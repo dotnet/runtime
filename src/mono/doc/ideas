@@ -1,5 +1,14 @@
 * Ideas
 
+	There are many pending classes that need to be implemented.  Those have
+	the highest impact in the Mono project: the sooner they are done,
+	the sooner we can start using this platform to create new and
+	exciting applications.
+
+	That being said, if you are not very excited about working on class
+	libraries, here is a list of other related projects or tools that might
+	be useful to the Mono project.
+
 	Here are a few ideas of tools, classes and projects that you
 	could start. More are forthcoming.
 

@@ -15,6 +15,31 @@
 	the compiler and various programs are routinely compiled and
 	ran.
 
+** Obtaining MCS
+
+	The Mono C# compiler is part of the `mcs' module in the Mono CVS
+	you can get it from our <a href="anoncvs.html">Anonymous CVS</a> server,
+	or you can get nightly <a href="download.html">download page</a>.
+
+** Running MCS
+
+	MCS is written in C# and uses heavily the .NET APIs.  At this point
+	MCS only runs on Windows with the .NET Framework SDK installed.  Work
+	is progressing rapidly in our JIT engine and our class libraries to
+	allow MCS to be ran in non-Windows systems. 
+
+** Reporting Bugs in MCS
+
+	When you report a bug, try to provide a small test case that would
+	show the error so we can include this as part of the Mono C# regression
+	test suite.
+
+	If the bug is an error or a warning that we do not flag, write
+	a sample program called `csXXXX.cs' where XXXX is the code number
+	that is used by the Microsoft C# compiler that illustrates the 
+	problem.  That way we can also do regression tests on the invalid
+	input.  
+
 ** Phases of the compiler
 
 	The compiler has a number of phases:

@@ -1,4 +1,12 @@
-* Testing 
+* Testing
+
+	Testing is an important part of the Mono project: every one of its
+	three major components has a test suite tailored for its needs.  This
+	is very helpful, because in the course of developing the software it
+	is very common to introduce bugs in existing code.  A test suite
+	helps us fix the bugs as soon as they are introduced.
+
+** Class Library Tests
 
 	All classes in Mono libraries should have comprehensive unit test
 	suites to go with them. Unit testing is a software engineering
@@ -19,3 +27,5 @@
 	more info, read <a
 	href="http://nunit.sourceforge.net/doc/testinfected/testing.html">
 	JUnit Test Infected: Programmers Love Writing Tests</a>.
+
+

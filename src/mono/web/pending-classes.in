@@ -31,7 +31,6 @@ System.Globalization.TaiwanCalendar
 System.Globalization.TextElementEnumerator
 System.Globalization.TextInfo
 System.Globalization.ThaiBuddhistCalendar
-System.IO.BufferedStream
 System.IO.EndOfStreamException
 System.IO.IsolatedStorage.IsolatedStorage
 System.IO.IsolatedStorage.IsolatedStorageException

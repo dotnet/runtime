@@ -1,18 +1,19 @@
 * The Mono runtime
 
-	The Mono runtime will implement the JIT engine (and a byte
-	code interpreter for quickly porting to new systems), the
-	class loader, the garbage collector, threading system and
-	metadata access libraries.
+	The Mono runtime implements a JIT engine for the CIL virtual
+	machine (as well as a byte code interpreter, this is to
+	quickly port it to new systems), the class loader, the garbage
+	collector, threading system and metadata access libraries.
 
 	We currently have two runtimes:
 
 	<ul>
+		* <b>mono:</b> The Just In Time compiler implemented
+	 	  using a BURS instruction selector.  We only support
+		  x86 machines in the JIT engine at this point.
+	
 		* <b>mint:</b> The Mono interpreter.  This is an
 		  easy-to-port runtime engine.
-
-		* <b>mono:</b> The Just In Time compiler implemented
-	 	  using a BURS instruction selector
 	</ul>
 
 	Currently both runtimes are missing garbage collection.  We
