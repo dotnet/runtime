@@ -1,5 +1,10 @@
 2004-12-15 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
+	* configure.in: isinf can be a macro and the test from AC_CHECK_FUNCTION
+	#undefines it before testing...
+
+2004-12-15 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
 	* configure.in: check for ieeefp.h and isinf.
 
 2004-12-15  Raja R Harinath  <rharinath@novell.com>
