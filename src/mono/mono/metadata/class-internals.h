@@ -219,6 +219,10 @@ struct _MonoClass {
 	guint gc_descr_inited : 1; /* gc_descr is initialized */
 	guint has_cctor       : 1; /* class has a cctor */
 	guint dummy           : 1; /* temporary hack */
+	/* next byte */
+	guint has_references  : 1; /* it has GC-tracked references in the instance */
+	guint has_static_refs : 1; /* it has static fields that are GC-tracked */
+
 	guint32 declsec_flags;     /* declarative security attributes flags */
 
 	MonoClass  *parent;

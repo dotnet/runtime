@@ -528,6 +528,8 @@ class_compute_field_layout (MonoClass *class)
 			class_compute_field_layout (class->parent);
 		class->instance_size += class->parent->instance_size;
 		class->min_align = class->parent->min_align;
+		/* we use |= since it may have been set already */
+		class->has_references |= class->parent->has_references;
 		blittable = class->parent->blittable;
 	} else {
 		class->instance_size = sizeof (MonoObject);
@@ -646,6 +648,9 @@ class_compute_field_layout (MonoClass *class)
 	mono_class_layout_fields (class);
 }
 
+/* useful until we keep track of gc-references in corlib etc. */
+#define IS_GC_REFERENCE(t) ((t)->type == MONO_TYPE_U || (t)->type == MONO_TYPE_I || (t)->type == MONO_TYPE_PTR)
+
 void
 mono_class_layout_fields (MonoClass *class)
 {
@@ -735,6 +740,8 @@ mono_class_layout_fields (MonoClass *class)
 				field->offset += align - 1;
 				field->offset &= ~(align - 1);
 				real_size = field->offset + size;
+				if (MONO_TYPE_IS_REFERENCE (field->type) || IS_GC_REFERENCE (field->type))
+					class->has_references = TRUE;
 			}
 
 			class->instance_size = MAX (real_size, class->instance_size);
@@ -761,6 +768,8 @@ mono_class_layout_fields (MonoClass *class)
 			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
 
+			if (MONO_TYPE_IS_REFERENCE (field->type) || IS_GC_REFERENCE (field->type))
+				class->has_references = TRUE;
 			size = mono_type_size (field->type, &align);
 			
 			/*
@@ -793,7 +802,9 @@ mono_class_layout_fields (MonoClass *class)
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;
-			
+
+		if (MONO_TYPE_IS_REFERENCE (field->type) || IS_GC_REFERENCE (field->type))
+			class->has_static_refs = TRUE;
 		size = mono_type_size (field->type, &align);
 		field->offset = class->class_size;
 		field->offset += align - 1;
@@ -2582,6 +2593,9 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	class->instance_size = mono_class_instance_size (class->parent);
 	class->class_size = 0;
 	mono_class_setup_supertypes (class);
+	if (!eclass->size_inited)
+		class_compute_field_layout (eclass);
+	class->has_references = MONO_TYPE_IS_REFERENCE (&eclass->byval_arg) || eclass->has_references? TRUE: FALSE;
 
 	class->rank = rank;
 	
