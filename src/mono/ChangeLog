@@ -1,3 +1,8 @@
+2004-09-20  Jackson Harper  <jackson@ximian.com>
+
+	* support/map.c/h: Add poll events map functions. Use values
+	instead of names for defines.
+	
 2004-09-17  Martin Baulig  <martin@ximian.com>
 
 	* Makefile.am (mcs-do-compiler-tests): Reverted Raja's latest
