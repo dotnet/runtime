@@ -600,7 +600,8 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 			if (corlib)
 				return corlib;
 			corlib = load_in_path ("corlib.dll", (const char**)assemblies_path, status);
-			return corlib;
+			if (corlib)
+				return corlib;
 		}
 		corlib = load_in_path ("mscorlib.dll", default_path, status);
 		if (!corlib)
