@@ -2998,19 +2998,11 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 		}
 	}
 
-	if (assemblyb->modules) {
-		len = mono_array_length (assemblyb->modules);
-		table = &assembly->tables [MONO_TABLE_MODULE];
-		alloc_table (table, len);
-		for (i = 0; i < len; ++i)
-			mono_image_fill_module_table (domain, mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i), assembly);
-	} else {
-		table = &assembly->tables [MONO_TABLE_MODULE];
-		table->rows++;
-		alloc_table (table, table->rows);
-		table->values [table->next_idx * MONO_MODULE_SIZE + MONO_MODULE_NAME] = string_heap_insert (&assembly->sheap, "RefEmit_YouForgotToDefineAModule");
-		table->next_idx ++;
-	}
+	len = mono_array_length (assemblyb->modules);
+	table = &assembly->tables [MONO_TABLE_MODULE];
+	alloc_table (table, len);
+	for (i = 0; i < len; ++i)
+		mono_image_fill_module_table (domain, mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i), assembly);
 
 	/* Emit types */
 	if (assemblyb->modules) {

@@ -303,6 +303,8 @@ typedef struct {
 	guint32 attrs;
 } MonoReflectionResource;
 
+struct MonoReflectionModuleBuilder;
+
 typedef struct {
 	MonoReflectionAssembly assembly;
 	MonoDynamicAssembly *dynamic_assembly;
@@ -320,6 +322,7 @@ typedef struct {
 	guint32 pekind;
 	MonoBoolean delay_sign;
 	guint32 access;
+	struct MonoReflectionModuleBuilder *main_module;
 } MonoReflectionAssemblyBuilder;
 
 typedef struct {
