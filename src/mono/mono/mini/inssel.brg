@@ -957,6 +957,27 @@ freg: OP_FCALL_REG (OP_ICONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+# 64 bit versions
+reg: OP_CALL_REG (OP_I8CONST) {
+	tree->opcode = CEE_CALL;
+	((MonoCallInst*)tree)->fptr = state->left->tree->inst_p0;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_VOIDCALL_REG (OP_I8CONST) {
+	tree->opcode = OP_VOIDCALL;
+	((MonoCallInst*)tree)->fptr = state->left->tree->inst_p0;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+freg: OP_FCALL_REG (OP_I8CONST) {
+	tree->opcode = OP_FCALL;
+	((MonoCallInst*)tree)->fptr = state->left->tree->inst_p0;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 stmt: CEE_RET "0" {
 	mono_bblock_add_inst (s->cbb, tree);
 }
