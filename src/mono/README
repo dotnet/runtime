@@ -80,7 +80,7 @@ This is Mono.
 	Then, go into the mono directory, and configure:
 
 		cd mono
-		./autogen --prefix=/usr/local
+		./autogen.sh --prefix=/usr/local
 
 	Then compile using the special target `fullbuild':
 
