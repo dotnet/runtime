@@ -2696,7 +2696,6 @@ array_constructed:
 			MonoClass *c , *oclass;
 			guint32 token;
 			int do_isinst = *ip == CEE_ISINST;
-			gboolean found = FALSE;
 
 			++ip;
 			token = read32 (ip);
@@ -2705,35 +2704,13 @@ array_constructed:
 			g_assert (sp [-1].type == VAL_OBJ);
 
 			if ((o = sp [-1].data.p)) {
-
 				vt = o->vtable;
 				oclass = vt->klass;
 
-				if (c->flags & TYPE_ATTRIBUTE_INTERFACE) {
-					if ((c->interface_id <= oclass->max_interface_id) &&
-					    vt->interface_offsets [c->interface_id])
-						found = TRUE;
-				} else {
-					if (oclass == mono_defaults.transparent_proxy_class) {
-						/* fixme: add check for IRemotingTypeInfo */
-						MonoRealProxy *rp = ((MonoTransparentProxy *)o)->rp;
-						MonoType *type;
-						type = rp->class_to_proxy->type;
-						oclass = mono_class_from_mono_type (type);
-					}
-					/* handle array casts */
-					if (oclass->rank) {
-						if ((oclass->rank == c->rank) && mono_class_has_parent (oclass->cast_class, c->cast_class)) {
-							sp [-1].data.vt.klass = c;
-							found = TRUE;
-						}
-					} else if (mono_class_has_parent (oclass, c)) {
-						sp [-1].data.vt.klass = c;
-						found = TRUE;
-					}
+				if (mono_object_isinst (o, c)) {
+					sp [-1].data.vt.klass = c;
 				}
-
-				if (!found) {
+				else {
 					if (do_isinst) {
 						sp [-1].data.p = NULL;
 						sp [-1].data.vt.klass = NULL;
@@ -4332,6 +4309,8 @@ die_on_ex:
 			++sp;
 			goto main_loop;
 		}
+		if (!frame->parent)
+			goto die_on_ex;
 		DEBUG_LEAVE ();
 		return;
 	}
