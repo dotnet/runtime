@@ -85,15 +85,16 @@ mono_async_invoke (MonoAsyncResult *ares, gboolean cb_only)
 {
 	ASyncCall *ac = (ASyncCall *)ares->data;
 
-	if (!cb_only)
+	if (!cb_only) {
 		ac->res = mono_message_invoke (ares->async_delegate, ac->msg, 
 					       &ac->msg->exc, &ac->out_args);
-
+		g_assert (ac->res);
+	}
 	ac->inside_cb = 1;
 	ares->completed = 1;
 		
 	/* notify listeners */
-	ReleaseSemaphore (ac->wait_semaphore, 1, NULL);
+	ReleaseSemaphore (ac->wait_semaphore, 0x7fffffff, NULL);
 
 	/* call async callback if cb_method != null*/
 	if (ac->cb_method) {
@@ -161,29 +162,18 @@ arch_begin_invoke (MonoMethod *method, gpointer ret_ip, MonoObject *delegate)
 }
 
 void
-arch_end_invoke (MonoObject *this, ...)
+arch_end_invoke (MonoMethod *method, gpointer first_arg, ...)
 {
+	MonoDomain *domain = mono_domain_get ();
 	MonoAsyncResult *ares;
 	MonoMethodMessage *msg;
 	ASyncCall *ac;
-	MonoDomain *domain = this->vtable->domain;
-	MonoMethod *method;
-	MonoClass *klass;
 	GList *l;
 	int i;
 
-	klass = this->vtable->klass;
-	method = NULL;
-
-	for (i = 0; i < klass->method.count; ++i) {
-		if (klass->methods [i]->name[0] == 'E' && 
-		    !strcmp ("EndInvoke", klass->methods [i]->name))
-			method = klass->methods [i];
-	}
-
 	g_assert (method);
 
-	msg = arch_method_call_message_new (method, &this, NULL, NULL, NULL);
+	msg = arch_method_call_message_new (method, &first_arg, NULL, NULL, NULL);
 
 	ares = mono_array_get (msg->args, gpointer, method->signature->param_count - 1);
 	g_assert (ares);
@@ -206,8 +196,10 @@ arch_end_invoke (MonoObject *this, ...)
 		mono_async_invoke (ares, FALSE);
 	}		
 	LeaveCriticalSection (&delegate_section);
-
 	
+	/* wait until we are really finished */
+	WaitForSingleObject (ac->wait_semaphore, INFINITE);
+
 	if (ac->msg->exc) {
 		char *strace = mono_string_to_utf8 (((MonoException*)ac->msg->exc)->stack_trace);
 		char  *tmp;
@@ -221,7 +213,7 @@ arch_end_invoke (MonoObject *this, ...)
 	/* fixme: we also need to restore out args */
 
 	/* restore return value */
-
+	g_assert (ac->res);
 	arch_return_value (method->signature->ret, ac->res, NULL);
 }
 
@@ -358,7 +350,7 @@ async_invoke_abort (MonoObject *obj)
 	}
 
 	/* signal that we finished processing */
-	ReleaseSemaphore (ac->wait_semaphore, 1, NULL);
+	ReleaseSemaphore (ac->wait_semaphore, 0x7fffffff, NULL);
 
 	/* start a new worker */
 	mono_thread_create (domain, async_invoke_thread);

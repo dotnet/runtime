@@ -200,7 +200,6 @@ mono_object_new (MonoDomain *domain, MonoClass *klass)
 	if (!klass->inited)
 		mono_class_init (klass);
 
-
 	if (klass->ghcimpl) {
 		o = mono_object_allocate (klass->instance_size);
 		o->vtable = mono_class_vtable (domain, klass);

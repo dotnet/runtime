@@ -226,7 +226,7 @@ gpointer
 arch_begin_invoke          (MonoMethod *method, gpointer ret_ip, MonoObject *delegate);
 
 void
-arch_end_invoke            (MonoObject *this, ...);
+arch_end_invoke            (MonoMethod *method, gpointer first_arg, ...);
 
 gpointer
 arch_get_delegate_invoke   (MonoMethod *method, int *size);

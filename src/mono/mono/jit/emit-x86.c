@@ -701,11 +701,12 @@ arch_compile_method (MonoMethod *method)
 				g_free (id);
 			}
 		} else if (delegate && *name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
-			code = addr = g_malloc (256);
+			code = addr = g_malloc (32);
 			x86_push_imm (code, method);
 			x86_call_code (code, arch_begin_invoke);
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 			x86_ret (code);
+			g_assert ((code - addr) <= 32);
 		} else if (delegate && *name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
 			/* this can raise exceptions, so we need a wrapper to save/restore LMF */
 			method->addr = (gpointer)arch_end_invoke;

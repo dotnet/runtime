@@ -332,6 +332,7 @@ arch_create_native_wrapper (MonoMethod *method)
 	int i, align, locals = 0, arg_size = 0;
 	gboolean pinvoke = FALSE;
 	GList *free_list = NULL;
+	gboolean end_invoke = FALSE;
 
 	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
@@ -381,6 +382,10 @@ arch_create_native_wrapper (MonoMethod *method)
 
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		guint8 *l1, *l2;
+
+		if (method->klass->parent == mono_defaults.multicastdelegate_class &&
+		    *method->name == 'E' && !strcmp (method->name, "EndInvoke"))
+			end_invoke = TRUE;
 
 		if (arg_size) {
 			/* repush all arguments */
@@ -499,6 +504,9 @@ enum_marshal:
 	}
 
 	if (method->addr) {
+		/* special case EndInvoke - we pass the MonoMethod as first parameter */
+		if (end_invoke)
+			x86_push_imm (code, method);
 		/* call the native code */
 		x86_call_code (code, method->addr);
 	} else {
@@ -527,8 +535,9 @@ enum_marshal:
 	}
 
 	/* remove arguments from stack */
-	if (arg_size || locals)
-		x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size + (locals<<2));
+	if (arg_size || locals || end_invoke)
+		x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size + (locals<<2) + 
+				 (end_invoke ? 4 : 0));
 
 	if (pinvoke && !csig->ret->byref && (csig->ret->type == MONO_TYPE_STRING)) {
 		/* If the argument is non-null, then convert the value back */
