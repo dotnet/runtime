@@ -771,7 +771,8 @@ gpointer mono_arch_ip_from_context              (void *sigctx);
 void     mono_arch_flush_register_windows       (void);
 
 /* Exception handling */
-gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj, gboolean test_only);
+gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,
+						 gpointer original_ip, gboolean test_only);
 void      mono_jit_walk_stack                   (MonoStackWalk func, gpointer user_data);
 MonoArray *ves_icall_get_trace                  (MonoException *exc, gint32 skip, MonoBoolean need_file_info);
 MonoBoolean ves_icall_get_frame_info            (gint32 skip, MonoBoolean need_file_info, 

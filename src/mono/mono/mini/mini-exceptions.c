@@ -191,7 +191,7 @@ glist_to_array (GList *list)
  *
  */
 gboolean
-mono_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
+mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gboolean test_only)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji, rji;
@@ -265,10 +265,23 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		MonoContext ctx_cp = *ctx;
 		if (mono_jit_trace_calls != NULL)
 			g_print ("EXCEPTION handling: %s\n", mono_object_class (obj)->name);
-		if (!mono_handle_exception (&ctx_cp, obj, TRUE)) {
+		if (!mono_handle_exception (&ctx_cp, obj, original_ip, TRUE)) {
 			if (mono_break_on_exc)
 				G_BREAKPOINT ();
 			mono_unhandled_exception (obj);
+
+			if (mono_debugger_unhandled_exception (original_ip, obj)) {
+				/*
+				 * If this returns true, then we're running inside the
+				 * Mono Debugger and the debugger wants us to restore the
+				 * context and continue (normally, the debugger inserts
+				 * a breakpoint on the `original_ip', so it regains control
+				 * immediately after restoring the context).
+				 */
+				MONO_CONTEXT_SET_IP (ctx, original_ip);
+				restore_context (ctx);
+				g_assert_not_reached ();
+			}
 		}
 	}
 

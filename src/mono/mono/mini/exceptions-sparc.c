@@ -161,7 +161,7 @@ throw_exception (MonoObject *ex, guint32 sp, guint32 ip)
 	ctx.ip = ip;
 	ctx.fp = (guint32*)ctx.sp [sparc_i6 - 16];
 
-	mono_handle_exception (&ctx, ex, FALSE);
+	mono_handle_exception (&ctx, ex, ip, FALSE);
 	restore_context (&ctx);
 
 	g_assert_not_reached ();
@@ -386,7 +386,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 	mctx.sp = ctx->uc_mcontext.gregs [REG_SP];
 	mctx.fp = mctx.sp [sparc_fp - 16];
 
-	mono_handle_exception (&mctx, obj, test_only);
+	mono_handle_exception (&mctx, obj, mctx.ip, test_only);
 	
 	/* We can't use restore_context to return from a signal handler */
 	ctx->uc_mcontext.gregs [REG_PC] = mctx.ip;

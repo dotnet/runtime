@@ -248,7 +248,7 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 	ctx.SC_ECX = ecx;
 	ctx.SC_EAX = eax;
 	
-	mono_arch_handle_exception (&ctx, exc, FALSE);
+	mono_handle_exception (&ctx, exc, eip + 1, FALSE);
 	restore_context (&ctx);
 
 	g_assert_not_reached ();
@@ -499,7 +499,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 gboolean
 mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 {
-	return mono_handle_exception (sigctx, obj, test_only);
+	return mono_handle_exception (sigctx, obj, mono_arch_ip_from_context (sigctx), test_only);
 }
 
 gpointer
