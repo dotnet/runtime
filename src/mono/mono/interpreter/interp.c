@@ -1034,6 +1034,7 @@ ves_exec_method (MonoInvocation *frame)
 	MonoMethodHeader *header;
 	MonoMethodSignature *signature;
 	MonoImage *image;
+	GSList *finally_ips = NULL;
 	const unsigned char *endfinally_ip;
 	register const unsigned char *ip;
 	register stackval *sp;
@@ -3290,6 +3291,11 @@ array_constructed:
 			}
 			BREAK;
 		CASE (CEE_ENDFINALLY)
+			if (finally_ips) {
+				ip = finally_ips->data;
+				finally_ips = g_slist_remove (finally_ips, ip);
+				goto main_loop;
+			}
 			if (frame->ex)
 				goto handle_fault;
 			/*
@@ -3528,7 +3534,6 @@ array_constructed:
 					sp->type = VAL_TP;
 
 				++sp;
-				++ip;
 				break;
 			}
 			case CEE_STARG: {
@@ -3761,10 +3766,14 @@ die_on_ex:
 			if (MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
 				if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 					ip = header->code + clause->handler_offset;
-					goto main_loop;
-				} else
-					break;
+					finally_ips = g_slist_append (finally_ips, ip);
+				}
 			}
+		}
+		if (finally_ips) {
+			ip = finally_ips->data;
+			finally_ips = g_slist_remove (finally_ips, ip);
+			goto main_loop;
 		}
 
 		/*
@@ -3814,27 +3823,18 @@ die_on_ex:
 static int 
 ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 {
-	MonoArray *args = NULL;
 	MonoImage *image = assembly->image;
 	MonoCLIImageInfo *iinfo;
 	MonoMethod *method;
 	MonoObject *exc = NULL;
-	int i, rval;
+	int rval;
 
 	iinfo = image->image_info;
 	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
 	if (!method)
 		g_error ("No entry point method found in %s", image->name);
 
-	if (method->signature->param_count) {
-		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
-		for (i = 0; i < argc; ++i) {
-			MonoString *arg = mono_string_new (domain, argv [i]);
-			mono_array_set (args, gpointer, i, arg);
-		}
-	}
-	
-	rval = mono_runtime_exec_main (method, args, &exc);
+	rval = mono_runtime_run_main (method, argc, argv, &exc);
 
 	if (exc)
 		mono_print_unhandled_exception (exc);
@@ -3971,10 +3971,7 @@ main (int argc, char *argv [])
 	segv_exception = mono_get_exception_null_reference ();
 	segv_exception->message = mono_string_new (domain, "Segmentation fault");
 	signal (SIGSEGV, segv_handler);
-	/*
-	 * skip the program name from the args.
-	 */
-	++i;
+
 	retval = ves_exec (domain, assembly, argc - i, argv + i);
 #endif
 	mono_profiler_shutdown ();
