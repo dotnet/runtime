@@ -1,3 +1,7 @@
+2004-05-31  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: fixlets for windows.
+
 2004-05-29  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: export CC instead of passing it to libgc/configure.
