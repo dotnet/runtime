@@ -487,7 +487,7 @@ MonoReflectionField*    mono_field_get_object    (MonoDomain *domain, MonoClass 
 MonoReflectionProperty* mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *property);
 MonoReflectionEvent*    mono_event_get_object    (MonoDomain *domain, MonoClass *klass, MonoEvent *event);
 /* note: this one is slightly different: we keep the whole array of params in the cache */
-MonoReflectionParameter** mono_param_get_objects  (MonoDomain *domain, MonoMethod *method);
+MonoArray* mono_param_get_objects  (MonoDomain *domain, MonoMethod *method);
 
 MonoArray*  mono_reflection_get_custom_attrs (MonoObject *obj);
 MonoArray*  mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *porpValues, MonoArray *fields, MonoArray* fieldValues);

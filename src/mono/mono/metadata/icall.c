@@ -1073,22 +1073,10 @@ static MonoArray*
 ves_icall_get_parameter_info (MonoMethod *method)
 {
 	MonoDomain *domain = mono_domain_get (); 
-	MonoArray *res;
-	static MonoClass *System_Reflection_ParameterInfo;
-	MonoReflectionParameter** args;
-	int i;
 
 	MONO_ARCH_SAVE_REGS;
 
-	args = mono_param_get_objects (domain, method);
-	if (!System_Reflection_ParameterInfo)
-		System_Reflection_ParameterInfo = mono_class_from_name (
-			mono_defaults.corlib, "System.Reflection", "ParameterInfo");
-	res = mono_array_new (domain, System_Reflection_ParameterInfo, method->signature->param_count);
-	for (i = 0; i < method->signature->param_count; ++i) {
-		mono_array_set (res, gpointer, i, args [i]);
-	}
-	return res;
+	return mono_param_get_objects (domain, method);
 }
 
 static MonoReflectionType*

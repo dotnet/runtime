@@ -3731,41 +3731,43 @@ mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
  * Return an System.Reflection.ParameterInfo array object representing the parameters
  * in the method @method.
  */
-MonoReflectionParameter**
+MonoArray*
 mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 {
-	MonoReflectionParameter **res;
-	MonoReflectionMethod *member;
-	MonoClass *oklass;
+	static MonoClass *System_Reflection_ParameterInfo;
+	MonoArray *res = NULL;
+	MonoReflectionMethod *member = NULL;
+	MonoReflectionParameter *param = NULL;
 	char **names;
 	int i;
 
+	if (!System_Reflection_ParameterInfo)
+		System_Reflection_ParameterInfo = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "ParameterInfo");
+	
 	if (!method->signature->param_count)
-		return NULL;
+		return mono_array_new (domain, System_Reflection_ParameterInfo, 0);
 
 	/* Note: the cache is based on the address of the signature into the method
 	 * since we already cache MethodInfos with the method as keys.
 	 */
-	CHECK_OBJECT (MonoReflectionParameter**, &(method->signature), NULL);
+	CHECK_OBJECT (MonoArray*, &(method->signature), NULL);
 
 	member = mono_method_get_object (domain, method, NULL);
 	names = g_new (char *, method->signature->param_count);
 	mono_method_get_param_names (method, (const char **) names);
-	
-	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "ParameterInfo");
-#if HAVE_BOEHM_GC
-	res = GC_MALLOC (sizeof (MonoReflectionParameter*) * method->signature->param_count);
-#else
-	res = g_new0 (MonoReflectionParameter*, method->signature->param_count);
-#endif
+
+	res = mono_array_new (domain, System_Reflection_ParameterInfo, method->signature->param_count);
 	for (i = 0; i < method->signature->param_count; ++i) {
-		res [i] = (MonoReflectionParameter *)mono_object_new (domain, oklass);
-		res [i]->ClassImpl = mono_type_get_object (domain, method->signature->params [i]);
-		res [i]->DefaultValueImpl = NULL; /* FIXME */
-		res [i]->MemberImpl = (MonoObject*)member;
-		res [i]->NameImpl = mono_string_new (domain, names [i]);
-		res [i]->PositionImpl = i;
-		res [i]->AttrsImpl = method->signature->params [i]->attrs;
+		param = (MonoReflectionParameter *)mono_object_new (domain, 
+															System_Reflection_ParameterInfo);
+		param->ClassImpl = mono_type_get_object (domain, method->signature->params [i]);
+		param->DefaultValueImpl = NULL; /* FIXME */
+		param->MemberImpl = (MonoObject*)member;
+		param->NameImpl = mono_string_new (domain, names [i]);
+		param->PositionImpl = i;
+		param->AttrsImpl = method->signature->params [i]->attrs;
+		mono_array_set (res, gpointer, i, param);
 	}
 	g_free (names);
 	CACHE_OBJECT (&(method->signature), res, NULL);
