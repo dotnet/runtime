@@ -42,15 +42,27 @@
 	mailing list.
 
 <a name="packaged">
+* Packaged.
 
-	At this point, you should look into using one of the <a
-	href="snapshots">nightly snapshots</a> or getting the 
-	sources from <a href="anoncvs.html">Anonymous CVS</a> 
-	as significant work has gone into Mono since our last stable
-	release in September.
+	Version 0.8 of Mono was released on February 11, 2002.  If you want
+	up-to-date code, you might consider getting the code from AnonCVS,
+	or using the daily snapshots.
 
-	We will be making a packaged release sometime in January.
+	<a name="feb-11">
+	<ul>
+		* <a href="archive/mono-0.8.tar.gz">mono-0.8.tar.gz</a>: Mono Runtime 0.8 release.
 
+		  Includes: source code to the x86 JIT/interpreter
+		  engine.<br>
+		  Binaries for the compiler and the class libraries
+		  are included as a convenience.
+
+		* <a href="archive/mcs-0.8.tar.gz">mcs-0.8.tar.gz</a>: Mono Class Libraries and C# Compiler.
+
+		  Source code for the Mono Class Libraries, C#
+		  compiler, regression test suites and development
+		  tools (yacc for C#, nant and nunit)
+	</ul>
 	
 <a name="install">
 ** Installing the software
