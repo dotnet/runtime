@@ -538,6 +538,7 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 {
 	guint8 *code, *buf;
 	static guint8 *vc = NULL;
+	MonoDomain* domain = mono_domain_get ();
 
 	/* previously created trampoline code */
 	if (method->info)
@@ -555,7 +556,9 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	here, so we must save it before. */
 	//code = buf = g_malloc(METHOD_TRAMPOLINE_SIZE);
 	// FIXME: should pass the domain down tot his function
-	code = buf = mono_code_manager_reserve (mono_domain_get ()->code_mp, METHOD_TRAMPOLINE_SIZE);
+	mono_domain_lock (domain);
+	code = buf = mono_code_manager_reserve (domain->code_mp, METHOD_TRAMPOLINE_SIZE);
+	mono_domain_unlock (domain);
 
 	/* Save r11. There's nothing magic in the '44', its just an arbitrary
 	position - see above */
@@ -818,7 +821,9 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 	the trampoline relies on r11 having the same value it had before coming
 	here, so we must save it before. */
 	//code = buf = g_malloc(METHOD_TRAMPOLINE_SIZE);
+	mono_domain_lock (vtable->domain);
 	code = buf = mono_code_manager_reserve (vtable->domain->code_mp, METHOD_TRAMPOLINE_SIZE);
+	mono_domain_unlock (vtable->domain);
 
 #if 1
 	ppc_mflr (buf, ppc_r4);

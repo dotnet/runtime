@@ -2082,12 +2082,16 @@ handle_thunk (int absolute, guchar *code, guchar *target) {
 	pdata.absolute = absolute;
 	pdata.found = 0;
 
+	mono_domain_lock (domain);
 	mono_code_manager_foreach (domain->code_mp, search_thunk_slot, &pdata);
+
 	if (!pdata.found) {
 		/* this uses the first available slot */
 		pdata.found = 2;
 		mono_code_manager_foreach (domain->code_mp, search_thunk_slot, &pdata);
 	}
+	mono_domain_unlock (domain);
+
 	if (pdata.found != 1)
 		g_print ("thunk failed for %p from %p\n", target, code);
 	g_assert (pdata.found == 1);

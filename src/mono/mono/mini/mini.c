@@ -2112,12 +2112,14 @@ mono_get_element_address_signature (int arity)
 	MonoMethodSignature *res;
 	int i;
 
-	if (!sighash)
+	EnterCriticalSection (&trampoline_hash_mutex);
+	if (!sighash) {
 		sighash = g_hash_table_new (NULL, NULL);
-
-
-	if ((res = g_hash_table_lookup (sighash, (gpointer)arity)))
+	}
+	else if ((res = g_hash_table_lookup (sighash, (gpointer)arity))) {
+		LeaveCriticalSection (&trampoline_hash_mutex);
 		return res;
+	}
 
 	res = mono_metadata_signature_alloc (mono_defaults.corlib, arity + 1);
 
@@ -2130,6 +2132,7 @@ mono_get_element_address_signature (int arity)
 	res->ret = &mono_defaults.int_class->byval_arg;
 
 	g_hash_table_insert (sighash, (gpointer)arity, res);
+	LeaveCriticalSection (&trampoline_hash_mutex);
 
 	return res;
 }
@@ -2603,7 +2606,6 @@ inflate_generic_field (MonoClassField *field, MonoMethod *method, MonoClass **re
 	MonoGenericInst *ginst;
 	MonoGenericMethod *gmethod;
 	MonoClassField *res;
-	MonoClass *klass;
 
 	ginst = method->klass->generic_inst;
 	gmethod = method->signature->gen_method;
@@ -6163,18 +6165,27 @@ static GHashTable *jit_icall_hash_addr = NULL;
 MonoJitICallInfo *
 mono_find_jit_icall_by_name (const char *name)
 {
+	MonoJitICallInfo *info;
 	g_assert (jit_icall_hash_name);
 
 	//printf ("lookup addr %s %p\n", name, g_hash_table_lookup (jit_icall_hash_name, name));
-	return g_hash_table_lookup (jit_icall_hash_name, name);
+	EnterCriticalSection (&trampoline_hash_mutex);
+	info = g_hash_table_lookup (jit_icall_hash_name, name);
+	LeaveCriticalSection (&trampoline_hash_mutex);
+	return info;
 }
 
 MonoJitICallInfo *
 mono_find_jit_icall_by_addr (gconstpointer addr)
 {
+	MonoJitICallInfo *info;
 	g_assert (jit_icall_hash_addr);
 
-	return g_hash_table_lookup (jit_icall_hash_addr, (gpointer)addr);
+	EnterCriticalSection (&trampoline_hash_mutex);
+	info = g_hash_table_lookup (jit_icall_hash_addr, (gpointer)addr);
+	LeaveCriticalSection (&trampoline_hash_mutex);
+
+	return info;
 }
 
 gconstpointer
@@ -6182,15 +6193,22 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 {
 	char *name;
 	MonoMethod *wrapper;
+	gconstpointer code;
 	
 	if (callinfo->wrapper)
 		return callinfo->wrapper;
+	
 	name = g_strdup_printf ("__icall_wrapper_%s", callinfo->name);
 	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func);
 	/* Must be domain neutral since there is only one copy */
-	callinfo->wrapper = mono_jit_compile_method_with_opt (wrapper, default_opt | MONO_OPT_SHARED);
+	code = mono_jit_compile_method_with_opt (wrapper, default_opt | MONO_OPT_SHARED);
 
-	g_hash_table_insert (jit_icall_hash_addr, (gpointer)callinfo->wrapper, callinfo);
+	EnterCriticalSection (&trampoline_hash_mutex);
+	if (!callinfo->wrapper) {
+		callinfo->wrapper = code;
+		g_hash_table_insert (jit_icall_hash_addr, (gpointer)callinfo->wrapper, callinfo);
+	}
+	LeaveCriticalSection (&trampoline_hash_mutex);
 
 	g_free (name);
 	return callinfo->wrapper;
@@ -6203,6 +6221,8 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 	
 	g_assert (func);
 	g_assert (name);
+
+	EnterCriticalSection (&trampoline_hash_mutex);
 
 	if (!jit_icall_hash_name) {
 		jit_icall_hash_name = g_hash_table_new (g_str_hash, g_str_equal);
@@ -6233,6 +6253,7 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 	g_hash_table_insert (jit_icall_hash_name, (gpointer)info->name, info);
 	g_hash_table_insert (jit_icall_hash_addr, (gpointer)func, info);
 
+	LeaveCriticalSection (&trampoline_hash_mutex);
 	return info;
 }
 
@@ -6685,8 +6706,12 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			target = mono_arch_create_jit_trampoline (patch_info->data.method);
 		break;
 	case MONO_PATCH_INFO_SWITCH: {
-		gpointer *jump_table = mono_code_manager_reserve (domain->code_mp, sizeof (gpointer) * patch_info->table_size);
+		gpointer *jump_table;
 		int i;
+	
+		mono_domain_lock (domain);
+		jump_table = mono_code_manager_reserve (domain->code_mp, sizeof (gpointer) * patch_info->table_size);
+		mono_domain_unlock (domain);
 
 		for (i = 0; i < patch_info->table_size; i++) {
 			jump_table [i] = code + (int)patch_info->data.table [i];
@@ -7359,7 +7384,11 @@ mono_codegen (MonoCompile *cfg)
 	/* we always allocate code in cfg->domain->code_mp to increase locality */
 	cfg->code_size = cfg->code_len + max_epilog_size;
 	/* fixme: align to MONO_ARCH_CODE_ALIGNMENT */
+
+	mono_domain_lock (cfg->domain);
 	code = mono_code_manager_reserve (cfg->domain->code_mp, cfg->code_size);
+	mono_domain_unlock (cfg->domain);
+
 	memcpy (code, cfg->native_code, cfg->code_len);
 	g_free (cfg->native_code);
 	cfg->native_code = code;
@@ -7404,7 +7433,11 @@ mono_codegen (MonoCompile *cfg)
 			break;
 		}
 		case MONO_PATCH_INFO_SWITCH: {
-			gpointer *table = mono_code_manager_reserve (cfg->domain->code_mp, sizeof (gpointer) * patch_info->table_size);
+			gpointer *table;
+			mono_domain_lock (cfg->domain);
+			table = mono_code_manager_reserve (cfg->domain->code_mp, sizeof (gpointer) * patch_info->table_size);
+			mono_domain_unlock (cfg->domain);
+		
 			patch_info->ip.i = patch_info->ip.label->inst_c0;
 			for (i = 0; i < patch_info->table_size; i++) {
 				table [i] = (gpointer)patch_info->data.table [i]->native_offset;
@@ -7425,7 +7458,10 @@ mono_codegen (MonoCompile *cfg)
 
 	mono_arch_patch_code (cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors);
 
+	mono_domain_lock (cfg->domain);
 	mono_code_manager_commit (cfg->domain->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
+	mono_domain_unlock (cfg->domain);
+	
 	mono_arch_flush_icache (cfg->native_code, cfg->code_len);
 
 	mono_debug_close_method (cfg);
@@ -7865,13 +7901,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 }
 
 static gpointer
-mono_jit_compile_method_inner (MonoMethod *method, MonoDomain** code_domain)
+mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain)
 {
-	MonoDomain *target_domain = *code_domain;
 	MonoCompile *cfg;
 	GHashTable *jit_code_hash;
-	gpointer code;
+	gpointer code = NULL;
 	guint32 opt;
+	MonoJitInfo *info;
 
 	opt = default_opt;
 
@@ -7886,12 +7922,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain** code_domain)
 
 		mono_class_init (method->klass);
 		if ((info = mono_aot_get_method (domain, method))) {
-
 			g_hash_table_insert (domain->jit_code_hash, method, info);
-
 			mono_domain_unlock (domain);
-
-			*code_domain = domain;
+			mono_runtime_class_init (mono_class_vtable (domain, method->klass));
 			return info->code_start;
 		}
 
@@ -7946,9 +7979,24 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain** code_domain)
 	}
 
 	cfg = mini_method_compile (method, opt, target_domain, TRUE, 0);
-	code = cfg->native_code;
 
-	g_hash_table_insert (jit_code_hash, method, cfg->jit_info);
+	mono_domain_lock (target_domain);
+
+	/* Check if some other thread already did the job. In this case, we can
+       discard the code this thread generated. */
+
+	if ((info = g_hash_table_lookup (target_domain->jit_code_hash, method))) {
+		/* We can't use a domain specific method in another domain */
+		if ((target_domain == mono_domain_get ()) || info->domain_neutral) {
+			code = info->code_start;
+//			printf("Discarding code for method %s\n", method->name);
+		}
+	}
+	
+	if (code == NULL) {
+		g_hash_table_insert (jit_code_hash, method, cfg->jit_info);
+		code = cfg->native_code;
+	}
 
 	mono_destroy_compile (cfg);
 
@@ -7968,6 +8016,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain** code_domain)
 		g_slist_free (list);
 	}
 
+	mono_domain_unlock (target_domain);
+
+	mono_runtime_class_init (mono_class_vtable (target_domain, method->klass));
 	return code;
 }
 
@@ -7975,9 +8026,9 @@ static gpointer
 mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 {
 	/* FIXME: later copy the code from mono */
-	MonoDomain *target_domain, *code_domain, *domain = mono_domain_get ();
+	MonoDomain *target_domain, *domain = mono_domain_get ();
 	MonoJitInfo *info;
-	gpointer code;
+	gpointer p;
 
 	if (default_opt & MONO_OPT_SHARED)
 		target_domain = mono_root_domain;
@@ -7996,22 +8047,9 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 		}
 	}
 
-	code_domain = target_domain;
-	code = mono_jit_compile_method_inner (method, &code_domain);
-
 	mono_domain_unlock (target_domain);
-
-	if (code != NULL) {
-		/* make sure runtime_init is called */
-		/* 
-		 * this should be done outside the domain lock, since it might
-		 * cause an exception, and stack unwinding can't release unmanaged
-		 * locks yet.
-		 */
-		mono_runtime_class_init (mono_class_vtable (code_domain, method->klass));
-	}
-
-	return code;
+	p = mono_jit_compile_method_inner (method, target_domain);
+	return p;
 }
 
 static gpointer
