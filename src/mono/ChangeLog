@@ -1,6 +1,7 @@
 2004-03-16  Duncan Mak  <duncan@ximian.com>
 
-	* runtime/Makefile.am (MakeCert.exe, cert2spc.exe, certmgr.exe):
+	* runtime/Makefile.am
+	(MakeCert.exe, cert2spc.exe, certmgr.exe, setreg.exe):
 	Remember to install them to mono/runtime.
 
 2004-03-14  Zoltan Varga  <vargaz@freemail.hu>
