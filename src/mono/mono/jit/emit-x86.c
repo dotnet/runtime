@@ -941,28 +941,26 @@ mono_compute_branches (MonoFlowGraph *cfg)
 	cfg->code = end;
 
 	for (ji = cfg->jump_info; ji; ji = ji->next) {
-		gpointer *ip = GUINT_TO_POINTER (GPOINTER_TO_UINT (ji->ip) + cfg->start);
-		char *target;
+		unsigned char *ip = GUINT_TO_POINTER (GPOINTER_TO_UINT (ji->ip) + cfg->start);
+		unsigned char *target;
 
 		switch (ji->type) {
 		case MONO_JUMP_INFO_BB:
 			target = ji->data.bb->addr + cfg->start;
-			*ip = target - GPOINTER_TO_UINT(ip) - 4;
 			break;
 		case MONO_JUMP_INFO_ABS:
 			target = ji->data.target;
-			*ip = target - GPOINTER_TO_UINT(ip) - 4;
 			break;
 		case MONO_JUMP_INFO_EPILOG:
 			target = cfg->epilog + cfg->start;
-			*ip = target - GPOINTER_TO_UINT(ip) - 4;
 			break;
 		case MONO_JUMP_INFO_IP:
-			*ip = ip;
-			break;
+			*(unsigned char**)ip = ip;
+			continue;
 		default:
 			g_assert_not_reached ();
 		}
+		x86_patch (ip, target);
 	}
 }
 
