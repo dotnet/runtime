@@ -707,7 +707,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		gint32 address, iloffset;
 		int offset;
 
-		*new_ctx = *ctx;
+//		*new_ctx = *ctx;
+		memcpy(new_ctx, ctx, sizeof(*new_ctx));
 
 		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
 			/* remove any unused lmf */
@@ -728,9 +729,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			iloffset = mono_debug_il_offset_from_address (ji->method, address, domain);
 
 			if (iloffset < 0)
-				tmpaddr = g_strdup_printf ("<0x%05x>", address);
+				tmpaddr = g_strdup_printf ("<0x%08x>", address);
 			else
-				tmpaddr = g_strdup_printf ("[0x%05x]", iloffset);
+				tmpaddr = g_strdup_printf ("[0x%08x]", iloffset);
 		
 			fname = mono_method_full_name (ji->method, TRUE);
 
@@ -744,7 +745,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			g_free (tmpaddr);
 		}
 		sframe = (MonoS390StackFrame *) MONO_CONTEXT_GET_BP (ctx);
+		if (ji->used_regs) {
+		}
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->prev);
+		sframe = (MonoS390StackFrame *) sframe->prev;
 		MONO_CONTEXT_SET_IP (new_ctx, sframe->return_address);
 		*res = *ji;
 		return res;
@@ -774,6 +778,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		MONO_CONTEXT_SET_BP (ctx, (*lmf)->ebp);
 		MONO_CONTEXT_SET_IP (ctx, (*lmf)->eip);
 */
+		memcpy(new_ctx->uc_mcontext.gregs, (*lmf)->gregs, sizeof((*lmf)->gregs));
+		memcpy(new_ctx->uc_mcontext.fpregs.fprs, (*lmf)->fregs, sizeof((*lmf)->fregs));
 		MONO_CONTEXT_SET_BP (new_ctx, (*lmf)->ebp);
 		MONO_CONTEXT_SET_IP (new_ctx, (*lmf)->eip);
 		*lmf = (*lmf)->previous_lmf;
@@ -1057,8 +1063,12 @@ mono_arch_handle_exception (void *uc, gpointer obj, gboolean test_only)
 								g_free (trace);
 								return TRUE;
 							}
+//							memcpy(ctx, &new_ctx, sizeof(new_ctx));
 							if (mono_jit_trace_calls != NULL)
-								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
+								g_print ("EXCEPTION: catch found at clause %d of %s - caught at %p with sp %p\n", 
+									 i, mono_method_full_name (ji->method, TRUE),
+									 ei->handler_start,
+									 MONO_CONTEXT_GET_BP(ctx));
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 							*((gpointer *)((char *)MONO_CONTEXT_GET_BP (ctx) + ji->exvar_offset)) = obj;
 							jit_tls->lmf = lmf;

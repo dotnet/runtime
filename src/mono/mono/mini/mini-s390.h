@@ -19,6 +19,8 @@ struct MonoLMF {
 	MonoMethod *method;
 	gulong      ebp;
 	gulong      eip;
+	gulong	    gregs[16];
+	gdouble     fregs[16];
 };
 
 typedef struct ucontext MonoContext;

@@ -554,7 +554,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	printf ("ENTER: %s(", fname);
 	g_free (fname);
 
-	printf (") ip: %p\n", __builtin_return_address (1));
+	printf (") ip: %p sp: %p\n", __builtin_return_address (1), sp);
 
 	if (rParm == NULL)
 		return;
@@ -4481,11 +4481,19 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/* save the current IP						 */
 		/*---------------------------------------------------------------*/
 		s390_lr    (code, s390_r1, cfg->frame_reg);
-		s390_ahi   (code, s390_r1, alloc_size);
+//		s390_ahi   (code, s390_r1, alloc_size);
 		s390_st	   (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, ebp));
 		s390_l     (code, s390_r1, 0, s390_r1, S390_RET_ADDR_OFFSET);
 		s390_la    (code, s390_r1, 0, s390_r1, 0);
 		s390_st    (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, eip));
+
+		/*---------------------------------------------------------------*/
+		/* Save general and floating point registers			 */
+		/*---------------------------------------------------------------*/
+		s390_stm   (code, s390_r2, s390_r6, s390_r13, G_STRUCT_OFFSET(MonoLMF, gregs[2]));
+		for (i = 0; i < 16; i++) {
+			s390_std  (code, i, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, fregs[i]));
+		}
 
 		/*---------------------------------------------------------------*/
 		/* Restore the parameter registers now that we've set up the lmf */
