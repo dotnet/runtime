@@ -261,6 +261,7 @@ typedef struct {
 
 typedef struct _MonoType MonoType;
 typedef struct _MonoGenericInst MonoGenericInst;
+typedef struct _MonoGenericMethod MonoGenericMethod;
 typedef struct _MonoGenericParam MonoGenericParam;
 typedef struct _MonoArrayType MonoArrayType;
 typedef struct _MonoMethodSignature MonoMethodSignature;
@@ -319,7 +320,7 @@ typedef struct {
 	guint16      num_locals;
 	MonoExceptionClause *clauses;
 	MonoGenericParam *gen_params;
-	MonoGenericInst *geninst;
+	MonoGenericMethod *gen_method;
 	MonoType    *locals [MONO_ZERO_LEN_ARRAY];
 } MonoMethodHeader;
 

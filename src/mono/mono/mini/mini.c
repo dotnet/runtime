@@ -2481,7 +2481,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 #define TYPE_PARAM_TO_TYPE(num) (method->klass->generic_inst->type_argv [(num)])
 #define TYPE_PARAM_TO_CLASS(num) (mono_class_from_mono_type (TYPE_PARAM_TO_TYPE ((num))))
 
-#define MTYPE_PARAM_TO_TYPE(num) (((MonoMethodNormal *) method)->header->geninst->mtype_argv [(num)])
+#define MTYPE_PARAM_TO_TYPE(num) (((MonoMethodNormal *) method)->header->gen_method->mtype_argv [(num)])
 #define MTYPE_PARAM_TO_CLASS(num) (mono_class_from_mono_type (MTYPE_PARAM_TO_TYPE ((num))))
 
 
@@ -2584,7 +2584,7 @@ inflate_generic_field (MonoClassField *field, MonoClass *klass, MonoClass **retc
 	res = g_new0 (MonoClassField, 1);
 	*res = *field;
 	ginst = klass->generic_inst;
-	res->type = mono_class_inflate_generic_type (field->type, ginst);
+	res->type = mono_class_inflate_generic_type (field->type, ginst, NULL);
 	return res;
 }
 

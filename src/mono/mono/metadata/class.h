@@ -221,14 +221,20 @@ struct _MonoGenericInst {
 	MonoType *parent;
 	MonoType **ifaces;
 	MonoType *generic_type;
-	MonoMethod *generic_method;
 	int type_argc;
 	MonoType **type_argv;
-	int mtype_argc;
-	MonoType **mtype_argv;
 	guint is_open       : 1;
 	guint initialized   : 1;
 	guint init_pending  : 1;
+};
+
+struct _MonoGenericMethod {
+	MonoGenericInst *generic_inst;
+	MonoClass *klass;
+	MonoMethod *generic_method;
+	int mtype_argc;
+	MonoType **mtype_argv;
+	guint is_open       : 1;
 };
 
 struct _MonoGenericParam {
@@ -305,13 +311,10 @@ MonoClass*
 mono_class_from_generic    (MonoGenericInst *ginst);
 
 MonoType*
-mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst);
-
-MonoMethodSignature*
-mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGenericInst *ginst);
+mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst, MonoGenericMethod *gmethod);
 
 MonoMethod*
-mono_class_inflate_generic_method (MonoMethod *method, MonoGenericInst *ginst);
+mono_class_inflate_generic_method (MonoMethod *method, MonoGenericMethod *gmethod);
 
 MonoClassField*
 mono_field_from_memberref  (MonoImage *image, guint32 token, MonoClass **retklass);

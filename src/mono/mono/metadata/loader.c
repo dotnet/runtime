@@ -339,7 +339,7 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 			  !(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 			  method->signature);
 		mn = (MonoMethodNormal *) method;
-		g_assert (mn->header->geninst);
+		g_assert (mn->header->gen_method);
 
 		return method->signature;
 	}
@@ -416,8 +416,15 @@ method_from_memberref (MonoImage *image, guint32 idx)
 			method = find_method (klass, mname, sig);
 			if (!method)
 				g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
-			else if (klass->generic_inst)
-				method = mono_class_inflate_generic_method (method, klass->generic_inst);
+			else if (klass->generic_inst) {
+				MonoGenericMethod *gmethod = g_new0 (MonoGenericMethod, 1);
+
+				gmethod->klass = klass;
+				gmethod->generic_method = method;
+				gmethod->generic_inst = klass->generic_inst;
+
+				method = mono_class_inflate_generic_method (method, gmethod);
+			}
 			mono_metadata_free_method_signature (sig);
 			return method;
 		}
@@ -490,7 +497,7 @@ method_from_methodspec (MonoImage *image, guint32 idx)
 {
 	MonoMethod *method;
 	MonoTableInfo *tables = image->tables;
-	MonoGenericInst *ginst;
+	MonoGenericMethod *gmethod;
 	const char *ptr;
 	guint32 cols [MONO_METHODSPEC_SIZE];
 	guint32 token, param_count, i;
@@ -510,19 +517,20 @@ method_from_methodspec (MonoImage *image, guint32 idx)
 	ptr++;
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 
-	ginst = g_new0 (MonoGenericInst, 1);
-	ginst->generic_method = method;
-	ginst->mtype_argc = param_count;
-	ginst->mtype_argv = g_new0 (MonoType *, param_count);
+	gmethod = g_new0 (MonoGenericMethod, 1);
+	gmethod->klass = method->klass;
+	gmethod->generic_method = method;
+	gmethod->mtype_argc = param_count;
+	gmethod->mtype_argv = g_new0 (MonoType *, param_count);
 	
 	for (i = 0; i < param_count; i++) {
-		ginst->mtype_argv [i] = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
+		gmethod->mtype_argv [i] = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
 
-		if (!ginst->is_open)
-			ginst->is_open = mono_class_is_open_constructed_type (ginst->mtype_argv [i]);
+		if (!gmethod->is_open)
+			gmethod->is_open = mono_class_is_open_constructed_type (gmethod->mtype_argv [i]);
 	}
 
-	return mono_class_inflate_generic_method (method, ginst);
+	return mono_class_inflate_generic_method (method, gmethod);
 }
 
 typedef struct MonoDllMap MonoDllMap;

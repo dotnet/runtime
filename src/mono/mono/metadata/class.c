@@ -199,29 +199,32 @@ mono_class_is_open_constructed_type (MonoType *t)
 }
 
 MonoType*
-mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst)
+mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst,
+				 MonoGenericMethod *gmethod)
 {
 	switch (type->type) {
 	case MONO_TYPE_MVAR:
-		if (ginst && ginst->mtype_argv)
-			return dup_type (ginst->mtype_argv [type->data.generic_param->num]);
+		if (gmethod && gmethod->mtype_argv)
+			return dup_type (gmethod->mtype_argv [type->data.generic_param->num]);
 		else
 			return type;
-	case MONO_TYPE_VAR: {
-		MonoType *t = ginst->type_argv [type->data.generic_param->num];
+	case MONO_TYPE_VAR:
+		if (ginst) {
+			MonoType *t = ginst->type_argv [type->data.generic_param->num];
 
-		if ((t->type == MONO_TYPE_VAR) || (t->type == MONO_TYPE_MVAR))
+			if ((t->type == MONO_TYPE_VAR) || (t->type == MONO_TYPE_MVAR))
+				return type;
+			else
+				return dup_type (t);
+		} else
 			return type;
-		else
-			return dup_type (t);
-	}
 	case MONO_TYPE_SZARRAY: {
 		MonoClass *eclass = type->data.klass;
 		MonoClass *nclass;
 		MonoType *nt;
-		if (eclass->byval_arg.type == MONO_TYPE_MVAR) {
-			nclass = mono_class_from_mono_type (ginst->type_argv [eclass->byval_arg.data.generic_param->num]);
-		} else if (eclass->byval_arg.type == MONO_TYPE_VAR) {
+		if ((eclass->byval_arg.type == MONO_TYPE_MVAR) && gmethod) {
+			nclass = mono_class_from_mono_type (gmethod->mtype_argv [eclass->byval_arg.data.generic_param->num]);
+		} else if ((eclass->byval_arg.type == MONO_TYPE_VAR) && ginst) {
 			nclass = mono_class_from_mono_type (ginst->type_argv [eclass->byval_arg.data.generic_param->num]);
 		} else {
 			return type;
@@ -243,7 +246,7 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst)
 
 		for (i = 0; i < oginst->type_argc; i++) {
 			MonoType *t = oginst->type_argv [i];
-			nginst->type_argv [i] = mono_class_inflate_generic_type (t, ginst);
+			nginst->type_argv [i] = mono_class_inflate_generic_type (t, ginst, gmethod);
 		};
 
 		nt = dup_type (type);
@@ -256,16 +259,18 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst)
 	return type;
 }
 
-MonoMethodSignature*
-mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGenericInst *ginst)
+static MonoMethodSignature*
+inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig,
+			   MonoGenericMethod *gmethod)
 {
 	MonoMethodSignature *res;
 	int i;
 	res = mono_metadata_signature_alloc (image, sig->param_count);
-	res->ret = mono_class_inflate_generic_type (sig->ret, ginst);
-	for (i = 0; i < sig->param_count; ++i) {
-		res->params [i] = mono_class_inflate_generic_type (sig->params [i], ginst);
-	}
+	res->ret = mono_class_inflate_generic_type (sig->ret, gmethod->generic_inst, gmethod);
+	for (i = 0; i < sig->param_count; ++i)
+		res->params [i] = mono_class_inflate_generic_type (sig->params [i],
+								   gmethod->generic_inst,
+								   gmethod);
 	res->hasthis = sig->hasthis;
 	res->explicit_this = sig->explicit_this;
 	res->call_convention = sig->call_convention;
@@ -274,7 +279,7 @@ mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig
 }
 
 static MonoMethodHeader*
-inflate_generic_header (MonoMethodHeader *header, MonoGenericInst *ginst)
+inflate_generic_header (MonoMethodHeader *header, MonoGenericMethod *gmethod)
 {
 	MonoMethodHeader *res;
 	int i;
@@ -287,15 +292,16 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericInst *ginst)
 	res->num_locals = header->num_locals;
 	res->clauses = header->clauses;
 	res->gen_params = header->gen_params;
-	res->geninst = ginst;
-	for (i = 0; i < header->num_locals; ++i) {
-		res->locals [i] = mono_class_inflate_generic_type (header->locals [i], ginst);
-	}
+	res->gen_method = gmethod;
+	for (i = 0; i < header->num_locals; ++i)
+		res->locals [i] = mono_class_inflate_generic_type (header->locals [i],
+								   gmethod->generic_inst,
+								   gmethod);
 	return res;
 }
 
 MonoMethod*
-mono_class_inflate_generic_method (MonoMethod *method, MonoGenericInst *ginst)
+mono_class_inflate_generic_method (MonoMethod *method, MonoGenericMethod *gmethod)
 {
 	MonoMethod *result;
 	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
@@ -307,11 +313,11 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericInst *ginst)
 		*nmethod = *(MonoMethodNormal*)method;
 		result = (MonoMethod*)nmethod;
 		if (nmethod->header)
-			nmethod->header = inflate_generic_header (nmethod->header, ginst);
+			nmethod->header = inflate_generic_header (nmethod->header, gmethod);
 	}
-	if (ginst->klass)
-		result->klass = ginst->klass;
-	result->signature = mono_class_inflate_generic_signature (method->klass->image, result->signature, ginst);
+	result->klass = gmethod->klass;
+	result->signature = inflate_generic_signature (
+		method->klass->image, result->signature, gmethod);
 	return result;
 }
 
@@ -392,7 +398,7 @@ class_compute_field_layout (MonoClass *class)
 		if (mono_field_is_deleted (field))
 			continue;
 		if (class->generic_inst) {
-			field->type = mono_class_inflate_generic_type (field->type, class->generic_inst);
+			field->type = mono_class_inflate_generic_type (field->type, class->generic_inst, NULL);
 			field->type->attrs = cols [MONO_FIELD_FLAGS];
 		}
 
@@ -1695,8 +1701,17 @@ mono_class_initialize_generic (MonoGenericInst *ginst, gboolean inflate_methods)
 		klass->field = gklass->field;
 		klass->method = gklass->method;
 		klass->methods = g_new0 (MonoMethod *, klass->method.count);
-		for (i = 0; i < klass->method.count; i++)
-			klass->methods [i] = mono_class_inflate_generic_method (gklass->methods [i], ginst);
+
+		for (i = 0; i < klass->method.count; i++) {
+			MonoGenericMethod *gmethod = g_new0 (MonoGenericMethod, 1);
+
+			gmethod->klass = klass;
+			gmethod->generic_method = gklass->methods [i];
+			gmethod->generic_inst = ginst;
+
+			klass->methods [i] = mono_class_inflate_generic_method (
+				gklass->methods [i], gmethod);
+		}
 	}
 
 	ginst->initialized = TRUE;
