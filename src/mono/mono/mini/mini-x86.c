@@ -2676,7 +2676,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_push_reg (code, X86_EAX);
 			x86_fptan (code);
 			x86_fnstsw (code);
-			x86_test_reg_imm (code, X86_EAX, 0x400);
+			x86_test_reg_imm (code, X86_EAX, X86_FP_C2);
 			check_pos = code;
 			x86_branch8 (code, X86_CC_NE, 0, FALSE);
 			x86_fstp (code, 0); /* pop the 1.0 */
@@ -2687,7 +2687,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_fxch (code, 1);
 			x86_fprem1 (code);
 			x86_fstsw (code);
-			x86_test_reg_imm (code, X86_EAX, 0x400);
+			x86_test_reg_imm (code, X86_EAX, X86_FP_C2);
 			pop_jump = code;
 			x86_branch8 (code, X86_CC_NE, 0, FALSE);
 			x86_fstp (code, 1);
@@ -2723,7 +2723,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* x86_fprem1 (code); */
 			x86_fprem (code);
 			x86_fnstsw (code);
-			x86_alu_reg_imm (code, X86_AND, X86_EAX, 0x0400);
+			x86_alu_reg_imm (code, X86_AND, X86_EAX, X86_FP_C2);
 			l2 = code + 2;
 			x86_branch8 (code, X86_CC_NE, l1 - l2, FALSE);
 
@@ -2741,7 +2741,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			/* this overwrites EAX */
 			EMIT_FPCOMPARE(code);
-			x86_alu_reg_imm (code, X86_AND, X86_EAX, 0x4500);
+			x86_alu_reg_imm (code, X86_AND, X86_EAX, X86_FP_CC_MASK);
 			break;
 		case OP_FCEQ:
 			if (cfg->opt & MONO_OPT_FCMOV) {
@@ -2762,7 +2762,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_push_reg (code, X86_EAX);
 
 			EMIT_FPCOMPARE(code);
-			x86_alu_reg_imm (code, X86_AND, X86_EAX, 0x4500);
+			x86_alu_reg_imm (code, X86_AND, X86_EAX, X86_FP_CC_MASK);
 			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x4000);
 			x86_set_reg (code, X86_CC_EQ, ins->dreg, TRUE);
 			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
@@ -2798,7 +2798,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_push_reg (code, X86_EAX);
 
 			EMIT_FPCOMPARE(code);
-			x86_alu_reg_imm (code, X86_AND, X86_EAX, 0x4500);
+			x86_alu_reg_imm (code, X86_AND, X86_EAX, X86_FP_CC_MASK);
 			if (ins->opcode == OP_FCLT_UN) {
 				guchar *is_not_zero_check, *end_jump;
 				is_not_zero_check = code;
@@ -2806,7 +2806,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				end_jump = code;
 				x86_jump8 (code, 0);
 				x86_patch (is_not_zero_check, code);
-				x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x4500);
+				x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_CC_MASK);
 
 				x86_patch (end_jump, code);
 			}
@@ -2840,8 +2840,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_push_reg (code, X86_EAX);
 
 			EMIT_FPCOMPARE(code);
-			x86_alu_reg_imm (code, X86_AND, X86_EAX, 0x4500);
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x0100);
+			x86_alu_reg_imm (code, X86_AND, X86_EAX, X86_FP_CC_MASK);
+			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C0);
 			if (ins->opcode == OP_FCGT_UN) {
 				guchar *is_not_zero_check, *end_jump;
 				is_not_zero_check = code;
@@ -2849,7 +2849,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				end_jump = code;
 				x86_jump8 (code, 0);
 				x86_patch (is_not_zero_check, code);
-				x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x4500);
+				x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_CC_MASK);
 
 				x86_patch (end_jump, code);
 			}
@@ -2871,12 +2871,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_BRANCH (ins, X86_CC_EQ, TRUE);
 			break;
 		case OP_FBNE_UN:
+			/* Branch if C013 != 100 */
 			if (cfg->opt & MONO_OPT_FCMOV) {
-				EMIT_COND_BRANCH (ins, X86_CC_P, FALSE);
+				/* branch if !ZF or (PF|CF) */
 				EMIT_COND_BRANCH (ins, X86_CC_NE, FALSE);
+				EMIT_COND_BRANCH (ins, X86_CC_P, FALSE);
+				EMIT_COND_BRANCH (ins, X86_CC_B, FALSE);
 				break;
 			}
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x4000);
+			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C3);
 			EMIT_COND_BRANCH (ins, X86_CC_NE, FALSE);
 			break;
 		case OP_FBLT:
@@ -2899,7 +2902,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				end_jump = code;
 				x86_jump8 (code, 0);
 				x86_patch (is_not_zero_check, code);
-				x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x4500);
+				x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_CC_MASK);
 
 				x86_patch (end_jump, code);
 			}
@@ -2911,7 +2914,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				EMIT_COND_BRANCH (ins, X86_CC_LT, FALSE);
 				break;
 			}
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x0100);
+			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C0);
 			if (ins->opcode == OP_FBGT_UN) {
 				guchar *is_not_zero_check, *end_jump;
 				is_not_zero_check = code;
@@ -2919,14 +2922,32 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				end_jump = code;
 				x86_jump8 (code, 0);
 				x86_patch (is_not_zero_check, code);
-				x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x4500);
+				x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_CC_MASK);
 
 				x86_patch (end_jump, code);
 			}
 			EMIT_COND_BRANCH (ins, X86_CC_EQ, FALSE);
 			break;
 		case OP_FBGE:
+			/* Branch if C013 == 100 or 001 */
+			if (cfg->opt & MONO_OPT_FCMOV) {
+				guchar *br1;
+
+				/* skip branch if C1=1 */
+				br1 = code;
+				x86_branch8 (code, X86_CC_P, 0, FALSE);
+				/* branch if (C0 | C3) = 1 */
+				EMIT_COND_BRANCH (ins, X86_CC_BE, FALSE);
+				x86_patch (br1, code);
+				break;
+			}
+			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C0);
+			EMIT_COND_BRANCH (ins, X86_CC_EQ, FALSE);
+			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C3);
+			EMIT_COND_BRANCH (ins, X86_CC_EQ, FALSE);
+			break;
 		case OP_FBGE_UN:
+			/* Branch if C013 == 000 */
 			if (cfg->opt & MONO_OPT_FCMOV) {
 				EMIT_COND_BRANCH (ins, X86_CC_LE, FALSE);
 				break;
@@ -2934,13 +2955,30 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_BRANCH (ins, X86_CC_NE, FALSE);
 			break;
 		case OP_FBLE:
+			/* Branch if C013=000 or 100 */
+			if (cfg->opt & MONO_OPT_FCMOV) {
+				guchar *br1;
+
+				/* skip branch if C1=1 */
+				br1 = code;
+				x86_branch8 (code, X86_CC_P, 0, FALSE);
+				/* branch if C0=0 */
+				EMIT_COND_BRANCH (ins, X86_CC_NB, FALSE);
+				x86_patch (br1, code);
+				break;
+			}
+			x86_alu_reg_imm (code, X86_AND, X86_EAX, (X86_FP_C0|X86_FP_C1));
+			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0);
+			EMIT_COND_BRANCH (ins, X86_CC_EQ, FALSE);
+			break;
 		case OP_FBLE_UN:
+			/* Branch if C013 != 001 */
 			if (cfg->opt & MONO_OPT_FCMOV) {
 				EMIT_COND_BRANCH (ins, X86_CC_P, FALSE);
 				EMIT_COND_BRANCH (ins, X86_CC_GE, FALSE);
 				break;
 			}
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x0100);
+			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C0);
 			EMIT_COND_BRANCH (ins, X86_CC_NE, FALSE);
 			break;
 		case CEE_CKFINITE: {
@@ -2948,7 +2986,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_fxam (code);
 			x86_fnstsw (code);
 			x86_alu_reg_imm (code, X86_AND, X86_EAX, 0x4100);
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x0100);
+			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C0);
 			x86_pop_reg (code, X86_EAX);
 			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "ArithmeticException");
 			break;

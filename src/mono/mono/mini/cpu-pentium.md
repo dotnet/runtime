@@ -453,14 +453,14 @@ long_bge_un:
 long_ble:
 long_ble_un:
 float_beq: len:12
-float_bne_un: len:12
+float_bne_un: len:18
 float_blt: len:12
 float_blt_un: len:20
 float_bgt: len:12
 float_btg_un: len:20
-float_bge: len:12
+float_bge: len:22
 float_bge_un: len:12
-float_ble: len:12
+float_ble: len:22
 float_ble_un: len:12
 float_add: src1:f src2:f len:2
 float_sub: src1:f src2:f len:2
