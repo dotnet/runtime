@@ -3892,7 +3892,7 @@ array_constructed:
 				clause = &inv->runtime_method->clauses [i];
 				if (clause->flags <= 1 && MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
 					if (!clause->flags) {
-						if (mono_object_isinst ((MonoObject*)frame->ex, mono_class_get (method->klass->image, clause->token_or_filter))) {
+						if (mono_object_isinst ((MonoObject*)frame->ex, clause->data.catch_class)) {
 							/* 
 							 * OK, we found an handler, now we need to execute the finally
 							 * and fault blocks before branching to the handler code.
