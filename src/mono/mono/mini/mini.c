@@ -2852,7 +2852,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if (method->signature->is_inflated)
 		generic_context = ((MonoMethodInflated *) method)->context;
 	else if (generic_container)
-		generic_context = generic_container->context;
+		generic_context = &generic_container->context;
 
 	g_assert (!method->signature->has_type_parameters);
 

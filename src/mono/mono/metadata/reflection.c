@@ -7355,8 +7355,7 @@ mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
 	tb->generic_container = g_new0 (MonoGenericContainer, 1);
 	tb->generic_container->klass = klass;
 
-	tb->generic_container->context = g_new0 (MonoGenericContext, 1);
-	tb->generic_container->context->container = tb->generic_container;
+	tb->generic_container->context.container = tb->generic_container;
 }
 
 /*

@@ -349,8 +349,8 @@ struct _MonoGenericContext {
 };
 
 struct _MonoGenericContainer {
+	MonoGenericContext context;
 	MonoGenericContainer *parent;
-	MonoGenericContext *context;
 	GHashTable *method_hash;
 	MonoClass *klass;
 	int type_argc    : 6;

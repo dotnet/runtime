@@ -1505,8 +1505,7 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *g
 		container->parent = generic_container;
 		container->is_signature = 1;
 
-		container->context = g_new0 (MonoGenericContext, 1);
-		container->context->container = container;
+		container->context.container = container;
 
 		container->type_argc = gen_param_count;
 		container->type_params = g_new0 (MonoGenericParam, gen_param_count);
@@ -3825,11 +3824,10 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token)
 	container->type_argc = n;
 	container->type_params = params;
 
-	container->context = g_new0 (MonoGenericContext, 1);
-	container->context->container = container;
+	container->context.container = container;
 
 	for (i = 0; i < n; i++)
-		params [i].constraints = get_constraints (image, i + 1, container->context);
+		params [i].constraints = get_constraints (image, i + 1, &container->context);
 
 	return container;
 }
