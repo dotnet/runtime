@@ -1,0 +1,4 @@
+2004-04-07  Zoltan Varga  <vargaz@freemail.hu>
+
+	* mono-jni.c Makefile.am: New files.
+

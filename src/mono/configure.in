@@ -322,6 +322,56 @@ dnl End of libgc checks
 dnl
 
 if test x$platform_win32 = xno; then
+
+	dnl ******************************************************************
+	dnl *** Checks for the IKVM JNI interface library                  ***
+	dnl ******************************************************************
+	AC_ARG_WITH(ikvm-jni, [  --with-ikvm-jni=yes,no  build the IKVM JNI interface library],[with_ikvm_jni=$withval],[with_ikvm_jni=yes])
+	AC_ARG_WITH(jdk, [  --with-jdk=DIRECTORY  use JDK from DIRECTORY],[with_jdk_dir=$withval],[with_jdk_dir=])
+
+	ikvm_jni_dir=
+	if test x$with_ikvm_jni = xyes; then
+		AC_MSG_CHECKING([JDK headers])
+
+		if test x$with_jdk_dir = x; then
+			# Try JAVA_HOME variable
+			if test x$JAVA_HOME != x; then
+				with_jdk_dir=$JAVA_HOME
+			fi
+		fi
+	
+		jdk_platform=
+		if test -d $with_jdk_dir/include; then
+			jdk_headers_found=yes
+
+			if test -d $with_jdk_dir/include/linux; then
+				jdk_platform=linux
+			else
+			if test -d $with_jdk_dir/include/solaris; then
+				jdk_platform=solaris
+			else
+				jdk_headers_found=no
+			fi
+			fi
+		else
+			jdk_headers_found=no
+		fi
+
+		if test x$jdk_headers_found = xyes; then
+			AC_MSG_RESULT($with_jdk_dir/include $with_jdk_dir/include/$jdk_platform)
+		else
+			AC_MSG_RESULT(not found)
+		fi
+
+		if test x$jdk_headers_found = xyes; then
+			ikvm_jni_dir=ikvm-jni
+			IKVM_JNI_CFLAGS="-I$with_jdk_dir/include -I$with_jdk_dir/include/$jdk_platform"
+		fi
+	fi
+
+	AC_SUBST(ikvm_jni_dir)
+	AC_SUBST(IKVM_JNI_CFLAGS)
+
 	AC_CHECK_FUNCS(getpwuid_r)
 	dnl ******************************************************************
 	dnl *** Check for large file support                               ***
@@ -1099,6 +1149,7 @@ mono/io-layer/Makefile
 mono/handles/Makefile
 mono/mini/Makefile
 mono/profiler/Makefile
+ikvm-jni/Makefile
 runtime/Makefile
 scripts/Makefile
 man/Makefile

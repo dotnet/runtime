@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = @libgc_dir@ mono web docs runtime scripts man data samples support
+SUBDIRS = @libgc_dir@ mono @ikvm_jni_dir@ docs runtime scripts man data samples support
 
 # EXTRA_SUBDIRS = libgc
 
