@@ -1,0 +1,17 @@
+To edit the website appearance:
+
+cd doc/web
+edit template.html.in
+make
+
+To edit website content:
+
+cd doc (this directory)
+edit files carefully
+cd web
+make
+
+To publish changes:
+
+cd web
+make push
