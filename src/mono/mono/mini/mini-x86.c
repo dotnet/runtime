@@ -243,13 +243,13 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 		MonoMethodVar *vmv = MONO_VARINFO (cfg, i);
 
 		/* unused vars */
-		if (vmv->range.first_use.abs_pos > vmv->range.last_use.abs_pos)
+		if (vmv->range.first_use.abs_pos >= vmv->range.last_use.abs_pos)
 			continue;
 
 		if ((ins->flags & (MONO_INST_IS_DEAD|MONO_INST_VOLATILE|MONO_INST_INDIRECT)) || 
 		    (ins->opcode != OP_LOCAL && ins->opcode != OP_ARG))
 			continue;
-
+`
 		/* we dont allocate I1 to registers because there is no simply way to sign extend 
 		 * 8bit quantities in caller saved registers on x86 */
 		if (is_regsize_var (ins->inst_vtype) || (ins->inst_vtype->type == MONO_TYPE_BOOLEAN) || 

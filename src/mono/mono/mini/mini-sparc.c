@@ -493,7 +493,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 		MonoMethodVar *vmv = MONO_VARINFO (cfg, i);
 
 		/* unused vars */
-		if (vmv->range.first_use.abs_pos > vmv->range.last_use.abs_pos)
+		if (vmv->range.first_use.abs_pos >= vmv->range.last_use.abs_pos)
 			continue;
 
 		/* FIXME: Make arguments on stack allocateable to registers */
