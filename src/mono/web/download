@@ -24,6 +24,13 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 	we make the first tarball release.
 
 	<ul>
+	 	<a name="july-29">
+		<b>July 29, 2001</b>
+		<ul>
+		* <a href="archive/mono-0.5.tar.gz">mono-0.5.tar.gz</a>: Mono Runtime 0.5 release
+		* <a href="archive/mono-0.5">Release Notes</a>
+		</ul>
+	
 		<a name="july-22">
 		<b>July 22, 2001</b>
 		<ul>

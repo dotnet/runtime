@@ -550,12 +550,12 @@
     </class>
 
     <class name="System.Collections.Queue">
-        <last-activity>Jul-15-2001</last-activity>
-        <implementation>no</implementation>
-        <test-suite>no</test-suite>
+        <last-activity>Jul-30-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
         <completion>?</completion>
         <maintainers>
-            <maintainer>iain@ximian.com</maintainer>
+            <maintainer>ric@users.sourceforge.net</maintainer>
         </maintainers>
     </class>
 

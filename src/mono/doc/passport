@@ -1,3 +1,14 @@
+* Updates
+
+	I have received many comments from people, and I have updated
+	the page accordingly.  From removing incorrect statements, to
+	fixing typos, to include mentions to other software pieces.
+
+	I also corrected my statement about IIS and a trojan horse, I
+	should read a more educated press in the future.  My apologies
+	to Microsoft and its employees on this particular topic.  IIS
+	did not have a trojan horse built in.
+
 * Microsoft Hailstorm and Passport
 
 	Microsoft Passport is a centralized database hosted by
@@ -14,7 +25,7 @@
 
 ** Passport
 
-	Passport is important not because of it being breaktrough
+	Passport is important not because of it being a breakthrough
 	technologically speaking, but because the company is in a
 	position to drive most people toward being suscribers of it.
 
@@ -75,12 +86,7 @@
 	 	at the corporate level policy, but also the fact that
 	 	the source code for Microsoft products is not
 	 	available, means that trojans or worms could be built
-	 	into the products by malicious engineers.  This is not
-	 	unheard of, as the <a
-	 	href="http://slashdot.org/articles/00/04/14/0619206.shtml">Microsoft
-	 	Internet Server</a> had a trojan horse built into that
-	 	allowed anyone that knew about this to control any
-	 	server running IIS.
+	 	into the products by malicious engineers.  
 
 		* <b>Security:</b> With a centralized system like
 	 	Passport, imagine the repercussions of a malicious
@@ -91,7 +97,17 @@
 		Hackers have already <a
 	 	href="http://slashdot.org/articles/00/10/27/1147248.shtml">broken
 	 	into Microsoft</a> in the past.  And the company was
-	 	unable to figure out for how long their systems had been hacked. 
+	 	unable to figure out for how long their systems had
+		been hacked. 
+
+		Security holes have been found in <a
+		href="http://slashdot.org/articles/00/04/14/0619206.shtml">IIS
+		in the past.</a>  If all the world's data is stored on
+		a central location, when a single security hole is
+		detected, it would allow an intruder to install a
+		backdoor within seconds into the corporate network
+		without people ever noticing. 
+
 	</ul>
 
 	Microsoft might or might not realize this.  The idea behind
@@ -112,6 +128,15 @@
 		system should not create an internet `blackout' in the
 		case of failure.
 
+	 	A distributed system using different software
+		platforms and different vendors would be more
+		resistent to an attack, as holes in a particular
+		implementation of the server software would not affect
+		every person at the same time.  
+
+		A security hole attack might not even be relevant to
+		other software vendors software.
+
 		* <b>Allow for multiple registrars:</b> Users should
 		be able to choose a registrar (their banks, local
 		phone company, service provider, Swiss bank, or any
@@ -129,10 +154,14 @@
 	possibility of replicating and caching public information
 	about the user.  
 
-	For instant messaging (another pieces of the Hailstorm bit),
+	For instant messaging (another piece of the Hailstorm bit),
 	you want to use a non-centralized system like Sun's <a
 	href="http://www.jxta.org">JXTA</a>.  Some people mailed me to
-	mention Jabber as a messaging platform.  
+	mention Jabber as a messaging platform and other people
+	pointed out to the <a
+	href="http://java.sun.com/products/jms/">Java Message
+	Service</a>.   The JMS does support a number of very
+	interesting features that are worth researching.
 
 	It could also just use the user e-mail address as the `key' to
 	choose the registrar (msn.com, hotmail.com -> passport.com;
@@ -163,7 +192,7 @@
 ** Deploying it
 
 	The implementation of such a system should be a pretty
-	straightforward tasks once security cryptographers have
+	straightforward task once security cryptographers have
 	designed such a beast.  
 
 	The major problems are:
@@ -188,7 +217,7 @@
 
 ** Passport and Mono
 
-	The .NET class libraries includes a Passport class that
+	The .NET class libraries include a Passport class that
 	applications might use to authenticate with Passport.  Since
 	we do not have information at this point on the exact protocol
 	of Passport, it is not even feasible to implement it.
@@ -211,7 +240,7 @@
 
 	A few people have said: `Mono will allow Passport to be
 	available for Linux and that is bad'.  This is plain
-	miss-information.
+	missinformation.
 
 	Currently, you can obtain Passport for Linux from Microsoft
 	itself and deploy it today on your Web server.  Mono does not
