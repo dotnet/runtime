@@ -260,7 +260,7 @@ starg:
 ldloc:
 ldloca:
 stloc:
-localloc: dest:i src1:i len:32
+localloc: dest:i src1:i len:64
 endfilter:
 unaligned.:
 volatile.:
