@@ -40,10 +40,10 @@
 #include "debug.h"
 
 /* 
- * if OPT_BOOL is defined we use 32bit to store boolean local variables.
- * This gives great speedup for boolean expressions 
- */
-#define OPT_BOOL
+ * if OPT_BOOL is defined we use 32bit to store boolean local variables.  This
+ * gives great speedup for boolean expressions, but unfortunately it changes
+ * semantics, so i disable it until we have a real solution  */
+/* #define OPT_BOOL */
 
 /* this is x86 specific */
 #define MB_TERM_LDIND_REF MB_TERM_LDIND_I4
