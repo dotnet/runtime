@@ -35,6 +35,7 @@ static void initialize_debugger_support (void);
 
 static MonoDebugHandle *mono_debug_handle = NULL;
 static gconstpointer debugger_notification_address = NULL;
+#ifndef PLATFORM_WIN32
 static pthread_cond_t debugger_thread_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t debugger_thread_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 static pthread_cond_t debugger_finished_cond = PTHREAD_COND_INITIALIZER;
@@ -43,6 +44,7 @@ static pthread_cond_t debugger_start_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t debugger_start_mutex = PTHREAD_MUTEX_INITIALIZER;
 static gboolean debugger_signalled = FALSE;
 static gboolean must_send_finished = FALSE;
+#endif
 
 
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
@@ -76,18 +78,23 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 static void
 mono_debugger_lock (void)
 {
+#ifndef PLATFORM_WIN32
 	pthread_mutex_lock (&debugger_thread_mutex);
+#endif
 }
 
 static void
 mono_debugger_unlock (void)
 {
+#ifndef PLATFORM_WIN32
 	pthread_mutex_unlock (&debugger_thread_mutex);
+#endif
 }
 
 static void
 mono_debugger_signal (gboolean modified, gboolean wait_until_finished)
 {
+#ifndef PLATFORM_WIN32
 	mono_debugger_lock ();
 	if (!debugger_signalled) {
 		debugger_signalled = TRUE;
@@ -104,6 +111,7 @@ mono_debugger_signal (gboolean modified, gboolean wait_until_finished)
 		pthread_cond_wait (&debugger_finished_cond, &debugger_finished_mutex);
 		pthread_mutex_unlock (&debugger_finished_mutex);
 	}
+#endif
 }
 
 static void
@@ -1295,6 +1303,7 @@ extern void (*mono_debugger_class_init_func) (MonoClass *klass);
 
 static gboolean has_mono_debugger_support = FALSE;
 
+#ifndef PLATFORM_WIN32
 /*
  * NOTE: We must not call any functions here which we ever may want to debug !
  */
@@ -1352,13 +1361,16 @@ debugger_thread_func (gpointer ptr)
 
 	return NULL;
 }
+#endif
 
 static void
 initialize_debugger_support ()
 {
 	guint8 *buf, *ptr;
+#ifndef PLATFORM_WIN32
 	pthread_t thread;
 	int ret;
+#endif
 
 	if (has_mono_debugger_support)
 		return;
@@ -1371,6 +1383,7 @@ initialize_debugger_support ()
 	debugger_notification_address = buf;
 	x86_ret (buf);
 
+#ifndef PLATFORM_WIN32
 	pthread_mutex_lock (&debugger_start_mutex);
 
 	ret = pthread_create (&thread, NULL, debugger_thread_func, ptr);
@@ -1381,6 +1394,7 @@ initialize_debugger_support ()
 	 * debugger attached to it.
 	 */
 	pthread_cond_wait (&debugger_start_cond, &debugger_start_mutex);
+#endif
 }
 
 static GPtrArray *breakpoints = NULL;
