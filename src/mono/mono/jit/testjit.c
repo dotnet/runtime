@@ -767,6 +767,22 @@ mono_compile_method (MonoMethod *method)
 		MAKE_BI_ALU (REM)
 		MAKE_BI_ALU (REM_UN)
 
+		case CEE_NEG: {
+			ip++;
+			sp--;
+			t1 = ctree_new (mp, MB_TERM_NEG, 0, sp [0], NULL);
+			t1->cli_addr = sp [0]->cli_addr;
+			PUSH_TREE (t1);		
+			break;
+		}
+		case CEE_NOT: {
+			ip++;
+			sp--;
+			t1 = ctree_new (mp, MB_TERM_NOT, 0, sp [0], NULL);
+			t1->cli_addr = sp [0]->cli_addr;
+			PUSH_TREE (t1);
+			break;
+		}
 	        case CEE_BR_S: {
 			++ip;
 			t1 = ctree_new_leaf (mp, MB_TERM_BR, 0);

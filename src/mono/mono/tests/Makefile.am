@@ -1,5 +1,7 @@
 
 TEST_PROG=../interpreter/mint
+JITTEST_PROG=../jit/testjit
+
 CSC=csc
 
 BENCHSRC=fib.cs random.cs nested-loops.cs 
@@ -30,9 +32,23 @@ TESTSRC=			\
 	jit-int.cs		\
 	jit-uint.cs		\
 	jit-long.cs		\
-	jit-ulong.cs	
+	jit-ulong.cs		\
+	jit-float.cs	
+
+
+JITTESTSRC=			\
+	jit-int.cs		\
+	jit-uint.cs		\
+	jit-long.cs		\
+	jit-ulong.cs		\
+	jit-float.cs		\
+	test-ops.cs		\
+	fib.cs			\
+	nested-loops.cs		\
+	random.cs
 
 TESTS=$(TESTSRC:.cs=.exe)
+JITTESTS=$(JITTESTSRC:.cs=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)
 
 EXTRA_DIST=test-driver $(TESTSRC)
@@ -50,3 +66,7 @@ testb: $(TEST_PROG) $(TESTBS)
 		./test-driver $(TEST_PROG) $$i;	\
 	done
 
+testjit: $(JITTEST_PROG) $(JITTESTS)
+	for i in $(JITTESTS); do	\
+		./test-driver $(JITTEST_PROG) $$i;	\
+	done

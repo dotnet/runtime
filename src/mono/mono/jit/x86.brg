@@ -75,7 +75,7 @@ guint64 mono_llrem_un  (guint64 a, guint64 b);
 # constatnts
 %term CONST_I4 CONST_I8 CONST_R4 CONST_R8
 %term LDLOC LDARG STLOC BR RET RETV ARG CALL BREAK
-%term ADD SUB MUL DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN
+%term ADD SUB MUL DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN NEG NOT
 %term BLT BLT_UN BEQ BNE_UN BRTRUE BRFALSE BGE BGE_UN BLE BLE_UN BGT BGT_UN 
 %term CONV_I4 CONV_I1 CONV_I2 CONV_I8
 
@@ -281,6 +281,18 @@ reg: XOR (reg, reg) {
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 	x86_alu_reg_reg (s->code, X86_XOR, tree->reg1, tree->right->reg1);
+}
+
+reg: NEG (reg) {
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	 x86_neg_reg (s->code, tree->reg1);
+}
+
+reg: NOT (reg) {
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	 x86_not_reg (s->code, tree->reg1);
 }
 
 reg: SHL (reg, CONST_I4) {
@@ -670,6 +682,11 @@ stmt: CALL {
 # 64 bit integers
 #
 
+reg: CONV_I4 (lreg) {
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+} 
+
 lreg: CONST_I8 1 {
 	x86_mov_reg_imm (s->code, tree->reg1, tree->data.i);
 	x86_mov_reg_imm (s->code, tree->reg2, *(gint32 *)(&tree->data.p + 4));
@@ -681,7 +698,7 @@ lreg: CONV_I8 (CONST_I4) 1 {
 	if (tree->left->data.i >= 0)
 		x86_alu_reg_reg (s->code, X86_XOR, tree->reg2, tree->reg2);
 	else 
-		x86_mov_reg_imm (s->code, tree->reg1, -1);		
+		x86_mov_reg_imm (s->code, tree->reg2, -1);		
 }
 
 stmt: STLOC (lreg) {
@@ -747,6 +764,25 @@ lreg: OR (lreg, lreg) {
 		x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg2, 4);
 	x86_alu_reg_reg (s->code, X86_OR, tree->reg1, tree->right->reg1);
 	x86_alu_reg_reg (s->code, X86_OR, tree->reg2, tree->right->reg2);
+}
+
+lreg: NEG (lreg) {
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	if (tree->reg2 != tree->left->reg2)
+		x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg2, 4);
+	x86_neg_reg (s->code, tree->reg1);
+	x86_alu_reg_imm (s->code, X86_ADC, tree->reg2, 0);
+	x86_neg_reg (s->code, tree->reg2);
+}
+
+lreg: NOT (lreg) {
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	if (tree->reg2 != tree->left->reg2)
+		x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg2, 4);
+	 x86_not_reg (s->code, tree->reg1);
+	 x86_not_reg (s->code, tree->reg2);
 }
 
 lreg: MUL (lreg, lreg) {
@@ -1057,6 +1093,11 @@ stmt: BLE_UN (lreg, lreg) {
 #
 # floating point 
 
+#stmt: STLOC (CONV_I4 (freg)) {
+#	// fixme: set CW
+#	x86_fist_pop_membase (s->code, X86_EBP, tree->data.i, FALSE);
+#} 
+
 freg: CONST_R4 {
 	x86_fld (s->code, tree->data.p, FALSE);
 }
@@ -1087,6 +1128,28 @@ freg: ADD (freg, freg) {
 	x86_fp_op_reg (s->code, X86_FADD, 1, TRUE);
 }
 
+freg: SUB (freg, freg) {
+	x86_fp_op_reg (s->code, X86_FSUB, 1, TRUE);
+}
+
+freg: MUL (freg, freg) {
+	x86_fp_op_reg (s->code, X86_FMUL, 1, TRUE);
+}
+
+freg: DIV (freg, freg) {
+	x86_fp_op_reg (s->code, X86_FDIV, 1, TRUE);
+}
+
+#freg: REM (freg, freg) {
+# this does not work, since it does not pop a value from the stack,
+# and we need to test if the instruction is ready
+#	x86_fprem1 (s->code);
+#}
+
+freg: NEG (freg) {
+	x86_fchs (s->code);
+}
+
 stmt: STLOC (freg) {
 	g_assert (tree->type == MONO_TYPE_R4 ||
 		  tree->type == MONO_TYPE_R8);
@@ -1111,6 +1174,69 @@ stmt: BEQ (freg, freg) {
 	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x4000);
 	offset = 6 + s->code - start;
 	x86_branch32 (s->code, X86_CC_EQ, tree->data.i - offset, TRUE);
+}
+
+stmt: BNE_UN (freg, freg) {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_fcompp (s->code);
+	x86_fnstsw (s->code);
+	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
+	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x4000);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_NE, tree->data.i - offset, TRUE);
+}
+
+stmt: BLT_UN (freg, freg) {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_fcompp (s->code);
+	x86_fnstsw (s->code);
+	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
+	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x0100);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_EQ, tree->data.i - offset, TRUE);
+}
+
+stmt: BGE_UN (freg, freg) {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_fcompp (s->code);
+	x86_fnstsw (s->code);
+	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
+	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x0100);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_NE, tree->data.i - offset, TRUE);
+}
+
+stmt: BGT_UN (freg, freg) {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_fcompp (s->code);
+	x86_fnstsw (s->code);
+	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_EQ, tree->data.i - offset, TRUE);
+}
+
+stmt: BLE_UN (freg, freg) {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_fcompp (s->code);
+	x86_fnstsw (s->code);
+	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_NE, tree->data.i - offset, TRUE);
 }
 
 freg: CALL {

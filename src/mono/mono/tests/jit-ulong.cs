@@ -29,6 +29,10 @@ public class TestJit {
 		if ((a % 4) != 1)
 			return 1;
 
+		b = 0;
+		if (~b != 0xffffffffffffffff)
+			return 1;
+
 		return 0;
 	}
 	

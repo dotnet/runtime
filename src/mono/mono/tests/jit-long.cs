@@ -29,6 +29,13 @@ public class TestJit {
 		if ((a % 4) != 1)
 			return 1;
 
+		if (-a != -9)
+			return 1;
+
+		b = -1;
+		if (~b != 0)
+			return 1;
+
 		return 0;
 	}
 	
@@ -60,6 +67,8 @@ public class TestJit {
 	public static int Main() {
 		int num = 1;
 
+		return test_alu();
+		
 		if (test_call (3, 5) != 8)
 			return num;
 		num++;
