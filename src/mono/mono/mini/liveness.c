@@ -203,6 +203,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 	for (i = 0; i < max_vars; i ++) {
 		MONO_VARINFO (cfg, i)->range.first_use.abs_pos = ~ 0;
 		MONO_VARINFO (cfg, i)->range.last_use .abs_pos =   0;
+		MONO_VARINFO (cfg, i)->spill_costs = 0;
 	}
 
 	for (i = 0; i < cfg->num_bblocks; ++i) {
