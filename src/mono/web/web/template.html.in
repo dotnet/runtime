@@ -5,10 +5,12 @@
 <!--
    body { font-family: "trebuchet ms", lucida, verdana, helvetica; background-image: url("images/bgsquares.png"); background-attachment: fixed; }
    body, td, table { font-family: "trebuchet ms", lucida, verdana, helvetica; font-size: 12px; }
-	a:link { color: #000000; text-decoration: none; font-weight: bold; border-bottom: none 1px; }
-	a:visited { color: #cccccc; }
+	a:link { color: #bbbbbb; text-decoration: none; font-weight: bold; border-bottom: none 1px; }
+	a:visited { color: #ee9900; }
 //	a:active  { color: #222222; }
-	a:hover  { color: #ee9900; border-bottom: #ffffff dashed 1px; }
+	a:hover  { color: #ee9900; 
+		   // border-bottom: #ffffff dashed 1px; 
+                 }
 	.subnavi { font-size: small; text-indent: 16pt; }
 
 // -->

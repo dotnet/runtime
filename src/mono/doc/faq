@@ -14,14 +14,16 @@ A: Mono is a project to implement various technologies developed by
 
    It contains a number of components:
 
-	* A Common Language Runtime (CLR) system that contains a class loader,
-	  Just-in-time compiler, and a garbage collection aware
-	  runtime.
+	<ul>
+		* A Common Language Runtime (CLR) system that contains a class loader,
+		  Just-in-time compiler, and a garbage collection aware
+		  runtime.
 
-	* A class library. 
+		* A class library. 
 
-	* A compiler for the C# language, in the future we might work
-	  on other compilers that target the Common Language Runtime. 
+		* A compiler for the C# language, in the future we might work
+	  	  on other compilers that target the Common Language Runtime. 
+	</ul>
 
    The CLR and the Common Type System (CTS) enables applications and
    libraries to be written in a collection of different languages that
@@ -99,7 +101,7 @@ A: We will devote most of our resources to work on the pieces which
 Q: If applications use Mono, does that mean that I have to pay a service fee?
    
 A: No.  Mono is not related to Microsoft's initiative of
-   software-as-a-service.  Please read questions 1 and 2. 
+   software-as-a-service.  Please read questions <a href="#q1">1</a> and <a href="#q2">2</a>. 
 
 Q: If you implement .NET, wont I depend on Microsoft Passport to run my software?
 
@@ -112,11 +114,11 @@ A: You are a bit confused.  It is easy to be confused, as Microsoft
 
 Q: But .NET does not exist, it is vaporware. 
    
-A: Mono is not .NET.  Please refer to questions 1 and 2. 
+A: Mono is not .NET.  Please refer to questions <a href="#q1">1</a> and <a href="#q2">2</a>. 
 
 Q: Will Mono enable thin computing?
 
-A: Please refer to questions 1 and 2. 
+A: Please refer to questions <a href="#q1">1</a> and <a href="#q2">2</a>. 
 
 ** Passport
 
@@ -186,7 +188,7 @@ A: No.
 
 Q: Is Mono just a new way of writing Web Services?
    
-A: No.  Please refer to the questions 1 and 2. 
+A: No.  Please refer to the questions <a href="#q1">1</a> and <a href="#q2">2</a>. 
 
 Q: If this implements the SDK classes, will I be able to write and
    execute Web services with this?

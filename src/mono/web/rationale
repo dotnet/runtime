@@ -1,7 +1,7 @@
 
-The Mono Project
+* The Mono Project
 
-* Background.
+** Background.
 
 	The GNOME project goal was to bring missing technologies to
 	Unix and make it competitive in the current market place for
@@ -29,7 +29,7 @@ The Mono Project
 	parse, create and walk an XML document would be inneficient
 	compared to a C API.
 
-* Microsoft's .NET
+** Microsoft's .NET
 
 	The Microsoft .NET initiative is confusing because it is a
 	company wide effort that ranges from development tools to end
@@ -57,7 +57,7 @@ The Mono Project
 	From all the above, the one I am interested in is the new .NET
 	development platform. 
 
-* The Common Language Infrastructure platform. 
+** The Common Language Infrastructure platform. 
 
 	Microsoft has created a new development platform.  The
 	highlights of this new development platform are:
@@ -106,7 +106,7 @@ The Mono Project
 	for program development that gives Microsoft a room to grow
   	for the coming years. 
 
-* ECMA standards.
+** ECMA standards.
 
 	Microsoft together with HP and Intel have submitted the
   	specifications of C#, the runtime, the metadata and the
@@ -116,7 +116,7 @@ The Mono Project
 	You can get a copy of the specifications submitted to ECMA
 	from: <a href="http://www.dotnetexperts.com/ecma">http://www.dotnetexperts.com/ecma</a>
 
-* Mono: an Open Source Common Language Infrastructure implementation. 
+** Mono: an Open Source Common Language Infrastructure implementation. 
 
 	Ximian has begun work on Mono, a project that aims to bring
   	the Common Language Infrastructure platform to free systems.  
@@ -132,7 +132,7 @@ The Mono Project
   	.NET development platform because it is a great platform to
   	build on.
 
-* What makes up Mono?
+** What makes up Mono?
 
 	There are various pieces that will make up Mono:
 
@@ -155,7 +155,7 @@ The Mono Project
 		* A CIL GCC frontend.
 	</ul>
 
-* Why use GNOME components?
+** Why use GNOME components?
 
 	GNOME is an umbrella project that consists of infrastructural
 	components (GUI toolkit, XML libraries, CORBA implementation,

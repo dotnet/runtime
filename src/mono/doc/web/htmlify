@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+$q = 1;
 
 while (<>){
 	chop;
@@ -12,6 +13,11 @@ while (<>){
 		print "<p>\n";
 	} elsif (/^\t\t\* (.*)$/) {
 		print "<li>$1\n";
+	} elsif (/^Q: (.*)$/){
+		print "<a name=\"q$q\"><b>Question $q:</b> $1<br>\n";
+		$q++;
+	} elsif (/^A: (.*)$/){
+		print "$1\n";
 	} else {
 		print "$_\n";
 	}
