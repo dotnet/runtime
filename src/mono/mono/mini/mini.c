@@ -6569,9 +6569,17 @@ static void
 optimize_branches (MonoCompile *cfg) {
 	int i, changed = FALSE;
 	MonoBasicBlock *bb, *bbn;
+	guint32 niterations;
 
+	/*
+	 * Some crazy loops could cause the code below to go into an infinite
+	 * loop, see bug #53003 for an example. To prevent this, we put an upper
+	 * bound on the number of iterations.
+	 */
+	niterations = 1000;
 	do {
 		changed = FALSE;
+		niterations --;
 
 		/* we skip the entry block (exit is handled specially instead ) */
 		for (bb = cfg->bb_entry->next_bb; bb; bb = bb->next_bb) {
@@ -6630,10 +6638,12 @@ optimize_branches (MonoCompile *cfg) {
 				}				
 			}
 		}
-	} while (changed);
+	} while (changed && (niterations > 0));
 
+	niterations = 1000;
 	do {
 		changed = FALSE;
+		niterations --;
 
 		/* we skip the entry block (exit is handled specially instead ) */
 		for (bb = cfg->bb_entry->next_bb; bb; bb = bb->next_bb) {
@@ -6721,7 +6731,7 @@ optimize_branches (MonoCompile *cfg) {
 				}
 			}
 		}
-	} while (changed);
+	} while (changed && (niterations > 0));
 
 }
 
