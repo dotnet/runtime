@@ -492,6 +492,7 @@ typedef struct {
 	MonoSpillInfo   *spill_info_float; /* fp register spills */
 	gint             spill_count;
 	/* unsigned char   *cil_code; */
+	MonoMethod      *inlined_method; /* the method which is currently inlined */
 
 	/* the exception object passed to catch/filter blocks */
 	MonoInst        *exvar;
