@@ -819,10 +819,8 @@ A: MonoDoc is a graphical documentation browser for the Mono class
 Q: I am having trouble compiling a new version of Mono from CVS, it 
    complains about my runtime being out of sync.
 
-A: Jonathan Pryor has provided the following answer:
-
-   To upgrade your class libraries and compiler, see the See
-   README.building in the MCS directory.
+A: To upgrade your class libraries and compiler, see the 
+   INSTALL.txt in the MCS directory.
 
    The single biggest source of confusion seems to be the "Your
    runtime is out of sync" messages.  Realize that this is *normal*
@@ -837,6 +835,18 @@ A: Jonathan Pryor has provided the following answer:
 
    Once this is done, you can continue building your entire
    environment.
+
+   For instance you just need to:
+   1.- Upgrade your Mono runtime (you might better do it with the 
+   mono-build.sh script available in the <a 
+   href="http://www.go-mono.com">download</a> page.
+   2.- Get the latest mono-lite tarball from the daily snapshots 
+   <a href="http://www.go-mono.com/daily/">page</a>, unzip and 
+   untar and copy all the dll files to your install path lib 
+   directory (typically pointed by the $MONO_PATH variable).
+   Copy all the exe files to the install path bin directory.
+   3.- Then checkout or update your mcs CVS copy. Then follow 
+   the steps described in mcs/INSTALL.txt.
 
 Q: Will it be possible to use the CLI features without using byte codes
    or the JIT?
@@ -1561,7 +1571,7 @@ A: Mono doesn't support generics currently but a lot of work is being
 
    If you are having problems compiling or running Mono software
    or if you think that you found a bug, etc. Please visit the
-   <a href="http://geneura.ugr.es/~jaime/deploy/mono-common-problems.html">Mono Common Problems</a> document and try there. 
+   <a href="http://monoevo.sf.net/mono-common-problems.html">Mono Common Problems</a> document and try there. 
 
 ** Credits
 
