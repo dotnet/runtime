@@ -1765,14 +1765,27 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 				continue;
 
 			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
-
 			csig->params [i] = &mono_defaults.int_class->byval_arg;
+
 			mono_mb_emit_ldarg (mb, i);
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
 			mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
 			mono_mb_emit_stloc (mb, tmp_locals [i]);
 			break;	
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+			if (t->byref)
+				continue;
+
+			klass = mono_class_from_mono_type (t);
+
+			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+			csig->params [i] = &mono_defaults.int_class->byval_arg;
+
+			g_warning ("array marshaling not implemented");
+			g_assert_not_reached ();
+			break;
 		}
 	}
 
