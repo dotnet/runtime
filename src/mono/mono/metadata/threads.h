@@ -15,7 +15,7 @@
 extern void mono_thread_init(void);
 extern void mono_thread_cleanup(void);
 
-#ifdef HAVE_PTHREAD_H
+#ifdef HAVE_PTHREAD
 #include <mono/metadata/threads-pthread.h>
 #else
 #warning "No thread support found!"
