@@ -1057,7 +1057,7 @@ async_notifier (union sigval sig)
 
 	error = aio_return (ndata->aio);
 	if (error < 0) {
-		error = _wapi_get_win32_error (error);
+		error = _wapi_get_win32_file_error (error);
 		numbytes = 0;
 	} else {
 		numbytes = error;

@@ -1795,8 +1795,13 @@ typedef enum {
 	ERROR_SXS_INVALID_ASSEMBLY_IDENTITY_ATTRIBUTE_NAME = 14080
 } WapiError;
 
-extern guint32 GetLastError(void);
-extern void SetLastError(guint32 code);
-extern guint32 errno_to_WSA (guint32 code, const char *function_name);
+G_BEGIN_DECLS
+
+guint32 GetLastError (void);
+void SetLastError (guint32 code);
+guint32 errno_to_WSA (guint32 code, const char *function_name);
+gint _wapi_get_win32_file_error (gint err);
+
+G_END_DECLS
 
 #endif /* _WAPI_ERROR_H_ */

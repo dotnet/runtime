@@ -131,3 +131,75 @@ errno_to_WSA (guint32 code, const gchar *function_name)
 	return result;
 }
 
+gint
+_wapi_get_win32_file_error (gint err)
+{
+	gint ret;
+	/* mapping ideas borrowed from wine. they may need some work */
+
+	switch (err) {
+	case EACCES: case EPERM: case EROFS:
+		ret = ERROR_ACCESS_DENIED;
+		break;
+	
+	case EAGAIN:
+		ret = ERROR_SHARING_VIOLATION;
+		break;
+	
+	case EBUSY:
+		ret = ERROR_LOCK_VIOLATION;
+		break;
+	
+	case EEXIST:
+		ret = ERROR_FILE_EXISTS;
+		break;
+	
+	case EINVAL: case ESPIPE:
+		ret = ERROR_SEEK;
+		break;
+	
+	case EISDIR:
+		ret = ERROR_CANNOT_MAKE;
+		break;
+	
+	case ENFILE: case EMFILE:
+		ret = ERROR_NO_MORE_FILES;
+		break;
+
+	case ENOENT: case ENOTDIR:
+		ret = ERROR_FILE_NOT_FOUND;
+		break;
+	
+	case ENOSPC:
+		ret = ERROR_HANDLE_DISK_FULL;
+		break;
+	
+	case ENOTEMPTY:
+		ret = ERROR_DIR_NOT_EMPTY;
+		break;
+
+	case ENOEXEC:
+		ret = ERROR_BAD_FORMAT;
+		break;
+
+	case ENAMETOOLONG:
+		ret = ERROR_FILENAME_EXCED_RANGE;
+		break;
+	
+	case EINPROGRESS:
+		ret = ERROR_IO_PENDING;
+		break;
+	
+	case ENOSYS:
+		ret = ERROR_NOT_SUPPORTED;
+		break;
+	
+	default:
+		g_message ("Unknown errno: %s\n", strerror (err));
+		ret = ERROR_GEN_FAILURE;
+		break;
+	}
+
+	return ret;
+}
+
