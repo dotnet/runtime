@@ -13,7 +13,7 @@
 #include <glib.h>
 #include "metadata.h"
 #include "tabledefs.h"
-#include "endian.h"
+#include "mono-endian.h"
 #include "cil-coff.h"
 #include "tokentype.h"
 #include "private.h"

@@ -15,11 +15,15 @@ if THREADS_PTHREAD
 THREAD_SOURCE = \
 	threads-pthread.c	\
 	threads-pthread.h	\
+	threads-pthread-types.c	\
+	threads-pthread-types.h	\
 	#
 else
 THREAD_SOURCE = \
 	threads-dummy.h		\
 	threads-dummy.c		\
+	threads-dummy-types.c	\
+	threads-dummy-types.h	\
 	#
 endif
 
@@ -35,6 +39,7 @@ libmetadata_a_SOURCES = \
 	object.c	\
 	icall.c		\
 	threads.h	\
+	threads-types.h	\
 	$(THREAD_SOURCE)	\
 	#
 
@@ -44,7 +49,7 @@ libmetadatainclude_HEADERS = \
 	assembly.h	\
 	blob.h		\
 	cil-coff.h	\
-	endian.h	\
+	mono-endian.h	\
 	image.h		\
 	metadata.h	\
 	rawbuffer.h	\

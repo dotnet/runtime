@@ -62,6 +62,8 @@ mono_new_object (MonoClass *klass)
 	o = mono_object_allocate (klass->instance_size);
 	o->klass = klass;
 
+	mono_threads_synchronisation_init(&o->synchronisation);
+
 	return o;
 }
 

@@ -1,3 +1,8 @@
+2001-10-04  Dick Porter  <dick@ximian.com>
+
+	* configure.in: Do some deeper checks on pthreads for some of the
+	more interesting functions
+
 2001-09-24  Dietmar Maurer  <dietmar@ximian.com>
 
 	* mono/tests/Makefile.am (testjit): a new target to test the JITer

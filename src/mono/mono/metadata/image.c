@@ -19,7 +19,7 @@
 #include "image.h"
 #include "cil-coff.h"
 #include "rawbuffer.h"
-#include "endian.h"
+#include "mono-endian.h"
 #include "private.h"
 
 #define INVALID_ADDRESS 0xffffffff

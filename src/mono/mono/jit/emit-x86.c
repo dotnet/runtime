@@ -16,7 +16,7 @@
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
-#include <mono/metadata/endian.h>
+#include <mono/metadata/mono-endian.h>
 #include <mono/arch/x86/x86-codegen.h>
 
 #include "jit.h"

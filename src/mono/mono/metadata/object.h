@@ -2,9 +2,11 @@
 #define _MONO_CLI_OBJECT_H_
 
 #include <mono/metadata/class.h>
+#include <mono/metadata/threads-types.h>
 
 typedef struct {
 	MonoClass *klass;
+	MonoThreadsSync synchronisation;
 } MonoObject;
 
 typedef struct {

@@ -13,7 +13,7 @@
 #include <glib.h>
 #include "cil-coff.h"
 #include "private.h"
-#include "endian.h"
+#include "mono-endian.h"
 
 gboolean dump_data = TRUE;
 gboolean dump_tables = FALSE;

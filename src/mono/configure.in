@@ -15,6 +15,8 @@ AM_PROG_LIBTOOL
 
 AC_CHECK_SIZEOF(void *)
 
+CFLAGS='-g -Wall -Wunused -Wmissing-prototypes -Wmissing-declarations'
+
 dnl ***************************
 dnl *** Checks for glib 1.2 ***
 dnl ***************************
@@ -40,6 +42,41 @@ AC_CHECK_LIB(pthread, pthread_create, [
 		THREAD_LIBS=-lpthread
 		AM_CONDITIONAL(THREADS_PTHREAD, true)
 		AC_DEFINE(HAVE_PTHREAD)
+
+		# Need pthread_mutex_timedlock
+		pthread_CFLAGS=""
+		orig_CPPFLAGS=$CPPFLAGS
+		# This is a gcc-specific error, but we already set gcc-specific
+		# options in CFLAGS :)
+		CPPFLAGS="$CPPFLAGS -Werror-implicit-function-declaration"
+		AC_MSG_CHECKING(for pthread_mutex_timedlock)
+		AC_TRY_COMPILE([ #include <pthread.h>], [
+			pthread_mutex_t mut=PTHREAD_MUTEX_INITIALIZER;
+			pthread_mutex_timedlock(&mut, NULL);
+		], [
+			# Works!
+			AC_MSG_RESULT(ok)
+		], [
+			AC_MSG_RESULT(no)
+
+			# glibc requires -D_GNU_SOURCE before it will declare
+			# this function
+			AC_MSG_CHECKING(whether _GNU_SOURCE is needed for pthread_mutex_timedlock)
+			CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"
+			AC_TRY_COMPILE([ #include <pthread.h>], [
+				pthread_mutex_t mut=PTHREAD_MUTEX_INITIALIZER;
+				pthread_mutex_timedlock(&mut, NULL);
+			], [
+				AC_MSG_RESULT(ok)
+				pthread_CFLAGS="-D_GNU_SOURCE"
+			], [
+				AC_MSG_RESULT(no)
+				dnl Add other variants here
+				AC_MSG_ERROR(Need pthread_mutex_timedlock)
+			])
+		])
+		CPPFLAGS=$orig_CPPFLAGS
+		CFLAGS="$CFLAGS $pthread_CFLAGS"
 	], [
 		AC_MSG_RESULT([Cannot find libpthread])
 		# Check for other thread systems here, set THREAD_LIBS to
@@ -50,8 +87,6 @@ AC_CHECK_LIB(pthread, pthread_create, [
 		# mono/metadata/threads.h
 	])
 AC_SUBST(THREAD_LIBS)
-
-CFLAGS='-g -Wall -Wunused -Wmissing-prototypes -Wmissing-declarations'
 
 TARGET="unknown"
 

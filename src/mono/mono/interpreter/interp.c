@@ -28,7 +28,7 @@
 #include <mono/metadata/image.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/cil-coff.h>
-#include <mono/metadata/endian.h>
+#include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/blob.h>
 #include <mono/metadata/tokentype.h>
@@ -618,6 +618,8 @@ ves_runtime_method (MonoInvocation *frame)
 	static guint target_offset = 0;
 	static guint method_offset = 0;
 
+	init_class(mono_defaults.delegate_class);
+	
 	if (!target_offset) {
 		MonoClassField *field;
 

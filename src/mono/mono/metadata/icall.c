@@ -350,7 +350,16 @@ static gpointer icall_map [] = {
 	"System.Threading.Thread::DataSlot_register", ves_icall_System_Threading_Thread_DataSlot_register,
 	"System.Threading.Thread::DataSlot_store", ves_icall_System_Threading_Thread_DataSlot_store,
 	"System.Threading.Thread::DataSlot_retrieve", ves_icall_System_Threading_Thread_DataSlot_retrieve,
+	/* Not in the System.Threading namespace, but part of the same code */
 	"System.LocalDataStoreSlot::DataSlot_unregister", ves_icall_System_LocalDataStoreSlot_DataSlot_unregister,
+	"System.Threading.Monitor::Monitor_enter", ves_icall_System_Threading_Monitor_Monitor_enter,
+	"System.Threading.Monitor::Monitor_exit", ves_icall_System_Threading_Monitor_Monitor_exit,
+	"System.Threading.Monitor::Monitor_test_owner", ves_icall_System_Threading_Monitor_Monitor_test_owner,
+	"System.Threading.Monitor::Monitor_test_synchronised", ves_icall_System_Threading_Monitor_Monitor_test_synchronised,
+	"System.Threading.Monitor::Monitor_pulse", ves_icall_System_Threading_Monitor_Monitor_pulse,
+	"System.Threading.Monitor::Monitor_pulse_all", ves_icall_System_Threading_Monitor_Monitor_pulse_all,
+	"System.Threading.Monitor::Monitor_try_enter", ves_icall_System_Threading_Monitor_Monitor_try_enter,
+	"System.Threading.Monitor::Monitor_wait", ves_icall_System_Threading_Monitor_Monitor_wait,
 
 	/*
 	 * add other internal calls here

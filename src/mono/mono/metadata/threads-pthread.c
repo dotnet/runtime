@@ -18,6 +18,7 @@
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/threads-types.h>
 
 /*
  * Implementation of timed thread joining from the P1003.1d/D14 (July 1999)
@@ -44,6 +45,11 @@ static pthread_mutex_t threads_mutex;
 static GHashTable *threads=NULL;
 static MonoObject *main_thread;
 
+/* As an alternative to storing this hash (and which would solve the
+ * GC-moving-stuff-around problem), we could define a thread-system
+ * specific struct and add a wrapper to it in the LocalDataStoreSlot
+ * class
+ */
 typedef struct 
 {
 	MonoObject *slot;
@@ -548,6 +554,210 @@ MonoObject *ves_icall_System_Threading_Thread_DataSlot_retrieve(MonoObject *slot
 #endif
 	
 	return(ret);
+}
+
+void ves_icall_System_Threading_Monitor_Monitor_enter(MonoObject *obj)
+{
+	pthread_t tid=pthread_self();
+	
+#ifdef THREAD_LOCK_DEBUG
+	g_message("Locking %p in thread %ld", obj, tid);
+#endif
+	
+	if(obj->synchronisation.sync_tid==tid) {
+		obj->synchronisation.recursion_count++;
+		return;
+	}
+	
+	pthread_mutex_lock(&obj->synchronisation.mutex);
+
+	obj->synchronisation.sync_tid=tid;
+	obj->synchronisation.recursion_count=1;
+}
+
+void ves_icall_System_Threading_Monitor_Monitor_exit(MonoObject *obj)
+{
+	pthread_t tid=pthread_self();
+	
+	g_assert(obj->synchronisation.sync_tid==tid);
+	g_assert(obj->synchronisation.recursion_count>0);
+	
+#ifdef THREAD_LOCK_DEBUG
+	g_message("Unlocking %p in thread %ld", obj, tid);
+#endif
+	
+	obj->synchronisation.recursion_count--;
+	
+	if(obj->synchronisation.recursion_count==0) {
+		obj->synchronisation.sync_tid=0;
+		pthread_mutex_unlock(&obj->synchronisation.mutex);
+	}
+}
+
+gboolean ves_icall_System_Threading_Monitor_Monitor_test_owner(MonoObject *obj)
+{
+	pthread_t tid=pthread_self();
+	
+	if(obj->synchronisation.sync_tid==tid) {
+		return(TRUE);
+	} else {
+		return(FALSE);
+	}
+}
+
+gboolean ves_icall_System_Threading_Monitor_Monitor_test_synchronised(MonoObject *obj)
+{
+	if(obj->synchronisation.sync_tid!=0) {
+		return(TRUE);
+	} else {
+		return(FALSE);
+	}
+}
+
+void ves_icall_System_Threading_Monitor_Monitor_pulse(MonoObject *obj)
+{
+	pthread_t tid=pthread_self();
+	
+	g_assert(obj->synchronisation.sync_tid==tid);
+
+#ifdef THREAD_LOCK_DEBUG
+	g_message("Pulsing %p", obj);
+#endif
+	
+	pthread_cond_signal(&obj->synchronisation.cond);
+}
+
+void ves_icall_System_Threading_Monitor_Monitor_pulse_all(MonoObject *obj)
+{
+	pthread_t tid=pthread_self();
+	
+	g_assert(obj->synchronisation.sync_tid==tid);
+	
+#ifdef THREAD_LOCK_DEBUG
+	g_message("Pulsing all %p", obj);
+#endif
+	
+	pthread_cond_broadcast(&obj->synchronisation.cond);
+}
+
+gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
+							      int ms)
+{
+	pthread_t tid=pthread_self();
+	int ret;
+	
+#ifdef THREAD_LOCK_DEBUG
+	g_message("Trying to lock %p in thread %ld with timeout %dms", obj,
+		  tid, ms);
+#endif
+	
+	if(obj->synchronisation.sync_tid==tid) {
+		obj->synchronisation.recursion_count++;
+		return(TRUE);
+	}
+	
+	if(ms==0) {
+		ret=pthread_mutex_trylock(&obj->synchronisation.mutex);
+		if(ret==0) {
+			/* Locked */
+			obj->synchronisation.sync_tid=tid;
+			obj->synchronisation.recursion_count=1;
+			return(TRUE);
+		} else {
+#ifdef THREAD_LOCK_DEBUG
+			g_message("Not locked (%s)", strerror(ret));
+#endif
+			return(FALSE);
+		}
+	} else {
+		struct timespec timeout;
+		struct timeval now;
+		div_t divvy;
+		
+		divvy=div(ms, 1000);
+		gettimeofday(&now, NULL);
+		
+		timeout.tv_sec=now.tv_sec+divvy.quot;
+		timeout.tv_nsec=(now.tv_usec+divvy.rem)*1000;
+		
+		ret=pthread_mutex_timedlock(&obj->synchronisation.mutex,
+					    &timeout);
+		if(ret==0) {
+			/* Locked */
+			obj->synchronisation.sync_tid=tid;
+			obj->synchronisation.recursion_count=1;
+			return(TRUE);
+		} else {
+#ifdef THREAD_LOCK_DEBUG
+			g_message("Not locked (%s)", strerror(ret));
+#endif
+			return(FALSE);
+		}
+	}
+}
+
+gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
+							 int ms)
+{
+	pthread_t tid=pthread_self();
+	guint save_recursion_count;
+	int ret;
+	
+	g_assert(obj->synchronisation.sync_tid==tid);
+	
+#ifdef THREAD_LOCK_DEBUG
+	g_message("Trying to wait for %p in thread %ld with timeout %dms", obj,
+		  tid, ms);
+#endif
+	
+	/* The mutex is released while the thread is waiting for the
+	 * condition.  Another thread will try and acquire it, so
+	 * release the thread pointer here.
+	 */
+	save_recursion_count=obj->synchronisation.recursion_count;
+	obj->synchronisation.sync_tid=0;
+	obj->synchronisation.recursion_count=0;
+	
+	if(ms==0) {
+		ret=pthread_cond_wait(&obj->synchronisation.cond,
+				      &obj->synchronisation.mutex);
+		/* Signalled */
+		/* Regain the thread pointer now the mutex is locked
+		 * again */
+		obj->synchronisation.sync_tid=tid;
+		obj->synchronisation.recursion_count=save_recursion_count;
+		
+		return(TRUE);
+	} else {
+		struct timespec timeout;
+		struct timeval now;
+		div_t divvy;
+		
+		divvy=div(ms, 1000);
+		gettimeofday(&now, NULL);
+		
+		timeout.tv_sec=now.tv_sec+divvy.quot;
+		timeout.tv_nsec=(now.tv_usec+divvy.rem)*1000;
+		
+		ret=pthread_cond_timedwait(&obj->synchronisation.cond,
+					   &obj->synchronisation.mutex,
+					   &timeout);
+		/* Regain the thread pointer now the mutex is locked
+		 * again (mutex is locked even if the wait times out)
+		 */
+		obj->synchronisation.sync_tid=tid;
+		obj->synchronisation.recursion_count=save_recursion_count;
+		
+		if(ret==0) {
+			/* Signalled */
+			return(TRUE);
+		} else {
+#ifdef THREAD_LOCK_DEBUG
+			g_message("Not signalled (%s)", strerror(ret));
+#endif
+			return(FALSE);
+		}
+	}
 }
 
 static void join_all_threads(gpointer key, gpointer value, gpointer user)

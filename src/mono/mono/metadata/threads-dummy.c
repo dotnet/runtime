@@ -65,6 +65,42 @@ void ves_icall_System_LocalDataStoreSlot_DataSlot_unregister(MonoObject *this)
 {
 }
 
+void ves_icall_System_Threading_Monitor_Monitor_enter(MonoObject *obj)
+{
+}
+
+void ves_icall_System_Threading_Monitor_Monitor_exit(MonoObject *obj)
+{
+}
+
+gboolean ves_icall_System_Threading_Monitor_Monitor_test_owner(MonoObject *obj)
+{
+	return(FALSE);
+}
+
+gboolean ves_icall_System_Threading_Monitor_Monitor_test_synchronised(MonoObject *obj)
+{
+	return(FALSE);
+}
+
+void ves_icall_System_Threading_Monitor_Monitor_pulse(MonoObject *obj)
+{
+}
+
+void ves_icall_System_Threading_Monitor_Monitor_pulse_all(MonoObject *obj)
+{
+}
+
+gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj, int ms)
+{
+	return(FALSE);
+}
+
+gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj, int ms)
+{
+	return(FALSE);
+}
+
 void mono_thread_init(void)
 {
 	MonoClass *thread_class;
