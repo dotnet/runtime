@@ -669,7 +669,9 @@ mono_arch_allocate_vars (MonoCompile *m)
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
 	MonoInst *inst;
-	int i, offset, size, align, curinst;
+	guint32 locals_stack_size, locals_stack_align;
+	int i, offset, curinst, size, align;
+	gint32 *offsets;
 
 	header = mono_method_get_header (m->method);
 
@@ -743,27 +745,24 @@ mono_arch_allocate_vars (MonoCompile *m)
 		}
 	}
 
-	for (i = curinst; i < m->num_varinfo; ++i) {
-		inst = m->varinfo [i];
-
-		if ((inst->flags & MONO_INST_IS_DEAD) || inst->opcode == OP_REGVAR)
-			continue;
-
-		/* inst->unused indicates native sized value types, this is used by the
-		* pinvoke wrappers when they call functions returning structure */
-		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
-			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
-		else
-			size = mono_type_size (inst->inst_vtype, &align);
-
-		offset += size;
-		offset += align - 1;
-		offset &= ~(align - 1);
-		inst->opcode = OP_REGOFFSET;
-		inst->inst_basereg = X86_EBP;
-		inst->inst_offset = -offset;
-		//g_print ("allocating local %d to %d\n", i, -offset);
+	/* Allocate locals */
+	offsets = mono_allocate_stack_slots (m, &locals_stack_size, &locals_stack_align);
+	if (locals_stack_align) {
+		offset += (locals_stack_align - 1);
+		offset &= ~(locals_stack_align - 1);
 	}
+	for (i = m->locals_start; i < m->num_varinfo; i++) {
+		if (offsets [i] != -1) {
+			MonoInst *inst = m->varinfo [i];
+			inst->opcode = OP_REGOFFSET;
+			inst->inst_basereg = X86_EBP;
+			inst->inst_offset = - (offset + offsets [i]);
+			//printf ("allocated local %d to ", i); mono_print_tree_nl (inst);
+		}
+	}
+	g_free (offsets);
+	offset += locals_stack_size;
+
 	offset += (MONO_ARCH_FRAME_ALIGNMENT - 1);
 	offset &= ~(MONO_ARCH_FRAME_ALIGNMENT - 1);
 

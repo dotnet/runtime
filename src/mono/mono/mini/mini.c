@@ -6912,6 +6912,10 @@ mono_allocate_stack_slots (MonoCompile *m, guint32 *stack_size, guint32 *stack_a
 			 * This also handles the case when the variable is used in an
 			 * exception region, as liveness info is not computed there.
 			 */
+			/* 
+			 * FIXME: All valuetypes are marked as INDIRECT because of LDADDR
+			 * opcodes.
+			 */
 			if (! (inst->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))) {
 				if (slot_info->slots) {
 					slot = (int)slot_info->slots->data;
