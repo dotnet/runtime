@@ -560,6 +560,7 @@ build_guid_table (void)
 void
 mono_image_init (MonoImage *image)
 {
+	image->mempool = mono_mempool_new ();
 	image->method_cache = g_hash_table_new (NULL, NULL);
 	image->class_cache = g_hash_table_new (NULL, NULL);
 	image->field_cache = g_hash_table_new (NULL, NULL);
@@ -1066,6 +1067,7 @@ mono_image_close (MonoImage *image)
 	}
 	/*g_print ("destroy image %p (dynamic: %d)\n", image, image->dynamic);*/
 	if (!image->dynamic) {
+		mono_mempool_destroy (image->mempool);
 		g_free (image);
 	} else {
 		/* Dynamic images are GC_MALLOCed */
@@ -1106,6 +1108,7 @@ mono_image_close (MonoImage *image)
 		for (i = 0; i < MONO_TABLE_NUM; ++i) {
 			g_free (di->tables [i].values);
 		}
+		mono_mempool_destroy (image->mempool);
 	}
 }
 

@@ -4,6 +4,7 @@
 
 #include "mono/metadata/image.h"
 #include "mono/metadata/blob.h"
+#include "mono/metadata/mempool.h"
 #include "mono/utils/mono-hash.h"
 
 struct _MonoAssembly {
@@ -62,6 +63,7 @@ struct _MonoImage {
 	const char *version;
 	char *guid;
 	void *image_info;
+	MonoMemPool         *mempool;
 
 	char                *raw_metadata;
 			    
