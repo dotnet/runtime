@@ -2944,6 +2944,8 @@ guint8 cond;
 			code = cfg->native_code + offset;
 		}
 
+		mono_debug_record_line_number (cfg, ins, offset);
+
 		switch (ins->opcode) {
 		case OP_STOREI1_MEMBASE_IMM: {
 			s390_lhi (code, s390_r14, ins->inst_imm);
