@@ -9,3 +9,5 @@ stamp-h
 libtool
 Makefile.in
 config.log
+config.h.in
+mono-*.tar.gz
