@@ -1342,6 +1342,31 @@ class Tests {
 		return 0;
 	}
 
+	static int return_55 () {
+		return 55;
+	}
+
+	static int test_0_cfold_div_zero () {
+		// Test that constant folding doesn't cause division by zero exceptions
+		if (return_55 () != return_55 ()) {
+			int d = 1;
+			int q = 0;
+			int val;			
+
+			val = d / q;
+			val = d % q;
+
+			q = -1;
+			d = Int32.MinValue;
+			val = d / q;
+
+			q = -1;
+			val = d % q;
+		}
+
+		return 0;
+	}
+
 	static int test_0_udiv_zero () {
 		uint d = 1;
 		uint q = 0;
