@@ -2694,13 +2694,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				 */
 				if (call->stack_usage == 4) {
 					/* we want to use registers that won't get used soon, so use
-					 * edx and ecx, as registers get allocated in the order eax, ecx, edx.
-					 * However, for a long call, part of the return is in edx, so only use ecx
+					 * ecx, as eax will get allocated first. edx is used by long calls,
+					 * so we can't use that.
 					 */
-					if (ins->opcode != OP_LCALL)
-						x86_pop_reg (code, X86_EDX);
-					else
-						x86_pop_reg (code, X86_ECX);
+					
+					x86_pop_reg (code, X86_ECX);
 				} else {
 					x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
 				}
@@ -2714,14 +2712,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			call = (MonoCallInst*)ins;
 			x86_call_reg (code, ins->sreg1);
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention)) {
-				if (call->stack_usage == 4) {
-					if (ins->opcode != OP_LCALL_REG)
-						x86_pop_reg (code, X86_EDX);
-					else
-						x86_pop_reg (code, X86_ECX);
-				} else {
+				if (call->stack_usage == 4)
+					x86_pop_reg (code, X86_ECX);
+				else
 					x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
-				}
 			}
 			break;
 		case OP_FCALL_MEMBASE:
@@ -2732,14 +2726,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			call = (MonoCallInst*)ins;
 			x86_call_membase (code, ins->sreg1, ins->inst_offset);
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention)) {
-				if (call->stack_usage == 4) {
-					if (ins->opcode != OP_LCALL_MEMBASE)
-						x86_pop_reg (code, X86_EDX);
-					else
-						x86_pop_reg (code, X86_ECX);
-				} else {
+				if (call->stack_usage == 4)
+					x86_pop_reg (code, X86_ECX);
+				else
 					x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
-				}
 			}
 			break;
 		case OP_OUTARG:
