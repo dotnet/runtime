@@ -184,6 +184,8 @@ mono_field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass
 		g_print ("type in sig: %s\n", klass->name);*/
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_SPEC | nindex);
 		mono_class_init (klass);
+		if (retklass)
+			*retklass = klass;
 		return mono_class_get_field_from_name (klass, fname);
 	}
 	default:

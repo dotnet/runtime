@@ -179,8 +179,8 @@ mono_type_get_name (MonoType *type)
 	return g_string_free (result, FALSE);
 }
 
-static MonoType*
-inflate_generic_type (MonoType *type, MonoGenericInst *ginst)
+MonoType*
+mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst)
 {
 	switch (type->type) {
 	case MONO_TYPE_MVAR:
@@ -217,9 +217,9 @@ mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig
 	MonoMethodSignature *res;
 	int i;
 	res = mono_metadata_signature_alloc (image, sig->param_count);
-	res->ret = inflate_generic_type (sig->ret, ginst);
+	res->ret = mono_class_inflate_generic_type (sig->ret, ginst);
 	for (i = 0; i < sig->param_count; ++i) {
-		res->params [i] = inflate_generic_type (sig->params [i], ginst);
+		res->params [i] = mono_class_inflate_generic_type (sig->params [i], ginst);
 	}
 	res->hasthis = sig->hasthis;
 	res->explicit_this = sig->explicit_this;
@@ -244,7 +244,7 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericInst *ginst)
 	res->gen_params = header->gen_params;
 	res->geninst = ginst;
 	for (i = 0; i < header->num_locals; ++i) {
-		res->locals [i] = inflate_generic_type (header->locals [i], ginst);
+		res->locals [i] = mono_class_inflate_generic_type (header->locals [i], ginst);
 	}
 	return res;
 }
@@ -344,7 +344,7 @@ class_compute_field_layout (MonoClass *class)
 		class->fields [i].type = mono_metadata_parse_field_type (
 			m, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
 		if (class->generic_inst) {
-			class->fields [i].type = inflate_generic_type (class->fields [i].type, class->generic_inst->data.generic_inst);
+			class->fields [i].type = mono_class_inflate_generic_type (class->fields [i].type, class->generic_inst->data.generic_inst);
 			class->fields [i].type->attrs = cols [MONO_FIELD_FLAGS];
 		}
 

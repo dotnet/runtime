@@ -1866,6 +1866,34 @@ mono_image_get_fieldref_token (MonoDynamicAssembly *assembly, MonoClassField *fi
 }
 
 static guint32
+field_encode_inflated_field (MonoDynamicAssembly *assembly, MonoReflectionInflatedField *field)
+{
+	guint32 sig, token;
+	MonoClass *klass;
+	const gchar *name;
+
+	klass = field->rfield.klass;
+	name = field->rfield.field->name;
+	sig = fieldref_encode_signature (assembly, field->declaring);
+	token = mono_image_get_memberref_token (assembly, &klass->byval_arg, name, sig);
+
+	return token;
+}
+
+static guint32
+mono_image_get_inflated_field_token (MonoDynamicAssembly *assembly, MonoReflectionInflatedField *field)
+{
+	guint32 token;
+	
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, field->rfield.field));
+	if (token)
+		return token;
+	token = field_encode_inflated_field (assembly, field);
+	g_hash_table_insert (assembly->handleref, field, GUINT_TO_POINTER(token));
+	return token;
+}
+
+static guint32
 encode_generic_method_sig (MonoDynamicAssembly *assembly, MonoGenericInst *ginst)
 {
 	char *buf;
@@ -2689,7 +2717,8 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *a
 				g_assert (m->klass->generic_inst);
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoInflatedMethod") ||
-				   (!strcmp (iltoken->member->vtable->klass->name, "MonoInflatedCtor"))) {
+				   !strcmp (iltoken->member->vtable->klass->name, "MonoInflatedCtor") ||
+				   !strcmp (iltoken->member->vtable->klass->name, "MonoInflatedField")) {
 				continue;
 			} else {
 				g_assert_not_reached ();
@@ -2701,7 +2730,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *a
 				g_assert (m->signature->generic_param_count);
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoInflatedMethod") ||
-				   (!strcmp (iltoken->member->vtable->klass->name, "MonoInflatedCtor"))) {
+				   !strcmp (iltoken->member->vtable->klass->name, "MonoInflatedCtor")) {
 				continue;
 			} else {
 				g_assert_not_reached ();
@@ -3074,6 +3103,10 @@ mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 		 strcmp (klass->name, "MonoInflatedCtor") == 0) {
 		MonoReflectionInflatedMethod *m = (MonoReflectionInflatedMethod *)obj;
 		token = mono_image_get_methodspec_token (assembly, m->rmethod.method);
+	}
+	else if (strcmp (klass->name, "MonoInflatedField") == 0) {
+		MonoReflectionInflatedField *f = (MonoReflectionInflatedField *)obj;
+		token = mono_image_get_inflated_field_token (assembly, f);
 	}
 	else if (strcmp (klass->name, "MonoField") == 0) {
 		MonoReflectionField *f = (MonoReflectionField *)obj;
@@ -5773,6 +5806,50 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb)
 	return mb->mhandle;
 }
 
+static MonoClassField*
+fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* fb)
+{
+	MonoClassField *field;
+	const char *p, *p2;
+	guint32 len, idx;
+
+	if (fb->handle)
+		return fb->handle;
+
+	field = g_new0 (MonoClassField, 1);
+
+	field->name = mono_string_to_utf8 (fb->name);
+	if (fb->attrs) {
+		/* FIXME: handle type modifiers */
+		field->type = g_memdup (fb->type->type, sizeof (MonoType));
+		field->type->attrs = fb->attrs;
+	} else {
+		field->type = fb->type->type;
+	}
+	if ((fb->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) && fb->rva_data)
+		field->data = mono_array_addr (fb->rva_data, char, 0);
+	if (fb->offset != -1)
+		field->offset = fb->offset;
+	field->parent = klass;
+	fb->handle = field;
+	mono_save_custom_attrs (klass->image, field, fb->cattrs);
+
+	if (fb->def_value) {
+		MonoDynamicAssembly *assembly = klass->image->assembly->dynamic;
+		field->type->attrs |= FIELD_ATTRIBUTE_HAS_DEFAULT;
+		field->def_value = g_new0 (MonoConstant, 1);
+		idx = encode_constant (assembly, fb->def_value, &field->def_value->type);
+		/* Copy the data from the blob since it might get realloc-ed */
+		p = assembly->blob.data + idx;
+		len = mono_metadata_decode_blob_size (p, &p2);
+		len += p2 - p;
+		field->def_value->value = g_malloc (len);
+		memcpy (field->def_value->value, p, len);
+	}
+
+	return field;
+}
+
 static MonoReflectionInflatedMethod*
 inflated_method_get_object (MonoDomain *domain, MonoMethod *method, MonoReflectionMethod *declaring)
 {
@@ -5923,6 +6000,56 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *type, MonoObj
 	inflated = mono_class_inflate_generic_method (method, ginst);
 
 	return inflated_method_get_object (mono_object_domain (type), inflated, (MonoReflectionMethod *) obj);
+}
+
+MonoReflectionInflatedField*
+mono_reflection_inflate_field (MonoReflectionGenericInst *type, MonoObject *obj)
+{
+	static MonoClass *System_Reflection_MonoInflatedField;
+	MonoGenericInst *ginst, *type_ginst;
+	MonoClassField *field, *inflated;
+	MonoReflectionInflatedField *res;
+	MonoDomain *domain;
+	MonoClass *klass;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (!System_Reflection_MonoInflatedField) {
+		System_Reflection_MonoInflatedField = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "MonoInflatedField");
+		g_assert (System_Reflection_MonoInflatedField);
+	}
+
+	klass = mono_class_from_mono_type (type->type.type);
+	type_ginst = type->type.type->data.generic_inst;
+
+	if (!strcmp (obj->vtable->klass->name, "FieldBuilder")) {
+		field = fieldbuilder_to_mono_class_field (klass, (MonoReflectionFieldBuilder *) obj);
+	} else if (!strcmp (obj->vtable->klass->name, "MonoField"))
+		field = ((MonoReflectionField *) obj)->field;
+	else
+		g_assert_not_reached ();
+
+	ginst = g_new0 (MonoGenericInst, 1);
+	ginst->generic_type = type->type.type;
+	ginst->type_argc = type_ginst->type_argc;
+	ginst->type_argv = type_ginst->type_argv;
+
+	inflated = g_new0 (MonoClassField, 1);
+	*inflated = *field;
+	inflated->type = mono_class_inflate_generic_type (field->type, ginst);
+
+	domain = mono_object_domain (obj);
+
+	res = (MonoReflectionInflatedField *)mono_object_new (domain, System_Reflection_MonoInflatedField);
+	res->declaring = field;
+	res->rfield.klass = klass;
+	res->rfield.field = inflated;
+	res->rfield.name = mono_string_new (domain, inflated->name);
+	res->rfield.attrs = inflated->type->attrs;
+	res->rfield.type = mono_type_get_object (domain, inflated->type);
+	CACHE_OBJECT (inflated, res, field->parent);
+	return res;
 }
 
 static void

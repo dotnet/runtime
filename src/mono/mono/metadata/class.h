@@ -290,6 +290,9 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 MonoClass*
 mono_class_from_generic    (MonoType *gtype, gboolean inflate_methods);
 
+MonoType*
+mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst);
+
 MonoMethodSignature*
 mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGenericInst *ginst);
 

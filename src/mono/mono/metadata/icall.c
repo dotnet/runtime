@@ -4158,6 +4158,7 @@ static gconstpointer icall_map [] = {
 	 */
 	"System.Reflection.MonoGenericInst::inflate_method", mono_reflection_inflate_method_or_ctor,
 	"System.Reflection.MonoGenericInst::inflate_ctor", mono_reflection_inflate_method_or_ctor,
+	"System.Reflection.MonoGenericInst::inflate_field", mono_reflection_inflate_field,
 	
 	/*
 	 * System.Type
