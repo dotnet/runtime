@@ -157,17 +157,34 @@ mono_bitset_count (MonoBitSet *set) {
 
 #endif
 
+static gint
+my_g_bit_nth_lsf (gulong mask, gint nth_bit)
+{
+	do {
+		nth_bit++;
+		if (mask & (1 << (gulong) nth_bit))
+			return nth_bit;
+	} while (nth_bit < 31);
+	return -1;
+}
+
 int
 mono_bitset_find_first (MonoBitSet *set, gint pos) {
 	int j = pos / BITS_PER_CHUNK;
 	int bit = pos % BITS_PER_CHUNK;
 	int result, i;
 
-	g_return_val_if_fail (pos < set->size, -1);
+	if (pos == -1) {
+		j = 0;
+		bit = -1;
+	} else {
+		g_return_val_if_fail (pos < set->size, -1);
+	}
+	/*g_print ("find first from %d (j: %d, bit: %d)\n", pos, j, bit);*/
 
 	for (i = j; i < set->size / BITS_PER_CHUNK; ++i) {
 		if (set->data [i]) {
-			result = g_bit_nth_lsf (set->data [i], bit);
+			result = my_g_bit_nth_lsf (set->data [i], bit);
 			if (result != -1)
 				return result + i * BITS_PER_CHUNK;
 		}
@@ -249,8 +266,6 @@ mono_bitset_sub (MonoBitSet *dest, MonoBitSet *src) {
 
 gboolean
 mono_bitset_equal (MonoBitSet *src, MonoBitSet *src1) {
-	int i;
-
 	if (src->size != src1->size)
 		return FALSE;
  
@@ -261,14 +276,16 @@ mono_bitset_equal (MonoBitSet *src, MonoBitSet *src1) {
 
 /*
  * Compile with: 
- * gcc -Wall -DTEST_BITSET -o monobitset monobitset.c `pkg-config --cflags --libs glib-2.0`
+ * gcc -g -Wall -DTEST_BITSET -o monobitset monobitset.c `pkg-config --cflags --libs glib-2.0`
  */
 int 
 main() {
-	MonoBitSet *set1, *set2, *set3;
+	MonoBitSet *set1, *set2, *set3, *set4;
 	int error = 1;
+	int count, i;
 
 	set1 = mono_bitset_new (60, 0);
+	set4 = mono_bitset_new (60, 0);
 
 	if (mono_bitset_count (set1) != 0)
 		return error;
@@ -279,6 +296,8 @@ main() {
 		return error;
 	error++;
 
+	g_print("should be 33: %d\n", mono_bitset_find_first (set1, 0));
+	
 	if (mono_bitset_find_first (set1, 0) != 33)
 		return error;
 	error++;
@@ -307,6 +326,7 @@ main() {
 		return error;
 	error++;
 
+	/* test 10 */
 	set2 = mono_bitset_clone (set1, 0);
 	if (mono_bitset_count (set2) != 1)
 		return error;
@@ -338,10 +358,39 @@ main() {
 		return error;
 	error++;
 
+	mono_bitset_set (set4, 0);
+	mono_bitset_set (set4, 1);
+	mono_bitset_set (set4, 10);
+	if (mono_bitset_count (set4) != 3)
+		return error;
+	error++;
+
+	count = 0;
+	for (i = mono_bitset_find_first (set4, -1); i != -1; i = mono_bitset_find_first (set4, i)) {
+		count ++;
+		g_print ("count got: %d at %d\n", count, i);
+	}
+	if (count != 3)
+		return error;
+	error++;
+	g_print ("count passed\n");
+
+	if (mono_bitset_find_first (set4, -1) != 0)
+		return error;
+	error++;
+
+	mono_bitset_set (set4, 31);
+	if (mono_bitset_find_first (set4, 10) != 31)
+		return error;
+	error++;
+
 	mono_bitset_free (set1);
 	mono_bitset_free (set2);
 	mono_bitset_free (set3);
+	mono_bitset_free (set4);
 
+	g_print ("total tests passed: %d\n", error - 1);
+	
 	return 0;
 }
 
