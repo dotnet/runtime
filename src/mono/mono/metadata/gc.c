@@ -40,11 +40,12 @@ run_finalize (void *obj, void *data)
 		}
 	}
 	/* speedup later... */
-	 mono_runtime_invoke (o->vtable->klass->vtable [finalize_slot], o, NULL, &exc);
+	/* g_print ("Finalize run on %s\n", mono_object_class (o)->name); */
+	mono_runtime_invoke (o->vtable->klass->vtable [finalize_slot], o, NULL, &exc);
 
-	 if (exc) {
-		 /* fixme: do something useful */
-	 }
+	if (exc) {
+		/* fixme: do something useful */
+	}
 }
 
 /*

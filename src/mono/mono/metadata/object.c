@@ -494,7 +494,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 		}
 	}
 
-	if (!strcmp (method->name, ".ctor")) {
+	if (!strcmp (method->name, ".ctor") && method->klass != mono_defaults.string_class) {
 		obj = mono_object_new (mono_domain_get (), method->klass);
 		mono_runtime_invoke (method, obj, pa, exc);
 		return obj;
