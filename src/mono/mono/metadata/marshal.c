@@ -57,8 +57,7 @@ static MonoDisHelper marshal_dh = {
 gpointer
 mono_delegate_to_ftnptr (MonoDelegate *delegate)
 {
-	MonoMethod *method, *invoke, *wrapper;
-	MonoMethodSignature *sig;
+	MonoMethod *method, *wrapper;
 	MonoClass *klass;
 
 	if (!delegate)
@@ -71,10 +70,8 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 	g_assert (klass->delegate);
 	
 	method = delegate->method_info->method;
-	sig = method->signature;
 	
-	invoke = mono_get_delegate_invoke (klass);
-	wrapper = mono_marshal_get_managed_wrapper (invoke, (MonoObject *)delegate);
+	wrapper = mono_marshal_get_managed_wrapper (method, (MonoObject *)delegate);
 
 	delegate->delegate_trampoline =  mono_compile_method (wrapper);
 
