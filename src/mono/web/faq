@@ -534,9 +534,13 @@ A: Our main intention at Ximian is to be able to develop GNOME
 
 Q: Will Mono run on Windows?
 
-A: We hope so.  Currently some parts of Mono only run on Windows
+A: Yes.  Currently some parts of Mono only run on Windows
    (the C# compiler is a .NET executable) and other parts have only
-   been compiled on Linux, but work on Windows with Cygwin.
+   been compiled on Linux, and require Cygwin to compile on Windows.
+
+Q: Will I require Cygwin to run mono?
+
+A: No.  While you'll need it to compile it, it runs without cygwin and does not even require cygwin1.dll
 
 Q: Will Mono depend on GNOME?
 
