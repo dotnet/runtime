@@ -133,7 +133,7 @@ mono_profiler_startup (const char *desc)
 			prof->class_name = cname + 1;
 		}
 	} else {
-		prof->assembly_name = g_strdup ("corlib");
+		prof->assembly_name = g_strdup ("mscorlib");
 	}
 
 	mono_profiler_install (prof, cov_shutdown);
