@@ -883,6 +883,8 @@ void _wapi_handle_unref (gpointer handle)
 #endif
 	
 	if(destroy==TRUE) {
+		WapiHandleType type = _wapi_private_handles[idx].type;
+
 #ifdef DEBUG
 		g_message ("%s: Destroying handle %p", __func__, handle);
 #endif
@@ -894,16 +896,18 @@ void _wapi_handle_unref (gpointer handle)
 
 		_wapi_private_handles[idx].type = WAPI_HANDLE_UNUSED;
 		
-		/* Destroy the mutex and cond var.  We hope nobody
-		 * tried to grab them between the handle unlock and
-		 * now, but pthreads doesn't have a
-		 * "unlock_and_destroy" atomic function.
-		 */
-		thr_ret = mono_mutex_destroy (&_wapi_private_handles[idx].signal_mutex);
-		g_assert (thr_ret == 0);
-			
-		thr_ret = pthread_cond_destroy (&_wapi_private_handles[idx].signal_cond);
-		g_assert (thr_ret == 0);
+		if (!_WAPI_SHARED_HANDLE(type)) {
+			/* Destroy the mutex and cond var.  We hope nobody
+			 * tried to grab them between the handle unlock and
+			 * now, but pthreads doesn't have a
+			 * "unlock_and_destroy" atomic function.
+			 */
+			thr_ret = mono_mutex_destroy (&_wapi_private_handles[idx].signal_mutex);
+			g_assert (thr_ret == 0);
+				
+			thr_ret = pthread_cond_destroy (&_wapi_private_handles[idx].signal_cond);
+			g_assert (thr_ret == 0);
+		}
 
 		/* The garbage collector will take care of shared data
 		 * if this is a shared handle

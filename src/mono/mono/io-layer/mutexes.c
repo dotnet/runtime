@@ -43,8 +43,13 @@ void _wapi_mutex_details (gpointer handle_info)
 {
 	struct _WapiHandle_mutex *mut = (struct _WapiHandle_mutex *)handle_info;
 	
+#ifdef PTHREAD_POINTER_ID
+	g_print ("own: %5d:%5p, count: %5u", mut->pid, mut->tid,
+		 mut->recursion);
+#else
 	g_print ("own: %5d:%5ld, count: %5u", mut->pid, mut->tid,
 		 mut->recursion);
+#endif
 }
 
 struct _WapiHandleOps _wapi_namedmutex_ops = {
