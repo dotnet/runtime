@@ -647,6 +647,19 @@ if test x$platform_win32 = xno; then
 	dnl *** have it in the library (duh))                            ***
 	dnl ****************************************************************
 	AC_CHECK_FUNCS(poll)
+
+	dnl *************************
+	dnl *** Check for signbit ***
+	dnl *************************
+	AC_MSG_CHECKING(for signbit)
+	AC_TRY_COMPILE([#include <math.h>], [
+		int s = signbit(1.0);
+	], [
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_SIGNBIT)
+	], [
+		AC_MSG_RESULT(no)
+	]) 
 else
 	AC_CHECK_LIB(ws2_32, main, LIBS="$LIBS -lws2_32", AC_ERROR(bad mingw install?))
 	AC_CHECK_LIB(psapi, main, LIBS="$LIBS -lpsapi", AC_ERROR(bad mingw install?))
