@@ -1397,7 +1397,7 @@ static void pipe_close_private (gpointer handle)
 		return;
 	}
 	
-	if (pipe_private_handle->fd_mapped.fd == TRUE) {
+	if (pipe_private_handle->fd_mapped.assigned == TRUE) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": closing pipe handle %p with fd %d", handle,
