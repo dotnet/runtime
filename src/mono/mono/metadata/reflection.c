@@ -5072,6 +5072,11 @@ mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 			mono_defaults.corlib, "System.Reflection", "Assembly");
 	res = (MonoReflectionAssembly *)mono_object_new (domain, System_Reflection_Assembly);
 	res->assembly = assembly;
+
+	/* FIXME: This is a workaround for 1.1.3 */
+	if (!strcmp (assembly->aname.name, "__MetadataTypes"))
+		res->corlib_internal = TRUE;
+
 	CACHE_OBJECT (assembly, res, NULL);
 	return res;
 }
