@@ -1506,7 +1506,8 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 {
 	MonoDomain *domain = mono_object_domain (type); 
 	MonoArray *intf;
-	int ninterf, i;
+	GPtrArray *ifaces = NULL;
+	int i;
 	MonoClass *class = mono_class_from_mono_type (type->type);
 	MonoClass *parent;
 	MonoBitSet *slots = mono_bitset_new (class->max_interface_id + 1, 0);
@@ -1519,32 +1520,37 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 		return mono_array_new (domain, mono_defaults.monotype_class, 0);
 	}
 
-	ninterf = 0;
 	for (parent = class; parent; parent = parent->parent) {
-		for (i = 0; i < parent->interface_count; ++i) {
-			if (mono_bitset_test (slots, parent->interfaces [i]->interface_id))
-				continue;
+		GPtrArray *tmp_ifaces = mono_class_get_implemented_interfaces (parent);
+		if (tmp_ifaces) {
+			for (i = 0; i < tmp_ifaces->len; ++i) {
+				MonoClass *ic = g_ptr_array_index (tmp_ifaces, i);
 
-			mono_bitset_set (slots, parent->interfaces [i]->interface_id);
-			++ninterf;
+				if (mono_bitset_test (slots, ic->interface_id))
+					continue;
+
+				mono_bitset_set (slots, ic->interface_id);
+				if (ifaces == NULL)
+					ifaces = g_ptr_array_new ();
+				g_ptr_array_add (ifaces, ic);
+			}
+			g_ptr_array_free (tmp_ifaces, TRUE);
 		}
 	}
-
-	intf = mono_array_new (domain, mono_defaults.monotype_class, ninterf);
-	ninterf = 0;
-	for (parent = class; parent; parent = parent->parent) {
-		for (i = 0; i < parent->interface_count; ++i) {
-			if (!mono_bitset_test (slots, parent->interfaces [i]->interface_id))
-				continue;
-
-			mono_bitset_clear (slots, parent->interfaces [i]->interface_id);
-			mono_array_set (intf, gpointer, ninterf,
-					mono_type_get_object (domain, &parent->interfaces [i]->byval_arg));
-			++ninterf;
-		}
-	}
-
 	mono_bitset_free (slots);
+
+	if (!ifaces)
+		return mono_array_new (domain, mono_defaults.monotype_class, 0);
+		
+	intf = mono_array_new (domain, mono_defaults.monotype_class, ifaces->len);
+	for (i = 0; i < ifaces->len; ++i) {
+		MonoClass *ic = g_ptr_array_index (ifaces, i);
+		
+		mono_array_set (intf, gpointer, i,
+						mono_type_get_object (domain, &ic->byval_arg));
+	}
+	g_ptr_array_free (ifaces, TRUE);
+
 	return intf;
 }
 
