@@ -1494,6 +1494,7 @@ mini_emit_isninst_cast (MonoCompile *s, int klass_reg, MonoClass *klass, MonoIns
 {
 	int idepth_reg = mono_regstate_next_int (s->rs);
 	int stypes_reg = mono_regstate_next_int (s->rs);
+	int stype = mono_regstate_next_int (s->rs);
 
 	if (klass->idepth > MONO_DEFAULT_SUPERTABLE_SIZE) {
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, idepth_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, idepth));
@@ -1501,13 +1502,13 @@ mini_emit_isninst_cast (MonoCompile *s, int klass_reg, MonoClass *klass, MonoIns
 		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BLT_UN, false_target);
 	}
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, stypes_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, supertypes));
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, stypes_reg, stypes_reg, ((klass->idepth - 1) << 2));
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, stype, stypes_reg, ((klass->idepth - 1) << 2));
 	if (mono_compile_aot) {
 		int const_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_CLASSCONST (s, const_reg, klass);
-		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, stypes_reg, const_reg);
+		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, stype, const_reg);
 	} else {
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, stypes_reg, klass);
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, stype, klass);
 	}
 	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, true_target);
 }
@@ -1559,6 +1560,7 @@ mini_emit_castclass (MonoCompile *s, int klass_reg, MonoClass *klass)
 {
 	int idepth_reg = mono_regstate_next_int (s->rs);
 	int stypes_reg = mono_regstate_next_int (s->rs);
+	int stype = mono_regstate_next_int (s->rs);
 
 	if (klass->idepth > MONO_DEFAULT_SUPERTABLE_SIZE) {
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, idepth_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, idepth));
@@ -1566,13 +1568,13 @@ mini_emit_castclass (MonoCompile *s, int klass_reg, MonoClass *klass)
 		MONO_EMIT_NEW_COND_EXC (s, LT_UN, "InvalidCastException");
 	}
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, stypes_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, supertypes));
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, stypes_reg, stypes_reg, ((klass->idepth - 1) << 2));
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, stype, stypes_reg, ((klass->idepth - 1) << 2));
 	if (mono_compile_aot) {
 		int const_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_CLASSCONST (s, const_reg, klass);
-		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, stypes_reg, const_reg);
+		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, stype, const_reg);
 	} else {
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, stypes_reg, klass);
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, stype, klass);
 	}
 	MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
 }
