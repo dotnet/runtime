@@ -96,6 +96,13 @@ get_entropy_from_server (const char *path, guchar *buf, int len)
 
 #include <WinCrypt.h>
 
+#ifndef PROV_INTEL_SEC
+#define PROV_INTEL_SEC		22
+#endif
+#ifndef CRYPT_VERIFY_CONTEXT
+#define CRYPT_VERIFY_CONTEXT	0xF0000000
+#endif
+
 gpointer
 ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (MonoArray *seed)
 {
