@@ -433,7 +433,7 @@ mono_fconv_ovf_i8 (double v)
 
 	res = (gint64)v;
 
-	if (isnan(v) || v != res) {
+	if (isnan(v) || truncl (v) != res) {
 		mono_raise_exception (mono_get_exception_overflow ());
 	}
 	return res;
@@ -448,7 +448,7 @@ mono_fconv_ovf_u8 (double v)
     
 	res = (guint64)v;
 
-	if (isnan(v) || v != res) {
+	if (isnan(v) || truncl (v) != res) {
 		mono_raise_exception (mono_get_exception_overflow ());
 	}
 	return res;
