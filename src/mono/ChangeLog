@@ -1,5 +1,22 @@
 2002-09-01  Juli Mallett  <jmallett@FreeBSD.org>
 
+	* configure.in, mono/interpreter/interp.c,
+	mono/io-layer/handles.c, mono/io-layer/processes.c,
+	mono/io-layer/threads.c, mono/io-layer/timed-thread.c,
+	mono/io-layer/wait.c, mono/jit/helpers.c, mono/jit/jit.c,
+	mono/metadata/appdomain.c, mono/metadata/class.c,
+	mono/metadata/domain.c, mono/metadata/gc.c,
+	mono/metadata/object.c, mono/metadata/reflection.c,
+	mono/metadata/threads.c, mono/os/gc_wrapper.h,
+	mono/utils/mono-hash.c: Add a new header, gc_wrapper.h, to
+	wrap inclusion of gc.h for boehm, since from FreeBSD and
+	OpenBSD ports, gc.h is <gc.h>, but on GNU it seems to be
+	in <gc/gc.h>.  This will reduce the diffs FreeBSD ports has
+	to apply, and also makes it possible for me to build with
+	GC on OpenBSD/macppc built by hand.
+
+2002-09-01  Juli Mallett  <jmallett@FreeBSD.org>
+
 	* configure.in: On BSD don't try to use -ldl, we simply don't use it.
 
 2002-09-01  Juli Mallett  <jmallett@FreeBSD.org>

@@ -110,6 +110,7 @@ AC_SUBST(GLIB_LIBS)
 AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 
+AC_CHECK_HEADERS(gc.h gc/gc.h)
 AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes",,$libdl)
 gc=auto
 AC_ARG_WITH(gc, [  --with-gc=boehm,none],[gc=$with_gc])

@@ -16,9 +16,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#if HAVE_BOEHM_GC
-#include <gc/gc.h>
-#endif
+#include <mono/os/gc_wrapper.h>
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>

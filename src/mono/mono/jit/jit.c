@@ -8,9 +8,7 @@
  */
 
 #include <config.h>
-#if HAVE_BOEHM_GC
-#include <gc/gc.h>
-#endif
+#include <mono/os/gc_wrapper.h>
 #include <glib.h>
 #include <stdlib.h>
 #include <stdarg.h>

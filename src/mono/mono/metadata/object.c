@@ -23,9 +23,7 @@
 #include <mono/metadata/marshal.h>
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/marshal.h"
-#if HAVE_BOEHM_GC
-#include <gc/gc.h>
-#endif
+#include <mono/os/gc_wrapper.h>
 
 /* 
  * enable to get a good speedup: we still need to figure out

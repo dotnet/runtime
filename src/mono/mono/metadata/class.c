@@ -29,9 +29,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/debug-helpers.h>
-#if HAVE_BOEHM_GC
-#include <gc/gc.h>
-#endif
+#include <mono/os/gc_wrapper.h>
 
 #define CSIZE(x) (sizeof (x) / 4)
 

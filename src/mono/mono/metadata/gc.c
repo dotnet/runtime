@@ -13,13 +13,8 @@
 #include <mono/metadata/gc.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/tabledefs.h>
-#if HAVE_BOEHM_GC
 #define GC_I_HIDE_POINTERS
-#include <gc/gc.h>
-#else
-#define HIDE_POINTER(v) (v)
-#define REVEAL_POINTER(v) (v)
-#endif
+#include <mono/os/gc_wrapper.h>
 
 static int finalize_slot = -1;
 

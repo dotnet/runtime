@@ -9,7 +9,7 @@
 
 #include <config.h>
 #if HAVE_BOEHM_GC
-#include <gc/gc.h>
+#include <mono/os/gc_wrapper.h>
 #include "mono/utils/mono-hash.h"
 #endif
 #include <glib.h>

@@ -12,9 +12,7 @@
 #include <glib.h>
 #include <string.h>
 
-#if HAVE_BOEHM_GC
-#include <gc/gc.h>
-#endif
+#include <mono/os/gc_wrapper.h>
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>

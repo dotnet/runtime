@@ -20,9 +20,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/io-layer/io-layer.h>
 
-#if HAVE_BOEHM_GC
-#include <gc/gc.h>
-#endif
+#include <mono/os/gc_wrapper.h>
 
 #undef THREAD_DEBUG
 #undef THREAD_LOCK_DEBUG

@@ -37,9 +37,7 @@
 #endif
 
 #include <glib.h>
-#if HAVE_BOEHM_GC
-#include <gc/gc.h>
-#endif
+#include <mono/os/gc_wrapper.h>
 #include "mono-hash.h"
 
 #define HASH_TABLE_MIN_SIZE 11

@@ -22,9 +22,7 @@
 #include <setjmp.h>
 #include <signal.h>
 
-#if HAVE_BOEHM_GC
-#include <gc/gc.h>
-#endif
+#include <mono/os/gc_wrapper.h>
 
 #ifdef HAVE_ALLOCA_H
 #   include <alloca.h>

@@ -9,9 +9,7 @@
 
 #include <config.h>
 #include <glib.h>
-#if HAVE_BOEHM_GC
-#include <gc/gc.h>
-#endif
+#include <mono/os/gc_wrapper.h>
 #include <pthread.h>
 
 #include "timed-thread.h"
