@@ -2275,7 +2275,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			g_assert (tmp_locals [i]);
 			mono_mb_emit_ldloc (mb, tmp_locals [i]);
 			if (!t->byref) {
-				mono_mb_emit_byte (mb, CEE_LDOBJ);
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_byte (mb, CEE_MONO_LDNATIVEOBJ);
 				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
 			}
 			break;

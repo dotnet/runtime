@@ -3239,6 +3239,23 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				ADD_TREE (t1, cli_addr);
 				break;
 			}
+			case CEE_MONO_LDNATIVEOBJ: {
+				guint32 token;
+				MonoClass *c;
+
+				++ip;
+				token = read32 (ip);
+				ip += 4;
+				sp--;
+
+				g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
+				c = (MonoClass *)mono_method_get_wrapper_data (method, token);
+				g_assert (c->valuetype);
+				
+				t1 = ctree_create_load (cfg, &c->byval_arg, *sp, &svt, FALSE);
+				PUSH_TREE (t1, svt);
+				break;
+			}
 			case CEE_MONO_FREE: {
 				++ip;
 
