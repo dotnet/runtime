@@ -2580,6 +2580,10 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
  			MONO_INST_NEW (cfg, ins, OP_GETTYPE);
 			ins->inst_i0 = args [0];
 			return ins;
+		} else if (strcmp (cmethod->name, "InternalGetHashCode") == 0) {
+ 			MONO_INST_NEW (cfg, ins, OP_GETHASHCODE);
+			ins->inst_i0 = args [0];
+			return ins;
 		} else
 			return NULL;
 	} else if (cmethod->klass == mono_defaults.array_class) {

@@ -1393,6 +1393,22 @@ reg: OP_GETTYPE (reg) {
 	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOAD_MEMBASE, state->reg1, vt_reg, G_STRUCT_OFFSET (MonoVTable, type));
 }
 
+reg: OP_GETHASHCODE (reg) {
+	int t1 = mono_regstate_next_int (s->rs);
+	
+	#if HAVE_BOEHM_GC
+	#define MONO_OBJECT_ALIGNMENT_SHIFT	3
+	#else
+	#define MONO_OBJECT_ALIGNMENT_SHIFT	2
+	#endif
+
+
+	/* return (GPOINTER_TO_UINT (this) >> MONO_OBJECT_ALIGNMENT_SHIFT) * 2654435761u; */
+	
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, t1, state->left->reg1, MONO_OBJECT_ALIGNMENT_SHIFT);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_MUL_IMM, state->reg1, t1, 2654435761u);
+}
+
 #
 # array support
 #

@@ -737,13 +737,9 @@ ves_icall_System_Object_MemberwiseClone (MonoObject *this)
 static gint32
 ves_icall_System_Object_GetHashCode (MonoObject *this)
 {
-	register guint32 key;
-
 	MONO_ARCH_SAVE_REGS;
 
-	key = (GPOINTER_TO_UINT (this) >> MONO_OBJECT_ALIGNMENT_SHIFT) * 2654435761u;
-
-	return key & 0x7fffffff;
+	return (GPOINTER_TO_UINT (this) >> MONO_OBJECT_ALIGNMENT_SHIFT) * 2654435761u;
 }
 
 static gint32

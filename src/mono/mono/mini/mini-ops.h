@@ -389,6 +389,7 @@ MINI_OP(OP_SQRT,    "sqrt")
 MINI_OP(OP_GETCHR, "getchar")
 MINI_OP(OP_STRLEN, "strlen")
 MINI_OP(OP_GETTYPE, "gettype")
+MINI_OP(OP_GETHASHCODE, "gethashcode")
 /* get adrress of element in a 2D array */
 MINI_OP(OP_LDELEMA2D, "getldelema2")
 /* inlined small memcpy with constant length */
