@@ -2013,6 +2013,8 @@ typedef struct {
 	int found;
 } PatchData;
 
+#define is_call_imm(diff) ((gint)(diff) >= -33554432 && (gint)(diff) <= 33554431)
+
 static int
 search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 	PatchData *pdata = (PatchData*)user_data;
@@ -2022,7 +2024,18 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 	guint32 load [2];
 	guchar *templ;
 	int i, count = 0;
-	
+
+	if (!pdata->absolute) {
+		g_assert (!is_call_imm (pdata->target - pdata->code));
+		/* make sure a jump is possible from the code to the thunk area */
+		i = pdata->code - code;
+		if (!is_call_imm (i))
+			return 0;
+		i = pdata->code + csize - code;
+		if (!is_call_imm (i))
+			return 0;
+	}
+
 	templ = (guchar*)load;
 	ppc_lis (templ, ppc_r0, (guint32)(pdata->target) >> 16);
 	ppc_ori (templ, ppc_r0, ppc_r0, (guint32)(pdata->target) & 0xffff);
@@ -2054,7 +2067,7 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 			thunks += 4;
 			count++;
 		}
-		g_print ("failed thunk lookup at %p (%d entries)\n", data, count);
+		g_print ("failed thunk lookup for %p from %p at %p (%d entries)\n", pdata->target, pdata->code, data, count);
 	}
 	return 0;
 }
@@ -2093,15 +2106,20 @@ ppc_patch (guchar *code, guchar *target)
 		if (ins & 2) {
 			gint diff = (gint)target;
 			if ((diff < -33554432) || (diff > 33554431)) {
-				handle_thunk (TRUE, code, target);
-				return;
+				diff = target - code;
+				if (is_call_imm (diff)) {
+					handle_thunk (TRUE, code, target);
+					return;
+				}
+				/* change it to relative */
+				ins &= ~2;
 			}
 			ins = prim << 26 | (ins & 3);
 			diff &= ~0xfc000003;
 			ins |= diff;
 		} else {
 			gint diff = target - code;
-			if ((gint)target >= -33554432 && (gint)target <= 33554431) {
+			if (is_call_imm (target)) {
 				/* we change it into an absolute reference */
 				ins = prim << 26 | (ins & 3) | 2;
 				diff = (gint)target;
@@ -2110,7 +2128,7 @@ ppc_patch (guchar *code, guchar *target)
 				*(guint32*)code = ins;
 				return;
 			}
-			if ((diff < -33554432) || (diff > 33554431)) {
+			if (!is_call_imm (diff)) {
 				handle_thunk (FALSE, code, target);
 				return;
 			}
