@@ -124,8 +124,14 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 		/* Patch trampoline */
 		/* FIXME: Make this thread safe */
-		amd64_mov_reg_imm (tramp, AMD64_R11, addr);
-		amd64_jump_reg (tramp, AMD64_R11);
+		if (!m->klass->valuetype) {
+			/* 
+			 * Valuetype method trampolines can't be patched since they are used for virtual
+			 * calls which need an unbox trampoline.
+			 */
+			amd64_mov_reg_imm (tramp, AMD64_R11, addr);
+			amd64_jump_reg (tramp, AMD64_R11);
+		}
 	}
 
 	return addr;
