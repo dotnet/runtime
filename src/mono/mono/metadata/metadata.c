@@ -2461,6 +2461,12 @@ mono_type_stack_size (MonoType *t, gint *align)
 	return 0;
 }
 
+gboolean
+mono_metadata_generic_inst_is_valuetype (MonoGenericInst *ginst)
+{
+	return MONO_TYPE_ISSTRUCT (ginst->generic_type);
+}
+
 guint
 mono_metadata_generic_inst_hash (MonoGenericInst *ginst)
 {

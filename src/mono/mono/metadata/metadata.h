@@ -14,7 +14,7 @@
 #define MONO_ZERO_LEN_ARRAY 1
 #endif
 
-#define MONO_TYPE_ISSTRUCT(t) (!(t)->byref && (((t)->type == MONO_TYPE_VALUETYPE && !(t)->data.klass->enumtype) || ((t)->type == MONO_TYPE_TYPEDBYREF)))
+#define MONO_TYPE_ISSTRUCT(t) (!(t)->byref && (((t)->type == MONO_TYPE_VALUETYPE && !(t)->data.klass->enumtype) || ((t)->type == MONO_TYPE_TYPEDBYREF)) || (((t)->type == MONO_TYPE_GENERICINST) && mono_metadata_generic_inst_is_valuetype ((t)->data.generic_inst)))
 #define MONO_TYPE_IS_VOID(t) ((t) && ((t)->type == MONO_TYPE_VOID) && !(t)->byref)
 #define MONO_TYPE_IS_POINTER(t) ((t) && (((t)->byref || ((t)->type == MONO_TYPE_I) || (t)->type == MONO_TYPE_STRING) || ((t)->type == MONO_TYPE_SZARRAY) || ((t)->type == MONO_TYPE_CLASS) || ((t)->type == MONO_TYPE_CLASS) || ((t)->type == MONO_TYPE_OBJECT) || ((t)->type == MONO_TYPE_ARRAY) || ((t)->type == MONO_TYPE_PTR)))
 #define MONO_TYPE_IS_REFERENCE(t) ((t) && (((t)->type == MONO_TYPE_STRING) || ((t)->type == MONO_TYPE_SZARRAY) || ((t)->type == MONO_TYPE_CLASS) || ((t)->type == MONO_TYPE_OBJECT) || ((t)->type == MONO_TYPE_ARRAY)))
@@ -411,6 +411,7 @@ int            mono_type_size                  (MonoType        *type,
 int            mono_type_stack_size            (MonoType        *type, 
 						int             *alignment);
 
+gboolean       mono_metadata_generic_inst_is_valuetype (MonoGenericInst *ginst);
 guint          mono_metadata_generic_inst_hash  (MonoGenericInst *ginst);
 gboolean       mono_metadata_generic_inst_equal (MonoGenericInst *g1, MonoGenericInst *g2);
 
