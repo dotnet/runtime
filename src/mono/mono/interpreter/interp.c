@@ -1,3 +1,11 @@
+/*
+ * interp.c: Interpreter for CIL byte codes
+ *
+ * Author:
+ *   Paolo Molaro (lupus@ximian.com)
+ *
+ * (C) 2001 Ximian, Inc.
+ */
 #include <config.h>
 #include <stdio.h>
 #include <string.h>
@@ -101,7 +109,8 @@ static int count = 0;
  * duplication.
  * */
 void 
-ves_exec_method (cli_image_info_t *iinfo, MonoMetaMethodHeader *mh, stackval *args) {
+ves_exec_method (cli_image_info_t *iinfo, MonoMetaMethodHeader *mh, stackval *args)
+{
 	/*
 	 * with alloca we get the expected huge performance gain
 	 * stackval *stack = g_new0(stackval, mh->max_stack);*/
@@ -818,7 +827,8 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMetaMethodHeader *mh, stackval *ar
 }
 
 int 
-ves_exec (cli_image_info_t *iinfo) {
+ves_exec (cli_image_info_t *iinfo)
+{
 	gint32 entryp;
 	char * loc, *ptr;
 	stackval result;
@@ -837,11 +847,12 @@ ves_exec (cli_image_info_t *iinfo) {
 }
 
 int 
-main (int argc, char *argv[]) {
+main (int argc, char *argv [])
+{
 	cli_image_info_t *iinfo;
 	MonoAssembly *assembly;
 	int retval = 0;
-	char * file = argv[1];
+	char *file = argv [1];
 
 	assembly = mono_assembly_open (file, NULL);
 	if (!assembly){
@@ -854,3 +865,6 @@ main (int argc, char *argv[]) {
 	printf("count: %d\n", count);
 	return retval;
 }
+
+
+
