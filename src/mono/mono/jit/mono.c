@@ -16,16 +16,15 @@
 #include <mono/os/util.h>
 
 /**
- * mono_jit_assembly:
- * @assembly: reference to an assembly
+ * mono_jit_image:
+ * @image: reference to an image
+ * @verbose: If true, print debugging information on stdout.
  *
- * JIT compilation of all methods in the assembly. Prints debugging
- * information on stdout.
+ * JIT compilation of all methods in the image.
  */
-static void
-mono_jit_assembly (MonoAssembly *assembly)
+void
+mono_jit_compile_image (MonoImage *image, int verbose)
 {
-	MonoImage *image = assembly->image;
 	MonoMethod *method;
 	MonoTableInfo *t = &image->tables [MONO_TABLE_METHOD];
 	int i;
@@ -36,15 +35,129 @@ mono_jit_assembly (MonoAssembly *assembly)
 					  (MONO_TABLE_METHOD << 24) | (i + 1), 
 					  NULL);
 
-		printf ("\nMethod: %s\n\n", method->name);
+		if (verbose)
+			g_print ("Compiling: %s:%s\n\n", image->assembly_name, method->name);
 
-		if (method->flags & METHOD_ATTRIBUTE_ABSTRACT)
-			printf ("ABSTARCT\n");
-		else
+		if (method->flags & METHOD_ATTRIBUTE_ABSTRACT) {
+			if (verbose)
+				printf ("ABSTARCT\n");
+		} else
 			arch_compile_method (method);
 
 	}
 
+}
+
+static MonoClass *
+find_class_in_assembly (MonoAssembly *assembly, const char *namespace, const char *name)
+{
+	MonoAssembly **ptr;
+	MonoClass *class;
+
+	class = mono_class_from_name (assembly->image, namespace, name);
+	if (class)
+		return class;
+
+	for (ptr = assembly->image->references; ptr && *ptr; ptr++) {
+		class = find_class_in_assembly (*ptr, namespace, name);
+		if (class)
+			return class;
+	}
+
+	return NULL;
+}
+
+static MonoMethod *
+find_method_in_assembly (MonoAssembly *assembly, MonoMethodDesc *mdesc)
+{
+	MonoAssembly **ptr;
+	MonoMethod *method;
+
+	method = mono_method_desc_search_in_image (mdesc, assembly->image);
+	if (method)
+		return method;
+
+	for (ptr = assembly->image->references; ptr && *ptr; ptr++) {
+		method = find_method_in_assembly (*ptr, mdesc);
+		if (method)
+			return method;
+	}
+
+	return NULL;
+}
+
+/**
+ * mono_jit_compile_class:
+ * @assembly: Lookup things in this assembly
+ * @compile_class: Name of the image/class/method to compile
+ * @compile_times: Compile it that many times
+ * @verbose: If true, print debugging information on stdout.
+ *
+ * JIT compilation of the image/class/method.
+ *
+ * @compile_class can be one of:
+ *
+ * - an image name (`@corlib')
+ * - a class name (`System.Int32')
+ * - a method name (`System.Int32:Parse')
+ */
+void
+mono_jit_compile_class (MonoAssembly *assembly, char *compile_class,
+			int compile_times, int verbose)
+{
+	const char *cmethod = strrchr (compile_class, ':');
+	char *cname;
+	char *code;
+	int i, j;
+	MonoClass *class;
+
+	if (compile_class [0] == '@') {
+		MonoImage *image = mono_image_loaded (compile_class + 1);
+		if (!image)
+			g_error ("Cannot find image %s", compile_class + 1);
+		if (verbose)
+			g_print ("Compiling image %s\n", image->name);
+		for (j = 0; j < compile_times; ++j)
+			mono_jit_compile_image (image, verbose);
+	} else if (cmethod) {
+		MonoMethodDesc *mdesc;
+		MonoMethod *m;
+		mdesc = mono_method_desc_new (compile_class, FALSE);
+		if (!mdesc)
+			g_error ("Invalid method name '%s'", compile_class);
+		m = find_method_in_assembly (assembly, mdesc);
+		if (!m)
+			g_error ("Cannot find method '%s'", compile_class);
+		for (j = 0; j < compile_times; ++j) {
+			code = arch_compile_method (m);
+			// g_free (code);
+		}
+	} else {
+		cname = strrchr (compile_class, '.');
+		if (cname)
+			*cname++ = 0;
+		else {
+			cname = compile_class;
+			compile_class = (char *)"";
+		}
+		class = find_class_in_assembly (assembly, compile_class, cname);
+		if (!class)
+			g_error ("Cannot find class %s.%s", compile_class, cname);
+		mono_class_init (class);
+		for (j = 0; j < compile_times; ++j) {
+			for (i = 0; i < class->method.count; ++i) {
+				if (class->methods [i]->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+					continue;
+				if (class->methods [i]->flags & METHOD_ATTRIBUTE_ABSTRACT)
+					continue;
+				if (verbose)
+					g_print ("Compiling: %s.%s:%s\n",
+						 compile_class, cname, class->methods [i]->name);
+				code = arch_compile_method (class->methods [i]);
+				// g_free (code);
+			}
+		}
+	}
 }
 
 static void
@@ -55,29 +168,41 @@ usage (char *name)
 		 "Usage is: %s [options] executable args...\n\n", name,  VERSION, name);
 	fprintf (stderr,
 		 "Runtime Debugging:\n"
-		 "    -d               debug the jit, show disassembler output.\n"
-		 "    --dump-asm       dumps the assembly code generated\n"
-		 "    --dump-forest    dumps the reconstructed forest\n"
-		 "    --print-vtable   print the VTable of all used classes\n"
-		 "    --stats          print statistics about the jit operations\n"
-		 "    --trace          printf function call trace\n"
-		 "    --compile cname  compile methods in given class\n"
-		 "                     format: (namespace.name[:methodname])\n"
-		 "    --ncompile num   compile methods num times (default: 1000)\n"
+		 "    -d                 debug the jit, show disassembler output.\n"
+		 "    --dump-asm         dumps the assembly code generated\n"
+		 "    --dump-forest      dumps the reconstructed forest\n"
+		 "    --print-vtable     print the VTable of all used classes\n"
+		 "    --stats            print statistics about the jit operations\n"
+		 "    --trace            printf function call trace\n"
+		 "    --compile NAME     compile NAME, then exit.\n"
+		 "                       NAME is in one of the following formats:\n"
+		 "                         namespace.name          compile the given class\n"
+		 "                         namespace.name:method   compile the given method\n"
+		 "                         @imagename              compile the given image\n"
+		 "    --ncompile NUM     compile methods NUM times (default: 1000)\n"
 		 "\n"
-		 "Development:"
-		 "    --dwarf          write dwarf2 debug information\n"
-		 "    --dwarf-plus     write extended dwarf2 debug information\n"
-		 "    --profile        record and dump profile info\n"
-		 "    --stabs          write stabs debug information\n"
-		 "    --debug name     insert a breakpoint at the start of method name\n"
+		 "Development:\n"
+		 "    --debug FORMAT     write a debugging file.  FORMAT is one of:\n"
+		 "                         stabs        to write stabs information\n"
+		 "                         dwarf        to write dwarf2 information\n"
+		 "                         dwarf-plus   to write extended dwarf2 information\n"
+		 "    --debug-args ARGS  comma-separated list of additional arguments for the\n"
+		 "                       symbol writer.  See the manpage for details.\n"
+		 "    --profile          record and dump profile info\n"
+		 "    --break NAME       insert a breakpoint at the start of method NAME\n"
+		 "                       (NAME is in `namespace.name:methodname' format)\n"
+		 "    --precomile name   precompile NAME before executing the main application:\n"
+		 "                       NAME is in one of the following formats:\n"
+		 "                         namespace.name          compile the given class\n"
+		 "                         namespace.name:method   compile the given method\n"
+		 "                         @imagename              compile the given image\n"
 		 "\n"
-		 "Runtime:"
-		 "    --fast-iconv     Use fast floating point integer conversion\n"
-		 "    --noinline       Disable code inliner\n"
-		 "    --nols           disable linear scan register allocation\n"
-		 "    --share-code     force jit to produce shared code\n"
-		 "    --workers n      maximum number of worker threads\n"
+		 "Runtime:\n"
+		 "    --fast-iconv       Use fast floating point integer conversion\n"
+		 "    --noinline         Disable code inliner\n"
+		 "    --nols             disable linear scan register allocation\n"
+		 "    --share-code       force jit to produce shared code\n"
+		 "    --workers n        maximum number of worker threads\n"
 		);
 	exit (1);
 }
@@ -90,9 +215,11 @@ main (int argc, char *argv [])
 	int retval = 0, i;
 	int compile_times = 1000;
 	char *compile_class = NULL;
+	char *debug_args = NULL;
 	char *file, *error;
 	gboolean testjit = FALSE;
 	int stack, verbose = FALSE;
+	GList *precompile_classes = NULL;
 
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
@@ -121,7 +248,7 @@ main (int argc, char *argv [])
 			mono_use_linear_scan = FALSE;
 		else if (strcmp (argv [i], "--print-vtable") == 0)
 			mono_print_vtable = TRUE;
-		else if (strcmp (argv [i], "--debug") == 0) {
+		else if (strcmp (argv [i], "--break") == 0) {
 			MonoMethodDesc *desc = mono_method_desc_new (argv [++i], FALSE);
 			if (!desc)
 				g_error ("Invalid method name '%s'", argv [i]);
@@ -142,18 +269,23 @@ main (int argc, char *argv [])
 		} else if (strcmp (argv [i], "--stats") == 0) {
 			memset (&mono_jit_stats, 0, sizeof (MonoJitStats));
 			mono_jit_stats.enabled = TRUE;
-		} else if (strcmp (argv [i], "--stabs") == 0) {
+		} else if (strcmp (argv [i], "--debug") == 0) {
 			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
 				g_error ("You can only use one debugging format.");
-			mono_debug_format = MONO_DEBUG_FORMAT_STABS;
-		} else if (strcmp (argv [i], "--dwarf") == 0) {
-			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
-				g_error ("You can only use one debugging format.");
-			mono_debug_format = MONO_DEBUG_FORMAT_DWARF2;
-		} else if (strcmp (argv [i], "--dwarf-plus") == 0) {
-			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
-				g_error ("You can only use one debugging format.");
-			mono_debug_format = MONO_DEBUG_FORMAT_DWARF2_PLUS;
+			if (strcmp (argv [++i], "stabs"))
+				mono_debug_format = MONO_DEBUG_FORMAT_STABS;
+			else if (strcmp (argv [i], "--dwarf") == 0)
+				mono_debug_format = MONO_DEBUG_FORMAT_DWARF2;
+			else if (strcmp (argv [i], "--dwarf-plus") == 0)
+				mono_debug_format = MONO_DEBUG_FORMAT_DWARF2_PLUS;
+			else
+				g_error ("Unknown debugging format: %s", argv [i]);
+		} else if (strcmp (argv [i], "--debug-args") == 0) {
+			if (debug_args)
+				g_error ("You can use --debug-args only once.");
+			debug_args = argv [++i];
+		} else if (strcmp (argv [i], "--precompile") == 0) {
+			precompile_classes = g_list_append (precompile_classes, argv [++i]);
 		} else if (strcmp (argv [i], "--verbose") == 0) {
 			verbose = TRUE;;
 		} else if (strcmp (argv [i], "--fast-iconv") == 0) {
@@ -183,58 +315,23 @@ main (int argc, char *argv [])
 	}
 
 	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
-		MonoDebugHandle *handle = mono_debug_open_file (file, mono_debug_format);
-		mono_debug_add_image (handle, assembly->image);
+		gchar **args;
+
+		args = g_strsplit (debug_args ? debug_args : "", ",", -1);
+		mono_debug_open (assembly, mono_debug_format, (const char **) args);
+		g_strfreev (args);
 	}
 
 	if (testjit) {
-		mono_jit_assembly (assembly);
+		mono_jit_compile_image (assembly->image, TRUE);
 	} else if (compile_class) {
-		const char *cmethod = strrchr (compile_class, ':');
-		char *cname;
-		char *code;
-		int j;
-		MonoClass *class;
-
-		if (cmethod) {
-			MonoMethodDesc *mdesc;
-			MonoMethod *m;
-			mdesc = mono_method_desc_new (compile_class, FALSE);
-			if (!mdesc)
-				g_error ("Invalid method name '%s'", compile_class);
-			m = mono_method_desc_search_in_image (mdesc, assembly->image);
-			if (!m)
-				g_error ("Cannot find method '%s'", compile_class);
-			for (j = 0; j < compile_times; ++j) {
-				code = arch_compile_method (m);
-				g_free (code);
-			}
-		} else {
-			cname = strrchr (compile_class, '.');
-			if (cname)
-				*cname++ = 0;
-			else {
-				cname = compile_class;
-				compile_class = (char *)"";
-			}
-			class = mono_class_from_name (assembly->image, compile_class, cname);
-			if (!class)
-				g_error ("Cannot find class %s.%s", compile_class, cname);
-			mono_class_init (class);
-			for (j = 0; j < compile_times; ++j) {
-				for (i = 0; i < class->method.count; ++i) {
-					if (class->methods [i]->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
-						continue;
-					if (class->methods [i]->flags & METHOD_ATTRIBUTE_ABSTRACT)
-						continue;
-					if (verbose)
-						g_print ("Compiling: %s\n", class->methods [i]->name);
-					code = arch_compile_method (class->methods [i]);
-					g_free (code);
-				}
-			}
-		}
+		mono_jit_compile_class (assembly, compile_class, compile_times, TRUE);
 	} else {
+		GList *tmp;
+
+		for (tmp = precompile_classes; tmp; tmp = tmp->next)
+			mono_jit_compile_class (assembly, tmp->data, 1, verbose);
+
 		retval = mono_jit_exec (domain, assembly, argc - i, argv + i);
 		printf ("RESULT: %d\n", retval);
 	}

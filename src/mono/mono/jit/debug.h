@@ -54,7 +54,8 @@ extern int mono_debug_insert_breakpoint;
 
 extern gchar *mono_debug_last_breakpoint_address;
 
-MonoDebugHandle* mono_debug_open_file (const char *filename, MonoDebugFormat format);
+MonoDebugHandle* mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format,
+				  const char **args);
 
 void           mono_debug_cleanup (void);
 

@@ -24,12 +24,12 @@ free_method_info (DebugMethodInfo *minfo)
 }
 
 MonoDebugHandle*
-mono_debug_open_file (const char *filename, MonoDebugFormat format)
+mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **args)
 {
 	MonoDebugHandle *debug;
 	
 	debug = g_new0 (MonoDebugHandle, 1);
-	debug->name = g_strdup (filename);
+	debug->name = g_strdup (assembly->image->name);
 	debug->format = format;
 	debug->producer_name = g_strdup_printf ("Mono JIT compiler version %s", VERSION);
 	debug->next_idx = 100;
@@ -50,7 +50,7 @@ mono_debug_open_file (const char *filename, MonoDebugFormat format)
 		break;
 	case MONO_DEBUG_FORMAT_DWARF2_PLUS:
 		if (!mono_default_debug_handle)
-			mono_debug_open_file (filename, MONO_DEBUG_FORMAT_DWARF2);
+			mono_debug_open (assembly, MONO_DEBUG_FORMAT_DWARF2, NULL);
 		break;
 	default:
 		g_assert_not_reached ();
@@ -59,8 +59,10 @@ mono_debug_open_file (const char *filename, MonoDebugFormat format)
 	debug->next = mono_debug_handles;
 	mono_debug_handles = debug;
 
-	if (!mono_default_debug_handle)
+	if (!mono_default_debug_handle) {
 		mono_default_debug_handle = debug;
+		mono_debug_add_image (debug, assembly->image);
+	}
 
 	return debug;
 }

@@ -317,6 +317,13 @@ mono_jit_exec              (MonoDomain *domain, MonoAssembly *assembly,
 void        
 mono_jit_cleanup           (MonoDomain *domain);
 
+void
+mono_jit_compile_image     (MonoImage *image, int verbose);
+
+void
+mono_jit_compile_class     (MonoAssembly *assembly, char *compile_class,
+			    int compile_times, int verbose);
+
 MonoMethodMessage *
 arch_method_call_message_new (MonoMethod *method, gpointer stack, MonoMethod *invoke, 
 			      MonoDelegate **cb, MonoObject **state);
