@@ -1154,7 +1154,8 @@ check_inlining (MonoMethod *method)
 				cm = mono_method_get_wrapper_data (method, token);
 			else
 				cm = mono_get_method (method->klass->image, token, NULL);
-			g_assert (cm);
+			if (!cm)
+				goto fail;
 
 			if (cm == method)
 				goto fail;
