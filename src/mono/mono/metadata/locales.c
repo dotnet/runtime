@@ -131,24 +131,25 @@ ves_icall_System_Globalization_CultureInfo_construct_datetime_format (MonoCultur
 	domain = mono_domain_get ();
 
 	datetime->AbbreviatedDayNames = create_names_array (dfe->abbreviated_day_names,
-			NUM_OF_DAYS);
+			NUM_DAYS);
 	datetime->AbbreviatedMonthNames = create_names_array (dfe->abbreviated_month_names,
-			MAX_NUM_MONTHS);
+			NUM_MONTHS);
 	datetime->AMDesignator = mono_string_new (domain, dfe->am_designator);
 	datetime->CalendarWeekRule = dfe->calendar_week_rule;
 	datetime->DateSeparator = mono_string_new (domain, dfe->date_separator);
-	datetime->DayNames = create_names_array (dfe->day_names, NUM_OF_DAYS);
+	datetime->DayNames = create_names_array (dfe->day_names, NUM_DAYS);
 	datetime->FirstDayOfWeek = dfe->first_day_of_week;
 	datetime->FullDateTimePattern = mono_string_new (domain, dfe->full_date_time_pattern);
 	datetime->LongDatePattern = mono_string_new (domain, dfe->long_date_pattern);
 	datetime->LongTimePattern = mono_string_new (domain, dfe->long_time_pattern);
 	datetime->MonthDayPattern = mono_string_new (domain, dfe->month_day_pattern);
-	datetime->MonthNames = create_names_array (dfe->month_names, MAX_NUM_MONTHS);
+	datetime->MonthNames = create_names_array (dfe->month_names, NUM_MONTHS);
 	datetime->PMDesignator = mono_string_new (domain, dfe->pm_designator);
 	datetime->ShortDatePattern = mono_string_new (domain, dfe->short_date_pattern);
 	datetime->ShortTimePattern = mono_string_new (domain, dfe->short_time_pattern);
 	datetime->TimeSeparator = mono_string_new (domain, dfe->time_separator);
 	datetime->YearMonthPattern = mono_string_new (domain, dfe->year_month_pattern);
+
 }
 
 void
@@ -173,7 +174,7 @@ ves_icall_System_Globalization_CultureInfo_construct_number_format (MonoCultureI
 	number->currencyGroupSeparator = mono_string_new (domain,
 			nfe->currency_group_separator);
 	number->currencyGroupSizes = create_group_sizes_array (nfe->currency_group_sizes,
-			MAX_GROUP_SIZE);
+			GROUP_SIZE);
 	number->currencyNegativePattern = nfe->currency_negative_pattern;
 	number->currencyPositivePattern = nfe->currency_positive_pattern;
 	number->currencySymbol = mono_string_new (domain, nfe->currency_symbol);
@@ -186,7 +187,7 @@ ves_icall_System_Globalization_CultureInfo_construct_number_format (MonoCultureI
 			nfe->number_decimal_separator);
 	number->numberGroupSeparator = mono_string_new (domain, nfe->number_group_separator);
 	number->numberGroupSizes = create_group_sizes_array (nfe->number_group_sizes,
-			MAX_GROUP_SIZE);
+			GROUP_SIZE);
 	number->numberNegativePattern = nfe->number_negative_pattern;
 	number->percentDecimalDigits = nfe->percent_decimal_digits;
 	number->percentDecimalSeparator = mono_string_new (domain,
@@ -194,7 +195,7 @@ ves_icall_System_Globalization_CultureInfo_construct_number_format (MonoCultureI
 	number->percentGroupSeparator = mono_string_new (domain,
 			nfe->percent_group_separator);
 	number->percentGroupSizes = create_group_sizes_array (nfe->percent_group_sizes,
-			MAX_GROUP_SIZE);
+			GROUP_SIZE);
 	number->percentNegativePattern = nfe->percent_negative_pattern;
 	number->percentPositivePattern = nfe->percent_positive_pattern;
 	number->percentSymbol = mono_string_new (domain, nfe->percent_symbol);
@@ -222,7 +223,8 @@ construct_culture (MonoCultureInfo *this, const CultureInfoEntry *ci)
 	this->specific_lcid = ci->specific_lcid;
 	this->datetime_index = ci->datetime_format_index;
 	this->number_index = ci->number_format_index;
-
+	this->calendar_data = ci->calendar_data;
+	
 	return TRUE;
 }
 

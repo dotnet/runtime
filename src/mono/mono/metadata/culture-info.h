@@ -4,9 +4,10 @@
 
 #include <glib.h>
 
-#define NUM_OF_DAYS 7
-#define MAX_NUM_MONTHS 13
-#define MAX_GROUP_SIZE 5
+#define NUM_DAYS 7
+#define NUM_MONTHS 13
+#define GROUP_SIZE 5
+#define NUM_OPT_CALS 5
 
 typedef struct {
 	const gchar *full_date_time_pattern;
@@ -20,10 +21,10 @@ typedef struct {
 	const gchar *am_designator;
 	const gchar *pm_designator;
 
-	const gchar *day_names [NUM_OF_DAYS]; 
-	const gchar *abbreviated_day_names [NUM_OF_DAYS];
-	const gchar *month_names [MAX_NUM_MONTHS];
-	const gchar *abbreviated_month_names [MAX_NUM_MONTHS];
+	const gchar *day_names [NUM_DAYS]; 
+	const gchar *abbreviated_day_names [NUM_DAYS];
+	const gchar *month_names [NUM_MONTHS];
+	const gchar *abbreviated_month_names [NUM_MONTHS];
 
 	gint calendar_week_rule;
 	gint first_day_of_week;
@@ -60,9 +61,9 @@ typedef struct {
 	gint percent_decimal_digits;
 	gint number_decimal_digits;
 
-	const gint currency_group_sizes [MAX_GROUP_SIZE];
-	const gint percent_group_sizes [MAX_GROUP_SIZE];
-	const gint number_group_sizes [MAX_GROUP_SIZE];	
+	const gint currency_group_sizes [GROUP_SIZE];
+	const gint percent_group_sizes [GROUP_SIZE];
+	const gint number_group_sizes [GROUP_SIZE];	
 } NumberFormatEntry;
 
 typedef struct {
@@ -77,6 +78,9 @@ typedef struct {
 	const gchar *win3lang;
 	const gchar *iso3lang;
 	const gchar *iso2lang;
+
+	gint calendar_data [NUM_OPT_CALS];
+
 	gint datetime_format_index;
 	gint number_format_index;
 } CultureInfoEntry;
