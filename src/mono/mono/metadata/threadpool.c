@@ -3,6 +3,7 @@
  *
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)
+ *   Gonzalo Paniagua Javier (gonzalo@ximian.com)
  *
  * (C) 2001 Ximian, Inc.
  */
@@ -30,6 +31,9 @@ static int busy_worker_threads = 0;
 /* we use this to store a reference to the AsyncResult to avoid GC */
 static MonoGHashTable *ares_htable = NULL;
 
+/* we append a job */
+static HANDLE job_added;
+
 typedef struct {
 	MonoMethodMessage *msg;
 	HANDLE             wait_semaphore;
@@ -40,7 +44,8 @@ typedef struct {
 	MonoArray         *out_args;
 } ASyncCall;
 
-static void async_invoke_thread (void);
+static void async_invoke_thread (gpointer data);
+static void append_job (MonoAsyncResult *ar);
 
 static GList *async_call_queue = NULL;
 
@@ -77,8 +82,7 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	MonoDomain *domain = mono_domain_get ();
 	MonoAsyncResult *ares;
 	ASyncCall *ac;
-	gboolean do_create = FALSE;
-	int busy;
+	int busy, worker;
 
 #ifdef HAVE_BOEHM_GC
 	ac = GC_MALLOC (sizeof (ASyncCall));
@@ -98,24 +102,24 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	ares = mono_async_result_new (domain, ac->wait_semaphore, ac->state, ac);
 	ares->async_delegate = target;
 
-	EnterCriticalSection (&mono_delegate_section);	
-	if (!ares_htable)
+	if (!ares_htable) {
 		ares_htable = mono_g_hash_table_new (NULL, NULL);
+		job_added = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
+	}
 
 	mono_g_hash_table_insert (ares_htable, ares, ares);
 
-	async_call_queue = g_list_append (async_call_queue, ares); 
-
 	busy = (int) InterlockedCompareExchange (&busy_worker_threads, 0, -1);
-	if (mono_worker_threads <= ++busy &&
-	    mono_worker_threads < mono_max_worker_threads) {
-		mono_worker_threads++;
-		do_create = TRUE;
+	worker = (int) InterlockedCompareExchange (&mono_worker_threads, 0, -1); 
+	if (worker <= ++busy &&
+	    worker < mono_max_worker_threads) {
+		InterlockedIncrement (&mono_worker_threads);
+		InterlockedIncrement (&busy_worker_threads);
+		mono_thread_create (domain, async_invoke_thread, ares);
+	} else {
+		append_job (ares);
+		ReleaseSemaphore (job_added, 1, NULL);
 	}
-	LeaveCriticalSection (&mono_delegate_section);
-
-	if (do_create)
-		mono_thread_create (domain, async_invoke_thread, NULL);
 
 	return ares;
 }
@@ -128,7 +132,6 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	*exc = NULL;
 	*out_args = NULL;
 
-	EnterCriticalSection (&mono_delegate_section);	
 	/* check if already finished */
 	if (ares->endinvoke_called) {
 		*exc = (MonoObject *)mono_exception_from_name (mono_defaults.corlib, "System", 
@@ -141,7 +144,6 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	ac = (ASyncCall *)ares->data;
 
 	g_assert (ac != NULL);
-	LeaveCriticalSection (&mono_delegate_section);
 
 	/* wait until we are really finished */
 	WaitForSingleObject (ac->wait_semaphore, INFINITE);
@@ -153,7 +155,34 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 }
 
 static void
-async_invoke_thread ()
+append_job (MonoAsyncResult *ar)
+{
+	EnterCriticalSection (&mono_delegate_section);
+	async_call_queue = g_list_append (async_call_queue, ar); 
+	LeaveCriticalSection (&mono_delegate_section);
+}
+
+static MonoAsyncResult *
+dequeue_job (void)
+{
+	MonoAsyncResult *ar = NULL;
+	GList *tmp = NULL;
+
+	EnterCriticalSection (&mono_delegate_section);
+	if (async_call_queue) {
+		ar = (MonoAsyncResult *)async_call_queue->data;
+		tmp = async_call_queue;
+		async_call_queue = g_list_remove_link (tmp, tmp); 
+	}
+	LeaveCriticalSection (&mono_delegate_section);
+	if (tmp)
+		g_list_free_1 (tmp);
+
+	return ar;
+}
+
+static void
+async_invoke_thread (gpointer data)
 {
 	MonoDomain *domain;
 	MonoThread *thread;
@@ -165,21 +194,7 @@ async_invoke_thread ()
 		gboolean cont;
 		MonoAsyncResult *ar;
 
-		ar = NULL;
-		InterlockedIncrement (&busy_worker_threads);
-		EnterCriticalSection (&mono_delegate_section);
-		
-		if (async_call_queue) {
-			GList *tmp;
-
-			ar = (MonoAsyncResult *)async_call_queue->data;
-			tmp = async_call_queue;
-			async_call_queue = g_list_remove_link (async_call_queue, async_call_queue); 
-			g_list_free_1 (tmp);
-		}
-
-		LeaveCriticalSection (&mono_delegate_section);
-
+		ar = (MonoAsyncResult *) data;
 		if (ar) {
 			/* worker threads invokes methods in different domains,
 			 * so we need to set the right domain here */
@@ -187,24 +202,18 @@ async_invoke_thread ()
 			mono_domain_set (domain);
 
 			mono_async_invoke (ar);
+			InterlockedDecrement (&busy_worker_threads);
 		}
 
-		InterlockedDecrement (&busy_worker_threads);
+		data = dequeue_job ();
+		if (!data && WaitForSingleObject (job_added, 500) != WAIT_TIMEOUT)
+			data = dequeue_job ();
 
-		EnterCriticalSection (&mono_delegate_section);
-		cont = (async_call_queue != NULL);
-		LeaveCriticalSection (&mono_delegate_section);
-		if (cont)
-			continue;
-
-		Sleep (500);
-		EnterCriticalSection (&mono_delegate_section);
-		if (!async_call_queue) {
-			mono_worker_threads--;
-			LeaveCriticalSection (&mono_delegate_section);
+		if (!data) {
+			InterlockedDecrement (&mono_worker_threads);
 			ExitThread (0);
 		}
-		LeaveCriticalSection (&mono_delegate_section);
+		InterlockedIncrement (&busy_worker_threads);
 	}
 
 	g_assert_not_reached ();
