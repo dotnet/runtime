@@ -159,7 +159,7 @@
 	both client and server channels work; We are interested in people
 	testing it with other ORBs.
 
-	Ben checked-in today his managed implementation of Xlst that
+	Ben checked-in today his managed implementation of Xslt that
 	we mentioned on Jul 19th; This uncovered various limitations
 	on the XPath implementation, which Piers has swifly removed.
 	Monodoc, NUnit and our Corcompare work with it.  Since this is
