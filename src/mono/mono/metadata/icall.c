@@ -2532,7 +2532,24 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 			type = NULL;
 	}
 	else
-		type = mono_reflection_get_type (assembly->assembly->image, &info, ignoreCase);
+		if (assembly->assembly->dynamic) {
+			/* Enumerate all modules */
+			MonoReflectionAssemblyBuilder *abuilder = (MonoReflectionAssemblyBuilder*)assembly;
+			int i;
+
+			if (!abuilder->modules)
+				type = NULL;
+			else {
+				for (i = 0; i < mono_array_length (abuilder->modules); ++i) {
+					MonoReflectionModuleBuilder *mb = mono_array_get (abuilder->modules, MonoReflectionModuleBuilder*, i);
+					type = mono_reflection_get_type (&mb->dynamic_image->image, &info, ignoreCase);
+					if (type)
+						break;
+				}
+			}
+		}
+		else
+			type = mono_reflection_get_type (assembly->assembly->image, &info, ignoreCase);
 	g_free (str);
 	g_list_free (info.modifiers);
 	g_list_free (info.nested);
