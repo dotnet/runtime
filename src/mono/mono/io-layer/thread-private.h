@@ -26,13 +26,13 @@ struct _WapiHandle_thread
 {
 	WapiThreadState state;
 	guint32 exitstatus;
-	gboolean joined;
 	gpointer process_handle;
 };
 
 struct _WapiHandlePrivate_thread
 {
 	TimedThread *thread;
+	gboolean joined;
 };
 
 #endif /* _WAPI_THREAD_PRIVATE_H_ */

@@ -46,7 +46,9 @@ libmonoruntime_a_SOURCES = \
 	string-icalls.c \
 	string-icalls.h \
 	sysmath.h	\
-	sysmath.c
+	sysmath.c	\
+	process.c	\
+	process.h
 
 libmetadata_a_SOURCES = \
 	assembly.c	\

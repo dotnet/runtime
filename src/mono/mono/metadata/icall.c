@@ -37,6 +37,7 @@
 #include <mono/metadata/sysmath.h>
 #include <mono/metadata/debug-symfile.h>
 #include <mono/metadata/string-icalls.h>
+#include <mono/metadata/process.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
 
@@ -2773,6 +2774,20 @@ static gconstpointer icall_map [] = {
 	"System.Threading.Interlocked::Exchange(int&,int)", ves_icall_System_Threading_Interlocked_Exchange_Int,
 	"System.Threading.Interlocked::Exchange(object&,object)", ves_icall_System_Threading_Interlocked_Exchange_Object,
 	"System.Threading.Interlocked::Exchange(single&,single)", ves_icall_System_Threading_Interlocked_Exchange_Single,
+
+	/*
+	 * System.Diagnostics.Process
+	 */
+	"System.Diagnostics.Process::GetCurrentProcess_internal()", ves_icall_System_Diagnostics_Process_GetCurrentProcess_internal,
+	"System.Diagnostics.Process::GetPid_internal()", ves_icall_System_Diagnostics_Process_GetPid_internal,
+	"System.Diagnostics.Process::Process_free_internal(intptr)", ves_icall_System_Diagnostics_Process_Process_free_internal,
+	"System.Diagnostics.Process::GetModules_internal()", ves_icall_System_Diagnostics_Process_GetModules_internal,
+	"System.Diagnostics.Process::Start_internal(string,string,ProcInfo&)", ves_icall_System_Diagnostics_Process_Start_internal,
+	"System.Diagnostics.Process::WaitForExit_internal(intptr,int)", ves_icall_System_Diagnostics_Process_WaitForExit_internal,
+	"System.Diagnostics.Process::ExitTime_internal(intptr)", ves_icall_System_Diagnostics_Process_ExitTime_internal,
+	"System.Diagnostics.Process::StartTime_internal(intptr)", ves_icall_System_Diagnostics_Process_StartTime_internal,
+	"System.Diagnostics.Process::ExitCode_internal(intptr)", ves_icall_System_Diagnostics_Process_ExitCode_internal,
+	"System.Diagnostics.FileVersionInfo::GetVersionInfo_internal(string)", ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal,
 
 	/*
 	 * add other internal calls here

@@ -156,8 +156,9 @@ gpointer CreateSemaphore(WapiSecurityAttributes *security G_GNUC_UNUSED, gint32 
 	}
 
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Created semaphore handle %p",
-		  handle);
+	g_message(G_GNUC_PRETTY_FUNCTION
+		  ": Created semaphore handle %p initial %d max %d", handle,
+		  initial, max);
 #endif
 
 	_wapi_handle_unlock_handle (handle);

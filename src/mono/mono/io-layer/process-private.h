@@ -18,6 +18,12 @@ extern struct _WapiHandleOps _wapi_process_ops;
 struct _WapiHandle_process
 {
 	pid_t id;
+	guint32 exec_errno;
+	guint32 exitstatus;
+	gpointer main_thread;
+	guint32 env;
+	WapiFileTime create_time;
+	WapiFileTime exit_time;
 };
 
 struct _WapiHandlePrivate_process

@@ -21,11 +21,13 @@
 extern struct _WapiHandleShared_list *_wapi_shared_data;
 extern struct _WapiHandlePrivate_list *_wapi_private_data;
 
-extern void _wapi_handle_init (void);
-
 extern guint32 _wapi_handle_new_internal (WapiHandleType type);
 extern gpointer _wapi_handle_new (WapiHandleType type);
 extern gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
+				     gpointer *shared, gpointer *private);
+extern gpointer _wapi_search_handle (WapiHandleType type,
+				     gboolean (*check)(gpointer, gpointer),
+				     gpointer user_data,
 				     gpointer *shared, gpointer *private);
 extern void _wapi_handle_ref (gpointer handle);
 extern void _wapi_handle_unref (gpointer handle);
@@ -57,6 +59,15 @@ extern int _wapi_handle_timedwait_signal (struct timespec *timeout);
 extern int _wapi_handle_wait_signal_handle (gpointer handle);
 extern int _wapi_handle_timedwait_signal_handle (gpointer handle,
 						 struct timespec *timeout);
+extern gboolean _wapi_handle_process_fork (guint32 cmd, guint32 args,
+					   guint32 env, guint32 dir,
+					   gboolean inherit, guint32 flags,
+					   gpointer stdin_handle,
+					   gpointer stdout_handle,
+					   gpointer stderr_handle,
+					   gpointer *process_handle,
+					   gpointer *thread_handle,
+					   guint32 *pid, guint32 *tid);
 
 static inline WapiHandleType _wapi_handle_type (gpointer handle)
 {
@@ -70,6 +81,10 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 						  gboolean broadcast)
 {
 	guint32 idx=GPOINTER_TO_UINT (handle);
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": setting state of %p to %s (broadcast %s)", handle, state?"TRUE":"FALSE", broadcast?"TRUE":"FALSE");
+#endif
 
 	if(state==TRUE) {
 		/* Tell everyone blocking on a single handle */
@@ -93,8 +108,17 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 		pthread_cond_broadcast (&_wapi_shared_data->signal_cond);
 		mono_mutex_unlock (&_wapi_shared_data->signal_mutex);
 #else
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": lock global signal mutex");
+#endif
+
 		mono_mutex_lock (&_wapi_private_data->signal_mutex);
 		pthread_cond_broadcast (&_wapi_private_data->signal_cond);
+
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": unlock global signal mutex");
+#endif
+
 		mono_mutex_unlock (&_wapi_private_data->signal_mutex);
 #endif /* _POSIX_THREAD_PROCESS_SHARED */
 	} else {
@@ -111,6 +135,9 @@ static inline gboolean _wapi_handle_issignalled (gpointer handle)
 
 static inline int _wapi_handle_lock_signal_mutex (void)
 {
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": lock global signal mutex");
+#endif
 #ifdef _POSIX_THREAD_PROCESS_SHARED
 	return(mono_mutex_lock (&_wapi_shared_data->signal_mutex));
 #else
@@ -120,6 +147,9 @@ static inline int _wapi_handle_lock_signal_mutex (void)
 
 static inline int _wapi_handle_unlock_signal_mutex (void)
 {
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": unlock global signal mutex");
+#endif
 #ifdef _POSIX_THREAD_PROCESS_SHARED
 	return(mono_mutex_unlock (&_wapi_shared_data->signal_mutex));
 #else
@@ -130,6 +160,10 @@ static inline int _wapi_handle_unlock_signal_mutex (void)
 static inline int _wapi_handle_lock_handle (gpointer handle)
 {
 	guint32 idx=GPOINTER_TO_UINT (handle);
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": locking handle %p", handle);
+#endif
 	
 	return(mono_mutex_lock (&_wapi_shared_data->handles[idx].signal_mutex));
 }
@@ -137,6 +171,10 @@ static inline int _wapi_handle_lock_handle (gpointer handle)
 static inline int _wapi_handle_unlock_handle (gpointer handle)
 {
 	guint32 idx=GPOINTER_TO_UINT (handle);
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handle %p", handle);
+#endif
 	
 	return(mono_mutex_unlock (&_wapi_shared_data->handles[idx].signal_mutex));
 }

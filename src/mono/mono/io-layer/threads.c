@@ -100,10 +100,10 @@ static void thread_own (gpointer handle)
 		return;
 	}
 
-	if(thread_handle->joined==FALSE) {
+	if(thread_private_handle->joined==FALSE) {
 		_wapi_timed_thread_join (thread_private_handle->thread, NULL,
 					 NULL);
-		thread_handle->joined=TRUE;
+		thread_private_handle->joined=TRUE;
 	}
 }
 
@@ -123,6 +123,11 @@ static void thread_exit(guint32 exitstatus, gpointer handle)
 	}
 
 	_wapi_handle_lock_handle (handle);
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": Recording thread handle %p exit status", handle);
+#endif
 	
 	thread_handle->exitstatus=exitstatus;
 	thread_handle->state=THREAD_STATE_EXITED;

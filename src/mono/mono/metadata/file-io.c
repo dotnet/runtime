@@ -16,7 +16,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/appdomain.h>
 
-#define DEBUG
+#undef DEBUG
 
 /* conversion functions */
 

@@ -18,6 +18,7 @@ typedef enum {
 	WapiHandleRequestType_Close,
 	WapiHandleRequestType_Scratch,
 	WapiHandleRequestType_ScratchFree,
+	WapiHandleRequestType_ProcessFork,
 } WapiHandleRequestType;
 
 typedef struct 
@@ -47,6 +48,19 @@ typedef struct
 
 typedef struct 
 {
+	guint32 cmd;
+	guint32 args;
+	guint32 env;
+	guint32 dir;
+	guint32 stdin_handle;
+	guint32 stdout_handle;
+	guint32 stderr_handle;
+	gboolean inherit;
+	guint32 flags;
+} WapiHandleRequest_ProcessFork;
+
+typedef struct 
+{
 	WapiHandleRequestType type;
 	union 
 	{
@@ -55,6 +69,7 @@ typedef struct
 		WapiHandleRequest_Close close;
 		WapiHandleRequest_Scratch scratch;
 		WapiHandleRequest_ScratchFree scratch_free;
+		WapiHandleRequest_ProcessFork process_fork;
 	} u;
 } WapiHandleRequest;
 
@@ -65,6 +80,7 @@ typedef enum {
 	WapiHandleResponseType_Close,
 	WapiHandleResponseType_Scratch,
 	WapiHandleResponseType_ScratchFree,
+	WapiHandleResponseType_ProcessFork,
 } WapiHandleResponseType;
 
 typedef struct 
@@ -101,6 +117,14 @@ typedef struct
 
 typedef struct
 {
+	guint32 process_handle;
+	guint32 thread_handle;
+	guint32 pid;
+	guint32 tid;
+} WapiHandleResponse_ProcessFork;
+
+typedef struct
+{
 	WapiHandleResponseType type;
 	union
 	{
@@ -110,6 +134,7 @@ typedef struct
 		WapiHandleResponse_Close close;
 		WapiHandleResponse_Scratch scratch;
 		WapiHandleResponse_ScratchFree scratch_free;
+		WapiHandleResponse_ProcessFork process_fork;
 	} u;
 } WapiHandleResponse;
 

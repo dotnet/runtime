@@ -120,9 +120,8 @@ static const guchar *thread_details (struct _WapiHandleShared *handle)
 	struct _WapiHandle_thread *thr=&handle->u.thread;
 
 	g_snprintf (buf, sizeof(buf),
-		    "proc: %p, state: %d, exit: %u, join: %s",
-		    thr->process_handle, thr->state, thr->exitstatus,
-		    thr->joined?"TRUE":"FALSE");
+		    "proc: %p, state: %d, exit: %u",
+		    thr->process_handle, thr->state, thr->exitstatus);
 	
 	return(buf);
 }

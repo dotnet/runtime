@@ -14,6 +14,19 @@
 
 #include "mono/io-layer/handles.h"
 
+typedef enum {
+	STARTF_USESHOWWINDOW=0x001,
+	STARTF_USESIZE=0x002,
+	STARTF_USEPOSITION=0x004,
+	STARTF_USECOUNTCHARS=0x008,
+	STARTF_USEFILLATTRIBUTE=0x010,
+	STARTF_RUNFULLSCREEN=0x020,
+	STARTF_FORCEONFEEDBACK=0x040,
+	STARTF_FORCEOFFFEEDBACK=0x080,
+	STARTF_USESTDHANDLES=0x100,
+} WapiStartupFlags;
+
+
 typedef struct _WapiStartupInfo WapiStartupInfo;
 
 struct _WapiStartupInfo 
@@ -29,7 +42,7 @@ struct _WapiStartupInfo
 	guint32 dwXCountChars;
 	guint32 dwYCountChars;
 	guint32 dwFillAttribute;
-	guint32 dwFlags;
+	WapiStartupFlags dwFlags;
 	guint16 wShowWindow;
 	guint16 cbReserved2;
 	guint8 *lpReserved2;
@@ -74,12 +87,41 @@ struct _WapiProcessInformation
 #define CREATE_PRESERVE_CODE_AUTHZ_LEVEL find out the value for this one...
 #endif
 
+/* These are general access control defines, not process-specific.
+ * They will move to an access control-defining header when more
+ * things use them.
+ */
+#define SYNCHRONIZE			0x00100000
+#define STANDARD_RIGHTS_REQUIRED	0x000f0000
+
+#define	PROCESS_TERMINATE		0x0001
+#define	PROCESS_CREATE_THREAD		0x0002
+#define	PROCESS_SET_SESSIONID		0x0004
+#define	PROCESS_VM_OPERATION		0x0008
+#define	PROCESS_VM_READ			0x0010
+#define	PROCESS_VM_WRITE		0x0020
+#define	PROCESS_DUP_HANDLE		0x0040
+#define	PROCESS_CREATE_PROCESS		0x0080
+#define	PROCESS_SET_QUOTA		0x0100
+#define	PROCESS_SET_INFORMATION		0x0200
+#define	PROCESS_QUERY_INFORMATION	0x0400
+#define	PROCESS_ALL_ACCESS		(STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xfff)
+
 extern gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			       WapiSecurityAttributes *process_attrs,
 			       WapiSecurityAttributes *thread_attrs,
 			       gboolean inherit_handles, guint32 create_flags,
-			       gpointer env, const gunichar2 *cwd,
+			       gpointer environ, const gunichar2 *cwd,
 			       WapiStartupInfo *startup,
 			       WapiProcessInformation *process_info);
+extern gpointer GetCurrentProcess (void);
+extern guint32 GetCurrentProcessId (void);
+extern gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed);
+extern gpointer OpenProcess (guint32 access, gboolean inherit, guint32 pid);
+extern gboolean GetExitCodeProcess (gpointer process, guint32 *code);
+extern gboolean GetProcessTimes (gpointer process, WapiFileTime *create_time,
+				 WapiFileTime *exit_time,
+				 WapiFileTime *kernel_time,
+				 WapiFileTime *user_time);
 
 #endif /* _WAPI_PROCESSES_H_ */

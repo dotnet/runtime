@@ -119,22 +119,6 @@ static void shared_init (void)
 #endif
 }
 
-void _wapi_handle_init (void)
-{
-	/* Create our own process and main thread handles (assume this
-	 * function is being called from the main thread)
-	 */
-	/* No need to make these variables visible outside this
-	 * function, the handles will be cleaned up at process exit.
-	 */
-	gpointer process_handle;
-	gpointer thread_handle;
-
-	process_handle=_wapi_handle_new (WAPI_HANDLE_PROCESS);
-	
-	thread_handle=_wapi_handle_new (WAPI_HANDLE_THREAD);
-}
-
 guint32 _wapi_handle_new_internal (WapiHandleType type)
 {
 	guint32 i;
@@ -262,6 +246,44 @@ gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 	}
 	
 	return(TRUE);
+}
+
+gpointer _wapi_search_handle (WapiHandleType type,
+			      gboolean (*check)(gpointer test, gpointer user),
+			      gpointer user_data,
+			      gpointer *shared, gpointer *private)
+{
+	struct _WapiHandleShared *shared_handle_data;
+	struct _WapiHandlePrivate *private_handle_data;
+	guint32 i;
+
+	for(i=1; i<_WAPI_MAX_HANDLES; i++) {
+		struct _WapiHandleShared *shared=&_wapi_shared_data->handles[i];
+		
+		if(shared->type==type) {
+			if(check (GUINT_TO_POINTER (i), user_data)==TRUE) {
+				break;
+			}
+		}
+	}
+
+	if(i==_WAPI_MAX_HANDLES) {
+		return(GUINT_TO_POINTER (0));
+	}
+	
+	if(shared!=NULL) {
+		shared_handle_data=&_wapi_shared_data->handles[i];
+
+		*shared=&shared_handle_data->u;
+	}
+	
+	if(private!=NULL) {
+		private_handle_data=&_wapi_private_data->handles[i];
+
+		*private=&private_handle_data->u;
+	}
+	
+	return(GUINT_TO_POINTER (i));
 }
 
 void _wapi_handle_ref (gpointer handle)
@@ -673,11 +695,20 @@ again:
 	for(i=0; i<numhandles; i++) {
 		guint32 idx=GPOINTER_TO_UINT (handles[i]);
 		
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": attempting to lock %p",
+			   handles[i]);
+#endif
+
 		ret=mono_mutex_trylock (&_wapi_shared_data->handles[idx].signal_mutex);
 		if(ret!=0) {
 			/* Bummer */
 			struct timespec sleepytime;
 			
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": attempt failed for %p", handles[i]);
+#endif
+
 			while(i--) {
 				idx=GPOINTER_TO_UINT (handles[i]);
 				mono_mutex_unlock (&_wapi_shared_data->handles[idx].signal_mutex);
@@ -765,18 +796,43 @@ void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles)
 	for(i=0; i<numhandles; i++) {
 		guint32 idx=GPOINTER_TO_UINT (handles[i]);
 		
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handle %p",
+			   handles[i]);
+#endif
+
 		mono_mutex_unlock (&_wapi_shared_data->handles[idx].signal_mutex);
 	}
 }
 
+/* Process-shared handles (currently only process and thread handles
+ * are allowed, and they only work because once signalled they can't
+ * become unsignalled) are waited for by one process and signalled by
+ * another.  Without process-shared conditions, the waiting process
+ * will block forever.  To get around this, the four handle waiting
+ * functions use a short timeout when _POSIX_THREAD_PROCESS_SHARED is
+ * not available.  They also return "success" if the fake timeout
+ * expired, and let the caller check signal status.
+ */
 int _wapi_handle_wait_signal (void)
 {
 #ifdef _POSIX_THREAD_PROCESS_SHARED
 	return(mono_cond_wait (&_wapi_shared_data->signal_cond,
 			       &_wapi_shared_data->signal_mutex));
 #else
-	return(mono_cond_wait (&_wapi_private_data->signal_cond,
-			       &_wapi_private_data->signal_mutex));
+	struct timespec fake_timeout;
+	int ret;
+	
+	_wapi_calc_timeout (&fake_timeout, 100);
+
+	ret=mono_cond_timedwait (&_wapi_private_data->signal_cond,
+				 &_wapi_private_data->signal_mutex,
+				 &fake_timeout);
+	if(ret==ETIMEDOUT) {
+		ret=0;
+	}
+
+	return(ret);
 #endif /* _POSIX_THREAD_PROCESS_SHARED */
 }
 
@@ -787,26 +843,144 @@ int _wapi_handle_timedwait_signal (struct timespec *timeout)
 				    &_wapi_shared_data->signal_mutex,
 				    timeout));
 #else
-	return(mono_cond_timedwait (&_wapi_private_data->signal_cond,
-				    &_wapi_private_data->signal_mutex,
-				    timeout));
+	struct timespec fake_timeout;
+	int ret;
+	
+	_wapi_calc_timeout (&fake_timeout, 100);
+	
+	if((fake_timeout.tv_sec>timeout->tv_sec) ||
+	   (fake_timeout.tv_sec==timeout->tv_sec &&
+	    fake_timeout.tv_nsec > timeout->tv_nsec)) {
+		/* Real timeout is less than 100ms time */
+		ret=mono_cond_timedwait (&_wapi_private_data->signal_cond,
+					 &_wapi_private_data->signal_mutex,
+					 timeout);
+	} else {
+		ret=mono_cond_timedwait (&_wapi_private_data->signal_cond,
+					 &_wapi_private_data->signal_mutex,
+					 &fake_timeout);
+		if(ret==ETIMEDOUT) {
+			ret=0;
+		}
+	}
+	
+	return(ret);
 #endif /* _POSIX_THREAD_PROCESS_SHARED */
 }
 
 int _wapi_handle_wait_signal_handle (gpointer handle)
 {
+#ifdef _POSIX_THREAD_PROCESS_SHARED
 	guint32 idx=GPOINTER_TO_UINT (handle);
 	
 	return(mono_cond_wait (&_wapi_shared_data->handles[idx].signal_cond,
 			       &_wapi_shared_data->handles[idx].signal_mutex));
+#else
+	guint32 idx=GPOINTER_TO_UINT (handle);
+	struct timespec fake_timeout;
+	int ret;
+	
+	_wapi_calc_timeout (&fake_timeout, 100);
+	
+	ret=mono_cond_timedwait (&_wapi_shared_data->handles[idx].signal_cond,
+				 &_wapi_shared_data->handles[idx].signal_mutex,
+				 &fake_timeout);
+	if(ret==ETIMEDOUT) {
+		ret=0;
+	}
+
+	return(ret);
+#endif /* _POSIX_THREAD_PROCESS_SHARED */
 }
 
 int _wapi_handle_timedwait_signal_handle (gpointer handle,
 					  struct timespec *timeout)
 {
+#ifdef _POSIX_THREAD_PROCESS_SHARED
 	guint32 idx=GPOINTER_TO_UINT (handle);
 	
 	return(mono_cond_timedwait (&_wapi_shared_data->handles[idx].signal_cond,
 				    &_wapi_shared_data->handles[idx].signal_mutex,
 				    timeout));
+#else
+	guint32 idx=GPOINTER_TO_UINT (handle);
+	struct timespec fake_timeout;
+	int ret;
+	
+	_wapi_calc_timeout (&fake_timeout, 100);
+	
+	if((fake_timeout.tv_sec>timeout->tv_sec) ||
+	   (fake_timeout.tv_sec==timeout->tv_sec &&
+	    fake_timeout.tv_nsec > timeout->tv_nsec)) {
+		/* Real timeout is less than 100ms time */
+		ret=mono_cond_timedwait (&_wapi_shared_data->handles[idx].signal_cond,
+					 &_wapi_shared_data->handles[idx].signal_mutex,
+					 timeout);
+	} else {
+		ret=mono_cond_timedwait (&_wapi_shared_data->handles[idx].signal_cond,
+					 &_wapi_shared_data->handles[idx].signal_mutex,
+					 &fake_timeout);
+		if(ret==ETIMEDOUT) {
+			ret=0;
+		}
+	}
+	
+	return(ret);
+#endif /* _POSIX_THREAD_PROCESS_SHARED */
+}
+
+gboolean _wapi_handle_process_fork (guint32 cmd, guint32 args, guint32 env,
+				    guint32 dir, gboolean inherit,
+				    guint32 flags, gpointer stdin_handle,
+				    gpointer stdout_handle,
+				    gpointer stderr_handle,
+				    gpointer *process_handle,
+				    gpointer *thread_handle, guint32 *pid,
+				    guint32 *tid)
+{
+	WapiHandleRequest fork_proc;
+	WapiHandleResponse fork_proc_resp;
+	
+	if(shared!=TRUE) {
+		return(FALSE);
+	}
+
+	fork_proc.type=WapiHandleRequestType_ProcessFork;
+	fork_proc.u.process_fork.cmd=cmd;
+	fork_proc.u.process_fork.args=args;
+	fork_proc.u.process_fork.env=env;
+	fork_proc.u.process_fork.dir=dir;
+	fork_proc.u.process_fork.stdin_handle=GPOINTER_TO_UINT (stdin_handle);
+	fork_proc.u.process_fork.stdout_handle=GPOINTER_TO_UINT (stdout_handle);
+	fork_proc.u.process_fork.stderr_handle=GPOINTER_TO_UINT (stderr_handle);
+	fork_proc.u.process_fork.inherit=inherit;
+	fork_proc.u.process_fork.flags=flags;
+	
+	_wapi_daemon_request_response (daemon_sock, &fork_proc,
+				       &fork_proc_resp);
+	if(fork_proc_resp.type==WapiHandleResponseType_ProcessFork) {
+		*process_handle=GUINT_TO_POINTER (fork_proc_resp.u.process_fork.process_handle);
+		*thread_handle=GUINT_TO_POINTER (fork_proc_resp.u.process_fork.thread_handle);
+		*pid=fork_proc_resp.u.process_fork.pid;
+		*tid=fork_proc_resp.u.process_fork.tid;
+
+		/* If there was an internal error, the handles will be
+		 * 0.  If there was an error forking or execing, the
+		 * handles will have values, and process_handle's
+		 * exec_errno will be set, and the handle will be
+		 * signalled immediately.
+		 */
+		if(process_handle==0 || thread_handle==0) {
+			return(FALSE);
+		} else {
+			return(TRUE);
+		}
+	} else {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": bogus daemon response, type %d",
+			   fork_proc_resp.type);
+		g_assert_not_reached ();
+	}
+	
+	return(FALSE);
 }
