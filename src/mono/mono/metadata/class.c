@@ -880,6 +880,9 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 		int rnum = 0;
 		class->parent = parent;
 
+		if (!parent)
+			g_assert_not_reached (); /* FIXME */
+
 		class->marshalbyref = parent->marshalbyref;
 		class->contextbound  = parent->contextbound;
 		class->delegate  = parent->delegate;
