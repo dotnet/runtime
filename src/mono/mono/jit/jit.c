@@ -3222,6 +3222,22 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				PUSH_TREE (t1, VAL_POINTER);
 				break;
 			}
+			case CEE_MONO_NEWOBJ: {
+				MonoClass *class;
+				guint32 token;
+
+				++ip;
+				token = read32 (ip);
+				ip += 4;
+
+				class = (MonoClass *)mono_method_get_wrapper_data (method, token);
+
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_NEWOBJ);
+				t1->data.p = class;
+				PUSH_TREE (t1, VAL_POINTER);
+
+				break;
+			}
 
 			default:
 				g_error ("Unimplemented opcode at IL_%04x "

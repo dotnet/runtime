@@ -2832,7 +2832,9 @@ handle_enum:
 		return MONO_NATIVE_LPARRAY;
 	case MONO_TYPE_I: return MONO_NATIVE_INT;
 	case MONO_TYPE_U: return MONO_NATIVE_UINT;
+	case MONO_TYPE_CLASS: 
 	case MONO_TYPE_OBJECT: {
+		/* FIXME : we need to handle ArrayList and StringBuilder here, probably */
 		if (mspec) {
 			switch (mspec->native) {
 			case MONO_NATIVE_STRUCT:
@@ -2850,12 +2852,10 @@ handle_enum:
 				g_error ("cant marshal object as native type %02x", mspec->native);
 			}
 		}
-		return MONO_NATIVE_LPSTRUCT; /* ?? */
+		*conv = MONO_MARSHAL_CONV_OBJECT_STRUCT;
+		return MONO_NATIVE_STRUCT;
 	}
 	case MONO_TYPE_FNPTR: return MONO_NATIVE_FUNC;
-	case MONO_TYPE_CLASS: 
-		/* FIXME : we need to handle ArrayList and StringBuilder here, probably */
-		return MONO_NATIVE_INTERFACE; /* ?? */
 	case MONO_TYPE_TYPEDBYREF:
 	default:
 		g_error ("type 0x%02x not handled in marshal", t);

@@ -5,6 +5,14 @@ public class Test {
 
 
 	[StructLayout (LayoutKind.Sequential)]
+	public class SimpleObj {
+		public int a;
+		public int b;
+
+		public void test () {}
+	}
+
+	[StructLayout (LayoutKind.Sequential)]
 	public struct SimpleStruct2 {
 		public int a;
 		public int b;
@@ -19,6 +27,7 @@ public class Test {
 		[MarshalAs (UnmanagedType.ByValArray, SizeConst=2)] public short[] a1;
 		[MarshalAs (UnmanagedType.ByValTStr, SizeConst=4)] public string s1;
 		public SimpleStruct2 emb1;
+		public SimpleObj emb2;
 		public string s2;
 	}
 	
@@ -27,7 +36,7 @@ public class Test {
 		int size = Marshal.SizeOf (typeof (SimpleStruct));
 		
 		Console.WriteLine ("SimpleStruct:" + size);
-		if (size != 36)
+		if (size != 44)
 			return 1;
 		
 		IntPtr p = Marshal.AllocHGlobal (size);
@@ -42,6 +51,9 @@ public class Test {
 		ss.emb1 = new SimpleStruct2 ();
 		ss.emb1.a = 3;
 		ss.emb1.b = 4;
+		ss.emb2 = new SimpleObj ();
+		ss.emb2.a = 10;
+		ss.emb2.b = 11;
 		ss.s2 = "just a test";
 		
 		Marshal.StructureToPtr (ss, p, false);
@@ -75,7 +87,7 @@ public class Test {
 			return 1;
 
 		SimpleStruct cp = (SimpleStruct)Marshal.PtrToStructure (p, ss.GetType ());
-		
+
 		if (cp.a != 1)
 			return 2;
 
@@ -101,6 +113,12 @@ public class Test {
 			return 2;
 
 		if (cp.emb1.b != 4)
+			return 2;
+
+		if (cp.emb2.a != 10)
+			return 2;
+
+		if (cp.emb2.b != 11)
 			return 2;
 
 		if (cp.s2 != "just a test")

@@ -297,6 +297,7 @@ OPDEF(CEE_MONO_FREE, "mono_free", Pop1, Push0, InlineNone, X, 2, 0xF0, 0x02, NEX
 OPDEF(CEE_MONO_OBJADDR, "mono_objaddr", Pop1, PushI, InlineNone, X, 2, 0xF0, 0x03, NEXT)
 OPDEF(CEE_MONO_LDPTR, "mono_ldptr", Pop0, PushI, InlineI, X, 2, 0xF0, 0x04, NEXT)
 OPDEF(CEE_MONO_VTADDR, "mono_vtaddr", Pop1, PushI, InlineNone, X, 2, 0xF0, 0x05, NEXT)
+OPDEF(CEE_MONO_NEWOBJ, "mono_newobj", Pop0, PushRef, InlineType, X, 2, 0xF0, 0x06, NEXT)
 #ifndef OPALIAS
 #define _MONO_CIL_OPALIAS_DEFINED_
 #define OPALIAS(a,s,r)

@@ -56,6 +56,9 @@ mono_mb_new (MonoClass *klass, const char *name);
 void
 mono_mb_patch_addr (MonoMethodBuilder *mb, int pos, int value);
 
+void
+mono_mb_patch_addr_s (MonoMethodBuilder *mb, int pos, gint8 value);
+
 guint32
 mono_mb_add_data (MonoMethodBuilder *mb, gpointer data);
 

@@ -300,5 +300,6 @@
 <opcode name="mono_ldptr" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x04" flow="next"/>
 
 <opcode name="mono_vtaddr" input="Pop1" output="PushI" args="InlineNone" o1="0xF0" o2="0x05" flow="next"/>
+<opcode name="mono_newobj" input="Pop0" output="PushRef" args="InlineType" o1="0xF0" o2="0x06" flow="next"/>
 
 </opdesc>
