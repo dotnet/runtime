@@ -886,6 +886,7 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 	}
 	offsets [1] = offset;
 
+	/* FIXME: This might cause a deadlock with domain->lock */
 	EnterCriticalSection (&metadata_lock);
 	/* intern the strings in the method. */
 	ip = header->code;
@@ -1014,23 +1015,31 @@ struct _vtallocation {
 	char data [MONO_ZERO_LEN_ARRAY];
 };
 
-/*
- * we don't use vtallocation->next, yet
- */
 #define vt_alloc(vtype,sp,native)	\
 	if ((vtype)->type == MONO_TYPE_VALUETYPE && !(vtype)->data.klass->enumtype) {	\
 		if (!(vtype)->byref) {	\
 			guint32 align;	\
 			guint32 size; \
+            vtallocation *tmp, *prev; \
                         if (native) size = mono_class_native_size ((vtype)->data.klass, &align);	\
                         else size = mono_class_value_size ((vtype)->data.klass, &align);	\
-			if (!vtalloc || vtalloc->size <= size) {	\
-				vtalloc = alloca (sizeof (vtallocation) + size);	\
-				vtalloc->size = size;	\
+            prev = NULL; \
+			tmp = vtalloc; \
+			while (tmp && (tmp->size < size)) { \
+				prev = tmp; \
+			    tmp = tmp->next; \
+			} \
+            if (!tmp) { \
+				tmp = alloca (sizeof (vtallocation) + size);	\
+				tmp->size = size;	\
 				g_assert (size < 10000);	\
-			}	\
-			(sp)->data.vt.vt = vtalloc->data;	\
-			vtalloc = NULL;	\
+			} \
+			else \
+			    if (prev) \
+				    prev->next = tmp->next; \
+                else \
+                    vtalloc = tmp->next; \
+			(sp)->data.vt.vt = tmp->data;	\
 		} else {	\
 			(sp)->data.vt.klass = (vtype)->data.klass;	\
 		}	\
@@ -1039,10 +1048,13 @@ struct _vtallocation {
 #define vt_free(sp)	\
 	do {	\
 		if ((sp)->type == VAL_VALUET) {	\
-			vtalloc = (vtallocation*)(((char*)(sp)->data.vt.vt) - G_STRUCT_OFFSET (vtallocation, data));	\
+			vtallocation *tmp = (vtallocation*)(((char*)(sp)->data.vt.vt) - G_STRUCT_OFFSET (vtallocation, data));	\
+            tmp->next = vtalloc; \
+            vtalloc = tmp; \
 		}	\
 	} while (0)
 
+/*
 static void
 verify_method (MonoMethod *m)
 {
@@ -1060,8 +1072,9 @@ verify_method (MonoMethod *m)
 		G_BREAKPOINT ();
 	mono_free_verify_list (errors);
 }
+*/
 
-#define MYGUINT64_MAX 18446744073709551615UL
+#define MYGUINT64_MAX 18446744073709551615ULL
 #define MYGINT64_MAX 9223372036854775807LL
 #define MYGINT64_MIN (-MYGINT64_MAX -1LL)
 
@@ -1247,7 +1260,7 @@ ves_exec_method (MonoInvocation *frame)
 	GSList *finally_ips = NULL;
 	const unsigned char *endfinally_ip;
 	register const unsigned char *ip;
-	register stackval *sp;
+	register stackval *sp = NULL;
 	void **args_pointers;
 	guint32 *offsets;
 	gint il_ins_count = -1;
@@ -2954,7 +2967,7 @@ array_constructed:
 		CASE (CEE_CONV_OVF_I8_UN) {
 			switch (sp [-1].type) {
 			case VAL_DOUBLE:
-				if (sp [-1].data.f < 0 || sp [-1].data.f > 9223372036854775807L)
+				if (sp [-1].data.f < 0 || sp [-1].data.f > 9223372036854775807LL)
 					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.l = (guint64)sp [-1].data.f;
 				break;
