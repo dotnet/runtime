@@ -151,7 +151,10 @@
   </tr>
 </table>
 
-@item Jun 23rd, 2003: DiaCanvas#
+@item Jun 23rd, 2003: DiaCanvas#, Turkish presentation
+
+	http://enver.casdb.com/sunumlar/mono/
+
 
 @item Jun 17th, 2003: Web Services client; Profiling hooks
 
@@ -159,7 +162,7 @@
 	services in the Mono runtime.  This allows Mono to work as a
 	web services client.  We still require a WSDL compiler to
 	compile the initial stub, but Erik has the beginning of a WSDL
-	compiler ready and Atsushi has continued his work on his
+	compiler ready and Atsushi has continued work on his
 	experimental Xml Schema to C# class generator.  
 
 	As part of this, the Mono Http runtime has been rewritten to
@@ -171,9 +174,9 @@
 	Paolo has commited the new pluggable profiling API to the Mono
 	runtime: now the profiler is built as a module, and a new code
 	coverage analysis has been checked in (and Zoltan already
-	added imporvements to it).
+	added improvements to it).
 
-	Mark Mozilla bindings continue to improve, and we will shortly
+	Mark's Mozilla bindings continue to improve, and we will shortly
 	migrate the Mono documentation browser to use Mozilla, to take
 	advantage of the tutorial's use of CSS.
 
