@@ -44,7 +44,8 @@
 ** New features & enhancements in 1.6 version
 
 <ul>
-	<li>Firebird Embedded Server support</li>
+	<li>Firebird Embedded Server support.</li>
+	<li>New FbScript class implementation.</li>
 </ul>
    
 ** Testing
