@@ -315,7 +315,7 @@ void ves_icall_System_Threading_Monitor_Monitor_exit(MonoObject *obj)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return(mono_monitor_exit (obj));
+	mono_monitor_exit (obj);
 }
 
 gboolean ves_icall_System_Threading_Monitor_Monitor_test_owner(MonoObject *obj)

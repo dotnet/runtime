@@ -352,7 +352,8 @@ allocate_type_entry (MonoDebuggerSymbolTable *table, guint32 size, guint8 **ptr)
 		retval = table->type_table_offset;
 		table->type_table_offset += size + 4;
 		data = ((guint8 *) table->current_type_table) + retval - table->type_table_start;
-		*((gint32 *) data)++ = size;
+		*(gint32 *) data = size;
+		data += sizeof(gint32);
 		*ptr = data;
 		return retval;
 	}
@@ -397,41 +398,49 @@ write_simple_type (MonoDebuggerSymbolTable *table, MonoType *type)
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
-		*((gint32 *) ptr)++ = 1;
+		*((gint32 *) ptr) = 1;
+		ptr += sizeof(gint32);
 		break;
 
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
-		*((gint32 *) ptr)++ = 2;
+		*((gint32 *) ptr) = 2;
+		ptr += sizeof(gint32);
 		break;
 
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_R4:
-		*((gint32 *) ptr)++ = 4;
+		*((gint32 *) ptr) = 4;
+		ptr += sizeof(gint32);
 		break;
 
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 	case MONO_TYPE_R8:
-		*((gint32 *) ptr)++ = 8;
+		*((gint32 *) ptr) = 8;
+		ptr += sizeof(gint32);
 		break;
 
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-		*((gint32 *) ptr)++ = sizeof (void *);
+		*((gint32 *) ptr) = sizeof (void *);
+		ptr += sizeof(gint32);
 		break;
 
 	case MONO_TYPE_VOID:
-		*((gint32 *) ptr)++ = 0;
+		*((gint32 *) ptr) = 0;
+		ptr += sizeof(gint32);
 		break;
 
 	case MONO_TYPE_STRING: {
 		MonoString string;
 
-		*((gint32 *) ptr)++ = -8;
-		*((guint32 *) ptr)++ = sizeof (MonoString);
+		*((gint32 *) ptr) = -8;
+		ptr += sizeof(gint32);
+		*((guint32 *) ptr) = sizeof (MonoString);
+		ptr += sizeof(guint32);
 		*ptr++ = 1;
 		*ptr++ = (guint8*)&string.length - (guint8*)&string;
 		*ptr++ = sizeof (string.length);
@@ -576,13 +585,16 @@ write_type (MonoDebuggerSymbolTable *table, MonoType *type)
 	case MONO_TYPE_SZARRAY: {
 		MonoArray array;
 
-		*((gint32 *) ptr)++ = -size;
-		*((guint32 *) ptr)++ = sizeof (MonoArray);
+		*((gint32 *) ptr) = -size;
+		ptr += sizeof(gint32);
+		*((guint32 *) ptr) = sizeof (MonoArray);
+		ptr += sizeof(guint32);
 		*ptr++ = 2;
 		*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
 		*ptr++ = sizeof (array.max_length);
 		*ptr++ = (guint8*)&array.vector - (guint8*)&array;
-		*((guint32 *) ptr)++ = write_type (table, type->data.type);
+		*((guint32 *) ptr) = write_type (table, type->data.type);
+		ptr += sizeof(guint32);
 		break;
 	}
 
@@ -590,8 +602,10 @@ write_type (MonoDebuggerSymbolTable *table, MonoType *type)
 		MonoArray array;
 		MonoArrayBounds bounds;
 
-		*((gint32 *) ptr)++ = -size;
-		*((guint32 *) ptr)++ = sizeof (MonoArray);
+		*((gint32 *) ptr) = -size;
+		ptr += sizeof(gint32);
+		*((guint32 *) ptr) = sizeof (MonoArray);
+		ptr += sizeof(guint32);
 		*ptr++ = 3;
 		*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
 		*ptr++ = sizeof (array.max_length);
@@ -603,7 +617,8 @@ write_type (MonoDebuggerSymbolTable *table, MonoType *type)
 		*ptr++ = sizeof (bounds.lower_bound);
 		*ptr++ = (guint8*)&bounds.length - (guint8*)&bounds;
 		*ptr++ = sizeof (bounds.length);
-		*((guint32 *) ptr)++ = write_type (table, type->data.array->type);
+		*((guint32 *) ptr) = write_type (table, type->data.array->type);
+		ptr += sizeof(guint32);
 		break;
 	}
 
@@ -613,41 +628,55 @@ write_type (MonoDebuggerSymbolTable *table, MonoType *type)
 		int i, j;
 
 		if (klass->init_pending) {
-			*((gint32 *) ptr)++ = -1;
+			*((gint32 *) ptr) = -1;
+			ptr += sizeof(gint32);
 			break;
 		}
 
 		g_hash_table_insert (class_table, klass, GUINT_TO_POINTER (offset));
 
 		if (klass->enumtype) {
-			*((gint32 *) ptr)++ = -size;
-			*((guint32 *) ptr)++ = sizeof (MonoObject);
+			*((gint32 *) ptr) = -size;
+			ptr += sizeof(gint32);
+			*((guint32 *) ptr) = sizeof (MonoObject);
+			ptr += sizeof(guint32);
 			*ptr++ = 4;
-			*((guint32 *) ptr)++ = write_type (table, klass->enum_basetype);
+			*((guint32 *) ptr) = write_type (table, klass->enum_basetype);
+			ptr += sizeof(guint32);
 			break;
 		}
 
-		*((gint32 *) ptr)++ = -size;
+		*((gint32 *) ptr) = -size;
+		ptr += sizeof(guint32);
 
-		*((guint32 *) ptr)++ = klass->instance_size + base_offset;
+		*((guint32 *) ptr) = klass->instance_size + base_offset;
+		ptr += sizeof(guint32);
 		if (type->type == MONO_TYPE_OBJECT)
 			*ptr++ = 7;
 		else
 			*ptr++ = kind == MONO_TYPE_CLASS ? 6 : 5;
 		*ptr++ = kind == MONO_TYPE_CLASS;
-		*((guint32 *) ptr)++ = num_fields;
-		*((guint32 *) ptr)++ = num_fields * (4 + sizeof (gpointer));
-		*((guint32 *) ptr)++ = num_properties;
-		*((guint32 *) ptr)++ = num_properties * 3 * sizeof (gpointer);
-		*((guint32 *) ptr)++ = num_methods;
-		*((guint32 *) ptr)++ = num_methods * (4 + 2 * sizeof (gpointer)) +
+		*((guint32 *) ptr) = num_fields;
+		ptr += sizeof(guint32);
+		*((guint32 *) ptr) = num_fields * (4 + sizeof (gpointer));
+		ptr += sizeof(guint32);
+		*((guint32 *) ptr) = num_properties;
+		ptr += sizeof(guint32);
+		*((guint32 *) ptr) = num_properties * 3 * sizeof (gpointer);
+		ptr += sizeof(guint32);
+		*((guint32 *) ptr) = num_methods;
+		ptr += sizeof(guint32);
+		*((guint32 *) ptr) = num_methods * (4 + 2 * sizeof (gpointer)) +
 			num_params * sizeof (gpointer);
+		ptr += sizeof(guint32);
 		for (i = 0; i < klass->field.count; i++) {
 			if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
 
-			*((guint32 *) ptr)++ = klass->fields [i].offset + base_offset;
-			*((guint32 *) ptr)++ = write_type (table, klass->fields [i].type);
+			*((guint32 *) ptr) = klass->fields [i].offset + base_offset;
+			ptr += sizeof(guint32);
+			*((guint32 *) ptr) = write_type (table, klass->fields [i].type);
+			ptr += sizeof(guint32);
 		}
 
 		for (i = 0; i < klass->property.count; i++) {
@@ -655,34 +684,44 @@ write_type (MonoDebuggerSymbolTable *table, MonoType *type)
 				continue;
 
 			if (klass->properties [i].get)
-				*((guint32 *) ptr)++ = write_type
+				*((guint32 *) ptr) = write_type
 					(table, klass->properties [i].get->signature->ret);
 			else
-				*((guint32 *) ptr)++ = 0;
-			*((gpointer *) ptr)++ = klass->properties [i].get;
-			*((gpointer *) ptr)++ = klass->properties [i].set;
+				*((guint32 *) ptr) = 0;
+			ptr += sizeof(guint32);
+			*((gpointer *) ptr) = klass->properties [i].get;
+			ptr += sizeof(gpointer);
+			*((gpointer *) ptr) = klass->properties [i].set;
+			ptr += sizeof(gpointer);
 		}
 
 		for (i = 0; i < methods->len; i++) {
 			MonoMethod *method = g_ptr_array_index (methods, i);
 
-			*((gpointer *) ptr)++ = method;
+			*((gpointer *) ptr) = method;
+			ptr += sizeof(gpointer);
 			if ((method->signature->ret) && (method->signature->ret->type != MONO_TYPE_VOID))
-				*((guint32 *) ptr)++ = write_type (table, method->signature->ret);
+				*((guint32 *) ptr) = write_type (table, method->signature->ret);
 			else
-				*((guint32 *) ptr)++ = 0;
-			*((guint32 *) ptr)++ = method->signature->param_count;
+				*((guint32 *) ptr) = 0;
+			ptr += sizeof(guint32);
+			*((guint32 *) ptr) = method->signature->param_count;
+			ptr += sizeof(guint32);
 			for (j = 0; j < method->signature->param_count; j++)
-				*((guint32 *) ptr)++ = write_type (table, method->signature->params [j]);
+			{
+				*((guint32 *) ptr) = write_type (table, method->signature->params [j]);
+				ptr += sizeof(guint32);
+			}
 		}
 
 		g_ptr_array_free (methods, FALSE);
 
 		if (kind == MONO_TYPE_CLASS) {
 			if (klass->parent)
-				*((guint32 *) ptr)++ = write_type (table, &klass->parent->this_arg);
+				*((guint32 *) ptr) = write_type (table, &klass->parent->this_arg);
 			else
-				*((guint32 *) ptr)++ = 0;
+				*((guint32 *) ptr) = 0;
+			ptr += sizeof(guint32);		
 		}
 
 		break;
@@ -691,7 +730,8 @@ write_type (MonoDebuggerSymbolTable *table, MonoType *type)
 	default:
 		g_message (G_STRLOC ": %p - %x,%x,%x", type, type->attrs, kind, type->byref);
 
-		*((gint32 *) ptr)++ = -1;
+		*((gint32 *) ptr) = -1;
+		ptr += sizeof(gint32);
 		break;
 	}
 

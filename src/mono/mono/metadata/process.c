@@ -189,11 +189,14 @@ typedef struct {
 static gpointer process_get_versioninfo_block (gpointer data,
 					       version_data *block)
 {
-	block->data_len=*(((guint16 *)data)++);
-	block->value_len=*(((guint16 *)data)++);
+	block->data_len=*((guint16 *)data);
+	data = (char *)data + sizeof(guint16);
+	block->value_len=*((guint16 *)data);
+	data = (char *)data + sizeof(guint16);
 
 	/* No idea what the type is supposed to indicate */
-	block->type=*(((guint16 *)data)++);
+	block->type=*((guint16 *)data);
+	data = (char *)data + sizeof(guint16);
 	block->key=((gunichar2 *)data);
 
 	/* skip over the key (including the terminator) */
@@ -546,7 +549,8 @@ static void process_get_fileversion (MonoObject *filever, MonoImage *image)
 		return;
 	}
 
-	ffi=(((VS_FIXEDFILEINFO *)data_ptr)++);
+	ffi=((VS_FIXEDFILEINFO *)data_ptr);
+	data_ptr = (char *)data_ptr + sizeof(VS_FIXEDFILEINFO);
 	if((ffi->dwSignature!=VS_FFI_SIGNATURE) ||
 	   (ffi->dwStrucVersion!=VS_FFI_STRUCVERSION)) {
 #ifdef DEBUG

@@ -54,13 +54,15 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile)
 	if (!ptr)
 		return FALSE;
 
-	magic = *((guint64 *) ptr)++;
+	magic = *((guint64 *) ptr);
+	ptr += sizeof(guint64);
 	if (magic != MONO_SYMBOL_FILE_MAGIC) {
 		g_warning ("Symbol file %s has is not a mono symbol file", handle->image_file);
 		return FALSE;
 	}
 
-	version = *((guint32 *) ptr)++;
+	version = *((guint32 *) ptr);
+	ptr += sizeof(guint32);
 	if (version != MONO_SYMBOL_FILE_VERSION) {
 		g_warning ("Symbol file %s has incorrect version "
 			   "(expected %d, got %ld)", handle->image_file,
@@ -162,8 +164,8 @@ mono_debug_close_mono_symbol_file (MonoSymbolFile *symfile)
 static gchar *
 read_string (const char *ptr)
 {
-	int len = *((guint32 *) ptr)++;
-
+	int len = *((guint32 *) ptr);
+	ptr += sizeof(guint32);
 	return g_filename_from_utf8 (ptr, len, NULL, NULL, NULL);
 }
 

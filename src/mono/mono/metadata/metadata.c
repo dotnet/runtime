@@ -1201,7 +1201,7 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 		while (mono_metadata_parse_custom_mod (m, NULL, tmp_ptr, &tmp_ptr))
 			count++;
 		if (count) {
-			type = g_malloc0 (sizeof (MonoType) + (count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod));
+			type = g_malloc0 (sizeof (MonoType) + ((gint32)count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod));
 			type->num_mods = count;
 			if (count > 64)
 				g_warning ("got more than 64 modifiers in type");
@@ -1292,7 +1292,7 @@ mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
 	MonoMethodSignature *sig;
 
 	/* later we want to allocate signatures with mempools */
-	sig = g_malloc0 (sizeof (MonoMethodSignature) + (nparams - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
+	sig = g_malloc0 (sizeof (MonoMethodSignature) + ((gint32)nparams - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
 	sig->param_count = nparams;
 
 	return sig;
@@ -2115,7 +2115,8 @@ mono_metadata_packing_from_typedef (MonoImage *meta, guint32 index, guint32 *pac
 }
 
 #ifndef __GNUC__
-#define __alignof__(a) sizeof(a)
+/*#define __alignof__(a) sizeof(a)*/
+#define __alignof__(type) G_STRUCT_OFFSET(struct { char c; type x; }, x)
 #endif
 
 /*

@@ -223,7 +223,10 @@ lookup_method_func (gpointer key, gpointer value, gpointer user_data)
 static MonoDebugMethodInfo *
 _mono_debug_lookup_method (MonoMethod *method)
 {
-	struct LookupMethodData data = { NULL, method };
+	struct LookupMethodData data;
+
+	data.minfo = NULL;
+	data.method = method;
 
 	if (!mono_debug_handles)
 		return NULL;
