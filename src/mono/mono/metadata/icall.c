@@ -514,7 +514,7 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 }
 
 static void
-ves_icall_InitializeArray (MonoArray *array, MonoClassField *field_handle)
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoArray *array, MonoClassField *field_handle)
 {
 	MonoClass *klass = array->obj.vtable->klass;
 	guint32 size = mono_array_element_size (klass);
@@ -559,6 +559,35 @@ ves_icall_InitializeArray (MonoArray *array, MonoClassField *field_handle)
 	}
 		 
 #endif
+}
+
+static gint
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetOffsetToStringData (void)
+{
+	return offsetof (MonoString, chars);
+}
+
+static MonoObject *
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue (MonoObject *obj)
+{
+	if ((obj == NULL) || (! (obj->vtable->klass->valuetype)))
+		return obj;
+	else
+		return mono_object_clone (obj);
+}
+
+static void
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (MonoType *handle)
+{
+	MonoClass *klass;
+
+	MONO_CHECK_ARG_NULL (handle);
+
+	klass = mono_class_from_mono_type (handle);
+	MONO_CHECK_ARG (handle, klass);
+
+	/* This will call the type constructor */
+	mono_class_vtable (mono_domain_get (), klass);
 }
 
 static MonoObject *
@@ -2784,7 +2813,10 @@ static gconstpointer icall_map [] = {
 	/*
 	 * System.Runtime.CompilerServices.RuntimeHelpers
 	 */
-	"System.Runtime.CompilerServices.RuntimeHelpers::InitializeArray", ves_icall_InitializeArray,
+	"System.Runtime.CompilerServices.RuntimeHelpers::InitializeArray", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
+	"System.Runtime.CompilerServices.RuntimeHelpers::GetOffsetToStringData", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetOffsetToStringData,
+	"System.Runtime.CompilerServices.RuntimeHelpers::GetObjectValue", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue,
+	"System.Runtime.CompilerServices.RuntimeHelpers::RunClassConstructor", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor,
 	
 	/*
 	 * System.Threading
