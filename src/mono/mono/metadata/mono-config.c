@@ -7,6 +7,7 @@
  *
  * (C) 2002 Ximian, Inc.
  */
+#include "config.h"
 #include <glib.h>
 #include <string.h>
 #include "mono/metadata/loader.h"
@@ -251,12 +252,16 @@ mono_config_parse (const char *filename) {
 		mono_config_parse_file (home);
 		return;
 	}
-	/* FIXME: handle windows... */
-	mono_config_parse_file ("/etc/mono/config");
+#if defined (PLATFORM_WIN32)
+	/* maybe it's better to use a registry key or the install root from the binary */
+	mono_config_parse_file (MONO_CFG_DIR "\\mono\\config");
+#else
+	mono_config_parse_file (MONO_CFG_DIR "/mono/config");
 	home = g_get_home_dir ();
 	user_cfg = g_strconcat (home, G_DIR_SEPARATOR_S, ".mono/config", NULL);
 	mono_config_parse_file (user_cfg);
 	g_free (user_cfg);
+#endif
 	
 }
 
