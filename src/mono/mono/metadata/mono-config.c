@@ -338,7 +338,7 @@ mono_install_get_config_dir (void)
   int i;
 #endif
 
-  mono_cfg_dir = getenv ("MONO_CFG_DIR");
+  mono_cfg_dir = g_getenv ("MONO_CFG_DIR");
 
   if (!mono_cfg_dir) {
 #ifndef PLATFORM_WIN32

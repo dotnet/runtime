@@ -615,7 +615,7 @@ void mono_gc_init (void)
 
 #ifdef ENABLE_FINALIZER_THREAD
 
-	if (getenv ("GC_DONT_GC")) {
+	if (g_getenv ("GC_DONT_GC")) {
 		gc_disabled = TRUE;
 		return;
 	}

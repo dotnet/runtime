@@ -723,9 +723,8 @@ void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoO
 }
 
 static gboolean
-complete_path (const gunichar2 *appname, gunichar **completed)
+complete_path (const gunichar2 *appname, gunichar2 **completed)
 {
-#ifdef PLATFORM_WIN32
 	gchar *utf8app;
 	gchar *found;
 
@@ -735,8 +734,14 @@ complete_path (const gunichar2 *appname, gunichar **completed)
 		return FALSE;
 	}
 
+	if (g_file_test (utf8app, G_FILE_TEST_IS_EXECUTABLE)) {
+		g_free (utf8app);
+		return FALSE;
+	}
+	
 	found = g_find_program_in_path (utf8app);
 	if (found == NULL) {
+		*completed = NULL;
 		g_free (utf8app);
 		return FALSE;
 	}
@@ -745,9 +750,6 @@ complete_path (const gunichar2 *appname, gunichar **completed)
 	g_free (found);
 	g_free (utf8app);
 	return TRUE;
-#else
-	return FALSE;
-#endif
 }
 
 MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *appname, MonoString *cmd, MonoString *dirname, HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoProcInfo *process_info)
@@ -770,7 +772,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *app
 	
 	if (process_info->use_shell) {
 		const gchar *spath;
-		gchar *shell_args;
+		const gchar *shell_args;
 #ifdef PLATFORM_WIN32
 		spath = g_getenv ("COMSPEC");
 		shell_args = "/c %s";
@@ -805,6 +807,10 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *app
 	} else {
 		shell_path = mono_string_chars (appname);
 		free_shell_path = complete_path (shell_path, &shell_path);
+		if (shell_path == NULL) {
+			process_info->pid = -ERROR_FILE_NOT_FOUND;
+			return FALSE;
+		}
 	}
 
 	if (process_info->env_keys != NULL) {

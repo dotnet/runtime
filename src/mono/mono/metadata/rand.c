@@ -158,7 +158,7 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes
 #endif
 
     if (file < 0) {
-        const char *socket_path = getenv("MONO_EGD_SOCKET");
+        const char *socket_path = g_getenv("MONO_EGD_SOCKET");
 
         if (socket_path == NULL)
             mono_raise_exception (mono_get_exception_execution_engine ("Failed to open /dev/urandom or /dev/random device, or find egd socket"));

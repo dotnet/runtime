@@ -250,9 +250,9 @@ get_posix_locale (void)
 {
 	const gchar* posix_locale = NULL;
 
-	posix_locale = getenv("LC_ALL");
+	posix_locale = g_getenv("LC_ALL");
 	if (posix_locale == 0) {
-		posix_locale = getenv("LANG");
+		posix_locale = g_getenv("LANG");
 		if (posix_locale == 0) {
 			posix_locale = setlocale(LC_ALL, NULL);
 		}

@@ -76,7 +76,7 @@ check_path_env (void) {
 	const char *path;
 	char **splitted;
 	
-	path = getenv ("MONO_PATH");
+	path = g_getenv ("MONO_PATH");
 	if (!path)
 		return;
 
@@ -100,7 +100,7 @@ check_extra_gac_path_env (void) {
 	const char *path;
 	char **splitted;
 	
-	path = getenv ("MONO_GAC_PATH");
+	path = g_getenv ("MONO_GAC_PATH");
 	if (!path)
 		return;
 
@@ -361,7 +361,7 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 				references [i] = mono_assembly_load (&aname, image->assembly->basedir, status);
 			}
 			if (references [i] != NULL){
-				if (getenv ("MONO_SILENT_WARNING") == NULL)
+				if (g_getenv ("MONO_SILENT_WARNING") == NULL)
 					g_printerr ("Compat mode: the request from %s to load %s was remapped (http://www.go-mono.com/remap.html)\n",
 						 image->name, aname.name);
 				
