@@ -282,9 +282,8 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 			if (corlib)
 				return corlib;
 		}
-		fullpath = g_concat_dir_and_file (MONO_ASSEMBLIES, CORLIB_NAME);
-		corlib = mono_assembly_open (fullpath, status);
-		g_free (fullpath);
+		corlib = load_in_path (CORLIB_NAME, default_path, status);
+		g_free (CORLIB_NAME);
 		return corlib;
 	}
 	result = search_loaded (aname);
