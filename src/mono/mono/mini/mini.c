@@ -50,7 +50,12 @@
 
 #include "jit-icalls.c"
 
-#define MONO_IS_COND_BRANCH(op) ((op >= CEE_BEQ && op <= CEE_BLT_UN) || (op >= OP_LBEQ && op <= OP_LBLT_UN) || (op >= OP_FBEQ && op <= OP_FBLT_UN))
+/* 
+ * this is used to determine when some branch optimizations are possible: we exclude FP compares
+ * because they have weird semantics with NaNs.
+ */
+#define MONO_IS_COND_BRANCH_OP(ins) (((ins)->opcode >= CEE_BEQ && (ins)->opcode <= CEE_BLT_UN) || ((ins)->opcode >= OP_LBEQ && (ins)->opcode <= OP_LBLT_UN) || ((ins)->opcode >= OP_FBEQ && (ins)->opcode <= OP_FBLT_UN))
+#define MONO_IS_COND_BRANCH_NOFP(ins) (MONO_IS_COND_BRANCH_OP(ins) && (ins)->inst_left->inst_left->type != STACK_R8)
 
 #define MONO_CHECK_THIS(ins) (cfg->method->signature->hasthis && (ins)->ssa_op == MONO_SSA_LOAD && (ins)->inst_left->inst_c0 == 0)
 
@@ -6960,7 +6965,7 @@ optimize_branches (MonoCompile *cfg)
 				bbn = bb->out_bb [0];
 
 				/* conditional branches where true and false targets are the same can be also replaced with CEE_BR */
-				if (bb->last_ins && MONO_IS_COND_BRANCH (bb->last_ins->opcode)) {
+				if (bb->last_ins && MONO_IS_COND_BRANCH_OP (bb->last_ins)) {
 					bb->last_ins->opcode = CEE_BR;
 					bb->last_ins->inst_target_bb = bb->last_ins->inst_true_bb;
 					changed = TRUE;
@@ -7041,7 +7046,7 @@ optimize_branches (MonoCompile *cfg)
 					}
 				}
 			} else if (bb->out_count == 2) {
-				if (bb->last_ins && MONO_IS_COND_BRANCH (bb->last_ins->opcode)) {
+				if (bb->last_ins && MONO_IS_COND_BRANCH_NOFP (bb->last_ins)) {
 					bbn = bb->last_ins->inst_true_bb;
 					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR &&
 					    bbn->code->inst_target_bb->region == bb->region) {
@@ -7221,10 +7226,13 @@ mini_select_instructions (MonoCompile *cfg)
 	cfg->rs = mono_regstate_new ();
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		if (bb->last_ins && MONO_IS_COND_BRANCH (bb->last_ins->opcode) &&
+		if (bb->last_ins && MONO_IS_COND_BRANCH_OP (bb->last_ins) &&
 		    bb->next_bb != bb->last_ins->inst_false_bb) {
 
-			if (bb->next_bb ==  bb->last_ins->inst_true_bb) {
+			/* we are careful when inverting, since bugs like #59580
+			 * could show up when dealing with NaNs.
+			 */
+			if (MONO_IS_COND_BRANCH_NOFP(bb->last_ins) && bb->next_bb == bb->last_ins->inst_true_bb) {
 				MonoBasicBlock *tmp =  bb->last_ins->inst_true_bb;
 				bb->last_ins->inst_true_bb = bb->last_ins->inst_false_bb;
 				bb->last_ins->inst_false_bb = tmp;

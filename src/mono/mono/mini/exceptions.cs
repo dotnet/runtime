@@ -1318,10 +1318,10 @@ class Tests {
 			q = -1;
 			d = Int32.MinValue;
 			val = d / q;
-		} catch (ArithmeticException) {
-			failed = false;
 		} catch (DivideByZeroException) {
 			/* wrong exception */
+		} catch (ArithmeticException) {
+			failed = false;
 		}
 		if (failed)
 			return 3;
@@ -1331,10 +1331,10 @@ class Tests {
 			q = -1;
 			d = Int32.MinValue;
 			val = d % q;
-		} catch (ArithmeticException) {
-			failed = false;
 		} catch (DivideByZeroException) {
 			/* wrong exception */
+		} catch (ArithmeticException) {
+			failed = false;
 		}
 		if (failed)
 			return 4;
@@ -1423,10 +1423,10 @@ class Tests {
 			q = -1;
 			d = Int64.MinValue;
 			val = d / q;
-		} catch (ArithmeticException) {
-			failed = false;
 		} catch (DivideByZeroException) {
 			/* wrong exception */
+		} catch (ArithmeticException) {
+			failed = false;
 		}
 		if (failed)
 			return 3;
@@ -1436,10 +1436,10 @@ class Tests {
 			q = -1;
 			d = Int64.MinValue;
 			val = d % q;
-		} catch (ArithmeticException) {
-			failed = false;
 		} catch (DivideByZeroException) {
 			/* wrong exception */
+		} catch (ArithmeticException) {
+			failed = false;
 		}
 		if (failed)
 			return 4;

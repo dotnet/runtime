@@ -438,4 +438,18 @@
 		ret 
 	}
 		
+	.method public static int32 test_0_bug59580  ()
+	{
+	        ldc.r4          float32(0x7FC00000)
+	        ldc.r4          float32(0x7FC00000)
+        	bge.un          pass
+	        br              fail
+	pass:
+        	ldc.i4.0
+	        ret
+	fail:
+        	ldc.i4.1
+	        ret
+	}
+
 }
