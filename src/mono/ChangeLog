@@ -1,3 +1,8 @@
+2002-02-25  Sergey Chaban  <serge@wildwestsoftware.com>
+	* configure.in: added support for ARM target arch.
+	Uncommented and modified arm-*-linux* target,
+	added mono/arch/arm/Makefile to AC_OUTPUT list.
+
 2002-02-21  Mark Crichton  <crichton@gimp.org>
 
 	* status/class.xml: Added contact info for RNGCryptoServiceProvider

@@ -402,7 +402,7 @@ sparc*-*-*) TARGET=SPARC; arch_target=sparc; ACCESS_UNALIGNED="no";;
 #alpha*-*-linux* | alpha*-*-osf*) TARGET=ALPHA; ACCESS_UNALIGNED="no";;
 #m68k-*-linux*) TARGET=M68K;;
 powerpc-*-linux* | powerpc-*-sysv*) TARGET=POWERPC; arch_target=ppc;;
-#arm-*-linux-*) TARGET=ARM; ACCESS_UNALIGNED="no";;
+arm-*-linux-*) TARGET=ARM; arch_target=arm; ACCESS_UNALIGNED="no";;
 esac
 
 if test ${TARGET} = unknown; then
@@ -436,6 +436,7 @@ mono/arch/Makefile
 mono/arch/x86/Makefile
 mono/arch/ppc/Makefile
 mono/arch/sparc/Makefile
+mono/arch/arm/Makefile
 mono/interpreter/Makefile
 mono/tests/Makefile
 mono/wrapper/Makefile
