@@ -1092,8 +1092,6 @@ builtin_types[] = {
 	{{NULL}, 0,     MONO_TYPE_I,       0,     1,     0},
 	{{NULL}, 0,     MONO_TYPE_U,       0,     0,     0},
 	{{NULL}, 0,     MONO_TYPE_U,       0,     1,     0},
-	{{NULL}, 0,     MONO_TYPE_OBJECT,  0,     0,     0},
-	{{NULL}, 0,     MONO_TYPE_OBJECT,  0,     1,     0}
 };
 
 #define NBUILTIN_TYPES() (sizeof (builtin_types) / sizeof (builtin_types [0]))
@@ -2287,10 +2285,15 @@ mono_metadata_type_hash (MonoType *t1)
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
 		/* check if the distribution is good enough */
-		return hash << 7 | g_str_hash (t1->data.klass->name);
+		return ((hash << 5) - hash) ^ g_str_hash (t1->data.klass->name);
 	case MONO_TYPE_PTR:
+		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.type);
 	case MONO_TYPE_SZARRAY:
-		return hash << 7 | mono_metadata_type_hash (t1->data.type);
+		if (t1->data.type->type == MONO_TYPE_OBJECT)
+			return ((hash << 5) - hash);
+		return ((hash << 5) - hash) ^ (gint32)(t1->data.type->data.klass);
+	case MONO_TYPE_ARRAY:
+		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.array->type);
 	}
 	return hash;
 }
@@ -2334,7 +2337,18 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 	case MONO_TYPE_CLASS:
 		return t1->data.klass == t2->data.klass;
 	case MONO_TYPE_PTR:
+		return mono_metadata_type_equal (t1->data.type, t2->data.type);
 	case MONO_TYPE_SZARRAY:
+retry_sz:
+		if (t1->data.type->type != t2->data.type->type)
+			return FALSE;
+		if (t1->data.type->type == MONO_TYPE_CLASS || t1->data.type->type == MONO_TYPE_VALUETYPE)
+			return t1->data.type->data.klass == t2->data.type->data.klass;
+		if (t1->data.type->type == MONO_TYPE_SZARRAY) {
+			t1 = t1->data.type;
+			t2 = t2->data.type;
+			goto retry_sz;
+		}
 		return mono_metadata_type_equal (t1->data.type, t2->data.type);
 	case MONO_TYPE_ARRAY:
 		if (t1->data.array->rank != t2->data.array->rank)

@@ -3197,7 +3197,18 @@ mymono_metadata_type_equal (MonoType *t1, MonoType *t2)
 	case MONO_TYPE_CLASS:
 		return t1->data.klass == t2->data.klass;
 	case MONO_TYPE_PTR:
+		return mymono_metadata_type_equal (t1->data.type, t2->data.type);
 	case MONO_TYPE_SZARRAY:
+retry_sz:
+		if (t1->data.type->type != t2->data.type->type)
+			return FALSE;
+		if (t1->data.type->type == MONO_TYPE_CLASS || t1->data.type->type == MONO_TYPE_VALUETYPE)
+			return t1->data.type->data.klass == t2->data.type->data.klass;
+		if (t1->data.type->type == MONO_TYPE_SZARRAY) {
+			t1 = t1->data.type;
+			t2 = t2->data.type;
+			goto retry_sz;
+		}
 		return mymono_metadata_type_equal (t1->data.type, t2->data.type);
 	case MONO_TYPE_ARRAY:
 		if (t1->data.array->rank != t2->data.array->rank)
@@ -3223,10 +3234,10 @@ mymono_metadata_type_hash (MonoType *t1)
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
 		/* check if the distribution is good enough */
-		return hash << 7 | g_str_hash (t1->data.klass->name);
+		return ((hash << 5) - hash) ^ g_str_hash (t1->data.klass->name);
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY:
-		return hash << 7 | mymono_metadata_type_hash (t1->data.type);
+		return ((hash << 5) - hash) ^ mymono_metadata_type_hash (t1->data.type);
 	}
 	return hash;
 }
@@ -5249,4 +5260,5 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token)
 	}
 	return result;
 }
+
 
