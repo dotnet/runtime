@@ -131,7 +131,7 @@
  		    </ul>
  	          </td>
 	          <td bgcolor="#999999">
-		     <b>SuSE 8.0/x86</b> 
+		     <b>Linux s/390</b> 
 		     <ul>
                         <li><a href="archive/s390/libgc-6.1-1.s390.rpm">libgc-6.1-1.s390.rpm</a>
                         <li><a href="archive/s390/libgc-devel-6.1-1.s390.rpm">libgc-devel-6.1-1.s390.rpm</a>
