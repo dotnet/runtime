@@ -455,8 +455,14 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 	}
 
 	result = aio_error (aio);
+#ifdef DEBUG
+	g_print ("aio_error (read) returned %d for %d\n", result, fd);
+#endif
 	if (result == 0) {
 		numbytes = aio_return (aio);
+#ifdef DEBUG
+		g_print ("numbytes %d for %d\n", numbytes, fd);
+#endif
 	} else {
 		errno = result;
 		_wapi_set_last_error_from_errno ();
@@ -556,14 +562,14 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 	}
 
 	result = aio_error (aio);
-	if (result == -1) {
-		_wapi_set_last_error_from_errno ();
-		return FALSE;
-	}
-
-	result = aio_error (aio);
+#ifdef DEBUG
+	g_print ("aio_error (write) returned %d for %d\n", result, fd);
+#endif
 	if (result == 0) {
 		numbytes = aio_return (aio);
+#ifdef DEBUG
+	g_print ("numbytes %d for %d\n", numbytes, fd);
+#endif
 	} else {
 		errno = result;
 		_wapi_set_last_error_from_errno ();
