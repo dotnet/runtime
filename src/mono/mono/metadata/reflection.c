@@ -5558,6 +5558,41 @@ typebuilder_setup_properties (MonoClass *klass)
 	}
 }
 
+static void
+typebuilder_setup_events (MonoClass *klass)
+{
+	MonoReflectionTypeBuilder *tb = klass->reflection_info;
+	MonoReflectionEventBuilder *eb;
+	int i, j;
+
+	klass->event.count = tb->events ? mono_array_length (tb->events) : 0;
+	klass->event.first = 0;
+	klass->event.last = klass->event.count;
+
+	klass->events = g_new0 (MonoEvent, klass->event.count);
+	for (i = 0; i < klass->event.count; ++i) {
+		eb = mono_array_get (tb->events, MonoReflectionEventBuilder*, i);
+		klass->events [i].attrs = eb->attrs;
+		klass->events [i].name = mono_string_to_utf8 (eb->name);
+		if (eb->add_method)
+			klass->events [i].add = eb->add_method->mhandle;
+		if (eb->remove_method)
+			klass->events [i].remove = eb->remove_method->mhandle;
+		if (eb->raise_method)
+			klass->events [i].raise = eb->raise_method->mhandle;
+
+		if (eb->other_methods) {
+			klass->events [i].other = g_new0 (MonoMethod*, mono_array_length (eb->other_methods));
+			for (j = 0; j < mono_array_length (eb->other_methods); ++j) {
+				MonoReflectionMethodBuilder *mb = 
+					mono_array_get (eb->other_methods,
+									MonoReflectionMethodBuilder*, j);
+				klass->events [i].other [j] = mb->mhandle;
+			}
+		}
+	}
+}
+
 MonoReflectionType*
 mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 {
@@ -5574,8 +5609,6 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	 * Fields to set in klass:
 	 * the various flags: delegate/unicode/contextbound etc.
 	 * nested_classes
-	 * properties
-	 * events
 	 */
 	klass->flags = tb->attrs;
 	klass->element_class = klass;
@@ -5604,6 +5637,8 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	typebuilder_setup_fields (klass);
 
 	typebuilder_setup_properties (klass);
+
+	typebuilder_setup_events (klass);
 
 	res = mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 	/* with enums res == tb: need to fix that. */
@@ -5669,6 +5704,12 @@ mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig)
 	return result;
 }
 
+/**
+ * mono_reflection_lookup_dynamic_token:
+ *
+ *  Finish the Builder object pointed to by TOKEN and return the corresponding
+ * runtime structure.
+ */
 gpointer
 mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token)
 {
