@@ -3121,7 +3121,8 @@ static gconstpointer icall_map [] = {
 	/*
 	 * System.Diagnostics.Process
 	 */
-	"System.Diagnostics.Process::GetCurrentProcess_internal()", ves_icall_System_Diagnostics_Process_GetCurrentProcess_internal,
+	"System.Diagnostics.Process::GetProcess_internal(int)", ves_icall_System_Diagnostics_Process_GetProcess_internal,
+	"System.Diagnostics.Process::GetProcesses_internal()", ves_icall_System_Diagnostics_Process_GetProcesses_internal,
 	"System.Diagnostics.Process::GetPid_internal()", ves_icall_System_Diagnostics_Process_GetPid_internal,
 	"System.Diagnostics.Process::Process_free_internal(intptr)", ves_icall_System_Diagnostics_Process_Process_free_internal,
 	"System.Diagnostics.Process::GetModules_internal()", ves_icall_System_Diagnostics_Process_GetModules_internal,
@@ -3130,6 +3131,9 @@ static gconstpointer icall_map [] = {
 	"System.Diagnostics.Process::ExitTime_internal(intptr)", ves_icall_System_Diagnostics_Process_ExitTime_internal,
 	"System.Diagnostics.Process::StartTime_internal(intptr)", ves_icall_System_Diagnostics_Process_StartTime_internal,
 	"System.Diagnostics.Process::ExitCode_internal(intptr)", ves_icall_System_Diagnostics_Process_ExitCode_internal,
+	"System.Diagnostics.Process::ProcessName_internal(intptr)", ves_icall_System_Diagnostics_Process_ProcessName_internal,
+	"System.Diagnostics.Process::GetWorkingSet_internal(intptr,int&,int&)", ves_icall_System_Diagnostics_Process_GetWorkingSet_internal,
+	"System.Diagnostics.Process::SetWorkingSet_internal(intptr,int,int,bool)", ves_icall_System_Diagnostics_Process_SetWorkingSet_internal,
 	"System.Diagnostics.FileVersionInfo::GetVersionInfo_internal(string)", ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal,
 
 	/* 

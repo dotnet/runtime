@@ -50,7 +50,6 @@ typedef struct
 typedef struct 
 {
 	guint32 cmd;
-	guint32 args;
 	guint32 env;
 	guint32 dir;
 	guint32 stdin_handle;

@@ -31,9 +31,13 @@ struct _WapiHandle_file
 	guint32 attrs;
 };
 
+/* The boolean is for distinguishing between a zeroed struct being not
+ * as yet assigned, and one containing a valid fd 0
+ */
 struct _WapiHandlePrivate_file
 {
 	int fd;
+	gboolean assigned;
 };
 
 struct _WapiHandle_find

@@ -1404,6 +1404,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	}
 
 	file_private_handle->fd=ret;
+	file_private_handle->assigned=TRUE;
 	file_handle->filename=_wapi_handle_scratch_store (filename,
 							  strlen (filename));
 	if(security!=NULL) {
@@ -1627,7 +1628,8 @@ static gboolean console_find_fd (gpointer handle, gpointer user_data)
 		return(FALSE);
 	}
 	
-	if(file_private_handle->fd==fd) {
+	if(file_private_handle->fd==fd &&
+	   file_private_handle->assigned==TRUE) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION
 			   ": Returning console handle %p", handle);
@@ -1684,6 +1686,11 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 
 		return(INVALID_HANDLE_VALUE);
 	}
+
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": creating standard handle type %s",
+		  name);
+#endif
 	
 	/* Check if fd is valid */
 	flags=fcntl(fd, F_GETFL);
@@ -1725,6 +1732,7 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 		}
 	
 		file_private_handle->fd=fd;
+		file_private_handle->assigned=TRUE;
 		file_handle->filename=_wapi_handle_scratch_store (name, strlen (name));
 		/* some default security attributes might be needed */
 		file_handle->security_attributes=0;
@@ -1740,6 +1748,12 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 
 		_wapi_handle_unlock_handle (handle);
 	} else {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": reusing handle %p with fd %d", handle,
+			  file_private_handle->fd);
+#endif
+
 		/* Add a reference to this reused handle */
 		_wapi_handle_ref (handle);
 	}
@@ -2769,11 +2783,13 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 	}
 	
 	pipe_read_private_handle->fd=filedes[0];
+	pipe_read_private_handle->assigned=TRUE;
 	pipe_read_handle->fileaccess=GENERIC_READ;
 	
 	*readpipe=read_handle;
 
 	pipe_write_private_handle->fd=filedes[1];
+	pipe_write_private_handle->assigned=TRUE;
 	pipe_write_handle->fileaccess=GENERIC_WRITE;
 	
 	*writepipe=write_handle;

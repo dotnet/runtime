@@ -203,12 +203,18 @@ static void ref_handle (guint32 *open_handles, guint32 handle)
  * unref_handle:
  * @open_handles: An array of handles referenced by the calling client
  * @handle: handle to inc refcnt
+ * @daemon_initiated: set to %TRUE if the daemon is unreffing a
+ * handle.  Controls whether or not to set the handle type to UNUSED.
+ * This must not happen here if a client process is unreffing a
+ * handle, because it has more cleaning up to do and must still be
+ * able to locate the handle and specify the type.
  *
  * Decrease ref count of handle for the calling client. If global ref
  * count reaches 0 it is free'ed. Return TRUE if the local ref count
  * is 0. Handle 0 is ignored.
  */
-static gboolean unref_handle (guint32 *open_handles, guint32 handle)
+static gboolean unref_handle (guint32 *open_handles, guint32 handle,
+			      gboolean daemon_initiated)
 {
 	gboolean destroy=FALSE;
 	
@@ -253,6 +259,9 @@ static gboolean unref_handle (guint32 *open_handles, guint32 handle)
 		mono_mutex_destroy (&_wapi_shared_data->handles[handle].signal_mutex);
 		pthread_cond_destroy (&_wapi_shared_data->handles[handle].signal_cond);
 		memset (&_wapi_shared_data->handles[handle].u, '\0', sizeof(_wapi_shared_data->handles[handle].u));
+		if(daemon_initiated) {
+			_wapi_shared_data->handles[handle].type=WAPI_HANDLE_UNUSED;
+		}
 	}
 
 	if(open_handles==daemon_handles) {
@@ -333,7 +342,7 @@ static void rem_fd(GIOChannel *channel, guint32 *open_handles)
 			/* Ignore the hint to the client to destroy
 			 * the handle private data
 			 */
-			unref_handle (open_handles, i);
+			unref_handle (open_handles, i, TRUE);
 		}
 	}
 	
@@ -476,8 +485,10 @@ static void process_post_mortem (pid_t pid, int status)
 				   process_handle, NULL, NULL);
 
 	unref_handle (daemon_handles,
-		      GPOINTER_TO_UINT (process_handle_data->main_thread));
-	unref_handle (daemon_handles, GPOINTER_TO_UINT (process_handle));
+		      GPOINTER_TO_UINT (process_handle_data->main_thread),
+		      TRUE);
+	unref_handle (daemon_handles, GPOINTER_TO_UINT (process_handle),
+		      TRUE);
 }
 
 static void process_died (void)
@@ -608,7 +619,7 @@ static void process_close (GIOChannel *channel, guint32 *open_handles,
 	WapiHandleResponse resp;
 	
 	resp.type=WapiHandleResponseType_Close;
-	resp.u.close.destroy=unref_handle (open_handles, handle);
+	resp.u.close.destroy=unref_handle (open_handles, handle, FALSE);
 
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": unreffing handle 0x%x", handle);
@@ -699,113 +710,140 @@ static void process_process_fork (GIOChannel *channel, guint32 *open_handles,
 	
 	if(process_handle==0 || thread_handle==0) {
 		/* unref_handle() copes with the handle being 0 */
-		unref_handle (daemon_handles, process_handle);
-		unref_handle (open_handles, process_handle);
-		unref_handle (daemon_handles, thread_handle);
-		unref_handle (open_handles, thread_handle);
+		unref_handle (daemon_handles, process_handle, TRUE);
+		unref_handle (open_handles, process_handle, TRUE);
+		unref_handle (daemon_handles, thread_handle, TRUE);
+		unref_handle (open_handles, thread_handle, TRUE);
 		process_handle=0;
 		thread_handle=0;
 	} else {
-		char *cmd=NULL, *args=NULL;
+		char *cmd=NULL, *dir=NULL, **argv, **env;
+		GError *gerr=NULL;
+		gboolean ret;
 			
-		/* Get usable copies of the cmd and args now rather
-		 * than in the child process.  This is to prevent the
-		 * race condition where the parent can return the
-		 * reply to the client, which then promptly deletes
-		 * the scratch data before the new process gets to see
-		 * it.
+		/* Get usable copies of the cmd, dir and env now
+		 * rather than in the child process.  This is to
+		 * prevent the race condition where the parent can
+		 * return the reply to the client, which then promptly
+		 * deletes the scratch data before the new process
+		 * gets to see it.  Also explode argv here so we can
+		 * use it to set the process name.
 		 */
 		cmd=_wapi_handle_scratch_lookup_as_string (process_fork.cmd);
-		if(process_fork.args!=0) {
-			args=_wapi_handle_scratch_lookup_as_string (process_fork.args);
-		}
-
+		dir=_wapi_handle_scratch_lookup_as_string (process_fork.dir);
+		env=_wapi_handle_scratch_lookup_string_array (process_fork.env);
+		
+		ret=g_shell_parse_argv (cmd, NULL, &argv, &gerr);
+		if(ret==FALSE) {
+			/* FIXME: Could do something with the
+			 * GError here
+			 */
+			process_handle_data->exec_errno=gerr->code;
+		} else {
 #ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": forking");
+			g_message (G_GNUC_PRETTY_FUNCTION ": forking");
 #endif
 
-		_wapi_lookup_handle (GUINT_TO_POINTER (process_handle),
-				     WAPI_HANDLE_PROCESS,
-				     (gpointer *)&process_handle_data, NULL);
+			_wapi_lookup_handle (GUINT_TO_POINTER (process_handle),
+					     WAPI_HANDLE_PROCESS,
+					     (gpointer *)&process_handle_data,
+					     NULL);
 
-		_wapi_lookup_handle (GUINT_TO_POINTER (thread_handle),
-				     WAPI_HANDLE_THREAD,
-				     (gpointer *)&thread_handle_data, NULL);
+			_wapi_lookup_handle (GUINT_TO_POINTER (thread_handle),
+					     WAPI_HANDLE_THREAD,
+					     (gpointer *)&thread_handle_data,
+					     NULL);
 
-		/* Fork, exec cmd with args and optional env, and
-		 * return the handles with pid and blank thread id
-		 */
-		pid=fork ();
-		if(pid==-1) {
-			process_handle_data->exec_errno=errno;
-		} else if (pid==0) {
-			/* child */
-			char **argv, *full_args;
-			GError *gerr=NULL;
-			gboolean ret;
-			int i;
-				
-			/* should we detach from the process group? 
-			 * We're already running without a controlling
-			 * tty...
+			/* Fork, exec cmd with args and optional env,
+			 * and return the handles with pid and blank
+			 * thread id
 			 */
-
-			/* Connect stdin, stdout and stderr */
-			dup2 (fds[0], 0);
-			dup2 (fds[1], 1);
-			dup2 (fds[2], 2);
-
-			if(process_fork.inherit!=TRUE) {
-				/* FIXME: do something here */
-			}
+			pid=fork ();
+			if(pid==-1) {
+				process_handle_data->exec_errno=errno;
+			} else if (pid==0) {
+				/* child */
+				int i;
 				
-			/* Close all file descriptors */
-			for(i=3; i<getdtablesize (); i++) {
-				close (i);
-			}
+				/* should we detach from the process
+				 * group? We're already running
+				 * without a controlling tty...
+				 */
+
+				/* Connect stdin, stdout and stderr */
+				dup2 (fds[0], 0);
+				dup2 (fds[1], 1);
+				dup2 (fds[2], 2);
+
+				if(process_fork.inherit!=TRUE) {
+					/* FIXME: do something here */
+				}
+				
+				/* Close all file descriptors */
+				for(i=3; i<getdtablesize (); i++) {
+					close (i);
+				}
 			
 #ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION
-				   ": exec()ing [%s] args [%s]", cmd, args);
-#endif		
-		
-			if(args!=NULL) {
-				full_args=g_strconcat (cmd, " ", args, NULL);
-			} else {
-				full_args=g_strdup (cmd);
-			}
-			ret=g_shell_parse_argv (full_args, NULL, &argv, &gerr);
-			
-			g_free (full_args);
+				g_message (G_GNUC_PRETTY_FUNCTION
+					   ": exec()ing [%s] in dir [%s]",
+					   cmd, dir);
+				{
+					i=0;
+					while(argv[i]!=NULL) {
+						g_message ("arg %d: [%s]",
+							   i, argv[i]);
+						i++;
+					}
 
-			if(ret==FALSE) {
-				/* FIXME: Could do something with the
-				 * GError here
-				 */
-				process_handle_data->exec_errno=gerr->code;
+					i=0;
+					while(env[i]!=NULL) {
+						g_message ("env %d: [%s]",
+							   i, env[i]);
+						i++;
+					}
+				}
+#endif
+			
+				/* set cwd */
+				if(chdir (dir)==-1) {
+					process_handle_data->exec_errno=errno;
+					exit (-1);
+				}
+			
+				/* exec */
+				execve (argv[0], argv, env);
+		
+				/* bummer! */
+				process_handle_data->exec_errno=errno;
 				exit (-1);
 			}
-			
-
-#ifdef DEBUG
-			{
-				i=0;
-				while(argv[i]!=NULL) {
-					g_message ("arg %d: [%s]", i, argv[i]);
-					i++;
-				}
-			}
-#endif
-			
-			
-			/* exec */
-			execv (cmd, argv);
-		
-			/* bummer! */
-			process_handle_data->exec_errno=errno;
-			exit (-1);
 		}
 		/* parent */
+
+		/* store process name, based on the last section of the cmd */
+		{
+			char *slash=strrchr (argv[0], '/');
+			
+			if(slash!=NULL) {
+				process_handle_data->proc_name=_wapi_handle_scratch_store (slash+1, strlen (slash+1));
+			} else {
+				process_handle_data->proc_name=_wapi_handle_scratch_store (argv[0], strlen (argv[0]));
+			}
+		}
+		
+		/* These seem to be the defaults on w2k */
+		process_handle_data->min_working_set=204800;
+		process_handle_data->max_working_set=1413120;
+		
+		if(cmd!=NULL) {
+			g_free (cmd);
+		}
+		if(dir!=NULL) {
+			g_free (dir);
+		}
+		g_strfreev (argv);
+		g_strfreev (env);
 		
 		/* store pid */
 		process_handle_data->id=pid;

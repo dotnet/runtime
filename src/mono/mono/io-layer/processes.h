@@ -117,5 +117,13 @@ extern gboolean GetProcessTimes (gpointer process, WapiFileTime *create_time,
 				 WapiFileTime *exit_time,
 				 WapiFileTime *kernel_time,
 				 WapiFileTime *user_time);
+extern gboolean EnumProcessModules (gpointer process, gpointer *modules,
+				    guint32 size, guint32 *needed);
+extern guint32 GetModuleBaseName (gpointer process, gpointer module,
+				  gunichar2 *basename, guint32 size);
+extern gboolean GetProcessWorkingSetSize (gpointer process, size_t *min,
+					  size_t *max);
+extern gboolean SetProcessWorkingSetSize (gpointer process, size_t min,
+					  size_t max);
 
 #endif /* _WAPI_PROCESSES_H_ */

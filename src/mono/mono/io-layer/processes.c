@@ -30,6 +30,9 @@
 #include <mono/io-layer/process-private.h>
 #include <mono/io-layer/threads.h>
 
+/* The process' environment strings */
+extern char **environ;
+
 #undef DEBUG
 
 static void process_close_shared (gpointer handle);
@@ -55,7 +58,6 @@ static void process_ops_init (void)
 
 static void process_close_shared (gpointer handle G_GNUC_UNUSED)
 {
-#ifdef DEBUG
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
 
@@ -67,24 +69,28 @@ static void process_close_shared (gpointer handle G_GNUC_UNUSED)
 		return;
 	}
 
+#ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION
 		   ": closing process handle %p with id %d", handle,
 		   process_handle->id);
 #endif
+
+	if(process_handle->proc_name!=0) {
+		_wapi_handle_scratch_delete (process_handle->proc_name);
+		process_handle->proc_name=0;
+	}
 }
 
 gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			WapiSecurityAttributes *process_attrs G_GNUC_UNUSED,
 			WapiSecurityAttributes *thread_attrs G_GNUC_UNUSED,
 			gboolean inherit_handles, guint32 create_flags,
-			gpointer environ, const gunichar2 *cwd,
+			gpointer new_environ, const gunichar2 *cwd,
 			WapiStartupInfo *startup,
 			WapiProcessInformation *process_info)
 {
-	gchar *cmd=NULL, *prog, *args=NULL, *dir=NULL;
-	gunichar2 *environp;
-	guint32 env=0, stored_dir=0, stored_prog=0, stored_args=0;
-	guint32 env_count=0, i;
+	gchar *cmd=NULL, *prog, *full_prog, *args=NULL, *args_after_prog=NULL, *dir=NULL;
+	guint32 env=0, stored_dir=0, stored_prog=0, i;
 	gboolean ret=FALSE;
 	gpointer stdin_handle, stdout_handle, stderr_handle;
 	guint32 pid, tid;
@@ -173,28 +179,55 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 				dir[i]='/';
 			}
 		}
-		stored_dir=_wapi_handle_scratch_store (dir, strlen (dir));
+	} else {
+		dir=g_get_current_dir ();
 	}
+	stored_dir=_wapi_handle_scratch_store (dir, strlen (dir));
 	
-	/* environ is a block of NULL-terminated strings, which is
-	 * itself NULL-terminated. Of course, passing an array of
+	
+	/* new_environ is a block of NULL-terminated strings, which
+	 * is itself NULL-terminated. Of course, passing an array of
 	 * string pointers would have made things too easy :-(
+	 *
+	 * If new_environ is not NULL it specifies the entire set of
+	 * environment variables in the new process.  Otherwise the
+	 * new process inherits the same environment.
 	 */
-	/* Not sure whether I should turn the w32 env block into
-	 * proper env vars, or just leave it to be read back by other
-	 * w32 emulation functions.
-	 */
-	if(environ!=NULL) {
-		/* env_count counts bytes, not chars */
-		for(environp=(gunichar2 *)environ; *environp;
-		    env_count+=2, environp++) {
-			while(*environp) {
-				env_count+=2;
-				environp++;
+	if(new_environ!=NULL) {
+		gchar **strings;
+		guint32 count;
+		gunichar2 *new_environp;
+
+		/* Count the number of strings */
+		for(new_environp=(gunichar2 *)new_environ; *new_environp;
+		    new_environp++) {
+			count++;
+			while(*new_environp) {
+				new_environp++;
+			}
+		}
+		strings=g_new0 (gchar *, count);
+		
+		/* Copy each environ string into 'strings' turning it
+		 * into utf8 at the same time
+		 */
+		count=0;
+		for(new_environp=(gunichar2 *)new_environ; *new_environp;
+		    new_environp++) {
+			strings[count]=g_utf16_to_utf8 (new_environp, -1, NULL,
+							NULL, NULL);
+			count++;
+			while(*new_environp) {
+				new_environp++;
 			}
 		}
 
-		env=_wapi_handle_scratch_store (environ, env_count);
+		env=_wapi_handle_scratch_store_string_array (strings);
+
+		g_strfreev (strings);
+	} else {
+		/* Use the existing environment */
+		env=_wapi_handle_scratch_store_string_array (environ);
 	}
 
 	/* We can't put off locating the executable any longer :-( */
@@ -220,6 +253,8 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			prog=g_strdup_printf ("%s/%s", curdir, cmd);
 			g_free (curdir);
 		}
+
+		args_after_prog=args;
 	} else {
 		gchar *token=NULL;
 		
@@ -227,9 +262,15 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		 * marks into account
 		 */
 
-		/* FIXME: move the contents of args down when token
-		 * has been set (otherwise argv[0] is duplicated)
+		/* First, strip off all leading whitespace */
+		args=g_strchug (args);
+		
+		/* args_after_prog points to the contents of args
+		 * after token has been set (otherwise argv[0] is
+		 * duplicated)
 		 */
+		args_after_prog=args;
+
 		/* Assume the opening quote will always be the first
 		 * character
 		 */
@@ -238,6 +279,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			if(g_ascii_isspace (args[i+1])) {
 				/* We found the first token */
 				token=g_strndup (args+1, i-1);
+				args_after_prog=args+i;
 			} else {
 				/* Quotation mark appeared in the
 				 * middle of the token.  Just give the
@@ -252,6 +294,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 			for(i=0; args[i]!='\0'; i++) {
 				if(g_ascii_isspace (args[i])) {
 					token=g_strndup (args, i);
+					args_after_prog=args+i;
 					break;
 				}
 			}
@@ -260,6 +303,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		if(token==NULL && args[0]!='\0') {
 			/* Must be just one token in the string */
 			token=g_strdup (args);
+			args_after_prog=NULL;
 		}
 		
 		if(token==NULL) {
@@ -317,31 +361,33 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 	}
 
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": Exec prog [%s] args [%s]",
-		   prog, args);
+	g_message (G_GNUC_PRETTY_FUNCTION ": Exec prog [%s] args [%s]", prog,
+		   args_after_prog);
 #endif
 	
-	stored_prog=_wapi_handle_scratch_store (prog, strlen (prog));
-	stored_args=_wapi_handle_scratch_store (args, strlen (args));
-	
-	stdin_handle=GetStdHandle (STD_INPUT_HANDLE);
-	stdout_handle=GetStdHandle (STD_OUTPUT_HANDLE);
-	stderr_handle=GetStdHandle (STD_ERROR_HANDLE);
-	
-	if(startup!=NULL) {
-		if(startup->dwFlags & STARTF_USESTDHANDLES) {
-			stdin_handle=startup->hStdInput;
-			stdout_handle=startup->hStdOutput;
-			stderr_handle=startup->hStdError;
-		}
+	if(args_after_prog!=NULL) {
+		full_prog=g_strconcat (prog, " ", args_after_prog, NULL);
+	} else {
+		full_prog=g_strdup (prog);
 	}
 	
-	ret=_wapi_handle_process_fork (stored_prog, stored_args, env,
-				       stored_dir, inherit_handles,
-				       create_flags, stdin_handle,
-				       stdout_handle, stderr_handle,
-				       &process_handle, &thread_handle, &pid,
-				       &tid);
+	stored_prog=_wapi_handle_scratch_store (full_prog, strlen (full_prog));
+
+	if(startup!=NULL && startup->dwFlags & STARTF_USESTDHANDLES) {
+		stdin_handle=startup->hStdInput;
+		stdout_handle=startup->hStdOutput;
+		stderr_handle=startup->hStdError;
+	} else {
+		stdin_handle=GetStdHandle (STD_INPUT_HANDLE);
+		stdout_handle=GetStdHandle (STD_OUTPUT_HANDLE);
+		stderr_handle=GetStdHandle (STD_ERROR_HANDLE);
+	}
+	
+	ret=_wapi_handle_process_fork (stored_prog, env, stored_dir,
+				       inherit_handles, create_flags,
+				       stdin_handle, stdout_handle,
+				       stderr_handle, &process_handle,
+				       &thread_handle, &pid, &tid);
 	
 	if(ret==TRUE && process_info!=NULL) {
 		process_info->hProcess=process_handle;
@@ -354,7 +400,7 @@ cleanup:
 	if(cmd!=NULL) {
 		g_free (cmd);
 	}
-	if(prog!=NULL) {
+	if(full_prog!=NULL) {
 		g_free (prog);
 	}
 	if(stored_prog!=0) {
@@ -363,9 +409,6 @@ cleanup:
 	if(args!=NULL) {
 		g_free (args);
 	}
-	if(stored_args!=0) {
-		_wapi_handle_scratch_delete (stored_args);
-	}
 	if(dir!=NULL) {
 		g_free (dir);
 	}
@@ -373,7 +416,7 @@ cleanup:
 		_wapi_handle_scratch_delete (stored_dir);
 	}
 	if(env!=0) {
-		_wapi_handle_scratch_delete (env);
+		_wapi_handle_scratch_delete_string_array (env);
 	}
 	
 	return(ret);
@@ -413,6 +456,8 @@ static void process_set_current (void)
 					     (gpointer *)&process_handle,
 					     NULL);
 	if(current_process==0) {
+		gchar *progname, *slash;
+		
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION
 			   ": Need to create my own process handle");
@@ -435,6 +480,31 @@ static void process_set_current (void)
 		}
 
 		process_handle->id=pid;
+		
+		/* These seem to be the defaults on w2k */
+		process_handle->min_working_set=204800;
+		process_handle->max_working_set=1413120;
+		
+		progname=g_get_prgname ();
+
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": using [%s] as prog name",
+			   progname);
+#endif
+
+		if(progname!=NULL) {
+			slash=strrchr (progname, '/');
+			if(slash!=NULL) {
+				process_handle->proc_name=_wapi_handle_scratch_store (slash+1, strlen (slash+1));
+			} else {
+				process_handle->proc_name=_wapi_handle_scratch_store (progname, strlen (progname));
+			}
+		}
+
+		/* Make sure the new handle has a reference so it wont go away
+		 * until this process exits
+		 */
+		_wapi_handle_ref (current_process);
 	} else {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": Found my process handle");
@@ -461,7 +531,10 @@ static gboolean process_enum (gpointer handle, gpointer user_data)
 {
 	GPtrArray *processes=user_data;
 	
-	g_ptr_array_add (processes, handle);
+	/* Ignore processes that have already exited (ie they are signalled) */
+	if(_wapi_handle_issignalled (handle)==FALSE) {
+		g_ptr_array_add (processes, handle);
+	}
 	
 	/* Return false to keep searching */
 	return(FALSE);
@@ -471,6 +544,8 @@ gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 {
 	GPtrArray *processes=g_ptr_array_new ();
 	guint32 fit, i;
+	
+	mono_once (&process_current_once, process_set_current);
 	
 	_wapi_search_handle (WAPI_HANDLE_PROCESS, process_enum, processes,
 			     NULL, NULL);
@@ -617,6 +692,173 @@ gboolean GetProcessTimes (gpointer process, WapiFileTime *create_time,
 	if(_wapi_handle_issignalled (process)==TRUE) {
 		*exit_time=process_handle->exit_time;
 	}
+	
+	return(TRUE);
+}
+
+gboolean EnumProcessModules (gpointer process, gpointer *modules,
+			     guint32 size, guint32 *needed)
+{
+	/* Store modules in an array of pointers (main module as
+	 * modules[0]), using the load address for each module as a
+	 * token.  (Use 'NULL' as an alternative for the main module
+	 * so that the simple implementation can just return one item
+	 * for now.)  Get the info from /proc/<pid>/maps on linux,
+	 * other systems will have to implement /dev/kmem reading or
+	 * whatever other horrid technique is needed.
+	 */
+	if(size<sizeof(gpointer)) {
+		return(FALSE);
+	}
+	
+#ifdef linux
+	modules[0]=NULL;
+	*needed=sizeof(gpointer);
+#else
+	modules[0]=NULL;
+	*needed=sizeof(gpointer);
+#endif
+	
+	return(TRUE);
+}
+
+guint32 GetModuleBaseName (gpointer process, gpointer module,
+			   gunichar2 *basename, guint32 size)
+{
+	struct _WapiHandle_process *process_handle;
+	gboolean ok;
+	
+	mono_once (&process_current_once, process_set_current);
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": Getting module base name, process handle %p module %p",
+		   process, module);
+#endif
+
+	if(basename==NULL || size==0) {
+		return(FALSE);
+	}
+	
+	ok=_wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
+				(gpointer *)&process_handle, NULL);
+	if(ok==FALSE) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": Can't find process %p",
+			   process);
+#endif
+		
+		return(FALSE);
+	}
+
+	if(module==NULL) {
+		/* Shorthand for the main module, which has the
+		 * process name recorded in the handle data
+		 */
+		pid_t pid;
+		gunichar2 *procname;
+		guchar *procname_utf8;
+		glong len, bytes;
+		
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   ": Returning main module name");
+#endif
+
+		pid=process_handle->id;
+		procname_utf8=_wapi_handle_scratch_lookup_as_string (process_handle->proc_name);
+	
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": Process name is [%s]",
+			   procname_utf8);
+#endif
+
+		procname=g_utf8_to_utf16 (procname_utf8, -1, NULL, &len, NULL);
+		if(procname==NULL) {
+			/* bugger */
+			g_free (procname_utf8);
+			return(0);
+		}
+
+		/* Add the terminator, and convert chars to bytes */
+		bytes=(len+1)*2;
+		
+		if(size<bytes) {
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": Size %d smaller than needed (%ld); truncating", size, bytes);
+#endif
+
+			memcpy (basename, procname, size);
+		} else {
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION
+				   ": Size %d larger than needed (%ld)",
+				   size, bytes);
+#endif
+
+			memcpy (basename, procname, bytes);
+		}
+		
+		g_free (procname_utf8);
+		g_free (procname);
+
+		return(len);
+	} else {
+		/* Look up the address in /proc/<pid>/maps */
+	}
+	
+	return(0);
+}
+
+gboolean GetProcessWorkingSetSize (gpointer process, size_t *min, size_t *max)
+{
+	struct _WapiHandle_process *process_handle;
+	gboolean ok;
+	
+	mono_once (&process_current_once, process_set_current);
+
+	if(min==NULL || max==NULL) {
+		/* Not sure if w32 allows NULLs here or not */
+		return(FALSE);
+	}
+	
+	ok=_wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
+				(gpointer *)&process_handle, NULL);
+	if(ok==FALSE) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": Can't find process %p",
+			   process);
+#endif
+		
+		return(FALSE);
+	}
+
+	*min=process_handle->min_working_set;
+	*max=process_handle->max_working_set;
+	
+	return(TRUE);
+}
+
+gboolean SetProcessWorkingSetSize (gpointer process, size_t min, size_t max)
+{
+	struct _WapiHandle_process *process_handle;
+	gboolean ok;
+
+	mono_once (&process_current_once, process_set_current);
+
+	ok=_wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
+				(gpointer *)&process_handle, NULL);
+	if(ok==FALSE) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": Can't find process %p",
+			   process);
+#endif
+		
+		return(FALSE);
+	}
+
+	process_handle->min_working_set=min;
+	process_handle->max_working_set=max;
 	
 	return(TRUE);
 }

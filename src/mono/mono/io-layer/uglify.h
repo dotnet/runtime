@@ -31,6 +31,7 @@ typedef guint32 ULONG;
 typedef gint32 *PLONG;
 typedef guint64 LONGLONG;
 typedef gunichar2 TCHAR;
+typedef size_t SIZE_T;
 
 typedef gpointer HANDLE;
 typedef gpointer *LPHANDLE;

@@ -1021,6 +1021,13 @@ void mono_thread_init(MonoDomain *domain, MonoThreadStartCB start_cb)
 	mono_thread_start_cb = start_cb;
 
 	slothash_key=TlsAlloc();
+
+	/* Get a pseudo handle to the current process.  This is just a
+	 * kludge so that wapi can build a process handle if needed.
+	 * As a pseudo handle is returned, we don't need to clean
+	 * anything up.
+	 */
+	GetCurrentProcess ();
 }
 
 #ifdef THREAD_DEBUG

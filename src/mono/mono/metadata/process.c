@@ -21,14 +21,14 @@
 
 #undef DEBUG
 
-HANDLE ves_icall_System_Diagnostics_Process_GetCurrentProcess_internal (void)
+HANDLE ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 {
 	HANDLE handle;
 	
 	/* GetCurrentProcess returns a pseudo-handle, so use
 	 * OpenProcess instead
 	 */
-	handle=OpenProcess (PROCESS_ALL_ACCESS, TRUE, GetCurrentProcessId ());
+	handle=OpenProcess (PROCESS_ALL_ACCESS, TRUE, pid);
 	
 	if(handle==NULL) {
 		/* FIXME: Throw an exception */
@@ -655,9 +655,10 @@ void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoO
 	mono_image_close (image);
 }
 
-MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *filename, MonoString *args, HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoProcInfo *process_info)
+MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd, MonoString *dirname, HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoProcInfo *process_info)
 {
 	gboolean ret;
+	gunichar2 *dir;
 	STARTUPINFO startinfo={0};
 	PROCESS_INFORMATION procinfo;
 	
@@ -667,7 +668,16 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *fil
 	startinfo.hStdOutput=stdout_handle;
 	startinfo.hStdError=stderr_handle;
 	
-	ret=CreateProcess (mono_string_chars (filename), mono_string_chars (args), NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, NULL, NULL, &startinfo, &procinfo);
+	/* The default dir name is "".  Turn that into NULL to mean
+	 * "current directory"
+	 */
+	if(mono_string_length (dirname)==0) {
+		dir=NULL;
+	} else {
+		dir=mono_string_chars (dirname);
+	}
+	
+	ret=CreateProcess (NULL, mono_string_chars (cmd), NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, NULL, dir, &startinfo, &procinfo);
 
 	if(ret==TRUE) {
 		process_info->process_handle=procinfo.hProcess;
@@ -744,4 +754,88 @@ gint32 ves_icall_System_Diagnostics_Process_ExitCode_internal (HANDLE process)
 #endif
 	
 	return(code);
+}
+
+MonoString *ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE process)
+{
+	MonoString *string;
+	gboolean ok;
+	HMODULE mod;
+	gunichar2 name[MAX_PATH];
+	guint32 needed;
+	guint32 len;
+	
+	ok=EnumProcessModules (process, &mod, sizeof(mod), &needed);
+	if(ok==FALSE) {
+		return(NULL);
+	}
+	
+	len=GetModuleBaseName (process, mod, name, sizeof(name));
+	if(len==0) {
+		return(NULL);
+	}
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": process name is [%s]",
+		   g_utf16_to_utf8 (name, -1, NULL, NULL, NULL));
+#endif
+	
+	string=mono_string_new_utf16 (mono_domain_get (), name, len);
+	
+	return(string);
+}
+
+/* Returns an array of pids */
+MonoArray *ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
+{
+	MonoArray *procs;
+	gboolean ret;
+	guint32 needed, count, i;
+	guint32 pids[1024];
+
+	ret=EnumProcesses (pids, sizeof(pids), &needed);
+	if(ret==FALSE) {
+		/* FIXME: throw an exception */
+		return(NULL);
+	}
+	
+	count=needed/sizeof(guint32);
+	procs=mono_array_new (mono_domain_get (), mono_defaults.int_class,
+			      count);
+	for(i=0; i<count; i++) {
+		mono_array_set (procs, guint32, i, pids[i]);
+	}
+	
+	return(procs);
+}
+
+MonoBoolean ves_icall_System_Diagnostics_Process_GetWorkingSet_internal (HANDLE process, guint32 *min, guint32 *max)
+{
+	gboolean ret;
+	
+	ret=GetProcessWorkingSetSize (process, min, max);
+	
+	return(ret);
+}
+
+MonoBoolean ves_icall_System_Diagnostics_Process_SetWorkingSet_internal (HANDLE process, guint32 min, guint32 max, MonoBoolean use_min)
+{
+	gboolean ret;
+	guint32 ws_min;
+	guint32 ws_max;
+	
+	ret=GetProcessWorkingSetSize (process, &ws_min, &ws_max);
+	if(ret==FALSE) {
+		return(FALSE);
+	}
+	
+	if(use_min==TRUE) {
+		max=ws_max;
+	} else {
+		min=ws_min;
+	}
+	
+	ret=SetProcessWorkingSetSize (process, min, max);
+
+	return(ret);
 }

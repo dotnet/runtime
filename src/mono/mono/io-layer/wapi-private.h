@@ -25,7 +25,7 @@
  *
  * If this ever reaches 255, we have problems :-(
  */
-#define _WAPI_HANDLE_VERSION 6
+#define _WAPI_HANDLE_VERSION 7
 
 typedef enum {
 	WAPI_HANDLE_UNUSED=0,

@@ -36,10 +36,13 @@ extern void _wapi_handle_ref (gpointer handle);
 extern void _wapi_handle_unref (gpointer handle);
 extern guint32 _wapi_handle_scratch_store_internal (guint32 bytes);
 extern guint32 _wapi_handle_scratch_store (gconstpointer data, guint32 bytes);
+extern guint32 _wapi_handle_scratch_store_string_array (gchar **data);
 extern gconstpointer _wapi_handle_scratch_lookup (guint32 idx);
 extern guchar *_wapi_handle_scratch_lookup_as_string (guint32 idx);
+extern gchar **_wapi_handle_scratch_lookup_string_array (guint32 idx);
 extern void _wapi_handle_scratch_delete_internal (guint32 idx);
 extern void _wapi_handle_scratch_delete (guint32 idx);
+extern void _wapi_handle_scratch_delete_string_array (guint32 idx);
 extern void _wapi_handle_register_capabilities (WapiHandleType type,
 						WapiHandleCapability caps);
 extern gboolean _wapi_handle_test_capabilities (gpointer handle,
@@ -62,9 +65,9 @@ extern int _wapi_handle_timedwait_signal (struct timespec *timeout);
 extern int _wapi_handle_wait_signal_handle (gpointer handle);
 extern int _wapi_handle_timedwait_signal_handle (gpointer handle,
 						 struct timespec *timeout);
-extern gboolean _wapi_handle_process_fork (guint32 cmd, guint32 args,
-					   guint32 env, guint32 dir,
-					   gboolean inherit, guint32 flags,
+extern gboolean _wapi_handle_process_fork (guint32 cmd, guint32 env,
+					   guint32 dir, gboolean inherit,
+					   guint32 flags,
 					   gpointer stdin_handle,
 					   gpointer stdout_handle,
 					   gpointer stderr_handle,

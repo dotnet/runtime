@@ -574,7 +574,51 @@ guint32 _wapi_handle_scratch_store (gconstpointer data, guint32 bytes)
 		}
 	}
 
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": stored [%s] at %d (len %d)",
+		   data, idx, bytes);
+#endif
+	
 	memcpy (&_wapi_shared_data->scratch_base[idx], data, bytes);
+	
+	return(idx);
+}
+
+guint32 _wapi_handle_scratch_store_string_array (gchar **data)
+{
+	guint32 *stored_strings, count=0, i, idx;
+	gchar **strings;
+	
+	/* No point storing no data */
+	if(data==NULL) {
+		return(0);
+	}
+
+	strings=data;
+	while(*strings!=NULL) {
+		count++;
+		strings++;
+	}
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": %d strings to store", count);
+#endif
+	
+	if(count==0) {
+		return(0);
+	}
+
+	/* stored_strings[0] is the count */
+	stored_strings=g_new0 (guint32, count+1);
+	stored_strings[0]=count;
+	
+	strings=data;
+	for(i=0; i<count; i++) {
+		stored_strings[i+1]=_wapi_handle_scratch_store (strings[i], strlen (strings[i]));
+	}
+
+	idx=_wapi_handle_scratch_store (stored_strings,
+					sizeof(guint32)*(count+1));
 	
 	return(idx);
 }
@@ -605,6 +649,46 @@ gconstpointer _wapi_handle_scratch_lookup (guint32 idx)
 	}
 	
 	return(&storage[idx]);
+}
+
+gchar **_wapi_handle_scratch_lookup_string_array (guint32 idx)
+{
+	gchar **strings;
+	const guint32 *stored_strings;
+	guint32 count, i;
+	
+	if(idx < HDRSIZE || idx > _WAPI_SHM_SCRATCH_SIZE) {
+		return(NULL);
+	}
+
+	stored_strings=_wapi_handle_scratch_lookup (idx);
+	if(stored_strings==NULL) {
+		return(NULL);
+	}
+	
+	/* stored_strings[0] is the number of strings, the index of
+	 * each string follows
+	 */
+	count=stored_strings[0];
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": looking up an array of %d strings", count);
+#endif
+	
+	/* NULL-terminate the array */
+	strings=g_new0 (gchar *, count+1);
+	
+	for(i=0; i<count; i++) {
+		strings[i]=_wapi_handle_scratch_lookup_as_string (stored_strings[i+1]);
+
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": string %d is [%s]", i,
+			   strings[i]);
+#endif
+	}
+	
+	return(strings);
 }
 
 /*
@@ -653,6 +737,33 @@ void _wapi_handle_scratch_delete (guint32 idx)
 	} else {
 		_wapi_handle_scratch_delete_internal (idx);
 	}
+}
+
+void _wapi_handle_scratch_delete_string_array (guint32 idx)
+{
+	const guint32 *stored_strings;
+	guint32 count, i;
+	
+	stored_strings=_wapi_handle_scratch_lookup (idx);
+	if(stored_strings==NULL) {
+		return;
+	}
+	
+	/* stored_strings[0] is the number of strings, the index of
+	 * each string follows
+	 */
+	count=stored_strings[0];
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": deleting an array of %d strings",
+		   count);
+#endif
+	
+	for(i=1; i<count; i++) {
+		_wapi_handle_scratch_delete (stored_strings[i]);
+	}
+	
+	_wapi_handle_scratch_delete (idx);
 }
 
 void _wapi_handle_register_capabilities (WapiHandleType type,
@@ -1005,9 +1116,9 @@ int _wapi_handle_timedwait_signal_handle (gpointer handle,
 #endif /* _POSIX_THREAD_PROCESS_SHARED */
 }
 
-gboolean _wapi_handle_process_fork (guint32 cmd, guint32 args, guint32 env,
-				    guint32 dir, gboolean inherit,
-				    guint32 flags, gpointer stdin_handle,
+gboolean _wapi_handle_process_fork (guint32 cmd, guint32 env, guint32 dir,
+				    gboolean inherit, guint32 flags,
+				    gpointer stdin_handle,
 				    gpointer stdout_handle,
 				    gpointer stderr_handle,
 				    gpointer *process_handle,
@@ -1024,7 +1135,6 @@ gboolean _wapi_handle_process_fork (guint32 cmd, guint32 args, guint32 env,
 
 	fork_proc.type=WapiHandleRequestType_ProcessFork;
 	fork_proc.u.process_fork.cmd=cmd;
-	fork_proc.u.process_fork.args=args;
 	fork_proc.u.process_fork.env=env;
 	fork_proc.u.process_fork.dir=dir;
 	fork_proc.u.process_fork.stdin_handle=GPOINTER_TO_UINT (stdin_handle);

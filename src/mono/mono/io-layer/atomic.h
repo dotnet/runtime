@@ -73,6 +73,9 @@ static inline gint32 InterlockedDecrement(volatile gint32 *val)
  * See
  * http://msdn.microsoft.com/library/en-us/dnmag00/html/win320700.asp?frame=true
  * for the reasons for using cmpxchg and a loop here.
+ *
+ * That url is no longer valid, but it's still in the google cache at the
+ * moment: http://www.google.com/search?q=cache:http://msdn.microsoft.com/library/en-us/dnmag00/html/win320700.asp?frame=true
  */
 static inline gint32 InterlockedExchange(volatile gint32 *val, gint32 new_val)
 {

@@ -190,10 +190,17 @@ static const guchar *find_details (struct _WapiHandleShared *handle)
 static const guchar *process_details (struct _WapiHandleShared *handle)
 {
 	static guchar buf[80];
+	guchar *name;
 	struct _WapiHandle_process *proc=&handle->u.process;
 	
-	g_snprintf (buf, sizeof(buf), "pid: %5u",
-		    proc->id);
+	name=_wapi_handle_scratch_lookup_as_string (proc->proc_name);
+	
+	g_snprintf (buf, sizeof(buf), "[%20s] pid: %5u",
+		    name==NULL?(guchar *)"":name, proc->id);
+
+	if(name!=NULL) {
+		g_free (name);
+	}
 	
 	return(buf);
 }
