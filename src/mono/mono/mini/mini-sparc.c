@@ -957,8 +957,34 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 }
 
 #define EMIT_COND_BRANCH(ins,cond) EMIT_COND_BRANCH_GENERAL((ins),branch,(cond))
-
 #define EMIT_FLOAT_COND_BRANCH(ins,cond) EMIT_COND_BRANCH_GENERAL((ins),fbranch,(cond))
+
+#define EMIT_COND_BRANCH_PREDICTED(ins,cond) \
+    do { \
+	    gint32 disp; \
+        guint32 predict = 0; \
+		if (ins->flags & MONO_INST_BRLABEL) { \
+		   if (ins->inst_i0->inst_c0) { \
+		       disp = (ins->inst_i0->inst_c0 - ((guint8*)code - cfg->native_code)) >> 2; \
+			   g_assert (sparc_is_imm19 (disp)); \
+               predict = 1; \
+			} else { \
+	            mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0); \
+                disp = 0; \
+            } \
+        } else { \
+            if (ins->inst_true_bb->native_offset) { \
+               disp = (ins->inst_true_bb->native_offset - ((guint8*)code - cfg->native_code)) >> 2; \
+               g_assert (sparc_is_imm19 (disp)); \
+			   predict = 1; \
+            } else { \
+	            mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
+                disp = 0; \
+            } \
+        } \
+		sparc_branchp (code, 1, (cond), sparc_icc_short, (predict), disp); \
+		sparc_nop (code); \
+    } while (0)
 
 #define EMIT_COND_BRANCH_BPR(ins,bop,predict) \
     do { \
@@ -2059,6 +2085,12 @@ sparc_patch (guint8 *code, const guint8 *target)
 		/* Bicc */
 		*(guint32*)code = ((ins >> 22) << 22) | (disp & 0x3fffff);
 	}
+	else if ((op == 0) && (op2 == 1)) {
+		if (!sparc_is_imm19 (disp))
+			NOT_IMPLEMENTED;
+		/* BPcc */
+		*(guint32*)code |= (disp & 0x7ffff);
+	}
 	else if ((op == 0) && (op2 == 3)) {
 		if (!sparc_is_imm16 (disp))
 			NOT_IMPLEMENTED;
@@ -2808,7 +2840,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_BGE_UN:
 		case CEE_BLE:
 		case CEE_BLE_UN:
-			EMIT_COND_BRANCH (ins, opcode_to_sparc_cond (ins->opcode));
+			if (sparcv9)
+				EMIT_COND_BRANCH_PREDICTED (ins, opcode_to_sparc_cond (ins->opcode));
+			else
+				EMIT_COND_BRANCH (ins, opcode_to_sparc_cond (ins->opcode));
 			break;
 		case OP_SPARC_BRZ:
 			/* We misuse the macro arguments */
@@ -3277,7 +3312,7 @@ handle_enum:
 		sparc_mov_reg_reg (code, sparc_i0, sparc_o1);
 		break;
 	case SAVE_FP:
-		sparc_stdf (code, sparc_f0, sparc_fp, 72);
+		sparc_stdf_imm (code, sparc_f0, sparc_fp, 72);
 		sparc_ld_imm (code, sparc_fp, 72, sparc_o1);
 		sparc_ld_imm (code, sparc_fp, 72, sparc_o2);
 		break;
