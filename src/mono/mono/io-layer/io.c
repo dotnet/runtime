@@ -2628,6 +2628,7 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	 * than mess around with regexes.
 	 */
 
+	find_handle->namelist = NULL;
 	result = mono_io_scandir (dir_part, entry_part, &find_handle->namelist);
 	
 	if (result < 0) {
@@ -2828,7 +2829,7 @@ gboolean FindClose (gpointer handle)
 	struct _WapiHandlePrivate_find *find_handle;
 	gboolean ok;
 	int thr_ret;
-	
+
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND, NULL,
 				(gpointer *)&find_handle);
 	if(ok==FALSE) {
