@@ -273,6 +273,15 @@
 	It may not be possible to manage exceptions in that case,
 	though. I need to think more about it.
 
+** Threading issues
+
+	If your application creates threads on its own, and you want them to 
+	be able to call code into the CIL universe with Mono, you have to
+	register the thread with Mono before issuing the call.
+
+	To do so, call the mono_thread_attach() function before you execute
+	any managed code from the thread
+
 * Samples
 
 	See the sample programs in mono/sample/embed for examples of
