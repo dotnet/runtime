@@ -27,6 +27,7 @@
 #include <mono/io-layer/daemon-messages.h>
 
 #undef DEBUG
+#undef HEAVY_DEBUG /* This will print handle counts on every handle created */
 
 /* Shared threads don't seem to work yet */
 #undef _POSIX_THREAD_PROCESS_SHARED
@@ -155,6 +156,39 @@ attach_again:
 #endif
 }
 
+#ifdef HEAVY_DEBUG
+static void
+print_handle_count (gint mask)
+{
+	gint count [WAPI_HANDLE_COUNT];
+	gint i;
+	static const gchar *names [] = {"WAPI_HANDLE_UNUSED",
+				  "WAPI_HANDLE_FILE",
+				  "WAPI_HANDLE_CONSOLE",
+				  "WAPI_HANDLE_THREAD",
+				  "WAPI_HANDLE_SEM",
+				  "WAPI_HANDLE_MUTEX",
+				  "WAPI_HANDLE_EVENT",
+				  "WAPI_HANDLE_SOCKET",
+				  "WAPI_HANDLE_FIND",
+				  "WAPI_HANDLE_PROCESS",
+				  "WAPI_HANDLE_PIPE"
+				};
+
+
+	memset (count, 0, sizeof (gint) * WAPI_HANDLE_COUNT);
+
+	for (i = 1; i < _WAPI_MAX_HANDLES; i++) {
+		struct _WapiHandleShared *shared = &_wapi_shared_data->handles [i];
+		count [shared->type]++;
+	}
+
+	for (i = 0; i < WAPI_HANDLE_COUNT; i++)
+		if ((i & mask) == i) /* Always prints the UNUSED count */
+			g_print ("%s: %d\n", names [i], count [i]);
+}
+#endif /* HEAVY_DEBUG */
+
 /*
  * _wapi_handle_new_internal:
  * @type: Init handle to this type
@@ -171,6 +205,9 @@ guint32 _wapi_handle_new_internal (WapiHandleType type)
 	 * allocation, assuming that handles are allocated more often
 	 * than they're freed. Leave 0 (NULL) as a guard
 	 */
+#ifdef HEAVY_DEBUG
+	print_handle_count (WAPI_HANDLE_SEM);
+#endif
 again:
 	for(i=last; i<_WAPI_MAX_HANDLES; i++) {
 		struct _WapiHandleShared *shared=&_wapi_shared_data->handles[i];
@@ -205,11 +242,12 @@ gpointer _wapi_handle_new (WapiHandleType type)
 	gpointer handle;
 	WapiHandleRequest new;
 	WapiHandleResponse new_resp;
-#if HAVE_BOEHM_GC
-	gboolean tried_collect=FALSE;
-#endif
 	
 	mono_once (&shared_init_once, shared_init);
+
+#if HAVE_BOEHM_GC
+	GC_gcollect ();
+#endif
 
 again:
 	if(shared==TRUE) {
@@ -235,23 +273,6 @@ again:
 		
 	if(idx==0) {
 		g_warning (G_GNUC_PRETTY_FUNCTION ": Ran out of handles!");
-
-#if HAVE_BOEHM_GC
-		/* See if we can reclaim some handles by forcing a GC
-		 * collection
-		 */
-		if(tried_collect==FALSE) {
-			g_warning (G_GNUC_PRETTY_FUNCTION
-				   ": Seeing if GC collection helps...");
-			GC_gcollect ();
-			tried_collect=TRUE;
-			goto again;
-		} else {
-			g_warning (G_GNUC_PRETTY_FUNCTION
-				   ": didn't help, returning error");
-		}
-#endif
-	
 		return(GUINT_TO_POINTER (_WAPI_HANDLE_INVALID));
 	}
 

@@ -974,49 +974,69 @@ static SOCKET Socket_to_SOCKET(MonoObject *sockobj)
 void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks, MonoArray **write_socks, MonoArray **err_socks, gint32 timeout)
 {
 	fd_set readfds, writefds, errfds;
+	fd_set *readptr = NULL, *writeptr = NULL, *errptr = NULL;
 	struct timeval tv;
 	div_t divvy;
 	int ret;
-	int readarrsize, writearrsize, errarrsize;
+	int readarrsize = 0, writearrsize = 0, errarrsize = 0;
 	MonoDomain *domain=mono_domain_get();
 	MonoClass *sock_arr_class;
 	MonoArray *socks;
 	int count;
 	int i;
+	SOCKET handle;
 	
 	MONO_ARCH_SAVE_REGS;
 
-	readarrsize=mono_array_length(*read_socks);
+	if (*read_socks)
+		readarrsize=mono_array_length(*read_socks);
+
 	if(readarrsize>FD_SETSIZE) {
 		mono_raise_exception(get_socket_exception(WSAEFAULT));
 		return;
 	}
 	
-	FD_ZERO(&readfds);
-	for(i=0; i<readarrsize; i++) {
-		FD_SET(Socket_to_SOCKET(mono_array_get(*read_socks, MonoObject *, i)), &readfds);
+	if (readarrsize) {
+		readptr = &readfds;
+		FD_ZERO(&readfds);
+		for(i=0; i<readarrsize; i++) {
+			handle = Socket_to_SOCKET(mono_array_get(*read_socks, MonoObject *, i));
+			FD_SET(handle, &readfds);
+		}
 	}
 	
-	writearrsize=mono_array_length(*write_socks);
+	if (*write_socks)
+		writearrsize=mono_array_length(*write_socks);
+
 	if(writearrsize>FD_SETSIZE) {
 		mono_raise_exception(get_socket_exception(WSAEFAULT));
 		return;
 	}
 	
-	FD_ZERO(&writefds);
-	for(i=0; i<writearrsize; i++) {
-		FD_SET(Socket_to_SOCKET(mono_array_get(*write_socks, MonoObject *, i)), &writefds);
+	if (writearrsize) {
+		writeptr = &writefds;
+		FD_ZERO(&writefds);
+		for(i=0; i<writearrsize; i++) {
+			handle = Socket_to_SOCKET(mono_array_get(*write_socks, MonoObject *, i));
+			FD_SET(handle, &writefds);
+		}
 	}
 	
-	errarrsize=mono_array_length(*err_socks);
+	if (*err_socks)
+		errarrsize=mono_array_length(*err_socks);
+
 	if(errarrsize>FD_SETSIZE) {
 		mono_raise_exception(get_socket_exception(WSAEFAULT));
 		return;
 	}
 	
-	FD_ZERO(&errfds);
-	for(i=0; i<errarrsize; i++) {
-		FD_SET(Socket_to_SOCKET(mono_array_get(*err_socks, MonoObject *, i)), &errfds);
+	if (errarrsize) {
+		errptr = &errfds;
+		FD_ZERO(&errfds);
+		for(i=0; i<errarrsize; i++) {
+			handle = Socket_to_SOCKET(mono_array_get(*err_socks, MonoObject *, i));
+			FD_SET(handle, &errfds);
+		}
 	}
 
 	/* Negative timeout meaning block until ready is only
@@ -1027,9 +1047,9 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 		tv.tv_sec=divvy.quot;
 		tv.tv_usec=divvy.rem;
 	
-		ret=select(0, &readfds, &writefds, &errfds, &tv);
+		ret=select(0, readptr, writeptr, errptr, &tv);
 	} else {
-		ret=select(0, &readfds, &writefds, &errfds, NULL);
+		ret=select(0, readptr, writeptr, errptr, NULL);
 	}
 	
 	if(ret==SOCKET_ERROR) {
@@ -1037,61 +1057,73 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 		return;
 	}
 
-	sock_arr_class=((MonoObject *)*read_socks)->vtable->klass;
-	
-	count=0;
-	for(i=0; i<readarrsize; i++) {
-		if(FD_ISSET(Socket_to_SOCKET(mono_array_get(*read_socks, MonoObject *, i)), &readfds)) {
-			count++;
-		}
-	}
-	socks=mono_array_new_full(domain, sock_arr_class, &count, NULL);
-	count=0;
-	for(i=0; i<readarrsize; i++) {
-		MonoObject *sock=mono_array_get(*read_socks, MonoObject *, i);
+	if (readarrsize) {
+		sock_arr_class=((MonoObject *)*read_socks)->vtable->klass;
 		
-		if(FD_ISSET(Socket_to_SOCKET(sock), &readfds)) {
-			mono_array_set(socks, MonoObject *, count, sock);
-			count++;
+		count=0;
+		for(i=0; i<readarrsize; i++) {
+			if(FD_ISSET(Socket_to_SOCKET(mono_array_get(*read_socks, MonoObject *, i)), &readfds)) {
+				count++;
+			}
 		}
+		socks=mono_array_new_full(domain, sock_arr_class, &count, NULL);
+		count=0;
+		for(i=0; i<readarrsize; i++) {
+			MonoObject *sock=mono_array_get(*read_socks, MonoObject *, i);
+			
+			if(FD_ISSET(Socket_to_SOCKET(sock), &readfds)) {
+				mono_array_set(socks, MonoObject *, count, sock);
+				count++;
+			}
+		}
+		*read_socks=socks;
+	} else {
+		*read_socks = NULL;
 	}
-	*read_socks=socks;
 
-	count=0;
-	for(i=0; i<writearrsize; i++) {
-		if(FD_ISSET(Socket_to_SOCKET(mono_array_get(*write_socks, MonoObject *, i)), &writefds)) {
-			count++;
+	if (writearrsize) {
+		sock_arr_class=((MonoObject *)*write_socks)->vtable->klass;
+		count=0;
+		for(i=0; i<writearrsize; i++) {
+			if(FD_ISSET(Socket_to_SOCKET(mono_array_get(*write_socks, MonoObject *, i)), &writefds)) {
+				count++;
+			}
 		}
-	}
-	socks=mono_array_new_full(domain, sock_arr_class, &count, NULL);
-	count=0;
-	for(i=0; i<writearrsize; i++) {
-		MonoObject *sock=mono_array_get(*write_socks, MonoObject *, i);
-		
-		if(FD_ISSET(Socket_to_SOCKET(sock), &writefds)) {
-			mono_array_set(socks, MonoObject *, count, sock);
-			count++;
+		socks=mono_array_new_full(domain, sock_arr_class, &count, NULL);
+		count=0;
+		for(i=0; i<writearrsize; i++) {
+			MonoObject *sock=mono_array_get(*write_socks, MonoObject *, i);
+			
+			if(FD_ISSET(Socket_to_SOCKET(sock), &writefds)) {
+				mono_array_set(socks, MonoObject *, count, sock);
+				count++;
+			}
 		}
+		*write_socks=socks;
+	} else {
+		*write_socks = NULL;
 	}
-	*write_socks=socks;
 
-	count=0;
-	for(i=0; i<errarrsize; i++) {
-		if(FD_ISSET(Socket_to_SOCKET(mono_array_get(*err_socks, MonoObject *, i)), &errfds)) {
-			count++;
+	if (errarrsize) {
+		sock_arr_class=((MonoObject *)*err_socks)->vtable->klass;
+		count=0;
+		for(i=0; i<errarrsize; i++) {
+			if(FD_ISSET(Socket_to_SOCKET(mono_array_get(*err_socks, MonoObject *, i)), &errfds)) {
+				count++;
+			}
 		}
-	}
-	socks=mono_array_new_full(domain, sock_arr_class, &count, NULL);
-	count=0;
-	for(i=0; i<errarrsize; i++) {
-		MonoObject *sock=mono_array_get(*err_socks, MonoObject *, i);
-		
-		if(FD_ISSET(Socket_to_SOCKET(sock), &errfds)) {
-			mono_array_set(socks, MonoObject *, count, sock);
-			count++;
+		socks=mono_array_new_full(domain, sock_arr_class, &count, NULL);
+		count=0;
+		for(i=0; i<errarrsize; i++) {
+			MonoObject *sock=mono_array_get(*err_socks, MonoObject *, i);
+			
+			if(FD_ISSET(Socket_to_SOCKET(sock), &errfds)) {
+				mono_array_set(socks, MonoObject *, count, sock);
+				count++;
+			}
 		}
+		*err_socks=socks;
 	}
-	*err_socks=socks;
 }
 
 void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET sock, gint32 level, gint32 name, MonoObject **obj_val)
