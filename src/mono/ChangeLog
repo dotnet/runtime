@@ -1,4 +1,39 @@
+2004-04-12  Sachin Kumar <skumar1@novell.com>
+	* Makefile.am: Added 'web' in SUBDIRS
+
 2004-04-07  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: don't try-run the tests for nptl and/or sigaltstack
+	if they are disabled in the command line.
+
+2004-04-05  Jackson Harper  <jackson@ximian.com>
+
+	* man/ilasm.1: Show /output instead of /out as the switch for
+	specifying output file names.
+
+2004-04-05  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Check for pthread_getattr_np and pthread_attr_get_np.
+
+2004-04-02  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* config.h.in: added HAVE_GETPWUID_R
+	* configure.in: check for getpwuid_r.
+
+2004-03-23  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Fix GNU ld check.
+
+2004-03-22  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Use amd64 instead of x86-64 as directory name. Fixes
+	#55840.
+	
+	* configure.in: Disable -version-script if not using GNU ld. Fixes
+	#55910.
+
+	* configure.in: Speedup successful sigaltstack test.
+
 
 	* configure.in: don't try-run the tests for nptl and/or sigaltstack
 	if they are disabled in the command line.
