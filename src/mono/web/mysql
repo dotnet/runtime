@@ -31,6 +31,12 @@
 		</ul>
 	</li>
 	
+	<li>Bugs with Mono or the data provider should be reported 
+	in Mono's Bugzilla <a href="http://bugzilla.ximian.com/">here</a>.  If you
+	do not have Bugzilla user account, it is free 
+	and easy to 
+	create one <a href="http://bugzilla.ximian.com/createaccount.cgi">here</a>.</li>
+	
 </ul>
 
  <p><a href="http://www.mysql.com/articles/dotnet/">Exploring MySQL 
@@ -69,6 +75,8 @@
 	
 	<li>Mono.Data.MySql (deprecated)
 		<ul>
+			<li>Currently, only works with version 3.23.x of MySQL</li>
+		
 			<li>can connect</li>
 	
 			<li>can execute non-queries via ExecuteNonQuery()</li>
@@ -168,6 +176,7 @@
           "Password=mypassword;";
        IDbConnection dbcon;
        dbcon = new MySQLConnection(connectionString);
+       dbcon.Open();
        IDbCommand dbcmd = dbcon.CreateCommand();
        // requires a table to be created named employee
        // with columns firstname and lastname
@@ -238,15 +247,9 @@ mono TestExample.exe
 	
 	<li>Has a ConnectionString format: 
 <pre>
- "Server=hostname;" +
- "Database=database;" +
- "User ID=username;" +
- "Password=password"
+ "Server=hostname;Database=database;User ID=username;Password=password"
          (or)
- "host=hostname;" +
- "dbname=database;" +
- "user=username;" +
- "passwd=password"
+ "Host=hostname;Dbname=database;User=username;Passwd=password"
 </pre>
 
 	<li>C# Example:
@@ -266,6 +269,7 @@ mono TestExample.exe
           "Password=mypassword;";
        IDbConnection dbcon;
        dbcon = new MySqlConnection(connectionString);
+       dbcon.Open();
        IDbCommand dbcmd = dbcon.CreateCommand();
        // requires a table to be created named employee
        // with columns firstname and lastname

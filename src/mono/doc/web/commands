@@ -36,6 +36,7 @@
 1,Debugging,jit-debug.html,jit-debug.src
 0,Plans,plans.html,plans.src
 1,ADO.NET,ado-net.html,ado-net.src
+2,ProviderFactory,provider-factory.html,provider-factory.src
 2,Firebird Interbase,firebird.html,firebird.src
 2,IBM DB2,ibmdb2.html,ibmdb2.src
 2,Microsft SQL Server,sqlclient.html,sqlclient.src

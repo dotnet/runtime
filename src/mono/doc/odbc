@@ -1,10 +1,15 @@
 * ODBC Data Provider
+
 <ul>
-	<li>Exists in namespace System.Data.Odbc and assembly System.Data
+
+	<li>ADO.NET Data Provider for Data Sources 
+	that have <a href="http://www.microsoft.com/data/odbc/">ODBC</a> support.</li>
+
+	<li>Exists in namespace System.Data.Odbc and assembly System.Data</li>
 	
-	<li>Works on Windows and Linux. Should have no problems working on UNIX too.
+	<li>Works on Windows and Linux. Should have no problems working on UNIX too.</li>
 	
-	<li>Works on Windows via the native Windows odbc32.dll
+	<li>Works on Windows via the native Windows odbc32.dll</li>
 	
 	<li>Works on Linux via:
 	
@@ -14,7 +19,7 @@
 			from <a href="http://www.easysoft.com/">Easysoft</a></li>
 			
 		<li><a href="http://www.iodbc.org/">iODBC</a> which has 
-		    a commercial support 
+		    commercial support 
 		    from <a href="http://oplweb.openlinksw.com:8080/download/">OpenLink Software</a></li>
 	</ul>
 	
@@ -24,16 +29,17 @@
 	
 	<li>ODBC can connect to various databases which has an ODBC driver installed:
 	<ul> 
-		  <li><a href="http://www.mysql.com/">MySQL</a> 
-		  <li><a href="http://www.postgresql.org/">PostgreSQL</a>
-		  <li><a href="http://www.oracle.com/">Oracle</a>
-		  <li><a href="http://www.borland.com/products/downloads/download_interbase.html">Interbase</a>
-		  <li><a href="http://www.sybase.com/downloads">Sybase</a> and
+		  <li><a href="http://www.mysql.com/">MySQL</a></li>
+		  <li><a href="http://www.postgresql.org/">PostgreSQL</a></li>
+		  <li><a href="http://www.oracle.com/">Oracle</a></li>
+		  <li><a href="http://www.borland.com/products/downloads/download_interbase.html">Interbase</a></li>
+		  <li><a href="http://www.sybase.com/downloads">Sybase</a> (
+		  via <a href="http://www.freetds.org/">FreeTDS</a> on UNIX)</li>
 		  <li><a href="http://www.microsoft.com/sql/default.asp">Microsoft SQL Server</a> (
-		  via <a href="http://www.freetds.org/">FreeTDS</a> on UNIX)
-		  <li><a href="http://www-3.ibm.com/software/data/db2/">IBM DB2 Universal Database</a>
-		  <li><a href="http://www.microsoft.com/office/access/default.asp">MS Access</a> 
-		  (via <a href="http://mdbtools.sourceforge.net/">MDB Tools</a> on UNIX)
+		  via <a href="http://www.freetds.org/">FreeTDS</a> on UNIX)</li>
+		  <li><a href="http://www-3.ibm.com/software/data/db2/">IBM DB2 Universal Database</a></li>
+		  <li><a href="http://www.microsoft.com/office/access/default.asp">MS Access</a>
+		  (via <a href="http://mdbtools.sourceforge.net/">MDB Tools</a> on UNIX)</li>
 	</ul>
 		
 	<li>ODBC Provider created by Brian Ritchie.</li>
@@ -73,6 +79,14 @@
 	<li>Can Fill a DataTable in a DataSet via an OdbcDataAdapter</li>
 	
 	<li>Works in SQL#, but Column names don't show up correctly.</li>
+	
+	<li>Bugs with Mono or the data provider should be reported 
+	in Mono's Bugzilla <a href="http://bugzilla.ximian.com/">here</a>.  If you
+	do not have Bugzilla user account, it is free 
+	and easy to 
+	create one <a href="http://bugzilla.ximian.com/createaccount.cgi">here</a>.</li>
+
+	
 </ul>
 	
 ** Action Plan
@@ -84,28 +98,45 @@
 	<li>Testing with other setups
 </ul>
 
-** Testing ODBC provider
+** Testing ODBC provider with IBM DB2 Universal Database
 
-<p>Test Mono's ODBC provider System.Data.Odbc with the MySQL ODBC driver MyODBC
+<ul>
+	<li>You need a working mono and mcs</li>
+	
+	<li>For Unix, you will need unixODBC or iODBC installed</li>
+	
+	<li>Have acess to a <a href="http://www-3.ibm.com/software/data/db2/">IBM DB2 Universal Database</a> or
+	you can download from IBM</li>
+	
+	<li>Read these web pages about Unix, ODBC, and IBM DB2
 
+	<ul>
+		<li><a href="http://www.unixodbc.com/doc/db2.html">unixODBC web page about IBM DB2</a></li>
+		<li><a href="http://www-3.ibm.com/software/data/db2/udb/ad/v8/cli/t0010406">IBM web page about unixODBC and DB2</a></li>
+	</ul>
+	</li>
+	
+	<li>The ODBC provider is similar to the <a href="http://www.go-mono.com/ibmdb2.html">IBM DB2</a> provider.</li>
+</ul>
+
+** Testing ODBC provider with MySQL
+
+<p>You can test Mono's ODBC provider System.Data.Odbc with the MySQL ODBC driver MyODBC
+	
 <p><ul>
 	<li>Take a look at OdbcTest.cs in mcs/class/System.Data/Test</li>
 
 	<li>Here is a ConnectionString format if you have a DSN setup: 
 <pre>
-"DSN=dataSetName;" +
-"UID=myuserid;" +
-"PWD=mypassword"
+"DSN=dataSetName;UID=myuserid;PWD=mypassword"
 </pre>
 	</li>
 	<li>Here is a ConnectionString format if you do not have a DSN (have not
 	gotten this to work though):
 <pre>
 "DRIVER={MySQL ODBC 3.51 Driver};" +
-"SERVER=localhost;" +
-"DATABASE=test;" +
-"UID=myuserid;" +
-"PASSWORD=mypassword;" +
+"SERVER=localhost;DATABASE=test;" +
+"UID=myuserid;PASSWORD=mypassword;" +
 "OPTION=3";
 
 </pre>
@@ -129,6 +160,7 @@
           "UID=myuserid;" +
           "PWD=mypassword";
        IDbConnection dbcon;
+       dbcon.Open();
        dbcon = new OdbcConnection(connectionString);
        IDbCommand dbcmd = dbcon.CreateCommand();
        // requires a table to be created named employee

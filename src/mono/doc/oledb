@@ -27,6 +27,14 @@
 	</li>
 	
 	<li>Does not support trusted connections</li>
+	
+	<li>Bugs with Mono or the data provider should be reported 
+	in Mono's Bugzilla <a href="http://bugzilla.ximian.com/">here</a>.  If you
+	do not have Bugzilla user account, it is free 
+	and easy to 
+	create one <a href="http://bugzilla.ximian.com/createaccount.cgi">here</a>.</li>
+
+	
 </ul>
 	
 ** Current Status
@@ -87,6 +95,7 @@
           "Password=fun2db";
        IDbConnection dbcon;
        dbcon = new OleDbConnection(connectionString);
+       dbcon.Open();
        IDbCommand dbcmd = dbcon.CreateCommand();
        // requires a table to be created named employee
        // with columns firstname and lastname

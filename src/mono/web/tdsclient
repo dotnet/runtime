@@ -19,6 +19,13 @@
 	<li>Uses TDS Protocol Version 4.2 by default</li>
 	
 	<li>Does not support trusted connections</li>
+	
+	<li>Bugs with Mono or the data provider should be reported 
+	in Mono's Bugzilla <a href="http://bugzilla.ximian.com/">here</a>.  If you
+	do not have Bugzilla user account, it is free 
+	and easy to 
+	create one <a href="http://bugzilla.ximian.com/createaccount.cgi">here</a>.</li>
+
 </ul>
 
 ** Current Status
@@ -71,6 +78,18 @@
 	<li>Located at mcs/class/System.Data/Test is a test for System.Data.SqlClient
 	named SqlTest.cs and you could use this as a basis for your test.</li>
 	
+		<li>Has a connection string format:
+<pre>
+ Server=hostname;Database=databaseName;User ID=userid;Password=password
+</pre>
+	</li>
+	<li>The Server part can be used two ways:
+		<ul>
+			<li>hostname - "Server=MYHOST"</li>
+			<li>hostname,port - "Server=MYHOST,1533"</li>
+		</ul>
+	</li>
+	
 	<li>C# Example:
 <pre>
  using System;
@@ -88,6 +107,7 @@
           "Password=mypassword;";
        IDbConnection dbcon;
        dbcon = new TdsConnection(connectionString);
+       dbcon.Open();
        IDbCommand dbcmd = dbcon.CreateCommand();
        string sql = 
            "SELECT fname, lname " +

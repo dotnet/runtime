@@ -1,17 +1,24 @@
 * IBM DB2 Data Provider
 <ul>
+	<li>ADO.NET Data Provider for <a href="http://www-3.ibm.com/software/data/db2/">IBM DB2 Universal Database</a></li>
+
 	<li>Exists in namespace DB2ClientCS and assembly Mono.Data.DB2Client</li>
 	
 	<li>The source code exists at mcs/class/Mono.Data.DB2Client</li>
 			
 	<li>Requires the Call Level Interface to IBM DB2 shared library.  This
 	is db2cli.dll on Windows.  The IBM DB2 CLI API is very similar to the ODBC API. If
-	you take a look at Mono's System.Data.Odbc ODBC provider, you will see the
+	you take a look at Mono's <a href="http://www.go-mono.com/odbc.html">System.Data.Odbc</a> ODBC provider, you will see the
 	DllImport's have similiar function names.</li>
-	
-	<li><a href="http://www-3.ibm.com/software/data/db2/">IBM DB2 Universal Database</a> can be downloaded from IBM.</li>
-		
+			
 	<li>IBM DB2 Provider created by Christopher Bockner.</li>
+	
+	<li>Bugs with Mono or the data provider should be reported 
+	in Mono's Bugzilla <a href="http://bugzilla.ximian.com/">here</a>.  If you
+	do not have Bugzilla user account, it is free 
+	and easy to 
+	create one <a href="http://bugzilla.ximian.com/createaccount.cgi">here</a>.</li>
+	
 </ul>
 	
 ** Current Status
@@ -22,6 +29,8 @@
 	<li>Able to connect to IBM DB2</li>
 	
 	<li>Able to execute DML, such as, CREATE TABLE via ExecuteNonQuery()</li>
+	
+	<li>Christopher says it can retrieve data via the DB2ClientDataReader</li>
 	   
 </ul>
 	
@@ -48,6 +57,21 @@ In order to test.
 	
 	<li>If you do not have the source to mcs, get the source from
 	<a href="http://www.go-mono.com/download">here</a></li>
+	
+	<li>Has a ConnectionString format like ODBC</li>
+	
+	<li>Here is a ConnectionString format if you have a DSN setup: 
+<pre>
+ "DSN=dataSetName;UID=myuserid;PWD=mypassword"
+</pre>
+	</li>
+
+	<li>Here is a ConnectionString format if you do not have a DSN (have not
+	gotten this to work though, so, I am open to suggestions):
+<pre>
+ "DRIVER={DB2 Driver};SERVER=localhost;DATABASE=test;UID=myuserid;PASSWORD=mypassword"
+</pre>
+	</li>
 	
 	<li>In mcs/class/Mono.Data.DB2Client/Test/DBConnTest, you will find
 	a DBConnTest.cs.</li> 
@@ -87,6 +111,7 @@ mono DBConnTest.exe database userid password
        string connectionString = 
           "DSN=sample;UID=db2admin;PWD=mypass";
        IDbConnection dbcon = new DB2ClientConnection(connectionString);
+       dbcon.Open();
        IDbCommand dbcmd = dbcon.CreateCommand();
        string sql =
             "CREATE TABLE mono_db2_test1 ( " +

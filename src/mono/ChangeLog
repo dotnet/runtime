@@ -1,3 +1,24 @@
+2003-02-17  Daniel Morgan <danmorg@sc.rr.com>
+
+	* doc/provider-factory: add new web page 
+	about Mono.Data's ProviderFactory
+
+	* doc/web/commands
+	* doc/web/makefile: add provider-factory web page to build
+	
+	* doc/ado-net
+	* doc/ibmdb2
+	* doc/postgresql
+	* doc/sqlclient
+	* doc/tdsclient
+	* doc/sybase
+	* doc/mysql
+	* doc/firebird
+	* doc/oracle
+	* doc/oledb
+	* doc/odbc
+	* doc/sqlite: updated web pages
+
 2003-02-16  Martin Baulig  <martin@ximian.com>
 
 	* doc/jit-debug-sample

@@ -1,15 +1,30 @@
 * Oracle Data Provider
 
 <ul>
+
 	<li>ADO.NET Data Provider for <a href="http://www.oracle.com/">Oracle</a> databases</li>
+
 	<li>Exists in namespace System.Data.OracleClient and assembly System.Data.OracleClient</li>
+
 	<li>Works on Windows and Linux</li>
+
 	<li>Works with Oracle 8i</li>
+
 	<li>Uses the Oracle CLI (Call Level Interface) which is a C library (API) for the Oracle Client 
 		software</li>
+
 	<li>Internally, the OracleClient provider has OCI abstracted to an object-oriented programming model</li>
+
 	<li>Created by Daniel Morgan and Tim Coleman</li>
+
 	<li>Does not support trusted connections</li>
+
+	<li>Bugs with Mono or the data provider should be reported 
+	in Mono's Bugzilla <a href="http://bugzilla.ximian.com/">here</a>.  If you
+	do not have Bugzilla user account, it is free 
+	and easy to 
+	create one <a href="http://bugzilla.ximian.com/createaccount.cgi">here</a>.</li>
+	
 </ul>
 	
 ** Current Status
@@ -22,19 +37,32 @@
 	assembly and the oci library).  In Current Mono cvs, System.Data.OracleClient 
 	directly platform invokes into the oci library thanks to Tim Coleman.</li>
 	
+	<li>Can have multiple connections with different transactions where each transaction is
+	separated from the others, so a rollback or commit in one transaction 
+	does not affect the other.</li>
+	
 	<li>Can execute simple DML SQL statements, such as, 
 	INSERT a row into the EMP table via the OracleCommand's ExecuteNonQuery method</li>
-	
+		
 	<li>The System.Data.OracleClient.dll assembly can be built with mcs/mono via
 	the makefile.gnu for System.Data.OracleClient or csc/.net via the
 	System.Data.OracleClient.build nant build file.</li>
 	
-	<li>Can NOT retrieve data yet.  ExecuteReader() and ExecuteScalar() in OracleCommand
-	and OracleDataReader need to be implemented.</li>
+	<li>Can retrieve data via ExecuteReader and OracleDataReader.  Currently, 
+	only simple character
+	data is supported.  ExecuteScalar() still needs to be imlemented.</li>
+			
+	<li>OracleException and Error handling exists now.</li>
+	
+	<li>Handling of various data types need to be handled</li>
+	
+	<li>Data Adapter needs to be created. Tim has started on it.</li>
 	
 	<li>Lots of missing functionality and bugs.</li>
 	
-	<li>Error handling has been started.</li>
+	<li>Works with SQL# command-line and GTK# versions in cvs.  Only works with
+	simple character data though.  SQL# For GTK# can only show the results to
+	the TextView because the Data Adapter is not yet available</li>
 	   
 </ul>
 	
@@ -94,15 +122,20 @@
           "Password=tiger;";
        IDbConnection dbcon;
        dbcon = new OracleConnection(connectionString);
+       dbcon.Open();
        IDbCommand dbcmd = dbcon.CreateCommand();
-       string sql =
-              "insert into scott.emp " +
-              "(empno, ename, job, sal, deptno) " +
-              "values(123," +
-              "'Don Smith'," +
-              "'Cook'," +
-              "23021," +
-              "20)";
+       string sql = "SELECT ename, job FROM scott.emp";
+       dbcmd.CommandText = sql;
+       IDataReader reader = dbcmd.ExecuteReader();
+       while(reader.Read()) {
+          string employeeName = reader["ename"];
+          string job = reader["job"];
+          Console.WriteLine("Employee Name: {0}  Job: {1}",
+		                    employeeName, job);
+       }
+       // clean up
+       reader.Close();
+       reader = null;
        dbcmd.CommandText = sql;
        dbcmd.ExecuteNonQuery();
        dbcmd.Dispose();

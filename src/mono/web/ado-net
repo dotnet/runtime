@@ -1,87 +1,178 @@
 * ADO.NET
 
-	<p>Mono's ADO.NET Developers:
-	<ul>
-	<li><b>Rodrigo Moya</b> - rodrigo -AT- ximian.comNOSPAM - coordinator 
-	for the ADO.NET implementation and works on the OLE DB provider
-	and tests</li>
-	<li><b>Daniel Morgan</b> - danmorg -AT- sc.rr.comNOSPAM - works on
-	the MySQL, PostgreSQL, Oracle providers, and tests</li>
-	<li><b>Tim Coleman</b> - tim -AT- timcoleman.comNOSPAM - works on
-	the Microsoft SQL Server, Sybase, TDS providers, Oracle, and tests</li>
-	<li><b>Brian Ritchie</b> - brianlritchie -AT- hotmail.comNOSPAM - works on
-	the ODBC provider and the ProviderFactory</li>
-	<li><b>Vladimir Vukicevic</b> - vladimir -AT- pobox.comNOSPAM - works on
-	the SQL Lite provider</li>
-	<li><b>Christopher Bockner</b> - cleared -AT- rogers.comNOSPAM - works on
-	the IBM DB2 Universal Database provider</li>
-	<li><b>Ville Palo</b> - vi64pa -AT- koti.soon.fiNOSPAM - works on XML stuff in System.Data
-	including DataSet, XmlDataDocument, and has done lots of testing</li>
-	<li><b>Gonzalo Paniagua Javier</b> - gonzalo -AT- ximian.comNOSPAM - integration
-	between System.Web and System.Data</li>
-	<li><b>Gaurav Vaish</b> - gvaish -AT- iitk.ac.in - works on data binding of
-	web controls</li>
-	<li><b>Phillip Jerkins</b> - Named Instance support in System.Data.SqlClient</li>
-	</ul>
+<p>Mono's ADO.NET Developers:
+
+<table border=1>
+
+<tr>
+	<td><b>Developer</b></td>
+	<td><b>Email</b></td>
+	<td><b>Contribution</b></td>
+</tr>
+
+<tr>
+	<td>Rodrigo Moya</td>
+	<td>rodrigo -AT-<br> ximian.comNOSPAM</td>
+	<td>ADO.NET coordinator,<br> OLE DB provider,<br> and tests</td>
+</tr>
+
+<tr>
+	<td>Daniel Morgan</td>
+    <td>danmorg -AT-<br> sc.rr.comNOSPAM</td>
+    <td>MySQL, PostgreSQL, <br>Oracle providers,<br> and tests</td>
+</tr>
+
+<tr>
+	<td>Tim Coleman</td>
+	<td>tim -AT- <br>timcoleman.comNOSPAM</td>
+	<td>Microsoft SQL Server, <br>Sybase, <br>TDS providers,<br> Oracle, 
+		<br>and tests.<br>
+		He has
+	    contributed <br>to other parts <br>of Mono too, <br>such as, 
+	    <br>EnterpriseServices,
+	    XML, <br>and WebServices.</td>
+</tr>
+
+<tr>
+	<td>Brian Ritchie</td>
+	<td>brianlritchie -AT-<br> hotmail.comNOSPAM</td>
+	<td>ODBC provider <br>and the ProviderFactory <br>in Mono.Data</td>
+</tr>
+
+<tr>
+	<td>Vladimir Vukicevic</td> 
+	<td>vladimir -AT-<br> pobox.comNOSPAM</td>
+	<td>SQL Lite provider. <br> He has contributed to GTK# <br>and mPhoto too.</td>
+</tr>
+
+<tr>
+	<td>Christopher Bockner</td>
+	<td>cleared -AT-<br> rogers.comNOSPAM</td>
+	<td>IBM DB2 Universal <br>Database provider</td>
+</tr>
+
+<tr>
+	<td>Ville Palo</td>
+	<td>vi64pa -AT-<br> koti.soon.fiNOSPAM</td>
+	<td>XML stuff <br>in System.Data <br>including DataSet <br>
+	   and XmlDataDocument, <br>and tests</td>
+</tr>
+
+<tr>
+	<td>Gonzalo Paniagua Javier</td>
+	<td>gonzalo -AT-<br> ximian.comNOSPAM</td>
+	<td>Integration between <br>System.Web and <br>System.Data</td>
+</tr>
+
+<tr>
+	<td>Gaurav Vaish</td>
+	<td>gvaish -AT-<br> iitk.ac.inNOSPAM</td>
+	<td>Web controls</td>
+</tr>
+
+<tr>
+	<td>Phillip Jerkins</td>
+	<td>Phillip.Jerkins -AT-<br> morgankeegan.comNOSPAM</td>
+	<td>Named Instance support <br>in System.Data.SqlClient</td>
+</tr>
+
+</table>
+
+** Bugs and Feature Requests
+
+<ul>
+
+	<li>Bugs with Mono or any data provider in Mono should be reported 
+	    in Mono's Bugzilla <a href="http://bugzilla.ximian.com/">here</a>.  If you
+	    do not have a Bugzilla user account, it is free 
+	    and easy to create 
+	    one <a href="http://bugzilla.ximian.com/createaccount.cgi">here</a>.</li>
 	
-* Action plan
+	<li>Any RFE (Request For Enhancement) for features missing or new functionality
+	    should be entered as a bug in Bugzilla too</li>
 
-	<p>The current plan to implement ADO.NET is as follows:
-
-	<ul>
-		<li>Either create ADO.NET providers or modify pre-exiting ADO.NET providers to
-		work with Mono</li>
-		
-		<ul>
-			<li>Create ADO.NET Providers
+</ul>
+	
+** ADO.NET Data Providers
+	
+<p>List of ADO.NET Data Providers working in Mono:
 			
-			<ul>
-					<li><a href="http://www.go-mono.com/ibmdb2.html">IBM DB2 Universal Database</a></li>
-					<li><a href="http://www.go-mono.com/mysql.html">MySQL</a></li>
-					<li><a href="http://www.go-mono.com/odbc.html">ODBC</a></li>
-					<li><a href="http://www.go-mono.com/oracle.html">Oracle</a></li>
-					<li><a href="http://www.go-mono.com/oledb.html">OLE DB</a></li>
-					<li><a href="http://www.go-mono.com/postgresql.html">PostgreSQL</a></li>
-					<li><a href="http://www.go-mono.com/sqlclient.html">Microsoft SQL Server</a></li>
-					<li><a href="http://www.go-mono.com/sqlite.html">SQL Lite</a></li>
-					<li><a href="http://www.go-mono.com/sybase.html">Sybase</a></li>
-					<li><a href="http://www.go-mono.com/tdsclient.html">TDS Generic</a></li>
-					<li>Providers which we do not have, but we would like to have.  Currently,
-					some of these databases are supported via the ODBC or OLEDB providers.</li>
-					<ul>
-						<li><a href="http://msdn.microsoft.com/library/en-us/dnsql2k/html/sqlxml_intromanagedclasses.asp?frame=true">Managed Classes for SqlXml</a> which is
-						a .NET data provider for retrieving XML data from a Microsoft SQL Server 2000 database.  The System.Data.SqlClient provider
-						in Mono can be used as a starting point at mcs/class/System.Data/System.Data.SqlClient.</li>
-						<li><a href="http://www.hughes.com.au/">miniSQL</a></li>
-						<li><a href="http://www.sleepycat.com/">BerkeleyDB (Sleepycat)</a></li>
-						<li><a href="http://www.sapdb.org/">SapDB</a></li>
-						<li><a href="http://www-3.ibm.com/software/data/informix/">Informix</a></li>	
-						<li><a href="http://msdn.microsoft.com/vfoxpro/">Foxpro</a></li>	
-						<li>Microsoft Access - could be done by creating C# bindings to <a href="http://mdbtools.sourceforge.net">MDB Tools</a></li>
-						<li>dbase or xbase type database files</li>
-						<li>Others are welcome</li>
-					</ul>
-				</ul></li>
-				<br>
-			<li>Modify Pre-existing ADO.NET Providers to work with Mono.  This may
-			require fixing or implementing areas of Mono too.
-				<ul>
-					<li><a href="http://www.go-mono.com/firebird.html">Firebird Interbase</a></li> is a
-					   Firebird SQL Managed data provider. It can be used with Interbase databases too.  It
-					   is written in 100%C# and does not require a client library. Works on .NET and Mono.</a>
-					<li><a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a> is a 
-					   PostgreSQL Managed data provider written 
-					   in 100% C#, does not require a client library, and works on .NET and Mono</li>
-					<li><a href="http://sourceforge.net/projects/mysqlnet/">MySQLNet</a> is a 
-					   MySQL Managed data provider written in 100% C#, does not
-					   require a client library, and works on .NET and Mono</li>
-				</ul>
-			</li>
-		</ul>
-	<br>
-	<li>Create Tools to be used for ADO.NET and other technologies (ASP.NET, XML, etc)
-	
-	<ul>
+<ul>
+	<li><a href="http://www.go-mono.com/ibmdb2.html">IBM DB2 Universal Database</a></li>
+	<li><a href="http://www.go-mono.com/mysql.html">MySQL</a></li>
+	<li><a href="http://www.go-mono.com/odbc.html">ODBC</a></li>
+	<li><a href="http://www.go-mono.com/oracle.html">Oracle</a></li>
+	<li><a href="http://www.go-mono.com/oledb.html">OLE DB</a></li>
+	<li><a href="http://www.go-mono.com/postgresql.html">PostgreSQL</a></li>
+	<li><a href="http://www.go-mono.com/sqlclient.html">Microsoft SQL Server</a></li>
+	<li><a href="http://www.go-mono.com/sqlite.html">SQL Lite</a></li>
+	<li><a href="http://www.go-mono.com/sybase.html">Sybase</a></li>
+	<li><a href="http://www.go-mono.com/tdsclient.html">TDS Generic</a></li>
+</ul>
+
+<p>Providers which we do not have, but we would like to have.  Currently,
+	some of these databases are supported via the ODBC or OLE DB providers.
+
+<ul>
+	<li><a href="http://msdn.microsoft.com/library/en-us/dnsql2k/html/sqlxml_intromanagedclasses.asp?frame=true">Managed Classes for SqlXml</a> which is
+		a .NET data provider for retrieving XML data from a Microsoft SQL Server 2000 database.  The System.Data.SqlClient provider
+		in Mono can be used as a starting point at mcs/class/System.Data/System.Data.SqlClient.</li>
+	<li><a href="http://www.hughes.com.au/">miniSQL</a></li>
+	<li><a href="http://www.sleepycat.com/">BerkeleyDB (Sleepycat)</a></li>
+	<li><a href="http://www.sapdb.org/">SapDB</a></li>
+	<li><a href="http://www-3.ibm.com/software/data/informix/">Informix</a></li>	
+	<li><a href="http://msdn.microsoft.com/vfoxpro/">Foxpro</a></li>	
+	<li>Microsoft Access - could be done by creating C# bindings to <a href="http://mdbtools.sourceforge.net">MDB Tools</a></li>
+	<li>dbase or xbase type database files</li>
+	<li>Others are welcome</li>
+</ul>
+
+<p>External Projects that have created ADO.NET Providers that work on Mono:
+
+<ul>
+
+	<li><a href="http://www.go-mono.com/firebird.html">Firebird Interbase</a></li> is a
+	   Firebird SQL Managed data provider. It can be used with Interbase databases too.  It
+	   is written in 100%C# and does not require a client library. Works on .NET and Mono.</a>
+	<li><a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a> is a 
+	   PostgreSQL Managed data provider written 
+	   in 100% C#, does not require a client library, and works on .NET and Mono</li>
+	<li><a href="http://sourceforge.net/projects/mysqlnet/">MySQLNet</a> is a 
+	   MySQL Managed data provider written in 100% C#, does not
+	   require a client library, and works on .NET and Mono</li>
+</ul>
+
+** Tools
+
+<p>Some tools that can be used for ADO.NET and other technologies (ASP.NET, XML, etc).
+
+<ul>	
+		<li><b>SQL# CLI</b> - a SQL query tool with a command-line interface.
+		    It can be used to enter and execute SQL statements or 
+		    execute a batch of SQL commands from a file.   It can
+		  be used to test connection strings, connect to various ADO.NET
+		  providers, save output to text, html, or xml.  It is a work-in-progress.
+		  The SQL# CLI is distributed with the
+		  Mono runtime and class libraries as an executable assembly sqlsharp.exe.
+		  The source to SQL# CLI can be found in the mcs source at
+		  mcs/tools/SqlSharp/SqlSharpCli.cs
+		  </li>
+		  
+		<li><p><b>SQL# GUI - a graphical SQL query tool</b> allows a user
+		  to enter SQL commands in a top panel which is a text editor.  It
+		  has a toolbar and menu for various tasks, such as, executing
+		  SQL commands one-at-a-time or in a batch.  The results would appear
+		  in a bottom panel in a grid or could be saved to a file (xml, html, csv).
+		  Also, the bottom panel would allow logging of SQL command executed.
+		  Currently, there is a <a href="http://go-mono.com/images/sqlsharp.png">SQL# For GTK#</a> which
+		  provides a GUI interface using the <a href="http://gtk-sharp.sourceforge.net">Gtk#</a> toolkit.  SQL# For GTK#
+		  is a work-in-progress and can be found in the mcs source at 
+		  mcs/tools/SqlSharp/gui/gtk-sharp</li>  
+</ul>
+
+<p>Tools we would like to have, but they have not been created yet:
+
+<ul>
 		<li><b>XML Schema Definition tool</b> <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cptools/html/cpconxmlschemadefinitiontoolxsdexe.asp">xsd.exe</a> needs 
 			to be created.  Maybe this TODO item should be at the System.XML web page instead.
 			
@@ -125,28 +216,6 @@
 			</li>
 			</ul>
 		</li>
-	
-		<li><b>SQL# CLI</b> - a SQL query tool with a command-line interface.
-		    It can be used to enter and execute SQL statements or 
-		    execute a batch of SQL commands from a file.   It can
-		  be used to test connection strings, connect to various ADO.NET
-		  providers, save output to text, html, or xml.  It is a work-in-progress.
-		  The SQL# CLI is distributed with the
-		  Mono runtime and class libraries as an executable assembly sqlsharp.exe.
-		  The source to SQL# CLI can be found in the mcs source at
-		  mcs/tools/SqlSharp/SqlSharpCli.cs
-		  </li>
-		  
-		<li><p><b>SQL# GUI - a graphical SQL query tool</b> allows a user
-		  to enter SQL commands in a top panel which is a text editor.  It
-		  has a toolbar and menu for various tasks, such as, executing
-		  SQL commands one-at-a-time or in a batch.  The results would appear
-		  in a bottom panel in a grid or could be saved to a file (xml, html, csv).
-		  Also, the bottom panel would allow logging of SQL command executed.
-		  Currently, there is a <a href="http://go-mono.com/images/sqlsharp.png">SQL# For GTK#</a> which
-		  provides a GUI interface using the <a href="http://gtk-sharp.sourceforge.net">Gtk#</a> toolkit.  SQL# For GTK#
-		  is a work-in-progress and can be found in the mcs source at 
-		  mcs/tools/SqlSharp/gui/gtk-sharp</li>  
 		
 		<li><b>Application XML Configuration File Editor</b> - a tool
 		to create and edit an application configuration file, such as,
@@ -171,16 +240,26 @@
 		  </ul>
 		</li>
 
-	</ul>
 </ul>
+
+** Extra Classes in Mono ADO.NET
+
+ <p>An ADO.NET <a href="http://www.go-mono.com/provider-factory.html">Provider Factory</a> 
+    was created by Brian Ritchie.  The 
+	Provider Factory is a way to dynamically create
+	connections, commands, parameters, and data adapters based on configuration 
+	information.
 	
-* Current Status
+** Current Status
 
 	<p>Various ADO.NET Providers have been created at various stages of 
 	development including: 
 	Firebird/Interbase, IBM DB2 Universal Database, MySQL, ODBC, OLE DB, Oracle,
 	PostgreSQL, SQL Lite, Sybase, Microsoft SQL Server, and TDS Generic.  
 	See their respective web page for more information.
+	
+	<p><b>Data Relations</b> via DataRelation, DataRelationCollection, and
+	other classes have not been implemented
 	
 	<p><b>Constraints</b> need lots of work
 	
@@ -200,17 +279,7 @@
 	Stuart Caborn has started the XML support in a DataSet.  Tim Coleman started
 	XML support in the ExecuteXmlReader() in a SqlCommand.  Ville Palo has been
 	heavily modifying DataSet, XmlDataDocument, and other classes for reading
-	and writing XML.
-	
-	<p><b>ADO.NET Provider Factory</b> was created by Brian Ritchie.  The 
-	Provider Factory is a way to dynamically create
-	connections, commands, parameters, and data adapters based on configuration 
-	information.  The provider factory also provides utility functions needed by a lot of 
-	providers but are not exposed via the provider.  The ProviderFactory
-	is found at mcs/class/Mono.Data and includes a test named test.cs for it in
-	mcs/class/Mono.Data/Test.  Also, take a look at the sample .config file for the
-	test.exe application named test.exe.config.  The .config file is automatically
-	read when you use the Mono.Data.ProviderFactory or Mono.Data.DataTools.
+	and writing XML.  XML Serialization support in DataSet needs to be implemented.
 		
 	<p><b>Integration with ASP.NET</b> has been created.  Data binding of
 	a DataTable in a DataSet to a System.Web.UI.WebControls.DataGrid works.  Data binding
@@ -307,12 +376,71 @@
 </pre>
 	</ul>
 
-* Testing
+** Testing
 
 <ul>
-	<li>Testing connection-oriented classes are done via the provider specific tests
+	<li>Testing connection-oriented classes are done 
+	via the provider specific tests
+	found in the mcs source at mcs/class</br>
+		<table border=1>	
+			<tr>
+				<td><b>Name</b></td>
+				<td><b>Assembly /</br> Namespace</b></td>
+				<td><b>Test</b></td>	
+			</tr>		
+			
+			<tr>
+				<td>Microsoft</br> SQL</br> Server</br></td>
+				<td>System.Data /</br> System.Data.SqlClient</td>
+				<td>SqlTest.cs at</br> System.Data/Test</td>
+			</tr>
+			
+			<tr>
+				<td>PostgreSQL</br> (Mono)</td>
+				<td>Mono.Data.PostgreSqlClient /</br> Mono.Data.PostgreSqlClient</td>
+				<td>PostgresTest.cs at</br> System.Data/Test</td>
+			</tr>
+
+			<tr>
+				<td>MySQL</br> (Mono)</td>
+				<td>Mono.Data.MySql /</br> Mono.Data.MySql</td>
+				<td>MySqlTest.cs at</br> Mono.Data.MySql/Test</td>
+			</tr>
+
+			<tr>
+				<td>Oracle</br> (Mono)</td>
+				<td>System.Data.OracleClient /</br> System.Data.OracleClient</td>
+				<td>TestOracleClient.cs at</br> System.Data.OracleClient</td>
+			</tr>
+
+			<tr>
+				<td>ODBC</br> (Mono)</td>
+				<td>System.Data.OracleClient /</br> System.Data.OracleClient</td>
+				<td>TestOracleClient.cs at</br> System.Data.OracleClient</td>
+			</tr>
+			
+		</table>
+	
 
 	<li><a href="http://www.go-mono.com/testing.html">Testing non-connection classes</a> are 
-	done via mono's modified version of NUnit.</li>
-
+	done via mono's modified version of NUnit.
+		<ul>
+			<li>To run all the NUnit tests for Mono, you need the mcs source.  cd to the root
+			of the mcs source.  To run it:
+				<ul>
+					<li>On Linux: make -f makefile test</li>
+					<li>On Windows: make test</li>
+				</ul>
+			</li>
+			<li>If you just want to run the NUnit tests for System.Data, you would cd into
+			the mcs source at class/System.Data/Test and run it:
+				<ul>
+					<li>On Linux: make -f makefile test</li>
+					<li>On Windows: make test</li>
+				</ul>
+			</li>
+		</ul>
+	</li>
+		
 </ul>	
+

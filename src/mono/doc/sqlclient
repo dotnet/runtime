@@ -18,7 +18,12 @@
 	
 	<li>Uses TDS Protocol Version 7.0</li>
 	
-	<li>Does not support trusted connections</li>
+	<li>Bugs with Mono or the data provider should be reported 
+	in Mono's Bugzilla <a href="http://bugzilla.ximian.com/">here</a>.  If you
+	do not have Bugzilla user account, it is free 
+	and easy to 
+	create one <a href="http://bugzilla.ximian.com/createaccount.cgi">here</a>.</li>
+	
 </ul>
 
 
@@ -62,9 +67,13 @@
 ** Action plan
 
 <ul>
-	<li>Connection timeouts is being developed now.
-
-	<li>Needs more testing...
+	<li>Connection timeouts is being developed now</li>
+	
+	<li>Needs more testing</li>
+	
+	<li>Would like to figure out how to connect via Trusted_Connection or Integrated Security</li>
+	
+	<li>Start work on TDS Protocol Version 8.0 support</li>
 
 </ul>
 
@@ -79,11 +88,64 @@
 			<li><a href="http://www.microsoft.com/sql/default.asp">Microsoft SQL Server</a></li>
 		</ul>
 	</li>
+	
 	<li>If using Microsoft SQL Server 2000, make sure
-	you are using at least Service Pack 3 for Microsoft SQL Server 2000</li>
+	you are using at least Service Pack 3 for Microsoft SQL Server 2000.  If using
+	MSDE 2000, make sure you have the special Service Pack 3 for MSDE 2000.</li>
+	
+	<li>For those that only have MSDE installed.  You can change the authentication mode 
+	from Windows Only Authentication to SQL Server and Windows Authentications (also knows as Mixed-mode authentication)
+	via the <a href="http://support.microsoft.com/default.aspx?scid=kb;en-us;Q322336&sd=tech#4">registry</a></li>.  It is
+	the LoginMode you need to change.  By default,
+	MSDE is installed with Windows Only Authentication. For SqlClient to work with MSDE, you will
+	need to change the setting.</a>
+	
+	<li>If using MSDE, you might need to create a new user with password.  Give
+    this user access to various databases in this MSDE instance.  Also, for each
+    database, give this new user at least SELECT access to the various tables you want
+    to retrieve data from.</li>
+	
+	<li>If you have Enterprise Manager, you can easily change the authentication mode
+	for both MSDE and Microsoft SQL Server.  To change the authentication mode in 
+	Enterprise Mananger, select the instance, right-click on it, and select properites.
+	The SQL Server properties dialog for that instance will pop up.  Choose the Security
+	tab.  Change the authentication from Windows Only to SQL Server and Windows.  If
+	the instance of your database does not show up in Enterprise Manager, Register first
+	by selecting the Action menu and choosing New SQL Server Registration.</li>
 
 	<li>Located at mcs/class/System.Data/Test is a test for System.Data.SqlClient
 	named SqlTest.cs and you could use this as a basis for your test.</li>
+	
+	<li>Mono's SqlClient does not support trusted connections 
+	nor integrated security.  You can not use this when connecting.  You need 
+	to explicitly use a User ID and Password
+	authenticated by SQL Server.</li>
+	
+	<li>Has a connection string format:
+<pre>
+ Server=hostname;Database=databaseName;User ID=userid;Password=password
+</pre>
+	</li>
+	<li>The Server part can be used three ways:
+	
+		<table border=1>
+			<tr>
+				<td><b>Server Definition</b></td> <td><b>Example</b></td>
+			</tr>	
+		
+			<tr>
+				<td>hostname</td> <td>Server=MYHOST</td>
+			</tr>
+			
+			<tr>
+				<td>hostname,port</td> <td>Server=MYHOST,1433</td>
+			</tr>
+			
+			<tr>
+				<td>hostname\\instance</td> <td>Server=MYHOST\\NETSDK</td>
+			</tr>
+		</table>
+	</li>
 	
 	<li>C# Example:
 <pre>
@@ -102,6 +164,7 @@
           "Password=mypassword;";
        IDbConnection dbcon;
        dbcon = new SqlConnection(connectionString);
+       dbcon.Open();
        IDbCommand dbcmd = dbcon.CreateCommand();
        string sql = 
            "SELECT fname, lname " +

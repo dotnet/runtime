@@ -36,6 +36,13 @@
 				and libpq.so on Linux.</li>
 		</ul>
 	</li>
+	
+	<li>Bugs with Mono or the data provider should be reported 
+	in Mono's Bugzilla <a href="http://bugzilla.ximian.com/">here</a>.  If you
+	do not have Bugzilla user account, it is free 
+	and easy to 
+	create one <a href="http://bugzilla.ximian.com/createaccount.cgi">here</a>.</li>
+
 
 </ul>
 
@@ -429,6 +436,7 @@ mono PostgresTest.exe
           "Password=fun2db;";
        IDbConnection dbcon;
        dbcon = new PgConnection(connectionString);
+       dbcon.Open();
        IDbCommand dbcmd = dbcon.CreateCommand();
        // requires a table to be created named employee
        // with columns firstname and lastname
@@ -511,6 +519,7 @@ mono TestExample.exe
           "User ID=postgres;" +
           "Password=fun2db;";
        IDbConnection dbcon;
+       dbcon.Open();
        dbcon = new NpgsqlConnection(connectionString);
        IDbCommand dbcmd = dbcon.CreateCommand();
        // requires a table to be created named employee
