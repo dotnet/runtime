@@ -1,3 +1,15 @@
+/*
+ * mempool.c: efficient memory allocation
+ *
+ * MonoMemPool is for fast allocation of memory. We free
+ * all memory when the pool is destroyed.
+ *
+ * Author:
+ *   Dietmar Maurer (dietmar@ximian.com)
+ *
+ * (C) 2001 Ximian, Inc.
+ */
+
 #include <config.h>
 #include <glib.h>
 

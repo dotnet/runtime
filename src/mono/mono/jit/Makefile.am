@@ -12,8 +12,8 @@ testjit_SOURCES =		\
 	jit.h			\
 	regset.h		\
 	regset.c		\
+	mempool.h		\
 	mempool.c		\
-	testjit.h		\
 	testjit.c
 
 testjit_LDADD =				\

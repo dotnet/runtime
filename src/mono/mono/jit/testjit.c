@@ -1,6 +1,10 @@
 /*
- * testjit.c: Test 
+ * testjit.c: The mono JIT compiler.
  *
+ * Author:
+ *   Dietmar Maurer (dietmar@ximian.com)
+ *
+ * (C) 2001 Ximian, Inc.
  */
 
 #include <config.h>
@@ -17,7 +21,6 @@
 #include <mono/arch/x86/x86-codegen.h>
 
 #include "jit.h"
-#include "testjit.h"
 #include "regset.h"
 
 /*
@@ -44,7 +47,7 @@ case CEE_##name##_S: {                                                        \
 	int near_jump = *ip == CEE_##name##_S;                                \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
-	t1 = ctree_new (mp, MB_TERM_##name, sp [0], sp [1]);                  \
+	t1 = mono_ctree_new (mp, MB_TERM_##name, sp [0], sp [1]);             \
 	if (near_jump)                                                        \
 		t1->data.i = cli_addr + 2 + (signed char) *ip;                \
 	else                                                                  \
@@ -59,20 +62,31 @@ case CEE_##name##_S: {                                                        \
 case CEE_##name: {                                                            \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
-	t1 = ctree_new (mp, MB_TERM_##name, sp [0], sp [1]);                  \
+	t1 = mono_ctree_new (mp, MB_TERM_##name, sp [0], sp [1]);             \
 	t1->cli_addr = sp [0]->cli_addr;                                      \
 	PUSH_TREE (t1);                                                       \
 	break;                                                                \
 }
 	
 /* Whether to dump the assembly code after genreating it */
-gboolean dump_asm    = FALSE;
+gboolean mono_jit_dump_asm = FALSE;
 
 /* Whether to dump the forest */
-gboolean dump_forest = FALSE;
+gboolean mono_jit_dump_forest = FALSE;
 
-static gpointer mono_compile_method (MonoMethod *method);
+/* 
+ * We sometimes need static data, for example the forest generator need it to
+ * store constants or class data. We use a global memory pool for that purpose.
+ */
+MonoMemPool *mono_jit_static_mp;
 
+/**
+ * map_stind_type:
+ * @type: the type to map
+ *
+ * Translates the MonoTypeEnum @type into the corresponding store opcode 
+ * for the code generator.
+ */
 static int
 map_stind_type (MonoTypeEnum type)
 {
@@ -107,6 +121,13 @@ map_stind_type (MonoTypeEnum type)
 	return -1;
 }
 
+/**
+ * map_ldind_type:
+ * @type: the type to map
+ *
+ * Translates the MonoTypeEnum @type into the corresponding load opcode 
+ * for the code generator.
+ */
 static int
 map_ldind_type (MonoTypeEnum type)
 {
@@ -144,6 +165,13 @@ map_ldind_type (MonoTypeEnum type)
 	return -1;
 }
 
+/**
+ * map_call_type:
+ * @type: the type to map
+ *
+ * Translates the MonoTypeEnum @type into the corresponding call opcode 
+ * for the code generator.
+ */
 static int
 map_call_type (MonoTypeEnum type)
 {
@@ -176,221 +204,11 @@ map_call_type (MonoTypeEnum type)
 	return -1;
 }
 
-
-/* 
- * allocates static data (we never free it). Such data is
- * needed by the code generation to store constants. We should
- * use something faster than g_malloc()
+/*
+ * prints the tree to stdout
  */
-inline static gpointer
-alloc_static (int size)
-{
-	return g_malloc (size);
-}
-
-static MonoRegSet *
-get_x86_regset ()
-{
-	MonoRegSet *rs;
-
-	rs = mono_regset_new (X86_NREG);
-
-	mono_regset_reserve_reg (rs, X86_ESP);
-	mono_regset_reserve_reg (rs, X86_EBP);
-
-	return rs;
-}
-
-static void
-tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs) 
-{
-	MBTree *kids[10];
-	int ern = mono_burg_rule (tree->state, goal);
-	guint16 *nts = mono_burg_nts [ern];
-	int i;
-	
-	mono_burg_kids (tree, ern, kids);
-
-	if (goal == MB_NTERM_reg || (goal == MB_NTERM_lreg)) {
-		switch (tree->op) {
-		case MB_TERM_SHL:
-		case MB_TERM_SHR:
-		case MB_TERM_SHR_UN:
-			tree->exclude_mask |= (1 << X86_ECX);
-			tree->left->exclude_mask |= (1 << X86_ECX);
-			break;
-		case MB_TERM_CALL_R8:
-		case MB_TERM_CALL_I4:
-			tree->reg1 = X86_EAX;
-			break;
-		case MB_TERM_CALL_I8:
-		case MB_TERM_MUL:
-			tree->reg1 = X86_EAX;
-			tree->reg2 = X86_EDX;
-			break;
-		case MB_TERM_DIV:
-		case MB_TERM_DIV_UN:
-		case MB_TERM_REM:
-		case MB_TERM_REM_UN:
-			tree->reg1 = X86_EAX;
-			tree->reg2 = X86_EDX;
-			if (goal == MB_NTERM_reg) {
-				tree->left->exclude_mask |= (1 << X86_EDX);
-				tree->right->exclude_mask |= (1 << X86_EDX);
-			}
-			break;
-		default:
-			/* do nothing */
-		}
-	}
-
-	for (i = 0; nts [i]; i++) 
-		tree_allocate_regs (kids [i], nts [i], rs);
-
-	for (i = 0; nts [i]; i++) {
-		mono_regset_free_reg (rs, kids [i]->reg1);
-		mono_regset_free_reg (rs, kids [i]->reg2);
-	}
-
-	switch (goal) {
-	case MB_NTERM_reg:
-		if ((tree->reg1 = 
-		     mono_regset_alloc_reg (rs, tree->reg1, tree->exclude_mask)) == -1) {
-			g_warning ("register allocation failed\n");
-			g_assert_not_reached ();
-		}
-
-		break;
-
-	case MB_NTERM_lreg:
-		if ((tree->reg1 = 
-		     mono_regset_alloc_reg (rs, tree->reg1, tree->exclude_mask)) == -1 ||
-		    (tree->reg2 = 
-		     mono_regset_alloc_reg (rs, tree->reg2, tree->exclude_mask)) == -1) {
-			g_warning ("register allocation failed\n");
-			g_assert_not_reached ();
-		}
-		break;
-
-	case MB_NTERM_freg:
-		/* fixme: allocate floating point registers */
-		break;
-
-	default:
-		/* do nothing */
-	}
-
-	tree->emit = mono_burg_func [ern];
-
-}
-
-static void
-tree_emit (MBCodeGenStatus *s, MBTree *tree) 
-{
-	if (tree->left)
-		tree_emit (s, tree->left);
-	if (tree->right)
-		tree_emit (s, tree->right);
-
-	tree->addr = s->code - s->start;
-
-	if (tree->emit)
-		((MBEmitFunc)tree->emit) (tree, s);
-}
-
-static gint32
-get_address (GPtrArray *forest, gint32 cli_addr, gint base, gint len)
-{
-	gint32 ind, pos;
-	MBTree *t1;
-
-	ind = (len / 2);
-	pos = base + ind;
-
-	/* skip trees with cli_addr == -1 */
-	while ((t1 = (MBTree *) g_ptr_array_index (forest, pos)) &&
-	       t1->cli_addr == -1 && ind) {
-		ind--;
-		pos--;
-	}
-
-	if (t1->cli_addr == cli_addr) {
-		t1->jump_target = 1;
-		return t1->first_addr;
-	}
-
-	if (len <= 1)
-		return -1;
-
-	if (t1->cli_addr > cli_addr) {
-		return get_address (forest, cli_addr, base, ind);
-	} else {
-		ind = (len / 2);		
-		return get_address (forest, cli_addr, base + ind, len - ind);
-	}
-}
-
-static void
-compute_branches (MBCodeGenStatus *s)
-{
-	GPtrArray *forest = s->forest;
-	const int top = forest->len;
-	gint32 addr;
-	guint8 *end;
-	int i;
-
-	end = s->code;
-
-	for (i = 0; i < top; i++) {
-		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
-
-		if (t1->is_jump) {
-
-			if ((i + 1) < forest->len) {
-				MBTree *t2 = (MBTree *) g_ptr_array_index (forest, i + 1);
-				t2->jump_target = 1;
-			}
-
-			if (t1->data.i >= 0) {
-				addr = get_address (forest, t1->data.i, 0, forest->len);
-				if (addr == -1) {
-					g_error ("address 0x%x not found at IL_%04x",
-						 t1->data.i, t1->cli_addr);
-				}
-			} else
-				addr = s->epilog;
-
-			t1->data.i = addr - t1->addr;
-			s->code = s->start + t1->addr;
-			((MBEmitFunc)t1->emit) (t1, s);
-		}
-	}
-
-	s->code = end;
-}
-
-static MBTree *
-ctree_new (MonoMemPool *mp, int op, MBTree *left, MBTree *right)
-{
-	MBTree *t = mono_mempool_alloc0 (mp, sizeof (MBTree));
-
-	t->op = op;
-	t->left = left;
-	t->right = right;
-	t->reg1 = -1;
-	t->reg2 = -1;
-	t->cli_addr = -1;
-	return t;
-}
-
-static MBTree *
-ctree_new_leaf (MonoMemPool *mp, int op)
-{
-	return ctree_new (mp, op, NULL, NULL);
-}
-
-static void
-print_tree (MBTree *tree)
+void
+mono_print_ctree (MBTree *tree)
 {
 	int arity;
 
@@ -406,15 +224,18 @@ print_tree (MBTree *tree)
 
 	g_assert (!(tree->right && !tree->left));
 
-	print_tree (tree->left);
-	print_tree (tree->right);
+	mono_print_ctree (tree->left);
+	mono_print_ctree (tree->right);
 
 	if (arity)
 		printf (")");
 }
 
-static void
-print_forest (GPtrArray *forest)
+/*
+ * prints the whole forest to stdout
+ */
+void
+mono_print_forest (GPtrArray *forest)
 {
 	const int top = forest->len;
 	int i;
@@ -426,65 +247,20 @@ print_forest (GPtrArray *forest)
 		else
 			printf ("       ");
 
-		print_tree (t);
+		mono_print_ctree (t);
 		printf ("\n");
 	}
 
 }
 
-static void
-forest_label (MBCodeGenStatus *s)
-{
-	GPtrArray *forest = s->forest;
-	const int top = forest->len;
-	int i;
-	
-	for (i = 0; i < top; i++) {
-		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
-		MBState *mbstate;
-
-		mbstate =  mono_burg_label (t1, s);
-		if (!mbstate) {
-			g_warning ("tree does not match");
-			print_tree (t1); printf ("\n\n");
-
-			print_forest (forest);
-			g_assert_not_reached ();
-		}
-	}
-}
-
-static void
-forest_emit (MBCodeGenStatus *s)
-{
-	GPtrArray *forest = s->forest;
-	const int top = forest->len;
-	int i;
-		
-	for (i = 0; i < top; i++) {
-		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
-		t1->first_addr = s->code - s->start;
-		tree_emit (s, t1);
-	}
-
-	s->epilog = s->code - s->start;
-}
-
-static void
-forest_allocate_regs (MBCodeGenStatus *s)
-{
-	GPtrArray *forest = s->forest;
-	const int top = forest->len;
-	int i;
-	
-	for (i = 0; i < top; i++) {
-		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
-		tree_allocate_regs (t1, 1, s->rs);
-	}
-
-}
-
-static void
+/**
+ * mono_disassemble_code:
+ * @code: a pointer to the code
+ * @size: the code size in bytes
+ *
+ * Disassemble to code to stdout.
+ */
+void
 mono_disassemble_code (guint8 *code, int size)
 {
 	int i;
@@ -501,89 +277,60 @@ mono_disassemble_code (guint8 *code, int size)
 	system ("as /tmp/test.s -o /tmp/test.o;objdump -d /tmp/test.o"); 
 }
 
-static void
-emit_method (MonoMethod *method, MBCodeGenStatus *s)
-{
-	method->addr = s->start = s->code = g_malloc (1024);
-
-	forest_label (s);
-
-	forest_allocate_regs (s);
-	arch_emit_prologue (s);
-	forest_emit (s);
-	arch_emit_epilogue (s);
-
-	compute_branches (s);
-
-	if (dump_forest)
-		print_forest (s->forest);
-
-	if (dump_asm)
-		mono_disassemble_code (s->start, s->code - s->start);
-}
-
-static gpointer
-arch_create_jit_trampoline (MonoMethod *method)
-{
-	guint8 *code, *buf;
-
-	if (method->addr)
-		return method->addr;
-
-	code = buf = g_malloc (64);
-
-	x86_push_reg (buf, X86_EBP);
-	x86_mov_reg_reg (buf, X86_EBP, X86_ESP, 4);
-
-	x86_push_imm (buf, method);
-	x86_call_code (buf, mono_compile_method);
-	x86_mov_reg_imm (buf, X86_ECX, method);
-	x86_mov_membase_reg (buf, X86_ECX, G_STRUCT_OFFSET (MonoMethod, addr),
-			     X86_EAX, 4);
-
-	/* free the allocated code buffer */
-	x86_push_reg (buf, X86_EAX);
-	x86_push_imm (buf, code);
-	x86_call_code (buf, g_free);
-	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);
-	x86_pop_reg (buf, X86_EAX);
-
-	x86_leave (buf);
-
-	/* jump to the compiled method */
-	x86_jump_reg (buf, X86_EAX);
-
-	g_assert ((buf - code) < 64);
-
-	return code;
-}
-
+/**
+ * ctree_create_load:
+ * @mp: pointer to a memory pool
+ * @addr_type: address type (MB_TERM_ADDR_L, MB_TERM_ADDR_A or MB_TERM_ADDR_G)
+ * @type: the type of the value
+ * @addr: the address of the value
+ *
+ * Creates a tree to load the value at address @addr.
+ */
 inline static MBTree *
-ctree_create_load (MonoMemPool *mp, int atype, MonoTypeEnum type, gpointer pos)
+ctree_create_load (MonoMemPool *mp, int addr_type, MonoTypeEnum type, gpointer addr)
 {
 	int ldind = map_ldind_type (type);
 	MBTree *t;
 
-	t = ctree_new_leaf (mp, atype);
-	t->data.p = pos;
-	t = ctree_new (mp, ldind, t, NULL);
+	t = mono_ctree_new_leaf (mp, addr_type);
+	t->data.p = addr;
+	t = mono_ctree_new (mp, ldind, t, NULL);
 
 	return t;
 }
 
+/**
+ * ctree_create_store:
+ * @mp: pointer to a memory pool
+ * @addr_type: address type (MB_TERM_ADDR_L, MB_TERM_ADDR_A or MB_TERM_ADDR_G)
+ * @s: the value (tree) to store
+ * @type: the type of the value
+ * @addr: the address of the value
+ *
+ * Creates a tree to store the value @s at address @addr.
+ */
 inline static MBTree *
-ctree_create_store (MonoMemPool *mp, int atype, MBTree *s, MonoTypeEnum type, gpointer pos)
+ctree_create_store (MonoMemPool *mp, int addr_type, MBTree *s, MonoTypeEnum type, gpointer addr)
 {
 	int stind = map_stind_type (type);
 	MBTree *t;
 
-	t = ctree_new_leaf (mp, atype);
-	t->data.p = pos;
-	t = ctree_new (mp, stind, t, s);
+	t = mono_ctree_new_leaf (mp, addr_type);
+	t->data.p = addr;
+	t = mono_ctree_new (mp, stind, t, s);
 
 	return t;
 }
 
+/**
+ * Create a duplicate of the value of a tree. This is
+ * easy for trees starting with LDIND/STIND, since the
+ * duplicate is simple a LDIND tree with the same address.
+ * For other trees we have to split the tree into one tree
+ * storing the value to a new temporary variable, and 
+ * another tree which loads that value back. We can then
+ * duplicate the second tree.
+ */
 inline static MBTree *
 ctree_create_dup (MonoMemPool *mp, MBTree *s)
 {
@@ -594,37 +341,37 @@ ctree_create_dup (MonoMemPool *mp, MBTree *s)
 	case MB_TERM_LDIND_I1:
 		t = mono_mempool_alloc (mp, sizeof (MBTree));
 		*t = *s->left;
-		t = ctree_new (mp, MB_TERM_LDIND_I1, t, NULL);
+		t = mono_ctree_new (mp, MB_TERM_LDIND_I1, t, NULL);
 		break;
 	case MB_TERM_STIND_I2:
 	case MB_TERM_LDIND_I2:
 		t = mono_mempool_alloc (mp, sizeof (MBTree));
 		*t = *s->left;
-		t = ctree_new (mp, MB_TERM_LDIND_I2, t, NULL);
+		t = mono_ctree_new (mp, MB_TERM_LDIND_I2, t, NULL);
 		break;
 	case MB_TERM_STIND_I4:
 	case MB_TERM_LDIND_I4:
 		t = mono_mempool_alloc (mp, sizeof (MBTree));
 		*t = *s->left;
-		t = ctree_new (mp, MB_TERM_LDIND_I4, t, NULL);
+		t = mono_ctree_new (mp, MB_TERM_LDIND_I4, t, NULL);
 		break;
 	case MB_TERM_STIND_I8:
 	case MB_TERM_LDIND_I8:
 		t = mono_mempool_alloc (mp, sizeof (MBTree));
 		*t = *s->left;
-		t = ctree_new (mp, MB_TERM_LDIND_I8, t, NULL);
+		t = mono_ctree_new (mp, MB_TERM_LDIND_I8, t, NULL);
 		break;
 	case MB_TERM_STIND_R4:
 	case MB_TERM_LDIND_R4:
 		t = mono_mempool_alloc (mp, sizeof (MBTree));
 		*t = *s->left;
-		t = ctree_new (mp, MB_TERM_LDIND_R4, t, NULL);
+		t = mono_ctree_new (mp, MB_TERM_LDIND_R4, t, NULL);
 		break;
 	case MB_TERM_STIND_R8:
 	case MB_TERM_LDIND_R8:
 		t = mono_mempool_alloc (mp, sizeof (MBTree));
 		*t = *s->left;
-		t = ctree_new (mp, MB_TERM_LDIND_R8, t, NULL);
+		t = mono_ctree_new (mp, MB_TERM_LDIND_R8, t, NULL);
 		break;
 	default:
 		g_warning ("unknown op \"%s\"", mono_burg_term_string [s->op]);
@@ -636,8 +383,15 @@ ctree_create_dup (MonoMemPool *mp, MBTree *s)
 
 typedef void (*MonoCCtor) (void);
 
+/**
+ * mono_jit_init_class:
+ * @klass: the class to initialise
+ *
+ * Initialise the class @klass by calling the class
+ * constructor.
+ */
 static void
-init_class (MonoClass *klass)
+mono_jit_init_class (MonoClass *klass)
 {
 	MonoCCtor cctor;
 	MonoMethod *method;
@@ -650,15 +404,16 @@ init_class (MonoClass *klass)
 		return;
 
 	if (klass->parent && !klass->parent->inited)
-		init_class (klass->parent);
+		mono_jit_init_class (klass->parent);
 	
 	klass->inited = 1;
 
-	klass->data = g_malloc0 (klass->class_size);
+	klass->data = mono_mempool_alloc0 (mono_jit_static_mp, klass->class_size);
 
 	for (i = 0; i < klass->method.count; ++i) {
 		method = klass->methods [i];
-		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && (strcmp (".cctor", method->name) == 0)) {
+		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
+		    (strcmp (".cctor", method->name) == 0)) {
 	
 			cctor = arch_create_jit_trampoline (method);
 			cctor ();
@@ -678,14 +433,25 @@ init_class (MonoClass *klass)
 #define ARG_TYPE(n)     ((n) ? (signature)->params [(n) - (signature)->hasthis] : \
 			(signature)->hasthis ? &method->klass->this_arg: (signature)->params [(0)])
 
-static gpointer
-mono_compile_method (MonoMethod *method)
+/**
+ * mono_create_forest:
+ * @method: the method to analyse
+ * @mp: a memory pool
+ * @locals_size: to return the size of local vars
+ *
+ * This is the architecture independent part of JIT compilation.
+ * It creates a forest of trees which can then be fed into the
+ * architecture dependent code generation.
+ *
+ * We should extend this to mark basic blocks. We can then also try
+ * to make various optimisations at this level.
+ */
+GPtrArray *
+mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 {
-	MBCodeGenStatus cgstat;
 	MonoMethodHeader *header;
 	MonoMethodSignature *signature;
 	MonoImage *image;
-	MonoMemPool *mp;
 	MBTree **sp, **stack, *t1, *t2;
 	register const unsigned char *ip, *end;
 	guint *locals_offsets;
@@ -693,19 +459,12 @@ mono_compile_method (MonoMethod *method)
 	GPtrArray *forest;
 	int local_offset = 0;
 
-	g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
-	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
-
-	printf ("Start JIT compilation of %s\n", method->name);
-
 	header = ((MonoMethodNormal *)method)->header;
 	signature = method->signature;
 	image = method->klass->image;
 	
 	ip = header->code;
 	end = ip + header->code_size;
-
-	cgstat.mp = mp = mono_mempool_new ();
 
 	sp = stack = alloca (sizeof (MBTree *) * header->max_stack);
 	
@@ -768,7 +527,7 @@ mono_compile_method (MonoMethod *method)
 			        mono_metadata_typedef_from_field (image, token & 0xffffff));
 
 			if (!klass->inited)
-				init_class (klass);
+				mono_jit_init_class (klass);
 
 			field = mono_class_get_field (klass, token);
 			g_assert (field);
@@ -776,7 +535,7 @@ mono_compile_method (MonoMethod *method)
 			addr = MONO_CLASS_STATIC_FIELDS_BASE (klass) + field->offset;
 
 			if (load_addr) {
-				t1 = ctree_new_leaf (mp, MB_TERM_ADDR_G);
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
 				t1->data.p = addr;
 			} else {
 				t1 = ctree_create_load (mp, MB_TERM_ADDR_G, field->type->type, addr);
@@ -802,7 +561,7 @@ mono_compile_method (MonoMethod *method)
 			        mono_metadata_typedef_from_field (image, token & 0xffffff));
 
 			if (!klass->inited)
-				init_class (klass);
+				mono_jit_init_class (klass);
 
 			field = mono_class_get_field (klass, token);
 			g_assert (field);
@@ -818,7 +577,7 @@ mono_compile_method (MonoMethod *method)
 		}
 		case CEE_BREAK: { 
 			++ip;
-			t1 = ctree_new_leaf (mp, MB_TERM_BREAK);
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_BREAK);
 			t1->cli_addr = cli_addr;
 			ADD_TREE (t1);
 			break;
@@ -864,7 +623,7 @@ mono_compile_method (MonoMethod *method)
 
 				for (i = nargs - 1; i >= 0; i--) {
 					sp--;
-					t1 = ctree_new (mp, MB_TERM_ARG, *sp, NULL);	
+					t1 = mono_ctree_new (mp, MB_TERM_ARG, *sp, NULL);	
 					ADD_TREE (t1);
 					if (!i && csig->hasthis)
 						size = mono_type_size (&cm->klass->this_arg, &align);
@@ -882,7 +641,7 @@ mono_compile_method (MonoMethod *method)
 
 			cm->addr = arch_create_jit_trampoline (cm);
 			
-			t1 = ctree_new_leaf (mp, map_call_type (csig->ret->type));
+			t1 = mono_ctree_new_leaf (mp, map_call_type (csig->ret->type));
 			t1->data.p = cm;
 			t1->size = offset;
 			
@@ -907,7 +666,7 @@ mono_compile_method (MonoMethod *method)
 		}
 		case CEE_LDC_I4_S: { 
 			++ip;
-			t1 = ctree_new_leaf (mp, MB_TERM_CONST_I4);
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 			t1->data.i = *(gint8 *)ip;
 			++ip;
 			t1->cli_addr = cli_addr;
@@ -916,7 +675,7 @@ mono_compile_method (MonoMethod *method)
 		}
 		case CEE_LDC_I4: { 
 			++ip;
-			t1 = ctree_new_leaf (mp, MB_TERM_CONST_I4);
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 			t1->data.i = read32 (ip);
 			ip += 4;
 			t1->cli_addr = cli_addr;
@@ -933,7 +692,7 @@ mono_compile_method (MonoMethod *method)
 		case CEE_LDC_I4_6:
 		case CEE_LDC_I4_7:
 		case CEE_LDC_I4_8: {
-			t1 = ctree_new_leaf (mp, MB_TERM_CONST_I4);
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 			t1->data.i = (*ip) - CEE_LDC_I4_0;
 			++ip;
 			t1->cli_addr = cli_addr;
@@ -943,7 +702,7 @@ mono_compile_method (MonoMethod *method)
 		case CEE_LDNULL: {
 			//fixme: don't know if this is portable ?
 			++ip;
-			t1 = ctree_new_leaf (mp, MB_TERM_CONST_I4);
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 			t1->data.i = 0;
 			t1->cli_addr = cli_addr;
 			PUSH_TREE (t1);
@@ -951,7 +710,7 @@ mono_compile_method (MonoMethod *method)
 		}
 		case CEE_LDC_I8: {
 			++ip;
-			t1 = ctree_new_leaf (mp, MB_TERM_CONST_I8);
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I8);
 			t1->data.l = read64 (ip);
 			ip += 8;
 			t1->cli_addr = cli_addr;
@@ -959,9 +718,9 @@ mono_compile_method (MonoMethod *method)
 			break;
 		}
 		case CEE_LDC_R4: {
-			float *f = alloc_static (sizeof (float));
+			float *f = mono_mempool_alloc (mono_jit_static_mp, sizeof (float));
 			++ip;
-			t1 = ctree_new_leaf (mp, MB_TERM_CONST_R4);
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_R4);
 			readr4 (ip, f);
 			t1->data.p = f;
 			t1->cli_addr = cli_addr;
@@ -970,9 +729,9 @@ mono_compile_method (MonoMethod *method)
 			break;
 		}
 		case CEE_LDC_R8: { 
-			double *d = alloc_static (sizeof (double));
+			double *d = mono_mempool_alloc (mono_jit_static_mp, sizeof (double));
 			++ip;
-			t1 = ctree_new_leaf (mp, MB_TERM_CONST_R8);
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_R8);
 			readr8 (ip, d);
 			t1->data.p = d;
 			t1->cli_addr = cli_addr;
@@ -1050,7 +809,7 @@ mono_compile_method (MonoMethod *method)
 		case CEE_NEG: {
 			ip++;
 			sp--;
-			t1 = ctree_new (mp, MB_TERM_NEG, sp [0], NULL);
+			t1 = mono_ctree_new (mp, MB_TERM_NEG, sp [0], NULL);
 			t1->cli_addr = sp [0]->cli_addr;
 			PUSH_TREE (t1);		
 			break;
@@ -1058,14 +817,14 @@ mono_compile_method (MonoMethod *method)
 		case CEE_NOT: {
 			ip++;
 			sp--;
-			t1 = ctree_new (mp, MB_TERM_NOT, sp [0], NULL);
+			t1 = mono_ctree_new (mp, MB_TERM_NOT, sp [0], NULL);
 			t1->cli_addr = sp [0]->cli_addr;
 			PUSH_TREE (t1);
 			break;
 		}
 	        case CEE_BR_S: {
 			++ip;
-			t1 = ctree_new_leaf (mp, MB_TERM_BR);
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_BR);
 			t1->data.i = cli_addr + 2 + (signed char) *ip;
 			t1->cli_addr = cli_addr;
 			ADD_TREE (t1);
@@ -1074,7 +833,7 @@ mono_compile_method (MonoMethod *method)
 		}
 		case CEE_BR: {
 			++ip;
-			t1 = ctree_new_leaf (mp, MB_TERM_BR);
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_BR);
 			t1->data.i = cli_addr + 5 + (gint32) read32(ip);
 			t1->cli_addr = cli_addr;
 			ADD_TREE (t1);
@@ -1099,7 +858,7 @@ mono_compile_method (MonoMethod *method)
 			++ip;
 			--sp;
 
-			t1 = ctree_new (mp, MB_TERM_BRTRUE, sp [0], NULL);
+			t1 = mono_ctree_new (mp, MB_TERM_BRTRUE, sp [0], NULL);
 
 			if (near_jump)
 				t1->data.i = cli_addr + 2 + (signed char) *ip;
@@ -1117,7 +876,7 @@ mono_compile_method (MonoMethod *method)
 			++ip;
 			--sp;
 
-			t1 = ctree_new (mp, MB_TERM_BRFALSE, sp [0], NULL);
+			t1 = mono_ctree_new (mp, MB_TERM_BRFALSE, sp [0], NULL);
 
 			if (near_jump)
 				t1->data.i = cli_addr + 2 + (signed char) *ip;
@@ -1134,10 +893,10 @@ mono_compile_method (MonoMethod *method)
 
 			if (signature->ret->type != MONO_TYPE_VOID) {
 				--sp;
-				t1 = ctree_new (mp, MB_TERM_RETV, *sp, NULL);
+				t1 = mono_ctree_new (mp, MB_TERM_RETV, *sp, NULL);
 				t1->cli_addr = sp [0]->cli_addr;
 			} else {
-				t1 = ctree_new (mp, MB_TERM_RET, NULL, NULL);
+				t1 = mono_ctree_new (mp, MB_TERM_RET, NULL, NULL);
 				t1->cli_addr = cli_addr;
 			}
 
@@ -1196,7 +955,7 @@ mono_compile_method (MonoMethod *method)
 		case CEE_CONV_I1: {
 			++ip;
 			sp--;
-			t1 = ctree_new (mp, MB_TERM_CONV_I1, *sp, NULL);
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_I1, *sp, NULL);
 			t1->cli_addr = sp [0]->cli_addr;
 			PUSH_TREE (t1);		
 			break;
@@ -1205,7 +964,7 @@ mono_compile_method (MonoMethod *method)
 		case CEE_CONV_I2: {
 			++ip;
 			sp--;
-			t1 = ctree_new (mp, MB_TERM_CONV_I2, *sp, NULL);
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_I2, *sp, NULL);
 			t1->cli_addr = sp [0]->cli_addr;
 			PUSH_TREE (t1);		
 			break;
@@ -1214,7 +973,7 @@ mono_compile_method (MonoMethod *method)
 		case CEE_CONV_I4: {
 			++ip;
 			sp--;
-			t1 = ctree_new (mp, MB_TERM_CONV_I4, *sp, NULL);
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_I4, *sp, NULL);
 			t1->cli_addr = sp [0]->cli_addr;
 			PUSH_TREE (t1);		
 			break;
@@ -1222,7 +981,7 @@ mono_compile_method (MonoMethod *method)
 		case CEE_CONV_I8: {
 			++ip;
 			sp--;
-			t1 = ctree_new (mp, MB_TERM_CONV_I8, *sp, NULL);
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_I8, *sp, NULL);
 			t1->cli_addr = sp [0]->cli_addr;
 			PUSH_TREE (t1);		
 			break;
@@ -1230,7 +989,7 @@ mono_compile_method (MonoMethod *method)
 		case CEE_CONV_R8: {
 			++ip;
 			sp--;
-			t1 = ctree_new (mp, MB_TERM_CONV_R8, *sp, NULL);
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_R8, *sp, NULL);
 			t1->cli_addr = sp [0]->cli_addr;
 			PUSH_TREE (t1);		
 			break;
@@ -1258,27 +1017,24 @@ mono_compile_method (MonoMethod *method)
 		default:
 			g_warning ("unknown instruction `%s' at IL_%04X", 
 				   opcode_names [*ip], ip - header->code);
-			print_forest (forest);
+			mono_print_forest (forest);
 			g_assert_not_reached ();
 		}
 	}
-	
-	cgstat.forest = forest;
-	cgstat.code = NULL;
-	cgstat.locals_size = local_offset;
-	cgstat.rs = get_x86_regset ();
 
-	emit_method (method, &cgstat);
-
-	mono_regset_free (cgstat.rs);
-	g_ptr_array_free (forest, TRUE);
-	mono_mempool_destroy (cgstat.mp);
-
-	return method->addr;
+	*locals_size = local_offset;
+	return forest;
 }
-
+	
+/**
+ * mono_jit_assembly:
+ * @assembly: reference to an assembly
+ *
+ * JIT compilation of all methods in the assembly. Prints debugging
+ * information on stdout.
+ */
 static void
-jit_assembly (MonoAssembly *assembly)
+mono_jit_assembly (MonoAssembly *assembly)
 {
 	MonoImage *image = assembly->image;
 	MonoMethod *method;
@@ -1291,9 +1047,9 @@ jit_assembly (MonoAssembly *assembly)
 					  (MONO_TABLE_METHOD << 24) | (i + 1), 
 					  NULL);
 
-		printf ("\nStart Method %s\n\n", method->name);
+		printf ("\nMethod: %s\n\n", method->name);
 
-		mono_compile_method (method);
+		arch_compile_method (method);
 
 	}
 
@@ -1301,8 +1057,16 @@ jit_assembly (MonoAssembly *assembly)
 
 typedef int (*MonoMainIntVoid) ();
 
+/**
+ * mono_jit_exec:
+ * @assembly: reference to an assembly
+ * @argc: argument count
+ * @argv: argument vector
+ *
+ * Start execution of a program.
+ */
 static int 
-ves_exec (MonoAssembly *assembly, int argc, char *argv[])
+mono_jit_exec (MonoAssembly *assembly, int argc, char *argv[])
 {
 	MonoImage *image = assembly->image;
 	MonoCLIImageInfo *iinfo;
@@ -1356,12 +1120,12 @@ main (int argc, char *argv [])
 			usage (argv [0]);
 		} else if (strcmp (argv [i], "-d") == 0) {
 			testjit = TRUE;
-			dump_asm = TRUE;
-			dump_forest = TRUE;
+			mono_jit_dump_asm = TRUE;
+			mono_jit_dump_forest = TRUE;
 		} else if (strcmp (argv [i], "--dump-asm") == 0)
-			dump_asm = TRUE;
+			mono_jit_dump_asm = TRUE;
 		else if (strcmp (argv [i], "--dump-forest") == 0)
-			dump_forest = TRUE;
+			mono_jit_dump_forest = TRUE;
 		else
 			usage (argv [0]);
 	}
@@ -1380,14 +1144,19 @@ main (int argc, char *argv [])
 		exit (1);
 	}
 
+	mono_jit_static_mp = mono_mempool_new ();
+
 	if (testjit) {
-		jit_assembly (assembly);
+		mono_jit_assembly (assembly);
 	} else {
-		retval = ves_exec (assembly, argc, argv);
+		retval = mono_jit_exec (assembly, argc, argv);
 		printf ("RESULT: %d\n", retval);
 	}
 
 	mono_assembly_close (assembly);
+
+	/* this is not really needed, since we exit anyway */
+	mono_mempool_destroy (mono_jit_static_mp);
 
 	return retval;
 }

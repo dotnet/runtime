@@ -1,3 +1,12 @@
+/*
+ * regset.c: register set abstraction
+ *
+ * Author:
+ *   Dietmar Maurer (dietmar@ximian.com)
+ *
+ * (C) 2001 Ximian, Inc.
+ */
+
 #include "regset.h"
 #include <mono/arch/x86/x86-codegen.h>
 
@@ -102,4 +111,5 @@ mono_regset_reg_used (MonoRegSet *rs, int regnum)
 
 	return rs->used_mask & ind;
 }
+
 

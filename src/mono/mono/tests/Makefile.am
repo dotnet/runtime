@@ -35,7 +35,8 @@ TESTSRC=			\
 	jit-uint.cs		\
 	jit-long.cs		\
 	jit-ulong.cs		\
-	jit-float.cs	
+	jit-float.cs		\
+	pop.cs
 
 
 JITTESTSRC=			\
@@ -47,7 +48,8 @@ JITTESTSRC=			\
 	test-ops.cs		\
 	fib.cs			\
 	nested-loops.cs		\
-	random.cs
+	random.cs		\
+	pop.cs
 
 TESTS=$(TESTSRC:.cs=.exe)
 JITTESTS=$(JITTESTSRC:.cs=.exe)

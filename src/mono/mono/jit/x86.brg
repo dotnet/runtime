@@ -1,3 +1,12 @@
+/*
+ * x86.brg: X86 code generator
+ *
+ * Author:
+ *   Dietmar Maurer (dietmar@ximian.com)
+ *
+ * (C) 2001 Ximian, Inc.
+ */
+
 #include <glib.h>
 #include <stdio.h>
 
@@ -7,12 +16,22 @@
 #include <mono/arch/x86/x86-codegen.h>
 
 #include "regset.h"
-#include "jit.h"
+#include "mempool.h"
 
 #define MBTREE_TYPE  MBTree
 #define MBCGEN_TYPE  MBCodeGenStatus
 #define MBCOST_DATA  MBCodeGenStatus
 #define MBALLOC_STATE mono_mempool_alloc (data->mp, sizeof (MBState))
+
+typedef struct {
+	MonoMemPool *mp;
+	guint8 *start;
+	guint8 *code;
+	gint32 locals_size;
+	GPtrArray *forest;
+	MonoRegSet *rs;
+	guint32 epilog;
+} MBCodeGenStatus;
 
 typedef struct _MBTree MBTree;
 struct _MBTree {
@@ -41,8 +60,6 @@ struct _MBTree {
 		gpointer p;
 	} data;
 };
-
-gboolean same_tree (MBTree *t1, MBTree *t2);
 
 gint64  mono_llmult    (gint64 a, gint64 b);
 gint64  mono_lldiv     (gint64 a, gint64 b);
@@ -1150,6 +1167,8 @@ stmt: RETV (freg) {
 
 %% 
 
+#include "jit.h"
+
 gint64 
 mono_llmult (gint64 a, gint64 b)
 {
@@ -1178,4 +1197,24 @@ guint64
 mono_llrem_un (guint64 a, guint64 b)
 {
 	return a % b;
+}
+
+MBTree *
+mono_ctree_new (MonoMemPool *mp, int op, MBTree *left, MBTree *right)
+{
+	MBTree *t = mono_mempool_alloc0 (mp, sizeof (MBTree));
+
+	t->op = op;
+	t->left = left;
+	t->right = right;
+	t->reg1 = -1;
+	t->reg2 = -1;
+	t->cli_addr = -1;
+	return t;
+}
+
+MBTree *
+mono_ctree_new_leaf (MonoMemPool *mp, int op)
+{
+	return mono_ctree_new (mp, op, NULL, NULL);
 }
