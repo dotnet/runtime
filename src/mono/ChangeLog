@@ -1,3 +1,8 @@
+2004-03-13  Martin Willemoes Hansen  <mwh@sysrq.dk>
+
+	* data/config.in: Changed libgtkhtml-3.0.so.2 to libgtkhtml-3.0.so to fix
+	breakage with gtkhtml-3.0.10
+
 2004-03-10  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in acconfig.h: Add a --with-sigaltstack option for platforms
