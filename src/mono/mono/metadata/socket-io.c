@@ -1325,7 +1325,7 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 			if(address)
 				mreq.imr_address = ipaddress_to_struct_in_addr (address);
 #else
-			if(local_address)
+			if(address)
 				mreq.imr_interface = ipaddress_to_struct_in_addr (address);
 #endif /* HAVE_STRUCT_IP_MREQN */
 			
