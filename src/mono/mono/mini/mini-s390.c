@@ -3582,7 +3582,7 @@ guint8 cond;
 				s390_l	  (code, s390_r13, 0, s390_r13, 4);
 			}
 			s390_srda (code, s390_r0, 0, 32);
-			s390_dr   (code, s390_r0, ins->sreg2);
+			s390_dr   (code, s390_r0, s390_r13);
 			s390_lr   (code, ins->dreg, s390_r1);
 		}
 			break;
@@ -3611,7 +3611,7 @@ guint8 cond;
 				s390_l	  (code, s390_r13, 0, s390_r13, 4);
 			}
 			s390_srda (code, s390_r0, 0, 32);
-			s390_dr   (code, s390_r0, ins->sreg2);
+			s390_dr   (code, s390_r0, s390_r13);
 			s390_lr   (code, ins->dreg, s390_r0);
 		}
 			break;
@@ -3638,7 +3638,8 @@ guint8 cond;
 				}
 				s390_or	  (code, ins->dreg, s390_r0);
 			} else {
-				s390_bras (code, s390_r13, 4);
+				s390_basr (code, s390_r13, 0);
+				s390_j    (code, 4);
 				s390_word (code, ins->inst_imm);
 				if (ins->dreg != ins->sreg1) {
 					s390_lr	  (code, ins->dreg, ins->sreg1);

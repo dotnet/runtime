@@ -1,3 +1,7 @@
+2004-09-28  Neale Ferguson <Neale.Ferguson@SoftwareAG-usa.com>
+
+	* mini-s390.c: Fix AND_IMM/OR_IMM/DIV_IMM/REM_IMM
+
 2004-09-28  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am ($(tmpinst)/bin/pedump): New.
