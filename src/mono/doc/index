@@ -117,7 +117,8 @@
 	      <img src="images/netmagazine.png">
 	    </td>
 	    <td>
-	      <a href="http://www.fawcette.com/dotnetmag/2003_TE/magazine/columns/trends/default.asp">May 31st, 2003</a>: CLI integration.
+		
+	      <a href="http://www.ftponline.com/wss/2003_TE/magazine/columns/trends">May 31st, 2003</a>: CLI integration.
 	    </td>
 	  </tr>
 	  <tr>
@@ -252,7 +253,8 @@
 
 @item Oct 25th: GTK# 0.11+ Windows Installer available
 
-	Johannes created a <a href="http://java.thn.htu.se/~toor/gtk-sharp/gtk-sharp-0.11-cvs.exe">Windows Installer for GTK# 0.11+</a> and works
+	Johannes created a Windows
+	Installer for GTK# 0.11+ and works
 	with Mono 0.28 for Windows.
 
 @item Oct 21st: Mono Community at Novell Forge
@@ -358,7 +360,7 @@
 	href="images/finddlg.png">here</a>.
 
 	Johannes has patches to have Wine track the Gtk theme,
-	screenshot <a href="http://www.sport-huettn.de/jroith/swfsample.png">here</a>
+	screenshot here (link got broken).
 
 	<b>Security:</b> New authenticode support from Sebastien has
 	been checked into CVS.

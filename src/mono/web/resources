@@ -9,7 +9,7 @@
 
 ** Microsoft .NET
 
-	The <a href="http://msdn.microsoft.com/net">Microsoft.NET site.</a>
+	The <a href="http://msdn.microsoft.com/netframework">Microsoft.NET site.</a>
 
 	The Microsoft .NET Framework can be downloaded <a
 	href="http://msdn.microsoft.com/library/default.asp?url=/downloads/list/netdevframework.asp">here</a>
@@ -74,21 +74,13 @@
 		<li><a href="http://www.gotdotnet.com/userarea/keywordsrch.aspx?keyword=winchurn">http://www.gotdotnet.com/userarea/keywordsrch.aspx?keyword=winchurn</a>
 	</ul>
 
-** Presentations
-
-	Currently the <a href="Presentations/O-Reilly">O'Reilly</a>
-	presentation on Mono is available.  Arturo Espinosa has given
-	a talk on Mono in Mexico and made <a
-	href="http://construct.ximian.com/~arturo/Presentations/Mono.OLS/html">spanish
-	slides</a>
-
 ** ECMA Documentation.
 
 	You can get the documentation for the ECMA specs from:
 
 	<ul>
-		* <a href="http://www.ecma-international.org/publications/standards/ECMA-334.HTM">C# Language Specification</a>
-		* <a href="http://www.ecma-international.org/publications/standards/ECMA-335.HTM">Common Language Infrastructure</a>
+		* <a href="http://www.ecma-international.org/publications/standards/Ecma-334.HTM">C# Language Specification</a>
+		* <a href="http://www.ecma-international.org/publications/standards/Ecma-335.HTM">Common Language Infrastructure</a>
 	</ul>
 
 
@@ -97,7 +89,6 @@
 	<ul>
 		* <a href="http://msdn.microsoft.com/net/ecma">At MSDN</a>
 		* <a href="http://www.dotnetexperts.com">Dot Net Experts</a>
-		* <a href="http://developer.intel.com/software/idap/ecma">Intel</a>
 		* <a href="http://lightning.csse.monash.edu.au/.net/CLI">Monash University</a>
 	</ul>
 
@@ -153,7 +144,7 @@
 
 	<li><b>Class Libraries</b></li>
 	<ul>
-		* <a href="http://9mm.com/~ogl/sdldotnet/">SDL for
+		* <a href="http://cs-sdl.sourceforge.net/">SDL for
 		.NET:</a> Bindings for the popular SDL graphics library.
 
 
@@ -193,10 +184,6 @@
 		* <a
 	          href="http://www.southern-storm.com.au/portable_net.html">Portable.NET:</a>
 		  Another implementation of the CLI and C# compiler.
-
-		* A Free (GFDL) tutorial on C# in Spanish with
-		  examples, slides, and extras (under development). Get it <a
-	 	  href="http://geneura.ugr.es/~jaime/csharp/">here</a>.
 	</ul>
 
 ** GNOME Documentation
