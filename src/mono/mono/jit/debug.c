@@ -17,6 +17,7 @@
 #include "debug-private.h"
 #include "helpers.h"
 
+#ifndef PLATFORM_WIN32
 /*
  * NOTE:  Functions and variables starting with `mono_debug_' and `debug_' are
  *        part of the general debugging code.
@@ -1628,3 +1629,95 @@ mono_debugger_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, ch
 
 	return retval;
 }
+#else
+
+MonoDebugHandle*
+mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **args)
+{
+	return NULL;
+}
+
+void
+mono_debug_write_symbols (MonoDebugHandle *debug)
+{
+}
+
+void
+mono_debug_make_symbols (void)
+{
+}
+
+void
+mono_debug_cleanup (void)
+{
+}
+
+guint32
+mono_debug_get_type (MonoDebugHandle *debug, MonoClass *klass)
+{
+	return 0;
+}
+
+void
+mono_debug_add_type (MonoClass *klass)
+{
+}
+
+void
+mono_debug_add_method (MonoFlowGraph *cfg)
+{
+}
+
+gchar *
+mono_debug_source_location_from_address (MonoMethod *method, guint32 address, guint32 *line_number)
+{
+	return NULL;
+}
+
+gint32
+mono_debug_il_offset_from_address (MonoMethod *method, gint32 address)
+{
+	return -1;
+}
+
+gint32
+mono_debug_address_from_il_offset (MonoMethod *method, gint32 il_offset)
+{
+	return 0;
+}
+
+int
+mono_insert_breakpoint_full (MonoMethodDesc *desc, gboolean use_trampoline)
+{
+	return 0;
+}
+
+int
+mono_remove_breakpoint (int breakpoint_id)
+{
+	return 0;
+}
+
+int
+mono_insert_breakpoint (const gchar *method_name, gboolean include_namespace)
+{
+	return 0;
+}
+
+int
+mono_method_has_breakpoint (MonoMethod* method, gboolean use_trampoline)
+{
+	return 0;
+}
+
+void
+mono_debugger_trampoline_breakpoint_callback (void)
+{
+}
+
+int 
+mono_debugger_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
+{
+	return -1;
+}
+#endif /* PLATFORM_WIN32 */
