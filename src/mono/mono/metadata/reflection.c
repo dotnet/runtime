@@ -8701,6 +8701,10 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 		klass->instance_size += klass->parent->instance_size;
 		klass->class_size += klass->parent->class_size;
 		klass->min_align = klass->parent->min_align;
+		/* if the type has no fields we won't call the field_setup
+		 * routine which sets up klass->has_references.
+		 */
+		klass->has_references |= klass->parent->has_references;
 	} else {
 		klass->instance_size = sizeof (MonoObject);
 		klass->min_align = 1;

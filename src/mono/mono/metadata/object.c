@@ -48,6 +48,8 @@
 #else
 #define GC_NO_DESCRIPTOR (NULL)
 #define ALLOC_TYPED(dest,size,type) do { (dest) = GC_MALLOC ((size)); *(gpointer*)dest = (type);} while (0)
+#define MAKE_STRING_DESCRIPTOR(bitmap,sz) NULL
+#define MAKE_DESCRIPTOR(bitmap,sz,objsize) NULL
 #endif
 #else
 #ifdef HAVE_SGEN_GC
@@ -575,7 +577,7 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		}
 #endif
 		class->gc_descr = (gpointer)MAKE_DESCRIPTOR (bitmap, max_set + 1, class->instance_size);
-		/*printf ("new descriptor: 0x%x for %s.%s\n", class->gc_descr, class->name_space, class->name);*/
+		/*printf ("new descriptor: %p 0x%x for %s.%s\n", class->gc_descr, bitmap [0], class->name_space, class->name);*/
 		if (bitmap != default_bitmap)
 			g_free (bitmap);
 	}
