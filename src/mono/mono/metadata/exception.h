@@ -49,6 +49,9 @@ mono_get_exception_type_load           (void);
 MonoException *
 mono_get_exception_missing_method      (void);
 
+MonoException *
+mono_get_exception_not_implemented     (void);
+
 MonoException*
 mono_get_exception_argument_null       (MonoDomain *domain, const guchar *arg);
 

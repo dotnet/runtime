@@ -40,7 +40,9 @@ libmetadata_a_SOURCES = \
 	mempool.h	\
 	mempool.c	\
 	appdomain.h	\
-	appdomain.c
+	appdomain.c	\
+	rand.h		\
+	rand.c
 
 libmetadataincludedir = $(includedir)/mono/metadata
 
@@ -62,7 +64,8 @@ libmetadatainclude_HEADERS = \
 	class.h		\
 	object.h	\
 	exception.h	\
-	appdomain.h
+	appdomain.h	\
+	rand.h
 
 pedump_SOURCES =		\
 	pedump.c $(libmetadata_a_SOURCES)

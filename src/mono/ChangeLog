@@ -1,3 +1,8 @@
+2002-02-21  Mark Crichton  <crichton@gimp.org>
+ 
+        * configure.in: Add checks for a system-provided entropy device
+        * acconfig.h: Added HAVE_CRYPT_RNG and NAME_DEV_RANDOM
+
 2002-02-20  Dick Porter  <dick@ximian.com>
 
 	* acconfig.h:

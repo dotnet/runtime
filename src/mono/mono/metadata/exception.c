@@ -102,6 +102,13 @@ mono_get_exception_type_load ()
 }
 
 MonoException *
+mono_get_exception_not_implemented ()
+{
+	return mono_exception_from_name (mono_defaults.corlib, "System",
+					 "NotImplementedException");
+}
+
+MonoException *
 mono_get_exception_missing_method ()
 {
 	return mono_exception_from_name (mono_defaults.corlib, "System",

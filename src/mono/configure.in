@@ -306,6 +306,71 @@ else
 	CFLAGS="$CFLAGS -mno-cygwin"
 fi
 
+dnl ****************************
+dnl *** Look for /dev/random ***
+dnl ****************************
+
+AC_MSG_CHECKING([if usage of random device is requested])
+AC_ARG_ENABLE(dev-random,
+[  --disable-dev-random    disable the use of the random device],
+try_dev_random=$enableval, try_dev_random=yes)
+AC_MSG_RESULT($try_dev_random)
+
+case "{$target}" in
+    *-openbsd*)
+    NAME_DEV_RANDOM="/dev/srandom"
+    ;;
+
+dnl Win32 does not have /dev/random, they have their own method...
+
+    *-*-mingw*|*-*-cygwin*)
+    ac_cv_have_dev_random = no
+    ;;
+
+dnl Everywhere else, it's /dev/random
+
+    *)
+    NAME_DEV_RANDOM="/dev/random"
+    ;;
+esac
+
+AC_DEFINE_UNQUOTED(NAME_DEV_RANDOM, "$NAME_DEV_RANDOM")
+
+dnl Now check if the device actually exists
+
+if test "x$try_dev_random" = "xyes"; then
+    AC_CACHE_CHECK(for random device, ac_cv_have_dev_random,
+    [if test -r "$NAME_DEV_RANDOM" ; then
+        ac_cv_have_dev_random=yes; else ac_cv_have_dev_random=no; fi])
+    if test "x$ac_cv_have_dev_random" = "xyes"; then
+        AC_DEFINE(HAVE_CRYPT_RNG)
+    fi
+else
+    AC_MSG_CHECKING(for random device)
+    ac_cv_have_dev_random=no
+    AC_MSG_RESULT(has been disabled)
+fi
+
+if test "x$platform_win32" = "xyes"; then
+    AC_DEFINE(HAVE_CRYPT_RNG)
+fi
+
+if test "x$ac_cv_have_dev_random" = "xno" \
+    && test "x$platform_win32" = "xno"; then
+    AC_MSG_WARN([[
+***
+*** A system-provided entropy source was not found on this system.
+*** Because of this, the System.Security.Cryptography random number generator
+*** will throw a NotImplemented exception.
+***
+*** If you are seeing this message, and you know your system DOES have an
+*** entropy collection in place, please contact <crichton@gimp.org> and
+*** provide information about the system and how to access the random device.
+***
+*** For those systems who lack a random device, EGD support is forthcoming.
+***]])
+fi
+ 
 if test "x$cross_compiling" = "xno"; then
 # check for new iconv version
 AC_MSG_CHECKING(for new iconv)

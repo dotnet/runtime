@@ -27,6 +27,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/unicode.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/rand.h>
 #include <mono/io-layer/io-layer.h>
 #include "decimal.h"
 
@@ -1178,6 +1179,14 @@ static gpointer icall_map [] = {
 	"System.Text.Encoding::IConvGetChars", ves_icall_iconv_get_chars,
 
 	"System.DateTime::GetNow", ves_icall_System_DateTime_GetNow,
+
+	/*
+	 * System.Security.Cryptography calls
+	 */
+
+	 "System.Security.Cryptography.RNGCryptoServiceProvider::GetBytes", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes,
+	 "System.Security.Cryptography.RNG_CryptoServiceProvider::GetNonZeroBytes", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetNonZeroBytes,
+
 	/*
 	 * add other internal calls here
 	 */
