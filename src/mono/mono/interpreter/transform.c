@@ -2506,6 +2506,7 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				break;
 			case CEE_MONO_SAVE_LMF:
 			case CEE_MONO_RESTORE_LMF:
+			case CEE_MONO_NOT_TAKEN:
 				++td.ip;
 				break;
 			default:
