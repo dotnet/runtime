@@ -13,6 +13,7 @@ typedef struct MonoSymbolFileLineNumberEntry	MonoSymbolFileLineNumberEntry;
 typedef struct MonoSymbolFileMethodEntry	MonoSymbolFileMethodEntry;
 typedef struct MonoSymbolFileMethodAddress	MonoSymbolFileMethodAddress;
 typedef struct MonoSymbolFileDynamicTable	MonoSymbolFileDynamicTable;
+typedef struct MonoSymbolFileSourceEntry	MonoSymbolFileSourceEntry;
 
 typedef struct MonoDebugMethodInfo		MonoDebugMethodInfo;
 typedef struct MonoDebugMethodJitInfo		MonoDebugMethodJitInfo;
@@ -24,24 +25,19 @@ typedef struct MonoDebugClassInfo		MonoDebugClassInfo;
 /* Keep in sync with OffsetTable in mcs/class/Mono.CSharp.Debugger/MonoSymbolTable.cs */
 struct MonoSymbolFileOffsetTable {
 	guint32 total_file_size;
+	guint32 data_section_offset;
+	guint32 data_section_size;
+	guint32 source_count;
 	guint32 source_table_offset;
 	guint32 source_table_size;
 	guint32 method_count;
 	guint32 method_table_offset;
 	guint32 method_table_size;
-	guint32 line_number_table_offset;
-	guint32 line_number_table_size;
-	guint32 local_variable_table_offset;
-	guint32 local_variable_table_size;
-	guint32 source_file_table_offset;
-	guint32 source_file_table_size;
-	guint32 source_file_count;
 	guint32 type_count;
-	guint32 type_index_table_offset;
-	guint32 type_index_table_size;
 };
 
 struct MonoSymbolFileMethodEntry {
+	guint32 source_index;
 	guint32 token;
 	guint32 start_row;
 	guint32 end_row;
@@ -49,10 +45,18 @@ struct MonoSymbolFileMethodEntry {
 	guint32 num_parameters;
 	guint32 num_locals;
 	guint32 num_line_numbers;
+	guint32 name_offset;
+	guint32 full_name_offset;
 	guint32 type_index_table_offset;
 	guint32 local_variable_table_offset;
-	guint32 source_file_offset;
 	guint32 line_number_table_offset;
+};
+
+struct MonoSymbolFileSourceEntry {
+	guint32 index;
+	guint32 num_methods;
+	guint32 name_offset;
+	guint32 method_offset;
 };
 
 struct MonoSymbolFileMethodAddress {
@@ -77,7 +81,7 @@ struct MonoSymbolFileLineNumberEntry {
 struct MonoDebugMethodInfo {
 	MonoMethod *method;
 	MonoSymbolFile *symfile;
-	guint32 file_offset;
+	guint32 index;
 	guint32 num_il_offsets;
 	guint32 start_line;
 	guint32 end_line;
@@ -139,7 +143,7 @@ struct MonoDebugVarInfo {
 struct MonoDebugRangeInfo {
 	const guint8 *start_address;
 	const guint8 *end_address;
-	guint32 file_offset;
+	guint32 index;
 	gpointer dynamic_data;
 	guint32 dynamic_size;
 };
@@ -191,20 +195,10 @@ struct MonoGlobalSymbolFile {
 };
 
 struct MonoSymbolFile {
-	guint64 magic;
-	guint32 version;
 	guint64 dynamic_magic;
 	guint32 dynamic_version;
-	guint32 is_dynamic;
-	char *image_file;
-	char *symbol_file;
+	const char *image_file;
 	MonoGlobalSymbolFile *global;
-	/* Pointer to the mmap()ed contents of the file. */
-	guint8 *raw_contents;
-	guint32 raw_contents_size;
-	/* Pointer to the malloced string table. */
-	guint8 *string_table;
-	guint32 string_table_size;
 	/* Pointer to the malloced range table. */
 	guint32 locked;
 	guint32 generation;
@@ -219,18 +213,17 @@ struct MonoSymbolFile {
 	MonoSymbolFilePriv *_priv;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		28
+#define MONO_SYMBOL_FILE_VERSION		29
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
-#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	21
+#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	22
 #define MONO_SYMBOL_FILE_DYNAMIC_MAGIC		0x7aff65af4253d427
 
 extern MonoGlobalSymbolFile *mono_debugger_global_symbol_file;
 
 MonoSymbolFile *
 mono_debug_open_mono_symbol_file   (MonoImage                 *image,
-				    const char                *filename,
-				    gboolean                   emit_warnings);
+				    gboolean                   create_symfile);
 
 void
 mono_debug_symfile_add_method      (MonoSymbolFile           *symfile,
@@ -242,9 +235,6 @@ mono_debug_symfile_add_type        (MonoSymbolFile           *symfile,
 
 void
 mono_debug_close_mono_symbol_file  (MonoSymbolFile           *symfile);
-
-MonoSymbolFile *
-mono_debug_create_mono_symbol_file (MonoImage                *image);
 
 gchar *
 mono_debug_find_source_location    (MonoSymbolFile           *symfile,
