@@ -199,7 +199,7 @@ EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC)
 test:	testjit
 
 TestDriver.dll:
-	$(CSC) -target:library -o $@ ../mini/TestDriver.cs
+	$(CSC) -target:library -o $@ $(srcdir)/../mini/TestDriver.cs
 
 test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 	@failed=0; \

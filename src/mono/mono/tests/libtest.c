@@ -184,7 +184,7 @@ mono_test_empty_pinvoke (int i)
 }
 
 int 
-mono_test_marshal_bool_byref (int a, char *b, int c)
+mono_test_marshal_bool_byref (int a, int *b, int c)
 {
     int res = *b;
 
@@ -517,10 +517,11 @@ mono_test_marshal_stringbuilder (char *s, int n)
 	return 0;
 }
 
-#ifdef __GNUC__
 typedef struct {
-} EmptyStruct;
+#ifndef __GNUC__
+    char a;
 #endif
+} EmptyStruct;
 
 int
 mono_test_marshal_string_array (char **array)
@@ -529,7 +530,6 @@ mono_test_marshal_string_array (char **array)
 	return 0;
 }
 
-#ifdef __GNUC__
 /* this does not work on Redhat gcc 2.96 */
 int 
 mono_test_empty_struct (int a, EmptyStruct es, int b)
@@ -540,7 +540,6 @@ mono_test_empty_struct (int a, EmptyStruct es, int b)
 		return 0;
 	return 1;
 }
-#endif
 
 typedef struct {
        char a[100];
