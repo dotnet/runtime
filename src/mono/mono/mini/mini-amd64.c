@@ -1607,7 +1607,8 @@ create_spilled_load_float (MonoCompile *cfg, int spill, int reg, MonoInst *ins)
 	return load;
 }
 
-#define ireg_is_freeable(r) ((r) >= 0 && (r) <= 7 && AMD64_IS_CALLEE_REG ((r)))
+#define is_global_ireg(r) ((r) >= 0 && (r) <= 15 && AMD64_IS_CALLEE_SAVED_REG ((r)))
+#define ireg_is_freeable(r) ((r) >= 0 && (r) <= 15 && AMD64_IS_CALLEE_REG ((r)))
 #define freg_is_freeable(r) ((r) >= 0 && (r) <= AMD64_XMM_NREG)
 
 #define reg_is_freeable(r,fp) ((fp) ? freg_is_freeable ((r)) : ireg_is_freeable ((r)))
@@ -1959,6 +1960,17 @@ mono_amd64_alloc_float_reg (MonoCompile *cfg, InstList *tmp, MonoInst *ins, guin
 	return val;
 }
 
+static inline void
+assign_ireg (MonoRegState *rs, int reg, int hreg)
+{
+	g_assert (reg >= MONO_MAX_IREGS);
+	g_assert (hreg < MONO_MAX_IREGS);
+	g_assert (! is_global_ireg (hreg));
+
+	rs->iassign [reg] = hreg;
+	rs->isymbolic [hreg] = reg;
+	rs->ifree_mask &= ~ (1 << hreg);
+}
 
 /*#include "cprop.c"*/
 
@@ -2179,17 +2191,19 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		DEBUG (g_print ("processing:"));
 		DEBUG (print_ins (i, ins));
 		if (spec [MONO_INST_CLOB] == 's') {
+			/*
+			 * Shift opcodes, SREG2 must be RCX
+			 */
 			if (rs->ifree_mask & (1 << AMD64_RCX)) {
-				DEBUG (g_print ("\tshortcut assignment of R%d to ECX\n", ins->sreg2));
 				if (ins->sreg2 < MONO_MAX_IREGS) {
 					/* Argument already in hard reg, need to copy */
 					MonoInst *copy = create_copy_ins (cfg, AMD64_RCX, ins->sreg2, NULL, FALSE);
 					insert_before_ins (ins, tmp, copy);
 				}
-				rs->iassign [ins->sreg2] = AMD64_RCX;
-				rs->isymbolic [AMD64_RCX] = ins->sreg2;
-				ins->sreg2 = AMD64_RCX;
-				rs->ifree_mask &= ~ (1 << AMD64_RCX);
+				else {
+					DEBUG (g_print ("\tshortcut assignment of R%d to ECX\n", ins->sreg2));
+					assign_ireg (rs, ins->sreg2, AMD64_RCX);
+				}
 			} else {
 				int need_ecx_spill = TRUE;
 				/* 
@@ -2223,43 +2237,49 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					rs->isymbolic [val] = prev_dreg;
 					ins->dreg = val;*/
 				}
-				val = rs->iassign [ins->sreg2];
-				if (val >= 0 && val != AMD64_RCX) {
-					MonoInst *move = create_copy_ins (cfg, AMD64_RCX, val, NULL, FALSE);
-					DEBUG (g_print ("\tmoved arg from R%d (%d) to ECX\n", val, ins->sreg2));
-					move->next = ins;
-					g_assert_not_reached ();
-					/* FIXME: where is move connected to the instruction list? */
-					//tmp->prev->data->next = move;
+				if (is_global_ireg (ins->sreg2)) {
+					MonoInst *copy = create_copy_ins (cfg, AMD64_RCX, ins->sreg2, NULL, FALSE);
+					insert_before_ins (ins, tmp, copy);
 				}
-				else 
-					if (val == AMD64_RCX) {
-						if (ins->sreg2 < MONO_MAX_IREGS) {
-							/* sreg2 is already assigned to a hard reg, need to copy */
-							MonoInst *copy = create_copy_ins (cfg, AMD64_RCX, ins->sreg2, NULL, FALSE);
-							insert_before_ins (ins, tmp, copy);
-						}
+				else {
+					val = rs->iassign [ins->sreg2];
+					if (val >= 0 && val != AMD64_RCX) {
+						MonoInst *move = create_copy_ins (cfg, AMD64_RCX, val, NULL, FALSE);
+						DEBUG (g_print ("\tmoved arg from R%d (%d) to ECX\n", val, ins->sreg2));
+						move->next = ins;
+						g_assert_not_reached ();
+						/* FIXME: where is move connected to the instruction list? */
+						//tmp->prev->data->next = move;
+					}
+					else {
+						if (val == AMD64_RCX)
 						need_ecx_spill = FALSE;
 					}
+				}
 				if (need_ecx_spill && !(rs->ifree_mask & (1 << AMD64_RCX))) {
 					DEBUG (g_print ("\tforced spill of R%d\n", rs->isymbolic [AMD64_RCX]));
 					get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [AMD64_RCX], FALSE);
 					mono_regstate_free_int (rs, AMD64_RCX);
 				}
-				/* force-set sreg2 */
-				rs->iassign [ins->sreg2] = AMD64_RCX;
-				rs->isymbolic [AMD64_RCX] = ins->sreg2;
-				ins->sreg2 = AMD64_RCX;
-				rs->ifree_mask &= ~ (1 << AMD64_RCX);
+				if (!is_global_ireg (ins->sreg2))
+					/* force-set sreg2 */
+					assign_ireg (rs, ins->sreg2, AMD64_RCX);
 			}
-		} else if (spec [MONO_INST_CLOB] == 'd') { /* division */
+			ins->sreg2 = AMD64_RCX;
+		} else if (spec [MONO_INST_CLOB] == 'd') { 
+			/*
+			 * DIVISION/REMAINER
+			 */
 			int dest_reg = AMD64_RAX;
 			int clob_reg = AMD64_RDX;
 			if (spec [MONO_INST_DEST] == 'd') {
 				dest_reg = AMD64_RDX; /* reminder */
 				clob_reg = AMD64_RAX;
 			}
-			val = rs->iassign [ins->dreg];
+			if (is_global_ireg (ins->dreg))
+				val = ins->dreg;
+			else
+				val = rs->iassign [ins->dreg];
 			if (0 && val >= 0 && val != dest_reg && !(rs->ifree_mask & (1 << dest_reg))) {
 				DEBUG (g_print ("\tforced spill of R%d\n", rs->isymbolic [dest_reg]));
 				get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [dest_reg], FALSE);
@@ -2286,10 +2306,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				} else {
 					DEBUG (g_print ("\tshortcut assignment of R%d to %s\n", ins->dreg, mono_arch_regname (dest_reg)));
 					prev_dreg = ins->dreg;
-					rs->iassign [ins->dreg] = dest_reg;
-					rs->isymbolic [dest_reg] = ins->dreg;
+					assign_ireg (rs, ins->dreg, dest_reg);
 					ins->dreg = dest_reg;
-					rs->ifree_mask &= ~ (1 << dest_reg);
 				}
 			} else {
 				//DEBUG (g_print ("dest reg in div assigned: %s\n", mono_arch_regname (val)));
@@ -2302,7 +2320,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					}
 				}
 			}
-			if (!(rs->ifree_mask & (1 << clob_reg)) && (clob_reg != val) && (rs->isymbolic [clob_reg] >= 8)) {
+			if (!(rs->ifree_mask & (1 << clob_reg)) && (clob_reg != val) && (rs->isymbolic [clob_reg] >= MONO_MAX_IREGS)) {
 				DEBUG (g_print ("\tforced spill of clobbered reg R%d\n", rs->isymbolic [clob_reg]));
 				get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [clob_reg], FALSE);
 				mono_regstate_free_int (rs, clob_reg);
@@ -2527,11 +2545,10 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				MonoInst *copy = create_copy_ins (cfg, AMD64_RAX, ins->sreg1, NULL, FALSE);
 				insert_before_ins (ins, tmp, copy);
 			}
-			/* force-set sreg1 */
-			rs->iassign [ins->sreg1] = AMD64_RAX;
-			rs->isymbolic [AMD64_RAX] = ins->sreg1;
+			else
+				/* force-set sreg1 */
+				assign_ireg (rs, ins->sreg1, AMD64_RAX);
 			ins->sreg1 = AMD64_RAX;
-			rs->ifree_mask &= ~ (1 << AMD64_RAX);
 		}
 
 		/*
@@ -2661,6 +2678,11 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				DEBUG (g_print ("\tneed to copy sreg2 %s to reg %s\n", mono_amd64_regname (ins->sreg2, fp), mono_amd64_regname (reg2, fp)));
 				sreg2_copy = create_copy_ins (cfg, reg2, ins->sreg2, NULL, fp);
 				prev_sreg2 = ins->sreg2 = reg2;
+
+				if (fp)
+					mono_regstate_free_float (rs, reg2);
+				else
+					mono_regstate_free_int (rs, reg2);
 			}
 
 			MonoInst *copy = create_copy_ins (cfg, ins->dreg, ins->sreg1, NULL, fp);
@@ -2793,9 +2815,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					hreg = regpair >> 32;
 					reg = regpair & 0xffffffff;
 
-					rs->iassign [reg] = hreg;
-					rs->isymbolic [hreg] = reg;
-					rs->ifree_mask &= ~ (1 << hreg);
+					assign_ireg (rs, reg, hreg);
 
 					DEBUG (g_print ("\tassigned arg reg %s to R%d\n", mono_arch_regname (hreg), reg));
 
@@ -3664,8 +3684,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_mov_reg_imm_size (code, ins->dreg, ins->inst_c0, 8);
 			break;
 		case OP_AOTCONST:
-			if ((MonoJumpInfoType)ins->inst_i1 != MONO_PATCH_INFO_SWITCH)
-				mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
+			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
 			amd64_mov_reg_membase (code, ins->dreg, AMD64_RIP, 0, 8);
 			break;
 		case CEE_CONV_I4:
