@@ -95,6 +95,21 @@ typedef struct _MonoFSAsyncResult {
 	MonoDelegate *real_cb;
 } MonoFSAsyncResult;
 
+#ifdef PLATFORM_WIN32
+typedef struct _WapiOverlapped WapiOverlapped;
+
+struct _WapiOverlapped
+{
+	guint32 Internal;
+	guint32 InternalHigh;
+	guint32 Offset;
+	guint32 OffsetHigh;
+	gpointer hEvent;
+	gpointer handle1;
+	gpointer handle2;
+};
+#endif
+
 /* System.IO.MonoIO */
 
 extern MonoBoolean
