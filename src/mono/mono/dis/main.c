@@ -306,6 +306,7 @@ dis_locals (metadata_t *m, guint32 token)
 		int val;
 		char * desc = NULL;
 		const char *p = ptr;
+		MonoType *type;
 		ptr = get_encoded_value (ptr, &val);
 		if (val == ELEMENT_TYPE_PINNED) {
 			fprintf(output, "//pinned\n");
@@ -316,7 +317,9 @@ dis_locals (metadata_t *m, guint32 token)
 			fprintf(output, "// byref\n");
 			p = ptr;
 		}
-		ptr = get_type(m, p, &desc);
+		type = mono_metadata_parse_type (m, p, &ptr);
+		desc = dis_stringify_type (m, type);
+		mono_metadata_free_type (type);
 		fprintf(output, "\t\t%s\tV_%d\n", desc, i);
 		g_free(desc);
 	}

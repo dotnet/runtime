@@ -20,6 +20,13 @@ char *get_typespec            (metadata_t *m, guint32 blob_idx);
 char *get_method              (metadata_t *m, guint32 token);
 
 
+char *dis_stringify_type (metadata_t *m, MonoType *type);
+char *dis_stringify_token (metadata_t *m, guint32 token);
+char *dis_stringify_array (metadata_t *m, MonoArray *array);
+char *dis_stringify_modifiers (metadata_t *m, int n, MonoCustomMod *mod);
+char *dis_stringify_param (metadata_t *m, MonoParam *param);
+char *dis_stringify_method_signature (metadata_t *m, MonoMethodSignature *method);
+
 /*
  * These functions are used during the decoding of streams in the
  * metadata heaps (a simple parsing).

@@ -448,6 +448,165 @@ static map_t element_type_map [] = {
 	{ 0, NULL }
 };
 
+static map_t call_conv_type_map [] = {
+	{ MONO_CALL_DEFAULT     , "default" },
+	{ MONO_CALL_C           , "c" },
+	{ MONO_CALL_STDCALL     , "stdcall" },
+	{ MONO_CALL_THISCALL    , "thiscall" },
+	{ MONO_CALL_FASTCALL    , "fastcall" },
+	{ MONO_CALL_VARARG      , "vararg" },
+	{ 0, NULL }
+};
+
+char*
+dis_stringify_token (metadata_t *m, guint32 token)
+{
+	guint idx = token & 0xffffff;
+	switch (token >> 24) {
+	case META_TABLE_TYPEDEF: return get_typedef (m, idx);
+	case META_TABLE_TYPEREF: return get_typeref (m, idx);
+	case META_TABLE_TYPESPEC: return get_typespec (m, idx);
+	default:
+		 break;
+	}
+	return g_strdup_printf("0x%08x", token);
+}
+
+char*
+dis_stringify_array (metadata_t *m, MonoArray *array) 
+{
+	char *type;
+	GString *s = g_string_new("");
+	int i;
+	
+	type = dis_stringify_type (m, array->type);
+	g_string_append (s, type);
+	g_free (type);
+	g_string_append_c (s, '[');
+	for (i = 0; i < array->rank; ++i) {
+		if (i)
+			g_string_append_c (s, ',');
+		if (i < array->numsizes) {
+			if (i < array->numlobounds && array->lobounds[i] != 0)
+				g_string_sprintfa (s, "%d..%d", array->lobounds[i], array->sizes[i]);
+			else
+				g_string_sprintfa (s, "%d", array->sizes[i]);
+		}
+	}
+	g_string_append_c (s, ']');
+	type = s->str;
+	g_string_free (s, FALSE);
+	return type;
+}
+
+char*
+dis_stringify_modifiers (metadata_t *m, int n, MonoCustomMod *mod)
+{
+	GString *s = g_string_new("");
+	char *result;
+	int i;
+	for (i = 0; i < n; ++i) {
+		char *tok = dis_stringify_token (m, mod[i].token);
+		g_string_sprintfa (s, "%s %s", mod[i].mod == ELEMENT_TYPE_CMOD_OPT ? "opt": "reqd", tok);
+		g_free (tok);
+	}
+	g_string_append_c (s, ' ');
+	result = s->str;
+	g_string_free (s, FALSE);
+	return result;
+}
+
+char*
+dis_stringify_param (metadata_t *m, MonoParam *param) 
+{
+	char *mods = NULL;
+	char *t;
+	char *result;
+	if (param->num_modifiers)
+		mods = dis_stringify_modifiers (m, param->num_modifiers, param->modifiers);
+	if (param->typedbyref)
+		t = g_strdup ("TypedByRef");
+	else if (!param->type)
+		t = g_strdup ("void");
+	else
+		t = dis_stringify_type (m, param->type);
+	result = g_strjoin (mods ? mods : "", t, NULL);
+	g_free (t);
+	g_free (mods);
+	return result;
+}
+
+char*
+dis_stringify_method_signature (metadata_t *m, MonoMethodSignature *method)
+{
+	return g_strdup ("method-signature");
+}
+
+char*
+dis_stringify_type (metadata_t *m, MonoType *type)
+{
+	char *bare = NULL;
+	char *byref = type->byref ? "ref " : "";
+	char *result;
+
+	switch (type->type){
+	case ELEMENT_TYPE_BOOLEAN:
+	case ELEMENT_TYPE_CHAR:
+	case ELEMENT_TYPE_I1:
+	case ELEMENT_TYPE_U1:
+	case ELEMENT_TYPE_I2:
+	case ELEMENT_TYPE_U2:
+	case ELEMENT_TYPE_I4:
+	case ELEMENT_TYPE_U4:
+	case ELEMENT_TYPE_I8:
+	case ELEMENT_TYPE_U8:
+	case ELEMENT_TYPE_R4:
+	case ELEMENT_TYPE_R8:
+	case ELEMENT_TYPE_I:
+	case ELEMENT_TYPE_U:
+	case ELEMENT_TYPE_STRING:
+	case ELEMENT_TYPE_OBJECT:
+	case ELEMENT_TYPE_TYPEDBYREF:
+		bare = g_strdup (map (type->type, element_type_map));
+		break;
+		
+	case ELEMENT_TYPE_VALUETYPE:
+	case ELEMENT_TYPE_CLASS:
+		bare = dis_stringify_token (m, type->data.token);
+		break;
+		
+	case ELEMENT_TYPE_FNPTR:
+		bare = dis_stringify_method_signature (m, type->data.method);
+		break;
+	case ELEMENT_TYPE_PTR:
+	case ELEMENT_TYPE_SZARRAY: {
+		char *child_type;
+		char *mods;
+		if (type->custom_mod) {
+			mods = dis_stringify_modifiers (m, type->data.mtype->num_modifiers, type->data.mtype->modifiers);	
+			child_type = dis_stringify_type (m, type->data.mtype->type);
+		} else {
+			mods = g_strdup("");
+			child_type = dis_stringify_type (m, type->data.type);
+		}
+		
+		bare = g_strdup_printf (type->type == ELEMENT_TYPE_PTR ? "%s*%s" : "%s%s[]", mods, child_type);
+		g_free (child_type);
+		g_free (mods);
+		break;
+	}
+	case ELEMENT_TYPE_ARRAY:
+		bare = dis_stringify_array (m, type->data.array);
+		break;
+	default:
+		g_error ("Do not know how to stringify type 0x%x", type->type);
+	}
+
+	result = g_strjoin (byref, bare, NULL);
+	g_free (bare);
+	return result;
+}
+
 /**
  * get_type:
  * @m: metadata context 
@@ -462,6 +621,7 @@ static map_t element_type_map [] = {
 const char *
 get_type (metadata_t *m, const char *ptr, char **result)
 {
+#if 0
 	char c;
 	
 	c = *ptr++;
@@ -509,6 +669,12 @@ get_type (metadata_t *m, const char *ptr, char **result)
 	}
 	
 	return ptr;
+#else
+	MonoType *type = mono_metadata_parse_type (m, ptr, &ptr);
+	*result = dis_stringify_type (m, type);
+	mono_metadata_free_type (type);
+	return ptr;
+#endif
 }
 
 /**
@@ -845,16 +1011,21 @@ typedef_locator (const void *a, const void *b)
 	guint32 cols [6], cols_next [6];
 
 	expand (loc->t, typedef_index, cols, CSIZE (cols));
-	expand (loc->t, typedef_index + 1, cols_next, CSIZE (cols_next));
 
 	if (loc->idx < cols [4])
 		return -1;
 
-	if (loc->idx >= cols_next [4])
-		return 1;
+	/*
+	 * Need to check that the next row is valid.
+	 */
+	if (typedef_index + 1 < loc->t->rows) {
+		expand (loc->t, typedef_index + 1, cols_next, CSIZE (cols_next));
+		if (loc->idx >= cols_next [4])
+			return 1;
 
-	if (cols [5] == cols_next [4])
-		return 1; 
+		if (cols [4] == cols_next [4])
+			return 1; 
+	}
 
 	loc->result = typedef_index;
 	
@@ -878,7 +1049,14 @@ get_field (metadata_t *m, guint32 token)
 	guint32 cols [3];
 	char *sig, *res, *type;
 	locator_t loc;
-	
+
+	/*
+	 * We can get here also with a MenberRef token (for a field
+	 * defined in another module/assembly, just like in get_method ()
+	 */
+	if (mono_metadata_token_code (token) == TOKEN_TYPE_MEMBER_REF) {
+		return g_strdup_printf ("fieldref-0x%08x", token);
+	}
 	g_assert (mono_metadata_token_code (token) == TOKEN_TYPE_FIELD_DEF);
 
 	expand (&m->tables [META_TABLE_FIELD], idx - 1, cols, CSIZE (cols));
@@ -897,7 +1075,7 @@ get_field (metadata_t *m, guint32 token)
 
 	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
 	type = get_typedef (m, loc.result + 1);
-	res = g_strdup_printf ("%s %s %s",
+	res = g_strdup_printf ("%s %s.%s",
 			       sig, type,
 			       mono_metadata_string_heap (m, cols [1]));
 	g_free (type);
