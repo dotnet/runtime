@@ -13,28 +13,29 @@
 
 	The code will load an executable and map the references to
 	external assemblies to our own version of the assemblies on
-	GNU/Linux.
+	Linux.
 
 	Our roadmap looks like this, this has been updated as of
 	<b>Jul 15, 2001</b>:
 
 	<ul>
 
-		* Milestone 1: <b> Done</b> Fully read and parse all CIL byte-codes
+		* Milestone 1: <b>Done</b> Fully read and parse all CIL byte-codes
 		  and metadata tokens (ie, a disassembler).  
 
-		* Milestone 2: Complete an interpreter for CIL byte
+		* Milestone 2: <b>Done</b> Complete an interpreter for CIL byte
 		  codes.  This interpreter can be used temporarly to
 		  run CIL byte code on a system where no JIT is
 		  available.
 
-		* Milestone 3: Define an <i>lburg</i>-like instruction
-		  selector for the JITer for Intel.  Although slower
-		  at JITing than a streaming JITer, it generates
-		  better code.  The same grammar can later be used for
-		  the stream jitter. 
+		* Milestone 3: <b>Done</b>Define an <i>lburg</i>-like
+		  instruction selector for the JITer for Intel.
+		  Although slower at JITing than a streaming JITer, it
+		  generates better code.  The same grammar can later
+		  be used for the stream jitter.
 
-		* Milestone 4: Implement JITer.
+		* Milestone 4: Implement JITer.  This is where our
+		  current efforts are focused on, the JITer is 60% ready.
 
 		* Milestone 5: Port of the JITer to non IA32 systems.
 	</ul>
@@ -47,34 +48,27 @@
 	will need to install the CygWin32 development tools to get a
 	Unix-like compilation environment.
 
-** JIT Engine (<b>updated, Jul 14th, 2001</b>)
+** JIT Engine (<b>updated, Nov 16th, 2001</b>)
 
-	We will be using a code-generator generator approach for our
-        JITer.  Given the properties of CIL byte codes, we can take
-        full advantage of a real instruction selector for our code
-        generator. 
+	The JIT engine uses a code-generator generator approach for
+	compilation.  Given the properties of CIL byte codes, we can
+	take full advantage of a real instruction selector for our
+	code generator. 
 
 	There are a couple of books that deal with this technique: "A
 	Retargetable C Compiler" and "Advanced Compiler Design and
 	Implementation" are good references.  You can also get a
         technical description of <a
-        href="http://research.microsoft.com/copyright/accept.asp?path=http://www.research.microsoft.com/~drh/pubs/iburg.pdf&pub=ACM">lbrug</a>
+        href="http://research.microsoft.com/copyright/accept.asp?path=http://www.research.microsoft.com/~drh/pubs/iburg.pdf&pub=ACM">lbrug</a>.
 
-	Previously we had looked at a number of JIT engines and tools,
-        but they would not take full advantage of the CIL properties: 
+	A few papers that describe the instruction selector:
 
 	<ul>
-		* <a
-		  href="http://www.intel.com/research/mrl/orp/">ORP</a>
+		* <a href="http://research.microsoft.com/copyright/accept.asp?path=http://www.research.microsoft.com/~drh/pubs/interface.pdf&pub=wiley">A code generation interface for ANSI C</a>
 
-		* <a
-		  href="http://www.gnu.org/software/lightning/">GNU
-        	  Lightning</a>
 
-		* <a href="http://www.eecs.harvard.edu/~nr/toolkit/">NJ Machine
-	 	  Toolkit</a>.).
+		* <a href="http://research.microsoft.com/copyright/accept.asp?path=http://www.research.microsoft.com/~drh/pubs/iburg.pdf&pub=ACM">Engineering efficient code generators using tree matching and dynamic programming.</a>
 
-		* VCODE.
 	</ul>
 
 ** Garbage Collection
@@ -113,6 +107,13 @@
 		  <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnmag00/html/GCI.asp">http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnmag00/html/GCI.asp</a>
 		  <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnmag00/html/GCI2.asp">http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnmag00/html/GCI2.asp</a>
 	</ul>
+
+** IO and threading
+
+	The ECMA runtime and the .NET runtime assume an IO model and a
+	threading model that is very similar to the Win32 API.  Dick
+	Porter has been working on the Mono abstraction layer that allows
+	our runtime to execute code that depend on this behaviour.
 
 ** Useful links
 

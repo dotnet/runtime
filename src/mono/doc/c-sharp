@@ -1,8 +1,7 @@
 * MCS: The Ximian C# compiler
 
-	MCS began as an experiment to learn the features of C# by
-	writing a large C# program.  MCS is currently able to compile
-	small C# programs.  
+	MCS is currently able to compile small C# programs (there is
+	a test suite included that you can use).
 
 	All type, field, method, delegates definitions are now emitted
 	and the body of constructors and methods is being generated
@@ -47,11 +46,9 @@
 		  have to postpone this decision until the above steps
 		  are finished.
 
-		* Code generation: The compiler recently started generating IL 
-		  executables that contain interfaces.  Work is
-		  progressing in other areas.
+		* Code generation: The code generation is done through
+		  the System.Reflection.Emit API.
 
-		  The code generation is done through the System.Reflection.Emit API. 
 	</ul>
 
 <a name="tasks">
@@ -82,8 +79,6 @@
 		* Implement constant expression evaluator.
 
 		* Implement constant declarations.
-
-		* Implement enumerations.
 	</ul>
 
 	Interesting and Fun hacks to the compiler:
@@ -105,9 +100,6 @@
 		  initialization before use coverage are two great
 		  features of C# that help reduce the number of bugs
 		  in applications.  It is one interesting hack.
-
-		* Enum resolutions: it is another fun hack, as enums can be defined 
-		  in terms of themselves (<tt>enum X { a = b + 1, b = 5 }</tt>). 
 
 	</ul>
 

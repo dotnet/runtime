@@ -4,35 +4,35 @@
 	Pieces of Mono that have been implemented:
 
 	<ul>
-		* C# compiler: The C# parser can now generate parse
-		trees. Next up: semantic analysis, compiler lever optimizations
-		and code generation.
+		* C# compiler: The C# compiler is mostly complete, a 
+	 	few features are still missing (for a list, check the
+		<a href="c-sharp.html">C# compiler</a> web page.
 
-		* Metadata library: Can currently parse and load
-		information from .NET modules (executables and DLL
-		files).  
+		* A CIL bytecode interpreter (<b>mint</b>).  This
+		currently can be used to run most .NET programs
+		(modulo the fact that our class libraries are not
+		complete enough).
 
-		Parsing of Exception tables is missing. 
+		<b>mint</b> can currently run the Mono C# compiler and
+		the compiler generates valid code. 
+
+		We use <b>mint</b> as a reference implementation of
+		the runtime environment and to quickly support
+		non-Intel platforms.
+
+		* The Mono JIT engine.  The JIT engine is the real
+		virtual machine that we will be supporting.  It is
+		approaching maturity rapidly.
+
+		* Metadata library: Can currently parse
+		and load information from .NET modules (executables
+		and DLL files).
 
 		* Disassembler: Can disassemble .NET modules. Still
 		lacking exception handling as well as useful debugging
 		tools (hex dumping, token dumping).
 
 		* Class Libraries: You can check the current status in the
-		  <a href="class-status.html">Class Status page</a>
+		  <a href="class-status.html">Class Status page</a>.
 	</ul>
 
-	Tasks on the critical path:
-
-	<ul>
-		* Bytecode interpreter: (Paolo is working on this).
-
-		* Simple JIT: Not implemented yet (Miguel is
-		  researching the code-generator generator)
-
-		* Garbage collection engine (Dick is working on this, his contact is <a
-		  href="mailto:dick@ximian.com">dick@ximian.com</a>
-	</ul>
-	
-	If you want to work on any task here, please mail <a
-	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
