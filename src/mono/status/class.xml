@@ -1416,5 +1416,13 @@
         <maintainers>
             <maintainer>bob@thestuff.net</maintainer>
     </maintainers>
+    <class name="System.DateTime">
+        <last-activity>Jul-23-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>marcel@narings.nl</maintainer>
+    </maintainers>
 </classes>
 
