@@ -441,7 +441,7 @@ class_compute_field_layout (MonoClass *class)
 			class_compute_field_layout (class->parent);
 		class->instance_size += class->parent->instance_size;
 		class->min_align = class->parent->min_align;
-		blittable = class->blittable;
+		blittable = class->parent->blittable;
 	} else {
 		class->instance_size = sizeof (MonoObject);
 		class->min_align = 1;
@@ -494,7 +494,8 @@ class_compute_field_layout (MonoClass *class)
 
 		field->parent = class;
 
-		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
+		/* Only do these checks if we still think this type is blittable */
+		if (blittable && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
 			if (field->type->byref) {
 				blittable = FALSE;
 			} else {
@@ -503,6 +504,7 @@ class_compute_field_layout (MonoClass *class)
 					blittable = FALSE;
 			}
 		}
+
 		if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
 			mono_metadata_field_info (m, idx, &field->offset, NULL, NULL);
 			if (field->offset == (guint32)-1 && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
@@ -560,10 +562,13 @@ mono_class_layout_fields (MonoClass *class)
 	 * performance.
 	 * Requires that all classes whose layout is known to native code be annotated
 	 * with [StructLayout (LayoutKind.Sequential)]
+	 * Value types have gc_aware_layout disabled by default, as per
+	 * what the default is for other runtimes.
 	 */
 	 /* corlib is missing [StructLayout] directives in many places */
 	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
-		if (class->image != mono_defaults.corlib)
+		if (class->image != mono_defaults.corlib &&
+			class->byval_arg.type != MONO_TYPE_VALUETYPE)
 			gc_aware_layout = TRUE;
 	}
 
@@ -1536,6 +1541,7 @@ mono_class_setup_mono_type (MonoClass *class)
 			 * do not set the valuetype bit for System.ValueType.
 			 * class->valuetype = 1;
 			 */
+			class->blittable = TRUE;
 		} else if (!strcmp (name, "Enum")) {
 			/*
 			 * do not set the valuetype bit for System.Enum.
@@ -1969,6 +1975,7 @@ mono_ptr_class_get (MonoType *type)
 	result->instance_size = sizeof (gpointer);
 	result->cast_class = result->element_class = el_class;
 	result->enum_basetype = &result->element_class->byval_arg;
+	result->blittable = TRUE;
 
 	result->this_arg.type = result->byval_arg.type = MONO_TYPE_PTR;
 	result->this_arg.data.type = result->byval_arg.data.type = result->enum_basetype;
@@ -2009,11 +2016,13 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 	/* Can pointers get boxed? */
 	result->instance_size = sizeof (gpointer);
 	result->cast_class = result->element_class = result;
+	result->blittable = TRUE;
 
 	result->this_arg.type = result->byval_arg.type = MONO_TYPE_FNPTR;
 	result->this_arg.data.method = result->byval_arg.data.method = sig;
 	result->this_arg.byref = TRUE;
 	result->enum_basetype = &result->element_class->byval_arg;
+	result->blittable = TRUE;
 
 	mono_class_setup_supertypes (result);
 

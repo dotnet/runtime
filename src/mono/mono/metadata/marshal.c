@@ -954,11 +954,16 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 		return;
 
 	if (klass->blittable) {
+		int msize = mono_class_value_size (klass, NULL);
+		g_assert (msize == info->native_size);
 		mono_mb_emit_byte (mb, CEE_LDLOC_1);
 		mono_mb_emit_byte (mb, CEE_LDLOC_0);
-		mono_mb_emit_icon (mb, mono_class_value_size (klass, NULL));
+		mono_mb_emit_icon (mb, msize);
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_CPBLK);
+
+		mono_mb_emit_add_to_local (mb, 0, msize);
+		mono_mb_emit_add_to_local (mb, 1, msize);
 		return;
 	}
 
@@ -2255,6 +2260,9 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 
 		tmp_locals [i] = 0;
 		
+		/* Ensure that we have marshalling info for this param */
+		mono_marshal_load_type_info (mono_class_from_mono_type (t));
+		
 		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
 			MonoType *mtype;
 			MonoClass *mklass;
@@ -2521,6 +2529,9 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 
 	emit_thread_interrupt_checkpoint (mb);
 	mono_mb_emit_managed_call (mb, method, NULL);
+
+	/* Ensure that we have marshalling info for the return */
+	mono_marshal_load_type_info (mono_class_from_mono_type (sig->ret));
 
 	if (!sig->ret->byref) { 
 		switch (sig->ret->type) {
@@ -3212,6 +3223,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		argnum = i + sig->hasthis;
 		tmp_locals [i] = 0;
 
+		/* Ensure that we have marshalling info for this param */
+		mono_marshal_load_type_info (mono_class_from_mono_type (t));
+
 		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
 			MonoType *mtype;
 			MonoClass *mklass;
@@ -3708,6 +3722,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 		mono_mb_emit_native_call (mb, lasterr_sig, mono_marshal_set_last_error);
 	}		
+
+	/* Ensure that we have marshalling info for the return */
+	mono_marshal_load_type_info (mono_class_from_mono_type (sig->ret));
 
 	/* convert the result */
 	if (!sig->ret->byref) {
@@ -5400,6 +5417,15 @@ mono_marshal_load_type_info (MonoClass* klass)
 	if (info->native_size & (min_align - 1)) {
 		info->native_size += min_align - 1;
 		info->native_size &= ~(min_align - 1);
+	}
+
+	/* Update the class's blittable info, if the layouts don't match */
+	if (info->native_size != mono_class_value_size (klass, NULL))
+		klass->blittable = FALSE;
+
+	/* If this is an array type, ensure that we have element info */
+	if (klass->element_class) {
+		mono_marshal_load_type_info (klass->element_class);
 	}
 
 	return klass->marshal_info;
