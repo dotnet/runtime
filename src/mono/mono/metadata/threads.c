@@ -162,6 +162,7 @@ static guint32 start_wrapper(void *data)
 	 * jit) sets the lmf marker.
 	 */
 	mono_thread_new_init (tid, &tid, start_func);
+	thread->stack_ptr = &tid;
 
 #ifdef THREAD_DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION

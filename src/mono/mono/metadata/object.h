@@ -183,6 +183,7 @@ typedef struct {
 	MonoObject *abort_state;
 	guint32 tid;
 	HANDLE      start_notify;
+	gpointer stack_ptr;
 } MonoThread;
 
 typedef struct {
