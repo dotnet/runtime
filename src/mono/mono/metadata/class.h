@@ -17,12 +17,39 @@ typedef struct {
 	gpointer value;
 } MonoConstant;
 
+/*
+ * MonoClassField is just a runtime representation of the metadata for
+ * field, it doesn't contain the data directly.  Static fields are
+ * stored in MonoVTable->data.  Instance fields are allocated in the
+ * objects after the object header.
+ */
 typedef struct {
+	/* Type of the field */
 	MonoType        *type;
+
+	/*
+	 * Offset where this field is stored; if it is an instance
+	 * field, it's the offset from the start of the object, if
+	 * it's static, it's from the start of the memory chunk
+	 * allocated for statics for the class.
+	 */
 	int              offset;
+
 	const char      *name;
+
+	/*
+	 * Pointer to the data (from the RVA address, valid only for
+	 * fields with the has rva flag).
+	 */
 	const char      *data;
+
+	/* Type where the field was defined */
 	MonoClass       *parent;
+
+	/*
+	 * If the field is constant, pointer to the metadata where the
+	 * constant value can be loaded.
+	 */
 	MonoConstant    *def_value;
 } MonoClassField;
 
