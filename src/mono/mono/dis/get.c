@@ -32,7 +32,7 @@ get_typedef (MonoImage *m, int idx)
 {
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	const char *ns;
-	char *tstring, *result;
+	char *tstring, *result, *ename;
         guint32 token;
         
 	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPEDEF], idx - 1, cols, MONO_TYPEDEF_SIZE);
@@ -51,9 +51,11 @@ get_typedef (MonoImage *m, int idx)
                         "%s%s%s/%s%s", ns, *ns?".":"", outer,
                         mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]),
 			tstring ? tstring : "");
-                g_free (outer);
+		ename = get_escaped_name (result);
+		g_free (result);
+		g_free (outer);
 		g_free (tstring);
-                return result;
+		return ename;
         }
         
 	
@@ -61,9 +63,11 @@ get_typedef (MonoImage *m, int idx)
 		"%s%s%s%s", ns, *ns?".":"",
 		mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]),
 		tstring ? tstring : "");
+	ename = get_escaped_name (result);
+	g_free (result);
 	g_free (tstring);
 
-	return result;
+	return ename;
 }
 
 char *
