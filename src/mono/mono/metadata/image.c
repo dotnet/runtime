@@ -92,7 +92,7 @@ mono_image_ensure_section_idx (MonoImage *image, int section)
 	writable = sect->st_flags & SECT_FLAGS_MEM_WRITE;
 
 	iinfo->cli_sections [section] = mono_raw_buffer_load (
-		fileno (image->f), writable,
+		fileno (image->f), writable, TRUE,
 		sect->st_raw_data_ptr, sect->st_raw_data_size);
 
 	if (iinfo->cli_sections [section] == NULL)
@@ -241,7 +241,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 	offset = mono_cli_rva_image_map (iinfo, iinfo->cli_cli_header.ch_metadata.rva);
 	size = iinfo->cli_cli_header.ch_metadata.size;
 	
-	image->raw_metadata = mono_raw_buffer_load (fileno (image->f), FALSE, offset, size);
+	image->raw_metadata = mono_raw_buffer_load (fileno (image->f), FALSE, FALSE, offset, size);
 	if (image->raw_metadata == NULL)
 		return FALSE;
 

@@ -492,8 +492,8 @@ output_profile (GList *funcs)
 			p->u.method->klass->name_space, p->u.method->klass->name,
 			p->u.method->name, sig);
 		g_free (sig);
-		printf ("%-52s %7d %7llu %7d\n", buf,
-			(gint)(p->total*1000), p->count, (gint)((p->total*1000)/p->count));
+		printf ("%-82s\t%8.3f\t%7llu\t%8.3f\n", buf,
+			(double)(p->total*1000), p->count, (double)(p->total*1000)/(double)p->count);
 	}
 	printf ("Total number of calls: %lld\n", total_calls);
 }

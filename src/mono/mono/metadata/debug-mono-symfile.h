@@ -4,6 +4,7 @@
 #include <glib.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/debug-symfile.h>
 
 typedef struct MonoSymbolFile			MonoSymbolFile;
 typedef struct MonoSymbolFileOffsetTable	MonoSymbolFileOffsetTable;
@@ -53,6 +54,14 @@ struct MonoSymbolFile {
 MonoSymbolFile *mono_debug_open_mono_symbol_file   (MonoImage                 *image,
 						    const char                *filename,
 						    gboolean                   emit_warnings);
+
+typedef MonoDebugMethodInfo * (*MonoDebugGetMethodFunc) (MonoDebugSymbolFile *symbol_file,
+							 MonoMethod          *method,
+							 gpointer             user_data);
+
+void    mono_debug_update_mono_symbol_file (MonoSymbolFile           *symbol_file,
+					    MonoDebugGetMethodFunc    method_info_func,
+					    gpointer                  user_data);
 
 void mono_debug_close_mono_symbol_file (MonoSymbolFile *symfile);
 

@@ -336,7 +336,7 @@ mono_debug_open_symbol_file (MonoImage *image, const char *filename, gboolean em
 		return NULL;
 	}
 
-	ptr = mono_raw_buffer_load (fd, 1, 0, file_size);
+	ptr = mono_raw_buffer_load (fd, 1, 1, 0, file_size);
 	if (!ptr) {
 		if (emit_warnings)
 			g_warning ("Can't read symbol file: %s", filename);

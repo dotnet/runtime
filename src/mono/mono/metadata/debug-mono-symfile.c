@@ -73,7 +73,7 @@ mono_debug_open_mono_symbol_file (MonoImage *image, const char *filename, gboole
 	void *ptr;
 	int fd;
 
-	fd = open (filename, O_RDWR);
+	fd = open (filename, O_RDONLY);
 	if (fd == -1) {
 		if (emit_warnings)
 			g_warning ("Can't open symbol file: %s", filename);
@@ -89,7 +89,7 @@ mono_debug_open_mono_symbol_file (MonoImage *image, const char *filename, gboole
 		return NULL;
 	}
 
-	ptr = mono_raw_buffer_load (fd, 1, 0, file_size);
+	ptr = mono_raw_buffer_load (fd, TRUE, FALSE, 0, file_size);
 	if (!ptr) {
 		if (emit_warnings)
 			g_warning ("Can't read symbol file: %s", filename);
@@ -164,4 +164,70 @@ mono_debug_find_source_location (MonoSymbolFile *symfile, MonoMethod *method, gu
 	}
 
 	return NULL;
+}
+
+struct MyData
+{
+	MonoSymbolFile *symfile;
+	MonoDebugGetMethodFunc get_method_func;
+	gpointer user_data;
+};
+
+static void
+update_method_func (gpointer key, gpointer value, gpointer user_data)
+{
+	struct MyData *mydata = (struct MyData *) user_data;
+	MonoSymbolFileMethodEntry *me = (MonoSymbolFileMethodEntry *) value;
+	MonoMethod *method = (MonoMethod *) key;
+	MonoSymbolFileLineNumberEntry *lne, *lne_end;
+	const char *ptr, *end;
+
+	MonoDebugMethodInfo *minfo = mydata->get_method_func
+		(mydata->symfile, method, mydata->user_data);
+
+	if (!minfo)
+		return;
+
+	me->address = minfo->code_start;
+
+	ptr = mydata->symfile->raw_contents + me->line_number_table_offset;
+	end = mydata->symfile->raw_contents + mydata->symfile->offset_table->line_number_table_offset +
+		mydata->symfile->offset_table->line_number_table_size;
+
+	lne = (MonoSymbolFileLineNumberEntry *) ptr;
+	lne_end = ((MonoSymbolFileLineNumberEntry *) end);
+
+	for (; (lne < lne_end) && lne->row; lne++) {
+		guint32 address;
+		int i;
+
+		address = minfo->code_size;
+
+		for (i = 0; i < minfo->num_il_offsets; i++) {
+			MonoDebugILOffsetInfo *il = &minfo->il_offsets [i];
+
+			if (il->offset >= lne->offset) {
+				address = il->address;
+				break;
+			}
+		}
+
+		lne->address = address;
+	}
+
+}
+
+void
+mono_debug_update_mono_symbol_file (MonoSymbolFile *symfile,
+				    MonoDebugGetMethodFunc get_method_func,
+				    gpointer user_data)
+{
+	g_message (G_STRLOC);
+
+	if (symfile->method_table) {
+		struct MyData mydata = { symfile, get_method_func, user_data };
+		g_hash_table_foreach (symfile->method_table, update_method_func, &mydata);
+	}
+
+	mono_raw_buffer_update (symfile->raw_contents, symfile->raw_contents_size);
 }
