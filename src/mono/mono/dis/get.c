@@ -197,6 +197,7 @@ get_typespec (MonoImage *m, guint32 idx)
 			if (s)
 				g_string_append (res, s);
 		}
+		g_string_append (res, "*");
 		break;
 		
 	case MONO_TYPE_FNPTR:
