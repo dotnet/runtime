@@ -81,7 +81,8 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 		break;
 	}
 
-	references = image->assembly->image->references;
+	mono_image_load_references (image);
+	references = image->references;
 	if (!references ||  !references [idx-1]) {
 		/* 
 		 * detected a reference to mscorlib, we simply return a reference to a dummy 
@@ -245,7 +246,7 @@ class_compute_field_layout (MonoClass *class)
 				blittable = FALSE;
 			} else {
 				MonoClass *field_class = mono_class_from_mono_type (class->fields [i].type);
-				if (!field_class->blittable)
+				if (!field_class || !field_class->blittable)
 					blittable = FALSE;
 			}
 		}
@@ -1295,6 +1296,42 @@ mono_ptr_class_get (MonoType *type)
 	return result;
 }
 
+static MonoClass *
+mono_fnptr_class_get (MonoMethodSignature *sig)
+{
+	MonoClass *result;
+	static GHashTable *ptr_hash = NULL;
+
+	if (!ptr_hash)
+		ptr_hash = g_hash_table_new (g_direct_hash, g_direct_equal);
+	
+	if ((result = g_hash_table_lookup (ptr_hash, sig)))
+		return result;
+	result = g_new0 (MonoClass, 1);
+
+	result->parent = NULL; /* no parent for PTR types */
+	result->name = "System";
+	result->name_space = "MonoFNPtrFakeClass";
+	result->image = NULL; /* need to fix... */
+	result->inited = TRUE;
+	result->flags = TYPE_ATTRIBUTE_CLASS; // | (el_class->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK);
+	/* Can pointers get boxed? */
+	result->instance_size = sizeof (gpointer);
+	/*
+	 * baseval, diffval: need them to allow casting ?
+	 */
+	result->cast_class = result->element_class = result;
+
+	result->this_arg.type = result->byval_arg.type = MONO_TYPE_FNPTR;
+	result->this_arg.data.method = result->byval_arg.data.method = sig;
+	result->this_arg.byref = TRUE;
+	result->enum_basetype = &result->element_class->byval_arg;
+
+	g_hash_table_insert (ptr_hash, sig, result);
+
+	return result;
+}
+
 MonoClass *
 mono_class_from_mono_type (MonoType *type)
 {
@@ -1339,6 +1376,8 @@ mono_class_from_mono_type (MonoType *type)
 		return mono_array_class_get (type->data.array->type, type->data.array->rank);
 	case MONO_TYPE_PTR:
 		return mono_ptr_class_get (type->data.type);
+	case MONO_TYPE_FNPTR:
+		return mono_fnptr_class_get (type->data.method);
 	case MONO_TYPE_SZARRAY:
 		return mono_array_class_get (type->data.type, 1);
 	case MONO_TYPE_CLASS:
@@ -1723,38 +1762,78 @@ load_file_for_image (MonoImage *image, int fileidx)
 			if (res->modules [i] && !res->modules [i]->assembly)
 				res->modules [i]->assembly = image->assembly;
 		}
+		mono_image_load_references (image, NULL);
 	}
 	g_free (name);
 	g_free (base_dir);
 	return res;
 }
 
+static MonoClass*
+return_nested_in (MonoClass *class, char *nested) {
+	MonoClass *found;
+	char *s = strchr (nested, '/');
+	GList *tmp;
+
+	if (s) {
+		*s = 0;
+		s++;
+	}
+	for (tmp = class->nested_classes; tmp; tmp = tmp->next) {
+		found = tmp->data;
+		if (strcmp (found->name, nested) == 0) {
+			if (s)
+				return return_nested_in (found, s);
+			return found;
+		}
+	}
+	return NULL;
+}
+
 MonoClass *
 mono_class_from_name (MonoImage *image, const char* name_space, const char *name)
 {
 	GHashTable *nspace_table;
+	MonoImage *loaded_image;
 	guint32 token;
+	MonoClass *class;
+	char *nested;
+	char buf [1024];
+
+	if ((nested = strchr (name, '/'))) {
+		int pos = nested - name;
+		int len = strlen (name);
+		if (len > 1023)
+			return NULL;
+		memcpy (buf, name, len + 1);
+		buf [pos] = 0;
+		nested = buf + pos + 1;
+		name = buf;
+	}
 
 	nspace_table = g_hash_table_lookup (image->name_cache, name_space);
 	
 	if (!nspace_table || !(token = GPOINTER_TO_UINT (g_hash_table_lookup (nspace_table, name)))) {
 		MonoTableInfo  *t = &image->tables [MONO_TABLE_EXPORTEDTYPE];
+		guint32 cols [MONO_EXP_TYPE_SIZE];
 		int i;
 
 		for (i = 0; i < t->rows; ++i) {
-			guint32 cols [MONO_EXP_TYPE_SIZE];
 			const char *ename, *enspace;
-			mono_metadata_decode_row (t, i - 1, cols, MONO_EXP_TYPE_SIZE);
+			mono_metadata_decode_row (t, i, cols, MONO_EXP_TYPE_SIZE);
 			ename = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAME]);
 			enspace = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAMESPACE]);
 
 			if (strcmp (name, ename) == 0 && strcmp (name_space, enspace) == 0) {
 				guint32 impl = cols [MONO_EXP_TYPE_IMPLEMENTATION];
 				if ((impl & IMPLEMENTATION_MASK) == IMPLEMENTATION_FILE) {
-					image = load_file_for_image (image, impl >> IMPLEMENTATION_BITS);
-					if (!image)
+					loaded_image = load_file_for_image (image, impl >> IMPLEMENTATION_BITS);
+					if (!loaded_image)
 						return NULL;
-					return mono_class_from_name (image, name_space, name);
+					class = mono_class_from_name (loaded_image, name_space, name);
+					if (nested)
+						return return_nested_in (class, nested);
+					return class;
 				} else {
 					g_error ("not yet implemented");
 				}
@@ -1766,7 +1845,10 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 
 	token = MONO_TOKEN_TYPE_DEF | token;
 
-	return mono_class_get (image, token);
+	class = mono_class_get (image, token);
+	if (nested)
+		return return_nested_in (class, nested);
+	return class;
 }
 
 /*

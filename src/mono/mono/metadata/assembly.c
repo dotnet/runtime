@@ -62,6 +62,8 @@ search_loaded (MonoAssemblyName* aname)
 	
 	for (tmp = loaded_assemblies; tmp; tmp = tmp->next) {
 		ass = tmp->data;
+		if (!ass->aname.name)
+			continue;
 		/* we just compare the name, but later we'll do all the checks */
 		/* g_print ("compare %s %s\n", aname->name, ass->aname.name); */
 		if (strcmp (aname->name, ass->aname.name))
@@ -107,8 +109,8 @@ mono_assembly_setrootdir (const char *root_dir)
 	default_path [0] = g_strdup (root_dir);
 }
 
-static void
-load_references (MonoImage *image, MonoImageOpenStatus *status) {
+void
+mono_image_load_references (MonoImage *image, MonoImageOpenStatus *status) {
 	MonoTableInfo *t;
 	guint32 cols [MONO_ASSEMBLYREF_SIZE];
 	const char *hash;
@@ -387,7 +389,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	/* register right away to prevent loops */
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
 
-	load_references (image, status);
+	mono_image_load_references (image, status);
 	if (*status != MONO_IMAGE_OK) {
 		mono_assembly_close (ass);
 		return NULL;
@@ -398,7 +400,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	for (i = 0; i < t->rows; i++){
 		if (image->modules [i]) {
 			image->modules [i]->assembly = ass;
-			load_references (image->modules [i], status);
+			mono_image_load_references (image->modules [i], status);
 		}
 		/* 
 		 * FIXME: what do we do here? it could be a native dll...
