@@ -170,6 +170,8 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
 	guint32 cols [MONO_FIELD_SIZE];
+	char rva_desc [32];
+	guint32 rva;
 	int i;
 
 	if (end > t->rows + 1) {
@@ -184,6 +186,13 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end)
 		mono_metadata_decode_row (t, i, cols, MONO_FIELD_SIZE);
 		sig = get_field_signature (m, cols [MONO_FIELD_SIGNATURE]);
 		flags = field_flags (cols [MONO_FIELD_FLAGS]);
+
+		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_HAS_FIELD_RVA) {
+			mono_metadata_field_info (m, i, NULL, &rva, NULL);
+			g_snprintf (rva_desc, sizeof (rva_desc), " at D_%08x", rva);
+		} else {
+			rva_desc [0] = 0;
+		}
 		
 		mono_metadata_field_info (m, i, &field_offset, NULL, NULL);
 		if (field_offset != -1)
@@ -205,10 +214,10 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end)
 				 mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]));
 			fprintf (output, "%s\n", lit);
 			g_free (lit);
-		} else 
-			fprintf (output, "    .field %s %s %s %s\n",
+		} else
+			fprintf (output, "    .field %s %s %s %s%s\n",
 				 attrs? attrs: "", flags, sig,
-				 mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]));
+				 mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]), rva_desc);
 		g_free (attrs);
 		g_free (flags);
 		g_free (sig);
@@ -485,7 +494,7 @@ dis_method_list (MonoImage *m, guint32 start, guint32 end)
 		fprintf (output, "    {\n");
 		fprintf (output, "        // Method begins at RVA 0x%x\n", cols [MONO_METHOD_RVA]);
 		dis_code (m, cols [MONO_METHOD_RVA]);
-		fprintf (output, "    }\n\n");
+		fprintf (output, "    } // end of method %s\n\n", sig_str);
 		mono_metadata_free_method_signature (ms);
 		g_free (sig_str);
 	}
@@ -776,7 +785,7 @@ dis_type (MonoImage *m, int n)
 	dis_property_list (m, n);
 	dis_event_list (m, n);
 
-	fprintf (output, "  }\n");
+	fprintf (output, "  } // end of type %s%s%s\n", nspace, *nspace? ".": "", name);
 	if (*nspace)
 		fprintf (output, "}\n");
 	fprintf (output, "\n");
@@ -796,6 +805,43 @@ dis_types (MonoImage *m)
 
 	for (i = 1; i < t->rows; i++)
 		dis_type (m, i);
+}
+
+/**
+ * dis_data:
+ * @m: metadata context
+ *
+ * disassembles all data blobs references in the FieldRVA table in the @m context
+ */
+static void
+dis_data (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELDRVA];
+	MonoTableInfo *ft = &m->tables [MONO_TABLE_FIELD];
+	int i, b;
+	const char *rva, *sig;
+	guint32 align, size;
+	guint32 cols [MONO_FIELD_RVA_SIZE];
+	MonoType *type;
+
+	for (i = 0; i < t->rows; i++) {
+		mono_metadata_decode_row (t, i, cols, MONO_FIELD_RVA_SIZE);
+		rva = mono_cli_rva_map (m->image_info, cols [MONO_FIELD_RVA_RVA]);
+		sig = mono_metadata_blob_heap (m, mono_metadata_decode_row_col (ft, cols [MONO_FIELD_RVA_FIELD] -1, MONO_FIELD_SIGNATURE));
+		mono_metadata_decode_value (sig, &sig);
+		/* FIELD signature == 0x06 */
+		g_assert (*sig == 0x06);
+		type = mono_metadata_parse_field_type (m, 0, sig + 1, &sig);
+		mono_class_init (mono_class_from_mono_type (type));
+		size = mono_class_value_size (mono_class_from_mono_type (type), &align);
+		fprintf (output, ".data D_%08x = bytearray (", cols [MONO_FIELD_RVA_RVA]);
+		for (b = 0; b < size; ++b) {
+			if (!(b % 16))
+				fprintf (output, "\n\t");
+			fprintf (output, " %02x", rva [b]);
+		}
+		fprintf (output, ") // size: %d\n", size);
+	}
 }
 
 struct {
@@ -857,6 +903,7 @@ disassemble_file (const char *file)
 		dis_directive_assemblyref (img);
 		dis_directive_assembly (img);
 		dis_types (img);
+		dis_data (img);
 	}
 	
 	mono_image_close (img);
