@@ -14,6 +14,7 @@
 #ifdef HAVE_SEMAPHORE_H
 #include <semaphore.h>
 #endif
+#include <errno.h>
 
 #include <mono/io-layer/processes.h>
 
@@ -295,7 +296,7 @@ void _wapi_timed_thread_suspend (TimedThread *thread)
 		exit (-1);
 	}
 
-	MONO_SEM_WAIT (&thread->suspend_sem);
+	while (MONO_SEM_WAIT (&thread->suspend_sem) != 0 && errno == EINTR);
 }
 
 void _wapi_timed_thread_resume (TimedThread *thread)

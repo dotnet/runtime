@@ -675,7 +675,11 @@ guint32 SuspendThread(gpointer handle)
 			_wapi_timed_thread_suspend (thread_private_handle->thread);
 		else {
 			pthread_kill (thread_private_handle->thread->id, SIGPWR);
-			MONO_SEM_WAIT (&thread_private_handle->thread->suspended_sem);
+			while (MONO_SEM_WAIT (&thread_private_handle->thread->suspended_sem) != 0) {
+				if (errno != EINTR) {
+					return(0xFFFFFFFF);
+				}
+			}
 		}
 	}
 
