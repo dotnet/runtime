@@ -733,7 +733,7 @@ int _wapi_shutdown(guint32 handle, int how)
 	return(ret);
 }
 
-guint32 _wapi_socket(int domain, int type, int protocol)
+guint32 _wapi_socket(int domain, int type, int protocol, void *unused, guint32 unused2, guint32 unused3)
 {
 	struct _WapiHandlePrivate_socket *socket_private_handle;
 	gpointer handle;

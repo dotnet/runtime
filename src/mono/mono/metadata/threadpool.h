@@ -15,6 +15,8 @@ MonoObject *
 mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, 
 			 MonoObject **exc);
 
+void mono_thread_pool_cleanup (void);
+
 void
 ves_icall_System_Threading_ThreadPool_GetAvailableThreads (int *workerThreads,
 							   int *completionPortThreads);

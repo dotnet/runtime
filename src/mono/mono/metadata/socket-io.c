@@ -593,7 +593,9 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
 		return(NULL);
 	}
 	
-	sock = _wapi_socket (sock_family, sock_type, sock_proto);
+	sock = _wapi_socket (sock_family, sock_type, sock_proto,
+			     NULL, 0, WSA_FLAG_OVERLAPPED);
+
 	if(sock==INVALID_SOCKET) {
 		*error = WSAGetLastError ();
 		return(NULL);
@@ -1002,6 +1004,51 @@ extern void ves_icall_System_Net_Sockets_Socket_Bind_internal(SOCKET sock, MonoO
 	g_free(sa);
 }
 
+enum {
+	SelectModeRead,
+	SelectModeWrite,
+	SelectModeError
+};
+
+MonoBoolean
+ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
+						   gint timeout, gint32 *error)
+{
+	fd_set fds;
+	int ret = 0;
+	struct timeval tv;
+	struct timeval *tvptr;
+	div_t divvy;
+
+	MONO_ARCH_SAVE_REGS;
+
+	do {
+		*error = 0;
+		FD_ZERO (&fds);
+		_wapi_FD_SET (sock, &fds);
+		if (timeout >= 0) {
+			divvy = div (timeout, 1000000);
+			tv.tv_sec = divvy.quot;
+			tv.tv_usec = divvy.rem;
+			tvptr = &tv;
+		} else {
+			tvptr = NULL;
+		}
+
+		if (mode == SelectModeRead) {
+			ret = _wapi_select (0, &fds, NULL, NULL, tvptr);
+		} else if (mode == SelectModeWrite) {
+			ret = _wapi_select (0, NULL, &fds, NULL, tvptr);
+		} else if (mode == SelectModeError) {
+			ret = _wapi_select (0, NULL, NULL, &fds, tvptr);
+		} else {
+			g_assert_not_reached ();
+		}
+	} while ((ret == SOCKET_ERROR) && (*error == WSAGetLastError ()) == WSAEINTR);
+
+	return (ret != SOCKET_ERROR && _wapi_FD_ISSET (sock, &fds));
+}
+
 extern void ves_icall_System_Net_Sockets_Socket_Connect_internal(SOCKET sock, MonoObject *sockaddr, gint32 *error)
 {
 	struct sockaddr *sa;
@@ -1025,7 +1072,7 @@ extern void ves_icall_System_Net_Sockets_Socket_Connect_internal(SOCKET sock, Mo
 	if(ret==SOCKET_ERROR) {
 		*error = WSAGetLastError ();
 	}
-	
+
 	g_free(sa);
 }
 
@@ -1052,7 +1099,7 @@ gint32 ves_icall_System_Net_Sockets_Socket_Receive_internal(SOCKET sock, MonoArr
 		*error = WSAGetLastError ();
 		return(0);
 	}
-	
+
 	return(ret);
 }
 
@@ -1125,7 +1172,7 @@ gint32 ves_icall_System_Net_Sockets_Socket_Send_internal(SOCKET sock, MonoArray 
 		*error = WSAGetLastError ();
 		return(0);
 	}
-	
+
 	return(ret);
 }
 

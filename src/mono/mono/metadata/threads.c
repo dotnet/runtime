@@ -1166,7 +1166,10 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 #ifdef THREAD_DEBUG
 		g_print ("Aborting id: %d\n", thread->tid);
 #endif
+/* Will assert on windows */
+#ifndef __MINGW32__
 		ves_icall_System_Threading_Thread_Abort (thread, NULL);
+#endif
 		return TRUE;
 	}
 
@@ -1211,6 +1214,8 @@ void mono_thread_manage (void)
 	} while(wait->num>0);
 	
 	g_free (wait);
+
+	mono_thread_pool_cleanup ();
 
 	EnterCriticalSection(&threads_mutex);
 

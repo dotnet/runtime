@@ -25,7 +25,7 @@
 #define _wapi_sendto sendto 
 #define _wapi_setsockopt setsockopt 
 #define _wapi_shutdown shutdown 
-#define _wapi_socket socket 
+#define _wapi_socket WSASocket 
 #define _wapi_gethostbyname gethostbyname 
 #define _wapi_select select 
 
@@ -37,6 +37,8 @@
 #define _wapi_FD_SET FD_SET
 
 #else
+
+#define WSA_FLAG_OVERLAPPED           0x01
 
 extern guint32 _wapi_accept(guint32 handle, struct sockaddr *addr,
 			    socklen_t *addrlen);
@@ -63,7 +65,8 @@ extern int _wapi_sendto(guint32 handle, const void *msg, size_t len,
 extern int _wapi_setsockopt(guint32 handle, int level, int optname,
 			    const void *optval, socklen_t optlen);
 extern int _wapi_shutdown(guint32 handle, int how);
-extern guint32 _wapi_socket(int domain, int type, int protocol);
+extern guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
+			    guint32 unused2, guint32 flags);
 extern struct hostent *_wapi_gethostbyname(const char *hostname);
 extern int _wapi_select(int nfds, fd_set *readfds, fd_set *writefds,
 			fd_set *exceptfds, struct timeval *timeout);

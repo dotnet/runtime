@@ -180,6 +180,20 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	return ac->res;
 }
 
+void
+mono_thread_pool_cleanup (void)
+{
+	gint release;
+
+	EnterCriticalSection (&mono_delegate_section);
+	g_list_free (async_call_queue);
+	async_call_queue = NULL;
+	release = (gint) InterlockedCompareExchange (&busy_worker_threads, 0, -1);
+	LeaveCriticalSection (&mono_delegate_section);
+	if (job_added)
+		ReleaseSemaphore (job_added, release, NULL);
+}
+
 static void
 append_job (MonoAsyncResult *ar)
 {
