@@ -398,6 +398,7 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 				   MonoClass *klass)
 {
 	MonoMethodInflated *result;
+	MonoClass *rklass;
 
 	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
@@ -415,11 +416,10 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 			mono_method_get_header (method), context);
 
 	if (klass)
-		result->nmethod.method.klass = klass;
+		rklass = result->nmethod.method.klass = klass;
 	else {
-		MonoType *declaring = mono_class_inflate_generic_type (
-			&method->klass->byval_arg, context);
-		result->nmethod.method.klass = mono_class_from_mono_type (declaring);
+		MonoType *declaring = mono_class_inflate_generic_type (&method->klass->byval_arg, context);
+		rklass = result->nmethod.method.klass = mono_class_from_mono_type (declaring);
 	}
 
 	result->nmethod.method.signature = inflate_generic_signature (
@@ -428,11 +428,11 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 	if (context->gmethod) {
 		result->context = g_new0 (MonoGenericContext, 1);
 		result->context->gmethod = context->gmethod;
-		result->context->ginst = result->nmethod.method.klass->generic_inst;
+		result->context->ginst = rklass->generic_inst;
 
 		mono_stats.generics_metadata_size += sizeof (MonoGenericContext);
-	} else
-		result->context = result->nmethod.method.klass->generic_inst->context;
+	} else if (rklass->generic_inst)
+		result->context = rklass->generic_inst->context;
 
 	if (method->signature->is_inflated)
 		result->declaring = ((MonoMethodInflated *) method)->declaring;

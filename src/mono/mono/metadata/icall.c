@@ -254,12 +254,6 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 
 	vsize = mono_class_instance_size (vc) - sizeof (MonoObject);
 
-#if 0
-	g_message (G_STRLOC ": %d (%d) <= %d (%d)",
-		   ec->byval_arg.type, esize,
-		   vc->byval_arg.type, vsize);
-#endif
-
 #define ASSIGN_UNSIGNED(etype) G_STMT_START{\
 	switch (vc->byval_arg.type) { \
 	case MONO_TYPE_U1: \
@@ -1752,9 +1746,7 @@ ves_icall_MonoType_GetGenericArguments (MonoReflectionType *type)
 
 	klass = mono_class_from_mono_type (type->type);
 
-	if (type->type->byref) {
-		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, 0);
-	} else if (klass->generic_container) {
+	if (klass->generic_container) {
 		MonoGenericContainer *container = klass->generic_container;
 		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, container->type_argc);
 		for (i = 0; i < container->type_argc; ++i) {
@@ -1779,8 +1771,6 @@ ves_icall_Type_get_IsGenericTypeDefinition (MonoReflectionType *type)
 	MonoClass *klass;
 	MONO_ARCH_SAVE_REGS;
 
-	if (type->type->byref)
-		return FALSE;
 	klass = mono_class_from_mono_type (type->type);
 
 	return klass->generic_container != NULL;
@@ -1792,8 +1782,6 @@ ves_icall_Type_GetGenericTypeDefinition_impl (MonoReflectionType *type)
 	MonoClass *klass;
 	MONO_ARCH_SAVE_REGS;
 
-	if (type->type->byref)
-		return NULL;
 	klass = mono_class_from_mono_type (type->type);
 	if (klass->generic_container) {
 		return type; /* check this one */
@@ -1818,9 +1806,6 @@ ves_icall_Type_BindGenericParameters (MonoReflectionType *type, MonoArray *type_
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (type->type->byref)
-		return NULL;
-
 	count = mono_array_length (type_array);
 	types = g_new0 (MonoType *, count);
 
@@ -1840,8 +1825,6 @@ ves_icall_Type_get_IsGenericInstance (MonoReflectionType *type)
 	MonoClass *klass;
 	MONO_ARCH_SAVE_REGS;
 
-	if (type->type->byref)
-		return FALSE;
 	klass = mono_class_from_mono_type (type->type);
 	return klass->generic_inst != NULL;
 }
@@ -1851,8 +1834,6 @@ ves_icall_Type_GetGenericParameterPosition (MonoReflectionType *type)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	if (type->type->byref)
-		return -1;
 	if (type->type->type == MONO_TYPE_VAR || type->type->type == MONO_TYPE_MVAR)
 		return type->type->data.generic_param->num;
 	return -1;
@@ -1896,8 +1877,6 @@ ves_icall_MonoType_get_HasGenericArguments (MonoReflectionType *type)
 	MonoClass *klass;
 	MONO_ARCH_SAVE_REGS;
 
-	if (type->type->byref)
-		return FALSE;
 	klass = mono_class_from_mono_type (type->type);
 	if (klass->generic_container || klass->generic_inst)
 		return TRUE;
@@ -1909,8 +1888,6 @@ ves_icall_MonoType_get_IsGenericParameter (MonoReflectionType *type)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	if (type->type->byref)
-		return FALSE;
 	if (type->type->type == MONO_TYPE_VAR || type->type->type == MONO_TYPE_MVAR)
 		return TRUE;
 	return FALSE;
@@ -1921,8 +1898,6 @@ ves_icall_TypeBuilder_get_IsGenericParameter (MonoReflectionTypeBuilder *tb)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	if (tb->type.type->byref)
-		return FALSE;
 	if (tb->type.type->type == MONO_TYPE_VAR || tb->type.type->type == MONO_TYPE_MVAR)
 		return TRUE;
 	return FALSE;
@@ -2153,9 +2128,6 @@ ves_icall_MonoType_get_DeclaringMethod (MonoReflectionType *type)
 	MonoClass *klass;
 
 	MONO_ARCH_SAVE_REGS;
-
-	if (type->type->byref)
-		return FALSE;
 
 	method = type->type->data.generic_param->method;
 	if (!method)
