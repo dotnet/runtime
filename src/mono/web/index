@@ -72,6 +72,15 @@
   </tr>
 </table>
 
+** Apr 26, 2002
+
+	Binary packages of Mono 0.11 are available for <a
+	href="http://www.superin.formativ.net/mono/mono.htm">Windows</a>
+	(Thanks to Guenther Roith) and for
+	<a
+	href="http://mono.baselabs.org/index.php/software/">Linux</a> (thanks
+	to BaseLabs).
+
 ** Apr 24, 2002
 
 	<b>Mono 0.11 is out!</b> Mostly performance improvements, bug
