@@ -53,14 +53,14 @@ AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir],
 		fi
 	else
 		PKG_PATH=$with_crosspkgdir
+		PKG_CONFIG_PATH=$PKG_PATH
+		export PKG_CONFIG_PATH
 	fi
 )
 
 ## Versions of dependencies
 GLIB_REQUIRED_VERSION=1.3.11
 
-PKG_CONFIG_PATH=$PKG_PATH
-export PKG_CONFIG_PATH
 PKG_CHECK_MODULES(BASE_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION)
 
 GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0`
