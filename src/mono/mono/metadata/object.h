@@ -46,6 +46,7 @@
      if (arg == NULL)							  \
        {								  \
               	MonoException *ex;                                        \
+                if (arg) {} /* check if the name exists */                \
 		ex = mono_get_exception_argument_null (#arg);             \
                 mono_raise_exception (ex);                                \
        };				}G_STMT_END
