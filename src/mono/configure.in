@@ -228,6 +228,14 @@ AC_ARG_WITH(gc, [  --with-gc=boehm,included,none],[gc=$with_gc],[gc=$gc_default]
 # so this option will stay until nptl becomes more widespread
 AC_ARG_WITH(nptl, [  --with-nptl=yes,no      enable/disable support for NPTL],[],[with_nptl=yes])
 
+# Enable support for using sigaltstack for SIGSEGV and stack overflow handling
+# This does not work on some platforms (bug #55253)
+AC_ARG_WITH(sigaltstack, [  --with-sigaltstack=yes,no      enable/disable support for sigaltstack],[],[with_sigaltstack=yes])
+
+if test x$with_sigaltstack = "xyes"; then
+	AC_DEFINE(HAVE_WORKING_SIGALTSTACK)
+fi
+
 # assembly bundle support, see metadata/make-bundle.pl for more info
 AC_ARG_WITH(bundle, [  --with-bundle=bundle_template],[
 	BUNDLE_FILE=$with_bundle
@@ -973,4 +981,5 @@ echo "
 	GC:	$gc
 	ICU:	$enable_icu
 	NPTL:   $with_nptl
+	SIGALTSTACK: $with_sigaltstack
 "
