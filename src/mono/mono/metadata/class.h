@@ -156,7 +156,7 @@ struct MonoVTable {
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
 	guint       max_interface_id;
         gpointer   *interface_offsets;   
-        gpointer    data;
+        gpointer    data; /* to store static class data */
         gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
 };
 

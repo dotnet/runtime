@@ -344,8 +344,11 @@ mono_mb_emit_ldflda (MonoMethodBuilder *mb, gint32 offset)
 {
         mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
         mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-        mono_mb_emit_icon (mb, offset);
-        mono_mb_emit_byte (mb, CEE_ADD);
+
+	if (offset) {
+		mono_mb_emit_icon (mb, offset);
+		mono_mb_emit_byte (mb, CEE_ADD);
+	}
 }
 
 void
@@ -1962,6 +1965,291 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 
 	if (!this)
 		g_hash_table_insert (cache, method, res);
+
+	return res;
+}
+
+MonoMethod *
+mono_marshal_get_ldfld_wrapper (MonoType *type)
+{
+	MonoMethodSignature *sig, *csig;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	MonoClass *klass;
+	static GHashTable *ldfld_hash = NULL; 
+	char *name;
+	int i, t, pos0, pos1;
+
+	if (!ldfld_hash) 
+		ldfld_hash = g_hash_table_new (NULL, NULL);
+
+	if (res = g_hash_table_lookup (ldfld_hash, type))
+		return res;
+
+	klass = mono_class_from_mono_type (type);
+
+	name = g_strdup_printf ("__ldfld_wrapper_%s.%s", klass->name_space, klass->name); 
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_LDFLD);
+	g_free (name);
+
+	mb->method->save_lmf = 1;
+
+	/* <restype> ldfld (MonoObject *this, gpointer class, gpointer field, int offset); */
+	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
+	sig->params [0] = &mono_defaults.object_class->byval_arg;
+	sig->params [1] = &mono_defaults.int_class->byval_arg;
+	sig->params [2] = &mono_defaults.int_class->byval_arg;
+	sig->params [3] = &mono_defaults.int_class->byval_arg;
+	sig->ret = &klass->byval_arg;
+
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoObject, vtable));
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoVTable, klass));
+	mono_mb_emit_byte (mb, CEE_ADD);
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_defaults.transparent_proxy_class));
+
+	mono_mb_emit_byte (mb, CEE_BNE_UN);
+	pos0 = mb->pos;
+	mono_mb_emit_i4 (mb, 0);
+
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_ldarg (mb, 2);
+
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
+	csig->params [0] = &mono_defaults.object_class->byval_arg;
+	csig->params [1] = &mono_defaults.int_class->byval_arg;
+	csig->params [2] = &mono_defaults.int_class->byval_arg;
+	csig->ret = &klass->this_arg;
+	csig->pinvoke = 1;
+
+	mono_mb_emit_native_call (mb, csig, mono_load_remote_field_new);
+
+	if (klass->valuetype) {
+		mono_mb_emit_byte (mb, CEE_UNBOX);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));		
+		mono_mb_emit_byte (mb, CEE_BR);
+		pos1 = mb->pos;
+		mono_mb_emit_i4 (mb, 0);
+	} else {
+		mono_mb_emit_byte (mb, CEE_RET);
+	}
+
+
+	mono_mb_patch_addr (mb, pos0, mb->pos - (pos0 + 4));
+
+	mono_mb_emit_ldarg (mb, 0);
+        mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+        mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
+	mono_mb_emit_ldarg (mb, 3);
+	mono_mb_emit_byte (mb, CEE_ADD);
+
+	if (klass->valuetype)
+		mono_mb_patch_addr (mb, pos1, mb->pos - (pos1 + 4));
+
+	t = type->type;
+ handle_enum:
+	switch (t) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+		mono_mb_emit_byte (mb, CEE_LDIND_I1);
+		break;
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		mono_mb_emit_byte (mb, CEE_LDIND_I2);
+		break;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		mono_mb_emit_byte (mb, CEE_LDIND_I4);
+		break;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		mono_mb_emit_byte (mb, CEE_LDIND_I8);
+		break;
+	case MONO_TYPE_R4:
+		mono_mb_emit_byte (mb, CEE_LDIND_R4);
+		break;
+	case MONO_TYPE_R8:
+		mono_mb_emit_byte (mb, CEE_LDIND_R8);
+		break;
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		break;
+	case MONO_TYPE_VALUETYPE:
+		if (klass->enumtype) {
+			t = klass->enum_basetype->type;
+			goto handle_enum;
+		}
+		mono_mb_emit_byte (mb, CEE_LDOBJ);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+		break;
+	default:
+		g_warning ("type %x not implemented", type->type);
+		g_assert_not_reached ();
+	}
+
+	mono_mb_emit_byte (mb, CEE_RET);
+       
+	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
+	mono_mb_free (mb);
+	
+	g_hash_table_insert (ldfld_hash, type, res);
+
+	return res;
+}
+
+MonoMethod *
+mono_marshal_get_stfld_wrapper (MonoType *type)
+{
+	MonoMethodSignature *sig, *csig;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	MonoClass *klass;
+	static GHashTable *stfld_hash = NULL; 
+	char *name;
+	int i, t, pos;
+
+	if (!stfld_hash) 
+		stfld_hash = g_hash_table_new (NULL, NULL);
+
+	if (res = g_hash_table_lookup (stfld_hash, type))
+		return res;
+
+	klass = mono_class_from_mono_type (type);
+
+	name = g_strdup_printf ("__stfld_wrapper_%s.%s", klass->name_space, klass->name); 
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_STFLD);
+	g_free (name);
+
+	mb->method->save_lmf = 1;
+
+	/* void stfld (MonoObject *this, gpointer class, gpointer field, int offset, gpointer val); */
+	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 5);
+	sig->params [0] = &mono_defaults.object_class->byval_arg;
+	sig->params [1] = &mono_defaults.int_class->byval_arg;
+	sig->params [2] = &mono_defaults.int_class->byval_arg;
+	sig->params [3] = &mono_defaults.int_class->byval_arg;
+	sig->params [4] = &klass->byval_arg;
+	sig->ret = &mono_defaults.void_class->byval_arg;
+
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoObject, vtable));
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoVTable, klass));
+	mono_mb_emit_byte (mb, CEE_ADD);
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_defaults.transparent_proxy_class));
+
+	mono_mb_emit_byte (mb, CEE_BNE_UN);
+	pos = mb->pos;
+	mono_mb_emit_i4 (mb, 0);
+
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_ldarg (mb, 2);
+	mono_mb_emit_ldarg (mb, 4);
+
+	if (klass->valuetype) {
+		mono_mb_emit_byte (mb, CEE_BOX);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));		
+	}
+
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
+	csig->params [0] = &mono_defaults.object_class->byval_arg;
+	csig->params [1] = &mono_defaults.int_class->byval_arg;
+	csig->params [2] = &mono_defaults.int_class->byval_arg;
+	csig->params [3] = &klass->this_arg;
+	csig->ret = &mono_defaults.void_class->byval_arg;
+	csig->pinvoke = 1;
+
+	mono_mb_emit_native_call (mb, csig, mono_store_remote_field_new);
+
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
+
+	mono_mb_emit_ldarg (mb, 0);
+        mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+        mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
+	mono_mb_emit_ldarg (mb, 3);
+	mono_mb_emit_byte (mb, CEE_ADD);
+	mono_mb_emit_ldarg (mb, 4);
+
+	t = type->type;
+ handle_enum:
+	switch (t) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+		mono_mb_emit_byte (mb, CEE_STIND_I1);
+		break;
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		mono_mb_emit_byte (mb, CEE_STIND_I2);
+		break;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		mono_mb_emit_byte (mb, CEE_STIND_I4);
+		break;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		mono_mb_emit_byte (mb, CEE_STIND_I8);
+		break;
+	case MONO_TYPE_R4:
+		mono_mb_emit_byte (mb, CEE_STIND_R4);
+		break;
+	case MONO_TYPE_R8:
+		mono_mb_emit_byte (mb, CEE_STIND_R8);
+		break;
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		mono_mb_emit_byte (mb, CEE_STIND_I);
+		break;
+	case MONO_TYPE_VALUETYPE:
+		if (klass->enumtype) {
+			t = klass->enum_basetype->type;
+			goto handle_enum;
+		}
+		mono_mb_emit_byte (mb, CEE_STOBJ);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+		break;
+	default:
+		g_warning ("type %x not implemented", type->type);
+		g_assert_not_reached ();
+	}
+
+	mono_mb_emit_byte (mb, CEE_RET);
+       
+	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
+	mono_mb_free (mb);
+	
+	g_hash_table_insert (stfld_hash, type, res);
 
 	return res;
 }

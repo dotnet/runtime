@@ -1948,6 +1948,48 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 		return res;
 }
 
+MonoObject *
+mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *field)
+{
+	static MonoMethod *getter = NULL;
+	MonoDomain *domain = mono_domain_get ();
+	MonoClass *field_class;
+	MonoMethodMessage *msg;
+	MonoArray *out_args;
+	MonoObject *exc, *res;
+
+	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
+
+	if (!getter) {
+		int i;
+
+		for (i = 0; i < mono_defaults.object_class->method.count; ++i) {
+			MonoMethod *cm = mono_defaults.object_class->methods [i];
+	       
+			if (!strcmp (cm->name, "FieldGetter")) {
+				getter = cm;
+				break;
+			}
+		}
+		g_assert (getter);
+	}
+	
+	field_class = mono_class_from_mono_type (field->type);
+
+	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
+	out_args = mono_array_new (domain, mono_defaults.object_class, 1);
+	mono_message_init (domain, msg, mono_method_get_object (domain, getter, NULL), out_args);
+
+	mono_array_set (msg->args, gpointer, 0, mono_string_new (domain, klass->name));
+	mono_array_set (msg->args, gpointer, 1, mono_string_new (domain, field->name));
+
+	mono_remoting_invoke ((MonoObject *)((MonoTransparentProxy *)this)->rp, msg, &exc, &out_args);
+
+	res = mono_array_get (out_args, MonoObject *, 0);
+
+	return res;
+}
+
 /**
  * mono_store_remote_field:
  * @this: pointer to an object
@@ -1993,6 +2035,41 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 	else 
 		arg = *((MonoObject **)val);
 		
+
+	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
+	mono_message_init (domain, msg, mono_method_get_object (domain, setter, NULL), NULL);
+
+	mono_array_set (msg->args, gpointer, 0, mono_string_new (domain, klass->name));
+	mono_array_set (msg->args, gpointer, 1, mono_string_new (domain, field->name));
+	mono_array_set (msg->args, gpointer, 2, arg);
+
+	mono_remoting_invoke ((MonoObject *)((MonoTransparentProxy *)this)->rp, msg, &exc, &out_args);
+}
+
+void
+mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *field, MonoObject *arg)
+{
+	static MonoMethod *setter = NULL;
+	MonoDomain *domain = mono_domain_get ();
+	MonoMethodMessage *msg;
+	MonoArray *out_args;
+	MonoObject *exc;
+
+	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
+
+	if (!setter) {
+		int i;
+
+		for (i = 0; i < mono_defaults.object_class->method.count; ++i) {
+			MonoMethod *cm = mono_defaults.object_class->methods [i];
+	       
+			if (!strcmp (cm->name, "FieldSetter")) {
+				setter = cm;
+				break;
+			}
+		}
+		g_assert (setter);
+	}
 
 	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
 	mono_message_init (domain, msg, mono_method_get_object (domain, setter, NULL), NULL);

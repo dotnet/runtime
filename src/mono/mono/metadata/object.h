@@ -363,8 +363,14 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 gpointer
 mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, gpointer *res);
 
+MonoObject *
+mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *field);
+
 void
 mono_store_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, gpointer val);
+
+void
+mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *field, MonoObject *arg);
 
 void
 mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args);

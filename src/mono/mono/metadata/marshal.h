@@ -148,6 +148,12 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass);
 MonoMethod *
 mono_marshal_get_ptr_to_struct (MonoClass *klass);
 
+MonoMethod *
+mono_marshal_get_stfld_wrapper (MonoType *type);
+
+MonoMethod *
+mono_marshal_get_ldfld_wrapper (MonoType *type);
+
 /* marshaling internal calls */
 
 void * 

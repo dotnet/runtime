@@ -197,7 +197,7 @@ inline void
 mono_context_set				   (MonoAppContext *new_context);
 
 inline MonoAppContext * 
-mono_context_get				   ();
+mono_context_get				   (void);
 
 MonoAppDomain * 
 ves_icall_System_AppDomain_InternalSetDomain	   (MonoAppDomain *ad);
@@ -206,7 +206,7 @@ MonoAppDomain *
 ves_icall_System_AppDomain_InternalSetDomainByID   (gint32 domainid);
 
 MonoAppContext * 
-ves_icall_System_AppDomain_InternalGetContext      ();
+ves_icall_System_AppDomain_InternalGetContext      (void);
 
 MonoAppContext * 
 ves_icall_System_AppDomain_InternalSetContext	   (MonoAppContext *mc);
