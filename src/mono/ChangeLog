@@ -1,3 +1,9 @@
+
+Fri Jun 18 19:39:09 CEST 2004 Paolo Molaro <lupus@ximian.com>
+
+	* Makefile.am: process data before runtime, so the config file is
+	installed and gacutil has a chance to work (finding symlink).
+
 2004-06-18  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am ($(monoone_DATA) $(monotwo_DATA) $(monobins_DATA)): 
