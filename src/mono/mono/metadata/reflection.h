@@ -467,7 +467,6 @@ typedef struct {
 	guint32 location;
 } MonoManifestResourceInfo;
 
-char*         mono_type_get_name         (MonoType *type);
 int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);
 MonoType*     mono_reflection_get_type   (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase);
 MonoType*     mono_reflection_type_from_name (char *name, MonoImage *image);

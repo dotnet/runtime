@@ -3993,64 +3993,6 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 	return 1;
 }
 
-static void
-mono_type_get_name_recurse (MonoType *type, GString *str)
-{
-	MonoClass *klass;
-	
-	switch (type->type) {
-	case MONO_TYPE_ARRAY: {
-		int i, rank = type->data.array->rank;
-
-		mono_type_get_name_recurse (&type->data.array->eklass->byval_arg, str);
-		g_string_append_c (str, '[');
-		for (i = 1; i < rank; i++)
-			g_string_append_c (str, ',');
-		g_string_append_c (str, ']');
-		break;
-	}
-	case MONO_TYPE_SZARRAY:
-		mono_type_get_name_recurse (&type->data.klass->byval_arg, str);
-		g_string_append (str, "[]");
-		break;
-	case MONO_TYPE_PTR:
-		mono_type_get_name_recurse (type->data.type, str);
-		g_string_append_c (str, '*');
-		break;
-	default:
-		klass = mono_class_from_mono_type (type);
-		if (klass->nested_in) {
-			mono_type_get_name_recurse (&klass->nested_in->byval_arg, str);
-			g_string_append_c (str, '+');
-		}
-		if (*klass->name_space) {
-			g_string_append (str, klass->name_space);
-			g_string_append_c (str, '.');
-		}
-		g_string_append (str, klass->name);
-		break;
-	}
-}
-
-/*
- * mono_type_get_name:
- * @type: a type
- *
- * Returns the string representation for type as required by System.Reflection.
- * The inverse of mono_reflection_parse_type ().
- */
-char*
-mono_type_get_name (MonoType *type)
-{
-	GString* result = g_string_new ("");
-	mono_type_get_name_recurse (type, result);
-
-	if (type->byref)
-		g_string_append_c (result, '&');
-
-	return g_string_free (result, FALSE);
-}
-
 static MonoType*
 mono_reflection_get_type_internal (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase)
 {

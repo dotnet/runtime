@@ -167,7 +167,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str)
  * Returns the string representation for type as required by System.Reflection.
  * The inverse of mono_reflection_parse_type ().
  */
-static char*
+char*
 mono_type_get_name (MonoType *type)
 {
 	GString* result = g_string_new ("");
@@ -1122,6 +1122,7 @@ mono_class_init (MonoClass *class)
 		ctor->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
 		ctor->signature = sig;
 		ctor->name = ".ctor";
+		ctor->slot = -1;
 		class->methods = g_new (MonoMethod*, class->method.count);
 		class->methods [0] = ctor;
 		if (class->rank > 1) {
@@ -1137,6 +1138,7 @@ mono_class_init (MonoClass *class)
 			ctor->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
 			ctor->signature = sig;
 			ctor->name = ".ctor";
+			ctor->slot = -1;
 			class->methods [1] = ctor;
 		}
 	} else {
@@ -1887,7 +1889,7 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 			mono_class_init (parent);
 	}
 
-	class = g_malloc0 (sizeof (MonoClass) + parent->vtable_size * sizeof (gpointer));
+	class = g_malloc0 (sizeof (MonoClass));
 
 	class->image = image;
 	class->name_space = eclass->name_space;
@@ -1907,7 +1909,6 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 	class->parent = parent;
 	class->instance_size = mono_class_instance_size (class->parent);
 	class->class_size = 0;
-	class->vtable_size = parent->vtable_size;
 	mono_class_setup_supertypes (class);
 
 	class->rank = rank;

@@ -325,6 +325,9 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass);
 gpointer
 mono_ldtoken               (MonoImage *image, guint32 token, MonoClass **retclass);
 
+char*         
+mono_type_get_name         (MonoType *type);
+
 void
 mono_install_trampoline (MonoTrampoline func);
 
