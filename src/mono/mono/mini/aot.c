@@ -521,11 +521,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 	GPtrArray *patches;
 	int i, pindex;
 
-#ifdef HAVE_BOEHM_GC
-	minfo = GC_MALLOC (sizeof (MonoAotMethod));
-#else
 	minfo = g_new0 (MonoAotMethod, 1);
-#endif
 
 	minfo->domain = domain;
 	jinfo = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo));
@@ -737,11 +733,12 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 				info32 += (ji->table_size + 1);
 				break;
 			case MONO_PATCH_INFO_R4:
-				ji->data.target = info;
+				ji->data.target = info32;
 				info32 ++;
 				break;
 			case MONO_PATCH_INFO_R8:
-				ji->data.target = info;
+				info32 = ALIGN_PTR_TO (info32, 8);
+				ji->data.target = info32;
 				info32 += 2;
 				break;
 			case MONO_PATCH_INFO_LDSTR:
@@ -1202,8 +1199,9 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 				fprintf (tmpfp, "\t.long 0x%08x\n", *((guint32 *)patch_info->data.target));	
 				break;
 			case MONO_PATCH_INFO_R8:
+				emit_alignment (tmpfp, 8);
 				fprintf (tmpfp, "\t.long 0x%08x\n", *((guint32 *)patch_info->data.target));
-				fprintf (tmpfp, "\t.long 0x%08x\n", *((guint32 *)patch_info->data.target + 1));
+				fprintf (tmpfp, "\t.long 0x%08x\n", *(((guint32 *)patch_info->data.target) + 1));
 				break;
 			case MONO_PATCH_INFO_VTABLE:
 			case MONO_PATCH_INFO_CLASS_INIT:
