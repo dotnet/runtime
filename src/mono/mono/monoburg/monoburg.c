@@ -319,8 +319,7 @@ emit_state ()
 
 	if (dag_mode) {
 		output ("\tMBTREE_TYPE\t *tree;\n");
-		output ("\tgint8 reg1, reg2, reg3;\n");
-		output ("\tunsigned spilled:1;\n");
+		output ("\tgint16 reg1, reg2;\n");
 	}
 	
 	output ("\tMBState\t\t*left, *right;\n");
