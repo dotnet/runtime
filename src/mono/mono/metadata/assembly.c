@@ -49,7 +49,6 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	MonoAssembly *ass;
 	MonoImage *image;
 	metadata_tableinfo_t *t;
-	cli_image_info_t *iinfo;
 	metadata_t *m;
 	int i, j;
 	const char *basename = strrchr (filename, '/');
@@ -78,8 +77,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	if (resolver == NULL)
 		resolver = default_assembly_name_resolver;
 
-	iinfo = image->image_info;
-	m = &iinfo->cli_metadata;
+	m = &image->metadata;
 	t = &m->tables [META_TABLE_ASSEMBLYREF];
 
 	image->references = g_new (MonoAssembly *, t->rows + 1);

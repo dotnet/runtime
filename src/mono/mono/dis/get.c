@@ -67,21 +67,21 @@ get_array_shape (metadata_t *m, const char *ptr, char **result)
 	int i, r;
 	char buffer [80];
 	
-	ptr = mono_metadata_decode_value (ptr, &rank);
-	ptr = mono_metadata_decode_value (ptr, &num_sizes);
+	rank = mono_metadata_decode_value (ptr, &ptr);
+	num_sizes = mono_metadata_decode_value (ptr, &ptr);
 
 	if (num_sizes > 0)
 		sizes = g_new (guint32, num_sizes);
 	
 	for (i = 0; i < num_sizes; i++)
-		ptr = mono_metadata_decode_value (ptr, &(sizes [i]));
+		sizes [i] = mono_metadata_decode_value (ptr, &ptr);
 
-	ptr = mono_metadata_decode_value (ptr, &num_lo_bounds);
+	num_lo_bounds = mono_metadata_decode_value (ptr, &ptr);
 	if (num_lo_bounds > 0)
 		lo_bounds = g_new (guint32, num_lo_bounds);
 	
 	for (i = 0; i < num_lo_bounds; i++)
-		ptr = mono_metadata_decode_value (ptr, &(lo_bounds [i]));
+		lo_bounds [i] = mono_metadata_decode_value (ptr, &ptr);
 
 	for (r = 0; r < rank; r++){
 		if (r < num_sizes){
@@ -129,7 +129,7 @@ get_typespec (metadata_t *m, guint32 idx)
 
 	mono_metadata_decode_row (&m->tables [META_TABLE_TYPESPEC], idx-1, cols, CSIZE (cols));
 	ptr = mono_metadata_blob_heap (m, cols [0]);
-	ptr = mono_metadata_decode_value (ptr, &len);
+	len = mono_metadata_decode_value (ptr, &ptr);
 	
 	switch (*ptr++){
 	case ELEMENT_TYPE_PTR:
@@ -304,7 +304,7 @@ get_encoded_typedef_or_ref (metadata_t *m, const char *ptr, char **result)
 {
 	guint32 token;
 	
-	ptr = mono_metadata_decode_value (ptr, &token);
+	token = mono_metadata_decode_value (ptr, &ptr);
 
 	*result = get_typedef_or_ref (m, token);
 
@@ -532,60 +532,10 @@ dis_stringify_type (metadata_t *m, MonoType *type)
 const char *
 get_type (metadata_t *m, const char *ptr, char **result)
 {
-#if 0
-	char c;
-	
-	c = *ptr++;
-	
-	switch (c){
-	case ELEMENT_TYPE_BOOLEAN:
-	case ELEMENT_TYPE_CHAR:
-	case ELEMENT_TYPE_I1:
-	case ELEMENT_TYPE_U1:
-	case ELEMENT_TYPE_I2:
-	case ELEMENT_TYPE_U2:
-	case ELEMENT_TYPE_I4:
-	case ELEMENT_TYPE_U4:
-	case ELEMENT_TYPE_I8:
-	case ELEMENT_TYPE_U8:
-	case ELEMENT_TYPE_R4:
-	case ELEMENT_TYPE_R8:
-	case ELEMENT_TYPE_I:
-	case ELEMENT_TYPE_STRING:
-	case ELEMENT_TYPE_OBJECT:
-		*result = g_strdup (map (c, element_type_map));
-		break;
-		
-	case ELEMENT_TYPE_VALUETYPE:
-	case ELEMENT_TYPE_CLASS:
-		ptr = get_encoded_typedef_or_ref (m, ptr, result);
-		break;
-		
-	case ELEMENT_TYPE_FNPTR:
-		ptr = methoddefref_signature (m, ptr, result);
-		break;
-		
-	case ELEMENT_TYPE_SZARRAY: {
-		char *child_type;
-		
-		ptr = get_type (m, ptr, &child_type);
-		*result = g_strdup_printf ("%s[]", child_type);
-		g_free (child_type);
-		break;
-	}
-		
-	case ELEMENT_TYPE_ARRAY:
- 
-		*result = g_strdup ("ARRAY:TODO");
-	}
-	
-	return ptr;
-#else
 	MonoType *type = mono_metadata_parse_type (m, ptr, &ptr);
 	*result = dis_stringify_type (m, type);
 	mono_metadata_free_type (type);
 	return ptr;
-#endif
 }
 
 /**
@@ -601,7 +551,7 @@ get_field_signature (metadata_t *m, guint32 blob_signature)
 	char *res;
 	int len;
 	
-	ptr = mono_metadata_decode_value (ptr, &len);
+	len = mono_metadata_decode_value (ptr, &ptr);
 	base = ptr;
 	/* FIELD is 0x06 */
 	g_assert (*ptr == 0x06);
@@ -631,7 +581,7 @@ get_field_literal_type (metadata_t *m, guint32 blob_signature)
 	int len;
 	char *allocated_modifier_string;
 	
-	ptr = mono_metadata_decode_value (ptr, &len);
+	len = mono_metadata_decode_value (ptr, &ptr);
 
 	/* FIELD is 0x06 */
 	g_assert (*ptr == 0x06);
@@ -814,7 +764,7 @@ get_methodref_signature (metadata_t *m, guint32 blob_signature, const char *fanc
 	int param_count, signature_len;
 	int i;
 	
-	ptr = mono_metadata_decode_value (ptr, &signature_len);
+	signature_len = mono_metadata_decode_value (ptr, &ptr);
 
 	if (*ptr & 0x20){
 		if (*ptr & 0x40)
@@ -827,7 +777,7 @@ get_methodref_signature (metadata_t *m, guint32 blob_signature, const char *fanc
 		seen_vararg = 1;
 
 	ptr++;
-	ptr = mono_metadata_decode_value (ptr, &param_count);
+	param_count = mono_metadata_decode_value (ptr, &ptr);
 	ptr = get_ret_type (m, ptr, &allocated_ret_type);
 
 	g_string_append (res, allocated_ret_type);
@@ -871,46 +821,6 @@ get_methodref_signature (metadata_t *m, guint32 blob_signature, const char *fanc
 	return s;
 }
 
-/*
- * We use this to pass context information to the typedef locator
- */
-typedef struct {
-	int idx;		 /* The field index that we are trying to locate */
-	metadata_t *m;		 /* the metadata context */
-	metadata_tableinfo_t *t; /* pointer to the typedef table */
-	guint32 result;
-} locator_t;
-
-static int
-typedef_locator (const void *a, const void *b)
-{
-	locator_t *loc = (locator_t *) a;
-	char *bb = (char *) b;
-	int typedef_index = (bb - loc->t->base) / loc->t->row_size;
-	guint32 cols [6], cols_next [6];
-
-	mono_metadata_decode_row (loc->t, typedef_index, cols, CSIZE (cols));
-
-	if (loc->idx < cols [4])
-		return -1;
-
-	/*
-	 * Need to check that the next row is valid.
-	 */
-	if (typedef_index + 1 < loc->t->rows) {
-		mono_metadata_decode_row (loc->t, typedef_index + 1, cols_next, CSIZE (cols_next));
-		if (loc->idx >= cols_next [4])
-			return 1;
-
-		if (cols [4] == cols_next [4])
-			return 1; 
-	}
-
-	loc->result = typedef_index;
-	
-	return 0;
-}
-
 /**
  * get_field:
  * @m: metadata context
@@ -927,7 +837,7 @@ get_field (metadata_t *m, guint32 token)
 	metadata_tableinfo_t *tdef = &m->tables [META_TABLE_TYPEDEF];
 	guint32 cols [3];
 	char *sig, *res, *type;
-	locator_t loc;
+	guint32 type_idx;
 
 	/*
 	 * We can get here also with a MenberRef token (for a field
@@ -945,15 +855,9 @@ get_field (metadata_t *m, guint32 token)
 	 * To locate the actual "container" for this field, we have to scan
 	 * the TypeDef table.  LAME!
 	 */
-	loc.idx = idx;
-	loc.m = m;
-	loc.t = tdef;
+	type_idx = mono_metadata_typedef_from_field (m, idx);
 
-	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, typedef_locator))
-		g_assert_not_reached ();
-
-	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
-	type = get_typedef (m, loc.result + 1);
+	type = get_typedef (m, type_idx);
 	res = g_strdup_printf ("%s %s.%s",
 			       sig, type,
 			       mono_metadata_string_heap (m, cols [1]));
@@ -1053,7 +957,7 @@ get_constant (metadata_t *m, ElementTypeEnum t, guint32 blob_index)
 	const char *ptr = mono_metadata_blob_heap (m, blob_index);
 	int len;
 	
-	ptr = mono_metadata_decode_value (ptr, &len);
+	len = mono_metadata_decode_value (ptr, &ptr);
 	
 	switch (t){
 	case ELEMENT_TYPE_BOOLEAN:

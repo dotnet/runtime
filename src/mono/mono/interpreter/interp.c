@@ -44,9 +44,6 @@ enum {
 };
 #undef OPDEF
 
-/* this needs to be metadata,token indexed, not only token */
-static GHashTable * method_cache = 0;
-
 /* FIXME: check in configure */
 typedef gint32 nati_t;
 
@@ -57,11 +54,10 @@ static int count = 0;
 #define CSIZE(x) (sizeof (x) / 4)
 
 static void
-ves_real_abort (int line, MonoImage *image, MonoMethod *mh,
+ves_real_abort (int line, MonoMethod *mh,
 		const unsigned char *ip, stackval *stack, stackval *sp)
 {
-	cli_image_info_t *iinfo = image->image_info;
-	metadata_t *m = &iinfo->cli_metadata;
+	metadata_t *m = &mh->image->metadata;
 	const char *name = mono_metadata_string_heap (m, mh->name_idx);
 		
 	fprintf (stderr, "Execution aborted in method: %s\n", name);
@@ -73,7 +69,7 @@ ves_real_abort (int line, MonoImage *image, MonoMethod *mh,
 		printf ("\t[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type, sp[-1].data.i, sp[-1].data.f);
 	exit (1);
 }
-#define ves_abort() ves_real_abort(__LINE__, image, mh, ip, stack, sp)
+#define ves_abort() ves_real_abort(__LINE__, mh, ip, stack, sp)
 
 /*
  * newobj:
@@ -86,14 +82,14 @@ ves_real_abort (int line, MonoImage *image, MonoMethod *mh,
 static MonoObject *
 newobj (MonoImage *image, guint32 token)
 {
-	cli_image_info_t *iinfo = image->image_info;
-	metadata_t *m = &iinfo->cli_metadata;
+	metadata_t *m = &image->metadata;
 	
 	switch (mono_metadata_token_code (token)){
-	case TOKEN_TYPE_METHOD_DEF:
-		g_error ("TOKEN_TYPE_METHOD_DEF not supported in newobj yet");
-		break;
-		
+	case TOKEN_TYPE_METHOD_DEF: {
+		guint32 idx = mono_metadata_typedef_from_method (m, token);
+		g_print ("GOT typedef %d from token 0x%x\n", idx, token);
+		return mono_object_new (image, TOKEN_TYPE_TYPE_DEF | idx);
+	}
 	case TOKEN_TYPE_MEMBER_REF: {
 		guint32 member_cols [3];
 		guint32 mpr_token, table, idx;
@@ -132,6 +128,43 @@ newobj (MonoImage *image, guint32 token)
 	return NULL;
 }
 
+static stackval
+stackval_from_data (MonoType *type, const char *data, guint offset)
+{
+	stackval result;
+	switch (type->type) {
+	case ELEMENT_TYPE_I4:
+		result.type = VAL_I32;
+		result.data.i = *(gint32*)(data + offset);
+		break;
+	case ELEMENT_TYPE_I2:
+		result.type = VAL_I32;
+		result.data.i = *(gint16*)(data + offset);
+		break;
+	default:
+		g_warning ("got type %x", type->type);
+		g_assert_not_reached ();
+	}
+	g_print ("field value: %d\n", result.data.i);
+	return result;
+}
+
+void
+stackval_to_data (MonoType *type, stackval *val, char *data, guint offset)
+{
+	switch (type->type) {
+	case ELEMENT_TYPE_I4:
+		*(gint32*)(data + offset) = val->data.i;
+		break;
+	case ELEMENT_TYPE_I2:
+		*(gint16*)(data + offset) = val->data.i;
+		break;
+	default:
+		g_warning ("got type %x", type->type);
+		g_assert_not_reached ();
+	}
+}
+
 /*
  * Need to optimize ALU ops when natural int == int32 
  *
@@ -147,7 +180,7 @@ newobj (MonoImage *image, guint32 token)
  * -fomit-frame-pointer gives about 2% speedup. 
  */
 static void 
-ves_exec_method (MonoImage *image, MonoMethod *mh, stackval *args)
+ves_exec_method (MonoMethod *mh, stackval *args)
 {
 	/*
 	 * with alloca we get the expected huge performance gain
@@ -319,17 +352,14 @@ ves_exec_method (MonoImage *image, MonoMethod *mh, stackval *args)
 			++ip;
 			token = read32 (ip);
 			ip += 4;
-			if (!(cmh = g_hash_table_lookup (method_cache, GINT_TO_POINTER (token)))) {
-				cmh = mono_get_method (image, token);
-				g_hash_table_insert (method_cache, GINT_TO_POINTER (token), cmh);
-			}
+			cmh = mono_get_method (mh->image, token);
 
 			/* decrement by the actual number of args */
 			sp -= cmh->signature->param_count;
 			g_assert (cmh->signature->call_convention == MONO_CALL_DEFAULT);
 
 			/* we need to truncate according to the type of args ... */
-			ves_exec_method (image, cmh, sp);
+			ves_exec_method (cmh, sp);
 
 			/* need to handle typedbyref ... */
 			if (cmh->signature->ret->type)
@@ -711,12 +741,31 @@ ves_exec_method (MonoImage *image, MonoMethod *mh, stackval *args)
 
 		CASE (CEE_NEWOBJ) {
 			MonoObject *o;
+			MonoMethod *cmh;
 			guint32 token;
+			int pc;
 
 			ip++;
 			token = read32 (ip);
-			o = newobj (image, token);
+			o = newobj (mh->image, token);
 			ip += 4;
+			/* call the contructor */
+			cmh = mono_get_method (mh->image, token);
+
+			/* decrement by the actual number of args */
+			/* need to pass object as first arg: we may overflow the stack here
+			 * until we use a different argument passing mechanism. */
+			/* we shift the args to make room for the object reference */
+			for (pc = 0; pc < cmh->signature->param_count; ++pc)
+				sp[-pc] = sp[-pc-1];
+			sp -= cmh->signature->param_count + 1;
+			sp->type = VAL_OBJ;
+			sp->data.p = o;
+
+			g_assert (cmh->signature->call_convention == MONO_CALL_DEFAULT);
+
+			/* we need to truncate according to the type of args ... */
+			ves_exec_method (cmh, sp);
 			BREAK;
 		}
 		
@@ -727,9 +776,41 @@ ves_exec_method (MonoImage *image, MonoMethod *mh, stackval *args)
 		CASE (CEE_UNUSED1) ves_abort(); BREAK;
 		CASE (CEE_UNBOX) ves_abort(); BREAK;
 		CASE (CEE_THROW) ves_abort(); BREAK;
-		CASE (CEE_LDFLD) ves_abort(); BREAK;
+		CASE (CEE_LDFLD) {
+			MonoObject *obj;
+			MonoClassField *field;
+			guint32 token;
+
+			++ip;
+			token = read32 (ip);
+			ip += 4;
+			
+			g_assert (sp [-1].type == VAL_OBJ);
+			obj = sp [-1].data.p;
+			field = mono_class_get_field (obj->klass, token);
+			g_assert (field);
+			sp [-1] = stackval_from_data (field->type->type, (char*)obj, field->offset);
+			BREAK;
+		}
 		CASE (CEE_LDFLDA) ves_abort(); BREAK;
-		CASE (CEE_STFLD) ves_abort(); BREAK;
+		CASE (CEE_STFLD) {
+			MonoObject *obj;
+			MonoClassField *field;
+			guint32 token;
+
+			++ip;
+			token = read32 (ip);
+			ip += 4;
+			
+			sp -= 2;
+			
+			g_assert (sp [0].type == VAL_OBJ);
+			obj = sp [0].data.p;
+			field = mono_class_get_field (obj->klass, token);
+			g_assert (field);
+			stackval_to_data (field->type->type, &sp [1], (char*)obj, field->offset);
+			BREAK;
+		}
 		CASE (CEE_LDSFLD)
 			/* FIXME: get the real field here */
 			ip += 5;
@@ -930,10 +1011,8 @@ ves_exec (MonoAssembly *assembly)
 	iinfo = image->image_info;
 	
 	/* we need to exec the class and object constructors... */
-	method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-
 	mh = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point);
-	ves_exec_method (image, mh, &result);
+	ves_exec_method (mh, &result);
 	fprintf (stderr, "result: %d\n", result.data.i);
 	mono_free_method (mh);
 

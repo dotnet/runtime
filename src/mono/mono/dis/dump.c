@@ -33,7 +33,7 @@ dump_table_assembly (metadata_t *m)
 	fprintf (output, "PublicKey:     BlobPtr (0x%08x)\n", cols [6]);
 
 	ptr = mono_metadata_blob_heap (m, cols [6]);
-	ptr = mono_metadata_decode_value (ptr, &len);
+	len = mono_metadata_decode_value (ptr, &ptr);
 	if (len > 0){
 		fprintf (output, "\tDump:");
 		hex_dump (ptr, 0, len);
@@ -100,7 +100,7 @@ dump_table_assemblyref (metadata_t *m)
 			 cols [0], cols [1], cols [2], cols [3],
 			 mono_metadata_string_heap (m, cols [6]));
 		ptr = mono_metadata_blob_heap (m, cols [6]);
-		ptr = mono_metadata_decode_value (ptr, &len);
+		len = mono_metadata_decode_value (ptr, &ptr);
 		if (len > 0){
 			fprintf (output, "\tPublic Key:");
 			hex_dump (ptr, 0, len);
@@ -268,12 +268,12 @@ dump_table_property (metadata_t *m)
 			strcat (flags, "hasdefault ");
 
 		ptr = mono_metadata_blob_heap (m, cols [2]);
-		ptr = mono_metadata_decode_blob_size (ptr, &bsize);
+		bsize = mono_metadata_decode_blob_size (ptr, &ptr);
 		/* ECMA claims 0x08 ... */
 		if (*ptr != 0x28 && *ptr != 0x08)
 				g_warning("incorrect signature in propert blob: 0x%x", *ptr);
 		ptr++;
-		ptr = mono_metadata_decode_value (ptr, &pcount);
+		pcount = mono_metadata_decode_value (ptr, &ptr);
 		ptr = get_type (m, ptr, &type);
 		fprintf (output, "%d: %s %s (",
 			 i, type, mono_metadata_string_heap (m, cols [1]));

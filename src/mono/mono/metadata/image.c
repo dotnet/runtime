@@ -192,7 +192,7 @@ load_cli_header (MonoImage *image, cli_image_info_t *iinfo)
 static gboolean
 load_metadata_ptrs (MonoImage *image, cli_image_info_t *iinfo)
 {
-	metadata_t *metadata = &iinfo->cli_metadata;
+	metadata_t *metadata = &image->metadata;
 	guint32 offset, size;
 	guint16 streams;
 	int i;
@@ -303,7 +303,7 @@ load_metadata (MonoImage *image, cli_image_info_t *iinfo)
 	if (!load_metadata_ptrs (image, iinfo))
 		return FALSE;
 
-	return load_tables (image, &iinfo->cli_metadata);
+	return load_tables (image, &image->metadata);
 }
 
 static MonoImage *
@@ -320,6 +320,9 @@ do_mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
 	image->name = g_strdup (fname);
 	iinfo = g_new0 (cli_image_info_t, 1);
 	image->image_info = iinfo;
+
+	image->method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->class_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 	header = &iinfo->cli_header;
 		
@@ -422,13 +425,13 @@ mono_image_close (MonoImage *image)
 
 	g_free (image->name);
 	
+	if (image->metadata.raw_metadata != NULL)
+		raw_buffer_free (image->metadata.raw_metadata);
+	
 	if (image->image_info){
 		cli_image_info_t *ii = image->image_info;
 		int i;
 
-		if (ii->cli_metadata.raw_metadata != NULL)
-			raw_buffer_free (ii->cli_metadata.raw_metadata);
-	
 		for (i = 0; i < ii->cli_section_count; i++){
 			if (!ii->cli_sections [i])
 				continue;

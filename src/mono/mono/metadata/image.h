@@ -1,6 +1,8 @@
 #ifndef _MONONET_METADATA_IMAGE_H_ 
 #define _MONONET_METADATA_IMAGE_H_
 
+#include <mono/metadata/metadata.h>
+
 typedef struct _MonoImage MonoImage;
 
 typedef struct {
@@ -14,6 +16,8 @@ struct _MonoImage {
 	char *name;
 	void *image_info;
 
+	metadata_t metadata;
+
 	/*
 	 * references is initialized only by using the mono_assembly_open
 	 * function, and not by using the lowlevel mono_image_open.
@@ -21,6 +25,12 @@ struct _MonoImage {
 	 * It is NULL terminated.
 	 */
 	MonoAssembly **references;
+
+	/*
+	 * Indexed by method tokens and typedef tokens.
+	 */
+	GHashTable *method_cache;
+	GHashTable *class_cache;
 
 	/*
 	 * user_info is a public field and is not touched by the

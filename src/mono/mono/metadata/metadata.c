@@ -9,6 +9,7 @@
 
 #include <config.h>
 #include <stdio.h> 
+#include <stdlib.h>
 #include <glib.h>
 #include "metadata.h"
 #include "tabledefs.h"
@@ -825,65 +826,71 @@ mono_metadata_decode_row (metadata_tableinfo_t *t, int idx, guint32 *res, int re
 /**
  * mono_metadata_decode_blob_size:
  * @ptr: pointer to a blob object
- * @size: where we return the size of the object
+ * @rptr: the new position of the pointer
  *
- * This decodes a compressed size as described by 23.1.4
+ * This decodes a compressed size as described by 23.1.4 (a blob or user string object)
  *
- * Returns: the position to start decoding a blob or user string object
- * from. 
+ * Returns: the size of the blob object
  */
-const char *
-mono_metadata_decode_blob_size (const char *xptr, int *size)
+guint32
+mono_metadata_decode_blob_size (const char *xptr, const char **rptr)
 {
 	const unsigned char *ptr = xptr;
+	guint32 size;
 	
 	if ((*ptr & 0x80) == 0){
-		*size = ptr [0] & 0x7f;
+		size = ptr [0] & 0x7f;
 		ptr++;
 	} else if ((*ptr & 0x40) == 0){
-		*size = ((ptr [0] & 0x3f) << 8) + ptr [1];
+		size = ((ptr [0] & 0x3f) << 8) + ptr [1];
 		ptr += 2;
 	} else {
-		*size = ((ptr [0] & 0x1f) << 24) +
+		size = ((ptr [0] & 0x1f) << 24) +
 			(ptr [1] << 16) +
 			(ptr [2] << 8) +
 			ptr [3];
 		ptr += 4;
 	}
-
-	return (char *) ptr;
+	if (rptr)
+		*rptr = ptr;
+	return size;
 }
 
 
 /**
  * mono_metadata_decode_value:
  * @ptr: pointer to decode from
- * @len: result value is stored here.
+ * @rptr: the new position of the pointer
  *
  * This routine decompresses 32-bit values as specified in the "Blob and
  * Signature" section (22.2)
  *
- * Returns: updated pointer location
+ * Returns: the decoded value
  */
-const char *
-mono_metadata_decode_value (const char *_ptr, guint32 *len)
+guint32
+mono_metadata_decode_value (const char *_ptr, const char **rptr)
 {
 	const unsigned char *ptr = (unsigned char *) _ptr;
 	unsigned char b = *ptr;
+	guint32 len;
 	
 	if ((b & 0x80) == 0){
-		*len = b;
-		return ptr+1;
+		len = b;
+		++ptr;
 	} else if ((b & 0x40) == 0){
-		*len = ((b & 0x3f) << 8 | ptr [1]);
-		return ptr + 2;
+		len = ((b & 0x3f) << 8 | ptr [1]);
+		ptr += 2;
+	} else {
+		len = ((b & 0x1f) << 24) |
+			(ptr [1] << 16) |
+			(ptr [2] << 8) |
+			ptr [3];
+		ptr += 4;
 	}
-	*len = ((b & 0x1f) << 24) |
-		(ptr [1] << 16) |
-		(ptr [2] << 8) |
-		ptr [3];
+	if (rptr)
+		*rptr = ptr;
 	
-	return ptr + 4;
+	return len;
 }
 
 guint32
@@ -891,7 +898,7 @@ mono_metadata_parse_typedef_or_ref (metadata_t *m, const char *ptr, const char *
 {
 	guint32 token;
 	guint table;
-	ptr = mono_metadata_decode_value (ptr, &token);
+	token = mono_metadata_decode_value (ptr, &ptr);
 
 	switch (table & 0x03) {
 	case 0: table = META_TABLE_TYPEDEF; break;
@@ -923,22 +930,22 @@ MonoArray *
 mono_metadata_parse_array (metadata_t *m, const char *ptr, const char **rptr)
 {
 	int i;
-	MonoArray *array = g_new0(MonoArray, 1);
+	MonoArray *array = g_new0 (MonoArray, 1);
 	
 	array->type = mono_metadata_parse_type (m, ptr, &ptr);
-	ptr = mono_metadata_decode_value (ptr, &array->rank);
+	array->rank = mono_metadata_decode_value (ptr, &ptr);
 
-	ptr = mono_metadata_decode_value (ptr, &array->numsizes);
+	array->numsizes = mono_metadata_decode_value (ptr, &ptr);
 	if (array->numsizes)
-		array->sizes = g_new0(int, array->numsizes);
+		array->sizes = g_new0 (int, array->numsizes);
 	for (i = 0; i < array->numsizes; ++i)
-		ptr = mono_metadata_decode_value (ptr, &(array->sizes[i]));
+		array->sizes [i] = mono_metadata_decode_value (ptr, &ptr);
 
-	ptr = mono_metadata_decode_value (ptr, &array->numlobounds);
+	array->numlobounds = mono_metadata_decode_value (ptr, &ptr);
 	if (array->numlobounds)
-		array->lobounds = g_new0(int, array->numlobounds);
+		array->lobounds = g_new0 (int, array->numlobounds);
 	for (i = 0; i < array->numlobounds; ++i)
-		ptr = mono_metadata_decode_value (ptr, &(array->lobounds[i]));
+		array->lobounds [i] = mono_metadata_decode_value (ptr, &ptr);
 
 	if (rptr)
 		*rptr = ptr;
@@ -965,7 +972,7 @@ mono_metadata_parse_param (metadata_t *m, int rettype, const char *ptr, const ch
 	/* count the modifiers */
 	while (mono_metadata_parse_custom_mod (m, NULL, tmp_ptr, &tmp_ptr))
 		count++;
-	param = g_malloc0(sizeof(MonoParam)+(count-1)*sizeof(MonoCustomMod));
+	param = g_malloc0(sizeof(MonoParam)+(count-MONO_ZERO_LEN_ARRAY)*sizeof(MonoCustomMod));
 	param->num_modifiers = count;
 	/* save them this time */
 	count = 0;
@@ -1015,7 +1022,7 @@ mono_metadata_parse_method_signature (metadata_t *m, int def, const char *ptr, c
 		method->explicit_this = 1;
 	method->call_convention = *ptr & 0x0F;
 	ptr++;
-	ptr = mono_metadata_decode_value (ptr, &method->param_count);
+	method->param_count = mono_metadata_decode_value (ptr, &ptr);
 	method->ret = mono_metadata_parse_param (m, 1, ptr, &ptr);
 
 	method->params = g_new0(MonoParam*, method->param_count);
@@ -1064,10 +1071,7 @@ mono_metadata_free_method_signature (MonoMethodSignature *method)
 static void
 do_mono_metadata_parse_type (MonoType *type, metadata_t *m, const char *ptr, const char **rptr)
 {
-	int val;
-	
-	ptr = mono_metadata_decode_value (ptr, &val);
-	type->type = val;
+	type->type = mono_metadata_decode_value (ptr, &ptr);
 	
 	switch (type->type){
 	case ELEMENT_TYPE_BOOLEAN:
@@ -1102,7 +1106,7 @@ do_mono_metadata_parse_type (MonoType *type, metadata_t *m, const char *ptr, con
 			/* count the modifiers */
 			while (mono_metadata_parse_custom_mod (m, NULL, tmp_ptr, &tmp_ptr))
 				count++;
-			type->data.mtype = mtype = g_malloc0(sizeof(MonoModifiedType)+(count-1)*sizeof(MonoCustomMod));
+			type->data.mtype = mtype = g_malloc0(sizeof(MonoModifiedType)+(count-MONO_ZERO_LEN_ARRAY)*sizeof(MonoCustomMod));
 			mtype->num_modifiers = count;
 			count = 0;
 			
@@ -1294,21 +1298,21 @@ mono_metadata_parse_mh (metadata_t *m, const char *ptr)
 
 		mono_metadata_decode_row (t, (mh->local_var_sig_tok & 0xffffff)-1, cols, 1);
 		ptr = mono_metadata_blob_heap (m, cols [0]);
-		ptr = mono_metadata_decode_blob_size (ptr, &bsize);
+		bsize = mono_metadata_decode_blob_size (ptr, &ptr);
 		if (*ptr != 0x07)
 			g_warning ("wrong signature for locals blob");
 		ptr++;
-		ptr = mono_metadata_decode_value (ptr, &len);
+		len = mono_metadata_decode_value (ptr, &ptr);
 		mh->num_locals = len;
 		mh->locals = g_new (MonoType*, len);
 		for (i = 0; i < len; ++i) {
 			int val;
 			const char *p = ptr;
-			ptr = mono_metadata_decode_blob_size (ptr, &val);
+			val = mono_metadata_decode_blob_size (ptr, &ptr);
 			/* FIXME: store pinned/byref values */
 			if (val == ELEMENT_TYPE_PINNED) {
 				p = ptr;
-				ptr = mono_metadata_decode_blob_size (ptr, &val);
+				val = mono_metadata_decode_blob_size (ptr, &ptr);
 			}
 			if (val == ELEMENT_TYPE_BYREF) {
 				p = ptr;
@@ -1341,21 +1345,7 @@ mono_metadata_free_mh (MonoMetaMethodHeader *mh)
 MonoFieldType *
 mono_metadata_parse_field_type (metadata_t *m, const char *ptr, const char **rptr)
 {
-	MonoFieldType *ft;
-	int len;
-	
-	ft = g_new (MonoFieldType, 1);
-	ptr = mono_metadata_decode_value (ptr, &len);
-
-	/* FIELD signature == 0x06 */
-	g_assert (*ptr == 0x06);
-	ptr++;
-	len--;
-
-	mono_metadata_parse_custom_mod (m, &ft->custom_mod, ptr, &ptr);
-	do_mono_metadata_parse_type (&ft->type, m, ptr, rptr);
-
-	return ft;
+	return mono_metadata_parse_param (m, 0, ptr, rptr);
 }
 
 /*
@@ -1392,3 +1382,84 @@ mono_metadata_token_from_dor (guint32 dor_index)
 
 	return 0;
 }
+
+/*
+ * We use this to pass context information to the typedef locator
+ */
+typedef struct {
+	int idx;		 /* The index that we are trying to locate */
+	int col_idx;		 /* The index in the row where idx is stored */
+	metadata_t *m;		 /* the metadata context */
+	metadata_tableinfo_t *t; /* pointer to the typedef table */
+	guint32 result;
+} locator_t;
+
+#define CSIZE(x) (sizeof (x) / 4)
+
+static int
+typedef_locator (const void *a, const void *b)
+{
+	locator_t *loc = (locator_t *) a;
+	char *bb = (char *) b;
+	int typedef_index = (bb - loc->t->base) / loc->t->row_size;
+	guint32 cols [6], cols_next [6];
+
+	mono_metadata_decode_row (loc->t, typedef_index, cols, CSIZE (cols));
+
+	if (loc->idx < cols [loc->col_idx])
+		return -1;
+
+	/*
+	 * Need to check that the next row is valid.
+	 */
+	if (typedef_index + 1 < loc->t->rows) {
+		mono_metadata_decode_row (loc->t, typedef_index + 1, cols_next, CSIZE (cols_next));
+		if (loc->idx >= cols_next [loc->col_idx])
+			return 1;
+
+		if (cols [loc->col_idx] == cols_next [loc->col_idx])
+			return 1; 
+	}
+
+	loc->result = typedef_index;
+	
+	return 0;
+}
+
+#define FIELD_INDEX 4
+#define METHOD_INDEX 5
+
+guint32
+mono_metadata_typedef_from_field (metadata_t *meta, guint32 index)
+{
+	metadata_tableinfo_t *tdef = &meta->tables [META_TABLE_TYPEDEF];
+	locator_t loc;
+	
+	loc.idx = mono_metadata_token_index (index);
+	loc.col_idx = FIELD_INDEX;
+	loc.t = tdef;
+
+	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, typedef_locator))
+		g_assert_not_reached ();
+
+	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
+	return loc.result + 1;
+}
+
+guint32
+mono_metadata_typedef_from_method (metadata_t *meta, guint32 index)
+{
+	metadata_tableinfo_t *tdef = &meta->tables [META_TABLE_TYPEDEF];
+	locator_t loc;
+	
+	loc.idx = mono_metadata_token_index (index);
+	loc.col_idx = METHOD_INDEX;
+	loc.t = tdef;
+
+	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, typedef_locator))
+		g_assert_not_reached ();
+
+	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
+	return loc.result + 1;
+}
+

@@ -177,8 +177,6 @@ typedef struct {
 	section_table_t  *cli_section_tables;
 	void            **cli_sections;
 	cli_header_t      cli_cli_header;
-
-	metadata_t        cli_metadata;
 } cli_image_info_t;
 
 guint32       cli_rva_image_map (cli_image_info_t *iinfo, guint32 rva);

@@ -296,22 +296,22 @@ dis_locals (metadata_t *m, guint32 token)
 
 	mono_metadata_decode_row (t, (token&0xffffff)-1, cols, CSIZE(cols));
 	ptr = mono_metadata_blob_heap (m, cols[0]);
-	ptr = mono_metadata_decode_blob_size (ptr, &bsize);
+	bsize = mono_metadata_decode_blob_size (ptr, &ptr);
 	if (*ptr != 0x07)
 			g_warning("wrong signature for locals blob");
 	ptr++;
-	ptr = mono_metadata_decode_value (ptr, &len);
+	len = mono_metadata_decode_value (ptr, &ptr);
 	fprintf(output, "\t.locals ( // %d\n", len);
 	for (i=0; i < len; ++i) {
 		int val;
 		char * desc = NULL;
 		const char *p = ptr;
 		MonoType *type;
-		ptr = mono_metadata_decode_value (ptr, &val);
+		val = mono_metadata_decode_value (ptr, &ptr);
 		if (val == ELEMENT_TYPE_PINNED) {
 			fprintf(output, "//pinned\n");
 			p = ptr;
-			ptr = mono_metadata_decode_value (ptr, &val);
+			val = mono_metadata_decode_value (ptr, &ptr);
 		}
 		if (val == ELEMENT_TYPE_BYREF) {
 			fprintf(output, "// byref\n");
@@ -383,14 +383,14 @@ parse_method_signature (metadata_t *m, guint32 blob_signature)
 	MethodSignature *ms = g_new0 (MethodSignature, 1);
 	int i, len;
 
-	ptr = mono_metadata_decode_value (ptr, &len);
+	len = mono_metadata_decode_value (ptr, &ptr);
 	fprintf (output, "     // SIG: ");
 	hex_dump (ptr, 0, -len);
 	fprintf (output, "\n");
 	
 	ms->flags = *ptr++;
 
-	ptr = mono_metadata_decode_value (ptr, &ms->param_count);
+	ms->param_count = mono_metadata_decode_value (ptr, &ptr);
 	ptr = get_ret_type (m, ptr, &ms->ret_type);
 	ms->param = g_new (char *, ms->param_count);
 	
@@ -532,11 +532,8 @@ dis_type (metadata_t *m, cli_image_info_t *ii, int n)
 	else
 		last = m->tables [META_TABLE_FIELD].rows;
 			
-	/*if (cols [4] != cols_next [4] && cols_next [4] != 0)
-		dis_field_list (m, cols [4] - 1, last);*/
 	if (cols[4] && cols[4] <= m->tables [META_TABLE_FIELD].rows)
 		dis_field_list (m, cols [4] - 1, last);
-	/*fprintf (output, "cols[4] -> %d   cols_next[4] -> %d   last -> %d  rows -> %d\n", cols[4], cols_next[4], last, m->tables [META_TABLE_FIELD].rows);*/
 	fprintf (output, "\n");
 
 	if (next_is_valid)
@@ -544,9 +541,6 @@ dis_type (metadata_t *m, cli_image_info_t *ii, int n)
 	else
 		last = m->tables [META_TABLE_METHOD].rows;
 	
-	/*if (cols [4] != cols_next [5] && cols_next [5] != 0)
-		dis_method_list (m, ii, cols [5] - 1, last);*/
-	/*fprintf (output, "method(%d): cols[5] -> %d   cols_next[5] -> %d   last -> %d  rows -> %d\n", next_is_valid, cols[5], cols_next[5], last, m->tables [META_TABLE_METHOD].rows);*/
 	if (cols [5] < m->tables [META_TABLE_METHOD].rows)
 		dis_method_list (m, ii, cols [5]-1, last);
 
@@ -614,7 +608,7 @@ disassemble_file (const char *file)
 	}
 
 	ii = img->image_info;
-	m = &ii->cli_metadata;
+	m = &img->metadata;
 	
 	if (dump_table != -1){
 		(*table_list [dump_table].dumper) (m);

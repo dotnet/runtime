@@ -37,7 +37,7 @@
 int
 mono_field_type_size (MonoFieldType *ft)
 {
-	MonoType *t = &ft->type;
+	MonoType *t = ft->type;
 
 	switch (t->type){
 	case ELEMENT_TYPE_BOOLEAN:
@@ -133,6 +133,10 @@ class_compute_field_layout (metadata_t *m, MonoClass *class)
 		
 		mono_metadata_decode_row (t, idx, cols, CSIZE (cols));
 		sig = mono_metadata_blob_heap (m, cols [2]);
+		mono_metadata_decode_value (sig, &sig);
+
+		/* FIELD signature == 0x06 */
+		g_assert (*sig == 0x06);
 		
 		class->fields [i].type = mono_metadata_parse_field_type (
 			m, sig, &sig);
@@ -179,14 +183,16 @@ class_compute_field_layout (metadata_t *m, MonoClass *class)
 static MonoClass *
 mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 {
-	cli_image_info_t *iinfo = image->image_info;
-	metadata_t *m = &iinfo->cli_metadata;
+	metadata_t *m = &image->metadata;
 	metadata_tableinfo_t *tt = &m->tables [META_TABLE_TYPEDEF];
 	MonoClass *class;
 	guint32 cols [6], parent_token;
 	guint tidx = type_token & 0xffffff;
+	const char *name;
 	
-	mono_metadata_decode_row (tt, tidx, cols, CSIZE (cols));
+	mono_metadata_decode_row (tt, tidx-1, cols, CSIZE (cols));
+	name = mono_metadata_string_heap (m, cols[1]);
+	g_print ("Init class %s\n", name);
 
 	class = g_new0 (MonoClass, 1);
 
@@ -283,27 +289,39 @@ mono_class_get_field (MonoClass *class, guint32 field_token)
 
 	g_assert (mono_metadata_token_code (field_token) == TOKEN_TYPE_FIELD_DEF);
 
-	return mono_class_get_field_idx (class, idx);
+	return mono_class_get_field_idx (class, idx - 1);
 }
 
-static guint
-mono_class_hash (gconstpointer p)
+static void
+typedef_from_typeref (MonoImage *image, guint32 type_token, MonoImage **rimage, guint32 *index)
 {
-	MonoClass *c = (MonoClass *) p;
-
-	return (((guint32)(c->image)) ^ c->type_token);
-}
-
-static gint
-mono_class_equal (gconstpointer ap, gconstpointer bp)
-{
-	MonoClass *a = (MonoClass *) ap;
-	MonoClass *b = (MonoClass *) bp;
-
-	if ((a->image == b->image) && (a->type_token == b->type_token))
-		return TRUE;
-
-	return FALSE;
+	guint32 cols[6];
+	metadata_t *m = &image->metadata;
+	metadata_tableinfo_t  *t = &m->tables[META_TABLE_TYPEREF];
+	guint32 idx, i;
+	const char *name, *nspace;
+	
+	mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, 3);
+	g_assert ((cols [0] & 0x3) == 2);
+	idx = cols [0] >> 2;
+	name = mono_metadata_string_heap (m, cols [1]);
+	nspace = mono_metadata_string_heap (m, cols [2]);
+	/* load referenced assembly */
+	image = image->references [idx-1]->image;
+	m = &image->metadata;
+	t = &m->tables [META_TABLE_TYPEDEF];
+	/* dumb search for now */
+	for (i=0; i < t->rows; ++i) {
+		mono_metadata_decode_row (t, i, cols, 6);
+		if (strcmp (name, mono_metadata_string_heap (m, cols [1])) == 0 
+				&& strcmp (nspace, mono_metadata_string_heap (m, cols [2])) == 0) {
+			*rimage = image;
+			*index = i + 1;
+			return;
+		}
+	}
+	g_assert_not_reached ();
+	
 }
 
 /**
@@ -316,30 +334,22 @@ mono_class_equal (gconstpointer ap, gconstpointer bp)
 MonoClass *
 mono_class_get (MonoImage *image, guint32 type_token)
 {
-	MonoClass *class, hash_lookup;
-	static GHashTable *class_hash;
+	MonoClass *class;
 
-	hash_lookup.image = image;
-	hash_lookup.type_token = type_token;
-
-	if (!class_hash){
-		class_hash = g_hash_table_new (
-			mono_class_hash, mono_class_equal);
-	}
-	
-	class = g_hash_table_lookup (class_hash, &hash_lookup);
-
-	if (class)
-		return class;
+	if ((type_token & 0xff000000) == TOKEN_TYPE_TYPE_DEF 
+					&& (class = g_hash_table_lookup (image->class_cache, GUINT_TO_POINTER (type_token))))
+			return class;
 
 	switch (type_token & 0xff000000){
 	case TOKEN_TYPE_TYPE_DEF:
 		class = mono_class_create_from_typedef (image, type_token);
 		break;
 		
-	case TOKEN_TYPE_TYPE_REF:
-		g_error ("Can not handle class creation of TypeRefs yet");
-
+	case TOKEN_TYPE_TYPE_REF: {
+		typedef_from_typeref (image, type_token, &image, &type_token);
+		class = mono_class_create_from_typedef (image, type_token);
+		break;
+	}
 	case TOKEN_TYPE_TYPE_SPEC:
 		g_error ("Can not handle class creation of TypeSpecs yet");
 		
@@ -347,7 +357,7 @@ mono_class_get (MonoImage *image, guint32 type_token)
 		g_assert_not_reached ();
 	}
 	
-	g_hash_table_insert (class_hash, class, class);
+	g_hash_table_insert (image->class_cache, GUINT_TO_POINTER (type_token), class);
 
 	return class;
 }

@@ -6,6 +6,12 @@
 
 #include <mono/metadata/blob.h>
 
+#ifdef __GNUC__
+#define MONO_ZERO_LEN_ARRAY 0
+#else
+#define MONO_ZERO_LEN_ARRAY 1
+#endif
+
 typedef struct {
 	guint32  sh_offset;
 	guint32  sh_size;
@@ -186,13 +192,16 @@ const char    *mono_metadata_string_heap   (metadata_t *meta, guint32 index);
 const char    *mono_metadata_blob_heap     (metadata_t *meta, guint32 index);
 const char    *mono_metadata_user_string   (metadata_t *meta, guint32 index);
 
+guint32 mono_metadata_typedef_from_field  (metadata_t *meta, guint32 index);
+guint32 mono_metadata_typedef_from_method (metadata_t *meta, guint32 index);
+
 /*
  * Functions to extract information from the Blobs
  */
-const char  *mono_metadata_decode_value     (const char            *ptr,
-                                             guint32               *len);
-const char  *mono_metadata_decode_blob_size (const char            *xptr,
-                                             int                   *size);
+guint32 mono_metadata_decode_value     (const char            *ptr,
+                                        const char           **rptr);
+guint32 mono_metadata_decode_blob_size (const char            *ptr,
+                                        const char           **rptr);
 
 typedef enum {
 	MONO_META_EXCEPTION_CLAUSE_NONE,
@@ -217,7 +226,6 @@ typedef struct {
 } MonoMetaExceptionHandler;
 
 typedef struct _MonoType MonoType;
-typedef struct _MonoFieldType MonoFieldType;
 typedef struct _MonoArray MonoArray;
 typedef struct _MonoMethodSignature MonoMethodSignature;
 
@@ -229,7 +237,7 @@ typedef struct {
 typedef struct {
 	MonoType *type;
 	int num_modifiers;
-	MonoCustomMod modifiers[1]; /* this may grow */
+	MonoCustomMod modifiers[MONO_ZERO_LEN_ARRAY]; /* this may grow */
 } MonoModifiedType;
 
 struct _MonoArray {
@@ -255,25 +263,18 @@ struct _MonoType {
 	} data;
 };
 
-/*
- * A Field Type is a Type that might have an optional Custom Modifier.
- */
-struct _MonoFieldType {
-	MonoType type;
-	MonoCustomMod custom_mod;
-};
-
 typedef struct {
 	/* maybe use a union here: saves 4 bytes */
 	MonoType *type; /* NULL for VOID */
 	short param_attrs; /* 22.1.11 */
 	char typedbyref;
-	int num_modifiers;
-	MonoCustomMod modifiers[1]; /* this may grow */
+	char num_modifiers;
+	MonoCustomMod modifiers[MONO_ZERO_LEN_ARRAY]; /* this may grow */
 } MonoRetType;
 
-/* MonoRetType is used also for params */
+/* MonoRetType is used also for params and fields */
 typedef MonoRetType MonoParam;
+typedef MonoRetType MonoFieldType;
 
 struct _MonoMethodSignature {
 	char hasthis;
@@ -323,7 +324,6 @@ void           mono_metadata_free_type         (MonoType        *type);
 MonoFieldType *mono_metadata_parse_field_type  (metadata_t      *m,
 						const char      *ptr,
 						const char      **rptr);
-void           mono_metadata_free_field_type   (MonoFieldType   *field_type);
 							
 
 MonoMethodSignature  *mono_metadata_parse_method_signature (metadata_t            *m,

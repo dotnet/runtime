@@ -19,8 +19,7 @@
 void
 mono_typedef_decode (MonoImage *image, guint32 tidx, MonoTypedef *ret)
 {
-	cli_image_info_t *iinfo = image->image_info;
-	metadata_t *m = &iinfo->cli_metadata;
+	metadata_t *m = &image->metadata;
 	metadata_tableinfo_t *tt = m->tables [META_TABLE_TYPEDEF];
 	int next_is_valid;
 	guint32 cols_next [6];

@@ -199,7 +199,7 @@ dump_cli_header (cli_header_t *ch)
 }	
 
 static void
-dsh (char *label, cli_image_info_t *iinfo, stream_header_t *sh)
+dsh (char *label, stream_header_t *sh)
 {
 	printf ("%s: 0x%08x - 0x%08x [%d == 0x%08x]\n",
 		label,
@@ -208,16 +208,14 @@ dsh (char *label, cli_image_info_t *iinfo, stream_header_t *sh)
 }
 
 static void
-dump_metadata_ptrs (cli_image_info_t *iinfo)
+dump_metadata_ptrs (metadata_t *meta)
 {
-	metadata_t *meta = &iinfo->cli_metadata;
-	
 	printf ("\nMetadata pointers:\n");
-	dsh ("\tTables (#~)", iinfo, &meta->heap_tables);
-	dsh ("\t    Strings", iinfo, &meta->heap_strings);
-	dsh ("\t       Blob", iinfo, &meta->heap_blob);
-	dsh ("\tUser string", iinfo, &meta->heap_us);
-	dsh ("\t       GUID", iinfo, &meta->heap_guid);
+	dsh ("\tTables (#~)", &meta->heap_tables);
+	dsh ("\t    Strings", &meta->heap_strings);
+	dsh ("\t       Blob", &meta->heap_blob);
+	dsh ("\tUser string", &meta->heap_us);
+	dsh ("\t       GUID", &meta->heap_guid);
 }
 
 static void
@@ -227,12 +225,11 @@ dump_table (metadata_t *meta, int table)
 }
 
 static void
-dump_metadata (cli_image_info_t *iinfo)
+dump_metadata (metadata_t *meta)
 {
-	metadata_t *meta = &iinfo->cli_metadata;
 	int table;
 	
-	dump_metadata_ptrs (iinfo);
+	dump_metadata_ptrs (meta);
 
 	printf ("Rows:\n");
 	for (table = 0; table < 64; table++){
@@ -250,24 +247,26 @@ dump_metadata (cli_image_info_t *iinfo)
 }
 
 static void
-dump_methoddef (cli_image_info_t *iinfo, guint32 token)
+dump_methoddef (metadata_t *metadata, guint32 token)
 {
 	char *loc;
 
-	loc = mono_metadata_locate_token (&iinfo->cli_metadata, token);
+	loc = mono_metadata_locate_token (metadata, token);
 
 	printf ("RVA for Entry Point: 0x%08x\n", (*(guint32 *)loc));
 }
 
 static void
-dump_dotnet_iinfo (cli_image_info_t *iinfo)
+dump_dotnet_iinfo (MonoImage *image)
 {
+	cli_image_info_t *iinfo = image->image_info;
+
 	dump_dotnet_header (&iinfo->cli_header);
 	dump_sections (iinfo);
 	dump_cli_header (&iinfo->cli_cli_header);
-	dump_metadata (iinfo);
+	dump_metadata (&image->metadata);
 
-	dump_methoddef (iinfo, iinfo->cli_cli_header.ch_entry_point);
+	dump_methoddef (&image->metadata, iinfo->cli_cli_header.ch_entry_point);
 }
 
 static void
@@ -280,7 +279,6 @@ usage (void)
 int
 main (int argc, char *argv [])
 {
-	cli_image_info_t *iinfo;
 	MonoImage *image;
 	char *file = NULL;
 	int i;
@@ -305,10 +303,9 @@ main (int argc, char *argv [])
 		fprintf (stderr, "Can not open image %s\n", file);
 		exit (1);
 	}
-	iinfo = image->image_info;
 
 	if (dump_data)
-		dump_dotnet_iinfo (iinfo);
+		dump_dotnet_iinfo (image);
 	
 	mono_image_close (image);
 	

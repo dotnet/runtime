@@ -4,6 +4,7 @@
 #include <mono/metadata/metadata.h>
 
 typedef struct {
+	MonoImage *image;
 	MonoMetaMethodHeader *header;
 	MonoMethodSignature  *signature;
 	

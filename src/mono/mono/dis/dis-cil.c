@@ -63,7 +63,7 @@ get_encoded_user_string (const char *ptr)
 	char *res;
 	int len, i, j;
 
-	ptr = mono_metadata_decode_blob_size (ptr, &len);
+	len = mono_metadata_decode_blob_size (ptr, &ptr);
 	res = g_malloc (len + 1);
 
 	/*
