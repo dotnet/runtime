@@ -16,7 +16,7 @@ class Container {
 
 		string[] args = { "test0", "test1" };
 		
-		newDomain.ExecuteAssembly ("jit-int.exe");
+		newDomain.ExecuteAssembly ("jit-int.exe", null, args);
 
 		Console.WriteLine ("Ready");
 	}

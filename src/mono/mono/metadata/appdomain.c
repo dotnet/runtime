@@ -56,6 +56,7 @@ mono_create_domain ()
 	domain->setup = NULL;
 	domain->friendly_name = NULL;
 
+	domain->mp = mono_mempool_new ();
 	domain->env = g_hash_table_new (g_str_hash, g_str_equal);
 	domain->assemblies = g_hash_table_new (g_str_hash, g_str_equal);
 	domain->class_vtable_hash = g_hash_table_new (NULL, NULL);
@@ -64,6 +65,8 @@ mono_create_domain ()
 
 	return domain;
 }
+
+MonoDomain *mono_root_domain = NULL;
 
 /**
  * mono_init:
@@ -90,6 +93,7 @@ mono_init ()
 	appdomain_thread_id = TlsAlloc ();
 
 	domain = mono_create_domain ();
+	mono_root_domain = domain;
 
 	TlsSetValue (appdomain_thread_id, domain);
 
@@ -234,9 +238,54 @@ ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoAppDomainSetup *setup)
 static MonoObject *
 mono_domain_transfer_object (MonoDomain *src, MonoDomain *dst, MonoObject *obj)
 {
+	MonoClass *klass;
+	MonoObject *res;	
+
+	if (!obj)
+		return NULL;
+
+	g_assert (obj->vtable->domain == src);
+
 	/* fixme: transfer an object from one domain into another */
-	g_assert_not_reached ();
-	return obj;
+
+	klass = obj->vtable->klass;
+
+	if (MONO_CLASS_IS_ARRAY (klass)) {
+		MonoArray *ao = (MonoArray *)obj;
+		int esize, ecount, i;
+		guint32 *sizes;
+		
+		sizes = alloca (klass->rank * sizeof(guint32) * 2);
+		esize = mono_array_element_size (klass);
+		ecount = 1;
+		for (i = 0; i < klass->rank; ++i) {
+			sizes [i] = ao->bounds [i].length;
+			ecount *= ao->bounds [i].length;
+			sizes [i + klass->rank] = ao->bounds [i].lower_bound;
+		}
+		res = (MonoObject *)mono_array_new_full (dst, klass, sizes, sizes + klass->rank);
+		if (klass->element_class->valuetype) {
+			memcpy (res, (char *)ao + sizeof(MonoArray), esize * ecount);
+		} else {
+			g_assert (esize == sizeof (gpointer));
+			for (i = 0; i < ecount; i++) {
+				int offset = sizeof (MonoArray) + esize * i;
+				gpointer *src_ea = (gpointer *)((char *)ao + offset);
+				gpointer *dst_ea = (gpointer *)((char *)res + offset);
+
+				*dst_ea = mono_domain_transfer_object (src, dst, *src_ea);
+			}
+		}
+	} else if (klass == mono_defaults.string_class) {
+		MonoString *str = (MonoString *)obj;
+		res = (MonoObject *)mono_string_new_utf16 (dst, 
+		        (const guint16 *)str->c_str->vector, str->length); 
+	} else {
+		// fixme: we need generic marshalling code here */
+		g_assert_not_reached ();
+	}
+	
+	return res;
 }
 
 MonoObject *
@@ -440,7 +489,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssem
 void
 ves_icall_System_AppDomain_Unload (MonoAppDomain *ad)
 {
-	mono_domain_unload (ad->data);
+	mono_domain_unload (ad->data, FALSE);
 }
 
 /**
@@ -473,10 +522,35 @@ mono_domain_assembly_open (MonoDomain *domain, char *name)
 	return ass;
 }
 
-void
-mono_domain_unload (MonoDomain *domain)
+static void
+remove_assembly (gpointer key, gpointer value, gpointer user_data)
 {
-	g_warning ("Domain unloading not yet implemented");
+	mono_assembly_close ((MonoAssembly *)value);
+}
+
+void
+mono_domain_unload (MonoDomain *domain, gboolean force)
+{
+	if ((domain == mono_root_domain) && !force) {
+		g_warning ("cant unload root domain");
+		return;
+	}
+
+	g_hash_table_foreach (domain->assemblies, remove_assembly, NULL);
+
+	g_hash_table_destroy (domain->env);
+	g_hash_table_destroy (domain->assemblies);
+	g_hash_table_destroy (domain->class_vtable_hash);
+	g_hash_table_destroy (domain->jit_code_hash);
+	g_hash_table_destroy (domain->ldstr_table);
+	mono_mempool_destroy (domain->mp);
+	
+	// fixme: anything else required ? */
+
+	g_free (domain);
+
+	if ((domain == mono_root_domain))
+		mono_root_domain = NULL;
 }
 
 gint32
@@ -488,6 +562,7 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 	MonoImage *image;
 	MonoCLIImageInfo *iinfo;
 	MonoMethod *method;
+	MonoObject *margs;
 	char *filename;
 	gint32 res;
 
@@ -509,7 +584,8 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 	if (!method)
 		g_error ("No entry point method found in %s", image->name);
 
-	res = mono_runtime_exec_main (method, args);
+	margs = mono_domain_transfer_object (cdom, ad->data, (MonoObject *)args);
+	res = mono_runtime_exec_main (method, (MonoArray *)margs);
 
 	mono_domain_set (cdom);
 

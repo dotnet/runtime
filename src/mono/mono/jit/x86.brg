@@ -22,7 +22,6 @@
 #include <mono/arch/x86/x86-codegen.h>
 
 #include "regset.h"
-#include "mempool.h"
 #include "jit.h"
 
 #define MBTREE_TYPE  MBTree

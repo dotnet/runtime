@@ -14,7 +14,7 @@
 #include <glib.h>
 #include <string.h>
 
-#include "jit.h"
+#include "mempool.h"
 
 /*
  * MonoMemPool is for fast allocation of memory. We free

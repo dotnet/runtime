@@ -235,7 +235,7 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 	fprintf (info->f, ".stabs \"%s:F(0,%d)\",36,0,%d,%p\n", name, sig->ret->type, line, cfg->start);
 
 	/* params */
-	mono_method_get_param_names (cfg->method, names);
+	mono_method_get_param_names (cfg->method, (const char **)names);
 	if (sig->hasthis)
 		fprintf (info->f, ".stabs \"this:p(0,%d)=(0,%d)\",160,0,%d,%d\n", info->next_idx++, klass->byval_arg.type, line, 8); /* FIXME */
 	for (i = 0; i < sig->param_count; ++i) {

@@ -37,6 +37,8 @@ libmetadata_a_SOURCES = \
 	exception.h	\
 	unicode.c	\
 	unicode.h	\
+	mempool.h	\
+	mempool.c	\
 	appdomain.h	\
 	appdomain.c
 

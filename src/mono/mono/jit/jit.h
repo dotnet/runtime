@@ -6,9 +6,9 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/mempool.h>
 
 #include "regset.h"
-#include "mempool.h"
 
 #define ISSTRUCT(t) (!t->byref && t->type == MONO_TYPE_VALUETYPE && !t->data.klass->enumtype)
 
@@ -112,7 +112,6 @@ typedef struct {
 	guint32  used_regs;
 	unsigned num_clauses;
 	MonoJitExceptionInfo *clauses;
-
 } MonoJitInfo;
 
 typedef GArray MonoJitInfoTable;

@@ -15,6 +15,7 @@
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/mempool.h>
 
 /* This is a copy of System.AppDomainSetup */
 typedef struct {
@@ -36,13 +37,14 @@ typedef struct _MonoAppDomain MonoAppDomain;
 
 struct _MonoDomain {
 	MonoAppDomain *domain;
-	GHashTable *env;
-	GHashTable *assemblies;
+	MonoMemPool   *mp;
+	GHashTable    *env;
+	GHashTable    *assemblies;
 	MonoAppDomainSetup *setup;
-	MonoString *friendly_name;
-	GHashTable *ldstr_table;
-	GHashTable *class_vtable_hash;
-	GHashTable *jit_code_hash;
+	MonoString    *friendly_name;
+	GHashTable    *ldstr_table;
+	GHashTable    *class_vtable_hash;
+	GHashTable    *jit_code_hash;
 };
 
 /* This is a copy of System.AppDomain */
@@ -50,6 +52,8 @@ struct _MonoAppDomain {
 	MonoObject  object;
 	MonoDomain *data;
 };
+
+extern MonoDomain *mono_root_domain;
 
 MonoDomain *
 mono_init (void);
@@ -64,7 +68,7 @@ MonoAssembly *
 mono_domain_assembly_open (MonoDomain *domain, char *name);
 
 void
-mono_domain_unload (MonoDomain *domain);
+mono_domain_unload (MonoDomain *domain, gboolean force);
 
 void
 ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoAppDomainSetup *setup);

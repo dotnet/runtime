@@ -107,7 +107,7 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 }
 
 static void
-ves_icall_System_Array_CreateInstance ()
+ves_icall_System_Array_CreateInstanceImpl ()
 {
 	g_warning ("not implemented");
 	g_assert_not_reached ();
@@ -442,7 +442,7 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 
 static MonoObject*
 ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params) {
-	MonoMethodSignature *sig = method->method->signature;
+	//MonoMethodSignature *sig = method->method->signature;
 
 	/*
 	 * Do we need to copy the values so that the called method can't change them?
@@ -935,7 +935,7 @@ static gpointer icall_map [] = {
 	"System.Array::GetRank",          ves_icall_System_Array_GetRank,
 	"System.Array::GetLength",        ves_icall_System_Array_GetLength,
 	"System.Array::GetLowerBound",    ves_icall_System_Array_GetLowerBound,
-	"System.Array::CreateInstance",   ves_icall_System_Array_CreateInstance,
+	"System.Array::CreateInstanceImpl",   ves_icall_System_Array_CreateInstanceImpl,
 	"System.Array::FastCopy",         ves_icall_System_Array_FastCopy,
 	"System.Array::Clone",            mono_array_clone,
 

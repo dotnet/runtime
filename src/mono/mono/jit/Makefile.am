@@ -16,8 +16,6 @@ mono_SOURCES =			\
 	regset.c		\
 	debug.h			\
 	debug.c			\
-	mempool.h		\
-	mempool.c		\
 	jit.c
 
 mono_LDADD =				\

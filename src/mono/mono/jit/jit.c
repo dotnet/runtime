@@ -3420,7 +3420,7 @@ main (int argc, char *argv [])
 	mono_network_cleanup();
 	mono_thread_cleanup();
 
-	// mono_domain_unload (domain);
+	mono_domain_unload (domain, TRUE);
 
 	return retval;
 }

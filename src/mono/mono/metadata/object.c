@@ -150,7 +150,7 @@ mono_array_clone (MonoArray *array)
 	guint32 *sizes;
 	MonoClass *klass = array->obj.vtable->klass;
 	
-	sizes = g_malloc (klass->rank * sizeof(guint32) * 2);
+	sizes = alloca (klass->rank * sizeof(guint32) * 2);
 	size = mono_array_element_size (klass);
 	for (i = 0; i < klass->rank; ++i) {
 		sizes [i] = array->bounds [i].length;
@@ -240,7 +240,7 @@ mono_string_new_utf16 (MonoDomain *domain, const guint16 *text, gint32 len)
 	s = (MonoString*)mono_object_new (domain, mono_defaults.string_class);
 	g_assert (s != NULL);
 
-	ca = (MonoArray *)mono_array_new (domain, mono_defaults.string_class, len);
+	ca = (MonoArray *)mono_array_new (domain, mono_defaults.char_class, len);
 	g_assert (ca != NULL);
 	
 	s->c_str = ca;
