@@ -930,6 +930,7 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 #endif
 	
 #ifdef __MINGW32__
+	g_error ("Thread.Abort is not yet implemented under Windows");	
 	g_assert_not_reached ();
 #else
 	/* fixme: store the state somewhere */
