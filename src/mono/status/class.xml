@@ -577,6 +577,16 @@
         </maintainers>
     </class>
 
+    <class name="System.Collections.DictionaryBase">
+        <last-activity>Nov-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
     <class name="System.Collections.IDictionaryEnumerator">
         <last-activity>Jul-15-2001</last-activity>
         <implementation>yes</implementation>
@@ -4103,6 +4113,26 @@
             <maintainer>miguel@ximian.com</maintainer>
         </maintainers>
     </class>
+
+    <class name="System.Net.Sockets.TcpListener">
+        <last-activity>Nov-23-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>pp@myelin.co.nz</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Net.Sockets.TcpClient">
+        <last-activity>Nov-23-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>pp@myelin.co.nz</maintainer>
+        </maintainers>
+    </class>
+  
 </classes>
 
 
