@@ -26,7 +26,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/utils/mono-uri.h>
 
-#define MONO_CORLIB_VERSION 14
+#define MONO_CORLIB_VERSION 15
 
 CRITICAL_SECTION mono_delegate_section;
 
@@ -751,6 +751,7 @@ free_assembly_name (MonoAssemblyName *aname)
 	g_free ((void *) aname->name);
 	g_free ((void *) aname->culture);
 	g_free ((void *) aname->hash_value);
+	g_free ((void *) aname->public_tok_value);
 }
 
 static gboolean
@@ -809,49 +810,10 @@ get_info_from_assembly_name (MonoString *assRef, MonoAssemblyName *aname)
 			tmp++;
 			value += 15;
 			if (*value && strcmp (value, "null")) {
-				gint i, len;
-				gchar h, l;
-				gchar *result;
-				
-				value = g_strstrip (g_strdup (value));
-				len = strlen (value);
-				if (len % 2) {
-					g_free (value);
-					g_strfreev (parts);
-					return FALSE;
-				}
-				
-				aname->hash_len = len / 2;
-				aname->hash_value = g_malloc0 (aname->hash_len);
-				result = (gchar *) aname->hash_value;
-				
-				for (i = 0; i < len; i++) {
-					if (i % 2) {
-						l = g_ascii_xdigit_value (value [i]);
-						if (l == -1) {
-							g_free (value);
-							g_strfreev (parts);
-							return FALSE;
-						}
-						result [i / 2] = (h * 16) + l;
-					} else {
-						h = g_ascii_xdigit_value (value [i]);
-						if (h == -1) {
-							g_free (value);
-							g_strfreev (parts);
-							return FALSE;
-						}
-					}
-				}
-				g_free (value);
-
-				/*
-				g_print ("PublicKeyToken: ");
-				for (i = 0; i < aname->hash_len; i++) {
-					g_print ("%x", 0x00FF & aname->hash_value [i]); 
-				}
-				g_print ("\n");
-				*/
+                                gchar *t = g_strdup (value);
+                                g_strchug (t);
+				aname->public_tok_value = g_strdup (g_strchomp (t));
+                                g_free (t);
 			}
 		}
 	}
@@ -985,7 +947,7 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 
 	if (!assembly) {
 		mono_raise_exception ((MonoException *)mono_exception_from_name (
-		        mono_defaults.corlib, "System.IO", "FileNotFoundException"));
+			mono_defaults.corlib, "System.IO", "FileNotFoundException"));
 	}
 
 	image = assembly->image;
@@ -1242,7 +1204,7 @@ mono_domain_unload (MonoDomain *domain)
 #if 0
 	thread_handle = CreateThread (NULL, 0, unload_thread_main, &thread_data, 0, &tid);
 #else
-        thread_handle = CreateThread (NULL, 0, unload_thread_main, &thread_data, CREATE_SUSPENDED, &tid);
+	thread_handle = CreateThread (NULL, 0, unload_thread_main, &thread_data, CREATE_SUSPENDED, &tid);
 	ResumeThread (thread_handle);
 #endif
 	ret = WaitForSingleObject (thread_handle, INFINITE);

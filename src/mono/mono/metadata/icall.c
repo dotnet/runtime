@@ -4909,7 +4909,16 @@ static const IcallEntry environment_icalls [] = {
 };
 
 static const IcallEntry cultureinfo_icalls [] = {
-	{"construct_internal_locale(string)", ves_icall_System_Globalization_CultureInfo_construct_internal_locale}
+	{"construct_compareinfo(object,string)", ves_icall_System_Globalization_CompareInfo_construct_compareinfo},
+	{"construct_datetime_format", ves_icall_System_Globalization_CultureInfo_construct_datetime_format},
+	{"construct_internal_locale(string)", ves_icall_System_Globalization_CultureInfo_construct_internal_locale},
+	{"construct_internal_locale_from_current_locale", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_current_locale},
+	{"construct_internal_locale_from_lcid", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid},
+	{"construct_internal_locale_from_name", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name},
+	{"construct_internal_locale_from_specific_name", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_specific_name},
+	{"construct_number_format", ves_icall_System_Globalization_CultureInfo_construct_number_format},
+	{"internal_get_cultures", ves_icall_System_Globalization_CultureInfo_internal_get_cultures},
+	{"internal_is_lcid_neutral", ves_icall_System_Globalization_CultureInfo_internal_is_lcid_neutral}
 };
 
 static const IcallEntry compareinfo_icalls [] = {

@@ -6,46 +6,46 @@
 
 #if 1
 #ifdef __GNUC__
-#define mono_assert(expr) 	           G_STMT_START{		  \
+#define mono_assert(expr)		   G_STMT_START{		  \
      if (!(expr))							  \
        {								  \
-              	MonoException *ex;                                        \
-                char *msg = g_strdup_printf ("file %s: line %d (%s): "    \
-                "assertion failed: (%s)", __FILE__, __LINE__,             \
-                __PRETTY_FUNCTION__, #expr);				  \
-		ex = mono_get_exception_execution_engine (msg);           \
-		g_free (msg);                                             \
-                mono_raise_exception (ex);                                \
+		MonoException *ex;					  \
+		char *msg = g_strdup_printf ("file %s: line %d (%s): "	  \
+		"assertion failed: (%s)", __FILE__, __LINE__,		  \
+		__PRETTY_FUNCTION__, #expr);				  \
+		ex = mono_get_exception_execution_engine (msg);		  \
+		g_free (msg);						  \
+		mono_raise_exception (ex);				  \
        };				}G_STMT_END
 
-#define mono_assert_not_reached() 	          G_STMT_START{		  \
-     MonoException *ex;                                                   \
-     char *msg = g_strdup_printf ("file %s: line %d (%s): "               \
+#define mono_assert_not_reached()		  G_STMT_START{		  \
+     MonoException *ex;							  \
+     char *msg = g_strdup_printf ("file %s: line %d (%s): "		  \
      "should not be reached", __FILE__, __LINE__, __PRETTY_FUNCTION__);	  \
-     ex = mono_get_exception_execution_engine (msg);                      \
-     g_free (msg);                                                        \
-     mono_raise_exception (ex);                                           \
+     ex = mono_get_exception_execution_engine (msg);			  \
+     g_free (msg);							  \
+     mono_raise_exception (ex);						  \
 }G_STMT_END
 #else /* not GNUC */
-#define mono_assert(expr) 	           G_STMT_START{		  \
+#define mono_assert(expr)		   G_STMT_START{		  \
      if (!(expr))							  \
        {								  \
-              	MonoException *ex;                                        \
-                char *msg = g_strdup_printf ("file %s: line %d: "         \
-                "assertion failed: (%s)", __FILE__, __LINE__,             \
-                #expr);							  \
-		ex = mono_get_exception_execution_engine (msg);           \
-		g_free (msg);                                             \
-                mono_raise_exception (ex);                                \
+		MonoException *ex;					  \
+		char *msg = g_strdup_printf ("file %s: line %d: "	  \
+		"assertion failed: (%s)", __FILE__, __LINE__,		  \
+		#expr);							  \
+		ex = mono_get_exception_execution_engine (msg);		  \
+		g_free (msg);						  \
+		mono_raise_exception (ex);				  \
        };				}G_STMT_END
 
-#define mono_assert_not_reached() 	          G_STMT_START{		  \
-     MonoException *ex;                                                   \
-     char *msg = g_strdup_printf ("file %s: line %d): "                   \
+#define mono_assert_not_reached()		  G_STMT_START{		  \
+     MonoException *ex;							  \
+     char *msg = g_strdup_printf ("file %s: line %d): "			  \
      "should not be reached", __FILE__, __LINE__);			  \
-     ex = mono_get_exception_execution_engine (msg);                      \
-     g_free (msg);                                                        \
-     mono_raise_exception (ex);                                           \
+     ex = mono_get_exception_execution_engine (msg);			  \
+     g_free (msg);							  \
+     mono_raise_exception (ex);						  \
 }G_STMT_END
 #endif
 #else
@@ -53,25 +53,25 @@
 #define mono_assert_not_reached() g_assert_not_reached() 
 #endif
 
-#define MONO_CHECK_ARG(arg, expr)       	G_STMT_START{		  \
+#define MONO_CHECK_ARG(arg, expr)		G_STMT_START{		  \
      if (!(expr))							  \
        {								  \
-              	MonoException *ex;                                        \
-                char *msg = g_strdup_printf ("assertion `%s' failed",     \
+		MonoException *ex;					  \
+		char *msg = g_strdup_printf ("assertion `%s' failed",	  \
 		#expr);							  \
-                if (arg) {} /* check if the name exists */                \
-		ex = mono_get_exception_argument (#arg, msg);             \
-		g_free (msg);                                             \
-                mono_raise_exception (ex);                                \
+		if (arg) {} /* check if the name exists */		  \
+		ex = mono_get_exception_argument (#arg, msg);		  \
+		g_free (msg);						  \
+		mono_raise_exception (ex);				  \
        };				}G_STMT_END
 
-#define MONO_CHECK_ARG_NULL(arg) 	    G_STMT_START{		  \
+#define MONO_CHECK_ARG_NULL(arg)	    G_STMT_START{		  \
      if (arg == NULL)							  \
        {								  \
-              	MonoException *ex;                                        \
-                if (arg) {} /* check if the name exists */                \
-		ex = mono_get_exception_argument_null (#arg);             \
-                mono_raise_exception (ex);                                \
+		MonoException *ex;					  \
+		if (arg) {} /* check if the name exists */		  \
+		ex = mono_get_exception_argument_null (#arg);		  \
+		mono_raise_exception (ex);				  \
        };				}G_STMT_END
 
 typedef guchar MonoBoolean;
@@ -147,8 +147,8 @@ typedef struct {
 	MonoString *class_name;
 	MonoString *stack_trace;
 	MonoString *remote_stack_trace;
-	gint32      remote_stack_index;
-	gint32      hresult;
+	gint32	    remote_stack_index;
+	gint32	    hresult;
 	MonoString *source;
 } MonoException;
 
@@ -193,10 +193,10 @@ typedef struct {
 } MonoRealProxy;
 
 typedef struct {
-	MonoObject       object;
-	MonoRealProxy   *rp;	
+	MonoObject	 object;
+	MonoRealProxy	*rp;	
 	MonoRemoteClass *remote_class;
-	MonoBoolean      custom_type_info;
+	MonoBoolean	 custom_type_info;
 } MonoTransparentProxy;
 
 /* This is a copy of System.Runtime.Remoting.Messaging.CallType */
@@ -217,7 +217,7 @@ typedef struct {
 	MonoObject *rval;
 	MonoObject *exc;
 	MonoAsyncResult *async_result;
-	guint32     call_type;
+	guint32	    call_type;
 } MonoMethodMessage;
 
 typedef struct {
@@ -232,17 +232,17 @@ typedef struct {
 
 typedef struct {
 	MonoObject  obj;
-	HANDLE      handle;
+	HANDLE	    handle;
 	MonoObject *culture_info;
 	MonoObject *ui_culture_info;
 	MonoBoolean threadpool_thread;
 	gunichar2  *name;
-	guint32     name_len;
-	guint32     state;
+	guint32	    name_len;
+	guint32	    state;
 	MonoException *abort_exc;
 	MonoObject *abort_state;
 	guint32 tid;
-	HANDLE      start_notify;
+	HANDLE	    start_notify;
 	gpointer stack_ptr;
 	gpointer *static_data;
 	gpointer jit_data;
@@ -333,6 +333,10 @@ typedef struct {
 	MonoObject obj;
 	MonoBoolean is_read_only;
 	gint32 lcid;
+	gint32 parent_lcid;
+	gint32 specific_lcid;
+	gint32 datetime_index;
+	gint32 number_index;
 	MonoBoolean use_user_override;
 	MonoNumberFormatInfo *number_format;
 	MonoDateTimeFormatInfo *datetime_format;
@@ -356,8 +360,8 @@ typedef struct {
 	gint32 lcid;
 } MonoSortKey;
 
-typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, void **params, MonoObject **exc);
-typedef gpointer    (*MonoCompileFunc)       (MonoMethod *method);
+typedef MonoObject* (*MonoInvokeFunc)	     (MonoMethod *method, void *obj, void **params, MonoObject **exc);
+typedef gpointer    (*MonoCompileFunc)	     (MonoMethod *method);
 typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
 
 #define mono_object_class(obj) (((MonoObject*)(obj))->vtable->klass)
@@ -378,14 +382,14 @@ typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
 #define mono_stringbuilder_capacity(sb) ((sb)->str->length)
 
 MonoObject *
-mono_object_new             (MonoDomain *domain, MonoClass *klass);
+mono_object_new		    (MonoDomain *domain, MonoClass *klass);
 
 MonoObject *
 mono_object_new_specific    (MonoVTable *vtable);
 
 /* can be used for classes without finalizer in non-profiling mode */
 MonoObject *
-mono_object_new_fast        (MonoVTable *vtable);
+mono_object_new_fast	    (MonoVTable *vtable);
 
 MonoObject *
 mono_object_new_alloc_specific (MonoVTable *vtable);
@@ -394,65 +398,65 @@ MonoObject *
 mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, guint32 token);
 
 MonoArray*
-mono_array_new              (MonoDomain *domain, MonoClass *eclass, guint32 n);
+mono_array_new		    (MonoDomain *domain, MonoClass *eclass, guint32 n);
 
 MonoArray*
-mono_array_new_full         (MonoDomain *domain, MonoClass *array_class,
+mono_array_new_full	    (MonoDomain *domain, MonoClass *array_class,
 			     guint32 *lengths, guint32 *lower_bounds);
 
 MonoArray *
-mono_array_new_specific     (MonoVTable *vtable, guint32 n);
+mono_array_new_specific	    (MonoVTable *vtable, guint32 n);
 
 MonoArray*
-mono_array_clone            (MonoArray *array);
+mono_array_clone	    (MonoArray *array);
 
 MonoString*
-mono_string_new_utf16       (MonoDomain *domain, const guint16 *text, gint32 len);
+mono_string_new_utf16	    (MonoDomain *domain, const guint16 *text, gint32 len);
 
 MonoString*
 mono_string_new_size	    (MonoDomain *domain, gint32 len);
 
 MonoString*
-mono_ldstr                  (MonoDomain *domain, MonoImage *image, guint32 str_index);
+mono_ldstr		    (MonoDomain *domain, MonoImage *image, guint32 str_index);
 
 MonoString*
-mono_string_is_interned     (MonoString *str);
+mono_string_is_interned	    (MonoString *str);
 
 MonoString*
-mono_string_intern          (MonoString *str);
+mono_string_intern	    (MonoString *str);
 
 MonoString*
-mono_string_new             (MonoDomain *domain, const char *text);
+mono_string_new		    (MonoDomain *domain, const char *text);
 
 MonoString*
-mono_string_new_wrapper     (const char *text);
+mono_string_new_wrapper	    (const char *text);
 
 MonoString*
-mono_string_new_len         (MonoDomain *domain, const char *text, guint length);
+mono_string_new_len	    (MonoDomain *domain, const char *text, guint length);
 
 char *
-mono_string_to_utf8         (MonoString *string_obj);
+mono_string_to_utf8	    (MonoString *string_obj);
 
 gunichar2 *
-mono_string_to_utf16        (MonoString *string_obj);
+mono_string_to_utf16	    (MonoString *string_obj);
 
 MonoString *
-mono_string_from_utf16      (gunichar2 *data);
+mono_string_from_utf16	    (gunichar2 *data);
 
-void       
-mono_object_free            (MonoObject *o);
+void	   
+mono_object_free	    (MonoObject *o);
 
 MonoObject *
-mono_value_box              (MonoDomain *domain, MonoClass *klass, gpointer val);
+mono_value_box		    (MonoDomain *domain, MonoClass *klass, gpointer val);
 
 gpointer
-mono_object_unbox           (MonoObject *obj);
+mono_object_unbox	    (MonoObject *obj);
 
 MonoObject *
-mono_object_clone           (MonoObject *obj);
+mono_object_clone	    (MonoObject *obj);
 
 MonoObject *
-mono_object_isinst          (MonoObject *obj, MonoClass *klass);
+mono_object_isinst	    (MonoObject *obj, MonoClass *klass);
 
 MonoObject *
 mono_object_isinst_mbyref   (MonoObject *obj, MonoClass *klass);
@@ -463,28 +467,28 @@ mono_object_castclass_mbyref (MonoObject *obj, MonoClass *klass);
 typedef void (*MonoExceptionFunc) (MonoException *ex);
 
 void
-mono_install_handler        (MonoExceptionFunc func);
+mono_install_handler	    (MonoExceptionFunc func);
 
 void
-mono_raise_exception        (MonoException *ex);
+mono_raise_exception	    (MonoException *ex);
 
 void
 mono_runtime_object_init    (MonoObject *this_obj);
 
 void
-mono_runtime_class_init     (MonoVTable *vtable);
+mono_runtime_class_init	    (MonoVTable *vtable);
 
-void        
+void	    
 mono_install_runtime_invoke (MonoInvokeFunc func);
 
-void        
+void	    
 mono_install_compile_method (MonoCompileFunc func);
 
 MonoMethod*
 mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method);
 
 MonoObject*
-mono_runtime_invoke         (MonoMethod *method, void *obj, void **params,
+mono_runtime_invoke	    (MonoMethod *method, void *obj, void **params,
 			     MonoObject **exc);
 
 MonoMethod *
@@ -507,30 +511,30 @@ mono_runtime_exec_managed_code (MonoDomain *domain,
 				gpointer main_args);
 
 int
-mono_runtime_run_main       (MonoMethod *method, int argc, char* argv[], 
+mono_runtime_run_main	    (MonoMethod *method, int argc, char* argv[], 
 			     MonoObject **exc);
 
 int
-mono_runtime_exec_main      (MonoMethod *method, MonoArray *args,
+mono_runtime_exec_main	    (MonoMethod *method, MonoArray *args,
 			     MonoObject **exc);
 
 MonoAsyncResult *
-mono_async_result_new       (MonoDomain *domain, HANDLE handle, 
+mono_async_result_new	    (MonoDomain *domain, HANDLE handle, 
 			     MonoObject *state, gpointer data);
 
 MonoWaitHandle *
-mono_wait_handle_new        (MonoDomain *domain, HANDLE handle);
+mono_wait_handle_new	    (MonoDomain *domain, HANDLE handle);
 
 void
-mono_message_init           (MonoDomain *domain, MonoMethodMessage *this_obj, 
+mono_message_init	    (MonoDomain *domain, MonoMethodMessage *this_obj, 
 			     MonoReflectionMethod *method, MonoArray *out_args);
 
 MonoObject *
-mono_remoting_invoke        (MonoObject *real_proxy, MonoMethodMessage *msg, 
+mono_remoting_invoke	    (MonoObject *real_proxy, MonoMethodMessage *msg, 
 			     MonoObject **exc, MonoArray **out_args);
 
 MonoObject *
-mono_message_invoke         (MonoObject *target, MonoMethodMessage *msg, 
+mono_message_invoke	    (MonoObject *target, MonoMethodMessage *msg, 
 			     MonoObject **exc, MonoArray **out_args);
 
 MonoMethodMessage *
@@ -559,10 +563,10 @@ void
 mono_print_unhandled_exception (MonoObject *exc);
 
 void
-mono_delegate_ctor          (MonoObject *this_obj, MonoObject *target, gpointer addr);
+mono_delegate_ctor	    (MonoObject *this_obj, MonoObject *target, gpointer addr);
 
 gpointer 
-mono_compile_method        (MonoMethod *method);
+mono_compile_method	   (MonoMethod *method);
 
 MonoRemoteClass*
 mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class);

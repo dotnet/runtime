@@ -19,6 +19,11 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/locales.h>
+#include <mono/metadata/culture-info.h>
+#include <mono/metadata/culture-info-tables.h>
+
+
+#include <locale.h>
 
 #undef DEBUG
 
@@ -39,6 +44,460 @@ static gint32 string_invariant_indexof_char (MonoString *source, gint32 sindex,
 					     MonoBoolean first);
 static MonoString *string_invariant_tolower (MonoString *this);
 static MonoString *string_invariant_toupper (MonoString *this);
+
+static int
+culture_lcid_locator (const void *a, const void *b)
+{
+	const CultureInfoEntry *aa = a;
+	const CultureInfoEntry *bb = b;
+
+	return (aa->lcid - bb->lcid);
+}
+
+static int
+culture_name_locator (const void *a, const void *b)
+{
+	const CultureInfoNameEntry *aa = a;
+	const CultureInfoNameEntry *bb = b;
+	int ret;
+	
+	ret = strcmp (aa->name, bb->name);
+
+	return ret;
+}
+
+static MonoArray*
+create_group_sizes_array (const gint *gs, gint ml)
+{
+	MonoArray *ret;
+	int i, len = 0;
+
+	for (i = 0; i < ml; i++) {
+		if (gs [i] == -1)
+			break;
+		len++;
+	}
+	
+	ret = mono_array_new (mono_domain_get (),
+			mono_defaults.int32_class, len);
+
+	for(i = 0; i < len; i++)
+		mono_array_set (ret, gint32, i, gs [i]);
+
+	return ret;
+}
+
+static MonoArray*
+create_names_array (const gchar **names, int ml)
+{
+	MonoArray *ret;
+	MonoDomain *domain;
+	int i, len = 0;
+
+	if (names == NULL)
+		return NULL;
+
+	domain = mono_domain_get ();
+
+	for (i = 0; i < ml; i++) {
+		if (names [i] == NULL)
+			break;
+		len++;
+	}
+
+	ret = mono_array_new (mono_domain_get (), mono_defaults.string_class, len);
+
+	for(i = 0; i < len; i++)
+		mono_array_set (ret, MonoString *, i, mono_string_new (domain, names [i]));
+
+	return ret;
+}
+
+void
+ves_icall_System_Globalization_CultureInfo_construct_datetime_format (MonoCultureInfo *this)
+{
+	MonoDomain *domain;
+	MonoDateTimeFormatInfo *datetime;
+	const DateTimeFormatEntry *dfe;
+
+	MONO_ARCH_SAVE_REGS;
+
+	g_assert (this->datetime_index >= 0);
+
+	datetime = this->datetime_format;
+	dfe = &datetime_format_entries [this->datetime_index];
+
+	domain = mono_domain_get ();
+
+	datetime->AbbreviatedDayNames = create_names_array (dfe->abbreviated_day_names,
+			NUM_OF_DAYS);
+	datetime->AbbreviatedMonthNames = create_names_array (dfe->abbreviated_month_names,
+			MAX_NUM_MONTHS);
+	datetime->AMDesignator = mono_string_new (domain, dfe->am_designator);
+	datetime->CalendarWeekRule = dfe->calendar_week_rule;
+	datetime->DateSeparator = mono_string_new (domain, dfe->date_separator);
+	datetime->DayNames = create_names_array (dfe->day_names, NUM_OF_DAYS);
+	datetime->FirstDayOfWeek = dfe->first_day_of_week;
+	datetime->FullDateTimePattern = mono_string_new (domain, dfe->full_date_time_pattern);
+	datetime->LongDatePattern = mono_string_new (domain, dfe->long_date_pattern);
+	datetime->LongTimePattern = mono_string_new (domain, dfe->long_time_pattern);
+	datetime->MonthDayPattern = mono_string_new (domain, dfe->month_day_pattern);
+	datetime->MonthNames = create_names_array (dfe->month_names, MAX_NUM_MONTHS);
+	datetime->PMDesignator = mono_string_new (domain, dfe->pm_designator);
+	datetime->ShortDatePattern = mono_string_new (domain, dfe->short_date_pattern);
+	datetime->ShortTimePattern = mono_string_new (domain, dfe->short_time_pattern);
+	datetime->TimeSeparator = mono_string_new (domain, dfe->time_separator);
+	datetime->YearMonthPattern = mono_string_new (domain, dfe->year_month_pattern);
+}
+
+void
+ves_icall_System_Globalization_CultureInfo_construct_number_format (MonoCultureInfo *this)
+{
+	MonoDomain *domain;
+	MonoNumberFormatInfo *number;
+	const NumberFormatEntry *nfe;
+
+	MONO_ARCH_SAVE_REGS;
+
+	g_assert (this->number_format >= 0);
+
+	number = this->number_format;
+	nfe = &number_format_entries [this->number_index];
+
+	domain = mono_domain_get ();
+
+	number->currencyDecimalDigits = nfe->currency_decimal_digits;
+	number->currencyDecimalSeparator = mono_string_new (domain,
+			nfe->currency_decimal_separator);
+	number->currencyGroupSeparator = mono_string_new (domain,
+			nfe->currency_group_separator);
+	number->currencyGroupSizes = create_group_sizes_array (nfe->currency_group_sizes,
+			MAX_GROUP_SIZE);
+	number->currencyNegativePattern = nfe->currency_negative_pattern;
+	number->currencyPositivePattern = nfe->currency_positive_pattern;
+	number->currencySymbol = mono_string_new (domain, nfe->currency_symbol);
+	number->naNSymbol = mono_string_new (domain, nfe->nan_symbol);
+	number->negativeInfinitySymbol = mono_string_new (domain,
+			nfe->negative_infinity_symbol);
+	number->negativeSign = mono_string_new (domain, nfe->negative_sign);
+	number->numberDecimalDigits = nfe->number_decimal_digits;
+	number->numberDecimalSeparator = mono_string_new (domain,
+			nfe->number_decimal_separator);
+	number->numberGroupSeparator = mono_string_new (domain, nfe->number_group_separator);
+	number->numberGroupSizes = create_group_sizes_array (nfe->number_group_sizes,
+			MAX_GROUP_SIZE);
+	number->numberNegativePattern = nfe->number_negative_pattern;
+	number->percentDecimalDigits = nfe->percent_decimal_digits;
+	number->percentDecimalSeparator = mono_string_new (domain,
+			nfe->percent_decimal_separator);
+	number->percentGroupSeparator = mono_string_new (domain,
+			nfe->percent_group_separator);
+	number->percentGroupSizes = create_group_sizes_array (nfe->percent_group_sizes,
+			MAX_GROUP_SIZE);
+	number->percentNegativePattern = nfe->percent_negative_pattern;
+	number->percentPositivePattern = nfe->percent_positive_pattern;
+	number->percentSymbol = mono_string_new (domain, nfe->percent_symbol);
+	number->perMilleSymbol = mono_string_new (domain, nfe->per_mille_symbol);
+	number->positiveInfinitySymbol = mono_string_new (domain,
+			nfe->positive_infinity_symbol);
+	number->positiveSign = mono_string_new (domain, nfe->positive_sign);
+}
+
+static MonoBoolean
+construct_culture (MonoCultureInfo *this, const CultureInfoEntry *ci)
+{
+	MonoDomain *domain = mono_domain_get ();
+
+	this->lcid = ci->lcid;
+	this->name = mono_string_new (domain, ci->name);
+	this->icu_name = mono_string_new (domain, ci->icu_name);
+	this->displayname = mono_string_new (domain, ci->displayname);
+	this->englishname = mono_string_new (domain, ci->englishname);
+	this->nativename = mono_string_new (domain, ci->nativename);
+	this->win3lang = mono_string_new (domain, ci->win3lang);
+	this->iso3lang = mono_string_new (domain, ci->iso3lang);
+	this->iso2lang = mono_string_new (domain, ci->iso2lang);
+	this->parent_lcid = ci->parent_lcid;
+	this->specific_lcid = ci->specific_lcid;
+	this->datetime_index = ci->datetime_format_index;
+	this->number_index = ci->number_format_index;
+
+	return TRUE;
+}
+
+static const CultureInfoEntry*
+culture_info_entry_from_lcid (int lcid)
+{
+	const CultureInfoEntry *ci;
+	CultureInfoEntry key;
+
+	key.lcid = lcid;
+	ci = bsearch (&key, culture_entries, NUM_CULTURE_ENTRIES, sizeof (CultureInfoEntry), culture_lcid_locator);
+
+	return ci;
+}
+
+/**
+ * The following two methods are modified from the ICU source code. (http://oss.software.ibm.com/icu)
+ * Copyright (c) 1995-2003 International Business Machines Corporation and others
+ * All rights reserved.
+ */
+static gchar*
+get_posix_locale (void)
+{
+	const gchar* posix_locale = NULL;
+
+	posix_locale = getenv("LC_ALL");
+	if (posix_locale == 0) {
+		posix_locale = getenv("LANG");
+		if (posix_locale == 0) {
+			posix_locale = setlocale(LC_ALL, NULL);
+		}
+	}
+
+	if (posix_locale == NULL)
+		return NULL;
+
+	if ((strcmp ("C", posix_locale) == 0) || (strchr (posix_locale, ' ') != NULL)
+			|| (strchr (posix_locale, '/') != NULL)) {
+		/**
+		 * HPUX returns 'C C C C C C C'
+		 * Solaris can return /en_US/C/C/C/C/C on the second try.
+		 * Maybe we got some garbage.
+		 */
+		return NULL;
+	}
+
+	return g_strdup (posix_locale);
+}
+
+static gchar*
+get_current_locale_name (void)
+{
+	gchar *locale;
+	gchar *corrected = NULL;
+	const gchar *p;
+	const gchar *q;
+        gchar *c;
+	gint32 len;
+
+#ifdef PLATFORM_WIN32
+	locale = g_win32_getlocale ();
+#else	
+	locale = get_posix_locale ();
+#endif	
+
+	if (locale == NULL)
+		return NULL;
+
+	if ((p = strchr (locale, '.')) != NULL) {
+		/* assume new locale can't be larger than old one? */
+		corrected = malloc (strlen (locale));
+		strncpy (corrected, locale, p - locale);
+		corrected [p - locale] = 0;
+
+		/* do not copy after the @ */
+		if ((p = strchr (corrected, '@')) != NULL)
+			corrected [p - corrected] = 0;
+	}
+
+	/* Note that we scan the *uncorrected* ID. */
+	if ((p = strrchr (locale, '@')) != NULL) {
+		if (corrected == NULL) {
+			corrected = malloc (strlen (locale));
+			strncpy (corrected, locale, p - locale);
+			corrected [p - locale] = 0;
+		}
+		p++;
+		
+		/* Take care of any special cases here.. */
+		if (!strcmp (p, "nynorsk"))
+			p = "NY";			 
+
+		if (strchr (corrected, '_') == NULL)
+			strcat (corrected, "__"); /* aa@b -> aa__b */
+		else
+			strcat (corrected, "_"); /* aa_CC@b -> aa_CC_b */
+
+		if ((q = strchr (p, '.')) != NULL) {
+			/* How big will the resulting string be? */
+			len = strlen (corrected) + (q - p);
+			strncat (corrected, p, q - p);
+			corrected [len] = 0;
+		} else {
+			/* Anything following the @ sign */
+			strcat (corrected, p);
+		}
+
+		/* Should there be a map from 'no@nynorsk' -> no_NO_NY here?	
+		 * How about 'russian' -> 'ru'? 
+		 */
+	}
+
+	if (corrected == NULL)
+		corrected = locale;
+	else
+		g_free (locale);
+
+	if ((c = strchr (corrected, '_')) != NULL)
+		*c = '-';
+
+	g_strdown (corrected);
+
+	return corrected;
+}	 
+
+MonoBoolean
+ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_current_locale (MonoCultureInfo *ci)
+{
+	gchar *locale;
+	CultureInfoNameEntry key;
+	const CultureInfoNameEntry *ne;
+
+	MONO_ARCH_SAVE_REGS;
+
+	locale = get_current_locale_name ();
+	if (locale == NULL)
+		return FALSE;
+
+	key.name = locale;
+	ne = bsearch (&key, culture_name_entries, NUM_CULTURE_ENTRIES,
+			sizeof (CultureInfoNameEntry), culture_name_locator);
+
+        g_free (locale);
+
+	if (ne == NULL)
+		return FALSE;
+
+	return construct_culture (ci, &culture_entries [ne->culture_entry_index]);
+}
+
+MonoBoolean
+ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid (MonoCultureInfo *this,
+		gint lcid)
+{
+	const CultureInfoEntry *ci;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	ci = culture_info_entry_from_lcid (lcid);
+	if(ci == NULL)
+		return FALSE;
+
+	return construct_culture (this, ci);
+}
+
+MonoBoolean
+ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (MonoCultureInfo *this,
+		MonoString *name)
+{
+	CultureInfoNameEntry key;
+	const CultureInfoNameEntry *ne;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	key.name = mono_string_to_utf8 (name);
+	ne = bsearch (&key, culture_name_entries, NUM_CULTURE_ENTRIES,
+			sizeof (CultureInfoNameEntry), culture_name_locator);
+
+        g_free (key.name);
+
+	if (ne == NULL)
+		return FALSE;
+
+	return construct_culture (this, &culture_entries [ne->culture_entry_index]);
+}
+
+MonoBoolean
+ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_specific_name (MonoCultureInfo *ci,
+		MonoString *name)
+{
+	const CultureInfoEntry *entry;
+	CultureInfoNameEntry key;
+	const CultureInfoNameEntry *ne;
+
+	MONO_ARCH_SAVE_REGS;
+
+	key.name = mono_string_to_utf8 (name);
+	ne = bsearch (&key, culture_name_entries, NUM_CULTURE_ENTRIES,
+			sizeof (CultureInfoNameEntry), culture_name_locator);
+
+        g_free (key.name);
+
+	if (ne == NULL)
+		return FALSE;
+
+	entry = &culture_entries [ne->culture_entry_index];
+
+	/* try avoiding another lookup, often the culture is its own specific culture */
+	if (entry->lcid != entry->specific_lcid)
+		entry = culture_info_entry_from_lcid (entry->specific_lcid);
+
+	return construct_culture (ci, entry);
+}
+
+MonoArray*
+ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean neutral,
+		MonoBoolean specific, MonoBoolean installed)
+{
+	MonoArray *ret;
+	MonoClass *class;
+	MonoCultureInfo *culture;
+	MonoDomain *domain;
+	const CultureInfoEntry *ci;
+	gint i, len;
+	gboolean is_neutral;
+
+	MONO_ARCH_SAVE_REGS;
+
+	domain = mono_domain_get ();
+
+	len = 0;
+	for (i = 0; i < NUM_CULTURE_ENTRIES; i++) {
+		ci = &culture_entries [i];
+		is_neutral = ((ci->lcid & 0xff00) == 0 || ci->specific_lcid == 0);
+		if ((neutral && is_neutral) || (specific && !is_neutral))
+			len++;
+	}
+
+	class = mono_class_from_name (mono_defaults.corlib,
+			"System.Globalization", "CultureInfo");
+	ret = mono_array_new (domain, class, len);
+
+	len = 0;
+	for (i = 0; i < NUM_CULTURE_ENTRIES; i++) {
+		ci = &culture_entries [i];
+		is_neutral = ((ci->lcid & 0xff00) == 0 || ci->specific_lcid == 0);
+		if ((neutral && !is_neutral) && (specific && is_neutral))
+			continue;
+		culture = (MonoCultureInfo *) mono_object_new (domain, class);
+		mono_runtime_object_init ((MonoObject *) culture);
+		construct_culture (culture, ci);
+		mono_array_set (ret, MonoCultureInfo *, len++, culture);
+	}
+
+	return ret;
+}
+
+/**
+ * Set is_neutral and return TRUE if the culture is found. If it is not found return FALSE.
+ */
+MonoBoolean
+ves_icall_System_Globalization_CultureInfo_internal_is_lcid_neutral (gint lcid, MonoBoolean *is_neutral)
+{
+	const CultureInfoEntry *entry;
+
+	MONO_ARCH_SAVE_REGS;
+
+	entry = culture_info_entry_from_lcid (lcid);
+
+	if (entry == NULL)
+		return FALSE;
+
+	*is_neutral = (entry->specific_lcid == 0);
+
+	return TRUE;
+}
 
 #ifdef HAVE_ICU
 
@@ -146,7 +605,7 @@ static MonoDateTimeFormatInfo *create_DateTimeFormat (const char *locale)
 		ures_close (subbundle);
 	}
 	
-	/* Date/Time patterns.  Don't set FullDateTimePattern.  As it
+	/* Date/Time patterns.	Don't set FullDateTimePattern.	As it
 	 * seems to always default to LongDatePattern + " " +
 	 * LongTimePattern, let the property accessor deal with it.
 	 */
@@ -362,7 +821,7 @@ void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoC
 	int32_t str_len, ret;
 	
 	MONO_ARCH_SAVE_REGS;
-	
+
 	icu_locale=mono_string_to_icu_locale (locale);
 	if(icu_locale==NULL) {
 		/* Something went wrong */
@@ -443,7 +902,7 @@ void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoCompa
 	g_free (icu_locale);
 }
 
-/* Set up the collator to reflect the options required.  Some of these
+/* Set up the collator to reflect the options required.	 Some of these
  * options clash, as they adjust the collator strength level.  Try to
  * make later checks reduce the strength level, and attempt to take
  * previous options into account.
@@ -817,7 +1276,7 @@ int ves_icall_System_Globalization_CompareInfo_internal_index_char (MonoCompareI
 int ves_icall_System_Threading_Thread_current_lcid (void)
 {
 	MONO_ARCH_SAVE_REGS;
-	
+
 	return(uloc_getLCID (uloc_getDefault ()));
 }
 
@@ -1333,33 +1792,33 @@ static MonoString *string_invariant_replace (MonoString *me,
 		if (occurr == 0)
 			return me;
 		newsize = srclen + ((newstrlen - oldstrlen) * occurr);
- 	} else
+	} else
 		newsize = srclen;
 
-        ret = NULL;
+	ret = NULL;
 	i = 0;
 	while (i < srclen) {
 		if (0 == memcmp(src + i, oldstr, oldstrlen * sizeof(gunichar2))) {
-                        if (ret == NULL) {
-                                ret = mono_string_new_size( mono_domain_get (), newsize);
-                                dest = mono_string_chars(ret);
-                                memcpy (dest, src, i * sizeof(gunichar2));
-                        }
+			if (ret == NULL) {
+				ret = mono_string_new_size( mono_domain_get (), newsize);
+				dest = mono_string_chars(ret);
+				memcpy (dest, src, i * sizeof(gunichar2));
+			}
 			if (newstrlen > 0) {
 				memcpy(dest + destpos, newstr, newstrlen * sizeof(gunichar2));
 				destpos += newstrlen;
 			}
 			i += oldstrlen;
-                        continue;
+			continue;
 		} else if (ret != NULL) {
 			dest[destpos] = src[i];
- 		}
+		}
 		destpos++;
 		i++;
 	}
-        
-        if (ret == NULL)
-                return me;
+	
+	if (ret == NULL)
+		return me;
 
 	return ret;
 }

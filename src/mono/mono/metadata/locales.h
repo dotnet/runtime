@@ -27,6 +27,14 @@ typedef enum {
 } MonoCompareOptions;
 
 extern void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoCultureInfo *this, MonoString *locale);
+extern MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_current_locale (MonoCultureInfo *ci);
+extern MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid (MonoCultureInfo *this, gint lcid);
+extern MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (MonoCultureInfo *this, MonoString *name);
+extern MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_specific_name (MonoCultureInfo *ci, MonoString *name);
+extern MonoArray *ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean neutral, MonoBoolean specific, MonoBoolean installed);
+extern MonoBoolean ves_icall_System_Globalization_CultureInfo_internal_is_lcid_neutral (gint lcid, MonoBoolean *is_neutral);
+extern void ves_icall_System_Globalization_CultureInfo_construct_datetime_format (MonoCultureInfo *this);
+extern void ves_icall_System_Globalization_CultureInfo_construct_number_format (MonoCultureInfo *this);
 extern void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoCompareInfo *comp, MonoString *locale);
 extern int ves_icall_System_Globalization_CompareInfo_internal_compare (MonoCompareInfo *this, MonoString *str1, gint32 off1, gint32 len1, MonoString *str2, gint32 off2, gint32 len2, gint32 options);
 extern void ves_icall_System_Globalization_CompareInfo_free_internal_collator (MonoCompareInfo *this);
