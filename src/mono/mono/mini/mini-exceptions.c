@@ -434,8 +434,10 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 							}
 						}
 
-						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
+						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+							mono_debugger_handle_exception (ei->data.filter, MONO_EXCEPTION_CLAUSE_FILTER, obj);
 							filtered = call_filter (ctx, ei->data.filter);
+					}
 
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
 						     mono_object_isinst (obj, mono_class_get (ji->method->klass->image, ei->data.token))) || filtered) {
@@ -455,6 +457,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 							}
 							if (mono_jit_trace_calls != NULL && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
+							mono_debugger_handle_exception (ei->handler_start, MONO_EXCEPTION_CLAUSE_NONE, obj);
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 							jit_tls->lmf = lmf;
 							g_free (trace);
@@ -470,6 +473,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 						    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
 							if (mono_jit_trace_calls != NULL && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
+							mono_debugger_handle_exception (ei->handler_start, MONO_EXCEPTION_CLAUSE_FINALLY, obj);
 							call_filter (ctx, ei->handler_start);
 						}
 						
