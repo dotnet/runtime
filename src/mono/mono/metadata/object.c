@@ -566,6 +566,18 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoClass *class)
 
 		class = iclass;
 	}
+	else
+	{
+		pvt->interface_offsets = mono_mempool_alloc0 (domain->mp, 
+				sizeof (gpointer) * (pvt->max_interface_id + 1));
+
+		/* initialize interface offsets */
+		for (i = 0; i <= class->max_interface_id; ++i) {
+			int slot = class->interface_offsets [i];
+			if (slot >= 0)
+				pvt->interface_offsets [i] = &(pvt->vtable [slot]);
+		}
+	}
 
 	mono_g_hash_table_insert (domain->proxy_vtable_hash, class, pvt);
 

@@ -27,6 +27,9 @@
 HANDLE mono_delegate_semaphore = NULL;
 CRITICAL_SECTION mono_delegate_section;
 
+static gunichar2 process_guid [36];
+static gboolean process_guid_set = FALSE;
+
 static MonoAssembly *
 mono_domain_assembly_preload (MonoAssemblyName *aname,
 			      gchar **assemblies_path,
@@ -907,4 +910,18 @@ ves_icall_System_AppDomain_InternalSetContext (MonoAppContext *mc)
 	mono_context_set (mc);
 	
 	return old_context;
+}
+
+MonoString *
+ves_icall_System_AppDomain_InternalGetProcessGuid (MonoString* newguid)
+{
+	mono_domain_lock (mono_root_domain);
+	if (process_guid_set) {
+		mono_domain_unlock (mono_root_domain);
+		return mono_string_new_utf16 (mono_domain_get (), process_guid, sizeof(process_guid)/2);
+	}
+	memcpy (process_guid, mono_string_chars(newguid), sizeof(process_guid));
+	process_guid_set = TRUE;
+	mono_domain_unlock (mono_root_domain);
+	return newguid;
 }
