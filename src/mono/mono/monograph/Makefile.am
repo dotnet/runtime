@@ -3,6 +3,12 @@ if PLATFORM_WIN32
 export HOST_CC
 endif
 
+if JIT_SUPPORTED
+runtime_lib=../mini/libmono.la
+else
+runtime_lib=../interpreter/libmint.la
+endif
+
 bin_PROGRAMS = monograph
 
 INCLUDES = 				\
@@ -11,10 +17,7 @@ INCLUDES = 				\
 	$(GLIB_CFLAGS)
 
 monograph_LDADD = \
-	../metadata/libmetadata.la	\
-	../io-layer/libwapi.la		\
-	../utils/libmonoutils.la	\
-	$(LIBGC_LIBS)			\
+	$(runtime_lib)			\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm

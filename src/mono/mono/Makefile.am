@@ -3,5 +3,5 @@ if ! PLATFORM_WIN32
 HANDLES = handles
 endif
 
-SUBDIRS = utils io-layer monoburg os cil metadata dis \
-      arch monograph interpreter mini tests benchmark $(HANDLES) profiler
+SUBDIRS = utils io-layer monoburg os cil metadata \
+      arch interpreter mini dis monograph tests benchmark $(HANDLES) profiler

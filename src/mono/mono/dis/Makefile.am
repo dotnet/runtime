@@ -4,6 +4,12 @@ if PLATFORM_WIN32
 export HOST_CC
 endif
 
+if JIT_SUPPORTED
+runtime_lib=../mini/libmono.la
+else
+runtime_lib=../interpreter/libmint.la
+endif
+
 bin_PROGRAMS = monodis
 
 noinst_LIBRARIES = libmonodis.a
@@ -24,10 +30,7 @@ monodis_SOURCES =	\
 
 monodis_LDADD = 			\
 	libmonodis.a			\
-	../metadata/libmetadata.la 	\
-	../io-layer/libwapi.la		\
-	../utils/libmonoutils.la	\
-	$(LIBGC_LIBS)			\
+	$(runtime_lib)			\
 	$(GMODULE_LIBS) 		\
 	$(GLIB_LIBS) 
 
