@@ -65,6 +65,26 @@ mono_object_new (MonoImage *image, guint32 type_token)
 	return o;
 }
 
+/**
+ * mono_object_clone:
+ * @obj: the object to clone
+ *
+ * Returns: A newly created object who is a shallow copy of @obj
+ */
+MonoObject *
+mono_object_clone (MonoObject *obj)
+{
+	MonoObject *o;
+	int size;
+	
+	size = obj->klass->instance_size;
+	o = mono_object_allocate (size);
+	
+	memcpy (o, obj, size);
+
+	return o;
+}
+
 /*
  * mono_new_szarray:
  * @image: image where the object is being referenced

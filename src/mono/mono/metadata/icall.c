@@ -236,16 +236,38 @@ ves_icall_System_Array_GetLowerBound (MonoMethod *mh, stackval *sp)
 	sp [0].type = VAL_I32;
 }
 
+static void 
+ves_icall_System_Object_MemberwiseClone (MonoMethod *mh, stackval *sp)
+{
+	MonoObject *o;
+
+	g_assert (sp [0].type == VAL_OBJ);
+
+	sp [0].data.p = mono_object_clone (sp [0].data.p);
+}
+
 static gpointer icall_map [] = {
-	"__array_Set",                   ves_icall_array_Set,
-	"__array_Get",                   ves_icall_array_Get,
-	"__array_ctor",                  ves_icall_array_ctor,
-	"__array_bound_ctor",            ves_icall_array_bound_ctor,
-	"System.Array::GetValue",        ves_icall_System_Array_GetValue,
-	"System.Array::SetValue",        ves_icall_System_Array_SetValue,
-	"System.Array::GetRank",         ves_icall_System_Array_GetRank,
-	"System.Array::GetLength",       ves_icall_System_Array_GetLength,
-	"System.Array::GetLowerBound",   ves_icall_System_Array_GetLowerBound,
+	/*
+	 * System.Array
+	 */
+	"__array_Set",                    ves_icall_array_Set,
+	"__array_Get",                    ves_icall_array_Get,
+	"__array_ctor",                   ves_icall_array_ctor,
+	"__array_bound_ctor",             ves_icall_array_bound_ctor,
+	"System.Array::GetValue",         ves_icall_System_Array_GetValue,
+	"System.Array::SetValue",         ves_icall_System_Array_SetValue,
+	"System.Array::GetRank",          ves_icall_System_Array_GetRank,
+	"System.Array::GetLength",        ves_icall_System_Array_GetLength,
+	"System.Array::GetLowerBound",    ves_icall_System_Array_GetLowerBound,
+
+	/*
+	 * System.Object
+	 */
+	"System.Object::MemberwiseClone", ves_icall_System_Object_MemberwiseClone,
+
+	/*
+	 * add other internal calls here
+	 */
 	NULL, NULL
 };
 

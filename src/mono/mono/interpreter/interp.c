@@ -1312,7 +1312,39 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			BREAK;
 		}
 		
-		CASE (CEE_CASTCLASS) ves_abort(); BREAK;
+		CASE (CEE_CASTCLASS) {
+			MonoObject *o;
+			MonoClass *c;
+			guint32 token;
+			gboolean found = FALSE;
+
+			++ip;
+			token = read32 (ip);
+
+			g_assert (sp [-1].type == VAL_OBJ);
+
+			if ((o = sp [-1].data.p)) {
+				c = o->klass;
+
+				/* 
+				 * fixme: this only works for class casts, but not for 
+				 * interface casts. 
+				 */
+				while (c) {
+					if (c->type_token == token) {
+						found = TRUE;
+						break;
+					}
+					c = c->parent;
+				}
+
+				g_assert (found);
+
+			}
+
+			ip += 4;
+			BREAK;
+		}
 		CASE (CEE_ISINST) ves_abort(); BREAK;
 		CASE (CEE_CONV_R_UN) ves_abort(); BREAK;
 		CASE (CEE_UNUSED58) ves_abort(); BREAK;
@@ -1364,7 +1396,6 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			token = read32 (ip);
 			ip += 4;
 			
-			printf ("FIELD %08x\n",token);
 			sp -= 2;
 			
 			g_assert (sp [0].type == VAL_OBJ);

@@ -13,9 +13,17 @@ public class TestObj {
 	}
 	public static int Main () {
 		TestObj obj = new TestObj ();
-		if (sbah + obj.bah + obj.amethod () == 8)
-			return 0;
-		return 1;
+		TestObj clone;
+		
+		if (sbah + obj.bah + obj.amethod () != 8)
+			return 1;
+
+		clone = (TestObj)obj.MemberwiseClone ();
+
+		if (clone.boh != 2)
+			return 1;
+		
+		return 0;
 	}
 }
 

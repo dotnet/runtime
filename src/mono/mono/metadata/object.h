@@ -36,5 +36,8 @@ mono_object_free      (MonoObject *o);
 MonoObject *
 mono_value_box        (MonoImage *image, guint32 etype, gpointer val);
 		      
+MonoObject *
+mono_object_clone     (MonoObject *obj);
+
 #endif
 
