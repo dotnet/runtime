@@ -80,6 +80,22 @@
   </tr>
 </table>
 
+@item Jul 3rd, 2002
+
+	Listen to Paolo Molaro do a talk on Mono at the WebIT
+	conference in Padova, Italy this coming friday.  Details are
+	<a href="http://www.webbit2001.org/event/eventview/534/">here</a>
+
+	You can also see a trip report from the Gnome in the South trip:
+	<a href="http://primates.ximian.com/~miguel/sur.html">here</a>
+
+	Miguel will be doing a couple of talks at the O'Reilly
+	conference about Mono: status update, progress and developing
+	applications with it.  Details are <a
+	href="http://conferences.oreillynet.com/cs/os2002/view/e_sess/2994">here</a>
+	and <a
+	href="http://conferences.oreillynet.com/cs/os2002/view/e_sess/2996">here</a>
+
 @item Jun 30, 2002
 
 	Martin Baulig fixed the remaining bugs that prevented MCS to
@@ -102,6 +118,9 @@
 	there are bindings for the GtkHTML widget (the one used by
 	Evolution's composer).  And Rachel also got the beginning of GNOME
 	bindings, that should simplify application development.
+
+	A big thanks goes to Dennis Hayes for getting the
+	Windows.Forms work together, and commiting so many stubs for Windows.Forms. 
 
 @item Jun 24, 2002
 
