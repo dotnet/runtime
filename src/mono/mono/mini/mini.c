@@ -3120,7 +3120,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (*ip != CEE_CALLI && check_call_signature (cfg, fsig, sp))
 				goto unverified;
 
-			if ((ins_flag & MONO_INST_TAILCALL) && cmethod && (*ip == CEE_CALL)) {
+			if ((ins_flag & MONO_INST_TAILCALL) && cmethod && (*ip == CEE_CALL) && (mono_metadata_signature_equal (method->signature, cmethod->signature))) {
 				int i;
 				/* FIXME: This assumes the two methods has the same number and type of arguments */
 				for (i = 0; i < n; ++i) {
