@@ -221,6 +221,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_OUT_OF_LINE_BBLOCKS 1
 #define MONO_ARCH_HAVE_PIC_AOT 1
 #define MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN 1
+#define MONO_ARCH_HAVE_CREATE_VARS 1
 
 gpointer*
 mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs);

@@ -840,12 +840,18 @@ mono_arch_allocate_vars (MonoCompile *m)
 				m->ret->inst_c0 = cinfo->ret.reg;
 			}
 			break;
+		case ArgValuetypeInReg:
+			/* Allocate a local to hold the result, the epilog will copy it to the correct place */
+			offset += 16;
+			m->ret->opcode = OP_REGOFFSET;
+			m->ret->inst_basereg = AMD64_RBP;
+			m->ret->inst_offset = - offset;
+			break;
 		default:
 			g_assert_not_reached ();
 		}
 		m->ret->dreg = m->ret->inst_c0;
 	}
-
 
 	/* Allocate locals */
 	offsets = mono_allocate_stack_slots (m, &locals_stack_size, &locals_stack_align);
@@ -891,7 +897,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 			 * are volatile across calls.
 			 * FIXME: Optimize this.
 			 */
-			if ((ainfo->storage == ArgInIReg) || (ainfo->storage == ArgInFloatSSEReg) || (ainfo->storage == ArgInDoubleSSEReg))
+			if ((ainfo->storage == ArgInIReg) || (ainfo->storage == ArgInFloatSSEReg) || (ainfo->storage == ArgInDoubleSSEReg) || (ainfo->storage == ArgValuetypeInReg))
 				inreg = FALSE;
 
 			inst->opcode = OP_REGOFFSET;
@@ -908,6 +914,8 @@ mono_arch_allocate_vars (MonoCompile *m)
 				inst->inst_basereg = AMD64_RBP;
 				inst->inst_offset = ainfo->offset + ARGS_OFFSET;
 				break;
+			case ArgValuetypeInReg:
+				break;
 			default:
 				NOT_IMPLEMENTED;
 			}
@@ -916,13 +924,32 @@ mono_arch_allocate_vars (MonoCompile *m)
 				inst->opcode = OP_REGOFFSET;
 				inst->inst_basereg = AMD64_RBP;
 				/* These arguments are saved to the stack in the prolog */
-				offset += 8;
+				if (ainfo->storage == ArgValuetypeInReg)
+					offset += 2 * sizeof (gpointer);
+				else
+					offset += sizeof (gpointer);
 				inst->inst_offset = - offset;
 			}
 		}
 	}
 
 	m->stack_offset = offset;
+
+	g_free (cinfo);
+}
+
+void
+mono_arch_create_vars (MonoCompile *cfg)
+{
+	MonoMethodSignature *sig;
+	CallInfo *cinfo;
+
+	sig = mono_method_signature (cfg->method);
+
+	cinfo = get_call_info (sig, FALSE);
+
+	if (cinfo->ret.storage == ArgValuetypeInReg)
+		cfg->ret_var_is_local = TRUE;
 
 	g_free (cinfo);
 }
@@ -2651,7 +2678,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		/* handle clobbering of sreg1 */
 		if (((spec [MONO_INST_DEST] == 'f' && spec [MONO_INST_SRC1] == 'f' && use_sse2) || spec [MONO_INST_CLOB] == '1' || spec [MONO_INST_CLOB] == 's') && ins->dreg != ins->sreg1) {
 			MonoInst *sreg2_copy = NULL;
-
+			MonoInst *copy;
 			gboolean fp = (spec [MONO_INST_SRC1] == 'f');
 
 			if (ins->dreg == ins->sreg2) {
@@ -2676,7 +2703,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					mono_regstate_free_int (rs, reg2);
 			}
 
-			MonoInst *copy = create_copy_ins (cfg, ins->dreg, ins->sreg1, NULL, fp);
+			copy = create_copy_ins (cfg, ins->dreg, ins->sreg1, NULL, fp);
 			DEBUG (g_print ("\tneed to copy sreg1 %s to dreg %s\n", mono_amd64_regname (ins->sreg1, fp), mono_amd64_regname (ins->dreg, fp)));
 			insert_before_ins (ins, tmp, copy);
 
@@ -4721,7 +4748,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
-	int alloc_size, pos, max_offset, i;
+	int alloc_size, pos, max_offset, i, quad;
 	guint8 *code;
 	CallInfo *cinfo;
 
@@ -4746,12 +4773,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	pos = 0;
 
 	if (method->save_lmf) {
+		gint32 lmf_offset;
 
 		pos = ALIGN_TO (pos + sizeof (MonoLMF), 16);
 
 		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, pos);
 
-		gint32 lmf_offset = - cfg->arch.lmf_offset;
+		lmf_offset = - cfg->arch.lmf_offset;
 
 		/* Save ip */
 		amd64_lea_membase (code, AMD64_R11, AMD64_RIP, 0);
@@ -4874,6 +4902,25 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			case ArgInDoubleSSEReg:
 				amd64_movsd_membase_reg (code, inst->inst_basereg, inst->inst_offset, ainfo->reg);
 				break;
+			case ArgValuetypeInReg:
+				for (quad = 0; quad < 2; quad ++) {
+					switch (ainfo->pair_storage [quad]) {
+					case ArgInIReg:
+						amd64_mov_membase_reg (code, inst->inst_basereg, inst->inst_offset + (quad * sizeof (gpointer)), ainfo->pair_regs [quad], sizeof (gpointer));
+						break;
+					case ArgInFloatSSEReg:
+						amd64_movss_membase_reg (code, inst->inst_basereg, inst->inst_offset + (quad * sizeof (gpointer)), ainfo->pair_regs [quad]);
+						break;
+					case ArgInDoubleSSEReg:
+						amd64_movsd_membase_reg (code, inst->inst_basereg, inst->inst_offset + (quad * sizeof (gpointer)), ainfo->pair_regs [quad]);
+						break;
+					case ArgNone:
+						break;
+					default:
+						g_assert_not_reached ();
+					}
+				}
+				break;
 			default:
 				break;
 			}
@@ -4895,6 +4942,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	if (method->save_lmf) {
+		gint32 lmf_offset;
+
 		if (lmf_tls_offset != -1) {
 			/* Load lmf quicky using the FS register */
 			x86_prefix (code, X86_FS_PREFIX);
@@ -4910,7 +4959,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 								 (gpointer)"mono_get_lmf_addr");		
 		}
 
-		gint32 lmf_offset = - cfg->arch.lmf_offset;
+		lmf_offset = - cfg->arch.lmf_offset;
 
 		/* Save lmf_addr */
 		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), AMD64_RAX, 8);
@@ -4939,9 +4988,10 @@ void
 mono_arch_emit_epilog (MonoCompile *cfg)
 {
 	MonoMethod *method = cfg->method;
-	int pos, i;
+	int quad, pos, i;
 	guint8 *code;
 	int max_epilog_size = 16;
+	CallInfo *cinfo;
 	
 	if (cfg->method->save_lmf)
 		max_epilog_size += 256;
@@ -5017,6 +5067,32 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			}
 		}
 	}
+
+	/* Load returned vtypes into registers if needed */
+	cinfo = get_call_info (mono_method_signature (method), FALSE);
+	if (cinfo->ret.storage == ArgValuetypeInReg) {
+		ArgInfo *ainfo = &cinfo->ret;
+		MonoInst *inst = cfg->ret;
+
+		for (quad = 0; quad < 2; quad ++) {
+			switch (ainfo->pair_storage [quad]) {
+			case ArgInIReg:
+				amd64_mov_reg_membase (code, ainfo->pair_regs [quad], inst->inst_basereg, inst->inst_offset + (quad * sizeof (gpointer)), sizeof (gpointer));
+				break;
+			case ArgInFloatSSEReg:
+				amd64_movss_reg_membase (code, ainfo->pair_regs [quad], inst->inst_basereg, inst->inst_offset + (quad * sizeof (gpointer)));
+				break;
+			case ArgInDoubleSSEReg:
+				amd64_movsd_reg_membase (code, ainfo->pair_regs [quad], inst->inst_basereg, inst->inst_offset + (quad * sizeof (gpointer)));
+				break;
+			case ArgNone:
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+		}
+	}
+	g_free (cinfo);
 
 	amd64_leave (code);
 	amd64_ret (code);
@@ -5124,9 +5200,11 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_R8: {
+			guint8 *pos;
+
 			code = (guint8*)ALIGN_TO (code, 8);
 
-			guint8* pos = cfg->native_code + patch_info->ip.i;
+			pos = cfg->native_code + patch_info->ip.i;
 
 			*(double*)code = *(double*)patch_info->data.target;
 
@@ -5140,9 +5218,11 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			break;
 		}
 		case MONO_PATCH_INFO_R4: {
+			guint8 *pos;
+
 			code = (guint8*)ALIGN_TO (code, 8);
 
-			guint8* pos = cfg->native_code + patch_info->ip.i;
+			pos = cfg->native_code + patch_info->ip.i;
 
 			*(float*)code = *(float*)patch_info->data.target;
 
