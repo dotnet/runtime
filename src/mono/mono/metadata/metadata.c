@@ -1267,8 +1267,8 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 			break;
 		case MONO_TYPE_CMOD_REQD:
 		case MONO_TYPE_CMOD_OPT:
-			count ++;
 			mono_metadata_parse_custom_mod (m, &(type->modifiers [count]), ptr, &ptr);
+			count ++;
 			break;
 		default:
 			found = FALSE;
