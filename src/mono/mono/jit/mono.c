@@ -170,8 +170,8 @@ static void
 usage (char *name)
 {
 	fprintf (stderr,
-		 "%s %s, the Mono ECMA CLI JIT Compiler, (C) 2001, 2002 Ximian, Inc.\n\n"
-		 "Usage is: %s [options] executable args...\n\n", name,  VERSION, name);
+		 "mono %s, the Mono ECMA CLI JIT Compiler, (C) 2001, 2002 Ximian, Inc.\n\n"
+		 "Usage is: %s [options] executable args...\n\n",  VERSION, name);
 	fprintf (stderr,
 		 "Runtime Debugging:\n"
 		 "    -d                 debug the jit, show disassembler output.\n"
