@@ -858,13 +858,6 @@ arch_compile_method (MonoMethod *method)
 			method->klass->name, method->name, method, method->addr);
 	}
 
-	/*
-	{
-		static int x = 0;
-		if (!strcmp (method->klass->name, "String") && !strcmp (method->name, "ToCharArray"))
-			if (x++) exit (0);
-	}
-	*/
 	return method->addr;
 }
 
