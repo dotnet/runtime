@@ -101,7 +101,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 	indent [0] = 0;
 
 	while (ptr < end){
-		for (i = 0; i < mh->num_clauses; ++i) {
+		for (i = mh->num_clauses - 1; i >= 0 ; --i) {
 			if ((mh->clauses[i].flags == 0 || mh->clauses[i].flags == 2) && ptr == start + mh->clauses[i].try_offset) {
 				fprintf (output, "\t%s.try { // %d\n", indent, i);
 				CODE_INDENT;
