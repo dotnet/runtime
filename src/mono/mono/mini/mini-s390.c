@@ -4811,11 +4811,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				if (ainfo->reg == STK_BASE) {
 					s390_lr  (code, s390_r13, ainfo->reg);
 					s390_ahi (code, s390_r13, alloc_size);
+					s390_l   (code, s390_r13, 0, s390_r13, 
+						  ainfo->offparm + S390_MINIMAL_STACK_SIZE);
 					code = emit_memcpy (code, abs(ainfo->vtsize), 
 							    inst->inst_basereg, 
-							    inst->inst_offset, s390_r13, 
-							    ainfo->offparm + 
-							    S390_MINIMAL_STACK_SIZE);
+							    inst->inst_offset, s390_r13, 0);
 				} else {
 					code = emit_memcpy (code, abs(ainfo->vtsize), 
 							    inst->inst_basereg, 

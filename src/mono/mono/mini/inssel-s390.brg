@@ -273,7 +273,7 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 	int soffset   = vt->inst_offset;
 	int tmpr;
 	
-//printf("OP_OUTARG_VT(CEE_LDOBJ(base))\n");
+printf("OP_OUTARG_VT(CEE_LDOBJ(base))\n");
 	if (size < 0) { 
 		size = -size;
 		if (start_reg != STK_BASE) {
@@ -307,28 +307,32 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (OP_S390_ARGPTR)) {
 	int soffset   = vt->inst_offset;
 	int tmpr;
 
-//printf("OP_OUTARG_VT(CEE_LDOBJ(OP_S390_ARGPTR))\n");
+printf("OP_OUTARG_VT(CEE_LDOBJ(OP_S390_ARGPTR))\n");
 	if (size < 0) { 
 		size = -size;
-		MONO_EMIT_NEW_MOVE (s, STK_BASE, tree->inst_imm,
-				    vt->inst_basereg, soffset, size);
 		if (start_reg != STK_BASE) {
+			MONO_EMIT_NEW_MOVE (s, STK_BASE, tree->inst_imm,
+					    vt->inst_basereg, soffset, size);
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, start_reg, 
 						 STK_BASE, tree->sreg2);
-		}
-	} else {
-		if (start_reg != STK_BASE) {
-			MONO_OUTPUT_VTR (s, size, start_reg, vt->inst_basereg, soffset);
 		} else {
-			MONO_OUTPUT_VTS (s, size, STK_BASE, 
-					 tree->inst_imm+sizeof(gpointer), 
-				  	 vt->inst_basereg, soffset);
+			MONO_EMIT_NEW_MOVE (s, STK_BASE, 
+					    tree->inst_imm+sizeof(gpointer),
+					    vt->inst_basereg, soffset, size);
 			tmpr = mono_regstate_next_int (s->rs);
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, STK_BASE,
 						 tree->inst_imm+sizeof(gpointer));
 			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, 
 						     STK_BASE, tree->inst_imm,
 						     tmpr);
+		}
+	} else {
+		if (start_reg != STK_BASE) {
+			MONO_OUTPUT_VTR (s, size, start_reg, vt->inst_basereg, soffset);
+		} else {
+			MONO_OUTPUT_VTS (s, size, STK_BASE, 
+					 tree->inst_imm,
+				  	 vt->inst_basereg, soffset);
 		}	
 	}
 }
@@ -338,15 +342,26 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (OP_REGOFFSET)) "0" {
 	int start_reg = tree->sreg1;
 	int size      = tree->unused;
 	int soffset   = vt->inst_offset;
+	int tmpr;
 
-//printf("OP_OUTARG_VT(CEE_LDOBJ(OP_REGOFFSET))\n");
+printf("OP_OUTARG_VT(CEE_LDOBJ(OP_REGOFFSET))\n");
 	if (size < 0) { 
 		size = -size;
-		MONO_EMIT_NEW_MOVE (s, STK_BASE, tree->sreg2, 
-				    vt->inst_basereg, soffset, size);
 		if (start_reg != STK_BASE) {
+			MONO_EMIT_NEW_MOVE (s, STK_BASE, tree->sreg2, 
+					    vt->inst_basereg, soffset, size);
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, start_reg, 
 						 STK_BASE, tree->sreg2);
+		} else {
+			MONO_EMIT_NEW_MOVE (s, STK_BASE, 
+					    tree->sreg2+sizeof(gpointer),
+					    vt->inst_basereg, soffset, size);
+			tmpr = mono_regstate_next_int (s->rs);
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, STK_BASE,
+						 tree->sreg2+sizeof(gpointer));
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, 
+						     STK_BASE, tree->sreg2,
+						     tmpr);
 		}
 	} else {
 		if (start_reg != STK_BASE) {
@@ -363,13 +378,24 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (OP_S390_LOADARG)) {
 	int start_reg = tree->sreg1;
 	int size      = -tree->unused;
 	int soffset   = vt->inst_offset;
+	int tmpr;
 
-//printf("OP_OUTARG_VT(CEE_LDOBJ(OP_S390_LOADARG))\n");
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, start_reg, STK_BASE, soffset);
-	MONO_EMIT_NEW_MOVE (s, STK_BASE, tree->sreg2, start_reg, 0, size);
+printf("OP_OUTARG_VT(CEE_LDOBJ(OP_S390_LOADARG))\n");
 	if (start_reg != STK_BASE) {
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, start_reg, STK_BASE, soffset);
+		MONO_EMIT_NEW_MOVE (s, STK_BASE, tree->sreg2, start_reg, 0, size);
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, start_reg, 
 					 STK_BASE, tree->sreg2);
+	} else {
+		MONO_EMIT_NEW_MOVE (s, STK_BASE, 
+				    tree->inst_imm+sizeof(gpointer),
+				    vt->inst_basereg, soffset, size);
+		tmpr = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, STK_BASE,
+					 tree->inst_imm+sizeof(gpointer));
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, 
+					     STK_BASE, tree->inst_imm,
+					     tmpr);
 	}
 }
 
@@ -398,7 +424,7 @@ stmt: OP_OUTARG_VT (reg) {
 	int soffset   = tree->sreg2;
 	int tmpr;
 
-//printf("OP_OUTARG_VT(reg)\n");
+printf("OP_OUTARG_VT(reg)\n");
 	if (size < 0) { 
 		size = -size;
 		MONO_EMIT_NEW_MOVE (s, STK_BASE, soffset, 
