@@ -4182,11 +4182,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			x86_test_reg_reg (code, X86_EAX, X86_EAX);
 			buf = code;
 			x86_branch8 (code, X86_CC_NE, 0, 0);
+			x86_push_imm (code, cfg->domain);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
 			x86_patch (buf, code);
 		}
 		else {
 			g_assert (!cfg->compile_aot);
+			x86_push_imm (code, cfg->domain);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
 		}
 	}

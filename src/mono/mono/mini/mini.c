@@ -7298,15 +7298,15 @@ mono_get_lmf_addr (void)
 
 /* Called by native->managed wrappers */
 void
-mono_jit_thread_attach ()
+mono_jit_thread_attach (MonoDomain *domain)
 {
 #ifdef HAVE_KW_THREAD
 	if (!mono_lmf_addr) {
-		mono_thread_attach (mono_domain_get ());
+		mono_thread_attach (domain);
 	}
 #else
 	if (!TlsGetValue (mono_jit_tls_id))
-		mono_thread_attach (mono_domain_get ());
+		mono_thread_attach (domain);
 #endif
 }	
 
