@@ -793,6 +793,7 @@ tree_allocate_regs (MonoFlowGraph *cfg, MBTree *tree, int goal, MonoRegSet *rs,
 	       
 	default:
 		/* do nothing */
+		break;
 	}
 
 #ifdef DEBUG_REGALLOC

@@ -8,6 +8,7 @@
  */
 
 #include <config.h>
+#include <string.h>
 
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/appdomain.h>
