@@ -3445,7 +3445,7 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 void
 mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 {
-#ifndef PLATFORM_WIN32
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	struct sigaltstack sa;
 
 	sa.ss_sp = tls->signal_stack;
