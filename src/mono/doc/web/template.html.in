@@ -2,6 +2,7 @@
 <html>
 <head>
 <title>#TITLE#</title>
+<link rel="icon" href="../MonoIcon.png" type="image/png">
 <!-- background-image: url("images/bgsquares.gif");  -->
 <style type="text/css">
 <!--
