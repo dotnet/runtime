@@ -3,8 +3,8 @@ check-local: test
 TEST_PROG = ../interpreter/mint
 JITTEST_PROG = ../mini/mono
 
-TEST_PROG_RUN = MONO_PATH=$(mcs_topdir)/class/lib/default $(LIBTOOL) --mode=execute $(TEST_PROG)
-JITTEST_PROG_RUN = MONO_PATH=$(mcs_topdir)/class/lib/default $(LIBTOOL) --mode=execute $(JITTEST_PROG)
+TEST_PROG_RUN = MONO_PATH=$(mcs_topdir)/class/lib/default MONO_SHARED_DIR=$(mono_build_root)/runtime $(LIBTOOL) --mode=execute $(TEST_PROG)
+JITTEST_PROG_RUN = MONO_PATH=$(mcs_topdir)/class/lib/default MONO_SHARED_DIR=$(mono_build_root)/runtime $(LIBTOOL) --mode=execute $(JITTEST_PROG)
 
 RUNTIME_ARGS=--config tests-config --optimize=all
 

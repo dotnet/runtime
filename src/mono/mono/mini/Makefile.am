@@ -31,7 +31,7 @@ static_libs=	\
 	$(libgc_static_libs) \
 	$(ICU_LIBS)
 
-RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/default ./mono --config $(top_builddir)/data/config
+RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/default MONO_SHARED_DIR=$(mono_build_root)/runtime ./mono --config $(top_builddir)/data/config
 
 MCS = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe --unsafe -nowarn:0162
 ILASM = $(RUNTIME) $(mcs_topdir)/ilasm/ilasm.exe
