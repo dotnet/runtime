@@ -1342,16 +1342,12 @@ lreg: CONV_I8 (reg) {
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 
-	// fixme: check if the branch8 is to the right location
-	x86_breakpoint (s->code);
-
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 0);
 	x86_alu_reg_reg (s->code, X86_XOR, tree->reg2, tree->reg2);
-	x86_branch8 (s->code, X86_CC_GE, 4, TRUE);
+	x86_branch8 (s->code, X86_CC_GE, 5, TRUE);
 	i1 = s->code;
 	x86_mov_reg_imm (s->code, tree->reg2, -1); 
-	g_assert ((s->code - i1) == 4);
-	g_assert_not_reached ();
+	g_assert ((s->code - i1) == 5);
 }
 
 lreg: CONV_U8 (CONST_I4) 1 {
@@ -1864,6 +1860,10 @@ freg: LDIND_R8 (locaddr) {
 	x86_fld_membase (s->code, X86_EBP, tree->left->data.i, TRUE);
 }
 
+freg: LDIND_R8 (reg) {
+	x86_fld_membase (s->code, tree->left->reg1, 0, TRUE);
+}
+
 freg: ADD (freg, freg) {
 	x86_fp_op_reg (s->code, X86_FADD, 1, TRUE);
 }
@@ -1898,6 +1898,10 @@ stmt: STIND_R4 (locaddr, freg) {
 
 stmt: STIND_R8 (locaddr, freg) {
 	x86_fst_membase (s->code, X86_EBP, tree->left->data.i, TRUE, TRUE);
+}
+
+stmt: STIND_R8 (reg, freg) {
+	x86_fst_membase (s->code, tree->left->reg1, 0, TRUE, TRUE);
 }
 
 stmt: ARG (freg) {

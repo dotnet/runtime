@@ -80,6 +80,20 @@ case CEE_##name: {                                                            \
 	break;                                                                \
 }
 
+#define MAKE_SPILLED_BI_ALU(name)                                             \
+case CEE_##name: {                                                            \
+	++ip;                                                                 \
+	sp -= 2;                                                              \
+	t1 = mono_ctree_new (mp, MB_TERM_##name, sp [0], sp [1]);             \
+        g_assert (sp [0]->svt == sp [1]->svt);                                \
+        t1->svt = sp [0]->svt;                                                \
+        t1 = mono_store_tree (cfg, -1, t1, &t2);                              \
+        g_assert (t1);                                                        \
+        ADD_TREE (t1);                                                        \
+	PUSH_TREE (t2, t2->svt);                                              \
+	break;                                                                \
+}
+
 #define MAKE_LDIND(name, op, svt)                                             \
 case CEE_##name: {                                                            \
 	++ip;                                                                 \
@@ -222,6 +236,12 @@ map_stvalue_type (MonoClass *class)
 
 	if (!class->inited)
 		mono_jit_init_class (class);
+
+	if (class == mono_defaults.double_class)
+		return MB_TERM_STIND_R8;
+
+	if (class == mono_defaults.single_class)
+		return MB_TERM_STIND_R4;
 
 	size =  class->instance_size - sizeof (MonoObject);
 
@@ -2116,10 +2136,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		MAKE_BI_ALU (SHR)
 		MAKE_BI_ALU (SHR_UN)
 		MAKE_BI_ALU (MUL)
-		MAKE_BI_ALU (DIV)
-		MAKE_BI_ALU (DIV_UN)
-		MAKE_BI_ALU (REM)
-		MAKE_BI_ALU (REM_UN)
+		MAKE_SPILLED_BI_ALU (DIV)
+		MAKE_SPILLED_BI_ALU (DIV_UN)
+		MAKE_SPILLED_BI_ALU (REM)
+		MAKE_SPILLED_BI_ALU (REM_UN)
 
 		MAKE_LDIND (LDIND_I1,  MB_TERM_LDIND_I1, VAL_I32)
 		MAKE_LDIND (LDIND_U1,  MB_TERM_LDIND_U1, VAL_I32)

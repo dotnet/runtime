@@ -1,6 +1,9 @@
+* implementet all floating point instruction in x86.brg, we also need to check
+  the floating branch instruction - some of them seems to be wrong, we need to
+  write better tests for that.
+* implement exceptions
 * correctly align value types on the stack and in arrays
 * enum types can have several base types (not only int32)
 * document the functions and variables in the JIT 
-* compute the frame size
 * implement a register set for FP registers (just count register usage on x86)
 
