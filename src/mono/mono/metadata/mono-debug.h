@@ -89,7 +89,6 @@ extern GHashTable *mono_debug_handles;
 void mono_debug_init (MonoDomain *domain, MonoDebugFormat format);
 void mono_debug_init_2 (MonoAssembly *assembly);
 void mono_debug_cleanup (void);
-MonoDebugDomainData *mono_debug_get_domain_data (MonoDebugHandle *handle, MonoDomain *domain);
 void mono_debug_add_wrapper (MonoMethod *method, gpointer wrapper, MonoDomain *domain);
 
 void mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDomain *domain);
