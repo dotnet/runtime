@@ -123,7 +123,7 @@ TestDriver.dll: TestDriver.cs
 	$(MCS) /out:TestDriver.dll /target:library TestDriver.cs
 
 cpu-pentium.h: cpu-pentium.md genmdesc$(EXEEXT)
-	./genmdesc $(srcdir)/cpu-pentium.md cpu-pentium.h pentium
+	./genmdesc $(srcdir)/cpu-pentium.md cpu-pentium.h pentium_desc
 
 cpu-g4.h: cpu-g4.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-g4.md cpu-g4.h ppcg4

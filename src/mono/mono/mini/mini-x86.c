@@ -1113,7 +1113,7 @@ typedef struct {
 	int prev_use;
 } RegTrack;
 
-static const char*const * ins_spec = pentium;
+static const char*const * ins_spec = pentium_desc;
 
 static void
 print_ins (int i, MonoInst *ins)
