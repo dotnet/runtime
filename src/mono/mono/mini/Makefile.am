@@ -319,7 +319,7 @@ stat3: mono bench.exe
 docu: mini.sgm
 	docbook2txt mini.sgm
 
-clean:
+clean-local:
 	rm -f mono a.out gmon.out *.o test.exe
 
 pkgconfigdir = $(libdir)/pkgconfig
