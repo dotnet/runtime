@@ -766,8 +766,10 @@ dwarf2_write_class (MonoDebugHandle *debug, MonoClass *klass, int idx)
 		dwarf2_write_string_type (debug, klass, idx);
 		break;
 	default:
+#if 0
 		g_message (G_STRLOC ": %s.%s - 0x%x - 0x%x", klass->name_space, klass->name,
 			   klass->byval_arg.type, klass->flags);
+#endif
 
 		// DW_TAG_basic_type
 		dwarf2_write_byte (debug->f, ABBREV_BASE_TYPE);
