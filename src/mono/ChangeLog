@@ -1,5 +1,9 @@
 2004-05-27  Gert Driesen (drieseng@users.sourceforge.net)
 
+	* monowiz.win32.nsi: normalized line-endings to unix (LF)
+
+2004-05-27  Gert Driesen (drieseng@users.sourceforge.net)
+
 	* monowiz.win32.nsi: do not include mono subdirectory in
 	MonoConfigDir registry key, to match batch files
 
