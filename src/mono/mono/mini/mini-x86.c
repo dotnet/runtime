@@ -2246,12 +2246,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			x86_mul_reg (code, non_eax_reg, FALSE);
 			/* save before the check since pop and mov don't change the flags */
+			if (ins->dreg != X86_EAX)
+				x86_mov_reg_reg (code, ins->dreg, X86_EAX, 4);
 			if (saved_edx)
 				x86_pop_reg (code, X86_EDX);
 			if (saved_eax)
 				x86_pop_reg (code, X86_EAX);
-			if (ins->dreg != X86_EAX)
-				x86_mov_reg_reg (code, ins->dreg, X86_EAX, 4);
 			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_O, FALSE, "OverflowException");
 			break;
 		}
@@ -2263,10 +2263,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_mov_reg_imm (code, ins->dreg, 0);
 			break;
 		case CEE_CONV_I4:
-		case CEE_CONV_U4:
 		case OP_MOVE:
 			x86_mov_reg_reg (code, ins->dreg, ins->sreg1, 4);
 			break;
+		case CEE_CONV_U4:
+			g_assert_not_reached ();
 		case CEE_JMP: {
 			/*
 			 * Note: this 'frame destruction' logic is useful for tail calls, too.
