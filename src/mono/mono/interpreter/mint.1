@@ -50,6 +50,13 @@ like this: `class:method' or `class::method'
 .I "--opcode-count"
 Displays the number of opcodes executed
 .PP
+.SH ENVIRONMENT VARIABLES
+.TP
+.I "MONO_PATH"
+Provides a search path to mono and mint where to look for library files.
+Directories are separated by the platform path separator (colons on unix). Example:
+.B /home/username/lib:/usr/local/mono/lib
+.PP
 .SH FILES
 Assemblies are lodaed from the installation lib directory.  If you set
 `prefix' to /usr, the assemblies will be located in /usr/lib.

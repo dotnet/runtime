@@ -108,6 +108,14 @@ Dumps the contents of the typeref table
 .PP
 If no flags are specified the program dumps the content of the image
 in a format that can be used to rountrip the code. 
+.PP
+.SH ENVIRONMENT VARIABLES
+.TP
+.I "MONO_PATH"
+Provides a search path to mono and mint where to look for library files.
+Directories are separated by the platform path separator (colons on unix). Example:
+.B /home/username/lib:/usr/local/mono/lib
+.PP
 .SH AUTHOR
 monodis was written by Miguel de Icaza, Paolo Molaro and Dietmar Maurer.
 .SH SEE ALSO
