@@ -213,7 +213,7 @@ mono_trace_set_mask_string (char *value)
 
 	const char *valid_flags[] = {"asm", "type", "dll", "gc", "cfg", "aot", "all", NULL};
 	const MonoTraceMask	valid_masks[] = {MONO_TRACE_ASSEMBLY, MONO_TRACE_TYPE, MONO_TRACE_DLLIMPORT,
-                                                 MONO_TRACE_GC, MONO_TRACE_CONFIG, MONO_TRACE_ALL };
+                                                 MONO_TRACE_GC, MONO_TRACE_CONFIG, MONO_TRACE_AOT, MONO_TRACE_ALL };
 
 	if(!value)
 		return;
