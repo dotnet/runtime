@@ -2927,11 +2927,16 @@ stmt: CALL_VOID (this, ADDR_G) {
 }
 
 stmt: CALL_VOID (this, reg) {
-	int lreg = tree->left->reg1;
 	int treg = X86_EAX;
+	int lreg = tree->left->reg1;
+	int rreg = tree->right->reg1;
 
-	if (lreg == treg) 
+	if (lreg == treg || rreg == treg) 
 		treg = X86_EDX;
+	if (lreg == treg || rreg == treg) 
+		treg = X86_ECX;
+	if (lreg == treg || rreg == treg) 
+		mono_assert_not_reached ();
 	
 	if (tree->left->op != MB_TERM_NOP) {
 		mono_assert (lreg >= 0);
