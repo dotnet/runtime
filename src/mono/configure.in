@@ -1,6 +1,6 @@
 AC_INIT(README)
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(mono, 0.3)
+AM_INIT_AUTOMAKE(mono, 0.4)
 AM_MAINTAINER_MODE
 
 AC_PROG_CC
@@ -33,5 +33,5 @@ mono/metadata/Makefile
 mono/dis/Makefile
 mono/cil/Makefile
 mono/interpreter/Makefile
-mono/doc/Makefile
+doc/Makefile
 ])
