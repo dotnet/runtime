@@ -2823,7 +2823,8 @@ usage (void)
 		 "Usage is: mint [options] executable args...\n", VERSION);
 	fprintf (stderr,
 		 "Valid Options are:\n"
-		 "--trace\n");
+		 "--trace\n"
+		 "--opcode-count\n");
 	exit (1);
 }
 
@@ -2857,6 +2858,8 @@ main (int argc, char *argv [])
 			tracing = 1;
 		if (strcmp (argv [i], "--opcode-count") == 0)
 			ocount = 1;
+		if (strcmp (argv [i], "--help") == 0)
+			usage ();
 	}
 	
 	file = argv [i];

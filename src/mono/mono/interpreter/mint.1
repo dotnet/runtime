@@ -1,0 +1,44 @@
+.\" 
+.\" mint manual page.
+.\" (C) Ximian, Inc. 
+.\" Author:
+.\"   Miguel de Icaza (miguel@gnu.org)
+.\"
+.TH Mono "Mono 1.0"
+.SH NAME
+mint \- Mono ECMA-CLI interpreter.
+.SH SYNOPSIS
+.PP
+.B mint
+[\-\-help] [\-\-opcode\-count] [\-\-trace]
+program.exe [arguments...]
+.SH DESCRIPTION
+The \fImint\fP program is an interpreter for ECMA CLI byte codes.  It
+executes the bytecodes contains in 
+.I program.exe
+and optionally passes
+the
+.I arguments
+to it. 
+.SH OPTIONS
+The following Generic options are supported:
+.TP
+.I "--help", "-h"
+Displays usage instructions.
+.TP
+.I "--trace"
+Displays opcodes and stack state as the interpreter executes the image
+.I "--opcode-count"
+Displays the number of opcodes executed.
+.PP
+If no flags are specified the program dumps the content of the image
+in a format that can be used to rountrip the code. 
+.SH FILES
+Assemblies are lodaed from the installation lib directory.  If you set
+`prefix' to /usr, the assemblies will be located in /usr/lib.
+.SH MAILING LISTS
+Visit http://mail.ximian.com/mailman/mono-list for details.
+.SH WEB SITE
+Visit: http://www.go-mono.com for details
+.SH SEE ALSO
+.BR monodis(1)

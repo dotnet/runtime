@@ -17,3 +17,7 @@ mint_LDADD =				\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm
+
+man_MANS = mint.1
+
+EXTRA_DIST = $(man_MANS)
