@@ -114,7 +114,7 @@ class Test {
 
 		if (o.GetType () != myobj.GetType ())
 			return 1;
-		
+
 		MyStruct myres = o.Add (2, out res, 3);
 
 		Console.WriteLine ("Result: " + myres.a + " " +

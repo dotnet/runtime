@@ -2393,7 +2393,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			arg_sp = sp -= cm->signature->param_count;
 
-			if ((cm->flags & METHOD_ATTRIBUTE_FINAL) ||
+			if ((cm->flags & METHOD_ATTRIBUTE_FINAL && cm->klass != mono_defaults.object_class) ||
 			    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
 				virtual = 0;
 
@@ -2514,9 +2514,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				if (virtual || (csig->hasthis && 
 						!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL) &&
-						(cm->klass->marshalbyref || 
-						 shared_to_unshared_call ||
-						 cm->klass == mono_defaults.object_class))) {
+						(cm->klass->marshalbyref || shared_to_unshared_call))) {
+
 					mono_class_init (cm->klass);
 					
 					if (cm->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
