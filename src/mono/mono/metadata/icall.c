@@ -5677,8 +5677,8 @@ static const IcallEntry interlocked_icalls [] = {
 };
 
 static const IcallEntry mutex_icalls [] = {
-	{"CreateMutex_internal", ves_icall_System_Threading_Mutex_CreateMutex_internal},
-	{"ReleaseMutex_internal", ves_icall_System_Threading_Mutex_ReleaseMutex_internal}
+	{"CreateMutex_internal(bool,string,bool&)", ves_icall_System_Threading_Mutex_CreateMutex_internal},
+	{"ReleaseMutex_internal(intptr)", ves_icall_System_Threading_Mutex_ReleaseMutex_internal}
 };
 
 static const IcallEntry nativeevents_icalls [] = {

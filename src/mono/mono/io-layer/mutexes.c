@@ -140,8 +140,7 @@ static gboolean mutex_is_owned (gpointer handle)
 	} else {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION
-			   ": mutex handle %p not owned by %d:%ld", handle,
-			   getpid (), pthread_self ());
+			   ": mutex handle %p not owned by %d:%ld, but locked %d times by %d:%ld", handle, getpid (), pthread_self (), mutex_handle->recursion, mutex_handle->pid, mutex_handle->tid);
 #endif
 
 		return(FALSE);
@@ -247,6 +246,12 @@ gpointer CreateMutex(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean ow
 	thr_ret = mono_mutex_lock (&named_mutex_mutex);
 	g_assert (thr_ret == 0);
 
+	/* Need to blow away any old errors here, because code tests
+	 * for ERROR_ALREADY_EXISTS on success (!) to see if a mutex
+	 * was freshly created
+	 */
+	SetLastError (ERROR_SUCCESS);
+	
 	if(name!=NULL) {
 		utf8_name=g_utf16_to_utf8 (name, -1, NULL, NULL, NULL);
 	} else {
@@ -273,6 +278,12 @@ gpointer CreateMutex(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean ow
 			g_free (utf8_name);
 			_wapi_handle_ref (handle);
 			ret = handle;
+
+			/* Not an error, but this is how the caller is
+			 * informed that the mutex wasn't freshly
+			 * created
+			 */
+			SetLastError (ERROR_ALREADY_EXISTS);
 			goto cleanup;
 		}
 		/* Otherwise fall through to create the mutex. */

@@ -52,8 +52,7 @@ extern MonoString* ves_icall_System_Threading_Thread_GetName_internal (MonoThrea
 extern void ves_icall_System_Threading_Thread_SetName_internal (MonoThread *this_obj, MonoString *name);
 extern void ves_icall_System_Threading_Thread_SlotHash_store(MonoObject *data);
 extern MonoObject *ves_icall_System_Threading_Thread_SlotHash_lookup(void);
-extern HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal(MonoBoolean owned, MonoString *name);
-extern void ves_icall_System_Threading_Mutex_ReleaseMutex_internal(HANDLE handle);
+extern HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal(MonoBoolean owned, MonoString *name, MonoBoolean *created);
 extern void ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handle );
 extern HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, MonoBoolean initial, MonoString *name);
 extern gboolean ves_icall_System_Threading_Events_SetEvent_internal (HANDLE handle);
