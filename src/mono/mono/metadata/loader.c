@@ -281,7 +281,6 @@ ves_map_ffi_type (MonoType *type)
 	return rettype;
 }
 
-extern cos();
 static void
 fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 {
