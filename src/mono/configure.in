@@ -56,6 +56,7 @@ AC_CHECK_LIB(pthread, pthread_create, [
 		], [
 			# Works!
 			AC_MSG_RESULT(ok)
+			AC_DEFINE(HAVE_PTHREAD_MUTEX_TIMEDLOCK)
 		], [
 			AC_MSG_RESULT(no)
 
@@ -69,10 +70,12 @@ AC_CHECK_LIB(pthread, pthread_create, [
 			], [
 				AC_MSG_RESULT(ok)
 				pthread_CFLAGS="-D_GNU_SOURCE"
+				AC_DEFINE(HAVE_PTHREAD_MUTEX_TIMEDLOCK)
 			], [
 				AC_MSG_RESULT(no)
 				dnl Add other variants here
-				AC_MSG_ERROR(Need pthread_mutex_timedlock)
+				#AC_MSG_ERROR(Need pthread_mutex_timedlock)
+				AC_MSG_WARN(Working around pthread_mutex_timedlock)
 			])
 		])
 		CPPFLAGS=$orig_CPPFLAGS

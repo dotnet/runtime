@@ -655,7 +655,12 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 		obj->synchronisation.recursion_count++;
 		return(TRUE);
 	}
-	
+
+#ifndef HAVE_PTHREAD_MUTEX_TIMEDLOCK
+	/* Nasty temporary kludge to work around older pthreads */
+#warning("Limiting Try_Enter(timeout) because of missing pthread_mutex_timedlock()");
+	ms=0;
+#endif
 	if(ms==0) {
 		ret=pthread_mutex_trylock(&obj->synchronisation.mutex);
 		if(ret==0) {
@@ -670,6 +675,7 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 			return(FALSE);
 		}
 	} else {
+#ifdef HAVE_PTHREAD_MUTEX_TIMEDLOCK
 		struct timespec timeout;
 		struct timeval now;
 		div_t divvy;
@@ -693,6 +699,7 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 #endif
 			return(FALSE);
 		}
+#endif /* HAVE_PTHREAD_MUTEX_TIMEDLOCK */
 	}
 }
 
