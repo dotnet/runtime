@@ -3051,8 +3051,28 @@ array_constructed:
 			}
 			++ip;
 			BREAK;
-		CASE (CEE_CONV_OVF_I8) ves_abort(); BREAK;
-		CASE (CEE_CONV_OVF_U8) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_I8)
+			/* FIXME: handle other cases */
+			if (sp [-1].type == VAL_I32) {
+				sp [-1].data.l = (guint64)sp [-1].data.l;
+			} else if(sp [-1].type == VAL_I64) {
+				/* defined as NOP */
+			} else {
+				ves_abort();
+			}
+			++ip;
+			BREAK;
+		CASE (CEE_CONV_OVF_U8)
+			/* FIXME: handle other cases */
+			if (sp [-1].type == VAL_I32) {
+				sp [-1].data.l = (guint64)sp [-1].data.l;
+			} else if(sp [-1].type == VAL_I64) {
+				/* defined as NOP */
+			} else {
+				ves_abort();
+			}
+			++ip;
+			BREAK;
 		CASE (CEE_UNUSED50) 
 		CASE (CEE_UNUSED18) 
 		CASE (CEE_UNUSED19) 
