@@ -111,6 +111,16 @@
   </tr>
 </table>
 
+@item May 6th, 2003: Mono 0.24 ships
+
+	We have released Mono 0.24 which includes our new code
+	generation engine.  A list of the new features is available <a
+	href="archive/mono-0.24.html">here</a>.  
+
+	Packages for Windows, and various Linux distributions are
+	available on our <a href="download.html">download</a> page.
+	We are shipping Gtk# and MonoDoc packages for the first time.
+
 @item Apr 21st, 2003: Virtuoso 3.0 ships.
 
 	<a href="http://www.openlinksw.com">OpenLink's</a> released
