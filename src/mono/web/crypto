@@ -29,11 +29,6 @@
 		* Keypair persistance for RSA and DSA. This persistance must
 		  somehow be linked with X509 certificate stores (in planning).
 
-		* <code>MACTripleDES</code> is not functionnal. There are many 
-		  differents and conflicting standards about how to do MAC 
-		  (NIST has two, ANSI has one, maybe the framework is using 
-		  yet another). We just have to figure out which one it is.
-
 		* <code>PasswordDeriveBytes</code> is currently limited to 
 		  generating keys with the maximum length equals to the hash 
 		  output (as specified in PKCS #5). However the framework 
