@@ -686,18 +686,8 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 		info->filename = replace_suffix (image->name, "dbg");
 		if (g_file_test (info->filename, G_FILE_TEST_EXISTS))
 			info->symfile = mono_debug_open_mono_symbol_file (info->image, info->filename, TRUE);
-		else if (debug->flags & MONO_DEBUG_FLAGS_MONO_DEBUGGER) {
-#if 0
-			if (!strcmp (info->name, "corlib"))
-				break;
-#endif
-			info->ilfile = g_strdup_printf ("%s.il", info->name);
-			info->always_create_il = TRUE;
-			debug_load_method_lines (info);
-			g_assert (info->methods);
-			info->symfile = mono_debug_create_mono_symbol_file (
-				info->image, info->ilfile, info->methods);
-		}
+		else if (debug->flags & MONO_DEBUG_FLAGS_MONO_DEBUGGER)
+			info->symfile = mono_debug_create_mono_symbol_file (info->image);
 		debugger_symbol_file_table_generation++;
 		break;
 
