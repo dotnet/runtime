@@ -42,6 +42,7 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/locales.h>
+#include <mono/metadata/filewatcher.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
 #include <mono/utils/monobitset.h>
@@ -5074,6 +5075,18 @@ static gconstpointer icall_map [] = {
 	"System.String::InternalReplace(string,string,System.Globalization.CompareInfo)", ves_icall_System_String_InternalReplace_Str_Comp,
 	"System.String::InternalToLower(System.Globalization.CultureInfo)", ves_icall_System_String_InternalToLower_Comp,
 	"System.String::InternalToUpper(System.Globalization.CultureInfo)", ves_icall_System_String_InternalToUpper_Comp,
+
+	/*
+	 * System.IO.FileSystemWatcher
+	 */
+	"System.IO.FileSystemWatcher::InternalSupportsFSW", ves_icall_System_IO_FSW_SupportsFSW,
+	"System.IO.FileSystemWatcher::InternalOpenDirectory", ves_icall_System_IO_FSW_OpenDirectory,
+	"System.IO.FileSystemWatcher::InternalCloseDirectory", ves_icall_System_IO_FSW_CloseDirectory,
+	"System.IO.FileSystemWatcher::InternalReadDirectoryChanges", ves_icall_System_IO_FSW_ReadDirectoryChanges,
+	/*
+	 * System.IO.FAMWatcher
+	 */
+	"System.IO.FAMWatcher::InternalFAMNextEvent", ves_icall_System_IO_FAMW_InternalFAMNextEvent,
 
 	/*
 	 * add other internal calls here

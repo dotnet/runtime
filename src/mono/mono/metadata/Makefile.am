@@ -71,7 +71,9 @@ libmonoruntime_la_SOURCES = \
 	environment.c	\
 	environment.h	\
 	locales.c	\
-	locales.h
+	locales.h	\
+	filewatcher.c	\
+	filewatcher.h
 
 libmetadata_la_SOURCES = \
 	assembly.c	\
