@@ -151,6 +151,8 @@ function clickHandler (evt)
 	{
 		var strClass;
 		var strField;
+		var strNamespace;
+		var strAssembly;
 
 		elt = getParentDiv (elt);
 		var strEltClass = elt.className;
@@ -186,7 +188,7 @@ function clickHandler (evt)
 			strEltClass == 'd' ||	// delegate
 			strEltClass == 'en')	// enum
 		{
-			strClass = getName (elt).toLowerCase () + 'class';
+			strClass = getName (elt);
 			if (strEltClass == 'en')
 				strField = null;
 			elt = getParentDiv (elt);
@@ -196,12 +198,47 @@ function clickHandler (evt)
 		if (strEltClass.charAt (strEltClass.length - 1) == '_')
 			strEltClass = strEltClass.slice (0, strEltClass.length - 1);
 
-		if (strEltClass == 'n')	// namespace
+		if (strEltClass == 'n')
+		{
+			strNamespace = getName (elt);
+			elt = getParentDiv (elt);
+		}
+
+		var strEltClass = elt.className;
+		if (strEltClass.charAt (strEltClass.length - 1) == '_')
+			strEltClass = strEltClass.slice (0, strEltClass.length - 1);
+
+		if (strEltClass == 'y')
+		{
+			strAssembly = getName (elt);
+		}
+
+		if (evt.ctrlKey)
+		{
+			var strRoot = 'http://cvs.hispalinux.es/cgi-bin/cvsweb/mcs/class/';
+			var strExtra = '?cvsroot=Mono';
+
+			if (strAssembly)
+			{
+				strRoot = strRoot + strAssembly + '/';
+				if (strNamespace)
+				{
+					strRoot = strRoot + strNamespace + '/';
+					if (strClass)
+					{
+						strRoot += strClass + '.cs';
+						strExtra += '&rev=1';
+					}
+				}
+				window.open (strRoot + strExtra, 'CVS');
+			}
+		}
+		else if (strNamespace)
 		{
 			var re = /\./g ;
-			var strNamespace = getName (elt).toLowerCase ().replace (re, '');
+			strNamespace = strNamespace.toLowerCase ().replace (re, '');
 			if (strClass)
-				strNamespace += strClass;
+				strNamespace += strClass.toLowerCase () + 'class';
 			if (strField)
 				strNamespace += strField;
 			if (strClass || strField)
