@@ -443,6 +443,17 @@ class Tests {
 		}
 		return a + b + c;
 	}
+
+	static int test_0_short_sign_extend () {
+		int t1 = 0xffeedd;
+		short s1 = (short)t1;
+		int t2 = s1;
+
+		if ((uint)t2 != 0xffffeedd) 
+			return 1;
+		else
+			return 0;
+	}		
 	
 	static int test_15_for_loop () {
 		int i;
