@@ -93,7 +93,7 @@ class Tests {
 	}
 
 	/* Regression test for #30073 */
-	public static test_0_newarr_emulation () {
+	public static int test_0_newarr_emulation () {
 		double d = 500;
 		checked {
 			double [] arr = new double [(int)d];
