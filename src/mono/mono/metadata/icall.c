@@ -1876,6 +1876,54 @@ ves_icall_System_Environment_GetCommandLine ()
 	return NULL;	/* FIXME */
 }
 
+
+void
+ves_icall_MonoMethodMessage_InitMessage (MonoMethodMessage *this, 
+					 MonoReflectionMethod *method,
+					 MonoArray *out_args)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoMethodSignature *sig = method->method->signature;
+	MonoString *name;
+	int i, j;
+	char **names;
+	guint8 arg_type;
+
+	this->method = method;
+
+	this->args = mono_array_new (domain, mono_defaults.object_class, sig->param_count);
+	this->arg_types = mono_array_new (domain, mono_defaults.byte_class, sig->param_count);
+
+	names = g_new (char *, sig->param_count);
+	mono_method_get_param_names (method->method, (const char **) names);
+	this->names = mono_array_new (domain, mono_defaults.string_class, sig->param_count);
+	
+	for (i = 0; i < sig->param_count; i++) {
+		 name = mono_string_new (domain, names [i]);
+		 mono_array_set (this->names, gpointer, i, name);	
+	}
+
+	g_free (names);
+	
+	for (i = 0, j = 0; i < sig->param_count; i++) {
+
+		if (sig->params [i]->byref) {
+			if (out_args) {
+				gpointer arg = mono_array_get (out_args, gpointer, j);
+				mono_array_set (this->args, gpointer, i, arg);
+				j++;
+			}
+			arg_type = 2;
+			if (sig->params [i]->attrs & PARAM_ATTRIBUTE_IN)
+				arg_type = 1;
+		} else {
+			arg_type = 1;
+		}
+
+		mono_array_set (this->arg_types, guint8, i, arg_type);
+	}
+}
+
 /* icall map */
 
 static gpointer icall_map [] = {
@@ -2212,6 +2260,12 @@ static gpointer icall_map [] = {
 	"System.Runtime.Remoting.RemotingServices::InternalExecute",
 	ves_icall_InternalExecute,
 
+	/*
+	 * System.Runtime.Remoting.Messaging
+	 */	
+	"System.Runtime.Remoting.Messaging.MonoMethodMessage::InitMessage",
+	ves_icall_MonoMethodMessage_InitMessage,
+	
 	/*
 	 * System.Runtime.Remoting.Proxies
 	 */	
