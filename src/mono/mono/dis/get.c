@@ -1697,7 +1697,7 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 	}
 		
 	case MONO_TYPE_CLASS:
-		return g_strdup ("CLASS CONSTANT.  MUST BE ZERO");
+		return g_strdup ("nullref");
 		
 	default:
 		g_error ("Unknown MONO_TYPE (%d) on constant at Blob index (0x%08x)\n",
