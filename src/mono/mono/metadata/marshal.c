@@ -2683,7 +2683,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *s
 	MONO_CHECK_ARG_NULL (dest);
 
 	g_assert (src->obj.vtable->klass->rank == 1);
-	g_assert (start_index >= 0 && start_index < mono_array_length (src));
+	g_assert (start_index >= 0);
+	g_assert (length >= 0);
 	g_assert (start_index + length <= mono_array_length (src));
 
 	element_size = mono_array_element_size (src->obj.vtable->klass);
@@ -2706,7 +2707,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gpointer s
 	MONO_CHECK_ARG_NULL (dest);
 
 	g_assert (dest->obj.vtable->klass->rank == 1);
-	g_assert (start_index >= 0 && start_index < mono_array_length (dest));
+	g_assert (start_index >= 0);
+	g_assert (length >= 0);
 	g_assert (start_index + length <= mono_array_length (dest));
 
 	element_size = mono_array_element_size (dest->obj.vtable->klass);
