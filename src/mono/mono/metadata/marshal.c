@@ -2346,7 +2346,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
  * calls the unamnaged code in func)
  */
 MonoMethod *
-mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gpointer func)
+mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gconstpointer func)
 {
 	MonoMethodSignature *csig;
 	MonoMethodBuilder *mb;
