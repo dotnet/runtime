@@ -218,6 +218,8 @@ namespace Simple {
 			T loc197 = new T (0xdeadbeef, 0xcafebabe);
 			T loc198 = new T (0xdeadbeef, 0xcafebabe);
 			T loc199 = new T (0xdeadbeef, 0xcafebabe);
+			int loc_i = 11;
+			long loc_j = 12;
 
 			if (loc0.A != 0xdeadbeef || loc0.B != 0xcafebabe) throw new System.Exception ();
 			if (loc1.A != 0xdeadbeef || loc1.B != 0xcafebabe) throw new System.Exception();
@@ -419,7 +421,8 @@ namespace Simple {
 			if (loc197.A != 0xdeadbeef || loc197.B != 0xcafebabe) throw new System.Exception();
 			if (loc198.A != 0xdeadbeef || loc198.B != 0xcafebabe) throw new System.Exception();
 			if (loc199.A != 0xdeadbeef || loc199.B != 0xcafebabe) throw new System.Exception();
-
+			if (loc_i != 11) throw new System.Exception ();
+			if (loc_j != 12) throw new System.Exception ();
 
 			return 0;
 		}
