@@ -71,17 +71,6 @@ static MonoW32ExceptionHandler segv_handler;
 
 static LPTOP_LEVEL_EXCEPTION_FILTER old_handler;
 
-#define W32_SEH_COPY_CONTEXT \
-	sctx->eax = ctx->Eax;\
-	sctx->ebx = ctx->Ebx;\
-	sctx->ecx = ctx->Ecx;\
-	sctx->edx = ctx->Edx;\
-	sctx->ebp = ctx->Ebp;\
-	sctx->esp = ctx->Esp;\
-	sctx->esi = ctx->Esi;\
-	sctx->edi = ctx->Edi;\
-	sctx->eip = ctx->Eip;
-
 #define W32_SEH_HANDLE_EX(_ex) \
 	if (_ex##_handler) _ex##_handler((int)sctx)
 
@@ -96,12 +85,22 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep)
 	struct sigcontext* sctx;
 	LONG res;
 
-	res = EXCEPTION_CONTINUE_SEARCH;
+	res = EXCEPTION_CONTINUE_EXECUTION;
 
 	er = ep->ExceptionRecord;
 	ctx = ep->ContextRecord;
 	sctx = g_malloc(sizeof(struct sigcontext));
-	W32_SEH_COPY_CONTEXT
+
+	/* Copy Win32 context to UNIX style context */
+	sctx->eax = ctx->Eax;
+	sctx->ebx = ctx->Ebx;
+	sctx->ecx = ctx->Ecx;
+	sctx->edx = ctx->Edx;
+	sctx->ebp = ctx->Ebp;
+	sctx->esp = ctx->Esp;
+	sctx->esi = ctx->Esi;
+	sctx->edi = ctx->Edi;
+	sctx->eip = ctx->Eip;
 
 	switch (er->ExceptionCode) {
 	case EXCEPTION_ACCESS_VIOLATION:
@@ -121,6 +120,17 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep)
 	default:
 		break;
 	}
+
+	/* Copy context back */
+	ctx->Eax = sctx->eax;
+	ctx->Ebx = sctx->ebx;
+	ctx->Ecx = sctx->ecx;
+	ctx->Edx = sctx->edx;
+	ctx->Ebp = sctx->ebp;
+	ctx->Esp = sctx->esp;
+	ctx->Esi = sctx->esi;
+	ctx->Edi = sctx->edi;
+	ctx->Eip = sctx->eip;
 
 	return res;
 }
