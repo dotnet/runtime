@@ -203,8 +203,6 @@ newobj (MonoImage *image, guint32 token)
 	return result;
 }
 
-#undef DEBUG_VM_DISPATCH
-
 static MonoMethod*
 get_virtual_method (MonoImage *image, MonoMethod *m, stackval *objs)
 {
@@ -216,9 +214,9 @@ get_virtual_method (MonoImage *image, MonoMethod *m, stackval *objs)
 			return m;
 	obj = objs->data.p;
 	klass = objs->data.vt.klass ? objs->data.vt.klass: obj->klass;
-	if (!(m->klass->flags & TYPE_ATTRIBUTE_INTERFACE))
+	if (!(m->klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)
 		klass = obj->klass;
-	for (; klass && klass != m->klass; klass = klass->parent) {
+	for (; klass ; klass = klass->parent) {
 		for (i = 0; i < klass->method.count; ++i) {
 			if (!klass->methods [i]->flags & METHOD_ATTRIBUTE_VIRTUAL)
 				continue;

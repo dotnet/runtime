@@ -24,6 +24,7 @@ TESTSRC=			\
 	enum.cs			\
 	property.cs		\
 	interface.cs		\
+	iface.cs		\
 	virtual-method.cs	\
 	intptrcast.cs		\
 	indexer.cs		\
