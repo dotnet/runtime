@@ -537,7 +537,7 @@ ves_pinvoke_method (MonoInvocation *frame)
 		stackval_from_data (sig->ret->type, frame->retval, res);
 }
 
-#define DEBUG_INTERP 1
+#define DEBUG_INTERP 0
 #if DEBUG_INTERP
 #define OPDEF(a,b,c,d,e,f,g,h,i,j)  b,
 static char *opcode_names[] = {

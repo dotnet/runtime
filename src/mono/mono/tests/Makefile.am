@@ -1,5 +1,5 @@
 
-TEST_PROG=../interpreter/mono-int
+TEST_PROG=../interpreter/mint
 CSC=csc
 
 TESTSRC=			\
