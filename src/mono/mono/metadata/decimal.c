@@ -21,7 +21,11 @@
 #include <math.h>
 
 /* needed for building microsoft dll */
+#ifdef __GNUC__
 #define DECINLINE __inline
+#else
+#define DECINLINE
+#endif
 
 #define LIT_GUINT32(x) x
 #define LIT_GUINT64(x) x##L
