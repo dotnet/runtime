@@ -183,6 +183,20 @@ TEST_CS_SRC=			\
 	bug-42136.cs		\
 	interlocked.cs		\
 	cross-domain.cs		\
+	appdomain-exit.cs	\
+	delegate-async-exit.cs	\
+	delegate-delegate-exit.cs	\
+	delegate-exit.cs	\
+	finalizer-abort.cs	\
+	finalizer-exception.cs	\
+	finalizer-exit.cs	\
+	main-exit.cs	\
+	main-returns-abort-resetabort.cs	\
+	main-returns-background-abort-resetabort.cs	\
+	main-returns-background-resetabort.cs	\
+	main-returns-background.cs	\
+	main-returns.cs	\
+	subthread-exit.cs	\
 	desweak.cs
 
 if X86
@@ -190,6 +204,8 @@ PLATFORM_DISABLED_TESTS=
 endif
 
 DISABLED_TESTS=			\
+	delegate-async-exception.cs	\
+	delegate-delegate-exception.cs	\
 	$(PLATFORM_DISABLED_TESTS)
 
 # These only compile with MS CSC
