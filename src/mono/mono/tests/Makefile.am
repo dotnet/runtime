@@ -164,7 +164,10 @@ TEST_CS_SRC=			\
 	classinit2.cs		\
 	synchronized.cs		\
 	vararg.cs		\
-	async_read.cs
+	async_read.cs		\
+	threadpool.cs		\
+	threadpool1.cs
+
 
 TEST_IL_SRC=			\
 	cpblkTest.il		\
