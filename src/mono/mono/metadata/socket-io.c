@@ -8,7 +8,9 @@
  */
 
 #include <config.h>
+
 #include <glib.h>
+#include <string.h>
 
 #include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
@@ -17,6 +19,7 @@
 #include <mono/metadata/appdomain.h>
 
 #include <sys/time.h> 
+#include <netdb.h>
 
 #undef DEBUG
 
@@ -213,67 +216,67 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 					     int *system_level,
 					     int *system_name)
 {
-	switch(mono_level) {
+	switch (mono_level) {
 	case SocketOptionLevel_Socket:
-		*system_level=SOL_SOCKET;
-
+		*system_level = SOL_SOCKET;
+		
 		switch(mono_name) {
 		case SocketOptionName_DontLinger:
 			/* This is SO_LINGER, because the setsockopt
 			 * internal call maps DontLinger to SO_LINGER
 			 * with l_onoff=0
 			 */
-			*system_name=SO_LINGER;
+			*system_name = SO_LINGER;
 			break;
 		case SocketOptionName_Debug:
-			*system_name=SO_DEBUG;
+			*system_name = SO_DEBUG;
 			break;
 #ifdef SO_ACCEPTCONN
 		case SocketOptionName_AcceptConnection:
-			*system_name=SO_ACCEPTCONN;
+			*system_name = SO_ACCEPTCONN;
 			break;
 #endif
 		case SocketOptionName_ReuseAddress:
-			*system_name=SO_REUSEADDR;
+			*system_name = SO_REUSEADDR;
 			break;
 		case SocketOptionName_KeepAlive:
-			*system_name=SO_KEEPALIVE;
+			*system_name = SO_KEEPALIVE;
 			break;
 		case SocketOptionName_DontRoute:
-			*system_name=SO_DONTROUTE;
+			*system_name = SO_DONTROUTE;
 			break;
 		case SocketOptionName_Broadcast:
-			*system_name=SO_BROADCAST;
+			*system_name = SO_BROADCAST;
 			break;
 		case SocketOptionName_Linger:
-			*system_name=SO_LINGER;
+			*system_name = SO_LINGER;
 			break;
 		case SocketOptionName_OutOfBandInline:
-			*system_name=SO_OOBINLINE;
+			*system_name = SO_OOBINLINE;
 			break;
 		case SocketOptionName_SendBuffer:
-			*system_name=SO_SNDBUF;
+			*system_name = SO_SNDBUF;
 			break;
 		case SocketOptionName_ReceiveBuffer:
-			*system_name=SO_RCVBUF;
+			*system_name = SO_RCVBUF;
 			break;
 		case SocketOptionName_SendLowWater:
-			*system_name=SO_SNDLOWAT;
+			*system_name = SO_SNDLOWAT;
 			break;
 		case SocketOptionName_ReceiveLowWater:
-			*system_name=SO_RCVLOWAT;
+			*system_name = SO_RCVLOWAT;
 			break;
 		case SocketOptionName_SendTimeout:
-			*system_name=SO_SNDTIMEO;
+			*system_name = SO_SNDTIMEO;
 			break;
 		case SocketOptionName_ReceiveTimeout:
-			*system_name=SO_RCVTIMEO;
+			*system_name = SO_RCVTIMEO;
 			break;
 		case SocketOptionName_Error:
-			*system_name=SO_ERROR;
+			*system_name = SO_ERROR;
 			break;
 		case SocketOptionName_Type:
-			*system_name=SO_TYPE;
+			*system_name = SO_TYPE;
 			break;
 		case SocketOptionName_ExclusiveAddressUse:
 		case SocketOptionName_UseLoopback:
@@ -288,39 +291,58 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 		break;
 		
 	case SocketOptionLevel_IP:
-		*system_level=SOL_IP;
-
+#ifdef HAVE_SOL_IP
+		*system_level = SOL_IP;
+#else
+		if (1) {
+			static int cached = 0;
+			static int proto;
+			
+			if (!cached) {
+				struct protoent *pent;
+				
+				pent = getprotobyname ("IP");
+				proto = pent ? pent->p_proto : 0 /* 0 a good default value?? */;
+				cached = 1;
+			}
+			
+			*system_level = proto;
+		}
+#endif /* HAVE_SOL_IP */
+		
 		switch(mono_name) {
 		case SocketOptionName_IPOptions:
-			*system_name=IP_OPTIONS;
+			*system_name = IP_OPTIONS;
 			break;
 		case SocketOptionName_HeaderIncluded:
-			*system_name=IP_HDRINCL;
+			*system_name = IP_HDRINCL;
 			break;
 		case SocketOptionName_TypeOfService:
-			*system_name=IP_TOS;
+			*system_name = IP_TOS;
 			break;
 		case SocketOptionName_IpTimeToLive:
-			*system_name=IP_TTL;
+			*system_name = IP_TTL;
 			break;
 		case SocketOptionName_MulticastInterface:
-			*system_name=IP_MULTICAST_IF;
+			*system_name = IP_MULTICAST_IF;
 			break;
 		case SocketOptionName_MulticastTimeToLive:
-			*system_name=IP_MULTICAST_TTL;
+			*system_name = IP_MULTICAST_TTL;
 			break;
 		case SocketOptionName_MulticastLoopback:
-			*system_name=IP_MULTICAST_LOOP;
+			*system_name = IP_MULTICAST_LOOP;
 			break;
 		case SocketOptionName_AddMembership:
-			*system_name=IP_ADD_MEMBERSHIP;
+			*system_name = IP_ADD_MEMBERSHIP;
 			break;
 		case SocketOptionName_DropMembership:
-			*system_name=IP_DROP_MEMBERSHIP;
+			*system_name = IP_DROP_MEMBERSHIP;
 			break;
+#ifdef HAVE_IP_PKTINFO
 		case SocketOptionName_PacketInformation:
-			*system_name=IP_PKTINFO;
+			*system_name = IP_PKTINFO;
 			break;
+#endif /* HAVE_IP_PKTINFO */
 		case SocketOptionName_DontFragment:
 		case SocketOptionName_AddSourceMembership:
 		case SocketOptionName_DropSourceMembership:
@@ -336,11 +358,28 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 		break;
 		
 	case SocketOptionLevel_Tcp:
-		*system_level=SOL_TCP;
-
+#ifdef HAVE_SOL_TCP
+		*system_level = SOL_TCP;
+#else
+		if (1) {
+			static int cached = 0;
+			static int proto;
+			
+			if (!cached) {
+				struct protoent *pent;
+				
+				pent = getprotobyname ("TCP");
+				proto = pent ? pent->p_proto : 0 /* is 0 a good default value?? */;
+				cached = 1;
+			}
+			
+			*system_level = proto;
+		}
+#endif /* HAVE_SOL_TCP */
+		
 		switch(mono_name) {
 		case SocketOptionName_NoDelay:
-			*system_name=TCP_NODELAY;
+			*system_name = TCP_NODELAY;
 			break;
 #if 0
 			/* The documentation is talking complete
@@ -380,7 +419,7 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 }
 
 #define STASH_SYS_ASS(this) \
-	if(system_assembly==NULL) { \
+	if(system_assembly == NULL) { \
 		system_assembly=this->vtable->klass->image; \
 	}
 
@@ -1081,10 +1120,9 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 
 	/* Only one of obj_val, byte_val or int_val has data */
 	if(obj_val!=NULL) {
-		struct linger linger;
-		struct ip_mreqn mreq;
-		int valsize;
 		MonoClassField *field;
+		struct linger linger;
+		int valsize;
 		
 		switch(name) {
 		case SocketOptionName_DontLinger:
@@ -1108,23 +1146,32 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 			ret=setsockopt(sock, system_level, system_name,
 				       &linger, valsize);
 			break;
-			
+#ifdef HAVE_IP_ADD_MEMBERSHIP
 		case SocketOptionName_AddMembership:
+#endif
+#ifdef HAVE_IP_DROP_MEMBERSHIP
 		case SocketOptionName_DropMembership:
+#endif
+#if defined (HAVE_IP_ADD_MEMBERSHIP) || defined (HAVE_IP_DROP_MEMBERSHIP)
+		{
+			struct ip_mreqn mreq;
+			
 			/* pain! MulticastOption holds two IPAddress
 			 * members, so I have to dig the value out of
 			 * those :-(
 			 */
-			field=mono_class_get_field_from_name(obj_val->vtable->klass, "group");
-			mreq.imr_multiaddr=ipaddress_to_struct_in_addr(*(gpointer *)(((char *)obj_val)+field->offset));
-			field=mono_class_get_field_from_name(obj_val->vtable->klass, "local");
-			mreq.imr_address=ipaddress_to_struct_in_addr(*(gpointer *)(((char *)obj_val)+field->offset))
-;
-			valsize=sizeof(mreq);
-			ret=setsockopt(sock, system_level, system_name,
-				       &mreq, valsize);
+			field = mono_class_get_field_from_name (obj_val->vtable->klass, "group");
+			mreq.imr_multiaddr = ipaddress_to_struct_in_addr (*(gpointer *)(((char *)obj_val) +
+											field->offset));
+			field = mono_class_get_field_from_name (obj_val->vtable->klass, "local");
+			mreq.imr_address = ipaddress_to_struct_in_addr (*(gpointer *)(((char *)obj_val) +
+										      field->offset));
+			valsize = sizeof (mreq);
+			ret = setsockopt (sock, system_level, system_name,
+					  &mreq, valsize);
 			break;
-
+		}
+#endif /* HAVE_IP_[ADD,DROP]_MEMBERSHIP */
 		default:
 			/* Throw an exception */
 			mono_raise_exception(get_socket_exception(WSAEINVAL));
