@@ -6107,8 +6107,8 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *ty
 	MonoDomain *domain;
 	MonoType *geninst;
 	MonoGenericInst *ginst;
-	MonoReflectionType *ptype;
-	MonoClass *klass, *iklass, *pklass;
+	MonoReflectionType *ptype = NULL;
+	MonoClass *klass, *iklass, *pklass = NULL;
 	MonoReflectionGenericInst *res, *parent = NULL;
 	int i;
 
@@ -6128,10 +6128,12 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *ty
 		MonoReflectionTypeBuilder *tb = klass->reflection_info;
 
 		ptype = tb->parent;
-		pklass = mono_class_from_mono_type (ptype->type);
+		if (ptype)
+			pklass = mono_class_from_mono_type (ptype->type);
 	} else {
 		pklass = klass->parent;
-		ptype = mono_type_get_object (domain, &pklass->byval_arg);
+		if (pklass)
+			ptype = mono_type_get_object (domain, &pklass->byval_arg);
 	}
 
 	if (pklass && pklass->generic_inst)
