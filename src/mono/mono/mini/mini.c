@@ -3797,6 +3797,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				g_assert (cmethod);
 
+				if (!virtual && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT))
+					goto unverified;
+
 				if (!cmethod->klass->inited)
 					mono_class_init (cmethod->klass);
 
