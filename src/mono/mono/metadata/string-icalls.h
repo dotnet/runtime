@@ -37,9 +37,6 @@ ves_icall_System_String_ctor_chara_int_int (gpointer dummy, MonoArray *value,  g
 MonoString *
 ves_icall_System_String_ctor_encoding (gpointer dummy, gint8 *value, gint32 sindex, gint32 length, MonoObject *enc);
 
-MonoBoolean 
-ves_icall_System_String_InternalEquals (MonoString *str1, MonoString *str2);
-
 MonoString * 
 ves_icall_System_String_InternalJoin (MonoString *separator, MonoArray * value, gint32 sindex, gint32 count);
 
@@ -48,9 +45,6 @@ ves_icall_System_String_InternalInsert (MonoString *me, gint32 sindex, MonoStrin
 
 MonoString * 
 ves_icall_System_String_InternalReplace_Char (MonoString *me, gunichar2 oldChar, gunichar2 newChar);
-
-MonoString * 
-ves_icall_System_String_InternalReplace_Str (MonoString *me, MonoString *oldValue, MonoString *newValue);
 
 MonoString * 
 ves_icall_System_String_InternalRemove (MonoString *me, gint32 sindex, gint32 count);
@@ -63,12 +57,6 @@ ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gin
 
 MonoString * 
 ves_icall_System_String_InternalTrim (MonoString *me, MonoArray *chars, gint32 typ);
-
-gint32 
-ves_icall_System_String_InternalIndexOf_Char (MonoString *me, gunichar2 value, gint32 sindex, gint32 count);
-
-gint32 
-ves_icall_System_String_InternalIndexOf_Str (MonoString *me, MonoString *value, gint32 sindex, gint32 count);
 
 gint32 
 ves_icall_System_String_InternalIndexOfAny (MonoString *me, MonoArray *arr, gint32 sindex, gint32 count);
@@ -86,12 +74,6 @@ MonoString *
 ves_icall_System_String_InternalPad (MonoString *me, gint32 width, gunichar2 chr, MonoBoolean right);
 
 MonoString *
-ves_icall_System_String_InternalToLower (MonoString *me);
-
-MonoString *
-ves_icall_System_String_InternalToUpper (MonoString *me);
-
-MonoString *
 ves_icall_System_String_InternalAllocateStr (gint32 length);
 
 void 
@@ -105,9 +87,6 @@ ves_icall_System_String_InternalIntern (MonoString *str);
 
 MonoString * 
 ves_icall_System_String_InternalIsInterned (MonoString *str);
-
-gint32 
-ves_icall_System_String_InternalCompareStr_N (MonoString *s1, gint32 i1, MonoString *s2, gint32 i2, gint32 length, gint32 mode);
 
 gint32
 ves_icall_System_String_GetHashCode (MonoString *me);

@@ -4942,7 +4942,6 @@ static const IcallEntry environment_icalls [] = {
 };
 
 static const IcallEntry cultureinfo_icalls [] = {
-	{"construct_compareinfo(object,string)", ves_icall_System_Globalization_CompareInfo_construct_compareinfo},
 	{"construct_internal_locale(string)", ves_icall_System_Globalization_CultureInfo_construct_internal_locale}
 };
 
@@ -5349,30 +5348,21 @@ static const IcallEntry string_icalls [] = {
 	{".ctor(sbyte*,int,int,System.Text.Encoding)", ves_icall_System_String_ctor_encoding},
 	{"GetHashCode", ves_icall_System_String_GetHashCode},
 	{"InternalAllocateStr", ves_icall_System_String_InternalAllocateStr},
-	{"InternalCompare(string,int,string,int,int,int)", ves_icall_System_String_InternalCompareStr_N},
 	{"InternalCopyTo", ves_icall_System_String_InternalCopyTo},
-	{"InternalEquals", ves_icall_System_String_InternalEquals},
-	{"InternalIndexOf(char,int,int)", ves_icall_System_String_InternalIndexOf_Char},
-	{"InternalIndexOf(string,int,int)", ves_icall_System_String_InternalIndexOf_Str},
 	{"InternalIndexOfAny", ves_icall_System_String_InternalIndexOfAny},
 	{"InternalInsert", ves_icall_System_String_InternalInsert},
 	{"InternalIntern", ves_icall_System_String_InternalIntern},
 	{"InternalIsInterned", ves_icall_System_String_InternalIsInterned},
 	{"InternalJoin", ves_icall_System_String_InternalJoin},
-	{"InternalLastIndexOf(char,int,int)", ves_icall_System_String_InternalLastIndexOf_Char},
-	{"InternalLastIndexOf(string,int,int)", ves_icall_System_String_InternalLastIndexOf_Str},
 	{"InternalLastIndexOfAny", ves_icall_System_String_InternalLastIndexOfAny},
 	{"InternalPad", ves_icall_System_String_InternalPad},
 	{"InternalRemove", ves_icall_System_String_InternalRemove},
 	{"InternalReplace(char,char)", ves_icall_System_String_InternalReplace_Char},
-	{"InternalReplace(string,string)", ves_icall_System_String_InternalReplace_Str},
 	{"InternalReplace(string,string,System.Globalization.CompareInfo)", ves_icall_System_String_InternalReplace_Str_Comp},
 	{"InternalSplit", ves_icall_System_String_InternalSplit},
 	{"InternalStrcpy(string,int,string)", ves_icall_System_String_InternalStrcpy_Str},
 	{"InternalStrcpy(string,int,string,int,int)", ves_icall_System_String_InternalStrcpy_StrN},
-	{"InternalToLower", ves_icall_System_String_InternalToLower},
 	{"InternalToLower(System.Globalization.CultureInfo)", ves_icall_System_String_InternalToLower_Comp},
-	{"InternalToUpper", ves_icall_System_String_InternalToUpper},
 	{"InternalToUpper(System.Globalization.CultureInfo)", ves_icall_System_String_InternalToUpper_Comp},
 	{"InternalTrim", ves_icall_System_String_InternalTrim},
 	{"get_Chars", ves_icall_System_String_get_Chars}

@@ -190,24 +190,6 @@ ves_icall_System_String_ctor_encoding (gpointer dummy, gint8 *value, gint32 sind
 	return NULL;
 }
 
-MonoBoolean 
-ves_icall_System_String_InternalEquals (MonoString *str1, MonoString *str2)
-{
-	gunichar2 *str1ptr;
-	gunichar2 *str2ptr;
-	gint32 str1len;
-
-	MONO_ARCH_SAVE_REGS;
-
-	/* Length checking is done in C# */
-	str1len = mono_string_length(str1);
-
-	str1ptr = mono_string_chars(str1);
-	str2ptr = mono_string_chars(str2);
-
-	return (0 == memcmp(str1ptr, str2ptr, str1len * sizeof(gunichar2)));
-}
-
 MonoString * 
 ves_icall_System_String_InternalJoin (MonoString *separator, MonoArray * value, gint32 sindex, gint32 count)
 {
@@ -310,82 +292,6 @@ ves_icall_System_String_InternalReplace_Char (MonoString *me, gunichar2 oldChar,
 		else
 			dest[i] = src[i];
 	}
-
-	return ret;
-}
-
-MonoString * 
-ves_icall_System_String_InternalReplace_Str (MonoString *me, MonoString *oldValue, MonoString *newValue)
-{
-	MonoString *ret;
-	gunichar2 *src;
-	gunichar2 *dest;
-	gunichar2 *oldstr;
-	gunichar2 *newstr;
-	gint32 i, destpos;
-	gint32 occurr;
-	gint32 newsize;
-	gint32 oldstrlen;
-	gint32 newstrlen;
-	gint32 srclen;
-
-	MONO_ARCH_SAVE_REGS;
-
-	occurr = 0;
-	destpos = 0;
-
-	oldstr = mono_string_chars(oldValue);
-	oldstrlen = mono_string_length(oldValue);
-
-	if (NULL != newValue) {
-		newstr = mono_string_chars(newValue);
-		newstrlen = mono_string_length(newValue);
-	} else
-		newstrlen = 0;
-
-	src = mono_string_chars(me);
-	srclen = mono_string_length(me);
-
-	if (oldstrlen != newstrlen) {
-		i = 0;
-		while (i <= srclen - oldstrlen) {
-			if (0 == memcmp(src + i, oldstr, oldstrlen * sizeof(gunichar2))) {
-				occurr++;
-				i += oldstrlen;
-			}
-			else
-				i ++;
-		}
-		if (occurr == 0)
-			return me;
-		newsize = srclen + ((newstrlen - oldstrlen) * occurr);
- 	} else
-		newsize = srclen;
-
-        ret = NULL;
-	i = 0;
-	while (i < srclen) {
-		if (0 == memcmp(src + i, oldstr, oldstrlen * sizeof(gunichar2))) {
-                        if (ret == NULL) {
-                                ret = mono_string_new_size( mono_domain_get (), newsize);
-                                dest = mono_string_chars(ret);
-                                memcpy (dest, src, i * sizeof(gunichar2));
-                        }
-			if (newstrlen > 0) {
-				memcpy(dest + destpos, newstr, newstrlen * sizeof(gunichar2));
-				destpos += newstrlen;
-			}
-			i += oldstrlen;
-                        continue;
-		} else if (ret != NULL) {
-			dest[destpos] = src[i];
- 		}
-			destpos++;
-			i++;
-		}
-        
-        if (ret == NULL)
-                return me;
 
 	return ret;
 }
@@ -557,49 +463,6 @@ ves_icall_System_String_InternalTrim (MonoString *me, MonoArray *chars, gint32 t
 }
 
 gint32 
-ves_icall_System_String_InternalIndexOf_Char (MonoString *me, gunichar2 value, gint32 sindex, gint32 count)
-{
-	gint32 pos;
-	gunichar2 *src;
-
-	MONO_ARCH_SAVE_REGS;
-
-	src = mono_string_chars(me);
-	for (pos = sindex; pos != count + sindex; pos++) {
-		if ( src [pos] == value)
-			return pos;
-	}
-
-	return -1;
-}
-
-gint32 
-ves_icall_System_String_InternalIndexOf_Str (MonoString *me, MonoString *value, gint32 sindex, gint32 count)
-{
-	gint32 lencmpstr;
-	gint32 pos, i;
-	gunichar2 *src;
-	gunichar2 *cmpstr;
-
-	MONO_ARCH_SAVE_REGS;
-
-	lencmpstr = mono_string_length(value);
-
-	src = mono_string_chars(me);
-	cmpstr = mono_string_chars(value);
-
-	count -= lencmpstr;
-	for (pos = sindex; pos <= sindex + count; pos++) {
-		for (i = 0; src [pos + i] == cmpstr [i];) {
-			if (++i == lencmpstr)
-				return pos;
-		}
-	}
-
-	return -1;
-}
-
-gint32 
 ves_icall_System_String_InternalIndexOfAny (MonoString *me, MonoArray *arr, gint32 sindex, gint32 count)
 {
 	gint32 pos;
@@ -720,48 +583,6 @@ ves_icall_System_String_InternalPad (MonoString *me, gint32 width, gunichar2 chr
 }
 
 MonoString *
-ves_icall_System_String_InternalToLower (MonoString *me)
-{
-	MonoString * ret;
-	gunichar2 *src; 
-	gunichar2 *dest;
-	gint32 i;
-
-	MONO_ARCH_SAVE_REGS;
-
-	ret = mono_string_new_size(mono_domain_get (), mono_string_length(me));
-
-	src = mono_string_chars (me);
-	dest = mono_string_chars (ret);
-
-	for (i = 0; i < mono_string_length (me); ++i)
-		dest[i] = g_unichar_tolower(src[i]);
-
-	return ret;
-}
-
-MonoString *
-ves_icall_System_String_InternalToUpper (MonoString *me)
-{
-	int i;
-	MonoString * ret;
-	gunichar2 *src; 
-	gunichar2 *dest;
-
-	MONO_ARCH_SAVE_REGS;
-
-	ret = mono_string_new_size(mono_domain_get (), mono_string_length(me));
-
-	src = mono_string_chars (me);
-	dest = mono_string_chars (ret);
-
-	for (i = 0; i < mono_string_length (me); ++i)
-		dest[i] = g_unichar_toupper(src[i]);
-
-	return ret;
-}
-
-MonoString *
 ves_icall_System_String_InternalAllocateStr (gint32 length)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -810,55 +631,6 @@ ves_icall_System_String_InternalIsInterned (MonoString *str)
 	MONO_ARCH_SAVE_REGS;
 
 	return mono_string_is_interned(str);
-}
-
-gint32
-ves_icall_System_String_InternalCompareStr_N (MonoString *s1, gint32 i1, MonoString *s2, gint32 i2, gint32 length, gint32 mode)
-{
-	/* c translation of C# code from old string.cs.. :) */
-	gint32 lenstr1;
-	gint32 lenstr2;
-	gint32 charcmp;
-	gunichar2 *str1;
-	gunichar2 *str2;
-
-	gint32 pos;
-	
-	MONO_ARCH_SAVE_REGS;
-
-	lenstr1 = mono_string_length(s1);
-	lenstr2 = mono_string_length(s2);
-
-	str1 = mono_string_chars(s1);
-	str2 = mono_string_chars(s2);
-
-	pos = 0;
-
-	for (pos = 0; pos != length; pos++) {
-		if (i1 + pos >= lenstr1 || i2 + pos >= lenstr2)
-			break;
-
-		charcmp = string_icall_cmp_char(str1[i1 + pos], str2[i2 + pos], mode);
-		if (charcmp != 0)
-			return charcmp;
-	}
-
-	/* the lesser wins, so if we have looped until length we just need to check the last char */
-	if (pos == length) {
-		return string_icall_cmp_char(str1[i1 + pos - 1], str2[i2 + pos - 1], mode);
-	}
-
-	/* Test if one the strings has been compared to the end */
-	if (i1 + pos >= lenstr1) {
-		if (i2 + pos >= lenstr2)
-			return 0;
-		else
-			return -1;
-	} else if (i2 + pos >= lenstr2)
-		return 1;
-
-	/* if not, check our last char only.. (can this happen?) */
-	return string_icall_cmp_char(str1[i1 + pos], str2[i2 + pos], mode);
 }
 
 gint32
