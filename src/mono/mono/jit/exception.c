@@ -686,6 +686,11 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 	MonoArray *res;
 	MonoArray *ta = exc->trace_ips;
 	int i, len;
+
+	if (ta == NULL) {
+		/* Exception is not thrown yet */
+		return mono_array_new (domain, mono_defaults.stack_frame_class, 0);
+	}
 	
 	len = mono_array_length (ta);
 
@@ -697,6 +702,12 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		gpointer ip = mono_array_get (ta, gpointer, i);
 
 		ji = mono_jit_info_table_find (domain, ip);
+		if (ji == NULL) {
+			/* Unmanaged frame */
+			mono_array_set (res, gpointer, i, sf);
+			continue;
+		}
+
 		g_assert (ji != NULL);
 
 		sf->method = mono_method_get_object (domain, ji->method, NULL);
@@ -938,4 +949,5 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 
 	g_assert_not_reached ();
 }
+
 
