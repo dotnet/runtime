@@ -745,6 +745,22 @@ void      mono_arch_emit_this_vret_args         (MonoCompile *cfg, MonoCallInst 
 void      mono_arch_allocate_vars               (MonoCompile *m);
 int       mono_arch_get_argument_info           (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info);
 gboolean  mono_arch_print_tree			(MonoInst *tree, int arity);
+MonoJitInfo *mono_arch_find_jit_info            (MonoDomain *domain, 
+												 MonoJitTlsData *jit_tls, 
+												 MonoJitInfo *res, 
+												 MonoJitInfo *prev_ji, 
+												 MonoContext *ctx, 
+												 MonoContext *new_ctx, 
+												 char **trace, 
+												 MonoLMF **lmf, 
+												 int *native_offset,
+												 gboolean *managed);
+gpointer mono_arch_get_call_filter              (void);
+gpointer mono_arch_get_restore_context          (void);
+gboolean mono_arch_handle_exception             (void *sigctx, gpointer obj, gboolean test_only);
+
+/* Exception handling */
+gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj, gboolean test_only);
 void      mono_jit_walk_stack                   (MonoStackWalk func, gpointer user_data);
 MonoArray *ves_icall_get_trace                  (MonoException *exc, gint32 skip, MonoBoolean need_file_info);
 MonoBoolean ves_icall_get_frame_info            (gint32 skip, MonoBoolean need_file_info, 

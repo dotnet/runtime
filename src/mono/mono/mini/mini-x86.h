@@ -39,6 +39,36 @@ struct MonoLMF {
 typedef struct MonoCompileArch {
 } MonoCompileArch;
 
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+# define SC_EAX sc_eax
+# define SC_EBX sc_ebx
+# define SC_ECX sc_ecx
+# define SC_EDX sc_edx
+# define SC_EBP sc_ebp
+# define SC_EIP sc_eip
+# define SC_ESP sc_esp
+# define SC_EDI sc_edi
+# define SC_ESI sc_esi
+#else
+# define SC_EAX eax
+# define SC_EBX ebx
+# define SC_ECX ecx
+# define SC_EDX edx
+# define SC_EBP ebp
+# define SC_EIP eip
+# define SC_ESP esp
+# define SC_EDI edi
+# define SC_ESI esi
+#endif
+
+typedef struct sigcontext MonoContext;
+
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->SC_EIP = (long)ip; } while (0); 
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->SC_EBP = (long)bp; } while (0); 
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->SC_EIP))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->SC_EBP))
+
 #ifndef PLATFORM_WIN32
 
 #ifdef HAVE_WORKING_SIGALTSTACK

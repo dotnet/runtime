@@ -66,6 +66,7 @@ genmdesc_LDADD = \
 	$(GMODULE_LIBS)
 
 x86_sources = \
+    mini-exceptions.c	\
 	mini-x86.c		\
 	mini-x86.h		\
 	exceptions-x86.c	\
@@ -167,7 +168,7 @@ libmono_la_LIBADD = \
 	$(MCS) /unsafe $< /r:TestDriver.dll
 
 %.exe: %.il
-	ilasm /OUTPUT=$*.exe $<
+	ilasm /output=$*.exe $<
 
 TestDriver.dll: TestDriver.cs
 	$(MCS) /out:TestDriver.dll /target:library TestDriver.cs
@@ -195,7 +196,7 @@ checktests: $(regtests)
 	for i in $(regtests); do $(RUNTIME) $$i; done
 
 rcheck: mono $(regtests)
-	./mono --verbose --regression $(regtests)
+	./mono --regression $(regtests)
 
 aotcheck: mono $(regtests)
 	for i in $(regtests); do ./mono --aot $$i; done
