@@ -3193,10 +3193,10 @@ pad_heap (MonoDynamicStream *sh)
 	}
 }
 
-static struct StreamDesc {
+struct StreamDesc {
 	const char *name;
 	MonoDynamicStream *stream;
-} stream_desc [5];
+};
 
 /*
  * build_compressed_metadata() fills in the blob of data that represents the 
@@ -3220,6 +3220,7 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	guint16 *int16val;
 	MonoImage *meta;
 	unsigned char *p;
+	struct StreamDesc stream_desc [5];
 
 	qsort (assembly->gen_params->pdata, assembly->gen_params->len, sizeof (gpointer), compare_genericparam);
 	for (i = 0; i < assembly->gen_params->len; i++){
