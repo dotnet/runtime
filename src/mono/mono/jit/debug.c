@@ -774,7 +774,7 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address)
 		return NULL;
 
 	if (minfo->info->symfile) {
-		guint32 offset = il_offset_from_address (minfo, address);
+		gint32 offset = il_offset_from_address (minfo, address);
 		
 		if (offset < 0)
 			return NULL;
