@@ -511,10 +511,13 @@ void
 mono_loader_lock           (void);
 
 void
-mono_loader_unlock           (void);
+mono_loader_unlock         (void);
 
 void 
-mono_init_icall            (void);
+mono_icall_init            (void);
+
+void
+mono_icall_cleanup         (void);
 
 gpointer
 mono_method_get_wrapper_data (MonoMethod *method, guint32 id);

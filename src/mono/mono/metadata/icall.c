@@ -6595,7 +6595,7 @@ static GHashTable *jit_icall_hash_name = NULL;
 static GHashTable *jit_icall_hash_addr = NULL;
 
 void
-mono_init_icall (void)
+mono_icall_init (void)
 {
 	int i = 0;
 
@@ -6622,7 +6622,15 @@ mono_init_icall (void)
 		}
 	}
 
-	icall_hash = g_hash_table_new (g_str_hash , g_str_equal);
+	icall_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+}
+
+void
+mono_icall_cleanup (void)
+{
+	g_hash_table_destroy (icall_hash);
+	g_hash_table_destroy (jit_icall_hash_name);
+	g_hash_table_destroy (jit_icall_hash_addr);
 }
 
 void
@@ -6894,7 +6902,7 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 	mono_loader_lock ();
 
 	if (!jit_icall_hash_name) {
-		jit_icall_hash_name = g_hash_table_new (g_str_hash, g_str_equal);
+		jit_icall_hash_name = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, g_free);
 		jit_icall_hash_addr = g_hash_table_new (NULL, NULL);
 	}
 
