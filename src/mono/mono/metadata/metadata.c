@@ -27,7 +27,8 @@ static void do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGener
 					 const char *ptr, const char **rptr);
 
 static gboolean do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only);
-static gboolean _mono_metadata_generic_class_equal (MonoGenericClass *g1, MonoGenericClass *g2,
+static gboolean mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only);
+static gboolean _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGenericClass *g2,
 						    gboolean signature_only);
 
 /*
@@ -2831,13 +2832,13 @@ mono_metadata_generic_class_is_valuetype (MonoGenericClass *gclass)
 }
 
 static gboolean
-_mono_metadata_generic_class_equal (MonoGenericClass *g1, MonoGenericClass *g2, gboolean signature_only)
+_mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGenericClass *g2, gboolean signature_only)
 {
 	int i;
 
 	if (g1->inst->type_argc != g2->inst->type_argc)
 		return FALSE;
-	if (!do_mono_metadata_type_equal (&g1->container_class->byval_arg, &g2->container_class->byval_arg, signature_only))
+	if (!mono_metadata_class_equal (g1->container_class, g2->container_class, signature_only))
 		return FALSE;
 	for (i = 0; i < g1->inst->type_argc; ++i) {
 		if (!do_mono_metadata_type_equal (g1->inst->type_argv [i], g2->inst->type_argv [i], signature_only))
@@ -3791,6 +3792,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	guint32 cols [MONO_GENERICPARAM_SIZE];
 	guint32 i, owner = 0, last_num, n;
 	MonoGenericContainer *container;
+	MonoGenericClass *gclass;
 	MonoGenericParam *params;
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_TYPEDEF)

@@ -259,6 +259,43 @@ mono_class_is_open_constructed_type (MonoType *t)
 	}
 }
 
+static MonoGenericClass *
+inflate_generic_class (MonoGenericClass *ogclass, MonoGenericContext *context)
+{
+	MonoGenericClass *ngclass, *cached;
+
+	if (ogclass->is_dynamic) {
+		MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
+		ngclass = &dgclass->generic_class;
+	} else
+		ngclass = g_new0 (MonoGenericClass, 1);
+
+	*ngclass = *ogclass;
+
+	ngclass->inst = mono_metadata_inflate_generic_inst (ogclass->inst, context);
+
+	ngclass->klass = NULL;
+
+	ngclass->context = g_new0 (MonoGenericContext, 1);
+	ngclass->context->container = context->container;
+	ngclass->context->gclass = ngclass;
+
+	ngclass->initialized = FALSE;
+
+	mono_loader_lock ();
+	cached = mono_metadata_lookup_generic_class (ngclass);
+	mono_loader_unlock ();
+	if (cached) {
+		g_free (ngclass);
+		return cached;
+	}
+
+	mono_class_create_generic (ngclass);
+	mono_class_create_generic_2 (ngclass);
+
+	return ngclass;
+}
+
 static MonoType*
 inflate_generic_type (MonoType *type, MonoGenericContext *context)
 {
@@ -287,51 +324,25 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		return nt;
 	}
 	case MONO_TYPE_GENERICINST: {
-		MonoGenericClass *ogclass = type->data.generic_class;
-		MonoGenericClass *ngclass, *cached;
+		MonoGenericClass *ngclass = inflate_generic_class (type->data.generic_class, context);
+		MonoType *nt = dup_type (type, type);
+		nt->data.generic_class = ngclass;
+		return nt;
+	}
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_VALUETYPE: {
+		MonoClass *klass = type->data.klass;
+		MonoGenericClass *gclass;
 		MonoType *nt;
-		int i;
 
-		if (ogclass->is_dynamic) {
-			MonoDynamicGenericClass *dgclass = g_new0 (MonoDynamicGenericClass, 1);
-			ngclass = &dgclass->generic_class;
-		} else
-			ngclass = g_new0 (MonoGenericClass, 1);
+		if (!klass->generic_container)
+			return NULL;
 
-		*ngclass = *ogclass;
-
-		ngclass->inst = mono_metadata_inflate_generic_inst (ogclass->inst, context);
-
-		ngclass->klass = NULL;
-
-		ngclass->context = g_new0 (MonoGenericContext, 1);
-		ngclass->context->container = context->container;
-		ngclass->context->gclass = ngclass;
-
-		ngclass->initialized = FALSE;
-
-		mono_loader_lock ();
-		cached = mono_metadata_lookup_generic_class (ngclass);
-		if (cached) {
-			g_free (ngclass);
-			mono_loader_unlock ();
-
-			nt = dup_type (type, type);
-			nt->data.generic_class = cached;
-			return nt;
-		}
-
-		mono_class_create_generic (ngclass);
-		mono_class_create_generic_2 (ngclass);
-
-		mono_stats.generic_instance_count++;
-		mono_stats.generics_metadata_size += sizeof (MonoGenericClass) +
-			sizeof (MonoGenericContext) +
-			ngclass->inst->type_argc * sizeof (MonoType);
+		gclass = inflate_generic_class (klass->generic_container->context.gclass, context);
 
 		nt = dup_type (type, type);
-		nt->data.generic_class = ngclass;
-		mono_loader_unlock ();
+		nt->type = MONO_TYPE_GENERICINST;
+		nt->data.generic_class = gclass;
 		return nt;
 	}
 	default:
@@ -398,6 +409,27 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
 	return res;
 }
 
+static MonoGenericContext *
+inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflate_with)
+{
+	MonoGenericContext *res = g_new0 (MonoGenericContext, 1);
+
+	res->container = context->container;
+
+	if (context->gclass)
+		res->gclass = inflate_generic_class (context->gclass, inflate_with);
+
+	if (context->gmethod) {
+		res->gmethod = g_new0 (MonoGenericMethod, 1);
+
+		res->gmethod->container = context->gmethod->container;
+		res->gmethod->inst = mono_metadata_inflate_generic_inst (context->gmethod->inst, inflate_with);
+	} else
+		res->gmethod = inflate_with->gmethod;
+
+	return res;
+}
+
 MonoMethod*
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context,
 				   MonoClass *klass)
@@ -408,6 +440,13 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		return method;
+
+	if (method->signature->is_inflated) {
+		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
+
+		context = inflate_generic_context (imethod->context, context);
+		method = imethod->declaring;
+	}
 
 	mono_stats.inflated_method_count++;
 	mono_stats.generics_metadata_size +=
@@ -430,22 +469,8 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 	result->nmethod.method.signature = mono_class_inflate_generic_signature (
 		method->klass->image, method->signature, context);
 
-	if (context->gmethod) {
-		result->context = g_new0 (MonoGenericContext, 1);
-		result->context->container = context->gmethod->container;
-		result->context->gmethod = context->gmethod;
-		result->context->gclass = rklass->generic_class;
-
-		mono_stats.generics_metadata_size += sizeof (MonoGenericContext);
-	} else if (method->signature->generic_param_count)
-		result->context = (MonoGenericContext *) ((MonoMethodNormal *) method)->generic_container;
-	else if (rklass->generic_class)
-		result->context = rklass->generic_class->context;
-
-	if (method->signature->is_inflated)
-		result->declaring = ((MonoMethodInflated *) method)->declaring;
-	else
-		result->declaring = method;
+	result->context = context;
+	result->declaring = method;
 
 	return (MonoMethod *) result;
 }
@@ -1814,6 +1839,50 @@ set_generic_param_owner (MonoGenericContainer *container, MonoClass *klass, int 
 	return pos + gc->type_argc;
 }
 
+static MonoGenericInst *
+get_shared_inst (MonoGenericContainer *container)
+{
+	MonoGenericInst *nginst;
+	int i;
+
+	nginst = g_new0 (MonoGenericInst, 1);
+	nginst->type_argc = container->type_argc;
+	nginst->type_argv = g_new0 (MonoType *, nginst->type_argc);
+	nginst->is_open = 1;
+
+	for (i = 0; i < nginst->type_argc; i++) {
+		MonoType *t = g_new0 (MonoType, 1);
+
+		t->type = container->is_method ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
+		t->data.generic_param = &container->type_params [i];
+
+		nginst->type_argv [i] = t;
+	}
+
+	return mono_metadata_lookup_generic_inst (nginst);
+}
+
+static MonoGenericClass *
+get_shared_gclass (MonoGenericContainer *container)
+{
+	MonoGenericClass *gclass = g_new0 (MonoGenericClass, 1);
+	MonoGenericClass *cached;
+
+	gclass->context = &container->context;
+	gclass->container_class = container->klass;
+	gclass->inst = get_shared_inst (container);
+
+	cached = mono_metadata_lookup_generic_class (gclass);
+	if (cached) {
+		g_free (gclass);
+		return cached;
+	}
+
+	gclass->klass = container->klass;
+
+	return gclass;
+}
+
 /**
  * @image: context where the image is created
  * @type_token:  typedef token
@@ -1859,8 +1928,9 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	class->generic_container = mono_metadata_load_generic_params (image, class->type_token, NULL);
 	if (class->generic_container) {
 		class->generic_container->klass = class;
-		context = g_new0 (MonoGenericContext, 1);
-		context->container = class->generic_container;
+		context = &class->generic_container->context;
+
+		context->gclass = get_shared_gclass (context->container);
 	}
 
 	if (cols [MONO_TYPEDEF_EXTENDS])
