@@ -187,7 +187,7 @@ struct MonoInst {
 		union {
 			MonoInst *src;
 			MonoMethodVar *var;
-			ssize_t const_val;
+			gssize const_val;
 			gpointer p;
 			MonoMethod *method;
 			MonoMethodSignature *signature;
