@@ -318,7 +318,7 @@ starg:
 ldloc:
 ldloca:
 stloc:
-localloc: dest:i src1:i len:30
+localloc: dest:i src1:i len:32
 unused57:
 endfilter:
 unaligned.:
