@@ -1735,6 +1735,10 @@ handle_enum:
 			if (args [i]->type != STACK_VTYPE)
 				return 1;
 			continue;
+		case MONO_TYPE_GENERICINST:
+			simple_type = sig->params [i]->data.generic_inst->generic_type->type;
+			goto handle_enum;
+
 		default:
 			g_error ("unknown type 0x%02x in check_call_signature", simple_type);
 		}

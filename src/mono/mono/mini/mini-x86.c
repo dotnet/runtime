@@ -751,6 +751,10 @@ handle_enum:
 					arg->unused = sig->pinvoke;
 					arg->inst_imm = sizeof (MonoTypedRef); 
 					break;
+				case MONO_TYPE_GENERICINST:
+					type = ptype->data.generic_inst->generic_type->type;
+					goto handle_enum;
+
 				default:
 					g_error ("unknown type 0x%02x in mono_arch_call_opcode\n", type);
 				}
