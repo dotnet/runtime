@@ -38,6 +38,7 @@ static void object_register_finalizer (MonoObject *obj, void (*callback)(void *,
 #if HAVE_BOEHM_GC
 static void finalize_notify (void);
 static HANDLE pending_done_event;
+static HANDLE shutdown_event;
 #endif
 
 /* 
@@ -443,18 +444,11 @@ static volatile gboolean finished=FALSE;
 
 static void finalize_notify (void)
 {
-	gboolean pending = GC_should_invoke_finalizers ();
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": prodding finalizer");
 #endif
 
 	SetEvent (finalizer_event);
-	if (finished && pending) {
-		/* Finishing the finalizer thread, so wait a little bit... */
-		/* MS seems to wait for about 2 seconds */
-		ResetEvent (pending_done_event);
-		WaitForSingleObject (pending_done_event, 2000);
-	}
 }
 
 static guint32 finalizer_thread (gpointer unused)
@@ -484,8 +478,11 @@ static guint32 finalizer_thread (gpointer unused)
 		if (GC_should_invoke_finalizers ()) {
 			GC_invoke_finalizers ();
 		}
+
 		SetEvent (pending_done_event);
 	}
+
+	SetEvent (shutdown_event);
 	
 	return(0);
 }
@@ -546,7 +543,8 @@ void mono_gc_init (void)
 	
 	finalizer_event = CreateEvent (NULL, FALSE, FALSE, NULL);
 	pending_done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-	if (finalizer_event == NULL || pending_done_event == NULL) {
+	shutdown_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+	if (finalizer_event == NULL || pending_done_event == NULL || shutdown_event == NULL) {
 		g_assert_not_reached ();
 	}
 
@@ -557,7 +555,7 @@ void mono_gc_init (void)
 	 * the runtime to wait for this thread to exit when it's
 	 * cleaning up.
 	 */
-	gc_thread = CreateThread (NULL, 0, finalizer_thread, NULL, 0, NULL);
+	gc_thread = CreateThread (NULL, mono_threads_get_default_stacksize (), finalizer_thread, NULL, 0, NULL);
 	if (gc_thread == NULL) {
 		g_assert_not_reached ();
 	}
@@ -571,9 +569,19 @@ void mono_gc_cleanup (void)
 #endif
 
 #ifdef ENABLE_FINALIZER_THREAD
+	ResetEvent (shutdown_event);
 	finished = TRUE;
-	if (!gc_disabled)
+	if (!gc_disabled) {
 		finalize_notify ();
+		/* Finishing the finalizer thread, so wait a little bit... */
+		/* MS seems to wait for about 2 seconds */
+		/* 
+		 * FIXME: This is not thread safe. If the finalizer thread keeps
+		 * running, and the runtime is shut down, it will lead to a crash.
+		 */
+		WaitForSingleObject (shutdown_event, 2000);
+	}
+
 #endif
 }
 

@@ -57,6 +57,7 @@ extern MonoThread *mono_thread_attach (MonoDomain *domain);
 void     mono_threads_install_cleanup   (MonoThreadCleanupFunc func);
 
 extern void mono_threads_set_default_stacksize (guint32 stacksize);
+extern guint32 mono_threads_get_default_stacksize (void);
 guint32  mono_threads_alloc_static_data (guint32 size, guint32 align);
 gpointer mono_threads_get_static_data   (guint32 offset);
 

@@ -245,6 +245,11 @@ void mono_threads_set_default_stacksize (guint32 stacksize)
 	default_stacksize = stacksize;
 }
 
+guint32 mono_threads_get_default_stacksize (void)
+{
+	return default_stacksize;
+}
+
 void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 {
 	MonoThread *thread;
