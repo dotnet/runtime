@@ -3,17 +3,17 @@
 	MCS is currently able to compile small C# programs (there is
 	a test suite included that you can use).
 
-	All type, field, method, delegates definitions are now emitted
-	and the body of constructors and methods is being generated
-	for a subset of the language.  Although MCS can parse itself,
-	it cant not yet compile itself.  Most statements are generated
-	correctly and about 80% of the C# expressions are supported.
+	We are in feature completion mode right now.  There are still
+	a couple of areas that are not covered by the Mono compiler, but
+	they are very very few at this point.
 
-	Work is progressing quickly on various fronts in the C#
-	compiler.
+	Although MCS has been able to parse itself since April,
+	it can not yet compile itself.  We are working hard towards
+	mkaing the compiler self hosting in Linux.
 
 	A test suite is being built currently to track the progress of
-	the compiler.
+	the compiler and various programs are routinely compiled and
+	ran.
 
 ** Phases of the compiler
 
@@ -57,11 +57,18 @@
 	Simple tasks:
 
 	<ul>
-		* PInvoke declarations are not supported.
-
 		* Extern declarations are missing.
+	</ul>
 
-		* Pre-processing is not supported.
+	Larger tasks:
+
+	<ul>
+		* Finish constant folding.
+	</ul>
+
+	Interesting and Fun hacks to the compiler:
+
+	<ul>
 
 		* Jay does not work correctly with `error'
 		  productions, making parser errors hard to point.  It
@@ -71,30 +78,6 @@
 		  Nick Drochak has started a project on SourceForge for this.
 		  You can find the project at: <a href="http://sourceforge.net/projects/jb2csharp/">
 		  http://sourceforge.net/projects/jb2csharp/</a>
-	</ul>
-
-	Larger tasks:
-
-	<ul>
-		* Implement constant expression evaluator.
-
-		* Implement constant declarations.
-	</ul>
-
-	Interesting and Fun hacks to the compiler:
-
-	<ul>
-		* Finishing the JB port from Java to C#.  If you are
-		  interested in working on this, please contact the project admin on SourceForge:
-		  <a href="http://sourceforge.net/projects/jb2csharp/">
-		  http://sourceforge.net/projects/jb2csharp/</a>
-
-		  More on JB at: <a href="http://www.cs.colorado.edu/~dennis/software/jb.html">
-		  http://www.cs.colorado.edu/~dennis/software/jb.html</a>
-
-		  JB will allow us to move from the Berkeley Yacc
-		  based Jay to a Bison-based compiler (better error
-		  reporting and recovery).
 
 		* Semantic Analysis: Return path coverage and
 		  initialization before use coverage are two great

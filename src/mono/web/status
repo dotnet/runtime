@@ -8,21 +8,22 @@
 	 	few features are still missing (for a list, check the
 		<a href="c-sharp.html">C# compiler</a> web page.
 
+		* The Mono JIT engine.  The JIT engine is the real
+		virtual machine that we will be supporting.  It is
+		functionaly currently, and we are improving its speed,
+		and making it feature complete.
+
 		* A CIL bytecode interpreter (<b>mint</b>).  This
 		currently can be used to run most .NET programs
 		(modulo the fact that our class libraries are not
 		complete enough).
 
 		<b>mint</b> can currently run the Mono C# compiler and
-		the compiler generates valid code. 
+		the compiler generates valid code.  
 
 		We use <b>mint</b> as a reference implementation of
 		the runtime environment and to quickly support
 		non-Intel platforms.
-
-		* The Mono JIT engine.  The JIT engine is the real
-		virtual machine that we will be supporting.  It is
-		approaching maturity rapidly.
 
 		* Metadata library: Can currently parse
 		and load information from .NET modules (executables

@@ -5,9 +5,19 @@
 	class loader, the garbage collector, threading system and
 	metadata access libraries.
 
-	Currently the runtime has an image loader and metadata access
-	entry points.  The runtime comes with a simple interpreter
-	that can execute very simple programs. 
+	We currently have two runtimes:
+
+	<ul>
+		* <b>mint:</b> The Mono interpreter.  This is an
+		  easy-to-port runtime engine.
+
+		* <b>mono:</b> The Just In Time compiler implemented
+	 	  using a BURS instruction selector
+	</ul>
+
+	Currently both runtimes are missing garbage collection.  We
+	are planning on using the ORP GC engine and deploy it by
+	middle January.  
 
 ** Executing MSIL/CIL images
 
@@ -16,7 +26,7 @@
 	Linux.
 
 	Our roadmap looks like this, this has been updated as of
-	<b>Jul 15, 2001</b>:
+	<b>Dec 18, 2001</b>:
 
 	<ul>
 
@@ -30,12 +40,12 @@
 
 		* Milestone 3: <b>Done</b>Define an <i>lburg</i>-like
 		  instruction selector for the JITer for Intel.
-		  Although slower at JITing than a streaming JITer, it
-		  generates better code.  The same grammar can later
-		  be used for the stream jitter.
 
-		* Milestone 4: Implement JITer.  This is where our
-		  current efforts are focused on, the JITer is 60% ready.
+		* Milestone 4: <b>Done</b> Implement JITer.  This is where our
+		  current efforts are focused on, the JITer currently runs
+		  all of the code we have tested on it.  The major limitation
+		  is that our class libraries are not complete, and hence not
+		  every application can be ran.
 
 		* Milestone 5: Port of the JITer to non IA32 systems.
 	</ul>
@@ -46,9 +56,10 @@
 
 	The JIT engine should work on Linux and Win32, although you
 	will need to install the CygWin32 development tools to get a
-	Unix-like compilation environment.
+	Unix-like compilation environment (mostly we use GNU make in 
+	a few of the makefiles).
 
-** JIT Engine (<b>updated, Nov 16th, 2001</b>)
+** JIT Engine (<b>updated, Dec 18th, 2001</b>)
 
 	The JIT engine uses a code-generator generator approach for
 	compilation.  Given the properties of CIL byte codes, we can
@@ -73,18 +84,9 @@
 
 ** Garbage Collection
 
-	We have decided to implement a generational tracing garbage
-	collector, which is very similar to the one being used by
-	.NET.  For an introduction to the garbage collection system
-	used by Microsoft's CLR implementation, you can read this book
-	on <a
-	href="http://www.amazon.com/exec/obidos/ASIN/0471941484/o/qid=992556433/sr=2-1/ref=aps_sr_b_1_1/103-5866388-0492603">Garbage
-	Collection.</a>
-
-	Another consideration is to use the same interface that ORP
-	uses to its Garbage Collection system and reuse that GC system
-	instead of rolling our own, as the ORP system is pretty advanced
-	and is independent of the rest of ORP.
+	We will be using the Intel ORP GC engine as it provides a precise
+	garbage collector engine, similar to what is available on the
+	.NET environment. 
 
 	Although using a conservative garbage collector like Bohem's
 	would work, all the type information is available at runtime,
@@ -111,9 +113,11 @@
 ** IO and threading
 
 	The ECMA runtime and the .NET runtime assume an IO model and a
-	threading model that is very similar to the Win32 API.  Dick
-	Porter has been working on the Mono abstraction layer that allows
-	our runtime to execute code that depend on this behaviour.
+	threading model that is very similar to the Win32 API.  
+
+	Dick Porter has been working on the Mono abstraction layer
+	that allows our runtime to execute code that depend on this
+	behaviour.
 
 ** Useful links
 
@@ -139,7 +143,5 @@
 	PInvoke is the mechanism we are using to wrap Unix API calls
 	as well as talking to system libraries.
 
-	We hvae implemented PInvoke through libffi, but we are likely
-	going to roll our own system as the runtime matures, specially
-	as the interpreter is approaching completion, and we move into
-	the JITer.
+	Initially we used libffi, but it was fairly slow, so we have
+	reused parts of the JIT work to create efficient PInvoke trampolines. 
