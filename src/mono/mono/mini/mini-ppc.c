@@ -285,6 +285,7 @@ typedef struct {
 	guint32 stack_usage;
 	guint32 struct_ret;
 	ArgInfo ret;
+	ArgInfo sig_cookie;
 	ArgInfo args [1];
 } CallInfo;
 
@@ -350,6 +351,13 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 	}
         DEBUG(printf("params: %d\n", sig->param_count));
 	for (i = 0; i < sig->param_count; ++i) {
+		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
+                        /* Prevent implicit arguments and sig_cookie from
+			   being passed in registers */
+                        gr = PPC_LAST_ARG_REG + 1;
+                        /* Emit the signature cookie just before the implicit arguments */
+                        add_general (&gr, &stack_size, &cinfo->sig_cookie, TRUE);
+                }
                 DEBUG(printf("param %d: ", i));
 		if (sig->params [i]->byref) {
                         DEBUG(printf("byref\n"));
@@ -572,6 +580,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	int i, offset, size, align, curinst;
 	int frame_reg = ppc_sp;
 
+
 	/* allow room for the vararg method args: void* and long/double */
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (m->method))
 		m->param_area = MAX (m->param_area, sizeof (gpointer)*8);
@@ -650,6 +659,9 @@ mono_arch_allocate_vars (MonoCompile *m)
 	/* this is a global constant */
 	mono_exc_esp_offset = offset;
 #endif
+	if (sig->call_convention == MONO_CALL_VARARG) {
+                m->sig_cookie = PPC_STACK_PARAM_OFFSET;
+        }
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		inst = m->ret;
@@ -659,7 +671,10 @@ mono_arch_allocate_vars (MonoCompile *m)
 		inst->opcode = OP_REGOFFSET;
 		inst->inst_basereg = frame_reg;
 		offset += sizeof(gpointer);
+		if (sig->call_convention == MONO_CALL_VARARG)
+			m->sig_cookie += sizeof (gpointer);
 	}
+
 	curinst = m->locals_start;
 	for (i = curinst; i < m->num_varinfo; ++i) {
 		inst = m->varinfo [i];
@@ -692,6 +707,8 @@ mono_arch_allocate_vars (MonoCompile *m)
 			offset &= ~(sizeof (gpointer) - 1);
 			inst->inst_offset = offset;
 			offset += sizeof (gpointer);
+			if (sig->call_convention == MONO_CALL_VARARG)
+				m->sig_cookie += sizeof (gpointer);
 		}
 		curinst++;
 	}
@@ -706,6 +723,8 @@ mono_arch_allocate_vars (MonoCompile *m)
 			offset &= ~(align - 1);
 			inst->inst_offset = offset;
 			offset += size;
+			if ((sig->call_convention == MONO_CALL_VARARG) && (i < sig->sentinelpos)) 
+				m->sig_cookie += size;
 		}
 		curinst++;
 	}
@@ -747,6 +766,21 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
+		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
+			MonoInst *sig_arg;
+			cfg->disable_aot = TRUE;
+				
+			MONO_INST_NEW (cfg, sig_arg, OP_ICONST);
+			sig_arg->inst_p0 = call->signature;
+			
+			MONO_INST_NEW (cfg, arg, OP_OUTARG);
+			arg->inst_imm = cinfo->sig_cookie.offset;
+			arg->inst_left = sig_arg;
+			
+			/* prepend, so they get reversed */
+			arg->next = call->out_args;
+			call->out_args = arg;
+		}
 		if (is_virtual && i == 0) {
 			/* the argument will be attached to the call instrucion */
 			in = call->args [i];
@@ -2802,9 +2836,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* ensure ins->sreg1 is not NULL */
 			ppc_lwz (code, ppc_r0, 0, ins->sreg1);
 			break;
-		case OP_ARGLIST:
-			/* FIXME: implement */
+		case OP_ARGLIST: {
+			if (ppc_is_imm16 (cfg->sig_cookie + cfg->stack_usage)) {
+				ppc_addi (code, ppc_r11, cfg->frame_reg, cfg->sig_cookie + cfg->stack_usage);
+			} else {
+				ppc_load (code, ppc_r11, cfg->sig_cookie + cfg->stack_usage);
+				ppc_add (code, ppc_r11, cfg->frame_reg, ppc_r11);
+			}
+			ppc_stw (code, ppc_r11, 0, ins->sreg1);
 			break;
+		}
 		case OP_FCALL:
 		case OP_LCALL:
 		case OP_VCALL:
