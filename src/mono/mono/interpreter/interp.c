@@ -293,7 +293,7 @@ get_virtual_method (MonoDomain *domain, MonoMethod *m, stackval *objs)
 	vtable = (MonoMethod **)obj->vtable->vtable;
 
 	if (m->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		return *(MonoMethod**)(obj->vtable->interface_offsets [m->klass->interface_id] + (m->slot<<2));
+		return *(MonoMethod**)((char*)obj->vtable->interface_offsets [m->klass->interface_id] + (m->slot<<2));
 	}
 
 	g_assert (vtable [m->slot]);
@@ -302,7 +302,7 @@ get_virtual_method (MonoDomain *domain, MonoMethod *m, stackval *objs)
 }
 
 void inline
-stackval_from_data (MonoType *type, stackval *result, const char *data)
+stackval_from_data (MonoType *type, stackval *result, char *data)
 {
 	if (type->byref) {
 		switch (type->type) {
@@ -613,7 +613,7 @@ ves_pinvoke_method (MonoInvocation *frame)
 	TlsSetValue (frame_thread_id, frame);
 
 	func ((MonoFunc)frame->method->addr, &frame->retval->data.p, frame->obj, frame->stack_args);
-	stackval_from_data (frame->method->signature->ret, frame->retval, (const char*)&frame->retval->data.p);
+	stackval_from_data (frame->method->signature->ret, frame->retval, (char*)&frame->retval->data.p);
 	TlsSetValue (frame_thread_id, frame->args);
 }
 
@@ -664,7 +664,7 @@ ves_runtime_method (MonoInvocation *frame)
 		/* FIXME: need to handle exceptions across managed/unmanaged boundaries */
 		func ((MonoFunc)delegate->method_ptr, &frame->retval->data.p, delegate->target, frame->stack_args);
 #endif
-		stackval_from_data (frame->method->signature->ret, frame->retval, (const char*)&frame->retval->data.p);
+		stackval_from_data (frame->method->signature->ret, frame->retval, (char*)&frame->retval->data.p);
 		return;
 	}
 	g_error ("Don't know how to exec runtime method %s.%s::%s", 
@@ -805,7 +805,7 @@ calc_offsets (MonoImage *image, MonoMethodHeader *header, MonoMethodSignature *s
 			ip += 2;
 			break;
 		case MonoInlineSwitch: {
-			gint32 n;
+			guint32 n;
 			++ip;
 			n = read32 (ip);
 			ip += 4;
@@ -1332,7 +1332,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDC_I4_S) 
 			++ip;
 			sp->type = VAL_I32;
-			sp->data.i = *(gint8 *)ip;
+			sp->data.i = *(const gint8 *)ip;
 			++ip;
 			++sp;
 			BREAK;
@@ -2005,7 +2005,7 @@ ves_exec_method (MonoInvocation *frame)
 				if (GET_NATI (sp [0]) == 0)
 					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
 				val = (mono_u)sp [-1].data.p;
-				val /= (guint64)sp [0].data.p;
+				val /= (mono_u)sp [0].data.p;
 				sp [-1].data.p = (gpointer)val;
 			}
 			BREAK;
@@ -2293,13 +2293,13 @@ ves_exec_method (MonoInvocation *frame)
 		}
 		CASE (CEE_LDSTR) {
 			MonoObject *o;
-			guint32 index;
+			guint32 str_index;
 
 			ip++;
-			index = mono_metadata_token_index (read32 (ip));
+			str_index = mono_metadata_token_index (read32 (ip));
 			ip += 4;
 
-			o = (MonoObject*)mono_ldstr (domain, image, index);
+			o = (MonoObject*)mono_ldstr (domain, image, str_index);
 			sp->type = VAL_OBJ;
 			sp->data.p = o;
 			sp->data.vt.klass = NULL;
@@ -2430,7 +2430,7 @@ array_constructed:
 						/* fixme: add check for IRemotingTypeInfo */
 						MonoRealProxy *rp = ((MonoTransparentProxy *)o)->rp;
 						MonoType *type;
-						type = ((MonoReflectionType *)rp->class_to_proxy)->type;
+						type = rp->class_to_proxy->type;
 						oclass = mono_class_from_mono_type (type);
 					}
 					/* handle array casts */
@@ -3885,7 +3885,7 @@ output_newobj_profile (GList *proflist)
 	GList *tmp;
 	NewobjProfile *p;
 	MonoClass *klass;
-	char* isarray;
+	const char* isarray;
 	char buf [256];
 
 	if (proflist)

@@ -65,10 +65,10 @@ struct _MonoInvocation {
 
 void mono_init_icall (void);
 
-void inline stackval_from_data (MonoType *type, stackval *result, const char *data);
+void inline stackval_from_data (MonoType *type, stackval *result, char *data);
 void ves_exec_method (MonoInvocation *frame);
 
-typedef void (*MonoFunc) ();
+typedef void (*MonoFunc) (void);
 typedef void (*MonoPIFunc) (MonoFunc callme, void *retval, void *obj_this, stackval *arguments);
 
 /*
