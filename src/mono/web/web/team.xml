@@ -133,9 +133,13 @@
       <last-name>Martinez</last-name>
     </name>
     <e-mail>yoros@wanadoo.es</e-mail>
-    <location>Spain</location>
+    <image>none.png</image>
+    <location>Murcia, Spain</location>
+    <organization>None</organization>
+	<description>External Contributor</description>
     <tasks>
-      <task>Coding little things</task>
+      <task>Testing core class libraries</task>
+      <task>Fixing little bugs</task>
     </tasks>
   </contributor>
 
