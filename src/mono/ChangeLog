@@ -1,3 +1,7 @@
+2003-07-22  Duncan Mak  <duncan@ximian.com>
+       
+        * runtime/Makefile.am: Remove sqlsharp as we no longer distribute it.
+
 2003-07-22  Zoltan Varga  <vargaz@freemail.hu>
 
 	* mono/tests/Makefile.am: Add missing test. Make tests interruptable
