@@ -383,7 +383,7 @@ typedef struct MonoTypeNameParse MonoTypeNameParse;
 struct MonoTypeNameParse {
 	char *name_space;
 	char *name;
-	char *assembly;
+	MonoAssemblyName assembly;
 	GList *modifiers; /* 0 -> byref, -1 -> pointer, > 0 -> array rank */
 	GList *nested;
 };
@@ -400,6 +400,7 @@ typedef struct {
 char*         mono_type_get_name         (MonoType *type);
 int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);
 MonoType*     mono_reflection_get_type   (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase);
+MonoType*     mono_reflection_type_from_name (char *name);
 
 void          mono_image_create_pefile (MonoReflectionAssemblyBuilder *assembly);
 void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);

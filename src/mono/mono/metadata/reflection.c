@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <time.h>
 #include <string.h>
+#include <ctype.h>
 #include "image.h"
 #include "cil-coff.h"
 #include "rawbuffer.h"
@@ -2830,6 +2831,94 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	return res;
 }
 
+static int
+assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
+	int found_sep;
+	char *s;
+
+	memset (assembly, 0, sizeof (MonoAssemblyName));
+	assembly->name = p;
+	assembly->culture = "";
+	
+	while (*p && (isalnum (*p) || *p == '.'))
+		p++;
+	if (!*p)
+		return 0;
+	found_sep = 0;
+	while (*p == ' ' || *p == ',') {
+		*p++ = 0;
+		found_sep = 1;
+		continue;
+	}
+	/* failed */
+	if (!found_sep)
+		return 1;
+	while (*p) {
+		if (*p == 'V' && strncmp (p, "Version=", 8) == 0) {
+			p += 8;
+			assembly->major = strtoul (p, &s, 10);
+			if (s == p || *s != '.')
+				return 1;
+			p = ++s;
+			assembly->minor = strtoul (p, &s, 10);
+			if (s == p || *s != '.')
+				return 1;
+			p = ++s;
+			assembly->build = strtoul (p, &s, 10);
+			if (s == p || *s != '.')
+				return 1;
+			p = ++s;
+			assembly->revision = strtoul (p, &s, 10);
+			if (s == p)
+				return 1;
+		} else if (*p == 'C' && strncmp (p, "Culture=", 8) == 0) {
+			p += 8;
+			if (strncmp (p, "neutral", 7) == 0) {
+				assembly->culture = "";
+				p += 7;
+			} else {
+				assembly->culture = p;
+				while (*p && *p != ',') {
+					p++;
+				}
+			}
+		} else if (*p == 'P' && strncmp (p, "PublicKeyToken=", 15) == 0) {
+			p += 15;
+			s = p;
+			while (*s && isxdigit (*s)) {
+				*s = tolower (*s);
+				s++;
+			}
+			assembly->hash_len = s - p;
+			if (!(s-p) || ((s-p) & 1))
+				return 1;
+			assembly->hash_value = s = p;
+			while (*s && isxdigit (*s)) {
+				int val;
+				val = *s >= '0' && *s <= '9'? *s - '0': *s - 'a' + 10;
+				s++;
+				*p = val << 4;
+				*p |= *s >= '0' && *s <= '9'? *s - '0': *s - 'a' + 10;
+				p++;
+			}
+			p = s;
+		} else {
+			return 1;
+		}
+		found_sep = 0;
+		while (*p == ' ' || *p == ',') {
+			*p++ = 0;
+			found_sep = 1;
+			continue;
+		}
+		/* failed */
+		if (!found_sep)
+			return 1;
+	}
+
+	return 0;
+}
+
 /*
  * mono_reflection_parse_type:
  * @name: type name
@@ -2850,7 +2939,8 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 
 	start = p = w = name;
 
-	info->name = info->name_space = info->assembly = NULL;
+	memset (&info->assembly, 0, sizeof (MonoAssemblyName));
+	info->name = info->name_space = NULL;
 	info->nested = NULL;
 	info->modifiers = NULL;
 
@@ -2948,12 +3038,13 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 			}
 			if (!*p)
 				return 0; /* missing assembly name */
-			info->assembly = p;
+			if (!assembly_name_to_aname (&info->assembly, p))
+				return 0;
 			break;
 		default:
 			break;
 		}
-		if (info->assembly)
+		if (info->assembly.name)
 			break;
 	}
 	*w = 0; /* terminate class name */
@@ -3084,6 +3175,37 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 	return &klass->byval_arg;
 }
 
+MonoType*
+mono_reflection_type_from_name (char *name)
+{
+	MonoType *type;
+	MonoImage *image;
+	MonoTypeNameParse info;
+	
+	/*g_print ("requested type %s\n", str);*/
+	if (!mono_reflection_parse_type (name, &info)) {
+		g_list_free (info.modifiers);
+		g_list_free (info.nested);
+		return NULL;
+	}
+
+	if (info.assembly.name) {
+		image = mono_image_loaded (info.assembly.name);
+		/* do we need to load if it's not already loaded? */
+		if (!image) {
+			g_list_free (info.modifiers);
+			g_list_free (info.nested);
+			return NULL;
+		}
+	} else
+		image = mono_defaults.corlib;
+
+	type = mono_reflection_get_type (image, &info, FALSE);
+	g_list_free (info.modifiers);
+	g_list_free (info.nested);
+	return type;
+}
+
 /*
  * Optimization we could avoid mallocing() an little-endian archs that
  * don't crash with unaligned accesses.
@@ -3157,8 +3279,21 @@ handle_enum:
 			p += slen;
 			break;
 		}
+		case MONO_TYPE_CLASS: {
+			char *n;
+			MonoType *t;
+			slen = mono_metadata_decode_value (p, &p);
+			n = g_memdup (p, slen + 1);
+			n [slen] = 0;
+			t = mono_reflection_type_from_name (n);
+			if (!t)
+				g_warning ("Cannot load type '%s'", n);
+			g_free (n);
+			params [i] = mono_type_get_object (mono_domain_get (), t);
+			break;
+		}
 		default:
-			g_warning ("Type %02x not handled in custom attr value decoding", sig->params [i]->type);
+			g_warning ("Type 0x%02x not handled in custom attr value decoding", sig->params [i]->type);
 			break;
 		}
 	}

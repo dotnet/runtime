@@ -675,41 +675,17 @@ ves_icall_AssemblyBuilder_getDataChunk (MonoReflectionAssemblyBuilder *assb, Mon
 static MonoReflectionType*
 ves_icall_type_from_name (MonoString *name)
 {
-	MonoDomain *domain = mono_domain_get (); 
 	MonoType *type;
-	MonoImage *image;
-	MonoTypeNameParse info;
 	gchar *str;
 	
 	str = mono_string_to_utf8 (name);
 	/*g_print ("requested type %s\n", str);*/
-	if (!mono_reflection_parse_type (str, &info)) {
-		g_free (str);
-		g_list_free (info.modifiers);
-		g_list_free (info.nested);
-		return NULL;
-	}
-
-	if (info.assembly) {
-		image = mono_image_loaded (info.assembly);
-		/* do we need to load if it's not already loaded? */
-		if (!image) {
-			g_free (str);
-			g_list_free (info.modifiers);
-			g_list_free (info.nested);
-			return NULL;
-		}
-	} else
-		image = mono_defaults.corlib;
-
-	type = mono_reflection_get_type (image, &info, FALSE);
+	type = mono_reflection_type_from_name (str);
 	g_free (str);
-	g_list_free (info.modifiers);
-	g_list_free (info.nested);
 	if (!type)
 		return NULL;
 	/*g_print ("got it\n");*/
-	return mono_type_get_object (domain, type);
+	return mono_type_get_object (mono_object_domain (name), type);
 }
 
 static MonoReflectionType*
