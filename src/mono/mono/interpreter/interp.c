@@ -4983,7 +4983,6 @@ static void main_thread_handler (gpointer user_data)
 {
 	MainThreadArgs *main_args=(MainThreadArgs *)user_data;
 	MonoAssembly *assembly;
-	char *error;
 
 	if (main_args->enable_debugging)
 		mono_debug_init (main_args->domain, MONO_DEBUG_FORMAT_MONO);
@@ -5002,11 +5001,6 @@ static void main_thread_handler (gpointer user_data)
 #ifdef RUN_TEST
 	test_load_class (assembly->image);
 #else
-	error = mono_verify_corlib ();
-	if (error) {
-		fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
-		exit (1);
-	}
 	segv_exception = mono_get_exception_null_reference ();
 	segv_exception->message = mono_string_new (main_args->domain, "Segmentation fault");
 	signal (SIGSEGV, segv_handler);
@@ -5144,12 +5138,6 @@ mono_main (int argc, char *argv [])
 
 	domain = mono_interp_init(file);
 	mono_config_parse (config_file);
-
-	error = mono_verify_corlib ();
-	if (error) {
-		fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
-		exit (1);
-	}
 
 	error = mono_check_corlib_version ();
 	if (error) {
