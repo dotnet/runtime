@@ -947,6 +947,20 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 					if (im->flags & METHOD_ATTRIBUTE_STATIC)
 							continue;
 					g_assert (io + l <= max_vtsize);
+
+					/* 
+					 * If one of our parents already implements this interface
+					 * we can inherit the implementation.
+					 */
+					if (!(vtable [io + l])) {
+						MonoClass *parent = class->parent;
+
+						if ((ic->interface_id <= parent->max_interface_id) && 
+							(parent->interface_offsets [ic->interface_id]) &&
+							parent->vtable)
+							vtable [io + l] = parent->vtable [parent->interface_offsets [ic->interface_id] + l];
+					}
+
 					if (!(vtable [io + l])) {
 						for (j = 0; j < onum; ++j) {
 							g_print (" at slot %d: %s (%d) overrides %s (%d)\n", io+l, overrides [j*2+1]->name, 
