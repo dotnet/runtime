@@ -94,10 +94,17 @@
 	ONE 2002:</a></b> Come see Paolo, Mike and Miguel from the Mono team at the .NET ONE conference in Frankfurt.</ul>
 </ul>
 
-@item Nov 8th, 2002: Mono s390
+@item Nov 8th, 2002: Mono s390, Database work, new JIT updates.
 
 	Neale Ferguson has contributed <a href="download.html">RPM
 	packages</a> of Mono for the Linux/s390.
+
+	Tim Coleman posted an <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-November/003329.html">update</a>
+	on the improvements in the System.Data
+
+	The new JIT engine can run 72 out of our 154 tests for the
+	virtual machine, and it also got exception support this week.
 
 @item Nov 1st, 2002: TDS, Crypto, Gtk#, Winforms, bug fixes.
 
