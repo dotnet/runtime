@@ -144,6 +144,22 @@ mono_string_Internal_ctor_encoding (gpointer dummy, gint8 *value, gint32 sindex,
 	return NULL;
 }
 
+MonoBoolean 
+mono_string_InternalEquals (MonoString *str1, MonoString *str2)
+{
+	gunichar2 *str1ptr;
+	gunichar2 *str2ptr;
+	gint32 str1len;
+
+	/* Length checking is done in C# */
+	str1len = mono_string_length(str1);
+
+	str1ptr = mono_string_chars(str1);
+	str2ptr = mono_string_chars(str2);
+
+	return (0 == memcmp(str1ptr, str2ptr, str1len * sizeof(gunichar2)));
+}
+
 MonoString * 
 mono_string_InternalJoin (MonoString *separator, MonoArray * value, gint32 sindex, gint32 count)
 {
@@ -231,22 +247,18 @@ MonoString *
 mono_string_InternalRemove (MonoString *me, gint32 sindex, gint32 count)
 {
 	MonoString * ret;
-	gint32 count_bytes;
-	gint32 index_bytes;
-	gint32 me_bytes;
+	gint32 srclen;
 	gunichar2 *dest;
 	gunichar2 *src;
 
-	me_bytes = mono_string_length(me);
-	ret = mono_string_InternalAllocateStr(me_bytes - count);
-	index_bytes = sindex * sizeof(gunichar2);
-	count_bytes = count * sizeof(gunichar2);
+	srclen = mono_string_length(me);
+	ret = mono_string_InternalAllocateStr(srclen - count);
 
 	src = mono_string_chars(me);
 	dest = mono_string_chars(ret);
 
-	memcpy(dest, src, index_bytes);
-	memcpy(dest + sindex, src + sindex + count, me_bytes - count_bytes);
+	memcpy(dest, src, sindex * sizeof(gunichar2));
+	memcpy(dest + sindex, src + sindex + count, (srclen - count - sindex) * sizeof(gunichar2));
 
 	return ret;
 }
@@ -271,9 +283,13 @@ mono_string_InternalSplit (MonoString *me, MonoArray *separator, gint32 count)
 	gint32 tmpstrsize;
 	gunichar2 *tmpstrptr;
 
+	gunichar2 cmpchar;
+
 	src = mono_string_chars(me);
 	srcsize = mono_string_length(me);
 	arrsize = mono_array_length(separator);
+
+	cmpchar = mono_array_get(separator, gunichar2, 0);
 
 	splitsize = 0;
 	for (i = 0; i != srcsize && splitsize < count; i++) {
@@ -474,7 +490,7 @@ mono_string_InternalLastIndexOfStr (MonoString *me, MonoString *value, gint32 si
 	src = mono_string_chars(me);
 	cmpstr = mono_string_chars(value);
 
-	for (pos = sindex; pos > sindex - count; pos--) {
+	for (pos = sindex - lencmpstr + 1; pos > sindex - count; pos--) {
 		if (0 == memcmp(src + pos, cmpstr, lencmpstr * sizeof(gunichar2)))
 			return pos;
 	}

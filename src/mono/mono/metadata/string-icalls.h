@@ -37,6 +37,9 @@ mono_string_Internal_ctor_chara_int_int (gpointer dummy, MonoArray *value,  gint
 MonoString *
 mono_string_Internal_ctor_encoding (gpointer dummy, gint8 *value, gint32 sindex, gint32 length, MonoObject *enc);
 
+MonoBoolean 
+mono_string_InternalEquals (MonoString *str1, MonoString *str2);
+
 MonoString * 
 mono_string_InternalJoin (MonoString *separator, MonoArray * value, gint32 sindex, gint32 count);
 
