@@ -591,7 +591,7 @@ create_profiler (void)
 {
 	MonoProfiler *prof = g_new0 (MonoProfiler, 1);
 
-	prof->methods = g_hash_table_new (g_direct_hash, g_direct_equal);
+	prof->methods = g_hash_table_new (NULL, NULL);
 	MONO_TIMER_INIT (prof->jit_timer);
 	prof->mempool = mono_mempool_new ();
 	return prof;

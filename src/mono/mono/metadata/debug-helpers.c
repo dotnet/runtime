@@ -14,6 +14,21 @@ struct MonoMethodDesc {
 	gboolean include_namespace;
 };
 
+static const char *wrapper_type_names [] = {
+	"none",
+	"delegate-invoke",
+	"delegate-begin-invoke",
+	"delegate-end-invoke",
+	"runtime-invoke",
+	"native-to-managed",
+	"managed-to-native",
+	"remoting-invoke",
+	"remoting-invoke-with-check",
+	"ldfld",
+	"stfld",
+	"synchronized"
+};
+
 static void
 append_class_name (GString *res, MonoClass *class, gboolean include_namespace)
 {
@@ -435,15 +450,28 @@ mono_disasm_code (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, const
 	return result;
 }
 
+static const char*
+wrapper_type_to_str (guint32 wrapper_type)
+{
+	g_assert (wrapper_type < sizeof (wrapper_type_names) / sizeof (char*));
+
+	return wrapper_type_names [wrapper_type];
+}
+
 char *
 mono_method_full_name (MonoMethod *method, gboolean signature)
 {
 	char *res;
+	char wrapper [64];
 
 	if (signature) {
 		char *tmpsig = mono_signature_get_desc (method->signature, TRUE);
 
-		res = g_strdup_printf ("%02d %s.%s:%s (%s)", method->wrapper_type, method->klass->name_space, 
+		if (method->wrapper_type != MONO_WRAPPER_NONE)
+			sprintf (wrapper, "(wrapper %s) ", wrapper_type_to_str (method->wrapper_type));
+		else
+			sprintf (wrapper, "");
+		res = g_strdup_printf ("%s%s.%s:%s (%s)", wrapper, method->klass->name_space, 
 				       method->klass->name, method->name, tmpsig);
 		g_free (tmpsig);
 	} else {
