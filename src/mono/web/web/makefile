@@ -47,7 +47,8 @@ clean:
 
 push:
 	cp -f $(NON_HTML_SOURCES) deploy
-	scp -P 2200 -r deploy/* www@www.ximian.com:/web/cvsmodules/mono
+	echo scp -P 2200 -r deploy/* www@www.ximian.com:/web/cvsmodules/mono
+	(cd deploy; rsync --verbose --recursive --checksum --update --rsh='ssh -p 2200' . www@www.ximian.com:/web/cvsmodules/mono )
 
 push2: 
 	scp -r deploy/* primates:public_html/xxx
