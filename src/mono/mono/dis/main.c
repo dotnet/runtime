@@ -349,7 +349,7 @@ dis_code (metadata_t *m, cli_image_info_t *ii, guint32 rva)
 		mh->code_size, mh->code_size, mh->local_var_sig_tok);
 	if (mh->local_var_sig_tok)
 		dis_locals (m, mh->local_var_sig_tok);
-	dissasemble_cil (m, mh->code, mh->code_size);
+	dissasemble_cil (m, mh);
 	
 /*
   hex_dump (mh->code, 0, mh->code_size);

@@ -251,7 +251,7 @@ mono_get_method (MonoImage *image, guint32 token)
 	result->image = image;
 	
 	mono_metadata_decode_row (&tables [table], index - 1, cols, 6);
-	result->name_idx = cols [3];
+	result->name = mono_metadata_string_heap (&image->metadata, cols [3]);
 
 	if (!sig) /* already taken from the methodref */
 		sig = mono_metadata_blob_heap (&image->metadata, cols [4]);

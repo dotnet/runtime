@@ -77,21 +77,60 @@ get_encoded_user_string (const char *ptr)
 	return res;
 }
 
+#define CODE_INDENT g_assert (indent_level < 127); \
+	indent[indent_level*2] = ' ';	\
+	indent[indent_level*2+1] = ' ';	\
+	++indent_level;	\
+	indent[indent_level*2] = 0;
+#define CODE_UNINDENT g_assert (indent_level);	\
+	--indent_level;	\
+	indent[indent_level*2] = 0;
+
 void
-dissasemble_cil (metadata_t *m, const unsigned char *start, int size) 
+dissasemble_cil (metadata_t *m, MonoMetaMethodHeader *mh) 
 {
+	const unsigned char *start = mh->code;
+	int size = mh->code_size;
 	const unsigned char *end = start + size;
 	const unsigned char *ptr = start;
 	opcode_t *entry;
+	char indent[256];
+	int i, indent_level = 0;
+	char *clause_names[] = {"catch", "filter", "finally", "fault"};
+
+	indent [0] = 0;
 
 	while (ptr < end){
+		/* first pass to get the end clauses */
+		for (i = 0; i < mh->num_clauses; ++i) {
+			if (!mh->clauses[i].flags && ptr == start + mh->clauses[i].try_offset + mh->clauses[i].try_len) {
+				CODE_UNINDENT;
+				fprintf (output, "\t%s} // end .try %d\n", indent, i);
+			}
+			if (ptr == start + mh->clauses[i].handler_offset + mh->clauses[i].handler_len) {
+				CODE_UNINDENT;
+				fprintf (output, "\t%s} // end handler %d\n", indent, i);
+			}
+		}
+		for (i = 0; i < mh->num_clauses; ++i) {
+			if (!mh->clauses[i].flags && ptr == start + mh->clauses[i].try_offset) {
+				fprintf (output, "\t%s.try { // %d\n", indent, i);
+				CODE_INDENT;
+			}
+			if (ptr == start + mh->clauses[i].handler_offset) {
+				char * klass = mh->clauses[i].flags ? g_strdup ("") : dis_stringify_token (m, mh->clauses[i].token_or_filter);
+				fprintf (output, "\t%s%s %s { // %d\n", indent, clause_names [mh->clauses[i].flags], klass, i);
+				CODE_INDENT;
+				g_free (klass);
+			}
+		}
 		if (*ptr == 0xfe){
 			ptr++;
 			entry = &opcodes [*ptr + 256];
 		} else 
 			entry = &opcodes [*ptr];
 
-		fprintf (output, "\tIL_%04x: %s ", (int) (ptr - start), entry->name);
+		fprintf (output, "\t%sIL_%04x: %s ", indent, (int) (ptr - start), entry->name);
 		ptr++;
 		switch (entry->argument){
 		case InlineBrTarget: {
@@ -245,7 +284,8 @@ dissasemble_cil (metadata_t *m, const unsigned char *start, int size)
 			ptr++;
 			break;
 		}
-
+		default:
+			break;
 		}
 
 		fprintf (output, "\n");

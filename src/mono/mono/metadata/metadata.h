@@ -221,10 +221,13 @@ typedef enum {
 } MonoCallConvention;
 
 typedef struct {
-	MonoMetaExceptionEnum kind;
-	int n_clauses;
-	void **clauses;
-} MonoMetaExceptionHandler;
+	guint32 flags;
+	guint32 try_offset;
+	guint32 try_len;
+	guint32 handler_offset;
+	guint32 handler_len;
+	guint32 token_or_filter;
+} MonoExceptionClause;
 
 typedef struct _MonoType MonoType;
 typedef struct _MonoArray MonoArray;
@@ -293,12 +296,13 @@ typedef struct {
 	short       max_stack;
 	guint32     local_var_sig_tok;
 
+	unsigned int num_clauses : 16;
 	/* if local_var_sig_tok != 0, then the following apply: */
 	unsigned int init_locals : 1;
 	int         num_locals;
 	MonoType  **locals;
 
-	GList      *exception_handler_list;
+	MonoExceptionClause *clauses;
 } MonoMetaMethodHeader;
 
 guint32     mono_metadata_parse_typedef_or_ref (metadata_t      *m,

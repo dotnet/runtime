@@ -51,18 +51,13 @@ typedef gint32 nati_t;
 #define GET_NATI(sp) ((guint32)(sp).data.i)
 #define CSIZE(x) (sizeof (x) / 4)
 
-static int count = 0;
-
 static void ves_exec_method (MonoMethod *mh, stackval *args);
 
 static void
 ves_real_abort (int line, MonoMethod *mh,
 		const unsigned char *ip, stackval *stack, stackval *sp)
 {
-	metadata_t *m = &mh->image->metadata;
-	const char *name = mono_metadata_string_heap (m, mh->name_idx);
-		
-	fprintf (stderr, "Execution aborted in method: %s\n", name);
+	fprintf (stderr, "Execution aborted in method: %s\n", mh->name);
 	fprintf (stderr, "Line=%d IP=0x%04x, Aborted execution\n", line,
 		 ip-(unsigned char *)mh->data.header->code);
 	g_print ("0x%04x %02x\n",
@@ -375,8 +370,6 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	 * but it may be useful for debug
 	 */
 	while (1) {
-		/*count++;*/
-
 		/*g_assert (sp >= stack);*/
 #if DEBUG_INTERP
 		{
@@ -1281,7 +1274,6 @@ main (int argc, char *argv [])
 	}
 	retval = ves_exec (assembly);
 	mono_assembly_close (assembly);
-	printf("count: %d\n", count);
 
 	return retval;
 }

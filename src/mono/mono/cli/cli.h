@@ -15,7 +15,8 @@ typedef struct {
 	guint16 flags; /* method flags */
 	MonoImage *image;
 	MonoMethodSignature  *signature;
-	guint32 name_idx; 
+	/* name is useful mostly for debugging */
+	char *name; 
 	union {
 		MonoMetaMethodHeader *header;
 		MonoMethodPInvokeInfo *piinfo;

@@ -756,36 +756,6 @@ dword_align (const char *ptr)
 	return (const char *) (((guint32) (ptr + 3)) & ~3);
 }
 
-static MonoMetaExceptionHandler *
-parse_exception_handler (const char *ptr, gboolean is_fat)
-{
-	MonoMetaExceptionHandler *eh = g_new0 (MonoMetaExceptionHandler, 1);
-	int size;
-	
-	eh->kind = (MonoMetaExceptionEnum) *ptr;
-	ptr++;
-	if (is_fat)
-		size = (ptr [0] << 16) | (ptr [1] << 8) | ptr [2];
-	else
-		size = (unsigned char) ptr [0];
-
-	/*
-	 * It must be aligned
-	 */
-	ptr += 4;
-	g_assert ((((guint32) ptr) & 3) == 0);
-
-	if (is_fat){
-		printf ("Records: %d (%d)\n", size / 12, size);
-		
-	} else {
-		printf ("Records: %d (%d)\n", size / 12, size);
-	
-	}
-
-	return eh;
-}
-
 /**
  * mono_metadata_decode_row:
  * @t: table to extract information from.
@@ -1188,39 +1158,106 @@ mono_metadata_free_type (MonoType *type)
 	g_free (type);
 }
 
+static void
+hex_dump (const char *buffer, int base, int count)
+{
+	int show_header = 1;
+	int i;
+
+	if (count < 0){
+		count = -count;
+		show_header = 0;
+	}
+	
+	for (i = 0; i < count; i++){
+		if (show_header)
+			if ((i % 16) == 0)
+				printf ("\n0x%08x: ", (unsigned char) base + i);
+
+		printf ("%02x ", (unsigned char) (buffer [i]));
+	}
+	fflush (stdout);
+}
+
 /** 
  * @mh: The Method header
  * @ptr: Points to the beginning of the Section Data (25.3)
  */
 static void
-parse_section_data (MonoMetaMethodHeader *mh, const char *ptr)
+parse_section_data (MonoMetaMethodHeader *mh, const unsigned char *ptr)
 {
-#if 0
-	while ((*ptr) &  METHOD_HEADER_SECTION_MORE_SECTS){
+	unsigned char sect_data_flags;
+	const unsigned char *sptr;
+	int is_fat;
+	guint32 sect_data_len;
+	
+	while (1) {
 		/* align on 32-bit boundary */
 		/* FIXME: not 64-bit clean code */
-		ptr = dword_align (ptr); 
-		
+		sptr = ptr = dword_align (ptr); 
 		sect_data_flags = *ptr;
 		ptr++;
 		
-		if (sect_data_flags & METHOD_HEADER_SECTION_MORE_SECTS){
-			g_error ("Can not deal with more sections");
+		is_fat = sect_data_flags & METHOD_HEADER_SECTION_FAT_FORMAT;
+		if (is_fat) {
+			sect_data_len = (ptr [0] << 16) | (ptr [1] << 8) | ptr [0];
+			ptr += 3;
+		} else {
+			sect_data_len = ptr [0];
+			++ptr;
 		}
+		/*
+		g_print ("flags: %02x, len: %d\n", sect_data_flags, sect_data_len);
+		hex_dump (sptr, 0, sect_data_len+8);
+		g_print ("\nheader: ");
+		hex_dump (sptr-4, 0, 4);
+		g_print ("\n");
+		*/
 		
-		if (sect_data_flags & METHOD_HEADER_SECTION_FAT_FORMAT){
-			sect_data_len = 
+		if (sect_data_flags & METHOD_HEADER_SECTION_EHTABLE) {
+			const unsigned char *p = dword_align (ptr);
+			int i;
+			mh->num_clauses = is_fat ? sect_data_len / 24: sect_data_len / 12;
+			/* we could just store a pointer if we don't need to byteswap */
+			mh->clauses = g_new0 (MonoExceptionClause, mh->num_clauses);
+			for (i = 0; i < mh->num_clauses; ++i) {
+				MonoExceptionClause *ec = &mh->clauses [i];
+				if (is_fat) {
+					/* we could memcpy and byteswap */
+					ec->flags = read32 (p);
+					p += 4;
+					ec->try_offset = read32 (p);
+					p += 4;
+					ec->try_len = read32 (p);
+					p += 4;
+					ec->handler_offset = read32 (p);
+					p += 4;
+					ec->handler_len = read32 (p);
+					p += 4;
+					ec->token_or_filter = read32 (p);
+					p += 4;
 				} else {
-					sect_data_len = ptr [0];
-					ptr++;
+					ec->flags = read16 (p);
+					p += 2;
+					ec->try_offset = read16 (p);
+					p += 2;
+					ec->try_len = *p;
+					++p;
+					ec->handler_offset = read16 (p);
+					p += 2;
+					ec->handler_len = *p;
+					++p;
+					ec->token_or_filter = read32 (p);
+					p += 4;
 				}
-		
-		if (!(sect_data_flags & METHOD_HEADER_SECTION_EHTABLE))
-			return mh;
-		
-		ptr = dword_align (ptr);
+				/* g_print ("try %d: %x %04x-%04x %04x\n", i, ec->flags, ec->try_offset, ec->try_offset+ec->try_len, ec->try_len); */
+			}
+		}
+		if (sect_data_flags & METHOD_HEADER_SECTION_MORE_SECTS)
+			ptr += sect_data_len - 4; /* LAMESPEC: it seems the size includes the header */
+		else
+			return;
 	}
-#endif
 }
 
 MonoMetaMethodHeader *
@@ -1283,7 +1320,7 @@ mono_metadata_parse_mh (metadata_t *m, const char *ptr)
 		 */
 		ptr = mh->code + mh->code_size;
 		
-		parse_section_data (mh, ptr);
+		parse_section_data (mh, (const unsigned char*)ptr);
 		break;
 		
 	default:
@@ -1331,6 +1368,7 @@ mono_metadata_free_mh (MonoMetaMethodHeader *mh)
 	for (i = 0; i < mh->num_locals; ++i)
 		mono_metadata_free_type (mh->locals[i]);
 	g_free (mh->locals);
+	g_free (mh->clauses);
 	g_free (mh);
 }
 
