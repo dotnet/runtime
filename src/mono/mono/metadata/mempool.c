@@ -184,3 +184,23 @@ mono_mempool_alloc0 (MonoMemPool *pool, guint size)
 	return rval;
 }
 
+/**
+ * mono_mempool_contains_addr:
+ *
+ *  Determines whenever ADDR is inside the memory used by the mempool.
+ */
+gboolean
+mono_mempool_contains_addr (MonoMemPool *pool,
+							gpointer addr)
+{
+	MonoMemPool *p;
+
+	p = pool;
+	while (p) {
+		if (addr > (gpointer)p && addr <= (gpointer)((guint8*)p + p->size))
+			return TRUE;
+		p = p->next;
+	}
+
+	return FALSE;
+}

@@ -96,6 +96,9 @@ mono_domain_has_type_resolve (MonoDomain *domain);
 MonoReflectionAssembly *
 mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb);
 
+gboolean
+mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot);
+
 void
 mono_context_init 				   (MonoDomain *domain);
 

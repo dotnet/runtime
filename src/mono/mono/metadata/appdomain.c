@@ -254,6 +254,22 @@ mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb)
 }
 
 /**
+ * mono_domain_owns_vtable_slot:
+ *
+ *   Returns whenever VTABLE_SLOT is inside a vtable which belongs to DOMAIN.
+ */
+gboolean
+mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
+{
+	gboolean res;
+
+	mono_domain_lock (domain);
+	res = mono_mempool_contains_addr (domain->mp, vtable_slot);
+	mono_domain_unlock (domain);
+	return res;
+}
+
+/**
  * mono_domain_set:
  * @domain: domain
  * @force: force setting.
@@ -1262,7 +1278,7 @@ unload_thread_main (void *arg)
 	/* Clear references to our vtables in class->cached_vtable */
 	mono_domain_lock (domain);
 	g_hash_table_foreach (domain->class_vtable_hash, clear_cached_vtable,
-							   domain);
+						  domain);
 	mono_domain_unlock (domain);
 
 	mono_threads_clear_cached_culture (domain);

@@ -26,4 +26,8 @@ gpointer
 mono_mempool_alloc0        (MonoMemPool *pool, 
 			    guint        size);
 
+gboolean
+mono_mempool_contains_addr (MonoMemPool *pool,
+							gpointer addr);
+
 #endif
