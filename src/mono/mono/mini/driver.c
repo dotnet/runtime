@@ -843,8 +843,12 @@ mono_main (int argc, char* argv[])
 		main_args.argv = argv + i;
 		main_args.opts = opt;
 		main_args.aot_options = aot_options;
-	     
+#if RUN_IN_SUBTHREAD
 		mono_runtime_exec_managed_code (domain, main_thread_handler, &main_args);
+#else
+		main_thread_handler (&main_args);
+		mono_thread_manage ();
+#endif
 		mini_cleanup (domain);
 
 		/* Look up return value from System.Environment.ExitCode */
