@@ -1695,7 +1695,7 @@ handle_enum:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
-			if (args [i]->type != STACK_I4 && args [i]->type != STACK_PTR && args [i]->type != STACK_MP)
+			if (args [i]->type != STACK_I4 && args [i]->type != STACK_PTR && args [i]->type != STACK_MP && args [i]->type != STACK_OBJ)
 				return 1;
 			continue;
 		case MONO_TYPE_CLASS:
