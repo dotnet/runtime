@@ -128,6 +128,9 @@ mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
 	if (strcmp (l->name, r->name))
 		return FALSE;
 
+	if ((l->culture && !r->culture) || (!l->culture && r->culture) || strcmp (l->culture, r->culture))
+		return FALSE;
+
         /*
          * simply compare names until some other issues are resolved
          * (version info not getting set correctly for custom

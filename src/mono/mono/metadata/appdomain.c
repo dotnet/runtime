@@ -776,7 +776,7 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 		result = real_load (assemblies_path, aname->culture, aname->name);
 	}
 
-	return NULL;
+	return result;
 }
 
 MonoReflectionAssembly *
@@ -1021,7 +1021,7 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 	g_free (filename);
 
 	if (!assembly)
-		mono_raise_exception (mono_get_exception_file_not_found (filename));
+		mono_raise_exception (mono_get_exception_file_not_found (file));
 
 	image = assembly->image;
 
