@@ -106,6 +106,15 @@ typedef struct {
 
 typedef struct {
 	MonoReflectionType *parent;
+	MonoString *name;
+	MonoReflectionMethod *add_method;
+	MonoReflectionMethod *remove_method;
+	MonoReflectionMethod *raise_method;
+	guint32 attrs;
+} MonoEventInfo;
+
+typedef struct {
+	MonoReflectionType *parent;
 	MonoReflectionType *type;
 	MonoString *name;
 	guint32 attrs;

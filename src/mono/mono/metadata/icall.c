@@ -888,6 +888,19 @@ ves_icall_get_property_info (MonoReflectionProperty *property, MonoPropertyInfo 
 	 */
 }
 
+static void
+ves_icall_get_event_info (MonoReflectionEvent *event, MonoEventInfo *info)
+{
+	MonoDomain *domain = mono_domain_get (); 
+
+	info->parent = mono_type_get_object (domain, &event->klass->byval_arg);
+	info->name = mono_string_new (domain, event->event->name);
+	info->attrs = event->event->attrs;
+	info->add_method = event->event->add ? mono_method_get_object (domain, event->event->add): NULL;
+	info->remove_method = event->event->remove ? mono_method_get_object (domain, event->event->remove): NULL;
+	info->raise_method = event->event->raise ? mono_method_get_object (domain, event->event->raise): NULL;
+}
+
 static MonoArray*
 ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 {
@@ -2317,6 +2330,7 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.MonoMethodInfo::get_parameter_info", ves_icall_get_parameter_info,
 	"System.Reflection.MonoFieldInfo::get_field_info", ves_icall_get_field_info,
 	"System.Reflection.MonoPropertyInfo::get_property_info", ves_icall_get_property_info,
+	"System.Reflection.MonoEventInfo::get_event_info", ves_icall_get_event_info,
 	"System.Reflection.MonoMethod::InternalInvoke", ves_icall_InternalInvoke,
 	"System.Reflection.MonoCMethod::InternalInvoke", ves_icall_InternalInvoke,
 	"System.MonoCustomAttrs::GetCustomAttributes", mono_reflection_get_custom_attrs,
