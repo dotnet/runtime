@@ -18,6 +18,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/gc.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/assembly.h>
 #if HAVE_BOEHM_GC
 #include <gc/gc.h>
 #endif
@@ -362,7 +363,7 @@ mono_runtime_get_main_args (void)
  */
 int
 mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
-		       MonoObject **exc)
+		       MonoObject **exc, MonoAssembly *app)
 {
 	int i;
 	MonoArray *args = NULL;
@@ -382,6 +383,8 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 			mono_array_set (args, gpointer, i, arg);
 		}
 	}
+	
+	mono_assembly_set_main (app);
 	
 	return mono_runtime_exec_main (method, args, exc);
 }

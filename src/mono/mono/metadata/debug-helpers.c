@@ -42,9 +42,9 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace) {
 	case MONO_TYPE_FNPTR: /* who cares for the exact signature? */
 		g_string_append (res, "*()"); break;
 	case MONO_TYPE_U:
-		g_string_append (res, "intptr"); break;
-	case MONO_TYPE_I:
 		g_string_append (res, "uintptr"); break;
+	case MONO_TYPE_I:
+		g_string_append (res, "intptr"); break;
 	case MONO_TYPE_R4:
 		g_string_append (res, "single"); break;
 	case MONO_TYPE_R8:

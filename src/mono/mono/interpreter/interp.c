@@ -4057,7 +4057,7 @@ ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 	if (!method)
 		g_error ("No entry point method found in %s", image->name);
 
-	rval = mono_runtime_run_main (method, argc, argv, &exc);
+	rval = mono_runtime_run_main (method, argc, argv, &exc, assembly);
 
 	return rval;
 }

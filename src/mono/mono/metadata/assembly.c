@@ -367,3 +367,27 @@ mono_assembly_close (MonoAssembly *assembly)
 	g_free (assembly);
 }
 
+void
+mono_assembly_foreach (GFunc func, gpointer user_data)
+{
+	/* In the future this can do locking of loaded_assemblies */
+
+	g_list_foreach (loaded_assemblies, func, user_data);
+}
+
+/* Holds the assembly of the application, for
+ * System.Diagnostics.Process::MainModule
+ */
+static MonoAssembly *main_assembly=NULL;
+
+void
+mono_assembly_set_main (MonoAssembly *assembly)
+{
+	main_assembly=assembly;
+}
+
+MonoAssembly *
+mono_assembly_get_main (void)
+{
+	return(main_assembly);
+}

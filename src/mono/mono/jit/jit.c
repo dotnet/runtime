@@ -3615,7 +3615,7 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 	iinfo = image->image_info;
 	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
 
-	rval = mono_runtime_run_main (method, argc, argv, &exc);
+	rval = mono_runtime_run_main (method, argc, argv, &exc, assembly);
 
 	return rval;
 }
