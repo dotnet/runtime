@@ -721,10 +721,10 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass)
 			result->string_ctor = 1;
 
 		result->signature->pinvoke = 1;
-	} else if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+	} else if ((cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) && (!(cols [1] & METHOD_IMPL_ATTRIBUTE_NATIVE))) {
 		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)result;
 		MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
-		MonoCallConvention conv;
+		MonoCallConvention conv = 0;
 
 		result->signature->pinvoke = 1;
 		piinfo->implmap_idx = mono_metadata_implmap_from_method (image, idx - 1);
