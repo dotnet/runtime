@@ -71,6 +71,7 @@
 
 * Directory Layout
 
+<pre>
         System.Drawing  (assembly directory)
                 System.Drawing.Blah
                         Common code for "Blah"
@@ -85,6 +86,7 @@
                 WineLIB
                         System.Drawing.Blah
                                 Win32 ports of "System.Drawing.Blah"
+</pre>
 
 	Notice that there is a proof of concept Gtk-backend for
 	Windows.Forms, but nobody is working on it, and for the
