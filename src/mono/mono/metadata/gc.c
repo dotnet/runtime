@@ -462,6 +462,31 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 	return NULL;
 }
 
+guint32
+mono_gchandle_new (MonoObject *obj, gboolean pinned)
+{
+	return ves_icall_System_GCHandle_GetTargetHandle (obj, 0, pinned? HANDLE_PINNED: HANDLE_NORMAL);
+}
+
+guint32
+mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection)
+{
+	return ves_icall_System_GCHandle_GetTargetHandle (obj, 0, track_resurrection? HANDLE_WEAK_TRACK: HANDLE_WEAK);
+}
+
+/* This will return NULL for a collected object if using a weakref handle */
+MonoObject*
+mono_gchandle_get_target (guint32 gchandle)
+{
+	return ves_icall_System_GCHandle_GetTarget (gchandle);
+}
+
+void
+mono_gchandle_free (guint32 gchandle)
+{
+	ves_icall_System_GCHandle_FreeHandle (gchandle);
+}
+
 #if HAVE_BOEHM_GC
 
 static HANDLE finalizer_event;

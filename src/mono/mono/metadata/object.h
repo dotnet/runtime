@@ -252,5 +252,11 @@ mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObjec
 MonoObject*
 mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc);
 
+/* GC handles support */
+guint32      mono_gchandle_new         (MonoObject *obj, gboolean pinned);
+guint32      mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection);
+MonoObject*  mono_gchandle_get_target  (guint32 gchandle);
+void         mono_gchandle_free        (guint32 gchandle);
+
 #endif
 
