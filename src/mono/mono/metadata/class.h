@@ -255,11 +255,15 @@ struct _MonoDynamicGenericInst {
 };
 
 struct _MonoGenericMethod {
-	MonoGenericInst *generic_inst;
 	gpointer reflection_info;
 	int mtype_argc;
 	MonoType **mtype_argv;
 	guint is_open       : 1;
+};
+
+struct _MonoGenericContext {
+	MonoGenericInst *ginst;
+	MonoGenericMethod *gmethod;
 };
 
 struct _MonoGenericParam {
@@ -347,7 +351,7 @@ MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst, MonoGenericMethod *gmethod);
 
 MonoMethod*
-mono_class_inflate_generic_method (MonoMethod *method, MonoGenericMethod *gmethod, MonoClass *klass);
+mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context, MonoClass *klass);
 
 MonoClassField*
 mono_field_from_memberref  (MonoImage *image, guint32 token, MonoClass **retklass);

@@ -2633,16 +2633,16 @@ static MonoMethod *
 mini_get_method (MonoImage *image, guint32 token, MonoMethod *calling_method)
 {
 	MonoMethod *method = mono_get_method (image, token, NULL);
-	MonoGenericMethod *gmethod;
+	MonoGenericContext *context;
 
 	if (!calling_method->signature->is_inflated || !method->signature->is_inflated)
 		return method;
 
-	gmethod = g_new0 (MonoGenericMethod, 1);
-	*gmethod = *((MonoMethodInflated *) calling_method)->gmethod;
-	gmethod->generic_inst = calling_method->klass->generic_inst;
+	context = g_new0 (MonoGenericContext, 1);
+	context->ginst = calling_method->klass->generic_inst;
+	context->gmethod = ((MonoMethodInflated *) calling_method)->gmethod;
 
-	return mono_class_inflate_generic_method (method, gmethod, NULL);
+	return mono_class_inflate_generic_method (method, context, NULL);
 }
 
 static MonoClass *

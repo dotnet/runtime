@@ -283,16 +283,16 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst,
 
 static MonoMethodSignature*
 inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig,
-			   MonoGenericMethod *gmethod)
+			   MonoGenericContext *context)
 {
 	MonoMethodSignature *res;
 	int i;
 	res = mono_metadata_signature_alloc (image, sig->param_count);
-	res->ret = mono_class_inflate_generic_type (sig->ret, gmethod->generic_inst, gmethod);
+	res->ret = mono_class_inflate_generic_type (
+		sig->ret, context->ginst, context->gmethod);
 	for (i = 0; i < sig->param_count; ++i)
-		res->params [i] = mono_class_inflate_generic_type (sig->params [i],
-								   gmethod->generic_inst,
-								   gmethod);
+		res->params [i] = mono_class_inflate_generic_type (
+			sig->params [i], context->ginst, context->gmethod);
 	res->hasthis = sig->hasthis;
 	res->explicit_this = sig->explicit_this;
 	res->call_convention = sig->call_convention;
@@ -302,7 +302,7 @@ inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig,
 }
 
 static MonoMethodHeader*
-inflate_generic_header (MonoMethodHeader *header, MonoGenericMethod *gmethod)
+inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
 {
 	MonoMethodHeader *res;
 	int i;
@@ -316,14 +316,13 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericMethod *gmethod)
 	res->clauses = header->clauses;
 	res->gen_params = header->gen_params;
 	for (i = 0; i < header->num_locals; ++i)
-		res->locals [i] = mono_class_inflate_generic_type (header->locals [i],
-								   gmethod->generic_inst,
-								   gmethod);
+		res->locals [i] = mono_class_inflate_generic_type (
+			header->locals [i], context->ginst, context->gmethod);
 	return res;
 }
 
 MonoMethod*
-mono_class_inflate_generic_method (MonoMethod *method, MonoGenericMethod *gmethod,
+mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context,
 				   MonoClass *klass)
 {
 	MonoMethodInflated *result;
@@ -337,20 +336,20 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericMethod *gmetho
 
 	if (result->nmethod.header)
 		result->nmethod.header = inflate_generic_header (
-			result->nmethod.header, gmethod);
+			result->nmethod.header, context);
 
 	if (klass)
 		result->nmethod.method.klass = klass;
 	else {
 		MonoType *declaring = mono_class_inflate_generic_type (
-			&method->klass->byval_arg, gmethod->generic_inst, gmethod);
+			&method->klass->byval_arg, context->ginst, context->gmethod);
 		result->nmethod.method.klass = mono_class_from_mono_type (declaring);
 	}
 
 	result->nmethod.method.signature = inflate_generic_signature (
-		method->klass->image, method->signature, gmethod);
+		method->klass->image, method->signature, context);
 
-	result->gmethod = gmethod;
+	result->gmethod = context->gmethod;
 	if (method->signature->is_inflated)
 		result->declaring = ((MonoMethodInflated *) method)->declaring;
 	else
@@ -1200,11 +1199,11 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 static MonoMethod *
 inflate_method (MonoGenericInst *ginst, MonoMethod *method)
 {
-	MonoGenericMethod *gmethod = g_new0 (MonoGenericMethod, 1);
+	MonoGenericContext *context = g_new0 (MonoGenericContext, 1);
 
-	gmethod->generic_inst = ginst;
+	context->ginst = ginst;
 
-	return mono_class_inflate_generic_method (method, gmethod, ginst->klass);
+	return mono_class_inflate_generic_method (method, context, ginst->klass);
 }
 
 /**

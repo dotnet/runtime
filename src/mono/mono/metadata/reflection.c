@@ -7102,6 +7102,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	MonoMethod *method, *inflated;
 	MonoReflectionMethodBuilder *mb = NULL;
 	MonoGenericMethod *gmethod;
+	MonoGenericContext *context;
 	int count, i;
 
 	MONO_ARCH_SAVE_REGS;
@@ -7129,9 +7130,11 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 		gmethod->mtype_argv [i] = garg->type;
 	}
 
-	gmethod->generic_inst = method->klass->generic_inst;
+	context = g_new0 (MonoGenericContext, 1);
+	context->ginst = method->klass->generic_inst;
+	context->gmethod = gmethod;
 
-	inflated = mono_class_inflate_generic_method (method, gmethod, NULL);
+	inflated = mono_class_inflate_generic_method (method, context, NULL);
 
 	return mono_method_get_object (
 		mono_object_domain (rmethod), inflated, NULL);
@@ -7142,14 +7145,18 @@ inflate_mono_method (MonoReflectionGenericInst *type, MonoMethod *method, MonoOb
 {
 	MonoGenericMethod *gmethod;
 	MonoGenericInst *ginst;
+	MonoGenericContext *context;
 
 	ginst = type->type.type->data.generic_inst;
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
 	gmethod->reflection_info = obj;
-	gmethod->generic_inst = ginst;
 
-	return mono_class_inflate_generic_method (method, gmethod, ginst->klass);
+	context = g_new0 (MonoGenericContext, 1);
+	context->ginst = ginst;
+	context->gmethod = gmethod;
+
+	return mono_class_inflate_generic_method (method, context, ginst->klass);
 }
 
 static MonoMethod *
