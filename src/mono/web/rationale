@@ -134,25 +134,51 @@
 
 ** What makes up Mono?
 
-	There are various pieces that will make up Mono:
+	There are various pieces that make up Mono today:
 
 	<ul>
 		* A C# compiler.
 
-		* The Virtual Execution System: that will have the
+		* The Virtual Execution System: that has the
   		  Just-in-Time compiler, garbage collector, loader,
   		  threading engine.
 
-		  A byte code interpreter will be provided for quickly
+		  A byte code interpreter is provided for quickly
   		  porting Mono to new systems and debugging the JIT
 		  purposes, but it is not intended to be the ideal
 		  execution environment.
 
-		* An implemenation of the .NET class library.
+		* An implemenation of the .NET class libraries:
+		  Remoting, Reflection, Reflection.Emit, Xml, Xpath,
+		  Xslt, Xml Serialization, Web Services support. 
 
-		* Visual development tools. 
+		* Cross platform class libraries for data access:
+		  Postgress, MySQL, DB2, TDS, Sybase, Oracle, ODBC and
+		  Gnome's GDA.
 
-		* A CIL GCC frontend.
+		* Unix class libraries: Mono.Posix
+
+		* Gnome-specific class libraries: The Gtk# family. 
+
+		* A code pre-compiler to generate native code ahead of
+		  time.
+
+		* Gtk# a toolkit to develop GNOME applications on Unix
+		  and Windows.
+
+		* An implementation of the Remoting infrastructure in
+		 .NET
+	</ul>
+
+	Other work-in-progress components:
+
+	<ul>
+		* A VB.NET compiler and JScript compilers are in the works.
+
+		* Web services on the server side.
+
+		* We are planning to include Remoting.CORBA as part of
+		  Mono standard distribution.
 	</ul>
 
 ** Why use GNOME components?
