@@ -94,6 +94,51 @@
 	ONE 2002:</a></b> Come see Paolo, Mike and Miguel from the Mono team at the .NET ONE conference in Frankfurt.</ul>
 </ul>
 
+@item Oct 9th, 2002: Various Mon oupdates.
+
+	Brian Ritchie, Dan Morgan, Rodrigo Moya and Ville Palo have
+	been working on various database providers.  The MySQL has
+	seen a lot of work, and a new ODBC provider is now on CVS and
+	more extensive regression tests have been checked in.
+
+	Dick Porter is our background hero and keeps fixing the
+	lowlevel bugs in the portability layer.  Now the Mono handle
+	daemon should be a lot more robust and will no longer lear IPC
+	regions.  Gonzalo Paniagua has initiated the migration of XSP
+	into the System.Web class libraries now that we have a
+	complete HttpRuntime implementation.  This means that you are
+	able to embed the ASP.NET processor into any web server you
+	want.  This also includes support for the system-wide
+	configuration file `machine.config'.
+
+	Martin Baulig has been busy with the Mono Debugger, you can see how
+	it looks <a
+	href="http://primates.ximian.com/~miguel/debugger-1.png">here</a>
+	and <a
+	href="http://primates.ximian.com/~miguel/debugger-2.png">here</a>.
+	Now local variables and breakpoints are supported, and we are
+	working on the UI elements to simplify their use (as seen on
+	the screenshot).  
+
+	<a href="http://gtksharp.sf.net">Gtk#</a> has seen a lot of
+	activity specially as we start to build larger applications.
+	Vladimir Vukicevic, Kristian Rietveld, Rachel Hestilow, Mike
+	Kestner and Miguel de Icaza have been busy improving it.
+	mPhoto which is a Photo management application for Mono and
+	Gtk# is seen <a
+	href="http://primates.ximian.com/~miguel/shots/mphoto-2.pnt">here</a>.
+
+	Chris Toshok the man behind LDAP in Evolution continues to
+	work on the Mono.LDAP# implementation.
+
+	Dietmar Maurer and Paolo Molaro are still busy working on our
+	new optimized JIT/ATC engine and are making great progress.
+	The code base has been designed to ease the implementation of
+	more advanced compiler optimizations, and optimizations can be
+	chosen individually so they can be tuned for a particular
+	processor, or use profile-based information to improve the
+	performance.
+
 @item Oct 1st, 2002: Mono 0.16 released;  Debugger updates.
 
 	Mono 0.16 has been released.  Source and RPMs are <a
