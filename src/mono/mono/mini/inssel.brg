@@ -234,7 +234,7 @@
 #endif
 
 #define	MONO_EMIT_NEW_CLASSCONST(cfg,dr,imm) MONO_EMIT_NEW_AOTCONST(cfg,dr,imm,MONO_PATCH_INFO_CLASS)
-#define MONO_EMIT_NEW_VTABLECONST(cfg,dest,vtable) MONO_EMIT_NEW_AOTCONST ((cfg), (dest), mono_compile_aot ? (gpointer)((vtable)->klass) : (vtable), MONO_PATCH_INFO_VTABLE)
+#define MONO_EMIT_NEW_VTABLECONST(cfg,dest,vtable) MONO_EMIT_NEW_AOTCONST ((cfg), (dest), (cfg)->compile_aot ? (gpointer)((vtable)->klass) : (vtable), MONO_PATCH_INFO_VTABLE)
 
 #define	MONO_EMIT_NEW_BRANCH_BLOCK(cfg,op,targetbb) do { \
                 MonoInst *inst; \
@@ -740,7 +740,7 @@ stmt: CEE_SWITCH (reg) {
 	else
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, offset_reg, state->left->reg1, 2);
 	mono_bblock_add_inst (s->cbb, label);
-	if (mono_compile_aot) {
+	if (s->compile_aot) {
 		int table_reg = mono_regstate_next_int (s->rs);
 		int sum_reg = mono_regstate_next_int (s->rs);
 		MonoJumpInfoBBTable *table;
@@ -979,7 +979,7 @@ reg: CEE_ISINST (reg) {
 				int parent_reg = mono_regstate_next_int (s->rs);
 				int const_reg;
 				MONO_EMIT_NEW_LOAD_MEMBASE (s, parent_reg, eclass_reg, G_STRUCT_OFFSET (MonoClass, parent));
-				if (mono_compile_aot) {
+				if (s->compile_aot) {
 					const_reg = mono_regstate_next_int (s->rs);
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class->parent);
 					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, parent_reg, const_reg);
@@ -987,7 +987,7 @@ reg: CEE_ISINST (reg) {
 					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, parent_reg, mono_defaults.enum_class->parent);
 				}
 				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, object_is_null);
-				if (mono_compile_aot) {
+				if (s->compile_aot) {
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class);
 					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
 				} else {
@@ -998,7 +998,7 @@ reg: CEE_ISINST (reg) {
 			} else if (klass->cast_class == mono_defaults.enum_class->parent) {
 				int const_reg;
 				
-				if (mono_compile_aot) {
+				if (s->compile_aot) {
 					const_reg = mono_regstate_next_int (s->rs);
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class->parent);
 					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
@@ -1006,7 +1006,7 @@ reg: CEE_ISINST (reg) {
 					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, eclass_reg, mono_defaults.enum_class->parent);
 				}
 				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
-				if (mono_compile_aot) {
+				if (s->compile_aot) {
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class);
 					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
 				} else {
@@ -1015,7 +1015,7 @@ reg: CEE_ISINST (reg) {
 				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
 				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, false_label);
 			} else if (klass->cast_class == mono_defaults.enum_class) {
-				if (mono_compile_aot) {
+				if (s->compile_aot) {
 					int const_reg = mono_regstate_next_int (s->rs);
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class);
 					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
@@ -1081,7 +1081,7 @@ reg: OP_CISINST (reg) {
 		mono_bblock_add_inst (s->cbb, interface_fail_label);
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoVTable, klass));
 		
-		if (mono_compile_aot) {
+		if (s->compile_aot) {
 			int tproxy_reg = mono_regstate_next_int (s->rs);
 			MONO_EMIT_NEW_CLASSCONST (s, tproxy_reg, mono_defaults.transparent_proxy_class);
 			MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, klass_reg, tproxy_reg);
@@ -1100,7 +1100,7 @@ reg: OP_CISINST (reg) {
 		
 		MONO_NEW_LABEL (s, no_proxy_label);
 		
-		if (mono_compile_aot) {
+		if (s->compile_aot) {
 			int tproxy_reg = mono_regstate_next_int (s->rs);
 			MONO_EMIT_NEW_CLASSCONST (s, tproxy_reg, mono_defaults.transparent_proxy_class);
 			MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, klass_reg, tproxy_reg);
@@ -1153,7 +1153,7 @@ reg: OP_UNBOXCAST (reg) {
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, rank_reg, 0);
 	MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
 
-	if (mono_compile_aot) {
+	if (s->compile_aot) {
 		int const_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_CLASSCONST (s, const_reg, klass->element_class);
 		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
@@ -1198,7 +1198,7 @@ reg: CEE_CASTCLASS (reg) {
 				int parent_reg = mono_regstate_next_int (s->rs);
 				int const_reg;
 				MONO_EMIT_NEW_LOAD_MEMBASE (s, parent_reg, eclass_reg, G_STRUCT_OFFSET (MonoClass, parent));
-				if (mono_compile_aot) {
+				if (s->compile_aot) {
 					const_reg = mono_regstate_next_int (s->rs);
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class->parent);
 					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, parent_reg, const_reg);
@@ -1206,7 +1206,7 @@ reg: CEE_CASTCLASS (reg) {
 					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, parent_reg, mono_defaults.enum_class->parent);
 				}
 				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, object_is_null);
-				if (mono_compile_aot) {
+				if (s->compile_aot) {
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class);
 					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
 				} else {
@@ -1215,14 +1215,14 @@ reg: CEE_CASTCLASS (reg) {
 				MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
 			} else if (klass->cast_class == mono_defaults.enum_class->parent) {
 				int const_reg = mono_regstate_next_int (s->rs);
-				if (mono_compile_aot) {
+				if (s->compile_aot) {
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class->parent);
 					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
 				} else {
 					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, eclass_reg, mono_defaults.enum_class->parent);
 				}
 				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BEQ, object_is_null);
-				if (mono_compile_aot) {
+				if (s->compile_aot) {
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class);
 					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
 				} else {
@@ -1230,7 +1230,7 @@ reg: CEE_CASTCLASS (reg) {
 				}
 				MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
 			} else if (klass->cast_class == mono_defaults.enum_class) {
-				if (mono_compile_aot) {
+				if (s->compile_aot) {
 					int const_reg = mono_regstate_next_int (s->rs);
 					MONO_EMIT_NEW_CLASSCONST (s, const_reg, mono_defaults.enum_class);
 					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
@@ -1288,7 +1288,7 @@ reg: OP_CCASTCLASS (reg) {
 		mono_bblock_add_inst (s->cbb, fail_label);
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoVTable, klass));
 
-		if (mono_compile_aot) {
+		if (s->compile_aot) {
 			int tproxy_reg = mono_regstate_next_int (s->rs);
 			MONO_EMIT_NEW_CLASSCONST (s, tproxy_reg, mono_defaults.transparent_proxy_class);
 			MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, klass_reg, tproxy_reg);
@@ -1316,7 +1316,7 @@ reg: OP_CCASTCLASS (reg) {
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoVTable, klass));
 
-		if (mono_compile_aot) {
+		if (s->compile_aot) {
 			int tproxy_reg = mono_regstate_next_int (s->rs);
 			MONO_EMIT_NEW_CLASSCONST (s, tproxy_reg, mono_defaults.transparent_proxy_class);
 			MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, klass_reg, tproxy_reg);
@@ -1443,7 +1443,7 @@ reg: OP_CHECK_ARRAY_TYPE (reg) {
 		int class_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, class_reg, 
 					       vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
-		if (mono_compile_aot) {
+		if (s->compile_aot) {
 			int klass_reg = mono_regstate_next_int (s->rs);
 			MONO_EMIT_NEW_CLASSCONST (s, klass_reg, array_class);
 			MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, class_reg, klass_reg);
@@ -1451,7 +1451,7 @@ reg: OP_CHECK_ARRAY_TYPE (reg) {
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, class_reg, array_class);
 		}
 	} else {
-		if (mono_compile_aot) {
+		if (s->compile_aot) {
 			int vt_reg = mono_regstate_next_int (s->rs);
 			MONO_EMIT_NEW_VTABLECONST (s, vt_reg, mono_class_vtable (s->domain, array_class));
 			MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, vtable_reg, vt_reg);
@@ -1487,7 +1487,7 @@ reg: CEE_LDELEMA (reg, reg) "20" {
 reg: CEE_REFANYVAL (reg) {
 	int klass_reg = mono_regstate_next_int (s->rs);
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, state->left->reg1, G_STRUCT_OFFSET (MonoTypedRef, klass));
-	if (mono_compile_aot) {
+	if (s->compile_aot) {
 		int const_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_CLASSCONST (s, const_reg, tree->inst_newa_class);
 		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, klass_reg, const_reg);
@@ -1505,7 +1505,7 @@ reg: OP_REFANYTYPE (reg) {
 stmt: CEE_MKREFANY (OP_GROUP (reg, OP_ICONST), reg),
 stmt: CEE_MKREFANY (OP_GROUP (reg, OP_I8CONST), reg) {
 	MonoClass *klass = (MonoClass*)(tree->inst_left->inst_right->inst_p0);
-	if (mono_compile_aot) {
+	if (s->compile_aot) {
 		int const_reg = mono_regstate_next_int (s->rs);
 		int type_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_CLASSCONST (s, const_reg, klass);
@@ -1530,7 +1530,7 @@ static void
 mini_emit_max_iid_check (MonoCompile *s, int max_iid_reg, MonoClass *klass,
 						 MonoInst *false_target)
 {
-	if (mono_compile_aot) {
+	if (s->compile_aot) {
 		int iid_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_AOTCONST (s, iid_reg, klass, MONO_PATCH_INFO_IID);
 		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, max_iid_reg, iid_reg);
@@ -1568,7 +1568,7 @@ mini_emit_max_iid_check_class (MonoCompile *s, int klass_reg, MonoClass *klass,
 static void
 mini_emit_load_intf_reg (MonoCompile *s, int intf_reg, int ioffset_reg, MonoClass *klass)
 {
-	if (mono_compile_aot) {
+	if (s->compile_aot) {
 		int iid_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_AOTCONST (s, iid_reg, klass, MONO_PATCH_INFO_IID);
 		/* FIXME: Do a shift instead */
@@ -1666,7 +1666,7 @@ mini_emit_isninst_cast (MonoCompile *s, int klass_reg, MonoClass *klass, MonoIns
 	}
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, stypes_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, supertypes));
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, stype, stypes_reg, ((klass->idepth - 1) * SIZEOF_VOID_P));
-	if (mono_compile_aot) {
+	if (s->compile_aot) {
 		int const_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_CLASSCONST (s, const_reg, klass);
 		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, stype, const_reg);
@@ -1718,7 +1718,7 @@ mini_emit_castclass (MonoCompile *s, int klass_reg, MonoClass *klass)
 	}
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, stypes_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, supertypes));
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, stype, stypes_reg, ((klass->idepth - 1) * SIZEOF_VOID_P));
-	if (mono_compile_aot) {
+	if (s->compile_aot) {
 		int const_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_CLASSCONST (s, const_reg, klass);
 		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, stype, const_reg);
