@@ -145,14 +145,6 @@ typedef struct {
 	MonoObject *exc;
 } MonoMethodMessage;
 
-typedef struct {
-	gulong new_object_count;
-	gulong initialized_class_count;
-	gulong used_class_count;
-	gulong class_vtable_size;
-	gulong class_static_data_size;
-} MonoStats;
-
 typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, void **params, MonoObject **exc);
 
 #define mono_object_class(obj) (((MonoObject*)(obj))->vtable->klass)
@@ -170,8 +162,6 @@ typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, voi
 
 #define mono_string_chars(s) ((gunichar2*)(s)->chars)
 #define mono_string_length(s) ((s)->length)
-
-extern MonoStats mono_stats;
 
 void *
 mono_object_allocate        (size_t size);

@@ -390,7 +390,7 @@ mono_domain_assembly_open (MonoDomain *domain, char *name)
 	g_hash_table_insert (domain->assemblies, ass->aname.name, ass);
 	mono_domain_unlock (domain);
 
-	// fixme: maybe this must be recursive ?
+	/* FIXME: maybe this must be recursive ? */
 	for (i = 0; (tmp = ass->image->references [i]) != NULL; i++) {
 		if (!g_hash_table_lookup (domain->assemblies, tmp->aname.name))
 			g_hash_table_insert (domain->assemblies, tmp->aname.name, tmp);
@@ -427,7 +427,7 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 	mono_mempool_destroy (domain->mp);
 	DeleteCriticalSection (&domain->lock);
 	
-	// fixme: anything else required ? */
+	/* FIXME: anything else required ? */
 
 #if HAVE_BOEHM_GC
 #else

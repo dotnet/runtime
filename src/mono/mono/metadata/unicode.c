@@ -161,7 +161,7 @@ ves_icall_iconv_new_encoder (MonoString *name, MonoBoolean big_endian)
 	iconv_t cd;
 	char *n;
 
-	// fixme: don't enforce big endian, support old iconv
+	/* FIXME: don't enforce big endian, support old iconv */
 
 	g_assert (name);
 
@@ -189,7 +189,7 @@ ves_icall_iconv_new_decoder (MonoString *name, MonoBoolean big_endian)
 	iconv_t cd;
 	char *n;
 
-	// fixme: don't enforce big endian, support old iconv
+	/* FIXME: don't enforce big endian, support old iconv */
 
 	g_assert (name);
 

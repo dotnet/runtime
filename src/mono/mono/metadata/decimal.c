@@ -50,7 +50,7 @@
 #define POSTCONDITION(flag)  
 #define TEST(flag)
 #define INVARIANT_TEST(p)
-#endif //#ifdef _DEBUG
+#endif /*#ifdef _DEBUG*/
 
 #define DECIMAL_MAX_SCALE 28
 #define DECIMAL_MAX_INTFACTORS 9
@@ -698,7 +698,7 @@ DECINLINE static int rescale128(guint64* pclo, guint64* pchi, int* pScale, int t
             scale += i;
             factor = constantsDecadeInt32Factors[i] >> i; /* 10^i/2^i=5^i */
             mult128by32(pclo, pchi, factor, 0);
-    //printf("3: %.17e\n", (((double)chi) * pow(2,64) + clo) * pow(10, -scale) * pow(2, -texp));
+    /*printf("3: %.17e\n", (((double)chi) * pow(2,64) + clo) * pow(10, -scale) * pow(2, -texp));*/
         }
 
         while (texp > 0) {
@@ -1342,7 +1342,7 @@ gint32 mono_decimalDiv(/*[Out]*/decimal_repr* pC, /*[In]*/decimal_repr* pA, /*[I
     /* adjust scale and sign */
     scale = (int)pA->signscale.scale - (int)pB->signscale.scale;
 
-    //test: printf("0: %.17e\n", (((double)chi) * pow(2,64) + clo) * pow(10, -scale) * pow(2, -exp));
+    /*test: printf("0: %.17e\n", (((double)chi) * pow(2,64) + clo) * pow(10, -scale) * pow(2, -exp));*/
     rc = rescale128(&clo, &chi, &scale, texp, 0, DECIMAL_MAX_SCALE, 1);
     if (rc != DECIMAL_SUCCESS) return rc;
 

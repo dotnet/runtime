@@ -132,6 +132,15 @@ typedef struct {
         gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
 } MonoVTable;
 
+typedef struct {
+	gulong new_object_count;
+	gulong initialized_class_count;
+	gulong used_class_count;
+	gulong class_vtable_size;
+	gulong class_static_data_size;
+} MonoStats;
+
+extern MonoStats mono_stats;
 
 typedef gpointer (*MonoTrampoline)       (MonoMethod *method);
 

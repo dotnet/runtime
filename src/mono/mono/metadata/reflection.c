@@ -2066,7 +2066,7 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 	/* it's an exe */
 	header->coff.coff_attributes = GUINT16_FROM_LE (0x010e);
 	/* it's a dll */
-	//header->coff.coff_attributes = GUINT16_FROM_LE (0x210e);
+	/*header->coff.coff_attributes = GUINT16_FROM_LE (0x210e); */
 	header->pe.pe_magic = GUINT16_FROM_LE (0x10B);
 	header->pe.pe_major = 6;
 	header->pe.pe_minor = 0;

@@ -34,6 +34,8 @@
 
 #define CSIZE(x) (sizeof (x) / 4)
 
+MonoStats mono_stats;
+
 gboolean mono_print_vtable = FALSE;
 
 static MonoClass * mono_class_create_from_typedef (MonoImage *image, guint32 type_token);
@@ -377,7 +379,7 @@ mono_class_init (MonoClass *class)
 
 	class->init_pending = 1;
 
-//	mono_stats.initialized_class_count++;
+	mono_stats.initialized_class_count++;
 
 	if (class->parent) {
 		if (!class->parent->inited)
@@ -443,7 +445,7 @@ mono_class_init (MonoClass *class)
 		return;
 	}
 
-	//printf ("METAINIT %s.%s\n", class->name_space, class->name);
+	/* printf ("METAINIT %s.%s\n", class->name_space, class->name); */
 
 	/* compute maximum number of slots and maximum interface id */
 	max_iid = 0;
@@ -604,9 +606,9 @@ mono_class_init (MonoClass *class)
 				if (im) {
 					g_assert (io + l <= max_vtsize);
 					if (im->slot < 0) {
-						// fixme: why do we need this ?
+						/* FIXME: why do we need this ? */
 						im->slot = io + l;
-						// g_assert_not_reached ();
+						/* g_assert_not_reached (); */
 					}
 				}
 			}
@@ -920,7 +922,7 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 		if (((strcmp (class->parent->name, "Enum") == 0) && (strcmp (class->parent->name_space, "System") == 0))) {
 			class->valuetype = class->enumtype = 1;
 		}
-		//class->enumtype = class->parent->enumtype;
+		/*class->enumtype = class->parent->enumtype; */
 		class->parent->subclasses = g_list_prepend (class->parent->subclasses, class);
 		mono_compute_relative_numbering (mono_defaults.object_class, &rnum);
 	} else {
@@ -1016,7 +1018,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	if (class->flags & TYPE_ATTRIBUTE_INTERFACE)
 		class->interface_id = mono_get_unique_iid (class);
 
-	//class->interfaces = mono_metadata_interfaces_from_typedef (image, type_token, &class->interface_count);
+	/*class->interfaces = mono_metadata_interfaces_from_typedef (image, type_token, &class->interface_count); */
 
 	if (class->enumtype) {
 		class->fields = g_new0 (MonoClassField, class->field.count);

@@ -591,7 +591,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				g_warning ("Symbol file %s contains invalid field offset entry.",
 					   symfile->file_name);
 				g_message (G_STRLOC ": %d", token);
-				// G_BREAKPOINT ();
+				/* G_BREAKPOINT (); */
 				continue;
 			}
 

@@ -22,8 +22,6 @@
 #include <gc/gc.h>
 #endif
 
-MonoStats mono_stats;
-
 void
 mono_runtime_object_init (MonoObject *this)
 {
@@ -137,8 +135,8 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	if (!class->inited)
 		mono_class_init (class);
 
-//	mono_stats.used_class_count++;
-//	mono_stats.class_vtable_size += sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+	mono_stats.used_class_count++;
+	mono_stats.class_vtable_size += sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
 
 	vt = mono_mempool_alloc0 (domain->mp,  sizeof (MonoVTable) + 
 				  class->vtable_size * sizeof (gpointer));
@@ -155,7 +153,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		vt->data = mono_mempool_alloc0 (domain->mp, class->class_size + 8);
 		
 #endif
-//		mono_stats.class_static_data_size += class->class_size + 8;
+		mono_stats.class_static_data_size += class->class_size + 8;
 	}
 
 	for (i = class->field.first; i < class->field.last; ++i) {
@@ -217,8 +215,8 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 			break;
 		}
 		case MONO_TYPE_STRING: {
-			//gpointer *val = (gpointer*)t;
-			//*val = mono_string_new_utf16 (domain, (const guint16*)p, len/2);
+			/*gpointer *val = (gpointer*)t;
+			*val = mono_string_new_utf16 (domain, (const guint16*)p, len/2);*/
 			break;
 		}
 		case MONO_TYPE_CLASS:
@@ -286,7 +284,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoClass *class)
 	vt = mono_class_vtable (domain, class);
 	vtsize = sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
 
-//	mono_stats.class_vtable_size += vtsize;
+	mono_stats.class_vtable_size += vtsize;
 
 	pvt = mono_mempool_alloc (domain->mp, vtsize);
 	memcpy (pvt, vt, vtsize);
@@ -1274,9 +1272,9 @@ mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg,
 	static MonoMethod *im = NULL;
 	gpointer pa [4];
 
-	//static MonoObject *(*invoke) (gpointer, gpointer, MonoObject **, MonoArray **) = NULL;
+	/*static MonoObject *(*invoke) (gpointer, gpointer, MonoObject **, MonoArray **) = NULL;*/
 
-	/* fixme: make this domain dependent */
+	/* FIXME: make this domain dependent */
 	if (!im) {
 		MonoClass *klass;
 		int i;

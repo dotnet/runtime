@@ -77,7 +77,7 @@ mono_lookup_internal_call (MonoMethod *method)
 
 	name = g_strconcat (method->klass->name_space, ".", method->klass->name, "::", method->name, NULL);
 	if (!(res = g_hash_table_lookup (icall_hash, name))) {
-		// trying to resolve with full signature
+		/* trying to resolve with full signature */
 		g_free (name);
 	
 		tmpsig = mono_signature_get_desc(method->signature, TRUE);

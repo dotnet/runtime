@@ -19,6 +19,8 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/threads.h>
+#include <mono/metadata/socket-io.h>
 #include <mono/metadata/cil-coff.h>
 
 HANDLE mono_delegate_semaphore = NULL;
@@ -79,7 +81,7 @@ mono_runtime_cleanup (MonoDomain *domain)
 void
 ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoAppDomainSetup *setup)
 {
-	// fixme: implement me
+	/* FIXME: implement me */
 }
 
 /**
@@ -143,7 +145,7 @@ mono_domain_transfer_object (MonoDomain *src, MonoDomain *dst, MonoObject *obj)
 		res = (MonoObject *)mono_string_new_utf16 (dst, 
 		        (const guint16 *)mono_string_chars (str), str->length); 
 	} else {
-		// fixme: we need generic marshalling code here */
+		/* FIXME: we need generic marshalling code here */
 		g_assert_not_reached ();
 	}
 	
@@ -250,14 +252,14 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 	
 	adclass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
 	
-	// fixme: pin all those objects
+	/* FIXME: pin all those objects */
 	ad = (MonoAppDomain *) mono_object_new (domain, adclass);
 	ad->data = data = mono_domain_create ();
 	data->domain = ad;
 	data->setup = setup;
 	data->friendly_name = mono_string_to_utf8 (friendly_name);
 
-	// fixme: what to do next ?
+	/* FIXME: what to do next ? */
 
 	return ad;
 }
