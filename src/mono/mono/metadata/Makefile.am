@@ -138,7 +138,7 @@ pedump_LDADD = libmetadata.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
 
 
 monosn_LDADD = \
-	../metadata/libmetadata.la	\
+	libmetadata.la	\
 	../io-layer/libwapi.la		\
 	../utils/libmonoutils.la	\
 	$(LIBGC_LIBS)			\
