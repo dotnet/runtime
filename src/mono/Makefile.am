@@ -19,6 +19,7 @@ DISTCLEANFILES= mono.pc
 fullbuild: remove-binaries mcs-tree-safe-build xinstall-runtime mcs-rest install
 
 mcs-tree-safe-build:
+	(cd ../mcs/jay; make)
 	(cd ../mcs/mcs; make MCS=mcs)
 	(cd ../mcs/class/corlib; make MCS=mcs)
 	cp ../mcs/class/lib/corlib.dll runtime
