@@ -8492,7 +8492,7 @@ mini_cleanup (MonoDomain *domain)
 	 * fully working (mono_domain_finalize may invoke managed finalizers
 	 * and mono_runtime_cleanup will wait for other threads to finish).
 	 */
-	mono_domain_finalize (domain, -1);
+	mono_domain_finalize (domain, 2000);
 
 	mono_runtime_cleanup (domain);
 
