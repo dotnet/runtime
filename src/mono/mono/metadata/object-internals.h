@@ -213,6 +213,7 @@ typedef struct {
 
 struct _MonoThread {
 	MonoObject  obj;
+	int         lock_thread_id; /* to be used as the pre-shifted thread id in thin locks */
 	HANDLE	    handle;
 	MonoObject **culture_info;
 	MonoObject **ui_culture_info;
@@ -228,6 +229,10 @@ struct _MonoThread {
 	gpointer *static_data;
 	gpointer jit_data;
 	gpointer lock_data;
+	gpointer unused1;
+	gpointer unused2;
+	int stack_size;
+	MonoObject *start_obj;
 	GSList *appdomain_refs;
 	MonoBoolean interruption_requested;
 	gpointer suspend_event;

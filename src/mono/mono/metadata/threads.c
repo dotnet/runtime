@@ -41,7 +41,8 @@ struct StartInfo
 {
 	guint32 (*func)(void *);
 	MonoThread *obj;
-	void *this;
+	MonoObject *delegate;
+	void *start_arg;
 	MonoDomain *domain;
 };
 
@@ -113,6 +114,7 @@ static guint32 slothash_key = -1;
 
 /* The default stack size for each thread */
 static guint32 default_stacksize = 0;
+#define default_stacksize_for_thread(thread) ((thread)->stack_size? (thread)->stack_size: default_stacksize)
 
 static void thread_adjust_static_data (MonoThread *thread);
 static void mono_init_static_data_info (StaticDataInfo *static_data);
@@ -218,9 +220,11 @@ static guint32 start_wrapper(void *data)
 {
 	struct StartInfo *start_info=(struct StartInfo *)data;
 	guint32 (*start_func)(void *);
-	void *this;
+	void *start_arg;
 	guint32 tid;
 	MonoThread *thread=start_info->obj;
+	MonoObject *start_delegate = start_info->delegate;
+	MonoObject *start_obj = start_info->start_arg;
 	
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Start wrapper",
@@ -244,7 +248,7 @@ static guint32 start_wrapper(void *data)
 	}
 
 	start_func = start_info->func;
-	this = start_info->this;
+	start_arg = start_info->start_arg;
 
 	/* This MUST be called before any managed code can be
 	 * executed, as it calls the callback function that (for the
@@ -284,7 +288,16 @@ static guint32 start_wrapper(void *data)
 	g_message (G_GNUC_PRETTY_FUNCTION "start_wrapper for %d\n", thread->tid);
 #endif
 
-	start_func (this);
+	/* start_func is set only for unamanged start functions */
+	if (start_func) {
+		start_func (start_arg);
+	} else {
+		void *args [1];
+		g_assert (start_delegate != NULL);
+		args [0] = start_arg;
+		/* we may want to handle the exception here. See comment below on unhandled exceptions */
+		mono_runtime_delegate_invoke (start_delegate, args, NULL);
+	}
 #ifdef PLATFORM_WIN32
 	/* If the thread calls ExitThread at all, this remaining code
 	 * will not be executed, but the main thread will eventually
@@ -346,16 +359,16 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	start_info->func = func;
 	start_info->obj = thread;
 	start_info->domain = domain;
-	start_info->this = arg;
+	start_info->start_arg = arg;
 	
 	/* Create suspended, so we can do some housekeeping before the thread
 	 * starts
 	 */
 #if defined(PLATFORM_WIN32) && defined(HAVE_BOEHM_GC)
-	thread_handle = GC_CreateThread(NULL, default_stacksize, start_wrapper, start_info,
+	thread_handle = GC_CreateThread(NULL, default_stacksize_for_thread (thread), start_wrapper, start_info,
 				     CREATE_SUSPENDED, &tid);
 #else
-	thread_handle = CreateThread(NULL, default_stacksize, start_wrapper, start_info,
+	thread_handle = CreateThread(NULL, default_stacksize_for_thread (thread), start_wrapper, start_info,
 				     CREATE_SUSPENDED, &tid);
 #endif
 #ifdef THREAD_DEBUG
@@ -476,7 +489,12 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		  ": Trying to start a new thread: this (%p) start (%p)",
 		  this, start);
 #endif
-	
+
+/* FIXME: remove the code inside BROKEN_THREAD_START once martin gets rid of the
+ * thread_start_compile_func stuff.
+ */
+#define BROKEN_THREAD_START
+#ifdef BROKEN_THREAD_START
 	im = mono_get_delegate_invoke (start->vtable->klass);
 	im = mono_marshal_get_delegate_invoke (im);
 	if (mono_thread_callbacks)
@@ -489,10 +507,19 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 			  ": Can't locate start method!");
 		return(NULL);
 	} else {
+#else
+	start_func = NULL;
+	{
+#endif
 		/* This is freed in start_wrapper */
 		start_info = g_new0 (struct StartInfo, 1);
 		start_info->func = start_func;
-		start_info->this = delegate;
+#ifdef BROKEN_THREAD_START
+		start_info->start_arg = start;
+#else
+		start_info->start_arg = this->start_obj;
+#endif
+		start_info->delegate = start;
 		start_info->obj = this;
 		start_info->domain = mono_domain_get ();
 
@@ -503,10 +530,10 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		}
 
 #if defined(PLATFORM_WIN32) && defined(HAVE_BOEHM_GC)
-		thread=GC_CreateThread(NULL, default_stacksize, start_wrapper, start_info,
+		thread=GC_CreateThread(NULL, default_stacksize_for_thread (this), start_wrapper, start_info,
 				    CREATE_SUSPENDED, &tid);
 #else
-		thread=CreateThread(NULL, default_stacksize, start_wrapper, start_info,
+		thread=CreateThread(NULL, default_stacksize_for_thread (this), start_wrapper, start_info,
 				    CREATE_SUSPENDED, &tid);
 #endif
 		if(thread==NULL) {
