@@ -102,6 +102,11 @@
   </tr>
 </table>
 
+@item Feb 27th, 2003: Mono 0.21 released
+
+	Mono 0.21 has been released.  This is only a bug fix release.
+	The <a href="archive/mono-0.21">release notes</a> are available.
+
 @item Feb 25th, 2003: Mono 0.20 for Windows released;   New Apache module released.
 
 	Packages of Mono for Windows have been <a
