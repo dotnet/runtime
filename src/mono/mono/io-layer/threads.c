@@ -8,10 +8,6 @@
  */
 
 #include <config.h>
-#if HAVE_BOEHM_GC
-#include <mono/os/gc_wrapper.h>
-#include "mono/utils/mono-hash.h"
-#endif
 #include <stdio.h>
 #include <glib.h>
 #include <string.h>
@@ -47,10 +43,6 @@
 static mono_once_t thread_hash_once = MONO_ONCE_INIT;
 static mono_mutex_t thread_hash_mutex = MONO_MUTEX_INITIALIZER;
 static GHashTable *thread_hash=NULL;
-
-#if HAVE_BOEHM_GC
-static MonoGHashTable *tls_gc_hash = NULL;
-#endif
 
 static gboolean thread_own (gpointer handle);
 
@@ -231,15 +223,19 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	g_assert (thr_ret == 0);
 	
 	/* defaults of 2Mb for 32bits and 4Mb for 64bits */
+	/* temporarily changed to use 1 MB: this allows more threads to be used,
+	 * as well as using less virtual memory and so more is available for
+	 * the GC heap.
+	 */
 	if (stacksize == 0){
 #if HAVE_VALGRIND_MEMCHECK_H
 		if (RUNNING_ON_VALGRIND) {
 			stacksize = 1 << 20;
 		} else {
-			stacksize = (SIZEOF_VOID_P / 2) * 1024 * 1024;
+			stacksize = (SIZEOF_VOID_P / 4) * 1024 * 1024;
 		}
 #else
-		stacksize = (SIZEOF_VOID_P / 2) * 1024 * 1024;
+		stacksize = (SIZEOF_VOID_P / 4) * 1024 * 1024;
 #endif
 		
 	}
@@ -714,10 +710,6 @@ gboolean TlsFree(guint32 idx)
 	thr_ret = pthread_key_delete(TLS_keys[idx]);
 	g_assert (thr_ret == 0);
 	
-#if HAVE_BOEHM_GC
-	mono_g_hash_table_remove (tls_gc_hash, MAKE_GC_ID (idx));
-#endif
-
 	MONO_SPIN_UNLOCK (TLS_spinlock);
 	
 	return(TRUE);
@@ -791,14 +783,6 @@ gboolean TlsSetValue(guint32 idx, gpointer value)
 		return(FALSE);
 	}
 	
-#if HAVE_BOEHM_GC
-	if (!tls_gc_hash) {
-		MONO_GC_REGISTER_ROOT (tls_gc_hash);
-		tls_gc_hash = mono_g_hash_table_new(g_direct_hash, g_direct_equal);
-	}
-	mono_g_hash_table_insert (tls_gc_hash, MAKE_GC_ID (idx), value);
-#endif
-
 	MONO_SPIN_UNLOCK (TLS_spinlock);
 	
 	return(TRUE);

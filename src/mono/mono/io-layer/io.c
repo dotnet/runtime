@@ -483,14 +483,19 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 
 		_wapi_unlock_file_region (fd, current_pos, numbytes);
 
-		if(ret==-1) {
+		if (ret == -1) {
+			if (errno == EINTR) {
+				ret = 0;
+			} else {
+				_wapi_set_last_error_from_errno ();
+				
 #ifdef DEBUG
-			g_message("%s: write of handle %p error: %s",
-				  __func__, handle, strerror(errno));
+				g_message("%s: write of handle %p error: %s",
+					  __func__, handle, strerror(errno));
 #endif
 
-			_wapi_set_last_error_from_errno ();
-			return(FALSE);
+				return(FALSE);
+			}
 		}
 		if(byteswritten!=NULL) {
 			*byteswritten=ret;
@@ -771,7 +776,13 @@ static gboolean file_setendoffile(gpointer handle)
 	}
 	
 	if(pos>size) {
-		/* extend */
+		/* Extend the file.  Use write() here, because some
+		 * manuals say that ftruncate() behaviour is undefined
+		 * when the file needs extending.  The POSIX spec says
+		 * that on XSI-conformant systems it extends, so if
+		 * every system we care about conforms, then we can
+		 * drop this write.
+		 */
 		do {
 			ret=write(fd, "", 1);
 		} while (ret==-1 && errno==EINTR &&
@@ -1187,14 +1198,19 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 		ret=write(fd, buffer, numbytes);
 	} while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 
-	if(ret==-1) {
+	if (ret == -1) {
+		if (errno == EINTR) {
+			ret = 0;
+		} else {
+			_wapi_set_last_error_from_errno ();
+			
 #ifdef DEBUG
-		g_message ("%s: write of handle %p error: %s", __func__,
-			   handle, strerror(errno));
+			g_message ("%s: write of handle %p error: %s",
+				   __func__, handle, strerror(errno));
 #endif
 
-		_wapi_set_last_error_from_errno ();
-		return(FALSE);
+			return(FALSE);
+		}
 	}
 	if(byteswritten!=NULL) {
 		*byteswritten=ret;
@@ -1273,14 +1289,19 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 		ret=read(fd, buffer, numbytes);
 	} while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 		
-	if(ret==-1) {
+	if (ret == -1) {
+		if (errno == EINTR) {
+			ret = 0;
+		} else {
+			_wapi_set_last_error_from_errno ();
+			
 #ifdef DEBUG
-		g_message("%s: read of handle %p error: %s", __func__, handle,
-			  strerror(errno));
+			g_message("%s: read of handle %p error: %s", __func__,
+				  handle, strerror(errno));
 #endif
 
-		_wapi_set_last_error_from_errno ();
-		return(FALSE);
+			return(FALSE);
+		}
 	}
 	
 #ifdef DEBUG
@@ -1335,14 +1356,19 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 		ret=write(fd, buffer, numbytes);
 	} while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 
-	if(ret==-1) {
+	if (ret == -1) {
+		if (errno == EINTR) {
+			ret = 0;
+		} else {
+			_wapi_set_last_error_from_errno ();
+			
 #ifdef DEBUG
-		g_message("%s: write of handle %p error: %s", __func__, handle,
-			  strerror(errno));
+			g_message("%s: write of handle %p error: %s", __func__,
+				  handle, strerror(errno));
 #endif
 
-		_wapi_set_last_error_from_errno ();
-		return(FALSE);
+			return(FALSE);
+		}
 	}
 	if(byteswritten!=NULL) {
 		*byteswritten=ret;
@@ -2036,7 +2062,7 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 	/* Check if fd is valid */
 	do {
 		flags=fcntl(fd, F_GETFL);
-	} while (flags==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+	} while (flags == -1 && errno == EINTR);
 
 	if(flags==-1) {
 		/* Invalid fd.  Not really much point checking for EBADF
@@ -3712,8 +3738,7 @@ static gboolean _wapi_lock_file_region (int fd, off_t offset, off_t length)
 	
 	do {
 		ret = fcntl (fd, F_SETLK, &lock_data);
-	}
-	while(ret == -1 && errno == EINTR && !_wapi_thread_cur_apc_pending ());
+	} while(ret == -1 && errno == EINTR);
 	
 #ifdef DEBUG
 	g_message ("%s: fcntl returns %d", __func__, ret);
@@ -3739,8 +3764,7 @@ static gboolean _wapi_unlock_file_region (int fd, off_t offset, off_t length)
 	
 	do {
 		ret = fcntl (fd, F_SETLK, &lock_data);
-	}
-	while(ret == -1 && errno == EINTR && !_wapi_thread_cur_apc_pending ());
+	} while(ret == -1 && errno == EINTR);
 	
 #ifdef DEBUG
 	g_message ("%s: fcntl returns %d", __func__, ret);
