@@ -11,6 +11,7 @@
 #include "timed-thread.h"
 #include "wait-private.h"
 #include "handles-private.h"
+#include "misc-private.h"
 
 #include "pthread-compat.h"
 
@@ -93,14 +94,8 @@ static gboolean thread_wait(WapiHandle *handle, guint32 ms)
 		ret=_wapi_timed_thread_join(thread_handle->thread, NULL, NULL);
 	} else {
 		struct timespec timeout;
-		struct timeval now;
-		div_t divvy;
 
-		divvy=div((int)ms, 1000);
-		gettimeofday(&now, NULL);
-	
-		timeout.tv_sec=now.tv_sec+divvy.quot;
-		timeout.tv_nsec=(now.tv_usec+divvy.rem)*1000;
+		_wapi_calc_timeout(&timeout, ms);
 	
 		ret=_wapi_timed_thread_join(thread_handle->thread, &timeout,
 					    NULL);
@@ -121,8 +116,6 @@ static guint32 thread_wait_multiple(gpointer data)
 	int ret;
 	guint32 numhandles, count;
 	struct timespec timeout;
-	struct timeval now;
-	div_t divvy;
 	
 	numhandles=item->handles[WAPI_HANDLE_THREAD]->len;
 	
@@ -150,11 +143,7 @@ static guint32 thread_wait_multiple(gpointer data)
 	
 	/* OK, we need to wait for some */
 	if(item->timeout!=INFINITE) {
-		divvy=div((int)item->timeout, 1000);
-		gettimeofday(&now, NULL);
-	
-		timeout.tv_sec=now.tv_sec+divvy.quot;
-		timeout.tv_nsec=(now.tv_usec+divvy.rem)*1000;
+		_wapi_calc_timeout(&timeout, item->timeout);
 	}
 	
 	/* We can restart from here without resetting the timeout,

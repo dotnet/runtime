@@ -9,6 +9,7 @@
 #include "mono/io-layer/wapi.h"
 #include "wapi-private.h"
 #include "wait-private.h"
+#include "misc-private.h"
 
 #define DEBUG
 
@@ -72,14 +73,8 @@ static gboolean sema_wait(WapiHandle *handle G_GNUC_UNUSED, guint32 ms G_GNUC_UN
 		waited=TRUE;
 	} else {
 		struct timespec timeout;
-		struct timeval now;
-		div_t divvy;
-		
-		divvy=div((int)ms, 1000);
-		gettimeofday(&now, NULL);
-		
-		timeout.tv_sec=now.tv_sec+divvy.quot;
-		timeout.tv_nsec=(now.tv_usec+divvy.rem)*1000;
+
+		_wapi_calc_timeout(&timeout, ms);
 		
 		ret=pthread_cond_timedwait(&sem_cond, &sem_mutex, &timeout);
 		if(ret==0) {
@@ -105,8 +100,6 @@ static guint32 sema_wait_multiple(gpointer data G_GNUC_UNUSED)
 	WaitQueueItem *item=(WaitQueueItem *)data;
 	guint32 numhandles, count;
 	struct timespec timeout;
-	struct timeval now;
-	div_t divvy;
 	guint32 i;
 	int ret;
 	
@@ -146,11 +139,7 @@ static guint32 sema_wait_multiple(gpointer data G_GNUC_UNUSED)
 	
 	/* OK, we need to wait for some */
 	if(item->timeout!=INFINITE) {
-		divvy=div((int)item->timeout, 1000);
-		gettimeofday(&now, NULL);
-		
-		timeout.tv_sec=now.tv_sec+divvy.quot;
-		timeout.tv_nsec=(now.tv_usec+divvy.rem)*1000;
+		_wapi_calc_timeout(&timeout, item->timeout);
 	}
 	
 	/* We can restart from here without resetting the timeout,

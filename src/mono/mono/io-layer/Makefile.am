@@ -14,6 +14,7 @@ OTHER_H = \
 	handles.h	\
 	io.h		\
 	io-layer.h	\
+	mutexes.h	\
 	semaphores.h	\
 	status.h	\
 	threads.h	\
@@ -33,6 +34,10 @@ OTHER_SRC = \
 	io.c			\
 	io.h			\
 	io-layer.h		\
+	misc.c			\
+	misc-private.h		\
+	mutexes.c		\
+	mutexes.h		\
 	pthread-compat.c	\
 	pthread-compat.h	\
 	semaphores.c		\
