@@ -956,7 +956,7 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 	gboolean ok;
 	int ret;
 	
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
 				(gpointer *)&console_handle,
 				(gpointer *)&console_private_handle);
 	if(ok==FALSE) {
