@@ -15,7 +15,6 @@
 
 #include "mini-x86.h"
 #include "inssel.h"
-#include "regset.h"
 #include "cpu-pentium.h"
 
 int mono_exc_esp_offset = 0;
