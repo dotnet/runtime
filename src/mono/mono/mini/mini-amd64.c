@@ -5588,7 +5588,7 @@ mono_arch_get_patch_offset (guint8 *code)
 }
 
 gpointer*
-mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs)
+mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 {
 	guint32 reg;
 	guint32 disp;
@@ -5649,11 +5649,11 @@ mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs)
 	/* R11 is clobbered by the trampoline code */
 	g_assert (reg != AMD64_R11);
 
-	return (gpointer)((regs [reg]) + disp);
+	return (gpointer)(((guint64)(regs [reg])) + disp);
 }
 
 gpointer*
-mono_amd64_get_delegate_method_ptr_addr (guint8* code, guint64 *regs)
+mono_arch_get_delegate_method_ptr_addr (guint8* code, gpointer *regs)
 {
 	guint32 reg;
 	guint32 disp;
@@ -5668,7 +5668,7 @@ mono_amd64_get_delegate_method_ptr_addr (guint8* code, guint64 *regs)
 		if (reg == AMD64_RAX)
 			return NULL;
 		else
-			return (gpointer*)(regs [reg] + disp);
+			return (gpointer*)(((guint64)(regs [reg])) + disp);
 	}
 
 	return NULL;

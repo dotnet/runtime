@@ -88,7 +88,7 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	if (!code)
 		return addr;
 
-	vtable_slot = mono_amd64_get_vcall_slot_addr (code, regs);
+	vtable_slot = mono_arch_get_vcall_slot_addr (code, regs);
 
 	if (vtable_slot) {
 		if (m->klass->valuetype)
@@ -131,7 +131,7 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 				InterlockedExchangePointer (got_entry, addr);
 			}
 		}
-		else if ((method_ptr = mono_amd64_get_delegate_method_ptr_addr (code, regs))) {
+		else if ((method_ptr = mono_arch_get_delegate_method_ptr_addr (code, regs))) {
 			/* This is a call inside a delegate wrapper to the target method */
 			MonoJitInfo *ji = 
 				mono_jit_info_table_find (mono_domain_get (), code);

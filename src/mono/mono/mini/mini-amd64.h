@@ -223,12 +223,6 @@ typedef struct {
 #define MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN 1
 #define MONO_ARCH_HAVE_CREATE_VARS 1
 
-gpointer*
-mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs);
-
-gpointer*
-mono_amd64_get_delegate_method_ptr_addr (guint8* code, guint64 *regs);
-
 void
 mono_amd64_exceptions_init (void);
 
