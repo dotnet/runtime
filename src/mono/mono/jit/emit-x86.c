@@ -1776,8 +1776,13 @@ arch_create_native_wrapper (MonoMethod *method)
 	MonoMethodSignature *csig = method->signature;
 	MonoJitInfo *ji;
 	guint8 *code, *start;
-	int i, align, arg_size = 0;
+	int i, align, locals = 0, arg_size = 0;
 	gboolean pinvoke = FALSE;
+	GList *str_list = NULL;
+
+	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
+	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+		pinvoke = TRUE;
 
 	/* compute the size of the activation frame */
 
@@ -1792,6 +1797,8 @@ arch_create_native_wrapper (MonoMethod *method)
 	for (i = 0; i < csig->param_count; ++i) {
 		arg_size += mono_type_stack_size (csig->params [i], &align);
 		g_assert (align == 4);
+		if (pinvoke && (csig->params [i]->type == MONO_TYPE_STRING))
+			locals++;
 	}
 
 	start = code = g_malloc (512);
@@ -1839,21 +1846,28 @@ arch_create_native_wrapper (MonoMethod *method)
 			x86_branch8 (code, X86_CC_GEZ, l1 - (l2 + 2), FALSE); 
 		}
 
-	} else if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-		int offset = arg_size + sizeof (MonoLMF) - 4;
-
-		pinvoke = TRUE;
+	} else if (pinvoke) {
+		int offset = arg_size + (locals <<2) + sizeof (MonoLMF) - 4;
+		int l = 0;
+		
+		/* allocate locals */
+		if (locals) {
+			x86_alu_reg_imm (code, X86_SUB, X86_ESP, (locals<<2));
+			x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
+		}
 
 		for (i = csig->param_count - 1; i >= 0; i--) {
 			MonoType *t = csig->params [i];
+			int type;
 
 			if (t->byref) {
 				x86_push_membase (code, X86_ESP, offset);
 				continue;
 			}
 
+			type = t->type;
 enum_marshal:
-			switch (t->type) {
+			switch (type) {
 			case MONO_TYPE_BOOLEAN:
 			case MONO_TYPE_CHAR:
 			case MONO_TYPE_I1:
@@ -1878,6 +1892,9 @@ enum_marshal:
 				x86_push_membase (code, X86_ESP, offset);
 				x86_call_code (code, mono_string_to_utf8);
 				x86_mov_membase_reg (code, X86_ESP, 0, X86_EAX, 4);
+				str_list = g_list_prepend (str_list, (gpointer)l);
+				x86_mov_membase_reg (code, X86_EBP, l, X86_EAX, 4);
+				l+= 4;
 				break;
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8:
@@ -1887,7 +1904,7 @@ enum_marshal:
 				break;
 			case MONO_TYPE_VALUETYPE:
 				if (t->data.klass->enumtype) {
-					t = t->data.klass->enum_basetype->type;
+					type = t->data.klass->enum_basetype->type;
 					goto enum_marshal;
 				} else {
 					int j, size;
@@ -1899,8 +1916,8 @@ enum_marshal:
 				break;
 			default:
 				g_error ("type 0x%02x unknown", t->type);
-			}
 
+			}
 		}			
 
 		if (csig->ret->type == MONO_TYPE_VALUETYPE) {
@@ -1925,11 +1942,29 @@ enum_marshal:
 		x86_call_code (code, arch_get_throw_exception_by_name ());
 	}
 
-	/* remove arguments from stack */
-	if (arg_size)
-		x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size);
+	/* free pinvoke string args */
+	if (str_list) {
+		GList *l;
 
-	
+		x86_push_reg (code, X86_EAX);
+		x86_push_reg (code, X86_EDX);
+		
+		for (l = str_list; l; l = l->next) {
+			x86_push_membase (code, X86_EBP, ((int)l->data));
+			x86_call_code (code, g_free);
+			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
+		}
+
+		x86_pop_reg (code, X86_EDX);
+		x86_pop_reg (code, X86_EAX);
+
+		g_list_free (str_list);
+	}
+
+	/* remove arguments from stack */
+	if (arg_size || locals)
+		x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size + (locals<<2));
+
 	if (pinvoke && !csig->ret->byref && (csig->ret->type == MONO_TYPE_STRING)) {
 		/* If the argument is non-null, then convert the value back */
 		x86_alu_reg_reg (code, X86_OR, X86_EAX, X86_EAX);
@@ -1938,7 +1973,7 @@ enum_marshal:
 		x86_call_code (code, mono_string_new_wrapper);
 		x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 	}
-
+	
 	/* restore the LMF */
 	
 	/* ebx = previous_lmf */
