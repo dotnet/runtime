@@ -435,6 +435,12 @@ mono_lookup_dynamic_token (MonoImage *image, guint32 token);
 void
 mono_install_lookup_dynamic_token (MonoLookupDynamicToken func);
 
+void
+mono_class_create_generic (MonoGenericInst *ginst);
+
+void
+mono_class_create_generic_2 (MonoGenericInst *ginst);
+
 typedef struct {
 	MonoImage *corlib;
 	MonoClass *object_class;

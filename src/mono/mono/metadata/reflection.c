@@ -7877,6 +7877,7 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 	}
 
 	mono_class_create_generic (ginst);
+	mono_class_create_generic_2 (ginst);
 
 	g_hash_table_insert (klass->image->generic_inst_cache, ginst, ginst);
 

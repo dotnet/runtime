@@ -44,9 +44,6 @@ mono_class_from_typeref    (MonoImage *image, guint32 type_token);
 MonoClass *
 mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gboolean is_mvar);
 
-MonoClass*
-mono_class_create_generic  (MonoGenericInst *ginst);
-
 MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context);
 

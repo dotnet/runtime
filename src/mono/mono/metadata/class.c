@@ -327,6 +327,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		nginst->initialized = FALSE;
 
 		mono_class_create_generic (nginst);
+		mono_class_create_generic_2 (nginst);
 
 		mono_stats.generic_instance_count++;
 		mono_stats.generics_metadata_size += sizeof (MonoGenericInst) +
@@ -1373,7 +1374,6 @@ mono_class_init (MonoClass *class)
 	if (class->generic_inst && !class->generic_inst->is_dynamic) {
 		MonoGenericInst *ginst = class->generic_inst;
 		MonoClass *gklass;
-		GList *list;
 
 		gklass = mono_class_from_mono_type (ginst->generic_type);
 		mono_class_init (gklass);
@@ -1388,14 +1388,14 @@ mono_class_init (MonoClass *class)
 		if (MONO_CLASS_IS_INTERFACE (class))
 			class->interface_id = mono_get_unique_iid (class);
 
-		class->method = gklass->method;
+		g_assert (class->method.count == gklass->method.count);
 		class->methods = g_new0 (MonoMethod *, class->method.count);
 
 		for (i = 0; i < class->method.count; i++)
 			class->methods [i] = mono_class_inflate_generic_method (
 				gklass->methods [i], ginst->context, ginst->klass);
 
-		class->field = gklass->field;
+		g_assert (class->field.count == gklass->field.count);
 		class->fields = g_new0 (MonoClassField, class->field.count);
 
 		for (i = 0; i < class->field.count; i++) {
@@ -1427,19 +1427,7 @@ mono_class_init (MonoClass *class)
 			prop->parent = class;
 		}
 
-		class->interface_count = gklass->interface_count;
-		class->interfaces = g_new0 (MonoClass *, class->interface_count);
-		for (i = 0; i < class->interface_count; i++) {
-			MonoType *it = &gklass->interfaces [i]->byval_arg;
-			MonoType *inflated = mono_class_inflate_generic_type (
-				it, ginst->context);
-			class->interfaces [i] = mono_class_from_mono_type (inflated);
-			mono_class_init (class->interfaces [i]);
-		}
-
-		for (list = gklass->nested_classes; list; list = list->next)
-			class->nested_classes = g_list_append (
-				class->nested_classes, list->data);
+		g_assert (class->interface_count == gklass->interface_count);
 	}
 
 	if (class->parent && !class->parent->inited)
@@ -1919,7 +1907,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	return class;
 }
 
-MonoClass*
+void
 mono_class_create_generic (MonoGenericInst *ginst)
 {
 	MonoClass *klass, *gklass;
@@ -1952,8 +1940,34 @@ mono_class_create_generic (MonoGenericInst *ginst)
 
 		klass->valuetype = gklass->valuetype;
 	}
+}
 
-	return klass;
+void
+mono_class_create_generic_2 (MonoGenericInst *ginst)
+{
+	MonoClass *klass, *gklass;
+	GList *list;
+	int i;
+
+	klass = ginst->klass;
+	gklass = mono_class_from_mono_type (ginst->generic_type);
+	while (gklass->generic_inst)
+		gklass = mono_class_from_mono_type (gklass->generic_inst->generic_type);
+
+	klass->method = gklass->method;
+	klass->field = gklass->field;
+
+	klass->interface_count = gklass->interface_count;
+	klass->interfaces = g_new0 (MonoClass *, klass->interface_count);
+	for (i = 0; i < klass->interface_count; i++) {
+		MonoType *it = &gklass->interfaces [i]->byval_arg;
+		MonoType *inflated = mono_class_inflate_generic_type (it, ginst->context);
+		klass->interfaces [i] = mono_class_from_mono_type (inflated);
+	}
+
+	for (list = gklass->nested_classes; list; list = list->next)
+		klass->nested_classes = g_list_append (
+			klass->nested_classes, list->data);
 }
 
 MonoClass *

@@ -1563,6 +1563,7 @@ do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, MonoGenericCo
 			ginst->is_open = mono_class_is_open_constructed_type (t);
 	}
 
+	mono_class_create_generic_2 (ginst);
 
 	if (rptr)
 		*rptr = ptr;
