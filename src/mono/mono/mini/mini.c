@@ -5982,240 +5982,187 @@ mono_print_tree_nl (MonoInst *tree)
 	printf ("\n");
 }
 
+static MonoType*
+type_from_typename (char *typename)
+{
+	MonoClass *klass;
+
+	if (!strcmp (typename, "int"))
+		klass = mono_defaults.int_class;
+	else if (!strcmp (typename, "ptr"))
+		klass = mono_defaults.int_class;
+	else if (!strcmp (typename, "void"))
+		klass = mono_defaults.void_class;
+	else if (!strcmp (typename, "int32"))
+		klass = mono_defaults.int32_class;
+	else if (!strcmp (typename, "uint32"))
+		klass = mono_defaults.uint32_class;
+	else if (!strcmp (typename, "long"))
+		klass = mono_defaults.int64_class;
+	else if (!strcmp (typename, "ulong"))
+		klass = mono_defaults.uint64_class;
+	else if (!strcmp (typename, "float"))
+		klass = mono_defaults.single_class;
+	else if (!strcmp (typename, "double"))
+		klass = mono_defaults.double_class;
+	else if (!strcmp (typename, "object"))
+		klass = mono_defaults.object_class;
+	else {
+		g_error (typename);
+		g_assert_not_reached ();
+	}
+	return &klass->byval_arg;
+}
+
+static MonoMethodSignature*
+make_icall_sig (const char *sigstr)
+{
+	gchar **parts;
+	int i, len;
+	gchar **tmp;
+	MonoMethodSignature *res;
+
+	parts = g_strsplit (sigstr, " ", 256);
+
+	tmp = parts;
+	len = 0;
+	while (*tmp) {
+		len ++;
+		tmp ++;
+	}
+
+	res = mono_metadata_signature_alloc (mono_defaults.corlib, len - 1);
+	res->pinvoke = 1;
+
+#ifdef PLATFORM_WIN32
+	/* 
+	 * Under windows, the default pinvoke calling convention is STDCALL but
+	 * we need CDECL.
+	 */
+	res->call_convention = MONO_CALL_C;
+#endif
+
+	res->ret = type_from_typename (parts [0]);
+	for (i = 1; i < len; ++i) {
+		res->params [i - 1] = type_from_typename (parts [i]);
+	}
+
+	g_strfreev (parts);
+
+	return res;
+}
+
 static void
 create_helper_signature (void)
 {
+
 	/* FIXME: set call conv */
 	/* MonoArray * mono_array_new (MonoDomain *domain, MonoClass *klass, gint32 len) */
-	helper_sig_newarr = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
-	helper_sig_newarr->params [0] = helper_sig_newarr->params [1] = &mono_defaults.int_class->byval_arg;
-	helper_sig_newarr->ret = &mono_defaults.object_class->byval_arg;
-	helper_sig_newarr->params [2] = &mono_defaults.int32_class->byval_arg;
-	helper_sig_newarr->pinvoke = 1;
+	helper_sig_newarr = make_icall_sig ("object ptr ptr int32");
 
 	/* MonoArray * mono_array_new_specific (MonoVTable *vtable, guint32 len) */
-	helper_sig_newarr_specific = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-	helper_sig_newarr_specific->params [0] = &mono_defaults.int_class->byval_arg;
-	helper_sig_newarr_specific->params [1] = &mono_defaults.int32_class->byval_arg;
-	helper_sig_newarr_specific->ret = &mono_defaults.object_class->byval_arg;
-	helper_sig_newarr_specific->pinvoke = 1;
+	helper_sig_newarr_specific = make_icall_sig ("object ptr int32");
 
 	/* MonoObject * mono_object_new (MonoDomain *domain, MonoClass *klass) */
-	helper_sig_object_new = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-	helper_sig_object_new->params [0] = helper_sig_object_new->params [1] = &mono_defaults.int_class->byval_arg;
-	helper_sig_object_new->ret = &mono_defaults.object_class->byval_arg;
-	helper_sig_object_new->pinvoke = 1;
+	helper_sig_object_new = make_icall_sig ("object ptr ptr");
 
 	/* MonoObject * mono_object_new_specific (MonoVTable *vtable) */
-	helper_sig_object_new_specific = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	helper_sig_object_new_specific->params [0] = &mono_defaults.int_class->byval_arg;
-	helper_sig_object_new_specific->ret = &mono_defaults.object_class->byval_arg;
-	helper_sig_object_new_specific->pinvoke = 1;
+	helper_sig_object_new_specific = make_icall_sig ("object ptr");
 
 	/* void* mono_method_compile (MonoMethod*) */
-	helper_sig_compile = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	helper_sig_compile->params [0] = helper_sig_compile->ret = &mono_defaults.int_class->byval_arg;
-	helper_sig_compile->pinvoke = 1;
+	helper_sig_compile = make_icall_sig ("ptr ptr");
 
 	/* void* mono_ldvirtfn (MonoObject *, MonoMethod*) */
-	helper_sig_compile_virt = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-	helper_sig_compile_virt->params [0] = &mono_defaults.object_class->byval_arg;
-	helper_sig_compile_virt->params [1] = helper_sig_compile_virt->ret = &mono_defaults.int_class->byval_arg;
-	helper_sig_compile_virt->pinvoke = 1;
+	helper_sig_compile_virt = make_icall_sig ("ptr object ptr");
 
 	/* MonoString* mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 str_index) */
-	helper_sig_ldstr = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
-	helper_sig_ldstr->params [0] = helper_sig_ldstr->params [1] = &mono_defaults.int_class->byval_arg;
-	helper_sig_ldstr->params [2] = &mono_defaults.int32_class->byval_arg;
-	helper_sig_ldstr->ret = &mono_defaults.object_class->byval_arg;
-	helper_sig_ldstr->pinvoke = 1;
+	helper_sig_ldstr = make_icall_sig ("object ptr ptr int32");
 
 	/* MonoDomain *mono_domain_get (void) */
-	helper_sig_domain_get = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
-	helper_sig_domain_get->ret = &mono_defaults.int_class->byval_arg;
-	helper_sig_domain_get->pinvoke = 1;
+	helper_sig_domain_get = make_icall_sig ("ptr");
 
-	/* void* stelem_ref (MonoArray *, int index, MonoObject *) */
-	helper_sig_stelem_ref = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
-	helper_sig_stelem_ref->params [0] = &mono_defaults.array_class->byval_arg;
-	helper_sig_stelem_ref->params [1] = &mono_defaults.int32_class->byval_arg;
-	helper_sig_stelem_ref->params [2] = &mono_defaults.object_class->byval_arg;
-	helper_sig_stelem_ref->ret = &mono_defaults.void_class->byval_arg;
-	helper_sig_stelem_ref->pinvoke = 1;
+	/* void stelem_ref (MonoArray *, int index, MonoObject *) */
+	helper_sig_stelem_ref = make_icall_sig ("void ptr int32 object");
 
-	/* void* stelem_ref_check (MonoArray *, MonoObject *) */
-	helper_sig_stelem_ref_check = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-	helper_sig_stelem_ref_check->params [0] = &mono_defaults.array_class->byval_arg;
-	helper_sig_stelem_ref_check->params [1] = &mono_defaults.object_class->byval_arg;
-	helper_sig_stelem_ref_check->ret = &mono_defaults.void_class->byval_arg;
-	helper_sig_stelem_ref_check->pinvoke = 1;
+	/* void stelem_ref_check (MonoArray *, MonoObject *) */
+	helper_sig_stelem_ref_check = make_icall_sig ("void object object");
 
 	/* long amethod (long, long) */
-	helper_sig_long_long_long = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-	helper_sig_long_long_long->params [0] = helper_sig_long_long_long->params [1] = 
-		&mono_defaults.int64_class->byval_arg;
-	helper_sig_long_long_long->ret = &mono_defaults.int64_class->byval_arg;
-	helper_sig_long_long_long->pinvoke = 1;
+	helper_sig_long_long_long = make_icall_sig ("long long long");
 
 	/* object  amethod (intptr) */
-	helper_sig_obj_ptr = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	helper_sig_obj_ptr->params [0] = &mono_defaults.int_class->byval_arg;
-	helper_sig_obj_ptr->ret = &mono_defaults.object_class->byval_arg;
-	helper_sig_obj_ptr->pinvoke = 1;
+	helper_sig_obj_ptr = make_icall_sig ("object ptr");
 
 	/* void amethod (intptr) */
-	helper_sig_void_ptr = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	helper_sig_void_ptr->params [0] = &mono_defaults.int_class->byval_arg;
-	helper_sig_void_ptr->ret = &mono_defaults.void_class->byval_arg;
-	helper_sig_void_ptr->pinvoke = 1;
+	helper_sig_void_ptr = make_icall_sig ("void ptr");
 
 	/* void amethod (MonoObject *obj) */
-	helper_sig_void_obj = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	helper_sig_void_obj->params [0] = &mono_defaults.object_class->byval_arg;
-	helper_sig_void_obj->ret = &mono_defaults.void_class->byval_arg;
-	helper_sig_void_obj->pinvoke = 1;
+	helper_sig_void_obj = make_icall_sig ("void object");
 
 	/* void amethod (MonoObject *obj, void *ptr, int i) */
-	helper_sig_void_obj_ptr_int = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
-	helper_sig_void_obj_ptr_int->params [0] = &mono_defaults.object_class->byval_arg;
-	helper_sig_void_obj_ptr_int->params [1] = &mono_defaults.int_class->byval_arg;
-	helper_sig_void_obj_ptr_int->params [2] = &mono_defaults.int_class->byval_arg;
-	helper_sig_void_obj_ptr_int->ret = &mono_defaults.void_class->byval_arg;
-	helper_sig_void_obj_ptr_int->pinvoke = 1;
+	helper_sig_void_obj_ptr_int = make_icall_sig ("void object ptr int");
 
 	/* intptr amethod (void) */
-	helper_sig_ptr_void = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
-	helper_sig_ptr_void->ret = &mono_defaults.int_class->byval_arg;
-	helper_sig_ptr_void->pinvoke = 1;
+	helper_sig_ptr_void = make_icall_sig ("ptr");
 
 	/* object amethod (void) */
-	helper_sig_obj_void = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
-	helper_sig_obj_void->ret = &mono_defaults.object_class->byval_arg;
-	helper_sig_obj_void->pinvoke = 1;
+	helper_sig_obj_void = make_icall_sig ("object");
 
 	/* void  amethod (intptr, intptr) */
-	helper_sig_void_ptr_ptr = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-	helper_sig_void_ptr_ptr->params [0] = &mono_defaults.int_class->byval_arg;
-	helper_sig_void_ptr_ptr->params [1] = &mono_defaults.int_class->byval_arg;
-	helper_sig_void_ptr_ptr->ret = &mono_defaults.void_class->byval_arg;
-	helper_sig_void_ptr_ptr->pinvoke = 1;
+	helper_sig_void_ptr_ptr = make_icall_sig ("void ptr ptr");
 
 	/* void  amethod (intptr, intptr, intptr) */
-	helper_sig_void_ptr_ptr_ptr = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
-	helper_sig_void_ptr_ptr_ptr->params [0] = &mono_defaults.int_class->byval_arg;
-	helper_sig_void_ptr_ptr_ptr->params [1] = &mono_defaults.int_class->byval_arg;
-	helper_sig_void_ptr_ptr_ptr->params [2] = &mono_defaults.int_class->byval_arg;
-	helper_sig_void_ptr_ptr_ptr->ret = &mono_defaults.void_class->byval_arg;
-	helper_sig_void_ptr_ptr_ptr->pinvoke = 1;
+	helper_sig_void_ptr_ptr_ptr = make_icall_sig ("void ptr ptr ptr");
 
 	/* intptr  amethod (intptr, intptr) */
-	helper_sig_ptr_ptr_ptr = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-	helper_sig_ptr_ptr_ptr->params [0] = &mono_defaults.int_class->byval_arg;
-	helper_sig_ptr_ptr_ptr->params [1] = &mono_defaults.int_class->byval_arg;
-	helper_sig_ptr_ptr_ptr->ret = &mono_defaults.int_class->byval_arg;
-	helper_sig_ptr_ptr_ptr->pinvoke = 1;
+	helper_sig_ptr_ptr_ptr = make_icall_sig ("ptr ptr ptr");
 
 	/* IntPtr  amethod (object) */
-	helper_sig_ptr_obj = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	helper_sig_ptr_obj->params [0] = &mono_defaults.object_class->byval_arg;
-	helper_sig_ptr_obj->ret = &mono_defaults.int_class->byval_arg;
-	helper_sig_ptr_obj->pinvoke = 1;
+	helper_sig_ptr_obj = make_icall_sig ("ptr object");
 
 	/* IntPtr  amethod (object, int) */
-	helper_sig_ptr_obj_int = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-	helper_sig_ptr_obj_int->params [0] = &mono_defaults.object_class->byval_arg;
-	helper_sig_ptr_obj_int->params [1] = &mono_defaults.int_class->byval_arg;
-	helper_sig_ptr_obj_int->ret = &mono_defaults.int_class->byval_arg;
-	helper_sig_ptr_obj_int->pinvoke = 1;
+	helper_sig_ptr_obj_int = make_icall_sig ("ptr object int");
 
 	/* IntPtr  amethod (int) */
-	helper_sig_ptr_int = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	helper_sig_ptr_int->params [0] = &mono_defaults.int32_class->byval_arg;
-	helper_sig_ptr_int->ret = &mono_defaults.int_class->byval_arg;
-	helper_sig_ptr_int->pinvoke = 1;
+	helper_sig_ptr_int = make_icall_sig ("ptr int32");
 
 	/* long amethod (long, guint32) */
-	helper_sig_long_long_int = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-	helper_sig_long_long_int->params [0] = &mono_defaults.int64_class->byval_arg;
-	helper_sig_long_long_int->params [1] = &mono_defaults.int32_class->byval_arg;
-	helper_sig_long_long_int->ret = &mono_defaults.int64_class->byval_arg;
-	helper_sig_long_long_int->pinvoke = 1;
+	helper_sig_long_long_int = make_icall_sig ("long long int32");
 
 	/* ulong amethod (double) */
-	helper_sig_ulong_double = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	helper_sig_ulong_double->params [0] = &mono_defaults.double_class->byval_arg;
-	helper_sig_ulong_double->ret = &mono_defaults.uint64_class->byval_arg;
-	helper_sig_ulong_double->pinvoke = 1;
+	helper_sig_ulong_double = make_icall_sig ("ulong double");
 
 	/* long amethod (double) */
-	helper_sig_long_double = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	helper_sig_long_double->params [0] = &mono_defaults.double_class->byval_arg;
-	helper_sig_long_double->ret = &mono_defaults.int64_class->byval_arg;
-	helper_sig_long_double->pinvoke = 1;
+	helper_sig_long_double = make_icall_sig ("long double");
 
 	/* double amethod (long) */
-	helper_sig_double_long = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	helper_sig_double_long->params [0] = &mono_defaults.int64_class->byval_arg;
-	helper_sig_double_long->ret = &mono_defaults.double_class->byval_arg;
-	helper_sig_double_long->pinvoke = 1;
+	helper_sig_double_long = make_icall_sig ("double long");
 
 	/* double amethod (int) */
-	helper_sig_double_int = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	helper_sig_double_int->params [0] = &mono_defaults.int32_class->byval_arg;
-	helper_sig_double_int->ret = &mono_defaults.double_class->byval_arg;
-	helper_sig_double_int->pinvoke = 1;
+	helper_sig_double_int = make_icall_sig ("double int32");
 
 	/* float amethod (long) */
-	helper_sig_float_long = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	helper_sig_float_long->params [0] = &mono_defaults.int64_class->byval_arg;
-	helper_sig_float_long->ret = &mono_defaults.single_class->byval_arg;
-	helper_sig_float_long->pinvoke = 1;
+	helper_sig_float_long = make_icall_sig ("float long");
 
 	/* double amethod (double, double) */
-	helper_sig_double_double_double = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-	helper_sig_double_double_double->params [0] = &mono_defaults.double_class->byval_arg;
-	helper_sig_double_double_double->params [1] = &mono_defaults.double_class->byval_arg;
-	helper_sig_double_double_double->ret = &mono_defaults.double_class->byval_arg;
-	helper_sig_double_double_double->pinvoke = 1;
+	helper_sig_double_double_double = make_icall_sig ("double double double");
 
 	/* uint amethod (double) */
-	helper_sig_uint_double = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	helper_sig_uint_double->params [0] = &mono_defaults.double_class->byval_arg;
-	helper_sig_uint_double->ret = &mono_defaults.uint32_class->byval_arg;
-	helper_sig_uint_double->pinvoke = 1;
+	helper_sig_uint_double = make_icall_sig ("uint32 double");
 
 	/* int amethod (double) */
-	helper_sig_int_double = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	helper_sig_int_double->params [0] = &mono_defaults.double_class->byval_arg;
-	helper_sig_int_double->ret = &mono_defaults.int32_class->byval_arg;
-	helper_sig_int_double->pinvoke = 1;
+	helper_sig_int_double = make_icall_sig ("int32 double");
 
 	/* void  initobj (intptr, int size) */
-	helper_sig_initobj = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-	helper_sig_initobj->params [0] = &mono_defaults.int_class->byval_arg;
-	helper_sig_initobj->params [1] = &mono_defaults.int32_class->byval_arg;
-	helper_sig_initobj->ret = &mono_defaults.void_class->byval_arg;
-	helper_sig_initobj->pinvoke = 1;
+	helper_sig_initobj = make_icall_sig ("void ptr int32");
 
 	/* void  memcpy (intptr, intptr, int size) */
-	helper_sig_memcpy = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
-	helper_sig_memcpy->params [0] = &mono_defaults.int_class->byval_arg;
-	helper_sig_memcpy->params [1] = &mono_defaults.int_class->byval_arg;
-	helper_sig_memcpy->params [2] = &mono_defaults.int32_class->byval_arg;
-	helper_sig_memcpy->ret = &mono_defaults.void_class->byval_arg;
-	helper_sig_memcpy->pinvoke = 1;
+	helper_sig_memcpy = make_icall_sig ("void ptr ptr int32");
 
 	/* void  memset (intptr, int val, int size) */
-	helper_sig_memset = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
-	helper_sig_memset->params [0] = &mono_defaults.int_class->byval_arg;
-	helper_sig_memset->params [1] = &mono_defaults.int32_class->byval_arg;
-	helper_sig_memset->params [2] = &mono_defaults.int32_class->byval_arg;
-	helper_sig_memset->ret = &mono_defaults.void_class->byval_arg;
-	helper_sig_memset->pinvoke = 1;
+	helper_sig_memset = make_icall_sig ("void ptr int32 int32");
 
-	helper_sig_class_init_trampoline = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
-	helper_sig_class_init_trampoline->ret = &mono_defaults.void_class->byval_arg;
-	helper_sig_class_init_trampoline->pinvoke = 1;	
+	helper_sig_class_init_trampoline = make_icall_sig ("void");
 }
 
 static GHashTable *jit_icall_hash_name = NULL;
