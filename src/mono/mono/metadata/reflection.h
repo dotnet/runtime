@@ -437,6 +437,7 @@ typedef struct {
 	guint32 index;
 	MonoReflectionType *base_type;
 	MonoArray *iface_constraints;
+	MonoBoolean has_ctor_constraint;
 } MonoReflectionGenericParam;
 
 typedef struct _MonoReflectionGenericInst MonoReflectionGenericInst;

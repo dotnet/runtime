@@ -1945,10 +1945,8 @@ encode_constraints (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynam
 			assembly, constraint->type);
 	}
 
-#if 0
 	if (gparam->has_ctor_constraint)
 		encode_new_constraint (assembly, owner);
-#endif
 }
 
 static void
