@@ -1,3 +1,8 @@
+2002-03-17  Nick Drochak  <ndrochak@gol.com>
+
+	* class.xml: Added class I stubbed out:
+	ApplicationDirectoryMembershipCondition
+
 2002-01-14  Nick Drochak  <ndrochak@gol.com>
 
 	* class.xml: Added classes I implemented.

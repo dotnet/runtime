@@ -2766,6 +2766,15 @@
 			<maintainer>tomasr@mvps.org</maintainer>
 		</maintainers>
 	</class>
+	<class name="System.Security.Policy.ApplicationDirectoryMembershipCondition">
+		<last-activity>Mar-17-2002</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>5</completion>
+		<maintainers>
+			<maintainer>ndrochak@gol.com</maintainer>
+		</maintainers>
+	</class>
 	<class name="System.Security.Policy.IIdentityPermissionFactory">
 		<last-activity>Jan-03-2002</last-activity>
 		<implementation>no</implementation>
