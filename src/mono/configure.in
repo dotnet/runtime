@@ -102,6 +102,12 @@ AC_CHECK_TOOL(CC, gcc, gcc)
 AC_PROG_CC
 AM_PROG_CC_STDC
 AC_PROG_INSTALL
+dnl We should use AM_PROG_AS, but it's not available on automake/aclocal 1.4
+: ${CCAS='$(CC)'}
+# Set ASFLAGS if not already set.
+: ${CCASFLAGS='$(CFLAGS)'}
+AC_SUBST(CCAS)
+AC_SUBST(CCASFLAGS)
 
 AC_CHECK_PROG(BISON, bison,yes,no)
 if test "x$BISON" = "xno";
