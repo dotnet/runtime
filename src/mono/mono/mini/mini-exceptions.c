@@ -512,6 +512,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 	MonoContext initial_ctx;
 	int frame_count = 0;
 	gboolean gc_disabled = FALSE;
+	gboolean has_dynamic_methods = FALSE;
 	
 	/*
 	 * This function might execute on an alternate signal stack, and Boehm GC
@@ -620,6 +621,9 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 				}
 			}
 
+			if (ji->method->dynamic)
+				has_dynamic_methods = TRUE;
+
 			if (stack_overflow)
 				free_stack = (guint8*)(MONO_CONTEXT_GET_BP (ctx)) - (guint8*)(MONO_CONTEXT_GET_BP (&initial_ctx));
 			else
@@ -663,6 +667,9 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 								if (mono_ex && !initial_trace_ips) {
 									trace_ips = g_list_reverse (trace_ips);
 									mono_ex->trace_ips = glist_to_array (trace_ips, mono_defaults.int_class);
+									if (has_dynamic_methods)
+										/* These methods could go away anytime, so compute the stack trace now */
+										mono_ex->stack_trace = ves_icall_System_Exception_get_trace (mono_ex);
 								}
 								g_list_free (trace_ips);
 
@@ -718,6 +725,9 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 				if (mono_ex && !initial_trace_ips) {
 					trace_ips = g_list_reverse (trace_ips);
 					mono_ex->trace_ips = glist_to_array (trace_ips, mono_defaults.int_class);
+					if (has_dynamic_methods)
+						/* These methods could go away anytime, so compute the stack trace now */
+						mono_ex->stack_trace = ves_icall_System_Exception_get_trace (mono_ex);
 				}
 				g_list_free (trace_ips);
 				return FALSE;
