@@ -5676,16 +5676,10 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 
 	/* 
 	 * A given byte sequence can match more than case here, so we have to be
-	 * really careful about the ordering of the cases.
+	 * really careful about the ordering of the cases. Longer sequences
+	 * come first.
 	 */
-	if (code [2] == 0xe8)
-		/* call <ADDR> */
-		return NULL;
-	else if (IS_REX (code [4]) && (code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x3)) {
-		/* call *%reg */
-		return NULL;
-	}
-	else if ((code [0] == 0x41) && (code [1] == 0xff) && (code [2] == 0x15)) {
+	if ((code [0] == 0x41) && (code [1] == 0xff) && (code [2] == 0x15)) {
 		/* call OFFSET(%rip) */
 		return NULL;
 	}
@@ -5696,6 +5690,14 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 		reg = amd64_modrm_rm (code [2]);
 		disp = *(guint32*)(code + 3);
 		//printf ("B: [%%r%d+0x%x]\n", reg, disp);
+	}
+	else if (code [2] == 0xe8) {
+		/* call <ADDR> */
+		return NULL;
+	}
+	else if (IS_REX (code [4]) && (code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x3)) {
+		/* call *%reg */
+		return NULL;
 	}
 	else if ((code [4] == 0xff) && (amd64_modrm_reg (code [5]) == 0x2) && (amd64_modrm_mod (code [5]) == 0x1)) {
 		/* call *[reg+disp8] */
