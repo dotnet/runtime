@@ -2797,11 +2797,41 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			PUSH_TREE (t1, VAL_DOUBLE);		
 			break;
 		}
+		case CEE_CONV_OVF_I4: {
+			++ip;
+			sp--;
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_I4, *sp, NULL);
+			PUSH_TREE (t1, VAL_I32);
+			break;
+		}
+		case CEE_CONV_OVF_I4_UN: /* on 32-bits the test is the same */
 		case CEE_CONV_OVF_U4: {
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_U4, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);		
+			break;
+		}
+		case CEE_CONV_OVF_I1: {
+			++ip;
+			sp--;
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_I1, *sp, NULL);
+			PUSH_TREE (t1, VAL_I32);
+			break;
+		}
+		case CEE_CONV_OVF_I1_UN: {
+			++ip;
+			sp--;
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_I1_UN, *sp, NULL);
+			PUSH_TREE (t1, VAL_I32);
+			break;
+		}
+		case CEE_CONV_OVF_U1_UN:
+		case CEE_CONV_OVF_U1: {
+			++ip;
+			sp--;
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_U1, *sp, NULL);
+			PUSH_TREE (t1, VAL_I32);
 			break;
 		}
 		case CEE_CONV_OVF_I2: {
@@ -2811,10 +2841,18 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			PUSH_TREE (t1, VAL_I32);
 			break;
 		}
+		case CEE_CONV_OVF_U2_UN:
 		case CEE_CONV_OVF_U2: {
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_U2, *sp, NULL);
+			PUSH_TREE (t1, VAL_I32);
+			break;
+		}
+		case CEE_CONV_OVF_I2_UN: {
+			++ip;
+			sp--;
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_I2_UN, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);
 			break;
 		}
@@ -2825,7 +2863,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			PUSH_TREE (t1, VAL_I32);
 			break;
 		}
-		case CEE_CONV_OVF_I4_UN: {
+		case CEE_CONV_OVF_U4_UN: {
 			// fixme: raise exceptions ?
 			++ip;
 			sp--;
@@ -2833,12 +2871,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			PUSH_TREE (t1, VAL_I32);		
 			break;
 		}
-		case CEE_CONV_OVF_U4_UN: {
-			// fixme: raise exceptions ?
+		case CEE_CONV_OVF_I8_UN: {
 			++ip;
 			sp--;
-			t1 = mono_ctree_new (mp, MB_TERM_CONV_I4, *sp, NULL);
-			PUSH_TREE (t1, VAL_I32);		
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_I8_UN, *sp, NULL);
+			PUSH_TREE (t1, VAL_I64);
 			break;
 		}
 		case 0xFE: {
