@@ -5415,6 +5415,9 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 	MonoMethodBuilder *mb = m->mb;
 	MonoClass *klass = mono_class_from_mono_type (t);
 	gboolean need_convert, need_free;
+	MonoMarshalNative encoding;
+
+	encoding = mono_marshal_get_string_encoding (m->piinfo, spec);
 
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
@@ -5432,7 +5435,6 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			MonoClass *eklass;
 			guint32 label1, label2, label3;
 			int index_var, src_var, dest_ptr, esize;
-			MonoMarshalNative encoding;
 			MonoMarshalConv conv;
 			gboolean is_string = FALSE;
 
@@ -5440,7 +5442,6 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			eklass = klass->element_class;
 
-			encoding = mono_marshal_get_string_encoding (m->piinfo, spec);
 			if (eklass == mono_defaults.string_class) {
 				is_string = TRUE;
 				conv = mono_marshal_get_string_to_ptr_conv (m->piinfo, spec);
@@ -5558,8 +5559,8 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_CONV_OUT:
-		/* Character arrays are implicitly marshalled as [Out] */
-		need_convert = (klass->element_class == mono_defaults.char_class) || (klass->element_class == mono_defaults.stringbuilder_class) || (t->attrs & PARAM_ATTRIBUTE_OUT);
+		/* Unicode character arrays are implicitly marshalled as [Out] under MS.NET */
+		need_convert = ((klass->element_class == mono_defaults.char_class) && (encoding == MONO_NATIVE_LPWSTR)) || (klass->element_class == mono_defaults.stringbuilder_class) || (t->attrs & PARAM_ATTRIBUTE_OUT);
 		need_free = mono_marshal_need_free (&klass->element_class->byval_arg, 
 											m->piinfo, spec);
 
