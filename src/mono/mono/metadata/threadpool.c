@@ -95,7 +95,7 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	ReleaseSemaphore (mono_delegate_semaphore, 1, NULL);
 
 	if (workers == 0) {
-		MonoObject *thread;
+		MonoThread *thread;
 		workers++;
 		thread = mono_thread_create (domain, async_invoke_thread);
 		g_assert (thread != NULL);
@@ -152,7 +152,7 @@ async_invoke_thread ()
 		MonoAsyncResult *ar;
 		gboolean new_worker = FALSE;
 
-		if (WaitForSingleObject (mono_delegate_semaphore, 3000) == WAIT_TIMEOUT) {
+		if (WaitForSingleObject (mono_delegate_semaphore, 500) == WAIT_TIMEOUT) {
 			EnterCriticalSection (&mono_delegate_section);
 			workers--;
 			LeaveCriticalSection (&mono_delegate_section);
@@ -175,13 +175,6 @@ async_invoke_thread ()
 		}
 
 		LeaveCriticalSection (&mono_delegate_section);
-
-		if (mono_runtime_shutdown) {
-			EnterCriticalSection (&mono_delegate_section);
-			workers--;
-			LeaveCriticalSection (&mono_delegate_section);
-			ExitThread (0);
-		}
 
 		if (!ar)
 			continue;

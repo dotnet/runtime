@@ -91,7 +91,6 @@ extern MonoDomain *mono_root_domain;
 
 extern HANDLE mono_delegate_semaphore;
 extern CRITICAL_SECTION mono_delegate_section;
-extern int mono_runtime_shutdown;
 
 #define mono_domain_lock(domain)   EnterCriticalSection(&(domain)->lock)
 #define mono_domain_unlock(domain) LeaveCriticalSection(&(domain)->lock)

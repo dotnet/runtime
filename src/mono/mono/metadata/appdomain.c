@@ -23,7 +23,6 @@
 
 HANDLE mono_delegate_semaphore = NULL;
 CRITICAL_SECTION mono_delegate_section;
-int mono_runtime_shutdown = 0;
 
 static MonoObject *
 mono_domain_transfer_object (MonoDomain *src, MonoDomain *dst, MonoObject *obj);
@@ -67,11 +66,6 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb)
 void
 mono_runtime_cleanup (MonoDomain *domain)
 {
-	mono_runtime_shutdown = 1;
-
-	/* signal all waiters in order to stop all workers (max. 0xffff) */
-	ReleaseSemaphore (mono_delegate_semaphore, 0xffff, NULL);
-
 	mono_thread_cleanup ();
 
 	/* Do this after the thread cleanup, because subthreads might
