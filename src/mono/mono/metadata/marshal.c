@@ -2177,8 +2177,11 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				case MONO_NATIVE_LPWSTR:
 					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPWSTR);
 					break;
+				case MONO_NATIVE_LPSTR:
+					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPSTR);
+					break;
 				default:
-					g_warning ("marshalling conversion not implemented");
+					g_warning ("marshalling conversion %d not implemented", spec->native);
 					g_assert_not_reached ();
 				}
 			} else {
