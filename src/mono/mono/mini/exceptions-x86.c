@@ -573,7 +573,8 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 	/* adjust eip so that it point into the call instruction */
 	eip -= 1;
 
-	ctx.SC_ESP = esp;
+	/* Pop argument and return address */
+	ctx.SC_ESP = esp + (2 * sizeof (gpointer));
 	ctx.SC_EIP = eip;
 	ctx.SC_EBP = ebp;
 	ctx.SC_EDI = edi;
@@ -792,7 +793,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			*lmf = (*lmf)->previous_lmf;
 		}
 
-		new_ctx->SC_ESP = ctx->SC_EBP;
+		/* Pop EBP and the return address */
+		new_ctx->SC_ESP = ctx->SC_EBP + (2 * sizeof (gpointer));
 		/* we substract 1, so that the IP points into the call instruction */
 		new_ctx->SC_EIP = *((int *)ctx->SC_EBP + 1) - 1;
 		new_ctx->SC_EBP = *((int *)ctx->SC_EBP);
