@@ -38,8 +38,8 @@
 
 	<pre>
 	$ gdb ~/monocvs/mono/mono/jit/mono
-	(gdb) r --dwarf --debug Foo:Main ./Foo.exe
-	Starting program: /home/martin/monocvs/mono/mono/jit/mono --dwarf --debug Foo:Main ./Foo.exe
+	(gdb) r --debug=dwarf --break Foo:Main ./Foo.exe
+	Starting program: /home/martin/monocvs/mono/mono/jit/mono --debug=dwarf --break Foo:Main ./Foo.exe
 	0x081e8911 in ?? ()
 	(gdb) call mono_debug_make_symbols ()
 	(gdb) add-symbol-file /tmp/Foo.o

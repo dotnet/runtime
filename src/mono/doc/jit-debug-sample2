@@ -39,8 +39,8 @@
 
 	<pre>
 	$ gdb ~/monocvs/mono/mono/jit/mono
-	(gdb) r --dwarf-plus --debug Foo:Main ./Foo.exe
-	Starting program: /home/martin/monocvs/mono/mono/jit/mono --dwarf-plus --debug Foo:Main ./Foo.exe
+	(gdb) r --debug=dwarf-plus --break Foo:Main ./Foo.exe
+	Starting program: /home/martin/monocvs/mono/mono/jit/mono --debug=dwarf-plus --break Foo:Main ./Foo.exe
 	Program received signal SIGTRAP, Trace/breakpoint trap.
 	0x081e8681 in ?? ()
 	(gdb) call mono_debug_make_symbols ()

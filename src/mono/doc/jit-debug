@@ -32,6 +32,10 @@
 	monodis /home/export/martin/MONO-LINUX/bin/mcs.exe > mcs.il
 	</pre>
 
+	This is normally done automatically, but you can also disable
+	it and create them by hand.  See the <tt>mono</tt> manual page
+	for details.
+
 	Make sure that all the .il files have the same name as their corresponding
 	assembly and that they're all created in the current directory.
 
@@ -43,7 +47,7 @@
 	than 65.535 lines and it's type support is also very limited. You should only
 	use this if your debugger doesn't support DWARF 2.
 
-	To generate STABS output, use the <tt>--stabs</tt> command line argument.
+	To generate STABS output, use the <tt>--debug=stabs</tt> command line argument.
 
 
 	* DWARF 2: The DWARF 2 debugging format is a very powerful debugging format
@@ -51,9 +55,8 @@
 	type support. It's the recommended format unless you need to use STABS because
 	your debugger doesn't support DWARF 2.
 
-	To generate DWARF 2 output, use the <tt>--dwarf</tt> command line argument.
+	To generate DWARF 2 output, use the <tt>--debug=dwarf</tt> command line argument.
 	</ul>
-
 
 	You need to regenerate the symbol file each time the JIT compiled a new
 	method and each time you restart the JIT. You cannot reuse your symbol file
@@ -110,7 +113,7 @@
 	assembler to produce an object file <tt>Foo-debug.o</tt>. This object file must be
 	in the current directory.
 
-	Then start the JIT in your debugger and give it the <tt>--dwarf-plus</tt> command
+	Then start the JIT in your debugger and give it the <tt>--debug=dwarf-plus</tt> command
 	line argument.
 
 	Each time you call <tt>mono_debug_make_symbols ()</tt> from withing your debugger,
@@ -140,7 +143,7 @@
 
 ** Breakpoints and single stepping
 
-	The JIT has a <tt>--debug</tt> command line argument to insert a breakpoint at the
+	The JIT has a <tt>--break</tt> command line argument to insert a breakpoint at the
 	beginning of this method. It takes a <tt>Namespace.Class:Method</tt> argument which
 	is the method. This argument can be given multiple times.
 
