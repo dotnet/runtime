@@ -90,6 +90,16 @@ typedef enum {
 	X86_CC_NO = 11,
 	X86_NCC
 } X86_CC;
+
+/* FP status */
+enum {
+	X86_FP_C0 = 0x100,
+	X86_FP_C1 = 0x200,
+	X86_FP_C2 = 0x400,
+	X86_FP_C3 = 0x4000,
+	X86_FP_CC_MASK = 0x4500
+};
+
 /*
 // prefix code
 */
@@ -104,6 +114,8 @@ typedef enum {
 	X86_ES_PREFIX = 0x26,
 	X86_FS_PREFIX = 0x64,
 	X86_GS_PREFIX = 0x65,
+	X86_UNLIKELY_PREFIX = 0x2E,
+	X86_LIKELY_PREFIX = 0x3E,
 	X86_OPERAND_PREFIX = 0x66,
 	X86_ADDRESS_PREFIX = 0x67
 } X86_Prefix;
@@ -1185,6 +1197,12 @@ typedef union {
 	do {	\
 		*(inst)++ = (unsigned char)0xd9;	\
 		*(inst)++ = (unsigned char)0xe8;	\
+	} while (0)
+
+#define x86_fldpi(inst)	\
+	do {	\
+		*(inst)++ = (unsigned char)0xd9;	\
+		*(inst)++ = (unsigned char)0xeb;	\
 	} while (0)
 
 #define x86_fst(inst,mem,is_double,pop_stack)	\
