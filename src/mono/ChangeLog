@@ -1,3 +1,7 @@
+2004-12-28  Jonathan Pryor  <jonpryor@vt.edu>
+
+	* configure.in: Add header & function checks for MonoPosixHelper.
+
 2004-12-20  Raja R Harinath  <rharinath@novell.com>
 
 	* configure.in: Change from 'pax' format to 'ustar' format for the
