@@ -20,6 +20,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/cil-coff.h>
+#include <mono/metadata/rawbuffer.h>
 
 static guint32 appdomain_thread_id = -1;
 static guint32 context_thread_id = -1;
@@ -27,6 +28,8 @@ static guint32 context_thread_id = -1;
 static gint32 appdomain_id_counter = 0;
 
 static MonoGHashTable * appdomains_list = NULL;
+
+static CRITICAL_SECTION appdomains_mutex;
 
 MonoDomain *mono_root_domain = NULL;
 
@@ -68,8 +71,11 @@ MonoJitInfo *
 mono_jit_info_table_find (MonoDomain *domain, char *addr)
 {
 	MonoJitInfoTable *table = domain->jit_info_table;
-	int left = 0, right = table->len;
+	int left = 0, right;
 
+	mono_domain_lock (domain);
+
+	right = table->len;
 	while (left < right) {
 		int pos = (left + right) / 2;
 		MonoJitInfo *ji = g_array_index (table, gpointer, pos);
@@ -80,11 +86,14 @@ mono_jit_info_table_find (MonoDomain *domain, char *addr)
 			right = pos;
 		else if (addr >= end) 
 			left = pos + 1;
-		else
+		else {
+			mono_domain_unlock (domain);
 			return ji;
+		}
 	}
+	mono_domain_unlock (domain);
 
-	/* maybe irt is shared code, so we also search in the root domain */
+	/* maybe it is shared code, so we also search in the root domain */
 	if (domain != mono_root_domain)
 		return mono_jit_info_table_find (mono_root_domain, addr);
 
@@ -96,9 +105,13 @@ mono_jit_info_table_add (MonoDomain *domain, MonoJitInfo *ji)
 {
 	MonoJitInfoTable *table = domain->jit_info_table;
 	gpointer start = ji->code_start;
-	int pos = mono_jit_info_table_index (table, start);
+	int pos;
+
+	mono_domain_lock (domain);
+	pos = mono_jit_info_table_index (table, start);
 
 	g_array_insert_val (table, pos, ji);
+	mono_domain_unlock (domain);
 }
 
 static int
@@ -193,7 +206,9 @@ mono_domain_create (void)
 
 	InitializeCriticalSection (&domain->lock);
 
+	EnterCriticalSection (&appdomains_mutex);
 	mono_g_hash_table_insert(appdomains_list, GINT_TO_POINTER(domain->domain_id), domain);
+	LeaveCriticalSection (&appdomains_mutex);
 
 	return domain;
 }
@@ -221,7 +236,10 @@ mono_init (const char *filename)
 	appdomain_thread_id = TlsAlloc ();
 	context_thread_id = TlsAlloc ();
 
+	InitializeCriticalSection (&appdomains_mutex);
+
 	mono_metadata_init ();
+	mono_raw_buffer_init ();
 	mono_images_init ();
 	mono_assemblies_init ();
 
@@ -485,6 +503,14 @@ typedef struct {
 } DomainInfo;
 
 static void
+copy_hash_entry (gpointer key, gpointer data, gpointer user_data)
+{
+	MonoGHashTable *dest = (MonoGHashTable*)user_data;
+
+	mono_g_hash_table_insert (dest, key, data);
+}
+
+static void
 foreach_domain (gpointer key, gpointer data, gpointer user_data)
 {
 	DomainInfo *dom_info = user_data;
@@ -496,10 +522,23 @@ void
 mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 {
 	DomainInfo dom_info;
+	MonoGHashTable *copy;
+
+	/*
+	 * Create a copy of the hashtable to avoid calling the user callback
+	 * inside the lock because that could lead to deadlocks.
+	 * We can do this because this function is not perf. critical.
+	 */
+	copy = mono_g_hash_table_new (NULL, NULL);
+	EnterCriticalSection (&appdomains_mutex);
+	mono_g_hash_table_foreach (appdomains_list, copy_hash_entry, copy);
+	LeaveCriticalSection (&appdomains_mutex);
 
 	dom_info.func = func;
 	dom_info.user_data = user_data;
-	mono_g_hash_table_foreach (appdomains_list, foreach_domain, &dom_info);
+	mono_g_hash_table_foreach (copy, foreach_domain, &dom_info);
+
+	mono_g_hash_table_destroy (copy);
 }
 
 /**
@@ -514,8 +553,12 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 {
 	MonoAssembly *ass;
 
-	if ((ass = g_hash_table_lookup (domain->assemblies, name)))
+	mono_domain_lock (domain);
+	if ((ass = g_hash_table_lookup (domain->assemblies, name))) {
+		mono_domain_unlock (domain);
 		return ass;
+	}
+	mono_domain_unlock (domain);
 
 	if (!(ass = mono_assembly_open (name, NULL)))
 		return NULL;
@@ -543,7 +586,9 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 		return;
 	}
 
+	EnterCriticalSection (&appdomains_mutex);
 	mono_g_hash_table_remove(appdomains_list, GINT_TO_POINTER(domain->domain_id));
+	LeaveCriticalSection (&appdomains_mutex);
 	
 	g_free (domain->friendly_name);
 	g_hash_table_foreach (domain->assemblies, remove_assembly, NULL);
@@ -588,10 +633,11 @@ mono_domain_get_by_id (gint32 domainid)
 {
 	MonoDomain * domain;
 
-	if ((domain = mono_g_hash_table_lookup(appdomains_list, GINT_TO_POINTER(domainid)))) 
-		return domain;
+	EnterCriticalSection (&appdomains_mutex);
+	domain = mono_g_hash_table_lookup (appdomains_list, GINT_TO_POINTER(domainid));
+	LeaveCriticalSection (&appdomains_mutex);
 
-	return NULL;
+	return domain;
 }
 
 void 

@@ -22,6 +22,8 @@
 #include <glib.h>
 #include "rawbuffer.h"
 
+#include <mono/io-layer/io-layer.h>
+
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 #define ROUND_UP(VALUE,SIZE)	(ROUND_DOWN((VALUE) + (SIZE) - 1, (SIZE)))
 #if SIZEOF_VOID_P == 8
@@ -32,6 +34,7 @@
 
 static GHashTable *mmap_map = NULL;
 static size_t alignment = 0;
+static CRITICAL_SECTION mmap_mutex;
 
 static void
 get_alignment (void)
@@ -70,6 +73,16 @@ mono_raw_buffer_free_malloc (void *base)
 	g_free (base);
 }
 
+void
+mono_raw_buffer_init (void)
+{
+	InitializeCriticalSection (&mmap_mutex);
+
+	get_alignment ();
+
+	mmap_map = g_hash_table_new (g_direct_hash, g_direct_equal);
+}
+
 static void *
 mono_raw_buffer_load_mmap (int fd, int is_writable, guint32 base, size_t size)
 {
@@ -81,8 +94,6 @@ mono_raw_buffer_load_mmap (int fd, int is_writable, guint32 base, size_t size)
 	void *ptr;
 	HANDLE file, mapping;
 
-	if (alignment == 0)
-		get_alignment ();
 	start = ROUND_DOWN (base, alignment);
 	end = base + size;
 	
@@ -106,10 +117,9 @@ mono_raw_buffer_load_mmap (int fd, int is_writable, guint32 base, size_t size)
 		return 0;
 	}
 
-	if (mmap_map == NULL)
-		mmap_map = g_hash_table_new (g_direct_hash, g_direct_equal);
-
+	EnterCriticalSection (&mmap_mutex);
 	g_hash_table_insert (mmap_map, ptr, GINT_TO_POINTER (mapping));
+	LeaveCriticalSection (&mmap_mutex);
 	
 	return ((char *)ptr) + (base - start);
 
@@ -122,8 +132,6 @@ mono_raw_buffer_load_mmap (int fd, int is_writable, guint32 base, size_t size)
 	int flags = 0;
 	void *ptr;
 
-	if (alignment == 0)
-		get_alignment ();
 	start = ROUND_DOWN (base, alignment);
 	end = ROUND_UP (base + size, alignment);
 
@@ -139,10 +147,9 @@ mono_raw_buffer_load_mmap (int fd, int is_writable, guint32 base, size_t size)
 	if (ptr == (void *) -1)
 		return 0;
 	
-	if (mmap_map == NULL)
-		mmap_map = g_hash_table_new (g_direct_hash, g_direct_equal);
-	
+	EnterCriticalSection (&mmap_mutex);
 	g_hash_table_insert (mmap_map, ptr, GINT_TO_POINTER (size));
+	LeaveCriticalSection (&mmap_mutex);
 
 	return ((char *)ptr) + (base - start);
 #endif
@@ -153,7 +160,9 @@ mono_raw_buffer_free_mmap (void *base)
 {
 	int value;
 
+	EnterCriticalSection (&mmap_mutex);
 	value = GPOINTER_TO_INT (g_hash_table_lookup (mmap_map, base));
+	LeaveCriticalSection (&mmap_mutex);
 
 #ifdef USE_WIN32_API
 	UnmapViewOfFile (base);
@@ -189,10 +198,14 @@ void
 mono_raw_buffer_update (void *buffer, size_t size)
 {
 	char *mmap_base;
+	gboolean exists;
 
 	mmap_base =  (gpointer)(ROUND_DOWN ((UINTPTR_TYPE) (buffer), alignment));
-	
-	if (mmap_map && g_hash_table_lookup (mmap_map, mmap_base))
+
+	EnterCriticalSection (&mmap_mutex);
+	exists = g_hash_table_lookup (mmap_map, mmap_base) != NULL;
+	LeaveCriticalSection (&mmap_mutex);
+	if (exists)
 		mono_raw_buffer_update_mmap (mmap_base, size);
 }
 
@@ -200,10 +213,12 @@ void
 mono_raw_buffer_free (void *buffer)
 {
 	char *mmap_base;
+	gboolean exists;
 
 	mmap_base = (gpointer)(ROUND_DOWN ((UINTPTR_TYPE) (buffer), alignment));
 	
-	if (mmap_map && g_hash_table_lookup (mmap_map, mmap_base))
+	exists = g_hash_table_lookup (mmap_map, mmap_base) != NULL;
+	if (exists)
 		mono_raw_buffer_free_mmap (mmap_base);
 	else
 		mono_raw_buffer_free_malloc (buffer);
