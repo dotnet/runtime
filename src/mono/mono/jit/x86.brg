@@ -156,11 +156,12 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 /* emit an exception if condition is fail */
 #define EMIT_COND_SYSTEM_EXCEPTION(cond,signed,exc_name)       \
         do {                                                   \
-	        x86_branch8 (s->code, cond, 12, signed);       \
+                gpointer t;                                    \
+	        x86_branch8 (s->code, cond, 10, signed);       \
 	        x86_push_imm (s->code, exc_name);              \
-		x86_mov_reg_imm (s->code, X86_EAX,             \
-		        arch_get_throw_exception_by_name ());  \
-	        x86_call_reg (s->code, X86_EAX);               \
+		t = arch_get_throw_exception_by_name ();       \
+		mono_add_jump_info (s, s->code + 1, t, NULL);  \
+	        x86_call_code (s->code, 0);                    \
 	} while (0); 
 
 %%
@@ -1050,8 +1051,8 @@ reg: LDSFLDA (CONST_I4) {
 
 	x86_push_imm (s->code, tree->left->data.i);
 	x86_push_imm (s->code, tree->data.klass);
-	x86_mov_reg_imm (s->code, X86_EAX, mono_ldsflda);
-	x86_call_reg (s->code, X86_EAX);
+	mono_add_jump_info (s, s->code + 1, mono_ldsflda, NULL);
+	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
 	
 	x86_pop_reg (s->code, X86_EDX);
@@ -1098,8 +1099,8 @@ reg: LDSTR {
 
 	x86_push_imm (s->code, tree->data.p);
 	x86_push_imm (s->code, s->method->klass->image);
-	x86_mov_reg_imm (s->code, X86_EAX, mono_ldstr_wrapper);
-	x86_call_reg (s->code, X86_EAX);
+	mono_add_jump_info (s, s->code + 1, mono_ldstr_wrapper, NULL);
+	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
 
 	x86_pop_reg (s->code, X86_EDX);
@@ -1131,8 +1132,8 @@ reg: TOSTRING (reg) {
 		x86_push_reg (s->code, X86_EDX);
 
 		x86_push_reg (s->code, tree->left->reg1);
-		x86_mov_reg_imm (s->code, X86_EAX, mono_string_new_wrapper);
-		x86_call_reg (s->code, X86_EAX);
+		mono_add_jump_info (s, s->code + 1, mono_string_new_wrapper, NULL);
+		x86_call_code (s->code, 0);
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer));
 
 		x86_pop_reg (s->code, X86_EDX);
@@ -1154,8 +1155,8 @@ reg: NEWARR (reg) {
 
 	x86_push_reg (s->code, tree->left->reg1);
 	x86_push_imm (s->code, tree->data.p);
-	x86_mov_reg_imm (s->code, X86_EAX, mono_array_new_wrapper);
-	x86_call_reg (s->code, X86_EAX);
+	mono_add_jump_info (s, s->code + 1, mono_array_new_wrapper, NULL);
+	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer) + 4);
 
 	x86_pop_reg (s->code, X86_EDX);
@@ -1175,8 +1176,8 @@ reg: NEWOBJ {
 	x86_push_reg (s->code, X86_EDX);
 
 	x86_push_imm (s->code, tree->data.klass);
-	x86_mov_reg_imm (s->code, X86_EAX, mono_object_new_wrapper);
-	x86_call_reg (s->code, X86_EAX);
+	mono_add_jump_info (s, s->code + 1, mono_object_new_wrapper, NULL);
+	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer));
 
 	x86_pop_reg (s->code, X86_EDX);
@@ -1238,8 +1239,8 @@ reg: CASTCLASS (reg) {
 
 		x86_push_imm (s->code, tree->data.klass);
 		x86_push_reg (s->code, tree->left->reg1);
-		x86_mov_reg_imm (s->code, X86_EAX, mono_object_isinst);
-		x86_call_reg (s->code, X86_EAX);
+		mono_add_jump_info (s, s->code + 1, mono_object_isinst, NULL);
+		x86_call_code (s->code, 0);
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
 
 		x86_pop_reg (s->code, X86_EDX);
@@ -1265,8 +1266,8 @@ reg: ISINST (reg) {
 
 	x86_push_imm (s->code, tree->data.klass);
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_mov_reg_imm (s->code, X86_EAX, mono_object_isinst);
-	x86_call_reg (s->code, X86_EAX);
+	mono_add_jump_info (s, s->code + 1, mono_object_isinst, NULL);
+	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
 
 	x86_pop_reg (s->code, X86_EDX);
@@ -1562,8 +1563,8 @@ stmt: ARG_STRING (reg) {
 	x86_push_reg (s->code, X86_EDX);
 
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_mov_reg_imm (s->code, X86_EAX, mono_string_to_utf8);
-	x86_call_reg (s->code, X86_EAX);
+	mono_add_jump_info (s, s->code + 1, mono_string_to_utf8, NULL);
+	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
 	
 	x86_mov_membase_reg (s->code, X86_ESP, 12, X86_EAX, 4);
@@ -1861,8 +1862,8 @@ reg: CONV_OVF_I4 (lreg){
 
 		/* throw exception */
 		x86_push_imm (s->code, "OverflowException");
-		x86_mov_reg_imm (s->code, X86_EAX, arch_get_throw_exception_by_name ()); 
-		x86_call_reg (s->code, X86_EAX); 
+		mono_add_jump_info (s, s->code + 1, arch_get_throw_exception_by_name (), NULL);
+		x86_call_code (s->code, 0);
 	
 		o3 = s->code;
 		/* our top bit is set, check that top word is 0xfffffff */
@@ -1941,8 +1942,8 @@ lreg: CONV_U8 (CONST_I4) 1 {
 lreg: CONV_OVF_U8 (CONST_I4) {
 	if (tree->left->data.i < 0){
 		x86_push_imm (s->code, "OverflowException");
-		x86_mov_reg_imm (s->code, X86_EAX, arch_get_throw_exception_by_name ()); 
-	        x86_call_reg (s->code, X86_EAX);                            
+		mono_add_jump_info (s, s->code + 1, arch_get_throw_exception_by_name (), NULL);
+		x86_call_code (s->code, 0);
 	} else {
 		x86_mov_reg_imm (s->code, tree->reg1, tree->left->data.i);
 		x86_alu_reg_reg (s->code, X86_XOR, tree->reg2, tree->reg2);
@@ -2276,8 +2277,8 @@ lreg: MUL (lreg, lreg) {
 	x86_push_reg (s->code, tree->right->reg1);
 	x86_push_reg (s->code, tree->left->reg2);
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_mov_reg_imm (s->code, X86_EAX, mono_llmult);
-	x86_call_reg (s->code, X86_EAX);
+	mono_add_jump_info (s, s->code + 1, mono_llmult, NULL);
+	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 16);
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
@@ -2298,17 +2299,17 @@ lreg: MUL_OVF (lreg, lreg) {
 	/* pass a pointer to store the resulting exception -
 	 * ugly, but it works */
 	x86_push_reg (s->code, X86_ESP); 
-	x86_mov_reg_imm (s->code, X86_EAX, mono_llmult_ovf);
-	x86_call_reg (s->code, X86_EAX);
+	mono_add_jump_info (s, s->code + 1, mono_llmult_ovf, NULL);
+	x86_call_code (s->code, 0);
 	x86_mov_reg_membase (s->code, X86_ECX, X86_ESP, 4, 4);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 20);
 	x86_alu_reg_imm (s->code, X86_CMP, X86_ECX, 0);
 
 	/* cond. emit exception */
-	x86_branch8 (s->code, X86_CC_EQ, 9, FALSE);                     
-	x86_push_reg (s->code, X86_ECX);                                 
-	x86_mov_reg_imm (s->code, X86_EAX, arch_get_throw_exception ());  
-	x86_call_reg (s->code, X86_EAX);                             
+	x86_branch8 (s->code, X86_CC_EQ, 7, FALSE);                     
+	x86_push_reg (s->code, X86_ECX);
+	mono_add_jump_info (s, s->code + 1, arch_get_throw_exception (), NULL);
+	x86_call_code (s->code, 0);
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
 		x86_pop_reg (s->code, X86_ECX);
@@ -2328,17 +2329,17 @@ lreg: MUL_OVF_UN (lreg, lreg) {
 	/* pass a pointer to store the resulting exception -
 	 * ugly, but it works */
 	x86_push_reg (s->code, X86_ESP); 
-	x86_mov_reg_imm (s->code, X86_EAX, mono_llmult_ovf_un);
-	x86_call_reg (s->code, X86_EAX);
+	mono_add_jump_info (s, s->code + 1, mono_llmult_ovf_un, NULL);
+	x86_call_code (s->code, 0);
 	x86_mov_reg_membase (s->code, X86_ECX, X86_ESP, 4, 4);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 20);
 	x86_alu_reg_imm (s->code, X86_CMP, X86_ECX, 0);
 
 	/* cond. emit exception */
-	x86_branch8 (s->code, X86_CC_EQ, 9, FALSE);                     
+	x86_branch8 (s->code, X86_CC_EQ, 7, FALSE);                     
 	x86_push_reg (s->code, X86_ECX);                                 
-	x86_mov_reg_imm (s->code, X86_EAX, arch_get_throw_exception ());  
-	x86_call_reg (s->code, X86_EAX);                             
+	mono_add_jump_info (s, s->code + 1, arch_get_throw_exception (), NULL);
+	x86_call_code (s->code, 0);
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
 		x86_pop_reg (s->code, X86_ECX);
@@ -2355,8 +2356,8 @@ lreg: DIV (lreg, lreg) {
 	x86_push_reg (s->code, tree->right->reg1);
 	x86_push_reg (s->code, tree->left->reg2);
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_mov_reg_imm (s->code, X86_EAX, mono_lldiv);
-	x86_call_reg (s->code, X86_EAX);
+	mono_add_jump_info (s, s->code + 1, mono_lldiv, NULL);
+	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 16);
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
@@ -2374,8 +2375,8 @@ lreg: REM (lreg, lreg) {
 	x86_push_reg (s->code, tree->right->reg1);
 	x86_push_reg (s->code, tree->left->reg2);
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_mov_reg_imm (s->code, X86_EAX, mono_llrem);
-	x86_call_reg (s->code, X86_EAX);
+	mono_add_jump_info (s, s->code + 1, mono_llrem, NULL);
+	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 16);
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
@@ -2393,8 +2394,8 @@ lreg: DIV_UN (lreg, lreg) {
 	x86_push_reg (s->code, tree->right->reg1);
 	x86_push_reg (s->code, tree->left->reg2);
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_mov_reg_imm (s->code, X86_EAX, mono_lldiv_un);
-	x86_call_reg (s->code, X86_EAX);
+	mono_add_jump_info (s, s->code + 1, mono_lldiv_un, NULL);
+	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 16);
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
@@ -2412,8 +2413,8 @@ lreg: REM_UN (lreg, lreg) {
 	x86_push_reg (s->code, tree->right->reg1);
 	x86_push_reg (s->code, tree->left->reg2);
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_mov_reg_imm (s->code, X86_EAX, mono_llrem_un);
-	x86_call_reg (s->code, X86_EAX);
+	mono_add_jump_info (s, s->code + 1, mono_llrem_un, NULL);
+	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 16);
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
@@ -3093,8 +3094,8 @@ stmt: STIND_OBJ (reg, reg) {
 	x86_push_imm (s->code, tree->data.i);
 	x86_push_reg (s->code, tree->right->reg1);
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_mov_reg_imm (s->code, X86_EAX, MEMCOPY);
-	x86_call_reg (s->code, X86_EAX);
+	mono_add_jump_info (s, s->code + 1, MEMCOPY, NULL);
+	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
 
 	x86_pop_reg (s->code, X86_ECX);
@@ -3127,8 +3128,8 @@ stmt: ARG_OBJ (reg) {
 	x86_lea_membase (s->code, X86_EAX, X86_ESP, 5*4);
 	x86_push_reg (s->code, X86_EAX);
 
-	x86_mov_reg_imm (s->code, X86_EAX, MEMCOPY);
-	x86_call_reg (s->code, X86_EAX);
+	mono_add_jump_info (s, s->code + 1, MEMCOPY, NULL);
+	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
 
 	x86_pop_reg (s->code, X86_ECX);
@@ -3143,8 +3144,9 @@ stmt: RET_OBJ (reg) {
 	x86_push_reg (s->code, tree->left->reg1);
 	x86_push_membase (s->code, X86_EBP, 8);
 
-	x86_mov_reg_imm (s->code, X86_EAX, MEMCOPY);
-	x86_call_reg (s->code, X86_EAX);
+
+	mono_add_jump_info (s, s->code + 1, MEMCOPY, NULL);
+	x86_call_code (s->code, 0);
 
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
 
