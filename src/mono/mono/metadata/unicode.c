@@ -14,7 +14,11 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/unicode.h>
 
-#include <iconv.h>
+#if HAVE_ICONV_H
+#include <iconv.h> 
+#elif HAVE_GICONV_H
+#include <giconv.h> 
+#endif
 
 static MonoUnicodeCategory catmap[] = {
 	/* G_UNICODE_CONTROL = */              Control,
