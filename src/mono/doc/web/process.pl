@@ -56,9 +56,14 @@ while (<COMMANDS>) {
 
   my $line;
   my $temp;
+  my $tit;
+  my $title;
 
+  $tit = $command[1];
   foreach $line (@template) {
     $temp = $line;
+    $title = "$tit / Mono";
+    $temp =~ s/#TITLE#/$title/;
     $temp =~ s/#CONTENT#/$content/;
     $temp =~ s/#MENU#/$menu/;
     print OUTPUT $temp;

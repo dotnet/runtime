@@ -220,6 +220,11 @@ A: No.  That just means that applications might use that API to
    documented and whether we will be able to talk to
    passport.com 
 
+Q: What is your opinion?
+
+A: You can read my personal <a href="passport.html">opinion on
+   passport</a>.
+
 ** Mono and Windows
 
 Q: Will Mono allow me to run Microsoft Office on Linux?

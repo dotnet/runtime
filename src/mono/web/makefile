@@ -7,3 +7,6 @@ all-docs: $(SOURCES)
 
 clean:
 	rm all-docs
+
+webit:
+	(cd web; make && make push)
