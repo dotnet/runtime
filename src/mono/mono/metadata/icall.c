@@ -3191,6 +3191,12 @@ ves_icall_System_Reflection_Assembly_get_EntryPoint (MonoReflectionAssembly *ass
 	return mono_method_get_object (mono_object_domain (assembly), mono_get_method (assembly->assembly->image, token, NULL), NULL);
 }
 
+static MonoReflectionModule*
+ves_icall_System_Reflection_Assembly_get_ManifestModule (MonoReflectionAssembly *assembly) 
+{
+	return mono_module_get_object (mono_object_domain (assembly), assembly->assembly->image);
+}
+
 static MonoArray*
 ves_icall_System_Reflection_Assembly_GetManifestResourceNames (MonoReflectionAssembly *assembly) 
 {
@@ -5591,6 +5597,8 @@ static const IcallEntry assembly_icalls [] = {
 	{"MonoDebugger_GetType", ves_icall_MonoDebugger_GetType},
 	/* normal icalls again */
 	{"get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint},
+	{"get_ManifestModule", ves_icall_System_Reflection_Assembly_get_ManifestModule},
+	{"get_MetadataToken", mono_reflection_get_token},
 	{"get_code_base", ves_icall_System_Reflection_Assembly_get_code_base},
 	{"get_global_assembly_cache", ves_icall_System_Reflection_Assembly_get_global_assembly_cache},
 	{"get_location", ves_icall_System_Reflection_Assembly_get_location},
@@ -5610,7 +5618,8 @@ static const IcallEntry module_icalls [] = {
 	{"InternalGetTypes", ves_icall_System_Reflection_Module_InternalGetTypes},
 	{"ResolveFieldToken", ves_icall_System_Reflection_Module_ResolveFieldToken},
 	{"ResolveMethodToken", ves_icall_System_Reflection_Module_ResolveMethodToken},
-	{"ResolveTypeToken", ves_icall_System_Reflection_Module_ResolveTypeToken}
+	{"ResolveTypeToken", ves_icall_System_Reflection_Module_ResolveTypeToken},
+	{"get_MetadataToken", mono_reflection_get_token}
 };
 
 static const IcallEntry monocmethod_icalls [] = {

@@ -5016,6 +5016,18 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 	res->name      = mono_string_new (domain, g_path_get_basename (image->name));
 	res->scopename = mono_string_new (domain, image->module_name);
 
+	if (image->assembly->image == image)
+		res->token = mono_metadata_make_token (MONO_TABLE_MODULE, 1);
+	else {
+		int i;
+		g_assert (image->assembly->image->modules);
+		res->token = 0;
+		while (image->assembly->image->modules [i])
+			if (image->assembly->image->modules [i] == image)
+				res->token = mono_metadata_make_token (MONO_TABLE_MODULEREF, i + 1);
+		g_assert (res->token);
+	}
+
 	mono_image_addref (image);
 
 	CACHE_OBJECT (image, res, NULL);
@@ -5059,6 +5071,7 @@ mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_ind
 	res->name      = mono_string_new (domain, name);
 	res->scopename = mono_string_new (domain, name);
 	res->is_resource = cols [MONO_FILE_FLAGS] && FILE_CONTAINS_NO_METADATA;
+	res->token = mono_metadata_make_token (MONO_TABLE_FILE, table_index + 1);
 
 	return res;
 }
@@ -5999,6 +6012,14 @@ mono_reflection_get_token (MonoObject *obj)
 		MonoReflectionParameter *p = (MonoReflectionParameter*)obj;
 
 		token = mono_method_get_param_token (((MonoReflectionMethod*)p->MemberImpl)->method, p->PositionImpl);
+	}
+	else if (strcmp (klass->name, "Module") == 0) {
+		MonoReflectionModule *m = (MonoReflectionModule*)obj;
+
+		token = m->token;
+	}
+	else if (strcmp (klass->name, "Assembly") == 0) {
+		token = mono_metadata_make_token (MONO_TABLE_ASSEMBLY, 1);
 	}
 	else {
 		gchar *msg = g_strdup_printf ("MetadataToken is not supported for type '%s.%s'", klass->name_space, klass->name);
