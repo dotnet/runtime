@@ -107,7 +107,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 		while (active) {
 			amv = (MonoMethodVar *)active->data;
 
-			if (amv->range.last_use.abs_pos >= vmv->range.first_use.abs_pos)
+			if (amv->range.last_use.abs_pos > vmv->range.first_use.abs_pos)
 				break;
 
 #ifdef DEBUG_LSCAN
