@@ -1,3 +1,13 @@
+2004-06-16  Raja R Harinath  <rharinath@novell.com>
+
+	Include prototype completely-untested 'make bootstrap' support for W32.
+	* Makefile.am (bootstrap): Define to fasterstrap for W32.
+	(MCS_DIRS, MCS_FILES): Don't refer to Mono.CSharp.Debugger in W32.
+	(tmpinst-dir): Change sub-make invoke to ...
+	(tmpinst-dir-contents): ... this.  Build 'mono.bat' in W32 instead
+	of 'mono' and 'mcs'.
+	($(tmpinst)/bin/mono.bat): New.
+
 2004-06-15  Dick Porter  <dick@ximian.com>
 
 	* configure.in: Check for struct ip_mreqn and struct ip_mreq on

@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I .
 
-SUBDIRS = @libgc_dir@ mono @ikvm_jni_dir@ docs runtime scripts man data samples support web 
+SUBDIRS = $(libgc_dir) mono $(ikvm_jni_dir) docs runtime scripts man data samples support web 
 
 # Keep in sync with SUBDIRS
 ## 'tools' is not normally built
@@ -44,16 +44,26 @@ MCS_BASIC_FILES = \
 
 # Set of directories and files the 'mcs' compiler can use
 ## We build class/System twice to resolve the cyclic dependency of class/System.XML
-MCS_DIRS = $(MCS_BASIC_DIRS) class/System.XML class/System class/Mono.CSharp.Debugger
-MCS_FILES = $(MCS_BASIC_FILES) \
-	$(mcs_topdir)/class/lib/default/System.Xml.dll \
-	$(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll
+MCS_DIRS = $(MCS_BASIC_DIRS) class/System.XML class/System
+MCS_FILES = $(MCS_BASIC_FILES) $(mcs_topdir)/class/lib/default/System.Xml.dll
 
 tmpinst = _tmpinst
+
+if PLATFORM_WIN32
+
+# bootstraps using the .NET C# compiler
+bootstrap: fasterstrap
+
+else
+
+MCS_DIRS += class/Mono.CSharp.Debugger
+MCS_FILES += $(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll
 
 bootstrap: tmpinst-mcs-basic-build mono-do-runtime-only
 	$(MAKE) tmpinst-mcs-short-build
 	$(MAKE) fasterstrap
+
+endif
 
 faststrap: tmpinst-mcs-short-build
 	$(MAKE) mono-do-runtime-only
@@ -141,7 +151,31 @@ mcs-do-run-test: tmpinst-dir
 
 tmpinst-dir: 
 	mkdir -p $(tmpinst) $(tmpinst)/bin $(tmpinst)/lib $(tmpinst)/etc/mono
-	$(MAKE) $(tmpinst)/bin/mono $(tmpinst)/bin/mcs $(tmpinst)/etc/mono/machine.config
+	$(MAKE) tmpinst-dir-contents
+
+if PLATFORM_WIN32
+
+tmpinst-dir-contents: $(tmpinst)/bin/mono.bat $(tmpinst)/etc/mono/machine.config
+
+else
+
+tmpinst-dir-contents: $(tmpinst)/bin/mono $(tmpinst)/bin/mcs $(tmpinst)/etc/mono/machine.config
+
+endif
+
+$(tmpinst)/bin/mono.bat: $(srcdir)/Makefile.am
+	echo '@echo off' > $@
+	echo 'set builddir="'"`pwd`"'"' >> $@
+	echo 'set win_builddir="'"`cygpath -w -a .`"'"' >> $@
+	echo 'set tmpinst="%win_builddir%\$(tmpinst)"' >> $@
+	echo 'if %MONO_PATH% == "" goto when_empty' >> $@
+	echo 'set MONO_PATH="%MONO_PATH%;%tmpinst%\lib"' >> $@
+	echo 'goto endif_empty' >> $@
+	echo ':when_empty' >> $@
+	echo 'set MONO_PATH=%tmpinst%\lib' >> $@
+	echo ':endif_empty' >> $@
+	echo 'set MONO_CFG_DIR=%tmpinst%\etc' >> $@
+	echo "`cygpath -w /bin/sh`" '"%builddir%/libtool" --mode=execute "%builddir%/$(mono_runtime)" --config "%win_builddir%\data\config" %*' >> $@
 
 $(tmpinst)/bin/mono: $(srcdir)/Makefile.am
 	echo '#! /bin/sh' > $@
