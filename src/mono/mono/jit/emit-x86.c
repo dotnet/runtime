@@ -345,26 +345,31 @@ get_unbox_trampoline (MonoMethod *m)
  */
 static gpointer
 x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi, 
-		      int ebx, guint8 *code, MonoMethod *m)
+		      int ebx, const guint8 *code, MonoMethod *m)
 {
 	guint8 ab, reg;
 	gint32 disp;
 	gpointer o;
 
-	/* go to the start of the call instruction */
+	/* go to the start of the call instruction
+	 *
+	 * address_byte = (m << 6) | (o << 3) | reg
+	 * call opcode: 0xff address_byte displacement
+	 * 0xff m=1,o=2 imm8
+	 * 0xff m=2,o=2 imm32
+	 */
 	code -= 6;
-	g_assert (*code == 0xff);
-
-	code++;
-	ab = *code;
-	g_assert ((ab >> 6) == 2);
-	
-	/* extract the register number containing the address */
-	reg = ab & 0x07;
-	code++;
-
-	/* extract the displacement */
-	disp = *((gint32*)code);
+	if ((code [3] == 0xff) && ((code [4] & 0x18) == 0x10) && ((code [4] >> 6) == 1)) {
+		reg = code [4] & 0x07;
+		disp = (signed char)code [5];
+	} else {
+		if ((code [0] == 0xff) && ((code [1] & 0x18) == 0x10) && ((code [1] >> 6) == 2)) {
+			reg = code [1] & 0x07;
+			disp = *((gint32*)(code + 2));
+		} else {
+			g_assert_not_reached ();
+		}
+	}
 
 	switch (reg) {
 	case X86_EAX:
