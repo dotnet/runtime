@@ -102,6 +102,20 @@
   </tr>
 </table>
 
+@item Mar 3rd, 2003: The Mono Hackers Hall Of Fame welcomes Zoltan Vargaz
+
+	The <a href="hackers.html">Mono Hackers Hall Of Fame</a>
+	continues to show our appreciation to the excellent
+	contributors that make <b>mono::</b> a successful free
+	software project.
+
+	Zoltan has contributed significantly to Mono, with bug reports and bug 
+	fixes as well as pushing the envelope of the things that can be done in
+	and with the mono runtime: the gcc-based ngen compiler, code coverage
+	and more recently his work with Reflection.Emit that got mono to the 
+	point of running the <a href="http://www.ikvm.net">IKVM</a> Java virtual 
+	machine.
+
 @item Mar 2nd, 2003: New Mono mailing list.
 
 	A new mailing list for <a

@@ -13,6 +13,14 @@ Some of them may start contributing because they want a mention in the
 
 * Mono Hackers
 
+** Zoltan Vargaz
+
+Zoltan has contributed significantly to Mono, with bug reports and bug 
+fixes as well as pushing the envelope of the things that can be done in
+and with the mono runtime: the gcc-based ngen compiler, code coverage
+and more recently his work with Reflection.Emit that got mono to the 
+point of running the IKVM Java virtual machine.
+
 ** Sergey Chaban
 
 Sergey has been a long time contributor to the project, from the early
