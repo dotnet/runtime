@@ -1,6 +1,8 @@
-2005-03-24  Raja R Harinath  <harinath@acm.org>
+2005-03-24  Raja R Harinath  <rharinath@novell.com>
 
+	* configure.in (libgdiplus): Make more intuitive.
 	* runtime/Makefile.am (wrapper-config): Remove temporary file.
+	Update to change.
 
 2005-03-23  Raja R Harinath  <rharinath@novell.com>
 

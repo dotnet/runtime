@@ -309,16 +309,16 @@ AC_SUBST([mcs_topdir])
 AC_SUBST([mcs_topdir_from_srcdir])
 
 AC_ARG_WITH([libgdiplus], 
-	[  --with-libgdiplus=no|sibling|<path>	Override the libgdiplus used for System.Drawing tests (defaults to NO)], 
-	[], [with_libgdiplus=no])
+	[  --with-libgdiplus=installed|sibling|<path>	Override the libgdiplus used for System.Drawing tests (defaults to NO)], 
+	[], [with_libgdiplus=installed])
 
 case $with_libgdiplus in
-no) libgdiplus_topdir= ;;
-yes|sibling) libgdiplus_topdir=`cd ../libgdiplus && pwd` ;;
-/*) libgdiplus_topdir=$with_libgdiplus ;;
-*) libgdiplus_topdir=`cd $with_libgdiplus && pwd` ;;
+no|installed) libgdiplus_loc= ;;
+yes|sibling) libgdiplus_loc=`cd ../libgdiplus && pwd`/src/libgdiplus.la ;;
+/*) libgdiplus_loc=$with_libgdiplus ;;
+*) libgdiplus_loc=`pwd`/$with_libgdiplus ;;
 esac
-AC_SUBST([libgdiplus_topdir])
+AC_SUBST([libgdiplus_loc])
 
 AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
 if test "x$PKG_CONFIG" = "xno"; then
@@ -1681,10 +1681,7 @@ runtime/Makefile
   echo 'MCS_FLAGS = $(PLATFORM_DEBUG_FLAGS)' >> $srcdir/$mcsdir/build/config.make
 )
 
-case $libgdiplus_topdir in
-'') libgdiplus_loc='installed (assumed to exist, have not checked)' ;;
-*) libgdiplus_loc=$libgdiplus_topdir ;;
-esac
+libgdiplus_msg=${libgdiplus_loc:-assumed to be installed}
 
 echo "
         mcs source:  $mcs_topdir
@@ -1695,7 +1692,7 @@ echo "
 	Engine:      $jit_status
 	2.0 Alpha:   $PREVIEW
 	JNI support: $jdk_headers_found
-	libgdiplus:  $libgdiplus_loc
+	libgdiplus:  $libgdiplus_msg
 	$disabled
 
 "
