@@ -392,8 +392,8 @@ static MonoThreadsSync *mon_new(void)
 	MonoThreadsSync *new;
 	
 #if HAVE_BOEHM_GC
-	new=(MonoThreadsSync *)GC_debug_malloc (sizeof(MonoThreadsSync), "sync", 1);
-	GC_debug_register_finalizer (new, mon_finalize, NULL, NULL, NULL);
+	new=(MonoThreadsSync *)GC_MALLOC (sizeof(MonoThreadsSync));
+	GC_REGISTER_FINALIZER (new, mon_finalize, NULL, NULL, NULL);
 #else
 	/* This should be freed when the object that owns it is
 	 * deleted
