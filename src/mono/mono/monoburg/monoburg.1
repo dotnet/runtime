@@ -15,6 +15,7 @@ monoburg \- code generator generator
 [\-p]
 [\-c VALUE]    
 [\-d HEADER]
+[\-DVALUE]
 [FILE...]
 .SH DESCRIPTION
 The \fImonoburg\fP program is used to generate tree pattern matchers 
@@ -74,7 +75,8 @@ reg:  Fetch (addr)
 .RE
 .fi
 .PP
-
+A simple pre-processor is included, consisting of: %ifdef, %else and
+%endif.  %ifdef operates on definitions from the command line.
 .SH OPTIONS
 The following options are supported:
 .TP
@@ -94,7 +96,10 @@ Extended mode. Enables monoburg to work with DAGs.
 .TP
 .I "-c VALUE"
 Set the default costs to VALUE
-
+.TP
+.I "-Dvar"
+Defines the variable "var" as true.  This is used with %ifdef, %else
+and %endif in the source files to perform conditional compilation.
 .PP
 .SH AUTHOR
 monoburg was written by Dietmar Maurer. It is based on the papers from 
