@@ -563,6 +563,17 @@ reg: OP_LCONV_TO_U2 (lreg) {
 	MONO_EMIT_UNALU (s, tree, CEE_CONV_U2, state->reg1, state->left->reg1);
 }
 
+reg: OP_LCONV_TO_OVF_I1_UN (lreg) {
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg2, 0);
+	MONO_EMIT_NEW_COND_EXC (s, NE_UN, "OverflowException");
+
+	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 127);
+	MONO_EMIT_NEW_COND_EXC (s, GT, "OverflowException");
+	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, -128);
+	MONO_EMIT_NEW_COND_EXC (s, LT, "OverflowException");
+	MONO_EMIT_UNALU (s, tree, CEE_CONV_I1, state->reg1, state->left->reg1);
+}
+
 reg: OP_LCONV_TO_OVF_I1 (lreg) {
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg2, 0);
 	MONO_EMIT_NEW_COND_EXC (s, GT, "OverflowException");
@@ -576,6 +587,7 @@ reg: OP_LCONV_TO_OVF_I1 (lreg) {
 	MONO_EMIT_UNALU (s, tree, CEE_CONV_I1, state->reg1, state->left->reg1);
 }
 
+reg: OP_LCONV_TO_OVF_U1_UN (lreg),
 reg: OP_LCONV_TO_OVF_U1 (lreg) {
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg2, 0);
 	MONO_EMIT_NEW_COND_EXC (s, NE_UN, "OverflowException");
@@ -600,6 +612,19 @@ reg: OP_LCONV_TO_OVF_I2 (lreg) {
 	MONO_EMIT_UNALU (s, tree, CEE_CONV_I2, state->reg1, state->left->reg1);
 }
 
+reg: OP_LCONV_TO_OVF_I2_UN (lreg) {
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg2, 0);
+	MONO_EMIT_NEW_COND_EXC (s, NE_UN, "OverflowException");
+
+	/* Probe value to be within -32768 and 32767 */
+	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 32767);
+	MONO_EMIT_NEW_COND_EXC (s, GT, "OverflowException");
+	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, -32768);
+	MONO_EMIT_NEW_COND_EXC (s, LT, "OverflowException");
+	MONO_EMIT_UNALU (s, tree, CEE_CONV_I2, state->reg1, state->left->reg1);
+}
+
+reg: OP_LCONV_TO_OVF_U2_UN (lreg),
 reg: OP_LCONV_TO_OVF_U2 (lreg) {
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg2, 0);
 	MONO_EMIT_NEW_COND_EXC (s, NE_UN, "OverflowException");
@@ -636,6 +661,7 @@ reg: OP_LCONV_TO_OVF_I (lreg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+reg: OP_LCONV_TO_OVF_I4_UN (lreg),
 reg: OP_LCONV_TO_OVF_I4 (lreg) {
 	tree->dreg = state->reg1;
 	tree->sreg1 = state->left->reg1;
