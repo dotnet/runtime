@@ -636,6 +636,17 @@ mono_test_marshal_primitive_byref_delegate (PrimitiveByrefDelegate delegate)
 	return 0;
 }
 
+typedef int (*return_int_delegate) (int i);
+
+typedef return_int_delegate (*ReturnDelegateDelegate) ();
+
+int
+mono_test_marshal_return_delegate_delegate (ReturnDelegateDelegate d)
+{
+	return (d ()) (55);
+}
+
+
 int 
 mono_test_marshal_stringbuilder (char *s, int n)
 {
