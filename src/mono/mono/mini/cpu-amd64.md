@@ -18,7 +18,6 @@
 #	a  EAX register
 #       d  EDX register
 #	l  long reg (forced eax:edx)
-#		L  long reg (dynamic)
 #
 # len:number         describe the maximun length in bytes of the instruction
 # 		     number is a positive integer.  If the length is not specified
@@ -134,7 +133,7 @@ stsfld:
 stobj:
 conv.ovf.i1.un:
 conv.ovf.i2.un:
-conv.ovf.i4.un:
+conv.ovf.i4.un: dest:i src1:i len:16
 conv.ovf.i8.un:
 conv.ovf.u1.un:
 conv.ovf.u2.un:
@@ -170,7 +169,7 @@ conv.ovf.u1:
 conv.ovf.i2:
 conv.ovf.u2:
 conv.ovf.i4:
-conv.ovf.u4: dest:i src1:i len:4
+conv.ovf.u4: dest:i src1:i len:15
 conv.ovf.i8:
 conv.ovf.u8:
 refanyval:
@@ -273,8 +272,8 @@ call_membase: dest:a src1:b len:64 clob:c
 trap:
 iconst: dest:i len:10
 i8const: dest:i len:17
-r4const: dest:f len:7
-r8const: dest:f len:7
+r4const: dest:f len:8
+r8const: dest:f len:9
 regvar:
 reg:
 regoffset:
@@ -421,14 +420,14 @@ float_bge: len:32
 float_bge_un: len:13
 float_ble: len:32
 float_ble_un: len:13
-float_add: dest:f src1:f src2:f len:3
-float_sub: dest:f src1:f src2:f len:3
-float_mul: dest:f src1:f src2:f len:3
-float_div: dest:f src1:f src2:f len:3
-float_div_un: dest:f src1:f src2:f len:3
+float_add: dest:f src1:f src2:f len:5
+float_sub: dest:f src1:f src2:f len:5
+float_mul: dest:f src1:f src2:f len:5
+float_div: dest:f src1:f src2:f len:5
+float_div_un: dest:f src1:f src2:f len:5
 float_rem: dest:f src1:f src2:f len:19
 float_rem_un: dest:f src1:f src2:f len:19
-float_neg: dest:f src1:f len:3
+float_neg: dest:f src1:f len:16
 float_not: dest:f src1:f len:3
 float_conv_to_i1: dest:i src1:f len:49
 float_conv_to_i2: dest:i src1:f len:49
@@ -473,6 +472,7 @@ float_cgt_un: dest:i src1:f src2:f len:47
 float_clt: dest:i src1:f src2:f len:35
 float_clt_un: dest:i src1:f src2:f len:42
 float_conv_to_u: dest:i src1:f len:46
+fmove: dest:f src1:f len:8
 call_handler: len:14
 aot_const: dest:i len:10
 x86_test_null: src1:i len:5
