@@ -3969,7 +3969,7 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 
 	if (assembly->assembly->dynamic) {
 		MonoReflectionAssemblyBuilder *abuilder = (MonoReflectionAssemblyBuilder*)assembly;
-		if (abuilder->modules)
+		if (abuilder->modules) {
 			for (i = 0; i < mono_array_length(abuilder->modules); i++) {
 				MonoReflectionModuleBuilder *mb = mono_array_get (abuilder->modules, MonoReflectionModuleBuilder*, i);
 				if (res == NULL)
@@ -3992,6 +3992,20 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 					}
 				}
 			}
+
+			/* 
+			 * Replace TypeBuilders with the created types to be compatible
+			 * with MS.NET.
+			 */
+			if (res) {
+				for (i = 0; i < mono_array_length (res); ++i) {
+					MonoReflectionTypeBuilder *tb = mono_array_get (res, MonoReflectionTypeBuilder*, i);
+					if (tb->created)
+						mono_array_set (res, MonoReflectionType*, i, tb->created);
+				}
+			}
+		}
+
 		if (abuilder->loaded_modules)
 			for (i = 0; i < mono_array_length(abuilder->loaded_modules); i++) {
 				MonoReflectionModule *rm = mono_array_get (abuilder->loaded_modules, MonoReflectionModule*, i);
