@@ -20,6 +20,8 @@ typedef WapiHandle **LPHANDLE;
 typedef WapiSecurityAttributes *LPSECURITY_ATTRIBUTES;
 typedef WapiOverlapped *LPOVERLAPPED;
 typedef WapiThreadStart LPTHREAD_START_ROUTINE;
+typedef WapiCriticalSection CRITICAL_SECTION;
+typedef WapiCriticalSection *LPCRITICAL_SECTION;
 
 #define CONST const
 #define VOID void

@@ -1,6 +1,7 @@
 #ifndef _WAPI_WAPI_H_
 #define _WAPI_WAPI_H_
 
+#include <mono/io-layer/critical-sections.h>
 #include <mono/io-layer/error.h>
 #include <mono/io-layer/handles.h>
 #include <mono/io-layer/io.h>

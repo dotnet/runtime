@@ -9,6 +9,7 @@ INCLUDES = \
 libwapiincludedir = $(includedir)/mono/io-layer
 
 OTHER_H = \
+	critical-sections.h	\
 	error.h		\
 	handles.h	\
 	io.h		\
@@ -22,6 +23,8 @@ OTHER_H = \
 	#
 
 OTHER_SRC = \
+	critical-sections.c	\
+	critical-sections.h	\
 	error.c			\
 	error.h			\
 	handles.c		\
