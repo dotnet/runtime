@@ -1889,25 +1889,6 @@ check_call_signature (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **arg
 	}
 	for (i = 0; i < sig->param_count; ++i) {
 		if (sig->params [i]->byref) {
-			/* 
-			 * check the result of ldelema is only passed as an argument if the byref
-			 * type matches exactly the array element type.
-			 * FIXME: if the argument as been saved on the stack as part of the
-			 * interface variable code (the value was on the stack at a basic block boundary)
-			 * we need to add the check in that case, too.
-			 */
-			if (args [i]->opcode == CEE_LDELEMA) {
-				MonoInst *check;
-				MonoClass *exact_class = mono_class_from_mono_type (sig->params [i]);
-				if (!exact_class->valuetype) {
-					MONO_INST_NEW (cfg, check, OP_CHECK_ARRAY_TYPE);
-					check->cil_code = args [i]->cil_code;
-					check->klass = exact_class;
-					check->inst_left = args [i]->inst_left;
-					check->type = STACK_OBJ;
-					args [i]->inst_left = check;
-				}
-			}
 			if (args [i]->type != STACK_MP && args [i]->type != STACK_PTR)
 				return 1;
 			continue;
@@ -5067,6 +5048,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				klass = (MonoClass*)mono_method_get_wrapper_data (method, read32 (ip + 1));
 			else
 				klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
+			
+			/* we need to make sure that this array is exactly the type it needs
+			 * to be for correctness. the stelemref wrapper is lax with its usage
+			 * so we need to ignore it there
+			 */
+			if (!klass->valuetype && method->wrapper_type != MONO_WRAPPER_STELEMREF) {
+				MonoInst* check;
+				MONO_INST_NEW (cfg, check, OP_CHECK_ARRAY_TYPE);
+				check->cil_code = ip;
+				check->klass = klass;
+				check->inst_left = sp [0];
+				check->type = STACK_OBJ;
+				sp [0] = check;
+			}
+			
 			mono_class_init (klass);
 			NEW_LDELEMA (cfg, ins, sp, klass);
 			ins->cil_code = ip;

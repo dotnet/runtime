@@ -596,4 +596,32 @@ COND:   ldloc.0
 		ceq
 		ret
 	}
+	
+	.method public static int32 test_1_array_type_mismatch_ldelema  () {
+		.locals init (int32 r)
+		
+			ldc.i4.1
+			newarr string
+			ldc.i4.0 
+			ldelema string
+			pop
+		
+		.try {
+			ldc.i4.1
+			newarr string
+			ldc.i4.0 
+			ldelema object
+			pop
+			
+			leave end
+		} catch [mscorlib]System.ArrayTypeMismatchException {
+			pop
+			ldc.i4.1
+			stloc.0
+			leave end
+		}
+	end:
+		ldloc.0
+		ret
+	}
 }
