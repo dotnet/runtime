@@ -402,6 +402,16 @@ typedef struct {
 	MonoArray *constraints;
 } MonoReflectionGenericParam;
 
+typedef struct _MonoReflectionGenericInst MonoReflectionGenericInst;
+struct _MonoReflectionGenericInst {
+	MonoReflectionType type;
+	MonoClass *klass;
+	MonoReflectionGenericInst *parent;
+	MonoReflectionType *generic_type;
+	MonoArray *methods;
+	MonoArray *ctors;
+};
+
 typedef struct {
 	MonoObject  obj;
 	MonoString *name;
@@ -532,10 +542,12 @@ MonoReflectionType* mono_reflection_create_runtime_class  (MonoReflectionTypeBui
 
 MonoReflectionType *mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoReflectionMethodBuilder *mb, guint32 index, MonoReflectionGenericParam *gparam);
 
-MonoClass*
+MonoReflectionGenericInst*
 mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *types);
 MonoReflectionMethod*
 mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *method, MonoArray *types);
+MonoReflectionMethod*
+mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *type, MonoObject *obj);
 
 MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig);
 

@@ -302,6 +302,7 @@ my_mono_class_from_mono_type (MonoType *type) {
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_GENERICINST:
 		return mono_class_from_mono_type (type);
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
@@ -1697,6 +1698,7 @@ create_typespec (MonoDynamicAssembly *assembly, MonoType *type)
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
+	case MONO_TYPE_GENERICINST:
 		encode_type (assembly, type, p, &p);
 		break;
 	case MONO_TYPE_CLASS:
@@ -5759,18 +5761,26 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb)
 	return mb->mhandle;
 }
 
-MonoClass*
+MonoReflectionGenericInst*
 mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *types)
 {
+	static MonoClass *System_Reflection_MonoGenericInst;
 	MonoType *geninst;
 	MonoGenericInst *ginst;
-	MonoClass *klass, *iklass, *parent = NULL;
+	MonoClass *klass, *iklass;
 	MonoReflectionTypeBuilder *tb = NULL;
+	MonoReflectionGenericInst *res, *parent = NULL;
 	int i;
 
 	klass = mono_class_from_mono_type (type->type);
 	if (klass->num_gen_params != mono_array_length (types))
 		return NULL;
+
+	if (!System_Reflection_MonoGenericInst) {
+		System_Reflection_MonoGenericInst = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "MonoGenericInst");
+		g_assert (System_Reflection_MonoGenericInst);
+	}
 
 	if (klass->wastypebuilder && klass->reflection_info) {
 		tb = klass->reflection_info;
@@ -5792,43 +5802,17 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *ty
 
 	iklass = mono_class_from_generic (geninst, FALSE);
 
-	mono_class_setup_parent (iklass, parent ? parent : mono_defaults.object_class);
+	mono_class_setup_parent (iklass, parent ? parent->klass : mono_defaults.object_class);
 	mono_class_setup_mono_type (iklass);
 
-	if (tb) {
-		int mcount, ccount;
-		int pos = 0;
+	res = (MonoReflectionGenericInst *)mono_object_new (mono_object_domain (type), System_Reflection_MonoGenericInst);
 
-		mcount = tb->methods ? mono_array_length (tb->methods) : 0;
-		ccount = tb->ctors ? mono_array_length (tb->ctors) : 0;
+	res->type.type = iklass->generic_inst;
+	res->klass = iklass;
+	res->parent = parent;
+	res->generic_type = type;
 
-		iklass->method.count = mcount + ccount;
-		iklass->methods = g_new0 (MonoMethod *, iklass->method.count);
-
-		for (i = 0; i < mcount; i++) {
-			MonoReflectionMethodBuilder *mb = mono_array_get (tb->methods, gpointer, i);
-			MonoMethod *method = methodbuilder_to_mono_method (iklass, mb);
-
-			iklass->methods [pos++] = mono_class_inflate_generic_method (method, ginst, NULL);
-		}
-
-		for (i = 0; i < ccount; i++) {
-			MonoReflectionCtorBuilder *cb = mono_array_get (tb->ctors, gpointer, i);
-			MonoMethod *method = ctorbuilder_to_mono_method (iklass, cb);
-
-			iklass->methods [pos++] = mono_class_inflate_generic_method (method, ginst, NULL);
-		}
-	} else {
-		iklass->field = klass->field;
-		iklass->method = klass->method;
-
-		iklass->methods = g_new0 (MonoMethod *, iklass->method.count);
-
-		for (i = 0; i < iklass->method.count; i++)
-			iklass->methods [i] = mono_class_inflate_generic_method (klass->methods [i], ginst, NULL);
-	}
-
-	return iklass;
+	return res;
 }
 
 MonoReflectionMethod*
@@ -5869,6 +5853,33 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	inflated = mono_class_inflate_generic_method (method, NULL, ginst);
 
 	return mono_method_get_object (mono_object_domain (rmethod), inflated, inflated->klass);
+}
+
+MonoReflectionMethod*
+mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *type, MonoObject *obj)
+{
+	MonoGenericInst *ginst;
+	MonoMethod *method, *inflated;
+	MonoClass *klass;
+
+	MONO_ARCH_SAVE_REGS;
+
+	klass = mono_class_from_mono_type (type->type.type);
+	ginst = type->type.type->data.generic_inst;
+
+	if (!strcmp (obj->vtable->klass->name, "MethodBuilder"))
+		method = methodbuilder_to_mono_method (klass, (MonoReflectionMethodBuilder *) obj);
+	else if (!strcmp (obj->vtable->klass->name, "ConstructorBuilder"))
+		method = ctorbuilder_to_mono_method (klass, (MonoReflectionCtorBuilder *) obj);
+	else if (!strcmp (obj->vtable->klass->name, "MonoMethod") ||
+		 !strcmp (obj->vtable->klass->name, "MonoCMethod"))
+		method = ((MonoReflectionMethod *) obj)->method;
+	else
+		g_assert_not_reached ();
+
+	inflated = mono_class_inflate_generic_method (method, ginst, NULL);
+
+	return mono_method_get_object (mono_object_domain (type), inflated, inflated->klass);
 }
 
 static void

@@ -1464,18 +1464,15 @@ ves_icall_Type_GetGenericTypeDefinition_impl (MonoReflectionType *type)
 	return NULL;
 }
 
-static MonoReflectionType*
+static MonoReflectionGenericInst*
 ves_icall_Type_BindGenericParameters (MonoReflectionType *type, MonoArray *types)
 {
-	MonoClass *klass;
 	MONO_ARCH_SAVE_REGS;
 
 	if (type->type->byref)
 		return NULL;
 
-	klass = mono_reflection_bind_generic_parameters (type, types);
-
-	return mono_type_get_object (mono_object_domain (type), klass->generic_inst);
+	return mono_reflection_bind_generic_parameters (type, types);
 }
 
 static gboolean
@@ -4154,6 +4151,12 @@ static gconstpointer icall_map [] = {
 	 * MethodBuilder generic icalls.
 	 */
 	"System.Reflection.Emit.MethodBuilder::define_generic_parameter", ves_icall_MethodBuilder_define_generic_parameter,
+
+	/*
+	 * MonoGenericInst generic icalls.
+	 */
+	"System.Reflection.MonoGenericInst::inflate_method", mono_reflection_inflate_method_or_ctor,
+	"System.Reflection.MonoGenericInst::inflate_ctor", mono_reflection_inflate_method_or_ctor,
 	
 	/*
 	 * System.Type
