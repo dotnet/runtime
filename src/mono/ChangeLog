@@ -1,3 +1,12 @@
+2004-05-04  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/net_1_1/Makefile.am (mono_runtime): Use USE_JIT, not
+	JIT_SUPPORTED.
+	(install-data-local, uninstall-data-local): Run runtime with
+	libtool.
+	* runtime/net_2_0/Makefile.am: Likewise.
+	Report from Urs C Muff <umuff@quark.com>.
+
 2004-05-03  Jackson Harper  <jackson@ximian.com>
 
 	* man/gacutil.1: Basic man page for gacutil. This doesn't include
