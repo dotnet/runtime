@@ -646,6 +646,18 @@ A: We can not predict the future, but a conservative estimate is that
    expected to contain the same object types independently of how the
    instructions was reached.
 
+
+** Mono and Portable.NET
+
+Q: What are the differences between Mono and Portable.NET?
+
+A: Most of Mono is being written using C#, the only pieces written in
+   C are those who have to absolutely be built using C (The JIT
+   engine, the runtime, the interfaces to the garbage collection
+   system).
+
+   The C# compiler and the tools will become reusable C# components.
+
 ** Assorted questions
 
 Q: You say that the CLI allows multiple languages to execute on the

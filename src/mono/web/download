@@ -86,7 +86,7 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 	follow these instructions:
 
 	<ul>
-		* Install <a href="http://www.cygwin.org">CygWin</a> first.
+		* Install <a href="http://www.cygwin.com">CygWin</a> first.
 
 		* Untar the MCS distribution (see below for information).
 
@@ -96,7 +96,7 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 	To compile the mono runtime on windows:
 
 	<ul>
-		* Install <a href="http://www.cygwin.org">CygWin</a> first.
+		* Install <a href="http://www.cygwin.com">CygWin</a> first.
 
 		* Once installed, in a terminal window or a cygwin
 		  window (a shortcut should be on your desktop), untar the glib
