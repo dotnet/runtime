@@ -255,6 +255,7 @@ mono_debug_close_method (MonoCompile *cfg)
 		mono_debugger_breakpoint_callback (method, info->breakpoint_id);
 
 	free_jit_debug_info (jit);
+	g_array_free (info->line_numbers, TRUE);
 	g_free (info);
 }
 
