@@ -3,10 +3,11 @@
  * Create trampolines to invoke arbitrary functions.
  * 
  * Copyright (C) Ximian Inc.
- * 
+ *
  * Authors: Paolo Molaro (lupus@ximian.com)
  *          Jeffrey Stedfast <fejj@ximian.com>
- * 
+ *	    Mark Crichton <crichton@gimp.org>
+ *
  */
 
 #include "config.h"
@@ -23,23 +24,17 @@
 #define THIS_POS	sparc_i2
 #define ARGP_POS	sparc_i3
 #define LOC_POS	-4
+#define MINV_POS 8
 
 #define ARG_SIZE	sizeof (stackval)
 
-static void
-fake_func (void (*callme)(gpointer, gpointer), stackval *retval, void *this_obj, stackval *arguments)
-{
-	/*
-	   *(gpointer*)retval = (gpointer)(*callme) (arguments [0].data.p, arguments [1].data.p, arguments [2].data.p);
-	   *(gdouble*) retval = (gdouble)(*callme) (arguments [0].data.f);
-	*/
-	
-	/* internal_from_handle() */
-	/* return (gpointer)(*callme) (((MonoType *)arguments [0].data.p)->data.klass); */
-	
-	/* InitializeArray() */
-	(*callme) (arguments [0].data.p, arguments [1].data.p);
-}
+/* Some assembly... */
+#define flushi(addr)    __asm__ __volatile__ ("flush %0"::"r"(addr):"memory")
+
+
+/* WARNING:  This code WILL BREAK.  We do not currently check the status
+ * of the registers.  Things can get trampled.  You have been warned.
+ */
 
 static const char *
 mono_type (int type)
@@ -115,9 +110,8 @@ mono_type (int type)
 }
 
 static void
-calculate_sizes (MonoMethod *method, guint32 *local_size, guint32 *stack_size, guint32 *code_size, int runtime)
+calculate_sizes (MonoMethodSignature *sig, guint32 *local_size, guint32 *stack_size, guint32 *code_size, gboolean string_ctor)
 {
-	MonoMethodSignature *sig = method->signature;
 	guint32 local = 0, stack = 0, code = 6;
 	guint32 simpletype;
 	int i;
@@ -147,6 +141,7 @@ calculate_sizes (MonoMethod *method, guint32 *local_size, guint32 *stack_size, g
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_STRING:
 		case MONO_TYPE_R4:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_CLASS:
@@ -164,17 +159,6 @@ calculate_sizes (MonoMethod *method, guint32 *local_size, guint32 *stack_size, g
 					 mono_class_value_size (sig->params[i]->data.klass, NULL));
 			stack += 4;
 			code += i < 6 ? 1 : 3;
-			break;
-		case MONO_TYPE_STRING:
-			if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime) {
-				stack += 4;
-				code += i < 6 ? 1 : 3;
-				break;
-			}
-			
-			stack += 4;
-			code += 5;
-			local++;
 			break;
 		case MONO_TYPE_I8:
 			stack += 8;
@@ -208,20 +192,14 @@ calculate_sizes (MonoMethod *method, guint32 *local_size, guint32 *stack_size, g
 		case MONO_TYPE_U:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_STRING:
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
 			code += 2;
 			break;
-#if 0
-		case MONO_TYPE_STRING:
-			code += 2;
-			if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && !runtime) {
-				code += 4;
-			}
-			break;
-#endif
 		case MONO_TYPE_I8:
 			code += 3;
 			break;
@@ -248,7 +226,10 @@ calculate_sizes (MonoMethod *method, guint32 *local_size, guint32 *stack_size, g
 	
 	stack += MINFRAME + (local * 4);
 	
-	fprintf (stderr, "\tstack size: %d (%d)\n\tcode size: %d\n", STACKALIGN(stack), stack, code);
+#ifdef DEBUG_SPARC_TRAMP
+	fprintf (stderr, "\tstack size: %d (%d)\n\tcode size: %d\n", 
+		 STACKALIGN(stack), stack, code); 
+#endif
 	
 	*local_size = local;
 	*stack_size = STACKALIGN(stack);
@@ -262,18 +243,23 @@ mono_string_new_wrapper (const char *text)
 }
 
 MonoPIFunc
-mono_create_trampoline (MonoMethod *method, int runtime)
+mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
-	MonoMethodSignature *sig;
 	guint32 *p, *code_buffer;
 	guint32 local_size, stack_size, code_size;
 	guint32 arg_pos, simpletype;
+	static GHashTable *cache = NULL;
 	int i, stringp, cur_out_reg;
-	
-	sig = method->signature;
-	
-	fprintf (stderr, "\nPInvoke [start emiting] %s\n", method->name);
-	calculate_sizes (method, &local_size, &stack_size, &code_size, runtime);
+	MonoPIFunc res;
+
+	if (!cache)
+		cache = g_hash_table_new ((GHashFunc)mono_signature_hash,
+		            (GCompareFunc)mono_metadata_signature_equal);
+
+	if ((res = (MonoPIFunc)g_hash_table_lookup(cache, sig)))
+		return res;
+
+	calculate_sizes (sig, &local_size, &stack_size, &code_size, string_ctor);
 	
 	code_buffer = p = alloca (code_size * 4);
 	cur_out_reg = sparc_o0;
@@ -288,25 +274,6 @@ mono_create_trampoline (MonoMethod *method, int runtime)
 	sparc_st_imm (p, sparc_i3, sparc_fp, 80);
 #endif
 	
-	/*
-	 * We store some local vars here to handle string pointers.
-	 * and align to 16 byte boundary...
-	 */
-#if 0
-	if (local_size) {
-		x86_alu_reg_imm (p, X86_SUB, X86_ESP, local_size * 4);
-		stack_size = (stack_size * local_size * 4) % 16;
-	} else {
-		stack_size = stack_size % 16;
-	}
-	if (stack_size)
-		x86_alu_reg_imm (p, X86_SUB, X86_ESP, stack_size);
-#endif
-	
-	/*
-	 * %i3 has the pointer to the args.
-	 */
-	
 	if (sig->hasthis) {
 		sparc_mov_reg_reg (p, sparc_i2, cur_out_reg);
 		cur_out_reg++;
@@ -318,7 +285,13 @@ mono_create_trampoline (MonoMethod *method, int runtime)
 		arg_pos = ARG_SIZE * i;
 		
 		if (sig->params[i]->byref) {
-			fprintf (stderr, "\tpushing params[%d] (byref): type=%s;\n", i, mono_type (sig->params[i]->type));
+
+#ifdef DEBUG_SPARC_TRAMP
+			fprintf (stderr, "\tpushing params[%d] (byref):"\
+					 " type=%s;\n", i
+					 ,mono_type(sig->params[i]->type));
+#endif
+
 			sparc_ld_imm (p, sparc_i3, arg_pos, cur_out_reg);
 			cur_out_reg++;
 			continue;
@@ -326,7 +299,12 @@ mono_create_trampoline (MonoMethod *method, int runtime)
 		
 		simpletype = sig->params[i]->type;
 enum_marshal:
-		fprintf (stderr, "\tpushing params[%d]: type=%s;\n", i, mono_type (simpletype));
+
+#ifdef DEBUG_SPARC_TRAMP
+		fprintf (stderr, "\tpushing params[%d]: type=%s;\n",
+                         i, mono_type (simpletype));
+#endif
+
 		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -339,6 +317,7 @@ enum_marshal:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_STRING:
 		case MONO_TYPE_R4:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_CLASS:
@@ -357,36 +336,6 @@ enum_marshal:
 				sparc_ld (p, sparc_l0, 0, cur_out_reg);
 				cur_out_reg++;
 			}
-			break;
-		case MONO_TYPE_STRING:
-			if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime) {
-				sparc_ld_imm (p, sparc_i3, arg_pos, cur_out_reg);
-				cur_out_reg++;
-				break;
-			}
-			
-#if 0
-			sparc_sethi (p, mono_string_to_utf8, sparc_l0);
-			sparc_or_imm (p, 0, sparc_l0, mono_string_to_utf8, sparc_l1);
-			
-			x86_push_membase (p, X86_EDX, arg_pos);
-			x86_mov_reg_imm (p, X86_EDX, mono_string_to_utf8);
-			x86_call_reg (p, X86_EDX);
-			x86_alu_reg_imm (p, X86_ADD, X86_ESP, 4);
-			x86_push_reg (p, X86_EAX);
-			/*
-			 * Store the pointer in a local we'll free later.
-			 */
-			stringp++;
-			x86_mov_membase_reg (p, X86_EBP, LOC_POS * stringp, X86_EAX, 4);
-			/*
-			 * we didn't save the reg: restore it here.
-			 */
-			if (i > 1)
-				x86_mov_reg_membase (p, X86_EDX, X86_EBP, ARGP_POS, 4);
-#endif
-			fprintf (stderr, "MONO_TYPE_STRING not yet fully supported.\n");
-			exit (1);
 			break;
 		case MONO_TYPE_I8:
 			sparc_ld_imm (p, sparc_i3, arg_pos, cur_out_reg);
@@ -415,25 +364,26 @@ enum_marshal:
 	 * Long integers are in EAX:EDX.
 	 * FP values are on the FP stack.
 	 */
-#if 0
-	if (sig->ret->byref) {
-		x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
-		x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
+	if (sig->ret->byref || string_ctor) {
+		sparc_st (p, sparc_o0, sparc_i1, 0);
 	} else {
 		simpletype = sig->ret->type;
+
+#ifdef DEBUG_SPARC_TRAMP
+                fprintf (stderr, "\tret type: %s;\n", mono_type (simpletype));
+#endif
+
 enum_retvalue:
 		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
-			x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
-			x86_mov_regp_reg (p, X86_ECX, X86_EAX, 1);
+			sparc_stb (p, sparc_o0, sparc_i1, 0);
 			break;
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
-			x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
-			x86_mov_regp_reg (p, X86_ECX, X86_EAX, 2);
+			sparc_sth (p, sparc_o0, sparc_i1, 0);
 			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
@@ -443,39 +393,18 @@ enum_retvalue:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
-			x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
-			x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
-			break;
-		case MONO_TYPE_STRING: 
-			if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime) {
-				x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
-				x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
-				break;
-			}
-			
-			/* If the argument is non-null, then convert the value back */
-			x86_alu_reg_reg (p, X86_OR, X86_EAX, X86_EAX);
-			x86_branch8 (p, X86_CC_EQ, 11, FALSE);
-			x86_push_reg (p, X86_EAX);
-			x86_mov_reg_imm (p, X86_EDX, mono_string_new);
-			x86_call_reg (p, X86_EDX);
-			x86_alu_reg_imm (p, X86_ADD, X86_ESP, 4);
-			
-			x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
-			x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_PTR:
+			sparc_st (p, sparc_o0, sparc_i1, 0);
 			break;
 		case MONO_TYPE_R4:
-			x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
-			x86_fst_membase (p, X86_ECX, 0, FALSE, TRUE);
+			sparc_stf (p, sparc_f0, sparc_i1, 0);
 			break;
 		case MONO_TYPE_R8:
-			x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
-			x86_fst_membase (p, X86_ECX, 0, TRUE, TRUE);
+			sparc_stdf (p, sparc_f0, sparc_i1, 0);
 			break;
 		case MONO_TYPE_I8:
-			x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
-			x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
-			x86_mov_membase_reg (p, X86_ECX, 4, X86_EDX, 4);
+			sparc_std (p, sparc_o0, sparc_i1, 0);
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (sig->ret->data.klass->enumtype) {
@@ -488,54 +417,105 @@ enum_retvalue:
 			g_error ("Can't handle as return value 0x%x", sig->ret->type);
 		}
 	}
-#endif
 	
-#if 0
-	/* free the allocated strings... */
-	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
-		if (local_size)
-			x86_mov_reg_imm (p, X86_EDX, g_free);
-		for (i = 1; i <= local_size; ++i) {
-			x86_push_membase (p, X86_EBP, LOC_POS * i);
-			x86_call_reg (p, X86_EDX);
-		}
-	}
-#endif
 	/*
 	 * Standard epilog.
 	 * 8 may be 12 when returning structures (to skip unimp opcode).
 	 */
 	sparc_jmpl_imm (p, sparc_i7, 8, sparc_zero);
 	sparc_restore (p, sparc_zero, sparc_zero, sparc_zero);
-	
+
+#if DEBUG_SPARC_TRAMP
 	{
 		unsigned char *inptr, *inend;
 		
 		inptr = (unsigned char *) code_buffer;
 		inend = (unsigned char *) p;
 		
-		printf (".text\n.align 4\n.globl main\n.type main,function\nmain:\n");
+		fprintf (stderr,".text\n.align 4\n.globl main\n.type main,function\nmain:\n");
 		while (inptr < inend) {
-			printf (".byte 0x%x\n", *inptr);
+			fprintf (stderr, ".byte 0x%x\n", *inptr);
 			inptr++;
 		}
-		fflush (stdout);
+		fflush (stderr);
 	}
-	
-	fprintf (stderr, "PInvoke [finish emiting] %s\n", method->name);
-	
-	/* FIXME: need to flush */
-	return g_memdup (code_buffer, 4 * (p - code_buffer));
+#endif
+
+	res = (MonoPIFunc)g_memdup (code_buffer, 4 * (p - code_buffer));
+
+	/* So here's the deal...
+	 * UltraSPARC will flush a whole cache line at a time
+	 * BUT, older SPARCs won't.
+	 * So, be compatable and flush dwords at a time...
+	 */
+
+	for (i = 0; i < ((p - code_buffer)/2); i++)
+		flushi((res + (i*8)));
+
+	g_hash_table_insert(cache, sig, res);
+
+	return res;
 }
 
 void *
 mono_create_method_pointer (MonoMethod *method)
 {
+	MonoMethodSignature *sig;
+	MonoJitInfo *ji;
+	guint32 stack_size;
+	unsigned char *p, *code_buffer;
+
+	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL && method->addr) {
+		ji = g_new0 (MonoJitInfo, 1);
+		ji->method = method;
+		ji->code_size = 1;
+		ji->code_start = method->addr;
+
+		mono_jit_info_table_add (mono_root_domain, ji);
+		return method->addr;
+	}
+
+	sig = method->signature;
+
+	code_buffer = p = alloca (1024); /* Ok, this might overflow. */
+
+	stack_size = STACKALIGN(((sig->param_count + 1) * 4) + MINFRAME);
+
+	/* Prologue */
+	/* SPARC rocks, 'nuff said */
+	sparc_save_imm(p, sparc_sp, -stack_size, sparc_sp);
+
+	/* Initialize the structure with zeros.  GO GO GADGET G0! */
+	sparc_st(p, sparc_g0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex)), 0);
+	sparc_st(p, sparc_g0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex_handler)), 0);
+	sparc_st(p, sparc_g0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, child)), 0);
+	sparc_st(p, sparc_g0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, parent)), 0);
+
+	/* set the method pointer */
+	/* 32 bit runtime -- Any thoughts on doing sparc64? */
+	sparc_ld_imm(p, (guint32) method >> 16, 0, sparc_o0);
+	sparc_or_imm(p, 0, sparc_o0, (guint32) method & 0xffff, sparc_o0);
+	sparc_st(p, sparc_o0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, method)),0);
+	{
+		unsigned char *inptr, *inend;
+
+		inptr = (unsigned char *) code_buffer;
+		inend = (unsigned char *) p;
+
+		fprintf (stderr,".text\n.align 4\n.globl main\n.type main,function\nmain:\n");
+		while (inptr < inend) {
+			fprintf (stderr, ".byte 0x%x\n", *inptr);
+			inptr++;
+		}
+		fflush (stderr);
+        }
+
 	return NULL;
 }
 
 MonoMethod*
 mono_method_pointer_get (void *code)
 {
+	g_warning("mono_method_pointer_get: IMPLEMENT ME\n");
 	return NULL;
 }
