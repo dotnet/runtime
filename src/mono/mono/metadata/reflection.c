@@ -2379,7 +2379,7 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 		case MONO_SECTION_TEXT:
 			/* patch entry point */
 			rva = (guint32*)(assembly->code.data + 2);
-			*rva = GUINT32_FROM_LE (virtual_base + assembly->text_rva);
+			*rva = GUINT32_FROM_LE (virtual_base + assembly->text_rva + assembly->iat_offset);
 			memcpy (pefile->data + assembly->sections [i].offset, assembly->code.data, assembly->code.index);
 			memcpy (pefile->data + assembly->sections [i].offset + assembly->code.index, assembly->assembly.image->raw_metadata, assembly->meta_size);
 			break;
