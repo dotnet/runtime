@@ -2601,19 +2601,6 @@ ves_icall_System_Runtime_Serialization_FormatterServices_GetUninitializedObject_
 	return obj;
 }
 
-static void
-ves_icall_StringBuilder_CopyChars (MonoArray *chars, MonoString *str, gint32 pos)
-{
-	gpointer *ea;
-	gunichar2 *str_chars;
-	gint32 str_length;
-
-	ea = mono_array_addr (chars, gunichar2, pos);
-	str_chars = mono_string_chars (str);
-	str_length = mono_string_length (str);
-	memcpy (ea, str_chars, str_length * 2);
-}
-
 /* icall map */
 
 static gconstpointer icall_map [] = {
@@ -2953,7 +2940,6 @@ static gconstpointer icall_map [] = {
 	"System.Text.Encoding::IConvGetBytes", ves_icall_iconv_get_bytes,
 	"System.Text.Encoding::IConvGetCharCount", ves_icall_iconv_get_char_count,
 	"System.Text.Encoding::IConvGetChars", ves_icall_iconv_get_chars,
-	"System.Text.StringBuilder::CopyChars", ves_icall_StringBuilder_CopyChars,
 
 	"System.DateTime::GetNow", ves_icall_System_DateTime_GetNow,
 	"System.CurrentTimeZone::GetTimeZoneData", ves_icall_System_CurrentTimeZone_GetTimeZoneData,
