@@ -2,7 +2,7 @@
 AC_INIT(README)
 AC_CANONICAL_SYSTEM
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(mono, 0.13)
+AM_INIT_AUTOMAKE(mono, 0.14)
 AM_MAINTAINER_MODE
 
 dnl ****************************************
@@ -98,7 +98,7 @@ AC_SUBST(GLIB_LIBS)
 AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 
-AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes")
+AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes",,-ldl)
 gc=auto
 AC_ARG_WITH(gc, [  --with-gc=boehm,none],[gc=$with_gc])
 
@@ -110,7 +110,7 @@ case "x$gc" in
 
 		AC_DEFINE(HAVE_BOEHM_GC)
 		AC_SUBST(HAVE_BOEHM_GC)
-		LIBS="$LIBS -lgc"
+		LIBS="$LIBS -lgc -ldl"
 		;;
 	xnone)
 		AC_MSG_WARN("Compiling mono without GC.")
@@ -123,7 +123,7 @@ dnl		# If libgc was found, use it.  Otherwise just warn.
 		else
 			AC_DEFINE(HAVE_BOEHM_GC)
 			AC_SUBST(HAVE_BOEHM_GC)
-			LIBS="$LIBS -lgc"
+			LIBS="$LIBS -lgc -ldl"
 			gc="boehm"
 		fi
 dnl		AC_MSG_WARN("Compiling mono without GC.")
@@ -291,7 +291,7 @@ if test x$platform_win32 = xno; then
 	dnl *****************************
 	dnl *** Checks for libpthread ***
 	dnl *****************************
-	AC_SEARCH_LIBS(pthread_create, pthread c_r, [
+	AC_SEARCH_LIBS(pthread_create, pthread, [
 		AM_CONDITIONAL(THREADS_PTHREAD, true)
 		AC_DEFINE(HAVE_PTHREAD)
 
