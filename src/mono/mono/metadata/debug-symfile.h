@@ -8,7 +8,7 @@
 typedef struct MonoDebugSymbolFile		MonoDebugSymbolFile;
 typedef struct MonoDebugSymbolFileSection	MonoDebugSymbolFileSection;
 typedef struct MonoDebugMethodInfo		MonoDebugMethodInfo;
-typedef struct MonoDebugLocalInfo		MonoDebugLocalInfo;
+typedef struct MonoDebugVarInfo			MonoDebugVarInfo;
 typedef struct MonoDebugILOffsetInfo		MonoDebugILOffsetInfo;
 
 /* Machine dependent information about a method.
@@ -20,10 +20,10 @@ struct MonoDebugMethodInfo {
 	char *code_start;
 	guint32 code_size;
 	guint32 num_params;
-	guint32 this_offset;
-	guint32 *param_offsets;
+	MonoDebugVarInfo *this_var;
+	MonoDebugVarInfo *params;
 	guint32 num_locals;
-	MonoDebugLocalInfo *locals;
+	MonoDebugVarInfo *locals;
 	guint32 num_il_offsets;
 	MonoDebugILOffsetInfo *il_offsets;
 	guint32 prologue_end;
@@ -31,7 +31,29 @@ struct MonoDebugMethodInfo {
 	gpointer _priv;
 };
 
-struct MonoDebugLocalInfo {
+/*
+ * These bits of the MonoDebugLocalInfo's "index" field are flags specifying
+ * where the variable is actually stored.
+ *
+ * See relocate_variable() in debug-symfile.c for more info.
+ */
+#define MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS		0xf0000000
+
+/* If "index" is zero, the variable is at stack offset "offset". */
+#define MONO_DEBUG_VAR_ADDRESS_MODE_STACK		0
+
+/* The variable is in the register whose number is contained in bits 0..4 of the
+ * "index" field plus an offset of "offset" (which can be zero).
+ */
+#define MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER		0x10000000
+
+/* The variables in in the two registers whose numbers are contained in bits 0..4
+ * and 5..9 of the "index" field plus an offset of "offset" (which can be zero).
+ */
+#define MONO_DEBUG_VAR_ADDRESS_MODE_TWO_REGISTERS	0x20000000
+
+struct MonoDebugVarInfo {
+	guint32 index;
 	guint32 offset;
 	guint32 begin_scope;
 	guint32 end_scope;
@@ -60,7 +82,7 @@ struct MonoDebugSymbolFileSection {
 	gulong size;
 };
 
-#define MONO_DEBUG_SYMBOL_FILE_VERSION			8
+#define MONO_DEBUG_SYMBOL_FILE_VERSION			9
 
 /* Keep in sync with Mono.CSharp.Debugger.MonoDwarfFileWriter.Section */
 #define MONO_DEBUG_SYMBOL_SECTION_DEBUG_INFO		0x01

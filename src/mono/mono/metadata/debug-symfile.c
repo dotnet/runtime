@@ -32,6 +32,9 @@
 #define MRT_mono_array_bounds_offset	0x0e
 #define MRT_variable_start_scope	0x0f
 #define MRT_variable_end_scope		0x10
+#define MRT_mono_string_fieldsize	0x11
+#define MRT_mono_array_fieldsize	0x12
+#define MRT_type_field_fieldsize	0x13
 
 #define MRI_string_offset_length	0x00
 #define MRI_string_offset_vector	0x01
@@ -47,6 +50,14 @@
 #define MRS_debug_abbrev		0x02
 #define MRS_debug_line			0x03
 #define MRS_mono_reloc_table		0x04
+
+#define DW_OP_const4s			0x0d
+#define DW_OP_plus			0x22
+#define DW_OP_reg0			0x50
+#define DW_OP_breg0			0x70
+#define DW_OP_fbreg			0x91
+#define DW_OP_piece			0x93
+#define DW_OP_nop			0x96
 
 #ifdef HAVE_ELF_H
 
@@ -213,6 +224,88 @@ mono_debug_close_symbol_file (MonoDebugSymbolFile *symfile)
 	g_free (symfile);
 }
 
+static void
+relocate_variable (MonoDebugVarInfo *var, void *base_ptr)
+{
+	if (!var) {
+		* ((guint8 *) base_ptr)++ = DW_OP_nop;
+		* ((guint8 *) base_ptr)++ = DW_OP_nop;
+		* ((guint8 *) base_ptr)++ = DW_OP_nop;
+		* ((guint8 *) base_ptr)++ = DW_OP_nop;
+		* ((guint8 *) base_ptr)++ = DW_OP_nop;
+		* ((guint8 *) base_ptr)++ = DW_OP_nop;
+		* ((guint8 *) base_ptr)++ = DW_OP_nop;
+		* ((guint8 *) base_ptr)++ = DW_OP_nop;
+		return;
+	}
+		
+	/*
+	 * Update the location description for a local variable or method parameter.
+	 * MCS always reserves 8 bytes for us to do this, if we don't need them all
+	 * we just fill up the rest with DW_OP_nop's.
+	 */
+
+	switch (var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS) {
+	case MONO_DEBUG_VAR_ADDRESS_MODE_STACK:
+		/*
+		 * Variable is on the stack.
+		 *
+		 * If `index' is zero, use the normal frame register.  Otherwise, bits
+		 * 0..4 of `index' contain the frame register.
+		 *
+		 * Both DW_OP_fbreg and DW_OP_breg0 ... DW_OP_breg31 take an ULeb128
+		 * argument - since this has an variable size, we set it to zero and
+		 * manually add a 4 byte constant using DW_OP_plus.
+		 */
+		if (!var->index)
+			/* Use the normal frame register (%ebp on the i386). */
+			* ((guint8 *) base_ptr)++ = DW_OP_fbreg;
+		else
+			/* Use a custom frame register. */
+			* ((guint8 *) base_ptr)++ = DW_OP_breg0 + (var->index & 0x001f);
+		* ((guint8 *) base_ptr)++ = 0;
+		* ((guint8 *) base_ptr)++ = DW_OP_const4s;
+		* ((gint32 *) base_ptr)++ = var->offset;
+		* ((guint8 *) base_ptr)++ = DW_OP_plus;
+		break;
+
+	case MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER:
+		/*
+		 * Variable is in the register whose number is contained in bits 0..4
+		 * of `index'.
+		 *
+		 * We need to write exactly 8 bytes in this location description, so instead
+		 * of filling up the rest with DW_OP_nop's just add the `offset' even if
+		 * it's zero.
+		 */
+		* ((guint8 *) base_ptr)++ = DW_OP_reg0 + (var->index & 0x001f);
+		* ((guint8 *) base_ptr)++ = DW_OP_nop;
+		* ((guint8 *) base_ptr)++ = DW_OP_const4s;
+		* ((gint32 *) base_ptr)++ = var->offset;
+		* ((guint8 *) base_ptr)++ = DW_OP_plus;
+		break;
+
+	case MONO_DEBUG_VAR_ADDRESS_MODE_TWO_REGISTERS:
+		/*
+		 * Variable is in two registers whose numbers are in bits 0..4 and 5..9 of 
+		 * the `index' field.  Don't add `offset' since we have only two bytes left,
+		 * fill them up with DW_OP_nop's.
+		 */
+		* ((guint8 *) base_ptr)++ = DW_OP_reg0 + (var->index & 0x001f);
+		* ((guint8 *) base_ptr)++ = DW_OP_piece;
+		* ((guint8 *) base_ptr)++ = sizeof (int);
+		* ((guint8 *) base_ptr)++ = DW_OP_reg0 + ((var->index & 0x1f0) >> 5);
+		* ((guint8 *) base_ptr)++ = DW_OP_piece;
+		* ((guint8 *) base_ptr)++ = sizeof (int);
+		* ((guint8 *) base_ptr)++ = DW_OP_nop;
+		* ((guint8 *) base_ptr)++ = DW_OP_nop;
+		break;
+
+	default:
+		g_assert_not_reached ();
+	}
+}
+
 void
 mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			       MonoDebugMethodInfoFunc method_info_func,
@@ -348,12 +441,11 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			guint32 token = *((guint32 *) tmp_ptr)++;
 			guint32 original = *((guint32 *) tmp_ptr)++;
 			MonoDebugMethodInfo *minfo;
-			gint32 address;
 
 			minfo = method_info_func (symfile, token, user_data);
 
 			if (!minfo) {
-				* (void **) base_ptr = 0;
+				relocate_variable (NULL, base_ptr);
 				continue;
 			}
 
@@ -365,14 +457,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				continue;
 			}
 
-			address = minfo->locals [original].offset;
-
-#if 0
-			g_message ("Relocating local variable %d (%s) to stack offset %d",
-				   original, minfo->method->name, address);
-#endif
-
-			* (gint32 *) base_ptr = address;
+			relocate_variable (&minfo->locals [original], base_ptr);
 
 			break;
 		}
@@ -380,18 +465,17 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			guint32 token = *((guint32 *) tmp_ptr)++;
 			guint32 original = *((guint32 *) tmp_ptr)++;
 			MonoDebugMethodInfo *minfo;
-			gint32 address;
 
 			minfo = method_info_func (symfile, token, user_data);
 
 			if (!minfo) {
-				* (void **) base_ptr = 0;
+				relocate_variable (NULL, base_ptr);
 				continue;
 			}
 
 			if (minfo->method->signature->hasthis) {
 				if (original == 0) {
-					* (gint32 *) base_ptr = minfo->this_offset;
+					relocate_variable (minfo->this_var, base_ptr);
 					continue;
 				}
 
@@ -406,14 +490,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				continue;
 			}
 
-			address = minfo->param_offsets [original];
-
-#if 0
-			g_message ("Relocating parameter %d (%s) to stack offset %d",
-				   original, minfo->method->name, address);
-#endif
-
-			* (gint32 *) base_ptr = address;
+			relocate_variable (&minfo->params [original], base_ptr);
 
 			break;
 		}
@@ -611,6 +688,61 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 
 			break;
 		}
+
+		case MRT_mono_string_fieldsize: {
+			guint32 idx = *((guint32 *) tmp_ptr)++;
+			MonoString string;
+			guint32 fieldsize;
+
+			switch (idx) {
+			case MRI_string_offset_length:
+				fieldsize = sizeof (string.length);
+				break;
+
+			case MRI_string_offset_vector:
+				fieldsize = sizeof (string.c_str);
+				break;
+
+			default:
+				g_warning ("Symbol file %s contains invalid string fieldsize entry",
+					   symfile->file_name);
+				continue;
+			}
+
+			* (guint32 *) base_ptr = fieldsize;
+
+			break;
+		}
+
+		case MRT_mono_array_fieldsize: {
+			guint32 idx = *((guint32 *) tmp_ptr)++;
+			MonoArray array;
+			guint32 fieldsize;
+
+			switch (idx) {
+			case MRI_array_offset_bounds:
+				fieldsize = sizeof (array.bounds);
+				break;
+
+			case MRI_array_offset_max_length:
+				fieldsize = sizeof (array.max_length);
+				break;
+
+			case MRI_array_offset_vector:
+				fieldsize = sizeof (array.vector);
+				break;
+
+			default:
+				g_warning ("Symbol file %s contains invalid array fieldsize entry",
+					   symfile->file_name);
+				continue;
+			}
+
+			* (guint32 *) base_ptr = fieldsize;
+
+			break;
+		}
+
 
 		default:
 			g_warning ("Symbol file %s contains unknown relocation entry %d",
