@@ -593,9 +593,36 @@ typedef struct {
 } EmptyStruct;
 
 int
+mono_test_marshal_empty_string_array (char **array)
+{
+	return (array == NULL) ? 0 : 1;
+}
+
+int
 mono_test_marshal_string_array (char **array)
 {
-	printf ("%p\n", array);
+	if (strcmp (array [0], "ABC"))
+		return 1;
+	if (strcmp (array [1], "DEF"))
+		return 2;
+
+	return 0;
+}
+
+int
+mono_test_marshal_unicode_string_array (gunichar2 **array)
+{
+	GError *error = NULL;
+	char *s;
+
+	s = g_utf16_to_utf8 (array [0], -1, NULL, NULL, &error);
+	if (strcmp (s, "ABC"))
+		return 1;
+
+	s = g_utf16_to_utf8 (array [1], -1, NULL, NULL, &error);
+	if (strcmp (s, "DEF"))
+		return 2;
+
 	return 0;
 }
 

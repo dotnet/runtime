@@ -87,8 +87,14 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_array")]
 	public static extern int mono_test_marshal_array (int [] a1);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_empty_string_array")]
+	public static extern int mono_test_marshal_empty_string_array (string [] a1);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_string_array")]
 	public static extern int mono_test_marshal_string_array (string [] a1);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_unicode_string_array", CharSet=CharSet.Unicode)]
+	public static extern int mono_test_marshal_unicode_string_array (string [] a1);
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_inout_array")]
 	public static extern int mono_test_marshal_inout_array ([In, Out] int [] a1);
@@ -372,8 +378,15 @@ public class Tests {
 	}
 
 	static int test_0_marshal_empty_string_array () {
-		mono_test_marshal_string_array (null);
-		return 0;
+		return mono_test_marshal_empty_string_array (null);
+	}
+
+	static int test_0_marshal_string_array () {
+		return mono_test_marshal_string_array (new String [] { "ABC", "DEF" });
+	}
+
+	static int test_0_marshal_unicode_string_array () {
+		return mono_test_marshal_unicode_string_array (new String [] { "ABC", "DEF" });
 	}
 
 	static int test_0_last_error () {
