@@ -527,4 +527,18 @@
       <task>System.Windows.Forms</task>
     </tasks>
   </contributor>
+  <contributor>
+    <name>
+      <first-name>Lee</first-name>
+      <last-name>Mallabone</last-name>
+    </name>
+    <e-mail>mono-docs@fonicmonkey.net</e-mail>
+    <image>none.png</image>
+    <location>Cambridge, UK</location>
+    <description>External Contributor</description>
+    <tasks>
+      <task>Gtk#</task>
+      <task>Technical documentation</task>
+    </tasks>
+  </contributor>
 </contributors>
