@@ -648,7 +648,7 @@ real_load (gchar **search_path, const gchar *culture, gchar *filename)
 		if (**path == '\0')
 			continue; /* Ignore empty ApplicationBase */
 
-		if (culture && g_strcasecmp (culture, "neutral"))
+		if (culture && *culture != '\0') /* !neutral */
 			fullpath = g_build_filename (*path, culture, filename, NULL);
 		else
 			fullpath = g_build_filename (*path, filename, NULL);
@@ -811,7 +811,7 @@ get_info_from_assembly_name (MonoString *assRef, MonoAssemblyName *aname)
 			tmp++;
 			g_free (t);
 			if (g_strcasecmp (aname->culture, "neutral") == 0) {
-				g_free (aname->culture);
+				g_free ((void *) aname->culture);
 				aname->culture = g_strdup ("");
 			}
 			continue;

@@ -5213,6 +5213,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 			assembly->revision = strtoul (p, &s, 10);
 			if (s == p)
 				return 1;
+			p = s;
 		} else if (*p == 'C' && strncmp (p, "Culture=", 8) == 0) {
 			p += 8;
 			if (strncmp (p, "neutral", 7) == 0) {
