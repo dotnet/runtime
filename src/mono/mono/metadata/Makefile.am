@@ -30,6 +30,8 @@ libmetadata_a_SOURCES = \
 	threads-types.h	\
 	file-io.c	\
 	file-io.h	\
+	socket-io.c	\
+	socket-io.h	\
 	exception.c	\
 	exception.h	\
 	unicode.c	\

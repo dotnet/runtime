@@ -41,6 +41,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/verify.h>
 #include <mono/io-layer/io-layer.h>
+#include <mono/metadata/socket-io.h>
 /*#include <mono/cli/types.h>*/
 #include "interp.h"
 #include "hacks.h"
@@ -2683,9 +2684,28 @@ array_constructed:
 		CASE (CEE_UNUSED17) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_I1)
 		CASE (CEE_CONV_OVF_U1) ves_abort(); BREAK;
-		CASE (CEE_CONV_OVF_I2) ves_abort(); BREAK;
-		CASE (CEE_CONV_OVF_U2) ves_abort(); BREAK;
-		CASE (CEE_CONV_OVF_I4) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_I2)
+		CASE (CEE_CONV_OVF_U2)
+			++ip;
+			/* FIXME: handle other cases */
+			if (sp [-1].type == VAL_I32) {
+				/* defined as NOP */
+			} else {
+				ves_abort();
+			}
+			BREAK;
+		CASE (CEE_CONV_OVF_I4)
+			++ip;
+			/* FIXME: handle other cases */
+			if (sp [-1].type == VAL_I32) {
+				/* defined as NOP */
+			} else if(sp [-1].type == VAL_I64) {
+				sp [-1].data.i = (gint32)sp [-1].data.l;
+				break;
+			} else {
+				ves_abort();
+			}
+			BREAK;
 		CASE (CEE_CONV_OVF_U4)
 			++ip;
 			/* FIXME: handle other cases */
@@ -2756,7 +2776,7 @@ array_constructed:
 			++sp;
 			BREAK;
 		CASE (CEE_CONV_OVF_U) ves_abort(); BREAK;
-		CASE (CEE_ADD_OVF) ves_abort(); BREAK;
+		CASE (CEE_ADD_OVF)
 		CASE (CEE_ADD_OVF_UN)
 			++ip;
 			--sp;
@@ -3617,6 +3637,7 @@ main (int argc, char *argv [])
 	}
 
 	mono_thread_init();
+	mono_network_init();
 
 	frame_thread_id = TlsAlloc ();
 	TlsSetValue (frame_thread_id, NULL);
@@ -3636,6 +3657,7 @@ main (int argc, char *argv [])
 		g_hash_table_foreach (profiling, build_profile, &profile);
 	output_profile (profile);
 	
+	mono_network_cleanup();
 	mono_thread_cleanup();
 
 	mono_assembly_close (assembly);

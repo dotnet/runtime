@@ -21,7 +21,6 @@ static guint32 unicode_len(const guchar *str)
 	} while(1);
 }
 
-/* Cut&pasted from glib (switch to g_convert() when glib-2 is out */
 guchar *_wapi_unicode_to_utf8(const guchar *uni)
 {
 	GError *error = NULL;

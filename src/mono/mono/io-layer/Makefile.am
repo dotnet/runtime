@@ -3,6 +3,7 @@ lib_LIBRARIES = libwapi.a
 INCLUDES = \
 	$(GLIB_CFLAGS)		\
 	$(GMODULE_CFLAGS)	\
+	-D_WAPI_BUILDING=1	\
 	-I$(top_srcdir)		\
 	#
 
@@ -15,8 +16,10 @@ OTHER_H = \
 	handles.h	\
 	io.h		\
 	io-layer.h	\
+	macros.h	\
 	mutexes.h	\
 	semaphores.h	\
+	sockets.h	\
 	status.h	\
 	threads.h	\
 	uglify.h	\
@@ -37,6 +40,7 @@ OTHER_SRC = \
 	io.c			\
 	io.h			\
 	io-layer.h		\
+	macros.h		\
 	misc.c			\
 	misc-private.h		\
 	mutexes.c		\
@@ -45,6 +49,8 @@ OTHER_SRC = \
 	pthread-compat.h	\
 	semaphores.c		\
 	semaphores.h		\
+	sockets.c		\
+	sockets.h		\
 	status.h		\
 	threads.c		\
 	threads.h		\

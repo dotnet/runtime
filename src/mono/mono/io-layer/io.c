@@ -730,8 +730,13 @@ WapiHandle *CreateFile(const guchar *name, guint32 fileaccess,
 	
 	if(ret==-1) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": Error opening file: %s",
-			  strerror(errno));
+#ifdef ACTUALLY_DO_UNICODE
+		g_message(G_GNUC_PRETTY_FUNCTION ": Error opening file %s: %s",
+			  filename, strerror(errno));
+#else
+		g_message(G_GNUC_PRETTY_FUNCTION ": Error opening file %s: %s",
+			  filename, strerror(errno));
+#endif
 #endif
 		return(INVALID_HANDLE_VALUE);
 	}

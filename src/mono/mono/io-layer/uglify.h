@@ -18,6 +18,7 @@ typedef gint32 *PLONG;
 
 typedef WapiHandle *HANDLE;
 typedef WapiHandle **LPHANDLE;
+typedef WapiHandle *SOCKET;	/* NB: w32 defines this to be int */
 typedef WapiSecurityAttributes *LPSECURITY_ATTRIBUTES;
 typedef WapiOverlapped *LPOVERLAPPED;
 typedef WapiThreadStart LPTHREAD_START_ROUTINE;
@@ -27,6 +28,8 @@ typedef WapiFileTime FILETIME;
 typedef WapiFileTime *LPFILETIME;
 typedef WapiSystemTime SYSTEMTIME;
 typedef WapiSystemTime *LPSYSTEMTIME;
+typedef WapiWSAData WSADATA;
+typedef WapiWSAData *LDWSADATA;
 
 #define CONST const
 #define VOID void
