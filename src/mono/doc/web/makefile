@@ -1,4 +1,5 @@
 SOURCES=	\
+	../anoncvs		\
 	../contributing  	\
 	../class-library	\
 	../class-status		\

@@ -23,6 +23,22 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Dec 1, 2001
+
+	AnonCVS access to Mono is here (updated every hour).  Thanks
+	to <a href="http://www.hispalinux.es">HispaLinux</a> and Jesus
+	Climent for helping to set this up.
+
+** Nov 30, 2001
+
+	All tests from the mono runtime work with the JIT engine now
+	(Dietmar).
+
+	Recursive enumeration definition in the C# compiler are
+	working now (Ravi).
+
+	More work on the Web classes (Gaurav).
+
 ** Nov 28, 2001
 
 	JIT land: Paolo got GDB support into the JIT engine while
@@ -33,6 +49,8 @@
 	new more tests.
 	
 	Nick keeps working on improving our class library test suite.
+
+	Dick has almost completed the Mono IO layer.
 
 ** Nov 16, 2001
 

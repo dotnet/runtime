@@ -1,0 +1,54 @@
+* Anonymous CVS access
+
+	Anonymous access to the Mono is available currently from the
+	HispaLinux CVS server (later I will provide a nice
+	anoncvs.go-mono.com alias).
+
+	Sources are currently being updated every hour.
+
+	The server is currently located in Spain.  If you want to
+	become an AnonCVS mirror, go <a href="#mirror">here</a>
+
+** Checking out the sources
+
+	To check out the sources for the first time from the
+	repository, use this command:
+
+<pre>
+	export CVSROOT=:pserver:anonymous@reypastor.hispalinux.es:/mono
+	cvs co -z3 mcs mono gtk-sharp
+</pre>
+
+	That will get you the compiler and class libraries (mcs), the
+	interpreter and JITer (mono) and the Gtk# bindings.
+
+	The server is located in Spain.
+
+** Updating the sources
+
+	To update your sources every day, you use this command:
+
+<pre>
+	export CVSROOT=:pserver:anonymous@reypastor.hispalinux.es:/mono
+	cvs update -dP -z3 mcs mono gtk-sharp
+</pre>
+
+** Thanks
+
+	Thanks to <a href="http://www.hispalinux.es">HispaLinux</a>
+	for providing this Anon CVS server.  The server is located in
+	Spain.
+
+	Special thanks to Jesus Climent, Rodrigo Moya, Juantomás
+	García and Ismael Olea for making this happen.
+
+<a name="#mirror">
+** Becoming an AnonCVS mirror
+
+	To become an AnonCVS mirror, you currently need about 20
+	megabytes of free disk space and bandwidth that you do not
+	mind sharing (you probably want enough to spare).
+
+	I need to be able to rsync to your machine from the main CVS
+	server.  The preferred method to rsync is to setup ssh in your
+	machine.

@@ -42,22 +42,6 @@ TODO=multimedia
 		  href="mailto:vladimir@ximian.com">Vladimir</a> has
 		  researched the problem before 
 
-TODO=gtk,Gtk+ wrappers for Mono and .NET
-		* Wrap the Gtk+ API.  This is simple and can be done
-		  on Windows as Gtk+ 2.0 works on Windows.
-
-	 	  This work can also be used on Windows and will
-		  enable developers on Windows to use some of Gtk+'s
-		  advanced features.
-
-		  The idea is to wrap the Gtk+ API and allow us to
-		  build GUI applications using Gtk+ and in the future
-		  other Gtk+-based libraries from Mono (Gal, GtkHTML).
-
-		  There is extensive knowledge on wrapping Gtk+ in
-		  other languages (this has been done this for Perl,
-		  Python, Java, Scheme, Haskel and other languages in
-		  the past).
 	</ul>
 
 <a name="projects">
