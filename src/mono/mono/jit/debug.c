@@ -34,6 +34,9 @@ static void release_symbol_file_table (void);
 static void initialize_debugger_support (void);
 
 static MonoDebugHandle *mono_debug_handle = NULL;
+static void (*debugger_notification_code) (void) = NULL;
+static pthread_cond_t debugger_thread_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t debugger_thread_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
@@ -54,6 +57,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&mono_breakpoint_trampoline_code,
 	&debugger_symbol_file_table_generation,
 	&debugger_symbol_file_table_modified,
+	&debugger_notification_code,
 	&debugger_symbol_file_table,
 	&debugger_update_symbol_file_table,
 	&mono_compile_method,
@@ -61,6 +65,18 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_remove_breakpoint,
 	&mono_runtime_invoke
 };
+
+static void
+mono_debugger_lock (void)
+{
+	pthread_mutex_lock (&debugger_thread_mutex);
+}
+
+static void
+mono_debugger_unlock (void)
+{
+	pthread_mutex_unlock (&debugger_thread_mutex);
+}
 
 static void
 free_method_info (MonoDebugMethodInfo *minfo)
@@ -115,6 +131,7 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 
 	g_assert (!mono_debug_handle);
 
+	mono_debugger_lock ();
 	release_symbol_file_table ();
 
 	debug = g_new0 (MonoDebugHandle, 1);
@@ -256,6 +273,8 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 	mono_debug_add_type (mono_defaults.serializationinfo_class);
 	mono_debug_add_type (mono_defaults.streamingcontext_class);
 
+	mono_debugger_unlock ();
+
 	return debug;
 }
 
@@ -265,7 +284,9 @@ mono_debug_add_assembly (MonoAssembly *assembly, gpointer user_data)
 	if (!mono_debug_handle)
 		return;
 
+	mono_debugger_lock ();
 	mono_debug_open_image (mono_debug_handle, assembly->image);
+	mono_debugger_unlock ();
 }
 
 static void
@@ -928,8 +949,11 @@ mono_debug_add_type (MonoClass *klass)
 		return;
 
 	if (info->symfile) {
+		mono_debugger_lock ();
 		mono_debug_symfile_add_type (info->symfile, klass);
 		debugger_symbol_file_table_modified++;
+		pthread_cond_signal (&debugger_thread_cond);
+		mono_debugger_unlock ();
 	}
 }
 
@@ -1018,6 +1042,8 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 	if (!minfo || minfo->jit)
 		return;
 
+	mono_debugger_lock ();
+
 	mono_debug_handle->dirty = TRUE;
 
 	minfo->jit = jit = g_new0 (MonoDebugMethodJitInfo, 1);
@@ -1097,7 +1123,10 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 	if (info->symfile) {
 		mono_debug_symfile_add_method (info->symfile, method);
 		debugger_symbol_file_table_modified++;
+		pthread_cond_signal (&debugger_thread_cond);
 	}
+
+	mono_debugger_unlock ();
 }
 
 gchar *
@@ -1209,6 +1238,8 @@ debugger_update_symbol_file_table (void)
 	if (!mono_debug_handle)
 		return FALSE;
 
+	mono_debugger_lock ();
+
 	g_hash_table_foreach (mono_debug_handle->images, update_symbol_file_table_count_func, &count);
 
 	release_symbol_file_table ();
@@ -1227,6 +1258,9 @@ debugger_update_symbol_file_table (void)
 	g_hash_table_foreach (mono_debug_handle->images, update_symbol_file_table_func, &data);
 
 	debugger_symbol_file_table = symfile_table;
+
+	mono_debugger_unlock ();
+
 	return TRUE;
 }
 
@@ -1234,14 +1268,47 @@ extern void (*mono_debugger_class_init_func) (MonoClass *klass);
 
 static gboolean has_mono_debugger_support = FALSE;
 
+/*
+ * NOTE: We must not call any functions here which we ever may want to debug !
+ */
+static gpointer
+debugger_thread_func (gpointer unused)
+{
+	raise (SIGSTOP);
+
+	g_message (G_STRLOC);
+	pthread_mutex_lock (&debugger_thread_mutex);
+
+	while (TRUE) {
+		/* Send notification. */
+		debugger_notification_code ();
+
+		/* Wait for an event. */
+		pthread_cond_wait (&debugger_thread_cond, &debugger_thread_mutex);
+	}
+
+	return NULL;
+}
+
 static void
 initialize_debugger_support ()
 {
+	guint8 *buf;
+	pthread_t thread;
+
 	if (has_mono_debugger_support)
 		return;
 	has_mono_debugger_support = TRUE;
 
 	mono_debugger_class_init_func = mono_debug_add_type;
+
+	debugger_notification_code = g_malloc0 (16);
+	buf = (guint8 *) debugger_notification_code;
+	x86_breakpoint (buf);
+	x86_ret (buf);
+
+	int ret = pthread_create (&thread, NULL, debugger_thread_func, NULL);
+	g_assert (ret == 0);
 }
 
 static GPtrArray *breakpoints = NULL;
