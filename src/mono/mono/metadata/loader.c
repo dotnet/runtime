@@ -326,7 +326,7 @@ method_from_memberref (MonoImage *image, guint32 idx)
 			method = find_method (klass, mname, sig);
 			if (!method)
 				g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
-			else if (klass->generic_inst) {
+			else if (klass->generic_inst && (klass != method->klass)) {
 				MonoGenericMethod *gmethod = g_new0 (MonoGenericMethod, 1);
 
 				gmethod->generic_method = method;
