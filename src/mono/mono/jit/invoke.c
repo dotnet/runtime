@@ -92,10 +92,11 @@ get_invoke_method_with_frame (void)
  * trampoline (as suggested by Paolo).
  */
 MonoObject*
-arch_runtime_invoke (MonoMethod *method, void *obj, void **params)
+arch_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {
 	static guint64 (*invoke_int64) (gpointer code, gpointer frame, int frame_size) = NULL;
 	static double (*invoke_double) (gpointer code, gpointer frame, int frame_size) = NULL;
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoObject *retval;
 	MonoMethodSignature *sig; 
 	int i, tmp, type, sp = 0;
@@ -103,8 +104,24 @@ arch_runtime_invoke (MonoMethod *method, void *obj, void **params)
 	int frame_size = 0;
 	gpointer *frame;
 	gpointer code;
+	gpointer last_end_of_stack;
+	jmp_buf env, *last_env;
 	
 	sig = method->signature;
+
+	if (exc) {
+		last_end_of_stack = jit_tls->end_of_stack;
+		last_env = jit_tls->env;
+
+		jit_tls->end_of_stack = &last_env;
+		jit_tls->env = &env;
+
+		if ((*exc = setjmp (env))) {
+			jit_tls->end_of_stack = last_end_of_stack;
+			jit_tls->env = last_env;
+			return NULL;
+		}
+	}
 
 	/* allocate ret object. */
 	if (sig->ret->type == MONO_TYPE_VOID) {
@@ -253,6 +270,11 @@ handle_enum_2:
 		break;
 	default:
 		g_error ("return type 0x%x not handled in arch_runtime_invoke", type);
+	}
+
+	if (exc) {
+		jit_tls->end_of_stack = last_end_of_stack;
+		jit_tls->env = last_env;
 	}
 
 	return retval;

@@ -101,7 +101,7 @@ mono_async_invoke (MonoAsyncResult *ares, gboolean cb_only)
 	/* call async callback if cb_method != null*/
 	if (ac->cb_method) {
 		void *pa = &ares;
-		mono_runtime_invoke (ac->cb_method, ac->cb_target, pa);
+		mono_runtime_invoke (ac->cb_method, ac->cb_target, pa, NULL);
 	}
 }
 

@@ -904,7 +904,8 @@ verify_method (MonoMethod *m)
 	(guint64)(MYGUINT64_MAX) - (guint64)(b) < (guint64)(a) ? -1 : 0
 
 static MonoObject*
-interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
+interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params,
+			    MonoObject **exc)
 {
 	MonoInvocation frame;
 	MonoObject *retval = NULL;
@@ -3817,7 +3818,8 @@ ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 	MonoImage *image = assembly->image;
 	MonoCLIImageInfo *iinfo;
 	MonoMethod *method;
-	int i;
+	MonoObject *exc = NULL;
+	int i, rval;
 
 	iinfo = image->image_info;
 	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
@@ -3832,7 +3834,12 @@ ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 		}
 	}
 	
-	return mono_runtime_exec_main (method, args);
+	rval = mono_runtime_exec_main (method, args, &exc);
+
+	if (exc)
+		mono_print_unhandled_exception (exc);
+
+	return rval;
 }
 
 static void

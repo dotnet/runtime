@@ -3655,11 +3655,18 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 	MonoImage *image = assembly->image;
 	MonoCLIImageInfo *iinfo;
 	MonoMethod *method;
+	MonoObject *exc;
+	int rval;
 
 	iinfo = image->image_info;
 	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
 
-	return mono_runtime_run_main (method, argc, argv);
+	rval = mono_runtime_run_main (method, argc, argv, &exc);
+
+	if (exc)
+		mono_print_unhandled_exception (exc);
+
+	return rval;
 }
 
 #ifdef PLATFORM_WIN32
@@ -3710,8 +3717,6 @@ sigsegv_signal_handler (int _dummy)
 	g_error ("we should never reach this code");
 }
 
-static guint32 mono_main_thread_id = 0;
-
 /**
  * mono_thread_abort:
  * @obj: exception object
@@ -3721,21 +3726,16 @@ static guint32 mono_main_thread_id = 0;
 static void
 mono_thread_abort (MonoObject *obj)
 {
-	const char *message = "";
-	char *trace = NULL;
-	MonoString *str; 
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoDomain *domain = mono_domain_get ();
 	MonoClassField *field;
 	MonoDelegate *d;
-	MonoDomain *domain = mono_domain_get ();
-
+	
 	g_assert (obj);
 
-	if (mono_object_isinst (obj, mono_defaults.exception_class)) {
-		if ((str = ((MonoException *)obj)->message))
-			message = mono_string_to_utf8 (str);
-		if ((str = ((MonoException *)obj)->stack_trace))
-			trace = mono_string_to_utf8 (str);
-	}				
+	if (jit_tls->env) {	
+		longjmp (*jit_tls->env, obj);
+	}
 	       
 	field=mono_class_get_field_from_name(mono_defaults.appdomain_class, "UnhandledException");
 	g_assert (field);
@@ -3744,20 +3744,12 @@ mono_thread_abort (MonoObject *obj)
 	d = *(MonoDelegate **)(((char *)domain->domain) + field->offset); 
 
 	if (!d) {
-		g_warning ("unhandled exception %s.%s: \"%s\"", obj->vtable->klass->name_space, 
-			   obj->vtable->klass->name, message);
-		if (trace) {
-			g_printerr (trace);
-			g_printerr ("\n");
-		}
+		mono_print_unhandled_exception (obj);
 	} else {
 		/* FIXME: call the event handler */ 
 		g_assert_not_reached ();
 
 	}
-
-	if (mono_main_thread_id == GetCurrentThreadId ())
-		mono_delegate_cleanup (); 
 	
 	ExitThread (-1);
 }
@@ -3771,7 +3763,6 @@ mono_thread_start_cb (gpointer stack_start)
 
 	TlsSetValue (mono_jit_tls_id, jit_tls);
 
-	jit_tls->end_of_stack = stack_start;
 	jit_tls->abort_func = mono_thread_abort;
 }
 
@@ -3820,8 +3811,6 @@ mono_jit_init (char *file) {
 
 	metadata_section = &ms;
 	InitializeCriticalSection (metadata_section);
-
-	mono_main_thread_id = GetCurrentThreadId ();
 
 	mono_jit_tls_id = TlsAlloc ();
 	mono_thread_start_cb (&file);

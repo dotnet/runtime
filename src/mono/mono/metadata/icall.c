@@ -951,7 +951,7 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 static MonoObject *
 ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params) 
 {
-	return mono_runtime_invoke_array (method->method, this, params);
+	return mono_runtime_invoke_array (method->method, this, params, NULL);
 }
 
 static MonoObject *
@@ -1046,7 +1046,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 	if (!strcmp (method->method->name, ".ctor"))
 		g_assert_not_reached ();
 
-	result = mono_runtime_invoke_array (method->method, this, params);
+	result = mono_runtime_invoke_array (method->method, this, params, NULL);
 
 	*outArgs = out_args;
 
@@ -2126,13 +2126,11 @@ ves_icall_System_Environment_GetEnvironmentVariableNames (void)
 	return names;
 }
 
-int ves_icall_System_Environment_get_TickCount (void);
-
 /*
  * Returns the number of milliseconds elapsed since the system started.
  */
 static gint32
-ves_icall_System_Environment_get_TickCount ()
+ves_icall_System_Environment_get_TickCount (void)
 {
 #if defined (PLATFORM_WIN32)
 	return GetTickCount();

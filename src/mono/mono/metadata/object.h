@@ -153,7 +153,7 @@ typedef struct {
 	gulong class_static_data_size;
 } MonoStats;
 
-typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, void **params);
+typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, void **params, MonoObject **exc);
 
 #define mono_object_class(obj) (((MonoObject*)(obj))->vtable->klass)
 #define mono_object_domain(obj) (((MonoObject*)(obj))->vtable->domain)
@@ -258,19 +258,23 @@ void
 mono_install_runtime_invoke (MonoInvokeFunc func);
 
 MonoObject*
-mono_runtime_invoke         (MonoMethod *method, void *obj, void **params);
+mono_runtime_invoke         (MonoMethod *method, void *obj, void **params,
+			     MonoObject **exc);
 
 MonoObject*
-mono_runtime_invoke_array   (MonoMethod *method, void *obj, MonoArray *params);
+mono_runtime_invoke_array   (MonoMethod *method, void *obj, MonoArray *params,
+			     MonoObject **exc);
 
 MonoArray*
 mono_runtime_get_main_args  (void);
 
 int
-mono_runtime_run_main       (MonoMethod *method, int argc, char* argv[]);
+mono_runtime_run_main       (MonoMethod *method, int argc, char* argv[], 
+			     MonoObject **exc);
 
 int
-mono_runtime_exec_main      (MonoMethod *method, MonoArray *args);
+mono_runtime_exec_main      (MonoMethod *method, MonoArray *args,
+			     MonoObject **exc);
 
 MonoAsyncResult *
 mono_async_result_new       (MonoDomain *domain, HANDLE handle, 
@@ -290,6 +294,9 @@ mono_remoting_invoke        (MonoObject *real_proxy, MonoMethodMessage *msg,
 MonoObject *
 mono_message_invoke         (MonoObject *target, MonoMethodMessage *msg, 
 			     MonoObject **exc, MonoArray **out_args);
+
+void
+mono_print_unhandled_exception (MonoObject *exc);
 
 #endif
 

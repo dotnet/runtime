@@ -24,9 +24,6 @@
 
 MonoStats mono_stats;
 
-/* next object id for object hashcode */
-static guint32 uoid = 0;
-
 void
 mono_runtime_object_init (MonoObject *this)
 {
@@ -44,7 +41,7 @@ mono_runtime_object_init (MonoObject *this)
 
 	g_assert (method);
 
-	mono_runtime_invoke (method, this, NULL);
+	mono_runtime_invoke (method, this, NULL, NULL);
 }
 
 /*
@@ -62,7 +59,7 @@ mono_runtime_class_init (MonoClass *klass)
 		MonoMethod *method = klass->methods [i];
 		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
 		    (strcmp (".cctor", method->name) == 0)) {
-			mono_runtime_invoke (method, NULL, NULL);
+			mono_runtime_invoke (method, NULL, NULL, NULL);
 			return;
 		}
 	}
@@ -305,13 +302,13 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoClass *class)
 static MonoInvokeFunc default_mono_runtime_invoke = NULL;
 
 MonoObject*
-mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
+mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {
 	if (!default_mono_runtime_invoke) {
 		g_error ("runtime invoke called on uninitialized runtime");
 		return NULL;
 	}
-	return default_mono_runtime_invoke (method, obj, params);
+	return default_mono_runtime_invoke (method, obj, params, exc);
 }
 
 static MonoArray* main_args;
@@ -328,7 +325,8 @@ mono_runtime_get_main_args (void)
  * needed by System.Environment.
  */
 int
-mono_runtime_run_main (MonoMethod *method, int argc, char* argv[])
+mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
+		       MonoObject **exc)
 {
 	int i;
 	MonoArray *args = NULL;
@@ -349,7 +347,7 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[])
 		}
 	}
 	
-	return mono_runtime_exec_main (method, args);
+	return mono_runtime_exec_main (method, args, exc);
 }
 
 /*
@@ -357,21 +355,30 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[])
  * executable name).
  */
 int
-mono_runtime_exec_main (MonoMethod *method, MonoArray *args)
+mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 {
 	gpointer pa [1];
+	int rval;
 
 	pa [0] = args;
 
 	/* FIXME: check signature of method */
 	if (method->signature->ret->type == MONO_TYPE_I4) {
 		MonoObject *res;
-		res = mono_runtime_invoke (method, NULL, pa);
-		return *(guint32 *)((char *)res + sizeof (MonoObject));
+		res = mono_runtime_invoke (method, NULL, pa, exc);
+		if (!exc || !*exc)
+			rval = *(guint32 *)((char *)res + sizeof (MonoObject));
+		else
+			rval = -1;
 	} else {
-		mono_runtime_invoke (method, NULL, pa);
-		return 0;
+		mono_runtime_invoke (method, NULL, pa, exc);
+		if (!exc || !*exc)
+			rval = 0;
+		else
+			rval = -1;
 	}
+
+	return rval;
 }
 
 void
@@ -381,7 +388,8 @@ mono_install_runtime_invoke (MonoInvokeFunc func)
 }
 
 MonoObject*
-mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params)
+mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
+			   MonoObject **exc)
 {
 	MonoMethodSignature *sig = method->signature;
 	gpointer *pa = NULL;
@@ -423,10 +431,10 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params)
 
 	if (!strcmp (method->name, ".ctor")) {
 		obj = mono_object_new (mono_domain_get (), method->klass);
-		mono_runtime_invoke (method, obj, pa);
+		mono_runtime_invoke (method, obj, pa, exc);
 		return obj;
 	} else
-		return mono_runtime_invoke (method, obj, pa);
+		return mono_runtime_invoke (method, obj, pa, exc);
 }
 
 /**
@@ -1201,7 +1209,7 @@ mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg,
 	pa [2] = exc;
 	pa [3] = out_args;
 
-	return mono_runtime_invoke (im, NULL, pa);
+	return mono_runtime_invoke (im, NULL, pa, exc);
 }
 
 MonoObject *
@@ -1236,8 +1244,34 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 			}
 		}
 
-		return mono_runtime_invoke_array (method, target, msg->args);
+		return mono_runtime_invoke_array (method, target, msg->args, exc);
 	}
+}
+
+void
+mono_print_unhandled_exception (MonoObject *exc)
+{
+	char *message = g_strdup ("");
+	char *trace = g_strdup ("");
+	MonoString *str; 
+
+	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
+		if ((str = ((MonoException *)exc)->message))
+			message = mono_string_to_utf8 (str);
+		if ((str = ((MonoException *)exc)->stack_trace))
+			trace = mono_string_to_utf8 (str);
+	}				
+
+	g_warning ("unhandled exception %s.%s: \"%s\"", exc->vtable->klass->name_space, 
+		   exc->vtable->klass->name, message);
+	
+	if (trace) {
+		g_printerr (trace);
+		g_printerr ("\n");
+	}
+
+	g_free (message);
+	g_free (trace);
 }
 
 

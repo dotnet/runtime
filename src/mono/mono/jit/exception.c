@@ -154,9 +154,10 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 	g_assert (obj != NULL);
 
 	ji = mono_jit_info_table_find (domain, ip);
-
+	
 	end_of_stack = jit_tls->end_of_stack;
-		
+	g_assert (end_of_stack);
+
 	if (!restore_context)
 		restore_context = arch_get_restore_context ();
 	

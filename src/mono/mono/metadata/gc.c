@@ -24,6 +24,7 @@ static int finalize_slot = -1;
 static void
 run_finalize (void *obj, void *data)
 {
+	MonoObject *exc = NULL;
 	MonoObject *o;
 	o = (MonoObject*)((char*)obj + GPOINTER_TO_UINT (data));
 
@@ -39,7 +40,11 @@ run_finalize (void *obj, void *data)
 		}
 	}
 	/* speedup later... */
-	 mono_runtime_invoke (o->vtable->klass->vtable [finalize_slot], o, NULL);
+	 mono_runtime_invoke (o->vtable->klass->vtable [finalize_slot], o, NULL, &exc);
+
+	 if (exc) {
+		 /* fixme: do something useful */
+	 }
 }
 
 /*

@@ -21,6 +21,7 @@
 #include <signal.h>
 #endif
 
+#include <setjmp.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/exception.h>
@@ -197,6 +198,7 @@ typedef struct {
 
 typedef struct {
 	gpointer          end_of_stack;
+	jmp_buf          *env;
 	MonoLMF          *lmf;
 	MonoAsyncResult  *async_result;
 	void            (*abort_func) (MonoObject *object);
@@ -261,7 +263,7 @@ gpointer
 arch_create_remoting_trampoline (MonoMethod *method);
 
 MonoObject*
-arch_runtime_invoke        (MonoMethod *method, void *obj, void **params);
+arch_runtime_invoke        (MonoMethod *method, void *obj, void **params, MonoObject **exc);
 
 gpointer
 arch_create_native_wrapper (MonoMethod *method);

@@ -2891,7 +2891,7 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 		params = g_new (void*, method->signature->param_count);
 		fill_param_data (image, method->signature, cols [MONO_CUSTOM_ATTR_VALUE], params);
 		attr = mono_object_new (mono_domain_get (), method->klass);
-		mono_runtime_invoke (method, attr, params);
+		mono_runtime_invoke (method, attr, params, NULL);
 		list = g_list_prepend (list, attr);
 		free_param_data (method->signature, params);
 		g_free (params);

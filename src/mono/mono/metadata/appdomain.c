@@ -366,7 +366,7 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 		g_error ("No entry point method found in %s", image->name);
 
 	margs = mono_domain_transfer_object (cdom, ad->data, (MonoObject *)args);
-	res = mono_runtime_exec_main (method, (MonoArray *)margs);
+	res = mono_runtime_exec_main (method, (MonoArray *)margs, NULL);
 
 	mono_domain_set (cdom);
 
