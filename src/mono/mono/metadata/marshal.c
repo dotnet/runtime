@@ -1174,9 +1174,8 @@ mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 {
 	MonoMethod *res;
 
-	g_assert (
-		(wrapper->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK) ||
-		(wrapper->wrapper_type == MONO_WRAPPER_SYNCHRONIZED));
+	if (wrapper->wrapper_type == MONO_WRAPPER_NONE)
+		return wrapper;
 
 	EnterCriticalSection (&marshal_mutex);
 	res = mono_g_hash_table_lookup (wrapper_hash, wrapper);
