@@ -4350,7 +4350,7 @@ die_on_ex:
 		ip_offset = frame->ip - header->code;
 		for (i = 0; i < header->num_clauses; ++i) {
 			clause = &header->clauses [i];
-			if (clause->flags == 3 && MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
+			if (clause->flags == MONO_EXCEPTION_CLAUSE_FAULT && MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
 				ip = header->code + clause->handler_offset;
 #if DEBUG_INTERP
 				if (tracing)
