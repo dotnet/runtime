@@ -2666,12 +2666,20 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 			MonoReflectionAssemblyBuilder *abuilder = (MonoReflectionAssemblyBuilder*)assembly;
 			int i;
 
-			if (!abuilder->modules)
-				type = NULL;
-			else {
+			type = NULL;
+			if (abuilder->modules) {
 				for (i = 0; i < mono_array_length (abuilder->modules); ++i) {
 					MonoReflectionModuleBuilder *mb = mono_array_get (abuilder->modules, MonoReflectionModuleBuilder*, i);
 					type = mono_reflection_get_type (&mb->dynamic_image->image, &info, ignoreCase);
+					if (type)
+						break;
+				}
+			}
+
+			if (!type && abuilder->loaded_modules) {
+				for (i = 0; i < mono_array_length (abuilder->loaded_modules); ++i) {
+					MonoReflectionModule *mod = mono_array_get (abuilder->loaded_modules, MonoReflectionModule*, i);
+					type = mono_reflection_get_type (mod->image, &info, ignoreCase);
 					if (type)
 						break;
 				}
