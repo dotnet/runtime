@@ -1,9 +1,10 @@
 
 			<Mono newbie coders start file>
+	<h1> A little help for mono newbie coders </h1>
 
 
 	For those who are new to Mono and are impatient to contribute
-	with code (uhh... you are brave!!) here is the document you
+	with code (uhh... you are brave!!) here is the document you 
 	should read.
 
 	
@@ -15,118 +16,128 @@
 		* Start with the NUnit Tests Guidelines.  In the cvs
 	    	  they are located at: mcs/class/doc/NUnitGuideli...
 
-		  But wait, this is a document for impatient
+		* But wait, this is a document for impatient
 	    	  people. So EVERYTHING should be here. Well, it is. 
 	</ul>
 
--------------------- cut here --------------------
 
-Mono NUnit Test Guidelines and Best Practices
+	<h2> The NUnit Tests Guidelines document </h2>
 
-Authors: Nick Drochak  <ndrochak@gol.com>
-	 Martin Baulig  <martin@gnome.org>
-Last Update: 2002-03-02
-Rev: 0.3
+	Mono NUnit Test Guidelines and Best Practices
 
-* Purpose
+	Authors: Nick Drochak  <ndrochak@gol.com>
+	Martin Baulig  <martin@gnome.org>
+	Last Update: 2002-03-02
+	Rev: 0.3
 
-This document captures all the good ideas people have had about
-writing NUnit tests for the mono project. This document will be useful
-for anyone who writes or maintains unit tests.
+ <b> Purpose </b>
 
-* Other resources
+	This document captures all the good ideas people have had 
+	about writing NUnit tests for the mono project. This document 
+	will be useful for anyone who writes or maintains unit tests.
+
+ <b> Other resources </b>
+
 	- mcs/class/README has an explanation of the build process and
 	  how it relates to the tests.
-	- http://nunit.sourceforge.net is the place to find out about NUnit
+	- http://nunit.sourceforge.net is the place to find out about 
+	  NUnit
 
-* Getting Started
+ <b> Getting Started </b>
 
-If you are new to writing NUnit tests, there is a template you may use
-to help get started. The file is:
+	If you are new to writing NUnit tests, there is a template 
+	you may use to help get started. The file is:
 
 	mcs/class/doc/TemplateTest.cs
 
 
-	(2.- This is the point two!. This file is just after the end of the 
-	guidelines. Copy/paste it in another buffer. And keep reading.)
+	(2.- This is the point two!. This file is just after the end 
+	of the guidelines. Copy/paste it in another buffer. And keep 
+	reading.)
 
+	Save a copy of this file in the appropriate test subdirecty 
+	(see below), and replace all the [text] markers with 
+	appropriate code. Comments in the template are there to guide 
+	you. You should also look at existing tests to see how other 
+	people have written them. 
 
-Save a copy of this file in the appropriate test subdirecty (see
-below), and replace all the [text] markers with appropriate
-code. Comments in the template are there to guide you. You should also
-look at existing tests to see how other people have written them.
-mcs/class/corlib/Test/System.Collections/CollectionBaseTest.cs is a
-small one that might help.
+	mcs/class/corlib/Test/System.Collections/CollectionBaseTest.cs 
 
-      (3.- You reached the third point. And as expected, it's just here to 
-      tell you that the content of CollectionBaseTest.cs is after the 
-      TemplateTest.cs code at the end of these guidelines.)
+	is a small one that might help.
 
-The directory that will contain your new file depends on the
-assembly/namespace of the class for which you are creating the
-tests. Under mcs/class there is a directory for each assembly. In each
-assembly there is a Test directory, e.g. mcs/class/corlib/Test. In the
-Test directory there are sub-directories for each namespace in the
-assembly, e.g. mcs/class/corlib/Test/Sytem. Put your new test file in
-the appropriate sub-directory under Test for the class you are
-testing.
+	(3.- You reached the third point. And as expected, it's just 
+	here to tell you that the content of CollectionBaseTest.cs is 
+	after the TemplateTest.cs code at the end of these 
+	guidelines.)
 
-Once your test class is complete, you need to add it to the
-AllTests.cs file in the same directory as your new test. Add a call to
-"suite.AddTest()" passing the name of your new test class's suite
-property as the parameter.  You will see examples in the AllTests.cs
-file, so just copy and paste inside there.
+	The directory that will contain your new file depends on the
+	assembly/namespace of the class for which you are creating the
+	tests. Under mcs/class there is a directory for each assembly. 
+	In each assembly there is a Test directory, e.g. 
+	mcs/class/corlib/Test. In the Test directory there are 
+	sub-directories for each namespace in the assembly, e.g. 
+	mcs/class/corlib/Test/Sytem. Put your new test file in the 
+	appropriate sub-directory under Test for the class you are
+	testing.
 
-Once all of that is done, you can do a 'make test' from the top mcs
-directory.  Your test class will be automagically included in the
-build and the tests will be run along with all the others.
+	Once your test class is complete, you need to add it to the
+	AllTests.cs file in the same directory as your new test. Add a 
+	call to "suite.AddTest()" passing the name of your new test 
+	class's suite property as the parameter.  You will see examples 
+	in the AllTests.cs file, so just copy and paste inside there.
 
-* Tips
+	Once all of that is done, you can do a 'make test' from the top 
+	mcs directory.  Your test class will be automagically included 
+	in the build and the tests will be run along with all the 
+	others.
 
-** Provide an unique error message for Assert()
+ <b> Tips </b>
 
-Include an unique message for each Assert() so that when the assert
-fails, it is trivial to locate the failing one. Otherwise, it may be
-difficult to determine which part of the test is failing. A good way
-to ensure unique messages is to use something like #A01, #A02 etc.
+ <b> Provide an unique error message for Assert() </b>
 
-    Bad:
+	Include an unique message for each Assert() so that when the 
+	assert fails, it is trivial to locate the failing one. 
+	Otherwise, it may be difficult to determine which part of the 
+	test is failing. A good way to ensure unique messages is to use 
+	something like #A01, #A02 etc.
+
+    	Bad:
 <pre>
 	AssertEquals("array match", compare[0], i1[0]);
 	AssertEquals("array match", compare[1], i1[1]);
 	AssertEquals("array match", compare[2], i1[2]);
 	AssertEquals("array match", compare[3], i1[3]);
 </pre>
-    Good:
+    	Good:
 <pre>
 	AssertEquals("#A01", compare[0], i1[0]);
 	AssertEquals("#A02", compare[1], i1[1]);
 	AssertEquals("#A03", compare[2], i1[2]);
 	AssertEquals("#A04", compare[3], i1[3]);
 </pre>
-Once you used such a number in an Assert(), don't change it later on -
-people might use it it identify the test in bug reports or in mailing
-lists.
+	Once you used such a number in an Assert(), don't change it 
+	later on - people might use it it identify the test in bug 
+	reports or in mailing lists.
 
-** Use AssertEquals() to compare things, not Assert().
+ <b> Use AssertEquals() to compare things, not Assert(). </b>
 
-Never compare two values with Assert() - if the test fails, people
-have no idea what went wrong while AssertEquals() reports the failed
-value.
+	Never compare two values with Assert() - if the test fails, 
+	people have no idea what went wrong while AssertEquals() 
+	reports the failed value.
 
-    Bad:
+    	Bad:
 <pre>
         Assert ("A01", myTicks[0] == t1.Ticks);
 </pre>
-    Good:
+    	Good:
 <pre>
         AssertEquals ("A01", myTicks[0], t1.Ticks);
 </pre>
 
-** Constructors
+ <b> Constructors </b>
 
-When writing your testcase, please make sure to provide a constructor
-which takes no arguments:
+	When writing your testcase, please make sure to provide a 
+	constructor which takes no arguments:
 
 <pre>
         public class DateTimeTest : TestCase
@@ -145,7 +156,7 @@ which takes no arguments:
         }
 </pre>
 
-* Namespace
+ <b> Namespace </b>
 
 	Please keep the namespace within each test directory
 	consistent - all tests which are referenced in the same
@@ -157,7 +168,7 @@ which takes no arguments:
 	and you have a subdirectory called "System", you can put all
 	the tests in that dir into namespace "MonoTests.System".
 
-* Test your test with the microsoft runtime
+ <b> Test your test with the microsoft runtime </b>
 
 	If possible, try to run your testsuite with the Microsoft
 	runtime on Windows and make sure all tests in it pass. This is
@@ -177,51 +188,53 @@ which takes no arguments:
 	we'll forward this to the Microsoft people from time to time
 	to help them fix their documentation and runtime.
 
--------------------- cut here ------------------------
-
 <pre>
 -------------------- TemplateTest.cs begins ----------
 
-// this is a template for making NUnit tests.  Text enclosed in square
-// brackets (and the brackets themselves) should be replaced by appropiate
-// code.
+	// this is a template for making NUnit tests.  Text enclosed 
+	// in square brackets (and the brackets themselves) should be 
+	// replaced by appropiate code.
 
-// [File Name].cs - NUnit Test Cases for [explain here]
-//
-// [Author Name] ([Author email Address])
-//
-// (C) [Copyright holder]
-// 
+	// [File Name].cs - NUnit Test Cases for [explain here]
+	//
+	// [Author Name] ([Author email Address])
+	//
+	// (C) [Copyright holder]
+	// 
 
-// these are the standard namespaces you will need.  You may need to add more
-// depending on your tests.
-using NUnit.Framework;
-using System;
+	// these are the standard namespaces you will need.  You may 
+	// need to add more depending on your tests.
+	using NUnit.Framework;
+	using System;
 
-// all test namespaces start with "MonoTests."  Append the Namespace that
-// contains the class you are testing, e.g. MonoTests.System.Collections
-namespace MonoTests.[Namespace]
-{
+	// all test namespaces start with "MonoTests."  Append the 
+	// Namespace that contains the class you are testing, e.g. 
+	// MonoTests.System.Collections
+	namespace MonoTests.[Namespace]
+	{
 
-// the class name should end with "Test" and start with the name of the class
-// you are testing, e.g. CollectionBaseTest
-public class [Class to be tested]Test : TestCase {
+	// the class name should end with "Test" and start with the name 
+	// of the class you are testing, e.g. CollectionBaseTest
+	public class [Class to be tested]Test : TestCase {
 	
-	// there should be two constructors for your class.  The first one
-	// (without parameters) should set the name to something unique.
-	// Of course the name of the method is the same as the name of the
-	// class
+	// there should be two constructors for your class.  The first 
+	// one (without parameters) should set the name to something 
+	// unique.
+	// Of course the name of the method is the same as the name of 
+	// the class
 	public [Constructor]() : base ("[Namespace.Class]") {}
 	public [Constructor](string name) : base(name) {}
 
-	// this method is run before each Test* method is called. You can put
-	// variable initialization, etc. here that is common to each test.
+	// this method is run before each Test* method is called. You 
+	// can put variable initialization, etc. here that is common to 
+	// each test.
 	// Just leave the method empty if you don't need to use it.
 	protected override void SetUp() {}
 
-	// this method is run after each Test* method is called. You can put
-	// clean-up code, etc. here.  Whatever needs to be done after each test.
-	// Just leave the method empty if you don't need to use it.
+	// this method is run after each Test* method is called. You 
+	// can put clean-up code, etc. here.  Whatever needs to be done 
+	// after each test. Just leave the method empty if you don't need 
+	// to use it.
 	protected override void TearDown() {}
 
 	// this property is required.  You need change the parameter for
@@ -232,159 +245,181 @@ public class [Class to be tested]Test : TestCase {
 		}
 	}
 
-	// this is just one of probably many test methods in your test class.
-	// each test method must start with "Test".  All methods in your class
-	// which start with "Test" will be automagically called by the NUnit
-	// framework.
+	// this is just one of probably many test methods in your test 
+	// class. each test method must start with "Test".  All methods 
+	// in your class which start with "Test" will be automagically 
+	// called by the NUnit framework.
 	public void Test[Something] {
-		// inside here you will exercise your class and then call Assert()
+		// inside here you will exercise your class and then 
+		// call Assert()
 	}
 }
 
 ---------------------- TemplateTest.cs ends --------------
+
 ---------------------- CollectionBaseTest.cs begins ------
-//
-// System.Collections.CollectionBase
-// Test suite for System.Collections.CollectionBase
-//
-// Author:
-//    Nick D. Drochak II
-//
-// (C) 2001 Nick D. Drochak II
-//
+	//
+	// System.Collections.CollectionBase
+	// Test suite for System.Collections.CollectionBase
+	//
+	// Author:
+	//    Nick D. Drochak II
+	//
+	// (C) 2001 Nick D. Drochak II
+	//
 
 
-using System;
-using System.Collections;
-using NUnit.Framework;
+	using System;
+	using System.Collections;
+	using NUnit.Framework;
 
-namespace MonoTests.System.Collections
-{
-
-public class CollectionBaseTest : TestCase 	
-{
-	public CollectionBaseTest () : base ("System.Collection.CollectionBase testsuite") {}
-	public CollectionBaseTest (String name) : base (name) {}
-
-	// We need a concrete class to test the abstract base class
-	public class ConcreteCollection : CollectionBase 
+	namespace MonoTests.System.Collections
 	{
-		// These fields are used as markers to test the On* hooks.
-		public bool onClearFired;
-		public bool onClearCompleteFired;
 
-		public bool onInsertFired;
-		public int onInsertIndex;
-		public bool onInsertCompleteFired;
-		public int onInsertCompleteIndex;
+	public class CollectionBaseTest : TestCase 	
+	{
+		public CollectionBaseTest () : base 
+			("System.Collection.CollectionBase testsuite") 
+			{}
+		public CollectionBaseTest (String name) : base (name) 
+			{}
 
-		public bool onRemoveFired;
-		public int onRemoveIndex;
-		public bool onRemoveCompleteFired;
-		public int onRemoveCompleteIndex;
-
-		public bool onSetFired;
-		public int onSetOldValue;
-		public int onSetNewValue;
-		public bool onSetCompleteFired;
-		public int onSetCompleteOldValue;
-		public int onSetCompleteNewValue;
-
-		// This constructor is used to test OnValid()
-		public ConcreteCollection()	
+		// We need a concrete class to test the abstract base 
+		// class
+		public class ConcreteCollection : CollectionBase 
 		{
-			IList listObj;
-			listObj = this;
-			listObj.Add(null);
-		}
+			// These fields are used as markers to test 
+			// the On* hooks.
+			public bool onClearFired;
+			public bool onClearCompleteFired;
 
-		// This constructor puts consecutive integers into the list
-		public ConcreteCollection(int i) {
-			IList listObj;
-			listObj = this;
+			public bool onInsertFired;
+			public int onInsertIndex;
+			public bool onInsertCompleteFired;
+			public int onInsertCompleteIndex;
 
-			int j;
-			for (j = 0; j< i; j++) {
-				listObj.Add(j);
+			public bool onRemoveFired;
+			public int onRemoveIndex;
+			public bool onRemoveCompleteFired;
+			public int onRemoveCompleteIndex;
+
+			public bool onSetFired;
+			public int onSetOldValue;
+			public int onSetNewValue;
+			public bool onSetCompleteFired;
+			public int onSetCompleteOldValue;
+			public int onSetCompleteNewValue;
+
+			// This constructor is used to test OnValid()
+			public ConcreteCollection()	
+			{
+				IList listObj;
+				listObj = this;
+				listObj.Add(null);
+			}
+
+			// This constructor puts consecutive integers into the list
+			public ConcreteCollection(int i) {
+				IList listObj;
+				listObj = this;
+
+				int j;
+				for (j = 0; j< i; j++) {
+					listObj.Add(j);
+				}
+			}
+
+			// A helper method to look at a value in the 
+			// list at a specific index
+			public int PeekAt(int index)
+			{
+				IList listObj;
+				listObj = this;
+				return (int) listObj[index];
+			}
+
+			// Mark the flag if this hook is fired
+			protected override void OnClear() {
+				this.onClearFired = true;
+			}
+
+			// Mark the flag if this hook is fired
+			protected override void OnClearComplete() 
+			{
+				this.onClearCompleteFired = true;
+			}
+
+			// Mark the flag, and save the paramter if 
+			// this hook is fired
+			protected override void OnInsert(int index, 
+							object value) 
+			{
+				this.onInsertFired = true;
+				this.onInsertIndex = index;
+			}
+
+			// Mark the flag, and save the paramter if 
+			// this hook is fired
+			protected override void OnInsertComplete(int index, 
+							object value) 
+			{
+				this.onInsertCompleteFired = true;
+				this.onInsertCompleteIndex = index;
+			}
+		
+			// Mark the flag, and save the paramter if this hook 
+			// is fired
+			protected override void OnRemove(int index, 
+							object value) 
+			{
+				this.onRemoveFired = true;
+				this.onRemoveIndex = index;
+			}
+		
+			// Mark the flag, and save the paramter if this hook 
+			// is fired
+			protected override void OnRemoveComplete(int index, 
+								object value) 
+			{
+				this.onRemoveCompleteFired = true;
+				this.onRemoveCompleteIndex = index;
+			}
+		
+			// Mark the flag, and save the paramters if this hook 
+			// is fired
+			protected override void OnSet(int index, object oldValue, 
+								object newValue) 
+			{
+				this.onSetFired = true;
+				this.onSetOldValue = (int) oldValue;
+				this.onSetNewValue = (int) newValue;
+			}
+		
+			// Mark the flag, and save the paramters if this hook 
+			// is fired
+			protected override void OnSetComplete(int index, 
+							object oldValue, 
+							object newValue) 
+			{
+				this.onSetCompleteFired = true;
+				this.onSetCompleteOldValue = (int) oldValue;
+				this.onSetCompleteNewValue = (int) newValue;
+			}
+		}  // public class ConcreteCollection
+
+		public static ITest Suite {
+			get {
+				return new TestSuite 
+					(typeof(CollectionBaseTest));
 			}
 		}
 
-		// A helper method to look at a value in the list at a specific index
-		public int PeekAt(int index)
-		{
-			IList listObj;
-			listObj = this;
-			return (int) listObj[index];
+		// Check the count property
+		public void TestCount() {
+			ConcreteCollection myCollection;
+			myCollection = new ConcreteCollection(4);
+			Assert(4 == myCollection.Count);
 		}
-
-		// Mark the flag if this hook is fired
-		protected override void OnClear() {
-			this.onClearFired = true;
-		}
-
-		// Mark the flag if this hook is fired
-		protected override void OnClearComplete() 
-		{
-			this.onClearCompleteFired = true;
-		}
-
-		// Mark the flag, and save the paramter if this hook is fired
-		protected override void OnInsert(int index, object value) 
-		{
-			this.onInsertFired = true;
-			this.onInsertIndex = index;
-		}
-
-		// Mark the flag, and save the paramter if this hook is fired
-		protected override void OnInsertComplete(int index, object value) 
-		{
-			this.onInsertCompleteFired = true;
-			this.onInsertCompleteIndex = index;
-		}
-		
-		// Mark the flag, and save the paramter if this hook is fired
-		protected override void OnRemove(int index, object value) 
-		{
-			this.onRemoveFired = true;
-			this.onRemoveIndex = index;
-		}
-		
-		// Mark the flag, and save the paramter if this hook is fired
-		protected override void OnRemoveComplete(int index, object value) 
-		{
-			this.onRemoveCompleteFired = true;
-			this.onRemoveCompleteIndex = index;
-		}
-		
-		// Mark the flag, and save the paramters if this hook is fired
-		protected override void OnSet(int index, object oldValue, object newValue) 
-		{
-			this.onSetFired = true;
-			this.onSetOldValue = (int) oldValue;
-			this.onSetNewValue = (int) newValue;
-		}
-		
-		// Mark the flag, and save the paramters if this hook is fired
-		protected override void OnSetComplete(int index, object oldValue, object newValue) 
-		{
-			this.onSetCompleteFired = true;
-			this.onSetCompleteOldValue = (int) oldValue;
-			this.onSetCompleteNewValue = (int) newValue;
-		}
-	}  // public class ConcreteCollection
-
-	public static ITest Suite {
-		get {
-			return new TestSuite (typeof(CollectionBaseTest));
-		}
-	}
-
-	// Check the count property
-	public void TestCount() {
-		ConcreteCollection myCollection;
-		myCollection = new ConcreteCollection(4);
-		Assert(4 == myCollection.Count);
-	}
 
 	// Make sure GetEnumerator returns an object
 	public void TestGetEnumerator() {
@@ -480,26 +515,37 @@ public class CollectionBaseTest : TestCase
 
 }
 ----------------------- CollectionBaseTest.cs ends --------
+
 </pre>
 	<ul>
-		* If you use Emacs, you might want to use the .emacs file and the 
-		  package developed by Brad Merrill mailto:zbrad@cybercom.net. It 
-		  will allow you to highlight and indent in C# style in your Emacs
-		  editor. (XEmacs will still work but it'll also complain).
+		* If you use Emacs, you might want to use the .emacs 
+		  file and the package developed by Brad Merrill 
+		  mailto:zbrad@cybercom.net. It will allow you to 
+		  highlight and indent in C# style in your Emacs
+		  editor. (XEmacs will still work but it'll also 
+		  complain).
 
-		*  CSharpDevelop is a GPLed IDE developed by IC#Code. Search for it
-		   at sourceforge if you are interested in it.
+		* CSharpDevelop is a GPLed IDE developed by IC#Code. 
+		  Search for it at sourceforge if you are interested 
+		  in it.
 
-		* For those who Java: "A comparison of Microsoft's C# programming
-		  language to Sun Microsystem's Java Programming language" by Dare
-	    	  Obasanjo is a really good (very complete) text to read. 
+		* For those who Java: "A comparison of Microsoft's 
+		  C# programming language to Sun Microsystem's Java 
+		  Programming language" by Dare Obasanjo is a really good 
+		  (very complete) text to read. 
 
-		* Suggest this point and more, now I can't think of anything more.
+		* Suggest this point and more, now I can't think of 
+		  anything more.
 	</ul>
 
 	Enjoy!!.
 
-	(c) Jaime Anguiano Olarra.
+	(c) 2002, <a href="mailto:jaime@geneura.ugr.es">Jaime Anguiano Olarra</a>.
 
-	The parts included in this document are property of their respective authors.
+	The parts included in this document are property of their 
+	respective authors.
+
+	Note: The identation of the source code has been changed a bit
+	so it could fit better in the website. Anyway, as nothing more
+	changed, the files should work as expected.
 
