@@ -11,7 +11,7 @@ libmetadata_a_SOURCES = \
 
 libmetadataincludedir = $(includedir)/mono/metadata
 
-libmetadata_a_HEADERS = \
+libmetadatainclude_HEADERS = \
 	assembly.h	\
 	cil-coff.h	\
 	eltype.h	\
