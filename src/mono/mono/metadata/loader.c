@@ -326,13 +326,9 @@ method_from_memberref (MonoImage *image, guint32 idx)
 			method = find_method (klass, mname, sig);
 			if (!method)
 				g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
-			else if (klass->generic_inst && (klass != method->klass)) {
-				MonoGenericContext *context = g_new0 (MonoGenericContext, 1);
-
-				context->ginst = klass->generic_inst;
-
-				method = mono_class_inflate_generic_method (method, context, klass);
-			}
+			else if (klass->generic_inst && (klass != method->klass))
+				method = mono_class_inflate_generic_method (
+					method, klass->generic_inst->context, klass);
 			mono_metadata_free_method_signature (sig);
 			return method;
 		}

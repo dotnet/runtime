@@ -6959,6 +6959,9 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 		return geninst;
 	}
 
+	ginst->context = g_new0 (MonoGenericInst, 1);
+	ginst->context->ginst = ginst;
+
 	geninst = g_new0 (MonoType, 1);
 	geninst->type = MONO_TYPE_GENERICINST;
 	geninst->data.generic_inst = ginst;

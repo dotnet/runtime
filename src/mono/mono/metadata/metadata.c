@@ -1436,6 +1436,9 @@ do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, const char *p
 
 	type->data.generic_inst = ginst;
 
+	ginst->context = g_new0 (MonoGenericContext, 1);
+	ginst->context->ginst = ginst;
+
 	ginst->klass = g_new0 (MonoClass, 1);
 
 	ginst->generic_type = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);

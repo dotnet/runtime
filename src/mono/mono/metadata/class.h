@@ -224,6 +224,7 @@ struct MonoVTable {
  * Generic instantiation data type encoding.
  */
 struct _MonoGenericInst {
+	MonoGenericContext *context;
 	MonoClass *klass;
 	MonoType *parent;
 	int count_ifaces;

@@ -254,6 +254,9 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst,
 
 		nginst->klass = NULL;
 
+		nginst->context = g_new0 (MonoGenericContext, 1);
+		nginst->context->ginst = nginst;
+
 		mono_loader_lock ();
 		nt = g_hash_table_lookup (oginst->klass->image->generic_inst_cache, nginst);
 
@@ -1199,11 +1202,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 static MonoMethod *
 inflate_method (MonoGenericInst *ginst, MonoMethod *method)
 {
-	MonoGenericContext *context = g_new0 (MonoGenericContext, 1);
-
-	context->ginst = ginst;
-
-	return mono_class_inflate_generic_method (method, context, ginst->klass);
+	return mono_class_inflate_generic_method (method, ginst->context, ginst->klass);
 }
 
 /**
