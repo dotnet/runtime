@@ -9,7 +9,9 @@ typedef struct {
 	FILE *f;
 	char *filename;
 	char *name;
+	int total_lines;
 	int *mlines;
+	int *moffsets;
 	int nmethods;
 	int next_idx;
 } AssemblyDebugInfo;
@@ -106,21 +108,45 @@ debug_load_method_lines (AssemblyDebugInfo* info)
 		g_free (name);
 		return;
 	}
+
+	info->total_lines = 100;
+	info->moffsets = g_malloc (info->total_lines * sizeof (int));
+
 	g_free (name);
 	i = 0;
 	while (fgets (buf, sizeof (buf), f)) {
-		i++;
-		if (sscanf (buf, " // method line %d", &mnum) && mnum < info->nmethods) {
-			while (fgets (buf, sizeof (buf), f)) {
-				++i;
-				if (strstr (buf, "}"))
-					break; /* internalcall or runtime method */
-				if (strstr (buf, "IL_0000:"))
-					break;
+		int offset = 0, pos = i;
+
+		++i;
+		if (!sscanf (buf, " // method line %d", &mnum))
+			continue;
+
+		if (mnum >= info->nmethods)
+			break;
+
+		while (fgets (buf, sizeof (buf), f)) {
+			int newoffset;
+
+			++i;
+			if (i + 2 >= info->total_lines) {
+				info->total_lines += 100;
+				info->moffsets = g_realloc (info->moffsets, info->total_lines * sizeof (int));
+				g_assert (info->moffsets);
 			}
-			/* g_print ("method %d found at %d\n", mnum, i); */
-			info->mlines [mnum] = i;
+
+			if (strstr (buf, "}"))
+				break;
+
+			if (sscanf (buf, " IL_%x:", &newoffset)) {
+				offset = newoffset;
+				if (!offset)
+					pos = i;
+			}
+
+			info->moffsets [i] = offset;
 		}
+		/* g_print ("method %d found at %d\n", mnum, pos); */
+		info->mlines [mnum] = pos;
 	}
 	fclose (f);
 }
@@ -178,6 +204,7 @@ mono_debug_close_ass (AssemblyDebugInfo* debug)
 {
 	fclose (debug->f);
 	g_free (debug->mlines);
+	g_free (debug->moffsets);
 	g_free (debug->name);
 	g_free (debug->filename);
 	g_free (debug);
@@ -232,7 +259,7 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 	 * We need to output all the basic info, if we change filename...
 	 * fprintf (info->f, ".stabs \"%s.il\",100,0,0,0\n", klass->image->assembly_name);
 	 */
-	fprintf (info->f, ".stabs \"%s:F(0,%d)\",36,0,%d,%p\n", name, sig->ret->type, line, cfg->start);
+	fprintf (info->f, ".stabs \"%s:F(0,%d)\",36,0,%d,%p\n", name, sig->ret->type, line, cfg->start+1);
 
 	/* params */
 	mono_method_get_param_names (cfg->method, (const char **)names);
@@ -250,12 +277,20 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 			fprintf (info->f, ".stabs \"local_%d:(0,%d)=(0,%d)\",128,0,%d,%d\n", i, info->next_idx++, header->locals [i]->type, line, stack_offset);
 		}
 	}
+
+	fprintf (info->f, ".stabn 68,0,%d,%d\n", line, 0);
+
 	/* start lines of basic blocks */
 	for (i = 0; i < cfg->block_count; ++i) {
 		int j;
 		for (j = 0; j < cfg->bblocks [i].forest->len; ++j) {
 			MBTree *t = (MBTree *) g_ptr_array_index (cfg->bblocks [i].forest, j);
-			fprintf (info->f, ".stabn 68,0,%d,%d\n", line + t->cli_addr, t->addr);
+			int *lines = info->moffsets + line, *k = lines;
+
+			while ((*k != -1) && (*k < t->cli_addr))
+				k++;
+
+			fprintf (info->f, ".stabn 68,0,%d,%d\n", line + (k-lines), t->addr-1);
 		}
 	}
 

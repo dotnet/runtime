@@ -1058,6 +1058,8 @@ arch_compile_method (MonoMethod *method)
 
 		if (match_debug_method (method))
 			x86_breakpoint (cfg->code);
+		else if (mono_debug_handle)
+			x86_nop (cfg->code);
 
 		if (mono_jit_dump_forest) {
 			int i;
