@@ -119,7 +119,8 @@ dup_type (MonoType* t, const MonoType *original)
 }
 
 static void
-mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed)
+mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
+			    gboolean include_arity)
 {
 	MonoClass *klass;
 	
@@ -127,7 +128,8 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed)
 	case MONO_TYPE_ARRAY: {
 		int i, rank = type->data.array->rank;
 
-		mono_type_get_name_recurse (&type->data.array->eklass->byval_arg, str, FALSE);
+		mono_type_get_name_recurse (
+			&type->data.array->eklass->byval_arg, str, FALSE, include_arity);
 		g_string_append_c (str, '[');
 		for (i = 1; i < rank; i++)
 			g_string_append_c (str, ',');
@@ -135,24 +137,32 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed)
 		break;
 	}
 	case MONO_TYPE_SZARRAY:
-		mono_type_get_name_recurse (&type->data.klass->byval_arg, str, FALSE);
+		mono_type_get_name_recurse (
+			&type->data.klass->byval_arg, str, FALSE, include_arity);
 		g_string_append (str, "[]");
 		break;
 	case MONO_TYPE_PTR:
-		mono_type_get_name_recurse (type->data.type, str, FALSE);
+		mono_type_get_name_recurse (type->data.type, str, FALSE, include_arity);
 		g_string_append_c (str, '*');
 		break;
 	default:
 		klass = mono_class_from_mono_type (type);
 		if (klass->nested_in) {
-			mono_type_get_name_recurse (&klass->nested_in->byval_arg, str, TRUE);
+			mono_type_get_name_recurse (
+				&klass->nested_in->byval_arg, str, TRUE, include_arity);
 			g_string_append_c (str, '+');
 		}
 		if (*klass->name_space) {
 			g_string_append (str, klass->name_space);
 			g_string_append_c (str, '.');
 		}
-		g_string_append (str, klass->name);
+		if (!include_arity) {
+			char *s = strchr (klass->name, '`');
+			int len = s ? s - klass->name : strlen (klass->name);
+
+			g_string_append_len (str, klass->name, len);
+		} else
+			g_string_append (str, klass->name);
 		if (is_recursed)
 			break;
 		if (klass->generic_inst) {
@@ -163,7 +173,8 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed)
 			for (i = 0; i < ginst->type_argc; i++) {
 				if (i)
 					g_string_append_c (str, ',');
-				mono_type_get_name_recurse (ginst->type_argv [i], str, FALSE);
+				mono_type_get_name_recurse (
+					ginst->type_argv [i], str, FALSE, include_arity);
 			}
 			g_string_append_c (str, '>');
 		} else if (klass->gen_params) {
@@ -188,16 +199,22 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed)
  * Returns the string representation for type as required by System.Reflection.
  * The inverse of mono_reflection_parse_type ().
  */
-char*
-mono_type_get_name (MonoType *type)
+static char*
+_mono_type_get_name (MonoType *type, gboolean include_arity)
 {
 	GString* result = g_string_new ("");
-	mono_type_get_name_recurse (type, result, FALSE);
+	mono_type_get_name_recurse (type, result, FALSE, include_arity);
 
 	if (type->byref)
 		g_string_append_c (result, '&');
 
 	return g_string_free (result, FALSE);
+}
+
+char*
+mono_type_get_name (MonoType *type)
+{
+	return _mono_type_get_name (type, TRUE);
 }
 
 gboolean
@@ -1033,15 +1050,24 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 
 			for (l = 0; l < ic->method.count; l++) {
 				MonoMethod *im = ic->methods [l];						
-				char *qname, *fqname;
-				MonoClass *k1;
+				char *qname, *fqname, *cname, *the_cname;
+				MonoClass *k1, *the_ic;
 				
 				if (vtable [io + l])
 					continue;
+
+				if (ic->generic_inst) {
+					MonoClass *the_ic = mono_class_from_mono_type (ic->generic_inst->generic_type);
+					the_cname = _mono_type_get_name (&the_ic->byval_arg, FALSE);
+					cname = the_cname;
+				} else {
+					the_cname = NULL;
+					cname = ic->name;
+				}
 					
-				qname = g_strconcat (ic->name, ".", im->name, NULL); 
+				qname = g_strconcat (cname, ".", im->name, NULL);
 				if (ic->name_space && ic->name_space [0])
-					fqname = g_strconcat (ic->name_space, ".", ic->name, ".", im->name, NULL);
+					fqname = g_strconcat (ic->name_space, ".", cname, ".", im->name, NULL);
 				else
 					fqname = NULL;
 
@@ -1060,6 +1086,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 						}
 					}
 				}
+				g_free (the_cname);
 				g_free (qname);
 				g_free (fqname);
 			}
