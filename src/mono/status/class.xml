@@ -959,6 +959,66 @@
         </maintainers>
     </class>
 
+    <class name="System.Xml.XmlNodeType">
+        <last-activity>Jun-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>jason@injektilo.org</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Xml.XmlSpace">
+        <last-activity>Jun-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>jason@injektilo.org</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Xml.XmlNameTable">
+        <last-activity>Jun-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>jason@injektilo.org</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Xml.XmlNamespaceManager">
+        <last-activity>Jun-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>jason@injektilo.org</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Xml.XmlParserContext">
+        <last-activity>Jun-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>jason@injektilo.org</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Xml.XmlResolver">
+        <last-activity>Jun-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>jason@injektilo.org</maintainer>
+        </maintainers>
+    </class>
+  
     <class name="System.Collections.SortedList">
         <last-activity>Jun-16-2001</last-activity>
         <implementation>no</implementation>
