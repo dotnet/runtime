@@ -1353,7 +1353,7 @@ ves_exec_method (MonoInvocation *frame)
 				ins = g_strdup ("");
 			}
 			output_indent ();
-			discode = mono_disasm_code_one (NULL, frame->method, ip);
+			discode = mono_disasm_code_one (NULL, frame->method, ip, NULL);
 			discode [strlen (discode) - 1] = 0; /* no \n */
 			g_print ("(%d) %-29s %s\n", GetCurrentThreadId(), discode, ins);
 			g_free (ins);
