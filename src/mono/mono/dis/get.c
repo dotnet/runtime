@@ -1142,7 +1142,7 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 	GString *res = g_string_new ("");
 	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
 	char *allocated_ret_type, *s;
-	gboolean seen_vararg = 0;
+	gboolean has_vararg = 0, seen_vararg = 0;
 	int param_count, signature_len;
 	int i, gen_count = 0;
 	int cconv;
@@ -1157,7 +1157,7 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 	}
 
 	if (*ptr & 0x05)
-		seen_vararg = 1;
+		has_vararg = 1;
 	if (*ptr & 0x10)
 		gen_count = 1;
 	cconv = *ptr & 0x0f;
@@ -1189,8 +1189,12 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 		 * If ptr is a SENTINEL
 		 */
 		if (*ptr == 0x41){
-			g_string_append (res, " varargs ");
-			continue;
+			if (!seen_vararg){
+				g_string_append (res, "..., ");
+				seen_vararg = 1;
+			}
+
+			ptr++;
 		}
 
 		ptr = get_param (m, ptr, &param);
