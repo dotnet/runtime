@@ -1025,7 +1025,7 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 	if(timeout>=0) {
 		divvy=div(timeout, 1000000);
 		tv.tv_sec=divvy.quot;
-		tv.tv_usec=divvy.rem*1000000;
+		tv.tv_usec=divvy.rem;
 	
 		ret=select(0, &readfds, &writefds, &errfds, &tv);
 	} else {
