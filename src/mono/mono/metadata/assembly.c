@@ -452,12 +452,10 @@ do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 MonoAssembly *
 mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 {
-	MonoAssembly *ass, *ass2;
 	MonoImage *image;
-	char *base_dir;
+	MonoAssembly *ass;
 	MonoImageOpenStatus def_status;
 	gchar *fname;
-	GList *loading;
 	
 	g_return_val_if_fail (filename != NULL, NULL);
 
@@ -498,6 +496,21 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		return NULL;
 	}
 
+	ass = mono_assembly_load_from (image, fname, status);
+
+	g_free (fname);
+
+	return ass;
+}
+
+MonoAssembly *
+mono_assembly_load_from (MonoImage *image, const char*fname, 
+						 MonoImageOpenStatus *status)
+{
+	MonoAssembly *ass, *ass2;
+	char *base_dir;
+	GList *loading;
+
 #if defined (PLATFORM_WIN32)
 	{
 		gchar *tmp_fn;
@@ -522,9 +535,6 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	ass = g_new0 (MonoAssembly, 1);
 	ass->basedir = base_dir;
 	ass->image = image;
-
-
-	g_free (fname);
 
 	mono_assembly_fill_assembly_name (image, &ass->aname);
 
