@@ -12,7 +12,8 @@ libmonoutils_la_SOURCES = \
 	strtod.h	\
 	strtod.c	\
 	strenc.h	\
-	strenc.c
+	strenc.c	\
+	mono-uri.c
 
 libmonoutilsincludedir = $(includedir)/mono/utils
 
@@ -21,7 +22,8 @@ libmonoutilsinclude_HEADERS = \
 	mono-digest.h	\
 	mono-logger.h	\
 	mono-hash.h		\
-	mono-math.h
+	mono-math.h	\
+	mono-uri.h
 
 EXTRA_DIST = ChangeLog
 

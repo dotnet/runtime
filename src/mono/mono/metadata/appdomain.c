@@ -24,6 +24,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h>
+#include <mono/utils/mono-uri.h>
 
 #define MONO_CORLIB_VERSION 6
 
@@ -577,13 +578,18 @@ set_domain_search_path (MonoDomain *domain)
 		if (strncmp (*tmp, "file://", 7) == 0) {
 			gchar *file = *tmp;
 			gchar *uri = *tmp;
+			gchar *tmpuri;
 
 			if (uri [7] != '/')
 				uri = g_strdup_printf ("file:///%s", uri + 7);
 
+			tmpuri = uri;
+			uri = mono_escape_uri_string (tmpuri);
 			*tmp = g_filename_from_uri (uri, NULL, &error);
-			if (uri != file)
-				g_free (uri);
+			g_free (uri);
+
+			if (tmpuri != file)
+				g_free (tmpuri);
 
 			if (error != NULL) {
 				g_warning ("%s\n", error->message);

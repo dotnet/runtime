@@ -23,6 +23,7 @@
 #include "mono-bundle.h"
 #endif
 #include <mono/io-layer/io-layer.h>
+#include <mono/utils/mono-uri.h>
 
 /* the default search path is just MONO_ASSEMBLIES */
 static const char*
@@ -469,6 +470,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	if (strncmp (filename, "file://", 7) == 0) {
 		GError *error = NULL;
 		gchar *uri = (gchar *) filename;
+		gchar *tmpuri;
 
 		/*
 		 * MS allows file://c:/... and fails on file://localhost/c:/... 
@@ -477,9 +479,13 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		if (uri [7] != '/')
 			uri = g_strdup_printf ("file:///%s", uri + 7);
 	
+		tmpuri = uri;
+		uri = mono_escape_uri_string (tmpuri);
 		fname = g_filename_from_uri (uri, NULL, &error);
-		if (uri != filename)
-			g_free (uri);
+		g_free (uri);
+
+		if (tmpuri != filename)
+			g_free (tmpuri);
 
 		if (error != NULL) {
 			g_warning ("%s\n", error->message);
