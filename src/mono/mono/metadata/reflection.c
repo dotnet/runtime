@@ -3137,16 +3137,16 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 	size = assembly->sections [MONO_SECTION_TEXT].size;
 	size += FILE_ALIGN - 1;
 	size &= ~(FILE_ALIGN - 1);
-	header->pe.pe_code_size = size;
+	header->pe.pe_code_size = GUINT32_FROM_LE(size);
 	size = assembly->sections [MONO_SECTION_RSRC].size;
 	size += FILE_ALIGN - 1;
 	size &= ~(FILE_ALIGN - 1);
-	header->pe.pe_data_size = size;
+	header->pe.pe_data_size = GUINT32_FROM_LE(size);
 	g_assert (START_TEXT_RVA == assembly->sections [MONO_SECTION_TEXT].rva);
-	header->pe.pe_rva_code_base = assembly->sections [MONO_SECTION_TEXT].rva;
-	header->pe.pe_rva_data_base = assembly->sections [MONO_SECTION_RSRC].rva;
+	header->pe.pe_rva_code_base = GUINT32_FROM_LE (assembly->sections [MONO_SECTION_TEXT].rva);
+	header->pe.pe_rva_data_base = GUINT32_FROM_LE (assembly->sections [MONO_SECTION_RSRC].rva);
 	/* pe_rva_entry_point always at the beginning of the text section */
-	header->pe.pe_rva_entry_point = assembly->sections [MONO_SECTION_TEXT].rva;
+	header->pe.pe_rva_entry_point = GUINT32_FROM_LE (assembly->sections [MONO_SECTION_TEXT].rva);
 
 	header->nt.pe_image_base = GUINT32_FROM_LE (virtual_base);
 	header->nt.pe_section_align = GUINT32_FROM_LE (VIRT_ALIGN);
