@@ -12,6 +12,9 @@
 	  getgrgid_r.
 	* support/pwd.c: Add checks for non-portable functions getpwnam_r,
 	  getpwuid_r.
+	* support/map.c: Remove <poll.h> include.  Building on Tigar (Mac OS X 10.4
+	  beta) breaks when both <poll.h> and <sys/poll.h> are included, so only use
+	  <sys/poll.h>.
 	* support/mph.h: Clean up macro handling for type overflow checking.
 
 2004-11-08  Raja R Harinath  <rharinath@novell.com>
