@@ -31,7 +31,7 @@
 #include "threadpool.h"
 
 /* maximum number of worker threads */
-int mono_max_worker_threads = 25; /* fixme: should be 25 per available CPU */
+int mono_max_worker_threads = 25; /* per available CPU? */
 static int mono_min_worker_threads = 0;
 
 /* current number of worker threads */
@@ -201,8 +201,19 @@ mono_thread_pool_cleanup (void)
 static void
 append_job (MonoAsyncResult *ar)
 {
+	GList *tmp;
+
 	EnterCriticalSection (&mono_delegate_section);
-	async_call_queue = g_list_append (async_call_queue, ar); 
+	if (async_call_queue == NULL) {
+		async_call_queue = g_list_append (async_call_queue, ar); 
+	} else {
+		for (tmp = async_call_queue; tmp && tmp->data != NULL; tmp = tmp->next);
+		if (tmp == NULL) {
+			async_call_queue = g_list_append (async_call_queue, ar); 
+		} else {
+			tmp->data = ar;
+		}
+	}
 	LeaveCriticalSection (&mono_delegate_section);
 }
 
@@ -210,17 +221,23 @@ static MonoAsyncResult *
 dequeue_job (void)
 {
 	MonoAsyncResult *ar = NULL;
-	GList *tmp = NULL;
+	GList *tmp, *tmp2;
 
 	EnterCriticalSection (&mono_delegate_section);
-	if (async_call_queue) {
-		ar = (MonoAsyncResult *)async_call_queue->data;
-		tmp = async_call_queue;
-		async_call_queue = g_list_remove_link (tmp, tmp); 
+	tmp = async_call_queue;
+	if (tmp) {
+		ar = (MonoAsyncResult *) tmp->data;
+		tmp->data = NULL;
+		tmp2 = tmp;
+		for (tmp2 = tmp; tmp2->next != NULL; tmp2 = tmp2->next);
+		if (tmp2 != tmp) {
+			async_call_queue = tmp->next;
+			tmp->next = NULL;
+			tmp2->next = tmp;
+			tmp->prev = tmp2;
+		}
 	}
 	LeaveCriticalSection (&mono_delegate_section);
-	if (tmp)
-		g_list_free_1 (tmp);
 
 	return ar;
 }
@@ -266,7 +283,7 @@ async_invoke_thread (gpointer data)
 			}
 			while (!data && timeout > 0);
 		}
-		
+
 		if (!data) {
 			workers = (int) InterlockedCompareExchange (&mono_worker_threads, 0, -1); 
 			min = (int) InterlockedCompareExchange (&mono_min_worker_threads, 0, -1); 
