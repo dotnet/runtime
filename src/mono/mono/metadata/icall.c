@@ -2320,7 +2320,7 @@ ves_icall_Type_GetConstructors (MonoReflectionType *type, guint32 bflags)
 }
 
 static MonoArray*
-ves_icall_Type_GetProperties (MonoReflectionType *type, guint32 bflags)
+ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case)
 {
 	MonoDomain *domain; 
 	GSList *l = NULL, *tmp;
@@ -2332,11 +2332,17 @@ ves_icall_Type_GetProperties (MonoReflectionType *type, guint32 bflags)
 	int i, match;
 	int len = 0;
 	GHashTable *method_slots = g_hash_table_new (NULL, NULL);
+	gchar *propname = NULL;
+	int (*compare_func) (const char *s1, const char *s2);
 
 	MONO_ARCH_SAVE_REGS;
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
+	if (name != NULL) {
+		propname = mono_string_to_utf8 (name);
+		compare_func = (ignore_case) ? g_strcasecmp : strcmp;
+	}
 
 handle_parent:
 	for (i = 0; i < klass->property.count; ++i) {
@@ -2368,6 +2374,11 @@ handle_parent:
 			continue;
 		match = 0;
 
+		if (name != NULL) {
+			if (compare_func (propname, prop->name))
+				continue;
+		}
+		
 		if (g_hash_table_lookup (method_slots, GUINT_TO_POINTER (method->slot)))
 			continue;
 		g_hash_table_insert (method_slots, GUINT_TO_POINTER (method->slot), prop);
@@ -2377,6 +2388,8 @@ handle_parent:
 	}
 	if ((!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent)))
 		goto handle_parent;
+
+	g_free (propname);
 	if (!System_Reflection_PropertyInfo)
 		System_Reflection_PropertyInfo = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "PropertyInfo");
@@ -4757,7 +4770,7 @@ static gconstpointer icall_map [] = {
 	"System.MonoType::GetFields", ves_icall_Type_GetFields,
 	"System.MonoType::GetMethods", ves_icall_Type_GetMethods,
 	"System.MonoType::GetConstructors", ves_icall_Type_GetConstructors,
-	"System.MonoType::GetProperties", ves_icall_Type_GetProperties,
+	"System.MonoType::GetPropertiesByName", ves_icall_Type_GetPropertiesByName,
 	"System.MonoType::GetEvents", ves_icall_Type_GetEvents,
 	"System.MonoType::InternalGetEvent", ves_icall_MonoType_GetEvent,
 	"System.MonoType::GetInterfaces", ves_icall_Type_GetInterfaces,
