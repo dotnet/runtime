@@ -40,6 +40,7 @@ extern MonoThread *mono_thread_current (void);
 
 typedef struct {
 	gpointer (* thread_start_compile_func) (MonoMethod *delegate);
+	void (* thread_created) (guint32 tid, gpointer stack_start, gpointer func);
 	void (* start_resume) (guint32 tid);
 	void (* end_resume) (guint32 tid);
 } MonoThreadCallbacks;

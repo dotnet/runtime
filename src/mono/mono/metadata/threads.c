@@ -204,6 +204,9 @@ void mono_thread_new_init (guint32 tid, gpointer stack_start, gpointer func)
 	if (mono_thread_start_cb) {
 		mono_thread_start_cb (tid, stack_start, func);
 	}
+
+	if (mono_thread_callbacks)
+		(* mono_thread_callbacks->thread_created) (tid, stack_start, func);
 }
 
 void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
