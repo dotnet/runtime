@@ -35,7 +35,7 @@ static void do_mono_metadata_parse_type (MonoType *type, MonoImage *m, const cha
  * information might refer to different tables.
  */
 
-static MonoMetaTable AssemblySchema [] = {
+const static MonoMetaTable AssemblySchema [] = {
 	{ MONO_MT_UINT32,     "HashId" },
 	{ MONO_MT_UINT16,     "Major" },  
 	{ MONO_MT_UINT16,     "Minor" },
@@ -48,19 +48,19 @@ static MonoMetaTable AssemblySchema [] = {
 	{ MONO_MT_END, NULL }
 };
 	
-static MonoMetaTable AssemblyOSSchema [] = {
+const static MonoMetaTable AssemblyOSSchema [] = {
 	{ MONO_MT_UINT32,     "OSPlatformID" },
 	{ MONO_MT_UINT32,     "OSMajor" },
 	{ MONO_MT_UINT32,     "OSMinor" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable AssemblyProcessorSchema [] = {
+const static MonoMetaTable AssemblyProcessorSchema [] = {
 	{ MONO_MT_UINT32,     "Processor" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable AssemblyRefSchema [] = {
+const static MonoMetaTable AssemblyRefSchema [] = {
 	{ MONO_MT_UINT16,     "Major" },
 	{ MONO_MT_UINT16,     "Minor" },
 	{ MONO_MT_UINT16,     "Build" },
@@ -73,7 +73,7 @@ static MonoMetaTable AssemblyRefSchema [] = {
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable AssemblyRefOSSchema [] = {
+const static MonoMetaTable AssemblyRefOSSchema [] = {
 	{ MONO_MT_UINT32,     "OSPlatformID" },
 	{ MONO_MT_UINT32,     "OSMajorVersion" },
 	{ MONO_MT_UINT32,     "OSMinorVersion" },
@@ -81,20 +81,20 @@ static MonoMetaTable AssemblyRefOSSchema [] = {
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable AssemblyRefProcessorSchema [] = {
+const static MonoMetaTable AssemblyRefProcessorSchema [] = {
 	{ MONO_MT_UINT32,     "Processor" },
 	{ MONO_MT_TABLE_IDX,  "AssemblyRef:AssemblyRef" },
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable ClassLayoutSchema [] = {
+const static MonoMetaTable ClassLayoutSchema [] = {
 	{ MONO_MT_UINT16,     "PackingSize" },
 	{ MONO_MT_UINT32,     "ClassSize" },
 	{ MONO_MT_TABLE_IDX,  "Parent:TypeDef" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable ConstantSchema [] = {
+const static MonoMetaTable ConstantSchema [] = {
 	{ MONO_MT_UINT8,      "Type" },
 	{ MONO_MT_UINT8,      "PaddingZero" },
 	{ MONO_MT_CONST_IDX,  "Parent" },
@@ -102,34 +102,34 @@ static MonoMetaTable ConstantSchema [] = {
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable CustomAttributeSchema [] = {
+const static MonoMetaTable CustomAttributeSchema [] = {
 	{ MONO_MT_HASCAT_IDX, "Parent" },
 	{ MONO_MT_CAT_IDX,    "Type" },
 	{ MONO_MT_BLOB_IDX,   "Value" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable DeclSecuritySchema [] = {
+const static MonoMetaTable DeclSecuritySchema [] = {
 	{ MONO_MT_UINT16,     "Action" },
 	{ MONO_MT_HASDEC_IDX, "Parent" },
 	{ MONO_MT_BLOB_IDX,   "PermissionSet" },
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable EventMapSchema [] = {
+const static MonoMetaTable EventMapSchema [] = {
 	{ MONO_MT_TABLE_IDX,  "Parent:TypeDef" },
 	{ MONO_MT_TABLE_IDX,  "EventList:Event" },
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable EventSchema [] = {
+const static MonoMetaTable EventSchema [] = {
 	{ MONO_MT_UINT16,     "EventFlags#EventAttribute" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_TABLE_IDX,  "EventType" }, /* TypeDef or TypeRef */
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable ExportedTypeSchema [] = {
+const static MonoMetaTable ExportedTypeSchema [] = {
 	{ MONO_MT_UINT32,     "Flags" },
 	{ MONO_MT_TABLE_IDX,  "TypeDefId" },
 	{ MONO_MT_STRING_IDX, "TypeName" },
@@ -138,37 +138,37 @@ static MonoMetaTable ExportedTypeSchema [] = {
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable FieldSchema [] = {
+const static MonoMetaTable FieldSchema [] = {
 	{ MONO_MT_UINT16,     "Flags" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_BLOB_IDX,   "Signature" },
 	{ MONO_MT_END, NULL }	
 };
-static MonoMetaTable FieldLayoutSchema [] = {
+const static MonoMetaTable FieldLayoutSchema [] = {
 	{ MONO_MT_UINT32,     "Offset" },
 	{ MONO_MT_TABLE_IDX,  "Field:Field" },
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable FieldMarshalSchema [] = {
+const static MonoMetaTable FieldMarshalSchema [] = {
 	{ MONO_MT_HFM_IDX,    "Parent" },
 	{ MONO_MT_BLOB_IDX,   "NativeType" },
 	{ MONO_MT_END, NULL }	
 };
-static MonoMetaTable FieldRVASchema [] = {
+const static MonoMetaTable FieldRVASchema [] = {
 	{ MONO_MT_UINT32,     "RVA" },
 	{ MONO_MT_TABLE_IDX,  "Field:Field" },
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable FileSchema [] = {
+const static MonoMetaTable FileSchema [] = {
 	{ MONO_MT_UINT32,     "Flags" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_BLOB_IDX,   "Value" }, 
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable ImplMapSchema [] = {
+const static MonoMetaTable ImplMapSchema [] = {
 	{ MONO_MT_UINT16,     "MappingFlag" },
 	{ MONO_MT_MF_IDX,     "MemberForwarded" },
 	{ MONO_MT_STRING_IDX, "ImportName" },
@@ -176,13 +176,13 @@ static MonoMetaTable ImplMapSchema [] = {
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable InterfaceImplSchema [] = {
+const static MonoMetaTable InterfaceImplSchema [] = {
 	{ MONO_MT_TABLE_IDX,  "Class:TypeDef" }, 
 	{ MONO_MT_TDOR_IDX,  "Interface=TypeDefOrRef" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable ManifestResourceSchema [] = {
+const static MonoMetaTable ManifestResourceSchema [] = {
 	{ MONO_MT_UINT32,     "Offset" },
 	{ MONO_MT_UINT32,     "Flags" },
 	{ MONO_MT_STRING_IDX, "Name" },
@@ -190,14 +190,14 @@ static MonoMetaTable ManifestResourceSchema [] = {
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable MemberRefSchema [] = {
+const static MonoMetaTable MemberRefSchema [] = {
 	{ MONO_MT_MRP_IDX,    "Class" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_BLOB_IDX,   "Signature" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable MethodSchema [] = {
+const static MonoMetaTable MethodSchema [] = {
 	{ MONO_MT_UINT32,     "RVA" },
 	{ MONO_MT_UINT16,     "ImplFlags#MethodImplAttributes" },
 	{ MONO_MT_UINT16,     "Flags#MethodAttribute" },
@@ -207,21 +207,21 @@ static MonoMetaTable MethodSchema [] = {
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable MethodImplSchema [] = {
+const static MonoMetaTable MethodImplSchema [] = {
 	{ MONO_MT_TABLE_IDX,  "Class:TypeDef" },
 	{ MONO_MT_MDOR_IDX,   "MethodBody" },
 	{ MONO_MT_MDOR_IDX,   "MethodDeclaration" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable MethodSemanticsSchema [] = {
+const static MonoMetaTable MethodSemanticsSchema [] = {
 	{ MONO_MT_UINT16,     "MethodSemantic" },
 	{ MONO_MT_TABLE_IDX,  "Method:Method" },
 	{ MONO_MT_HS_IDX,     "Association" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable ModuleSchema [] = {
+const static MonoMetaTable ModuleSchema [] = {
 	{ MONO_MT_UINT16,     "Generation" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_GUID_IDX,   "MVID" },
@@ -230,43 +230,43 @@ static MonoMetaTable ModuleSchema [] = {
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable ModuleRefSchema [] = {
+const static MonoMetaTable ModuleRefSchema [] = {
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable NestedClassSchema [] = {
+const static MonoMetaTable NestedClassSchema [] = {
 	{ MONO_MT_TABLE_IDX,  "NestedClass:TypeDef" },
 	{ MONO_MT_TABLE_IDX,  "EnclosingClass:TypeDef" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable ParamSchema [] = {
+const static MonoMetaTable ParamSchema [] = {
 	{ MONO_MT_UINT16,     "Flags" },
 	{ MONO_MT_UINT16,     "Sequence" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable PropertySchema [] = {
+const static MonoMetaTable PropertySchema [] = {
 	{ MONO_MT_UINT16,     "Flags" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_BLOB_IDX,   "Type" },
 	{ MONO_MT_END, NULL }	
 };
 
-static MonoMetaTable PropertyMapSchema [] = {
+const static MonoMetaTable PropertyMapSchema [] = {
 	{ MONO_MT_TABLE_IDX,  "Parent:TypeDef" },
 	{ MONO_MT_TABLE_IDX,  "PropertyList:Property" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable StandaloneSigSchema [] = {
+const static MonoMetaTable StandaloneSigSchema [] = {
 	{ MONO_MT_BLOB_IDX,   "Signature" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable TypeDefSchema [] = {
+const static MonoMetaTable TypeDefSchema [] = {
 	{ MONO_MT_UINT32,     "Flags" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_STRING_IDX, "Namespace" },
@@ -276,19 +276,19 @@ static MonoMetaTable TypeDefSchema [] = {
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable TypeRefSchema [] = {
+const static MonoMetaTable TypeRefSchema [] = {
 	{ MONO_MT_RS_IDX,     "ResolutionScope=ResolutionScope" },
 	{ MONO_MT_STRING_IDX, "Name" },
 	{ MONO_MT_STRING_IDX, "Namespace" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable TypeSpecSchema [] = {
+const static MonoMetaTable TypeSpecSchema [] = {
 	{ MONO_MT_BLOB_IDX,   "Signature" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable GenericParamSchema [] = {
+const static MonoMetaTable GenericParamSchema [] = {
 	{ MONO_MT_UINT16,     "Number" },
 	{ MONO_MT_UINT16,     "Flags" },
 	{ MONO_MT_TABLE_IDX,  "Owner" }, /* TypeDef or MethodDef */
@@ -301,20 +301,20 @@ static MonoMetaTable GenericParamSchema [] = {
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable MethodSpecSchema [] = {
+const static MonoMetaTable MethodSpecSchema [] = {
 	{ MONO_MT_MDOR_IDX,   "Method" },
 	{ MONO_MT_BLOB_IDX,   "Signature" },
 	{ MONO_MT_END, NULL }
 };
 
-static MonoMetaTable GenericParamConstraintSchema [] = {
+const static MonoMetaTable GenericParamConstraintSchema [] = {
 	{ MONO_MT_TABLE_IDX,  "GenericParam" },
 	{ MONO_MT_TDOR_IDX,   "Constraint" },
 	{ MONO_MT_END, NULL }
 };
 
-static struct {
-	MonoMetaTable *table;
+const static struct {
+	const MonoMetaTable *table;
 	const char    *name;
 } tables [] = {
 	/*  0 */ { ModuleSchema,               "Module" },
@@ -412,7 +412,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 	int size = 0, field_size;
 	int i, n, code;
 	int shift = 0;
-	MonoMetaTable *table = tables [tableindex].table;
+	const MonoMetaTable *table = tables [tableindex].table;
 
 	for (i = 0; (code = table [i].code) != MONO_MT_END; i++){
 		switch (code){
@@ -774,7 +774,7 @@ mono_metadata_locate_token (MonoImage *meta, guint32 token)
  *
  * Returns the MonoMetaTable structure for table @table
  */
-MonoMetaTable *
+const MonoMetaTable *
 mono_metadata_get_table (MonoMetaTableEnum table)
 {
 	int x = (int) table;
@@ -1315,13 +1315,18 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
 	MonoMethodSignature *method;
 	int i, ret_attrs = 0, *pattrs = NULL;
 	guint32 hasthis = 0, explicit_this = 0, call_convention, param_count;
+	guint32 gen_param_count = 0;
 
+	if (*ptr & 0x10)
+		gen_param_count = 1;
 	if (*ptr & 0x20)
 		hasthis = 1;
 	if (*ptr & 0x40)
 		explicit_this = 1;
 	call_convention = *ptr & 0x0F;
 	ptr++;
+	if (gen_param_count)
+		gen_param_count = mono_metadata_decode_value (ptr, &ptr);
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 	pattrs = g_new0 (int, param_count);
 
@@ -1347,7 +1352,8 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
 	method->hasthis = hasthis;
 	method->explicit_this = explicit_this;
 	method->call_convention = call_convention;
-	method->ret = mono_metadata_parse_type (m, MONO_PARSE_RET, ret_attrs, ptr, &ptr);
+	if (call_convention != 0xa)
+		method->ret = mono_metadata_parse_type (m, MONO_PARSE_RET, ret_attrs, ptr, &ptr);
 
 	if (method->param_count) {
 		method->sentinelpos = -1;
@@ -1397,7 +1403,7 @@ mono_metadata_parse_generic_inst (MonoImage *m, const char *ptr, const char **rp
 	
 	generic_inst->generic_type = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	generic_inst->type_argc = count = mono_metadata_decode_value (ptr, &ptr);
-	generic_inst->type_argv = g_new0 (MonoType, count);
+	generic_inst->type_argv = g_new0 (MonoType*, count);
 
 	for (i = 0; i < generic_inst->type_argc; i++)
 		generic_inst->type_argv [i] = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);

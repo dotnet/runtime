@@ -27,6 +27,7 @@ typedef enum {
 	MONO_TOKEN_FILE              = 0x26000000,
 	MONO_TOKEN_EXPORTED_TYPE     = 0x27000000,
 	MONO_TOKEN_MANIFEST_RESOURCE = 0x28000000,
+	MONO_TOKEN_METHOD_SPEC       = 0x2b000000,
 
 	/*
 	 * These do not match metadata tables directly

@@ -432,12 +432,10 @@ mono_lookup_pinvoke_call (MonoMethod *method)
 		g_module_symbol (gmodule, import, &method->addr); 
 	} else {
 		char *mangled_name;
-		gpointer addr;
 
 		switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
 		case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
 			mangled_name = g_strconcat (import, "W", NULL);
-			printf ("SEARCH %s\n", mangled_name);
 			g_module_symbol (gmodule, mangled_name, &method->addr); 
 			g_free (mangled_name);
 
@@ -485,6 +483,16 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 		return mono_lookup_dynamic_token (image, token);
 
 	if (table != MONO_TABLE_METHOD) {
+		if (table == MONO_TABLE_METHODSPEC) {
+			/* just a temporary hack */
+			mono_metadata_decode_row (&tables [table], idx - 1, cols, MONO_METHODSPEC_SIZE);
+			token = cols [MONO_METHODSPEC_METHOD];
+			if ((token & METHODDEFORREF_MASK) == METHODDEFORREF_METHODDEF)
+				token = MONO_TOKEN_METHOD_DEF | (token >> METHODDEFORREF_BITS);
+			else
+				token = MONO_TOKEN_MEMBER_REF | (token >> METHODDEFORREF_BITS);
+			return mono_get_method (image, token, klass);
+		}
 		if (table != MONO_TABLE_MEMBERREF)
 			g_print("got wrong token: 0x%08x\n", token);
 		g_assert (table == MONO_TABLE_MEMBERREF);
