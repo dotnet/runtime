@@ -1,3 +1,9 @@
+
+Wed May 15 12:22:09 CEST 2002 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: search for pthread functions also in libc_r (patch
+	from Garrett Rooney <rooneg@electricjellyfish.net>).
+
 2002-05-11  Daniel Morgan <danmorg@sc.rr.com>
 
 	* doc/ado-net: added instructions for installing PostgreSQL on Linux
