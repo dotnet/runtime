@@ -2610,7 +2610,7 @@ check_corlib (MonoImage *corlib)
 			break;
 	}
 	if (i < klass->field.count) {
-		cindex = mono_metadata_get_constant_index (corlib, MONO_TOKEN_FIELD_DEF | (i + 1), 0);
+		cindex = mono_metadata_get_constant_index (corlib, MONO_TOKEN_FIELD_DEF | (klass->field.first + i + 1), 0);
 		if (cindex) {
 			mono_metadata_decode_row (&corlib->tables [MONO_TABLE_CONSTANT], cindex - 1, constant_cols, MONO_CONSTANT_SIZE);
 			version = 0;
