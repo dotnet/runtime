@@ -5,7 +5,7 @@ using System;
 [My(typeof(System.Enum))]
 class T {
 	static int Main() {
-		object[] a = Attribute.GetCustomAttributes (typeof (T), true);
+		object[] a = Attribute.GetCustomAttributes (typeof (T), false);
 		if (a.Length != 3)
 			return 1;
 		foreach (object o in a) {
