@@ -1846,6 +1846,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 	mono_mb_emit_managed_call (mb, method, NULL);
 
 	switch (sig->ret->type) {
+	case MONO_TYPE_VOID:
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
