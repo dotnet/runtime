@@ -809,7 +809,7 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 	if (extra_gac_paths) {
 		paths = extra_gac_paths;
 		while (!res && *paths) {
-			gacpath = g_build_path (G_DIR_SEPARATOR_S, *paths, "gac", name, NULL);
+			gacpath = g_build_path (G_DIR_SEPARATOR_S, *paths, "lib", "mono", "gac", name, NULL);
 			res = probe_for_partial_name (gacpath, fullname, status);
 			g_free (gacpath);
 			paths++;
