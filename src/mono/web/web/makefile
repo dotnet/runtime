@@ -10,8 +10,8 @@ CORCOMPARE=../../../mcs/tools/corcompare
 OBJECTS=									\
 	deploy/ado-net.html							\
 	deploy/anoncvs.html							\
-	deploy/MonoBeta1PressCoverage.htm					\
 	deploy/asp-net.html							\
+	deploy/beta1-press.html							\
 	deploy/blogs.html							\
 	deploy/books.html							\
 	deploy/bugs.html							\

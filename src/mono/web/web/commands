@@ -5,7 +5,7 @@
 1,Team,team.html,team.src
 1,Other sites,other.html,other.src
 1,Old News,oldnews.html,oldnews.src
-2,Press Coverage,MonoBeta1PressCoverage.htm
+2,Press Coverage,beta1-press.html,beta1-press.src
 1,Bug Reporting,bugs.html,bugs.src
 0,Mono,rationale.html,rationale.src
 1,Runtime,runtime.html,runtime.src
