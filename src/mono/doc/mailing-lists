@@ -68,6 +68,15 @@
 	by email.
 	    </td>
 	  </tr>
+	  <tr>
+	    <td>
+		<b><a href="http://lists.ximian.com/mailman/listinfo/mono-bugs">mono-bugs</a></b>
+	    </td>
+	    <td>
+	       This mailing list is used to keep track of the bugs in Mono as reported
+	       in <a href="http://bugzilla.ximian.com">Bugzilla.ximian.com</a>
+	    </td>
+	  </tr>
 	</table>
 
 	Other mailing lists of interest:
