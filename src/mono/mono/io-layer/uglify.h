@@ -41,6 +41,7 @@ typedef gpointer HMODULE;
 typedef WapiSecurityAttributes SECURITY_ATTRIBUTES;
 typedef WapiSecurityAttributes *LPSECURITY_ATTRIBUTES;
 typedef WapiOverlapped *LPOVERLAPPED;
+typedef WapiOverlappedCB LPOVERLAPPED_COMPLETION_ROUTINE;
 typedef WapiThreadStart LPTHREAD_START_ROUTINE;
 typedef WapiCriticalSection CRITICAL_SECTION;
 typedef WapiCriticalSection *LPCRITICAL_SECTION;

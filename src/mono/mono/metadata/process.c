@@ -19,6 +19,7 @@
 #include <mono/metadata/image.h>
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/exception.h>
+#include <mono/utils/strenc.h>
 #include <mono/io-layer/io-layer.h>
 
 #undef DEBUG
@@ -727,6 +728,8 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd
 	gunichar2 *dir;
 	STARTUPINFO startinfo={0};
 	PROCESS_INFORMATION procinfo;
+	gunichar2 *shell_path = NULL;
+	gchar *env_vars = NULL;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -735,6 +738,70 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd
 	startinfo.hStdInput=stdin_handle;
 	startinfo.hStdOutput=stdout_handle;
 	startinfo.hStdError=stderr_handle;
+	
+	if (process_info->use_shell) {
+		const gchar *spath;
+		const gchar *arg;
+#ifdef PLATFORM_WIN32
+		arg = "/c"; /* This works for cmd and command */
+		spath = g_getenv ("COMSPEC");
+#else
+		arg = "-c"; /* sh, bash, tcsh... any other? */
+		spath = g_getenv ("SHELL");
+#endif
+		if (spath != NULL) {
+			gint dummy;
+			gchar *newcmd, *tmp;
+
+			shell_path = mono_unicode_from_external (spath, &dummy);
+			tmp = mono_string_to_utf8 (cmd);
+			newcmd = g_strdup_printf ("%s %s", arg, tmp);
+			g_free (tmp);
+			cmd = mono_string_new (mono_domain_get (), newcmd);
+			g_free (newcmd);
+		}
+	}
+
+	if (process_info->env_keys != NULL) {
+		gint i, len; 
+		MonoString *ms;
+		MonoString *key, *value;
+		gunichar2 *str, *ptr;
+		gunichar2 *equals16;
+
+		for (len = 0, i = 0; i < mono_array_length (process_info->env_keys); i++) {
+			ms = mono_array_get (process_info->env_values, MonoString *, i);
+			if (ms == NULL)
+				continue;
+
+			len += mono_string_length (ms) * sizeof (gunichar2);
+			ms = mono_array_get (process_info->env_keys, MonoString *, i);
+			len += mono_string_length (ms) * sizeof (gunichar2);
+			len += 2 * sizeof (gunichar2);
+		}
+
+		equals16 = g_utf8_to_utf16 ("=", 1, NULL, NULL, NULL);
+		ptr = str = g_new0 (gunichar2, len + 1);
+		for (i = 0; i < mono_array_length (process_info->env_keys); i++) {
+			value = mono_array_get (process_info->env_values, MonoString *, i);
+			if (value == NULL)
+				continue;
+
+			key = mono_array_get (process_info->env_keys, MonoString *, i);
+			memcpy (ptr, mono_string_chars (key), mono_string_length (key) * sizeof (gunichar2));
+			ptr += mono_string_length (key);
+
+			memcpy (ptr, equals16, sizeof (gunichar2));
+			ptr++;
+
+			memcpy (ptr, mono_string_chars (value), mono_string_length (value) * sizeof (gunichar2));
+			ptr += mono_string_length (value);
+			ptr++;
+		}
+
+		g_free (equals16);
+		env_vars = (gchar *) str;
+	}
 	
 	/* The default dir name is "".  Turn that into NULL to mean
 	 * "current directory"
@@ -745,7 +812,9 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd
 		dir=mono_string_chars (dirname);
 	}
 	
-	ret=CreateProcess (NULL, mono_string_chars (cmd), NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, NULL, dir, &startinfo, &procinfo);
+	ret=CreateProcess (shell_path, mono_string_chars (cmd), NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, env_vars, dir, &startinfo, &procinfo);
+
+	g_free (env_vars);
 
 	if(ret) {
 		process_info->process_handle=procinfo.hProcess;

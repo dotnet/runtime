@@ -63,6 +63,7 @@ extern void mono_thread_new_init (guint32 tid, gpointer stack_start,
 				  gpointer func);
 extern void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg);
 extern MonoThread *mono_thread_attach (MonoDomain *domain);
+extern void mono_thread_dettach (MonoThread *thread);
 
 void     mono_threads_install_cleanup   (MonoThreadCleanupFunc func);
 
@@ -111,8 +112,6 @@ extern MonoObject *ves_icall_System_Threading_Interlocked_CompareExchange_Object
 extern gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single(gfloat *location1, gfloat value, gfloat comparand);
 extern void ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state);
 extern void ves_icall_System_Threading_Thread_ResetAbort (void);
-extern void ves_icall_System_Threading_ThreadPool_GetAvailableThreads (int *workerThreads, int *completionPortThreads);
-extern void ves_icall_System_Threading_ThreadPool_GetMaxThreads (int *workerThreads, int *completionPortThreads);
 
 gint8 ves_icall_System_Threading_Thread_VolatileRead1 (void *ptr);
 gint16 ves_icall_System_Threading_Thread_VolatileRead2 (void *ptr);

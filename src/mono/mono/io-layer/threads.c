@@ -865,6 +865,25 @@ void SleepEx(guint32 ms, gboolean alertable)
 	Sleep(ms);
 }
 
+gboolean
+BindIoCompletionCallback (gpointer handle,
+			  WapiOverlappedCB callback,
+			  guint64 flags)
+{
+	WapiHandleType type;
+	
+	type = _wapi_handle_type (handle);
+	if (type == WAPI_HANDLE_FILE || type == WAPI_HANDLE_PIPE)
+		return _wapi_io_add_callback (handle, callback, flags);
+
+	if (type == WAPI_HANDLE_SOCKET) {
+		/* FIXME: implement me */
+	}
+
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+}
+
 #ifdef WITH_INCLUDED_LIBGC
 
 static void GC_suspend_handler (int sig)

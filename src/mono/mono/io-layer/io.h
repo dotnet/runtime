@@ -33,7 +33,12 @@ struct _WapiOverlapped
 	guint32 Offset;
 	guint32 OffsetHigh;
 	gpointer hEvent;
+	gpointer handle1;
+	gpointer handle2;
 };
+
+typedef void (*WapiOverlappedCB) (guint32 error, guint32 numbytes,
+				  WapiOverlapped *overlapped);
 
 #define GENERIC_READ	0x80000000
 #define GENERIC_WRITE	0x40000000

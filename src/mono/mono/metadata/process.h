@@ -22,6 +22,9 @@ typedef struct
 	HANDLE thread_handle;
 	guint32 pid; /* Contains GetLastError () on failure */
 	guint32 tid;
+	MonoArray *env_keys;
+	MonoArray *env_values;
+	MonoBoolean use_shell;
 } MonoProcInfo;
 
 extern HANDLE ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid);

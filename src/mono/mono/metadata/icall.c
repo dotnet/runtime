@@ -21,6 +21,7 @@
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/threadpool.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/assembly.h>
@@ -4920,6 +4921,8 @@ static const IcallEntry path_icalls [] = {
 };
 
 static const IcallEntry monoio_icalls [] = {
+	{"BeginRead", ves_icall_System_IO_MonoIO_BeginRead },
+	{"BeginWrite", ves_icall_System_IO_MonoIO_BeginWrite },
 	{"Close(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Close},
 	{"CopyFile(string,string,bool,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_CopyFile},
 	{"CreateDirectory(string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_CreateDirectory},
@@ -4934,9 +4937,10 @@ static const IcallEntry monoio_icalls [] = {
 	{"GetFileStat(string,System.IO.MonoIOStat&,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_GetFileStat},
 	{"GetFileType(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_GetFileType},
 	{"GetLength(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_GetLength},
+	{"GetSupportsAsync", ves_icall_System_IO_MonoIO_GetSupportsAsync},
 	{"GetTempPath(string&)", ves_icall_System_IO_MonoIO_GetTempPath},
 	{"MoveFile(string,string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_MoveFile},
-	{"Open(string,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Open},
+	{"Open(string,System.IO.FileMode,System.IO.FileAccess,System.IO.FileShare,bool,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Open},
 	{"Read(intptr,byte[],int,int,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Read},
 	{"RemoveDirectory(string,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_RemoveDirectory},
 	{"Seek(intptr,long,System.IO.SeekOrigin,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Seek},
@@ -5395,6 +5399,7 @@ static const IcallEntry thread_icalls [] = {
 };
 
 static const IcallEntry threadpool_icalls [] = {
+	{"BindHandleInternal", ves_icall_System_Threading_ThreadPool_BindHandle},
 	{"GetAvailableThreads", ves_icall_System_Threading_ThreadPool_GetAvailableThreads},
 	{"GetMaxThreads", ves_icall_System_Threading_ThreadPool_GetMaxThreads}
 };

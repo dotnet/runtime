@@ -360,25 +360,13 @@ mono_thread_attach (MonoDomain *domain)
 }
 
 void
-ves_icall_System_Threading_ThreadPool_GetAvailableThreads (int *workerThreads, int *completionPortThreads)
+mono_thread_detach (MonoThread *thread)
 {
-	int busy;
+	g_return_if_fail (thread != NULL);
 
-	MONO_ARCH_SAVE_REGS;
-
-	busy = (int) InterlockedCompareExchange (&busy_worker_threads, 0, -1);
-	*workerThreads = mono_max_worker_threads - busy;
-	*completionPortThreads = 0;
-}
-
-void
-ves_icall_System_Threading_ThreadPool_GetMaxThreads (int *workerThreads, int *completionPortThreads)
-{
-
-	MONO_ARCH_SAVE_REGS;
-
-	*workerThreads = mono_max_worker_threads;
-	*completionPortThreads = 0;
+	TlsSetValue (current_object_key, NULL);
+	
+	thread_cleanup (thread);
 }
 
 HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,

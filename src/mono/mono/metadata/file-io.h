@@ -78,6 +78,23 @@ typedef enum {
 	FileAttributes_MonoExecutable=0x80000000,
 } MonoFileAttributes;
 
+typedef struct _MonoFSAsyncResult {
+	MonoObject obj;
+	MonoObject *state;
+	MonoBoolean completed;
+	MonoBoolean done;
+	MonoException *exc;
+	MonoWaitHandle *wait_handle;
+	MonoDelegate *async_callback;
+	MonoBoolean completed_synch;
+	MonoArray *buffer;
+	gint offset;
+	gint count;
+	gint original_count;
+	gint bytes_read;
+	MonoDelegate *real_cb;
+} MonoFSAsyncResult;
+
 /* System.IO.MonoIO */
 
 extern MonoBoolean
@@ -132,7 +149,7 @@ ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat,
 extern HANDLE 
 ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
 				 gint32 access_mode, gint32 share,
-				 gint32 *error);
+				 MonoBoolean async, gint32 *error);
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_Close (HANDLE handle, gint32 *error);
@@ -196,5 +213,14 @@ ves_icall_System_IO_MonoIO_get_InvalidPathChars (void);
 
 extern gint32
 ves_icall_System_IO_MonoIO_GetTempPath (MonoString **mono_name);
+
+extern MonoBoolean
+ves_icall_System_IO_MonoIO_GetSupportsAsync (void);
+
+extern MonoBoolean
+ves_icall_System_IO_MonoIO_BeginRead (HANDLE handle, MonoFSAsyncResult *ares);
+
+extern MonoBoolean
+ves_icall_System_IO_MonoIO_BeginWrite (HANDLE handle, MonoFSAsyncResult *ares);
 
 #endif /* _MONO_METADATA_FILEIO_H_ */

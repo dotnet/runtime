@@ -9,12 +9,21 @@
 
 #include <config.h>
 #include <glib.h>
+#include <string.h>
+#include <errno.h>
+#include <signal.h>
+#include <unistd.h>
+
+#if !defined PLATFORM_WIN32 && defined HAVE_AIO_H
+#include <aio.h>
+#endif
 
 #include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/file-io.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/marshal.h>
 
 #undef DEBUG
 
@@ -480,7 +489,7 @@ ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat,
 HANDLE 
 ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
 				 gint32 access_mode, gint32 share,
-				 gint32 *error)
+				 MonoBoolean async, gint32 *error)
 {
 	HANDLE ret;
 	
@@ -490,7 +499,8 @@ ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
 	
 	ret=CreateFile (mono_string_chars (filename),
 			convert_access (access_mode), convert_share (share),
-			NULL, convert_mode (mode), FILE_ATTRIBUTE_NORMAL,
+			NULL, convert_mode (mode),
+			FILE_ATTRIBUTE_NORMAL | ((async) ? FILE_FLAG_OVERLAPPED : 0),
 			NULL);
 	if(ret==INVALID_HANDLE_VALUE) {
 		*error=GetLastError ();
@@ -877,3 +887,64 @@ ves_icall_System_IO_MonoIO_GetTempPath (MonoString **mono_name)
 	
 	return(ret);
 }
+
+/*
+ * Asynchronous IO
+ */
+MonoBoolean
+ves_icall_System_IO_MonoIO_GetSupportsAsync (void)
+{
+	MONO_ARCH_SAVE_REGS;
+
+#ifdef PLATFORM_WIN32
+	return (g_getenv ("MONO_DISABLE_AIO") == NULL && WINVER >= 0x500);
+#else
+  #ifdef HAVE_AIO_H
+	if (aio_cancel (-1, NULL) == -1 && errno == ENOSYS)
+		return FALSE;
+
+	return (g_getenv ("MONO_DISABLE_AIO") == NULL);
+  #else
+	return FALSE;
+  #endif
+#endif
+}
+
+static WapiOverlapped *
+get_overlapped_from_fsa (MonoFSAsyncResult *ares)
+{
+	WapiOverlapped *ovl;
+
+	ovl = g_new0 (WapiOverlapped, 1);
+	ovl->Offset = ares->offset;
+	ovl->hEvent = ares->wait_handle;
+
+	return ovl;
+}
+
+MonoBoolean
+ves_icall_System_IO_MonoIO_BeginRead (HANDLE handle, MonoFSAsyncResult *ares)
+{
+	guint32 bytesread;
+	WapiOverlapped *ovl;
+
+	MONO_ARCH_SAVE_REGS;
+
+	ovl = get_overlapped_from_fsa (ares);
+	ovl->handle1 = ares;
+	return ReadFile (handle, mono_array_addr (ares->buffer, gchar, ares->offset), ares->count, &bytesread, ovl);
+}
+
+MonoBoolean
+ves_icall_System_IO_MonoIO_BeginWrite (HANDLE handle, MonoFSAsyncResult *ares)
+{
+	guint32 byteswritten;
+	WapiOverlapped *ovl;
+
+	MONO_ARCH_SAVE_REGS;
+
+	ovl = get_overlapped_from_fsa (ares);
+	ovl->handle1 = ares;
+	return WriteFile (handle, mono_array_addr (ares->buffer, gchar, ares->offset), ares->count, &byteswritten, ovl);
+}
+

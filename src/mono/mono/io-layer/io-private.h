@@ -13,6 +13,7 @@
 #include <config.h>
 #include <glib.h>
 #include <glob.h>
+#include <mono/io-layer/io.h>
 
 extern struct _WapiHandleOps _wapi_file_ops;
 extern struct _WapiHandleOps _wapi_console_ops;
@@ -38,6 +39,8 @@ struct _WapiHandlePrivate_file
 {
 	int fd;
 	gboolean assigned;
+	gboolean async;
+	WapiOverlappedCB callback;
 };
 
 struct _WapiHandle_find
@@ -51,6 +54,11 @@ struct _WapiHandlePrivate_find
 	int dummy;
 };
 
-extern int _wapi_file_handle_to_fd (gpointer handle);
+G_BEGIN_DECLS
+int _wapi_file_handle_to_fd (gpointer handle);
+gboolean _wapi_io_add_callback (gpointer handle,
+				WapiOverlappedCB callback,
+				guint64 flags);
+G_END_DECLS
 
 #endif /* _WAPI_IO_PRIVATE_H_ */

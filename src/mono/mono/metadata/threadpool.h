@@ -15,4 +15,15 @@ MonoObject *
 mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, 
 			 MonoObject **exc);
 
+void
+ves_icall_System_Threading_ThreadPool_GetAvailableThreads (int *workerThreads,
+							   int *completionPortThreads);
+
+void
+ves_icall_System_Threading_ThreadPool_GetMaxThreads (int *workerThreads,
+						     int *completionPortThreads);
+
+MonoBoolean
+ves_icall_System_Threading_ThreadPool_BindHandle (gpointer handle);
+
 #endif

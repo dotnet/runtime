@@ -202,7 +202,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 				new_environp++;
 			}
 		}
-		strings=g_new0 (gchar *, count);
+		strings=g_new0 (gchar *, count + 1); /* +1 -> last one is NULL */
 		
 		/* Copy each environ string into 'strings' turning it
 		 * into utf8 (or the requested encoding) at the same

@@ -5,7 +5,8 @@
  *   Dietmar Maurer (dietmar@ximian.com)
  *   Gonzalo Paniagua Javier (gonzalo@ximian.com)
  *
- * (C) 2001 Ximian, Inc.
+ * (C) 2001-2003 Ximian, Inc.
+ * (c) 2004 Novell, Inc. (http://www.novell.com)
  */
 
 #include <config.h>
@@ -15,6 +16,9 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/file-io.h>
+#include <mono/metadata/monitor.h>
+#include <mono/metadata/marshal.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/os/gc_wrapper.h>
 
@@ -70,12 +74,12 @@ mono_async_invoke (MonoAsyncResult *ares)
 	}
 
 	/* notify listeners */
-	mono_monitor_try_enter (ares, INFINITE);
+	mono_monitor_try_enter ((MonoObject *) ares, INFINITE);
 	if (ares->handle != NULL) {
 		ac->wait_event = ((MonoWaitHandle *) ares->handle)->handle;
 		SetEvent (ac->wait_event);
 	}
-	mono_monitor_exit (ares);
+	mono_monitor_exit ((MonoObject *) ares);
 
 	mono_g_hash_table_remove (ares_htable, ares);
 }
@@ -138,11 +142,11 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	*out_args = NULL;
 
 	/* check if already finished */
-	mono_monitor_try_enter (ares, INFINITE);
+	mono_monitor_try_enter ((MonoObject *) ares, INFINITE);
 	if (ares->endinvoke_called) {
 		*exc = (MonoObject *)mono_exception_from_name (mono_defaults.corlib, "System", 
 					      "InvalidOperationException");
-		mono_monitor_exit (ares);
+		mono_monitor_exit ((MonoObject *) ares);
 		return NULL;
 	}
 
@@ -155,12 +159,12 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	if (!ares->completed) {
 		if (ares->handle == NULL) {
 			ac->wait_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-			ares->handle = mono_wait_handle_new (mono_object_domain (ares), ac->wait_event);
+			ares->handle = (MonoObject *) mono_wait_handle_new (mono_object_domain (ares), ac->wait_event);
 		}
-		mono_monitor_exit (ares);
+		mono_monitor_exit ((MonoObject *) ares);
 		WaitForSingleObject (ac->wait_event, INFINITE);
 	} else {
-		mono_monitor_exit (ares);
+		mono_monitor_exit ((MonoObject *) ares);
 	}
 
 	*exc = ac->msg->exc;
@@ -230,5 +234,82 @@ async_invoke_thread (gpointer data)
 	}
 
 	g_assert_not_reached ();
+}
+
+void
+ves_icall_System_Threading_ThreadPool_GetAvailableThreads (gint *workerThreads, gint *completionPortThreads)
+{
+	gint busy;
+
+	MONO_ARCH_SAVE_REGS;
+
+	busy = (gint) InterlockedCompareExchange (&busy_worker_threads, 0, -1);
+	*workerThreads = mono_max_worker_threads - busy;
+	*completionPortThreads = 0;
+}
+
+void
+ves_icall_System_Threading_ThreadPool_GetMaxThreads (gint *workerThreads, gint *completionPortThreads)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	*workerThreads = mono_max_worker_threads;
+	*completionPortThreads = 0;
+}
+
+static void
+overlapped_callback (guint32 error, guint32 numbytes, WapiOverlapped *overlapped)
+{
+	MonoFSAsyncResult *ares;
+	MonoThread *thread;
+	gpointer ftn;
+ 
+	MONO_ARCH_SAVE_REGS;
+
+	ares = (MonoFSAsyncResult *) overlapped->handle1;
+	ares->completed = TRUE;
+	if (ares->bytes_read != -1)
+		ares->bytes_read = numbytes;
+	else
+		ares->count = numbytes;
+
+	thread = mono_thread_attach (mono_object_domain (ares));
+	SetEvent (ares->wait_handle->handle);
+	if (ares->async_callback != NULL) {
+		gpointer p [1];
+
+		*p = ares;
+		mono_runtime_invoke (ares->async_callback->method_info->method, NULL, p, NULL);
+	}
+
+	mono_thread_detach (thread);
+	CloseHandle (thread->handle);
+	g_free (overlapped);
+}
+
+MonoBoolean
+ves_icall_System_Threading_ThreadPool_BindHandle (gpointer handle)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	if (!BindIoCompletionCallback (handle, overlapped_callback, 0)) {
+		gint error = GetLastError ();
+		MonoException *exc;
+		gchar *msg;
+
+		if (error == ERROR_INVALID_PARAMETER) {
+			exc = mono_get_exception_argument (NULL, "Invalid parameter.");
+		} else {
+			msg = g_strdup_printf ("Win32 error %d.", error);
+			exc = mono_exception_from_name_msg (mono_defaults.corlib,
+							    "System",
+							    "ApplicationException", msg);
+			g_free (msg);
+		}
+
+		mono_raise_exception (exc);
+	}
+
+	return TRUE;
 }
 

@@ -18,6 +18,9 @@
 #include <glob.h>
 #include <stdio.h>
 #include <utime.h>
+#ifdef HAVE_AIO_H
+#include <aio.h>
+#endif
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
@@ -201,64 +204,82 @@ static guint32 _wapi_stat_to_file_attributes (struct stat *buf)
 	return attrs;
 }
 
-static void _wapi_set_last_error_from_errno (void)
+static int
+_wapi_get_win32_error (int err)
 {
+	int ret;
 	/* mapping ideas borrowed from wine. they may need some work */
 
-	switch (errno) {
+	switch (err) {
 	case EACCES: case EPERM: case EROFS:
-		SetLastError (ERROR_ACCESS_DENIED);
+		ret = ERROR_ACCESS_DENIED;
 		break;
 	
 	case EAGAIN:
-		SetLastError (ERROR_SHARING_VIOLATION);
+		ret = ERROR_SHARING_VIOLATION;
 		break;
 	
 	case EBUSY:
-		SetLastError (ERROR_LOCK_VIOLATION);
+		ret = ERROR_LOCK_VIOLATION;
 		break;
 	
 	case EEXIST:
-		SetLastError (ERROR_FILE_EXISTS);
+		ret = ERROR_FILE_EXISTS;
 		break;
 	
 	case EINVAL: case ESPIPE:
-		SetLastError (ERROR_SEEK);
+		ret = ERROR_SEEK;
 		break;
 	
 	case EISDIR:
-		SetLastError (ERROR_CANNOT_MAKE);
+		ret = ERROR_CANNOT_MAKE;
 		break;
 	
 	case ENFILE: case EMFILE:
-		SetLastError (ERROR_NO_MORE_FILES);
+		ret = ERROR_NO_MORE_FILES;
 		break;
 
 	case ENOENT: case ENOTDIR:
-		SetLastError (ERROR_FILE_NOT_FOUND);
+		ret = ERROR_FILE_NOT_FOUND;
 		break;
 	
 	case ENOSPC:
-		SetLastError (ERROR_HANDLE_DISK_FULL);
+		ret = ERROR_HANDLE_DISK_FULL;
 		break;
 	
 	case ENOTEMPTY:
-		SetLastError (ERROR_DIR_NOT_EMPTY);
+		ret = ERROR_DIR_NOT_EMPTY;
 		break;
 
 	case ENOEXEC:
-		SetLastError (ERROR_BAD_FORMAT);
+		ret = ERROR_BAD_FORMAT;
 		break;
 
 	case ENAMETOOLONG:
-		SetLastError (ERROR_FILENAME_EXCED_RANGE);
+		ret = ERROR_FILENAME_EXCED_RANGE;
+		break;
+	
+	case EINPROGRESS:
+		ret = ERROR_IO_PENDING;
+		break;
+	
+	case ENOSYS:
+		ret = ERROR_NOT_SUPPORTED;
 		break;
 	
 	default:
-		g_message ("Unknown errno: %s\n", strerror (errno));
-		SetLastError (ERROR_GEN_FAILURE);
+		g_message ("Unknown errno: %s\n", strerror (err));
+		ret = ERROR_GEN_FAILURE;
 		break;
 	}
+
+	return ret;
+}
+
+static void
+_wapi_set_last_error_from_errno (void)
+{
+	SetLastError (_wapi_get_win32_error (errno));
 }
 
 /* Handle ops.
@@ -316,9 +337,38 @@ static WapiFileType file_getfiletype(void)
 	return(FILE_TYPE_DISK);
 }
 
+#ifdef HAVE_AIO_H
+typedef struct {
+	struct aiocb *aio;
+	WapiOverlapped *overlapped;
+	WapiOverlappedCB callback;
+} notifier_data_t;
+
+static void
+async_notifier (sigval_t sig)
+{
+	notifier_data_t *ndata = sig.sival_ptr;
+	guint32 error;
+	guint32 numbytes;
+
+	error = aio_return (ndata->aio);
+	if (error < 0) {
+		error = _wapi_get_win32_error (error);
+		numbytes = 0;
+	} else {
+		numbytes = error;
+		error = 0;
+	}
+
+	ndata->callback (error, numbytes, ndata->overlapped);
+	g_free (ndata);
+}
+
+#endif /* HAVE_AIO_H */
+
 static gboolean file_read(gpointer handle, gpointer buffer,
 			  guint32 numbytes, guint32 *bytesread,
-			  WapiOverlapped *overlapped G_GNUC_UNUSED)
+			  WapiOverlapped *overlapped)
 {
 	struct _WapiHandle_file *file_handle;
 	struct _WapiHandlePrivate_file *file_private_handle;
@@ -346,23 +396,79 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 
 		return(FALSE);
 	}
-	
-	ret=read(file_private_handle->fd, buffer, numbytes);
-	if(ret==-1) {
-#ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": read of handle %p fd %d error: %s", handle,
-			  file_private_handle->fd, strerror(errno));
-#endif
 
-		return(FALSE);
+	if (file_private_handle->async == FALSE) {
+		ret=read(file_private_handle->fd, buffer, numbytes);
+		if(ret==-1) {
+			gint err = errno;
+
+#ifdef DEBUG
+			g_message(G_GNUC_PRETTY_FUNCTION
+				  ": read of handle %p fd %d error: %s", handle,
+				  file_private_handle->fd, strerror(err));
+#endif
+			SetLastError (_wapi_get_win32_error (err));
+			return(FALSE);
+		}
+		
+		if(bytesread!=NULL) {
+			*bytesread=ret;
+		}
+		
+		return(TRUE);
 	}
-	
-	if(bytesread!=NULL) {
-		*bytesread=ret;
+
+#ifndef HAVE_AIO_H
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+#else
+	if (overlapped == NULL || file_private_handle->callback == NULL) {
+		SetLastError (ERROR_INVALID_PARAMETER);
+		return FALSE;
 	}
-	
-	return(TRUE);
+
+	{
+	int fd = file_private_handle->fd;
+	struct aiocb *aio;
+	int result;
+	notifier_data_t *ndata;
+
+	ndata = g_new0 (notifier_data_t, 1);
+	aio = g_new0 (struct aiocb, 1);
+	ndata->overlapped = overlapped;
+	ndata->aio = aio;
+	ndata->callback = file_private_handle->callback;
+
+	aio->aio_fildes = fd;
+	aio->aio_lio_opcode = LIO_READ;
+	aio->aio_nbytes = numbytes;
+	aio->aio_offset = overlapped->Offset + (((gint64) overlapped->OffsetHigh) << 32);
+	aio->aio_buf = buffer;
+	aio->aio_sigevent.sigev_notify = SIGEV_THREAD;
+	aio->aio_sigevent.sigev_notify_function = async_notifier;
+	aio->aio_sigevent.sigev_value.sival_ptr = ndata;
+
+	result = aio_read (aio);
+	if (result == -1) {
+		_wapi_set_last_error_from_errno ();
+		return FALSE;
+	}
+
+	result = aio_error (aio);
+	if (result == 0) {
+		numbytes = aio_return (aio);
+	} else {
+		errno = result;
+		_wapi_set_last_error_from_errno ();
+		return FALSE;
+	}
+
+	if (bytesread)
+		*bytesread = numbytes;
+
+	return TRUE;
+	}
+#endif
 }
 
 static gboolean file_write(gpointer handle, gconstpointer buffer,
@@ -396,21 +502,80 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 		return(FALSE);
 	}
 	
-	ret=write(file_private_handle->fd, buffer, numbytes);
-	if(ret==-1) {
+	if (file_private_handle->async == FALSE) {
+		ret=write(file_private_handle->fd, buffer, numbytes);
+		if(ret==-1) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": write of handle %p fd %d error: %s", handle,
-			  file_private_handle->fd, strerror(errno));
+			g_message(G_GNUC_PRETTY_FUNCTION
+				  ": write of handle %p fd %d error: %s", handle,
+				  file_private_handle->fd, strerror(errno));
 #endif
 
-		return(FALSE);
+			return(FALSE);
+		}
+		if(byteswritten!=NULL) {
+			*byteswritten=ret;
+		}
+		return(TRUE);
 	}
-	if(byteswritten!=NULL) {
-		*byteswritten=ret;
+
+#ifndef HAVE_AIO_H
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return FALSE;
+#else
+	if (overlapped == NULL || file_private_handle->callback == NULL) {
+		SetLastError (ERROR_INVALID_PARAMETER);
+		return FALSE;
 	}
-	
-	return(TRUE);
+
+	{
+	int fd = file_private_handle->fd;
+	struct aiocb *aio;
+	int result;
+	notifier_data_t *ndata;
+
+	ndata = g_new0 (notifier_data_t, 1);
+	aio = g_new0 (struct aiocb, 1);
+	ndata->overlapped = overlapped;
+	ndata->aio = aio;
+	ndata->callback = file_private_handle->callback;
+
+	aio->aio_fildes = fd;
+	aio->aio_lio_opcode = LIO_WRITE;
+	aio->aio_nbytes = numbytes;
+	aio->aio_offset = overlapped->Offset + (((gint64) overlapped->OffsetHigh) << 32);
+	aio->aio_buf = (gpointer) buffer;
+	aio->aio_sigevent.sigev_notify = SIGEV_THREAD;
+	aio->aio_sigevent.sigev_notify_function = async_notifier;
+	aio->aio_sigevent.sigev_value.sival_ptr = ndata;
+
+	result = aio_write (aio);
+	if (result == -1) {
+		_wapi_set_last_error_from_errno ();
+		return FALSE;
+	}
+
+	result = aio_error (aio);
+	if (result == -1) {
+		_wapi_set_last_error_from_errno ();
+		return FALSE;
+	}
+
+	result = aio_error (aio);
+	if (result == 0) {
+		numbytes = aio_return (aio);
+	} else {
+		errno = result;
+		_wapi_set_last_error_from_errno ();
+		return FALSE;
+	}
+
+	if (byteswritten)
+		*byteswritten = numbytes;
+
+	return TRUE;
+	}
+#endif
 }
 
 static gboolean file_flush(gpointer handle)
@@ -1424,6 +1589,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 
 	file_private_handle->fd=ret;
 	file_private_handle->assigned=TRUE;
+	file_private_handle->async = ((attrs & FILE_FLAG_OVERLAPPED) != 0);
 	file_handle->filename=_wapi_handle_scratch_store (filename,
 							  strlen (filename));
 	if(security!=NULL) {
@@ -3009,3 +3175,41 @@ guint32 GetTempPath (guint32 len, gunichar2 *buf)
 	
 	return(ret);
 }
+
+gboolean
+_wapi_io_add_callback (gpointer handle,
+		       WapiOverlappedCB callback,
+		       guint64 flags G_GNUC_UNUSED)
+{
+	struct _WapiHandle_file *file_handle;
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
+	
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+				  (gpointer *) &file_handle,
+				  (gpointer *) &file_private_handle);
+
+	if (ok == FALSE) {
+		ok = _wapi_lookup_handle (handle, WAPI_HANDLE_PIPE,
+					  (gpointer *) &file_handle,
+					  (gpointer *) &file_private_handle);
+
+	}
+
+	if (ok == FALSE || file_private_handle->async == FALSE) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return FALSE;
+	}
+
+	_wapi_handle_lock_handle (handle);
+	if (file_private_handle->callback != NULL) {
+		SetLastError (ERROR_INVALID_PARAMETER);
+		return FALSE;
+	}
+
+	file_private_handle->callback = callback;
+	_wapi_handle_unlock_handle (handle);
+
+	return TRUE;
+}
+
