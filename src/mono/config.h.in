@@ -3,6 +3,9 @@
 /* Define if you have the ANSI C header files.  */
 #undef STDC_HEADERS
 
+/* The number of bytes in a void *.  */
+#undef SIZEOF_VOID_P
+
 /* Define if you have the <dlfcn.h> header file.  */
 #undef HAVE_DLFCN_H
 

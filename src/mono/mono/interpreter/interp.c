@@ -569,6 +569,10 @@ ves_pinvoke_method (MonoInvocation *frame)
  * interested in: it's needed here and in several other code where the C#
  * implementation is highly tied to the internals (Array and String are other good 
  * examples).
+ *
+ * From the spec:
+ * runtime specifies that the implementation of the method is automatically
+ * provided by the runtime and is primarily used for the methods of delegates.
  */
 static void
 ves_runtime_method (MonoInvocation *frame)
@@ -623,6 +627,7 @@ dump_stack (stackval *stack, stackval *sp)
 #if DEBUG_INTERP
 
 unsigned long opcode_count = 0;
+unsigned long fcall_count = 0;
 
 static void
 output_indent (void)
@@ -634,6 +639,7 @@ output_indent (void)
 }
 
 #define DEBUG_ENTER()	\
+	fcall_count++;	\
 	if (tracing) {	\
 		MonoClass *klass = frame->method->klass;	\
 		debug_indent_level++;	\
@@ -784,7 +790,8 @@ ves_exec_method (MonoInvocation *frame)
 		for (i = 0; i < header->num_locals; ++i) {
 			locals_pointers [i] = frame->locals + offset;
 			size = mono_type_size (header->locals [i], &align);
-			offset += offset % align;
+			offset += align - 1;
+			offset &= ~(align - 1);
 			offset += size;
 		}
 	}
@@ -806,7 +813,8 @@ ves_exec_method (MonoInvocation *frame)
 			args_pointers [i + has_this] = frame->args + offset;
 			stackval_to_data (signature->params [i], frame->stack_args + i, frame->args + offset);
 			size = mono_type_size (signature->params [i], &align);
-			offset += offset % align;
+			offset += align - 1;
+			offset &= ~(align - 1);
 			offset += size;
 		}
 	}
@@ -993,20 +1001,21 @@ ves_exec_method (MonoInvocation *frame)
 			ip += 8;
 			++sp;
 			BREAK;
-		CASE (CEE_LDC_R4)
+		CASE (CEE_LDC_R4) {
+			float val;
 			++ip;
 			sp->type = VAL_DOUBLE;
-			/* FIXME: ENOENDIAN */
-			sp->data.f = *(float*)(ip);
-			ip += sizeof (float);
+			readr4 (ip, &val);
+			sp->data.f = val;
+			ip += 4;
 			++sp;
 			BREAK;
+		}
 		CASE (CEE_LDC_R8) 
 			++ip;
 			sp->type = VAL_DOUBLE;
-			/* FIXME: ENOENDIAN */
-			sp->data.f = *(double*) (ip);
-			ip += sizeof (double);
+			readr8(ip, &sp->data.f);
+			ip += 8;
 			++sp;
 			BREAK;
 		CASE (CEE_UNUSED99) ves_abort (); BREAK;
@@ -1280,7 +1289,7 @@ ves_exec_method (MonoInvocation *frame)
 			else {
 				/*
 				 * FIXME: here and in other places GET_NATI on the left side 
-				 * _will_ be wrong when we change the macro to work on 64 buts 
+				 * _will_ be wrong when we change the macro to work on 64 bits 
 				 * systems.
 				 */
 				result = (gint)GET_NATI (sp [0]) <= (gint)GET_NATI (sp [1]);
@@ -2888,8 +2897,10 @@ main (int argc, char *argv [])
 	mono_assembly_close (assembly);
 
 #if DEBUG_INTERP
-	if (ocount)
+	if (ocount) {
 		fprintf (stderr, "opcode count: %ld\n", opcode_count);
+		fprintf (stderr, "fcall count: %ld\n", fcall_count);
+	}
 #endif
 	return retval;
 }

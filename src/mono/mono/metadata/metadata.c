@@ -1153,7 +1153,8 @@ mono_metadata_parse_method_signature (MonoMetadata *m, int def, const char *ptr,
 			}
 			method->params [i] = mono_metadata_parse_type (m, MONO_PARSE_PARAM, 0, ptr, &ptr);
 			size = mono_type_size (method->params [i], &align);
-			offset += (offset % align);
+			offset += align - 1;
+			offset &= ~(align - 1);
 			offset += size;
 		}
 	}
@@ -1475,7 +1476,8 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 			mh->locals [i] = mono_metadata_parse_type (m, MONO_PARSE_LOCAL, 0, ptr, &ptr);
 
 			val = mono_type_size (mh->locals [i], &align);
-			offset += (offset % align);
+			offset += align - 1;
+			offset &= ~(align - 1);
 			offset += val;
 		}
 		mh->locals_size = offset;

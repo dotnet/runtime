@@ -1,3 +1,8 @@
+
+Mon Sep 10 20:19:00 CEST 2001 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: check for sizeof(void*) and for the architecture.
+
 2001-09-05  Dick Porter  <dick@ximian.com>
 
 	* autogen.sh: Fixed the section that adds $ACLOCAL_FLAGS to the

@@ -24,3 +24,5 @@ BUILT_SOURCES = codegen-x86.c codegen.h
 
 CLEANFILES = $(BUILT_SOURCES)
 
+EXTRA_DIST = x86.brg
+

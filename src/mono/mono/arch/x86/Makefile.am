@@ -1,6 +1,7 @@
+
 INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
 
-lib_LIBRARIES = libmonoarch.a
+noinst_LTLIBRARIES = libmonoarch-x86.la
 
-libmonoarch_a_SOURCES = tramp.c x86-codegen.h
+libmonoarch_x86_la_SOURCES = tramp.c x86-codegen.h
 

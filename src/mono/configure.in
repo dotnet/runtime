@@ -3,6 +3,8 @@ AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(mono, 0.6)
 AM_MAINTAINER_MODE
 
+AC_CANONICAL_HOST
+
 AC_PROG_CC
 AM_PROG_CC_STDC
 AC_PROG_INSTALL
@@ -10,6 +12,8 @@ AC_PROG_INSTALL
 # Set STDC_HEADERS
 AC_HEADER_STDC
 AM_PROG_LIBTOOL
+
+AC_CHECK_SIZEOF(void *)
 
 dnl ***************************
 dnl *** Checks for glib 1.2 ***
@@ -30,6 +34,36 @@ AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 
 CFLAGS='-g -Wall -Wunused -Wmissing-prototypes -Wmissing-declarations'
+
+TARGET="unknown"
+
+case "$host" in
+#mips-sgi-irix5.* | mips-sgi-irix6.*) TARGET=MIPS;;
+i*86-*-*) TARGET=X86; arch_target=x86;;
+#sparc-sun-4*) TARGET=SPARC;;
+#sparc-sun-*) TARGET=SPARC;;
+#sparc*-*-linux*) TARGET=SPARC;;
+#alpha*-*-linux* | alpha*-*-osf*) TARGET=ALPHA;;
+#m68k-*-linux*) TARGET=M68K;;
+#powerpc-*-linux* | powerpc-*-sysv*) TARGET=POWERPC;;
+#arm-*-linux-*) TARGET=ARM;;
+esac
+
+if test ${TARGET} = unknown; then
+	CFLAGS="$CFLAGS -DNO_PORT"
+	AC_MSG_WARN("mono has not been ported to $host: some things may not work.")
+fi
+
+AM_CONDITIONAL(MIPS_GCC, test ${TARGET}${ac_cv_prog_gcc} = MIPSyes)
+AM_CONDITIONAL(MIPS_SGI, test ${TARGET}${ac_cv_prog_gcc} = MIPSno)
+AM_CONDITIONAL(SPARC, test x$TARGET = xSPARC)
+AM_CONDITIONAL(X86, test x$TARGET = xX86)
+AM_CONDITIONAL(ALPHA, test x$TARGET = xALPHA)
+AM_CONDITIONAL(M68K, test x$TARGET = xM68K)
+AM_CONDITIONAL(POWERPC, test x$TARGET = xPOWERPC)
+AM_CONDITIONAL(ARM, test x$TARGET = xARM)
+
+AC_SUBST(arch_target)
 AC_SUBST(CFLAGS)
 
 AC_OUTPUT([

@@ -140,15 +140,17 @@ load_section_tables (MonoImage *image, MonoCLIImageInfo *iinfo)
 		if (fread (t, sizeof (MonoSectionTable), 1, image->f) != 1)
 			return FALSE;
 
-		t->st_virtual_size = le32_to_cpu (t->st_virtual_size);
-		t->st_virtual_address = le32_to_cpu (t->st_virtual_address);
-		t->st_raw_data_size = le32_to_cpu (t->st_raw_data_size);
-		t->st_raw_data_ptr = le32_to_cpu (t->st_raw_data_ptr);
-		t->st_reloc_ptr = le32_to_cpu (t->st_reloc_ptr);
-		t->st_lineno_ptr = le32_to_cpu (t->st_lineno_ptr);
-		t->st_reloc_count = le16_to_cpu (t->st_reloc_count);
-		t->st_line_count = le16_to_cpu (t->st_line_count);
-
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+		t->st_virtual_size = GUINT32_FROM_LE (t->st_virtual_size);
+		t->st_virtual_address = GUINT32_FROM_LE (t->st_virtual_address);
+		t->st_raw_data_size = GUINT32_FROM_LE (t->st_raw_data_size);
+		t->st_raw_data_ptr = GUINT32_FROM_LE (t->st_raw_data_ptr);
+		t->st_reloc_ptr = GUINT32_FROM_LE (t->st_reloc_ptr);
+		t->st_lineno_ptr = GUINT32_FROM_LE (t->st_lineno_ptr);
+		t->st_reloc_count = GUINT16_FROM_LE (t->st_reloc_count);
+		t->st_line_count = GUINT16_FROM_LE (t->st_line_count);
+		t->st_flags = GUINT16_FROM_LE (t->st_flags);
+#endif
 		/* consistency checks here */
 	}
 
@@ -175,6 +177,34 @@ load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo)
 	if ((n = fread (&iinfo->cli_cli_header, sizeof (MonoCLIHeader), 1, image->f)) != 1)
 		return FALSE;
 
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+#define SWAP32(x) (x) = GUINT32_FROM_LE ((x))
+#define SWAP16(x) (x) = GUINT16_FROM_LE ((x))
+#define SWAPPDE(x) do { (x).rva = GUINT32_FROM_LE ((x).rva); (x).size = GUINT32_FROM_LE ((x).size);} while (0)
+	SWAP32 (iinfo->cli_cli_header.ch_size);
+	SWAP32 (iinfo->cli_cli_header.ch_flags);
+	SWAP32 (iinfo->cli_cli_header.ch_entry_point);
+	SWAP16 (iinfo->cli_cli_header.ch_runtime_major);
+	SWAP16 (iinfo->cli_cli_header.ch_runtime_minor);
+	SWAPPDE (iinfo->cli_cli_header.ch_metadata);
+	SWAPPDE (iinfo->cli_cli_header.ch_resources);
+	SWAPPDE (iinfo->cli_cli_header.ch_strong_name);
+	SWAPPDE (iinfo->cli_cli_header.ch_code_manager_table);
+	SWAPPDE (iinfo->cli_cli_header.ch_vtable_fixups);
+	SWAPPDE (iinfo->cli_cli_header.ch_export_address_table_jumps);
+	SWAPPDE (iinfo->cli_cli_header.ch_eeinfo_table);
+	SWAPPDE (iinfo->cli_cli_header.ch_helper_table);
+	SWAPPDE (iinfo->cli_cli_header.ch_dynamic_info);
+	SWAPPDE (iinfo->cli_cli_header.ch_delay_load_info);
+	SWAPPDE (iinfo->cli_cli_header.ch_module_image);
+	SWAPPDE (iinfo->cli_cli_header.ch_external_fixups);
+	SWAPPDE (iinfo->cli_cli_header.ch_ridmap);
+	SWAPPDE (iinfo->cli_cli_header.ch_debug_map);
+	SWAPPDE (iinfo->cli_cli_header.ch_ip_map);
+#undef SWAP32
+#undef SWAP16
+#undef SWAPPDE
+#endif
 	/* Catch new uses of the fields that are supposed to be zero */
 
 	if ((iinfo->cli_cli_header.ch_eeinfo_table.rva != 0) ||
@@ -374,19 +404,48 @@ do_mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
 	if (!(msdos.msdos_header [0] == 'M' && msdos.msdos_header [1] == 'Z'))
 		goto invalid_image;
 	
+	msdos.pe_offset = GUINT32_FROM_LE (msdos.pe_offset);
+
 	if (msdos.pe_offset != sizeof (msdos))
 		fseek (image->f, msdos.pe_offset, SEEK_SET);
 	
 	if ((n = fread (header, sizeof (MonoDotNetHeader), 1, image->f)) != 1)
 		goto invalid_image;
 
-	if (header->coff.coff_machine != 0x14c) /* FIXME: ENOENDIAN */
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+#define SWAP32(x) (x) = GUINT32_FROM_LE ((x))
+#define SWAP16(x) (x) = GUINT16_FROM_LE ((x))
+	SWAP32 (header->coff.coff_time);
+	SWAP32 (header->coff.coff_symptr);
+	SWAP32 (header->coff.coff_symcount);
+	SWAP16 (header->coff.coff_machine);
+	SWAP16 (header->coff.coff_sections);
+	SWAP16 (header->coff.coff_opt_header_size);
+	SWAP16 (header->coff.coff_attributes);
+	/* MonoPEHeader */
+	SWAP32 (header->pe.pe_code_size);
+	SWAP32 (header->pe.pe_data_size);
+	SWAP32 (header->pe.pe_uninit_data_size);
+	SWAP32 (header->pe.pe_rva_entry_point);
+	SWAP32 (header->pe.pe_rva_code_base);
+	SWAP32 (header->pe.pe_rva_data_base);
+	SWAP16 (header->pe.pe_magic);
+	/* MonoPEHeaderNT: not used yet */
+	/* MonoDotNetHeader: mostly unused */
+	SWAP32 (header->datadir.pe_cli_header.rva);
+	SWAP32 (header->datadir.pe_cli_header.size);
+
+#undef SWAP32
+#undef SWAP16
+#endif
+
+	if (header->coff.coff_machine != 0x14c)
 		goto invalid_image;
 
 	if (header->coff.coff_opt_header_size != (sizeof (MonoDotNetHeader) - sizeof (MonoCOFFHeader) - 4))
 		goto invalid_image;
 
-	if (header->pe.pe_magic != 0x10B) /* FIXME: ENOENDIAN */
+	if (header->pe.pe_magic != 0x10B)
 		goto invalid_image;
 
 	if (header->pe.pe_major != 6 || header->pe.pe_minor != 0)
