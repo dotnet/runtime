@@ -44,6 +44,9 @@ mono_method_get_token      (MonoMethod *method);
 guint32
 mono_method_get_flags      (MonoMethod *method, guint32 *iflags);
 
+guint32
+mono_method_get_index      (MonoMethod *method);
+
 MonoImage *
 mono_load_image            (const char *fname, MonoImageOpenStatus *status);
 

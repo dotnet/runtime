@@ -5673,7 +5673,7 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs)
 {
 	guint32 param_index, i, lastp, crow = 0;
 	guint32 param_cols [MONO_PARAM_SIZE], const_cols [MONO_CONSTANT_SIZE];
-	gint32 idx = -1;
+	gint32 idx;
 
 	MonoClass *klass = method->klass;
 	MonoImage *image = klass->image;
@@ -5703,13 +5703,7 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs)
 	paramt = &klass->image->tables [MONO_TABLE_PARAM];
 	constt = &image->tables [MONO_TABLE_CONSTANT];
 
-	for (i = 0; i < klass->method.count; ++i) {
-		if (method == klass->methods [i]) {
-			idx = klass->method.first + i;
-			break;
-		}
-	}
-
+	idx = mono_method_get_index (method) - 1;
 	g_assert (idx != -1);
 
 	param_index = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
@@ -6473,22 +6467,6 @@ free_param_data (MonoMethodSignature *sig, void **params) {
 }
 
 /*
- * Find the method index in the metadata methodDef table.
- * Later put these three helper methods in metadata and export them.
- */
-static guint32
-find_method_index (MonoMethod *method) {
-	MonoClass *klass = method->klass;
-	int i;
-
-	for (i = 0; i < klass->method.count; ++i) {
-		if (method == klass->methods [i])
-			return klass->method.first + 1 + i;
-	}
-	return 0;
-}
-
-/*
  * Find the field index in the metadata FieldDef table.
  */
 static guint32
@@ -6696,7 +6674,7 @@ mono_custom_attrs_from_method (MonoMethod *method)
 	
 	if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, method)))
 		return cinfo;
-	idx = find_method_index (method);
+	idx = mono_method_get_index (method);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_METHODDEF;
 	return mono_custom_attrs_from_index (method->klass->image, idx);
@@ -6803,7 +6781,7 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 	}
 
 	image = method->klass->image;
-	method_index = find_method_index (method);
+	method_index = mono_method_get_index (method);
 	ca = &image->tables [MONO_TABLE_METHOD];
 
 	if (method->klass->generic_class || mono_method_signature (method)->generic_param_count) {
@@ -9011,7 +8989,7 @@ mono_declsec_flags_from_method (MonoMethod *method)
 {
 	if (method->flags & METHOD_ATTRIBUTE_HAS_SECURITY) {
 		/* FIXME: No cache (for the moment) */
-		guint32 idx = find_method_index (method);
+		guint32 idx = mono_method_get_index (method);
 		idx <<= MONO_HAS_DECL_SECURITY_BITS;
 		idx |= MONO_HAS_DECL_SECURITY_METHODDEF;
 		return mono_declsec_get_flags (method->klass->image, idx);
@@ -9145,7 +9123,7 @@ mono_declsec_get_demands (MonoMethod *method, MonoDeclSecurityActions* demands)
 		mono_class_init (method->klass);
 		memset (demands, 0, sizeof (MonoDeclSecurityActions));
 
-		guint32 idx = find_method_index (method);
+		guint32 idx = mono_method_get_index (method);
 		idx <<= MONO_HAS_DECL_SECURITY_BITS;
 		idx |= MONO_HAS_DECL_SECURITY_METHODDEF;
 		result = fill_actions_from_index (image, idx, demands);
@@ -9204,7 +9182,7 @@ MonoBoolean
 mono_declsec_get_method_action (MonoMethod *method, guint32 action, MonoDeclSecurityEntry *entry)
 {
 	if (method->flags & METHOD_ATTRIBUTE_HAS_SECURITY) {
-		guint32 idx = find_method_index (method);
+		guint32 idx = mono_method_get_index (method);
 		idx <<= MONO_HAS_DECL_SECURITY_BITS;
 		idx |= MONO_HAS_DECL_SECURITY_METHODDEF;
 		return get_declsec_action (method->klass->image, idx, action, entry);
