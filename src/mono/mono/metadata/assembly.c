@@ -389,6 +389,15 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 						 image->name, aname.name);
 				
 			} else {
+				char *extra_msg = g_strdup ("");
+
+				if (*status == MONO_IMAGE_ERROR_ERRNO) {
+					extra_msg = g_strdup_printf ("System error: %s\n", strerror (errno));
+				} else if (*status == MONO_IMAGE_MISSING_ASSEMBLYREF) {
+					extra_msg = g_strdup ("Cannot find an assembly referenced from this one.\n");
+				} else if (*status == MONO_IMAGE_IMAGE_INVALID) {
+					extra_msg = g_strdup ("The file exists but is not a valid assembly.\n");
+				}
 			
 				for (j = 0; j < i; j++)
 					mono_assembly_close (references [j]);
@@ -397,11 +406,12 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 				g_warning ("Could not find assembly %s, references from %s (assemblyref_index=%d)\n"
 					   "     Major/Minor: %d,%d\n"
 					   "     Build:       %d,%d\n"
-					   "     Token:       %s\n",
+					   "     Token:       %s\n%s",
 					   aname.name, image->name, i,
 					   aname.major, aname.minor, aname.build, aname.revision,
-					   aname.public_key_token);
+					   aname.public_key_token, extra_msg);
 				*status = MONO_IMAGE_MISSING_ASSEMBLYREF;
+				g_free (extra_msg);
 				return;
 			}
 		}
