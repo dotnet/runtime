@@ -19,6 +19,43 @@
 	  <tr>
 	    <td>
 		<b><a
+	href="http://lists.ximian.com/mailman/listinfo/mono-devel-list">mono-devel-list</a></b>
+	    </td>
+	    <td> 
+	      A mailing list specifically dedicated to discussions
+	      about developing Mono and programming *with* Mono.
+	      Programmers that work on Mono are _strongly_ encouraged
+	      to join this list.  Third-party programmers interested
+	      in running or compiling their managed applications with
+	      Mono or that are interested in using mono-specific
+	      technologies should join the list as well.
+	      <p>
+	      Examples of on-topic arguments are:
+	      <ul>
+		<li>proposals and patches for new features for the mono runtime and programs
+		<li>discussions about bugs in the mono runtime and programs
+		<li>discussions about future directions
+		<li>embedding API, scripting language bridges
+		<li>mono/mcs build issues
+		<li>programming with mono-specific assemblies
+		<li>discussions about third-party compilers that target and/or use directly the CLR
+		<li>discussions about getting a managed application run with mono
+	      </ul>
+		
+              <p>Topics that are better discussed on other mailing lists:
+              <ul>
+		<li> general C# questions (use the specific lists at develop.com)
+		<li> issues that are already covered by a more specific mono
+		     mailing list (like System.Windows.Forms or Gtk#)
+		<li> success reports about new apps running on mono, including
+		     runtime/buildtime support for new programming languages (use
+		     mono-list to reach a wider audience)
+              </ul>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+		<b><a
 	href="http://lists.ximian.com/mailman/listinfo/mono-announce-list">mono-announce-list</a></b>
 	    </td>
 	    <td>

@@ -102,6 +102,12 @@
   </tr>
 </table>
 
+@item Mar 2nd, 2003: New Mono mailing list.
+
+	A new mailing list for <a
+	href="http://lists.ximian.com/mailman/listinfo/mono-devel-list">Mono
+	Development</a> has been created.
+
 @item Feb 27th, 2003: Mono 0.21 released
 
 	Mono 0.21 has been released.  This is only a bug fix release.
