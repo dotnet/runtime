@@ -142,9 +142,13 @@
   </tr>
 </table>
 
-@item Sep 19th, 2003: Gtk# 0.11 released
+@item Sep 26th, 2003: DiaCanvas# 0.1 released, Gtk# 0.11 released.
 
-	Mike Kestner has released an update to Gtk#
+	Mike Kestner has <a
+	href="http://lists.ximian.com/archives/public/gtk-sharp-list/2003-September/002475.html">released</a>
+	a new version of <a href="http://gtk-sharp.sf.net">Gtk#</a>.
+
+	Martin has also released his DiaCanvas# code.
 
 @item Sep 16th, 2003: WineLib, Authenticode, Generics, Xslt updates, Wsdl compiler, WSE.
 
