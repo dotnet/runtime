@@ -3123,7 +3123,8 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 	TIME_ZONE_INFORMATION tz_info;
 	FILETIME ft;
 	int i;
-
+	int err;
+	
 	GetTimeZoneInformation (&tz_info);
 
 	MONO_CHECK_ARG_NULL (data);
@@ -3141,9 +3142,13 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 			break;
 	mono_array_set ((*names), gpointer, 0, mono_string_new_utf16 (domain, tz_info.StandardName, i));
 
-	SystemTimeToFileTime (&tz_info.StandardDate, &ft);
+	tz_info.StandardDate.wYear = year;
+	err = SystemTimeToFileTime (&tz_info.StandardDate, &ft);
+	g_assert (err);
 	mono_array_set ((*data), gint64, 1, ((guint64)ft.dwHighDateTime<<32) | ft.dwLowDateTime);
-	SystemTimeToFileTime (&tz_info.DaylightDate, &ft);
+	tz_info.DaylightDate.wYear = year;
+	err = SystemTimeToFileTime (&tz_info.DaylightDate, &ft);
+	g_assert (err);
 	mono_array_set ((*data), gint64, 0, ((guint64)ft.dwHighDateTime<<32) | ft.dwLowDateTime);
 	mono_array_set ((*data), gint64, 3, tz_info.Bias + tz_info.StandardBias);
 	mono_array_set ((*data), gint64, 2, tz_info.Bias + tz_info.DaylightBias);
