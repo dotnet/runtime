@@ -5369,7 +5369,8 @@ optimize_branches (MonoCompile *cfg) {
 				} else {
 					if (bb->last_ins && bb->last_ins->opcode == CEE_BR) {
 						bbn = bb->last_ins->inst_target_bb;
-						if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR) {
+						if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR &&
+						    bbn->code->inst_target_bb->region == bb->region) {
 							
 							if (cfg->verbose_level > 2)
 								g_print ("in %s branch to branch triggered %d -> %d\n", cfg->method->name, 
@@ -5381,21 +5382,31 @@ optimize_branches (MonoCompile *cfg) {
 						}
 					}
 				}
+
 			} else if (bb->out_count == 2) {
-				/* fixme: this does not correctly unlink the blocks, so we get serious problems in idom code */
+				/* fixme: this does not correctly - no idea whats wrong */
 				if (0 && bb->last_ins && bb->last_ins->opcode >= CEE_BEQ && bb->last_ins->opcode <= CEE_BLT_UN) {
 					bbn = bb->last_ins->inst_true_bb;
-					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR) {
+					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR &&
+					    bbn->code->inst_target_bb->region == bb->region) {
 						if (cfg->verbose_level > 2)
 							g_print ("cbranch to branch triggered %d -> %d (0x%02x)\n", bb->block_num, 
 								 bbn->block_num, bbn->code->opcode);
-						 
-						if (bb->out_bb [0] == bbn) {
-							bb->out_bb [0] = bbn->code->inst_target_bb;
-						} else if (bb->out_bb [1] == bbn) {
-							bb->out_bb [1] = bbn->code->inst_target_bb;
-						}
+		
+						replace_basic_block (bb, bb->out_bb [0], bbn->code->inst_target_bb);
 						bb->last_ins->inst_true_bb = bbn->code->inst_target_bb;
+						changed = TRUE;
+					}
+
+					bbn = bb->last_ins->inst_false_bb;
+					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR &&
+					    bbn->code->inst_target_bb->region == bb->region) {
+						if (cfg->verbose_level > 2)
+							g_print ("cbranch to branch triggered %d -> %d (0x%02x)\n", bb->block_num, 
+								 bbn->block_num, bbn->code->opcode);
+		
+						replace_basic_block (bb, bb->out_bb [0], bbn->code->inst_target_bb);
+						bb->last_ins->inst_false_bb = bbn->code->inst_target_bb;
 						changed = TRUE;
 					}
 				}
