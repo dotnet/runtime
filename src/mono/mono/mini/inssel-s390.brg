@@ -1,0 +1,463 @@
+%%
+
+#
+# inssel-s390.brg: burg file for special s390 instructions
+#
+# Author:
+#   Neale Ferguson (Neale.Ferguson@SoftwareAG-usa.com)
+#   Dietmar Maurer (dietmar@ximian.com)
+#   Paolo Molaro (lupus@ximian.com)
+#
+# (C) 2002 Ximian, Inc.
+#
+
+stmt: OP_START_HANDLER {
+	MonoInst *spvar = mono_find_spvar_for_region (s, s->cbb->region);
+	tree->inst_left = spvar;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_ENDFINALLY {
+	MonoInst *spvar = mono_find_spvar_for_region (s, s->cbb->region);
+	tree->inst_left = spvar;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_ENDFILTER (reg) {
+	MonoInst *spvar = mono_find_spvar_for_region (s, s->cbb->region);
+	tree->inst_left = spvar;
+	tree->sreg1 = state->left->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_STIND_I8 (OP_REGVAR, lreg) {
+	/* this should only happen for methods returning a long */
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, s390_r2, state->right->reg1);
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, s390_r3, state->right->reg2);
+}
+
+freg: OP_LCONV_TO_R8 (lreg) {
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+freg: OP_LCONV_TO_R4 (lreg) {
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+freg: CEE_CONV_R_UN (reg) {
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+reg: OP_LOCALLOC (OP_ICONST) {
+	/* microcoded in mini-s390.c */
+	tree->sreg1 = mono_regstate_next_int (s->rs);
+	tree->dreg  = state->reg1;
+	MONO_EMIT_NEW_ICONST (s, tree->sreg1, state->left->tree->inst_c0);
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+reg: OP_LOCALLOC (reg) {
+	tree->dreg = state->reg1;
+	tree->sreg1 = state->left->reg1;
+        mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_SETRET (reg) {
+	tree->opcode = OP_MOVE;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = s390_r2;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_SETRET (lreg) {
+	tree->opcode = OP_SETLRET;
+	tree->sreg1 = state->left->reg1;
+	tree->sreg2 = state->left->reg2;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_SETRET (freg) {
+	tree->opcode = OP_FMOVE;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = s390_f0;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_SETRET (OP_ICONST) {
+	tree->opcode = OP_ICONST;
+	tree->inst_c0 = state->left->tree->inst_c0;
+	tree->dreg = s390_r2;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG (reg) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->reg1);
+		return;
+	}
+	tree->opcode = OP_SETREG;
+	tree->dreg = tree->unused;
+	tree->sreg1 = state->left->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG (OP_REGVAR) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->tree->dreg);
+		return;
+	}
+	tree->opcode = OP_SETREG;
+	tree->dreg = tree->unused;
+	tree->sreg1 = state->left->tree->dreg;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG (lreg) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->reg2);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, s->frame_reg, tree->inst_imm + 4, state->left->reg1);
+		return;
+	}
+	MONO_EMIT_NEW_UNALU (s, OP_SETREG, tree->unused, state->left->reg2);
+	tree->opcode = OP_SETREG;
+	tree->dreg = tree->unused + 1;
+	tree->sreg1 = state->left->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG (OP_ICONST) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STORE_MEMBASE_IMM, s->frame_reg, tree->inst_imm, state->left->tree->inst_c0);
+		return;
+	}
+	tree->opcode = OP_SETREGIMM;
+	tree->dreg = tree->unused;
+	tree->inst_c0 = state->left->tree->inst_c0;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->left->tree->dreg);
+		return;
+	}
+	tree->opcode = OP_SETREG;
+	tree->sreg1 = state->left->left->tree->dreg;
+	tree->dreg = tree->unused;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG (freg) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->reg1);
+		return;
+	}
+	tree->opcode = OP_SETFREG;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = tree->unused;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG_R4 (freg) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->reg1);
+		return;
+	}
+	tree->opcode = OP_SETFREG;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = tree->unused;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG_R8 (freg) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->reg1);
+		return;
+	}
+	tree->opcode = OP_SETFREG;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = tree->unused;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
+	MonoInst *vt  = state->left->left->tree;
+	int start_reg = tree->sreg2;
+	int size      = tree->unused;
+	int nregs     = size / 4;
+	int soffset   = vt->inst_offset;
+	int i, tmpr;
+	if (size < 0) { 
+		size = -size;
+		mini_emit_memcpy (s, s->frame_reg, tree->sreg1,
+				  vt->inst_basereg, soffset, size, 0);
+		if (start_reg != STK_BASE) {
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, start_reg, 
+						 s->frame_reg, tree->sreg1);
+		}
+	} else {
+		if (start_reg != STK_BASE) {
+			for (i = 0; i < nregs; ++i) {
+				tmpr = mono_regstate_next_int (s->rs);
+				MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, vt->inst_basereg, 
+							    soffset);
+				MONO_EMIT_NEW_UNALU (s, OP_SETREG, start_reg + i, tmpr);
+				soffset += sizeof (gpointer);
+			}
+		} else {
+			mini_emit_memcpy (s, s->frame_reg, tree->inst_imm, 
+				 	  vt->inst_basereg, soffset, size, 0);
+		}	
+	}
+}
+
+stmt: OP_OUTARG_VT (OP_ICONST) {
+	int start_reg = tree->sreg2;
+	int size      = tree->unused;
+	int nregs     = size / 4;
+	int i;
+printf("OP_OUTARG_VT (OP_ICONST)\n");
+	if (start_reg != STK_BASE) {
+		if (nregs) {
+			tree->opcode  = OP_SETREGIMM;
+			tree->dreg    = start_reg;
+			tree->inst_c0 = state->left->tree->inst_c0;
+			mono_bblock_add_inst (s->cbb, tree);
+		}
+	} else {
+		mini_emit_memcpy (s, s->frame_reg, tree->inst_c0, STK_BASE, 
+				  tree->inst_offset, size, 0);
+	}
+}
+
+stmt: OP_OUTARG_VT (reg) {
+	int start_reg = tree->sreg2;
+	int size      = tree->unused;
+	int nregs     = size / 4;
+	int soffset   = tree->inst_imm;
+	int i;
+printf("OP_OUTARG_VT (reg)\n");
+	if (start_reg != STK_BASE) {
+		for (i = 0; i < nregs; ++i) {
+			MONO_EMIT_NEW_LOAD_MEMBASE(s, start_reg, s->frame_reg, 
+						   tree->inst_offset);
+			soffset += sizeof(gpointer);
+		}
+	} else {
+		mini_emit_memcpy (s, s->frame_reg, tree->inst_imm, tree->sreg1, 
+				  soffset, size, 0);
+	}
+}
+
+stmt: CEE_STIND_R8 (OP_REGVAR, freg) {
+	/* nothing to do: the value is already on the FP stack */
+}
+
+stmt: CEE_BNE_UN (fpcflags) {
+	tree->opcode = OP_FBNE_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BEQ (fpcflags) {
+	tree->opcode = OP_FBEQ;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BLT (fpcflags) {
+	tree->opcode = OP_FBLT;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BLT_UN (fpcflags) {
+	tree->opcode = OP_FBLT_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BGT (fpcflags) {
+	tree->opcode = OP_FBGT;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BGT_UN (fpcflags) {
+	tree->opcode = OP_FBGT_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BGE  (fpcflags) {
+	tree->opcode = OP_FBGE;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BGE_UN (fpcflags) {
+	tree->opcode = OP_FBGE_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BLE  (fpcflags) {
+	tree->opcode = OP_FBLE;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BLE_UN (fpcflags) {
+	tree->opcode = OP_FBLE_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_POP (freg) "0" {
+	/* nothing to do */
+}     
+
+freg: OP_LCONV_TO_R8 (lreg) {
+	/* nothing to do - emulated */
+}
+
+freg: OP_LCONV_TO_R4 (lreg) {
+	/* nothing to do - emulated */
+}
+
+freg: OP_LCONV_TO_R_UN (lreg) {
+	/* nothing to do - emulated */
+}
+
+freg: OP_FREM (freg, freg) {
+	/* nothing to do - emulated */
+}
+
+reg: OP_CEQ (OP_COMPARE (freg, freg)) {	
+	MONO_EMIT_BIALU (s, tree, OP_FCEQ, state->reg1, state->left->left->reg1,
+			 state->left->right->reg1);
+}
+
+reg: OP_CLT (OP_COMPARE (freg, freg)) {	
+	MONO_EMIT_BIALU (s, tree, OP_FCLT, state->reg1, state->left->left->reg1,
+			 state->left->right->reg1);
+}
+
+reg: OP_CLT_UN (OP_COMPARE (freg, freg)) {	
+	MONO_EMIT_BIALU (s, tree, OP_FCLT_UN, state->reg1, state->left->left->reg1,
+			 state->left->right->reg1);
+}
+
+reg: OP_CGT (OP_COMPARE (freg, freg)) {	
+	MONO_EMIT_BIALU (s, tree, OP_FCGT, state->reg1, state->left->left->reg1,
+			 state->left->right->reg1);
+}
+
+reg: OP_CGT_UN (OP_COMPARE (freg, freg)) {	
+	MONO_EMIT_BIALU (s, tree, OP_FCGT_UN, state->reg1, state->left->left->reg1,
+			 state->left->right->reg1);
+}
+
+base: OP_REGOFFSET "0" {
+}
+
+base: OP_S390_STKARG "0" {
+	int tmpr;
+	tmpr = mono_regstate_next_int (s->rs);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, s->frame_reg, 
+				(s->stack_offset+state->tree->unused));
+	tree->inst_offset  = state->tree->inst_offset;
+	tree->inst_basereg = tmpr;
+}
+
+base: OP_LDADDR (OP_S390_LOADARG) "0" {
+	int tmpr;
+	tmpr = mono_regstate_next_int (s->rs);
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, s->frame_reg, 
+				    state->left->tree->inst_offset);
+	tree->inst_offset  = 0;
+	tree->inst_basereg = tmpr;
+}
+
+base: OP_LDADDR (OP_S390_ARGPTR) "0" {
+	int tmpr;
+	tmpr = mono_regstate_next_int (s->rs);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, s->frame_reg, 
+				 state->left->tree->inst_offset);
+	tree->inst_offset  = 0;
+	tree->inst_basereg = tmpr;
+}
+
+base: OP_LDADDR (OP_S390_STKARG) "0" {
+	int tmpr;
+	tmpr = mono_regstate_next_int (s->rs);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, s->frame_reg, 
+				 (s->stack_offset + state->left->tree->unused));
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, tmpr, 
+				 state->left->tree->inst_offset);
+	tree->inst_offset  = 0;
+	tree->inst_basereg = tmpr;
+}
+
+reg: OP_LDADDR (OP_S390_LOADARG) "2" {
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, s->frame_reg, 
+				 state->left->tree->inst_offset);
+	tree->inst_offset  = 0;
+	tree->inst_basereg = state->reg1;
+}
+
+reg: OP_LDADDR (OP_S390_ARGPTR) "2" {
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, s->frame_reg, 
+				 state->left->tree->inst_offset);
+	tree->inst_offset  = 0;
+	tree->inst_basereg = state->reg1;
+}
+
+reg: OP_LDADDR (OP_S390_STKARG) "2" {
+printf("CEE_LDOBJ (OP_S390_STKARG) 2\n");
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, s->frame_reg, 
+				 (s->stack_offset + state->left->tree->unused));
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, state->reg1, 
+				 state->left->tree->inst_offset);
+	tree->inst_offset  = 0;
+	tree->inst_basereg = state->reg1;
+}
+
+reg: CEE_LDOBJ (OP_S390_LOADARG) "1" {
+	int tmpr;
+	tmpr = mono_regstate_next_int (s->rs);
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, s->frame_reg, 
+				    state->left->tree->inst_offset);
+	tree->inst_offset  = 0;
+	tree->inst_basereg = tmpr;
+}
+
+reg: CEE_LDOBJ (OP_S390_ARGPTR) "1" {
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, s->frame_reg, 
+				 state->left->tree->inst_offset);
+	tree->inst_offset  = 0;
+	tree->inst_basereg = state->reg1;
+}
+
+reg: CEE_LDOBJ (OP_S390_STKARG) "1" {
+printf("CEE_LDOBJ (OP_S390_STKARG) 1\n");
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, s->frame_reg,
+				 (s->stack_offset + state->left->tree->unused));
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, state->reg1,
+				 state->left->tree->inst_offset);
+	tree->inst_offset  = 0;
+	tree->inst_basereg = state->reg1;
+}
+
+base: CEE_LDOBJ (OP_S390_ARGPTR) "0" {
+	int tmpr;
+printf("CEE_LDOBJ (OP_S390_ARGPTR) 0\n");
+	tmpr = mono_regstate_next_int (s->rs);
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, s->frame_reg, 
+				    state->left->tree->inst_offset);
+	tree->inst_offset  = 0;
+	tree->inst_basereg = tmpr;
+}
+
+base: CEE_LDOBJ (OP_S390_STKARG) "0" {
+	int tmpr;
+printf("CEE_LDOBJ (OP_S390_STKARG) 0\n");
+	tmpr = mono_regstate_next_int (s->rs);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, s->frame_reg,
+				 (s->stack_offset + state->left->tree->unused));
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, tmpr, state->left->tree->inst_offset);
+	tree->inst_offset  = 0;
+	tree->inst_basereg = tmpr;
+}
+
+%%
