@@ -5,6 +5,7 @@
 #include <mono/metadata/class.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
+#include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/debug-mono-symfile.h>
 #include <mono/jit/codegen.h>
 #include <mono/jit/debug.h>
@@ -31,10 +32,13 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	MONO_SYMBOL_FILE_DYNAMIC_VERSION,
 	sizeof (MonoDebuggerInfo),
 	&mono_generic_trampoline_code,
+	&mono_breakpoint_trampoline_code,
 	&mono_debugger_symbol_file_table_generation,
 	&mono_debugger_symbol_file_table,
 	&mono_debugger_update_symbol_file_table,
-	&mono_compile_method
+	&mono_compile_method,
+	&mono_debugger_insert_breakpoint,
+	&mono_debugger_remove_breakpoint
 };
 
 static void
@@ -1099,21 +1103,118 @@ mono_debugger_update_symbol_file_table (void)
 	return TRUE;
 }
 
-static gboolean has_debugger_support = FALSE;
-
 extern void (*mono_debugger_class_init_func) (MonoClass *klass);
 static GPtrArray *class_table = NULL;
 gpointer *mono_debugger_class_table = NULL;
 guint32 mono_debugger_class_table_size = 0;
 
+static gboolean has_mono_debugger_support = FALSE;
+
 static void
 initialize_debugger_support ()
 {
-	if (has_debugger_support)
+	if (has_mono_debugger_support)
 		return;
-	has_debugger_support = TRUE;
+	has_mono_debugger_support = TRUE;
 
 	class_table = g_ptr_array_new ();
 
 	mono_debugger_class_init_func = mono_debug_add_type;
+}
+
+static GPtrArray *breakpoints = NULL;
+
+int
+mono_insert_breakpoint_full (MonoMethodDesc *desc, gboolean use_trampoline)
+{
+	static int last_breakpoint_id = 0;
+	MonoDebuggerBreakpointInfo *info;
+
+	info = g_new0 (MonoDebuggerBreakpointInfo, 1);
+	info->desc = desc;
+	info->use_trampoline = use_trampoline;
+	info->index = ++last_breakpoint_id;
+
+	if (!breakpoints)
+		breakpoints = g_ptr_array_new ();
+
+	g_ptr_array_add (breakpoints, info);
+
+	return info->index;
+}
+
+guint64
+mono_debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument)
+{
+	MonoMethodDesc *desc;
+
+	desc = mono_method_desc_new (string_argument, FALSE);
+	if (!desc)
+		return 0;
+
+	return mono_insert_breakpoint_full (desc, TRUE);
+}
+
+guint64
+mono_debugger_remove_breakpoint (guint64 breakpoint)
+{
+	int i;
+
+	if (!breakpoints)
+		return 0;
+
+	for (i = 0; i < breakpoints->len; i++) {
+		MonoDebuggerBreakpointInfo *info = g_ptr_array_index (breakpoints, i);
+
+		if (info->index != breakpoint)
+			continue;
+
+		mono_method_desc_free (info->desc);
+		g_ptr_array_remove (breakpoints, info);
+		g_free (info);
+		return 1;
+	}
+
+	return 0;
+}
+
+int
+mono_remove_breakpoint (int breakpoint_id)
+{
+	return mono_debugger_remove_breakpoint (breakpoint_id);
+}
+
+int
+mono_insert_breakpoint (const gchar *method_name, gboolean include_namespace)
+{
+	MonoMethodDesc *desc;
+
+	desc = mono_method_desc_new (method_name, include_namespace);
+	if (!desc)
+		return 0;
+
+	return mono_insert_breakpoint_full (desc, has_mono_debugger_support);
+}
+
+int
+mono_method_has_breakpoint (MonoMethod* method, gboolean use_trampoline)
+{
+	int i;
+
+	if (!breakpoints || (method->wrapper_type != MONO_WRAPPER_NONE))
+		return 0;
+
+	for (i = 0; i < breakpoints->len; i++) {
+		MonoDebuggerBreakpointInfo *info = g_ptr_array_index (breakpoints, i);
+
+		if (info->use_trampoline != use_trampoline)
+			continue;
+
+		if (!mono_method_desc_full_match (info->desc, method))
+			continue;
+
+		return info->index;
+	}
+
+	return 0;
 }

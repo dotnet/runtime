@@ -239,10 +239,8 @@ main (int argc, char *argv [])
 				break_on_main = TRUE;
 				i++;
 			} else {
-				MonoMethodDesc *desc = mono_method_desc_new (argv [++i], FALSE);
-				if (!desc)
+				if (!mono_insert_breakpoint (argv [++i], FALSE))
 					g_error ("Invalid method name '%s'", argv [i]);
-				mono_debug_methods = g_list_append (mono_debug_methods, desc);
 			}
 		} else if (strcmp (argv [i], "--count") == 0) {
 			compile_times = atoi (argv [++i]);
@@ -343,7 +341,7 @@ main (int argc, char *argv [])
 
 			method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
 			desc = mono_method_desc_from_method (method);
-			mono_debug_methods = g_list_append (mono_debug_methods, desc);
+			mono_insert_breakpoint_full (desc, FALSE);
 		}
 
 		retval = mono_jit_exec (domain, assembly, argc - i, argv + i);
@@ -354,5 +352,3 @@ main (int argc, char *argv [])
 
 	return retval;
 }
-
-

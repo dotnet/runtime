@@ -225,15 +225,11 @@ guint32  mono_jit_tls_id;
 gboolean mono_break_on_exc = FALSE;
 
 MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
-GList *mono_debug_methods = NULL;
 
 /* If non-zero, insert a breakpoint when compiling the next method.
  * If positive, interpret this variable as a counter and decrement
  * it after setting the breakpoint. */
 int mono_debug_insert_breakpoint = 0;
-
-/* This is the address of the last breakpoint which was inserted. */
-gchar *mono_debug_last_breakpoint_address = NULL;
 
 MonoJitStats mono_jit_stats;
 
@@ -3728,20 +3724,6 @@ mono_get_runtime_method (MonoMethod* method)
 	return NULL;
 }
 
-static int
-match_debug_method (MonoMethod* method)
-{
-	GList *tmp = mono_debug_methods;
-
-	for (; tmp; tmp = tmp->next) {
-		if (method->wrapper_type != MONO_WRAPPER_NONE)
-			continue;
-		if (mono_method_desc_full_match (tmp->data, method))
-			return 1;
-	}
-	return 0;
-}
-
 /**
  * mono_compile_method:
  * @method: pointer to the method info
@@ -3811,10 +3793,7 @@ mono_jit_compile_method (MonoMethod *method)
 		cfg->code_size = MAX (header->code_size * 5, 256);
 		cfg->start = cfg->code = g_malloc (cfg->code_size);
 
-		/* fixme: make this arch independent */
-		mono_debug_last_breakpoint_address = cfg->code;
-
-		if (match_debug_method (method) || mono_debug_insert_breakpoint)
+		if (mono_method_has_breakpoint (method, FALSE) || mono_debug_insert_breakpoint)
 			x86_breakpoint (cfg->code);
 		else if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
 			x86_nop (cfg->code);

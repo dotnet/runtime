@@ -3,6 +3,7 @@
 
 #include <glib.h>
 #include <stdio.h>
+#include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/debug-mono-symfile.h>
 #include <mono/metadata/loader.h>
 #include <mono/jit/jit.h>
@@ -10,6 +11,7 @@
 typedef struct _MonoDebugHandle			MonoDebugHandle;
 typedef struct _MonoDebuggerInfo		MonoDebuggerInfo;
 typedef struct _MonoDebuggerSymbolFileTable	MonoDebuggerSymbolFileTable;
+typedef struct _MonoDebuggerBreakpointInfo	MonoDebuggerBreakpointInfo;
 
 typedef enum {
 	MONO_DEBUG_FORMAT_NONE,
@@ -76,6 +78,14 @@ gint32         mono_debug_il_offset_from_address (MonoMethod *method, gint32 add
 
 gint32         mono_debug_address_from_il_offset (MonoMethod *method, gint32 il_offset);
 
+int            mono_method_has_breakpoint (MonoMethod* method, gboolean use_trampoline);
+
+int            mono_insert_breakpoint (const gchar *method_name, gboolean include_namespace);
+
+int            mono_insert_breakpoint_full (MonoMethodDesc *desc, gboolean use_trampoline);
+
+int            mono_remove_breakpoint (int breakpint_id);
+
 /* DEBUGGER PUBLIC FUNCTION:
  *
  * This is a public function which is supposed to be called from within a debugger
@@ -90,11 +100,21 @@ void           mono_debug_write_symbols (MonoDebugHandle* debug);
 /* Update all symbol files.  Returns TRUE if the symbol have changed and FALSE if not. */
 int            mono_debugger_update_symbol_file_table (void);
 
+guint64        mono_debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
+
+guint64        mono_debugger_remove_breakpoint (guint64 breakpoint);
+
 /*
  * Address of the x86 trampoline code.  This is used by the debugger to check
  * whether a method is a trampoline.
  */
 extern guint8 *mono_generic_trampoline_code;
+
+/*
+ * Address of a special breakpoint code which is used by the debugger to get a breakpoint
+ * after compiling a method.
+ */
+extern guint8 *mono_breakpoint_trampoline_code;
 
 /* This is incremented each time the symbol table is modified.
  * The debugger looks at this variable and if it has a higher value than its current
@@ -118,11 +138,14 @@ struct _MonoDebuggerInfo {
 	guint64 magic;
 	guint32 version;
 	guint32 total_size;
-	guint8 **trampoline_code;
+	guint8 **generic_trampoline_code;
+	guint8 **breakpoint_trampoline_code;
 	guint32 *symbol_file_generation;
 	MonoDebuggerSymbolFileTable **symbol_file_table;
 	int (*update_symbol_file_table) (void);
 	gpointer (*compile_method) (MonoMethod *method);
+	guint64 (*insert_breakpoint) (guint64 method_argument, const gchar *string_argument);
+	guint64 (*remove_breakpoint) (guint64 breakpoint);
 };
 
 struct _MonoDebuggerSymbolFileTable {
@@ -132,6 +155,12 @@ struct _MonoDebuggerSymbolFileTable {
 	guint32 count;
 	guint32 generation;
 	MonoSymbolFile *symfiles [MONO_ZERO_LEN_ARRAY];
+};
+
+struct _MonoDebuggerBreakpointInfo {
+	guint32 index;
+	gboolean use_trampoline;
+	MonoMethodDesc *desc;
 };
 
 #endif /* __MONO_JIT_DEBUG_H__ */
