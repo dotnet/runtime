@@ -3704,29 +3704,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_IDIV:
 			amd64_cdq_size (code, 4);
-			amd64_div_reg_size (code, ins->sreg2, 4, TRUE);
+			amd64_div_reg_size (code, ins->sreg2, TRUE, 4);
 			break;
 		case OP_IDIV_UN:
 			amd64_alu_reg_reg (code, X86_XOR, AMD64_RDX, AMD64_RDX);
-			amd64_div_reg_size (code, ins->sreg2, 4, FALSE);
+			amd64_div_reg_size (code, ins->sreg2, FALSE, 4);
 			break;
 		case OP_IDIV_IMM:
 			amd64_mov_reg_imm (code, ins->sreg2, ins->inst_imm);
 			amd64_cdq_size (code, 4);
-			amd64_div_reg_size (code, ins->sreg2, 4, TRUE);
+			amd64_div_reg_size (code, ins->sreg2, TRUE, 4);
 			break;
 		case OP_IREM:
 			amd64_cdq_size (code, 4);
-			amd64_div_reg_size (code, ins->sreg2, 4, TRUE);
+			amd64_div_reg_size (code, ins->sreg2, TRUE, 4);
 			break;
 		case OP_IREM_UN:
 			amd64_alu_reg_reg (code, X86_XOR, AMD64_RDX, AMD64_RDX);
-			amd64_div_reg_size (code, ins->sreg2, 4, FALSE);
+			amd64_div_reg_size (code, ins->sreg2, FALSE, 4);
 			break;
 		case OP_IREM_IMM:
 			amd64_mov_reg_imm (code, ins->sreg2, ins->inst_imm);
 			amd64_cdq_size (code, 4);
-			amd64_div_reg_size (code, ins->sreg2, 4, TRUE);
+			amd64_div_reg_size (code, ins->sreg2, TRUE, 4);
 			break;
 
 		case OP_ICOMPARE:
