@@ -1,5 +1,11 @@
 2004-11-25  Raja R Harinath  <rharinath@novell.com>
 
+	* runtime/Makefile.am (all-local): Make mcs/ tree writeable if
+	necessary.
+	(distdir): New.  Using 'cygnus' option disables the automake rule.
+
+2004-11-25  Raja R Harinath  <rharinath@novell.com>
+
 	* runtime/Makefile.am (check-local): Use $(mkinstalldirs).
 
 2004-11-24  Raja R Harinath  <rharinath@novell.com>
