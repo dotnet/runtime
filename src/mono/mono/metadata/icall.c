@@ -2039,12 +2039,11 @@ handle_parent:
 	return res;
 }
 
-static MonoType *
+static MonoReflectionType *
 ves_icall_Type_GetNestedType (MonoReflectionType *type, MonoString *name, guint32 bflags)
 {
 	MonoDomain *domain; 
 	MonoClass *startklass, *klass;
-	MonoType *res;
 	MonoClass *nested;
 	GList *tmpn;
 	char *str;
