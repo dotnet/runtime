@@ -16,7 +16,6 @@
 #include "mono/metadata/threadpool.h"
 #include "mono/metadata/mono-config.h"
 #include <mono/metadata/profiler-private.h>
-#include <mono/metadata/cil-coff.h>
 #include <mono/os/util.h>
 
 static MonoClass *
@@ -335,11 +334,10 @@ main (int argc, char *argv [])
 
 		if (break_on_main) {
 			MonoImage *image = assembly->image;
-			MonoCLIImageInfo *iinfo = image->image_info;
 			MonoMethodDesc *desc;
 			MonoMethod *method;
 
-			method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
+			method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
 			desc = mono_method_desc_from_method (method);
 			mono_debug_methods = g_list_append (mono_debug_methods, desc);
 		}
