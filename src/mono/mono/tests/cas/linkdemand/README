@@ -6,8 +6,13 @@ cas3.cs		Partial execution before (handled) exception
 cas4.cs		Reflection on a method protected by LinkDemand (granted)
 cas5.cs		Reflection on a method protected by LinkDemand (denied)
 
-This is the "common" case for LinkDemand (i.e. using user supplied declarative
-security attributes).
+noncas1.cs	Non CAS (PrincipalPermission) on class (success)
+noncas2.cs	Non CAS (PrincipalPermission) on class (failure)
+noncas3.cs	Non CAS (PrincipalPermission) on method (success)
+noncas4.cs	Non CAS (PrincipalPermission) on method (failure)
+
+Those are the "common" case for LinkDemand (i.e. using user supplied 
+declarative security attributes).
 
 
 and now the special cases...

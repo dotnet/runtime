@@ -5,19 +5,22 @@ PROFILE = net_1_1
 all:	icall1.exe icall2.exe icall3.exe icall4.exe icall5.exe icall6.exe \
 	aptc1a.exe aptc1b.exe aptc2a.exe aptc2b.exe aptclib.dll \
 	pinvoke1.exe pinvoke2.exe pinvoke3.exe pinvoke4.exe \
-	cas1.exe cas2.exe cas3.exe cas4.exe cas5.exe
+	cas1.exe cas2.exe cas3.exe cas4.exe cas5.exe \
+	noncas1.exe noncas2.exe noncas3.exe noncas4.exe
 
 aot:	icall1.exe.so icall2.exe.so icall3.exe.so icall4.exe.so icall5.exe.so icall6.exe.so \
 	aptc1a.exe.so aptc1b.exe.so aptc2a.exe.so aptc2b.exe.so aptclib.dll.so \
 	pinvoke1.exe.so pinvoke2.exe.so pinvoke3.exe.so pinvoke4.exe.so \
-	cas1.exe.so cas2.exe.so cas3.exe.so cas4.exe.so cas5.exe.so
+	cas1.exe.so cas2.exe.so cas3.exe.so cas4.exe.so cas5.exe.so \
+	noncas1.exe.so noncas2.exe.so noncas3.exe.so noncas4.exe.so
 
 FULLTRUST_TEST_FILES = icall1 icall2 icall3 icall4 icall5 icall6 \
 	aptc1a aptc1b aptc2a aptc2b \
 	pinvoke1 pinvoke2 pinvoke4 \
-	cas1 cas3 cas4 cas5
+	cas1 cas3 cas4 cas5 \
+	noncas1 noncas2 noncas3 noncas4
 
-UNHANDLED_TEST_FILES = cas2 pinvoke3
+UNHANDLED_TEST_FILES = cas2 pinvoke3 
 
 INTERNET_TEST_FILES = pinvoke1 pinvoke2 cas1
 
@@ -97,9 +100,6 @@ aptc2b.exe: aptc2.cs aptclib.dll
 
 aptclib.dll: aptclib.cs aptc.snk
 	$(CSCOMPILE) aptclib.cs /out:$@ /target:library /keyfile:aptc.snk
-
-linkdemand_%.exe: linkdemand_%.cs
-	$(CSCOMPILE) $^ /out:$@ /r:Mono.Permissions.dll
 
 %.exe: %.cs
 	$(CSCOMPILE) $^ /out:$@
