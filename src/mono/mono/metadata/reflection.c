@@ -3228,7 +3228,7 @@ compare_genericparam (const void *a, const void *b)
 	const GenericParamTableEntry **a_entry = (const GenericParamTableEntry **) a;
 	const GenericParamTableEntry **b_entry = (const GenericParamTableEntry **) b;
 
-	return (*a_entry)->owner - (*b_entry)->owner;
+	return (*b_entry)->owner - (*a_entry)->owner;
 }
 
 static int
