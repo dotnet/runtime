@@ -25,5 +25,4 @@ all:
 	perl process.pl commands template.html.in .
 
 for-tuomas:
-	cp *.html ~/home-page/for-tuomas
-	web-sync
+	scp *.html primates:~/public-html/for-tuomas

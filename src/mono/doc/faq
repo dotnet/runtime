@@ -383,3 +383,14 @@ A: They met online on the Linux IRC network;  They met in person for
    the first time in 1997.
 
 
+** Acronyms
+
+Q: What is the difference between CLR (Common Language Runtime) and
+   CLI (Common Language Infrastructure)?
+
+A: CLI is the specification of an execution system.  The Microsoft
+   implementation of this specification is named CLR. 
+
+   Unless we come up with our own acronym, we could just call ours
+   also CLR, just because it would do exactly the same thing the
+   Microsoft implementation does.
