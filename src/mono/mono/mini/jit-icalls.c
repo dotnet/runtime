@@ -488,7 +488,7 @@ extern long double aintl (long double);
 #define trunc aintl
 #else
 /* FIXME: This means we will never throw overflow exceptions */
-#define trunc
+#define trunc(v) res
 #endif
 #endif /* HAVE_TRUNC */
 
