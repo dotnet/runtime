@@ -1,3 +1,8 @@
+2004-09-04 Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: added check for kqueue. Patch from Geoff Norton
+	in HEAD.
+
 2004-08-17  Dick Porter  <dick@ximian.com>
 
 	* configure.in: Correct intl library for FreeBSD and OpenBSD.
