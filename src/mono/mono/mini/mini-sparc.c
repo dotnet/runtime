@@ -186,19 +186,7 @@ mono_arch_regname (int reg) {
 void
 mono_arch_cpu_init (void)
 {
-}
-
-/*
- * This function returns the optimizations supported on this cpu.
- */
-guint32
-mono_arch_cpu_optimizazions (guint32 *exclude_mask)
-{
 	char buf [1024];
-	guint32 opts = 0;
-
-	*exclude_mask = 0;
-
 #ifndef __linux__
 	if (!sysinfo (SI_ISALIST, buf, 1024))
 		g_assert_not_reached ();
@@ -215,13 +203,26 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 		strcpy (buf, "sparcv8");
 #endif
 
+	if (strstr (buf, "sparcv9"))
+		sparcv9 = TRUE;
+}
+
+/*
+ * This function returns the optimizations supported on this cpu.
+ */
+guint32
+mono_arch_cpu_optimizazions (guint32 *exclude_mask)
+{
+	guint32 opts = 0;
+
+	*exclude_mask = 0;
+
 	/* 
 	 * On some processors, the cmov instructions are even slower than the
 	 * normal ones...
 	 */
-	if (strstr (buf, "sparcv9")) {
+	if (sparcv9) {
 		opts |= MONO_OPT_CMOV | MONO_OPT_FCMOV;
-		sparcv9 = TRUE;
 	}
 	else
 		*exclude_mask |= MONO_OPT_CMOV | MONO_OPT_FCMOV;
