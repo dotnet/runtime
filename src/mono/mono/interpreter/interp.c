@@ -2551,11 +2551,14 @@ array_constructed:
 			MonoClassField *field;
 			guint32 token, offset;
 
+			sp -= 2;
+			
+			if (!sp [0].data.p)
+				THROW_EX (mono_get_exception_null_reference (), ip);
+			
 			++ip;
 			token = read32 (ip);
 			ip += 4;
-			
-			sp -= 2;
 			
 			if (sp [0].type == VAL_OBJ) {
 				obj = sp [0].data.p;
