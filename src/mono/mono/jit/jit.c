@@ -2171,6 +2171,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			if (MONO_TYPE_ISSTRUCT (csig->ret)) {
 				size = mono_type_size (csig->ret, &align);
+				if (csig->pinvoke && MONO_TYPE_ISSTRUCT ((csig->ret)))
+					mono_class_native_size (csig->ret->data.klass);
+
 				vtype_num = arch_allocate_var (cfg, size, align, MONO_TEMPVAR, VAL_UNKNOWN);
 				/* we push a pointer to the vtype as argument */
 				args_size += sizeof (gpointer);
@@ -3195,6 +3198,14 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				sp -= 1;
 				t1 = mono_ctree_new (mp, MB_TERM_OBJADDR, *sp, NULL);
+				PUSH_TREE (t1, VAL_POINTER);
+				break;
+			}
+			case CEE_MONO_VTADDR: {
+				++ip;
+
+				sp -= 1;
+				t1 = mono_ctree_new (mp, MB_TERM_VTADDR, *sp, NULL);
 				PUSH_TREE (t1, VAL_POINTER);
 				break;
 			}

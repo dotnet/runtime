@@ -75,6 +75,19 @@ typedef struct {
 	char *d;
 } simplestruct;
 
+simplestruct
+mono_test_return_vtype ()
+{
+	simplestruct res;
+
+	res.a = 0;
+	res.b = 1;
+	res.c = 0;
+	res.d = "TEST";
+
+	return res;
+}
+
 int 
 mono_test_marshal_struct (simplestruct ss)
 {

@@ -240,7 +240,7 @@ debug_memcopy (void *dest, const void *src, size_t n);
 %term REMOTE_STIND_I8 REMOTE_STIND_R4 REMOTE_STIND_R8 REMOTE_STIND_OBJ
 %term SIN COS SQRT
 
-%term FUNC1 PROC3 FREE OBJADDR
+%term FUNC1 PROC3 FREE OBJADDR VTADDR
 
 #
 # we start at stmt
@@ -1733,6 +1733,12 @@ reg: NEWOBJ_SPEC {
 reg: OBJADDR (reg) {
 	if (tree->left->reg1 != tree->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
+reg: VTADDR (ADDR_L) {
+	int offset = VARINFO (s, tree->left->data.i).offset;
+
+	x86_lea_membase (s->code, tree->reg1, X86_EBP, offset);
 }
 
 stmt: FREE (reg) {
@@ -4810,7 +4816,9 @@ stmt: ARG_OBJ (reg) {
 	int size = tree->data.i;
 	int sa;
 	
-	mono_assert (size > 0);
+	if (!size)
+		return;
+
 	sa = size + 3;
 	sa &= ~3;
 

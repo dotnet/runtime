@@ -515,7 +515,7 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 	case MONO_MARSHAL_CONV_STR_BYVALWSTR: 
 	case MONO_MARSHAL_CONV_BOOL_VARIANTBOOL:
 	default:
-		g_warning ("marshalling conversion %d not implemented", conv);
+		g_warning ("marshaling conversion %d not implemented", conv);
 		g_assert_not_reached ();
 	}
 }
@@ -699,8 +699,14 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 				}
 				emit_struct_conv (mb, ftype->data.klass, to_object);
 				continue;
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_OBJECT:
+				/* fixme: handle MONO_TYPE_CLASS and delegates */
+				g_assert_not_reached ();
+				break;
 			default:
-				g_error ("marshalling type %02x not implemented", ftype->type);
+				g_warning ("marshaling type %02x not implemented", ftype->type);
+				g_assert_not_reached ();
 			}
 			break;
 		}
@@ -1826,7 +1832,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			mono_mb_emit_ldloc (mb, tmp_locals [i]);
 			mono_mb_emit_byte (mb, CEE_STLOC_1);
 
-			/* emit valuetype convnversion code code */
+			/* emit valuetype conversion code */
 			emit_struct_conv (mb, klass, FALSE);
 			break;
 		case MONO_TYPE_STRING:
@@ -1975,16 +1981,30 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		case MONO_TYPE_BOOLEAN:
 			/* maybe we need to make sure that it fits within 8 bits */
 			break;
-		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_VALUETYPE: {
+			int tmp;
 			if (sig->ret->data.klass->enumtype) {
 				type = sig->ret->data.klass->enum_basetype->type;
 				goto handle_enum;
-			} else {
-				g_warning ("generic valutype %s not handled", 
-					   sig->ret->data.klass->name);
-				g_assert_not_reached ();
 			}
+
+			tmp = mono_mb_add_local (mb, sig->ret);
+			g_assert (tmp);
+			/* load pointer to returned value type */
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
+			/* store the address of the source into local variable 0 */
+			mono_mb_emit_byte (mb, CEE_STLOC_0);
+			/* set dst_ptr */
+			mono_mb_emit_ldloc_addr (mb, tmp);
+			mono_mb_emit_byte (mb, CEE_STLOC_1);
+
+			/* emit valuetype conversion code */
+			emit_struct_conv (mb, sig->ret->data.klass, TRUE);
+
+			mono_mb_emit_ldloc (mb, tmp);
 			break;
+		}
 		case MONO_TYPE_STRING:
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
