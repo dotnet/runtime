@@ -598,7 +598,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		return vt;
 
 	mono_domain_lock (domain);
-	if ((vt = mono_g_hash_table_lookup (domain->class_vtable_hash, class))) {
+	if ((vt = g_hash_table_lookup (domain->class_vtable_hash, class))) {
 		mono_domain_unlock (domain);
 		return vt;
 	}
@@ -715,7 +715,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	 * arch_create_jit_trampoline () can recursively call this function again
 	 * because it compiles icall methods right away.
 	 */
-	mono_g_hash_table_insert (domain->class_vtable_hash, class, vt);
+	g_hash_table_insert (domain->class_vtable_hash, class, vt);
 	if (!class->cached_vtable)
 		class->cached_vtable = vt;
 
@@ -870,7 +870,7 @@ mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_
 	MonoRemoteClass *rc;
 
 	mono_domain_lock (domain);
-	rc = mono_g_hash_table_lookup (domain->proxy_vtable_hash, class_name);
+	rc = g_hash_table_lookup (domain->proxy_vtable_hash, class_name);
 
 	if (rc) {
 		mono_domain_unlock (domain);
@@ -885,7 +885,7 @@ mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_
 	rc->proxy_class = mono_defaults.marshalbyrefobject_class;
 	rc->proxy_class_name = mono_string_to_utf8 (class_name);
 
-	mono_g_hash_table_insert (domain->proxy_vtable_hash, class_name, rc);
+	g_hash_table_insert (domain->proxy_vtable_hash, class_name, rc);
 	mono_upgrade_remote_class (domain, rc, proxy_class);
 
 	mono_domain_unlock (domain);

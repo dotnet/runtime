@@ -974,7 +974,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	MonoMethod **vtable;
 	int i, max_vtsize = 0, max_iid, cur_slot = 0;
 	GPtrArray *ifaces;
-	MonoGHashTable *override_map = NULL;
+	GHashTable *override_map = NULL;
 
 	/* setup_vtable() must be called only once on the type */
 	if (class->interface_offsets) {
@@ -1019,9 +1019,9 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 			vtable [dslot] = overrides [i*2 + 1];
 			vtable [dslot]->slot = dslot;
 			if (!override_map)
-				override_map = mono_g_hash_table_new (NULL, NULL);
+				override_map = g_hash_table_new (NULL, NULL);
 
-			mono_g_hash_table_insert (override_map, overrides [i * 2], overrides [i * 2 + 1]);
+			g_hash_table_insert (override_map, overrides [i * 2], overrides [i * 2 + 1]);
 		}
 	}
 
@@ -1228,8 +1228,8 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 						slot = k->methods [j]->slot;
 						g_assert (cm->slot < max_vtsize);
 						if (!override_map)
-							override_map = mono_g_hash_table_new (NULL, NULL);
-						mono_g_hash_table_insert (override_map, m1, cm);
+							override_map = g_hash_table_new (NULL, NULL);
+						g_hash_table_insert (override_map, m1, cm);
 						break;
 					}
 				}
@@ -1255,8 +1255,8 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 			vtable [decl->slot] = overrides [i*2 + 1];
  			overrides [i * 2 + 1]->slot = decl->slot;
 			if (!override_map)
-				override_map = mono_g_hash_table_new (NULL, NULL);
-			mono_g_hash_table_insert (override_map, decl, overrides [i * 2 + 1]);
+				override_map = g_hash_table_new (NULL, NULL);
+			g_hash_table_insert (override_map, decl, overrides [i * 2 + 1]);
 		}
 	}
 
@@ -1267,12 +1267,12 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	if (override_map) {
 		for (i = 0; i < max_vtsize; ++i)
 			if (vtable [i]) {
-				MonoMethod *cm = mono_g_hash_table_lookup (override_map, vtable [i]);
+				MonoMethod *cm = g_hash_table_lookup (override_map, vtable [i]);
 				if (cm)
 					vtable [i] = cm;
 			}
 
-		mono_g_hash_table_destroy (override_map);
+		g_hash_table_destroy (override_map);
 	}
 
 	if (class->generic_class) {

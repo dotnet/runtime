@@ -6493,7 +6493,7 @@ mono_create_class_init_trampoline (MonoVTable *vtable)
 	/* previously created trampoline code */
 	mono_domain_lock (vtable->domain);
 	code = 
-		mono_g_hash_table_lookup (vtable->domain->class_init_trampoline_hash,
+		g_hash_table_lookup (vtable->domain->class_init_trampoline_hash,
 								  vtable);
 	mono_domain_unlock (vtable->domain);
 	if (code)
@@ -6503,7 +6503,7 @@ mono_create_class_init_trampoline (MonoVTable *vtable)
 
 	/* store trampoline address */
 	mono_domain_lock (vtable->domain);
-	mono_g_hash_table_insert (vtable->domain->class_init_trampoline_hash,
+	g_hash_table_insert (vtable->domain->class_init_trampoline_hash,
 							  vtable, code);
 	mono_domain_unlock (vtable->domain);
 
@@ -6531,7 +6531,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 		return code;
 
 	mono_domain_lock (domain);
-	code = mono_g_hash_table_lookup (domain->jump_trampoline_hash, method);
+	code = g_hash_table_lookup (domain->jump_trampoline_hash, method);
 	mono_domain_unlock (domain);
 	if (code)
 		return code;
@@ -6546,7 +6546,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 	mono_jit_info_table_add (mono_get_root_domain (), ji);
 
 	mono_domain_lock (domain);
-	mono_g_hash_table_insert (domain->jump_trampoline_hash, method, ji->code_start);
+	g_hash_table_insert (domain->jump_trampoline_hash, method, ji->code_start);
 	mono_domain_unlock (domain);
 
 	return ji->code_start;

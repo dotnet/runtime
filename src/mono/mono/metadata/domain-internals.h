@@ -94,8 +94,8 @@ struct _MonoDomain {
 	char               *friendly_name;
 	guint32            state;
 	MonoGHashTable     *ldstr_table;
-	MonoGHashTable     *class_vtable_hash;
-	MonoGHashTable     *proxy_vtable_hash;
+	GHashTable         *class_vtable_hash;
+	GHashTable         *proxy_vtable_hash;
 	MonoGHashTable     *static_data_hash;
 	GHashTable         *jit_code_hash;
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
@@ -120,8 +120,8 @@ struct _MonoDomain {
 	/* Used to store offsets of thread and context static fields */
 	GHashTable         *special_static_fields;
 	GHashTable         *jump_target_hash;
-	MonoGHashTable     *class_init_trampoline_hash;
-	MonoGHashTable     *jump_trampoline_hash;
+	GHashTable         *class_init_trampoline_hash;
+	GHashTable         *jump_trampoline_hash;
 	/* 
 	 * This must be a GHashTable, since these objects can't be finalized
 	 * if the hashtable contains a GC visible reference to them.

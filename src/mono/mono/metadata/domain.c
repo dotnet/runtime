@@ -285,14 +285,14 @@ mono_domain_create (void)
 	domain->env = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
 	domain->assemblies_by_name = g_hash_table_new (g_str_hash, g_str_equal);
 	domain->assemblies = NULL;
-	domain->class_vtable_hash = mono_g_hash_table_new (NULL, NULL);
-	domain->proxy_vtable_hash = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
+	domain->class_vtable_hash = g_hash_table_new (NULL, NULL);
+	domain->proxy_vtable_hash = g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
 	domain->static_data_hash = mono_g_hash_table_new (NULL, NULL);
 	domain->jit_code_hash = g_hash_table_new (NULL, NULL);
 	domain->ldstr_table = mono_g_hash_table_new ((GHashFunc)ldstr_hash, (GCompareFunc)ldstr_equal);
 	domain->jit_info_table = mono_jit_info_table_new ();
-	domain->class_init_trampoline_hash = mono_g_hash_table_new (NULL, NULL);
-	domain->jump_trampoline_hash = mono_g_hash_table_new (NULL, NULL);
+	domain->class_init_trampoline_hash = g_hash_table_new (NULL, NULL);
+	domain->jump_trampoline_hash = g_hash_table_new (NULL, NULL);
 	domain->finalizable_objects_hash = g_hash_table_new (NULL, NULL);
 	domain->domain_id = InterlockedIncrement (&appdomain_id_counter);
 
@@ -785,8 +785,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_g_hash_table_destroy (domain->env);
 	g_hash_table_destroy (domain->assemblies_by_name);
 	g_list_free (domain->assemblies);
-	mono_g_hash_table_destroy (domain->class_vtable_hash);
-	mono_g_hash_table_destroy (domain->proxy_vtable_hash);
+	g_hash_table_destroy (domain->class_vtable_hash);
+	g_hash_table_destroy (domain->proxy_vtable_hash);
 	mono_g_hash_table_destroy (domain->static_data_hash);
 	g_hash_table_destroy (domain->jit_code_hash);
 	if (domain->dynamic_code_hash) {
@@ -806,8 +806,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		g_hash_table_foreach (domain->jump_target_hash, delete_jump_list, NULL);
 		g_hash_table_destroy (domain->jump_target_hash);
 	}
-	mono_g_hash_table_destroy (domain->class_init_trampoline_hash);
-	mono_g_hash_table_destroy (domain->jump_trampoline_hash);
+	g_hash_table_destroy (domain->class_init_trampoline_hash);
+	g_hash_table_destroy (domain->jump_trampoline_hash);
 	g_hash_table_destroy (domain->finalizable_objects_hash);
 	if (domain->special_static_fields)
 		g_hash_table_destroy (domain->special_static_fields);
