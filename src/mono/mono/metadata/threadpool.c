@@ -168,6 +168,7 @@ async_invoke_thread ()
  
 	thread = mono_thread_current ();
 	thread->threadpool_thread = TRUE;
+	thread->state |= ThreadState_Background;
 	for (;;) {
 		MonoAsyncResult *ar;
 
