@@ -224,7 +224,7 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 	MONO_ARCH_SAVE_REGS;
 }
 
-/*static CRITICAL_SECTION handle_section;*/
+static CRITICAL_SECTION handle_section;
 static guint32 next_handle = 0;
 static gpointer *gc_handles = NULL;
 static guint8 *gc_handle_types = NULL;
@@ -257,15 +257,17 @@ ves_icall_System_GCHandle_GetTarget (guint32 handle)
 
 	if (gc_handles) {
 		type = handle & 0x3;
+		EnterCriticalSection (&handle_section);
 		g_assert (type == gc_handle_types [handle >> 2]);
 		obj = gc_handles [handle >> 2];
+		LeaveCriticalSection (&handle_section);
 		if (!obj)
 			return NULL;
 
 		if ((type == HANDLE_WEAK) || (type == HANDLE_WEAK_TRACK))
 			return REVEAL_POINTER (obj);
 		else
-		return obj;
+			return obj;
 	}
 	return NULL;
 }
@@ -274,10 +276,12 @@ guint32
 ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint32 type)
 {
 	gpointer val = obj;
-	guint32 h, idx = next_handle++;
+	guint32 h, idx;
 
 	MONO_ARCH_SAVE_REGS;
 
+	EnterCriticalSection (&handle_section);
+	idx = next_handle++;
 	if (idx >= array_size) {
 #if HAVE_BOEHM_GC
 		gpointer *new_array;
@@ -339,6 +343,7 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 		gc_handle_types [idx] = type;
 		break;
 	}
+	LeaveCriticalSection (&handle_section);
 	return h;
 }
 
@@ -349,6 +354,8 @@ ves_icall_System_GCHandle_FreeHandle (guint32 handle)
 	int type = handle & 0x3;
 
 	MONO_ARCH_SAVE_REGS;
+
+	EnterCriticalSection (&handle_section);
 
 #ifdef HAVE_BOEHM_GC
 	g_assert (type == gc_handle_types [idx]);
@@ -362,6 +369,7 @@ ves_icall_System_GCHandle_FreeHandle (guint32 handle)
 
 	gc_handles [idx] = (gpointer)-1;
 	gc_handle_types [idx] = (guint8)-1;
+	LeaveCriticalSection (&handle_section);
 }
 
 gpointer
@@ -373,8 +381,10 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 	MONO_ARCH_SAVE_REGS;
 
 	if (gc_handles) {
+		EnterCriticalSection (&handle_section);
 		obj = gc_handles [handle >> 2];
 		g_assert (gc_handle_types [handle >> 2] == type);
+		LeaveCriticalSection (&handle_section);
 		if ((type == HANDLE_WEAK) || (type == HANDLE_WEAK_TRACK)) {
 			obj = REVEAL_POINTER (obj);
 			if (obj == (MonoObject *) -1)
@@ -425,6 +435,8 @@ void mono_gc_init (void)
 {
 	HANDLE gc_thread;
 
+	InitializeCriticalSection (&handle_section);
+
 	if (getenv ("GC_DONT_GC"))
 		return;
 	
@@ -461,6 +473,7 @@ void mono_gc_cleanup (void)
 /* no Boehm GC support. */
 void mono_gc_init (void)
 {
+	InitializeCriticalSection (&handle_section);
 }
 
 void mono_gc_cleanup (void)
