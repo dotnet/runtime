@@ -209,7 +209,7 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	if (cfg->frame_reg != ppc_sp)
 		top = 31;
 #if USE_EXTRA_TEMPS
-	top -= 2;
+	top = 29;
 #endif
 	for (i = 13; i < top; ++i)
 		regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
