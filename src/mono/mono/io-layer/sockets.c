@@ -23,6 +23,10 @@
 #endif
 #include <unistd.h>
 
+#ifndef HAVE_MSG_NOSIGNAL
+#include <signal.h>
+#endif
+
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/socket-private.h>
@@ -657,6 +661,9 @@ int _wapi_recv(guint32 handle, void *buf, size_t len, int recv_flags)
 int _wapi_recvfrom(guint32 handle, void *buf, size_t len, int recv_flags,
 		   struct sockaddr *from, socklen_t *fromlen)
 {
+#ifndef HAVE_MSG_NOSIGNAL
+	void (*old_sigpipe)(int);	// old SIGPIPE handler
+#endif
 	struct _WapiHandlePrivate_socket *socket_private_handle;
 	gboolean ok;
 	int ret;
@@ -675,8 +682,16 @@ int _wapi_recvfrom(guint32 handle, void *buf, size_t len, int recv_flags,
 		return(SOCKET_ERROR);
 	}
 	
+#ifdef HAVE_MSG_NOSIGNAL
+	ret=recvfrom(socket_private_handle->fd, buf, len, recv_flags | MSG_NOSIGNAL, from,
+		     fromlen);
+#else
+	old_sigpipe = signal(SIGPIPE, SIG_IGN);
 	ret=recvfrom(socket_private_handle->fd, buf, len, recv_flags, from,
 		     fromlen);
+	signal(SIGPIPE, old_sigpipe);
+#endif
+
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": recv error: %s",
@@ -719,6 +734,9 @@ int _wapi_recvfrom(guint32 handle, void *buf, size_t len, int recv_flags,
 
 int _wapi_send(guint32 handle, const void *msg, size_t len, int send_flags)
 {
+#ifndef HAVE_MSG_NOSIGNAL
+	void (*old_sigpipe)(int);	// old SIGPIPE handler
+#endif
 	struct _WapiHandlePrivate_socket *socket_private_handle;
 	gboolean ok;
 	int ret;
@@ -736,8 +754,14 @@ int _wapi_send(guint32 handle, const void *msg, size_t len, int send_flags)
 		WSASetLastError(WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
-	
+
+#ifdef HAVE_MSG_NOSIGNAL
+	ret=send(socket_private_handle->fd, msg, len, send_flags | MSG_NOSIGNAL);
+#else
+	old_sigpipe = signal(SIGPIPE, SIG_IGN);
 	ret=send(socket_private_handle->fd, msg, len, send_flags);
+	signal(SIGPIPE, old_sigpipe);
+#endif
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": send error: %s",
@@ -787,6 +811,9 @@ int _wapi_send(guint32 handle, const void *msg, size_t len, int send_flags)
 int _wapi_sendto(guint32 handle, const void *msg, size_t len, int send_flags,
 		 const struct sockaddr *to, socklen_t tolen)
 {
+#ifndef HAVE_MSG_NOSIGNAL
+	void (*old_sigpipe)(int);	// old SIGPIPE handler
+#endif
 	struct _WapiHandlePrivate_socket *socket_private_handle;
 	gboolean ok;
 	int ret;
@@ -805,7 +832,13 @@ int _wapi_sendto(guint32 handle, const void *msg, size_t len, int send_flags,
 		return(SOCKET_ERROR);
 	}
 	
+#ifdef HAVE_MSG_NOSIGNAL
+	ret=sendto(socket_private_handle->fd, msg, len, send_flags | MSG_NOSIGNAL, to, tolen);
+#else
+	old_sigpipe = signal(SIGPIPE, SIG_IGN);
 	ret=sendto(socket_private_handle->fd, msg, len, send_flags, to, tolen);
+	signal(SIGPIPE, old_sigpipe);
+#endif
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": send error: %s",

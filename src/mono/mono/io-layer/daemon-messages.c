@@ -13,15 +13,12 @@
 #include <errno.h>
 #include <string.h>
 
+#ifndef HAVE_MSG_NOSIGNAL
+#include <signal.h>
+#endif
+
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/daemon-messages.h>
-
-/* 
- * Since this is not portable, it's probably better to just ignore sigpipe.
- */
-#ifndef MSG_NOSIGNAL
-#define MSG_NOSIGNAL 0
-#endif
 
 /* Send request on fd, wait for response (called by applications, not
  * the daemon)
@@ -31,14 +28,22 @@ void _wapi_daemon_request_response (int fd, WapiHandleRequest *req,
 {
 	static pthread_mutex_t req_mutex=PTHREAD_MUTEX_INITIALIZER;
 	int ret;
-	
+#ifndef HAVE_MSG_NOSIGNAL
+	void (*old_sigpipe)(int);
+#endif
+
 	/* Serialise requests to the daemon from the same process.  We
 	 * rely on request turnaround time being minimal anyway, so
 	 * performance shouldnt suffer from the mutex.
 	 */
 	pthread_mutex_lock (&req_mutex);
 	
+#ifdef HAVE_MSG_NOSIGNAL
 	ret=send (fd, req, sizeof(WapiHandleRequest), MSG_NOSIGNAL);
+#else
+	old_sigpipe = signal (SIGPIPE, SIG_IGN);
+	ret=send (fd, req, sizeof(WapiHandleRequest), 0);
+#endif
 	if(ret!=sizeof(WapiHandleRequest)) {
 		if(errno==EPIPE) {
 			g_warning (G_GNUC_PRETTY_FUNCTION ": The handle daemon vanished!");
@@ -50,7 +55,12 @@ void _wapi_daemon_request_response (int fd, WapiHandleRequest *req,
 		}
 	}
 
+#ifdef HAVE_MSG_NOSIGNAL
 	ret=recv (fd, resp, sizeof(WapiHandleResponse), MSG_NOSIGNAL);
+#else
+	ret=recv (fd, resp, sizeof(WapiHandleResponse), 0);
+	signal (SIGPIPE, old_sigpipe);
+#endif
 	if(ret==-1) {
 		if(errno==EPIPE) {
 			g_warning (G_GNUC_PRETTY_FUNCTION ": The handle daemon vanished!");
@@ -69,8 +79,17 @@ void _wapi_daemon_request_response (int fd, WapiHandleRequest *req,
 void _wapi_daemon_request (int fd, WapiHandleRequest *req)
 {
 	int ret;
+#ifndef HAVE_MSG_NOSIGNAL
+	void (*old_sigpipe)(int);
+#endif
 	
+#ifdef HAVE_MSG_NOSIGNAL
 	ret=recv (fd, req, sizeof(WapiHandleRequest), MSG_NOSIGNAL);
+#else
+	old_sigpipe = signal (SIGPIPE, SIG_IGN);
+	ret=recv (fd, req, sizeof(WapiHandleRequest), 0);
+	signal (SIGPIPE, old_sigpipe);
+#endif
 	if(ret==-1) {
 #ifdef DEBUG
 		g_warning (G_GNUC_PRETTY_FUNCTION ": Recv error: %s",
@@ -84,8 +103,17 @@ void _wapi_daemon_request (int fd, WapiHandleRequest *req)
 void _wapi_daemon_response (int fd, WapiHandleResponse *resp)
 {
 	int ret;
+#ifndef HAVE_MSG_NOSIGNAL
+	void (*old_sigpipe)(int);
+#endif
 	
+#ifdef HAVE_MSG_NOSIGNAL
 	ret=send (fd, resp, sizeof(WapiHandleResponse), MSG_NOSIGNAL);
+#else
+	old_sigpipe = signal (SIGPIPE, SIG_IGN);
+	ret=send (fd, resp, sizeof(WapiHandleResponse), 0);
+	signal (SIGPIPE, old_sigpipe);
+#endif
 	if(ret==-1) {
 #ifdef DEBUG
 		g_warning (G_GNUC_PRETTY_FUNCTION ": Send error: %s",

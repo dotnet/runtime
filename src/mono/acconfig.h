@@ -1,5 +1,6 @@
 #undef HAVE_INET_PTON
 #undef HAVE_INET_ATON
+#undef HAVE_MSG_NOSIGNAL
 #undef HAVE_SOL_IP
 #undef HAVE_SOL_TCP
 #undef HAVE_IP_PKTINFO
