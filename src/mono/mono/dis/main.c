@@ -962,7 +962,7 @@ main (int argc, char *argv [])
 				dump_header_data_p = TRUE;
 			else if (strcmp (argv [i], "--mscorlib") == 0) {
 				substitute_with_mscorlib_p = TRUE;
-				i++;
+				continue;
 			} else if (strncmp (argv [i], "--output=", 9) == 0) {
 				output = fopen (argv [i]+9, "w");
 				if (output == NULL) {

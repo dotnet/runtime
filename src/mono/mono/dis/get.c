@@ -501,17 +501,22 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 static char *
 dis_stringify_object (MonoImage *m, MonoType *type)
 {
+	/* FIXME: handle MONO_TYPE_OBJECT ... */
 	const char *otype = type->type == MONO_TYPE_CLASS? "class" : "valuetype";
 	char *assemblyref = NULL, *result;
 	MonoClass *c = type->data.klass;
 	if (!c)
 		return g_strdup ("Unknown");
 	if (m != c->image) {
-		/* we cheat */
-		if (substitute_with_mscorlib_p && !strcmp ("corlib", c->image->assembly_name))
-			assemblyref = g_strdup_printf ("[%s]", "mscorlib");
-		else
-			assemblyref = g_strdup_printf ("[%s]", c->image->assembly_name);
+		if (c->image->assembly_name) {
+			/* we cheat */
+			if (substitute_with_mscorlib_p && !strcmp ("corlib", c->image->assembly_name))
+				assemblyref = g_strdup_printf ("[%s]", "mscorlib");
+			else
+				assemblyref = g_strdup_printf ("[%s]", c->image->assembly->aname.name);
+		} else {
+			assemblyref = g_strdup_printf ("[.module %s]", c->image->module_name);
+		}
 	}
 	result = g_strdup_printf ("%s %s%s%s%s", otype, assemblyref?assemblyref:"", c->name_space, 
 				*c->name_space?".":"", c->name);
@@ -991,10 +996,11 @@ get_method (MonoImage *m, guint32 token)
 	MonoMethod *mh;
 
 	mh = mono_get_method (m, token, NULL);
-	if (mh)
-		name = g_strdup_printf ("%s%s%s::%s", mh->klass->name_space, *(mh->klass->name_space)?".":"",
-				mh->klass->name, mh->name); 
-	else
+	if (mh) {
+		sig = dis_stringify_object (m, &mh->klass->byval_arg);
+		name = g_strdup_printf ("%s::%s", sig, mh->name);
+		g_free (sig);
+	} else
 		name = NULL;
 
 	switch (mono_metadata_token_code (token)){
