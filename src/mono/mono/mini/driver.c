@@ -93,7 +93,7 @@ opt_names [] = {
 	MONO_OPT_LOOP |  \
 	MONO_OPT_AOT)
 
-#define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP | MONO_OPT_SSAPRE)
+#define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP)
 
 static guint32
 parse_optimizations (const char* p)
