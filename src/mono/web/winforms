@@ -33,6 +33,9 @@
 	the existing library on Linux, but this is a bit more
 	complicated).  
 
+	See the file mcs/class/System.Windows.Forms/CheckOutList for
+	details on who is working on which class.
+
 	Please read the README document in the
 	System.Windows.Forms/WINElib directory for details about how
 	to build the Windows.Forms support for Mono.
