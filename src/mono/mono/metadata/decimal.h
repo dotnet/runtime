@@ -6,12 +6,21 @@ typedef struct
 {
 	union {
 		guint32 ss32;
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+	    struct {
+		    unsigned int sign      : 1;
+		    unsigned int reserved2 : 7;
+		    unsigned int scale     : 8;
+		    unsigned int reserved1 : 16;
+	    } signscale;
+#else
 	    struct {
 		    unsigned int reserved1 : 16;
-	        unsigned int scale : 8; 
+		    unsigned int scale     : 8;
 		    unsigned int reserved2 : 7;
-	    	unsigned int sign : 1; 
-		} signscale;
+		    unsigned int sign      : 1;
+	    } signscale;
+#endif
 	} u;
     guint32 hi32;
     guint32 lo32;
