@@ -2244,7 +2244,7 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 	for (i = 0; i < count; i++) {
 		MonoAssembly *assem = assembly->assembly->image->references [i];
 		MonoReflectionAssemblyName *aname;
-		char *codebase;
+		char *codebase, *absolute;
 
 		aname = (MonoReflectionAssemblyName *) mono_object_new (
 			domain, System_Reflection_AssemblyName);
@@ -2255,9 +2255,11 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 			aname->name = mono_string_new (domain, assem->aname.name);
 		aname->major = assem->aname.major;
 
-		codebase = g_filename_to_uri (assembly->assembly->image->references [i]->image->name, NULL, NULL);
+		absolute = g_build_filename (assem->basedir, assem->image->module_name, NULL);
+		codebase = g_filename_to_uri (absolute, NULL, NULL);
 		aname->codebase = mono_string_new (domain, codebase);
 		g_free (codebase);
+		g_free (absolute);
 		mono_array_set (result, gpointer, i, aname);
 	}
 	return result;
