@@ -7256,6 +7256,58 @@ handle_type:
 	*retbuffer = buffer;
 }
 
+static void
+encode_named_val (MonoReflectionAssembly *assembly, char *buffer, char *p, char **retbuffer, char **retp, guint32 *buflen, MonoType *type, char *name, MonoObject *value)
+{
+	int len;
+	/* Preallocate a large enough buffer */
+	if (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype) {
+		char *str = type_get_qualified_name (type, NULL);
+		len = strlen (str);
+		g_free (str);
+	} else {
+		len = 0;
+	}
+	len += strlen (name);
+
+	if ((p-buffer) + 20 + len >= *buflen) {
+		char *newbuf;
+		*buflen *= 2;
+		*buflen += len;
+		newbuf = g_realloc (buffer, *buflen);
+		p = newbuf + (p-buffer);
+		buffer = newbuf;
+	}
+
+	if (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype) {
+		char *str = type_get_qualified_name (type, NULL);
+		int slen = strlen (str);
+
+		*p++ = 0x55;
+		/*
+		 * This seems to be optional...
+		 * *p++ = 0x80;
+		 */
+		mono_metadata_encode_value (slen, p, &p);
+		memcpy (p, str, slen);
+		p += slen;
+		g_free (str);
+	} else if (type->type == MONO_TYPE_OBJECT) {
+		*p++ = 0x51;
+	} else {
+		mono_metadata_encode_value (type->type, p, &p);
+		if (type->type == MONO_TYPE_SZARRAY)
+			mono_metadata_encode_value (type->data.klass->this_arg.type, p, &p);
+	}
+	len = strlen (name);
+	mono_metadata_encode_value (len, p, &p);
+	memcpy (p, name, len);
+	p += len;
+	encode_cattr_value (assembly->assembly, buffer, p, &buffer, &p, buflen, type, value, NULL);
+	*retp = p;
+	*retbuffer = buffer;
+}
+
 /*
  * mono_reflection_get_custom_attrs_blob:
  * @ctor: custom attribute constructor
@@ -7307,56 +7359,11 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 		for (i = 0; i < mono_array_length (properties); ++i) {
 			MonoType *ptype;
 			char *pname;
-			int len;
-			
+
 			prop = mono_array_get (properties, gpointer, i);
 			get_prop_name_and_type (prop, &pname, &ptype);
 			*p++ = 0x54; /* PROPERTY signature */
-
-			/* Preallocate a large enough buffer */
-			if (ptype->type == MONO_TYPE_VALUETYPE && ptype->data.klass->enumtype) {
-				char *str = type_get_qualified_name (ptype, NULL);
-				len = strlen (str);
-				g_free (str);
-			}
-			else
-				len = 0;
-			len += strlen (pname);
-
-			if ((p-buffer) + 20 + len >= buflen) {
-				char *newbuf;
-				buflen *= 2;
-				buflen += len;
-				newbuf = g_realloc (buffer, buflen);
-				p = newbuf + (p-buffer);
-				buffer = newbuf;
-			}
-
-			if (ptype->type == MONO_TYPE_VALUETYPE && ptype->data.klass->enumtype) {
-				char *str = type_get_qualified_name (ptype, NULL);
-				int slen = strlen (str);
-
-				*p++ = 0x55;
-				/*
-				 * This seems to be optional...
-				 * *p++ = 0x80;
-				 */
-				mono_metadata_encode_value (slen, p, &p);
-				memcpy (p, str, slen);
-				p += slen;
-				g_free (str);
-			} else if (ptype->type == MONO_TYPE_OBJECT) {
-				*p++ = 0x51;
-			} else {
-				mono_metadata_encode_value (ptype->type, p, &p);
-				if (ptype->type == MONO_TYPE_SZARRAY)
-					mono_metadata_encode_value (ptype->data.klass->this_arg.type, p, &p);
-			}
-			len = strlen (pname);
-			mono_metadata_encode_value (len, p, &p);
-			memcpy (p, pname, len);
-			p += len;
-			encode_cattr_value (assembly->assembly, buffer, p, &buffer, &p, &buflen, ptype, (MonoObject*)mono_array_get (propValues, gpointer, i), NULL);
+			encode_named_val (assembly, buffer, p, &buffer, &p, &buflen, ptype, pname, (MonoObject*)mono_array_get (propValues, gpointer, i));
 			g_free (pname);
 		}
 	}
@@ -7366,43 +7373,11 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 		for (i = 0; i < mono_array_length (fields); ++i) {
 			MonoType *ftype;
 			char *fname;
-			int len;
-			
+
 			field = mono_array_get (fields, gpointer, i);
 			get_field_name_and_type (field, &fname, &ftype);
 			*p++ = 0x53; /* FIELD signature */
-			if (ftype->type == MONO_TYPE_VALUETYPE && ftype->data.klass->enumtype) {
-				char *str = type_get_qualified_name (ftype, NULL);
-				int slen = strlen (str);
-				if ((p-buffer) + 10 + slen >= buflen) {
-					char *newbuf;
-					buflen *= 2;
-					buflen += slen;
-					newbuf = g_realloc (buffer, buflen);
-					p = newbuf + (p-buffer);
-					buffer = newbuf;
-				}
-				*p++ = 0x55;
-				/*
-				 * This seems to be optional...
-				 * *p++ = 0x80;
-				 */
-				mono_metadata_encode_value (slen, p, &p);
-				memcpy (p, str, slen);
-				p += slen;
-				g_free (str);
-			} else if (ftype->type == MONO_TYPE_OBJECT) {
-				*p++ = 0x51;
-			} else {
-				mono_metadata_encode_value (ftype->type, p, &p);
-				if (ftype->type == MONO_TYPE_SZARRAY)
-					mono_metadata_encode_value (ftype->data.klass->this_arg.type, p, &p);
-			}
-			len = strlen (fname);
-			mono_metadata_encode_value (len, p, &p);
-			memcpy (p, fname, len);
-			p += len;
-			encode_cattr_value (assembly->assembly, buffer, p, &buffer, &p, &buflen, ftype, (MonoObject*)mono_array_get (fieldValues, gpointer, i), NULL);
+			encode_named_val (assembly, buffer, p, &buffer, &p, &buflen, ftype, fname, (MonoObject*)mono_array_get (fieldValues, gpointer, i));
 			g_free (fname);
 		}
 	}
