@@ -3951,9 +3951,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			if (dreg != ins->dreg) {
 				x86_push_reg (code, dreg);
-				x86_mov_reg_reg (code, dreg, ins->sreg2, 4);
 			}
 
+			x86_mov_reg_reg (code, dreg, ins->sreg2, 4);
 			x86_prefix (code, X86_LOCK_PREFIX);
 			x86_xadd_membase_reg (code, ins->inst_basereg, ins->inst_offset, dreg, 4);
 			/* dreg contains the old value, add with sreg2 value */
