@@ -218,8 +218,16 @@ ves_icall_type_from_handle (MonoType *handle)
 static guint32
 ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c)
 {
-	MonoClass *klass = mono_class_from_mono_type (type->type);
-	MonoClass *klassc = mono_class_from_mono_type (c->type);
+	MonoClass *klass;
+	MonoClass *klassc;
+
+	while (!type->type) { /* FIXME: hack for TypeBuilder */
+		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)type;
+		type = tb->parent;
+	}
+
+	klass = mono_class_from_mono_type (type->type);
+	klassc = mono_class_from_mono_type (c->type);
 
 	/* cut&paste from mono_object_isinst (): keep in sync */
 	if (klassc->flags & TYPE_ATTRIBUTE_INTERFACE) {
@@ -477,7 +485,7 @@ enum {
  * Note: the filter is applied from within corlib.
  */
 static MonoArray*
-ves_icall_type_find_members (MonoReflectionType *type, guint32 membertypes, guint32 bflags, gpointer filter, MonoObject *criteria)
+ves_icall_type_find_members (MonoReflectionType *type, guint32 membertypes, guint32 bflags)
 {
 	GSList *l = NULL, *tmp;
 	MonoClass *startklass, *klass;
@@ -615,6 +623,7 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 		namespace = "";
 		name = str;
 	}
+
 	klass = mono_class_from_name (assembly->assembly->image, namespace, name);
 	g_free (str);
 	if (!klass)

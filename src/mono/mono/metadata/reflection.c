@@ -708,15 +708,10 @@ mono_image_get_type_info (MonoReflectionTypeBuilder *tb, MonoDynamicAssembly *as
 	values [MONO_TYPEDEF_FIELD_LIST] = assembly->tables [MONO_TABLE_FIELD].next_idx;
 	values [MONO_TYPEDEF_METHOD_LIST] = assembly->tables [MONO_TABLE_METHOD].next_idx;
 
-	/* handle methods */
-	if (tb->methods) {
-		table = &assembly->tables [MONO_TABLE_METHOD];
-		table->rows += mono_array_length (tb->methods);
-		alloc_table (table, table->rows);
-		for (i = 0; i < mono_array_length (tb->methods); ++i)
-			mono_image_get_method_info (
-				mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i), assembly);
-	}
+	/*
+	 * FIXME: constructors and methods need to be output in the same order
+	 * as they are defined (according to table_idx).
+	 */
 
 	/* handle constructors */
 	if (tb->ctors) {
@@ -726,6 +721,16 @@ mono_image_get_type_info (MonoReflectionTypeBuilder *tb, MonoDynamicAssembly *as
 		for (i = 0; i < mono_array_length (tb->ctors); ++i)
 			mono_image_get_ctor_info (
 				mono_array_get (tb->ctors, MonoReflectionCtorBuilder*, i), assembly);
+	}
+
+	/* handle methods */
+	if (tb->methods) {
+		table = &assembly->tables [MONO_TABLE_METHOD];
+		table->rows += mono_array_length (tb->methods);
+		alloc_table (table, table->rows);
+		for (i = 0; i < mono_array_length (tb->methods); ++i)
+			mono_image_get_method_info (
+				mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i), assembly);
 	}
 
 	/* handle fields */
@@ -1070,7 +1075,9 @@ mono_image_create_token (MonoReflectionAssemblyBuilder *assembly, MonoObject *ob
 
 	if (strcmp (klass->name, "MethodBuilder") == 0) {
 		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)obj;
-		return mb->table_idx | MONO_TOKEN_METHOD_DEF;
+		token = mb->table_idx | MONO_TOKEN_METHOD_DEF;
+		/*g_print ("got token 0x%08x for %s\n", token, mono_string_to_utf8 (mb->name));*/
+		return token;
 	}
 	if (strcmp (klass->name, "FieldBuilder") == 0) {
 		MonoReflectionFieldBuilder *mb = (MonoReflectionFieldBuilder *)obj;
@@ -1079,7 +1086,7 @@ mono_image_create_token (MonoReflectionAssemblyBuilder *assembly, MonoObject *ob
 	if (strcmp (klass->name, "MonoCMethod") == 0) {
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
 		token = mono_image_get_methodref_token (assembly->dynamic_assembly, m->method);
-		g_print ("got token 0x%08x for %s\n", token, m->method->name);
+		/*g_print ("got token 0x%08x for %s\n", token, m->method->name);*/
 		return token;
 	}
 	g_print ("requested token for %s\n", klass->name);
@@ -1335,6 +1342,7 @@ mono_param_get_objects (MonoMethod *method)
 
 	member = mono_method_get_object (method);
 	names = g_new (char*, method->signature->param_count);
+	mono_method_get_param_names (method, names);
 	
 	/* Note: the cache is based on the address of the signature into the method
 	 * since we already cache MethodInfos with the method as keys.

@@ -240,6 +240,12 @@ enum_retvalue:
 			x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
 			x86_mov_regp_reg (p, X86_ECX, X86_EAX, 1);
 			break;
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+			x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
+			x86_mov_regp_reg (p, X86_ECX, X86_EAX, 2);
+			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:

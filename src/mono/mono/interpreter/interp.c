@@ -597,11 +597,22 @@ output_indent (void)
 static void
 db_match_method (gpointer data, gpointer user_data)
 {
-	/*
-	 * Make this function smarter (accept Class:method...)
-	 */
-	if (strcmp((char*)data, (char*)user_data) == 0)
+	MonoMethod *m = (MonoMethod*)user_data;
+	char *startname, *startclass;
+
+	if (strcmp((char*)data, m->name) == 0) {
 		break_on_method = 1;
+		return;
+	}
+	startname = rindex ((char*)data, ':');
+	if (!startname)
+		return;
+	if (strcmp(startname + 1, m->name) != 0)
+		return;
+	startclass = (char*)data;
+	if (memcmp (startclass, m->klass->name, startname-startclass) == 0)
+		break_on_method = 1;
+	/* ignore namespace */
 }
 
 static guint32*
@@ -637,7 +648,7 @@ calc_offsets (MonoMethodHeader *header, MonoMethodSignature *signature)
 
 #define DEBUG_ENTER()	\
 	fcall_count++;	\
-	g_list_foreach (db_methods, db_match_method, (gpointer)frame->method->name);	\
+	g_list_foreach (db_methods, db_match_method, (gpointer)frame->method);	\
 	if (break_on_method) G_BREAKPOINT ();	\
 	break_on_method = 0;	\
 	if (tracing) {	\
@@ -2433,7 +2444,10 @@ array_constructed:
 			g_assert (class != NULL);
 
 			sp [-1].type = VAL_OBJ;
-			sp [-1].data.p = mono_value_box (class, &sp [-1]);
+			if (class->byval_arg.type == MONO_TYPE_VALUETYPE && !class->enumtype) 
+				sp [-1].data.p = mono_value_box (class, sp [-1].data.p);
+			else
+				sp [-1].data.p = mono_value_box (class, &sp [-1]);
 			/* need to vt_free (sp); */
 
 			ip += 4;
@@ -2985,8 +2999,8 @@ array_constructed:
 			case CEE_LDARG: {
 				guint32 arg_pos;
 				++ip;
-				arg_pos = read32 (ip);
-				ip += 4;
+				arg_pos = read16 (ip);
+				ip += 2;
 				vt_alloc (ARG_TYPE (signature, arg_pos), sp);
 				stackval_from_data (ARG_TYPE (signature, arg_pos), sp, ARG_POS (arg_pos));
 				++sp;
@@ -2998,8 +3012,8 @@ array_constructed:
 				guint32 anum;
 
 				++ip;
-				anum = read32 (ip);
-				ip += 4;
+				anum = read16 (ip);
+				ip += 2;
 				t = ARG_TYPE (signature, anum);
 				c = mono_class_from_mono_type (t);
 				sp->data.vt.klass = c;
@@ -3017,8 +3031,8 @@ array_constructed:
 			case CEE_STARG: {
 				guint32 arg_pos;
 				++ip;
-				arg_pos = read32 (ip);
-				ip += 4;
+				arg_pos = read16 (ip);
+				ip += 2;
 				--sp;
 				stackval_to_data (ARG_TYPE (signature, arg_pos), sp, ARG_POS (arg_pos));
 				vt_free (sp);
@@ -3027,8 +3041,8 @@ array_constructed:
 			case CEE_LDLOC: {
 				guint32 loc_pos;
 				++ip;
-				loc_pos = read32 (ip);
-				ip += 4;
+				loc_pos = read16 (ip);
+				ip += 2;
 				vt_alloc (LOCAL_TYPE (header, loc_pos), sp);
 				stackval_from_data (LOCAL_TYPE (header, loc_pos), sp, LOCAL_POS (loc_pos));
 				++sp;
@@ -3040,8 +3054,8 @@ array_constructed:
 				guint32 loc_pos;
 
 				++ip;
-				loc_pos = read32 (ip);
-				ip += 4;
+				loc_pos = read16 (ip);
+				ip += 2;
 				t = LOCAL_TYPE (header, loc_pos);
 				c =  mono_class_from_mono_type (t);
 				sp->data.vt.vt = LOCAL_POS (loc_pos);
@@ -3058,8 +3072,8 @@ array_constructed:
 			case CEE_STLOC: {
 				guint32 loc_pos;
 				++ip;
-				loc_pos = read32 (ip);
-				ip += 4;
+				loc_pos = read16 (ip);
+				ip += 2;
 				--sp;
 				stackval_to_data (LOCAL_TYPE (header, loc_pos), sp, LOCAL_POS (loc_pos));
 				vt_free (sp);

@@ -50,6 +50,8 @@ class CGen {
 		get_method = tbuilder.DefineMethod("get_FieldI", MethodAttributes.Public, result, null);
 		ilg = get_method.GetILGenerator (128);
 		ilg.Emit (OpCodes.Ldloc_0);
+		ilg.Emit (OpCodes.Ldloc_0);
+		ilg.Emit (OpCodes.Ceq);
 		ilg.Emit (OpCodes.Ret);
 		pbuilder.SetGetMethod (get_method);
 
