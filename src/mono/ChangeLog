@@ -1,3 +1,7 @@
+2003-03-31  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* data/machine.config: added SessionStateModule to httpModules section.
+
 2003-02-13  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* data/machine.config: added default sessionState section and handler.
