@@ -1341,10 +1341,18 @@ typedef union {
 		x86_memindex_emit ((inst), 6, (basereg), (disp), (indexreg), (shift));	\
 	} while (0)
 
+#define x86_push_imm_template(inst) x86_push_imm (inst, 0xf0f0f0f0)
+	
 #define x86_push_imm(inst,imm)	\
 	do {	\
-		*(inst)++ = (unsigned char)0x68;	\
-		x86_imm_emit32 ((inst), (imm));	\
+		int _imm = (int) imm;	\
+		if (x86_is_imm8 (_imm)) {	\
+			*(inst)++ = (unsigned char)0x6A;	\
+			x86_imm_emit8 ((inst), (_imm));	\
+		} else {	\
+			*(inst)++ = (unsigned char)0x68;	\
+			x86_imm_emit32 ((inst), (_imm));	\
+		}	\
 	} while (0)
 
 #define x86_pop_reg(inst,reg)	\
