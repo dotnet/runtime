@@ -1423,6 +1423,88 @@
         <completion>10</completion>
         <maintainers>
             <maintainer>marcel@narings.nl</maintainer>
-    </maintainers>
+        </maintainers>
+    </class>
+    <class name="System.Globalization.Calendar">
+        <last-activity>Jul-24-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcel@narings.nl</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Globalization.GregorianCalendar">
+        <last-activity>Jul-24-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcel@narings.nl</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Globalization.HebrewCalendar">
+        <last-activity>Jul-24-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcel@narings.nl</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Globalization.HijriCalendar">
+        <last-activity>Jul-24-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcel@narings.nl</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Globalization.JapaneseCalendar">
+        <last-activity>Jul-24-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcel@narings.nl</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Globalization.JulianCalendar">
+        <last-activity>Jul-24-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcel@narings.nl</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Globalization.KoreanCalendar">
+        <last-activity>Jul-24-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcel@narings.nl</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Globalization.TaiwanCalendar">
+        <last-activity>Jul-24-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcel@narings.nl</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Globalization.ThaiBuddhistCalendar">
+        <last-activity>Jul-24-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>marcel@narings.nl</maintainer>
+        </maintainers>
+    </class>
 </classes>
 
