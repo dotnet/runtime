@@ -100,7 +100,7 @@ check_extra_gac_path_env (void) {
 	const char *path;
 	char **splitted;
 	
-	path = g_getenv ("MONO_GAC_PATH");
+	path = g_getenv ("MONO_GAC_PREFIX");
 	if (!path)
 		return;
 
