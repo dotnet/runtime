@@ -7,6 +7,7 @@
 		* <a href="#ComponentPascal">Component Pascal</a>
 		* <a href="#MonoLogo">MonoLogo</a>
 		* <a href="#Oberon">Oberon</a>
+		* <a href="#Forth">Forth</a>
 	</ul>
 
 	Languages we would like to have supported, with links to resources:
@@ -42,7 +43,15 @@
 	Page</a>, you can <a
 	href="http://www2.fit.qut.edu.au/CompSci/PLAS/ComponentPascal/gpcp1.1.4-netRTM.zip">
 	download it</a>
+	
+<a name="Forth">
+** Delta Forth
 
+   	 The Delta Forth.NET project: <a 
+	 href="http://www.codeproject.com/dotnet/dforthnet.asp">Home
+	 Page</a> and <a href="http://www.dataman.ro/dforth/index.html">more
+	 details here</a>.
+	 
 
 * Missing languages
 
