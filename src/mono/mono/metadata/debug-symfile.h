@@ -126,9 +126,6 @@ MonoReflectionMethodBuilder *
 ves_icall_Debugger_MonoSymbolWriter_method_builder_from_token (MonoReflectionModuleBuilder *mb,
 							       guint32 token);
 
-guint32
-ves_icall_Debugger_DwarfFileWriter_get_type_token (MonoReflectionType *type);
-
 gchar *
 mono_debug_find_source_location (MonoDebugSymbolFile *symfile, MonoMethod *method, guint32 offset);
 

@@ -2582,8 +2582,6 @@ static gconstpointer icall_map [] = {
 	 */
 	"Mono.CSharp.Debugger.MonoSymbolWriter::get_method_builder", 
 	ves_icall_Debugger_MonoSymbolWriter_method_builder_from_token,
-	"Mono.CSharp.Debugger.DwarfFileWriter::get_type_token", 
-	ves_icall_Debugger_DwarfFileWriter_get_type_token,
 
 
 	/*

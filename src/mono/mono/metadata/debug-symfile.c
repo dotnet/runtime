@@ -833,16 +833,6 @@ ves_icall_Debugger_MonoSymbolWriter_method_builder_from_token (MonoReflectionMod
 	return retval;
 }
 
-guint32
-ves_icall_Debugger_DwarfFileWriter_get_type_token (MonoReflectionType *type)
-{
-	MonoClass *klass = mono_class_from_mono_type (type->type);
-
-	mono_class_init (klass);
-
-	return klass->type_token;
-}
-
 gchar *
 mono_debug_find_source_location (MonoDebugSymbolFile *symfile, MonoMethod *method, guint32 offset)
 {
