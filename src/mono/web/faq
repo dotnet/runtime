@@ -18,6 +18,7 @@
 <a href="#licensing">Licensing</a><br>
 <a href="#patents">Patents</a><br>
 <a href="#etc">Miscellaneous Questions</a><br>
+<a href="#problems">Mono Common Problems</a><br>
 
 A <a
 href="http://www.es.gnome.org/documentacion/articulos/MONO-PUF/MONO-PUF/">spanish
@@ -1173,4 +1174,11 @@ A: If you use mono from cvs, you need to be prepared for changes in the
    way around).
 
 
+
+<a name="problems"></a>
+** Mono Common Problems
+
+   If you are having problems compiling or running Mono software
+   or if you think that you found a bug, etc. Please visit the
+   <a href="http://geneura.ugr.es/~jaime/mono-common-problems.html">Mono Common Problems</a> document and try there. 
 
