@@ -956,57 +956,62 @@ typedef struct {
 	guint16 b1_cond;
 } MonoOvfJump;
 
-#define EMIT_COND_BRANCH(ins,cond) \
+#define EMIT_COND_BRANCH_FLAGS(ins,b0,b1) \
 if (ins->flags & MONO_INST_BRLABEL) { \
         if (0 && ins->inst_i0->inst_c0) { \
-		ppc_bc (code, branch_b0_table [cond], branch_b1_table [cond], (code - cfg->native_code + ins->inst_i0->inst_c0) & 0xffff);	\
+		ppc_bc (code, (b0), (b1), (code - cfg->native_code + ins->inst_i0->inst_c0) & 0xffff);	\
         } else { \
 	        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0); \
-		ppc_bc (code, branch_b0_table [cond], branch_b1_table [cond], 0);	\
+		ppc_bc (code, (b0), (b1), 0);	\
         } \
 } else { \
         if (0 && ins->inst_true_bb->native_offset) { \
-		ppc_bc (code, branch_b0_table [cond], branch_b1_table [cond], (code - cfg->native_code + ins->inst_true_bb->native_offset) & 0xffff); \
+		ppc_bc (code, (b0), (b1), (code - cfg->native_code + ins->inst_true_bb->native_offset) & 0xffff); \
         } else { \
 		int br_disp = ins->inst_true_bb->max_offset - offset;	\
 		if (!ppc_is_imm16 (br_disp + 1024) || ! ppc_is_imm16 (ppc_is_imm16 (br_disp - 1024))) {	\
 			MonoOvfJump *ovfj = mono_mempool_alloc (cfg->mempool, sizeof (MonoOvfJump));	\
 			ovfj->bb = ins->inst_true_bb;	\
 			ovfj->ip = NULL;	\
-			ovfj->b0_cond = branch_b0_table [cond];	\
-			ovfj->b1_cond = branch_b1_table [cond];	\
+			ovfj->b0_cond = (b0);	\
+			ovfj->b1_cond = (b1);	\
 		        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB_OVF, ovfj); \
 			ppc_b (code, 0);	\
 		} else {	\
 		        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
-			ppc_bc (code, branch_b0_table [cond], branch_b1_table [cond], 0);	\
+			ppc_bc (code, (b0), (b1), 0);	\
 		}	\
         } \
 }
+
+#define EMIT_COND_BRANCH(ins,cond) EMIT_COND_BRANCH_FLAGS(ins, branch_b0_table [(cond)], branch_b1_table [(cond)])
 
 /* emit an exception if condition is fail
  *
  * We assign the extra code used to throw the implicit exceptions
  * to cfg->bb_exit as far as the big branch handling is concerned
  */
-#define EMIT_COND_SYSTEM_EXCEPTION(cond,exc_name)            \
+#define EMIT_COND_SYSTEM_EXCEPTION_FLAGS(b0,b1,exc_name)            \
         do {                                                        \
 		int br_disp = cfg->bb_exit->max_offset - offset;	\
 		if (!ppc_is_imm16 (br_disp + 1024) || ! ppc_is_imm16 (ppc_is_imm16 (br_disp - 1024))) {	\
 			MonoOvfJump *ovfj = mono_mempool_alloc (cfg->mempool, sizeof (MonoOvfJump));	\
 			ovfj->bb = NULL;	\
 			ovfj->ip = code;	\
-			ovfj->b0_cond = branch_b0_table [cond];	\
-			ovfj->b1_cond = branch_b1_table [cond];	\
+			ovfj->b0_cond = (b0);	\
+			ovfj->b1_cond = (b1);	\
+			/* FIXME: test this code */	\
 		        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_OVF, ovfj); \
 			ppc_b (code, 0);	\
 			cfg->bb_exit->max_offset += 24;	\
 		} else {	\
 			mono_add_patch_info (cfg, code - cfg->native_code,   \
 				    MONO_PATCH_INFO_EXC, exc_name);  \
-			ppc_bc (code, branch_b0_table [cond], branch_b1_table [cond], 0);	\
+			ppc_bc (code, (b0), (b1), 0);	\
 		}	\
 	} while (0); 
+
+#define EMIT_COND_SYSTEM_EXCEPTION(cond,exc_name) EMIT_COND_SYSTEM_EXCEPTION_FLAGS(branch_b0_table [(cond)], branch_b1_table [(cond)], (exc_name))
 
 static void
 peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
@@ -2427,28 +2432,47 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case CEE_DIV:
-			ppc_divw (code, ins->dreg, ins->sreg1, ins->sreg2);
+			/* clear the summary overflow flag */
+			ppc_crxor (code, 28, 28, 28);
+			ppc_divwod (code, ins->dreg, ins->sreg1, ins->sreg2);
+			/* FIXME: use OverflowException for 0x80000000/-1 */
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_SO, "DivideByZeroException");
 			break;
 		case CEE_DIV_UN:
-			ppc_divwu (code, ins->dreg, ins->sreg1, ins->sreg2);
+			/* clear the summary overflow flag */
+			ppc_crxor (code, 28, 28, 28);
+			ppc_divwuod (code, ins->dreg, ins->sreg1, ins->sreg2);
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_SO, "DivideByZeroException");
 			break;
 		case OP_DIV_IMM:
 			ppc_load (code, ppc_r11, ins->inst_imm);
-			ppc_divw (code, ins->dreg, ins->sreg1, ppc_r11);
+			/* clear the summary overflow flag */
+			ppc_crxor (code, 28, 28, 28);
+			ppc_divwod (code, ins->dreg, ins->sreg1, ppc_r11);
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_SO, "DivideByZeroException");
 			break;
 		case CEE_REM:
-			ppc_divw (code, ppc_r11, ins->sreg1, ins->sreg2);
+			/* clear the summary overflow flag */
+			ppc_crxor (code, 28, 28, 28);
+			ppc_divwod (code, ppc_r11, ins->sreg1, ins->sreg2);
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_SO, "DivideByZeroException");
 			ppc_mullw (code, ppc_r11, ppc_r11, ins->sreg2);
 			ppc_subf (code, ins->dreg, ppc_r11, ins->sreg1);
 			break;
 		case CEE_REM_UN:
-			ppc_divwu (code, ppc_r11, ins->sreg1, ins->sreg2);
+			/* clear the summary overflow flag */
+			ppc_crxor (code, 28, 28, 28);
+			ppc_divwuod (code, ppc_r11, ins->sreg1, ins->sreg2);
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_SO, "DivideByZeroException");
 			ppc_mullw (code, ppc_r11, ppc_r11, ins->sreg2);
 			ppc_subf (code, ins->dreg, ppc_r11, ins->sreg1);
 			break;
 		case OP_REM_IMM:
 			ppc_load (code, ppc_r11, ins->inst_imm);
-			ppc_divw (code, ins->dreg, ins->sreg1, ppc_r11);
+			/* clear the summary overflow flag */
+			ppc_crxor (code, 28, 28, 28);
+			ppc_divwod (code, ins->dreg, ins->sreg1, ppc_r11);
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_SO, "DivideByZeroException");
 			ppc_mullw (code, ins->dreg, ins->dreg, ppc_r11);
 			ppc_subf (code, ins->dreg, ins->dreg, ins->sreg1);
 			break;
@@ -2879,6 +2903,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCLT_UN:
 			ppc_fcmpu (code, 0, ins->sreg1, ins->sreg2);
 			ppc_li (code, ins->dreg, 1);
+			ppc_bc (code, PPC_BR_TRUE, PPC_BR_SO, 3);
 			ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 2);
 			ppc_li (code, ins->dreg, 0);
 			break;
@@ -2891,6 +2916,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCGT_UN:
 			ppc_fcmpu (code, 0, ins->sreg1, ins->sreg2);
 			ppc_li (code, ins->dreg, 1);
+			ppc_bc (code, PPC_BR_TRUE, PPC_BR_SO, 3);
 			ppc_bc (code, PPC_BR_TRUE, PPC_BR_GT, 2);
 			ppc_li (code, ins->dreg, 0);
 			break;
@@ -2904,12 +2930,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_BRANCH (ins, CEE_BLT - CEE_BEQ);
 			break;
 		case OP_FBLT_UN:
+			EMIT_COND_BRANCH_FLAGS (ins, PPC_BR_TRUE, PPC_BR_SO);
 			EMIT_COND_BRANCH (ins, CEE_BLT_UN - CEE_BEQ);
 			break;
 		case OP_FBGT:
 			EMIT_COND_BRANCH (ins, CEE_BGT - CEE_BEQ);
 			break;
 		case OP_FBGT_UN:
+			EMIT_COND_BRANCH_FLAGS (ins, PPC_BR_TRUE, PPC_BR_SO);
 			EMIT_COND_BRANCH (ins, CEE_BGT_UN - CEE_BEQ);
 			break;
 		case OP_FBGE:
