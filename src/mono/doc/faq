@@ -843,12 +843,12 @@ A: You can get very good tools for doing Java development on free
 
 Q: Could Java target the CLI?
 
-A: Yes, Java could target the CLI.  We have details on a <a
-   href="ideas.html#guavac">project</a> that someone could take on to
-   make this happen.  
+A: Yes, Java could target the CLI, Microsoft's J# compiler does that.
 
-   Microsoft has an implementation of the Java language called J# that
-   can target the CIL execution engine. 
+   The <a href="http://weblog.ikvm.net/">IKVM</a> project builds a
+   Java runtime that works on top of .NET and on top of Mono.  IKVM is
+   essentially a JIT compiler that translates from JVM bytecodes into
+   CIL instructions, and then lets the native JIT engine take over. 
 
 Q: Is it possible to write a JVM byte code to CIL converter?
 
@@ -870,6 +870,8 @@ A: Yes, it is possible.  Here are a few starting point:
           	  be translated into the equivalent "meaning" in CLR-land.
 	</ul>
 
+   See also the <a href="http://weblog.ikvm.net/">IKVM project</a>
+
 Q: Could mono become a hybrid CIL/java platform?
 
 A: No. It is quite far from the philosophy of the project. The idea of Mono 
@@ -884,9 +886,8 @@ A: No. It is quite far from the philosophy of the project. The idea of Mono
 
 Q: Do you plan to implement a Javascript compiler?
 
-A: Yes. Eto Demerzal has started a Rhino port to C#.
-   After this is completed, we will begin developing
-   the JavaScript compiler.
+A: Yes.  The beginnings of the JScript compiler can be found on CVS.
+   Cesar coordinates this effort.
 
 Q: Can Mono or .NET share system classes (loaded from mscore.dll and other 
    libs) or will it behave like Sun's Java VM?
@@ -928,10 +929,13 @@ A: Embracing a good technology is good.  Extending technologies in
    encourage you to make those classes operate correctly well in both
    Mono and .NET.
 
+   Today Mono ships with a number of extra libraries that were
+   developed either by members of the Mono community, or other
+   groups.  
+
 Q: Is there any way I can develop the class libraries using Linux yet?
 
-A: Yes. Some class libraries can be developed on Linux. Search for
-   Paolo's post (he lists which classes can be compiled fine now).
+A: Yes.  Mono has been selfhosting since March 2002. 
 
 Q: Is there any way I can install a known working copy of mono in /usr, 
    and an experimental copy somewhere else, and have both copies use 
@@ -1304,7 +1308,8 @@ A: There are several but one that is free software and uses MCS is the one
 
 Q: Is it possible to use Visual C++ with Mono?.
 
-A: Well, It's possible to run VC++ generated apps under Mono though.
+A: It's possible to run VC++ generated apps under Mono, but we do not
+   provide a Manager C++ compiler ourselves.
 
 <a name="problems"></a>
 ** Mono Common Problems
