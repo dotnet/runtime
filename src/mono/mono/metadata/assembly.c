@@ -543,12 +543,14 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		return NULL;
 	}
 
-	ass2 = search_loaded (&ass->aname);
-	if (ass2) {
-		/* Somebody else has loaded the assembly before us */
-		LeaveCriticalSection (&assemblies_mutex);
-		mono_assembly_close (ass);
-		return ass2;
+	if (ass->aname.name) {
+		ass2 = search_loaded (&ass->aname);
+		if (ass2) {
+			/* Somebody else has loaded the assembly before us */
+			LeaveCriticalSection (&assemblies_mutex);
+			mono_assembly_close (ass);
+			return ass2;
+		}
 	}
 
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);

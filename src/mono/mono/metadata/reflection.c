@@ -2867,7 +2867,7 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	guint32 len;
 	guint32 *values;
 	char *name;
-	int i;
+	int i, module_index;
 
 	if (assembly->text_rva)
 		return;
@@ -2951,9 +2951,9 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 		GPtrArray *types = g_ptr_array_new ();
 
 		len = mono_array_length (assemblyb->modules);
-		for (i = 0; i < len; ++i) {
+		for (module_index = 0; module_index < len; ++module_index) {
 			MonoReflectionModuleBuilder *mb =
-				mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i);
+				mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, module_index);
 			if (mb->types)
 				for (i = 0; i < mono_array_length (mb->types); ++i) {
 					MonoReflectionTypeBuilder *type = mono_array_get (mb->types, MonoReflectionTypeBuilder*, i);
@@ -2965,7 +2965,7 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 		table = &assembly->tables [MONO_TABLE_TYPEDEF];
 		table->rows += types->len;
 		alloc_table (table, table->rows);
-		
+
 		for (i = 0; i < types->len; ++i) {
 			MonoReflectionTypeBuilder *type = g_ptr_array_index (types, i);
 			mono_image_get_type_info (domain, type, assembly);
