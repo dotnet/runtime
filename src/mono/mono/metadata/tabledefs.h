@@ -64,6 +64,14 @@ enum {
 };
 
 /*
+ *
+ * 22.1.8 Flags for ManifestResource
+ */
+#define MANIFEST_RESOURCE_VISIBILITY_MASK    0x00000007
+#define MANIFEST_RESOURCE_PUBLIC             0x00000001
+#define MANIFEST_RESOURCE_PRIVATE            0x00000002
+
+/*
  * Field Attributes (21.1.5).
  */
 
