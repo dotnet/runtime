@@ -795,7 +795,7 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 		result = real_load (assemblies_path, aname->culture, aname->name);
 	}
 
-	return NULL;
+	return result;
 }
 
 /*
