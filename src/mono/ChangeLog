@@ -1,5 +1,9 @@
 2004-07-12  Massimiliano Mantione  <massi@ximian.com>
 
+	* docs/abc-removal.txt: Updated documentation for ABC removal.
+
+2004-07-12  Massimiliano Mantione  <massi@ximian.com>
+
 	* mono/mini/abcremoval.c: Rewritten most of ABC removal.
 	* mono/mini/abcremoval.h: Rewritten most of ABC removal.
 	* mono/mini/build_relations_propagation_table.pl: Deleted (unneeded after the rewrite).
