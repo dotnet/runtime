@@ -669,6 +669,12 @@ mono_arch_allocate_vars (MonoCompile *m)
 	 */
 	if (m->flags & MONO_CFG_HAS_VARARGS)
 		m->param_area = MAX (m->param_area, sizeof (gpointer)*8);
+	/* gtk-sharp and other broken code will dllimport vararg functions even with
+	 * non-varargs signatures. Since there is little hope people will get this right
+	 * we assume they won't.
+	 */
+	if (m->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+		m->param_area = MAX (m->param_area, sizeof (gpointer)*8);
 
 	header = mono_method_get_header (m->method);
 
