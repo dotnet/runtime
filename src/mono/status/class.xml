@@ -3224,8 +3224,26 @@
         </maintainers>
     </class>
 
-    <class name="System.Security.Cryptography.SymmetrictAlgorithm">
+    <class name="System.Security.Cryptography.SymmetricAlgorithm">
         <last-activity>Oct-5-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>95</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Security.Cryptography.AsymmetricAlgorithm">
+        <last-activity>Oct-6-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>95</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Security.Cryptography.AsymmetricKeyExchangeDeformatter">
+        <last-activity>Oct-6-2001</last-activity>
         <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>100</completion>
@@ -3233,6 +3251,63 @@
             <maintainer>tome@sbox.tugraz.at</maintainer>
         </maintainers>
     </class>
+    <class name="System.Security.Cryptography.AsymmetricKeyExchangeFormatter">
+        <last-activity>Oct-6-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Security.Cryptography.AsymmetricSignatureDeformatter">
+        <last-activity>Oct-6-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Security.Cryptography.AsymmetricSignatureFormatter">
+        <last-activity>Oct-6-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Security.Cryptography.SignatureDescription">
+        <last-activity>Oct-6-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>80</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Security.Cryptography.CryptographicException">
+        <last-activity>Oct-6-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+    <class
+	name="System.Security.Cryptography.CryptograhicUnexpectedOperationException">
+        <last-activity>Oct-6-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>tome@sbox.tugraz.at</maintainer>
+        </maintainers>
+    </class>
+
+	
     
 </classes>
 
