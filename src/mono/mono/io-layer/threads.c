@@ -857,8 +857,10 @@ gboolean TlsSetValue(guint32 idx, gpointer value)
 	}
 	
 #if HAVE_BOEHM_GC
-	if (!tls_gc_hash)
+	if (!tls_gc_hash) {
+		MONO_GC_REGISTER_ROOT (tls_gc_hash);
 		tls_gc_hash = mono_g_hash_table_new(g_direct_hash, g_direct_equal);
+	}
 	mono_g_hash_table_insert (tls_gc_hash, MAKE_GC_ID (idx), value);
 #endif
 
