@@ -1156,6 +1156,16 @@
         </maintainers>
     </class>
 
+    <class name="System.IO.IOException">
+        <last-activity>Aug-26-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>80</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
     <class name="System.Xml.XmlReader">
         <last-activity>Jul-15-2001</last-activity>
         <implementation>yes</implementation>
