@@ -1,10 +1,18 @@
 * MCS: The Ximian C# compiler
 
-	The Mono C# compiler is considered feature complete at this
-	point and relatively mature.  MCS is able to compile itself
-	and many more C# programs (there is a test suite included that
-	you can use).  It is routinely used to compile Mono, roughly
-	half a million lines of C# code.
+	The Mono C# compiler is considered feature C# 1.0 complete at
+	this point and mature.  MCS is able to compile itself and many
+	more C# programs (there is a test suite included that you can
+	use).  It is routinely used to compile Mono, roughly 1.7
+	million lines of C# code.
+
+	The compiler is also fairly fast.  On a IBM ThinkPad t40 it
+	compiles 18,000 lines of C# code per second.
+
+	Work on C# 2.0 has started: some pieces of it are available on
+	the standard compiler with the -2 switch (iterators, method
+	conversions) and some others are available on the `gmcs'
+	branch on CVS (generics)
 
 ** Obtaining MCS
 

@@ -722,13 +722,14 @@ A: Most of Mono is being written using C#, with only
 	  will be most familiar with.
 
      <li> A multi-platform runtime engine: both a JIT engine and an
-          interpreter exist.  The JIT engine runs currently on x86
-          systems, while the interpreter works on SPARC, StrongARM,
-	  s390 and PowerPC systems.  
+          interpreter exist.  The JIT engine runs currently on x86,
+          PowerPC and Sparc systems, while the interpreter works on
+          x86, SPARC, StrongARM, s390 and PowerPC systems.  
 
-	  Our new compilation engine is being ported to the PowerPC.
+	  The JIT engine is being ported to PowerPC, s390, SPARC and
+          amd64 systems as of this time.
 
-     <li> Supports Linux, BSD, Windows and Solaris at this point.
+     <li> Supports Linux, BSD, MacOS, Windows and Solaris at this point.
 
      <li> The JIT engine is written using a portable instruction
           selector which not only generates good code but
@@ -745,6 +746,64 @@ A: Most of Mono is being written using C#, with only
           By forcing ourselves to use our own code to develop our
 	  tools, we bug fix problems rapidly, and the system is
 	  overall more robust and tested than if we did not.
+
+     <li> Our class libraries are licensed under the terms of the MIT
+          X11 license which is a very liberal license as opposed to
+          the GNU GPL with exceptions, this means that Mono can be
+          used in places where the GPL with exceptions is not
+          permissible.
+
+     <li> Mono has a complete Web Services stack: we implement ASP.NET
+          web servers and web clients as well as implementing the
+          Remoting-based SOAP infrastructure.
+
+     <li> Remoting implementation: Mono has a complete remoting
+          infrastructure that is used in our own codebase to provide
+          added functionality and performance to our ASP.NET engine
+          and more.
+
+     <li> Mono has a complete <a href="c-sharp.html">C# 1.0</a>
+          implementation and has been stress tested a lot more than
+          Portable.NET's compiler.
+
+     <li> Mono's C# compiler has strong error handling and has closer
+          adherence to the specification.
+
+     <li> Mono's C# compiler is written in C# which is easier for new
+          developers to come in and improve, fix and tune.  The Mono
+          C# compiler in C# is faster than their C-based compiler.
+
+     <li> Preview of C# 2.0: a work in progress for a 2.0
+          implementation of our compiler is available (iterators,
+          generics and anonymous methods are available in our
+          "preview" compiler).
+
+     <li> Mono has a complete Reflection and Reflection.Emit: these
+          are important for advanced applications, compilers and
+          dynamic code generation.
+
+     <li> Mono has a <a href="xml-classes">complete managed XML
+          stack</a>: XML, XPath, XML Serializer, XML Schema handling
+          are fully functional, feature complete and tuned for
+          performance.
+
+     <li> Mono has a complete cryptography stack: we have a complete
+          crypto stack: we implement the 1.0 and 1.1 APIs as well as
+          using our fully managed stack to implement the SSL/TLS
+          transports. 
+
+     <li> <a href="ado-net.html">Extensive database support</a>: Mono
+          ships with database provides for <a
+          href="firebird.html">Firebird</a>, <a href="ibmdb2.html">IBM
+          DB2</a>, <a href="oracle.html">Oracle</a>, <a
+          href="sybase.html">Sybase</a>, Microsoft <a
+          href="tdsclient.html">SQL Server</a>, <a
+          href="sqlite.html">SQL Lite</a>, <a
+          href="mysql.html">MySQL</a>, <a
+          href="postgresql">PostgresSQL</A>, <a href="oledb.html">Ole
+          DB</a> and <a href="odbc.html">ODBC</a>.
+
+     <li> Mono includes full LDAP support.
 
      <li> We have a great community of developers, without which Mono
           would not be possible.
