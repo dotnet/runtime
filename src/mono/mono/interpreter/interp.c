@@ -477,8 +477,8 @@ ves_array_set (MonoInvocation *frame)
 		for (i = 1; i < ac->rank; i++) {
 			if ((t = sp [i].data.i - ao->bounds [i].lower_bound) >= 
 			    ao->bounds [i].length) {
-				g_warning ("wrong array index");
-				g_assert_not_reached ();
+				frame->ex = mono_get_exception_index_out_of_range ();
+				return;
 			}
 			pos = pos*ao->bounds [i].length + sp [i].data.i - 
 				ao->bounds [i].lower_bound;
@@ -499,7 +499,7 @@ ves_array_get (MonoInvocation *frame)
 	MonoObject *o;
 	MonoArray *ao;
 	MonoClass *ac;
-	gint32 i, pos, esize;
+	gint32 i, t, pos, esize;
 	gpointer ea;
 	MonoType *mt;
 
@@ -512,9 +512,17 @@ ves_array_get (MonoInvocation *frame)
 	pos = sp [0].data.i;
 	if (ao->bounds != NULL) {
 		pos -= ao->bounds [0].lower_bound;
-		for (i = 1; i < ac->rank; i++)
+		for (i = 1; i < ac->rank; i++) {
+
+			if ((t = sp [i].data.i - ao->bounds [i].lower_bound) >= 
+			    ao->bounds [i].length) {
+				frame->ex = mono_get_exception_index_out_of_range ();
+				return;
+			}
+
 			pos = pos*ao->bounds [i].length + sp [i].data.i - 
 				ao->bounds [i].lower_bound;
+		}
 	}
 
 	esize = mono_array_element_size (ac);
