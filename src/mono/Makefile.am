@@ -91,7 +91,7 @@ mcs-do-basic-build:
 	cd $(mcs_topdir)/jay && $(MAKE)
 	cd $(mcs_topdir)/mcs && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB"
 	cd $(mcs_topdir)/class/corlib && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB"
-	cd $(mcs_topdir)/class/System && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB" MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB"
+	cd $(mcs_topdir)/class/System && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB"
 
 mcs-do-short-build:
 	tmpinst=`cd _tmpinst && pwd` ; \
