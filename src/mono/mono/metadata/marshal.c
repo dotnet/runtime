@@ -90,6 +90,17 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean sa
 	mono_register_jit_icall (func, name, sig, save);
 }
 
+static MonoMethodSignature*
+signature_no_pinvoke (MonoMethodSignature* sig)
+{
+	if (sig->pinvoke) {
+		sig = mono_metadata_signature_dup (sig);
+		sig->pinvoke = FALSE;
+	}
+	
+	return sig;
+}
+
 void
 mono_marshal_init (void)
 {
@@ -707,10 +718,8 @@ mono_mb_emit_calli (MonoMethodBuilder *mb, MonoMethodSignature *sig)
 void
 mono_mb_emit_managed_call (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *opt_sig)
 {
-	mono_mb_emit_byte (mb, CEE_PREFIX1);
-	mono_mb_emit_byte (mb, CEE_LDFTN);
+	mono_mb_emit_byte (mb, CEE_CALL);
 	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, method));
-	mono_mb_emit_calli (mb, opt_sig ? opt_sig : method->signature);
 }
 
 void
@@ -1621,7 +1630,7 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "BeginInvoke"));
 
-	sig = method->signature;
+	sig = signature_no_pinvoke (method->signature);
 
 	cache = method->klass->image->delegate_begin_invoke_cache;
 	if ((res = mono_marshal_find_in_cache (cache, sig)))
@@ -1687,7 +1696,7 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 
 	g_assert (method != NULL);
 
-	sig = method->signature;
+	sig = signature_no_pinvoke (method->signature);
 
 	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL);
 
@@ -1826,7 +1835,7 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "EndInvoke"));
 
-	sig = method->signature;
+	sig = signature_no_pinvoke (method->signature);
 
 	cache = method->klass->image->delegate_end_invoke_cache;
 	if ((res = mono_marshal_find_in_cache (cache, sig)))
@@ -1934,7 +1943,7 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 	if (method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE)
 		return method;
 
-	sig = method->signature;
+	sig = signature_no_pinvoke (method->signature);
 
 	/* we cant remote methods without this pointer */
 	if (!sig->hasthis)
@@ -1991,8 +2000,8 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
 	if (method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
 		return method;
 
-	sig = method->signature;
-
+	sig = signature_no_pinvoke (method->signature);
+	
 	/* we cant remote methods without this pointer */
 	g_assert (sig->hasthis);
 
@@ -2045,7 +2054,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "Invoke"));
 		
-	sig = method->signature;
+	sig = signature_no_pinvoke (method->signature);
 
 	cache = method->klass->image->delegate_invoke_cache;
 	if ((res = mono_marshal_find_in_cache (cache, sig)))
@@ -2647,7 +2656,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 		case MONO_TYPE_CLASS: {
 			klass = t->data.klass;
 
-			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+			tmp_locals [i] = mono_mb_add_local (mb, &klass->byval_arg);
 
 			if (klass->delegate) {
 				g_assert (!t->byref);
@@ -2703,6 +2712,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
 			mono_mb_emit_stloc (mb, tmp_locals [i]);
 			mono_mb_emit_ldloc (mb, tmp_locals [i]);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
 			mono_mb_emit_icon (mb, sizeof (MonoObject));
 			mono_mb_emit_byte (mb, CEE_ADD);
 			mono_mb_emit_byte (mb, CEE_STLOC_1); 
@@ -2990,6 +3001,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 
 			/* Set src */
 			mono_mb_emit_byte (mb, CEE_LDLOC_0);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
 			mono_mb_emit_icon (mb, sizeof (MonoObject));
 			mono_mb_emit_byte (mb, CEE_ADD);
 			mono_mb_emit_byte (mb, CEE_STLOC_0);
@@ -3087,6 +3100,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 			
 			/* Set src */
 			mono_mb_emit_ldloc (mb, tmp_locals [i]);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
 			mono_mb_emit_icon (mb, sizeof (MonoObject));
 			mono_mb_emit_byte (mb, CEE_ADD);
 			mono_mb_emit_byte (mb, CEE_STLOC_0);
@@ -4013,6 +4028,8 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			/* set the src_ptr */
 			mono_mb_emit_byte (mb, CEE_LDLOC_0);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
 			mono_mb_emit_icon (mb, sizeof (MonoObject));
 			mono_mb_emit_byte (mb, CEE_ADD);
 			mono_mb_emit_byte (mb, CEE_STLOC_0);
@@ -5326,7 +5343,7 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
-	sig = method->signature;
+	sig = signature_no_pinvoke (method->signature);
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_SYNCHRONIZED);
 
@@ -5384,7 +5401,13 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 		mono_mb_emit_ldarg (mb, 0);
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
-	mono_mb_emit_managed_call (mb, method, method->signature);
+	
+	/* this is needed to avoid recursion */
+	mono_mb_emit_byte (mb, CEE_PREFIX1);
+	mono_mb_emit_byte (mb, CEE_LDFTN);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, method));
+	mono_mb_emit_calli (mb, method->signature);
+
 	if (!MONO_TYPE_IS_VOID (sig->ret))
 		mono_mb_emit_stloc (mb, ret_local);
 
