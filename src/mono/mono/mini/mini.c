@@ -6296,8 +6296,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			int t = ptype->type;
 			if (t == MONO_TYPE_VALUETYPE && ptype->data.klass->enumtype)
 				t = ptype->data.klass->enum_basetype->type;
-			/* FIXME: use initobj for valuetypes, handle pointers, long, float. */
-			if (t >= MONO_TYPE_BOOLEAN && t <= MONO_TYPE_U4) {
+			if (ptype->byref) {
+				NEW_PCONST (cfg, ins, NULL);
+				NEW_LOCSTORE (cfg, store, i, ins);
+				MONO_ADD_INS (init_localsbb, store);
+			} else if (t >= MONO_TYPE_BOOLEAN && t <= MONO_TYPE_U4) {
 				NEW_ICONST (cfg, ins, 0);
 				NEW_LOCSTORE (cfg, store, i, ins);
 				MONO_ADD_INS (init_localsbb, store);
