@@ -1514,11 +1514,37 @@ resolution_scope_from_image (MonoDynamicAssembly *assembly, MonoImage *image)
 		if (strcmp (image->assembly_name, "corlib") == 0 ||
 				strcmp (image->assembly_name, "mscorlib") == 0 ||
 				strcmp (image->assembly_name, "System") == 0 ||
+				strcmp (image->assembly_name, "System.Runtime.Remoting") == 0 ||
 				strcmp (image->assembly_name, "System.Xml") == 0 ||
 				strcmp (image->assembly_name, "System.Data") == 0 ||
-				strcmp (image->assembly_name, "System.Drawing") == 0 ||
-				strcmp (image->assembly_name, "System.Web") == 0) {
+				strcmp (image->assembly_name, "System.Windows.Forms") == 0) {
 			static const guchar ptoken [9] = {8, '\xB7', '\x7A', '\x5C', '\x56', '\x19', '\x34', '\xE0', '\x89'};
+			values [MONO_ASSEMBLYREF_PUBLIC_KEY] = mono_image_add_stream_data (&assembly->blob, ptoken, 9);
+			values [MONO_ASSEMBLYREF_MAJOR_VERSION] = 1;
+			values [MONO_ASSEMBLYREF_BUILD_NUMBER] = 3300;
+		} else if (strcmp (image->assembly_name, "Accessibility") == 0 ||
+				strcmp (image->assembly_name, "cscompmgd") == 0 ||
+				strcmp (image->assembly_name, "CustomMarshalers") == 0 ||
+				strcmp (image->assembly_name, "Microsoft.JScript") == 0 ||
+				strcmp (image->assembly_name, "Microsoft.VisualBasic") == 0 ||
+				strcmp (image->assembly_name, "Microsoft.VisualBasic.Vsa") == 0 ||
+				strcmp (image->assembly_name, "Microsoft.VisualC") == 0 ||
+				strcmp (image->assembly_name, "Microsoft.Vsa") == 0 ||
+				strcmp (image->assembly_name, "System.Configuration.Install") == 0 ||
+				strcmp (image->assembly_name, "System.DirectoryServices") == 0 ||
+				strcmp (image->assembly_name, "System.Design") == 0 ||
+				strcmp (image->assembly_name, "System.Drawing") == 0 ||
+				strcmp (image->assembly_name, "System.Drawing.Design") == 0 ||
+				strcmp (image->assembly_name, "System.EnterpriseServices") == 0 ||
+				strcmp (image->assembly_name, "System.Management") == 0 ||
+				strcmp (image->assembly_name, "System.Messaging") == 0 ||
+				strcmp (image->assembly_name, "System.Runtime.Serialization.Formatters.Soap") == 0 ||
+				strcmp (image->assembly_name, "System.Security") == 0 ||
+				strcmp (image->assembly_name, "System.ServiceProcess") == 0 ||
+				strcmp (image->assembly_name, "System.Web.Services") == 0 ||
+				strcmp (image->assembly_name, "CustomMarshalers") == 0 ||
+				strcmp (image->assembly_name, "System.Web") == 0) {
+			static const guchar ptoken [9] = {8, '\xb0', '\x3f', '\x5f', '\x7f', '\x11', '\xd5', '\x0a', '\x3a'};
 			values [MONO_ASSEMBLYREF_PUBLIC_KEY] = mono_image_add_stream_data (&assembly->blob, ptoken, 9);
 			values [MONO_ASSEMBLYREF_MAJOR_VERSION] = 1;
 			values [MONO_ASSEMBLYREF_BUILD_NUMBER] = 3300;
