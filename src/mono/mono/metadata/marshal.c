@@ -3281,7 +3281,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 				mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
 
-				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STRARRAY_STRLPARRAY);
+				switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
+				case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
+					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STRARRAY_STRWLPARRAY);
+					break;
+				default:
+					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STRARRAY_STRLPARRAY);
+					break;					
+				}
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
 			}
 			else if (klass->element_class->blittable) {
@@ -3843,11 +3850,24 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_emit_i4 (mb, 0);
 
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
-				mono_mb_emit_ldarg (mb, argnum);
-				mono_mb_emit_byte (mb, CEE_LDLEN);				
-				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-				mono_mb_emit_byte (mb, CEE_MONO_PROC2);
-				mono_mb_emit_byte (mb, MONO_MARSHAL_FREE_ARRAY);
+
+				switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
+				case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
+					/* 
+					 * The array elements point to the managed string data so 
+					 * they don't need to be freed.
+					 */
+					mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+					mono_mb_emit_byte (mb, CEE_MONO_FREE);
+					break;
+				default:
+					mono_mb_emit_ldarg (mb, argnum);
+					mono_mb_emit_byte (mb, CEE_LDLEN);				
+					mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+					mono_mb_emit_byte (mb, CEE_MONO_PROC2);
+					mono_mb_emit_byte (mb, MONO_MARSHAL_FREE_ARRAY);
+					break;					
+				}
 
 				mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
 			}
@@ -4522,6 +4542,28 @@ mono_marshal_string_array (MonoArray *array)
 	for (i = 0; i < len; ++i) {
 		MonoString *s = (MonoString *)mono_array_get (array, gpointer, i);
 		result [i] = s ? mono_string_to_utf8 (s): NULL;
+	}
+	/* null terminate the array */
+	result [i] = NULL;
+
+	return result;
+}
+
+void *
+mono_marshal_string_array_to_unicode (MonoArray *array)
+{
+	char **result;
+	int i, len;
+
+	if (!array)
+		return NULL;
+
+	len = mono_array_length (array);
+
+	result = g_malloc (sizeof (gunichar2 *) * (len + 1));
+	for (i = 0; i < len; ++i) {
+		MonoString *s = (MonoString *)mono_array_get (array, gpointer, i);
+		result [i] = s ? mono_string_chars (s) : NULL;
 	}
 	/* null terminate the array */
 	result [i] = NULL;

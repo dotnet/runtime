@@ -73,6 +73,9 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate);
 void * 
 mono_marshal_string_array (MonoArray *array);
 
+void *
+mono_marshal_string_array_to_unicode (MonoArray *array);
+
 void
 mono_marshal_set_last_error (void);
 
