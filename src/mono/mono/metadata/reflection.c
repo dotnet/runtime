@@ -519,13 +519,14 @@ method_builder_encode_signature (MonoDynamicImage *assembly, ReflectionMethodBui
 	for (i = 0; i < nparams; ++i) {
 		MonoArray *modreq = NULL;
 		MonoArray *modopt = NULL;
+		MonoReflectionType *pt;
 
 		if (mb->param_modreq && (i < mono_array_length (mb->param_modreq)))
 			modreq = mono_array_get (mb->param_modreq, MonoArray*, i);
 		if (mb->param_modopt && (i < mono_array_length (mb->param_modopt)))
 			modopt = mono_array_get (mb->param_modopt, MonoArray*, i);
 		encode_custom_modifiers (assembly, modreq, modopt, p, &p);
-		MonoReflectionType *pt = mono_array_get (mb->parameters, MonoReflectionType*, i);
+		pt = mono_array_get (mb->parameters, MonoReflectionType*, i);
 		encode_reflection_type (assembly, pt, p, &p);
 	}
 	/* store length */
