@@ -1,13 +1,13 @@
 * Anonymous CVS access
 
-	Anonymous access to the Mono is available currently from the
-	HispaLinux CVS server (later I will provide a nice
-	anoncvs.go-mono.com alias).
+	Anonymous access to the Mono is available currently from three
+	servers (anoncvs-spain-1.go-mono.com,
+	anoncvs-spain-2.go-mono.com and anoncvs-us-1.go-mono.com).
+
+	You can also use `anoncvs.go-mono.com', and that will pick a
+	server automatically for you.
 
 	Sources are currently being updated every hour.
-
-	The server is currently located in Spain.  If you want to
-	become an AnonCVS mirror, go <a href="#mirror">here</a>
 
 ** Checking out the sources
 
@@ -15,7 +15,7 @@
 	repository, use this command:
 
 <pre>
-	export CVSROOT=:pserver:anonymous@reypastor.hispalinux.es:/mono
+	export CVSROOT=:pserver:anonymous@anoncvs.go-mono.com:/mono
 	cvs login
 	cvs -z3 co mcs mono gtk-sharp
 </pre>

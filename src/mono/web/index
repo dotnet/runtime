@@ -69,6 +69,17 @@
   </tr>
 </table>
 
+** Feb 20, 2002
+
+	New easy to run scripts for compiling Mono on Unix and Windows
+	is <a href="download.html">available</a>.  We can now easily compile
+	Mono on Windows and Linux.  If you had trouble before, use the
+	above scripts which will get the setup right for you.
+
+	There are now three machines that can provide AnonCVS, just
+	use anoncvs.go-mono.com as the hostname for your CVSROOT and
+	you will get one of the machines.
+
 ** Feb 19, 2002
 
 	Do you want to see what <a href="http://people.debian.org/~lupus/mono/">Mono Looks Like?</a>
