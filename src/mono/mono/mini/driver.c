@@ -760,8 +760,10 @@ mono_main (int argc, char* argv[])
 		break;
 	}
 
-	if (enable_debugging)
-		mono_debug_init (domain, MONO_DEBUG_FORMAT_MONO);
+	if (enable_debugging) {
+		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
+		mono_debug_init_1 (domain);
+	}
 
 	/* Parse gac loading options before loading assemblies. */
 	if (mono_compile_aot || action == DO_EXEC) {

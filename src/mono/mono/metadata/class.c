@@ -40,6 +40,7 @@ gboolean mono_print_vtable = FALSE;
 
 static MonoClass * mono_class_create_from_typedef (MonoImage *image, guint32 type_token);
 
+void (*mono_debugger_start_class_init_func) (MonoClass *klass) = NULL;
 void (*mono_debugger_class_init_func) (MonoClass *klass) = NULL;
 
 MonoClass *
@@ -1298,6 +1299,9 @@ mono_class_init (MonoClass *class)
 
 	class->init_pending = 1;
 
+	if (mono_debugger_start_class_init_func)
+		mono_debugger_start_class_init_func (class);
+
 	mono_stats.initialized_class_count++;
 
 	if (class->generic_inst && !class->generic_inst->is_dynamic) {
@@ -1456,6 +1460,10 @@ mono_class_init (MonoClass *class)
 		 */
 		setup_interface_offsets (class, 0);
 		mono_loader_unlock ();
+
+		if (mono_debugger_class_init_func)
+			mono_debugger_class_init_func (class);
+
 		return;
 	}
 
@@ -1522,7 +1530,6 @@ mono_class_init (MonoClass *class)
 	if (mono_debugger_class_init_func)
 		mono_debugger_class_init_func (class);
 }
-
 
 void
 mono_class_setup_mono_type (MonoClass *class)

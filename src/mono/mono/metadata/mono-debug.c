@@ -32,11 +32,13 @@ static void                 mono_debug_close_image     (MonoDebugHandle *debug);
 static MonoDebugHandle     *_mono_debug_get_image      (MonoImage *image);
 static void                 mono_debug_add_assembly    (MonoAssembly *assembly,
 							gpointer user_data);
+static void                 mono_debug_start_add_type  (MonoClass *klass);
 static void                 mono_debug_add_type        (MonoClass *klass);
 static MonoDebugDomainData *mono_debug_get_domain_data (MonoDebugHandle *handle,
 							MonoDomain *domain);
 
 extern void (*mono_debugger_class_init_func) (MonoClass *klass);
+extern void (*mono_debugger_start_class_init_func) (MonoClass *klass);
 
 /*
  * Initialize debugging support.
@@ -46,10 +48,8 @@ extern void (*mono_debugger_class_init_func) (MonoClass *klass);
  * callbacks here.
  */
 void
-mono_debug_init (MonoDomain *domain, MonoDebugFormat format)
+mono_debug_init (MonoDebugFormat format)
 {
-	MonoAssembly **ass;
-
 	g_assert (!mono_debug_initialized);
 
 	mono_debug_initialized = TRUE;
@@ -57,22 +57,25 @@ mono_debug_init (MonoDomain *domain, MonoDebugFormat format)
 	in_the_mono_debugger = format == MONO_DEBUG_FORMAT_DEBUGGER;
 
 	if (in_the_mono_debugger)
-		mono_debugger_initialize (domain);
+		mono_debugger_initialize ();
 
 	mono_debugger_lock ();
 
 	mono_debug_handles = g_hash_table_new_full
 		(NULL, NULL, NULL, (GDestroyNotify) mono_debug_close_image);
 
+	mono_debugger_start_class_init_func = mono_debug_start_add_type;
 	mono_debugger_class_init_func = mono_debug_add_type;
 	mono_install_assembly_load_hook (mono_debug_add_assembly, NULL);
+}
 
-	mono_debug_open_image (mono_get_corlib ());
-	/*
-	 * FIXME: Ugh: what is this code supposed to do? corlib has no references.
-	for (ass = mono_defaults.corlib->references; ass && *ass; ass++)
-		mono_debug_open_image ((*ass)->image);
-	*/
+void
+mono_debug_init_1 (MonoDomain *domain)
+{
+	MonoDebugHandle *handle = mono_debug_open_image (mono_get_corlib ());
+
+	if (in_the_mono_debugger)
+		mono_debugger_add_builtin_types (handle->_priv->debugger_info);
 }
 
 /*
@@ -83,12 +86,7 @@ mono_debug_init (MonoDomain *domain, MonoDebugFormat format)
 void
 mono_debug_init_2 (MonoAssembly *assembly)
 {
-	MonoDebugHandle *handle;
-
 	mono_debug_open_image (mono_assembly_get_image (assembly));
-
-	handle = _mono_debug_get_image (mono_get_corlib ());
-	g_assert (handle);
 }
 
 void
@@ -128,11 +126,8 @@ mono_debug_open_image (MonoImage *image)
 		return handle;
 
 	handle->symfile = mono_debug_open_mono_symbol_file (handle, in_the_mono_debugger);
-	if (in_the_mono_debugger) {
+	if (in_the_mono_debugger)
 		handle->_priv->debugger_info = mono_debugger_add_symbol_file (handle);
-		if (image == mono_get_corlib ())
-			mono_debugger_add_builtin_types (handle->_priv->debugger_info);
-	}
 
 	return handle;
 }
@@ -161,6 +156,29 @@ mono_debug_add_assembly (MonoAssembly *assembly, gpointer user_data)
  * This is called via the `mono_debugger_class_init_func' from mono_class_init() each time
  * a new class is initialized.
  */
+MonoDebuggerSymbolFile *
+_mono_debugger_get_symfile (MonoImage *image)
+{
+	MonoDebugHandle *handle = _mono_debug_get_image (image);
+	if (!handle)
+		return NULL;
+
+	return handle->_priv->debugger_info;
+}
+
+static void
+mono_debug_start_add_type (MonoClass *klass)
+{
+	MonoDebugHandle *handle;
+
+	handle = _mono_debug_get_image (klass->image);
+	if (!handle)
+		return;
+
+	if (handle->_priv->debugger_info)
+		mono_debugger_start_add_type (handle->_priv->debugger_info, klass);
+}
+
 static void
 mono_debug_add_type (MonoClass *klass)
 {
@@ -173,6 +191,7 @@ mono_debug_add_type (MonoClass *klass)
 	if (handle->_priv->debugger_info)
 		mono_debugger_add_type (handle->_priv->debugger_info, klass);
 }
+
 
 struct LookupMethodData
 {

@@ -18,7 +18,9 @@ typedef struct _MonoDebuggerSymbolTable		MonoDebuggerSymbolTable;
 typedef struct _MonoDebuggerSymbolFile		MonoDebuggerSymbolFile;
 typedef struct _MonoDebuggerSymbolFilePriv	MonoDebuggerSymbolFilePriv;
 typedef struct _MonoDebuggerRangeInfo		MonoDebuggerRangeInfo;
+typedef struct _MonoDebuggerClassEntry		MonoDebuggerClassEntry;
 typedef struct _MonoDebuggerClassInfo		MonoDebuggerClassInfo;
+typedef struct _MonoDebuggerClassTable		MonoDebuggerClassTable;
 typedef struct _MonoDebuggerIOLayer		MonoDebuggerIOLayer;
 
 typedef enum {
@@ -38,8 +40,32 @@ typedef enum {
 	MONO_DEBUGGER_TYPE_KIND_OBJECT,
 	MONO_DEBUGGER_TYPE_KIND_STRUCT,
 	MONO_DEBUGGER_TYPE_KIND_CLASS,
-	MONO_DEBUGGER_TYPE_KIND_CLASS_INFO
+	MONO_DEBUGGER_TYPE_KIND_CLASS_INFO,
+	MONO_DEBUGGER_TYPE_KIND_REFERENCE
 } MonoDebuggerTypeKind;
+
+typedef enum {
+	MONO_DEBUGGER_TYPE_UNKNOWN	= 0,
+	MONO_DEBUGGER_TYPE_VOID,
+	MONO_DEBUGGER_TYPE_BOOLEAN,
+	MONO_DEBUGGER_TYPE_CHAR,
+	MONO_DEBUGGER_TYPE_I1,
+	MONO_DEBUGGER_TYPE_U1,
+	MONO_DEBUGGER_TYPE_I2,
+	MONO_DEBUGGER_TYPE_U2,
+	MONO_DEBUGGER_TYPE_I4,
+	MONO_DEBUGGER_TYPE_U4,
+	MONO_DEBUGGER_TYPE_I8,
+	MONO_DEBUGGER_TYPE_U8,
+	MONO_DEBUGGER_TYPE_R4,
+	MONO_DEBUGGER_TYPE_R8,
+	MONO_DEBUGGER_TYPE_I,
+	MONO_DEBUGGER_TYPE_U,
+	MONO_DEBUGGER_TYPE_STRING,
+	MONO_DEBUGGER_TYPE_ARRAY,
+	MONO_DEBUGGER_TYPE_ENUM,
+	MONO_DEBUGGER_TYPE_MAX		= 100
+} MonoDebuggerType;
 
 struct _MonoDebuggerBreakpointInfo {
 	guint32 index;
@@ -48,8 +74,8 @@ struct _MonoDebuggerBreakpointInfo {
 
 struct _MonoDebuggerBuiltinTypeInfo
 {
+	MonoDebuggerClassEntry *centry;
 	MonoClass *klass;
-	MonoDebuggerClassInfo *cinfo;
 	guint32 type_info;
 	guint32 class_info;
 	guint8 *type_data;
@@ -59,6 +85,7 @@ struct _MonoDebuggerBuiltinTypes {
 	guint32 total_size;
 	guint32 type_info_size;
 	MonoDebuggerBuiltinTypeInfo *object_type;
+	MonoDebuggerBuiltinTypeInfo *valuetype_type;
 	MonoDebuggerBuiltinTypeInfo *byte_type;
 	MonoDebuggerBuiltinTypeInfo *void_type;
 	MonoDebuggerBuiltinTypeInfo *boolean_type;
@@ -78,6 +105,7 @@ struct _MonoDebuggerBuiltinTypes {
 	MonoDebuggerBuiltinTypeInfo *enum_type;
 	MonoDebuggerBuiltinTypeInfo *array_type;
 	MonoDebuggerBuiltinTypeInfo *exception_type;
+	MonoDebuggerBuiltinTypeInfo *type_type;
 };
 
 struct _MonoDebuggerSymbolTable {
@@ -88,7 +116,6 @@ struct _MonoDebuggerSymbolTable {
 	/*
 	 * Corlib and builtin types.
 	 */
-	MonoDomain *domain;
 	MonoDebuggerSymbolFile *corlib;
 	MonoDebuggerBuiltinTypes *builtin_types;
 
@@ -156,9 +183,10 @@ struct _MonoDebuggerSymbolFile {
 	MonoDebuggerRangeInfo *range_table;
 	guint32 range_entry_size;
 	guint32 num_range_entries;
-	/* Pointer to the malloced class table. */
-	MonoDebuggerClassInfo *class_table;
-	guint32 num_class_entries;
+	/* Pointer to the class table. */
+	guint32 class_table_size;
+	MonoDebuggerClassTable *current_class_table;
+	MonoDebuggerClassTable *class_table_start;
 	/* Private. */
 	MonoDebuggerSymbolFilePriv *_priv;
 };
@@ -171,11 +199,22 @@ struct _MonoDebuggerRangeInfo {
 	guint32 dynamic_size;
 };
 
+struct _MonoDebuggerClassTable {
+	MonoDebuggerClassTable *next;
+	guint32 index, size;
+	MonoDebuggerClassInfo *data;
+};
+
 struct _MonoDebuggerClassInfo {
 	MonoClass *klass;
 	guint32 rank;
 	guint32 token;
 	guint32 type_info;
+};
+
+struct _MonoDebuggerClassEntry {
+	MonoDebuggerClassInfo *info;
+	guint32 type_reference;
 };
 
 enum {
@@ -227,15 +266,19 @@ extern MonoDebuggerIOLayer mono_debugger_io_layer;
 
 extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, guint32 arg);
 
-void            mono_debugger_initialize                  (MonoDomain *domain);
+void            mono_debugger_initialize                  (void);
 void            mono_debugger_cleanup                     (void);
 
 void            mono_debugger_lock                        (void);
 void            mono_debugger_unlock                      (void);
 void            mono_debugger_event                       (MonoDebuggerEvent event, gpointer data, guint32 arg);
 
+MonoDebuggerSymbolFile   *_mono_debugger_get_symfile      (MonoImage *image);
 MonoDebuggerSymbolFile   *mono_debugger_add_symbol_file   (MonoDebugHandle *handle);
-void                      mono_debugger_add_type          (MonoDebuggerSymbolFile *symfile, MonoClass *klass);
+void                      mono_debugger_start_add_type    (MonoDebuggerSymbolFile *symfile,
+							   MonoClass *klass);
+void                      mono_debugger_add_type          (MonoDebuggerSymbolFile *symfile,
+							   MonoClass *klass);
 MonoDebuggerBuiltinTypes *mono_debugger_add_builtin_types (MonoDebuggerSymbolFile *symfile);
 
 void            mono_debugger_add_method                  (MonoDebuggerSymbolFile *symfile,

@@ -80,13 +80,14 @@ struct _MonoDebugVarInfo {
 	guint32 end_scope;
 };
 
-#define MONO_DEBUGGER_VERSION				44
+#define MONO_DEBUGGER_VERSION				45
 #define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427ULL
 
 extern MonoDebugFormat mono_debug_format;
 extern GHashTable *mono_debug_handles;
 
-void mono_debug_init (MonoDomain *domain, MonoDebugFormat format);
+void mono_debug_init (MonoDebugFormat format);
+void mono_debug_init_1 (MonoDomain *domain);
 void mono_debug_init_2 (MonoAssembly *assembly);
 void mono_debug_cleanup (void);
 void mono_debug_add_wrapper (MonoMethod *method, gpointer wrapper, MonoDomain *domain);

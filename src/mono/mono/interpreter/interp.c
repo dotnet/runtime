@@ -4230,8 +4230,10 @@ static void main_thread_handler (gpointer user_data)
 	MainThreadArgs *main_args=(MainThreadArgs *)user_data;
 	MonoAssembly *assembly;
 
-	if (main_args->enable_debugging)
-		mono_debug_init (main_args->domain, MONO_DEBUG_FORMAT_MONO);
+	if (main_args->enable_debugging) {
+		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
+		mono_debug_init_1 (main_args->domain);
+	}
 
 	assembly = mono_domain_assembly_open (main_args->domain,
 					      main_args->file);
