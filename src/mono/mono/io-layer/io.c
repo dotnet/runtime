@@ -1635,9 +1635,11 @@ WapiHandle *FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 		g_free (handle);
 
 		switch (result) {
+#ifdef GLOB_NOMATCH
 		case GLOB_NOMATCH:
 			SetLastError (ERROR_NO_MORE_FILES);
 			break;
+#endif
 
 		default:
 #ifdef DEBUG

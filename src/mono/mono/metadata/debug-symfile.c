@@ -141,6 +141,9 @@ static gboolean
 get_sections (MonoDebugSymbolFile *symfile, gboolean emit_warnings)
 {
 #ifdef HAVE_ELF_H
+#ifdef __FreeBSD__
+	static const char ELFMAG[] = { ELFMAG0, ELFMAG1, ELFMAG2, ELFMAG3, 0 };
+#endif
 	if (!strncmp (symfile->raw_contents, ELFMAG, strlen (ELFMAG)))
 		return get_sections_elf32 (symfile, emit_warnings);
 #endif

@@ -233,7 +233,9 @@ WapiHandle *_wapi_accept(WapiHandle *handle, struct sockaddr *addr, socklen_t *a
 		case EINVAL:
 			WSASetLastError(WSAEINVAL);
 			break;
+#ifdef ENOSR
 		case ENOSR:
+#endif
 		case ECONNABORTED:
 		case ESOCKTNOSUPPORT:
 		case EPROTONOSUPPORT:
