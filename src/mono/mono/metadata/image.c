@@ -566,6 +566,7 @@ mono_image_init (MonoImage *image)
 
 	image->typespec_cache = g_hash_table_new (NULL, NULL);
 	image->memberref_signatures = g_hash_table_new (NULL, NULL);
+	image->helper_signatures = g_hash_table_new (g_str_hash, g_str_equal);
 
 	image->generic_inst_cache =
 		g_hash_table_new ((GHashFunc)mono_metadata_generic_inst_hash,
@@ -983,6 +984,8 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->generic_inst_cache);
 	g_hash_table_foreach (image->memberref_signatures, free_mr_signatures, NULL);
 	g_hash_table_destroy (image->memberref_signatures);
+	g_hash_table_foreach (image->helper_signatures, free_mr_signatures, NULL);
+	g_hash_table_destroy (image->helper_signatures);
 	
 	if (image->raw_metadata != NULL)
 		mono_raw_buffer_free (image->raw_metadata);
