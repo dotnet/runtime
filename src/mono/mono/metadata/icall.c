@@ -1760,22 +1760,6 @@ ves_icall_TypeBuilder_get_IsGenericParameter (MonoReflectionTypeBuilder *tb)
 	return FALSE;
 }
 
-static MonoReflectionGenericParam*
-ves_icall_TypeBuilder_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoString *name, int index)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	return mono_reflection_define_generic_parameter (tb, NULL, name, index);
-}
-
-static MonoReflectionGenericParam*
-ves_icall_MethodBuilder_define_generic_parameter (MonoReflectionMethodBuilder *mb, MonoString *name, int index)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	return mono_reflection_define_generic_parameter (NULL, mb, name, index);
-}
-
 static MonoReflectionType*
 ves_icall_MonoGenericInst_GetParentType (MonoReflectionGenericInst *type)
 {
@@ -1985,13 +1969,6 @@ ves_icall_MonoGenericInst_GetEvents (MonoReflectionGenericInst *type,
 				mono_event_get_object (domain, refclass, &dginst->events [i]));
 
 	return res;
-}
-
-static void
-ves_icall_MonoGenericParam_initialize (MonoReflectionGenericParam *gparam)
-{
-	MONO_ARCH_SAVE_REGS;
-	mono_reflection_initialize_generic_parameter (gparam);
 }
 
 static MonoReflectionMethod *
@@ -5140,8 +5117,8 @@ static const IcallEntry monogenericinst_icalls [] = {
 	{"initialize", mono_reflection_generic_inst_initialize}
 };
 
-static const IcallEntry monogenericparam_icalls [] = {
-	{"initialize", ves_icall_MonoGenericParam_initialize}
+static const IcallEntry generictypeparambuilder_icalls [] = {
+	{"initialize", mono_reflection_initialize_generic_parameter}
 };
 
 static const IcallEntry monomethod_icalls [] = {
@@ -5218,8 +5195,7 @@ static const IcallEntry dynamicmethod_icalls [] = {
 };
 
 static const IcallEntry methodbuilder_icalls [] = {
-	{"BindGenericParameters", mono_reflection_bind_generic_method_parameters},
-	{"define_generic_parameter", ves_icall_MethodBuilder_define_generic_parameter}
+	{"BindGenericParameters", mono_reflection_bind_generic_method_parameters}
 };
 
 static const IcallEntry modulebuilder_icalls [] = {
@@ -5239,7 +5215,6 @@ static const IcallEntry signaturehelper_icalls [] = {
 static const IcallEntry typebuilder_icalls [] = {
 	{"create_internal_class", mono_reflection_create_internal_class},
 	{"create_runtime_class", mono_reflection_create_runtime_class},
-	{"define_generic_parameter", ves_icall_TypeBuilder_define_generic_parameter},
 	{"get_IsGenericParameter", ves_icall_TypeBuilder_get_IsGenericParameter},
 	{"get_event_info", mono_reflection_event_builder_get_event_info},
 	{"setup_generic_class", mono_reflection_setup_generic_class},
@@ -5530,6 +5505,7 @@ static const IcallMap icall_entries [] = {
 	{"System.Reflection.Emit.AssemblyBuilder", assemblybuilder_icalls, G_N_ELEMENTS (assemblybuilder_icalls)},
 	{"System.Reflection.Emit.CustomAttributeBuilder", customattrbuilder_icalls, G_N_ELEMENTS (customattrbuilder_icalls)},
 	{"System.Reflection.Emit.DynamicMethod", dynamicmethod_icalls, G_N_ELEMENTS (dynamicmethod_icalls)},
+	{"System.Reflection.Emit.GenericTypeParameterBuilder", generictypeparambuilder_icalls, G_N_ELEMENTS (generictypeparambuilder_icalls)},
 	{"System.Reflection.Emit.MethodBuilder", methodbuilder_icalls, G_N_ELEMENTS (methodbuilder_icalls)},
 	{"System.Reflection.Emit.ModuleBuilder", modulebuilder_icalls, G_N_ELEMENTS (modulebuilder_icalls)},
 	{"System.Reflection.Emit.SignatureHelper", signaturehelper_icalls, G_N_ELEMENTS (signaturehelper_icalls)},
@@ -5541,7 +5517,6 @@ static const IcallMap icall_entries [] = {
 	{"System.Reflection.MonoEventInfo", monoeventinfo_icalls, G_N_ELEMENTS (monoeventinfo_icalls)},
 	{"System.Reflection.MonoField", monofield_icalls, G_N_ELEMENTS (monofield_icalls)},
 	{"System.Reflection.MonoGenericInst", monogenericinst_icalls, G_N_ELEMENTS (monogenericinst_icalls)},
-	{"System.Reflection.MonoGenericParam", monogenericparam_icalls, G_N_ELEMENTS (monogenericparam_icalls)},
 	{"System.Reflection.MonoMethod", monomethod_icalls, G_N_ELEMENTS (monomethod_icalls)},
 	{"System.Reflection.MonoMethodInfo", monomethodinfo_icalls, G_N_ELEMENTS (monomethodinfo_icalls)},
 	{"System.Reflection.MonoPropertyInfo", monopropertyinfo_icalls, G_N_ELEMENTS (monopropertyinfo_icalls)},
