@@ -11,9 +11,7 @@
 #ifndef _MONO_IOLAYER_IOLAYER_H_
 #define _MONO_IOLAYER_IOLAYER_H_
 
-#include <config.h>
-
-#if defined(PLATFORM_WIN32)
+#if defined(__WIN32__)
 /* Native win32 */
 #define UNICODE
 #define _UNICODE

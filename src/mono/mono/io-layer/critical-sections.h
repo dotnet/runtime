@@ -10,8 +10,6 @@
 #ifndef _WAPI_CRITICAL_SECTIONS_H_
 #define _WAPI_CRITICAL_SECTIONS_H_
 
-#include <config.h>
-
 #include <glib.h>
 #include <pthread.h>
 
