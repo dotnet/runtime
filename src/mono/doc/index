@@ -103,7 +103,7 @@
 	that will hold the entry points to document.  All master files
 	for our assemblies have been checked into CVS now.
 
-	Sergey Panov's Mono.PEToolkit and ILASM tools have been
+	Sergey Chaban's Mono.PEToolkit and ILASM tools have been
 	checked into CVS.  Although ILASM is old and will soon be
 	updated, we wanted to get the build issues sorted out.
 
