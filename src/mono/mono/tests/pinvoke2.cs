@@ -36,6 +36,14 @@ public class Tests {
 	public struct EmptyStruct {
 	}
 
+	[StructLayout (LayoutKind.Sequential)]
+	public struct DelegateStruct {
+		public int a;
+		public SimpleDelegate del;
+		[MarshalAs(UnmanagedType.FunctionPtr)] 
+		public SimpleDelegate del2;
+	}
+
 	/* sparcv9 has complex conventions when passing structs with doubles in them 
 	   by value, some simple tests for them */
 	[StructLayout (LayoutKind.Sequential)]
@@ -131,6 +139,9 @@ public class Tests {
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate")]
 	public static extern int mono_test_marshal_delegate (SimpleDelegate d);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate_struct")]
+	public static extern int mono_test_marshal_delegate_struct (DelegateStruct d);
 
 	[DllImport ("libtest", EntryPoint="mono_test_return_vtype")]
 	public static extern SimpleStruct mono_test_return_vtype (IntPtr i);
@@ -315,6 +326,16 @@ public class Tests {
 		SimpleDelegate d = new SimpleDelegate (delegate_test);
 
 		return mono_test_marshal_delegate (d);
+	}
+
+	static int test_0_marshal_delegate_struct () {
+		DelegateStruct s = new DelegateStruct ();
+
+		s.a = 2;
+		s.del = new SimpleDelegate (delegate_test);
+		s.del2 = new SimpleDelegate (delegate_test);
+
+		return mono_test_marshal_delegate_struct (s);
 	}
 
 	static int test_0_marshal_point () {

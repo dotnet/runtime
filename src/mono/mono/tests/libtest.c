@@ -313,12 +313,13 @@ mono_test_ref_vtype (int a, simplestruct *ss, int b, RefVTypeDelegate func)
 typedef struct {
 	int a;
 	int (*func) (int);
+	int (*func2) (int);
 } DelegateStruct;
 
 int 
 mono_test_marshal_delegate_struct (DelegateStruct ds)
 {
-	return ds.func (ds.a);
+	return ds.func (ds.a) + ds.func2 (ds.a);
 }
 
 int 
