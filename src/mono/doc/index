@@ -9,7 +9,7 @@
 
 	Mono includes: <a href="c-sharp.html">a compiler</a> for the
 	C# language, a <a href="runtime.html">runtime</a> for the
-	Common Language Infrastructure (also refered as the CLR) and a
+	Common Language Infrastructure (also referred as the CLR) and a
 	set of <a href="class-library.html">class libraries</a>.  
 
 	You can read our <a href="rationale.html">rationale</a> for
@@ -94,7 +94,7 @@
 	ONE 2002:</a></b> Come see Paolo, Mike and Miguel from the Mono team at the .NET ONE conference in Frankfurt.</ul>
 </ul>
 
-@item Oct 9th, 2002: Various Mono oupdates.
+@item Oct 9th, 2002: Various Mono updates.
 
 	Brian Ritchie, Daniel Morgan, Rodrigo Moya and Ville Palo have
 	been working on various database providers.  The MySQL has
@@ -102,8 +102,8 @@
 	more extensive regression tests have been checked in.
 
 	Dick Porter is our background hero and keeps fixing the
-	lowlevel bugs in the portability layer.  Now the Mono handle
-	daemon should be a lot more robust and will no longer lear IPC
+	low-level bugs in the portability layer.  Now the Mono handle
+	daemon should be a lot more robust and will no longer leave IPC
 	regions.  Gonzalo Paniagua has initiated the migration of XSP
 	into the System.Web class libraries now that we have a
 	complete HttpRuntime implementation.  This means that you are
@@ -200,7 +200,7 @@
 	System.DirectoryServices assembly.
 
 	Andrew has also continued with some of the cryptographic
-	classes implemetation.
+	classes implementation.
 
 	After much public debate, we have chosen a new <a
 	href="winforms.html">strategy to implement winforms</a>.
@@ -355,7 +355,7 @@
 	an update</a> on the ASP.NET widgets that are still pending.  Patrik is back, and he is 
 	working with Gonzalo to streamline the pipeline
 
-	Rachel quietly commited to Gtk-Sharp support for marshaling
+	Rachel quietly committed to Gtk-Sharp support for marshaling
 	structures (very important for Gtk#).  This uses extensively
 	the new marshaling code that Dietmar added to the runtime.
 
@@ -398,7 +398,7 @@
 
 @item Jul 20th, 2002: Spanish Mono Tutorial.
 
-	A spanish tutorial on using Mono is <a
+	A Spanish tutorial on using Mono is <a
 	href="http://mono.es.gnome.org/tutoriales/mono-linux/">here</a>.
 	Also the <a
 	href="http://mono.es.gnome.org/tutoriales/mono-puf/">FAQ</a>
@@ -437,7 +437,7 @@
 
 	Sergey Chaban has got Gtk# working on Windows, you can see
 	some screenshots: <a href="sshots/Gtksharp-1.jpg">sample apps</a> and
-	<a href="sshots/Gtksharp-2.jpg">running with a russian charset</a>.
+	<a href="sshots/Gtksharp-2.jpg">running with a Russian charset</a>.
 
 @item Jul 16th, 2002
 
@@ -469,7 +469,7 @@
 		  run the compiler on Linux.
 
 		* Martin fixed the remaining bugs in the compiler that stopped it from
-	 	  compiling the `corlib'.  The resuling image still contained errors though.
+	 	  compiling the `corlib'.  The resulting image still contained errors though.
 
 		* On July 8th, Radek got the PowerPC port to bootstrap
 		  the C# compiler.  This is important, because it exposed
@@ -617,11 +617,11 @@
 	bindings, that should simplify application development.
 
 	A big thanks goes to Dennis Hayes for getting the
-	Windows.Forms work together, and commiting so many stubs for Windows.Forms. 
+	Windows.Forms work together, and committing so many stubs for Windows.Forms. 
 
 @item Jun 25, 2002
 
-	I am updating the Mono site from the Unesco offices in
+	I am updating the Mono site from the UNESCO offices in
 	Uruguay, the <a href="http://www.gnome.org/resources/calendar/roadshow/GNOMEenelSur.html">South-America trip</a>
 	to promote free software is going very well.
 
@@ -663,7 +663,7 @@
 
 @item Jun 22, 2002
 
-	Mono's ASP.NET has rendered its first page on Linxu for the
+	Mono's ASP.NET has rendered its first page on Linux for the
 	first time (Gonzalo and Paolo).  
 
 	Also, we are getting close to
@@ -787,7 +787,7 @@
 	Lawrence has been working really hard in fixing, improving and
 	polishing the underlying network infrastructure.
 
-	The Rafael and Chris have commited the beginning of the
+	The Rafael and Chris have committed the beginning of the
 	VisualBasic.NET runtime support to CVS.
 
 	Jesus has contributed the beginning of the SoapFormatter
@@ -822,7 +822,7 @@
 	This is another milestone for our <a
 	href="ado-net.html">ADO.NET implementation plans</a>
 
-	We have a little surprise for everyone tracking the news on tuesday ;-)
+	We have a little surprise for everyone tracking the news on Tuesday ;-)
 
 @item May 2nd, 2002
 
@@ -1044,7 +1044,7 @@
 
 	We are very close to have a complete self hosting environment now.
 
-	Mono is temporarly using the Bohem GC garbage collector while
+	Mono is temporarily using the Bohem GC garbage collector while
 	we deploy the more advanced ORP one. 
 
 @item Mar 5, 2002
@@ -1162,7 +1162,7 @@
 
 	AppDomains have been deployed (Dietmar).  Socket work is done
 	(Dick).  Corlib compiled with no refs to mscorlib (Dan).  New
-	comprehensive tests for colib bits (David).  Nick is driving the
+	comprehensive tests for corlib bits (David).  Nick is driving the
 	regression test suite efforts and class library completeness.
 	New System.Data work (Chris). Bug fixes (Paolo, Duncan, Ravi, Miguel)
 
@@ -1297,7 +1297,7 @@
 	here</a>
 
 	Last minute breaking news: Paolo got our compiler in Linux to
-	compile fib.cs, patches are comming tomorrow once we have
+	compile fib.cs, patches are coming tomorrow once we have
 	ChangeLog entries.   
 
 @item Jan 4, 2002
@@ -1476,7 +1476,7 @@
 	href="http://lists.ximian.com/archives/public/gtk-sharp-list/2001-November/000013.html">
 	update</a> on his work on Gtk#.  
 
-	Ravi commited the initial support for Attributes in the
+	Ravi committed the initial support for Attributes in the
 	compiler. 
 
 	Many HTML Controls from Leen checked into CVS.
@@ -1493,7 +1493,7 @@
 <blockquote>
 	Many clean ups have been going into the class library by Nick Drochak. 
 
-	Mega patch from Dietmar: he commited the flow analysis code
+	Mega patch from Dietmar: he committed the flow analysis code
 	for the JITer. 
 
 	A lot of work has been going into the WebControls by Gaurav (4
@@ -1503,7 +1503,7 @@
 @item Nov 1, 2001
 
 <blockquote>
-	Ravi commited the caller-side method selection of methods with
+	Ravi committed the caller-side method selection of methods with
 	variable length arguments.  Now he depends on Miguel finishing
 	the array handling support. 
 </blockquote>
@@ -1511,7 +1511,7 @@
 @item Oct 27, 2001
 
 <blockquote>
-	Lots of classes for System.Web from Gaurav were commited this
+	Lots of classes for System.Web from Gaurav were committed this
 	morning.
 
 	Some large recent developments:
@@ -1520,7 +1520,7 @@
 	partially integrated (we need to put the internalcalls in
 	place now and compile and link the decimal code).
 
-	Derek Holden commited recently the IntegerFormatter code into
+	Derek Holden committed recently the IntegerFormatter code into
 	the CVS, so we got a pretty comprehensive integer formatting
 	engine that we can finally use all over the place. 
 
@@ -1635,7 +1635,7 @@
 
 <blockquote>
 	Paolo has written a section on <a href="porting.html">Porting
-	Mono</a> to othre architectures.
+	Mono</a> to other architectures.
 </blockquote>
 
 @item Sep 18, 2001
@@ -1689,7 +1689,7 @@
 	<b>.NET Hello World is working under Mono!</b>  The latest snapshots
 	will let you run it.   
 
-	Hello World consits of 1821 CIL instructions, 
+	Hello World consists of 1821 CIL instructions, 
         performs 66 subroutine calls and loads 12 classes from the corlib.dll
 
 	Good work Mono team!
