@@ -60,6 +60,20 @@ helper_memset (void *addr, int val, int size)
 	memset (addr, val, size);
 }
 
+static void
+helper_stelem_ref (MonoArray *array, int index, MonoObject *val)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	if (index >= array->max_length)
+		mono_raise_exception (mono_get_exception_index_out_of_range ());
+
+	if (val && !mono_object_isinst (val, array->obj.vtable->klass->element_class))
+		mono_raise_exception (mono_get_exception_array_type_mismatch ());
+
+	mono_array_set (array, gpointer, index, val);
+}
+
 static gint64 
 mono_llmult (gint64 a, gint64 b)
 {

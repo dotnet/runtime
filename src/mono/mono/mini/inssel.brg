@@ -518,6 +518,11 @@ stmt: CEE_STIND_I (OP_REGVAR, reg) {
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->left->tree->dreg, state->right->reg1);
 }
 
+stmt: CEE_STELEM_REF (OP_GROUP (reg, reg), reg) {
+
+	g_assert_not_reached ();
+}
+
 #
 # conversions: conv_u can be implemented with AND, also all _ovf conversions?
 #

@@ -264,6 +264,8 @@ MINI_OP(OP_FCLT_UN,"float_clt_un")
 
 MINI_OP(OP_FCONV_TO_U,	"float_conv_to_u")
 
+MINI_OP(OP_GROUP, "group")
+
 /* aot compiler */
 MINI_OP(OP_AOTCONST, "aot_const")
 

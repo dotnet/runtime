@@ -75,6 +75,7 @@ static MonoMethodSignature *helper_sig_ulong_double = NULL;
 static MonoMethodSignature *helper_sig_long_double = NULL;
 static MonoMethodSignature *helper_sig_uint_double = NULL;
 static MonoMethodSignature *helper_sig_int_double = NULL;
+static MonoMethodSignature *helper_sig_stelem_ref = NULL;
 
 static guint32 default_opt = MONO_OPT_PEEPHOLE;
 
@@ -474,6 +475,13 @@ print_method_from_ip (void *ip)
 		(dest)->inst_right = (sp) [1];	\
 		(dest)->type = STACK_MP;	\
 		(dest)->klass = (k);	\
+	} while (0)
+
+#define NEW_GROUP(cfg,dest,el1,el2) do {	\
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		(dest)->opcode = OP_GROUP;	\
+		(dest)->inst_left = (el1);	\
+		(dest)->inst_right = (el2);	\
 	} while (0)
 
 static GHashTable *coverage_hash = NULL;
@@ -3498,8 +3506,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_STELEM_I4:
 		case CEE_STELEM_I8:
 		case CEE_STELEM_R4:
-		case CEE_STELEM_R8:
-		case CEE_STELEM_REF: {
+		case CEE_STELEM_R8: {
 			MonoInst *load;
 			/*
 			 * translate to:
@@ -3519,6 +3526,35 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
 			MONO_ADD_INS (bblock, ins);
 			/* FIXME: add the implicit STELEM_REF castclass */
+			inline_costs += 1;
+			cfg->disable_ssa = TRUE;
+			break;
+		}
+		case CEE_STELEM_REF: {
+			MonoInst *iargs [3];
+
+			CHECK_STACK (3);
+			sp -= 3;
+
+			handle_loaded_temps (cfg, bblock, stack_start, sp);
+
+			iargs [2] = sp [2];
+			iargs [1] = sp [1];
+			iargs [0] = sp [0];
+			
+			mono_emit_jit_icall (cfg, bblock, helper_stelem_ref, iargs, ip);
+
+			/*
+			MonoInst *group;
+			NEW_GROUP (cfg, group, sp [0], sp [1]);
+			MONO_INST_NEW (cfg, ins, CEE_STELEM_REF);
+			ins->cil_code = ip;
+			ins->inst_left = group;
+			ins->inst_right = sp [2];
+			MONO_ADD_INS (bblock, ins);
+			*/
+
+			++ip;
 			inline_costs += 1;
 			cfg->disable_ssa = TRUE;
 			break;
@@ -4396,6 +4432,14 @@ create_helper_signature (void)
 	helper_sig_domain_get = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
 	helper_sig_domain_get->ret = &mono_defaults.int_class->byval_arg;
 	helper_sig_domain_get->pinvoke = 1;
+
+	/* void* stelem_ref (MonoArray *, int index, MonoObject *) */
+	helper_sig_stelem_ref = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
+	helper_sig_stelem_ref->params [0] = &mono_defaults.array_class->byval_arg;
+	helper_sig_stelem_ref->params [1] = &mono_defaults.int32_class->byval_arg;
+	helper_sig_stelem_ref->params [2] = &mono_defaults.object_class->byval_arg;
+	helper_sig_stelem_ref->ret = &mono_defaults.void_class->byval_arg;
+	helper_sig_stelem_ref->pinvoke = 1;
 
 	/* long amethod (long, long) */
 	helper_sig_long_long_long = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
@@ -6061,6 +6105,7 @@ mini_init (const char *filename)
 	mono_register_jit_icall (helper_memcpy, "helper_memcpy", helper_sig_memcpy, FALSE);
 	mono_register_jit_icall (helper_memset, "helper_memset", helper_sig_memset, FALSE);
 	mono_register_jit_icall (helper_initobj, "helper_initobj", helper_sig_initobj, FALSE);
+	mono_register_jit_icall (helper_stelem_ref, "helper_stelem_ref", helper_sig_stelem_ref, FALSE);
 	mono_register_jit_icall (mono_object_new, "mono_object_new", helper_sig_object_new, FALSE);
 	mono_register_jit_icall (mono_array_new, "mono_array_new", helper_sig_newarr, FALSE);
 	mono_register_jit_icall (mono_string_to_utf16, "mono_string_to_utf16", helper_sig_ptr_obj, FALSE);
