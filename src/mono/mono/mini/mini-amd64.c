@@ -5674,7 +5674,14 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 	 */
 	code -= 7;
 
-	if (IS_REX (code [4]) && (code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x3)) {
+	/* 
+	 * A given byte sequence can match more than case here, so we have to be
+	 * really careful about the ordering of the cases.
+	 */
+	if (code [2] == 0xe8)
+		/* call <ADDR> */
+		return NULL;
+	else if (IS_REX (code [4]) && (code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x3)) {
 		/* call *%reg */
 		return NULL;
 	}
@@ -5709,9 +5716,6 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 		reg = amd64_modrm_rm (code [6]);
 		disp = 0;
 	}
-	else if (code [2] == 0xe8)
-		/* call <ADDR> */
-		return NULL;
 	else
 		g_assert_not_reached ();
 
