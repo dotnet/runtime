@@ -75,7 +75,7 @@ const unsigned char table_sizes [64] = {
 	0,
 	MONO_PROPERTY_SIZE,
 	MONO_METHOD_SEMA_SIZE,
-	MONO_MTHODIMPL_SIZE,
+	MONO_METHODIMPL_SIZE,
 	MONO_MODULEREF_SIZE,	/* 0x1A */
 	MONO_TYPESPEC_SIZE,
 	MONO_IMPLMAP_SIZE,	
@@ -711,18 +711,25 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicAssembly
 	}
 	if (mb->override_method) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)mb->type;
+		guint32 tok;
 		table = &assembly->tables [MONO_TABLE_METHODIMPL];
 		table->rows ++;
 		alloc_table (table, table->rows);
-		values = table->values + table->rows * MONO_MTHODIMPL_SIZE;
-		values [MONO_MTHODIMPL_CLASS] = tb->table_idx;
-		values [MONO_MTHODIMPL_BODY] = METHODDEFORREF_METHODDEF | (mb->table_idx << METHODDEFORREF_BITS);
-		if (mb->override_method->method)
-			values [MONO_MTHODIMPL_DECLARATION] = mono_image_get_methodref_token (assembly, mb->override_method->method);
-		else {
-			MonoReflectionMethodBuilder *omb = (MonoReflectionMethodBuilder*)mb->override_method;
-			values [MONO_MTHODIMPL_DECLARATION] = METHODDEFORREF_METHODDEF | (omb->table_idx << METHODDEFORREF_BITS);
+		values = table->values + table->rows * MONO_METHODIMPL_SIZE;
+		values [MONO_METHODIMPL_CLASS] = tb->table_idx;
+		values [MONO_METHODIMPL_BODY] = METHODDEFORREF_METHODDEF | (mb->table_idx << METHODDEFORREF_BITS);
+		tok = mono_image_create_token (assembly, (MonoObject*)mb->override_method);
+		switch (mono_metadata_token_table (tok)) {
+		case MONO_TABLE_MEMBERREF:
+			tok = (mono_metadata_token_index (tok) << METHODDEFORREF_BITS ) | METHODDEFORREF_METHODREF;
+			break;
+		case MONO_TABLE_METHOD:
+			tok = (mono_metadata_token_index (tok) << METHODDEFORREF_BITS ) | METHODDEFORREF_METHODDEF;
+			break;
+		default:
+			g_assert_not_reached ();
 		}
+		values [MONO_METHODIMPL_DECLARATION] = tok;
 	}
 	mono_image_add_cattrs (assembly, mb->table_idx, CUSTOM_ATTR_METHODDEF, mb->cattrs);
 }
