@@ -232,10 +232,6 @@ AC_ARG_WITH(nptl, [  --with-nptl=yes,no      enable/disable support for NPTL],[]
 # This does not work on some platforms (bug #55253)
 AC_ARG_WITH(sigaltstack, [  --with-sigaltstack=yes,no      enable/disable support for sigaltstack],[],[with_sigaltstack=yes])
 
-if test x$with_sigaltstack = "xyes"; then
-	AC_DEFINE(HAVE_WORKING_SIGALTSTACK)
-fi
-
 # assembly bundle support, see metadata/make-bundle.pl for more info
 AC_ARG_WITH(bundle, [  --with-bundle=bundle_template],[
 	BUNDLE_FILE=$with_bundle
@@ -616,6 +612,79 @@ if test x$platform_win32 = xno; then
 				AC_DEFINE(HAVE_KW_THREAD)
 			fi
 	], [
+			AC_MSG_RESULT(no)
+	])
+
+	dnl **************************************
+	dnl *** Checks for working sigaltstack ***
+	dnl **************************************
+	AC_MSG_CHECKING(for working sigaltstack)
+	AC_TRY_RUN([
+		#include <stdio.h>
+		#include <stdlib.h>
+		#include <unistd.h>
+		#include <signal.h>
+		#include <pthread.h>
+
+		static void
+		sigsegv_signal_handler (int _dummy, siginfo_t *info, void *context)
+		{
+			exit (0);
+		}
+
+		static void *
+		loop (void *ignored)
+		{
+			sleep (1);
+
+			/* If we reach here, the signal handler wasn't called */
+			exit (1);
+		}
+
+		int
+		main ()
+		{
+			struct sigaction sa;
+			struct sigaltstack sas;
+			pthread_t id;
+			pthread_attr_t attr;
+			char *ptr = NULL;
+
+			sa.sa_sigaction = sigsegv_signal_handler;
+			sigemptyset (&sa.sa_mask);
+			sa.sa_flags = SA_SIGINFO | SA_STACK;
+			if (sigaction (SIGSEGV, &sa, NULL) == -1) {
+				perror ("lala");
+				return 1;
+			}
+
+			sas.ss_sp = malloc (SIGSTKSZ);
+			sas.ss_size = SIGSTKSZ;
+			sas.ss_flags = SS_ONSTACK;
+			if (sigaltstack (&sas, NULL) == -1) {
+				perror ("lala");
+				return 1;
+			}
+
+			pthread_attr_init (&attr);
+			if (pthread_create(&id, &attr, loop, &attr) != 0) {
+				printf ("failed\n");
+				return 3;
+			}
+
+			*ptr = 0;
+			pthread_join (id, NULL);
+			return 2;
+		}
+	], [
+			if test "x$with_sigaltstack" != "xyes"; then
+				AC_MSG_RESULT(disabled)
+			else
+				AC_MSG_RESULT(yes)
+				AC_DEFINE(HAVE_WORKING_SIGALTSTACK)
+			fi
+	], [
+			with_sigaltstack=no
 			AC_MSG_RESULT(no)
 	])
 
