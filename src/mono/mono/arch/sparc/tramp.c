@@ -189,11 +189,12 @@ calculate_sizes (MonoMethodSignature *sig, guint *stack_size, guint *code_size,
 			break;
 		case MONO_TYPE_VALUETYPE: {
 			gint size;
+			guint32 align;
 			if (sig->params[i]->data.klass->enumtype) {
 				simpletype = sig->params[i]->data.klass->enum_basetype->type;
 				goto enum_calc_size;
 			}
-			size = mono_class_native_size (sig->params[i]->data.klass, NULL);
+			size = mono_class_native_size (sig->params[i]->data.klass, &align);
 #if SPARCV9
 			if (size != 4) {
 #else
@@ -202,6 +203,8 @@ calculate_sizes (MonoMethodSignature *sig, guint *stack_size, guint *code_size,
 				DEBUG(fprintf(stderr, "copy %d byte struct on stack\n", size));
 				*use_memcpy = TRUE;
 				*code_size += 8*4;
+
+				*stack_size = (*stack_size + (align - 1)) & (~(align -1));
 				*stack_size += (size + 3) & (~3);
 				if (gr > OUT_REGS) {
 					*code_size += 4;
@@ -413,13 +416,16 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 			if (sig->params[i]->type == MONO_TYPE_VALUETYPE &&
 			    !sig->params[i]->data.klass->enumtype) {
 				gint size;
+				guint32 align;
 				
-				size = mono_class_native_size (sig->params[i]->data.klass, NULL);
+				size = mono_class_native_size (sig->params[i]->data.klass, &align);
 #if SPARCV9
 				if (size != 4) {
 #else
 				if (1) {
 #endif
+					/* Add alignment */
+					stack_par_pos = (stack_par_pos + (align - 1)) & (~(align - 1));
 					/* need to call memcpy here */
 					sparc_add_imm (p, 0, sparc_sp, stack_par_pos, sparc_o0);
 					sparc_ld_imm_ptr (p, sparc_i3, i*16, sparc_o1);
@@ -518,12 +524,13 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 			break;
 		case MONO_TYPE_VALUETYPE: {
 			gint size;
+			guint32 align;
 			MonoClass *klass = sig->params[i]->data.klass;
 			if (klass->enumtype) {
 				simpletype = klass->enum_basetype->type;
 				goto enum_calc_size;
 			}
-			size = mono_class_native_size (klass, NULL);
+			size = mono_class_native_size (klass, &align);
 #if SPARCV9
 			if (size <= 16) {
 				if (gr < OUT_REGS) {
@@ -559,6 +566,7 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 			*/
 #endif
 
+			cur_struct_pos = (cur_struct_pos + (align - 1)) & (~(align - 1));
 			if (gr < OUT_REGS) {
 				sparc_add_imm (p, 0, sparc_sp,
 					       cur_struct_pos, sparc_o0 + gr);
@@ -957,6 +965,8 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	}
 
 	/* return value storage */
+	/* Align to dword */
+	stackval_arg_pos = (stackval_arg_pos + (8 - 1)) & (~(8 -1));
 	if (sig->param_count) {
 		sparc_add_imm (p, 0, sparc_sp, stackval_arg_pos, sparc_l0);
 	}
