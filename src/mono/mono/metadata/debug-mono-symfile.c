@@ -451,8 +451,6 @@ mono_debug_symfile_add_type (MonoSymbolFile *symfile, MonoClass *klass)
 	} else
 		info->token = klass->type_token;
 	info->type_info = write_type (&klass->this_arg);
-
-	g_hash_table_insert (class_table, klass, info);
 }
 
 static int
@@ -748,11 +746,16 @@ static gpointer
 write_type (MonoType *type)
 {
 	guint8 buffer [BUFSIZ], *ptr = buffer, *retval;
-	int num_fields = 0, num_properties = 0;
-	guint32 size;
+	GPtrArray *methods = NULL;
+	int num_fields = 0, num_properties = 0, num_methods = 0;
+	int num_params = 0, kind;
+	guint32 size, data_size;
+	MonoClass *klass;
 
 	if (!type_table)
 		type_table = g_hash_table_new (g_direct_hash, g_direct_equal);
+	if (!class_table)
+		class_table = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 	retval = g_hash_table_lookup (type_table, type);
 	if (retval)
@@ -762,7 +765,14 @@ write_type (MonoType *type)
 	if (retval)
 		return retval;
 
-	switch (type->type) {
+	kind = type->type;
+	if (kind == MONO_TYPE_OBJECT) {
+		klass = mono_defaults.object_class;
+		kind = MONO_TYPE_CLASS;
+	} else if ((kind == MONO_TYPE_VALUETYPE) || (kind == MONO_TYPE_CLASS))
+		klass = type->data.klass;
+
+	switch (kind) {
 	case MONO_TYPE_SZARRAY:
 		size = 8 + sizeof (int) + sizeof (gpointer);
 		break;
@@ -773,10 +783,15 @@ write_type (MonoType *type)
 
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS: {
-		MonoClass *klass = type->data.klass;
+		GHashTable *method_slots = NULL;
 		int i;
 
 		mono_class_init (klass);
+
+		retval = g_hash_table_lookup (class_table, klass);
+		if (retval)
+			return retval;
+
 		if (klass->enumtype) {
 			size = 5 + sizeof (int) + sizeof (gpointer);
 			break;
@@ -790,36 +805,59 @@ write_type (MonoType *type)
 			if (!(klass->properties [i].attrs & FIELD_ATTRIBUTE_STATIC))
 				++num_properties;
 
-		size = 22 + sizeof (int) + num_fields * (4 + sizeof (gpointer)) +
-			num_properties * 3 * sizeof (gpointer);
+		method_slots = g_hash_table_new (NULL, NULL);
+		methods = g_ptr_array_new ();
 
-		if (type->type == MONO_TYPE_CLASS)
+		for (i = klass->method.count - 1; i >= 0; i--) {
+			MonoMethod *method = klass->methods [i];
+
+			if (strcmp (method->name, ".ctor") == 0 || strcmp (method->name, ".cctor") == 0)
+				continue;
+			if (method->flags & (METHOD_ATTRIBUTE_STATIC | METHOD_ATTRIBUTE_SPECIAL_NAME))
+				continue;
+			if (!((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC))
+				continue;
+			if (g_hash_table_lookup (method_slots, GUINT_TO_POINTER (method->slot)))
+				continue;
+			g_hash_table_insert (method_slots, GUINT_TO_POINTER (method->slot), method);
+
+			++num_methods;
+			num_params += method->signature->param_count;
+
+			g_ptr_array_add (methods, method);
+		}
+
+		g_hash_table_destroy (method_slots);
+
+		size = 30 + sizeof (int) + num_fields * (4 + sizeof (gpointer)) +
+			num_properties * 3 * sizeof (gpointer) + num_methods * (4 + 2 * sizeof (gpointer)) +
+			num_params * sizeof (gpointer);
+
+		if (kind == MONO_TYPE_CLASS)
 			size += sizeof (gpointer);
 		break;
 	}
-
-	case MONO_TYPE_OBJECT:
-		size = 5 + sizeof (int);
-		break;
 
 	default:
 		size = sizeof (int);
 		break;
 	}
 
-	retval = g_malloc0 (size + 4);
-	memcpy (retval + 4, buffer, size);
-	*((int *) retval) = size;
+	data_size = size;
+
+	retval = g_malloc0 (data_size + 4);
+	memcpy (retval + 4, buffer, data_size);
+	*((int *) retval) = data_size;
 
 	g_hash_table_insert (type_table, type, retval);
 
 	ptr = retval + 4;
 
-	switch (type->type) {
+	switch (kind) {
 	case MONO_TYPE_SZARRAY: {
 		MonoArray array;
 
-		*((int *) ptr)++ = -8 - sizeof (gpointer);
+		*((int *) ptr)++ = -size;
 		*((guint32 *) ptr)++ = sizeof (MonoArray);
 		*ptr++ = 2;
 		*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
@@ -833,7 +871,7 @@ write_type (MonoType *type)
 		MonoArray array;
 		MonoArrayBounds bounds;
 
-		*((int *) ptr)++ = -15 - sizeof (gpointer);
+		*((int *) ptr)++ = -size;
 		*((guint32 *) ptr)++ = sizeof (MonoArray);
 		*ptr++ = 3;
 		*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
@@ -852,28 +890,34 @@ write_type (MonoType *type)
 
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS: {
-		MonoClass *klass = type->data.klass;
-		int base_offset = type->type == MONO_TYPE_CLASS ? 0 : - sizeof (MonoObject);
-		int i;
+		int base_offset = kind == MONO_TYPE_CLASS ? 0 : - sizeof (MonoObject);
+		int i, j;
 
-		mono_class_init (klass);
+		g_hash_table_insert (class_table, klass, retval);
+
 		if (klass->enumtype) {
-			*((int *) ptr)++ = -5 - sizeof (gpointer);
+			*((int *) ptr)++ = -size;
 			*((guint32 *) ptr)++ = sizeof (MonoObject);
 			*ptr++ = 4;
 			*((gpointer *) ptr)++ = write_type (klass->enum_basetype);
 			break;
 		}
 
-		*((int *) ptr)++ = -22 - num_fields * (4 + sizeof (gpointer)) -
-			num_properties * 2 * sizeof (gpointer);
+		*((int *) ptr)++ = -size;
+
 		*((guint32 *) ptr)++ = klass->instance_size + base_offset;
-		*ptr++ = type->type == MONO_TYPE_CLASS ? 6 : 5;
-		*ptr++ = type->type == MONO_TYPE_CLASS;
+		if (type->type == MONO_TYPE_OBJECT)
+			*ptr++ = 7;
+		else
+			*ptr++ = kind == MONO_TYPE_CLASS ? 6 : 5;
+		*ptr++ = kind == MONO_TYPE_CLASS;
 		*((guint32 *) ptr)++ = num_fields;
 		*((guint32 *) ptr)++ = num_fields * (4 + sizeof (gpointer));
 		*((guint32 *) ptr)++ = num_properties;
 		*((guint32 *) ptr)++ = num_properties * 3 * sizeof (gpointer);
+		*((guint32 *) ptr)++ = num_methods;
+		*((guint32 *) ptr)++ = num_methods * (4 + 2 * sizeof (gpointer)) +
+			num_params * sizeof (gpointer);
 		for (i = 0; i < klass->field.count; i++) {
 			if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
@@ -894,7 +938,22 @@ write_type (MonoType *type)
 			*((gpointer *) ptr)++ = klass->properties [i].set;
 		}
 
-		if (type->type == MONO_TYPE_CLASS) {
+		for (i = 0; i < methods->len; i++) {
+			MonoMethod *method = g_ptr_array_index (methods, i);
+
+			*((gpointer *) ptr)++ = method;
+			if (method->signature->ret)
+				*((gpointer *) ptr)++ = write_type (method->signature->ret);
+			else
+				*((gpointer *) ptr)++ = NULL;
+			*((guint32 *) ptr)++ = method->signature->param_count;
+			for (j = 0; j < method->signature->param_count; j++)
+				*((gpointer *) ptr)++ = write_type (method->signature->params [j]);
+		}
+
+		g_ptr_array_free (methods, FALSE);
+
+		if (kind == MONO_TYPE_CLASS) {
 			if (klass->parent)
 				*((gpointer *) ptr)++ = write_type (&klass->parent->this_arg);
 			else
@@ -904,14 +963,8 @@ write_type (MonoType *type)
 		break;
 	}
 
-	case MONO_TYPE_OBJECT:
-		*((int *) ptr)++ = -5;
-		*((guint32 *) ptr)++ = sizeof (MonoObject);
-		*ptr++ = 7;
-		break;
-
 	default:
-		g_message (G_STRLOC ": %p - %x,%x,%x", type, type->attrs, type->type, type->byref);
+		g_message (G_STRLOC ": %p - %x,%x,%x", type, type->attrs, kind, type->byref);
 
 		*((int *) ptr)++ = -1;
 		break;
