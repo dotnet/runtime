@@ -434,15 +434,24 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 index)
 	{
 		gint i;
 		guint16 *s;
+		/* FIXME: we need to find better way for swapping strings, i.e. swap all string after image load */
+		static GHashTable *converted_strings = NULL;
 
-		/* FIXME: it will be better to just add WRITE and after get it to previous state */
-		mprotect ((void *) ((int) str & ~(PAGESIZE - 1)), len2 + ((int) str & (PAGESIZE - 1)),
-				    PROT_READ | PROT_WRITE | PROT_EXEC);
-		len2 >>= 1;
-		/* printf ("swap %p\n", str); */
-		for (i = 0, s = (guint16 *) str; i < len2; i++, s++) {
-			*s = ((*s & 0xff) << 8) | (*s >> 8);
-		}
+		if (!converted_strings)
+			converted_strings = g_hash_table_new (g_str_hash, g_str_equal);
+
+		if (converted_strings && !g_hash_table_lookup (converted_strings, str)) {
+			/* FIXME: it will be better to just add WRITE and after get it to previous state */
+			mprotect ((void *) ((int) str & ~(PAGESIZE - 1)), len2 + ((int) str & (PAGESIZE - 1)),
+				  PROT_READ | PROT_WRITE | PROT_EXEC);
+			len2 >>= 1;
+			/* printf ("swap %p\n", str); */
+			for (i = 0, s = (guint16 *) str; i < len2; i++, s++) {
+				*s = ((*s & 0xff) << 8) | (*s >> 8);
+			}
+			g_hash_table_insert (converted_strings, (gpointer) str, (gpointer) str);
+		} else
+			len2 >>= 1;
 	}
 #undef SWAP16
 #else
