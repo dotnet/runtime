@@ -501,8 +501,22 @@ A: Most of Mono is being written using C#, with only
 
    It is easier to describe what is unique about Mono:
    <ul>
-     <li> A Just-in-Time compiler engine.  This is important for
-	  making your applications fast.
+     <li> An advanced native-code compilation engine: Both
+	  just-in-time compilation (JIT) and pre-compilation of CIL
+	  bytecodes into native code are supported.
+
+     <li> A foundation for code optimization: The new code generator in
+	  Mono builds on the experience of our first JIT engine, and enables
+	  us to implement various advanced compiler optimization
+	  tricks.  With an SSA-framework, plenty of new optimizations are possible. 
+
+          The current list of optimizations are: Peephole postpass,
+	  Branch optimizations, Inline method calls, Constant folding, Constant
+	  propagation, Copy propagation, Dead code elimination, Linear scan
+	  global reg allocation, Conditional moves, Emit per-domain code,
+	  Instruction scheduling, Intrinsic method implementations, Tail
+	  recursion and tail calls, Loop related optimizations, Fast x86 FP
+	  compares, Leaf procedures optimizations
 
      <li> A self-hosting C# compiler written in C#, which is clean, easy
           to maintain.
@@ -516,36 +530,28 @@ A: Most of Mono is being written using C#, with only
           systems, while the interpreter works on SPARC, StrongARM,
 	  s390 and PowerPC systems.  
 
-     <li> Supports Linux, Windows and Solaris at this point.
+	  Our new compilation engine is being ported to the PowerPC.
+
+     <li> Supports Linux, BSD, Windows and Solaris at this point.
 
      <li> The JIT engine is written using a portable instruction
-          selector which not only generates good code (we are told
-          that we are faster than Rotor, but it is hard to tell) but
+          selector which not only generates good code but
           is also the foundation to re-target the JIT engine to other
           systems.  
 
-          The system employed is described in various compiler
-          books and it is very similar to what is described in the 
-          book that covers LCC, the ANSI C retargetable C compiler.
-
-     <li> The JIT engine supports in-lining, constant folding and propagation,
-
-     <li> Full support for remoting in the runtime, but the class 
-          libraries are still behind.
+     <li> Full support for remoting in the runtime.
 
      <li> The C# compiler, the JIT engine and the class libraries are
-          mature enough that the whole system is self-hosting.  This means that
-	  we develop Mono completely with itself at this point.
+          mature enough that the whole system has been self-hosting
+	  since April 2002.  This means that we develop Mono
+	  completely with itself at this point.
 
-     <li> We are not yet done, and there is a lot of work left to be
-          done
+          By forcing ourselves to use our own code to develop our
+	  tools, we bug fix problems rapidly, and the system is
+	  overall more robust and tested than if we did not.
 
      <li> We have a great community of developers, without which Mono
           would not be possible.
-
-     <li> We are working on an ahead of time compilation mode to
-	  pre-compile code for the target architecture (this is part
-	  of our new code generation effort).
    </ul>
 
 <a name="webservices"></a>
