@@ -305,9 +305,9 @@ x86_unwind_native_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, struct sig
 		}
 	}
 
-	if (!lmf)
-		g_assert_not_reached ();
-
+	//if (!lmf)
+	//g_assert_not_reached ();
+		
 	if (trace) {
 		g_free (*trace);
 		*trace = NULL;
