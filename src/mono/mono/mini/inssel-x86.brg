@@ -168,15 +168,6 @@ stmt: CEE_STIND_I1 (base, OP_CEQ (OP_COMPARE (OP_CEQ (cflags), OP_ICONST))) {
 	return 1;
 }
 
-cflags: OP_COMPARE (CEE_LDIND_I1 (base), OP_ICONST),
-cflags: OP_COMPARE (CEE_LDIND_U1 (base), OP_ICONST) {
-	tree->opcode = OP_X86_COMPARE_MEMBASE8_IMM;
-	tree->inst_basereg = state->left->left->tree->inst_basereg;
-	tree->inst_offset = state->left->left->tree->inst_offset;
-	tree->inst_imm = state->right->tree->inst_c0;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
 stmt: CEE_STIND_I1 (base, OP_CEQ (cflags)) {
 	tree->opcode = OP_X86_SETEQ_MEMBASE;
 	tree->inst_offset = state->left->tree->inst_offset;
