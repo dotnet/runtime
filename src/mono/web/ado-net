@@ -29,23 +29,26 @@
 	<b>Step 2:</b> <a href="http://msdn.microsoft.com/library/en-us/cpref/html/frlrfSystemDataOleDb.asp?frame=true">System.Data.OleDb</a> Provider:
 		
 	<ul>
-		* <p>On Unix systems: System.Data.OleDb will use the
+		* <p>On Unix systems: System.Data.OleDb uses the
 		<a href="http://www.gnome-db.org/">LibGDA</a>
 		 engine. 
 
 		  <p>LibGDA is a data access engine like ADO/OLE-DB, but for Unix.  The 
 		  GDA in libGDA stands for GNU/GNOME Data Access, but it does not require GNOME.
 		  It only requires glib2 and libxml2.  LibGDA is used by 
-		  libgnomedb, GNOME-DB, and gaSQL.  
+		  libgnomedb, GNOME-DB, and gaSQL.
 		  
 		  <p>There is work under way to get libgda working under 
 		  Windows using Cygwin by the GNOME-DB developers.
 		  
 		  <p>LibGDA has providers for MySQL, PostgreSQL, XML, ODBC,
-		  and MDB Tools (MS Access support).
+		  Oracle, Interbase, Sybase/SQL server (via FreeTDS), IBM DB2,
+		  SQLite and MDB Tools
+		  (MS Access support).
 
-		* On Windows systems: System.Data.OleDb will use OLE-DB as
-		  its engine.  It may have the option of using libgda too.
+		* On Windows systems: System.Data.OleDb will use libgda as well,
+		  if we can get it working, or OLE-DB as
+		  its engine.
 	</ul>
 
 	<b>Step 3:</b> <a href="http://msdn.microsoft.com/library/en-us/cpref/html/frlrfsystemdatasqlclient.asp?frame=true">System.Data.SqlClient</a> Provider:
@@ -58,7 +61,7 @@
 		  
 		  <p>Once Step 1 has been completed and the PostgreSQL
 		  provider support has been moved to its own place at 
-		  System.Data.PostgreSQL, we will use 
+		  Mono.Data.PostgreSQL, we will use 
 		  <a href="http://www.freetds.org/">FreeTDS</a> as the basis
 		  for providing access to Microsoft SQL Server databases.
 		  
@@ -111,11 +114,13 @@
 	<p>For Step 1, the PostgreSQL is starting to come together - it 
 	still needs a lot of work.
 	
-	<p>For Step 2, Rodrigo Moya has begun System.Data.OleDb which will use libgda
+	<p>For Step 2, Rodrigo Moya has been working on System.Data.OleDb which uses libgda
 	which is an OLE-DB/ADO data access for Unix.  The C-Sharp bindings to libgda
 	currently work - meaning they can compile, run, and you can connect to a
-	PostgreSQL database via libgda via the C-Sharp bindings to libgda.  He has also
-	added class stubs for System.Data.OleDb to cvs.
+	PostgreSQL database via libgda via the C-Sharp bindings to libgda.  Basic
+	functionality (execution of commands, data retrieval, transactions, etc) are
+	now working. Current focus is on filling up the missing pieces (Data adapters
+	mainly).
 	
 	<p>For Step 3, we need someone to start the FreeTDS .NET Data Provider so
 	we can have data access to Microsoft SQL Server and Sybase databases, or either
@@ -386,7 +391,7 @@
 	one locally.  PostgreSQL is the DBMS used for the initial 
 	implementation of System.Data.SqlClient.
 		
-	<p>Why?  Because it is open source, has a client 
+	<p>Why?  Because it is free software, has a client 
 	library that is easy to use, PostgreSQL is easy to install on
 	Unix and Windows (using the Cygwin install program), not difficult to setup after
 	installation, and it runs under: Linux, 
