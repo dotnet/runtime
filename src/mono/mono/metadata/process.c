@@ -741,12 +741,9 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd
 	
 	if (process_info->use_shell) {
 		const gchar *spath;
-		const gchar *arg;
 #ifdef PLATFORM_WIN32
-		arg = "/c"; /* This works for cmd and command */
 		spath = g_getenv ("COMSPEC");
 #else
-		arg = "-c"; /* sh, bash, tcsh... any other? */
 		spath = g_getenv ("SHELL");
 #endif
 		if (spath != NULL) {
@@ -756,9 +753,14 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd
 			shell_path = mono_unicode_from_external (spath, &dummy);
 			tmp = mono_string_to_utf8 (cmd);
 #ifdef PLATFORM_WIN32
-			newcmd = g_strdup_printf ("%s %s", arg, tmp);
+			newcmd = g_strdup_printf ("/c %s", tmp);
 #else
-			newcmd = g_strdup_printf ("%s '%s'", arg, tmp);
+			{
+			gchar *quoted;
+			quoted = g_shell_quote (tmp);
+			newcmd = g_strdup_printf ("-c %s", quoted);
+			g_free (quoted);
+			}
 #endif
 			g_free (tmp);
 			cmd = mono_string_new (mono_domain_get (), newcmd);
