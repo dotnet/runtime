@@ -1203,6 +1203,10 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 {
 	MonoType *type, *cached;
 	gboolean byref = FALSE;
+	gboolean pinned = FALSE;
+	const char *tmp_ptr;
+	int count = 0;
+	gboolean found;
 
 	/*
 	 * According to the spec, custom modifiers should come before the byref
@@ -1212,70 +1216,70 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 	 * Also, this type seems to be different from 'object & modopt(...)'. Maybe
 	 * it would be better to treat byref as real type constructor instead of
 	 * a modifier...
+	 * Also, pinned should come before anything else, but some MSV++ produced
+	 * assemblies violate this (#bug 61990).
 	 */
-	if (*ptr == MONO_TYPE_BYREF) {
-		byref = TRUE;
-		++ptr;
+
+	/* Count the modifiers first */
+	tmp_ptr = ptr;
+	found = TRUE;
+	while (found) {
+		switch (*tmp_ptr) {
+		case MONO_TYPE_PINNED:
+		case MONO_TYPE_BYREF:
+			++tmp_ptr;
+			break;
+		case MONO_TYPE_CMOD_REQD:
+		case MONO_TYPE_CMOD_OPT:
+			count ++;
+			mono_metadata_parse_custom_mod (m, NULL, tmp_ptr, &tmp_ptr);
+			break;
+		default:
+			found = FALSE;
+		}
 	}
 
-	switch (mode) {
-	case MONO_PARSE_MOD_TYPE:
-	case MONO_PARSE_PARAM:
-	case MONO_PARSE_RET:
-	case MONO_PARSE_LOCAL: /* should not have modifiers according to the spec, but ms tools disagree */
-	case MONO_PARSE_FIELD: {
-		/* count the modifiers */
-		const char *tmp_ptr = ptr;
-		int count = 0;
-		while (mono_metadata_parse_custom_mod (m, NULL, tmp_ptr, &tmp_ptr))
-			count++;
-		if (count) {
-			type = g_malloc0 (sizeof (MonoType) + ((gint32)count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod));
-			type->num_mods = count;
-			if (count > 64)
-				g_warning ("got more than 64 modifiers in type");
-			/* save them this time */
-			count = 0;
-			while (mono_metadata_parse_custom_mod (m, &(type->modifiers [count]), ptr, &ptr))
-				count++;
-			break;
-		} /* fall through */
+	if (count) {
+		type = g_malloc0 (sizeof (MonoType) + ((gint32)count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod));
+		type->num_mods = count;
+		if (count > 64)
+			g_warning ("got more than 64 modifiers in type");
 	}
-	case MONO_PARSE_TYPE:
+	else
 		/*
 		 * Later we can avoid doing this allocation.
 		 */
 		type = g_new0 (MonoType, 1);
-		break;
-	default:
-		g_assert_not_reached ();
+
+	/* Parse pinned, byref and custom modifiers */
+	found = TRUE;
+	count = 0;
+	while (found) {
+		switch (*ptr) {
+		case MONO_TYPE_PINNED:
+			pinned = TRUE;
+			++ptr;
+			break;
+		case MONO_TYPE_BYREF:
+			byref = TRUE;
+			++ptr;
+			break;
+		case MONO_TYPE_CMOD_REQD:
+		case MONO_TYPE_CMOD_OPT:
+			count ++;
+			mono_metadata_parse_custom_mod (m, &(type->modifiers [count]), ptr, &ptr);
+			break;
+		default:
+			found = FALSE;
+		}
 	}
 	
 	type->attrs = opt_attrs;
 	type->byref = byref;
-	if (mode == MONO_PARSE_LOCAL) {
-		/*
-		 * check for pinned flag
-		 */
-		if (*ptr == MONO_TYPE_PINNED) {
-			type->pinned = 1;
-			++ptr;
-		}
-	}
+	type->pinned = pinned ? 1 : 0;
 
-	switch (*ptr) {
-	case MONO_TYPE_BYREF: 
-		if (mode == MONO_PARSE_FIELD)
-			g_warning ("A field type cannot be byref");
-		type->byref = 1; 
-		ptr++;
-		/* follow through */
-	default:
-		/*if (*ptr == MONO_TYPE_VOID && mode != MONO_PARSE_RET)
-			g_error ("void not allowed in param");*/
-		do_mono_metadata_parse_type (type, m, ptr, &ptr);
-		break;
-	}
+	do_mono_metadata_parse_type (type, m, ptr, &ptr);
+
 	if (rptr)
 		*rptr = ptr;
 
