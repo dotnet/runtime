@@ -104,11 +104,7 @@ get_mono_object_isinst (void);
 
 //#define DEBUG
 
-#ifdef DEBUG
-#define MEMCOPY debug_memcpy
-void *MEMCOPY (void *dest, const void *src, size_t n);
-
-#define PRINT_REG(text,reg) \
+#define REAL_PRINT_REG(text,reg) \
 g_assert (reg >= 0); \
 x86_push_reg (s->code, X86_EAX); \
 x86_push_reg (s->code, X86_EDX); \
@@ -122,6 +118,12 @@ x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 3*4); \
 x86_pop_reg (s->code, X86_ECX); \
 x86_pop_reg (s->code, X86_EDX); \
 x86_pop_reg (s->code, X86_EAX); 
+
+#ifdef DEBUG
+#define MEMCOPY debug_memcpy
+void *MEMCOPY (void *dest, const void *src, size_t n);
+
+#define PRINT_REG(text,reg) REAL_PRINT_REG(text,reg)
 #else
 
 #define MEMCOPY memcpy
@@ -920,7 +922,10 @@ reg: SHR_UN (reg, reg) {
 }
 
 # array support
-reg: LDLEN (reg) {
+reg: LDLEN (reg) {	
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 0);
+	EMIT_COND_EXCEPTION (X86_CC_NE, get_exception_null_reference ());
+
 	x86_mov_reg_membase (s->code, tree->reg1, tree->left->reg1,  
 			     G_STRUCT_OFFSET (MonoArray, bounds), 4);
 	x86_mov_reg_membase (s->code, tree->reg1, tree->reg1,  
@@ -2460,7 +2465,7 @@ stmt: BLT (freg, freg) {
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
 	offset = 6 + s->code - s->start;
-	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, TRUE);
+	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, FALSE);
 }
 
 stmt: BLT_UN (freg, freg) {
@@ -2504,6 +2509,7 @@ stmt: BLE_UN (freg, freg) {
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
+	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x0100);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
 }

@@ -923,7 +923,7 @@ arch_compile_method (MonoMethod *method)
 		mono_compute_branches (cfg);
 		
 		if (mono_jit_dump_asm) {
-			char *id = g_strdup_printf ("%s_%s__%s", method->klass->name_space,
+			char *id = g_strdup_printf ("%s.%s_%s", method->klass->name_space,
 						    method->klass->name, method->name);
 			mono_disassemble_code (cfg->start, cfg->code - cfg->start, id);
 			g_free (id);
@@ -1084,6 +1084,9 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 	gpointer ip = (gpointer)ctx->eip;
 	static void (*restore_context) (struct sigcontext *);
 	static void (*call_finally) (struct sigcontext *, unsigned long);
+
+	g_assert (ctx != NULL);
+	g_assert (obj != NULL);
 
 	ji = mono_jit_info_table_find (mono_jit_info_table, ip);
 

@@ -1359,6 +1359,8 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 			case CEE_CEQ:
 			case CEE_CLT:
 			case CEE_CGT:
+			case CEE_UNALIGNED_:
+			case CEE_VOLATILE_:
 				ip++;
 				break;
 			case CEE_LDARG:
@@ -3015,6 +3017,16 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1->data.i = ARG_POS (n);
 				t1 = ctree_create_load (cfg, ARG_TYPE (n), t1, &svt, TRUE);
 				PUSH_TREE (t1, svt);
+				break;
+			}
+			case CEE_UNALIGNED_: {
+				++ip;
+				// fixme: implement me
+				break;
+			}
+			case CEE_VOLATILE_: {
+				++ip;
+				// fixme: implement me				
 				break;
 			}
 			default:

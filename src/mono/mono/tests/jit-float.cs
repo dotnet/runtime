@@ -31,8 +31,8 @@ public class TestJit {
 	
 	public static int test_branch ()
 	{
-		double a = 5, b = 5, t;
-		
+		double a = 0.5, b = 0.5, t;
+
 		if (a == b) t = 1; else t = 0;
 		if (t != 1) return 1;
 
@@ -51,6 +51,10 @@ public class TestJit {
 		if (a < b) t = 0; else t = 1;
 		if (t != 1) return 1;
 
+		if (a > 1.0) return 1;
+		
+		if (a < 0.1) return 1;
+		
 		return 0;
 	}
 
