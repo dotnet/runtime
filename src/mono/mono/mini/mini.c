@@ -1937,7 +1937,7 @@ mono_emit_jit_icall (MonoCompile *cfg, MonoBasicBlock *bblock, gconstpointer fun
 static void
 mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJitICallInfo *info)
 {
-	MonoInst *ins, *temp = NULL, *store, *load;
+	MonoInst *ins, *temp = NULL, *store, *load, *begin;
 	MonoInst *last_arg = NULL;
 	int nargs;
 	MonoCallInst *call;
@@ -1969,21 +1969,19 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 	if (nargs)
 		last_arg->next = store;
 
+	if (nargs)
+		begin = call->out_args;
+	else
+		begin = store;
+
 	if (cfg->prev_ins) {
 		store->next = cfg->prev_ins->next;
-		if (nargs)
-			cfg->prev_ins->next = call->out_args;
-		else
-			cfg->prev_ins->next = store;
+		cfg->prev_ins->next = begin;
 	} else {
 		store->next = cfg->cbb->code;
-		if (nargs)		
-			cfg->cbb->code = call->out_args;
-		else
-			cfg->cbb->code = store;
+		cfg->cbb->code = begin;
 	}
 
-	
 	call->fptr = info->wrapper;
 
 	if (!MONO_TYPE_IS_VOID (info->sig->ret)) {
@@ -5344,6 +5342,13 @@ mono_print_tree (MonoInst *tree) {
 		printf (")");
 }
 
+void
+mono_print_tree_nl (MonoInst *tree)
+{
+	mono_print_tree (tree);
+	printf ("\n");
+}
+
 static void
 create_helper_signature (void)
 {
@@ -6297,8 +6302,7 @@ mono_compile_create_vars (MonoCompile *cfg)
 		g_print ("locals done\n");
 }
 
-#if 0
-static void
+void
 mono_print_code (MonoCompile *cfg)
 {
 	MonoBasicBlock *bb;
@@ -6320,7 +6324,6 @@ mono_print_code (MonoCompile *cfg)
 			bb->last_ins->next = NULL;
 	}
 }
-#endif
 
 extern const char * const mono_burg_rule_string [];
 
@@ -6852,7 +6855,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 #define DEBUGSSA_CLASS "Tests"
 #ifdef DEBUGSSA
 
-
 	if (!header->num_clauses && !cfg->disable_ssa) {
 		mono_local_cprop (cfg);
 		mono_ssa_compute (cfg);
@@ -6898,7 +6900,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 	/* after SSA removal */
 	if (parts == 3)
 		return cfg;
-	
+
 	decompose_pass (cfg);
 
 	/* FIXME: disabled with exception clauses: bug #42136 */
@@ -6980,6 +6982,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 			ei->handler_start = cfg->native_code + tblock->native_offset;
 		}
 	}
+
+	cfg->jit_info = jinfo;
 
 	mono_jit_info_table_add (cfg->domain, jinfo);
 

@@ -18,7 +18,7 @@
 #define MONO_USE_AOT_COMPILER
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "2"
+#define MONO_AOT_FILE_VERSION "3"
 
 #if 1
 #define mono_bitset_test_fast(set,n) (((guint32*)set)[2+(n)/32] & (1 << ((n) % 32)))
@@ -428,6 +428,7 @@ typedef struct {
 	MonoBasicBlock  *cbb;        /* used by instruction selection */
 	MonoInst        *prev_ins;   /* in decompose */
 	MonoJumpInfo    *patch_info;
+	MonoJitInfo     *jit_info;
 	guint            num_bblocks;
 	guint            locals_start;
 	guint            num_varinfo; /* used items in varinfo */
@@ -603,6 +604,8 @@ void      mono_cprop_local                  (MonoCompile *cfg, MonoBasicBlock *b
 MonoInst* mono_compile_create_var           (MonoCompile *cfg, MonoType *type, int opcode);
 void      mono_blockset_print               (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom);
 void      mono_print_tree                   (MonoInst *tree);
+void      mono_print_tree_nl                (MonoInst *tree);
+void      mono_print_code                   (MonoCompile *cfg);
 int       mono_spillvar_offset              (MonoCompile *cfg, int spillvar);
 void      mono_select_instructions          (MonoCompile *cfg);
 const char* mono_inst_name                  (int op);
