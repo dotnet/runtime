@@ -229,6 +229,50 @@
 		
 		ret
 	}
+
+	.method static public int32 test_0_localloc () cil managed {
+		.locals init (native int, native int, native int)
+
+		ldc.i4 6
+		localloc
+		conv.i
+		stloc.0
+
+		ldc.i4 6
+		localloc
+		conv.i
+		stloc.1
+
+		ldc.i4 6
+		localloc
+		conv.i
+		stloc.2
+
+		// br OK1
+		ldloc.1
+		ldc.i4 999999
+		stind.i4
+		ldloc.1
+		ldind.i4
+		ldc.i4 999999
+		beq OK1
+		br FAIL
+
+OK1:
+		ldloc.0
+		ldc.i4 999999
+		stind.i4
+		ldloc.0
+		ldind.i4
+		ldc.i4 999999
+		beq PASS
+
+FAIL:	ldc.i4.1
+		ret
+
+PASS:	ldc.i4.0
+		ret
+	}
 	
 	.method static public int32 test_3_copy_used_bug () il managed {
 
