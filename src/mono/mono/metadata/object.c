@@ -508,6 +508,8 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 
 /**
  * field_is_special_static:
+ * @fklass: The MonoClass to look up.
+ * @field: The MonoClassField describing the field.
  *
  * Returns SPECIAL_STATIC_THREAD if the field is thread static, SPECIAL_STATIC_CONTEXT if it is context static,
  * SPECIAL_STATIC_NONE otherwise.
@@ -942,12 +944,15 @@ void mono_upgrade_remote_class (MonoDomain *domain, MonoRemoteClass *remote_clas
 
 /**
  * mono_object_get_virtual_method:
+ * @obj: object to operate on.
+ * @method: method 
  *
- * Retrieve the MonoMethod that would be called on obj if obj is passed as
+ * Retrieves the MonoMethod that would be called on obj if obj is passed as
  * the instance of a callvirt of method.
  */
 MonoMethod*
-mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method) {
+mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method)
+{
 	MonoClass *klass;
 	MonoMethod **vtable;
 	gboolean is_proxy;
@@ -996,6 +1001,10 @@ static MonoInvokeFunc default_mono_runtime_invoke = dummy_mono_runtime_invoke;
 
 /**
  * mono_runtime_invoke:
+ * @method: method to invoke
+ * @obJ: object instance
+ * @params: arguments to the method
+ * @exc: exception information.
  *
  * Invokes the method represented by `method' on the object `obj'.
  *
@@ -1617,7 +1626,11 @@ mono_install_runtime_invoke (MonoInvokeFunc func)
 }
 
 /**
- * mono_runtime_invoke:
+ * mono_runtime_invoke_array:
+ * @method: method to invoke
+ * @obJ: object instance
+ * @params: arguments to the method
+ * @exc: exception information.
  *
  * Invokes the method represented by `method' on the object `obj'.
  *
@@ -2996,8 +3009,13 @@ mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
 
 /**
  * mono_method_call_message_new:
+ * @method: method to encapsulate
+ * @params: parameters to the method
+ * @invoke: optional, delegate invoke.
+ * @cb: async callback delegate.
+ * @state: state passed to the async callback.
  *
- * Translates arguments pointers into a Message.
+ * Translates arguments pointers into a MonoMethodMessage.
  */
 MonoMethodMessage *
 mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *invoke, 
