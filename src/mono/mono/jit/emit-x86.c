@@ -466,13 +466,14 @@ arch_create_jit_trampoline (MonoMethod *method)
 		x86_push_reg (buf, X86_ECX);
 
 		/* save LMF begin */
+
+		/* save the IP (caller ip) */
+		x86_push_membase (buf, X86_ESP, 16);
+
 		x86_push_reg (buf, X86_EBX);
 		x86_push_reg (buf, X86_EDI);
 		x86_push_reg (buf, X86_ESI);
 		x86_push_reg (buf, X86_EBP);
-
-		/* save the IP (caller ip) */
-		x86_push_membase (buf, X86_ESP, 32);
 
 		/* save method info */
 		x86_push_membase (buf, X86_ESP, 32);
@@ -511,13 +512,13 @@ arch_create_jit_trampoline (MonoMethod *method)
 		x86_mov_membase_reg (buf, X86_EDI, 0, X86_EBX, 4);
 		/* discard method info */
 		x86_pop_reg (buf, X86_ESI);
-		/* discard save IP */
-		x86_pop_reg (buf, X86_ESI);
 		/* restore caller saved regs */
 		x86_pop_reg (buf, X86_EBP);
 		x86_pop_reg (buf, X86_ESI);
 		x86_pop_reg (buf, X86_EDI);
 		x86_pop_reg (buf, X86_EBX);
+		/* discard save IP */
+		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);		
 		/* restore LMF end */
 
 		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 16);
