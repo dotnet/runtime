@@ -3349,7 +3349,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		tracing = 1;
 
-	cfg->code_size = 256;
+	sig = method->signature;
+	cfg->code_size = 256 + sig->param_count * 20;
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
 	if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
@@ -3424,7 +3425,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	/* load arguments allocated to register from the stack */
-	sig = method->signature;
 	pos = 0;
 
 	cinfo = calculate_sizes (sig, sig->pinvoke);
@@ -3621,6 +3621,7 @@ register.  Should this case include linux/ppc?
 		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
 
 	cfg->code_len = code - cfg->native_code;
+	g_assert (cfg->code_len < cfg->code_size);
 	g_free (cinfo);
 
 	return code;
