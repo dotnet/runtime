@@ -57,9 +57,6 @@ libmini_la_SOURCES = \
 	liveness.c	\
 	ssa.c		\
 	driver.c	\
-	debug.c		\
-	debug-stabs.c	\
-	debug-dwarf2.c	\
 	debug-mini.c	\
 	linear-scan.c	\
 	aot.c		\

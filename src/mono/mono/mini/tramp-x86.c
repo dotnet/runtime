@@ -14,16 +14,10 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/arch/x86/x86-codegen.h>
+#include <mono/metadata/mono-debug-debugger.h>
 
 #include "mini.h"
 #include "mini-x86.h"
-
-/* 
- * define for the (broken) debugger breakpoint interface:
- * The debugger should use the hw registers to set the breakpoints.
- */
-#define mono_method_has_breakpoint(a,b) (0)
-#define mono_remove_breakpoint(a)
 
 /* adapt to mini later... */
 #define mono_jit_share_code (1)
@@ -150,9 +144,9 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 			reg = code [1] & 0x07;
 			disp = *((gint32*)(code + 2));
 		} else if ((code [1] == 0xe8)) {
-			breakpoint_id = mono_method_has_breakpoint (m, TRUE);
+			breakpoint_id = mono_debugger_method_has_breakpoint (m, TRUE);
 			if (breakpoint_id) {
-				mono_remove_breakpoint (breakpoint_id);
+				mono_debugger_remove_breakpoint (breakpoint_id);
 				trampoline = get_breakpoint_trampoline (m, breakpoint_id, addr);
 			} else
 				trampoline = addr;
@@ -204,9 +198,9 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 		trampoline = *((gpointer *)o) = addr;
 	}
 
-	breakpoint_id = mono_method_has_breakpoint (m, TRUE);
+	breakpoint_id = mono_debugger_method_has_breakpoint (m, TRUE);
 	if (breakpoint_id) {
-		mono_remove_breakpoint (breakpoint_id);
+		mono_debugger_remove_breakpoint (breakpoint_id);
 		return get_breakpoint_trampoline (m, breakpoint_id, trampoline);
 	} else {
 		return trampoline;

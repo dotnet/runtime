@@ -33,12 +33,13 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/mono-debug.h>
+#include <mono/metadata/mono-debug-debugger.h>
 
 #include "mini.h"
 #include <string.h>
 #include <ctype.h>
 #include "inssel.h"
-#include "debug.h"
 
 static FILE *mini_stats_fd = NULL;
 
@@ -476,6 +477,7 @@ mini_usage (void)
 		"    --compile-all          Compiles all the methods in the assembly\n"
 		"    --breakonex            Inserts a breakpoint on exceptions\n"
 		"    --break METHOD         Inserts a breakpoint at METHOD entry\n"
+		"    --debug                Enable debugging support\n"
 		"\n"
 		"Development:\n"
 		"    --statfile FILE        Sets the stat file to FILE\n"
@@ -511,6 +513,7 @@ mini_main (int argc, char* argv[]) {
 	const char* aname, *mname = NULL;
 	char *config_file = NULL;
 	int i, count = 1;
+	int enable_debugging = FALSE;
 	guint32 opt, action = DO_EXEC;
 	MonoGraphOptions mono_graph_options = 0;
 	int mini_verbose = 0;
@@ -543,7 +546,7 @@ mini_main (int argc, char* argv[]) {
 		} else if (strcmp (argv [i], "--breakonex") == 0) {
 			mono_break_on_exc = TRUE;
 		} else if (strcmp (argv [i], "--break") == 0) {
-			if (!mono_insert_breakpoint (argv [++i], FALSE))
+			if (!mono_debugger_insert_breakpoint (argv [++i], FALSE))
 				g_error ("Invalid method name '%s'", argv [i]);
 		} else if (strcmp (argv [i], "--print-vtable") == 0) {
 			mono_print_vtable = TRUE;
@@ -569,6 +572,8 @@ mini_main (int argc, char* argv[]) {
 			mname = argv [++i];
 			mono_graph_options = MONO_GRAPH_CFG;
 			action = DO_DRAW;
+		} else if (strcmp (argv [i], "--debug") == 0) {
+			enable_debugging = TRUE;
 		} else {
 			fprintf (stderr, "Unknown command line option: %s\n", argv [i]);
 			return 1;
@@ -621,12 +626,18 @@ mini_main (int argc, char* argv[]) {
 		break;
 	}
 
+	if (enable_debugging)
+		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
+
 	assembly = mono_assembly_open (aname, NULL);
 	if (!assembly) {
 		fprintf (stderr, "cannot open assembly %s\n", aname);
 		mini_cleanup (domain);
 		return 2;
 	}
+
+	if (enable_debugging)
+		mono_debug_init_2 (assembly);
 
 	if (mono_compile_aot || action == DO_EXEC) {
 		g_set_prgname (aname);

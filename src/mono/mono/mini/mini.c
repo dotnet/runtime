@@ -33,12 +33,13 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/mono-debug.h>
+#include <mono/metadata/mono-debug-debugger.h>
 
 #include "mini.h"
 #include <string.h>
 #include <ctype.h>
 #include "inssel.h"
-#include "debug.h"
 
 #include "jit-icalls.c"
 
@@ -2143,7 +2144,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	ADD_BBLOCK (cfg, bbhash, bblock);
 
 	if (cfg->method == method) {
-		if (mono_method_has_breakpoint (method, FALSE)) {
+		if (mono_debugger_method_has_breakpoint (method, FALSE)) {
 			MONO_INST_NEW (cfg, ins, CEE_BREAK);
 			MONO_ADD_INS (bblock, ins);
 		}

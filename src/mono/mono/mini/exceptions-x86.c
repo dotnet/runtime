@@ -18,10 +18,10 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/mono-debug.h>
 
 #include "mini.h"
 #include "mini-x86.h"
-#include "debug-private.h"
 
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 # define SC_EAX sc_eax
@@ -600,13 +600,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 				*managed = TRUE;
 
 		if (trace) {
-			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
-				mono_debug_make_symbols ();
+			mono_debug_update ();
 
 			source_location = mono_debug_source_location_from_address (ji->method, address, NULL);
 			iloffset = mono_debug_il_offset_from_address (ji->method, address);
-			source_location = NULL;
-			iloffset = -1;
 
 			if (iloffset < 0)
 				tmpaddr = g_strdup_printf ("<0x%05x>", address);
@@ -863,8 +860,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 			g_print ("EXCEPTION handling: %s\n", mono_object_class (obj)->name);
 		if (!mono_arch_handle_exception (&ctx_cp, obj, TRUE)) {
 			if (mono_break_on_exc) {
-				if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
-					mono_debug_make_symbols ();
+				mono_debug_update ();
 				G_BREAKPOINT ();
 			}
 			mono_unhandled_exception (obj);
