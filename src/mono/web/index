@@ -12,10 +12,8 @@
 	Common Language Infrastructure (also referred as the CLR) and a
 	set of <a href="class-library.html">class libraries</a>.  The
 	runtime can be <a href="embedded-api.html">embedded</a> into your
-	application.
-
-	Mono has implementations of both <a href="ado-net.html">ADO.NET</a>
-	and <a href="asp-net.html">ASP.NET</a> as part of its distribution.
+	application.  It implements of both <a href="ado-net.html">ADO.NET</a>
+	and <a href="asp-net.html">ASP.NET</a>.
 
 	You can read our <a href="rationale.html">rationale</a> for
 	this project.  If you have questions about the project, please
@@ -34,16 +32,9 @@
 	href="http://www.gotmono.com/cgi-bin/yabb/YaBB.pl">forum</a> at <a
 	href="http://www.gotmono.com">GotMono</a>.
 
-	You can contact the team at: <a
-	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
-
-	In order to follow the process of the project and to learn more
-	about the team members we have created the <a 
-	href="http://monoevo.sf.net/mwn/index.html">Mono Weekly News letter</a>.
-	Which archives can be found <a 
-	href="http://monoevo.sf.net/mwn/archives.html">here</a>.
-	We have a <a href="http://www.nullenvoid.com/gtksharp/wiki">Gtk# Wiki</a>
-	and a <a href="http://www.nullenvoid.com/mono/wiki">Mono Wiki</a>
+	Wikis: <a href="http://www.nullenvoid.com/gtksharp/wiki">Gtk# Wiki</a>
+	and <a href="http://www.nullenvoid.com/mono/wiki">Mono
+	Wiki</a>
 
     </td>
     <td>
