@@ -482,18 +482,19 @@ ppc_unwind_native_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 #define setup_context(ctx)
 
 #else
-	/* FIXME: restore the rest of the registers */
 /* 
- * The registers can be at different at different offsets in the ucontext,
+ * The registers can be at different offsets in the ucontext,
  * so we need to reference them from uctx->uc_mcontext.uc_regs 
  */
 /* return the offset within uc_regs of register regnum (PT_*) */
 #define regoffset(regnum) (G_STRUCT_OFFSET (mcontext_t, gregs) + (regnum) * sizeof (unsigned long))
 
+	/* FIXME: restore the rest of the registers */
 #define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
 		ppc_lwz (code, tmp_reg, G_STRUCT_OFFSET (struct ucontext, uc_mcontext.uc_regs), ctx_reg);	\
 		ppc_lwz (code, ip_reg, regoffset (PT_NIP), tmp_reg);	\
 		ppc_lwz (code, ppc_sp, regoffset (PT_R1), tmp_reg);	\
+		ppc_lmw (code, ppc_r13, tmp_reg, regoffset (PT_R13));	\
 	} while (0)
 
 /* yes, very ugly, but we need to setup the pointer, since
@@ -613,17 +614,12 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 	/*printf ("stack in throw: %p\n", esp);*/
 	MONO_CONTEXT_SET_BP (&ctx, esp);
 	MONO_CONTEXT_SET_IP (&ctx, eip);
-#if 0
-	ctx.SC_ESP = esp;
-	ctx.SC_EIP = eip;
-	ctx.SC_EBP = ebp;
-	ctx.SC_EDI = edi;
-	ctx.SC_ESI = esi;
-	ctx.SC_EBX = ebx;
-	ctx.SC_EDX = edx;
-	ctx.SC_ECX = ecx;
-	ctx.SC_EAX = eax;
-#endif	
+#ifdef __APPLE__
+	/* FIXME */
+#else
+	memcpy (((char*)ctx.uc_mcontext.uc_regs) + regoffset (PT_R13), int_regs, sizeof (gulong) * 19);
+#endif
+
 	mono_arch_handle_exception (&ctx, exc, FALSE);
 	restore_context (&ctx);
 
@@ -802,7 +798,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	if (ji != NULL) {
 		char *source_location, *tmpaddr, *fname;
 		gint32 address, iloffset;
-		int offset;
+		int offset, i;
+		gulong *ctx_regs;
 
 		*new_ctx = *ctx;
 		setup_context (new_ctx);
@@ -863,6 +860,22 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 #endif
 		sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_BP (ctx);
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->sp);
+		if (ji->used_regs) {
+			/* keep updated with emit_prolog in mini-ppc.c */
+			offset = 0;
+			for (i = 13; i < 32; ++i) {
+				if (ji->used_regs & (1 << i)) {
+					offset += sizeof (gulong);
+#ifdef __APPLE__
+					/* FIXME */
+#else
+					*(gulong*)(((char*)new_ctx->uc_mcontext.uc_regs) + regoffset (PT_R0 + i)) = *(gulong*)((char*)sframe->sp - offset);
+#endif
+				}
+			}
+		}
+		/* the calling IP is in the parent frame */
+		sframe = (MonoPPCStackFrame*)sframe->sp;
 		/* we substract 4, so that the IP points into the call instruction */
 		MONO_CONTEXT_SET_IP (new_ctx, sframe->lr - 4);
 		*res = *ji;
@@ -905,6 +918,11 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		MONO_CONTEXT_SET_IP (new_ctx, sframe->lr);*/
 		MONO_CONTEXT_SET_BP (new_ctx, (*lmf)->ebp);
 		MONO_CONTEXT_SET_IP (new_ctx, (*lmf)->eip);
+#ifdef __APPLE__
+	/* FIXME */
+#else
+		memcpy (((char*)new_ctx->uc_mcontext.uc_regs) + regoffset (PT_R13), (*lmf)->iregs, sizeof (gulong) * 19);
+#endif
 		*lmf = (*lmf)->previous_lmf;
 
 		return res;
