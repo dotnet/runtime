@@ -170,9 +170,11 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 			if (!info->image_table [i]) {
 				if (mono_aot_verbose > 0)
 					printf ("AOT module %s is out of date.\n", aot_name);
-				g_free (info->methods);
+				mono_g_hash_table_destroy (info->methods);
 				g_free (info->image_table);
+#ifndef HAVE_BOEHM_GC
 				g_free (info);
+#endif
 				g_free (aot_name);
 				g_module_close (assembly->aot_module);
 				assembly->aot_module = NULL;
