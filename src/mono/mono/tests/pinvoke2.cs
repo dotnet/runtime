@@ -765,5 +765,31 @@ public class Tests {
 	static int test_0_stdcall_name_mangling () {
 		return mono_test_stdcall_name_mangling (0, 1, 2) == 3 ? 0 : 1;
 	}
+
+	/*
+	 * Pointers to structures can not be passed
+	 */
+
+	public struct CharInfo {
+		public char Character;
+		public short Attributes;
+	}
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct")]
+	public static unsafe extern int mono_test_marshal_ptr_to_struct (CharInfo *ptr);
+
+	static unsafe int test_0_marshal_ptr_to_struct () {
+		CharInfo [] buffer = new CharInfo [1];
+		fixed (CharInfo *ptr = &buffer [0]) {
+			try {
+				mono_test_marshal_ptr_to_struct (ptr);
+				return 1;
+			}
+			catch (MarshalDirectiveException) {
+				return 0;
+			}
+		}
+		return 1;
+	}
 }
 
