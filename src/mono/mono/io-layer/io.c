@@ -2512,6 +2512,8 @@ gboolean CreateDirectory (const gunichar2 *name, WapiSecurityAttributes *securit
 {
 	gchar *utf8_name;
 	int result;
+	struct stat buf;
+	guint32 attrs;
 	
 	utf8_name = mono_unicode_to_external (name);
 	if (utf8_name == NULL) {
@@ -2523,19 +2525,32 @@ gboolean CreateDirectory (const gunichar2 *name, WapiSecurityAttributes *securit
 	}
 
 	result = mkdir (utf8_name, 0777);
-	g_free (utf8_name);
 
-	if (result == 0)
+	if (result == 0) {
+		g_free (utf8_name);
 		return TRUE;
-
-	switch (errno) {
-	case EEXIST:
-		return TRUE;
-	default:
-		_wapi_set_last_error_from_errno ();
-		break;
 	}
-	
+
+	if (errno == EEXIST) {
+		result = stat (utf8_name, &buf);
+		if (result == -1) {
+			_wapi_set_last_error_from_errno ();
+			g_free (utf8_name);
+			return FALSE;
+		}
+
+		g_free (utf8_name);
+		attrs = _wapi_stat_to_file_attributes (&buf);
+		if ((attrs & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
+			return TRUE;
+
+		errno = EEXIST;
+		_wapi_set_last_error_from_errno ();
+		return FALSE;
+	}
+
+	_wapi_set_last_error_from_errno ();
+	g_free (utf8_name);
 	return FALSE;
 }
 
