@@ -2739,7 +2739,7 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 		idx = find_method_index (rmethod->method);
 		idx <<= CUSTOM_ATTR_BITS;
 		idx |= CUSTOM_ATTR_METHODDEF;
-		image = method->klass->image;
+		image = rmethod->method->klass->image;
 	} else if (strcmp ("ParameterInfo", klass->name) == 0) {
 		MonoReflectionParameter *param = (MonoReflectionParameter*)obj;
 		MonoReflectionMethod *rmethod = (MonoReflectionMethod*)param->MemberImpl;

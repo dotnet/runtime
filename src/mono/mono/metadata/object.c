@@ -335,39 +335,40 @@ MonoObject*
 mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params)
 {
 	MonoMethodSignature *sig = method->signature;
-	gpointer *pa;
+	gpointer *pa = NULL;
 	int i;
+		
+	if (NULL != params) {
+		pa = alloca (sizeof (gpointer) * mono_array_length (params);
+		for (i = 0; i < mono_array_length (params); i++) {
+			if (sig->params [i]->byref) {
+				/* nothing to do */
+			}
 
-	pa = alloca (sizeof (gpointer) * mono_array_length (params));
-
-	for (i = 0; i < mono_array_length (params); i++) {
-		if (sig->params [i]->byref) {
-			/* nothing to do */
-		}
-
-		switch (sig->params [i]->type) {
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_U:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U8:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_VALUETYPE:
-			pa [i] = (char *)(((gpointer *)params->vector)[i]) + sizeof (MonoObject);
-			break;
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_CLASS:
-			pa [i] = (char *)(((gpointer *)params->vector)[i]);
-			break;
-		default:
-			g_error ("type 0x%x not handled in ves_icall_InternalInvoke", sig->params [i]->type);
+			switch (sig->params [i]->type) {
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I1:
+			case MONO_TYPE_BOOLEAN:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I2:
+			case MONO_TYPE_CHAR:
+			case MONO_TYPE_U:
+			case MONO_TYPE_I:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U8:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_VALUETYPE:
+				pa [i] = (char *)(((gpointer *)params->vector)[i]) + sizeof (MonoObject);
+				break;
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_CLASS:
+				pa [i] = (char *)(((gpointer *)params->vector)[i]);
+				break;
+			default:
+				g_error ("type 0x%x not handled in ves_icall_InternalInvoke", sig->params [i]->type);
+			}
 		}
 	}
 
