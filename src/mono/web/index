@@ -151,10 +151,13 @@
   </tr>
 </table>
 
-@item Jun 23rd, 2003: DiaCanvas#, Turkish presentation
+@item Jun 26th: Mono 0.25 has been released.
 
-	http://enver.casdb.com/sunumlar/mono/
+	We have released Mono 0.25.  A list of the new features is
+	available <a href="archive/mono-0.25.html">here</a>.  
 
+	Packages for Windows, and various Linux distributions are
+	available on our <a href="download.html">download</a> page.
 
 @item Jun 17th, 2003: Web Services client; Profiling hooks
 
