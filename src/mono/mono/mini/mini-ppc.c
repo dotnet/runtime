@@ -900,6 +900,13 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				arg->opcode = OP_OUTARG_R8;
 				arg->unused = ainfo->reg;
 				call->used_fregs |= 1 << ainfo->reg;
+				if (ainfo->size == 4) {
+					/* we reduce the precision */
+					MonoInst *conv;
+					MONO_INST_NEW (cfg, conv, OP_FCONV_TO_R4);
+					conv->inst_left = arg->inst_left;
+					arg->inst_left = conv;
+				}
 			} else {
 				g_assert_not_reached ();
 			}
@@ -2837,15 +2844,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_li (code, ins->dreg, 0);
 			break;
 		case OP_FCGT:
-			ppc_fcmpu (code, 0, ins->sreg1, ins->sreg2);
+			ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
 			ppc_li (code, ins->dreg, 1);
-			ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 2);
+			ppc_bc (code, PPC_BR_TRUE, PPC_BR_GT, 2);
 			ppc_li (code, ins->dreg, 0);
 			break;
 		case OP_FCGT_UN:
-			ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
+			ppc_fcmpu (code, 0, ins->sreg1, ins->sreg2);
 			ppc_li (code, ins->dreg, 1);
-			ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 2);
+			ppc_bc (code, PPC_BR_TRUE, PPC_BR_GT, 2);
 			ppc_li (code, ins->dreg, 0);
 			break;
 		case OP_FBEQ:

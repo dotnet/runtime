@@ -66,7 +66,7 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 }
 
 /* Stack size for trampoline function */
-#define STACK 144
+#define STACK (144 + 8*8)
 
 /* Method-specific trampoline code framgment size */
 #define METHOD_TRAMPOLINE_SIZE 64
@@ -230,6 +230,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 	guint8 *buf, *code = NULL;
 	static guint8* generic_jump_trampoline = NULL;
 	static guint8 *generic_class_init_trampoline = NULL;
+	int i, offset;
 
 	switch (tramp_type) {
 	case MONO_TRAMPOLINE_GENERIC:
@@ -309,6 +310,13 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		ppc_stw  (buf, ppc_r30, STACK - 120, ppc_r1);
 		/* Save 'method' pseudo-parameter - the one passed in r11 */
 		ppc_stw  (buf, ppc_r11, STACK - 124, ppc_r1);
+
+		/* Save the FP registers */
+		offset = 124 + 4 + 8;
+		for (i = ppc_f1; i <= ppc_f8; ++i) {
+			ppc_stfd  (buf, i, STACK - offset, ppc_r1);
+			offset += 8;
+		}
 
 		/*----------------------------------------------------------
 		STEP 1: call 'mono_get_lmf_addr()' to get the address of our
@@ -391,6 +399,12 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		ppc_lwz  (buf, ppc_r9,  STACK - 36,  ppc_r1);
 		ppc_lwz  (buf, ppc_r10, STACK - 40,  ppc_r1);
 		
+		/* Restore the FP registers */
+		offset = 124 + 4 + 8;
+		for (i = ppc_f1; i <= ppc_f8; ++i) {
+			ppc_lfd  (buf, i, STACK - offset, ppc_r1);
+			offset += 8;
+		}
 		/* We haven't touched any of these, so there's no need to
 		restore them */
 		/*
