@@ -1,9 +1,18 @@
+check-local: test
 
 TEST_PROG=../interpreter/mint
 JITTEST_PROG=../mini/mono
 RUNTIME_ARGS=--config tests-config --optimize=all
 #CSC=csc /unsafe
-CSC=mcs --unsafe -nowarn:0162
+
+if USE_JIT
+mono_runtime = $(top_builddir)/mono/mini/mono
+else
+mono_runtime = $(top_builddir)/mono/interpreter/mint
+endif
+
+CSC = MONO_PATH=$(top_srcdir)/runtime/net_1_1 $(LIBTOOL) --mode=execute $(mono_runtime) --config ../../data/config $(top_srcdir)/runtime/mcs.exe --unsafe -nowarn:0162
+ILASM = $(LIBTOOL) --mode=execute $(mono_runtime) --config ../../data/config $(top_srcdir)/runtime/ilasm.exe
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
@@ -205,7 +214,7 @@ TESTBS=$(BENCHSRC:.cs=.exe)
 EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC) $(BENCHSRC)
 
 %.exe: %.il
-	ilasm -out:$@ $<
+	$(ILASM) -out:$@ $<
 
 %.exe: %.cs TestDriver.dll
 	$(CSC) -r:TestDriver.dll -out:$@ $<
@@ -220,7 +229,7 @@ test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 	passed=0; \
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS); do	\
-		if $(srcdir)/test-driver $(TEST_PROG) $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(LIBTOOL) --mode=execute $(TEST_PROG)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -312,9 +321,6 @@ testjitspeed: $(JITTEST_PROG) $(TESTBS)
 		echo $$i;	\
 		time $(JITTEST_PROG) $$i;	\
 	done
-
-check:
-	@echo no check yet
 
 noinst_LTLIBRARIES = libtest.la
 

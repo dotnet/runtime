@@ -18,7 +18,7 @@ class Test {
 		IAsyncResult ar;
 		int sum0 = 0;
 		
-		FileStream s = new FileStream ("async_read.cs",  FileMode.Open);
+		FileStream s = new FileStream ("async_read.exe",  FileMode.Open);
 
 		s.Position = 0;
 		sum0 = 0;
