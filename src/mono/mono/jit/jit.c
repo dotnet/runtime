@@ -4136,7 +4136,7 @@ mono_jit_init (const char *file) {
 	InitializeCriticalSection (metadata_section);
 
 	mono_jit_tls_id = TlsAlloc ();
-	mono_thread_start_cb (&file);
+	mono_thread_start_cb ((gpointer)-1);
 
 	mono_install_compile_method (mono_jit_compile_method);
 	mono_install_trampoline (arch_create_jit_trampoline);
