@@ -1454,13 +1454,27 @@ get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name)
 	guint32 member_cols [MONO_MEMBERREF_SIZE], method_cols [MONO_METHOD_SIZE];
         char *s, *type_param;
         const char *ptr;
+	guint32 sig;
 	int param_count, cconv, i, gen_count = 0;
-        
-        token >>= METHODDEFORREF_BITS;
-        mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], 
-                        token-1, method_cols, MONO_METHOD_SIZE);
-        
-	ptr = mono_metadata_blob_heap (m, method_cols [MONO_METHOD_SIGNATURE]);
+
+	switch (token & METHODDEFORREF_MASK) {
+	case METHODDEFORREF_METHODDEF:
+		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], 
+					  (token >> METHODDEFORREF_BITS) - 1,
+					  method_cols, MONO_METHOD_SIZE);
+		sig = method_cols [MONO_METHOD_SIGNATURE];
+		break;
+	case METHODDEFORREF_METHODREF:
+		mono_metadata_decode_row (&m->tables [MONO_TABLE_MEMBERREF], 
+					  (token >> METHODDEFORREF_BITS) - 1,
+					  member_cols, MONO_MEMBERREF_SIZE);
+		sig = member_cols [MONO_MEMBERREF_SIGNATURE];
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+
+	ptr = mono_metadata_blob_heap (m, sig);
 	mono_metadata_decode_value (ptr, &ptr);
 
 	if (*ptr & 0x20){
