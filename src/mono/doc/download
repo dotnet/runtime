@@ -20,8 +20,27 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 <a name="sources">
 ** Sources
 
-	Currently we will be providing CVS snapshots every day, until
-	we make the first tarball release.
+	We provide both <a href="packaged">packaged and tested</a>
+	tarballs (those are known to compile and pass `make
+	distcheck') as well as <a href="snapshots">daily snapshots</a> done
+	at 10pm Boston Time
+
+<a name="snapshots">
+*** Snapshots
+
+	The daily snapshots are available <a
+	href="http://www.go-mono.com/snapshots">here</a>.  These
+	snapshots are done every day at 10pm EST (Boston Time). 
+
+	They are not guaranteed to build, but most of the time they
+	should.  They should give you a window to see what we are up to.
+
+	You might also want to track our development using the <a
+	href="http://mail.ximian.com/mailman/listinfo/mono-cvs-list">mono-cvs-list</a>
+	mailing list.
+
+<a name="packaged">
+*** Released and tested packages
 
 	<ul>
 	 	<a name="july-29">

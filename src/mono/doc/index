@@ -5,10 +5,11 @@
 	You can read our <a href="rationale.html">rationale</a> for
 	this project.  If you have questions about the project, please
 	read our list of <a href="faq.html">Frequently Asked
-	Questions</a> or contact us.
+	Questions</a> or <a href="mailto:mono-list@ximian.com">contact us.</a>
 
 	You might also want to <a href="download.html">Download the
-	source</a> for our work so far.  
+	source</a> for our work so far.  Or you can grab a <a
+	href="snapshots">snapshot</a> of our current work. 
 
 	You might want to <a
 	href="resources.html#mailing">subscribe</a> to our mono-list
@@ -16,6 +17,11 @@
 
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
+
+** Aug 3, 2001
+
+	Daily snapshots of mcs and mono are now available, they will
+	run every night at 10pm Boston time.  
 
 ** Jul 29, 2001
 

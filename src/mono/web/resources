@@ -45,6 +45,12 @@
 	href="http://mail.ximian.com/mailman/listinfo/mono-announce-list">mono-announce-list:</a></b>
 	Announcements of Mono developments.
 		* <b><a
+	href="http://mail.ximian.com/mailman/listinfo/mono-gc-list">mono-gc-list:</a></b>
+	Discussion on the GC system of Mono.
+		* <b><a
+	href="http://mail.ximian.com/mailman/listinfo/mono-cvs-list">mono-cvs-list:</a></b>
+	Track the CVS activity of Mono on this mailing list.  You can get <a href="http://www.go-mono.com/snapshots">daily snapshots</a> as well.
+		* <b><a
 	href="http://mail.ximian.com/mailman/listinfo/mono-docs-list">mono-docs-list:</a></b>
 	Discussion on the documentation of Mono.
 		* <b><a
