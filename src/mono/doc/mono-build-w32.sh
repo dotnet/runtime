@@ -42,6 +42,11 @@ fi
 
 cvs checkout mono || exit -1
 
+if [ ! -z "${AUTO_STABLE}" -o -e /usr/autotool/stable ]; then
+    export AUTO_STABLE=${AUTO_STABLE:-/usr/autotool/stable}
+    export AUTO_DEVEL=${AUTO_STABLE}
+fi
+
 # Need to install pkgconfig and set ACLOCAL_FLAGS if there is not a
 # pkgconfig installed already.  Otherwise set PKG_CONFIG_PATH to the
 # glib we're about to install in $here/install.  This script could
