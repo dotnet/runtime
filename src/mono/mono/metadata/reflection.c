@@ -609,6 +609,54 @@ field_encode_signature (MonoDynamicAssembly *assembly, MonoReflectionFieldBuilde
 	return idx;
 }
 
+static guint32
+encode_constant (MonoDynamicAssembly *assembly, MonoObject *val, guint32 *ret_type) {
+	char blob_size [64];
+	char *b = blob_size;
+	char *p, *box_val;
+	char* buf;
+	guint32 idx, len;
+	
+	p = buf = g_malloc (64);
+
+	box_val = ((char*)val) + sizeof (MonoObject);
+	*ret_type = val->klass->byval_arg.type;
+	switch (*ret_type) {
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I1:
+		len = 1;
+		break;
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I2:
+		len = 2;
+		break;
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_R4:
+		len = 4;
+		break;
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_R8:
+		len = 8;
+		break;
+	case MONO_TYPE_STRING:
+	default:
+		g_error ("we don't encode constant type 0x%02x yet", *ret_type);
+	}
+
+	/* there is no signature */
+	mono_metadata_encode_value (len, b, &b);
+	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
+	/* FIXME: ENOENDIAN */
+	mono_image_add_stream_data (&assembly->blob, box_val, len);
+
+	g_free (buf);
+	return idx;
+}
+
 static void
 mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicAssembly *assembly)
 {
@@ -632,6 +680,17 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicAssembly *
 		values = table->values + table->rows * MONO_FIELD_LAYOUT_SIZE;
 		values [MONO_FIELD_LAYOUT_FIELD] = fb->table_idx;
 		values [MONO_FIELD_LAYOUT_OFFSET] = fb->offset;
+	}
+	if (fb->attrs & FIELD_ATTRIBUTE_LITERAL) {
+		guint32 field_type = 0;
+		table = &assembly->tables [MONO_TABLE_CONSTANT];
+		table->rows ++;
+		alloc_table (table, table->rows);
+		values = table->values + table->rows * MONO_CONSTANT_SIZE;
+		values [MONO_CONSTANT_PARENT] = HASCONSTANT_FIEDDEF | (fb->table_idx << HASCONSTANT_BITS);
+		values [MONO_CONSTANT_VALUE] = encode_constant (assembly, fb->def_value, &field_type);
+		values [MONO_CONSTANT_TYPE] = field_type;
+		values [MONO_CONSTANT_PADDING] = 0;
 	}
 }
 
@@ -890,6 +949,32 @@ mono_image_get_type_info (MonoReflectionTypeBuilder *tb, MonoDynamicAssembly *as
 		for (i = 0; i < mono_array_length (tb->properties); ++i)
 			mono_image_get_property_info (
 				mono_array_get (tb->properties, MonoReflectionPropertyBuilder*, i), assembly);
+	}
+	if (tb->subtypes) {
+		MonoDynamicTable *ntable;
+		
+		table = &assembly->tables [MONO_TABLE_TYPEDEF];
+		table->rows += mono_array_length (tb->subtypes);
+		alloc_table (table, table->rows);
+
+		ntable = &assembly->tables [MONO_TABLE_NESTEDCLASS];
+		ntable->rows += mono_array_length (tb->subtypes);
+		alloc_table (ntable, ntable->rows);
+		values = ntable->values + ntable->next_idx * MONO_NESTED_CLASS_SIZE;
+
+		for (i = 0; i < mono_array_length (tb->subtypes); ++i) {
+			MonoReflectionTypeBuilder *subtype = mono_array_get (tb->subtypes, MonoReflectionTypeBuilder*, i);
+
+			mono_image_get_type_info (subtype, assembly);
+			values [MONO_NESTED_CLASS_NESTED] = subtype->table_idx;
+			values [MONO_NESTED_CLASS_ENCLOSING] = tb->table_idx;
+			/*g_print ("nesting %s (%d) in %s (%d) (rows %d/%d)\n",
+				mono_string_to_utf8 (subtype->name), subtype->table_idx,
+				mono_string_to_utf8 (tb->name), tb->table_idx,
+				ntable->next_idx, ntable->rows);*/
+			values += MONO_NESTED_CLASS_SIZE;
+			ntable->next_idx++;
+		}
 	}
 }
 
@@ -1189,11 +1274,12 @@ mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *s
 	
 	if (!assembly->dynamic_assembly)
 		mono_image_basic_init (assembly);
-	mono_metadata_encode_value (str->length * 2, b, &b);
+	mono_metadata_encode_value (1 | (str->length * 2), b, &b);
 	index = mono_image_add_stream_data (&assembly->dynamic_assembly->us, buf, b-buf);
 	/* FIXME: ENOENDIAN */
 	mono_image_add_stream_data (&assembly->dynamic_assembly->us, (char*)mono_string_chars (str), str->length * 2);
-	return index;
+	mono_image_add_stream_data (&assembly->dynamic_assembly->us, "", 1);
+	return MONO_TOKEN_STRING | index;
 }
 
 /*

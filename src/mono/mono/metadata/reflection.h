@@ -240,6 +240,7 @@ typedef struct {
 	MonoArray *ctors;
 	MonoArray *properties;
 	MonoArray *fields;
+	MonoArray *subtypes;
 	guint32 attrs;
 	guint32 table_idx;
 	MonoReflectionModuleBuilder *module;
