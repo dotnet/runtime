@@ -654,7 +654,7 @@ void _wapi_handle_unref (gpointer handle)
 	}
 }
 
-#define HDRSIZE (sizeof(struct _WapiScratchHeader) - MONO_ZERO_ARRAY_LENGTH)
+#define HDRSIZE sizeof(struct _WapiScratchHeader)
 
 static pthread_mutex_t _wapi_scratch_mutex=PTHREAD_MUTEX_INITIALIZER;
 
