@@ -101,17 +101,6 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 	indent [0] = 0;
 
 	while (ptr < end){
-		/* first pass to get the end clauses */
-		for (i = 0; i < mh->num_clauses; ++i) {
-			if (!mh->clauses[i].flags && ptr == start + mh->clauses[i].try_offset + mh->clauses[i].try_len) {
-				CODE_UNINDENT;
-				fprintf (output, "\t%s} // end .try %d\n", indent, i);
-			}
-			if (ptr == start + mh->clauses[i].handler_offset + mh->clauses[i].handler_len) {
-				CODE_UNINDENT;
-				fprintf (output, "\t%s} // end handler %d\n", indent, i);
-			}
-		}
 		for (i = 0; i < mh->num_clauses; ++i) {
 			if (!mh->clauses[i].flags && ptr == start + mh->clauses[i].try_offset) {
 				fprintf (output, "\t%s.try { // %d\n", indent, i);
@@ -136,7 +125,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 		switch (entry->argument){
 		case InlineBrTarget: {
 			gint target = *(gint32 *) ptr;
-			fprintf (output, "IL_%04x", ((int) (ptr - start)) + 4 + target);
+			fprintf (output, "IL_%04x\n", ((int) (ptr - start)) + 4 + target);
 			ptr += 4;
 			break;
 		}
@@ -262,7 +251,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 		case ShortInlineBrTarget: {
 			signed char x = *ptr;
 			
-			fprintf (output, "IL_%04x", ptr - start + 1 + x);
+			fprintf (output, "IL_%04x\n", ptr - start + 1 + x);
 			ptr++;
 			break;
 		}
@@ -295,5 +284,15 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 		}
 
 		fprintf (output, "\n");
+		for (i = 0; i < mh->num_clauses; ++i) {
+			if (!mh->clauses[i].flags && ptr == start + mh->clauses[i].try_offset + mh->clauses[i].try_len) {
+				CODE_UNINDENT;
+				fprintf (output, "\t%s} // end .try %d\n", indent, i);
+			}
+			if (ptr == start + mh->clauses[i].handler_offset + mh->clauses[i].handler_len) {
+				CODE_UNINDENT;
+				fprintf (output, "\t%s} // end handler %d\n", indent, i);
+			}
+		}
 	}
 }
