@@ -897,7 +897,11 @@ ves_icall_System_IO_MonoIO_GetSupportsAsync (void)
 	MONO_ARCH_SAVE_REGS;
 
 #ifdef PLATFORM_WIN32
-	return (g_getenv ("MONO_DISABLE_AIO") == NULL && WINVER >= 0x500);
+	/* Seems like BindIoCompletionCallback is not found when compiling...
+	 * Disabling AIO support on win. Any one wants to fix this?
+	 */
+	return FALSE;	
+	/* return (g_getenv ("MONO_DISABLE_AIO") == NULL && WINVER >= 0x500); */
 #else
   #ifdef HAVE_AIO_H
 	if (aio_cancel (-1, NULL) == -1 && errno == ENOSYS)

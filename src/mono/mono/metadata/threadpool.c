@@ -12,6 +12,11 @@
 #include <config.h>
 #include <glib.h>
 
+#ifdef PLATFORM_WIN32
+#define WINVER 0x0500
+#define _WIN32_WINNT 0x0500
+#endif
+
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
@@ -292,6 +297,9 @@ ves_icall_System_Threading_ThreadPool_BindHandle (gpointer handle)
 {
 	MONO_ARCH_SAVE_REGS;
 
+#ifdef PLATFORM_WIN32
+	return FALSE;
+#else
 	if (!BindIoCompletionCallback (handle, overlapped_callback, 0)) {
 		gint error = GetLastError ();
 		MonoException *exc;
@@ -311,5 +319,6 @@ ves_icall_System_Threading_ThreadPool_BindHandle (gpointer handle)
 	}
 
 	return TRUE;
+#endif
 }
 
