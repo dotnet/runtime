@@ -3968,22 +3968,28 @@ mono_metadata_memberref_is_method (MonoImage *image, guint32 token)
 }
 
 static MonoType*
-ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 token)
+ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 token, MonoResolveTokenError *error)
 {
 	MonoClass *klass;
 	int table = mono_metadata_token_table (token);
 	int index = mono_metadata_token_index (token);
 
+	*error = ResolveTokenError_Other;
+
 	/* Validate token */
 	if ((table != MONO_TABLE_TYPEDEF) && (table != MONO_TABLE_TYPEREF) && 
-		(table != MONO_TABLE_TYPESPEC))
+		(table != MONO_TABLE_TYPESPEC)) {
+		*error = ResolveTokenError_BadTable;
 		return NULL;
+	}
 
 	if (image->dynamic)
 		return mono_lookup_dynamic_token (image, token);
 
-	if ((index <= 0) || (index > image->tables [table].rows))
+	if ((index <= 0) || (index > image->tables [table].rows)) {
+		*error = ResolveTokenError_OutOfRange;
 		return NULL;
+	}
 
 	klass = mono_class_get (image, token);
 	if (klass)
@@ -3993,49 +3999,148 @@ ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 t
 }
 
 static MonoMethod*
-ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32 token)
+ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32 token, MonoResolveTokenError *error)
 {
 	int table = mono_metadata_token_table (token);
 	int index = mono_metadata_token_index (token);
 
+	*error = ResolveTokenError_Other;
+
 	/* Validate token */
 	if ((table != MONO_TABLE_METHOD) && (table != MONO_TABLE_METHODSPEC) && 
-		(table != MONO_TABLE_MEMBERREF))
+		(table != MONO_TABLE_MEMBERREF)) {
+		*error = ResolveTokenError_BadTable;
 		return NULL;
+	}
 
 	if (image->dynamic)
 		/* FIXME: validate memberref token type */
 		return mono_lookup_dynamic_token (image, token);
 
-	if ((index <= 0) || (index > image->tables [table].rows))
+	if ((index <= 0) || (index > image->tables [table].rows)) {
+		*error = ResolveTokenError_OutOfRange;
 		return NULL;
-	if ((table == MONO_TABLE_MEMBERREF) && (!mono_metadata_memberref_is_method (image, token)))
-			return NULL;
+	}
+	if ((table == MONO_TABLE_MEMBERREF) && (!mono_metadata_memberref_is_method (image, token))) {
+		*error = ResolveTokenError_BadTable;
+		return NULL;
+	}
 
 	return mono_get_method (image, token, NULL);
 }
 
+static MonoString*
+ves_icall_System_Reflection_Module_ResolveStringToken (MonoImage *image, guint32 token, MonoResolveTokenError *error)
+{
+	int index = mono_metadata_token_index (token);
+
+	*error = ResolveTokenError_Other;
+
+	/* Validate token */
+	if (mono_metadata_token_code (token) != MONO_TOKEN_STRING) {
+		*error = ResolveTokenError_BadTable;
+		return NULL;
+	}
+
+	if (image->dynamic)
+		return mono_lookup_dynamic_token (image, token);
+
+	if ((index <= 0) || (index >= image->heap_us.size)) {
+		*error = ResolveTokenError_OutOfRange;
+		return NULL;
+	}
+
+	/* FIXME: What to do if the index points into the middle of a string ? */
+
+	return mono_ldstr (mono_domain_get (), image, index);
+}
+
 static MonoClassField*
-ves_icall_System_Reflection_Module_ResolveFieldToken (MonoImage *image, guint32 token)
+ves_icall_System_Reflection_Module_ResolveFieldToken (MonoImage *image, guint32 token, MonoResolveTokenError *error)
 {
 	MonoClass *klass;
 	int table = mono_metadata_token_table (token);
 	int index = mono_metadata_token_index (token);
 
+	*error = ResolveTokenError_Other;
+
 	/* Validate token */
-	if ((table != MONO_TABLE_FIELD) && (table != MONO_TABLE_MEMBERREF))
+	if ((table != MONO_TABLE_FIELD) && (table != MONO_TABLE_MEMBERREF)) {
+		*error = ResolveTokenError_BadTable;
 		return NULL;
+	}
 
 	if (image->dynamic)
 		/* FIXME: validate memberref token type */
 		return mono_lookup_dynamic_token (image, token);
 
-	if ((index <= 0) || (index > image->tables [table].rows))
+	if ((index <= 0) || (index > image->tables [table].rows)) {
+		*error = ResolveTokenError_OutOfRange;
 		return NULL;
-	if ((table == MONO_TABLE_MEMBERREF) && (mono_metadata_memberref_is_method (image, token)))
-			return NULL;
+	}
+	if ((table == MONO_TABLE_MEMBERREF) && (mono_metadata_memberref_is_method (image, token))) {
+		*error = ResolveTokenError_BadTable;
+		return NULL;
+	}
 
 	return mono_field_from_token (image, token, &klass, NULL);
+}
+
+
+static MonoObject*
+ves_icall_System_Reflection_Module_ResolveMemberToken (MonoImage *image, guint32 token, MonoResolveTokenError *error)
+{
+	int table = mono_metadata_token_table (token);
+
+	*error = ResolveTokenError_Other;
+
+	switch (table) {
+	case MONO_TABLE_TYPEDEF:
+	case MONO_TABLE_TYPEREF:
+	case MONO_TABLE_TYPESPEC: {
+		MonoType *t = ves_icall_System_Reflection_Module_ResolveTypeToken (image, token, error);
+		if (t)
+			return (MonoObject*)mono_type_get_object (mono_domain_get (), t);
+		else
+			return NULL;
+	}
+	case MONO_TABLE_METHOD:
+	case MONO_TABLE_METHODSPEC: {
+		MonoMethod *m = ves_icall_System_Reflection_Module_ResolveMethodToken (image, token, error);
+		if (m)
+			return (MonoObject*)mono_method_get_object (mono_domain_get (), m, m->klass);
+		else
+			return NULL;
+	}		
+	case MONO_TABLE_FIELD: {
+		MonoClassField *f = ves_icall_System_Reflection_Module_ResolveFieldToken (image, token, error);
+		if (f)
+			return (MonoObject*)mono_field_get_object (mono_domain_get (), f->parent, f);
+		else
+			return NULL;
+	}
+	case MONO_TABLE_MEMBERREF:
+		if (mono_metadata_memberref_is_method (image, token)) {
+			MonoMethod *m = ves_icall_System_Reflection_Module_ResolveMethodToken (image, token, error);
+			if (m)
+				return (MonoObject*)mono_method_get_object (mono_domain_get (), m, m->klass);
+			else
+				return NULL;
+		}
+		else {
+			MonoClassField *f = ves_icall_System_Reflection_Module_ResolveFieldToken (image, token, error);
+			if (f)
+				return (MonoObject*)mono_field_get_object (mono_domain_get (), f->parent, f);
+			else
+				return NULL;
+		}
+		break;
+
+	default:
+		*error = ResolveTokenError_BadTable;
+	}
+
+	return NULL;
 }
 
 static MonoReflectionType*
@@ -5658,7 +5763,9 @@ static const IcallEntry module_icalls [] = {
 	{"GetPEKind", ves_icall_System_Reflection_Module_GetPEKind},
 	{"InternalGetTypes", ves_icall_System_Reflection_Module_InternalGetTypes},
 	{"ResolveFieldToken", ves_icall_System_Reflection_Module_ResolveFieldToken},
+	{"ResolveMemberToken", ves_icall_System_Reflection_Module_ResolveMemberToken},
 	{"ResolveMethodToken", ves_icall_System_Reflection_Module_ResolveMethodToken},
+	{"ResolveStringToken", ves_icall_System_Reflection_Module_ResolveStringToken},
 	{"ResolveTypeToken", ves_icall_System_Reflection_Module_ResolveTypeToken},
 	{"get_MetadataToken", mono_reflection_get_token}
 };

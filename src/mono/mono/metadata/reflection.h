@@ -37,6 +37,12 @@ typedef struct {
 	char *dllentry, *dll;
 } MonoReflectionMethodAux;
 
+typedef enum {
+	ResolveTokenError_OutOfRange,
+	ResolveTokenError_BadTable,
+	ResolveTokenError_Other
+} MonoResolveTokenError;
+
 int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);
 MonoType*     mono_reflection_get_type   (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve);
 MonoType*     mono_reflection_type_from_name (char *name, MonoImage *image);
