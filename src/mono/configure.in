@@ -784,6 +784,7 @@ man/Makefile
 doc/Makefile
 docs/Makefile
 data/Makefile
+samples/Makefile
 data/config
 mono.spec
 ])
