@@ -1989,6 +1989,9 @@ handle_enum:
 	mono_mb_emit_ldloc (mb, 1);
 	mono_mb_emit_byte (mb, CEE_STIND_I);
 
+	mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+	mono_mb_emit_stloc (mb, 0);
+
 	mono_mb_emit_byte (mb, CEE_LEAVE);
 	mono_mb_emit_i4 (mb, 0);
 
@@ -3849,7 +3852,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
 			}
 
-			if (t->attrs & PARAM_ATTRIBUTE_OUT) {
+			/* Character arrays are implicitly marshalled as [Out] */
+			if ((klass->element_class == mono_defaults.char_class) || (t->attrs & PARAM_ATTRIBUTE_OUT)) {
 				/* FIXME: Optimize blittable case */
 				MonoClass *eklass;
 				guint32 label1, label2, label3;
