@@ -3135,10 +3135,10 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				break;
 			}
 			
-			if (!t->byref)
+			if (!(t->byref || (t->attrs & PARAM_ATTRIBUTE_OUT)))
 				continue;
 
-			if (t->attrs & PARAM_ATTRIBUTE_OUT) {
+			if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
 				/* allocate a new object new object */
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
@@ -3149,7 +3149,10 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 			/* dst = *argument */
 			mono_mb_emit_ldarg (mb, argnum);
-			mono_mb_emit_byte (mb, CEE_LDIND_I);
+
+			if (t->byref)
+				mono_mb_emit_byte (mb, CEE_LDIND_I);
+
 			mono_mb_emit_byte (mb, CEE_STLOC_1);
 
 			mono_mb_emit_byte (mb, CEE_LDLOC_1);

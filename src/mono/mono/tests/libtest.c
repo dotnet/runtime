@@ -477,3 +477,21 @@ VectorList* TestVectorList (VectorList *vl)
 	return vl;
 }
 
+
+typedef struct _OSVERSIONINFO
+{ 
+	int a; 
+	int b; 
+} OSVERSIONINFO; 
+
+int 
+GetVersionEx (OSVERSIONINFO *osvi)
+{
+
+	printf ("GOT %d %d\n", osvi->a, osvi->b);
+
+	osvi->a += 1;
+	osvi->b += 1;
+
+	return osvi->a + osvi->b;
+}
