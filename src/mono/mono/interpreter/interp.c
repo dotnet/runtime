@@ -33,6 +33,7 @@
 #include <mono/metadata/blob.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/cli/cli.h>
+#include "hacks.h"
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
@@ -52,61 +53,6 @@ typedef gint32 nati_t;
 #define GET_NATI(sp) ((guint32)(sp).data.i)
 
 static int count = 0;
-
-/*
- * Attempt at using the goto label construct of GNU GCC:
- * it turns out this does give some benefit: 5-15% speedup.
- * Don't look at these macros, it hurts...
- */
-#define GOTO_LABEL
-#undef GOTO_LABEL
-#ifdef GOTO_LABEL
-#define SWITCH(a) goto *goto_map [(a)];
-#define BREAK SWITCH(*ip)
-#define CASE(l)	l ## _LABEL:
-#define SUB_SWITCH \
-	CEE_PREFIX1_LABEL: \
-	CEE_ARGLIST_LABEL: \
-	CEE_CEQ_LABEL: \
-	CEE_CGT_LABEL: \
-	CEE_CGT_UN_LABEL: \
-	CEE_CLT_LABEL: \
-	CEE_CLT_UN_LABEL: \
-	CEE_LDFTN_LABEL: \
-	CEE_LDVIRTFTN_LABEL: \
-	CEE_UNUSED56_LABEL: \
-	CEE_LDARG_LABEL: \
-	CEE_LDARGA_LABEL: \
-	CEE_STARG_LABEL: \
-	CEE_LDLOC_LABEL: \
-	CEE_LDLOCA_LABEL: \
-	CEE_STLOC_LABEL: \
-	CEE_LOCALLOC_LABEL: \
-	CEE_UNUSED57_LABEL: \
-	CEE_ENDFILTER_LABEL: \
-	CEE_UNALIGNED__LABEL: \
-	CEE_VOLATILE__LABEL: \
-	CEE_TAIL__LABEL: \
-	CEE_INITOBJ_LABEL: \
-	CEE_UNUSED68_LABEL: \
-	CEE_CPBLK_LABEL: \
-	CEE_INITBLK_LABEL: \
-	CEE_UNUSED69_LABEL: \
-	CEE_RETHROW_LABEL: \
-	CEE_UNUSED_LABEL: \
-	CEE_SIZEOF_LABEL: \
-	CEE_REFANYTYPE_LABEL: \
-	CEE_UNUSED52_LABEL: \
-	CEE_UNUSED53_LABEL: \
-	CEE_UNUSED54_LABEL: \
-	CEE_UNUSED55_LABEL: \
-	CEE_UNUSED70_LABEL:
-#else
-#define SWITCH(a) switch(a)
-#define BREAK	break
-#define CASE(l)	case l:
-#define SUB_SWITCH case 0xFE:
-#endif
 
 #define CSIZE(x) (sizeof (x) / 4)
 
@@ -213,16 +159,7 @@ ves_exec_method (MonoImage *image, MonoMethod *mh, stackval *args)
 	/* FIXME: remove this hack */
 	static int fake_field = 42;
 	stackval *locals;
-
-#ifdef GOTO_LABEL
-	const static void * const goto_map [] = {
-#define OPDEF(a,b,c,d,e,f,g,h,i,j) \
-	&& a ## _LABEL,
-#include "mono/cil/opcode.def"
-#undef OPDEF
-	&&START
-	};
-#endif
+	GOTO_LABEL_VARS;
 
 	if (mh->header->num_locals)
 		locals = alloca (sizeof (stackval) * mh->header->num_locals);
@@ -233,9 +170,6 @@ ves_exec_method (MonoImage *image, MonoMethod *mh, stackval *args)
 	 */
 	while (1) {
 		/*count++;*/
-#ifdef GOTO_LABEL
-		START:
-#endif
 
 #if DEBUG_INTERP
 		g_print ("0x%04x %02x\n", ip-(unsigned char*)mh->header->code, *ip);
@@ -558,7 +492,24 @@ ves_exec_method (MonoImage *image, MonoMethod *mh, stackval *args)
 		CASE (CEE_BGT_UN) ves_abort(); BREAK;
 		CASE (CEE_BLE_UN) ves_abort(); BREAK;
 		CASE (CEE_BLT_UN) ves_abort(); BREAK;
-		CASE (CEE_SWITCH) ves_abort(); BREAK;
+		CASE (CEE_SWITCH) {
+			guint32 n;
+			const unsigned char *st;
+			++ip;
+			n = read32 (ip);
+			ip += 4;
+			st = ip + sizeof (gint32) * n;
+			--sp;
+			if ((guint32)sp->data.i < n) {
+				gint offset;
+				ip += sizeof (gint32) * (guint32)sp->data.i;
+				offset = read32 (ip);
+				ip = st + offset;
+			} else {
+				ip = st;
+			}
+			BREAK;
+		}
 		CASE (CEE_LDIND_I1) ves_abort(); BREAK;
 		CASE (CEE_LDIND_U1) ves_abort(); BREAK;
 		CASE (CEE_LDIND_I2) ves_abort(); BREAK;
@@ -958,17 +909,10 @@ ves_exec_method (MonoImage *image, MonoMethod *mh, stackval *args)
 			case CEE_UNUSED55: 
 			case CEE_UNUSED70: 
 			default:
-#ifdef GOTO_LABEL
-			CEE_ILLEGAL_LABEL:
-			CEE_ENDMAC_LABEL:
-#endif
 				g_error ("Unimplemented opcode: 0xFE %02x at 0x%x\n", *ip, ip-(unsigned char*)mh->header->code);
 			}
 			continue;
-#ifndef GOTO_LABEL
-		default:
-			g_error ("Unimplemented opcode: %x at 0x%x\n", *ip, ip-(unsigned char*)mh->header->code);
-#endif
+		DEFAULT;
 		}
 	}
 
