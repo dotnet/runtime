@@ -149,6 +149,25 @@ cflags: OP_COMPARE (reg, CEE_LDIND_U4 (base)) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+cflags : OP_CEQ (OP_COMPARE (OP_CEQ (cflags), OP_ICONST)) {
+	tree->opcode = OP_CNE;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+} cost {
+	MBCOND (!state->left->right->tree->inst_c0);
+	return 1;
+}
+
+stmt: CEE_STIND_I1 (base, OP_CEQ (OP_COMPARE (OP_CEQ (cflags), OP_ICONST))) {
+	tree->opcode = OP_X86_SETNE_MEMBASE;
+	tree->inst_offset = state->left->tree->inst_offset;
+	tree->inst_basereg = state->left->tree->inst_basereg;
+	mono_bblock_add_inst (s->cbb, tree);
+} cost {
+	MBCOND (!state->right->left->right->tree->inst_c0);
+	return 1;
+}
+
 stmt: CEE_STIND_I1 (base, OP_CEQ (cflags)) {
 	tree->opcode = OP_X86_SETEQ_MEMBASE;
 	tree->inst_offset = state->left->tree->inst_offset;

@@ -2209,7 +2209,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_mul_reg (code, ins->sreg2, FALSE);
 			break;
 		case OP_X86_SETEQ_MEMBASE:
-			x86_set_membase (code, X86_CC_EQ, ins->inst_basereg, ins->inst_offset, TRUE);
+		case OP_X86_SETNE_MEMBASE:
+			x86_set_membase (code, ins->opcode == OP_X86_SETEQ_MEMBASE ? X86_CC_EQ : X86_CC_NE,
+		                         ins->inst_basereg, ins->inst_offset, TRUE);
 			break;
 		case OP_STOREI1_MEMBASE_IMM:
 			x86_mov_membase_imm (code, ins->inst_destbasereg, ins->inst_offset, ins->inst_imm, 1);
@@ -2760,6 +2762,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_CGT_UN:
 			x86_set_reg (code, X86_CC_GT, ins->dreg, FALSE);
+			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
+			break;
+		case OP_CNE:
+			x86_set_reg (code, X86_CC_NE, ins->dreg, TRUE);
 			x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
 			break;
 		case OP_COND_EXC_EQ:

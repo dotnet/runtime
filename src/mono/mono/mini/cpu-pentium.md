@@ -258,6 +258,7 @@ cgt: dest:i len:6
 cgt.un: dest:i len:6
 clt: dest:i len:6
 clt.un: dest:i len:6
+cne: dest:i len:6
 ldftn:
 ldvirtftn:
 ldarg:
@@ -539,6 +540,7 @@ x86_fpop: src1:f len:2
 x86_fp_load_i8: dest:f src1:b len:7
 x86_fp_load_i4: dest:f src1:b len:7
 x86_seteq_membase: src1:b len:7
+x86_setne_membase: src1:b len:7
 x86_add_membase: dest:i src1:i src2:b clob:1 len:11
 x86_sub_membase: dest:i src1:i src2:b clob:1 len:11
 x86_mul_membase: dest:i src1:i src2:b clob:1 len:13
