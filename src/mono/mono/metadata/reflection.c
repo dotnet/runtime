@@ -98,6 +98,20 @@ const unsigned char table_sizes [64] = {
 	0	/* 0x2A */
 };
 
+/**
+ * These macros can be used to allocate long living atomic data so it won't be
+ * tracked by the garbage collector.
+ */
+#ifdef HAVE_BOEHM_GC
+#define ALLOC_ATOMIC(size) GC_MALLOC_ATOMIC (size)
+#define FREE_ATOMIC(ptr)
+#define REALLOC_ATOMIC(ptr, size) GC_REALLOC ((ptr), (size))
+#else
+#define ALLOC_ATOMIC(size) g_malloc (size)
+#define FREE_ATOMIC(ptr) g_free (size)
+#define REALLOC_ATOMIC(ptr, size) g_realloc ((ptr), (size))
+#endif
+
 static guint32 mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type);
 static guint32 mono_image_get_methodref_token (MonoDynamicAssembly *assembly, MonoMethod *method);
 static guint32 mono_image_get_sighelper_token (MonoDynamicAssembly *assembly, MonoReflectionSigHelper *helper);
@@ -115,9 +129,21 @@ alloc_table (MonoDynamicTable *table, guint nrows)
 			else
 				table->alloc_rows *= 2;
 
-		table->values = g_realloc (table->values, (table->alloc_rows) * table->columns * sizeof (guint32));
+		table->values = REALLOC_ATOMIC (table->values, (table->alloc_rows) * table->columns * sizeof (guint32));
 	}
 }
+
+static void
+make_room_in_stream (MonoDynamicStream *stream, int size)
+{
+	while (stream->alloc_size <= size) {
+		if (stream->alloc_size < 4096)
+			stream->alloc_size = 4096;
+		else
+			stream->alloc_size *= 2;
+	}
+	stream->data = REALLOC_ATOMIC (stream->data, stream->alloc_size);
+}	
 
 static guint32
 string_heap_insert (MonoDynamicStream *sh, const char *str)
@@ -131,10 +157,9 @@ string_heap_insert (MonoDynamicStream *sh, const char *str)
 
 	len = strlen (str) + 1;
 	idx = sh->index;
-	if (idx + len > sh->alloc_size) {
-		sh->alloc_size += len + 4096;
-		sh->data = g_realloc (sh->data, sh->alloc_size);
-	}
+	if (idx + len > sh->alloc_size)
+		make_room_in_stream (sh, idx + len);
+
 	/*
 	 * We strdup the string even if we already copy them in sh->data
 	 * so that the string pointers in the hash remain valid even if
@@ -151,7 +176,7 @@ string_heap_init (MonoDynamicStream *sh)
 {
 	sh->index = 0;
 	sh->alloc_size = 4096;
-	sh->data = g_malloc (4096);
+	sh->data = ALLOC_ATOMIC (4096);
 	sh->hash = g_hash_table_new (g_str_hash, g_str_equal);
 	string_heap_insert (sh, "");
 }
@@ -160,7 +185,7 @@ string_heap_init (MonoDynamicStream *sh)
 static void
 string_heap_free (MonoDynamicStream *sh)
 {
-	g_free (sh->data);
+	FREE_ATOMIC (sh->data);
 	g_hash_table_foreach (sh->hash, (GHFunc)g_free, NULL);
 	g_hash_table_destroy (sh->hash);
 }
@@ -170,10 +195,8 @@ static guint32
 mono_image_add_stream_data (MonoDynamicStream *stream, const char *data, guint32 len)
 {
 	guint32 idx;
-	if (stream->alloc_size < stream->index + len) {
-		stream->alloc_size += len + 4096;
-		stream->data = g_realloc (stream->data, stream->alloc_size);
-	}
+	if (stream->alloc_size < stream->index + len)
+		make_room_in_stream (stream, stream->index + len);
 	memcpy (stream->data + stream->index, data, len);
 	idx = stream->index;
 	stream->index += len;
@@ -188,10 +211,8 @@ static guint32
 mono_image_add_stream_zero (MonoDynamicStream *stream, guint32 len)
 {
 	guint32 idx;
-	if (stream->alloc_size < stream->index + len) {
-		stream->alloc_size += len + 4096;
-		stream->data = g_realloc (stream->data, stream->alloc_size);
-	}
+	if (stream->alloc_size < stream->index + len)
+		make_room_in_stream (stream, stream->index + len);
 	memset (stream->data + stream->index, 0, len);
 	idx = stream->index;
 	stream->index += len;
@@ -245,16 +266,16 @@ add_to_blob_cached (MonoDynamicAssembly *assembly, char *b1, int s1, char *b2, i
 	char *copy;
 	gpointer oldkey, oldval;
 
-	copy = g_malloc (s1+s2);
+	copy = ALLOC_ATOMIC (s1+s2);
 	memcpy (copy, b1, s1);
 	memcpy (copy + s1, b2, s2);
-	if (g_hash_table_lookup_extended (assembly->blob_cache, copy, &oldkey, &oldval)) {
-		g_free (copy);
+	if (mono_g_hash_table_lookup_extended (assembly->blob_cache, copy, &oldkey, &oldval)) {
+		FREE_ATOMIC (copy);
 		idx = GPOINTER_TO_UINT (oldval);
 	} else {
 		idx = mono_image_add_stream_data (&assembly->blob, b1, s1);
 		mono_image_add_stream_data (&assembly->blob, b2, s2);
-		g_hash_table_insert (assembly->blob_cache, copy, GUINT_TO_POINTER (idx));
+		mono_g_hash_table_insert (assembly->blob_cache, copy, GUINT_TO_POINTER (idx));
 	}
 	return idx;
 }
@@ -2557,7 +2578,7 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 			MonoReflectionTypeBuilder *type = g_ptr_array_index (types, i);
 			mono_image_get_type_info (domain, type, assembly);
 		}
-		g_ptr_array_free (types, FALSE);
+		g_ptr_array_free (types, TRUE);
 	}
 
 	/* 
@@ -2796,7 +2817,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly->handleref = g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->tokens = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
-	assembly->blob_cache = g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
+	assembly->blob_cache = mono_g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
 
 	string_heap_init (&assembly->sheap);
 	mono_image_add_stream_data (&assembly->us, "", 1);
@@ -3121,6 +3142,8 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 			memcpy (pefile->data + text_offset, assembly->assembly.image->raw_metadata, assembly->meta_size);
 			text_offset += assembly->meta_size;
 			memcpy (pefile->data + text_offset, assembly->strong_name, assembly->strong_name_size);
+
+			g_free (assembly->assembly.image->raw_metadata);
 			break;
 		case MONO_SECTION_RELOC:
 			rva = (guint32*)(pefile->data + assembly->sections [i].offset);
@@ -3533,14 +3556,15 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	if (!method->signature->param_count)
 		return NULL;
 
-	member = mono_method_get_object (domain, method, NULL);
-	names = g_new (char *, method->signature->param_count);
-	mono_method_get_param_names (method, (const char **) names);
-	
 	/* Note: the cache is based on the address of the signature into the method
 	 * since we already cache MethodInfos with the method as keys.
 	 */
 	CHECK_OBJECT (MonoReflectionParameter**, &(method->signature), NULL);
+
+	member = mono_method_get_object (domain, method, NULL);
+	names = g_new (char *, method->signature->param_count);
+	mono_method_get_param_names (method, (const char **) names);
+	
 	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "ParameterInfo");
 #if HAVE_BOEHM_GC
 	res = GC_MALLOC (sizeof (MonoReflectionParameter*) * method->signature->param_count);
@@ -5316,6 +5340,10 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	 */
 	klass->flags = tb->attrs;
 	klass->element_class = klass;
+
+	if (!((MonoDynamicAssembly*)klass->image->assembly->dynamic)->run)
+		/* No need to fully construct the type */
+		return mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 
 	/* enums are done right away */
 	if (!klass->enumtype)

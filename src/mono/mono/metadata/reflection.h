@@ -265,7 +265,7 @@ typedef struct {
 	GHashTable *typeref;
 	GHashTable *handleref;
 	MonoGHashTable *tokens;
-	GHashTable *blob_cache;
+	MonoGHashTable *blob_cache;
 	GList *array_methods;
 	MonoGHashTable *token_fixups;
 	MonoGHashTable *method_to_table_idx;

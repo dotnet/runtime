@@ -554,7 +554,7 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 		class->interface_offsets [ic->interface_id] = cur_slot;
 		cur_slot += ic->method.count;
 	}
-	g_ptr_array_free (ifaces, FALSE);
+	g_ptr_array_free (ifaces, TRUE);
 
 	for (k = class->parent; k ; k = k->parent) {
 		ifaces = collect_implemented_interfaces (k);
@@ -569,7 +569,7 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 				class->interface_offsets [ic->interface_id] = io;
 			}
 		}
-		g_ptr_array_free (ifaces, FALSE);
+		g_ptr_array_free (ifaces, TRUE);
 	}
 	return cur_slot;
 }
@@ -594,7 +594,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 		MonoClass *ic = g_ptr_array_index (ifaces, i);
 		max_vtsize += ic->method.count;
 	}
-	g_ptr_array_free (ifaces, FALSE);
+	g_ptr_array_free (ifaces, TRUE);
 	
 	if (class->parent) {
 		max_vtsize += class->parent->vtable_size;
@@ -768,7 +768,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 				}
 			}
 		}
-		g_ptr_array_free (ifaces, FALSE);
+		g_ptr_array_free (ifaces, TRUE);
 	} 
 
 	for (i = 0; i < class->method.count; ++i) {
