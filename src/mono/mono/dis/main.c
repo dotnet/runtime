@@ -858,7 +858,7 @@ dis_data (MonoImage *m)
 		g_assert (*sig == 0x06);
 		type = mono_metadata_parse_field_type (m, 0, sig + 1, &sig);
 		mono_class_init (mono_class_from_mono_type (type));
-		size = mono_class_value_size (mono_class_from_mono_type (type), &align);
+		size = mono_type_size (type, &align);
 		fprintf (output, ".data D_%08x = bytearray (", cols [MONO_FIELD_RVA_RVA]);
 		for (b = 0; b < size; ++b) {
 			if (!(b % 16))
