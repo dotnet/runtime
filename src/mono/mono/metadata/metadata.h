@@ -391,7 +391,7 @@ mono_type_to_unmanaged (MonoType *type, MonoMarshalSpec *mspec,
 /*
  * Makes a token based on a table and an index
  */
-#define mono_metadata_make_token(table,idx) (((table) << 24)| idx)
+#define mono_metadata_make_token(table,idx) (((table) << 24)| (idx))
 
 /*
  * Returns the table index that this token encodes.
