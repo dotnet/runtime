@@ -226,7 +226,7 @@ test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 
 testb: $(TEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\
-		./test-driver $(TEST_PROG) $$ii $(RUNTIME_ARGS);	\
+		./test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS);	\
 	done
 
 testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS)
