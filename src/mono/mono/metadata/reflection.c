@@ -5817,7 +5817,7 @@ mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoRef
 
 	param = gparam->param = g_new0 (MonoGenericParam, 1);
 	param->name = mono_string_to_utf8 (gparam->name);
-	param->num = mono_array_length (tb->generic_params);
+	param->num = mono_array_length (tb->generic_params) - 1;
 
 	count = gparam->constraints ? mono_array_length (gparam->constraints) : 0;
 	param->constraints = g_new0 (MonoClass *, count + 1);
