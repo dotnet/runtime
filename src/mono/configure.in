@@ -1610,6 +1610,9 @@ tools/locale-builder/Makefile
 runtime/Makefile
 ])
 
+echo "prefix=$prefix" > $mcsdir/build/config.make
+echo "MCS_FLAGS = \$(PLATFORM_DEBUG_FLAGS)" >> $mcsdir/build/config.make
+
 echo "
         mcs source:  $mcs_topdir
 	GC:	     $gc
