@@ -38,8 +38,12 @@ A: If you are sure that no other Mono process is running, you can just
 
 	rm -i ~/.wapi/*
 
-   You can disable the use of the shared handles setup by setting the
-   MONO_DISABLE_SHM environment variable as well:
+   If you can not delete those files (because say, you have a running
+   Mono, you can disable the use of the shared handles setup by
+   setting the MONO_DISABLE_SHM environment variable as well:
 
 	bash$ export MONO_DISABLE_SHM=1
 
+   The above is highly discouraged as that will make process execution
+   fail, and without that many things like XSP/ASP.NET or the C#
+   compiler's -pkg: support will not work.
