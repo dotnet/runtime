@@ -56,24 +56,24 @@
                   <td bgcolor="#999999">
                     <img src="images/redhat-36.gif"><b>Red Hat 9.0/x86</b>
                     <ul>
-                        <li><a href="archive/redhat-90-i386/mono-0.25-1.i386.rpm">mono-0.25-1.i386.rpm</a>
-                        <li><a href="archive/redhat-90-i386/mono-devel-0.25-1.i386.rpm">mono-devel-0.25-1.i386.rpm</a>
-                        <li><a href="archive/redhat-90-i386/mono-debuginfo-0.25-1.i386.rpm">mono-debuginfo-0.25-1.i386.rpm</a>
-		 	<br>
-			<li><a href="archive/redhat-90-i386/gtk-sharp-0.9-1.i386.rpm">gtk-sharp-0.9-1.i386.rpm</a>
-			<li><a href="archive/redhat-90-i386/gtk-sharp-debuginfo-0.9-1.i386.rpm">gtk-sharp-debuginfo-0.9-1.i386.rpm</a>
-			<li><a href="archive/redhat-90-i386/monodoc-0.4-1.i386.rpm">monodoc-0.4-1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/mono-0.25-1.ximian.6.1.i386.rpm">mono-0.25-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/mono-devel-0.25-1.ximian.6.1.i386.rpm">mono-devel-0.25-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/mono-debuginfo-0.25-1.ximian.6.1.i386.rpm">mono-debuginfo-0.25-1.i386.rpm</a>
+	 	      <br>
+		      <li><a href="archive/redhat-90-i386/gtk-sharp-0.9-1.i386.rpm">gtk-sharp-0.9-1.i386.rpm</a>
+		      <li><a href="archive/redhat-90-i386/gtk-sharp-debuginfo-0.9-1.i386.rpm">gtk-sharp-debuginfo-0.9-1.i386.rpm</a>
+		      <li><a href="archive/redhat-90-i386/monodoc-0.4-1.i386.rpm">monodoc-0.4-1.i386.rpm</a>
                     </ul>
                   </td>
                   <td bgcolor="#999999">
                     <img src="images/redhat-36.gif"><b>Red Hat 8.0/x86</b>
                     <ul>
-                        <li><a href="archive/redhat-80-i386/mono-0.25-2.i386.rpm">mono-0.25-2.i386.rpm</a>
-                        <li><a href="archive/redhat-80-i386/mono-devel-0.25-2.i386.rpm">mono-devel-0.25-2.i386.rpm</a>
-		 	<br>
-			<li><a href="archive/redhat-80-i386/gtk-sharp-0.9-1.i386.rpm">gtk-sharp-0.9-1.i386.rpm</a>
-			<li><a href="archive/redhat-80-i386/monodoc-0.4-1.i386.rpm">monodoc-0.4-1.i386.rpm</a>
-                    </ul>
+                      <li><a href="archive/redhat-80-i386/mono-0.25-1.ximian.5.1.i386.rpm">mono-0.25-1.ximian.5.1.i386.rpm</a>
+                      <li><a href="archive/redhat-80-i386/mono-devel-0.25-1.ximian.5.1.i386.rpm">mono-devel-0.25-1.ximian.5.1.i386.rpm</a>
+	 	      <br>
+		      <li><a href="archive/redhat-80-i386/gtk-sharp-0.9-1.i386.rpm">gtk-sharp-0.9-1.i386.rpm</a>
+		      <li><a href="archive/redhat-80-i386/monodoc-0.4-1.i386.rpm">monodoc-0.4-1.i386.rpm</a>
+                    </ul>n
                   </td>
 		</tr>
 
@@ -96,28 +96,31 @@
 		  <td bgcolor="#999999">
 		    <img src="images/redhat-36.gif"><b>Red Hat 7.3/x86</b>
                     <ul>
-			<li><a href="archive/redhat-73-i386/mono-0.25-1.i386.rpm">mono-0.25-1.i386.rpm</a>
-			<li><a href="archive/redhat-73-i386/mono-devel-0.25-1.i386.rpm">mono-devel-0.25-1.i386.rpm</a>
+		      <li><a href="archive/redhat-73-i386/mono-0.25-1.ximian.4.1.i386.rpm">mono-0.25-1.ximian.4.1.i386.rpm</a>
+		      <li><a href="archive/redhat-73-i386/mono-devel-0.25-1.ximian.4.1.i386.rpm">mono-devel-0.25-1.ximian.4.1.i386.rpm</a>
 		    </ul>
 		  </td>
 		  <td bgcolor="#999999">
-		    <img src="images/mandrake-36.gif"><b>Mandrake 8.2/x86</b>
+		    <img src="images/mandrake-36.gif"><b>Mandrake 9.1/x86</b>
                     <ul>
-			<li><a href="archive/mandrake-82-i386/mono-0.25-1.i586.rpm">mono-0.25-1.i586.rpm</a>
-			<li><a href="archive/mandrake-82-i386/mono-devel-0.25-1.i586.rpm">mono-devel-0.25-1.i586.rpm</a>
+		      <li><a href="archive/mandrake-91-i586/mono-0.25-1.ximian.6.1.i586.rpm">mono-0.25-1.ximian.6.1.i586.rpm</a>
+		      <li><a href="archive/mandrake-91-i586/mono-devel-0.25-1.ximian.6.1.i586.rpm">mono-devel-0.25-1.ximian.6.1.i586.rpm</a>
 		    </ul>
 		  </td>
 		</tr>
 
-		<tr>
- 		  <td bgcolor="#999999"> 
-		     <img src="images/suse-36.gif"><b>SuSE 8.2/x86</b> 
-                     <ul> 
- 			<li><a href="archive/suse-80-i386/mono-0.25-1.i386.rpm">mono-0.25-1.i386.rpm</a> 
- 			<li><a href="archive/suse-80-i386/mono-devel-0.25-1.i386.rpm">mono-devel-0.25-1.i386.rpm</a> 
- 		    </ul>
- 	          </td>
-	        </tr>
+                    <!--
+                        We don't have SuSE packages right now
+                      -->
+<!-- 		<tr> -->
+<!--  		  <td bgcolor="#999999">  -->
+<!-- 		     <img src="images/suse-36.gif"><b>SuSE 8.2/x86</b>  -->
+<!--                      <ul>  -->
+<!--  			<li><a href="archive/suse-80-i386/mono-0.25-1.i386.rpm">mono-0.25-1.i386.rpm</a>  -->
+<!--  			<li><a href="archive/suse-80-i386/mono-devel-0.25-1.i386.rpm">mono-devel-0.25-1.i386.rpm</a>  -->
+<!--  		    </ul> -->
+<!--  	          </td> -->
+<!-- 	        </tr> -->
 	      </table>
 	    </td>
 	  </tr>
