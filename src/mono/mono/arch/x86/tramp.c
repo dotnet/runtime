@@ -78,7 +78,6 @@ enum_calc_size:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
-		case MONO_TYPE_R4:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
@@ -92,7 +91,7 @@ enum_calc_size:
 				simpletype = sig->params [i]->data.klass->enum_basetype->type;
 				goto enum_calc_size;
 			}
-			if ((size = mono_class_value_size (sig->params [i]->data.klass, NULL)) != 4) {
+			if ((size = mono_class_native_size (sig->params [i]->data.klass, NULL)) != 4) {
 				stack_size += size + 3;
 				stack_size &= ~3;
 				code_size += 32;
@@ -105,6 +104,10 @@ enum_calc_size:
 		case MONO_TYPE_I8:
 			stack_size += 8;
 			code_size += i < 10 ? 5 : 8;
+			break;
+		case MONO_TYPE_R4:
+			stack_size += 4;
+			code_size += i < 10 ? 10 : 13;
 			break;
 		case MONO_TYPE_R8:
 			stack_size += 8;
@@ -180,7 +183,7 @@ enum_marshal:
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (!sig->params [i - 1]->data.klass->enumtype) {
-				int size = mono_class_value_size (sig->params [i - 1]->data.klass, NULL);
+				int size = mono_class_native_size (sig->params [i - 1]->data.klass, NULL);
 				if (size == 4) {
 					/* it's a structure that fits in 4 bytes, need to push the value pointed to */
 					x86_mov_reg_membase (p, X86_EAX, X86_EDX, arg_pos, 4);
