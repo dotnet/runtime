@@ -13,6 +13,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/threads.h>
 #include <mono/io-layer/io-layer.h>
 
 #include <mono/os/gc_wrapper.h>
@@ -92,7 +93,7 @@ gboolean mono_monitor_try_enter (MonoObject *obj, guint32 ms)
 	MonoThreadsSync *mon;
 	guint32 id=GetCurrentThreadId ();
 	HANDLE sem;
-	guint32 then, now, delta;
+	guint32 then=0, now, delta;
 	guint32 waitms;
 	guint32 ret;
 	

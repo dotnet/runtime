@@ -84,6 +84,7 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 	
 	if (alertable && _wapi_thread_apc_pending (current_thread)) {
 		apc_pending = TRUE;
+		ret = WAIT_IO_COMPLETION;
 		goto done;
 	}
 	
@@ -245,6 +246,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	
 	if (alertable && _wapi_thread_apc_pending (current_thread)) {
 		apc_pending = TRUE;
+		ret = WAIT_IO_COMPLETION;
 		goto done;
 	}
 	
