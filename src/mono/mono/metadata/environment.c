@@ -15,6 +15,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/exception.h>
+#include <mono/io-layer/io-layer.h>
 
 #ifndef PLATFORM_WIN32
 #include <sys/utsname.h>
