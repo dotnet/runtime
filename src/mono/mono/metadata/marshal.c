@@ -2458,7 +2458,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 
 				tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
 
-				mono_mb_emit_ldstr (mb, spec->data.custom_data.cookie);
+				mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 
 				mono_mb_emit_byte (mb, CEE_CALL);
 				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
@@ -2721,7 +2721,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 			mono_mb_emit_byte (mb, CEE_LDLOC_3);
 			mono_mb_emit_stloc (mb, loc1);
 
-			mono_mb_emit_ldstr (mb, spec->data.custom_data.cookie);
+			mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 			mono_mb_emit_byte (mb, CEE_CALL);
 			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_find_method_by_name (mklass, "GetInstance", 1)));
 			mono_mb_emit_byte (mb, CEE_DUP);
@@ -2881,7 +2881,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 
 				/* Call CleanUpManagedData */
 
-				mono_mb_emit_ldstr (mb, spec->data.custom_data.cookie);
+				mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 
 				mono_mb_emit_byte (mb, CEE_CALL);
 				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
@@ -3404,7 +3404,7 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 
 			conv_arg = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
-			mono_mb_emit_ldstr (mb, spec->data.custom_data.cookie);
+			mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 
 			mono_mb_emit_byte (mb, CEE_CALL);
 			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
@@ -3443,7 +3443,7 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_VALUETYPE:
-			mono_mb_emit_ldstr (mb, spec->data.custom_data.cookie);
+			mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 			
 			mono_mb_emit_byte (mb, CEE_CALL);
 			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
@@ -3480,7 +3480,7 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, CEE_LDLOC_3);
 			mono_mb_emit_stloc (mb, loc1);
 
-			mono_mb_emit_ldstr (mb, spec->data.custom_data.cookie);
+			mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 
 			mono_mb_emit_byte (mb, CEE_CALL);
 			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
