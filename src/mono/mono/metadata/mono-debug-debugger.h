@@ -232,6 +232,8 @@ MonoObject     *mono_debugger_runtime_invoke              (MonoMethod *method, v
 							   void **params, MonoObject **exc);
 
 guint32         mono_debugger_lookup_type                 (const gchar *type_name);
+gint32          mono_debugger_lookup_assembly             (const gchar *name);
+
 
 
 MonoReflectionMethod *

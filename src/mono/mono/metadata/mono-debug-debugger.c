@@ -1213,3 +1213,34 @@ mono_debugger_lookup_type (const gchar *type_name)
 	mono_debugger_unlock ();
 	return 0;
 }
+
+gint32
+mono_debugger_lookup_assembly (const gchar *name)
+{
+	MonoAssembly *assembly;
+	MonoImageOpenStatus status;
+	int i;
+
+	mono_debugger_lock ();
+
+ again:
+	for (i = 0; i < mono_debugger_symbol_table->num_symbol_files; i++) {
+		MonoDebuggerSymbolFile *symfile = mono_debugger_symbol_table->symbol_files [i];
+
+		if (!strcmp (symfile->image_file, name)) {
+			mono_debugger_unlock ();
+			return i;
+		}
+	}
+
+	assembly = mono_assembly_open (name, &status);
+
+	if (status != MONO_IMAGE_OK) {
+		g_warning (G_STRLOC ": Cannot open image `%s'", name);
+		mono_debugger_unlock ();
+		return -1;
+	}
+
+	must_reload_symtabs = TRUE;
+	goto again;
+}
