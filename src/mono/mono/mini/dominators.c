@@ -477,3 +477,43 @@ mono_compute_natural_loops (MonoCompile *cfg)
 
 }
 
+static void
+clear_idominators (MonoCompile *cfg)
+{
+	guint i;
+    
+	for (i = 0; i < cfg->num_bblocks; ++i) {
+		if (cfg->bblocks[i]->dominated) {
+			g_list_free (cfg->bblocks[i]->dominated);        
+			cfg->bblocks[i]->dominated = NULL;
+		}
+	}
+
+	cfg->comp_done &= ~MONO_COMP_IDOM;   
+}
+
+static void
+clear_loops (MonoCompile *cfg)
+{
+	guint i;
+    
+	for (i = 0; i < cfg->num_bblocks; ++i) {
+		cfg->bblocks[i]->nesting = 0;
+		if (cfg->bblocks[i]->loop_blocks) {
+			g_list_free (cfg->bblocks[i]->loop_blocks);        
+			cfg->bblocks[i]->loop_blocks = NULL;
+		}
+	}
+
+	cfg->comp_done &= ~MONO_COMP_LOOPS;   
+}
+
+void
+mono_free_loop_info (MonoCompile *cfg)
+{
+    if (cfg->comp_done & MONO_COMP_IDOM)
+        clear_idominators (cfg);
+    if (cfg->comp_done & MONO_COMP_LOOPS)
+        clear_loops (cfg);
+}
+    

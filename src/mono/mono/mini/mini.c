@@ -6562,6 +6562,7 @@ mono_destroy_compile (MonoCompile *cfg)
 {
 	//mono_mempool_stats (cfg->mempool);
 	g_hash_table_destroy (cfg->bb_hash);
+	mono_free_loop_info (cfg);
 	if (cfg->rs)
 		mono_regstate_free (cfg->rs);
 	if (cfg->spvars)
