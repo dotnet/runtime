@@ -59,7 +59,7 @@ static void socket_ops_init (void)
 static void socket_close_private (gpointer handle)
 {
 #ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": closing socket handle 0x%x",
+	g_message(G_GNUC_PRETTY_FUNCTION ": closing socket handle %p",
 		  handle);
 #endif
 

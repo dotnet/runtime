@@ -68,14 +68,15 @@ mono_runtime_cleanup (MonoDomain *domain)
 {
 	mono_runtime_shutdown = 1;
 
-	mono_network_cleanup ();
-
 	/* signal all waiters in order to stop all workers (max. 0xffff) */
 	ReleaseSemaphore (mono_delegate_semaphore, 0xffff, NULL);
 
 	mono_thread_cleanup ();
-		
 
+	/* Do this after the thread cleanup, because subthreads might
+	 * still be doing socket calls.
+	 */
+	mono_network_cleanup ();
 }
 
 void
