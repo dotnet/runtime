@@ -147,6 +147,9 @@ static MonoCodeManager *global_codeman = NULL;
 
 static GHashTable *jit_icall_name_hash = NULL;
 
+/* If set to true, the environment variable MONO_DEBUG is set */
+static int mono_env_debug = 0;
+
 /*
  * Address of the trampoline code.  This is used by the debugger to check
  * whether a method is a trampoline.
@@ -9391,7 +9394,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 
 #ifdef MONO_ARCH_HAVE_INVALIDATE_METHOD
 	/* FIXME: only enable this with a env var */
-	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+	if (mono_env_debug && method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 		/*
 		 * Instead of freeing the code, change it to call an error routine
 		 * so people can fix their code.
@@ -9792,6 +9795,9 @@ mini_init (const char *filename)
 
 	if (!g_thread_supported ())
 		g_thread_init (NULL);
+
+	if (getenv ("MONO_DEBUG") != NULL)
+		mono_env_debug = 1;
 	
 	MONO_GC_PRE_INIT ();
 
