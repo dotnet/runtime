@@ -169,6 +169,7 @@ x86_pop_reg (s->code, X86_EAX);
 %term INTF_ADDR VFUNC_ADDR NOP NEWARR NEWOBJ NEWSTRUCT CPOBJ POP INITOBJ
 %term ISINST CASTCLASS UNBOX
 %term CONV_OVF_I1 CONV_OVF_U1 CONV_OVF_I2 CONV_OVF_U2 CONV_OVF_U4 CONV_OVF_U8 CONV_OVF_I4
+%term CONV_OVF_I4_UN CONV_OVF_U1_UN CONV_OVF_U2_UN
 %term CONV_OVF_I2_UN CONV_OVF_I8_UN CONV_OVF_I1_UN 
 %term EXCEPTION THROW RETHROW HANDLER SAVE_LMF RESTORE_LMF
 %term LDLEN
@@ -621,6 +622,15 @@ reg: CONV_I4 (reg) {
 } 
 
 reg: CONV_OVF_U4 (reg) {
+	/* Keep in sync with CONV_OVF_I4_UN below, they are the same on 32-bit machines */
+	x86_test_reg_imm (s->code, tree->left->reg1, 0x8000000);
+	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
+reg: CONV_OVF_I4_UN (reg) {
+	/* Keep in sync with CONV_OVF_U4 above, they are the same on 32-bit machines */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0x8000000);
 	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());
 	if (tree->reg1 != tree->left->reg1)
@@ -648,6 +658,16 @@ reg: CONV_OVF_I1_UN (reg) {
 }
 
 reg: CONV_OVF_U1 (reg) {
+	/* Keep in sync with CONV_OVF_U1_UN routine below, they are the same on 32-bit machines */
+	/* probe value to be within 0 to 255 */
+	x86_test_reg_imm (s->code, tree->left->reg1, 0xffffff00);
+	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());	
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
+}
+
+reg: CONV_OVF_U1_UN (reg) {
+	/* Keep in sync with CONV_OVF_U1 routine above, they are the same on 32-bit machines */
 	/* probe value to be within 0 to 255 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffffff00);
 	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());	
@@ -668,6 +688,16 @@ reg: CONV_OVF_I2 (reg) {
 }
 
 reg: CONV_OVF_U2 (reg) {
+	/* Keep in sync with CONV_OVF_U2_UN below, they are the same on 32-bit machines */
+	/* Probe value to be within 0 and 65535 */
+	x86_test_reg_imm (s->code, tree->left->reg1, 0xffff0000);
+	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());	
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
+}
+
+reg: CONV_OVF_U2_UN (reg) {
+	/* Keep in sync with CONV_OVF_U2 above, they are the same on 32-bit machines */
 	/* Probe value to be within 0 and 65535 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffff0000);
 	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());	
@@ -1659,6 +1689,16 @@ reg: CONV_OVF_I4 (lreg){
 }
 
 reg: CONV_OVF_U4 (lreg) {
+	/* Keep in sync with CONV_OVF_I4_UN below, they are the same on 32-bit machines */
+	/* top word must be 0 */
+	x86_test_reg_reg (s->code, tree->left->reg2, tree->left->reg2);
+	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
+reg: CONV_OVF_I4_UN (lreg) {
+	/* Keep in sync with CONV_OVF_U4 above, they are the same on 32-bit machines */
 	/* top word must be 0 */
 	x86_test_reg_reg (s->code, tree->left->reg2, tree->left->reg2);
 	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());

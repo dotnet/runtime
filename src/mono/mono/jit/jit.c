@@ -2862,7 +2862,13 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			PUSH_TREE (t1, VAL_I32);
 			break;
 		}
-		case CEE_CONV_OVF_I4_UN: /* on 32-bits the test is the same */
+		case CEE_CONV_OVF_I4_UN: {
+			++ip;
+			sp--;
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_I4_UN, *sp, NULL);
+			PUSH_TREE (t1, VAL_I32);		
+			break;
+		}
 		case CEE_CONV_OVF_U4: {
 			++ip;
 			sp--;
@@ -2884,7 +2890,14 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			PUSH_TREE (t1, VAL_I32);
 			break;
 		}
-		case CEE_CONV_OVF_U1_UN:
+		case CEE_CONV_OVF_U1_UN: {
+			++ip;
+			sp--;
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_U1_UN, *sp, NULL);
+			PUSH_TREE (t1, VAL_I32);
+			break;
+		}
+		
 		case CEE_CONV_OVF_U1: {
 			++ip;
 			sp--;
@@ -2899,7 +2912,13 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			PUSH_TREE (t1, VAL_I32);
 			break;
 		}
-		case CEE_CONV_OVF_U2_UN:
+		case CEE_CONV_OVF_U2_UN: {
+			++ip;
+			sp--;
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_U2_UN, *sp, NULL);
+			PUSH_TREE (t1, VAL_I32);
+			break;
+		}
 		case CEE_CONV_OVF_U2: {
 			++ip;
 			sp--;
