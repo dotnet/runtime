@@ -841,9 +841,8 @@
     <tasks>
 
       <task>Type Reflector</task>
-
-      <task>System.Diagnostics Trace/Debug/Listeners, Config File Support</task>
-
+      <task>S.Diagnostics Trace/Debug/Listeners</task>
+      <task>Config File Support</task>
     </tasks>
 
   </contributor>

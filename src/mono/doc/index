@@ -42,7 +42,7 @@
 	href="http://monoevo.sf.net/mwn/index.html">Mono Weekly News letter</a>.
 	Which archives can be found <a 
 	href="http://monoevo.sf.net/mwn/archives.html">here</a>.
-	We have a <a href="http://www.nullenvoid.com/gtk-sharp/wiki">Gtk# Wiki</a>
+	We have a <a href="http://www.nullenvoid.com/gtksharp/wiki">Gtk# Wiki</a>
 	and a <a href="http://www.nullenvoid.com/mono/wiki">Mono Wiki</a>
 
     </td>
@@ -234,6 +234,8 @@
 
 	Mono 0.21 has been released.  This is only a bug fix release.
 	The <a href="archive/mono-0.21">release notes</a> are available.
+
+	Windows binary is available <a href="archive/mono-0.21-win32-1.exe">here</a>
 
 @item Feb 25th, 2003: Mono 0.20 for Windows released;   New Apache module released.
 
