@@ -575,6 +575,11 @@ mono_arch_allocate_vars (MonoCompile *m)
 	/* allow room for the vararg method args: void* and long/double */
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (m->method))
 		m->param_area = MAX (m->param_area, sizeof (gpointer)*8);
+	/* this is bug #60332: remove when #59509 is fixed, so no weird vararg 
+	 * call convs needs to be handled this way.
+	 */
+	if (m->flags & MONO_CFG_HAS_VARARGS)
+		m->param_area = MAX (m->param_area, sizeof (gpointer)*8);
 
 	header = ((MonoMethodNormal *)m->method)->header;
 

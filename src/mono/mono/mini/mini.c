@@ -2310,6 +2310,7 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 	}
 
 	temp = mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, sp, ip, FALSE);
+	cfg->flags |= MONO_CFG_HAS_VARARGS;
 
 	NEW_TEMPLOAD (cfg, addr, temp);
 	return addr;
@@ -3913,6 +3914,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cmethod->klass->parent == mono_defaults.array_class) {
 				NEW_METHODCONST (cfg, *sp, cmethod);
 				temp = mono_emit_native_call (cfg, bblock, mono_array_new_va, fsig, sp, ip, FALSE);
+				cfg->flags |= MONO_CFG_HAS_VARARGS;
 
 			} else if (cmethod->string_ctor) {
 				/* we simply pass a null pointer */
