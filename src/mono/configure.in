@@ -821,6 +821,7 @@ ACCESS_UNALIGNED="yes"
 JIT_SUPPORTED=no
 LIBC="libc.so.6"
 
+jit_wanted=false
 case "$host" in
 #	mips-sgi-irix5.* | mips-sgi-irix6.*)
 #		TARGET=MIPS;
@@ -830,6 +831,7 @@ case "$host" in
 		TARGET=X86;
 		arch_target=x86;
 		JIT_SUPPORTED=yes
+		jit_wanted=true
 		;;
 	x86_64-*-* | amd64-*-*)
 		TARGET=AMD64;
@@ -841,6 +843,7 @@ case "$host" in
 		arch_target=sparc;
 		JIT_SUPPORTED=yes
 		ACCESS_UNALIGNED="no"
+		jit_wanted=true
 		;;
 #       alpha*-*-linux* | alpha*-*-osf*)
 #		TARGET=ALPHA;
@@ -881,6 +884,19 @@ case "$host" in
 		ACCESS_UNALIGNED="no"
 		;;
 esac
+
+AC_ARG_WITH(jit, [  --with-jit=yes,no    If you want to build scripts that default to the JIT],[
+	jit_wanted=true
+])
+
+USEJIT=false
+if test x$JIT_SUPPORTED = xyes; then
+   if $jit_wanted; then
+      USEJIT=true
+   fi
+fi
+
+AM_CONDITIONAL(USE_JIT, test x$USEJIT = xtrue)
 
 libsuffix=".so"
 
