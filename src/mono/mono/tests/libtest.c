@@ -241,6 +241,13 @@ mono_test_marshal_stringbuilder (char *s, int n)
 typedef struct {
 } EmptyStruct;
 
+int
+mono_test_marshal_string_array (char **array)
+{
+	printf ("%p\n", array);
+	return 0;
+}
+
 /* this does not work on Redhat gcc 2.96 */
 #if 0
 int 
