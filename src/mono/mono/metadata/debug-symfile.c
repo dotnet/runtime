@@ -4,7 +4,6 @@
 #include <mono/metadata/rawbuffer.h>
 #include <mono/metadata/debug-symfile.h>
 
-#include <elf.h>
 #include <fcntl.h>
 #include <unistd.h>
 
