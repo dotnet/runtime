@@ -674,7 +674,6 @@ ves_pinvoke_method (MonoInvocation *frame)
 
 	g_slist_free (l);
 
-	printf ("PINVOKE %s %08x %d %p\n", frame->method->name, sig->ret->type, sig->hasthis, frame->obj);
 
 	if (sig->ret->type != MONO_TYPE_VOID)
 		stackval_from_data (sig->ret, frame->retval, res);

@@ -23,6 +23,16 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Aug 28, 2001
+
+	<b>.NET Hello World is working under Mono!</b>  The latest snapshots
+	will let you run it.   
+
+	Hello World consits of 1821 CIL instructions, 
+        performs 66 subroutine calls and loads 12 classes from the corlib.dll
+
+	Good work Mono team!
+
 ** Aug 23, 2001
 
 	Lloyd Dupont has announced his OpenGL bindings for C#, they

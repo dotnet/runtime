@@ -34,6 +34,7 @@ clean:
 
 push:
 	scp *.html www@www.ximian.com:/web/cvsmodules/mono
+	scp *.html migueldeicaza@mononet.sf.net:/home/groups/m/mo/mononet/htdocs
 
 push2: 
 	scp *.html primates:public_html/xxx
