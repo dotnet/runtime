@@ -2829,12 +2829,28 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 
 	long int gmtoff;
 	int is_daylight = 0, day;
-	char tzone[10];
+	char tzone [64];
 
 	MONO_ARCH_SAVE_REGS;
 
-	if ((year < 1900) || (year > 2100))
-		mono_raise_exception (mono_get_exception_not_implemented ());
+	MONO_CHECK_ARG_NULL (data);
+	MONO_CHECK_ARG_NULL (names);
+
+	(*data) = mono_array_new (domain, mono_defaults.int64_class, 4);
+	(*names) = mono_array_new (domain, mono_defaults.string_class, 2);
+
+	/* 
+	 * no info is better than crashing: we'll need our own tz data to make 
+	 * this work properly, anyway.
+	 */
+	if ((year < 1900) || (year > 2100)) {
+		t = time (NULL);
+		tt = *localtime (&t);
+		strftime (tzone, sizeof (tzone), "%Z", &tt);
+		mono_array_set ((*names), gpointer, 0, mono_string_new (domain, tzone));
+		mono_array_set ((*names), gpointer, 1, mono_string_new (domain, tzone));
+		return 1;
+	}
 
 	memset (&start, 0, sizeof (start));
 
@@ -2851,12 +2867,6 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 #endif
 	
 	gmtoff = gmt_offset (start);
-
-	MONO_CHECK_ARG_NULL (data);
-	MONO_CHECK_ARG_NULL (names);
-
-	(*data) = mono_array_new (domain, mono_defaults.int64_class, 4);
-	(*names) = mono_array_new (domain, mono_defaults.string_class, 2);
 
 	/* For each day of the year, calculate the tm_gmtoff. */
 	for (day = 0; day < 365; day++) {
@@ -2882,7 +2892,7 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 				tt1 = *localtime (&t1);
 			} while (gmt_offset (tt1) == gmtoff);
 			
-			strftime (tzone, 10, "%Z", &tt);
+			strftime (tzone, sizeof (tzone), "%Z", &tt);
 			
 			/* Write data, if we're already in daylight saving, we're done. */
 			if (is_daylight) {
@@ -2906,7 +2916,7 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 	}
 
 	if (!is_daylight) {
-		strftime (tzone, 10, "%Z", &tt);
+		strftime (tzone, sizeof (tzone), "%Z", &tt);
 		mono_array_set ((*names), gpointer, 0, mono_string_new (domain, tzone));
 		mono_array_set ((*names), gpointer, 1, mono_string_new (domain, tzone));
 		mono_array_set ((*data), gint64, 0, 0);
