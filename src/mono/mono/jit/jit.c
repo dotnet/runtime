@@ -1356,8 +1356,10 @@ check_inlining (MonoMethod *method)
 
 	g_assert (method);
 
-	if (method->inline_count != -1)
+	if (method->inline_info)
 		return method->inline_count;
+
+	method->inline_info = 1;
 	
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
@@ -1608,11 +1610,14 @@ check_inlining (MonoMethod *method)
 	       ip [3] == CEE_LDLOC_0 &&
 	       ip [4] == CEE_RET)))
 		goto fail;
+	
+	if (signature->hasthis && arg_used [0])
+		method->uses_this = 1;
 
 	return method->inline_count = ip - header->code;
 
  fail:
-	return method->inline_count = -2;
+	return method->inline_count = -1;
 }
 
 static void
@@ -2365,8 +2370,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				virtual = 0;
 
 #ifdef INLINE_CALLS
-			if (!virtual && cm->inline_count != -2 &&
-			    (cm->inline_count >= 0 || check_inlining (cm) >= 0)) {
+			if (!virtual && cm->inline_count != -1 &&
+			    (cm->inline_info || check_inlining (cm) >= 0)) {
 				MonoInlineInfo *ii = alloca (sizeof (MonoInlineInfo));
 				int args;
 
@@ -2380,6 +2385,15 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				ii->saved_image = image;
 				ii->arg_map = alloca (args * sizeof (MBTree *));
 				memcpy (ii->arg_map, sp, args * sizeof (MBTree *));
+
+				if (cm->signature->hasthis) {					
+					if (ii->arg_map [0]->op != MB_TERM_CHECKTHIS)
+						ii->arg_map [0] = mono_ctree_new (mp, MB_TERM_CHECKTHIS, 
+										  ii->arg_map [0], NULL);
+					if (!cm->uses_this)
+						ADD_TREE (ii->arg_map [0], cli_addr);
+				}
+
 				inline_list = g_list_prepend (inline_list, ii);
 				ip = ((MonoMethodNormal *)ii->method)->header->code;
 				ii->end = ip + ii->method->inline_count;

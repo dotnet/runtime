@@ -14,8 +14,11 @@ typedef struct {
 	gpointer remoting_tramp; 
 	gint slot;
 	/* name is useful mostly for debugging */
-	const char *name; 
-	int inline_count;
+	const char *name;
+	/* this is used by the inlining algorithm */
+	unsigned int inline_info:1;
+	unsigned int uses_this:1;
+	gint16 inline_count;
 } MonoMethod;
 
 typedef struct {
