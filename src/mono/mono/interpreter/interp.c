@@ -2723,13 +2723,11 @@ array_constructed:
 					}
 					/* handle array casts */
 					if (oclass->rank) {
-						if ((oclass->rank == c->rank) &&
-						    (oclass->cast_class->baseval - c->cast_class->baseval) <= 
-						    c->cast_class->diffval) {
+						if ((oclass->rank == c->rank) && mono_class_has_parent (oclass->cast_class, c->cast_class)) {
 							sp [-1].data.vt.klass = c;
 							found = TRUE;
 						}
-					} else if ((oclass->baseval - c->baseval) <= c->diffval) {
+					} else if (mono_class_has_parent (oclass, c)) {
 						sp [-1].data.vt.klass = c;
 						found = TRUE;
 					}
