@@ -19,6 +19,7 @@
 #include "mono/metadata/threadpool.h"
 #include "mono/metadata/monitor.h"
 #include <string.h>
+#include <errno.h>
 
 //#define DEBUG_RUNTIME_CODE
 
@@ -82,6 +83,8 @@ static CRITICAL_SECTION marshal_mutex;
 /* Maps wrapper methods to the methods they wrap */
 static MonoGHashTable *wrapper_hash;
 
+static guint32 last_error_tls_id;
+
 void
 mono_marshal_init (void)
 {
@@ -91,6 +94,7 @@ mono_marshal_init (void)
 		module_initialized = TRUE;
 		InitializeCriticalSection (&marshal_mutex);
 		wrapper_hash = mono_g_hash_table_new (NULL, NULL);
+		last_error_tls_id = TlsAlloc ();
 	}
 }
 
@@ -2762,7 +2766,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 
 /*
  * generates IL code for the icall wrapper (the generated method
- * calls the unamnaged code in func)
+ * calls the unmanaged code in func)
  */
 MonoMethod *
 mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gconstpointer func)
@@ -3334,6 +3338,17 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	/* call the native method */
 	mono_mb_emit_native_call (mb, csig, method->addr);
 
+	/* Set LastError if needed */
+	if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
+		MonoMethodSignature *lasterr_sig;
+
+		lasterr_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+		lasterr_sig->ret = &mono_defaults.void_class->byval_arg;
+		lasterr_sig->pinvoke = 1;
+
+		mono_mb_emit_native_call (mb, lasterr_sig, mono_marshal_set_last_error);
+	}		
+
 	/* convert the result */
 	if (!sig->ret->byref) {
 		MonoMarshalSpec *spec = mspecs [0];
@@ -3654,7 +3669,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			mono_mb_emit_byte (mb, CEE_STIND_I1);
 		}
 	}
-
 
 	if (!MONO_TYPE_IS_VOID(sig->ret))
 		mono_mb_emit_byte (mb, CEE_LDLOC_3);
@@ -3984,6 +3998,16 @@ mono_marshal_string_array (MonoArray *array)
 }
 
 void
+mono_marshal_set_last_error (void)
+{
+#ifdef WIN32
+	TlsSetValue (last_error_tls_id, (gpointer)GetLastError ());
+#else
+	TlsSetValue (last_error_tls_id, (gpointer)errno);
+#endif
+}
+
+void
 ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *src, gint32 start_index,
 								    gpointer dest, gint32 length)
 {
@@ -4188,7 +4212,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return (GetLastError ());
+	return ((guint32)TlsGetValue (last_error_tls_id));
 }
 
 guint32 
