@@ -2935,12 +2935,12 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 		switch (size) {
 			case 1: 
 				s390_lhi  (code, s390_r0, 0xff);
-				s390_or   (code, dreg, s390_r0);
+				s390_nr   (code, dreg, s390_r0);
 				break;
 			case 2:
 				s390_lhi  (code, s390_r0, -1);
 				s390_srl  (code, s390_r0, 0, 16);
-				s390_or   (code, dreg, s390_r0);
+				s390_nr   (code, dreg, s390_r0);
 				break;
 		}
 	}

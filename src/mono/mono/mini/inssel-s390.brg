@@ -80,10 +80,22 @@ stmt: CEE_STIND_I8 (OP_REGVAR, lreg) {
 }
 
 freg: OP_LCONV_TO_R8 (lreg) {
+	tree->dreg = state->reg1;
+	tree->sreg1 = state->left->reg1;
+	tree->sreg2 = state->left->reg2;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
 freg: OP_LCONV_TO_R4 (lreg) {
+	tree->dreg = state->reg1;
+	tree->sreg1 = state->left->reg1;
+	tree->sreg2 = state->left->reg2;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+freg: CEE_CONV_R_UN (reg) {
+	tree->dreg = state->reg1;
+	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -273,7 +285,7 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 	int soffset   = vt->inst_offset;
 	int tmpr;
 	
-printf("OP_OUTARG_VT(CEE_LDOBJ(base))\n");
+//printf("OP_OUTARG_VT(CEE_LDOBJ(base))\n");
 	if (size < 0) { 
 		size = -size;
 		if (start_reg != STK_BASE) {
@@ -307,7 +319,7 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (OP_S390_ARGPTR)) {
 	int soffset   = vt->inst_offset;
 	int tmpr;
 
-printf("OP_OUTARG_VT(CEE_LDOBJ(OP_S390_ARGPTR))\n");
+//printf("OP_OUTARG_VT(CEE_LDOBJ(OP_S390_ARGPTR))\n");
 	if (size < 0) { 
 		size = -size;
 		if (start_reg != STK_BASE) {
@@ -344,7 +356,7 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (OP_REGOFFSET)) "0" {
 	int soffset   = vt->inst_offset;
 	int tmpr;
 
-printf("OP_OUTARG_VT(CEE_LDOBJ(OP_REGOFFSET))\n");
+//printf("OP_OUTARG_VT(CEE_LDOBJ(OP_REGOFFSET))\n");
 	if (size < 0) { 
 		size = -size;
 		if (start_reg != STK_BASE) {
@@ -380,7 +392,7 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (OP_S390_LOADARG)) {
 	int soffset   = vt->inst_offset;
 	int tmpr;
 
-printf("OP_OUTARG_VT(CEE_LDOBJ(OP_S390_LOADARG))\n");
+//printf("OP_OUTARG_VT(CEE_LDOBJ(OP_S390_LOADARG))\n");
 	if (start_reg != STK_BASE) {
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, start_reg, STK_BASE, soffset);
 		MONO_EMIT_NEW_MOVE (s, STK_BASE, tree->sreg2, start_reg, 0, size);
@@ -424,15 +436,26 @@ stmt: OP_OUTARG_VT (reg) {
 	int soffset   = tree->sreg2;
 	int tmpr;
 
-printf("OP_OUTARG_VT(reg)\n");
+//printf("OP_OUTARG_VT(reg)\n");
 	if (size < 0) { 
 		size = -size;
-		MONO_EMIT_NEW_MOVE (s, STK_BASE, soffset, 
-				  state->left->tree->sreg1, 
-				  tree->inst_imm, size);
 		if (start_reg != STK_BASE) {
+			MONO_EMIT_NEW_MOVE (s, STK_BASE, soffset,
+					    state->left->tree->sreg1,
+					    tree->inst_imm, size);
 			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, start_reg, 
-				     		 STK_BASE, soffset);
+						 STK_BASE, soffset);
+		} else {
+			MONO_EMIT_NEW_MOVE (s, STK_BASE, 
+					    soffset+sizeof(gpointer),
+					    state->left->tree->sreg1,
+					    tree->inst_imm, size);
+			tmpr = mono_regstate_next_int (s->rs);
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, STK_BASE,
+						 soffset+sizeof(gpointer));
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, 
+						     STK_BASE, tree->inst_imm,
+						     tmpr);
 		}
 	} else {
 		if (start_reg != STK_BASE) {
