@@ -852,7 +852,7 @@ mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint16 local, gint32 incr)
 }
 
 static void
-emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, 
+emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, 
 		      int usize, int msize, MonoMarshalSpec *mspec)
 {
 	switch (conv) {
@@ -934,6 +934,13 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		mono_mb_emit_icall (mb, mono_string_new_wrapper);
 		mono_mb_emit_byte (mb, CEE_STIND_I);		
 		break;
+	case MONO_MARSHAL_CONV_STR_LPWSTR:
+		mono_mb_emit_byte (mb, CEE_LDLOC_1);
+		mono_mb_emit_byte (mb, CEE_LDLOC_0);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_icall (mb, mono_string_from_utf16);
+		mono_mb_emit_byte (mb, CEE_STIND_I);
+		break;
 	case MONO_MARSHAL_CONV_OBJECT_STRUCT: {
 		MonoClass *klass = mono_class_from_mono_type (type);
 		int src_var, dst_var;
@@ -981,7 +988,6 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 	case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
 		g_error ("Structure field of type %s can't be marshalled as LPArray", mono_class_from_mono_type (type)->name);
 		break;
-	case MONO_MARSHAL_CONV_STR_LPWSTR:
 	case MONO_MARSHAL_CONV_STR_BSTR:
 	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
 	case MONO_MARSHAL_CONV_STR_TBSTR:
@@ -1042,7 +1048,7 @@ conv_to_icall (MonoMarshalConv conv)
 }
 
 static void
-emit_str_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, int usize, int msize,
+emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, int usize, int msize,
 		      MonoMarshalSpec *mspec)
 {
 	int pos;
@@ -1325,9 +1331,9 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 		}
 		default:
 			if (to_object) 
-				emit_ptr_to_str_conv (mb, ftype, conv, usize, msize, info->fields [i].mspec);
+				emit_ptr_to_object_conv (mb, ftype, conv, usize, msize, info->fields [i].mspec);
 			else
-				emit_str_to_ptr_conv (mb, ftype, conv, usize, msize, info->fields [i].mspec);	
+				emit_object_to_ptr_conv (mb, ftype, conv, usize, msize, info->fields [i].mspec);	
 		}
 		
 		if (to_object) {
@@ -7115,6 +7121,8 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 			}
 			break;
 		case MONO_MARSHAL_CONV_STR_LPWSTR:
+			/* We assume this field points inside a MonoString */
+			break;
 		case MONO_MARSHAL_CONV_STR_LPSTR:
 		case MONO_MARSHAL_CONV_STR_LPTSTR:
 		case MONO_MARSHAL_CONV_STR_BSTR:
