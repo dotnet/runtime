@@ -504,7 +504,7 @@ gint32
 ves_icall_System_String_InternalIndexOf_Str (MonoString *me, MonoString *value, gint32 sindex, gint32 count)
 {
 	gint32 lencmpstr;
-	gint32 pos;
+	gint32 pos, i;
 	gunichar2 *src;
 	gunichar2 *cmpstr;
 
@@ -513,12 +513,12 @@ ves_icall_System_String_InternalIndexOf_Str (MonoString *me, MonoString *value, 
 	src = mono_string_chars(me);
 	cmpstr = mono_string_chars(value);
 
-	for (pos = sindex; pos != count + sindex; pos++) {
-		if (pos + lencmpstr > count + sindex)
-			return -1;
-
-		if (0 == memcmp(src + pos, cmpstr, lencmpstr * sizeof(gunichar2)))
-			return pos;
+	count -= lencmpstr;
+	for (pos = sindex; pos <= sindex + count; pos++) {
+		for (i = 0; src [pos + i] == cmpstr [i];) {
+			if (++i == lencmpstr)
+				return pos;
+		}
 	}
 
 	return -1;
