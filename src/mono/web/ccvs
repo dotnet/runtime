@@ -183,6 +183,57 @@
 	Also, remember to pat yourself on the back after the commit, smile and
 	think we're a step closer to a better free software world.
 
+* Branches
+
+	We have branched the CVS modules `mono', `mcs' and
+	`libgdiplus', the tag to fetch these branches is: `mono-1-0',
+	so you use the following command to fetch the mono-1-0
+	branches:
+
+<pre>
+	cvs co -r mono-1-0 mono 
+	cvs co -r mono-1-0 mcs
+	cvs co -r mono-1-0 libgdiplus
+</pre>
+
+	I personally use a directory called `mono-1-0' to keep these
+	together and a separate directory keeps my HEAD development,
+	and I configure each one to different prefixes, so I can test
+	and run code with HEAD or mono-1-0.
+
+*** mono-1-0 policy
+
+	This branch will only get bug fixes to critical and major errors.
+	You must still get approval from the maintainer of the code to
+	check-in code into this branch.
+
+	Before submitting a patch for this branch, you should run all
+	appropriate regression tests.  Upcoming mono-1.0.x versions
+	will be produced from this branch.
+
+*** mono HEAD policy
+
+	HEAD should continue to build at all times: HEAD is not a
+	dumping ground for partial work: you still must ensure that
+	the build is not broken, and that no regressions are caused.
+	Unlike the main branch, you do not need approval to minor
+	changes, the same old rules apply.
+
+	But for any large architectural change, you must check with
+	the maintainers and get approval for the patches.  For these
+	large changes, if you are touching someone else's code, you
+	should contact the maintainer of that code and get approval
+	from them.
+
+	You must assume that HEAD will be packaged and distributed at
+	any point, this will be the branch that we use for making the
+	mono-1.1.x releases that will lead to our stable mono-1.2.x
+	release.
+
+	So, the bottom line is: do not check-in known regressions that
+	break the build.  A lot of work is underway, and we must
+	ensure the tree works.
+
 
 * Using CVS.
 
