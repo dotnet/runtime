@@ -23,6 +23,13 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Sep 18, 2001
+
+	<A a href="download.html#sep-18">Mono 0.7</a> has been
+	released (runtime engine, class libraries
+	and C# compiler).  Check the <a href="archive/mono-0.7">Mono
+	0.7 announcement</a> for details
+
 ** Sep 17, 2001
 
 	Mike Kestner's Gtk# (Gtk-sharp) was checked into the CVS
