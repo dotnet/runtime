@@ -169,6 +169,9 @@ mono_method_blittable (MonoMethod *method)
 	if (mono_method_has_marshal_info (method))
 		return FALSE;
 
+	 if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) && ((MonoMethodPInvoke*)method)->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR)
+	 return FALSE;
+
 	return TRUE;
 }
 #endif
