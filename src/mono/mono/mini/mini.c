@@ -8286,9 +8286,27 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	decompose_pass (cfg);
 
-	if (cfg->got_var)
+	if (cfg->got_var) {
+		GList *regs;
+
 		/* The decompose pass may create calls which need the got var */
 		mono_emit_load_got_addr (cfg);
+
+		/* 
+		 * Allways allocate the GOT var to a register, because keeping it
+		 * in memory will increase the number of live temporaries in some
+		 * code created by inssel.brg, leading to the well known spills+
+		 * branches problem. Testcase: mcs crash in 
+		 * System.MonoCustomAttrs:GetCustomAttributes.
+		 */
+		regs = mono_arch_get_global_int_regs (cfg);
+		g_assert (regs);
+		cfg->got_var->opcode = OP_REGVAR;
+		cfg->got_var->dreg = regs->data;
+		cfg->used_int_regs |= 1LL << cfg->got_var->dreg;
+		
+		g_list_free (regs);
+	}
 
 	if (cfg->opt & MONO_OPT_LINEARS) {
 		GList *vars, *regs;
@@ -8300,6 +8318,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 		if ((vars = mono_arch_get_allocatable_int_vars (cfg))) {
 			regs = mono_arch_get_global_int_regs (cfg);
+			if (cfg->got_var)
+				regs = g_list_delete_link (regs, regs);
 			mono_linear_scan (cfg, vars, regs, &cfg->used_int_regs);
 		}
 	}

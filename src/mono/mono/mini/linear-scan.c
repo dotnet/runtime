@@ -118,7 +118,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 			regs = g_list_prepend (regs, (gpointer)amv->reg);
 			gains [amv->reg] += amv->spill_costs;
 		}
-		
+
 		if (active && g_list_length (active) == max_regs) {
 			/* Spill */
 
@@ -188,7 +188,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 		vmv = l->data;
 		
 		if (vmv->reg >= 0)  {
-			if (gains [vmv->reg] > mono_arch_regalloc_cost (cfg, vmv)) {
+			if ((gains [vmv->reg] > mono_arch_regalloc_cost (cfg, vmv)) && (cfg->varinfo [vmv->idx]->opcode != OP_REGVAR)) {
 				cfg->varinfo [vmv->idx]->opcode = OP_REGVAR;
 				cfg->varinfo [vmv->idx]->dreg = vmv->reg;
 				if (cfg->verbose_level > 2)
