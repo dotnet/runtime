@@ -10,7 +10,7 @@
 #include <mono/metadata/appdomain.h>
 
 #include <string.h>
-#include <varargs.h>
+#include <stdarg.h>
 
 /*
  * PROTOTYPES
