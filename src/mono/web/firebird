@@ -5,25 +5,14 @@
 	
 	<li><a href="http://firebird.sourceforge.net/index.php">Firebird Relational Database</a> is 
 	an independent project which uses source code based on the Interbase source code released
-	by Borland under the Interbase Public License.</li>
+	by Borland under the Interbase Public License</li>
 	
 	<li>Both the Firebird Relational Database and the Firebird .NET Data Provider can be
 	downloaded from <a href="http://sourceforge.net/projects/firebird/firebird">here</a></li>
 	
 	<li>The Firebird .NET Data provider has been made
  available by Carlos Guzmán Álvarez (aka "Carlos G.A."), who has also made a
- number of contributions to the OdbcJdbc code.</li>
- 
-	<li>Stuff that works:
-		<ul>
-			<li>CommandBuilder</li>
-            <li>DataReader</li>
-            <li>SchemaTable</li>
-            <li>DataAdapter</li>
-            <li>BatchQuerys</li>
-            <li>ExecuteNonQuery</li>
-        </ul>
-	</li>
+ number of contributions to the OdbcJdbc code</li>
 	
 </ul>
 
@@ -37,21 +26,75 @@
         provider/driver is written in C# and provides a high-performance native
         implementation of the GDS32/API functions. This means that .Net developers
         will be able to access Firebird databases without the need of Firebird
-        client install.<li>
+        client install</li>
  
     <li>In support of the new module, a new mailing list
         <a href="http://lists.sourceforge.net/lists/listinfo/firebird-net-provider">firebird-net-provider</a> has 
         been created. Please use this list for any 
-        questions that you may have about the provider.</li>       
+        questions that you may have about the provider</li>       
     
-    <li>CommandBuilder works</li>
+	<li>Stuff that works:
+		<ul>
+			<li>Currently implemented classes: 
+					<ul>
+					<li>Connection and Connection Pooling</li> 
+					<li>Command</li>
+					<li>Transaction</li>
+					<li>CommandBuilder</li>
+					<li>DataAdapter</li>
+					<li>DataReader</li>
+					<li>Error</li>
+					<li>ErrorCollection</li>
+					<li>Exception</li>
+					<li>Parameter</li>
+					<li>ParameterCollection</li>
+					<li>Transaction</li>
+					</ul>
+			</li>		
+        </ul>
+	</li>
  
 </ul>   
    
 * Action Plan
 
 <ul>
-	<li>Get it to work on Mono too</li>
+	<li>Bug fixing</li>
+	<li>Improving API reference documentation</li>
+	<li>Full testing with Firebird 1.5</li>
+	<li>Test with Mono ( http://www.go-mono.com )
+		<ul>
+			<li>Status  : Started</li>
+		</ul>
+	</li>
 	
-	<li>Connection Pooling.</li>
+	<li>Support for array datatype
+		<ul>
+		<li>Status  : Started</li>
+		<li>Comments: See Interbase API reference documentation</li>
+		<li>Add new file FbArray.cs for array fields management</li>
+		</ul>
+	</li>
+
+	<li>Support for Stored Procs calls that have returns values
+		<ul>
+		<li>Status  : Pending.</li>
+		<li>Comments: Modify the isc_dsql_prepare method of GDS implementation for
+			allow to return the output parameters.</li>
+		</ul>
+	</li>
+	
+	<li>Implementation of FbClientPermission and FbClientPermissionAttribute
+		<ul>
+		<li>Status  : Pending</li>
+		<li>Comments: See if these are really needed for Firebird</li>
+		</ul>
+	</li>
+
+	<li>Improve Logger implementation
+		<ul>
+			<li>Status: Pending</li>
+		</ul>
+	</li>
+
 </ul>	
