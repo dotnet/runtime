@@ -4236,6 +4236,8 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->image.assembly = (MonoAssembly*)assembly;
 	image->run = assembly->run;
 	image->save = assembly->save;
+	image->pe_kind = 0x1; /* ILOnly */
+	image->machine = 0x14c; /* I386 */
 
 	return image;
 }
@@ -4574,6 +4576,11 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb) {
 	mono_image_basic_init (assemblyb);
 	assembly = mb->dynamic_image;
 
+	assembly->pe_kind = assemblyb->pe_kind;
+	assembly->machine = assemblyb->machine;
+	((MonoDynamicImage*)assemblyb->dynamic_assembly->assembly.image)->pe_kind = assemblyb->pe_kind;
+	((MonoDynamicImage*)assemblyb->dynamic_assembly->assembly.image)->machine = assemblyb->machine;
+
 	/* already created */
 	if (assembly->pefile.index)
 		return;
@@ -4648,7 +4655,7 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb) {
 	header->pesig [0] = 'P';
 	header->pesig [1] = 'E';
 	
-	header->coff.coff_machine = GUINT16_FROM_LE (0x14c);
+	header->coff.coff_machine = GUINT16_FROM_LE (assemblyb->machine);
 	header->coff.coff_sections = GUINT16_FROM_LE (nsections);
 	header->coff.coff_time = GUINT32_FROM_LE (time (NULL));
 	header->coff.coff_opt_header_size = GUINT16_FROM_LE (sizeof (MonoDotNetHeader) - sizeof (MonoCOFFHeader) - 4);
@@ -4761,7 +4768,7 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb) {
 	cli_header = (MonoCLIHeader*)(assembly->code.data + assembly->cli_header_offset);
 	cli_header->ch_size = GUINT32_FROM_LE (72);
 	cli_header->ch_runtime_major = GUINT16_FROM_LE (2);
-	cli_header->ch_flags = GUINT32_FROM_LE (CLI_FLAGS_ILONLY);
+	cli_header->ch_flags = GUINT32_FROM_LE (assemblyb->pe_kind);
 	if (assemblyb->entry_point) {
 		guint32 table_idx = 0;
 		if (!strcmp (assemblyb->entry_point->object.vtable->klass->name, "MethodBuilder")) {

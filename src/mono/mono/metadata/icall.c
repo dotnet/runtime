@@ -4098,8 +4098,9 @@ static void
 ves_icall_System_Reflection_Module_GetPEKind (MonoImage *image, gint32 *pe_kind, gint32 *machine)
 {
 	if (image->dynamic) {
-		*pe_kind = 0x1; /* ILOnly */
-		*machine = 0x14c; /* I386 */
+		MonoDynamicImage *dyn = (MonoDynamicImage*)image;
+		*pe_kind = dyn->pe_kind;
+		*machine = dyn->machine;
 	}
 	else {
 		*pe_kind = ((MonoCLIImageInfo*)(image->image_info))->cli_cli_header.ch_flags & 0x3;

@@ -690,6 +690,8 @@ typedef struct {
 	MonoArray *permissions_minimum;
 	MonoArray *permissions_optional;
 	MonoArray *permissions_refused;
+	gint32 pe_kind;
+	gint32 machine;
 } MonoReflectionAssemblyBuilder;
 
 typedef struct {
