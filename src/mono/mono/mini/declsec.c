@@ -4,7 +4,7 @@
  * Author:
  *	Sebastien Pouliot  <sebastien@ximian.com>
  *
- * Copyright (C) 2004 Novell, Inc (http://www.novell.com)
+ * Copyright (C) 2004-2005 Novell, Inc (http://www.novell.com)
  */
 
 #include "declsec.h"
@@ -16,9 +16,13 @@
 MonoBoolean
 mono_method_has_declsec (MonoMethod *method)
 {
-	if (method->wrapper_type != MONO_WRAPPER_NONE)
+	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+		method = mono_marshal_method_from_wrapper (method);
+		if (!method)
+			return FALSE;
+	} else if (method->wrapper_type != MONO_WRAPPER_NONE)
 		return FALSE;
-		
+
 	if ((method->klass->flags & TYPE_ATTRIBUTE_HAS_SECURITY) || (method->flags & METHOD_ATTRIBUTE_HAS_SECURITY)) {
 		/* ignore static constructors */
 		if (strcmp (method->name, ".cctor"))
