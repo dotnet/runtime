@@ -1256,11 +1256,15 @@ ves_exec_method (MonoInvocation *frame)
 	unsigned char unaligned_address = 0;
 	unsigned char volatile_address = 0;
 	vtallocation *vtalloc = NULL;
+	MonoVTable *method_class_vt;
 	GOTO_LABEL_VARS;
 
 	if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 		frame->method = mono_marshal_get_native_wrapper (frame->method);
 
+	method_class_vt = mono_class_vtable (domain, frame->method->klass);
+	if (!method_class_vt->initialized)
+		mono_runtime_class_init (method_class_vt);
 	signature = frame->method->signature;
 
 	DEBUG_ENTER ();
@@ -2908,6 +2912,8 @@ array_constructed:
 			g_assert (field);
 			
 			vt = mono_class_vtable (domain, klass);
+			if (!vt->initialized)
+				mono_runtime_class_init (vt);
 			if (!domain->thread_static_fields || !(addr = g_hash_table_lookup (domain->thread_static_fields, field)))
 				addr = (char*)(vt->data) + field->offset;
 			else
@@ -2947,6 +2953,8 @@ array_constructed:
 			g_assert (field);
 
 			vt = mono_class_vtable (domain, klass);
+			if (!vt->initialized)
+				mono_runtime_class_init (vt);
 			if (!domain->thread_static_fields || !(addr = g_hash_table_lookup (domain->thread_static_fields, field)))
 				addr = (char*)(vt->data) + field->offset;
 			else
