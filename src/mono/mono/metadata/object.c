@@ -367,8 +367,8 @@ set_value (MonoType *type, void *dest, void *value, int deref_pointer) {
 		*p = value;
 		return;
 	}
-handle_enum:
 	t = type->type;
+handle_enum:
 	switch (t) {
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I1:
