@@ -1,6 +1,11 @@
 	<a href="http://www.ximian.com">Ximian</a> announced the
 	launch of the Mono project, an effort to create an Open Source
-	implementation of the .NET Development Framework.
+	implementation of the .NET Development Framework.  
+
+	Mono includes: <a href="c-sharp.html">a compiler</a> for the
+	C# language, a <a href="runtime.html">runtime</a> for the
+	Common Language Infrastructure and a set of <a
+	href="class-librayr.html">class libraries</a>
 
 	You can read our <a href="rationale.html">rationale</a> for
 	this project.  If you have questions about the project, please
