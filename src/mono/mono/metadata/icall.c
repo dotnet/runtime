@@ -1608,7 +1608,7 @@ ves_icall_MonoType_GetArrayRank (MonoReflectionType *type)
 }
 
 static MonoArray*
-ves_icall_Type_GetGenericArguments (MonoReflectionType *type)
+ves_icall_MonoType_GetGenericArguments (MonoReflectionType *type)
 {
 	MonoArray *res;
 	MonoClass *klass, *pklass;
@@ -5034,6 +5034,7 @@ static const IcallEntry monotype_icalls [] = {
 	{"GetEvents_internal", ves_icall_Type_GetEvents_internal},
 	{"GetField", ves_icall_Type_GetField},
 	{"GetFields_internal", ves_icall_Type_GetFields_internal},
+	{"GetGenericArguments", ves_icall_MonoType_GetGenericArguments},
 	{"GetInterfaces", ves_icall_Type_GetInterfaces},
 	{"GetMethodsByName", ves_icall_Type_GetMethodsByName},
 	{"GetNestedType", ves_icall_Type_GetNestedType},
@@ -5438,7 +5439,6 @@ static const IcallEntry waithandle_icalls [] = {
 static const IcallEntry type_icalls [] = {
 	{"BindGenericParameters", ves_icall_Type_BindGenericParameters},
 	{"Equals", ves_icall_type_Equals},
-	{"GetGenericArguments", ves_icall_Type_GetGenericArguments},
 	{"GetGenericParameterPosition", ves_icall_Type_GetGenericParameterPosition},
 	{"GetGenericTypeDefinition_impl", ves_icall_Type_GetGenericTypeDefinition_impl},
 	{"GetInterfaceMapData", ves_icall_Type_GetInterfaceMapData},
