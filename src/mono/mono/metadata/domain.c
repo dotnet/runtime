@@ -175,6 +175,7 @@ mono_init (const char *filename)
 	static MonoDomain *domain = NULL;
 	MonoAssembly *ass;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
+	MonoAssemblyName corlib_aname;
 
 	if (domain)
 		g_assert_not_reached ();
@@ -187,7 +188,8 @@ mono_init (const char *filename)
 	TlsSetValue (appdomain_thread_id, domain);
 
 	/* find the corlib */
-	ass = mono_assembly_open (CORLIB_NAME, NULL, &status);
+	corlib_aname.name = "corlib";
+	ass = mono_assembly_load (&corlib_aname, NULL, &status);
 	if ((status != MONO_IMAGE_OK) || (ass == NULL)) {
 		switch (status){
 		case MONO_IMAGE_ERROR_ERRNO:
@@ -377,17 +379,17 @@ mono_domain_assembly_open (MonoDomain *domain, char *name)
 	if ((ass = g_hash_table_lookup (domain->assemblies, name)))
 		return ass;
 
-	if (!(ass = mono_assembly_open (name, NULL, NULL)))
+	if (!(ass = mono_assembly_open (name, NULL)))
 		return NULL;
 
 	mono_domain_lock (domain);
-	g_hash_table_insert (domain->assemblies, ass->name, ass);
+	g_hash_table_insert (domain->assemblies, ass->aname.name, ass);
 	mono_domain_unlock (domain);
 
 	// fixme: maybe this must be recursive ?
 	for (i = 0; (tmp = ass->image->references [i]) != NULL; i++) {
-		if (!g_hash_table_lookup (domain->assemblies, tmp->name))
-			g_hash_table_insert (domain->assemblies, tmp->name, tmp);
+		if (!g_hash_table_lookup (domain->assemblies, tmp->aname.name))
+			g_hash_table_insert (domain->assemblies, tmp->aname.name, tmp);
 	}
 
 	return ass;
