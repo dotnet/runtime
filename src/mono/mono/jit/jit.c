@@ -4107,6 +4107,7 @@ mono_jit_init (const char *file) {
 				ves_icall_get_frame_info);
 	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", 
 				ves_icall_get_trace);
+	mono_add_internal_call ("Mono.Runtime.mono_runtime_install_handlers", mono_runtime_install_handlers);
 
 	metadata_section = &ms;
 	InitializeCriticalSection (metadata_section);
