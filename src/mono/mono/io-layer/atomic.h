@@ -33,7 +33,7 @@ static inline gint32 InterlockedCompareExchange(volatile gint32 *dest,
 
 	__asm__ __volatile__ ("lock; cmpxchgl %2, %0"
 			      : "=m" (*dest), "=a" (old)
-			      : "r" (exch), "0" (*dest), "a" (comp));	
+			      : "r" (exch), "m" (*dest), "a" (comp));	
 	return(old);
 }
 
@@ -43,7 +43,7 @@ static inline gpointer InterlockedCompareExchangePointer(volatile gpointer *dest
 
 	__asm__ __volatile__ ("lock; cmpxchgl %2, %0"
 			      : "=m" (*dest), "=a" (old)
-			      : "r" (exch), "0" (*dest), "a" (comp));	
+			      : "r" (exch), "m" (*dest), "a" (comp));	
 	return(old);
 }
 
@@ -53,7 +53,7 @@ static inline gint32 InterlockedIncrement(volatile gint32 *val)
 	
 	__asm__ __volatile__ ("lock; xaddl %0, %1"
 			      : "=r" (tmp), "=m" (*val)
-			      : "0" (1), "1" (*val));
+			      : "0" (1), "m" (*val));
 
 	return(tmp+1);
 }
@@ -64,7 +64,7 @@ static inline gint32 InterlockedDecrement(volatile gint32 *val)
 	
 	__asm__ __volatile__ ("lock; xaddl %0, %1"
 			      : "=r" (tmp), "=m" (*val)
-			      : "0" (-1), "1" (*val));
+			      : "0" (-1), "m" (*val));
 
 	return(tmp-1);
 }
@@ -80,7 +80,7 @@ static inline gint32 InterlockedExchange(volatile gint32 *val, gint32 new)
 	
 	__asm__ __volatile__ ("1:; lock; cmpxchgl %2, %0; jne 1b"
 			      : "=m" (*val), "=a" (ret)
-			      : "r" (new), "0" (*val), "a" (*val));
+			      : "r" (new), "m" (*val), "a" (*val));
 
 	return(ret);
 }
@@ -92,7 +92,7 @@ static inline gpointer InterlockedExchangePointer(volatile gpointer *val,
 	
 	__asm__ __volatile__ ("1:; lock; cmpxchgl %2, %0; jne 1b"
 			      : "=m" (*val), "=a" (ret)
-			      : "r" (new), "0" (*val), "a" (*val));
+			      : "r" (new), "m" (*val), "a" (*val));
 
 	return(ret);
 }
@@ -103,7 +103,7 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 	
 	__asm__ __volatile__ ("lock; xaddl %0, %1"
 			      : "=r" (ret), "=m" (*val)
-			      : "0" (add), "1" (*val));
+			      : "0" (add), "m" (*val));
 	
 	return(ret);
 }
