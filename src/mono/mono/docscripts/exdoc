@@ -1,0 +1,30 @@
+#!/usr/bin/perl
+
+
+while (<>){
+	if (/\/\*\* *\n/){
+		&process_doc;
+	} else {
+		# print "IGNORING: $_";
+	}
+}
+
+sub process_doc {
+	$doc = "";
+	$func = <>;
+	chop $func;
+	$func =~ s/^ \* //;
+	print "Function: $func\n";
+	$body = "";
+
+	# Process arguments
+	while (<>){
+		if (/^ \*\//){
+			print "$body\n";
+			return;
+		}
+		chop;
+		s/^\ \*//;
+		$body .= "\t$_\n";
+	}
+}

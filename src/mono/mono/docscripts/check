@@ -1,0 +1,11 @@
+#!/bin/sh
+dir=`dirname $0`
+perl $dir/exdoc $1 | grep ^Function:  | sed -e 's/Function: //' -e 's/://' > documented
+nm .libs/`basename $1 .c`.o | grep ' T ' | sed 's/.* T //' > public
+for i in `cat public`; do
+	if grep $i documented > /dev/null; then
+		true
+	else
+		echo $i is not documented
+	fi
+done
