@@ -71,17 +71,6 @@
 		  might have more information)
 	</ul>
 
-	Critical tasks:
-
-	<ul>
-		* Resolve "base" classes and "base" interfaces for
-		  classes, structs and interfaces.
-
-		  Once this is done, we can actually do the semantic
-		  analysis, because otherwise we do not know who our
-		  parents are.
-	</ul>
-
 	Interesting and Fun hacks to the compiler:
 
 	<ul>
@@ -143,6 +132,55 @@ A: No, currently I am using Jay which is a port of Berkeley Yacc to
 
    In the future I want to port one of the Bison/Java ports to C# for
    the parser.
+
+Q: Should someone work on a GCC front-end to C#?
+
+A: I would love if someone does, and we would love to help anyone that
+   takes on that task, but we do not have the time or expertise to
+   build a C# compiler with the GCC engine.  I find it a lot more fun
+   personally to work on C# on a C# compiler, which has an intrinsic
+   beauty.
+
+   We can provide help and assistance to anyone who would like to work
+   on this task.
+
+Q: Should someone make a GCC backend that will generate CIL images?
+
+A: I would love to see a backend to GCC that generates CIL images.  It
+   would provide a ton of free compilers that would generate CIL
+   code.  This is something that people would want to look into
+   anyways for Windows interoperation in the future.
+
+   Again, we would love to provide help and assistance to anyone
+   interested in working in such a project.
+
+Q: What about making a front-end to GCC that takes CIL images and
+   generates native code?
+
+A: I would love to see this, specially since GCC supports this same
+   feature for Java Byte Codes.  You could use the metadata library
+   from Mono to read the byte codes (ie, this would be your
+   "front-end") and generate the trees that get passed to the
+   optimizer.
+
+   Ideally our implementation of the CLI will be available as a shared
+   library that could be linked with your application as its runtime
+   support. 
+
+   Again, we would love to provide help and assistance to anyone
+   interested in working in such a project.
+   
+Q: But would this work around the GPL in the GCC compiler and allow
+   people to work on non-free front-ends?
+
+A: People can already do this by targeting the JVM byte codes (there
+   are about 130 compilers for various languages that target the JVM).
+
+Q: Why are you writing a JIT engine instead of a front-end to GCC?
+
+A: The JIT engine and runtime engine will be able to execute CIL
+   executables generated on Windows.
+
 
 You might also want to look at the <a href="faq.html#gcc">GCC</a>
 section on the main FAQ
