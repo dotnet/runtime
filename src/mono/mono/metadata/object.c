@@ -1532,44 +1532,46 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 void
 mono_print_unhandled_exception (MonoObject *exc)
 {
-	char *message = "";
-	char *trace = "";
+	char *message = (char *) "";
 	MonoString *str; 
-	MonoProperty *property;
+	MonoMethod *method;
+	MonoClass *klass;
 	gboolean free_message = FALSE;
-	gboolean free_trace = FALSE;
+	gint i;
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
-		property = mono_class_get_property_from_name (exc->vtable->klass, "Message");
+		klass = exc->vtable->klass;
+		method = NULL;
+		while (klass && method == NULL) {
+			for (i = 0; i < klass->method.count; ++i) {
+				method = klass->methods [i];
+				if (!strcmp ("ToString", method->name) &&
+				    method->signature->param_count == 0 &&
+				    method->flags & METHOD_ATTRIBUTE_VIRTUAL &&
+				    method->flags & METHOD_ATTRIBUTE_PUBLIC) {
+					break;
+				}
+				method = NULL;
+			}
+			
+			if (method == NULL)
+				klass = klass->parent;
+		}
 
-		g_assert (property);
-		g_assert (property->get);
+		g_assert (method);
 
-		str = (MonoString *) mono_runtime_invoke (property->get, exc, NULL, NULL);
+		str = (MonoString *) mono_runtime_invoke (method, exc, NULL, NULL);
 		if (str) {
 			message = mono_string_to_utf8 (str);
 			free_message = TRUE;
 		}
-		
-		if ((str = ((MonoException *)exc)->stack_trace)) {
-			trace = mono_string_to_utf8 (str);
-			free_trace = TRUE;
-		}
 	}				
 
-	g_warning ("unhandled exception %s.%s: \"%s\"", exc->vtable->klass->name_space, 
+	g_warning ("unhandled exception %s.%s: %s\n", exc->vtable->klass->name_space, 
 		   exc->vtable->klass->name, message);
 	
-	if (trace) {
-		g_printerr (trace);
-		g_printerr ("\n");
-	}
-
 	if (free_message)
 		g_free (message);
-
-	if (free_trace)
-		g_free (trace);
 }
 
 /**
