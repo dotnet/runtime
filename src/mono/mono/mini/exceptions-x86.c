@@ -600,8 +600,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 				*managed = TRUE;
 
 		if (trace) {
-			mono_debug_update ();
-
 			source_location = mono_debug_source_location_from_address (ji->method, address, NULL);
 			iloffset = mono_debug_il_offset_from_address (ji->method, address);
 
@@ -855,10 +853,8 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		if (mono_jit_trace_calls)
 			g_print ("EXCEPTION handling: %s\n", mono_object_class (obj)->name);
 		if (!mono_arch_handle_exception (&ctx_cp, obj, TRUE)) {
-			if (mono_break_on_exc) {
-				mono_debug_update ();
+			if (mono_break_on_exc)
 				G_BREAKPOINT ();
-			}
 			mono_unhandled_exception (obj);
 		}
 	}
