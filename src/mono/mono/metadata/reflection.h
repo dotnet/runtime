@@ -132,6 +132,13 @@ typedef struct {
 } MonoTypeInfo;
 
 typedef struct {
+	MonoObject object;
+	guint32 count;
+	guint32 capacity;
+	MonoArray *data_array;
+} MonoArrayList;
+
+typedef struct {
 	MonoObject *member;
 	gint32 code_pos;
 } MonoReflectionILTokenInfo;
@@ -242,6 +249,8 @@ typedef struct {
 	MonoString *name;
 	MonoString *dir;
 	MonoArray *cattrs;
+	MonoArray *table_indexes;
+	MonoArrayList *methods;
 } MonoReflectionAssemblyBuilder;
 
 typedef struct {

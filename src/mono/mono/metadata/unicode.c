@@ -272,8 +272,9 @@ again:
 			goto again;
 		}
 		case EILSEQ:
-			have_error = TRUE;
-			break;
+			p++;
+			inbytes_remaining--;
+			goto again;
 		default:
 			have_error = TRUE;
 			break;
@@ -355,11 +356,16 @@ iconv_convert (iconv_t cd, guchar *src, int len, guchar *dest, int max_len, gboo
 	outbytes_remaining = outbuf_size;
 	outp = dest;
 
+ again:
 	err = iconv (cd, (char **)&p, &inbytes_remaining, (char **)&outp, &outbytes_remaining);
 
 	if(err == (size_t)-1) {
 		if (errno == EINVAL) {
 			/* Incomplete text, do not report an error */
+		} else if (errno == EILSEQ) {
+			p++;
+			inbytes_remaining--;
+			goto again;
 		} else {
 			have_error = TRUE;
 		}

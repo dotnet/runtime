@@ -3,6 +3,7 @@
 #include <string.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/rawbuffer.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/debug-symfile.h>
@@ -206,6 +207,8 @@ read_line_numbers (MonoDebugSymbolFile *symfile)
 		ptr += length;
 		lnb->start_line = * ((guint32 *) ptr)++;
 		lnb->file_offset = * ((guint32 *) ptr)++;
+
+		g_message (G_STRLOC ": %ld - %p - %s", token, method, method->name);
 
 		g_hash_table_insert (symfile->line_number_table, method, lnb);
 	}
@@ -444,7 +447,8 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			}
 
 #if 0
-			g_message ("Start of `%s' relocated to %p", minfo->method->name, minfo->code_start);
+			g_message ("Start of `%s' (%ld) relocated to %p", minfo->method->name,
+				   token, minfo->code_start);
 #endif
 
 			* (void **) base_ptr = minfo->code_start;
@@ -518,6 +522,8 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 					   "local variable %d, but method %s only has %d local variables.",
 					   symfile->file_name, original, minfo->method->name,
 					   minfo->num_locals);
+				g_message (G_STRLOC ": %ld", token);
+				G_BREAKPOINT ();
 				continue;
 			}
 
@@ -588,6 +594,8 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			if (original > klass->field.count) {
 				g_warning ("Symbol file %s contains invalid field offset entry.",
 					   symfile->file_name);
+				g_message (G_STRLOC ": %ld", token);
+				// G_BREAKPOINT ();
 				continue;
 			}
 
@@ -705,7 +713,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 
 			minfo = method_info_func (symfile, token, user_data);
 
-			if (!minfo) {
+			if (!minfo || !minfo->locals) {
 				* (void **) base_ptr = 0;
 				continue;
 			}
@@ -733,7 +741,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 
 			minfo = method_info_func (symfile, token, user_data);
 
-			if (!minfo) {
+			if (!minfo || !minfo->locals) {
 				* (void **) base_ptr = 0;
 				continue;
 			}
@@ -840,21 +848,17 @@ ves_icall_Debugger_MonoSymbolWriter_get_local_type_from_sig (MonoReflectionAssem
 	return mono_type_get_object (domain, type);
 }
 
-MonoReflectionMethod *
-ves_icall_Debugger_MonoSymbolWriter_method_from_token (MonoReflectionAssembly *assembly, guint32 token)
+MonoReflectionMethodBuilder *
+ves_icall_Debugger_MonoSymbolWriter_method_from_token (MonoReflectionModuleBuilder *mb, guint32 token)
 {
-	MonoDomain *domain; 
-	MonoImage *image;
-	MonoMethod *method;
+	MonoArrayList *methods = mb->assemblyb->methods;
+	MonoReflectionMethodBuilder *retval;
+	guint32 index = (token & 0xffffff) - 1;
 
-	MONO_CHECK_ARG_NULL (assembly);
+	g_assert (methods != NULL);
+	g_assert (index < methods->count);
 
-	domain = mono_domain_get();
-	image = assembly->assembly->image;
-
-	method = mono_get_method (image, token, NULL);
-
-	return mono_method_get_object (domain, method);
+	return mono_array_get (methods->data_array, MonoReflectionMethodBuilder *, index);
 }
 
 guint32

@@ -127,8 +127,8 @@ MonoReflectionType *
 ves_icall_Debugger_MonoSymbolWriter_get_local_type_from_sig (MonoReflectionAssembly *assembly,
 							     MonoArray *signature);
 
-MonoReflectionMethod *
-ves_icall_Debugger_MonoSymbolWriter_method_from_token (MonoReflectionAssembly *assembly,
+MonoReflectionMethodBuilder *
+ves_icall_Debugger_MonoSymbolWriter_method_from_token (MonoReflectionModuleBuilder *mb,
 						       guint32 token);
 
 guint32
