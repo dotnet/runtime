@@ -191,6 +191,10 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	guint32 res;
 	HANDLE done_event;
 
+	if (mono_thread_current () == gc_thread)
+		/* We are called from inside a finalizer, not much we can do here */
+		return FALSE;
+
 	mono_profiler_appdomain_event (domain, MONO_PROFILE_START_UNLOAD);
 
 	/* 
@@ -758,11 +762,13 @@ void mono_gc_cleanup (void)
 	if (!gc_disabled) {
 		ResetEvent (shutdown_event);
 		finished = TRUE;
-		finalize_notify ();
-		/* Finishing the finalizer thread, so wait a little bit... */
-		/* MS seems to wait for about 2 seconds */
-		if (WaitForSingleObjectEx (shutdown_event, 2000, FALSE) == WAIT_TIMEOUT) {
-			mono_thread_stop (gc_thread);
+		if (mono_thread_current () != gc_thread) {
+			finalize_notify ();
+			/* Finishing the finalizer thread, so wait a little bit... */
+			/* MS seems to wait for about 2 seconds */
+			if (WaitForSingleObjectEx (shutdown_event, 2000000, FALSE) == WAIT_TIMEOUT) {
+				mono_thread_stop (gc_thread);
+			}
 		}
 		gc_thread = NULL;
 		GC_finalizer_notifier = NULL;
