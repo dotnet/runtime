@@ -347,11 +347,12 @@ mono_arch_get_rethrow_exception (void)
  *
  * Returns a function pointer which can be used to raise 
  * corlib exceptions. The returned function has the following 
- * signature: void (*func) (char *exc_name); 
+ * signature: void (*func) (gpointer ip, char *exc_name); 
  * For example to raise an arithmetic exception you can use:
  *
  * x86_push_imm (code, "ArithmeticException"); 
- * x86_call_code (code, arch_get_throw_exception_by_name ()); 
+ * x86_push_imm (code, <IP>)
+ * x86_jump_code (code, arch_get_throw_exception_by_name ()); 
  *
  */
 gpointer 
@@ -377,6 +378,50 @@ mono_arch_get_throw_exception_by_name (void)
 	x86_jump_code (code, mono_arch_get_throw_exception ());
 
 	g_assert ((code - start) < 32);
+
+	return start;
+}
+
+/**
+ * mono_arch_get_throw_corlib_exception:
+ *
+ * Returns a function pointer which can be used to raise 
+ * corlib exceptions. The returned function has the following 
+ * signature: void (*func) (guint32 ex_token, guint32 offset); 
+ * Here, offset is the offset which needs to be substracted from the caller IP 
+ * to get the IP of the throw. Passing the offset has the advantage that it 
+ * needs no relocations in the caller.
+ */
+gpointer 
+mono_arch_get_throw_corlib_exception (void)
+{
+	static guint8 start [64];
+	static int inited = 0;
+	guint8 *code;
+
+	if (inited)
+		return start;
+
+	inited = 1;
+	code = start;
+
+	x86_push_membase (code, X86_ESP, 4); /* token */
+	x86_push_imm (code, mono_defaults.exception_class->image);
+	x86_call_code (code, mono_exception_from_token);
+	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
+	/* Compute caller ip */
+	x86_pop_reg (code, X86_ECX);
+	/* Pop token */
+	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
+	x86_pop_reg (code, X86_EDX);
+	x86_alu_reg_reg (code, X86_SUB, X86_ECX, X86_EDX);
+	/* Push exception object */
+	x86_push_reg (code, X86_EAX);
+	/* Push throw IP */
+	x86_push_reg (code, X86_ECX);
+	x86_jump_code (code, mono_arch_get_throw_exception ());
+
+	g_assert ((code - start) < 64);
 
 	return start;
 }

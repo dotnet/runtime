@@ -8759,6 +8759,10 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_arch_get_rethrow_exception (), "mono_arch_rethrow_exception", helper_sig_void_obj, TRUE);
 	mono_register_jit_icall (mono_arch_get_throw_exception_by_name (), "mono_arch_throw_exception_by_name", 
 				 helper_sig_void_ptr, TRUE);
+#if MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION
+	mono_register_jit_icall (mono_arch_get_throw_corlib_exception (), "mono_arch_throw_corlib_exception", 
+				 helper_sig_void_ptr, TRUE);
+#endif
 	mono_register_jit_icall (mono_thread_get_pending_exception, "mono_thread_get_pending_exception", helper_sig_obj_void, FALSE);
 	mono_register_jit_icall (mono_thread_interruption_checkpoint, "mono_thread_interruption_checkpoint", helper_sig_void_void, FALSE);
 	mono_register_jit_icall (mono_thread_force_interruption_checkpoint, "mono_thread_force_interruption_checkpoint", helper_sig_void_void, FALSE);
