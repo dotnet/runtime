@@ -547,8 +547,7 @@ enum_retvalue:
 		}
 		ptype = sig->params [i];
 	handle_enum:
-		simpletype = ptype->type;
-		switch (simpletype) {
+		switch (ptype->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
