@@ -1434,7 +1434,6 @@ reg: OP_CHECK_ARRAY_TYPE (reg) {
 	MonoClass* array_class = mono_array_class_get (tree->klass, 1);
 	
 	int vtable_reg = mono_regstate_next_int (s->rs);
-	int class_reg = mono_regstate_next_int (s->rs);
 
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOAD_MEMBASE, vtable_reg, 
 				       state->left->reg1, G_STRUCT_OFFSET (MonoObject, vtable));
