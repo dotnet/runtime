@@ -8,5 +8,5 @@ int main (int argc, char **argv)
 {
 	_wapi_shm_destroy ();
 	
-	exit (0);
+	return 0;
 }
