@@ -561,14 +561,17 @@ interp_walk_stack (MonoStackWalk func, gpointer user_data)
 	MonoMethodHeader *hd;
 
 	while (frame) {
+		gboolean managed = FALSE;
 		if (!frame->method || (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || 
 				(frame->method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)))
 			il_offset = -1;
 		else {
 			hd = ((MonoMethodNormal*)frame->method)->header;
 			il_offset = frame->ip - hd->code;
+			if (!frame->method->wrapper_type)
+				managed = TRUE;
 		}
-		if (func (frame->method, -1, il_offset, user_data))
+		if (func (frame->method, -1, il_offset, managed, user_data))
 			return;
 		frame = frame->parent;
 	}

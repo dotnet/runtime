@@ -103,7 +103,7 @@ typedef struct {
 
 extern MonoDefaults mono_defaults;
 
-typedef gboolean (*MonoStackWalk)     (MonoMethod *method, gint32 native_offset, gint32 il_offset, gpointer data);
+typedef gboolean (*MonoStackWalk)     (MonoMethod *method, gint32 native_offset, gint32 il_offset, gboolean managed, gpointer data);
 typedef void     (*MonoStackWalkImpl) (MonoStackWalk func, gpointer user_data);
 
 void 

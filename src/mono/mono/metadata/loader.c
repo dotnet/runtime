@@ -562,14 +562,13 @@ mono_install_stack_walk (MonoStackWalkImpl func)
 }
 
 static gboolean
-last_managed (MonoMethod *m, gint no, gint ilo, gpointer data)
+last_managed (MonoMethod *m, gint no, gint ilo, gboolean managed, gpointer data)
 {
 	MonoMethod **dest = data;
 	*dest = m;
 	/*g_print ("In %s::%s [%d] [%d]\n", m->klass->name, m->name, no, ilo);*/
-	if ((m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || m->wrapper_type)
-		return FALSE;
-	return TRUE;
+
+	return managed;
 }
 
 MonoMethod*

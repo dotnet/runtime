@@ -754,12 +754,12 @@ ves_icall_AssemblyBuilder_getDataChunk (MonoReflectionAssemblyBuilder *assb, Mon
 }
 
 static gboolean
-get_get_type_caller (MonoMethod *m, gint32 no, gint32 ilo, gpointer data) {
+get_get_type_caller (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data) {
 	MonoImage **dest = data;
 
 	/* skip icalls and Type::GetType () */
-	if (!m || m->wrapper_type || (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-			(strcmp (m->name, "GetType") == 0 && m->klass == mono_defaults.monotype_class->parent))
+	if (!m || !managed ||
+	    (strcmp (m->name, "GetType") == 0 && m->klass == mono_defaults.monotype_class->parent))
 		return FALSE;
 	*dest = m->klass->image;
 	return TRUE;
@@ -2230,9 +2230,14 @@ ves_icall_System_Reflection_Assembly_GetExecutingAssembly (void)
 
 
 static gboolean
-get_caller (MonoMethod *m, gint32 no, gint32 ilo, gpointer data)
+get_caller (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
 {
 	MonoMethod **dest = data;
+
+	/* skip unmanaged frames */
+	if (!managed)
+		return FALSE;
+
 	if (m == *dest) {
 		*dest = NULL;
 		return FALSE;

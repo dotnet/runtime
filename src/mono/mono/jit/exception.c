@@ -562,7 +562,8 @@ glist_to_array (GList *list)
  */
 static MonoJitInfo *
 mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *ctx, 
-			 MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset)
+			 MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset,
+			 gboolean *managed)
 {
 	MonoJitInfo *ji;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
@@ -574,6 +575,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 
 	if (native_offset)
 		*native_offset = -1;
+
+	if (managed)
+		*managed = FALSE;
 
 	if (ji != NULL) {
 		char *source_location, *tmpaddr, *fname;
@@ -591,6 +595,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 
 		if (native_offset)
 			*native_offset = address;
+
+		if (managed)
+			if (!ji->method->wrapper_type)
+				*managed = TRUE;
 
 		if (trace) {
 			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
@@ -716,6 +724,7 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 	MonoLMF *lmf = jit_tls->lmf;
 	MonoJitInfo *ji;
 	gint native_offset, il_offset;
+	gboolean managed;
 
 	MonoContext ctx, new_ctx;
 
@@ -724,12 +733,12 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 
 	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
 		
-		ji = mono_arch_find_jit_info (domain, jit_tls, &ctx, &new_ctx, NULL, &lmf, &native_offset);
+		ji = mono_arch_find_jit_info (domain, jit_tls, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
 		g_assert (ji);
 		
 		il_offset = mono_debug_il_offset_from_address (ji->method, native_offset);
 
-		if (func (ji->method, native_offset, il_offset, user_data))
+		if (func (ji->method, native_offset, il_offset, managed, user_data))
 			return;
 		
 		ctx = new_ctx;
@@ -752,7 +761,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MONO_CONTEXT_SET_BP (&ctx, __builtin_frame_address (0));
 
 	do {
-		ji = mono_arch_find_jit_info (domain, jit_tls, &ctx, &new_ctx, NULL, &lmf, native_offset);
+		ji = mono_arch_find_jit_info (domain, jit_tls, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
 		g_assert (ji);
 
 		ctx = new_ctx;
@@ -830,7 +839,7 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		char *trace = NULL;
 		
 		ji = mono_arch_find_jit_info (domain, jit_tls, ctx, &new_ctx, 
-					      test_only ? &trace : NULL, &lmf, NULL);
+					      test_only ? &trace : NULL, &lmf, NULL, NULL);
 		if (!ji) {
 			g_warning ("Exception insinde function without unwind info");
 			g_assert_not_reached ();
