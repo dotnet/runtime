@@ -812,14 +812,15 @@ static guint32
 do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerClassInfo *cinfo)
 {
 	guint8 buffer [BUFSIZ], *ptr = buffer, *old_ptr;
-	GPtrArray *methods = NULL, *static_methods = NULL, *ctors = NULL;
+	GPtrArray *methods = NULL, *static_methods = NULL, *ctors = NULL, *cctors = NULL;
 	int num_fields = 0, num_static_fields = 0, num_properties = 0, num_static_properties = 0;
 	int num_events = 0, num_static_events = 0;
 	int num_methods = 0, num_static_methods = 0, num_params = 0, num_static_params = 0, base_offset = 0;
 	int num_ctors = 0, num_ctor_params = 0;
+	int num_cctors = 0;
 	int field_info_size = 0, static_field_info_size = 0, property_info_size = 0, event_info_size = 0, static_event_info_size = 0;
 	int static_property_info_size = 0, method_info_size = 0, static_method_info_size = 0;
-	int ctor_info_size = 0, iface_info_size = 0;
+	int ctor_info_size = 0, cctor_info_size = 0, iface_info_size = 0;
 	guint32 size, data_size, offset, data_offset;
 	GHashTable *method_slots = NULL;
 	int i;
@@ -868,14 +869,16 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 	methods = g_ptr_array_new ();
 	static_methods = g_ptr_array_new ();
 	ctors = g_ptr_array_new ();
+	cctors = g_ptr_array_new ();
 
 	for (i = 0; i < klass->method.count; i++) {
 		MonoMethod *method = klass->methods [i];
 
-		if (!strcmp (method->name, ".cctor"))
+		if (!strcmp (method->name, ".cctor")) {
+			++num_cctors;
+			g_ptr_array_add (cctors, method);
 			continue;
-		if (!((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC))
-			continue;
+		}
 
 		if (!strcmp (method->name, ".ctor")) {
 			++num_ctors;
@@ -912,16 +915,17 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 	static_property_info_size = num_static_properties * (4 + 2 * sizeof (gpointer));
 	event_info_size = num_events * (4 + 2 * sizeof (gpointer));
 	static_event_info_size = num_static_events * (4 + 2 * sizeof (gpointer));
-	method_info_size = num_methods * (4 + 2 * sizeof (gpointer)) + num_params * 4;
-	static_method_info_size = num_static_methods * (4 + 2 * sizeof (gpointer)) +
+	method_info_size = num_methods * (2 * 4 + sizeof (gpointer)) + num_params * 4;
+	static_method_info_size = num_static_methods * (2 * 4 + sizeof (gpointer)) +
 		num_static_params * 4;
-	ctor_info_size = num_ctors * (4 + 2 * sizeof (gpointer)) + num_ctor_params * 4;
+	ctor_info_size = num_ctors * (2 * 4 + sizeof (gpointer)) + num_ctor_params * 4;
+	cctor_info_size = num_cctors * (2 * 4 + sizeof (gpointer));
 	iface_info_size = klass->interface_count * 4;
 
-	size = 90 + sizeof (gpointer) + field_info_size + static_field_info_size +
+	size = 98 + sizeof (gpointer) + field_info_size + static_field_info_size +
 		property_info_size + static_property_info_size + event_info_size +
 		static_event_info_size + method_info_size + static_method_info_size +
-		ctor_info_size + iface_info_size;
+		ctor_info_size + cctor_info_size + iface_info_size;
 
 	data_size = size;
 
@@ -969,6 +973,9 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 	WRITE_UINT32 (ptr, num_ctors);
 	WRITE_UINT32 (ptr, data_offset);
 	data_offset += ctor_info_size;
+	WRITE_UINT32 (ptr, num_cctors);
+	WRITE_UINT32 (ptr, data_offset);
+	data_offset += cctor_info_size;
 	WRITE_UINT32 (ptr, klass->interface_count);
 	WRITE_UINT32 (ptr, data_offset);
 	data_offset += iface_info_size;
@@ -1094,6 +1101,16 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 	}
 
 	g_ptr_array_free (ctors, FALSE);
+
+	for (i = 0; i < cctors->len; i++) {
+		MonoMethod *cctor = g_ptr_array_index (cctors, i);
+
+		WRITE_POINTER (ptr, cctor);
+		WRITE_UINT32 (ptr, 0);
+		WRITE_UINT32 (ptr, 0);
+	}
+
+	g_ptr_array_free (cctors, FALSE);
 
 	for (i = 0; i < klass->interface_count; i++)
 		WRITE_UINT32 (ptr, write_class (table, klass->interfaces [i]));
