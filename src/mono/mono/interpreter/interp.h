@@ -2,6 +2,7 @@
 #include <glib.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
+#include "config.h"
 
 enum {
 	VAL_I32     = 0,
