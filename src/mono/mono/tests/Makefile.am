@@ -200,7 +200,7 @@ TESTSI_CS=$(TEST_CS_SRC:.cs=.exe)
 TESTSI_IL=$(TEST_IL_SRC:.il=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)
 
-EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC)
+EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC) $(BENCHSRC)
 
 %.exe: %.il
 	ilasm -out:$@ $<
