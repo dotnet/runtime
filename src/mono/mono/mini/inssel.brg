@@ -615,14 +615,14 @@ reg: CEE_CONV_OVF_U1 (reg) {
 	/* probe value to be within 0 to 255 */
 	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 255);
 	MONO_EMIT_NEW_COND_EXC (s, GT_UN, "OverflowException");
-	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg1, state->left->reg1, -(0xff + 1));
+	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg1, state->left->reg1, 0xff);
 }
 
 reg: CEE_CONV_OVF_U1_UN (reg) {
 	/* probe value to be within 0 to 255 */
 	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 255);
 	MONO_EMIT_NEW_COND_EXC (s, GT_UN, "OverflowException");
-	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg1, state->left->reg1, -(0xff + 1));
+	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg1, state->left->reg1, 0xff);
 }
 
 reg: CEE_CONV_OVF_I2 (reg) {	
@@ -645,14 +645,14 @@ reg: CEE_CONV_OVF_U2 (reg) {
 	/* Probe value to be within 0 and 65535 */
 	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 0xffff);
 	MONO_EMIT_NEW_COND_EXC (s, GT_UN, "OverflowException");
-	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg1, state->left->reg1, -(0xffff + 1));
+	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg1, state->left->reg1, 0xffff);
 }
 
 reg: CEE_CONV_OVF_U2_UN (reg) {
 	/* Probe value to be within 0 and 65535 */
 	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 0xffff);
 	MONO_EMIT_NEW_COND_EXC (s, GT_UN, "OverflowException");
-	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg1, state->left->reg1, -(0xffff + 1));
+	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg1, state->left->reg1, 0xffff);
 }
 
 #

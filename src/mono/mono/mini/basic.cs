@@ -619,4 +619,41 @@ class Tests {
 		}
 		return 2;
 	}
+
+	static int test_0_checked_byte_cast () {
+		int v = 250;
+		int b = checked ((byte) (v));
+
+		if (b != 250)
+			return 1;
+		return 0;
+	}
+
+	static int test_0_checked_byte_cast_un () {
+		uint v = 250;
+		uint b = checked ((byte) (v));
+
+		if (b != 250)
+			return 1;
+		return 0;
+	}
+
+	static int test_0_checked_short_cast () {
+		int v = 250;
+		int b = checked ((ushort) (v));
+
+		if (b != 250)
+			return 1;
+		return 0;
+	}
+
+	static int test_0_checked_short_cast_un () {
+		uint v = 250;
+		uint b = checked ((ushort) (v));
+
+		if (b != 250)
+			return 1;
+		return 0;
+	}
+
 }
