@@ -1432,7 +1432,7 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 		klass = mono_array_class_get (&klass->byval_arg, rank);
 		mono_class_init (klass);
 		if (recarray) {
-			klass = mono_array_class_get (klass, rank);
+			klass = mono_array_class_get (&klass->byval_arg, rank);
 			mono_class_init (klass);
 		}
 		/*g_print ("got array class %s [%d] (0x%x)\n", klass->element_class->name, klass->rank, klass->this_arg.type);*/
