@@ -2202,7 +2202,7 @@ mono_marshal_xdomain_copy_value (MonoObject *val)
 		MonoStringBuilder *newsb = (MonoStringBuilder *) mono_object_new (domain, mono_defaults.stringbuilder_class);
 		newsb->str = mono_string_new_utf16 (domain, mono_string_chars (oldsb->str), mono_string_length (oldsb->str));
 		newsb->length = oldsb->length;
-		newsb->max_capacity = G_MAXINT32;
+		newsb->max_capacity = (gint32)0x7fffffff;
 		return (MonoObject *) newsb;
 	}
 	return NULL;
