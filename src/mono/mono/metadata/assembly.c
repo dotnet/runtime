@@ -603,7 +603,6 @@ mono_assembly_open_from_bundle (const char *filename, MonoImageOpenStatus *statu
 {
 	int i;
 	char *name = g_path_get_basename (filename);
-	char *dot = strrchr (name, '.');
 	MonoImage *image = NULL;
 
 	/*

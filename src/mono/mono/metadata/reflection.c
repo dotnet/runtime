@@ -220,7 +220,6 @@ string_heap_init (MonoDynamicStream *sh)
 	string_heap_insert (sh, "");
 }
 
-#if 0 /* never used */
 static void
 string_heap_free (MonoDynamicStream *sh)
 {
@@ -228,7 +227,6 @@ string_heap_free (MonoDynamicStream *sh)
 	g_hash_table_foreach (sh->hash, (GHFunc)g_free, NULL);
 	g_hash_table_destroy (sh->hash);
 }
-#endif
 
 static guint32
 mono_image_add_stream_data (MonoDynamicStream *stream, const char *data, guint32 len)
@@ -4905,7 +4903,10 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 	mono_dynamic_stream_reset (&assembly->us);
 	mono_dynamic_stream_reset (&assembly->blob);
 	mono_dynamic_stream_reset (&assembly->guid);
-	mono_dynamic_stream_reset (&assembly->sheap);
+	string_heap_free (&assembly->sheap);
+
+	mono_g_hash_table_foreach (assembly->blob_cache, (GHFunc)g_free, NULL);
+	mono_g_hash_table_destroy (assembly->blob_cache);
 }
 
 MonoReflectionModule *
