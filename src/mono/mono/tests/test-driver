@@ -11,7 +11,7 @@ $output =~ s/\.exe$/.output/;
 $| = 0;
 print "Testing $test... ";
 
-my $res = system("$interpreter $test 2>/dev/null 1>$stdout");
+my $res = system("$interpreter @ARGV $test 2>/dev/null 1>$stdout");
 
 if ($res) {
 	printf ("failed $? (%d) signal (%d).\n", $? >> 8, $? & 127);

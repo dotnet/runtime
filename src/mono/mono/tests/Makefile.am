@@ -1,6 +1,7 @@
 
 TEST_PROG=../interpreter/mint
 JITTEST_PROG=../jit/mono
+RUNTIME_ARGS=--config tests-config
 
 CSC=csc /unsafe
 
@@ -135,7 +136,7 @@ test: $(TEST_PROG) $(TESTSI) libtest.la
 	passed=0; \
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI); do	\
-		if ./test-driver $(TEST_PROG) $$i; \
+		if ./test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -146,7 +147,7 @@ test: $(TEST_PROG) $(TESTSI) libtest.la
 
 testb: $(TEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\
-		./test-driver $(TEST_PROG) $$i;	\
+		./test-driver $(TEST_PROG) $$ii $(RUNTIME_ARGS);	\
 	done
 
 testjit: $(JITTEST_PROG) $(TESTSI) $(TESTBS)
@@ -154,7 +155,7 @@ testjit: $(JITTEST_PROG) $(TESTSI) $(TESTBS)
 	passed=0; \
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI) $(TESTBS); do	\
-		if ./test-driver $(JITTEST_PROG) $$i; \
+		if ./test-driver $(JITTEST_PROG) $$i $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
