@@ -82,7 +82,22 @@
 
 @item Jul 8th, 2002
 
-	Alp Toker has released version 0.5 of <a href="http://www.atoker.com/phonic/">Phonic</a>, a media player for .NET. Phonic makes extensive use of Mono-developed technologies such as Gtk# and csvorbis. Hopefully we will be seeing many more exciting applications like these in the near future.
+	Radek today fixed the last bugs to get Mono to self host on
+	Linux/PowerPC.
+
+	Alp Toker has released version 0.5 of <a
+	href="http://www.atoker.com/phonic/">Phonic</a>, a media
+	player for .NET. Phonic makes extensive use of Mono-developed
+	technologies such as Gtk# and csvorbis (Ogg player ported by
+	Mark). Hopefully we will be seeing many more exciting
+	applications like these in the near future.
+
+	Dietmar has been moving a lot of the architecture specific
+	code in the JIT engine to our internal representation.  This
+	means that porting the JIT is simpler now, as there is less
+	architecture-specific code to maintain.  The inliner, constant
+	folder and constant propagation are also done at the
+	architecture independent layer.
 
 @item Jul 3rd, 2002
 

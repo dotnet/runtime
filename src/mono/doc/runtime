@@ -59,7 +59,7 @@
 	Unix-like compilation environment (mostly we use GNU make in 
 	a few of the makefiles).
 
-** JIT Engine (<b>updated, April 21, 2002</b>)
+** JIT Engine (<b>updated, July 8th, 2002</b>)
 
 	The JIT engine uses a code-generator generator approach for
 	compilation.  Given the properties of CIL byte codes, we can
@@ -80,6 +80,10 @@
 		  Although compilers typically do
 		  constant folding, the combination of inlining with
 		  constant folding gives some very good results.
+
+		* Linear scan register allocation.  In the past,
+		  register allocation was our achilles heel, but now 
+		  we have left this problem behind.
 	</ul>
 
 	There are a couple of books that deal with this technique: "A
