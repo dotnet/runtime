@@ -1,6 +1,6 @@
 ifeq ($(findstring CYGWIN,$(shell uname)),)
 CSC=mcs
-RUN_MONO=mono
+RUN_MONO=mono --debug
 else
 CSC=csc /nologo
 endif
