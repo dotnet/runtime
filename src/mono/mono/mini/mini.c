@@ -85,10 +85,12 @@ static MonoMethodSignature *helper_sig_obj_void = NULL;
 static MonoMethodSignature *helper_sig_ptr_void = NULL;
 static MonoMethodSignature *helper_sig_void_ptr = NULL;
 static MonoMethodSignature *helper_sig_void_obj = NULL;
+static MonoMethodSignature *helper_sig_void_obj_ptr_int = NULL;
 static MonoMethodSignature *helper_sig_void_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_void_ptr_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_ptr_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_ptr_obj = NULL;
+static MonoMethodSignature *helper_sig_ptr_obj_int = NULL;
 static MonoMethodSignature *helper_sig_ptr_int = NULL;
 static MonoMethodSignature *helper_sig_initobj = NULL;
 static MonoMethodSignature *helper_sig_memcpy = NULL;
@@ -5165,6 +5167,31 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				inline_costs += 10 * num_calls++;
 				break;
 			}
+
+			case CEE_MONO_FUNC2: {
+				int temp;
+				gpointer func = NULL;
+				CHECK_STACK (2);
+				sp -= 2;
+
+				CHECK_OPSIZE (3);
+				switch (ip [2]) {
+				case MONO_MARSHAL_CONV_ASANY:
+					func = mono_marshal_asany;
+					break;
+				default:
+					g_warning ("unknown conversion %d\n", ip [2]);
+					g_assert_not_reached ();
+				}
+				temp = mono_emit_jit_icall (cfg, bblock, func, sp, ip);
+				NEW_TEMPLOAD (cfg, *sp, temp);
+				sp++;
+
+				ip += 3;
+				inline_costs += 10 * num_calls++;
+				break;
+			}
+
 			case CEE_MONO_PROC2: {
 				gpointer func = NULL;
 				CHECK_STACK (2);
@@ -5181,6 +5208,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					break;
 				case MONO_MARSHAL_FREE_ARRAY:
 					func = mono_marshal_free_array;
+					break;
+				case MONO_MARSHAL_CONV_ASANY:
+					func = mono_marshal_asany;
 					break;
 				default:
 					g_assert_not_reached ();
@@ -5203,6 +5233,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					break;
 				case MONO_MARSHAL_CONV_STR_BYVALWSTR:
 					func = mono_string_to_byvalwstr;
+					break;
+				case MONO_MARSHAL_FREE_ASANY:
+					func = mono_marshal_free_asany;
 					break;
 				default:
 					g_assert_not_reached ();
@@ -6028,6 +6061,14 @@ create_helper_signature (void)
 	helper_sig_void_obj->ret = &mono_defaults.void_class->byval_arg;
 	helper_sig_void_obj->pinvoke = 1;
 
+	/* void amethod (MonoObject *obj, void *ptr, int i) */
+	helper_sig_void_obj_ptr_int = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
+	helper_sig_void_obj_ptr_int->params [0] = &mono_defaults.object_class->byval_arg;
+	helper_sig_void_obj_ptr_int->params [1] = &mono_defaults.int_class->byval_arg;
+	helper_sig_void_obj_ptr_int->params [2] = &mono_defaults.int_class->byval_arg;
+	helper_sig_void_obj_ptr_int->ret = &mono_defaults.void_class->byval_arg;
+	helper_sig_void_obj_ptr_int->pinvoke = 1;
+
 	/* intptr amethod (void) */
 	helper_sig_ptr_void = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
 	helper_sig_ptr_void->ret = &mono_defaults.int_class->byval_arg;
@@ -6065,6 +6106,13 @@ create_helper_signature (void)
 	helper_sig_ptr_obj->params [0] = &mono_defaults.object_class->byval_arg;
 	helper_sig_ptr_obj->ret = &mono_defaults.int_class->byval_arg;
 	helper_sig_ptr_obj->pinvoke = 1;
+
+	/* IntPtr  amethod (object, int) */
+	helper_sig_ptr_obj_int = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+	helper_sig_ptr_obj_int->params [0] = &mono_defaults.object_class->byval_arg;
+	helper_sig_ptr_obj_int->params [1] = &mono_defaults.int_class->byval_arg;
+	helper_sig_ptr_obj_int->ret = &mono_defaults.int_class->byval_arg;
+	helper_sig_ptr_obj_int->pinvoke = 1;
 
 	/* IntPtr  amethod (int) */
 	helper_sig_ptr_int = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
@@ -8470,6 +8518,8 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_delegate_to_ftnptr, "mono_delegate_to_ftnptr", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_marshal_string_array, "mono_marshal_string_array", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_marshal_string_array_to_unicode, "mono_marshal_string_array_to_unicode", helper_sig_ptr_obj, FALSE);
+	mono_register_jit_icall (mono_marshal_asany, "mono_marshal_asany", helper_sig_ptr_obj_int, FALSE);
+	mono_register_jit_icall (mono_marshal_free_asany, "mono_marshal_free_asany", helper_sig_void_obj_ptr_int, FALSE);
 	mono_register_jit_icall (mono_string_utf8_to_builder, "mono_string_utf8_to_builder", helper_sig_void_ptr_ptr, FALSE);
 	mono_register_jit_icall (mono_string_utf16_to_builder, "mono_string_utf16_to_builder", helper_sig_void_ptr_ptr, FALSE);
 	mono_register_jit_icall (mono_marshal_free_array, "mono_marshal_free_array", helper_sig_void_ptr_ptr, FALSE);
