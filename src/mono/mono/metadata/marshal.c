@@ -1779,6 +1779,11 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		argnum = i + sig->hasthis;
 		tmp_locals [i] = 0;
 
+		if (t->byref) {
+			/* fixme: what to do here? */
+			continue;
+		}
+
 		switch (t->type) {
 		case MONO_TYPE_VALUETYPE:
 			
@@ -1859,7 +1864,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		argnum = i + sig->hasthis;
 
 		if (t->byref) {
-			g_assert_not_reached ();
+			/* fixme: ?? */
 			mono_mb_emit_ldarg (mb, argnum);
 			continue;
 		}
@@ -1928,56 +1933,59 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	/* return the result */
 
-	type = sig->ret->type;
-handle_enum:
-	switch (type) {
-	case MONO_TYPE_VOID:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
+	if (!sig->ret->byref) {
+		type = sig->ret->type;
+	handle_enum:
+		switch (type) {
+		case MONO_TYPE_VOID:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
 		/* no conversions necessary */
-		break;
-	case MONO_TYPE_BOOLEAN:
-		/* maybe we need to make sure that it fits within 8 bits */
-		break;
-	case MONO_TYPE_VALUETYPE:
-		if (sig->ret->data.klass->enumtype) {
-			type = sig->ret->data.klass->enum_basetype->type;
-			goto handle_enum;
-		} else {
-			g_warning ("generic valutype %s not handled", sig->ret->data.klass->name);
+			break;
+		case MONO_TYPE_BOOLEAN:
+			/* maybe we need to make sure that it fits within 8 bits */
+			break;
+		case MONO_TYPE_VALUETYPE:
+			if (sig->ret->data.klass->enumtype) {
+				type = sig->ret->data.klass->enum_basetype->type;
+				goto handle_enum;
+			} else {
+				g_warning ("generic valutype %s not handled", 
+					   sig->ret->data.klass->name);
+				g_assert_not_reached ();
+			}
+			break;
+		case MONO_TYPE_STRING:
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
+			mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
+			break;
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT:
+			/* fixme: we need conversions here */
+			break;
+		case MONO_TYPE_CHAR:
+			/* fixme: we need conversions here */
+			break;
+		case MONO_TYPE_TYPEDBYREF:
+		case MONO_TYPE_FNPTR:
+		default:
+			g_warning ("return type 0x%02x unknown", sig->ret->type);	
 			g_assert_not_reached ();
 		}
-		break;
-	case MONO_TYPE_STRING:
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
-		mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
-		break;
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
-		/* fixme: we need conversions here */
-		break;
-	case MONO_TYPE_CHAR:
-		/* fixme: we need conversions here */
-		break;
-	case MONO_TYPE_TYPEDBYREF:
-	case MONO_TYPE_FNPTR:
-	default:
-		g_warning ("return type 0x%02x unknown", sig->ret->type);	
-		g_assert_not_reached ();
 	}
 
 	mono_mb_emit_byte (mb, CEE_RET);
