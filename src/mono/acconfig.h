@@ -34,3 +34,4 @@
 #undef USE_MACH_SEMA
 #undef HAVE_SOCKLEN_T
 #undef HAVE_TRUNCL
+#undef HAVE_AINTL

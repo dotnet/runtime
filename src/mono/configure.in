@@ -701,8 +701,16 @@ ac_cv_c_socklen_t=yes
 AC_CHECK_FUNCS(truncl, , AC_MSG_CHECKING(for truncl in math.h)
 	AC_TRY_LINK([#include <math.h>], 
 	[ truncl(0.0); ], 
-	AC_DEFINE(HAVE_TRUNCL) AC_MSG_RESULT(yes),
+	[
+		AC_DEFINE(HAVE_TRUNCL) 
+		AC_MSG_RESULT(yes)
+		ac_cv_truncl=yes
+	],
 	AC_MSG_RESULT(no)))
+
+if test "x$ac_cv_truncl" != "xyes"; then
+   AC_CHECK_LIB(sunmath, aintl, [ AC_DEFINE(HAVE_AINTL) LIBS="$LIBS -lsunmath"])
+fi
 
 dnl ****************************
 dnl *** Look for /dev/random ***
@@ -817,6 +825,7 @@ case "$host" in
 	sparc*-*-*)
 		TARGET=SPARC;
 		arch_target=sparc;
+		#JIT_SUPPORTED=yes
 		ACCESS_UNALIGNED="no"
 		;;
 #       alpha*-*-linux* | alpha*-*-osf*)
