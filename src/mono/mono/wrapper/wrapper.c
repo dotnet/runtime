@@ -5,6 +5,8 @@
 
 #include "wrapper.h"
 
+extern char **environ;
+
 gint64
 mono_wrapper_seek (gpointer fd, gint64 offset, gint32 whence)
 {
@@ -59,7 +61,7 @@ mono_wrapper_ftruncate (gpointer fd, gint64 length)
 gpointer
 mono_wrapper_open (const char * path, gint32 flags, gint32 mode)
 {
-	return (gpointer)open (path, flags, mode);
+	return (gpointer) open (path, flags, mode);
 }
 
 gint32
@@ -125,3 +127,4 @@ mono_wrapper_environ ()
 {
 	return (gpointer)environ;
 }
+

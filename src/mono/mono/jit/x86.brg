@@ -35,7 +35,8 @@ struct _MBTree {
 	gint32 addr;       /* address of emitted instruction */
 	gint32 first_addr; /* first code address of a tree */ 
 
-	int reg;
+	gint8 reg1;
+	gint8 reg2;
 	MonoTypeEnum type;
 
 	union {
@@ -57,7 +58,7 @@ gboolean same_tree (MBTree *t1, MBTree *t2);
 %term LDLOC LDARG STLOC BR RET RETV ARG CALL
 %term ADD SUB MUL
 %term BLT BEQ BGE BRTRUE
-%term CONV_I4 CONV_I1 CONV_I2
+%term CONV_I4 CONV_I1 CONV_I2 CONV_I8
 #
 # we start at stmt
 #
@@ -75,39 +76,39 @@ locaddr: LDARG {
 	tree->data.i = tree->data.i + 8;
 }
 
-# do nothing
-reg: CONV_I4 (reg) 
-
 reg: CONV_I1 (reg) {
-	if (tree->reg != tree->left->reg)
-		x86_mov_reg_reg (s->code, tree->reg, tree->left->reg, 4);
-	x86_alu_reg_imm (s->code, X86_AND, tree->reg, 0xff);
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_alu_reg_imm (s->code, X86_AND, tree->reg1, 0xff);
 }
 
 reg: CONV_I2 (reg) {
-	if (tree->reg != tree->left->reg)
-		x86_mov_reg_reg (s->code, tree->reg, tree->left->reg, 4);
-	x86_alu_reg_imm (s->code, X86_AND, tree->reg, 0xffff);
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_alu_reg_imm (s->code, X86_AND, tree->reg1, 0xffff);
 }
+
+# do nothing
+reg: CONV_I4 (reg) 
 
 reg: LDLOC {
 	switch (tree->type) {
 	case MONO_TYPE_I1:
-		x86_widen_membase (s->code, tree->reg, X86_EBP,
+		x86_widen_membase (s->code, tree->reg1, X86_EBP,
 				   tree->data.i, TRUE, FALSE);
 		break;
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
-		x86_widen_membase (s->code, tree->reg, X86_EBP,
+		x86_widen_membase (s->code, tree->reg1, X86_EBP,
 				   tree->data.i, FALSE, FALSE);
 		break;
 	case MONO_TYPE_I2:
-		x86_widen_membase (s->code, tree->reg, X86_EBP,
+		x86_widen_membase (s->code, tree->reg1, X86_EBP,
 				   tree->data.i, TRUE, TRUE);
 		break;
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
-		x86_widen_membase (s->code, tree->reg, X86_EBP,
+		x86_widen_membase (s->code, tree->reg1, X86_EBP,
 				   tree->data.i, FALSE, TRUE);
 		break;
 
@@ -117,7 +118,7 @@ reg: LDLOC {
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
-		x86_mov_reg_membase (s->code, tree->reg, X86_EBP,
+		x86_mov_reg_membase (s->code, tree->reg1, X86_EBP,
 				     tree->data.i, 4);
 		break;
 	default:
@@ -127,7 +128,8 @@ reg: LDLOC {
 } cost {
 	MBCOND (tree->type != MONO_TYPE_R4 &&
 		tree->type != MONO_TYPE_R8 &&
-		tree->type != MONO_TYPE_I8);
+		tree->type != MONO_TYPE_I8 &&
+		tree->type != MONO_TYPE_U8);
 
 	return 1;
 }
@@ -146,7 +148,7 @@ reg: LDARG {
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
-		x86_mov_reg_membase (s->code, tree->reg, X86_EBP,
+		x86_mov_reg_membase (s->code, tree->reg1, X86_EBP,
 				     tree->data.i + 8, 4);
 		break;
 	default:
@@ -156,40 +158,41 @@ reg: LDARG {
 } cost {
 	MBCOND (tree->type != MONO_TYPE_R4 &&
 		tree->type != MONO_TYPE_R8 &&
-		tree->type != MONO_TYPE_I8);
+		tree->type != MONO_TYPE_I8 &&
+		tree->type != MONO_TYPE_U8);
 
 	return 1;
 }
 
 
 reg: MUL (reg, reg) {
-	if (tree->reg != tree->left->reg)
-		x86_mov_reg_reg (s->code, tree->reg, tree->left->reg, 4);
-	x86_imul_reg_reg (s->code, tree->reg, tree->right->reg);
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_imul_reg_reg (s->code, tree->reg1, tree->right->reg1);
 }
 
 reg: ADD (reg, CONST_I4) {
-	if (tree->reg != tree->left->reg)
-		x86_mov_reg_reg (s->code, tree->reg, tree->left->reg, 4);
-	x86_alu_reg_imm (s->code, X86_ADD, tree->reg, tree->right->data.i);
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, tree->right->data.i);
 }
 
 reg: ADD (reg, reg) {
-	if (tree->reg != tree->left->reg)
-		x86_mov_reg_reg (s->code, tree->reg, tree->left->reg, 4);
-	x86_alu_reg_reg (s->code, X86_ADD, tree->reg, tree->right->reg);
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->right->reg1);
 }
 
 reg: SUB (reg, CONST_I4) {
-	if (tree->reg != tree->left->reg)
-		x86_mov_reg_reg (s->code, tree->reg, tree->left->reg, 4);
-	x86_alu_reg_imm (s->code, X86_SUB, tree->reg, tree->right->data.i);
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_alu_reg_imm (s->code, X86_SUB, tree->reg1, tree->right->data.i);
 }
 
 reg: SUB (reg, reg) {
-	if (tree->reg != tree->left->reg)
-		x86_mov_reg_reg (s->code, tree->reg, tree->left->reg, 4);
-	x86_alu_reg_reg (s->code, X86_SUB, tree->reg, tree->right->reg);
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_alu_reg_reg (s->code, X86_SUB, tree->reg1, tree->right->reg1);
 }
 
 stmt: STLOC (CONST_I4) {
@@ -203,13 +206,13 @@ stmt: STLOC (reg) {
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
 		x86_mov_membase_reg (s->code, X86_EBP, tree->data.i,
-				     tree->left->reg, 1);
+				     tree->left->reg1, 1);
 		break;
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
 		x86_mov_membase_reg (s->code, X86_EBP, tree->data.i,
-				     tree->left->reg, 2);
+				     tree->left->reg1, 2);
 		break;
 	case MONO_TYPE_I:
 	case MONO_TYPE_I4:
@@ -218,7 +221,7 @@ stmt: STLOC (reg) {
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
 		x86_mov_membase_reg (s->code, X86_EBP, tree->data.i,
-				     tree->left->reg, 4);
+				     tree->left->reg1, 4);
 		break;
 	default:
 		g_warning ("unknown type %02x", tree->type);
@@ -236,7 +239,7 @@ stmt: BLT (reg, CONST_I4) {
 	gint32 offset;
 
 	tree->is_jump = 1;
-	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg, tree->right->data.i);
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	offset = 6 + s->code - start;
 	x86_branch32 (s->code, X86_CC_LT, tree->data.i - offset, TRUE); 
 }
@@ -246,7 +249,7 @@ stmt: BEQ (reg, CONST_I4) {
 	gint32 offset;
 
 	tree->is_jump = 1;
-	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg, tree->right->data.i);
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	offset = 6 + s->code - start;
 	x86_branch32 (s->code, X86_CC_EQ, tree->data.i - offset, TRUE);
 }
@@ -256,7 +259,7 @@ stmt: BGE (reg, CONST_I4) {
 	gint32 offset;
 
 	tree->is_jump = 1;
-	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg, tree->right->data.i);
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	offset = 6 + s->code - start;
 	x86_branch32 (s->code, X86_CC_GE, tree->data.i - offset, TRUE);
 }
@@ -266,7 +269,7 @@ stmt: BRTRUE (reg) {
 	gint32 offset;
 
 	tree->is_jump = 1;
-	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg, 0);
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 0);
 	offset = 6 + s->code - start;
 	x86_branch32 (s->code, X86_CC_NE, tree->data.i - offset, TRUE);
 }
@@ -278,7 +281,7 @@ stmt: RETV (reg) {
 		x86_jump32 (s->code, tree->data.i - 5);      
 	}
 
-	g_assert (tree->left->reg == X86_EAX); // return must be in EAX
+	g_assert (tree->left->reg1 == X86_EAX); // return must be in EAX
 }
 
 stmt: RET {
@@ -293,7 +296,7 @@ stmt: ARG (CONST_I4) {
 }
 
 stmt: ARG (reg) {
-	x86_push_reg (s->code, tree->left->reg);
+	x86_push_reg (s->code, tree->left->reg1);
 }
 
 reg: CALL {
@@ -313,7 +316,7 @@ reg: CALL {
 		x86_mov_reg_imm (s->code, X86_EAX, tree->data.p);
 		x86_call_membase (s->code, X86_EAX, 
 				  G_STRUCT_OFFSET (MonoMethod, addr));
-		g_assert (tree->reg == X86_EAX);
+		g_assert (tree->reg1 == X86_EAX);
 		break;
 	default:
 		g_warning ("unknown type %02x", tree->type);
@@ -322,7 +325,8 @@ reg: CALL {
 } cost {
 	MBCOND (tree->type != MONO_TYPE_R4 &&
 		tree->type != MONO_TYPE_R8 &&
-		tree->type != MONO_TYPE_I8);
+		tree->type != MONO_TYPE_I8 &&
+		tree->type != MONO_TYPE_U8);
 
 	return 1;
 }
@@ -331,6 +335,128 @@ reg: CALL {
 stmt: CALL {
 	x86_mov_reg_imm (s->code, X86_EAX, tree->data.p);
 	x86_call_membase (s->code, X86_EAX, G_STRUCT_OFFSET (MonoMethod, addr));
+}
+
+#
+# 64 bit integers
+#
+
+lreg: CONV_I8 (CONST_I4) {
+	x86_mov_reg_imm (s->code, tree->reg1, tree->left->data.i);
+
+	if (tree->left->data.i >= 0)
+		x86_alu_reg_reg (s->code, X86_XOR, tree->reg2, tree->reg2);
+	else 
+		x86_mov_reg_imm (s->code, tree->reg1, -1);		
+}
+
+stmt: STLOC (lreg) {
+	x86_mov_membase_reg (s->code, X86_EBP, tree->data.i,
+			     tree->left->reg1, 4);
+	x86_mov_membase_reg (s->code, X86_EBP, tree->data.i + 4,
+			     tree->left->reg2, 4);
+}
+
+lreg: LDARG {
+	x86_mov_reg_membase (s->code, tree->reg1, X86_EBP,
+			     tree->data.i + 8, 4);
+	x86_mov_reg_membase (s->code, tree->reg2, X86_EBP,
+			     tree->data.i + 8 + 4, 4);
+} cost {
+	MBCOND (tree->type == MONO_TYPE_I8 ||
+		tree->type == MONO_TYPE_U8);
+	return 0;
+}
+
+lreg: LDLOC {
+	x86_mov_reg_membase (s->code, tree->reg1, X86_EBP,
+			     tree->data.i, 4);
+	x86_mov_reg_membase (s->code, tree->reg2, X86_EBP,
+			     tree->data.i + 4, 4);
+} cost {
+	MBCOND (tree->type == MONO_TYPE_I8 ||
+		tree->type == MONO_TYPE_U8);
+	return 0;
+}
+
+lreg: SUB (lreg, lreg) {
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	if (tree->reg2 != tree->left->reg2)
+		x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg2, 4);
+	x86_alu_reg_reg (s->code, X86_SUB, tree->reg1, tree->right->reg1);
+	x86_alu_reg_reg (s->code, X86_SUB, tree->reg2, tree->right->reg2);
+}
+
+lreg: ADD (lreg, lreg) {
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	if (tree->reg2 != tree->left->reg2)
+		x86_mov_reg_reg (s->code, tree->reg2, tree->left->reg2, 4);
+	x86_alu_reg_reg (s->code, X86_ADD, tree->reg1, tree->right->reg1);
+	x86_alu_reg_reg (s->code, X86_ADC, tree->reg2, tree->right->reg2);
+}
+
+lreg: CALL {
+	x86_mov_reg_imm (s->code, X86_EAX, tree->data.p);
+	x86_call_membase (s->code, X86_EAX, 
+			  G_STRUCT_OFFSET (MonoMethod, addr));
+} cost {
+	MBCOND (tree->type == MONO_TYPE_I8 ||
+		tree->type == MONO_TYPE_U8);
+	return 0;
+}
+
+stmt: RETV (lreg) {
+
+	if (!tree->last_instr) {
+		tree->is_jump = 1;
+		x86_jump32 (s->code, tree->data.i - 5);      
+	}
+	g_assert (tree->left->reg1 == X86_EAX); // return must be in EAX
+	g_assert (tree->left->reg2 == X86_EDX); // return must be in EDX
+}
+
+
+stmt: ARG (lreg) {
+	x86_push_reg (s->code, tree->left->reg2);
+	x86_push_reg (s->code, tree->left->reg1);
+}
+
+stmt: BEQ (lreg, lreg) {
+	guint8 *start = s->code;
+	gint32 o1, o2, i;
+
+	tree->is_jump = 1;
+
+	for (i = 0; i < 2; i ++) {
+		s->code = start;
+		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+		o1 = 2 + s->code - start;
+		x86_branch8 (s->code, X86_CC_NE, o2 - o1, FALSE);
+		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+		o2 = 6 + s->code - start;
+		x86_branch32 (s->code, X86_CC_EQ, tree->data.i - o2, TRUE);
+	}
+}
+stmt: BGE (lreg, lreg) {
+	guint8 *start = s->code;
+	gint32 o1, o2, oe, i;
+
+	tree->is_jump = 1;
+
+	for (i = 0; i < 2; i ++) {
+		s->code = start;
+		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+		o1 = 6 + s->code - start;
+		x86_branch32 (s->code, X86_CC_GT,  tree->data.i - o1, TRUE);
+		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg2, tree->right->reg2);
+		o2 = 2 + s->code - start;
+		x86_branch8 (s->code, X86_CC_NE, oe - o2, TRUE);
+		x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+		oe = 6 + s->code - start;
+		x86_branch32 (s->code, X86_CC_GE, tree->data.i - oe, FALSE);
+	}
 }
 
 #
@@ -405,8 +531,6 @@ stmt: RETV (freg) {
 		tree->is_jump = 1;
 		x86_jump32 (s->code, tree->data.i - 5);      
 	}
-
-	//g_assert (tree->left->reg == X86_EAX); // return must be in EAX
 }
 
 
@@ -415,9 +539,9 @@ stmt: RETV (freg) {
 #
 
 reg: ADD (locaddr, reg) {
-	if (tree->reg != tree->right->reg)
-		x86_mov_reg_reg (s->code, tree->reg, tree->right->reg, 4);
-	x86_alu_reg_membase (s->code, X86_ADD, tree->reg, X86_EBP, 
+	if (tree->reg1 != tree->right->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->right->reg1, 4);
+	x86_alu_reg_membase (s->code, X86_ADD, tree->reg1, X86_EBP, 
 			     tree->left->data.i);	
 } cost {
 	MBCOND (tree->left->type == MONO_TYPE_I4 ||
@@ -426,9 +550,9 @@ reg: ADD (locaddr, reg) {
 }
 
 reg: MUL (locaddr, reg) {
-	if (tree->reg != tree->right->reg)
-		x86_mov_reg_reg (s->code, tree->reg, tree->right->reg, 4);
-	x86_imul_reg_membase (s->code, tree->reg, X86_EBP, tree->left->data.i);
+	if (tree->reg1 != tree->right->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->right->reg1, 4);
+	x86_imul_reg_membase (s->code, tree->reg1, X86_EBP, tree->left->data.i);
 } cost {
 	MBCOND (tree->left->type == MONO_TYPE_I4 ||
 		tree->left->type == MONO_TYPE_U4);

@@ -1,0 +1,3 @@
+* compute the frame size
+* implement value types
+* implement a register set for FP registers (just count register usage on x86)

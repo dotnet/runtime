@@ -58,6 +58,38 @@ get_x86_regset ()
 }
 
 static void
+tree_preallocate_regs (MBTree *tree, int goal) 
+{
+	MBTree *kids[10];
+	int ern = mono_burg_rule (tree->state, goal);
+	guint16 *nts = mono_burg_nts [ern];
+	int i;
+	
+	mono_burg_kids (tree, ern, kids);
+
+	if (tree->reg1 < 0) { /* if not already assigned */
+
+		switch (tree->op) {
+		case MB_TERM_CALL:
+			tree->reg1 = X86_EAX;
+			tree->reg2 = X86_EDX;
+			break;
+		case MB_TERM_RETV:
+			tree->left->reg1 = X86_EAX;
+			tree->left->reg2 = X86_EDX;
+			break;
+		default:
+			/* do nothing */
+		}
+
+	}
+
+	for (i = 0; nts [i]; i++) 
+		tree_preallocate_regs (kids [i], nts [i]);
+
+}
+
+static void
 tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs) 
 {
 	MBTree *kids[10];
@@ -70,14 +102,33 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 	for (i = 0; nts [i]; i++) 
 		tree_allocate_regs (kids [i], nts [i], rs);
 
-	for (i = 0; nts [i]; i++) 
-		mono_regset_free_reg (rs, kids [i]->reg);
+	for (i = 0; nts [i]; i++) {
+		mono_regset_free_reg (rs, kids [i]->reg1);
+		mono_regset_free_reg (rs, kids [i]->reg2);
+	}
 
-	if (goal == MB_NTERM_reg) {
-		if ((tree->reg = mono_regset_alloc_reg (rs, -1)) == -1) {
+	switch (goal) {
+	case MB_NTERM_reg:
+		if ((tree->reg1 = mono_regset_alloc_reg (rs, tree->reg1)) == -1) {
 			g_warning ("register allocation failed\n");
 			g_assert_not_reached ();
 		}
+		break;
+
+	case MB_NTERM_lreg:
+		if ((tree->reg1 = mono_regset_alloc_reg (rs, tree->reg1)) == -1 ||
+		    (tree->reg2 = mono_regset_alloc_reg (rs, tree->reg2)) == -1) {
+			g_warning ("register allocation failed\n");
+			g_assert_not_reached ();
+		}
+		break;
+
+	case MB_NTERM_freg:
+		/* fixme: allocate floating point registers */
+		break;
+
+	default:
+		/* do nothing */
 	}
 
 	tree->emit = mono_burg_func [ern];
@@ -178,7 +229,8 @@ ctree_new (int op, MonoTypeEnum type, MBTree *left, MBTree *right)
 	t->left = left;
 	t->right = right;
 	t->type = type;
-	t->reg = -1;
+	t->reg1 = -1;
+	t->reg2 = -1;
 	t->is_jump = 0;
 	t->jump_target = 0;
 	t->last_instr = 0;
@@ -282,6 +334,7 @@ forest_allocate_regs (MBCodeGenStatus *s)
 	
 	for (i = 0; i < top; i++) {
 		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
+		tree_preallocate_regs (t1, 1);
 		tree_allocate_regs (t1, 1, s->rs);
 	}
 
@@ -787,6 +840,14 @@ mono_compile_method (MonoMethod *method)
 			++ip;
 			sp--;
 			t1 = ctree_new (MB_TERM_CONV_I4, MONO_TYPE_I4, *sp, NULL);
+			t1->cli_addr = sp [0]->cli_addr;
+			PUSH_TREE (t1);		
+			break;
+	       
+		case CEE_CONV_I8:
+			++ip;
+			sp--;
+			t1 = ctree_new (MB_TERM_CONV_I8, MONO_TYPE_I8, *sp, NULL);
 			t1->cli_addr = sp [0]->cli_addr;
 			PUSH_TREE (t1);		
 			break;
