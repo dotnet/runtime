@@ -38,11 +38,14 @@ con:  Four                    0
 
 addr: con                     0 
 
-addr: Plus(con,reg)           0 
+addr: Plus(con,reg)           
 {
 	int ern = mono_burg_rule (tree->state, MB_NTERM_addr);
 	printf ("%s\n", mono_burg_rule_string [ern]);
-} 
+} cost 
+{  
+  return 1;
+}
 
 addr: Plus(con,Mul(Four,reg)) 2 
 {

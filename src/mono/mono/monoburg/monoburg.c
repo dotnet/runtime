@@ -33,15 +33,27 @@ static void output (char *fmt, ...)
 }
 
 void     
-create_rule (char *id, Tree *tree, char *code, char *cost)
+create_rule (char *id, Tree *tree, char *code, char *cost, char *cfunc)
 {
 	Rule *rule = g_new0 (Rule, 1);
+
+	if (!cfunc && !cost)
+		cost = "0";
 
 	rule->lhs = nonterm (id);
 	rule->tree = tree;
 	rule_list = g_list_append (rule_list, rule);
 	rule->cost = cost;
+	rule->cfunc = cfunc;
 	rule->code = code;
+
+	if (cfunc) {
+		if (cost)
+			yyerror ("duplicated costs (constant costs and cost function)");
+		else 
+			rule->cost = g_strdup_printf ("mono_burg_cost_%d (tree)",
+						      g_list_length (rule_list));
+	}
 
 	rule->lhs->rules = g_list_append (rule->lhs->rules, rule);
 
@@ -210,6 +222,14 @@ emit_header ()
 	output ("#ifndef MBTREE_LEFT\n#define MBTREE_LEFT(t) ((t)->left)\n#endif\n");
 	output ("#ifndef MBTREE_RIGHT\n#define MBTREE_RIGHT(t) ((t)->right)\n#endif\n");
 	output ("#ifndef MBTREE_STATE\n#define MBTREE_STATE(t) ((t)->state)\n#endif\n");
+
+	output ("\n");
+	output ("#define MBMAXCOST 32768\n");
+
+	output ("\n");
+	output ("#define MBCOND(x) if (!x) return MBMAXCOST;\n");
+
+	output ("\n");
 
 	for (l = term_list; l; l = l->next) {
 		Term *t = (Term *)l->data;
@@ -583,6 +603,29 @@ emit_emitter_func ()
 }
 
 static void
+emit_cost_func ()
+{
+	GList *l;
+	int i;
+
+	for (l =  rule_list, i = 0; l; l = l->next) {
+		Rule *rule = (Rule *)l->data;
+		
+		if (rule->cfunc) {
+			output ("static guint16\n");
+
+			emit_rule_string (rule, "");
+
+			output ("mono_burg_cost_%d (MBTREE_TYPE *tree)\n", i + 1);
+			output ("{\n");
+			output ("%s\n", rule->cfunc);
+			output ("}\n\n");
+		}
+		i++;
+	}
+}
+
+static void
 emit_closure ()
 {
 	GList *l, *rl;
@@ -834,6 +877,7 @@ main (int argc, char *argv [])
 	}
 	
 	emit_vardefs ();
+	emit_cost_func ();
 	emit_emitter_func ();
 	emit_decoders ();
 

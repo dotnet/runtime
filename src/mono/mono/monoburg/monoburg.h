@@ -43,6 +43,7 @@ struct _Rule {
 	Tree *tree;
 	char *code;
 	char *cost;
+	char *cfunc;
 };
 
 
@@ -54,7 +55,8 @@ NonTerm *nonterm        (char *id);
 
 void     start_nonterm  (char *id);
 
-void     create_rule    (char *id, Tree *tree, char *code, char *cost);
+void     create_rule    (char *id, Tree *tree, char *code, char *cost, 
+			 char *cfunc);
 
 void     yyparsetail    (void);
 

@@ -32,11 +32,13 @@ static int yylinepos = 0;
 %token <text> CODE
 %token <text> STRING
 %token  START
+%token  COST
 %token  TERM
 %token <ivalue> INTEGER
 
 %type   <tree>          tree
 %type   <text>          optcost
+%type   <text>          optcfunc
 %type   <text>          optcode
 
 %%
@@ -44,7 +46,7 @@ static int yylinepos = 0;
 decls   : /* empty */ 
 	| START IDENT { start_nonterm ($2); } decls
 	| TERM  tlist decls
-	| IDENT ':' tree optcost optcode { create_rule ($1, $3, $5, $4); } decls 
+	| IDENT ':' tree optcost optcode optcfunc { create_rule ($1, $3, $5, $4, $6); } decls 
 	;
 
 optcode : /* empty */ { $$ = NULL }
@@ -61,11 +63,14 @@ tree	: IDENT { $$ = create_tree ($1, NULL, NULL); }
 	| IDENT '(' tree ',' tree ')' { $$ = create_tree ($1, $3, $5); }
 	;
 
-optcost : /* empty */ {$$ = "0"; }
+optcost : /* empty */ {$$ = NULL; }
 	| STRING
 	| INTEGER { $$ = g_strdup_printf ("%d", $1); }
 	;
 
+optcfunc : /*empty */ { $$ = NULL; }
+	 | COST CODE { $$ = $2; }
+	 ;
 %%
 
 static char *
@@ -189,10 +194,10 @@ yylex (void)
       char *n = next;
       int l;
 
-      //if (!strncmp (next - 1, "cost", 4) && isspace (next[3])) {
-      //next += 4;
-      //return COST;
-      //}
+      if (!strncmp (next - 1, "cost", 4) && isspace (next[3])) {
+	next += 4;
+	return COST;
+      }
 
       while (isalpha (*n) || isdigit (*n) || (*n == '_')) 
 	      n++;
