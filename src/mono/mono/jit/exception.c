@@ -293,9 +293,9 @@ x86_unwind_native_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, struct sig
 			MONO_CONTEXT_SET_IP (new_ctx, frame->return_address);
 			frame = frame->next;
 			MONO_CONTEXT_SET_BP (new_ctx, frame);
-
-			/* stop if we detect an unexpected managed frame */
-			if (mono_jit_info_table_find (domain, frame->return_address)) {
+			
+			/* stop if !frame or when we detect an unexpected managed frame */
+			if (!frame || mono_jit_info_table_find (domain, frame->return_address)) {
 				if (trace) {
 					g_free (*trace);
 					*trace = NULL;
@@ -762,11 +762,9 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	do {
 		ji = mono_arch_find_jit_info (domain, jit_tls, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
-		g_assert (ji);
-
 		ctx = new_ctx;
 		
-		if (MONO_CONTEXT_GET_BP (&ctx) >= jit_tls->end_of_stack)
+		if (!ji || MONO_CONTEXT_GET_BP (&ctx) >= jit_tls->end_of_stack)
 			return FALSE;
 
 	} while (skip-- > 0);
