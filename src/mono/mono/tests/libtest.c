@@ -419,3 +419,38 @@ class_marshal_test2 (SimpleObj **obj1)
 
 	return 0;
 }
+
+int
+string_marshal_test0 (char *str)
+{
+	if (strcmp (str, "TEST0"))
+		return -1;
+
+	return 0;
+}
+
+void
+string_marshal_test1 (char **str)
+{
+	*str = "TEST1";
+}
+
+int
+string_marshal_test2 (char **str)
+{
+	printf ("string_marshal_test2 %s\n", *str);
+
+	if (strcmp (*str, "TEST1"))
+		return -1;
+
+	return 0;
+}
+
+int
+string_marshal_test3 (char *str)
+{
+	if (str)
+		return -1;
+
+	return 0;
+}

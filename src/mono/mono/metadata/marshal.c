@@ -2701,13 +2701,19 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
 			break;
 		case MONO_TYPE_STRING:
-			if (t->byref)
-				continue;
-
 			csig->params [argnum] = &mono_defaults.int_class->byval_arg;
 			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
-			mono_mb_emit_ldarg (mb, argnum);
+			if (t->byref) {
+				if (t->attrs & PARAM_ATTRIBUTE_OUT)
+					break;
+
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_byte (mb, CEE_LDIND_I);				
+			} else {
+				mono_mb_emit_ldarg (mb, argnum);
+			}
+
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
 
@@ -2880,13 +2886,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			}
 			break;
 		case MONO_TYPE_STRING:
-			if (t->byref) {
-				mono_mb_emit_ldarg (mb, argnum);
-			} else {
-				g_assert (tmp_locals [i]);
-				mono_mb_emit_ldloc (mb, tmp_locals [i]);
-			}
-			break;
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 			g_assert (tmp_locals [i]);
@@ -3032,13 +3031,18 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 		switch (t->type) {
 		case MONO_TYPE_STRING:
-			if (t->byref)
-				continue;
-
-			mono_mb_emit_ldloc (mb, tmp_locals [i]);
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_FREE);
-
+			if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_ldloc (mb, tmp_locals [i]);
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
+				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
+				mono_mb_emit_byte (mb, CEE_STIND_I);		
+			} else {
+				mono_mb_emit_ldloc (mb, tmp_locals [i]);
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_byte (mb, CEE_MONO_FREE);
+			}
 			break;
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:			
