@@ -818,42 +818,19 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 	mono_raw_buffer_update (symfile->raw_contents, symfile->raw_contents_size);
 }
 
-MonoReflectionType *
-ves_icall_Debugger_MonoSymbolWriter_get_local_type_from_sig (MonoReflectionAssembly *assembly,
-							     MonoArray *signature)
-{
-	MonoDomain *domain; 
-	MonoImage *image;
-	MonoType *type;
-	const char *ptr;
-	int len = 0;
-
-	MONO_CHECK_ARG_NULL (assembly);
-	MONO_CHECK_ARG_NULL (signature);
-
-	domain = mono_domain_get();
-	image = assembly->assembly->image;
-
-	ptr = mono_array_addr (signature, char, 0);
-	g_assert (*ptr++ == 0x07);
-	len = mono_metadata_decode_value (ptr, &ptr);
-	g_assert (len == 1);
-
-	type = mono_metadata_parse_type (image, MONO_PARSE_LOCAL, 0, ptr, &ptr);
-
-	return mono_type_get_object (domain, type);
-}
-
 MonoReflectionMethodBuilder *
-ves_icall_Debugger_MonoSymbolWriter_method_from_token (MonoReflectionModuleBuilder *mb, guint32 token)
+ves_icall_Debugger_MonoSymbolWriter_method_builder_from_token (MonoReflectionModuleBuilder *mb, guint32 token)
 {
 	MonoArrayList *methods = mb->assemblyb->methods;
 	guint32 index = (token & 0xffffff) - 1;
+	MonoReflectionMethodBuilder *retval;
 
 	g_assert (methods != NULL);
 	g_assert (index < methods->count);
 
-	return mono_array_get (methods->data_array, MonoReflectionMethodBuilder *, index);
+	retval = mono_array_get (methods->data_array, MonoReflectionMethodBuilder *, index);
+
+	return retval;
 }
 
 guint32

@@ -122,13 +122,9 @@ void    mono_debug_update_symbol_file (MonoDebugSymbolFile      *symbol_file,
 
 void    mono_debug_close_symbol_file  (MonoDebugSymbolFile      *symbol_file);
 
-MonoReflectionType *
-ves_icall_Debugger_MonoSymbolWriter_get_local_type_from_sig (MonoReflectionAssembly *assembly,
-							     MonoArray *signature);
-
 MonoReflectionMethodBuilder *
-ves_icall_Debugger_MonoSymbolWriter_method_from_token (MonoReflectionModuleBuilder *mb,
-						       guint32 token);
+ves_icall_Debugger_MonoSymbolWriter_method_builder_from_token (MonoReflectionModuleBuilder *mb,
+							       guint32 token);
 
 guint32
 ves_icall_Debugger_DwarfFileWriter_get_type_token (MonoReflectionType *type);
