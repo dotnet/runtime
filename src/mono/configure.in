@@ -384,6 +384,7 @@ AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsy
 		eval "mono_feature_disable_$feature='yes'"
 		AC_MSG_NOTICE([Disabled support for feature: $feature])
 	done
+	disabled="Disabled:    $enable_minimal"
 ],[])
 
 if test "x$mono_feature_disable_aot" = "xyes"; then
@@ -1618,6 +1619,6 @@ echo "
 	Engine:      $jit_status
 	2.0 Alpha:   $PREVIEW
 	JNI support: $jdk_headers_found
-	Disabled:    $enable_minimal
+	$disabled
 
 "
