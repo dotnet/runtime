@@ -458,10 +458,10 @@ struct MonoDllMap {
 	MonoDllMap *next;
 };
 
-static GHashTable *dll_map;
+static GHashTable *global_dll_map;
 
-int 
-mono_dllmap_lookup (const char *dll, const char* func, const char **rdll, const char **rfunc) {
+static int 
+mono_dllmap_lookup_hash (GHashTable *dll_map, const char *dll, const char* func, const char **rdll, const char **rfunc) {
 	MonoDllMap *map, *tmp;
 
 	*rdll = dll;
@@ -492,14 +492,34 @@ mono_dllmap_lookup (const char *dll, const char* func, const char **rdll, const 
 	return 1;
 }
 
+static int 
+mono_dllmap_lookup (MonoImage *assembly, const char *dll, const char* func, const char **rdll, const char **rfunc)
+{
+	int res;
+	if (assembly && assembly->dll_map) {
+		res = mono_dllmap_lookup_hash (assembly->dll_map, dll, func, rdll, rfunc);
+		if (res)
+			return res;
+	}
+	return mono_dllmap_lookup_hash (global_dll_map, dll, func, rdll, rfunc);
+}
+
 void
-mono_dllmap_insert (const char *dll, const char *func, const char *tdll, const char *tfunc) {
+mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, const char *tdll, const char *tfunc) {
 	MonoDllMap *map, *entry;
+	GHashTable *dll_map = NULL;
 
 	mono_loader_lock ();
 
-	if (!dll_map)
-		dll_map = g_hash_table_new (g_str_hash, g_str_equal);
+	if (!assembly) {
+		if (!global_dll_map)
+			global_dll_map = g_hash_table_new (g_str_hash, g_str_equal);
+		dll_map = global_dll_map;
+	} else {
+		if (!assembly->dll_map)
+			assembly->dll_map = g_hash_table_new (g_str_hash, g_str_equal);
+		dll_map = assembly->dll_map;
+	}
 
 	map = g_hash_table_lookup (dll_map, dll);
 	if (!map) {
@@ -521,6 +541,11 @@ mono_dllmap_insert (const char *dll, const char *func, const char *tdll, const c
 	}
 
 	mono_loader_unlock ();
+}
+
+static void
+mono_dllmap_free (GHashTable *dll_map)
+{
 }
 
 static int wine_test_needed = 1;
@@ -561,7 +586,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	scope_token = mono_metadata_decode_row_col (mr, im_cols [MONO_IMPLMAP_SCOPE] - 1, MONO_MODULEREF_NAME);
 	orig_scope = mono_metadata_string_heap (image, scope_token);
 
-	mono_dllmap_lookup (orig_scope, import, &new_scope, &import);
+	mono_dllmap_lookup (image, orig_scope, import, &new_scope, &import);
 
 	/*
 	 * If we are P/Invoking a library from System.Windows.Forms, load Wine

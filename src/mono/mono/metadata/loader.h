@@ -164,11 +164,8 @@ mono_add_internal_call     (const char *name, gconstpointer method);
 gpointer
 mono_lookup_internal_call (MonoMethod *method);
 
-int 
-mono_dllmap_lookup (const char *dll, const char* func, const char **rdll, const char **rfunc);
-
 void
-mono_dllmap_insert (const char *dll, const char *func, const char *tdll, const char *tfunc);
+mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, const char *tdll, const char *tfunc);
 
 gpointer
 mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char **exc_arg);

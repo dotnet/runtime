@@ -148,6 +148,9 @@ struct _MonoImage {
 	 */
 	void *user_info;
 
+	/* dll map entries */
+	GHashTable *dll_map;
+
 	/* Whenever this is a dynamically emitted module */
 	gboolean dynamic;
 };

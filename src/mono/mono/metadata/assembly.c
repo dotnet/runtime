@@ -24,6 +24,7 @@
 #endif
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/mono-uri.h>
+#include <mono/metadata/mono-config.h>
 
 /* the default search path is just MONO_ASSEMBLIES */
 static const char*
@@ -530,6 +531,8 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	}
 
 	ass = mono_assembly_load_from (image, fname, status);
+
+	mono_config_for_assembly (ass->image);
 
 	g_free (fname);
 

@@ -8,7 +8,10 @@
 #ifndef __MONO_METADATA_CONFIG_H__
 #define __MONO_METADATA_CONFIG_H__
 
+const char* mono_get_config_dir (void);
+
 void mono_config_parse (const char *filename);
+void mono_config_for_assembly (MonoImage *assembly);
 
 #endif /* __MONO_METADATA_CONFIG_H__ */
 

@@ -4495,31 +4495,6 @@ ves_icall_RuntimeMethod_GetFunctionPointer (MonoMethod *method)
 	return mono_compile_method (method);
 }
 
-char const * mono_cfg_dir = "";
-
-void    
-mono_install_get_config_dir (void)
-{
-#ifdef PLATFORM_WIN32
-  int i;
-#endif
-
-  mono_cfg_dir = getenv ("MONO_CFG_DIR");
-
-  if (!mono_cfg_dir) {
-#ifndef PLATFORM_WIN32
-    mono_cfg_dir = MONO_CFG_DIR;
-#else
-    mono_cfg_dir = g_strdup (MONO_CFG_DIR);
-    for (i = strlen (mono_cfg_dir) - 1; i >= 0; i--) {
-        if (mono_cfg_dir [i] == '/')
-            ((char*) mono_cfg_dir) [i] = '\\';
-    }
-#endif
-  }
-}
-
-
 static MonoString *
 ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
 {
@@ -4528,7 +4503,7 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
 
 	MONO_ARCH_SAVE_REGS;
 
-	path = g_build_path (G_DIR_SEPARATOR_S, mono_cfg_dir, "mono", "machine.config", NULL);
+	path = g_build_path (G_DIR_SEPARATOR_S, mono_get_config_dir (), "mono", "machine.config", NULL);
 
 #if defined (PLATFORM_WIN32)
 	/* Avoid mixing '/' and '\\' */
@@ -4553,7 +4528,7 @@ ves_icall_System_Web_Util_ICalls_get_machine_install_dir (void)
 
 	MONO_ARCH_SAVE_REGS;
 
-	path = g_path_get_dirname (mono_cfg_dir);
+	path = g_path_get_dirname (mono_get_config_dir ());
 
 #if defined (PLATFORM_WIN32)
 	/* Avoid mixing '/' and '\\' */
