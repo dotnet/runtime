@@ -86,7 +86,7 @@
 	      <a href="index.rss"><img src="images/xml.gif"></a>
 	    </td>
 	  </tr>
-	  <tr>
+	 <tr>
 	    <td>
 	      <a href="screenshots.html">Screenshots</a>
 	    </td>
@@ -95,6 +95,19 @@
     </td>
   </tr>
 </table>
+
+@item Jan, 20th: Mono 0.19 released;  Screenshots page
+
+	Mono 0.19 has been released.  Check out the <a
+	href="archive/mono-0.19">release notes</a> for an overview of
+	the changes.  You can get it <a href="download.html">here</a>.
+	There are no major features in this release, mostly bug fixes
+	and performance improvements.
+
+	We have now a new section <a href="screenshots.html">with
+	screenshots</a> of various Mono applications.  You can see
+	there the new released Debugger, as well as the work in
+	progress on the documentation browser.
 
 @item Jan, 19th: Mono Debugger released.
 
