@@ -87,4 +87,18 @@
     </tasks>
   </contributor>
 
+  <contributor>
+    <name>
+      <first-name>Alp</first-name>
+      <last-name>Toker</last-name>
+    </name>
+    <e-mail>alp@atoker.com</e-mail>
+    <location>London, UK</location>
+    <tasks>
+      <task>Debian packaging</task>
+      <task>Gtk# hacks</task>
+      <task>Random fixes</task>
+    </tasks>
+  </contributor>
+ 
 </contributors>
