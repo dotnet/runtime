@@ -38,11 +38,25 @@
 
 <table cellpadding="0" cellspacing="0" border="0" width="100%">
     <tr>
-        <td><img src="images/pixel.gif" alt=""></td><!-- left border -->
-        <td colspan="4">
-           <a href="http://www.go-mono.com"><img src="images/mono-new.gif"
-        alt="mono-logo" border="0"></a></td>
-        <td><img src="images/pixel.gif" alt=""></td><!-- right border -->
+        <td><img src="images/pixel.gif" alt=""></td><!-- left border
+        -->
+	<td colspan="4">
+	<table>
+	  <tr>
+	    <td>
+               <a href="http://www.go-mono.com"><img
+        src="images/mono-new.gif" alt="mono-logo" border="0"></a>
+	    </td>
+	    <td>
+              <a class="navi0" href="download.html">Downloads</a> | 
+              <a class="navi0" href="screenshots.html">Screenshots</a> |
+              <a class="navi0" href="http://mono.ximian.com:8080">API Docs</a>
+	    </td>
+	  </tr>
+	</table>
+	</td>
+        <td><img src="images/pixel.gif" alt=""></td><!-- right border
+        -->
     </tr>
     <tr>
         <td><img src="images/pixel.gif" width="1" height="1" alt=""></td>

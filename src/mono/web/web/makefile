@@ -64,20 +64,6 @@ OBJECTS=									\
 	deploy/testing.html							\
 	deploy/tools.html							\
 	deploy/winforms.html							\
-	deploy/class-status.html						\
-        deploy/class-status-corlib.html						\
-        deploy/class-status-System.html						\
-        deploy/class-status-System.Xml.html					\
-        deploy/class-status-System.Drawing.html					\
-        deploy/class-status-System.Data.html					\
-        deploy/class-status-System.Web.html					\
-        deploy/class-status-System.Web.Services.html				\
-	deploy/class-status-Microsoft.VisualBasic.html				\
-	deploy/class-status-System.EnterpriseServices.html			\
-	deploy/class-status-System.Runtime.Serialization.Formatters.Soap.html	\
-	deploy/class-status-System.Security.html				\
-	deploy/class-status-System.Windows.Forms.html				\
-	deploy/class-status-Cscompmgd.html					\
 	deploy/class-library.html						\
 	deploy/classlib-doc.html
 
@@ -91,7 +77,7 @@ NON_HTML_SOURCES=		\
 	../mono-build.sh	\
 	../mono-build-w32.sh
 
-all: $(OBJECTS) deploy/index.rss ../team
+all: $(OBJECT) deploy/index.rss ../team
 	perl process.pl commands template.html.in deploy
 	-mkdir deploy/team
 	cp team/*png deploy/team
