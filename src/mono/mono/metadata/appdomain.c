@@ -547,6 +547,10 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 	MonoMethod *method;
 	void *params [1];
 
+	if (!domain->domain)
+		/* This can happen during startup */
+		return;
+
 	klass = domain->domain->mbr.obj.vtable->klass;
 
 	method = mono_class_get_method_from_name (klass, "DoAssemblyLoad", -1);
