@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.24 2002/03/11 11:24:33 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.25 2002/03/30 11:19:25 dietmar Exp $
 */
 
 #ifndef X86_H
@@ -1346,9 +1346,9 @@ typedef union {
 
 #define x86_call_code(inst,target)	\
 	do {	\
-		int offset = (unsigned char*)(target) - (inst);	\
-		offset -= 5;	\
-		x86_call_imm ((inst), offset);	\
+		int _x86_offset = (unsigned char*)(target) - (inst);	\
+		_x86_offset -= 5;	\
+		x86_call_imm ((inst), _x86_offset);	\
 	} while (0)
 
 #define x86_ret(inst) do { *(inst)++ = (unsigned char)0xc3; } while (0)

@@ -94,7 +94,7 @@ mono_array_new_wrapper  (MonoClass *eclass, guint32 n);
 MonoObject *
 mono_object_new_wrapper (MonoClass *klass);
 MonoString*
-mono_ldstr_wrapper      (MonoImage *image, guint32 index);
+mono_ldstr_wrapper      (MonoImage *image, guint32 ind);
 
 gpointer
 get_mono_object_isinst (void);
@@ -311,10 +311,10 @@ stmt: THROW (reg) {
 }
 
 stmt: RETHROW {
-	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;
+	int off = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;
 	gpointer target;
 
-	x86_push_membase (s->code, X86_EBP, offset);
+	x86_push_membase (s->code, X86_EBP, off);
 	target = arch_get_throw_exception ();
 	mono_add_jump_info (s, s->code + 1, MONO_JUMP_INFO_ABS, target);
 	x86_call_code (s->code, target);
@@ -3445,10 +3445,11 @@ mono_llmult_ovf (gpointer *exc, guint32 al, gint32 ah, guint32 bl, gint32 bh)
 
 	*exc = NULL;
 	return res;
-
+/*
  raise_exception:
 	*exc = mono_get_exception_overflow ();
 	return 0;
+*/
 }
 
 gint64 
@@ -3530,11 +3531,11 @@ mono_object_new_wrapper (MonoClass *klass)
 }
 
 MonoString*
-mono_ldstr_wrapper (MonoImage *image, guint32 index)
+mono_ldstr_wrapper (MonoImage *image, guint32 ind)
 {
 	MonoDomain *domain = mono_domain_get ();
 
-	return mono_ldstr (domain, image, index);
+	return mono_ldstr (domain, image, ind);
 }
 
 gpointer 

@@ -23,7 +23,7 @@
  * Returns a pointer to a method which restores a previously saved sigcontext.
  */
 static gpointer
-arch_get_restore_context ()
+arch_get_restore_context (void)
 {
 	static guint8 *start = NULL;
 	guint8 *code;
@@ -66,7 +66,7 @@ arch_get_restore_context ()
  * Returns a pointer to a method which calls a finally handler.
  */
 static gpointer
-arch_get_call_finally ()
+arch_get_call_finally (void)
 {
 	static guint8 start [28];
 	static int inited = 0;

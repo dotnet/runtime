@@ -27,8 +27,7 @@ arch_remoting_invoke (MonoMethod *method, gpointer ip, gpointer first_arg)
 	MonoObject *res, *exc;
 	MonoArray *out_args;
 	int this_pos = 0;
-	static MonoObject *(*invoke) (gpointer proxy, gpointer msg, 
-				      MonoObject **exc, MonoArray **out_args) = NULL;
+	static MonoObject *(*invoke) (gpointer, gpointer, MonoObject **, MonoArray **) = NULL;
 
 	//printf ("REMOTING %s.%s:%s\n", method->klass->name_space, method->klass->name,
 	//method->name);
@@ -122,11 +121,11 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
  */
 static gpointer
 x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi, 
-		      int ebx, const guint8 *code, MonoMethod *m)
+		      int ebx, guint8 *code, MonoMethod *m)
 {
 	guint8 reg;
 	gint32 disp;
-	gpointer o;
+	char *o;
 	gpointer addr;
 
 	EnterCriticalSection (metadata_section);

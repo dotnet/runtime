@@ -32,7 +32,8 @@ mono_method_return_message_restore (MonoMethod *method, gpointer stack,
 	MonoMethodSignature *sig = method->signature;
 	MonoClass *class;
 	int i, j, type, size, align;
-	gpointer resp, vt_resp, cpos = stack;
+	gpointer resp, vt_resp;
+	char *cpos = stack;
 
 	if (ISSTRUCT (sig->ret))
 		cpos += 4;
@@ -44,7 +45,7 @@ mono_method_return_message_restore (MonoMethod *method, gpointer stack,
 		size = mono_type_stack_size (sig->params [i], &align);
 		
 		if (sig->params [i]->byref) {
-			gpointer arg = mono_array_get (out_args, gpointer, j);
+			char *arg = mono_array_get (out_args, gpointer, j);
 			type = sig->params [i]->type;
 			class = mono_class_from_mono_type (sig->params [i]);
 			
@@ -72,7 +73,7 @@ mono_method_return_message_restore (MonoMethod *method, gpointer stack,
 			case MONO_TYPE_CLASS: 
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
-				*((MonoObject **)cpos) = arg;
+				*((MonoObject **)cpos) = (MonoObject *)arg;
 				break;
 			default:
 				g_assert_not_reached ();
@@ -87,7 +88,7 @@ mono_method_return_message_restore (MonoMethod *method, gpointer stack,
 	/* restore return value */
 
 	resp = &result;
-	vt_resp = (gpointer)result + sizeof (MonoObject);
+	vt_resp = (char *)result + sizeof (MonoObject);
 
 	if (sig->ret->byref) {
 		asm ("movl (%0),%%eax" : : "r" (resp) : "eax");
@@ -166,7 +167,7 @@ mono_method_call_message_new (MonoMethod *method, gpointer stack)
 	MonoMethodMessage *msg;
 	MonoString *name;
 	int i, type, size, align;
-	gpointer cpos = stack;
+	char *cpos = stack;
 	char **names;
 	guint8 arg_type;
 

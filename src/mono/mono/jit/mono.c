@@ -160,7 +160,7 @@ main (int argc, char *argv [])
 		const char *cmethod = strrchr (compile_class, ':');
 		char *cname;
 		char *code;
-		int i, j;
+		int j;
 		MonoClass *class;
 
 		if (cmethod) {
@@ -182,7 +182,7 @@ main (int argc, char *argv [])
 				*cname++ = 0;
 			else {
 				cname = compile_class;
-				compile_class = "";
+				compile_class = (char *)"";
 			}
 			class = mono_class_from_name (assembly->image, compile_class, cname);
 			if (!class)

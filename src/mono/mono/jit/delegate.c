@@ -71,7 +71,7 @@ mono_delegate_ctor (MonoDelegate *this, MonoObject *target, gpointer addr)
 }
 
 static gpointer
-arch_get_async_invoke ()
+arch_get_async_invoke (void)
 {
 	static guint8 *start = NULL, *code;
 
@@ -261,7 +261,7 @@ arch_end_invoke (MonoObject *this, gpointer handle, ...)
 		g_free (strace);	
 		((MonoException*)ac->exc)->stack_trace = mono_string_new (domain, tmp);
 		g_free (tmp);
-		mono_raise_exception (ac->exc);
+		mono_raise_exception ((MonoException*)ac->exc);
 	}
 
 	sig = ac->end_method->signature;
@@ -466,7 +466,7 @@ async_invoke_abort (MonoObject *obj)
 
 	/* we need to call the callback if not already called */
 	if (!ac->inside_cb) {
-		void (*async_cb) (gpointer target, MonoAsyncResult *ares);
+		void (*async_cb) (gpointer target, MonoAsyncResult *ar);
 		ac->inside_cb = 1;
 		async_cb = ac->cb_code; 
 		async_cb (ac->cb_target, ares);

@@ -25,7 +25,7 @@
 #include "debug.h"
 
 static void
-enter_method (MonoMethod *method, gpointer ebp)
+enter_method (MonoMethod *method, char *ebp)
 {
 	int i, j;
 	MonoClass *class;
@@ -110,7 +110,7 @@ enter_method (MonoMethod *method, gpointer ebp)
 				if (class == mono_defaults.string_class) {
 					printf ("[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
 				} else if (class == mono_defaults.int32_class) {
-					printf ("[INT32:%p:%d], ", o, *(gint32 *)((gpointer)o + sizeof (MonoObject)));
+					printf ("[INT32:%p:%d], ", o, *(gint32 *)((char *)o + sizeof (MonoObject)));
 				} else
 					printf ("[%s.%s:%p], ", class->name_space, class->name, o);
 			} else {
@@ -197,7 +197,7 @@ leave_method (MonoMethod *method, int edx, int eax, double test)
 			if (o->vtable->klass == mono_defaults.boolean_class) {
 				printf ("[BOOLEAN:%p:%d]", o, *((guint8 *)o + sizeof (MonoObject)));		
 			} else if  (o->vtable->klass == mono_defaults.int32_class) {
-				printf ("[INT32:%p:%d]", o, *((gint32 *)((gpointer)o + sizeof (MonoObject))));	
+				printf ("[INT32:%p:%d]", o, *((gint32 *)((char *)o + sizeof (MonoObject))));	
 			} else
 				printf ("[%s.%s:%p]", o->vtable->klass->name_space, o->vtable->klass->name, o);
 		} else
@@ -568,12 +568,11 @@ mono_compute_branches (MonoFlowGraph *cfg)
 			if (t1->op == MB_TERM_SWITCH) {
 				MonoBBlock **jt = (MonoBBlock **)t1->data.p;
 				guint32 *rt = (guint32 *)t1->data.p;
-				
 				int m = *((guint32 *)t1->data.p) + 1;
-				int j;
+				int k;
 				
-				for (j = 1; j <= m; j++)
-					rt [j] = (int)(jt [j]->addr + cfg->start);
+				for (k = 1; k <= m; k++)
+					rt [k] = (int)(jt [k]->addr + cfg->start);
 				
 				/* emit the switch instruction again to update addresses */
 				cfg->code = cfg->start + t1->addr;
@@ -586,7 +585,7 @@ mono_compute_branches (MonoFlowGraph *cfg)
 
 	for (ji = cfg->jump_info; ji; ji = ji->next) {
 		gpointer *ip = GUINT_TO_POINTER (GPOINTER_TO_UINT (ji->ip) + cfg->start);
-		gpointer target;
+		char *target;
 
 		switch (ji->type) {
 		case MONO_JUMP_INFO_BB:

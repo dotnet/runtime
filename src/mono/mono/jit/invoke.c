@@ -23,7 +23,7 @@
  * invoke_method_with_frame ((gpointer code, gpointer frame, int frame_size);
  */
 static gpointer
-get_invoke_method_with_frame ()
+get_invoke_method_with_frame (void)
 {
 	static guint8 *start;
 	guint8 *code;
