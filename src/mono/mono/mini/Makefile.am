@@ -77,7 +77,8 @@ libmono_la_SOURCES = \
 
 libmono_la_LIBADD = \
 	$(libs) -lgc -lm	\
-	$(MINI_LIBS)
+	$(GLIB_LIBS)		\
+	$(GMODULE_LIBS)
 
 %.exe: %.cs TestDriver.dll
 	$(MCS) /unsafe $< /r:TestDriver.dll
