@@ -37,5 +37,12 @@ extern gboolean ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfG
 extern gboolean ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpointer user, MonoString *group);
 
 
-#endif /* _MONO_METADATA_SECURITY_H_ */
+/* Mono.Security.Cryptography.KeyPairPersistance */
+extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (MonoString *root);
+extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (MonoString *path);
+extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (MonoString *path);
+extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (MonoString *path);
+extern MonoBoolean ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (MonoString *path);
 
+
+#endif /* _MONO_METADATA_SECURITY_H_ */

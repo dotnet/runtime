@@ -54,6 +54,7 @@
 
 #if defined (PLATFORM_WIN32)
 #include <windows.h>
+#include <shlobj.h>
 #endif
 #include "decimal.h"
 
@@ -4331,6 +4332,25 @@ ves_icall_System_Environment_GetGacPath (void)
 	return mono_string_new (mono_domain_get (), MONO_ASSEMBLIES);
 }
 
+static MonoString*
+ves_icall_System_Environment_GetWindowsFolderPath (int folder)
+{
+#if defined (PLATFORM_WIN32)
+	WCHAR path [MAX_PATH];
+	/* Create directory if no existing */
+	if (SUCCEEDED (SHGetFolderPathW (NULL, folder | CSIDL_FLAG_CREATE, NULL, 0, path))) {
+		int len = 0;
+		while (path [len])
+			++ len;
+		return mono_string_new_utf16 (mono_domain_get (), path, len);
+	}
+#else
+	g_warning ("ves_icall_System_Environment_GetWindowsFolderPath should only be called on Windows!");
+#endif
+	return mono_string_new (mono_domain_get (), "");
+}
+
+
 static const char *encodings [] = {
 	(char *) 1,
 		"ascii", "us_ascii", "us", "ansi_x3.4_1968",
@@ -4940,6 +4960,7 @@ static const IcallEntry environment_icalls [] = {
 	{"GetEnvironmentVariable", ves_icall_System_Environment_GetEnvironmentVariable},
 	{"GetEnvironmentVariableNames", ves_icall_System_Environment_GetEnvironmentVariableNames},
 	{"GetMachineConfigPath",	ves_icall_System_Configuration_DefaultConfig_get_machine_config_path},
+	{"GetWindowsFolderPath", ves_icall_System_Environment_GetWindowsFolderPath},
 	{"get_ExitCode", mono_environment_exitcode_get},
 	{"get_HasShutdownStarted", ves_icall_System_Environment_get_HasShutdownStarted},
 	{"get_MachineName", ves_icall_System_Environment_get_MachineName},
@@ -5533,6 +5554,14 @@ static const IcallEntry principal_icalls [] = {
 	{"IsMemberOfGroupName", ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName}
 };
 
+static const IcallEntry keypair_icalls [] = {
+	{"_CanSecure", ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure},
+	{"_IsMachineProtected", ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected},
+	{"_IsUserProtected", ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected},
+	{"_ProtectMachine", ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine},
+	{"_ProtectUser", ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser}
+};
+
 /* proto
 static const IcallEntry array_icalls [] = {
 };
@@ -5541,6 +5570,7 @@ static const IcallEntry array_icalls [] = {
 
 /* keep the entries all sorted */
 static const IcallMap icall_entries [] = {
+	{"Mono.Security.Cryptography.KeyPairPersistence", keypair_icalls, G_N_ELEMENTS (keypair_icalls)},
 	{"System.Activator", activator_icalls, G_N_ELEMENTS (activator_icalls)},
 	{"System.AppDomain", appdomain_icalls, G_N_ELEMENTS (appdomain_icalls)},
 	{"System.AppDomainSetup", appdomainsetup_icalls, G_N_ELEMENTS (appdomainsetup_icalls)},

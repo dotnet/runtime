@@ -17,16 +17,28 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strenc.h>
 
-#ifndef PLATFORM_WIN32
+#ifdef PLATFORM_WIN32
+
+#include <aclapi.h>
+#include <accctrl.h>
+
+#ifndef PROTECTED_DACL_SECURITY_INFORMATION
+#define PROTECTED_DACL_SECURITY_INFORMATION	0x80000000L
+#endif
+
+#else
 
 #include <config.h>
 #include <grp.h>
 #include <pwd.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 /* Disclaimers */
+
+#if defined(__GNUC__)
 
 #ifndef HAVE_GETGRGID_R
 	#warning Non-thread safe getgrgid being used!
@@ -40,6 +52,8 @@
 #ifndef HAVE_GETPWUID_R
 	#warning Non-thread safe getpwuid being used!
 #endif
+
+#endif /* defined(__GNUC__) */
 
 #endif /* not PLATFORM_WIN32 */
 
@@ -574,4 +588,346 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpoint
 #endif /* PLATFORM_WIN32 */
 
 	return result;
+}
+
+
+/* Mono.Security.Cryptography IO related internal calls */
+
+#ifdef PLATFORM_WIN32
+
+static PSID
+GetAdministratorsSid (void) 
+{
+	SID_IDENTIFIER_AUTHORITY admins = SECURITY_NT_AUTHORITY;
+	PSID pSid = NULL;
+	if (!AllocateAndInitializeSid (&admins, 2, SECURITY_BUILTIN_DOMAIN_RID, 
+		DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &pSid)) 
+		return NULL;
+	/* Note: this SID must be freed with FreeSid () */
+	return pSid;
+}
+
+
+static PSID
+GetEveryoneSid (void)
+{
+	SID_IDENTIFIER_AUTHORITY everyone = SECURITY_WORLD_SID_AUTHORITY;
+	PSID pSid = NULL;
+	if (!AllocateAndInitializeSid (&everyone, 1, SECURITY_WORLD_RID, 0, 0, 0, 0, 0, 0, 0, &pSid))
+		return NULL;
+	/* Note: this SID must be freed with FreeSid () */
+	return pSid;
+}
+
+
+static PSID
+GetCurrentUserSid (void) 
+{
+	PSID sid = NULL;
+	guint32 size = 0;
+	gpointer token = ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken ();
+
+	GetTokenInformation (token, TokenUser, NULL, size, (PDWORD)&size);
+	if (size > 0) {
+		TOKEN_USER *tu = g_malloc0 (size);
+		if (GetTokenInformation (token, TokenUser, tu, size, (PDWORD)&size)) {
+			DWORD length = GetLengthSid (tu->User.Sid);
+			sid = (PSID) g_malloc0 (length);
+			if (!CopySid (length, sid, tu->User.Sid)) {
+				g_free (sid);
+				sid = NULL;
+			}
+		}
+		g_free (tu);
+	}
+	/* Note: this SID must be freed with g_free () */
+	return sid;
+}
+
+
+static ACCESS_MASK
+GetRightsFromSid (PSID sid, PACL acl) 
+{
+	ACCESS_MASK rights = 0;
+	TRUSTEE trustee;
+
+	BuildTrusteeWithSidW (&trustee, sid);
+	if (GetEffectiveRightsFromAcl (acl, &trustee, &rights) != ERROR_SUCCESS)
+		return 0;
+
+	return rights;
+}
+
+
+static gboolean 
+IsMachineProtected (gunichar2 *path)
+{
+	gboolean success = FALSE;
+	PACL pDACL = NULL;
+	PSID pEveryoneSid = NULL;
+
+	DWORD dwRes = GetNamedSecurityInfoW (path, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, NULL, NULL, &pDACL, NULL, NULL);
+	if (dwRes != ERROR_SUCCESS)
+		return FALSE;
+
+	/* We check that Everyone is still limited to READ-ONLY -
+	but not if new entries have been added by an Administrator */
+
+	pEveryoneSid = GetEveryoneSid ();
+	if (pEveryoneSid) {
+		ACCESS_MASK rights = GetRightsFromSid (pEveryoneSid, pDACL);
+		// http://msdn.microsoft.com/library/en-us/security/security/generic_access_rights.asp?frame=true
+		success = (rights == (READ_CONTROL | SYNCHRONIZE | FILE_READ_DATA | FILE_READ_EA | FILE_READ_ATTRIBUTES));
+		FreeSid (pEveryoneSid);
+	}
+	/* Note: we don't need to check our own access - 
+	we'll know soon enough when reading the file */
+
+	if (pDACL)
+		LocalFree (pDACL);
+
+	return success;
+}
+
+
+static gboolean 
+IsUserProtected (gunichar2 *path)
+{
+	gboolean success = FALSE;
+	PACL pDACL = NULL;
+	PSID pEveryoneSid = NULL;
+
+	DWORD dwRes = GetNamedSecurityInfoW (path, SE_FILE_OBJECT, 
+		DACL_SECURITY_INFORMATION, NULL, NULL, &pDACL, NULL, NULL);
+	if (dwRes != ERROR_SUCCESS)
+		return FALSE;
+
+	/* We check that our original entries in the ACL are in place -
+	but not if new entries have been added by the user */
+
+	/* Everyone should be denied */
+	pEveryoneSid = GetEveryoneSid ();
+	if (pEveryoneSid) {
+		ACCESS_MASK rights = GetRightsFromSid (pEveryoneSid, pDACL);
+		success = (rights == 0);
+		FreeSid (pEveryoneSid);
+	}
+	/* Note: we don't need to check our own access - 
+	we'll know soon enough when reading the file */
+
+	if (pDACL)
+		LocalFree (pDACL);
+
+	return success;
+}
+
+
+static gboolean 
+ProtectMachine (gunichar2 *path)
+{
+	PSID pEveryoneSid = GetEveryoneSid ();
+	PSID pAdminsSid = GetAdministratorsSid ();
+	DWORD retval = -1;
+
+	if (pEveryoneSid && pAdminsSid) {
+		PACL pDACL = NULL;
+		EXPLICIT_ACCESS ea [2];
+		ZeroMemory (&ea, 2 * sizeof (EXPLICIT_ACCESS));
+
+		// grant all access to the BUILTIN\Administrators group
+		BuildTrusteeWithSidW (&ea [0].Trustee, pAdminsSid);
+		ea [0].grfAccessPermissions = GENERIC_ALL;
+		ea [0].grfAccessMode = SET_ACCESS;
+		ea [0].grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
+		ea [0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+		ea [0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+
+		// read-only access everyone
+		BuildTrusteeWithSidW (&ea [1].Trustee, pEveryoneSid);
+		ea [1].grfAccessPermissions = GENERIC_READ;
+		ea [1].grfAccessMode = SET_ACCESS;
+		ea [1].grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
+		ea [1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+		ea [1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+
+		retval = SetEntriesInAcl (2, ea, NULL, &pDACL);
+		if (retval == ERROR_SUCCESS) {
+			// with PROTECTED_DACL_SECURITY_INFORMATION we
+			// remove any existing ACL (like inherited ones)
+			retval = SetNamedSecurityInfo (path, SE_FILE_OBJECT, 
+				DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+				NULL, NULL, pDACL, NULL);
+		}
+		if (pDACL)
+			LocalFree (pDACL);
+	}
+
+	if (pEveryoneSid)
+		FreeSid (pEveryoneSid);
+	if (pAdminsSid)
+		FreeSid (pAdminsSid);
+	return (retval == ERROR_SUCCESS);
+}
+
+
+static gboolean 
+ProtectUser (gunichar2 *path)
+{
+	DWORD retval = -1;
+
+	PSID pCurrentSid = GetCurrentUserSid ();
+	if (pCurrentSid) {
+		PACL pDACL = NULL;
+		EXPLICIT_ACCESS ea;
+		ZeroMemory (&ea, sizeof (EXPLICIT_ACCESS));
+
+		// grant exclusive access to the current user
+		BuildTrusteeWithSidW (&ea.Trustee, pCurrentSid);
+		ea.grfAccessPermissions = GENERIC_ALL;
+		ea.grfAccessMode = SET_ACCESS;
+		ea.grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
+		ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+		ea.Trustee.TrusteeType = TRUSTEE_IS_USER;
+
+		retval = SetEntriesInAcl (1, &ea, NULL, &pDACL);
+		if (retval == ERROR_SUCCESS) {
+			// with PROTECTED_DACL_SECURITY_INFORMATION we
+			// remove any existing ACL (like inherited ones)
+			retval = SetNamedSecurityInfo (path, SE_FILE_OBJECT, 
+				DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+				NULL, NULL, pDACL, NULL);
+		}
+
+		if (pDACL)
+			LocalFree (pDACL);
+		g_free (pCurrentSid); /* g_malloc0 */
+	}
+
+	return (retval == ERROR_SUCCESS);
+}
+
+#else
+
+static gboolean 
+IsProtected (MonoString *path, gint32 protection) 
+{
+	gboolean result = FALSE;
+	gchar *utf8_name = mono_unicode_to_external (mono_string_chars (path));
+	if (utf8_name) {
+		struct stat st;
+		if (stat (utf8_name, &st) == 0) {
+			result = (((st.st_mode & 0777) & protection) == 0);
+		}
+		g_free (utf8_name);
+	}
+	return result;
+}
+
+
+static gboolean 
+Protect (MonoString *path, gint32 file_mode, gint32 add_dir_mode)
+{
+	gboolean result = FALSE;
+	gchar *utf8_name = mono_unicode_to_external (mono_string_chars (path));
+	if (utf8_name) {
+		struct stat st;
+		if (stat (utf8_name, &st) == 0) {
+			int mode = file_mode;
+			if (st.st_mode & S_IFDIR)
+				mode |= add_dir_mode;
+			result = (chmod (utf8_name, mode) == 0);
+		}
+		g_free (utf8_name);
+	}
+	return result;
+}
+
+#endif /* not PLATFORM_WIN32 */
+
+
+MonoBoolean
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (MonoString *root)
+{
+#if PLATFORM_WIN32
+	gint32 flags;
+
+	MONO_ARCH_SAVE_REGS;
+
+	/* ACL are nice... unless you have FAT or other uncivilized filesystem */
+	if (!GetVolumeInformation (mono_string_chars (root), NULL, 0, NULL, NULL, (LPDWORD)&flags, NULL, 0))
+		return FALSE;
+	return ((flags & FS_PERSISTENT_ACLS) == FS_PERSISTENT_ACLS);
+#else
+	MONO_ARCH_SAVE_REGS;
+	/* we assume some kind of security is applicable outside Windows */
+	return TRUE;
+#endif
+}
+
+
+MonoBoolean
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (MonoString *path)
+{
+	gboolean ret = FALSE;
+
+	MONO_ARCH_SAVE_REGS;
+
+	/* no one, but the owner, should have write access to the directory */
+#ifdef PLATFORM_WIN32
+	ret = IsMachineProtected (mono_string_chars (path));
+#else
+	ret = IsProtected (path, (S_IWGRP | S_IWOTH));
+#endif
+	return ret;
+}
+
+
+MonoBoolean
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (MonoString *path)
+{
+	gboolean ret = FALSE;
+
+	MONO_ARCH_SAVE_REGS;
+
+	/* no one, but the user, should have access to the directory */
+#ifdef PLATFORM_WIN32
+	ret = IsUserProtected (mono_string_chars (path));
+#else
+	ret = IsProtected (path, (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH));
+#endif
+	return ret;
+}
+
+
+MonoBoolean
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (MonoString *path)
+{
+	gboolean ret = FALSE;
+
+	MONO_ARCH_SAVE_REGS;
+
+	/* read/write to owner, read to everyone else */
+#ifdef PLATFORM_WIN32
+	ret = ProtectMachine (mono_string_chars (path));
+#else
+	ret = Protect (path, (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH), (S_IXUSR | S_IXGRP | S_IXOTH));
+#endif
+	return ret;
+}
+
+
+MonoBoolean
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (MonoString *path)
+{
+	gboolean ret = FALSE;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	/* read/write to user, no access to everyone else */
+#ifdef PLATFORM_WIN32
+	ret = ProtectUser (mono_string_chars (path));
+#else
+	ret = Protect (path, (S_IRUSR | S_IWUSR), S_IXUSR);
+#endif
+	return ret;
 }
