@@ -902,6 +902,16 @@ ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilder *mb, MonoObject *o
 }
 
 static gint32
+ves_icall_ModuleBuilder_getMethodToken (MonoReflectionModuleBuilder *mb,
+					MonoReflectionMethod *method,
+					MonoArray *opt_param_types)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return mono_image_create_method_token (mb->dynamic_image, method, opt_param_types);
+}
+
+static gint32
 ves_icall_ModuleBuilder_getDataChunk (MonoReflectionModuleBuilder *mb, MonoArray *buf, gint32 offset)
 {
 	int count;
@@ -5409,6 +5419,7 @@ static const IcallEntry modulebuilder_icalls [] = {
 	{"build_metadata", ves_icall_ModuleBuilder_build_metadata},
 	{"create_modified_type", ves_icall_ModuleBuilder_create_modified_type},
 	{"getDataChunk", ves_icall_ModuleBuilder_getDataChunk},
+	{"getMethodToken", ves_icall_ModuleBuilder_getMethodToken},
 	{"getToken", ves_icall_ModuleBuilder_getToken},
 	{"getUSIndex", mono_image_insert_string}
 };

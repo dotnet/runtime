@@ -311,7 +311,7 @@ struct _MonoMethodSignature {
 	unsigned int  pinvoke   : 1;
 	unsigned int  ref_count : 23;
 	guint16       param_count;
-	guint16       sentinelpos;
+	gint16        sentinelpos;
 	unsigned int  generic_param_count : 30;
 	unsigned int  is_inflated         : 1;
 	unsigned int  has_type_parameters : 1;

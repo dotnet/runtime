@@ -570,6 +570,7 @@ void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);
 MonoReflectionModule * mono_image_load_module (MonoReflectionAssemblyBuilder *assembly, MonoString *file_name);
 guint32       mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str);
 guint32       mono_image_create_token  (MonoDynamicImage *assembly, MonoObject *obj);
+guint32       mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, MonoArray *opt_param_types);
 void          mono_image_module_basic_init (MonoReflectionModuleBuilder *module);
 
 MonoReflectionAssembly* mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly);
@@ -617,7 +618,6 @@ void
 mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type, MonoArray *methods, MonoArray *ctors, MonoArray *fields, MonoArray *properties, MonoArray *events);
 MonoReflectionEvent *
 mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, MonoReflectionEventBuilder *eb);
-
 
 MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig);
 

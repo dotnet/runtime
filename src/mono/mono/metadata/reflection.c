@@ -41,6 +41,7 @@ typedef struct {
 	MonoArray *parameters;
 	MonoArray *generic_params;
 	MonoArray *pinfo;
+	MonoArray *opt_types;
 	guint32 attrs;
 	guint32 iattrs;
 	guint32 call_conv;
@@ -618,6 +619,8 @@ method_get_signature_size (MonoMethodSignature *sig)
 
 	if (sig->generic_param_count)
 		size += 4;
+	if (sig->sentinelpos >= 0)
+		size++;
 
 	return size;	
 }
@@ -651,8 +654,11 @@ method_encode_signature (MonoDynamicImage *assembly, MonoMethodSignature *sig)
 		mono_metadata_encode_value (sig->generic_param_count, p, &p);
 	mono_metadata_encode_value (nparams, p, &p);
 	encode_type (assembly, sig->ret, p, &p);
-	for (i = 0; i < nparams; ++i)
+	for (i = 0; i < nparams; ++i) {
+		if (i == sig->sentinelpos)
+			*p++ = MONO_TYPE_SENTINEL;
 		encode_type (assembly, sig->params [i], p, &p);
+	}
 	/* store length */
 	g_assert (p - buf < size);
 	mono_metadata_encode_value (p-buf, b, &b);
@@ -672,7 +678,8 @@ method_builder_encode_signature (MonoDynamicImage *assembly, ReflectionMethodBui
 	int i;
 	guint32 nparams =  mb->parameters ? mono_array_length (mb->parameters): 0;
 	guint32 ngparams = mb->generic_params ? mono_array_length (mb->generic_params): 0;
-	guint32 size = 21 + nparams * 20;
+	guint32 notypes = mb->opt_types ? mono_array_length (mb->opt_types): 0;
+	guint32 size = 21 + nparams * 20 + notypes * 20;
 	guint32 idx;
 	char blob_size [6];
 	char *b = blob_size;
@@ -689,7 +696,7 @@ method_builder_encode_signature (MonoDynamicImage *assembly, ReflectionMethodBui
 	p++;
 	if (ngparams)
 		mono_metadata_encode_value (ngparams, p, &p);
-	mono_metadata_encode_value (nparams, p, &p);
+	mono_metadata_encode_value (nparams + notypes, p, &p);
 	encode_custom_modifiers (assembly, mb->return_modreq, mb->return_modopt, p, &p);
 	encode_reflection_type (assembly, mb->rtype, p, &p);
 	for (i = 0; i < nparams; ++i) {
@@ -705,6 +712,15 @@ method_builder_encode_signature (MonoDynamicImage *assembly, ReflectionMethodBui
 		pt = mono_array_get (mb->parameters, MonoReflectionType*, i);
 		encode_reflection_type (assembly, pt, p, &p);
 	}
+	if (notypes)
+		*p++ = MONO_TYPE_SENTINEL;
+	for (i = 0; i < notypes; ++i) {
+		MonoReflectionType *pt;
+
+		pt = mono_array_get (mb->opt_types, MonoReflectionType*, i);
+		encode_reflection_type (assembly, pt, p, &p);
+	}
+
 	/* store length */
 	g_assert (p - buf < size);
 	mono_metadata_encode_value (p-buf, b, &b);
@@ -1210,6 +1226,7 @@ reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb,
 	rmb->rtype = mb->rtype;
 	rmb->parameters = mb->parameters;
 	rmb->generic_params = mb->generic_params;
+	rmb->opt_types = NULL;
 	rmb->pinfo = mb->pinfo;
 	rmb->attrs = mb->attrs;
 	rmb->iattrs = mb->iattrs;
@@ -1239,6 +1256,7 @@ reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb,
 	rmb->rtype = mono_type_get_object (mono_domain_get (), &mono_defaults.void_class->byval_arg);
 	rmb->parameters = mb->parameters;
 	rmb->generic_params = NULL;
+	rmb->opt_types = NULL;
 	rmb->pinfo = mb->pinfo;
 	rmb->attrs = mb->attrs;
 	rmb->iattrs = mb->iattrs;
@@ -1266,6 +1284,7 @@ reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb,
 	rmb->rtype = mb->rtype;
 	rmb->parameters = mb->parameters;
 	rmb->generic_params = NULL;
+	rmb->opt_types = NULL;
 	rmb->pinfo = NULL;
 	rmb->attrs = mb->attrs;
 	rmb->iattrs = 0;
@@ -2219,6 +2238,44 @@ mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method)
 	token = mono_image_get_memberref_token (assembly, &method->klass->byval_arg,
 		method->name,  method_encode_signature (assembly, method->signature));
 	g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
+	return token;
+}
+
+static guint32
+mono_image_get_varargs_method_token (MonoDynamicImage *assembly, guint32 original,
+				     const gchar *name, guint32 sig)
+{
+	MonoDynamicTable *table;
+	guint32 parent, token;
+	guint32 *values;
+	
+	table = &assembly->tables [MONO_TABLE_MEMBERREF];
+
+	parent = mono_metadata_token_index (original);
+	parent <<= MEMBERREF_PARENT_BITS;
+	switch (mono_metadata_token_table (original)) {
+	case MONO_TABLE_METHOD:
+		parent |= MEMBERREF_PARENT_METHODDEF;
+		break;
+	case MONO_TABLE_MEMBERREF:
+		parent |= MEMBERREF_PARENT_TYPEREF;
+		break;
+	default:
+		g_warning ("got wrong token in varargs method token");
+		return 0;
+	}
+
+	if (assembly->save) {
+		alloc_table (table, table->rows + 1);
+		values = table->values + table->next_idx * MONO_MEMBERREF_SIZE;
+		values [MONO_MEMBERREF_CLASS] = parent;
+		values [MONO_MEMBERREF_NAME] = string_heap_insert (&assembly->sheap, name);
+		values [MONO_MEMBERREF_SIGNATURE] = sig;
+	}
+
+	token = MONO_TOKEN_MEMBER_REF | table->next_idx;
+	table->next_idx ++;
+
 	return token;
 }
 
@@ -3355,6 +3412,8 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 				MonoClassField *f = ((MonoReflectionField*)iltoken->member)->field;
 				g_assert (f->generic_type);
 				continue;
+			} else if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder")) {
+				continue;
 			} else {
 				g_assert_not_reached ();
 			}
@@ -3770,6 +3829,68 @@ mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str)
 							  GUINT_TO_POINTER (MONO_TOKEN_STRING | idx), str);
 
 	return MONO_TOKEN_STRING | idx;
+}
+
+guint32
+mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj,
+				MonoArray *opt_param_types)
+{
+	MonoClass *klass;
+	guint32 original_token, token = 0;
+
+	original_token = mono_image_create_token (assembly, obj);
+
+	klass = obj->vtable->klass;
+	if (strcmp (klass->name, "MonoMethod") == 0) {
+		MonoMethod *method = ((MonoReflectionMethod *)obj)->method;
+		MonoMethodSignature *sig, *old;
+		guint32 sig_token;
+		int nargs, i;
+
+		g_assert (opt_param_types && method->signature->param_count &&
+			  (method->signature->sentinelpos >= 0));
+
+		nargs = mono_array_length (opt_param_types);
+		old = method->signature;
+		sig = mono_metadata_signature_alloc (
+			&assembly->image, old->param_count + nargs);
+
+		sig->hasthis = old->hasthis;
+		sig->explicit_this = old->explicit_this;
+		sig->call_convention = old->call_convention;
+		sig->generic_param_count = old->generic_param_count;
+		sig->param_count = old->param_count + nargs;
+		sig->sentinelpos = old->param_count;
+		sig->ret = old->ret;
+
+		for (i = 0; i < old->param_count; i++)
+			sig->params [i] = old->params [i];
+
+		for (i = 0; i < nargs; i++) {
+			MonoReflectionType *rt = mono_array_get (
+				opt_param_types, MonoReflectionType *, i);
+			sig->params [old->param_count + i] = rt->type;
+		}
+
+		sig_token = method_encode_signature (assembly, sig);
+		token = mono_image_get_varargs_method_token (
+			assembly, original_token, method->name, sig_token);
+	} else if (strcmp (klass->name, "MethodBuilder") == 0) {
+		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)obj;
+		ReflectionMethodBuilder rmb;
+		guint32 sig;
+	
+		reflection_methodbuilder_from_method_builder (&rmb, mb);
+		rmb.opt_types = opt_param_types;
+
+		sig = method_builder_encode_signature (assembly, &rmb);
+
+		token = mono_image_get_varargs_method_token (
+			assembly, original_token, mono_string_to_utf8 (rmb.name), sig);
+	} else
+		g_error ("requested method token for %s\n", klass->name);
+
+	return token;
 }
 
 /*
