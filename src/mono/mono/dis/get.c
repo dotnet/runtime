@@ -24,6 +24,7 @@ static char *
 get_memberref_parent (MonoImage *m, guint32 mrp_token);
 
 GHashTable *key_table = NULL;
+gboolean show_method_tokens = FALSE;
 
 char *
 get_typedef (MonoImage *m, int idx)
@@ -632,6 +633,10 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 		g_free (esname);
 	}
 	g_string_append (result, ") ");
+
+	if (show_method_tokens && methoddef_row)
+		g_string_append_printf (result, " /* 0x%X */ ",
+				(methoddef_row >> MONO_TYPEORMETHOD_BITS) | MONO_TOKEN_METHOD_DEF);
 
 	if (free_method)
 		mono_metadata_free_method_signature (method);
