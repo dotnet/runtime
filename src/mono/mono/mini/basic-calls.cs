@@ -300,5 +300,18 @@ class Tests {
 			return 0;
 		return 1;
 	}
+
+	static int first_is_zero (int v1, int v2) {
+		if (v1 != 0)
+			return -1;
+		return v2;
+	}
+	static int test_1_handle_dup_stloc () {
+		int index = 0;
+		int val = first_is_zero (index, ++index);
+		if (val != 1)
+			return 2;
+		return 1;
+	}
 }
 
