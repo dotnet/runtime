@@ -702,6 +702,7 @@ dis_interfaces (MonoImage *m, guint32 typedef_row)
 {
 	plocator_t loc;
 	guint start;
+	gboolean first_interface = 1;
 	guint32 cols [MONO_INTERFACEIMPL_SIZE];
 	char *intf;
 	MonoTableInfo *table = &m->tables [MONO_TABLE_INTERFACEIMPL];
@@ -731,7 +732,12 @@ dis_interfaces (MonoImage *m, guint32 typedef_row)
 		if (cols [MONO_INTERFACEIMPL_CLASS] != loc.idx)
 			break;
 		intf = get_typedef_or_ref (m, cols [MONO_INTERFACEIMPL_INTERFACE]);
-		fprintf (output, "  \timplements %s\n", intf);
+		if (first_interface) {
+			fprintf (output, "  \timplements %s", intf);
+			first_interface = 0;
+		} else {
+			fprintf (output, ", %s", intf);
+		}
 		g_free (intf);
 		++start;
 	}
