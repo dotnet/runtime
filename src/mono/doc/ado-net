@@ -35,14 +35,13 @@
 		  its engine.  It may have the option of using libgda too.
 	</ul>
 
-	<b>Step 3:</b> System.Data.SqlClient Providers:
+	<b>Step 3:</b> System.Data.SqlClient Provider:
 
 	<ul>
-		* System.Data.SqlClient will then become a generic
-		  proxy for binding to other SQL implementations other
-		  than PostgreSQL (MySQL on Unix/Windows; MS SQL on
-		  Windows; Interbase on Unix/Windows, Oracle on
-		  Unix/Windows). Others are welcomed.
+		* System.Data.SqlClient will then become a managed
+		  provider for MS SQL Server, both on Windows and
+		  Linux, to be compatible with applications written
+		  for MS .NET.
 	</ul>
 
 	<b>Step 4:</b> Other System.Data providers:
