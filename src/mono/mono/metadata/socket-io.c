@@ -506,7 +506,7 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 
 #define STASH_SYS_ASS(this) \
 	if(system_assembly == NULL) { \
-		system_assembly=this->vtable->klass->image; \
+		system_assembly=mono_image_loaded ("System"); \
 	}
 
 static MonoImage *system_assembly=NULL;
@@ -1274,6 +1274,19 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 	}
 }
 
+static MonoObject* int_to_object (MonoDomain *domain, int val)
+{
+   	/* construct an Int32 object to hold val */
+   	MonoObject* obj = mono_object_new(domain, mono_defaults.int32_class);
+
+   	/* Locate and set the "value" field */
+   	MonoClassField *field = mono_class_get_field_from_name(mono_defaults.int32_class,
+   					     "value");
+   	*(gint32 *)(((char *)obj)+field->offset)=val;
+    return obj;
+}
+
+
 void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET sock, gint32 level, gint32 name, MonoObject **obj_val)
 {
 	int system_level;
@@ -1283,6 +1296,8 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 	int valsize=sizeof(val);
 	struct linger linger;
 	int lingersize=sizeof(linger);
+	struct timeval tv;
+	int tvsize=sizeof(tv);
 	MonoDomain *domain=mono_domain_get();
 	MonoObject *obj;
 	MonoClass *obj_class;
@@ -1308,6 +1323,12 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 			       &lingersize);
 		break;
 		
+	case SocketOptionName_SendTimeout:
+	case SocketOptionName_ReceiveTimeout:
+		ret=getsockopt(sock, system_level, system_name, &tv,
+		           &tvsize);
+		break;
+
 	default:
 		ret=getsockopt(sock, system_level, system_name, &val,
 			       &valsize);
@@ -1339,18 +1360,16 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 		
 	case SocketOptionName_DontLinger:
 		/* construct a bool int in val - true if linger is off */
-		val=!linger.l_onoff;
+		obj = int_to_object (domain, !linger.l_onoff);
+		break;
 		
-		/* fall through */
-		
+	case SocketOptionName_SendTimeout:
+	case SocketOptionName_ReceiveTimeout:
+		obj = int_to_object (domain, (tv.tv_sec * 1000) + (tv.tv_usec / 1000));
+		break;
+
 	default:
-		/* construct an Int32 object to hold val */
-		obj=mono_object_new(domain, mono_defaults.int32_class);
-		
-		/* Locate and set the "value" field */
-		field=mono_class_get_field_from_name(mono_defaults.int32_class,
-						     "value");
-		*(gint32 *)(((char *)obj)+field->offset)=val;
+		obj = int_to_object (domain, val);
 	}
 
 	*obj_val=obj;
@@ -1541,8 +1560,19 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 			mono_raise_exception(get_socket_exception(WSAGetLastError()));
 		}
 	} else {
-		ret=setsockopt(sock, system_level, system_name, &int_val,
+		switch(name) {
+			case SocketOptionName_SendTimeout:
+			case SocketOptionName_ReceiveTimeout: {
+				struct timeval tv;
+				tv.tv_sec = int_val / 1000;
+				tv.tv_usec = (int_val % 1000) * 1000;
+				ret=setsockopt(sock, system_level, system_name, &tv, sizeof (tv));
+				break;
+			}
+			default:
+				ret=setsockopt(sock, system_level, system_name, &int_val,
 			       sizeof(int_val));
+		}
 	}
 
 	if(ret==SOCKET_ERROR) {
