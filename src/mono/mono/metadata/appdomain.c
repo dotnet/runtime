@@ -20,7 +20,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/tabledefs.h>
-#include <mono/metadata/gc.h>
+#include <mono/metadata/gc-internal.h>
 
 HANDLE mono_delegate_semaphore = NULL;
 CRITICAL_SECTION mono_delegate_section;

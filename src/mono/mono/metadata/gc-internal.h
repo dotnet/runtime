@@ -1,5 +1,5 @@
 /*
- * metadata/gc.h: GC icalls.
+ * metadata/gc-internal.h: GC icalls.
  *
  * Author: Paolo Molaro <lupus@ximian.com>
  *

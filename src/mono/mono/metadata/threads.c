@@ -1134,6 +1134,9 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 
 	/* fixme: store the state somewhere */
 #ifndef __MINGW32__
+#ifndef	SIGRTMIN
+#define	SIGRTMIN	SIGUSR1
+#endif
 #ifdef PTHREAD_POINTER_ID
 	pthread_kill (GUINT_TO_POINTER(thread->tid), SIGRTMIN);
 #else

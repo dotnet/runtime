@@ -10,7 +10,7 @@
 #include <glib.h>
 #include <string.h>
 
-#include <mono/metadata/gc.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/exception.h>
