@@ -46,6 +46,9 @@ public class Test {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct2")]
 	public static extern int mono_test_marshal_struct2 (SimpleStruct2 ss);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct_array")]
+	public static extern int mono_test_marshal_struct_array (SimpleStruct2[] ss);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate")]
 	public static extern int mono_test_marshal_delegate (SimpleDelegate d);
 
@@ -75,13 +78,21 @@ public class Test {
 		ss2.f = 1.5;
 		ss2.g = 42;
 		ss2.h = 123L;
+
 		if (mono_test_marshal_struct2 (ss2) != 0)
 			return 4;
+
+		SimpleStruct2[] ss_arr = new SimpleStruct2 [2];
+		ss_arr [0] = ss2;
+		ss_arr [1] = ss2;
+
+		if (mono_test_marshal_struct_array (ss_arr) != 0)
+			return 5;
 		
 		SimpleDelegate d = new SimpleDelegate (delegate_test);
 
 		if (mono_test_marshal_delegate (d) != 0)
-			return 5;
+			return 6;
 
 		return 0;
 	}

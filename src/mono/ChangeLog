@@ -1,3 +1,8 @@
+2003-10-06  Zoltan Varga  <vargaz@freemail.hu>
+
+	* mono/tests/pinvoke2.cs mono/tests/libtest.c: Add array of structs
+	marshalling test.
+
 2003-10-04  Bernie Solomon  <bernard@ugsolutions.com>
 
 	* mono/tests/libtest.c: remove warnings except
