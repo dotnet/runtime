@@ -1083,7 +1083,7 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 			HANDLE handle;
 			method = delegate->method_info->method;
 
-			msg = mono_method_call_message_new (method, params, NULL, &async_callback, &state);
+			msg = mono_method_call_message_new (mono_marshal_method_from_wrapper (method), params, NULL, &async_callback, &state);
 			handle = CreateEvent (NULL, TRUE, FALSE, NULL);
 			ares = mono_async_result_new (mono_domain_get (), handle, state, handle);
 			ares->async_delegate = (MonoObject *)delegate;
