@@ -634,7 +634,12 @@ set_domain_search_path (MonoDomain *domain)
 	}
 
 	for (i = 1; pvt_split && i < npaths; i++) {
-		tmp [i] = g_build_filename (tmp [0], pvt_split [i - 1], NULL);
+		if (g_path_is_absolute (pvt_split [i - 1])) {
+			tmp [i] = g_strdup (pvt_split [i - 1]);
+		} else {
+			tmp [i] = g_build_filename (tmp [0], pvt_split [i - 1], NULL);
+		}
+
 		if (strchr (tmp [i], '.')) {
 			gchar *reduced;
 			gchar *freeme;
