@@ -111,7 +111,8 @@
 	href="http://primates.ximian.com/~gonzalo/mono/shots/finished.png">here</a>
 
 	Mark has checked his bindings for Gtk-based Mozilla into CVS,
-	module name: `GtkMozEmbed'.
+	module name: `GtkMozEmbed'.  Read the <a
+	href="http://lists.ximian.com/archives/public/mono-list/2003-April/013247.html">details</a>
 
 	The SWT port to C# using Gtk is <a
 	href="http://lists.ximian.com/archives/public/sd-mono-port/2003-March/000114.html">progressing</a>.  Screenshots are
