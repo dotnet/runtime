@@ -124,7 +124,8 @@ AC_SUBST(GLIB_LIBS)
 AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 
-AC_CHECK_HEADERS(gc.h gc/gc.h)
+gc_headers=no
+AC_CHECK_HEADERS(gc.h gc/gc.h, gc_headers=yes)
 AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes",,$libdl)
 gc=auto
 AC_ARG_WITH(gc, [  --with-gc=boehm,none],[gc=$with_gc])
@@ -133,6 +134,9 @@ case "x$gc" in
 	xboehm|xbohem|xyes)
 		if test "x$found_boehm" != "xyes"; then
 			AC_MSG_ERROR("GC requested but libgc not found!")
+		fi
+		if test "x$gc_headers" != "xyes"; then
+			AC_MSG_ERROR("GC requested but header files not found! You may need to install them by hand.")
 		fi
 
 		AC_DEFINE(HAVE_BOEHM_GC)
@@ -147,6 +151,9 @@ case "x$gc" in
 		if test "x$found_boehm" != "xyes"; then
 			AC_MSG_WARN("Compiling mono without GC.")
 		else
+			if test "x$gc_headers" != "xyes"; then
+				AC_MSG_ERROR("Found libgc but not its header files! You may need to install them by hand.")
+			fi
 			AC_DEFINE(HAVE_BOEHM_GC)
 			AC_SUBST(HAVE_BOEHM_GC)
 			LIBS="$LIBS -lgc $libdl"

@@ -1,3 +1,9 @@
+
+Mon Nov 18 16:40:34 CET 2002 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in, mono/os/gc_wrapper.h: check that the gc headers have
+	been installed.
+
 2002-11-12  Daniel Morgan <danmorg@sc.rr.com>
 
 	* doc/oledb
