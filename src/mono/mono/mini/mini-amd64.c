@@ -30,7 +30,7 @@ static gint appdomain_tls_offset = -1;
 static gint thread_tls_offset = -1;
 
 /* Use SSE2 instructions for fp arithmetic */
-static gboolean use_sse2 = TRUE;
+static gboolean use_sse2 = FALSE;
 
 /* xmm15 is reserved for use by some opcodes */
 #define AMD64_CALLEE_FREGS 0xef
