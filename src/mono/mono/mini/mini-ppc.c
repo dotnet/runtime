@@ -350,6 +350,14 @@ handle_enum:
 }
 
 /*
+ * Initialize the cpu to execute managed code.
+ */
+void
+mono_arch_cpu_init (void)
+{
+}
+
+/*
  * This function returns the optimizations supported on this cpu.
  */
 guint32

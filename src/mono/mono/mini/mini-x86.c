@@ -414,6 +414,23 @@ cpuid (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx)
 }
 
 /*
+ * Initialize the cpu to execute managed code.
+ */
+void
+mono_arch_cpu_init (void)
+{
+	guint16 fpcw;
+
+	/* spec compliance requires running with double precision */
+	__asm__  __volatile__ ("fnstcw %0\n": "=m" (fpcw));
+	fpcw &= ~X86_FPCW_PRECC_MASK;
+	fpcw |= X86_FPCW_PREC_DOUBLE;
+	__asm__  __volatile__ ("fldcw %0\n": : "m" (fpcw));
+	__asm__  __volatile__ ("fnstcw %0\n": "=m" (fpcw));
+
+}
+
+/*
  * This function returns the optimizations supported on this cpu.
  */
 guint32
@@ -421,7 +438,7 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 {
 	int eax, ebx, ecx, edx;
 	guint32 opts = 0;
-
+	
 	*exclude_mask = 0;
 	/* Feature Flags function, flags returned in EDX. */
 	if (cpuid (1, &eax, &ebx, &ecx, &edx)) {
@@ -639,10 +656,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 	rev_args = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * n);
-	
-	if (sig->ret && (sig->ret->type == MONO_TYPE_I8 || sig->ret->type == MONO_TYPE_U8)) {
-		//g_warning ("long value returned");
-	}
+
 	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret))
 		stack_size = 4;
 	else

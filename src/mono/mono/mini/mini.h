@@ -617,6 +617,7 @@ MonoJitICallInfo *mono_register_jit_icall      (gconstpointer func, const char *
 gconstpointer     mono_icall_get_wrapper       (MonoJitICallInfo* callinfo);
 
 /* methods that must be provided by the arch-specific port */
+void      mono_arch_cpu_init                    (void);
 guint32   mono_arch_cpu_optimizazions           (guint32 *exclude_mask);
 void      mono_arch_instrument_mem_needs        (MonoMethod *method, int *stack, int *code);
 void     *mono_arch_instrument_prolog           (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments);

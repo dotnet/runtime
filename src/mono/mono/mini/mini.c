@@ -4505,7 +4505,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			case CEE_ARGLIST: {
 				/* somewhat similar to LDTOKEN */
 				MonoInst *addr, *vtvar;
-				CHECK_STACK (1);
+				CHECK_STACK_OVF (1);
 				vtvar = mono_compile_create_var (cfg, &mono_defaults.argumenthandle_class->byval_arg, OP_LOCAL); 
 
 				NEW_TEMPLOADA (cfg, addr, vtvar->inst_c0);
@@ -6891,7 +6891,9 @@ MonoDomain *
 mini_init (const char *filename)
 {
 	MonoDomain *domain;
-	
+
+	mono_arch_cpu_init ();
+
 	metadata_section = &ms;
 	InitializeCriticalSection (metadata_section);
 
