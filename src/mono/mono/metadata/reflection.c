@@ -4511,6 +4511,8 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 	res->name      = mono_string_new (domain, g_path_get_basename (image->name));
 	res->scopename = mono_string_new (domain, image->module_name);
 
+	mono_image_addref (image);
+
 	CACHE_OBJECT (image, res, NULL);
 	return res;
 }

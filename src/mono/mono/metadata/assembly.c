@@ -434,7 +434,7 @@ do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	}
 	g_free (name);
 	if (image) {
-		InterlockedIncrement (&image->ref_count);
+		mono_image_addref (image);
 		return image;
 	}
 #endif

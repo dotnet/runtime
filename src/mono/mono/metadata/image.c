@@ -887,6 +887,18 @@ free_hash_table (gpointer key, gpointer val, gpointer user_data)
 
 /**
  * mono_image_close:
+ * @image: The image file we wish to add a reference to
+ *
+ *  Increases the reference count of an image.
+ */
+void
+mono_image_addref (MonoImage *image)
+{
+	InterlockedIncrement (&image->ref_count);
+}	
+
+/**
+ * mono_image_close:
  * @image: The image file we wish to close
  *
  * Closes an image file, deallocates all memory consumed and

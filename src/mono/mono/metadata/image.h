@@ -165,6 +165,7 @@ MonoImage    *mono_image_loaded   (const char *name);
 MonoImage    *mono_image_loaded_by_guid (const char *guid);
 void          mono_image_init     (MonoImage *image);
 void          mono_image_close    (MonoImage *image);
+void          mono_image_addref   (MonoImage *image);
 const char   *mono_image_strerror (MonoImageOpenStatus status);
 
 int           mono_image_ensure_section     (MonoImage *image,
