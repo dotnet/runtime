@@ -535,7 +535,7 @@ void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 	g_message(G_GNUC_PRETTY_FUNCTION ": Sleeping for %d ms", ms);
 #endif
 
-	Sleep(ms);
+	SleepEx(ms,TRUE);
 }
 
 gint32
