@@ -48,9 +48,12 @@ static MonoString *
 mono_double_ToStringImpl (double value)
 {
 	/* FIXME: Handle formats, etc. */
-	const gchar *retVal;
-	retVal = g_strdup_printf ("%g", value);
-	return mono_string_new (mono_domain_get (), retVal);
+	MonoString *s;
+	gchar *retVal;
+	retVal = g_strdup_printf ("%.15g", value);
+	s = mono_string_new (mono_domain_get (), retVal);
+	g_free (retVal);
+	return s;
 }
 
 /*
@@ -65,10 +68,7 @@ mono_double_ParseImpl (char *ptr)
 static MonoString *
 mono_float_ToStringImpl (float value)
 {
-	/* FIXME: Handle formats, etc. */
-	const gchar *retVal;
-	retVal = g_strdup_printf ("%f", value);
-	return mono_string_new (mono_domain_get (), retVal);
+	return mono_double_ToStringImpl (value);
 }
 
 static MonoObject *
