@@ -73,6 +73,9 @@ static MonoThreadCallbacks *mono_thread_callbacks = NULL;
 /* The TLS key that holds the LocalDataStoreSlot hash in each thread */
 static guint32 slothash_key = -1;
 
+/* The default stack size for each thread */
+static guint32 default_stacksize = 0;
+
 static void thread_adjust_static_data (MonoThread *thread);
 
 /* Spin lock for InterlockedXXX 64 bit functions */
@@ -237,6 +240,11 @@ void mono_thread_new_init (guint32 tid, gpointer stack_start, gpointer func)
 		(* mono_thread_callbacks->thread_created) (tid, stack_start, func);
 }
 
+void mono_threads_set_default_stacksize (guint32 stacksize)
+{
+	default_stacksize = stacksize;
+}
+
 void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 {
 	MonoThread *thread;
@@ -256,7 +264,7 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	/* Create suspended, so we can do some housekeeping before the thread
 	 * starts
 	 */
-	thread_handle = CreateThread(NULL, 0, start_wrapper, start_info,
+	thread_handle = CreateThread(NULL, default_stacksize, start_wrapper, start_info,
 				     CREATE_SUSPENDED, &tid);
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Started thread ID %d (handle %p)",
@@ -385,7 +393,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 			return(NULL);
 		}
 
-		thread=CreateThread(NULL, 0, start_wrapper, start_info,
+		thread=CreateThread(NULL, default_stacksize, start_wrapper, start_info,
 				    CREATE_SUSPENDED, &tid);
 		if(thread==NULL) {
 			g_warning(G_GNUC_PRETTY_FUNCTION
