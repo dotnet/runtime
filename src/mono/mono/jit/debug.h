@@ -88,6 +88,12 @@ void           mono_debug_make_symbols (void);
 void           mono_debug_write_symbols (MonoDebugHandle* debug);
 
 /*
+ * Address of the x86 trampoline code.  This is used by the debugger to check
+ * whether a method is a trampoline.
+ */
+extern guint8 *mono_generic_trampoline_code;
+
+/*
  * Do not use these two functions unless you know exactly what you're doing.
  *
  * Returns a pointer to a region of memory within the JIT's address space.  The Mono

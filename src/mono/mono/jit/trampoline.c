@@ -18,6 +18,12 @@
 #include "codegen.h"
 
 /*
+ * Address of the x86 trampoline code.  This is used by the debugger to check
+ * whether a method is a trampoline.
+ */
+guint8 *mono_generic_trampoline_code = NULL;
+
+/*
  * get_unbox_trampoline:
  * @m: method pointer
  * @addr: pointer to native code for @m
@@ -151,7 +157,6 @@ arch_create_jit_trampoline (MonoMethod *method)
 {
 	MonoDomain *domain = mono_domain_get ();
 	guint8 *code, *buf;
-	static guint8 *vc = NULL;
 	GHashTable *jit_code_hash;
 
 	/* previously created trampoline code */
@@ -185,8 +190,8 @@ arch_create_jit_trampoline (MonoMethod *method)
 		return code;
 	}
 
-	if (!vc) {
-		vc = buf = g_malloc (256);
+	if (!mono_generic_trampoline_code) {
+		mono_generic_trampoline_code = buf = g_malloc (256);
 		/* save caller save regs because we need to do a call */ 
 		x86_push_reg (buf, X86_EDX);
 		x86_push_reg (buf, X86_EAX);
@@ -253,12 +258,12 @@ arch_create_jit_trampoline (MonoMethod *method)
 		/* call the compiled method */
 		x86_jump_reg (buf, X86_EAX);
 
-		g_assert ((buf - vc) <= 256);
+		g_assert ((buf - mono_generic_trampoline_code) <= 256);
 	}
 
 	code = buf = g_malloc (16);
 	x86_push_imm (buf, method);
-	x86_jump_code (buf, vc);
+	x86_jump_code (buf, mono_generic_trampoline_code);
 	g_assert ((buf - code) <= 16);
 
 	/* store trampoline address */
