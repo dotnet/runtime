@@ -24,6 +24,15 @@ free_method_info (DebugMethodInfo *minfo)
 	g_free (minfo);
 }
 
+static MonoDebugMethodInfo *
+method_info_func (MonoSymbolFile *symfile, MonoMethod *method, gpointer user_data)
+{
+	AssemblyDebugInfo *info = user_data;
+	DebugMethodInfo *minfo;
+
+	return (MonoDebugMethodInfo *) g_hash_table_lookup (info->handle->methods, method);
+}
+
 static void
 debug_arg_warning (const char *message)
 {
@@ -445,6 +454,16 @@ mono_debug_write_symbols (MonoDebugHandle *debug)
 			AssemblyDebugInfo *info = (AssemblyDebugInfo*)tmp->data;
 
 			mono_debug_write_assembly_dwarf2_plus (info);
+		}
+		break;
+	case MONO_DEBUG_FORMAT_MONO:
+		for (tmp = debug->info; tmp; tmp = tmp->next) {
+			AssemblyDebugInfo *info = (AssemblyDebugInfo*)tmp->data;
+
+			if (!info->mono_symfile)
+				continue;
+
+			mono_debug_update_mono_symbol_file (info->mono_symfile, method_info_func, info);
 		}
 		break;
 	default:
