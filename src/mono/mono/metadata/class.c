@@ -33,7 +33,8 @@ mono_class_create_from_typeref (MonoImage *image, guint32 type_token)
 	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
 	guint32 idx;
 	const char *name, *nspace;
-	
+	MonoClass *res;
+
 	mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
 	g_assert ((cols [MONO_TYPEREF_SCOPE] & 0x3) == 2);
 	idx = cols [MONO_TYPEREF_SCOPE] >> 2;
@@ -43,7 +44,12 @@ mono_class_create_from_typeref (MonoImage *image, guint32 type_token)
 		 * detected a reference to mscorlib, we simply return a reference to a dummy 
 		 * until we have a better solution.
 		 */
-		return mono_class_from_name (image, "System", "MonoDummy");
+		res = mono_class_from_name (image, "System", "MonoDummy");
+		/* prevent method loading */
+		res->dummy = 1;
+		/* some storage if the type is used  - very ugly hack */
+		res->instance_size = 2*sizeof (gpointer);
+		return res;
 	}	
 
 	name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
@@ -216,7 +222,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		g_assert (class->instance_size);
 	}
 
-	if (!strcmp (nspace, "System") && !strcmp (name, "ValueType"))
+	if (!strcmp (nspace, "System") && 
+	    (!strcmp (name, "ValueType") || !strcmp (name, "Enum")))
 		class->valuetype = 1;
 	
 	/*
@@ -423,6 +430,33 @@ mono_class_instance_size (MonoClass *klass)
 		mono_class_metadata_init (klass);
 
 	return klass->instance_size;
+}
+
+/**
+ * mono_class_value_size:
+ * @klass: a class 
+ *
+ * This function is used for value types, and return the
+ * space and the alignment to store that kind of value object.
+ *
+ * Returns: the size of a value of kind @klass
+ */
+gint32
+mono_class_value_size      (MonoClass *klass, guint32 *align)
+{
+	gint32 size;
+
+	/* fixme: check disable, because we still have external revereces to
+	 * mscorlib and Dummy Objects 
+	 */
+	//g_assert (klass->valuetype);
+
+	size = mono_class_instance_size (klass) - sizeof (MonoObject);
+
+	/* fixme: don't know how o align that */
+	*align = size;
+
+	return size;
 }
 
 /**

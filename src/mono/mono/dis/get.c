@@ -535,7 +535,7 @@ dis_stringify_type (MonoMetadata *m, MonoType *type)
 		
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
-		bare = dis_stringify_token (m, type->data.klass->type_token);
+		bare = dis_stringify_token (type->data.klass->image, type->data.klass->type_token);
 		break;
 		
 	case MONO_TYPE_FNPTR:

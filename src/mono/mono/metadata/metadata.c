@@ -1406,7 +1406,6 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 				p = ptr;
 			}
 			mh->locals [i] = mono_metadata_parse_type (m, p, &ptr);
-
 			if (pinned) 
 				mh->locals [i]->constraint = MONO_TYPE_PINNED;
 			if (val == MONO_TYPE_BYREF) 
@@ -1662,13 +1661,12 @@ mono_type_size (MonoType *t, gint *align)
 		*align = __alignof__(gpointer);
 		return sizeof (gpointer);
 		
-	case MONO_TYPE_VALUETYPE:
-		*align = __alignof__(gpointer);
-		/*
-		 * FIXME: very bogus value
-		 */
-		g_warning ("fixme: wrong size for value type");
-		return 4;
+	case MONO_TYPE_VALUETYPE: {
+		guint32 size;
+
+		size = mono_class_value_size (t->data.klass, align);
+		return size;
+	}
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_PTR:

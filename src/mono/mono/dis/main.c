@@ -735,16 +735,17 @@ struct {
 static void
 disassemble_file (const char *file)
 {
+	MonoAssembly *ass;
 	enum MonoImageOpenStatus status;
 	MonoImage *img;
 
-	fprintf (output, "// Disassembling %s\n", file);
-
-	img = mono_image_open (file, &status);
-	if (img == NULL){
+	ass = mono_assembly_open (file, NULL, &status);
+	if (ass == NULL){
 		fprintf (stderr, "Error while trying to process %s\n", file);
 		return;
 	}
+
+	img = ass->image;
 
 	if (dump_table != -1){
 		(*table_list [dump_table].dumper) (img);

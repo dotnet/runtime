@@ -478,9 +478,10 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 			result->klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
 		}
 
-		g_assert (loc);
-
-		((MonoMethodNormal *)result)->header = mono_metadata_parse_mh (image, loc);
+		if (!result->klass->dummy && !(result->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
+			g_assert (loc);
+			((MonoMethodNormal *)result)->header = mono_metadata_parse_mh (image, loc);
+		}
 	}
 
 	g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);

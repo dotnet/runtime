@@ -19,6 +19,7 @@ struct _MonoClass {
 	MonoImage *image;
 	guint32    type_token;
 
+	guint dummy           : 1; /* temorary hack */
 	guint inited          : 1;
 	guint metadata_inited : 1;
 	guint valuetype       : 1; /* derives from System.ValueType */
@@ -82,6 +83,9 @@ mono_array_element_size    (MonoArrayClass *ac);
 
 gint32
 mono_class_instance_size   (MonoClass *klass);
+
+gint32
+mono_class_value_size      (MonoClass *klass, guint32 *align);
 
 gint32
 mono_class_data_size       (MonoClass *klass);

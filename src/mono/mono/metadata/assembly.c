@@ -90,6 +90,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	else
 		basename++;
 
+
 	/*
 	 * Temporary hack until we have a complete corlib.dll
 	 */
