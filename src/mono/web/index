@@ -174,13 +174,19 @@
 	</a> Wikis.
 </p>
 
+@item Jun 15th, 2004: Mono Beta 3 has been released
+
+	Our third beta has been released.
+
+	Packages and source code are available <a
+	href="download.html">on our download</a> page.
+
 @item Jun 1st, 2004: Mono Beta 2 has been released
 
 	<table>
 	<tr>
 	  <td>
-	    <img
-	    src="http://www.go-mono.com/images/beta2.gif"></td>
+</td>
 	  <td>Mono Beta 2 has been released.  See our <a
 	   href="http://www.go-mono.com/archive/beta2/beta2.html">Release
 	   Notes</a>, or go directly to the <a href="download.html">download</a> page. 

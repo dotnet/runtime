@@ -42,15 +42,15 @@
 		  <td>
 	 	    <ul>
 	              <li><a href="archive/beta3/mono-0.96.tar.gz">Mono Runtime 0.96</a>
-	 	      <li><a href="archive/beta3/mcs-0.95.tar.gz">Mono Class Libraries and C# Compiler 0.96</a>
+	 	      <li><a href="archive/beta3/mcs-0.96.tar.gz">Mono Class Libraries and C# Compiler 0.96</a>
  		      <li><a href="archive/beta3/libgdiplus-0.9.tar.gz">libgdiplus 0.9</a>
 		      <p>
-		      <li><a href="archive/beta2/monodoc-0.17.tar.gz">MonoDoc 0.17</a>
- 		      <li><a href="archive/beta2/xsp-0.15.tar.gz">XSP web server 0.15</a>
- 		      <li><a href="archive/beta2/mod_mono-0.11.tar.gz">Apache Mono module 0.11</a>
+		      <li><a href="archive/beta3/monodoc-0.17.tar.gz">MonoDoc 0.17</a>
+ 		      <li><a href="archive/beta3/xsp-0.15.tar.gz">XSP web server 0.15</a>
+ 		      <li><a href="archive/beta3/mod_mono-0.11.tar.gz">Apache Mono module 0.11</a>
 		      <p>
-		      <li><a href="archive/beta2/gtk-sharp-0.98.tar.gz">Gtk# 0.98</a>
-		      <li><a href="archive/beta2/gecko-sharp-0.5.tar.gz">Gecko# 0.5</a>
+		      <li><a href="archive/beta3/gtk-sharp-0.98.tar.gz">Gtk# 0.98</a>
+		      <li><a href="archive/beta3/gecko-sharp-0.5.tar.gz">Gecko# 0.5</a>
 	            </ul>
 		  </td>
 	        </tr>
