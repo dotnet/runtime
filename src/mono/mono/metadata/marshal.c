@@ -1975,7 +1975,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 	if (this) {
 		/* fime: howto free that memory ? */
 	}
-	
+
 	sig = method->signature;
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
@@ -1995,6 +1995,14 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 	csig = g_memdup (sig, sigsize);
 	csig->hasthis = 0;
 	csig->pinvoke = 1;
+
+#ifdef PLATFORM_WIN32
+	/* 
+	 * Under windows, delegates passed to native code must use the STDCALL
+	 * calling convention.
+	 */
+	csig->call_convention = MONO_CALL_STDCALL;
+#endif
 
 	/* fixme: howto handle this ? */
 	if (sig->hasthis) {
