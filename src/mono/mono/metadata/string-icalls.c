@@ -212,6 +212,7 @@ MonoString *
 ves_icall_System_String_InternalJoin (MonoString *separator, MonoArray * value, gint32 sindex, gint32 count)
 {
 	MonoString * ret;
+	MonoString *current;
 	gint32 length;
 	gint32 pos;
 	gint32 insertlen;
@@ -228,7 +229,10 @@ ves_icall_System_String_InternalJoin (MonoString *separator, MonoArray * value, 
 
 	length = 0;
 	for (pos = sindex; pos != sindex + count; pos++) {
-		length += mono_string_length(mono_array_get(value, MonoString *, pos));
+		current = mono_array_get (value, MonoString *, pos);
+		if (current != NULL)
+			length += mono_string_length (current);
+
 		if (pos < sindex + count - 1)
 			length += insertlen;
 	}
@@ -238,11 +242,14 @@ ves_icall_System_String_InternalJoin (MonoString *separator, MonoArray * value, 
 	destpos = 0;
 
 	for (pos = sindex; pos != sindex + count; pos++) {
-		src = mono_string_chars(mono_array_get(value, MonoString *, pos));
-		srclen = mono_string_length(mono_array_get(value, MonoString *, pos));
+		current = mono_array_get (value, MonoString *, pos);
+		if (current != NULL) {
+			src = mono_string_chars (current);
+			srclen = mono_string_length (current);
 
-		memcpy(dest + destpos, src, srclen * sizeof(gunichar2));
-		destpos += srclen;
+			memcpy (dest + destpos, src, srclen * sizeof(gunichar2));
+			destpos += srclen;
+		}
 
 		if (pos < sindex + count - 1) {
 			memcpy(dest + destpos, insert, insertlen * sizeof(gunichar2));
