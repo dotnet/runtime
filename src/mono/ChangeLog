@@ -1,3 +1,8 @@
+2005-02-21  Michal Moskal  <malekith@pld-linux.org>
+	    Raja R Harinath  <rharinath@novell.com>
+
+	* configure.in: Emit exec_prefix and libdir into mcs/build/config.make.
+
 2005-02-17  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am (cur_dir_cmd): New.  Use cygpath to get the

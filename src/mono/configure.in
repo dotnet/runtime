@@ -1653,7 +1653,9 @@ runtime/Makefile
   NONE | '${prefix}') exec_prefix=$prefix ;;
   esac
 
-  echo "prefix=$exec_prefix" > $srcdir/$mcsdir/build/config.make
+  echo "prefix=$prefix" > $srcdir/$mcsdir/build/config.make
+  echo "exec_prefix=$exec_prefix" >> $srcdir/$mcsdir/build/config.make
+  echo "libdir=$libdir" >> $srcdir/$mcsdir/build/config.make
   echo 'MCS_FLAGS = $(PLATFORM_DEBUG_FLAGS)' >> $srcdir/$mcsdir/build/config.make
 )
 
