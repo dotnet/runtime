@@ -216,6 +216,9 @@ mono_marshal_get_castclass (MonoClass *klass);
 MonoMethod *
 mono_marshal_get_proxy_cancast (MonoClass *klass);
 
+MonoMethod *
+mono_marshal_get_stelemref (void);
+
 /* marshaling internal calls */
 
 void * 
