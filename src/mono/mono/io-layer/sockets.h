@@ -23,6 +23,10 @@
 #define WSADESCRIPTION_LEN 256
 #define WSASYS_STATUS_LEN 128
 
+#ifdef __APPLE__
+typedef unsigned int socklen_t;
+#endif
+
 typedef struct 
 {
 	guint16 wVersion;
