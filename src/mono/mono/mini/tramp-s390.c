@@ -354,12 +354,16 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		s390_l     (buf, s390_r1, 0, s390_r11, METHOD_SAVE_OFFSET);
 		s390_st    (buf, s390_r1, 0, s390_r13, 				
 			    G_STRUCT_OFFSET(MonoLMF, method));				
-										
+									
 		/*---------------------------------------------------------------*/	
-		/* save the current IP						 */	
+		/* save the current SP						 */	
 		/*---------------------------------------------------------------*/	
 		s390_l     (buf, s390_r1, 0, STK_BASE, 0);
 		s390_st	   (buf, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, ebp));	
+									
+		/*---------------------------------------------------------------*/	
+		/* save the current IP						 */	
+		/*---------------------------------------------------------------*/	
 		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
 			s390_lhi   (buf, s390_r1, 0);
 		} else {
@@ -420,7 +424,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		STEP 3: Restore the LMF
 		----------------------------------------------------------*/
 		restoreLMF(buf, STK_BASE, CREATE_STACK_SIZE);
-		
+	
 		/*----------------------------------------------------------
 		STEP 4: call the compiled method
 		----------------------------------------------------------*/
@@ -547,6 +551,12 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	static guint8 *vc = NULL;
 	gint32 displace;
 
+	if (method->info)
+		return (method->info);
+
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		return (mono_arch_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method)));
+
 	vc = create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
 
 	/* This is the method-specific part of the trampoline. Its purpose is
@@ -569,6 +579,7 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	/* Sanity check */
 	g_assert ((buf - code) <= METHOD_TRAMPOLINE_SIZE);
 	
+	method->info = code;
 	mono_jit_stats.method_trampolines++;
 
 	return code;

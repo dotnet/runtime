@@ -516,8 +516,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	MonoS390StackFrame *sframe;
 
 	if (prev_ji && 
-	    (ip > prev_ji->code_start && 
-	    ((guint8 *) ip < ((guint8 *) prev_ji->code_start) + prev_ji->code_size)))
+	    (ip >= prev_ji->code_start && 
+	    ((guint8 *) ip <= ((guint8 *) prev_ji->code_start) + prev_ji->code_size)))
 		ji = prev_ji;
 	else
 		ji = mono_jit_info_table_find (domain, ip);
@@ -885,6 +885,7 @@ mono_arch_handle_exception (void *uc, gpointer obj, gboolean test_only)
 				for (i = 0; i < ji->num_clauses; i++) {
 					MonoJitExceptionInfo *ei = &ji->clauses [i];
 					gboolean filtered = FALSE;
+
 
 					if (ei->try_start < MONO_CONTEXT_GET_IP (ctx) && 
 					    MONO_CONTEXT_GET_IP (ctx) <= ei->try_end) { 

@@ -1169,7 +1169,7 @@ enum_retvalue:
 			nParm++;
 			continue;
 		}
-		simpletype = sig->params [i]->type;
+		simpletype = mono_type_get_underlying_type(sig->params [i])->type;
 	enum_calc_size:
 		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
@@ -4959,7 +4959,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/*---------------------------------------------------------------*/	
 		s390_lr    (code, s390_r1, cfg->frame_reg);
 		s390_st	   (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, ebp));	
-		s390_l     (code, s390_r1, 0, s390_r1, S390_RET_ADDR_OFFSET);		
+		s390_basr  (code, s390_r1, 0);
 		s390_la    (code, s390_r1, 0, s390_r1, 0);				
 		s390_st    (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, eip));	
 											
