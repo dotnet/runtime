@@ -20,7 +20,10 @@
 	SourceGear</a>'s <a
 	href="http://www.sourcegear.com/vault/index.asp">Vault</a>. They
 	even funded the development of our Web Services classes back in
-	2002.
+	2002. Another example is OpenLink's
+	<a href="http://www.openlinksw.com/virtuoso/">Virtuoso</a>. People
+	from OpenLink also contributed to Mono.
+	
 
 * Hosting ASP.NET
 
@@ -72,5 +75,5 @@
 	It does not work on Windows.
 
 <div align="bottom">
-<small>Last updated: Sat, 29 May 2004 02:53:44 GMT</small>
+<small>Last updated: Sat, 12 Jun 2004 05:07:31 GMT</small>
 </div>
