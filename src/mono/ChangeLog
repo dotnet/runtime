@@ -1,3 +1,8 @@
+2003-10-07  Zoltan Varga  <vargaz@freemail.hu>
+
+	* mono/tests/pinvoke2.cs mono/tests/libtest.c: Fix array of structs
+	test.
+
 2003-10-06  Bernie Solomon  <bernard@ugsolutions.com>
 
 	* mono/tests/pinvoke2.cs mono/tests/pinvoke11.cs 

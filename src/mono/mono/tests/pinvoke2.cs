@@ -105,7 +105,23 @@ public class Test {
 			return 4;
 
 		SimpleStruct2[] ss_arr = new SimpleStruct2 [2];
+
+		ss2.b = true;
+		ss2.d = "TEST";
+		ss2.e = 99;
+		ss2.f = 1.5;
+		ss2.g = 42;
+		ss2.h = 123L;
+
 		ss_arr [0] = ss2;
+
+		ss2.b = false;
+		ss2.d = "TEST2";
+		ss2.e = 100;
+		ss2.f = 2.5;
+		ss2.g = 43;
+		ss2.h = 124L;
+
 		ss_arr [1] = ss2;
 
 		if (mono_test_marshal_struct_array (ss_arr) != 0)
