@@ -73,13 +73,15 @@ mono_map_stind_type (MonoType *type)
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
-
 		return MB_TERM_STIND_I1;	
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
 		return MB_TERM_STIND_I2;	
+#if SIZEOF_VOID_P == 4
 	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		return MB_TERM_STIND_I4;	
@@ -92,6 +94,10 @@ mono_map_stind_type (MonoType *type)
 		return MB_TERM_STIND_REF;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 		return MB_TERM_STIND_I8;
 	case MONO_TYPE_R4:
 		return MB_TERM_STIND_R4;
@@ -134,7 +140,10 @@ mono_map_remote_stind_type (MonoType *type)
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
 		return MB_TERM_REMOTE_STIND_I2;	
+#if SIZEOF_VOID_P == 4
 	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		return MB_TERM_REMOTE_STIND_I4;	
@@ -145,6 +154,10 @@ mono_map_remote_stind_type (MonoType *type)
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:    
 		return MB_TERM_REMOTE_STIND_REF;
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		return MB_TERM_REMOTE_STIND_I8;
@@ -179,7 +192,10 @@ mono_map_starg_type (MonoType *type)
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
+#if SIZEOF_VOID_P == 4
 	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		return MB_TERM_STIND_I4;
@@ -190,6 +206,10 @@ mono_map_starg_type (MonoType *type)
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:    
 		return MB_TERM_STIND_REF;
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		return MB_TERM_STIND_I8;
@@ -224,20 +244,30 @@ mono_map_arg_type (MonoType *type)
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
+#if SIZEOF_VOID_P == 4
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
+#endif
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
+		return MB_TERM_ARG_I4;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:    
-		return MB_TERM_ARG_I4;
 	case MONO_TYPE_STRING:
+#if SIZEOF_VOID_P == 8
+		return MB_TERM_ARG_I8;
+#else
 		return MB_TERM_ARG_I4;
+#endif
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 		return MB_TERM_ARG_I8;
 	case MONO_TYPE_R4:
 		return MB_TERM_ARG_R4;
@@ -287,10 +317,15 @@ mono_map_ldind_type (MonoType *type, MonoValueType *svt)
 	case MONO_TYPE_CHAR:
 		*svt = VAL_I32;
 		return MB_TERM_LDIND_U2;
+#if SIZEOF_VOID_P == 4
 	case MONO_TYPE_I:
+#endif
 	case MONO_TYPE_I4:
 		*svt = VAL_I32;
 		return MB_TERM_LDIND_I4;
+#if SIZEOF_VOID_P == 4
+	case MONO_TYPE_U:
+#endif
 	case MONO_TYPE_U4:
 		*svt = VAL_I32;
 		return MB_TERM_LDIND_U4;
@@ -302,6 +337,10 @@ mono_map_ldind_type (MonoType *type, MonoValueType *svt)
 	case MONO_TYPE_ARRAY:    
 		*svt = VAL_POINTER;
 		return MB_TERM_LDIND_REF;
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		*svt = VAL_I64;
@@ -343,7 +382,10 @@ mono_map_ldarg_type (MonoType *type, MonoValueType *svt)
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
+#if SIZEOF_VOID_P == 4
 	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		*svt = VAL_I32;
@@ -355,9 +397,13 @@ mono_map_ldarg_type (MonoType *type, MonoValueType *svt)
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:    
 		*svt = VAL_POINTER;
-		return MB_TERM_LDIND_U4;
+		return MB_TERM_LDIND_REF;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 		*svt = VAL_I64;
 		return MB_TERM_LDIND_I8;
 	case MONO_TYPE_R4:
@@ -405,7 +451,10 @@ mono_map_call_type (MonoType *type, MonoValueType *svt)
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
+#if SIZEOF_VOID_P == 4
 	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		*svt = VAL_I32;
@@ -423,9 +472,17 @@ mono_map_call_type (MonoType *type, MonoValueType *svt)
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY: 
 		*svt = VAL_POINTER;
+#if SIZEOF_VOID_P == 8
+		return MB_TERM_CALL_I8;
+#else
 		return MB_TERM_CALL_I4;
+#endif
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 		*svt = VAL_I64;
 		return MB_TERM_CALL_I8;
 	case MONO_TYPE_R4:
