@@ -191,6 +191,16 @@ print_method_from_ip (void *ip)
 
 }
 
+MonoJumpInfoToken *
+mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
+{
+	MonoJumpInfoToken *res = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoToken));
+	res->image = image;
+	res->token = token;
+
+	return res;
+}
+
 #define MONO_INIT_VARINFO(vi,id) do { \
 	(vi)->range.first_use.pos.bid = 0xffff; \
 	(vi)->reg = -1; \
@@ -290,26 +300,26 @@ print_method_from_ip (void *ip)
 		(dest)->type = STACK_PTR;	\
 	} while (0)
 
-#define NEW_LDSTRCONST(cfg,dest,token) do {	\
+#define NEW_LDSTRCONST(cfg,dest,image,token) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = OP_AOTCONST;	\
-		(dest)->inst_p0 = (gpointer)(token);	\
+		(dest)->inst_p0 = mono_jump_info_token_new ((cfg)->mempool, (image), (token));	\
 		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_LDSTR; \
 		(dest)->type = STACK_OBJ;	\
 	} while (0)
 
-#define NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,token) do {	\
+#define NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,image,token) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = OP_AOTCONST;	\
-		(dest)->inst_p0 = (gpointer)(token);	\
+		(dest)->inst_p0 = mono_jump_info_token_new ((cfg)->mempool, (image), (token));	\
 		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_TYPE_FROM_HANDLE; \
 		(dest)->type = STACK_OBJ;	\
 	} while (0)
 
-#define NEW_LDTOKENCONST(cfg,dest,token) do {	\
+#define NEW_LDTOKENCONST(cfg,dest,image,token) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = OP_AOTCONST;	\
-		(dest)->inst_p0 = (gpointer)(token);	\
+		(dest)->inst_p0 = mono_jump_info_token_new ((cfg)->mempool, (image), (token));	\
 		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_LDTOKEN; \
 		(dest)->type = STACK_PTR;	\
 	} while (0)
@@ -2150,6 +2160,11 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	//if (!MONO_TYPE_IS_VOID (signature->ret)) return FALSE;
 
 	/* also consider num_locals? */
+	if (getenv ("MONO_INLINELIMIT"))
+		if (header->code_size < atoi (getenv ("MONO_INLINELIMIT"))) {
+			return TRUE;
+		}
+
 	if (header->code_size < 20)
 		return TRUE;
 
@@ -2290,7 +2305,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	int i, costs, new_locals_offset;
 
 	if (cfg->verbose_level > 2)
-		g_print ("INLINE START %p %s\n", cmethod,  mono_method_full_name (cmethod, TRUE));
+		g_print ("INLINE START %p %s -> %s\n", cmethod,  mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 
 	cheader = ((MonoMethodNormal *)cmethod)->header;
 
@@ -2316,12 +2331,12 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	ebblock = NEW_BBLOCK (cfg);
 	ebblock->block_num = cfg->num_bblocks++;
 	ebblock->real_offset = real_offset;
-	
+
 	costs = mono_method_to_ir (cfg, cmethod, sbblock, ebblock, new_locals_offset, rvar, dont_inline, sp, real_offset, *ip == CEE_CALLVIRT);
-	
+
 	if (costs >= 0 && costs < 60) {
 		if (cfg->verbose_level > 2)
-			g_print ("INLINE END %s\n", mono_method_full_name (cmethod, TRUE));
+			g_print ("INLINE END %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 		
 		mono_jit_stats.inlined_methods++;
 
@@ -3092,7 +3107,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			inline_costs += 10 * num_calls++;
 
 			/* tail recursion elimination */
-			if ((cfg->opt & MONO_OPT_TAILC) && *ip == CEE_CALL && cmethod == cfg->method && ip [5] == CEE_RET) {
+			if ((cfg->opt & MONO_OPT_TAILC) && *ip == CEE_CALL && cmethod == method && ip [5] == CEE_RET) {
 				gboolean has_vtargs = FALSE;
 				int i;
 				
@@ -3601,7 +3616,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					mono_ldstr (cfg->domain, image, mono_metadata_token_index (n));
 				} else {
 					if (mono_compile_aot)
-						NEW_LDSTRCONST (cfg, ins, n);
+						NEW_LDSTRCONST (cfg, ins, image, n);
 					else {
 						NEW_PCONST (cfg, ins, NULL);
 						ins->cil_code = ip;
@@ -4506,7 +4521,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoClass *tclass = mono_class_from_mono_type (handle);
 					mono_class_init (tclass);
 					if (mono_compile_aot)
-						NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, n);
+						NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, image, n);
 					else
 						NEW_PCONST (cfg, ins, mono_type_get_object (cfg->domain, handle));
 					ins->type = STACK_OBJ;
@@ -4514,7 +4529,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ip += 5;
 				} else {
 					if (mono_compile_aot)
-						NEW_LDTOKENCONST (cfg, ins, n);
+						NEW_LDTOKENCONST (cfg, ins, image, n);
 					else
 						NEW_PCONST (cfg, ins, handle);
 					ins->type = STACK_VTYPE;
@@ -5021,6 +5036,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			case CEE_TAIL_:
 				ins_flag |= MONO_INST_TAILCALL;
+				/* Can't inline tail calls at this time */
+				inline_costs += 100000;
 				ip += 2;
 				break;
 			case CEE_INITOBJ:
@@ -7187,6 +7204,12 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 {
 	MonoMethod *invoke;
 	MonoObject *(*runtime_invoke) (MonoObject *this, void **params, MonoObject **exc);
+
+	if (obj == NULL && !(method->flags & METHOD_ATTRIBUTE_STATIC)) {
+		g_warning ("Ignoring invocation of an instance method on a NULL instance.\n");
+		return NULL;
+	}
+
 	invoke = mono_marshal_get_runtime_invoke (method);
 	runtime_invoke = mono_jit_compile_method (invoke);
 	return runtime_invoke (obj, params, exc);

@@ -1611,6 +1611,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				mono_regstate_free_int (rs, X86_EDX);
 			}
 		}
+
 		/* update for use with FP regs... */
 		if (spec [MONO_INST_DEST] != 'f' && ins->dreg >= MONO_MAX_IREGS) {
 			val = rs->iassign [ins->dreg];
@@ -3085,15 +3086,15 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			continue;
 		case MONO_PATCH_INFO_LDSTR:
 			*((gconstpointer *)(ip + 1)) = 
-				mono_ldstr (domain, method->klass->image, 
-							mono_metadata_token_index (patch_info->data.token));
+				mono_ldstr (domain, patch_info->data.token->image, 
+							mono_metadata_token_index (patch_info->data.token->token));
 			continue;
 		case MONO_PATCH_INFO_TYPE_FROM_HANDLE: {
 			gpointer handle;
 			MonoClass *handle_class;
 
-			handle = mono_ldtoken (method->klass->image, 
-								   patch_info->data.token, &handle_class);
+			handle = mono_ldtoken (patch_info->data.token->image, 
+								   patch_info->data.token->token, &handle_class);
 			mono_class_init (handle_class);
 			mono_class_init (mono_class_from_mono_type (handle));
 
@@ -3105,8 +3106,8 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			gpointer handle;
 			MonoClass *handle_class;
 
-			handle = mono_ldtoken (method->klass->image, 
-								   patch_info->data.token, &handle_class);
+			handle = mono_ldtoken (patch_info->data.token->image,
+								   patch_info->data.token->token, &handle_class);
 			mono_class_init (handle_class);
 
 			*((gconstpointer *)(ip + 1)) = handle;

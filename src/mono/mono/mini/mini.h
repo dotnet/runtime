@@ -18,7 +18,7 @@
 #define MONO_USE_AOT_COMPILER
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "5"
+#define MONO_AOT_FILE_VERSION "6"
 
 #if 1
 #define mono_bitset_test_fast(set,n) (((guint32*)set)[2+(n)/32] & (1 << ((n) % 32)))
@@ -359,6 +359,16 @@ typedef enum {
 	MONO_PATCH_INFO_WRAPPER
 } MonoJumpInfoType;
 
+/*
+ * We need to store the image which the token refers to along with the token,
+ * since the image might not be the same as the image of the method which
+ * contains the relocation, because of inlining.
+ */
+typedef struct MonoJumpInfoToken {
+	MonoImage *image;
+	guint32 token;
+} MonoJumpInfoToken;
+
 typedef struct MonoJumpInfo MonoJumpInfo;
 struct MonoJumpInfo {
 	MonoJumpInfo *next;
@@ -381,7 +391,7 @@ struct MonoJumpInfo {
 		MonoImage      *image;
 		MonoVTable     *vtable;
 		const char     *name;
-		guint32        token;
+		MonoJumpInfoToken  *token;
 	} data;
 
 	int table_size; /* use by switch */
@@ -600,6 +610,7 @@ MonoDomain* mini_init                      (const char *filename);
 void        mini_cleanup                   (MonoDomain *domain);
 
 /* helper methods */
+MonoJumpInfoToken * mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token);
 void      mono_precompile_assemblies        (void);
 int       mono_parse_default_optimizations  (const char* p);
 void      mono_bblock_add_inst              (MonoBasicBlock *bb, MonoInst *inst);

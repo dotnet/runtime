@@ -521,7 +521,8 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 			case MONO_PATCH_INFO_LDSTR:
 			case MONO_PATCH_INFO_LDTOKEN:
 			case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-				ji->data.target = *data;
+				image = aot_module->image_table [(int)data [0]];
+				ji->data.token = mono_jump_info_token_new (mp, image, (int)data [1]);
 				break;
 			case MONO_PATCH_INFO_EXC_NAME:
 				ji->data.klass = decode_class_info (aot_module, data);
@@ -906,7 +907,8 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 		case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
 			fprintf (tmpfp, "\t.align 8\n");
 			fprintf (tmpfp, "%s_p_%d:\n", mname, j);
-			fprintf (tmpfp, "\t.long 0x%08x\n", patch_info->data.token);
+			fprintf (tmpfp, "\t.long 0x%08x\n", get_image_index (acfg, patch_info->data.token->image));
+			fprintf (tmpfp, "\t.long 0x%08x\n", patch_info->data.token->token);
 			j++;
 			break;
 		default:
