@@ -8,21 +8,30 @@ typedef struct {
 } MonoObject;
 
 typedef struct {
+	guint32 length;
+	guint32 lower_bound;
+} MonoArrayBounds;
+
+typedef struct {
 	MonoObject obj;
-	gint32 lower_bound;
-	gint32 length;
-	gint32 rank;
 	gpointer vector;
+	MonoArrayBounds *bounds;
 } MonoArrayObject;
 
 typedef struct {
 	MonoObject obj;
-	gint32 length;
 	MonoArrayObject *c_str;
+	gint32 length;
 } MonoStringObject;
 
-MonoObject *mono_object_new  (MonoImage *image, guint32 type_token);
-void        mono_object_free (MonoObject *o);
+MonoObject *
+mono_object_new       (MonoImage *image, guint32 type_token);
+
+MonoObject *
+mono_new_szarray      (MonoImage *image, guint32 etype, guint32 n);
+
+void       
+mono_object_free      (MonoObject *o);
 		      
 #endif
 

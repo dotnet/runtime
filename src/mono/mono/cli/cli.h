@@ -28,17 +28,29 @@ typedef struct {
 } MonoMethodPInvoke;
 
 
-MonoMethod        *mono_get_method      (MonoImage *image, guint32 token);
-void               mono_free_method     (MonoMethod *method);
+MonoMethod *
+mono_get_method            (MonoImage *image, guint32 token);
 
-guint32            mono_typedef_from_name (MonoImage *image, const char *name, 
-					   const char *nspace, guint32 *mlist);
+void               
+mono_free_method           (MonoMethod *method);
 
-guint32            mono_get_string_class_info (guint *ttoken, MonoImage **cl);
+guint32            
+mono_typedef_from_name     (MonoImage *image, const char *name, 
+			    const char *nspace, guint32 *mlist);
 
+MonoImage *
+mono_get_corlib            (void);
 
-MonoImage         *mono_load_image    (const char *fname, enum MonoImageOpenStatus *status);
+guint32            
+mono_get_string_class_info (guint *ttoken, MonoImage **cl);
 
-gpointer           mono_lookup_internal_call (const char *name);
+void              
+mono_get_array_class_info  (guint *ttoken, MonoImage **cl);
+
+MonoImage *
+mono_load_image            (const char *fname, enum MonoImageOpenStatus *status);
+
+gpointer
+mono_lookup_internal_call  (const char *name);
 
 #endif

@@ -65,11 +65,55 @@ mono_typedef_from_name (MonoImage *image, const char *name,
 				&& strcmp (nspace, mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE])) == 0) {
 			if (mlist)
 				*mlist = cols [MONO_TYPEDEF_METHOD_LIST];
-			return i + 1;
+			return MONO_TOKEN_TYPE_DEF | (i + 1);
 		}
 	}
 	g_assert_not_reached ();
 	return 0;
+}
+
+MonoImage *
+mono_get_corlib ()
+{
+	static MonoImage *corlib = NULL;
+	MonoAssembly *ass;
+	enum MonoImageOpenStatus status = MONO_IMAGE_OK;
+
+	if (!corlib) {
+		ass = mono_assembly_open (CORLIB_NAME, NULL, &status);
+		g_assert (status == MONO_IMAGE_OK);
+		g_assert (ass != NULL);
+		g_assert (ass->image != NULL);
+		
+		corlib = ass->image;
+	}
+
+	return corlib;
+}
+
+/**
+ * mono_get_array_class_info:
+ * @ttoken: pointer to location to store type definition token
+ * @cl: pointer where image will be stored
+ *
+ * This routine locates information about the System.Array class. A reference
+ * to the image containing the class is returned in @cl. The type definition 
+ * token is returned in @ttoken. 
+ */
+void
+mono_get_array_class_info (guint *ttoken, MonoImage **cl)
+{
+	static guint32 arr_token = 0;
+	static MonoImage *corlib;
+
+	if (!arr_token) {
+		corlib = mono_get_corlib ();		
+		arr_token = mono_typedef_from_name (corlib, "Array", "System", NULL);
+		g_assert (arr_token != 0);
+	}
+
+	*ttoken = arr_token;
+	*cl = corlib;
 }
 
 /**
@@ -88,8 +132,6 @@ guint32
 mono_get_string_class_info (guint *ttoken, MonoImage **cl)
 {
 	static guint32 ctor = 0, tt = 0;
-	enum MonoImageOpenStatus status = MONO_IMAGE_OK; 
-	MonoAssembly *ass;
 	static MonoImage *corlib;
 	MonoMetadata *m;
 	MonoTableInfo *t;
@@ -104,13 +146,8 @@ mono_get_string_class_info (guint *ttoken, MonoImage **cl)
 		return ctor;
 	}
 
-	ass = mono_assembly_open (CORLIB_NAME, NULL, &status);
-	g_assert (status == MONO_IMAGE_OK);
-	g_assert (ass != NULL);
+	*cl = corlib = mono_get_corlib ();		
 	
-	*cl = corlib = ass->image;
-	g_assert (corlib != NULL);
-       
 	m = &corlib->metadata;
 	t = &m->tables [MONO_TABLE_TYPEDEF];
 
@@ -165,8 +202,8 @@ mono_get_string_class_info (guint *ttoken, MonoImage **cl)
 	return ctor;
 }
 
-static void
-methoddef_from_memberref (MonoImage *image, guint32 index, MonoImage **rimage, guint32 *rindex)
+static MonoMethod *
+method_from_memberref (MonoImage *image, guint32 index)
 {
 	MonoMetadata *m = &image->metadata;
 	MonoTableInfo *tables = m->tables;
@@ -220,9 +257,7 @@ methoddef_from_memberref (MonoImage *image, guint32 index, MonoImage **rimage, g
 				if (strcmp (mname, mono_metadata_string_heap (m, cols [MONO_METHOD_NAME])) == 0 
 						&& sig_len == msig_len
 						&& strncmp (sig, msig, sig_len) == 0) {
-					*rimage = image;
-					*rindex = i + 1;
-					return;
+					return mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1));
 				}
 			}
 			g_assert_not_reached ();
@@ -232,9 +267,66 @@ methoddef_from_memberref (MonoImage *image, guint32 index, MonoImage **rimage, g
 		}
 		break;
 	}
+	case MEMBERREF_PARENT_TYPESPEC: {
+		MonoMethodSignature *ms;
+		guint32 bcols [MONO_TYPESPEC_SIZE];
+		const char *ptr;
+		guint32 len;
+		MonoType *type;
+		MonoMethod *result;
+
+		mono_metadata_decode_row (&tables [MONO_TABLE_TYPESPEC], nindex - 1, 
+					  bcols, MONO_TYPESPEC_SIZE);
+		ptr = mono_metadata_blob_heap (m, bcols [MONO_TYPESPEC_SIGNATURE]);
+		len = mono_metadata_decode_value (ptr, &ptr);	
+		type = mono_metadata_parse_type (m, ptr, &ptr);
+
+		if (type->type != MONO_TYPE_ARRAY)
+			g_assert_not_reached ();		
+
+		ms = mono_metadata_parse_method_signature (m, 0, sig, &sig);
+
+		result = (MonoMethod *)g_new0 (MonoMethod, 1);
+		result->image = image;
+		result->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
+		result->signature = ms;
+		
+		if (!strcmp (mname, ".ctor")) { 
+			g_assert (ms->hasthis);
+			if (type->data.array->rank == ms->param_count) {
+				result->addr = mono_lookup_internal_call ("__array_ctor");
+				return result;
+			} else if ((type->data.array->rank * 2) == ms->param_count) {
+				result->addr = mono_lookup_internal_call ("__array_bound_ctor");
+				return result;			
+			} else 
+				g_assert_not_reached ();
+		}
+
+		if (!strcmp (mname, "Set")) {
+			g_assert (ms->hasthis);
+			g_assert (type->data.array->rank + 1 == ms->param_count);
+
+			result->addr = mono_lookup_internal_call ("__array_Set");
+			return result;
+		}
+
+		if (!strcmp (mname, "Get")) {
+			g_assert (ms->hasthis);
+			g_assert (type->data.array->rank == ms->param_count);
+
+			result->addr = mono_lookup_internal_call ("__array_Get");
+			return result;
+		}
+
+		g_assert_not_reached ();
+		break;
+	}
 	default:
 		g_assert_not_reached ();
 	}
+
+	return NULL;
 }
 
 static ffi_type *
@@ -356,28 +448,36 @@ mono_get_method (MonoImage *image, guint32 token)
 	int table = mono_metadata_token_table (token);
 	int index = mono_metadata_token_index (token);
 	MonoTableInfo *tables = m->tables;
-	const char *loc, *name;
-	const char *sig = NULL;
+	const char *loc, *sig = NULL;
+	char *name;
 	int size;
 	guint32 cols[6];
 
 	if (table == MONO_TABLE_METHOD && (result = g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (token))))
 			return result;
-	
+
 	if (table != MONO_TABLE_METHOD) {
 		g_assert (table == MONO_TABLE_MEMBERREF);
-		methoddef_from_memberref (image, index, &image, &token);
-		return mono_get_method (image, MONO_TOKEN_METHOD_DEF | token);
+		return method_from_memberref (image, index);
 	}
 
 	mono_metadata_decode_row (&tables [table], index - 1, cols, 6);
 
 	if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+		MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
 		MonoAssembly *corlib;
+		guint32 tdef;
+		guint32 tdcols [MONO_TYPEDEF_SIZE];
+
+		tdef = mono_metadata_typedef_from_method (m, index - 1) - 1;
+
+		mono_metadata_decode_row (t, tdef, tdcols, MONO_TYPEDEF_SIZE);
+
+		name = g_strconcat (mono_metadata_string_heap (m, tdcols [MONO_TYPEDEF_NAMESPACE]), ".",
+				    mono_metadata_string_heap (m, tdcols [MONO_TYPEDEF_NAME]), "::", 
+				    mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]), NULL);
 
 		corlib = mono_assembly_open (CORLIB_NAME, NULL, NULL);
-
-		name = mono_metadata_string_heap (m, cols[3]);
 
 		/* all internal calls must be inside corlib */
 		g_assert (corlib->image == image);
@@ -385,6 +485,8 @@ mono_get_method (MonoImage *image, guint32 token)
 		result = (MonoMethod *)g_new0 (MonoMethod, 1);
 
 		result->addr = mono_lookup_internal_call (name);
+
+		g_free (name);
 
 		g_assert (result->addr != NULL);
 

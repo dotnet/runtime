@@ -1,3 +1,7 @@
+2001-08-09  Dietmar Maurer  <dietmar@ximian.com>
+
+	* mono/tests/array.cs: more array tests
+
 2001-08-06  Dietmar Maurer  <dietmar@ximian.com>
 
 	* mono/tests/pinvoke.cs: we can now print strings ;-)

@@ -4,6 +4,8 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
 
+#define MONO_CLASS_IS_ARRAY(c) (c->type_token == 0)
+
 typedef struct {
 	MonoFieldType *type;
 	int            offset;
@@ -17,6 +19,7 @@ struct _MonoClass {
 	guint32    type_token;
 
 	guint inited : 1;
+	guint valuetype : 1;
 
 	MonoClass *parent;
 	
@@ -44,8 +47,20 @@ struct _MonoClass {
 	 */
 };
 
-MonoClass *mono_class_get       (MonoImage *image, guint32 type_token);
+typedef struct {
+	MonoClass class;
+	guint32 rank;        /* array dimension */
+	guint32 etype_token; /* element type token */
+	guint32 esize;       /* element size */	
+} MonoArrayClass;
 
-MonoClassField *mono_class_get_field (MonoClass *class, guint32 field_token);
+MonoClass *
+mono_class_get       (MonoImage *image, guint32 type_token);
+
+MonoClass *
+mono_array_class_get (MonoImage *image, guint32 etype, guint32 rank);
+
+MonoClassField *
+mono_class_get_field (MonoClass *class, guint32 field_token);
 
 #endif /* _MONO_CLI_CLASS_H_ */

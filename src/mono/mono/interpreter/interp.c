@@ -145,6 +145,9 @@ newobj (MonoImage *image, guint32 token)
 		table = mpr_token & 7;
 		idx = mpr_token >> 3;
 		
+		if (strcmp (mono_metadata_string_heap (m, member_cols[1]), ".ctor"))
+			g_error ("Unhandled: call to non constructor");
+
 		switch (table){
 		case 0: /* TypeDef */
 			result = mono_object_new (image, MONO_TOKEN_TYPE_DEF | idx);
@@ -158,8 +161,8 @@ newobj (MonoImage *image, guint32 token)
 		case 3: /* MethodDef */
 			g_error ("Unhandled: MethodDef");
 			
-		case 4: /* TypeSpec */
-			g_error ("Unhandled: TypeSepc");
+		case 4: /* TypeSpec */			
+			result = mono_object_new (image, MONO_TOKEN_TYPE_SPEC | idx);
 		}
 		break;
 	}
@@ -224,6 +227,7 @@ stackval_from_data (MonoType *type, const char *data, guint offset)
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_CLASS:
+	case MONO_TYPE_ARRAY:
 		result.type = VAL_OBJ;
 		result.data.p = *(gpointer*)(data + offset);
 		break; 
@@ -262,6 +266,7 @@ stackval_to_data (MonoType *type, stackval *val, char *data, guint offset)
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_CLASS:
+	case MONO_TYPE_ARRAY:
 		*(gpointer*)(data + offset) = val->data.p;
 		break;
 	default:
@@ -270,65 +275,14 @@ stackval_to_data (MonoType *type, stackval *val, char *data, guint offset)
 	}
 }
 
-/*
- * newarr:
- * @image: image where the object is being referenced
- * @token: type token
- * @n: number of array elements
- *
- * This routine creates a new array with @n elements of type @token
- */
-static MonoObject *
-newarr (MonoImage *image, guint32 token, guint32 n)
-{
-	MonoClass *tc;
-	MonoObject *o;
-	MonoArrayObject *ao;
-	static guint32 arr_token = 0;
-	static MonoImage *corlib = NULL;
-
-	tc = mono_class_get (image, token);
-	g_assert (tc != 0);
-
-	if (!arr_token) {
-		MonoAssembly *ass;
-		enum MonoImageOpenStatus status = MONO_IMAGE_OK; 
-
-		ass = mono_assembly_open (CORLIB_NAME, NULL, &status);
-		g_assert (status == MONO_IMAGE_OK);
-		g_assert (ass != NULL);
-
-		corlib = ass->image;
-		
-		arr_token = mono_typedef_from_name (corlib, "Array", "System",
-						    NULL);
-		g_assert (arr_token != 0);
-
-		arr_token =  MONO_TOKEN_TYPE_DEF | arr_token;
-	}
-
-        o = mono_object_new (corlib, arr_token);
-	g_assert (o != NULL);
-
-	g_assert (o->klass->field.count == 3);
-
-	ao = (MonoArrayObject *)o;
-
-	ao->lower_bound = 0;
-	ao->length = n;
-	ao->rank = 1;
-	ao->vector = g_malloc0 (n * (o->klass->instance_size - 
-				     sizeof (MonoObject)));
-
-	return o;
-}
-
 static char *
 mono_get_ansi_string (MonoObject *o)
 {
 	MonoStringObject *s = (MonoStringObject *)o;
 	char *as, *vector;
 	int i;
+
+	g_assert (o != NULL);
 
 	if (!s->length)
 		return g_strdup ("");
@@ -350,10 +304,148 @@ mono_get_ansi_string (MonoObject *o)
 }
 
 static void 
-ves_icall_InternalGetValue (MonoMethod *mh, stackval *sp)
+ves_icall_array_Set (MonoMethod *mh, stackval *sp)
+{
+	MonoObject *o;
+	MonoArrayObject *ao;
+	MonoArrayClass *ac;
+	gint32 i, t, pos;
+	gpointer ea;
+
+	g_assert (sp [0].type == VAL_OBJ);
+
+	o = sp [0].data.p;
+	ao = (MonoArrayObject *)o;
+	ac = (MonoArrayClass *)o->klass;
+
+	g_assert (ac->rank >= 1);
+
+	pos = sp [1].data.i - ao->bounds [1].lower_bound;
+	for (i = 1; i < ac->rank; i++) {
+		if ((t = sp [i + 1].data.i - ao->bounds [i].lower_bound) >= ao->bounds [i].length) {
+			g_warning ("wrong array index");
+			g_assert_not_reached ();
+		}
+		pos = pos*ao->bounds [i].length + sp [i + 1].data.i - ao->bounds [i].lower_bound;
+	}
+
+	ea = ao->vector + (pos * ac->esize);
+	memcpy (ea, &sp [ac->rank + 1].data.p, ac->esize);
+}
+
+static void 
+ves_icall_array_Get (MonoMethod *mh, stackval *sp)
+{
+	MonoObject *o;
+	MonoArrayObject *ao;
+	MonoArrayClass *ac;
+	gint32 i, pos;
+	gpointer ea;
+
+	g_assert (sp [0].type == VAL_OBJ);
+
+	o = sp [0].data.p;
+	ao = (MonoArrayObject *)o;
+	ac = (MonoArrayClass *)o->klass;
+
+	g_assert (ac->rank >= 1);
+
+	pos = sp [1].data.i - ao->bounds [1].lower_bound;
+	for (i = 1; i < ac->rank; i++)
+		pos = pos*ao->bounds [i].length + sp [i + 1].data.i - ao->bounds [i].lower_bound;
+
+	ea = ao->vector + (pos * ac->esize);
+
+	sp [0].type = VAL_I32; /* fixme: not really true */
+	memcpy (&sp [0].data.p, ea, ac->esize);
+}
+
+static void 
+ves_icall_array_ctor (MonoMethod *mh, stackval *sp)
+{
+	MonoObject *o;
+	MonoArrayObject *ao;
+	MonoArrayClass *ac;
+	gint32 i, len;
+
+	g_assert (sp [0].type == VAL_OBJ);
+
+	o = sp [0].data.p;
+	ao = (MonoArrayObject *)o;
+	ac = (MonoArrayClass *)o->klass;
+
+	g_assert (ac->rank >= 1);
+
+	len = sp [1].data.i;
+	for (i = 1; i < ac->rank; i++)
+		len *= sp [i + 1].data.i;
+
+	ao->vector = g_malloc0 (len * ac->esize);
+	ao->bounds = g_malloc0 (ac->rank * sizeof (MonoArrayBounds));
+
+	for (i = 0; i < ac->rank; i++)
+		ao->bounds [i].length = sp [i + 1].data.i;
+}
+
+static void 
+ves_icall_array_bound_ctor (MonoMethod *mh, stackval *sp)
+{
+	MonoObject *o;
+	MonoArrayClass *ac;
+
+	g_assert (sp [0].type == VAL_OBJ);
+
+	o = sp [0].data.p;
+	ac = (MonoArrayClass *)o->klass;
+
+	g_warning ("experimental implementation");
+	g_assert_not_reached ();
+}
+
+static void 
+ves_icall_System_Array_InternalGetValue (MonoMethod *mh, stackval *sp)
 {
 	g_warning ("experimental implementation");
 	g_assert_not_reached ();
+}
+
+static void 
+ves_icall_System_Array_GetRank (MonoMethod *mh, stackval *sp)
+{
+	MonoObject *o;
+
+	g_assert (sp [0].type == VAL_OBJ);
+
+	o = sp [0].data.p;
+
+	sp [0].data.i = ((MonoArrayClass *)o->klass)->rank;
+	sp [0].type = VAL_I32;
+}
+
+static void 
+ves_icall_System_Array_GetLength (MonoMethod *mh, stackval *sp)
+{
+	MonoObject *o;
+
+	g_assert (sp [0].type == VAL_OBJ);
+
+	o = sp [0].data.p;
+
+	sp [0].data.i = ((MonoArrayObject *)o)->bounds [sp [1].data.i].length;
+	sp [0].type = VAL_I32;
+}
+
+static void 
+ves_icall_System_Array_GetLowerBound (MonoMethod *mh, stackval *sp)
+{
+	MonoObject *o;
+
+	g_assert (sp [0].type == VAL_OBJ);
+
+	o = sp [0].data.p;
+
+	sp [0].data.i = ((MonoArrayObject *)o)->bounds [sp [1].data.i].lower_bound;
+	sp [0].type = VAL_I32;
 }
 
 gpointer
@@ -365,8 +457,22 @@ mono_lookup_internal_call (const char *name)
 	if (!icall_hash) {
 		icall_hash = g_hash_table_new (g_str_hash , g_str_equal);
 		
-		g_hash_table_insert (icall_hash, "InternalGetValue", 
-				     &ves_icall_InternalGetValue);
+		g_hash_table_insert (icall_hash, "__array_Set", 
+				     &ves_icall_array_Set);
+		g_hash_table_insert (icall_hash, "__array_Get", 
+				     &ves_icall_array_Get);
+		g_hash_table_insert (icall_hash, "__array_ctor", 
+				     &ves_icall_array_ctor);
+		g_hash_table_insert (icall_hash, "__array_bound_ctor", 
+				     &ves_icall_array_bound_ctor);
+		g_hash_table_insert (icall_hash, "System.Array::InternalGetValue", 
+				     &ves_icall_System_Array_InternalGetValue);
+		g_hash_table_insert (icall_hash, "System.Array::GetRank", 
+				     &ves_icall_System_Array_GetRank);
+		g_hash_table_insert (icall_hash, "System.Array::GetLength", 
+				     &ves_icall_System_Array_GetLength);
+		g_hash_table_insert (icall_hash, "System.Array::GetLowerBound", 
+				     &ves_icall_System_Array_GetLowerBound);
 	}
 
 	if (!(res = g_hash_table_lookup (icall_hash, name))) {
@@ -417,7 +523,9 @@ ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 			values[i] = &sp [i].data.f;
 			break;
 		case MONO_TYPE_STRING:
-			if (mh->flags & PINVOKE_ATTRIBUTE_CHAR_SET_ANSI) {
+			g_assert (sp [i].type == VAL_OBJ);
+
+			if (mh->flags & PINVOKE_ATTRIBUTE_CHAR_SET_ANSI && sp [i].data.p) {
 				tmp_string = alloca (sizeof (char *));
 				*tmp_string = mono_get_ansi_string (sp [i].data.p);
 				l = g_slist_prepend (l, *tmp_string);
@@ -1319,7 +1427,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 
 			ctor = mono_get_string_class_info (&ttoken, &cl);
 			o = mono_object_new (cl, ttoken);
-		
+			
 			g_assert (o != NULL);
 
 			cmh = mono_get_method (cl, ctor);
@@ -1478,7 +1586,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 
 			ip++;
 			token = read32 (ip);
-			o = newarr (mh->image, token, sp [-1].data.i);
+			o = mono_new_szarray (mh->image, token, sp [-1].data.i);
 			ip += 4;
 
 			sp [-1].type = VAL_OBJ;
@@ -1496,11 +1604,10 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			o = sp [-1].data.p;
 			g_assert (o != NULL);
 			
-			/* must be a szarray */
-			g_assert (o->vector != NULL);
+			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
 
 			sp [-1].type = VAL_I32;
-			sp [-1].data.i = o->length;
+			sp [-1].data.i = o->bounds [0].length;
 
 			BREAK;
 		}
@@ -1513,18 +1620,19 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		CASE (CEE_LDELEM_U4) /* fall through */
 		CASE (CEE_LDELEM_I)  /* fall through */
 		CASE (CEE_LDELEM_R4) /* fall through */
-		CASE (CEE_LDELEM_R8) {
+		CASE (CEE_LDELEM_R8) /* fall through */
+		CASE (CEE_LDELEM_REF) {
 			MonoArrayObject *o;
 
 			sp -= 2;
 
 			g_assert (sp [0].type == VAL_OBJ);
 			o = sp [0].data.p;
-			/* must be a szarray */
-			g_assert (o->vector != NULL);
 
+			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
+			
 			g_assert (sp [1].data.i >= 0);
-			g_assert (sp [1].data.i < o->length);
+			g_assert (sp [1].data.i < o->bounds [0].length);
 			
 			switch (*ip) {
 			case CEE_LDELEM_I1:
@@ -1563,6 +1671,10 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 				sp [0].data.i = ((double *)o->vector)[sp [1].data.i]; 
 				sp [0].type = VAL_DOUBLE;
 				break;
+			case CEE_LDELEM_REF:
+				sp [0].data.p = ((gpointer *)o->vector)[sp [1].data.i]; 
+				sp [0].type = VAL_OBJ;
+				break;
 			default:
 				ves_abort();
 			}
@@ -1573,24 +1685,27 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			BREAK;
 		}
 		CASE (CEE_LDELEM_I8) ves_abort(); BREAK;
-		CASE (CEE_LDELEM_REF) ves_abort(); BREAK;
 		CASE (CEE_STELEM_I)  /* fall through */
 		CASE (CEE_STELEM_I1) /* fall through */ 
 		CASE (CEE_STELEM_I2) /* fall through */
 		CASE (CEE_STELEM_I4) /* fall through */
 		CASE (CEE_STELEM_R4) /* fall through */
-		CASE (CEE_STELEM_R8) {
+		CASE (CEE_STELEM_R8) /* fall through */
+		CASE (CEE_STELEM_REF) {
 			MonoArrayObject *o;
+			MonoArrayClass *ac;
+			MonoObject *v;
 
 			sp -= 3;
 
 			g_assert (sp [0].type == VAL_OBJ);
 			o = sp [0].data.p;
-			/* must be a szarray */
-			g_assert (o->vector != NULL);
 
+			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
+			ac = (MonoArrayClass *)o->obj.klass;
+		    
 			g_assert (sp [1].data.i >= 0);
-			g_assert (sp [1].data.i < o->length);
+			g_assert (sp [1].data.i < o->bounds [0].length);
 
 			switch (*ip) {
 			case CEE_STELEM_I:
@@ -1617,6 +1732,17 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 				((double *)o->vector)[sp [1].data.i] = 
 					sp [2].data.f;
 				break;
+			case CEE_STELEM_REF:
+				g_assert (sp [2].type == VAL_OBJ);
+			
+				v = sp [2].data.p;
+
+				//fixme: what about type conversions ?
+				g_assert (v->klass->type_token == ac->etype_token);
+
+				((gpointer *)o->vector)[sp [1].data.i] = 
+					sp [2].data.p;
+				break;
 			default:
 				ves_abort();
 			}
@@ -1626,7 +1752,6 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			BREAK;
 		}
 		CASE (CEE_STELEM_I8)  ves_abort(); BREAK;
-		CASE (CEE_STELEM_REF) ves_abort(); BREAK;
 		CASE (CEE_UNUSED2) 
 		CASE (CEE_UNUSED3) 
 		CASE (CEE_UNUSED4) 

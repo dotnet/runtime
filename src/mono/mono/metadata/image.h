@@ -33,6 +33,12 @@ struct _MonoImage {
 	GHashTable *class_cache;
 
 	/*
+	 * Indexed by ((rank << 24) | (typedef & 0xffffff)), which limits us to a
+	 * maximal rank of 255
+	 */
+	GHashTable *array_cache;
+
+	/*
 	 * user_info is a public field and is not touched by the
 	 * metadata engine
 	 */

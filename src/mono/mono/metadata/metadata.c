@@ -907,7 +907,7 @@ mono_metadata_parse_typedef_or_ref (MonoMetadata *m, const char *ptr, const char
 	guint table;
 	token = mono_metadata_decode_value (ptr, &ptr);
 
-	switch (table & 0x03) {
+	switch (token & 0x03) {
 	case 0: table = MONO_TABLE_TYPEDEF; break;
 	case 1: table = MONO_TABLE_TYPEREF; break;
 	case 2: table = MONO_TABLE_TYPESPEC; break;
@@ -1658,12 +1658,9 @@ mono_type_size (MonoType *t, gint *align)
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_ARRAY:
 		*align = __alignof__(gpointer);
 		return sizeof (gpointer);
-		
-	case MONO_TYPE_ARRAY:
-		g_error ("FIXME: Add computation of size for MONO_TYPE_ARRAY");
-		break;
 	default:
 		g_error ("type 0x%02x unknown", t->type);
 	}

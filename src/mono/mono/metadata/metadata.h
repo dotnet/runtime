@@ -256,7 +256,7 @@ MonoType      *mono_metadata_parse_type        (MonoMetadata      *m,
                					const char     **rptr);
 void           mono_metadata_free_type         (MonoType        *type);
 int            mono_type_size                  (MonoType        *type, 
-				                                int             *alignment);
+						int             *alignment);
 
 MonoFieldType *mono_metadata_parse_field_type  (MonoMetadata      *m,
 						const char      *ptr,

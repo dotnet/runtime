@@ -939,7 +939,6 @@ get_method (MonoMetadata *m, guint32 token)
 
 	switch (mono_metadata_token_code (token)){
 	case MONO_TOKEN_METHOD_DEF:
-
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], 
 					  idx - 1, method_cols, MONO_METHOD_SIZE);
 
