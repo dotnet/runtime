@@ -801,7 +801,7 @@ A: Most of Mono is being written using C#, with only
           href="tdsclient.html">SQL Server</a>, <a
           href="sqlite.html">SQL Lite</a>, <a
           href="mysql.html">MySQL</a>, <a
-          href="postgresql">PostgresSQL</A>, <a href="oledb.html">Ole
+          href="postgresql.html">PostgresSQL</A>, <a href="oledb.html">Ole
           DB</a> and <a href="odbc.html">ODBC</a>.
 
      <li> Mono includes full LDAP support.
