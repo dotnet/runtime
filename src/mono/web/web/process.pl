@@ -24,9 +24,9 @@ while (<COMMANDS>) {
   if ($command[0] != -1) {
       $menu .= "\t\t";
       if ($command[0] == 0){
-	  $menu .= "<tr><td class=\"navi\"><a class=\"navi\"";
+	  $menu .= "<tr><td align=\"top\" class=\"navi\"><a class=\"navi\"";
       } else {
-	  $menu .= "&nbsp; &nbsp; &nbsp; <tr><td class=\"subnavi\"><a ";
+	  $menu .= "&nbsp; &nbsp; &nbsp; <tr><td align=\"top\" class=\"subnavi\"><a ";
       }
       $menu .= "HREF=\"$command[2]\">$command[1]</A></td></tr>\n\n";
   } 

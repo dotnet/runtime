@@ -25,7 +25,7 @@ all:
 	perl process.pl commands template.html.in .
 
 push:
-	scp *.html www:/web/cvsmodules/mono
+	scp *.html www@www.ximian.com:/web/cvsmodules/mono
 
 push2: 
 	scp *.html primates:public_html/xxx

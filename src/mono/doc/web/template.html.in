@@ -3,7 +3,7 @@
 <title>[ m o n o ] main page</title>
 <style type="text/css">
 <!--
-   body { font-family: "trebuchet ms", lucida, verdana, helvetica; background-image: url("images/bgsquares.png"); background-attachment: fixed; }
+   body { font-family: "trebuchet ms", lucida, verdana, helvetica; background-image: url("images/bgsquares.gif"); background-attachment: fixed; }
    body, td, table { font-family: "trebuchet ms", lucida, verdana, helvetica; font-size: 12px; }
 	a:link { color: #bbbbbb; text-decoration: none; font-weight: bold; border-bottom: none 1px; }
 	a:visited { color: #ee9900; }
@@ -22,26 +22,26 @@
 
 <table cellpadding="0" cellspacing="0" border="0">
     <tr>
-        <td><img src="images/pixel.png"></td>
-        <td colspan="3"><img src="images/mono.png"></td>
-        <td><img src="images/pixel.png"></td>
+        <td><img src="images/pixel.gif"></td>
+        <td colspan="3"><img src="images/mono.gif"></td>
+        <td><img src="images/pixel.gif"></td>
     </tr>
     <tr>
         <td>
-            <img src="images/pixel.png"></td><td colspan="3" bgcolor="black">
-            <img src="images/pixel.png" height="2">
+            <img src="images/pixel.gif"></td><td colspan="3" bgcolor="black">
+            <img src="images/pixel.gif" height="2">
         </td>
-        <td bgcolor="black"><img src="images/pixel.png" width="2"></td>
-	<td><img src="images/pixel.png"></td>
+        <td bgcolor="black"><img src="images/pixel.gif" width="2"></td>
+	<td><img src="images/pixel.gif"></td>
     </tr>
     <tr>
-	<td width="100"><img src="images/pixel.png"></td>
+	<td width="100"><img src="images/pixel.gif"></td>
 	<td valign="top" align="right">
-	    <table class="navi" cellpadding="3">
+	    <table class="navi" cellpadding="3" valign="top">
                 #MENU#
 	    </table>
 	</td>
-        <td bgcolor="black"><img src="images/pixel.png" width="2"></td>
+        <td bgcolor="black"><img src="images/pixel.gif" width="2"></td>
         <td bgcolor="white">
             <table cellpadding="16">
               <tr><td>
@@ -49,16 +49,16 @@
 	      </td></tr>
             </table>
 	</td>
-        <td bgcolor="black"><img src="images/pixel.png" width="2"></td>
-        <td width="100"><img src="images/pixel.png"></td>
+        <td bgcolor="black"><img src="images/pixel.gif" width="2"></td>
+        <td width="100"><img src="images/pixel.gif"></td>
     </tr>
     <tr>
         <td colspan="2">
-            <img src="images/pixel.png"></td><td colspan="2" bgcolor="black">
-            <img src="images/pixel.png" height="2">
+            <img src="images/pixel.gif"></td><td colspan="2" bgcolor="black">
+            <img src="images/pixel.gif" height="2">
         </td>
-        <td bgcolor="black"><img src="images/pixel.png" width="2"></td>
-        <td><img src="images/pixel.png"></td>
+        <td bgcolor="black"><img src="images/pixel.gif" width="2"></td>
+        <td><img src="images/pixel.gif"></td>
     </tr>
 </tr>
 </table>

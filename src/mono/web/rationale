@@ -102,10 +102,10 @@
 
 ** ECMA standards.
 
-	Microsoft, HP and Intel have submitted the
+	Microsoft has submitted the
   	specifications of C#, the runtime, the metadata and the
   	other various bits of the .NET development platform to the
-  	ECMA for standarization.
+  	<a href="http://www.ecma.ch">ECMA</a> for standarization.
 
 	You can get a copy of the specifications submitted to ECMA
 	from: <a href="http://www.dotnetexperts.com/ecma">http://www.dotnetexperts.com/ecma</a>
