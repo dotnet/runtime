@@ -202,6 +202,7 @@ mono_domain_create (void)
 	domain->jit_code_hash = g_hash_table_new (NULL, NULL);
 	domain->ldstr_table = mono_g_hash_table_new ((GHashFunc)ldstr_hash, (GCompareFunc)ldstr_equal);
 	domain->jit_info_table = mono_jit_info_table_new ();
+	domain->class_init_trampoline_hash = mono_g_hash_table_new (NULL, NULL);
 	domain->domain_id = InterlockedIncrement (&appdomain_id_counter);
 
 	InitializeCriticalSection (&domain->lock);
@@ -608,6 +609,7 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 		g_hash_table_foreach (domain->jump_target_hash, delete_jump_list, NULL);
 		g_hash_table_destroy (domain->jump_target_hash);
 	}
+	mono_g_hash_table_destroy (domain->class_init_trampoline_hash);
 	if (domain->thread_static_fields)
 		g_hash_table_destroy (domain->thread_static_fields);
 	DeleteCriticalSection (&domain->lock);

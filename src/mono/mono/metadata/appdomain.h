@@ -101,6 +101,7 @@ struct _MonoDomain {
 	MonoAppContext     *default_context;
 	GHashTable         *thread_static_fields;
 	GHashTable         *jump_target_hash;
+	MonoGHashTable     *class_init_trampoline_hash;
 };
 
 /* This is a copy of System.AppDomain */
