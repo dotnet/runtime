@@ -86,15 +86,6 @@ static void handle_store(MonoThread *thread)
 		threads=mono_g_hash_table_new(g_direct_hash, g_direct_equal);
 	}
 
-	/* GHashTable will remove a previous entry if a duplicate key
-	 * is stored, which is exactly what we want: we store the
-	 * thread both in the start_wrapper (in the subthread), and as
-	 * soon as possible in the parent thread.  This is to minimise
-	 * the window in which the thread exists but we haven't
-	 * recorded it.
-	 */
-	mono_g_hash_table_remove (threads, GUINT_TO_POINTER(thread->tid));
-	
 	/* We don't need to duplicate thread->handle, because it is
 	 * only closed when the thread object is finalized by the GC.
 	 */
@@ -141,9 +132,11 @@ static guint32 start_wrapper(void *data)
 	guint32 (*start_func)(void *);
 	void *this;
 	guint32 tid;
+	MonoThread *thread=start_info->obj;
 	
 #ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Start wrapper");
+	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Start wrapper",
+		  GetCurrentThreadId ());
 #endif
 	
 	/* We can be sure start_info->obj->tid and
@@ -152,7 +145,7 @@ static guint32 start_wrapper(void *data)
 	 * thread resumed
 	 */
 
-	tid=start_info->obj->tid;
+	tid=thread->tid;
 	
 	mono_domain_set (start_info->domain);
 
@@ -165,11 +158,23 @@ static guint32 start_wrapper(void *data)
 	 */
 	mono_thread_new_init (tid, &tid, start_func);
 
-	TlsSetValue (current_object_key, start_info->obj);
-	handle_store(start_info->obj);
+#ifdef THREAD_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": (%d) Setting current_object_key to %p",
+		   GetCurrentThreadId (), thread);
+#endif
+
+	TlsSetValue (current_object_key, thread);
 
 	mono_profiler_thread_start (tid);
 
+	if(thread->start_notify!=NULL) {
+		/* Let the thread that called Start() know we're
+		 * ready
+		 */
+		ReleaseSemaphore (thread->start_notify, 1, NULL);
+	}
+	
 	g_free (start_info);
 
 	start_func (this);
@@ -180,7 +185,8 @@ static guint32 start_wrapper(void *data)
 	 */
 
 #ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Start wrapper terminating");
+	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Start wrapper terminating",
+		  GetCurrentThreadId ());
 #endif
 	
 	thread_cleanup (tid);
@@ -263,6 +269,12 @@ mono_thread_attach (MonoDomain *domain)
 
 	handle_store(thread);
 
+#ifdef THREAD_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": (%d) Setting current_object_key to %p",
+		   GetCurrentThreadId (), thread);
+#endif
+
 	TlsSetValue (current_object_key, thread);
 	mono_domain_set (domain);
 
@@ -309,6 +321,12 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		start_info->obj = this;
 		start_info->domain = mono_domain_get ();
 
+		this->start_notify=CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
+		if(this->start_notify==NULL) {
+			g_warning (G_GNUC_PRETTY_FUNCTION ": CreateSemaphore error 0x%x", GetLastError ());
+			return(NULL);
+		}
+
 		thread=CreateThread(NULL, 0, start_wrapper, start_info,
 				    CREATE_SUSPENDED, &tid);
 		if(thread==NULL) {
@@ -316,7 +334,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 				  ": CreateThread error 0x%x", GetLastError());
 			return(NULL);
 		}
-
+		
 		this->handle=thread;
 		this->tid=tid;
 
@@ -354,7 +372,8 @@ void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this,
 	MONO_ARCH_SAVE_REGS;
 
 #ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION ": Launching thread %p", this);
+	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Launching thread %p (%d)",
+		  GetCurrentThreadId (), this, this->tid);
 #endif
 
 	/* Only store the handle when the thread is about to be
@@ -370,6 +389,30 @@ void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this,
 
 	if (mono_thread_callbacks)
 		(* mono_thread_callbacks->end_resume) (this->tid);
+
+	if(this->start_notify!=NULL) {
+		/* Wait for the thread to set up its TLS data etc, so
+		 * theres no potential race condition if someone tries
+		 * to look up the data believing the thread has
+		 * started
+		 */
+
+#ifdef THREAD_DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": (%d) waiting for thread %p (%d) to start",
+			  GetCurrentThreadId (), this, this->tid);
+#endif
+
+		WaitForSingleObject (this->start_notify, INFINITE);
+		CloseHandle (this->start_notify);
+		this->start_notify=NULL;
+	}
+
+#ifdef THREAD_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION
+		  ": (%d) Done launching thread %p (%d)",
+		  GetCurrentThreadId (), this, this->tid);
+#endif
 }
 
 void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
@@ -765,6 +808,12 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 	thread->abort_state = state;
 	thread->abort_exc = mono_get_exception_thread_abort ();
 
+#ifdef THREAD_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": (%d) Abort requested for %p (%d)", GetCurrentThreadId (),
+		   thread, thread->tid);
+#endif
+	
 #ifdef __MINGW32__
 	g_assert_not_reached ();
 #else
@@ -887,13 +936,6 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 	if(wait->num<MAXIMUM_WAIT_OBJECTS) {
 		MonoThread *thread=(MonoThread *)value;
 		
-		/* Theres a theoretical chance that thread->handle
-		 * might be NULL if the child thread has called
-		 * handle_store() but the parent thread hasn't set the
-		 * handle pointer yet.  WaitForMultipleObjects will
-		 * fail, and we'll just go round the loop again.  By
-		 * that time the handle should be stored properly.
-		 */
 		wait->handles[wait->num]=thread->handle;
 		wait->threads[wait->num]=thread;
 		wait->num++;

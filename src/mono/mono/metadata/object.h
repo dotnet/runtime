@@ -180,6 +180,7 @@ typedef struct {
 	MonoException *abort_exc;
 	MonoObject *abort_state;
 	guint32 tid;
+	HANDLE      start_notify;
 } MonoThread;
 
 typedef struct {
