@@ -2442,6 +2442,11 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	dir_part=g_path_get_dirname (utf8_pattern);
 	entry_part=g_path_get_basename (utf8_pattern);
 
+#if 0
+	/* Don't do this check for now, it breaks if directories
+	 * really do have metachars in their names (see bug 58116).
+	 * FIXME: Figure out a better solution to keep some checks...
+	 */
 	if (strchr (dir_part, '*') || strchr (dir_part, '?')) {
 		SetLastError (ERROR_INVALID_NAME);
 		g_free (dir_part);
@@ -2449,6 +2454,7 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 		g_free (utf8_pattern);
 		return(INVALID_HANDLE_VALUE);
 	}
+#endif
 	
 	handle=_wapi_handle_new (WAPI_HANDLE_FIND);
 	if(handle==_WAPI_HANDLE_INVALID) {
