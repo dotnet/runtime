@@ -1082,6 +1082,7 @@ case "$host" in
 	hppa2.0w-hp-hpux11.00 | hppa64-hp-hpux11.00)
 		TARGET=HPPA;
 		arch_target=hppa; 
+		LIBC="libc.sl"
 		ACCESS_UNALIGNED="no"
 		;;
 	macppc-*-openbsd* | powerpc-*-linux* | powerpc-*-openbsd* | \

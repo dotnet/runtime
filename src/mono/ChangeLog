@@ -1,3 +1,7 @@
+2004-05-05  Bernie Solomon  <bernard@ugsolutions.com>
+
+	* configure.in: set LIBC on HPUX
+
 2004-05-05  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Detect JNI headers in GNU classpath sources as well.
