@@ -180,6 +180,8 @@
 	href="http://www.nexus.hu/vargaz/">here</a>.  A fresh Gtk#
 	version is available now.
 
+	Jean's remoting-based Soap implenentation is also maturing.
+
 @item Jun 26th: Mono 0.25 has been released.
 
 	We have released Mono 0.25.  A list of the new features is
