@@ -726,5 +726,11 @@ class Tests {
 		buffer [x] = ((byte)(value >> x));
 		return buffer [x];
 	}
+
+	static int test_0_ulong_regress () {
+		ulong u = 4257145737;
+		u --;
+		return (u == 4257145736) ? 0 : 1;
+	}
 }
 

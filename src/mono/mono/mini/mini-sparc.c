@@ -2670,13 +2670,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_SUB_IMM:
 			/* according to inssel-long32.brg, this should set cc */
-			// we add the negated value
-			if (sparc_is_imm13 (- ins->inst_imm))
-				sparc_add_imm (code, TRUE, ins->sreg1, -ins->inst_imm, ins->dreg);
-			else {
-				sparc_set (code, - ins->inst_imm, sparc_o7);
-				sparc_add (code, TRUE, ins->sreg1, sparc_o7, ins->dreg);
-			}
+			EMIT_ALU_IMM (ins, sub, TRUE);
 			break;
 		case OP_SBB:
 			/* according to inssel-long32.brg, this should set cc */
