@@ -22,14 +22,14 @@ class Container {
 
 		Console.WriteLine (AppDomain.CurrentDomain.FriendlyName);
 			
-		AppDomain newDomain = AppDomain.CreateDomain ("NewDomain", new Evidence (), setup);
+		AppDomain newDomain = AppDomain.CreateDomain ("NewDomain", null, setup);
 
 		string[] args = { "1", "2", "3"};		
 		res = newDomain.ExecuteAssembly ("appdomain-client.exe", null, args);
 		if (res != arg_sum (args))
 			return 1;
 		
-		Console.WriteLine ("Ready");
+		Console.WriteLine ("test-ok");
 
 		return 0;
 	}

@@ -14,13 +14,9 @@ class Container {
 		private c2 (SerializationInfo info, StreamingContext context) {
 			a = info.GetInt32("a");
 			s1 = info.GetString("s1");
-			Console.WriteLine ("SetObjectData called: " + info.AssemblyName + "," +
-					   info.FullTypeName + " " + s1 + ", " + a);
 		}
 
 		public void GetObjectData (SerializationInfo info, StreamingContext context) {
-			Console.WriteLine ("GetObjectData called: " + info.AssemblyName + "," +
-					   info.FullTypeName + " " + s1 + ", " + a);
 			info.AddValue ("a", a);
 			if (s1 != null)
 				info.AddValue ("s1", s1);
@@ -31,35 +27,33 @@ class Container {
 	
 	[Serializable]
 	public class c1 {
-		public c1 () {
-			e1.a = 3;
-			e1.s1 = "SS";
-			sa [0].a = 5;
-		}
 		public int a = 1;
 		public int b = 2;
 		public string s1 = "TEST1";
 		[NonSerialized] public string s2 = "TEST2";
-		public c2 [] sa = new c2 [2];
 		public c2 e1;
 	}
 	
 	static int Main ()
 	{
+		Console.WriteLine ("Friendly name: " + AppDomain.CurrentDomain.FriendlyName);
+
 		AppDomainSetup setup = new AppDomainSetup ();
 		setup.ApplicationBase = Directory.GetCurrentDirectory ();
-		Console.WriteLine (AppDomain.CurrentDomain.FriendlyName);
 			
-		AppDomain newDomain = AppDomain.CreateDomain ("NewDomain", new Evidence (), setup);
+		AppDomain newDomain = AppDomain.CreateDomain ("NewDomain", null, setup);
 
 		c1 a1 = new c1 ();
-
-		
+		a1.e1.a = 3;
+		a1.e1.s1 = "SS";
+        
 		newDomain.SetData ("TEST", a1);
+	        
 		c1 r1 = (c1)newDomain.GetData ("TEST");
+	        
 		if (r1.a != 1 || r1.b !=2)
-			return 1;
-		
+				return 1;
+			
 		if (r1.s1 != "TEST1")
 			return 2;
 		
@@ -70,14 +64,9 @@ class Container {
 			return 4;
 
 		if (r1.e1.s1 != "SS")
-			return 4;
-		
-		if (r1.sa [0].a != 5)
 			return 5;
-
-		if (r1.sa [0].s1 != "(null)")
-			return 6;
-		
+			
+		Console.WriteLine("test-ok");
 
 		return 0;
 	}

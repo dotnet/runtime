@@ -10,11 +10,10 @@ class Client {
 		int res = 0;
 		
 		foreach (string s in args) {
-			Console.WriteLine (s);
 			res += Convert.ToInt32 (s);
 		}
 
-		Console.WriteLine ("Sum: " + res);
+		Console.WriteLine ("(appdomain-client.exe) Sum: " + res);
 		return res;
 	}
 }
