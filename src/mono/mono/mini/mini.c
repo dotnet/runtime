@@ -2461,6 +2461,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 #define CHECK_STACK_OVF(num) if (((sp - stack_start) + (num)) > header->max_stack) goto unverified
 #define CHECK_ARG(num) if ((unsigned)(num) >= (unsigned)num_args) goto unverified
 #define CHECK_LOCAL(num) if ((unsigned)(num) >= (unsigned)header->num_locals) goto unverified
+#define CHECK_OPSIZE(size) if (ip + size > end) goto unverified
 
 #define TYPE_PARAM_TO_TYPE(num) (method->klass->generic_inst->data.generic_inst->type_argv [(num)])
 #define TYPE_PARAM_TO_CLASS(num) (mono_class_from_mono_type (TYPE_PARAM_TO_TYPE ((num))))
@@ -2877,6 +2878,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			inline_costs += 1;
 			break;
 		case CEE_LDARG_S:
+			CHECK_OPSIZE (2);
 			CHECK_STACK_OVF (1);
 			CHECK_ARG (ip [1]);
 			NEW_ARGLOAD (cfg, ins, ip [1]);
@@ -2885,6 +2887,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ip += 2;
 			break;
 		case CEE_LDARGA_S:
+			CHECK_OPSIZE (2);
 			CHECK_STACK_OVF (1);
 			CHECK_ARG (ip [1]);
 			NEW_ARGLOADA (cfg, ins, ip [1]);
@@ -2893,6 +2896,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ip += 2;
 			break;
 		case CEE_STARG_S:
+			CHECK_OPSIZE (2);
 			CHECK_STACK (1);
 			--sp;
 			CHECK_ARG (ip [1]);
@@ -2907,6 +2911,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ip += 2;
 			break;
 		case CEE_LDLOC_S:
+			CHECK_OPSIZE (2);
 			CHECK_STACK_OVF (1);
 			CHECK_LOCAL (ip [1]);
 			NEW_LOCLOAD (cfg, ins, ip [1]);
@@ -2915,6 +2920,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ip += 2;
 			break;
 		case CEE_LDLOCA_S:
+			CHECK_OPSIZE (2);
 			CHECK_STACK_OVF (1);
 			CHECK_LOCAL (ip [1]);
 			NEW_LOCLOADA (cfg, ins, ip [1]);
@@ -2923,6 +2929,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ip += 2;
 			break;
 		case CEE_STLOC_S:
+			CHECK_OPSIZE (2);
 			CHECK_STACK (1);
 			--sp;
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
@@ -2968,6 +2975,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			*sp++ = ins;
 			break;
 		case CEE_LDC_I4_S:
+			CHECK_OPSIZE (2);
 			CHECK_STACK_OVF (1);
 			++ip;
 			NEW_ICONST (cfg, ins, *((signed char*)ip));
@@ -2976,6 +2984,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			*sp++ = ins;
 			break;
 		case CEE_LDC_I4:
+			CHECK_OPSIZE (5);
 			CHECK_STACK_OVF (1);
 			NEW_ICONST (cfg, ins, (gint32)read32 (ip + 1));
 			ins->cil_code = ip;
@@ -2983,6 +2992,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			*sp++ = ins;
 			break;
 		case CEE_LDC_I8:
+			CHECK_OPSIZE (9);
 			CHECK_STACK_OVF (1);
 			MONO_INST_NEW (cfg, ins, OP_I8CONST);
 			ins->cil_code = ip;
@@ -2994,6 +3004,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_LDC_R4: {
 			float *f = g_malloc (sizeof (float));
+			CHECK_OPSIZE (5);
 			CHECK_STACK_OVF (1);
 			MONO_INST_NEW (cfg, ins, OP_R4CONST);
 			ins->type = STACK_R8;
@@ -3006,6 +3017,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 		case CEE_LDC_R8: {
 			double *d = g_malloc (sizeof (double));
+			CHECK_OPSIZE (9);
 			CHECK_STACK_OVF (1);
 			MONO_INST_NEW (cfg, ins, OP_R8CONST);
 			ins->type = STACK_R8;
@@ -3060,6 +3072,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->inst_i0 = *sp;
 			break;
 		case CEE_JMP:
+			CHECK_OPSIZE (5);
 			if (stack_start != sp)
 				goto unverified;
 			MONO_INST_NEW (cfg, ins, CEE_JMP);
@@ -3079,6 +3092,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			int temp, array_rank = 0;
 			int virtual = *ip == CEE_CALLVIRT;
 
+			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 
 			if (*ip == CEE_CALLI) {
@@ -3345,6 +3359,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			start_new_bblock = 1;
 			break;
 		case CEE_BR_S:
+			CHECK_OPSIZE (2);
 			MONO_INST_NEW (cfg, ins, CEE_BR);
 			ins->cil_code = ip++;
 			MONO_ADD_INS (bblock, ins);
@@ -3363,6 +3378,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_BRFALSE_S:
 		case CEE_BRTRUE_S:
+			CHECK_OPSIZE (2);
 			CHECK_STACK (1);
 			MONO_INST_NEW (cfg, ins, *ip + BIG_BRANCH_OFFSET);
 			ins->cil_code = ip++;
@@ -3385,6 +3401,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_BGT_UN_S:
 		case CEE_BLE_UN_S:
 		case CEE_BLT_UN_S:
+			CHECK_OPSIZE (2);
 			CHECK_STACK (2);
 			MONO_INST_NEW (cfg, ins, *ip + BIG_BRANCH_OFFSET);
 			ins->cil_code = ip++;
@@ -3398,6 +3415,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			inline_costs += 10;
 			break;
 		case CEE_BR:
+			CHECK_OPSIZE (5);
 			MONO_INST_NEW (cfg, ins, CEE_BR);
 			ins->cil_code = ip++;
 			MONO_ADD_INS (bblock, ins);
@@ -3416,6 +3434,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_BRFALSE:
 		case CEE_BRTRUE:
+			CHECK_OPSIZE (5);
 			CHECK_STACK (1);
 			MONO_INST_NEW (cfg, ins, *ip);
 			ins->cil_code = ip++;
@@ -3438,6 +3457,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_BGT_UN:
 		case CEE_BLE_UN:
 		case CEE_BLT_UN:
+			CHECK_OPSIZE (5);
 			CHECK_STACK (2);
 			MONO_INST_NEW (cfg, ins, *ip);
 			ins->cil_code = ip++;
@@ -3451,6 +3471,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			inline_costs += 10;
 			break;
 		case CEE_SWITCH:
+			CHECK_OPSIZE (5);
 			CHECK_STACK (1);
 			n = read32 (ip + 1);
 			MONO_INST_NEW (cfg, ins, *ip);
@@ -3459,6 +3480,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (ins->inst_left->type != STACK_I4) goto unverified;
 			ins->cil_code = ip;
 			ip += 5;
+			CHECK_OPSIZE (n * sizeof (guint32));
 			target = ip + n * sizeof (guint32);
 			MONO_ADD_INS (bblock, ins);
 			GET_BBLOCK (cfg, bbhash, tblock, target);
@@ -3596,6 +3618,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ip++;
 			break;
 		case CEE_CPOBJ:
+			CHECK_OPSIZE (5);
 			CHECK_STACK (2);
 			token = read32 (ip + 1);
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
@@ -3648,6 +3671,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_LDOBJ: {
 			MonoInst *iargs [3];
+			CHECK_OPSIZE (5);
 			CHECK_STACK (1);
 			--sp;
 			token = read32 (ip + 1);
@@ -3699,6 +3723,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 		case CEE_LDSTR:
 			CHECK_STACK_OVF (1);
+			CHECK_OPSIZE (5);
 			n = read32 (ip + 1);
 
 			if (method->wrapper_type != MONO_WRAPPER_NONE) {
@@ -3746,6 +3771,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoMethodSignature *fsig;
 			int temp;
 
+			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			if (method->wrapper_type != MONO_WRAPPER_NONE) {
 				cmethod = mono_method_get_wrapper_data (method, token);
@@ -3842,6 +3868,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_ISINST:
 			CHECK_STACK (1);
 			--sp;
+			CHECK_OPSIZE (5);
 			klass = mono_class_get (image, read32 (ip + 1));
 			mono_class_init (klass);
 		
@@ -3870,6 +3897,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			CHECK_STACK (1);
 			--sp;
+			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
@@ -3949,6 +3977,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			CHECK_STACK (1);
 			--sp;
+			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
@@ -3981,6 +4010,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_CASTCLASS:
 			CHECK_STACK (1);
 			--sp;
+			CHECK_OPSIZE (5);
 			klass = mono_class_get (image, read32 (ip + 1));
 			mono_class_init (klass);
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
@@ -4037,6 +4067,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			// FIXME: enable this test later.
 			//if (sp [0]->type != STACK_OBJ && sp [0]->type != STACK_MP)
 			//	goto unverified;
+			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			field = mono_field_from_token (image, token, &klass);
 			if (field->parent->gen_params)
@@ -4182,6 +4213,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoClassField *field;
 			gpointer addr = NULL;
 
+			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 
 			field = mono_field_from_token (image, token, &klass);
@@ -4342,6 +4374,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_STOBJ:
 			CHECK_STACK (2);
 			sp -= 2;
+			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = mono_method_get_wrapper_data (method, token);
@@ -4376,6 +4409,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (1);
 			--sp;
 			val = *sp;
+			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = mono_method_get_wrapper_data (method, token);
@@ -4436,6 +4470,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->cil_code = ip;
 			--sp;
 
+			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 
 			/* allocate the domainvar - becaus this is used in decompose_foreach */
@@ -4471,6 +4506,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_LDELEMA:
 			CHECK_STACK (2);
 			sp -= 2;
+			CHECK_OPSIZE (5);
 
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = (MonoClass*)mono_method_get_wrapper_data (method, read32 (ip + 1));
@@ -4490,6 +4526,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoInst *load;
 			CHECK_STACK (2);
 			sp -= 2;
+			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			klass = mono_class_get (image, token);
 			mono_class_init (klass);
@@ -4575,6 +4612,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 */
 			CHECK_STACK (3);
 			sp -= 3;
+			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 			klass = mono_class_get (image, token);
 			mono_class_init (klass);
@@ -4663,6 +4701,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (1);
 			MONO_INST_NEW (cfg, ins, *ip);
 			--sp;
+			CHECK_OPSIZE (5);
 			klass = mono_class_get (image, read32 (ip + 1));
 			mono_class_init (klass);
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
@@ -4683,6 +4722,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (1);
 			MONO_INST_NEW (cfg, ins, *ip);
 			--sp;
+			CHECK_OPSIZE (5);
 			klass = mono_class_get (image, read32 (ip + 1));
 			mono_class_init (klass);
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
@@ -4710,6 +4750,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			CHECK_STACK_OVF (1);
 
+			CHECK_OPSIZE (5);
 			n = read32 (ip + 1);
 
 			handle = mono_ldtoken (image, n, &handle_class);
@@ -4784,8 +4825,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_LEAVE_S: {
 			GList *handlers;
 			if (*ip == CEE_LEAVE) {
+				CHECK_OPSIZE (5);
 				target = ip + 5 + (gint32)read32(ip + 1);
 			} else {
+				CHECK_OPSIZE (2);
 				target = ip + 2 + (signed char)(ip [1]);
 			}
 
@@ -4869,6 +4912,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 
+			CHECK_OPSIZE (2);
 			switch (ip [1]) {
 
 			case CEE_MONO_FUNC1: {
@@ -4877,6 +4921,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK (1);
 				sp--;
 
+				CHECK_OPSIZE (3);
 				switch (ip [2]) {
 				case MONO_MARSHAL_CONV_STR_LPWSTR:
 					func = mono_string_to_utf16;
@@ -4931,6 +4976,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK (2);
 				sp -= 2;
 
+				CHECK_OPSIZE (3);
 				switch (ip [2]) {
 				case MONO_MARSHAL_CONV_LPSTR_SB:
 					func = mono_string_utf8_to_builder;
@@ -4952,6 +4998,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK (3);
 				sp -= 3;
 
+				CHECK_OPSIZE (3);
 				switch (ip [2]) {
 				case MONO_MARSHAL_CONV_STR_BYVALSTR:
 					func = mono_string_to_byvalstr;
@@ -4977,6 +5024,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			case CEE_MONO_LDPTR:
 				CHECK_STACK_OVF (1);
+				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
 				NEW_PCONST (cfg, ins, mono_method_get_wrapper_data (method, token));
 				ins->cil_code = ip;
@@ -4998,6 +5046,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *iargs [2];
 				int temp;
 				CHECK_STACK_OVF (1);
+				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 				mono_class_init (klass);
@@ -5022,6 +5071,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			case CEE_MONO_LDNATIVEOBJ:
 				CHECK_STACK (1);
+				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
 				klass = mono_method_get_wrapper_data (method, token);
 				g_assert (klass->valuetype);
@@ -5036,6 +5086,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK (1);
 				--sp;
 				
+				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);    
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 
@@ -5060,6 +5111,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		}
 		case CEE_PREFIX1: {
+			CHECK_OPSIZE (2);
 			switch (ip [1]) {
 			case CEE_ARGLIST: {
 				/* somewhat similar to LDTOKEN */
@@ -5107,6 +5159,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				int temp;
 
 				CHECK_STACK_OVF (1);
+				CHECK_OPSIZE (6);
 				n = read32 (ip + 2);
 				if (method->wrapper_type != MONO_WRAPPER_NONE)
 					cmethod = mono_method_get_wrapper_data (method, n);
@@ -5138,6 +5191,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				int temp;
 
 				CHECK_STACK (1);
+				CHECK_OPSIZE (6);
 				n = read32 (ip + 2);
 				if (method->wrapper_type != MONO_WRAPPER_NONE)
 					cmethod = mono_method_get_wrapper_data (method, n);
@@ -5160,6 +5214,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			case CEE_LDARG:
 				CHECK_STACK_OVF (1);
+				CHECK_OPSIZE (4);
 				n = read16 (ip + 2);
 				CHECK_ARG (n);
 				NEW_ARGLOAD (cfg, ins, n);
@@ -5169,6 +5224,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			case CEE_LDARGA:
 				CHECK_STACK_OVF (1);
+				CHECK_OPSIZE (4);
 				n = read16 (ip + 2);
 				CHECK_ARG (n);
 				NEW_ARGLOADA (cfg, ins, n);
@@ -5180,6 +5236,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK (1);
 				--sp;
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
+				CHECK_OPSIZE (4);
 				n = read16 (ip + 2);
 				CHECK_ARG (n);
 				NEW_ARGSTORE (cfg, ins, n, *sp);
@@ -5193,6 +5250,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			case CEE_LDLOC:
 				CHECK_STACK_OVF (1);
+				CHECK_OPSIZE (4);
 				n = read16 (ip + 2);
 				CHECK_LOCAL (n);
 				NEW_LOCLOAD (cfg, ins, n);
@@ -5202,6 +5260,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			case CEE_LDLOCA:
 				CHECK_STACK_OVF (1);
+				CHECK_OPSIZE (4);
 				n = read16 (ip + 2);
 				CHECK_LOCAL (n);
 				NEW_LOCLOADA (cfg, ins, n);
@@ -5212,6 +5271,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			case CEE_STLOC:
 				CHECK_STACK (1);
 				--sp;
+				CHECK_OPSIZE (4);
 				n = read16 (ip + 2);
 				CHECK_LOCAL (n);
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
@@ -5274,6 +5334,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			case CEE_UNALIGNED_:
 				ins_flag |= MONO_INST_UNALIGNED;
+				/* FIXME: record alignment? we can assume 1 for now */
+				CHECK_OPSIZE (3);
 				ip += 3;
 				break;
 			case CEE_VOLATILE_:
@@ -5289,6 +5351,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			case CEE_INITOBJ:
 				CHECK_STACK (1);
 				--sp;
+				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
 				if (method->wrapper_type != MONO_WRAPPER_NONE)
 					klass = mono_method_get_wrapper_data (method, token);
@@ -5319,6 +5382,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			case CEE_CONSTRAINED_:
 				/* FIXME: implement */
+				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
 				ip += 6;
 				break;
@@ -5341,6 +5405,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 			case CEE_NO_:
+				CHECK_OPSIZE (3);
 				if (ip [2] & 0x1)
 					ins_flag |= MONO_INST_NOTYPECHECK;
 				if (ip [2] & 0x2)
@@ -5366,6 +5431,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			case CEE_SIZEOF:
 				CHECK_STACK_OVF (1);
+				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
 				/* FIXXME: handle generics. */
 				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC) {
