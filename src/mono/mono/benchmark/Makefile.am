@@ -1,4 +1,5 @@
-TEST_PROG=../jit/mono
+TEST_PROG=../mini/mono
+RUNTIME_ARGS="-O=all"
 
 CSC=mcs
 
@@ -13,6 +14,7 @@ TESTSRC=			\
 	inline3.cs		\
 	inline4.cs		\
 	inline5.cs		\
+	inline6.cs		\
 	muldiv.cs		\
 	loops.cs		\
 	initlocals.cs		\
@@ -36,7 +38,7 @@ test: $(TEST_PROG) $(TESTSI)
 	@failed=0; \
 	passed=0; \
 	for i in $(TESTSI); do	\
-		if ./test-driver $(TEST_PROG) $$i; \
+		if ./test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \

@@ -13,7 +13,7 @@ print "Testing $test... ";
 
 for ($c = 20 - length ($test); $c > 0; $c--) { print " "; }
 
-my $res = system("/usr/bin/time -o .res -f '%U' $interpreter $test 2>/dev/null 1>$stdout");
+my $res = system("/usr/bin/time -o .res -f '%U' $interpreter @ARGV $test 2>/dev/null 1>$stdout");
 
 if ($res) {
 	printf ("failed $? (%d) signal (%d).\n", $? >> 8, $? & 127);
