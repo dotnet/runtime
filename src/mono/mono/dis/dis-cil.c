@@ -61,7 +61,8 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 	const MonoOpcode *entry;
 	char indent[1024];
 	int i, indent_level = 0;
-	const char *clause_names[] = {"catch", "filter", "finally", "fault"};
+	gboolean in_fault = 0;
+	const char *clause_names[] = {"catch", "filter", "finally", "", "fault"};
 
 	indent [0] = 0;
 
@@ -75,16 +76,30 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 #endif
 	while (ptr < end){
 		for (i = mh->num_clauses - 1; i >= 0 ; --i) {
-			if ((mh->clauses[i].flags == 0 || mh->clauses[i].flags == 2) && ptr == start + mh->clauses[i].try_offset) {
+			if (ptr == start + mh->clauses[i].try_offset) {
 				fprintf (output, "\t%s.try { // %d\n", indent, i);
 				CODE_INDENT;
 			}
+                        
 			if (ptr == start + mh->clauses[i].handler_offset) {
-				char * klass = mh->clauses[i].flags ? g_strdup ("") : dis_stringify_token (m, mh->clauses[i].token_or_filter);
-				fprintf (output, "\t%s%s %s { // %d\n", indent, clause_names [mh->clauses[i].flags], klass, i);
+                                if (mh->clauses[i].flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+                                        CODE_UNINDENT;
+                                        fprintf (output, "\t%s} { // %d\n", indent, i);
+                                } else {
+                                        char * klass = mh->clauses[i].flags ? g_strdup ("") :
+                                        dis_stringify_token (m, mh->clauses[i].token_or_filter);
+                                        fprintf (output, "\t%s%s %s { // %d\n", indent,
+                                                        clause_names [mh->clauses[i].flags], klass, i);
+                                        g_free (klass);
+                                }
 				CODE_INDENT;
-				g_free (klass);
-			}
+                                if (mh->clauses[i].flags == MONO_EXCEPTION_CLAUSE_FAULT)
+                                        in_fault = 1;
+			} 
+                        if (mh->clauses[i].flags == 1 && ptr == start + mh->clauses[i].token_or_filter) {
+                                fprintf (output, "\t%s%s {\n", indent, clause_names[1]);
+                                CODE_INDENT;
+                        }
 		}
 		fprintf (output, "\t%sIL_%04x: ", indent, (int) (ptr - start));
 		i = *ptr;
@@ -94,7 +109,10 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 		} 
 		entry = &mono_opcodes [i];
 
-		fprintf (output, "%s ", mono_opcode_names [i]);
+                if (in_fault && entry->opval == 0xDC)
+                        fprintf (output, " %s", "endfault");
+                else
+                        fprintf (output, " %s ", mono_opcode_names [i]);
 		ptr++;
 		switch (entry->argument){
 		case MonoInlineBrTarget: {
@@ -261,13 +279,15 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 
 		fprintf (output, "\n");
 		for (i = 0; i < mh->num_clauses; ++i) {
-			if ((mh->clauses[i].flags == 0 || mh->clauses[i].flags == 2)  && ptr == start + mh->clauses[i].try_offset + mh->clauses[i].try_len) {
+			if (ptr == start + mh->clauses[i].try_offset + mh->clauses[i].try_len) {
 				CODE_UNINDENT;
 				fprintf (output, "\t%s} // end .try %d\n", indent, i);
 			}
 			if (ptr == start + mh->clauses[i].handler_offset + mh->clauses[i].handler_len) {
 				CODE_UNINDENT;
 				fprintf (output, "\t%s} // end handler %d\n", indent, i);
+                                if (mh->clauses[i].flags == MONO_EXCEPTION_CLAUSE_FAULT)
+                                        in_fault = 0;
 			}
 		}
 	}
