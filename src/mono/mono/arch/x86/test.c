@@ -113,6 +113,8 @@ int main() {
 	x86_mov_regp_reg (p, X86_EAX, X86_EAX, 4);
 	x86_mov_membase_reg (p, X86_EAX, 0, X86_EAX, 4);
 	x86_mov_reg_membase (p, X86_EAX, X86_EAX, 0, 4);
+	x86_mov_reg_memindex (p, X86_ECX, X86_EAX, 34, X86_EDX, 2, 4);
+	x86_mov_memindex_reg (p, X86_EAX, X86_EAX, 0, X86_EDX, 2, 4);
 	x86_mov_reg_reg (p, X86_EAX, X86_EAX, 1);
 	x86_mov_reg_reg (p, X86_EAX, X86_EAX, 4);
 	x86_mov_reg_mem (p, X86_EAX, mem_addr, 4);

@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.10 2001/09/21 12:50:46 dietmar Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.11 2001/09/26 10:33:18 lupus Exp $
 */
 
 #ifndef X86_H
@@ -232,9 +232,21 @@ typedef union {
 	}	\
 	} while (0)
 
-/* 
- * TODO: memindex_emit 
- */
+#define x86_memindex_emit(inst,r,basereg,disp,indexreg,shift)	\
+	do {	\
+		if ((disp) == 0 && (basereg) != X86_EBP) {	\
+			x86_address_byte ((inst), 0, (r), 4);	\
+			x86_address_byte ((inst), (shift), (indexreg), (basereg));	\
+		} else if (x86_is_imm8((disp))) {	\
+			x86_address_byte ((inst), 1, (r), 4);	\
+			x86_address_byte ((inst), (shift), (indexreg), (basereg));	\
+			x86_imm_emit8 ((inst), (disp));	\
+		} else {	\
+			x86_address_byte ((inst), 2, (r), 4);	\
+			x86_address_byte ((inst), (shift), (indexreg), (basereg));	\
+			x86_imm_emit32 ((inst), (disp));	\
+		}	\
+	} while (0)
 
 #define x86_breakpoint(inst) \
 	do {	\
@@ -681,6 +693,17 @@ typedef union {
 		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
 	} while (0)
 
+#define x86_mov_memindex_reg(inst,basereg,disp,indexreg,shift,reg,size)	\
+	do {	\
+		switch ((size)) {	\
+		case 1: *(inst)++ = (unsigned char)0x88; break;	\
+		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
+		case 4: *(inst)++ = (unsigned char)0x89; break;	\
+		default: assert (0);	\
+		}	\
+		x86_memindex_emit ((inst), (reg), (basereg), (disp), (indexreg), (shift));	\
+	} while (0)
+
 #define x86_mov_reg_reg(inst,dreg,reg,size)	\
 	do {	\
 		switch ((size)) {	\
@@ -712,6 +735,17 @@ typedef union {
 		default: assert (0);	\
 		}	\
 		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
+	} while (0)
+
+#define x86_mov_reg_memindex(inst,reg,basereg,disp,indexreg,shift,size)	\
+	do {	\
+		switch ((size)) {	\
+		case 1: *(inst)++ = (unsigned char)0x8a; break;	\
+		case 2: *(inst)++ = (unsigned char)0x66; /* fall through */	\
+		case 4: *(inst)++ = (unsigned char)0x8b; break;	\
+		default: assert (0);	\
+		}	\
+		x86_memindex_emit ((inst), (reg), (basereg), (disp), (indexreg), (shift));	\
 	} while (0)
 
 #define x86_mov_reg_imm(inst,reg,imm)	\
