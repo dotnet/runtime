@@ -57,6 +57,9 @@ struct _MonoInvocation {
 
 void mono_init_icall (void);
 
+void inline stackval_from_data (MonoType *type, stackval *result, const char *data);
+void ves_exec_method (MonoInvocation *frame);
+
 typedef void (*MonoFunc) ();
 typedef void (*MonoPIFunc) (MonoFunc callme, void *retval, void *obj_this, stackval *arguments);
 
@@ -64,3 +67,5 @@ typedef void (*MonoPIFunc) (MonoFunc callme, void *retval, void *obj_this, stack
  * defined in an arch specific file.
  */
 MonoPIFunc mono_create_trampoline (MonoMethod *method);
+void *mono_create_method_pointer (MonoMethod *method);
+

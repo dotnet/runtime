@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.6 2001/09/06 09:46:03 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.7 2001/09/07 12:53:34 lupus Exp $
 */
 
 #ifndef X86_H
@@ -737,6 +737,24 @@ typedef union {
 		}	\
 	} while (0)
 
+#define x86_mov_membase_imm(inst,basereg,disp,imm,size)	\
+	do {	\
+		if ((size) == 1) {	\
+			*(inst)++ = (unsigned char)0xc6;	\
+			x86_membase_emit ((inst), 0, (basereg), (disp));	\
+			x86_imm_emit8 ((inst), (imm));	\
+		} else if ((size) == 2) {	\
+			*(inst)++ = (unsigned char)0x66;	\
+			*(inst)++ = (unsigned char)0xc7;	\
+			x86_membase_emit ((inst), 0, (basereg), (disp));	\
+			x86_imm_emit16 ((inst), (imm));	\
+		} else {	\
+			*(inst)++ = (unsigned char)0xc7;	\
+			x86_membase_emit ((inst), 0, (basereg), (disp));	\
+			x86_imm_emit32 ((inst), (imm));	\
+		}	\
+	} while (0)
+
 #define x86_lea_mem(inst,reg,mem)	\
 	do {	\
 		*(inst)++ = (unsigned char)0x8d;	\
@@ -766,7 +784,7 @@ typedef union {
 		if ((is_signed)) op += 0x08;	\
 		if ((is_half)) op += 0x01;	\
 		*(inst)++ = op;	\
-		x86_mem_emit ((inst), (reg), (mem));	\
+		x86_mem_emit ((inst), (dreg), (mem));	\
 	} while (0)
 
 #define x86_widen_membase(inst,dreg,basereg,disp,is_signed,is_half)	\
@@ -776,7 +794,7 @@ typedef union {
 		if ((is_signed)) op += 0x08;	\
 		if ((is_half)) op += 0x01;	\
 		*(inst)++ = op;	\
-		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
+		x86_membase_emit ((inst), (dreg), (basereg), (disp));	\
 	} while (0)
 
 #define x86_cdq(inst)  do { *(inst)++ = (unsigned char)0x99; } while (0)

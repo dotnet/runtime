@@ -122,14 +122,15 @@ mono_create_trampoline (MonoMethod *method)
 	x86_mov_reg_reg (p, X86_EBP, X86_ESP, 4);
 	/*
 	 * We store some local vars here to handle string pointers.
+	 * and align to 16 byte boundary...
 	 */
-	if (local_size)
+	if (local_size) {
 		x86_alu_reg_imm (p, X86_SUB, X86_ESP, local_size * 4);
-
-	/*
-	 * We'll need to align to at least 8 bytes boudary... (16 may be better)
-	 * x86_alu_reg_imm (p, X86_SUB, X86_ESP, stack_size);
-	 */
+		stack_size = (stack_size * local_size * 4) % 16;
+	} else {
+		stack_size = stack_size % 16;
+	}
+	x86_alu_reg_imm (p, X86_SUB, X86_ESP, stack_size);
 
 	/*
 	 * EDX has the pointer to the args.
@@ -147,6 +148,10 @@ mono_create_trampoline (MonoMethod *method)
 			continue;
 		}
 		switch (sig->params [i - 1]->type) {
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
@@ -186,10 +191,6 @@ mono_create_trampoline (MonoMethod *method)
 			break;
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_CHAR:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
 		default:
 			g_error ("Can't trampoline 0x%x", sig->params [i - 1]->type);
 		}
@@ -226,6 +227,7 @@ mono_create_trampoline (MonoMethod *method)
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_STRING: /* this is going to cause large pains... */
 			x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
 			x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
 			break;
@@ -266,4 +268,162 @@ mono_create_trampoline (MonoMethod *method)
 
 	return g_memdup (code_buffer, p - code_buffer);
 }
+
+#define MINV_POS  (- sizeof (MonoInvocation))
+#define STACK_POS (MINV_POS - sizeof (stackval) * sig->param_count)
+#define OBJ_POS   8
+#define TYPE_OFFSET (G_STRUCT_OFFSET (stackval, type))
+
+/*
+ * Returns a pointer to a native function that can be used to
+ * call the specified method.
+ * The function created will receive the arguments according
+ * to the call convention specified in the method.
+ * This function works by creating a MonoInvocation structure,
+ * filling the fields in and calling ves_exec_method on it.
+ * Still need to figure out how to handle the exception stuff
+ * across the managed/unmanaged boundary.
+ */
+void *
+mono_create_method_pointer (MonoMethod *method)
+{
+	MonoMethodSignature *sig;
+	unsigned char *p, *code_buffer;
+	gint32 local_size;
+	gint32 stackval_pos, arg_pos = 8;
+	int i;
+
+	/*
+	 * If it is a static P/Invoke method, we can just return the pointer
+	 * to the method implementation.
+	 */
+	sig = method->signature;
+
+	code_buffer = p = alloca (512); /* FIXME: check for overflows... */
+
+	local_size = sizeof (MonoInvocation) + sizeof (stackval) * (sig->param_count + 1);
+	stackval_pos = -local_size;
+
+	/*
+	 * Standard function prolog with magic trick.
+	 */
+	x86_jump_code (p, code_buffer + 8);
+	*p++ = 'M';
+	*p++ = 'o';
+	*(void**)p = method;
+	p += 4;
+	x86_push_reg (p, X86_EBP);
+	x86_mov_reg_reg (p, X86_EBP, X86_ESP, 4);
+	x86_alu_reg_imm (p, X86_SUB, X86_ESP, local_size);
+
+	/*
+	 * Initialize MonoInvocation fields, first the ones known now.
+	 */
+	x86_mov_reg_imm (p, X86_EAX, 0);
+	x86_mov_membase_reg (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex)), X86_EAX, 4);
+	x86_mov_membase_reg (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex_handler)), X86_EAX, 4);
+	x86_mov_membase_reg (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, child)), X86_EAX, 4);
+	x86_mov_membase_reg (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, parent)), X86_EAX, 4);
+	/*
+	 * Set the method pointer.
+	 */
+	x86_mov_membase_imm (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, method)), (int)method, 4);
+
+	/*
+	 * Handle this.
+	 */
+	if (sig->hasthis) {
+		if (sig->call_convention != MONO_CALL_THISCALL) {
+			/*
+			 * Grab it from the stack, otherwise it's already in ECX.
+			 */
+			x86_mov_reg_membase (p, X86_ECX, X86_EBP, OBJ_POS, 4);
+			arg_pos += 4;
+		}
+		x86_mov_membase_reg (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, obj)), X86_ECX, 4);
+	}
+	/*
+	 * Handle the arguments. stackval_pos is the posset of the stackval array from EBP.
+	 * arg_pos is the offset from EBP to the incoming arg on the stack.
+	 * We just call stackval_from_data to handle all the (nasty) issues....
+	 */
+	for (i = 0; i < sig->param_count; ++i) {
+		x86_mov_reg_imm (p, X86_ECX, stackval_from_data);
+		x86_lea_membase (p, X86_EDX, X86_EBP, arg_pos);
+		x86_lea_membase (p, X86_EAX, X86_EBP, stackval_pos);
+		x86_push_reg (p, X86_EDX);
+		x86_push_reg (p, X86_EAX);
+		x86_push_imm (p, sig->params [i]);
+		x86_call_reg (p, X86_ECX);
+		x86_alu_reg_imm (p, X86_SUB, X86_ESP, 12);
+		stackval_pos += sizeof (stackval);
+		arg_pos += 4;
+		if (!sig->params [i]->byref) {
+			switch (sig->params [i]->type) {
+			case MONO_TYPE_I8:
+			case MONO_TYPE_R8:
+				arg_pos += 4;
+				break;
+			case MONO_TYPE_VALUETYPE:
+				g_assert_not_reached (); /* Not implemented yet. */
+			default:
+				break;
+			}
+		}
+	}
+
+	/*
+	 * Handle the return value storage area.
+	 */
+	x86_lea_membase (p, X86_EAX, X86_EBP, stackval_pos);
+	x86_mov_membase_reg (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, retval)), X86_EAX, 4);
+
+	/*
+	 * Call the method.
+	 */
+	x86_lea_membase (p, X86_EAX, X86_EBP, MINV_POS);
+	x86_push_reg (p, X86_EAX);
+	x86_mov_reg_imm (p, X86_EDX, ves_exec_method);
+	x86_call_reg (p, X86_EDX);
+
+	/*
+	 * Move the return value to the proper place.
+	 */
+	x86_lea_membase (p, X86_EAX, X86_EBP, stackval_pos);
+	if (sig->ret->byref) {
+		x86_mov_reg_membase (p, X86_EAX, X86_EAX, 0, 4);
+	} else {
+		switch (sig->ret->type) {
+		case MONO_TYPE_VOID:
+			break;
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_STRING:
+			x86_mov_reg_membase (p, X86_EAX, X86_EAX, 0, 4);
+			break;
+		case MONO_TYPE_I8:
+			x86_mov_reg_membase (p, X86_EDX, X86_EAX, 4, 4);
+			x86_mov_reg_membase (p, X86_EAX, X86_EAX, 0, 4);
+			break;
+		case MONO_TYPE_R8:
+			x86_fld_membase (p, X86_EAX, 0, TRUE);
+			break;
+		default:
+			g_error ("Type 0x%x not handled yet in thunk creation", sig->ret->type);
+			break;
+		}
+	}
+	
+	/*
+	 * Standard epilog.
+	 */
+	x86_leave (p);
+	x86_ret (p);
+
+	return g_memdup (code_buffer, p - code_buffer);
+}
+
 

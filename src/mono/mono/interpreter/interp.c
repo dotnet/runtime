@@ -80,7 +80,7 @@ static char *opcode_names[] = {
 		(frame)->child = NULL;	\
 	} while (0)
 
-static void ves_exec_method (MonoInvocation *frame);
+void ves_exec_method (MonoInvocation *frame);
 
 typedef void (*ICallMethod) (MonoInvocation *frame);
 
@@ -351,7 +351,7 @@ get_exception_invalid_cast ()
 	return ex;
 }
 
-static void inline
+void inline
 stackval_from_data (MonoType *type, stackval *result, const char *data)
 {
 	if (type->byref) {
@@ -450,6 +450,7 @@ stackval_to_data (MonoType *type, stackval *val, char *data)
 		return;
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
 		*(guint16*)data = val->data.i;
 		return;
 	case MONO_TYPE_I: /* FIXME: not 64 bit clean */
@@ -559,6 +560,43 @@ ves_pinvoke_method (MonoInvocation *frame)
 	func (frame->method->addr, &frame->retval->data.p, frame->obj, frame->stack_args);
 	stackval_from_data (frame->method->signature->ret, frame->retval, (const char*)&frame->retval->data.p);
 	g_free (func);
+}
+
+/*
+ * This is a hack, you don't want to see the code in this function. Go away.
+ *
+ * We need a way to easily find the offset in an object of a field we may be
+ * interested in: it's needed here and in several other code where the C#
+ * implementation is highly tied to the internals (Array and String are other good 
+ * examples).
+ */
+static void
+ves_runtime_method (MonoInvocation *frame)
+{
+	const char *name = frame->method->name;
+	MonoObject *obj = frame->obj;
+	
+	if (*name == '.' && (strcmp (name, ".ctor") == 0) && obj &&
+			mono_object_isinst (obj, mono_defaults.delegate_class)) {
+		/* 
+		 * FIXME: query the offsets at runtime. 
+		 */
+		*(gpointer*)(((char*)obj) + sizeof (MonoObject) + 4) = frame->stack_args[0].data.p;
+		*(gpointer*)(((char*)obj) + sizeof (MonoObject) + 12) = frame->stack_args[1].data.p;
+		return;
+	}
+	if (*name == 'I' && (strcmp (name, "Invoke") == 0) && obj &&
+			mono_object_isinst (obj, mono_defaults.delegate_class)) {
+		MonoPIFunc func = mono_create_trampoline (frame->method);
+		void* faddr = *(gpointer*)(((char*)obj) + sizeof (MonoObject) + 12);
+		func (faddr, &frame->retval->data.p, frame->obj, frame->stack_args);
+		stackval_from_data (frame->method->signature->ret, frame->retval, (const char*)&frame->retval->data.p);
+		g_free (func);
+		return;
+	}
+	g_error ("Don't know how to exec runtime method %s.%s::%s", 
+			frame->method->klass->name_space, frame->method->klass->name,
+			frame->method->name);
 }
 
 static void
@@ -676,7 +714,7 @@ struct _vtallocation {
  * duplication.
  * 
  */
-static void 
+void 
 ves_exec_method (MonoInvocation *frame)
 {
 	MonoInvocation child_frame;
@@ -715,7 +753,13 @@ ves_exec_method (MonoInvocation *frame)
 		DEBUG_LEAVE ();
 		return;
 	} 
-		
+
+	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
+		ves_runtime_method (frame);
+		DEBUG_LEAVE ();
+		return;
+	} 
+
 	header = ((MonoMethodNormal *)frame->method)->header;
 	signature = frame->method->signature;
 	image = frame->method->klass->image;
@@ -2459,7 +2503,17 @@ ves_exec_method (MonoInvocation *frame)
 				break;
 			}
 			case CEE_CLT_UN: ves_abort(); break;
-			case CEE_LDFTN: ves_abort(); break;
+			case CEE_LDFTN: {
+				guint32 token;
+				++ip;
+				token = read32 (ip);
+				ip += 4;
+				sp->type = VAL_NATI;
+				sp->data.p = mono_create_method_pointer (mono_get_method (image, token, NULL));
+				sp->data.vt.klass = NULL;
+				++sp;
+				break;
+			}
 			case CEE_LDVIRTFTN: ves_abort(); break;
 			case CEE_UNUSED56: ves_abort(); break;
 			case CEE_LDARG: {
