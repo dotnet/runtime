@@ -97,6 +97,9 @@ static GHashTable *type_initialization_hash;
 /* from thread id to thread id being waited on */
 static GHashTable *blocked_thread_hash;
 
+/* Main thread */
+static MonoThread *main_thread;
+
 void
 mono_type_initialization_init (void)
 {
@@ -421,7 +424,7 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		/* Convert to the format expected by GC_make_descriptor */
 		bm [0] = (guint32)bitmap;
 		bm [1] = (guint32)(bitmap >> 32);
-		class->gc_descr = (gpointer)GC_make_descriptor (&bm, class->instance_size / sizeof (gpointer));
+		class->gc_descr = (gpointer)GC_make_descriptor ((GC_bitmap)&bm, class->instance_size / sizeof (gpointer));
 	}
 }
 #endif /* CREATION_SPEEDUP */
@@ -1242,7 +1245,9 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	MonoDomain *domain = mono_domain_get ();
 	gchar *utf8_fullpath;
 	int result;
-	
+
+	main_thread = mono_thread_current ();
+
 	main_args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
 
 	if (!g_path_is_absolute (argv [0])) {
@@ -1372,8 +1377,9 @@ mono_unhandled_exception (MonoObject *exc)
 	if (exc->vtable->klass != mono_defaults.threadabortexception_class) {
 		delegate = *(MonoObject **)(((char *)domain->domain) + field->offset); 
 
-		/* set exitcode only in the main thread? */
-		mono_environment_exitcode_set (1);
+		/* set exitcode only in the main thread */
+		if (mono_thread_current () == main_thread)
+			mono_environment_exitcode_set (1);
 		if (domain != mono_root_domain || !delegate) {
 			mono_print_unhandled_exception (exc);
 		} else {
@@ -1498,6 +1504,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			case MONO_TYPE_R4:
 			case MONO_TYPE_R8:
 			case MONO_TYPE_VALUETYPE:
+				g_assert (((gpointer*)params->vector) [i]);
 				pa [i] = (char *)(((gpointer *)params->vector)[i]) + sizeof (MonoObject);
 				break;
 			case MONO_TYPE_STRING:
