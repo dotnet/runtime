@@ -96,7 +96,6 @@ guint32 mono_jit_tls_id = -1;
 gboolean mono_jit_trace_calls = FALSE;
 gboolean mono_break_on_exc = FALSE;
 gboolean mono_compile_aot = FALSE;
-gboolean mono_no_aot = FALSE;
 
 static int mini_verbose = 0;
 
@@ -5699,10 +5698,15 @@ mono_create_class_init_trampoline (MonoVTable *vtable)
 MonoVTable*
 mono_find_class_init_trampoline_by_addr (gconstpointer addr)
 {
+	MonoVTable *res;
+
+	EnterCriticalSection (&class_init_hash_mutex);
 	if (class_init_hash_addr)
-		return g_hash_table_lookup (class_init_hash_addr, addr);
+		res = g_hash_table_lookup (class_init_hash_addr, addr);
 	else
-		return NULL;
+		res = NULL;
+	LeaveCriticalSection (&class_init_hash_mutex);
+	return res;
 }
 
 static GHashTable *emul_opcode_hash = NULL;
@@ -5799,7 +5803,7 @@ mono_inst_foreach (MonoInst *tree, MonoInstFunc func, gpointer data) {
 	func (tree, data);
 }
 
-#if 0
+G_GNUC_UNUSED
 static void
 mono_print_bb_code (MonoBasicBlock *bb) {
 	if (bb->code) {
@@ -5811,7 +5815,6 @@ mono_print_bb_code (MonoBasicBlock *bb) {
 		}
 	}
 }
-#endif
 
 static void
 print_dfn (MonoCompile *cfg) {
@@ -7122,7 +7125,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 }
 
 static gpointer
-mono_jit_compile_method (MonoMethod *method)
+mono_jit_compile_method_inner (MonoMethod *method)
 {
 	/* FIXME: later copy the code from mono */
 	MonoDomain *target_domain, *domain = mono_domain_get ();
@@ -7138,28 +7141,26 @@ mono_jit_compile_method (MonoMethod *method)
 
 	jit_code_hash = target_domain->jit_code_hash;
 
-	if ((info = g_hash_table_lookup (jit_code_hash, method))) {
-		/* We can't use a domain specific method in another domain */
-		if (! ((domain != target_domain) && !info->domain_neutral)) {
-			mono_jit_stats.methods_lookups++;
-			return info->code_start;
-		}
-	}
-
 #ifdef MONO_USE_AOT_COMPILER
 	if (!mono_compile_aot && (default_opt & MONO_OPT_AOT)) {
 		MonoJitInfo *info;
+
+		mono_domain_lock (domain);
 
 		mono_class_init (method->klass);
 		if ((info = mono_aot_get_method (domain, method))) {
 
 			g_hash_table_insert (domain->jit_code_hash, method, info);
 
+			mono_domain_unlock (domain);
+
 			/* make sure runtime_init is called */
 			mono_runtime_class_init (mono_class_vtable (domain, method->klass));
 
 			return info->code_start;
 		}
+
+		mono_domain_unlock (domain);
 	}
 #endif
 
@@ -7231,6 +7232,38 @@ mono_jit_compile_method (MonoMethod *method)
 	}
 	/* make sure runtime_init is called */
 	mono_runtime_class_init (mono_class_vtable (target_domain, method->klass));
+
+	return code;
+}
+
+static gpointer
+mono_jit_compile_method (MonoMethod *method)
+{
+	/* FIXME: later copy the code from mono */
+	MonoDomain *target_domain, *domain = mono_domain_get ();
+	MonoCompile *cfg;
+	MonoJitInfo *info;
+	gpointer code;
+
+	if (default_opt & MONO_OPT_SHARED)
+		target_domain = mono_root_domain;
+	else 
+		target_domain = domain;
+
+	mono_domain_lock (target_domain);
+
+	if ((info = g_hash_table_lookup (target_domain->jit_code_hash, method))) {
+		/* We can't use a domain specific method in another domain */
+		if (! ((domain != target_domain) && !info->domain_neutral)) {
+			mono_domain_unlock (target_domain);
+			mono_jit_stats.methods_lookups++;
+			return info->code_start;
+		}
+	}
+
+	code = mono_jit_compile_method_inner (method);
+
+	mono_domain_unlock (target_domain);
 
 	return code;
 }
