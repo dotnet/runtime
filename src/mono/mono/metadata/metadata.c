@@ -346,12 +346,13 @@ mono_meta_table_name (int table)
 }
 
 #define rtsize(s,b) (((s) > (1 << (b)) ? 4 : 2))
-		 
+#define idx_size(tableidx) (meta->tables [(tableidx)].rows < 65536 ? 2 : 4)
+
+/* Reference: Partition II - 23.2.6 */
 static int
-compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount, guint32 *result_bitfield)
+compute_size (metadata_t *meta, MonoMetaTable *table, int tableindex, guint32 *result_bitfield)
 {
 	guint32 bitfield = 0;
-	int tsize =  rowcount > 65536 ? 4 : 2;
 	int size = 0, field_size;
 	int i, n, code;
 	int shift = 0;
@@ -374,10 +375,77 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount, guint32 *res
 			field_size = meta->idx_string_wide ? 4 : 2; break;
 			
 		case MONO_MT_GUID_IDX:
-			field_size = meta->idx_string_wide ? 4 : 2; break;
+			field_size = meta->idx_guid_wide ? 4 : 2; break;
 
 		case MONO_MT_TABLE_IDX:
-			field_size = tsize; break;
+			/* Uhm, a table index can point to other tables besides the current one
+			 * so, it's not correct to use the rowcount of the current table to
+			 * get the size for this column - lupus 
+			 */
+			switch (tableindex) {
+			case META_TABLE_ASSEMBLYREFOS:
+				g_assert (i == 3);
+				field_size = idx_size (META_TABLE_ASSEMBLYREF); break;
+			case META_TABLE_ASSEMBLYPROCESSOR:
+				g_assert (i == 1);
+				field_size = idx_size (META_TABLE_ASSEMBLYREF); break;
+			case META_TABLE_CLASSLAYOUT:
+				g_assert (i == 2);
+				field_size = idx_size (META_TABLE_TYPEDEF); break;
+			case META_TABLE_EVENTMAP:
+				g_assert (i == 0 || i == 1);
+				field_size = i ? idx_size (META_TABLE_EVENT):
+					idx_size(META_TABLE_TYPEDEF); 
+				break;
+			case META_TABLE_EVENT:
+				g_assert (i == 2);
+				field_size = MAX (idx_size (META_TABLE_TYPEDEF), idx_size(META_TABLE_TYPEREF));
+				field_size = MAX (field_size, idx_size(META_TABLE_TYPESPEC));
+				break;
+			case META_TABLE_EXPORTEDTYPE:
+				g_assert (i == 1);
+				field_size = idx_size (META_TABLE_TYPEDEF); break;
+			case META_TABLE_FIELDLAYOUT:
+				g_assert (i == 1);
+				field_size = idx_size (META_TABLE_FIELD); break;
+			case META_TABLE_FIELDRVA:
+				g_assert (i == 1);
+				field_size = idx_size (META_TABLE_FIELD); break;
+			case META_TABLE_IMPLMAP:
+				g_assert (i == 3);
+				field_size = idx_size (META_TABLE_MODULEREF); break;
+			case META_TABLE_INTERFACEIMPL:
+				g_assert (i == 0);
+				field_size = idx_size (META_TABLE_TYPEDEF); break;
+			case META_TABLE_METHOD:
+				g_assert (i == 5);
+				field_size = idx_size (META_TABLE_PARAM); break;
+			case META_TABLE_METHODIMPL:
+				g_assert (i == 0);
+				field_size = idx_size (META_TABLE_TYPEDEF); break;
+			case META_TABLE_METHODSEMANTICS:
+				g_assert (i == 1);
+				field_size = idx_size (META_TABLE_METHOD); break;
+			case META_TABLE_NESTEDCLASS:
+				g_assert (i == 0 || i == 1);
+				field_size = idx_size (META_TABLE_TYPEDEF); break;
+			case META_TABLE_PROPERTYMAP:
+				g_assert (i == 0 || i == 1);
+				field_size = i ? idx_size (META_TABLE_PROPERTY):
+					idx_size(META_TABLE_TYPEDEF); 
+				break;
+			case META_TABLE_TYPEDEF:
+				g_assert (i == 4 || i == 5);
+				field_size = i == 4 ? idx_size (META_TABLE_FIELD):
+					idx_size(META_TABLE_METHOD); 
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+			if (field_size != idx_size (tableindex))
+				g_warning ("size changed (%d to %d)", idx_size (tableindex), field_size);
+			
+			break;
 
 			/*
 			 * HasConstant: ParamDef, FieldDef, Property
@@ -560,6 +628,7 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount, guint32 *res
 		bitfield |= (field_size-1) << shift;
 		shift += 2;
 		size += field_size;
+		/*g_print ("table %02x field %d size %d\n", tableindex, i, field_size);*/
 	}
 
 	*result_bitfield = (i << 24) | bitfield;
@@ -584,7 +653,7 @@ mono_metadata_compute_table_bases (metadata_t *meta)
 			continue;
 
 		meta->tables [i].row_size = compute_size (
-			meta, tables [i].table, meta->tables [i].rows,
+			meta, tables [i].table, i,
 			&meta->tables [i].size_bitfield);
 		meta->tables [i].base = base;
 		base += meta->tables [i].rows * meta->tables [i].row_size;
@@ -640,6 +709,7 @@ mono_metadata_get_table (MetaTableEnum table)
 const char *
 mono_metadata_string_heap (metadata_t *meta, guint32 index)
 {
+	g_return_val_if_fail (index < meta->heap_strings.sh_size, "");
 	return meta->raw_metadata + meta->heap_strings.sh_offset + index;
 }
 
