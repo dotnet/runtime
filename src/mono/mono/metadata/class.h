@@ -57,12 +57,6 @@ typedef struct {
 struct _MonoClass {
 	MonoImage *image;
 
-	/*
-	 * relative numbering for fast type checking
-	 */
-	unsigned int baseval;
-	unsigned int diffval;
-
 	/* The underlying type of the enum */
 	MonoType *enum_basetype;
 	/* element class for arrays and enum */
@@ -184,6 +178,8 @@ struct MonoVTable {
 	/* do not add any fields after vtable, the structure is dynamically extended */
         gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
 };
+
+#define mono_class_has_parent(klass,parent) ((klass)->idepth >= (parent)->idepth) && ((klass)->supertypes [(parent)->idepth - 1] == (parent))
 
 typedef struct {
 	gulong new_object_count;

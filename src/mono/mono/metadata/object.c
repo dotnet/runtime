@@ -1677,12 +1677,10 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 			oklass = ((MonoTransparentProxy *)obj)->klass;
 		}
 		if (klass->rank) {
-			if (oklass->rank == klass->rank && 
-			    (oklass->cast_class->baseval - klass->cast_class->baseval) <= 
-			    klass->cast_class->diffval)
+			if (oklass->rank == klass->rank && mono_class_has_parent (oklass->cast_class, klass->cast_class))
 				return obj;
 			
-		} else if ((oklass->baseval - klass->baseval) <= klass->diffval)
+		} else if (mono_class_has_parent (oklass, klass))
 			return obj;
 	}
 

@@ -1132,25 +1132,6 @@ mono_class_init (MonoClass *class)
 }
 
 
-/*
- * Compute a relative numbering of the class hierarchy as described in
- * "Java for Large-Scale Scientific Computations?"
- */
-static void
-mono_compute_relative_numbering (MonoClass *class, int *c)
-{
-	GList *s;
-
-	(*c)++;
-
-	class->baseval = *c;
-
-	for (s = class->subclasses; s; s = s->next)
-		mono_compute_relative_numbering ((MonoClass *)s->data, c); 
-	
-	class->diffval = *c -  class->baseval;
-}
-
 void
 mono_class_setup_mono_type (MonoClass *class)
 {
@@ -1283,7 +1264,6 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 	}
 
 	if (!(class->flags & TYPE_ATTRIBUTE_INTERFACE)) {
-		int rnum = 0;
 		class->parent = parent;
 
 		if (!parent)
@@ -1312,7 +1292,6 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 		}
 		/*class->enumtype = class->parent->enumtype; */
 		class->parent->subclasses = g_list_prepend (class->parent->subclasses, class);
-		mono_compute_relative_numbering (mono_defaults.object_class, &rnum);
 		mono_class_setup_supertypes (class);
 	} else {
 		class->parent = NULL;
@@ -1467,15 +1446,14 @@ mono_ptr_class_get (MonoType *type)
 	result->flags = TYPE_ATTRIBUTE_CLASS | (el_class->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK);
 	/* Can pointers get boxed? */
 	result->instance_size = sizeof (gpointer);
-	/*
-	 * baseval, diffval: need them to allow casting ?
-	 */
 	result->cast_class = result->element_class = el_class;
 	result->enum_basetype = &result->element_class->byval_arg;
 
 	result->this_arg.type = result->byval_arg.type = MONO_TYPE_PTR;
 	result->this_arg.data.type = result->byval_arg.data.type = result->enum_basetype;
 	result->this_arg.byref = TRUE;
+
+	mono_class_setup_supertypes (result);
 
 	g_hash_table_insert (ptr_hash, el_class, result);
 
@@ -1503,15 +1481,14 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 	result->flags = TYPE_ATTRIBUTE_CLASS; // | (el_class->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK);
 	/* Can pointers get boxed? */
 	result->instance_size = sizeof (gpointer);
-	/*
-	 * baseval, diffval: need them to allow casting ?
-	 */
 	result->cast_class = result->element_class = result;
 
 	result->this_arg.type = result->byval_arg.type = MONO_TYPE_FNPTR;
 	result->this_arg.data.method = result->byval_arg.data.method = sig;
 	result->this_arg.byref = TRUE;
 	result->enum_basetype = &result->element_class->byval_arg;
+
+	mono_class_setup_supertypes (result);
 
 	g_hash_table_insert (ptr_hash, sig, result);
 
@@ -1639,7 +1616,7 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	MonoClass *class;
 	MonoClass *parent = NULL;
 	GSList *list;
-	int rnum = 0, nsize;
+	int nsize;
 	char *name;
 
 	eclass = mono_class_from_mono_type (element_type);
@@ -1682,7 +1659,6 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	class->class_size = 0;
 	class->vtable_size = parent->vtable_size;
 	class->parent->subclasses = g_list_prepend (class->parent->subclasses, class);
-	mono_compute_relative_numbering (mono_defaults.object_class, &rnum);
 	mono_class_setup_supertypes (class);
 
 	class->rank = rank;
@@ -2070,10 +2046,7 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 				return TRUE;
 		}
 	} else {
-		/*
-		 * klass->baseval is 0 for interfaces 
-		 */
-		if (klass->baseval && ((klass->baseval - klassc->baseval) <= klassc->diffval))
+		if (!(klass->flags & TYPE_ATTRIBUTE_INTERFACE) && mono_class_has_parent (klass, klassc))
 			return TRUE;
 	}
 	
