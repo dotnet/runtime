@@ -470,8 +470,13 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	gmethod->mtype_argv = g_new0 (MonoType *, param_count);
 
 	for (i = 0; i < param_count; i++) {
-		gmethod->mtype_argv [i] = mono_metadata_parse_type_full (
+		MonoType *t = mono_metadata_parse_type_full (
 			image, container, MONO_PARSE_TYPE, 0, ptr, &ptr);
+
+		if (context)
+			t = mono_class_inflate_generic_type (t, context);
+
+		gmethod->mtype_argv [i] = t;
 
 		if (!gmethod->is_open)
 			gmethod->is_open = mono_class_is_open_constructed_type (gmethod->mtype_argv [i]);
@@ -492,6 +497,12 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	if (!context) {
 		new_context = g_new0 (MonoGenericContext, 1);
 		new_context->gmethod = gmethod;
+
+		context = new_context;
+	} else {
+		new_context = g_new0 (MonoGenericContext, 1);
+		new_context->gmethod = gmethod;
+		new_context->ginst = context->ginst;
 
 		context = new_context;
 	}
