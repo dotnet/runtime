@@ -1,3 +1,7 @@
+2004-01-22  Atsushi Enomoto <atsushi@ximian.com>
+
+	* xml-classes : status update, additional infos.
+
 2004-01-16  Atsushi Enomoto <atsushi@ximian.com>
 
 	* web/commands : Added xml-classes (forgot to commit).

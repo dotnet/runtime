@@ -50,15 +50,15 @@
   implemented, but it requires CAS (code access security) feature. We need to
   fixup this class after ongoing CAS effort works.
 
+  You might also be interested in an improved <a href="http://codeblogs.ximian.com/blogs/benm/archives/000039.html">XmlCachingResolver</a> by Ben Maurer.
 
 *** XmlNameTable
 
   XmlNameTable itself is implemented. However, it should be actually used in
   several classes. Currently it makes sense if compared names are both in
-  the table, but if it is obvious that compared names are both in this table,
-  it should be simply compared using ReferenceEquals() (if these names are
-  different, the comparison is still inefficient yet).
-
+  the table, they should be simply compared using ReferenceEquals(). We 
+  have partially done in XmlNamespaceManager (in .NET 1.2 methods; if the
+  build is not NET_1_2 then it is internal use only).
 
 *** Xml Stream Reader
 
@@ -68,9 +68,9 @@
   XmlInputStream class. This may disappear since XmlStreamReader is enough to
   handle this problem).
 
-  However, there are some problems lies in these classes on reading network
-  stream (especially on Linux). This should be fixed soon.
-
+  However, there seems some problems in these classes on reading network
+  stream (especially on Linux). This should be fixed soon, if we found the
+  actual reason.
 
 *** XML Reader
 
@@ -78,10 +78,10 @@
 
 	<ul>
 		* Most of the OASIS conformance test passes as Microsoft 
-		  does, but about W3C tests, it is not perfect.
+		  does, but about W3C tests, it is still not perfect.
 		* I won't add any XDR support on XmlValidatingReader. (I haven't
 		  ever seen XDR used other than Microsoft's BizTalk Server 2000,
-		  and Now they have 2003 with XML Schema support)
+		  and Now they have 2002 with XML Schema support)
 	</ul>
 
   XmlTextReader and XmlValidatingReader should be faster than now. Currently
@@ -115,33 +115,35 @@
 
 ** System.Xml.Schema
 
+*** Summary
+
+  Basically it is completed. We can compile complex and simple types, refer to
+  external schemas, extend or restrict other types, or use substitution groups.
+  You can test how current schema validation engine is (in)complete by using
+  standalone test module 
+  (see mcs/class/System.XML/Test/System.Xml.Schema/standalone_tests).
+  At least in my box, msxsdtest fails only 30 cases with bugfixed catalog.
+
 *** Schema Object Model
 
-  Basically it is implemented. Some features still needs to fix:
+  Completed, except for some things to be fixed:
 
 	<ul>
 		* Complete facet support. Currently some of them is missing.
 		  Recently David Sheldon is doing several fixes on them.
-		* Complete derivation by restriction (DBR) support. Especially
-		  substitution group won't work with it (However, I won't
-		  recommend both substitution group and DBR, regardless of 
-		  this incompleteness.)
-		* And moreover, as for DBR, currently XmlSchema compilation
-		  fails for correct schemas mainly incorrect Particle Valid 
-		  (xml schema structures 3.9.6) check. To fix this problem, 
-		  we have to create another particle comparison code.
+		* ContentTypeParticle for pointless xs:choice is incomplete
+		  (It is because fixing this arose another bugs in 
+		  compilation. Interestingly, MS.NET also fails around here,
+		  so it might be nature of ContentTypeParticle design)
+		* Some derivation by restriction (DBR) handling is incorrect.
 	</ul>
-
-  Some bugs are remaining, but as far as I tried W3C XML Schema test suite 
-  with bugfixes (of test suite), only 69 out of 7581 has failed. With my test
-  suite fix, MS.NET failed 48 cases.
 
 *** Validating Reader
 
   XML Schema validation feature is (currently) implemented on
   Mono.Xml.Schema.XsdValidatingReader, which is internally used in
-  XmlValidatingReader. 
-  
+  XmlValidatingReader.
+
   Basically this is implemented and actually its feature is almost complete,
   but I have only did validation feature testing. So we have to write more 
   tests on properties, methods, and events (validation errors).
@@ -152,9 +154,22 @@
   Lluis rules ;-)
 
   Well, in fact XmlSerializer is almost finished and is on bugfix phase.
-  However, more tests are required especially schema import and export
-  feature. Please try xsd.exe to create classes from schema, or schema
-  from class. And if any problems were found, please file it to bugzilla.
+
+  However, we appliciate more tests. Please try 
+  
+  	<ul>
+		* System.Web.Services to invoke SOAP services.
+  		* xsd.exe and wsdl.exe to create classes.
+	</ul>
+
+  And if any problems were found, please file it to bugzilla.
+
+  Lluis also built interesting standalone test system placed under
+  mcs/class/System.Web.Services/Test/standalone.
+
+  You might also interested in genxs, which enables you to create custom
+  XML serializer. This is not included in Microsoft.NET. 
+  See mcs/tools/genxs for the details.
 
 
 ** System.Xml.XPath and System.Xml.Xsl
@@ -162,12 +177,7 @@
   There are two implementations for XSLT. One (and historical) implementation
   is based on libxslt. Now we uses fully implemented managed XSLT.
 
-  Putting aside bug fixes, we have to support:
-
-	<ul>
-		* embedded script (such as VB, C#, JScript). So some 
-		packages like latest NAnt (for MS.NET) won't be compiled.
-	</ul>
+  As for Managed XSLT, we support msxsl:script.
 
   It would be nice if we can support <a href="http://www.exslt.org/">EXSLT</a>.
   <a href="http://msdn.microsoft.com/WebServices/default.aspx?pull=/library/en-us/dnexxml/html/xml05192003.asp">Microsoft has already done it</a>, but it
@@ -178,7 +188,7 @@
 
   Our managed XSLT implementation is still inefficient. XslTransform.Load()
   and .Transform() looks three times slower (However it depends on 
-  XmlTextReader which is also slow, so we are starting optimization from 
+  XmlTextReader which is also slow, so we are starting optimization from
   that class, not XSLT itself). These number are only for specific cases,
   and there might be more critical point on XSLT engine (mainly
   XPathNodeIterator).
@@ -193,7 +203,7 @@
 
   There are two assemblies related to System.Xml v2.0; System.Xml.dll and
   System.Data.SqlXml.dll (here I treat sqlxml.dll as part of System.Xml v2.0,
-  but it is also one of the ADO.NET 2.0 feature). There are several 
+  but note that it is also one of the ADO.NET 2.0 feature). There are several 
   namespaces such as MS.Internal.Xml and System.Xml. Note that .NET Framework
   is pre-release version and MS.Internal.Xml namespace apparently shows that
   it is not in stable status as yet.
@@ -210,7 +220,7 @@
 
   Tim Coleman started ADO.NET 2.0 related works. Currently I have no plan to
   implement System.Xml v2.0 classes and won't touch with them immediately, 
-  but will start in next some months. If any of you wants to try these 
+  but will start in next some months. If any of you wants to try this
   frontier, we welcome your effort.
 
 *** XPathNavigator2
@@ -218,9 +228,10 @@
   System.Xml v2.0 implementation will be started from XPathDocument2 and
   XPathNavigator2 implementations. Firstly, its document structure and
   basic navigation feature will be implemented. And next, XPath2 engine
-  became ready to be implemented (XPathNavigator2 looks very different from
+  should be implemented (XPathNavigator2 looks very different from
   XPathNavigator). Another requirement is schema based validation feature.
-  It needs some schema improvements.
+  It needs some schema improvements, such like IXmlInfosetReader support.
+  (IXmlInfosetReader is in MS.Internal.Xml.)
 
 *** XML Query
 
@@ -230,7 +241,8 @@
   such as XML Schema based datatypes.
 
   XML Query implementation can be found mainly in System.Xml.Query and 
-  MS.Internal.Xml.Query namespaces. Note that they are in System.Data.SqlXml.dll.
+  MS.Internal.Xml.Query namespaces. Note that they are in 
+  System.Data.SqlXml.dll.
 
   MSDN documentation says that there are two kind of API for XML Query: High
   Level API and Low Level API. At the time of this beta version, the Low Level
@@ -274,25 +286,25 @@
 
 *** xsd.exe
 
-  xsd.exe is used to:
+  See <a href="ado-net.html">ADO.NET page</a>.
 
-	<ol>
-		* generate classes source code from schema
-		* generate DataSet classes source code from schema
-		* generate schema documents from assembly (classes)
-		* infer schema documents from XML instance
-		* convert XDR into XSD
-	</ol>
+  Microsoft has another inference class from XmlReader to XmlSchemaCollection
+  (Microsoft.XsdInference). It may be useful, but it won't be so easy.
 
-  As descrived above, I won't work on 5) XDR stuff.
 
-  Current xsd.exe supports 1) and 3) 
+** Miscellaneous
 
-  As for 2) and 4), Currently there is no works on them. (This inference
-  feature is rather DataSet specific than general purpose use.)
+  Sometimes I hear complain about System.dll and System.Xml.dll mutual
+  dependency: System.dll references to System.Xml.dll (e.g. 
+  System.Configuration.ConfigXmlDocument extended from XmlDocument), while 
+  System.Xml.dll vice versa (e.g. XmlUrlResolver.ResolveUri takes System.Uri).
+  Since they are in public method signatures, so at least we cannot get rid
+  of these mutual references.
 
-  Microsoft has another inference class from XmlReader to XmlSchemaCollection.
-  It may be useful, but it won't be so easy.
+  However, for those who really want to build System.Xml.dll without System.dll,
+  I created <a href="http://primates.ximian.com/~atsushi/System_DummyClasses.cs">dummy classes in System.dll</a>. To build System.Xml.dll in such way, remove 
+  <code>/r:System.dll</code> from Makefile, and add this source to 
+  System.Xml.dll.sources. Note that this is at the point of Mono 0.30 release.
 
-  any volunteers?
+  Also note that you still need System.dll to run mcs.
 
