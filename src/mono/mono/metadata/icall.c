@@ -2384,15 +2384,14 @@ g_concat_dir_and_file (const char *dir, const char *file)
 		return g_strconcat (dir, file, NULL);
 }
 
-static MonoObject*
-ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflectionAssembly *assembly, MonoString *name) 
+static void *
+ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflectionAssembly *assembly, MonoString *name, gint32 *size) 
 {
 	char *n = mono_string_to_utf8 (name);
 	MonoTableInfo *table = &assembly->assembly->image->tables [MONO_TABLE_MANIFESTRESOURCE];
 	guint32 i;
 	guint32 cols [MONO_MANIFEST_SIZE];
 	const char *val;
-	MonoObject *result;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -2406,36 +2405,16 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflection
 	if (i == table->rows)
 		return NULL;
 	/* FIXME */
-	if (!cols [MONO_MANIFEST_IMPLEMENTATION]) {
-		guint32 size;
-		MonoArray *data;
-		val = mono_image_get_resource (assembly->assembly->image, cols [MONO_MANIFEST_OFFSET], &size);
-		if (!val)
-			return NULL;
-		data = mono_array_new (mono_object_domain (assembly), mono_defaults.byte_class, size);
-		memcpy (mono_array_addr (data, char, 0), val, size);
-		return (MonoObject*)data;
-	}
-	switch (cols [MONO_MANIFEST_IMPLEMENTATION] & IMPLEMENTATION_MASK) {
-	case IMPLEMENTATION_FILE:
-		i = cols [MONO_MANIFEST_IMPLEMENTATION] >> IMPLEMENTATION_BITS;
-		table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
-		i = mono_metadata_decode_row_col (table, i - 1, MONO_FILE_NAME);
-		val = mono_metadata_string_heap (assembly->assembly->image, i);
-		n = g_concat_dir_and_file (assembly->assembly->basedir, val);
-		result = (MonoObject*)mono_string_new (mono_object_domain (assembly), n);
-		/* check hash if needed */
-		g_free (n);
-		return result;
-
-	case IMPLEMENTATION_ASSEMBLYREF:
-		break;
-
-	case IMPLEMENTATION_EXP_TYPE:
+	if (cols [MONO_MANIFEST_IMPLEMENTATION]) {
+		/*
+		 * this code should only be called after obtaining the 
+		 * ResourceInfo and handling the other cases.
+		 */
 		g_assert_not_reached ();
-		break;
+		return NULL;
 	}
-	return NULL;
+
+	return mono_image_get_resource (assembly->assembly->image, cols [MONO_MANIFEST_OFFSET], size);
 }
 
 static gboolean
@@ -4075,7 +4054,7 @@ static gconstpointer icall_map [] = {
 	"System.Buffer::GetByteInternal", ves_icall_System_Buffer_GetByteInternal,
 	"System.Buffer::SetByteInternal", ves_icall_System_Buffer_SetByteInternal,
 	"System.Buffer::BlockCopyInternal", ves_icall_System_Buffer_BlockCopyInternal,
-
+	
 	/*
 	 * System.IO.MonoIO
 	 */
