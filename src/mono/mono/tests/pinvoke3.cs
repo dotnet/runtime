@@ -292,4 +292,24 @@ public class Tests {
 		return mono_test_marshal_return_delegate_delegate (new ReturnDelegateDelegate (return_delegate));
 	}
 
+	/* Passing and returning strings */
+
+	public delegate String ReturnStringDelegate (String s);
+
+	[DllImport ("libtest", EntryPoint="mono_test_return_string")]
+	public static extern String mono_test_marshal_return_string_delegate (ReturnStringDelegate d);
+
+	public static String managed_return_string (String s) {
+		if (s != "TEST")
+			return "";
+		else
+			return "12345";
+	}
+
+	static int test_0_marshal_return_string_delegate () {
+		ReturnStringDelegate d = new ReturnStringDelegate (managed_return_string);
+		String s = mono_test_marshal_return_string_delegate (d);
+
+		return (s == "12345") ? 0 : 1;
+	}
 }
