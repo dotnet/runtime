@@ -273,7 +273,7 @@ encode_value (gint32 value, char *buf, char **endbuf)
 	 */
 	if ((value >= 0) && (value <= 127))
 		*p++ = value;
-	else if ((value >= 0) && (value <= 16384)) {
+	else if ((value >= 0) && (value <= 16383)) {
 		p [0] = 0x80 | (value >> 8);
 		p [1] = value & 0xff;
 		p += 2;
