@@ -536,5 +536,8 @@ mono_find_jit_icall_by_name (const char *name);
 MonoJitICallInfo *
 mono_find_jit_icall_by_addr (gconstpointer addr);
 
+MonoMethodSignature*
+mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGenericContext *context);
+
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
 

@@ -246,7 +246,7 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
  * token is the method_ref or method_def token used in a call IL instruction.
  */
 MonoMethodSignature*
-mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
+mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context)
 {
 	int table = mono_metadata_token_table (token);
 	int idx = mono_metadata_token_index (token);
@@ -279,11 +279,19 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 	
 		ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
 		mono_metadata_decode_blob_size (ptr, &ptr);
-		sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
+		sig = mono_metadata_parse_method_signature_full (image, context, 0, ptr, NULL);
 		g_hash_table_insert (image->memberref_signatures, GUINT_TO_POINTER (token), sig);
 	}
 
+	sig = mono_class_inflate_generic_signature (image, sig, context);
+
 	return sig;
+}
+
+MonoMethodSignature*
+mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
+{
+	return mono_method_get_signature_full (method, image, token, NULL);
 }
 
 static MonoMethod *

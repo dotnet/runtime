@@ -979,5 +979,8 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest);
 gpointer
 mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *real_proxy);
 
+MonoMethodSignature*
+mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context);
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 

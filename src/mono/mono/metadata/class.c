@@ -348,9 +348,8 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 	return inflated;
 }
 
-static MonoMethodSignature*
-inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig,
-			   MonoGenericContext *context)
+MonoMethodSignature*
+mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig, MonoGenericContext *context)
 {
 	MonoMethodSignature *res;
 	gboolean is_open;
@@ -420,7 +419,7 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 		rklass = result->nmethod.method.klass = mono_class_from_mono_type (declaring);
 	}
 
-	result->nmethod.method.signature = inflate_generic_signature (
+	result->nmethod.method.signature = mono_class_inflate_generic_signature (
 		method->klass->image, method->signature, context);
 
 	if (context->gmethod) {
