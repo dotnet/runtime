@@ -14,15 +14,11 @@
 
 	Online API documentation for Mono is available in the `monodoc' package. 
 
-	Gtk-sharp is package to build GUI applications with the Gtk toolkit.
-
+	Gtk# is package to build GUI applications with the Gtk+ toolkit.
 
 	The software is also available on the `Mono' channel in <a href="http://www.ximian.com/products/redcarpet/">Red Carpet</a>.
 
-	Some useful links: the <a
-	href="http://www.go-mono.org/faq.html">FAQ</a>.
-
-        Packages can find RPM Spec files and other resources in the <a
+        Packagers can find RPM Spec files and other resources in the <a
 	href="http://www.go-mono.com/packagers/">packagers page</a>.
 
 	<table>
