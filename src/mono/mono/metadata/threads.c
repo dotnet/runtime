@@ -1515,10 +1515,14 @@ abort_appdomain_thread (gpointer key, gpointer value, gpointer user_data)
 
 	if (mono_thread_has_appdomain_ref (thread, domain)) {
 		/* printf ("ABORTING THREAD %p BECAUSE IT REFERENCES DOMAIN %s.\n", thread, domain->friendly_name); */
+		HANDLE handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
+		if (handle == NULL)
+			return;
+
 		ves_icall_System_Threading_Thread_Abort (thread, NULL);
 
 		if(data->wait.num<MAXIMUM_WAIT_OBJECTS) {
-			data->wait.handles [data->wait.num] = thread->handle;
+			data->wait.handles [data->wait.num] = handle;
 			data->wait.threads [data->wait.num] = thread;
 			data->wait.num++;
 		} else {
