@@ -822,4 +822,70 @@ class Tests {
 		return n;
 	}
 	
+	static int my_flags;
+	static int test_0_and_cmp ()
+	{
+		
+		/* various forms of test [mem], imm */
+		
+		my_flags = 0x01020304;
+		
+		if ((my_flags & 0x01020304) == 0)
+			return 1;
+		
+		if ((my_flags & 0x00000304) == 0)
+			return 2;
+		
+		if ((my_flags & 0x00000004) == 0)
+			return 3;
+		
+		if ((my_flags & 0x00000300) == 0)
+			return 4;
+		
+		if ((my_flags & 0x00020000) == 0)
+			return 5;
+		
+		if ((my_flags & 0x01000000) == 0)
+			return 6;
+		
+		/* test esi, imm */
+		int local = 0x01020304;
+		
+		if ((local & 0x01020304) == 0)
+			return 7;
+		
+		if ((local & 0x00000304) == 0)
+			return 8;
+		
+		if ((local & 0x00000004) == 0)
+			return 9;
+		
+		if ((local & 0x00000300) == 0)
+			return 10;
+		
+		if ((local & 0x00020000) == 0)
+			return 11;
+		
+		if ((local & 0x01000000) == 0)
+			return 12;
+		
+		return 0;
+	}
+	
+	static int test_0_cne ()
+	{
+		int x = 0;
+		int y = 1;
+		
+		bool b = x != y;
+		bool bb = x != x;
+		
+		if (!b)
+			return 1;
+		if (bb)
+			return 2;
+		
+		return 0;
+	}
+	
 }
