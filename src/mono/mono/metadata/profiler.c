@@ -5,6 +5,7 @@
 #include "mono/metadata/mono-debug.h"
 #include "mono/metadata/class-internals.h"
 #include "mono/metadata/domain-internals.h"
+#include "mono/metadata/gc-internal.h"
 #include "mono/io-layer/io-layer.h"
 #include <string.h>
 #include <sys/time.h>
@@ -377,6 +378,7 @@ mono_profiler_gc_event (MonoGCEvent event, int generation)
 void
 mono_profiler_install_gc (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback)
 {
+	mono_gc_enable_events ();
 	gc_event = callback;
 	gc_heap_resize = heap_resize_callback;
 }

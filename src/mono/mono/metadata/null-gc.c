@@ -50,5 +50,10 @@ mono_object_is_alive (MonoObject* o)
 	return TRUE;
 }
 
+void
+mono_gc_enable_events (void)
+{
+}
+
 #endif
 

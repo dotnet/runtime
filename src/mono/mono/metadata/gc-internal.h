@@ -35,6 +35,7 @@ extern void mono_gc_disable (void);
 extern gboolean mono_object_is_alive (MonoObject* obj);
 extern gboolean mono_gc_is_finalizer_thread (MonoThread *thread);
 extern gpointer mono_gc_out_of_memory (size_t size);
+extern void     mono_gc_enable_events (void);
 
 #endif /* __MONO_METADATA_GC_H__ */
 
