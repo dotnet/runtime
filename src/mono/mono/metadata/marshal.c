@@ -2738,7 +2738,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (guint16 *ptr)
 
 	MONO_ARCH_SAVE_REGS;
 
-	while (t++)
+	while (*t++)
 		len++;
 
 	return mono_string_new_utf16 (domain, ptr, len);
