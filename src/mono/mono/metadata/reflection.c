@@ -8920,8 +8920,8 @@ resolve_object (MonoImage *image, MonoObject *obj)
 			nargs = 0;
 
 		sig = mono_metadata_signature_alloc (image, nargs);
-		sig->explicit_this = helper->call_conv & 64;
-		sig->hasthis = helper->call_conv & 32;
+		sig->explicit_this = helper->call_conv & 64 ? 1 : 0;
+		sig->hasthis = helper->call_conv & 32 ? 1 : 0;
 
 		if (helper->call_conv == 0) /* unmanaged */
 			sig->call_convention = helper->unmanaged_call_conv - 1;
