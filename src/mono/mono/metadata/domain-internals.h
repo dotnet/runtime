@@ -104,6 +104,7 @@ struct _MonoDomain {
 	GHashTable         *special_static_fields;
 	GHashTable         *jump_target_hash;
 	MonoGHashTable     *class_init_trampoline_hash;
+	MonoGHashTable     *jump_trampoline_hash;
 	/* 
 	 * This must be a GHashTable, since these objects can't be finalized
 	 * if the hashtable contains a GC visible reference to them.
