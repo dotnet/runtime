@@ -164,7 +164,8 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 %term STIND_I1 STIND_I2 STIND_I4 STIND_I8 STIND_R4 STIND_R8 STIND_OBJ
 %term ADDR_L ADDR_G ARG_I4 ARG_I8 ARG_R4 ARG_R8 ARG_OBJ ARG_STRING CALL_I4 CALL_I8 CALL_R8 CALL_VOID
 %term BREAK SWITCH BR RET_VOID RET RET_OBJ ENDFINALLY
-%term ADD ADD_OVF SUB MUL MUL_OVF MUL_OVF_UN DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN NEG NOT
+%term ADD ADD_OVF ADD_OVF_UN SUB SUB_OVF SUB_OVF_UN MUL MUL_OVF MUL_OVF_UN 
+%term DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN NEG NOT
 %term BLT BLT_UN BEQ BNE_UN BRTRUE BRFALSE BGE BGE_UN BLE BLE_UN BGT BGT_UN 
 %term CEQ CLT CGT
 %term CONV_I4 CONV_I1 CONV_I2 CONV_I8 CONV_U8 CONV_R4 CONV_R8
@@ -813,6 +814,14 @@ reg: ADD_OVF (reg, reg) {
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
 
+reg: ADD_OVF_UN (reg, reg) {
+	x86_alu_reg_reg (s->code, X86_ADD, tree->left->reg1, tree->right->reg1);
+	EMIT_COND_EXCEPTION (X86_CC_NC, get_exception_overflow ());	
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
 reg: SUB (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	if (tree->right->data.i == 1)
 		x86_dec_reg (s->code, tree->left->reg1);
@@ -825,6 +834,22 @@ reg: SUB (reg, CONST_I4) "MB_USE_OPT1(0)" {
 
 reg: SUB (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_SUB, tree->left->reg1, tree->right->reg1);
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
+reg: SUB_OVF (reg, reg) {
+	x86_alu_reg_reg (s->code, X86_SUB, tree->left->reg1, tree->right->reg1);
+	EMIT_COND_EXCEPTION (X86_CC_NO, get_exception_overflow ());	
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
+reg: SUB_OVF_UN (reg, reg) {
+	x86_alu_reg_reg (s->code, X86_SUB, tree->left->reg1, tree->right->reg1);
+	EMIT_COND_EXCEPTION (X86_CC_NC, get_exception_overflow ());	
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);

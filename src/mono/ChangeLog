@@ -1,6 +1,7 @@
 2002-01-14  Dietmar Maurer  <dietmar@ximian.com>
 
 	* mono/tests/exception6.cs: new tests for ADD_OVF, MUL_OVF
+	added tests for SUB_OVF, SUB_OVF_UN
 
 2001-12-21  Dietmar Maurer  <dietmar@ximian.com>
 

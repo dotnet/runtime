@@ -9,6 +9,46 @@ public class Ex {
 
 			ocount = 0;
 			try {
+				int a = Int32.MinValue + 1;
+				int t = a--;
+			} catch {
+				ocount++;
+			}
+			if (ocount != 0)
+				return 1;
+
+			ocount = 0;
+			try {
+				int a = Int32.MinValue;
+				int t = a--;
+			} catch {
+				ocount++;
+			}
+			if (ocount != 1)
+				return 1;
+
+			ocount = 0;
+			try {
+				uint a = 1;
+				uint t = a--;
+			} catch {
+				ocount++;
+			}
+			if (ocount != 0)
+				return 1;
+
+			ocount = 0;
+			try {
+				uint a = 0;
+				uint t = a--;
+			} catch {
+				ocount++;
+			}
+			if (ocount != 1)
+				return 1;
+
+			ocount = 0;
+			try {
 				sbyte a = 126;
 				sbyte t = a++;
 			} catch {
@@ -54,7 +94,18 @@ public class Ex {
 			}
 			if (ocount != 1)
 				return 1;
-		
+
+			/*
+			ocount = 0;
+			try {
+				uint a = 0xffffffff;
+				uint t = a*2;
+			} catch {
+				ocount++;
+			}
+			if (ocount != 1)
+				return 1;
+			*/
 		}
 		
 		return 0;

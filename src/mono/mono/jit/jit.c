@@ -1167,7 +1167,10 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 		case CEE_POP:
 		case CEE_ADD:
 		case CEE_ADD_OVF:
+		case CEE_ADD_OVF_UN:
 		case CEE_SUB:
+		case CEE_SUB_OVF:
+		case CEE_SUB_OVF_UN:
 		case CEE_AND:
 		case CEE_OR:
 		case CEE_XOR:
@@ -2499,7 +2502,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 		MAKE_BI_ALU (ADD)
 		MAKE_BI_ALU (ADD_OVF)
+		MAKE_BI_ALU (ADD_OVF_UN)
 		MAKE_BI_ALU (SUB)
+		MAKE_BI_ALU (SUB_OVF)
+		MAKE_BI_ALU (SUB_OVF_UN)
 		MAKE_BI_ALU (AND)
 		MAKE_BI_ALU (OR)
 		MAKE_BI_ALU (XOR)
