@@ -6,13 +6,14 @@
 typedef enum {
 	MONO_TRACE_ASSEMBLY		= (1<<0),
 	MONO_TRACE_TYPE			= (1<<1),
-	MONO_TRACE_DLLIMPORT	= (1<<2),
+	MONO_TRACE_DLLIMPORT		= (1<<2),
 	MONO_TRACE_GC			= (1<<3),
-
-	MONO_TRACE_ALL			=   MONO_TRACE_ASSEMBLY |
-								MONO_TRACE_TYPE |
-								MONO_TRACE_DLLIMPORT |
-								MONO_TRACE_GC
+        MONO_TRACE_CONFIG		= (1<<4),
+	MONO_TRACE_ALL			= MONO_TRACE_ASSEMBLY |
+					  MONO_TRACE_TYPE |
+					  MONO_TRACE_DLLIMPORT |
+					  MONO_TRACE_GC |
+        				  MONO_TRACE_CONFIG
 } MonoTraceMask;
 
 void 
