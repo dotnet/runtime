@@ -3380,7 +3380,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod);
 						fsig = wrapper->signature;
 				} else {
-					fsig = mono_method_get_signature (cmethod, image, token);
+					fsig = mono_method_get_signature_full (cmethod, image, token, generic_context);
 				}
 
 				n = fsig->param_count + fsig->hasthis;
