@@ -16,7 +16,9 @@
 #include <mono/metadata/filewatcher.h>
 
 #if (defined (PLATFORM_WIN32) && WINVER >= 0x0400)
-/* Supported under windows */
+/* TODO:
+ * We use the managed watcher on windows, so the code inside this #if is never used
+ */
 gint
 ves_icall_System_IO_FSW_SupportsFSW (void)
 {
@@ -26,25 +28,29 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 gpointer
 ves_icall_System_IO_FSW_OpenDirectory (MonoString *path, gpointer reserved)
 {
+	return NULL;
+	/*
 	gpointer dir;
 	gchar *utf8path;
 
 	MONO_ARCH_SAVE_REGS;
 
-	utf8path = mono_string_to_utf8 (path);
 	dir = CreateFile (path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_DELETE,
 			  NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
-	g_free (utf8path);
 
 	return dir;
+	*/
 }
 
 gboolean
 ves_icall_System_IO_FSW_CloseDirectory (gpointer handle)
 {
+	return FALSE;
+	/*
 	MONO_ARCH_SAVE_REGS;
 
 	return CloseHandle (handle);
+	*/
 }
 
 gboolean
@@ -55,6 +61,8 @@ ves_icall_System_IO_FSW_ReadDirectoryChanges (  gpointer handle,
 						gpointer overlap,
 						gpointer callback)
 {
+	return FALSE;
+	/*
 	gpointer dest;
 	gint size;
 	MonoObject *delegate = (MonoObject *) callback;
@@ -69,7 +77,7 @@ ves_icall_System_IO_FSW_ReadDirectoryChanges (  gpointer handle,
 	im = mono_get_delegate_invoke (mono_object_get_class (delegate));
 	func = mono_compile_method (im);
 	return FALSE;
-	/* return ReadDirectoryChanges (handle, dest, size, includeSubdirs, filters,
+	* return ReadDirectoryChanges (handle, dest, size, includeSubdirs, filters,
 				     NULL, (LPOVERLAPPED) overlap,
 				     func); */
 }
