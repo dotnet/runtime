@@ -3008,7 +3008,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			MonoClass *handle_class;
 
 			handle = mono_ldtoken (patch_info->data.token->image, 
-								   patch_info->data.token->token, &handle_class);
+								   patch_info->data.token->token, &handle_class, NULL);
 			mono_class_init (handle_class);
 			mono_class_init (mono_class_from_mono_type (handle));
 
@@ -3020,7 +3020,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			MonoClass *handle_class;
 
 			handle = mono_ldtoken (patch_info->data.token->image,
-								   patch_info->data.token->token, &handle_class);
+								   patch_info->data.token->token, &handle_class, NULL);
 			mono_class_init (handle_class);
 
 			patch_lis_ori (ip, handle);
