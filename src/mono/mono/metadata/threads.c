@@ -91,7 +91,7 @@ static void handle_store(MonoThread *thread)
 #endif
 
 	if(threads==NULL) {
-		threads=mono_g_hash_table_new(g_direct_hash, g_direct_equal);
+		threads=mono_g_hash_table_new(NULL, NULL);
 	}
 
 	/* We don't need to duplicate thread->handle, because it is

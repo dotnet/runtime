@@ -318,7 +318,7 @@ verify_constant_table (MonoImage *image, GSList *list, int level)
 	MonoTableInfo *t = &image->tables [MONO_TABLE_CONSTANT];
 	guint32 cols [MONO_CONSTANT_SIZE];
 	guint32 value, i;
-	GHashTable *dups = g_hash_table_new (g_direct_hash, g_direct_equal);
+	GHashTable *dups = g_hash_table_new (NULL, NULL);
 	
 	for (i = 0; i < t->rows; ++i) {
 		mono_metadata_decode_row (t, i, cols, MONO_CONSTANT_SIZE);
@@ -388,7 +388,7 @@ verify_event_map_table (MonoImage *image, GSList *list, int level)
 	MonoTableInfo *t = &image->tables [MONO_TABLE_EVENTMAP];
 	guint32 cols [MONO_EVENT_MAP_SIZE];
 	guint32 i, last_event;
-	GHashTable *dups = g_hash_table_new (g_direct_hash, g_direct_equal);
+	GHashTable *dups = g_hash_table_new (NULL, NULL);
 
 	last_event = 0;
 

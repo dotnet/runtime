@@ -466,7 +466,11 @@ load_class_names (MonoImage *image)
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	const char *name;
 	const char *nspace;
-	guint32 i, visib;
+	guint32 i, visib, nspace_index;
+	GHashTable *name_cache2, *nspace_table;
+
+	/* Temporary hash table to avoid lookups in the nspace_table */
+	name_cache2 = g_hash_table_new (NULL, NULL);
 
 	for (i = 1; i <= t->rows; ++i) {
 		mono_metadata_decode_row (t, i - 1, cols, MONO_TYPEDEF_SIZE);
@@ -476,8 +480,19 @@ load_class_names (MonoImage *image)
 			continue;
 		name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
 		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
-		mono_image_add_to_name_cache (image, nspace, name, i);
+
+		nspace_index = cols [MONO_TYPEDEF_NAMESPACE];
+		nspace_table = g_hash_table_lookup (name_cache2, GUINT_TO_POINTER (nspace_index));
+		if (!nspace_table) {
+			nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
+			g_hash_table_insert (image->name_cache, (char*)nspace, nspace_table);
+			g_hash_table_insert (name_cache2, GUINT_TO_POINTER (nspace_index),
+								 nspace_table);
+		}
+		g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (i));
 	}
+
+	g_hash_table_destroy (name_cache2);
 }
 
 static void
@@ -498,8 +513,8 @@ build_guid_table (void)
 void
 mono_image_init (MonoImage *image)
 {
-	image->method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-	image->class_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->method_cache = g_hash_table_new (NULL, NULL);
+	image->class_cache = g_hash_table_new (NULL, NULL);
 	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
 	image->array_cache = g_hash_table_new (NULL, NULL);
 
@@ -513,11 +528,11 @@ mono_image_init (MonoImage *image)
 		g_hash_table_new ((GHashFunc)mono_signature_hash, 
 				  (GCompareFunc)mono_metadata_signature_equal);
 
-	image->runtime_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-	image->managed_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-	image->native_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-	image->remoting_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-	image->synchronized_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->runtime_invoke_cache = g_hash_table_new (NULL, NULL);
+	image->managed_wrapper_cache = g_hash_table_new (NULL, NULL);
+	image->native_wrapper_cache = g_hash_table_new (NULL, NULL);
+	image->remoting_invoke_cache = g_hash_table_new (NULL, NULL);
+	image->synchronized_cache = g_hash_table_new (NULL, NULL);
 
 	image->generics_cache = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GEqualFunc)mono_metadata_type_equal);
 
@@ -836,7 +851,7 @@ mono_image_open (const char *fname, MonoImageOpenStatus *status)
 }
 
 static void
-free_hash_table(gpointer key, gpointer val, gpointer user_data)
+free_hash_table (gpointer key, gpointer val, gpointer user_data)
 {
 	g_hash_table_destroy ((GHashTable*)val);
 }

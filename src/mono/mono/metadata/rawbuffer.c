@@ -80,7 +80,7 @@ mono_raw_buffer_init (void)
 
 	get_alignment ();
 
-	mmap_map = g_hash_table_new (g_direct_hash, g_direct_equal);
+	mmap_map = g_hash_table_new (NULL, NULL);
 }
 
 static void *

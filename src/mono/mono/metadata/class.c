@@ -1675,7 +1675,7 @@ mono_ptr_class_get (MonoType *type)
 	mono_loader_lock ();
 
 	if (!ptr_hash)
-		ptr_hash = g_hash_table_new (g_direct_hash, g_direct_equal);
+		ptr_hash = g_hash_table_new (NULL, NULL);
 	el_class = mono_class_from_mono_type (type);
 	if ((result = g_hash_table_lookup (ptr_hash, el_class))) {
 		mono_loader_unlock ();
@@ -1716,7 +1716,7 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 	mono_loader_lock ();
 
 	if (!ptr_hash)
-		ptr_hash = g_hash_table_new (g_direct_hash, g_direct_equal);
+		ptr_hash = g_hash_table_new (NULL, NULL);
 	
 	if ((result = g_hash_table_lookup (ptr_hash, sig))) {
 		mono_loader_unlock ();

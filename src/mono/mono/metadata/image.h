@@ -51,7 +51,7 @@ typedef struct {
 struct _MonoImage {
 	int   ref_count;
 	FILE *f;
-	/* if f is NULL the image was loaded rom raw data */
+	/* if f is NULL the image was loaded from raw data */
 	char *raw_data;
 	guint32 raw_data_len;
 	gboolean raw_data_allocated;

@@ -2962,10 +2962,10 @@ create_dynamic_mono_image (char *assembly_name, char *module_name)
 	image->references = g_new0 (MonoAssembly*, 1);
 	image->references [0] = NULL;
 
-	image->method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-	image->class_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->method_cache = g_hash_table_new (NULL, NULL);
+	image->class_cache = g_hash_table_new (NULL, NULL);
 	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
-	image->array_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->array_cache = g_hash_table_new (NULL, NULL);
 
 	image->delegate_begin_invoke_cache = 
 		g_hash_table_new ((GHashFunc)mono_signature_hash, 
@@ -2977,11 +2977,11 @@ create_dynamic_mono_image (char *assembly_name, char *module_name)
 		g_hash_table_new ((GHashFunc)mono_signature_hash, 
 				  (GCompareFunc)mono_metadata_signature_equal);
 
-	image->runtime_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-	image->managed_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-	image->native_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-	image->remoting_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-	image->synchronized_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->runtime_invoke_cache = g_hash_table_new (NULL, NULL);
+	image->managed_wrapper_cache = g_hash_table_new (NULL, NULL);
+	image->native_wrapper_cache = g_hash_table_new (NULL, NULL);
+	image->remoting_invoke_cache = g_hash_table_new (NULL, NULL);
+	image->synchronized_cache = g_hash_table_new (NULL, NULL);
 
 	image->generics_cache = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GEqualFunc)mono_metadata_type_equal);
 
@@ -3016,12 +3016,12 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 
 	assembly->assembly.dynamic = assembly;
 	assemblyb->assembly.assembly = (MonoAssembly*)assembly;
-	assembly->token_fixups = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
-	assembly->method_to_table_idx = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
-	assembly->field_to_table_idx = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
-	assembly->param_marshalling = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
-	assembly->handleref = g_hash_table_new (g_direct_hash, g_direct_equal);
-	assembly->tokens = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
+	assembly->token_fixups = mono_g_hash_table_new (NULL, NULL);
+	assembly->method_to_table_idx = mono_g_hash_table_new (NULL, NULL);
+	assembly->field_to_table_idx = mono_g_hash_table_new (NULL, NULL);
+	assembly->param_marshalling = mono_g_hash_table_new (NULL, NULL);
+	assembly->handleref = g_hash_table_new (NULL, NULL);
+	assembly->tokens = mono_g_hash_table_new (NULL, NULL);
 	assembly->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	assembly->blob_cache = mono_g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
 
