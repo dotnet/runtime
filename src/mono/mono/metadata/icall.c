@@ -477,7 +477,8 @@ ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
 	memcpy ((gpointer)res + sizeof (MonoObject), (gpointer)obj + sizeof (MonoObject), MIN (s1, s2));
 #else
-	memcpy ((gpointer)res + sizeof (MonoObject), (gpointer)obj + sizeof (MonoObject) + (s2 > s1 ? s2 - s1 : 0),
+	memcpy ((gpointer)res + sizeof (MonoObject) + (s1 > s2 ? s1 - s2 : 0),
+		(gpointer)obj + sizeof (MonoObject) + (s2 > s1 ? s2 - s1 : 0),
 		MIN (s1, s2));
 #endif
 	return res;
