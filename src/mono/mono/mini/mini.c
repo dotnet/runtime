@@ -6904,6 +6904,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 	jinfo->code_start = cfg->native_code;
 	jinfo->code_size = cfg->code_len;
 	jinfo->used_regs = cfg->used_int_regs;
+	jinfo->domain_neutral = cfg->opt & MONO_OPT_SHARED;
 
 	if (header->num_clauses) {
 		int i;
