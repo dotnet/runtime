@@ -108,12 +108,12 @@ echo +++ processing boehm gc
 
 if test ! -f "$PREFIX/lib/libgc.dylib"; then
 	if test ! -d "gc6.3alpha6"; then
-		curl http://www.hpl.hp.com/personal/Hans_Boehm/gc/gc_source/gc6.3alpha5.tar.gz -O
-		tar xzf gc6.3alpha5.tar.gz
-		rm gc6.3alpha5.tar.gz
+		curl http://www.hpl.hp.com/personal/Hans_Boehm/gc/gc_source/gc6.3alpha6.tar.gz -O
+		tar xzf gc6.3alpha6.tar.gz
+		rm gc6.3alpha6.tar.gz
 	fi
 	
-	cd gc6.3alpha5
+	cd gc6.3alpha6
 	
 	./configure --prefix=$PREFIX --enable-thread=pthreads
 	gnumake
