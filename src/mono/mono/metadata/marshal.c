@@ -2383,12 +2383,20 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			
 			if (klass->element_class == mono_defaults.string_class) {
 				g_assert (tmp_locals [i]);
+
+				mono_mb_emit_ldloc (mb, tmp_locals [i]);
+				mono_mb_emit_byte (mb, CEE_BRFALSE);
+				pos = mb->pos;
+				mono_mb_emit_i4 (mb, 0);
+
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_byte (mb, CEE_LDLEN);				
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 				mono_mb_emit_byte (mb, CEE_MONO_PROC2);
 				mono_mb_emit_byte (mb, MONO_MARSHAL_FREE_ARRAY);
+
+				mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
 			}
 
 			break;
@@ -2635,8 +2643,13 @@ mono_marshal_free (gpointer ptr)
 }
 
 void
-mono_marshal_free_array (gpointer *ptr, int size) {
+mono_marshal_free_array (gpointer *ptr, int size) 
+{
 	int i;
+
+	printf ("TESTFREE %p\n", ptr);
+	if (!ptr)
+		return;
 
 	for (i = 0; i < size; i++)
 		if (ptr [i])
@@ -2657,8 +2670,12 @@ mono_marshal_string_array (MonoArray *array)
 	char **result;
 	int i, len;
 
+	printf ("TEST %p\n", array);
+
 	if (!array)
 		return NULL;
+
+	printf ("TEST1 %p\n", array);
 
 	len = mono_array_length (array);
 
