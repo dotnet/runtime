@@ -3897,7 +3897,7 @@ guint8 cond;
 			s390_basr (code, s390_r13, 0);
 			s390_j    (code, 4);
 			s390_word (code, cfg->sig_cookie);
-			s390_l    (code, ins->sreg1, 0, s390_r13, 4);
+			s390_mvc  (code, 4, ins->sreg1, 0, s390_r13, 4);
 		}
 			break;
 		case OP_FCALL: {
