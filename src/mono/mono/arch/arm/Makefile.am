@@ -5,7 +5,6 @@ noinst_LTLIBRARIES = libmonoarch-arm.la
 
 BUILT_SOURCES = arm_dpimacros.h
 
-SCRIPT_SOURCES = dpiops.sh mov_macros.th dpi_macros.th cmp_macros.th
 
 libmonoarch_arm_la_SOURCES = $(BUILT_SOURCES) \
 	tramp.c \
@@ -15,10 +14,10 @@ libmonoarch_arm_la_SOURCES = $(BUILT_SOURCES) \
 	arm-dis.h \
 	#
 
-arm_dpimacros.h: $(SCRIPT_SOURCES)
+arm_dpimacros.h: dpiops.sh mov_macros.th dpi_macros.th cmp_macros.th
 	bash ./dpiops.sh
 
 CLEANFILES = $(BUILT_SOURCES)
 
-EXTRA_DIST = $(SCRIPT_SOURCES)
+EXTRA_DIST = dpiops.sh mov_macros.th dpi_macros.th cmp_macros.th
 
