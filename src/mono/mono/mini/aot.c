@@ -810,13 +810,14 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 				//printf ("A: %s.\n", ji->data.name);
 				break;
 			case MONO_PATCH_INFO_SWITCH:
-				ji->table_size = info32 [0];
-				table = g_new (gpointer, ji->table_size);
-				ji->data.target = table;
-				for (i = 0; i < ji->table_size; i++) {
+				ji->data.table = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoBBTable));
+				ji->data.table->table_size = info32 [0];
+				table = g_new (gpointer, ji->data.table->table_size);
+				ji->data.table->table = (MonoBasicBlock**)table;
+				for (i = 0; i < ji->data.table->table_size; i++) {
 					table [i] = (gpointer)(gssize)info32 [i + 1];
 				}
-				info32 += (ji->table_size + 1);
+				info32 += (ji->data.table->table_size + 1);
 				break;
 			case MONO_PATCH_INFO_R4:
 				ji->data.target = info32;
@@ -1313,12 +1314,12 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 				fprintf (tmpfp, "\t.long 0x%08x\n", (gint)patch_info->data.offset);
 				break;
 			case MONO_PATCH_INFO_SWITCH: {
-				gpointer *table = (gpointer *)patch_info->data.target;
+				gpointer *table = (gpointer *)patch_info->data.table->table;
 				int k;
 
-				fprintf (tmpfp, "\t.long %d\n", patch_info->table_size);
+				fprintf (tmpfp, "\t.long %d\n", patch_info->data.table->table_size);
 			
-				for (k = 0; k < patch_info->table_size; k++) {
+				for (k = 0; k < patch_info->data.table->table_size; k++) {
 					fprintf (tmpfp, "\t.long %d\n", (int)(gssize)table [k]);
 				}
 				break;

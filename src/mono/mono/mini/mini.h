@@ -416,6 +416,12 @@ typedef struct MonoJumpInfoToken {
 	guint32 token;
 } MonoJumpInfoToken;
 
+
+typedef struct MonoJumpInfoBBTable {
+	MonoBasicBlock **table;
+	int table_size;
+} MonoJumpInfoBBTable;
+
 typedef struct MonoJumpInfo MonoJumpInfo;
 struct MonoJumpInfo {
 	MonoJumpInfo *next;
@@ -434,7 +440,6 @@ struct MonoJumpInfo {
 		int             offset;
 #endif
 		MonoBasicBlock *bb;
-		MonoBasicBlock **table;
 		MonoInst       *inst;
 		MonoMethod     *method;
 		MonoClass      *klass;
@@ -443,9 +448,8 @@ struct MonoJumpInfo {
 		MonoVTable     *vtable;
 		const char     *name;
 		MonoJumpInfoToken  *token;
+		MonoJumpInfoBBTable *table;
 	} data;
-
-	int table_size; /* use by switch */
 };
 
 /* optimization flags: keep up to date with the name array in driver.c */

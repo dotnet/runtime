@@ -265,26 +265,17 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 	} while (0)
 
 #if SIZEOF_VOID_P == 8
-#define NEW_PCONST(cfg,dest,val) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = OP_I8CONST;	\
-		(dest)->inst_p0 = (val);	\
-		(dest)->type = STACK_PTR;	\
-	} while (0)
-#else
-#define NEW_PCONST(cfg,dest,val) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = OP_ICONST;	\
-		(dest)->inst_p0 = (val);	\
-		(dest)->type = STACK_PTR;	\
-	} while (0)
-#endif
-
-#if SIZEOF_VOID_P == 8
 #define OP_PCONST OP_I8CONST
 #else
 #define OP_PCONST OP_ICONST
 #endif
+
+#define NEW_PCONST(cfg,dest,val) do {	\
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		(dest)->opcode = OP_PCONST;	\
+		(dest)->inst_p0 = (val);	\
+		(dest)->type = STACK_PTR;	\
+	} while (0)
 
 #define NEW_AOTCONST(cfg,dest,patch_type,cons) do {    \
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
@@ -1759,12 +1750,16 @@ void
 mono_create_jump_table (MonoCompile *cfg, MonoInst *label, MonoBasicBlock **bbs, int num_blocks)
 {
 	MonoJumpInfo *ji = mono_mempool_alloc (cfg->mempool, sizeof (MonoJumpInfo));
+	MonoJumpInfoBBTable *table;
+
+	table = mono_mempool_alloc (cfg->mempool, sizeof (MonoJumpInfoBBTable));
+	table->table = bbs;
+	table->table_size = num_blocks;
 	
 	ji->ip.label = label;
 	ji->type = MONO_PATCH_INFO_SWITCH;
-	ji->data.table = bbs;
+	ji->data.table = table;
 	ji->next = cfg->patch_info;
-	ji->table_size = num_blocks;
 	cfg->patch_info = ji;
 }
 
@@ -6710,15 +6705,15 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		int i;
 
 		if (method->dynamic) {
-			jump_table = mono_code_manager_reserve (mono_dynamic_code_hash_lookup (domain, method)->code_mp, sizeof (gpointer) * patch_info->table_size);
+			jump_table = mono_code_manager_reserve (mono_dynamic_code_hash_lookup (domain, method)->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 		} else {
 			mono_domain_lock (domain);
-			jump_table = mono_code_manager_reserve (domain->code_mp, sizeof (gpointer) * patch_info->table_size);
+			jump_table = mono_code_manager_reserve (domain->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 			mono_domain_unlock (domain);
 		}
 
-		for (i = 0; i < patch_info->table_size; i++) {
-			jump_table [i] = code + (int)patch_info->data.table [i];
+		for (i = 0; i < patch_info->data.table->table_size; i++) {
+			jump_table [i] = code + (int)patch_info->data.table->table [i];
 		}
 		target = jump_table;
 		break;
@@ -7485,18 +7480,18 @@ mono_codegen (MonoCompile *cfg)
 		case MONO_PATCH_INFO_SWITCH: {
 			gpointer *table;
 			if (cfg->method->dynamic) {
-				table = mono_code_manager_reserve (cfg->dynamic_info->code_mp, sizeof (gpointer) * patch_info->table_size);
+				table = mono_code_manager_reserve (cfg->dynamic_info->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 			} else {
 				mono_domain_lock (cfg->domain);
-				table = mono_code_manager_reserve (cfg->domain->code_mp, sizeof (gpointer) * patch_info->table_size);
+				table = mono_code_manager_reserve (cfg->domain->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 				mono_domain_unlock (cfg->domain);
 			}
 		
 			patch_info->ip.i = patch_info->ip.label->inst_c0;
-			for (i = 0; i < patch_info->table_size; i++) {
-				table [i] = (gpointer)patch_info->data.table [i]->native_offset;
+			for (i = 0; i < patch_info->data.table->table_size; i++) {
+				table [i] = (gpointer)patch_info->data.table->table [i]->native_offset;
 			}
-			patch_info->data.target = table;
+			patch_info->data.table->table = (MonoBasicBlock**)table;
 			break;
 		}
 		default:
