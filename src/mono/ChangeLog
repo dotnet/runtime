@@ -5,6 +5,8 @@
 	(populate-runtime-subdir): Make into subroutine that takes list of
 	profiles to populate.
 	(faststrap): Update.
+	(MCS_DIRS, MCS_FILES, MONO_CSHARP_DEBUGGER_DIR,	MONO_CSHARP_DEBUGGER_FILE): 
+	Avoid automake conditional/+= problems.
 
 2004-06-16  Raja R Harinath  <rharinath@novell.com>
 

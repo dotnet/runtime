@@ -45,8 +45,8 @@ MCS_BASIC_FILES = \
 
 # Set of directories and files the 'mcs' compiler can use
 ## We build class/System twice to resolve the cyclic dependency of class/System.XML
-MCS_DIRS = $(MCS_BASIC_DIRS) class/System.XML class/System
-MCS_FILES = $(MCS_BASIC_FILES) $(mcs_topdir)/class/lib/default/System.Xml.dll
+MCS_DIRS = $(MCS_BASIC_DIRS) class/System.XML class/System $(MONO_CSHARP_DEBUGGER_DIR)
+MCS_FILES = $(MCS_BASIC_FILES) $(mcs_topdir)/class/lib/default/System.Xml.dll $(MONO_CSHARP_DEBUGGER_FILE)
 
 tmpinst = _tmpinst
 
@@ -60,8 +60,8 @@ bootstrap: tmpinst-dir
 
 else
 
-MCS_DIRS += class/Mono.CSharp.Debugger
-MCS_FILES += $(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll
+MONO_CSHARP_DEBUGGER_DIR = class/Mono.CSharp.Debugger
+MONO_CSHARP_DEBUGGER_FILE = $(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll
 
 bootstrap: tmpinst-mcs-basic-build mono-do-runtime-only
 	$(MAKE) tmpinst-mcs-short-build
