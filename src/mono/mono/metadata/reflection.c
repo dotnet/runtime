@@ -1916,7 +1916,12 @@ method_encode_methodspec (MonoDynamicAssembly *assembly, MonoGenericInst *ginst)
 
 	g_assert (ginst);
 	if (ginst->generic_method) {
-		mtoken = mono_image_get_methodref_token (assembly, ginst->generic_method);
+		MonoMethod *gm = ginst->generic_method;
+		MonoClass *k = ginst->klass ? ginst->klass : gm->klass;
+
+		sig = method_encode_signature (assembly, gm->signature);
+		mtoken = mono_image_get_memberref_token (assembly, &k->byval_arg, gm->name, sig);
+
 		if (!ginst->generic_method->signature->generic_param_count)
 			return mtoken;
 	}
@@ -6063,6 +6068,8 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_typ
 	ginst->generic_type = reflected_type->type.type;
 	ginst->type_argc = type_ginst->type_argc;
 	ginst->type_argv = type_ginst->type_argv;
+
+	ginst->klass = mono_class_from_generic (ginst->generic_type, FALSE);
 
 	inflated = mono_class_inflate_generic_method (method, ginst);
 
