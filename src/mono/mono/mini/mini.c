@@ -9005,14 +9005,78 @@ mono_runtime_install_handlers (void)
 #endif /* PLATFORM_WIN32 */
 }
 
+#ifdef HAVE_LINUX_RTC_H
+#include <linux/rtc.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+static int rtc_fd = -1;
+
+static int
+enable_rtc_timer (gboolean enable)
+{
+	int flags;
+	flags = fcntl (rtc_fd, F_GETFL);
+	if (flags < 0) {
+		perror ("getflags");
+		return 0;
+	}
+	if (enable)
+		flags |= FASYNC;
+	else
+		flags &= ~FASYNC;
+	if (fcntl (rtc_fd, F_SETFL, flags) == -1) {
+		perror ("setflags");
+		return 0;
+	}
+	return 1;
+}
+#endif
+
 static void
 setup_stat_profiler (void)
 {
 #ifdef ITIMER_PROF
 	struct itimerval itval;
 	static int inited = 0;
+#ifdef HAVE_LINUX_RTC_H
+	const char *rtc_freq;
+	if (!inited && (rtc_freq = g_getenv ("MONO_RTC"))) {
+		int freq = 0;
+		inited = 1;
+		if (*rtc_freq)
+			freq = atoi (rtc_freq);
+		if (!freq)
+			freq = 1024;
+		rtc_fd = open ("/dev/rtc", O_RDONLY);
+		if (rtc_fd == -1) {
+			perror ("open /dev/rtc");
+			return;
+		}
+		add_signal_handler (SIGPROF, sigprof_signal_handler);
+		if (ioctl (rtc_fd, RTC_IRQP_SET, freq) == -1) {
+			perror ("set rtc freq");
+			return;
+		}
+		if (ioctl (rtc_fd, RTC_PIE_ON, 0) == -1) {
+			perror ("start rtc");
+			return;
+		}
+		if (fcntl (rtc_fd, F_SETSIG, SIGPROF) == -1) {
+			perror ("setsig");
+			return;
+		}
+		if (fcntl (rtc_fd, F_SETOWN, getpid ()) == -1) {
+			perror ("setown");
+			return;
+		}
+		enable_rtc_timer (TRUE);
+		return;
+	}
+	if (rtc_fd >= 0)
+		return;
+#endif
 
-	itval.it_interval.tv_usec = 1000;
+	itval.it_interval.tv_usec = 999;
 	itval.it_interval.tv_sec = 0;
 	itval.it_value = itval.it_interval;
 	setitimer (ITIMER_PROF, &itval, NULL);
@@ -9257,6 +9321,10 @@ print_jit_stats (void)
 void
 mini_cleanup (MonoDomain *domain)
 {
+#ifdef HAVE_LINUX_RTC_H
+	if (rtc_fd >= 0)
+		enable_rtc_timer (FALSE);
+#endif
 	/* 
 	 * mono_runtime_cleanup() and mono_domain_finalize () need to
 	 * be called early since they need the execution engine still
