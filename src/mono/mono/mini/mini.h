@@ -105,7 +105,11 @@ extern guint32 mono_jit_tls_id;
 extern MonoTraceSpec *mono_jit_trace_calls;
 extern gboolean mono_break_on_exc;
 extern int mono_exc_esp_offset;
+#ifdef DISABLE_AOT
+#define mono_compile_aot 0
+#else
 extern gboolean mono_compile_aot;
+#endif
 
 struct MonoEdge {
 	MonoEdge *next;

@@ -39,6 +39,8 @@
 
 #include "mini.h"
 
+#ifndef DISABLE_AOT
+
 #ifdef PLATFORM_WIN32
 #define SHARED_EXT ".dll"
 #elif defined(__ppc__) && defined(__MACH__)
@@ -1773,4 +1775,24 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	return 0;
 }
 
+#else
+/* AOT disabled */
+
+void
+mono_aot_init (void)
+{
+}
+
+MonoJitInfo*
+mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
+{
+	return NULL;
+}
+
+int
+mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
+{
+	return 0;
+}
+#endif
 

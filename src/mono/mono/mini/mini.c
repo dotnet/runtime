@@ -129,7 +129,9 @@ static guint32 default_opt = MONO_OPT_PEEPHOLE;
 guint32 mono_jit_tls_id = -1;
 MonoTraceSpec *mono_jit_trace_calls = NULL;
 gboolean mono_break_on_exc = FALSE;
+#ifndef DISABLE_AOT
 gboolean mono_compile_aot = FALSE;
+#endif
 
 static int mini_verbose = 0;
 

@@ -684,11 +684,13 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--stats") == 0) {
 			mono_stats.enabled = TRUE;
 			mono_jit_stats.enabled = TRUE;
+#ifndef DISABLE_AOT
 		} else if (strcmp (argv [i], "--aot") == 0) {
 			mono_compile_aot = TRUE;
 		} else if (strncmp (argv [i], "--aot=", 6) == 0) {
 			mono_compile_aot = TRUE;
 			aot_options = &argv [i][6];
+#endif
 		} else if (strcmp (argv [i], "--compile-all") == 0) {
 			action = DO_COMPILE;
 		} else if (strcmp (argv [i], "--profile") == 0) {
