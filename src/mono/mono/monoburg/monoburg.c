@@ -507,7 +507,7 @@ emit_label_func ()
 	}
 	
 	output ("\tdefault:\n");
-	output ("\t\tg_error (\"unknown operator: 0x%04x\", MBTREE_OP(tree));\n");
+	output ("\t\tg_error (\"unknown operator: 0x%%04x\", MBTREE_OP(tree));\n");
 	output ("\t}\n\n");
 
 	if (!dag_mode) {
