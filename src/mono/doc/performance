@@ -19,7 +19,7 @@
 	into the runtime system. You can invoke this profiler on your program
 	by running with the --profile flag.
 
-<pre>
+<pre class="shell">
 	mono --profile program.exe
 </pre>
 
@@ -37,7 +37,7 @@
 	When the program has finished executing, the profiler prints the
 	data in human readable format. It looks like:
 
-<pre>
+<pre class="shell">
 Total time spent compiling 227 methods (sec): 0.07154
 Slowest method to compile (sec): 0.01893: System.Console::.cctor()
 Time(ms) Count   P/call(ms) Method name
@@ -133,7 +133,7 @@ Total memory allocated: 448 KB
 	handle this issue in different ways. Some choose to make a
 	special class for each primative, and force the user to do an
 	operation such as:
-<pre>
+<pre class="shell">
 // This is Java
 list.add (new Integer (1));
 System.out.println (list.get (1).intValue ());
@@ -152,7 +152,7 @@ System.out.println (list.get (1).intValue ());
 	Note that because it is an implicit conversion, you will
 	not see it in your code. For example, boxing is happening here:
 
-<pre>
+<pre class="shell">
 ArrayList foo = new ArrayList ();
 foo.Add (1);
 </pre>
@@ -181,7 +181,7 @@ foo.Add (1);
 	reduce the memory consumption and reduce the work that the GC
 	has to do.
 
-** foreach
+** Common problems with <tt>foreach</tt>
 
 	The <tt>foreach</tt> C# statement handles various kinds of
 	different constructs (about seven different code patterns are

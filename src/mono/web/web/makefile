@@ -50,6 +50,7 @@ OBJECTS=									\
 	deploy/other.html							\
 	deploy/papers.html							\
 	deploy/passport.html							\
+	deploy/performance.html							\
 	deploy/plans.html							\
 	deploy/porting.html							\
 	deploy/postgresql.html							\

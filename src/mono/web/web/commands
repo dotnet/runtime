@@ -1,7 +1,6 @@
 0,Home,index.html,index.src
 1,Roadmap,mono-roadmap.html
 1,FAQ,faq.html,faq.src
-1,News archive,http://monoevo.sf.net/mwn/archives.html
 1,Screenshots,screenshots.html,screenshots.src
 1,Team,team.html,team.src
 1,Other sites,other.html,other.src
@@ -41,6 +40,7 @@
 1,Papers,papers.html,papers.src
 1,Languages,languages.html,languages.src
 1,Debugging,jit-debug.html,jit-debug.src
+1,Performance,performance.html,performance.src
 0,Plans,plans.html,plans.src
 1,Drawing,drawing.html,drawing.src
 1,ADO.NET,ado-net.html,ado-net.src

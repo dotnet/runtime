@@ -55,6 +55,14 @@
 	        </tr>
 		<tr bgcolor="#bbbbbb">
 		  <td bgcolor="#999999">
+                    <img src="images/suse-36.gif"><b>SUSE 9/x86</b><br>
+		  </td>
+  		  <td>
+		    <a href="archive/0.30/suse-90-i586/">Packages</a>
+		  </td>
+	        </tr>
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
                     <img src="images/debian-36.gif"><b>Debian Packages</b><br>
 		  </td>
   		  <td>
