@@ -87,10 +87,12 @@ sparc_magic_trampoline (MonoMethod *m, guint32 *code)
 	g_assert (addr);
 
 	/* FIXME: patch calling code and vtable */
-	if ((sparc_inst_op (*code) == 0x2) && (sparc_inst_op3 (*code) == 0x38)) {
-		/* FIXME: is this allways a vcall ? */
-		/* indirect call through a vtable */
 
+	/*
+	 * Check whenever this is a virtual call, and call an unbox trampoline if
+	 * needed.
+	 */
+	if (mono_sparc_is_virtual_call (code)) {
 		if (m->klass->valuetype)
 			addr = get_unbox_trampoline (m, addr);
 	}
@@ -184,10 +186,10 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type)
 
 	code = buf = g_malloc (TRAMPOLINE_SIZE * 4);
 
-	/* %l0 is caller saved so we can use it */
-	sparc_set (code, tramp, sparc_l0);
+	/* We have to use g5 here because there is no other free register */
+	sparc_set (code, tramp, sparc_g5);
 	sparc_set (code, arg1, sparc_r1);
-	sparc_jmpl (code, sparc_l0, sparc_g0, sparc_g0);
+	sparc_jmpl (code, sparc_g5, sparc_g0, sparc_g0);
 	sparc_nop (code);
 
 	g_assert ((code - buf) <= TRAMPOLINE_SIZE);
@@ -198,7 +200,7 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type)
 
 	mono_jit_stats.method_trampolines++;
 
-	/* FIXME: flush icache */
+	mono_arch_flush_icache (ji->code_start, ji->code_size);
 
 	return ji;
 }	

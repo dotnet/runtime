@@ -95,11 +95,22 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 	return opts;
 }
 
+static void
+mono_sparc_break (void)
+{
+}
+
 static gboolean
 is_regsize_var (MonoType *t) {
 	if (t->byref)
 		return TRUE;
 	switch (t->type) {
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I:
@@ -110,7 +121,7 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:
-		return FALSE;
+		return TRUE;
 	case MONO_TYPE_VALUETYPE:
 		if (t->data.klass->enumtype)
 			return is_regsize_var (t->data.klass->enum_basetype);
@@ -125,9 +136,6 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 	GList *vars = NULL;
 	int i;
 
-	/* FIXME: */
-	return NULL;
-
 	/* 
 	 * FIXME: If an argument is allocated to a register, then load it from the
 	 * stack in the prolog.
@@ -141,10 +149,10 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 		if (vmv->range.first_use.abs_pos > vmv->range.last_use.abs_pos)
 			continue;
 
-		if (ins->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || (ins->opcode != OP_LOCAL && ins->opcode != OP_ARG))
+		/* FIXME: Make arguments on stack allocateable to registers */
+		if (ins->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || (ins->opcode != OP_LOCAL))
 			continue;
 
-		/* FIXME: */
 		/* we can only allocate 32 bit values */
 		if (is_regsize_var (ins->inst_vtype)) {
 			g_assert (MONO_VARINFO (cfg, i)->reg == -1);
@@ -371,6 +379,7 @@ enum_retvalue:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
+		case MONO_TYPE_PTR:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_SZARRAY:
@@ -574,8 +583,6 @@ mono_arch_allocate_vars (MonoCompile *m)
 				inst->inst_left = indir;
 			}
 		}
-		else
-			g_assert_not_reached ();
 	}
 
 	/* align the stack size to 8 bytes */
@@ -1914,6 +1921,36 @@ emit_move_return_value (MonoInst *ins, guint32 *code)
 }
 
 /*
+ * mono_sparc_is_virtual_call:
+ *
+ *  Determine whenever the instruction at CODE is a virtual call.
+ */
+gboolean 
+mono_sparc_is_virtual_call (guint32 *code)
+{
+	guint32 buf[1];
+	guint32 *p;
+
+	p = buf;
+
+	if ((sparc_inst_op (*code) == 0x2) && (sparc_inst_op3 (*code) == 0x38)) {
+		/*
+		 * Register indirect call. If it is a virtual call, then the 
+		 * instruction in the delay slot is a special kind of nop.
+		 */
+
+		/* Construct special nop */
+		sparc_or_imm (p, FALSE, sparc_g0, 0xca, sparc_g0);
+		p --;
+
+		if (code [1] == p [0])
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+/*
  * Some conventions used in the following code.
  * 2) The only scratch registers we have are o7 and g1.  We try to
  * stick to o7 when we can, and use g1 when necessary.
@@ -2041,7 +2078,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_cmp_imm (code, ins->sreg1, 0);
 			break;
 		case CEE_BREAK:
-			sparc_ta (code, 1);
+			/*
+			 * gdb does not like encountering 'ta 1' in the debugged code. So 
+			 * instead of emitting a trap, we emit a call a C function and place a 
+			 * breakpoint there.
+			 */
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, mono_sparc_break);
+			sparc_call_simple (code, 0);
+			sparc_nop (code);
 			break;
 		case OP_ADDCC:
 			sparc_add (code, TRUE, ins->sreg1, ins->sreg2, ins->dreg);
@@ -2221,6 +2265,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VOIDCALL:
 		case CEE_CALL:
 			call = (MonoCallInst*)ins;
+			g_assert (!call->virtual);
 			if (ins->flags & MONO_INST_HAS_METHOD)
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
 			else
@@ -2237,7 +2282,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CALL_REG:
 			call = (MonoCallInst*)ins;
 			sparc_jmpl (code, ins->sreg1, sparc_g0, sparc_callsite);
-			sparc_nop (code);
+			/*
+			 * We emit a special kind of nop in the delay slot to tell the 
+			 * trampoline code that this is a virtual call, thus an unbox
+			 * trampoline might need to be called.
+			 */
+			if (call->virtual)
+				sparc_or_imm (code, FALSE, sparc_g0, 0xca, sparc_g0);
+			else
+				sparc_nop (code);
 
 			code = emit_move_return_value (ins, code);
 			break;
@@ -2251,7 +2304,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			sparc_ld_imm (code, ins->inst_basereg, ins->inst_offset, sparc_o7);
 			sparc_jmpl (code, sparc_o7, sparc_g0, sparc_callsite);
-			sparc_nop (code);
+			if (call->virtual)
+				sparc_or_imm (code, FALSE, sparc_g0, 0xca, sparc_g0);
+			else
+				sparc_nop (code);
 
 			code = emit_move_return_value (ins, code);
 			break;
@@ -2616,6 +2672,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 void
 mono_arch_register_lowlevel_calls (void)
 {
+	mono_register_jit_icall (mono_sparc_break, "mono_sparc_break", NULL, TRUE);
 }
 
 void
@@ -3052,6 +3109,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				sparc_st_imm (code, sparc_i0 + ainfo->reg, inst->inst_basereg, inst->inst_offset);
 				sparc_st_imm (code, sparc_i0 + ainfo->reg + 1, inst->inst_basereg, inst->inst_offset + 4);				
 			}
+
+		if ((ainfo->storage == ArgInSplitRegStack) || (ainfo->storage == ArgOnStack))
+			if (inst->opcode == OP_REGVAR)
+				/* FIXME: Load the argument into memory */
+				NOT_IMPLEMENTED;
 
 		pos++;
 	}

@@ -31,4 +31,6 @@ struct MonoLMF {
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
 #define MONO_ARCH_EMULATE_FREM 1
 
+gboolean mono_sparc_is_virtual_call (guint32 *code);
+
 #endif /* __MONO_MINI_SPARC_H__ */  

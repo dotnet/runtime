@@ -12,8 +12,8 @@
 
 stmt: CEE_STIND_I8 (OP_REGVAR, lreg) {
 	/* this should only happen for methods returning a long */
-	MONO_EMIT_NEW_UNALU (s, OP_MOVE, sparc_o0, state->right->reg2);
-	MONO_EMIT_NEW_UNALU (s, OP_MOVE, sparc_o1, state->right->reg1);
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, state->left->tree->dreg, state->right->reg2);
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, state->left->tree->dreg + 1, state->right->reg1);
 }
 
 lreg: CEE_LDIND_I8 (OP_REGVAR) {
@@ -26,14 +26,20 @@ lreg: CEE_LDIND_I8 (OP_REGVAR) {
 }
 
 freg: OP_LCONV_TO_R8 (lreg) {
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
 freg: OP_LCONV_TO_R4 (lreg) {
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
 freg: CEE_CONV_R_UN (reg) {
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -45,6 +51,8 @@ reg: OP_LOCALLOC (OP_ICONST) {
 }
 
 reg: OP_LOCALLOC (reg) {
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -245,6 +253,14 @@ stmt: OP_OUTARG_VT (OP_ICONST) {
 
 stmt: CEE_STIND_R8 (OP_REGVAR, freg) {
 	/* nothing to do: the value is already on the FP stack */
+}
+
+reg: CEE_LDIND_I1 (OP_REGVAR) {
+	/* All regs are 32 bit */
+	tree->opcode = OP_MOVE;
+	tree->sreg1 = state->left->tree->dreg;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
 reg: CEE_LDIND_I2 (OP_REGVAR) {
