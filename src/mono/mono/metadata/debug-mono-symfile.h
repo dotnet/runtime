@@ -32,6 +32,9 @@ struct MonoSymbolFileOffsetTable {
 	guint32 line_number_table_size;
 	guint32 local_variable_table_offset;
 	guint32 local_variable_table_size;
+	guint32 source_file_table_offset;
+	guint32 source_file_table_size;
+	guint32 source_file_count;
 	guint32 type_count;
 	guint32 type_index_table_offset;
 	guint32 type_index_table_size;
@@ -174,7 +177,7 @@ struct MonoSymbolFile {
 	MonoSymbolFilePriv *_priv;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		26
+#define MONO_SYMBOL_FILE_VERSION		27
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
 #define MONO_SYMBOL_FILE_DYNAMIC_VERSION	14
