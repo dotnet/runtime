@@ -120,9 +120,7 @@ if SPARC
 libmono_la_SOURCES = \
 	$(common_sources) $(sparc_sources)
 
-#arch_BURGSRC= $(srcdir)/inssel-ppc.brg
-# no inssel for sparc yet
-arch_BURGSRC=
+arch_BURGSRC= $(srcdir)/inssel-sparc.brg
 endif
 
 BURGSRC= $(common_BURGSRC) $(arch_BURGSRC)

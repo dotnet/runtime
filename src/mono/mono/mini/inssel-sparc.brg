@@ -1,0 +1,201 @@
+%%
+
+#
+# inssel-sparc.brg: burg file for special sparc instructions
+#
+# Author:
+#   Dietmar Maurer (dietmar@ximian.com)
+#   Paolo Molaro (lupus@ximian.com)
+#
+# (C) 2002 Ximian, Inc.
+#
+
+stmt: CEE_STIND_I8 (OP_REGVAR, lreg) {
+	/* this should only happen for methods returning a long */
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, sparc_o0, state->right->reg1);
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, sparc_o1, state->right->reg2);
+}
+
+#lreg: OP_LNEG (lreg) "2" {
+#	MONO_EMIT_NEW_BIALU_IMM (s, OP_PPC_SUBFIC, state->reg1, state->left->reg1, 0);
+#	MONO_EMIT_UNALU (s, tree, OP_PPC_SUBFZE, state->reg2, state->left->reg2);
+#}
+
+freg: OP_LCONV_TO_R8 (lreg) {
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+freg: OP_LCONV_TO_R4 (lreg) {
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+freg: CEE_CONV_R_UN (reg) {
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+reg: OP_LOCALLOC (OP_ICONST) {
+	/* microcoded in mini-sparc.c */
+	tree->sreg1 = mono_regstate_next_int (s->rs);
+	MONO_EMIT_NEW_ICONST (s, tree->sreg1, state->left->tree->inst_c0);
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+reg: OP_LOCALLOC (reg) {
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_SETRET (reg) {
+	tree->opcode = OP_MOVE;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = sparc_o0;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_SETRET (lreg) {
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, sparc_o0, state->left->reg2);
+	tree->opcode = OP_MOVE;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = sparc_o1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_SETRET (freg) {
+	/* FIXME */
+}
+
+stmt: OP_SETRET (OP_ICONST) {
+	tree->opcode = OP_ICONST;
+	tree->inst_c0 = state->left->tree->inst_c0;
+	tree->dreg = sparc_o0;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG (reg) {
+	tree->opcode = OP_SETREG;
+	tree->dreg = tree->unused;
+	tree->sreg1 = state->left->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG (OP_REGVAR) {
+	tree->opcode = OP_SETREG;
+	tree->dreg = tree->unused;
+	tree->sreg1 = state->left->tree->dreg;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG (lreg) {
+	MONO_EMIT_NEW_UNALU (s, OP_SETREG, tree->unused, state->left->reg2);
+	tree->opcode = OP_SETREG;
+	tree->dreg = tree->unused + 1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG (OP_ICONST) {
+	tree->opcode = OP_SETREGIMM;
+	tree->dreg = tree->unused;
+	tree->inst_c0 = state->left->tree->inst_c0;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+#stmt: OP_OUTARG (CEE_LDIND_I4 (base)) {
+#	tree->opcode = OP_X86_PUSH_MEMBASE;
+#	tree->inst_basereg = state->left->left->tree->inst_basereg;
+#	tree->inst_offset = state->left->left->tree->inst_offset;
+#	mono_bblock_add_inst (s->cbb, tree);
+#}
+
+#stmt: OP_OUTARG (CEE_LDIND_U4 (base)) {
+#	tree->opcode = OP_X86_PUSH_MEMBASE;
+#	tree->inst_basereg = state->left->left->tree->inst_basereg;
+#	tree->inst_offset = state->left->left->tree->inst_offset;
+#	mono_bblock_add_inst (s->cbb, tree);
+#}
+
+#stmt: OP_OUTARG (CEE_LDIND_I (base)) {
+#	tree->opcode = OP_X86_PUSH_MEMBASE;
+#	tree->inst_basereg = state->left->left->tree->inst_basereg;
+#	tree->inst_offset = state->left->left->tree->inst_offset;
+#	mono_bblock_add_inst (s->cbb, tree);
+#}
+
+#stmt: OP_OUTARG (CEE_LDIND_REF (base)) {
+#	tree->opcode = OP_X86_PUSH_MEMBASE;
+#	tree->inst_basereg = state->left->left->tree->inst_basereg;
+#	tree->inst_offset = state->left->left->tree->inst_offset;
+#	mono_bblock_add_inst (s->cbb, tree);
+#}
+
+stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
+	tree->opcode = OP_SETREG;
+	tree->sreg1 = state->left->left->tree->dreg;
+	tree->dreg = tree->unused;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG_VT (OP_ICONST) {
+	tree->opcode = OP_SETREGIMM;
+	tree->dreg = tree->unused;
+	tree->inst_imm = state->left->tree->inst_c0;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_STIND_R8 (OP_REGVAR, freg) {
+	/* nothing to do: the value is already on the FP stack */
+}
+
+stmt: CEE_BNE_UN (fpcflags) {
+	tree->opcode = OP_FBNE_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BEQ (fpcflags) {
+	tree->opcode = OP_FBEQ;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BLT (fpcflags) {
+	tree->opcode = OP_FBLT;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BLT_UN (fpcflags) {
+	tree->opcode = OP_FBLT_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BGT (fpcflags) {
+	tree->opcode = OP_FBGT;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BGT_UN (fpcflags) {
+	tree->opcode = OP_FBGT_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BGE  (fpcflags) {
+	tree->opcode = OP_FBGE;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BGE_UN (fpcflags) {
+	tree->opcode = OP_FBGE_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BLE  (fpcflags) {
+	tree->opcode = OP_FBLE;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_BLE_UN (fpcflags) {
+	tree->opcode = OP_FBLE_UN;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_POP (freg) "0" {
+	/* nothing to do */
+}     
+
+%%

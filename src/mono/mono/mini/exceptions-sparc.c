@@ -118,8 +118,7 @@ struct stack_frame
 gpointer 
 mono_arch_get_throw_exception (void)
 {
-	g_assert (TRUE);
-	return NULL;
+	return 0xdeadbeef;
 }
 
 /**
@@ -137,8 +136,7 @@ mono_arch_get_throw_exception (void)
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
 {
-	g_assert (TRUE);
-	return NULL;
+	return 0xdecafbad;
 }	
 
 static MonoArray *
