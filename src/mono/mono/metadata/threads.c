@@ -293,7 +293,7 @@ static guint32 start_wrapper(void *data)
 		/* we may want to handle the exception here. See comment below on unhandled exceptions */
 		mono_runtime_delegate_invoke (start_delegate, args, NULL);
 	}
-#ifdef PLATFORM_WIN32
+
 	/* If the thread calls ExitThread at all, this remaining code
 	 * will not be executed, but the main thread will eventually
 	 * call thread_cleanup() on this thread's behalf.
@@ -313,7 +313,6 @@ static guint32 start_wrapper(void *data)
 	 * to TLS data.)
 	 */
 	SET_CURRENT_OBJECT (NULL);
-#endif
 	
 	thread_cleanup (thread);
 
