@@ -1983,6 +1983,7 @@ mono_metadata_nesting_typedef (MonoImage *meta, guint32 index, guint32 start_ind
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_NESTEDCLASS];
 	guint32 start;
+	guint32 class_index = mono_metadata_token_index (index);
 	
 	if (!tdef->base)
 		return 0;
@@ -1990,7 +1991,7 @@ mono_metadata_nesting_typedef (MonoImage *meta, guint32 index, guint32 start_ind
 	start = start_index;
 
 	while (start <= tdef->rows) {
-		if (index == mono_metadata_decode_row_col (tdef, start - 1, MONO_NESTED_CLASS_ENCLOSING))
+		if (class_index == mono_metadata_decode_row_col (tdef, start - 1, MONO_NESTED_CLASS_ENCLOSING))
 			break;
 		else
 			start++;
