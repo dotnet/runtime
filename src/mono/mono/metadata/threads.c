@@ -205,6 +205,16 @@ static guint32 start_wrapper(void *data)
 	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Start wrapper terminating",
 		  GetCurrentThreadId ());
 #endif
+
+	/* Remove the reference to the thread object in the TLS data,
+	 * so the thread object can be finalized.  This won't be
+	 * reached if the thread threw an uncaught exception, so those
+	 * thread handles will stay referenced :-( (This is due to
+	 * missing support for scanning thread-specific data in the
+	 * Boehm GC - the io-layer keeps a GC-visible hash of pointers
+	 * to TLS data.)
+	 */
+	TlsSetValue (current_object_key, NULL);
 	
 	thread_cleanup (thread);
 	

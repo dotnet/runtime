@@ -90,7 +90,10 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 #if HAVE_BOEHM_GC
 	guint offset = 0;
 
+#ifndef GC_DEBUG
+	/* This assertion is not valid when GC_DEBUG is defined */
 	g_assert (GC_base (obj) == (char*)obj - offset);
+#endif
 	GC_REGISTER_FINALIZER_NO_ORDER ((char*)obj - offset, callback, GUINT_TO_POINTER (offset), NULL, NULL);
 #endif
 }
