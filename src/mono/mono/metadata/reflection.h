@@ -301,6 +301,8 @@ typedef struct {
 	gboolean save;
 	char *strong_name;
 	guint32 strong_name_size;
+	char *win32_res;
+	guint32 win32_res_size;
 	MonoDynamicStream pefile;
 	MonoDynamicStream sheap;
 	MonoDynamicStream code; /* used to store method headers and bytecode */
@@ -319,6 +321,13 @@ typedef struct {
 	guint32 attrs;
 	guint32 offset;
 } MonoReflectionResource;
+
+typedef struct {
+	guint32 res_type;
+	guint32 res_id;
+	guint32 lang_id;
+	MonoArray *res_data;
+} MonoReflectionWin32Resource;
 
 typedef struct {
 	guint32 action;
@@ -343,6 +352,7 @@ typedef struct {
 	MonoBoolean delay_sign;
 	guint32 access;
 	MonoArray *loaded_modules;
+	MonoArray *win32_resources;
 } MonoReflectionAssemblyBuilder;
 
 typedef struct {

@@ -3784,11 +3784,132 @@ calc_section_size (MonoDynamicImage *assembly)
 	assembly->sections [MONO_SECTION_TEXT].attrs = SECT_FLAGS_HAS_CODE | SECT_FLAGS_MEM_EXECUTE | SECT_FLAGS_MEM_READ;
 	nsections++;
 
+	if (assembly->win32_res) {
+		guint32 res_size = (assembly->win32_res_size + 3) & ~3;
+
+		assembly->sections [MONO_SECTION_RSRC].size = res_size;
+		assembly->sections [MONO_SECTION_RSRC].attrs = SECT_FLAGS_HAS_INITIALIZED_DATA | SECT_FLAGS_MEM_READ;
+		nsections++;
+	}
+
 	assembly->sections [MONO_SECTION_RELOC].size = 12;
 	assembly->sections [MONO_SECTION_RELOC].attrs = SECT_FLAGS_MEM_READ | SECT_FLAGS_MEM_DISCARDABLE | SECT_FLAGS_HAS_INITIALIZED_DATA;
 	nsections++;
 
 	return nsections;
+}
+
+static void
+assembly_add_win32_resources (MonoDynamicImage *assembly, MonoReflectionAssemblyBuilder *assemblyb)
+{
+	char *buf;
+	char *p;
+	guint32 size;
+	MonoPEResourceDir dir;
+	MonoPEResourceDirEntry dir_entry;
+	MonoPEResourceDataEntry data_entry;
+	MonoReflectionWin32Resource *win32_res;
+
+	if (!assemblyb->win32_resources)
+		return;
+
+	/* Currently, we only support one resource */
+	g_assert (mono_array_length (assemblyb->win32_resources) == 1);
+
+	win32_res = mono_array_addr (assemblyb->win32_resources, MonoReflectionWin32Resource, 0);
+
+	/*
+	 * For the format of the resource directory, see the article
+	 * "An In-Depth Look into the Win32 Portable Executable File Format" by
+	 * Matt Pietrek
+	 */
+
+	size = 256 + mono_array_length (win32_res->res_data);
+	p = buf = g_malloc (size);
+
+	memset (&dir, 0, sizeof (dir));
+	dir.res_id_entries = GUINT32_TO_LE (1);
+
+	memset (&dir_entry, 0, sizeof (dir_entry));
+
+	memset (&data_entry, 0, sizeof (data_entry));
+
+	g_assert (sizeof (dir) == 16);
+	g_assert (sizeof (dir_entry) == 8);
+	g_assert (sizeof (data_entry) == 16);
+
+	/* Level one IMAGE_RESOURCE_DIRECTORY */
+	memcpy (p, &dir, sizeof (dir));
+	p += sizeof (dir);
+
+	dir_entry.name_offset = GUINT32_TO_LE (win32_res->res_type);
+	dir_entry.dir_offset = GUINT32_TO_LE (p + sizeof (dir_entry) - buf);
+	dir_entry.is_dir = 1;
+
+	memcpy (p, &dir_entry, sizeof (dir_entry));
+	p += sizeof (dir_entry);
+
+	/* Level two IMAGE_RESOURCE_DIRECTORY */
+	memcpy (p, &dir, sizeof (dir));
+	p += sizeof (dir);
+
+	dir_entry.name_offset = GUINT32_TO_LE (win32_res->res_id);
+	dir_entry.dir_offset = GUINT32_TO_LE (p - buf + sizeof (dir_entry));
+	dir_entry.is_dir = 1;
+
+	memcpy (p, &dir_entry, sizeof (dir_entry));
+	p += sizeof (dir_entry);
+
+	/* Level three IMAGE_RESOURCE_DIRECTORY */
+	memcpy (p, &dir, sizeof (dir));
+	p += sizeof (dir);
+
+	/* The dir_offset field is an RVA in this case, it will be fixed up later */
+	dir_entry.name_offset = GUINT32_TO_LE (win32_res->lang_id);
+	dir_entry.dir_offset = GUINT32_TO_LE (p - buf + sizeof (dir_entry));
+	dir_entry.is_dir = 0;
+
+	memcpy (p, &dir_entry, sizeof (dir_entry));
+	p += sizeof (dir_entry);
+
+	/* Level four IMAGE_RESOURCE_DATA_ENTRY */
+	data_entry.rde_data_offset = GUINT32_TO_LE (p - buf + sizeof (data_entry));
+	data_entry.rde_size = mono_array_length (win32_res->res_data);
+
+	memcpy (p, &data_entry, sizeof (data_entry));
+	p += sizeof (data_entry);
+
+	memcpy (p, mono_array_addr (win32_res->res_data, char, 0), data_entry.rde_size);
+	p += data_entry.rde_size;
+
+	g_assert (p - buf < size);
+
+	assembly->win32_res = g_malloc (p - buf);
+	assembly->win32_res_size = p - buf;
+	memcpy (assembly->win32_res, buf, p - buf);
+
+	g_free (buf);
+}
+
+static void
+fixup_resource_directory (char *res_section, char *p, guint32 rva)
+{
+	MonoPEResourceDir *dir = (MonoPEResourceDir*)p;
+	int i;
+
+	p += sizeof (MonoPEResourceDir);
+	for (i = 0; i < dir->res_named_entries + dir->res_id_entries; ++i) {
+		MonoPEResourceDirEntry *dir_entry = (MonoPEResourceDirEntry*)p;
+		char *child = res_section + (GUINT32_FROM_LE (dir_entry->dir_offset));
+		if (dir_entry->is_dir)
+			fixup_resource_directory (res_section, child, rva);
+		else {
+			MonoPEResourceDataEntry *data_entry = (MonoPEResourceDataEntry*)child;
+			data_entry->rde_data_offset = GUINT32_TO_LE (GUINT32_FROM_LE (data_entry->rde_data_offset) + rva);
+		}
+
+		p += sizeof (MonoPEResourceDirEntry);
+	}
 }
 
 /*
@@ -3848,6 +3969,9 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb) {
 	}
 
 	build_compressed_metadata (assembly);
+
+	if (mb->is_main)
+		assembly_add_win32_resources (assembly, assemblyb);
 
 	nsections = calc_section_size (assembly);
 
@@ -4084,6 +4208,15 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb) {
 			*data16 = 0; /* terminate */
 			break;
 		case MONO_SECTION_RSRC:
+			if (assembly->win32_res) {
+				text_offset = assembly->sections [i].offset;
+
+				/* Fixup the offsets in the IMAGE_RESOURCE_DATA_ENTRY structures */
+				fixup_resource_directory (assembly->win32_res, assembly->win32_res, assembly->sections [i].rva);
+
+				memcpy (pefile->data + text_offset, assembly->win32_res, assembly->win32_res_size);
+			}
+			break;
 		default:
 			g_assert_not_reached ();
 		}

@@ -25,7 +25,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h>
 
-#define MONO_CORLIB_VERSION 5
+#define MONO_CORLIB_VERSION 6
 
 CRITICAL_SECTION mono_delegate_section;
 
@@ -1009,7 +1009,7 @@ ves_icall_System_AppDomain_InternalSetDomainByID (gint32 domainid)
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (!mono_domain_set (domain, FALSE))	
+	if (!domain || !mono_domain_set (domain, FALSE))	
 		mono_raise_exception (mono_get_exception_appdomain_unloaded ());
 
 	return current_domain->domain;
@@ -1140,6 +1140,8 @@ unload_thread_main (void *arg)
 	mono_domain_unlock (domain);
 
 	domain->state = MONO_APPDOMAIN_UNLOADED;
+
+	//printf ("UNLOADED %s.\n", domain->friendly_name);
 
 	mono_domain_free (domain, FALSE);
 
