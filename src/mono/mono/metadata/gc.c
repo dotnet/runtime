@@ -229,6 +229,8 @@ ves_icall_System_GCHandle_GetTarget (guint32 handle)
 
 	if (gc_handles) {
 		obj = gc_handles [handle >> 2];
+		if (!obj)
+			return NULL;
 		if ((handle & 0x3) > 1)
 			return REVEAL_POINTER (obj);
 		return obj;
