@@ -109,20 +109,10 @@ Happy hacking!
 
 	<tr>
 		<td>JIT (mono/mini/)
-		<td>Implement generics support.
-		We need to add support for the additional instructions and change existing ones to
-		support the generics requirements.
-		<td>Medium-hard
-		<td>2-3 months
-		<td>lupus and Martin
-	</tr>
-
-	<tr>
-		<td>JIT (mono/mini/)
 		<td>Port the JIT to additional architectures.
-		Currently ports are in the works for mips, arm, sparc, s390. None of the ports
-		are as feature-complete as the x86 one, yet, so help is needed in getting them
-		up to speed. Ports to more architectures are welcome as well.
+		Currently ports exist for x86, ppc, sparc and s390. 
+
+		Ports to more architectures are welcome as well.
 		<td>Medium-hard
 		<td>3-6 months per arch
 		<td>not assigned
@@ -176,6 +166,24 @@ Happy hacking!
 		<td>Medium-hard (thesis subject)
 		<td>6-12 months
 		<td>not assigned
+	</tr>
+
+	<tr>
+		<td>Linker tool.
+
+		<td>Write a tool that given a list of methods and
+		classes extracts them from an existing assembly and
+		produces a new assembly with these classes and any
+		dependencies they might have.
+		
+		<br>The idea is to have a way of creating custom
+		libraries that can either be embedded with Mono's
+		bundle setup or to create smaller editions of the
+		libraries for embedded systems.
+
+		<td>Medium
+		<td>4-6 months
+		<td>
 	</tr>
 
 	<tr>
@@ -235,37 +243,21 @@ Happy hacking!
 		<td>not assigned
 	</tr>
 	<tr>
-		<td>POSIX bindings.
-		<td>The Mono.POSIX assembly is a project to create a binding to
-	the various low-level calls in Unix which are not available
-	thought he regular assemblies in .NET.
-		
-	The work should be done in two steps: one step is doing the
-	low-level binding for the system call, and another possibly is
-	to expose .NET-level objects like Streams for common patterns:
-	for example Streams for socketpairs. 
-
-	<ul>
-		<li>Complete the bindings for all POSIX calls in Mono.Posix.
-	</ul>
-
-		<td>Medium
-		<td>2-3 months + QA.
-		<td>not assigned
-	</tr>
-	<tr>
-		<td>System.Drawing CODECs
-		<td>Complete the JPEG and PNG codecs to be fully
-		finished; Implement EXIF data loading; Implement the missing image codecs. 
-		<td>Medium
-		<td>2-3 months.
-		<td>not assigned
-	</tr>
-	<tr>
 		<td>System.Data updates
-		<td>.NET 1.2 introduced many new updates to the
+		<td>.NET 1.2 will introduce many new updates to the
 		System.Data namespace: MARS and ObjectSpaces are the
 		big ones. 
+		<td>Medium
+		<td>6-9 months.
+		<td>Work with the mono-devel-list to keep track of things.
+	</tr>
+	<tr>
+		<td>System.XML updates
+		
+		<td>.NET 2.0 will introduce many new updates to the
+		System.Xml namespace: XQuery and new XPathDocument are
+		the big changes.
+
 		<td>Medium
 		<td>6-9 months.
 		<td>Work with the mono-devel-list to keep track of things.
