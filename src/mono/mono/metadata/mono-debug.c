@@ -11,7 +11,7 @@
 
 #define SYMFILE_TABLE_CHUNK_SIZE	16
 #define DATA_TABLE_PTR_CHUNK_SIZE	256
-#define DATA_TABLE_CHUNK_SIZE		65536
+#define DATA_TABLE_CHUNK_SIZE		131072
 
 MonoSymbolTable *mono_symbol_table = NULL;
 MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
@@ -409,8 +409,11 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	total_size = size + sizeof (MonoDebugMethodAddress);
 
 	if (total_size + 9 >= DATA_TABLE_CHUNK_SIZE) {
-		g_warning (G_STRLOC);
-		return;
+		// FIXME: Maybe we should print a warning here.
+		//        This should only happen for very big methods, for instance
+		//        with more than 40.000 line numbers and more than 5.000
+		//        local variables.
+		return NULL;
 	}
 
 	allocate_data_item (mono_symbol_table, MONO_DEBUG_DATA_ITEM_METHOD, total_size, (guint8 **) &address);
@@ -609,8 +612,11 @@ mono_debug_add_type (MonoClass *klass)
 	total_size = size + sizeof (MonoDebugClassEntry);
 
 	if (total_size + 9 >= DATA_TABLE_CHUNK_SIZE) {
-		g_warning (G_STRLOC);
-		return;
+		// FIXME: Maybe we should print a warning here.
+		//        This should only happen for very big methods, for instance
+		//        with more than 40.000 line numbers and more than 5.000
+		//        local variables.
+		return NULL;
 	}
 
 	allocate_data_item (mono_symbol_table, MONO_DEBUG_DATA_ITEM_CLASS, total_size, (guint8 **) &entry);
