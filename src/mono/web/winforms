@@ -27,6 +27,13 @@
 
 * Win32/Wine edition.
 
+	Currently (May 21st, 2003) to get the Windows.Forms support
+	working, you need a Mono installation from CVS, and you need
+	to install Wine plus the <a
+	href="http://www.openlinksw.com">OpenLink patch</a>, and
+	define the environment variable "SWF" (export SWF=1 from your
+	shell). 
+
 	<table>
 	<tr>
 	<td>
