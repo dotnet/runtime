@@ -70,9 +70,11 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 
 /* Stack size for trampoline function 
  * PPC_MINIMAL_STACK_SIZE + 16 (args + alignment to ppc_magic_trampoline)
- * 32 * 4 gregs + 13 * 8 fregs
+ * + MonoLMF + 14 fp regs + 13 gregs + alignment
+ * #define STACK (PPC_MINIMAL_STACK_SIZE + 4 * sizeof (gulong) + sizeof (MonoLMF) + 14 * sizeof (double) + 13 * (sizeof (gulong)))
+ * STACK would be 444 for 32 bit darwin
  */
-#define STACK (320)
+#define STACK (448)
 
 /* Method-specific trampoline code fragment size */
 #define METHOD_TRAMPOLINE_SIZE 64
@@ -97,7 +99,7 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 static gpointer
 ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 {
-	char *o, *start;
+	char *o = NULL;
 	gpointer addr;
 	int reg, offset = 0;
 
@@ -137,8 +139,8 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	 */
 	if (((*code) >> 26) == 18) {
 		/*g_print ("direct patching\n");*/
-		ppc_patch (code, addr);
-		mono_arch_flush_icache (code, 4);
+		ppc_patch ((char*)code, addr);
+		mono_arch_flush_icache ((char*)code, 4);
 		return addr;
 	}
 	
@@ -150,6 +152,7 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	for(; --code;) {
 		if((*code & 0x7c0803a6) == 0x7c0803a6) {
 			gint16 soff;
+			gint reg_offset;
 			/* Here we are: we reached the 'mtlr rA'.
 			Extract the register from the instruction */
 			reg = (*code & 0x03e00000) >> 21;
@@ -161,43 +164,19 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 			soff = (*code & 0xffff);
 			offset = soff;
 			reg = (*code >> 16) & 0x1f;
+			g_assert (reg != ppc_r1);
 			/*g_print ("patching reg is %d\n", reg);*/
-			switch(reg) {
-				case 0 : o = *((int *) (sp + STACK - 8));   break;
-				case 3 : o = *((int *) (sp + STACK - 12));   break;
-				case 4 : o = *((int *) (sp + STACK - 16));   break;
-				case 5 : o = *((int *) (sp + STACK - 20));   break;
-				case 6 : o = *((int *) (sp + STACK - 24));   break;
-				case 7 : o = *((int *) (sp + STACK - 28));   break;
-				case 8 : o = *((int *) (sp + STACK - 32));   break;
-				case 9 : o = *((int *) (sp + STACK - 36));   break;
-				case 10: o = *((int *) (sp + STACK - 40));   break;
-				case 11: o = *((int *) (sp + STACK - 44));  break;
-				case 12: o = *((int *) (sp + STACK - 48));  break;
-				case 13: o = *((int *) (sp + STACK - 52));  break;
-				case 14: o = *((int *) (sp + STACK - 56));  break;
-				case 15: o = *((int *) (sp + STACK - 60));  break;
-				case 16: o = *((int *) (sp + STACK - 64));  break;
-				case 17: o = *((int *) (sp + STACK - 68));  break;
-				case 18: o = *((int *) (sp + STACK - 72));  break;
-				case 19: o = *((int *) (sp + STACK - 76));  break;
-				case 20: o = *((int *) (sp + STACK - 80));  break;
-				case 21: o = *((int *) (sp + STACK - 84));  break;
-				case 22: o = *((int *) (sp + STACK - 88));  break;
-				case 23: o = *((int *) (sp + STACK - 92));  break;
-				case 24: o = *((int *) (sp + STACK - 96));  break;
-				case 25: o = *((int *) (sp + STACK - 100));  break;
-				case 26: o = *((int *) (sp + STACK - 104));  break;
-				case 27: o = *((int *) (sp + STACK - 108));  break;
-				case 28: o = *((int *) (sp + STACK - 112));  break;
-				case 29: o = *((int *) (sp + STACK - 116));  break;
-				case 30: o = *((int *) (sp + STACK - 120)); break;
-				case 31: o = *((int *) (sp + STACK - 4));   break;
-				default:
-					printf("%s: Unexpected register %d\n",
-						__FUNCTION__, reg);
-					g_assert_not_reached();
+			if (reg >= 13) {
+				/* saved in the MonoLMF structure */
+				reg_offset = STACK - sizeof (MonoLMF) + G_STRUCT_OFFSET (MonoLMF, iregs);
+				reg_offset += (reg - 13) * sizeof (gulong);
+			} else {
+				/* saved in the stack, see frame diagram below */
+				reg_offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (13 * sizeof (gulong));
+				reg_offset += reg * sizeof (gulong);
 			}
+			/* o contains now the value of register reg */
+			o = *((char**) (sp + reg_offset));
 			break;
 		}
 	}
@@ -233,6 +212,21 @@ ppc_class_init_trampoline (void *vtable, guint32 *code, char *sp)
 #endif
 }
 
+/*
+ * Stack frame description when the generic trampoline is called.
+ * caller frame
+ * --------------------
+ *  MonoLMF
+ *  -------------------
+ *  Saved FP registers 0-13
+ *  -------------------
+ *  Saved general registers 0-12
+ *  -------------------
+ *  param area for 3 args to ppc_magic_trampoline
+ *  -------------------
+ *  linkage area
+ *  -------------------
+ */
 static guchar*
 create_trampoline_code (MonoTrampolineType tramp_type)
 {
@@ -262,100 +256,73 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		
 		code = buf = g_malloc(512);
 		
-		/*-----------------------------------------------------------
-		STEP 0: First create a non-standard function prologue with a
-		stack size big enough to save our registers:
-		
-			lr		(We'll be calling functions here, so we
-					must save it)
-			r0		(See ppc_magic_trampoline)
-			r1 (sp)		(Stack pointer - must save)
-			r3-r10		Function arguments.
-			r11-r31		(See ppc_magic_trampoline)
-			method in r11	(See ppc_magic_trampoline)
-			
-		This prologue is non-standard because r0 is not saved here - it
-		was saved in the method-specific trampoline code
-		-----------------------------------------------------------*/
-		
 		ppc_stwu (buf, ppc_r1, -STACK, ppc_r1);
-		
-		/* Save r0 before modifying it - we will need its contents in
-		'ppc_magic_trampoline' */
-		ppc_stw  (buf, ppc_r0,  STACK - 8,   ppc_r1);
-		
-		ppc_stw  (buf, ppc_r31, STACK - 4, ppc_r1);
-		ppc_mr   (buf, ppc_r31, ppc_r1);
-		
-		/* Now save our registers. */
-		ppc_stw  (buf, ppc_r3,  STACK - 12,  ppc_r1);
-		ppc_stw  (buf, ppc_r4,  STACK - 16,  ppc_r1);
-		ppc_stw  (buf, ppc_r5,  STACK - 20,  ppc_r1);
-		ppc_stw  (buf, ppc_r6,  STACK - 24,  ppc_r1);
-		ppc_stw  (buf, ppc_r7,  STACK - 28,  ppc_r1);
-		ppc_stw  (buf, ppc_r8,  STACK - 32,  ppc_r1);
-		ppc_stw  (buf, ppc_r9,  STACK - 36,  ppc_r1);
-		ppc_stw  (buf, ppc_r10, STACK - 40,  ppc_r1);
-		/* STACK - 44 contains r11, which is set in the method-specific
-		part of the trampoline (see bellow this 'if' block) */
-		ppc_stw  (buf, ppc_r12, STACK - 48,  ppc_r1);
-		ppc_stw  (buf, ppc_r13, STACK - 52,  ppc_r1);
-		ppc_stw  (buf, ppc_r14, STACK - 56,  ppc_r1);
-		ppc_stw  (buf, ppc_r15, STACK - 60,  ppc_r1);
-		ppc_stw  (buf, ppc_r16, STACK - 64,  ppc_r1);
-		ppc_stw  (buf, ppc_r17, STACK - 68,  ppc_r1);
-		ppc_stw  (buf, ppc_r18, STACK - 72,  ppc_r1);
-		ppc_stw  (buf, ppc_r19, STACK - 76,  ppc_r1);
-		ppc_stw  (buf, ppc_r20, STACK - 80,  ppc_r1);
-		ppc_stw  (buf, ppc_r21, STACK - 84,  ppc_r1);
-		ppc_stw  (buf, ppc_r22, STACK - 88,  ppc_r1);
-		ppc_stw  (buf, ppc_r23, STACK - 92,  ppc_r1);
-		ppc_stw  (buf, ppc_r24, STACK - 96,  ppc_r1);
-		ppc_stw  (buf, ppc_r25, STACK - 100, ppc_r1);
-		ppc_stw  (buf, ppc_r26, STACK - 104, ppc_r1);
-		ppc_stw  (buf, ppc_r27, STACK - 108, ppc_r1);
-		ppc_stw  (buf, ppc_r28, STACK - 112, ppc_r1);
-		ppc_stw  (buf, ppc_r29, STACK - 116, ppc_r1);
-		ppc_stw  (buf, ppc_r30, STACK - 120, ppc_r1);
-		/* Save 'method' pseudo-parameter - the one passed in r11 */
-		ppc_stw  (buf, ppc_r11, STACK - 124, ppc_r1);
 
-		/* Save the FP registers */
-		offset = 124 + 4 + 8;
-		for (i = ppc_f1; i <= PPC_LAST_FPARG_REG; ++i) {
-			ppc_stfd  (buf, i, STACK - offset, ppc_r1);
-			offset += 8;
+		/* start building the MonoLMF on the stack */
+		offset = STACK - sizeof (double) * MONO_SAVED_FREGS;
+		for (i = 14; i < 32; i++) {
+			ppc_stfd (buf, i, offset, ppc_r1);
+			offset += sizeof (double);
 		}
+		/* 
+		 * now the integer registers. r13 is already saved in the trampoline,
+		 * and at this point contains the method to compile, so we skip it.
+		 */
+		offset = STACK - sizeof (MonoLMF) + G_STRUCT_OFFSET (MonoLMF, iregs) + sizeof (gulong);
+		ppc_stmw (buf, ppc_r14, ppc_r1, offset);
 
-		/*----------------------------------------------------------
-		STEP 1: call 'mono_get_lmf_addr()' to get the address of our
-		LMF. We'll need to restore it after the call to
-		'ppc_magic_trampoline' and before the call to the native
-		method.
-		----------------------------------------------------------*/
-				
-		/* Calculate the address and make the call. Keep in mind that
-		we're using r0, so we'll have to restore it before calling
-		'ppc_magic_trampoline' */
-		ppc_lis  (buf, ppc_r0, (guint32) mono_get_lmf_addr >> 16);
-		ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) mono_get_lmf_addr & 0xffff);
+		/* Now save the rest of the registers below the MonoLMF struct, first 14
+		 * fp regs and then the 13 gregs.
+		 */
+		offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double));
+		for (i = 0; i < 14; i++) {
+			ppc_stfd (buf, i, offset, ppc_r1);
+			offset += sizeof (double);
+		}
+		offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (13 * sizeof (gulong));
+		for (i = 0; i < 13; i++) {
+			ppc_stw (buf, i, offset, ppc_r1);
+			offset += sizeof (gulong);
+		}
+		/* we got here through a jump to the ctr reg, we must save the lr
+		 * in the parent frame (we do it here to reduce the size of the
+		 * method-specific trampoline)
+		 */
+		ppc_mflr (buf, ppc_r0);
+		ppc_stw (buf, ppc_r0, STACK + PPC_RET_ADDR_OFFSET, ppc_r1);
+
+		/* ok, now we can continue with the MonoLMF setup, mostly untouched 
+		 * from emit_prolog in mini-ppc.c
+		 */
+		ppc_load (buf, ppc_r0, mono_get_lmf_addr);
 		ppc_mtlr (buf, ppc_r0);
 		ppc_blrl (buf);
+		/* we build the MonoLMF structure on the stack - see mini-ppc.h
+		 * The pointer to the struct is put in ppc_r11.
+		 */
+		ppc_addi (buf, ppc_r11, ppc_sp, STACK - sizeof (MonoLMF));
+		ppc_stw (buf, ppc_r3, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
+		/* new_lmf->previous_lmf = *lmf_addr */
+		ppc_lwz (buf, ppc_r0, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r3);
+		ppc_stw (buf, ppc_r0, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r11);
+		/* *(lmf_addr) = r11 */
+		ppc_stw (buf, ppc_r11, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r3);
+		/* save method info (it's in r13) */
+		ppc_stw (buf, ppc_r13, G_STRUCT_OFFSET(MonoLMF, method), ppc_r11);
+		ppc_stw (buf, ppc_sp, G_STRUCT_OFFSET(MonoLMF, ebp), ppc_r11);
+		/* save the IP (caller ip) */
+		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
+			ppc_li (buf, ppc_r0, 0);
+		} else {
+			ppc_lwz (buf, ppc_r0, STACK + PPC_RET_ADDR_OFFSET, ppc_r1);
+		}
+		ppc_stw (buf, ppc_r0, G_STRUCT_OFFSET(MonoLMF, eip), ppc_r11);
 
-		/* XXX Update LMF !!! */
-		
-		/*----------------------------------------------------------
-		STEP 2: call 'ppc_magic_trampoline()', who will compile the
-		code and fix the method vtable entry for us
-		----------------------------------------------------------*/
-				
-		/* Set arguments */
-		
-		/* Arg 1: MonoMethod *method. It was put in r11 by the
-		method-specific trampoline code, and then saved before the call
-		to mono_get_lmf_addr()'. Restore r11, by the way :-) */
-		ppc_lwz  (buf, ppc_r3,  STACK - 124, ppc_r1);
-		ppc_lwz  (buf, ppc_r11, STACK - 44,  ppc_r1);
+		/*
+		 * Now we're ready to call ppc_magic_trampoline ().
+		 */
+		/* Arg 1: MonoMethod *method. It was put in r13 */
+		ppc_mr  (buf, ppc_r3, ppc_r13);
 		
 		/* Arg 2: code (next address to the instruction that called us) */
 		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
@@ -364,11 +331,11 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 			ppc_lwz  (buf, ppc_r4, STACK + PPC_RET_ADDR_OFFSET, ppc_r1);
 		}
 		
-		/* Arg 3: stack pointer */
+		/* Arg 3: stack pointer so that the magic trampoline can access the
+		 * registers we saved above
+		 */
 		ppc_mr   (buf, ppc_r5, ppc_r1);
 		
-		/* Calculate call address, restore r0 and call
-		'ppc_magic_trampoline'. Return value will be in r3 */
 		if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT) {
 			ppc_lis  (buf, ppc_r0, (guint32) ppc_class_init_trampoline >> 16);
 			ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) ppc_class_init_trampoline & 0xffff);
@@ -377,78 +344,57 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 			ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) ppc_magic_trampoline & 0xffff);
 		}
 		ppc_mtlr (buf, ppc_r0);
-		ppc_lwz	 (buf, ppc_r0, STACK - 8,  ppc_r1);
 		ppc_blrl (buf);
 		
-		/* OK, code address is now on r3. Move it to r0, so that we
-		can restore r3 and use it from r0 later */
-		ppc_mr   (buf, ppc_r0, ppc_r3);
-		
+		/* OK, code address is now on r3. Move it to the counter reg
+		 * so it will be ready for the final jump: this is safe since we
+		 * won't do any more calls.
+		 */
+		ppc_mtctr (buf, ppc_r3);
 
-		/*----------------------------------------------------------
-		STEP 3: Restore the LMF
-		----------------------------------------------------------*/
-		
-		/* XXX Do it !!! */
-		
-		/*----------------------------------------------------------
-		STEP 4: call the compiled method
-		----------------------------------------------------------*/
-		
-		/* Restore registers */
-
-		ppc_lwz  (buf, ppc_r3,  STACK - 12,  ppc_r1);
-		ppc_lwz  (buf, ppc_r4,  STACK - 16,  ppc_r1);
-		ppc_lwz  (buf, ppc_r5,  STACK - 20,  ppc_r1);
-		ppc_lwz  (buf, ppc_r6,  STACK - 24,  ppc_r1);
-		ppc_lwz  (buf, ppc_r7,  STACK - 28,  ppc_r1);
-		ppc_lwz  (buf, ppc_r8,  STACK - 32,  ppc_r1);
-		ppc_lwz  (buf, ppc_r9,  STACK - 36,  ppc_r1);
-		ppc_lwz  (buf, ppc_r10, STACK - 40,  ppc_r1);
-		ppc_lwz  (buf, ppc_r11, STACK - 44,  ppc_r1);
-		ppc_lwz  (buf, ppc_r12, STACK - 48,  ppc_r1);
-		ppc_stw  (buf, ppc_r13, STACK - 52,  ppc_r1);
-		
-		/* Restore the FP registers */
-		offset = 124 + 4 + 8;
-		for (i = ppc_f1; i <= PPC_LAST_FPARG_REG; ++i) {
-			ppc_lfd  (buf, i, STACK - offset, ppc_r1);
-			offset += 8;
+		/*
+		 * Now we restore the MonoLMF (see emit_epilogue in mini-ppc.c)
+		 * and the rest of the registers, so the method called will see
+		 * the same state as before we executed.
+		 * The pointer to MonoLMF is in ppc_r11.
+		 */
+		ppc_addi (buf, ppc_r11, ppc_r1, STACK - sizeof (MonoLMF));
+		/* r5 = previous_lmf */
+		ppc_lwz (buf, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r11);
+		/* r6 = lmf_addr */
+		ppc_lwz (buf, ppc_r6, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
+		/* *(lmf_addr) = previous_lmf */
+		ppc_stw (buf, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r6);
+		/* restore iregs: this time include r13 */
+		ppc_lmw (buf, ppc_r13, ppc_r11, G_STRUCT_OFFSET(MonoLMF, iregs));
+		/* restore fregs */
+		for (i = 14; i < 32; i++) {
+			ppc_lfd (buf, i, G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble)), ppc_r11);
 		}
-		/* We haven't touched any of these, so there's no need to
-		restore them */
-		
-		ppc_lwz  (buf, ppc_r14, STACK - 56,  ppc_r1);
-		ppc_lwz  (buf, ppc_r15, STACK - 60,  ppc_r1);
-		ppc_lwz  (buf, ppc_r16, STACK - 64,  ppc_r1);
-		ppc_lwz  (buf, ppc_r17, STACK - 68,  ppc_r1);
-		ppc_lwz  (buf, ppc_r18, STACK - 72,  ppc_r1);
-		ppc_lwz  (buf, ppc_r19, STACK - 76,  ppc_r1);
-		ppc_lwz  (buf, ppc_r20, STACK - 80,  ppc_r1);
-		ppc_lwz  (buf, ppc_r21, STACK - 84,  ppc_r1);
-		ppc_lwz  (buf, ppc_r22, STACK - 88,  ppc_r1);
-		ppc_lwz  (buf, ppc_r23, STACK - 92,  ppc_r1);
-		ppc_lwz  (buf, ppc_r24, STACK - 96,  ppc_r1);
-		ppc_lwz  (buf, ppc_r25, STACK - 100, ppc_r1);
-		ppc_lwz  (buf, ppc_r26, STACK - 104, ppc_r1);
-		ppc_lwz  (buf, ppc_r27, STACK - 108, ppc_r1);
-		ppc_lwz  (buf, ppc_r28, STACK - 112, ppc_r1);
-		ppc_lwz  (buf, ppc_r29, STACK - 116, ppc_r1);
-		ppc_lwz  (buf, ppc_r30, STACK - 120, ppc_r1);
-		ppc_lwz  (buf, ppc_r31, STACK - 4, ppc_r1);
-		
+
+		/* restore the volatile registers, we skip r1, of course */
+		offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double));
+		for (i = 0; i < 14; i++) {
+			ppc_lfd (buf, i, offset, ppc_r1);
+			offset += sizeof (double);
+		}
+		offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (13 * sizeof (gulong));
+		ppc_lwz (buf, ppc_r0, offset, ppc_r1);
+		offset += 2 * sizeof (gulong);
+		for (i = 2; i < 13; i++) {
+			ppc_lwz (buf, i, offset, ppc_r1);
+			offset += sizeof (gulong);
+		}
 
 		/* Non-standard function epilogue. Instead of doing a proper
-		return, we just call the compiled code, so
-		that, when it finishes, the method returns here. */
-	
-		/* Restore stack pointer, r31, LR and jump to the code */
+		 * return, we just hump to the compiled code.
+		 */
+		/* Restore stack pointer and LR and jump to the code */
 		ppc_lwz  (buf, ppc_r1,  0, ppc_r1);
-		//ppc_lwz  (buf, ppc_r31, -4, ppc_r1);
 		ppc_lwz  (buf, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_r1);
 		ppc_mtlr (buf, ppc_r11);
-		ppc_mtctr (buf, ppc_r0);
 		ppc_bcctr (buf, 20, 0);
+
 		/* Flush instruction cache, since we've generated code */
 		mono_arch_flush_icache (code, buf - code);
 	
@@ -477,31 +423,26 @@ create_specific_tramp (MonoMethod *method, guint8* tramp, MonoDomain *domain) {
 	MonoJitInfo *ji;
 
 	mono_domain_lock (domain);
-	code = buf = mono_code_manager_reserve (domain->code_mp, METHOD_TRAMPOLINE_SIZE);
+	code = buf = mono_code_manager_reserve (domain->code_mp, 32);
 	mono_domain_unlock (domain);
 
-	/* Save r11. There's nothing magic in the '44', its just an arbitrary
-	position - see above */
-	ppc_stw  (buf, ppc_r11, -44,  ppc_r1);
-	
-	/* Now save LR - we'll overwrite it now */
-	ppc_mflr (buf, ppc_r11);
-	ppc_stw  (buf, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_r1);
+	/* Save r13 in the place it will have in the on-stack MonoLMF */
+	ppc_stw  (buf, ppc_r13, -(MONO_SAVED_FREGS * 8 + MONO_SAVED_GREGS * sizeof (gpointer)),  ppc_r1);
 	
 	/* Prepare the jump to the generic trampoline code.*/
-	ppc_lis  (buf, ppc_r11, (guint32) tramp >> 16);
-	ppc_ori  (buf, ppc_r11, ppc_r11, (guint32) tramp & 0xffff);
-	ppc_mtlr (buf, ppc_r11);
+	ppc_lis  (buf, ppc_r13, (guint32) tramp >> 16);
+	ppc_ori  (buf, ppc_r13, ppc_r13, (guint32) tramp & 0xffff);
+	ppc_mtctr (buf, ppc_r13);
 	
-	/* And finally put 'method' in r11 and fly! */
-	ppc_lis  (buf, ppc_r11, (guint32) method >> 16);
-	ppc_ori  (buf, ppc_r11, ppc_r11, (guint32) method & 0xffff);
-	ppc_blr  (buf);
+	/* And finally put 'method' in r13 and fly! */
+	ppc_lis  (buf, ppc_r13, (guint32) method >> 16);
+	ppc_ori  (buf, ppc_r13, ppc_r13, (guint32) method & 0xffff);
+	ppc_bcctr (buf, 20, 0);
 	
 	/* Flush instruction cache, since we've generated code */
 	mono_arch_flush_icache (code, buf - code);
 
-	g_assert ((buf - code) <= JUMP_TRAMPOLINE_SIZE);
+	g_assert ((buf - code) <= 32);
 
 	ji = g_new0 (MonoJitInfo, 1);
 	ji->method = method;
@@ -594,7 +535,7 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 
 	ppc_mflr (buf, ppc_r4);
 	ppc_stw  (buf, ppc_r4, PPC_RET_ADDR_OFFSET, ppc_sp);
-	ppc_stwu (buf, ppc_sp, -32, ppc_sp);
+	ppc_stwu (buf, ppc_sp, -64, ppc_sp);
 	ppc_load (buf, ppc_r3, vtable);
 	ppc_load (buf, ppc_r5, 0);
 
@@ -602,9 +543,9 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 	ppc_mtlr (buf, ppc_r0);
 	ppc_blrl (buf);
 
-	ppc_lwz (buf, ppc_r0, 32 + PPC_RET_ADDR_OFFSET, ppc_sp);
+	ppc_lwz (buf, ppc_r0, 64 + PPC_RET_ADDR_OFFSET, ppc_sp);
 	ppc_mtlr (buf, ppc_r0);
-	ppc_addic (buf, ppc_sp, ppc_sp, 32);
+	ppc_addic (buf, ppc_sp, ppc_sp, 64);
 	ppc_blr (buf);
 
 	/* Flush instruction cache, since we've generated code */
