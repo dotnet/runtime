@@ -36,15 +36,15 @@ mono_jit_info_table_free (MonoJitInfoTable *table)
 }
 
 static int
-mono_jit_info_table_index (MonoJitInfoTable *table, gpointer addr)
+mono_jit_info_table_index (MonoJitInfoTable *table, char *addr)
 {
 	int left = 0, right = table->len;
 
 	while (left < right) {
 		int pos = (left + right) / 2;
 		MonoJitInfo *ji = g_array_index (table, gpointer, pos);
-		gpointer start = ji->code_start;
-		gpointer end = (char *)start + ji->code_size;
+		char *start = ji->code_start;
+		char *end = start + ji->code_size;
 
 		if (addr < start)
 			right = pos;
@@ -58,7 +58,7 @@ mono_jit_info_table_index (MonoJitInfoTable *table, gpointer addr)
 }
 
 MonoJitInfo *
-mono_jit_info_table_find (MonoDomain *domain, gpointer addr)
+mono_jit_info_table_find (MonoDomain *domain, char *addr)
 {
 	MonoJitInfoTable *table = domain->jit_info_table;
 	int left = 0, right = table->len;
@@ -66,8 +66,8 @@ mono_jit_info_table_find (MonoDomain *domain, gpointer addr)
 	while (left < right) {
 		int pos = (left + right) / 2;
 		MonoJitInfo *ji = g_array_index (table, gpointer, pos);
-		gpointer start = ji->code_start;
-		gpointer end = (char *)start + ji->code_size;
+		char *start = ji->code_start;
+		char *end = start + ji->code_size;
 
 		if (addr < start)
 			right = pos;
