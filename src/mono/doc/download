@@ -32,7 +32,7 @@
 	 	      <li><a href="archive/mcs-0.24.tar.gz">Mono Class Libraries and C# Compiler.</a>
 	              <li><a href="archive/mono-0.24.tar.gz">Mono Runtime</a>
 		      <li><a href="archive/gc6.1.tar.gz">Boehm GC 6.1</a>
- 		      <li><a href="archive/xsp-0.4.tar.gz">XSP web server (0.3)</a>
+ 		      <li><a href="archive/xsp-0.4.tar.gz">XSP web server (0.4)</a>
 		      <li><a href="archive/mono-debugger-0.2.2.tar.gz">Mono Debugger 0.2.2</a>
 		      <li><a href="archive/monodoc-0.4.tar.gz">MonoDoc 0.4</a>
 		      <li><a href="archive/gtk-sharp-0.9.tar.gz">Gtk# 0.9</a>
@@ -57,7 +57,7 @@
 
 		<tr>
                   <td bgcolor="#999999">
-                    <b>Red Hat 9.0/x86</b><img align="rigth" src="images/redhat.gif">
+                    <img src="images/redhat-36.gif"><b>Red Hat 9.0/x86</b>
                     <ul>
                         <li><a href="archive/redhat-90-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
                         <li><a href="archive/redhat-90-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
@@ -71,7 +71,7 @@
                     </ul>
                   </td>
                   <td bgcolor="#999999">
-                    <b>Red Hat 8.0/x86</b><img align="rigth" src="images/redhat.gif">
+                    <img src="images/redhat-36.gif"><b>Red Hat 8.0/x86</b>
                     <ul>
                         <li><a href="archive/redhat-80-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
                         <li><a href="archive/redhat-80-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
@@ -86,13 +86,13 @@
 
   		<tr> 
                   <td bgcolor="#999999">
-                    <b>Debian</b><img align="rigth" src="images/deb.png">
+                    <img src="images/debian-36.gif"><b>Debian</b>
                     <ul>
                         <li><a href="http://www.atoker.com/mono/">Debian Packages here.</a>
                     </ul>
                   </td>
   		  <td bgcolor="#999999">
- 		    <b>Windows Setup Wizard (XP, 2000, NT)</b> <img align="rigth" src="images/windows-36.png">
+ 		    <img src="images/windows-36.gif"><b>Windows Setup Wizard (XP, 2000, NT)</b> 
  		    <ul>
  	              <li><a href="archive/mono-0.24-win32-1.exe">Setup program.</a>
  	            </ul>
@@ -101,7 +101,7 @@
 
 		<tr>
 		  <td bgcolor="#999999">
-		    <b>Red Hat 7.3/x86</b><img align="rigth" src="images/redhat.gif">
+		    <img src="images/redhat-36.gif"><b>Red Hat 7.3/x86</b>
                     <ul>
 			<li><a href="archive/redhat-73-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
 			<li><a href="archive/redhat-73-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
@@ -110,7 +110,7 @@
 		    </ul>
 		  </td>
 		  <td bgcolor="#999999">
-		    <b>Mandrake 8.2/x86</b><img align="rigth" src="images/mandrake-36.png">
+		    <img src="images/mandrake-36.gif"><b>Mandrake 8.2/x86</b>
                     <ul>
 			<li><a href="archive/mandrake-82-i386/libgc-6.1-1.i586.rpm">libgc-6.1-1.i586.rpm</a>
 			<li><a href="archive/mandrake-82-i386/libgc-devel-6.1-1.i586.rpm">libgc-devel-6.1-1.i586.rpm</a>
@@ -122,7 +122,7 @@
 
 		<tr>
  		  <td bgcolor="#999999"> 
- 		    <b>SuSE 8.0/x86</b> <img align="rigth" src="images/suse-36.png">
+		     <img src="images/suse-36.gif"><b>SuSE 8.0/x86</b> 
                      <ul> 
  			<li><a href="archive/suse-80-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a> 
  			<li><a href="archive/suse-80-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a> 
