@@ -15,7 +15,7 @@ mono_debug_open_file (const char *filename, MonoDebugFormat format)
 	
 	debug = g_new0 (MonoDebugHandle, 1);
 	debug->name = g_strdup (filename);
-	debug->format = format;
+	debug->default_format = format;
 	return debug;
 }
 
@@ -127,7 +127,7 @@ debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, Mo
 	/* record_line_number takes absolute memory addresses. */
 	record_line_number (minfo, minfo->method_info.code_start, minfo->start_line, FALSE);
 	/* record_il_offsets uses offsets relative to minfo->method_info.code_start. */
-	record_il_offset (il_offsets, 0, 0);
+	record_il_offset (il_offsets, 0, st_address);
 
 	/* This is the first actual code line of the method. */
 	record_line_number (minfo, minfo->method_info.code_start + st_address, st_line, TRUE);
@@ -147,11 +147,11 @@ debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, Mo
 				record_line_number (minfo, cfg->start + st_address, st_line, TRUE);
 			}
 
-			if (t->cli_addr != -1)
-				record_il_offset (il_offsets, t->cli_addr, st_address);
-
 			addr_inc = t->addr - st_address - 1;
 			st_address += addr_inc;
+
+			if (t->cli_addr != -1)
+				record_il_offset (il_offsets, t->cli_addr, st_address);
 
 			if (!info->moffsets)
 				continue;
@@ -207,7 +207,8 @@ mono_debug_open_assembly (MonoDebugHandle* handle, MonoImage *image)
 			return info;
 	}
 	info = g_new0 (AssemblyDebugInfo, 1);
-	switch (handle->format) {
+	info->format = handle->default_format;
+	switch (handle->default_format) {
 	case MONO_DEBUG_FORMAT_STABS:
 		info->filename = g_strdup_printf ("%s-stabs.s", image->assembly_name);
 		break;
@@ -216,6 +217,23 @@ mono_debug_open_assembly (MonoDebugHandle* handle, MonoImage *image)
 		break;
 	case MONO_DEBUG_FORMAT_DWARF2_PLUS:
 		info->filename = g_strdup_printf ("%s-debug.o", image->assembly_name);
+
+		g_message (G_STRLOC ": %s - %s", image->assembly_name, image->name);
+
+		/* Fall back to dwarf if we can't find the symbol file. */
+		if (!g_file_test (info->filename, G_FILE_TEST_EXISTS)) {
+			gchar *tmp = g_strdup_printf ("%s-dwarf.s", image->assembly_name);
+
+			if (g_file_test (tmp, G_FILE_TEST_EXISTS)) {
+				g_warning ("Can't open symbol file `%s', falling back to DWARF 2.",
+					   info->filename);
+				g_free (info->filename);
+				info->filename = tmp;
+				info->format = MONO_DEBUG_FORMAT_DWARF2;
+			} else
+				g_free (tmp);
+		}
+
 		break;
 	}
 	info->image = image;
@@ -247,7 +265,7 @@ mono_debug_open_assembly (MonoDebugHandle* handle, MonoImage *image)
 	mono_debug_get_type (info, mono_defaults.double_class);
 	mono_debug_get_type (info, mono_defaults.string_class);
 
-	switch (handle->format) {
+	switch (info->format) {
 	case MONO_DEBUG_FORMAT_STABS:
 		mono_debug_open_assembly_stabs (info);
 		break;
@@ -265,7 +283,7 @@ mono_debug_open_assembly (MonoDebugHandle* handle, MonoImage *image)
 	info->nmethods = image->tables [MONO_TABLE_METHOD].rows + 1;
 	info->mlines = g_new0 (int, info->nmethods);
 
-	if (handle->format != MONO_DEBUG_FORMAT_DWARF2_PLUS)
+	if (info->format != MONO_DEBUG_FORMAT_DWARF2_PLUS)
 		debug_load_method_lines (info);
 
 	return info;
@@ -283,7 +301,7 @@ mono_debug_make_symbols (void)
 	for (tmp = mono_debug_handle->info; tmp; tmp = tmp->next) {
 		info = (AssemblyDebugInfo*)tmp->data;
 
-		switch (mono_debug_handle->format) {
+		switch (info->format) {
 		case MONO_DEBUG_FORMAT_STABS:
 			mono_debug_write_assembly_stabs (info);
 			break;
@@ -322,7 +340,7 @@ mono_debug_close (MonoDebugHandle* debug)
 	for (tmp = debug->info; tmp; tmp = tmp->next) {
 		info = (AssemblyDebugInfo*)tmp->data;
 
-		switch (debug->format) {
+		switch (info->format) {
 		case MONO_DEBUG_FORMAT_STABS:
 			mono_debug_close_assembly_stabs (info);
 			break;

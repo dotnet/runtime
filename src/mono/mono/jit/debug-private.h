@@ -42,12 +42,13 @@ struct _AssemblyDebugInfo {
 	GHashTable *type_hash;
 	int next_klass_idx;
 	GPtrArray *source_files;
+	MonoDebugFormat format;
 	gpointer _priv;
 };
 
 struct _MonoDebugHandle {
 	char *name;
-	MonoDebugFormat format;
+	MonoDebugFormat default_format;
 	GList *info;
 };
 
