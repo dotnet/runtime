@@ -8234,7 +8234,7 @@ mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, Mon
 		event->raise = eb->raise_method->mhandle;
 
 	if (eb->other_methods) {
-		event->other = g_new0 (MonoMethod*, mono_array_length (eb->other_methods));
+		event->other = g_new0 (MonoMethod*, mono_array_length (eb->other_methods) + 1);
 		for (j = 0; j < mono_array_length (eb->other_methods); ++j) {
 			MonoReflectionMethodBuilder *mb = 
 				mono_array_get (eb->other_methods,
@@ -8271,7 +8271,7 @@ typebuilder_setup_events (MonoClass *klass)
 			klass->events [i].raise = eb->raise_method->mhandle;
 
 		if (eb->other_methods) {
-			klass->events [i].other = g_new0 (MonoMethod*, mono_array_length (eb->other_methods));
+			klass->events [i].other = g_new0 (MonoMethod*, mono_array_length (eb->other_methods) + 1);
 			for (j = 0; j < mono_array_length (eb->other_methods); ++j) {
 				MonoReflectionMethodBuilder *mb = 
 					mono_array_get (eb->other_methods,
