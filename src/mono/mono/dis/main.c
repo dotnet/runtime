@@ -288,7 +288,7 @@ pinvoke_flags (guint32 f)
 	g_string_append (str, map (cconv, pinvoke_call_conv_map));
 	g_string_append (str, flags (f, pinvoke_flags_map));
 
-	s = str->str;
+	s = g_strdup(str->str);
 	g_string_free (str, FALSE);
 
 	return s;
@@ -398,9 +398,9 @@ pinvoke_info (MonoMetadata *m, guint32 mindex)
 
 		mono_metadata_decode_row (im, i, im_cols, MONO_IMPLMAP_SIZE);
 
-		flags = pinvoke_flags (im_cols [MONO_IMPLMAP_FLAGS]);
+		if ((im_cols [MONO_IMPLMAP_MEMBER] >> 1) == mindex + 1) {
 
-		if ((im_cols [MONO_IMPLMAP_FLAGS] >> 1) == mindex + 1) {
+			flags = pinvoke_flags (im_cols [MONO_IMPLMAP_FLAGS]);
 
 			import = mono_metadata_string_heap (m, im_cols [MONO_IMPLMAP_NAME]);
 
@@ -411,9 +411,8 @@ pinvoke_info (MonoMetadata *m, guint32 mindex)
 				
 			return g_strdup_printf ("(%s as %s %s)", scope, import,
 						flags);
+			g_free (flags);
 		}
-
-		g_free (flags);
 	}
 
 	return NULL;

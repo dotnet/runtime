@@ -52,8 +52,11 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	MonoMetadata *m;
 	int i;
 	const char *basename = strrchr (filename, '/');
+	const char *fullname = filename;
 	static MonoAssembly *corlib;
 	
+	g_return_val_if_fail (filename != NULL, NULL);
+
 	if (basename == NULL)
 		basename = filename;
 	else
@@ -62,12 +65,13 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	/*
 	 * Temporary hack until we have a complete corlib.dll
 	 */
-	if (!strcmp (basename, CORLIB_NAME) && corlib != NULL)
-		return corlib;
-		
-	g_return_val_if_fail (filename != NULL, NULL);
-
-	image = mono_image_open (filename, status);
+	if (!strcmp (basename, CORLIB_NAME)) {
+		if (corlib != NULL)
+			return corlib;
+		fullname = MONO_ASSEMBLIES "/" CORLIB_NAME;
+	}
+	
+	image = mono_image_open (fullname, status);
 	if (!image){
 		if (status)
 			*status = MONO_IMAGE_ERROR_ERRNO;

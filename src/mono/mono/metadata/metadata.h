@@ -269,6 +269,11 @@ MonoMethodSignature  *mono_metadata_parse_method_signature (MonoMetadata        
                                                             const char           **rptr);
 void                  mono_metadata_free_method_signature  (MonoMethodSignature   *method);
 
+gboolean          mono_metadata_signature_equal (MonoMetadata *m1, 
+						 MonoMethodSignature *sig1, 
+						 MonoMetadata *m2, 
+						 MonoMethodSignature *sig2);
+
 MonoMethodHeader *mono_metadata_parse_mh (MonoMetadata *m, const char *ptr);
 void              mono_metadata_free_mh  (MonoMethodHeader *mh);
 

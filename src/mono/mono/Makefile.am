@@ -1,1 +1,1 @@
-SUBDIRS = metadata cil cli dis interpreter tests
+SUBDIRS = metadata cil cli dis interpreter wrapper tests

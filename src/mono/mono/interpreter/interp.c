@@ -11,14 +11,11 @@
  *
  * (C) 2001 Ximian, Inc.
  */
-#define _ISOC99_SOURCE
-
 #include <config.h>
 #include <stdio.h>
 #include <string.h>
 #include <glib.h>
 #include <ffi.h>
-#include <math.h>
 
 
 #ifdef HAVE_ALLOCA_H
@@ -59,7 +56,7 @@ static MonoImage *corlib = NULL;
 
 static void ves_exec_method (MonoInvocation *frame);
 
-typedef void (*ICallMethod) (MonoMethod *mh, stackval *args);
+typedef void (*ICallMethod) (MonoInvocation *frame);
 
 
 static void
@@ -137,7 +134,9 @@ newobj (MonoImage *image, guint32 token)
 	
 	switch (mono_metadata_token_code (token)){
 	case MONO_TOKEN_METHOD_DEF: {
-		guint32 idx = mono_metadata_typedef_from_method (m, token);
+		guint32 idx;
+
+		idx = mono_metadata_typedef_from_method (m, token);
 		result = mono_object_new (image, MONO_TOKEN_TYPE_DEF | idx);
 		break;
 	}
@@ -174,6 +173,9 @@ newobj (MonoImage *image, guint32 token)
 		}
 		break;
 	}
+	default:
+		g_warning ("dont know how to handle token %p\n", token); 
+		g_assert_not_reached ();
 	}
 	
 	if (result)
@@ -230,29 +232,33 @@ get_named_exception (const char *name)
 	MonoClass *klass;
 	MonoInvocation call;
 	MonoObject *o;
-	MonoMethodSignature sig = {
-		1, /* hasthis */
-		0,
-		MONO_CALL_DEFAULT,
-		0, /* param count */
-		0, /* sentinel pos */
-		NULL, /* retval -> void */
-		NULL, /* params */
-		0
-	};
 	int i;
 	guint32 tdef = mono_typedef_from_name (corlib, name, "System", NULL);
-	o = newobj (corlib, tdef);
+	stackval sv;
+
+	o = mono_object_new (corlib, tdef);
+	g_assert (o != NULL);
+
 	klass = mono_class_get (corlib, tdef);
 	call.method = NULL;
+
+	/* fixme: this returns the wrong constructor .ctor() without the
+	   string argument */
 	for (i = 0; i < klass->method.count; ++i) {
-		if (match_signature (".ctor", &sig, klass->methods [i])) {
+		if (!strcmp (".ctor", klass->methods [i]->name) &&
+		    klass->methods [i]->signature->param_count == 0) {
 			call.method = klass->methods [i];
 			break;
 		}
 	}
-	g_assert (call.method);
+	sv.data.p = o;
+	sv.type = VAL_OBJ;
+
+	call.stack_args = &sv;
 	call.obj = o;
+
+	g_assert (call.method);
+
 	ves_exec_method (&call);
 	return o;
 }
@@ -411,17 +417,19 @@ mono_get_ansi_string (MonoObject *o)
 }
 
 static void 
-ves_pinvoke_method (MonoMethod *mh, stackval *sp)
+ves_pinvoke_method (MonoInvocation *frame)
 {
-	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)mh;
+	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)frame->method;
+	MonoMethodSignature *sig = frame->method->signature;
 	gpointer *values;
 	float *tmp_float;
 	char **tmp_string;
 	int i, acount, rsize, align;
+	stackval *sp = frame->stack_args;
 	gpointer res = NULL; 
 	GSList *t, *l = NULL;
 
-	acount = mh->signature->param_count;
+	acount = sig->param_count;
 
 	values = alloca (sizeof (gpointer) * acount);
 
@@ -429,7 +437,7 @@ ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 
 	for (i = 0; i < acount; i++) {
 
-		switch (mh->signature->params [i]->type->type) {
+		switch (sig->params [i]->type->type) {
 
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
@@ -452,7 +460,7 @@ ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 		case MONO_TYPE_STRING:
 			g_assert (sp [i].type == VAL_OBJ);
 
-			if (mh->flags & PINVOKE_ATTRIBUTE_CHAR_SET_ANSI && sp [i].data.p) {
+			if (frame->method->flags & PINVOKE_ATTRIBUTE_CHAR_SET_ANSI && sp [i].data.p) {
 				tmp_string = alloca (sizeof (char *));
 				*tmp_string = mono_get_ansi_string (sp [i].data.p);
 				l = g_slist_prepend (l, *tmp_string);
@@ -468,16 +476,16 @@ ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 			break;
  		default:
 			g_warning ("not implemented %x", 
-				   mh->signature->params [i]->type->type);
+				   sig->params [i]->type->type);
 			g_assert_not_reached ();
 		}
 
 	}
 
-	if ((rsize = mono_type_size (mh->signature->ret->type, &align)))
+	if ((rsize = mono_type_size (sig->ret->type, &align)))
 		res = alloca (rsize);
 
-	ffi_call (piinfo->cif, mh->addr, res, values);
+	ffi_call (piinfo->cif, frame->method->addr, res, values);
 		
 	t = l;
 	while (t) {
@@ -487,9 +495,8 @@ ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 
 	g_slist_free (l);
 
-	if (mh->signature->ret->type)
-		*sp = stackval_from_data (mh->signature->ret->type, res);
-			
+	if (sig->ret->type->type != MONO_TYPE_VOID)
+		*frame->retval = stackval_from_data (sig->ret->type, res);
 }
 
 #define DEBUG_INTERP 0
@@ -584,16 +591,15 @@ ves_exec_method (MonoInvocation *frame)
 
 	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		ICallMethod icall = frame->method->addr;
-
-		icall (frame->method, frame->stack_args);
-		return;
-	}
-
-	if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-		ves_pinvoke_method (frame->method, frame->stack_args);
+		icall (frame);
 		return;
 	} 
 
+	if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+		ves_pinvoke_method (frame);
+		return;
+	} 
+		
 	header = ((MonoMethodNormal *)frame->method)->header;
 	signature = frame->method->signature;
 	image = frame->method->image;
@@ -852,13 +858,17 @@ ves_exec_method (MonoInvocation *frame)
 			} else {
 				child_frame.obj = NULL;
 			}
-			if (csignature->ret->type) {
+			if (csignature->ret->type->type != MONO_TYPE_VOID) {
 				/* FIXME: handle valuetype */
 				child_frame.retval = &retval;
 			} else {
 				child_frame.retval = NULL;
 			}
+
+			child_frame.ex = NULL;
+
 			ves_exec_method (&child_frame);
+
 			if (child_frame.ex) {
 				/*
 				 * An exception occurred, need to run finally, fault and catch handlers..
@@ -868,7 +878,7 @@ ves_exec_method (MonoInvocation *frame)
 			}
 
 			/* need to handle typedbyref ... */
-			if (csignature->ret->type) {
+			if (csignature->ret->type->type != MONO_TYPE_VOID) {
 				*sp = retval;
 				sp++;
 			}
@@ -876,7 +886,7 @@ ves_exec_method (MonoInvocation *frame)
 		}
 		CASE (CEE_CALLI) ves_abort(); BREAK;
 		CASE (CEE_RET)
-			if (signature->ret->type) {
+			if (signature->ret->type->type != MONO_TYPE_VOID) {
 				--sp;
 				*frame->retval = *sp;
 			}

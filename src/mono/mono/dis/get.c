@@ -495,14 +495,8 @@ dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method, in
 char*
 dis_stringify_type (MonoMetadata *m, MonoType *type)
 {
-	char *bare = NULL;
-	char *byref;
+	char *bare = NULL, *pinned = "", *byref = "";
 	char *result;
-
-	if (!type)
-		return g_strdup ("void");
-
-	byref = type->byref ? "&" : "";
 
 	switch (type->type){
 	case MONO_TYPE_BOOLEAN:
@@ -553,12 +547,23 @@ dis_stringify_type (MonoMetadata *m, MonoType *type)
 	case MONO_TYPE_ARRAY:
 		bare = dis_stringify_array (m, type->data.array);
 		break;
+	case MONO_TYPE_VOID:
+		bare = g_strdup ("void");
+		break;
 	default:
 		g_error ("Do not know how to stringify type 0x%x", type->type);
 	}
+	
+	if (type->constraint == MONO_TYPE_PINNED)
+		pinned = " pinned";
 
-	result = g_strconcat (bare, byref, NULL);
+	if (type->byref)
+		byref = "&";
+		
+	result = g_strconcat (bare, byref, pinned, NULL);
+
 	g_free (bare);
+
 	return result;
 }
 
@@ -964,7 +969,6 @@ get_method (MonoMetadata *m, guint32 token)
 		name = mono_metadata_string_heap (m, method_cols [MONO_METHOD_NAME]);
 
 		sig = get_methodref_signature (m, method_cols [MONO_METHOD_SIGNATURE], name);
-
 		return sig;
 		
 	case MONO_TOKEN_MEMBER_REF: {
@@ -985,7 +989,7 @@ get_method (MonoMetadata *m, guint32 token)
 		g_free (sig);
 		return res;
 	}
-		
+	       
 	default:
 		g_assert_not_reached ();
 	}

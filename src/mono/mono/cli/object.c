@@ -135,4 +135,3 @@ mono_value_box (MonoImage *image, guint32 etype, gpointer val)
 
 	return res;
 }
-

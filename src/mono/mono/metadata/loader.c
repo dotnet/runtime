@@ -205,20 +205,26 @@ mono_get_string_class_info (guint *ttoken, MonoImage **cl)
 static MonoMethod *
 method_from_memberref (MonoImage *image, guint32 index)
 {
+	MonoImage *mimage;
 	MonoMetadata *m = &image->metadata;
 	MonoTableInfo *tables = m->tables;
 	guint32 cols[6];
-	guint32 nindex, sig_len, msig_len, class, i;
-	const char *sig, *msig, *mname, *name, *nspace;
+	guint32 nindex, class, i;
+	const char *mname, *name, *nspace;
+	MonoMethodSignature *sig, *msig;
+	const char *ptr;
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], index-1, cols, 3);
 	nindex = cols [MONO_MEMBERREF_CLASS] >> MEMBERREF_PARENT_BITS;
 	class = cols [MONO_MEMBERREF_CLASS] & MEMBERREF_PARENT_MASK;
 	/*g_print ("methodref: 0x%x 0x%x %s\n", class, nindex,
 		mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]));*/
-	sig = mono_metadata_blob_heap (m, cols [MONO_MEMBERREF_SIGNATURE]);
-	sig_len = mono_metadata_decode_blob_size (sig, &sig);
+
 	mname = mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]);
+	
+	ptr = mono_metadata_blob_heap (m, cols [MONO_MEMBERREF_SIGNATURE]);
+	mono_metadata_decode_blob_size (ptr, &ptr);
+	sig = mono_metadata_parse_method_signature (m, 0, ptr, NULL);
 
 	switch (class) {
 	case MEMBERREF_PARENT_TYPEREF: {
@@ -243,23 +249,31 @@ method_from_memberref (MonoImage *image, guint32 index)
 			/* this will triggered by references to mscorlib */
 			g_assert (image->references [scopeindex-1] != NULL);
 
-			image = image->references [scopeindex-1]->image;
+			mimage = image->references [scopeindex-1]->image;
 
-			m = &image->metadata;
+			m = &mimage->metadata;
 			tables = &m->tables [MONO_TABLE_METHOD];
-			mono_typedef_from_name (image, name, nspace, &i);
+			mono_typedef_from_name (mimage, name, nspace, &i);
 			/* mostly dumb search for now */
-			for (;i < tables->rows; ++i) {
+			for (i--; i < tables->rows; ++i) {
+
 				mono_metadata_decode_row (tables, i, cols, MONO_METHOD_SIZE);
-				msig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
-				msig_len = mono_metadata_decode_blob_size (msig, &msig);
-				
-				if (strcmp (mname, mono_metadata_string_heap (m, cols [MONO_METHOD_NAME])) == 0 
-						&& sig_len == msig_len
-						&& strncmp (sig, msig, sig_len) == 0) {
-					return mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1));
+
+				if (!strcmp (mname, mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]))) {
+					
+					ptr = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
+					mono_metadata_decode_blob_size (ptr, &ptr);
+					msig = mono_metadata_parse_method_signature (m, 1, ptr, NULL);
+
+					if (mono_metadata_signature_equal (&image->metadata, sig, 
+									   &mimage->metadata, msig)) {
+						mono_metadata_free_method_signature (sig);
+						mono_metadata_free_method_signature (msig);
+						return mono_get_method (mimage, MONO_TOKEN_METHOD_DEF | (i + 1));
+					}
 				}
 			}
+			g_warning ("cant find method %s.%s::%s",nspace, name, mname);
 			g_assert_not_reached ();
 			break;
 		default:
@@ -268,9 +282,7 @@ method_from_memberref (MonoImage *image, guint32 index)
 		break;
 	}
 	case MEMBERREF_PARENT_TYPESPEC: {
-		MonoMethodSignature *ms;
 		guint32 bcols [MONO_TYPESPEC_SIZE];
-		const char *ptr;
 		guint32 len;
 		MonoType *type;
 		MonoMethod *result;
@@ -284,19 +296,17 @@ method_from_memberref (MonoImage *image, guint32 index)
 		if (type->type != MONO_TYPE_ARRAY)
 			g_assert_not_reached ();		
 
-		ms = mono_metadata_parse_method_signature (m, 0, sig, &sig);
-
 		result = (MonoMethod *)g_new0 (MonoMethod, 1);
 		result->image = image;
 		result->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
-		result->signature = ms;
+		result->signature = sig;
 		
 		if (!strcmp (mname, ".ctor")) { 
-			g_assert (ms->hasthis);
-			if (type->data.array->rank == ms->param_count) {
+			g_assert (sig->hasthis);
+			if (type->data.array->rank == sig->param_count) {
 				result->addr = mono_lookup_internal_call ("__array_ctor");
 				return result;
-			} else if ((type->data.array->rank * 2) == ms->param_count) {
+			} else if ((type->data.array->rank * 2) == sig->param_count) {
 				result->addr = mono_lookup_internal_call ("__array_bound_ctor");
 				return result;			
 			} else 
@@ -304,16 +314,16 @@ method_from_memberref (MonoImage *image, guint32 index)
 		}
 
 		if (!strcmp (mname, "Set")) {
-			g_assert (ms->hasthis);
-			g_assert (type->data.array->rank + 1 == ms->param_count);
+			g_assert (sig->hasthis);
+			g_assert (type->data.array->rank + 1 == sig->param_count);
 
 			result->addr = mono_lookup_internal_call ("__array_Set");
 			return result;
 		}
 
 		if (!strcmp (mname, "Get")) {
-			g_assert (ms->hasthis);
-			g_assert (type->data.array->rank == ms->param_count);
+			g_assert (sig->hasthis);
+			g_assert (type->data.array->rank == sig->param_count);
 
 			result->addr = mono_lookup_internal_call ("__array_Get");
 			return result;
@@ -333,9 +343,6 @@ static ffi_type *
 ves_map_ffi_type (MonoType *type)
 {
 	ffi_type *rettype;
-
-	if (!type)
-		return &ffi_type_void;
 
 	switch (type->type) {
 	case MONO_TYPE_I1:
@@ -366,6 +373,9 @@ ves_map_ffi_type (MonoType *type)
 		break;
 	case MONO_TYPE_STRING:
 		rettype = &ffi_type_pointer;
+		break;
+	case MONO_TYPE_VOID:
+		rettype = &ffi_type_void;
 		break;
 	default:
 		g_warning ("not implemented");
@@ -451,7 +461,7 @@ mono_get_method (MonoImage *image, guint32 token)
 	const char *loc, *sig = NULL;
 	char *name;
 	int size;
-	guint32 cols[6];
+	guint32 cols[MONO_TYPEDEF_SIZE];
 
 	if (table == MONO_TABLE_METHOD && (result = g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (token))))
 			return result;
@@ -506,9 +516,7 @@ mono_get_method (MonoImage *image, guint32 token)
 	if (!sig) /* already taken from the methodref */
 		sig = mono_metadata_blob_heap (m, cols [4]);
 	size = mono_metadata_decode_blob_size (sig, &sig);
-	result->signature = mono_metadata_parse_method_signature (m, 0, sig, 
-								  NULL);
-
+	result->signature = mono_metadata_parse_method_signature (m, 0, sig, NULL);
 
 	if (result->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, 

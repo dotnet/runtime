@@ -1,5 +1,7 @@
 
 #include <glib.h>
+#include <mono/cli/cli.h>
+#include <mono/cli/object.h>
 
 enum {
 	VAL_I32     = 0,

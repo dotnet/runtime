@@ -9,7 +9,7 @@ AC_PROG_INSTALL
 
 # Set STDC_HEADERS
 AC_HEADER_STDC
-AC_PROG_RANLIB
+AM_PROG_LIBTOOL
 
 dnl ***************************
 dnl *** Checks for glib 1.2 ***
@@ -43,5 +43,6 @@ mono/cil/Makefile
 mono/cli/Makefile
 mono/interpreter/Makefile
 mono/tests/Makefile
+mono/wrapper/Makefile
 doc/Makefile
 ])

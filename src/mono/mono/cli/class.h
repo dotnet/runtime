@@ -44,11 +44,11 @@ struct _MonoClass {
 	 * Field information: Type and location from object base
 	 */
 	MonoClassField *fields;
-	
-	struct MonoMethod **methods;
+
+	MonoMethod **methods;
 
 	/*
-	 * After the fields, there is room for the static fields...
+	 * After the methods, there is room for the static fields...
 	 */
 };
 

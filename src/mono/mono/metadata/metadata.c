@@ -993,7 +993,7 @@ mono_metadata_parse_param (MonoMetadata *m, int rettype, const char *ptr, const 
 	case MONO_TYPE_VOID: 
 		if (!rettype)
 			g_error ("void not allowed in param");
-		ptr++;
+		param->type = mono_metadata_parse_type (m, ptr, &ptr);
 		break;
 	case MONO_TYPE_BYREF: 
 		byref = 1; 
@@ -1092,6 +1092,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoMetadata *m, const char *ptr, c
 	type->type = mono_metadata_decode_value (ptr, &ptr);
 	
 	switch (type->type){
+	case MONO_TYPE_VOID:
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I1:
@@ -1131,21 +1132,9 @@ do_mono_metadata_parse_type (MonoType *type, MonoMetadata *m, const char *ptr, c
 			/* save them this time */
 			while (mono_metadata_parse_custom_mod (m, &(mtype->modifiers[count]), ptr, &ptr))
 				count++;
-			/* FIXME: mono_metadata_decode_value ... */
-			if (*ptr == MONO_TYPE_VOID) {
-				mtype->type = NULL;
-				ptr++;
-			} else {
-				mtype->type = mono_metadata_parse_type (m, ptr, &ptr);
-			}
+			mtype->type = mono_metadata_parse_type (m, ptr, &ptr);
 		} else {
-			/* FIXME: mono_metadata_decode_value ... */
-			if (*ptr == MONO_TYPE_VOID) {
-				type->data.type = NULL;
-				ptr++;
-			} else {
-				type->data.type = mono_metadata_parse_type (m, ptr, &ptr);
-			}
+			type->data.type = mono_metadata_parse_type (m, ptr, &ptr);
 		}
 		break;
 	case MONO_TYPE_FNPTR:
@@ -1396,19 +1385,26 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 			return mh;
 		mh->locals = g_new (MonoType*, len);
 		for (i = 0; i < len; ++i) {
+			gboolean pinned = FALSE;
 			int val;
 			int align;
 			const char *p = ptr;
 			val = mono_metadata_decode_blob_size (ptr, &ptr);
-			/* FIXME: store pinned/byref values */
 			if (val == MONO_TYPE_PINNED) {
 				p = ptr;
+				pinned = TRUE;
 				val = mono_metadata_decode_blob_size (ptr, &ptr);
 			}
 			if (val == MONO_TYPE_BYREF) {
 				p = ptr;
 			}
 			mh->locals [i] = mono_metadata_parse_type (m, p, &ptr);
+
+			if (pinned) 
+				mh->locals [i]->constraint = MONO_TYPE_PINNED;
+			if (val == MONO_TYPE_BYREF) 
+				mh->locals [i]->byref = 1;
+
 			val = mono_type_size (mh->locals [i], &align);
 			offset += (offset % align);
 			offset += val;
@@ -1580,6 +1576,9 @@ mono_type_size (MonoType *t, gint *align)
 	}
 
 	switch (t->type){
+	case MONO_TYPE_VOID:
+		*align = 0;
+		return 0;
 	case MONO_TYPE_BOOLEAN:
 		*align = __alignof__(char);
 		return sizeof (char);
@@ -1631,6 +1630,7 @@ mono_type_size (MonoType *t, gint *align)
 		/*
 		 * FIXME: very bogus value
 		 */
+		g_warning ("fixme: wrong size for value type");
 		return 4;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
@@ -1643,5 +1643,120 @@ mono_type_size (MonoType *t, gint *align)
 		g_error ("type 0x%02x unknown", t->type);
 	}
 	return 0;
+}
+
+static gboolean
+mono_metadata_type_token_equal (MonoMetadata *m1, guint32 token1, 
+				MonoMetadata *m2, guint32 token2)
+{
+	int table1 = mono_metadata_token_table (token1);
+	int index1 = mono_metadata_token_index (token1);
+	int table2 = mono_metadata_token_table (token2);
+	int index2 = mono_metadata_token_index (token2);
+	guint32 cols[MAX (MONO_TYPEDEF_SIZE, MONO_TYPEREF_SIZE)];
+	const char *name1, *nspace1;
+	const char *name2, *nspace2;
+
+	switch (table1) {
+	case MONO_TABLE_TYPEDEF:
+		mono_metadata_decode_row (&m1->tables [table1], index1 - 1, cols, MONO_TYPEDEF_SIZE);
+		name1 = mono_metadata_string_heap (m1, cols [MONO_TYPEDEF_NAME]);
+		nspace1 = mono_metadata_string_heap (m1, cols [MONO_TYPEDEF_NAMESPACE]);
+		break;
+	case MONO_TABLE_TYPEREF:
+		mono_metadata_decode_row (&m1->tables [table1], index1 - 1, cols, MONO_TYPEREF_SIZE);
+		name1 = mono_metadata_string_heap (m1, cols [MONO_TYPEREF_NAME]);
+		nspace1 = mono_metadata_string_heap (m1, cols [MONO_TYPEREF_NAMESPACE]);
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+
+
+	switch (table2) {
+	case MONO_TABLE_TYPEDEF:
+		mono_metadata_decode_row (&m2->tables [table2], index2 - 1, cols, MONO_TYPEDEF_SIZE);
+		name2 = mono_metadata_string_heap (m2, cols [MONO_TYPEDEF_NAME]);
+		nspace2 = mono_metadata_string_heap (m2, cols [MONO_TYPEDEF_NAMESPACE]);
+		break;
+	case MONO_TABLE_TYPEREF:
+		mono_metadata_decode_row (&m2->tables [table2], index2 -1, cols, MONO_TYPEREF_SIZE);
+		name2 = mono_metadata_string_heap (m2, cols [MONO_TYPEREF_NAME]);
+		nspace2 = mono_metadata_string_heap (m2, cols [MONO_TYPEREF_NAMESPACE]);
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+
+
+	if (strcmp (nspace1, nspace2))
+		return FALSE;
+
+	if (strcmp (name1, name2))
+		return FALSE;
+
+	return TRUE;
+}
+
+static gboolean
+mono_metadata_type_equal (MonoMetadata *m1, MonoType *t1, MonoMetadata *m2, MonoType *t2)
+{
+	if (t1->type != t2->type ||
+	    t1->byref != t2->byref)
+		return FALSE;
+
+	switch (t1->type) {
+	case MONO_TYPE_VOID:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_OBJECT:
+		break;
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS:
+		return mono_metadata_type_token_equal (m1, t1->data.token, m2, t2->data.token);
+	default:
+		g_error ("implement type compare for %0x!", t1->type);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+gboolean
+mono_metadata_signature_equal (MonoMetadata *m1, MonoMethodSignature *sig1, 
+			       MonoMetadata *m2, MonoMethodSignature *sig2)
+{
+	int i;
+
+	if (sig1->hasthis != sig2->hasthis ||
+	    sig1->param_count != sig2->param_count)
+		return FALSE;
+
+	for (i = 0; i < sig1->param_count; i++) { 
+		MonoParam *p1 = sig1->params[i];
+		MonoParam *p2 = sig2->params[i];
+		
+		if (p1->param_attrs != p2->param_attrs ||
+		    p1->typedbyref !=  p2->typedbyref)
+			return FALSE;
+		
+		if (!mono_metadata_type_equal (m1, p1->type, m2, p2->type))
+			return FALSE;
+	}
+
+	return TRUE;
 }
 

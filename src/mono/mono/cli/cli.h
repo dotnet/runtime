@@ -4,13 +4,12 @@
 #include <ffi.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
-#include <mono/cli/object.h>
 
 typedef struct {
 	guint16 flags;  /* method flags */
 	guint16 iflags; /* method implementation flags */
 	MonoImage *image;
-	MonoMethodSignature  *signature;
+	MonoMethodSignature *signature;
 	gpointer addr;
 	/* name is useful mostly for debugging */
 	const char *name; 

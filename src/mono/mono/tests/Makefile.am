@@ -13,7 +13,8 @@ TESTSRC=			\
 	exception.cs		\
 	struct.cs		\
 	pinvoke.cs		\
-	array.cs
+	array.cs		\
+	stream.cs
 
 TESTS=				\
 	test-ops.exe		\
@@ -26,7 +27,8 @@ TESTS=				\
 	exception.exe		\
 	struct.exe		\
 	pinvoke.exe		\
-	array.exe
+	array.exe		\
+	stream.exe
 
 EXTRA_DIST=test-driver $(TESTSRC)
 
