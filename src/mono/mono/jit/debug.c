@@ -1067,8 +1067,14 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 			if (end_offset >= 0)
 				end_offset++;
 
-			begin_scope = address_from_il_offset (minfo, begin_offset);
-			end_scope = address_from_il_offset (minfo, end_offset);
+			if (begin_offset >= 0)
+				begin_scope = address_from_il_offset (minfo, begin_offset);
+			else
+				begin_scope = -1;
+			if (end_offset >= 0)
+				end_scope = address_from_il_offset (minfo, end_offset);
+			else
+				end_scope = -1;
 
 			if (begin_scope > 0)
 				locals [i].begin_scope = begin_scope;
