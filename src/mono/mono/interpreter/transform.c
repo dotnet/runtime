@@ -692,9 +692,11 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 	}
 
 	while (td.ip < end) {
+		int in_offset;
+
 		g_assert (td.sp >= td.stack);
 		g_assert (td.vt_sp < 0x10000000);
-		int in_offset = td.ip - header->code;
+		in_offset = td.ip - header->code;
 		td.in_offsets [in_offset] = td.new_ip - td.new_code;
 		new_in_start_offset = td.new_ip - td.new_code;
 		td.in_start = td.ip;
