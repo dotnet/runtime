@@ -3558,6 +3558,345 @@
             <maintainer>miguel@ximian.com</maintainer>
         </maintainers>
     </class>
-  
+
+    <class name="System.Web.UI.WebControls.AdCreatedEventArgs">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.AdCreatedEventHandler">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.AdRotator">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.BaseDataList">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.BaseValidator">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.BorderStyle">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.ButtonColumnType">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.CalendarSelectionMode">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.DataList">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.DayNameFormat">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.FirstDayOfWeek">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.FontInfo">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.FontSize">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.GridLines">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.HorizontalAlign">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.HyperLink">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.ImageAlign">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.IRepeatInfoUser">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.ListItemType">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.ListSelectionMode">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.NextPrevFormat">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.PagerMode">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.PagerPosition">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.RepeatDirection">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.RepeatLayout">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.TextAlign">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.TextBoxMode">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.TitleFormat">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.UnitType">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.ValidationCompareOperator">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.ValidationDataType">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.ValidationSummaryDisplayMode">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.ValidatorDisplay">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Web.UI.WebControls.VerticalAlign">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>gvaish@iitk.ac.in</maintainer>
+        </maintainers>
+    </class>
 </classes>
 
