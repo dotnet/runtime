@@ -11,6 +11,8 @@
  *
  * Taken from the FreeBSD distribution.
  */
+#include <glib.h>
+
 #include "strtod.h"
 
 /*-
@@ -141,20 +143,13 @@ static char sccsid[] = "@(#)strtod.c	8.1 (Berkeley) 6/4/93";
 #if defined(i386) || defined(mips) && defined(MIPSEL) || defined (__arm__)
 
 #define IEEE_8087
-#define Long long
 
 #elif defined(__x86_64__)
 
 #define IEEE_8087
-#define Long int
 
 #elif defined(__ia64)
 
-# ifndef __LP64__
-#  define Long long
-# else
-#  define Long int
-# endif
 # ifdef __hpux
 #  define IEEE_MC68k
 # else
@@ -164,18 +159,13 @@ static char sccsid[] = "@(#)strtod.c	8.1 (Berkeley) 6/4/93";
 #elif defined(__hppa)
 
 # define IEEE_MC68k
-# ifndef __LP64__
-#  define Long long
-# else
-#  define Long int
-# endif
 
 #else
 #define IEEE_MC68k
-#define Long long
 #endif
 
-#define ULong unsigned Long
+#define Long gint32
+#define ULong guint32
 
 #ifdef DEBUG
 #include "stdio.h"
