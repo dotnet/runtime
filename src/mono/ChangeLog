@@ -1,3 +1,7 @@
+2004-01-15  Zoltan Varga  <vargaz@freemail.hu>
+
+	* runtime/Makefile.am: Add al.exe.
+
 2004-01-10  Jackson Harper <jackson@ximian.com>
 
 	* data/machine.config: Add trace handler (Trace.axd) add trace
