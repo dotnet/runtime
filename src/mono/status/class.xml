@@ -1048,9 +1048,9 @@
 
     <class name="System.UriFormatException">
         <last-activity>Jun-16-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>85</completion>
         <maintainers>
             <maintainer>scott@stonecobra.com</maintainer>
         </maintainers>
@@ -1077,8 +1077,8 @@
   
     <class name="System.Collections.BitArray">
         <last-activity>Jun-16-2001</last-activity>
-        <implementation>no</implementation>
-        <test-suite>no</test-suite>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
         <completion>?</completion>
         <maintainers>
             <maintainer>dmenest@yahoo.com</maintainer>

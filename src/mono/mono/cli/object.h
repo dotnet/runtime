@@ -2,7 +2,10 @@
 #define _MONO_CLI_OBJECT_H_
 
 typedef struct {
-	void *klass;
+} MonoClass;
+
+typedef struct {
+	MonoClass *klass;
 } MonoObject;
 
 #endif
