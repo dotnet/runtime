@@ -3073,6 +3073,17 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 }	
 
 /*
+ * mono_class_get_cctor:
+ *
+ *   Returns the static constructor of @klass if it exists, NULL otherwise.
+ */
+MonoMethod*
+mono_class_get_cctor (MonoClass *klass)
+{
+	return mono_class_get_method_from_name_flags (klass, ".cctor", -1, METHOD_ATTRIBUTE_SPECIAL_NAME);
+}
+
+/*
  * mono_class_needs_cctor_run:
  *
  *  Determines whenever the class has a static constructor and whenever it
@@ -3081,19 +3092,13 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 gboolean
 mono_class_needs_cctor_run (MonoClass *klass, MonoMethod *caller)
 {
-	int i;
 	MonoMethod *method;
-	
-	for (i = 0; i < klass->method.count; ++i) {
-		method = klass->methods [i];
-		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
-		    (strcmp (".cctor", method->name) == 0)) {
-			if (caller == method)
-				return FALSE;
-			return TRUE;
-		}
-	}
-	return FALSE;
+
+	method = mono_class_get_cctor (klass);
+	if (method)
+		return (method == caller) ? FALSE : TRUE;
+	else
+		return TRUE;
 }
 
 /**
@@ -3895,7 +3900,7 @@ mono_event_get_flags (MonoEvent *event)
 }
 
 /**
- * mono_find_method_by_name:
+ * mono_class_get_method_from_name:
  * @klass: where to look for the method
  * @name_space: name of the method
  * @param_count: number of parameters. -1 for any number.
@@ -3906,16 +3911,35 @@ mono_event_get_flags (MonoEvent *event)
 MonoMethod *
 mono_class_get_method_from_name (MonoClass *klass, const char *name, int param_count)
 {
+	return mono_class_get_method_from_name_flags (klass, name, param_count, 0);
+}
+
+/**
+ * mono_class_get_method_from_name_flags:
+ * @klass: where to look for the method
+ * @name_space: name of the method
+ * @param_count: number of parameters. -1 for any number.
+ * @flags: flags which must be set in the method
+ *
+ * Obtains a MonoMethod with a given name and number of parameters.
+ * It only works if there are no multiple signatures for any given method name.
+ */
+MonoMethod *
+mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int param_count, int flags)
+{
 	MonoMethod *res = NULL;
 	int i;
 
 	mono_class_init (klass);
 
 	for (i = 0; i < klass->method.count; ++i) {
-		if (klass->methods [i]->name[0] == name [0] && 
-		    !strcmp (name, klass->methods [i]->name) &&
-		    (param_count == -1 || mono_method_signature (klass->methods [i])->param_count == param_count)) {
-			res = klass->methods [i];
+		MonoMethod *method = klass->methods [i];
+
+		if (method->name[0] == name [0] && 
+		    !strcmp (name, method->name) &&
+		    (param_count == -1 || mono_method_signature (method)->param_count == param_count) &&
+			((method->flags & flags) == flags)) {
+			res = method;
 			break;
 		}
 	}

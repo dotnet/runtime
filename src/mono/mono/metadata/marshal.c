@@ -870,12 +870,7 @@ mono_mb_emit_exception (MonoMethodBuilder *mb, const char *exc_name, const char 
 	MonoClass *mme = mono_class_from_name (mono_defaults.corlib, "System", exc_name);
 	int i;
 	mono_class_init (mme);
-	for (i = 0; i < mme->method.count; ++i) {
-		if (strcmp (mme->methods [i]->name, ".ctor") == 0 && mono_method_signature (mme->methods [i])->param_count == 0) {
-			ctor = mme->methods [i];
-			break;
-		}
-	}
+	ctor = mono_class_get_method_from_name (mme, ".ctor", 0);
 	g_assert (ctor);
 	mono_mb_emit_byte (mb, CEE_NEWOBJ);
 	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, ctor));
@@ -1443,7 +1438,7 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 	MonoObject *state;
 	MonoMethod *im;
 	MonoClass *klass;
-	MonoMethod *method = NULL;
+	MonoMethod *method = NULL, *method2 = NULL;
 	int i;
 
 	g_assert (delegate);
@@ -1478,14 +1473,9 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 	klass = delegate->object.vtable->klass;
 
 	method = mono_get_delegate_invoke (klass);
-	for (i = 0; i < klass->method.count; ++i) {
-		if (klass->methods [i]->name[0] == 'B' && 
-		    !strcmp ("BeginInvoke", klass->methods [i]->name)) {
-			method = klass->methods [i];
-			break;
-		}
-	}
-
+	method2 = mono_class_get_method_from_name (klass, "BeginInvoke", -1);
+	if (method2)
+		method = method2;
 	g_assert (method != NULL);
 
 	im = mono_get_delegate_invoke (method->klass);
@@ -1860,14 +1850,7 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 
 	klass = delegate->object.vtable->klass;
 
-	for (i = 0; i < klass->method.count; ++i) {
-		if (klass->methods [i]->name[0] == 'E' && 
-		    !strcmp ("EndInvoke", klass->methods [i]->name)) {
-			method = klass->methods [i];
-			break;
-		}
-	}
-
+	method = mono_class_get_method_from_name (klass, "EndInvoke", -1);
 	g_assert (method != NULL);
 
 	sig = signature_no_pinvoke (mono_method_signature (method));

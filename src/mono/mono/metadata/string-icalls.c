@@ -202,7 +202,7 @@ ves_icall_System_String_ctor_encoding (gpointer dummy, gint8 *value, gint32 sind
 	arr = mono_array_new (domain, mono_defaults.byte_class, length);
 	memcpy (mono_array_addr (arr, guint8*, 0), value + sindex, length);
 
-	get_string = mono_find_method_by_name (enc->vtable->klass, "GetString", 1);
+	get_string = mono_class_get_method_from_name (enc->vtable->klass, "GetString", 1);
 	args [0] = arr;
 	s = (MonoString*)mono_runtime_invoke (get_string, enc, args, &exc);
 	if (!s || exc)

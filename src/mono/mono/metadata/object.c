@@ -50,18 +50,10 @@ mono_ldstr_metdata_sig (MonoDomain *domain, const char* sig);
 void
 mono_runtime_object_init (MonoObject *this)
 {
-	int i;
 	MonoMethod *method = NULL;
 	MonoClass *klass = this->vtable->klass;
 
-	for (i = 0; i < klass->method.count; ++i) {
-		if (!strcmp (".ctor", klass->methods [i]->name) &&
-		    mono_method_signature (klass->methods [i])->param_count == 0) {
-			method = klass->methods [i];
-			break;
-		}
-	}
-
+	method = mono_class_get_method_from_name (klass, ".ctor", 0);
 	g_assert (method);
 
 	if (method->klass->valuetype)
@@ -150,13 +142,11 @@ mono_type_initialization_init (void)
 void
 mono_runtime_class_init (MonoVTable *vtable)
 {
-	int i;
 	MonoException *exc;
 	MonoException *exc_to_throw;
 	MonoMethod *method = NULL;
 	MonoClass *klass;
 	gchar *full_name;
-	gboolean found;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -164,19 +154,11 @@ mono_runtime_class_init (MonoVTable *vtable)
 		return;
 
 	exc = NULL;
-	found = FALSE;
 	klass = vtable->klass;
 
-	for (i = 0; i < klass->method.count; ++i) {
-		method = klass->methods [i];
-		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
-		    (strcmp (".cctor", method->name) == 0)) {
-			found = TRUE;
-			break;
-		}
-	}
+	method = mono_class_get_cctor (klass);
 
-	if (found) {
+	if (method) {
 		MonoDomain *domain = vtable->domain;
 		TypeInitializationLock *lock;
 		guint32 tid = GetCurrentThreadId();
@@ -1471,17 +1453,8 @@ MonoMethod *
 mono_get_delegate_invoke (MonoClass *klass)
 {
 	MonoMethod *im;
-	int i;
 
-	im = NULL;
-
-	for (i = 0; i < klass->method.count; ++i) {
-		if (klass->methods [i]->name[0] == 'I' && 
-		    !strcmp ("Invoke", klass->methods [i]->name)) {
-			im = klass->methods [i];
-		}
-	}
-
+	im = mono_class_get_method_from_name (klass, "Invoke", -1);
 	g_assert (im);
 
 	return im;
@@ -1666,7 +1639,6 @@ create_unhandled_exception_eventargs (MonoObject *exc)
 	MonoMethod *method = NULL;
 	MonoBoolean is_terminating = TRUE;
 	MonoObject *obj;
-	gint i;
 
 	klass = mono_class_from_name (mono_defaults.corlib, "System", "UnhandledExceptionEventArgs");
 	g_assert (klass);
@@ -1674,15 +1646,7 @@ create_unhandled_exception_eventargs (MonoObject *exc)
 	mono_class_init (klass);
 
 	/* UnhandledExceptionEventArgs only has 1 public ctor with 2 args */
-	for (i = 0; i < klass->method.count; ++i) {
-		method = klass->methods [i];
-		if (!strcmp (".ctor", method->name) &&
-		    mono_method_signature (method)->param_count == 2 &&
-		    method->flags & METHOD_ATTRIBUTE_PUBLIC)
-			break;
-		method = NULL;
-	}
-
+	method = mono_class_get_method_from_name_flags (klass, ".ctor", 2, METHOD_ATTRIBUTE_PUBLIC);
 	g_assert (method);
 
 	args [0] = exc;
@@ -2024,18 +1988,11 @@ mono_object_new_specific (MonoVTable *vtable)
 
 		if (im == NULL) {
 			MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Activation", "ActivationServices");
-			int i;
 
 			if (!klass->inited)
 				mono_class_init (klass);
 
-			for (i = 0; i < klass->method.count; ++i) {
-				if (!strcmp ("CreateProxyForType", klass->methods [i]->name) &&
-					mono_method_signature (klass->methods [i])->param_count == 1) {
-					im = klass->methods [i];
-					break;
-				}
-			}
+			im = mono_class_get_method_from_name (klass, "CreateProxyForType", 1);
 			g_assert (im);
 			vtable->domain->create_proxy_for_type_method = im;
 		}
@@ -2699,15 +2656,8 @@ mono_object_isinst_mbyref (MonoObject *obj, MonoClass *klass)
 		MonoClass *rpklass = mono_defaults.iremotingtypeinfo_class;
 		MonoMethod *im = NULL;
 		gpointer pa [2];
-		int i;
-	
-		for (i = 0; i < rpklass->method.count; ++i) {
-			if (!strcmp ("CanCastTo", rpklass->methods [i]->name)) {
-				im = rpklass->methods [i];
-				break;
-			}
-		}
-	
+
+		im = mono_class_get_method_from_name (rpklass, "CanCastTo", -1);
 		im = mono_object_get_virtual_method (rp, im);
 		g_assert (im);
 	
@@ -3131,19 +3081,7 @@ mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg,
 	/*static MonoObject *(*invoke) (gpointer, gpointer, MonoObject **, MonoArray **) = NULL;*/
 
 	if (!im) {
-		MonoClass *klass;
-		int i;
-
-		klass = mono_defaults.real_proxy_class; 
-		       
-		for (i = 0; i < klass->method.count; ++i) {
-			if (!strcmp ("PrivateInvoke", klass->methods [i]->name) &&
-			    mono_method_signature (klass->methods [i])->param_count == 4) {
-				im = klass->methods [i];
-				break;
-			}
-		}
-	
+		im = mono_class_get_method_from_name (mono_defaults.real_proxy_class, "PrivateInvoke", 4);
 		g_assert (im);
 		real_proxy->vtable->domain->private_invoke_method = im;
 	}
@@ -3216,23 +3154,12 @@ mono_print_unhandled_exception (MonoObject *exc)
 	MonoMethod *method;
 	MonoClass *klass;
 	gboolean free_message = FALSE;
-	gint i;
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		klass = exc->vtable->klass;
 		method = NULL;
 		while (klass && method == NULL) {
-			for (i = 0; i < klass->method.count; ++i) {
-				method = klass->methods [i];
-				if (!strcmp ("ToString", method->name) &&
-				    mono_method_signature (method)->param_count == 0 &&
-				    method->flags & METHOD_ATTRIBUTE_VIRTUAL &&
-				    method->flags & METHOD_ATTRIBUTE_PUBLIC) {
-					break;
-				}
-				method = NULL;
-			}
-			
+			method = mono_class_get_method_from_name_flags (klass, "ToString", 0, METHOD_ATTRIBUTE_VIRTUAL | METHOD_ATTRIBUTE_PUBLIC);
 			if (method == NULL)
 				klass = klass->parent;
 		}
@@ -3449,16 +3376,7 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 	}
 	
 	if (!getter) {
-		int i;
-
-		for (i = 0; i < mono_defaults.object_class->method.count; ++i) {
-			MonoMethod *cm = mono_defaults.object_class->methods [i];
-	       
-			if (!strcmp (cm->name, "FieldGetter")) {
-				getter = cm;
-				break;
-			}
-		}
+		getter = mono_class_get_method_from_name (mono_defaults.object_class, "FieldGetter", -1);
 		g_assert (getter);
 	}
 	
@@ -3519,16 +3437,7 @@ mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *
 	}
 
 	if (!getter) {
-		int i;
-
-		for (i = 0; i < mono_defaults.object_class->method.count; ++i) {
-			MonoMethod *cm = mono_defaults.object_class->methods [i];
-	       
-			if (!strcmp (cm->name, "FieldGetter")) {
-				getter = cm;
-				break;
-			}
-		}
+		getter = mono_class_get_method_from_name (mono_defaults.object_class, "FieldGetter", -1);
 		g_assert (getter);
 	}
 	
@@ -3582,16 +3491,7 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 	}
 
 	if (!setter) {
-		int i;
-
-		for (i = 0; i < mono_defaults.object_class->method.count; ++i) {
-			MonoMethod *cm = mono_defaults.object_class->methods [i];
-	       
-			if (!strcmp (cm->name, "FieldSetter")) {
-				setter = cm;
-				break;
-			}
-		}
+		setter = mono_class_get_method_from_name (mono_defaults.object_class, "FieldSetter", -1);
 		g_assert (setter);
 	}
 
@@ -3644,16 +3544,7 @@ mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField 
 	}
 
 	if (!setter) {
-		int i;
-
-		for (i = 0; i < mono_defaults.object_class->method.count; ++i) {
-			MonoMethod *cm = mono_defaults.object_class->methods [i];
-	       
-			if (!strcmp (cm->name, "FieldSetter")) {
-				setter = cm;
-				break;
-			}
-		}
+		setter = mono_class_get_method_from_name (mono_defaults.object_class, "FieldSetter", -1);
 		g_assert (setter);
 	}
 
