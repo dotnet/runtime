@@ -74,9 +74,6 @@ typedef enum
 #define AMD64_CALLEE_SAVED_REGS ((1<<AMD64_RBX) | (1<<AMD64_R12) | (1<<AMD64_R13) | (1<<AMD64_R14) | (1<<AMD64_R15))
 #define AMD64_IS_CALLEE_SAVED_REG(reg) (AMD64_CALLEE_SAVED_REGS & (1 << (reg)))
 
-#define AMD64_BYTE_REGS ((1 << AMD64_RAX) | (1 << AMD64_RBX) | (1 << AMD64_RCX) | (1 << AMD64_RDX))
-#define AMD64_IS_BYTE_REG(reg) (AMD64_BYTE_REGS & (1 << (reg)))
-
 #define AMD64_REX(bits) ((unsigned char)(0x40 | (bits)))
 #define amd64_emit_rex(inst, width, reg_modrm, reg_index, reg_rm_base_opcode) do \
 	{ \
@@ -85,7 +82,7 @@ typedef enum
 			(((reg_modrm) > 7) ? AMD64_REX_R : 0) | \
 			(((reg_index) > 7) ? AMD64_REX_X : 0) | \
 			(((reg_rm_base_opcode) > 7) ? AMD64_REX_B : 0); \
-		if (_amd64_rex_bits != 0) *(inst)++ = AMD64_REX(_amd64_rex_bits); \
+		if ((_amd64_rex_bits != 0) || ((width == 1))) *(inst)++ = AMD64_REX(_amd64_rex_bits); \
 	} while (0)
 
 typedef union {
@@ -95,68 +92,9 @@ typedef union {
 
 #include "../x86/x86-codegen.h"
 
+/* In 64 bit mode, all registers have a low byte subregister */
 #undef X86_IS_BYTE_REG
 #define X86_IS_BYTE_REG(reg) 1
-
-/* Need to fill this info in for amd64. */
-
-#if 0
-/*
-// bitvector mask for callee-saved registers
-*/
-#define X86_ESI_MASK (1<<X86_ESI)
-#define X86_EDI_MASK (1<<X86_EDI)
-#define X86_EBX_MASK (1<<X86_EBX)
-#define X86_EBP_MASK (1<<X86_EBP)
-
-#define X86_CALLEE_REGS ((1<<X86_EAX) | (1<<X86_ECX) | (1<<X86_EDX))
-#define X86_CALLER_REGS ((1<<X86_EBX) | (1<<X86_EBP) | (1<<X86_ESI) | (1<<X86_EDI))
-#define X86_BYTE_REGS   ((1<<X86_EAX) | (1<<X86_ECX) | (1<<X86_EDX) | (1<<X86_EBX))
-
-#define X86_IS_SCRATCH(reg) (X86_CALLER_REGS & (1 << (reg))) /* X86_EAX, X86_ECX, or X86_EDX */
-#define X86_IS_CALLEE(reg)  (X86_CALLEE_REGS & (1 << (reg))) 	/* X86_ESI, X86_EDI, X86_EBX, or X86_EBP */
-
-#define X86_IS_BYTE_REG(reg) ((reg) < 4)
-
-/*
-// Frame structure:
-//
-//      +--------------------------------+
-//      | in_arg[0]       = var[0]	     |
-//      | in_arg[1]	      = var[1]	     |
-//      |	      . . .			         |
-//      | in_arg[n_arg-1] = var[n_arg-1] |
-//      +--------------------------------+
-//      |       return IP                |
-//      +--------------------------------+
-//      |       saved EBP                | <-- frame pointer (EBP)
-//      +--------------------------------+
-//      |            ...                 |  n_extra
-//      +--------------------------------+
-//      |	    var[n_arg]	             |
-//      |	    var[n_arg+1]             |  local variables area
-//      |          . . .                 |
-//      |	    var[n_var-1]             | 
-//      +--------------------------------+
-//      |			                     |
-//      |			                     |  
-//      |		spill area               | area for spilling mimic stack
-//      |			                     |
-//      +--------------------------------|
-//      |          ebx                   |
-//      |          ebp [ESP_Frame only]  |
-//      |	       esi                   |  0..3 callee-saved regs
-//      |          edi                   | <-- stack pointer (ESP)
-//      +--------------------------------+
-//      |	stk0	                     |
-//      |	stk1	                     |  operand stack area/
-//      |	. . .	                     |  out args
-//      |	stkn-1	                     |
-//      +--------------------------------|
-//
-//
-*/
-#endif
 
 #define amd64_modrm_mod(modrm) ((modrm) >> 6)
 #define amd64_modrm_reg(modrm) (((modrm) >> 3) & 0x7)
@@ -725,7 +663,7 @@ typedef union {
 #define amd64_branch32_size(inst,cond,imm,is_signed,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_branch32((inst),(cond),(imm),(is_signed)); } while (0)
 #define amd64_branch_size(inst,cond,target,is_signed,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_branch((inst),(cond),(target),(is_signed)); } while (0)
 #define amd64_branch_disp_size(inst,cond,disp,is_signed,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_branch_disp((inst),(cond),(disp),(is_signed)); } while (0)
-#define amd64_set_reg_size(inst,cond,reg,is_signed,size) do { amd64_emit_rex ((inst),0,0,0,(reg)); x86_set_reg((inst),(cond),((reg)&0x7),(is_signed)); } while (0)
+#define amd64_set_reg_size(inst,cond,reg,is_signed,size) do { amd64_emit_rex((inst),1,0,0,(reg)); x86_set_reg((inst),(cond),((reg)&0x7),(is_signed)); } while (0)
 #define amd64_set_mem_size(inst,cond,mem,is_signed,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_set_mem((inst),(cond),(mem),(is_signed)); } while (0)
 #define amd64_set_membase_size(inst,cond,basereg,disp,is_signed,size) do { amd64_emit_rex ((inst),(size),0,0,(basereg)); x86_set_membase((inst),(cond),((basereg)&0x7),(disp),(is_signed)); } while (0)
 #define amd64_call_imm_size(inst,disp,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_call_imm((inst),(disp)); } while (0)
