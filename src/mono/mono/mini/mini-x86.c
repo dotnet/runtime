@@ -2638,10 +2638,41 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ABS:
 			x86_fabs (code);
 			break;		
-		case OP_TAN:
+		case OP_TAN: {
+			/* 
+			 * it really doesn't make sense to inline all this code,
+			 * it's here just to show that things may not be as simple 
+			 * as they appear.
+			 */
+			guchar *check_pos, *end_tan, *pop_jump;
+			x86_push_reg (code, X86_EAX);
 			x86_fptan (code);
-			break;		
+			x86_fnstsw (code);
+			x86_test_reg_imm (code, X86_EAX, 0x400);
+			check_pos = code;
+			x86_branch8 (code, X86_CC_NE, 0, FALSE);
+			x86_fstp (code, 0); /* pop the 1.0 */
+			end_tan = code;
+			x86_jump8 (code, 0);
+			x86_fldpi (code);
+			x86_fp_op (code, X86_FADD, 0);
+			x86_fxch (code, 1);
+			x86_fprem1 (code);
+			x86_fstsw (code);
+			x86_test_reg_imm (code, X86_EAX, 0x400);
+			pop_jump = code;
+			x86_branch8 (code, X86_CC_NE, 0, FALSE);
+			x86_fstp (code, 1);
+			x86_fptan (code);
+			x86_patch (pop_jump, code);
+			x86_fstp (code, 0); /* pop the 1.0 */
+			x86_patch (check_pos, code);
+			x86_patch (end_tan, code);
+			x86_pop_reg (code, X86_EAX);
+			break;
+		}
 		case OP_ATAN:
+			x86_fld1 (code);
 			x86_fpatan (code);
 			break;		
 		case OP_SQRT:
