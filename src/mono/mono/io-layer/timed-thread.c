@@ -254,6 +254,8 @@ int _wapi_timed_thread_join(TimedThread *thread, struct timespec *timeout,
 		if(exitstatus!=NULL) {
 			*exitstatus = thread->exitstatus;
 		}
+
+		_wapi_timed_thread_destroy (thread);
 	}
 	return(result);
 }
