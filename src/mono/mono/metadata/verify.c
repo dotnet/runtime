@@ -686,7 +686,7 @@ enum {
 	TYPE_MAX = 8
 };
 
-static const char* 
+static const char*  const
 arg_name [TYPE_MAX] = {
 	"Invalid",
 	"Int32",

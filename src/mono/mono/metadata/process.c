@@ -97,6 +97,22 @@ static guint32 unicode_bytes (const gunichar2 *str)
 	} while(1);
 }
 
+/* 
+ * compare a null-terminated utf16 string and a normal string.
+ * Can be used only for ascii or latin1 chars.
+ */
+static gboolean
+unicode_string_equals (const gunichar2 *str1, const guchar *str2)
+{
+	while (*str1 && *str2) {
+		if (*str1 != *str2)
+			return FALSE;
+		++str1;
+		++str2;
+	}
+	return *str1 == *str2;
+}
+
 static void process_set_field_object (MonoObject *obj, const guchar *fieldname,
 				      MonoObject *data)
 {
@@ -242,65 +258,7 @@ static gpointer process_read_string_block (MonoObject *filever,
 {
 	version_data block;
 	guint16 string_len=0;
-	guchar comments_key[]= {'C', '\0', 'o', '\0', 'm', '\0',
-				'm', '\0', 'e', '\0', 'n', '\0',
-				't', '\0', 's', '\0', '\0', '\0'};
-	guchar compname_key[]= {'C', '\0', 'o', '\0', 'm', '\0',
-				'p', '\0', 'a', '\0', 'n', '\0',
-				'y', '\0', 'N', '\0', 'a', '\0',
-				'm', '\0', 'e', '\0', '\0', '\0'};
-	guchar filedesc_key[]= {'F', '\0', 'i', '\0', 'l', '\0',
-				'e', '\0', 'D', '\0', 'e', '\0',
-				's', '\0', 'c', '\0', 'r', '\0',
-				'i', '\0', 'p', '\0', 't', '\0',
-				'i', '\0', 'o', '\0', 'n', '\0',
-				'\0', '\0'};
-	guchar filever_key[]= {'F', '\0', 'i', '\0', 'l', '\0',
-			       'e', '\0', 'V', '\0', 'e', '\0',
-			       'r', '\0', 's', '\0', 'i', '\0',
-			       'o', '\0', 'n', '\0', '\0', '\0'};
-	guchar internal_key[]= {'I', '\0', 'n', '\0', 't', '\0',
-				'e', '\0', 'r', '\0', 'n', '\0',
-				'a', '\0', 'l', '\0', 'N', '\0',
-				'a', '\0', 'm', '\0', 'e', '\0',
-				'\0', '\0'};
-	guchar legalcpy_key[]= {'L', '\0', 'e', '\0', 'g', '\0',
-				'a', '\0', 'l', '\0', 'C', '\0',
-				'o', '\0', 'p', '\0', 'y', '\0',
-				'r', '\0', 'i', '\0', 'g', '\0',
-				'h', '\0', 't', '\0', '\0', '\0'};
-	guchar legaltrade_key[]= {'L', '\0', 'e', '\0', 'g', '\0',
-				  'a', '\0', 'l', '\0', 'T', '\0',
-				  'r', '\0', 'a', '\0', 'd', '\0',
-				  'e', '\0', 'm', '\0', 'a', '\0',
-				  'r', '\0', 'k', '\0', 's', '\0',
-				  '\0', '\0'};
-	guchar origfile_key[]= {'O', '\0', 'r', '\0', 'i', '\0',
-				'g', '\0', 'i', '\0', 'n', '\0',
-				'a', '\0', 'l', '\0', 'F', '\0',
-				'i', '\0', 'l', '\0', 'e', '\0',
-				'n', '\0', 'a', '\0', 'm', '\0',
-				'e', '\0', '\0', '\0'};
-	guchar privbuild_key[]= {'P', '\0', 'r', '\0', 'i', '\0',
-				 'v', '\0', 'a', '\0', 't', '\0',
-				 'e', '\0', 'B', '\0', 'u', '\0',
-				 'i', '\0', 'l', '\0', 'd', '\0',
-				 '\0', '\0'};
-	guchar prodname_key[]= {'P', '\0', 'r', '\0', 'o', '\0',
-				'd', '\0', 'u', '\0', 'c', '\0',
-				't', '\0', 'N', '\0', 'a', '\0',
-				'm', '\0', 'e', '\0', '\0', '\0'};
-	guchar prodver_key[]= {'P', '\0', 'r', '\0', 'o', '\0',
-			       'd', '\0', 'u', '\0', 'c', '\0',
-			       't', '\0', 'V', '\0', 'e', '\0',
-			       'r', '\0', 's', '\0', 'i', '\0',
-			       'o', '\0', 'n', '\0', '\0', '\0'};
-	guchar specbuild_key[]= {'S', '\0', 'p', '\0', 'e', '\0',
-				 'c', '\0', 'i', '\0', 'a', '\0',
-				 'l', '\0', 'B', '\0', 'u', '\0',
-				 'i', '\0', 'l', '\0', 'd', '\0',
-				 '\0', '\0'};
-	
+
 	/* data_ptr is pointing at an array of one or more String
 	 * blocks with total length (not including alignment padding)
 	 * of data_len.
@@ -331,42 +289,29 @@ static gpointer process_read_string_block (MonoObject *filever,
 		data_ptr=((gunichar2 *)data_ptr)+block.value_len;
 
 		if(store==TRUE) {
-			if(!memcmp (block.key, &comments_key,
-				    unicode_bytes (block.key))) {
-
+			if (unicode_string_equals (block.key, "Comments")) {
 				process_set_field_string (filever, "comments", value, unicode_chars (value));
-			} else if (!memcmp (block.key, &compname_key,
-					    unicode_bytes (block.key))) {
+			} else if (unicode_string_equals (block.key, "CompanyName")) {
 				process_set_field_string (filever, "companyname", value, unicode_chars (value));
-			} else if (!memcmp (block.key, &filedesc_key,
-					    unicode_bytes (block.key))) {
+			} else if (unicode_string_equals (block.key, "FileDescription")) {
 				process_set_field_string (filever, "filedescription", value, unicode_chars (value));
-			} else if (!memcmp (block.key, &filever_key,
-					    unicode_bytes (block.key))) {
+			} else if (unicode_string_equals (block.key, "FileVersion")) {
 				process_set_field_string (filever, "fileversion", value, unicode_chars (value));
-			} else if (!memcmp (block.key, &internal_key,
-					    unicode_bytes (block.key))) {
+			} else if (unicode_string_equals (block.key, "InternalName")) {
 				process_set_field_string (filever, "internalname", value, unicode_chars (value));
-			} else if (!memcmp (block.key, &legalcpy_key,
-					    unicode_bytes (block.key))) {
+			} else if (unicode_string_equals (block.key, "LegalCopyright")) {
 				process_set_field_string (filever, "legalcopyright", value, unicode_chars (value));
-			} else if (!memcmp (block.key, &legaltrade_key,
-					    unicode_bytes (block.key))) {
+			} else if (unicode_string_equals (block.key, "LegalTrademarks")) {
 				process_set_field_string (filever, "legaltrademarks", value, unicode_chars (value));
-			} else if (!memcmp (block.key, &origfile_key,
-					    unicode_bytes (block.key))) {
+			} else if (unicode_string_equals (block.key, "OriginalFilename")) {
 				process_set_field_string (filever, "originalfilename", value, unicode_chars (value));
-			} else if (!memcmp (block.key, &privbuild_key,
-					    unicode_bytes (block.key))) {
+			} else if (unicode_string_equals (block.key, "PrivateBuild")) {
 				process_set_field_string (filever, "privatebuild", value, unicode_chars (value));
-			} else if (!memcmp (block.key, &prodname_key,
-					    unicode_bytes (block.key))) {
+			} else if (unicode_string_equals (block.key, "ProductName")) {
 				process_set_field_string (filever, "productname", value, unicode_chars (value));
-			} else if (!memcmp (block.key, &prodver_key,
-					    unicode_bytes (block.key))) {
+			} else if (unicode_string_equals (block.key, "ProductVersion")) {
 				process_set_field_string (filever, "productversion", value, unicode_chars (value));
-			} else if (!memcmp (block.key, &specbuild_key,
-					    unicode_bytes (block.key))) {
+			} else if (unicode_string_equals (block.key, "SpecialBuild")) {
 				process_set_field_string (filever, "specialbuild", value, unicode_chars (value));
 			} else {
 				/* Not an error, just not interesting
@@ -493,21 +438,7 @@ static void process_get_fileversion (MonoObject *filever, MonoImage *image)
 	gpointer data_ptr;
 	version_data block;
 	gint32 data_len; /* signed to guard against underflow */
-	guchar vs_key[]= {'V', '\0', 'S', '\0', '_', '\0', 'V', '\0',
-			  'E', '\0', 'R', '\0', 'S', '\0', 'I', '\0',
-			  'O', '\0', 'N', '\0', '_', '\0', 'I', '\0',
-			  'N', '\0', 'F', '\0', 'O', '\0', '\0', '\0'
-	};
-	guchar var_key[]= {'V', '\0', 'a', '\0', 'r', '\0', 'F', '\0',
-			   'i', '\0', 'l', '\0', 'e', '\0', 'I', '\0',
-			   'n', '\0', 'f', '\0', 'o', '\0', '\0', '\0', 
-	};
-	guchar str_key[]= {'S', '\0', 't', '\0', 'r', '\0', 'i', '\0',
-			   'n', '\0', 'g', '\0', 'F', '\0', 'i', '\0',
-			   'l', '\0', 'e', '\0', 'I', '\0', 'n', '\0',
-			   'f', '\0', 'o', '\0', '\0', '\0', 
-	};
-	
+
 	version_info=mono_image_lookup_resource (image,
 						 MONO_PE_RESOURCE_ID_VERSION,
 						 0, NULL);
@@ -543,7 +474,7 @@ static void process_get_fileversion (MonoObject *filever, MonoImage *image)
 		return;
 	}
 
-	if(memcmp (block.key, &vs_key, unicode_bytes (block.key))) {
+	if (!unicode_string_equals (block.key, "VS_VERSION_INFO")) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION
 			   ": VS_VERSION_INFO mismatch");
@@ -589,11 +520,10 @@ static void process_get_fileversion (MonoObject *filever, MonoImage *image)
 		
 		data_len=data_len-block.data_len;
 
-		if(!memcmp (block.key, &var_key, unicode_bytes (block.key))) {
+		if (unicode_string_equals (block.key, "VarFileInfo")) {
 			data_ptr=process_read_var_block (filever, data_ptr,
 							 block.data_len);
-		} else if (!memcmp (block.key, &str_key,
-				    unicode_bytes (block.key))) {
+		} else if (unicode_string_equals (block.key, "StringFileInfo")) {
 			data_ptr=process_read_stringtable_block (filever, data_ptr, block.data_len);
 		} else {
 			/* Bogus data */
