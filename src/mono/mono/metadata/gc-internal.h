@@ -29,6 +29,13 @@ extern void mono_gc_init (void);
 extern void mono_gc_cleanup (void);
 extern void mono_gc_enable (void);
 extern void mono_gc_disable (void);
+
+/*
+ * Return whenever the current thread is registered with the GC (i.e. started
+ * by the GC pthread wrappers on unix.
+ */
+extern gboolean mono_gc_is_gc_thread (void);
+
 /* only valid after the RECLAIM_START GC event and before RECLAIM_END
  * Not exported in public headers, but can be linked to (unsupported).
  */

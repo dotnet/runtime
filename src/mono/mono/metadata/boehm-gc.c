@@ -56,6 +56,16 @@ mono_gc_enable (void)
 #endif
 }
 
+gboolean
+mono_gc_is_gc_thread (void)
+{
+#ifdef USE_INCLUDED_LIBGC
+	return GC_thread_is_registered ();
+#else
+	return TRUE;
+#endif
+}
+
 extern int GC_is_marked (void *p);
 
 gboolean

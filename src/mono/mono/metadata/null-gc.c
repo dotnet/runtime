@@ -45,6 +45,12 @@ mono_gc_enable (void)
 }
 
 gboolean
+mono_gc_is_gc_thread (void)
+{
+	return TRUE;
+}
+
+gboolean
 mono_object_is_alive (MonoObject* o)
 {
 	return TRUE;

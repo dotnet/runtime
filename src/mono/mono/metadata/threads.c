@@ -390,6 +390,10 @@ mono_thread_attach (MonoDomain *domain)
 		return thread;
 	}
 
+	if (!mono_gc_is_gc_thread ()) {
+		g_error ("Thread %p calling into managed code is not registered with the GC. On UNIX, this can be fixed by #include-ing <gc.h> before <pthread.h> in the file containing the thread creation code.", GetCurrentThread ());
+	}
+
 	thread = (MonoThread *)mono_object_new (domain,
 						mono_defaults.thread_class);
 
