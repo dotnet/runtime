@@ -102,6 +102,16 @@
   </tr>
 </table>
 
+@item Apr 5th, 2003: New compilation engine.
+
+	The new Mono compilation engine has been placed on CVS, the
+	details are <a
+	href="http://lists.ximian.com/archives/public/mono-list/2003-April/013269.html">here</a>
+
+	Zoltan has commited his <a
+	href="http://lists.ximian.com/archives/public/mono-devel-list/2003-April/000274.html">typed
+	allocation</a> patches to CVS as well.
+
 @item Apr 3rd, 2003: NUnit 2.0 GTK# GUI;  GtkMozEmbed; SWT#
 
 	Gonzalo has checked in his <a href="http://gtk-sharp.sf.net">Gtk#</a>-based
