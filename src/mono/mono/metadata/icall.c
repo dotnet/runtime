@@ -753,36 +753,91 @@ ves_icall_AssemblyBuilder_getDataChunk (MonoReflectionAssemblyBuilder *assb, Mon
 	return count;
 }
 
-static gboolean
-get_get_type_caller (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data) {
-	MonoImage **dest = data;
+typedef struct getTypeInfo GetTypeInfo;
+struct getTypeInfo {
+	MonoType *type;
+	MonoTypeNameParse *info;
+	MonoBoolean ignoreCase;
+};
 
-	/* skip icalls and Type::GetType () */
-	if (!m || !managed ||
-	    (strcmp (m->name, "GetType") == 0 && m->klass == mono_defaults.monotype_class->parent))
-		return FALSE;
-	*dest = m->klass->image;
-	return TRUE;
+static void
+try_get_type (gpointer key, gpointer value, gpointer user_data)
+{
+	GetTypeInfo *gt_info = user_data;
+	MonoAssembly *assembly;
+
+	if (gt_info->type != NULL)
+		return;
+
+	assembly = value;
+	/* Weird, but the domain is locked and the assembly will not be freed */
+	memcpy (&gt_info->info->assembly, &assembly->aname, sizeof (MonoAssemblyName));
+	gt_info->type = mono_reflection_get_type (assembly->image,
+						  gt_info->info,
+						  gt_info->ignoreCase);
 }
 
 static MonoReflectionType*
-ves_icall_type_from_name (MonoString *name)
+ves_icall_type_from_name (MonoString *name,
+			  MonoBoolean throwOnError,
+			  MonoBoolean ignoreCase)
 {
-	MonoImage *image = NULL;
-	MonoType *type;
 	gchar *str;
+	MonoType *type;
+	MonoAssembly *assembly = NULL;
+	MonoTypeNameParse info;
 
 	MONO_ARCH_SAVE_REGS;
 
-	mono_stack_walk (get_get_type_caller, &image);
 	str = mono_string_to_utf8 (name);
-	/*g_print ("requested type %s\n", str);*/
-	type = mono_reflection_type_from_name (str, image);
-	g_free (str);
-	if (!type)
+	if (!mono_reflection_parse_type (str, &info)) {
+		g_free (str);
+		g_list_free (info.modifiers);
+		g_list_free (info.nested);
+		if (throwOnError) /* uhm: this is a parse error, though... */
+			mono_raise_exception (mono_get_exception_type_load ());
+
 		return NULL;
-	/*g_print ("got it\n");*/
-	return mono_type_get_object (mono_object_domain (name), type);
+	}
+
+	if (info.assembly.name) {
+		assembly = mono_assembly_load (&info.assembly, NULL, NULL);
+
+		if (!assembly) {
+			if (throwOnError)
+				mono_raise_exception (mono_get_exception_type_load ());
+
+			return NULL;
+		}
+	}
+	
+	if (assembly) {
+		type = mono_reflection_get_type (assembly->image, &info, ignoreCase);
+	} else {
+		MonoDomain *domain = mono_domain_get ();
+		GetTypeInfo gt_info;
+		
+		gt_info.type = NULL;
+		gt_info.info = &info;
+		gt_info.ignoreCase = ignoreCase;
+
+		mono_domain_lock (domain);
+		g_hash_table_foreach (domain->assemblies, try_get_type, &gt_info);
+		mono_domain_unlock (domain);
+		type = gt_info.type;
+	}
+
+	g_free (str);
+	g_list_free (info.modifiers);
+	g_list_free (info.nested);
+	if (!type) {
+		if (throwOnError)
+			mono_raise_exception (mono_get_exception_type_load ());
+
+		return NULL;
+	}
+
+	return mono_type_get_object (mono_domain_get (), type);
 }
 
 static MonoReflectionType*
