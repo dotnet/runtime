@@ -147,6 +147,11 @@ mono_g_hash_table_new_full (GHashFunc       hash_func,
 		       GDestroyNotify  value_destroy_func)
 {
   MonoGHashTable *hash_table;
+  static gboolean inited = FALSE;
+  if (!inited) {
+    MONO_GC_REGISTER_ROOT (node_free_list);
+    inited = TRUE;
+  }
   
 #if HAVE_BOEHM_GC
   hash_table = GC_MALLOC (sizeof (MonoGHashTable));
