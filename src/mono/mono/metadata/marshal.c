@@ -5078,6 +5078,12 @@ ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr)
 	g_free (ptr);
 }
 
+void*
+ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement (MonoArray *arrayobj, int index)
+{
+	return mono_array_addr_with_size (arrayobj, mono_array_element_size (arrayobj->obj.vtable->klass), index);
+}
+
 MonoMarshalType *
 mono_marshal_load_type_info (MonoClass* klass)
 {

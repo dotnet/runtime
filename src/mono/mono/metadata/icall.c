@@ -5419,6 +5419,7 @@ static const IcallEntry marshal_icalls [] = {
 	{"StringToHGlobalAuto", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi},
 	{"StringToHGlobalUni", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni},
 	{"StructureToPtr", ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr},
+	{"UnsafeAddrOfPinnedArrayElement", ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement},
 	{"WriteByte", ves_icall_System_Runtime_InteropServices_Marshal_WriteByte},
 	{"WriteInt16", ves_icall_System_Runtime_InteropServices_Marshal_WriteInt16},
 	{"WriteInt32", ves_icall_System_Runtime_InteropServices_Marshal_WriteInt32},

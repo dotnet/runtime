@@ -306,6 +306,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size);
 void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr);
 
+void*
+ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement (MonoArray *arrayobj, int index);
 
 #endif /* __MONO_MARSHAL_H__ */
 
