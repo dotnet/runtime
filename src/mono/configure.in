@@ -6,7 +6,7 @@ AC_CANONICAL_SYSTEM
 m4_ifdef([_A][M_PROG_TAR],[_A][M_SET_OPTION([tar-ustar])])
 
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(mono,1.1.4)
+AM_INIT_AUTOMAKE(mono,1.1.5)
 AM_MAINTAINER_MODE
 
 AC_PROG_LN_S
@@ -1331,6 +1331,9 @@ case "$host" in
 		interp_wanted=true
 		arch_target=alpha;
 	       ;;
+	*-*-mingw*|*-*-cygwin*)
+		INTL="intl"
+		;;
 #	ia64-*-linux* | ia64-*-hpux*)
 #		TARGET=IA64;
 #		arch_target=ia64;
