@@ -1,5 +1,11 @@
 2004-04-29  Raja R Harinath  <rharinath@novell.com>
 
+	* runtime/Makefile.am (monobins_DATA): Add gacutil.exe.
+	* runtime/net_1_1/Makefile.am (all-local): Copy
+	$(gac_assemblies_list) here.
+	(install-data-local): Install dll from $(srcdir).
+	* runtime/net_2_0/Makefile.am: Likewise.
+
 	* Makefile.am (fullbuild): Update to changes in tree layout.
 	* runtime/net_1_1/Makefile.am (install-data-local): Allow empty
 	$(gac_assemblies_list).
