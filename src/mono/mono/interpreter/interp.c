@@ -4116,6 +4116,34 @@ segv_handler (int signum)
 	mono_raise_exception (segv_exception);
 }
 
+static MonoBoolean
+ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
+			  MonoReflectionMethod **method, 
+			  gint32 *iloffset, gint32 *native_offset,
+			  MonoString **file, gint32 *line, gint32 *column)
+{
+	if (iloffset)
+		*iloffset = 0;
+	if (native_offset)
+		*native_offset = 0;
+	if (method)
+		*method = NULL;
+	if (line)
+		*line = 0;
+	if (column)
+		*column = 0;
+	if (file)
+		*file = mono_string_new (mono_domain_get (), "unknown");
+
+	return TRUE;
+}
+
+static MonoArray *
+ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info)
+{
+	return NULL;
+}
+
 int 
 main (int argc, char *argv [])
 {
@@ -4176,6 +4204,8 @@ main (int argc, char *argv [])
 	mono_add_internal_call ("System.Array::Set", ves_array_set);
 	mono_add_internal_call ("System.Array::Get", ves_array_get);
 	mono_add_internal_call ("System.Array::Address", ves_array_element_address);
+	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", ves_icall_get_frame_info);
+	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", ves_icall_get_trace);
 
 	frame_thread_id = TlsAlloc ();
 	TlsSetValue (frame_thread_id, NULL);
