@@ -1,3 +1,10 @@
+2004-09-02  Martin Baulig  <martin@ximian.com>
+
+	* runtime/net_1_1/Makefile.am (install-data-local): Install
+	mscorlib.dll.mdb into $(corlibdir).
+
+	* runtime/net_2_0/Makefile.am: Likewise.
+
 2004-08-30  Zoltan Varga  <vargaz@freemail.hu>
 
 	* scripts/mcs.in: Remove obsolete comment.
