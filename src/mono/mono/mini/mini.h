@@ -190,6 +190,20 @@ struct MonoBasicBlock {
 
 	/* we use that to prevent merging of bblock covered by different clauses*/
 	guint real_offset;
+
+	/*
+	 * The region encodes whether the basic block is inside
+	 * a finally, catch, filter or none of thoese.
+	 *
+	 * If the value is -1, then it is neither finally, catch nor filter
+	 *
+	 * Otherwise the format is:
+	 *
+	 *  Bits: |     0-3      |       4-7      |     8-31
+	 * 	  |		 |                |
+	 *        | clause-flags |   MONO_REGION  | clause-index 
+	 *
+	 */
         guint region;
 
 	/* The current symbolic register number, used in local register allocation. */
@@ -434,9 +448,10 @@ enum {
 	MONO_OPT_PRECOMP  = 1 << 17
 };
 
+/* Bit-fields in the MonoBasicBlock.region */
 #define MONO_REGION_FINALLY  16
 #define MONO_REGION_CATCH    32
-#define MONO_REGION_FAULT    64
+#define MONO_REGION_FAULT    64         /* Currently unused */
 #define MONO_REGION_FILTER  128
 
 /*
@@ -467,12 +482,15 @@ typedef struct {
 	MonoSpillInfo   *spill_info; /* machine register spills */
 	MonoSpillInfo   *spill_info_float; /* fp register spills */
 	gint             spill_count;
-	// unsigned char   *cil_code;
+	/* unsigned char   *cil_code; */
 
-	MonoInst        *exvar; /* the exception object passed to catch/filter blocks */
+	/* the exception object passed to catch/filter blocks */
+	MonoInst        *exvar;
+	
 	MonoInst        *domainvar; /* a cache for the current domain */
+
 	/* A hashtable of region ID-> SP var mappings */
-    /* An SP var is a place to store the stack pointer (used by handlers) */
+	/* An SP var is a place to store the stack pointer (used by handlers)*/
 	GHashTable      *spvars;
 
 	GList           *ldstr_list; /* used by AOT */
