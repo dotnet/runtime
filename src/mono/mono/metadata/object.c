@@ -645,7 +645,7 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method) {
 	MonoClass *klass;
 	MonoMethod **vtable;
 	gboolean is_proxy;
-	MonoMethod *res;
+	MonoMethod *res = NULL;
 
 	klass = mono_object_class (obj);
 	if (klass == mono_defaults.transparent_proxy_class) {
@@ -662,15 +662,18 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method) {
 
 	/* check method->slot is a valid index: perform isinstance? */
 	if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		res = vtable [klass->interface_offsets [method->klass->interface_id] + method->slot];
+		if (!is_proxy)
+			res = vtable [klass->interface_offsets [method->klass->interface_id] + method->slot];
 	} else {
 		res = vtable [method->slot];
 	}
 
-	g_assert (res);
+	if (is_proxy) {
+		if (!res) res = method;   /* It may be an interface or abstract class method */
+		res = mono_marshal_get_remoting_invoke (res);
+	}
 
-	if (is_proxy)
-		return mono_marshal_get_remoting_invoke (res);
+	g_assert (res);
 	
 	return res;
 }
