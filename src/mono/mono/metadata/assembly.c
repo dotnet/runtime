@@ -215,8 +215,14 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 			return;
 		}
 
+		/* 
+		 * This check is disabled since lots of people seem to have an older
+		 * corlib which triggers this.
+		 */
+		/* 
 		if (image->references [i]->image == image)
 			g_error ("Error: Assembly %s references itself", image->name);
+		*/
 	}
 	image->references [i] = NULL;
 
