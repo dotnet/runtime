@@ -19,6 +19,12 @@ mono_regstate_new (void)
 }
 
 void
+mono_regstate_free (MonoRegState *rs) {
+	g_free (rs->iassign);
+	g_free (rs);
+}
+
+void
 mono_regstate_reset (MonoRegState *rs) {
 	rs->next_vireg = MONO_MAX_IREGS;
 	rs->next_vfreg = MONO_MAX_FREGS;

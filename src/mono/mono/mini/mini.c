@@ -4768,9 +4768,10 @@ mono_bblock_add_inst (MonoBasicBlock *bb, MonoInst *inst)
 void
 mono_destroy_compile (MonoCompile *cfg)
 {
-
 	//mono_mempool_stats (cfg->mempool);
 	g_hash_table_destroy (cfg->bb_hash);
+	if (cfg->rs)
+		mono_regstate_free (cfg->rs);
 	mono_mempool_destroy (cfg->mempool);
 	g_list_free (cfg->ldstr_list);
 
@@ -5285,7 +5286,7 @@ mono_codegen (MonoCompile *cfg)
 	/* g_assert (((int)cfg->native_code & (MONO_ARCH_CODE_ALIGNMENT - 1)) == 0); */
 
 	cfg->epilog_begin = cfg->code_len;
-	
+
 	if (mono_jit_profile)
 		code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
 

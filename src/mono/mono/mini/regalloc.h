@@ -45,6 +45,7 @@ typedef struct {
 
 MonoRegState* mono_regstate_new (void);
 
+void          mono_regstate_free      (MonoRegState *rs);
 void          mono_regstate_reset     (MonoRegState *rs);
 void          mono_regstate_assign    (MonoRegState *rs);
 int           mono_regstate_alloc_int (MonoRegState *rs, guint32 allow);
