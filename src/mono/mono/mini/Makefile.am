@@ -133,7 +133,7 @@ libmono_la_SOURCES = \
 	$(common_sources) $(x86_sources)
 
 arch_BURGSRC= $(srcdir)/inssel-x86.brg
-arch_built=cpu-pentium.md
+arch_built=cpu-pentium.h
 endif
 
 if POWERPC
@@ -141,7 +141,7 @@ libmono_la_SOURCES = \
 	$(common_sources) $(ppc_sources)
 
 arch_BURGSRC= $(srcdir)/inssel-ppc.brg
-arch_built=cpu-g4.md
+arch_built=cpu-g4.h
 endif
 
 if SPARC
@@ -149,7 +149,7 @@ libmono_la_SOURCES = \
 	$(common_sources) $(sparc_sources)
 
 arch_BURGSRC= $(srcdir)/inssel-sparc.brg
-arch_built=cpu-sparc.md
+arch_built=cpu-sparc.h
 endif
 
 if S390
@@ -157,7 +157,7 @@ libmono_la_SOURCES = \
 	$(common_sources) $(s390_sources)
 
 arch_BURGSRC= $(srcdir)/inssel-s390.brg
-arch_built=cpu-s390.md
+arch_built=cpu-s390.h
 endif
 
 BURGSRC= $(common_BURGSRC) $(arch_BURGSRC)
