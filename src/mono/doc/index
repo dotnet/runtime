@@ -99,6 +99,21 @@
 	folder and constant propagation are also done at the
 	architecture independent layer.
 
+	Gonzalo is now running the sample ASP.NET applications on
+	Linux with the Mono runtime.  It still needs polishing though,
+	and help with the various ASP.NET controls would be
+	appreciated.  The ASP.NET community seems more poor than the
+	PHP community, we need to have a few open source controls to
+	do things dynamic rendering (libart+gdk-pixbuf again can do
+	most of the work), charts and components like the kind of
+	thing you see in the PHP universe: to bring nice GPL code to
+	the masses of Windows developers, lure them into the world of
+	Linux.
+
+	Dick has also got us the new Process implementation that
+	implements the Win32 semantics.  Now only redirection is
+	missing.
+
 @item Jul 3rd, 2002
 
 	Listen to Paolo Molaro do a talk on Mono at the WebIT
