@@ -25,9 +25,15 @@ static pthread_t collection_thread_id;
 static gpointer collection_thread (gpointer args) G_GNUC_NORETURN;
 static gpointer collection_thread (gpointer unused G_GNUC_UNUSED)
 {
+	struct timespec sleepytime;
+
+	sleepytime.tv_sec = 10;
+	sleepytime.tv_nsec = 0;
+
 	while (1) {
+		//_wapi_handle_dump ();
 		_wapi_handle_update_refs ();
-		_wapi_handle_spin (10000);
+		nanosleep (&sleepytime, NULL);
 	}
 }
 

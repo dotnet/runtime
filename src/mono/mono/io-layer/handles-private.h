@@ -319,6 +319,8 @@ static inline void _wapi_handle_spin (guint32 ms)
 {
 	struct timespec sleepytime;
 	
+	g_assert (ms < 1000);
+	
 	sleepytime.tv_sec = 0;
 	sleepytime.tv_nsec = ms * 1000000;
 	

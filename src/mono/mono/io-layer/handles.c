@@ -1679,6 +1679,8 @@ void _wapi_handle_update_refs (void)
 {
 	guint32 i;
 	
+	_WAPI_HANDLE_COLLECTION_UNSAFE;
+
 	for (i = 0; i < _wapi_private_handle_count; i++) {
 		struct _WapiHandleUnshared *handle = &_wapi_private_handles[i];
 		guint32 now = (guint32)(time (NULL) & 0xFFFFFFFF);
@@ -1686,6 +1688,11 @@ void _wapi_handle_update_refs (void)
 		if (_WAPI_SHARED_HANDLE(handle->type)) {
 			struct _WapiHandleSharedMetadata *shared_meta;
 			
+#ifdef DEBUG
+			g_message ("%s: (%d) handle 0x%x is SHARED", __func__,
+				   getpid (), i);
+#endif
+
 			shared_meta = &_wapi_shared_layout->metadata[handle->u.shared.offset];
 
 #ifdef DEBUG
@@ -1698,6 +1705,11 @@ void _wapi_handle_update_refs (void)
 		} else if (handle->type == WAPI_HANDLE_FILE) {
 			struct _WapiHandle_file *file_handle = &handle->u.file;
 			
+#ifdef DEBUG
+			g_message ("%s: (%d) handle 0x%x is FILE", __func__,
+				   getpid (), i);
+#endif
+			
 			g_assert (file_handle->share_info != NULL);
 
 #ifdef DEBUG
@@ -1709,4 +1721,6 @@ void _wapi_handle_update_refs (void)
 			InterlockedExchange (&file_handle->share_info->timestamp, now);
 		}
 	}
+	
+	_WAPI_HANDLE_COLLECTION_SAFE;
 }
