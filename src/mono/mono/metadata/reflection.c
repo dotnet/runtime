@@ -2084,7 +2084,7 @@ assembly_add_resource (MonoDynamicAssembly *assembly, MonoReflectionResource *rs
 static void
 set_version_from_string (MonoString *version, guint32 *values)
 {
-	char *ver, *p;
+	gchar *ver, *p, *str;
 	guint32 i;
 	
 	values [MONO_ASSEMBLY_MAJOR_VERSION] = 0;
@@ -2093,7 +2093,7 @@ set_version_from_string (MonoString *version, guint32 *values)
 	values [MONO_ASSEMBLY_BUILD_NUMBER] = 0;
 	if (!version)
 		return;
-	ver = mono_string_to_utf8 (version);
+	ver = str = mono_string_to_utf8 (version);
 	for (i = 0; i < 4; ++i) {
 		values [MONO_ASSEMBLY_MAJOR_VERSION + i] = strtol (ver, &p, 10);
 		switch (*p) {
@@ -2107,7 +2107,7 @@ set_version_from_string (MonoString *version, guint32 *values)
 		}
 		ver = p;
 	}
-	g_free (ver);
+	g_free (str);
 }
 
 static guint32
