@@ -118,11 +118,11 @@ static struct _WapiHandleOps find_ops = {
 
 /* Some utility functions.
  */
-static void _wapi_time_t_to_filetime (time_t time, WapiFileTime *filetime)
+static void _wapi_time_t_to_filetime (time_t timeval, WapiFileTime *filetime)
 {
 	guint64 ticks;
 	
-	ticks = ((guint64)time * 10000000) + 116444736000000000UL;
+	ticks = ((guint64)timeval * 10000000) + 116444736000000000UL;
 	filetime->dwLowDateTime = ticks & 0xFFFFFFFF;
 	filetime->dwHighDateTime = ticks >> 32;
 }
@@ -144,7 +144,7 @@ static guint32 _wapi_stat_to_file_attributes (struct stat *buf)
 	return attrs;
 }
 
-static void _wapi_set_last_error_from_errno ()
+static void _wapi_set_last_error_from_errno (void)
 {
 	/* mapping ideas borrowed from wine. they may need some work */
 
@@ -1666,9 +1666,9 @@ gboolean FindNextFile (WapiHandle *wapi_handle, WapiFindData *find_data)
 	struct stat buf;
 	const gchar *filename;
 	
-	gchar *basename;
+	gchar *base_filename;
 	gunichar2 *utf16_basename;
-	time_t ctime;
+	time_t create_time;
 	int i;
 
 	if (wapi_handle == INVALID_HANDLE_VALUE || wapi_handle->type != WAPI_HANDLE_FIND) {
@@ -1697,13 +1697,13 @@ gboolean FindNextFile (WapiHandle *wapi_handle, WapiFindData *find_data)
 	/* fill data block */
 
 	if (buf.st_mtime < buf.st_ctime)
-		ctime = buf.st_mtime;
+		create_time = buf.st_mtime;
 	else
-		ctime = buf.st_ctime;
+		create_time = buf.st_ctime;
 	
 	find_data->dwFileAttributes = _wapi_stat_to_file_attributes (&buf);
 
-	_wapi_time_t_to_filetime (ctime, &find_data->ftCreationTime);
+	_wapi_time_t_to_filetime (create_time, &find_data->ftCreationTime);
 	_wapi_time_t_to_filetime (buf.st_atime, &find_data->ftLastAccessTime);
 	_wapi_time_t_to_filetime (buf.st_mtime, &find_data->ftLastWriteTime);
 
@@ -1719,8 +1719,8 @@ gboolean FindNextFile (WapiHandle *wapi_handle, WapiFindData *find_data)
 	find_data->dwReserved0 = 0;
 	find_data->dwReserved1 = 0;
 
-	basename = g_path_get_basename (filename);
-	utf16_basename = g_utf8_to_utf16 (basename, MAX_PATH, NULL, NULL, NULL);
+	base_filename = g_path_get_basename (filename);
+	utf16_basename = g_utf8_to_utf16 (base_filename, MAX_PATH, NULL, NULL, NULL);
 
 	i = 0;
 	while (utf16_basename [i] != 0) {	/* copy basename */
@@ -1731,7 +1731,7 @@ gboolean FindNextFile (WapiHandle *wapi_handle, WapiFindData *find_data)
 	find_data->cFileName[i] = 0;		/* null terminate */
 	find_data->cAlternateFileName [0] = 0;	/* not used */
 
-	g_free (basename);
+	g_free (base_filename);
 	g_free (utf16_basename);
 	return TRUE;
 }
@@ -1887,7 +1887,7 @@ gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels lev
 	WapiFileAttributesData *data;
 
 	struct stat buf;
-	time_t ctime;
+	time_t create_time;
 	int result;
 	
 	if (level != GetFileExInfoStandard) {
@@ -1921,13 +1921,13 @@ gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels lev
 	data = (WapiFileAttributesData *)info;
 
 	if (buf.st_mtime < buf.st_ctime)
-		ctime = buf.st_mtime;
+		create_time = buf.st_mtime;
 	else
-		ctime = buf.st_ctime;
+		create_time = buf.st_ctime;
 	
 	data->dwFileAttributes = _wapi_stat_to_file_attributes (&buf);
 
-	_wapi_time_t_to_filetime (ctime, &data->ftCreationTime);
+	_wapi_time_t_to_filetime (create_time, &data->ftCreationTime);
 	_wapi_time_t_to_filetime (buf.st_atime, &data->ftLastAccessTime);
 	_wapi_time_t_to_filetime (buf.st_mtime, &data->ftLastWriteTime);
 

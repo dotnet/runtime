@@ -250,7 +250,7 @@ again:
 	outbytes_remaining = outbuf_size;
 	outp = buf;
 
-	err = iconv (cd, (const char **)&p, &inbytes_remaining, 
+	err = iconv (cd, (char **)&p, &inbytes_remaining, 
 		     (char **)&outp, &outbytes_remaining);
 
 	if(err == (size_t)-1) {
@@ -293,7 +293,7 @@ again:
 }
 
 int
-ves_icall_iconv_get_byte_count (gpointer converter, MonoArray *chars, gint32 index, gint32 count)
+ves_icall_iconv_get_byte_count (gpointer converter, MonoArray *chars, gint32 idx, gint32 count)
 {
 	iconv_t cd = (iconv_t)converter;
 	guchar *src;
@@ -301,13 +301,13 @@ ves_icall_iconv_get_byte_count (gpointer converter, MonoArray *chars, gint32 ind
 
 	g_assert (cd);
 	g_assert (chars);
-	g_assert (mono_array_length (chars) > index);
-	g_assert (mono_array_length (chars) >= (index + count));
+	g_assert (mono_array_length (chars) > idx);
+	g_assert (mono_array_length (chars) >= (idx + count));
 
-	if (!(len = (mono_array_length (chars) - index) * 2))
+	if (!(len = (mono_array_length (chars) - idx) * 2))
 		return 0;
 
-	src =  mono_array_addr (chars, guint16, index);
+	src =  mono_array_addr (chars, guint16, idx);
 
 	return iconv_get_length (cd, src, len, TRUE);
 }
@@ -346,7 +346,7 @@ iconv_convert (iconv_t cd, guchar *src, int len, guchar *dest, int max_len, gboo
 	outbytes_remaining = outbuf_size;
 	outp = dest;
 
-	err = iconv (cd, (const char **)&p, &inbytes_remaining, (char **)&outp, &outbytes_remaining);
+	err = iconv (cd, (char **)&p, &inbytes_remaining, (char **)&outp, &outbytes_remaining);
 
 	if(err == (size_t)-1) {
 		if (errno == EINVAL) {
@@ -417,17 +417,17 @@ ves_icall_iconv_get_bytes (gpointer converter, MonoArray *chars, gint32 charInde
 }
 
 int
-ves_icall_iconv_get_char_count (gpointer converter, MonoArray *bytes, gint32 index, gint32 count)
+ves_icall_iconv_get_char_count (gpointer converter, MonoArray *bytes, gint32 idx, gint32 count)
 {
 	iconv_t cd = (iconv_t)converter;
 	guchar *src;
 
 	g_assert (cd);
 	g_assert (bytes);
-	g_assert (mono_array_length (bytes) > index);
-	g_assert (mono_array_length (bytes) >= (index + count));
+	g_assert (mono_array_length (bytes) > idx);
+	g_assert (mono_array_length (bytes) >= (idx + count));
 
-	src =  mono_array_addr (bytes, char, index);
+	src =  mono_array_addr (bytes, char, idx);
 
 	/* iconv_get_length () returns the number of bytes */
 	return iconv_get_length (cd, src, (int) count, FALSE) / 2;

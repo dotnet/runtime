@@ -541,12 +541,12 @@ int _wapi_listen(WapiHandle *handle, int backlog)
 	return(0);
 }
 
-int _wapi_recv(WapiHandle *handle, void *buf, size_t len, int flags)
+int _wapi_recv(WapiHandle *handle, void *buf, size_t len, int recv_flags)
 {
-	return(_wapi_recvfrom(handle, buf, len, flags, NULL, 0));
+	return(_wapi_recvfrom(handle, buf, len, recv_flags, NULL, 0));
 }
 
-int _wapi_recvfrom(WapiHandle *handle, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen)
+int _wapi_recvfrom(WapiHandle *handle, void *buf, size_t len, int recv_flags, struct sockaddr *from, socklen_t *fromlen)
 {
 	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
 	int ret;
@@ -556,7 +556,7 @@ int _wapi_recvfrom(WapiHandle *handle, void *buf, size_t len, int flags, struct 
 		return(SOCKET_ERROR);
 	}
 	
-	ret=recvfrom(socket_handle->fd, buf, len, flags, from, fromlen);
+	ret=recvfrom(socket_handle->fd, buf, len, recv_flags, from, fromlen);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": recv error: %s",
@@ -597,7 +597,7 @@ int _wapi_recvfrom(WapiHandle *handle, void *buf, size_t len, int flags, struct 
 	return(ret);
 }
 
-int _wapi_send(WapiHandle *handle, const void *msg, size_t len, int flags)
+int _wapi_send(WapiHandle *handle, const void *msg, size_t len, int send_flags)
 {
 	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
 	int ret;
@@ -607,7 +607,7 @@ int _wapi_send(WapiHandle *handle, const void *msg, size_t len, int flags)
 		return(SOCKET_ERROR);
 	}
 	
-	ret=send(socket_handle->fd, msg, len, flags);
+	ret=send(socket_handle->fd, msg, len, send_flags);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": send error: %s",
@@ -654,7 +654,7 @@ int _wapi_send(WapiHandle *handle, const void *msg, size_t len, int flags)
 	return(ret);
 }
 
-int _wapi_sendto(WapiHandle *handle, const void *msg, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
+int _wapi_sendto(WapiHandle *handle, const void *msg, size_t len, int send_flags, const struct sockaddr *to, socklen_t tolen)
 {
 	struct _WapiHandle_socket *socket_handle=(struct _WapiHandle_socket *)handle;
 	int ret;
@@ -664,7 +664,7 @@ int _wapi_sendto(WapiHandle *handle, const void *msg, size_t len, int flags, con
 		return(SOCKET_ERROR);
 	}
 	
-	ret=sendto(socket_handle->fd, msg, len, flags, to, tolen);
+	ret=sendto(socket_handle->fd, msg, len, send_flags, to, tolen);
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": send error: %s",

@@ -104,7 +104,7 @@ ves_icall_iconv_reset                    (gpointer converter);
 
 int
 ves_icall_iconv_get_byte_count           (gpointer converter, MonoArray *chars,
-					  gint32 index, gint32 count);
+					  gint32 idx, gint32 count);
 
 int
 ves_icall_iconv_get_bytes                (gpointer converter, MonoArray *chars,
@@ -113,7 +113,7 @@ ves_icall_iconv_get_bytes                (gpointer converter, MonoArray *chars,
 
 int
 ves_icall_iconv_get_char_count           (gpointer converter, MonoArray *bytes,
-					  gint32 index, gint32 count);
+					  gint32 idx, gint32 count);
 
 int
 ves_icall_iconv_get_chars                (gpointer converter, MonoArray *bytes,

@@ -80,10 +80,10 @@ extern int _wapi_getpeername(WapiHandle *handle, struct sockaddr *name, socklen_
 extern int _wapi_getsockname(WapiHandle *handle, struct sockaddr *name, socklen_t *namelen);
 extern int _wapi_getsockopt(WapiHandle *handle, int level, int optname, void *optval, socklen_t *optlen);
 extern int _wapi_listen(WapiHandle *handle, int backlog);
-extern int _wapi_recv(WapiHandle *handle, void *buf, size_t len, int flags);
-extern int _wapi_recvfrom(WapiHandle *handle, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen);
-extern int _wapi_send(WapiHandle *handle, const void *msg, size_t len, int flags);
-extern int _wapi_sendto(WapiHandle *handle, const void *msg, size_t len, int flags, const struct sockaddr *to, socklen_t tolen);
+extern int _wapi_recv(WapiHandle *handle, void *buf, size_t len, int recv_flags);
+extern int _wapi_recvfrom(WapiHandle *handle, void *buf, size_t len, int recv_flags, struct sockaddr *from, socklen_t *fromlen);
+extern int _wapi_send(WapiHandle *handle, const void *msg, size_t len, int send_flags);
+extern int _wapi_sendto(WapiHandle *handle, const void *msg, size_t len, int send_flags, const struct sockaddr *to, socklen_t tolen);
 extern int _wapi_setsockopt(WapiHandle *handle, int level, int optname, const void *optval, socklen_t optlen);
 extern int _wapi_shutdown(WapiHandle *handle, int how);
 extern WapiHandle *_wapi_socket(int domain, int type, int protocol);;

@@ -374,13 +374,13 @@ ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat)
 }
 
 HANDLE 
-ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode, gint32 access, gint32 share)
+ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode, gint32 access_mode, gint32 share)
 {
 	gunichar2 *utf16_filename;
 	HANDLE result;
 
 	utf16_filename = mono_string_to_utf16 (filename);
-	result = CreateFile (utf16_filename, convert_access (access), convert_share (share),
+	result = CreateFile (utf16_filename, convert_access (access_mode), convert_share (share),
 			     NULL, convert_mode (mode), FILE_ATTRIBUTE_NORMAL, NULL);
 	g_free (utf16_filename);
 

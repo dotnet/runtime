@@ -864,13 +864,13 @@ gint32 ves_icall_System_Net_Sockets_Socket_SendTo_internal(SOCKET sock, MonoArra
 	return(ret);
 }
 
-static SOCKET Socket_to_SOCKET(MonoObject *socket)
+static SOCKET Socket_to_SOCKET(MonoObject *sockobj)
 {
 	SOCKET sock;
 	MonoClassField *field;
 	
-	field=mono_class_get_field_from_name(socket->vtable->klass, "socket");
-	sock=*(SOCKET *)(((char *)socket)+field->offset);
+	field=mono_class_get_field_from_name(sockobj->vtable->klass, "socket");
+	sock=*(SOCKET *)(((char *)sockobj)+field->offset);
 
 	return(sock);
 }

@@ -6,7 +6,7 @@
 typedef struct _WapiHandle WapiHandle;
 
 extern gboolean CloseHandle(WapiHandle *handle);
-extern guint32 SignalObjectAndWait(WapiHandle *signal, WapiHandle *wait,
+extern guint32 SignalObjectAndWait(WapiHandle *signal_handle, WapiHandle *wait,
 				   guint32 timeout, gboolean alertable);
 
 #endif /* _WAPI_HANDLES_H_ */

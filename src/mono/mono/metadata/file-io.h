@@ -104,7 +104,7 @@ extern gboolean
 ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat);
 
 extern HANDLE 
-ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode, gint32 access, gint32 share);
+ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode, gint32 access_mode, gint32 share);
 
 extern gboolean 
 ves_icall_System_IO_MonoIO_Close (HANDLE handle);

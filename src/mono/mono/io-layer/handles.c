@@ -95,7 +95,7 @@ gboolean CloseHandle(WapiHandle *handle)
 
 /**
  * SignalObjectAndWait:
- * @signal: An object to signal
+ * @signal_handle: An object to signal
  * @wait: An object to wait for
  * @timeout: The maximum time in milliseconds to wait for
  * @alertable: Specifies whether the function returnes when the system
@@ -128,13 +128,13 @@ gboolean CloseHandle(WapiHandle *handle)
  * %WAIT_TIMEOUT - The @timeout interval elapsed and @wait's state is
  * still not signalled.  %WAIT_FAILED - an error occurred.
  */
-guint32 SignalObjectAndWait(WapiHandle *signal, WapiHandle *wait,
+guint32 SignalObjectAndWait(WapiHandle *signal_handle, WapiHandle *wait,
 			    guint32 timeout, gboolean alertable)
 {
 	gboolean waited;
 	guint32 ret;
 	
-	if(signal->ops->signal==NULL) {
+	if(signal_handle->ops->signal==NULL) {
 		return(WAIT_FAILED);
 	}
 	
@@ -142,7 +142,7 @@ guint32 SignalObjectAndWait(WapiHandle *signal, WapiHandle *wait,
 		return(WAIT_FAILED);
 	}
 
-	waited=wait->ops->wait(wait, signal, timeout);
+	waited=wait->ops->wait(wait, signal_handle, timeout);
 	if(waited==TRUE) {
 		/* Object signalled before timeout expired */
 #ifdef DEBUG
