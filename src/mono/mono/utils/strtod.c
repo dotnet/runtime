@@ -143,6 +143,11 @@ static char sccsid[] = "@(#)strtod.c	8.1 (Berkeley) 6/4/93";
 #define IEEE_8087
 #define Long long
 
+#elif defined(__x86_64__)
+
+#define IEEE_8087
+#define Long int
+
 #elif defined(__ia64)
 
 # ifndef __LP64__
