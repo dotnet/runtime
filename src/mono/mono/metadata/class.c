@@ -999,10 +999,46 @@ mono_class_init (MonoClass *class)
 		class_compute_field_layout (class);
 
 	/* initialize method pointers */
-	class->methods = g_new (MonoMethod*, class->method.count);
-	for (i = 0; i < class->method.count; ++i)
-		class->methods [i] = mono_get_method (class->image,
-		        MONO_TOKEN_METHOD_DEF | (i + class->method.first + 1), class);
+	if (class->rank) {
+		MonoMethod *ctor;
+		MonoMethodSignature *sig;
+		class->method.count = class->rank > 1? 2: 1;
+		sig = mono_metadata_signature_alloc (class->image, class->rank);
+		sig->ret = &mono_defaults.void_class->byval_arg;
+		sig->pinvoke = TRUE;
+		for (i = 0; i < class->rank; ++i)
+			sig->params [i] = &mono_defaults.int32_class->byval_arg;
+
+		ctor = (MonoMethod *) g_new0 (MonoMethodPInvoke, 1);
+		ctor->klass = class;
+		ctor->flags = METHOD_ATTRIBUTE_PUBLIC | METHOD_ATTRIBUTE_RT_SPECIAL_NAME | METHOD_ATTRIBUTE_SPECIAL_NAME;
+		ctor->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
+		ctor->signature = sig;
+		ctor->name = ".ctor";
+		class->methods = g_new (MonoMethod*, class->method.count);
+		class->methods [0] = ctor;
+		if (class->rank > 1) {
+			sig = mono_metadata_signature_alloc (class->image, class->rank * 2);
+			sig->ret = &mono_defaults.void_class->byval_arg;
+			sig->pinvoke = TRUE;
+			for (i = 0; i < class->rank * 2; ++i)
+				sig->params [i] = &mono_defaults.int32_class->byval_arg;
+
+			ctor = (MonoMethod *) g_new0 (MonoMethodPInvoke, 1);
+			ctor->klass = class;
+			ctor->flags = METHOD_ATTRIBUTE_PUBLIC | METHOD_ATTRIBUTE_RT_SPECIAL_NAME | METHOD_ATTRIBUTE_SPECIAL_NAME;
+			ctor->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
+			ctor->signature = sig;
+			ctor->name = ".ctor";
+			class->methods [1] = ctor;
+		}
+	} else {
+		class->methods = g_new (MonoMethod*, class->method.count);
+		for (i = 0; i < class->method.count; ++i) {
+			class->methods [i] = mono_get_method (class->image,
+				MONO_TOKEN_METHOD_DEF | (i + class->method.first + 1), class);
+		}
+	}
 
 	init_properties (class);
 	init_events (class);

@@ -1388,6 +1388,27 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 	if (pcount != m->signature->param_count)
 		mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetParameterCountException"));
 
+	if (m->klass->rank && !strcmp (m->name, ".ctor")) {
+		int i;
+		pcount = mono_array_length (params);
+		guint32 *lengths;
+		guint32 *lower_bounds;
+		lengths = alloca (sizeof (guint32) * pcount);
+		for (i = 0; i < pcount; ++i)
+			lengths [i] = *(gint32*) ((char*)mono_array_get (params, gpointer, i) + sizeof (MonoObject));
+
+		if (m->klass->rank == pcount) {
+			/* Only lengths provided. */
+			lower_bounds = NULL;
+		} else {
+			g_assert (pcount == (m->klass->rank * 2));
+			/* lower bounds are first. */
+			lower_bounds = lengths;
+			lengths += m->klass->rank;
+		}
+
+		return (MonoObject*)mono_array_new_full (mono_object_domain (params), m->klass, lengths, lower_bounds);
+	}
 	return mono_runtime_invoke_array (m, this, params, NULL);
 }
 
