@@ -36,6 +36,7 @@ OBJECTS=									\
 	deploy/classlib-doc.html						\
 	deploy/contact.html							\
 	deploy/c-sharp.html							\
+	deploy/mbas.html							\
 	deploy/ccvs.html							\
 	deploy/documentation.html						\
 	deploy/download.html							\
