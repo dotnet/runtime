@@ -79,7 +79,8 @@ TESTSRC=			\
 	time.cs			\
 	appdomain.cs		\
 	appdomain-client.cs	\
-	pointer.cs
+	pointer.cs		\
+	vararg.cs
 
 
 TESTSI=$(TESTSRC:.cs=.exe)
