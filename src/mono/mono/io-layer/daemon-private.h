@@ -16,6 +16,7 @@ typedef enum {
 	DAEMON_STARTING = 0,
 	DAEMON_RUNNING  = 1,
 	DAEMON_DIED_AT_STARTUP = 2,
+	DAEMON_CLOSING = 3,
 } _wapi_daemon_status;
 
 extern void _wapi_daemon_main (gpointer data, gpointer scratch);

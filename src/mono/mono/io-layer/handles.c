@@ -799,7 +799,7 @@ guint32 _wapi_handle_scratch_store (gconstpointer data, guint32 bytes)
 	
 		if(remap==TRUE) {
 			munmap (_wapi_shared_scratch, old_len);
-			_wapi_shared_scratch=_wapi_shm_file_map (WAPI_SHM_SCRATCH, 0, NULL);
+			_wapi_shared_scratch=_wapi_shm_file_map (WAPI_SHM_SCRATCH, 0, NULL, NULL);
 		}
 	} else {
 		idx=_wapi_handle_scratch_store_internal (store_bytes, &remap);

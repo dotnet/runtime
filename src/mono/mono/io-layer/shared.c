@@ -148,7 +148,7 @@ gpointer _wapi_shm_file_expand (gpointer mem, _wapi_shm_t type,
 	}
 	close (fd);
 	
-	new_mem=_wapi_shm_file_map (type, segment, NULL);
+	new_mem=_wapi_shm_file_map (type, segment, NULL, NULL);
 	
 	return(new_mem);
 }
@@ -245,7 +245,7 @@ try_again:
 	if(fstat (fd, &statbuf)==-1) {
 		g_critical (G_GNUC_PRETTY_FUNCTION ": fstat error: %s",
 			    g_strerror (errno));
-		if(*created==TRUE) {
+		if(created && *created==TRUE) {
 			unlink (filename);
 		}
 		close (fd);
@@ -259,7 +259,7 @@ try_again:
 #else
 		g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] is not big enough! (found %ld, need %d bytes)", filename, statbuf.st_size, wanted_size);
 #endif
-		if(*created==TRUE) {
+		if(created && *created==TRUE) {
 			unlink (filename);
 		}
 		close (fd);
@@ -270,7 +270,7 @@ try_again:
 }
 
 gpointer _wapi_shm_file_map (_wapi_shm_t type, guint32 segment,
-			     gboolean *created)
+			     gboolean *created, off_t *size)
 {
 	gpointer shm_seg;
 	int fd;
@@ -290,7 +290,10 @@ gpointer _wapi_shm_file_map (_wapi_shm_t type, guint32 segment,
 		close (fd);
 		return(NULL);
 	}
-
+	if(size) {
+		*size=statbuf.st_size;
+	}
+	
 	shm_seg=mmap (NULL, statbuf.st_size, PROT_READ|PROT_WRITE, MAP_SHARED,
 		      fd, 0);
 	if(shm_seg==MAP_FAILED) {
@@ -317,19 +320,47 @@ gboolean _wapi_shm_attach (struct _WapiHandleShared_list **data,
 			   struct _WapiHandleScratch **scratch)
 {
 	gboolean data_created=FALSE, scratch_created=FALSE;
-	int tries;
+	off_t data_size, scratch_size;
+	int tries, closing_tries=0;
 
-	*data=_wapi_shm_file_map (WAPI_SHM_DATA, 0, &data_created);
+map_again:
+	*data=_wapi_shm_file_map (WAPI_SHM_DATA, 0, &data_created, &data_size);
 	if(*data==NULL) {
 		return(FALSE);
 	}
 	
-	*scratch=_wapi_shm_file_map (WAPI_SHM_SCRATCH, 0, &scratch_created);
+	*scratch=_wapi_shm_file_map (WAPI_SHM_SCRATCH, 0, &scratch_created,
+				     &scratch_size);
 	if(*scratch==NULL) {
 		if(data_created) {
 			_wapi_shm_destroy ();
 		}
 		return(FALSE);
+	}
+	
+	if(data_created==FALSE && (*data)->daemon_running==DAEMON_CLOSING) {
+		/* Daemon is closing down, give it a few ms and try
+		 * again.
+		 */
+		
+		struct timespec sleepytime;
+			
+		munmap (*data, data_size);
+		munmap (*scratch, scratch_size);
+		
+		if(closing_tries++ == 5) {
+			/* Something must have gone wrong, so bail
+			 * out.  This will let the calling code delete
+			 * the shared segments and try again.
+			 */
+			return(FALSE);
+		}
+		
+		sleepytime.tv_sec=0;
+		sleepytime.tv_nsec=10000000;	/* 10ms */
+			
+		nanosleep (&sleepytime, NULL);
+		goto map_again;
 	}
 	
 	if(data_created==TRUE) {

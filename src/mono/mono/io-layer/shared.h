@@ -30,7 +30,7 @@ typedef enum {
 
 extern guchar *_wapi_shm_file (_wapi_shm_t type, guint32 segment);
 extern gpointer _wapi_shm_file_map (_wapi_shm_t type, guint32 segment,
-				    gboolean *created);
+				    gboolean *created, off_t *size);
 extern gpointer _wapi_shm_file_expand (gpointer mem, _wapi_shm_t type,
 				       guint32 segment, guint32 old_len,
 				       guint32 new_len);

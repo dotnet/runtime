@@ -156,7 +156,8 @@ static inline void _wapi_handle_ensure_mapped (guint32 segment)
 #endif
 
 		_wapi_shared_data[segment]=_wapi_shm_file_map (WAPI_SHM_DATA,
-							       segment, NULL);
+							       segment, NULL,
+							       NULL);
 		if(_wapi_private_data!=NULL) {
 			/* the daemon doesn't deal with private data */
 			_wapi_private_data[segment]=g_new0 (struct _WapiHandlePrivate_list, 1);

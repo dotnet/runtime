@@ -22,6 +22,10 @@
 #include <string.h>
 #include <sys/time.h>
 
+#ifdef HAVE_POLL
+#include <sys/poll.h>
+#endif
+
 #include <mono/io-layer/io-layer.h>
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/wapi-private.h>
@@ -91,6 +95,9 @@ static void maybe_exit (void)
 		return;
 	}
 
+	/* Prevent new clients from connecting... */
+	_wapi_shared_data[0]->daemon_running=DAEMON_CLOSING;
+
 	for(i=0;
 	    i<_wapi_shared_data[0]->num_segments * _WAPI_HANDLES_PER_SEGMENT;
 	    i++) {
@@ -99,9 +106,48 @@ static void maybe_exit (void)
 			g_message (G_GNUC_PRETTY_FUNCTION
 				   ": Still got handle references");
 #endif
+
+			_wapi_shared_data[0]->daemon_running=DAEMON_RUNNING;
 			return;
 		}
 	}
+	
+#ifdef HAVE_POLL
+	/* Last check, make sure no client came along while we were
+	 * checking the handle lists.
+	 *
+	 * Use poll() directly here, as glib doesn't seem to have any
+	 * exposed way of seeing if a file descriptor is ready
+	 * (g_io_channel_get_buffer_condition() isn't it.)
+	 *
+	 * Crappy systems that don't have poll() will just have to
+	 * lump it (for them there is still the very slight chance
+	 * that someone tried to connect just as the DAEMON_CLOSING
+	 * flag was being set.)
+	 */
+	{
+		struct pollfd fds[1];
+		
+		fds[0].fd=main_sock;
+		fds[0].events=POLLIN;
+		fds[0].revents=0;
+		
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": Last connect check");
+#endif
+
+		if(poll (fds, 1, 0)>0) {
+			/* Someone did connect, so carry on running */
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION
+				   ": Someone connected");
+#endif
+
+			_wapi_shared_data[0]->daemon_running=DAEMON_RUNNING;
+			return;
+		}
+	}
+#endif
 	
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": Byebye");
