@@ -336,7 +336,7 @@ dis_code (metadata_t *m, cli_image_info_t *ii, guint32 rva)
 	if (rva == 0)
 		return;
 
-	mh = mono_metadata_parse_mh (ptr);
+	mh = mono_metadata_parse_mh (m, ptr);
 	loc = mono_metadata_locate_token (m, ii->cli_cli_header.ch_entry_point);
 	if (rva == read32(loc))
 		fprintf (output, "\t.entrypoint\n");

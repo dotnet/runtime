@@ -280,6 +280,8 @@ typedef struct {
 
 	/* if local_var_sig_tok != 0, then the following apply: */
 	unsigned int init_locals : 1;
+	int         num_locals;
+	MonoType  **locals;
 
 	GList      *exception_handler_list;
 } MonoMetaMethodHeader;
@@ -311,7 +313,7 @@ MonoMethodSignature  *mono_metadata_parse_method_signature (metadata_t          
                                                             const char           **rptr);
 void                  mono_metadata_free_method_signature  (MonoMethodSignature   *method);
 
-MonoMetaMethodHeader *mono_metadata_parse_mh (const char *ptr);
+MonoMetaMethodHeader *mono_metadata_parse_mh (metadata_t *m, const char *ptr);
 void                  mono_metadata_free_mh  (MonoMetaMethodHeader *mh);
 
 /*

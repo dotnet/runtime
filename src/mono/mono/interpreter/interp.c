@@ -121,14 +121,12 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 	 * with alloca we get the expected huge performance gain
 	 * stackval *stack = g_new0(stackval, mh->max_stack);
 	 */
-	stackval *stack = alloca(sizeof(stackval) * mh->header->max_stack);
+	stackval *stack = alloca (sizeof (stackval) * mh->header->max_stack);
 	register const unsigned char *ip = mh->header->code;
 	register stackval *sp = stack;
 	/* FIXME: remove this hack */
 	static int fake_field = 42;
-
-	/* need to figure out how many of these, too */
-	stackval locals [16];
+	stackval *locals;
 
 #ifdef GOTO_LABEL
 	const static void * const goto_map [] = {
@@ -139,6 +137,9 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 	&&START
 	};
 #endif
+
+	if (mh->header->num_locals)
+		locals = alloca (sizeof (stackval) * mh->header->num_locals);
 
 	/*
 	 * using while (ip < end) may result in a 15% performance drop, 

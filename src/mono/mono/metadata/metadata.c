@@ -1153,7 +1153,7 @@ mono_get_method (cli_image_info_t *iinfo, guint32 token)
 	/* if this is a methodref from another module/assembly, this fails */
 	loc = cli_rva_map (iinfo, cols [0]);
 	g_assert (loc);
-	result->header = mono_metadata_parse_mh (loc);
+	result->header = mono_metadata_parse_mh (&iinfo->cli_metadata, loc);
 	if (!sig) /* already taken from the methodref */
 		sig = mono_metadata_blob_heap (&iinfo->cli_metadata, cols [4]);
 	sig = mono_metadata_decode_blob_size (sig, &size);
@@ -1206,7 +1206,7 @@ parse_section_data (MonoMetaMethodHeader *mh, const char *ptr)
 }
 
 MonoMetaMethodHeader *
-mono_metadata_parse_mh (const char *ptr)
+mono_metadata_parse_mh (metadata_t *m, const char *ptr)
 {
 	MonoMetaMethodHeader *mh;
 	unsigned char flags = *(unsigned char *) ptr;
@@ -1253,7 +1253,7 @@ mono_metadata_parse_mh (const char *ptr)
 		mh->code = ptr;
 
 		if (!(fat_flags & METHOD_HEADER_MORE_SECTS))
-			return mh;
+			break;
 
 		/*
 		 * There are more sections
@@ -1268,11 +1268,45 @@ mono_metadata_parse_mh (const char *ptr)
 		return NULL;
 	}
 		       
+	if (mh->local_var_sig_tok) {
+		metadata_tableinfo_t *t = &m->tables [META_TABLE_STANDALONESIG];
+		const char *ptr;
+		guint32 cols[1];
+		int len=0, i, bsize;
+
+		mono_metadata_decode_row (t, (mh->local_var_sig_tok & 0xffffff)-1, cols, 1);
+		ptr = mono_metadata_blob_heap (m, cols [0]);
+		ptr = mono_metadata_decode_blob_size (ptr, &bsize);
+		if (*ptr != 0x07)
+			g_warning ("wrong signature for locals blob");
+		ptr++;
+		ptr = mono_metadata_decode_value (ptr, &len);
+		mh->num_locals = len;
+		mh->locals = g_new (MonoType*, len);
+		for (i = 0; i < len; ++i) {
+			int val;
+			const char *p = ptr;
+			ptr = mono_metadata_decode_blob_size (ptr, &val);
+			/* FIXME: store pinned/byref values */
+			if (val == ELEMENT_TYPE_PINNED) {
+				p = ptr;
+				ptr = mono_metadata_decode_blob_size (ptr, &val);
+			}
+			if (val == ELEMENT_TYPE_BYREF) {
+				p = ptr;
+			}
+			mh->locals [i] = mono_metadata_parse_type (m, p, &ptr);
+		}
+	}
 	return mh;
 }
 
 void
 mono_metadata_free_mh (MonoMetaMethodHeader *mh)
 {
+	int i;
+	for (i = 0; i < mh->num_locals; ++i)
+		mono_metadata_free_type (mh->locals[i]);
+	g_free (mh->locals);
 	g_free (mh);
 }
