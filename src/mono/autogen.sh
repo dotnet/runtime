@@ -78,6 +78,37 @@ xlc )
   am_opt=--include-deps;;
 esac
 
+
+if grep "^AM_PROG_LIBTOOL" configure.in >/dev/null; then
+  if test -z "$NO_LIBTOOLIZE" ; then 
+    echo "Running libtoolize..."
+    libtoolize --force --copy
+  fi
+fi
+
+echo "Running aclocal $aclocalinclude ..."
+aclocal $aclocalinclude || {
+  echo
+  echo "**Error**: aclocal failed. This may mean that you have not"
+  echo "installed all of the packages you need, or you may need to"
+  echo "set ACLOCAL_FLAGS to include \"-I \$prefix/share/aclocal\""
+  echo "for the prefix where you installed the packages whose"
+  echo "macros were not found"
+  exit 1
+}
+
+if grep "^AM_CONFIG_HEADER" configure.in >/dev/null; then
+  echo "Running autoheader..."
+  autoheader || { echo "**Error**: autoheader failed."; exit 1; }
+fi
+
+echo "Running automake --gnu $am_opt ..."
+automake --add-missing --gnu $am_opt ||
+  { echo "**Error**: automake failed."; exit 1; }
+echo "Running autoconf ..."
+autoconf || { echo "**Error**: autoconf failed."; exit 1; }
+
+
 conf_flags="--enable-maintainer-mode --enable-compile-warnings" #--enable-iso-c
 
 if test x$NOCONFIGURE = x; then
