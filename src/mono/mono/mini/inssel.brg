@@ -1082,6 +1082,37 @@ stmt: OP_VCALL_REG (reg, reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+#
+# Optimized call instructions
+#
+
+reg: OP_CALL_REG (OP_ICONST) {
+	tree->opcode = CEE_CALL;
+	((MonoCallInst*)tree)->fptr = state->left->tree->inst_c0;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_VOIDCALL_REG (OP_ICONST) {
+	tree->opcode = OP_VOIDCALL;
+	((MonoCallInst*)tree)->fptr = state->left->tree->inst_c0;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+freg: OP_FCALL_REG (OP_ICONST) {
+	tree->opcode = OP_FCALL;
+	((MonoCallInst*)tree)->fptr = state->left->tree->inst_c0;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+lreg: OP_LCALL_REG (OP_ICONST) {
+	tree->opcode = OP_LCALL;
+	((MonoCallInst*)tree)->fptr = state->left->tree->inst_c0;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 stmt: CEE_RET "0" {
 	mono_bblock_add_inst (s->cbb, tree);
 }

@@ -574,33 +574,6 @@ stmt: CEE_POP (freg) "0" {
 	MONO_EMIT_UNALU (s, tree, OP_X86_FPOP, -1, state->left->reg1);	
 }     
 
-reg: OP_CALL_REG (OP_ICONST) {
-	tree->opcode = CEE_CALL;
-	((MonoCallInst*)tree)->fptr = state->left->tree->inst_c0;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: OP_VOIDCALL_REG (OP_ICONST) {
-	tree->opcode = OP_VOIDCALL;
-	((MonoCallInst*)tree)->fptr = state->left->tree->inst_c0;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-freg: OP_FCALL_REG (OP_ICONST) {
-	tree->opcode = OP_FCALL;
-	((MonoCallInst*)tree)->fptr = state->left->tree->inst_c0;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-lreg: OP_LCALL_REG (OP_ICONST) {
-	tree->opcode = OP_LCALL;
-	((MonoCallInst*)tree)->fptr = state->left->tree->inst_c0;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
 # override the rules in inssel-float.brg that work for machines with FP registers 
 
 freg: OP_FCONV_TO_R8 (freg) "0" {
