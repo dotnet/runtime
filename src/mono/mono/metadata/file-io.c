@@ -271,6 +271,13 @@ ves_icall_System_IO_MonoIO_FindFirstFile (MonoString *path, MonoIOStat *stat,
 	if (result == INVALID_HANDLE_VALUE) {
 		*error=GetLastError ();
 	}
+	
+	if (r == FALSE) {
+		/* No more files were found, after we discarded . and .. */
+		FindClose(result);
+		result = INVALID_HANDLE_VALUE;
+		*error = ERROR_NO_MORE_FILES;
+	}
 
 	return result;
 }
