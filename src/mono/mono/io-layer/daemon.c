@@ -603,7 +603,9 @@ static void process_process_fork (guint32 idx,
 			process_handle_data->exec_errno=errno;
 		} else if (pid==0) {
 			/* child */
-			char **argv;
+			char **argv, *full_args;
+			GError *gerr=NULL;
+			gboolean ret;
 			
 			/* should we detach from the process group? 
 			 * We're already running without a controlling
@@ -621,10 +623,33 @@ static void process_process_fork (guint32 idx,
 #endif		
 		
 			if(args!=NULL) {
-				argv=g_strsplit (args, " \t", 0);
+				full_args=g_strconcat (cmd, " ", args, NULL);
 			} else {
-				argv=g_new0 (char *, 1);
+				full_args=g_strdup (cmd);
 			}
+			ret=g_shell_parse_argv (full_args, NULL, &argv, &gerr);
+			
+			g_free (full_args);
+
+			if(ret==FALSE) {
+				/* FIXME: Could do something with the
+				 * GError here
+				 */
+				process_handle_data->exec_errno=gerr->code;
+				exit (-1);
+			}
+			
+
+#ifdef DEBUG
+			{
+				int i=0;
+				while(argv[i]!=NULL) {
+					g_message ("arg %d: [%s]", i, argv[i]);
+					i++;
+				}
+			}
+#endif
+			
 			
 			/* exec */
 			execv (cmd, argv);
