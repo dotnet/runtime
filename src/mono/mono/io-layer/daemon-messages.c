@@ -24,6 +24,14 @@
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/daemon-messages.h>
 
+/* Solaris doesn't define these */
+#ifndef CMSG_LEN
+#define CMSG_LEN(size)    (sizeof (struct cmsghdr) + (size))
+#endif
+#ifndef CMSG_SPACE
+#define CMSG_SPACE(size)  (sizeof (struct cmsghdr) + (size))
+#endif
+
 /* Send request on fd, wait for response (called by applications, not
  * the daemon, indirectly through _wapi_daemon_request_response and
  * _wapi_daemon_request_response_with_fds)
