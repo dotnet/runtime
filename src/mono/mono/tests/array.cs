@@ -10,6 +10,15 @@ public class Test {
 			if (ia [i] != i*i)
 				return 1;
 		
+		if (ia.Rank != 1)
+			return 1;
+
+		// test Clone
+
+
+		if (ia.GetValue (2) == null)
+			return 1;
+		
 		return 0;
 	}
 }

@@ -11,6 +11,7 @@ typedef struct {
 	guint16 iflags; /* method implementation flags */
 	MonoImage *image;
 	MonoMethodSignature  *signature;
+	gpointer addr;
 	/* name is useful mostly for debugging */
 	const char *name; 
 } MonoMethod;
@@ -18,13 +19,12 @@ typedef struct {
 typedef struct {
 	MonoMethod method;
 	MonoMethodHeader *header;
-} MonoMethodManaged;
+} MonoMethodNormal;
 
 typedef struct {
 	MonoMethod method;
 	guint16 piflags;  /* pinvoke flags */
 	ffi_cif *cif;
-	gpointer addr;
 } MonoMethodPInvoke;
 
 
@@ -38,5 +38,7 @@ guint32            mono_get_string_class_info (guint *ttoken, MonoImage **cl);
 
 
 MonoImage         *mono_load_image    (const char *fname, enum MonoImageOpenStatus *status);
+
+gpointer           mono_lookup_internal_call (const char *name);
 
 #endif

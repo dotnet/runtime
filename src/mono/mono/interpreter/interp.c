@@ -57,11 +57,14 @@ static int debug_indent_level = 0;
 
 static void ves_exec_method (MonoMethod *mh, stackval *args);
 
+typedef void (*ICallMethod) (MonoMethod *mh, stackval *args);
+
+
 static void
 ves_real_abort (int line, MonoMethod *mh,
 		const unsigned char *ip, stackval *stack, stackval *sp)
 {
-	MonoMethodManaged *mm = (MonoMethodManaged *)mh;
+	MonoMethodNormal *mm = (MonoMethodNormal *)mh;
 	fprintf (stderr, "Execution aborted in method: %s\n", mh->name);
 	fprintf (stderr, "Line=%d IP=0x%04x, Aborted execution\n", line,
 		 ip-(unsigned char *)mm->header->code);
@@ -172,6 +175,7 @@ get_virtual_method (MonoImage *image, guint32 token, stackval *args)
 {
 	switch (mono_metadata_token_table (token)) {
 	case MONO_TABLE_METHOD:
+	case MONO_TABLE_MEMBERREF:
 		return mono_get_method (image, token);
 	}
 	g_error ("got virtual method: 0x%x\n", token);
@@ -346,6 +350,34 @@ mono_get_ansi_string (MonoObject *o)
 }
 
 static void 
+ves_icall_InternalGetValue (MonoMethod *mh, stackval *sp)
+{
+	g_warning ("experimental implementation");
+	g_assert_not_reached ();
+}
+
+gpointer
+mono_lookup_internal_call (const char *name)
+{
+	static GHashTable *icall_hash = NULL;
+	gpointer res;
+
+	if (!icall_hash) {
+		icall_hash = g_hash_table_new (g_str_hash , g_str_equal);
+		
+		g_hash_table_insert (icall_hash, "InternalGetValue", 
+				     &ves_icall_InternalGetValue);
+	}
+
+	if (!(res = g_hash_table_lookup (icall_hash, name))) {
+		g_warning ("cant resolve internal call to \"%s\"", name);
+		g_assert_not_reached ();
+	}
+
+	return res;
+}
+
+static void 
 ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 {
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)mh;
@@ -410,7 +442,7 @@ ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 	if ((rsize = mono_type_size (mh->signature->ret->type, &align)))
 		res = alloca (rsize);
 
-	ffi_call (piinfo->cif, piinfo->addr, res, values);
+	ffi_call (piinfo->cif, mh->addr, res, values);
 		
 	t = l;
 	while (t) {
@@ -484,7 +516,7 @@ dump_stack (stackval *stack, stackval *sp)
 static void 
 ves_exec_method (MonoMethod *mh, stackval *args)
 {
-	MonoMethodManaged *mm = (MonoMethodManaged *)mh;
+	MonoMethodNormal *mm = (MonoMethodNormal *)mh;
 	stackval *stack;
 	register const unsigned char *ip;
 	register stackval *sp;
@@ -492,10 +524,17 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	char *locals = locals_store;
 	GOTO_LABEL_VARS;
 
+	if (mh->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+		ICallMethod icall = mh->addr;
+
+		icall (mh, args);
+		return;
+	}
+
 	if (mh->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		ves_pinvoke_method (mh, args);
 		return;
-	}
+	} 
 
 	ip = mm->header->code;
 
