@@ -631,7 +631,7 @@ analyze_dev_use (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *root, MonoInst 
 static void
 mono_ssa_avoid_copies (MonoCompile *cfg)
 {
-	MonoInst *inst, *next, *u;
+	MonoInst *inst, *next;
 	MonoBasicBlock *bb;
 	MonoMethodVar *i1, *i2;
 

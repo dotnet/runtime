@@ -329,7 +329,6 @@ mono_arch_has_unwind_info (gconstpointer addr)
 {
 	struct frame_state state_in;
 	struct frame_state *res;
-	guint8 const *code;
 
 	if (!inited) 
 		init_frame_state_for ();
