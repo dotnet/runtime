@@ -144,9 +144,9 @@ db_match_method (gpointer data, gpointer user_data)
 		char *mn, *args = dump_stack (frame->stack_args, frame->stack_args+signature->param_count);	\
 		debug_indent_level++;	\
 		output_indent ();	\
-                mn = mono_method_full_name (frame->method, FALSE); \
+		mn = mono_method_full_name (frame->method, FALSE); \
 		g_print ("(%d) Entering %s (", GetCurrentThreadId(), mn);	\
-                g_free (mn); \
+		g_free (mn); \
 		if (signature->hasthis) { \
 			if (global_no_pointers) { \
 				g_print ("this%s ", frame->obj ? "" : "=null"); \
@@ -168,9 +168,9 @@ db_match_method (gpointer data, gpointer user_data)
 		else	\
 			args = g_strdup ("");	\
 		output_indent ();	\
-                mn = mono_method_full_name (frame->method, FALSE); \
+		mn = mono_method_full_name (frame->method, FALSE); \
 		g_print ("(%d) Leaving %s", GetCurrentThreadId(),  mn);	\
-                g_free (mn); \
+		g_free (mn); \
 		g_print (" => %s\n", args);	\
 		g_free (args);	\
 		debug_indent_level--;	\
@@ -1271,27 +1271,30 @@ ves_exec_method (MonoInvocation *frame)
 	vtallocation *vtalloc = NULL;
 	GOTO_LABEL_VARS;
 
-	signature = frame->method->signature;
-
-	if (!(frame->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL ||
-	      frame->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) &&
-	    (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+	if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 		frame->method = mono_marshal_get_native_wrapper (frame->method);
-		ves_exec_method (frame);
-		return;
-	} 
+
+	signature = frame->method->signature;
 
 	DEBUG_ENTER ();
 
 	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		if (!frame->method->addr) {
-			if (!mono_lookup_pinvoke_call (frame->method)) {
+			/* ugly, but needed by the iflags setting in loader.c */
+			if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
+				ves_runtime_method (frame);
+				if (frame->ex)
+					goto handle_exception;
+				DEBUG_LEAVE ();
+				return;
+			}
+			if (frame->method->addr) {
 				frame->ex = (MonoException*)mono_get_exception_missing_method ();
 				goto handle_exception;
 			}
 		}
 		ves_pinvoke_method (frame, frame->method->signature, frame->method->addr, 
-				    frame->method->string_ctor);
+			    frame->method->string_ctor);
 		if (frame->ex)
 			goto handle_exception;
 		DEBUG_LEAVE ();
@@ -1619,11 +1622,10 @@ ves_exec_method (MonoInvocation *frame)
 				if (frame->method->wrapper_type != MONO_WRAPPER_NONE) {
 					csignature = (MonoMethodSignature *)mono_method_get_wrapper_data (frame->method, token);
 					child_frame.method = NULL;
-				} else
-				if ((ji = mono_jit_info_table_find (mono_root_domain, code))) {
+				} else if ((ji = mono_jit_info_table_find (mono_root_domain, code))) {
 					child_frame.method = ji->method;
 				} else {
-						g_assert_not_reached ();
+					g_assert_not_reached ();
 				}
 				g_assert (code);
 			} else {
@@ -1674,7 +1676,10 @@ ves_exec_method (MonoInvocation *frame)
 			child_frame.ex = NULL;
 			child_frame.ex_handler = NULL;
 
-			if (child_frame.method && csignature->hasthis && sp->type == VAL_OBJ &&
+			if (!child_frame.method) {
+				g_assert (code);
+				ves_pinvoke_method (&child_frame, csignature, code, FALSE);
+			} else if (csignature->hasthis && sp->type == VAL_OBJ &&
 					((MonoObject *)sp->data.p)->vtable->klass == mono_defaults.transparent_proxy_class) {
 				/* implement remoting */
 				g_assert (child_frame.method);
@@ -1682,40 +1687,35 @@ ves_exec_method (MonoInvocation *frame)
 				ves_exec_method (&child_frame);
 				//invoke_remoting_trampoline (&child_frame);
 			} else {
-				if (child_frame.method) {
-					switch (GPOINTER_TO_UINT (child_frame.method->addr)) {
-					case INLINE_STRING_LENGTH:
-						retval.type = VAL_I32;
-						retval.data.i = ((MonoString*)sp->data.p)->length;
-						/*g_print ("length of '%s' is %d\n", mono_string_to_utf8 (sp->data.p), retval.data.i);*/
-						break;
-					case INLINE_ARRAY_LENGTH:
-						retval.type = VAL_I32;
-						retval.data.i = mono_array_length ((MonoArray*)sp->data.p);
-						break;
-					case INLINE_ARRAY_RANK:
-						retval.type = VAL_I32;
-						retval.data.i = mono_object_class (sp->data.p)->rank;
-						break;
-					case INLINE_TYPE_ELEMENT_TYPE:
-						retval.type = VAL_OBJ;
-						{
-							MonoClass *c = mono_class_from_mono_type (((MonoReflectionType*)sp->data.p)->type);
-							retval.data.vt.klass = NULL;
-							if (c->enumtype && c->enum_basetype) /* types that are modifierd typebuilkders may not have enum_basetype set */
-								retval.data.p = mono_type_get_object (domain, c->enum_basetype);
-							else if (c->element_class)
-								retval.data.p = mono_type_get_object (domain, &c->element_class->byval_arg);
-							else
-								retval.data.p = NULL;
-						}
-						break;
-					default:
-						ves_exec_method (&child_frame);
+				switch (GPOINTER_TO_UINT (child_frame.method->addr)) {
+				case INLINE_STRING_LENGTH:
+					retval.type = VAL_I32;
+					retval.data.i = ((MonoString*)sp->data.p)->length;
+					/*g_print ("length of '%s' is %d\n", mono_string_to_utf8 (sp->data.p), retval.data.i);*/
+					break;
+				case INLINE_ARRAY_LENGTH:
+					retval.type = VAL_I32;
+					retval.data.i = mono_array_length ((MonoArray*)sp->data.p);
+					break;
+				case INLINE_ARRAY_RANK:
+					retval.type = VAL_I32;
+					retval.data.i = mono_object_class (sp->data.p)->rank;
+					break;
+				case INLINE_TYPE_ELEMENT_TYPE:
+					retval.type = VAL_OBJ;
+					{
+						MonoClass *c = mono_class_from_mono_type (((MonoReflectionType*)sp->data.p)->type);
+						retval.data.vt.klass = NULL;
+						if (c->enumtype && c->enum_basetype) /* types that are modifierd typebuilkders may not have enum_basetype set */
+							retval.data.p = mono_type_get_object (domain, c->enum_basetype);
+						else if (c->element_class)
+							retval.data.p = mono_type_get_object (domain, &c->element_class->byval_arg);
+						else
+							retval.data.p = NULL;
 					}
-				} else {
-					g_assert (code);
-					ves_pinvoke_method (&child_frame, csignature, code, FALSE);
+					break;
+				default:
+					ves_exec_method (&child_frame);
 				}
 			}
 
@@ -1835,8 +1835,14 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_BGE) /* Fall through */
 		CASE (CEE_BGE_S) {
 			int result;
-			int near_jump = *ip == CEE_BGE_S;
-			++ip;
+			int broffset;
+			if (*ip == CEE_BGE_S) {
+				broffset = (signed char)ip [1];
+				ip += 2;
+			} else {
+				broffset = (gint32) read32 (ip + 1);
+				ip += 5;
+			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
 				result = sp [0].data.i >= (gint)GET_NATI (sp [1]);
@@ -1846,13 +1852,8 @@ ves_exec_method (MonoInvocation *frame)
 				result = sp [0].data.f >= sp [1].data.f;
 			else
 				result = (gint)GET_NATI (sp [0]) >= (gint)GET_NATI (sp [1]);
-			if (result) {
-				if (near_jump)
-					ip += (signed char)*ip;
-				else
-					ip += (gint32) read32 (ip);
-			}
-			ip += near_jump ? 1: 4;
+			if (result)
+				ip += broffset;
 			BREAK;
 		}
 		CASE (CEE_BGT) /* Fall through */
