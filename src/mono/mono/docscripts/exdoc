@@ -33,8 +33,16 @@ while (<ARGV>){
 if ($html){
     for ($f = 0; $f < $filecount; $f++){
 	$name = $files[$f];
-	open (OUT, ">$dir/deploy/$name") || die "Can not create $dir/deploy/$name";
+	open (OUT, "> $dir/html/$name") || die "Can not create $dir/html/$name";
 	print "Merging: $name\n";
+	print OUT<<EOF;
+<?xml version="1.0" encoding="utf-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <title>$name</title>
+</head>
+<body>
+EOF
 	@a = split (/\n/, $files_content[$f]);
 
 	for ($ai = 0; $ai < $#a; $ai++){
@@ -44,23 +52,23 @@ if ($html){
 	    if ($api ne ""){
 print OUT<<EOF;
 <blockquote>
-    <a name="api:$api">
-                <table class="HeaderTable" width="100%" cellpadding="5">
+    <a name="api:$api"></a>
+                <table summary="" class="HeaderTable" width="100%" cellpadding="5">
                         <tr bgcolor="#b0c4de"><td>
 			<h3 class="api">$api</h3>
-			</td></tr></table>
-    </a>
+			</td></tr>
+		</table>
 
     <blockquote>
-                        <table class="SignatureTable" bgcolor="#c0c0c0" cellspacing="0" width="100%">
-                        <tr><td>
-                                <table class="InnerSignatureTalbe" cellpadding="10" cellspacing="0" width="100%">
-                                <tr bgcolor="#f2f2f2"><td>
-    <h4>Prototype: $api</h4>
-                                </td></tr>
-                                </table>
+        <table summary="" class="SignatureTable" bgcolor="#c0c0c0" cellspacing="0" width="100%">
+                <tr><td>
+                        <table summary="" class="InnerSignatureTalbe" cellpadding="10" cellspacing="0" width="100%">
+                        <tr bgcolor="#f2f2f2"><td>
+			<h4>Prototype: $api</h4>
                         </td></tr>
                         </table>
+	        </td></tr>
+	</table>
     </blockquote>
 <p>
 EOF
@@ -69,7 +77,7 @@ EOF
 			print OUT "<blockquote><dl>";
 
 		        print OUT "$arguments{$api}\n";
-			print OUT "</blockquote>";
+			print OUT "</dl></blockquote>";
 		    }
 		    if ($returns{$api} ne ""){
 		        print OUT "<h4>Returns</h4>";
@@ -83,14 +91,18 @@ EOF
 		        print OUT "$bodies{$api}\n";
 			print OUT "</blockquote>";
 		    }
-		    print OUT "</td></tr></table>";
 		    print OUT "\n";
                     print OUT "</blockquote>";
 	    } else {
 		print OUT "$line\n";
 	    }
 	}
+	print OUT<<EOF;
+</body>
+</html>
+EOF
 	close OUT;
+	system ("mono convert.exe $dir/html/$name $dir/deploy/$name");
     }
 }
 

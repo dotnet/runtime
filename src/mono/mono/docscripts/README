@@ -55,6 +55,14 @@ PROGRAMS
 
 		check mono/metadata/*.c
 
+* convert.cs
+
+	Converts an HTML file into a valid XML document, uses the
+	AgilityPack.dll.  The sources to this DLL live in GNOME CVS
+	module beagle/Filters/AgilityPack.
+
+	A binary is shipped for our convenience.
+
 DATAFILES:
 ---------
 
@@ -69,3 +77,4 @@ DATAFILES:
 	wapi
 		These two are produced by the produce-lists script
 		and it documents all the public methods.
+
