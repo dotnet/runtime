@@ -67,6 +67,11 @@
 #define isnan _isnan
 #define finite _finite
 #endif
+#ifndef HAVE_FINITE
+#ifdef HAVE_ISFINITE
+#define finite isfinite
+#endif
+#endif
 
 /* If true, then we output the opcodes as we interpret them */
 static int global_tracing = 0;
@@ -86,7 +91,11 @@ enum {
 };
 #undef OPDEF
 
-#define GET_NATI(sp) ((sp).data.nati)
+#if SIZEOF_VOID_P == 8
+#define GET_NATI(sp) ((sp).type == VAL_I32 ? (sp).data.i : (sp).data.nati)
+#else
+#define GET_NATI(sp) (sp).data.i
+#endif
 #define CSIZE(x) (sizeof (x) / 4)
 
 #define INIT_FRAME(frame,parent_frame,obj_this,method_args,method_retval,mono_method)	\
@@ -99,15 +108,30 @@ enum {
 		(frame)->ex_handler = NULL;	\
 		(frame)->ex = NULL;	\
 		(frame)->child = NULL;	\
+		(frame)->ip = NULL;	\
 		(frame)->invoke_trap = 0;	\
 	} while (0)
 
+typedef struct {
+	MonoInvocation *base_frame;
+	MonoInvocation *current_frame;
+	MonoInvocation *env_frame;
+	jmp_buf *current_env;
+	int search_for_handler;
+} ThreadContext;
+
+static MonoException * quit_exception = NULL;
+
 void ves_exec_method (MonoInvocation *frame);
+
+static char* dump_stack (stackval *stack, stackval *sp);
+static char* dump_frame (MonoInvocation *inv);
+static void ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context);
 
 typedef void (*ICallMethod) (MonoInvocation *frame);
 
 static guint32 die_on_exception = 0;
-static guint32 frame_thread_id = 0;
+static guint32 thread_context_id = 0;
 
 #define DEBUG_INTERP 1
 #if DEBUG_INTERP
@@ -146,7 +170,7 @@ db_match_method (gpointer data, gpointer user_data)
 		debug_indent_level++;	\
 		output_indent ();	\
 		mn = mono_method_full_name (frame->method, FALSE); \
-		g_print ("(%d) Entering %s (", GetCurrentThreadId(), mn);	\
+		g_print ("(%u) Entering %s (", GetCurrentThreadId(), mn);	\
 		g_free (mn); \
 		if (signature->hasthis) { \
 			if (global_no_pointers) { \
@@ -169,7 +193,7 @@ db_match_method (gpointer data, gpointer user_data)
 			args = g_strdup ("");	\
 		output_indent ();	\
 		mn = mono_method_full_name (frame->method, FALSE); \
-		g_print ("(%d) Leaving %s", GetCurrentThreadId(),  mn);	\
+		g_print ("(%u) Leaving %s", GetCurrentThreadId(),  mn);	\
 		g_free (mn); \
 		g_print (" => %s\n", args);	\
 		g_free (args);	\
@@ -187,9 +211,41 @@ db_match_method (gpointer data, gpointer user_data)
 
 static void
 interp_ex_handler (MonoException *ex) {
-	MonoInvocation *frame = TlsGetValue (frame_thread_id);
-	frame->ex = ex;
-	longjmp (*(jmp_buf*)frame->locals, 1);
+	ThreadContext *context = TlsGetValue (thread_context_id);
+	char *stack_trace;
+	stack_trace = dump_frame (context->current_frame);
+	ex->stack_trace = mono_string_new (mono_domain_get(), stack_trace);
+	g_free (stack_trace);
+	if (context == NULL || context->current_env == NULL) {
+		char *strace = mono_string_to_utf8 (ex->stack_trace);
+		fprintf(stderr, "Nothing can catch this exception: ");
+		fprintf(stderr, "%s", ex->object.vtable->klass->name);
+		if (ex->message != NULL) {
+			char *m = mono_string_to_utf8 (ex->message);
+			fprintf(stderr, ": %s", m);
+			g_free(m);
+		}
+		fprintf(stderr, "\n");
+		fprintf(stderr, "%s\n", strace);
+		g_free (strace);
+		if (ex->inner_ex != NULL) {
+			ex = ex->inner_ex;
+			fprintf(stderr, "Inner exception: %s", ex->object.vtable->klass->name);
+			if (ex->message != NULL) {
+				char *m = mono_string_to_utf8 (ex->message);
+				fprintf(stderr, ": %s", m);
+				g_free(m);
+			}
+			strace = mono_string_to_utf8 (ex->stack_trace);
+			fprintf(stderr, "\n");
+			fprintf(stderr, "%s\n", strace);
+			g_free (strace);
+		}
+		exit(1);
+	}
+	context->env_frame->ex = ex;
+	context->search_for_handler = 1;
+	longjmp (*context->current_env, 1);
 }
 
 static void
@@ -262,7 +318,6 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 			break;
 		}
 		result->data.p = *(gpointer*)data;
-		result->data.vt.klass = mono_class_from_mono_type (type);
 		return;
 	}
 	switch (type->type) {
@@ -292,6 +347,9 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 		return;
 	case MONO_TYPE_U:
 	case MONO_TYPE_I:
+		result->type = VAL_NATI;
+		result->data.nati = *(mono_i*)data;
+		return;
 	case MONO_TYPE_PTR:
 		result->type = VAL_TP;
 		result->data.p = *(gpointer*)data;
@@ -320,21 +378,20 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 	case MONO_TYPE_ARRAY:
 		result->type = VAL_OBJ;
 		result->data.p = *(gpointer*)data;
-		result->data.vt.klass = mono_class_from_mono_type (type);
 		return;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			return stackval_from_data (type->data.klass->enum_basetype, result, data, pinvoke);
+			stackval_from_data (type->data.klass->enum_basetype, result, data, pinvoke);
+			return;
 		} else {
 			int size;
 			result->type = VAL_VALUET;
-			result->data.vt.klass = type->data.klass;
 			
 			if (pinvoke)
 				size = mono_class_native_size (type->data.klass, NULL);
 			else
 				size = mono_class_value_size (type->data.klass, NULL);
-			memcpy (result->data.vt.vt, data, size);
+			memcpy (result->data.vt, data, size);
 		}
 		return;
 	default:
@@ -371,20 +428,27 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 		*p = val->data.i;
 		return;
 	}
-#if SIZEOF_VOID_P == 4
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-#endif
+	case MONO_TYPE_I: {
+		mono_i *p = (mono_i*)data;
+		/* In theory the value used by stloc should match the local var type
+	 	   but in practice it sometimes doesn't (a int32 gets dup'd and stloc'd into
+		   a native int - both by csc and mcs). Not sure what to do about sign extension
+		   as it is outside the spec... doing the obvious */
+		*p = val->type == VAL_I32 ? val->data.i : val->data.nati;
+		return;
+	}
+	case MONO_TYPE_U: {
+		mono_u *p = (mono_u*)data;
+		/* see above. */
+		*p = val->type == VAL_I32 ? (guint32)val->data.i : val->data.nati;
+		return;
+	}
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4: {
 		gint32 *p = (gint32*)data;
 		*p = val->data.i;
 		return;
 	}
-#if SIZEOF_VOID_P == 8
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-#endif
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8: {
 		gint64 *p = (gint64*)data;
@@ -413,7 +477,8 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 	}
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			return stackval_to_data (type->data.klass->enum_basetype, val, data, pinvoke);
+			stackval_to_data (type->data.klass->enum_basetype, val, data, pinvoke);
+			return;
 		} else {
 			int size;
 
@@ -422,7 +487,7 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 			else
 				size = mono_class_value_size (type->data.klass, NULL);
 
-			memcpy (data, val->data.vt.vt, size);
+			memcpy (data, val->data.vt, size);
 		}
 		return;
 	default:
@@ -430,6 +495,22 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 		g_assert_not_reached ();
 	}
 }
+
+#define FILL_IN_TRACE(exception, frame) \
+	do { \
+		char *stack_trace;	\
+		stack_trace = dump_frame (frame);	\
+		(exception)->stack_trace = mono_string_new (mono_domain_get(), stack_trace);	\
+		g_free (stack_trace);	\
+	} while (0)
+
+#define THROW_EX(exception,ex_ip)	\
+	do {\
+		frame->ip = (ex_ip);		\
+		FILL_IN_TRACE(exception, frame); \
+		frame->ex = (MonoException*)(exception);	\
+		goto handle_exception;	\
+	} while (0)
 
 static MonoObject*
 ves_array_create (MonoDomain *domain, MonoClass *klass, MonoMethodSignature *sig, stackval *values)
@@ -478,11 +559,16 @@ ves_array_set (MonoInvocation *frame)
 			if ((t = sp [i].data.i - ao->bounds [i].lower_bound) >= 
 			    ao->bounds [i].length) {
 				frame->ex = mono_get_exception_index_out_of_range ();
+				FILL_IN_TRACE(frame->ex, frame);
 				return;
 			}
 			pos = pos*ao->bounds [i].length + sp [i].data.i - 
 				ao->bounds [i].lower_bound;
 		}
+	} else if (pos >= ao->max_length) {
+		frame->ex = mono_get_exception_index_out_of_range ();
+		FILL_IN_TRACE(frame->ex, frame);
+		return;
 	}
 
 	esize = mono_array_element_size (ac);
@@ -513,16 +599,20 @@ ves_array_get (MonoInvocation *frame)
 	if (ao->bounds != NULL) {
 		pos -= ao->bounds [0].lower_bound;
 		for (i = 1; i < ac->rank; i++) {
-
 			if ((t = sp [i].data.i - ao->bounds [i].lower_bound) >= 
 			    ao->bounds [i].length) {
 				frame->ex = mono_get_exception_index_out_of_range ();
+				FILL_IN_TRACE(frame->ex, frame);
 				return;
 			}
 
 			pos = pos*ao->bounds [i].length + sp [i].data.i - 
 				ao->bounds [i].lower_bound;
 		}
+	} else if (pos >= ao->max_length) {
+		frame->ex = mono_get_exception_index_out_of_range ();
+		FILL_IN_TRACE(frame->ex, frame);
+		return;
 	}
 
 	esize = mono_array_element_size (ac);
@@ -539,7 +629,7 @@ ves_array_element_address (MonoInvocation *frame)
 	MonoObject *o;
 	MonoArray *ao;
 	MonoClass *ac;
-	gint32 i, pos, esize;
+	gint32 i, t, pos, esize;
 	gpointer ea;
 
 	o = frame->obj;
@@ -551,9 +641,20 @@ ves_array_element_address (MonoInvocation *frame)
 	pos = sp [0].data.i;
 	if (ao->bounds != NULL) {
 		pos -= ao->bounds [0].lower_bound;
-		for (i = 1; i < ac->rank; i++)
+		for (i = 1; i < ac->rank; i++) {
+			if ((t = sp [i].data.i - ao->bounds [i].lower_bound) >= 
+			    ao->bounds [i].length) {
+				frame->ex = mono_get_exception_index_out_of_range ();
+				FILL_IN_TRACE(frame->ex, frame);
+				return;
+			}
 			pos = pos*ao->bounds [i].length + sp [i].data.i - 
 				ao->bounds [i].lower_bound;
+		}
+	} else if (pos >= ao->max_length) {
+		frame->ex = mono_get_exception_index_out_of_range ();
+		FILL_IN_TRACE(frame->ex, frame);
+		return;
 	}
 
 	esize = mono_array_element_size (ac);
@@ -566,7 +667,8 @@ ves_array_element_address (MonoInvocation *frame)
 static void
 interp_walk_stack (MonoStackWalk func, gpointer user_data)
 {
-	MonoInvocation *frame = TlsGetValue (frame_thread_id);
+	ThreadContext *context = TlsGetValue (thread_context_id);
+	MonoInvocation *frame = context->current_frame;
 	int il_offset;
 	MonoMethodHeader *hd;
 
@@ -588,15 +690,24 @@ interp_walk_stack (MonoStackWalk func, gpointer user_data)
 }
 
 static void 
-ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFunc addr, gboolean string_ctor)
+ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFunc addr, gboolean string_ctor, ThreadContext *context)
 {
 	jmp_buf env;
 	MonoPIFunc func;
+	MonoInvocation *old_frame = context->current_frame;
+	MonoInvocation *old_env_frame = context->env_frame;
+	jmp_buf *old_env = context->current_env;
 
 	if (setjmp (env)) {
-		TlsSetValue (frame_thread_id, frame->args);
+		context->current_frame = old_frame;
+		context->env_frame = old_env_frame;
+		context->current_env = old_env;
+		context->search_for_handler = 0;
 		return;
 	}
+
+	context->env_frame = frame;
+	context->current_env = &env;
 
 	if (frame->method) {
 		if (!frame->method->info) {
@@ -608,15 +719,7 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFunc ad
 		func = mono_create_trampoline (sig, string_ctor);
 	}
 
-	/* 
-	 * frame->locals and args are unused for P/Invoke methods, so we reuse them. 
-	 * locals will point to the jmp_buf, while args will point to the previous
-	 * MonoInvocation frame: this is needed to make exception searching work across
-	 * managed/unmanaged boundaries.
-	 */
-	frame->locals = (char*)&env;
-	frame->args = (char*)TlsGetValue (frame_thread_id);
-	TlsSetValue (frame_thread_id, frame);
+	context->current_frame = frame;
 
 	func (addr, &frame->retval->data.p, frame->obj, frame->stack_args);
 
@@ -626,7 +729,9 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFunc ad
  	} else if (!MONO_TYPE_ISSTRUCT (sig->ret))
 		stackval_from_data (sig->ret, frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
 
-	TlsSetValue (frame_thread_id, frame->args);
+	context->current_frame = old_frame;
+	context->env_frame = old_env_frame;
+	context->current_env = old_env;
 }
 
 /*
@@ -635,7 +740,7 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFunc ad
  * provided by the runtime and is primarily used for the methods of delegates.
  */
 static void
-ves_runtime_method (MonoInvocation *frame)
+ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 {
 	const char *name = frame->method->name;
 	MonoObject *obj = (MonoObject*)frame->obj;
@@ -662,7 +767,7 @@ ves_runtime_method (MonoInvocation *frame)
 				if ((ji = mono_jit_info_table_find (mono_root_domain, code))) {
 					method = ji->method;
 					INIT_FRAME(&call,frame,delegate->delegate.target,frame->stack_args,frame->retval,method);
-					ves_exec_method (&call);
+					ves_exec_method_with_context (&call, context);
 					frame->ex = call.ex;
 					if (frame->ex)
 						return;
@@ -677,14 +782,14 @@ ves_runtime_method (MonoInvocation *frame)
 		if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 			nm = mono_marshal_get_delegate_begin_invoke (frame->method);
 			INIT_FRAME(&call,frame,obj,frame->stack_args,frame->retval,nm);
-			ves_exec_method (&call);
+			ves_exec_method_with_context (&call, context);
 			frame->ex = call.ex;
 			return;
 		}
 		if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
 			nm = mono_marshal_get_delegate_end_invoke (frame->method);
 			INIT_FRAME(&call,frame,obj,frame->stack_args,frame->retval,nm);
-			ves_exec_method (&call);
+			ves_exec_method_with_context (&call, context);
 			frame->ex = call.ex;
 			return;
 		}
@@ -721,14 +826,19 @@ dump_stack (stackval *stack, stackval *sp)
 	
 	while (s < sp) {
 		switch (s->type) {
+#if SIZEOF_VOID_P == 4
+		case VAL_NATI: g_string_sprintfa (str, "[%d/0x%0x] ", s->data.nati, s->data.nati); break;
+#else
+		case VAL_NATI: g_string_sprintfa (str, "[%lld/0x%0llx] ", s->data.nati, s->data.nati); break;
+#endif
 		case VAL_I32: g_string_sprintfa (str, "[%d] ", s->data.i); break;
-		case VAL_I64: g_string_sprintfa (str, "[%lld] ", s->data.l); break;
+		case VAL_I64: g_string_sprintfa (str, "[%lldL] ", s->data.l); break;
 		case VAL_DOUBLE: g_string_sprintfa (str, "[%0.5f] ", s->data.f); break;
 		case VAL_VALUET:
 			if (!global_no_pointers)
-				g_string_sprintfa (str, "[vt: %p] ", s->data.vt.vt);
+				g_string_sprintfa (str, "[vt: %p] ", s->data.vt);
 			else
-				g_string_sprintfa (str, "[vt%s] ", s->data.vt.vt ? "" : "=null");
+				g_string_sprintfa (str, "[vt%s] ", s->data.vt ? "" : "=null");
 			break;
 		case VAL_OBJ: {
 			MonoObject *obj =  s->data.p;
@@ -791,7 +901,7 @@ dump_stack (stackval *stack, stackval *sp)
 		}
 		default:
 			if (!global_no_pointers)
-				g_string_sprintfa (str, "[%p] ", s->data.p);
+				g_string_sprintfa (str, "[%c:%p] ", s->type == VAL_OBJ ? 'O' : s->type == VAL_MP ? 'M' : '?', s->data.p);
 			else
 				g_string_sprintfa (str, s->data.p ? "[ptr] " : "[null] ");
 			break;
@@ -808,45 +918,71 @@ dump_frame (MonoInvocation *inv)
 	int i;
 	char *args;
 	for (i = 0; inv; inv = inv->parent, ++i) {
-		MonoClass *k = inv->method->klass;
-		int codep;
-		const char * opname;
-		gchar *source = NULL;
-		if (inv->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL ||
-				inv->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
-			codep = 0;
-			opname = "";
-		} else {
-			MonoMethodHeader *hd = ((MonoMethodNormal *)inv->method)->header;
+		if (inv->method != NULL) {
+			MonoClass *k = inv->method->klass;
+			int codep = 0;
+			const char * opname = "";
+			gchar *source = NULL;
+			if ((inv->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
+				(inv->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) == 0) {
+				MonoMethodHeader *hd = ((MonoMethodNormal *)inv->method)->header;
 
-			if (inv->ip)
-				codep = *(inv->ip) == 0xfe? inv->ip [1] + 256: *(inv->ip);
+				if (hd != NULL) {
+					if (inv->ip)
+						codep = *(inv->ip) == 0xfe? inv->ip [1] + 256: *(inv->ip);
+					else
+						codep = 0;
+					opname = mono_opcode_names [codep];
+					codep = inv->ip - hd->code;
+	
+					source = mono_debug_source_location_from_il_offset (inv->method, codep, NULL);
+				}
+			}
+			args = dump_stack (inv->stack_args, inv->stack_args + inv->method->signature->param_count);
+			if (source)
+				g_string_sprintfa (str, "#%d: 0x%05x %-10s in %s.%s::%s (%s) at %s\n", i, codep, opname,
+						   k->name_space, k->name, inv->method->name, args, source);
 			else
-				codep = 0;
-			opname = mono_opcode_names [codep];
-			codep = inv->ip - hd->code;
-
-			source = mono_debug_source_location_from_il_offset (inv->method, codep, NULL);
+				g_string_sprintfa (str, "#%d: 0x%05x %-10s in %s.%s::%s (%s)\n", i, codep, opname,
+						   k->name_space, k->name, inv->method->name, args);
+			g_free (args);
+			g_free (source);
 		}
-		args = dump_stack (inv->stack_args, inv->stack_args + inv->method->signature->param_count);
-		if (source)
-			g_string_sprintfa (str, "#%d: 0x%05x %-10s in %s.%s::%s (%s) at %s\n", i, codep, opname,
-					   k->name_space, k->name, inv->method->name, args, source);
-		else
-			g_string_sprintfa (str, "#%d: 0x%05x %-10s in %s.%s::%s (%s)\n", i, codep, opname,
-					   k->name_space, k->name, inv->method->name, args);
-		g_free (args);
-		g_free (source);
 	}
 	return g_string_free (str, FALSE);
 }
 
 typedef enum {
 	INLINE_STRING_LENGTH = 1,
+	INLINE_STRING_GET_CHARS,
 	INLINE_ARRAY_LENGTH,
 	INLINE_ARRAY_RANK,
 	INLINE_TYPE_ELEMENT_TYPE
 } InlineMethod;
+
+typedef struct
+{
+	MonoClassField *field;
+} MonoRuntimeFieldInfo;
+
+typedef struct
+{
+	guint32 locals_size;
+	guint32 args_size;
+	MonoRuntimeFieldInfo *field_info;
+	guint32 offsets[1];
+} MethodRuntimeData;
+
+static void
+write32(unsigned char *p, guint32 v)
+{
+	p[0] = v & 0xff;
+	p[1] = (v >> 8) & 0xff;
+	p[2] = (v >> 16) & 0xff;
+	p[3] = (v >> 24) & 0xff;
+}
+
+static CRITICAL_SECTION calc_section;
 
 static void
 calc_offsets (MonoImage *image, MonoMethod *method)
@@ -854,44 +990,16 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 	int i, align, size, offset = 0;
 	MonoMethodHeader *header = ((MonoMethodNormal*)method)->header;
 	MonoMethodSignature *signature = method->signature;
-	int hasthis = signature->hasthis;
 	register const unsigned char *ip, *end;
 	const MonoOpcode *opcode;
 	guint32 token;
 	MonoMethod *m;
 	MonoClass *class;
 	MonoDomain *domain = mono_domain_get ();
-	guint32 *offsets;
+	MethodRuntimeData *rtd;
+	int n_fields = 0;
 
 	mono_profiler_method_jit (method); /* sort of... */
-	offsets = g_new0 (guint32, 2 + header->num_locals + signature->param_count + signature->hasthis);
-	for (i = 0; i < header->num_locals; ++i) {
-		size = mono_type_size (header->locals [i], &align);
-		offset += align - 1;
-		offset &= ~(align - 1);
-		offsets [2 + i] = offset;
-		offset += size;
-	}
-	offsets [0] = offset;
-	offset = 0;
-	if (hasthis) {
-		offset += sizeof (gpointer) - 1;
-		offset &= ~(sizeof (gpointer) - 1);
-		offsets [2 + header->num_locals] = offset;
-		offset += sizeof (gpointer);
-	}
-	for (i = 0; i < signature->param_count; ++i) {
-		if (signature->pinvoke)
-			size = mono_type_native_stack_size (signature->params [i], &align);
-		else
-			size = mono_type_stack_size (signature->params [i], &align);
-		offset += align - 1;
-		offset &= ~(align - 1);
-		offsets [2 + hasthis + header->num_locals + i] = offset;
-		offset += size;
-	}
-	offsets [1] = offset;
-
 	/* intern the strings in the method. */
 	ip = header->code;
 	end = ip + header->code_size;
@@ -920,9 +1028,7 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 			ip += 5;
 			break;
 		case MonoInlineField:
-			token = read32 (ip + 1);
-			mono_field_from_token (image, token, &class);
-			mono_class_vtable (domain, class);
+			n_fields++;
 			ip += 5;
 			break;
 		case MonoInlineMethod:
@@ -966,7 +1072,110 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 		}
 
 	}
-	method->info = offsets;
+
+	/* the rest needs to be locked so it is only done once */
+	EnterCriticalSection(&calc_section);
+	if (method->info != NULL) {
+		LeaveCriticalSection(&calc_section);
+		mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
+		return;
+	}
+	rtd = (MethodRuntimeData *)g_malloc0 (sizeof(MethodRuntimeData) + (header->num_locals - 1 + signature->hasthis + signature->param_count) * sizeof(guint32));
+	for (i = 0; i < header->num_locals; ++i) {
+		size = mono_type_size (header->locals [i], &align);
+		offset += align - 1;
+		offset &= ~(align - 1);
+		rtd->offsets [i] = offset;
+		offset += size;
+	}
+	rtd->locals_size = offset;
+	offset = 0;
+	if (signature->hasthis) {
+		offset += sizeof (gpointer) - 1;
+		offset &= ~(sizeof (gpointer) - 1);
+		rtd->offsets [header->num_locals] = offset;
+		offset += sizeof (gpointer);
+	}
+	for (i = 0; i < signature->param_count; ++i) {
+		if (signature->pinvoke) {
+			size = mono_type_native_stack_size (signature->params [i], &align);
+			align = 8;
+		}
+		else
+			size = mono_type_stack_size (signature->params [i], &align);
+		offset += align - 1;
+		offset &= ~(align - 1);
+		rtd->offsets [signature->hasthis + header->num_locals + i] = offset;
+		offset += size;
+	}
+	rtd->args_size = offset;
+	rtd->field_info = g_malloc(n_fields * sizeof(MonoRuntimeFieldInfo));
+
+	header->code = g_memdup(header->code, header->code_size);
+	n_fields = 0;
+	ip = header->code;
+	end = ip + header->code_size;
+	while (ip < end) {
+		i = *ip;
+		if (*ip == 0xfe) {
+			ip++;
+			i = *ip + 256;
+		}
+		opcode = &mono_opcodes [i];
+		switch (opcode->argument) {
+		case MonoInlineNone:
+			++ip;
+			break;
+		case MonoInlineString:
+			ip += 5;
+			break;
+		case MonoInlineType:
+			ip += 5;
+			break;
+		case MonoInlineField:
+			token = read32 (ip + 1);
+			rtd->field_info[n_fields].field = mono_field_from_token (image, token, &class);
+			mono_class_vtable (domain, class);
+			g_assert(rtd->field_info[n_fields].field->parent == class);
+			write32 ((unsigned char *)ip + 1, n_fields);
+			n_fields++;
+			ip += 5;
+			break;
+		case MonoInlineMethod:
+			ip += 5;
+			break;
+		case MonoInlineTok:
+		case MonoInlineSig:
+		case MonoShortInlineR:
+		case MonoInlineI:
+		case MonoInlineBrTarget:
+			ip += 5;
+			break;
+		case MonoInlineVar:
+			ip += 3;
+			break;
+		case MonoShortInlineVar:
+		case MonoShortInlineI:
+		case MonoShortInlineBrTarget:
+			ip += 2;
+			break;
+		case MonoInlineSwitch: {
+			guint32 n;
+			++ip;
+			n = read32 (ip);
+			ip += 4;
+			ip += 4 * n;
+			break;
+		}
+		case MonoInlineR:
+		case MonoInlineI8:
+			ip += 9;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+
+	}
 
 	/*
 	 * We store the inline info in addr, since it's unused for IL methods.
@@ -974,6 +1183,8 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 	if (method->klass == mono_defaults.string_class) {
 		if (strcmp (method->name, "get_Length") == 0)
 			method->addr = GUINT_TO_POINTER (INLINE_STRING_LENGTH);
+		else if (strcmp (method->name, "get_Chars") == 0)
+			method->addr = GUINT_TO_POINTER (INLINE_STRING_GET_CHARS);
 	} else if (method->klass == mono_defaults.array_class) {
 		if (strcmp (method->name, "get_Length") == 0)
 			method->addr = GUINT_TO_POINTER (INLINE_ARRAY_LENGTH);
@@ -984,70 +1195,90 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 			method->addr = GUINT_TO_POINTER (INLINE_TYPE_ELEMENT_TYPE);
 	}
 	mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
+	method->info = rtd;
+	LeaveCriticalSection(&calc_section);
 }
 
-#define LOCAL_POS(n)            (frame->locals + offsets [2 + (n)])
+#define LOCAL_POS(n)            (frame->locals + rtd->offsets [n])
 #define LOCAL_TYPE(header, n)   ((header)->locals [(n)])
 
 #define ARG_POS(n)              (args_pointers [(n)])
 #define ARG_TYPE(sig, n)        ((n) ? (sig)->params [(n) - (sig)->hasthis] : \
 				(sig)->hasthis ? &frame->method->klass->this_arg: (sig)->params [(0)])
 
-#define THROW_EX(exception,ex_ip)	\
-		do {\
-			char *stack_trace;	\
-			frame->ip = (ex_ip);		\
-			stack_trace = dump_frame (frame);	\
-			frame->ex = (MonoException*)(exception);	\
-			frame->ex->stack_trace = mono_string_new (domain, stack_trace);	\
-			g_free (stack_trace);	\
-			goto handle_exception;	\
-		} while (0)
-
 typedef struct _vtallocation vtallocation;
 
 struct _vtallocation {
 	vtallocation *next;
 	guint32 size;
-	char data [MONO_ZERO_LEN_ARRAY];
+	guint32 max_size;
+	union {
+		char data [MONO_ZERO_LEN_ARRAY];
+		double force_alignment;
+	} u;
 };
+
+#define vt_allocmem(sz, var) \
+	do { \
+		vtallocation *tmp, *prev; \
+		prev = NULL; \
+		tmp = vtalloc; \
+		while (tmp && (tmp->max_size < (sz))) { \
+			prev = tmp; \
+			tmp = tmp->next; \
+		} \
+		if (!tmp) { \
+			tmp = alloca (sizeof (vtallocation) + (sz));	\
+			tmp->max_size = (sz);	\
+			g_assert ((sz) < 10000);	\
+		} \
+		else \
+			if (prev) \
+				prev->next = tmp->next; \
+			else \
+				vtalloc = tmp->next; \
+		tmp->size = (sz);	\
+		var = tmp->u.data;	\
+	} while(0)
 
 #define vt_alloc(vtype,sp,native)	\
 	if ((vtype)->type == MONO_TYPE_VALUETYPE && !(vtype)->data.klass->enumtype) {	\
 		if (!(vtype)->byref) {	\
-			guint32 align;	\
-			guint32 size; \
-            vtallocation *tmp, *prev; \
-                        if (native) size = mono_class_native_size ((vtype)->data.klass, &align);	\
-                        else size = mono_class_value_size ((vtype)->data.klass, &align);	\
-            prev = NULL; \
-			tmp = vtalloc; \
-			while (tmp && (tmp->size < size)) { \
-				prev = tmp; \
-			    tmp = tmp->next; \
-			} \
-            if (!tmp) { \
-				tmp = alloca (sizeof (vtallocation) + size);	\
-				tmp->size = size;	\
-				g_assert (size < 10000);	\
-			} \
-			else \
-			    if (prev) \
-				    prev->next = tmp->next; \
-                else \
-                    vtalloc = tmp->next; \
-			(sp)->data.vt.vt = tmp->data;	\
-		} else {	\
-			(sp)->data.vt.klass = (vtype)->data.klass;	\
+			guint32 vtsize; \
+			if (native) vtsize = mono_class_native_size ((vtype)->data.klass, NULL);	\
+			else vtsize = mono_class_value_size ((vtype)->data.klass, NULL);	\
+			vt_allocmem(vtsize, (sp)->data.vt);	\
 		}	\
 	}
 
 #define vt_free(sp)	\
 	do {	\
 		if ((sp)->type == VAL_VALUET) {	\
-			vtallocation *tmp = (vtallocation*)(((char*)(sp)->data.vt.vt) - G_STRUCT_OFFSET (vtallocation, data));	\
-            tmp->next = vtalloc; \
-            vtalloc = tmp; \
+			vtallocation *tmp = (vtallocation*)(((char*)(sp)->data.vt) - G_STRUCT_OFFSET (vtallocation, u));	\
+			tmp->next = vtalloc; \
+			vtalloc = tmp; \
+		}	\
+	} while (0)
+
+#define stackvalpush(val, sp) \
+	do {	\
+		(sp)->type = (val)->type; \
+		(sp)->data = (val)->data; \
+		if ((val)->type == VAL_VALUET) {	\
+			vtallocation *vala = (vtallocation*)(((char*)(val)->data.vt) - G_STRUCT_OFFSET (vtallocation, u));	\
+			vt_allocmem(vala->size, (sp)->data.vt);	\
+			memcpy((sp)->data.vt, (val)->data.vt, vala->size);	\
+		}	\
+		(sp)++; \
+	} while (0)
+
+#define stackvalcpy(src, dest) \
+	do {	\
+		(dest)->type = (src)->type; \
+		(dest)->data = (src)->data; \
+		if ((dest)->type == VAL_VALUET) {	\
+			vtallocation *tmp = (vtallocation*)(((char*)(src)->data.vt) - G_STRUCT_OFFSET (vtallocation, u));	\
+			memcpy((dest)->data.vt, (src)->data.vt, tmp->size);	\
 		}	\
 	} while (0)
 
@@ -1083,15 +1314,37 @@ verify_method (MonoMethod *m)
 	(gint32)(b) >= 0 ? (gint32)(MYGINT32_MAX) - (gint32)(b) < (gint32)(a) ? -1 : 0	\
 	: (gint32)(MYGINT32_MIN) - (gint32)(b) > (gint32)(a) ? +1 : 0
 
+#define CHECK_SUB_OVERFLOW(a,b) \
+	(gint32)(b) < 0 ? (gint32)(MYGINT32_MAX) + (gint32)(b) < (gint32)(a) ? -1 : 0	\
+	: (gint32)(MYGINT32_MIN) + (gint32)(b) > (gint32)(a) ? +1 : 0
+
 #define CHECK_ADD_OVERFLOW_UN(a,b) \
 	(guint32)(MYGUINT32_MAX) - (guint32)(b) < (guint32)(a) ? -1 : 0
+
+#define CHECK_SUB_OVERFLOW_UN(a,b) \
+	(guint32)(a) < (guint32)(b) ? -1 : 0
 
 #define CHECK_ADD_OVERFLOW64(a,b) \
 	(gint64)(b) >= 0 ? (gint64)(MYGINT64_MAX) - (gint64)(b) < (gint64)(a) ? -1 : 0	\
 	: (gint64)(MYGINT64_MIN) - (gint64)(b) > (gint64)(a) ? +1 : 0
 
+#define CHECK_SUB_OVERFLOW64(a,b) \
+	(gint64)(b) < 0 ? (gint64)(MYGINT64_MAX) + (gint64)(b) < (gint64)(a) ? -1 : 0	\
+	: (gint64)(MYGINT64_MIN) + (gint64)(b) > (gint64)(a) ? +1 : 0
+
 #define CHECK_ADD_OVERFLOW64_UN(a,b) \
 	(guint64)(MYGUINT64_MAX) - (guint64)(b) < (guint64)(a) ? -1 : 0
+
+#define CHECK_SUB_OVERFLOW64_UN(a,b) \
+	(guint64)(a) < (guint64)(b) ? -1 : 0
+
+#if SIZEOF_VOID_P == 4
+#define CHECK_ADD_OVERFLOW_NAT(a,b) CHECK_ADD_OVERFLOW(a,b)
+#define CHECK_ADD_OVERFLOW_NAT_UN(a,b) CHECK_ADD_OVERFLOW_UN(a,b)
+#else
+#define CHECK_ADD_OVERFLOW_NAT(a,b) CHECK_ADD_OVERFLOW64(a,b)
+#define CHECK_ADD_OVERFLOW_NAT_UN(a,b) CHECK_ADD_OVERFLOW64_UN(a,b)
+#endif
 
 /* Resolves to TRUE if the operands would overflow */
 #define CHECK_MUL_OVERFLOW(a,b) \
@@ -1120,10 +1373,19 @@ verify_method (MonoMethod *m)
 	((guint64)(a) == 0) || ((guint64)(b) == 0) ? 0 : \
 	(guint64)(b) > ((MYGUINT64_MAX) / (guint64)(a))
 
+#if SIZEOF_VOID_P == 4
+#define CHECK_MUL_OVERFLOW_NAT(a,b) CHECK_MUL_OVERFLOW(a,b)
+#define CHECK_MUL_OVERFLOW_NAT_UN(a,b) CHECK_MUL_OVERFLOW_UN(a,b)
+#else
+#define CHECK_MUL_OVERFLOW_NAT(a,b) CHECK_MUL_OVERFLOW64(a,b)
+#define CHECK_MUL_OVERFLOW_NAT_UN(a,b) CHECK_MUL_OVERFLOW64_UN(a,b)
+#endif
+
 static MonoObject*
 interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {
-	MonoInvocation frame, *parent;
+	MonoInvocation frame;
+	ThreadContext *context = TlsGetValue (thread_context_id);
 	MonoObject *retval = NULL;
 	MonoMethodSignature *sig = method->signature;
 	MonoClass *klass = mono_class_from_mono_type (sig->ret);
@@ -1131,6 +1393,21 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 	void *ret;
 	stackval result;
 	stackval *args = alloca (sizeof (stackval) * sig->param_count);
+	ThreadContext context_struct;
+	MonoInvocation *old_frame;
+
+	if (context == NULL) {
+		context = &context_struct;
+		context_struct.base_frame = &frame;
+		context_struct.current_frame = NULL;
+		context_struct.env_frame = NULL;
+		context_struct.current_env = NULL;
+		context_struct.search_for_handler = 0;
+		TlsSetValue (thread_context_id, context);
+	}
+	else
+		old_frame = context->current_frame;
+
 
 	/* FIXME: Set frame for execption handling.  */
 
@@ -1148,7 +1425,7 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		retval = mono_object_new (mono_domain_get (), klass);
 		ret = ((char*)retval) + sizeof (MonoObject);
 		if (!sig->ret->data.klass->enumtype)
-			result.data.vt.vt = ret;
+			result.data.vt = ret;
 		break;
 	default:
 		retval = mono_object_new (mono_domain_get (), klass);
@@ -1170,14 +1447,12 @@ handle_enum:
 		case MONO_TYPE_BOOLEAN:
 			args [i].type = VAL_I32;
 			args [i].data.i = *(MonoBoolean*)params [i];
-			args [i].data.vt.klass = NULL;
 			break;
 		case MONO_TYPE_U2:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_CHAR:
 			args [i].type = VAL_I32;
 			args [i].data.i = *(gint16*)params [i];
-			args [i].data.vt.klass = NULL;
 			break;
 #if SIZEOF_VOID_P == 4
 		case MONO_TYPE_U: /* use VAL_POINTER? */
@@ -1187,7 +1462,6 @@ handle_enum:
 		case MONO_TYPE_I4:
 			args [i].type = VAL_I32;
 			args [i].data.i = *(gint32*)params [i];
-			args [i].data.vt.klass = NULL;
 			break;
 #if SIZEOF_VOID_P == 8
 		case MONO_TYPE_U:
@@ -1197,7 +1471,6 @@ handle_enum:
 		case MONO_TYPE_I8:
 			args [i].type = VAL_I64;
 			args [i].data.l = *(gint64*)params [i];
-			args [i].data.vt.klass = NULL;
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (sig->params [i]->data.klass->enumtype) {
@@ -1206,7 +1479,6 @@ handle_enum:
 			} else {
 				args [i].type = VAL_POINTER;
 				args [i].data.p = params [i];
-				args [i].data.vt.klass = NULL;
 			}
 			break;
 		case MONO_TYPE_STRING:
@@ -1216,7 +1488,6 @@ handle_enum:
 		case MONO_TYPE_OBJECT:
 			args [i].type = VAL_OBJ;
 			args [i].data.p = params [i];
-			args [i].data.vt.klass = NULL;
 			break;
 		default:
 			g_error ("type 0x%x not handled in  runtime invoke", sig->params [i]->type);
@@ -1227,15 +1498,27 @@ handle_enum:
 		/* Unbox the instance, since valuetype methods expect an interior pointer. */
 		obj = mono_object_unbox (obj);
 
-	/* chain with managed parent if any */
-	parent = TlsGetValue (frame_thread_id);
-	INIT_FRAME(&frame,parent,obj,args,&result,method);
+	INIT_FRAME(&frame,context->current_frame,obj,args,&result,method);
 	if (exc)
 		frame.invoke_trap = 1;
-	ves_exec_method (&frame);
-	if (exc && frame.ex) {
-		*exc = (MonoObject*) frame.ex;
-		return NULL;
+	ves_exec_method_with_context (&frame, context);
+	if (context == &context_struct)
+		TlsSetValue (thread_context_id, NULL);
+	else
+		context->current_frame = old_frame;
+	if (frame.ex != NULL) {
+		if (exc != NULL) {
+			*exc = (MonoObject*) frame.ex;
+			if (*exc == (MonoObject *)quit_exception)
+				mono_print_unhandled_exception(*exc);
+			return NULL;
+		}
+		if (context->current_env != NULL) {
+			context->env_frame->ex = frame.ex;
+			longjmp(*context->current_env, 1);
+		}
+		else
+			printf("dropped exception...\n");
 	}
 	if (sig->ret->type == MONO_TYPE_VOID && !method->string_ctor)
 		return NULL;
@@ -1243,6 +1526,24 @@ handle_enum:
 		return result.data.p;
 	stackval_to_data (sig->ret, &result, ret, sig->pinvoke);
 	return retval;
+}
+
+static MonoMethod *
+get_native_wrapper(MonoMethod *method, ThreadContext *context)
+{
+	jmp_buf env;
+	jmp_buf *old_env;
+	MonoMethod *wrapper;
+	old_env = context->current_env;
+	if (setjmp(env) != 0) {
+		context->current_env = old_env;
+		context->search_for_handler = 1;
+		return NULL;
+	}
+	context->current_env = &env;
+	wrapper = mono_marshal_get_native_wrapper (method);
+	context->current_env = old_env;
+	return wrapper;
 }
 
 /*
@@ -1256,8 +1557,8 @@ handle_enum:
  * duplication.
  * 
  */
-void 
-ves_exec_method (MonoInvocation *frame)
+static void 
+ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 {
 	MonoDomain *domain = mono_domain_get (); 	
 	MonoInvocation child_frame;
@@ -1265,12 +1566,11 @@ ves_exec_method (MonoInvocation *frame)
 	MonoMethodSignature *signature;
 	MonoImage *image;
 	GSList *finally_ips = NULL;
-	const unsigned char *endfinally_ip;
+	const unsigned char *endfinally_ip = NULL;
 	register const unsigned char *ip;
 	register stackval *sp = NULL;
+	MethodRuntimeData *rtd;
 	void **args_pointers;
-	guint32 *offsets;
-	gint il_ins_count = -1;
 	gint tracing = global_tracing;
 	unsigned char tail_recursion = 0;
 	unsigned char unaligned_address = 0;
@@ -1279,8 +1579,15 @@ ves_exec_method (MonoInvocation *frame)
 	MonoVTable *method_class_vt;
 	GOTO_LABEL_VARS;
 
-	if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-		frame->method = mono_marshal_get_native_wrapper (frame->method);
+	frame->ex = NULL;
+	frame->ip = NULL;
+	context->current_frame = frame;
+
+	if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+		frame->method = get_native_wrapper (frame->method, context);
+		if (frame->method == NULL)
+			goto exit_frame;
+	}
 
 	method_class_vt = mono_class_vtable (domain, frame->method->klass);
 	if (!method_class_vt->initialized)
@@ -1289,15 +1596,16 @@ ves_exec_method (MonoInvocation *frame)
 
 	DEBUG_ENTER ();
 
+	header = ((MonoMethodNormal *)frame->method)->header;
+
 	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		if (!frame->method->addr) {
 			/* ugly, but needed by the iflags setting in loader.c */
 			if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
-				ves_runtime_method (frame);
+				ves_runtime_method (frame, context);
 				if (frame->ex)
 					goto handle_exception;
-				DEBUG_LEAVE ();
-				return;
+				goto exit_frame;
 			}
 			if (frame->method->addr) {
 				frame->ex = (MonoException*)mono_get_exception_missing_method ();
@@ -1305,29 +1613,26 @@ ves_exec_method (MonoInvocation *frame)
 			}
 		}
 		ves_pinvoke_method (frame, frame->method->signature, frame->method->addr, 
-			    frame->method->string_ctor);
+			    frame->method->string_ctor, context);
 		if (frame->ex)
 			goto handle_exception;
-		DEBUG_LEAVE ();
-		return;
+		goto exit_frame;
 	} 
 
 	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
-		ves_runtime_method (frame);
+		ves_runtime_method (frame, context);
 		if (frame->ex)
 			goto handle_exception;
-		DEBUG_LEAVE ();
-		return;
+		goto exit_frame;
 	} 
 
 	/*verify_method (frame->method);*/
 
-	header = ((MonoMethodNormal *)frame->method)->header;
 	image = frame->method->klass->image;
 
 	if (!frame->method->info)
 		calc_offsets (image, frame->method);
-	offsets = frame->method->info;
+	rtd = frame->method->info;
 
 	/*
 	 * with alloca we get the expected huge performance gain
@@ -1337,14 +1642,15 @@ ves_exec_method (MonoInvocation *frame)
 	sp = frame->stack = alloca (sizeof (stackval) * header->max_stack);
 
 	if (header->num_locals) {
-		g_assert (offsets [0] < 10000);
-		frame->locals = alloca (offsets [0]);
+		g_assert (rtd->locals_size < 65536);
+		frame->locals = alloca (rtd->locals_size);
 		/* 
 		 * yes, we do it unconditionally, because it needs to be done for
 		 * some cases anyway and checking for that would be even slower.
 		 */
-		memset (frame->locals, 0, offsets [0]);
+		memset (frame->locals, 0, rtd->locals_size);
 	}
+
 	/*
 	 * Copy args from stack_args to args.
 	 */
@@ -1352,8 +1658,8 @@ ves_exec_method (MonoInvocation *frame)
 		int i;
 		int has_this = signature->hasthis;
 
-		g_assert (offsets [1] < 10000);
-		frame->args = alloca (offsets [1]);
+		g_assert (rtd->args_size < 10000);
+		frame->args = alloca (rtd->args_size);
 		g_assert ((signature->param_count + has_this) < 1000);
 		args_pointers = alloca (sizeof(void*) * (signature->param_count + has_this));
 		if (has_this) {
@@ -1362,7 +1668,7 @@ ves_exec_method (MonoInvocation *frame)
 			*this_arg = frame->obj;
 		}
 		for (i = 0; i < signature->param_count; ++i) {
-			args_pointers [i + has_this] = frame->args + offsets [2 + header->num_locals + has_this + i];
+			args_pointers [i + has_this] = frame->args + rtd->offsets [header->num_locals + has_this + i];
 			stackval_to_data (signature->params [i], frame->stack_args + i, args_pointers [i + has_this], signature->pinvoke);
 		}
 	}
@@ -1393,13 +1699,10 @@ ves_exec_method (MonoInvocation *frame)
 			output_indent ();
 			discode = mono_disasm_code_one (NULL, frame->method, ip, NULL);
 			discode [strlen (discode) - 1] = 0; /* no \n */
-			g_print ("(%d) %-29s %s\n", GetCurrentThreadId(), discode, ins);
+			g_print ("(%u) %-29s %s\n", GetCurrentThreadId(), discode, ins);
 			g_free (ins);
 			g_free (discode);
 		}
-		if (il_ins_count > 0)
-			if (!(--il_ins_count))
-				G_BREAKPOINT ();
 #endif
 		
 		SWITCH (*ip) {
@@ -1426,15 +1729,16 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDLOC_2)
 		CASE (CEE_LDLOC_3) {
 			int n = (*ip)-CEE_LDLOC_0;
+			MonoType *vartype = LOCAL_TYPE (header, n);
 			++ip;
-			if ((LOCAL_TYPE (header, n))->type == MONO_TYPE_I4) {
+			if (vartype->type == MONO_TYPE_I4) {
 				sp->type = VAL_I32;
 				sp->data.i = *(gint32*) LOCAL_POS (n);
 				++sp;
 				BREAK;
 			} else {
-				vt_alloc (LOCAL_TYPE (header, n), sp, FALSE);
-				stackval_from_data (LOCAL_TYPE (header, n), sp, LOCAL_POS (n), FALSE);
+				vt_alloc (vartype, sp, FALSE);
+				stackval_from_data (vartype, sp, LOCAL_POS (n), FALSE);
 			}
 			++sp;
 			BREAK;
@@ -1464,17 +1768,9 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			BREAK;
 		CASE (CEE_LDARGA_S) {
-			MonoType *t;
-			MonoClass *c;
-
 			++ip;
-			t = ARG_TYPE (signature, *ip);
-			c = mono_class_from_mono_type (t);
-			sp->data.vt.klass = c;
-			sp->data.vt.vt = ARG_POS (*ip);
-
+			sp->data.vt = ARG_POS (*ip);
 			sp->type = VAL_MP;
-
 			++sp;
 			++ip;
 			BREAK;
@@ -1494,17 +1790,9 @@ ves_exec_method (MonoInvocation *frame)
 			++sp;
 			BREAK;
 		CASE (CEE_LDLOCA_S) {
-			MonoType *t;
-			MonoClass *c;
-
 			++ip;
-			t = LOCAL_TYPE (header, *ip);
-			c =  mono_class_from_mono_type (t);
-			sp->data.vt.klass = c;
 			sp->data.p = LOCAL_POS (*ip);
-
 			sp->type = VAL_MP;
-
 			++sp;
 			++ip;
 			BREAK;
@@ -1520,7 +1808,6 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			sp->type = VAL_OBJ;
 			sp->data.p = NULL;
-			sp->data.vt.klass = NULL;
 			++sp;
 			BREAK;
 		CASE (CEE_LDC_I4_M1)
@@ -1583,14 +1870,7 @@ ves_exec_method (MonoInvocation *frame)
 			BREAK;
 		CASE (CEE_UNUSED99) ves_abort (); BREAK;
 		CASE (CEE_DUP) 
-			if (sp [-1].type == VAL_VALUET) {
-				MonoClass *c = sp [-1].data.vt.klass;
-				vt_alloc (&c->byval_arg, sp, FALSE);
-				stackval_from_data (&c->byval_arg, sp, sp [-1].data.vt.vt, FALSE);
-			} else {
-				*sp = sp [-1]; 
-			}
-			++sp; 
+			stackvalpush(sp - 1, sp);
 			++ip; 
 			BREAK;
 		CASE (CEE_POP)
@@ -1598,23 +1878,7 @@ ves_exec_method (MonoInvocation *frame)
 			--sp;
 			vt_free (sp);
 			BREAK;
-		CASE (CEE_JMP) {
-			guint32 token;
-
-			frame->ip = ip;
-			
-			++ip;
-			token = read32 (ip);
-			ip += 4;
-
-			child_frame.method = mono_get_method (image, token, NULL);
-			if (!child_frame.method)
-				THROW_EX (mono_get_exception_missing_method (), ip -5);
-
-			ves_abort ();
-
-			BREAK;
-		}
+		CASE (CEE_JMP) ves_abort(); BREAK;
 		CASE (CEE_CALLVIRT) /* Fall through */
 		CASE (CEE_CALLI)    /* Fall through */
 		CASE (CEE_CALL) {
@@ -1643,13 +1907,10 @@ ves_exec_method (MonoInvocation *frame)
 				if (frame->method->wrapper_type != MONO_WRAPPER_NONE) {
 					csignature = (MonoMethodSignature *)mono_method_get_wrapper_data (frame->method, token);
 					child_frame.method = NULL;
+				} else if ((ji = mono_jit_info_table_find (mono_root_domain, code))) {
+					child_frame.method = ji->method;
 				} else {
-					csignature = mono_metadata_parse_signature (image, token);
-					if ((ji = mono_jit_info_table_find (mono_root_domain, code))) {
-						child_frame.method = ji->method;
-					} else {
-						g_assert_not_reached ();
-					}
+					g_assert_not_reached ();
 				}
 				g_assert (code);
 			} else {
@@ -1701,12 +1962,13 @@ ves_exec_method (MonoInvocation *frame)
 				child_frame.retval = NULL;
 			}
 
+			child_frame.ip = NULL;
 			child_frame.ex = NULL;
 			child_frame.ex_handler = NULL;
 
 			if (!child_frame.method) {
 				g_assert (code);
-				ves_pinvoke_method (&child_frame, csignature, (MonoFunc) code, FALSE);
+				ves_pinvoke_method (&child_frame, csignature, (MonoFunc) code, FALSE, context);
 				if (child_frame.ex) {
 					frame->ex = child_frame.ex;
 					goto handle_exception;
@@ -1715,7 +1977,7 @@ ves_exec_method (MonoInvocation *frame)
 					((MonoObject *)sp->data.p)->vtable->klass == mono_defaults.transparent_proxy_class) {
 				g_assert (child_frame.method);
 				child_frame.method = mono_marshal_get_remoting_invoke (child_frame.method);
-				ves_exec_method (&child_frame);
+				ves_exec_method_with_context (&child_frame, context);
 			} else {
 				switch (GPOINTER_TO_UINT (child_frame.method->addr)) {
 				case INLINE_STRING_LENGTH:
@@ -1723,6 +1985,18 @@ ves_exec_method (MonoInvocation *frame)
 					retval.data.i = ((MonoString*)sp->data.p)->length;
 					/*g_print ("length of '%s' is %d\n", mono_string_to_utf8 (sp->data.p), retval.data.i);*/
 					break;
+				case INLINE_STRING_GET_CHARS: {
+					int idx = GET_NATI(sp [1]);
+					if ((idx < 0) || (idx >= mono_string_length ((MonoString*)sp->data.p))) {
+						child_frame.ex = mono_get_exception_index_out_of_range ();
+						FILL_IN_TRACE(child_frame.ex, &child_frame);
+					}
+					else {
+						retval.type = VAL_I32;
+						retval.data.i = mono_string_chars((MonoString*)sp->data.p)[idx];
+					}
+					break;
+				}
 				case INLINE_ARRAY_LENGTH:
 					retval.type = VAL_I32;
 					retval.data.i = mono_array_length ((MonoArray*)sp->data.p);
@@ -1735,7 +2009,6 @@ ves_exec_method (MonoInvocation *frame)
 					retval.type = VAL_OBJ;
 					{
 						MonoClass *c = mono_class_from_mono_type (((MonoReflectionType*)sp->data.p)->type);
-						retval.data.vt.klass = NULL;
 						if (c->enumtype && c->enum_basetype) /* types that are modifierd typebuilkders may not have enum_basetype set */
 							retval.data.p = mono_type_get_object (domain, c->enum_basetype);
 						else if (c->element_class)
@@ -1745,9 +2018,11 @@ ves_exec_method (MonoInvocation *frame)
 					}
 					break;
 				default:
-					ves_exec_method (&child_frame);
+					ves_exec_method_with_context (&child_frame, context);
 				}
 			}
+
+			context->current_frame = frame;
 
 			while (endsp > sp) {
 				--endsp;
@@ -1759,6 +2034,10 @@ ves_exec_method (MonoInvocation *frame)
 				 * An exception occurred, need to run finally, fault and catch handlers..
 				 */
 				frame->ex = child_frame.ex;
+				if (context->search_for_handler) {
+					context->search_for_handler = 0;
+					goto handle_exception;
+				}
 				goto handle_finally;
 			}
 
@@ -1774,7 +2053,7 @@ ves_exec_method (MonoInvocation *frame)
 				--sp;
 				if (sp->type == VAL_VALUET) {
 					/* the caller has already allocated the memory */
-					stackval_from_data (signature->ret, frame->retval, sp->data.vt.vt, signature->pinvoke);
+					stackval_from_data (signature->ret, frame->retval, sp->data.vt, signature->pinvoke);
 					vt_free (sp);
 				} else {
 					*frame->retval = *sp;
@@ -1783,8 +2062,7 @@ ves_exec_method (MonoInvocation *frame)
 			if (sp > frame->stack)
 				g_warning ("more values on stack: %d", sp-frame->stack);
 
-			DEBUG_LEAVE ();
-			return;
+			goto exit_frame;
 		CASE (CEE_BR_S) /* Fall through */
 		CASE (CEE_BR)
 			if (*ip == CEE_BR) {
@@ -1854,13 +2132,13 @@ ves_exec_method (MonoInvocation *frame)
 			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
-				result = sp [0].data.i == (gint)GET_NATI (sp [1]);
+				result = (mono_i)sp [0].data.i == (mono_i)GET_NATI (sp [1]);
 			else if (sp->type == VAL_I64)
 				result = sp [0].data.l == sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				result = sp [0].data.f == sp [1].data.f;
 			else
-				result = (gint)GET_NATI (sp [0]) == (gint)GET_NATI (sp [1]);
+				result = sp [0].data.nati == (mono_i)GET_NATI (sp [1]);
 			if (result)
 				ip += broffset;
 			BREAK;
@@ -1878,13 +2156,13 @@ ves_exec_method (MonoInvocation *frame)
 			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
-				result = sp [0].data.i >= (gint)GET_NATI (sp [1]);
+				result = (mono_i)sp [0].data.i >= (mono_i)GET_NATI (sp [1]);
 			else if (sp->type == VAL_I64)
 				result = sp [0].data.l >= sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				result = sp [0].data.f >= sp [1].data.f;
 			else
-				result = (gint)GET_NATI (sp [0]) >= (gint)GET_NATI (sp [1]);
+				result = (mono_i)sp [0].data.nati >= (mono_i)GET_NATI (sp [1]);
 			if (result)
 				ip += broffset;
 			BREAK;
@@ -1902,13 +2180,13 @@ ves_exec_method (MonoInvocation *frame)
 			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
-				result = sp [0].data.i > (gint)GET_NATI (sp [1]);
+				result = (mono_i)sp [0].data.i > (mono_i)GET_NATI (sp [1]);
 			else if (sp->type == VAL_I64)
 				result = sp [0].data.l > sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				result = sp [0].data.f > sp [1].data.f;
 			else
-				result = (gint)GET_NATI (sp [0]) > (gint)GET_NATI (sp [1]);
+				result = (mono_i)sp [0].data.nati > (mono_i)GET_NATI (sp [1]);
 			if (result)
 				ip += broffset;
 			BREAK;
@@ -1926,13 +2204,13 @@ ves_exec_method (MonoInvocation *frame)
 			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
-				result = sp[0].data.i < (gint)GET_NATI(sp[1]);
+				result = (mono_i)sp[0].data.i < (mono_i)GET_NATI(sp[1]);
 			else if (sp->type == VAL_I64)
 				result = sp[0].data.l < sp[1].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				result = sp[0].data.f < sp[1].data.f;
 			else
-				result = (gint)GET_NATI(sp[0]) < (gint)GET_NATI(sp[1]);
+				result = (mono_i)sp[0].data.nati < (mono_i)GET_NATI(sp[1]);
 			if (result)
 				ip += broffset;
 			BREAK;
@@ -1951,18 +2229,13 @@ ves_exec_method (MonoInvocation *frame)
 			sp -= 2;
 
 			if (sp->type == VAL_I32)
-				result = sp [0].data.i <= (gint)GET_NATI (sp [1]);
+				result = (mono_i)sp [0].data.i <= (mono_i)GET_NATI (sp [1]);
 			else if (sp->type == VAL_I64)
 				result = sp [0].data.l <= sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				result = sp [0].data.f <= sp [1].data.f;
 			else {
-				/*
-				 * FIXME: here and in other places GET_NATI on the left side 
-				 * _will_ be wrong when we change the macro to work on 64 bits 
-				 * systems.
-				 */
-				result = (gint)GET_NATI (sp [0]) <= (gint)GET_NATI (sp [1]);
+				result = (mono_i)sp [0].data.nati <= (mono_i)GET_NATI (sp [1]);
 			}
 			if (result)
 				ip += broffset;
@@ -1981,14 +2254,14 @@ ves_exec_method (MonoInvocation *frame)
 			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
-				result = (guint32)sp [0].data.i != (guint32)GET_NATI (sp [1]);
+				result = (mono_u)sp [0].data.i != (mono_u)GET_NATI (sp [1]);
 			else if (sp->type == VAL_I64)
 				result = (guint64)sp [0].data.l != (guint64)sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				result = isunordered (sp [0].data.f, sp [1].data.f) ||
 					(sp [0].data.f != sp [1].data.f);
 			else
-				result = GET_NATI (sp [0]) != GET_NATI (sp [1]);
+				result = (mono_u)sp [0].data.nati != (mono_u)GET_NATI (sp [1]);
 			if (result)
 				ip += broffset;
 			BREAK;
@@ -2006,13 +2279,13 @@ ves_exec_method (MonoInvocation *frame)
 			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
-				result = (guint32)sp [0].data.i >= (guint32)GET_NATI (sp [1]);
+				result = (mono_u)sp [0].data.i >= (mono_u)GET_NATI (sp [1]);
 			else if (sp->type == VAL_I64)
 				result = (guint64)sp [0].data.l >= (guint64)sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				result = !isless (sp [0].data.f,sp [1].data.f);
 			else
-				result = GET_NATI (sp [0]) >= GET_NATI (sp [1]);
+				result = (mono_u)sp [0].data.nati >= (mono_u)GET_NATI (sp [1]);
 			if (result)
 				ip += broffset;
 			BREAK;
@@ -2030,13 +2303,13 @@ ves_exec_method (MonoInvocation *frame)
 			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
-				result = (guint32)sp [0].data.i > (guint32)GET_NATI (sp [1]);
+				result = (mono_u)sp [0].data.i > (mono_u)GET_NATI (sp [1]);
 			else if (sp->type == VAL_I64)
 				result = (guint64)sp [0].data.l > (guint64)sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				result = isgreater (sp [0].data.f, sp [1].data.f);
 			else
-				result = GET_NATI (sp [0]) > GET_NATI (sp [1]);
+				result = (mono_u)sp [0].data.nati > (mono_u)GET_NATI (sp [1]);
 			if (result)
 				ip += broffset;
 			BREAK;
@@ -2054,13 +2327,13 @@ ves_exec_method (MonoInvocation *frame)
 			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
-				result = (guint32)sp [0].data.i <= (guint32)GET_NATI (sp [1]);
+				result = (mono_u)sp [0].data.i <= (mono_u)GET_NATI (sp [1]);
 			else if (sp->type == VAL_I64)
 				result = (guint64)sp [0].data.l <= (guint64)sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				result = islessequal (sp [0].data.f, sp [1].data.f);
 			else
-				result = GET_NATI (sp [0]) <= GET_NATI (sp [1]);
+				result = (mono_u)sp [0].data.nati <= (mono_u)GET_NATI (sp [1]);
 			if (result)
 				ip += broffset;
 			BREAK;
@@ -2078,14 +2351,14 @@ ves_exec_method (MonoInvocation *frame)
 			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
-				result = (guint32)sp[0].data.i < (guint32)GET_NATI(sp[1]);
+				result = (mono_u)sp[0].data.i < (mono_u)GET_NATI(sp[1]);
 			else if (sp->type == VAL_I64)
 				result = (guint64)sp[0].data.l < (guint64)sp[1].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				result = isunordered (sp [0].data.f, sp [1].data.f) ||
 					(sp [0].data.f < sp [1].data.f);
 			else
-				result = GET_NATI(sp[0]) < GET_NATI(sp[1]);
+				result = (mono_u)sp[0].data.nati < (mono_u)GET_NATI(sp[1]);
 			if (result)
 				ip += broffset;
 			BREAK;
@@ -2158,7 +2431,6 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			sp[-1].type = VAL_OBJ;
 			sp[-1].data.p = *(gpointer*)sp[-1].data.p;
-			sp[-1].data.vt.klass = NULL;
 			BREAK;
 		CASE (CEE_STIND_REF) {
 			gpointer *p;
@@ -2228,51 +2500,77 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			--sp;
 			/* should probably consider the pointers as unsigned */
-			if (sp->type == VAL_I32)
-				sp [-1].data.i += GET_NATI (sp [0]);
-			else if (sp->type == VAL_I64)
+			if (sp->type == VAL_I32) {
+				if (sp [-1].type == VAL_I32)
+					sp [-1].data.i += sp [0].data.i;
+				else
+					sp [-1].data.nati = sp [-1].data.nati + sp [0].data.i;
+			} else if (sp->type == VAL_I64)
 				sp [-1].data.l += sp [0].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				sp [-1].data.f += sp [0].data.f;
 			else {
-				char *p = sp [-1].data.p;
-				p += GET_NATI (sp [0]);
-				sp [-1].data.p = p;
+				if (sp [-1].type == VAL_I32) {
+					sp [-1].data.nati = sp [-1].data.i + sp [0].data.nati;
+					sp [-1].type = sp [0].type;
+				} else
+					sp [-1].data.nati = sp [-1].data.nati + sp [0].data.nati;
 			}
 			BREAK;
 		CASE (CEE_SUB)
 			++ip;
 			--sp;
 			/* should probably consider the pointers as unsigned */
-			if (sp->type == VAL_I32)
-				sp [-1].data.i -= GET_NATI (sp [0]);
-			else if (sp->type == VAL_I64)
+			if (sp->type == VAL_I32) {
+				if (sp [-1].type == VAL_I32)
+					sp [-1].data.i -= sp [0].data.i;
+				else {
+					sp [-1].data.nati = sp [-1].data.nati - sp [0].data.i;
+					sp [-1].type = VAL_NATI;
+				}
+			} else if (sp->type == VAL_I64)
 				sp [-1].data.l -= sp [0].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				sp [-1].data.f -= sp [0].data.f;
 			else {
-				char *p = sp [-1].data.p;
-				p -= GET_NATI (sp [0]);
-				sp [-1].data.p = p;
+				if (sp [-1].type == VAL_I32) {
+					sp [-1].data.nati = sp [-1].data.i - sp [0].data.nati;
+					sp [-1].type = sp [0].type;
+				} else
+					sp [-1].data.nati = sp [-1].data.nati - sp [0].data.nati;
 			}
 			BREAK;
 		CASE (CEE_MUL)
 			++ip;
 			--sp;
-			if (sp->type == VAL_I32)
-				sp [-1].data.i *= (gint)GET_NATI (sp [0]);
-			else if (sp->type == VAL_I64)
+			if (sp->type == VAL_I32) {
+				if (sp [-1].type == VAL_I32)
+					sp [-1].data.i *= sp [0].data.i;
+				else
+					sp [-1].data.nati = sp [-1].data.nati * sp [0].data.i;
+			} else if (sp->type == VAL_I64)
 				sp [-1].data.l *= sp [0].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				sp [-1].data.f *= sp [0].data.f;
+			else {
+				if (sp [-1].type == VAL_NATI)
+					sp [-1].data.nati = sp [-1].data.nati * sp [0].data.nati;
+				else {
+					sp [-1].data.nati = sp [-1].data.i * sp [0].data.nati;
+					sp [-1].type = VAL_NATI;
+				}
+			}
 			BREAK;
 		CASE (CEE_DIV)
 			++ip;
 			--sp;
 			if (sp->type == VAL_I32) {
-				if (GET_NATI (sp [0]) == 0)
+				if (sp [0].data.i == 0)
 					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
-				sp [-1].data.i /= (gint)GET_NATI (sp [0]);
+				if (sp [-1].type == VAL_I32)
+					sp [-1].data.i /= sp [0].data.i;
+				else
+					sp [-1].data.nati /= sp [0].data.i;
 			} else if (sp->type == VAL_I64) {
 				if (sp [0].data.l == 0)
 					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
@@ -2280,18 +2578,25 @@ ves_exec_method (MonoInvocation *frame)
 			} else if (sp->type == VAL_DOUBLE) {
 				/* set NaN is divisor is 0.0 */
 				sp [-1].data.f /= sp [0].data.f;
+			} else {
+				if (sp [-1].type == VAL_NATI)
+					sp [-1].data.nati = sp [-1].data.nati / sp [0].data.nati;
+				else {
+					sp [-1].data.nati = sp [-1].data.i / sp [0].data.nati;
+					sp [-1].type = VAL_NATI;
+				}
 			}
 			BREAK;
 		CASE (CEE_DIV_UN)
 			++ip;
 			--sp;
 			if (sp->type == VAL_I32) {
-				guint32 val;
-				if (GET_NATI (sp [0]) == 0)
+				if (sp [0].data.i == 0)
 					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
-				val = sp [-1].data.i;
-				val /= (guint32)GET_NATI (sp [0]);
-				sp [-1].data.i = val;
+				if (sp [-1].type == VAL_NATI)
+					sp [-1].data.nati = (mono_u)sp [-1].data.nati / (mono_u)sp [0].data.i;
+				else
+					sp [-1].data.i = (guint32)sp [-1].data.i / (guint32)sp [0].data.i;
 			} else if (sp->type == VAL_I64) {
 				guint64 val;
 				if (sp [0].data.l == 0)
@@ -2299,22 +2604,27 @@ ves_exec_method (MonoInvocation *frame)
 				val = sp [-1].data.l;
 				val /= (guint64)sp [0].data.l;
 				sp [-1].data.l = val;
-			} else if (sp->type == VAL_NATI) {
-				mono_u val;
-				if (GET_NATI (sp [0]) == 0)
+			} else {
+				if (sp [0].data.nati == 0)
 					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
-				val = (mono_u)sp [-1].data.p;
-				val /= (mono_u)sp [0].data.p;
-				sp [-1].data.p = (gpointer)val;
+				if (sp [-1].type == VAL_NATI)
+					sp [-1].data.nati = (mono_u)sp [-1].data.nati / (mono_u)sp [0].data.nati;
+				else {
+					sp [-1].data.nati = (mono_u)sp [-1].data.i / (mono_u)sp [0].data.nati;
+					sp [-1].type = VAL_NATI;
+				}
 			}
 			BREAK;
 		CASE (CEE_REM)
 			++ip;
 			--sp;
 			if (sp->type == VAL_I32) {
-				if (GET_NATI (sp [0]) == 0)
+				if (sp [0].data.i == 0)
 					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
-				sp [-1].data.i %= (gint)GET_NATI (sp [0]);
+				if (sp [-1].type == VAL_NATI)
+					sp [-1].data.nati = (mono_i)sp [-1].data.nati % (mono_i)sp [0].data.i;
+				else
+					sp [-1].data.i = sp [-1].data.i % sp [0].data.i;
 			} else if (sp->type == VAL_I64) {
 				if (sp [0].data.l == 0)
 					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
@@ -2323,59 +2633,102 @@ ves_exec_method (MonoInvocation *frame)
 				/* FIXME: what do we actually do here? */
 				sp [-1].data.f = fmod (sp [-1].data.f, sp [0].data.f);
 			} else {
-				if (GET_NATI (sp [0]) == 0)
+				if (sp [0].data.nati == 0)
 					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
-				(gint)GET_NATI (sp [-1]) %= (gint)GET_NATI (sp [0]);
+				if (sp [-1].type == VAL_NATI)
+					sp [-1].data.nati = (mono_i)sp [-1].data.nati % (mono_i)sp [0].data.nati;
+				else {
+					sp [-1].data.nati = (mono_i)sp [-1].data.i % (mono_i)sp [0].data.nati;
+					sp [-1].type = VAL_NATI;
+				}
 			}
 			BREAK;
 		CASE (CEE_REM_UN)
 			++ip;
 			--sp;
 			if (sp->type == VAL_I32) {
-				if (GET_NATI (sp [0]) == 0)
+				if (sp [0].data.i == 0)
 					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
-				(guint)sp [-1].data.i %= (guint)GET_NATI (sp [0]);
+				if (sp [-1].type == VAL_NATI)
+					sp [-1].data.nati = (mono_u)sp [-1].data.nati % (mono_u)sp [0].data.i;
+				else
+					sp [-1].data.i = (guint32)sp [-1].data.i % (guint32)sp [0].data.i;
 			} else if (sp->type == VAL_I64) {
 				if (sp [0].data.l == 0)
 					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
-				(guint64)sp [-1].data.l %= (guint64)sp [0].data.l;
+				sp [-1].data.l = (guint64)sp [-1].data.l % (guint64)sp [0].data.l;
 			} else if (sp->type == VAL_DOUBLE) {
 				/* unspecified behaviour according to the spec */
 			} else {
-				if (GET_NATI (sp [0]) == 0)
+				if (sp [0].data.nati == 0)
 					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
-				(guint64)GET_NATI (sp [-1]) %= (guint64)GET_NATI (sp [0]);
+				if (sp [-1].type == VAL_NATI)
+					sp [-1].data.nati = (mono_u)sp [-1].data.nati % (mono_u)sp [0].data.nati;
+				else {
+					sp [-1].data.nati = (mono_u)sp [-1].data.i % (mono_u)sp [0].data.nati;
+					sp [-1].type = VAL_NATI;
+				}
 			}
 			BREAK;
 		CASE (CEE_AND)
 			++ip;
 			--sp;
-			if (sp->type == VAL_I32)
-				sp [-1].data.i &= GET_NATI (sp [0]);
+			if (sp->type == VAL_I32) {
+				if (sp [-1].type == VAL_NATI)
+					sp [-1].data.nati &= sp [0].data.i;
+				else
+					sp [-1].data.i &= sp [0].data.i;
+			}
 			else if (sp->type == VAL_I64)
 				sp [-1].data.l &= sp [0].data.l;
-			else
-				GET_NATI (sp [-1]) &= GET_NATI (sp [0]);
+			else {
+				if (sp [-1].type == VAL_NATI)
+					sp [-1].data.nati = (mono_i)sp [-1].data.nati & (mono_i)sp [0].data.nati;
+				else {
+					sp [-1].data.nati = (mono_i)sp [-1].data.i & (mono_i)sp [0].data.nati;
+					sp [-1].type = VAL_NATI;
+				}
+			}
 			BREAK;
 		CASE (CEE_OR)
 			++ip;
 			--sp;
-			if (sp->type == VAL_I32)
-				sp [-1].data.i |= GET_NATI (sp [0]);
+			if (sp->type == VAL_I32) {
+				if (sp [-1].type == VAL_NATI)
+					sp [-1].data.nati |= sp [0].data.i;
+				else
+					sp [-1].data.i |= sp [0].data.i;
+			}
 			else if (sp->type == VAL_I64)
 				sp [-1].data.l |= sp [0].data.l;
-			else
-				GET_NATI (sp [-1]) |= GET_NATI (sp [0]);
+			else {
+				if (sp [-1].type == VAL_NATI)
+					sp [-1].data.nati = (mono_i)sp [-1].data.nati | (mono_i)sp [0].data.nati;
+				else {
+					sp [-1].data.nati = (mono_i)sp [-1].data.i | (mono_i)sp [0].data.nati;
+					sp [-1].type = VAL_NATI;
+				}
+			}
 			BREAK;
 		CASE (CEE_XOR)
 			++ip;
 			--sp;
-			if (sp->type == VAL_I32)
-				sp [-1].data.i ^= GET_NATI (sp [0]);
+			if (sp->type == VAL_I32) {
+				if (sp [-1].type == VAL_NATI)
+					sp [-1].data.nati ^= sp [0].data.i;
+				else
+					sp [-1].data.i ^= sp [0].data.i;
+			}
 			else if (sp->type == VAL_I64)
 				sp [-1].data.l ^= sp [0].data.l;
-			else
-				GET_NATI (sp [-1]) ^= GET_NATI (sp [0]);
+			else {
+				if (sp [-1].type == VAL_NATI)
+					sp [-1].data.nati = (mono_i)sp [-1].data.nati ^ (mono_i)sp [0].data.nati;
+				else {
+					sp [-1].data.nati = (mono_i)sp [-1].data.i ^ (mono_i)sp [0].data.nati;
+					sp [-1].type = VAL_NATI;
+				}
+			}
 			BREAK;
 		CASE (CEE_SHL)
 			++ip;
@@ -2385,7 +2738,7 @@ ves_exec_method (MonoInvocation *frame)
 			else if (sp [-1].type == VAL_I64)
 				sp [-1].data.l <<= GET_NATI (sp [0]);
 			else
-				GET_NATI (sp [-1]) <<= GET_NATI (sp [0]);
+				sp [-1].data.nati <<= GET_NATI (sp [0]);
 			BREAK;
 		CASE (CEE_SHR)
 			++ip;
@@ -2395,17 +2748,17 @@ ves_exec_method (MonoInvocation *frame)
 			else if (sp [-1].type == VAL_I64)
 				sp [-1].data.l >>= GET_NATI (sp [0]);
 			else
-				(gint)GET_NATI (sp [-1]) >>= GET_NATI (sp [0]);
+				sp [-1].data.nati = ((mono_i)sp [-1].data.nati) >> GET_NATI (sp [0]);
 			BREAK;
 		CASE (CEE_SHR_UN)
 			++ip;
 			--sp;
 			if (sp [-1].type == VAL_I32)
-				(guint)sp [-1].data.i >>= GET_NATI (sp [0]);
+				sp [-1].data.i = (guint)sp [-1].data.i >> GET_NATI (sp [0]);
 			else if (sp [-1].type == VAL_I64)
-				(guint64)sp [-1].data.l >>= GET_NATI (sp [0]);
+				sp [-1].data.l = (guint64)sp [-1].data.l >> GET_NATI (sp [0]);
 			else
-				(guint64)GET_NATI (sp [-1]) >>= GET_NATI (sp [0]);
+				sp [-1].data.nati = ((mono_u)sp[-1].data.nati) >> GET_NATI (sp [0]);
 			BREAK;
 		CASE (CEE_NEG)
 			++ip;
@@ -2417,7 +2770,7 @@ ves_exec_method (MonoInvocation *frame)
 			else if (sp->type == VAL_DOUBLE)
 				sp->data.f = - sp->data.f;
 			else if (sp->type == VAL_NATI)
-				sp->data.p = (gpointer)(- (mono_i)sp->data.p);
+				sp->data.nati = - (mono_i)sp->data.nati;
 			++sp;
 			BREAK;
 		CASE (CEE_NOT)
@@ -2428,10 +2781,30 @@ ves_exec_method (MonoInvocation *frame)
 			else if (sp->type == VAL_I64)
 				sp->data.l = ~ sp->data.l;
 			else if (sp->type == VAL_NATI)
-				sp->data.p = (gpointer)(~ (mono_i)sp->data.p);
+				sp->data.nati = ~ (mono_i)sp->data.p;
 			++sp;
 			BREAK;
-		CASE (CEE_CONV_U1) /* fall through */
+		CASE (CEE_CONV_U1) {
+			++ip;
+			switch (sp [-1].type) {
+			case VAL_DOUBLE:
+				sp [-1].data.i = (guint8)sp [-1].data.f;
+				break;
+			case VAL_I64:
+				sp [-1].data.i = (guint8)sp [-1].data.l;
+				break;
+			case VAL_VALUET:
+				ves_abort();
+			case VAL_I32:
+				sp [-1].data.i = (guint8)sp [-1].data.i;
+				break;
+			default:
+				sp [-1].data.i = (guint8)sp [-1].data.nati;
+				break;
+			}
+			sp [-1].type = VAL_I32;
+			BREAK;
+		}
 		CASE (CEE_CONV_I1) {
 			++ip;
 			switch (sp [-1].type) {
@@ -2453,7 +2826,27 @@ ves_exec_method (MonoInvocation *frame)
 			sp [-1].type = VAL_I32;
 			BREAK;
 		}
-		CASE (CEE_CONV_U2) /* fall through */
+		CASE (CEE_CONV_U2) {
+			++ip;
+			switch (sp [-1].type) {
+			case VAL_DOUBLE:
+				sp [-1].data.i = (guint16)sp [-1].data.f;
+				break;
+			case VAL_I64:
+				sp [-1].data.i = (guint16)sp [-1].data.l;
+				break;
+			case VAL_VALUET:
+				ves_abort();
+			case VAL_I32:
+				sp [-1].data.i = (guint16)sp [-1].data.i;
+				break;
+			default:
+				sp [-1].data.i = (guint16)sp [-1].data.nati;
+				break;
+			}
+			sp [-1].type = VAL_I32;
+			BREAK;
+		}
 		CASE (CEE_CONV_I2) {
 			++ip;
 			switch (sp [-1].type) {
@@ -2520,7 +2913,7 @@ ves_exec_method (MonoInvocation *frame)
 				sp [-1].data.l = (gint64)sp [-1].data.nati;
 				break;
 			}
-			sp [-1].type = VAL_I64;
+			sp [-1].type = ip[-1] == CEE_CONV_I ? VAL_NATI : VAL_I64;
 			BREAK;
 		CASE (CEE_CONV_R4) {
 			++ip;
@@ -2585,7 +2978,7 @@ ves_exec_method (MonoInvocation *frame)
 				sp [-1].data.l = (guint64) sp [-1].data.nati;
 				break;
 			}
-			sp [-1].type = VAL_I64;
+			sp [-1].type = ip[-1] == CEE_CONV_U ? VAL_NATI : VAL_I64;
 		        BREAK;
 		CASE (CEE_CPOBJ) {
 			MonoClass *vtklass;
@@ -2610,7 +3003,7 @@ ves_exec_method (MonoInvocation *frame)
 			else
 				c = mono_class_get (image, token);
 
-			addr = sp [-1].data.vt.vt;
+			addr = sp [-1].data.vt;
 			vt_alloc (&c->byval_arg, &sp [-1], FALSE);
 			stackval_from_data (&c->byval_arg, &sp [-1], addr, FALSE);
 			BREAK;
@@ -2626,7 +3019,6 @@ ves_exec_method (MonoInvocation *frame)
 			o = (MonoObject*)mono_ldstr (domain, image, str_index);
 			sp->type = VAL_OBJ;
 			sp->data.p = o;
-			sp->data.vt.klass = NULL;
 
 			++sp;
 			BREAK;
@@ -2671,8 +3063,8 @@ ves_exec_method (MonoInvocation *frame)
 				void *zero;
 				vt_alloc (&newobj_class->byval_arg, &valuetype_this, csig->pinvoke);
 				if (!newobj_class->enumtype && (newobj_class->byval_arg.type == MONO_TYPE_VALUETYPE)) {
-					zero = valuetype_this.data.vt.vt;
-					child_frame.obj = valuetype_this.data.vt.vt;
+					zero = valuetype_this.data.vt;
+					child_frame.obj = valuetype_this.data.vt;
 				} else {
 					memset (&valuetype_this, 0, sizeof (stackval));
 					zero = &valuetype_this;
@@ -2697,10 +3089,13 @@ ves_exec_method (MonoInvocation *frame)
 
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
 
+			child_frame.ip = NULL;
 			child_frame.ex = NULL;
 			child_frame.ex_handler = NULL;
 
-			ves_exec_method (&child_frame);
+			ves_exec_method_with_context (&child_frame, context);
+
+			context->current_frame = frame;
 
 			while (endsp > sp) {
 				--endsp;
@@ -2725,7 +3120,6 @@ array_constructed:
 			} else {
 				sp->type = VAL_OBJ;
 				sp->data.p = o;
-				sp->data.vt.klass = newobj_class;
 			}
 			++sp;
 			BREAK;
@@ -2733,8 +3127,7 @@ array_constructed:
 		CASE (CEE_CASTCLASS) /* Fall through */
 		CASE (CEE_ISINST) {
 			MonoObject *o;
-			MonoVTable *vt;
-			MonoClass *c , *oclass;
+			MonoClass *c;
 			guint32 token;
 			int do_isinst = *ip == CEE_ISINST;
 
@@ -2745,16 +3138,9 @@ array_constructed:
 			g_assert (sp [-1].type == VAL_OBJ);
 
 			if ((o = sp [-1].data.p)) {
-				vt = o->vtable;
-				oclass = vt->klass;
-
-				if (mono_object_isinst (o, c)) {
-					sp [-1].data.vt.klass = c;
-				}
-				else {
+				if (!mono_object_isinst (o, c)) {
 					if (do_isinst) {
 						sp [-1].data.p = NULL;
-						sp [-1].data.vt.klass = NULL;
 					} else
 						THROW_EX (mono_get_exception_invalid_cast (), ip - 1);
 				}
@@ -2814,7 +3200,7 @@ array_constructed:
 			frame->ex_handler = NULL;
 			if (!sp->data.p)
 				sp->data.p = mono_get_exception_null_reference ();
-			THROW_EX (sp->data.p, ip);
+			THROW_EX ((MonoException *)sp->data.p, ip);
 			BREAK;
 		CASE (CEE_LDFLDA) /* Fall through */
 		CASE (CEE_LDFLD) {
@@ -2829,33 +3215,28 @@ array_constructed:
 			
 			++ip;
 			token = read32 (ip);
+			field = rtd->field_info[token].field;
 			ip += 4;
 
 			if (sp [-1].type == VAL_OBJ) {
 				obj = sp [-1].data.p;
-
-				if (obj->vtable->klass == mono_defaults.transparent_proxy_class) {
+				if (obj->vtable->klass == mono_defaults.transparent_proxy_class && field->parent->marshalbyref) {
 					MonoClass *klass = ((MonoTransparentProxy*)obj)->klass;
-					field = mono_class_get_field (klass, token);
 					addr = mono_load_remote_field (obj, klass, field, NULL);
 				} else {
-					field = mono_field_from_token (image, token, NULL);
 					addr = (char*)obj + field->offset;
 				}				
 			} else {
-				obj = sp [-1].data.vt.vt;
-				field = mono_field_from_token (image, token, NULL);
+				obj = sp [-1].data.vt;
 				addr = (char*)obj + field->offset - sizeof (MonoObject);
 			}
 
 			if (load_addr) {
 				sp [-1].type = VAL_MP;
 				sp [-1].data.p = addr;
-				sp [-1].data.vt.klass = mono_class_from_mono_type (field->type);
 			} else {
 				vt_alloc (field->type, &sp [-1], FALSE);
-				stackval_from_data (field->type, &sp [-1], addr, FALSE);
-				
+				stackval_from_data (field->type, &sp [-1], addr, FALSE);				
 			}
 			BREAK;
 		}
@@ -2871,26 +3252,22 @@ array_constructed:
 			
 			++ip;
 			token = read32 (ip);
+			field = rtd->field_info[token].field;
 			ip += 4;
 			
 			if (sp [0].type == VAL_OBJ) {
 				obj = sp [0].data.p;
 
-				if (obj->vtable->klass == mono_defaults.transparent_proxy_class) {
+				if (obj->vtable->klass == mono_defaults.transparent_proxy_class && field->parent->marshalbyref) {
 					MonoClass *klass = ((MonoTransparentProxy*)obj)->klass;
-					field = mono_class_get_field (klass, token);
-
 					mono_store_remote_field (obj, klass, field, &sp [1].data);
-					offset = field->offset;
 				} else {
-					field = mono_field_from_token (image, token, NULL);
 					offset = field->offset;
 					stackval_to_data (field->type, &sp [1], (char*)obj + offset, FALSE);
 					vt_free (&sp [1]);
 				}
 			} else {
-				obj = sp [0].data.vt.vt;
-				field = mono_field_from_token (image, token, NULL);
+				obj = sp [0].data.vt;
 				offset = field->offset - sizeof (MonoObject);
 				stackval_to_data (field->type, &sp [1], (char*)obj + offset, FALSE);
 				vt_free (&sp [1]);
@@ -2901,7 +3278,6 @@ array_constructed:
 		CASE (CEE_LDSFLD) /* Fall through */
 		CASE (CEE_LDSFLDA) {
 			MonoVTable *vt;
-			MonoClass *klass;
 			MonoClassField *field;
 			guint32 token;
 			int load_addr = *ip == CEE_LDSFLDA;
@@ -2909,12 +3285,10 @@ array_constructed:
 
 			++ip;
 			token = read32 (ip);
+			field = rtd->field_info[token].field;
 			ip += 4;
-			
-			field = mono_field_from_token (image, token, &klass);
-			g_assert (field);
-			
-			vt = mono_class_vtable (domain, klass);
+						
+			vt = mono_class_vtable (domain, field->parent);
 			if (!vt->initialized)
 				mono_runtime_class_init (vt);
 			if (!domain->thread_static_fields || !(addr = g_hash_table_lookup (domain->thread_static_fields, field)))
@@ -2925,7 +3299,6 @@ array_constructed:
 			if (load_addr) {
 				sp->type = VAL_MP;
 				sp->data.p = addr;
-				sp->data.vt.klass = mono_class_from_mono_type (field->type);
 			} else {
 				vt_alloc (field->type, sp, FALSE);
 				stackval_from_data (field->type, sp, addr, FALSE);
@@ -2935,20 +3308,17 @@ array_constructed:
 		}
 		CASE (CEE_STSFLD) {
 			MonoVTable *vt;
-			MonoClass *klass;
 			MonoClassField *field;
 			guint32 token;
 			gpointer addr;
 
 			++ip;
 			token = read32 (ip);
+			field = rtd->field_info[token].field;
 			ip += 4;
 			--sp;
 
-			field = mono_field_from_token (image, token, &klass);
-			g_assert (field);
-
-			vt = mono_class_vtable (domain, klass);
+			vt = mono_class_vtable (domain, field->parent);
 			if (!vt->initialized)
 				mono_runtime_class_init (vt);
 			if (!domain->thread_static_fields || !(addr = g_hash_table_lookup (domain->thread_static_fields, field)))
@@ -2972,7 +3342,7 @@ array_constructed:
 			 * pointer to a value type. In reality, it can contain anything.
 			 */
 			if (sp [1].type == VAL_VALUET)
-				memcpy (sp [0].data.p, sp [1].data.vt.vt, mono_class_value_size (vtklass, NULL));
+				memcpy (sp [0].data.p, sp [1].data.vt, mono_class_value_size (vtklass, NULL));
 			else
 				memcpy (sp [0].data.p, &sp [1].data, mono_class_value_size (vtklass, NULL));
 			BREAK;
@@ -3044,6 +3414,8 @@ array_constructed:
 			guint64 value;
 			switch (sp [-1].type) {
 			case VAL_DOUBLE:
+				if (sp [-1].data.f <= -1.0)
+					THROW_EX (mono_get_exception_overflow (), ip);
 				value = (guint64)sp [-1].data.f;
 				break;
 			case VAL_I64:
@@ -3201,7 +3573,6 @@ array_constructed:
 			
 			sp->type = VAL_MP;
 			sp->data.p = mono_array_addr_with_size (o, esize, aindex);
-			sp->data.vt.klass = o->obj.vtable->klass->element_class;
 
 			++sp;
 			BREAK;
@@ -3232,7 +3603,7 @@ array_constructed:
 			aindex = sp [1].type == VAL_I32? sp [1].data.i: sp [1].data.nati;
 			if (aindex >= mono_array_length (o))
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
-      		
+
 			/*
 			 * FIXME: throw mono_get_exception_array_type_mismatch () if needed 
 			 */
@@ -3279,7 +3650,6 @@ array_constructed:
 				break;
 			case CEE_LDELEM_REF:
 				sp [0].data.p = mono_array_get (o, gpointer, aindex);
-				sp [0].data.vt.klass = NULL;
 				sp [0].type = VAL_OBJ;
 				break;
 			default:
@@ -3519,9 +3889,15 @@ array_constructed:
 			--sp;
 			/* FIXME: check overflow */
 			if (sp->type == VAL_I32) {
-				if (CHECK_ADD_OVERFLOW (sp [-1].data.i, GET_NATI (sp [0])))
-					THROW_EX (mono_get_exception_overflow (), ip);
-				sp [-1].data.i = (gint32)sp [-1].data.i + (gint32)GET_NATI (sp [0]);
+				if (sp [-1].type == VAL_I32) {
+					if (CHECK_ADD_OVERFLOW (sp [-1].data.i, sp [0].data.i))
+						THROW_EX (mono_get_exception_overflow (), ip);
+					sp [-1].data.i = (gint32)sp [-1].data.i + (gint32)sp [0].data.i;
+				} else {
+					if (CHECK_ADD_OVERFLOW_NAT (sp [-1].data.nati, (mono_i)sp [0].data.i))
+						THROW_EX (mono_get_exception_overflow (), ip);
+					sp [-1].data.nati = sp [-1].data.nati + (mono_i)sp [0].data.i;
+				}
 			} else if (sp->type == VAL_I64) {
 				if (CHECK_ADD_OVERFLOW64 (sp [-1].data.l, sp [0].data.l))
 					THROW_EX (mono_get_exception_overflow (), ip);
@@ -3539,9 +3915,15 @@ array_constructed:
 			--sp;
 			/* FIXME: check overflow, make unsigned */
 			if (sp->type == VAL_I32) {
-				if (CHECK_ADD_OVERFLOW_UN (sp [-1].data.i, GET_NATI (sp [0])))
-					THROW_EX (mono_get_exception_overflow (), ip);
-				sp [-1].data.i = (guint32)sp [-1].data.i + (guint32)GET_NATI (sp [0]);
+				if (sp [-1].type == VAL_I32) {
+					if (CHECK_ADD_OVERFLOW_UN (sp [-1].data.i, sp [0].data.i))
+						THROW_EX (mono_get_exception_overflow (), ip);
+					sp [-1].data.i = (guint32)sp [-1].data.i + (guint32)sp [0].data.i;
+				} else {
+					if (CHECK_ADD_OVERFLOW_NAT_UN (sp [-1].data.nati, (mono_u)sp [0].data.i))
+						THROW_EX (mono_get_exception_overflow (), ip);
+					sp [-1].data.nati = (mono_u)sp [-1].data.nati + (mono_u)sp [0].data.i;
+				}
 			} else if (sp->type == VAL_I64) {
 				if (CHECK_ADD_OVERFLOW64_UN (sp [-1].data.l, sp [0].data.l))
 					THROW_EX (mono_get_exception_overflow (), ip);
@@ -3558,10 +3940,18 @@ array_constructed:
 		CASE (CEE_MUL_OVF)
 			++ip;
 			--sp;
+			/* FIXME: check overflow */
 			if (sp->type == VAL_I32) {
-				if (CHECK_MUL_OVERFLOW (sp [-1].data.i, GET_NATI (sp [0])))
-					THROW_EX (mono_get_exception_overflow (), ip);
-				sp [-1].data.i *= (gint)GET_NATI (sp [0]);
+				if (sp [-1].type == VAL_NATI) {
+					if (CHECK_MUL_OVERFLOW_NAT (sp [-1].data.nati, sp [0].data.i))
+						THROW_EX (mono_get_exception_overflow (), ip);
+					sp [-1].data.nati = sp [-1].data.nati * sp [0].data.i;
+					sp [-1].type = VAL_NATI;
+				} else {
+					if (CHECK_MUL_OVERFLOW (sp [-1].data.i, sp [0].data.i))
+						THROW_EX (mono_get_exception_overflow (), ip);
+					sp [-1].data.i *= sp [0].data.i;
+				}
 			}
 			else if (sp->type == VAL_I64) {
 				if (CHECK_MUL_OVERFLOW64 (sp [-1].data.l, sp [0].data.l))
@@ -3570,15 +3960,24 @@ array_constructed:
 			}
 			else if (sp->type == VAL_DOUBLE)
 				sp [-1].data.f *= sp [0].data.f;
+			else
+				ves_abort();
 			BREAK;
 		CASE (CEE_MUL_OVF_UN)
 			++ip;
 			--sp;
 			/* FIXME: check overflow, make unsigned */
 			if (sp->type == VAL_I32) {
-				if (CHECK_MUL_OVERFLOW_UN (sp [-1].data.i, GET_NATI (sp [0])))
-					THROW_EX (mono_get_exception_overflow (), ip);
-				sp [-1].data.i *= (gint)GET_NATI (sp [0]);
+				if (sp [-1].type == VAL_NATI) {
+					if (CHECK_MUL_OVERFLOW_NAT_UN (sp [-1].data.nati, (mono_u)sp [0].data.i))
+						THROW_EX (mono_get_exception_overflow (), ip);
+					sp [-1].data.nati = (mono_u)sp [-1].data.nati * (mono_u)sp [0].data.i;
+					sp [-1].type = VAL_NATI;
+				} else {
+					if (CHECK_MUL_OVERFLOW_UN ((guint32)sp [-1].data.i, (guint32)sp [0].data.i))
+						THROW_EX (mono_get_exception_overflow (), ip);
+					sp [-1].data.i *= sp [0].data.i;
+				}
 			}
 			else if (sp->type == VAL_I64) {
 				if (CHECK_MUL_OVERFLOW64_UN (sp [-1].data.l, sp [0].data.l))
@@ -3587,23 +3986,67 @@ array_constructed:
 			}
 			else if (sp->type == VAL_DOUBLE)
 				sp [-1].data.f *= sp [0].data.f;
+			else
+				ves_abort();
 			BREAK;
 		CASE (CEE_SUB_OVF)
+			++ip;
+			--sp;
+			/* FIXME: handle undeflow/unsigned */
+			/* should probably consider the pointers as unsigned */
+			if (sp->type == VAL_I32) {
+				if (sp [-1].type == VAL_I32) {
+					if (CHECK_SUB_OVERFLOW (sp [-1].data.i, sp [0].data.i))
+						THROW_EX (mono_get_exception_overflow (), ip);
+					sp [-1].data.i -= sp [0].data.i;
+				} else {
+					sp [-1].data.nati = sp [-1].data.nati - sp [0].data.i;
+					sp [-1].type = VAL_NATI;
+				}
+			}
+			else if (sp->type == VAL_I64) {
+				if (CHECK_SUB_OVERFLOW64 (sp [-1].data.l, sp [0].data.l))
+				    THROW_EX (mono_get_exception_overflow (), ip);
+				sp [-1].data.l -= sp [0].data.l;
+			}
+			else if (sp->type == VAL_DOUBLE)
+				sp [-1].data.f -= sp [0].data.f;
+			else {
+				if (sp [-1].type == VAL_I32) {
+					sp [-1].data.nati = sp [-1].data.i - sp [0].data.nati;
+					sp [-1].type = sp [0].type;
+				} else
+					sp [-1].data.nati = sp [-1].data.nati - sp [0].data.nati;
+			}
+			BREAK;
 		CASE (CEE_SUB_OVF_UN)
 			++ip;
 			--sp;
 			/* FIXME: handle undeflow/unsigned */
 			/* should probably consider the pointers as unsigned */
-			if (sp->type == VAL_I32)
-				sp [-1].data.i -= GET_NATI (sp [0]);
-			else if (sp->type == VAL_I64)
+			if (sp->type == VAL_I32) {
+				if (sp [-1].type == VAL_I32) {
+					if (CHECK_SUB_OVERFLOW_UN (sp [-1].data.i, sp [0].data.i))
+						THROW_EX (mono_get_exception_overflow (), ip);
+					sp [-1].data.i -= sp [0].data.i;
+				} else {
+					sp [-1].data.nati = sp [-1].data.nati - sp [0].data.i;
+					sp [-1].type = VAL_NATI;
+				}
+			}
+			else if (sp->type == VAL_I64) {
+				if (CHECK_SUB_OVERFLOW64_UN (sp [-1].data.l, sp [0].data.l))
+				    THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.l -= sp [0].data.l;
+			}
 			else if (sp->type == VAL_DOUBLE)
 				sp [-1].data.f -= sp [0].data.f;
 			else {
-				char *p = sp [-1].data.p;
-				p -= GET_NATI (sp [0]);
-				sp [-1].data.p = p;
+				if (sp [-1].type == VAL_I32) {
+					sp [-1].data.nati = sp [-1].data.i - sp [0].data.nati;
+					sp [-1].type = sp [0].type;
+				} else
+					sp [-1].data.nati = sp [-1].data.nati - sp [0].data.nati;
 			}
 			BREAK;
 		CASE (CEE_ENDFINALLY)
@@ -3614,14 +4057,14 @@ array_constructed:
 			}
 			if (frame->ex)
 				goto handle_fault;
-			/*
-			 * There was no exception, we continue normally at the target address.
-			 */
-			ip = endfinally_ip;
+			ves_abort();
 			BREAK;
 		CASE (CEE_LEAVE) /* Fall through */
 		CASE (CEE_LEAVE_S)
-			sp = frame->stack; /* empty the stack */
+			while (sp > frame->stack) {
+				--sp;
+				vt_free (sp);
+			}
 			frame->ip = ip;
 			if (*ip == CEE_LEAVE_S) {
 				++ip;
@@ -3632,29 +4075,13 @@ array_constructed:
 				ip += (gint32) read32 (ip);
 				ip += 4;
 			}
-#if 0
-			/*
-			 * We may be either inside a try block or inside an handler.
-			 * In the first case there was no exception and we go on
-			 * executing the finally handlers and after that resume control
-			 * at endfinally_ip.
-			 * In the second case we need to clear the exception and
-			 * continue directly at the target ip.
-			 */
-			if (!frame->ex) {
-				endfinally_ip = ip;
-				goto handle_finally;
-			} else {
-				frame->ex = NULL;
-				frame->ex_handler = NULL;
-			}
-#else
-			frame->ex = NULL;
-			frame->ex_handler = NULL;
 			endfinally_ip = ip;
+			if (frame->ex_handler != NULL && MONO_OFFSET_IN_HANDLER(frame->ex_handler, frame->ip - header->code)) {
+				frame->ex_handler = NULL;
+				frame->ex = NULL;
+			}
 			goto handle_finally;
 			BREAK;
-#endif
 		CASE (CEE_UNUSED41)
 			++ip;
 		        switch (*ip) {
@@ -3668,8 +4095,7 @@ array_constructed:
 
 				sp--;
 
-				sp->type = VAL_I32;
-				sp->data.vt.klass = NULL;
+				sp->type = VAL_NATI;
 
 				switch (conv) {
 				case MONO_MARSHAL_CONV_STR_LPWSTR:
@@ -3753,7 +4179,7 @@ array_constructed:
 			case CEE_MONO_VTADDR: {
 				++ip;
 
-				sp->type = VAL_MP;
+				sp [-1].type = VAL_MP;
 				/* do nothing? */
 				break;
 			}
@@ -3764,9 +4190,8 @@ array_constructed:
 				token = read32 (ip);
 				ip += 4;
 				
-				sp->type = VAL_I32;
+				sp->type = VAL_NATI;
 				sp->data.p = mono_method_get_wrapper_data (frame->method, token);
-				sp->data.vt.klass = NULL;
 				++sp;
 				break;
 			}
@@ -3809,12 +4234,26 @@ array_constructed:
 
 				class = (MonoClass *)mono_method_get_wrapper_data (frame->method, token);
 				
-				stackval_from_data (signature->ret, frame->retval, sp->data.vt.vt, signature->pinvoke);
+				stackval_from_data (signature->ret, frame->retval, sp->data.vt, signature->pinvoke);
 
 				if (sp > frame->stack)
 					g_warning ("more values on stack: %d", sp-frame->stack);
-				DEBUG_LEAVE ();
-				return;
+				goto exit_frame;
+			}
+			case CEE_MONO_LDNATIVEOBJ: {
+				MonoClass *class;
+				guint32 token;
+
+				++ip;
+				token = read32 (ip);
+				ip += 4;
+
+				class = (MonoClass *)mono_method_get_wrapper_data (frame->method, token);
+				g_assert(class->valuetype);
+
+				sp [-1].type = VAL_VALUET;
+
+				break;
 			}
 			default:
 				g_error ("Unimplemented opcode: 0xF0 %02x at 0x%x\n", *ip, ip-header->code);
@@ -3864,7 +4303,7 @@ array_constructed:
 				sp -= 2;
 
 				if (sp->type == VAL_I32)
-					result = sp [0].data.i == (gint)GET_NATI (sp [1]);
+					result = (mono_i)sp [0].data.i == (mono_i)GET_NATI (sp [1]);
 				else if (sp->type == VAL_I64)
 					result = sp [0].data.l == sp [1].data.l;
 				else if (sp->type == VAL_DOUBLE) {
@@ -3873,7 +4312,7 @@ array_constructed:
 					else
 						result = sp [0].data.f == sp [1].data.f;
 				} else
-					result = GET_NATI (sp [0]) == GET_NATI (sp [1]);
+					result = sp [0].data.nati == GET_NATI (sp [1]);
 				sp->type = VAL_I32;
 				sp->data.i = result;
 
@@ -3886,7 +4325,7 @@ array_constructed:
 				sp -= 2;
 
 				if (sp->type == VAL_I32)
-					result = sp [0].data.i > (gint)GET_NATI (sp [1]);
+					result = (mono_i)sp [0].data.i > (mono_i)GET_NATI (sp [1]);
 				else if (sp->type == VAL_I64)
 					result = sp [0].data.l > sp [1].data.l;
 				else if (sp->type == VAL_DOUBLE) {
@@ -3895,7 +4334,7 @@ array_constructed:
 					else
 						result = sp [0].data.f > sp [1].data.f;
 				} else
-					result = (gint)GET_NATI (sp [0]) > (gint)GET_NATI (sp [1]);
+					result = (mono_i)sp [0].data.nati > (mono_i)GET_NATI (sp [1]);
 				sp->type = VAL_I32;
 				sp->data.i = result;
 
@@ -3908,13 +4347,13 @@ array_constructed:
 				sp -= 2;
 
 				if (sp->type == VAL_I32)
-					result = (guint32)sp [0].data.i > (mono_u)GET_NATI (sp [1]);
+					result = (mono_u)sp [0].data.i > (mono_u)GET_NATI (sp [1]);
 				else if (sp->type == VAL_I64)
 					result = (guint64)sp [0].data.l > (guint64)sp [1].data.l;
 				else if (sp->type == VAL_DOUBLE)
 					result = isnan (sp [0].data.f) || isnan (sp [1].data.f);
 				else
-					result = (mono_u)GET_NATI (sp [0]) > (mono_u)GET_NATI (sp [1]);
+					result = (mono_u)sp [0].data.nati > (mono_u)GET_NATI (sp [1]);
 				sp->type = VAL_I32;
 				sp->data.i = result;
 
@@ -3927,7 +4366,7 @@ array_constructed:
 				sp -= 2;
 
 				if (sp->type == VAL_I32)
-					result = sp [0].data.i < (gint)GET_NATI (sp [1]);
+					result = (mono_i)sp [0].data.i < (mono_i)GET_NATI (sp [1]);
 				else if (sp->type == VAL_I64)
 					result = sp [0].data.l < sp [1].data.l;
 				else if (sp->type == VAL_DOUBLE) {
@@ -3936,7 +4375,7 @@ array_constructed:
 					else
 						result = sp [0].data.f < sp [1].data.f;
 				} else
-					result = (gint)GET_NATI (sp [0]) < (gint)GET_NATI (sp [1]);
+					result = (mono_i)sp [0].data.nati < (mono_i)GET_NATI (sp [1]);
 				sp->type = VAL_I32;
 				sp->data.i = result;
 
@@ -3949,13 +4388,13 @@ array_constructed:
 				sp -= 2;
 
 				if (sp->type == VAL_I32)
-					result = (guint32)sp [0].data.i < (mono_u)GET_NATI (sp [1]);
+					result = (mono_u)sp [0].data.i < (mono_u)GET_NATI (sp [1]);
 				else if (sp->type == VAL_I64)
 					result = (guint64)sp [0].data.l < (guint64)sp [1].data.l;
 				else if (sp->type == VAL_DOUBLE)
 					result = isnan (sp [0].data.f) || isnan (sp [1].data.f);
 				else
-					result = (mono_u)GET_NATI (sp [0]) < (mono_u)GET_NATI (sp [1]);
+					result = (mono_u)sp [0].data.nati < (mono_u)GET_NATI (sp [1]);
 				sp->type = VAL_I32;
 				sp->data.i = result;
 
@@ -3996,7 +4435,6 @@ array_constructed:
 
 				sp->type = VAL_NATI;
 				sp->data.p = mono_create_method_pointer (m);
-				sp->data.vt.klass = NULL;
 				++sp;
 				break;
 			}
@@ -4012,20 +4450,12 @@ array_constructed:
 				break;
 			}
 			case CEE_LDARGA: {
-				MonoType *t;
-				MonoClass *c;
 				guint32 anum;
-
 				++ip;
 				anum = read16 (ip);
 				ip += 2;
-				t = ARG_TYPE (signature, anum);
-				c = mono_class_from_mono_type (t);
-				sp->data.vt.klass = c;
-				sp->data.vt.vt = ARG_POS (anum);
-
+				sp->data.vt = ARG_POS (anum);
 				sp->type = VAL_MP;
-
 				++sp;
 				break;
 			}
@@ -4051,16 +4481,13 @@ array_constructed:
 			}
 			case CEE_LDLOCA: {
 				MonoType *t;
-				MonoClass *c;
 				guint32 loc_pos;
 
 				++ip;
 				loc_pos = read16 (ip);
 				ip += 2;
 				t = LOCAL_TYPE (header, loc_pos);
-				c =  mono_class_from_mono_type (t);
-				sp->data.vt.vt = LOCAL_POS (loc_pos);
-				sp->data.vt.klass = c;
+				sp->data.vt = LOCAL_POS (loc_pos);
 
 				sp->type = VAL_MP;
 
@@ -4112,7 +4539,7 @@ array_constructed:
 
 				--sp;
 				g_assert (sp->type == VAL_TP || sp->type == VAL_MP);
-				memset (sp->data.vt.vt, 0, mono_class_value_size (class, NULL));
+				memset (sp->data.vt, 0, mono_class_value_size (class, NULL));
 				break;
 			}
 			case CEE_CONSTRAINED_: {
@@ -4206,18 +4633,24 @@ array_constructed:
 
 #if DEBUG_INTERP
 		if (tracing)
-			g_print ("* Handling exception '%s' at IL_%04x\n", mono_object_class (frame->ex)->name, frame->ip - header->code);
+			g_print ("* Handling exception '%s' at IL_%04x\n", frame->ex == NULL ? "** Unknown **" : mono_object_class (frame->ex)->name, frame->ip - header->code);
 #endif
 		if (die_on_exception)
 			goto die_on_ex;
+
+		if (frame->ex == quit_exception)
+			goto handle_finally;
 		
 		for (inv = frame; inv; inv = inv->parent) {
+			if (inv->method == NULL)
+				continue;
 			if (inv->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 				continue;
 			if (inv->method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME))
 				continue;
 			hd = ((MonoMethodNormal*)inv->method)->header;
 			ip_offset = inv->ip - hd->code;
+			inv->ex_handler = NULL; /* clear this in case we are trhowing an exception while handling one  - this one wins */
 			for (i = 0; i < hd->num_clauses; ++i) {
 				clause = &hd->clauses [i];
 				if (clause->flags <= 1 && MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
@@ -4232,15 +4665,7 @@ array_constructed:
 							if (tracing)
 								g_print ("* Found handler at '%s'\n", inv->method->name);
 #endif
-
-							/*
-							 * It seems that if the catch handler is found in the same method,
-							 * it gets executed before the finally handler.
-							 */
-							if (inv == frame)
-								goto handle_fault;
-							else
-								goto handle_finally;
+							goto handle_finally;
 						}
 					} else {
 						/* FIXME: handle filter clauses */
@@ -4266,26 +4691,30 @@ die_on_ex:
 		int i;
 		guint32 ip_offset;
 		MonoExceptionClause *clause;
+		GSList *old_list = finally_ips;
 		
 #if DEBUG_INTERP
 		if (tracing)
-			g_print ("* Handle finally\n");
+			g_print ("* Handle finally IL_%04x\n", endfinally_ip == NULL ? 0 : endfinally_ip - header->code);
 #endif
 		if ((frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) 
 				|| (frame->method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME))) {
-			DEBUG_LEAVE ();
-			return;
+			goto exit_frame;
 		}
 		ip_offset = frame->ip - header->code;
 
-		for (i = 0; i < header->num_clauses; ++i) {
-			clause = &header->clauses [i];
-			if (clause == frame->ex_handler)
+		if (endfinally_ip != NULL)
+			finally_ips = g_slist_prepend(finally_ips, (void *)endfinally_ip);
+		for (i = 0; i < header->num_clauses; ++i)
+			if (frame->ex_handler == &header->clauses [i])
 				break;
-			if (MONO_OFFSET_IN_CLAUSE (clause, ip_offset) && !(MONO_OFFSET_IN_CLAUSE (clause, endfinally_ip - header->code))) {
+		while (i > 0) {
+			--i;
+			clause = &header->clauses [i];
+			if (MONO_OFFSET_IN_CLAUSE (clause, ip_offset) && (endfinally_ip == NULL || !(MONO_OFFSET_IN_CLAUSE (clause, endfinally_ip - header->code)))) {
 				if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 					ip = header->code + clause->handler_offset;
-					finally_ips = g_slist_append (finally_ips, (gpointer) ip);
+					finally_ips = g_slist_prepend (finally_ips, (gpointer) ip);
 #if DEBUG_INTERP
 					if (tracing)
 						g_print ("* Found finally at IL_%04x with exception: %s\n", clause->handler_offset, frame->ex? "yes": "no");
@@ -4293,9 +4722,13 @@ die_on_ex:
 				}
 			}
 		}
-		if (finally_ips) {
+
+		endfinally_ip = NULL;
+
+		if (old_list != finally_ips && finally_ips) {
 			ip = finally_ips->data;
 			finally_ips = g_slist_remove (finally_ips, ip);
+			sp = frame->stack; /* spec says stack should be empty at endfinally so it should be at the start too */
 			goto main_loop;
 		}
 
@@ -4305,8 +4738,7 @@ die_on_ex:
 		 */
 		if (frame->ex)
 			goto handle_fault;
-		ip = endfinally_ip;
-		goto main_loop;
+		ves_abort();
 	}
 	handle_fault:
 	{
@@ -4349,19 +4781,40 @@ die_on_ex:
 			++sp;
 			goto main_loop;
 		}
-		if (!frame->parent) {
-			/* Pass the exception though the managed barrier if possible */
-			MonoInvocation *parent = TlsGetValue (frame_thread_id);
-			if (parent) {
-				parent->ex = frame->ex;
-				longjmp (*(jmp_buf*)parent->locals, 1);
-			}
-			goto die_on_ex;
-		}
-		DEBUG_LEAVE ();
-		return;
+		goto exit_frame;
 	}
-	
+exit_frame:
+	DEBUG_LEAVE ();
+}
+
+void
+ves_exec_method (MonoInvocation *frame)
+{
+	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext context_struct;
+	if (context == NULL) {
+		context = &context_struct;
+		context_struct.base_frame = frame;
+		context_struct.current_frame = NULL;
+		context_struct.current_env = NULL;
+		context_struct.search_for_handler = 0;
+		TlsSetValue (thread_context_id, context);
+	}
+	frame->ip = NULL;
+	frame->parent = context->current_frame;
+	ves_exec_method_with_context(frame, context);
+	if (frame->ex) {
+		if (context->current_env) {
+			context->env_frame->ex = frame->ex;
+			longjmp (*context->current_env, 1);
+		}
+		else
+			mono_unhandled_exception ((MonoException *)frame->ex);
+	}
+	if (context->base_frame == frame)
+		TlsSetValue (thread_context_id, NULL);
+	else
+		context->current_frame = frame->parent;
 }
 
 static int 
@@ -4379,6 +4832,8 @@ ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 		g_error ("No entry point method found in %s", image->name);
 
 	rval = mono_runtime_run_main (method, argc, argv, &exc);
+	if (exc != NULL)
+		mono_unhandled_exception (exc);
 
 	return rval;
 }
@@ -4435,6 +4890,14 @@ segv_handler (int signum)
 {
 	signal (signum, segv_handler);
 	mono_raise_exception (segv_exception);
+}
+
+
+static void
+quit_handler (int signum)
+{
+	signal (signum, quit_handler);
+	mono_raise_exception (quit_exception);
 }
 
 static MonoBoolean
@@ -4505,6 +4968,10 @@ static void main_thread_handler (gpointer user_data)
 	segv_exception = mono_get_exception_null_reference ();
 	segv_exception->message = mono_string_new (main_args->domain, "Segmentation fault");
 	signal (SIGSEGV, segv_handler);
+	/* perhaps we should use a different class for this exception... */
+	quit_exception = mono_get_exception_null_reference ();
+	quit_exception->message = mono_string_new (main_args->domain, "Quit");
+	signal (SIGINT, quit_handler);
 
 	ves_exec (main_args->domain, assembly, main_args->argc, main_args->argv);
 #endif
@@ -4587,8 +5054,9 @@ main (int argc, char *argv [])
 
 	g_thread_init (NULL);
 
-	frame_thread_id = TlsAlloc ();
-	TlsSetValue (frame_thread_id, NULL);
+	thread_context_id = TlsAlloc ();
+	TlsSetValue (thread_context_id, NULL);
+	InitializeCriticalSection(&calc_section);
 
 	mono_install_compile_method (mono_create_method_pointer);
 	mono_install_runtime_invoke (interp_mono_runtime_invoke);

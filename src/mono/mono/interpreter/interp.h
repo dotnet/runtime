@@ -37,10 +37,7 @@ typedef struct {
 		/* native size integer and pointer types */
 		gpointer p;
 		mono_u nati;
-		struct {
-			gpointer vt;
-			MonoClass *klass;
-		} vt;
+		gpointer vt;
 	} data;
 	unsigned int type;
 } stackval;
