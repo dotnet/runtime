@@ -365,6 +365,8 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 	return NULL;
 }
 
+#if HAVE_BOEHM_GC
+
 static HANDLE finalizer_event;
 static volatile gboolean finished=FALSE;
 
@@ -406,20 +408,20 @@ void mono_gc_init (void)
 	if (getenv ("GC_DONT_GC"))
 		return;
 	
-	finalizer_event=CreateEvent (NULL, FALSE, FALSE, NULL);
-	if(finalizer_event==NULL) {
+	finalizer_event = CreateEvent (NULL, FALSE, FALSE, NULL);
+	if (finalizer_event == NULL) {
 		g_assert_not_reached ();
 	}
 	
-	GC_finalize_on_demand=1;
-	GC_finalizer_notifier=finalize_notify;
+	GC_finalize_on_demand = 1;
+	GC_finalizer_notifier = finalize_notify;
 	
 	/* Don't use mono_thread_create here, because we don't want
 	 * the runtime to wait for this thread to exit when it's
 	 * cleaning up.
 	 */
-	gc_thread=CreateThread (NULL, 0, finalizer_thread, NULL, 0, NULL);
-	if(gc_thread==NULL) {
+	gc_thread = CreateThread (NULL, 0, finalizer_thread, NULL, 0, NULL);
+	if (gc_thread == NULL) {
 		g_assert_not_reached ();
 	}
 }
@@ -430,6 +432,20 @@ void mono_gc_cleanup (void)
 	g_message (G_GNUC_PRETTY_FUNCTION ": cleaning up finalizer");
 #endif
 
-	finished=TRUE;
+	finished = TRUE;
 	finalize_notify ();
 }
+
+#else
+
+/* no Boehm GC support. */
+void mono_gc_init (void)
+{
+}
+
+void mono_gc_cleanup (void)
+{
+}
+
+#endif
+
