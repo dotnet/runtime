@@ -1,3 +1,7 @@
+2004-06-29  Jackson Harper  <jackson@ximian.com>
+
+	* man/gacutil.1: Update man with new command line options.
+	
 2004-06-29  Raja R Harinath  <rharinath@novell.com>
             Atsushi Enomoto  <atsushi@ximian.com>
 
