@@ -8,15 +8,18 @@ TESTSRC=			\
 	fib.cs 			\
 	life.cs 		\
 	castclass.cs		\
+	commute.cs		\
 	isinst.cs		\
 	sbperf1.cs		\
 	sbperf2.cs		\
+	iconst-byte.cs		\
 	inline1.cs		\
 	inline2.cs		\
 	inline3.cs		\
 	inline4.cs		\
 	inline5.cs		\
 	inline6.cs		\
+	inline-readonly.cs	\
 	muldiv.cs		\
 	loops.cs		\
 	initlocals.cs		\
@@ -24,10 +27,14 @@ TESTSRC=			\
 	switch.cs		\
 	ctor-bench.cs		\
 	readonly.cs		\
+	readonly-byte-array.cs  \
+	readonly-inst.cs	\
+	readonly-vt.cs		\
 	bulkcpy.il		\
 	math.cs			\
 	boxtest.cs		\
-	valuetype-hash-equals.cs
+	valuetype-hash-equals.cs \
+	vt2.cs
 
 TESTSI_TMP=$(TESTSRC:.cs=.exe)
 TESTSI=$(TESTSI_TMP:.il=.exe)
