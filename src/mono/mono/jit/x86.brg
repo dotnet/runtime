@@ -147,25 +147,25 @@ stmt: STLOC (reg) {
 
 stmt: BR {
 	tree->is_jump = 1;
-	x86_jump32 (*code, tree->data.i); 
+	x86_jump32 (*code, tree->data.i - 5); 
 }
 
 stmt: BLT (reg, con) {
 	tree->is_jump = 1;
 	x86_alu_reg_imm (*code, X86_CMP, tree->left->reg, tree->right->data.i);
-	x86_branch32 (*code, X86_CC_LT, tree->data.i - 6, TRUE); 
+	x86_branch32 (*code, X86_CC_LT, tree->data.i - 11, TRUE); 
 }
 
 stmt: BEQ (reg, con) {
 	tree->is_jump = 1;
 	x86_alu_reg_imm (*code, X86_CMP, tree->left->reg, tree->right->data.i);
-	x86_branch32 (*code, X86_CC_EQ, tree->data.i - 6 , TRUE);
+	x86_branch32 (*code, X86_CC_EQ, tree->data.i - 11, TRUE);
 }
 
 stmt: BGE (reg, con) {
 	tree->is_jump = 1;
 	x86_alu_reg_imm (*code, X86_CMP, tree->left->reg, tree->right->data.i);
-	x86_branch32 (*code, X86_CC_GE, tree->data.i - 6, TRUE);
+	x86_branch32 (*code, X86_CC_GE, tree->data.i - 11, TRUE);
 }
 
 stmt: RETV (reg) {

@@ -86,17 +86,33 @@ tree_emit (guint8 *cstart, guint8 **buf, MBTree *tree)
 		((MBEmitFunc)tree->emit) (tree, buf);
 }
 
+static gboolean
+tree_get_address (MBTree *tree, gint32 vaddr, gint32 *addr)
+{
+	if (tree->left && tree_get_address (tree->left, vaddr, addr))
+		return TRUE;
+
+	if (tree->right && tree_get_address (tree->right, vaddr, addr))
+		return TRUE;
+
+	if (tree->vaddr == vaddr) {
+		*addr = tree->addr;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
 static gint32
 get_address (GPtrArray *forest, guint32 vaddr)
 {
-	int i;
+	gint32 i, a;
 
 	for (i = 0; i < forest->len; i++) {
 		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
 
-		if (t1->vaddr == vaddr)
-			return t1->addr;
-
+		if (tree_get_address (t1, vaddr, &a))
+			return a;
 	}
 
 	g_assert_not_reached ();
@@ -310,6 +326,8 @@ create_jit_trampoline (MonoMethod *method)
 
 #define ADD_TREE(t)     do { t->vaddr = vaddr; g_ptr_array_add (forest, (t)); } while (0)
 
+#define PUSH_TREE(t)    do { t->vaddr = vaddr; *sp = t; sp++; } while (0)
+
 #define LOCAL_POS(n)    (locals_offsets [(n)])
 #define LOCAL_TYPE(n)   ((header)->locals [(n)])
 
@@ -378,7 +396,7 @@ mono_compile_method (MonoMethod *method)
 
 	while (ip < end) {
 		guint32 vaddr = ip - header->code;
-
+		printf ("VADDR %0x\n", vaddr);
 		switch (*ip) {
 
 		case CEE_CALL: {
@@ -417,8 +435,7 @@ mono_compile_method (MonoMethod *method)
 				ADD_TREE (t2);
 				t1 = ctree_new_leaf (MB_TERM_LDLOC, t2->type);
 				t1->data.i = t2->data.i;
-				*sp = t1;
-				sp++;
+				PUSH_TREE (t1);
 			} else {
 				t1 = ctree_new_leaf (MB_TERM_CALL, MONO_TYPE_VOID);
 				t1->data.p = cm;
@@ -430,18 +447,16 @@ mono_compile_method (MonoMethod *method)
 			++ip;
 			t1 = ctree_new_leaf (MB_TERM_CONST, MONO_TYPE_I4);
 			t1->data.i = *ip;
-			*sp = t1;
 			++ip;
-			++sp;
+			PUSH_TREE (t1);
 			break;
 
 		case CEE_LDC_I4: 
 			++ip;
 			t1 = ctree_new_leaf (MB_TERM_CONST, MONO_TYPE_I4);
 			t1->data.i = read32 (ip);
-			*sp = t1;
 			ip += 4;
-			++sp;
+			PUSH_TREE (t1);
 			break;
 
 		case CEE_LDC_I4_M1:
@@ -456,9 +471,8 @@ mono_compile_method (MonoMethod *method)
 		case CEE_LDC_I4_8:
 			t1 = ctree_new_leaf (MB_TERM_CONST, MONO_TYPE_I4);
 			t1->data.i = (*ip) - CEE_LDC_I4_0;
-			*sp = t1;
-			++sp;
 			++ip;
+			PUSH_TREE (t1);
 			break;
 
 		case CEE_LDLOC_0:
@@ -470,8 +484,7 @@ mono_compile_method (MonoMethod *method)
 
 			t1 = ctree_new_leaf (MB_TERM_LDLOC, LOCAL_TYPE (n)->type);
 			t1->data.i = LOCAL_POS (n);
-			*sp = t1;
-			++sp;
+			PUSH_TREE (t1);
 			break;
 		}
 		case CEE_STLOC_0:
@@ -491,26 +504,29 @@ mono_compile_method (MonoMethod *method)
 
 		case CEE_ADD:
 			++ip;
-			--sp;
-			sp [-1] = ctree_new (MB_TERM_ADD, 0, sp [-1], sp [0]);
+			sp -= 2;
+			t1 = ctree_new (MB_TERM_ADD, 0, sp [0], sp [1]);
+			PUSH_TREE (t1);
 			break;
 
 		case CEE_SUB:
 			++ip;
-			--sp;
-			sp [-1] = ctree_new (MB_TERM_SUB, 0, sp [-1], sp [0]);
+			sp -= 2;
+			t1 = ctree_new (MB_TERM_SUB, 0, sp [0], sp [1]);
+			PUSH_TREE (t1);
 			break;
 
 		case CEE_MUL:
 			++ip;
-			--sp;
-			sp [-1] = ctree_new (MB_TERM_MUL, 0, sp [-1], sp [0]);
+			sp -= 2;
+			t1 = ctree_new (MB_TERM_MUL, 0, sp [0], sp [1]);
+			PUSH_TREE (t1);
 			break;
 
 		case CEE_BR_S: 
 			++ip;
 			t1 = ctree_new_leaf (MB_TERM_BR, 0);
-			t1->data.i = vaddr + (signed char) *ip;
+			t1->data.i = vaddr + 2 + (signed char) *ip;
 			ADD_TREE (t1);
 			++ip;
 			break;
@@ -518,7 +534,7 @@ mono_compile_method (MonoMethod *method)
 		case CEE_BR:
 			++ip;
 			t1 = ctree_new_leaf (MB_TERM_BR, 0);
-			t1->data.i = vaddr + (gint32) read32(ip);
+			t1->data.i = vaddr + 5 + (gint32) read32(ip);
 			ADD_TREE (t1);
 			ip += 4;
 			break;
@@ -529,10 +545,10 @@ mono_compile_method (MonoMethod *method)
 			++ip;
 			sp -= 2;
 			t1 = ctree_new (MB_TERM_BLT, 0, sp [0], sp [1]);
-			if (near_jump)
-				t1->data.i = vaddr + (signed char) *ip;
+			if (near_jump) 
+				t1->data.i = vaddr + 2 + (signed char) *ip;
 			else 
-				t1->data.i = vaddr + (gint32) read32 (ip);
+				t1->data.i = vaddr + 5 + (gint32) read32 (ip);
 
 			ADD_TREE (t1);
 			ip += near_jump ? 1: 4;		
@@ -545,9 +561,9 @@ mono_compile_method (MonoMethod *method)
 			sp -= 2;
 			t1 = ctree_new (MB_TERM_BEQ, 0, sp [0], sp [1]);
 			if (near_jump)
-				t1->data.i = vaddr + (signed char) *ip;
+				t1->data.i = vaddr + 2 + (signed char) *ip;
 			else 
-				t1->data.i = vaddr + (gint32) read32 (ip);
+				t1->data.i = vaddr + 5 + (gint32) read32 (ip);
 
 			ADD_TREE (t1);
 			ip += near_jump ? 1: 4;		
@@ -560,9 +576,9 @@ mono_compile_method (MonoMethod *method)
 			sp -= 2;
 			t1 = ctree_new (MB_TERM_BGE, 0, sp [0], sp [1]);
 			if (near_jump)
-				t1->data.i = vaddr + (signed char) *ip;
+				t1->data.i = vaddr + 2 + (signed char) *ip;
 			else 
-				t1->data.i = vaddr + (gint32) read32 (ip);
+				t1->data.i = vaddr + 5 + (gint32) read32 (ip);
 
 			ADD_TREE (t1);
 			ip += near_jump ? 1: 4;		
@@ -593,8 +609,7 @@ mono_compile_method (MonoMethod *method)
 			++ip;
 			t1 = ctree_new_leaf (MB_TERM_LDARG, ARG_TYPE (n)->type);
 			t1->data.i = ARG_POS (n);
-			*sp = t1;
-			++sp;
+			PUSH_TREE (t1);
 			break;
 		}
 
@@ -608,8 +623,7 @@ mono_compile_method (MonoMethod *method)
 				ip += 4;
 				t1 = ctree_new_leaf (MB_TERM_LDARG, ARG_TYPE (n)->type);
 				t1->data.i = ARG_POS (n);
-				*sp = t1;
-				++sp;
+				PUSH_TREE (t1);
 				break;
 			}
 			default:
