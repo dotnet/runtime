@@ -797,6 +797,7 @@ gpointer          mono_create_jump_trampoline (MonoDomain *domain,
 											   gboolean add_sync_wrapper);
 gpointer          mono_create_class_init_trampoline (MonoVTable *vtable);
 gpointer          mono_create_jit_trampoline (MonoMethod *method);
+gpointer          mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token);
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr);
 gboolean          mono_running_on_valgrind (void);
 void*             mono_global_codeman_reserve (int size);

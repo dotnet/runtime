@@ -6753,6 +6753,20 @@ mono_create_jit_trampoline (MonoMethod *method)
 	return tramp;
 }	
 
+#ifdef MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN
+gpointer
+mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
+{
+	gpointer tramp;
+
+	tramp = mono_arch_create_jit_trampoline_from_token (image, token);
+
+	mono_jit_stats.method_trampolines++;
+
+	return tramp;
+}	
+#endif
+
 MonoVTable*
 mono_find_class_init_trampoline_by_addr (gconstpointer addr)
 {

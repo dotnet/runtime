@@ -625,11 +625,15 @@ mono_aot_init_vtable (MonoVTable *vtable)
 			return FALSE;
 		}
 
+#ifdef MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN
+		vtable->vtable [i] = mono_create_jit_trampoline_from_token (image, token);
+#else
 		m = mono_get_method (image, token, NULL);
 		g_assert (m);
 
 		//printf ("M: %d %p %s\n", i, &(vtable->vtable [i]), mono_method_full_name (m, TRUE));
 		vtable->vtable [i] = mono_create_jit_trampoline (m);
+#endif
 	}
 
 	LeaveCriticalSection (&aot_mutex);
