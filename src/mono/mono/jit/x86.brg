@@ -4594,6 +4594,36 @@ stmt: CBRANCH (COMPARE (freg, freg)) {
 	}
 }
 
+freg: CALL_R8 (this, reg) {
+	int treg = X86_EAX;
+	int lreg = tree->left->reg1;
+	int rreg = tree->right->reg1;
+	
+	if (lreg == treg || rreg == treg) 
+		treg = X86_EDX;
+	if (lreg == treg || rreg == treg) 
+		treg = X86_ECX;
+	if (lreg == treg || rreg == treg) 
+		mono_assert_not_reached ();
+
+	if (tree->left->op != MB_TERM_NOP) {
+		mono_assert (lreg >= 0);
+		x86_push_reg (s->code, lreg);
+		x86_alu_membase_imm (s->code, X86_CMP, lreg, 0, 0);
+	}
+
+	if (tree->data.ci.vtype_num) {
+		int offset = VARINFO (s, tree->data.ci.vtype_num).offset;
+		x86_lea_membase (s->code, treg, X86_EBP, offset);
+		x86_push_reg (s->code, treg);
+	}
+
+	x86_call_reg (s->code, rreg);
+
+	if (tree->data.ci.args_size)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.ci.args_size);	
+}
+
 freg: CALL_R8 (this, ADDR_G) {
 	int lreg = tree->left->reg1;
 	int treg = X86_EAX;
