@@ -796,26 +796,26 @@ ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilder *mb, MonoObject *o
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return mono_image_create_token (mb->assemblyb->dynamic_assembly, obj);
+	return mono_image_create_token (mb->dynamic_image, obj);
 }
 
 static gint32
 ves_icall_ModuleBuilder_getDataChunk (MonoReflectionModuleBuilder *mb, MonoArray *buf, gint32 offset)
 {
 	int count;
-	MonoDynamicAssembly *ass = mb->assemblyb->dynamic_assembly;
+	MonoDynamicImage *image = mb->dynamic_image;
 	char *p = mono_array_addr (buf, char, 0);
 
 	MONO_ARCH_SAVE_REGS;
 
 	mono_image_create_pefile (mb);
 
-	if (offset >= ass->pefile.index)
+	if (offset >= image->pefile.index)
 		return 0;
 	count = mono_array_length (buf);
-	count = MIN (count, ass->pefile.index - offset);
+	count = MIN (count, image->pefile.index - offset);
 	
-	memcpy (p, ass->pefile.data + offset, count);
+	memcpy (p, image->pefile.data + offset, count);
 
 	return count;
 }

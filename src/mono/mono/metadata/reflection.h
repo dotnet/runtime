@@ -257,43 +257,10 @@ enum {
 
 typedef struct {
 	MonoAssembly assembly;
-	guint32 meta_size;
-	guint32 text_rva;
-	guint32 metadata_rva;
-	guint32 image_base;
-	guint32 cli_header_offset;
-	guint32 iat_offset;
-	guint32 idt_offset;
-	guint32 ilt_offset;
-	guint32 imp_names_offset;
-	struct {
-		guint32 rva;
-		guint32 size;
-		guint32 offset;
-		guint32 attrs;
-	} sections [MONO_SECTION_MAX];
-	GHashTable *typeref;
-	GHashTable *handleref;
-	MonoGHashTable *tokens;
-	MonoGHashTable *blob_cache;
-	GList *array_methods;
-	MonoGHashTable *token_fixups;
-	MonoGHashTable *method_to_table_idx;
-	MonoGHashTable *field_to_table_idx;
-	MonoGHashTable *method_aux_hash;
 	gboolean run;
 	gboolean save;
 	char *strong_name;
 	guint32 strong_name_size;
-	MonoDynamicStream pefile;
-	MonoDynamicStream sheap;
-	MonoDynamicStream code; /* used to store method headers and bytecode */
-	MonoDynamicStream resources; /* managed embedded resources */
-	MonoDynamicStream us;
-	MonoDynamicStream blob;
-	MonoDynamicStream tstream;
-	MonoDynamicStream guid;
-	MonoDynamicTable tables [64];
 } MonoDynamicAssembly;
 
 typedef struct {
@@ -412,6 +379,7 @@ typedef struct {
 	MonoReflectionAssemblyBuilder *assemblyb;
 	MonoArray *global_methods;
 	MonoArray *global_fields;
+	gboolean is_main;
 } MonoReflectionModuleBuilder;
 
 typedef struct {
@@ -562,7 +530,7 @@ MonoType*     mono_reflection_type_from_name (char *name, MonoImage *image);
 void          mono_image_create_pefile (MonoReflectionModuleBuilder *module);
 void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);
 guint32       mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str);
-guint32       mono_image_create_token  (MonoDynamicAssembly *assembly, MonoObject *obj);
+guint32       mono_image_create_token  (MonoDynamicImage *assembly, MonoObject *obj);
 void          mono_image_module_basic_init (MonoReflectionModuleBuilder *module);
 
 MonoReflectionAssembly* mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly);

@@ -830,7 +830,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 	if (klass->image->assembly->dynamic) {
 		MonoReflectionMethodAux *method_aux = 
 			mono_g_hash_table_lookup (
-				((MonoDynamicAssembly*)method->klass->image->assembly->dynamic)->method_aux_hash, method);
+				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		if (method_aux && method_aux->param_names) {
 			for (i = 0; i < method->signature->param_count; ++i)
 				if (method_aux->param_names [i])
@@ -875,7 +875,7 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 	if (method->klass->image->assembly->dynamic) {
 		MonoReflectionMethodAux *method_aux = 
 			mono_g_hash_table_lookup (
-				((MonoDynamicAssembly*)method->klass->image->assembly->dynamic)->method_aux_hash, method);
+				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		if (method_aux && method_aux->param_marshall) {
 			MonoMarshalSpec **dyn_specs = method_aux->param_marshall;
 			for (i = 0; i < method->signature->param_count + 1; ++i)
@@ -930,7 +930,7 @@ mono_method_has_marshal_info (MonoMethod *method)
 	if (method->klass->image->assembly->dynamic) {
 		MonoReflectionMethodAux *method_aux = 
 			mono_g_hash_table_lookup (
-				((MonoDynamicAssembly*)method->klass->image->assembly->dynamic)->method_aux_hash, method);
+				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		MonoMarshalSpec **dyn_specs = method_aux->param_marshall;
 		if (dyn_specs) {
 			for (i = 0; i < method->signature->param_count + 1; ++i)
