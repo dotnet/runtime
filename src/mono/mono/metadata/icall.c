@@ -1240,7 +1240,7 @@ search_method (MonoReflectionType *type, const char *name, guint32 flags, MonoAr
 		}
 		klass = klass->parent;
 	}
-	g_print ("Method %s.%s::%s (%d) not found\n", start_class->name_space, start_class->name, name, mono_array_length (args));
+	//g_print ("Method %s.%s::%s (%d) not found\n", start_class->name_space, start_class->name, name, mono_array_length (args));
 	return NULL;
 }
 
