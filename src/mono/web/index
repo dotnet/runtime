@@ -153,6 +153,12 @@
 	</a> Wikis.
 </p>
 
+@item Apr 22nd, 2004: XSP 0.12 released.
+
+	A new release of XSP is available. It fixes a bug that made Web Services
+	unusable from client proxies. You can download it from <a
+	href="/archive/xsp-0.12.tar.gz">here</a>.
+	
 @item Apr 21st, 2004: XSP 0.11 and mod_mono 0.8 released.
 
 	Gonzalo has made new releases of XSP and mod_mono (The ASP.NET hosting
