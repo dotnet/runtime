@@ -24,11 +24,6 @@
 
 **** TODO
 	<ul>
-		* The current implementation of <code>CryptoStream</code> is
-		  very limited and contain known bugs (<a 
-		  href="http://bugzilla.ximian.com/show_bug.cgi?id=40689">
-		  40689</a>). The class need to be re-designed.
-
 		* RNGCryptoServiceProvider is currently only working on Linux.
 		  The current implementation reside in Mono's runtime and use 
 		  the <code>/dev/[u]random</code> device (which do not exists 
@@ -124,20 +119,16 @@
 
 **** Status
 	<ul>
-		* All classes are present but some (most Transforms) are only 
-		  stubbed.
+		* All classes are present but some Transforms are only stubbed. 
+
+		* We now have a fully managed C14N implementation.
 
 		* Most classes have their unit tests.
 	</ul>
 
 **** TODO
 	<ul>
-		* All the transforms needs to be done. But this requires far 
-		  more XML knowledge than crypto. Note: Most tests runs because
-		  the feeded XML is pre-c14n (by hand in the code) before 
-		  signing (not because the transforms works). In the short
-		  term <code>libxml2</code> could be used to provide C14N, but 
-		  in the long term a fully managed class would be much better.
+		* Complete all Transform derived classes.
 	</ul>
 
 <hr>
@@ -275,7 +266,7 @@
 	<ul>
 		* Nothing (yet) commited in CVS. However the classes in this 
 		  namespace are outside WS-Security scope. So development, for 
-		  those classes, could be done without signing any agreements.
+		  those classes, could be done without signing this agreement.
 	</ul>
 
 **** TODO
@@ -283,6 +274,12 @@
 		* We need to define certificate stores (for both users and
 		  machines). These sames stores must be linked with asymmetric
 		  keypairs. This could also be used to store the SPC roots.
+	</ul>
+
+*** Notes
+	<ul>
+		* Microsoft has <a href="http://microsoft.com/downloads/details.aspx?FamilyId=21FB9B9A-C5F6-4C95-87B7-FC7AB49B3EDD&displaylang=en">released</a>
+		a technical preview of WSE 2.
 	</ul>
 
 <hr>
@@ -306,11 +303,17 @@
 		  (SPC) file - which is a long name for a simple PKCS#7 file.
 
 		* <code>makecert</code> to create X.509 test certificates that 
-		  can be used (once transformed in SPC) to sign assemblies.
+		  can be used (once transformed in SPC) to sign assemblies. It's
+		  now possible to generate SSL certificates for web servers.
 	</ul>
 
 	Somewhat usable, somewhat incomplete:
 	<ul>
+		* <code>certview</code> is a certificate viewer for 
+		  <code>System.Windows.Forms</code> (right now only working on 
+		  Windows), while <code>gcertview</code> is the same viewer 
+		  implemented for GTK# (working on both Windows and Linux).
+
 		* <code>sn</code> is a clone of the <code>sn</code> to manage
 		  strongnames. Current version is limited to creating new keypairs
 		  and converting values.
@@ -345,7 +348,6 @@
 		  RC4, RSAManaged ...).
 	</ul>
 
-
 <hr>	
 ** How to Help
 
@@ -353,18 +355,19 @@
 		* Complete any of the TODO (and feel good about it ;-).
 
 		* Analyse the current coverage of the unit tests on the 
-		  cryptographic classes and complete the unit tests.
+		  cryptographic classes and complete the unit tests. <b><code>
+		  monocov</code> does a great job at this! Now we just need to
+		  complete the missing unit tests.</b>
 
 		* Optimization can also be done on most algorithms as crypto 
 		  is never fast enough. Some have been done using the 
 		  Community Edition of BoundChecker (a free VisualStudio 
 		  addon) - recommanded! Just be sure to test every optimization
-		  (using the unit test) carefully - it's so fast to break an
+		  (using the unit tests) carefully - it's so fast to break an
 		  algorithm ;-).
 
 		* Write some documentation on the cryptographic classes for 
-		  the <a href="http://go-mono.com/tutorial/html/en/index.html">Mono 
-		  Handbook</a> as I'm not a very good writer (at least in English).
+		  <b>monodoc</b> as I'm not a very good writer (at least in English).
 	</ul>
 
 	Contact Sebastien Pouliot (<a href="mailto:spouliot@videotron.ca">home</a>
@@ -372,4 +375,4 @@
 	informations about the status of the cryptographic classes.
 
 <hr>
-Last reviewed: June 11, 2003 (post mono 0.24)
+Last reviewed: August 9, 2003 (post mono 0.25)
