@@ -1,0 +1,30 @@
+Q: .NET is evil, it will give Microsoft too much control over every desktop?
+Q: If you implement .NET, wont I depend on Microsoft Passport to run my software?
+
+A: You are a bit confused.  It is easy to be confused, as Microsoft
+   has been naming anything they have produced recently with `.NET'.
+
+
+Q: So what are you doing with .NET?
+
+A: We are implementing the .NET Framework: a new development platform
+   specified by Microsoft.  It contains a number of components:
+
+	* A Common Language Runtime (CLR) system that contains a class loader,
+	  Just-in-time compiler, and a garbage collection aware
+	  runtime.
+
+	* A .NET-compatible class library.
+
+	* A compiler for the C# language, in the future we might work
+	  on other compilers that target .NET.
+
+   The CLR and the Common Type System (CTS) enables applications and
+   libraries to be written in a collection of different languages that
+   target the byte code 
+
+  multiple languages to share the same code
+   (through the CLS specification
+
+Q: 
+A: 
