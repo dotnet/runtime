@@ -8068,6 +8068,12 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 	invoke = mono_marshal_get_runtime_invoke (method);
 	runtime_invoke = mono_jit_compile_method (invoke);
+	
+	/* We need this here becuase mono_marshal_get_runtime_invoke can be place 
+	 * the helper method in System.Object and not the target class
+	 */
+	mono_runtime_class_init (mono_class_vtable (mono_domain_get (), method->klass));
+
 	compiled_method = mono_jit_compile_method (method);
 	return runtime_invoke (obj, params, exc, compiled_method);
 }
