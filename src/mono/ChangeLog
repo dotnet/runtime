@@ -1,3 +1,8 @@
+2004-04-29  Jackson Harper  <jackson@ximian.com>
+
+	* runtime/net_2_0/Makefile.am: install 2.0 corlib to its own
+	special little place.
+	
 2004-04-29  Zoltan Varga  <vargaz@freemail.hu>
 
 	* acconfig.h configure.in: Add check for scandir.
