@@ -1863,7 +1863,18 @@ mini_emit_memset (MonoCompile *s, int destreg, int offset, int size, int val, in
 {
 	int val_reg = mono_regstate_next_int (s->rs);
 
-	MONO_EMIT_NEW_ICONST (s, val_reg, val);
+	if (sizeof (gpointer) == 8)
+		MONO_EMIT_NEW_I8CONST (s, val_reg, val);
+	else
+		MONO_EMIT_NEW_ICONST (s, val_reg, val);
+
+	if (sizeof (gpointer) == 8) {
+		while (size >= 8) {
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI8_MEMBASE_REG, destreg, offset, val_reg);
+			offset += 8;
+			size -= 8;
+		}
+	}	
 
 	while (size >= 4) {
 		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, destreg, offset, val_reg);
