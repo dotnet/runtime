@@ -2617,8 +2617,7 @@ mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 	int need_touch = FALSE;
 
 #if defined(PLATFORM_WIN32) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
-	if (!tree->flags & MONO_INST_INIT)
-		need_touch = TRUE;
+	need_touch = TRUE;
 #endif
 
 	if (need_touch) {
