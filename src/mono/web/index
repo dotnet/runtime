@@ -69,6 +69,21 @@
   </tr>
 </table>
 
+** Mar 5, 2002
+
+	Jason has got an incredible amount of work on the Xml
+	classes during the weekend, and Gaurav is very close to have
+	the complete System.Web namespace implemented.   
+
+	Martin and Duco have been killing bugs by using the recently
+	revamped regression test suite.
+
+	Piers has updated our <a href="class-status.html">class
+	status</a> page again, with even more information available.
+
+	The C# compiler has full constant folding implemented now and Ravi
+	killed bugs of bugs in the <a href="http://bugzilla.ximian.com/buglist.cgi?product=Mono%2FClass+Libraries&product=Mono%2FMCS&product=Mono%2FRuntime&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&email1=&emailtype1=substring&emailassigned_to1=1&email2=&emailtype2=substring&emailreporter2=1&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&short_desc=&short_desc_type=substring&long_desc=&long_desc_type=substring&bug_file_loc=&bug_file_loc_type=substring&keywords=&keywords_type=anywords&op_sys_details=&op_sys_details_type=substring&version_details=&version_details_type=substring&cmdtype=doit&order=%27Importance%27&form_name=query">Mono Bug List</a>
+
 ** Mar 1, 2002
 
 	RPMs of Mono 0.9 are available at <a href="http://mono.baselabs.org/#download">mono.baselabs.com</a>
