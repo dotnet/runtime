@@ -330,6 +330,11 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 		case SocketOptionName_Type:
 			*system_name = SO_TYPE;
 			break;
+#ifdef SO_PEERCRED
+		case SocketOptionName_PeerCred:
+			*system_name = SO_PEERCRED;
+			break;
+#endif
 		case SocketOptionName_ExclusiveAddressUse:
 		case SocketOptionName_UseLoopback:
 		case SocketOptionName_MaxConnections:
@@ -1428,6 +1433,10 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 	int lingersize=sizeof(linger);
 	struct timeval tv;
 	int tvsize=sizeof(tv);
+#ifdef SO_PEERCRED
+	struct ucred cred;
+	int credsize = sizeof(cred);
+#endif
 	MonoDomain *domain=mono_domain_get();
 	MonoObject *obj;
 	MonoClass *obj_class;
@@ -1460,6 +1469,13 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 		ret = _wapi_getsockopt (sock, system_level, system_name, &tv,
 		           &tvsize);
 		break;
+
+#ifdef SO_PEERCRED
+	case SocketOptionName_PeerCred: 
+		ret = _wapi_getsockopt (sock, system_level, system_name, &cred,
+					&credsize);
+		break;
+#endif
 
 	default:
 		ret = _wapi_getsockopt (sock, system_level, system_name, &val,
@@ -1499,6 +1515,32 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 	case SocketOptionName_ReceiveTimeout:
 		obj = int_to_object (domain, (tv.tv_sec * 1000) + (tv.tv_usec / 1000));
 		break;
+
+#ifdef SO_PEERCRED
+	case SocketOptionName_PeerCred: 
+	{
+		/* build a Mono.Posix.PeerCred+PeerCredData if
+		 * possible
+		 */
+		MonoImage *mono_posix_image = mono_image_loaded ("Mono.Posix");
+		MonoPeerCredData *cred_data;
+		
+		if (mono_posix_image == NULL) {
+			*error = WSAENOPROTOOPT;
+			return;
+		}
+		
+		obj_class = mono_class_from_name(mono_posix_image,
+						 "Mono.Posix",
+						 "PeerCred/PeerCredData");
+		obj = mono_object_new(domain, obj_class);
+		cred_data = (MonoPeerCredData *)obj;
+		cred_data->pid = cred.pid;
+		cred_data->uid = cred.uid;
+		cred_data->gid = cred.gid;
+		break;
+	}
+#endif
 
 	default:
 		obj = int_to_object (domain, val);
