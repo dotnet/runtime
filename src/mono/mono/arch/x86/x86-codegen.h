@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.27 2002/05/03 12:52:19 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.28 2002/05/06 16:33:54 serge Exp $
 */
 
 #ifndef X86_H
@@ -41,6 +41,10 @@ typedef enum {
 typedef enum {
 	X86_SHLD,
 	X86_SHLR,
+	X86_ROL = 0,
+	X86_ROR = 1,
+	X86_RCL = 2,
+	X86_RCR = 3,
 	X86_SHL = 4,
 	X86_SHR = 5,
 	X86_SAR = 7,
@@ -208,6 +212,7 @@ typedef union {
 #define x86_is_imm16(imm)            (((int)(imm) >= -(1<<16) && (int)(imm) <= ((1<<16)-1)))
 
 #define x86_reg_emit(inst,r,regno)   do { x86_address_byte ((inst), 3, (r), (regno)); } while (0)
+#define x86_reg8_emit(inst,r,regno,is_rh,is_rnoh)   do {x86_address_byte ((inst), 3, (is_rh)?((r)|4):(r), (is_rnoh)?((regno)|4):(regno));} while (0)
 #define x86_regp_emit(inst,r,regno)  do { x86_address_byte ((inst), 0, (r), (regno)); } while (0)
 #define x86_mem_emit(inst,r,disp)    do { x86_address_byte ((inst), 0, (r), 5); x86_imm_emit32((inst), (disp)); } while (0)
 
@@ -491,6 +496,21 @@ typedef union {
 	do {	\
 		*(inst)++ = (((unsigned char)(opc)) << 3) + 3;	\
 		x86_reg_emit ((inst), (dreg), (reg));	\
+	} while (0)
+
+/**
+ * @x86_alu_reg8_reg8:
+ * Supports ALU operations between two 8-bit registers.
+ * dreg := dreg opc reg
+ * X86_Reg_No enum is used to specify the registers.
+ * Additionally is_*_h flags are used to specify what part
+ * of a given 32-bit register is used - high (TRUE) or low (FALSE).
+ * For example: dreg = X86_EAX, is_dreg_h = TRUE -> use AH
+ */
+#define x86_alu_reg8_reg8(inst,opc,dreg,reg,is_dreg_h,is_reg_h)	\
+	do {	\
+		*(inst)++ = (((unsigned char)(opc)) << 3) + 2;	\
+		x86_reg8_emit ((inst), (dreg), (reg), (is_dreg_h), (is_reg_h));	\
 	} while (0)
 
 #define x86_alu_reg_mem(inst,opc,reg,mem)	\
@@ -985,6 +1005,19 @@ typedef union {
 		*(inst)++ = (unsigned char)0xc0+(map[(opc)]<<3)+((index)&0x07);	\
 	} while (0)
 
+/**
+ * @x86_fp_int_op_mem
+ * Supports FPU operations between ST(0) and integer operand in memory.
+ * Operation encoded using X86_FP_Opcode enum.
+ * Operand is addressed by [basereg + disp].
+ * is_int specifies whether operand is int32 (TRUE) or int16 (FALSE).
+ */
+#define x86_fp_int_op_mem(inst,opc,basereg,disp,is_int)	\
+	do {	\
+		*(inst)++ = (is_int) ? (unsigned char)0xda : (unsigned char)0xde;	\
+		x86_membase_emit ((inst), opc, (basereg), (disp));	\
+	} while (0)
+
 #define x86_fstp(inst,index)	\
 	do {	\
 		*(inst)++ = (unsigned char)0xdd;	\
@@ -1186,6 +1219,24 @@ typedef union {
 			x86_membase_emit ((inst), 3, (basereg), (disp));	\
 		}	\
 	} while (0)
+
+/**
+ * @x86_fist_membase
+ * Converts content of ST(0) to integer and stores it at memory location
+ * addressed by [basereg + disp].
+ * is_int specifies whether destination is int32 (TRUE) or int16 (FALSE).
+ */
+#define x86_fist_membase(inst,basereg,disp,is_int)	\
+	do {	\
+		if ((is_int)) {	\
+			*(inst)++ = (unsigned char)0xdb;	\
+			x86_membase_emit ((inst), 2, (basereg), (disp));	\
+		} else {	\
+			*(inst)++ = (unsigned char)0xdf;	\
+			x86_membase_emit ((inst), 2, (basereg), (disp));	\
+		}	\
+	} while (0)
+
 
 #define x86_push_reg(inst,reg)	\
 	do {	\
