@@ -147,6 +147,14 @@ static MonoCodeManager *global_codeman = NULL;
 
 static GHashTable *jit_icall_name_hash = NULL;
 
+/*
+ * Address of the trampoline code.  This is used by the debugger to check
+ * whether a method is a trampoline.
+ */
+guint8 *mono_generic_trampoline_code = NULL;
+
+static guint8* trampoline_code [MONO_TRAMPOLINE_NUM];
+
 gboolean
 mono_running_on_valgrind (void)
 {
@@ -6783,6 +6791,25 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 	return callinfo->wrapper;
 }
 
+static void
+mono_init_trampolines (void)
+{
+	trampoline_code [MONO_TRAMPOLINE_GENERIC] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
+	trampoline_code [MONO_TRAMPOLINE_JUMP] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_JUMP);
+	trampoline_code [MONO_TRAMPOLINE_CLASS_INIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
+#ifdef MONO_ARCH_HAVE_PIC_AOT
+	trampoline_code [MONO_TRAMPOLINE_AOT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_AOT);
+#endif
+
+	mono_generic_trampoline_code = trampoline_code [MONO_TRAMPOLINE_GENERIC];
+}
+
+guint8 *
+mono_get_trampoline_code (MonoTrampolineType tramp_type)
+{
+	return trampoline_code [tramp_type];
+}
+
 gpointer
 mono_create_class_init_trampoline (MonoVTable *vtable)
 {
@@ -9760,6 +9787,8 @@ mini_init (const char *filename)
 	jit_icall_name_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
 	mono_arch_cpu_init ();
+
+	mono_init_trampolines ();
 
 	if (!g_thread_supported ())
 		g_thread_init (NULL);

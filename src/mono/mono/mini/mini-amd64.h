@@ -221,9 +221,6 @@ typedef struct {
 #define MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN 1
 #define MONO_ARCH_HAVE_CREATE_VARS 1
 
-void
-mono_amd64_tramp_init (void);
-
 gboolean
 mono_amd64_is_sse2 (void);
 

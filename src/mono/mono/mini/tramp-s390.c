@@ -29,11 +29,6 @@
 #define METHOD_SAVE_OFFSET	S390_RET_ADDR_OFFSET-4
 
 /*------------------------------------------------------------------*/
-/* adapt to mini later...					    */
-/*------------------------------------------------------------------*/
-#define mono_jit_share_code 	(1)
-
-/*------------------------------------------------------------------*/
 /* Method-specific trampoline code fragment sizes		    */
 /*------------------------------------------------------------------*/
 #define METHOD_TRAMPOLINE_SIZE	64
@@ -64,23 +59,11 @@
 /*                 T y p e d e f s                                  */
 /*------------------------------------------------------------------*/
 
-typedef enum {
-	MONO_TRAMPOLINE_GENERIC,
-	MONO_TRAMPOLINE_JUMP,
-	MONO_TRAMPOLINE_CLASS_INIT
-} MonoTrampolineType;
-
 /*========================= End of Typedefs ========================*/
 
 /*------------------------------------------------------------------*/
 /*                   P r o t o t y p e s                            */
 /*------------------------------------------------------------------*/
-
-/*------------------------------------------------------------------*/
-/* Address of the generic trampoline code.  This is used by the     */
-/* debugger to check whether a method is a trampoline.		    */
-/*------------------------------------------------------------------*/
-guint8 *mono_generic_trampoline_code = NULL;
 
 /*========================= End of Prototypes ======================*/
 
@@ -251,36 +234,19 @@ s390_class_init_trampoline (void *vtable, guchar *code, char *sp)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- create_trampoline_code                            */
+/* Name		- mono_arch_create_trampoline_code                            */
 /*                                                                  */
 /* Function	- Create the designated type of trampoline according*/
 /*                to the 'tramp_type' parameter.                    */
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-static guchar*
-create_trampoline_code (MonoTrampolineType tramp_type)
+guchar*
+mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
 
 	guint8 *buf, *code = NULL;
-	static guint8* generic_jump_trampoline = NULL;
-	static guint8 *generic_class_init_trampoline = NULL;
 	int i, offset, lmfOffset;
-
-	switch (tramp_type) {
-	case MONO_TRAMPOLINE_GENERIC:
-		if (mono_generic_trampoline_code)
-			return mono_generic_trampoline_code;
-		break;
-	case MONO_TRAMPOLINE_JUMP:
-		if (generic_jump_trampoline)
-			return generic_jump_trampoline;
-		break;
-	case MONO_TRAMPOLINE_CLASS_INIT:
-		if (generic_class_init_trampoline)
-			return generic_class_init_trampoline;
-		break;
-	}
 
 	if(!code) {
 		/* Now we'll create in 'buf' the S/390 trampoline code. This
@@ -455,18 +421,6 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		g_assert ((buf - code) <= 512);
 	}
 
-	switch (tramp_type) {
-	case MONO_TRAMPOLINE_GENERIC:
-		mono_generic_trampoline_code = code;
-		break;
-	case MONO_TRAMPOLINE_JUMP:
-		generic_jump_trampoline = code;
-		break;
-	case MONO_TRAMPOLINE_CLASS_INIT:
-		generic_class_init_trampoline = code;
-		break;
-	}
-
 	return code;
 }
 
@@ -489,7 +443,7 @@ mono_arch_create_jump_trampoline (MonoMethod *method)
 	MonoDomain *domain = mono_domain_get();
 	gint32 displace;
 
-	tramp = create_trampoline_code (MONO_TRAMPOLINE_JUMP);
+	tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_JUMP);
 
 	mono_domain_lock (domain);
 	code = buf = mono_code_manager_reserve (domain->code_mp, METHOD_TRAMPOLINE_SIZE);
@@ -553,7 +507,7 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	static guint8 *vc = NULL;
 	gint32 displace;
 
-	vc = create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
+	vc = mono_get_trampoline_code (MONO_TRAMPOLINE_GENERIC);
 
 	/* This is the method-specific part of the trampoline. Its purpose is
 	to provide the generic part with the MonoMethod *method pointer. We'll
@@ -601,7 +555,7 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 {
 	guint8 *code, *buf, *tramp;
 
-	tramp = create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
+	tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
 
 	/*-----------------------------------------------------------*/
 	/* This is the method-specific part of the trampoline. Its   */

@@ -667,8 +667,6 @@ mono_arch_cpu_init (void)
 	fpcw |= X86_FPCW_PREC_DOUBLE;
 	__asm__  __volatile__ ("fldcw %0\n": : "m" (fpcw));
 	__asm__  __volatile__ ("fnstcw %0\n": "=m" (fpcw));
-
-	mono_amd64_tramp_init ();
 }
 
 /*

@@ -20,21 +20,6 @@
 #include "mini.h"
 #include "mini-sparc.h"
 
-typedef enum {
-	MONO_TRAMPOLINE_GENERIC,
-	MONO_TRAMPOLINE_JUMP,
-	MONO_TRAMPOLINE_CLASS_INIT
-} MonoTrampolineType;
-
-/* adapt to mini later... */
-#define mono_jit_share_code (1)
-
-/*
- * Address of the Sparc trampoline code.  This is used by the debugger to check
- * whether a method is a trampoline.
- */
-guint8 *mono_generic_trampoline_code = NULL;
-
 /*
  * get_unbox_trampoline:
  * @m: method pointer
@@ -133,28 +118,11 @@ sparc_class_init_trampoline (MonoVTable *vtable, guint32 *code)
 
 #define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))
 
-static guchar*
-create_trampoline_code (MonoTrampolineType tramp_type)
+guchar*
+mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code, *tramp_addr;
 	guint32 lmf_offset, method_reg, i;
-	static guint8* generic_jump_trampoline = NULL;
-	static guint8 *generic_class_init_trampoline = NULL;
-
-	switch (tramp_type) {
-	case MONO_TRAMPOLINE_GENERIC:
-		if (mono_generic_trampoline_code)
-			return mono_generic_trampoline_code;
-		break;
-	case MONO_TRAMPOLINE_JUMP:
-		if (generic_jump_trampoline)
-			return generic_jump_trampoline;
-		break;
-	case MONO_TRAMPOLINE_CLASS_INIT:
-		if (generic_class_init_trampoline)
-			return generic_class_init_trampoline;
-		break;
-	}
 
 	code = buf = mono_global_codeman_reserve (512);
 
@@ -257,18 +225,6 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 
 	g_assert ((code - buf) <= 512);
 
-	switch (tramp_type) {
-	case MONO_TRAMPOLINE_GENERIC:
-		mono_generic_trampoline_code = buf;
-		break;
-	case MONO_TRAMPOLINE_JUMP:
-		generic_jump_trampoline = buf;
-		break;
-	case MONO_TRAMPOLINE_CLASS_INIT:
-		generic_class_init_trampoline = buf;
-		break;
-	}
-
 	mono_arch_flush_icache (buf, code - buf);
 
 	return buf;
@@ -282,7 +238,7 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDo
 	MonoJitInfo *ji;
 	guint32 *code, *buf, *tramp;
 
-	tramp = create_trampoline_code (tramp_type);
+	tramp = mono_get_trampoline_code (tramp_type);
 
 	mono_domain_lock (domain);
 	code = buf = mono_code_manager_reserve (domain->code_mp, TRAMPOLINE_SIZE * 4);

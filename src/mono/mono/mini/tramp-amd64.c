@@ -23,19 +23,6 @@
 #include "mini.h"
 #include "mini-amd64.h"
 
-typedef enum {
-	MONO_TRAMPOLINE_GENERIC,
-	MONO_TRAMPOLINE_JUMP,
-	MONO_TRAMPOLINE_CLASS_INIT,
-	MONO_TRAMPOLINE_AOT
-} MonoTrampolineType;
-
-/*
- * Address of the trampoline code.  This is used by the debugger to check
- * whether a method is a trampoline.
- */
-guint8 *mono_generic_trampoline_code = NULL;
-
 /*
  * get_unbox_trampoline:
  * @m: method pointer
@@ -234,16 +221,12 @@ amd64_class_init_trampoline (long *regs, guint8 *code, MonoVTable *vtable, guint
 	}
 }
 
-static guchar*
-create_trampoline_code (MonoTrampolineType tramp_type)
+guchar*
+mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code, *tramp;
 	int i, lmf_offset, offset, method_offset, tramp_offset, saved_regs_offset, saved_fpregs_offset, framesize;
 	gboolean has_caller;
-	static guint8 *trampoline_code [16];
-
-	if (trampoline_code [tramp_type])
-		return trampoline_code [tramp_type];
 
 	if (tramp_type == MONO_TRAMPOLINE_JUMP)
 		has_caller = FALSE;
@@ -382,10 +365,6 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 
 	mono_arch_flush_icache (buf, code - buf);
 
-	if (tramp_type == MONO_TRAMPOLINE_GENERIC)
-		mono_generic_trampoline_code = buf;
-	trampoline_code [tramp_type] = buf;
-
 	return buf;
 }
 
@@ -397,7 +376,7 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDo
 	MonoJitInfo *ji;
 	guint8 *code, *buf, *tramp;
 
-	tramp = create_trampoline_code (tramp_type);
+	tramp = mono_arch_create_trampoline_code (tramp_type);
 
 	mono_domain_lock (domain);
 	code = buf = mono_code_manager_reserve (domain->code_mp, TRAMPOLINE_SIZE);
@@ -537,13 +516,4 @@ mono_debugger_create_notification_function (gpointer *notification_address)
 	x86_ret (buf);
 
 	return ptr;
-}
-
-void
-mono_amd64_tramp_init (void)
-{
-	create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
-	create_trampoline_code (MONO_TRAMPOLINE_JUMP);
-	create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
-	create_trampoline_code (MONO_TRAMPOLINE_AOT);
 }

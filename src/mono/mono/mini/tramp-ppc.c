@@ -21,21 +21,6 @@
 #include "mini.h"
 #include "mini-ppc.h"
 
-typedef enum {
-	MONO_TRAMPOLINE_GENERIC,
-	MONO_TRAMPOLINE_JUMP,
-	MONO_TRAMPOLINE_CLASS_INIT
-} MonoTrampolineType;
-
-/* adapt to mini later... */
-#define mono_jit_share_code (1)
-
-/*
- * Address of the x86 trampoline code.  This is used by the debugger to check
- * whether a method is a trampoline.
- */
-guint8 *mono_generic_trampoline_code = NULL;
-
 /*
  * get_unbox_trampoline:
  * @m: method pointer
@@ -241,28 +226,11 @@ ppc_class_init_trampoline (void *vtable, guint32 *code, char *sp)
  *  linkage area
  *  -------------------
  */
-static guchar*
-create_trampoline_code (MonoTrampolineType tramp_type)
+guchar*
+mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code = NULL;
-	static guint8* generic_jump_trampoline = NULL;
-	static guint8 *generic_class_init_trampoline = NULL;
 	int i, offset;
-
-	switch (tramp_type) {
-	case MONO_TRAMPOLINE_GENERIC:
-		if (mono_generic_trampoline_code)
-			return mono_generic_trampoline_code;
-		break;
-	case MONO_TRAMPOLINE_JUMP:
-		if (generic_jump_trampoline)
-			return generic_jump_trampoline;
-		break;
-	case MONO_TRAMPOLINE_CLASS_INIT:
-		if (generic_class_init_trampoline)
-			return generic_class_init_trampoline;
-		break;
-	}
 
 	if(!code) {
 		/* Now we'll create in 'buf' the PowerPC trampoline code. This
@@ -416,18 +384,6 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		g_assert ((buf - code) <= 512);
 	}
 
-	switch (tramp_type) {
-	case MONO_TRAMPOLINE_GENERIC:
-		mono_generic_trampoline_code = code;
-		break;
-	case MONO_TRAMPOLINE_JUMP:
-		generic_jump_trampoline = code;
-		break;
-	case MONO_TRAMPOLINE_CLASS_INIT:
-		generic_class_init_trampoline = code;
-		break;
-	}
-
 	return code;
 }
 
@@ -474,7 +430,7 @@ mono_arch_create_jump_trampoline (MonoMethod *method)
 	guint8 *tramp;
 	MonoDomain* domain = mono_domain_get ();
 	
-	tramp = create_trampoline_code (MONO_TRAMPOLINE_JUMP);
+	tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_JUMP);
 	return create_specific_tramp (method, tramp, domain);
 }
 
@@ -505,7 +461,7 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	MonoDomain* domain = mono_domain_get ();
 	gpointer code_start;
 
-	tramp = create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
+	tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_GENERIC);
 	/* FIXME: should pass the domain down to this function */
 	ji = create_specific_tramp (method, tramp, domain);
 	code_start = ji->code_start;
@@ -530,7 +486,7 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 {
 	guint8 *code, *buf, *tramp;
 
-	tramp = create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
+	tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
 
 	/* This is the method-specific part of the trampoline. Its purpose is
 	to provide the generic part with the MonoMethod *method pointer. We'll

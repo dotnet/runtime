@@ -467,6 +467,14 @@ struct MonoJumpInfo {
 	} data;
 };
 
+typedef enum {
+	MONO_TRAMPOLINE_GENERIC,
+	MONO_TRAMPOLINE_JUMP,
+	MONO_TRAMPOLINE_CLASS_INIT,
+	MONO_TRAMPOLINE_AOT,
+	MONO_TRAMPOLINE_NUM
+} MonoTrampolineType;
+
 /* optimization flags: keep up to date with the name array in driver.c */
 enum {
 	MONO_OPT_PEEPHOLE = 1 << 0,
@@ -804,6 +812,7 @@ MonoJitICallInfo *mono_find_jit_icall_by_addr  (gconstpointer addr);
 MonoJitICallInfo *mono_register_jit_icall      (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save);
 gconstpointer     mono_icall_get_wrapper       (MonoJitICallInfo* callinfo);
 
+guint8 *          mono_get_trampoline_code (MonoTrampolineType tramp_type);
 gpointer          mono_create_jump_trampoline (MonoDomain *domain, 
 											   MonoMethod *method, 
 											   gboolean add_sync_wrapper);
@@ -811,6 +820,7 @@ gpointer          mono_create_class_init_trampoline (MonoVTable *vtable);
 gpointer          mono_create_jit_trampoline (MonoMethod *method);
 gpointer          mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token);
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr);
+
 gboolean          mono_running_on_valgrind (void);
 void*             mono_global_codeman_reserve (int size);
 gint32*           mono_allocate_stack_slots (MonoCompile *cfg, guint32 *stack_size, guint32 *stack_align);
@@ -829,6 +839,7 @@ gpointer  mono_arch_get_throw_exception         (void);
 gpointer  mono_arch_get_rethrow_exception       (void);
 gpointer  mono_arch_get_throw_exception_by_name (void);
 gpointer  mono_arch_get_throw_corlib_exception  (void);
+guchar*   mono_arch_create_trampoline_code      (MonoTrampolineType tramp_type);
 gpointer  mono_arch_create_jit_trampoline       (MonoMethod *method);
 gpointer  mono_arch_create_jit_trampoline_from_token (MonoImage *image, guint32 token);
 MonoJitInfo *mono_arch_create_jump_trampoline      (MonoMethod *method);

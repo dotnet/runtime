@@ -24,22 +24,6 @@
 #include "mini.h"
 #include "mini-x86.h"
 
-typedef enum {
-	MONO_TRAMPOLINE_GENERIC,
-	MONO_TRAMPOLINE_JUMP,
-	MONO_TRAMPOLINE_CLASS_INIT,
-	MONO_TRAMPOLINE_AOT
-} MonoTrampolineType;
-
-/* adapt to mini later... */
-#define mono_jit_share_code (1)
-
-/*
- * Address of the x86 trampoline code.  This is used by the debugger to check
- * whether a method is a trampoline.
- */
-guint8 *mono_generic_trampoline_code = NULL;
-
 /*
  * get_unbox_trampoline:
  * @m: method pointer
@@ -270,14 +254,10 @@ x86_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi,
 		}
 }
 
-static guchar*
-create_trampoline_code (MonoTrampolineType tramp_type)
+guchar*
+mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code;
-	static guint8 *trampoline_code [16];
-
-	if (trampoline_code [tramp_type])
-		return trampoline_code [tramp_type];
 
 	code = buf = mono_global_codeman_reserve (256);
 
@@ -364,10 +344,6 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 
 	g_assert ((buf - code) <= 256);
 
-	if (tramp_type == MONO_TRAMPOLINE_GENERIC)
-		mono_generic_trampoline_code = code;
-	trampoline_code [tramp_type] = code;
-
 	return code;
 }
 
@@ -379,7 +355,7 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDo
 	guint8 *code, *buf, *tramp;
 	MonoJitInfo *ji;
 	
-	tramp = create_trampoline_code (tramp_type);
+	tramp = mono_get_trampoline_code (tramp_type);
 
 	mono_domain_lock (domain);
 	code = buf = mono_code_manager_reserve (domain->code_mp, TRAMPOLINE_SIZE);
@@ -506,12 +482,4 @@ mono_debugger_create_notification_function (gpointer *notification_address)
 	x86_ret (buf);
 
 	return ptr;
-}
-
-void
-mono_x86_tramp_init (void)
-{
-	create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
-	create_trampoline_code (MONO_TRAMPOLINE_JUMP);
-	create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
 }
