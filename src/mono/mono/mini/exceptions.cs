@@ -2139,5 +2139,30 @@ class Tests {
 
 		return 0;
 	}
+
+	struct S {
+		int i, j, k, l, m, n;
+	}
+
+	static IntPtr[] addr;
+
+	static unsafe void throw_func (int i, S s) {
+		addr [i] = new IntPtr (&i);
+		throw new Exception ();
+	}
+
+	/* Test that arguments are correctly popped off the stack during unwinding */
+	static int test_0_stack_unwind () {
+		addr = new IntPtr [1000];
+		S s = new S ();
+		for (int j = 0; j < 1000; j++) {
+			try {
+				throw_func (j, s);
+			}
+			catch (Exception) {
+			}
+		}
+		return (addr [0].ToInt64 () - addr [100].ToInt64 () < 100) ? 0 : 1;
+	}		
 }
 
