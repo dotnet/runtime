@@ -1353,4 +1353,33 @@
     </tasks>
     
   </contributor>
+  <contributor>
+
+    <name>
+
+      <first-name>Zoltan</first-name>
+
+      <last-name>Varga</last-name>
+
+    </name>
+
+    <e-mail>vargaz -AT- NOSPAM.freemail.hu</e-mail>
+
+    <image>none.png</image>
+
+    <location>Hungary</location>
+
+    <organization></organization>
+
+    <description></description>
+
+    <tasks>
+
+      <task>IKVM port</task>
+
+      <task>Runtime hacking</task>
+
+    </tasks>
+    
+  </contributor>
 </contributors>
