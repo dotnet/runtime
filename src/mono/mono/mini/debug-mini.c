@@ -161,7 +161,7 @@ mono_debug_record_line_number (MonoCompile *cfg, MonoInst *ins, guint32 address)
 }
 
 static inline void
-encode_value (guint32 value, char *buf, char **endbuf)
+encode_value (gint32 value, char *buf, char **endbuf)
 {
 	char *p = buf;
 
@@ -171,13 +171,13 @@ encode_value (guint32 value, char *buf, char **endbuf)
 	 * Same encoding as the one used in the metadata, extended to handle values
 	 * greater than 0x1fffffff.
 	 */
-	if (value <= 127)
+	if ((value >= 0) && (value <= 127))
 		*p++ = value;
-	else if (value <= 16384) {
+	else if ((value >= 0) && (value <= 16384)) {
 		p [0] = 0x80 | (value >> 8);
 		p [1] = value & 0xff;
 		p += 2;
-	} else if (value <= 0x1fffffff) {
+	} else if ((value >= 0) && (value <= 0x1fffffff)) {
 		p [0] = (value >> 24) | 0xc0;
 		p [1] = (value >> 16) & 0xff;
 		p [2] = (value >> 8) & 0xff;
@@ -196,12 +196,12 @@ encode_value (guint32 value, char *buf, char **endbuf)
 		*endbuf = p;
 }
 
-static inline guint32
+static inline gint32
 decode_value (char *_ptr, char **rptr)
 {
 	unsigned char *ptr = (unsigned char *) _ptr;
 	unsigned char b = *ptr;
-	guint32 len;
+	gint32 len;
 	
 	if ((b & 0x80) == 0){
 		len = b;
@@ -217,7 +217,7 @@ decode_value (char *_ptr, char **rptr)
 		ptr += 4;
 	}
 	else {
-		len = (ptr [0] << 24) | (ptr [1] << 16) | (ptr [2] << 8) | ptr [3];
+		len = (ptr [1] << 24) | (ptr [2] << 16) | (ptr [3] << 8) | ptr [4];
 		ptr += 5;
 	}
 	if (rptr)
@@ -284,6 +284,7 @@ mono_debug_serialize_debug_info (MonoCompile *cfg,
 	prev_offset = 0;
 	prev_native_offset = 0;
 	for (i = 0; i < jit->line_numbers->len; ++i) {
+		/* Sometimes, the offset values are not in increasing order */
 		MonoDebugLineNumberEntry *lne = &g_array_index (jit->line_numbers, 
 														MonoDebugLineNumberEntry,
 														i);
@@ -327,7 +328,7 @@ deserialize_debug_info (MonoMethod *method,
 {
 	MonoMethodHeader *header;
 	MonoDebugMethodJitInfo *jit;
-	guint32 offset, native_offset, prev_offset, prev_native_offset, len;
+	gint32 offset, native_offset, prev_offset, prev_native_offset, len;
 	char *p;
 	int i;
 
