@@ -572,7 +572,7 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
 		guint16 flags;
 
 		if (i > 0)
-			g_string_append (result, ", ");
+			g_string_append (result, ",");
 
 		flags = param->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
 		if (flags == GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT)
@@ -1322,20 +1322,28 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 char *
 get_fieldref_signature (MonoImage *m, int idx, MonoGenericContext *context)
 {
-        guint32 cols [MONO_MEMBERREF_SIZE];
+	guint32 cols [MONO_MEMBERREF_SIZE];
 	MonoGenericContext *new_context;
+	char *type, *estype, *esname;
         char *sig;
-        char *full_sig;
+	char *full_sig;
 
         mono_metadata_decode_row (&m->tables [MONO_TABLE_MEMBERREF],
 				  idx - 1, cols, MONO_MEMBERREF_SIZE);
 
 	new_context = get_memberref_context (m, cols [MONO_MEMBERREF_CLASS], context);
         sig = get_field_signature (m, cols [MONO_MEMBERREF_SIGNATURE], new_context);
-        full_sig = g_strdup_printf ("%s %s::%s", sig,
-                        get_memberref_parent (m, cols [MONO_MEMBERREF_CLASS], context),
-                        mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]));
+
+	type = get_memberref_parent (m, cols [MONO_MEMBERREF_CLASS], context);
+
+	estype = get_escaped_name (type);
+	esname = get_escaped_name (mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]));
+
+        full_sig = g_strdup_printf ("%s %s::%s", sig, estype, esname);
         g_free (sig);
+	g_free (type);
+	g_free (estype);
+	g_free (esname);
         
         return full_sig;
 }
