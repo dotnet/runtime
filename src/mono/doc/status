@@ -3,6 +3,7 @@
 	
 	Pieces of Mono that have been implemented:
 
+	<ul>
 		* C# compiler: The C# parser is pretty much complete,
 		it generates a parse tree and now semantic analysis and a few
 		compiler lever optimizations need to be implemented as well as
@@ -24,17 +25,19 @@
 
 		* Class Libraries: Only a few classes have been
 		implemented. 
+	</ul>
 
 	Tasks on the critical path that we are actively working on:
 
-		* Assembly mapper: Not implemented yet.
+	<ul>
+		* Method and Field resolution.
 
 		* Bytecode interpreter: Not implemented yet.
 
 		* Simple JIT: Not implemented yet.
 
 		* Garbage collection engine.
-
+	</ul>
 	
 
 

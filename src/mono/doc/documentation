@@ -11,6 +11,8 @@
 
 	We need documentation to be written on a number of topics:
 
+	<ul>
+
 		* The development tools (compilers, assembler tools,
 		  language reference, design time features).
 
@@ -26,6 +28,8 @@
 
 		* Differences between the Microsoft.NET Framework SDK
 		  development mode and the Mono version.
+
+	</ul>
 
 ** Class Library documentation
 

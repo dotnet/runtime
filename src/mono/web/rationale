@@ -39,6 +39,7 @@ The Mono Project
 	answer on what .NET is, as .NET is a branding formative that
 	has been applied to:
 
+	<ul>
 		* The .NET development platform, a new platform for
 		  writing software.
 
@@ -51,6 +52,8 @@ The Mono Project
 		* Hailstorm, the Passport centralized single-signon
 		  system that is being integrated into Windows XP.
 
+	</ul>
+
 	From all the above, the one I am interested in is the new .NET
 	development platform. 
 
@@ -59,6 +62,8 @@ The Mono Project
 	Microsoft has created a new development platform.  The
 	highlights of this new development platform are:
 
+
+	<ul>
 		* A runtime environment that provides garbage
 		  collection, threading and a virtual machine
 		  specification (The Virtual Execution System, VES)
@@ -73,6 +78,7 @@ The Mono Project
 		  follow if they want to generate classes and code
 		  that can interoperate with other programming
 		  languages (The Common Language Specification: CLS)
+	</ul>
 
 	The Common Language Infrastructure platform is similar to the
   	goals we had in GNOME of giving language independence to
@@ -130,6 +136,7 @@ The Mono Project
 
 	There are various pieces that will make up Mono:
 
+	<ul>
 		* A C# compiler.
 
 		* The Virtual Execution System: that will have the
@@ -146,6 +153,7 @@ The Mono Project
 		* Visual development tools. 
 
 		* A CIL GCC frontend.
+	</ul>
 
 * Why use GNOME components?
 

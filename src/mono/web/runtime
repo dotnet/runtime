@@ -21,6 +21,8 @@
 
 	Our roadmap looks like this:
 
+	<ul>
+
 		* Milestone 1: Fully read and parse all CIL byte-codes
 		  and metadata tokens (ie, a disassembler).
 
@@ -37,6 +39,7 @@
 
 		* Milestone 6: non-Intel port of the Optimizing JIT
 		  engine.
+	</ul>
 
 	A setup similar to the Kaffe JIT engine can be used to
 	layout the code to support non-IA32 architectures.  Our work

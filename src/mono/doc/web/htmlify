@@ -1,0 +1,18 @@
+#!/usr/bin/perl
+
+while (<>){
+	chop;
+	if (/^\* (.*)$/){
+		print "<h1>$1</h1>\n";
+	} elsif (/^\*\* (.*)$/) {
+		print "<h2>$1</h2>\n";
+	} elsif (/^\*\*\* (.*)$/) {
+		print "<h3>$1</h3>\n";
+	} elsif (/^$/) {
+		print "<p>\n";
+	} elsif (/^\t\t\* (.*)$/) {
+		print "<li>$1\n";
+	} else {
+		print "$_\n";
+	}
+}

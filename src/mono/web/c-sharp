@@ -9,12 +9,13 @@
 	compiler.  Recently I started using the System.Reflection API
 	to load system type definitions and avoid self-population of
 	types in the compiler and dropped my internal Type
-	representation in favor of using .NET's System.Type.  
+	representation in favor of using the CLI's System.Type.  
 
 ** Phases of the compiler
 
 	The compiler has a number of phases:
 
+	<ul>
 		* Lexical analyzer: hand-coded lexical analyzer that
 		  provides tokens to the parser.
 
@@ -44,6 +45,8 @@
 		* Code generation: nothing done so far, but I do not
 		  expect this to be hard, as I will just use
 		  System.Reflection.Emit to generate the code. 
+	
+	</ul>
 
 ** Current pending tasks
 
@@ -82,16 +85,8 @@ A: I wanted to learn about C#, and this was an exercise in this
 Q: If your C# compiler is written in C#, how do you plan on getting
    this working on a non-Microsoft environment.
 
-   The compiler will have two output mechanisms: IL code or C code.
-   A compiled version of the compiler could be run on Unix
-   using the JIT runtime.
-
-   The C output generation bit is just intended to be a temporary
-   measure to allow Unix hackers to contribute to the effort without
-   requiring Windows and Microsoft's .NET implementation to work on
-   the compiler.  So the MCS C# compiler will compile itself to C,
-   this code then compiled to an executable on Unix and voila!  We
-   have a native compiler for GNU/Linux.
+   We will do this through an implementation of the CLI Virtual
+   Execution System for Unix (our JIT engine). 
 
 Q: Do you use Bison?
 
