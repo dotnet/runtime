@@ -1190,15 +1190,18 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **read_socks,
 	/* Negative timeout meaning block until ready is only
 	 * specified in Poll, not Select
 	 */
-	if(timeout>=0) {
-		divvy=div(timeout, 1000000);
-		tv.tv_sec=divvy.quot;
-		tv.tv_usec=divvy.rem;
+
+	do {
+		if(timeout>=0) {
+			divvy=div(timeout, 1000000);
+			tv.tv_sec=divvy.quot;
+			tv.tv_usec=divvy.rem;
 	
-		ret=select(0, readptr, writeptr, errptr, &tv);
-	} else {
-		ret=select(0, readptr, writeptr, errptr, NULL);
-	}
+			ret=select(0, readptr, writeptr, errptr, &tv);
+		} else {
+			ret=select(0, readptr, writeptr, errptr, NULL);
+		}
+	} while ((ret==SOCKET_ERROR) && (WSAGetLastError() == WSAEINTR));
 	
 	if(ret==SOCKET_ERROR) {
 		mono_raise_exception(get_socket_exception(WSAGetLastError()));
