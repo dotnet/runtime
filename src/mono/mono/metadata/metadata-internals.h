@@ -12,8 +12,8 @@ struct _MonoAssembly {
 	MonoAssemblyName aname;
 	GModule *aot_module;
 	MonoImage *image;
-	/* Load files here */
 	gboolean dynamic;
+	gboolean corlib_internal;
 };
 
 typedef struct {

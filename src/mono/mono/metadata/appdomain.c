@@ -28,7 +28,7 @@
 #include <mono/metadata/threadpool.h>
 #include <mono/utils/mono-uri.h>
 
-#define MONO_CORLIB_VERSION 30
+#define MONO_CORLIB_VERSION 31
 
 CRITICAL_SECTION mono_delegate_section;
 
@@ -439,9 +439,8 @@ static void
 filter_assembly (gpointer key, gpointer value, gpointer user_data)
 {
 	add_assembly_helper_t *ah = (add_assembly_helper_t *) user_data;
-	MonoReflectionAssembly *ass;
+	MonoAssembly *ass = (MonoAssembly*)value;
 
-	ass = mono_assembly_get_object (ah->domain, value);
 	if (!ass->corlib_internal)
 		ah->len ++;
 }
@@ -450,11 +449,10 @@ static void
 add_assembly (gpointer key, gpointer value, gpointer user_data)
 {
 	add_assembly_helper_t *ah = (add_assembly_helper_t *) user_data;
-	MonoReflectionAssembly *ass;
+	MonoAssembly *ass = (MonoAssembly*)value;
 
-	ass = mono_assembly_get_object (ah->domain, value);
 	if (!ass->corlib_internal)
-		mono_array_set (ah->res, gpointer, ah->idx++, ass);
+		mono_array_set (ah->res, gpointer, ah->idx++, mono_assembly_get_object (ah->domain, ass));
 }
 
 MonoArray *

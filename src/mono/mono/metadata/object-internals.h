@@ -492,7 +492,6 @@ struct _MonoReflectionAssembly {
 	MonoObject *refuse;	/* PermissionSet - for SecurityAction.RequestRefuse */
 	MonoObject *granted;	/* PermissionSet - for the resolved assembly granted permissions */
 	MonoObject *denied;	/* PermissionSet - for the resolved assembly denied permissions */
-	MonoBoolean corlib_internal;
 };
 
 typedef struct {
@@ -716,6 +715,7 @@ typedef struct {
 	MonoArray *permissions_refused;
 	gint32 pe_kind;
 	gint32 machine;
+	MonoBoolean corlib_internal;
 } MonoReflectionAssemblyBuilder;
 
 typedef struct {
