@@ -73,15 +73,6 @@ optcfunc : /*empty */ { $$ = NULL; }
 	 ;
 %%
 
-static char *
-strndup (const char *s, int n)
-{
-  char *ns = malloc (n + 1);
-  strncpy (ns, s, n);
-  ns [n] = '\0';
-  return ns;
-}
-
 static char input[2048];
 static char *next = input;
 
@@ -203,7 +194,7 @@ yylex (void)
 	      n++;
 
       l = n - next + 1;
-      yylval.text = strndup (next - 1, l);
+      yylval.text = g_strndup (next - 1, l);
       next = n;
       return IDENT;
     }
@@ -216,7 +207,7 @@ yylex (void)
 	buf [i++] = c;
       
       buf [i] = '\0';
-      yylval.text = strdup (buf);
+      yylval.text = g_strdup (buf);
 
       return STRING;
     }
@@ -237,7 +228,7 @@ yylex (void)
 	}
       }
       buf [--i] = '\0';
-      yylval.text = strdup (buf);
+      yylval.text = g_strdup (buf);
 
       return CODE;
     }
