@@ -1,4 +1,3 @@
-
 /*
  * reflection.c: Routines for creating an image at runtime.
  * 
@@ -1550,7 +1549,7 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 		values [MONO_CONSTANT_TYPE] = field_type;
 		values [MONO_CONSTANT_PADDING] = 0;
 	}
-	if (fb->rva_data) {
+	if (fb->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) {
 		guint32 rva_idx;
 		table = &assembly->tables [MONO_TABLE_FIELDRVA];
 		table->rows ++;
@@ -1560,7 +1559,10 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 		/*
 		 * We store it in the code section because it's simpler for now.
 		 */
-		rva_idx = mono_image_add_stream_data (&assembly->code, mono_array_addr (fb->rva_data, char, 0), mono_array_length (fb->rva_data));
+		if (fb->rva_data)
+			rva_idx = mono_image_add_stream_data (&assembly->code, mono_array_addr (fb->rva_data, char, 0), mono_array_length (fb->rva_data));
+		else
+			rva_idx = mono_image_add_stream_zero (&assembly->code, mono_class_value_size (fb->handle->parent, NULL));
 		values [MONO_FIELD_RVA_RVA] = rva_idx + assembly->text_rva;
 	}
 	if (fb->marshal_info) {
@@ -2593,6 +2595,11 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 			mono_image_get_property_info (
 				mono_array_get (tb->properties, MonoReflectionPropertyBuilder*, i), assembly);
 	}
+
+	mono_image_add_decl_security (assembly, 
+								  mono_metadata_make_token (MONO_TABLE_TYPEDEF, tb->table_idx),
+								  tb->permissions);
+
 	if (tb->subtypes) {
 		MonoDynamicTable *ntable;
 		

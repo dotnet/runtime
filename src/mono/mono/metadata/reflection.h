@@ -432,6 +432,7 @@ typedef struct {
 	gint32 class_size;
 	gint32 packing_size;
 	MonoArray *generic_params;
+	MonoArray *permissions;
 } MonoReflectionTypeBuilder;
 
 typedef struct {
