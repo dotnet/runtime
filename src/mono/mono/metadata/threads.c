@@ -30,6 +30,11 @@ struct StartInfo
 	MonoDomain *domain;
 };
 
+typedef union {
+	gint32 ival;
+	gfloat fval;
+} IntFloatUnion;
+ 
 /* Controls access to the 'threads' array */
 static CRITICAL_SECTION threads_mutex;
 
@@ -834,12 +839,12 @@ gint64 ves_icall_System_Threading_Interlocked_Increment_Long (gint64 *location)
 	return (gint64) highret << 32 | (gint64) lowret;
 }
 
-gint32 ves_icall_System_Threading_Interlocked_Decrement_Int(gint32 *location)
+gint32 ves_icall_System_Threading_Interlocked_Decrement_Int (gint32 *location)
 {
 	return InterlockedDecrement(location);
 }
 
-gint64 ves_icall_System_Threading_Interlocked_Decrement_Long(gint64 * location)
+gint64 ves_icall_System_Threading_Interlocked_Decrement_Long (gint64 * location)
 {
 	gint32 lowret;
 	gint32 highret;
@@ -857,19 +862,24 @@ gint64 ves_icall_System_Threading_Interlocked_Decrement_Long(gint64 * location)
 	return (gint64) highret << 32 | (gint64) lowret;
 }
 
-gint32 ves_icall_System_Threading_Interlocked_Exchange_Int(gint32 *location1, gint32 value)
+gint32 ves_icall_System_Threading_Interlocked_Exchange_Int (gint32 *location1, gint32 value)
 {
 	return InterlockedExchange(location1, value);
 }
 
-MonoObject * ves_icall_System_Threading_Interlocked_Exchange_Object(MonoObject **location1, MonoObject *value)
+MonoObject * ves_icall_System_Threading_Interlocked_Exchange_Object (MonoObject **location1, MonoObject *value)
 {
 	return (MonoObject *) InterlockedExchangePointer((gpointer *) location1, value);
 }
 
-gfloat ves_icall_System_Threading_Interlocked_Exchange_Single(gfloat *location1, gfloat value)
+gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location1, gfloat value)
 {
-	return (gfloat) InterlockedExchange((gint32 *) location1, (gint32) value);
+	IntFloatUnion val, ret;
+
+	val.fval = value;
+	ret.ival = InterlockedExchange((gint32 *) location1, val.ival);
+
+	return ret.fval;
 }
 
 gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location1, gint32 value, gint32 comparand)
@@ -877,12 +887,18 @@ gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *locati
 	return InterlockedCompareExchange(location1, value, comparand);
 }
 
-MonoObject * ves_icall_System_Threading_Interlocked_CompareExchange_Object(MonoObject **location1, MonoObject *value, MonoObject *comparand)
+MonoObject * ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject **location1, MonoObject *value, MonoObject *comparand)
 {
 	return (MonoObject *) InterlockedCompareExchangePointer((gpointer *) location1, value, comparand);
 }
 
-gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single(gfloat *location1, gfloat value, gfloat comparand)
+gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *location1, gfloat value, gfloat comparand)
 {
-	return (gfloat) InterlockedCompareExchange((gint32 *) location1, (gint32) value, (gint32) comparand);
+	IntFloatUnion val, ret, cmp;
+
+	val.fval = value;
+	cmp.fval = comparand;
+	ret.ival = InterlockedCompareExchange((gint32 *) location1, val.ival, cmp.ival);
+
+	return ret.fval;
 }
