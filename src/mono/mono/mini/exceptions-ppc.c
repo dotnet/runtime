@@ -460,11 +460,14 @@ ppc_unwind_native_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 
 #endif
 
-	/* FIXME: restore the rest of the registers */
 #define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
+		int reg;	\
 		ppc_lwz (code, ip_reg, G_STRUCT_OFFSET (MonoContext, sc_ir), ctx_reg);	\
 		ppc_lwz (code, ppc_sp, G_STRUCT_OFFSET (MonoContext, sc_sp), ctx_reg);	\
 		ppc_lmw (code, ppc_r13, ctx_reg, G_STRUCT_OFFSET (MonoContext, regs));	\
+		for (reg = 0; reg < MONO_SAVED_FREGS; ++reg) {	\
+			ppc_lfd (code, (14 + reg), G_STRUCT_OFFSET(MonoLMF, fregs) + reg * sizeof (gdouble), ctx_reg);	\
+		}	\
 	} while (0)
 
 /* nothing to do */
@@ -480,7 +483,7 @@ static gpointer
 arch_get_restore_context (void)
 {
 	guint8 *code;
-	static guint8 start [64];
+	static guint8 start [128];
 	static int inited = 0;
 
 	if (inited)
@@ -510,7 +513,7 @@ arch_get_restore_context (void)
 static gpointer
 arch_get_call_filter (void)
 {
-	static guint8 start [256];
+	static guint8 start [320];
 	static int inited = 0;
 	guint8 *code;
 	int alloc_size, pos, i;
@@ -895,6 +898,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		MONO_CONTEXT_SET_BP (new_ctx, (*lmf)->ebp);
 		MONO_CONTEXT_SET_IP (new_ctx, (*lmf)->eip);
 		memcpy (&new_ctx->regs, (*lmf)->iregs, sizeof (gulong) * MONO_SAVED_GREGS);
+		memcpy (&new_ctx->fregs, (*lmf)->fregs, sizeof (double) * MONO_SAVED_FREGS);
 		*lmf = (*lmf)->previous_lmf;
 
 		return res;
