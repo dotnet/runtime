@@ -829,12 +829,12 @@ ves_array_element_address (MonoArray *this, ...)
 	class = this->obj.vtable->klass;
 
 	ind = va_arg(ap, int);
-	if (this->bounds != NULL) {
-		ind -= this->bounds [0].lower_bound;
-		for (i = 1; i < class->rank; i++) {
-			ind = ind*this->bounds [i].length + va_arg(ap, int) -
-				this->bounds [i].lower_bound;;
-		}
+	g_assert (this->bounds != NULL);
+
+	ind -= this->bounds [0].lower_bound;
+	for (i = 1; i < class->rank; i++) {
+		ind = ind*this->bounds [i].length + va_arg(ap, int) -
+			this->bounds [i].lower_bound;;
 	}
 
 	esize = mono_array_element_size (class);
@@ -2051,9 +2051,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			int k, frame_size;
 			int virtual = *ip == CEE_CALLVIRT;
 			int calli = *ip == CEE_CALLI;
-			gboolean array_set = FALSE;
-			gboolean array_get = FALSE;
-			gboolean array_address = FALSE;
+			int array_rank = 0;
 			/* fixme: compute this value */
 			gboolean shared_to_unshared_call = FALSE;
 			int nargs, vtype_num = 0;
@@ -2165,23 +2163,18 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			if (!calli && cm->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 				if (cm->klass->parent == mono_defaults.array_class) {
-					if (!strcmp (cm->name, "Set")) { 
-						array_set = TRUE;
+					array_rank = cm->klass->rank;
+				     
+					if (cm->name [0] == 'S') /* Set */ 
 						nargs--;
-					} else if (!strcmp (cm->name, "Get")) {
-						array_get = TRUE;
-					} else if (!strcmp (cm->name, "Address")) {
-						array_address = TRUE;
-					}
 				}
 			}
 
-			
 			if (csig->param_count + 1 < 10)
 				arg_info = default_arg_info;
 			else 
 				arg_info = g_new (MonoJitArgumentInfo, csig->param_count + 1);
-
+			
 			frame_size = arch_get_argument_info (csig, nargs, arg_info);
 
 			for (k = nargs - 1; k >= 0; k--) {
@@ -2194,6 +2187,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				this = *(--sp);		
 			else
 				this = mono_ctree_new_leaf (mp, MB_TERM_NOP);
+			
 
 			if (MONO_TYPE_ISSTRUCT (csig->ret)) {
 				int size, align;
@@ -2205,11 +2199,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				vtype_num = arch_allocate_var (cfg, size, align, MONO_TEMPVAR, VAL_UNKNOWN);
 			}
 
-			if (array_get) {
+			if (array_rank) {
 
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 				t2->data.p = ves_array_element_address;
-
+			       
 				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, this, t2);
 				t1->data.call_info.vtype_num = vtype_num;
 				t1->data.call_info.frame_size = frame_size;
@@ -2220,36 +2214,27 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				g_assert (t1);
 				ADD_TREE (t1, cli_addr);
 
-				t1 = mono_ctree_new (mp, mono_map_ldind_type (csig->ret, &svt), t2, NULL);
-				t1->svt = svt;		
-				PUSH_TREE (t1, t1->svt);
-
-			} else if (array_set) {
-
-				t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-				t2->data.p = ves_array_element_address;
-
-				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, this, t2);
-				t1->data.call_info.vtype_num = vtype_num;
-				t1->data.call_info.frame_size = frame_size;
-				t1->data.call_info.pad = arg_info [0].pad;
-				t1->svt = VAL_POINTER;
-
-				t1 = mono_store_tree (cfg, -1, t1, &t2);
-				g_assert (t1);
-				ADD_TREE (t1, cli_addr);
-
-				t1 = ctree_create_store (cfg, csig->params [nargs], t2, arg_sp [nargs], FALSE);
-				ADD_TREE (t1, cli_addr);			
+				if (cm->name [0] == 'G') { /* Get */
+					t1 = mono_ctree_new (mp, mono_map_ldind_type (csig->ret, &svt), t2, NULL);
+					t1->svt = svt;		
+					PUSH_TREE (t1, t1->svt);
+				} else if (cm->name [0] == 'S') { /* Set */
+					t1 = ctree_create_store (cfg, csig->params [nargs], t2, arg_sp [nargs], FALSE);
+					ADD_TREE (t1, cli_addr);			
+				} else if (cm->name [0] == 'A') { /* Address */
+					PUSH_TREE (t2, t1->svt);
+				} else {
+					g_assert_not_reached ();
+				}
 
 			} else {
 
 				if (calli) {
 					t2 = ftn; 
 				} else if (virtual || (csig->hasthis && 
-						!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL) &&
-						(cm->klass->marshalbyref || shared_to_unshared_call))) {
-
+						       !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL) &&
+						       (cm->klass->marshalbyref || shared_to_unshared_call))) {
+				
 					mono_class_init (cm->klass);
 					
 					if (cm->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
@@ -2260,14 +2245,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 					t2->data.m = cm;
 
 				} else {
-					if (array_address) {
-						t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-						t2->data.p = ves_array_element_address;
-					} else {
-						t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
-						t2->data.p = arch_create_jit_trampoline (cm);
-					}
+					t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
+					t2->data.p = arch_create_jit_trampoline (cm);
 				}
+	       
 
 				t1 = mono_ctree_new (mp, mono_map_call_type (csig->ret, &svt), this, t2);
 				t1->data.call_info.vtype_num = vtype_num;
@@ -2290,7 +2271,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 					}
 				} else
 					ADD_TREE (t1, cli_addr);
-   
 			}
 
 			if (csig->param_count > 9)
