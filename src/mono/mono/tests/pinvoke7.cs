@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 public class Test {
 
-	[StructLayout (LayoutKind.Sequential)]
+	[StructLayout (LayoutKind.Sequential, Size=0)]
 	public struct EmptyStruct {
 	}
 

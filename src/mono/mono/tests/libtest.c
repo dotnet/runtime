@@ -367,3 +367,55 @@ printInt (int* number)
 	printf( "<%d>\n", *number );
 	return *number + 1;
 }
+
+
+typedef struct {
+        char* str;
+        int i;
+} SimpleObj;
+
+int
+class_marshal_test0 (SimpleObj *obj1)
+{
+	printf ("class_marshal_test0 %s %d\n", obj1->str, obj1->i);
+
+	if (strcmp(obj1->str, "T1"))
+		return -1;
+	if (obj1->i != 4)
+		return -2;
+
+	return 0;
+}
+
+int
+class_marshal_test4 (SimpleObj *obj1)
+{
+	if (obj1)
+		return -1;
+
+	return 0;
+}
+
+void
+class_marshal_test1 (SimpleObj **obj1)
+{
+	SimpleObj *res = malloc (sizeof (SimpleObj));
+
+	res->str = "ABC";
+	res->i = 5;
+
+	*obj1 = res;
+}
+
+int
+class_marshal_test2 (SimpleObj **obj1)
+{
+	printf ("class_marshal_test2 %s %d\n", (*obj1)->str, (*obj1)->i);
+
+	if (strcmp((*obj1)->str, "ABC"))
+		return -1;
+	if ((*obj1)->i != 5)
+		return -2;
+
+	return 0;
+}

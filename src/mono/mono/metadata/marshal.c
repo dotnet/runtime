@@ -2743,47 +2743,73 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			mono_mb_emit_stloc (mb, tmp_locals [i]);
 			break;
 		case MONO_TYPE_CLASS:
-			if (t->byref)
-				continue;
+		case MONO_TYPE_OBJECT:
+			klass = t->data.klass;
 
 			csig->params [argnum] = &mono_defaults.int_class->byval_arg;
 			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
-			if (t->data.klass->delegate) {
+			if (klass->delegate) {
+				g_assert (!t->byref);
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 				mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
 				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_DEL_FTN);
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
-			} else if (t->data.klass == mono_defaults.stringbuilder_class) {
+			} else if (klass == mono_defaults.stringbuilder_class) {
+				g_assert (!t->byref);
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 				mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
 				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_SB_LPSTR);
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
 			} else {
-				mono_mb_emit_ldarg (mb, argnum);
-				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-				mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-				/* fixme: convert to what ? */
+				mono_mb_emit_byte (mb, CEE_LDNULL);
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
+
+				if (t->byref) {
+					/* we dont need any conversions for out parameters */
+					if (t->attrs & PARAM_ATTRIBUTE_OUT)
+						break;
+
+					mono_mb_emit_ldarg (mb, argnum);				
+					mono_mb_emit_byte (mb, CEE_LDIND_I);
+
+				} else {
+					mono_mb_emit_ldarg (mb, argnum);
+					mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+					mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
+				}
+				
+				/* store the address of the source into local variable 0 */
+				mono_mb_emit_byte (mb, CEE_STLOC_0);
+				mono_mb_emit_byte (mb, CEE_LDLOC_0);
+				mono_mb_emit_byte (mb, CEE_BRFALSE);
+				pos = mb->pos;
+				mono_mb_emit_i4 (mb, 0);
+
+				/* allocate space for the native struct and store the address */
+				mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
+				mono_mb_emit_byte (mb, CEE_PREFIX1);
+				mono_mb_emit_byte (mb, CEE_LOCALLOC);
+				mono_mb_emit_stloc (mb, tmp_locals [i]);
+				
+				/* set the src_ptr */
+				mono_mb_emit_byte (mb, CEE_LDLOC_0);
+				mono_mb_emit_icon (mb, sizeof (MonoObject));
+				mono_mb_emit_byte (mb, CEE_ADD);
+				mono_mb_emit_byte (mb, CEE_STLOC_0);
+
+				/* set dst_ptr */
+				mono_mb_emit_ldloc (mb, tmp_locals [i]);
+				mono_mb_emit_byte (mb, CEE_STLOC_1);
+
+				/* emit valuetype conversion code */
+				emit_struct_conv (mb, klass, FALSE);
+
+				mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
 			}
 
-			break;
-		case MONO_TYPE_OBJECT:
-			if (t->byref)
-				continue;
-			csig->params [argnum] = &mono_defaults.int_class->byval_arg;
-			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-			/* 
-			 * FIXME: this may need special handling to inspect the type
-			 * at runtime.
-			 */
-			mono_mb_emit_ldarg (mb, argnum);
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-			/* fixme: convert to what ? */
-			mono_mb_emit_stloc (mb, tmp_locals [i]);
 			break;
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
@@ -2863,12 +2889,11 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			break;
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
-			if (t->byref) {
-				mono_mb_emit_ldarg (mb, argnum);
-			} else {
-				g_assert (tmp_locals [i]);
+			g_assert (tmp_locals [i]);
+			if (t->byref) 
+				mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
+			else
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
-			}
 			break;
 		case MONO_TYPE_CHAR:
 			/* fixme: dont know how to marshal that. We cant simply
@@ -2896,7 +2921,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	/* call the native method */
 	mono_mb_emit_native_call (mb, csig, method->addr);
 
-	/* convert and the result */
+	/* convert the result */
 	if (!sig->ret->byref) {
 		MonoMarshalSpec *spec = mspecs [0];
 		type = sig->ret->type;
@@ -3017,10 +3042,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			break;
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:			
-			if (t->byref)
-				continue;
-     
 			if (t->data.klass == mono_defaults.stringbuilder_class) {
+				g_assert (!t->byref);
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
@@ -3029,7 +3052,44 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 				mono_mb_emit_byte (mb, CEE_MONO_FREE);
+				break;
 			}
+			
+			if (!t->byref)
+				continue;
+
+			if (t->attrs & PARAM_ATTRIBUTE_OUT) {
+				/* allocate a new object new object */
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_byte (mb, CEE_MONO_NEWOBJ);	
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+				mono_mb_emit_byte (mb, CEE_STIND_I);
+			}
+
+			/* dst = *argument */
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_byte (mb, CEE_LDIND_I);
+			mono_mb_emit_byte (mb, CEE_STLOC_1);
+
+			mono_mb_emit_byte (mb, CEE_LDLOC_1);
+			mono_mb_emit_byte (mb, CEE_BRFALSE);
+			pos = mb->pos;
+			mono_mb_emit_i4 (mb, 0);
+
+			mono_mb_emit_byte (mb, CEE_LDLOC_1);
+			mono_mb_emit_icon (mb, sizeof (MonoObject));
+			mono_mb_emit_byte (mb, CEE_ADD);
+			mono_mb_emit_byte (mb, CEE_STLOC_1);
+			
+			/* src = tmp_locals [i] */
+			mono_mb_emit_ldloc (mb, tmp_locals [i]);
+			mono_mb_emit_byte (mb, CEE_STLOC_0);
+
+			/* emit valuetype conversion code */
+			emit_struct_conv (mb, klass, TRUE);
+
+			mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (!t->byref)
