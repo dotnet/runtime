@@ -88,9 +88,15 @@ typedef enum {
 
 enum {
 	/* B0 operand for branches */
+	PPC_BR_DEC_CTR_NONZERO_FALSE = 0,
 	PPC_BR_LIKELY = 1, /* can be or'ed with the conditional variants */
+	PPC_BR_DEC_CTR_ZERO_FALSE = 2,
 	PPC_BR_FALSE  = 4,
+	PPC_BR_DEC_CTR_NONZERO_TRUE = 8,
+	PPC_BR_DEC_CTR_ZERO_TRUE = 10,
 	PPC_BR_TRUE   = 12,
+	PPC_BR_DEC_CTR_NONZERO = 16,
+	PPC_BR_DEC_CTR_ZERO = 18,
 	PPC_BR_ALWAYS = 20,
 	/* B1 operand for branches */
 	PPC_BR_LT     = 0,
