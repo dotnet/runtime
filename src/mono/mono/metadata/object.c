@@ -433,7 +433,6 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 	MonoClassField *field;
 	guint64 bitmap;
 	guint32 bm [2];
-	int i;
 	static gboolean gcj_inited = FALSE;
 
 	if (!gcj_inited) {
@@ -495,8 +494,8 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 /*		printf("KLASS: %s.\n", class->name); */
 
 		for (p = class; p != NULL; p = p->parent) {
-		for (i = 0; i < p->field.count; ++i) {
-			field = &p->fields [i];
+		gpointer iter = NULL;
+		while ((field = mono_class_get_fields (p, &iter))) {
 			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
 			if (field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA)
@@ -610,6 +609,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	guint32 vtable_size;
 	guint32 cindex;
 	guint32 constant_cols [MONO_CONSTANT_SIZE];
+	gpointer iter;
 
 	g_assert (class);
 
@@ -671,8 +671,8 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	}
 
 	cindex = -1;
-	for (i = class->field.first; i < class->field.last; ++i) {
-		field = &class->fields [i - class->field.first];
+	iter = NULL;
+	while ((field = mono_class_get_fields (class, &iter))) {
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
 		if (mono_field_is_deleted (field))
@@ -707,7 +707,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 
 		
 		if (!field->data) {
-			cindex = mono_metadata_get_constant_index (class->image, MONO_TOKEN_FIELD_DEF | (i + 1), cindex + 1);
+			cindex = mono_metadata_get_constant_index (class->image, mono_class_get_field_token (field), cindex + 1);
 			g_assert (cindex);
 			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA));
 
@@ -798,13 +798,13 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	/* Calculate vtable space for extra interfaces */
 	for (j = 0; j < remote_class->interface_count; j++) {
 		MonoClass* iclass = remote_class->interfaces[j];
-		int method_count = iclass->method.count;
+		int method_count = mono_class_num_methods (iclass);
 	
 		if (iclass->interface_id <= class->max_interface_id && class->interface_offsets[iclass->interface_id] != 0) 
 			continue;	/* interface implemented by the class */
 
 		for (i = 0; i < iclass->interface_count; i++)
-			method_count += iclass->interfaces[i]->method.count;
+			method_count += mono_class_num_methods (iclass->interfaces[i]);
 
 		extra_interface_vtsize += method_count * sizeof (gpointer);
 		if (iclass->max_interface_id > max_interface_id) max_interface_id = iclass->max_interface_id;
@@ -828,15 +828,14 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			pvt->vtable [i] = arch_create_remoting_trampoline (cm, target_type);
 	}
 
-	if (class->flags & TYPE_ATTRIBUTE_ABSTRACT)
-	{
+	if (class->flags & TYPE_ATTRIBUTE_ABSTRACT) {
 		/* create trampolines for abstract methods */
 		for (k = class; k; k = k->parent) {
-			mono_class_setup_methods (k);
-			for (i = 0; i < k->method.count; i++) {
-				int slot = k->methods [i]->slot;
-				if (!pvt->vtable [slot]) 
-					pvt->vtable [slot] = arch_create_remoting_trampoline (k->methods[i], target_type);
+			MonoMethod* m;
+			gpointer iter = NULL;
+			while ((m = mono_class_get_methods (k, &iter)))
+				if (!pvt->vtable [m->slot])
+					pvt->vtable [m->slot] = arch_create_remoting_trampoline (m, target_type);
 			}
 		}
 	}
@@ -869,13 +868,17 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			i = -1;
 			interf = iclass;
 			do {
+				MonoMethod* cm;
+				gpointer iter;
+				
 				pvt->interface_offsets [interf->interface_id] = &pvt->vtable [slot];
-				mono_class_setup_methods (interf);
-				for (j = 0; j < interf->method.count; ++j) {
-					MonoMethod *cm = interf->methods [j];
-					pvt->vtable [slot + j] = arch_create_remoting_trampoline (cm, target_type);
-				}
-				slot += interf->method.count;
+	
+				iter = NULL;
+				j = 0;
+				while ((cm = mono_class_get_methods (interf, &iter)))
+					pvt->vtable [slot + j++] = arch_create_remoting_trampoline (cm, target_type);
+				
+				slot += mono_class_num_methods (interf);
 				if (++i < iclass->interface_count) interf = iclass->interfaces[i];
 				else interf = NULL;
 				
