@@ -237,44 +237,11 @@ mono_debug_close_mono_symbol_file (MonoSymbolFile *symfile)
 }
 
 static int
-read_7bit_encoded_int (const char **ptr)
-{
-	int ret = 0;
-	int shift = 0;
-	char b;
-
-	do {
-		b = *(*ptr)++;
-				
-		ret = ret | ((b & 0x7f) << shift);
-		shift += 7;
-	} while ((b & 0x80) == 0x80);
-
-	return ret;
-}
-
-static int
-write_7bit_encoded_int (int fd, int value)
-{
-	do {
-		int high = (value >> 7) & 0x01ffffff;
-		char b = (char)(value & 0x7f);
-
-		if (high != 0)
-			b = (char)(b | 0x80);
-
-		if (write (fd, &b, 1) < 0)
-			return FALSE;
-
-		value = high;
-	} while (value != 0);
-	return TRUE;
-}
-
-static int
 write_string (int fd, const char *string)
 {
-	if (!write_7bit_encoded_int (fd, strlen (string)))
+	guint32 length = strlen (string);
+
+	if (write (fd, &length, sizeof (length)) < 0)
 		return FALSE;
 
 	if (write (fd, string, strlen (string)) < 0)
@@ -286,12 +253,10 @@ write_string (int fd, const char *string)
 static gchar *
 read_string (const char *ptr)
 {
-	int len = read_7bit_encoded_int (&ptr);
+	int len = *((guint32 *) ptr)++;
 	gchar *retval;
 
-	retval = g_malloc0 (len+1);
-	memcpy (retval, ptr, len);
-	return retval;
+	return g_filename_from_utf8 (ptr, len, NULL, NULL, NULL);
 }
 
 gchar *
