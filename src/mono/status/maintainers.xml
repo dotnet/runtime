@@ -1,33 +1,45 @@
 <maintainers>
-        <person email="miguel@ximian.com" name="Miguel de Icaza">
-                <class name="System.Object"/>
-                <assembly name="mscorlib"/>
-        </person>
-        <person email="fejj@ximian.com" name="Jeffrey Stedfast">
-                <class name="System.String" date="Jul-15-2001"/>
-        </person>
-        <person email="jbarn@httcb.net" name="John Barnette">
-                <class name="System.Collections.Hashtable" date="Jul-15-2001"/>
-        </person>
-        <person email="iain@ximian.com" name="Iain">
-                <class name="System.Collections.Queue"/>
-        </person>
-        <person email="bob@thestuff.net" name="Bob Smith">
-                <class name="System.Math"/>
-        </person>
-        <person email="joe@ximian.com" name="Joe Shaw">
-                <class name="System.Array"/>
-        </person>
-	<person email="marcins@zipworld.com.au" name="Marcin Szczepanski">
-		<class name="System.StringBuilder" date="Jul-15-2001"/>
-                <class name="System.IO.TextReader" date="Jul-15-2001"/>
-                <class name="System.IO.StringReader" date="Jul-15-2001"/>
-                <class name="System.IO.TextWriter" date="Jul-15-2001"/>
-                <class name="System.IO.StringWriter" date="Jul-15-2001"/>
-	</person>
-        <person email="rooneg@electricjellyfish.net" name="Garrett Rooney">
-		<class name="System.Collections.Stack" date="Jul-15-2001"/>
-        </person>
+  <person email="miguel@ximian.com" name="Miguel de Icaza">
+    <class name="System.Object"/>
+      <assembly name="mscorlib"/>
+  </person>
+  <person email="fejj@ximian.com" name="Jeffrey Stedfast">
+    <class name="System.String" date="Jul-15-2001"/>
+  </person>
+  <person email="jbarn@httcb.net" name="John Barnette">
+    <class name="System.Collections.Hashtable" date="Jul-15-2001"/>
+  </person>
+  <person email="iain@ximian.com" name="Iain">
+    <class name="System.Collections.Queue"/>
+  </person>
+  <person email="bob@thestuff.net" name="Bob Smith">
+    <class name="System.Math"/>
+  </person>
+  <person email="joe@ximian.com" name="Joe Shaw">
+    <class name="System.Array"/>
+  </person>
+  <person email="marcins@zipworld.com.au" name="Marcin Szczepanski">
+    <class name="System.StringBuilder" date="Jul-15-2001"/>
+    <class name="System.IO.TextReader" date="Jul-15-2001"/>
+    <class name="System.IO.StringReader" date="Jul-15-2001"/>
+    <class name="System.IO.TextWriter" date="Jul-15-2001"/>
+    <class name="System.IO.StringWriter" date="Jul-15-2001"/>
+  </person>
+  <person email="rooneg@electricjellyfish.net" name="Garrett Rooney">
+    <class name="System.Collections.Stack" date="Jul-15-2001"/>
+  </person>
+  <person email="angryjohn69@nc.rr.com" name="John R. Hicks">
+    <class name="System.Diagnostics.Switch" date="Jul-15-2001"/>
+      <class name="System.Diagnostics.BooleanSwitch" date="Jul-15-2001"/>
+      <class name="System.Diagnostics.TraceSwitch" date="Jul-15-2001"/>
+      <class name="System.Diagnostics.ConditionalAttribute" date="Jul-15-2001"/>
+      <class name="System.Diagnostics.Debug" date="Jul-15-2001"/>
+      <class name="System.Diagnostics.DiagnosticsConfigurationHandler" date="Jul-15-2001"/>
+      <class name="System.Diagnostics.StackFrame" date="Jul-15-2001"/>
+      <class name="System.Diagnostics.StackTrace" date="Jul-15-2001"/>
+      <class name="System.Diagnostics.Trace" date="Jul-15-2001"/>
+      <class name="System.Diagnostics.TraceListener" date="Jul-15-2001"/>
+  </person>
 </maintainers>
 
 
