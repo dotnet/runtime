@@ -83,7 +83,7 @@
 	  </tr>
 	  <tr>
 	    <td><b><a href="asp-net.html">ASP.NET</a></b></td>
-	    <td>Webforms working<br></td>
+	    <td>Webforms and WebServices working<br></td>
 	  </tr>
 	  <tr>
 	    <td>
@@ -151,14 +151,34 @@
   </tr>
 </table>
 
-@item Jul 4th, 2003: Coverage Analysis
+@item Jul 9th, 2003: ASP.NET web services, coverage tools.
+
+	Web Services keep advancing: now we also support server-side
+	authoring of Web Services as well as web service clients
+	(which shipped in Mono 0.25).  This works using our ASP.NET
+	runtime, so it works with either XSP or the Apache module. The
+	new Web Services work from Lluis added the missing bits:
+	routing and Soap extensions.
+
+	This missing piece in our ASP.NET implementation is now
+	completed, and we will start testing and debugging.  
+
+	GUI-wise: Work on <a href="http://xr.xwin.org">Xr</a> to
+	implement System.Drawing continues.  This will provide a full
+	GDI+ implementation for Mono, and this will be hooked up into
+	Gtk# and System.Windows.Forms.
+
+	MonoDoc keeps moving along, with a new web-based version
+	coming up next, and we are also exploring a collaborative
+	extension to allow people to contribute documentation through
+	their web browsers.
 
 	Zoltan's Coverage analysis tool has been checked into CVS.
 	With this tool it is now possible to find which class library
 	code paths are missing regression tests.  The module is
 	`monocov'.  Details are <a
-	href="http://www.nexus.hu/vargaz/">here</a>
-
+	href="http://www.nexus.hu/vargaz/">here</a>.  A fresh Gtk#
+	version is available now.
 
 @item Jun 26th: Mono 0.25 has been released.
 
