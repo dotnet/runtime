@@ -1,3 +1,7 @@
+2003-02-13  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* data/machine.config: added sample globalization section.
+
 2003-02-12  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* data/machine.config: added UrlAuthorizationModule and
