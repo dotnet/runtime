@@ -107,7 +107,16 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 			reg = code [1] & 0x07;
 			disp = *((gint32*)(code + 2));
 		} else if ((code [1] == 0xe8)) {
-			*((guint32*)(code + 2)) = (guint)addr - ((guint)code + 1) - 5; 
+			MonoJitInfo *ji = 
+				mono_jit_info_table_find (mono_domain_get (), code);
+			MonoJitInfo *target_ji = 
+				mono_jit_info_table_find (mono_domain_get (), addr);
+			/*
+			 * If the call was made from domain-neutral to domain-specific 
+			 * code, we can't patch the call site.
+			 */
+			if (! (ji && ji->domain_neutral && target_ji && !target_ji->domain_neutral))
+				*((guint32*)(code + 2)) = (guint)addr - ((guint)code + 1) - 5; 
 			return addr;
 		} else if ((code [4] == 0xff) && (((code [5] >> 6) & 0x3) == 0) && (((code [5] >> 3) & 0x7) == 2)) {
 			/*
@@ -149,11 +158,12 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 
 	o += disp;
 
-	if (m->klass->valuetype) {
-		return *((gpointer *)o) = get_unbox_trampoline (m, addr);
-	} else {
-		return *((gpointer *)o) = addr;
-	}
+	if (m->klass->valuetype)
+		addr = get_unbox_trampoline (m, addr);
+
+	*((gpointer *)o) = addr;
+
+	return addr;
 }
 
 static guchar*

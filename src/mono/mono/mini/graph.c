@@ -73,7 +73,7 @@ static void
 cfg_emit_one_loop_level (MonoCompile *cfg, FILE *fp, MonoBasicBlock *h)
 {
 	MonoBasicBlock *bb;
-	int i, j, level = 0;
+	int j, level = 0;
 
 	if (h) {
 		level = h->nesting;

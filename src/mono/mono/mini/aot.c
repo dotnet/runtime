@@ -28,6 +28,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/assembly.h>
 
 #include "mini.h"
 
@@ -95,14 +96,14 @@ mono_aot_get_method (MonoMethod *method)
 		return NULL;
 	}
 
-	//printf ("FOUND AOT compiled code for %s %p %p\n", mono_method_full_name (method, TRUE), code, info);
-
 	code_len = GPOINTER_TO_UINT (*((gpointer **)info));
 	info++;
 	used_int_regs = GPOINTER_TO_UINT (*((gpointer **)info));
 	info++;
 	used_strings = GPOINTER_TO_UINT (*((gpointer **)info));
 	info++;
+
+//	printf ("FOUND AOT compiled code for %s %p - %p %p\n", mono_method_full_name (method, TRUE), code, code + code_len, info);
 
 	for (i = 0; i < used_strings; i++) {
 		guint token =  GPOINTER_TO_UINT (*((gpointer **)info));
@@ -167,6 +168,15 @@ mono_aot_get_method (MonoMethod *method)
 			case MONO_PATCH_INFO_R8:
 				ji->data.target = data;
 				break;
+			case MONO_PATCH_INFO_EXC_NAME:
+				ji->data.klass = decode_class_info (data);
+				g_assert (ji->data.klass);
+				mono_class_init (ji->data.klass);
+				ji->data.name = ji->data.klass->name;
+				break;
+			case MONO_PATCH_INFO_METHOD_REL:
+				ji->data.offset = (int)data [0];
+				break;
 			default:
 				g_warning ("unhandled type %d", ji->type);
 				g_assert_not_reached ();
@@ -204,6 +214,7 @@ mono_aot_get_method (MonoMethod *method)
 		info->used_regs = used_int_regs;
 		info->method = method;
 		info->code_start = code;
+		info->domain_neutral = TRUE;
 		mono_jit_info_table_add (mono_root_domain, info);
 	}
 	mono_jit_stats.methods_aot++;
@@ -230,7 +241,7 @@ write_data_symbol (FILE *fp, const char *name, guint8 *buf, int size, int align)
 #endif
 
 static void
-write_string_symbol (FILE *fp, const char *name, char *value)
+write_string_symbol (FILE *fp, const char *name, const char *value)
 {
 	fprintf (fp, ".globl %s\n", name);
 	fprintf (fp, ".data\n");
@@ -387,6 +398,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	ref_hash = g_hash_table_new (NULL, NULL);
 
 	write_string_symbol (tmpfp, "mono_assembly_guid" , image->guid);
+
+	write_string_symbol (tmpfp, "mono_aot_version", MONO_AOT_FILE_VERSION);
 		
 	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
 		MonoJumpInfo *patch_info;
@@ -520,6 +533,17 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 				patch_info->data.name = cond_emit_image_label (tmpfp, ref_hash, patch_info->data.image);
 				j++;
 				break;
+			case MONO_PATCH_INFO_EXC_NAME: {
+				MonoClass *ex_class;
+
+				ex_class =
+					mono_class_from_name (mono_defaults.exception_class->image,
+										  "System", patch_info->data.target);
+				g_assert (ex_class);
+				patch_info->data.name = cond_emit_klass_label (tmpfp, ref_hash, ex_class);
+				j++;
+				break;
+			}
 			case MONO_PATCH_INFO_R4:
 				fprintf (tmpfp, "\t.align 8\n");
 				fprintf (tmpfp, "%s_patch_info_%d:\n", mname, j);
@@ -533,6 +557,12 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 				fprintf (tmpfp, "\t.long 0x%08x\n", *((guint32 *)patch_info->data.target));
 				fprintf (tmpfp, "\t.long 0x%08x\n", *((guint32 *)patch_info->data.target + 1));
 				
+				j++;
+				break;
+			case MONO_PATCH_INFO_METHOD_REL:
+				fprintf (tmpfp, "\t.align %d\n", sizeof (gpointer));
+				fprintf (tmpfp, "%s_patch_info_%d:\n", mname, j);
+				fprintf (tmpfp, "\t.long 0x%08x\n", patch_info->data.offset);
 				j++;
 				break;
 			default:
@@ -563,6 +593,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 				case MONO_PATCH_INFO_FIELD:
 				case MONO_PATCH_INFO_INTERNAL_METHOD:
 				case MONO_PATCH_INFO_IMAGE:
+				case MONO_PATCH_INFO_EXC_NAME:
 					fprintf (tmpfp, "\t.long %s\n", patch_info->data.name);
 					fprintf (tmpfp, "\t.long 0x%08x\n", ENCODE_TYPE_POS (patch_info->type, patch_info->ip.i));
 					j++;
@@ -570,6 +601,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 				case MONO_PATCH_INFO_SWITCH:
 				case MONO_PATCH_INFO_R4:
 				case MONO_PATCH_INFO_R8:
+				case MONO_PATCH_INFO_METHOD_REL:
 					fprintf (tmpfp, "\t.long %s_patch_info_%d\n", mname, j);
 					fprintf (tmpfp, "\t.long 0x%08x\n", ENCODE_TYPE_POS (patch_info->type, patch_info->ip.i));
 					j++;

@@ -3001,6 +3001,9 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_IP:
 			*((gpointer *)(ip)) = ip;
 			continue;
+		case MONO_PATCH_INFO_METHOD_REL:
+			*((gpointer *)(ip)) = code + patch_info->data.offset;
+			continue;
 		case MONO_PATCH_INFO_INTERNAL_METHOD: {
 			MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
 			if (!mi) {
@@ -3025,11 +3028,9 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_METHOD:
 			if (patch_info->data.method == method) {
 				target = code;
-			} else {
+			} else
 				/* get the trampoline to the method from the domain */
-				if (!(target = g_hash_table_lookup (domain->jit_code_hash, patch_info->data.method)))
-					target = mono_arch_create_jit_trampoline (patch_info->data.method);
-			}
+				target = mono_arch_create_jit_trampoline (patch_info->data.method);
 			break;
 		case MONO_PATCH_INFO_SWITCH: {
 			gpointer *table = (gpointer *)patch_info->data.target;
@@ -3040,7 +3041,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			for (i = 0; i < patch_info->table_size; i++) {
 				table [i] = (int)patch_info->data.table [i] + code;
 			}
-			/* we put into the table the absolute address, no need fo x86_patch in this case */
+			/* we put into the table the absolute address, no need for x86_patch in this case */
 			continue;
 		}
 		case MONO_PATCH_INFO_METHODCONST:
@@ -3052,6 +3053,9 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_R4:
 		case MONO_PATCH_INFO_R8:
 			*((gconstpointer *)(ip + 2)) = patch_info->data.target;
+			continue;
+		case MONO_PATCH_INFO_EXC_NAME:
+			*((gconstpointer *)(ip + 1)) = patch_info->data.name;
 			continue;
 		default:
 			g_assert_not_reached ();
@@ -3274,7 +3278,9 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_EXC:
 			x86_patch (patch_info->ip.i + cfg->native_code, code);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);
 			x86_push_imm (code, patch_info->data.target);
+			mono_add_patch_info (cfg, code + 1 - cfg->native_code, MONO_PATCH_INFO_METHOD_REL, (gpointer)patch_info->ip.i);
 			x86_push_imm (code, patch_info->ip.i + cfg->native_code);
 			patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
 			patch_info->data.name = "mono_arch_throw_exception_by_name";
