@@ -161,6 +161,42 @@ public class Tests
 		return 1;
 	}
 
+	public static void DoUnload (object state) {
+		AppDomain.Unload (AppDomain.CurrentDomain);
+	}
+
+	public static void Callback () {
+		Console.WriteLine (AppDomain.CurrentDomain);
+		WaitCallback unloadDomainCallback = new WaitCallback (DoUnload);
+		ThreadPool.QueueUserWorkItem (unloadDomainCallback);
+	}		
+
+	public static int test_0_unload_inside_appdomain_async () {
+		AppDomain domain = AppDomain.CreateDomain ("Test3");
+
+		domain.DoCallBack (new CrossAppDomainDelegate (Callback));
+
+		return 0;
+	}
+
+	public static void SyncCallback () {
+		AppDomain.Unload (AppDomain.CurrentDomain);
+	}		
+
+	public static int test_0_unload_inside_appdomain_sync () {
+		AppDomain domain = AppDomain.CreateDomain ("Test3");
+
+		try {
+			domain.DoCallBack (new CrossAppDomainDelegate (SyncCallback));
+		}
+		catch (Exception ex) {
+			/* Should throw a ThreadAbortException */
+			Thread.ResetAbort ();
+		}
+
+		return 0;
+	}
+
 	// FIXME: This does not work yet, because the thread is finalized too
 	// early
 	/*
