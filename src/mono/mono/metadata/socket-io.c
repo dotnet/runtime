@@ -1241,10 +1241,13 @@ static struct in_addr ipaddress_to_struct_in_addr(MonoObject *ipaddr)
 	MonoClassField *field;
 	
 	field=mono_class_get_field_from_name(ipaddr->vtable->klass, "address");
-	addr=*(guint64 *)(((char *)ipaddr)+field->offset);
 
-	/* No idea why .net uses a 64bit type to hold a 32bit value */
-	inaddr.s_addr=htonl((guint32)addr);
+	/* No idea why .net uses a 64bit type to hold a 32bit value...
+	 *
+	 * Internal value of IPAddess is in Network Order, there is no need
+	 * to call htonl here.
+	 */
+	inaddr.s_addr=(guint32)*(guint64 *)(((char *)ipaddr)+field->offset);
 	
 	return(inaddr);
 }
@@ -1295,10 +1298,12 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 		case SocketOptionName_AddMembership:
 		case SocketOptionName_DropMembership:
 		{
+			MonoObject *address = NULL;
+
 #ifdef HAVE_STRUCT_IP_MREQN
-			struct ip_mreqn mreq;
+			struct ip_mreqn mreq = {0};
 #else
-			struct ip_mreq mreq;
+			struct ip_mreq mreq = {0};
 #endif /* HAVE_STRUCT_IP_MREQN */
 			
 			/* pain! MulticastOption holds two IPAddress
@@ -1306,15 +1311,22 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 			 * those :-(
 			 */
 			field = mono_class_get_field_from_name (obj_val->vtable->klass, "group");
-			mreq.imr_multiaddr = ipaddress_to_struct_in_addr (*(gpointer *)(((char *)obj_val) +
-											field->offset));
+			address = *(gpointer *)(((char *)obj_val) + field->offset);
+
+			/* address might not be defined and if so, set the address to ADDR_ANY.
+			 */
+			if(address)
+				mreq.imr_multiaddr = ipaddress_to_struct_in_addr (address);
+
 			field = mono_class_get_field_from_name (obj_val->vtable->klass, "local");
+			address = *(gpointer *)(((char *)obj_val) + field->offset);
+
 #ifdef HAVE_STRUCT_IP_MREQN
-			mreq.imr_address = ipaddress_to_struct_in_addr (*(gpointer *)(((char *)obj_val) +
-										      field->offset));
+			if(address)
+				mreq.imr_address = ipaddress_to_struct_in_addr (address);
 #else
-			mreq.imr_interface = ipaddress_to_struct_in_addr (*(gpointer *)(((char *)obj_val) +
-											field->offset));
+			if(local_address)
+				mreq.imr_interface = ipaddress_to_struct_in_addr (address);
 #endif /* HAVE_STRUCT_IP_MREQN */
 			
 			ret = setsockopt (sock, system_level, system_name,
