@@ -438,6 +438,10 @@ mono_init (const char *filename)
 	        mono_defaults.corlib, "System", "MarshalByRefObject");
 	g_assert (mono_defaults.marshalbyrefobject_class != 0);
 
+	mono_defaults.monitor_class =  mono_class_from_name (
+	        mono_defaults.corlib, "System.Threading", "Monitor");
+	g_assert (mono_defaults.monitor_class != 0);
+
 	domain->friendly_name = g_path_get_basename (filename);
 
 	return domain;
