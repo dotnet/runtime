@@ -36,11 +36,30 @@ mono_arch_regname (int reg) {
 	return "unknown";
 }
 
-/* this function overwrites r0 */
+/* this function overwrites r0, r11, r12 */
 static guint8*
 emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffset)
 {
 	/* unrolled, use the counter in big */
+	if (size > sizeof (gpointer) * 5) {
+		int shifted = size >> 2;
+		guint8 *copy_loop_start, *copy_loop_jump;
+
+		ppc_load (code, ppc_r0, shifted);
+		ppc_mtctr (code, ppc_r0);
+		g_assert (sreg == ppc_r11);
+		ppc_addi (code, ppc_r12, dreg, (doffset - 4));
+		ppc_addi (code, ppc_r11, sreg, (soffset - 4));
+		copy_loop_start = code;
+		ppc_lwzu (code, ppc_r0, ppc_r11, 4);
+		ppc_stwu (code, ppc_r0, 4, ppc_r12);
+		copy_loop_jump = code;
+		ppc_bc (code, PPC_BR_DEC_CTR_NONZERO, 0, 0);
+		ppc_patch (copy_loop_jump, copy_loop_start);
+		size -= shifted * 4;
+		doffset = soffset = 0;
+		dreg = ppc_r12;
+	}
 	while (size >= 4) {
 		ppc_lwz (code, ppc_r0, soffset, sreg);
 		ppc_stw (code, ppc_r0, doffset, dreg);

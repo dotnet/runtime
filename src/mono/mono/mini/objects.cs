@@ -36,6 +36,36 @@ struct Small {
 	public byte b2;
 }
 
+struct Large {
+	int one;
+	int two;
+	long three;
+	long four;
+	int five;
+	long six;
+	int seven;
+	long eight;
+	long nine;
+	long ten;
+
+	public void populate ()
+	{
+		one = 1; two = 2;
+		three = 3; four = 4;
+		five = 5; six = 6;
+		seven = 7; eight = 8;
+		nine = 9; ten = 10;
+	}
+	public bool check ()
+	{
+		return one == 1  && two == 2  &&
+			three == 3  && four == 4  &&
+			five == 5  && six == 6  &&
+			seven == 7  && eight == 8  &&
+			nine == 9  && ten == 10;
+	}
+}
+
 class Sample {
 	public int a;
 	public Sample (int v) {
@@ -653,5 +683,29 @@ class Tests {
 		return llmult (arr [c + d], 150, 5, 0);
 	}
 
+	static bool large_struct_test (Large a, Large b, Large c, Large d)
+	{
+		if (!a.check ()) return false;
+		if (!b.check ()) return false;
+		if (!c.check ()) return false;
+		if (!d.check ()) return false;
+		return true;
+	}
+
+	static int test_2_large_struct_pass ()
+	{
+		Large a, b, c, d;
+		a = new Large ();
+		b = new Large ();
+		c = new Large ();
+		d = new Large ();
+		a.populate ();
+		b.populate ();
+		c.populate ();
+		d.populate ();
+		if (large_struct_test (a, b, c, d))
+			return 2;
+		return 0;
+	}
 }
 
