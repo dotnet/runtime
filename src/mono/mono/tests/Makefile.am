@@ -125,6 +125,7 @@ TEST_CS_SRC=			\
 	remoting2.cs		\
 	remoting3.cs		\
 	remoting4.cs		\
+	remoting5.cs		\
 	nonvirt.cs		\
 	largeexp.cs		\
 	largeexp2.cs		\
