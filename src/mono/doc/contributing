@@ -12,7 +12,23 @@
 
 		* <b>Writers:</b> You can help us with writing <a
 		  href="documentation.html">documentation</a>.
-		
+	</ul>
+
+	Those are just broad things that need to be worked on, but
+	something that would help tremendously would be to help with
+	small duties in the project that need to be addressed. 
+
+** Small tasks
+
+	A few smaller tasks are here, dropped in no particular order:
+	<ul>
+		* <b>MCS compilation process:</b> Currently MCS does
+		  not build with a single `make' command.  This should
+		  be fixed (this being part of the `Joel Test' that
+		  software has to pass).
+
+		* <b>Mono/doc and web site:</b> They need to be
+		  packaged up in the official `distribution'
 	</ul>
 
 * Special note
@@ -21,4 +37,4 @@
 	their shared source code, you will not be able to contribute
 	to Mono.
 
-	Please, follow care when reading code
+	Please, follow care when reading proprietary code.
