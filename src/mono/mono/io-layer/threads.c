@@ -676,36 +676,11 @@ gpointer TlsGetValue(guint32 idx)
 #ifdef TLS_DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": looking up key %d", idx);
 #endif
-
-#ifdef TLS_PTHREAD_MUTEX
-	mono_mutex_lock(&TLS_mutex);
-#else
-	MONO_SPIN_LOCK (TLS_spinlock);
-#endif
-	
-	if(TLS_used[idx]==FALSE) {
-#ifdef TLS_DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": key %d unused", idx);
-#endif
-
-#ifdef TLS_PTHREAD_MUTEX
-		mono_mutex_unlock(&TLS_mutex);
-#else
-		MONO_SPIN_UNLOCK (TLS_spinlock);
-#endif
-		return(NULL);
-	}
 	
 	ret=pthread_getspecific(TLS_keys[idx]);
 
 #ifdef TLS_DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": returning %p", ret);
-#endif
-	
-#ifdef TLS_PTHREAD_MUTEX
-	mono_mutex_unlock(&TLS_mutex);
-#else
-	MONO_SPIN_UNLOCK (TLS_spinlock);
 #endif
 	
 	return(ret);
