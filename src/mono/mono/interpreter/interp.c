@@ -3525,7 +3525,7 @@ array_constructed:
 		MINT_IN_CASE(MINT_MONO_RETOBJ)
 			++ip;
 			sp--;
-			stackval_from_data (mono_method_signature frame->runtime_method->method)->ret, frame->retval, sp->data.p,
+			stackval_from_data (mono_method_signature (frame->runtime_method->method)->ret, frame->retval, sp->data.p,
 			     mono_method_signature (frame->runtime_method->method)->pinvoke);
 			if (sp > frame->stack)
 				g_warning ("retobj: more values on stack: %d", sp-frame->stack);
