@@ -804,6 +804,11 @@ case "$host" in
 		arch_target=x86;
 		JIT_SUPPORTED=yes
 		;;
+	x86_64-*-* | amd64-*-*)
+		TARGET=AMD64;
+		arch_target=amd64;
+		JIT_SUPPORTED=no
+		;;
 	sparc*-*-*)
 		TARGET=SPARC;
 		arch_target=sparc;
@@ -849,6 +854,15 @@ case "$host" in
 		;;
 esac
 
+libsuffix=".so"
+
+case "$host" in
+     powerpc-*-darwin*)
+	libsuffix=".dylib"
+	;;
+esac
+AC_SUBST(libsuffix)
+
 if test ${TARGET} = ARM; then
 	dnl ******************************************
 	dnl *** Check to see what FPU is available ***
@@ -881,6 +895,7 @@ AM_CONDITIONAL(MIPS_GCC, test ${TARGET}${ac_cv_prog_gcc} = MIPSyes)
 AM_CONDITIONAL(MIPS_SGI, test ${TARGET}${ac_cv_prog_gcc} = MIPSno)
 AM_CONDITIONAL(SPARC, test x$TARGET = xSPARC)
 AM_CONDITIONAL(X86, test x$TARGET = xX86)
+AM_CONDITIONAL(AMD64, test x$TARGET = xAMD64)
 AM_CONDITIONAL(ALPHA, test x$TARGET = xALPHA)
 AM_CONDITIONAL(IA64, test x$TARGET = xIA64)
 AM_CONDITIONAL(M68K, test x$TARGET = xM68K)
@@ -912,6 +927,7 @@ mono/os/Makefile
 mono/os/win32/Makefile
 mono/os/unix/Makefile
 mono/arch/x86/Makefile
+mono/arch/amd64/Makefile
 mono/arch/hppa/Makefile
 mono/arch/ppc/Makefile
 mono/arch/sparc/Makefile
@@ -943,4 +959,5 @@ echo "
 
 	GC:	$gc
 	ICU:	$enable_icu
+	NPTL:   $with_nptl
 "
