@@ -29,6 +29,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/reflection.h>
 #include <mono/os/gc_wrapper.h>
 
 /*
@@ -112,87 +113,6 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 	image = references [idx-1]->image;
 
 	return mono_class_from_name (image, nspace, name);
-}
-
-MonoMarshalType *
-mono_marshal_load_type_info (MonoClass* klass)
-{
-	int i, j, count = 0, native_size = 0;
-	MonoMarshalType *info;
-	guint32 layout;
-
-	g_assert (klass != NULL);
-
-	if (klass->marshal_info)
-		return klass->marshal_info;
-
-	if (!klass->inited)
-		mono_class_init (klass);
-	
-	for (i = 0; i < klass->field.count; ++i) {
-		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
-			continue;
-		count++;
-	}
-
-	layout = klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
-
-	klass->marshal_info = info = g_malloc0 (sizeof (MonoMarshalType) + sizeof (MonoMarshalField) * count);
-	info->num_fields = count;
-	
-	/* Try to find a size for this type in metadata */
-	mono_metadata_packing_from_typedef (klass->image, klass->type_token, NULL, &native_size);
-
-	if (klass->parent) {
-		int parent_size = mono_class_native_size (klass->parent, NULL);
-
-		/* Add parent size to real size */
-		native_size += parent_size;
-		info->native_size = parent_size;
-	}
- 
-	for (j = i = 0; i < klass->field.count; ++i) {
-		int size, align;
-		
-		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
-			continue;
-
-		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL)
-			mono_metadata_field_info (klass->image, klass->field.first + i, 
-						  NULL, NULL, &info->fields [j].mspec);
-
-		info->fields [j].field = &klass->fields [i];
-
-		switch (layout) {
-		case TYPE_ATTRIBUTE_AUTO_LAYOUT:
-		case TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT:
-			size = mono_marshal_type_size (klass->fields [i].type, info->fields [j].mspec, 
-						       &align, TRUE, klass->unicode);
-			align = klass->packing_size ? MIN (klass->packing_size, align): align;	
-			info->fields [j].offset = info->native_size;
-			info->fields [j].offset += align - 1;
-			info->fields [j].offset &= ~(align - 1);
-			info->native_size = info->fields [j].offset + size;
-			break;
-		case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
-			/* FIXME: */
-			info->fields [j].offset = klass->fields [i].offset - sizeof (MonoObject);
-			info->native_size = klass->instance_size - sizeof (MonoObject);
-			break;
-		}	
-		j++;
-	}
-
-	if(layout != TYPE_ATTRIBUTE_AUTO_LAYOUT) {
-		info->native_size = MAX (native_size, info->native_size);
-	}
-
-	if (info->native_size & (klass->min_align - 1)) {
-		info->native_size += klass->min_align - 1;
-		info->native_size &= ~(klass->min_align - 1);
-	}
-
-	return klass->marshal_info;
 }
 
 /** 
@@ -1713,26 +1633,6 @@ mono_class_instance_size (MonoClass *klass)
 		mono_class_init (klass);
 
 	return klass->instance_size;
-}
-
-/**
- * mono_class_native_size:
- * @klass: a class 
- * 
- * Returns: the native size of an object instance (when marshaled 
- * to unmanaged code) 
- */
-gint32
-mono_class_native_size (MonoClass *klass, guint32 *align)
-{
-	
-	if (!klass->marshal_info)
-		mono_marshal_load_type_info (klass);
-
-	if (align)
-		*align = klass->min_align;
-
-	return klass->marshal_info->native_size;
 }
 
 /**

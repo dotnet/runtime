@@ -21,6 +21,19 @@ typedef struct _MonoMethodBuilder MonoMethodBuilder;
 
 /* marshaling helper functions */
 
+gint32
+mono_class_native_size (MonoClass *klass, guint32 *align);
+
+MonoMarshalType *
+mono_marshal_load_type_info (MonoClass* klass);
+
+gint32
+mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align, 
+			gboolean as_field, gboolean unicode);
+
+int            
+mono_type_native_stack_size (MonoType *type, int *alignment);
+
 gpointer
 mono_array_to_savearray (MonoArray *array);
 
@@ -115,6 +128,9 @@ mono_mb_emit_i2 (MonoMethodBuilder *mb, gint16 data);
 
 void
 mono_mb_emit_i4 (MonoMethodBuilder *mb, gint32 data);
+
+void
+mono_mb_emit_ldstr (MonoMethodBuilder *mb, char *str);
 
 /* functions to create various architecture independent helper functions */
 

@@ -2898,7 +2898,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				n = fsig->param_count + fsig->hasthis;
 
 			} else {
-				cmethod = mono_get_method (image, token, NULL);
+				if (method->wrapper_type != MONO_WRAPPER_NONE) {
+					cmethod =  (MonoMethod *)mono_method_get_wrapper_data (method, token);
+				} else {
+					cmethod = mono_get_method (image, token, NULL);
+				}
 
 				if (!cmethod->klass->inited)
 					mono_class_init (cmethod->klass);
@@ -3426,26 +3430,38 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK_OVF (1);
 			n = read32 (ip + 1);
 
-			if (mono_compile_aot) {
-				cfg->ldstr_list = g_list_prepend (cfg->ldstr_list, (gpointer)n);
+			if (method->wrapper_type != MONO_WRAPPER_NONE) {
+				int temp;
+				MonoInst *iargs [1];
+
+				NEW_PCONST (cfg, iargs [0], mono_method_get_wrapper_data (method, n));				
+				temp = mono_emit_jit_icall (cfg, bblock, mono_string_new_wrapper, iargs, ip);
+				NEW_TEMPLOAD (cfg, *sp, temp);
+
+			} else {
+
+				if (mono_compile_aot) {
+					cfg->ldstr_list = g_list_prepend (cfg->ldstr_list, (gpointer)n);
+				}
+
+				if ((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot) {
+					int temp;
+					MonoInst *iargs [3];
+					NEW_TEMPLOAD (cfg, iargs [0], mono_get_domainvar (cfg)->inst_c0);
+					NEW_IMAGECONST (cfg, iargs [1], image);
+					NEW_ICONST (cfg, iargs [2], mono_metadata_token_index (n));
+					temp = mono_emit_jit_icall (cfg, bblock, mono_ldstr, iargs, ip);
+					NEW_TEMPLOAD (cfg, *sp, temp);
+					mono_ldstr (cfg->domain, image, mono_metadata_token_index (n));
+				} else {
+					NEW_PCONST (cfg, ins, NULL);
+					ins->cil_code = ip;
+					ins->type = STACK_OBJ;
+					ins->inst_p0 = mono_ldstr (cfg->domain, image, mono_metadata_token_index (n));
+					*sp = ins;
+				}
 			}
 
-			if ((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot) {
-				int temp;
-				MonoInst *iargs [3];
-				NEW_TEMPLOAD (cfg, iargs [0], mono_get_domainvar (cfg)->inst_c0);
-				NEW_IMAGECONST (cfg, iargs [1], image);
-				NEW_ICONST (cfg, iargs [2], mono_metadata_token_index (n));
-				temp = mono_emit_jit_icall (cfg, bblock, mono_ldstr, iargs, ip);
-				NEW_TEMPLOAD (cfg, *sp, temp);
-				mono_ldstr (cfg->domain, image, mono_metadata_token_index (n));
-			} else {
-				NEW_PCONST (cfg, ins, NULL);
-				ins->cil_code = ip;
-				ins->type = STACK_OBJ;
-				ins->inst_p0 = mono_ldstr (cfg->domain, image, mono_metadata_token_index (n));
-				*sp = ins;
-			}
 			sp++;
 			ip += 5;
 			break;

@@ -2274,79 +2274,6 @@ mono_type_stack_size (MonoType *t, gint *align)
 }
 
 /*
- * mono_type_native_stack_size:
- * @t: the type to return the size it uses on the stack
- *
- * Returns: the number of bytes required to hold an instance of this
- * type on the native stack
- */
-int
-mono_type_native_stack_size (MonoType *t, gint *align)
-{
-	int tmp;
-
-	g_assert (t != NULL);
-
-	if (!align)
-		align = &tmp;
-
-	if (t->byref) {
-		*align = 4;
-		return 4;
-	}
-
-	switch (t->type){
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_FNPTR:
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_TYPEDBYREF:
-		*align = 4;
-		return 4;
-	case MONO_TYPE_R4:
-		*align = 4;
-		return 4;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-	case MONO_TYPE_R8:
-		*align = 4;
-		return 8;
-	case MONO_TYPE_VALUETYPE: {
-		guint32 size;
-
-		if (t->data.klass->enumtype)
-			return mono_type_native_stack_size (t->data.klass->enum_basetype, align);
-		else {
-			size = mono_class_native_size (t->data.klass, align);
-			*align = *align + 3;
-			*align &= ~3;
-			
-			size +=  3;
-			size &= ~3;
-
-			return size;
-		}
-	}
-	default:
-		g_error ("type 0x%02x unknown", t->type);
-	}
-	return 0;
-}
-
-/*
  * mono_metadata_type_hash:
  * @t1: a type
  *
@@ -2857,21 +2784,37 @@ mono_metadata_parse_marshal_spec (MonoImage *image, const char *ptr)
 
 	if (res->native == MONO_NATIVE_LPARRAY) {
 		if (ptr - start <= len)
-			res->elem_type = *ptr++;
+			res->data.array_data.elem_type = *ptr++;
 		if (ptr - start <= len)
-			res->param_num = mono_metadata_decode_value (ptr, &ptr);
+			res->data.array_data.param_num = mono_metadata_decode_value (ptr, &ptr);
 		if (ptr - start <= len)
-			res->num_elem = mono_metadata_decode_value (ptr, &ptr);
+			res->data.array_data.num_elem = mono_metadata_decode_value (ptr, &ptr);
 	} 
 
 	if (res->native == MONO_NATIVE_BYVALTSTR) {
 		if (ptr - start <= len)
-			res->num_elem = mono_metadata_decode_value (ptr, &ptr);
+			res->data.array_data.num_elem = mono_metadata_decode_value (ptr, &ptr);
 	}
 
 	if (res->native == MONO_NATIVE_BYVALARRAY) {
 		if (ptr - start <= len)
-			res->num_elem = mono_metadata_decode_value (ptr, &ptr);
+			res->data.array_data.num_elem = mono_metadata_decode_value (ptr, &ptr);
+	}
+	
+	if (res->native == MONO_NATIVE_CUSTOM) {
+		/* skip unused type guid */
+		len = mono_metadata_decode_value (ptr, &ptr);
+		ptr += len;
+		/* skip unused native type name */
+		len = mono_metadata_decode_value (ptr, &ptr);
+		ptr += len;
+		/* read custom marshaler type name */
+		len = mono_metadata_decode_value (ptr, &ptr);
+		res->data.custom_data.custom_name = g_strndup (ptr, len);		
+		ptr += len;
+		/* read cookie string */
+		len = mono_metadata_decode_value (ptr, &ptr);
+		res->data.custom_data.cookie = g_strndup (ptr, len);
 	}
 
 	return res;
@@ -3019,86 +2962,6 @@ handle_enum:
 		g_error ("type 0x%02x not handled in marshal", t);
 	}
 	return MONO_NATIVE_MAX;
-}
-
-gint32
-mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align, 
-			gboolean as_field, gboolean unicode)
-{
-	MonoMarshalNative native_type = mono_type_to_unmanaged (type, mspec, as_field, unicode, NULL);
-	MonoClass *klass;
-
-	switch (native_type) {
-	case MONO_NATIVE_BOOLEAN:
-		*align = 4;
-		return 4;
-	case MONO_NATIVE_I1:
-	case MONO_NATIVE_U1:
-		*align = 1;
-		return 1;
-	case MONO_NATIVE_I2:
-	case MONO_NATIVE_U2:
-		*align = 2;
-		return 2;
-	case MONO_NATIVE_I4:
-	case MONO_NATIVE_U4:
-	case MONO_NATIVE_ERROR:
-		*align = 4;
-		return 4;
-	case MONO_NATIVE_I8:
-	case MONO_NATIVE_U8:
-		*align = 4;
-		return 8;
-	case MONO_NATIVE_R4:
-		*align = 4;
-		return 4;
-	case MONO_NATIVE_R8:
-		*align = 4;
-		return 8;
-	case MONO_NATIVE_INT:
-	case MONO_NATIVE_UINT:
-	case MONO_NATIVE_LPSTR:
-	case MONO_NATIVE_LPWSTR:
-	case MONO_NATIVE_LPTSTR:
-	case MONO_NATIVE_BSTR:
-	case MONO_NATIVE_ANSIBSTR:
-	case MONO_NATIVE_TBSTR:
-	case MONO_NATIVE_LPARRAY:
-	case MONO_NATIVE_SAFEARRAY:
-	case MONO_NATIVE_IUNKNOWN:
-	case MONO_NATIVE_IDISPATCH:
-	case MONO_NATIVE_INTERFACE:
-	case MONO_NATIVE_ASANY:
-	case MONO_NATIVE_VARIANTBOOL:
-	case MONO_NATIVE_FUNC:
-	case MONO_NATIVE_LPSTRUCT:
-		*align =  4;
-		return sizeof (gpointer);
-	case MONO_NATIVE_STRUCT: 
-		klass = mono_class_from_mono_type (type);
-		return mono_class_native_size (klass, align);
-	case MONO_NATIVE_BYVALTSTR: {
-		int esize = unicode ? 2: 1;
-		g_assert (mspec);
-		*align = esize;
-		return mspec->num_elem * esize;
-	}
-	case MONO_NATIVE_BYVALARRAY: {
-		int esize;
-		klass = mono_class_from_mono_type (type);
-		esize = mono_class_native_size (klass->element_class, align);
-		g_assert (mspec);
-		return mspec->num_elem * esize;
-	}
-	case MONO_NATIVE_CURRENCY:
-	case MONO_NATIVE_VBBYREFSTR:
-	case MONO_NATIVE_CUSTOM:
-	default:
-		g_error ("native type %02x not implemented", native_type); 
-		break;
-	}
-	g_assert_not_reached ();
-	return 0;
 }
 
 const char*

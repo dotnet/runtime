@@ -158,9 +158,17 @@ typedef enum {
 
 typedef struct {
 	MonoMarshalNative native;
-	MonoMarshalNative elem_type;
-	gint32 param_num;
-	gint32 num_elem;
+	union {
+		struct {
+			MonoMarshalNative elem_type;
+			gint32 param_num;
+			gint32 num_elem;
+		} array_data;
+		struct {
+			char *custom_name;
+			char *cookie;
+		} custom_data;
+	} data;
 } MonoMarshalSpec;
 
 
@@ -356,8 +364,6 @@ int            mono_type_size                  (MonoType        *type,
 						int             *alignment);
 int            mono_type_stack_size            (MonoType        *type, 
 						int             *alignment);
-int            mono_type_native_stack_size     (MonoType        *type, 
-						int             *alignment);
 
 guint          mono_metadata_type_hash         (MonoType *t1);
 gboolean       mono_metadata_type_equal        (MonoType *t1, MonoType *t2);
@@ -384,10 +390,6 @@ void              mono_metadata_free_mh  (MonoMethodHeader *mh);
 guint32 
 mono_type_to_unmanaged (MonoType *type, MonoMarshalSpec *mspec, 
 			gboolean as_field, gboolean unicode, MonoMarshalConv *conv);
-
-gint32
-mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align, 
-			gboolean as_field, gboolean unicode);
 
 /*
  * Makes a token based on a table and an index

@@ -209,7 +209,7 @@ mono_find_method_by_name (MonoClass *klass, const char *name, int param_count)
 	int i;
 
 	for (i = 0; i < klass->method.count; ++i) {
-		if ((klass->methods [i]->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
+		if (/* (klass->methods [i]->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && */
 		    klass->methods [i]->name[0] == name [0] && 
 		    !strcmp (name, klass->methods [i]->name) &&
 		    klass->methods [i]->signature->param_count == param_count) {
@@ -396,6 +396,14 @@ mono_mb_emit_i2 (MonoMethodBuilder *mb, gint16 data)
 }
 
 void
+mono_mb_emit_ldstr (MonoMethodBuilder *mb, char *str)
+{
+        mono_mb_emit_byte (mb, CEE_LDSTR);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, str));
+}
+
+
+void
 mono_mb_emit_ldarg (MonoMethodBuilder *mb, guint argnum)
 {
 	if (argnum < 4) {
@@ -571,7 +579,7 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 
 		/* create a new array */
 		mono_mb_emit_byte (mb, CEE_LDLOC_1);
-		mono_mb_emit_icon (mb, mspec->num_elem);
+		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
 		mono_mb_emit_byte (mb, CEE_NEWARR);	
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eclass));
 		mono_mb_emit_byte (mb, CEE_STIND_I);
@@ -582,7 +590,7 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoArray, vector));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDLOC_0);
-		mono_mb_emit_icon (mb, mspec->num_elem * esize);
+		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem * esize);
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_CPBLK);			
 
@@ -755,7 +763,7 @@ emit_str_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
 		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoArray, vector));
 		mono_mb_emit_byte (mb, CEE_ADD);
-		mono_mb_emit_icon (mb, mspec->num_elem * esize);
+		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem * esize);
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_CPBLK);			
 		mono_mb_patch_addr_s (mb, pos, mb->pos - pos - 1);
@@ -2542,6 +2550,51 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		argnum = i + sig->hasthis;
 		tmp_locals [i] = 0;
 
+		if (spec->native == MONO_NATIVE_CUSTOM) {
+			MonoType *mtype;
+			MonoClass *mklass;
+			MonoMethod *marshal_managed_to_native;
+			MonoMethod *get_instance;
+
+			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, method->klass->image);
+			g_assert (mtype != NULL);
+			mklass = mono_class_from_mono_type (mtype);
+			g_assert (mklass != NULL);
+
+			marshal_managed_to_native = mono_find_method_by_name (mklass, "MarshalManagedToNative", 1);
+			g_assert (marshal_managed_to_native);
+			get_instance = mono_find_method_by_name (mklass, "GetInstance", 1);
+			g_assert (get_instance);
+			
+			switch (t->type) {
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_OBJECT:
+				if (t->byref)
+					break;
+
+				tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+
+				mono_mb_emit_ldstr (mb, spec->data.custom_data.cookie);
+
+				mono_mb_emit_byte (mb, CEE_CALL);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+				
+				mono_mb_emit_ldarg (mb, argnum);
+				
+				mono_mb_emit_byte (mb, CEE_CALLVIRT);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_managed_to_native));
+				
+				mono_mb_emit_stloc (mb, tmp_locals [i]);
+				break;
+			default:
+				g_warning ("custom marshalling of type %x is currently not supported", t->type);
+				g_assert_not_reached ();
+				break;
+			}
+			continue;
+		}
+		
+
 		switch (t->type) {
 		case MONO_TYPE_VALUETYPE:			
 			klass = t->data.klass;
@@ -3697,5 +3750,261 @@ ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src,
 	klass = mono_class_from_mono_type (type->type);
 
 	mono_struct_delete_old (klass, (char *)src);
+}
+
+MonoMarshalType *
+mono_marshal_load_type_info (MonoClass* klass)
+{
+	int i, j, count = 0, native_size = 0;
+	MonoMarshalType *info;
+	guint32 layout;
+
+	g_assert (klass != NULL);
+
+	if (klass->marshal_info)
+		return klass->marshal_info;
+
+	if (!klass->inited)
+		mono_class_init (klass);
+	
+	for (i = 0; i < klass->field.count; ++i) {
+		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		count++;
+	}
+
+	layout = klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
+
+	klass->marshal_info = info = g_malloc0 (sizeof (MonoMarshalType) + sizeof (MonoMarshalField) * count);
+	info->num_fields = count;
+	
+	/* Try to find a size for this type in metadata */
+	mono_metadata_packing_from_typedef (klass->image, klass->type_token, NULL, &native_size);
+
+	if (klass->parent) {
+		int parent_size = mono_class_native_size (klass->parent, NULL);
+
+		/* Add parent size to real size */
+		native_size += parent_size;
+		info->native_size = parent_size;
+	}
+ 
+	for (j = i = 0; i < klass->field.count; ++i) {
+		int size, align;
+		
+		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+
+		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL)
+			mono_metadata_field_info (klass->image, klass->field.first + i, 
+						  NULL, NULL, &info->fields [j].mspec);
+
+		info->fields [j].field = &klass->fields [i];
+
+		switch (layout) {
+		case TYPE_ATTRIBUTE_AUTO_LAYOUT:
+		case TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT:
+			size = mono_marshal_type_size (klass->fields [i].type, info->fields [j].mspec, 
+						       &align, TRUE, klass->unicode);
+			align = klass->packing_size ? MIN (klass->packing_size, align): align;	
+			info->fields [j].offset = info->native_size;
+			info->fields [j].offset += align - 1;
+			info->fields [j].offset &= ~(align - 1);
+			info->native_size = info->fields [j].offset + size;
+			break;
+		case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
+			/* FIXME: */
+			info->fields [j].offset = klass->fields [i].offset - sizeof (MonoObject);
+			info->native_size = klass->instance_size - sizeof (MonoObject);
+			break;
+		}	
+		j++;
+	}
+
+	if(layout != TYPE_ATTRIBUTE_AUTO_LAYOUT) {
+		info->native_size = MAX (native_size, info->native_size);
+	}
+
+	if (info->native_size & (klass->min_align - 1)) {
+		info->native_size += klass->min_align - 1;
+		info->native_size &= ~(klass->min_align - 1);
+	}
+
+	return klass->marshal_info;
+}
+
+/**
+ * mono_class_native_size:
+ * @klass: a class 
+ * 
+ * Returns: the native size of an object instance (when marshaled 
+ * to unmanaged code) 
+ */
+gint32
+mono_class_native_size (MonoClass *klass, guint32 *align)
+{
+	
+	if (!klass->marshal_info)
+		mono_marshal_load_type_info (klass);
+
+	if (align)
+		*align = klass->min_align;
+
+	return klass->marshal_info->native_size;
+}
+
+/*
+ * mono_type_native_stack_size:
+ * @t: the type to return the size it uses on the stack
+ *
+ * Returns: the number of bytes required to hold an instance of this
+ * type on the native stack
+ */
+int
+mono_type_native_stack_size (MonoType *t, gint *align)
+{
+	int tmp;
+
+	g_assert (t != NULL);
+
+	if (!align)
+		align = &tmp;
+
+	if (t->byref) {
+		*align = 4;
+		return 4;
+	}
+
+	switch (t->type){
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_TYPEDBYREF:
+		*align = 4;
+		return 4;
+	case MONO_TYPE_R4:
+		*align = 4;
+		return 4;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R8:
+		*align = 4;
+		return 8;
+	case MONO_TYPE_VALUETYPE: {
+		guint32 size;
+
+		if (t->data.klass->enumtype)
+			return mono_type_native_stack_size (t->data.klass->enum_basetype, align);
+		else {
+			size = mono_class_native_size (t->data.klass, align);
+			*align = *align + 3;
+			*align &= ~3;
+			
+			size +=  3;
+			size &= ~3;
+
+			return size;
+		}
+	}
+	default:
+		g_error ("type 0x%02x unknown", t->type);
+	}
+	return 0;
+}
+
+gint32
+mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align, 
+			gboolean as_field, gboolean unicode)
+{
+	MonoMarshalNative native_type = mono_type_to_unmanaged (type, mspec, as_field, unicode, NULL);
+	MonoClass *klass;
+
+	switch (native_type) {
+	case MONO_NATIVE_BOOLEAN:
+		*align = 4;
+		return 4;
+	case MONO_NATIVE_I1:
+	case MONO_NATIVE_U1:
+		*align = 1;
+		return 1;
+	case MONO_NATIVE_I2:
+	case MONO_NATIVE_U2:
+		*align = 2;
+		return 2;
+	case MONO_NATIVE_I4:
+	case MONO_NATIVE_U4:
+	case MONO_NATIVE_ERROR:
+		*align = 4;
+		return 4;
+	case MONO_NATIVE_I8:
+	case MONO_NATIVE_U8:
+		*align = 4;
+		return 8;
+	case MONO_NATIVE_R4:
+		*align = 4;
+		return 4;
+	case MONO_NATIVE_R8:
+		*align = 4;
+		return 8;
+	case MONO_NATIVE_INT:
+	case MONO_NATIVE_UINT:
+	case MONO_NATIVE_LPSTR:
+	case MONO_NATIVE_LPWSTR:
+	case MONO_NATIVE_LPTSTR:
+	case MONO_NATIVE_BSTR:
+	case MONO_NATIVE_ANSIBSTR:
+	case MONO_NATIVE_TBSTR:
+	case MONO_NATIVE_LPARRAY:
+	case MONO_NATIVE_SAFEARRAY:
+	case MONO_NATIVE_IUNKNOWN:
+	case MONO_NATIVE_IDISPATCH:
+	case MONO_NATIVE_INTERFACE:
+	case MONO_NATIVE_ASANY:
+	case MONO_NATIVE_VARIANTBOOL:
+	case MONO_NATIVE_FUNC:
+	case MONO_NATIVE_LPSTRUCT:
+		*align =  4;
+		return sizeof (gpointer);
+	case MONO_NATIVE_STRUCT: 
+		klass = mono_class_from_mono_type (type);
+		return mono_class_native_size (klass, align);
+	case MONO_NATIVE_BYVALTSTR: {
+		int esize = unicode ? 2: 1;
+		g_assert (mspec);
+		*align = esize;
+		return mspec->data.array_data.num_elem * esize;
+	}
+	case MONO_NATIVE_BYVALARRAY: {
+		int esize;
+		klass = mono_class_from_mono_type (type);
+		esize = mono_class_native_size (klass->element_class, align);
+		g_assert (mspec);
+		return mspec->data.array_data.num_elem * esize;
+	}
+	case MONO_NATIVE_CUSTOM:
+		g_assert_not_reached ();
+		break;
+	case MONO_NATIVE_CURRENCY:
+	case MONO_NATIVE_VBBYREFSTR:
+	default:
+		g_error ("native type %02x not implemented", native_type); 
+		break;
+	}
+	g_assert_not_reached ();
+	return 0;
 }
 
