@@ -9,7 +9,8 @@ CORCOMPARE=../../../mcs/tools/corcompare
 
 OBJECTS=									\
 	deploy/ado-net.html							\
-	deploy/provider-factory.html							\
+	deploy/bugs.html							\
+	deploy/provider-factory.html						\
 	deploy/mysql.html							\
 	deploy/odbc.html							\
 	deploy/oledb.html							\
@@ -128,7 +129,7 @@ transform.exe: transform.cs
 
 
 .PRECIOUS: src/%.src
-src/%.src: ../% commands template.html.in #makefile
+src/%.src: ../% commands template.html.in makefile
 	perl htmlify $< > $@
 
 .PRECIOUS: ../class-status-%

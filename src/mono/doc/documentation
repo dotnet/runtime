@@ -203,7 +203,7 @@
 </pre>
         
         	Use this to create lists.  Lists contains &lt;item&gt;
-        	elements
+        	elements which have to contain &lt;term&gt; containers.
         
 <pre>
 &lt;list type="table"&gt; &lt;/lits&gt;

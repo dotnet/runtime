@@ -142,9 +142,6 @@
   </tr>
 </table>
 
-@item Sep 3rd, 2003: Authenticode; WSE
-
-	
 @item Sep 1st, 2003: Ice for Mono;  XmlSerializer generators; Monodoc progress.
 
 	<b>Ice:</b> Vladimir has checked into CVS (Module ginzu) an
