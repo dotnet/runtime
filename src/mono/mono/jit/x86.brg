@@ -3061,49 +3061,7 @@ reg: CONV_U4 (lreg) {
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 } 
 
-
-reg: CONV_OVF_I4 (lreg){
-	guint8 *start = s->code;
-	guchar* o1, *o2, *o3, *o4, *o5;
-	int i;
-
-	/* 
-	 * Valid ints: 0xffffffff:8000000 to 00000000:0x7f000000
-	 */
-	for (i = 0; i < 2; i++) {
-		s->code = start;
-
-		x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
-
-		/* If the low word top bit is set, see if we are negative */
-		x86_branch8 (s->code, X86_CC_LT, o3 - o1, TRUE);
-		o1 = s->code;
-
-		/* We are not negative (no top bit set, check for our top word to be zero */
-		x86_test_reg_reg (s->code, tree->left->reg2, tree->left->reg2);
-		x86_branch8 (s->code, X86_CC_EQ, o4 - o2, TRUE);
-		o2 = s->code;
-
-		/* throw exception */
-		x86_push_imm (s->code, "OverflowException");
-		mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, 
-				    arch_get_throw_exception_by_name ());
-		x86_call_code (s->code, 0);
-	
-		o3 = s->code;
-		/* our top bit is set, check that top word is 0xfffffff */
-		x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg2, 0xffffffff);
-		
-		o4 = s->code;
-		/* nope, emit exception */
-		x86_branch8 (s->code, X86_CC_NE, o2 - o5, TRUE);
-		o5 = s->code;
-
-		if (tree->reg1 != tree->left->reg1)
-			x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
-	}
-}
-reg: CONV_OVF_I4 (lreg){
+reg: CONV_OVF_I4 (lreg) {
 	guint8 *br [3], *label [1];
 
 	/* 
@@ -3113,7 +3071,6 @@ reg: CONV_OVF_I4 (lreg){
 
 	/* If the low word top bit is set, see if we are negative */
 	br [0] = s->code; x86_branch8 (s->code, X86_CC_LT, 0, TRUE);
-
 	/* We are not negative (no top bit set, check for our top word to be zero */
 	x86_test_reg_reg (s->code, tree->left->reg2, tree->left->reg2);
 	br [1] = s->code; x86_branch8 (s->code, X86_CC_EQ, 0, TRUE);
