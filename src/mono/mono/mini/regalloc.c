@@ -34,6 +34,7 @@ mono_regstate_reset (MonoRegState *rs) {
 void
 mono_regstate_assign (MonoRegState *rs) {
 	int i;
+	rs->max_ireg = -1;
 	g_free (rs->iassign);
 	rs->iassign = g_malloc (MAX (MONO_MAX_IREGS, rs->next_vireg) * sizeof (int));
 	for (i = 0; i < MONO_MAX_IREGS; ++i) {
@@ -61,6 +62,7 @@ mono_regstate_alloc_int (MonoRegState *rs, regmask_t allow)
 	for (i = 0; i < MONO_MAX_IREGS; ++i) {
 		if (mask & (1 << i)) {
 			rs->ifree_mask &= ~ (1 << i);
+			rs->max_ireg = MAX (rs->max_ireg, i);
 			return i;
 		}
 	}

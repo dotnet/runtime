@@ -38,6 +38,7 @@ typedef struct {
 	int isymbolic [MONO_MAX_IREGS];
 	int fsymbolic [MONO_MAX_FREGS];
 
+	int max_ireg;
 	int ispills;
 } MonoRegState;
 

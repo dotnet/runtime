@@ -161,7 +161,7 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:
-		return FALSE;
+		return TRUE;
 	case MONO_TYPE_VALUETYPE:
 		if (t->data.klass->enumtype)
 			return is_regsize_var (t->data.klass->enum_basetype);
@@ -2004,6 +2004,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		//DEBUG (print_ins (i, ins));
 		tmp = tmp->next;
 	}
+	cfg->max_ireg = MAX (cfg->max_ireg, rs->max_ireg);
 }
 
 static guchar*
@@ -3336,7 +3337,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		ppc_mflr (code, ppc_r0);
 		ppc_stw (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
 	}
-	cfg->used_int_regs |= USE_EXTRA_TEMPS;
+	if (cfg->max_ireg >= 29)
+		cfg->used_int_regs |= USE_EXTRA_TEMPS;
 
 	alloc_size = cfg->stack_offset;
 	pos = 0;

@@ -496,6 +496,7 @@ typedef struct {
 	guint            num_varinfo; /* used items in varinfo */
 	guint            varinfo_count; /* total storage in varinfo */
 	gint             stack_offset;
+	gint             max_ireg;
 	MonoRegState    *rs;
 	MonoSpillInfo   *spill_info; /* machine register spills */
 	MonoSpillInfo   *spill_info_float; /* fp register spills */
