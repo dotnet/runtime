@@ -878,6 +878,7 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicAssembly
 			values [MONO_IMPLMAP_SCOPE] = table->rows;
 		}
 	}
+
 	if (mb->override_method) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)mb->type;
 		guint32 tok;
@@ -1841,10 +1842,6 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 	if (tb->subtypes) {
 		MonoDynamicTable *ntable;
 		
-		table = &assembly->tables [MONO_TABLE_TYPEDEF];
-		table->rows += mono_array_length (tb->subtypes);
-		alloc_table (table, table->rows);
-
 		ntable = &assembly->tables [MONO_TABLE_NESTEDCLASS];
 		ntable->rows += mono_array_length (tb->subtypes);
 		alloc_table (ntable, ntable->rows);
@@ -1862,26 +1859,36 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 			values += MONO_NESTED_CLASS_SIZE;
 			ntable->next_idx++;
 		}
-		for (i = 0; i < mono_array_length (tb->subtypes); ++i) {
-			MonoReflectionTypeBuilder *subtype = mono_array_get (tb->subtypes, MonoReflectionTypeBuilder*, i);
-
-			mono_image_get_type_info (domain, subtype, assembly);
-		}
 	}
 }
 
 static void
-assign_type_idx (MonoReflectionTypeBuilder *type, MonoDynamicTable *table)
+collect_types (GPtrArray *types, MonoReflectionTypeBuilder *type)
 {
-	int j;
+	int i;
 
-	type->table_idx = table->next_idx ++;
+	g_ptr_array_add (types, type);
+
 	if (!type->subtypes)
 		return;
-	for (j = 0; j < mono_array_length (type->subtypes); ++j) {
-		MonoReflectionTypeBuilder *subtype = mono_array_get (type->subtypes, MonoReflectionTypeBuilder*, j);
-		assign_type_idx (subtype, table);
+
+	for (i = 0; i < mono_array_length (type->subtypes); ++i) {
+		MonoReflectionTypeBuilder *subtype = mono_array_get (type->subtypes, MonoReflectionTypeBuilder*, i);
+		collect_types (types, subtype);
 	}
+}
+
+static gint
+compare_types_by_table_idx (MonoReflectionTypeBuilder **type1, 
+							MonoReflectionTypeBuilder **type2)
+{
+	if ((*type1)->table_idx < (*type2)->table_idx)
+		return -1;
+	else
+		if ((*type1)->table_idx > (*type2)->table_idx)
+			return 1;
+	else
+		return 0;
 }
 
 static void
@@ -1981,27 +1988,6 @@ mono_image_fill_module_table (MonoDomain *domain, MonoReflectionModuleBuilder *m
 	table->values [mb->table_idx * MONO_MODULE_SIZE + MONO_MODULE_MVID] = i;
 	table->values [mb->table_idx * MONO_MODULE_SIZE + MONO_MODULE_ENC] = 0;
 	table->values [mb->table_idx * MONO_MODULE_SIZE + MONO_MODULE_ENCBASE] = 0;
-
-	/* no types in the module */
-	if (!mb->types)
-		return;
-	
-	/*
-	 * fill-in info in other tables as well.
-	 */
-	table = &assembly->tables [MONO_TABLE_TYPEDEF];
-	table->rows += mono_array_length (mb->types);
-	alloc_table (table, table->rows);
-	/*
-	 * We assign here the typedef indexes to avoid mismatches if a type that
-	 * has not yet been stored in the tables is referenced by another type.
-	 */
-	for (i = 0; i < mono_array_length (mb->types); ++i) {
-		MonoReflectionTypeBuilder *type = mono_array_get (mb->types, MonoReflectionTypeBuilder*, i);
-		assign_type_idx (type, table);
-	}
-	for (i = 0; i < mono_array_length (mb->types); ++i)
-		mono_image_get_type_info (domain, mono_array_get (mb->types, MonoReflectionTypeBuilder*, i), assembly);
 }
 
 #define align_pointer(base,p)\
@@ -2503,6 +2489,34 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 		alloc_table (table, table->rows);
 		table->values [table->next_idx * MONO_MODULE_SIZE + MONO_MODULE_NAME] = string_heap_insert (&assembly->sheap, "RefEmit_YouForgotToDefineAModule");
 		table->next_idx ++;
+	}
+
+	/* Emit types */
+	if (assemblyb->modules) {
+		/* Collect all types into a list sorted by their table_idx */
+		GPtrArray *types = g_ptr_array_new ();
+
+		len = mono_array_length (assemblyb->modules);
+		for (i = 0; i < len; ++i) {
+			MonoReflectionModuleBuilder *mb =
+				mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i);
+			if (mb->types)
+				for (i = 0; i < mono_array_length (mb->types); ++i) {
+					MonoReflectionTypeBuilder *type = mono_array_get (mb->types, MonoReflectionTypeBuilder*, i);
+					collect_types (types, type);
+				}
+		}
+
+		g_ptr_array_sort (types, (GCompareFunc)compare_types_by_table_idx);
+		table = &assembly->tables [MONO_TABLE_TYPEDEF];
+		table->rows += types->len;
+		alloc_table (table, table->rows);
+		
+		for (i = 0; i < types->len; ++i) {
+			MonoReflectionTypeBuilder *type = g_ptr_array_index (types, i);
+			mono_image_get_type_info (domain, type, assembly);
+		}
+		g_ptr_array_free (types, FALSE);
 	}
 
 	/* 
