@@ -155,6 +155,7 @@ usage (char *name)
 		 "                         namespace.name:method   compile the given method\n"
 		 "                         @imagename              compile the given image\n"
 		 "    --ncompile NUM     compile methods NUM times (default: 1000)\n"
+		 "    --noboundcheck     Disables bound checks\n"
 		 "\n"
 		 "Development:\n"
 		 "    --debug[=FORMAT]   write a debugging file.  FORMAT is one of:\n"
