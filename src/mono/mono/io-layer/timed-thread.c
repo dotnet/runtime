@@ -187,10 +187,10 @@ int _wapi_timed_thread_attach(TimedThread **threadp,
 	thr_ret = pthread_cond_init(&thread->exit_cond, NULL);
 	g_assert (thr_ret == 0);
 	
-	thr_ret = sem_init (&thread->suspend_sem, 0, 0);
+	thr_ret = MONO_SEM_INIT (&thread->suspend_sem, 0);
 	g_assert (thr_ret != -1);
 	
-	thr_ret = sem_init (&thread->suspended_sem, 0, 0);
+	thr_ret = MONO_SEM_INIT (&thread->suspended_sem, 0);
 	g_assert (thr_ret != -1);
 	
 	thread->exit_routine = exit_routine;
