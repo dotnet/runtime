@@ -3375,6 +3375,7 @@ main (int argc, char *argv [])
 	mono_install_runtime_object_init (runtime_object_init);
 	mono_install_runtime_exec_main (jit_exec_main);
 	mono_install_handler (arch_get_throw_exception ());
+	mono_install_runtime_invoke (arch_runtime_invoke);
 
 	domain = mono_init (file);
 	mono_thread_init (domain);

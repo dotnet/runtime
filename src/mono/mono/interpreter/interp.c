@@ -820,7 +820,7 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
 	MonoMethodSignature *sig = method->signature;
 	int i, type;
 	void *ret;
-	stackval *args = g_new0 (stackval, sig->param_count);
+	stackval *args = alloca (sizeof (stackval) * sig->param_count);
 
 	/* FIXME: Set frame for execption handling.  */
 
@@ -831,7 +831,7 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
 	} else {
 		MonoClass *klass = mono_class_from_mono_type (sig->ret);
 		if (klass->valuetype) {
-			retval = mono_object_new (mono_domain_get (), mono_class_from_mono_type (sig->ret));
+			retval = mono_object_new (mono_domain_get (), klass);
 			ret = ((char*)retval) + sizeof (MonoObject);
 		} else {
 			ret = &retval;
@@ -839,6 +839,7 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
 	}
 	for (i = 0; i < sig->param_count; ++i) {
 		if (sig->params [i]->byref) {
+			args [i].type = VAL_POINTER;
 			args [i].data.p = params [i];
 			continue;
 		}
@@ -899,7 +900,6 @@ handle_enum:
 
 	INIT_FRAME(&frame,NULL,obj,args,ret,method);
 	ves_exec_method (&frame);
-	g_free (args);
 	return retval;
 }
 

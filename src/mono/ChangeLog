@@ -1,3 +1,9 @@
+2002-02-27  Dietmar Maurer  <dietmar@ximian.com>
+
+	* mono/tests/fib.cs: it is now possible to pass a repeat count as
+	command line argument, for example fib.exe 20 runs the test 20
+	times. 
+
 2002-02-25  Sergey Chaban  <serge@wildwestsoftware.com>
 	* configure.in: added support for ARM target arch.
 	Uncommented and modified arm-*-linux* target,

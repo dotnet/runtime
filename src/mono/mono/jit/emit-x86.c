@@ -1446,6 +1446,222 @@ arch_get_throw_exception_by_name ()
 	return start;
 }	
 
+/*
+ * this returns a helper method to invoke a method with a user supplied
+ * stack frame. The returned method has the following signature:
+ * invoke_method_with_frame ((gpointer code, gpointer frame, int frame_size);
+ */
+static gpointer
+get_invoke_method_with_frame ()
+{
+	static guint8 *start;
+	guint8 *code;
+
+	if (start)
+		return start;
+
+	start = code = malloc (64);
+
+	/* Prolog */
+	x86_push_reg (code, X86_EBP);
+	x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
+	x86_push_reg (code, X86_EBX);
+	x86_push_reg (code, X86_EDI);
+	x86_push_reg (code, X86_ESI);
+
+	x86_mov_reg_membase (code, X86_EAX, X86_EBP, 16, 4);
+	x86_alu_reg_reg (code, X86_SUB, X86_ESP, X86_EAX);
+
+	x86_push_membase (code, X86_EBP, 16);
+	x86_push_membase (code, X86_EBP, 12);
+	x86_lea_membase (code, X86_EAX, X86_ESP, 2*4);
+	x86_push_reg (code, X86_EAX);
+	x86_call_code (code, memcpy);
+	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 12);
+
+	x86_mov_reg_membase (code, X86_EAX, X86_EBP, 8, 4);
+	x86_call_reg (code, X86_EAX);
+
+	x86_mov_reg_membase (code, X86_ECX, X86_EBP, 16, 4);
+	x86_alu_reg_reg (code, X86_ADD, X86_ESP, X86_ECX);
+
+	/* Epilog */
+	x86_pop_reg (code, X86_ESI);
+	x86_pop_reg (code, X86_EDI);
+	x86_pop_reg (code, X86_EBX);
+	x86_leave (code);
+	x86_ret (code);
+	
+	g_assert ((code - start) < 64);
+
+	return start;
+}
+
+/**
+ * arch_runtime_invoke:
+ * @method: the method to invoke
+ * @obj: this pointer
+ * @params: array of parameter values.
+ *
+ * TODO: very ugly piece of code. we should replace that with a method-specific 
+ * trampoline (as suggested by Paolo).
+ */
+MonoObject*
+arch_runtime_invoke (MonoMethod *method, void *obj, void **params)
+{
+	static guint64 (*invoke_int64) (gpointer code, gpointer frame, int frame_size) = NULL;
+	static double (*invoke_double) (gpointer code, gpointer frame, int frame_size) = NULL;
+	MonoObject *retval;
+	MonoMethodSignature *sig = method->signature;
+	int i, tmp, type, sp = 0;
+	void *ret;
+	int frame_size = 0;
+	gpointer *frame;
+	gpointer code;
+
+	/* allocate ret object. */
+	if (sig->ret->type == MONO_TYPE_VOID) {
+		retval = NULL;
+		ret = NULL;
+	} else {
+		MonoClass *klass = mono_class_from_mono_type (sig->ret);
+		if (klass->valuetype) {
+			retval = mono_object_new (mono_domain_get (), klass);
+			ret = ((char*)retval) + sizeof (MonoObject);
+		} else {
+			ret = &retval;
+		}
+	}
+   
+	if (ISSTRUCT (sig->ret))
+		frame_size += sizeof (gpointer);
+	
+	if (sig->hasthis) 
+		frame_size += sizeof (gpointer);
+
+	for (i = 0; i < sig->param_count; ++i) {
+		int align;
+		frame_size += mono_type_stack_size (sig->params [i], &align);
+	}
+
+	frame = alloca (frame_size);
+
+	if (ISSTRUCT (sig->ret))
+		frame [sp++] = ret;
+
+	if (sig->hasthis) 
+		frame [sp++] = obj;
+		
+
+	for (i = 0; i < sig->param_count; ++i) {
+		if (sig->params [i]->byref) {
+			frame [sp++] = params [i];
+			continue;
+		}
+		type = sig->params [i]->type;
+handle_enum:
+		switch (type) {
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_BOOLEAN:
+			tmp = *(MonoBoolean*)params [i];
+			frame [sp++] = (gpointer)tmp;			
+			break;
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_CHAR:
+			tmp = *(gint16*)params [i];
+			frame [sp++] = (gpointer)tmp;			
+			break;
+#if SIZEOF_VOID_P == 4
+		case MONO_TYPE_U:
+		case MONO_TYPE_I:
+#endif
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I4:
+			frame [sp++] = (gpointer)*(gint32*)params [i];
+			break;
+#if SIZEOF_VOID_P == 8
+		case MONO_TYPE_U:
+		case MONO_TYPE_I:
+#endif
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I8:
+			frame [sp++] = (gpointer)*(gint32*)params [i];
+			frame [sp++] = (gpointer)*(((gint32*)params [i]) + 1);
+			break;
+		case MONO_TYPE_VALUETYPE:
+			if (sig->params [i]->data.klass->enumtype) {
+				type = sig->params [i]->data.klass->enum_basetype->type;
+				goto handle_enum;
+			} else {
+				g_warning ("generic valutype %s not handled in runtime invoke", sig->params [i]->data.klass->name);
+			}
+			break;
+		case MONO_TYPE_STRING:
+			frame [sp++] = params [i];
+			break;
+		default:
+			g_error ("type 0x%x not handled in invoke", sig->params [i]->type);
+		}
+	}
+
+	if (method->addr)
+		code = method->addr;
+	else
+		code = arch_compile_method (method);
+
+	if (!invoke_int64)
+		invoke_int64 = (gpointer)invoke_double = get_invoke_method_with_frame ();
+
+	type = sig->ret->type;
+handle_enum_2:
+	switch (type) {
+	case MONO_TYPE_VOID:
+		invoke_int64 (code, frame, frame_size);		
+		break;
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_CHAR:
+#if SIZEOF_VOID_P == 4
+	case MONO_TYPE_U:
+	case MONO_TYPE_I:
+#endif
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_STRING:
+		*((guint32 *)ret) = invoke_int64 (code, frame, frame_size);		
+		break;
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_U:
+	case MONO_TYPE_I:
+#endif
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I8:
+		*((guint64 *)ret) = invoke_int64 (code, frame, frame_size);		
+		break;
+	case MONO_TYPE_R4:
+		*((float *)ret) = invoke_double (code, frame, frame_size);		
+		break;
+	case MONO_TYPE_R8:
+		*((double *)ret) = invoke_double (code, frame, frame_size);		
+		break;
+	case MONO_TYPE_VALUETYPE:
+		if (sig->params [i]->data.klass->enumtype) {
+			type = sig->params [i]->data.klass->enum_basetype->type;
+			goto handle_enum_2;
+		} else 
+			invoke_int64 (code, frame, frame_size);		
+		break;
+	default:
+		g_error ("type 0x%x not handled in invoke", sig->params [i]->type);
+	}
+
+	return retval;
+}
 
 
 
