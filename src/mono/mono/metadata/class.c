@@ -190,7 +190,7 @@ mono_class_metadata_init (MonoClass *class)
 		return;
 	}
 
-	printf ("METAINIT %s.%s\n", class->name_space, class->name);
+	//printf ("METAINIT %s.%s\n", class->name_space, class->name);
 
 	/* compute maximum number of slots and maximum interface id */
 	max_iid = 0;
@@ -371,14 +371,14 @@ mono_class_metadata_init (MonoClass *class)
 		MonoMethod *cm;
 	       
 		cm = vtable [i];
-		if (cm)
-			printf ("  METH%d %p %s %d\n", i, cm, cm->name, cm->slot);
+		//if (cm)
+		//printf ("  METH%d %p %s %d\n", i, cm, cm->name, cm->slot);
 
 	}
 
 	class->data = g_malloc0 (class->class_size);
 
-	printf ("METAEND %s.%s\n", class->name_space, class->name);
+	//printf ("METAEND %s.%s\n", class->name_space, class->name);
 }
 
 /**
