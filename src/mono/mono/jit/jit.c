@@ -91,7 +91,6 @@ case CEE_##cname: {                                                           \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
 	t1 = mono_ctree_new (mp, MB_TERM_##cname, sp [0], sp [1]);            \
-        g_assert (sp [0]->svt == sp [1]->svt);                                \
 	PUSH_TREE (t1, VAL_I32);                                              \
 	break;                                                                \
 }
@@ -101,7 +100,6 @@ case CEE_##name: {                                                            \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
 	t1 = mono_ctree_new (mp, MB_TERM_##name, sp [0], sp [1]);             \
-        g_assert (sp [0]->svt == sp [1]->svt);                                \
         t1->svt = sp [0]->svt;                                                \
         t1 = mono_store_tree (cfg, -1, t1, &t2);                              \
         g_assert (t1);                                                        \
