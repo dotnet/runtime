@@ -60,9 +60,11 @@ extern guint8 mono_burg_arity [];
 static MonoMethodSignature *helper_sig_long_long_long = NULL;
 static MonoMethodSignature *helper_sig_long_long_int = NULL;
 static MonoMethodSignature *helper_sig_newarr = NULL;
+static MonoMethodSignature *helper_sig_newarr_specific = NULL;
 static MonoMethodSignature *helper_sig_ldstr = NULL;
 static MonoMethodSignature *helper_sig_domain_get = NULL;
 static MonoMethodSignature *helper_sig_object_new = NULL;
+static MonoMethodSignature *helper_sig_object_new_specific = NULL;
 static MonoMethodSignature *helper_sig_compile = NULL;
 static MonoMethodSignature *helper_sig_compile_virt = NULL;
 static MonoMethodSignature *helper_sig_obj_ptr = NULL;
@@ -2016,7 +2018,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	MonoMethodHeader *cheader;
 	MonoBasicBlock *ebblock, *sbblock;
 	int i, costs, new_locals_offset;
-				
+
 	if (cfg->verbose_level > 2)
 		g_print ("INLINE START %p %s\n", cmethod,  mono_method_full_name (cmethod, TRUE));
 
@@ -3154,10 +3156,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					temp = iargs [0]->inst_c0;
 					NEW_TEMPLOADA (cfg, *sp, temp);
 				} else {
-					NEW_DOMAINCONST (cfg, iargs [0]);
-					NEW_CLASSCONST (cfg, iargs [1], cmethod->klass);
+					if ((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot) {
+						NEW_DOMAINCONST (cfg, iargs [0]);
+						NEW_CLASSCONST (cfg, iargs [1], cmethod->klass);
 
-					temp = mono_emit_jit_icall (cfg, bblock, mono_object_new, iargs, ip);
+						temp = mono_emit_jit_icall (cfg, bblock, mono_object_new, iargs, ip);
+					} else {
+						MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
+						NEW_PCONST (cfg, iargs [0], vtable);
+						temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_specific, iargs, ip);
+					}
 					NEW_TEMPLOAD (cfg, *sp, temp);
 				}
 
@@ -4464,11 +4472,24 @@ create_helper_signature (void)
 	helper_sig_newarr->params [2] = &mono_defaults.int32_class->byval_arg;
 	helper_sig_newarr->pinvoke = 1;
 
+	/* MonoArray * mono_array_new_specific (MonoVTable *vtable, guint32 len) */
+	helper_sig_newarr_specific = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+	helper_sig_newarr_specific->params [0] = &mono_defaults.int_class->byval_arg;
+	helper_sig_newarr_specific->params [1] = &mono_defaults.int32_class->byval_arg;
+	helper_sig_newarr_specific->ret = &mono_defaults.object_class->byval_arg;
+	helper_sig_newarr_specific->pinvoke = 1;
+
 	/* MonoObject * mono_object_new (MonoDomain *domain, MonoClass *klass) */
 	helper_sig_object_new = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
 	helper_sig_object_new->params [0] = helper_sig_object_new->params [1] = &mono_defaults.int_class->byval_arg;
 	helper_sig_object_new->ret = &mono_defaults.object_class->byval_arg;
 	helper_sig_object_new->pinvoke = 1;
+
+	/* MonoObject * mono_object_new_specific (MonoVTable *vtable) */
+	helper_sig_object_new_specific = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
+	helper_sig_object_new_specific->params [0] = &mono_defaults.int_class->byval_arg;
+	helper_sig_object_new_specific->ret = &mono_defaults.object_class->byval_arg;
+	helper_sig_object_new_specific->pinvoke = 1;
 
 	/* void* mono_method_compile (MonoMethod*) */
 	helper_sig_compile = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
@@ -4718,22 +4739,39 @@ static void
 decompose_foreach (MonoInst *tree, gpointer data) 
 {
 	static MonoJitICallInfo *newarr_info = NULL;
+	static MonoJitICallInfo *newarr_specific_info = NULL;
+	MonoJitICallInfo *info;
 
 	switch (tree->opcode) {
 	case CEE_NEWARR: {
 		MonoCompile *cfg = data;
 		MonoInst *iargs [3];
 
-		NEW_DOMAINCONST (cfg, iargs [0]);
-		NEW_CLASSCONST (cfg, iargs [1], tree->inst_newa_class);
-		iargs [2] = tree->inst_newa_len;
-
 		if (!newarr_info) {
-			newarr_info =  mono_find_jit_icall_by_addr (mono_array_new);
+			newarr_info = mono_find_jit_icall_by_addr (mono_array_new);
 			g_assert (newarr_info);
+			newarr_specific_info = mono_find_jit_icall_by_addr (mono_array_new_specific);
+			g_assert (newarr_specific_info);
 		}
 
-		mono_emulate_opcode (cfg, tree, iargs, newarr_info);
+		if ((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot) {
+			NEW_DOMAINCONST (cfg, iargs [0]);
+			NEW_CLASSCONST (cfg, iargs [1], tree->inst_newa_class);
+			iargs [2] = tree->inst_newa_len;
+
+			info = newarr_info;
+		}
+		else {
+			MonoVTable *vtable = mono_class_vtable (cfg->domain, 
+													mono_array_class_get (&tree->inst_newa_class->byval_arg, 1));
+
+			NEW_PCONST (cfg, iargs [0], vtable);
+			iargs [1] = tree->inst_newa_len;
+
+			info = newarr_specific_info;
+		}
+
+		mono_emulate_opcode (cfg, tree, iargs, info);
 		break;
 	}
 
@@ -5757,7 +5795,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 		cfg->comp_done &= ~MONO_COMP_LIVENESS;
 		if (!(cfg->comp_done & MONO_COMP_LIVENESS))
 			mono_analyze_liveness (cfg);
-		
+
 		if ((vars = mono_arch_get_allocatable_int_vars (cfg))) {
 			regs = mono_arch_get_global_int_regs (cfg);
 			mono_linear_scan (cfg, vars, regs, &cfg->used_int_regs);
@@ -6173,7 +6211,9 @@ mini_init (const char *filename)
 	mono_register_jit_icall (helper_initobj, "helper_initobj", helper_sig_initobj, FALSE);
 	mono_register_jit_icall (helper_stelem_ref, "helper_stelem_ref", helper_sig_stelem_ref, FALSE);
 	mono_register_jit_icall (mono_object_new, "mono_object_new", helper_sig_object_new, FALSE);
+	mono_register_jit_icall (mono_object_new_specific, "mono_object_new_specific", helper_sig_object_new_specific, FALSE);
 	mono_register_jit_icall (mono_array_new, "mono_array_new", helper_sig_newarr, FALSE);
+	mono_register_jit_icall (mono_array_new_specific, "mono_array_new_specific", helper_sig_newarr_specific, FALSE);
 	mono_register_jit_icall (mono_string_to_utf16, "mono_string_to_utf16", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_string_from_utf16, "mono_string_from_utf16", helper_sig_obj_ptr, FALSE);
 	mono_register_jit_icall (mono_string_new_wrapper, "mono_string_new_wrapper", helper_sig_obj_ptr, FALSE);
