@@ -323,23 +323,29 @@ debug_load_method_lines (AssemblyDebugInfo* info)
 			need_update = TRUE;
 
 		if (need_update) {
+#ifndef PLATFORM_WIN32
 			struct sigaction act, oldact;
 			sigset_t old_set;
+#endif
 			int ret;
 
+#ifndef PLATFORM_WIN32
 			act.sa_handler = SIG_IGN;
 			act.sa_flags = SA_NOCLDSTOP | SA_RESTART;
 			sigemptyset (&act.sa_mask);
 			sigaddset (&act.sa_mask, SIGCHLD);
 			sigprocmask (SIG_BLOCK, &act.sa_mask, &old_set);
 			sigaction (SIGCHLD, &act, &oldact);
+#endif
 			
 			g_print ("Recreating %s from %s.\n", info->ilfile, info->image->name);
 
 			ret = system (command);
 
+#ifndef PLATFORM_WIN32
 			sigaction (SIGCHLD, &oldact, NULL);
 			sigprocmask (SIG_SETMASK, &old_set, NULL);
+#endif
 
 			if (ret) {
 				g_warning ("cannot create IL assembly file (%s): %s",
