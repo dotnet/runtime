@@ -706,7 +706,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT))
 			continue;
 
-		
+		/* later do this only on demand if needed */
 		if (!field->data) {
 			cindex = mono_metadata_get_constant_index (class->image, mono_class_get_field_token (field), cindex + 1);
 			g_assert (cindex);
@@ -717,8 +717,6 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 			field->data = (gpointer)mono_metadata_blob_heap (class->image, constant_cols [MONO_CONSTANT_VALUE]);
 		}
 		
-		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL))
-			get_default_field_value (domain, field, (char*)vt->data + field->offset);
 	}
 
 	vt->max_interface_id = class->max_interface_id;
