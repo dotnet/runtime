@@ -69,6 +69,9 @@ Q: What does Mono stand for?
 
 A: Mono is the word for `Monkey' in Spanish. We like monkeys.
 
+   It only means a number of other things: monochromatic (hence the
+   gray theme used in the Web site).
+
 Q: When will you ship it?
 
 A: We do not know when the code will be shipped.  The more
@@ -236,6 +239,16 @@ A: No.  That just means that applications might use that API to
    We do not know at this time whether the Passport protocol is
    documented and whether we will be able to talk to
    passport.com 
+
+Q: But that must mean that you are tied to Passport!
+
+A: All the contrary.  The implementation could keep the interface (for
+   the sake of simplicity, lets say it implements the method `Login'
+   and `GetUserName').
+
+   We could implement `Login' and `GetUserName' by talking to XNS or
+   any other decentralized systems.  Or any other system that the
+   industry standarizes on.
 
 Q: What is your opinion?
 
@@ -485,6 +498,12 @@ A: Initial contact between David Stutz and Miguel de Icaza happened.
    We were initially contacted by Sam Ruby at the ECMA TG3 committee
    to discuss the same issue.  And we are glad to have good contacts
    to ask questions about the specs. 
+
+Q: Is Microsoft paying Ximian to do this?
+
+A: No, we are doing this for purely selfish reasons.  We are upgrading
+   our development platform to build better applications on Unix and other
+   systems.
 
 Q: Do you fear that Microsoft will change the spec and render Mono useless?
 

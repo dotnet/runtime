@@ -68,13 +68,13 @@
 	To do this, you have to "add" any new files that you created:
 
 <pre>
-	cvs add new-file.c
+	cvs add new-file.cs
 </pre>
 
 	And then commit your changes to the repository:
 
 <pre>
-	cvs commit .
+	cvs commit file-1.cs file-2.cs
 </pre>
 
 ** The Mailing List
