@@ -2684,6 +2684,7 @@ array_constructed:
 			BREAK;
 		}
 		CASE (CEE_CONV_R_UN)
+			++ip;
 			switch (sp [-1].type) {
 			case VAL_DOUBLE:
 				break;
