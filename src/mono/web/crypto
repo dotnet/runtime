@@ -374,11 +374,7 @@
 		  algorithm ;-).
 
 		* Write some documentation on the cryptographic classes for 
-		  <b>monodoc</b> as I'm not a very good writer (at least in English).
+		  <b>monodoc</b>.
 	</ul>
-
-	Contact <a href="mailto:spouliot@videotron.ca">Sebastien Pouliot</a> if
-	you need additional informations about the status of the cryptographic 
-	classes.
 <hr>
-Last reviewed: January 26, 2004 (post mono 0.29)
+Last reviewed: February 2, 2004 (mono 0.30)
