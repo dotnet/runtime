@@ -99,7 +99,6 @@ enum {
 #else
 #define GET_NATI(sp) (sp).data.i
 #endif
-#define CSIZE(x) (sizeof (x) / 4)
 
 #define INIT_FRAME(frame,parent_frame,obj_this,method_args,method_retval,mono_method)	\
 	do {	\
