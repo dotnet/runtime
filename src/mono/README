@@ -59,9 +59,11 @@ This is Mono.
 
 		tar xzf mcs-XXXX.tar.gz
 		tar xzf mono-XXXX.tar.gz
-		cd mono-XXXX
+		mv mono-XXX mono
+		mv mcs-XXX mcs
+		cd mono
 		./autogen.sh --prefix=/usr/local
-		make fullbuild
+		make bootstrap 
 
     c. Upgrade from CVS
     -------------------
