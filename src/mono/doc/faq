@@ -309,6 +309,18 @@ A: We do not know, volunteers are working on this, but there is no set
    date yet.  The current approach is using the Wine Library to implement
    it.
 
+Q: Hacking System.Windows.Forms.dll I've got this message while compiling 
+   in Linux:
+   <br><br>** Message: Unknown heap type: #-<br><br>
+   [...]<br><br>
+   My code compiles just fine, no warning. Any clues?.
+
+A: <b>#-</b> is a format of the metadata tables that is not documented, it is
+   produced in some cases by the ms compilers. Tell the compilers to
+   produce ECMA-compliant binaries (disabling debug mode or whatever is
+   needed). Or you can study the format and add support to the mono
+   metadata loader:-)
+
 <a name="msft"></a>
 ** Mono and Microsoft
 
@@ -659,6 +671,32 @@ Q: I'm wondering if there are any plans to start using nant to build the
 A: Maybe well be doing some sort of automated build process + testing when
    the summer finish.
 
+Q: I'm having a hell of a time and was wondering if you had any info on the 
+   availability of the Sybase .net provider?.
+
+A: the short answer is: no, it is not supported yet, but it will be soon.  
+   If you are intending to use this in a production environment, however, 
+   I suggest that you hold off on that for a while yet.  It's good to play 
+   with, but I wouldn't trust it that much.
+
+Q: I would like that you or someone else implemented the service-stuff from 
+   windows for mono and then you could use that for easily building daemons.
+   What are your plans about that?.
+ 
+A: Yes, we do need in fact someone with Windows experience to actually
+   implement the Windows versions of those classes.  The Unix case should
+   be relatively trivial. Paolo has expressed his interest in the past in 
+   having a Mono.Posix.dll which would provide us with direct access to 
+   the Unix API, raw, without the .NET framework wrapping.  Together 
+   with some utility classes and functions
+
+Q:  Where is System.ServiceProcess?.
+
+A:  Well, we should implement it.  And nobody has volunteered to do so, I
+    think that this is a completely new namespace that could be taken on by
+    an eager developer. It is also a pretty small assembly, so it should be 
+    fun to implement. 
+
 <a name="asp">
 ** Mono and ASP.NET
 
@@ -683,6 +721,23 @@ A: Yes, we have plans to do so, but we need to wait for Patrik's patches to
    HttpRuntime. Once that is there, writing a mod_mono should be trivial 
    (look at mono/samples/embed for a sample embedded application).
 
+Q: Does anyone know the status of the C# apache module for linux?
+
+A: mod_haydn is out there with the barebones support for embedding the Mono
+   runtime in your web server. Once System.Web is mature, we can author 
+   the next step, but we are currently doing bug fixing on it and use a 
+   small external web server to test it.  
+
+Q: I got the mono CVS version, what's next?. How do I start playing with 
+   ASP.NET in Mono?.
+
+A: Once you get your CVS version of Mono running, get the `xsp' module,
+   which contains a test server for ASP.NET, and start throwing .aspx
+   programs at it (I suggest we test all of the demos from the asp.net
+   quickstart tutorials first, and then move on to more complex
+   applications).
+
+
 <a name="ado">
 ** Mono and ADO.NET
 
@@ -703,6 +758,12 @@ Q: In developing the data architecture for the application are there and
 A: We are implementing all the classes in Microsoft .NET's System.Data, so
    you can be sure that things will work the same in Mono as with the Microsoft
    implementation. 
+
+Q: Does Mono can to connect to Sybase by using Mono.Data.*?
+
+A: Yes. use Mono.Data.SybaseClient. First of all you have to create a
+   SybaseConnection, and then, from it, use it as any other
+   IDbConnection-based class.
 
 <a name="java">
 ** Mono and Java
@@ -772,6 +833,17 @@ Q: Do you plan to implement a Javascript compiler?
 A: Yes. Eto Demerzal has started a Rhino port to C#.
    After this is completed, we will begin developing
    the JavaScript compiler.
+
+Q: Can Mono or .NET share system classes (loaded from mscore.dll and other 
+   libs) or will it behave like Sun's Java VM?
+
+A: What you can do with mono is to load different applications in their own
+   application domain: this is a feature of the CLR that allows sandboxing
+   applications inside a single process space. This is usualy exploited to
+   compartmentalize different parts of the same app, but it can also be
+   effectively used to reduce the startup and memory overhead.
+   Using different appdomains the runtime representation of types and
+   methods is shared across applications.
 
 <a name="extending"></a>
 ** Extending Mono
@@ -1139,6 +1211,15 @@ A: GtkHTML is just a lightweight HTML rendering engine that does not
    but we need a command-line and GUI tools that we can use natively on 
    Linux when disconnected from the Web (and that has better 
    interactions than a web page).
+
+Q: Is there a command-line tool that allows me to access .NET interactively?
+
+A: There are several but one that is free software and uses MCS is the one
+   Dennis Lu from Rice University is working on; a REPL C# interpreter.
+
+Q: Is it possible to use Visual C++ with Mono?.
+
+A: Well, It's possible to run VC++ generated apps under Mono though.
 
 <a name="problems"></a>
 ** Mono Common Problems
