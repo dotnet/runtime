@@ -362,8 +362,8 @@ load_tables (MonoImage *image)
 			image->tables [table].rows = 0;
 			continue;
 		}
-		if (table > 0x2b) {
-			g_warning("bits in valid must be zero above 0x2b (II - 23.1.6)");
+		if (table > MONO_TABLE_LAST) {
+			g_warning("bits in valid must be zero above 0x2d (II - 23.1.6)");
 		}
 		/*if ((sorted_mask & ((guint64) 1 << table)) == 0){
 			g_print ("table %s (0x%02x) is sorted\n", mono_meta_table_name (table), table);
