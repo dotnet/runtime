@@ -484,10 +484,6 @@ static void main_thread_handler (gpointer user_data)
 	}
 
 	if (mono_compile_aot) {
-		/* Turn on all optimizations unless overridden */
-		if (main_args->opts == DEFAULT_OPTIMIZATIONS)
-			main_args->opts = parse_optimizations ("all");
-
 		int res = mono_compile_assembly (assembly, main_args->opts);
 		printf ("AOT RESULT %d\n", res);
 	} else {
