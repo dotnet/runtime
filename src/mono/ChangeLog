@@ -1,4 +1,12 @@
+2002-09-20  Mark Crichton  <crichton@gimp.org>
 
+	* configure.in: added NEED_LINK_UNLINK to make io-layer more portable.
+	Linux has a "virtual fs" for UNIX sockets, Solaris and BSD don't.
+	For systems that do not have such a virtual FS, define
+	NEED_LINK_UNLINK.
+
+	* acconfig.h: added NEED_LINK_UNLINK
+	
 Wed Sep 4 18:09:58 CEST 2002 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in: add some needed defines to fix support of

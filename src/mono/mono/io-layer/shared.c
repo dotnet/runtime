@@ -186,7 +186,12 @@ try_again:
 		if(!(data->daemon_running==DAEMON_STARTING || 
 		     data->daemon_running==DAEMON_RUNNING ||
 		     data->daemon_running==DAEMON_DIED_AT_STARTUP) ||
+#ifdef NEED_LINK_UNLINK
+		   (strncmp (data->daemon, "/tmp/mono-handle-daemon-",
+			     24)!=0)) {
+#else
 		   (strncmp (data->daemon+1, "mono-handle-daemon-", 19)!=0)) {
+#endif
 			g_warning ("Shared memory sanity check failed.");
 			*success=FALSE;
 			return(NULL);

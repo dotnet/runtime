@@ -19,6 +19,7 @@ case "$host" in
 		platform_win32=no
 		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE"
 		LDFLAGS="$LDFLAGS -pthread"
+		AC_DEFINE(NEED_LINK_UNLINK)
 		libdl=
 		;;
 	*-*-linux*)
@@ -29,6 +30,7 @@ case "$host" in
 	*-*-solaris*)
 		platform_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT"
+		AC_DEFINE(NEED_LINK_UNLINK)
 		;;
 	*)
 		AC_MSG_WARN([*** Please add $host to configure.in checks!])

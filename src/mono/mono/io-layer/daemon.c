@@ -54,6 +54,9 @@ static gboolean fd_activity (GIOChannel *channel, GIOCondition condition,
  */
 static void cleanup (void)
 {
+#ifdef NEED_LINK_UNLINK
+        unlink(_wapi_shared_data->daemon);
+#endif 
 	_wapi_shm_destroy ();
 }
 
@@ -151,6 +154,12 @@ static void startup (void)
 		exit (-1);
 	}
 
+#ifdef NEED_LINK_UNLINK
+	/* Here's a more portable method... */
+	snprintf (_wapi_shared_data->daemon, MONO_SIZEOF_SUNPATH-1,
+		  "/tmp/mono-handle-daemon-%d-%ld-%ld", getuid (), random (),
+		  time (NULL));
+#else
 	/* Leave the first byte NULL so we create the socket in the
 	 * abstrace namespace, not on the filesystem.  (Lets see how
 	 * portable _that_ is :)
@@ -161,6 +170,7 @@ static void startup (void)
 	snprintf (_wapi_shared_data->daemon+1, MONO_SIZEOF_SUNPATH-2,
 		  "mono-handle-daemon-%d-%d-%ld", getuid (), getpid (),
 		  time (NULL));
+#endif
 }
 
 
