@@ -62,7 +62,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	/*
 	 * Temporary hack until we have a complete corlib.dll
 	 */
-	if (strcmp (basename, "corlib.dll") && corlib != NULL)
+	if (!strcmp (basename, "corlib.dll") && corlib != NULL)
 		return corlib;
 		
 	g_return_val_if_fail (filename != NULL, NULL);
@@ -103,11 +103,11 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 		 * and we do not load corlib twice.
 		 */
 		if (strcmp (basename, "corlib.dll") == 0){
-			if (strcmp (name, "mscorlib") == 0)
-				continue;
-
 			if (corlib == NULL)
 				corlib = ass;
+
+			if (strcmp (name, "mscorlib") == 0)
+				continue;
 		}
 		
 		assembly_ref = (*resolver) (name);
