@@ -2016,6 +2016,27 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				cm = mono_get_method (image, token, NULL);
 				g_assert (cm);
 
+				if (cm->klass == mono_defaults.math_class &&
+				    cm->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+
+					if (!strcmp (cm->name, "Sin")) {
+						--sp;
+						t1 = mono_ctree_new (mp, MB_TERM_SIN, *sp, NULL);
+						PUSH_TREE (t1, VAL_DOUBLE);
+						break;
+					} else if (!strcmp (cm->name, "Cos")) {
+						--sp;
+						t1 = mono_ctree_new (mp, MB_TERM_COS, *sp, NULL);
+						PUSH_TREE (t1, VAL_DOUBLE);
+						break;
+					} else if (!strcmp (cm->name, "Sqrt")) {
+						--sp;
+						t1 = mono_ctree_new (mp, MB_TERM_SQRT, *sp, NULL);
+						PUSH_TREE (t1, VAL_DOUBLE);
+						break;
+					}
+				}
+
 				if (cm->klass == mono_defaults.string_class &&
 				    *cm->name == '.' && !strcmp (cm->name, ".ctor"))
 					g_assert_not_reached ();

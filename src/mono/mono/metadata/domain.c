@@ -344,6 +344,10 @@ mono_init (const char *filename)
 		mono_defaults.corlib, "System.Reflection", "FieldInfo");
 	g_assert (mono_defaults.field_info_class != 0);
 
+	mono_defaults.math_class = mono_class_from_name (
+	        mono_defaults.corlib, "System", "Math");
+	g_assert (mono_defaults.math_class != 0);
+
 	domain->friendly_name = g_path_get_basename (filename);
 
 	return domain;

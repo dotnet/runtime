@@ -15,7 +15,8 @@ TESTSRC=			\
 	loops.cs		\
 	initlocals.cs		\
 	logic.cs		\
-	bulkcpy.il
+	bulkcpy.il		\
+	math.cs
 
 TESTSI_TMP=$(TESTSRC:.cs=.exe)
 TESTSI=$(TESTSI_TMP:.il=.exe)
