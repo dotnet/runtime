@@ -5817,7 +5817,6 @@ static const IcallEntry enum_icalls [] = {
 static const IcallEntry environment_icalls [] = {
 	{"Exit", ves_icall_System_Environment_Exit},
 	{"GetCommandLineArgs", mono_runtime_get_main_args},
-	{"GetEnvironmentVariable", ves_icall_System_Environment_GetEnvironmentVariable},
 	{"GetEnvironmentVariableNames", ves_icall_System_Environment_GetEnvironmentVariableNames},
 	{"GetLogicalDrivesInternal", ves_icall_System_Environment_GetLogicalDrives },
  	{"GetMachineConfigPath", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path},
@@ -5830,6 +5829,7 @@ static const IcallEntry environment_icalls [] = {
 	{"get_Platform", ves_icall_System_Environment_get_Platform},
 	{"get_TickCount", ves_icall_System_Environment_get_TickCount},
 	{"get_UserName", ves_icall_System_Environment_get_UserName},
+	{"internalGetEnvironmentVariable", ves_icall_System_Environment_GetEnvironmentVariable},
 	{"internalGetGacPath", ves_icall_System_Environment_GetGacPath},
 	{"internalGetHome", ves_icall_System_Environment_InternalGetHome},
 	{"set_ExitCode", mono_environment_exitcode_set}
