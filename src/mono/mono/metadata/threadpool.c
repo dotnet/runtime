@@ -302,7 +302,7 @@ async_invoke_thread (gpointer data)
 	
 		if (!data) {
 			guint32 wr;
-			int timeout = 500;
+			int timeout = 10000;
 			guint32 start_time = GetTickCount ();
 			
 			do {
