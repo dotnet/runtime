@@ -20,6 +20,7 @@
 1,CVS access,ccvs.html,ccvs.src
 1,AnonCVS access,anoncvs.html,anoncvs.src
 1,Forge,forge.html,forge.src
+1,Compiling,compiling.html,compiling.src
 0,Contributing,contributing.html,contributing.src
 1,Hackers,hackers.html,hackers.src
 1,Documentation,documentation.html,documentation.src

@@ -38,6 +38,12 @@
 		border-bottom: 2px solid #dddddd;
 	}
 
+	.shell { 
+	border-style: solid; background: #000000; color: #bbbbbb;
+	#777777; border-width:
+	1px; padding: 2pt; 
+	margin:15px;
+	}
 // --> 
 </style>
 #CSS#

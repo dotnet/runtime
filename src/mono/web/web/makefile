@@ -21,6 +21,7 @@ OBJECTS=									\
 	deploy/documentation.html						\
 	deploy/download.html							\
 	deploy/drawing.html							\
+	deploy/compiling.html							\
 	deploy/crypto.html							\
 	deploy/embedded-api.html						\
 	deploy/faq.html								\
