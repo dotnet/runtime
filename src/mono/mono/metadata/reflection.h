@@ -303,7 +303,7 @@ typedef struct {
 	MonoString *dir;
 	MonoArray *cattrs;
 	MonoArray *resources;
-	MonoString *keyfile;
+	MonoArray *public_key;
 	MonoString *version;
 	MonoString *culture;
 	guint32 algid;

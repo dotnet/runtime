@@ -2770,28 +2770,24 @@ set_version_from_string (MonoString *version, guint32 *values)
 }
 
 static guint32
-load_public_key (MonoString *fname, MonoDynamicAssembly *assembly) {
-	char *name, *content;
+load_public_key (MonoArray *pkey, MonoDynamicAssembly *assembly) {
 	gsize len;
 	guint32 token = 0;
+	char blob_size [6];
+	char *b = blob_size;
 
-	if (!fname)
+	if (!pkey)
 		return token;
-	name = mono_string_to_utf8 (fname);
-	if (g_file_get_contents (name, &content, &len, NULL)) {
-		char blob_size [6];
-		char *b = blob_size;
-		/* check it's a public key or keypair */
-		mono_metadata_encode_value (len, b, &b);
-		token = mono_image_add_stream_data (&assembly->blob, blob_size, b - blob_size);
-		mono_image_add_stream_data (&assembly->blob, content, len);
-		g_free (content);
-		/* need to get the actual value from the key type... */
-		assembly->strong_name_size = 128;
-		assembly->strong_name = g_malloc0 (assembly->strong_name_size);
-	}
-	/* FIXME: how do we tell mcs if loading fails? */
-	g_free (name);
+
+	len = mono_array_length (pkey);
+	mono_metadata_encode_value (len, b, &b);
+	token = mono_image_add_stream_data (&assembly->blob, blob_size, b - blob_size);
+	mono_image_add_stream_data (&assembly->blob, mono_array_addr (pkey, guint8, 0), len);
+
+	/* need to get the actual value from the key type... */
+	assembly->strong_name_size = 128;
+	assembly->strong_name = g_malloc0 (assembly->strong_name_size);
+
 	return token;
 }
 
@@ -2833,7 +2829,7 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	} else {
 		values [MONO_ASSEMBLY_CULTURE] = string_heap_insert (&assembly->sheap, "");
 	}
-	values [MONO_ASSEMBLY_PUBLIC_KEY] = load_public_key (assemblyb->keyfile, assembly);
+	values [MONO_ASSEMBLY_PUBLIC_KEY] = load_public_key (assemblyb->public_key, assembly);
 	values [MONO_ASSEMBLY_FLAGS] = assemblyb->flags;
 	set_version_from_string (assemblyb->version, values);
 
