@@ -27,7 +27,7 @@ wrapper.h: genwrapper.pl
 
 BUILT_SOURCES = wrapper.h Wrapper.cs libmonowrapper.def
 
-CLEANFILES += $(BUILT_SOURCES) lib*.a lib*.dll
+CLEANFILES = $(BUILT_SOURCES) lib*.a lib*.dll
 
 EXTRA_DIST = genwrapper.pl
 
