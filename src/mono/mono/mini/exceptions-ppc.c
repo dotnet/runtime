@@ -463,7 +463,6 @@ ppc_unwind_native_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 #define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
 		int reg;	\
 		ppc_lwz (code, ip_reg, G_STRUCT_OFFSET (MonoContext, sc_ir), ctx_reg);	\
-		ppc_lwz (code, ppc_sp, G_STRUCT_OFFSET (MonoContext, sc_sp), ctx_reg);	\
 		ppc_lmw (code, ppc_r13, ctx_reg, G_STRUCT_OFFSET (MonoContext, regs));	\
 		for (reg = 0; reg < MONO_SAVED_FREGS; ++reg) {	\
 			ppc_lfd (code, (14 + reg), G_STRUCT_OFFSET(MonoLMF, fregs) + reg * sizeof (gdouble), ctx_reg);	\
@@ -492,6 +491,8 @@ arch_get_restore_context (void)
 
 	code = start;
 	restore_regs_from_context (ppc_r3, ppc_r4, ppc_r5);
+	/* restore also the stack pointer */
+	ppc_lwz (code, ppc_sp, G_STRUCT_OFFSET (MonoContext, sc_sp), ppc_r3);
 	//ppc_break (code);
 	/* jump to the saved IP */
 	ppc_mtctr (code, ppc_r4);
@@ -525,44 +526,47 @@ arch_get_call_filter (void)
 	/* call_filter (MonoContext *ctx, unsigned long eip, gpointer exc) */
 	code = start;
 
+	/* save all the regs on the stack */
+	pos = 0;
+	for (i = 31; i >= 14; --i) {
+		pos += sizeof (gdouble);
+		ppc_stfd (code, i, -pos, ppc_sp);
+	}
+	pos += sizeof (gulong) * MONO_SAVED_GREGS;
+	ppc_stmw (code, ppc_r13, ppc_sp, -pos);
+
 	ppc_mflr (code, ppc_r0);
 	ppc_stw (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
-	alloc_size = 32 + PPC_MINIMAL_STACK_SIZE + (sizeof (gulong) * MONO_SAVED_GREGS + sizeof (gdouble) * MONO_SAVED_FREGS);
+
+	alloc_size = PPC_MINIMAL_STACK_SIZE + pos + 64;
 	// align to PPC_STACK_ALIGNMENT bytes
-	if (alloc_size & (PPC_STACK_ALIGNMENT - 1))
-		alloc_size += PPC_STACK_ALIGNMENT - (alloc_size & (PPC_STACK_ALIGNMENT - 1));
+	alloc_size += PPC_STACK_ALIGNMENT - 1;
+	alloc_size &= ~(PPC_STACK_ALIGNMENT - 1);
+
 	g_assert ((alloc_size & (PPC_STACK_ALIGNMENT-1)) == 0);
 	ppc_stwu (code, ppc_sp, -alloc_size, ppc_sp);
-	/* save all the regs on the stack */
-	pos = 32 + PPC_MINIMAL_STACK_SIZE;
-	ppc_stmw (code, ppc_r13, ppc_sp, pos);
-	pos += sizeof (gulong) * MONO_SAVED_GREGS;
-	pos += 7;
-	pos &= ~7;
-	for (i = 14; i < 32; ++i) {
-		ppc_stfd (code, i, pos, ppc_sp);
-		pos += sizeof (gdouble);
-	}
-	/* restore all the regs from ctx (in r3) */
-	/* FIXME: calling the filter code must not restore the stack pointer */
+
+	/* restore all the regs from ctx (in r3), but not r1, the stack pointer */
 	restore_regs_from_context (ppc_r3, ppc_r6, ppc_r7);
 	/* call handler at eip (r4) and set the first arg with the exception (r5) */
 	ppc_mtctr (code, ppc_r4);
 	ppc_mr (code, ppc_r3, ppc_r5);
 	ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
-	/* restore all the regs from the stack */
-	pos = 32 + PPC_MINIMAL_STACK_SIZE;
-	ppc_lmw (code, ppc_r13, ppc_sp, pos);
-	pos += sizeof (gulong) * MONO_SAVED_GREGS;
-	pos += 7;
-	pos &= ~7;
-	for (i = 14; i < 32; ++i) {
-		ppc_lfd (code, i, pos, ppc_sp);
-		pos += sizeof (gdouble);
-	}
+
+	/* epilog */
 	ppc_lwz (code, ppc_r0, alloc_size + PPC_RET_ADDR_OFFSET, ppc_sp);
 	ppc_mtlr (code, ppc_r0);
 	ppc_addic (code, ppc_sp, ppc_sp, alloc_size);
+	
+	/* restore all the regs from the stack */
+	pos = 0;
+	for (i = 31; i >= 14; --i) {
+		pos += sizeof (double);
+		ppc_lfd (code, i, -pos, ppc_sp);
+	}
+	pos += sizeof (gulong) * MONO_SAVED_GREGS;
+	ppc_lmw (code, ppc_r13, ppc_sp, -pos);
+
 	ppc_blr (code);
 
 	g_assert ((code - start) < sizeof(start));
@@ -612,17 +616,26 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name)
 
 	code = start;
 
+	/* save all the regs on the stack */
+	pos = 0;
+	for (i = 31; i >= 14; --i) {
+		pos += sizeof (gdouble);
+		ppc_stfd (code, i, -pos, ppc_sp);
+	}
+	pos += sizeof (gulong) * MONO_SAVED_GREGS;
+	ppc_stmw (code, ppc_r13, ppc_sp, -pos);
+
 	ppc_mflr (code, ppc_r0);
 	ppc_stw (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
-	alloc_size = 32 + PPC_MINIMAL_STACK_SIZE + (sizeof (gulong) * MONO_SAVED_GREGS + sizeof (gdouble) * MONO_SAVED_FREGS);
+
+	alloc_size = PPC_MINIMAL_STACK_SIZE + pos + 64;
 	// align to PPC_STACK_ALIGNMENT bytes
-	if (alloc_size & (PPC_STACK_ALIGNMENT - 1)) {
-		alloc_size += PPC_STACK_ALIGNMENT - 1;
-		alloc_size &= ~(PPC_STACK_ALIGNMENT - 1);
-	}
-	/*g_print ("alloc size = %d\n", alloc_size);*/
+	alloc_size += PPC_STACK_ALIGNMENT - 1;
+	alloc_size &= ~(PPC_STACK_ALIGNMENT - 1);
+
 	g_assert ((alloc_size & (PPC_STACK_ALIGNMENT-1)) == 0);
 	ppc_stwu (code, ppc_sp, -alloc_size, ppc_sp);
+
 	//ppc_break (code);
 	if (by_name) {
 		ppc_mr (code, ppc_r5, ppc_r3);
@@ -631,17 +644,7 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name)
 		ppc_bl (code, 0);
 		ppc_patch (code - 4, mono_exception_from_name);
 	}
-	/* save all the regs on the stack */
-	pos = 32 + PPC_MINIMAL_STACK_SIZE;
-	ppc_stmw (code, ppc_r13, ppc_sp, pos);
-	pos += sizeof (gulong) * MONO_SAVED_GREGS;
-	/* align for doubles */
-	pos += 7;
-	pos &= ~7;
-	for (i = 14; i < 32; ++i) {
-		ppc_stfd (code, i, pos, ppc_sp);
-		pos += sizeof (gdouble);
-	}
+
 	/* call throw_exception (exc, ip, sp, int_regs, fp_regs) */
 	/* caller sp */
 	ppc_lwz (code, ppc_r5, 0, ppc_sp); 
@@ -650,15 +653,13 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name)
 		ppc_lwz (code, ppc_r4, PPC_RET_ADDR_OFFSET, ppc_r5); 
 	else
 		ppc_mr (code, ppc_r4, ppc_r0); /* caller ip */
-	/* pointer to the saved int regs */
-	pos = 32 + PPC_MINIMAL_STACK_SIZE;
-	ppc_addi (code, ppc_r6, ppc_sp, pos);
 	/* pointer to the saved fp regs */
-	pos += sizeof (gulong) * MONO_SAVED_GREGS;
-	/* align for doubles */
-	pos += 7;
-	pos &= ~7;
+	pos = alloc_size - sizeof (double) * MONO_SAVED_FREGS;
 	ppc_addi (code, ppc_r7, ppc_sp, pos);
+	/* pointer to the saved int regs */
+	pos -= sizeof (gulong) * MONO_SAVED_GREGS;
+	ppc_addi (code, ppc_r6, ppc_sp, pos);
+
 	ppc_bl (code, 0);
 	ppc_patch (code - 4, throw_exception);
 	/* we should never reach this breakpoint */
@@ -842,7 +843,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			/* FIXME handle floating point args 
 			for (i = 31; i >= 14; --i) {
 				if (ji->used_fregs & (1 << i)) {
-					offset += sizeof (gulong);
+					offset += sizeof (double);
 					new_ctx->fregs [i - 14] = *(gulong*)((char*)sframe->sp - offset);
 				}
 			}*/

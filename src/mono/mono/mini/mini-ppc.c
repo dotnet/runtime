@@ -205,7 +205,7 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 {
 	GList *regs = NULL;
 	int i, top = 32;
-	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
+	if (cfg->frame_reg != ppc_sp)
 		top = 31;
 #if USE_EXTRA_TEMPS
 	top -= 2;
@@ -575,20 +575,23 @@ mono_arch_allocate_vars (MonoCompile *m)
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (m->method))
 		m->param_area = MAX (m->param_area, 16);
 
+	header = ((MonoMethodNormal *)m->method)->header;
+
 	/* 
-	 * FIXME: we'll use the frame register also for any method that has
-	 * filter clauses. This way, when the handlers are called,
+	 * We use the frame register also for any method that has
+	 * exception clauses. This way, when the handlers are called,
 	 * the code will reference local variables using the frame reg instead of
 	 * the stack pointer: if we had to restore the stack pointer, we'd
 	 * corrupt the method frames that are already on the stack (since
 	 * filters get called before stack unwinding happens) when the filter
-	 * code would call any method.
+	 * code would call any method (this also applies to finally etc.).
 	 */ 
-	if (m->flags & MONO_CFG_HAS_ALLOCA)
+	if ((m->flags & MONO_CFG_HAS_ALLOCA) || header->num_clauses)
 		frame_reg = ppc_r31;
 	m->frame_reg = frame_reg;
-
-	header = ((MonoMethodNormal *)m->method)->header;
+	if (frame_reg != ppc_sp) {
+		m->used_int_regs |= 1 << frame_reg;
+	}
 
 	sig = m->method->signature;
 	
@@ -2675,13 +2678,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (!cfg->method->save_lmf) {
 				/*for (i = 31; i >= 14; --i) {
 					if (cfg->used_float_regs & (1 << i)) {
-						pos += 4;
+						pos += sizeof (double);
 						ppc_lfd (code, i, -pos, cfg->frame_reg);
 					}
 				}*/
 				for (i = 31; i >= 13; --i) {
 					if (cfg->used_int_regs & (1 << i)) {
-						pos += 4;
+						pos += sizeof (gulong);
 						ppc_lwz (code, i, -pos, cfg->frame_reg);
 					}
 				}
@@ -3296,9 +3299,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		ppc_mflr (code, ppc_r0);
 		ppc_stw (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
 	}
-	if (cfg->flags & MONO_CFG_HAS_ALLOCA) {
-		cfg->used_int_regs |= 1 << 31;
-	}
 	cfg->used_int_regs |= USE_EXTRA_TEMPS;
 
 	alloc_size = cfg->stack_offset;
@@ -3339,8 +3339,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	g_assert ((alloc_size & (PPC_STACK_ALIGNMENT-1)) == 0);
 	if (alloc_size)
 		ppc_stwu (code, ppc_sp, -alloc_size, ppc_sp);
-	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
-		ppc_mr (code, ppc_r31, ppc_sp);
+	if (cfg->frame_reg != ppc_sp)
+		ppc_mr (code, cfg->frame_reg, ppc_sp);
 
         /* compute max_offset in order to use short forward jumps
 	 * we always do it on ppc because the immediate displacement
@@ -3544,14 +3544,14 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 		/*for (i = 31; i >= 14; --i) {
 			if (cfg->used_float_regs & (1 << i)) {
-				pos += 4;
-				ppc_lfd (code, i, -pos, cfg->frame_reg);
+				pos += sizeof (double);
+				ppc_lfd (code, i, -pos, ppc_sp);
 			}
 		}*/
 		for (i = 31; i >= 13; --i) {
 			if (cfg->used_int_regs & (1 << i)) {
-				pos += 4;
-				ppc_lwz (code, i, -pos, cfg->frame_reg);
+				pos += sizeof (gulong);
+				ppc_lwz (code, i, -pos, ppc_sp);
 			}
 		}
 	}
