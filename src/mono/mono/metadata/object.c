@@ -96,6 +96,7 @@ typedef struct
 {
 	guint32 initializing_tid;
 	guint32 waiting_count;
+	gboolean done;
 	CRITICAL_SECTION initialization_section;
 } TypeInitializationLock;
 
@@ -183,28 +184,38 @@ mono_runtime_class_init (MonoVTable *vtable)
 			InitializeCriticalSection (&lock->initialization_section);
 			lock->initializing_tid = tid;
 			lock->waiting_count = 1;
+			lock->done = FALSE;
 			/* grab the vtable lock while this thread still owns type_initialization_section */
 			EnterCriticalSection (&lock->initialization_section);
 			g_hash_table_insert (type_initialization_hash, vtable, lock);
 			do_initialization = 1;
 		} else {
 			gpointer blocked;
+			TypeInitializationLock *pending_lock;
 
-			if (lock->initializing_tid == tid) {
+			if (lock->initializing_tid == tid || lock->done) {
 				LeaveCriticalSection (&type_initialization_section);
 				return;
 			}
 			/* see if the thread doing the initialization is already blocked on this thread */
 			blocked = GUINT_TO_POINTER (lock->initializing_tid);
-			while ((blocked = g_hash_table_lookup (blocked_thread_hash, blocked))) {
-				if (blocked == GUINT_TO_POINTER (tid)) {
-					LeaveCriticalSection (&type_initialization_section);
-					return;
+			while ((pending_lock = (TypeInitializationLock*) g_hash_table_lookup (blocked_thread_hash, blocked))) {
+				if (pending_lock->initializing_tid == tid) {
+					if (!pending_lock->done) {
+						LeaveCriticalSection (&type_initialization_section);
+						return;
+					} else {
+						/* the thread doing the initialization is blocked on this thread,
+						   but on a lock that has already been freed. It just hasn't got
+						   time to awake */
+						break;
+					}
 				}
+				blocked = GUINT_TO_POINTER (pending_lock->initializing_tid);
 			}
 			++lock->waiting_count;
 			/* record the fact that we are waiting on the initializing thread */
-			g_hash_table_insert (blocked_thread_hash, GUINT_TO_POINTER (tid), GUINT_TO_POINTER (lock->initializing_tid));
+			g_hash_table_insert (blocked_thread_hash, GUINT_TO_POINTER (tid), lock);
 		}
 		LeaveCriticalSection (&type_initialization_section);
 
@@ -212,6 +223,7 @@ mono_runtime_class_init (MonoVTable *vtable)
 			mono_runtime_invoke (method, NULL, NULL, (MonoObject **) &exc);
 			if (last_domain)
 				mono_domain_set (last_domain, TRUE);
+			lock->done = TRUE;
 			LeaveCriticalSection (&lock->initialization_section);
 		} else {
 			/* this just blocks until the initializing thread is done */
