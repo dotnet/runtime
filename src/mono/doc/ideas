@@ -15,16 +15,6 @@
 <a name="runtime">
 ** Runtime
 
-	We need a verifier that can be run on an executable (assembly)
-	and tells whether the metadata for the executable is correct
-	or not.  It should report any anomalies.
-
-	For a list of anomalies in assemblies, check the various assertions
-	that are described on the ECMA documentation. 
-
-	This will help test our generated executables and can be also
-	used as an external verifier.
-
 <a name="classes">
 ** Classes
 

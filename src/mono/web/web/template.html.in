@@ -57,7 +57,8 @@
               <a class="topmenu" href="http://go-mono.com/daily">Daily snapshots</a> |              
               <a class="topmenu" href="screenshots.html">Screenshots</a> |
               <a class="topmenu" href="http://www.go-mono.com/docs/index.html">Documentation</a> |
-              <a class="topmenu" href="bugs.html">Bugs</a>
+              <a class="topmenu" href="bugs.html">Bugs</a> |
+	      <a class="topmenu" href="blogs.html">Blogs</a>
 	    </td>
 	  </tr>
 	</table>

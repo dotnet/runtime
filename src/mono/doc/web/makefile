@@ -9,20 +9,11 @@ CORCOMPARE=../../../mcs/tools/corcompare
 
 OBJECTS=									\
 	deploy/ado-net.html							\
-	deploy/bugs.html							\
-	deploy/provider-factory.html						\
-	deploy/mysql.html							\
-	deploy/odbc.html							\
-	deploy/oledb.html							\
-	deploy/oracle.html							\
-	deploy/postgresql.html							\
-	deploy/sqlclient.html							\
-	deploy/sqlite.html							\
-	deploy/sybase.html							\
-	deploy/tdsclient.html							\
 	deploy/anoncvs.html							\
 	deploy/asp-net.html							\
+	deploy/blogs.html							\
 	deploy/books.html							\
+	deploy/bugs.html							\
 	deploy/contributing.html						\
 	deploy/contact.html							\
 	deploy/c-sharp.html							\
@@ -47,20 +38,30 @@ OBJECTS=									\
 	deploy/mbas.html							\
 	deploy/mono-beginning.html						\
 	deploy/mono-contribution-howto.html					\
-	deploy/mono-todo.html					\
+	deploy/mono-todo.html							\
 	deploy/monodoc-xml.html							\
+	deploy/mysql.html							\
+	deploy/odbc.html							\
+	deploy/oledb.html							\
+	deploy/oracle.html							\
 	deploy/other.html							\
 	deploy/papers.html							\
 	deploy/passport.html							\
 	deploy/plans.html							\
 	deploy/porting.html							\
+	deploy/postgresql.html							\
 	deploy/ppc.html								\
+	deploy/provider-factory.html						\
 	deploy/rationale.html							\
 	deploy/resources.html							\
 	deploy/roadmap.html							\
 	deploy/runtime.html							\
 	deploy/screenshots.html							\
+	deploy/sqlclient.html							\
+	deploy/sqlite.html							\
 	deploy/status.html							\
+	deploy/sybase.html							\
+	deploy/tdsclient.html							\
 	deploy/team.html							\
 	deploy/testing.html							\
 	deploy/tools.html							\
