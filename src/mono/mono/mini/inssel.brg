@@ -1639,7 +1639,7 @@ mini_emit_load_intf_reg_class (MonoCompile *s, int intf_reg, int klass_reg, Mono
 {
 	int ioffset_reg = mono_regstate_next_int (s->rs);
 
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, ioffset_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, interface_offsets));
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, ioffset_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, interface_offsets));
 	mini_emit_load_intf_reg (s, intf_reg, ioffset_reg, klass);
 }
 

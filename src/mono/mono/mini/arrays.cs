@@ -196,5 +196,15 @@ class Tests {
 		}
 		return 0;
 	}
+
+	public static int test_0_interface_array_cast () {
+		try {
+			object [] a = new ICloneable [2];
+			ICloneable [] b = (ICloneable [])a;
+		} catch {
+			return 1;
+		}
+		return 0;
+	}
 }
 
