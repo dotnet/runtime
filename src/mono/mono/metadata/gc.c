@@ -195,7 +195,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	/* Tell the finalizer thread to finalize this appdomain */
 	finalize_notify ();
 
-	res = WaitForSingleObject (done_event, timeout);
+	res = WaitForSingleObjectEx (done_event, timeout, TRUE);
 
 	/* printf ("WAIT RES: %d.\n", res); */
 	if (res == WAIT_TIMEOUT) {
@@ -277,7 +277,7 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 	ResetEvent (pending_done_event);
 	finalize_notify ();
 	/* g_print ("Waiting for pending finalizers....\n"); */
-	WaitForSingleObject (pending_done_event, INFINITE);
+	WaitForSingleObjectEx (pending_done_event, INFINITE, TRUE);
 	/* g_print ("Done pending....\n"); */
 #else
 #endif
@@ -378,6 +378,7 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 		gc_handles = new_array;
 		gc_handle_types = new_type_array;
 #else
+		LeaveCriticalSection (&handle_section);
 		mono_raise_exception (mono_get_exception_execution_engine ("No GCHandle support built-in"));
 #endif
 	}
@@ -396,6 +397,7 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 		if (gc_handles [idx] != (gpointer)-1)
 			GC_GENERAL_REGISTER_DISAPPEARING_LINK (&(gc_handles [idx]), obj);
 #else
+		LeaveCriticalSection (&handle_section);
 		mono_raise_exception (mono_get_exception_execution_engine ("No weakref support"));
 #endif
 		break;
@@ -489,7 +491,7 @@ finalize_domain_objects (DomainFinalizationReq *req)
 	int i;
 	GPtrArray *objs;
 	MonoDomain *domain = req->domain;
-
+	
 	while (g_hash_table_size (domain->finalizable_objects_hash) > 0) {
 		/* 
 		 * Since the domain is unloading, nobody is allowed to put
@@ -527,7 +529,7 @@ static guint32 finalizer_thread (gpointer unused)
 		/* Wait to be notified that there's at least one
 		 * finaliser to run
 		 */
-		WaitForSingleObject (finalizer_event, INFINITE);
+		WaitForSingleObjectEx (finalizer_event, INFINITE, TRUE);
 
 		if (domains_to_finalize) {
 			EnterCriticalSection (&finalizer_mutex);
@@ -562,7 +564,6 @@ static guint32 finalizer_thread (gpointer unused)
 	}
 
 	SetEvent (shutdown_event);
-	
 	return(0);
 }
 
@@ -636,7 +637,7 @@ void mono_gc_init (void)
 	 * Wait until the finalizer thread sets gc_thread since its value is needed
 	 * by mono_thread_attach ()
 	 */
-	WaitForSingleObject (thread_started_event, INFINITE);
+	WaitForSingleObjectEx (thread_started_event, INFINITE, FALSE);
 #endif
 }
 
@@ -653,11 +654,9 @@ void mono_gc_cleanup (void)
 		finalize_notify ();
 		/* Finishing the finalizer thread, so wait a little bit... */
 		/* MS seems to wait for about 2 seconds */
-		/* 
-		 * FIXME: This is not thread safe. If the finalizer thread keeps
-		 * running, and the runtime is shut down, it will lead to a crash.
-		 */
-		WaitForSingleObject (shutdown_event, 2000);
+		if (WaitForSingleObjectEx (shutdown_event, 2000, FALSE) == WAIT_TIMEOUT) {
+			mono_thread_stop (gc_thread);
+		}
 	}
 
 #endif

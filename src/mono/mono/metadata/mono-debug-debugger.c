@@ -50,8 +50,8 @@ void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, gui
 
 MonoDebuggerIOLayer mono_debugger_io_layer = {
 	InitializeCriticalSection, DeleteCriticalSection, TryEnterCriticalSection,
-	EnterCriticalSection, LeaveCriticalSection, WaitForSingleObject, SignalObjectAndWait,
-	WaitForMultipleObjects, CreateSemaphore, ReleaseSemaphore, CreateThread,
+	EnterCriticalSection, LeaveCriticalSection, WaitForSingleObjectEx, SignalObjectAndWait,
+	WaitForMultipleObjectsEx, CreateSemaphore, ReleaseSemaphore, CreateThread,
 	GetCurrentThreadId
 };
 

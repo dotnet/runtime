@@ -889,11 +889,10 @@ MonoBoolean ves_icall_System_Diagnostics_Process_WaitForExit_internal (MonoObjec
 
 	if(ms<0) {
 		/* Wait forever */
-		ret=WaitForSingleObject (process, INFINITE);
+		ret=WaitForSingleObjectEx (process, INFINITE, TRUE);
 	} else {
-		ret=WaitForSingleObject (process, ms);
+		ret=WaitForSingleObjectEx (process, ms, TRUE);
 	}
-	
 	if(ret==WAIT_OBJECT_0) {
 		return(TRUE);
 	} else {

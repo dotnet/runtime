@@ -81,7 +81,9 @@ mono_async_invoke (MonoAsyncResult *ares)
 	}
 
 	/* notify listeners */
-	mono_monitor_try_enter ((MonoObject *) ares, INFINITE);
+	if(!mono_monitor_try_enter ((MonoObject *) ares, INFINITE))
+		return;
+	
 	if (ares->handle != NULL) {
 		ac->wait_event = ((MonoWaitHandle *) ares->handle)->handle;
 		SetEvent (ac->wait_event);
@@ -149,7 +151,10 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	*out_args = NULL;
 
 	/* check if already finished */
-	mono_monitor_try_enter ((MonoObject *) ares, INFINITE);
+	if (!mono_monitor_try_enter ((MonoObject *) ares, INFINITE)) {
+		return NULL;
+	}
+	
 	if (ares->endinvoke_called) {
 		*exc = (MonoObject *)mono_exception_from_name (mono_defaults.corlib, "System", 
 					      "InvalidOperationException");
@@ -169,7 +174,7 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 			ares->handle = (MonoObject *) mono_wait_handle_new (mono_object_domain (ares), ac->wait_event);
 		}
 		mono_monitor_exit ((MonoObject *) ares);
-		WaitForSingleObject (ac->wait_event, INFINITE);
+		WaitForSingleObjectEx (ac->wait_event, INFINITE, TRUE);
 	} else {
 		mono_monitor_exit ((MonoObject *) ares);
 	}
@@ -246,15 +251,23 @@ async_invoke_thread (gpointer data)
 
 		data = dequeue_job ();
 	
-		if (!data && WaitForSingleObject (job_added, 500) != WAIT_TIMEOUT)
-			data = dequeue_job ();
+		if (!data) {
+			guint32 wr;
+			wr = WaitForSingleObjectEx (job_added, 500, TRUE);
+			mono_thread_interruption_checkpoint ();
+
+			if (wr != WAIT_TIMEOUT)
+				data = dequeue_job ();
+		}
 		
 		if (!data) {
 			workers = (int) InterlockedCompareExchange (&mono_worker_threads, 0, -1); 
 			min = (int) InterlockedCompareExchange (&mono_min_worker_threads, 0, -1); 
 	
 			while (!data && workers <= min) {
-				WaitForSingleObject (job_added, INFINITE);
+				WaitForSingleObjectEx (job_added, INFINITE, TRUE);
+				mono_thread_interruption_checkpoint ();
+			
 				data = dequeue_job ();
 				workers = (int) InterlockedCompareExchange (&mono_worker_threads, 0, -1); 
 				min = (int) InterlockedCompareExchange (&mono_min_worker_threads, 0, -1); 

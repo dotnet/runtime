@@ -97,6 +97,13 @@ static guint32 mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32
 /* Spin lock for InterlockedXXX 64 bit functions */
 static CRITICAL_SECTION interlocked_mutex;
 
+/* Controls access to interruption flag */
+static CRITICAL_SECTION interruption_mutex;
+
+/* global count of thread interruptions requested */
+static gint32 thread_interruption_requested = 0;
+
+
 /* handle_store() and handle_remove() manage the array of threads that
  * still need to be waited for when the main thread exits.
  */
@@ -150,7 +157,9 @@ static void handle_remove(guint32 tid)
 
 static void thread_cleanup (MonoThread *thread)
 {
-	mono_monitor_try_enter ((MonoObject *)thread, INFINITE);
+	if (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
+		return;
+
 	thread->state |= ThreadState_Stopped;
 	mono_monitor_exit ((MonoObject *)thread);
 
@@ -401,6 +410,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 #endif
 	
 	im = mono_get_delegate_invoke (start->vtable->klass);
+	im = mono_marshal_get_delegate_invoke (im);
 	if (mono_thread_callbacks)
 		start_func = (* mono_thread_callbacks->thread_start_compile_func) (im);
 	else
@@ -500,7 +510,7 @@ void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this,
 			  GetCurrentThreadId (), this, this->tid);
 #endif
 
-		WaitForSingleObject (this->start_notify, INFINITE);
+		WaitForSingleObjectEx (this->start_notify, INFINITE, FALSE);
 		CloseHandle (this->start_notify);
 		this->start_notify=NULL;
 	}
@@ -586,7 +596,8 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 		   thread, ms);
 #endif
 	
-	ret=WaitForSingleObject(thread, ms);
+	ret=WaitForSingleObjectEx (thread, ms, TRUE);
+
 	if(ret==WAIT_OBJECT_0) {
 #ifdef THREAD_DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": join successful");
@@ -659,10 +670,10 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 		ms=INFINITE;
 	}
 	
-	ret=WaitForMultipleObjects(numhandles, handles, TRUE, ms);
+	ret=WaitForMultipleObjectsEx(numhandles, handles, TRUE, ms, TRUE);
 
 	g_free(handles);
-	
+
 	if(ret==WAIT_FAILED) {
 #ifdef THREAD_WAIT_DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Wait failed",
@@ -710,10 +721,10 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 		ms=INFINITE;
 	}
 
-	ret=WaitForMultipleObjects(numhandles, handles, FALSE, ms);
+	ret=WaitForMultipleObjectsEx(numhandles, handles, FALSE, ms, TRUE);
 
 	g_free(handles);
-	
+
 #ifdef THREAD_WAIT_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) returning %d",
 		  GetCurrentThreadId (), ret);
@@ -749,7 +760,8 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 		ms=INFINITE;
 	}
 	
-	ret=WaitForSingleObject(handle, ms);
+	ret=WaitForSingleObjectEx (handle, ms, TRUE);
+
 	if(ret==WAIT_FAILED) {
 #ifdef THREAD_WAIT_DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Wait failed",
@@ -928,23 +940,25 @@ mono_thread_get_abort_signal (void)
 #endif /* __MINGW32__ */
 }
 
-void
-ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	thread->abort_state = state;
-	thread->abort_exc = NULL;
-
-#ifdef THREAD_DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION
-		   ": (%d) Abort requested for %p (%d)", GetCurrentThreadId (),
-		   thread, thread->tid);
-#endif
-	
 #ifdef __MINGW32__
-	g_error ("Thread.Abort is not yet implemented under Windows");	
-	g_assert_not_reached ();
+static guint32 interruption_request_apc (gpointer param)
+{
+	MonoException* exc = mono_thread_request_interruption (FALSE);
+	if (exc) mono_raise_exception (exc);
+	return 0;
+}
+#endif /* __MINGW32__ */
+
+/*
+ * signal_thread_state_change
+ *
+ * Tells the thread that his state has changed and it has to enter the new
+ * state as soon as possible.
+ */
+static void signal_thread_state_change (MonoThread *thread)
+{
+#ifdef __MINGW32__
+	QueueUserAPC (interruption_request_apc, thread->handle, NULL);
 #else
 	/* fixme: store the state somewhere */
 #ifdef PTHREAD_POINTER_ID
@@ -956,19 +970,137 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 }
 
 void
-ves_icall_System_Threading_Thread_ResetAbort (void)
+ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 {
-	MonoThread *thread = mono_thread_current ();
-	
 	MONO_ARCH_SAVE_REGS;
 
+	if (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
+		return;
+
+	if ((thread->state & ThreadState_AbortRequested) != 0 || 
+		(thread->state & ThreadState_StopRequested) != 0) 
+	{
+		mono_monitor_exit ((MonoObject *)thread);
+		return;
+	}
+	
+	/* Make sure the thread is awake */
+	ves_icall_System_Threading_Thread_Resume (thread);
+
+	thread->state |= ThreadState_AbortRequested;
+	thread->abort_state = state;
+	thread->abort_exc = NULL;
+
+	mono_monitor_exit ((MonoObject *)thread);
+
+#ifdef THREAD_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": (%d) Abort requested for %p (%d)", GetCurrentThreadId (),
+		   thread, thread->tid);
+#endif
+	
+	signal_thread_state_change (thread);
+}
+
+void
+ves_icall_System_Threading_Thread_ResetAbort (void)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	MonoThread *thread = mono_thread_current ();
+	
+	if (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
+		return;
+	
+	thread->state &= ~ThreadState_AbortRequested;
+	
 	if (!thread->abort_exc) {
+		mono_monitor_exit ((MonoObject *)thread);
 		const char *msg = "Unable to reset abort because no abort was requested";
 		mono_raise_exception (mono_get_exception_thread_state (msg));
 	} else {
 		thread->abort_exc = NULL;
 		thread->abort_state = NULL;
 	}
+	
+	mono_monitor_exit ((MonoObject *)thread);
+}
+
+void
+ves_icall_System_Threading_Thread_Suspend (MonoThread *thread)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	if (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
+		return;
+
+	if ((thread->state & ThreadState_Suspended) != 0 || 
+		(thread->state & ThreadState_SuspendRequested) != 0 ||
+		(thread->state & ThreadState_StopRequested) != 0) 
+	{
+		mono_monitor_exit ((MonoObject *)thread);
+		return;
+	}
+	
+	thread->state |= ThreadState_SuspendRequested;
+	mono_monitor_exit ((MonoObject *)thread);
+
+	signal_thread_state_change (thread);
+}
+
+void
+ves_icall_System_Threading_Thread_Resume (MonoThread *thread)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	if (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
+		return;
+
+	if ((thread->state & ThreadState_SuspendRequested) != 0) {
+		thread->state &= ~ThreadState_SuspendRequested;
+		mono_monitor_exit ((MonoObject *)thread);
+		return;
+	}
+		
+	if ((thread->state & ThreadState_Suspended) == 0) 
+	{
+		mono_monitor_exit ((MonoObject *)thread);
+		return;
+	}
+
+	while (ResumeThread (thread->handle) == 0) {
+		/* A rare case: we may try to resume the thread when it has not still
+		   called SuspendThread. This my happen since SuspendThread can't be
+		   called from inside the thread lock. In this case, keep trying until
+		   the thread is actually resumed */
+		
+		Sleep (1);
+	}
+	
+	mono_monitor_exit ((MonoObject *)thread);
+}
+
+void mono_thread_stop (MonoThread *thread)
+{
+	if (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
+		return;
+
+	if ((thread->state & ThreadState_StopRequested) != 0 ||
+		(thread->state & ThreadState_Stopped) != 0)
+	{
+		mono_monitor_exit ((MonoObject *)thread);
+		return;
+	}
+	
+	/* Make sure the thread is awake */
+	ves_icall_System_Threading_Thread_Resume (thread);
+	
+	thread->state |= ThreadState_StopRequested;
+	thread->state &= ~ThreadState_AbortRequested;
+	
+	mono_monitor_exit ((MonoObject *)thread);
+	
+	signal_thread_state_change (thread);
 }
 
 gint8
@@ -1037,6 +1169,7 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	InitializeCriticalSection(&threads_mutex);
 	InitializeCriticalSection(&interlocked_mutex);
 	InitializeCriticalSection(&contexts_mutex);
+	InitializeCriticalSection(&interruption_mutex);
 	
 	mono_init_static_data_info (&thread_static_info);
 	mono_init_static_data_info (&context_static_info);
@@ -1094,7 +1227,8 @@ static void wait_for_tids (struct wait_data *wait, guint32 timeout)
 		  ": %d threads to wait for in this batch", wait->num);
 #endif
 
-	ret=WaitForMultipleObjects(wait->num, wait->handles, TRUE, timeout);
+	ret=WaitForMultipleObjectsEx(wait->num, wait->handles, TRUE, timeout, FALSE);
+
 	if(ret==WAIT_FAILED) {
 		/* See the comment in build_wait_tids() */
 #ifdef THREAD_DEBUG
@@ -1180,13 +1314,7 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 #ifdef THREAD_DEBUG
 		g_print (G_GNUC_PRETTY_FUNCTION ": Aborting id: %d\n", thread->tid);
 #endif
-/* Will assert on windows */
-#ifndef __MINGW32__
-		mono_monitor_try_enter ((MonoObject *)thread, INFINITE);
-		thread->state |= ThreadState_StopRequested;
-		mono_monitor_exit ((MonoObject *)thread);
-		ves_icall_System_Threading_Thread_Abort (thread, NULL);
-#endif
+		mono_thread_stop (thread);
 		return TRUE;
 	}
 
@@ -1655,6 +1783,148 @@ void mono_gc_start_world (void)
 		mono_g_hash_table_foreach (threads, gc_start_world, GUINT_TO_POINTER (self));
 	
 	LeaveCriticalSection (&threads_mutex);
+}
+
+
+static guint32 dummy_apc (gpointer param)
+{
+	return 0;
+}
+
+/*
+ * mono_thread_execute_interruption
+ * 
+ * Performs the operation that the requested thread state requires (abort,
+ * suspend or stop)
+ */
+static MonoException* mono_thread_execute_interruption (MonoThread *thread)
+{
+	while (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
+		;	/* we really need to get in */
+	
+	if (thread->interruption_requested) {
+		/* this will consume pending APC calls */
+		WaitForSingleObjectEx (GetCurrentThread(), 0, TRUE);
+		EnterCriticalSection (&interruption_mutex);
+		thread_interruption_requested--;
+		LeaveCriticalSection (&interruption_mutex);
+		thread->interruption_requested = FALSE;
+	}
+
+	if ((thread->state & ThreadState_AbortRequested) != 0) {
+		thread->abort_exc = mono_get_exception_thread_abort ();
+		mono_monitor_exit ((MonoObject *)thread);
+		return thread->abort_exc;
+	}
+	else if ((thread->state & ThreadState_SuspendRequested) != 0) {
+		thread->state &= ~ThreadState_SuspendRequested;
+		thread->state |= ThreadState_Suspended;
+		mono_monitor_exit ((MonoObject *)thread);
+		
+		SuspendThread (thread->handle);
+		
+		mono_monitor_try_enter ((MonoObject *)thread, INFINITE);
+		thread->state &= ~ThreadState_Suspended;
+		mono_monitor_exit ((MonoObject *)thread);
+		return NULL;
+	}
+	else if ((thread->state & ThreadState_StopRequested) != 0) {
+		/* FIXME: do this through the JIT? */
+		mono_monitor_exit ((MonoObject *)thread);
+		ExitThread (-1);
+		return NULL;
+	}
+	
+	mono_monitor_exit ((MonoObject *)thread);
+	return NULL;
+}
+
+/*
+ * mono_thread_request_interruption
+ *
+ * A signal handler can call this method to request the interruption of a
+ * thread. The result of the interruption will depend on the current state of
+ * the thread. If the result is an exception that needs to be throw, it is 
+ * provided as return value.
+ */
+MonoException* mono_thread_request_interruption (gboolean running_managed)
+{
+	MonoThread *thread = mono_thread_current ();
+
+	/* The thread may already be stopping */
+	if (thread == NULL) 
+		return NULL;
+	
+	if (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
+		;
+	
+	if (thread->interruption_requested) {
+		mono_monitor_exit ((MonoObject *)thread);
+		return NULL;
+	}
+
+	if (!running_managed) {
+		/* Can't stop while in unmanaged code. Increase the global interruption
+		   request count. When exiting the unmanaged method the count will be
+		   checked and the thread will be interrupted. */
+		
+		EnterCriticalSection (&interruption_mutex);
+		thread_interruption_requested++;
+		LeaveCriticalSection (&interruption_mutex);
+		
+		thread->interruption_requested = TRUE;
+		mono_monitor_exit ((MonoObject *)thread);
+		
+		/* this will awake the thread if it is in WaitForSingleObject 
+	       or similar */
+		QueueUserAPC (dummy_apc, thread->handle, NULL);
+		
+		return NULL;
+	}
+	else {
+		mono_monitor_exit ((MonoObject *)thread);
+		return mono_thread_execute_interruption (thread);
+	}
+}
+
+gboolean mono_thread_interruption_requested ()
+{
+	if (thread_interruption_requested) {
+		MonoThread *thread = mono_thread_current ();
+		/* The thread may already be stopping */
+		if (thread != NULL) 
+			return (thread->interruption_requested);
+	}
+	return FALSE;
+}
+
+/*
+ * Performs the interruption of the current thread, if one has been requested.
+ */
+void mono_thread_interruption_checkpoint ()
+{
+	MonoThread *thread = mono_thread_current ();
+	
+	/* The thread may already be stopping */
+	if (thread == NULL) 
+		return NULL;
+	
+	if (thread->interruption_requested) {
+		MonoException* exc = mono_thread_execute_interruption (thread);
+		if (exc) mono_raise_exception (exc);
+	}
+}
+
+/*
+ * Returns the address of a flag that will be non-zero if an interruption has
+ * been requested for a thread. The thread to interrupt may not be the current
+ * thread, so an additional call to mono_thread_interruption_requested() or
+ * mono_thread_interruption_checkpoint() is allways needed if the flag is not
+ * zero.
+ */
+gint32* mono_thread_interruption_request_flag ()
+{
+	return &thread_interruption_requested;
 }
 
 #ifdef WITH_INCLUDED_LIBGC

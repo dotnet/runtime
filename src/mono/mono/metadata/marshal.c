@@ -17,6 +17,7 @@
 #include "metadata/appdomain.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threadpool.h"
+#include "mono/metadata/threads.h"
 #include "mono/metadata/monitor.h"
 #include <string.h>
 #include <errno.h>
@@ -1060,6 +1061,29 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 	}
 }
 
+static void
+emit_thread_interrupt_checkpoint (MonoMethodBuilder *mb)
+{
+	static MonoMethodSignature *state_check_sig = NULL;
+	int pos_noabort;
+	
+	if (!state_check_sig) {
+		state_check_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+		state_check_sig->ret = &mono_defaults.void_class->byval_arg;
+		state_check_sig->pinvoke = 0;
+	}
+	
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, (gpointer) mono_thread_interruption_request_flag ()));
+	mono_mb_emit_byte (mb, CEE_LDIND_I4);
+	pos_noabort = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+	mono_mb_emit_native_call (mb, state_check_sig, mono_thread_interruption_checkpoint);
+	
+	mono_mb_patch_addr (mb, pos_noabort, mb->pos - (pos_noabort + 4));
+}
+
 static MonoAsyncResult *
 mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 {
@@ -1314,6 +1338,7 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldloc (mb, params_var);
 	mono_mb_emit_native_call (mb, csig, mono_delegate_begin_invoke);
+	emit_thread_interrupt_checkpoint (mb);
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	res = mono_mb_create_and_cache (cache, sig, mb, sig, sig->param_count + 16);
@@ -1516,6 +1541,7 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldloc (mb, params_var);
 	mono_mb_emit_native_call (mb, csig, mono_delegate_end_invoke);
+	emit_thread_interrupt_checkpoint (mb);
 
 	if (sig->ret->type == MONO_TYPE_VOID) {
 		mono_mb_emit_byte (mb, CEE_POP);
@@ -1623,6 +1649,7 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, method));
 	mono_mb_emit_ldloc (mb, params_var);
 	mono_mb_emit_native_call (mb, csig, mono_remoting_wrapper);
+	emit_thread_interrupt_checkpoint (mb);
 
 	if (sig->ret->type == MONO_TYPE_VOID) {
 		mono_mb_emit_byte (mb, CEE_POP);
@@ -1728,7 +1755,10 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
          *	prev.Invoke( args .. );
 	 * return this.<target>( args .. );
          */
-
+	
+	/* this wrapper can be used in unmanaged-managed transitions */
+	emit_thread_interrupt_checkpoint (mb);
+	
 	/* get this->prev */
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoMulticastDelegate, prev));
@@ -2391,6 +2421,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 		}
 	}
 
+	emit_thread_interrupt_checkpoint (mb);
 	mono_mb_emit_managed_call (mb, method, NULL);
 
 	if (!sig->ret->byref) { 
@@ -2441,6 +2472,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 			mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
 			mono_mb_emit_byte (mb, CEE_CONV_I);
 			mono_mb_emit_native_call (mb, alloc_sig, mono_marshal_alloc);
+			emit_thread_interrupt_checkpoint (mb);
 			mono_mb_emit_byte (mb, CEE_STLOC_1);
 			mono_mb_emit_byte (mb, CEE_LDLOC_1);
 			mono_mb_emit_stloc (mb, retobj_var);
@@ -2476,6 +2508,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 			mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
 			mono_mb_emit_byte (mb, CEE_CONV_I);
 			mono_mb_emit_native_call (mb, alloc_sig, mono_marshal_alloc);
+			emit_thread_interrupt_checkpoint (mb);
 			mono_mb_emit_byte (mb, CEE_DUP);
 			mono_mb_emit_byte (mb, CEE_STLOC_1);
 			mono_mb_emit_byte (mb, CEE_STLOC_3);
@@ -2526,6 +2559,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 			mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
 			mono_mb_emit_byte (mb, CEE_CONV_I);
 			mono_mb_emit_native_call (mb, alloc_sig, mono_marshal_alloc);
+			emit_thread_interrupt_checkpoint (mb);
 			mono_mb_emit_byte (mb, CEE_STLOC_1);
 
 			/* Update argument pointer */
@@ -2644,6 +2678,7 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	csig->pinvoke = 1;
 
 	mono_mb_emit_native_call (mb, csig, mono_load_remote_field_new);
+	emit_thread_interrupt_checkpoint (mb);
 
 	if (klass->valuetype) {
 		mono_mb_emit_byte (mb, CEE_UNBOX);
@@ -2808,6 +2843,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	csig->pinvoke = 1;
 
 	mono_mb_emit_native_call (mb, csig, mono_store_remote_field_new);
+	emit_thread_interrupt_checkpoint (mb);
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
@@ -2886,7 +2922,7 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	int i;
-
+	
 	g_assert (sig->pinvoke);
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
@@ -2902,7 +2938,7 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 		mono_mb_emit_ldarg (mb, i + sig->hasthis);
 
 	mono_mb_emit_native_call (mb, sig, (gpointer) func);
-
+	emit_thread_interrupt_checkpoint (mb);
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	csig = mono_metadata_signature_dup (sig);
@@ -2991,7 +3027,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 		g_assert (method->addr);
 		mono_mb_emit_native_call (mb, csig, method->addr);
-
+		emit_thread_interrupt_checkpoint (mb);
 		mono_mb_emit_byte (mb, CEE_RET);
 
 		csig = mono_metadata_signature_dup (csig);
@@ -3546,6 +3582,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 		mono_mb_emit_native_call (mb, lasterr_sig, mono_marshal_set_last_error);
 	}		
+
+	emit_thread_interrupt_checkpoint (mb);
 
 	/* convert the result */
 	if (!sig->ret->byref) {
@@ -4309,6 +4347,7 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 	mono_mb_emit_ldarg (mb, 0);
 	
 	mono_mb_emit_native_call (mb, upgrade_proxy_sig, mono_upgrade_remote_class_wrapper);
+	emit_thread_interrupt_checkpoint (mb);
 	
 	mono_mb_emit_ldarg (mb, 0);
 	pos_end = mono_mb_emit_branch (mb, CEE_BR);

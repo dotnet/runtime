@@ -1170,7 +1170,6 @@ mono_domain_unload (MonoDomain *domain)
 {
 	HANDLE thread_handle;
 	guint32 tid;
-	gboolean ret;
 	MonoAppDomainState prev_state;
 	MonoMethod *method;
 	MonoObject *exc;
@@ -1222,7 +1221,10 @@ mono_domain_unload (MonoDomain *domain)
 	thread_handle = CreateThread (NULL, 0, unload_thread_main, &thread_data, CREATE_SUSPENDED, &tid);
 	ResumeThread (thread_handle);
 #endif
-	ret = WaitForSingleObject (thread_handle, INFINITE);
+	
+	while (WaitForSingleObjectEx (thread_handle, INFINITE, FALSE) == WAIT_IO_COMPLETION)
+		; /* wait for the thread */
+	
 
 	if (thread_data.failure_reason) {
 		MonoException *ex;

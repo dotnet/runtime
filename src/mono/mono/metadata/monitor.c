@@ -194,9 +194,9 @@ retry:
 	}
 	
 	InterlockedIncrement (&mon->entry_count);
-	ret=WaitForSingleObject (mon->entry_sem, waitms);
+	ret=WaitForSingleObjectEx (mon->entry_sem, waitms, TRUE);
 	InterlockedDecrement (&mon->entry_count);
-	
+
 	if(ms!=INFINITE) {
 		now=GetTickCount ();
 		
@@ -503,10 +503,16 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	 * is private to this thread.  Therefore even if the event was
 	 * signalled before we wait, we still succeed.
 	 */
-	ret=WaitForSingleObject (event, ms);
+	ret=WaitForSingleObjectEx (event, ms, TRUE);
 	
+	if (mono_thread_interruption_requested ()) {
+		CloseHandle (event);
+		return(FALSE);
+	}
+
 	/* Regain the lock with the previous nest count */
 	regain=mono_monitor_try_enter (obj, INFINITE);
+	
 	if(regain==FALSE) {
 		/* Something went wrong, so throw a
 		 * SynchronizationLockException
@@ -527,7 +533,7 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 		/* Poll the event again, just in case it was signalled
 		 * while we were trying to regain the monitor lock
 		 */
-		ret=WaitForSingleObject (event, 0);
+		ret=WaitForSingleObjectEx (event, 0, FALSE);
 	}
 
 	/* Pulse will have popped our event from the queue if it signalled

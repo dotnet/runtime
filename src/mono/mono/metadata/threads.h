@@ -50,6 +50,8 @@ extern gboolean mono_threads_abort_appdomain_threads (MonoDomain *domain, int ti
 
 extern MonoThread *mono_thread_current (void);
 
+extern void mono_thread_stop (MonoThread *thread);
+
 typedef struct {
 	gpointer (* thread_start_compile_func) (MonoMethod *delegate);
 	void (* thread_created) (guint32 tid, gpointer stack_start, gpointer func);
@@ -75,6 +77,11 @@ gpointer mono_get_special_static_data   (guint32 offset);
 void mono_gc_stop_world (void);
 
 void mono_gc_start_world (void);
+
+extern MonoException* mono_thread_request_interruption (gboolean running_managed);
+extern gboolean mono_thread_interruption_requested (void);
+extern void mono_thread_interruption_checkpoint (void);
+extern gint32* mono_thread_interruption_request_flag (void);
 
 extern HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this_obj, MonoObject *start);
 extern void ves_icall_System_Threading_Thread_Thread_free_internal(MonoThread *this_obj, HANDLE thread);
@@ -112,6 +119,8 @@ extern MonoObject *ves_icall_System_Threading_Interlocked_CompareExchange_Object
 extern gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single(gfloat *location1, gfloat value, gfloat comparand);
 extern void ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state);
 extern void ves_icall_System_Threading_Thread_ResetAbort (void);
+extern void ves_icall_System_Threading_Thread_Suspend (MonoThread *thread);
+extern void ves_icall_System_Threading_Thread_Resume (MonoThread *thread);
 
 gint8 ves_icall_System_Threading_Thread_VolatileRead1 (void *ptr);
 gint16 ves_icall_System_Threading_Thread_VolatileRead2 (void *ptr);
