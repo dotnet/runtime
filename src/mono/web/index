@@ -80,14 +80,24 @@
   </tr>
 </table>
 
+@item Jun 20, 2002
+
+	Gonzalo has got the Mono ASP.NET implementation can now render all Html
+	Controls, and half of the Web Controls.  Session tracking is
+	next.  Look in xsp/test for a collection of tests that render with Mono.
+
+	Ajay has been very busy improving and extending the
+	XmlSerialization code.  All fields had to be re-ordered to
+	match the Microsoft implementation.
+
 @item Jun 19, 2002
 
-      You can now download a fresh tarball of the libraries and the MCS 
-      compiler daily from <a href="http://www.atoker.com/mono/">Alp Toker's
-      website</a>.
+	You can now download a fresh tarball of the libraries and the MCS 
+	compiler daily from <a href="http://www.atoker.com/mono/">Alp Toker's
+	website</a>.
       
-      New libgc RPMS for Redhat 7.3 are available on <a href="
-      http://java.thn.htu.se/~toor/">Richard Torkar's site</a>.
+	New libgc RPMS for Redhat 7.3 are available on <a href="
+	http://java.thn.htu.se/~toor/">Richard Torkar's site</a>.
 
 @item Jun 10, 2002
 
