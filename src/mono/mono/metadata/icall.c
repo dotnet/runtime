@@ -957,7 +957,7 @@ type_from_name (const char *str, MonoBoolean ignoreCase)
 	if (assembly)
 		type = mono_reflection_get_type (assembly->image, &info, ignoreCase);
 	
-	if (!info.assembly.name && !type) /* try mscorlib */
+	if ((!info.assembly || !info.assembly.name) && !type) /* try mscorlib */
 		type = mono_reflection_get_type (NULL, &info, ignoreCase);
 
 	g_list_free (info.modifiers);
