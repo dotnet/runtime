@@ -284,11 +284,13 @@ simplestruct
 mono_test_return_vtype (int i)
 {
 	simplestruct res;
+	static gunichar2 test2 [] = { 'T', 'E', 'S', 'T', '2', 0 };
 
 	res.a = 0;
 	res.b = 1;
 	res.c = 0;
 	res.d = "TEST";
+	res.d2 = test2;
 
 	return res;
 }

@@ -450,9 +450,9 @@ public class Tests {
 	static int test_0_return_vtype () {
 		SimpleStruct ss = mono_test_return_vtype (new IntPtr (5));
 
-		if (!ss.a && ss.b && !ss.c && ss.d == "TEST")
+		if (!ss.a && ss.b && !ss.c && ss.d == "TEST" && ss.d2 == "TEST2")
 			return 0;
-		
+
 		return 1;
 	}
 
