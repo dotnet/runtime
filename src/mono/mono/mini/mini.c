@@ -1500,8 +1500,7 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 		if (!found) {
 			bb->out_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * count);
 			for (i = 0; i < count; ++i) {
-#if 0
-				/* recompiling mcs fails with this */
+#if 1
 				/* try to reuse temps already allocated for this purpouse, if they occupy the same 
 				 * stack slot and if they are of the same type. */
 				bb->out_stack [i] = mono_compile_get_interface_var (cfg, i, sp [i]);
@@ -2725,6 +2724,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 
+			handle_loaded_temps (cfg, bblock, stack_start, sp);
+
 			if ((cfg->opt & MONO_OPT_INLINE) && cmethod &&
 			    (!virtual || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || (cmethod->flags & METHOD_ATTRIBUTE_FINAL)) && 
 			    mono_method_check_inlining (cmethod) &&
@@ -2753,7 +2754,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			
 			inline_costs += 10 * num_calls++;
-			handle_loaded_temps (cfg, bblock, stack_start, sp);
 
 			/* tail recursion elimination */
 			if ((cfg->opt & MONO_OPT_TAILC) && *ip == CEE_CALL && cmethod == cfg->method && ip [5] == CEE_RET) {
