@@ -5,6 +5,7 @@ CORCOMPARE=../../../mcs/tools/corcompare
 
 OBJECTS=	\
 	deploy/ado-net.html					\
+		deploy/postgresql.html			\
 	deploy/anoncvs.html					\
 	deploy/asp-net.html					\
 	deploy/books.html					\
