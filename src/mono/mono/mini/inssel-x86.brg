@@ -236,25 +236,9 @@ stmt: OP_OUTARG (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-# we need to reduce this code duplication with some burg syntax extension
-stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
-	tree->opcode = OP_X86_PUSH;
-	tree->sreg1 = state->left->left->tree->dreg;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: OP_OUTARG (CEE_LDIND_I4 (OP_REGVAR)) {
-	tree->opcode = OP_X86_PUSH;
-	tree->sreg1 = state->left->left->tree->dreg;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: OP_OUTARG (CEE_LDIND_U4 (OP_REGVAR)) {
-	tree->opcode = OP_X86_PUSH;
-	tree->sreg1 = state->left->left->tree->dreg;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
+stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)),
+stmt: OP_OUTARG (CEE_LDIND_I4 (OP_REGVAR)),
+stmt: OP_OUTARG (CEE_LDIND_U4 (OP_REGVAR)),
 stmt: OP_OUTARG (CEE_LDIND_I (OP_REGVAR)) {
 	tree->opcode = OP_X86_PUSH;
 	tree->sreg1 = state->left->left->tree->dreg;
@@ -288,37 +272,13 @@ stmt: OP_OUTARG (OP_ICONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: OP_OUTARG (CEE_LDIND_I4 (base)) {
-	tree->opcode = OP_X86_PUSH_MEMBASE;
-	tree->inst_basereg = state->left->left->tree->inst_basereg;
-	tree->inst_offset = state->left->left->tree->inst_offset;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: OP_OUTARG (CEE_LDIND_U4 (base)) {
-	tree->opcode = OP_X86_PUSH_MEMBASE;
-	tree->inst_basereg = state->left->left->tree->inst_basereg;
-	tree->inst_offset = state->left->left->tree->inst_offset;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: OP_OUTARG (CEE_LDIND_I (base)) {
-	tree->opcode = OP_X86_PUSH_MEMBASE;
-	tree->inst_basereg = state->left->left->tree->inst_basereg;
-	tree->inst_offset = state->left->left->tree->inst_offset;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
+stmt: OP_OUTARG (CEE_LDIND_I4 (base)),
+stmt: OP_OUTARG (CEE_LDIND_U4 (base)),
+stmt: OP_OUTARG (CEE_LDIND_I (base)),
 stmt: OP_OUTARG (CEE_LDIND_REF (base)) {
 	tree->opcode = OP_X86_PUSH_MEMBASE;
 	tree->inst_basereg = state->left->left->tree->inst_basereg;
 	tree->inst_offset = state->left->left->tree->inst_offset;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
-	tree->opcode = OP_X86_PUSH;
-	tree->sreg1 = state->left->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 

@@ -17,44 +17,64 @@
 # basic alu operations
 #
 
-reg: CEE_AND (reg, reg) {
+reg: CEE_AND (reg, reg),
+reg: CEE_OR (reg, reg),
+reg: CEE_XOR (reg, reg),
+reg: CEE_ADD (reg, reg),
+reg: CEE_SUB (reg, reg),
+reg: CEE_MUL (reg, reg),
+reg: CEE_MUL_OVF (reg, reg),
+reg: CEE_MUL_OVF_UN (reg, reg),
+reg: CEE_DIV (reg, reg),
+reg: CEE_DIV_UN (reg, reg),
+reg: CEE_REM (reg, reg),
+reg: CEE_REM_UN (reg, reg),
+reg: CEE_SHL (reg, reg),
+reg: CEE_SHR (reg, reg),
+reg: CEE_SHR_UN (reg, reg) {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
+
+reg: CEE_NEG (reg),
+reg: CEE_NOT (reg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
 
 reg: CEE_AND (reg, OP_ICONST) {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_AND_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-}
-
-reg: CEE_OR (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
 
 reg: CEE_OR (reg, OP_ICONST) {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_OR_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
 }
 
-reg: CEE_XOR (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
 reg: CEE_XOR (reg, OP_ICONST) {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_XOR_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
 }
 
-reg: CEE_NEG (reg) {
-	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
-}
-
-reg: CEE_NOT (reg) {
-	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
-}
-
-reg: CEE_ADD (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
 reg: CEE_ADD (reg, OP_ICONST) {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_ADD_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
+}
+
+reg: CEE_SUB (reg, OP_ICONST) {
+	MONO_EMIT_BIALU_IMM (s, tree, OP_SUB_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
+}
+
+reg: CEE_MUL (reg, OP_ICONST) {
+	MONO_EMIT_BIALU_IMM (s, tree, OP_MUL_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
+}
+
+reg: CEE_SHL (reg, OP_ICONST) {
+	MONO_EMIT_BIALU_IMM (s, tree, OP_SHL_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
+}
+
+reg: CEE_SHR (reg, OP_ICONST) {
+	MONO_EMIT_BIALU_IMM (s, tree, OP_SHR_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
+}
+
+reg: CEE_SHR_UN (reg, OP_ICONST) {
+	MONO_EMIT_BIALU_IMM (s, tree, OP_SHR_UN_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
 }
 
 reg: CEE_ADD_OVF (reg, reg) {
@@ -67,16 +87,8 @@ reg: CEE_ADD_OVF_UN (reg, reg) {
 	MONO_EMIT_NEW_COND_EXC (s, C, "OverflowException");
 }
 
-reg: CEE_SUB (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
 reg: CEE_SUB (reg, CEE_LDIND_I4 (OP_REGVAR)) {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->left->tree->dreg);
-}
-
-reg: CEE_SUB (reg, OP_ICONST) {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_SUB_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
 }
 
 reg: CEE_SUB_OVF (reg, reg) {
@@ -87,86 +99,6 @@ reg: CEE_SUB_OVF (reg, reg) {
 reg: CEE_SUB_OVF_UN (reg, reg) {
 	MONO_EMIT_NEW_BIALU (s, OP_SUBCC, state->reg1, state->left->reg1, state->right->reg1);
 	MONO_EMIT_NEW_COND_EXC (s, C, "OverflowException");
-}
-
-#
-# mult/div operations
-#
-
-reg: CEE_MUL (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-reg: CEE_MUL (reg, OP_ICONST) {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_MUL_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-}
-
-reg: CEE_MUL_OVF (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-reg: CEE_MUL_OVF_UN (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-reg: CEE_DIV (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-#reg: CEE_DIV (reg, OP_ICONST) {
-#	MONO_EMIT_BIALU_IMM (s, tree, OP_DIV_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-#}
-
-reg: CEE_DIV_UN (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-#reg: CEE_DIV_UN (reg, OP_ICONST) {
-#	MONO_EMIT_BIALU_IMM (s, tree, OP_DIV_UN_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-#}
-
-reg: CEE_REM (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-#reg: CEE_REM (reg, OP_ICONST) {
-#	MONO_EMIT_BIALU_IMM (s, tree, OP_REM_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-#}
-
-reg: CEE_REM_UN (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-#reg: CEE_REM_UN (reg, OP_ICONST) {
-#	MONO_EMIT_BIALU_IMM (s, tree, OP_REM_UN_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-#}
-
-#
-# shift operations
-#
-
-reg: CEE_SHL (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-reg: CEE_SHL (reg, OP_ICONST) {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_SHL_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-}
-
-reg: CEE_SHR (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-reg: CEE_SHR (reg, OP_ICONST) {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_SHR_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-}
-
-reg: CEE_SHR_UN (reg, reg) {
-	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
-}
-
-reg: CEE_SHR_UN (reg, OP_ICONST) {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_SHR_UN_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
 }
 
 cflags: OP_COMPARE (reg, reg) {
@@ -210,66 +142,23 @@ cflags: OP_COMPARE (reg, OP_ICONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_BNE_UN (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BEQ (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BLT (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BLT_UN (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BGT (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BGT_UN (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BGE  (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BGE_UN (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_BLE  (cflags) {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
+stmt: CEE_BNE_UN (cflags),
+stmt: CEE_BEQ (cflags),
+stmt: CEE_BLT (cflags),
+stmt: CEE_BLT_UN (cflags),
+stmt: CEE_BGT (cflags),
+stmt: CEE_BGT_UN (cflags),
+stmt: CEE_BGE  (cflags),
+stmt: CEE_BGE_UN (cflags),
+stmt: CEE_BLE  (cflags),
 stmt: CEE_BLE_UN (cflags) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-reg: OP_CEQ (cflags) {	
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-reg: OP_CLT (cflags) {	
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-reg: OP_CLT_UN (cflags) {	
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-reg: OP_CGT (cflags) {	
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
+reg: OP_CEQ (cflags),
+reg: OP_CLT (cflags),
+reg: OP_CLT_UN (cflags),
+reg: OP_CGT (cflags),
 reg: OP_CGT_UN (cflags) {	
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -344,12 +233,9 @@ stmt: CEE_STIND_I8 (base, i8con) {
 					 state->left->tree->inst_offset + MINI_LS_WORD_OFFSET, state->right->tree->inst_ls_word);
 }
 
-lreg: OP_BIGMUL (reg, reg) {
-	MONO_EMIT_NEW_BIALU (s, OP_BIGMUL, state->reg1, state->left->reg1, state->right->reg1); 
-}
-
+lreg: OP_BIGMUL (reg, reg),
 lreg: OP_BIGMUL_UN (reg, reg) {
-	MONO_EMIT_NEW_BIALU (s, OP_BIGMUL_UN, state->reg1, state->left->reg1, state->right->reg1); 
+	MONO_EMIT_NEW_BIALU (s, tree->opcode, state->reg1, state->left->reg1, state->right->reg1); 
 }
 
 lreg: OP_LONG_SHRUN_32 (lreg) {
