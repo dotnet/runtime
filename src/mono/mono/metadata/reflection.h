@@ -298,5 +298,14 @@ MonoReflectionProperty* mono_property_get_object (MonoDomain *domain, MonoClass 
 /* note: this one is slightly different: we keep the whole array of params in the cache */
 MonoReflectionParameter** mono_param_get_objects  (MonoDomain *domain, MonoMethod *method);
 
+
+typedef MonoObject* (*MonoInvokeFunc) (MonoMethod *method, void *obj, void **params);
+
+extern MonoInvokeFunc mono_default_runtime_invoke;
+
+void        mono_install_runtime_invoke (MonoInvokeFunc func);
+MonoObject* mono_runtime_invoke         (MonoMethod *method, void *obj, void **params);
+MonoArray*  mono_reflection_get_custom_attrs (MonoObject *obj);
+
 #endif /* __METADATA_REFLECTION_H__ */
 

@@ -24,6 +24,7 @@ TESTSRC=			\
 	exception4.cs		\
 	exception5.cs		\
 	exception6.cs		\
+	exception7.cs		\
 	struct.cs		\
 	valuetype-gettype.cs	\
 	static-constructor.cs	\
@@ -34,6 +35,8 @@ TESTSRC=			\
 	enum2.cs		\
 	property.cs		\
 	enumcast.cs		\
+	custom-attr.cs		\
+	double-cast.cs		\
 	newobj-valuetype.cs	\
 	arraylist-clone.cs	\
 	setenv.cs		\

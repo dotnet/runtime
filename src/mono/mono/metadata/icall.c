@@ -1011,6 +1011,7 @@ static gpointer icall_map [] = {
 	"System.Reflection.MonoFieldInfo::get_field_info", ves_icall_get_field_info,
 	"System.Reflection.MonoPropertyInfo::get_property_info", ves_icall_get_property_info,
 	"System.Reflection.MonoMethod::InternalInvoke", ves_icall_InternalInvoke,
+	"System.MonoCustomAttrs::GetCustomAttributes", mono_reflection_get_custom_attrs,
 	
 	/* System.Enum */
 

@@ -131,6 +131,9 @@ mono_string_intern          (MonoString *str);
 MonoString*
 mono_string_new             (MonoDomain *domain, const char *text);
 
+MonoString*
+mono_string_new_len         (MonoDomain *domain, const char *text, guint length);
+
 char *
 mono_string_to_utf8         (MonoString *string_obj);
 

@@ -220,8 +220,7 @@ namespace T {
 			mime_types.Add(".png", "image/png");
 			mime_types.Add(".cs", "text/plain");
 
-			Console.WriteLine ("Args: " + args [0]);
-			if (args [0] == "--root"){
+			if (args.Length == 2 && args [0] == "--root"){
 				docroot = args [1];
 			}
 			

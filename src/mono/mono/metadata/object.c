@@ -251,6 +251,28 @@ mono_string_new_utf16 (MonoDomain *domain, const guint16 *text, gint32 len)
 	return s;
 }
 
+MonoString*
+mono_string_new_len
+(MonoDomain *domain, const char *text, guint length)
+{
+	GError *error = NULL;
+	MonoString *o = NULL;
+	guint16 *ut;
+	glong items_written;
+
+	
+	ut = g_utf8_to_utf16 (text, length, NULL, &items_written, &error);
+
+	if (!error)
+		o = mono_string_new_utf16 (domain, ut, items_written);
+	else 
+		g_error_free (error);
+
+	g_free (ut);
+
+	return o;
+}
+
 /**
  * mono_string_new:
  * @text: a pointer to an utf8 string

@@ -12,6 +12,7 @@
 #include "mono/metadata/reflection.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"
+#include "mono/metadata/appdomain.h"
 #include <stdio.h>
 #include <glib.h>
 #include <errno.h>
@@ -1862,5 +1863,206 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 		return 0;
 	/* add other consistency checks */
 	return 1;
+}
+
+static MonoObject*
+dummy_runtime_invoke (MonoMethod *method, void *obj, void **params)
+{
+	g_error ("runtime invoke called on uninitialized runtime");
+	return NULL;
+}
+
+MonoInvokeFunc mono_default_runtime_invoke = dummy_runtime_invoke;
+
+void
+mono_install_runtime_invoke (MonoInvokeFunc func) {
+	if (func)
+		mono_default_runtime_invoke = func;
+	else
+		mono_default_runtime_invoke = dummy_runtime_invoke;
+}
+
+MonoObject*
+mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
+{
+	return mono_default_runtime_invoke (method, obj, params);;
+}
+
+static void
+fill_param_data (MonoImage *image, MonoMethodSignature *sig, guint32 blobidx, void **params) {
+	int len, i, slen;
+	const char *p = mono_metadata_blob_heap (image, blobidx);
+
+	len = mono_metadata_decode_value (p, &p);
+	if (len < 2 || read16 (p) != 0x0001) /* Prolog */
+		return;
+
+	for (i = 0; i < sig->param_count; ++i) {
+		if (read16 (p) != 0x0001)
+			g_warning ("no prolog in custom attr");
+		p += 2;
+		switch (sig->params [i]->type) {
+		case MONO_TYPE_BOOLEAN: {
+			MonoBoolean *bval = params [i] = g_malloc (sizeof (MonoBoolean));
+			*bval = *p;
+			++p;
+			break;
+		}
+		case MONO_TYPE_VALUETYPE:
+#if 0
+			if (sig->params [i]->data.klass->enumtype) {
+				/*
+				 * FIXME: we should check the unrelying eum type...
+				 */
+				g_string_sprintfa (res, "0x%x", read32 (p));
+				p += 4;
+			} else {
+				g_warning ("generic valutype not handled in custom attr value decoding");
+			}
+#endif
+				g_warning ("generic valutype not handled in custom attr value decoding");
+			break;
+		case MONO_TYPE_STRING: {
+			slen = mono_metadata_decode_value (p, &p);
+			params [i] = mono_string_new_len (mono_domain_get (), p, slen);
+			p += slen;
+			break;
+		}
+		default:
+			g_warning ("Type %02x not handled in custom attr value decoding", sig->params [i]->type);
+			break;
+		}
+	}
+}
+
+static void
+free_param_data (MonoMethodSignature *sig, void **params) {
+	int i;
+	for (i = 0; i < sig->param_count; ++i) {
+		switch (sig->params [i]->type) {
+		case MONO_TYPE_BOOLEAN:
+			g_free (params [i]);
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+/*
+ * Find the method index in the metadata methodDef table.
+ */
+static guint32
+find_method_index (MonoMethod *method) {
+	MonoClass *klass = method->klass;
+	int i;
+
+	for (i = 0; i < klass->method.count; ++i) {
+		if (method == klass->methods [i]) {
+			guint32 mlist = mono_metadata_decode_row_col (&klass->image->tables [MONO_TABLE_TYPEDEF], mono_metadata_token_index (klass->type_token) - 1, MONO_TYPEDEF_METHOD_LIST);
+			return mlist + i;
+		}
+	}
+	return 0;
+}
+
+MonoArray*
+mono_reflection_get_custom_attrs (MonoObject *obj)
+{
+	guint32 index, mtoken, i;
+	guint32 cols [MONO_CUSTOM_ATTR_SIZE];
+	MonoClass *klass;
+	MonoImage *image;
+	MonoTableInfo *ca;
+	MonoMethod *method;
+	MonoObject *attr;
+	MonoArray *result;
+	GList *list = NULL;
+	void **params;
+	
+	klass = obj->vtable->klass;
+	if (klass == mono_defaults.monotype_class) {
+		MonoReflectionType *rtype = (MonoReflectionType*)obj;
+		klass = mono_class_from_mono_type (rtype->type);
+		index = mono_metadata_token_index (klass->type_token);
+		index <<= CUSTOM_ATTR_BITS;
+		index |= CUSTOM_ATTR_TYPEDEF;
+		image = klass->image;
+	} else if (strcmp ("ParameterInfo", klass->name) == 0) {
+		MonoReflectionParameter *param = (MonoReflectionParameter*)obj;
+		MonoReflectionMethod *rmethod = (MonoReflectionMethod*)param->MemberImpl;
+		guint32 method_index = find_method_index (rmethod->method);
+		guint32 param_list, param_last, param_pos, found;
+
+		image = rmethod->method->klass->image;
+		ca = &image->tables [MONO_TABLE_METHOD];
+
+		param_list = mono_metadata_decode_row_col (ca, method_index - 1, MONO_METHOD_PARAMLIST);
+		if (method_index == ca->rows) {
+			ca = &image->tables [MONO_TABLE_PARAM];
+			param_last = ca->rows + 1;
+		} else {
+			param_last = mono_metadata_decode_row_col (ca, method_index, MONO_METHOD_PARAMLIST);
+			ca = &image->tables [MONO_TABLE_PARAM];
+		}
+		found = 0;
+		for (i = param_list; i < param_list; ++i) {
+			param_pos = mono_metadata_decode_row_col (ca, i - 1, MONO_PARAM_SEQUENCE);
+			if (param_pos == param->PositionImpl) {
+				found = 1;
+				break;
+			}
+		}
+		if (!found)
+			return mono_array_new (mono_domain_get (), mono_defaults.object_class, 0);
+		index = i;
+		index <<= CUSTOM_ATTR_BITS;
+		index |= CUSTOM_ATTR_PARAMDEF;
+	} else { /* handle other types here... */
+		g_error ("get custom attrs not yet supported for %s", klass->name);
+	}
+
+	/* at this point image and index are set correctly for searching the custom attr */
+	ca = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
+	/* the table is not sorted */
+	for (i = 0; i < ca->rows; ++i) {
+		mono_metadata_decode_row (ca, i, cols, MONO_CUSTOM_ATTR_SIZE);
+		if (cols [MONO_CUSTOM_ATTR_PARENT] != index)
+			continue;
+		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> CUSTOM_ATTR_TYPE_BITS;
+		switch (cols [MONO_CUSTOM_ATTR_TYPE] & CUSTOM_ATTR_TYPE_MASK) {
+		case CUSTOM_ATTR_TYPE_METHODDEF:
+			mtoken |= MONO_TOKEN_METHOD_DEF;
+			break;
+		case CUSTOM_ATTR_TYPE_MEMBERREF:
+			mtoken |= MONO_TOKEN_MEMBER_REF;
+			break;
+		default:
+			g_error ("Unknown table for custom attr type %08x", cols [MONO_CUSTOM_ATTR_TYPE]);
+			break;
+		}
+		method = mono_get_method (image, mtoken, NULL);
+		if (!method)
+			g_error ("Can't find custom attr constructor");
+		mono_class_init (method->klass);
+		/*g_print ("got attr %s\n", method->klass->name);*/
+		params = g_new (void*, method->signature->param_count);
+		fill_param_data (image, method->signature, cols [MONO_CUSTOM_ATTR_VALUE], params);
+		attr = mono_object_new (mono_domain_get (), method->klass);
+		mono_runtime_invoke (method, attr, params);
+		list = g_list_prepend (list, attr);
+		free_param_data (method->signature, params);
+		g_free (params);
+	}
+
+	index = g_list_length (list);
+	result = mono_array_new (mono_domain_get (), mono_defaults.object_class, index);
+	for (i = 0; i < index; ++i) {
+		mono_array_set (result, gpointer, i, list->data);
+		list = list->next;
+	}
+	g_list_free (g_list_first (list));
+
+	return result;
 }
 

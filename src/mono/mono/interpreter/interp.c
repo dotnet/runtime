@@ -807,6 +807,58 @@ verify_method (MonoMethod *m)
 #define CHECK_ADD_OVERFLOW64_UN(a,b) \
 	(guint64)(ULONG_MAX) - (guint64)(b) < (guint64)(a) ? -1 : 0
 
+static MonoObject*
+interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
+{
+	MonoInvocation frame;
+	MonoObject *retval;
+	MonoMethodSignature *sig = method->signature;
+	int i;
+	void *ret;
+	stackval *args = g_new0 (stackval, sig->param_count);
+
+	/* FIXME: Set frame for execption handling.  */
+
+	/* allocate ret object. */
+	if (sig->ret->type == MONO_TYPE_VOID) {
+		retval = NULL;
+		ret = NULL;
+	} else {
+		MonoClass *klass = mono_class_from_mono_type (sig->ret);
+		if (klass->valuetype) {
+			retval = mono_object_new (mono_domain_get (), mono_class_from_mono_type (sig->ret));
+			ret = ((char*)retval) + sizeof (MonoObject);
+		} else {
+			ret = &retval;
+		}
+	}
+	for (i = 0; i < sig->param_count; ++i) {
+		if (sig->params [i]->byref) {
+			args [i].data.p = params [i];
+			continue;
+		}
+		switch (sig->params [i]->type) {
+		case MONO_TYPE_BOOLEAN:
+			args [i].type = VAL_I32;
+			args [i].data.i = *(MonoBoolean*)params [i];
+			args [i].data.vt.klass = NULL;
+			break;
+		case MONO_TYPE_STRING:
+			args [i].type = VAL_OBJ;
+			args [i].data.p = params [i];
+			args [i].data.vt.klass = NULL;
+			break;
+		default:
+			g_error ("type 0x%x not handled in invoke", sig->params [i]->type);
+		}
+	}
+
+	INIT_FRAME(&frame,NULL,obj,args,ret,method);
+	ves_exec_method (&frame);
+	g_free (args);
+	return retval;
+}
+
 /*
  * Need to optimize ALU ops when natural int == int32 
  *
@@ -3787,6 +3839,7 @@ main (int argc, char *argv [])
 	mono_install_runtime_class_init (runtime_class_init);
 	mono_install_runtime_object_init (runtime_object_init);
 	mono_install_runtime_exec_main (runtime_exec_main);
+	mono_install_runtime_invoke (interp_mono_runtime_invoke);
 
 	mono_install_handler (interp_ex_handler);
 
