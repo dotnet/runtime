@@ -1327,6 +1327,13 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				reginfo1 = reginfo;
 			reginfo1 [ins->sreg1].prev_use = reginfo1 [ins->sreg1].last_use;
 			reginfo1 [ins->sreg1].last_use = i;
+			if (spec [MONO_INST_SRC1] == 'L') {
+				/* The virtual register is allocated sequentially */
+				reginfo1 [ins->sreg1 + 1].prev_use = reginfo1 [ins->sreg1 + 1].last_use;
+				reginfo1 [ins->sreg1 + 1].last_use = i;
+				if (reginfo1 [ins->sreg1 + 1].born_in == 0 || reginfo1 [ins->sreg1 + 1].born_in > i)
+					reginfo1 [ins->sreg1 + 1].born_in = i;
+			}
 		} else {
 			ins->sreg1 = -1;
 		}
@@ -1350,6 +1357,13 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				reginfo2 = reginfo;
 			reginfo2 [ins->sreg2].prev_use = reginfo2 [ins->sreg2].last_use;
 			reginfo2 [ins->sreg2].last_use = i;
+			if (spec [MONO_INST_SRC2] == 'L') {
+				/* The virtual register is allocated sequentially */
+				reginfo2 [ins->sreg2 + 1].prev_use = reginfo2 [ins->sreg2 + 1].last_use;
+				reginfo2 [ins->sreg2 + 1].last_use = i;
+				if (reginfo2 [ins->sreg2 + 1].born_in == 0 || reginfo2 [ins->sreg2 + 1].born_in > i)
+					reginfo2 [ins->sreg2 + 1].born_in = i;
+			}
 		} else {
 			ins->sreg2 = -1;
 		}
@@ -1372,8 +1386,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			reginfod [ins->dreg].last_use = i;
 			if (reginfod [ins->dreg].born_in == 0 || reginfod [ins->dreg].born_in > i)
 				reginfod [ins->dreg].born_in = i;
-			if (spec [MONO_INST_DEST] == 'l') {
-				/* result in eax:edx, the virtual register is allocated sequentially */
+			if (spec [MONO_INST_DEST] == 'l' || spec [MONO_INST_DEST] == 'L') {
+				/* The virtual register is allocated sequentially */
 				reginfod [ins->dreg + 1].prev_use = reginfod [ins->dreg + 1].last_use;
 				reginfod [ins->dreg + 1].last_use = i;
 				if (reginfod [ins->dreg + 1].born_in == 0 || reginfod [ins->dreg + 1].born_in > i)
@@ -1394,12 +1408,13 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	DEBUG (print_regtrack (reginfof, rs->next_vfreg));
 	tmp = reversed;
 	while (tmp) {
-		int prev_dreg, prev_sreg1, prev_sreg2;
+		int prev_dreg, prev_sreg1, prev_sreg2, clob_dreg;
 		dest_mask = src1_mask = src2_mask = X86_CALLEE_REGS;
 		--i;
 		ins = tmp->data;
 		spec = ins_spec [ins->opcode];
 		prev_dreg = -1;
+		clob_dreg = -1;
 		DEBUG (g_print ("processing:"));
 		DEBUG (print_ins (i, ins));
 		if (spec [MONO_INST_CLOB] == 's') {
@@ -1429,6 +1444,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					if (new_dest < 0)
 						new_dest = get_register_spilling (cfg, tmp, ins, dest_mask, ins->dreg);
 					g_assert (new_dest >= 0);
+					DEBUG (g_print ("\tclob:s changing dreg from R%d to %s (val = %d)\n", ins->dreg, mono_arch_regname (new_dest), val));
+					clob_dreg = ins->dreg;
 					ins->dreg = new_dest;
 					create_copy_ins (cfg, X86_ECX, new_dest, ins);
 					need_ecx_spill = FALSE;
@@ -1448,6 +1465,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					 * shift instruction clobbers the first operand.
 					 */
 					MonoInst *copy = create_copy_ins (cfg, ins->dreg, val, NULL);
+					DEBUG (g_print ("\tclob:s moved sreg1 from R%d to R%d\n", val, ins->dreg));
 					insert_before_ins (ins, tmp, copy);
 				}
 				val = rs->iassign [ins->sreg2];
@@ -1554,7 +1572,62 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				fspill_list = g_list_remove (fspill_list, spill_node->data);
 				fspill--;
 			}
-		} 
+		} else if (spec [MONO_INST_DEST] == 'L') {
+			int hreg;
+			val = rs->iassign [ins->dreg];
+			/* check special case when dreg have been moved from ecx (clob shift) */
+			if (spec [MONO_INST_CLOB] == 's' && clob_dreg != -1)
+				hreg = clob_dreg + 1;
+			else
+				hreg = ins->dreg + 1;
+
+			/* base prev_dreg on fixed hreg, handle clob case */
+			prev_dreg = hreg - 1;
+
+			if (val < 0) {
+				int spill = 0;
+				if (val < -1) {
+					/* the register gets spilled after this inst */
+					spill = -val -1;
+				}
+				val = mono_regstate_alloc_int (rs, dest_mask);
+				if (val < 0) /* todo: should we force reg into eax, for opt reasons? */
+					val = get_register_spilling (cfg, tmp, ins, dest_mask, ins->dreg);
+				rs->iassign [ins->dreg] = val;
+				if (spill)
+					create_spilled_store (cfg, spill, val, prev_dreg, ins);
+			}
+
+			DEBUG (g_print ("\tassigned dreg (long) %s to dest R%d\n", mono_arch_regname (val), hreg - 1));
+
+			rs->isymbolic [val] = hreg - 1;
+			ins->dreg = val;
+			
+			val = rs->iassign [hreg];
+			if (val < 0) {
+				int spill = 0;
+				if (val < -1) {
+					/* the register gets spilled after this inst */
+					spill = -val -1;
+				}
+				val = mono_regstate_alloc_int (rs, dest_mask);
+				if (val < 0) /* todo: should we force reg into edx, for opt reasons? */
+					val = get_register_spilling (cfg, tmp, ins, dest_mask, hreg);
+				rs->iassign [hreg] = val;
+				if (spill)
+					create_spilled_store (cfg, spill, val, hreg, ins);
+			}
+
+			DEBUG (g_print ("\tassigned hreg (long) %s to dest R%d\n", mono_arch_regname (val), hreg));
+			rs->isymbolic [val] = hreg;
+			/* save reg allocating into unused */
+			ins->unused = val;
+
+			if (reg_is_freeable (val) && hreg >= 0 && reginfo [hreg].born_in >= i) {
+				DEBUG (g_print ("\tfreeable %s (R%d)\n", mono_arch_regname (val), hreg));
+				mono_regstate_free_int (rs, val);
+			}
+		}
 		else if (ins->dreg >= MONO_MAX_IREGS) {
 			val = rs->iassign [ins->dreg];
 			prev_dreg = ins->dreg;
@@ -1574,6 +1647,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			DEBUG (g_print ("\tassigned dreg %s to dest R%d\n", mono_arch_regname (val), ins->dreg));
 			rs->isymbolic [val] = prev_dreg;
 			ins->dreg = val;
+			/* handle cases where lreg needs to be eax:edx */
 			if (spec [MONO_INST_DEST] == 'l') {
 				int hreg = prev_dreg + 1;
 				val = rs->iassign [hreg];
@@ -1592,7 +1666,6 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 				DEBUG (g_print ("\tassigned hreg %s to dest R%d\n", mono_arch_regname (val), hreg));
 				rs->isymbolic [val] = hreg;
-				/* FIXME:? ins->dreg = val; */
 				if (ins->dreg == X86_EAX) {
 					if (val != X86_EDX)
 						create_copy_ins (cfg, val, X86_EDX, ins);
@@ -1665,7 +1738,22 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (store) 
 					insert_before_ins (load, tmp, store);
 			}
-		} 
+		} else if ((spec [MONO_INST_DEST] == 'L') && (spec [MONO_INST_SRC1] == 'L')) {
+			/* force source to be same as dest */
+			rs->iassign [ins->sreg1] = ins->dreg;
+			rs->iassign [ins->sreg1 + 1] = ins->unused;
+
+			DEBUG (g_print ("\tassigned sreg1 (long) %s to sreg1 R%d\n", mono_arch_regname (ins->dreg), ins->sreg1));
+			DEBUG (g_print ("\tassigned sreg1 (long-high) %s to sreg1 R%d\n", mono_arch_regname (ins->unused), ins->sreg1 + 1));
+
+			ins->sreg1 = ins->dreg;
+			/* no need for this, we know that src1=dest in this cases */
+			/*ins->inst_c0 = ins->unused;*/
+
+			/* make sure that we remove them from free mask */
+			rs->ifree_mask &= ~ (1 << ins->dreg);
+			rs->ifree_mask &= ~ (1 << ins->unused);
+		}
 		else if (ins->sreg1 >= MONO_MAX_IREGS) {
 			val = rs->iassign [ins->sreg1];
 			prev_sreg1 = ins->sreg1;
@@ -2205,6 +2293,108 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SHL_IMM:
 			x86_shift_reg_imm (code, X86_SHL, ins->dreg, ins->inst_imm);
 			break;
+		case OP_LSHL: {
+			guint8 *jump_to_large_shift;
+			guint8 *jump_to_end;
+
+			/* handle shifts bellow 32 bits */
+			x86_alu_reg_imm (code, X86_CMP, X86_ECX, 32);
+			jump_to_large_shift = code; x86_branch8 (code, X86_CC_GE, 0, TRUE);
+
+			x86_shld_reg (code, ins->unused, ins->sreg1);
+			x86_shift_reg (code, X86_SHL, ins->sreg1);
+
+			jump_to_end = code; x86_jump8 (code, 0);
+
+			x86_patch (jump_to_large_shift, code);
+
+			/* handle shifts over 31 bits */
+			x86_mov_reg_reg (code, ins->unused, ins->sreg1, 4);
+			x86_clear_reg (code, ins->sreg1);
+			x86_alu_reg_imm (code, X86_AND, X86_ECX, 0x1f);
+			x86_shift_reg (code, X86_SHL, ins->unused);
+			
+			x86_patch (jump_to_end, code);
+			}
+			break;
+		case OP_LSHR: {
+			guint8 *jump_to_large_shift;
+			guint8 *jump_to_end;
+
+			/* handle shifts bellow 32 bits */
+			x86_alu_reg_imm (code, X86_CMP, X86_ECX, 32);
+			jump_to_large_shift = code; x86_branch8 (code, X86_CC_GE, 0, TRUE);
+
+			x86_shrd_reg (code, ins->sreg1, ins->unused);
+			x86_shift_reg (code, X86_SAR, ins->unused);
+
+			jump_to_end = code; x86_jump8 (code, 0);
+
+			x86_patch (jump_to_large_shift, code);
+
+			/* handle shifts over 31 bits */
+			x86_mov_reg_reg (code, ins->sreg1, ins->unused,  4);
+			x86_shift_reg_imm (code, X86_SAR, ins->unused, 0x1f);
+			x86_alu_reg_imm (code, X86_AND, X86_ECX, 0x1f);
+			x86_shift_reg (code, X86_SAR, ins->sreg1);
+			
+			x86_patch (jump_to_end, code);
+			}
+			break;
+		case OP_LSHR_UN: {
+			guint8 *jump_to_large_shift;
+			guint8 *jump_to_end;
+
+			/* handle shifts bellow 32 bits */
+			x86_alu_reg_imm (code, X86_CMP, X86_ECX, 32);
+			jump_to_large_shift = code; x86_branch8 (code, X86_CC_GE, 0, TRUE);
+
+			x86_shrd_reg (code, ins->sreg1, ins->unused);
+			x86_shift_reg (code, X86_SHR, ins->unused);
+
+			jump_to_end = code; x86_jump8 (code, 0);
+
+			x86_patch (jump_to_large_shift, code);
+
+			/* handle shifts over 31 bits */
+			x86_mov_reg_reg (code, ins->sreg1, ins->unused, 4);
+			x86_clear_reg (code, ins->unused);
+			x86_alu_reg_imm (code, X86_AND, X86_ECX, 0x1f);
+			x86_shift_reg (code, X86_SHR, ins->sreg1);
+			
+			x86_patch (jump_to_end, code);
+			}
+			break;
+		case OP_LSHL_IMM:
+			if (ins->inst_imm >= 32) {
+				x86_mov_reg_reg (code, ins->unused, ins->sreg1, 4);
+				x86_clear_reg (code, ins->sreg1);
+				x86_shift_reg_imm (code, X86_SHL, ins->unused, ins->inst_imm & 0x1f);
+			} else {
+				x86_shld_reg_imm (code, ins->unused, ins->sreg1, ins->inst_imm);
+				x86_shift_reg_imm (code, X86_SHL, ins->sreg1, ins->inst_imm);
+			}
+			break;
+		case OP_LSHR_IMM:
+			if (ins->inst_imm >= 32) {
+				x86_mov_reg_reg (code, ins->sreg1, ins->unused,  4);
+				x86_shift_reg_imm (code, X86_SAR, ins->unused, 0x1f);
+				x86_shift_reg_imm (code, X86_SAR, ins->sreg1, ins->inst_imm & 0x1f);
+			} else {
+				x86_shrd_reg_imm (code, ins->sreg1, ins->unused, ins->inst_imm);
+				x86_shift_reg_imm (code, X86_SAR, ins->unused, ins->inst_imm);
+			}
+			break;
+		case OP_LSHR_UN_IMM:
+			if (ins->inst_imm >= 32) {
+				x86_mov_reg_reg (code, ins->sreg1, ins->unused, 4);
+				x86_clear_reg (code, ins->unused);
+				x86_shift_reg_imm (code, X86_SHR, ins->sreg1, ins->inst_imm & 0x1f);
+			} else {
+				x86_shrd_reg_imm (code, ins->sreg1, ins->unused, ins->inst_imm);
+				x86_shift_reg_imm (code, X86_SHR, ins->unused, ins->inst_imm);
+			}
+			break;
 		case CEE_NOT:
 			x86_not_reg (code, ins->sreg1);
 			break;
@@ -2573,17 +2763,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_float_to_int (cfg, code, ins->dreg, 4, TRUE);
 			break;
 		case OP_FCONV_TO_I8:
-			/* we defined this instruction to output only to eax:edx */
 			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
 			x86_fnstcw_membase(code, X86_ESP, 0);
-			x86_mov_reg_membase (code, X86_EAX, X86_ESP, 0, 2);
-			x86_alu_reg_imm (code, X86_OR, X86_EAX, 0xc00);
-			x86_mov_membase_reg (code, X86_ESP, 2, X86_EAX, 2);
+			x86_mov_reg_membase (code, ins->dreg, X86_ESP, 0, 2);
+			x86_alu_reg_imm (code, X86_OR, ins->dreg, 0xc00);
+			x86_mov_membase_reg (code, X86_ESP, 2, ins->dreg, 2);
 			x86_fldcw_membase (code, X86_ESP, 2);
 			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
 			x86_fist_pop_membase (code, X86_ESP, 0, TRUE);
-			x86_pop_reg (code, X86_EAX);
-			x86_pop_reg (code, X86_EDX);
+			x86_pop_reg (code, ins->dreg);
+			x86_pop_reg (code, ins->unused);
 			x86_fldcw_membase (code, X86_ESP, 0);
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 			break;

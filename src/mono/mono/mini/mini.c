@@ -8375,9 +8375,11 @@ mini_init (const char *filename)
 	mono_register_opcode_emulation (OP_LREM, "__emul_lrem", helper_sig_long_long_long, mono_llrem, FALSE);
 	mono_register_opcode_emulation (OP_LREM_UN, "__emul_lrem_un", helper_sig_long_long_long, mono_llrem_un, FALSE);
 
+#ifndef MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
 	mono_register_opcode_emulation (OP_LSHL, "__emul_lshl", helper_sig_long_long_int, mono_lshl, TRUE);
 	mono_register_opcode_emulation (OP_LSHR, "__emul_lshr", helper_sig_long_long_int, mono_lshr, TRUE);
 	mono_register_opcode_emulation (OP_LSHR_UN, "__emul_lshr_un", helper_sig_long_long_int, mono_lshr_un, TRUE);
+#endif
 
 	mono_register_opcode_emulation (OP_FCONV_TO_U8, "__emul_fconv_to_u8", helper_sig_ulong_double, mono_fconv_u8, FALSE);
 	mono_register_opcode_emulation (OP_FCONV_TO_U4, "__emul_fconv_to_u4", helper_sig_uint_double, mono_fconv_u4, FALSE);

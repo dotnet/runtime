@@ -17,6 +17,8 @@
 #	f  floating point register
 #	a  EAX register
 #       d  EDX register
+#	l  long reg (forced eax:edx)
+#		L  long reg (dynamic)
 #
 # len:number         describe the maximun length in bytes of the instruction
 # 		     number is a positive integer.  If the length is not specified
@@ -33,8 +35,8 @@
 #	c  clobbers caller-save registers
 #	1  clobbers the first source register
 #	a  EAX is clobbered
-#       d  EAX and EDX are clobbered
-#	s  the src1 operand needs to be in ECX (shift opcodes)
+#   d  EAX and EDX are clobbered
+#	s  the src2 operand needs to be in ECX (shift opcodes)
 #	x  both the source operands are clobbered (xchg)
 #
 # flags:spec        describe if the instruction uses or sets the flags (unused)
@@ -392,9 +394,9 @@ long_rem_un:
 long_and:
 long_or:
 long_xor:
-long_shl:
-long_shr:
-long_shr_un:
+long_shl: dest:L src1:L src2:i clob:s len:21
+long_shr: dest:L src1:L src2:i clob:s len:22
+long_shr_un: dest:L src1:L src2:i clob:s len:22
 long_neg:
 long_not:
 long_conv_to_i1:
@@ -441,9 +443,9 @@ long_clt:
 long_clt_un:
 long_conv_to_r_un: dest:f src1:i src2:i len:37 
 long_conv_to_u:
-long_shr_imm:
-long_shr_un_imm:
-long_shl_imm:
+long_shr_imm: dest:L src1:L len:10
+long_shr_un_imm: dest:L src1:L len:10
+long_shl_imm: dest:L src1:L len:10
 long_add_imm:
 long_sub_imm:
 long_beq:
@@ -478,11 +480,11 @@ float_not: dest:f src1:f len:2
 float_conv_to_i1: dest:i src1:f len:39
 float_conv_to_i2: dest:i src1:f len:39
 float_conv_to_i4: dest:i src1:f len:39
-float_conv_to_i8: dest:l src1:f len:39
+float_conv_to_i8: dest:L src1:f len:39
 float_conv_to_r4:
 float_conv_to_r8:
 float_conv_to_u4: dest:i src1:f len:39
-float_conv_to_u8: dest:l src1:f len:39
+float_conv_to_u8: dest:L src1:f len:39
 float_conv_to_u2: dest:i src1:f len:39
 float_conv_to_u1: dest:i src1:f len:39
 float_conv_to_i: dest:i src1:f len:39

@@ -648,4 +648,28 @@ reg: CEE_MUL(reg, CEE_LDIND_I4 (base)) {
 	tree->opcode = OP_X86_MUL_MEMBASE; 
 	mono_bblock_add_inst (s->cbb, tree);
 } 
+
+lreg: OP_LSHL (lreg, reg) "0" {
+	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+}
+
+lreg: OP_LSHL (lreg, OP_ICONST) "0" {
+	MONO_EMIT_BIALU_IMM (s, tree, OP_LSHL_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
+}
+
+lreg: OP_LSHR (lreg, reg) "0" {
+	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+}
+
+lreg: OP_LSHR (lreg, OP_ICONST) "0" {
+	MONO_EMIT_BIALU_IMM (s, tree, OP_LSHR_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
+}
+
+lreg: OP_LSHR_UN (lreg, reg) "0" {
+	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+}
+
+lreg: OP_LSHR_UN (lreg, OP_ICONST) "0" {
+	MONO_EMIT_BIALU_IMM (s, tree, OP_LSHR_UN_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
+}
 %%
