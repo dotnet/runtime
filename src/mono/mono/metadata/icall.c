@@ -4703,16 +4703,13 @@ static const IcallEntry char_icalls [] = {
 	{"GetNumericValue", ves_icall_System_Char_GetNumericValue},
 	{"GetUnicodeCategory", ves_icall_System_Char_GetUnicodeCategory},
 	{"IsControl", ves_icall_System_Char_IsControl},
-	{"IsDigit", ves_icall_System_Char_IsDigit},
 	{"IsLetter", ves_icall_System_Char_IsLetter},
 	{"IsLower", ves_icall_System_Char_IsLower},
 	{"IsNumber", ves_icall_System_Char_IsNumber},
 	{"IsPunctuation", ves_icall_System_Char_IsPunctuation},
-	{"IsSeparator", ves_icall_System_Char_IsSeparator},
 	{"IsSurrogate", ves_icall_System_Char_IsSurrogate},
 	{"IsSymbol", ves_icall_System_Char_IsSymbol},
 	{"IsUpper", ves_icall_System_Char_IsUpper},
-	{"IsWhiteSpace", ves_icall_System_Char_IsWhiteSpace},
 	{"ToLower", ves_icall_System_Char_ToLower},
 	{"ToUpper", ves_icall_System_Char_ToUpper}
 };
