@@ -942,6 +942,10 @@ marshal_test_bool_struct(struct BoolStruct *s)
     return res;
 }
 
+#ifdef WIN32
+extern __declspec(dllimport) __stdcall void SetLastError(int x);
+#endif
+
 void
 mono_test_last_error (int err)
 {
