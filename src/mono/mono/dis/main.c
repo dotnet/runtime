@@ -358,7 +358,7 @@ typedef_flags (guint32 flags)
  * This routine displays all the decoded fields from @start to @end
  */
 static void
-dis_field_list (MonoImage *m, guint32 start, guint32 end)
+dis_field_list (MonoImage *m, guint32 start, guint32 end, MonoGenericContext *context)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
 	guint32 cols [MONO_FIELD_SIZE];
@@ -379,7 +379,7 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end)
 		if (!should_include_field (i + 1))
 			continue;
 		mono_metadata_decode_row (t, i, cols, MONO_FIELD_SIZE);
-		sig = get_field_signature (m, cols [MONO_FIELD_SIGNATURE]);
+		sig = get_field_signature (m, cols [MONO_FIELD_SIGNATURE], context);
 		flags = field_flags (cols [MONO_FIELD_FLAGS]);
 
 		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_HAS_FIELD_RVA) {
@@ -606,7 +606,7 @@ dis_locals (MonoImage *m, MonoMethodHeader *mh, const char *ptr)
 }
 
 static void
-dis_code (MonoImage *m, guint32 token, guint32 rva)
+dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContext *context)
 {
 	MonoMethodHeader *mh;
 	const char *ptr = mono_image_rva_map (m, rva);
@@ -617,13 +617,13 @@ dis_code (MonoImage *m, guint32 token, guint32 rva)
 	if (rva == 0)
 		return;
 
-	override = get_method_override (m, token);
+	override = get_method_override (m, token, context);
 	if (override) {
 		fprintf (output, "\t.override %s\n", override);
 		g_free (override);
 	}
 
-	mh = mono_metadata_parse_mh (m, ptr);
+	mh = mono_metadata_parse_mh_full (m, context, ptr);
 	if ((entry_point = mono_image_get_entry_point (m))){
 		loc = mono_metadata_locate_token (m, entry_point);
 		if (rva == read32 (loc))
@@ -634,7 +634,7 @@ dis_code (MonoImage *m, guint32 token, guint32 rva)
 	fprintf (output, "\t.maxstack %d\n", mh->max_stack);
 	if (mh->num_locals)
 		dis_locals (m, mh, ptr);
-	dissasemble_cil (m, mh);
+	dissasemble_cil (m, mh, context);
 	
 /*
   hex_dump (mh->code, 0, mh->code_size);
@@ -745,6 +745,8 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 
 	for (i = start; i < end; i++){
 		MonoMethodSignature *ms;
+		MonoGenericContainer *container;
+		MonoGenericContext *method_context = context;
 		char *flags, *impl_flags;
 		const char *sig;
 		char *sig_str;
@@ -759,8 +761,18 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 
 		sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 		mono_metadata_decode_blob_size (sig, &sig);
-		ms = mono_metadata_parse_method_signature_full (m, context, i + 1, sig, &sig);
-		sig_str = dis_stringify_method_signature (m, ms, i + 1, FALSE);
+
+		container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | (i + 1));
+		if (container) {
+			container->parent = context ? context->container : NULL;
+			container->is_method = 1;
+
+			method_context = (MonoGenericContext *) container;
+		}
+
+		ms = mono_metadata_parse_method_signature_full (m, method_context, i + 1, sig, &sig);
+		// ms = mono_metadata_parse_method_signature_full (m, context, i + 1, sig, &sig);
+		sig_str = dis_stringify_method_signature (m, ms, i + 1, method_context, FALSE);
 
 		fprintf (output, "    // method line %d\n", i + 1);
 		fprintf (output, "    .method %s", flags);
@@ -782,16 +794,16 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		
 		fprintf (output, "    {\n");
 		dump_cattrs (m, token, "        ");
-		dump_cattrs_for_method_params (m, i, ms);
+		// dump_cattrs_for_method_params (m, i, ms);
 		/* FIXME: need to sump also param custom attributes */
 		fprintf (output, "        // Method begins at RVA 0x%x\n", cols [MONO_METHOD_RVA]);
 		dump_declarative_security (m, OBJECT_TYPE_METHODDEF, i + 1, "        ");
 		if (cols [MONO_METHOD_IMPLFLAGS] & METHOD_IMPL_ATTRIBUTE_NATIVE)
 			fprintf (output, "          // Disassembly of native methods is not supported\n");
 		else
-			dis_code (m, token, cols [MONO_METHOD_RVA]);
+			dis_code (m, token, cols [MONO_METHOD_RVA], method_context);
 		fprintf (output, "    } // end of method %s::%s\n\n", klass_name, sig_str);
-		mono_metadata_free_method_signature (ms);
+		// mono_metadata_free_method_signature (ms);
 		g_free (sig_str);
 	}
 }
@@ -824,7 +836,7 @@ table_locator (const void *a, const void *b)
 }
 
 static void
-dis_property_methods (MonoImage *m, guint32 prop)
+dis_property_methods (MonoImage *m, guint32 prop, MonoGenericContext *context)
 {
 	guint start, end;
 	MonoTableInfo *msemt = &m->tables [MONO_TABLE_METHODSEMANTICS];
@@ -837,13 +849,13 @@ dis_property_methods (MonoImage *m, guint32 prop)
 		mono_metadata_decode_row (msemt, start, cols, MONO_METHOD_SEMA_SIZE);
 		if (!should_include_method (cols [MONO_METHOD_SEMA_METHOD]))
 			continue;
-		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD], TRUE);
+		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD], context, TRUE);
 		fprintf (output, "\t\t%s %s\n", type [cols [MONO_METHOD_SEMA_SEMANTICS]], sig);
 		g_free (sig);
 	}
 }
 static char*
-dis_property_signature (MonoImage *m, guint32 prop_idx)
+dis_property_signature (MonoImage *m, guint32 prop_idx, MonoGenericContext *context)
 {
 	MonoTableInfo *propt = &m->tables [MONO_TABLE_PROPERTY];
 	const char *ptr;
@@ -866,7 +878,7 @@ dis_property_signature (MonoImage *m, guint32 prop_idx)
 		g_warning("incorrect signature in propert blob: 0x%x", *ptr);
 	ptr++;
 	pcount = mono_metadata_decode_value (ptr, &ptr);
-	type = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	type = mono_metadata_parse_type_full (m, context, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	blurb = dis_stringify_type (m, type);
 	if (prop_flags & 0x0200)
 		g_string_append (res, "specialname ");
@@ -880,7 +892,7 @@ dis_property_signature (MonoImage *m, guint32 prop_idx)
 	for (i = 0; i < pcount; i++) {
 		if (i)
 			g_string_append (res, ", ");
-		param = mono_metadata_parse_param (m, ptr, &ptr);
+		param = mono_metadata_parse_type_full (m, context, MONO_PARSE_PARAM, 0, ptr, &ptr);
 		blurb = dis_stringify_param (m, param);
 		g_string_append (res, blurb);
 		mono_metadata_free_type (param);
@@ -894,23 +906,23 @@ dis_property_signature (MonoImage *m, guint32 prop_idx)
 }
 
 static void
-dis_property_list (MonoImage *m, guint32 typedef_row)
+dis_property_list (MonoImage *m, guint32 typedef_row, MonoGenericContext *context)
 {
 	guint start, end, i;
 	start = mono_metadata_properties_from_typedef (m, typedef_row, &end);
 
 	for (i = start; i < end; ++i) {
-		char *sig = dis_property_signature (m, i);
+		char *sig = dis_property_signature (m, i, context);
 		fprintf (output, "\t.property %s\n\t{\n", sig);
 		dump_cattrs (m, MONO_TOKEN_PROPERTY | (i + 1), "\t\t");
-		dis_property_methods (m, i);
+		dis_property_methods (m, i, context);
 		fprintf (output, "\t}\n");
 		g_free (sig);
 	}
 }
 
 static char*
-dis_event_signature (MonoImage *m, guint32 event_idx)
+dis_event_signature (MonoImage *m, guint32 event_idx, MonoGenericContext *context)
 {
 	MonoTableInfo *et = &m->tables [MONO_TABLE_EVENT];
 	char *type, *result, *esname;
@@ -920,7 +932,7 @@ dis_event_signature (MonoImage *m, guint32 event_idx)
 	
 	mono_metadata_decode_row (et, event_idx, cols, MONO_EVENT_SIZE);
 	esname = get_escaped_name (mono_metadata_string_heap (m, cols [MONO_EVENT_NAME]));
-	type = get_typedef_or_ref (m, cols [MONO_EVENT_TYPE]);
+	type = get_typedef_or_ref (m, cols [MONO_EVENT_TYPE], context);
 	event_flags = cols [MONO_EVENT_FLAGS];
 
 	if (event_flags & 0x0200)
@@ -937,7 +949,7 @@ dis_event_signature (MonoImage *m, guint32 event_idx)
 }
 
 static void
-dis_event_methods (MonoImage *m, guint32 event)
+dis_event_methods (MonoImage *m, guint32 event, MonoGenericContext *context)
 {
 	guint start, end;
 	MonoTableInfo *msemt = &m->tables [MONO_TABLE_METHODSEMANTICS];
@@ -950,7 +962,7 @@ dis_event_methods (MonoImage *m, guint32 event)
 		mono_metadata_decode_row (msemt, start, cols, MONO_METHOD_SEMA_SIZE);
 		if (!should_include_method (cols [MONO_METHOD_SEMA_METHOD]))
 			continue;
-		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD], TRUE);
+		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD], context, TRUE);
 		switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
 		case METHOD_SEMANTIC_OTHER:
 			type = ".other"; break;
@@ -969,23 +981,23 @@ dis_event_methods (MonoImage *m, guint32 event)
 }
 
 static void
-dis_event_list (MonoImage *m, guint32 typedef_row)
+dis_event_list (MonoImage *m, guint32 typedef_row, MonoGenericContext *context)
 {
 	guint start, end, i;
 	start = mono_metadata_events_from_typedef (m, typedef_row, &end);
 
 	for (i = start; i < end; ++i) {
-		char *sig = dis_event_signature (m, i);
+		char *sig = dis_event_signature (m, i, context);
 		fprintf (output, "\t.event %s\n\t{\n", sig);
 		dump_cattrs (m, MONO_TOKEN_EVENT | (i + 1), "\t\t");
-		dis_event_methods (m, i);
+		dis_event_methods (m, i, context);
 		fprintf (output, "\t}\n");
 		g_free (sig);
 	}
 }
 
 static void
-dis_interfaces (MonoImage *m, guint32 typedef_row)
+dis_interfaces (MonoImage *m, guint32 typedef_row, MonoGenericContext *context)
 {
 	plocator_t loc;
 	guint start;
@@ -1018,7 +1030,7 @@ dis_interfaces (MonoImage *m, guint32 typedef_row)
 		mono_metadata_decode_row (table, start, cols, MONO_INTERFACEIMPL_SIZE);
 		if (cols [MONO_INTERFACEIMPL_CLASS] != loc.idx)
 			break;
-		intf = get_typedef_or_ref (m, cols [MONO_INTERFACEIMPL_INTERFACE]);
+		intf = get_typedef_or_ref (m, cols [MONO_INTERFACEIMPL_INTERFACE], context);
 		if (first_interface) {
 			fprintf (output, "  \timplements %s", intf);
 			first_interface = 0;
@@ -1078,7 +1090,8 @@ dis_type (MonoImage *m, int n)
 		}
                 fprintf (output, "\n");
 		if (cols [MONO_TYPEDEF_EXTENDS]) {
-			char *base = get_typedef_or_ref (m, cols [MONO_TYPEDEF_EXTENDS]);
+			char *base = get_typedef_or_ref (
+				m, cols [MONO_TYPEDEF_EXTENDS], (MonoGenericContext *) container);
 			fprintf (output, "  \textends %s\n", base);
 			g_free (base);
 		}
@@ -1094,7 +1107,7 @@ dis_type (MonoImage *m, int n)
 	}
 
 	g_free (esname);
-	dis_interfaces (m, n + 1);
+	dis_interfaces (m, n + 1, (MonoGenericContext *) container);
 	fprintf (output, "  {\n");
 	dump_cattrs (m, MONO_TOKEN_TYPE_DEF | (n + 1), "    ");
 	dump_declarative_security (m, OBJECT_TYPE_TYPEDEF, (n + 1), "    ");
@@ -1114,7 +1127,7 @@ dis_type (MonoImage *m, int n)
 		last = m->tables [MONO_TABLE_FIELD].rows;
 			
 	if (cols [MONO_TYPEDEF_FIELD_LIST] && cols [MONO_TYPEDEF_FIELD_LIST] <= m->tables [MONO_TABLE_FIELD].rows)
-		dis_field_list (m, cols [MONO_TYPEDEF_FIELD_LIST] - 1, last);
+		dis_field_list (m, cols [MONO_TYPEDEF_FIELD_LIST] - 1, last, (MonoGenericContext *) container);
 	fprintf (output, "\n");
 
 	if (next_is_valid)
@@ -1125,8 +1138,8 @@ dis_type (MonoImage *m, int n)
 	if (cols [MONO_TYPEDEF_METHOD_LIST] && cols [MONO_TYPEDEF_METHOD_LIST] <= m->tables [MONO_TABLE_METHOD].rows)
 		dis_method_list (name, m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last, (MonoGenericContext *) container);
 
-	dis_property_list (m, n);
-	dis_event_list (m, n);
+	dis_property_list (m, n, (MonoGenericContext *) container);
+	dis_event_list (m, n, (MonoGenericContext *) container);
 
 	t = &m->tables [MONO_TABLE_NESTEDCLASS];
 	nested = mono_metadata_nesting_typedef (m, n + 1, 1);
@@ -1178,7 +1191,7 @@ dis_globals (MonoImage *m)
 		last = m->tables [MONO_TABLE_FIELD].rows;
 			
 	if (cols [MONO_TYPEDEF_FIELD_LIST] && cols [MONO_TYPEDEF_FIELD_LIST] <= m->tables [MONO_TABLE_FIELD].rows)
-		dis_field_list (m, cols [MONO_TYPEDEF_FIELD_LIST] - 1, last);
+		dis_field_list (m, cols [MONO_TYPEDEF_FIELD_LIST] - 1, last, NULL);
 	fprintf (output, "\n");
 
 	if (next_is_valid)

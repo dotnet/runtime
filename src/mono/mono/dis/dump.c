@@ -102,7 +102,7 @@ dump_table_typespec (MonoImage *m)
 	fprintf (output, "Typespec Table\n");
 	
 	for (i = 1; i <= t->rows; i++){		
-		char *typespec = get_typespec (m, i);
+		char *typespec = get_typespec (m, i, NULL);
 
 		fprintf (output, "%d: %s\n", i, typespec);
 		g_free (typespec);
@@ -194,7 +194,7 @@ dump_table_field (MonoImage *m)
 			first_m = last_m;
 		}
 		mono_metadata_decode_row (t, i - 1, cols, MONO_FIELD_SIZE);
-		sig = get_field_signature (m, cols [MONO_FIELD_SIGNATURE]);
+		sig = get_field_signature (m, cols [MONO_FIELD_SIGNATURE], NULL);
 		flags = field_flags (cols [MONO_FIELD_FLAGS]);
 		fprintf (output, "%d: %s %s: %s\n",
 			 i,
@@ -257,7 +257,7 @@ dump_table_memberref (MonoImage *m)
 			break;
 		case 4:
 			ks = "TypeSpec";
-			xx = get_typespec (m, idx);
+			xx = get_typespec (m, idx, NULL);
 			x = g_strconcat (xx, ".", mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]), NULL);
 			g_free (xx);
 			break;
@@ -267,9 +267,9 @@ dump_table_memberref (MonoImage *m)
 		blob = mono_metadata_blob_heap (m, cols [MONO_MEMBERREF_SIGNATURE]);
 		mono_metadata_decode_blob_size (blob, &blob);
 		if (*blob == 0x6) { /* it's a field */
-			sig = get_field_signature (m, cols [MONO_MEMBERREF_SIGNATURE]);
+			sig = get_field_signature (m, cols [MONO_MEMBERREF_SIGNATURE], NULL);
 		} else {
-			sig = get_methodref_signature (m, cols [MONO_MEMBERREF_SIGNATURE], NULL);
+			sig = get_methodref_signature (m, cols [MONO_MEMBERREF_SIGNATURE], NULL, NULL);
 		}
 		fprintf (output, "%d: %s[%d] %s\n\tResolved: %s\n\tSignature: %s\n\t\n",
 			 i + 1,
@@ -378,18 +378,18 @@ dump_table_property (MonoImage *m)
 		bsize = mono_metadata_decode_blob_size (ptr, &ptr);
 		/* ECMA claims 0x08 ... */
 		if (*ptr != 0x28 && *ptr != 0x08)
-				g_warning("incorrect signature in propert blob: 0x%x", *ptr);
+			g_warning("incorrect signature in propert blob: 0x%x", *ptr);
 		ptr++;
 		pcount = mono_metadata_decode_value (ptr, &ptr);
-		ptr = get_type (m, ptr, &type);
+		ptr = get_type (m, ptr, &type, NULL);
 		fprintf (output, "%d: %s %s (",
 			 i + 1, type, mono_metadata_string_heap (m, cols [MONO_PROPERTY_NAME]));
 		g_free (type);
 
 		for (j = 0; j < pcount; j++){
-				ptr = get_param (m, ptr, &type);
-				fprintf (output, "%s%s", j > 0? ", " : "",type);
-				g_free (type);
+			ptr = get_param (m, ptr, &type, NULL);
+			fprintf (output, "%s%s", j > 0? ", " : "",type);
+			g_free (type);
 		}
 		fprintf (output, ") %s\n", flags);
 	}
@@ -410,7 +410,7 @@ dump_table_event (MonoImage *m)
 		mono_metadata_decode_row (t, i, cols, MONO_EVENT_SIZE);
 
 		name = mono_metadata_string_heap (m, cols [MONO_EVENT_NAME]);
-		type = get_typedef_or_ref (m, cols [MONO_EVENT_TYPE]);
+		type = get_typedef_or_ref (m, cols [MONO_EVENT_TYPE], NULL);
 		fprintf (output, "%d: %s %s %s\n", i + 1, type, name,
 			 cols [MONO_EVENT_FLAGS] & 0x200 ? "specialname " : "");
 		g_free (type);
@@ -574,7 +574,7 @@ dump_table_method (MonoImage *m)
 		sigblob = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 		mono_metadata_decode_blob_size (sigblob, &sigblob);
 		method = mono_metadata_parse_method_signature (m, i, sigblob, &sigblob);
-		sig = dis_stringify_method_signature (m, method, i, FALSE);
+		sig = dis_stringify_method_signature (m, method, i, NULL, FALSE);
 		fprintf (output, "%d: %s (param: %d)\n", i, sig, cols [MONO_METHOD_PARAMLIST]);
 		g_free (sig);
 		mono_metadata_free_method_signature (method);
@@ -597,7 +597,7 @@ dump_table_implmap (MonoImage *m)
 
 		mono_metadata_decode_row (t, i - 1, cols, MONO_IMPLMAP_SIZE);
 
-		method = get_method (m, MONO_TOKEN_METHOD_DEF | (cols [MONO_IMPLMAP_MEMBER] >> MONO_MEMBERFORWD_BITS));
+		method = get_method (m, MONO_TOKEN_METHOD_DEF | (cols [MONO_IMPLMAP_MEMBER] >> MONO_MEMBERFORWD_BITS), NULL);
 		
 		fprintf (output, "%d: %s %d (%s %s)\n", i, 
 				 method,
@@ -622,8 +622,8 @@ dump_table_methodimpl (MonoImage *m)
 
 		mono_metadata_decode_row (t, i - 1, cols, MONO_METHODIMPL_SIZE);
 		class = get_typedef (m, cols [MONO_METHODIMPL_CLASS]);
-		impl = get_method (m, method_dor_to_token (cols [MONO_METHODIMPL_BODY]));
-		decl = get_method (m, method_dor_to_token (cols [MONO_METHODIMPL_DECLARATION]));
+		impl = get_method (m, method_dor_to_token (cols [MONO_METHODIMPL_BODY]), NULL);
+		decl = get_method (m, method_dor_to_token (cols [MONO_METHODIMPL_DECLARATION]), NULL);
 		fprintf (output, "%d: %s\n\tdecl: %s\n\timpl: %s\n", i, class, decl, impl);
 		g_free (class);
 		g_free (impl);
@@ -676,8 +676,8 @@ dump_table_interfaceimpl (MonoImage *m)
 		
 		mono_metadata_decode_row (t, i - 1, cols, MONO_INTERFACEIMPL_SIZE);
 		fprintf (output, "%d: %s implements %s\n", i,
-			get_typedef (m, cols [MONO_INTERFACEIMPL_CLASS]),
-			get_typedef_or_ref (m, cols [MONO_INTERFACEIMPL_INTERFACE]));
+			 get_typedef (m, cols [MONO_INTERFACEIMPL_CLASS]),
+			 get_typedef_or_ref (m, cols [MONO_INTERFACEIMPL_INTERFACE], NULL));
 	}
 }
 
@@ -900,7 +900,7 @@ dump_table_customattr (MonoImage *m)
 			g_warning ("Unknown table for custom attr type %08x", cols [MONO_CUSTOM_ATTR_TYPE]);
 			break;
 		}
-		method = get_method (m, mtoken);
+		method = get_method (m, mtoken, NULL);
 		meth = mono_get_method (m, mtoken, NULL);
 		params = custom_attr_params (m, mono_method_signature (meth), mono_metadata_blob_heap (m, cols [MONO_CUSTOM_ATTR_VALUE]));
 		fprintf (output, "%d: %s: %s [%s]\n", i, desc, method, params);
@@ -1090,9 +1090,9 @@ dump_table_methodspec (MonoImage *m)
 
                 /* build a methodspec token to get the method */
                 token = MONO_TOKEN_METHOD_SPEC | i;
-                method = get_method (m, token);
+                method = get_method (m, token, NULL);
                 
-                sig = get_method_type_param (m, cols [MONO_METHODSPEC_SIGNATURE]);
+                sig = get_method_type_param (m, cols [MONO_METHODSPEC_SIGNATURE], NULL);
 		fprintf (output, "%d: %s, %s\n", i, method, sig);
 		g_free (sig);
 		g_free (method);
@@ -1112,7 +1112,7 @@ dump_table_parconstraint (MonoImage *m)
                 char *sig;
 		mono_metadata_decode_row (t, i - 1, cols, MONO_GENPARCONSTRAINT_SIZE);
 
-                sig = get_typedef_or_ref (m, cols [MONO_GENPARCONSTRAINT_CONSTRAINT]);
+                sig = get_typedef_or_ref (m, cols [MONO_GENPARCONSTRAINT_CONSTRAINT], NULL);
 		fprintf (output, "%d: gen-par=%d, Constraint=%s\n", i,
 			 cols [MONO_GENPARCONSTRAINT_GENERICPAR], sig);
                 g_free (sig);

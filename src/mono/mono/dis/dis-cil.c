@@ -55,7 +55,7 @@ get_encoded_user_string (const char *ptr)
 	indent[indent_level*2] = 0;
 
 void
-dissasemble_cil (MonoImage *m, MonoMethodHeader *mh) 
+dissasemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContext *context)
 {
 	const unsigned char *start = mh->code;
 	int size = mh->code_size;
@@ -143,7 +143,7 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 			guint32 token = read32 (ptr);
 			char *s;
 			
-			s = get_field (m, token);
+			s = get_field (m, token, context);
 			fprintf (output, "%s", s);
 			g_free (s);
 			ptr += 4;
@@ -170,7 +170,7 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 			guint32 token = read32 (ptr);
 			char *s;
 
-			s = get_method (m, token);
+			s = get_method (m, token, context);
 			fprintf (output, "%s", s);
 			g_free (s);
 			ptr += 4;
@@ -233,7 +233,7 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 			guint32 token = read32 (ptr);
 			char *s;
 			
-			s = get_token (m, token);
+			s = get_token (m, token, context);
 			fprintf (output, "%s", s);
 			g_free (s);
 			
@@ -243,7 +243,7 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 		
 		case MonoInlineType: {
 			guint32 token = read32 (ptr);
-			char *s = get_token_type (m, token);
+			char *s = get_token_type (m, token, context);
 			fprintf (output, "%s", s);
 			g_free (s);
 			ptr += 4;

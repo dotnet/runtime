@@ -20,8 +20,11 @@
 
 extern gboolean substitute_with_mscorlib_p;
 
+static MonoGenericContext *
+get_memberref_context (MonoImage *m, guint32 mrp_token, MonoGenericContext *context);
+
 static char *
-get_memberref_parent (MonoImage *m, guint32 mrp_token);
+get_memberref_parent (MonoImage *m, guint32 mrp_token, MonoGenericContext *context);
 
 GHashTable *key_table = NULL;
 gboolean show_method_tokens = FALSE;
@@ -166,7 +169,7 @@ get_array_shape (MonoImage *m, const char *ptr, char **result)
  * Returns the stringified representation of a TypeSpec signature (22.2.17)
  */
 char *
-get_typespec (MonoImage *m, guint32 idx)
+get_typespec (MonoImage *m, guint32 idx, MonoGenericContext *context)
 {
 	guint32 cols [MONO_TYPESPEC_SIZE];
 	const char *ptr;
@@ -176,8 +179,8 @@ get_typespec (MonoImage *m, guint32 idx)
 
 	MonoType *type;
 
-	type = mono_type_create_from_typespec (m, idx);
-		
+	type = mono_type_create_from_typespec_full (m, context, idx);
+
 	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPESPEC], idx-1, cols, MONO_TYPESPEC_SIZE);
 	ptr = mono_metadata_blob_heap (m, cols [MONO_TYPESPEC_SIGNATURE]);
 	len = mono_metadata_decode_value (ptr, &ptr);
@@ -194,7 +197,7 @@ get_typespec (MonoImage *m, guint32 idx)
 		if (*ptr == MONO_TYPE_VOID)
 			g_string_append (res, "void");
 		else {
-			ptr = get_type (m, ptr, &s);
+			ptr = get_type (m, ptr, &s, context);
 			if (s)
 				g_string_append (res, s);
 		}
@@ -209,7 +212,7 @@ get_typespec (MonoImage *m, guint32 idx)
 		break;
 			
 	case MONO_TYPE_ARRAY:
-		ptr = get_type (m, ptr, &s);
+		ptr = get_type (m, ptr, &s, context);
 		g_string_append (res, s);
 		g_free (s);
 		g_string_append_c (res, ' ');
@@ -225,7 +228,7 @@ get_typespec (MonoImage *m, guint32 idx)
 			g_string_append_c (res, ' ');
 			g_free (s);
 		}
-		ptr = get_type (m, ptr, &s);
+		ptr = get_type (m, ptr, &s, context);
 		g_string_append (res, s);
 		g_string_append (res, "[]");
 		g_free (s);
@@ -233,7 +236,7 @@ get_typespec (MonoImage *m, guint32 idx)
 
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		ptr = get_type (m, ptr-1, &s);
+		ptr = get_type (m, ptr-1, &s, context);
 		g_string_append (res, s);
 		g_free (s);
 		break;
@@ -325,7 +328,7 @@ get_typeref (MonoImage *m, int idx)
  * at (dor_token >> 2) 
  */
 char *
-get_typedef_or_ref (MonoImage *m, guint32 dor_token)
+get_typedef_or_ref (MonoImage *m, guint32 dor_token, MonoGenericContext *context)
 {
 	char *temp = NULL, *s = NULL;
 	int table, idx;
@@ -348,7 +351,7 @@ get_typedef_or_ref (MonoImage *m, guint32 dor_token)
 		break;
 		
 	case 2: /* TypeSpec */
-		s = get_typespec (m, idx);
+		s = get_typespec (m, idx, context);
 		break;
 
 	default:
@@ -398,7 +401,7 @@ get_encoded_typedef_or_ref (MonoImage *m, const char *ptr, char **result)
 	
 	token = mono_metadata_decode_value (ptr, &ptr);
 
-	*result = get_typedef_or_ref (m, token);
+	*result = get_typedef_or_ref (m, token, NULL);
 
 	return ptr;
 }
@@ -473,7 +476,7 @@ dis_stringify_token (MonoImage *m, guint32 token)
 	switch (token >> 24) {
 	case MONO_TABLE_TYPEDEF: return get_typedef (m, idx);
 	case MONO_TABLE_TYPEREF: return get_typeref (m, idx);
-	case MONO_TABLE_TYPESPEC: return get_typespec (m, idx);
+	case MONO_TABLE_TYPESPEC: return get_typespec (m, idx, NULL);
 	default:
 		 break;
 	}
@@ -598,7 +601,8 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
 }
 
 char*
-dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int methoddef_row, gboolean fully_qualified)
+dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int methoddef_row,
+				MonoGenericContext *context, gboolean fully_qualified)
 {
 	guint32 cols [MONO_METHOD_SIZE];
 	guint32 pcols [MONO_PARAM_SIZE];
@@ -615,8 +619,6 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 	g_assert (method || methoddef_row);
 
 	if (methoddef_row) {
-		container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | methoddef_row);
-
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], methoddef_row -1, cols, MONO_METHOD_SIZE);
 		if (fully_qualified)
 			type = get_typedef (m, mono_metadata_typedef_from_method (m, methoddef_row));
@@ -624,9 +626,17 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 		param_index = cols [MONO_METHOD_PARAMLIST];
 		if (!method) {
 			const char *sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
+
+			container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | methoddef_row);
+			if (container) {
+				container->parent = context ? context->container : NULL;
+				container->is_method = 1;
+
+				context = (MonoGenericContext *) container;
+			}
+
 			mono_metadata_decode_blob_size (sig, &sig);
-			method = mono_metadata_parse_method_signature_full (
-				m, (MonoGenericContext *) container, methoddef_row, sig, &sig);
+			method = mono_metadata_parse_method_signature_full (m, context, methoddef_row, sig, &sig);
 			free_method = 1;
 		}      
                 gen_param = get_generic_param (m, container);
@@ -858,10 +868,12 @@ dis_stringify_type (MonoImage *m, MonoType *type)
 		bare = g_strdup ("void");
 		break;
 	case MONO_TYPE_MVAR:
-		bare = g_strdup_printf ("!!%d", type->data.generic_param->num);
+		g_assert (type->data.generic_param->name);
+		bare = g_strdup_printf ("!!%s", type->data.generic_param->name);
 		break;
 	case MONO_TYPE_VAR:
-		bare = g_strdup_printf ("!%d", type->data.generic_param->num);
+		g_assert (type->data.generic_param->name);
+		bare = g_strdup_printf ("!%s", type->data.generic_param->name);
 		break;
 	case MONO_TYPE_GENERICINST: {
 		GString *str = g_string_new ("");
@@ -910,7 +922,7 @@ dis_stringify_type (MonoImage *m, MonoType *type)
  * Returns: the new ptr to continue decoding
  */
 const char *
-get_type (MonoImage *m, const char *ptr, char **result)
+get_type (MonoImage *m, const char *ptr, char **result, MonoGenericContext *context)
 {
 	const char *start = ptr;
 	guint32 type;
@@ -941,7 +953,7 @@ get_type (MonoImage *m, const char *ptr, char **result)
 		int count, i;
 		char *temp;
 
-		ptr = get_type (m, ptr, &temp);
+		ptr = get_type (m, ptr, &temp, context);
 		g_string_append (str, temp);
 		g_free (temp);
 
@@ -951,7 +963,7 @@ get_type (MonoImage *m, const char *ptr, char **result)
 		for (i = 0; i < count; i++) {
 			if (i)
 				g_string_append (str, ",");
-			ptr = get_type (m, ptr, &temp);
+			ptr = get_type (m, ptr, &temp, context);
 			g_string_append (str, temp);
 		}
 
@@ -962,7 +974,7 @@ get_type (MonoImage *m, const char *ptr, char **result)
 	}
 
 	default:
-		t = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, start, &ptr);
+		t = mono_metadata_parse_type_full (m, context, MONO_PARSE_TYPE, 0, start, &ptr);
 		*result = dis_stringify_type (m, t);
 		mono_metadata_free_type (t);
 		break;
@@ -976,7 +988,7 @@ get_type (MonoImage *m, const char *ptr, char **result)
  * Returns a stringified representation of a FieldSig (22.2.4)
  */
 char *
-get_field_signature (MonoImage *m, guint32 blob_signature)
+get_field_signature (MonoImage *m, guint32 blob_signature, MonoGenericContext *context)
 {
 	char *allocated_modifier_string, *allocated_type_string;
 	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
@@ -992,7 +1004,7 @@ get_field_signature (MonoImage *m, guint32 blob_signature)
 	ptr++; len--;
 	
 	ptr = get_custom_mod (m, ptr, &allocated_modifier_string);
-	ptr = get_type (m, ptr, &allocated_type_string);
+	ptr = get_type (m, ptr, &allocated_type_string, context);
 
 	res = g_strdup_printf (
 		"%s %s",
@@ -1052,7 +1064,7 @@ decode_literal (MonoImage *m, guint32 token)
  * Returns: the new ptr to continue decoding.
  */
 const char *
-get_ret_type (MonoImage *m, const char *ptr, char **ret_type)
+get_ret_type (MonoImage *m, const char *ptr, char **ret_type, MonoGenericContext *context)
 {
 	GString *str = g_string_new ("");
 	char *mod = NULL;
@@ -1077,7 +1089,7 @@ get_ret_type (MonoImage *m, const char *ptr, char **ret_type)
 			ptr++;
 		}
 
-		ptr = get_type (m, ptr, &allocated_type_string);
+		ptr = get_type (m, ptr, &allocated_type_string, context);
 		g_string_append (str, allocated_type_string);
 		g_free (allocated_type_string);
 	}
@@ -1099,7 +1111,7 @@ get_ret_type (MonoImage *m, const char *ptr, char **ret_type)
  * Returns: the new ptr to continue decoding.
  */
 const char *
-get_param (MonoImage *m, const char *ptr, char **retval)
+get_param (MonoImage *m, const char *ptr, char **retval, MonoGenericContext *context)
 {
 	GString *str = g_string_new ("");
 	char *allocated_mod_string, *allocated_type_string;
@@ -1116,12 +1128,12 @@ get_param (MonoImage *m, const char *ptr, char **retval)
 		ptr++;
 	} else {
 		gboolean by_ref = 0;
-		 if (*ptr == MONO_TYPE_BYREF){
+		if (*ptr == MONO_TYPE_BYREF){
 			g_string_append (str, "[out] ");
 			ptr++;
 			by_ref = 1;
 		}
-		ptr = get_type (m, ptr, &allocated_type_string);
+		ptr = get_type (m, ptr, &allocated_type_string, context);
 		g_string_append (str, allocated_type_string);
 		if (by_ref)
 			g_string_append_c (str, '&');
@@ -1222,7 +1234,8 @@ field_flags (guint32 f)
  * Returns a stringifed representation of a MethodRefSig (22.2.2)
  */
 char *
-get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy_name)
+get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy_name,
+			 MonoGenericContext *context)
 {
 	GString *res = g_string_new ("");
 	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
@@ -1232,7 +1245,7 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 	int param_count, signature_len;
 	int i, gen_count = 0;
 	int cconv;
-	
+
 	signature_len = mono_metadata_decode_value (ptr, &ptr);
 
 	if (*ptr & 0x20){
@@ -1256,7 +1269,7 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 		gen_count = mono_metadata_decode_value (ptr, &ptr);
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 	if (cconv != 0xa) {
-		ptr = get_ret_type (m, ptr, &allocated_ret_type);
+		ptr = get_ret_type (m, ptr, &allocated_ret_type, context);
 		g_string_append (res, allocated_ret_type);
 		g_free (allocated_ret_type);
 	}
@@ -1287,7 +1300,7 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 			ptr++;
 		}
 
-		ptr = get_param (m, ptr, &param);
+		ptr = get_param (m, ptr, &param, context);
 		g_string_append (res, param);
 		if (i+1 != param_count)
 			g_string_append (res, ", ");
@@ -1307,18 +1320,20 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
  * Returns a stringifed representation of a field ref
  */
 char *
-get_fieldref_signature (MonoImage *m, int idx)
+get_fieldref_signature (MonoImage *m, int idx, MonoGenericContext *context)
 {
         guint32 cols [MONO_MEMBERREF_SIZE];
+	MonoGenericContext *new_context;
         char *sig;
         char *full_sig;
 
         mono_metadata_decode_row (&m->tables [MONO_TABLE_MEMBERREF],
-                        idx - 1, cols, MONO_MEMBERREF_SIZE);
+				  idx - 1, cols, MONO_MEMBERREF_SIZE);
 
-        sig = get_field_signature (m, cols [MONO_MEMBERREF_SIGNATURE]);
+	new_context = get_memberref_context (m, cols [MONO_MEMBERREF_CLASS], context);
+        sig = get_field_signature (m, cols [MONO_MEMBERREF_SIGNATURE], new_context);
         full_sig = g_strdup_printf ("%s %s::%s", sig,
-                        get_memberref_parent (m, cols [MONO_MEMBERREF_CLASS]),
+                        get_memberref_parent (m, cols [MONO_MEMBERREF_CLASS], context),
                         mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]));
         g_free (sig);
         
@@ -1335,7 +1350,7 @@ get_fieldref_signature (MonoImage *m, int idx)
  * the TypeDef table and locate the actual "owner" of the field
  */
 char *
-get_field (MonoImage *m, guint32 token)
+get_field (MonoImage *m, guint32 token, MonoGenericContext *context)
 {
 	int idx = mono_metadata_token_index (token);
 	guint32 cols [MONO_FIELD_SIZE];
@@ -1347,12 +1362,12 @@ get_field (MonoImage *m, guint32 token)
 	 * defined in another module/assembly, just like in get_method ()
 	 */
 	if (mono_metadata_token_code (token) == MONO_TOKEN_MEMBER_REF) {
-                return get_fieldref_signature (m, idx);
+                return get_fieldref_signature (m, idx, context);
 	}
 	g_assert (mono_metadata_token_code (token) == MONO_TOKEN_FIELD_DEF);
 
 	mono_metadata_decode_row (&m->tables [MONO_TABLE_FIELD], idx - 1, cols, MONO_FIELD_SIZE);
-	sig = get_field_signature (m, cols [MONO_FIELD_SIGNATURE]);
+	sig = get_field_signature (m, cols [MONO_FIELD_SIGNATURE], context);
 
 	/*
 	 * To locate the actual "container" for this field, we have to scan
@@ -1374,8 +1389,36 @@ get_field (MonoImage *m, guint32 token)
 	return res;
 }
 
+static MonoGenericContext *
+get_memberref_context (MonoImage *m, guint32 mrp_token, MonoGenericContext *context)
+{
+	MonoClass *klass;
+
+	/*
+	 * mrp_index is a MemberRefParent coded index
+	 */
+	guint32 table = mrp_token & 7;
+	guint32 idx = mrp_token >> 3;
+
+	switch (table){
+	case 0: /* TypeDef */
+		return (MonoGenericContext *) mono_metadata_load_generic_params (
+			m, MONO_TOKEN_TYPE_DEF | idx);
+		
+	case 1: /* TypeRef */
+		return NULL;
+		
+	case 4: /* TypeSpec */
+		klass = mono_class_get_full (m, MONO_TOKEN_TYPE_SPEC | idx, context);
+		g_assert (klass);
+		return klass->generic_class ? klass->generic_class->context : NULL;
+	}
+	g_assert_not_reached ();
+	return NULL;
+}
+
 static char *
-get_memberref_parent (MonoImage *m, guint32 mrp_token)
+get_memberref_parent (MonoImage *m, guint32 mrp_token, MonoGenericContext *context)
 {
 	/*
 	 * mrp_index is a MemberRefParent coded index
@@ -1397,7 +1440,7 @@ get_memberref_parent (MonoImage *m, guint32 mrp_token)
 		return g_strdup ("TODO:MethodDef");
 		
 	case 4: /* TypeSpec */
-		return get_typespec (m, idx);
+		return get_typespec (m, idx, context);
 	}
 	g_assert_not_reached ();
 	return NULL;
@@ -1413,7 +1456,7 @@ get_memberref_parent (MonoImage *m, guint32 mrp_token)
  * the TypeDef table and locate the actual "owner" of the field
  */
 char *
-get_method_core (MonoImage *m, guint32 token, gboolean fullsig)
+get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericContext *context)
 {
 	int idx = mono_metadata_token_index (token);
 	guint32 member_cols [MONO_MEMBERREF_SIZE], method_cols [MONO_METHOD_SIZE];
@@ -1422,8 +1465,10 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig)
 
 	MonoMethod *mh;
 
-	mh = mono_get_method (m, token, NULL);
+	mh = mono_get_method_full (m, token, NULL, context);
 	if (mh) {
+		if (mh->signature->is_inflated)
+			context = ((MonoMethodInflated *) mh)->context;
 		esname = get_escaped_name (mh->name);
 		sig = dis_stringify_object_with_class (m, mh->klass, TRUE);
 		if (show_tokens)
@@ -1440,7 +1485,7 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig)
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], 
 					  idx - 1, method_cols, MONO_METHOD_SIZE);
 
-		sig = get_methodref_signature (m, method_cols [MONO_METHOD_SIGNATURE], name);
+		sig = get_methodref_signature (m, method_cols [MONO_METHOD_SIGNATURE], name, context);
 		break;
 		
 	case MONO_TOKEN_MEMBER_REF: {
@@ -1448,17 +1493,17 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig)
 					  idx - 1, member_cols, MONO_MEMBERREF_SIZE);
 		if (!name)
 			name = g_strdup_printf ("%s::%s",
-					get_memberref_parent (m, member_cols [MONO_MEMBERREF_CLASS]),
-					mono_metadata_string_heap (m, member_cols [MONO_MEMBERREF_NAME]));
+						get_memberref_parent (m, member_cols [MONO_MEMBERREF_CLASS], context),
+						mono_metadata_string_heap (m, member_cols [MONO_MEMBERREF_NAME]));
 		sig = get_methodref_signature (
-			m, member_cols [MONO_MEMBERREF_SIGNATURE], name);
+			m, member_cols [MONO_MEMBERREF_SIGNATURE], name, context);
 		break;
 	}
 	case MONO_TOKEN_METHOD_SPEC: {
                 mono_metadata_decode_row (&m->tables [MONO_TABLE_METHODSPEC],
                                 idx - 1, member_cols, MONO_METHODSPEC_SIZE);
 		token = member_cols [MONO_METHODSPEC_METHOD];
-                sig = get_methodspec (m, idx, token, name);
+                sig = get_methodspec (m, idx, token, name, context);
 		break;
 	}
 
@@ -1482,9 +1527,9 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig)
 }
 
 char *
-get_method (MonoImage *m, guint32 token)
+get_method (MonoImage *m, guint32 token, MonoGenericContext *context)
 {
-	return get_method_core (m, token, TRUE);
+	return get_method_core (m, token, TRUE, context);
 }
 
 /**
@@ -1512,13 +1557,13 @@ get_methoddef (MonoImage *m, guint32 idx)
 		name = NULL;
         mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], 
                         idx - 1, cols, MONO_METHOD_SIZE);
-        sig = get_methodref_signature (m, cols [MONO_METHOD_SIGNATURE], name);
+        sig = get_methodref_signature (m, cols [MONO_METHOD_SIGNATURE], name, NULL);
         
         return sig;
 }
 
 char *
-get_method_type_param (MonoImage *m, guint32 blob_signature)
+get_method_type_param (MonoImage *m, guint32 blob_signature, MonoGenericContext *context)
 {
 	GString *res = g_string_new ("");
 	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
@@ -1534,8 +1579,8 @@ get_method_type_param (MonoImage *m, guint32 blob_signature)
         
 	for (i = 0; i < param_count; i++){
 		char *param = NULL;
-		
-		ptr = get_param (m, ptr, &param);
+
+		ptr = get_param (m, ptr, &param, context);
 		g_string_append (res, param);
 		if (i+1 != param_count)
 			g_string_append (res, ", ");
@@ -1555,7 +1600,7 @@ get_method_type_param (MonoImage *m, guint32 blob_signature)
  */
 
 char *
-get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name)
+get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name, MonoGenericContext *context)
 {
         GString *res = g_string_new ("");
 	guint32 member_cols [MONO_MEMBERREF_SIZE], method_cols [MONO_METHOD_SIZE];
@@ -1600,7 +1645,7 @@ get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name)
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 	if (cconv != 0xa) {
                 char *allocated_ret_type;
-		ptr = get_ret_type (m, ptr, &allocated_ret_type);
+		ptr = get_ret_type (m, ptr, &allocated_ret_type, context);
 		g_string_append (res, allocated_ret_type);
 		g_free (allocated_ret_type);
 	}
@@ -1613,7 +1658,7 @@ get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name)
         mono_metadata_decode_row (&m->tables [MONO_TABLE_METHODSPEC],
                         idx - 1, member_cols, MONO_METHODSPEC_SIZE);
         token = member_cols [MONO_METHODSPEC_SIGNATURE];
-        type_param = get_method_type_param (m, token);
+        type_param = get_method_type_param (m, token, context);
         g_string_append (res, type_param);
 	g_string_append (res, " (");
 
@@ -1624,7 +1669,7 @@ get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name)
 	for (i = 0; i < param_count; i++){
 		char *param = NULL;
 		
-		ptr = get_param (m, ptr, &param);
+		ptr = get_param (m, ptr, &param, context);
 		g_string_append (res, param);
 		if (i+1 != param_count)
 			g_string_append (res, ", ");
@@ -1755,14 +1800,14 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
  * constant.
  */
 char *
-get_token (MonoImage *m, guint32 token)
+get_token (MonoImage *m, guint32 token, MonoGenericContext *context)
 {
 	char *temp, *result;
 	guint32 idx = mono_metadata_token_index (token);
 
 	switch (mono_metadata_token_code (token)){
 	case MONO_TOKEN_FIELD_DEF:
-		temp = get_field (m, token);
+		temp = get_field (m, token, context);
 		result = g_strdup_printf ("field %s", temp);
 		g_free (temp);
 		return result;
@@ -1771,7 +1816,7 @@ get_token (MonoImage *m, guint32 token)
 	case MONO_TOKEN_TYPE_REF:
 		return get_typeref (m, idx);
 	case MONO_TOKEN_TYPE_SPEC:
-		return get_typespec (m, idx);
+		return get_typespec (m, idx, context);
 	case MONO_TOKEN_MEMBER_REF: {
 		guint32 cols [MONO_MEMBERREF_SIZE];
 		const char *sig;
@@ -1779,7 +1824,7 @@ get_token (MonoImage *m, guint32 token)
 		sig = mono_metadata_blob_heap (m, cols [MONO_MEMBERREF_SIGNATURE]);
 		mono_metadata_decode_blob_size (sig, &sig);
 		if (*sig == 0x6) { /* it's a field */
-			temp = get_field (m, token);
+			temp = get_field (m, token, context);
 			result = g_strdup_printf ("field %s", temp);
 			g_free (temp);
 			return result;
@@ -1807,7 +1852,7 @@ get_token (MonoImage *m, guint32 token)
  * at (token & 0xffffff) 
  */
 char *
-get_token_type (MonoImage *m, guint32 token)
+get_token_type (MonoImage *m, guint32 token, MonoGenericContext *context)
 {
 	char *temp = NULL, *s = NULL;
 	int idx;
@@ -1826,7 +1871,7 @@ get_token_type (MonoImage *m, guint32 token)
 		break;
 		
 	case MONO_TOKEN_TYPE_SPEC:
-		s = get_typespec (m, idx);
+		s = get_typespec (m, idx, context);
 		break;
 
 	default:
@@ -1917,7 +1962,7 @@ dis_get_custom_attrs (MonoImage *m, guint32 token)
 			g_error ("Unknown table for custom attr type %08x", cols [MONO_CUSTOM_ATTR_TYPE]);
 			break;
 		}
-		method = get_method (m, mtoken);
+		method = get_method (m, mtoken, NULL);
 		val = mono_metadata_blob_heap (m, cols [MONO_CUSTOM_ATTR_VALUE]);
 		len = mono_metadata_decode_value (val, &val);
 		attr = g_string_new (".custom ");
@@ -2425,7 +2470,7 @@ method_dor_to_token (guint32 idx) {
 }
 
 char *
-get_method_override (MonoImage *m, guint32 token)
+get_method_override (MonoImage *m, guint32 token, MonoGenericContext *context)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_METHODIMPL];
 	int i;
@@ -2440,7 +2485,7 @@ get_method_override (MonoImage *m, guint32 token)
 		decl = method_dor_to_token (cols [MONO_METHODIMPL_DECLARATION]);
 
 		if (token == impl)
-			return get_method_core (m, decl, FALSE);
+			return get_method_core (m, decl, FALSE, context);
 	}
 
 	return NULL;
