@@ -3,8 +3,10 @@
  *
  * Author:
  *      Mark Crichton (crichton@gimp.org)
+ *	Sebastien Pouliot (sebastien@ximian.com)
  *
  * (C) 2001 Ximian, Inc.
+ * (C) 2004 Novell (http://www.novell.com)
  *
  */
 
@@ -13,6 +15,7 @@
 
 #include <mono/metadata/object.h>
 
-void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes(MonoObject *self, MonoArray *arry);
+void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes (MonoObject *self, MonoArray *arry);
+void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_Seed (MonoArray *seed);
 
 #endif

@@ -127,7 +127,7 @@ void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGet
     buf = mono_array_addr (arry, guchar, 0);
 
     if (0 == CryptGenRandom (GetProvider(), len, buf))
-       mono_raise_exception (mono_get_exception_execution_engine ("Failed to generate random bytes from CryptAPI"));
+       mono_raise_exception (mono_get_exception_execution_engine ("Failed to generate random bytes from CryptoAPI"));
 }
 
 #else
@@ -183,3 +183,12 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes
 }
 
 #endif /* OS definition */
+
+void
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_Seed (MonoArray *seed)
+{
+	/* actually we do not support any PRNG requiring seeding right now but
+	the class library is ready for such possibility - so this empty 
+	function is needed (e.g. a new or modified runtime) */
+}
+

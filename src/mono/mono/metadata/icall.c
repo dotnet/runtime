@@ -5450,7 +5450,8 @@ static const IcallEntry remotingservices_icalls [] = {
 };
 
 static const IcallEntry rng_icalls [] = {
-	{"InternalGetBytes", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes}
+	{"InternalGetBytes", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes},
+	{"Seed", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_Seed}
 };
 
 static const IcallEntry methodhandle_icalls [] = {
