@@ -1360,7 +1360,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	/* Encode method info */
 	/**********************/
 
-	buf_size = 4096;
+	buf_size = (patches->len < 1000) ? 40960 : 40960 + (patches->len * 64);
 	p = buf = g_malloc (buf_size);
 
 	encode_value (cfg->code_len, p, &p);
