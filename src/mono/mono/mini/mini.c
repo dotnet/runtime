@@ -5110,6 +5110,10 @@ optimize_branches (MonoCompile *cfg) {
 		/* we skip the entry block (exit is handled specially instead ) */
 		for (bb = cfg->bb_entry->next_bb; bb; bb = bb->next_bb) {
 
+			/* dont touch code inside exception clauses */
+			if (bb->region != -1)
+				continue;
+
 			if (bb->out_count == 1) {
 				bbn = bb->out_bb [0];
 
@@ -5812,13 +5816,14 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 			tblock = g_hash_table_lookup (cfg->bb_hash, ip + ec->try_offset);
 			g_assert (tblock);
 			ei->try_start = cfg->native_code + tblock->native_offset;
+			g_assert (tblock->native_offset);
 			tblock = g_hash_table_lookup (cfg->bb_hash, ip + ec->try_offset + ec->try_len);
 			g_assert (tblock);
 			ei->try_end = cfg->native_code + tblock->native_offset;
+			g_assert (tblock->native_offset);
 			tblock = g_hash_table_lookup (cfg->bb_hash, ip + ec->handler_offset);
 			g_assert (tblock);
 			ei->handler_start = cfg->native_code + tblock->native_offset;
-
 		}
 	}
 
