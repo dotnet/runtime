@@ -6,10 +6,17 @@
 	libraries that are part of the 
 	<a href="http://www.gnome.org">GNOME</a> platform . 
 
+* Wiki
+
+	There is a <a
+	href="http://www.nullenvoid.com/gtksharp/wiki/index.php/">Gtk#
+	Wiki</a>.  You are encouraged to contribute to it.
+
 ** API of Gtk#
 
-	The API is browsable 
-	<a href="http://primates.ximian.com/~tvgm/gtk-sharp-docs/">here</a>
+	The Gtk# API is documented using the ECMA XML document format, you can read
+	more about it <a href="documentation.html">here</a>.  You can
+	also use the MonoDoc tool that ships with Gtk# documentation.
 
 ** Where to learn more.
 
