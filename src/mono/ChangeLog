@@ -1,3 +1,7 @@
+2003-01-20  Duncan Mak  <duncan@ximian.com>
+
+	* configure.in: Bump the release number to 0.19.
+	  
 2003-01-19  Daniel Morgan <danmorg@sc.rr.com>
 
 	* doc/ibmdb2: added file which is new web page
