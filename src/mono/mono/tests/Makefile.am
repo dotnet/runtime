@@ -166,6 +166,7 @@ TEST_IL_SRC=			\
 	ckfiniteTest.il		\
 	locallocTest.il		\
 	initblkTest.il		\
+	even-odd.il		\
 	bug-29859.il
 
 
