@@ -27,6 +27,7 @@ static FILE *cfd;
 
 static int dag_mode = 0;
 static int predefined_terms = 0;
+static int default_cost = 0;
 
 static void output (char *fmt, ...) 
 {
@@ -43,7 +44,7 @@ create_rule (char *id, Tree *tree, char *code, char *cost, char *cfunc)
 	Rule *rule = g_new0 (Rule, 1);
 
 	if (!cfunc && !cost)
-		cost = "0";
+		cost = g_strdup_printf ("%d", default_cost);
 
 	rule->lhs = nonterm (id);
 	rule->tree = tree;
@@ -925,7 +926,7 @@ main (int argc, char *argv [])
 {
 	char *cfile = NULL;
 	char *deffile = NULL;
-	char *infile = NULL;
+	GList *infiles = NULL;
 	int i;
 
 	g_log_set_handler (NULL, G_LOG_LEVEL_WARNING, warning_handler, stderr);
@@ -942,14 +943,13 @@ main (int argc, char *argv [])
 				deffile = argv [++i];
 			} else if (argv [i][1] == 's') {
 				cfile = argv [++i];
+			} else if (argv [i][1] == 'c') {
+				default_cost = atoi (argv [++i]);
 			} else {
 				usage ();
 			}
 		} else {
-			if (infile)
-				usage ();
-			else
-				infile = argv [i];
+			infiles = g_list_append (infiles, argv [i]);
 		}
 	}
 
@@ -965,16 +965,26 @@ main (int argc, char *argv [])
 		outputfd = stdout;
 
 
-	if (infile) {
-		if (!(inputfd = fopen (infile, "r"))) {
-			perror ("cant open input file");
-			exit (-1);
+	if (infiles) {
+		GList *l = infiles;
+		while (l) {
+			char *infile = (char *)l->data;
+			if (!(inputfd = fopen (infile, "r"))) {
+				perror ("cant open input file");
+				exit (-1);
+			}
+
+			yyparse ();
+
+			reset_parser ();
+
+			l->data = inputfd;
+			l = l->next;
 		}
 	} else {
 		inputfd = stdin;
+		yyparse ();
 	}
-
-	yyparse ();
 
 	check_result ();
 
@@ -1015,13 +1025,20 @@ main (int argc, char *argv [])
 
 	emit_kids ();
 
-	yyparsetail ();
+	if (infiles) {
+		GList *l = infiles;
+		while (l) {
+			inputfd = l->data;
+			yyparsetail ();
+			fclose (inputfd);
+			l = l->next;
+		}
+	} else {
+		yyparsetail ();
+	}
 
 	if (cfile)
 		fclose (cfd);
-
-	if (infile)
-		fclose (inputfd);
 
 	return 0;
 }

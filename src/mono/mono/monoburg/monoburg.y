@@ -93,10 +93,17 @@ yyerror (char *fmt, ...)
   exit (-1);
 }
 
+static int state = 0;
+
+void
+reset_parser ()
+{
+  state = 0;
+}
+
 static char
 nextchar ()
 {
-  static int state = 0;
   int next_state ;
   gboolean ll;
 

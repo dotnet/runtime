@@ -60,4 +60,6 @@ void     create_rule    (char *id, Tree *tree, char *code, char *cost,
 
 void     yyparsetail    (void);
 
+void     reset_parser (void);
+
 #endif

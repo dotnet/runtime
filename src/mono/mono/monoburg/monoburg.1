@@ -11,8 +11,11 @@ monoburg \- code generator generator
 .PP
 .B monoburg
 [\-h]  
+[\-e]  
+[\-p]
+[\-c VALUE]    
 [\-d HEADER]
-FILE
+[FILE...]
 .SH DESCRIPTION
 The \fImonoburg\fP program is used to generate tree pattern matchers 
 from BURG specifications. \fImonoburg\fP accepts the following EBNF grammar.
@@ -85,6 +88,9 @@ Assume termainals are already defined.
 .TP
 .I "-e"
 Extended mode. Enables monoburg to work with DAGs.
+.TP
+.I "-c VALUE"
+Set the default costs to VALUE
 
 .PP
 .SH AUTHOR
