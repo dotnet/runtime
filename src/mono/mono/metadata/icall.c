@@ -52,6 +52,7 @@
 #include <mono/metadata/security.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/cil-coff.h>
+#include <mono/metadata/security-manager.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
 #include <mono/utils/monobitset.h>
@@ -6495,6 +6496,13 @@ static const IcallEntry evidence_icalls [] = {
 	{"IsAuthenticodePresent", ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent}
 };
 
+static const IcallEntry securitymanager_icalls [] = {
+	{"get_CheckExecutionRights", ves_icall_System_Security_SecurityManager_get_CheckExecutionRights},
+	{"get_SecurityEnabled", ves_icall_System_Security_SecurityManager_get_SecurityEnabled},
+	{"set_CheckExecutionRights", ves_icall_System_Security_SecurityManager_set_CheckExecutionRights},
+	{"set_SecurityEnabled", ves_icall_System_Security_SecurityManager_set_SecurityEnabled}
+};
+
 /* proto
 static const IcallEntry array_icalls [] = {
 };
@@ -6575,6 +6583,7 @@ static const IcallMap icall_entries [] = {
 	{"System.Security.Principal.WindowsIdentity", identity_icalls, G_N_ELEMENTS (identity_icalls)},
 	{"System.Security.Principal.WindowsImpersonationContext", impersonation_icalls, G_N_ELEMENTS (impersonation_icalls)},
 	{"System.Security.Principal.WindowsPrincipal", principal_icalls, G_N_ELEMENTS (principal_icalls)},
+	{"System.Security.SecurityManager", securitymanager_icalls, G_N_ELEMENTS (securitymanager_icalls)},
 	{"System.String", string_icalls, G_N_ELEMENTS (string_icalls)},
 	{"System.Text.Encoding", encoding_icalls, G_N_ELEMENTS (encoding_icalls)},
 	{"System.Threading.Interlocked", interlocked_icalls, G_N_ELEMENTS (interlocked_icalls)},

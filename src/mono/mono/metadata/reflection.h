@@ -107,9 +107,12 @@ guint32 mono_declsec_flags_from_method (MonoMethod *method);
 guint32 mono_declsec_flags_from_class (MonoClass *klass);
 guint32 mono_declsec_flags_from_assembly (MonoAssembly *assembly);
 
+/* this structure MUST be kept in synch with RuntimeDeclSecurityEntry
+ * located in /mcs/class/corlib/System.Security/SecurityFrame.cs */
 typedef struct {
 	char *blob;				/* pointer to metadata blob */
 	guint32 size;				/* size of the metadata blob */
+	guint32 index;
 } MonoDeclSecurityEntry;
 
 typedef struct {
