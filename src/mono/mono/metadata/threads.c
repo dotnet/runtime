@@ -243,11 +243,8 @@ static guint32 start_wrapper(void *data)
 	mono_thread_push_appdomain_ref (mono_domain_get ());
 
 	thread_adjust_static_data (thread);
-#ifndef PLATFORM_WIN32
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION "start_wrapper for %d\n", thread->tid);
-#endif
-	pthread_cleanup_push ((void (*) (void *)) mono_thread_detach, thread);
 #endif
 
 	start_func (this);
@@ -273,8 +270,6 @@ static guint32 start_wrapper(void *data)
 	TlsSetValue (current_object_key, NULL);
 	
 	thread_cleanup (thread);
-#else
-	pthread_cleanup_pop (1);
 #endif
 
 	return(0);
