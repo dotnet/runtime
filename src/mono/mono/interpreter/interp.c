@@ -2206,7 +2206,7 @@ array_constructed:
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference(), ip - 1);
 
-			if (o->klass->element_class->type_token != c->type_token)
+			if (o->klass->element_class->type_token != c->element_class->type_token)
 				THROW_EX (mono_get_exception_invalid_cast (), ip - 1);
 
 			sp [-1].type = VAL_MP;
