@@ -15,10 +15,12 @@ typedef struct MonoSymbolFileMethodAddress	MonoSymbolFileMethodAddress;
 typedef struct MonoSymbolFileDynamicTable	MonoSymbolFileDynamicTable;
 typedef struct MonoSymbolFileSourceEntry	MonoSymbolFileSourceEntry;
 typedef struct MonoSymbolFileMethodIndexEntry	MonoSymbolFileMethodIndexEntry;
+typedef struct MonoSymbolFileLexicalBlockEntry	MonoSymbolFileLexicalBlockEntry;
 
 typedef struct MonoDebugMethodInfo		MonoDebugMethodInfo;
 typedef struct MonoDebugMethodJitInfo		MonoDebugMethodJitInfo;
 typedef struct MonoDebugVarInfo			MonoDebugVarInfo;
+typedef struct MonoDebugLexicalBlockEntry	MonoDebugLexicalBlockEntry;
 typedef struct MonoDebugLineNumberEntry		MonoDebugLineNumberEntry;
 typedef struct MonoDebugRangeInfo		MonoDebugRangeInfo;
 typedef struct MonoDebugClassInfo		MonoDebugClassInfo;
@@ -51,6 +53,8 @@ struct MonoSymbolFileMethodEntry {
 	guint32 type_index_table_offset;
 	guint32 local_variable_table_offset;
 	guint32 line_number_table_offset;
+	guint32 num_lexical_blocks;
+	guint32 lexical_block_table_offset;
 	guint32 namespace_idx;
 };
 
@@ -81,7 +85,13 @@ struct MonoSymbolFileMethodAddress {
 	guint32 type_table_offset;
 	guint32 num_line_numbers;
 	guint32 line_number_offset;
+	guint32 lexical_block_table_offset;
 	guint8 data [MONO_ZERO_LEN_ARRAY];
+};
+
+struct MonoSymbolFileLexicalBlockEntry {
+	guint32 start_offset;
+	guint32 end_offset;
 };
 
 struct MonoSymbolFileLineNumberEntry {
@@ -99,6 +109,11 @@ struct MonoDebugMethodInfo {
 	MonoSymbolFileLineNumberEntry *il_offsets;
 	MonoDebugMethodJitInfo *jit;
 	gpointer user_data;
+};
+
+struct MonoDebugLexicalBlockEntry {
+	guint32 start_address;
+	guint32 end_address;
 };
 
 struct MonoDebugLineNumberEntry {
@@ -224,7 +239,7 @@ struct MonoSymbolFile {
 	MonoSymbolFilePriv *_priv;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		33
+#define MONO_SYMBOL_FILE_VERSION		34
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
 #define MONO_SYMBOL_FILE_DYNAMIC_VERSION	26
@@ -256,6 +271,10 @@ mono_debug_find_source_location    (MonoSymbolFile           *symfile,
 MonoDebugMethodInfo *
 mono_debug_find_method             (MonoSymbolFile           *symfile,
 				    MonoMethod               *method);
+
+gint32
+_mono_debug_address_from_il_offset (MonoDebugMethodInfo      *minfo,
+				    guint32                   il_offset);
 
 MonoReflectionMethod *
 ves_icall_MonoDebugger_GetMethod   (MonoReflectionAssembly   *assembly,

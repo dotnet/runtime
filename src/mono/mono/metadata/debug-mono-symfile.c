@@ -280,17 +280,38 @@ mono_debug_find_source_location (MonoSymbolFile *symfile, MonoMethod *method, gu
 	return NULL;
 }
 
+gint32
+_mono_debug_address_from_il_offset (MonoDebugMethodInfo *minfo, guint32 il_offset)
+{
+	int i;
+
+	if (!minfo->jit || !minfo->jit->line_numbers)
+		return -1;
+
+	for (i = minfo->jit->line_numbers->len - 1; i >= 0; i--) {
+		MonoDebugLineNumberEntry lne = g_array_index (
+			minfo->jit->line_numbers, MonoDebugLineNumberEntry, i);
+
+		if (lne.offset <= il_offset)
+			return lne.address;
+	}
+
+	return -1;
+}
+
 void
 mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 {
 	MonoSymbolFileMethodEntryPriv *mep;
 	MonoSymbolFileMethodAddress *address;
+	MonoSymbolFileLexicalBlockEntry *block;
 	MonoDebugVarInfo *var_table;
 	MonoDebugRangeInfo *range;
 	MonoMethodHeader *header;
 	guint32 size, num_variables, variable_size, variable_offset;
-	guint32 type_size, type_offset, *type_index_table;
-	guint32 line_size, line_offset, has_this;
+	guint32 type_size, type_offset, *type_index_table, has_this;
+	guint32 line_size, line_offset, block_offset, block_size;
+	MonoDebugLexicalBlockEntry *block_table;
 	MonoDebugLineNumberEntry *line_table;
 	guint32 *type_table;
 	guint8 *ptr;
@@ -335,8 +356,21 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 		size += line_size;
 	}
 
+	block_size = mep->entry->num_lexical_blocks * sizeof (MonoSymbolFileLexicalBlockEntry);
+	block_offset = size;
+	size += block_size;
+
 	address = g_malloc0 (size);
 	ptr = (guint8 *) address;
+
+	block = (MonoSymbolFileLexicalBlockEntry *)
+		(symfile->_priv->raw_contents + mep->entry->lexical_block_table_offset);
+	block_table = (MonoDebugLexicalBlockEntry *) (ptr + block_offset);
+
+	for (i = 0; i < mep->entry->num_lexical_blocks; i++, block++) {
+		block_table [i].start_address = _mono_debug_address_from_il_offset (mep->minfo, block->start_offset);
+		block_table [i].end_address = _mono_debug_address_from_il_offset (mep->minfo, block->end_offset);
+	}
 
 	address->size = size;
 	address->has_this = has_this;
@@ -347,6 +381,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	address->wrapper_address = mep->minfo->jit->wrapper_addr;
 	address->variable_table_offset = variable_offset;
 	address->type_table_offset = type_offset;
+	address->lexical_block_table_offset = block_offset;
 
 	if (mep->minfo->jit->line_numbers) {
 		address->num_line_numbers = mep->minfo->jit->line_numbers->len;
@@ -392,11 +427,9 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	}
 
 	if (mep->minfo->jit->num_locals < mep->entry->num_locals) {
-#if 1
 		g_warning (G_STRLOC ": Method %s.%s has %d locals, but symbol file claims it has %d.",
 			   mep->method->klass->name, mep->method->name, mep->minfo->jit->num_locals,
 			   mep->entry->num_locals);
-#endif
 		var_table += mep->entry->num_locals;
 	} else {
 		g_assert ((header != NULL) || (mep->entry->num_locals == 0));
