@@ -1249,9 +1249,9 @@ reg: DIV_UN (reg, coni4) {
 			if (tree->left->reg1 != X86_EAX)
 				x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
 			x86_mov_reg_imm (s->code, X86_EDX, (guint32) floor(f));
-			/* x86_inc_reg (s->code, tree->reg1); */
+			/* x86_inc_reg (s->code, X86_EAX); */
 			/* INC is faster but we have to check for overflow. */
-			x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, 1);
+			x86_alu_reg_imm (s->code, X86_ADD, X86_EAX, 1);
 			x86_branch8(s->code, X86_CC_C, 2, FALSE);
 			x86_mul_reg (s->code, X86_EDX, FALSE);
 			x86_shift_reg_imm (s->code, X86_SHR, X86_EDX, k - 32);
