@@ -222,12 +222,17 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		class->parent = mono_class_get (image, parent_token);
 		class->instance_size = class->parent->instance_size;
 		class->valuetype = class->parent->valuetype;
+		class->enumtype = class->parent->enumtype;
 		g_assert (class->instance_size);
 	}
 
-	if (!strcmp (nspace, "System") && 
-	    (!strcmp (name, "ValueType") || !strcmp (name, "Enum"))) {
-		class->valuetype = 1;
+	if (!strcmp (nspace, "System")) {
+		if (!strcmp (name, "ValueType")) {
+			class->valuetype = 1;
+		} else if (!strcmp (name, "Enum")) {
+			class->valuetype = 1;
+			class->enumtype = 1;
+		}
 	}
 	if (class->valuetype)
 		class->this_arg.type = MONO_TYPE_VALUETYPE;

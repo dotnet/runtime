@@ -316,6 +316,18 @@ ves_map_ffi_type (MonoType *type)
 	case MONO_TYPE_U4:
 		rettype = &ffi_type_sint32;
 		break;
+	case MONO_TYPE_I:
+		rettype = &ffi_type_sint;
+		break;
+	case MONO_TYPE_U:
+		rettype = &ffi_type_sint;
+		break;
+	case MONO_TYPE_I8:
+		rettype = &ffi_type_sint64;
+		break;
+	case MONO_TYPE_PTR:
+		rettype = &ffi_type_pointer;
+		break;
 	case MONO_TYPE_R4:
 		rettype = &ffi_type_float;
 		break;
@@ -329,7 +341,7 @@ ves_map_ffi_type (MonoType *type)
 		rettype = &ffi_type_void;
 		break;
 	default:
-		g_warning ("not implemented");
+		g_warning ("not implemented 0x%02x", type->type);
 		g_assert_not_reached ();
 	}
 
@@ -372,9 +384,10 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 	scope = mono_map_dll (scope);
 	full_name = g_module_build_path (NULL, scope);
 	gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
-	g_free (full_name);
 
-	g_assert (gmodule);
+	if (!gmodule)
+		g_error ("Failed to load library %s (%s)", full_name, scope);
+	g_free (full_name);
 
 	piinfo->cif = g_new (ffi_cif , 1);
 	piinfo->piflags = im_cols [0];
@@ -466,17 +479,17 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 	size = mono_metadata_decode_blob_size (sig, &sig);
 	result->signature = mono_metadata_parse_method_signature (image, 0, sig, NULL);
 
+	if (!result->klass) {
+		guint32 type = mono_metadata_typedef_from_method (image, token);
+		result->klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
+	}
+
 	if (result->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, 
 				   index - 1);
 	} else if (!(result->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
 		/* if this is a methodref from another module/assembly, this fails */
 		loc = mono_cli_rva_map ((MonoCLIImageInfo *)image->image_info, cols [0]);
-
-		if (!result->klass) {
-			guint32 type = mono_metadata_typedef_from_method (image, token);
-			result->klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
-		}
 
 		if (!result->klass->dummy && !(result->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
 			g_assert (loc);

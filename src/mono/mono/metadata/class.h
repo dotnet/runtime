@@ -22,6 +22,7 @@ struct _MonoClass {
 	guint inited          : 1;
 	guint metadata_inited : 1;
 	guint valuetype       : 1; /* derives from System.ValueType */
+	guint enumtype        : 1; /* derives from System.Enum */
 
 	MonoClass *parent;
 
