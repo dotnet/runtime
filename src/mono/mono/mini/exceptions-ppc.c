@@ -1044,7 +1044,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	MonoContext mctx;
 	gboolean result;
 	
-	mctx.sc_ir = uc->uc_mcontext->ss.lr;
+	mctx.sc_ir = uc->uc_mcontext->ss.srr0;
 	mctx.sc_sp = uc->uc_mcontext->ss.r1;
 	memcpy (&mctx.regs, &uc->uc_mcontext->ss.r13, sizeof (gulong) * 19);
 	memcpy (&mctx.fregs, &uc->uc_mcontext->fs.fpregs [14], sizeof (double) * 20);
@@ -1053,7 +1053,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	/* restore the context so that returning from the signal handler will invoke
 	 * the catch clause 
 	 */
-	uc->uc_mcontext->ss.lr = mctx.sc_ir;
+	uc->uc_mcontext->ss.srr0 = mctx.sc_ir;
 	uc->uc_mcontext->ss.r1 = mctx.sc_sp;
 	memcpy (&uc->uc_mcontext->ss.r13, &mctx.regs, sizeof (gulong) * 19);
 	memcpy (&uc->uc_mcontext->fs.fpregs [14], &mctx.fregs, sizeof (double) * 20);
