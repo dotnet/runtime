@@ -2347,6 +2347,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 			retobj_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 			g_assert (retobj_var);
 			mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
+			mono_mb_emit_byte (mb, CEE_CONV_I);
 			mono_mb_emit_native_call (mb, alloc_sig, mono_marshal_alloc);
 			mono_mb_emit_byte (mb, CEE_STLOC_1);
 			mono_mb_emit_byte (mb, CEE_LDLOC_1);
@@ -2381,6 +2382,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 
 			/* Allocate and set dest */
 			mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
+			mono_mb_emit_byte (mb, CEE_CONV_I);
 			mono_mb_emit_native_call (mb, alloc_sig, mono_marshal_alloc);
 			mono_mb_emit_byte (mb, CEE_DUP);
 			mono_mb_emit_byte (mb, CEE_STLOC_1);
@@ -2430,6 +2432,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 
 			/* Allocate and set dest */
 			mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
+			mono_mb_emit_byte (mb, CEE_CONV_I);
 			mono_mb_emit_native_call (mb, alloc_sig, mono_marshal_alloc);
 			mono_mb_emit_byte (mb, CEE_STLOC_1);
 
