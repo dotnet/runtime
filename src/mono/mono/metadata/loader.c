@@ -902,6 +902,15 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 				}
 			}
 		}
+		
+		/* FIXME: lazyness for generics too, but how? */
+		if (!result->klass->dummy && !(result->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
+		    !(result->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) && container) {
+			gpointer loc = mono_image_rva_map (image, cols [0]);
+			g_assert (loc);
+			((MonoMethodNormal *) result)->header = mono_metadata_parse_mh_full (image, container, loc);
+		}
+		
 		((MonoMethodNormal *) result)->generic_container = generic_container;
 	}
 
