@@ -197,7 +197,7 @@ mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji)
 	mono_domain_unlock (domain);
 }	
 
-static gboolean
+gboolean
 mono_string_equal (MonoString *s1, MonoString *s2)
 {
 	int l1 = mono_string_length (s1);
@@ -211,7 +211,7 @@ mono_string_equal (MonoString *s1, MonoString *s2)
 	return memcmp (mono_string_chars (s1), mono_string_chars (s2), l1 * 2) == 0; 
 }
 
-static guint
+guint
 mono_string_hash (MonoString *s)
 {
 	const guint16 *p = mono_string_chars (s);

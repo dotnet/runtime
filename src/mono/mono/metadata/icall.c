@@ -778,7 +778,7 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fi
 			MonoString *s;
 			s = *(MonoString**)((guint8*)this + field->offset);
 			if (s != NULL)
-				result ^= ves_icall_System_String_GetHashCode (s);
+				result ^= mono_string_hash (s);
 			break;
 		}
 		default:
@@ -6332,7 +6332,6 @@ static const IcallEntry string_icalls [] = {
 	{".ctor(sbyte*)", ves_icall_System_String_ctor_sbytep},
 	{".ctor(sbyte*,int,int)", ves_icall_System_String_ctor_sbytep_int_int},
 	{".ctor(sbyte*,int,int,System.Text.Encoding)", ves_icall_System_String_ctor_encoding},
-	{"GetHashCode", ves_icall_System_String_GetHashCode},
 	{"InternalAllocateStr", ves_icall_System_String_InternalAllocateStr},
 	{"InternalCharCopy", ves_icall_System_String_InternalCharCopy},
 	{"InternalCopyTo", ves_icall_System_String_InternalCopyTo},

@@ -683,20 +683,6 @@ ves_icall_System_String_InternalIsInterned (MonoString *str)
 	return mono_string_is_interned(str);
 }
 
-gint32
-ves_icall_System_String_GetHashCode (MonoString *me)
-{
-	int i, h = 0;
-	gunichar2 *data = mono_string_chars (me);
-
-	MONO_ARCH_SAVE_REGS;
-
-	for (i = 0; i < mono_string_length (me); ++i)
-		h = (h << 5) - h + data [i];
-
-	return h;
-}
-
 gunichar2 
 ves_icall_System_String_get_Chars (MonoString *me, gint32 idx)
 {

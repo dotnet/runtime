@@ -128,6 +128,12 @@ mono_string_to_utf16	    (MonoString *string_obj);
 MonoString *
 mono_string_from_utf16	    (gunichar2 *data);
 
+gboolean
+mono_string_equal           (MonoString *s1, MonoString *s2);
+
+guint
+mono_string_hash            (MonoString *s);
+
 MonoObject *
 mono_value_box		    (MonoDomain *domain, MonoClass *klass, gpointer val);
 
