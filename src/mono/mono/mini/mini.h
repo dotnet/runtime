@@ -774,6 +774,7 @@ void      mono_add_patch_info               (MonoCompile *cfg, int ip, MonoJumpI
 void      mono_remove_patch_info            (MonoCompile *cfg, int ip);
 gpointer  mono_resolve_patch_target         (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors);
 MonoLMF** mono_get_lmf_addr                 (void);
+gint32    mono_get_lmf_tls_offset           (void);
 GList    *mono_varlist_insert_sorted        (MonoCompile *cfg, GList *list, MonoMethodVar *mv, gboolean sort_end);
 GList    *mono_varlist_sort                 (MonoCompile *cfg, GList *list, int sort_type);
 void      mono_analyze_liveness             (MonoCompile *cfg);

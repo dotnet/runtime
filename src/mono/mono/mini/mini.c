@@ -49,6 +49,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/utils/mono-math.h>
+#include <mono/utils/mono-compiler.h>
 #include <mono/os/gc_wrapper.h>
 
 #include "mini.h"
@@ -7257,8 +7258,16 @@ mono_destroy_compile (MonoCompile *cfg)
 }
 
 #ifdef HAVE_KW_THREAD
-static __thread gpointer mono_lmf_addr;
+static __thread gpointer mono_lmf_addr MONO_TLS_FAST;
 #endif
+
+gint32
+mono_get_lmf_tls_offset (void)
+{
+	int offset;
+	MONO_THREAD_VAR_OFFSET(mono_lmf_addr,offset);
+	return offset;
+}
 
 MonoLMF **
 mono_get_lmf_addr (void)

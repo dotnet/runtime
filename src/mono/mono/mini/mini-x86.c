@@ -4591,55 +4591,6 @@ mono_arch_flush_register_windows (void)
 
 static gboolean tls_offset_inited = FALSE;
 
-/* code should be simply return <tls var>; */
-static int read_tls_offset_from_method (void* method)
-{
-	guint8* code = (guint8*) method;
-	/* 
-	 * Determine the offset of the variable inside the TLS structures
-	 * by disassembling the function.
-	 */
-
-	/* gcc-3.3.2
-	 *
-	 * push ebp
-	 * mov ebp, esp
-	 * mov eax, gs:0
-	 * mov eax, DWORD PTR [eax+<offset>]
-	 */
-	if (
-		(code [0] == 0x55) && (code [1] == 0x89) && (code [2] == 0xe5) &&
-		(code [3] == 0x65) && (code [4] == 0xa1) && (code [5] == 0x00) &&
-		(code [6] == 0x00) && (code [7] == 0x00) && (code [8] == 0x00) &&
-		(code [9] == 0x8b) && (code [10] == 0x80)) {
-		return *(int*)&(code [11]);
-	}
-	
-	/* gcc-3.4
-	 *
-	 * push ebp
-	 * mov ebp, esp
-	 * mov eax, gs:<offset>
-	 */
-	if (
-		(code [0] == 0x55) && (code [1] == 0x89) && (code [2] == 0xe5) &&
-		(code [3] == 0x65) && (code [4] == 0xa1)) {
-		return *(int*)&(code [5]);
-	}
-	
-	/* 3.2.2 with -march=athlon
-	 *
-	 * push ebp
-	 * mov eax, gs:<offset>
-	 * mov ebp, esp
-	 */
-	if (
-		(code [0] == 0x55) && (code [1] == 0x65) && (code [2] == 0xa1)) {
-		return *(int*)&(code [3]);
-	}
-	
-	return -1;
-}
 void
 mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 {
@@ -4653,10 +4604,10 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 
 	if (!tls_offset_inited) {
 		tls_offset_inited = TRUE;
-		if (getenv ("MONO_NPTL")) {
-			lmf_tls_offset = read_tls_offset_from_method (mono_get_lmf_addr);
-			appdomain_tls_offset = read_tls_offset_from_method (mono_domain_get);
-			thread_tls_offset = read_tls_offset_from_method (mono_thread_current);
+		if (!getenv ("MONO_NO_TLS")) {
+			appdomain_tls_offset = mono_domain_get_tls_offset ();
+			lmf_tls_offset = mono_get_lmf_tls_offset ();
+			thread_tls_offset = mono_thread_get_tls_offset ();
 		}
 	}		
 
