@@ -591,5 +591,27 @@ class Tests {
 			return 2;
 		return 0;
 	}
+
+	static int test_3_checked_cast_un () {
+                ulong i = 2;
+                long j;
+
+                checked { j = (long)i; }
+
+		if (j != 2)
+			return 0;
+		return 3;
+	}
+	
+	static int test_4_checked_cast () {
+                long i = 3;
+                ulong j;
+
+                checked { j = (ulong)i; }
+
+		if (j != 3)
+			return 0;
+		return 4;
+	}
 }
 

@@ -1419,4 +1419,35 @@ class Tests {
 			return 2;
 		return 0;
 	}
+
+	static int test_3_checked_cast_un () {
+                ulong i = 0x8000000034000000;
+                long j;
+
+		try {
+	                checked { j = (long)i; }
+		} catch (OverflowException) {
+			j = 2;
+		}
+
+		if (j != 2)
+			return 0;
+		return 3;
+	}
+	
+	static int test_4_checked_cast () {
+                long i;
+                ulong j;
+
+		unchecked { i = (long)0x8000000034000000;};
+		try {
+                	checked { j = (ulong)i; }
+		} catch (OverflowException) {
+			j = 3;
+		}
+
+		if (j != 3)
+			return 0;
+		return 4;
+	}
 }
