@@ -401,6 +401,9 @@ method_encode_code (MonoDynamicAssembly *assembly, ReflectionMethodBuilder *mb)
 			goto fat_header;
 		}
 		idx = mono_image_add_stream_data (&assembly->code, &flags, 1);
+		/* add to the fixup todo list */
+		if (mb->ilgen && mb->ilgen->num_token_fixups)
+			g_hash_table_insert (assembly->token_fixups, mb->ilgen, GUINT_TO_POINTER (idx + 1));
 		mono_image_add_stream_data (&assembly->code, mono_array_addr (code, char, 0), code_size);
 		return assembly->text_rva + idx + CLI_H_SIZE;
 	} 
