@@ -854,6 +854,12 @@ disassemble_file (const char *file)
 	mono_image_close (img);
 }
 
+MonoObject *
+dis_runtime_invoke (MonoMethod *method, void *obj, void **params)
+{
+	/* do nothing */
+}
+
 static void
 usage (void)
 {
@@ -904,6 +910,7 @@ main (int argc, char *argv [])
 	if (input_files == NULL)
 		usage ();
 	
+	mono_install_runtime_invoke (dis_runtime_invoke);
 	mono_init (argv [0]);
 
 	for (l = input_files; l; l = l->next)
