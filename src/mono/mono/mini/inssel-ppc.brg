@@ -31,6 +31,13 @@ stmt: OP_ENDFILTER (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+lreg: OP_LSUB_OVF_UN (lreg, lreg) "0" {
+	/* SBB sets the condition code */
+	MONO_EMIT_NEW_BIALU (s, OP_SUBCC, state->reg1, state->left->reg1, state->right->reg1);
+	MONO_EMIT_NEW_BIALU (s, OP_SBB, state->reg2, state->left->reg2, state->right->reg2);
+	/* FIXME: This is wrong on ppc, see also compilation of tests/exception6.cs
+	MONO_EMIT_NEW_COND_EXC (s, C, "OverflowException");*/
+}
 stmt: CEE_STIND_I8 (OP_REGVAR, lreg) {
 	/* this should only happen for methods returning a long */
 	MONO_EMIT_NEW_UNALU (s, OP_MOVE, ppc_r3, state->right->reg1);
