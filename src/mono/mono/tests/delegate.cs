@@ -50,7 +50,7 @@ class Test {
 			return 1;
 		
 		object [] args = {3};
-		d3.DynamicInvoke (args);
+		Console.WriteLine (d3.DynamicInvoke (args));
 
 		AnotherDelegate d4 = new AnotherDelegate (puts);
 		if (d4.Method == null)
@@ -61,6 +61,8 @@ class Test {
 		Console.WriteLine (d4.Method.DeclaringType);
 		
 		return 0;
+
+
 	}
 }
 }

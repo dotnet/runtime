@@ -439,7 +439,7 @@ map_starg_type (MonoType *type)
 }
 
 static int
-map_arg_type (MonoType *type, gboolean pinvoke)
+map_arg_type (MonoType *type)
 {
 	if (type->byref) 
 		return MB_TERM_ARG_I4;
@@ -462,8 +462,6 @@ map_arg_type (MonoType *type, gboolean pinvoke)
 	case MONO_TYPE_ARRAY:    
 		return MB_TERM_ARG_I4;
 	case MONO_TYPE_STRING:
-		if (pinvoke)
-			return MB_TERM_ARG_STRING;
 		return MB_TERM_ARG_I4;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
@@ -474,7 +472,7 @@ map_arg_type (MonoType *type, gboolean pinvoke)
 		return MB_TERM_ARG_R8;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype)
-			return map_arg_type (type->data.klass->enum_basetype, pinvoke);
+			return map_arg_type (type->data.klass->enum_basetype);
 		else
 			return MB_TERM_ARG_OBJ;
 	default:
@@ -2026,7 +2024,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				MonoType *type = cm->signature->params [i];
 
 				size = mono_type_stack_size (type, &align);
-				t1 = mono_ctree_new (mp, map_arg_type (type, FALSE), arg_sp [i], NULL);	
+				t1 = mono_ctree_new (mp, map_arg_type (type), arg_sp [i], NULL);	
 				t1->data.i = size;
 				ADD_TREE (t1, cli_addr);
 				args_size += size;
@@ -2080,7 +2078,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			int virtual = *ip == CEE_CALLVIRT;
 			gboolean array_set = FALSE;
 			gboolean array_get = FALSE;
-			gboolean pinvoke = FALSE;
 			int nargs, vtype_num = 0;
 
 			++ip;
@@ -2092,15 +2089,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			ci =  mono_mempool_alloc0 (mp, sizeof (MethodCallInfo));
 			ci->m = cm;
-
-			if (cm->flags &  METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-				if (!(cm->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-					pinvoke = TRUE;
-
-				t1 = mono_ctree_new_leaf (mp, MB_TERM_SAVE_LMF);
-				t1->data.m = cm;
-				ADD_TREE (t1, cli_addr);
-			}
 
 			if ((cm->flags & METHOD_ATTRIBUTE_FINAL) ||
 			    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
@@ -2128,7 +2116,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			for (i = nargs - 1; i >= 0; i--) {
 				MonoType *type = cm->signature->params [i];
-				t1 = mono_ctree_new (mp, map_arg_type (type, pinvoke), arg_sp [i], NULL);
+				t1 = mono_ctree_new (mp, map_arg_type (type), arg_sp [i], NULL);
 				size = mono_type_stack_size (type, &align);
 				t1->data.i = size;
 				ADD_TREE (t1, cli_addr);
@@ -2219,21 +2207,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 						t1 = mono_store_tree (cfg, -1, t1, &t2);
 						g_assert (t1);
 						ADD_TREE (t1, cli_addr);
-
-						if (pinvoke && csig->ret->type == MONO_TYPE_STRING) {
-							t2 = mono_ctree_new (mp, MB_TERM_TOSTRING, t2, NULL);
-							t2->svt = VAL_POINTER;
-						} 
 						PUSH_TREE (t2, t2->svt);
 					}
 				} else
 					ADD_TREE (t1, cli_addr);
    
-			}
-
-			if (cm->flags &  METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-				t1 = mono_ctree_new_leaf (mp, MB_TERM_RESTORE_LMF);
-				ADD_TREE (t1, cli_addr);
 			}
 
 			break;
@@ -2978,10 +2956,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				g_assert (cm);
 				
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
-				if (!cm->addr)
-					t1->data.p = arch_compile_method (cm);
-				else 
-					t1->data.p = (char *)cm->addr;
+				t1->data.p = arch_compile_method (cm);
 				PUSH_TREE (t1, VAL_POINTER);
 				break;
 			}

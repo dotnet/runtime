@@ -28,14 +28,6 @@
 
 #define ARG_SIZE	sizeof (stackval)
 
-static MonoString*
-mono_string_new_wrapper (const char *text)
-{
-	MonoDomain *domain = mono_domain_get ();
-
-	return mono_string_new (domain, text);
-}
-
 MonoPIFunc
 mono_create_trampoline (MonoMethod *method, int runtime)
 {
@@ -155,7 +147,7 @@ enum_calc_size:
 				continue;
 			}
 			if (sig->params [i - 1]->type == MONO_TYPE_SZARRAY &&
-					sig->params [i - 1]->data.type->type == MONO_TYPE_STRING) {
+			    sig->params [i - 1]->data.type->type == MONO_TYPE_STRING) {
 				x86_mov_reg_membase (p, X86_EAX, X86_EDX, arg_pos, 4);
 				x86_push_regp (p, X86_EAX);
 				x86_mov_reg_imm (p, X86_EDX, mono_marshal_string_array);
@@ -208,11 +200,6 @@ enum_marshal:
 				goto enum_marshal;
 			}
 			break;
-		case MONO_TYPE_R8:
-			x86_alu_reg_imm (p, X86_SUB, X86_ESP, 8);
-			x86_fld_membase (p, X86_EDX, arg_pos, TRUE);
-			x86_fst_membase (p, X86_ESP, 0, TRUE, TRUE);
-			break;
 		case MONO_TYPE_STRING:
 			/* 
 			 * If it is an internalcall we assume it's the object we want.
@@ -241,6 +228,8 @@ enum_marshal:
 				x86_mov_reg_membase (p, X86_EDX, X86_EBP, ARGP_POS, 4);
 			break;
 		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_R8:
 			x86_push_membase (p, X86_EDX, arg_pos + 4);
 			x86_push_membase (p, X86_EDX, arg_pos);
 			break;

@@ -94,8 +94,6 @@ mono_array_new_wrapper  (MonoClass *eclass, guint32 n);
 MonoObject *
 mono_object_new_wrapper (MonoClass *klass);
 MonoString*
-mono_string_new_wrapper (const char *text);
-MonoString*
 mono_ldstr_wrapper      (MonoImage *image, guint32 index);
 
 gpointer
@@ -191,8 +189,8 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 %term CONV_OVF_I1 CONV_OVF_U1 CONV_OVF_I2 CONV_OVF_U2 CONV_OVF_U4 CONV_OVF_U8 CONV_OVF_I4
 %term CONV_OVF_I4_UN CONV_OVF_U1_UN CONV_OVF_U2_UN
 %term CONV_OVF_I2_UN CONV_OVF_I8_UN CONV_OVF_I1_UN 
-%term EXCEPTION THROW RETHROW HANDLER SAVE_LMF RESTORE_LMF
-%term LDLEN LDELEMA LDFTN TOSTRING LDSTR LDSFLDA
+%term EXCEPTION THROW RETHROW HANDLER
+%term LDLEN LDELEMA LDFTN LDSTR LDSFLDA
 
 #
 # we start at stmt
@@ -329,51 +327,6 @@ stmt: HANDLER {
 
 stmt: ENDFINALLY {
 	x86_ret (s->code);
-}
-
-stmt: SAVE_LMF {
-	/* save all caller saved regs */
-	x86_push_reg (s->code, X86_EBX);
-	x86_push_reg (s->code, X86_EDI);
-	x86_push_reg (s->code, X86_ESI);
-	x86_push_reg (s->code, X86_EBP);
-	
-	/* save the IP */
-	mono_add_jump_info (s, s->code + 1, MONO_JUMP_INFO_IP, NULL);
-	x86_push_imm (s->code, s->code);
-
-	/* save method info */
-	x86_push_imm (s->code, tree->data.m);
-	/* get the address of lmf for the current thread */
-	mono_add_jump_info (s, s->code + 1, MONO_JUMP_INFO_ABS, arch_get_lmf_addr);
-	x86_call_code (s->code, arch_get_lmf_addr);
-	/* push lmf */
-	x86_push_reg (s->code, X86_EAX); 
-	/* push *lfm (previous_lmf) */
-	x86_push_membase (s->code, X86_EAX, 0);
-	/* *(lmf) = ESP */
-	x86_mov_membase_reg (s->code, X86_EAX, 0, X86_ESP, 4);
-}
-
-stmt: RESTORE_LMF {
-	/* ebx = previous_lmf */
-	x86_pop_reg (s->code, X86_EBX);
-	/* edi = lmf */
-	x86_pop_reg (s->code, X86_EDI);
-	/* *(lmf) = previous_lmf */
-	x86_mov_membase_reg (s->code, X86_EDI, 0, X86_EBX, 4);
-
-	/* discard method info */
-	x86_pop_reg (s->code, X86_ESI);
-
-	/* discard save IP */
-	x86_pop_reg (s->code, X86_ESI);
-
-	/* restore caller saved regs */
-	x86_pop_reg (s->code, X86_EBP);
-	x86_pop_reg (s->code, X86_ESI);
-	x86_pop_reg (s->code, X86_EDI);
-	x86_pop_reg (s->code, X86_EBX);
 }
 
 stmt: STIND_I4 (addr, reg) {
@@ -1112,40 +1065,6 @@ reg: LDSTR {
 	}
 
 	PRINT_REG ("LDSTR", tree->reg1);	
-}
-
-reg: TOSTRING (reg) {
-	guint8 *start = s->code, *l1, *le;
-	int i;
-
-	l1 = le = NULL;
-
-	for (i = 0; i < 2; i++) {
-		s->code = start;
-
-		x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
-		x86_branch8 (s->code, X86_CC_EQ, le - l1, FALSE);
-		l1 = s->code;
-
-		if (tree->reg1 != X86_EAX)
-			x86_push_reg (s->code, X86_EAX);
-		x86_push_reg (s->code, X86_ECX);
-		x86_push_reg (s->code, X86_EDX);
-
-		x86_push_reg (s->code, tree->left->reg1);
-		mono_add_jump_info (s, s->code + 1, MONO_JUMP_INFO_ABS, mono_string_new_wrapper);
-		x86_call_code (s->code, 0);
-		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer));
-
-		x86_pop_reg (s->code, X86_EDX);
-		x86_pop_reg (s->code, X86_ECX);
-		if (tree->reg1 != X86_EAX) {
-			x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
-			x86_pop_reg (s->code, X86_EAX);
-		}
-
-		le = s->code;
-	}
 }
 
 reg: NEWARR (reg) {
@@ -3462,14 +3381,6 @@ mono_object_new_wrapper (MonoClass *klass)
 	MonoDomain *domain = mono_domain_get ();
 
 	return mono_object_new (domain, klass);
-}
-
-MonoString*
-mono_string_new_wrapper (const char *text)
-{
-	MonoDomain *domain = mono_domain_get ();
-
-	return mono_string_new (domain, text);
 }
 
 MonoString*

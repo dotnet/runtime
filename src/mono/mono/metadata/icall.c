@@ -860,14 +860,45 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 }
 
 static MonoObject*
-ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params) {
-	//MonoMethodSignature *sig = method->method->signature;
+ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params) 
+{
+	MonoMethodSignature *sig = method->method->signature;
+	gpointer *pa;
+	int i;
 
-	/*
-	 * Do we need to copy the values so that the called method can't change them?
-	 */
+	pa = alloca (sizeof (gpointer) * params->bounds->length);
 
-	return NULL;
+	for (i = 0; i < params->bounds->length; i++) {
+		if (sig->params [i]->byref) {
+			/* fixme: don't know how to handle this */
+			g_assert_not_reached ();
+		}
+
+		switch (sig->params [i]->type) {
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_U:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_VALUETYPE:
+			pa [i] = (char *)(((gpointer *)params->vector)[i]) + sizeof (MonoObject);
+			break;
+		case MONO_TYPE_STRING:
+			pa [i] = (char *)(((gpointer *)params->vector)[i]);
+			break;
+		default:
+			g_error ("type 0x%x not handled in invoke", sig->params [i]->type);
+		}
+	}
+
+	return mono_runtime_invoke (method->method, this, pa);
 }
 
 static MonoObject *

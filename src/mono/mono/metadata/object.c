@@ -315,6 +315,14 @@ mono_string_new (MonoDomain *domain, const char *text)
 	return o;
 }
 
+MonoString*
+mono_string_new_wrapper (const char *text)
+{
+	MonoDomain *domain = mono_domain_get ();
+
+	return mono_string_new (domain, text);
+}
+
 /**
  * mono_value_box:
  * @class: the class of the value

@@ -33,11 +33,11 @@ typedef struct {
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
 	MonoMethod *method;
-	guint32     eip;
 	guint32     ebp;
 	guint32     esi;
 	guint32     edi;
 	guint32     ebx;
+	guint32     eip;
 } MonoLMF;
 
 typedef struct {
@@ -221,6 +221,9 @@ arch_create_jit_trampoline (MonoMethod *method);
 
 MonoObject*
 arch_runtime_invoke        (MonoMethod *method, void *obj, void **params);
+
+gpointer
+arch_create_native_wrapper (MonoMethod *method);
 
 /* some handy debugging functions */
 

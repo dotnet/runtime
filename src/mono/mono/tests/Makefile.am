@@ -30,6 +30,7 @@ TESTSRC=			\
 	valuetype-gettype.cs	\
 	static-constructor.cs	\
 	pinvoke.cs		\
+	pinvoke1.cs		\
 	box.cs			\
 	array.cs		\
 	enum.cs			\
