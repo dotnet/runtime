@@ -53,8 +53,7 @@
 		  </td>
   		  <td>
 		    <a href="archive/beta1/fedora-1-i386">Packages</a>
-                    <p>For YUM repository, please use:
-                    <pre>http://www.go-mono.com/archive/beta1/fedora-1-i386/</pre>
+                    <p><a href="http://www.go-mono.com/archive/beta1/fedora-1-i386/">YUM Repository</a>
 		  </td>
 	        </tr>
                   <tr bgcolor="#bbbbbb">
@@ -88,6 +87,14 @@
 		  </td>
 		  <td>
 		    <a href="archive/beta1/windows/mono-Beta1-win32-1.exe">Mono Setup</a>
+		  </td>
+		</tr>
+		<tr>
+		  <td bgcolor="#999999">
+                    <img src="images/macos-36.gif"><b>Mac OS X package</b>
+		  </td>
+		  <td>
+		    <a href="archive/beta1/macos/mono-0.91.mpkg">mono-0.91.mpkg</a>
 		  </td>
 		</tr>
              </table>

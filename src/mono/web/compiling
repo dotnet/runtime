@@ -151,7 +151,7 @@
 	Then you can run:
 
 	<pre>
-	(cd mono; make fullbuild)
+	(cd mono; make bootstrap)
 	</pre>
 
 	Now you can install the result:
