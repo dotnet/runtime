@@ -3170,3 +3170,10 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	g_assert (cfg->code_len < cfg->code_size);
 
 }
+
+void
+mono_arch_flush_icache (guint8 *code, guint size)
+{
+	/* not needed */
+}
+
