@@ -1274,6 +1274,30 @@ mono_test_marshal_return_enum_delegate (ReturnEnumDelegate func)
 	return func (1);
 }
 
+typedef struct {
+	int a, b, c;
+	long d;
+} BlittableStruct;
+	
+typedef BlittableStruct (STDCALL *SimpleDelegate10) (BlittableStruct ss);
+
+int
+mono_test_marshal_blittable_struct_delegate (SimpleDelegate10 delegate)
+{
+	BlittableStruct ss, res;
+
+	ss.a = 1;
+	ss.b = 2;
+	ss.c = 3;
+	ss.d = 55;
+
+	res = delegate (ss);
+	if (! ((res.a == -1) && (res.b == -2) && (res.c == -3) && (res.d == -55)))
+		return 1;
+
+	return 0;
+}
+
 STDCALL int
 mono_test_stdcall_name_mangling (int a, int b, int c)
 {

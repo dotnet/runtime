@@ -337,5 +337,32 @@ public class Tests {
 		return e == FooEnum.Foo3 ? 0 : 1;
 	}
 
+	/* Passing and returning blittable structs */
 
+	[StructLayout (LayoutKind.Sequential)]
+	public struct BlittableStruct {
+		public int a, b, c;
+		public long d;
+	}
+
+	public static BlittableStruct delegate_test_blittable_struct (BlittableStruct ss)
+	{
+		BlittableStruct res;
+
+		res.a = -ss.a;
+		res.b = -ss.b;
+		res.c = -ss.c;
+		res.d = -ss.d;
+
+		return res;
+	}
+
+	public delegate BlittableStruct SimpleDelegate10 (BlittableStruct ss);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_blittable_struct_delegate")]
+	public static extern int mono_test_marshal_blittable_struct_delegate (SimpleDelegate10 d);
+
+	static int test_0_marshal_blittable_struct_delegate () {
+		return mono_test_marshal_blittable_struct_delegate (new SimpleDelegate10 (delegate_test_blittable_struct));
+	}
 }
