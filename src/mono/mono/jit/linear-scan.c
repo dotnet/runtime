@@ -48,7 +48,7 @@ mono_bitset_print (MonoBitSet *set)
 }
 
 static void
-update_live_range (MonoFlowGraph *cfg, int varnum, int block_num, int tree_pos)
+mono_update_live_range (MonoFlowGraph *cfg, int varnum, int block_num, int tree_pos)
 {
 	MonoVarInfo *vi = &g_array_index (cfg->varinfo, MonoVarInfo, varnum);
 	guint32 abs_pos = (block_num << 16) | tree_pos;
@@ -71,28 +71,17 @@ mono_update_live_info (MonoFlowGraph *cfg)
 		for (j = cfg->varinfo->len - 1; j > 0; j--) {
 			
 			if (mono_bitset_test (bb->live_in_set, j))
-				update_live_range (cfg, j, bb->num, 0);
+				mono_update_live_range (cfg, j, bb->num, 0);
 
 			if (mono_bitset_test (bb->live_out_set, j))
-				update_live_range (cfg, j, bb->num, bb->forest->len);
+				mono_update_live_range (cfg, j, bb->num, bb->forest->len);
 		} 
 	} 
 }
 
 static void
-update_tree_live_info (MonoFlowGraph *cfg, MonoBBlock *bb, MBTree *tree)
-{
-	if (tree->left)
-		update_tree_live_info (cfg, bb, tree->left);
-	if (tree->right)
-		update_tree_live_info (cfg, bb, tree->right);
-
-	if (tree->op == MB_TERM_ADDR_L)
-		update_live_range (cfg, tree->data.i, bb->num, bb->forest->len); 
-} 
-
-static void
-update_gen_set (MBTree *tree, MonoBitSet *set)
+mono_update_gen_set (MonoFlowGraph *cfg, MonoBBlock *bb, MBTree *tree, 
+		     int tnum, MonoBitSet *set)
 {
 	if (tree->left) {
 		switch (tree->op) {
@@ -111,19 +100,24 @@ update_gen_set (MBTree *tree, MonoBitSet *set)
 		case MB_TERM_STIND_R8:
 		case MB_TERM_STIND_OBJ:
 			if (tree->left->op != MB_TERM_ADDR_L)
-				update_gen_set (tree->left, set);
-				break;
+				mono_update_gen_set (cfg, bb, tree->left, tnum, set);
+			else
+				mono_update_live_range (cfg, tree->left->data.i, 
+							bb->num, tnum); 
+			break;
 		default:
-			update_gen_set (tree->left, set);
+			mono_update_gen_set (cfg, bb, tree->left, tnum, set);
 			break;
 		}
 	}
 
 	if (tree->right)
-		update_gen_set (tree->right, set);
+		mono_update_gen_set (cfg, bb, tree->right, tnum, set);
 
-	if (tree->op == MB_TERM_ADDR_L) 
+	if (tree->op == MB_TERM_ADDR_L) {
+		mono_update_live_range (cfg, tree->data.i, bb->num, tnum); 
 		mono_bitset_set (set, tree->data.i);
+	}
 } 
 
 static void
@@ -155,10 +149,8 @@ mono_analyze_liveness (MonoFlowGraph *cfg)
 		for (j = 0; j < bb->forest->len; j++) {
 			MBTree *t1 = (MBTree *) g_ptr_array_index (bb->forest, j);
 
-			update_tree_live_info (cfg, bb, t1);
-
 			mono_bitset_clear_all (old_live_in_set);
-			update_gen_set (t1, old_live_in_set);
+			mono_update_gen_set (cfg, bb, t1, j, old_live_in_set);
 			mono_bitset_sub (old_live_in_set, bb->kill_set);
 			mono_bitset_union (bb->gen_set, old_live_in_set);
 
