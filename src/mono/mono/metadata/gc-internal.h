@@ -42,5 +42,16 @@ void        mono_gc_weak_link_add    (void **link_addr, MonoObject *obj);
 void        mono_gc_weak_link_remove (void **link_addr);
 MonoObject *mono_gc_weak_link_get    (void **link_addr);
 
+/* simple interface for data structures needed in the runtime */
+void* mono_gc_make_descr_from_bitmap (unsigned int *bitmap, int numbits);
+/* desc is the result from mono_gc_make_descr*. A NULL value means
+ * all the words contain GC pointers.
+ * The memory is non-moving and it will be explicitly deallocated.
+ * size bytes will be available from the returned address (ie, descr
+ * must not be stored in the returned memory)
+ */
+void* mono_gc_alloc_fixed            (size_t size, void *descr);
+void  mono_gc_free_fixed             (void* addr);
+
 #endif /* __MONO_METADATA_GC_H__ */
 

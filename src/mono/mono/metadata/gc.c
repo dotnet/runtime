@@ -229,11 +229,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 void
 ves_icall_System_GC_InternalCollect (int generation)
 {
-	MONO_ARCH_SAVE_REGS;
-
-#if HAVE_BOEHM_GC
-	GC_gcollect ();
-#endif
+	mono_gc_collect (generation);
 }
 
 gint64
@@ -406,11 +402,7 @@ alloc_handle (HandleData *handles, MonoObject *obj)
 	if (!handles->size) {
 		handles->size = 32;
 		if (handles->type > HANDLE_WEAK_TRACK) {
-#ifdef HAVE_BOEHM_GC
-			handles->entries = GC_MALLOC (sizeof (gpointer) * handles->size);
-#else
-			handles->entries = g_malloc0 (sizeof (gpointer) * handles->size);
-#endif
+			handles->entries = mono_gc_alloc_fixed (sizeof (gpointer) * handles->size, NULL);
 		} else {
 			handles->entries = g_malloc0 (sizeof (gpointer) * handles->size);
 		}
@@ -445,15 +437,10 @@ alloc_handle (HandleData *handles, MonoObject *obj)
 
 		/* resize and copy the entries */
 		if (handles->type > HANDLE_WEAK_TRACK) {
-#ifdef HAVE_BOEHM_GC
 			gpointer *entries;
-			entries = GC_MALLOC (sizeof (gpointer) * new_size);
+			entries = mono_gc_alloc_fixed (sizeof (gpointer) * new_size, NULL);
 			memcpy (entries, handles->entries, sizeof (gpointer) * handles->size);
 			handles->entries = entries;
-#else
-			handles->entries = g_realloc (handles->entries, sizeof (gpointer) * new_size);
-			memset (handles->entries + handles->size, 0, sizeof (gpointer) * handles->size);
-#endif
 		} else {
 			gpointer *entries;
 			entries = g_malloc (sizeof (gpointer) * new_size);

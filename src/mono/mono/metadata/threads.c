@@ -205,12 +205,8 @@ static void thread_cleanup (MonoThread *thread)
 	if (thread->serialized_culture_info)
 		g_free (thread->serialized_culture_info);
 
-#ifndef HAVE_BOEHM_GC
-	if (thread->culture_info)
-		g_free (thread->culture_info);
-	if (thread->ui_culture_info)
-		g_free (thread->ui_culture_info);
-#endif
+	mono_gc_free_fixed (thread->culture_info);
+	mono_gc_free_fixed (thread->ui_culture_info);
 
 	if (mono_thread_cleanup)
 		mono_thread_cleanup (thread);
@@ -717,11 +713,7 @@ ves_icall_System_Threading_Thread_SetCachedCurrentCulture (MonoThread *this, Mon
 
 	mono_monitor_enter (this->synch_lock);
 	if (!this->culture_info) {
-#if HAVE_BOEHM_GC
-		this->culture_info = GC_MALLOC (sizeof (MonoObject*) * NUM_CACHED_CULTURES);
-#else
-		this->culture_info = g_new0 (MonoObject*, NUM_CACHED_CULTURES);
-#endif
+		this->culture_info = mono_gc_alloc_fixed (sizeof (MonoObject*) * NUM_CACHED_CULTURES, NULL);
 	}
 
 	for (i = 0; i < NUM_CACHED_CULTURES; ++i) {
@@ -797,11 +789,7 @@ ves_icall_System_Threading_Thread_SetCachedCurrentUICulture (MonoThread *this, M
 
 	mono_monitor_enter (this->synch_lock);
 	if (!this->ui_culture_info) {
-#if HAVE_BOEHM_GC
-		this->ui_culture_info = GC_MALLOC (sizeof (MonoObject*) * NUM_CACHED_CULTURES);
-#else
-		this->ui_culture_info = g_new0 (MonoObject*, NUM_CACHED_CULTURES);
-#endif
+		this->ui_culture_info = mono_gc_alloc_fixed (sizeof (MonoObject*) * NUM_CACHED_CULTURES, NULL);
 	}
 
 	for (i = 0; i < NUM_CACHED_CULTURES; ++i) {
@@ -1996,11 +1984,7 @@ mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset)
 
 	gpointer* static_data = *static_data_ptr;
 	if (!static_data) {
-#if HAVE_BOEHM_GC
-		static_data = GC_MALLOC (static_data_size [0]);
-#else
-		static_data = g_malloc0 (static_data_size [0]);
-#endif
+		static_data = mono_gc_alloc_fixed (static_data_size [0], NULL);
 		*static_data_ptr = static_data;
 		static_data [0] = static_data;
 	}
@@ -2008,11 +1992,7 @@ mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset)
 	for (i = 1; i <= idx; ++i) {
 		if (static_data [i])
 			continue;
-#if HAVE_BOEHM_GC
-		static_data [i] = GC_MALLOC (static_data_size [i]);
-#else
-		static_data [i] = g_malloc0 (static_data_size [i]);
-#endif
+		static_data [i] = mono_gc_alloc_fixed (static_data_size [i], NULL);
 	}
 }
 

@@ -121,5 +121,22 @@ mono_gc_weak_link_get (void **link_addr)
 	return obj;
 }
 
+void*
+mono_gc_make_descr_from_bitmap (unsigned int *bitmap, int numbits)
+{
+	return NULL;
+}
+
+void*
+mono_gc_alloc_fixed (size_t size, void *descr)
+{
+	return GC_MALLOC (size);
+}
+
+void
+mono_gc_free_fixed (void* addr)
+{
+}
+
 #endif /* no Boehm GC */
 

@@ -24,6 +24,7 @@
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/gc-internal.h>
+#include <mono/metadata/mono-gc.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/threadpool.h>
@@ -1285,9 +1286,7 @@ unload_thread_main (void *arg)
 
 	mono_domain_free (domain, FALSE);
 
-#ifdef HAVE_BOEHM_GC
-	GC_gcollect ();
-#endif
+	mono_gc_collect (mono_gc_max_generation ());
 
 	return 0;
 }

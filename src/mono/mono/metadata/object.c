@@ -663,11 +663,9 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		vt->gc_descr = class->gc_descr;
 
 	if (class->class_size) {
-#if HAVE_BOEHM_GC
 		if (class->has_static_refs)
-			vt->data = GC_MALLOC (class->class_size);
+			vt->data = mono_gc_alloc_fixed (class->class_size, NULL);
 		else
-#endif
 			vt->data = mono_mempool_alloc0 (domain->mp, class->class_size);
 		mono_g_hash_table_insert (domain->static_data_hash, class, vt->data);
 		mono_stats.class_static_data_size += class->class_size;
