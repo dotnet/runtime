@@ -1,7 +1,6 @@
 
 TEST_PROG=../interpreter/mint
 JITTEST_PROG=../jit/mono
-#JITTEST_PROG=../../../mini/mini
 RUNTIME_ARGS=--config tests-config
 
 CSC=csc /unsafe
