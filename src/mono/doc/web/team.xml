@@ -134,13 +134,15 @@
       <last-name>Hansen</last-name>
     </name>
     <e-mail>mwh -AT- sysrq.dkNOSPAM</e-mail>
+    <image>none.png</image>
     <location>Aarhus, Denmark</location>
-    <tasks>		
-      <task>NUnit1 -> NUnit2 conversion</task>
+    <description>Wannabe mono hacker</description>
+    <tasks>
+	<task>NUnit1 -> NUnit2 conversion</task>
 	<task>Stubbing</task>
-      <task>Mono Handbook work</task>
-      <task>Various fixes</task>
-    </tasks>		
+	<task>Mono Handbook work</task>
+	<task>Various fixes</task>
+    </tasks>
   </contributor>
 
   <contributor>
