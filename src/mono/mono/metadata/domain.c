@@ -27,8 +27,32 @@
 
 /* #define DEBUG_DOMAIN_UNLOAD */
 
-static guint32 appdomain_thread_id = -1;
+/* we need to use both the Tls* functions and __thread because
+ * the gc needs to see all the appcontext
+ */
 static guint32 context_thread_id = -1;
+ 
+#ifdef HAVE_KW_THREAD
+static __thread MonoDomain * tls_appdomain;
+static __thread MonoAppContext * tls_appcontext;
+#define GET_APPDOMAIN() tls_appdomain
+#define SET_APPDOMAIN(x) tls_appdomain = (x)
+
+#define GET_APPCONTEXT() tls_appcontext
+#define SET_APPCONTEXT(x) do { \
+	tls_appcontext = x; \
+	TlsSetValue (context_thread_id, x); \
+} while (FALSE)
+
+#else
+static guint32 appdomain_thread_id = -1;
+
+#define GET_APPDOMAIN() ((MonoDomain *)TlsGetValue (appdomain_thread_id))
+#define SET_APPDOMAIN(x) TlsSetValue (appdomain_thread_id, x);
+
+#define GET_APPCONTEXT() ((MonoAppContext *)TlsGetValue (context_thread_id))
+#define SET_APPCONTEXT(x) TlsSetValue (context_thread_id, x);
+#endif
 
 static gint32 appdomain_id_counter = 0;
 
@@ -278,8 +302,9 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	if (domain)
 		g_assert_not_reached ();
-
+#ifndef HAVE_KW_THREAD
 	appdomain_thread_id = TlsAlloc ();
+#endif
 	context_thread_id = TlsAlloc ();
 
 	InitializeCriticalSection (&appdomains_mutex);
@@ -297,7 +322,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	domain = mono_domain_create ();
 	mono_root_domain = domain;
 
-	TlsSetValue (appdomain_thread_id, domain);
+	SET_APPDOMAIN (domain);
 	
 	if (exe_filename != NULL) {
 		current_runtime = get_runtime_from_exe (exe_filename);
@@ -606,7 +631,7 @@ mono_get_root_domain (void)
 inline MonoDomain *
 mono_domain_get ()
 {
-	return ((MonoDomain *)TlsGetValue (appdomain_thread_id));
+	return GET_APPDOMAIN ();
 }
 
 /**
@@ -618,8 +643,8 @@ mono_domain_get ()
 inline void
 mono_domain_set_internal (MonoDomain *domain)
 {
-	TlsSetValue (appdomain_thread_id, domain);
-	TlsSetValue (context_thread_id, domain->default_context);
+	SET_APPDOMAIN (domain);
+	SET_APPCONTEXT (domain->default_context);
 }
 
 typedef struct {
@@ -781,13 +806,13 @@ mono_domain_get_id (MonoDomain *domain)
 void 
 mono_context_set (MonoAppContext * new_context)
 {
-	TlsSetValue (context_thread_id, new_context);
+	SET_APPCONTEXT (new_context);
 }
 
 MonoAppContext * 
 mono_context_get (void)
 {
-	return ((MonoAppContext *)TlsGetValue (context_thread_id));
+	GET_APPCONTEXT ();
 }
 
 MonoImage*

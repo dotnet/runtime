@@ -557,8 +557,6 @@ struct _MonoProfiler {
 	MonoMethod *max_jit_method;
 	int         methods_jitted;
 	
-	/* tls_id is the id for the TLS slot where MonoProfiler is stored */
-	int         tls_id;
 	GSList     *per_thread;
 	
 	/* chain of callers for the current thread */
@@ -613,14 +611,27 @@ create_profiler (void)
 	return prof;
 }
 #if 1
-#define GET_THREAD_PROF(prof) do {\
-		MonoProfiler *_tprofiler = TlsGetValue ((prof)->tls_id);	\
-		if (!_tprofiler) {	\
-			_tprofiler = create_profiler ();	\
-			prof->per_thread = g_slist_prepend (prof->per_thread, _tprofiler);	\
-			TlsSetValue ((prof)->tls_id, _tprofiler);	\
-		}	\
-		prof = _tprofiler;	\
+
+#ifdef HAVE_KW_THREAD
+	static __thread MonoProfiler * tls_profiler;
+#	define GET_PROFILER() tls_profiler
+#	define SET_PROFILER(x) tls_profiler = (x)
+#	define ALLOC_PROFILER() /* nop */
+#else
+	static guint32 profiler_thread_id = -1;
+#	define GET_PROFILER() ((MonoProfiler *)TlsGetValue (profiler_thread_id))
+#	define SET_PROFILER(x) TlsSetValue (profiler_thread_id, x);
+#	define ALLOC_PROFILER() profiler_thread_id = TlsAlloc ()
+#endif
+
+#define GET_THREAD_PROF(prof) do {                                                           \
+		MonoProfiler *_tprofiler = GET_PROFILER ();                                  \
+		if (!_tprofiler) {	                                                     \
+			_tprofiler = create_profiler ();                                     \
+			prof->per_thread = g_slist_prepend (prof->per_thread, _tprofiler);   \
+			SET_PROFILER (_tprofiler);                                           \
+		}	                                                                     \
+		prof = _tprofiler;	                                                     \
 	} while (0)
 #else
 /* thread unsafe but faster variant */
@@ -1071,8 +1082,8 @@ mono_profiler_install_simple (const char *desc)
 	}
 
 	prof = create_profiler ();
-	prof->tls_id = TlsAlloc ();
-	TlsSetValue (prof->tls_id, prof);
+	ALLOC_PROFILER ();
+	SET_PROFILER (prof);
 
 	mono_profiler_install (prof, simple_shutdown);
 	/* later do also object creation */

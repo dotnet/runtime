@@ -77,6 +77,21 @@ static MonoGHashTable *threads=NULL;
 /* The TLS key that holds the MonoObject assigned to each thread */
 static guint32 current_object_key = -1;
 
+#ifdef HAVE_KW_THREAD
+/* we need to use both the Tls* functions and __thread because
+ * the gc needs to see all the threads 
+ */
+static __thread MonoThread * tls_current_object;
+#define SET_CURRENT_OBJECT(x) do { \
+	tls_current_object = x; \
+	TlsSetValue (current_object_key, thread); \
+} while (FALSE)
+#define GET_CURRENT_OBJECT() tls_current_object
+#else
+#define SET_CURRENT_OBJECT(x) TlsSetValue (current_object_key, thread);
+#define GET_CURRENT_OBJECT() (MonoThread*) TlsGetValue (current_object_key);
+#endif
+
 /* function called at thread start */
 static MonoThreadStartCB mono_thread_start_cb = NULL;
 
@@ -199,7 +214,7 @@ static guint32 start_wrapper(void *data)
 
 	tid=thread->tid;
 
-	TlsSetValue (current_object_key, thread);
+	SET_CURRENT_OBJECT (thread);
 	
 	if (!mono_domain_set (start_info->domain, FALSE)) {
 		/* No point in raising an appdomain_unloaded exception here */
@@ -271,7 +286,7 @@ static guint32 start_wrapper(void *data)
 	 * Boehm GC - the io-layer keeps a GC-visible hash of pointers
 	 * to TLS data.)
 	 */
-	TlsSetValue (current_object_key, NULL);
+	SET_CURRENT_OBJECT (NULL);
 	
 	thread_cleanup (thread);
 #else
@@ -379,7 +394,7 @@ mono_thread_attach (MonoDomain *domain)
 		   GetCurrentThreadId (), thread);
 #endif
 
-	TlsSetValue (current_object_key, thread);
+	SET_CURRENT_OBJECT (thread);
 	mono_domain_set (domain, TRUE);
 
 	thread_adjust_static_data (thread);
@@ -399,7 +414,7 @@ mono_thread_detach (MonoThread *thread)
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION "mono_thread_detach for %d\n", thread->tid);
 #endif
-	TlsSetValue (current_object_key, NULL);
+	SET_CURRENT_OBJECT (NULL);
 	
 	thread_cleanup (thread);
 }
@@ -587,21 +602,20 @@ ves_icall_System_Threading_Thread_SetName_internal (MonoThread *this_obj, MonoSt
 		this_obj->name = NULL;
 }
 
+/* the jit may read the compiled code of this function */
 MonoThread *
 mono_thread_current (void)
 {
+	#if THREAD_DEBUG
 	MonoThread *thread;
-	
 	MONO_ARCH_SAVE_REGS;
-
-	/* Find the current thread object */
-	thread=TlsGetValue (current_object_key);
-	
-#ifdef THREAD_DEBUG
+	thread = GET_CURRENT_OBJECT ();
 	g_message (G_GNUC_PRETTY_FUNCTION ": returning %p", thread);
-#endif
-
-	return (thread);
+	return thread;
+	#else
+	MONO_ARCH_SAVE_REGS;
+	return GET_CURRENT_OBJECT ();
+	#endif
 }
 
 gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
