@@ -85,7 +85,7 @@ write_variable (MonoInst *inst, MonoDebugVarInfo *var)
 		var->index = inst->dreg | MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER;
 	else {
 		/* the debug interface needs fixing to allow 0(%base) address */
-		var->index = inst->inst_basereg | MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER;
+		var->index = inst->inst_basereg | MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET;
 		var->offset = inst->inst_offset;
 	}
 }

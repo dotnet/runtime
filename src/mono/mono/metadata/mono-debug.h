@@ -58,17 +58,13 @@ struct _MonoDebugDomainData {
  */
 #define MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS		0xf0000000
 
-/* If "index" is zero, the variable is at stack offset "offset". */
-#define MONO_DEBUG_VAR_ADDRESS_MODE_STACK		0
+/* The variable is in register "index". */
+#define MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER		0
 
-/* The variable is in the register whose number is contained in bits 0..4 of the
- * "index" field plus an offset of "offset" (which can be zero).
- */
-#define MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER		0x10000000
+/* The variable is at offset "offset" from register "index". */
+#define MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET		0x10000000
 
-/* The variables in in the two registers whose numbers are contained in bits 0..4
- * and 5..9 of the "index" field plus an offset of "offset" (which can be zero).
- */
+/* The variable is in the two registers "offset" and "index". */
 #define MONO_DEBUG_VAR_ADDRESS_MODE_TWO_REGISTERS	0x20000000
 
 struct _MonoDebugVarInfo {
@@ -79,7 +75,7 @@ struct _MonoDebugVarInfo {
 	guint32 end_scope;
 };
 
-#define MONO_DEBUGGER_VERSION				28
+#define MONO_DEBUGGER_VERSION				29
 #define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427
 
 extern MonoDebugFormat mono_debug_format;
