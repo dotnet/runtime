@@ -1850,9 +1850,9 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_SHL)
 			++ip;
 			--sp;
-			if (sp->type == VAL_I32)
+			if (sp [-1].type == VAL_I32)
 				sp [-1].data.i <<= GET_NATI (sp [0]);
-			else if (sp->type == VAL_I64)
+			else if (sp [-1].type == VAL_I64)
 				sp [-1].data.l <<= GET_NATI (sp [0]);
 			else
 				GET_NATI (sp [-1]) <<= GET_NATI (sp [0]);
@@ -1860,9 +1860,9 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_SHR)
 			++ip;
 			--sp;
-			if (sp->type == VAL_I32)
+			if (sp [-1].type == VAL_I32)
 				sp [-1].data.i >>= GET_NATI (sp [0]);
-			else if (sp->type == VAL_I64)
+			else if (sp [-1].type == VAL_I64)
 				sp [-1].data.l >>= GET_NATI (sp [0]);
 			else
 				(gint)GET_NATI (sp [-1]) >>= GET_NATI (sp [0]);
@@ -1870,9 +1870,9 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_SHR_UN)
 			++ip;
 			--sp;
-			if (sp->type == VAL_I32)
+			if (sp [-1].type == VAL_I32)
 				(guint)sp [-1].data.i >>= GET_NATI (sp [0]);
-			else if (sp->type == VAL_I64)
+			else if (sp [-1].type == VAL_I64)
 				(gulong)sp [-1].data.l >>= GET_NATI (sp [0]);
 			else
 				(gulong)GET_NATI (sp [-1]) >>= GET_NATI (sp [0]);
