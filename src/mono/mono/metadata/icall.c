@@ -3020,7 +3020,7 @@ ves_icall_MonoType_GetEvent (MonoReflectionType *type, MonoString *name, guint32
 {
 	MonoDomain *domain;
 	MonoClass *klass, *startklass;
-	gint i;
+	gpointer iter;
 	MonoEvent *event;
 	MonoMethod *method;
 	gchar *event_name;
@@ -3032,9 +3032,8 @@ ves_icall_MonoType_GetEvent (MonoReflectionType *type, MonoString *name, guint32
 	domain = mono_object_domain (type);
 
 handle_parent:	
-	mono_class_setup_events (klass);
-	for (i = 0; i < klass->event.count; i++) {
-		event = &klass->events [i];
+	iter = NULL;
+	while ((event = mono_class_get_events (klass, &iter))) {
 		if (strcmp (event->name, event_name))
 			continue;
 
@@ -3078,16 +3077,16 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, Mon
 	MonoMethod *method;
 	MonoEvent *event;
 	int i, len, match;
+	gpointer iter;
 
 	MONO_ARCH_SAVE_REGS;
 
-	domain = ((MonoObject *)type)->vtable->domain;
+	domain = mono_object_domain (type);
 	klass = startklass = mono_class_from_mono_type (type->type);
 
 handle_parent:	
-	mono_class_setup_events (klass);
-	for (i = 0; i < klass->event.count; ++i) {
-		event = &klass->events [i];
+	iter = NULL;
+	while ((event = mono_class_get_events (klass, &iter))) {
 		match = 0;
 		method = event->add;
 		if (!method)

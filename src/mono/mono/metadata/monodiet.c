@@ -224,6 +224,7 @@ handle_type (MonoClass *klass, guint32 flags)
 	MonoCustomAttrInfo* cattrs;
 	gpointer val = NULL, oldkey = NULL;
 	MonoProperty* prop;
+	MonoEvent* event;
 	gpointer iter;
 	
 	if (g_hash_table_lookup_extended (type_table, klass, &oldkey, &val)) {
@@ -259,9 +260,9 @@ handle_type (MonoClass *klass, guint32 flags)
 		cattrs = mono_custom_attrs_from_property (klass, prop);
 		handle_cattrs (cattrs);
 	}
-	mono_class_setup_events (klass);
-	for (i = 0; i < klass->event.count; ++i) {
-		cattrs = mono_custom_attrs_from_event (klass, &klass->events [i]);
+	iter = NULL;
+	while ((event = mono_class_get_events (klass, &iter))) {
+		cattrs = mono_custom_attrs_from_event (klass, event);
 		handle_cattrs (cattrs);
 	}
 	for (i = 0; i < klass->interface_count; ++i)

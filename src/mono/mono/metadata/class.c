@@ -898,7 +898,7 @@ mono_class_setup_properties (MonoClass *class)
 	mono_loader_unlock ();
 }
 
-void
+static void
 mono_class_setup_events (MonoClass *class)
 {
 	guint startm, endm, i, j;
