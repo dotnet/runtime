@@ -18,8 +18,6 @@
 	
 	<li>Uses TDS Protocol Version 4.2 by default</li>
 	
-	<li>Does not support trusted connections</li>
-	
 	<li>Bugs with Mono or the data provider should be reported 
 	in Mono's Bugzilla <a href="http://bugzilla.ximian.com/">here</a>.  If you
 	do not have Bugzilla user account, it is free 

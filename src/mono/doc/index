@@ -149,6 +149,10 @@
   </tr>
 </table>
 
+@item Jan 4, 2004: Windows Installer for Mono 0.29
+
+	There is a <a href="http://primates.ximian.com/~jackson/mono-0.29-win32-1.exe">Windows Intaller for Mono 0.29</a> available now.
+	
 @item Dec 21st: Mono on PowerPC Progress.
 
 	Paolo reports today that the Mono JIT on the PowerPC was able

@@ -17,8 +17,6 @@
 	<li>Requires the assembly Mono.Data.Tds.dll which implements the TDS protocol in 100% C#.</li>
 	
 	<li>Uses TDS Protocol Version 5.0</li>
-	
-	<li>Does not support trusted connections</li>
 
 	<li>Bugs with Mono or the data provider should be reported 
 	in Mono's Bugzilla <a href="http://bugzilla.ximian.com/">here</a>.  If you

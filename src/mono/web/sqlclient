@@ -31,11 +31,14 @@
 
 
 <ul>
-	<li>Able to connect to Microsoft SQL Server 7/2000 databases</li>
+	<li>Thanks to Sebastien Pouliot, we now have NT Authentication (Integrated Security) support.  This support was
+	added after the release of Mono 0.29.  So, you either get it from cvs or wait for the Mono 0.30 release.</li>
+
+	<li>Able to connect to Microsoft SQL Server 7/2000 databases via SQL Server authentication and NT Authentication.</li>
 	
 	<li>Connection pooling works.</li>
 	
-	<li>Stored Procedures work</li>
+	<li>Stored Procedures work.</li>
 	
 	<li>Parameters work.</li>
 	
@@ -59,8 +62,6 @@
 	
 	<li>Uses TDS Protocol Version 7.0</li>
 	
-	<li><a href="http://www.go-mono.com/tds-providers.html">Design of the Microsoft SQL Server, Sybase, and TDS Providers in Mono</a></li>
-	
 	<li>Works in the SQL# command-line and GTK# GUI version</li>
 </ul>
 
@@ -71,9 +72,9 @@
 	
 	<li>Needs more testing</li>
 	
-	<li>Would like to figure out how to connect via Trusted_Connection or Integrated Security</li>
-	
 	<li>Start work on TDS Protocol Version 8.0 support</li>
+	
+	<li>Add support for .NET 1.2 and 2.0 and Microsoft SQL Server (Yukon) support</li>
 
 </ul>
 
@@ -89,9 +90,10 @@
 		</ul>
 	</li>
 	
-	<li>If using Microsoft SQL Server 2000, make sure
+	<li><b>IMPORTANT:</b> If using Microsoft SQL Server 2000, make sure
 	you are using at least Service Pack 3 for Microsoft SQL Server 2000.  If using
-	MSDE 2000, make sure you have the special Service Pack 3 for MSDE 2000.</li>
+	MSDE 2000, make sure you have the special Service Pack 3 for MSDE 2000.  You
+	can get it from <a href="http://www.microsoft.com/sql/downloads/2000/sp3.asp">here</a></li>
 	
 	<li>For those that only have MSDE installed.  You can change the authentication mode 
 	from Windows Only Authentication to SQL Server and Windows Authentications (also knows as Mixed-mode authentication)
@@ -121,11 +123,17 @@
 	to explicitly use a User ID and Password
 	authenticated by SQL Server.</li>
 	
-	<li>Has a connection string format:
+	<li>Has a connection string format for SQL Server Authentication:
 <pre>
  Server=hostname;Database=databaseName;User ID=userid;Password=password
 </pre>
 	</li>
+	<li>Has a connection string format for NT Authentication:
+<pre>
+ Server=hostname;Database=databaseName;User ID=windowsUserid;Password=windowsPassword;Integrated Security=SSPI
+</pre>
+	</li>
+
 	<li>The Server part can be used three ways:
 	
 		<table border=1>

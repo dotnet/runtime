@@ -47,7 +47,7 @@
 	<li><a href="http://www.go-mono.com/sqlclient.html">Microsoft SQL Server</a></li>
 	<li><a href="http://www.go-mono.com/sqlite.html">SQL Lite</a></li>
 	<li><a href="http://www.go-mono.com/sybase.html">Sybase</a></li>
-	<li><a href="http://www.go-mono.com/tdsclient.html">TDS Generic</a></li>
+	<li><a href="http://www.go-mono.com/tdsclient.html">Older Microsoft SQL Server and Sybase databases</a></li>
 </ul>
 
 <p>Providers which we do not have, but we would like to have.  Currently,
@@ -333,6 +333,12 @@
 				<td>System.Data /</br> System.Data.SqlClient</td>
 				<td>SqlTest.cs at</br> System.Data/Test</td>
 			</tr>
+
+			<tr>
+				<td>PostgreSQL</br> (Npgsql)</td>
+				<td>Npgsql /</br> Npgsql</td>
+				<td>*.cs at</br> Npgsql/Test</td>
+			</tr>
 			
 			<tr>
 				<td>PostgreSQL</br> (Mono)</td>
@@ -349,13 +355,13 @@
 			<tr>
 				<td>Oracle</br> (Mono)</td>
 				<td>System.Data.OracleClient /</br> System.Data.OracleClient</td>
-				<td>TestOracleClient.cs at</br> System.Data.OracleClient</td>
+				<td>TestOracleClient.cs at</br> System.Data.OracleClient/Test</td>
 			</tr>
 
 			<tr>
 				<td>ODBC</br> (Mono)</td>
-				<td>System.Data.OracleClient /</br> System.Data.OracleClient</td>
-				<td>TestOracleClient.cs at</br> System.Data.OracleClient</td>
+				<td>System.Data.Odbc /</br> System.Data</td>
+				<td>OdbcTest.cs (to connect to MS SQL Server)at</br> System.Data/Test</td>
 			</tr>
 			
 		</table>

@@ -8,9 +8,7 @@
 
 	<li>Works on Windows and Linux</li>
 
-	<li>Works with Oracle 8i</li>
-
-	<li>May work with Oracle 9i</li>
+	<li>Works with Oracle 8i and 9i.</li>
 
 	<li>Uses the Oracle CLI (Call Level Interface) which is a C library (API) for the Oracle Client 
 		software</li>
@@ -30,12 +28,8 @@
 ** Current Status
 
 <ul>
-	<li>OracleConnection can connect and disconnect to an Oracle 8i database on 
+	<li>OracleConnection can connect and disconnect to an Oracle 8i or 9i database on 
 	Windows and Linux via OCI (Oracle Call-level Interface)</li>
-	
-	<li>No longer uses a glue library (a library between the System.Data.OracleClient.dll
-	assembly and the oci library).  In Current Mono cvs, System.Data.OracleClient 
-	directly platform invokes into the oci library thanks to Tim Coleman.</li>
 	
 	<li>Can have multiple connections with different transactions where each transaction is
 	separated from the others, so a rollback or commit in one transaction 
@@ -43,10 +37,6 @@
 	
 	<li>Can execute simple DML SQL statements, such as, 
 	INSERT a row into the EMP table via the OracleCommand's ExecuteNonQuery method</li>
-		
-	<li>The System.Data.OracleClient.dll assembly can be built with mcs/mono via
-	the makefile.gnu for System.Data.OracleClient or csc/.net via the
-	System.Data.OracleClient.build nant build file.</li>
 	
 	<li>Can retrieve data via ExecuteReader and OracleDataReader.  Currently, 
 	supports character, numeric, some date data types.  ExecuteScalar
@@ -66,8 +56,7 @@
 	
 	<li>Lots of missing functionality and bugs.</li>
 	
-	<li>Works with SQL# command-line and GTK# versions in cvs.  Only works with
-	simple character data though.</li>
+	<li>Works with SQL# command-line and GTK# GUI versions.</li>
 	   
 </ul>
 	
@@ -79,12 +68,12 @@
 	<li>transactions (WORKING)</li>
 	<li>Stored Procedures, Functions, and Packages support</li>
 	<li>Be able to fill a DataTable in a DataSet via a data adapter (IN PROGRESS)</li>
-	<li>Support for Oracle 8i (WORKING</li>
-	<li>Support for Oracle 9i (UNKNOWN)</li>
+	<li>Support for Oracle 8i and 9i (WORKING)</li>
 	<li>Support LOBs</li>
 	<li>Support all the data types</li>
 	<li>Implement Connection pooling</li>
 	<li>Security</li>
+	<li>Once Oracle 10g is released, make sure Mono works with Oracle 10g.</li>
 	
 </ul>
 
@@ -99,9 +88,7 @@
 	Registration to the <a href="http://technet.oracle.com/">Oracle Technology Network</a> is free.  If installing on Linux, 
 	I suggest you do a lot of searching to see how others installed Oracle on Linux.</li>
 	
-	<li>Make sure System.Data.OracleClient.dll assembly is built, if not, go
-	into System.Data.OracleClient and do a make -f makefile.gnu (on Linux) or
-	../../nant/NAnt.exe (on Windows using Cygwin).</li>
+	<li>Make sure System.Data.OracleClient.dll assembly is built.</li>
 	
 	<li>Take a look at TestOracleClient.cs found at mcs/class/System.Data.OracleClient/Test</li>
 	
@@ -161,12 +148,10 @@
 	    -r System.Data.OracleClient.dll
 </pre>
 		</li>
-		<li>Build on Windows via Cygwin:
+		<li>Build on Windows:
 <pre>
-	mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
-	     TestExample.cs \
-	     -lib:C:/cygwin/home/MyHome/mono/install/lib \
-	     -r System.Data.dll -r System.Data.OracleClient.dll
+	mcs TestExample.cs  /r:System.Data.dll \
+	    /r:System.Data.OracleClient.dll
 </pre>
 		</li>
 	</ul>
