@@ -1359,6 +1359,14 @@ mono_array_clone (MonoArray *array)
 	return o;
 }
 
+/* helper macros to check for overflow when calculating the size of arrays */
+#define MYGUINT32_MAX 4294967295U
+#define CHECK_ADD_OVERFLOW_UN(a,b) \
+        (guint32)(MYGUINT32_MAX) - (guint32)(b) < (guint32)(a) ? -1 : 0
+#define CHECK_MUL_OVERFLOW_UN(a,b) \
+        ((guint32)(a) == 0) || ((guint32)(b) == 0) ? 0 : \
+        (guint32)(b) > ((MYGUINT32_MAX) / (guint32)(a))
+
 /*
  * mono_array_new_full:
  * @domain: domain where the object is created
@@ -1398,6 +1406,8 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 	#endif
 		for (i = 0; i < array_class->rank; ++i) {
 			bounds [i].length = lengths [i];
+			if (CHECK_MUL_OVERFLOW_UN (len, lengths [i]))
+				out_of_memory (MYGUINT32_MAX);
 			len *= lengths [i];
 		}
 
@@ -1406,7 +1416,12 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 				bounds [i].lower_bound = lower_bounds [i];
 	}
 
+	if (CHECK_MUL_OVERFLOW_UN (byte_len, len))
+		out_of_memory (MYGUINT32_MAX);
 	byte_len *= len;
+	if (CHECK_ADD_OVERFLOW_UN (byte_len, sizeof (MonoArray)))
+		out_of_memory (MYGUINT32_MAX);
+	byte_len += sizeof (MonoArray);
 	/* 
 	 * Following three lines almost taken from mono_object_new ():
 	 * they need to be kept in sync.
@@ -1414,13 +1429,13 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 	vtable = mono_class_vtable (domain, array_class);
 #if CREATION_SPEEDUP
 	if (vtable->gc_descr != GC_NO_DESCRIPTOR)
-		o = mono_object_allocate_spec (sizeof (MonoArray) + byte_len, vtable);
+		o = mono_object_allocate_spec (byte_len, vtable);
 	else {
-		o = mono_object_allocate (sizeof (MonoArray) + byte_len);
+		o = mono_object_allocate (byte_len);
 		o->vtable = vtable;
 	}
 #else
-	o = mono_object_allocate (sizeof (MonoArray) + byte_len);
+	o = mono_object_allocate (byte_len);
 	o->vtable = vtable;
 #endif
 
@@ -1468,21 +1483,27 @@ mono_array_new_specific (MonoVTable *vtable, guint32 n)
 {
 	MonoObject *o;
 	MonoArray *ao;
-	gsize byte_len;
+	guint32 byte_len, elem_size;
 
 	MONO_ARCH_SAVE_REGS;
 
-	byte_len = n * mono_array_element_size (vtable->klass);
+	elem_size = mono_array_element_size (vtable->klass);
+	if (CHECK_MUL_OVERFLOW_UN (n, elem_size))
+		out_of_memory (MYGUINT32_MAX);
+	byte_len = n * elem_size;
+	if (CHECK_ADD_OVERFLOW_UN (byte_len, sizeof (MonoArray)))
+		out_of_memory (MYGUINT32_MAX);
+	byte_len += sizeof (MonoArray);
 #if CREATION_SPEEDUP
 	if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
-		o = mono_object_allocate_spec (sizeof (MonoArray) + byte_len, vtable);
+		o = mono_object_allocate_spec (byte_len, vtable);
 	} else {
 //		printf("ARRAY: %s.%s.\n", vtable->klass->name_space, vtable->klass->name);
-		o = mono_object_allocate (sizeof (MonoArray) + byte_len);
+		o = mono_object_allocate (byte_len);
 		o->vtable = vtable;
 	}
 #else
-	o = mono_object_allocate (sizeof (MonoArray) + byte_len);
+	o = mono_object_allocate (byte_len);
 	o->vtable = vtable;
 #endif
 
@@ -1935,14 +1956,15 @@ mono_string_from_utf16 (gunichar2 *data)
 	return mono_string_new_utf16 (domain, data, len);
 }
 
-static void
+G_GNUC_NORETURN static void
 default_ex_handler (MonoException *ex)
 {
 	MonoObject *o = (MonoObject*)ex;
 	g_error ("Exception %s.%s raised in C code", o->vtable->klass->name_space, o->vtable->klass->name);
+	exit (1);
 }
 
-static MonoExceptionFunc ex_handler = default_ex_handler;
+static G_GNUC_NORETURN MonoExceptionFunc ex_handler = default_ex_handler;
 
 void
 mono_install_handler        (MonoExceptionFunc func)
@@ -1956,7 +1978,7 @@ mono_install_handler        (MonoExceptionFunc func)
  *
  * Signal the runtime that the exception @ex has been raised in unmanaged code.
  */
-void
+G_GNUC_NORETURN void
 mono_raise_exception (MonoException *ex) 
 {
 	ex_handler (ex);
