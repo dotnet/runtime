@@ -313,13 +313,15 @@ mono_test_marshal_struct2 (simplestruct2 ss)
 	return 1;
 }
 
+/* on HP some of the struct should be on the stack and not in registers */
+int
 mono_test_marshal_struct2_2 (int i, int j, int k, simplestruct2 ss)
 {
 	if (i != 10 || j != 11 || k != 12)
 		return 1;
-	if (ss.a == 0 && ss.b == 1 && ss.c == 0 &&
-	    !strcmp (ss.d, "TEST") && 
-	    ss.e == 99 && ss.f == 1.5 && ss.g == 42 && ss.h == (guint64)123)
+	if (ss.a == 0 && ss.b == 0 && ss.c == 0 &&
+	    !strcmp (ss.d, "TEST2") && 
+	    ss.e == 100 && ss.f == 2.5 && ss.g == 43 && ss.h == (guint64)124)
 		return 0;
 
 	return 1;
