@@ -474,21 +474,21 @@ fat_header:
 				int finally_start = 0;
 				for (j = 0; j < mono_array_length (ex_info->handlers); ++j) {
 					ex_block = (MonoILExceptionBlock*)mono_array_addr (ex_info->handlers, MonoILExceptionBlock, j);
-					clause.flags = ex_block->type;
-					clause.try_offset = ex_info->start;
+					clause.flags = GUINT32_TO_LE (ex_block->type);
+					clause.try_offset = GUINT32_TO_LE (ex_info->start);
 					/* need fault, too, probably */
-					if (clause.flags == MONO_EXCEPTION_CLAUSE_FINALLY)
-						clause.try_len = finally_start - ex_info->start;
+					if (ex_block->type == MONO_EXCEPTION_CLAUSE_FINALLY)
+						clause.try_len = GUINT32_TO_LE (finally_start - ex_info->start);
 					else
-						clause.try_len = ex_info->len;
-					clause.handler_offset = ex_block->start;
-					clause.handler_len = ex_block->len;
+						clause.try_len = GUINT32_TO_LE (ex_info->len);
+					clause.handler_offset = GUINT32_TO_LE (ex_block->start);
+					clause.handler_len = GUINT32_TO_LE (ex_block->len);
 					finally_start = clause.handler_offset + clause.handler_len;
 					clause.token_or_filter = ex_block->extype ? mono_metadata_token_from_dor (
 							mono_image_typedef_or_ref (assembly, ex_block->extype->type)): 0;
+					clause.token_or_filter = GUINT32_TO_LE (clause.token_or_filter);
 					/*g_print ("out clause %d: from %d len=%d, handler at %d, %d\n", 
 							clause.flags, clause.try_offset, clause.try_len, clause.handler_offset, clause.handler_len);*/
-					/* FIXME: ENOENDIAN */
 					mono_image_add_stream_data (&assembly->code, (char*)&clause, sizeof (clause));
 				}
 			} else {
@@ -757,6 +757,49 @@ field_encode_signature (MonoDynamicAssembly *assembly, MonoReflectionFieldBuilde
 	return idx;
 }
 
+/*
+ * Copy len * nelem bytes from val to dest, swapping bytes to LE if necessary.
+ * dest may be misaligned.
+ */
+static void
+swap_with_size (char *dest, const char* val, int len, int nelem) {
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+	int elem;
+
+	for (elem = 0; elem < nelem; ++elem) {
+		switch (len) {
+		case 1:
+			*dest = *val;
+			break;
+		case 2:
+			dest [0] = val [1];
+			dest [1] = val [0];
+			break;
+		case 4:
+			dest [0] = val [3];
+			dest [1] = val [2];
+			dest [2] = val [1];
+			dest [3] = val [0];
+			break;
+		case 8:
+			dest [0] = val [7];
+			dest [1] = val [6];
+			dest [2] = val [5];
+			dest [3] = val [4];
+			dest [4] = val [3];
+			dest [5] = val [2];
+			dest [6] = val [1];
+			dest [7] = val [0];
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+	}
+#else
+	memcpy (dest, val, len * nelem);
+#endif
+}
+
 static guint32
 encode_constant (MonoDynamicAssembly *assembly, MonoObject *val, guint32 *ret_type) {
 	char blob_size [64];
@@ -803,8 +846,18 @@ handle_enum:
 		len = str->length * 2;
 		mono_metadata_encode_value (len, b, &b);
 		idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
-		/* FIXME: ENOENDIAN */
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+		{
+			char *swapped = g_malloc (2 * mono_string_length (str));
+			const char *p = (const char*)mono_string_chars (str);
+
+			swap_with_size (swapped, p, 2, mono_string_length (str));
+			mono_image_add_stream_data (&assembly->blob, swapped, len);
+			g_free (swapped);
+		}
+#else
 		mono_image_add_stream_data (&assembly->blob, (const char*)mono_string_chars (str), len);
+#endif
 
 		g_free (buf);
 		return idx;
@@ -816,8 +869,12 @@ handle_enum:
 	/* there is no signature */
 	mono_metadata_encode_value (len, b, &b);
 	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
-	/* FIXME: ENOENDIAN */
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+	swap_with_size (blob_size, val, len, 1);
+	mono_image_add_stream_data (&assembly->blob, blob_size, len);
+#else
 	mono_image_add_stream_data (&assembly->blob, box_val, len);
+#endif
 
 	g_free (buf);
 	return idx;
@@ -1752,8 +1809,18 @@ mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *s
 		mono_image_basic_init (assembly);
 	mono_metadata_encode_value (1 | (str->length * 2), b, &b);
 	idx = mono_image_add_stream_data (&assembly->dynamic_assembly->us, buf, b-buf);
-	/* FIXME: ENOENDIAN */
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+	{
+		char *swapped = g_malloc (2 * mono_string_length (str));
+		const char *p = (const char*)mono_string_chars (str);
+
+		swap_with_size (swapped, p, 2, mono_string_length (str));
+		mono_image_add_stream_data (&assembly->dynamic_assembly->us, swapped, str->length * 2);
+		g_free (swapped);
+	}
+#else
 	mono_image_add_stream_data (&assembly->dynamic_assembly->us, (const char*)mono_string_chars (str), str->length * 2);
+#endif
 	mono_image_add_stream_data (&assembly->dynamic_assembly->us, "", 1);
 	return MONO_TOKEN_STRING | idx;
 }
@@ -2963,7 +3030,6 @@ mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, Mo
 	/* write the prolog */
 	*p++ = 1;
 	*p++ = 0;
-	/* FIXME: ENOENDIAN */
 	for (i = 0; i < sig->param_count; ++i) {
 		if ((p-buffer) + 10 >= buflen) {
 			char *newbuf;
@@ -2984,28 +3050,22 @@ handle_enum:
 			break;
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_U2:
-		case MONO_TYPE_I2: {
-			guint16 *val = (guint16*)p;
-			*val = *(guint16*)argval;
+		case MONO_TYPE_I2:
+			swap_with_size (p, argval, 2, 1);
 			p += 2;
 			break;
-		}
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I4:
-		case MONO_TYPE_R4: {
-			guint32 *val = (guint32*)p;
-			*val = *(guint32*)argval;
+		case MONO_TYPE_R4:
+			swap_with_size (p, argval, 4, 1);
 			p += 4;
 			break;
-		}
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
-		case MONO_TYPE_R8: {
-			guint64 *val = (guint64*)p;
-			*val = *(guint64*)argval;
+		case MONO_TYPE_R8:
+			swap_with_size (p, argval, 8, 1);
 			p += 8;
 			break;
-		}
 		case MONO_TYPE_VALUETYPE:
 			if (sig->params [i]->data.klass->enumtype) {
 				type = sig->params [i]->data.klass->enum_basetype->type;
