@@ -38,6 +38,7 @@ OBJECTS=	\
 	deploy/passport.html			\
 	deploy/plans.html			\
 	deploy/porting.html			\
+	deploy/ppc.html				\
 	deploy/rationale.html			\
 	deploy/resources.html			\
 	deploy/roadmap.html			\
