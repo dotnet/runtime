@@ -35,8 +35,8 @@ print_subtypes (MonoImage *image, MonoClass *class, int depth) {
 	t = mono_image_get_table_info (image, MONO_TABLE_TYPEDEF);
 	
 	token = mono_metadata_token_index (class->type_token);
-	token <<= TYPEDEFORREF_BITS;
-	token |= TYPEDEFORREF_TYPEDEF;
+	token <<= MONO_TYPEDEFORREF_BITS;
+	token |= MONO_TYPEDEFORREF_TYPEDEF;
 
 	/* use a subgraph? */
 	for (i = 0; i < mono_table_info_get_rows (t); ++i) {
@@ -112,8 +112,8 @@ interface_graph (MonoImage *image, const char* cname) {
 	fprintf (output, "%s", graph_properties);
 	/* TODO: handle inetrface defined in one image and class defined in another. */
 	token = mono_metadata_token_index (class->type_token);
-	token <<= TYPEDEFORREF_BITS;
-	token |= TYPEDEFORREF_TYPEDEF;
+	token <<= MONO_TYPEDEFORREF_BITS;
+	token |= MONO_TYPEDEFORREF_TYPEDEF;
 	for (i = 0; i < mono_table_info_get_rows (intf); ++i) {
 		mono_metadata_decode_row (intf, i, cols, MONO_INTERFACEIMPL_SIZE);
 		/*g_print ("index: %d [%d implements %d]\n", index, cols [MONO_INTERFACEIMPL_CLASS], cols [MONO_INTERFACEIMPL_INTERFACE]);*/

@@ -356,17 +356,17 @@ verify_constant_table (MonoImage *image, GSList *list, int level)
 				ADD_ERROR (list, g_strdup_printf ("Type 0x%x is invalid in Constant row %d", cols [MONO_CONSTANT_TYPE], i + 1));
 		}
 		if (level & MONO_VERIFY_ERROR) {
-			value = cols [MONO_CONSTANT_PARENT] >> HASCONSTANT_BITS;
-			switch (cols [MONO_CONSTANT_PARENT] & HASCONSTANT_MASK) {
-			case HASCONSTANT_FIEDDEF:
+			value = cols [MONO_CONSTANT_PARENT] >> MONO_HASCONSTANT_BITS;
+			switch (cols [MONO_CONSTANT_PARENT] & MONO_HASCONSTANT_MASK) {
+			case MONO_HASCONSTANT_FIEDDEF:
 				if (value > image->tables [MONO_TABLE_FIELD].rows)
 					ADD_ERROR (list, g_strdup_printf ("Parent (field) is invalid in Constant row %d", i + 1));
 				break;
-			case HASCONSTANT_PARAM:
+			case MONO_HASCONSTANT_PARAM:
 				if (value > image->tables [MONO_TABLE_PARAM].rows)
 					ADD_ERROR (list, g_strdup_printf ("Parent (param) is invalid in Constant row %d", i + 1));
 				break;
-			case HASCONSTANT_PROPERTY:
+			case MONO_HASCONSTANT_PROPERTY:
 				if (value > image->tables [MONO_TABLE_PROPERTY].rows)
 					ADD_ERROR (list, g_strdup_printf ("Parent (property) is invalid in Constant row %d", i + 1));
 				break;
@@ -445,17 +445,17 @@ verify_event_table (MonoImage *image, GSList *list, int level)
 		}
 		
 		if (level & MONO_VERIFY_ERROR && cols [MONO_EVENT_TYPE]) {
-			value = cols [MONO_EVENT_TYPE] >> TYPEDEFORREF_BITS;
-			switch (cols [MONO_EVENT_TYPE] & TYPEDEFORREF_MASK) {
-			case TYPEDEFORREF_TYPEDEF:
+			value = cols [MONO_EVENT_TYPE] >> MONO_TYPEDEFORREF_BITS;
+			switch (cols [MONO_EVENT_TYPE] & MONO_TYPEDEFORREF_MASK) {
+			case MONO_TYPEDEFORREF_TYPEDEF:
 				if (!value || value > image->tables [MONO_TABLE_TYPEDEF].rows)
 					ADD_ERROR (list, g_strdup_printf ("Type invalid in Event row %d", i + 1));
 				break;
-			case TYPEDEFORREF_TYPEREF:
+			case MONO_TYPEDEFORREF_TYPEREF:
 				if (!value || value > image->tables [MONO_TABLE_TYPEREF].rows)
 					ADD_ERROR (list, g_strdup_printf ("Type invalid in Event row %d", i + 1));
 				break;
-			case TYPEDEFORREF_TYPESPEC:
+			case MONO_TYPEDEFORREF_TYPESPEC:
 				if (!value || value > image->tables [MONO_TABLE_TYPESPEC].rows)
 					ADD_ERROR (list, g_strdup_printf ("Type invalid in Event row %d", i + 1));
 				break;

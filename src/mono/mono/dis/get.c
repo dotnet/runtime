@@ -267,22 +267,22 @@ get_typeref (MonoImage *m, int idx)
 	t = mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAME]);
 	s = mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAMESPACE]);
 
-	rs_idx = cols [MONO_TYPEREF_SCOPE] >> RESOLTION_SCOPE_BITS;
-	table = cols [MONO_TYPEREF_SCOPE] & RESOLTION_SCOPE_MASK;
+	rs_idx = cols [MONO_TYPEREF_SCOPE] >> MONO_RESOLTION_SCOPE_BITS;
+	table = cols [MONO_TYPEREF_SCOPE] & MONO_RESOLTION_SCOPE_MASK;
 	
 	switch (table){
-	case RESOLTION_SCOPE_MODULE: /* Module */
+	case MONO_RESOLTION_SCOPE_MODULE: /* Module */
 		x = get_module (m, rs_idx);
 		ret = g_strdup_printf ("[%s] %s%s%s", x, s, *s?".":"", t);
 		g_free (x);
 		break;
 
-	case RESOLTION_SCOPE_MODULEREF: /* ModuleRef */
+	case MONO_RESOLTION_SCOPE_MODULEREF: /* ModuleRef */
 		x = get_moduleref (m, rs_idx);
 		ret = g_strdup_printf ("[.module %s]%s%s%s", x, s, *s ? "." : "", t);
 		break;
 			      
-	case RESOLTION_SCOPE_ASSEMBLYREF: /*
+	case MONO_RESOLTION_SCOPE_ASSEMBLYREF: /*
 		 * AssemblyRef (ECMA docs claim it is 3, but it looks to
 		 * me like it is 2 (tokens are prefixed with 0x23)
 		 */
@@ -291,7 +291,7 @@ get_typeref (MonoImage *m, int idx)
 		g_free (x);
 		break;
 		
-	case RESOLTION_SCOPE_TYPEREF: /* TypeRef */
+	case MONO_RESOLTION_SCOPE_TYPEREF: /* TypeRef */
 		x = get_typeref (m, rs_idx);
 		ret =  g_strdup_printf ("%s/%s", x, t);
 		g_free (x);
@@ -331,8 +331,8 @@ get_typedef_or_ref (MonoImage *m, guint32 dor_token)
 	/*
 	 * low 2 bits contain encoding
 	 */
-	table = dor_token & TYPEDEFORREF_MASK;
-	idx = dor_token >> TYPEDEFORREF_BITS;
+	table = dor_token & MONO_TYPEDEFORREF_MASK;
+	idx = dor_token >> MONO_TYPEDEFORREF_BITS;
 	
 	switch (table){
 	case 0: /* TypeDef */
@@ -1493,16 +1493,16 @@ get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name)
 	guint32 sig;
 	int param_count, cconv, i, gen_count = 0;
 
-	switch (token & METHODDEFORREF_MASK) {
-	case METHODDEFORREF_METHODDEF:
+	switch (token & MONO_METHODDEFORREF_MASK) {
+	case MONO_METHODDEFORREF_METHODDEF:
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], 
-					  (token >> METHODDEFORREF_BITS) - 1,
+					  (token >> MONO_METHODDEFORREF_BITS) - 1,
 					  method_cols, MONO_METHOD_SIZE);
 		sig = method_cols [MONO_METHOD_SIGNATURE];
 		break;
-	case METHODDEFORREF_METHODREF:
+	case MONO_METHODDEFORREF_METHODREF:
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_MEMBERREF], 
-					  (token >> METHODDEFORREF_BITS) - 1,
+					  (token >> MONO_METHODDEFORREF_BITS) - 1,
 					  member_cols, MONO_MEMBERREF_SIZE);
 		sig = member_cols [MONO_MEMBERREF_SIGNATURE];
 		break;
@@ -1781,32 +1781,32 @@ dis_get_custom_attrs (MonoImage *m, guint32 token)
 	const char *val;
 
 	idx = mono_metadata_token_index (token);
-	idx <<= CUSTOM_ATTR_BITS;
+	idx <<= MONO_CUSTOM_ATTR_BITS;
 	
 	switch (mono_metadata_token_table (token)) {
 	case MONO_TABLE_TYPEDEF:
-		idx |= CUSTOM_ATTR_TYPEDEF;
+		idx |= MONO_CUSTOM_ATTR_TYPEDEF;
 		break;
 	case MONO_TABLE_ASSEMBLY:
-		idx |= CUSTOM_ATTR_ASSEMBLY;
+		idx |= MONO_CUSTOM_ATTR_ASSEMBLY;
 		break;
 	case MONO_TABLE_MODULE:
-		idx |= CUSTOM_ATTR_MODULE;
+		idx |= MONO_CUSTOM_ATTR_MODULE;
 		break;
 	case MONO_TABLE_PROPERTY:
-		idx |= CUSTOM_ATTR_PROPERTY;
+		idx |= MONO_CUSTOM_ATTR_PROPERTY;
 		break;
 	case MONO_TABLE_EVENT:
-		idx |= CUSTOM_ATTR_EVENT;
+		idx |= MONO_CUSTOM_ATTR_EVENT;
 		break;
 	case MONO_TABLE_FIELD:
-		idx |= CUSTOM_ATTR_FIELDDEF;
+		idx |= MONO_CUSTOM_ATTR_FIELDDEF;
 		break;
 	case MONO_TABLE_METHOD:
-		idx |= CUSTOM_ATTR_METHODDEF;
+		idx |= MONO_CUSTOM_ATTR_METHODDEF;
 		break;
 	case MONO_TABLE_PARAM:
-		idx |= CUSTOM_ATTR_PARAMDEF;
+		idx |= MONO_CUSTOM_ATTR_PARAMDEF;
 		break;
 	default:
 		g_print ("Missing custom attr get support for token 0x%08x\n", token);
@@ -1820,12 +1820,12 @@ dis_get_custom_attrs (MonoImage *m, guint32 token)
 		mono_metadata_decode_row (ca, i, cols, MONO_CUSTOM_ATTR_SIZE);
 		if (cols [MONO_CUSTOM_ATTR_PARENT] != idx)
 			continue;
-		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> CUSTOM_ATTR_TYPE_BITS;
-		switch (cols [MONO_CUSTOM_ATTR_TYPE] & CUSTOM_ATTR_TYPE_MASK) {
-		case CUSTOM_ATTR_TYPE_METHODDEF:
+		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> MONO_CUSTOM_ATTR_TYPE_BITS;
+		switch (cols [MONO_CUSTOM_ATTR_TYPE] & MONO_CUSTOM_ATTR_TYPE_MASK) {
+		case MONO_CUSTOM_ATTR_TYPE_METHODDEF:
 			mtoken |= MONO_TOKEN_METHOD_DEF;
 			break;
-		case CUSTOM_ATTR_TYPE_MEMBERREF:
+		case MONO_CUSTOM_ATTR_TYPE_MEMBERREF:
 			mtoken |= MONO_TOKEN_MEMBER_REF;
 			break;
 		default:

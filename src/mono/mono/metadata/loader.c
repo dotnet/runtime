@@ -70,8 +70,8 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	}
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
-	nindex = cols [MONO_MEMBERREF_CLASS] >> MEMBERREF_PARENT_BITS;
-	class = cols [MONO_MEMBERREF_CLASS] & MEMBERREF_PARENT_MASK;
+	nindex = cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
+	class = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
 
 	fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
 	
@@ -80,7 +80,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	/* we may want to check the signature here... */
 
 	switch (class) {
-	case MEMBERREF_PARENT_TYPEREF:
+	case MONO_MEMBERREF_PARENT_TYPEREF:
 		klass = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | nindex);
 		if (!klass) {
 			g_warning ("Missing field %s in typeref index %d", fname, nindex);
@@ -90,7 +90,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		if (retklass)
 			*retklass = klass;
 		return mono_class_get_field_from_name (klass, fname);
-	case MEMBERREF_PARENT_TYPESPEC: {
+	case MONO_MEMBERREF_PARENT_TYPESPEC: {
 		/*guint32 bcols [MONO_TYPESPEC_SIZE];
 		guint32 len;
 		MonoType *type;
@@ -301,8 +301,8 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 	const char *ptr;
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], idx-1, cols, 3);
-	nindex = cols [MONO_MEMBERREF_CLASS] >> MEMBERREF_PARENT_BITS;
-	class = cols [MONO_MEMBERREF_CLASS] & MEMBERREF_PARENT_MASK;
+	nindex = cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
+	class = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
 	/*g_print ("methodref: 0x%x 0x%x %s\n", class, nindex,
 		mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]));*/
 
@@ -313,7 +313,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 	sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
 
 	switch (class) {
-	case MEMBERREF_PARENT_TYPEREF:
+	case MONO_MEMBERREF_PARENT_TYPEREF:
 		klass = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | nindex);
 		if (!klass) {
 			g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
@@ -326,7 +326,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 			g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
 		mono_metadata_free_method_signature (sig);
 		return method;
-	case MEMBERREF_PARENT_TYPESPEC: {
+	case MONO_MEMBERREF_PARENT_TYPESPEC: {
 		guint32 bcols [MONO_TYPESPEC_SIZE];
 		guint32 len;
 		MonoType *type;
@@ -387,7 +387,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 		g_assert_not_reached ();
 		break;
 	}
-	case MEMBERREF_PARENT_TYPEDEF:
+	case MONO_MEMBERREF_PARENT_TYPEDEF:
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | nindex);
 		if (!klass) {
 			g_warning ("Missing method %s in assembly %s typedef index %d", mname, image->name, nindex);
@@ -400,7 +400,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 			g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
 		mono_metadata_free_method_signature (sig);
 		return method;
-	case MEMBERREF_PARENT_METHODDEF:
+	case MONO_MEMBERREF_PARENT_METHODDEF:
 		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | nindex, NULL);
 		return method;
 	default:
@@ -424,10 +424,10 @@ method_from_methodspec (MonoImage *image, guint32 idx)
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_METHODSPEC], idx - 1, cols, MONO_METHODSPEC_SIZE);
 	token = cols [MONO_METHODSPEC_METHOD];
-	if ((token & METHODDEFORREF_MASK) == METHODDEFORREF_METHODDEF)
-		token = MONO_TOKEN_METHOD_DEF | (token >> METHODDEFORREF_BITS);
+	if ((token & MONO_METHODDEFORREF_MASK) == MONO_METHODDEFORREF_METHODDEF)
+		token = MONO_TOKEN_METHOD_DEF | (token >> MONO_METHODDEFORREF_BITS);
 	else
-		token = MONO_TOKEN_MEMBER_REF | (token >> METHODDEFORREF_BITS);
+		token = MONO_TOKEN_MEMBER_REF | (token >> MONO_METHODDEFORREF_BITS);
 
 	method = mono_get_method (image, token, NULL);
 

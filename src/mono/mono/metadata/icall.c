@@ -3329,8 +3329,8 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflection
 		 * this code should only be called after obtaining the 
 		 * ResourceInfo and handling the other cases.
 		 */
-		g_assert ((impl & IMPLEMENTATION_MASK) == IMPLEMENTATION_FILE);
-		file_idx = impl >> IMPLEMENTATION_BITS;
+		g_assert ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_FILE);
+		file_idx = impl >> MONO_IMPLEMENTATION_BITS;
 
 		module = mono_image_load_file_for_image (assembly->assembly->image, file_idx);
 		if (!module)
@@ -3371,9 +3371,9 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflec
 		info->location = RESOURCE_LOCATION_EMBEDDED | RESOURCE_LOCATION_IN_MANIFEST;
 	}
 	else {
-		switch (cols [MONO_MANIFEST_IMPLEMENTATION] & IMPLEMENTATION_MASK) {
-		case IMPLEMENTATION_FILE:
-			i = cols [MONO_MANIFEST_IMPLEMENTATION] >> IMPLEMENTATION_BITS;
+		switch (cols [MONO_MANIFEST_IMPLEMENTATION] & MONO_IMPLEMENTATION_MASK) {
+		case MONO_IMPLEMENTATION_FILE:
+			i = cols [MONO_MANIFEST_IMPLEMENTATION] >> MONO_IMPLEMENTATION_BITS;
 			table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
 			mono_metadata_decode_row (table, i - 1, file_cols, MONO_FILE_SIZE);
 			val = mono_metadata_string_heap (assembly->assembly->image, file_cols [MONO_FILE_NAME]);
@@ -3384,8 +3384,8 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflec
 				info->location = RESOURCE_LOCATION_EMBEDDED;
 			break;
 
-		case IMPLEMENTATION_ASSEMBLYREF:
-			i = cols [MONO_MANIFEST_IMPLEMENTATION] >> IMPLEMENTATION_BITS;
+		case MONO_IMPLEMENTATION_ASSEMBLYREF:
+			i = cols [MONO_MANIFEST_IMPLEMENTATION] >> MONO_IMPLEMENTATION_BITS;
 			info->assembly = mono_assembly_get_object (mono_domain_get (), assembly->assembly->image->references [i - 1]);
 
 			/* Obtain info recursively */
@@ -3393,7 +3393,7 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflec
 			info->location |= RESOURCE_LOCATION_ANOTHER_ASSEMBLY;
 			break;
 
-		case IMPLEMENTATION_EXP_TYPE:
+		case MONO_IMPLEMENTATION_EXP_TYPE:
 			g_assert_not_reached ();
 			break;
 		}

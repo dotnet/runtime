@@ -1054,7 +1054,7 @@ mono_custom_attrs_free (MonoCustomAttrInfo *ainfo)
 
 /*
  * idx is the table index of the object
- * type is one of CUSTOM_ATTR_*
+ * type is one of MONO_CUSTOM_ATTR_*
  */
 static void
 mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, MonoArray *cattrs)
@@ -1074,20 +1074,20 @@ mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, Mo
 	table->rows += count;
 	alloc_table (table, table->rows);
 	values = table->values + table->next_idx * MONO_CUSTOM_ATTR_SIZE;
-	idx <<= CUSTOM_ATTR_BITS;
+	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= type;
 	for (i = 0; i < count; ++i) {
 		cattr = (MonoReflectionCustomAttr*)mono_array_get (cattrs, gpointer, i);
 		values [MONO_CUSTOM_ATTR_PARENT] = idx;
 		token = mono_image_create_token (assembly, (MonoObject*)cattr->ctor);
 		type = mono_metadata_token_index (token);
-		type <<= CUSTOM_ATTR_TYPE_BITS;
+		type <<= MONO_CUSTOM_ATTR_TYPE_BITS;
 		switch (mono_metadata_token_table (token)) {
 		case MONO_TABLE_METHOD:
-			type |= CUSTOM_ATTR_TYPE_METHODDEF;
+			type |= MONO_CUSTOM_ATTR_TYPE_METHODDEF;
 			break;
 		case MONO_TABLE_MEMBERREF:
-			type |= CUSTOM_ATTR_TYPE_MEMBERREF;
+			type |= MONO_CUSTOM_ATTR_TYPE_MEMBERREF;
 			break;
 		default:
 			g_warning ("got wrong token in custom attr");
@@ -1126,16 +1126,16 @@ mono_image_add_decl_security (MonoDynamicImage *assembly, guint32 parent_token,
 		values = table->values + table->next_idx * MONO_DECL_SECURITY_SIZE;
 
 		idx = mono_metadata_token_index (parent_token);
-		idx <<= HAS_DECL_SECURITY_BITS;
+		idx <<= MONO_HAS_DECL_SECURITY_BITS;
 		switch (mono_metadata_token_table (parent_token)) {
 		case MONO_TABLE_TYPEDEF:
-			idx |= HAS_DECL_SECURITY_TYPEDEF;
+			idx |= MONO_HAS_DECL_SECURITY_TYPEDEF;
 			break;
 		case MONO_TABLE_METHOD:
-			idx |= HAS_DECL_SECURITY_METHODDEF;
+			idx |= MONO_HAS_DECL_SECURITY_METHODDEF;
 			break;
 		case MONO_TABLE_ASSEMBLY:
-			idx |= HAS_DECL_SECURITY_ASSEMBLY;
+			idx |= MONO_HAS_DECL_SECURITY_ASSEMBLY;
 			break;
 		default:
 			g_assert_not_reached ();
@@ -1213,7 +1213,7 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 					mtable->rows++;
 					alloc_table (mtable, mtable->rows);
 					mvalues = mtable->values + mtable->rows * MONO_FIELD_MARSHAL_SIZE;
-					mvalues [MONO_FIELD_MARSHAL_PARENT] = (table->next_idx << HAS_FIELD_MARSHAL_BITS) | HAS_FIELD_MARSHAL_PARAMDEF;
+					mvalues [MONO_FIELD_MARSHAL_PARENT] = (table->next_idx << MONO_HAS_FIELD_MARSHAL_BITS) | MONO_HAS_FIELD_MARSHAL_PARAMDEF;
 					mvalues [MONO_FIELD_MARSHAL_NATIVE_TYPE] = encode_marshal_blob (assembly, pb->marshal_info);
 				}
 				pb->table_idx = table->next_idx++;
@@ -1356,14 +1356,14 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *a
 		alloc_table (table, table->rows);
 		values = table->values + table->rows * MONO_METHODIMPL_SIZE;
 		values [MONO_METHODIMPL_CLASS] = tb->table_idx;
-		values [MONO_METHODIMPL_BODY] = METHODDEFORREF_METHODDEF | (mb->table_idx << METHODDEFORREF_BITS);
+		values [MONO_METHODIMPL_BODY] = MONO_METHODDEFORREF_METHODDEF | (mb->table_idx << MONO_METHODDEFORREF_BITS);
 		tok = mono_image_create_token (assembly, (MonoObject*)mb->override_method);
 		switch (mono_metadata_token_table (tok)) {
 		case MONO_TABLE_MEMBERREF:
-			tok = (mono_metadata_token_index (tok) << METHODDEFORREF_BITS ) | METHODDEFORREF_METHODREF;
+			tok = (mono_metadata_token_index (tok) << MONO_METHODDEFORREF_BITS ) | MONO_METHODDEFORREF_METHODREF;
 			break;
 		case MONO_TABLE_METHOD:
-			tok = (mono_metadata_token_index (tok) << METHODDEFORREF_BITS ) | METHODDEFORREF_METHODDEF;
+			tok = (mono_metadata_token_index (tok) << MONO_METHODDEFORREF_BITS ) | MONO_METHODDEFORREF_METHODDEF;
 			break;
 		default:
 			g_assert_not_reached ();
@@ -1690,7 +1690,7 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 		table->rows ++;
 		alloc_table (table, table->rows);
 		values = table->values + table->rows * MONO_CONSTANT_SIZE;
-		values [MONO_CONSTANT_PARENT] = HASCONSTANT_FIEDDEF | (fb->table_idx << HASCONSTANT_BITS);
+		values [MONO_CONSTANT_PARENT] = MONO_HASCONSTANT_FIEDDEF | (fb->table_idx << MONO_HASCONSTANT_BITS);
 		values [MONO_CONSTANT_VALUE] = encode_constant (assembly, fb->def_value, &field_type);
 		values [MONO_CONSTANT_TYPE] = field_type;
 		values [MONO_CONSTANT_PADDING] = 0;
@@ -1716,7 +1716,7 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 		table->rows ++;
 		alloc_table (table, table->rows);
 		values = table->values + table->rows * MONO_FIELD_MARSHAL_SIZE;
-		values [MONO_FIELD_MARSHAL_PARENT] = (fb->table_idx << HAS_FIELD_MARSHAL_BITS) | HAS_FIELD_MARSHAL_FIELDSREF;
+		values [MONO_FIELD_MARSHAL_PARENT] = (fb->table_idx << MONO_HAS_FIELD_MARSHAL_BITS) | MONO_HAS_FIELD_MARSHAL_FIELDSREF;
 		values [MONO_FIELD_MARSHAL_NATIVE_TYPE] = encode_marshal_blob (assembly, fb->marshal_info);
 	}
 }
@@ -1801,14 +1801,14 @@ mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicImag
 		values = table->values + semaidx * MONO_METHOD_SEMA_SIZE;
 		values [MONO_METHOD_SEMA_SEMANTICS] = METHOD_SEMANTIC_GETTER;
 		values [MONO_METHOD_SEMA_METHOD] = pb->get_method->table_idx;
-		values [MONO_METHOD_SEMA_ASSOCIATION] = (pb->table_idx << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_PROPERTY;
+		values [MONO_METHOD_SEMA_ASSOCIATION] = (pb->table_idx << MONO_HAS_SEMANTICS_BITS) | MONO_HAS_SEMANTICS_PROPERTY;
 	}
 	if (pb->set_method) {
 		semaidx = table->next_idx ++;
 		values = table->values + semaidx * MONO_METHOD_SEMA_SIZE;
 		values [MONO_METHOD_SEMA_SEMANTICS] = METHOD_SEMANTIC_SETTER;
 		values [MONO_METHOD_SEMA_METHOD] = pb->set_method->table_idx;
-		values [MONO_METHOD_SEMA_ASSOCIATION] = (pb->table_idx << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_PROPERTY;
+		values [MONO_METHOD_SEMA_ASSOCIATION] = (pb->table_idx << MONO_HAS_SEMANTICS_BITS) | MONO_HAS_SEMANTICS_PROPERTY;
 	}
 }
 
@@ -1853,21 +1853,21 @@ mono_image_get_event_info (MonoReflectionEventBuilder *eb, MonoDynamicImage *ass
 		values = table->values + semaidx * MONO_METHOD_SEMA_SIZE;
 		values [MONO_METHOD_SEMA_SEMANTICS] = METHOD_SEMANTIC_ADD_ON;
 		values [MONO_METHOD_SEMA_METHOD] = eb->add_method->table_idx;
-		values [MONO_METHOD_SEMA_ASSOCIATION] = (eb->table_idx << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_EVENT;
+		values [MONO_METHOD_SEMA_ASSOCIATION] = (eb->table_idx << MONO_HAS_SEMANTICS_BITS) | MONO_HAS_SEMANTICS_EVENT;
 	}
 	if (eb->remove_method) {
 		semaidx = table->next_idx ++;
 		values = table->values + semaidx * MONO_METHOD_SEMA_SIZE;
 		values [MONO_METHOD_SEMA_SEMANTICS] = METHOD_SEMANTIC_REMOVE_ON;
 		values [MONO_METHOD_SEMA_METHOD] = eb->remove_method->table_idx;
-		values [MONO_METHOD_SEMA_ASSOCIATION] = (eb->table_idx << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_EVENT;
+		values [MONO_METHOD_SEMA_ASSOCIATION] = (eb->table_idx << MONO_HAS_SEMANTICS_BITS) | MONO_HAS_SEMANTICS_EVENT;
 	}
 	if (eb->raise_method) {
 		semaidx = table->next_idx ++;
 		values = table->values + semaidx * MONO_METHOD_SEMA_SIZE;
 		values [MONO_METHOD_SEMA_SEMANTICS] = METHOD_SEMANTIC_FIRE;
 		values [MONO_METHOD_SEMA_METHOD] = eb->raise_method->table_idx;
-		values [MONO_METHOD_SEMA_ASSOCIATION] = (eb->table_idx << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_EVENT;
+		values [MONO_METHOD_SEMA_ASSOCIATION] = (eb->table_idx << MONO_HAS_SEMANTICS_BITS) | MONO_HAS_SEMANTICS_EVENT;
 	}
 }
 
@@ -1909,20 +1909,20 @@ encode_new_constraint (MonoDynamicImage *assembly, guint32 owner)
 	alloc_table (table, table->rows);
 
 	values = table->values + table->next_idx * MONO_CUSTOM_ATTR_SIZE;
-	owner <<= CUSTOM_ATTR_BITS;
-	owner |= CUSTOM_ATTR_GENERICPAR;
+	owner <<= MONO_CUSTOM_ATTR_BITS;
+	owner |= MONO_CUSTOM_ATTR_GENERICPAR;
 	values [MONO_CUSTOM_ATTR_PARENT] = owner;
 
 	token = mono_image_get_methodref_token (assembly, NewConstraintAttr_ctor);
 
 	type = mono_metadata_token_index (token);
-	type <<= CUSTOM_ATTR_TYPE_BITS;
+	type <<= MONO_CUSTOM_ATTR_TYPE_BITS;
 	switch (mono_metadata_token_table (token)) {
 	case MONO_TABLE_METHOD:
-		type |= CUSTOM_ATTR_TYPE_METHODDEF;
+		type |= MONO_CUSTOM_ATTR_TYPE_METHODDEF;
 		break;
 	case MONO_TABLE_MEMBERREF:
-		type |= CUSTOM_ATTR_TYPE_MEMBERREF;
+		type |= MONO_CUSTOM_ATTR_TYPE_MEMBERREF;
 		break;
 	default:
 		g_warning ("got wrong token in custom attr");
@@ -2030,8 +2030,8 @@ resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image)
 		values = table->values + token * MONO_MODULEREF_SIZE;
 		values [MONO_MODULEREF_NAME] = string_heap_insert (&assembly->sheap, image->module_name);
 
-		token <<= RESOLTION_SCOPE_BITS;
-		token |= RESOLTION_SCOPE_MODULEREF;
+		token <<= MONO_RESOLTION_SCOPE_BITS;
+		token |= MONO_RESOLTION_SCOPE_MODULEREF;
 		g_hash_table_insert (assembly->handleref, image, GUINT_TO_POINTER (token));
 
 		return token;
@@ -2073,8 +2073,8 @@ resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image)
 	} else {
 		values [MONO_ASSEMBLYREF_PUBLIC_KEY] = 0;
 	}
-	token <<= RESOLTION_SCOPE_BITS;
-	token |= RESOLTION_SCOPE_ASSEMBLYREF;
+	token <<= MONO_RESOLTION_SCOPE_BITS;
+	token |= MONO_RESOLTION_SCOPE_ASSEMBLYREF;
 	g_hash_table_insert (assembly->handleref, image, GUINT_TO_POINTER (token));
 	return token;
 }
@@ -2122,7 +2122,7 @@ create_typespec (MonoDynamicImage *assembly, MonoType *type)
 		values [MONO_TYPESPEC_SIGNATURE] = token;
 	}
 
-	token = TYPEDEFORREF_TYPESPEC | (table->next_idx << TYPEDEFORREF_BITS);
+	token = MONO_TYPEDEFORREF_TYPESPEC | (table->next_idx << MONO_TYPEDEFORREF_BITS);
 	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));
 	table->next_idx ++;
 	return token;
@@ -2155,7 +2155,7 @@ mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type)
 	if ((klass->image == &assembly->image) &&
 	    (type->type != MONO_TYPE_VAR) && (type->type != MONO_TYPE_MVAR)) {
 		MonoReflectionTypeBuilder *tb = klass->reflection_info;
-		token = TYPEDEFORREF_TYPEDEF | (tb->table_idx << TYPEDEFORREF_BITS);
+		token = MONO_TYPEDEFORREF_TYPEDEF | (tb->table_idx << MONO_TYPEDEFORREF_BITS);
 		mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), klass->reflection_info);
 		return token;
 	}
@@ -2163,8 +2163,8 @@ mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type)
 	if (klass->nested_in) {
 		enclosing = mono_image_typedef_or_ref (assembly, &klass->nested_in->byval_arg);
 		/* get the typeref idx of the enclosing type */
-		enclosing >>= TYPEDEFORREF_BITS;
-		scope = (enclosing << RESOLTION_SCOPE_BITS) | RESOLTION_SCOPE_TYPEREF;
+		enclosing >>= MONO_TYPEDEFORREF_BITS;
+		scope = (enclosing << MONO_RESOLTION_SCOPE_BITS) | MONO_RESOLTION_SCOPE_TYPEREF;
 	} else {
 		scope = resolution_scope_from_image (assembly, klass->image);
 	}
@@ -2176,7 +2176,7 @@ mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type)
 		values [MONO_TYPEREF_NAME] = string_heap_insert (&assembly->sheap, klass->name);
 		values [MONO_TYPEREF_NAMESPACE] = string_heap_insert (&assembly->sheap, klass->name_space);
 	}
-	token = TYPEDEFORREF_TYPEREF | (table->next_idx << TYPEDEFORREF_BITS); /* typeref */
+	token = MONO_TYPEDEFORREF_TYPEREF | (table->next_idx << MONO_TYPEDEFORREF_BITS); /* typeref */
 	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));
 	table->next_idx ++;
 	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), klass->reflection_info);
@@ -2198,29 +2198,29 @@ mono_image_get_memberref_token (MonoDynamicImage *assembly, MonoType *type, cons
 	guint32 parent;
 
 	parent = mono_image_typedef_or_ref (assembly, type);
-	switch (parent & TYPEDEFORREF_MASK) {
-	case TYPEDEFORREF_TYPEREF:
-		pclass = MEMBERREF_PARENT_TYPEREF;
+	switch (parent & MONO_TYPEDEFORREF_MASK) {
+	case MONO_TYPEDEFORREF_TYPEREF:
+		pclass = MONO_MEMBERREF_PARENT_TYPEREF;
 		break;
-	case TYPEDEFORREF_TYPESPEC:
-		pclass = MEMBERREF_PARENT_TYPESPEC;
+	case MONO_TYPEDEFORREF_TYPESPEC:
+		pclass = MONO_MEMBERREF_PARENT_TYPESPEC;
 		break;
-	case TYPEDEFORREF_TYPEDEF:
-		pclass = MEMBERREF_PARENT_TYPEDEF;
+	case MONO_TYPEDEFORREF_TYPEDEF:
+		pclass = MONO_MEMBERREF_PARENT_TYPEDEF;
 		break;
 	default:
 		g_warning ("unknown typeref or def token 0x%08x for %s", parent, name);
 		return 0;
 	}
 	/* extract the index */
-	parent >>= TYPEDEFORREF_BITS;
+	parent >>= MONO_TYPEDEFORREF_BITS;
 
 	table = &assembly->tables [MONO_TABLE_MEMBERREF];
 
 	if (assembly->save) {
 		alloc_table (table, table->rows + 1);
 		values = table->values + table->next_idx * MONO_MEMBERREF_SIZE;
-		values [MONO_MEMBERREF_CLASS] = pclass | (parent << MEMBERREF_PARENT_BITS);
+		values [MONO_MEMBERREF_CLASS] = pclass | (parent << MONO_MEMBERREF_PARENT_BITS);
 		values [MONO_MEMBERREF_NAME] = string_heap_insert (&assembly->sheap, name);
 		values [MONO_MEMBERREF_SIGNATURE] = sig;
 	}
@@ -2381,10 +2381,10 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method)
 
 	switch (mono_metadata_token_table (mtoken)) {
 	case MONO_TABLE_MEMBERREF:
-		mtoken = (mono_metadata_token_index (mtoken) << METHODDEFORREF_BITS) | METHODDEFORREF_METHODREF;
+		mtoken = (mono_metadata_token_index (mtoken) << MONO_METHODDEFORREF_BITS) | MONO_METHODDEFORREF_METHODREF;
 		break;
 	case MONO_TABLE_METHOD:
-		mtoken = (mono_metadata_token_index (mtoken) << METHODDEFORREF_BITS) | METHODDEFORREF_METHODDEF;
+		mtoken = (mono_metadata_token_index (mtoken) << MONO_METHODDEFORREF_BITS) | MONO_METHODDEFORREF_METHODDEF;
 		break;
 	default:
 		g_assert_not_reached ();
@@ -2480,7 +2480,7 @@ create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *
 		values [MONO_TYPESPEC_SIGNATURE] = token;
 	}
 
-	token = TYPEDEFORREF_TYPESPEC | (table->next_idx << TYPEDEFORREF_BITS);
+	token = MONO_TYPEDEFORREF_TYPESPEC | (table->next_idx << MONO_TYPEDEFORREF_BITS);
 	g_hash_table_insert (assembly->typespec, tb->type.type, GUINT_TO_POINTER(token));
 	table->next_idx ++;
 	return token;
@@ -2505,17 +2505,17 @@ mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFi
 	sig = fieldref_encode_signature (assembly, fb->type->type);
 
 	parent = create_generic_typespec (assembly, (MonoReflectionTypeBuilder *) fb->typeb);
-	g_assert ((parent & TYPEDEFORREF_MASK) == TYPEDEFORREF_TYPESPEC);
+	g_assert ((parent & MONO_TYPEDEFORREF_MASK) == MONO_TYPEDEFORREF_TYPESPEC);
 	
-	pclass = MEMBERREF_PARENT_TYPESPEC;
-	parent >>= TYPEDEFORREF_BITS;
+	pclass = MONO_MEMBERREF_PARENT_TYPESPEC;
+	parent >>= MONO_TYPEDEFORREF_BITS;
 
 	table = &assembly->tables [MONO_TABLE_MEMBERREF];
 
 	if (assembly->save) {
 		alloc_table (table, table->rows + 1);
 		values = table->values + table->next_idx * MONO_MEMBERREF_SIZE;
-		values [MONO_MEMBERREF_CLASS] = pclass | (parent << MEMBERREF_PARENT_BITS);
+		values [MONO_MEMBERREF_CLASS] = pclass | (parent << MONO_MEMBERREF_PARENT_BITS);
 		values [MONO_MEMBERREF_NAME] = string_heap_insert (&assembly->sheap, name);
 		values [MONO_MEMBERREF_SIGNATURE] = sig;
 	}
@@ -2869,7 +2869,7 @@ params_add_cattrs (MonoDynamicImage *assembly, MonoArray *pinfo) {
 		pb = mono_array_get (pinfo, MonoReflectionParamBuilder *, i);
 		if (!pb)
 			continue;
-		mono_image_add_cattrs (assembly, pb->table_idx, CUSTOM_ATTR_PARAMDEF, pb->cattrs);
+		mono_image_add_cattrs (assembly, pb->table_idx, MONO_CUSTOM_ATTR_PARAMDEF, pb->cattrs);
 	}
 }
 
@@ -2877,33 +2877,33 @@ static void
 type_add_cattrs (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb) {
 	int i;
 	
-	mono_image_add_cattrs (assembly, tb->table_idx, CUSTOM_ATTR_TYPEDEF, tb->cattrs);
+	mono_image_add_cattrs (assembly, tb->table_idx, MONO_CUSTOM_ATTR_TYPEDEF, tb->cattrs);
 	if (tb->fields) {
 		for (i = 0; i < tb->num_fields; ++i) {
 			MonoReflectionFieldBuilder* fb;
 			fb = mono_array_get (tb->fields, MonoReflectionFieldBuilder*, i);
-			mono_image_add_cattrs (assembly, fb->table_idx, CUSTOM_ATTR_FIELDDEF, fb->cattrs);
+			mono_image_add_cattrs (assembly, fb->table_idx, MONO_CUSTOM_ATTR_FIELDDEF, fb->cattrs);
 		}
 	}
 	if (tb->events) {
 		for (i = 0; i < mono_array_length (tb->events); ++i) {
 			MonoReflectionEventBuilder* eb;
 			eb = mono_array_get (tb->events, MonoReflectionEventBuilder*, i);
-			mono_image_add_cattrs (assembly, eb->table_idx, CUSTOM_ATTR_EVENT, eb->cattrs);
+			mono_image_add_cattrs (assembly, eb->table_idx, MONO_CUSTOM_ATTR_EVENT, eb->cattrs);
 		}
 	}
 	if (tb->properties) {
 		for (i = 0; i < mono_array_length (tb->properties); ++i) {
 			MonoReflectionPropertyBuilder* pb;
 			pb = mono_array_get (tb->properties, MonoReflectionPropertyBuilder*, i);
-			mono_image_add_cattrs (assembly, pb->table_idx, CUSTOM_ATTR_PROPERTY, pb->cattrs);
+			mono_image_add_cattrs (assembly, pb->table_idx, MONO_CUSTOM_ATTR_PROPERTY, pb->cattrs);
 		}
 	}
 	if (tb->ctors) {
 		for (i = 0; i < mono_array_length (tb->ctors); ++i) {
 			MonoReflectionCtorBuilder* cb;
 			cb = mono_array_get (tb->ctors, MonoReflectionCtorBuilder*, i);
-			mono_image_add_cattrs (assembly, cb->table_idx, CUSTOM_ATTR_METHODDEF, cb->cattrs);
+			mono_image_add_cattrs (assembly, cb->table_idx, MONO_CUSTOM_ATTR_METHODDEF, cb->cattrs);
 			params_add_cattrs (assembly, cb->pinfo);
 		}
 	}
@@ -2912,7 +2912,7 @@ type_add_cattrs (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb) {
 		for (i = 0; i < tb->num_methods; ++i) {
 			MonoReflectionMethodBuilder* mb;
 			mb = mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i);
-			mono_image_add_cattrs (assembly, mb->table_idx, CUSTOM_ATTR_METHODDEF, mb->cattrs);
+			mono_image_add_cattrs (assembly, mb->table_idx, MONO_CUSTOM_ATTR_METHODDEF, mb->cattrs);
 			params_add_cattrs (assembly, mb->pinfo);
 		}
 	}
@@ -2927,7 +2927,7 @@ static void
 module_add_cattrs (MonoDynamicImage *assembly, MonoReflectionModuleBuilder *mb) {
 	int i;
 	
-	mono_image_add_cattrs (assembly, mb->table_idx, CUSTOM_ATTR_MODULE, mb->cattrs);
+	mono_image_add_cattrs (assembly, mb->table_idx, MONO_CUSTOM_ATTR_MODULE, mb->cattrs);
 	
 	/* no types in the module */
 	if (!mb->types)
@@ -3013,9 +3013,9 @@ mono_image_fill_export_table_from_class (MonoDomain *domain, MonoClass *klass,
 	values [MONO_EXP_TYPE_FLAGS] = klass->flags;
 	values [MONO_EXP_TYPE_TYPEDEF] = klass->type_token;
 	if (klass->nested_in)
-		values [MONO_EXP_TYPE_IMPLEMENTATION] = (parent_index << IMPLEMENTATION_BITS) + IMPLEMENTATION_EXP_TYPE;
+		values [MONO_EXP_TYPE_IMPLEMENTATION] = (parent_index << MONO_IMPLEMENTATION_BITS) + MONO_IMPLEMENTATION_EXP_TYPE;
 	else
-		values [MONO_EXP_TYPE_IMPLEMENTATION] = (module_index << IMPLEMENTATION_BITS) + IMPLEMENTATION_FILE;
+		values [MONO_EXP_TYPE_IMPLEMENTATION] = (module_index << MONO_IMPLEMENTATION_BITS) + MONO_IMPLEMENTATION_FILE;
 	values [MONO_EXP_TYPE_NAME] = string_heap_insert (&assembly->sheap, klass->name);
 	values [MONO_EXP_TYPE_NAMESPACE] = string_heap_insert (&assembly->sheap, klass->name_space);
 
@@ -3447,8 +3447,8 @@ fixup_cattrs (MonoDynamicImage *assembly)
 		values = table->values + ((i + 1) * MONO_CUSTOM_ATTR_SIZE);
 
 		type = values [MONO_CUSTOM_ATTR_TYPE];
-		if ((type & CUSTOM_ATTR_TYPE_MASK) == CUSTOM_ATTR_TYPE_METHODDEF) {
-			idx = type >> CUSTOM_ATTR_TYPE_BITS;
+		if ((type & MONO_CUSTOM_ATTR_TYPE_MASK) == MONO_CUSTOM_ATTR_TYPE_METHODDEF) {
+			idx = type >> MONO_CUSTOM_ATTR_TYPE_BITS;
 			token = mono_metadata_make_token (MONO_TABLE_METHOD, idx);
 			ctor = mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
 			g_assert (ctor);
@@ -3456,7 +3456,7 @@ fixup_cattrs (MonoDynamicImage *assembly)
 			if (!strcmp (ctor->vtable->klass->name, "MonoCMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)ctor)->method;
 				idx = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->method_to_table_idx, m));
-				values [MONO_CUSTOM_ATTR_TYPE] = (idx << CUSTOM_ATTR_TYPE_BITS) | CUSTOM_ATTR_TYPE_METHODDEF;
+				values [MONO_CUSTOM_ATTR_TYPE] = (idx << MONO_CUSTOM_ATTR_TYPE_BITS) | MONO_CUSTOM_ATTR_TYPE_METHODDEF;
 			}
 		}
 	}
@@ -3512,7 +3512,7 @@ assembly_add_resource (MonoReflectionModuleBuilder *mb, MonoDynamicImage *assemb
 		g_free (name);
 		idx = table->next_idx++;
 		rsrc->offset = 0;
-		idx = IMPLEMENTATION_FILE | (idx << IMPLEMENTATION_BITS);
+		idx = MONO_IMPLEMENTATION_FILE | (idx << MONO_IMPLEMENTATION_BITS);
 	} else {
 		char sizebuf [4];
 		offset = mono_array_length (rsrc->data);
@@ -3662,7 +3662,7 @@ mono_image_emit_manifest (MonoReflectionModuleBuilder *moduleb)
 				int len = mono_array_length (file_module->resources);
 				for (j = 0; j < len; ++j) {
 					MonoReflectionResource* res = (MonoReflectionResource*)mono_array_addr (file_module->resources, MonoReflectionResource, j);
-					assembly_add_resource_manifest (file_module, assembly, res, IMPLEMENTATION_FILE | (module_index << IMPLEMENTATION_BITS));
+					assembly_add_resource_manifest (file_module, assembly, res, MONO_IMPLEMENTATION_FILE | (module_index << MONO_IMPLEMENTATION_BITS));
 				}
 			}
 		}
@@ -3765,7 +3765,7 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 	 * table->rows is already set above and in mono_image_fill_module_table.
 	 */
 	/* add all the custom attributes at the end, once all the indexes are stable */
-	mono_image_add_cattrs (assembly, 1, CUSTOM_ATTR_ASSEMBLY, assemblyb->cattrs);
+	mono_image_add_cattrs (assembly, 1, MONO_CUSTOM_ATTR_ASSEMBLY, assemblyb->cattrs);
 
 	module_add_cattrs (assembly, moduleb);
 
@@ -3861,11 +3861,11 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj,
 		}
 
 		parent = mono_image_typedef_or_ref (assembly, &method->klass->byval_arg);
-		g_assert ((parent & TYPEDEFORREF_MASK) == MEMBERREF_PARENT_TYPEREF);
-		parent >>= TYPEDEFORREF_BITS;
+		g_assert ((parent & MONO_TYPEDEFORREF_MASK) == MONO_MEMBERREF_PARENT_TYPEREF);
+		parent >>= MONO_TYPEDEFORREF_BITS;
 
-		parent <<= MEMBERREF_PARENT_BITS;
-		parent |= MEMBERREF_PARENT_TYPEREF;
+		parent <<= MONO_MEMBERREF_PARENT_BITS;
+		parent |= MONO_MEMBERREF_PARENT_TYPEREF;
 
 		sig_token = method_encode_signature (assembly, sig);
 		token = mono_image_get_varargs_method_token (
@@ -3883,8 +3883,8 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj,
 		parent = mono_image_create_token (assembly, obj);
 		g_assert (mono_metadata_token_table (parent) == MONO_TABLE_METHOD);
 
-		parent = mono_metadata_token_index (parent) << MEMBERREF_PARENT_BITS;
-		parent |= MEMBERREF_PARENT_METHODDEF;
+		parent = mono_metadata_token_index (parent) << MONO_MEMBERREF_PARENT_BITS;
+		parent |= MONO_MEMBERREF_PARENT_METHODDEF;
 
 		token = mono_image_get_varargs_method_token (
 			assembly, parent, mono_string_to_utf8 (rmb.name), sig);
@@ -6074,12 +6074,12 @@ mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 	ainfo->image = image;
 	for (i = 0, tmp = list; i < len; ++i, tmp = tmp->next) {
 		mono_metadata_decode_row (ca, GPOINTER_TO_UINT (tmp->data), cols, MONO_CUSTOM_ATTR_SIZE);
-		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> CUSTOM_ATTR_TYPE_BITS;
-		switch (cols [MONO_CUSTOM_ATTR_TYPE] & CUSTOM_ATTR_TYPE_MASK) {
-		case CUSTOM_ATTR_TYPE_METHODDEF:
+		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> MONO_CUSTOM_ATTR_TYPE_BITS;
+		switch (cols [MONO_CUSTOM_ATTR_TYPE] & MONO_CUSTOM_ATTR_TYPE_MASK) {
+		case MONO_CUSTOM_ATTR_TYPE_METHODDEF:
 			mtoken |= MONO_TOKEN_METHOD_DEF;
 			break;
-		case CUSTOM_ATTR_TYPE_MEMBERREF:
+		case MONO_CUSTOM_ATTR_TYPE_MEMBERREF:
 			mtoken |= MONO_TOKEN_MEMBER_REF;
 			break;
 		default:
@@ -6107,8 +6107,8 @@ mono_custom_attrs_from_method (MonoMethod *method)
 	if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, method)))
 		return cinfo;
 	idx = find_method_index (method);
-	idx <<= CUSTOM_ATTR_BITS;
-	idx |= CUSTOM_ATTR_METHODDEF;
+	idx <<= MONO_CUSTOM_ATTR_BITS;
+	idx |= MONO_CUSTOM_ATTR_METHODDEF;
 	return mono_custom_attrs_from_index (method->klass->image, idx);
 }
 
@@ -6121,8 +6121,8 @@ mono_custom_attrs_from_class (MonoClass *klass)
 	if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, klass)))
 		return cinfo;
 	idx = mono_metadata_token_index (klass->type_token);
-	idx <<= CUSTOM_ATTR_BITS;
-	idx |= CUSTOM_ATTR_TYPEDEF;
+	idx <<= MONO_CUSTOM_ATTR_BITS;
+	idx |= MONO_CUSTOM_ATTR_TYPEDEF;
 	return mono_custom_attrs_from_index (klass->image, idx);
 }
 
@@ -6135,8 +6135,8 @@ mono_custom_attrs_from_assembly (MonoAssembly *assembly)
 	if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, assembly)))
 		return cinfo;
 	idx = 1; /* there is only one assembly */
-	idx <<= CUSTOM_ATTR_BITS;
-	idx |= CUSTOM_ATTR_ASSEMBLY;
+	idx <<= MONO_CUSTOM_ATTR_BITS;
+	idx |= MONO_CUSTOM_ATTR_ASSEMBLY;
 	return mono_custom_attrs_from_index (assembly->image, idx);
 }
 
@@ -6149,8 +6149,8 @@ mono_custom_attrs_from_module (MonoImage *image)
 	if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, image)))
 		return cinfo;
 	idx = 1; /* there is only one module */
-	idx <<= CUSTOM_ATTR_BITS;
-	idx |= CUSTOM_ATTR_MODULE;
+	idx <<= MONO_CUSTOM_ATTR_BITS;
+	idx |= MONO_CUSTOM_ATTR_MODULE;
 	return mono_custom_attrs_from_index (image, idx);
 }
 
@@ -6163,8 +6163,8 @@ mono_custom_attrs_from_property (MonoClass *klass, MonoProperty *property)
 	if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, property)))
 		return cinfo;
 	idx = find_property_index (klass, property);
-	idx <<= CUSTOM_ATTR_BITS;
-	idx |= CUSTOM_ATTR_PROPERTY;
+	idx <<= MONO_CUSTOM_ATTR_BITS;
+	idx |= MONO_CUSTOM_ATTR_PROPERTY;
 	return mono_custom_attrs_from_index (klass->image, idx);
 }
 
@@ -6177,8 +6177,8 @@ mono_custom_attrs_from_event (MonoClass *klass, MonoEvent *event)
 	if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, event)))
 		return cinfo;
 	idx = find_event_index (klass, event);
-	idx <<= CUSTOM_ATTR_BITS;
-	idx |= CUSTOM_ATTR_EVENT;
+	idx <<= MONO_CUSTOM_ATTR_BITS;
+	idx |= MONO_CUSTOM_ATTR_EVENT;
 	return mono_custom_attrs_from_index (klass->image, idx);
 }
 
@@ -6191,8 +6191,8 @@ mono_custom_attrs_from_field (MonoClass *klass, MonoClassField *field)
 	if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, field)))
 		return cinfo;
 	idx = find_field_index (klass, field);
-	idx <<= CUSTOM_ATTR_BITS;
-	idx |= CUSTOM_ATTR_FIELDDEF;
+	idx <<= MONO_CUSTOM_ATTR_BITS;
+	idx |= MONO_CUSTOM_ATTR_FIELDDEF;
 	return mono_custom_attrs_from_index (klass->image, idx);
 }
 
@@ -6241,8 +6241,8 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 	if (!found)
 		return NULL;
 	idx = i;
-	idx <<= CUSTOM_ATTR_BITS;
-	idx |= CUSTOM_ATTR_PARAMDEF;
+	idx <<= MONO_CUSTOM_ATTR_BITS;
+	idx |= MONO_CUSTOM_ATTR_PARAMDEF;
 	return mono_custom_attrs_from_index (image, idx);
 }
 

@@ -318,12 +318,12 @@ dump_table_constant (MonoImage *m)
 
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [MONO_CONSTANT_SIZE];
-		const char *parent = desc [cols [MONO_CONSTANT_PARENT] & HASCONSTANT_MASK];
+		const char *parent = desc [cols [MONO_CONSTANT_PARENT] & MONO_HASCONSTANT_MASK];
 		
 		mono_metadata_decode_row (t, i, cols, MONO_CONSTANT_SIZE);
 
 		fprintf (output, "%d: Parent= %s: %d %s\n",
-			 i + 1, parent, cols [MONO_CONSTANT_PARENT] >> HASCONSTANT_BITS, 
+			 i + 1, parent, cols [MONO_CONSTANT_PARENT] >> MONO_HASCONSTANT_BITS, 
 			 get_constant (m, (MonoTypeEnum) cols [MONO_CONSTANT_TYPE], cols [MONO_CONSTANT_VALUE]));
 	}
 	
@@ -450,15 +450,15 @@ get_manifest_implementation (MonoImage *m, guint32 idx)
 	const char* table = "";
 	if (!idx)
 		return g_strdup ("current module");
-	row = idx >> IMPLEMENTATION_BITS;
-	switch (idx & IMPLEMENTATION_MASK) {
-	case IMPLEMENTATION_FILE:
+	row = idx >> MONO_IMPLEMENTATION_BITS;
+	switch (idx & MONO_IMPLEMENTATION_MASK) {
+	case MONO_IMPLEMENTATION_FILE:
 		table = "file";
 		break;
-	case IMPLEMENTATION_ASSEMBLYREF:
+	case MONO_IMPLEMENTATION_ASSEMBLYREF:
 		table = "assemblyref";
 		break;
-	case IMPLEMENTATION_EXP_TYPE:
+	case MONO_IMPLEMENTATION_EXP_TYPE:
 		table = "exportedtype";
 		break;
 	default:
@@ -597,7 +597,7 @@ dump_table_implmap (MonoImage *m)
 
 		mono_metadata_decode_row (t, i - 1, cols, MONO_IMPLMAP_SIZE);
 
-		method = get_method (m, MONO_TOKEN_METHOD_DEF | (cols [MONO_IMPLMAP_MEMBER] >> MEMBERFORWD_BITS));
+		method = get_method (m, MONO_TOKEN_METHOD_DEF | (cols [MONO_IMPLMAP_MEMBER] >> MONO_MEMBERFORWD_BITS));
 		
 		fprintf (output, "%d: %s %d (%s %s)\n", i, 
 				 method,
@@ -609,11 +609,11 @@ dump_table_implmap (MonoImage *m)
 
 static guint32
 method_dor_to_token (guint32 idx) {
-	switch (idx & METHODDEFORREF_MASK) {
-	case METHODDEFORREF_METHODDEF:
-		return MONO_TOKEN_METHOD_DEF | (idx >> METHODDEFORREF_BITS);
-	case METHODDEFORREF_METHODREF:
-		return MONO_TOKEN_MEMBER_REF | (idx >> METHODDEFORREF_BITS);
+	switch (idx & MONO_METHODDEFORREF_MASK) {
+	case MONO_METHODDEFORREF_METHODDEF:
+		return MONO_TOKEN_METHOD_DEF | (idx >> MONO_METHODDEFORREF_BITS);
+	case MONO_METHODDEFORREF_METHODREF:
+		return MONO_TOKEN_MEMBER_REF | (idx >> MONO_METHODDEFORREF_BITS);
 	}
 	return -1;
 }
@@ -666,8 +666,8 @@ dump_table_methodsem (MonoImage *m)
 		
 		mono_metadata_decode_row (t, i - 1, cols, MONO_METHOD_SEMA_SIZE);
 		semantics = flags (cols [MONO_METHOD_SEMA_SEMANTICS], semantics_map);
-		is_property = cols [MONO_METHOD_SEMA_ASSOCIATION] & HAS_SEMANTICS_MASK;
-		index = cols [MONO_METHOD_SEMA_ASSOCIATION] >> HAS_SEMANTICS_BITS;
+		is_property = cols [MONO_METHOD_SEMA_ASSOCIATION] & MONO_HAS_SEMANTICS_MASK;
+		index = cols [MONO_METHOD_SEMA_ASSOCIATION] >> MONO_HAS_SEMANTICS_BITS;
 		fprintf (output, "%d: [%d] %s method: %d %s %d\n", i, cols [MONO_METHOD_SEMA_ASSOCIATION], semantics,
 						cols [MONO_METHOD_SEMA_METHOD] - 1, 
 						is_property? "property" : "event",
@@ -695,66 +695,66 @@ dump_table_interfaceimpl (MonoImage *m)
 static char*
 has_cattr_get_table (MonoImage *m, guint32 val)
 {
-	guint32 t = val & CUSTOM_ATTR_MASK;
-	guint32 index = val >> CUSTOM_ATTR_BITS;
+	guint32 t = val & MONO_CUSTOM_ATTR_MASK;
+	guint32 index = val >> MONO_CUSTOM_ATTR_BITS;
 	const char *table;
 
 	switch (t) {
-	case CUSTOM_ATTR_METHODDEF:
+	case MONO_CUSTOM_ATTR_METHODDEF:
 		table = "MethodDef";
 		break;
-	case CUSTOM_ATTR_FIELDDEF:
+	case MONO_CUSTOM_ATTR_FIELDDEF:
 		table = "FieldDef";
 		break;
-	case CUSTOM_ATTR_TYPEREF:
+	case MONO_CUSTOM_ATTR_TYPEREF:
 		table = "TypeRef";
 		break;
-	case CUSTOM_ATTR_TYPEDEF:
+	case MONO_CUSTOM_ATTR_TYPEDEF:
 		table = "TypeDef";
 		break;
-	case CUSTOM_ATTR_PARAMDEF:
+	case MONO_CUSTOM_ATTR_PARAMDEF:
 		table = "Param";
 		break;
-	case CUSTOM_ATTR_INTERFACE:
+	case MONO_CUSTOM_ATTR_INTERFACE:
 		table = "InterfaceImpl";
 		break;
-	case CUSTOM_ATTR_MEMBERREF:
+	case MONO_CUSTOM_ATTR_MEMBERREF:
 		table = "MemberRef";
 		break;
-	case CUSTOM_ATTR_MODULE:
+	case MONO_CUSTOM_ATTR_MODULE:
 		table = "Module";
 		break;
-	case CUSTOM_ATTR_PERMISSION:
+	case MONO_CUSTOM_ATTR_PERMISSION:
 		table = "DeclSecurity?";
 		break;
-	case CUSTOM_ATTR_PROPERTY:
+	case MONO_CUSTOM_ATTR_PROPERTY:
 		table = "Property";
 		break;
-	case CUSTOM_ATTR_EVENT:
+	case MONO_CUSTOM_ATTR_EVENT:
 		table = "Event";
 		break;
-	case CUSTOM_ATTR_SIGNATURE:
+	case MONO_CUSTOM_ATTR_SIGNATURE:
 		table = "StandAloneSignature";
 		break;
-	case CUSTOM_ATTR_MODULEREF:
+	case MONO_CUSTOM_ATTR_MODULEREF:
 		table = "ModuleRef";
 		break;
-	case CUSTOM_ATTR_TYPESPEC:
+	case MONO_CUSTOM_ATTR_TYPESPEC:
 		table = "TypeSpec";
 		break;
-	case CUSTOM_ATTR_ASSEMBLY:
+	case MONO_CUSTOM_ATTR_ASSEMBLY:
 		table = "Assembly";
 		break;
-	case CUSTOM_ATTR_ASSEMBLYREF:
+	case MONO_CUSTOM_ATTR_ASSEMBLYREF:
 		table = "AssemblyRef";
 		break;
-	case CUSTOM_ATTR_FILE:
+	case MONO_CUSTOM_ATTR_FILE:
 		table = "File";
 		break;
-	case CUSTOM_ATTR_EXP_TYPE:
+	case MONO_CUSTOM_ATTR_EXP_TYPE:
 		table = "ExportedType";
 		break;
-	case CUSTOM_ATTR_MANIFEST:
+	case MONO_CUSTOM_ATTR_MANIFEST:
 		table = "Manifest";
 		break;
 	default:
@@ -899,12 +899,12 @@ dump_table_customattr (MonoImage *m)
 		
 		mono_metadata_decode_row (t, i - 1, cols, MONO_CUSTOM_ATTR_SIZE);
 		desc = has_cattr_get_table (m, cols [MONO_CUSTOM_ATTR_PARENT]);
-		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> CUSTOM_ATTR_TYPE_BITS;
-		switch (cols [MONO_CUSTOM_ATTR_TYPE] & CUSTOM_ATTR_TYPE_MASK) {
-		case CUSTOM_ATTR_TYPE_METHODDEF:
+		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> MONO_CUSTOM_ATTR_TYPE_BITS;
+		switch (cols [MONO_CUSTOM_ATTR_TYPE] & MONO_CUSTOM_ATTR_TYPE_MASK) {
+		case MONO_CUSTOM_ATTR_TYPE_METHODDEF:
 			mtoken |= MONO_TOKEN_METHOD_DEF;
 			break;
-		case CUSTOM_ATTR_TYPE_MEMBERREF:
+		case MONO_CUSTOM_ATTR_TYPE_MEMBERREF:
 			mtoken |= MONO_TOKEN_MEMBER_REF;
 			break;
 		default:
@@ -981,8 +981,8 @@ dump_table_field_marshal (MonoImage *m)
 		mono_metadata_decode_row (t, i - 1, cols, MONO_FIELD_MARSHAL_SIZE);
 		blob = mono_metadata_blob_heap (m, cols [MONO_FIELD_MARSHAL_NATIVE_TYPE]);
 		native = get_marshal_info (m, blob);
-		is_field = (cols [MONO_FIELD_MARSHAL_PARENT] & HAS_FIELD_MARSHAL_MASK) == HAS_FIELD_MARSHAL_FIELDSREF;
-		idx = cols [MONO_FIELD_MARSHAL_PARENT] >> HAS_FIELD_MARSHAL_BITS;
+		is_field = (cols [MONO_FIELD_MARSHAL_PARENT] & MONO_HAS_FIELD_MARSHAL_MASK) == MONO_HAS_FIELD_MARSHAL_FIELDSREF;
+		idx = cols [MONO_FIELD_MARSHAL_PARENT] >> MONO_HAS_FIELD_MARSHAL_BITS;
 		fprintf (output, "%d: (0x%04x) %s %d: %s\n", i, cols [MONO_FIELD_MARSHAL_PARENT], is_field? "Field" : "Param", idx, native);
 		g_free (native);
 	}
@@ -1038,7 +1038,7 @@ dump_table_declsec (MonoImage *m)
 		len = mono_metadata_decode_blob_size (blob, &blob);
 		action = get_security_action (cols [MONO_DECL_SECURITY_ACTION]);
 		idx = cols [MONO_DECL_SECURITY_PARENT];
-		fprintf (output, "%d: %s on %s %d%s", i, action, parent [idx & HAS_DECL_SECURITY_MASK], idx >> HAS_DECL_SECURITY_BITS, len? ":\n\t":"\n");
+		fprintf (output, "%d: %s on %s %d%s", i, action, parent [idx & MONO_HAS_DECL_SECURITY_MASK], idx >> MONO_HAS_DECL_SECURITY_BITS, len? ":\n\t":"\n");
 		if (!len)
 			continue;
 		for (idx = 0; idx < len; ++idx)

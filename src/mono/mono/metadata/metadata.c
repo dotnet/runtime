@@ -2740,16 +2740,16 @@ mono_metadata_get_constant_index (MonoImage *meta, guint32 token, guint32 hint)
 	guint32 index = mono_metadata_token_index (token);
 
 	tdef = &meta->tables [MONO_TABLE_CONSTANT];
-	index <<= HASCONSTANT_BITS;
+	index <<= MONO_HASCONSTANT_BITS;
 	switch (mono_metadata_token_table (token)) {
 	case MONO_TABLE_FIELD:
-		index |= HASCONSTANT_FIEDDEF;
+		index |= MONO_HASCONSTANT_FIEDDEF;
 		break;
 	case MONO_TABLE_PARAM:
-		index |= HASCONSTANT_PARAM;
+		index |= MONO_HASCONSTANT_PARAM;
 		break;
 	case MONO_TABLE_PROPERTY:
-		index |= HASCONSTANT_PROPERTY;
+		index |= MONO_HASCONSTANT_PROPERTY;
 		break;
 	default:
 		g_warning ("Not a valid token for the constant table: 0x%08x", token);
@@ -2830,7 +2830,7 @@ mono_metadata_methods_from_event   (MonoImage *meta, guint32 index, guint *end_i
 
 	loc.t = msemt;
 	loc.col_idx = MONO_METHOD_SEMA_ASSOCIATION;
-	loc.idx = ((index + 1) << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_EVENT; /* Method association coded index */
+	loc.idx = ((index + 1) << MONO_HAS_SEMANTICS_BITS) | MONO_HAS_SEMANTICS_EVENT; /* Method association coded index */
 
 	if (!bsearch (&loc, msemt->base, msemt->rows, msemt->row_size, table_locator))
 		return 0;
@@ -2918,7 +2918,7 @@ mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *en
 
 	loc.t = msemt;
 	loc.col_idx = MONO_METHOD_SEMA_ASSOCIATION;
-	loc.idx = ((index + 1) << HAS_SEMANTICS_BITS) | HAS_SEMANTICS_PROPERTY; /* Method association coded index */
+	loc.idx = ((index + 1) << MONO_HAS_SEMANTICS_BITS) | MONO_HAS_SEMANTICS_PROPERTY; /* Method association coded index */
 
 	if (!bsearch (&loc, msemt->base, msemt->rows, msemt->row_size, table_locator))
 		return 0;
@@ -2955,7 +2955,7 @@ mono_metadata_implmap_from_method (MonoImage *meta, guint32 method_idx)
 
 	loc.t = tdef;
 	loc.col_idx = MONO_IMPLMAP_MEMBER;
-	loc.idx = ((method_idx + 1) << MEMBERFORWD_BITS) | MEMBERFORWD_METHODDEF;
+	loc.idx = ((method_idx + 1) << MONO_MEMBERFORWD_BITS) | MONO_MEMBERFORWD_METHODDEF;
 
 	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
 		return 0;
@@ -3227,7 +3227,7 @@ mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
 
 	loc.t = tdef;
 	loc.col_idx = MONO_FIELD_MARSHAL_PARENT;
-	loc.idx = ((idx + 1) << HAS_FIELD_MARSHAL_BITS) | (is_field? HAS_FIELD_MARSHAL_FIELDSREF: HAS_FIELD_MARSHAL_PARAMDEF);
+	loc.idx = ((idx + 1) << MONO_HAS_FIELD_MARSHAL_BITS) | (is_field? MONO_HAS_FIELD_MARSHAL_FIELDSREF: MONO_HAS_FIELD_MARSHAL_PARAMDEF);
 
 	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
 		return NULL;
@@ -3238,11 +3238,11 @@ mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
 static MonoMethod*
 method_from_method_def_or_ref (MonoImage *m, guint32 tok)
 {
-	guint32 idx = tok >> METHODDEFORREF_BITS;
-	switch (tok & METHODDEFORREF_MASK) {
-	case METHODDEFORREF_METHODDEF:
+	guint32 idx = tok >> MONO_METHODDEFORREF_BITS;
+	switch (tok & MONO_METHODDEFORREF_MASK) {
+	case MONO_METHODDEFORREF_METHODDEF:
 		return mono_get_method (m, MONO_TOKEN_METHOD_DEF | idx, NULL);
-	case METHODDEFORREF_METHODREF:
+	case MONO_METHODDEFORREF_METHODREF:
 		return mono_get_method (m, MONO_TOKEN_MEMBER_REF | idx, NULL);
 	}
 	g_assert_not_reached ();

@@ -57,16 +57,16 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 	name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
 	nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
 	
-	idx = cols [MONO_TYPEREF_SCOPE] >> RESOLTION_SCOPE_BITS;
-	switch (cols [MONO_TYPEREF_SCOPE] & RESOLTION_SCOPE_MASK) {
-	case RESOLTION_SCOPE_MODULE:
+	idx = cols [MONO_TYPEREF_SCOPE] >> MONO_RESOLTION_SCOPE_BITS;
+	switch (cols [MONO_TYPEREF_SCOPE] & MONO_RESOLTION_SCOPE_MASK) {
+	case MONO_RESOLTION_SCOPE_MODULE:
 		if (!idx)
 			g_error ("null ResolutionScope not yet handled");
 		/* a typedef in disguise */
 		return mono_class_from_name (image, nspace, name);
-	case RESOLTION_SCOPE_MODULEREF:
+	case MONO_RESOLTION_SCOPE_MODULEREF:
 		return mono_class_from_name (image->modules [idx - 1], nspace, name);
-	case RESOLTION_SCOPE_TYPEREF: {
+	case MONO_RESOLTION_SCOPE_TYPEREF: {
 		MonoClass *enclosing = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | idx);
 		GList *tmp;
 		mono_class_init (enclosing);
@@ -78,7 +78,7 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 		g_warning ("TypeRef ResolutionScope not yet handled (%d)", idx);
 		return NULL;
 	}
-	case RESOLTION_SCOPE_ASSEMBLYREF:
+	case MONO_RESOLTION_SCOPE_ASSEMBLYREF:
 		break;
 	}
 
@@ -2596,8 +2596,8 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 		mono_metadata_decode_row (t, idx - 1, cols, MONO_EXP_TYPE_SIZE);
 
 		impl = cols [MONO_EXP_TYPE_IMPLEMENTATION];
-		if ((impl & IMPLEMENTATION_MASK) == IMPLEMENTATION_FILE) {
-			loaded_image = mono_assembly_load_module (image->assembly, impl >> IMPLEMENTATION_BITS);
+		if ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_FILE) {
+			loaded_image = mono_assembly_load_module (image->assembly, impl >> MONO_IMPLEMENTATION_BITS);
 			if (!loaded_image)
 				return NULL;
 			class = mono_class_from_name (loaded_image, name_space, name);
