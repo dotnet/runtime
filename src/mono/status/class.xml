@@ -1240,6 +1240,33 @@
             <maintainer>serge@wildwestsoftware.com</maintainer>
         </maintainers>
     </class>
-    
+
+    <class name="System.Byte">
+        <last-activity>Jun-19-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>dholden@draper.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.SByte">
+        <last-activity>Jun-19-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>dholden@draper.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Single">
+        <last-activity>Jun-19-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>dholden@draper.com</maintainer>
+        </maintainers>
+    </class>
 </classes>
 
