@@ -473,7 +473,7 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 	g_string_sprintfa (result, " %s %s(", retval, name);
 	g_free (retval);
 	for (i = 0; i < method->param_count; ++i) {
-		if (param_index && param_index < m->tables [MONO_TABLE_PARAM].rows) {
+		if (param_index && param_index <= m->tables [MONO_TABLE_PARAM].rows) {
 			mono_metadata_decode_row (&m->tables [MONO_TABLE_PARAM], param_index - 1, pcols, MONO_PARAM_SIZE);
 			name = mono_metadata_string_heap (m, pcols [MONO_PARAM_NAME]);
 			method->params [i]->attrs = pcols [MONO_PARAM_FLAGS];

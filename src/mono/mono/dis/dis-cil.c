@@ -63,6 +63,14 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 
 	indent [0] = 0;
 
+#ifdef DEBUG
+	for (i = 0; i < mh->num_clauses; ++i) {
+#define clause mh->clauses [i]
+		g_print ("out clause %d: from %d len=%d, handler at %d, %d\n", 
+			clause.flags, clause.try_offset, clause.try_len, clause.handler_offset, clause.handler_len);
+#undef clause
+	}
+#endif
 	while (ptr < end){
 		for (i = mh->num_clauses - 1; i >= 0 ; --i) {
 			if ((mh->clauses[i].flags == 0 || mh->clauses[i].flags == 2) && ptr == start + mh->clauses[i].try_offset) {
