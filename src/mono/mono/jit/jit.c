@@ -3126,6 +3126,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			PUSH_TREE (t1, VAL_I32);		
 			break;
 		case CEE_CONV_OVF_I8_UN:
+		case CEE_CONV_OVF_U8_UN: /* FIXME: slightly incorrect, but non worth fixing the corner cases in the old jit */
 			++ip;
 			sp--;
 			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_I8_UN, *sp, NULL);
