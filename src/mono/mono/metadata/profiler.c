@@ -1010,13 +1010,7 @@ simple_allocation (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 		profile_info->alloc_info = tmp;
 	}
 	tmp->count++;
-	if (klass == mono_defaults.string_class) {
-		tmp->mem += sizeof (MonoString) + 2 * mono_string_length ((MonoString*)obj) + 2;
-	} else if (klass->parent == mono_defaults.array_class) {
-		tmp->mem += sizeof (MonoArray) + mono_array_element_size (klass) * mono_array_length ((MonoArray*)obj);
-	} else {
-		tmp->mem += mono_class_instance_size (klass);
-	}
+	tmp->mem += mono_object_get_size (obj);
 }
 
 static void

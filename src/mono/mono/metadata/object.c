@@ -2118,9 +2118,9 @@ mono_object_clone (MonoObject *obj)
 
 	size = obj->vtable->klass->instance_size;
 	o = mono_object_allocate (size);
-	mono_profiler_allocation (o, obj->vtable->klass);
-
 	memcpy (o, obj, size);
+	
+	mono_profiler_allocation (o, obj->vtable->klass);
 
 	if (obj->vtable->klass->has_finalize)
 		mono_object_register_finalizer (o);
@@ -2571,6 +2571,24 @@ MonoClass*
 mono_object_get_class (MonoObject *obj)
 {
 	return mono_object_class (obj);
+}
+/**
+ * mono_object_get_size:
+ * @o: object to query
+ * 
+ * Returns: the size, in bytes, of @o
+ */
+guint
+mono_object_get_size (MonoObject* o)
+{
+	MonoClass* klass = mono_object_class (o);
+	
+	if (klass == mono_defaults.string_class)
+		return sizeof (MonoString) + 2 * mono_string_length ((MonoString*) o) + 2;
+	else if (klass->parent == mono_defaults.array_class)
+		return sizeof (MonoArray) + mono_array_element_size (klass) * mono_array_length ((MonoArray*) o);
+	else
+		return mono_class_instance_size (klass);
 }
 
 /**

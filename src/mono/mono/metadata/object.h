@@ -161,6 +161,9 @@ mono_monitor_try_enter       (MonoObject *obj, guint32 ms);
 gboolean
 mono_monitor_enter           (MonoObject *obj);
 
+guint
+mono_object_get_size         (MonoObject *o);
+
 void 
 mono_monitor_exit            (MonoObject *obj);
 
