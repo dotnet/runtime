@@ -103,8 +103,8 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 			*((guint32*)(code + 2)) = (guint)addr - ((guint)code + 1) - 5; 
 			return addr;
 		} else {
-			printf ("%x %x %x %x %x %x \n", code [0], code [1], code [2], code [3],
-				code [4], code [5]);
+			printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
+				code [4], code [5], code [6]);
 			g_assert_not_reached ();
 		}
 	}

@@ -17,6 +17,7 @@
 #include "mono/metadata/mono-config.h"
 #include <mono/metadata/profiler-private.h>
 #include <mono/os/util.h>
+#include <locale.h>
 
 static MonoClass *
 find_class_in_assembly (MonoAssembly *assembly, const char *namespace, const char *name)
@@ -200,6 +201,8 @@ main (int argc, char *argv [])
 	int break_on_main = FALSE;
 	MonoDebugHandle *debug = NULL;
 
+	
+	setlocale(LC_ALL, "");
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 	

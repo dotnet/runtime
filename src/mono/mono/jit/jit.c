@@ -18,7 +18,6 @@
 #include <mono/metadata/verify.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>
-#include <mono/metadata/cil-coff.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
@@ -1862,13 +1861,24 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		case CEE_LDTOKEN: {
 			gpointer handle;
 			MonoClass *handle_class;
+			MonoMethod *next_method;
 
 			++ip;
 			handle = mono_ldtoken (image, read32 (ip), &handle_class);
 			ip += 4;
 
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-			t1->data.p = handle;
+			if (!cfg->share_code && (*ip == CEE_CALL) && (next_method = mono_get_method (image, read32 (ip+1), NULL)) &&
+					(next_method->klass == mono_defaults.monotype_class->parent) &&
+					(strcmp (next_method->name, "GetTypeFromHandle") == 0)) {
+				MonoClass *tclass = mono_class_from_mono_type (handle);
+				mono_class_init (tclass);
+				ip += 5;
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+				t1->data.p = mono_type_get_object (cfg->domain, handle);
+			} else {
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+				t1->data.p = handle;
+			}
 			PUSH_TREE (t1, VAL_POINTER);
 
 			break;
@@ -3944,11 +3954,9 @@ int
 mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 {
 	MonoImage *image = assembly->image;
-	MonoCLIImageInfo *iinfo;
 	MonoMethod *method;
 
-	iinfo = image->image_info;
-	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
+	method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
 
 	return mono_runtime_run_main (method, argc, argv, NULL);
 }
@@ -4140,6 +4148,9 @@ mono_jit_init (const char *file) {
 void
 mono_jit_cleanup (MonoDomain *domain)
 {
+
+	mono_domain_finalize (domain);
+
 	mono_debug_cleanup ();
 
 #ifdef PLATFORM_WIN32
