@@ -3,6 +3,7 @@
  *
  * Author:
  *	Dick Porter (dick@ximian.com)
+ *	Patrik Torstensson (patrik.torstensson@labs2.com)
  *
  * (C) 2001 Ximian, Inc.
  */
@@ -196,6 +197,12 @@ void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 #endif
 
 	Sleep(ms);
+}
+
+MonoAppDomain *ves_icall_System_Threading_Thread_CurrentThreadDomain_internal(void) 
+{
+	/* return the current app */
+	return mono_domain_get()->domain;
 }
 
 MonoObject *ves_icall_System_Threading_Thread_CurrentThread_internal(void)

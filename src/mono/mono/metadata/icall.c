@@ -4,6 +4,7 @@
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)
  *   Paolo Molaro (lupus@ximian.com)
+ *	 Patrik Torstensson (patrik.torstensson@labs2.com)
  *
  * (C) 2001 Ximian, Inc.
  */
@@ -2181,6 +2182,7 @@ static gconstpointer icall_map [] = {
 	"System.Threading.Thread::Start_internal", ves_icall_System_Threading_Thread_Start_internal,
 	"System.Threading.Thread::Sleep_internal", ves_icall_System_Threading_Thread_Sleep_internal,
 	"System.Threading.Thread::CurrentThread_internal", ves_icall_System_Threading_Thread_CurrentThread_internal,
+	"System.Threading.Thread::CurrentThreadDomain_internal", ves_icall_System_Threading_Thread_CurrentThreadDomain_internal,
 	"System.Threading.Thread::Join_internal", ves_icall_System_Threading_Thread_Join_internal,
 	"System.Threading.Thread::SlotHash_lookup", ves_icall_System_Threading_Thread_SlotHash_lookup,
 	"System.Threading.Thread::SlotHash_store", ves_icall_System_Threading_Thread_SlotHash_store,

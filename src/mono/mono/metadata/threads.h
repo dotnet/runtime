@@ -3,6 +3,7 @@
  *
  * Author:
  *	Dick Porter (dick@ximian.com)
+ *	Patrik Torstensson (patrik.torstensson@labs2.com)
  *
  * (C) 2001 Ximian, Inc
  */
@@ -13,15 +14,18 @@
 #include <config.h>
 
 #include <mono/metadata/object.h>
+#include <mono/metadata/appdomain.h>
 
 extern void mono_thread_init (MonoDomain *domain);
 extern void mono_thread_cleanup(void);
+
 MonoObject *mono_thread_create (MonoDomain *domain, gpointer func);
 
 extern HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this, MonoObject *start);
 extern void ves_icall_System_Threading_Thread_Start_internal(MonoObject *this, HANDLE thread);
 extern void ves_icall_System_Threading_Thread_Sleep_internal(int ms);
 extern MonoObject *ves_icall_System_Threading_Thread_CurrentThread_internal(void);
+extern MonoAppDomain * ves_icall_System_Threading_Thread_CurrentThreadDomain_internal(void);
 extern gboolean ves_icall_System_Threading_Thread_Join_internal(MonoObject *this, int ms, HANDLE thread);
 extern void ves_icall_System_Threading_Thread_SlotHash_store(MonoObject *data);
 extern MonoObject *ves_icall_System_Threading_Thread_SlotHash_lookup(void);
