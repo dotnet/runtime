@@ -981,6 +981,9 @@ type_to_eval_stack_type (MonoType *type, MonoInst *inst)
 
 handle_enum:
 	switch (type->type) {
+	case MONO_TYPE_VOID:
+		inst->type = STACK_INV;
+		return;
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
@@ -2035,7 +2038,8 @@ mono_emit_call_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignatu
 	call->args = args;
 	call->signature = sig;
 	call = mono_arch_call_opcode (cfg, bblock, call, virtual);
-
+	type_to_eval_stack_type (sig->ret, &call->inst);
+	
 	for (arg = call->out_args; arg;) {
 		MonoInst *narg = arg->next;
 		arg->next = NULL;
@@ -2837,9 +2841,15 @@ unverified:
 }
 
 static MonoInst*
-emit_tree (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ins)
+emit_tree (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ins, const guint8* ip_next)
 {
 	MonoInst *store, *temp, *load;
+	
+	if (ip_in_bb (cfg, bblock, ip_next) &&
+		(CODE_IS_STLOC (ip_next) || *ip_next == CEE_BRTRUE || *ip_next == CEE_BRFALSE ||
+		*ip_next == CEE_BRTRUE_S || *ip_next == CEE_BRFALSE_S || *ip_next == CEE_RET))
+			return ins;
+	
 	temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
 	NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
 	store->cil_code = ins->cil_code;
@@ -3703,7 +3713,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 			} else {
-				if (0 && CODE_IS_STLOC (ip + 5) && (!MONO_TYPE_ISSTRUCT (fsig->ret)) && (!MONO_TYPE_IS_VOID (fsig->ret) || cmethod->string_ctor)) {
+				if (ip_in_bb (cfg, bblock, ip + 5) 
+				    && (!MONO_TYPE_ISSTRUCT (fsig->ret))
+				    && (!MONO_TYPE_IS_VOID (fsig->ret) || cmethod->string_ctor)
+				    && (CODE_IS_STLOC (ip + 5) || ip [5] == CEE_POP || ip [5] == CEE_BRTRUE || ip [5] == CEE_BRFALSE ||
+					ip [5] == CEE_BRTRUE_S || ip [5] == CEE_BRFALSE_S || ip [5] == CEE_RET)) {
 					/* no need to spill */
 					ins = (MonoInst*)mono_emit_method_call (cfg, bblock, cmethod, fsig, sp, ip, virtual ? sp [0] : NULL);
 					*sp++ = ins;
@@ -3977,7 +3991,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
 				--sp;
-				*sp++ = emit_tree (cfg, bblock, ins);
+				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
 			}
 			ip++;
 			break;
@@ -3998,7 +4012,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ADD_UNOP (*ip);
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
 				--sp;
-				*sp++ = emit_tree (cfg, bblock, ins);
+				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
 			}
 			ip++;			
 			break;
@@ -4366,7 +4380,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->inst_left = *sp;
 				ins->inst_newa_class = klass;
 				ins->cil_code = ip;
-				*sp++ = emit_tree (cfg, bblock, ins);
+				*sp++ = emit_tree (cfg, bblock, ins, ip + 5);
 				ip += 5;
 			}
 			break;
@@ -4550,7 +4564,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->klass = klass;
 				ins->inst_newa_class = klass;
 				ins->cil_code = ip;
-				*sp++ = emit_tree (cfg, bblock, ins);
+				*sp++ = emit_tree (cfg, bblock, ins, ip + 5);
 				ip += 5;
 			}
 			break;
@@ -5296,7 +5310,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ADD_BINOP (*ip);
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
 				--sp;
-				*sp++ = emit_tree (cfg, bblock, ins);
+				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
 			}
 			ip++;
 			break;
@@ -5531,7 +5545,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->inst_left = *sp;
 				ins->inst_newa_class = klass;
 				ins->cil_code = ip;
-				*sp++ = emit_tree (cfg, bblock, ins);
+				*sp++ = emit_tree (cfg, bblock, ins, ip + 6);
 				ip += 6;
 				break;
 			}
@@ -5608,7 +5622,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 */
 				if (cmp->inst_left->type == STACK_I8) {
 					--sp;
-					*sp++ = emit_tree (cfg, bblock, ins);
+					*sp++ = emit_tree (cfg, bblock, ins, ip + 2);
 				}
 				ip += 2;
 				break;
