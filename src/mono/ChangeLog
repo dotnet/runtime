@@ -3,6 +3,8 @@
 	* Makefile.am (fullbuild): Update to changes in tree layout.
 	* runtime/net_1_1/Makefile.am (install-data-local): Allow empty
 	$(gac_assemblies_list).
+	($(gac_assemblies_list)): Pick libraries from 'class/lib/default',
+	not 'class/lib/net_1_1'.
 
 2004-04-28  Jackson Harper  <jackson@ximian.com>
 
