@@ -39,7 +39,7 @@ typedef struct {
 	gpointer try_end;
 	gpointer handler_start;
 	union {
-		guint32 token;
+		MonoClass *catch_class;
 		gpointer filter;
 	} data;
 } MonoJitExceptionInfo;

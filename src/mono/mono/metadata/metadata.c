@@ -1777,7 +1777,7 @@ hex_dump (const char *buffer, int base, int count)
  * @ptr: Points to the beginning of the Section Data (25.3)
  */
 static void
-parse_section_data (MonoMethodHeader *mh, const unsigned char *ptr)
+parse_section_data (MonoImage *m, MonoMethodHeader *mh, const unsigned char *ptr)
 {
 	unsigned char sect_data_flags;
 	const unsigned char *sptr;
@@ -1815,9 +1815,8 @@ parse_section_data (MonoMethodHeader *mh, const unsigned char *ptr)
 			mh->clauses = g_new0 (MonoExceptionClause, mh->num_clauses);
 			for (i = 0; i < mh->num_clauses; ++i) {
 				MonoExceptionClause *ec = &mh->clauses [i];
-
+				guint32 tof_value;
 				if (is_fat) {
-					/* we could memcpy and byteswap */
 					ec->flags = read32 (p);
 					p += 4;
 					ec->try_offset = read32 (p);
@@ -1828,7 +1827,7 @@ parse_section_data (MonoMethodHeader *mh, const unsigned char *ptr)
 					p += 4;
 					ec->handler_len = read32 (p);
 					p += 4;
-					ec->token_or_filter = read32 (p);
+					tof_value = read32 (p);
 					p += 4;
 				} else {
 					ec->flags = read16 (p);
@@ -1841,8 +1840,15 @@ parse_section_data (MonoMethodHeader *mh, const unsigned char *ptr)
 					p += 2;
 					ec->handler_len = *p;
 					++p;
-					ec->token_or_filter = read32 (p);
+					tof_value = read32 (p);
 					p += 4;
+				}
+				if (ec->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+					ec->data.filter_offset = tof_value;
+				} else if (ec->flags == MONO_EXCEPTION_CLAUSE_NONE) {
+					ec->data.catch_class = tof_value? mono_class_get (m, tof_value): 0;
+				} else {
+					ec->data.catch_class = NULL;
 				}
 				/* g_print ("try %d: %x %04x-%04x %04x\n", i, ec->flags, ec->try_offset, ec->try_offset+ec->try_len, ec->try_len); */
 			}
@@ -1958,7 +1964,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *generic_contain
 	mh->max_stack = max_stack;
 	mh->init_locals = init_locals;
 	if (fat_flags & METHOD_HEADER_MORE_SECTS)
-		parse_section_data (mh, (const unsigned char*)ptr);
+		parse_section_data (m, mh, (const unsigned char*)ptr);
 	return mh;
 }
 

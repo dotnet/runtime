@@ -268,7 +268,10 @@ typedef struct {
 	guint32 try_len;
 	guint32 handler_offset;
 	guint32 handler_len;
-	guint32 token_or_filter;
+	union {
+		guint32 filter_offset;
+		MonoClass *catch_class;
+	} data;
 } MonoExceptionClause;
 
 typedef struct _MonoType MonoType;

@@ -873,11 +873,11 @@ method_encode_clauses (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen, g
 				clause->try_len = ex_info->len;
 			clause->handler_offset = ex_block->start;
 			clause->handler_len = ex_block->len;
-			clause->token_or_filter = ex_block->extype ? mono_metadata_token_from_dor (
-				mono_image_typedef_or_ref (assembly, ex_block->extype->type)): 0;
 			if (ex_block->extype) {
-				mono_g_hash_table_insert (assembly->tokens,
-					  GUINT_TO_POINTER (clause->token_or_filter), ex_block->extype);
+				clause->data.catch_class = mono_class_from_mono_type (ex_block->extype->type);
+			} else {
+				/* FIXME: handle filters */
+				clause->data.filter_offset = 0;
 			}
 			finally_start = ex_block->start + ex_block->len;
 
@@ -981,7 +981,6 @@ fat_header:
 	mono_image_add_stream_data (&assembly->code, mono_array_addr (code, char, 0), code_size);
 	if (num_exception) {
 		unsigned char sheader [4];
-		MonoExceptionClause clause;
 		MonoILExceptionInfo * ex_info;
 		MonoILExceptionBlock * ex_block;
 		int j;
@@ -989,7 +988,7 @@ fat_header:
 		stream_data_align (&assembly->code);
 		/* always use fat format for now */
 		sheader [0] = METHOD_HEADER_SECTION_FAT_FORMAT | METHOD_HEADER_SECTION_EHTABLE;
-		num_exception *= sizeof (MonoExceptionClause);
+		num_exception *= 6 * sizeof (guint32);
 		num_exception += 4; /* include the size of the header */
 		sheader [1] = num_exception & 0xff;
 		sheader [2] = (num_exception >> 8) & 0xff;
@@ -1002,23 +1001,37 @@ fat_header:
 			if (ex_info->handlers) {
 				int finally_start = ex_info->start + ex_info->len;
 				for (j = 0; j < mono_array_length (ex_info->handlers); ++j) {
+					guint32 val;
 					ex_block = (MonoILExceptionBlock*)mono_array_addr (ex_info->handlers, MonoILExceptionBlock, j);
-					clause.flags = GUINT32_TO_LE (ex_block->type);
-					clause.try_offset = GUINT32_TO_LE (ex_info->start);
+					/* the flags */
+					val = GUINT32_TO_LE (ex_block->type);
+					mono_image_add_stream_data (&assembly->code, (char*)&val, sizeof (guint32));
+					/* try offset */
+					val = GUINT32_TO_LE (ex_info->start);
+					mono_image_add_stream_data (&assembly->code, (char*)&val, sizeof (guint32));
 					/* need fault, too, probably */
 					if (ex_block->type == MONO_EXCEPTION_CLAUSE_FINALLY)
-						clause.try_len = GUINT32_TO_LE (finally_start - ex_info->start);
+						val = GUINT32_TO_LE (finally_start - ex_info->start);
 					else
-						clause.try_len = GUINT32_TO_LE (ex_info->len);
-					clause.handler_offset = GUINT32_TO_LE (ex_block->start);
-					clause.handler_len = GUINT32_TO_LE (ex_block->len);
+						val = GUINT32_TO_LE (ex_info->len);
+					mono_image_add_stream_data (&assembly->code, (char*)&val, sizeof (guint32));
+					/* handler offset */
+					val = GUINT32_TO_LE (ex_block->start);
+					mono_image_add_stream_data (&assembly->code, (char*)&val, sizeof (guint32));
+					/* handler len */
+					val = GUINT32_TO_LE (ex_block->len);
+					mono_image_add_stream_data (&assembly->code, (char*)&val, sizeof (guint32));
 					finally_start = ex_block->start + ex_block->len;
-					clause.token_or_filter = ex_block->extype ? mono_metadata_token_from_dor (
-							mono_image_typedef_or_ref (assembly, ex_block->extype->type)): 0;
-					clause.token_or_filter = GUINT32_TO_LE (clause.token_or_filter);
+					if (ex_block->extype) {
+						val = mono_metadata_token_from_dor (mono_image_typedef_or_ref (assembly, ex_block->extype->type));
+					} else {
+						/* FIXME: handle filters */
+						val = 0;
+					}
+					val = GUINT32_TO_LE (val);
+					mono_image_add_stream_data (&assembly->code, (char*)&val, sizeof (guint32));
 					/*g_print ("out clause %d: from %d len=%d, handler at %d, %d, finally_start=%d, ex_info->start=%d, ex_info->len=%d, ex_block->type=%d, j=%d, i=%d\n", 
 							clause.flags, clause.try_offset, clause.try_len, clause.handler_offset, clause.handler_len, finally_start, ex_info->start, ex_info->len, ex_block->type, j, i);*/
-					mono_image_add_stream_data (&assembly->code, (char*)&clause, sizeof (clause));
 				}
 			} else {
 				g_error ("No clauses for ex info block %d", i);

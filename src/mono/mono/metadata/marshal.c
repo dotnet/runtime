@@ -2434,7 +2434,7 @@ handle_enum:
 	clause->try_len = mb->pos;
 
 	/* filter code */
-	clause->token_or_filter = mb->pos;
+	clause->data.filter_offset = mb->pos;
 	
 	mono_mb_emit_byte (mb, CEE_POP);
 	mono_mb_emit_byte (mb, CEE_LDARG_2);
