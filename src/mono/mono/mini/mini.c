@@ -1500,7 +1500,8 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 		if (!found) {
 			bb->out_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * count);
 			for (i = 0; i < count; ++i) {
-#if 1
+#if 0
+				/* recompiling mcs fails with this */
 				/* try to reuse temps already allocated for this purpouse, if they occupy the same 
 				 * stack slot and if they are of the same type. */
 				bb->out_stack [i] = mono_compile_get_interface_var (cfg, i, sp [i]);
