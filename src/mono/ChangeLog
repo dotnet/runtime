@@ -3,6 +3,7 @@
 	* Makefile.am (bootstrap,faststrap,fasterstrap): Refactor.
 	Fix 'faststrap' to be corlib-version-change-safe.
 	(one-stage-strap,two-stage-strap,three-stage-strap): Remove.
+	(monolite-bootstrap): Update.
 
 2004-05-31  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 

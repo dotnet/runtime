@@ -71,7 +71,7 @@ get-monolite-latest:
 monolite-bootstrap: tmpinst-monolite mono-do-runtime-only
 	rm -f $(MCS_FILES)
 	$(MAKE) tmpinst-mcs-short-build
-	$(MAKE) finalstrap
+	$(MAKE) fasterstrap
 
 # internal targets
 
