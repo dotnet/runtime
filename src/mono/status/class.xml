@@ -2341,8 +2341,8 @@
     <class name="System.Drawing.Point">
         <last-activity>Aug-17-2001</last-activity>
         <implementation>yes</implementation>
-        <test-suite>no</test-suite>
-        <completion>?</completion>
+        <test-suite>yes</test-suite>
+        <completion>100</completion>
         <maintainers>
             <maintainer>mkestner@speakeasy.net</maintainer>
         </maintainers>
