@@ -154,14 +154,19 @@ ves_icall_iconv_new_encoder (MonoString *name, MonoBoolean big_endian)
 	iconv_t cd;
 	char *n;
 
-	// fixme: add support big_endian
+	// fixme: don't enforce big endian, support old iconv
 
 	g_assert (name);
 
 	n = mono_string_to_utf8 (name);
 
+	/* force big endian before class libraries are fixed */
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+	big_endian = 1;
+#endif 
+
 #ifdef HAVE_NEW_ICONV
-	cd = iconv_open (n, "UTF-16le");
+	cd = iconv_open (n, big_endian ? "UTF-16be" : "UTF-16le");
 #else
 	cd = iconv_open (n, "UTF-16");
 #endif
@@ -176,14 +181,19 @@ ves_icall_iconv_new_decoder (MonoString *name, MonoBoolean big_endian)
 	iconv_t cd;
 	char *n;
 
-	// fixme: add support big_endian
+	// fixme: don't enforce big endian, support old iconv
 
 	g_assert (name);
 
 	n = mono_string_to_utf8 (name);
 
+	/* force big endian before class libraries are fixed */
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+	big_endian = 1;
+#endif 
+
 #ifdef HAVE_NEW_ICONV
-	cd = iconv_open ("UTF-16le", n);
+	cd = iconv_open (big_endian ? "UTF-16be" : "UTF-16le", n);
 #else
 	cd = iconv_open ("UTF-16", n);
 #endif
