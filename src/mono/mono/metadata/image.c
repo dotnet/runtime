@@ -341,7 +341,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 			return FALSE;
 		} else {
 			g_message ("Unknown heap type: %s\n", ptr + 8);
-			ptr += 8 + strlen (ptr) + 1;
+			ptr += 8 + strlen (ptr + 8) + 1;
 		}
 		pad = ptr - image->raw_metadata;
 		if (pad % 4)

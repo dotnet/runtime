@@ -2627,9 +2627,9 @@ mono_metadata_encode_value (guint32 value, char *buf, char **endbuf)
 {
 	char *p = buf;
 	
-	if (value <= 127)
+	if (value < 0x80)
 		*p++ = value;
-	else if (value <= 16384) {
+	else if (value < 0x4000) {
 		p [0] = 0x80 | (value >> 8);
 		p [1] = value & 0xff;
 		p += 2;
