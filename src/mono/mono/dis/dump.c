@@ -19,8 +19,12 @@
 #include "mono/metadata/class.h"
 #include "mono/utils/mono-compiler.h"
 
+#ifndef HAVE_ISINF
+
 #ifdef HAVE_IEEEFP_H
 extern int isinf (double);
+#endif
+
 #endif
 
 void
