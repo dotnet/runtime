@@ -1,5 +1,10 @@
 2004-06-24  Raja R Harinath  <rharinath@novell.com>
 
+	* runtime/net_2_0/Makefile.am (gac_assemblies_list): Put back
+	ICSharpCode.SharpZipLib, not that it has a different version.
+
+2004-06-24  Raja R Harinath  <rharinath@novell.com>
+
 	* Makefile.am (MCS_DIRS, MCS_FILES): Add back Mono.CSharp.Debugger.
 	(tmpinst-dir-contents, $(tmpinst)/bin/mono.bat): Remove mono.bat
 	in W32.  Use 'mono' and 'mcs' in W32 too.
