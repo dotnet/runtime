@@ -3343,15 +3343,15 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			*((gpointer *)(ip)) = code + patch_info->data.offset;
 			continue;
 		case MONO_PATCH_INFO_SWITCH: {
-			gpointer *table = (gpointer *)patch_info->data.target;
+			gpointer *table = (gpointer *)patch_info->data.table->table;
 			int i;
 
 			// FIXME: inspect code to get the register
-			ppc_load (ip, ppc_r11, patch_info->data.target);
+			ppc_load (ip, ppc_r11, table);
 			//*((gconstpointer *)(ip + 2)) = patch_info->data.target;
 
-			for (i = 0; i < patch_info->data.table->table_size; i++) {
-				table [i] = (int)patch_info->data.table [i] + code;
+			for (i = 0; i < patch_info->data.table->table_size; i++) { 
+				table [i] = (int)patch_info->data.table->table [i] + code;
 			}
 			/* we put into the table the absolute address, no need for ppc_patch in this case */
 			continue;

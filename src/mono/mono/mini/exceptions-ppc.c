@@ -326,18 +326,6 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 	g_assert_not_reached ();
 }
 
-gpointer
-mono_arch_get_rethrow_exception (void)
-{
-	static guint8 start [132];
-	static int inited = 0;
-
-	if (inited)
-		return start;
-	mono_arch_get_throw_exception_generic (start, sizeof (start), FALSE, TRUE);
-	inited = 1;
-	return start;
-}
 /**
  * arch_get_throw_exception_generic:
  *
@@ -410,6 +398,26 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 	return start;
 }
 
+/**
+ * mono_arch_get_rethrow_exception:
+ *
+ * Returns a function pointer which can be used to rethrow 
+ * exceptions. The returned function has the following 
+ * signature: void (*func) (MonoException *exc); 
+ *
+ */
+gpointer
+mono_arch_get_rethrow_exception (void)
+{
+	static guint8 start [132];
+	static int inited = 0;
+
+	if (inited)
+		return start;
+	mono_arch_get_throw_exception_generic (start, sizeof (start), FALSE, TRUE);
+	inited = 1;
+	return start;
+}
 /**
  * arch_get_throw_exception:
  *
