@@ -60,13 +60,14 @@ $2 = void
 	href="http://lists.ximian.com/archives/public/mono-list/2003-January/011415.html">post</a>. 
 	
 	The debugger contains both Gtk# and command line interfaces.
-	The debugging file format used in Dwarf (its already supported
+	The debugging file format used in Dwarf (it's already supported
 	by our class libraries and the Mono C# compiler; To debug C
 	applications, you need a recent GCC, or to pass the -gdwarf-2
 	flag to gcc).
 
-	The debugger is available now, you can get it from <a
-	href="http://primates.ximian.com/~martin/debugger/mono-debugger-0.2.0.tar.gz">here</a>
+	You can download the releases from <a
+	href="http://primates.ximian.com/~martin/debugger/">Martin Baulig's
+	home page.</a>
 
 
 

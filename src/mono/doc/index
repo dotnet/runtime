@@ -1,106 +1,9 @@
 <link rel="alternate" type="application/rss+xml" title="RSS" href="index.rss"/>
 
-<table>
-  <tr>
-    <td valign="top">
-	<a href="http://www.ximian.com">Ximian</a> announced the
-	launch of the Mono project, an effort to create an open source
-	implementation of the .NET Development Framework.
 
-	Mono includes: <a href="c-sharp.html">a compiler</a> for the
-	C# language, a <a href="runtime.html">runtime</a> for the
-	Common Language Infrastructure (also referred as the CLR) and a
-	set of <a href="class-library.html">class libraries</a>.  The
-	runtime can be <a href="embedded-api.html">embedded</a> into your
-	application.  It implements of both <a href="ado-net.html">ADO.NET</a>
-	and <a href="asp-net.html">ASP.NET</a>.
-
-	You can read our <a href="rationale.html">rationale</a> for
-	this project.  If you have questions about the project, please
-	read our list of <a href="faq.html">Frequently Asked
-	Questions</a> or <a href="mailto:mono-list@ximian.com">contact
-	us.</a> The project <a href="mono-roadmap.html">roadmap</a>.
-
-	You might also want to <a href="download.html">Download the
-	source</a> for our work so far.  Grab a <a
-	href="snapshots">snapshot</a> of our current work, or <a
-	href="http://cvs.hispalinux.es/cgi-bin/cvsweb/?hidenonreadable=1&f=u&logsort=date&sortby=file&hideattic=1&cvsroot=mono">browse
-	the sources</a>
-
-	You might want to <a
-	href="mailing-lists.html">subscribe</a> to our mono-list
-	and mono-announce-list.  There is also a <a
-	href="http://www.gotmono.com/cgi-bin/yabb/YaBB.pl">forum</a> at <a
-	href="http://www.gotmono.com">GotMono</a>.
-
-	Wikis: <a href="http://www.nullenvoid.com/gtksharp/wiki">Gtk# Wiki</a>
-	and <a href="http://www.nullenvoid.com/mono/wiki">Mono
-	Wiki</a>
-
-    </td>
-    <td>
-	<table border=1>
+	<table align="right" border=1 padding=0 width=25%>
 	  <tr>
-	    <td colspan="3">
-	      <b><center>Mono Status</center></b>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>
-	      <b><a href="c-sharp.html">C# Compiler</a></b>
-	    </td>
-	    <td>
-	      <b>Self hosting on Linux</b><br>
-	      Self hosting on .NET.
-            </td>
-	  </tr>
-	  <tr>
-	    <td>
-	      <b>JIT</b>
-	    </td>
-	    <td>
-	      Linux/x86 working.
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>
-	      <b>Interpreter</b>
-	    </td>
-	    <td>
-	      Working:<br>
-	      Linux/x86, Linux/PPC, S390, StrongARM, SPARC, HPPA, SPARC v9 <br>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td><b><a href="asp-net.html">ASP.NET</a></b></td>
-	    <td>Webforms and WebServices working<br></td>
-	  </tr>
-	  <tr>
-	    <td>
-	      <b><a href="class-status.html">Classes</a></b>
-	    </td>
-	    <td>
-	      All assemblies compile.
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>
-	      RSS feed:
-	    </td>
-	    <td>
-	      <a href="index.rss"><img src="images/xml.gif"></a>
-	    </td>
-	  </tr>
-	 <tr>
-	    <td>
-	      <a href="screenshots.html">Screenshots</a>
-	    </td>
-	  </tr>
-	</table>
-
-	<table border=1>
-	  <tr>
-	    <td colspan="3">
+	    <td colspan="2" bgcolor=lightgrey>
 	      <b><center>In the news</center></b>
 	    </td>
 	  </tr>
@@ -144,11 +47,106 @@
 	    <td>
 	      <a href="http://www.infoworld.com/article/03/05/22/HNmono_1.html">Dec, 2002</a>: The Penguin takes flight.
 	    </td>
+		</tr>
+	 <tr>
+	    <td colspan="2" bgcolor=lightgrey>
+	      <b><center>Mono Status</center></b>
+	    </td>
 	  </tr>
+	  <tr>
+	    <td>
+	      <b><a href="c-sharp.html">C# Compiler:</a></b>
+	    </td>
+	    <td>
+	      Self hosting on Linux and .NET
+            </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <b>JIT:</b>
+	    </td>
+	    <td>
+	      Works for Linux/x86
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <b>Interpreter:</b>
+	    </td>
+	    <td>
+	      Works for 
+	      Linux/x86, Linux/PPC, S390, StrongARM, SPARC, HPPA, SPARC v9
+	    </td>
+	  </tr>
+	  <tr>
+	    <td><b><a href="asp-net.html">ASP.NET</a></b></td>
+	    <td>Webforms and WebServices working<br></td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <b><a href="class-status.html">Classes</a></b>
+	    </td>
+	    <td>
+	      All assemblies compile.
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      RSS feed:
+	    </td>
+	    <td>
+	      <a href="index.rss"><img src="images/xml.gif"></a>
+	    </td>
+	  </tr>
+
  	</table>
-    </td>
-  </tr>
-</table>
+
+
+<h2>Mono: Free C# and .NET on Linux and Windows</h2>
+<p>
+	The Mono project is an open source effort sponsored by 	<a
+	href="http://novell.com">Novell</a> to create a free
+	implementation of the .NET Development Framework.
+</p>
+
+<p>
+	Mono includes <a href="c-sharp.html">a compiler</a> for the
+	C# language, a <a href="runtime.html">Common Language
+	Runtime</a> (CLR) for the Common Language Infrastructure (CLI) and a
+	set of <a href="class-library.html">class libraries</a>.  The
+	runtime can be <a href="embedded-api.html">embedded</a> into your
+	application.  It implements both <a href="ado-net.html">ADO.NET</a>
+	and <a href="asp-net.html">ASP.NET</a>.
+</p>
+<p>
+	If you have questions about the project, read <a
+	href="rationale.html">the project launch statement</a> 
+	or visit our list of <a href="faq.html">Frequently Asked
+	Questions</a>. 
+</p>
+
+<p>
+	For details on the project's future direction, read the
+	<a href="mono-roadmap.html">roadmap</a>, and <a
+	href="download.html">download</a> the latest software version.
+	You can also get a <a href="snapshots">snapshot</a> of our
+	current work, or <a
+	href="http://cvs.hispalinux.es/cgi-bin/cvsweb/?hidenonreadable=1&f=u&logsort=date&sortby=file&hideattic=1&cvsroot=mono">browse
+	the source tree.</a>
+</p>
+<p>
+	To participate in discussion and development, <a
+	href="mailing-lists.html">subscribe to our mailing lists</a>.
+	You can also visit the <a
+	href="http://www.gotmono.com/cgi-bin/yabb/YaBB.pl">forum</a> at <a
+	href="http://www.gotmono.com">GotMono</a> or the <a
+	href="http://www.nullenvoid.com/gtksharp/wiki">Gtk#</a> and
+	<a href="http://www.nullenvoid.com/mono/wiki">Mono
+	</a> Wikis.
+</p>
+<br>
+<br>
+<h2>Mono Project Notes</h2>
 
 @item Feb 2nd, 2004: Mono 0.30 has been released
 
@@ -190,429 +188,7 @@
 	Zoltan has added support for modules to MCS (generation and
 	consumption).
 
-@item Dec 10th: Mono Debugger 0.5 released
-
-	Martin Baulig has <a
-	href="http://primates.ximian.com/~martin/blog/archives/000231.html">released</a>
-	a new version of the Mono Debugger.  
-
-@item Dec 2nd: Mono 0.29 has been released
-
-	Check out the <a
-	href="http://www.go-mono.com/archive/mono-0.29.html">Release
-	notes</a> for details on Mono 0.29.    
-
-	This release includes the PPC JIT engine running `Hello World'
-	and ASP.NET is considered feature-complete.
-	
-@item Nov 25th: Gtk# 0.14, System.DirectoryServices
-
-	Gtk# 0.14 has been released, and it is available from <a
-	href="http://gtk-sharp.sf.net">the Gtk# web site</a>.   
-
-	Sunil has checked in the implementation of
-	System.DirectoryServices as well as the Novell.Directory.Ldap
-	code into Mono CVS.
-
-@item Nov 14th: Gtk# 0.13 released.
-
-	Mike Kestner has <a
-	href="http://lists.ximian.com/archives/public/mono-list/2003-November/016943.html">announced</a>
-	the release of the <a href="http://gtk-sharp.sf.net">Gtk#</a>
-	GUI toolkit for .NET and Mono.
-
-@item Nov 13th: Managed LDAP binding for Mono and .NET
-
-	Sunil Kumar at Novell has <a
-	href="http://lists.ximian.com/archives/public/mono-list/2003-November/016907.html">announced</a>
-	the availability of a fully managed implementation of LDAP for
-	Mono and the .NET Framework.
-
-	You can obtain the library from <a
-	href="http://forge.novell.com">Novell Forge's</a> <a
-	href="http://forge.novell.com/modules/xfmod/cvs/cvsbrowse.php/ldapcsharp/CsharpLDAP">CSharpLDAP</a>
-	module.
-
-@item Nov 4th: Mono Roadmap announced.
-
-	The <a href="mono-roadmap.html">Mono Roadmap</a> and <a
-	href="mono-hacking-roadmap.html">Mono Hackers Roadmap</a> have
-	been released.   
-
-@item Oct 28th: Mono Get Together at the PDC.  GTK# 0.12 Released.
-
-	We will be getting together at the West Tower Lobby on Tuesday
-	28th at 6pm to talk about the Mono project. You have 24 hours to
-	notify all of your friends, open source buddies and free software
-	folks.
-
-	We will bring Mono t-shirts.
-
-	Mike Kestner released <a href="http://gtk-sharp.sourceforge.net">Gtk#</a> 0.12 today.  GTK# source tar balls
-	and RPMs are available.  A windows installer was contributed by Johannes Roith.
-	
-@item Oct 26th: Last Minute Mono BOF
-
-	The first in a series of undercover Mono BOFs at the PDC will take
-	place tonight at 7pm on the Academy meeting, in room 411. Come join us
-	to plot the evolution.
-
-
-@item Oct 25th: GTK# 0.11+ Windows Installer available
-
-	Johannes created a Windows
-	Installer for GTK# 0.11+ and works
-	with Mono 0.28 for Windows.
-
-@item Oct 21st: Mono Community at Novell Forge
-
-	Mono Developers that are looking for a public repository for
-	hosting their projects can now use <a
-	href="http://forge.novell.com">Novell Forge's</a> which hosts
-	a <a
-	href="http://forge.novell.com/modules/xfmod/community/?monocomm">Mono
-	Community</a>.
-
-	Novell Forge offers mailing lists, cvs repository, bug
-	tracking and mailing list services and all the other services
-	you expect.  Mono will continue to be hosted in our own CVS
-	repository, and using our <a href="anoncvs.html">anonymous CVS
-	servers</a>
-
-@item Oct 13th: SPARC V9, HPPA, Internationalization, GdiPlus
-
-	Dick Porter has checked in our rewrite of the international
-	substrate in Mono that uses the <a
-	href="http://oss.software.ibm.com/icu/">International
-	Components for Unicode</a> library from IBM.  This means that
-	we got CultureInfo support through the whole code base now.
-
-	Alexandre Pigolkine has checked-in the new implementation of
-	System.Drawing.  We have now dropped the old implementation
-	with multiple-backends that we had, and replaced it with an
-	implementation that P/Invokes into GDI+.  A GDI+
-	implementation on top of <a
-	href="http://www.cairographics.org">Cairo</a> is used on Unix
-	systems.  This step vastly simplifies the development and
-	maintenance of System.Drawing. 
-
-	There are plenty of updates to Mono as well, we encourage you
-	to read the <a
-	href="http://www.go-mono.com/monologue">Monologue</a> to keep
-	an eye on recent developments.
-
-	Bernie Solomon just <a
-	href="http://lists.ximian.com/archives/public/mono-devel-list/2003-October/002460.html">checked
-	in</a> 64-bit support for SPARC v9 and HPPA into the Mono
-	runtime.  This also improves the SPARC-32 support.
-
-@item Oct 6th: Linux s390 Mono packages available.
-
-	Neale Ferguson has contributed Mono packages for the
-	Linux/s390.  You can get them from the <a
-	href="download.html">download</a> page.
-
-@item Oct 5th: Monologue aggregates Mono Blogs
-
-	You can now read an aggregated view of the <a
-	href="blogs.html">blogs</a> maintained by Mono developers in
-	<a href="http://www.go-mono.com/monologue">Monologue</a>.
-	Monologue is available as an HTML page or as an <a
-	href="monologue/index.rss">RSS feed</a>.
-
-@item Oct 2nd: Windows packages, MonoDoc 0.7
-
-	Windows packages for Mono 0.28 are now available from our <a
-	href="download.html">download</a> page.
-
-	A new version of MonoDoc has been released.  The new version
-	is available <a href="archive/monodoc-0.7.tar.gz">here</a>
-
-@item Oct 1st: Mono 0.28 has been released.
-
-	Check out the <a
-	href="http://www.go-mono.com/archive/mono-0.28.html">Release
-	notes</a> for details on Mono 0.28.  This release marks the
-	completion of the SourceGear project to add web services
-	functionality to Mono and improve its reliability.
-
-@item Sep 30th: Mono Kick Start book available
-
-	The Mono Kick Start book is now <a
-	href="http://www.amazon.com/exec/obidos/tg/detail/-/0672325799/qid=1064937318/sr=8-1/ref=sr_8_1/103-9624440-8714218?v=glance&s=books&n=507846">available</a>
-	in English.  Originally available only in <a
-	href="http://www.amazon.de/exec/obidos/ASIN/3827264928/qid=1050051051/sr=2-1/ref=sr_2_3_1/028-2755135-1623712">German</a>.
-	The book technical review was done by <a
-	href="http://www.maurer-it.com/">Dietmar Maurer</a> JIT
-	architect at the Mono team.
-
-@item Sep 26th, 2003: DiaCanvas# 0.1 released, Gtk# 0.11 released.
-
-	Mike Kestner has <a
-	href="http://lists.ximian.com/archives/public/gtk-sharp-list/2003-September/002475.html">released</a>
-	a new version of <a href="http://gtk-sharp.sf.net">Gtk#</a>.
-
-	Martin has also 
-        <a href="http://mwh.sysrq.dk/programs/announcements/diacanvas-sharp-0.1.0.html">released</a>
-	his binding to <a href="http://diacanvas.sf.net">DiaCanvas</a> for C#.
-
-@item Sep 16th, 2003: WineLib, Authenticode, Generics, Xslt updates, Wsdl compiler, WSE.
-
-	<b>WineLib:</b> Vladimir has added new libraries to the Wine
-	process, which we will soon bring into our packages: the
-	various Windows common dialogs can now be used (screenshots:
-	<a href="images/colordlg.png">here</a>, <a
-	href="images/fontdlg.png">here</a>, <a
-	href="images/filedlg.png">here</a> and <a
-	href="images/finddlg.png">here</a>.
-
-	Johannes has patches to have Wine track the Gtk theme,
-	screenshot here (link got broken).
-
-	<b>Security:</b> New authenticode support from Sebastien has
-	been checked into CVS.
-
-	<b>Xslt:</b> Plenty of conformance updates to the managed
-	implementation of Xslt, as well as breaking the libxslt speed
-	barrier.  Our managed implementation is now faster than the
-	C-based libxslt that we used before.
-
-	<b>Generics:</b> Work continues on generics support, feel free
-	to try it out.  The compiler is currently on a separate
-	directory until we stability it (gmcs) and you need to compile
-	the class libraries with the `generics' profile to try it
-	out.  Sample generic programs are included in the CVS module. 
-
-	<b>Wsdl:</b> We now have Wsdl support in Mono: a wsdl compiler
-	command line tool, and support on ASP.NET to generate the wsdl
-	file from an .asmx file.
-
-	<b>AOT:</b> Many robustness updates to the ahead-of-time
-	compiler and a new locking and threading system that avoids
-	having "big locks" around the mono kernel, and moves to a
-	fine-grained locking system.  The design includes a lattice to
-	avoid deadlocks.
-
-	<b>Dogfooding:</b> We are now running Mono's ASP.NET on
-	go-mono.com to find problems.  It is currently hosting our
-	Monodoc documentation.  The <a
-	href="http://www.go-mono.com/docs/index.html">Apache module
-	version</a> and the <a href="http://www.go-mono.com:8080/">XSP
-	version</a>.
-
-	<b>WSE:</b> The Web Services Enhancements season has begun.
-	The Microsoft.Web.Services namespace and classes are now
-	checked into CVS.  
-
-@item Sep 1st, 2003: Ice for Mono;  XmlSerializer generators; Monodoc progress.
-
-	<b>Ice:</b> Vladimir has checked into CVS (Module ginzu) an
-	implementation of <a href="http://www.zeroc.com">ZeroC's</a>
-	<a href="http://www.zeroc.com/ice.html">ICE</a> protocol.  It
-	is implemented using Remoting.  If you were looking for an
-	efficient binary protocol to use with Remoting, this is it.
-
-	ICE is simpler to use than CORBA, and was created by people
-	who were deeply involved in CORBA and wanted to fix its
-	problems (you can see a <a
-	href="http://www.zeroc.com/iceVsCorba.html">list of
-	differences</a>).
-
-	<b>XmlSerializer</b>: Lluis has checked in a new technology
-	for use in our XmlSerializer: the XmlSerializer code
-	generator.  Currently our XmlSerializer generates a
-	description of instructions for serializing data, these
-	instructions are later interpreted while using it: Reflection
-	is used to pull all the data.  The code generator is the first
-	step into turning the Serializer from an intepreter into a
-	compiler and improving the performance of it.
-
-	Currently was used internally to implement the WSDL
-	serializer, in the future it will just be part of the standard
-	serialization process.
-
-	<b>MonoDoc:</b> New providers!  Thanks to <a
-	href="http://www.jaggersoft.com/">Jon Jagger</a> for providing
-	us with his master XML files for the C# specification we now
-	have integrated the C# spec into Monodoc.  Another provider is
-	the Error provider: now we include all the C# compiler errors
-	in the help system.
-
-	Alp has contributed various user interface improvement, and
-	updated our list widget for key navigation; Ben made the
-	matches window more useful and Joshua has helped us clean up
-	the ECMA provider even more.
-
-@item Aug 14th, 2003: Mono 0.26 has been released
-
-	A new version of Mono is available, the new features include:
-	<a href="http://www.cairographics.org/">Cairo support</a>, <a
-	href="http://remoting-corba.sf.net">Remoting.Corba</a>
-	support, as well as a managed XSLT implementation.  
-
-	Existing features have been improved vastly: better
-	Windows.Forms, runtime, faster compiler, web services, better
-	compliance to the spec and more. 
-
-	Check out the <a
-	href="http://www.go-mono.com/archive/mono-0.26.html">Release
-	notes</a> for details.
-
-@item Aug 9th, 2003: Python for .NET Preview 2 available;  Mono Documentation site up.
-
-	Brian Lloyd has <a
-	href="http://lists.ximian.com/archives/public/mono-list/2003-August/015313.html">announced</a>
-	the availability of his Python binding to .NET.  This works
-	with .NET and Mono.  For more information about it, see
-	Brian's site at <a href="
-	http://zope.org/Members/Brian/PythonNet/">http://zope.org/Members/Brian/PythonNet/</a>
-
-	We have uploaded the current Mono Documentation (core
-	libraries and Gtk#) to <a
-	href="http://mono.ximian.com:8080"/>http://mono.ximian.com:8080</a>.
-	The site is running the ASP.NET edition of <a
-	href="archive/monodoc-0.6.tar.gz">MonoDoc 0.6</a> on XSP.
-
-@item Aug 6th, 2003: Winforms samples
-
-	Timothy Parez is coordinating the effort to create sample
-	programs that exercise the various Windows.Forms controls.  We
-	are using this as graphical regression test suite for the Mono
-	implementation.
-
-	The screenshots of the various widgets, together with the
-	source code is available on the <a
-	href="http://www.nullenvoid.com/mono/wiki/index.php/WineSamples">WineSamples</a>
-	page on the <a
-	href="http://www.nullenvoid.com/mono/wiki/">Mono Wiki</a>.
-
-	A new cvs module called `winforms' has been created that
-	contains the source code for the samples.  To run the samples,
-	you can install the WineLib packages available from our <a
-	href="download.html">download page</a>.
-
-@item Aug 5th, 2003: New Apache Module architecture: 1.3 and 2.x supported
-
-	Gonzalo rearchitected our Apache module for hosting Mono and
-	ASP.NET.  The previous incarnation hosted a Mono runtime on
-	each Apache process, which lead to a slow setup for webforms.
-	The new setup uses a shared mono process for all the incoming
-	requests.  Daniel later improved up the new architecture and
-	added dual support, so now in addition to Apache 2.x, we
-	support Apache 1.3 with the same codebase.
-
-	The new code is available on CVS, on module `mod_mono', and
-	now requires an XSP installation to be available. 
-
-@item Aug 4th, 2003: Ximian acquired by Novell.
-
-	Today <a href="http://www.novell.com">Novell</a> acquired <a
-	href="http://www.ximian.com">Ximian</a>.  The press release is
-	available <a
-	href="http://www.ximian.com./about_us/press_center/press_releases/index.html?pr=novell">here</a>.
-
-	Mono and Gnome form an integral part of the Novell strategy.
-
-@item Jul 30th, 2003: Remoting.CORBA, Managed XSLT.
-
-	Today Lluis announced that Mono CVS contains all the fixes to
-	run <a
-	href="http://remoting-corba.sourceforge.net/">Remoting.CORBA</a>:
-	both client and server channels work; We are interested in people
-	testing it with other ORBs.
-
-	Ben checked-in today his managed implementation of Xslt that
-	we mentioned on Jul 19th; This uncovered various limitations
-	on the XPath implementation, which Piers has swifly removed.
-	Monodoc, NUnit and our Corcompare work with it.  Since this is
-	implementation is not completed yet, we still support the
-	libxslt-based version by default.  For more details on how to
-	try the new XSLT implementation, see <a
-	href="http://lists.ximian.com/archives/public/mono-devel-list/2003-July/001681.html">Ben's
-	post</a>
-
-@item Jul 27th, 2003: Wine packages and Daily Snapshots 
-
-	MonoWine packages (used to run System.Windows.Forms) software
-	are now available from our (<a
-	href="download.html">download</a> page).  You can track the
-	progress on our <a
-	href="http://www.nullenvoid.com/mono/wiki/index.php/WineSamples">Wiki
-	page.</a>
-
-	We're now building daily snapshots of Mono.  They come in
-	three distinct flavors:
-
-	<ul>
-		* mono snapshot tarballs - These are 'release-style' tarballs and
-		  contain everything necessary to setup a new
-		  installation from scratch.  This includes the Mono
-	 	  runtime and all the assemblies we distribute.
-
-		* monocharge tarballs - These tarballs contain only
-		  the assemblies built on that day.
-
-		* monolite tarballs - These tarballs contain a copy of
-		  'corlib.dll', 'mcs.exe', 'System.dll', 'System.Xml.dll' and
-		  'Mono.CSharp.Debugger.dll'. They can be used to
-		  re-bootstrap an out-of-sync installation.
-	</ul>
-
-	The daily builds are availble here: <a href="http://go-mono.com/daily">http://go-mono.com/daily</a>
-
-	If you find that the builds are broken, please notify Duncan.
-
-@item Jul 19th, 2003: Recent developments
-
-	Since Mono has matured, we have limited the news on the site
-	to major accomplishments that are finished, but this week, it
-	is worth devoting some time to talk about some of the
-	work-in-progress projects that are progressing.
-
-	Jackson has added support to the IL assembler for generics as
-	well as to the PEAPI library, and it has assembled its first
-	generic program.  Support for handling images with generics
-	has been on our file format reader for a while, but the JIT
-	engine is still incomplete. 
-
-	On the XSLT world, Atsushi and Ben continue to make big
-	improvements.  Ben recently got the prototype managed XSLT
-	implementation to run its first stylesheet.  Although
-	currently Mono uses libxslt to implement the System.Xml.Xsl
-	namespace, to have a fully .NET compliant implementation we
-	will need a managed version, and this is the beginning of it.
-
-	Lluis recently posted an update on the <a
-	href="http://lists.ximian.com/archives/public/mono-devel-list/2003-July/001550.html">state
-	of WSDL</a> in Mono.  Now that the web services runtime is
-	ready, the WSDL compiler becomes more important as a
-	development tool.
-
-	Atsushi continues his work on the DTD validating reader in
-	System.Xml, as well as improving our XML Schema support.
-
-@item Jul 14th, 2003: New build system;  IPV6 support.
-
-	Peter Williams has contributed a new build system that
-	addresses many of the annoyance we had with our previous build
-	system.  He has worked on this for a few weeks, and Gonzalo
-	helped test it and get it into CVS.  We no longer have the
-	historical dual build system: make for Unix and nant for
-	Windows.
-
-	This system also offers the opportunity to compile our class
-	libraries with different profiles (.NET 1.0, .NET 1.1 and the
-	various ECMA subsets).
-
-	Peter explains the new build system <a
-	href="http://lists.ximian.com/archives/public/mono-devel-list/2003-July/001506.html">here</a>
-
-	Jerome's IPV6 code has been checked into CVS; With Peter's new
-	build system, we will be able to expose it (as part of the
-	NET_1_1 build).
-
 <h2>Older News</h2>
 
-	Click <a href="oldnews.html">here</a> to see the olds news.
-
+	Click <a href="oldnews.html">here</a> to see older news.
 

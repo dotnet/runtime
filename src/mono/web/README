@@ -16,6 +16,13 @@ To publish changes:
 cd web
 make push
 
+################ Requirements
+
+You must have complete and working "mono" and "mcs" checkouts from
+CVS. You will probably need to bootstrap your Mono installation,
+although an existing install from RPMs may permit you to build the CVS
+versions more easily.
+
 ############## Samples 
 
 

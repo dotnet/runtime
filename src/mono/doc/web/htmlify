@@ -6,7 +6,7 @@ while (<>){
 	if (/^\* (.*)$/){
 		print "<h1>$1</h1>\n";
 	} elsif (/^\*\* (.*)$/) {
-		print "<h2>$1</h2>\n";
+		print "<h3>$1</h3>\n";
 	} elsif (/^\*\*\* (.*)$/) {
 		print "<h3>$1</h3>\n";
 	} elsif (/^\*\*\*\* (.*)$/) {
@@ -19,7 +19,7 @@ while (<>){
 	        $name = $link = $1;
 		$link =~ s/ //g;
 	        print "<a name=\"$link\">\n";
-	        print "<h2>$name</h2>\n";
+	        print "<h3>$name</h3>\n";
 	} elsif (/^Q: (.*)$/){
 		print "<p><a name=\"q$q\"></a><b>Question $q:</b> $1\n";
 		$q++;

@@ -1,3 +1,18 @@
+2004-02-05 Aaron Weber <aaron@ximian.com>
+
+	* README: update to describe better how to use the doc/web stuff
+
+	* index: change layout, move old news to oldnews page, rewrite
+	content, add new headings, decrease size of other headings.
+
+	* jit-debug: change link to martin's page; now it points to the
+	dir holding the debugger files. Fix grammar in one sentence.
+
+	* oldnews: erase very old news, add slightly old news removed from
+	index
+
+	* web/htmlify: shrink size of newsitem headings.
+	
 2004-02-03  Atsushi Enomoto <atsushi@ximian.com>
 
 	* xml-classes : updates
