@@ -408,6 +408,11 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugMethodAddress);
 
+	if (total_size + 9 >= DATA_TABLE_CHUNK_SIZE) {
+		g_warning (G_STRLOC);
+		return;
+	}
+
 	allocate_data_item (mono_symbol_table, MONO_DEBUG_DATA_ITEM_METHOD, total_size, (guint8 **) &address);
 
 	address->size = total_size;
@@ -602,6 +607,11 @@ mono_debug_add_type (MonoClass *klass)
 	size = ptr - oldptr;
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugClassEntry);
+
+	if (total_size + 9 >= DATA_TABLE_CHUNK_SIZE) {
+		g_warning (G_STRLOC);
+		return;
+	}
 
 	allocate_data_item (mono_symbol_table, MONO_DEBUG_DATA_ITEM_CLASS, total_size, (guint8 **) &entry);
 
