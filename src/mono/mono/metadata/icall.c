@@ -4783,6 +4783,12 @@ ves_icall_System_Char_GetDataTablePointers (guint8 **category_data, guint8 **num
 	*to_upper_data_high = ToUpperDataHigh;
 }
 
+static void
+ves_icall_System_Reflection_Emit_LocalBuilder_MakePinned (MonoReflectionLocalBuilder* this)
+{
+	this->type->type->pinned = TRUE;
+}
+
 /* icall map */
 typedef struct {
 	const char *method;
@@ -5506,6 +5512,10 @@ static const IcallEntry web_icalls [] = {
 	{"GetMachineInstallDirectory", ves_icall_System_Web_Util_ICalls_get_machine_install_dir}
 };
 
+static const IcallEntry localbuilder_icalls [] = {
+	{"MakePinned", ves_icall_System_Reflection_Emit_LocalBuilder_MakePinned },
+};
+
 /* proto
 static const IcallEntry array_icalls [] = {
 };
@@ -5551,6 +5561,7 @@ static const IcallMap icall_entries [] = {
 	{"System.Reflection.Emit.AssemblyBuilder", assemblybuilder_icalls, G_N_ELEMENTS (assemblybuilder_icalls)},
 	{"System.Reflection.Emit.CustomAttributeBuilder", customattrbuilder_icalls, G_N_ELEMENTS (customattrbuilder_icalls)},
 	{"System.Reflection.Emit.DynamicMethod", dynamicmethod_icalls, G_N_ELEMENTS (dynamicmethod_icalls)},
+	{"System.Reflection.Emit.LocalBuilder", localbuilder_icalls, G_N_ELEMENTS (localbuilder_icalls)},
 	{"System.Reflection.Emit.MethodBuilder", methodbuilder_icalls, G_N_ELEMENTS (methodbuilder_icalls)},
 	{"System.Reflection.Emit.ModuleBuilder", modulebuilder_icalls, G_N_ELEMENTS (modulebuilder_icalls)},
 	{"System.Reflection.Emit.SignatureHelper", signaturehelper_icalls, G_N_ELEMENTS (signaturehelper_icalls)},
