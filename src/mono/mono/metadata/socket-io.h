@@ -130,7 +130,12 @@ typedef enum {
 	SocketOptionName_BsdUrgent=2,
 	SocketOptionName_Expedited=2,
 	SocketOptionName_NoChecksum=1,
-	SocketOptionName_ChecksumCoverage=20
+	SocketOptionName_ChecksumCoverage=20,
+
+	/* This is Mono-specific, keep it in sync with
+	 * Mono.Posix/PeerCred.cs
+	 */
+	SocketOptionName_PeerCred=10001
 } MonoSocketOptionName;
 
 typedef struct _MonoSocketAsyncResult {
@@ -153,6 +158,14 @@ typedef struct _MonoSocketAsyncResult {
 	MonoDelegate *real_callback;
 	gint error;
 } MonoSocketAsyncResult;
+
+typedef struct
+{
+	MonoObject obj;
+	gint pid;
+	gint uid;
+	gint gid;
+} MonoPeerCredData;
 
 extern gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, gint32 family, gint32 type, gint32 proto, gint32 *error);
 extern void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock, gint32 *error);
