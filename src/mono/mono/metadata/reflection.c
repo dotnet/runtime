@@ -1625,24 +1625,23 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo) {
 	
 	p = buf = g_malloc (bufsize);
 
+	mono_metadata_encode_value (minfo->type, p, &p);
+
 	switch (minfo->type) {
 	case MONO_NATIVE_BYVALTSTR:
 	case MONO_NATIVE_BYVALARRAY:
-		mono_metadata_encode_value (minfo->type, p, &p);
 		mono_metadata_encode_value (minfo->count, p, &p);
 		break;
 	case MONO_NATIVE_LPARRAY:
-		mono_metadata_encode_value (minfo->type, p, &p);
-		if (minfo->eltype || (minfo->count > 0)) {
+		if (minfo->eltype || (minfo->count > 0) || (minfo->param_num > 0)) {
 			mono_metadata_encode_value (minfo->eltype, p, &p);
-			if (minfo->count > 0) {
-				mono_metadata_encode_value (0, p, &p);
+			if ((minfo->count > 0) || (minfo->param_num > 0)) {
+				mono_metadata_encode_value (minfo->param_num, p, &p);
 				mono_metadata_encode_value (minfo->count, p, &p);
 			}
 		}
 		break;
 	case MONO_NATIVE_CUSTOM:
-		mono_metadata_encode_value (minfo->type, p, &p);
 		if (minfo->guid) {
 			str = mono_string_to_utf8 (minfo->guid);
 			len = strlen (str);
@@ -1703,7 +1702,6 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo) {
 		}
 		break;
 	default:
-		mono_metadata_encode_value (minfo->type, p, &p);
 		break;
 	}
 	len = p-buf;

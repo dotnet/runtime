@@ -643,6 +643,7 @@ typedef struct {
 	MonoString *mcookie;
 	MonoString *marshaltype;
 	MonoReflectionType *marshaltyperef;
+	gint32 param_num;
 } MonoReflectionMarshal;
 
 typedef struct {
