@@ -91,6 +91,34 @@
 
 	<b>San Francisco</b>: August 14th.  Linux World Expo.
 
+@item Aug 13th, 2002: MCS news, Gtk# progress, Windows.Forms, ADO.NET
+
+	Martin Baulig has been fixing all the known bugs in the C#
+	compiler and now has moved into improving the compilation
+	speed and the generated code quality of MCS.  Today we got a
+	50% speedup in the bootstrap of MCS going from 24 seconds to 12 seconds. 
+
+	Gtk# has been making a lot of progress, some interesting
+	corner cases are now supported:, you can now create canvas items as
+	well as using the tree widget.  Here is a shot of <a
+	href="images/mocil.png">MonoCIL</a>.
+
+	On the runtime front, focus has been on improving remoting
+	support, exception handling, as well as completing the support
+	for structure marshaling.  
+
+	Patrik is also back in action: the HttpRuntime infrastructure
+	is rapidly improving, and Gonzalo is working into moving XSP
+	into our main class library and providing the missing pieces
+	to integrate with Patrik's code.
+
+	Dennis and his team are working on a WineLib-based
+	implementation of Windows Forms to guarantee that the corner
+	cases of Windows.Forms can be handled, and we are back on track again.
+
+	A lot more work on the ADO.NET and WebServices has also been
+	checked into CVS.
+
 @item Aug 1st, 2002: Mono Hackers Hall of Fame
 
 	The <a href="hackers.html">Mono Hackers Hall Of Fame</a> has been started
