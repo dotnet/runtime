@@ -167,6 +167,11 @@ typedef enum {
 } SparcCC;
 
 typedef enum {
+	sparc_icc_short = 0,
+    sparc_xcc_short = 2
+} SparcCCShort;
+
+typedef enum {
 	/* fop1 format */
 	sparc_fitos_val = 196,
 	sparc_fitod_val = 200,
@@ -232,6 +237,16 @@ typedef struct {
 typedef struct {
 	unsigned int op   : 2; /* always 0 */
 	unsigned int a    : 1;
+	unsigned int cond : 4;
+	unsigned int op2  : 3;
+	unsigned int cc01 : 2;
+	unsigned int p    : 1;
+	unsigned int d19  : 19;
+} sparc_format2c;
+
+typedef struct {
+	unsigned int op   : 2; /* always 0 */
+	unsigned int a    : 1;
 	unsigned int res  : 1;
 	unsigned int rcond: 3;
 	unsigned int op2  : 3;
@@ -239,7 +254,7 @@ typedef struct {
 	unsigned int p    : 1;
 	unsigned int rs1  : 5;
 	unsigned int d16lo: 14;
-} sparc_format2c;
+} sparc_format2d;
 
 typedef struct {
 	unsigned int op   : 2; /* 2 or 3 */
@@ -340,6 +355,7 @@ typedef struct {
 #define sparc_is_imm13(val) ((gint)val >= (gint)-(1<<12) && (gint)val <= (gint)((1<<12)-1))
 #define sparc_is_imm22(val) ((gint)val >= (gint)-(1<<21) && (gint)val <= (gint)((1<<21)-1))
 #define sparc_is_imm16(val) ((gint)val >= (gint)-(1<<15) && (gint)val <= (gint)((1<<15)-1))
+#define sparc_is_imm19(val) ((gint)val >= (gint)-(1<<18) && (gint)val <= (gint)((1<<18)-1))
 
 /* disassembly */
 #define sparc_inst_op(inst) ((inst) >> 30)
@@ -379,9 +395,22 @@ typedef struct {
 		(ins) = (unsigned int*)__f + 1;	\
 	} while (0)
 
-#define sparc_encode_format2c(ins,aval,bcond,oper,predict,r1,disp16) \
+#define sparc_encode_format2c(ins,aval,bcond,oper,xcc,predict,disp19) \
 	do {	\
 		sparc_format2c *__f = (sparc_format2c*)(ins);	\
+		__f->op = 0;	\
+		__f->a = (aval);	\
+		__f->cond = (bcond);	\
+		__f->op2 = (oper);	\
+        __f->cc01 = (xcc); \
+        __f->p = (predict); \
+        __f->d19 = (disp19); \
+		(ins) = (unsigned int*)__f + 1;	\
+	} while (0)
+
+#define sparc_encode_format2d(ins,aval,bcond,oper,predict,r1,disp16) \
+	do {	\
+		sparc_format2d *__f = (sparc_format2d*)(ins);	\
 		__f->op = 0;	\
 		__f->a = (aval);	\
         __f->res = 0;       \
@@ -752,13 +781,14 @@ typedef struct {
 #define sparc_branch(ins,aval,condval,displ) sparc_encode_format2b((ins),(aval),(condval),2,(displ))
 /* FIXME: float condition codes are different: unify. */
 #define sparc_fbranch(ins,aval,condval,displ) sparc_encode_format2b((ins),(aval),(condval),6,(displ))
+#define sparc_branchp(ins,aval,condval,xcc,predict,displ) sparc_encode_format2c((ins),(aval),(condval),0x1,(xcc),(predict),(displ))
 
-#define sparc_brz(ins,aval,predict,rs1,disp) sparc_encode_format2c((ins), (aval),0x1,0x3,(predict),(rs1),(disp))
-#define sparc_brlez(ins,aval,predict,rs1,disp) sparc_encode_format2c((ins), (aval),0x2,0x3,(predict),(rs1),(disp))
-#define sparc_brlz(ins,aval,predict,rs1,disp) sparc_encode_format2c((ins), (aval),0x3,0x3,(predict),(rs1),(disp))
-#define sparc_brnz(ins,aval,predict,rs1,disp) sparc_encode_format2c((ins), (aval),0x5,0x3,(predict),(rs1),(disp))
-#define sparc_brgz(ins,aval,predict,rs1,disp) sparc_encode_format2c((ins), (aval),0x6,0x3,(predict),(rs1),(disp))
-#define sparc_brgez(ins,aval,predict,rs1,disp) sparc_encode_format2c((ins), (aval),0x7,0x3,(predict),(rs1),(disp))
+#define sparc_brz(ins,aval,predict,rs1,disp) sparc_encode_format2d((ins), (aval),0x1,0x3,(predict),(rs1),(disp))
+#define sparc_brlez(ins,aval,predict,rs1,disp) sparc_encode_format2d((ins), (aval),0x2,0x3,(predict),(rs1),(disp))
+#define sparc_brlz(ins,aval,predict,rs1,disp) sparc_encode_format2d((ins), (aval),0x3,0x3,(predict),(rs1),(disp))
+#define sparc_brnz(ins,aval,predict,rs1,disp) sparc_encode_format2d((ins), (aval),0x5,0x3,(predict),(rs1),(disp))
+#define sparc_brgz(ins,aval,predict,rs1,disp) sparc_encode_format2d((ins), (aval),0x6,0x3,(predict),(rs1),(disp))
+#define sparc_brgez(ins,aval,predict,rs1,disp) sparc_encode_format2d((ins), (aval),0x7,0x3,(predict),(rs1),(disp))
 
 /* conditional moves */
 #define sparc_movcc(ins,cc,condval,r1,dest) sparc_encode_format4c((ins), 0x2, 0x2c, cc, condval, r1, dest)
