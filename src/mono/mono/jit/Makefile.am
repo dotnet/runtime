@@ -3,17 +3,17 @@ INCLUDES = 				\
 	$(GMODULE_CFLAGS)		\
 	$(GLIB_CFLAGS)
 
-libmono_la_LDFLAGS=-Wl,-version-script=$(srcdir)/ldscript
+liboldmono_la_LDFLAGS=-Wl,-version-script=$(srcdir)/ldscript
 
 if X86
 if PLATFORM_WIN32
 export HOST_CC
 endif
 
-bin_PROGRAMS = mono
-lib_LTLIBRARIES = libmono.la
+bin_PROGRAMS = oldmono
+lib_LTLIBRARIES = liboldmono.la
 
-libmono_la_LIBADD = 	\
+liboldmono_la_LIBADD = 	\
 	../metadata/libmonoruntime.la	\
 	../metadata/libmetadata.la	\
 	../io-layer/libwapi.la		\
@@ -38,17 +38,17 @@ jitsources =		\
 	helpers.h		\
 	helpers.c
 
-libmono_la_SOURCES = $(jitsources)
+liboldmono_la_SOURCES = $(jitsources)
 
-libmonoincludedir = $(includedir)/mono/jit
-libmonoinclude_HEADERS = \
+liboldmonoincludedir = $(includedir)/mono/jit
+liboldmonoinclude_HEADERS = \
 	jit.h			\
 	regset.h
 
-mono_SOURCES = mono.c $(jitsources)
+oldmono_SOURCES = mono.c $(jitsources)
 
 #mono_LDFLAGS=-static
-mono_LDADD =				\
+oldmono_LDADD =				\
 	../metadata/libmonoruntime.la	\
 	../metadata/libmetadata.la	\
 	../io-layer/libwapi.la		\
@@ -58,7 +58,7 @@ mono_LDADD =				\
 	$(GMODULE_LIBS) 		\
 	-lm
 
-mono_CFLAGS = $(AM_CFLAGS)
+oldmono_CFLAGS = $(AM_CFLAGS)
 
 codegen-x86.c codegen.h: x86.brg
 	../monoburg/monoburg $(srcdir)/x86.brg -d codegen.h -s codegen-x86.c
