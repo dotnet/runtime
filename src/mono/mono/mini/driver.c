@@ -37,6 +37,7 @@
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
+#include <mono/os/gc_wrapper.h>
 
 #include "mini.h"
 #include "jit.h"
@@ -614,7 +615,9 @@ mono_main (int argc, char* argv[])
 	guint32 opt, action = DO_EXEC;
 	MonoGraphOptions mono_graph_options = 0;
 	int mini_verbose = 0;
+	gboolean enable_profile = FALSE;
 	char *trace_options = NULL;
+	char *profile_options;
 	char *aot_options = NULL;
 
 	setlocale (LC_ALL, "");
@@ -665,7 +668,7 @@ mono_main (int argc, char* argv[])
 			count = atoi (argv [++i]);
 			action = DO_BENCH;
 		} else if (strcmp (argv [i], "--trace") == 0) {
-			trace_options = "";
+			trace_options = (char*)"";
 		} else if (strncmp (argv [i], "--trace=", 8) == 0) {
 			trace_options = &argv [i][8];
 		} else if (strcmp (argv [i], "--breakonex") == 0) {
@@ -686,9 +689,11 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--compile-all") == 0) {
 			action = DO_COMPILE;
 		} else if (strcmp (argv [i], "--profile") == 0) {
-			mono_profiler_load (NULL);
+			enable_profile = TRUE;
+			profile_options = NULL;
 		} else if (strncmp (argv [i], "--profile=", 10) == 0) {
-			mono_profiler_load (argv [i] + 10);
+			enable_profile = TRUE;
+			profile_options = argv [i] + 10;
 		} else if (strcmp (argv [i], "--compile") == 0) {
 			mname = argv [++i];
 			action = DO_BENCH;
@@ -715,6 +720,12 @@ mono_main (int argc, char* argv[])
 
 	if (mono_compile_aot || action == DO_EXEC) {
 		g_set_prgname (argv[i]);
+	}
+
+	if (enable_profile) {
+		/* Needed because of TLS accesses in mono_profiler_load () */
+		MONO_GC_PRE_INIT ();
+		mono_profiler_load (profile_options);
 	}
 
 	if (trace_options != NULL){
