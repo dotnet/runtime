@@ -7029,8 +7029,8 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_ldftn, "mono_ldftn", helper_sig_compile, FALSE);
 	mono_register_jit_icall (mono_ldvirtfn, "mono_ldvirtfn", helper_sig_compile_virt, FALSE);
 
-	mono_runtime_init (domain, mono_thread_start_cb,
-			   mono_thread_attach_cb);
+	mono_runtime_install_cleanup ((MonoDomainFunc)mini_cleanup);
+	mono_runtime_init (domain, mono_thread_start_cb, mono_thread_attach_cb);
 
 	//mono_thread_attach (domain);
 	return domain;
