@@ -738,6 +738,15 @@ write_simple_type (MonoType *type)
 		*((int *) ptr)++ = 8;
 		break;
 
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		*((int *) ptr)++ = sizeof (void *);
+		break;
+
+	case MONO_TYPE_VOID:
+		*((int *) ptr)++ = 0;
+		break;
+
 	case MONO_TYPE_STRING: {
 		MonoString string;
 
@@ -979,7 +988,7 @@ write_type (MonoType *type)
 			MonoMethod *method = g_ptr_array_index (methods, i);
 
 			*((gpointer *) ptr)++ = method;
-			if (method->signature->ret)
+			if ((method->signature->ret) && (method->signature->ret->type != MONO_TYPE_VOID))
 				*((gpointer *) ptr)++ = write_type (method->signature->ret);
 			else
 				*((gpointer *) ptr)++ = NULL;
