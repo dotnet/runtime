@@ -1612,7 +1612,6 @@ ves_icall_Type_GetConstructors (MonoReflectionType *type, guint32 bflags)
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
 
-handle_parent:	
 	for (i = 0; i < klass->method.count; ++i) {
 		match = 0;
 		method = klass->methods [i];
@@ -1642,8 +1641,6 @@ handle_parent:
 			
 		l = g_slist_prepend (l, member);
 	}
-	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
-		goto handle_parent;
 	len = g_slist_length (l);
 	if (!System_Reflection_ConstructorInfo)
 		System_Reflection_ConstructorInfo = mono_class_from_name (
