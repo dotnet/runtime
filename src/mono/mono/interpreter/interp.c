@@ -804,8 +804,12 @@ verify_method (MonoMethod *m)
 	(gint64)(b) >= 0 ? (gint64)(LLONG_MAX) - (gint64)(b) < (gint64)(a) ? -1 : 0	\
 	: (gint64)(LLONG_MIN) - (gint64)(b) > (gint64)(a) ? +1 : 0
 
+#ifndef GUINT64_MAX
+#define GUINT64_MAX 18446744073709551615UL
+#endif
+	
 #define CHECK_ADD_OVERFLOW64_UN(a,b) \
-	(guint64)(ULONG_MAX) - (guint64)(b) < (guint64)(a) ? -1 : 0
+	(guint64)(GUINT64_MAX) - (guint64)(b) < (guint64)(a) ? -1 : 0
 
 static MonoObject*
 interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
@@ -879,7 +883,7 @@ handle_enum:
 				type = sig->params [i]->data.klass->enum_basetype->type;
 				goto handle_enum;
 			} else {
-				g_warning ("generic valutype not handled in runtime invoke");
+				g_warning ("generic valutype %s not handled in runtime invoke", sig->params [i]->data.klass->name);
 			}
 			break;
 		case MONO_TYPE_STRING:
@@ -2529,7 +2533,7 @@ array_constructed:
 		CASE (CEE_CONV_OVF_U8_UN) {
 			switch (sp [-1].type) {
 			case VAL_DOUBLE:
-				if (sp [-1].data.f < 0 || sp [-1].data.f > 18446744073709551615UL)
+				if (sp [-1].data.f < 0 || sp [-1].data.f > GUINT64_MAX)
 					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.l = (guint64)sp [-1].data.f;
 				break;
