@@ -160,7 +160,7 @@ monosn_LDADD = \
 	$(GMODULE_LIBS) 		\
 	-lm
 
-BUILT_SOURCES = $(bundle_srcs)
+BUILT_SOURCES = $(bundle_srcs) libmetadata.la
 
 EXTRA_DIST = make-bundle.pl sample-bundle
 
