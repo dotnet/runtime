@@ -3468,7 +3468,6 @@ ves_array_get (MonoArray *this, ...)
 int 
 mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 {
-	MonoArray *args = NULL;
 	MonoImage *image = assembly->image;
 	MonoCLIImageInfo *iinfo;
 	MonoMethod *method;
@@ -3476,16 +3475,7 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 	iinfo = image->image_info;
 	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
 
-	if (method->signature->param_count) {
-		int i;
-		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
-		for (i = 0; i < argc; ++i) {
-			MonoString *arg = mono_string_new (domain, argv [i]);
-			mono_array_set (args, gpointer, i, arg);
-		}
-	}
-	
-	return mono_runtime_exec_main (method, args);
+	return mono_runtime_run_main (method, argc, argv);
 }
 
 #ifdef PLATFORM_WIN32

@@ -210,10 +210,6 @@ main (int argc, char *argv [])
 			}
 		}
 	} else {
-		/*
-		 * skip the program name from the args.
-		 */
-		++i;
 		retval = mono_jit_exec (domain, assembly, argc - i, argv + i);
 		printf ("RESULT: %d\n", retval);
 	}
