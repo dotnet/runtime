@@ -804,6 +804,9 @@ ves_icall_type_from_name (MonoString *name,
 		assembly = mono_assembly_load (&info.assembly, NULL, NULL);
 
 		if (!assembly) {
+			g_free (str);
+			g_list_free (info.modifiers);
+			g_list_free (info.nested);
 			if (throwOnError)
 				mono_raise_exception (mono_get_exception_type_load ());
 
