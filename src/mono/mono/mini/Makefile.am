@@ -158,6 +158,8 @@ common_sources = \
 	abcremoval.h	\
 	ssapre.c	\
 	ssapre.h	\
+	ssapre-cee-ops.h \
+	ssapre-mini-ops.h \
 	driver.c	\
 	debug-mini.c	\
 	linear-scan.c	\
