@@ -1,5 +1,7 @@
 #include <config.h>
 #include <limits.h>
+#include <dirent.h>
+#include <stdlib.h>
 
 #include "wrapper.h"
 
@@ -93,3 +95,33 @@ mono_wrapper_unlink (const char * path)
 	return unlink(path);
 }
 
+int
+mono_wrapper_opendir (const char * path)
+{
+	return (int)opendir(path);
+}
+
+const char *
+mono_wrapper_readdir (int dir)
+{
+	struct dirent* p = readdir((DIR*)dir);
+	return p != NULL ? p->d_name : NULL;
+}
+
+gint32
+mono_wrapper_closedir (int dir)
+{
+	return closedir((DIR*)dir);
+}
+
+int
+mono_wrapper_getenv (const char * variable)
+{
+	return (int)getenv(variable);
+}
+
+int
+mono_wrapper_environ ()
+{
+	return (int)environ;
+}

@@ -71,6 +71,21 @@ create_func ($lib, "", "stat", "int",
 create_func ($lib, "", "unlink", "int",
 	     "string", "path");
 
+create_func ($lib, "", "opendir", "IntPtr",
+	     "string", "path");
+
+create_func ($lib, "", "readdir", "string",
+	     "IntPtr", "dir");
+
+create_func ($lib, "", "closedir", "int",
+	     "IntPtr", "dir");
+
+create_func ($lib, "", "getenv", "IntPtr",
+	     "string", "variable");
+
+create_func ($lib, "", "environ", "IntPtr");
+
+
 map_const ("int", "%d", "SEEK_SET",
 	   "int", "%d", "SEEK_CUR",
 	   "int", "%d", "SEEK_END",
