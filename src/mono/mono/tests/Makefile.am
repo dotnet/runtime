@@ -35,6 +35,8 @@ TESTSRC=			\
 	enum2.cs		\
 	property.cs		\
 	enumcast.cs		\
+	array-cast.cs		\
+	cattr-compile.cs	\
 	custom-attr.cs		\
 	double-cast.cs		\
 	newobj-valuetype.cs	\
