@@ -17,23 +17,16 @@ This is Mono.
 
 		  Available from: http://www.freedesktop.org/Software/pkgconfig
 
-		* glib 2.0
+		* glib 2.4
 
 		  Available from: http://www.gtk.org/
 
 	Optional dependencies:
 
-	 	* ICU library
-
-		  http://oss.software.ibm.com/icu/index.html
-
-		  You will need this one to get complete support for the international
-		  features of the .NET Framework.
-
-		* Cairo and libgdiplus
+		* libgdiplus
 
 		  If you want to get support for System.Drawing, you will need to get
-		  both Libgdiplus and Cairo.
+		  Libgdiplus.
 
     b. Building the Software
     ------------------------
@@ -45,13 +38,7 @@ This is Mono.
 		make
 		make install
 
-	Mono supports a JIT engine on x86, SPARC and PowerPC systems.
-	The various commands that ship with Mono default to the JIT engine
-	on x86 and SPARC, to turn it on for PPC systems, use the --with-jit=yes 
-	command line option to configure.
-
-	MacOS X Users: you will need to download the latest Boehm GC
-	Alpha release for garbage collection to work properly.
+	Mono supports a JIT engine on x86, SPARC, S/390, AMD64 and PowerPC systems.
 
 	If you obtained this as a snapshot, you will need an existing
 	Mono installation.  To upgrade your installation, unpack both
