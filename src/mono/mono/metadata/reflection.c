@@ -2140,7 +2140,7 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoGenericInst *ginst)
 {
 	MonoDynamicTable *table;
 	guint32 *values;
-	guint32 token, mtoken, sig;
+	guint32 token, mtoken = 0, sig;
 
 	table = &assembly->tables [MONO_TABLE_METHODSPEC];
 
@@ -3086,7 +3086,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 	MonoReflectionMethodBuilder *method;
 	MonoReflectionTypeBuilder *tb;
 	MonoReflectionArrayMethod *am;
-	guint32 i, idx;
+	guint32 i, idx = 0;
 	unsigned char *target;
 
 	for (i = 0; i < ilgen->num_token_fixups; ++i) {
@@ -3544,7 +3544,7 @@ guint32
 mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj)
 {
 	MonoClass *klass;
-	guint32 token;
+	guint32 token = 0;
 
 	klass = obj->vtable->klass;
 	if (strcmp (klass->name, "MethodBuilder") == 0) {
@@ -4928,6 +4928,7 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
 {
 	MonoType *type;
 	MonoTypeNameParse info;
+	MonoAssembly *assembly;
 	
 	/*g_print ("requested type %s\n", str);*/
 	if (!mono_reflection_parse_type (name, &info)) {
@@ -4937,13 +4938,15 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
 	}
 
 	if (info.assembly.name) {
-		image = mono_image_loaded (info.assembly.name);
+		assembly = mono_assembly_loaded (&info.assembly);
 		/* do we need to load if it's not already loaded? */
-		if (!image) {
+		if (!assembly) {
 			g_list_free (info.modifiers);
 			g_list_free (info.nested);
 			return NULL;
 		}
+		else
+			image = assembly->image;
 	} else if (image == NULL) {
 		image = mono_defaults.corlib;
 	}
@@ -5037,12 +5040,15 @@ handle_type:
 			g_warning ("Cannot load type '%s'", n);
 		g_free (n);
 		*end = p + slen;
-		return mono_type_get_object (mono_domain_get (), t);
+		if (t)
+			return mono_type_get_object (mono_domain_get (), t);
+		else
+			return NULL;
 	}
 	case MONO_TYPE_OBJECT: {
 		char subt = *p++;
 		MonoObject *obj;
-		MonoClass *subc;
+		MonoClass *subc = NULL;
 		void *val;
 
 		if (subt == 0x50) {
@@ -5527,7 +5533,7 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 {
 	MonoClass *klass;
 	MonoArray *result;
-	MonoCustomAttrInfo *cinfo;
+	MonoCustomAttrInfo *cinfo = NULL;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -6606,7 +6612,7 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_typ
 					MonoObject *obj)
 {
 	MonoGenericInst *ginst, *type_ginst;
-	MonoMethod *method, *inflated;
+	MonoMethod *method = NULL, *inflated;
 	MonoReflectionInflatedMethod *res;
 	MonoClass *klass;
 
@@ -6658,7 +6664,7 @@ mono_reflection_inflate_field (MonoReflectionGenericInst *declaring_type,
 {
 	static MonoClass *System_Reflection_MonoInflatedField;
 	MonoGenericInst *ginst, *type_ginst;
-	MonoClassField *field, *inflated;
+	MonoClassField *field = NULL, *inflated;
 	MonoReflectionInflatedField *res;
 	MonoDomain *domain;
 	MonoClass *klass;
@@ -7128,7 +7134,7 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token)
 static gpointer
 resolve_object (MonoImage *image, MonoObject *obj)
 {
-	gpointer result;
+	gpointer result = NULL;
 
 	if (strcmp (obj->vtable->klass->name, "String") == 0) {
 		result = mono_string_intern ((MonoString*)obj);

@@ -661,6 +661,18 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 	return result;
 }
 
+MonoAssembly*
+mono_assembly_loaded (MonoAssemblyName *aname)
+{
+	MonoAssembly *res;
+
+	EnterCriticalSection (&assemblies_mutex);
+	res = search_loaded (aname);
+	LeaveCriticalSection (&assemblies_mutex);
+
+	return res;
+}
+
 void
 mono_assembly_close (MonoAssembly *assembly)
 {
