@@ -48,5 +48,7 @@ void mono_profiler_appdomain_loaded (MonoDomain *domain, int result);
 MonoProfileCoverageInfo* mono_profiler_coverage_alloc (MonoMethod *method, int entries);
 void                     mono_profiler_coverage_free  (MonoMethod *method);
 
+MonoProfileCoverageLevel mono_profiler_get_coverage_level (void);
+
 #endif /* __MONO_PROFILER_PRIVATE_H__ */
 

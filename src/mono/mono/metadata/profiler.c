@@ -37,7 +37,11 @@ static MonoProfileMethodFunc   method_leave;
 static MonoProfileThreadFunc   thread_start;
 static MonoProfileThreadFunc   thread_end;
 
+static MonoProfileCoverageFilterFunc coverage_filter_cb;
+
 static MonoProfileFunc shutdown_callback;
+
+static MonoProfileCoverageLevel coverage_level = MONO_COVERAGE_BASIC_BLOCK;
 
 /* this is directly accessible to other mono libs. */
 MonoProfileFlags mono_profiler_events;
@@ -94,6 +98,24 @@ void
 mono_profiler_install_allocation (MonoProfileAllocFunc callback)
 {
 	allocation_cb = callback;
+}
+
+void 
+mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callback)
+{
+	coverage_filter_cb = callback;
+}
+
+void
+mono_profiler_set_coverage_level (MonoProfileCoverageLevel level)
+{
+	coverage_level = level;
+}
+
+MonoProfileCoverageLevel
+mono_profiler_get_coverage_level ()
+{
+	return coverage_level;
 }
 
 void 
@@ -330,6 +352,10 @@ MonoProfileCoverageInfo*
 mono_profiler_coverage_alloc (MonoMethod *method, int entries)
 {
 	MonoProfileCoverageInfo *res;
+
+	if (coverage_filter_cb)
+		if (! (*coverage_filter_cb) (current_profiler, method))
+			return NULL;
 
 	if (!coverage_hash)
 		coverage_hash = g_hash_table_new (NULL, NULL);
@@ -1031,6 +1057,7 @@ mono_profiler_load (const char *desc)
 		GModule *pmodule;
 		const char* col = strchr (desc, ':');
 		char* libname;
+		char* path;
 		char *mname;
 		if (col != NULL) {
 			mname = g_memdup (desc, col - desc);
@@ -1039,7 +1066,8 @@ mono_profiler_load (const char *desc)
 			mname = g_strdup (desc);
 		}
 		libname = g_strdup_printf ("mono-profiler-%s", mname);
-		pmodule = g_module_open (libname, G_MODULE_BIND_LAZY);
+		path = g_module_build_path (NULL, libname);
+		pmodule = g_module_open (path, G_MODULE_BIND_LAZY);
 		if (pmodule) {
 			ProfilerInitializer func;
 			if (!g_module_symbol (pmodule, INITIALIZER_NAME, (gpointer *)&func)) {
@@ -1053,6 +1081,7 @@ mono_profiler_load (const char *desc)
 
 		g_free (libname);
 		g_free (mname);
+		g_free (path);
 	}
 }
 
