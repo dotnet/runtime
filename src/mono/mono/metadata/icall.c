@@ -509,6 +509,37 @@ ves_icall_System_Object_MemberwiseClone (MonoObject *this)
 	return mono_object_clone (this);
 }
 
+static gint32
+ves_icall_System_Object_GetHashCode (MonoObject *this)
+{
+	return *((gint32 *)this - 1);
+}
+
+/*
+ * A hash function for value types. I have no idea if this is a good hash 
+ * function (its similar to g_str_hash).
+ */
+static gint32
+ves_icall_System_ValueType_GetHashCode (MonoObject *this)
+{
+	gint32 i, size;
+	const char *p;
+	guint h;
+
+	MONO_CHECK_ARG_NULL (this);
+
+	size = this->vtable->klass->instance_size - sizeof (MonoObject);
+
+	p = (char *)this + sizeof (MonoObject);
+
+	for (i = 0; i < size; i++) {
+		h = (h << 5) - h + *p;
+		p++;
+	}
+
+	return h;
+}
+
 static MonoReflectionType *
 ves_icall_System_Object_GetType (MonoObject *obj)
 {
@@ -1643,12 +1674,6 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 #endif
 }
 
-
-static gpointer
-ves_icall_System_Object_obj_address (MonoObject *this) {
-	return this;
-}
-
 static gpointer icall_map [] = {
 	/*
 	 * System.Array
@@ -1669,7 +1694,12 @@ static gpointer icall_map [] = {
 	 */
 	"System.Object::MemberwiseClone", ves_icall_System_Object_MemberwiseClone,
 	"System.Object::GetType", ves_icall_System_Object_GetType,
-	"System.Object::obj_address", ves_icall_System_Object_obj_address,
+	"System.Object::GetHashCode", ves_icall_System_Object_GetHashCode,
+
+	/*
+	 * System.ValueType
+	 */
+	"System.ValueType::GetHashCode", ves_icall_System_ValueType_GetHashCode,
 
 	/*
 	 * System.String

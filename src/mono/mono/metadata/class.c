@@ -327,6 +327,7 @@ mono_class_init (MonoClass *class)
 	MonoClass *k, *ic;
 	MonoMethod **vtable = class->vtable;
 	int i, max_iid, cur_slot = 0;
+	static MonoMethod *default_ghc = NULL;
 
 	g_assert (class);
 
@@ -622,6 +623,22 @@ mono_class_init (MonoClass *class)
 						ic->method.count, ic->name_space, ic->name);
 				}
 			}
+		}
+	}
+
+#define GHC_SLOT 2
+
+	if (!default_ghc) {
+		if (class == mono_defaults.object_class) { 
+			default_ghc = vtable [GHC_SLOT];
+			g_assert (!strcmp (default_ghc->name, "GetHashCode"));
+		}
+	}
+	
+	class->ghcimpl = 1;
+	if (class != mono_defaults.object_class) { 
+		if (vtable [GHC_SLOT] == default_ghc) {
+			class->ghcimpl = 0;
 		}
 	}
 }

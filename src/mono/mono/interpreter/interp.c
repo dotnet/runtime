@@ -533,27 +533,34 @@ ves_runtime_method (MonoInvocation *frame)
 {
 	const char *name = frame->method->name;
 	MonoObject *obj = (MonoObject*)frame->obj;
-	MonoDelegate *delegate = (MonoDelegate*)frame->obj;
+	MonoMulticastDelegate *delegate = (MonoMulticastDelegate*)frame->obj;
 	MonoInvocation call;
 
-	mono_class_init (mono_defaults.delegate_class);
+	mono_class_init (mono_defaults.multicastdelegate_class);
 	
 	if (*name == '.' && (strcmp (name, ".ctor") == 0) && obj &&
-			mono_object_isinst (obj, mono_defaults.delegate_class)) {
-		delegate->target = frame->stack_args[0].data.p;
-		delegate->method_ptr = frame->stack_args[1].data.p;
+			mono_object_isinst (obj, mono_defaults.multicastdelegate_class)) {
+		delegate->delegate.target = frame->stack_args[0].data.p;
+		delegate->delegate.method_ptr = frame->stack_args[1].data.p;
+		if (!delegate->delegate.target) {
+			MonoDomain *domain = mono_domain_get ();
+			MonoMethod *m = mono_method_pointer_get (delegate->delegate.method_ptr);
+			delegate->delegate.method_info = mono_method_get_object (domain, m);
+		}
 		return;
 	}
 	if (*name == 'I' && (strcmp (name, "Invoke") == 0) && obj &&
-			mono_object_isinst (obj, mono_defaults.delegate_class)) {
-		MonoPIFunc func;
+			mono_object_isinst (obj, mono_defaults.multicastdelegate_class)) {
 		guchar *code;
 		MonoMethod *method;
 		
-		code = (guchar*)delegate->method_ptr;
+		// FIXME: support multicast delegates 
+		g_assert (!delegate->prev);
+
+		code = (guchar*)delegate->delegate.method_ptr;
 		method = mono_method_pointer_get (code);
 		/* FIXME: check for NULL method */
-		INIT_FRAME(&call,frame,delegate->target,frame->stack_args,frame->retval,method);
+		INIT_FRAME(&call,frame,delegate->delegate.target,frame->stack_args,frame->retval,method);
 		ves_exec_method (&call);
 #if 0
 		if (!method->addr)
@@ -3702,7 +3709,7 @@ output_profile (GList *funcs)
 		g_snprintf (buf, sizeof (buf), "%s.%s::%s(%d)",
 			p->u.method->klass->name_space, p->u.method->klass->name,
 			p->u.method->name, p->u.method->signature->param_count);
-		printf ("%-52s %7d %7ld %7d\n", buf,
+		printf ("%-52s %7d %7llu %7d\n", buf,
 			(gint)(p->total*1000), p->count, (gint)((p->total*1000)/p->count));
 	}
 }

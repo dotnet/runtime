@@ -81,7 +81,8 @@ TESTSRC=			\
 	appdomain-client.cs	\
 	pointer.cs		\
 	vararg.cs		\
-	rounding.cs
+	rounding.cs		\
+	hashcode.cs	
 
 
 TESTSI=$(TESTSRC:.cs=.exe)

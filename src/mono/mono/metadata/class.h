@@ -41,6 +41,7 @@ struct _MonoClass {
 	guint inited          : 1;
 	guint valuetype       : 1; /* derives from System.ValueType */
 	guint enumtype        : 1; /* derives from System.Enum */
+	guint ghcimpl         : 1; /* class has its own GetHashCode impl */ 
 	guint min_align       : 4;
 
 	MonoClass  *parent;

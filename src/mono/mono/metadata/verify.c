@@ -1825,18 +1825,26 @@ emit_classes_to_check [] = {
 	{NULL, NULL}
 };
 
-static const FieldDesc 
+static FieldDesc 
 delegate_fields[] = {
 	{"target_type", G_STRUCT_OFFSET (MonoDelegate, target_type)},
 	{"m_target", G_STRUCT_OFFSET (MonoDelegate, target)},
-	{"method", G_STRUCT_OFFSET (MonoDelegate, method)},
+	{"method_name", G_STRUCT_OFFSET (MonoDelegate, method_name)},
 	{"method_ptr", G_STRUCT_OFFSET (MonoDelegate, method_ptr)},
+	{"method_info", G_STRUCT_OFFSET (MonoDelegate, method_info)},
+	{NULL, 0}
+};
+
+static FieldDesc 
+multicast_delegate_fields[] = {
+	{"prev", G_STRUCT_OFFSET (MonoMulticastDelegate, prev)},
 	{NULL, 0}
 };
 
 static const ClassDesc
 system_classes_to_check [] = {
 	{"Delegate", delegate_fields},
+	{"MulticastDelegate", multicast_delegate_fields},
 	{NULL, NULL}
 };
 

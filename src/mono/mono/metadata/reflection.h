@@ -47,6 +47,21 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
+	MonoObject *target_type;
+	MonoObject *target;
+	MonoString *method_name;
+	gpointer method_ptr;
+	MonoReflectionMethod *method_info;
+} MonoDelegate;
+
+typedef struct _MonoMulticastDelegate MonoMulticastDelegate;
+struct _MonoMulticastDelegate {
+	MonoDelegate delegate;
+	MonoMulticastDelegate *prev;
+};
+
+typedef struct {
+	MonoObject object;
 	MonoClass *klass;
 	MonoClassField *field;
 } MonoReflectionField;

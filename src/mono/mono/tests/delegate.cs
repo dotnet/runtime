@@ -36,6 +36,10 @@ class Test {
 		Console.WriteLine (d3 (3));
 		G (2);
 		test.H (3);
+
+		if (d.Method.Name != "F")
+			return 1;
+		
 		return 0;
 	}
 }

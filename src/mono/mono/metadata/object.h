@@ -98,14 +98,6 @@ typedef struct {
 	MonoString *param_name;
 } MonoArgumentException;
 
-typedef struct {
-	MonoObject object;
-	MonoObject *target_type;
-	MonoObject *target;
-	MonoString *method;
-	gpointer    method_ptr;
-} MonoDelegate;
-
 typedef void   (*MonoRuntimeObjectInit) (MonoObject *o);
 typedef gint32 (*MonoRuntimeExecMain)   (MonoMethod *method, MonoArray *args);
 

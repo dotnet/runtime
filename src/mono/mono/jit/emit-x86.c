@@ -876,6 +876,27 @@ match_debug_method (MonoMethod* method)
 	return 0;
 }
 
+static void
+mono_delegate_ctor (MonoDelegate *this, MonoObject *target, 
+		    gpointer addr)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoClass *class;
+	MonoJitInfo *ji;
+
+	g_assert (this);
+	g_assert (addr);
+
+	class = this->object.vtable->klass;
+
+	if (!target && (ji = mono_jit_info_table_find (mono_jit_info_table, addr)))
+		this->method_info = mono_method_get_object (domain, ji->method);
+	
+	this->target = target;
+	this->method_ptr = addr;
+
+}
+
 /**
  * arch_compile_method:
  * @method: pointer to the method info
@@ -916,51 +937,26 @@ arch_compile_method (MonoMethod *method)
 	}
 
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
-		MonoClassField *field;
 		const char *name = method->name;
-		static guint target_offset = 0;
-		static guint method_offset = 0;
 		guint8 *code;
 		gboolean delegate = FALSE;
 
-		if (method->klass->parent && 
-		    method->klass->parent->parent == mono_defaults.delegate_class)
+		if (method->klass->parent == mono_defaults.multicastdelegate_class)
 			delegate = TRUE;
 				
-		if (!target_offset) {
-			mono_class_init (mono_defaults.delegate_class);
-
-			field = mono_class_get_field_from_name (mono_defaults.delegate_class, "m_target");
-			target_offset = field->offset;
-			field = mono_class_get_field_from_name (mono_defaults.delegate_class, "method_ptr");
-			method_offset = field->offset;
-		}
-		
 		if (delegate && *name == '.' && (strcmp (name, ".ctor") == 0)) {
-			addr = code = g_malloc (32);
-			x86_push_reg (code, X86_EBP);
-			x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
-			
-			/* load the this pointer */
-			x86_mov_reg_membase (code, X86_EAX, X86_EBP, 8, 4); 
-			/* load m_target arg */
-			x86_mov_reg_membase (code, X86_EDX, X86_EBP, 12, 4);
-			/* store mtarget */
-			x86_mov_membase_reg (code, X86_EAX, target_offset, X86_EDX, 4); 
-			/* load method_ptr arg */
-			x86_mov_reg_membase (code, X86_EDX, X86_EBP, 16, 4);
-			/* store method_ptr */
-			x86_mov_membase_reg (code, X86_EAX, method_offset, X86_EDX, 4); 
-
-			x86_leave (code);
-			x86_ret (code);
-
-			g_assert ((code - (guint8*)addr) < 32);
-
+			addr = (gpointer)mono_delegate_ctor;
 		} else if (delegate && *name == 'I' && (strcmp (name, "Invoke") == 0)) {
+			/*
+			 *	Invoke( args .. ) {
+			 *		if ( prev )
+			 *			prev.Invoke();
+			 *		return this.<m_target>( args );
+			 *	}
+			 */
 			MonoMethodSignature *csig = method->signature;
-			int i, arg_size, target, this_pos = 4;
-			guint8 *source;
+			guint8 *br[2], *pos[2];
+			int i, arg_size, this_pos = 4;
 			
 			if (csig->ret->type == MONO_TYPE_VALUETYPE) {
 				g_assert (!csig->ret->byref);
@@ -979,50 +975,89 @@ arch_compile_method (MonoMethod *method)
 
 			addr = g_malloc (64 + arg_size);
 
-			for (i = 0; i < 2; i ++) {
-				int j;
+			code = addr;
+			/* load the this pointer */
+			x86_mov_reg_membase (code, X86_EAX, X86_ESP, this_pos, 4);
+			
+			/* load prev */
+			x86_mov_reg_membase (code, X86_EDX, X86_EAX, G_STRUCT_OFFSET (MonoMulticastDelegate, prev), 4);
 
-				code = addr;
-				/* load the this pointer */
-				x86_mov_reg_membase (code, X86_EAX, X86_ESP, this_pos, 4);
-				/* load mtarget */
-				x86_mov_reg_membase (code, X86_EDX, X86_EAX, target_offset, 4); 
-				/* check if zero (static method call without this pointer) */
-				x86_alu_reg_imm (code, X86_CMP, X86_EDX, 0);
-				x86_branch32 (code, X86_CC_EQ, target, TRUE); 
-				source = code;
+			/* prev == 0 ? */
+			x86_alu_reg_imm (code, X86_CMP, X86_EDX, 0);
+			br[0] = code; x86_branch32 (code, X86_CC_EQ, 0, TRUE );
+			pos[0] = code;
 
-				/* virtual delegate methods: we have to replace the this pointer 
-				 * withe the actual target */
-				x86_mov_membase_reg (code, X86_ESP, this_pos, X86_EDX, 4); 
-				/* jump to method_ptr() */
-				x86_jump_membase (code, X86_EAX, method_offset);
+			x86_push_reg( code, X86_EAX );
+			/* push args */
+			for ( i = 0; i < (arg_size>>2); i++ )
+				x86_push_membase( code, X86_ESP, (arg_size + this_pos + 4) );
+			/* push next */
+			x86_push_reg( code, X86_EDX );
+			if (this_pos == 8)
+				x86_push_membase (code, X86_ESP, (arg_size + 8));
+			/* recurse */
+			br[1] = code; x86_call_imm( code, 0 );
+			pos[1] = code; x86_call_imm( br[1], addr - pos[1] );
 
-				/* static delegate methods: we have to remove the this pointer 
-				 * from the activation frame - I do this do creating a new 
-				 * stack frame an copy all arguments except the this pointer */
+			if (this_pos == 8)
+				x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size + 8);
+			else
+				x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size + 4);
+			x86_pop_reg( code, X86_EAX );
+			
+			/* prev == 0 */ 
+			x86_branch32( br[0], X86_CC_EQ, code - pos[0], TRUE );
+			
+			/* load mtarget */
+			x86_mov_reg_membase (code, X86_EDX, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, target), 4); 
+			/* mtarget == 0 ? */
+			x86_alu_reg_imm (code, X86_CMP, X86_EDX, 0);
+			br[0] = code; x86_branch32 (code, X86_CC_EQ, 0, TRUE);
+			pos[0] = code;
 
-				target = code - source;
-				g_assert ((arg_size & 3) == 0);
-				for (j = 0; j < (arg_size>>2); j++) {
-					x86_push_membase (code, X86_ESP, (arg_size + this_pos));
-				}
+			/* 
+			 * virtual delegate methods: we have to
+			 * replace the this pointer with the actual
+			 * target
+			 */
+			x86_mov_membase_reg (code, X86_ESP, this_pos, X86_EDX, 4); 
+			/* jump to method_ptr() */
+			x86_jump_membase (code, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
 
-				if (this_pos == 8) 
-					x86_push_membase (code, X86_ESP, (arg_size + 4));
-				
-				x86_call_membase (code, X86_EAX, method_offset);
+			/* mtarget != 0 */ 
+			x86_branch32( br[0], X86_CC_EQ, code - pos[0], TRUE);
+			/* 
+			 * static delegate methods: we have to remove
+			 * the this pointer from the activation frame
+			 * - I do this creating a new stack frame anx
+			 * copy all arguments except the this pointer
+			 */
+			g_assert ((arg_size & 3) == 0);
+			for (i = 0; i < (arg_size>>2); i++) {
+				x86_push_membase (code, X86_ESP, (arg_size + this_pos));
+			}
+
+			if (this_pos == 8)
+				x86_push_membase (code, X86_ESP, (arg_size + 4));
+			
+			x86_call_membase (code, X86_EAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+			if (arg_size) {
 				if (this_pos == 8) 
 					x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size + 4);
 				else
 					x86_alu_reg_imm (code, X86_ADD, X86_ESP, arg_size);
-				
-				x86_ret (code);
-
 			}
 
+			x86_ret (code);
+		
 			g_assert ((code - (guint8*)addr) < (64 + arg_size));
 
+			if (mono_jit_dump_asm) {
+				char *id = g_strdup_printf ("%s.%s_%s", method->klass->name_space,
+							    method->klass->name, method->name);
+				mono_disassemble_code( addr, code - (guint8*)addr, id );
+				g_free (id);
+			}
 		} else {
 			if (mono_debug_handle) 
 				return NULL;
@@ -1190,7 +1225,6 @@ arch_get_restore_context ()
 
 	/* get return address, stored in EDX */
 	x86_mov_reg_membase (code, X86_EDX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, eip), 4);
-
 	/* restore EBX */
 	x86_mov_reg_membase (code, X86_EBX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, ebx), 4);
 	/* restore EDI */

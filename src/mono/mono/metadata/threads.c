@@ -119,7 +119,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
 		  this, start);
 #endif
 	
-	field=mono_class_get_field_from_name(mono_defaults.delegate_class, "method_ptr");
+	field=mono_class_get_field_from_name(mono_defaults.multicastdelegate_class->parent, "method_ptr");
 	start_func= *(gpointer *)(((char *)start) + field->offset);
 	
 	if(start_func==NULL) {

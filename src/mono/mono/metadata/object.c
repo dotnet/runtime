@@ -90,13 +90,23 @@ mono_object_free (MonoObject *o)
 MonoObject *
 mono_object_new (MonoDomain *domain, MonoClass *klass)
 {
+	static guint32 uoid = 0;
 	MonoObject *o;
 
 	if (!klass->inited)
 		mono_class_init (klass);
 
-	o = mono_object_allocate (klass->instance_size);
-	o->vtable = mono_class_vtable (domain, klass);
+
+	if (klass->ghcimpl) {
+		o = mono_object_allocate (klass->instance_size);
+		o->vtable = mono_class_vtable (domain, klass);
+	} else {
+		guint32 *t;
+		t = mono_object_allocate (klass->instance_size + 4);
+		*t = ++uoid;
+		o = (MonoObject *)(++t);
+		o->vtable = mono_class_vtable (domain, klass);
+	}
 
 	return o;
 }

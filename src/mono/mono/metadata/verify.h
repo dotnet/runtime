@@ -21,7 +21,7 @@ typedef struct {
 GSList* mono_image_verify_tables (MonoImage *image, int level);
 GSList* mono_method_verify       (MonoMethod *method, int level);
 void    mono_free_verify_list    (GSList *list);
-char*   mono_verify_corlib       ();
+char*   mono_verify_corlib       (void);
 
 #endif  /* __MONO_METADATA_VERIFY_H__ */
 
