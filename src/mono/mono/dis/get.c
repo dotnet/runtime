@@ -1729,6 +1729,23 @@ get_token (MonoImage *m, guint32 token)
 		return get_typeref (m, idx);
 	case MONO_TOKEN_TYPE_SPEC:
 		return get_typespec (m, idx);
+	case MONO_TOKEN_MEMBER_REF: {
+		guint32 cols [MONO_MEMBERREF_SIZE];
+		const char *sig;
+		mono_metadata_decode_row (&m->tables [MONO_TABLE_MEMBERREF], mono_metadata_token_index (token) - 1, cols, MONO_MEMBERREF_SIZE);
+		sig = mono_metadata_blob_heap (m, cols [MONO_MEMBERREF_SIGNATURE]);
+		mono_metadata_decode_blob_size (sig, &sig);
+		if (*sig == 0x6) { /* it's a field */
+			temp = get_field (m, token);
+			result = g_strdup_printf ("field %s", temp);
+			g_free (temp);
+			return result;
+		}
+		else {
+			g_error ("Do not know how to decode tokens of type 0x%08x", token);
+		}
+		break;
+	}
 	default:		
 		g_error ("Do not know how to decode tokens of type 0x%08x", token);
 	}
