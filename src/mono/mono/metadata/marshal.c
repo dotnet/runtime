@@ -47,6 +47,9 @@ struct _MonoMethodBuilder {
 };
 
 static void
+delegate_hash_table_add (MonoDelegate *d);
+
+static void
 emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object);
 
 static MonoMethod *
@@ -179,24 +182,50 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 
 	delegate->delegate_trampoline =  mono_compile_method (wrapper);
 
+	// Add the delegate to the delegate hash table
+	delegate_hash_table_add (delegate);
+
 	return delegate->delegate_trampoline;
+}
+
+static GHashTable *delegate_hash_table;
+
+static GHashTable *
+delegate_hash_table_new () {
+	return g_hash_table_new (NULL, NULL);
+}
+
+void 
+delegate_hash_table_remove (MonoDelegate *d)
+{
+	EnterCriticalSection (&marshal_mutex);
+	if (delegate_hash_table == NULL)
+		delegate_hash_table = delegate_hash_table_new ();
+	g_hash_table_remove (delegate_hash_table, d->delegate_trampoline);
+	LeaveCriticalSection (&marshal_mutex);
+}
+
+void
+delegate_hash_table_add (MonoDelegate *d) 
+{
+	EnterCriticalSection (&marshal_mutex);
+	if (delegate_hash_table == NULL)
+		delegate_hash_table = delegate_hash_table_new ();
+	g_hash_table_insert (delegate_hash_table, d->delegate_trampoline, d);
+	LeaveCriticalSection (&marshal_mutex);
 }
 
 MonoDelegate*
 mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 {
-	MonoDelegate *d;
-	MonoJitInfo *ji;
+	EnterCriticalSection (&marshal_mutex);
+	if (delegate_hash_table == NULL)
+		delegate_hash_table = delegate_hash_table_new ();
 
-	d = (MonoDelegate*)mono_object_new (mono_domain_get (), klass);
-
-	ji = mono_jit_info_table_find (mono_domain_get (), ftn);
-	if (ji == NULL)
-		mono_raise_exception (mono_get_exception_argument ("", "Function pointer was not created by a Delegate."));
-
-	/* FIXME: discard the wrapper and call the original method */
-	mono_delegate_ctor ((MonoObject*)d, NULL, ftn);
-
+	MonoDelegate *d = g_hash_table_lookup (delegate_hash_table, ftn);
+	LeaveCriticalSection (&marshal_mutex);
+	if (d == NULL)
+		mono_raise_exception (mono_get_exception_argument (NULL, "Additional information: Function pointer was not created by a delegate."));
 	return d;
 }
 
@@ -206,6 +235,7 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 	MonoJitInfo *ji;
 	void *ptr, *ptr2;
 
+	delegate_hash_table_remove (delegate);
 	ptr2 = delegate->delegate_trampoline;
 
 	ptr = InterlockedExchangePointer (&delegate->delegate_trampoline, NULL);
@@ -4109,48 +4139,58 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_CONV_RESULT:
-		/* set src */
-		mono_mb_emit_byte (mb, CEE_STLOC_0);
-
-		/* Make a copy since emit_conv modifies local 0 */
-		loc = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		mono_mb_emit_byte (mb, CEE_LDLOC_0);
-		mono_mb_emit_stloc (mb, loc);
-
-		mono_mb_emit_byte (mb, CEE_LDNULL);
-		mono_mb_emit_byte (mb, CEE_STLOC_3);
-
-		mono_mb_emit_byte (mb, CEE_LDLOC_0);
-		mono_mb_emit_byte (mb, CEE_BRFALSE);
-		pos = mb->pos;
-		mono_mb_emit_i4 (mb, 0);
-
-		/* allocate result object */
-
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_NEWOBJ);	
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
-		mono_mb_emit_byte (mb, CEE_STLOC_3);
-				
-		/* set dst  */
-
-		mono_mb_emit_byte (mb, CEE_LDLOC_3);
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-		mono_mb_emit_icon (mb, sizeof (MonoObject));
-		mono_mb_emit_byte (mb, CEE_ADD);
-		mono_mb_emit_byte (mb, CEE_STLOC_1);
-							
-		/* emit conversion code */
-		emit_struct_conv (mb, klass, TRUE);
-
-		emit_struct_free (mb, klass, loc);
-
-		/* Free the pointer allocated by unmanaged code */
-		mono_mb_emit_ldloc (mb, loc);
-		mono_mb_emit_icall (mb, g_free);
-
-		mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
+		if (klass->delegate) {
+			g_assert (!t->byref);
+			mono_mb_emit_byte (mb, CEE_STLOC_0);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
+			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+			mono_mb_emit_byte (mb, CEE_LDLOC_0);
+			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL));
+			mono_mb_emit_byte (mb, CEE_STLOC_3);
+		} else {
+			/* set src */
+			mono_mb_emit_byte (mb, CEE_STLOC_0);
+	
+			/* Make a copy since emit_conv modifies local 0 */
+			loc = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+			mono_mb_emit_byte (mb, CEE_LDLOC_0);
+			mono_mb_emit_stloc (mb, loc);
+	
+			mono_mb_emit_byte (mb, CEE_LDNULL);
+			mono_mb_emit_byte (mb, CEE_STLOC_3);
+	
+			mono_mb_emit_byte (mb, CEE_LDLOC_0);
+			mono_mb_emit_byte (mb, CEE_BRFALSE);
+			pos = mb->pos;
+			mono_mb_emit_i4 (mb, 0);
+	
+			/* allocate result object */
+	
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_NEWOBJ);	
+			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+			mono_mb_emit_byte (mb, CEE_STLOC_3);
+					
+			/* set dst  */
+	
+			mono_mb_emit_byte (mb, CEE_LDLOC_3);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
+			mono_mb_emit_icon (mb, sizeof (MonoObject));
+			mono_mb_emit_byte (mb, CEE_ADD);
+			mono_mb_emit_byte (mb, CEE_STLOC_1);
+								
+			/* emit conversion code */
+			emit_struct_conv (mb, klass, TRUE);
+	
+			emit_struct_free (mb, klass, loc);
+	
+			/* Free the pointer allocated by unmanaged code */
+			mono_mb_emit_ldloc (mb, loc);
+			mono_mb_emit_icall (mb, g_free);
+			mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
+		}
 		break;
 
 	default:
@@ -4859,7 +4899,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		g_free (mspecs [i]);
 	g_free (mspecs);
 
-	/* printf ("CODE FOR %s: \n%s.\n", mono_method_full_name (res, TRUE), mono_disasm_code (0, res, ((MonoMethodNormal*)res)->header->code, ((MonoMethodNormal*)res)->header->code + ((MonoMethodNormal*)res)->header->code_size)); */
+	/* printf ("CODE FOR %s: \n%s.\n", mono_method_full_name (res, TRUE), mono_disasm_code (0, res, ((MonoMethodNormal*)res)->header->code, ((MonoMethodNormal*)res)->header->code + ((MonoMethodNormal*)res)->header->code_size)); */ 
 
 	return res;
 }
