@@ -462,9 +462,10 @@ arch_get_restore_context (void)
 static gpointer
 arch_get_call_filter (void)
 {
-	static guint8 start [64];
+	static guint8 start [196];
 	static int inited = 0;
 	guint8 *code;
+	int alloc_size, pos, i;
 
 	if (inited)
 		return start;
@@ -473,50 +474,44 @@ arch_get_call_filter (void)
 	/* call_filter (struct sigcontext *ctx, unsigned long eip, gpointer exc) */
 	code = start;
 
-#if 0
-	x86_push_reg (code, X86_EBP);
-	x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
-	x86_push_reg (code, X86_EBX);
-	x86_push_reg (code, X86_EDI);
-	x86_push_reg (code, X86_ESI);
+	ppc_mflr (code, ppc_r0);
+	ppc_stw (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
+	alloc_size = PPC_MINIMAL_STACK_SIZE + (sizeof (gulong) * 14 + sizeof (gdouble) * 14);
+	// align to PPC_STACK_ALIGNMENT bytes
+	if (alloc_size & (PPC_STACK_ALIGNMENT - 1))
+		alloc_size += PPC_STACK_ALIGNMENT - (alloc_size & (PPC_STACK_ALIGNMENT - 1));
+	ppc_stwu (code, ppc_sp, -alloc_size, ppc_sp);
+	/* save all the regs on the stack */
+	pos = PPC_MINIMAL_STACK_SIZE;
+	ppc_stmw (code, ppc_r13, ppc_sp, pos);
+	pos += sizeof (gulong) * 19;
+	for (i = 14; i < 32; ++i) {
+		ppc_stfd (code, i, pos, ppc_sp);
+		pos += sizeof (gdouble);
+	}
+	/* FIXME: restore all the regs from ctx (in r3) */
+	/* call handler at eip (r4) and set the first arg with the exception (r5) */
+	ppc_mtctr (code, ppc_r4);
+	ppc_mr (code, ppc_r3, ppc_r5);
+	ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
+	/* restore all the regs from the stack */
+	pos = PPC_MINIMAL_STACK_SIZE;
+	ppc_lmw (code, ppc_r13, ppc_sp, pos);
+	pos += sizeof (gulong) * 19;
+	for (i = 14; i < 32; ++i) {
+		ppc_lfd (code, i, pos, ppc_sp);
+		pos += sizeof (gdouble);
+	}
+	ppc_lwz (code, ppc_r0, alloc_size + PPC_RET_ADDR_OFFSET, ppc_sp);
+	ppc_mtlr (code, ppc_r0);
+	ppc_addic (code, ppc_sp, ppc_sp, alloc_size);
 
-	/* load ctx */
-	x86_mov_reg_membase (code, X86_EAX, X86_EBP, 8, 4);
-	/* load eip */
-	x86_mov_reg_membase (code, X86_ECX, X86_EBP, 12, 4);
-	/* save EBP */
-	x86_push_reg (code, X86_EBP);
-	/* push exc */
-	x86_push_membase (code, X86_EBP, 16);
-	/* set new EBP */
-	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBP), 4);
-	/* restore registers used by global register allocation (EBX & ESI) */
-	x86_mov_reg_membase (code, X86_EBX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBX), 4);
-	x86_mov_reg_membase (code, X86_ESI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_ESI), 4);
-	x86_mov_reg_membase (code, X86_EDI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EDI), 4);
-	/* save the ESP - this is used by endfinally */
-	x86_mov_membase_reg (code, X86_EBP, mono_exc_esp_offset, X86_ESP, 4);
-	/* call the handler */
-	x86_call_reg (code, X86_ECX);
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
-	/* restore EBP */
-	x86_pop_reg (code, X86_EBP);
-	/* restore saved regs */
-	x86_pop_reg (code, X86_ESI);
-	x86_pop_reg (code, X86_EDI);
-	x86_pop_reg (code, X86_EBX);
-	x86_leave (code);
-	x86_ret (code);
-
-	g_assert ((code - start) < 64);
-#endif
+	g_assert ((code - start) < sizeof(start));
 	return start;
 }
 
 static void
-throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsigned long ebx,
-		 unsigned long esi, unsigned long edi, unsigned long ebp, MonoObject *exc,
-		 unsigned long eip,  unsigned long esp)
+throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs)
 {
 	static void (*restore_context) (struct sigcontext *);
 	struct sigcontext ctx;
@@ -525,8 +520,10 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 		restore_context = arch_get_restore_context ();
 
 	/* adjust eip so that it point into the call instruction */
-	eip -= 1;
+	eip -= 4;
 
+	MONO_CONTEXT_SET_BP (&ctx, esp);
+	MONO_CONTEXT_SET_IP (&ctx, eip);
 #if 0
 	ctx.SC_ESP = esp;
 	ctx.SC_EIP = eip;
@@ -545,6 +542,67 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 }
 
 /**
+ * arch_get_throw_exception_generic:
+ *
+ * Returns a function pointer which can be used to raise 
+ * exceptions. The returned function has the following 
+ * signature: void (*func) (MonoException *exc); or
+ * void (*func) (char *exc_name);
+ *
+ */
+static gpointer 
+mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name)
+{
+	guint8 *code;
+	int alloc_size, pos, i;
+
+	code = start;
+
+	ppc_mflr (code, ppc_r0);
+	ppc_stw (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
+	alloc_size = PPC_MINIMAL_STACK_SIZE + (sizeof (gulong) * 14 + sizeof (gdouble) * 14);
+	// align to PPC_STACK_ALIGNMENT bytes
+	if (alloc_size & (PPC_STACK_ALIGNMENT - 1))
+		alloc_size += PPC_STACK_ALIGNMENT - (alloc_size & (PPC_STACK_ALIGNMENT - 1));
+	ppc_stwu (code, ppc_sp, -alloc_size, ppc_sp);
+	//ppc_break (code);
+	if (by_name) {
+		ppc_mr (code, ppc_r5, ppc_r3);
+		ppc_load (code, ppc_r3, mono_defaults.corlib);
+		ppc_load (code, ppc_r4, "System");
+		ppc_bl (code, 0);
+		ppc_patch (code - 4, mono_exception_from_name);
+	}
+	/* save all the regs on the stack */
+	pos = PPC_MINIMAL_STACK_SIZE;
+	ppc_stmw (code, ppc_r13, ppc_sp, pos);
+	pos += sizeof (gulong) * 19;
+	for (i = 14; i < 32; ++i) {
+		ppc_stfd (code, i, pos, ppc_sp);
+		pos += sizeof (gdouble);
+	}
+	/* call throw_exception (exc, ip, sp, int_regs, fp_regs) */
+	/* exc is already in place in r3 */
+	if (by_name)
+		ppc_mflr (code, ppc_r4);
+	else
+		ppc_mr (code, ppc_r4, ppc_r0); /* caller ip */
+	ppc_lwz (code, ppc_r5, 0, ppc_sp); /* caller sp */
+	/* pointer to the saved int regs */
+	pos = PPC_MINIMAL_STACK_SIZE;
+	ppc_addi (code, ppc_r6, ppc_sp, pos);
+	/* pointer to the saved fp regs */
+	pos += sizeof (gulong) * 19;
+	ppc_addi (code, ppc_r7, ppc_sp, pos);
+	ppc_bl (code, 0);
+	ppc_patch (code - 4, throw_exception);
+	/* we should never reach this breakpoint */
+	ppc_break (code);
+	g_assert ((code - start) < size);
+	return start;
+}
+
+/**
  * arch_get_throw_exception:
  *
  * Returns a function pointer which can be used to raise 
@@ -559,33 +617,13 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 gpointer 
 mono_arch_get_throw_exception (void)
 {
-	static guint8 start [24];
+	static guint8 start [128];
 	static int inited = 0;
-	guint8 *code;
 
 	if (inited)
 		return start;
-
+	mono_arch_get_throw_exception_generic (start, sizeof (start), FALSE);
 	inited = 1;
-	code = start;
-
-#if 0
-	x86_push_reg (code, X86_ESP);
-	x86_push_membase (code, X86_ESP, 4); /* IP */
-	x86_push_membase (code, X86_ESP, 12); /* exception */
-	x86_push_reg (code, X86_EBP);
-	x86_push_reg (code, X86_EDI);
-	x86_push_reg (code, X86_ESI);
-	x86_push_reg (code, X86_EBX);
-	x86_push_reg (code, X86_EDX);
-	x86_push_reg (code, X86_ECX);
-	x86_push_reg (code, X86_EAX);
-	x86_call_code (code, throw_exception);
-	/* we should never reach this breakpoint */
-	x86_breakpoint (code);
-
-	g_assert ((code - start) < 24);
-#endif
 	return start;
 }
 
@@ -604,27 +642,13 @@ mono_arch_get_throw_exception (void)
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
 {
-	static guint8 start [32];
+	static guint8 start [160];
 	static int inited = 0;
-	guint8 *code;
 
 	if (inited)
 		return start;
-
+	mono_arch_get_throw_exception_generic (start, sizeof (start), TRUE);
 	inited = 1;
-	code = start;
-#if 0
-	x86_push_membase (code, X86_ESP, 4); /* exception name */
-	x86_push_imm (code, "System");
-	x86_push_imm (code, mono_defaults.exception_class->image);
-	x86_call_code (code, mono_exception_from_name);
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 12);
-	/* save the newly create object (overwrite exception name)*/
-	x86_mov_membase_reg (code, X86_ESP, 4, X86_EAX, 4);
-	x86_jump_code (code, mono_arch_get_throw_exception ());
-
-	g_assert ((code - start) < 32);
-#endif
 	return start;
 }	
 
