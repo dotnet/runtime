@@ -159,7 +159,8 @@ mono_debug_add_type (MonoClass *klass)
 	MonoDebugHandle *handle;
 
 	handle = _mono_debug_get_image (klass->image);
-	g_assert (handle);
+	if (!handle)
+		return;
 
 	if (handle->_priv->debugger_info)
 		mono_debugger_add_type (handle->_priv->debugger_info, klass);
