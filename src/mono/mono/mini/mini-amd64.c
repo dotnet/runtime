@@ -5681,7 +5681,7 @@ mono_arch_is_int_overflow (void *sigctx, void *info)
 	rip = (guint8*)ctx->uc_mcontext.gregs [REG_RIP];
 
 	if (IS_REX (rip [0])) {
-		reg = amd64_rex_r (rip [0]);
+		reg = amd64_rex_b (rip [0]);
 		rip ++;
 	}
 	else
