@@ -1773,7 +1773,8 @@ ves_exec_method (MonoInvocation *frame)
 			BREAK;
 		CASE (CEE_NEG)
 			++ip;
-			if (sp->type == VAL_I32)
+		        --sp;
+			if (sp->type == VAL_I32) 
 				sp->data.i = - sp->data.i;
 			else if (sp->type == VAL_I64)
 				sp->data.l = - sp->data.l;
@@ -1781,15 +1782,18 @@ ves_exec_method (MonoInvocation *frame)
 				sp->data.f = - sp->data.f;
 			else if (sp->type == VAL_NATI)
 				sp->data.p = (gpointer)(- (int)sp->data.p);
+			++sp;
 			BREAK;
 		CASE (CEE_NOT)
 			++ip;
+		        --sp;
 			if (sp->type == VAL_I32)
 				sp->data.i = ~ sp->data.i;
 			else if (sp->type == VAL_I64)
 				sp->data.l = ~ sp->data.l;
 			else if (sp->type == VAL_NATI)
 				sp->data.p = (gpointer)(~ (int)sp->data.p);
+		        ++sp;
 			BREAK;
 		CASE (CEE_CONV_U1) /* fall through */
 		CASE (CEE_CONV_I1) {
