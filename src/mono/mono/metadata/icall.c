@@ -1537,7 +1537,7 @@ handle_parent:
 		match = 0;
 		l = g_slist_prepend (l, mono_property_get_object (domain, klass, prop));
 	}
-	if (!l && (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent)))
+	if ((!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent)))
 		goto handle_parent;
 	len = g_slist_length (l);
 	if (!System_Reflection_PropertyInfo)
