@@ -348,17 +348,7 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 		ji = mono_jit_info_table_find (mono_domain_get (), ptr);
 		g_assert (ji);
 
-		{
-			static int count = 0;
-			static void *ptrs [1000000];
-
-			count ++;
-			ptrs [count] = ji;
-			if ((count % 10000) == 0)
-				printf ("%d\n", count);
-
-			mono_runtime_free_method (mono_object_domain (delegate), ji->method);
-		}
+		mono_runtime_free_method (mono_object_domain (delegate), ji->method);
 	}
 }
 
