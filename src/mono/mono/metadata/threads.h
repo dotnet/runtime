@@ -31,6 +31,8 @@ extern gboolean ves_icall_System_Threading_Monitor_Monitor_test_synchronised(Mon
 extern void ves_icall_System_Threading_Monitor_Monitor_pulse(MonoObject *obj);
 extern void ves_icall_System_Threading_Monitor_Monitor_pulse_all(MonoObject *obj);
 extern gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj, int ms);
+extern WapiHandle *ves_icall_System_Threading_Mutex_CreateMutex_internal(MonoBoolean owned,char *name);
+extern void ves_icall_System_Threading_Mutex_ReleaseMutex_internal(WapiHandle *handle);
 
 extern gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext);
 extern gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext);

@@ -658,6 +658,14 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 	return(TRUE);
 }
 
+WapiHandle *ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned,char *name) {    
+   return(CreateMutex(NULL,owned,name));	                 
+}                                                                   
+
+void ves_icall_System_Threading_Mutex_ReleaseMutex_internal (WapiHandle *handle ) { 
+	ReleaseMutex(handle);
+}
+
 
 void mono_thread_init(void)
 {
