@@ -2398,6 +2398,12 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 
 					CHECK_STACK (&td, info->sig->param_count);
 					switch (info->sig->param_count) {
+					case 0:
+						if (MONO_TYPE_IS_VOID (info->sig->ret))
+							ADD_CODE (&td,MINT_ICALL_V_V);
+						else
+							g_assert_not_reached();
+						break;
 					case 1:
 						if (MONO_TYPE_IS_VOID (info->sig->ret))
 							ADD_CODE (&td,MINT_ICALL_P_V);

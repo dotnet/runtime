@@ -1239,6 +1239,11 @@ do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 	context->managed_code = 0;
 
 	switch (op) {
+	case MINT_ICALL_V_V: {
+		void (*func)() = ptr;
+        	func ();
+		break;
+	}
 	case MINT_ICALL_P_V: {
 		void (*func)(gpointer) = ptr;
         	func (sp [-1].data.p);
@@ -4409,7 +4414,10 @@ mono_interp_init(const char *file)
 	mono_add_internal_call ("Mono.Runtime::mono_runtime_install_handlers", mono_runtime_install_handlers);
 	mono_add_internal_call ("System.Delegate::CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal);
 
+ 	mono_register_jit_icall (mono_thread_interruption_checkpoint, "mono_thread_interruption_checkpoint", mono_create_icall_signature ("void"), FALSE);
+
 	mono_runtime_init (domain, NULL, NULL);
+
 
 	mono_thread_attach (domain);
 	return domain;
