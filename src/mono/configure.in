@@ -14,11 +14,11 @@ case "$host" in
 		platform_win32=yes
 		AC_DEFINE(PLATFORM_WIN32)
 		CC="gcc -mno-cygwin"
-		libdl="-ldl"
+		libdl=
 		;;
 	*)
 		platform_win32=no
-		libdl=
+		libdl="-ldl"
 		;;
 esac
 AC_MSG_RESULT($platform_win32)
