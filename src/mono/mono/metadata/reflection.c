@@ -3042,6 +3042,27 @@ get_field_name_and_type (MonoObject *field, char **name, MonoType **type)
 	}
 }
 
+static char*
+type_get_qualified_name (MonoType *type, MonoAssembly *ass) {
+	char *name, *result;
+	MonoClass *klass;
+	MonoAssembly *ta;
+
+	name = mono_type_get_name (type);
+	klass = mono_class_from_mono_type (type);
+	ta = klass->image->assembly;
+	if (ta == ass || klass->image == mono_defaults.corlib)
+		return name;
+
+	/* missing public key */
+	result = g_strdup_printf ("%s, %s, Version=%d.%d.%d.%d, Culture=%s", 
+		name, ta->aname.name,
+		ta->aname.major, ta->aname.minor, ta->aname.build, ta->aname.revision,
+		ta->aname.culture && *ta->aname.culture? ta->aname.culture: "neutral");
+	g_free (name);
+	return result;
+}
+
 static void
 encode_cattr_value (char *buffer, char *p, char **retbuffer, char **retp, guint32 *buflen, MonoType *type, MonoObject *arg)
 {
@@ -3106,6 +3127,62 @@ handle_enum:
 		p += slen;
 		g_free (str);
 		break;
+	}
+	case MONO_TYPE_CLASS: {
+		char *str;
+		guint32 slen;
+		if (!mono_object_isinst (arg, mono_defaults.monotype_class))
+			g_error ("only types allowed");
+handle_type:
+		str = type_get_qualified_name (((MonoReflectionType*)arg)->type, NULL);
+		slen = strlen (str);
+		if ((p-buffer) + 10 + slen >= *buflen) {
+			char *newbuf;
+			*buflen *= 2;
+			*buflen += slen;
+			newbuf = g_realloc (buffer, *buflen);
+			p = newbuf + (p-buffer);
+			buffer = newbuf;
+		}
+		mono_metadata_encode_value (slen, p, &p);
+		memcpy (p, str, slen);
+		p += slen;
+		g_free (str);
+		break;
+	}
+	/* it may be a boxed value or a Type */
+	case MONO_TYPE_OBJECT: {
+		MonoClass *klass = mono_object_class (arg);
+		char *str;
+		guint32 slen;
+		
+		if (mono_object_isinst (arg, mono_defaults.monotype_class)) {
+			*p++ = 0x50;
+			goto handle_type;
+		} else if (klass->enumtype) {
+			*p++ = 0x55;
+		} else if (klass->byval_arg.type >= MONO_TYPE_BOOLEAN && klass->byval_arg.type <= MONO_TYPE_R8) {
+			*p++ = simple_type = klass->byval_arg.type;
+			goto handle_enum;
+		} else {
+			g_error ("unhandled type in custom attr");
+		}
+		str = type_get_qualified_name (klass->enum_basetype, NULL);
+		slen = strlen (str);
+		if ((p-buffer) + 10 + slen >= *buflen) {
+			char *newbuf;
+			*buflen *= 2;
+			*buflen += slen;
+			newbuf = g_realloc (buffer, *buflen);
+			p = newbuf + (p-buffer);
+			buffer = newbuf;
+		}
+		mono_metadata_encode_value (slen, p, &p);
+		memcpy (p, str, slen);
+		p += slen;
+		g_free (str);
+		simple_type = klass->enum_basetype->type;
+		goto handle_enum;
 	}
 	default:
 		g_error ("type 0x%02x not yet supported in custom attr encoder", simple_type);
