@@ -635,7 +635,7 @@ COND:   ldloc.0
 	}
 
 	// bug #72148
-    .method private static int32 test_0_initlocals_float_ptr () {
+    .method public static int32 test_0_initlocals_float_ptr () {
 	.maxstack 3
 	.locals init (
 		float32[]	V_0,
@@ -658,6 +658,24 @@ COND:   ldloc.0
 	  		stloc.2 
 			ldc.i4.0
 			ret
+	}
+
+	.class nested private auto ansi sealed beforefieldinit FooStruct 
+		extends [mscorlib]System.ValueType {
+
+		.method public hidebysig specialname rtspecialname instance void .ctor () cil managed {
+			.maxstack 8
+			ret
+		}
+	}
+
+	.method public static int32 test_0_newobj_vtype () {
+		.maxstack 8
+
+		newobj instance void Tests/FooStruct::.ctor()
+		pop
+		ldc.i4.0
+		ret
 	}
 
 }
