@@ -5556,6 +5556,7 @@ mono_marshal_get_stelemref ()
 	
 	mono_mb_emit_byte (mb, CEE_RET);
 	ret = mono_mb_create_method (mb, sig, 4);
+	mono_mb_free (mb);
 	return ret;
 }
 
