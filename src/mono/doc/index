@@ -102,6 +102,19 @@
   </tr>
 </table>
 
+@item Mar 5th, 2003: Mono 0.22;  MonoDoc 0.2; Debugger 0.2.1: Release-o-Rama.
+
+	Mono 0.22 has been released.  See the <a
+	href="archive/mono-0.22">release notes</a>.  This is a bug fix
+	release.
+
+	A new preview of MonoDoc 0.2, the Mono Documentation browser
+	has been <a href=http://lists.ximian.com/archives/public/gtk-sharp-list/2003-March/001266.html">released</a>.
+
+	Martin also announced a <a
+	href="http://lists.ximian.com/archives/public/mono-list/2003-March/012756.html">new
+	release</a> of the Mono Debugger (both GUI and command line). 
+
 @item Mar 3rd, 2003: The Mono Hackers Hall Of Fame welcomes Zoltan Varga
 
 	The <a href="hackers.html">Mono Hackers Hall Of Fame</a>
