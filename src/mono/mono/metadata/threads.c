@@ -1005,9 +1005,9 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 void
 ves_icall_System_Threading_Thread_ResetAbort (void)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoThread *thread = mono_thread_current ();
+
+	MONO_ARCH_SAVE_REGS;
 	
 	if (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
 		return;
@@ -1015,8 +1015,8 @@ ves_icall_System_Threading_Thread_ResetAbort (void)
 	thread->state &= ~ThreadState_AbortRequested;
 	
 	if (!thread->abort_exc) {
-		mono_monitor_exit ((MonoObject *)thread);
 		const char *msg = "Unable to reset abort because no abort was requested";
+		mono_monitor_exit ((MonoObject *)thread);
 		mono_raise_exception (mono_get_exception_thread_state (msg));
 	} else {
 		thread->abort_exc = NULL;
