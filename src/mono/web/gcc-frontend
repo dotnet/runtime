@@ -1,9 +1,7 @@
 * The GCC front-end
 
-	The GCC front-end will accept input in a binary file with
-	codes in the Common Intermediate Language (CIL), and generate
-	native code.
+	Jeremy Singer has developed a .NET backend for GCC, his
+	research work is available <a
+	href="http://www.cl.cam.ac.uk/~jds31/research/gccnet/">here</a>.
 
-	This will allow pre-compilation and full optimization to take
-	place before a program is executed.
-
+	
