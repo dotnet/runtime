@@ -1819,9 +1819,9 @@ ves_icall_MonoGenericInst_GetInterfaces (MonoReflectionGenericInst *type)
 
 	klass = mono_class_from_mono_type (ginst->generic_type);
 
-	res = mono_array_new (domain, System_Reflection_MonoGenericInst, klass->interface_count);
+	res = mono_array_new (domain, System_Reflection_MonoGenericInst, ginst->count_ifaces);
 
-	for (i = 0; i < klass->interface_count; i++) {
+	for (i = 0; i < ginst->count_ifaces; i++) {
 		MonoReflectionType *iface = mono_type_get_object (domain, ginst->ifaces [i]);
 
 		mono_array_set (res, gpointer, i, iface);

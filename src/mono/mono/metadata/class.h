@@ -227,6 +227,7 @@ struct MonoVTable {
 struct _MonoGenericInst {
 	MonoClass *klass;
 	MonoType *parent;
+	int count_ifaces;
 	MonoType **ifaces;
 	MonoType *nested_in;
 	GList *nested;

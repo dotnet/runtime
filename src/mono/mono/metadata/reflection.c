@@ -6470,8 +6470,6 @@ mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
 		MonoReflectionGenericParam *gparam = mono_array_get (tb->generic_params, gpointer, i);
 		klass->gen_params [i] = *gparam->type.type->data.generic_param;
 	}
-
-	ensure_runtime_vtable (klass);
 }
 
 /*
@@ -6920,6 +6918,7 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 	else
 		icount = klass->interface_count;
 	ginst->ifaces = g_new0 (MonoType *, icount);
+	ginst->count_ifaces = icount;
 
 	for (i = 0; i < icount; i++) {
 		MonoReflectionType *itype;

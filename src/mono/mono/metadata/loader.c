@@ -813,10 +813,10 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 	for (i = 0; i < method->signature->param_count; ++i)
 		names [i] = "";
 
-	mono_class_init (klass);
-
 	if (klass->generic_inst) /* copy the names later */
 		return;
+
+	mono_class_init (klass);
 
 	if (klass->image->dynamic) {
 		MonoReflectionMethodAux *method_aux = 
