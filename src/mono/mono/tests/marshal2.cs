@@ -85,6 +85,10 @@ public class Test {
 			return 1;
 		if (Marshal.ReadInt32 (p, 28) != 4)
 			return 1;
+		if (Marshal.ReadInt32 (p, 32) != 10)
+			return 1;
+		if (Marshal.ReadInt32 (p, 36) != 11)
+			return 1;
 		if (Marshal.ReadInt32 (p, (int)Marshal.OffsetOf (t, "s2")) == 0)
 			return 1;
 
