@@ -89,7 +89,7 @@ vertical-align: top;
 	<p>At the October 2003 PDC conference a number of new
 	technologies were announced.  From the Mono release schedule
 	perspective, we should think about these technologies from
-	their release time perspective, and the features that must be
+	their release time standpoint, and the features that must be
 	supported.
 
 	<p>This document outlines the roadmap for the Mono project
@@ -99,11 +99,17 @@ vertical-align: top;
 	into the plan if external sources devote enough attention to
 	those problems.
 
+	<p>This is the timeline:
+	<p>
+	<center>
+	<img src="roadmap.png">
+	</center>
+	
 <h3>Background</h3>
 
 	<p>So far Microsoft has published two versions of the .NET
 	Framework: 1.0 and 1.1, the later with incremental updates to
-	the changes in 1.1.
+	the changes in 1.0
 
 	<p>The Mono project has been tracking some of the
 	improvements available in those two releases, some of the
@@ -131,7 +137,7 @@ vertical-align: top;
 	various people.
 
 	<p>Some other smaller and less used components do not have yet
-	a Mono equivalent.
+	a Mono equivalent (System.Management, System.Drawing.Design).
 
 <h3>Mono release strategy</h3>
 
@@ -139,7 +145,7 @@ vertical-align: top;
 	development effort we have put into it, and the use we have
 	given to them.  For example, the virtual machine and the C#
 	compiler very mature, while less commonly used functionality
-	like Windows.Forms or VB.NET are still under heavy
+	in Mono like Windows.Forms or VB.NET are still under heavy
 	development.
 
 	<p>Our strategy is to release the mature components as Mono
@@ -199,7 +205,7 @@ vertical-align: top;
 		compiler. 
 	</ul>
 	
-	<p>Release schedule: Q1/2004 release.
+	<p>Release schedule: Q1/2004.
 
 	<p>Bug fix releases would be done on a monthly basis.
 
@@ -268,7 +274,8 @@ vertical-align: top;
 
 		<li>Remoting improvements from Whidbey.
 
-		<li>System.XML improvements from Whidbey, most likely missing XQuery.
+		<li>System.XML: simpler improvements from Whidbey,
+		lacking the large additions (XQuery for example).
 
 		<li>Console and Serial ports support.
 
@@ -276,7 +283,8 @@ vertical-align: top;
 
 		<li>WSE1/WSE2 implementations.
 
-		<li>System.Windows.Forms officially debuts.
+		<li>System.Windows.Forms officially debuts with .NET
+		1.0 API;  1.2 API available as an unstable addition.
 	</ul>
 
 	<p>This release will by default provide .NET 1.2 APIs, but
@@ -285,8 +293,17 @@ vertical-align: top;
 	be distributed on the `mono-unstable' package, the libraries
 	in this release will be unsupported. 
 
-	<p>Release schedule: Q3/2004 release.
+	<p>Release schedule: Q4/2004.
 
+<h3>Mono 1.4</h3>
+
+	<p>A refresh update on the Mono 1.2 release containing the
+	missing components from the previous release and complete any
+	under performing pieces.  Updates to System.Xml, ASP.NET and
+	Windows.Forms to match the .NET 1.2 API.
+
+	<p>Release schedule: Q2/2005.
+	
 <h3>Peer projects</h3>
 
 	<p>Other projects like the debugger, the documentation browser
