@@ -2512,9 +2512,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			
 			} else {
 
-				if (virtual || (csig->hasthis && (cm->klass->marshalbyref || 
-								  shared_to_unshared_call ||
-								  cm->klass == mono_defaults.object_class))) {
+				if (virtual || (csig->hasthis && 
+						!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL) &&
+						(cm->klass->marshalbyref || 
+						 shared_to_unshared_call ||
+						 cm->klass == mono_defaults.object_class))) {
 					mono_class_init (cm->klass);
 					
 					if (cm->klass->flags & TYPE_ATTRIBUTE_INTERFACE)

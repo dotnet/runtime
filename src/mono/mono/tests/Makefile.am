@@ -92,7 +92,8 @@ TESTSRC=			\
 	remoting2.cs		\
 	remoting3.cs		\
 	nonvirt.cs		\
-	largeexp.cs
+	largeexp.cs		\
+	marshalbyref1.cs
 
 
 TESTSI=$(TESTSRC:.cs=.exe)
