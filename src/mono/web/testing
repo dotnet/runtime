@@ -29,6 +29,10 @@
   	that they work correctly.  Mono also needs a testing framework
 	to make it easy to write and run lots of tests. 
 
+	In some classes, we might also provide standalone tests because of
+	some reasons such as too huge testcases, another downloading and so on.
+	(For example, managed XSLT has standalone test which downloads and
+	expands some megabytes of OASIS test suite.)
 
 ** Getting started
 
