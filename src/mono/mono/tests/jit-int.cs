@@ -1,4 +1,29 @@
+using System;
+
 public class TestJit {
+
+	public static int test_short ()
+	{
+		int max = 32767;
+		int min = -32768;
+
+		int t1 = 0xffeedd;
+		short s1 = (short)t1;
+		int t2 = s1;
+
+		if ((uint)t2 != 0xffffeedd) 
+			return 1;
+		
+		Console.WriteLine (t2.ToString ("X"));
+		
+		if (Int16.Parse((min).ToString()) != -32768)
+			return 1;
+
+		if (Int16.Parse((max).ToString()) != 32767)
+			return 1;
+
+		return 0;
+	}
 
 	public static int test_call (int a, int b) {
 		return a+b;
@@ -88,8 +113,13 @@ public class TestJit {
 	}
 
 	public static int Main() {
-		int num = 1;
+		int num = 0;
 
+		num++;
+		if (test_short () != 0)
+			return num;
+
+		num++;
 		if (test_call (3, 5) != 8)
 			return num;
 		num++;

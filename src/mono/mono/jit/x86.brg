@@ -667,17 +667,11 @@ reg: ADDR_G 5 {
 }
 
 reg: CONV_I1 (reg) {
-	x86_alu_reg_imm (s->code, X86_AND, tree->left->reg1, 0xff);
-
-	if (tree->reg1 != tree->left->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, TRUE, FALSE);
 }
 
 reg: CONV_I2 (reg) {
-	x86_alu_reg_imm (s->code, X86_AND, tree->left->reg1, 0xffff);
-
-	if (tree->reg1 != tree->left->reg1)		     
-		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, TRUE, TRUE);
 }
 
 reg: CONST_I4 1 {
@@ -712,16 +706,14 @@ reg: CONV_OVF_I1 (reg) {
 	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_LE, TRUE, "OverflowException");	
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, -128);
 	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_GT, TRUE, "OverflowException");	
-	if (tree->reg1 != tree->left->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, TRUE, FALSE);
 }
 
 reg: CONV_OVF_I1_UN (reg) {
 	/* probe values between 0 to 128 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffffff80);
 	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");	
-	if (tree->reg1 != tree->left->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
+	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, FALSE, FALSE);
 }
 
 reg: CONV_OVF_U1 (reg) {
@@ -729,8 +721,7 @@ reg: CONV_OVF_U1 (reg) {
 	/* probe value to be within 0 to 255 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffffff00);
 	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");	
-	if (tree->reg1 != tree->left->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
+	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, FALSE, FALSE);
 }
 
 reg: CONV_OVF_U1_UN (reg) {
@@ -738,20 +729,16 @@ reg: CONV_OVF_U1_UN (reg) {
 	/* probe value to be within 0 to 255 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffffff00);
 	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");	
-	if (tree->reg1 != tree->left->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
+	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, FALSE, FALSE);
 }
 
-reg: CONV_OVF_I2 (reg) {
+reg: CONV_OVF_I2 (reg) {	
 	/* Probe value to be within -32768 and 32767 */
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 32767);
 	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_LE, TRUE, "OverflowException");	
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, -32768);
-	// fixme: check branch
-	mono_assert_not_reached ();
-	x86_branch8 (s->code, X86_CC_LT, -17, TRUE);
-	if (tree->reg1 != tree->left->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_GE, TRUE, "OverflowException");	
+	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, TRUE, TRUE);
 }
 
 reg: CONV_OVF_U2 (reg) {
@@ -759,8 +746,7 @@ reg: CONV_OVF_U2 (reg) {
 	/* Probe value to be within 0 and 65535 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffff0000);
 	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, TRUE, "OverflowException");	
-	if (tree->reg1 != tree->left->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
+	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, FALSE, TRUE);
 }
 
 reg: CONV_OVF_U2_UN (reg) {
@@ -768,16 +754,14 @@ reg: CONV_OVF_U2_UN (reg) {
 	/* Probe value to be within 0 and 65535 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffff0000);
 	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");	
-	if (tree->reg1 != tree->left->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
+	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, FALSE, TRUE);
 }
 
 reg: CONV_OVF_I2_UN (reg) {
 	/* Convert uint value into short, value within 0 and 32767 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffff8000);
 	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");	
-	if (tree->reg1 != tree->left->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
+	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, FALSE, TRUE);
 }
 
 reg: MUL (reg, reg) {
@@ -1838,17 +1822,11 @@ stmt: SWITCH (reg) {
 #
 
 reg: CONV_I1 (lreg) {
-	x86_alu_reg_imm (s->code, X86_AND, tree->left->reg1, 0xff);
-
-	if (tree->reg1 != tree->left->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, TRUE, FALSE);
 } 
 
 reg: CONV_I2 (lreg) {
-	x86_alu_reg_imm (s->code, X86_AND, tree->left->reg1, 0xffff);
-
-	if (tree->reg1 != tree->left->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, TRUE, TRUE);
 } 
 
 reg: CONV_I4 (lreg) {
@@ -1921,13 +1899,6 @@ stmt: POP (lreg)
 lreg: CONST_I8 1 {
 	x86_mov_reg_imm (s->code, tree->reg1, *((gint32 *)&tree->data.p));
 	x86_mov_reg_imm (s->code, tree->reg2, *((gint32 *)&tree->data.p + 1));
-}
-
-reg: CONV_I1 (lreg) {
-	x86_alu_reg_imm (s->code, X86_AND, tree->left->reg1, 0xff);
-
-	if (tree->reg1 != tree->left->reg1)
-		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
 
 lreg: CONV_I8 (CONST_I4) {
@@ -2812,7 +2783,7 @@ reg: CONV_I1 (freg) {
 	x86_push_reg (s->code, X86_EAX); // SP = SP - 4
 	x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
 	x86_pop_reg (s->code, tree->reg1);
-	x86_alu_reg_imm (s->code, X86_AND, tree->reg1, 0xff);
+	x86_widen_reg (s->code, tree->reg1, tree->reg1, TRUE, FALSE);
 	x86_fldcw_membase (s->code, X86_ESP, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
 }
@@ -2827,7 +2798,7 @@ reg: CONV_I2 (freg) {
 	x86_push_reg (s->code, X86_EAX); // SP = SP - 4
 	x86_fist_pop_membase (s->code, X86_ESP, 0, FALSE);
 	x86_pop_reg (s->code, tree->reg1);
-	x86_alu_reg_imm (s->code, X86_AND, tree->reg1, 0xffff);
+	x86_widen_reg (s->code, tree->reg1, tree->reg1, TRUE, TRUE);
 	x86_fldcw_membase (s->code, X86_ESP, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
 }
