@@ -1,3 +1,8 @@
+2005-02-12  Ben Maurer  <bmaurer@ximian.com>
+
+	* runtime/Makefile.am (centum_nunit_tests): Add corlib! Thanks to
+	nickd, miguel, et al. 
+
 2005-02-07  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Add -Wdeclaration-after-statement option to CFLAGS if
