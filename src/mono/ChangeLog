@@ -1,3 +1,8 @@
+
+Thu Jun 3 14:39:17 CEST 2004 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: libc setting for NetBSD (patch from recht@netbsd.org).
+
 2004-06-01  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am (bootstrap,faststrap,fasterstrap): Refactor.
