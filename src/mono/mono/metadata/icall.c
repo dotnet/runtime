@@ -2192,7 +2192,7 @@ handle_parent:
 }
 
 static MonoArray*
-ves_icall_Type_GetMethods (MonoReflectionType *type, guint32 bflags)
+ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case)
 {
 	MonoDomain *domain; 
 	GSList *l = NULL, *tmp;
@@ -2202,12 +2202,18 @@ ves_icall_Type_GetMethods (MonoReflectionType *type, guint32 bflags)
 	MonoObject *member;
 	int i, len, match;
 	GHashTable *method_slots = g_hash_table_new (NULL, NULL);
+	gchar *mname = NULL;
+	int (*compare_func) (const char *s1, const char *s2) = NULL;
 		
 	MONO_ARCH_SAVE_REGS;
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
 	len = 0;
+	if (name != NULL) {
+		mname = mono_string_to_utf8 (name);
+		compare_func = (ignore_case) ? g_strcasecmp : strcmp;
+	}
 
 handle_parent:
 	for (i = 0; i < klass->method.count; ++i) {
@@ -2236,6 +2242,12 @@ handle_parent:
 
 		if (!match)
 			continue;
+
+		if (name != NULL) {
+			if (compare_func (mname, method->name))
+				continue;
+		}
+		
 		match = 0;
 		if (g_hash_table_lookup (method_slots, GUINT_TO_POINTER (method->slot)))
 			continue;
@@ -2247,6 +2259,8 @@ handle_parent:
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
+
+	g_free (mname);
 	res = mono_array_new (domain, mono_defaults.method_info_class, len);
 	i = 0;
 
@@ -2333,7 +2347,7 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	int len = 0;
 	GHashTable *method_slots = g_hash_table_new (NULL, NULL);
 	gchar *propname = NULL;
-	int (*compare_func) (const char *s1, const char *s2);
+	int (*compare_func) (const char *s1, const char *s2) = NULL;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -4768,7 +4782,7 @@ static gconstpointer icall_map [] = {
 	"System.MonoType::IsByRefImpl", ves_icall_type_isbyref,
 	"System.MonoType::GetField", ves_icall_Type_GetField,
 	"System.MonoType::GetFields", ves_icall_Type_GetFields,
-	"System.MonoType::GetMethods", ves_icall_Type_GetMethods,
+	"System.MonoType::GetMethodsByName", ves_icall_Type_GetMethodsByName,
 	"System.MonoType::GetConstructors", ves_icall_Type_GetConstructors,
 	"System.MonoType::GetPropertiesByName", ves_icall_Type_GetPropertiesByName,
 	"System.MonoType::GetEvents", ves_icall_Type_GetEvents,

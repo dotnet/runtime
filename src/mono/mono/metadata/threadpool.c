@@ -191,7 +191,6 @@ async_invoke_thread (gpointer data)
 	thread->threadpool_thread = TRUE;
 	thread->state |= ThreadState_Background;
 	for (;;) {
-		gboolean cont;
 		MonoAsyncResult *ar;
 
 		ar = (MonoAsyncResult *) data;
