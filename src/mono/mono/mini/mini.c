@@ -7077,7 +7077,10 @@ emit_state (MonoCompile *cfg, MBState *state, int goal)
 		//if (state->reg2)
 		//	state->reg1 = state->reg2; /* chain rule */
 		//else
-		state->reg1 = mono_regstate_next_int (cfg->rs);
+#ifdef MONO_ARCH_ENABLE_EMIT_STATE_OPT
+		if (!state->reg1)
+#endif
+			state->reg1 = mono_regstate_next_int (cfg->rs);
 		//g_print ("alloc symbolic R%d (reg2: R%d) in block %d\n", state->reg1, state->reg2, cfg->cbb->block_num);
 		break;
 	case MB_NTERM_lreg:
@@ -7088,6 +7091,19 @@ emit_state (MonoCompile *cfg, MBState *state, int goal)
 		state->reg1 = mono_regstate_next_float (cfg->rs);
 		break;
 	default:
+#ifdef MONO_ARCH_ENABLE_EMIT_STATE_OPT
+		/*
+		 * Enabling this might cause bugs to surface in the local register
+		 * allocators on some architectures like x86.
+		 */
+		if ((state->tree->ssa_op == MONO_SSA_STORE) && (state->left->tree->opcode == OP_REGVAR)) {
+			/* Do not optimize away reg-reg moves */
+			if (! ((state->right->tree->ssa_op == MONO_SSA_LOAD) && (state->right->left->tree->opcode == OP_REGVAR))) {
+				state->right->reg1 = state->left->tree->dreg;
+			}
+		}
+#endif
+
 		/* do nothing */
 		break;
 	}

@@ -96,10 +96,10 @@ stind.r8: dest:f src1:b
 add: dest:i src1:i src2:i len:3 clob:1
 sub: dest:i src1:i src2:i len:3 clob:1
 mul: dest:i src1:i src2:i len:4 clob:1
-div: dest:a src1:i src2:i len:16 clob:d
-div.un: dest:a src1:i src2:i len:16 clob:d
-rem: dest:d src1:i src2:i len:16 clob:d
-rem.un: dest:d src1:i src2:i len:16 clob:d
+div: dest:a src1:a src2:i len:16 clob:d
+div.un: dest:a src1:a src2:i len:16 clob:d
+rem: dest:d src1:a src2:i len:16 clob:d
+rem.un: dest:d src1:a src2:i len:16 clob:d
 and: dest:i src1:i src2:i len:3 clob:1
 or: dest:i src1:i src2:i len:3 clob:1
 xor: dest:i src1:i src2:i len:3 clob:1
@@ -120,7 +120,6 @@ callvirt:
 cpobj:
 ldobj:
 ldstr:
-newobj:
 castclass:
 isinst:
 conv.r.un: dest:f src1:i len:8
@@ -531,10 +530,10 @@ int_sub: dest:i src1:i src2:i clob:1 len:64
 int_mul: dest:i src1:i src2:i clob:1 len:64
 int_mul_ovf: dest:i src1:i src2:i clob:1 len:64
 int_mul_ovf_un: dest:i src1:i src2:i clob:1 len:64
-int_div: dest:a src1:i src2:i clob:d len:64
-int_div_un: dest:a src1:i src2:i clob:d len:64
-int_rem: dest:d src1:i src2:i clob:d len:64
-int_rem_un: dest:d src1:i src2:i clob:d len:64
+int_div: dest:a src1:a src2:i clob:d len:64
+int_div_un: dest:a src1:a src2:i clob:d len:64
+int_rem: dest:d src1:a src2:i clob:d len:64
+int_rem_un: dest:d src1:a src2:i clob:d len:64
 int_and: dest:i src1:i src2:i clob:1 len:64
 int_or: dest:i src1:i src2:i clob:1 len:64
 int_xor: dest:i src1:i src2:i clob:1 len:64

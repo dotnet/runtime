@@ -2451,6 +2451,20 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		/* handle clobbering of sreg1 */
 		if ((spec [MONO_INST_CLOB] == '1' || spec [MONO_INST_CLOB] == 's') && ins->dreg != ins->sreg1) {
+			if (ins->dreg == ins->sreg2) {
+				/* 
+				 * copying sreg1 to dreg could clobber sreg2, so allocate a new
+				 * register for it.
+				 */
+				int reg2 = mono_amd64_alloc_int_reg (cfg, tmp, ins, dest_mask, ins->sreg2, 0);
+				MonoInst *copy;
+
+				DEBUG (g_print ("\tneed to copy sreg2 %s to reg %s\n", mono_arch_regname (ins->sreg2), mono_arch_regname (reg2)));
+				copy = create_copy_ins (cfg, reg2, ins->sreg2, NULL);
+				insert_before_ins (ins, tmp, copy);
+				prev_sreg2 = ins->sreg2 = reg2;
+			}
+
 			MonoInst *copy = create_copy_ins (cfg, ins->dreg, ins->sreg1, NULL);
 			DEBUG (g_print ("\tneed to copy sreg1 %s to dreg %s\n", mono_arch_regname (ins->sreg1), mono_arch_regname (ins->dreg)));
 			insert_before_ins (ins, tmp, copy);
