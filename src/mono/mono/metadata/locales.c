@@ -873,20 +873,40 @@ MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, 
 					 NULL, &ec);
 	if(U_SUCCESS (ec)) {
 		int pos, oldpos, len_delta=0;
-		int32_t newstr_len=mono_string_length (new);
-		UChar *uret;
+		int32_t newstr_len=mono_string_length (new), match_len;
+		UChar *uret, *match;
 		
 		for(pos=usearch_first (search, &ec);
 		    pos!=USEARCH_DONE;
 		    pos=usearch_next (search, &ec)) {
+			/* ICU usearch currently ignores most of the collator
+			 * attributes :-(
+			 *
+			 * Check the returned match to see if it really
+			 * does match properly...
+			 */
+			match_len = usearch_getMatchedLength (search);
+			match=(UChar *)g_malloc0 (sizeof(UChar) * (match_len + 1));
+			usearch_getMatchedText (search, match, match_len, &ec);
+
+			if (ucol_strcoll (coll, match, -1, mono_string_chars (old), -1) == UCOL_EQUAL) {
+				/* OK, we really did get a match */
 #ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION
-				   ": Got match at %d len %d", pos,
-				   usearch_getMatchedLength (search));
+				g_message (G_GNUC_PRETTY_FUNCTION
+					   ": Got match at %d len %d", pos,
+					   match_len);
 #endif
 
-			len_delta += (newstr_len -
-				      usearch_getMatchedLength (search));
+				len_delta += (newstr_len - match_len);
+			} else {
+				/* False alarm */
+#ifdef DEBUG
+				g_message (G_GNUC_PRETTY_FUNCTION
+					   ": Got false match at %d len %d",
+					   pos, match_len);
+#endif
+			}
+			g_free (match);
 		}
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION
@@ -899,12 +919,25 @@ MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, 
 		for(oldpos=0, pos=usearch_first (search, &ec);
 		    pos!=USEARCH_DONE;
 		    pos=usearch_next (search, &ec)) {
+			match_len = usearch_getMatchedLength (search);
+			match=(UChar *)g_malloc0 (sizeof(UChar) * (match_len + 1));
+			usearch_getMatchedText (search, match, match_len, &ec);
+
 			/* Add the unmatched text */
 			u_strncat (uret, mono_string_chars (this)+oldpos,
 				   pos-oldpos);
-			/* Then the replacement */
-			u_strcat (uret, mono_string_chars (new));
-			oldpos=pos+usearch_getMatchedLength (search);
+			if (ucol_strcoll (coll, match, -1, mono_string_chars (old), -1) == UCOL_EQUAL) {
+				/* Then the replacement */
+				u_strcat (uret, mono_string_chars (new));
+			} else {
+				/* Then the original, because this is a
+				 * false match
+				 */
+				u_strncat (uret, mono_string_chars (this)+pos,
+					   match_len);
+			}
+			oldpos=pos+match_len;
+			g_free (match);
 		}
 		
 		/* Finish off with the trailing unmatched text */
