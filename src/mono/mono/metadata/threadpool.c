@@ -279,7 +279,6 @@ overlapped_callback (guint32 error, guint32 numbytes, WapiOverlapped *overlapped
 		ares->count = numbytes;
 
 	thread = mono_thread_attach (mono_object_domain (ares));
-	SetEvent (ares->wait_handle->handle);
 	if (ares->async_callback != NULL) {
 		gpointer p [1];
 
@@ -287,8 +286,8 @@ overlapped_callback (guint32 error, guint32 numbytes, WapiOverlapped *overlapped
 		mono_runtime_invoke (ares->async_callback->method_info->method, NULL, p, NULL);
 	}
 
+	SetEvent (ares->wait_handle->handle);
 	mono_thread_detach (thread);
-	CloseHandle (thread->handle);
 	g_free (overlapped);
 }
 
