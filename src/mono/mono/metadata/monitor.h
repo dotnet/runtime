@@ -14,6 +14,8 @@
 
 #include <mono/metadata/object.h>
 
+void mono_monitor_init (void);
+
 extern gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj, guint32 ms);
 extern void ves_icall_System_Threading_Monitor_Monitor_exit(MonoObject *obj);
 extern gboolean ves_icall_System_Threading_Monitor_Monitor_test_owner(MonoObject *obj);

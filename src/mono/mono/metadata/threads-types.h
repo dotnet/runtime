@@ -15,15 +15,6 @@
 
 #include <mono/io-layer/io-layer.h>
 
-struct _MonoThreadsSync
-{
-	guint32 owner;			/* thread ID */
-	guint32 nest;
-	volatile guint32 entry_count;
-	HANDLE entry_sem;
-	GSList *wait_list;
-};
-
 /* This is a copy of System.Threading.ThreadState */
 typedef enum {
 	ThreadState_Running = 0x00000000,

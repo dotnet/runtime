@@ -16,8 +16,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/object-internals.h>
-
-#include <mono/os/gc_wrapper.h>
+#include <mono/metadata/gc-internal.h>
 
 /*#define LOCK_DEBUG(a) do { a; } while (0)*/
 #define LOCK_DEBUG(a)
@@ -52,38 +51,111 @@
  * an object.
  */
 
-
-static void 
-mon_finalize (void *o, void *unused)
+struct _MonoThreadsSync
 {
-	MonoThreadsSync *mon = o;
-	
+	guint32 owner;			/* thread ID */
+	guint32 nest;
+	volatile guint32 entry_count;
+	HANDLE entry_sem;
+	GSList *wait_list;
+	void *data;
+};
+
+typedef struct _MonitorArray MonitorArray;
+
+struct _MonitorArray {
+	MonitorArray *next;
+	int num_monitors;
+	MonoThreadsSync monitors [MONO_ZERO_LEN_ARRAY];
+};
+
+static CRITICAL_SECTION monitor_mutex;
+static MonoThreadsSync *monitor_freelist;
+static MonitorArray *monitor_allocated;
+static int array_size = 16;
+
+void
+mono_monitor_init (void)
+{
+	InitializeCriticalSection (&monitor_mutex);
+}
+
+/* LOCKING: this is called with monitor_mutex held */
+static void 
+mon_finalize (MonoThreadsSync *mon)
+{
 	LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": Finalizing sync %p", mon));
 
 	if (mon->entry_sem != NULL) {
 		CloseHandle (mon->entry_sem);
+		mon->entry_sem = NULL;
 	}
 	/* If this isn't empty then something is seriously broken - it
 	 * means a thread is still waiting on the object that owned
 	 * this lock, but the object has been finalized.
 	 */
 	g_assert (mon->wait_list == NULL);
+
+	mon->entry_count = 0;
+	/* owner and nest are set in mon_new, no need to zero them out */
+
+	mon->data = monitor_freelist;
+	monitor_freelist = mon;
 }
 
+/* LOCKING: this is called with monitor_mutex held */
 static MonoThreadsSync *
 mon_new (guint32 id)
 {
 	MonoThreadsSync *new;
-	
-#if HAVE_BOEHM_GC
-	new = GC_MALLOC (sizeof (MonoThreadsSync));
-	GC_REGISTER_FINALIZER (new, mon_finalize, NULL, NULL, NULL);
-#else
-	/* This should be freed when the object that owns it is
-	 * deleted
-	 */
-	new = g_new0 (MonoThreadsSync, 1);
-#endif
+
+	if (!monitor_freelist) {
+		MonitorArray *marray;
+		int i;
+		/* see if any sync block has been collected */
+		new = NULL;
+		for (marray = monitor_allocated; marray; marray = marray->next) {
+			for (i = 0; i < marray->num_monitors; ++i) {
+				if (marray->monitors [i].data == NULL) {
+					new = &marray->monitors [i];
+					new->data = monitor_freelist;
+					monitor_freelist = new;
+				}
+			}
+			/* small perf tweak to avoid scanning all the blocks */
+			if (new)
+				break;
+		}
+		/* need to allocate a new array of monitors */
+		if (!monitor_freelist) {
+			MonitorArray *last;
+			LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": allocating more monitors: %d", array_size));
+			marray = g_malloc0 (sizeof (MonoArray) + array_size * sizeof (MonoThreadsSync));
+			marray->num_monitors = array_size;
+			array_size *= 2;
+			/* link into the freelist */
+			for (i = 0; i < marray->num_monitors - 1; ++i) {
+				marray->monitors [i].data = &marray->monitors [i + 1];
+			}
+			marray->monitors [i].data = NULL; /* the last one */
+			monitor_freelist = &marray->monitors [0];
+			/* we happend the marray instead of prepending so that
+			 * the collecting loop above will need to scan smaller arrays first
+			 */
+			if (!monitor_allocated) {
+				monitor_allocated = marray;
+			} else {
+				last = monitor_allocated;
+				while (last->next)
+					last = last->next;
+				last->next = marray;
+			}
+		}
+	}
+
+	new = monitor_freelist;
+	monitor_freelist = new->data;
+
 	new->owner = id;
 	new->nest = 1;
 	
@@ -111,17 +183,16 @@ retry:
 
 	/* If the object has never been locked... */
 	if (mon == NULL) {
+		EnterCriticalSection (&monitor_mutex);
 		mon = mon_new (id);
 		if (InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, mon, NULL) == NULL) {
+			mono_gc_weak_link_add (&mon->data, obj);
+			LeaveCriticalSection (&monitor_mutex);
 			/* Successfully locked */
 			return 1;
 		} else {
-			/* Another thread got in first, so try again.
-			 * GC will take care of the monitor record
-			 */
-#ifndef HAVE_BOEHM_GC
-			mon_finalize (mon, NULL);
-#endif
+			mon_finalize (mon);
+			LeaveCriticalSection (&monitor_mutex);
 			goto retry;
 		}
 	}

@@ -25,6 +25,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/monitor.h>
 #include <mono/metadata/threadpool.h>
 #include <mono/utils/mono-uri.h>
 
@@ -77,6 +78,7 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	MonoString *arg;
 	
 	MONO_GC_PRE_INIT ();
+	mono_monitor_init ();
 	mono_thread_pool_init ();
 	mono_marshal_init ();
 
