@@ -117,6 +117,7 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 #elif defined(sparc) || defined (__sparc__)
 #define WAPI_ATOMIC_ASM
 
+#ifdef __GNUC__
 #define BEGIN_SPIN(tmp,lock) \
 __asm__ __volatile__("1:        ldstub [%1],%0\n\t"  \
                              "          cmp %0, 0\n\t" \
@@ -131,120 +132,125 @@ __asm__ __volatile__("stb	%%g0, [%0]"  \
                       : /* no outputs */ \
                       : "r" (&lock)\
                       : "memory");
+#else
+static inline void begin_spin(volatile unsigned char *lock)
+{
+	asm("1: ldstub [%i0], %l0");
+	asm("cmp %l0,0");
+	asm("bne 1b");
+	asm("nop");
+}
+#define BEGIN_SPIN(tmp,lock) begin_spin(&lock);
+#define END_SPIN(lock) ((lock) = 0);
+#endif
 
+extern volatile unsigned char _wapi_sparc_lock;
 
 static inline gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 exch, gint32 comp)
 {
-	static unsigned char lock;
 	int tmp;
 	gint32 old;
 
-	BEGIN_SPIN(tmp,lock)
+	BEGIN_SPIN(tmp,_wapi_sparc_lock)
 
 	old = *dest;
 	if (old==comp) {
 		*dest=exch;
 	}
 
-	END_SPIN(lock)
+	END_SPIN(_wapi_sparc_lock)
 
 	return(old);
 }
 
 static inline gpointer InterlockedCompareExchangePointer(volatile gpointer *dest, gpointer exch, gpointer comp)
 {
-        static unsigned char lock;
         int tmp;
         gpointer old;
 
-        BEGIN_SPIN(tmp,lock)
+        BEGIN_SPIN(tmp,_wapi_sparc_lock)
 
         old = *dest;
         if (old==comp) {
                 *dest=exch;
         }
 
-        END_SPIN(lock)
+        END_SPIN(_wapi_sparc_lock)
 
         return(old);
 }
 
 static inline gint32 InterlockedIncrement(volatile gint32 *dest)
 {
-        static unsigned char lock;
         int tmp;
         gint32 ret;
 
-        BEGIN_SPIN(tmp,lock)
+        BEGIN_SPIN(tmp,_wapi_sparc_lock)
 
-        *dest++;
+        (*dest)++;
         ret = *dest;
 
-        END_SPIN(lock)
+        END_SPIN(_wapi_sparc_lock)
 
         return(ret);
 }
 
 static inline gint32 InterlockedDecrement(volatile gint32 *dest)
 {
-        static unsigned char lock;
         int tmp;
         gint32 ret;
 
-        BEGIN_SPIN(tmp,lock)
+        BEGIN_SPIN(tmp,_wapi_sparc_lock)
 
-	*dest--;
+	(*dest)--;
         ret = *dest;
 
-        END_SPIN(lock)
+        END_SPIN(_wapi_sparc_lock)
 
         return(ret);
 }
 
 static inline gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
 {
-        static unsigned char lock;
         int tmp;
         gint32 ret;
 
-        BEGIN_SPIN(tmp,lock)
+        BEGIN_SPIN(tmp,_wapi_sparc_lock)
 
         ret = *dest;
         *dest = exch;
 
-        END_SPIN(lock)
+        END_SPIN(_wapi_sparc_lock)
 
         return(ret);
 }
 
 static inline gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch)
 {
-        static unsigned char lock;
         int tmp;
         gpointer ret;
 
-        BEGIN_SPIN(tmp,lock)
+        BEGIN_SPIN(tmp,_wapi_sparc_lock)
 
         ret = *dest;
         *dest = exch;
 
-        END_SPIN(lock)
+        END_SPIN(_wapi_sparc_lock)
 
         return(ret);
 }
 
 static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 {
-        static unsigned char lock;
         int tmp;
         gint32 ret;
 
-        BEGIN_SPIN(tmp,lock)
+        BEGIN_SPIN(tmp,_wapi_sparc_lock)
 
         ret = *dest;
         *dest += add;
 
-        END_SPIN(lock)
+        END_SPIN(_wapi_sparc_lock)
 
         return(ret);
 }
@@ -538,6 +544,11 @@ extern gint32 InterlockedDecrement(volatile gint32 *dest);
 extern gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch);
 extern gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch);
 extern gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add);
+
+#if defined(__hpux) && !defined(__GNUC__)
+#define WAPI_ATOMIC_ASM
+#endif
+
 #endif
 
 #endif /* _WAPI_ATOMIC_H_ */

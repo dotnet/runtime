@@ -14,7 +14,11 @@
 
 #include "mono/io-layer/wapi.h"
 
-#ifndef WAPI_ATOMIC_ASM
+#ifdef WAPI_ATOMIC_ASM
+#if defined(sparc) || defined (__sparc__)
+volatile unsigned char _wapi_sparc_lock;
+#endif
+#else
 
 static pthread_mutex_t spin;
 static mono_once_t spin_once=MONO_ONCE_INIT;
