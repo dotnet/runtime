@@ -160,6 +160,20 @@ mono_method_desc_new (const char *name, gboolean include_namespace)
 	return result;
 }
 
+MonoMethodDesc*
+mono_method_desc_from_method (MonoMethod *method)
+{
+	MonoMethodDesc *result;
+	
+	result = g_new0 (MonoMethodDesc, 1);
+	result->include_namespace = TRUE;
+	result->name = g_strdup (method->name);
+	result->klass = g_strdup (method->klass->name);
+	result->namespace = g_strdup (method->klass->name_space);
+
+	return result;
+}
+
 void
 mono_method_desc_free (MonoMethodDesc *desc)
 {

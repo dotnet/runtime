@@ -27,6 +27,7 @@ void            mono_type_get_desc (GString *res, MonoType *type, gboolean inclu
 char*           mono_signature_get_desc (MonoMethodSignature *sig, gboolean include_namespace);
 
 MonoMethodDesc* mono_method_desc_new (const char *name, gboolean include_namespace);
+MonoMethodDesc*mono_method_desc_from_method (MonoMethod *method);
 void            mono_method_desc_free (MonoMethodDesc *desc);
 gboolean        mono_method_desc_match (MonoMethodDesc *desc, MonoMethod *method);
 gboolean        mono_method_desc_full_match (MonoMethodDesc *desc, MonoMethod *method);
