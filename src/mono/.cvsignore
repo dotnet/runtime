@@ -9,6 +9,7 @@ config.sub
 configure
 libtool
 ltmain.sh
+ltconfig
 Makefile
 Makefile.in
 mono-*.tar.gz
