@@ -664,6 +664,9 @@ class_compute_field_layout (MonoClass *class)
 /* useful until we keep track of gc-references in corlib etc. */
 #define IS_GC_REFERENCE(t) ((t)->type == MONO_TYPE_U || (t)->type == MONO_TYPE_I || (t)->type == MONO_TYPE_PTR)
 
+/*
+ * LOCKING: this is supposed to be called with the loader lock held.
+ */
 void
 mono_class_layout_fields (MonoClass *class)
 {
@@ -1047,11 +1050,79 @@ mono_class_get_implemented_interfaces (MonoClass *klass)
 	return res;
 }
 
+typedef struct _IOffsetInfo IOffsetInfo;
+struct _IOffsetInfo {
+	IOffsetInfo *next;
+	int size;
+	int next_free;
+	int data [MONO_ZERO_LEN_ARRAY];
+};
+
+static IOffsetInfo *cached_offset_info = NULL;
+static int next_offset_info_size = 128;
+
+static int*
+cache_interface_offsets (int max_iid, int *data)
+{
+	IOffsetInfo *cached_info;
+	int *cached;
+	int new_size;
+	for (cached_info = cached_offset_info; cached_info; cached_info = cached_info->next) {
+		cached = cached_info->data;
+		while (cached < cached_info->data + cached_info->size && *cached) {
+			if (*cached == max_iid) {
+				int i, matched = TRUE;
+				cached++;
+				for (i = 0; i < max_iid; ++i) {
+					if (cached [i] != data [i]) {
+						matched = FALSE;
+						break;
+					}
+				}
+				if (matched)
+					return cached;
+				cached += max_iid;
+			} else {
+				cached += *cached + 1;
+			}
+		}
+	}
+	/* find a free slot */
+	for (cached_info = cached_offset_info; cached_info; cached_info = cached_info->next) {
+		if (cached_info->size - cached_info->next_free >= max_iid + 1) {
+			cached = &cached_info->data [cached_info->next_free];
+			*cached++ = max_iid;
+			memcpy (cached, data, max_iid * sizeof (int));
+			cached_info->next_free += max_iid + 1;
+			return cached;
+		}
+	}
+	/* allocate a new chunk */
+	if (max_iid + 1 < next_offset_info_size) {
+		new_size = next_offset_info_size;
+		if (next_offset_info_size < 4096)
+			next_offset_info_size += next_offset_info_size >> 2;
+	} else {
+		new_size = max_iid + 1;
+	}
+	cached_info = g_malloc0 (sizeof (IOffsetInfo) + sizeof (int) * new_size);
+	cached_info->size = new_size;
+	/*g_print ("allocated %d offset entries at %p (total: %d)\n", new_size, cached_info->data, offset_info_total_size);*/
+	cached = &cached_info->data [0];
+	*cached++ = max_iid;
+	memcpy (cached, data, max_iid * sizeof (int));
+	cached_info->next_free += max_iid + 1;
+	cached_info->next = cached_offset_info;
+	cached_offset_info = cached_info;
+	return cached;
+}
+
 static int
 setup_interface_offsets (MonoClass *class, int cur_slot)
 {
 	MonoClass *k, *ic;
 	int i, max_iid;
+	int *cached_data;
 	GPtrArray *ifaces;
 
 	/* compute maximum number of slots and maximum interface id */
@@ -1119,6 +1190,10 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	if (MONO_CLASS_IS_INTERFACE (class))
 		class->interface_offsets [class->interface_id] = cur_slot;
 
+	cached_data = cache_interface_offsets (max_iid + 1, class->interface_offsets);
+	g_free (class->interface_offsets);
+	class->interface_offsets = cached_data;
+
 	return cur_slot;
 }
 
@@ -1150,6 +1225,9 @@ mono_class_setup_vtable (MonoClass *class)
 	mono_loader_unlock ();
 }
 
+/*
+ * LOCKING: this is supposed to be called with the loader lock held.
+ */
 void
 mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int onum)
 {
@@ -1824,6 +1902,9 @@ mono_class_init (MonoClass *class)
 		mono_debugger_class_init_func (class);
 }
 
+/*
+ * LOCKING: this assumes the loader lock is held
+ */
 void
 mono_class_setup_mono_type (MonoClass *class)
 {
@@ -1943,6 +2024,9 @@ mono_class_setup_mono_type (MonoClass *class)
 	}
 }
 
+/*
+ * LOCKING: this assumes the loader lock is held
+ */
 void
 mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 {
@@ -2009,26 +2093,30 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 
 }
 
+/*
+ * LOCKING: this assumes the loader lock is held
+ */
 void
 mono_class_setup_supertypes (MonoClass *class)
 {
-	MonoClass *k;
-	int ms, i;
+	int ms;
 
 	if (class->supertypes)
 		return;
 
-	class->idepth = 0;
-	for (k = class; k ; k = k->parent) {
-		class->idepth++;
-	}
+	if (class->parent && !class->parent->supertypes)
+		mono_class_setup_supertypes (class->parent);
+	if (class->parent)
+		class->idepth = class->parent->idepth + 1;
+	else
+		class->idepth = 1;
 
 	ms = MAX (MONO_DEFAULT_SUPERTABLE_SIZE, class->idepth);
 	class->supertypes = g_new0 (MonoClass *, ms);
 
 	if (class->parent) {
-		for (i = class->idepth, k = class; k ; k = k->parent)
-			class->supertypes [--i] = k;
+		class->supertypes [class->idepth - 1] = class;
+		memcpy (class->supertypes, class->parent->supertypes, class->parent->idepth * sizeof (gpointer));
 	} else {
 		class->supertypes [0] = class;
 	}
