@@ -1376,7 +1376,7 @@ alloc_int_reg (MonoCompile *cfg, InstList *curinst, MonoInst *ins, int sym_reg, 
 }
 #endif
 
-#include "cprop.c"
+/*#include "cprop.c"*/
 
 /*
  * Local register allocation.
@@ -1408,8 +1408,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	ins = bb->code;
 
-	if (cfg->opt & MONO_OPT_COPYPROP)
-		local_copy_prop (cfg, ins);
+	/*if (cfg->opt & MONO_OPT_COPYPROP)
+		local_copy_prop (cfg, ins);*/
 	
 	i = 1;
 	fpcount = 0; /* FIXME: track fp stack utilization */
