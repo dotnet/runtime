@@ -1,3 +1,8 @@
+2003-10-13  Zoltan Varga  <vargaz@freemail.hu>
+
+	* mono/tests/Makefile.am: Link the tests with the test driver program
+	used for the mini tests.
+
 2003-10-10  Zoltan Varga  <vargaz@freemail.hu>
 
 	* mono/tests/libtest.c (mono_test_marshal_delegate): Added test for
