@@ -160,7 +160,7 @@ make install
 		  href="http://www.gimp.org/win32/libiconv-dev-20001007.zip">here</a>.
  
 		* Install the newest glib (cvs head version). You can download it
-                  from <a href="glib-1.3.11.tar.gz">here</a>.
+                  from <a href="ftp://ftp.gtk.org/pub/gtk/v1.3/glib-1.3.12.tar.gz">here</a>.
 
 		* Unpack the mono distribution:
 
@@ -189,7 +189,7 @@ make install
 		* Install <a href="http://www.freedesktop.org/software/pkgconfig">pkgconfig</a>.
 
 		* Install newest glib (cvs head version). You can download it
-                  from <a href="glib-1.3.11.tar.gz">here</a>. Maybe you need
+                  from <a href="ftp://ftp.gtk.org/pub/gtk/v1.3/glib-1.3.12.tar.gz">here</a>. Maybe you need
                   to modify your ACLOCAL_FLAGS for pkgconfig, for example if
                   your install prefix is /usr/local:
 <pre>
