@@ -44,30 +44,32 @@ while (<COMMANDS>) {
   chop;
   my @command = split /,/;
 
-  $n = $ARGV[2] . "/" . $command[2];
-  open OUTPUT, ">" . $n || die "Can not create $n";
-
-  my $content = "";
-  open INPUT, $command[3] || die "Can not open $command[3]";
-  while (<INPUT>) {
-    $content .= $_;
-  }
-  close INPUT;
-
-  my $line;
-  my $temp;
-  my $tit;
-  my $title;
-
-  $tit = $command[1];
-  foreach $line (@template) {
-    $temp = $line;
-    $title = "$tit / Mono";
-    $temp =~ s/#TITLE#/$title/;
-    $temp =~ s/#CONTENT#/$content/;
-    $temp =~ s/#MENU#/$menu/;
-    print OUTPUT $temp;
-  }
-
+  if ($command[2] =~ /^http:/){
+  } else {
+	  $n = $ARGV[2] . "/" . $command[2];
+	  open OUTPUT, ">" . $n || die "Can not create $n";
+	
+	  my $content = "";
+	  open INPUT, $command[3] || die "Can not open $command[3]";
+	  while (<INPUT>) {
+	    $content .= $_;
+	  }
+	  close INPUT;
+	
+	  my $line;
+	  my $temp;
+	  my $tit;
+	  my $title;
+	
+	  $tit = $command[1];
+	  foreach $line (@template) {
+	    $temp = $line;
+	    $title = "$tit / Mono";
+	    $temp =~ s/#TITLE#/$title/;
+	    $temp =~ s/#CONTENT#/$content/;
+	    $temp =~ s/#MENU#/$menu/;
+	    print OUTPUT $temp;
+	  }
+ }	
   close OUTPUT;
 }
