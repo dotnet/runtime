@@ -4280,11 +4280,8 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb) {
 	cli_header->ch_size = GUINT32_FROM_LE (72);
 	cli_header->ch_runtime_major = GUINT16_FROM_LE (2);
 	cli_header->ch_flags = GUINT32_FROM_LE (CLI_FLAGS_ILONLY);
-	if (assemblyb->entry_point) {
-		guint32 idx = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->method_to_table_idx, assemblyb->entry_point->method));
-		g_assert (idx);
-		cli_header->ch_entry_point = GUINT32_FROM_LE (idx | MONO_TOKEN_METHOD_DEF);
-	}
+	if (assemblyb->entry_point) 
+		cli_header->ch_entry_point = GUINT32_FROM_LE (assemblyb->entry_point->table_idx | MONO_TOKEN_METHOD_DEF);
 	else
 		cli_header->ch_entry_point = GUINT32_FROM_LE (0);
 	/* The embedded managed resources */

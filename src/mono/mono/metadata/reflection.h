@@ -337,7 +337,7 @@ typedef struct {
 typedef struct {
 	MonoReflectionAssembly assembly;
 	MonoDynamicAssembly *dynamic_assembly;
-	MonoReflectionMethod *entry_point;
+	MonoReflectionMethodBuilder *entry_point;
 	MonoArray *modules;
 	MonoString *name;
 	MonoString *dir;
