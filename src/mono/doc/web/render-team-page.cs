@@ -81,7 +81,7 @@ class Contributor {
         {
 
                 name         = GetName (node);
-                image        = GetField (node, "image");
+                image        = GetImage (node);
                 email        = GetField (node, "e-mail");
                 location     = GetField (node, "location");
                 organization = GetField (node, "organization");
@@ -94,6 +94,17 @@ class Contributor {
         public override string ToString ()
         {
                 return name.ToString ();
+        }
+
+        public static string GetImage (XmlNode node)
+        {
+                string result = GetField (node, "image");
+
+                if (result == String.Empty)
+                        return "none.png";
+
+                else
+                        return result;
         }
 
         public static string GetField (XmlNode node, string selector)

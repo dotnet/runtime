@@ -1,5 +1,14 @@
 2003-04-04  Duncan Mak  <duncan@ximian.com>
 
+	* doc/web/render-team-page.cs: Make it use 'none.png' if no image
+	are specified in the XML.
+
+	* doc/web/team.xml: Remove the comment.
+
+	* doc/web/render-team-page.cs: Make it not output a full HTML file.
+
+2003-04-04  Duncan Mak  <duncan@ximian.com>
+
 	* doc/web/commands: 
 	* doc/web/makefile: Add team page information.
 
