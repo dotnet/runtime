@@ -131,7 +131,7 @@ stmt: OP_SETRET (OP_ICONST) {
 
 stmt: OP_OUTARG (reg) {
 	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->reg1);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ppc_r1, tree->inst_imm, state->left->reg1);
 		return;
 	}
 	tree->opcode = OP_SETREG;
@@ -142,7 +142,7 @@ stmt: OP_OUTARG (reg) {
 
 stmt: OP_OUTARG (OP_REGVAR) {
 	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->tree->dreg);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ppc_r1, tree->inst_imm, state->left->tree->dreg);
 		return;
 	}
 	tree->opcode = OP_SETREG;
@@ -153,8 +153,8 @@ stmt: OP_OUTARG (OP_REGVAR) {
 
 stmt: OP_OUTARG (lreg) {
 	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->reg2);
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, s->frame_reg, tree->inst_imm + 4, state->left->reg1);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ppc_r1, tree->inst_imm, state->left->reg2);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ppc_r1, tree->inst_imm + 4, state->left->reg1);
 		return;
 	}
 	MONO_EMIT_NEW_UNALU (s, OP_SETREG, tree->unused, state->left->reg2);
@@ -166,7 +166,7 @@ stmt: OP_OUTARG (lreg) {
 
 stmt: OP_OUTARG (OP_ICONST) {
 	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STORE_MEMBASE_IMM, s->frame_reg, tree->inst_imm, state->left->tree->inst_c0);
+		MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STORE_MEMBASE_IMM, ppc_r1, tree->inst_imm, state->left->tree->inst_c0);
 		return;
 	}
 	tree->opcode = OP_SETREGIMM;
@@ -205,7 +205,7 @@ stmt: OP_OUTARG (OP_ICONST) {
 
 stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
 	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->left->tree->dreg);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ppc_r1, tree->inst_imm, state->left->left->tree->dreg);
 		return;
 	}
 	tree->opcode = OP_SETREG;
@@ -223,7 +223,7 @@ stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
 stmt: OP_OUTARG (freg) {
 	if (tree->inst_imm) {
 		int opcode = (tree->unused & 0xff00) == 0x0400? OP_STORER4_MEMBASE_REG: OP_STORER8_MEMBASE_REG;
-		MONO_EMIT_NEW_STORE_MEMBASE (s, opcode, s->frame_reg, tree->inst_imm, state->left->reg1);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, opcode, ppc_r1, tree->inst_imm, state->left->reg1);
 		return;
 	}
 	tree->opcode = OP_SETFREG;
@@ -234,7 +234,7 @@ stmt: OP_OUTARG (freg) {
 
 stmt: OP_OUTARG_R4 (freg) {
 	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->reg1);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, ppc_r1, tree->inst_imm, state->left->reg1);
 		return;
 	}
 	tree->opcode = OP_SETFREG;
@@ -245,7 +245,7 @@ stmt: OP_OUTARG_R4 (freg) {
 
 stmt: OP_OUTARG_R8 (freg) {
 	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->reg1);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, ppc_r1, tree->inst_imm, state->left->reg1);
 		return;
 	}
 	tree->opcode = OP_SETFREG;
@@ -269,7 +269,7 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 	}
 	//g_print ("vt size: %d at R%d + %d\n", tree->inst_imm, vt->inst_basereg, vt->inst_offset);
 	if (ovf_size != 0) {
-		mini_emit_memcpy (s, s->frame_reg, tree->inst_imm + (soffset - vt->inst_offset), vt->inst_basereg, soffset, ovf_size * sizeof (gpointer), 0);
+		mini_emit_memcpy (s, ppc_r1, tree->inst_imm + (soffset - vt->inst_offset), vt->inst_basereg, soffset, ovf_size * sizeof (gpointer), 0);
 	}
 }
 
