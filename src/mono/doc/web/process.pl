@@ -26,7 +26,7 @@ while (<COMMANDS>) {
 	  $menu .= "<tr><td valign=\"top\" class=\"navi" . $command[0];
 	  $menu .= "\"><a class=\"navi" . $command[0];
 	  $menu .= "\"";
-	  $menu .= "HREF=\"$command[2]\">$command[1]</A></td></tr>\n\n";
+	  $menu .= " HREF=\"$command[2]\">$command[1]</A></td></tr>\n\n";
   } 
 }
 close COMMANDS;
