@@ -382,7 +382,7 @@ mini_regression_list (int verbose, int count, char *images [])
 		mono_assembly_close (ass);
 	}
 	g_print ("Overall results: tests: %d, failed: %d, opt combinations: %d (pass: %.2f%%)\n", 
-		total_run, total, G_N_ELEMENTS (opt_sets), 100.0*(total_run-total)/total_run);
+		total_run, total, (int)G_N_ELEMENTS (opt_sets), 100.0*(total_run-total)/total_run);
 	return total;
 }
 
@@ -716,6 +716,16 @@ mono_main (int argc, char* argv[])
 		g_set_prgname (argv[i]);
 	}
 
+	if (trace_options != NULL){
+		/* 
+		 * Need to call this before mini_init () so we can trace methods 
+		 * compiled there too.
+		 */
+		mono_jit_trace_calls = mono_trace_parse_options (assembly, trace_options);
+		if (mono_jit_trace_calls == NULL)
+			exit (1);
+	}
+
 	mono_set_defaults (mini_verbose, opt);
 	domain = mini_init (argv [i]);
 	
@@ -777,12 +787,6 @@ mono_main (int argc, char* argv[])
 		fprintf (stderr, "cannot open assembly %s\n", aname);
 		mini_cleanup (domain);
 		return 2;
-	}
-
-	if (trace_options != NULL){
-		mono_jit_trace_calls = mono_trace_parse_options (assembly, trace_options);
-		if (mono_jit_trace_calls == NULL)
-			exit (1);
 	}
 
 	if (enable_debugging)
