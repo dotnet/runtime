@@ -144,18 +144,6 @@ load_symfile (MonoSymbolFile *symfile)
 		if (!method)
 			continue;
 
-		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-		    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
-		    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-		    (method->flags & METHOD_ATTRIBUTE_ABSTRACT))
-			g_assert_not_reached ();
-
-		if (!((MonoMethodNormal *) method)->header) {
-			g_warning (G_STRLOC ": Internal error: method %s.%s doesn't have a header",
-				   method->klass->name, method->name);
-			continue;
-		}
-
 		minfo = g_new0 (MonoDebugMethodInfo, 1);
 		minfo->file_offset = ((const char *) me) - start;
 		minfo->method = method;
@@ -370,11 +358,6 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 		return;
 
 	header = ((MonoMethodNormal *) method)->header;
-	if (!header) {
-		g_warning (G_STRLOC ": Internal error: method %s.%s doesn't have a header",
-			   method->klass->name, method->name);
-		return;
-	}
 
 	mep = g_hash_table_lookup (symfile->_priv->method_table, method);
 	if (!mep)
@@ -419,6 +402,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	address->end_address = mep->minfo->jit->code_start + mep->minfo->jit->code_size;
 	address->method_start_address = address->start_address + mep->minfo->jit->prologue_end;
 	address->method_end_address = address->start_address + mep->minfo->jit->epilogue_begin;
+	address->wrapper_address = mep->minfo->jit->wrapper_addr;
 	address->variable_table_offset = variable_offset;
 	address->type_table_offset = type_offset;
 
@@ -475,6 +459,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 #endif
 		var_table += mep->entry->num_locals;
 	} else {
+		g_assert ((header != NULL) || (mep->entry->num_locals == 0));
 		for (i = 0; i < mep->entry->num_locals; i++) {
 			MonoDebugVarInfo *var = &mep->minfo->jit->locals [i];
 			*var_table++ = mep->minfo->jit->locals [i];
