@@ -1164,11 +1164,13 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 		case MonoInlineNone:
 			++ip;
 			break;
+		case MonoInlineString:
+			mono_ldstr (mono_domain_get (), method->klass->image, mono_metadata_token_index (read32 (ip + 1)));
+			/* fall through */
 		case MonoInlineType:
 		case MonoInlineField:
 		case MonoInlineMethod:
 		case MonoInlineTok:
-		case MonoInlineString:
 		case MonoInlineSig:
 		case MonoShortInlineR:
 		case MonoInlineI:
@@ -3120,7 +3122,7 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
 		for (i = 0; i < argc; ++i) {
 			MonoString *arg = mono_string_new (domain, argv [i]);
-			mono_array_set (args, gpointer, i, mono_string_intern (arg));
+			mono_array_set (args, gpointer, i, arg);
 		}
 	}
 	

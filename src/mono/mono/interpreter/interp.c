@@ -710,10 +710,12 @@ db_match_method (gpointer data, gpointer user_data)
 #endif
 
 static guint32*
-calc_offsets (MonoMethodHeader *header, MonoMethodSignature *signature)
+calc_offsets (MonoImage *image, MonoMethodHeader *header, MonoMethodSignature *signature)
 {
 	int i, align, size, offset = 0;
 	int hasthis = signature->hasthis;
+	register const unsigned char *ip, *end;
+	const MonoOpcode *opcode;
 	guint32 *offsets = g_new0 (guint32, 2 + header->num_locals + signature->param_count + signature->hasthis);
 
 	for (i = 0; i < header->num_locals; ++i) {
@@ -739,6 +741,59 @@ calc_offsets (MonoMethodHeader *header, MonoMethodSignature *signature)
 		offset += size;
 	}
 	offsets [1] = offset;
+
+	/* intern the strings in the method. */
+	ip = header->code;
+	end = ip + header->code_size;
+	while (ip < end) {
+		i = *ip;
+		if (*ip == 0xfe) {
+			ip++;
+			i = *ip + 256;
+		}
+		opcode = &mono_opcodes [i];
+		switch (opcode->argument) {
+		case MonoInlineNone:
+			++ip;
+			break;
+		case MonoInlineString:
+			mono_ldstr (mono_domain_get (), image, mono_metadata_token_index (read32 (ip + 1)));
+			/* fall through */
+		case MonoInlineType:
+		case MonoInlineField:
+		case MonoInlineTok:
+		case MonoInlineSig:
+		case MonoInlineMethod:
+		case MonoShortInlineR:
+		case MonoInlineI:
+		case MonoInlineBrTarget:
+			ip += 5;
+			break;
+		case MonoInlineVar:
+			ip += 3;
+			break;
+		case MonoShortInlineVar:
+		case MonoShortInlineI:
+		case MonoShortInlineBrTarget:
+			ip += 2;
+			break;
+		case MonoInlineSwitch: {
+			gint32 n;
+			++ip;
+			n = read32 (ip);
+			ip += 4;
+			ip += 4 * n;
+			break;
+		}
+		case MonoInlineR:
+		case MonoInlineI8:
+			ip += 9;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+
+	}
 	return offsets;
 }
 
@@ -772,9 +827,10 @@ struct _vtallocation {
 		if (!(vtype)->byref) {	\
 			guint32 align;	\
 			guint32 size = mono_class_value_size ((vtype)->data.klass, &align);	\
-			if (!vtalloc || vtalloc->size < size) {	\
+			if (!vtalloc || vtalloc->size <= size) {	\
 				vtalloc = alloca (sizeof (vtallocation) + size);	\
 				vtalloc->size = size;	\
+				g_assert (size < 10000);	\
 			}	\
 			(sp)->data.vt.vt = vtalloc->data;	\
 			vtalloc = NULL;	\
@@ -953,6 +1009,8 @@ ves_exec_method (MonoInvocation *frame)
 	MethodProfile *profile_info;
 	GOTO_LABEL_VARS;
 
+	if (frame < 0xbff00000)
+		G_BREAKPOINT ();
 	mono_class_init (frame->method->klass);
 
 	DEBUG_ENTER ();
@@ -1006,14 +1064,15 @@ ves_exec_method (MonoInvocation *frame)
 	 * with alloca we get the expected huge performance gain
 	 * stackval *stack = g_new0(stackval, header->max_stack);
 	 */
-
+	g_assert (header->max_stack < 10000);
 	sp = frame->stack = alloca (sizeof (stackval) * header->max_stack);
 
 	if (!frame->method->info)
-		frame->method->info = calc_offsets (header, signature);
+		frame->method->info = calc_offsets (image, header, signature);
 	offsets = frame->method->info;
 
 	if (header->num_locals) {
+		g_assert (offsets [0] < 10000);
 		frame->locals = alloca (offsets [0]);
 		/* 
 		 * yes, we do it unconditionally, because it needs to be done for
@@ -1028,7 +1087,9 @@ ves_exec_method (MonoInvocation *frame)
 		int i;
 		int has_this = signature->hasthis;
 
+		g_assert (offsets [1] < 10000);
 		frame->args = alloca (offsets [1]);
+		g_assert ((signature->param_count + has_this) < 1000);
 		args_pointers = alloca (sizeof(void*) * (signature->param_count + has_this));
 		if (has_this) {
 			gpointer *this_arg;
@@ -3648,7 +3709,7 @@ ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
 		for (i = 0; i < argc; ++i) {
 			MonoString *arg = mono_string_new (domain, argv [i]);
-			mono_array_set (args, gpointer, i, mono_string_intern (arg));
+			mono_array_set (args, gpointer, i, arg);
 		}
 	}
 	
