@@ -72,11 +72,12 @@ A million repetitions of "a"
 
 #include <stdio.h>
 #include <string.h>
+#include <glib.h>
 #include "mono-digest.h"
 
 
-typedef          long int int32;
-typedef unsigned long int uint32;
+typedef gint32 int32;
+typedef guint32 uint32;
 
 /* #include <process.h> */	/* prototype for exit() - JHB */
 /* Using return() instead of exit() - SWR */
