@@ -1,3 +1,8 @@
+2002-05-21  Martin Baulig  <martin@gnome.org>
+
+	* mono.1: Updated to reflect my latest changes and beautified this a bit.
+	(FIXME: There are still command line argument which aren't documented here.)
+
 2002-05-19  Daniel Morgan <danmorg@sc.rr.com>
 
 	* doc/ado-net: updated page to include C# code snippets using
