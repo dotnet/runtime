@@ -177,17 +177,6 @@
 	There is a <a href="archive/mono-0.29-win32-1.exe">Windows
 	Installer for Mono 0.29</a> available now.
 	
-@item Dec 21st: Mono on PowerPC Progress.
-
-	Paolo reports today that the Mono JIT on the PowerPC was able
-	to successfully run the Mono C# compiler to build its first
-	programs.  This is by no means complete (exception handling is
-	missing, and Boehm GC seems to fail on MacOS X), this shows
-	the excellent progress Paolo has been making.
-
-	Zoltan has added support for modules to MCS (generation and
-	consumption).
-
 <h2>Older News</h2>
 
 	Click <a href="oldnews.html">here</a> to see older news.
