@@ -559,16 +559,6 @@
         </maintainers>
     </class>
 
-    <class name="System.Globalization.Calendar">
-        <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
-        <test-suite>no</test-suite>
-        <completion>10</completion>
-        <maintainers>
-            <maintainer>nick@ximian.com</maintainer>
-        </maintainers>
-    </class>
-
     <class name="System.Globalization.UnicodeCateogy">
         <last-activity>Jun-15-2001</last-activity>
         <implementation>yes</implementation>
@@ -801,7 +791,7 @@
 
     <class name="System.Diagnostics.Switch">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -811,7 +801,7 @@
 
     <class name="System.Diagnostics.BooleanSwitch">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -821,7 +811,7 @@
 
     <class name="System.Diagnostics.TraceSwitch">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -882,6 +872,16 @@
     <class name="System.Diagnostics.Trace">
         <last-activity>Jun-15-2001</last-activity>
         <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>angryjohn69@nc.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Diagnostics.TraceLevel">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -1085,6 +1085,14 @@
         </maintainers>
     </class>
 
-
+    <class name="System.TimeSpan">
+        <last-activity>Jun-17-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>duco@lorentz.xs4all.nl</maintainer>
+        </maintainers>
+    </class>
 </classes>
 

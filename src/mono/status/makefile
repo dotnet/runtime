@@ -11,8 +11,7 @@ xml:
 	./compare.exe $(NETDIR)\\mscorlib.dll $(MCSCLASSDIR)\\corlib\\corlib.dll > corlib.xml
 
 push:
-	scp *.xml www@www:/web/cvsmodules/mono/class-status
-	scp bn/*.html www@www:/web/cvsmodules/mono/class-status/bn
+	scp *.xml web/*html www@www:/web/cvsmodules/mono/class-status
 
 clean:
 	-rm -f compare.exe compare.pdb corlib.xml ByMaintainer.exe ByNamespace.exe commands *~ .*~
@@ -22,12 +21,12 @@ clean:
 
 ByNamespace: ByNamespace.xsl class.xml
 	$(CSC) ByNamespace.cs
-	mkdir bn
+	-mkdir bn
 	./ByNamespace
 
 ByMaintainer: ByMaintainer.xsl class.xml
 	$(CSC) ByMaintainer.cs
-	mkdir bm
+	-mkdir bm
 	./ByMaintainer
 
 webfiles:
