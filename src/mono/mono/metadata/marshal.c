@@ -1177,6 +1177,37 @@ mono_signature_to_name (MonoMethodSignature *sig, const char *prefix)
 	return result;
 }
 
+/**
+ * mono_marshal_get_string_encoding:
+ *
+ *  Return the string encoding which should be used for a given parameter.
+ */
+static MonoMarshalNative
+mono_marshal_get_string_encoding (MonoMethodPInvoke *piinfo, MonoMarshalSpec *spec)
+{
+	/* First try the parameter marshal info */
+	if (spec) {
+		if (spec->native == MONO_NATIVE_LPARRAY) {
+			if (spec->data.array_data.elem_type != 0)
+				return spec->data.array_data.elem_type;
+		}
+		else
+			return spec->native;
+	}
+
+	/* Then try the method level marshal info */
+	switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
+	case PINVOKE_ATTRIBUTE_CHAR_SET_ANSI:
+		return MONO_NATIVE_LPSTR;
+	case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
+		return MONO_NATIVE_LPWSTR;
+	case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
+		return MONO_NATIVE_LPTSTR;
+	default:
+		return MONO_NATIVE_LPSTR;
+	}
+}
+
 static inline MonoMethod*
 mono_marshal_find_in_cache (GHashTable *cache, gpointer key)
 {
@@ -3112,7 +3143,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			if (t->byref)
 				mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
 			break;
-		case MONO_TYPE_STRING:
+		case MONO_TYPE_STRING: {
+			MonoMarshalNative encoding = mono_marshal_get_string_encoding (piinfo, spec);
+
 			csig->params [argnum] = &mono_defaults.int_class->byval_arg;
 			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
@@ -3128,42 +3161,29 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
-
-			if (spec) {
-				switch (spec->native) {
-				case MONO_NATIVE_LPWSTR:
-					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPWSTR);
-					break;
-				case MONO_NATIVE_LPSTR:
-					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPSTR);
-					break;
-				default: {
-					char *msg = g_strdup_printf ("string marshalling conversion %d not implemented", spec->native);
+			
+			switch (encoding) {
+			case MONO_NATIVE_LPWSTR:
+				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPWSTR);
+				break;
+			case MONO_NATIVE_LPSTR:
+				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPSTR);
+				break;
+			case MONO_NATIVE_LPTSTR:
+				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPTSTR);
+				break;
+			default: {
+					char *msg = g_strdup_printf ("string marshalling conversion %d not implemented", encoding);
 					MonoException *exc = mono_get_exception_not_implemented (msg);
 					g_warning (msg);
 					g_free (msg);
 					mono_raise_exception (exc);
 				}
-				}
-			} else {
-				switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
-				case PINVOKE_ATTRIBUTE_CHAR_SET_ANSI:
-					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPSTR);
-					break;
-				case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
-					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPWSTR);
-					break;
-				case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
-					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPTSTR);
-					break;
-				default:
-					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPSTR);
-					break;					
-				}
 			}
 
 			mono_mb_emit_stloc (mb, tmp_locals [i]);
 			break;
+		}
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 			klass = t->data.klass;
@@ -3179,42 +3199,30 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_DEL_FTN);
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
 			} else if (klass == mono_defaults.stringbuilder_class) {
+				MonoMarshalNative encoding = mono_marshal_get_string_encoding (piinfo, spec);
+
 				g_assert (!t->byref);
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 				mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
 
-				if (spec) {
-					switch (spec->native) {
-					case MONO_NATIVE_LPWSTR:
-						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_SB_LPWSTR);
-						break;
-					case MONO_NATIVE_LPSTR:
-						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_SB_LPSTR);
-						break;
-					default: {
-						char *msg = g_strdup_printf ("stringbuilder marshalling conversion %d not implemented", spec->native);
-						MonoException *exc = mono_get_exception_not_implemented (msg);
-						g_warning (msg);
-						g_free (msg);
-						mono_raise_exception (exc);
-					}
-					}
-				} else {
-					switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
-					case PINVOKE_ATTRIBUTE_CHAR_SET_ANSI:
-						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_SB_LPSTR);
-						break;
-					case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
-						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_SB_LPWSTR);
-						break;
-					case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
-						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_SB_LPTSTR);
-						break;
-					default:
-						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_SB_LPSTR);
-						break;					
-					}
+				switch (encoding) {
+				case MONO_NATIVE_LPWSTR:
+					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_SB_LPWSTR);
+					break;
+				case MONO_NATIVE_LPSTR:
+					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_SB_LPSTR);
+					break;
+				case MONO_NATIVE_LPTSTR:
+					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_SB_LPTSTR);
+					break;
+				default: {
+					char *msg = g_strdup_printf ("stringbuilder marshalling conversion %d not implemented", encoding);
+					MonoException *exc = mono_get_exception_not_implemented (msg);
+					g_warning (msg);
+					g_free (msg);
+					mono_raise_exception (exc);
+				}
 				}
 
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
@@ -3277,17 +3285,26 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
 			if (klass->element_class == mono_defaults.string_class) {
+				MonoMarshalNative encoding = mono_marshal_get_string_encoding (piinfo, spec);
+
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 				mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
 
-				switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
-				case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
+				switch (encoding) {
+				case MONO_NATIVE_LPWSTR:
 					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STRARRAY_STRWLPARRAY);
 					break;
-				default:
+				case MONO_NATIVE_LPSTR:
 					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STRARRAY_STRLPARRAY);
-					break;					
+					break;
+				default: {
+					char *msg = g_strdup_printf ("string array marshalling conversion %d not implemented", encoding);
+					MonoException *exc = mono_get_exception_not_implemented (msg);
+					g_warning (msg);
+					g_free (msg);
+					mono_raise_exception (exc);
+				}
 				}
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
 			}
@@ -3719,6 +3736,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:			
 			if (t->data.klass == mono_defaults.stringbuilder_class) {
+				MonoMarshalNative encoding = mono_marshal_get_string_encoding (piinfo, spec);
 				gboolean need_free = TRUE;
 
 				g_assert (!t->byref);
@@ -3727,38 +3745,23 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 				mono_mb_emit_byte (mb, CEE_MONO_PROC2);
 
-				if (spec) {
-					switch (spec->native) {
-					case MONO_NATIVE_LPWSTR:
-						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPWSTR_SB);
-						/* 
-						 * mono_string_builder_to_utf16 does not allocate a 
-						 * new buffer, so no need to free it.
-						 */
-						need_free = FALSE;
-						break;
-					case MONO_NATIVE_LPSTR:
-						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_SB);
-						break;
-					default:
-						g_assert_not_reached ();
-					}
-				} else {
-					switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
-					case PINVOKE_ATTRIBUTE_CHAR_SET_ANSI:
-						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_SB);
-						break;
-					case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
-						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPWSTR_SB);
-						need_free = FALSE;
-						break;
-					case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
-						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPTSTR_SB);
-						break;
-					default:
-						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_SB);
-						break;					
-					}
+				switch (encoding) {
+				case MONO_NATIVE_LPWSTR:
+					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPWSTR_SB);
+					/* 
+					 * mono_string_builder_to_utf16 does not allocate a 
+					 * new buffer, so no need to free it.
+					 */
+					need_free = FALSE;
+					break;
+				case MONO_NATIVE_LPSTR:
+					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_SB);
+					break;
+				case MONO_NATIVE_LPTSTR:
+					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPTSTR_SB);
+					break;
+				default:
+					g_assert_not_reached ();
 				}
 
 				if (need_free) {
@@ -3842,6 +3845,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			klass = mono_class_from_mono_type (t);
 
 			if (klass->element_class == mono_defaults.string_class) {
+				MonoMarshalNative encoding = mono_marshal_get_string_encoding (piinfo, spec);
 				g_assert (tmp_locals [i]);
 
 				mono_mb_emit_ldarg (mb, argnum);
@@ -3851,8 +3855,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
 
-				switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
-				case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
+				switch (encoding) {
+				case MONO_NATIVE_LPWSTR:
 					/* 
 					 * The array elements point to the managed string data so 
 					 * they don't need to be freed.
@@ -4552,7 +4556,7 @@ mono_marshal_string_array (MonoArray *array)
 void *
 mono_marshal_string_array_to_unicode (MonoArray *array)
 {
-	char **result;
+	gunichar2 **result;
 	int i, len;
 
 	if (!array)
