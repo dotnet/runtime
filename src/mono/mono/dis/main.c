@@ -830,58 +830,6 @@ dis_property_methods (MonoImage *m, guint32 prop)
 		++start;
 	}
 }
-
-// This table is sorted
-static const char *keywords [] = {
-	"abstract", "algorithm", "alignment", "ansi", "any", "array", "as",
-	"assembly", "assert", "at", "auto", "autochar", "beforefieldinit",
-	"blob", "blob_object", "bool", "bstr", "bytearray", "byvalstr",
-	"callmostderived", "carray", "catch", "cdecl", "cf", "char", "cil",
-	"class", "clsid", "currency", "custom", "date", "decimal", "default",
-	"demand", "deny", "enum", "error", "explicit", "extends", "extern",
-	"false", "famandassem", "family", "famorassem", "fastcall", "fault",
-	"field", "filetime", "filter", "final", "finally", "fixed", "float",
-	"float32", "float64", "forwardref", "fromunmanaged", "handler",
-	"hidebysig", "hresult", "idispatch", "il", "implements", "import",
-	"in", "inheritcheck", "init", "initonly", "instance", "int", "int16",
-	"int32", "int64", "int8", "interface", "internalcall", "iunknown",
-	"lasterr", "linkcheck", "literal", "lpstr", "lpstruct", "lptstr",
-	"lpvoid", "lpwstr", "managed", "marshal", "method", "modopt",
-	"modreq", "native", "nested", "newslot", "noinlining", "nomangle",
-	"nometadata", "noncasdemand", "noncasinheritance", "noncaslinkdemand",
-	"notserialized", "null", "nullref", "object", "objectref", "opt",
-	"optil", "out", "permitonly", "pinned", "pinvokeimpl", "prejitdeny",
-	"prejitgrant", "preservesig", "private", "privatescope", "public",
-	"record", "refany", "reqmin", "reqopt", "reqrefuse", "reqsecobj",
-	"request", "rtspecialname", "runtime", "safearray", "sealed",
-	"sequential", "serializable", "specialname", "static", "stdcall",
-	"storage", "stored_object", "stream", "streamed_object", "string",
-	"struct", "synchronized", "syschar", "sysstring", "tbstr", "thiscall",
-	"tls", "to", "true", "typedref", "unicode", "unmanaged",
-	"unmanagedexp", "unsigned", "userdefined", "value", "valuetype",
-	"vararg", "variant", "vector", "virtual", "void", "wchar", "winapi",
-	"with",
-};
-
-#define NKEYWORDS sizeof (keywords)/sizeof(char*)
-
-static int 
-compmi(const void *m1, const void *m2) 
-{
-	return strcmp (m1, m2);
-}
-
-static char *
-quote_keyword (const char *ptr)
-{
-	char *m = bsearch (ptr, keywords, NKEYWORDS, sizeof(char*), compmi);
-	
-	if (m == NULL)
-		return g_strdup (ptr);
-	else
-		return g_strdup_printf ("'%s'", ptr);
-}
-	
 static char*
 dis_property_signature (MonoImage *m, guint32 prop_idx)
 {
@@ -912,7 +860,7 @@ dis_property_signature (MonoImage *m, guint32 prop_idx)
 		g_string_append (res, "specialname ");
 	if (prop_flags & 0x0400)
 		g_string_append (res, "rtspecialname ");
-	qk = quote_keyword (name);
+	qk = get_escaped_name (name);
 	g_string_sprintfa (res, "%s %s (", blurb, qk);
 	g_free (qk);
 	g_free (blurb);
