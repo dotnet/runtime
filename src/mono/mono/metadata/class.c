@@ -2124,7 +2124,7 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec,
 		class = mono_array_class_get (type->data.klass, 1);
 		break;
 	case MONO_TYPE_PTR:
-		class = mono_class_from_mono_type (type->data.type);
+		class = mono_ptr_class_get (type->data.type);
 		break;
 	case MONO_TYPE_GENERICINST:
 		g_assert (type->data.generic_inst->klass);

@@ -41,6 +41,7 @@ TEST_CS_SRC=			\
 	exception16.cs		\
 	struct.cs		\
 	valuetype-gettype.cs	\
+	typeof-ptr.cs		\
 	static-constructor.cs	\
 	pinvoke.cs		\
 	pinvoke1.cs		\
