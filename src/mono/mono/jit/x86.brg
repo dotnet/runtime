@@ -1067,6 +1067,24 @@ reg: CONV_OVF_I2_UN (reg) {
 	x86_widen_reg (s->code, tree->reg1, tree->left->reg1, FALSE, TRUE);
 }
 
+reg: MUL (reg, coni4) "MB_USE_OPT1(0)" {
+	unsigned int i, j, k, v;
+
+	v = tree->right->data.i;
+	for (i = 0, j = 1, k = 0xfffffffe; i < 32; i++, j = j << 1, k = k << 1) {
+		if (v & j)
+			break;
+	}
+
+	if (v < 0 || i == 32 || v & k) {
+		x86_imul_reg_reg_imm (s->code, tree->reg1, tree->left->reg1, tree->right->data.i);
+	} else {
+		x86_shift_reg_imm (s->code, X86_SHL, tree->left->reg1, i);
+		if (tree->reg1 != tree->left->reg1)
+			x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	}
+}
+
 reg: MUL (reg, reg) {
 	x86_imul_reg_reg (s->code, tree->left->reg1, tree->right->reg1);
 
@@ -1093,6 +1111,38 @@ reg: MUL_OVF_UN (reg, reg) {
 
 	mono_assert (tree->reg1 == X86_EAX &&
 		     tree->reg2 == X86_EDX);
+}
+
+reg: DIV (reg, coni4) {
+	unsigned int i, j, k, v;
+
+	v = tree->right->data.i;
+	for (i = 0, j = 1, k = 0xfffffffe; i < 32; i++, j = j << 1, k = k << 1) {
+		if (v & j)
+			break;
+	}
+
+	x86_shift_reg_imm (s->code, X86_SAR, tree->left->reg1, i);
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+
+} cost {
+	unsigned int i, j, k, v;
+
+	if (v < 0) 
+		return MBMAXCOST;
+
+	v = tree->right->data.i;
+	for (i = 0, j = 1, k = 0xfffffffe; i < 32; i++, j = j << 1, k = k << 1) {
+		if (v & j)
+			break;
+	}
+	
+	if (i == 32 || v & k) 
+		return MBMAXCOST;
+
+	return 0;
+
 }
 
 reg: DIV (reg, reg) {
@@ -1232,9 +1282,21 @@ reg: CEQ (reg, reg) {
 	x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
 }
 
+reg: CGT (reg, coni4) "MB_USE_OPT1(0)" {
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
+	x86_set_reg (s->code, X86_CC_GT, tree->reg1, TRUE);
+	x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
+}
+
 reg: CGT (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
 	x86_set_reg (s->code, X86_CC_GT, tree->reg1, TRUE);
+	x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
+}
+
+reg: CGT_UN (reg, coni4) "MB_USE_OPT1(0)" {
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
+	x86_set_reg (s->code, X86_CC_GT, tree->reg1, FALSE);
 	x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
 }
 
@@ -1244,9 +1306,21 @@ reg: CGT_UN (reg, reg) {
 	x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
 }
 
+reg: CLT (reg, coni4) "MB_USE_OPT1(0)" {
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
+	x86_set_reg (s->code, X86_CC_LT, tree->reg1, TRUE);
+	x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
+}
+
 reg: CLT (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
 	x86_set_reg (s->code, X86_CC_LT, tree->reg1, TRUE);
+	x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
+}
+
+reg: CLT_UN (reg, coni4) "MB_USE_OPT1(0)" {
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
+	x86_set_reg (s->code, X86_CC_LT, tree->reg1, FALSE);
 	x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
 }
 
@@ -1256,6 +1330,13 @@ reg: CLT_UN (reg, reg) {
 	x86_widen_reg (s->code, tree->reg1, tree->reg1, FALSE, FALSE);
 }
 
+reg: AND (reg, coni4) "MB_USE_OPT1(0)" {
+	x86_alu_reg_imm (s->code, X86_AND, tree->left->reg1, tree->right->data.i);
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
 reg: AND (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_AND, tree->left->reg1, tree->right->reg1);
 
@@ -1263,8 +1344,22 @@ reg: AND (reg, reg) {
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
 
+reg: OR (reg, coni4) "MB_USE_OPT1(0)" {
+	x86_alu_reg_imm (s->code, X86_OR, tree->left->reg1, tree->right->data.i);
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
 reg: OR (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_OR, tree->left->reg1, tree->right->reg1);
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
+reg: XOR (reg, coni4) "MB_USE_OPT1(0)" {
+	x86_alu_reg_imm (s->code, X86_XOR, tree->left->reg1, tree->right->data.i);
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);

@@ -10,7 +10,8 @@ TESTSRC=			\
 	isinst.cs		\
 	inline1.cs		\
 	inline2.cs		\
-	inline3.cs
+	inline3.cs		\
+	muldiv.cs
 
 TESTSI=$(TESTSRC:.cs=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)
