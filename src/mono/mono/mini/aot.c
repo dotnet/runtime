@@ -1747,7 +1747,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		g_assert (cfg);
 
 		if (cfg->disable_aot) {
-			printf ("Skip (other): %s\n", mono_method_full_name (method, TRUE));
+			//printf ("Skip (other): %s\n", mono_method_full_name (method, TRUE));
 			ocount++;
 			continue;
 		}
