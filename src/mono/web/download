@@ -24,6 +24,107 @@
 
         Packages can find RPM Spec files and other resources in the <a
 	href="http://www.go-mono.com/packagers/">packagers page</a>.
+
+	<table>
+	  <tbody>
+ 	  <tr bgcolor="#DDDDDD">
+	    <td>
+	      <b>Beta 3</b><br>
+	      <!-- <a href="archive/beta3/beta3.html">Release notes</a><br> -->
+	       June 15th, 2004
+	    </td>
+	    <td>
+	      <table cellspacing="1" cellpadding="3">
+		<tr bgcolor="#BBBBBB">
+		  <td>
+		    <b>Source Code</b>
+	          </td>
+		  <td>
+	 	    <ul>
+	              <li><a href="archive/beta3/mono-0.96.tar.gz">Mono Runtime 0.96</a>
+	 	      <li><a href="archive/beta3/mcs-0.95.tar.gz">Mono Class Libraries and C# Compiler 0.96</a>
+ 		      <li><a href="archive/beta3/libgdiplus-0.9.tar.gz">libgdiplus 0.9</a>
+		      <p>
+		      <li><a href="archive/beta2/monodoc-0.17.tar.gz">MonoDoc 0.17</a>
+ 		      <li><a href="archive/beta2/xsp-0.15.tar.gz">XSP web server 0.15</a>
+ 		      <li><a href="archive/beta2/mod_mono-0.11.tar.gz">Apache Mono module 0.11</a>
+		      <p>
+		      <li><a href="archive/beta2/gtk-sharp-0.98.tar.gz">Gtk# 0.98</a>
+		      <li><a href="archive/beta2/gecko-sharp-0.5.tar.gz">Gecko# 0.5</a>
+	            </ul>
+		  </td>
+	        </tr>
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
+                    <img src="images/redhat-36.gif"><b>Red Hat 9.0/x86</b><br>
+		  </td>
+  		  <td>
+		    <a href="archive/beta3/redhat-9-i386">Packages</a>
+		  </td>
+	        </tr>
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
+                    <img src="images/redhat-36.gif"><b>Fedora Core 1/x86</b><br>
+		  </td>
+  		  <td>
+		    <a href="archive/beta3/fedora-1-i386">Packages</a>
+                    <p><a href="http://www.go-mono.com/archive/yum-repository/fedora-1-i386">YUM Repository</a>
+		  </td>
+	        </tr>
+<!-- 		<tr bgcolor="#bbbbbb"> -->
+<!-- 		  <td bgcolor="#999999"> -->
+<!--                     <img src="images/redhat-36.gif"><b>Fedora Core 2/x86</b><br> -->
+<!-- 		  </td> -->
+<!--   		  <td> -->
+<!-- 		    <a href="archive/beta2/fedora-2-i386">Packages</a> -->
+<!--                     <p><a href="http://www.go-mono.com/archive/yum-repository/fedora-2-i386">YUM Repository</a> -->
+<!-- 		  </td> -->
+<!-- 	        </tr> -->
+                <tr bgcolor="#bbbbbb">
+                    <td bgcolor="#999999">
+                      <img src="images/suse-36.gif"><b>SLES 8/x86</b><br>
+                    </td>
+                    <td>
+                      <a href="archive/beta3/sles-8-i386/">Packages</a>
+                    </td>
+                </tr>
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
+                    <img src="images/suse-36.gif"><b>SUSE 9/x86</b><br>
+		  </td>
+  		  <td>
+		    <a href="archive/beta3/suse-90-i586/">Packages</a>
+		  </td>
+	        </tr>
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
+                    <img src="images/suse-36.gif"><b>SUSE 9.1/x86</b><br>
+		  </td>
+  		  <td>
+		    <a href="archive/beta3/suse-91-i586/">Packages</a>
+		  </td>
+	        </tr>
+<!-- 		<tr> -->
+<!-- 		  <td bgcolor="#999999"> -->
+<!-- 		    <div align="left"><img src="images/windows-36.gif"></div> -->
+<!-- 		    <div align="right"><b>Windows installer</b><br><small>Win2k and above</small></div> -->
+<!-- 		  </td> -->
+<!-- 		  <td> -->
+<!-- 		    <a href="archive/beta2/windows/mono-Beta2-win32-1.exe">Mono Setup</a> -->
+<!-- 		  </td> -->
+<!-- 		</tr> -->
+<!-- 		<tr> -->
+<!-- 		  <td bgcolor="#999999"> -->
+<!--                     <img src="images/macos-36.gif"><b>Mac OS X package</b> -->
+<!-- 		  </td> -->
+<!-- 		  <td> -->
+<!-- 		    <a href="archive/beta2/macos/Mono_0.95_Beta_2.dmg">Mono_0.95_Beta_2.dmg</a>: on /Library/Framework.<br> -->
+<!-- 		    <a href="archive/beta2/macos/mono-0.95.dmg">mono-0.95.dmg</a> On /opt. -->
+<!-- 		  </td> -->
+<!-- 		</tr> -->
+             </table>
+            </td>
+	</table>
         
 	<table>
 	  <tbody>
