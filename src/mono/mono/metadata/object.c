@@ -626,8 +626,8 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 	pa [0] = args;
 
 	domain = mono_object_domain (args);
-	g_assert (!domain->entry_assembly);
-	domain->entry_assembly = method->klass->image->assembly;
+	if (!domain->entry_assembly)
+		domain->entry_assembly = method->klass->image->assembly;
 
 	/* FIXME: check signature of method */
 	if (method->signature->ret->type == MONO_TYPE_I4) {
