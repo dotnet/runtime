@@ -167,8 +167,15 @@ db_match_method (gpointer data, gpointer user_data)
 #define DEBUG_LEAVE()	\
 	if (tracing) {	\
 		MonoClass *klass = frame->method->klass;	\
+		char *args;	\
+		if (signature->ret->type != MONO_TYPE_VOID)	\
+			args = dump_stack (frame->retval, frame->retval + 1);	\
+		else	\
+			args = g_strdup ("");	\
 		output_indent ();	\
-		g_print ("(%d) Leaving %s.%s::%s\n", GetCurrentThreadId(), klass->name_space, klass->name, frame->method->name);	\
+		g_print ("(%d) Leaving %s.%s::%s", GetCurrentThreadId(), klass->name_space, klass->name, frame->method->name);	\
+		g_print (" => %s\n", args);	\
+		g_free (args);	\
 		debug_indent_level--;	\
 	}	\
 	if (profiling) {	\
@@ -3898,6 +3905,7 @@ main (int argc, char *argv [])
 	mono_install_handler (interp_ex_handler);
 
 	domain = mono_init (file);
+	mono_runtime_init (domain);
 	mono_thread_init (domain);
 	mono_network_init ();
 
