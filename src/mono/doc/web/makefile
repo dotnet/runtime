@@ -1,6 +1,9 @@
-ROOT=C:/WINNT
-CSCRIPT = $(ROOT)/system32/cscript.exe
-CSC=csc
+ifeq ($(findstring CYGWIN,$(shell uname)),)
+CSC=mcs
+RUN_MONO=mono
+else
+CSC=csc /nologo
+endif
 
 CORCOMPARE=../../../mcs/tools/corcompare
 
@@ -106,13 +109,13 @@ mono-beginning.xml: ../mono-beginning.xml
 	cp ../mono-beginning.xml .
 
 deploy/index.rss: mono-rss.exe ../index
-	./mono-rss.exe ../index deploy/index.rss
+	$(RUN_MONO) ./mono-rss.exe ../index deploy/index.rss
 
 mono-rss.exe: mono-rss.cs rss.cs 
 	$(CSC) mono-rss.cs rss.cs
 
 ../team: render-team-page.exe team.xml
-	./render-team-page.exe team.xml "../team"
+	$(RUN_MONO) ./render-team-page.exe team.xml "../team"
 
 render-team-page.exe: render-team-page.cs
 	$(CSC) render-team-page.cs
@@ -132,10 +135,12 @@ $(OBJECTS): $(patsubst deploy/%.html,src/%.src, $(OBJECTS))
 
 #.PRECIOUS: $(patsubst deploy/%.html,src/%.src, $(OBJECTS))
 
+transform.exe: transform.cs
+	$(CSC) transform.cs
 
 
 .PRECIOUS: src/%.src
-src/%.src: ../% commands makefile template.html.in
+src/%.src: ../% commands template.html.in #makefile
 	perl htmlify $< > $@
 
 .PRECIOUS: ../class-status-%
@@ -144,20 +149,20 @@ src/%.src: ../% commands makefile template.html.in
 
 
 .PRECIOUS: src/%.html.in
-src/%.html.in: src/%.xml $(CORCOMPARE)/transform.js $(CORCOMPARE)/cormissing.xsl
-	$(CSCRIPT) /nologo $(CORCOMPARE)/transform.js $< $(CORCOMPARE)/cormissing.xsl > $@
+src/%.html.in: src/%.xml transform.exe $(CORCOMPARE)/cormissing.xsl
+	$(RUN_MONO) ./transform.exe $< $(CORCOMPARE)/cormissing.xsl > $@
 
 
 
 .PRECIOUS: src/%.xml
 src/%.xml: ../../../mcs/class/lib/%.dll $(CORCOMPARE)/CorCompare.exe
-	$(CORCOMPARE)/CorCompare.exe -x $@ $<
+	$(RUN_MONO) $(CORCOMPARE)/CorCompare.exe -x $@ $<
 
 src/corlib.xml: ../../../mcs/class/lib/corlib_cmp.dll $(CORCOMPARE)/CorCompare.exe
-	$(CORCOMPARE)/CorCompare.exe -f corlib -ms mscorlib -x $@ $<
+	$(RUN_MONO) $(CORCOMPARE)/CorCompare.exe -f corlib -ms mscorlib -x $@ $<
 
 src/System.Security.xml: ../../../mcs/class/lib/System.Security_cmp.dll $(CORCOMPARE)/CorCompare.exe
-	$(CORCOMPARE)/CorCompare.exe -f System.Security -ms System.Security -x $@ $<
+	$(RUN_MONO) $(CORCOMPARE)/CorCompare.exe -f System.Security -ms System.Security -x $@ $<
 
 ../class-status: ../class-status.in
 	cp -f $< $@
