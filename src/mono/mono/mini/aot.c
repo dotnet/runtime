@@ -923,6 +923,8 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 				}
 				case MONO_WRAPPER_LDFLD:
 				case MONO_WRAPPER_STFLD:
+				case MONO_WRAPPER_LDFLD_REMOTE:
+				case MONO_WRAPPER_STFLD_REMOTE:
 				case MONO_WRAPPER_ISINST: {
 					MonoClass *klass = decode_klass_info (aot_module, p, &p);
 					if (!klass)
@@ -932,6 +934,8 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 						ji->data.method = mono_marshal_get_ldfld_wrapper (&klass->byval_arg);
 					else if (wrapper_type == MONO_WRAPPER_STFLD)
 						ji->data.method = mono_marshal_get_stfld_wrapper (&klass->byval_arg);
+					else if (wrapper_type == MONO_WRAPPER_LDFLD_REMOTE)
+						ji->data.method = mono_marshal_get_ldfld_remote_wrapper (klass);
 					else
 						ji->data.method = mono_marshal_get_isinst (klass);
 					break;
@@ -954,7 +958,6 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 			case MONO_PATCH_INFO_INTERNAL_METHOD:
 				ji->data.name = aot_module->icall_table [decode_value (p, &p)];
 				g_assert (ji->data.name);
-				//printf ("A: %s.\n", ji->data.name);
 				break;
 			case MONO_PATCH_INFO_SWITCH:
 				ji->data.table = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoBBTable));
@@ -1698,6 +1701,8 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			case MONO_WRAPPER_PROXY_ISINST:
 			case MONO_WRAPPER_LDFLD:
 			case MONO_WRAPPER_STFLD:
+			case MONO_WRAPPER_LDFLD_REMOTE:
+			case MONO_WRAPPER_STFLD_REMOTE:
 			case MONO_WRAPPER_ISINST: {
 				MonoClass *proxy_class = (MonoClass*)mono_marshal_method_from_wrapper (patch_info->data.method);
 				encode_klass_info (acfg, proxy_class, p, &p);
@@ -1952,6 +1957,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 				case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
 				case MONO_WRAPPER_STFLD:
 				case MONO_WRAPPER_LDFLD:
+				case MONO_WRAPPER_LDFLD_REMOTE:
+				case MONO_WRAPPER_STFLD_REMOTE:
 				case MONO_WRAPPER_STELEMREF:
 				case MONO_WRAPPER_ISINST:
 				case MONO_WRAPPER_PROXY_ISINST:
