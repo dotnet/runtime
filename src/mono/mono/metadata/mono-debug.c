@@ -244,7 +244,7 @@ mono_debug_add_wrapper (MonoMethod *method, gpointer wrapper, MonoDomain *domain
 	mono_class_init (klass);
 
 	handle = _mono_debug_get_image (klass->image);
-	if (!handle || !handle->symfile) {
+	if (!handle || !handle->symfile || !handle->symfile->offset_table) {
 		mono_debugger_unlock ();
 		return;
 	}
@@ -283,7 +283,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	}
 
 	handle = _mono_debug_get_image (klass->image);
-	if (!handle || !handle->symfile) {
+	if (!handle || !handle->symfile || !handle->symfile->offset_table) {
 		mono_debugger_unlock ();
 		return;
 	}
@@ -353,7 +353,8 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address, gu
 	MonoDebugMethodInfo *minfo = _mono_debug_lookup_method (method);
 	MonoDebugDomainData *domain_data;
 
-	if (!minfo || !minfo->handle || !minfo->handle->symfile)
+	if (!minfo || !minfo->handle || !minfo->handle->symfile ||
+	    !minfo->handle->symfile->offset_table)
 		return NULL;
 
 	domain_data = mono_debug_get_domain_data (minfo->handle, domain);
@@ -407,7 +408,8 @@ mono_debug_il_offset_from_address (MonoMethod *method, gint32 address, MonoDomai
 		return -1;
 
 	minfo = _mono_debug_lookup_method (method);
-	if (!minfo || !minfo->il_offsets || !minfo->handle || !minfo->handle->symfile)
+	if (!minfo || !minfo->il_offsets || !minfo->handle || !minfo->handle->symfile ||
+	    !minfo->handle->symfile->offset_table)
 		return -1;
 
 	domain_data = mono_debug_get_domain_data (minfo->handle, domain);
@@ -429,7 +431,8 @@ mono_debug_address_from_il_offset (MonoMethod *method, gint32 il_offset, MonoDom
 		return -1;
 
 	minfo = _mono_debug_lookup_method (method);
-	if (!minfo || !minfo->il_offsets || !minfo->handle || !minfo->handle->symfile)
+	if (!minfo || !minfo->il_offsets || !minfo->handle || !minfo->handle->symfile ||
+	    !minfo->handle->symfile->offset_table)
 		return -1;
 
 	domain_data = mono_debug_get_domain_data (minfo->handle, domain);

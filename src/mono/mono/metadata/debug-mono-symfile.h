@@ -43,8 +43,6 @@ struct MonoSymbolFileMethodEntry {
 	guint32 _token;
 	guint32 _start_row;
 	guint32 _end_row;
-	guint32 __removed__class_type_index;
-	guint32 _num_parameters;
 	guint32 _num_locals;
 	guint32 _num_line_numbers;
 	guint32 _name_offset;
@@ -79,6 +77,7 @@ struct MonoSymbolFileMethodAddress {
 	const guint8 *method_end_address;
 	const guint8 *wrapper_address;
 	guint32 has_this;
+	guint32 num_params;
 	guint32 variable_table_offset;
 	guint32 type_table_offset;
 	guint32 num_line_numbers;
@@ -119,11 +118,12 @@ struct MonoDebugLineNumberEntry {
 struct _MonoSymbolFile {
 	const guint8 *raw_contents;
 	int raw_contents_size;
+	gchar *filename;
 	GHashTable *method_hash;
 	MonoSymbolFileOffsetTable *offset_table;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		37
+#define MONO_SYMBOL_FILE_VERSION		38
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614ULL
 
 MonoSymbolFile *

@@ -506,7 +506,7 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoDebugMethodInfo *
 
 	size = sizeof (MonoSymbolFileMethodAddress);
 
-	num_variables = read32(&(minfo->entry->_num_parameters)) + read32(&(minfo->entry->_num_locals));
+	num_variables = jit->num_params + read32(&(minfo->entry->_num_locals));
 	has_this = jit->this_var != NULL;
 
 	variable_size = (num_variables + has_this) * sizeof (MonoDebugVarInfo);
@@ -541,6 +541,7 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoDebugMethodInfo *
 
 	address->size = size;
 	address->has_this = has_this;
+	address->num_params = jit->num_params;
 	address->start_address = jit->code_start;
 	address->end_address = jit->code_start + jit->code_size;
 	address->method_start_address = address->start_address + jit->prologue_end;
@@ -580,16 +581,9 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoDebugMethodInfo *
 		*var_table++ = *jit->this_var;
 	*type_table++ = write_type (mono_debugger_symbol_table, &minfo->method->klass->this_arg);
 
-	if (jit->num_params != read32(&(minfo->entry->_num_parameters))) {
-		g_warning (G_STRLOC ": Method %s.%s has %d parameters, but symbol file claims it has %d.",
-			   minfo->method->klass->name, minfo->method->name, jit->num_params,
-			   read32(&(minfo->entry->_num_parameters)));
-		var_table += read32(&(minfo->entry->_num_parameters));
-	} else {
-		for (i = 0; i < jit->num_params; i++) {
-			*var_table++ = jit->params [i];
-			*type_table++ = write_type (mono_debugger_symbol_table, minfo->method->signature->params [i]);
-		}
+	for (i = 0; i < jit->num_params; i++) {
+		*var_table++ = jit->params [i];
+		*type_table++ = write_type (mono_debugger_symbol_table, minfo->method->signature->params [i]);
 	}
 
 	if (jit->num_locals < read32(&(minfo->entry->_num_locals))) {

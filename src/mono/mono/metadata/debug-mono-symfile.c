@@ -13,6 +13,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/debug-mono-symfile.h>
 #include <mono/metadata/mono-endian.h>
+#include <mono/metadata/metadata-internals.h>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -49,6 +50,7 @@ static int
 load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile)
 {
 	const char *ptr, *start;
+	gchar *guid;
 	guint64 magic;
 	long version;
 
@@ -59,7 +61,7 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile)
 	magic = read64(ptr);
 	ptr += sizeof(guint64);
 	if (magic != MONO_SYMBOL_FILE_MAGIC) {
-		g_warning ("Symbol file %s is not a mono symbol file", handle->image_file);
+		g_warning ("Symbol file %s is not a mono symbol file", symfile->filename);
 		return FALSE;
 	}
 
@@ -67,67 +69,26 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile)
 	ptr += sizeof(guint32);
 	if (version != MONO_SYMBOL_FILE_VERSION) {
 		g_warning ("Symbol file %s has incorrect version "
-			   "(expected %d, got %ld)", handle->image_file,
+			   "(expected %d, got %ld)", symfile->filename,
 			   MONO_SYMBOL_FILE_VERSION, version);
+		return FALSE;
+	}
+
+	guid = mono_guid_to_string ((const guint8 *) ptr);
+	ptr += 16;
+
+	if (strcmp (handle->image->guid, guid)) {
+		g_warning ("Symbol file %s doesn't match image %s", symfile->filename,
+			   handle->image_file);
 		return FALSE;
 	}
 
 	symfile->offset_table = (MonoSymbolFileOffsetTable *) ptr;
 
-	symfile->method_hash = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL,
-							     (GDestroyNotify) free_method_info);
+	symfile->method_hash = g_hash_table_new_full (
+		g_direct_hash, g_direct_equal, NULL, (GDestroyNotify) free_method_info);
 
 	return TRUE;
-}
-
-static gconstpointer
-open_symfile (MonoImage *image, guint32 *size)
-{
-	MonoTableInfo *table = mono_image_get_table_info (image, MONO_TABLE_MANIFESTRESOURCE);
-	guint32 i, num_rows;
-	guint32 cols [MONO_MANIFEST_SIZE];
-	const char *val;
-
-	num_rows = mono_table_info_get_rows (table);
-	for (i = 0; i < num_rows; ++i) {
-		mono_metadata_decode_row (table, i, cols, MONO_MANIFEST_SIZE);
-		val = mono_metadata_string_heap (image, cols [MONO_MANIFEST_NAME]);
-		if (!strcmp (val, "MonoSymbolFile"))
-			break;
-	}
-	if (i == num_rows)
-		return NULL;
-	g_assert (!cols [MONO_MANIFEST_IMPLEMENTATION]);
-
-	return mono_image_get_resource (image, cols [MONO_MANIFEST_OFFSET], size);
-}
-
-static gconstpointer
-open_external_symfile (MonoImage *image, guint32 *size)
-{
-	const gchar *filename;
-	gchar *basename, *name;
-	gchar *contents;
-
-	filename = mono_image_get_filename (image);
-
-	if (strstr (filename, ".dll") || strstr (filename, ".exe")) {
-		int len = strlen (filename) - 4;
-		basename = g_malloc0 (len);
-		strncpy (basename, filename, len);
-	} else {
-		basename = g_strdup (filename);
-	}
-
-	name = g_strdup_printf ("%s.mdb", basename);
-
-	if (!g_file_get_contents (name, &contents, size, NULL))
-		contents = NULL;
-
-	g_free (basename);
-	g_free (name);
-
-	return contents;
 }
 
 MonoSymbolFile *
@@ -137,10 +98,11 @@ mono_debug_open_mono_symbol_file (MonoDebugHandle *handle, gboolean create_symfi
 
 	symfile = g_new0 (MonoSymbolFile, 1);
 
-	symfile->raw_contents = open_symfile (handle->image, &symfile->raw_contents_size);
-	if (!symfile->raw_contents)
-		symfile->raw_contents = open_external_symfile (
-			handle->image, &symfile->raw_contents_size);
+	symfile->filename = g_strdup_printf ("%s.mdb", mono_image_get_filename (handle->image));
+
+	if (!g_file_get_contents (symfile->filename, &symfile->raw_contents,
+				  &symfile->raw_contents_size, NULL))
+		symfile->raw_contents = NULL;
 
 	if (load_symfile (handle, symfile))
 		return symfile;
