@@ -104,7 +104,7 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
                                         fprintf (output, "\t%s} { // %d\n", indent, i);
                                 } else {
                                         char * klass = mh->clauses[i].flags ? g_strdup ("") :
-                                        dis_stringify_token (m, mh->clauses[i].token_or_filter);
+                                        dis_stringify_object_with_class (m, mh->clauses[i].data.catch_class);
                                         fprintf (output, "\t%s%s %s { // %d\n", indent,
                                                         clause_names [mh->clauses[i].flags], klass, i);
                                         g_free (klass);
@@ -113,7 +113,7 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
                                 if (mh->clauses[i].flags == MONO_EXCEPTION_CLAUSE_FAULT)
                                         in_fault = 1;
 			} 
-                        if (mh->clauses[i].flags == 1 && ptr == start + mh->clauses[i].token_or_filter) {
+                        if (mh->clauses[i].flags == MONO_EXCEPTION_CLAUSE_FILTER && ptr == start + mh->clauses[i].data.filter_offset) {
                                 fprintf (output, "\t%s%s {\n", indent, clause_names[1]);
                                 CODE_INDENT;
                         }

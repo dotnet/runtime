@@ -703,7 +703,7 @@ dis_stringify_function_ptr (MonoImage *m, MonoMethodSignature *method)
 	return retval;
 }
 
-static char *
+char *
 dis_stringify_object_with_class (MonoImage *m, MonoClass *c)
 {
 	/* FIXME: handle MONO_TYPE_OBJECT ... */
