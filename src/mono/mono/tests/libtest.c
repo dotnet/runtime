@@ -500,6 +500,12 @@ mono_test_marshal_delegate (SimpleDelegate delegate)
 	return delegate (2);
 }
 
+SimpleDelegate
+mono_test_marshal_return_delegate (SimpleDelegate delegate)
+{
+	return delegate;
+}
+
 typedef simplestruct (STDCALL *SimpleDelegate2) (simplestruct ss);
 
 int
