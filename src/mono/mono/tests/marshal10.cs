@@ -134,15 +134,6 @@ public class time_t_CustomMarshaler : ICustomMarshaler {
 	}
 }
 
-public class Foo {
-	static Foo () {
-	}
-
-	[DllImport("libtest2")]
-	[return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(MyMarshal))]
-	public static extern string functionReturningString();
-}
-
 public class Testing
 {
 	[DllImport("libtest")]
@@ -157,21 +148,17 @@ public class Testing
 
 	public static int Main()
 	{
-		bool b = false;
+		string res = functionReturningString();
+		Console.WriteLine ("native string function returns {0}", res);
 
-		if (b) {
-			string res = Foo.functionReturningString();
-			Console.WriteLine ("native string function returns {0}", res);
+		if (res != "*ABC*")
+			return 1;
 
-			if (res != "*ABC*")
-				return 1;
+		DateTime d = DateTime.Now;
+		DateTime d2 = mono_test_marshal_time_t (d);
 
-			DateTime d = DateTime.Now;
-			DateTime d2 = mono_test_marshal_time_t (d);
-
-			if (((d2 - d).TotalSeconds < 3599) || ((d2 - d).TotalSeconds > 3601))
-				return 2;
-		}
+		if (((d2 - d).TotalSeconds < 3599) || ((d2 - d).TotalSeconds > 3601))
+			return 2;
 
 		return 0;
 	}
