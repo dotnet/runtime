@@ -1660,10 +1660,10 @@
 		</maintainers>
 	</class>
 	<class name="System.Net.Dns">
-		<last-activity>Sep-26-2001</last-activity>
+		<last-activity>Feb-11-2002</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>yes</test-suite>
-		<completion>75</completion>
+		<completion>100</completion>
 		<maintainers>
 			<maintainer>mpultz@get2net.dk</maintainer>
 		</maintainers>
@@ -1714,10 +1714,10 @@
 		</maintainers>
 	</class>
 	<class name="System.Net.IPHostEntry">
-		<last-activity>Sep-23-2001</last-activity>
+		<last-activity>Feb-11-2002</last-activity>
 		<implementation>yes</implementation>
-		<test-suite>yes</test-suite>
-		<completion>50</completion>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
 		<maintainers>
 			<maintainer>mpultz@get2net.dk</maintainer>
 		</maintainers>
