@@ -68,7 +68,7 @@ A million repetitions of "a"
   34AA973C D4C4DAA4 F61EEB2B DBAD2731 6534016F
 */
 
-/* #define SHA1HANDSOFF  */
+#define SHA1HANDSOFF
 
 #include <stdio.h>
 #include <string.h>
@@ -292,5 +292,23 @@ mono_sha1_get_digest_from_file (const gchar *filename, guchar digest [20])
 	}
 
 	mono_sha1_final (&ctx, digest);
+}
+
+/*
+ * mono_digest_get_public_token:
+ *
+ * Get the public token from public key data.
+ * @token must point to at least 8 bytes of storage.
+ */
+void 
+mono_digest_get_public_token (guchar* token, const guchar *pubkey, guint32 len)
+{
+	guchar digest [20];
+	int i;
+
+	g_return_if_fail (token != NULL);
+	mono_sha1_get_digest (pubkey, len, digest);
+	for (i = 0; i < 8; ++i)
+		token [i] = digest [19 - i];
 }
 

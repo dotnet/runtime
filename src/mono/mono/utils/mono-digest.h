@@ -59,4 +59,6 @@ void mono_sha1_init   (MonoSHA1Context* context);
 void mono_sha1_update (MonoSHA1Context* context, const guchar* data, guint32 len);
 void mono_sha1_final  (MonoSHA1Context* context, unsigned char digest[20]);
 
+void mono_digest_get_public_token (guchar* token, const guchar *pubkey, guint32 len);
+
 #endif	/* __MONO_DIGEST_H__ */
