@@ -1314,6 +1314,7 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 
 		/* MonoObject *remoting_wrapper (MonoMethod *method, gpointer params[]) */
 		csig->param_count = 2;
+		csig->pinvoke = 1;
 		csig->ret = &mono_defaults.object_class->byval_arg;
 		csig->params [0] = &mono_defaults.int_class->byval_arg;
 		csig->params [1] = &mono_defaults.int_class->byval_arg;
@@ -1330,10 +1331,12 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 	mono_mb_emit_ldloc (mb, params_var);
 	mono_mb_emit_native_call (mb, csig, mono_remoting_wrapper);
 
-	if (sig->ret->type == MONO_TYPE_VOID)
+	if (sig->ret->type == MONO_TYPE_VOID) {
 		mono_mb_emit_byte (mb, CEE_POP);
-	else
-		mono_mb_emit_restore_result (mb, sig->ret);
+		mono_mb_emit_byte (mb, CEE_RET);
+	} else {
+		 mono_mb_emit_restore_result (mb, sig->ret);
+	}
 
 	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
