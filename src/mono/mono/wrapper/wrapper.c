@@ -6,7 +6,9 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/types.h>
+#ifdef HAVE_UTIME_H
 #include <utime.h>
+#endif
 #include "wrapper.h"
 
 extern char **environ;
@@ -159,8 +161,10 @@ mono_wrapper_environ ()
 int
 mono_wrapper_mkdir (const char *path, int mode)
 {
+#ifndef PLATFORM_WIN32
 	if (mkdir (path, mode) == -1)
 		return -errno;
+#endif
 	return 0;
 }
 
@@ -183,6 +187,7 @@ mono_wrapper_rename (const char *src, const char *dst)
 int
 mono_wrapper_utime (const char *path, int atime, int mtime)
 {
+#ifndef PLATFORM_WIN32
 	struct utimbuf buf;
 
 	buf.actime = atime;
@@ -190,6 +195,7 @@ mono_wrapper_utime (const char *path, int atime, int mtime)
 
 	if (utime (path, &buf) == -1)
 		return -errno;
+#endif
 	return 0;
 }
 

@@ -11,6 +11,7 @@
 
 #include <glib.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
@@ -19,7 +20,10 @@
 #include <mono/metadata/appdomain.h>
 
 #include <sys/time.h> 
+
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
 
 #undef DEBUG
 
@@ -314,15 +318,21 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 		case SocketOptionName_IPOptions:
 			*system_name = IP_OPTIONS;
 			break;
+#ifdef IP_HDRINCL
 		case SocketOptionName_HeaderIncluded:
 			*system_name = IP_HDRINCL;
 			break;
+#endif
+#ifdef IP_TOS
 		case SocketOptionName_TypeOfService:
 			*system_name = IP_TOS;
 			break;
+#endif
+#ifdef IP_TTL
 		case SocketOptionName_IpTimeToLive:
 			*system_name = IP_TTL;
 			break;
+#endif
 		case SocketOptionName_MulticastInterface:
 			*system_name = IP_MULTICAST_IF;
 			break;
@@ -1296,7 +1306,7 @@ inet_pton (int family, const char *address, void *inaddrp)
 #else
 		/* assume the system has inet_addr(), if it doesn't
 		   have that we're pretty much screwed... */
-		in_addr_t inaddr;
+		guint32 inaddr;
 		
 		if (!strcmp (address, "255.255.255.255")) {
 			/* special-case hack */
@@ -1310,12 +1320,11 @@ inet_pton (int family, const char *address, void *inaddrp)
 				return 0;
 		}
 		
-		memcpy (inaddrp, &inaddr, sizeof (in_addr_t));
+		memcpy (inaddrp, &inaddr, sizeof (guint32));
 		return 1;
 #endif /* HAVE_INET_ATON */
 	}
 	
-	errno = EAFNOSUPPRT;
 	return -1;
 }
 #endif /* !HAVE_INET_PTON */

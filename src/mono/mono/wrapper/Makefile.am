@@ -2,9 +2,19 @@ lib_LTLIBRARIES = libmonowrapper.la
 
 INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
 
-libmonowrapper_la_SOURCES = 		\
-	glob.c				\
-	wrapper.c	
+if PLATFORM_WIN32
+# glob.c doesnt build under windows
+SRC=			\
+	wrapper.c	\
+	#
+else
+SRC=			\
+	glob.c		\
+	wrapper.c	\
+	#
+endif
+
+libmonowrapper_la_SOURCES = $(SRC)
 
 libmonowrapperincludedir = $(includedir)/mono/wrapper
 

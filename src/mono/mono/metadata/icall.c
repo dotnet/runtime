@@ -919,6 +919,8 @@ ves_icall_System_PAL_GetCurrentDirectory (MonoObject *object)
 static gint64
 ves_icall_System_DateTime_GetNow ()
 {
+#ifndef PLATFORM_WIN32
+	/* FIXME: put this in io-layer and call it GetLocalTime */
 	struct timeval tv;
 	gint64 res;
 
@@ -928,6 +930,7 @@ ves_icall_System_DateTime_GetNow ()
 	}
 
 	/* fixme: raise exception */
+#endif
 	return 0;
 }
 

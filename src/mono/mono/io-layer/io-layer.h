@@ -3,20 +3,16 @@
 
 #include <config.h>
 
-#if defined(PLATFORM_WIN32_NATIVE)
+#if defined(PLATFORM_WIN32)
 /* Native win32 */
 #define UNICODE
 #define _UNICODE
+#define __USE_W32_SOCKETS
 #include <windows.h>
-#elif defined(PLATFORM_WIN32)
-/* Cygwin */
-#define UNICODE
-#define _UNICODE
-#include <w32api/windows.h>
 #else	/* EVERYONE ELSE */
 #include "mono/io-layer/wapi.h"
 #include "mono/io-layer/uglify.h"
-#endif /* PLATFORM_WIN32_NATIVE */
+#endif /* PLATFORM_WIN32 */
 
 #ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>     /* defines FIONBIO and FIONREAD */

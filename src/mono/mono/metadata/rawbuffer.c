@@ -7,7 +7,7 @@
  * (C) 2001 Ximian, Inc.
  */
 #include <config.h>
-#if defined(PLATFORM_WIN32) || defined(PLATFORM_WIN32_NATIVE)
+#if defined(PLATFORM_WIN32)
 #define USE_WIN32_API		1
 #endif
 
@@ -24,10 +24,6 @@
 
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 #define ROUND_UP(VALUE,SIZE)	(ROUND_DOWN((VALUE) + (SIZE) - 1, (SIZE)))
-
-#if defined(PLATFORM_WIN32_NATIVE)
-#define get_osfhandle		_get_osfhandle
-#endif
 
 static GHashTable *mmap_map = NULL;
 static size_t alignment = 0;
@@ -94,7 +90,7 @@ mono_raw_buffer_load_mmap (int fd, int is_writable, guint32 base, size_t size)
 		access = FILE_MAP_READ;
 	}
 
-	file = (HANDLE) get_osfhandle (fd);
+	file = (HANDLE) _get_osfhandle (fd);
 	mapping = CreateFileMapping (file, NULL, prot, 0, 0, NULL);
 	if (mapping == NULL)
 		return 0;

@@ -28,7 +28,7 @@ AC_HEADER_STDC
 AC_LIBTOOL_WIN32_DLL
 AM_PROG_LIBTOOL
 
-AC_CHECK_HEADERS(sys/filio.h sys/sockio.h)
+AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h)
 
 # not 64 bit clean in cross-compile
 AC_CHECK_SIZEOF(void *, 4)
@@ -90,23 +90,6 @@ case "$host" in
 esac
 AC_MSG_RESULT($platform_win32)
 AM_CONDITIONAL(PLATFORM_WIN32, test x$platform_win32 = xyes)
-
-if test x$platform_win32 = xyes; then
-	AC_MSG_CHECKING([if building for native Win32])
-	case "$host" in
-		*-*-mingw*)
-			platform_win32_native=yes
-			AC_DEFINE(PLATFORM_WIN32_NATIVE)
-			;;
-		*)
-			platform_win32_native=no
-			;;
-	esac
-	AC_MSG_RESULT($platform_win32_native)
-	AM_CONDITIONAL(PLATFORM_WIN32_NATIVE,
-		       test x$platform_win32_native = xyes)
-fi
-
 
 if test x$platform_win32 = xno; then
 	dnl ******************************************************************
@@ -315,6 +298,12 @@ if test x$platform_win32 = xno; then
 	dnl *** Checks for semaphore lib ***
 	dnl ********************************
 	AC_CHECK_LIB(rt, sem_init, LIBS="$LIBS -lrt")
+else
+	# This is a kludge, we really ought to test for libws2_32, but
+	# I can't make AC_CHECK_LIB link (the symbols seem to be mangled
+	# with @num suffixes)
+	LIBS="$LIBS -lws2_32"
+	CFLAGS="$CFLAGS -mno-cygwin"
 fi
 
 if test "x$cross_compiling" = "xno"; then

@@ -1,3 +1,8 @@
+2002-02-20  Dick Porter  <dick@ximian.com>
+
+	* acconfig.h:
+	* configure.in: Always build without cygwin support on windows
+
 2002-02-19  Radek Doulik  <rodo@ximian.com>
 
 	* mono/tests/pinvoke.cs: use more pinvoke test methods
