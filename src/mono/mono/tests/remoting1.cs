@@ -101,6 +101,14 @@ class Test {
 
 		R1 o = (R1)real_proxy.GetTransparentProxy ();
 
+		if (RemotingServices.IsTransparentProxy (null))
+			return 1;
+		
+		if (!RemotingServices.IsTransparentProxy (o))
+			return 1;
+
+		Console.WriteLine (o.GetType ());
+		
 		MyStruct myres = o.Add (2, out res, 3);
 
 		Console.WriteLine ("Result: " + myres.a + " " +
@@ -123,6 +131,7 @@ class Test {
 		lres = test_call (o2);
 		
 		lres = test_call (o);
+
 		Console.WriteLine ("Result: " + lres);
 		if (lres != 5)
 			return 1;

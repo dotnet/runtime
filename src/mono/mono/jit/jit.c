@@ -2043,9 +2043,12 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			ci =  mono_mempool_alloc0 (mp, sizeof (MethodCallInfo));
 			ci->m = cm;
 
+			
+#ifndef EXT_VTABLE_HACK
 			if ((cm->flags & METHOD_ATTRIBUTE_FINAL) ||
 			    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
 				virtual = 0;
+#endif;
 
 			csig = cm->signature;
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);

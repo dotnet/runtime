@@ -1924,6 +1924,18 @@ ves_icall_MonoMethodMessage_InitMessage (MonoMethodMessage *this,
 	}
 }
 
+static MonoBoolean
+ves_icall_IsTransparentProxy (MonoObject *proxy)
+{
+	if (!proxy)
+		return 0;
+
+	if (proxy->vtable->klass == mono_defaults.transparent_proxy_class)
+		return 1;
+
+	return 0;
+}
+
 /* icall map */
 
 static gpointer icall_map [] = {
@@ -2259,6 +2271,8 @@ static gpointer icall_map [] = {
 	 */	
 	"System.Runtime.Remoting.RemotingServices::InternalExecute",
 	ves_icall_InternalExecute,
+	"System.Runtime.Remoting.RemotingServices::IsTransparentProxy",
+	ves_icall_IsTransparentProxy,
 
 	/*
 	 * System.Runtime.Remoting.Messaging

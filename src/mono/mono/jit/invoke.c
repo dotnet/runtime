@@ -200,6 +200,11 @@ handle_enum_2:
 #endif
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I4:
+	case MONO_TYPE_CLASS:  
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_STRING:
 		*((guint32 *)ret) = invoke_int64 (code, frame, frame_size);		
 		break;

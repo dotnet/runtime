@@ -604,11 +604,17 @@ mono_class_init (MonoClass *class)
 	       
 		cm = class->methods [i];
 
+		
+#ifndef EXT_VTABLE_HACK
 		if (!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
 		    (cm->slot >= 0))
 			continue;
-		
-		if (!(cm->flags & METHOD_ATTRIBUTE_NEW_SLOT)) {
+#else
+		if (cm->slot >= 0)
+			continue;
+#endif
+
+		if (!(cm->flags & METHOD_ATTRIBUTE_NEW_SLOT) && (cm->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
 			for (k = class->parent; k ; k = k->parent) {
 				int j;
 				for (j = 0; j < k->method.count; ++j) {
@@ -1064,7 +1070,7 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 			if (*class->name == 'M' && !strcmp (class->name, "MarshalByRefObject"))
 				class->marshalbyref = 1;
 
-			if (*class->name == 'M' && !strcmp (class->name, "ContextBoundObject")) 
+			if (*class->name == 'C' && !strcmp (class->name, "ContextBoundObject")) 
 				class->contextbound  = 1;
 
 			if (*class->name == 'D' && !strcmp (class->name, "Delegate")) 

@@ -652,9 +652,8 @@ arch_compile_method (MonoMethod *method)
 	guint8 *addr;
 	GHashTable *jit_code_hash;
 
-	g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
-
-	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 		if (!method->info)
 			method->info = arch_create_native_wrapper (method);
 		return method->info;

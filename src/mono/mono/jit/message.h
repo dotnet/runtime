@@ -15,9 +15,4 @@ mono_method_return_message_restore (MonoMethod *method,
 				    MonoObject *result,
 				    MonoArray *out_args);
 
-void
-ves_icall_MonoMethodMessage_InitMessage (MonoMethodMessage *this, 
-					 MonoReflectionMethod *method,
-					 MonoArray *out_args);
-
 #endif
