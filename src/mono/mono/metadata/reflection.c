@@ -3365,7 +3365,7 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 		}
 		method = mono_get_method (image, mtoken, NULL);
 		if (!method)
-			g_error ("Can't find custom attr constructor");
+			g_error ("Can't find custom attr constructor image: %s mtoken: 0x%08x", image->name, mtoken);
 		mono_class_init (method->klass);
 		/*g_print ("got attr %s\n", method->klass->name);*/
 		params = g_new (void*, method->signature->param_count);
