@@ -2866,11 +2866,31 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			break;
 		}
 		case CEE_CONV_OVF_U4: {
-			// fixme: raise exceptions ?
 			++ip;
 			sp--;
-			t1 = mono_ctree_new (mp, MB_TERM_CONV_I4, *sp, NULL);
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_U4, *sp, NULL);
 			PUSH_TREE (t1, VAL_I32);		
+			break;
+		}
+		case CEE_CONV_OVF_I2: {
+			++ip;
+			sp--;
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_I2, *sp, NULL);
+			PUSH_TREE (t1, VAL_I32);
+			break;
+		}
+		case CEE_CONV_OVF_U2: {
+			++ip;
+			sp--;
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_U2, *sp, NULL);
+			PUSH_TREE (t1, VAL_I32);
+			break;
+		}
+		case CEE_CONV_OVF_U8: {
+			++ip;
+			sp--;
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_OVF_U8, *sp, NULL);
+			PUSH_TREE (t1, VAL_I32);
 			break;
 		}
 		case CEE_CONV_OVF_I4_UN: {

@@ -12,3 +12,13 @@
 * document the functions and variables in the JIT 
 * implement a register set for FP registers (just count register usage on x86)
 
+* Calling conventions:
+
+	Implement fast call
+
+* Overflow conversions:
+
+	Implement CONV_OVF_XXX (constant) variants that emit either
+	loads or exceptions (as we can always tell)
+	
+	

@@ -157,6 +157,7 @@ x86_pop_reg (s->code, X86_EAX);
 %term BLT BLT_UN BEQ BNE_UN BRTRUE BRFALSE BGE BGE_UN BLE BLE_UN BGT BGT_UN 
 %term CEQ CLT
 %term CONV_I4 CONV_I1 CONV_I2 CONV_I8 CONV_U8 CONV_R4 CONV_R8
+%term CONV_OVF_U4 CONV_OVF_I2 CONV_OVF_U2 CONV_OVF_U8
 %term INTF_ADDR VFUNC_ADDR NOP NEWARR NEWOBJ CPOBJ POP INITOBJ VTYPE ISINST CASTCLASS
 %term EXCEPTION THROW RETHROW HANDLER 
 %term LDLEN
@@ -561,6 +562,38 @@ reg: CONV_I4 (reg) {
 	PRINT_REG ("CONV_I4", tree->left->reg1);
 } 
 
+reg: CONV_OVF_U4 (reg) {
+	x86_test_reg_imm (s->code, tree->left->reg1, 0x8000000);
+	x86_branch8 (s->code, X86_CC_EQ, 10, TRUE);
+	x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
+	x86_call_code (s->code, get_throw_exception ());
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
+reg: CONV_OVF_I2 (reg) {
+	/* Probe value to be within -32768 and 32767 */
+
+	x86_alu_reg_imm (s->code, X86_CMP, tree->reg1, 32767);
+	x86_branch8 (s->code, X86_CC_LE, 10, TRUE);
+	x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
+	x86_call_code (s->code, get_throw_exception ());
+
+	x86_alu_reg_imm (s->code, X86_CMP, tree->reg1, -32768);
+	x86_branch8 (s->code, X86_CC_LT, -17, TRUE);
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+}
+
+reg: CONV_OVF_U2 (reg) {
+	/* Probe value to be within 0 and 65535 */
+	x86_test_reg_imm (s->code, tree->left->reg1, 0xffff0000);
+	x86_branch8 (s->code, X86_CC_EQ, 10, TRUE);
+	x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
+	x86_call_code (s->code, get_throw_exception ());
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
+}
 
 reg: MUL (reg, reg) {
 	if (tree->reg1 != tree->left->reg1)
@@ -1516,6 +1549,31 @@ lreg: CONV_I8 (reg) {
 
 lreg: CONV_U8 (CONST_I4) 1 {
 	x86_mov_reg_imm (s->code, tree->reg1, tree->left->data.i);
+	x86_alu_reg_reg (s->code, X86_XOR, tree->reg2, tree->reg2);
+}
+
+lreg: CONV_OVF_U8 (CONST_I4) {
+	if (tree->left->data.i < 0){
+		x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
+		x86_call_code (s->code, get_throw_exception ());
+	} else {
+		x86_mov_reg_imm (s->code, tree->reg1, tree->left->data.i);
+		x86_alu_reg_reg (s->code, X86_XOR, tree->reg2, tree->reg2);
+	}
+}
+
+lreg: CONV_OVF_U8 (reg) {
+	/* 
+	 * Buggy: notice that this assumes reg is an int, maybe I should
+	 * generate a CONV_I8 node when the value on the stack is an int?
+	 */
+	x86_test_reg_imm (s->code, tree->left->reg1, 0x8000000);
+	x86_branch8 (s->code, X86_CC_EQ, 10, TRUE);
+	x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
+	x86_call_code (s->code, get_throw_exception ());
+
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 	x86_alu_reg_reg (s->code, X86_XOR, tree->reg2, tree->reg2);
 }
 
