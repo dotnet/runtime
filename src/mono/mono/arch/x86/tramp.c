@@ -304,9 +304,8 @@ enum_retvalue:
 	 * free the allocated strings.
 	 */
 	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
-		if (local_size)
-			x86_mov_reg_imm (p, X86_EDX, g_free);
 		for (i = 1; i <= local_size; ++i) {
+			x86_mov_reg_imm (p, X86_EDX, g_free);
 			x86_push_membase (p, X86_EBP, LOC_POS * i);
 			x86_call_reg (p, X86_EDX);
 		}

@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.21 2002/02/01 12:04:33 dietmar Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.22 2002/02/11 07:42:10 lupus Exp $
 */
 
 #ifndef X86_H
@@ -258,6 +258,26 @@ typedef union {
 			x86_address_byte ((inst), (shift), (indexreg), 5);	\
 			x86_imm_emit32 ((inst), (disp));	\
 		}	\
+	} while (0)
+
+/* disp will need to be relative to the start position... */
+#define x86_patch(ins,disp)	\
+	do {	\
+		unsigned char* pos = (ins) + 1;	\
+		int size = 0;	\
+		switch (*(ins)) {	\
+		case 0xe9: ++size; break;	\
+		case 0x0f: ++size; ++pos; break;	\
+		case 0xeb:	\
+		case 0x70: case 0x71: case 0x72: case 0x73:	\
+		case 0x74: case 0x75: case 0x76: case 0x77:	\
+		case 0x78: case 0x79: case 0x7a: case 0x7b:	\
+		case 0x7c: case 0x7d: case 0x7e: case 0x7f:	\
+			break;	\
+		default: assert (0);	\
+		}	\
+		if (size) x86_imm_emit32 (pos, (disp));	\
+		else x86_imm_emit8 (pos, (disp));	\
 	} while (0)
 
 #define x86_breakpoint(inst) \
