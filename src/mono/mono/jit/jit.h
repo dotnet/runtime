@@ -5,6 +5,7 @@
 
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/exception.h>
 
 #include "regset.h"
 #include "mempool.h"

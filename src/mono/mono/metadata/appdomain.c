@@ -263,7 +263,6 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 	MonoImage *image;
 	MonoCLIImageInfo *iinfo;
 	MonoMethod *method;
-	gint32 (*mfunc) (MonoArray* args);
 	char *filename;
 	gint32 res;
 

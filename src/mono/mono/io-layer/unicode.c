@@ -29,7 +29,7 @@ guchar *_wapi_unicode_to_utf8(const guchar *uni)
 
 	len = unicode_len(uni);
 	
-	res = g_utf16_to_utf8 (uni, len, NULL, NULL, &error);
+	res = g_utf16_to_utf8 ((gunichar2 *)uni, len, NULL, NULL, &error);
 
 	g_assert (!error);
 

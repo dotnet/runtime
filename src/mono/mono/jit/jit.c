@@ -3349,7 +3349,7 @@ usage (char *name)
 static void
 sigfpe_signal_handler (int _dummy)
 {
-	MonoObject *exc;
+	MonoException *exc;
 	void **_p = (void **)&_dummy;
 	struct sigcontext *ctx = (struct sigcontext *)++_p;
 
@@ -3363,11 +3363,11 @@ sigfpe_signal_handler (int _dummy)
 static void
 sigsegv_signal_handler (int _dummy)
 {
-	MonoObject *exc;
+	MonoException *exc;
 	void **_p = (void **)&_dummy;
 	struct sigcontext *ctx = (struct sigcontext *)++_p;
 
-	exc = mono_get_exception_execution_engine ();
+	exc = mono_get_exception_null_reference ();
 	
 	arch_handle_exception (ctx, exc);
 

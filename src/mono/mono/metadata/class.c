@@ -627,7 +627,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	} else if (!(cols [0] & TYPE_ATTRIBUTE_INTERFACE)) {
 		int rnum = 0;
 		class->parent = mono_class_get (image,  mono_metadata_token_from_dor (cols [3]));
-		if (class->parent->enumtype || (strcmp (class->parent->name, "ValueType") == 0) && (strcmp (class->parent->name_space, "System") == 0))
+		if (class->parent->enumtype || ((strcmp (class->parent->name, "ValueType") == 0) && (strcmp (class->parent->name_space, "System") == 0)))
 			class->valuetype = 1;
 		class->enumtype = class->parent->enumtype;
 		class->parent->subclasses = g_list_prepend (class->parent->subclasses, class);

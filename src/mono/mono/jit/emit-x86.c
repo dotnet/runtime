@@ -1205,7 +1205,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 		ctx->ebx = lmf->ebx;
 		ctx->ebp = lmf->ebp;
 		ctx->eip = lmf->eip;
-		ctx->esp = lmf;
+		ctx->esp = (unsigned long)lmf;
 
 		if (mono_object_isinst (obj, mono_defaults.exception_class)) {
 			char  *strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);

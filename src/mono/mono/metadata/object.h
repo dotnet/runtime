@@ -156,44 +156,8 @@ mono_raise_exception        (MonoException *ex);
 void
 mono_install_runtime_object_init (MonoRuntimeObjectInit func);
 
-MonoObject*
-mono_get_exception_divide_by_zero      (void);
-
-MonoObject*
-mono_get_exception_security            (void);
-
-MonoObject*
-mono_get_exception_arithmetic          (void);
-
-MonoObject*
-mono_get_exception_overflow            (void);
-
-MonoObject*
-mono_get_exception_null_reference      (void);
-
-MonoObject*
-mono_get_exception_execution_engine    (void);
-
-MonoObject*
-mono_get_exception_invalid_cast        (void);
-
-MonoObject*
-mono_get_exception_index_out_of_range  (void);
-
-MonoObject*
-mono_get_exception_array_type_mismatch (void);
-
-MonoObject*
-mono_get_exception_missing_method      (void);
-
-MonoException*
-mono_get_exception_argument_null       (const guchar *arg);
-
-MonoException *
-mono_get_exception_argument            (const guchar *arg, const guchar *msg);
-
-MonoException *
-mono_get_exception_io                  (const guchar *msg);
+void
+mono_install_runtime_exec_main   (MonoRuntimeExecMain func);
 
 #endif
 

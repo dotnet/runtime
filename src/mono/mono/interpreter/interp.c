@@ -3386,7 +3386,6 @@ runtime_exec_main (MonoMethod *method, MonoArray *args)
 	stackval result;
 	stackval argv_array;
 	MonoInvocation call;
-	gint32 (*mfunc) (MonoArray*);
 
 	argv_array.type = VAL_OBJ;
 	argv_array.data.p = args;
@@ -3667,7 +3666,7 @@ static void
 segv_handler (int signum)
 {
 	signal (signum, segv_handler);
-	mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System", "NullReferenceException"));
+	mono_raise_exception (mono_get_exception_null_reference ());
 }
 
 int 

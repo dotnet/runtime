@@ -439,7 +439,7 @@ mono_string_to_utf8 (MonoString *s)
 
 	g_assert (vector != NULL);
 
-	as = g_utf16_to_utf8 (vector, s->length, NULL, NULL, &error);
+	as = g_utf16_to_utf8 ((gunichar2 *)vector, s->length, NULL, NULL, &error);
 
 	g_assert (!error);
 

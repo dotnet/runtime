@@ -12,7 +12,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/class.h>
 
-MonoObject*
+MonoException *
 mono_exception_from_name (MonoImage *image, const char *name_space,
 			  const char *name)
 {
@@ -26,13 +26,13 @@ mono_exception_from_name (MonoImage *image, const char *name_space,
 	
 	mono_runtime_object_init (o);
 
-	return o;
+	return (MonoException *)o;
 }
 
-MonoObject*
+MonoException *
 mono_get_exception_divide_by_zero ()
 {
-	static MonoObject *ex = NULL;
+	static MonoException *ex = NULL;
 	if (ex)
 		return ex;
 	ex = mono_exception_from_name (mono_defaults.corlib, "System",
@@ -40,10 +40,10 @@ mono_get_exception_divide_by_zero ()
 	return ex;
 }
 
-MonoObject*
+MonoException *
 mono_get_exception_security ()
 {
-	static MonoObject *ex = NULL;
+	static MonoException *ex = NULL;
 	if (ex)
 		return ex;
 	ex = mono_exception_from_name (mono_defaults.corlib, "System",
@@ -51,10 +51,10 @@ mono_get_exception_security ()
 	return ex;
 }
 
-MonoObject*
+MonoException *
 mono_get_exception_arithmetic ()
 {
-	static MonoObject *ex = NULL;
+	static MonoException *ex = NULL;
 	if (ex)
 		return ex;
 	ex = mono_exception_from_name (mono_defaults.corlib, "System",
@@ -62,10 +62,10 @@ mono_get_exception_arithmetic ()
 	return ex;
 }
 
-MonoObject*
+MonoException *
 mono_get_exception_overflow ()
 {
-	static MonoObject *ex = NULL;
+	static MonoException *ex = NULL;
 	if (ex)
 		return ex;
 	ex = mono_exception_from_name (mono_defaults.corlib, "System",
@@ -73,10 +73,10 @@ mono_get_exception_overflow ()
 	return ex;
 }
 
-MonoObject*
+MonoException *
 mono_get_exception_null_reference ()
 {
-	static MonoObject *ex = NULL;
+	static MonoException *ex = NULL;
 	if (ex)
 		return ex;
 	ex = mono_exception_from_name (mono_defaults.corlib, "System",
@@ -84,10 +84,10 @@ mono_get_exception_null_reference ()
 	return ex;
 }
 
-MonoObject*
+MonoException *
 mono_get_exception_execution_engine ()
 {
-	static MonoObject *ex = NULL;
+	static MonoException *ex = NULL;
 	if (ex)
 		return ex;
 	ex = mono_exception_from_name (mono_defaults.corlib, "System",
@@ -95,10 +95,10 @@ mono_get_exception_execution_engine ()
 	return ex;
 }
 
-MonoObject*
+MonoException *
 mono_get_exception_invalid_cast ()
 {
-	static MonoObject *ex = NULL;
+	static MonoException *ex = NULL;
 	if (ex)
 		return ex;
 	ex = mono_exception_from_name (mono_defaults.corlib, "System",
@@ -106,10 +106,10 @@ mono_get_exception_invalid_cast ()
 	return ex;
 }
 
-MonoObject*
+MonoException *
 mono_get_exception_index_out_of_range ()
 {
-	static MonoObject *ex = NULL;
+	static MonoException *ex = NULL;
 	if (ex)
 		return ex;
 	ex = mono_exception_from_name (mono_defaults.corlib, "System",
@@ -117,10 +117,10 @@ mono_get_exception_index_out_of_range ()
 	return ex;
 }
 
-MonoObject*
+MonoException *
 mono_get_exception_array_type_mismatch ()
 {
-	static MonoObject *ex = NULL;
+	static MonoException *ex = NULL;
 	if (ex)
 		return ex;
 	ex = mono_exception_from_name (mono_defaults.corlib, "System",
@@ -128,10 +128,10 @@ mono_get_exception_array_type_mismatch ()
 	return ex;
 }
 
-MonoObject*
+MonoException *
 mono_get_exception_missing_method ()
 {
-	static MonoObject *ex = NULL;
+	static MonoException *ex = NULL;
 	if (ex)
 		return ex;
 	ex = mono_exception_from_name (mono_defaults.corlib, "System",

@@ -293,7 +293,7 @@ void
 mono_debug_add_type (MonoDebugHandle* debug, MonoClass *klass)
 {
 	char *name;
-	int i, j;
+	int i;
 	char buf [64];
 	AssemblyDebugInfo* info = mono_debug_open_ass (debug, klass->image);
 

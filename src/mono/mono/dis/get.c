@@ -497,7 +497,7 @@ dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method, in
 	return retval;
 }
 
-char *
+static char *
 dis_stringify_object (MonoMetadata *m, MonoType *type)
 {
 	char *otype = type->type == MONO_TYPE_CLASS? "class" : "valuetype";
