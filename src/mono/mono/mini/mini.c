@@ -2633,6 +2633,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						NEW_TEMPLOAD (cfg, ins, rvar->inst_c0);
 						*sp++ = ins;
 					}
+					if (sp != stack_start) {
+						handle_stack_args (cfg, ebblock, stack_start, sp - stack_start);
+						sp = stack_start;
+					}
+					start_new_bblock = 1;
 					if (cfg->verbose_level > 2)
 						g_print ("INLINE END %s\n", mono_method_full_name (cmethod, TRUE));
 					
