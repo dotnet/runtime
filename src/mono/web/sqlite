@@ -16,7 +16,7 @@
 	library reads and writes directly to and from the database files on disk.</li>
 
 	<li>SQL Lite can be downloaded 
-	from <a href"http://www.hwaci.com/sw/sqlite/download.html">here</a>.
+	from <a href="http://www.hwaci.com/sw/sqlite/download.html">here</a>.
 	binaries exist for Linux and Windows.  sqlite.dll on Windows 
 	and sqlite.so on Linux.  The source code is available too.</li>
 
