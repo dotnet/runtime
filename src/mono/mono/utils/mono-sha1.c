@@ -74,14 +74,19 @@ A million repetitions of "a"
 #include <string.h>
 #include "mono-digest.h"
 
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-#define LITTLE_ENDIAN
-#endif
-
+#ifndef  i386   /* For ALPHA  (SAK) */
+#define LITTLE_ENDIAN 
+typedef          long int int64;
+typedef unsigned long int uint64;
+typedef          int int32;
+typedef unsigned int uint32;
+#else  /*i386*/
+#define LITTLE_ENDIAN 
 typedef          long long int int64;
 typedef unsigned long long int uint64;
 typedef          long int int32;
 typedef unsigned long int uint32;
+#endif /*i386*/
 
 
 /* #include <process.h> */	/* prototype for exit() - JHB */
