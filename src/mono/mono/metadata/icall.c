@@ -2645,6 +2645,7 @@ ves_icall_Type_GetField (MonoReflectionType *type, MonoString *name, guint32 bfl
 	int i, match;
 	MonoClassField *field;
 	char *utf8_name;
+	int (*compare_func) (const char *s1, const char *s2) = NULL;
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
 
@@ -2652,6 +2653,8 @@ ves_icall_Type_GetField (MonoReflectionType *type, MonoString *name, guint32 bfl
 
 	if (!name)
 		mono_raise_exception (mono_get_exception_argument_null ("name"));
+
+	compare_func = (bflags & BFLAGS_IgnoreCase) ? g_strcasecmp : strcmp;
 
 handle_parent:	
 	for (i = 0; i < klass->field.count; ++i) {
@@ -2683,7 +2686,7 @@ handle_parent:
 		
 		utf8_name = mono_string_to_utf8 (name);
 
-		if (strcmp (field->name, utf8_name)) {
+		if (compare_func (field->name, utf8_name)) {
 			g_free (utf8_name);
 			continue;
 		}
