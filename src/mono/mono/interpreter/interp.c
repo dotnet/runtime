@@ -580,20 +580,21 @@ ves_runtime_method (MonoInvocation *frame)
 			frame->method->name);
 }
 
-static void
+static char*
 dump_stack (stackval *stack, stackval *sp)
 {
 	stackval *s = stack;
+	GString *str = g_string_new ("");
 	
 	if (sp == stack)
-		return;
+		return g_string_free (str, FALSE);
 	
 	while (s < sp) {
 		switch (s->type) {
-		case VAL_I32: printf ("[%d] ", s->data.i); break;
-		case VAL_I64: printf ("[%lld] ", s->data.l); break;
-		case VAL_DOUBLE: printf ("[%0.5f] ", s->data.f); break;
-		case VAL_VALUET: printf ("[vt: %p] ", s->data.vt.vt); break;
+		case VAL_I32: g_string_sprintfa (str, "[%d] ", s->data.i); break;
+		case VAL_I64: g_string_sprintfa (str, "[%lld] ", s->data.l); break;
+		case VAL_DOUBLE: g_string_sprintfa (str, "[%0.5f] ", s->data.f); break;
+		case VAL_VALUET: g_string_sprintfa (str, "[vt: %p] ", s->data.vt.vt); break;
 #if 0
 		case VAL_OBJ: {
 			MonoObject *obj =  s->data.p;
@@ -605,16 +606,19 @@ dump_stack (stackval *stack, stackval *sp)
 			}
 		}
 #endif
-		default: printf ("[%p] ", s->data.p); break;
+		default: g_string_sprintfa (str, "[%p] ", s->data.p); break;
 		}
 		++s;
 	}
+	return g_string_free (str, FALSE);
 }
 
-static void
+static char*
 dump_frame (MonoInvocation *inv)
 {
+	GString *str = g_string_new ("");
 	int i;
+	char *args;
 	for (i = 0; inv; inv = inv->parent, ++i) {
 		MonoClass *k = inv->method->klass;
 		int codep;
@@ -632,11 +636,12 @@ dump_frame (MonoInvocation *inv)
 			opname = mono_opcode_names [codep];
 			codep = inv->ip - hd->code;
 		}
-		g_print ("#%d: 0x%05x %-10s in %s.%s::%s (", i, codep, opname,
-						k->name_space, k->name, inv->method->name);
-		dump_stack (inv->stack_args, inv->stack_args + inv->method->signature->param_count);
-		g_print (")\n");
+		args = dump_stack (inv->stack_args, inv->stack_args + inv->method->signature->param_count);
+		g_string_sprintfa (str, "#%d: 0x%05x %-10s in %s.%s::%s (%s)\n", i, codep, opname,
+						k->name_space, k->name, inv->method->name, args);
+		g_free (args);
 	}
+	return g_string_free (str, FALSE);
 }
 
 #define DEBUG_INTERP 1
@@ -673,12 +678,13 @@ db_match_method (gpointer data, gpointer user_data)
 	break_on_method = 0;	\
 	if (tracing) {	\
 		MonoClass *klass = frame->method->klass;	\
+		char *args = dump_stack (frame->stack_args, frame->stack_args+signature->param_count);	\
 		debug_indent_level++;	\
 		output_indent ();	\
 		g_print ("Entering %s.%s::%s (", klass->name_space, klass->name, frame->method->name);	\
-		if (frame->method->signature->hasthis) g_print ("%p ", frame->obj);	\
-		dump_stack (frame->stack_args, frame->stack_args+frame->method->signature->param_count);	\
-		g_print (")\n");	\
+		if (signature->hasthis) g_print ("%p ", frame->obj);	\
+		g_print ("%s)\n", args);	\
+		g_free (args);	\
 	}	\
 	if (profiling) {	\
 		if (!(profile_info = g_hash_table_lookup (profiling, frame->method))) {	\
@@ -806,8 +812,11 @@ calc_offsets (MonoImage *image, MonoMethodHeader *header, MonoMethodSignature *s
 
 #define THROW_EX(exception,ex_ip)	\
 		do {\
+			char *stack_trace = dump_frame (frame);	\
 			frame->ip = (ex_ip);		\
 			frame->ex = (MonoException*)(exception);	\
+			frame->ex->stack_trace = mono_string_new (domain, stack_trace);	\
+			g_free (stack_trace);	\
 			goto handle_exception;	\
 		} while (0)
 
@@ -1011,6 +1020,7 @@ ves_exec_method (MonoInvocation *frame)
 
 	if (frame < 0xbff00000)
 		G_BREAKPOINT ();
+	signature = frame->method->signature;
 	mono_class_init (frame->method->klass);
 
 	DEBUG_ENTER ();
@@ -1057,7 +1067,6 @@ ves_exec_method (MonoInvocation *frame)
 	/*verify_method (frame->method);*/
 
 	header = ((MonoMethodNormal *)frame->method)->header;
-	signature = frame->method->signature;
 	image = frame->method->klass->image;
 
 	/*
@@ -1122,9 +1131,9 @@ ves_exec_method (MonoInvocation *frame)
 			char *ins;
 			if (sp > frame->stack) {
 				output_indent ();
-				g_print ("stack: ");
-				dump_stack (frame->stack, sp);
-				g_print ("\n");
+				ins = dump_stack (frame->stack, sp);
+				g_print ("stack: %s\n", ins);
+				g_free (ins);
 			}
 			output_indent ();
 			ins = mono_disasm_code_one (NULL, frame->method, ip);
@@ -3599,7 +3608,9 @@ die_on_ex:
 		g_print ("Unhandled exception %s.%s %s.\n", ex_obj->vtable->klass->name_space, ex_obj->vtable->klass->name,
 				message?message:"");
 		g_free (message);
-		dump_frame (frame);
+		message = dump_frame (frame);
+		g_print ("%s", message);
+		g_free (message);
 		exit (1);
 	}
 	handle_finally:
