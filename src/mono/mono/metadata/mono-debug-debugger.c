@@ -16,8 +16,11 @@
 #define TYPE_TABLE_PTR_CHUNK_SIZE	256
 #define TYPE_TABLE_CHUNK_SIZE		65536
 
+static guint32 debugger_lock_level = 0;
 static CRITICAL_SECTION debugger_lock_mutex;
 static gboolean mono_debugger_initialized = FALSE;
+
+static gboolean must_reload_symtabs = FALSE;
 
 static GHashTable *images = NULL;
 static GHashTable *type_table = NULL;
@@ -57,15 +60,28 @@ MonoDebuggerIOLayer mono_debugger_io_layer = {
 void
 mono_debugger_lock (void)
 {
-	if (mono_debugger_initialized)
-		EnterCriticalSection (&debugger_lock_mutex);
+	if (!mono_debugger_initialized)
+		return;
+
+	EnterCriticalSection (&debugger_lock_mutex);
+	debugger_lock_level++;
 }
 
 void
 mono_debugger_unlock (void)
 {
-	if (mono_debugger_initialized)
-		LeaveCriticalSection (&debugger_lock_mutex);
+	if (!mono_debugger_initialized)
+		return;
+
+	if (debugger_lock_level == 1) {
+		if (must_reload_symtabs) {
+			mono_debugger_event (MONO_DEBUGGER_EVENT_RELOAD_SYMTABS, NULL, 0);
+			must_reload_symtabs = FALSE;
+		}
+	}
+
+	debugger_lock_level--;
+	LeaveCriticalSection (&debugger_lock_mutex);
 }
 
 static MonoDebuggerSymbolFile *
@@ -337,7 +353,7 @@ mono_debugger_add_type (MonoDebuggerSymbolFile *symfile, MonoClass *klass)
 
 	cinfo->type_info = write_class (mono_debugger_symbol_table, klass);
 
-	mono_debugger_event (MONO_DEBUGGER_EVENT_TYPE_ADDED, NULL, 0);
+	must_reload_symtabs = TRUE;
 	mono_debugger_unlock ();
 }
 
@@ -467,7 +483,7 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoDebugMethodInfo *
 		}
 	}
 
-	mono_debugger_event (MONO_DEBUGGER_EVENT_METHOD_ADDED, NULL, 0);
+	must_reload_symtabs = TRUE;
 }
 
 static MonoDebuggerRangeInfo *

@@ -17,9 +17,8 @@ typedef struct _MonoDebuggerClassInfo		MonoDebuggerClassInfo;
 typedef struct _MonoDebuggerIOLayer		MonoDebuggerIOLayer;
 
 typedef enum {
-	MONO_DEBUGGER_EVENT_TYPE_ADDED,
-	MONO_DEBUGGER_EVENT_METHOD_ADDED,
-	MONO_DEBUGGER_EVENT_BREAKPOINT
+	MONO_DEBUGGER_EVENT_BREAKPOINT,
+	MONO_DEBUGGER_EVENT_RELOAD_SYMTABS
 } MonoDebuggerEvent;
 
 typedef enum {
