@@ -229,7 +229,8 @@ mul.ovf: dest:i src1:i src2:i len:8
 mul.ovf.un: dest:i src1:i src2:i len:12
 sub.ovf:
 sub.ovf.un:
-endfinally: len:10
+start_handler: len:8
+endfinally: len:12
 leave:
 leave.s:
 stind.i:
@@ -257,7 +258,7 @@ ldloc:
 ldloca:
 stloc:
 localloc: dest:i src1:i len:30
-endfilter:
+endfilter: len:12
 unaligned.:
 volatile.:
 tail.:

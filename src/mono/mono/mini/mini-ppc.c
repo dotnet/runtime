@@ -1685,8 +1685,8 @@ alloc_int_reg (MonoCompile *cfg, InstList *curinst, MonoInst *ins, int sym_reg, 
 }
 
 /* use ppc_r3-ppc_10 as temp registers */
-#define PPC_CALLER_REGS (0x7f<<3)
-#define PPC_CALLER_FREGS (0x7f<<2)
+#define PPC_CALLER_REGS (0xff<<3)
+#define PPC_CALLER_FREGS (0xff<<2)
 
 /*
  * Local register allocation.
@@ -2305,7 +2305,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_rlwinm (code, ins->dreg, ins->sreg1, 0, 16, 31);
 			break;
 		case OP_COMPARE:
-			if (ins->next && ins->next->opcode >= CEE_BNE_UN && ins->next->opcode <= CEE_BLT_UN)
+			if (ins->next && (ins->next->opcode >= CEE_BNE_UN && ins->next->opcode <= CEE_BLT_UN))
 				ppc_cmpl (code, 0, 0, ins->sreg1, ins->sreg2);
 			else
 				ppc_cmp (code, 0, 0, ins->sreg1, ins->sreg2);
@@ -2590,12 +2590,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_bl (code, 0);
 			break;
 		}
+		case OP_START_HANDLER:
+			ppc_mflr (code, ppc_r0);
+			ppc_stw (code, ppc_r0, ins->inst_left->inst_offset, ins->inst_left->inst_basereg);
+			break;
 		case OP_ENDFILTER:
 			if (ins->sreg1 != ppc_r3)
 				ppc_mr (code, ppc_r3, ins->sreg1);
+			ppc_lwz (code, ppc_r0, ins->inst_left->inst_offset, ins->inst_left->inst_basereg);
+			ppc_mtlr (code, ppc_r0);
 			ppc_blr (code);
 			break;
 		case CEE_ENDFINALLY:
+			ppc_lwz (code, ppc_r0, ins->inst_left->inst_offset, ins->inst_left->inst_basereg);
+			ppc_mtlr (code, ppc_r0);
 			ppc_blr (code);
 			break;
 		case OP_CALL_HANDLER: 
@@ -2645,7 +2653,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CGT:
 		case OP_CGT_UN:
 			ppc_li (code, ins->dreg, 1);
-			ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 2);
+			ppc_bc (code, PPC_BR_TRUE, PPC_BR_GT, 2);
 			ppc_li (code, ins->dreg, 0);
 			break;
 		case OP_COND_EXC_EQ:

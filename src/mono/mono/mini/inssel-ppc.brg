@@ -12,7 +12,23 @@
 
 stmt: OP_START_HANDLER {
 	MonoInst *spvar = mono_find_spvar_for_region (s, s->cbb->region);
-	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, spvar->inst_basereg, spvar->inst_offset, ppc_sp);
+	/*MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, spvar->inst_basereg, spvar->inst_offset, ppc_sp);
+	*/
+	tree->inst_left = spvar;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_ENDFINALLY {
+	MonoInst *spvar = mono_find_spvar_for_region (s, s->cbb->region);
+	tree->inst_left = spvar;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_ENDFILTER (reg) {
+	MonoInst *spvar = mono_find_spvar_for_region (s, s->cbb->region);
+	tree->inst_left = spvar;
+	tree->sreg1 = state->left->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: CEE_STIND_I8 (OP_REGVAR, lreg) {
