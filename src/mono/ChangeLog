@@ -15,19 +15,6 @@
 
 2004-05-04  Raja R Harinath  <rharinath@novell.com>
 
-	* Makefile.am (bootstrap): New target for building from CVS.  New
-	improved version of 'fullbuild' -- does not install any files.
-	(mcs-tree-safe-build): Build System.dll too, since mcs.exe uses that.
-	Build possibly stripped-down versions of mcs.exe, mscorlib.dll and
-	System.dll, using the BOOTSTRAP_WITH_OLDLIB define.
-	(xinstall-runtime): Don't install anything.  Create a temporary
-	install tree that hooks back to the build tree.
-	(mcs-rest): Prepend temporary install tree to PATH so that compile
-	picks the runtime and compiler that are being built.
-	(fullbuild): Obsolete target.  Bootstraps and installs tree.
-
-2004-05-04  Raja R Harinath  <rharinath@novell.com>
-
 	* runtime/net_1_1/Makefile.am (mono_runtime): Use USE_JIT, not
 	JIT_SUPPORTED.
 	(install-data-local, uninstall-data-local): Run runtime with
