@@ -1,3 +1,7 @@
+2005-01-19  Zoltan Varga  <vargaz@freemail.hu>
+
+	* Makefile.am (DIST_SUBDIRS): Distribute ikvm-native.
+
 2005-01-15  Zoltan Varga  <vargaz@freemail.hu>
 
 	* scripts/Makefile.am (bin_SCRIPTS): Remove whitespace after \.

@@ -5,7 +5,7 @@ SUBDIRS = $(libgc_dir) mono $(ikvm_native_dir) support docs data runtime scripts
 
 # Keep in sync with SUBDIRS
 ## 'tools' is not normally built
-DIST_SUBDIRS = libgc mono docs data runtime scripts man samples support web tools
+DIST_SUBDIRS = libgc mono docs data runtime scripts man samples ikvm-native support web tools
 
 EXTRA_DIST= mono.pc.in mono.spec.in mint.pc.in
 
