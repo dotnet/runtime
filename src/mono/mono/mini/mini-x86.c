@@ -472,10 +472,11 @@ cpuid (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx)
 	if (have_cpuid) {
 		/* Have to use the code manager to get around WinXP DEP */
 		MonoCodeManager *codeman = mono_code_manager_new_dynamic ();
+		CpuidFunc func;
 		void *ptr = mono_code_manager_reserve (codeman, sizeof (cpuid_impl));
 		memcpy (ptr, cpuid_impl, sizeof (cpuid_impl));
 
-		CpuidFunc func = (CpuidFunc)ptr;
+		func = (CpuidFunc)ptr;
 		func (id, p_eax, p_ebx, p_ecx, p_edx);
 
 		mono_code_manager_destroy (codeman);
@@ -2371,6 +2372,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		/* handle clobbering of sreg1 */
 		if ((spec [MONO_INST_CLOB] == '1' || spec [MONO_INST_CLOB] == 's') && ins->dreg != ins->sreg1) {
 			MonoInst *sreg2_copy = NULL;
+			MonoInst *copy = NULL;
 
 			if (ins->dreg == ins->sreg2) {
 				/* 
@@ -2388,7 +2390,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				mono_regstate_free_int (rs, reg2);
 			}
 
-			MonoInst *copy = create_copy_ins (cfg, ins->dreg, ins->sreg1, NULL);
+			copy = create_copy_ins (cfg, ins->dreg, ins->sreg1, NULL);
 			DEBUG (g_print ("\tneed to copy sreg1 %s to dreg %s\n", mono_arch_regname (ins->sreg1), mono_arch_regname (ins->dreg)));
 			insert_before_ins (ins, tmp, copy);
 

@@ -971,16 +971,18 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 				for (i = 0; i < ji->data.table->table_size; i++)
 					table [i] = (gpointer)(gssize)decode_value (p, &p);
 				break;
-			case MONO_PATCH_INFO_R4:
-				ji->data.target = mono_mempool_alloc0 (mp, sizeof (float));
+			case MONO_PATCH_INFO_R4: {
 				guint32 val;
 
+				ji->data.target = mono_mempool_alloc0 (mp, sizeof (float));
 				val = decode_value (p, &p);
 				*(float*)ji->data.target = *(float*)&val;
 				break;
+			}
 			case MONO_PATCH_INFO_R8: {
-				ji->data.target = mono_mempool_alloc0 (mp, sizeof (double));
 				guint32 val [2];
+
+				ji->data.target = mono_mempool_alloc0 (mp, sizeof (double));
 
 				val [0] = decode_value (p, &p);
 				val [1] = decode_value (p, &p);

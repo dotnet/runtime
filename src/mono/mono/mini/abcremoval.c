@@ -407,9 +407,10 @@ handle_load:
 	case CEE_AND: {
 		MonoSummarizedValue left_value;
 		MonoSummarizedValue right_value;
+		int constant_operand_value;
+
 		summarize_integer_value (area, value->inst_left, &left_value, result_value_kind);
 		summarize_integer_value (area, value->inst_right, &right_value, result_value_kind);
-		int constant_operand_value;
 
 		if (left_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
 			constant_operand_value = left_value.value.constant.value;
