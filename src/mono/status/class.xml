@@ -79,6 +79,16 @@
         </maintainers>
     </class>
 
+    <class name="System.Attribute">
+        <last-activity>Aug-16-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>95</completion>
+        <maintainers>
+            <maintainer>ndrochak@gol.com</maintainer>
+        </maintainers>
+    </class>
+
     <class name="System.DivideByZeroException">
         <last-activity>Jul-15-2001</last-activity>
         <implementation>yes</implementation>
@@ -945,12 +955,12 @@
     </class>
 
     <class name="System.Diagnostics.ConditionalAttribute">
-        <last-activity>Jul-15-2001</last-activity>
+        <last-activity>Aug-16-2001</last-activity>
         <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
-            <maintainer>angryjohn69@nc.rr.com</maintainer>
+            <maintainer>ndrochak@gol.com</maintainer>
         </maintainers>
     </class>
 
