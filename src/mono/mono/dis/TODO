@@ -1,0 +1,5 @@
+* Write test cases
+
+	Write test cases to stress test TypeSpec.  This is done by
+	creating arrays of various dimensions, sizes, and lower
+	bounds.

@@ -72,8 +72,11 @@ dump_table_typedef (metadata_t *m)
 	
 	for (i = 1; i <= t->rows; i++){
 		char *s = get_typedef (m, i);
-		
-		fprintf (output, "%d: %s\n", i, s);
+		guint32 cols [6];
+
+		expand (&m->tables [META_TABLE_TYPEDEF], i - 1, cols, CSIZE (cols));
+
+		fprintf (output, "%d: %s (flist=%d, mlist=%d)\n", i, s, cols [4], cols [5]);
 		g_free (s);
 	}
 	fprintf (output, "\n");
@@ -198,7 +201,7 @@ dump_table_memberref (metadata_t *m)
 			 ks, idx,
 			 mono_metadata_string_heap (m, cols [1]),
 			 x ? x : "",
-			 get_methodref_signature (m, cols [2]));
+			 get_methodref_signature (m, cols [2], NULL));
 
 		if (x)
 			g_free (x);

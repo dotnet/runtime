@@ -9,10 +9,15 @@ char *get_typeref             (metadata_t *m, int idx);
 char *get_typedef_or_ref      (metadata_t *m, guint32 dor_token);
 char *get_field_signature     (metadata_t *m, guint32 blob_signature);
 char *decode_literal          (metadata_t *m, guint32 token);
+char *get_field               (metadata_t *m, guint32 token);
 char *param_flags             (guint32 f);
 char *field_flags             (guint32 f);
-char *get_methodref_signature (metadata_t *m, guint32 blob_signature);
+char *get_methodref_signature (metadata_t *m, guint32 blob_signature, const char *fancy);
 char *get_constant            (metadata_t *m, ElementTypeEnum t, guint32 blob_index);
+char *get_token               (metadata_t *m, guint32 token);
+char *get_token_type          (metadata_t *m, guint32 token);
+char *get_typespec            (metadata_t *m, guint32 blob_idx);
+char *get_method              (metadata_t *m, guint32 token);
 
 
 /*

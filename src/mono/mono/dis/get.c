@@ -8,7 +8,9 @@
  */
 #include <config.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <glib.h>
 #include "meta.h"
 #include "util.h"
@@ -121,6 +123,141 @@ get_assemblyref (metadata_t *m, int idx)
 	return g_strdup (mono_metadata_string_heap (m, cols [6]));
 }
 
+/*
+ *
+ * Returns a string representing the ArrayShape (22.2.16).
+ */
+static const char *
+get_array_shape (metadata_t *m, const char *ptr, char **result)
+{
+	GString *res = g_string_new ("[");
+	guint32 rank, num_sizes, num_lo_bounds;
+	guint32 *sizes = NULL, *lo_bounds = NULL;
+	int i, r;
+	char buffer [80];
+	
+	ptr = get_encoded_value (ptr, &rank);
+	ptr = get_encoded_value (ptr, &num_sizes);
+
+	if (num_sizes > 0)
+		sizes = g_new (guint32, num_sizes);
+	
+	for (i = 0; i < num_sizes; i++)
+		ptr = get_encoded_value (ptr, &(sizes [i]));
+
+	ptr = get_encoded_value (ptr, &num_lo_bounds);
+	if (num_lo_bounds > 0)
+		lo_bounds = g_new (guint32, num_lo_bounds);
+	
+	for (i = 0; i < num_lo_bounds; i++)
+		ptr = get_encoded_value (ptr, &(lo_bounds [i]));
+
+	for (r = 0; r < rank; r++){
+		if (r < num_sizes){
+			if (r < num_lo_bounds){
+				sprintf (buffer, "%d..%d", lo_bounds [r], lo_bounds [r] + sizes [r] - 1);
+			} else {
+				sprintf (buffer, "0..%d", sizes [r] - 1);
+			}
+		} else
+			buffer [0] = 0;
+		
+		g_string_append (res, buffer);
+		if ((r + 1) != rank)
+			g_string_append (res, ", ");
+	}
+	g_string_append (res, "]");
+	
+	if (sizes)
+		g_free (sizes);
+
+	if (lo_bounds)
+		g_free (lo_bounds);
+
+	*result = res->str;
+	g_string_free (res, FALSE);
+
+	return ptr;
+}
+
+/**
+ * get_typespec:
+ * @m: metadata context
+ * @blob_idx: index into the blob heap
+ *
+ * Returns the stringified representation of a TypeSpec signature (22.2.17)
+ */
+char *
+get_typespec (metadata_t *m, guint32 idx)
+{
+	guint32 cols [1];
+	const char *ptr;
+	char *s, *result;
+	GString *res = g_string_new ("");
+	int len;
+
+	expand (&m->tables [META_TABLE_TYPESPEC], idx-1, cols, CSIZE (cols));
+	ptr = mono_metadata_blob_heap (m, cols [0]);
+	ptr = get_encoded_value (ptr, &len);
+	
+	switch (*ptr++){
+	case ELEMENT_TYPE_PTR:
+		ptr = get_custom_mod (m, ptr, &s);
+		if (s){
+			g_string_append (res, s);
+			g_string_append_c (res, ' ');
+			g_free (s);
+		}
+		
+		if (*ptr == ELEMENT_TYPE_VOID)
+			g_string_append (res, "void");
+		else {
+			ptr = get_type (m, ptr, &s);
+			if (s)
+				g_string_append (res, s);
+		}
+		break;
+		
+	case ELEMENT_TYPE_FNPTR:
+		g_string_append (res, "FNPTR ");
+		/*
+		 * we assume MethodRefSig, as we do not know
+		 * whether it is a MethodDefSig or a MethodRefSig.
+		 */
+		printf ("\n FNPTR:\n");
+		
+		hex_dump (ptr, 0, 40);
+		break;
+			
+	case ELEMENT_TYPE_ARRAY:
+		ptr = get_type (m, ptr, &s);
+		g_string_append (res, s);
+		g_free (s);
+		g_string_append_c (res, ' ');
+		ptr = get_array_shape (m, ptr, &s);
+		g_string_append (res, s);
+		g_free (s);
+		break;
+		
+	case ELEMENT_TYPE_SZARRAY:
+		ptr = get_custom_mod (m, ptr, &s);
+		if (s){
+			g_string_append (res, s);
+			g_string_append_c (res, ' ');
+			g_free (s);
+		}
+		ptr = get_type (m, ptr, &s);
+		g_string_append (res, s);
+		g_string_append (res, "[]");
+		g_free (s);
+	}
+
+	result = res->str;
+	g_string_free (res, FALSE);
+
+	return result;
+}
+
 char *
 get_typeref (metadata_t *m, int idx)
 {
@@ -207,7 +344,7 @@ get_typedef_or_ref (metadata_t *m, guint32 dor_token)
 		break;
 		
 	case 2: /* TypeSpec */
-		s = g_strdup_printf ("TODO-TypeSpec: 0x%08x", idx);
+		s = get_typespec (m, idx);
 		break;
 
 	default:
@@ -623,7 +760,7 @@ get_blob_encoded_size (const char *xptr, int *size)
  * Returns a stringifed representation of a MethodRefSig (22.2.2)
  */
 char *
-get_methodref_signature (metadata_t *m, guint32 blob_signature)
+get_methodref_signature (metadata_t *m, guint32 blob_signature, const char *fancy_name)
 {
 	GString *res = g_string_new ("");
 	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
@@ -638,7 +775,7 @@ get_methodref_signature (metadata_t *m, guint32 blob_signature)
 		if (*ptr & 0x40)
 			g_string_append (res, "explicit-this ");
 		else
-			g_string_append (res, "has-this ");
+			g_string_append (res, "instance "); /* has-this */
 	}
 
 	if (*ptr & 0x05)
@@ -649,6 +786,12 @@ get_methodref_signature (metadata_t *m, guint32 blob_signature)
 	ptr = get_ret_type (m, ptr, &allocated_ret_type);
 
 	g_string_append (res, allocated_ret_type);
+
+	if (fancy_name){
+		g_string_append_c (res, ' ');
+		g_string_append (res, fancy_name);
+	}
+	
 	g_string_append (res, " (");
 	
 	/*
@@ -681,6 +824,159 @@ get_methodref_signature (metadata_t *m, guint32 blob_signature)
 	s = res->str;
 	g_string_free (res, FALSE);
 	return s;
+}
+
+/*
+ * We use this to pass context information to the typedef locator
+ */
+typedef struct {
+	int idx;		 /* The field index that we are trying to locate */
+	metadata_t *m;		 /* the metadata context */
+	metadata_tableinfo_t *t; /* pointer to the typedef table */
+	guint32 result;
+} locator_t;
+
+static int
+typedef_locator (const void *a, const void *b)
+{
+	locator_t *loc = (locator_t *) a;
+	char *bb = (char *) b;
+	int typedef_index = (bb - loc->t->base) / loc->t->row_size;
+	guint32 cols [6], cols_next [6];
+
+	expand (loc->t, typedef_index, cols, CSIZE (cols));
+	expand (loc->t, typedef_index + 1, cols_next, CSIZE (cols_next));
+
+	if (loc->idx < cols [4])
+		return -1;
+
+	if (loc->idx >= cols_next [4])
+		return 1;
+
+	if (cols [5] == cols_next [4])
+		return 1; 
+
+	loc->result = typedef_index;
+	
+	return 0;
+}
+
+/**
+ * get_field:
+ * @m: metadata context
+ * @token: a FIELD_DEF token
+ *
+ * This routine has to locate the TypeDef that "owns" this Field.
+ * Since there is no backpointer in the Field table, we have to scan
+ * the TypeDef table and locate the actual "owner" of the field
+ */
+char *
+get_field (metadata_t *m, guint32 token)
+{
+	int idx = mono_metadata_token_index (token);
+	metadata_tableinfo_t *tdef = &m->tables [META_TABLE_TYPEDEF];
+	guint32 cols [3];
+	char *sig, *res, *type;
+	locator_t loc;
+	
+	g_assert (mono_metadata_token_code (token) == TOKEN_TYPE_FIELD_DEF);
+
+	expand (&m->tables [META_TABLE_FIELD], idx - 1, cols, CSIZE (cols));
+	sig = get_field_signature (m, cols [2]);
+
+	/*
+	 * To locate the actual "container" for this field, we have to scan
+	 * the TypeDef table.  LAME!
+	 */
+	loc.idx = idx;
+	loc.m = m;
+	loc.t = tdef;
+
+	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, typedef_locator))
+		g_assert_not_reached ();
+
+	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
+	type = get_typedef (m, loc.result + 1);
+	res = g_strdup_printf ("%s %s %s",
+			       sig, type,
+			       mono_metadata_string_heap (m, cols [1]));
+	g_free (type);
+	g_free (sig);
+
+	return res;
+}
+
+static char *
+get_memberref_parent (metadata_t *m, guint32 mrp_token)
+{
+	/*
+	 * mrp_index is a MemberRefParent coded index
+	 */
+	guint32 table = mrp_token & 7;
+	guint32 idx = mrp_token >> 3;
+
+	switch (table){
+	case 0: /* TypeDef */
+		return get_typedef (m, idx);
+		
+	case 1: /* TypeRef */
+		return get_typeref (m, idx);
+		
+	case 2: /* ModuleRef */
+		return g_strdup_printf ("TODO:MemberRefParent-ModuleRef");
+		
+	case 3: /* MethodDef */
+		return g_strdup ("TODO:MethodDef");
+		
+	case 4: /* TypeSpec */
+		return get_typespec (m, idx);
+	}
+	g_assert_not_reached ();
+	return NULL;
+}
+
+/**
+ * get_method:
+ * @m: metadata context
+ * @token: a METHOD_DEF or MEMBER_REF token
+ *
+ * This routine has to locate the TypeDef that "owns" this Field.
+ * Since there is no backpointer in the Field table, we have to scan
+ * the TypeDef table and locate the actual "owner" of the field
+ */
+char *
+get_method (metadata_t *m, guint32 token)
+{
+	int idx = mono_metadata_token_index (token);
+	guint32 member_cols [3];
+	char *res, *class, *fancy_name;
+	
+	switch (mono_metadata_token_code (token)){
+	case TOKEN_TYPE_METHOD_DEF:
+		return g_strdup_printf ("TODO:MethodDef call [%x]", token);
+		
+	case TOKEN_TYPE_MEMBER_REF: {
+		char *sig;
+		
+		expand (&m->tables [META_TABLE_MEMBERREF], idx - 1, member_cols, CSIZE (member_cols));
+		class = get_memberref_parent (m, member_cols [0]);
+		fancy_name = g_strconcat (class, "::",
+					  mono_metadata_string_heap (m, member_cols [1]),
+					  NULL);
+		
+		sig = get_methodref_signature (
+			m, member_cols [2], fancy_name);
+		res = g_strdup_printf ("%s", sig);
+		g_free (sig);
+
+		return res;
+	}
+		
+	default:
+		g_assert_not_reached ();
+	}
+	g_assert_not_reached ();
+	return NULL;
 }
 
 /**
@@ -735,17 +1031,20 @@ get_constant (metadata_t *m, ElementTypeEnum t, guint32 blob_index)
 		int len, i, j, e;
 		char *res;
 		e = len = 0;
-		for (i=0; !ptr[i+1]; i+=2) {
+		for (i = 0; !ptr [i+1]; i += 2){
 			len++;
-			switch(ptr[i]) {
-			case '"': case '\\': case '\n': /* add more */
+			switch (ptr [i]) {
+			case '"':
+			case '\\':
+			case '\n': /* add more */
 				e++;
 			}
 		}
 		res = g_malloc (len + e + 3);
 		j = 1;
-		res[0] = '"';
-		for (i=0; i < len; i+=2) {
+		res [0] = '"';
+
+		for (i = 0; i < len; i += 2){
 			switch(ptr[i]) {
 			case '"': 
 				res[j++] = '\\';
@@ -758,7 +1057,7 @@ get_constant (metadata_t *m, ElementTypeEnum t, guint32 blob_index)
 				res[j++] = 'n';
 				break;
 			default:
-				res[j++] = isprint(ptr[i])?ptr[i]:'.';
+				res[j++] = isprint (ptr [i]) ? ptr [i] : '.';
 				break;
 			}
 		}
@@ -788,4 +1087,70 @@ get_constant (metadata_t *m, ElementTypeEnum t, guint32 blob_index)
 		return g_strdup_printf ("Unknown");
 	}
 
+}
+
+/**
+ * get_token:
+ * @m: metadata context
+ * @token: token that we want to decode.
+ *
+ * Returns: An allocated value representing a stringified version of the
+ * constant.
+ */
+char *
+get_token (metadata_t *m, guint32 token)
+{
+	switch (mono_metadata_token_code (token)){
+	case TOKEN_TYPE_FIELD_DEF:
+		return (get_field (m, token));
+		
+	default:
+		g_error ("Do not know how to decode tokens of type 0x%08x", token);
+	}
+
+	g_assert_not_reached ();
+	return g_strdup ("ERROR");
+}
+
+/**
+ * get_token_type:
+ * @m: metadata context
+ * @token: the token can belong to any of the following tables:
+ * TOKEN_TYPE_TYPE_REF, TOKEN_TYPE_TYPE_DEF, TOKEN_TYPE_TYPE_SPEC
+ *
+ * Returns: a stringified version of the MethodDef or MethodRef or TypeSpecn
+ * at (token & 0xffffff) 
+ */
+char *
+get_token_type (metadata_t *m, guint32 token)
+{
+	char *temp = NULL, *s;
+	int idx;
+
+	idx = mono_metadata_token_index (token);
+	
+	switch (mono_metadata_token_code (token)){
+	case TOKEN_TYPE_TYPE_DEF:
+		temp = get_typedef (m, idx);
+		s = g_strdup_printf ("%s", temp);
+		break;
+		
+	case TOKEN_TYPE_TYPE_REF: 
+		temp = get_typeref (m, idx);
+		s = g_strdup_printf ("%s", temp);
+		break;
+		
+	case TOKEN_TYPE_TYPE_SPEC:
+		s = get_typespec (m, idx);
+		break;
+
+	default:
+		g_error ("Unhandled encoding for typedef-or-ref coded index");
+
+	}
+	
+	if (temp)
+		g_free (temp);
+
+	return s;
 }

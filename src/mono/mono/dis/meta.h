@@ -7,3 +7,4 @@
 #include <mono/metadata/eltype.h>
 #include <mono/metadata/blobsig.h>
 #include <mono/metadata/paramattr.h>
+#include <mono/metadata/tokentype.h>

@@ -103,7 +103,11 @@ dissasemble_cil (metadata_t *m, const unsigned char *start, int size)
 			
 		case InlineField: {
 			guint32 token = *(guint32 *) ptr;
-			fprintf (output, "fieldref-0x%08x", token);
+			char *s;
+			
+			s = get_field (m, token);
+			fprintf (output, "%s", s);
+			g_free (s);
 			ptr += 4;
 			break;
 		}
@@ -126,7 +130,11 @@ dissasemble_cil (metadata_t *m, const unsigned char *start, int size)
 		
 		case InlineMethod: {
 			guint32 token = *(guint32 *) ptr;
-			fprintf (output, "method-0x%08x", token);
+			char *s;
+
+			s = get_method (m, token);
+			fprintf (output, "%s", s);
+			g_free (s);
 			ptr += 4;
 			break;
 		}
@@ -179,16 +187,21 @@ dissasemble_cil (metadata_t *m, const unsigned char *start, int size)
 
 		case InlineTok: {
 			guint32 token = *(guint32 *) ptr;
-
-			fprintf (output, "TOKEN_%08x", token);
+			char *s;
+			
+			s = get_token (m, token);
+			fprintf (output, "%s", s);
+			g_free (s);
+			
 			ptr += 4;
 			break;
 		}
 		
 		case InlineType: {
 			guint32 token = *(guint32 *) ptr;
-
-			fprintf (output, "Type-%08x", token);
+			char *s = get_token_type (m, token);
+			fprintf (output, "%s", s);
+			g_free (s);
 			ptr += 4;
 			break;
 		}
