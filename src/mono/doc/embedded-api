@@ -107,7 +107,7 @@
 
 	The Boehm GC system needs to catch your calls to the pthreads
 	layer, so in each file where you use pthread.h you should
-	include the <gc/gc.h> file.  
+	include the &lt;gc/gc.h&gt; file.  
 
 * Exposing C code to the CIL universe
 
