@@ -41,6 +41,7 @@ gboolean mono_print_vtable = FALSE;
 
 static MonoClass * mono_class_create_from_typedef (MonoImage *image, guint32 type_token);
 static void mono_class_create_generic_2 (MonoGenericClass *gclass);
+static gboolean mono_class_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res);
 
 void (*mono_debugger_start_class_init_func) (MonoClass *klass) = NULL;
 void (*mono_debugger_class_init_func) (MonoClass *klass) = NULL;
@@ -801,51 +802,111 @@ mono_class_layout_fields (MonoClass *class)
 	}
 }
 
-static void
-init_properties (MonoClass *class)
+void
+mono_class_setup_methods (MonoClass *class)
+{
+	int i;
+	MonoMethod **methods;
+
+	if (class->methods || class->generic_class)
+		return;
+
+	mono_loader_lock ();
+
+	if (class->methods) {
+		mono_loader_unlock ();
+		return;
+	}
+
+	//printf ("INIT: %s.%s\n", class->name_space, class->name);
+
+	if (!class->generic_class && !class->methods) {
+		methods = g_new (MonoMethod*, class->method.count);
+		for (i = 0; i < class->method.count; ++i) {
+			methods [i] = mono_get_method (class->image,
+										   MONO_TOKEN_METHOD_DEF | (i + class->method.first + 1), class);
+		}
+	}
+
+	if (MONO_CLASS_IS_INTERFACE (class))
+		for (i = 0; i < class->method.count; ++i)
+			methods [i]->slot = i;
+
+	class->methods = methods;
+
+	mono_loader_unlock ();
+}
+
+
+void
+mono_class_setup_properties (MonoClass *class)
 {
 	guint startm, endm, i, j;
 	guint32 cols [MONO_PROPERTY_SIZE];
 	MonoTableInfo *pt = &class->image->tables [MONO_TABLE_PROPERTY];
 	MonoTableInfo *msemt = &class->image->tables [MONO_TABLE_METHODSEMANTICS];
+	MonoProperty *properties;
+
+	if (class->properties)
+		return;
+
+	mono_loader_lock ();
+
+	if (class->properties) {
+		mono_loader_unlock ();
+		return;
+	}
 
 	class->property.first = mono_metadata_properties_from_typedef (class->image, mono_metadata_token_index (class->type_token) - 1, &class->property.last);
 	class->property.count = class->property.last - class->property.first;
 
-	class->properties = g_new0 (MonoProperty, class->property.count);
+	if (class->property.count)
+		mono_class_setup_methods (class);
+
+	properties = g_new0 (MonoProperty, class->property.count);
 	for (i = class->property.first; i < class->property.last; ++i) {
 		mono_metadata_decode_row (pt, i, cols, MONO_PROPERTY_SIZE);
-		class->properties [i - class->property.first].parent = class;
-		class->properties [i - class->property.first].attrs = cols [MONO_PROPERTY_FLAGS];
-		class->properties [i - class->property.first].name = mono_metadata_string_heap (class->image, cols [MONO_PROPERTY_NAME]);
+		properties [i - class->property.first].parent = class;
+		properties [i - class->property.first].attrs = cols [MONO_PROPERTY_FLAGS];
+		properties [i - class->property.first].name = mono_metadata_string_heap (class->image, cols [MONO_PROPERTY_NAME]);
 
 		startm = mono_metadata_methods_from_property (class->image, i, &endm);
 		for (j = startm; j < endm; ++j) {
 			mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);
 			switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
 			case METHOD_SEMANTIC_SETTER:
-				class->properties [i - class->property.first].set = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				properties [i - class->property.first].set = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
 				break;
 			case METHOD_SEMANTIC_GETTER:
-				class->properties [i - class->property.first].get = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				properties [i - class->property.first].get = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
 				break;
 			default:
 				break;
 			}
 		}
 	}
+
+	class->properties = properties;
+
+	mono_loader_unlock ();
 }
 
-static void
-init_events (MonoClass *class)
+void
+mono_class_setup_events (MonoClass *class)
 {
 	guint startm, endm, i, j;
 	guint32 cols [MONO_EVENT_SIZE];
 	MonoTableInfo *pt = &class->image->tables [MONO_TABLE_EVENT];
 	MonoTableInfo *msemt = &class->image->tables [MONO_TABLE_METHODSEMANTICS];
 
+	if (class->events)
+		return;
+
 	class->event.first = mono_metadata_events_from_typedef (class->image, mono_metadata_token_index (class->type_token) - 1, &class->event.last);
 	class->event.count = class->event.last - class->event.first;
+
+	if (class->event.count)
+		mono_class_setup_methods (class);
 
 	class->events = g_new0 (MonoEvent, class->event.count);
 	for (i = class->event.first; i < class->event.last; ++i) {
@@ -1025,7 +1086,33 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 }
 
 void
-mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
+mono_class_setup_vtable (MonoClass *class)
+{
+	MonoMethod **overrides;
+	int onum = 0;
+
+	if (class->vtable)
+		return;
+
+	mono_class_setup_methods (class);
+
+	if (MONO_CLASS_IS_INTERFACE (class))
+		return;
+
+	mono_loader_lock ();
+
+	if (class->vtable)
+		return;
+
+	overrides = mono_class_get_overrides (class->image, class->type_token, &onum);	
+	mono_class_setup_vtable_general (class, overrides, onum);
+	g_free (overrides);
+
+	mono_loader_unlock ();
+}
+
+void
+mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int onum)
 {
 	MonoClass *k, *ic;
 	MonoMethod **vtable;
@@ -1033,11 +1120,8 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	GPtrArray *ifaces;
 	GHashTable *override_map = NULL;
 
-	/* setup_vtable() must be called only once on the type */
-	if (class->interface_offsets) {
-		g_warning ("vtable already computed in %s.%s", class->name_space, class->name);
+	if (class->vtable)
 		return;
-	}
 
 	ifaces = mono_class_get_implemented_interfaces (class);
 	if (ifaces) {
@@ -1406,8 +1490,6 @@ mono_class_init (MonoClass *class)
 	static MonoMethod *default_finalize = NULL;
 	static int finalize_slot = -1;
 	static int ghc_slot = -1;
- 	MonoMethod **overrides;
-	int onum = 0;
 
 	g_assert (class);
 
@@ -1554,9 +1636,6 @@ mono_class_init (MonoClass *class)
 	}
 
 	if (!class->generic_class) {
-		init_properties (class);
-		init_events (class);
-
 		i = mono_metadata_nesting_typedef (class->image, class->type_token, 1);
 		while (i) {
 			MonoClass* nclass;
@@ -1589,9 +1668,7 @@ mono_class_init (MonoClass *class)
 		return;
 	}
 
- 	overrides = mono_class_get_overrides (class->image, class->type_token, &onum);	
-	mono_class_setup_vtable (class, overrides, onum);
-	g_free (overrides);
+	mono_class_setup_vtable (class);
 
 	class->inited = 1;
 	class->init_pending = 0;
@@ -2696,6 +2773,7 @@ mono_class_get_property_from_name (MonoClass *klass, const char *name)
 	int i;
 
 	while (klass) {
+		mono_class_setup_properties (klass);
 		for (i = 0; i < klass->property.count; ++i) {
 			if (strcmp (name, klass->properties [i].name) == 0)
 				return &klass->properties [i];
@@ -2712,6 +2790,7 @@ mono_class_get_property_token (MonoProperty *prop)
 	int i;
 
 	while (klass) {
+		mono_class_setup_properties (klass);
 		for (i = 0; i < klass->property.count; ++i) {
 			if (&klass->properties [i] == prop)
 				return mono_metadata_make_token (MONO_TABLE_PROPERTY, klass->property.first + i + 1);
@@ -3080,7 +3159,53 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 MonoMethod*
 mono_class_get_cctor (MonoClass *klass)
 {
+	MonoCachedClassInfo cached_info;
+
+	/*
+	if (!klass->has_cctor)
+		return NULL;
+	*/
+
+	if (mono_class_get_cached_class_info (klass, &cached_info))
+		return mono_get_method (klass->image, cached_info.cctor_token, klass);
+
 	return mono_class_get_method_from_name_flags (klass, ".cctor", -1, METHOD_ATTRIBUTE_SPECIAL_NAME);
+}
+
+/*
+ * mono_class_get_finalizer:
+ *
+ *   Returns the finalizer method of @klass if it exists, NULL otherwise.
+ */
+MonoMethod*
+mono_class_get_finalizer (MonoClass *klass)
+{
+	MonoCachedClassInfo cached_info;
+	static int finalize_slot = -1;
+
+	if (finalize_slot < 0) {
+		int i;
+		MonoClass* obj_class = mono_get_object_class ();
+		mono_class_setup_vtable (obj_class);
+		for (i = 0; i < obj_class->vtable_size; ++i) {
+			MonoMethod *cm = obj_class->vtable [i];
+	       
+			if (!strcmp (mono_method_get_name (cm), "Finalize")) {
+				finalize_slot = i;
+				break;
+			}
+		}
+	}
+
+	if (!klass->has_finalize)
+		return NULL;
+
+	if (mono_class_get_cached_class_info (klass, &cached_info))
+		return mono_get_method (klass->image, cached_info.finalize_token, klass);
+	else {
+		mono_class_setup_vtable (klass);
+		return klass->vtable [finalize_slot];
+	}
 }
 
 /*
@@ -3276,6 +3401,23 @@ gpointer
 mono_lookup_dynamic_token (MonoImage *image, guint32 token)
 {
 	return lookup_dynamic (image, token);
+}
+
+static MonoGetCachedClassInfo get_cached_class_info = NULL;
+
+void
+mono_install_get_cached_class_info (MonoGetCachedClassInfo func)
+{
+	get_cached_class_info = func;
+}
+
+static gboolean
+mono_class_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
+{
+	if (!get_cached_class_info)
+		return FALSE;
+	else
+		return get_cached_class_info (klass, res);
 }
 
 MonoImage*

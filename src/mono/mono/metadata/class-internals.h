@@ -215,6 +215,7 @@ struct _MonoClass {
 	guint contextbound    : 1; /* class is a ContextBoundObject */
 	guint delegate        : 1; /* class is a Delegate */
 	guint gc_descr_inited : 1; /* gc_descr is initialized */
+	guint has_cctor       : 1; /* class has a cctor */
 	guint dummy           : 1; /* temporary hack */
 	guint32 declsec_flags;     /* declarative security attributes flags */
 
@@ -260,8 +261,10 @@ struct _MonoClass {
 	 */
 	MonoClassField *fields;
 
+	/* Initialized by a call to mono_class_setup_properties () */
 	MonoProperty *properties;
-	
+
+	/* Initialized by a call to mono_class_setup_events () */
 	MonoEvent *events;
 
 	MonoMethod **methods;
@@ -279,7 +282,9 @@ struct _MonoClass {
 	guint64 gc_bitmap;
 
 	MonoVTable *cached_vtable;
-        MonoMethod **vtable;	
+
+	/* Generic vtable. Initialized by a call to mono_class_setup_vtable () */
+	MonoMethod **vtable;	
 };
 
 struct MonoVTable {
@@ -371,6 +376,21 @@ struct _MonoGenericParam {
 	MonoClass** constraints; /* NULL means end of list */
 };
 
+/*
+ * Class information which might be cached by the runtime in the AOT file for
+ * example. Caching this allows us to avoid computing a generic vtable
+ * (class->vtable) in most cases, saving time and avoiding creation of lots of
+ * MonoMethod structures.
+ */
+typedef struct MonoCachedClassInfo {
+	guint32 vtable_size;
+	guint has_finalize : 1;
+	guint ghcimpl : 1;
+	guint has_cctor : 1;
+	guint32 cctor_token;
+	guint32 finalize_token;
+} MonoCachedClassInfo;
+
 typedef struct {
 	const char *name;
 	gconstpointer func;
@@ -402,6 +422,8 @@ typedef gpointer (*MonoRemotingTrampoline)       (MonoMethod *method, MonoRemoti
 
 typedef gpointer (*MonoLookupDynamicToken) (MonoImage *image, guint32 token);
 
+typedef gboolean (*MonoGetCachedClassInfo) (MonoClass *klass, MonoCachedClassInfo *res);
+
 void
 mono_classes_init (void);
 
@@ -409,7 +431,19 @@ void
 mono_class_layout_fields   (MonoClass *klass);
 
 void
-mono_class_setup_vtable    (MonoClass *klass, MonoMethod **overrides, int onum);
+mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int onum);
+
+void
+mono_class_setup_vtable (MonoClass *klass);
+
+void
+mono_class_setup_methods (MonoClass *klass);
+
+void
+mono_class_setup_properties (MonoClass *klass);
+
+void
+mono_class_setup_events (MonoClass *klass);
 
 void
 mono_class_setup_mono_type (MonoClass *klass);
@@ -432,6 +466,9 @@ mono_class_get_overrides   (MonoImage *image, guint32 type_token, gint32 *num_ov
 MonoMethod*
 mono_class_get_cctor (MonoClass *klass);
 
+MonoMethod*
+mono_class_get_finalizer (MonoClass *klass);
+
 gboolean
 mono_class_needs_cctor_run (MonoClass *klass, MonoMethod *caller);
 
@@ -446,6 +483,9 @@ mono_lookup_dynamic_token (MonoImage *image, guint32 token);
 
 void
 mono_install_lookup_dynamic_token (MonoLookupDynamicToken func);
+
+void
+mono_install_get_cached_class_info (MonoGetCachedClassInfo func);
 
 void
 mono_class_create_generic (MonoGenericClass *gclass);

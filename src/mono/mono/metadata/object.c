@@ -393,6 +393,22 @@ mono_runtime_free_method (MonoDomain *domain, MonoMethod *method)
 	/* mono_free_method (method); */
 }
 
+static MonoInitVTableFunc init_vtable_func = NULL;
+
+/**
+ * mono_install_init_vtable:
+ * @func: pointer to the function to be installed
+ *
+ *   Register a function which will be called by the runtime to initialize the
+ * method pointers inside a vtable. The JIT can use this function to load the
+ * vtable from the AOT file for example.
+ */
+void
+mono_install_init_vtable (MonoInitVTableFunc func)
+{
+	init_vtable_func = func;
+}
+
 #if 0 && HAVE_BOEHM_GC
 static void
 vtable_finalizer (void *obj, void *data) {
@@ -590,6 +606,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	MonoClassField *field;
 	char *t;
 	int i;
+	gboolean inited = FALSE;
 	guint32 vtable_size;
 	guint32 cindex;
 	guint32 constant_cols [MONO_CONSTANT_SIZE];
@@ -724,14 +741,21 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		class->cached_vtable = vt;
 
 	/* initialize vtable */
-	for (i = 0; i < class->vtable_size; ++i) {
-		MonoMethod *cm;
-	       
-		if ((cm = class->vtable [i])) {
-			if (mono_method_signature (cm)->generic_param_count)
-				vt->vtable [i] = cm;
-			else
-				vt->vtable [i] = arch_create_jit_trampoline (cm);
+	if (init_vtable_func)
+		inited = init_vtable_func (vt);
+
+	if (!inited) {
+		mono_class_setup_vtable (class);
+
+		for (i = 0; i < class->vtable_size; ++i) {
+			MonoMethod *cm;
+
+			if ((cm = class->vtable [i])) {
+				if (mono_method_signature (cm)->generic_param_count)
+					vt->vtable [i] = cm;
+				else
+					vt->vtable [i] = arch_create_jit_trampoline (cm);
+			}
 		}
 	}
 
@@ -807,6 +831,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	{
 		/* create trampolines for abstract methods */
 		for (k = class; k; k = k->parent) {
+			mono_class_setup_methods (k);
 			for (i = 0; i < k->method.count; i++) {
 				int slot = k->methods [i]->slot;
 				if (!pvt->vtable [slot]) 
@@ -844,7 +869,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			interf = iclass;
 			do {
 				pvt->interface_offsets [interf->interface_id] = &pvt->vtable [slot];
-	
+				mono_class_setup_methods (interf);
 				for (j = 0; j < interf->method.count; ++j) {
 					MonoMethod *cm = interf->methods [j];
 					pvt->vtable [slot + j] = arch_create_remoting_trampoline (cm, target_type);

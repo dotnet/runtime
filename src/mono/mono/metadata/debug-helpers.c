@@ -288,6 +288,7 @@ mono_method_desc_search_in_class (MonoMethodDesc *desc, MonoClass *klass)
 	int i;
 
 	mono_class_init (klass);
+	mono_class_setup_methods (klass);
 	for (i = 0; i < klass->method.count; ++i) {
 		if (mono_method_desc_match (desc, klass->methods [i]))
 			return klass->methods [i];

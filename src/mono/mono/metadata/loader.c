@@ -199,6 +199,7 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 		qname = fqname = NULL;
 
 	while (klass) {
+		mono_class_setup_methods (klass);
 		for (i = 0; i < klass->method.count; ++i) {
 			MonoMethod *m = klass->methods [i];
 
@@ -934,6 +935,8 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 	}
 
 	result = mono_get_method_from_token (image, token, klass, context);
+
+	//printf ("GET: %s\n", mono_method_full_name (result, TRUE));
 
 	if (!(result && result->is_inflated))
 		g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);

@@ -1579,6 +1579,7 @@ ves_icall_Type_GetInterfaceMapData (MonoReflectionType *type, MonoReflectionType
 	domain = mono_object_domain (type);
 	*targets = mono_array_new (domain, mono_defaults.method_info_class, len);
 	*methods = mono_array_new (domain, mono_defaults.method_info_class, len);
+	mono_class_setup_methods (iclass);
 	for (i = 0; i < len; ++i) {
 		member = mono_method_get_object (domain, iclass->methods [i], iclass);
 		mono_array_set (*methods, gpointer, i, member);
@@ -2791,6 +2792,7 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	}
 
 handle_parent:
+	mono_class_setup_methods (klass);
 	for (i = 0; i < klass->method.count; ++i) {
 		match = 0;
 		method = klass->methods [i];
@@ -2869,6 +2871,7 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 
+	mono_class_setup_methods (klass);
 	for (i = 0; i < klass->method.count; ++i) {
 		match = 0;
 		method = klass->methods [i];
@@ -2939,6 +2942,7 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	}
 
 handle_parent:
+	mono_class_setup_properties (klass);
 	for (i = 0; i < klass->property.count; ++i) {
 		prop = &klass->properties [i];
 		match = 0;
@@ -3028,6 +3032,7 @@ ves_icall_MonoType_GetEvent (MonoReflectionType *type, MonoString *name, guint32
 	domain = mono_object_domain (type);
 
 handle_parent:	
+	mono_class_setup_events (klass);
 	for (i = 0; i < klass->event.count; i++) {
 		event = &klass->events [i];
 		if (strcmp (event->name, event_name))
@@ -3080,6 +3085,7 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, Mon
 	klass = startklass = mono_class_from_mono_type (type->type);
 
 handle_parent:	
+	mono_class_setup_events (klass);
 	for (i = 0; i < klass->event.count; ++i) {
 		event = &klass->events [i];
 		match = 0;
@@ -5439,8 +5445,11 @@ ves_icall_MonoMethod_get_base_definition (MonoReflectionMethod *m)
 	if (klass->generic_class)
 		klass = klass->generic_class->container_class;
 
+	mono_class_setup_vtable (klass);
 	while (result == NULL && klass != NULL && (klass->vtable_size > method->slot))
 	{
+		mono_class_setup_vtable (klass);
+
 		result = klass->vtable [method->slot];
 		if (result == NULL) {
 			/* It is an abstract method */
@@ -5614,6 +5623,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll (MonoReflectionType 
 	MONO_ARCH_SAVE_REGS;
 
 	mono_class_init (klass);
+	mono_class_setup_vtable (klass);
 	for (i = 0; i < klass->method.count; ++i)
 		prelink_method (klass->methods [i]);
 }

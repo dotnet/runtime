@@ -39,8 +39,6 @@ extern int __imp_GC_finalize_on_demand;
 #define GC_finalize_on_demand __imp_GC_finalize_on_demand
 #endif
 
-static int finalize_slot = -1;
-
 static gboolean gc_disabled = FALSE;
 
 static CRITICAL_SECTION finalizer_mutex;
@@ -69,19 +67,6 @@ run_finalize (void *obj, void *data)
 	MonoObject *o, *o2;
 	o = (MonoObject*)((char*)obj + GPOINTER_TO_UINT (data));
 
-	if (finalize_slot < 0) {
-		int i;
-		MonoClass* obj_class = mono_get_object_class ();
-		for (i = 0; i < obj_class->vtable_size; ++i) {
-			MonoMethod *cm = obj_class->vtable [i];
-	       
-			if (!strcmp (mono_method_get_name (cm), "Finalize")) {
-				finalize_slot = i;
-				break;
-			}
-		}
-	}
-
 	mono_domain_lock (o->vtable->domain);
 
 	o2 = g_hash_table_lookup (o->vtable->domain->finalizable_objects_hash, o);
@@ -106,7 +91,7 @@ run_finalize (void *obj, void *data)
 	/* Use _internal here, since this thread can enter a doomed appdomain */
 	mono_domain_set_internal (mono_object_domain (o));		
 
-	mono_runtime_invoke (o->vtable->klass->vtable [finalize_slot], o, NULL, &exc);
+	mono_runtime_invoke (mono_class_get_finalizer (o->vtable->klass), o, NULL, &exc);
 
 	if (exc) {
 		/* fixme: do something useful */

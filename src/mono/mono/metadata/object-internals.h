@@ -367,6 +367,9 @@ typedef struct {
 /* used to free a dynamic method */
 typedef void        (*MonoFreeMethodFunc)	 (MonoDomain *domain, MonoMethod *method);
 
+/* Used to initialize the method pointers inside vtables */
+typedef gboolean    (*MonoInitVTableFunc)    (MonoVTable *vtable);
+
 /* remoting and async support */
 
 MonoAsyncResult *
@@ -415,6 +418,9 @@ mono_install_compile_method (MonoCompileFunc func);
 
 void
 mono_install_free_method    (MonoFreeMethodFunc func);
+
+void
+mono_install_init_vtable    (MonoInitVTableFunc func);
 
 void
 mono_type_initialization_init (void);
