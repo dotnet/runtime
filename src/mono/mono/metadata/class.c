@@ -244,6 +244,11 @@ class_compute_field_layout (MonoClass *class)
 					blittable = FALSE;
 			}
 		}
+		if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
+			mono_metadata_field_info (m, idx, &class->fields [i].offset, NULL, NULL);
+			if (class->fields [i].offset == (guint32)-1)
+				g_warning ("%s not initialized correctly (missing field layout info for %s)", class->name, class->fields [i].name);
+		}
 
 		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_HAS_FIELD_RVA) {
 			mono_metadata_field_info (m, idx, NULL, &rva, NULL);
@@ -268,6 +273,16 @@ class_compute_field_layout (MonoClass *class)
 		if (!((strcmp (class->name, "Enum") == 0) && (strcmp (class->name_space, "System") == 0)))
 			G_BREAKPOINT ();
 	}
+	mono_class_layout_fields (class);
+}
+
+void
+mono_class_layout_fields (MonoClass *class)
+{
+	int i;
+	const int top = class->field.count;
+	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
+
 	/*
 	 * Compute field layout and total size (not considering static fields)
 	 */
@@ -300,7 +315,6 @@ class_compute_field_layout (MonoClass *class)
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
 		for (i = 0; i < top; i++) {
 			int size, align;
-			int idx = class->field.first + i;
 
 			/*
 			 * There must be info about all the fields in a type if it
@@ -312,10 +326,9 @@ class_compute_field_layout (MonoClass *class)
 
 			size = mono_type_size (class->fields [i].type, &align);
 			
-			mono_metadata_field_info (m, idx, &class->fields [i].offset, NULL, NULL);
-			if (class->fields [i].offset == (guint32)-1)
-				g_warning ("%s not initialized correctly (missing field layout info for %s)", class->name, class->fields [i].name);
 			/*
+			 * When we get here, class->fields [i].offset is already set by the
+			 * loader (for either runtime fields or fields loaded from metadata).
 			 * The offset is from the start of the object: this works for both
 			 * classes and valuetypes.
 			 */
@@ -478,6 +491,12 @@ mono_class_setup_vtable (MonoClass *class)
 	MonoMethod **vtable;
 	int i, onum = 0, max_vtsize = 0, max_iid, cur_slot = 0;
 	MonoMethod **overrides;
+
+	/* setup_vtable() must be called only once on the type */
+	if (class->interface_offsets) {
+		g_warning ("vtable already computed in %s.%s", class->name_space, class->name);
+		return;
+	}
 
 	for (i = 0; i < class->interface_count; i++) 
 		max_vtsize += class->interfaces [i]->method.count;
@@ -938,6 +957,9 @@ mono_class_setup_mono_type (MonoClass *class)
 	const char *name = class->name;
 	const char *nspace = class->name_space;
 
+	if (class->flags & TYPE_ATTRIBUTE_INTERFACE)
+		class->interface_id = mono_get_unique_iid (class);
+
 	class->this_arg.byref = 1;
 	class->this_arg.data.klass = class;
 	class->this_arg.type = MONO_TYPE_CLASS;
@@ -1185,11 +1207,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		class->instance_size += 2 * sizeof (gpointer);
 		g_assert (class->field.count == 0);
 	}
-
-	if (class->flags & TYPE_ATTRIBUTE_INTERFACE)
-		class->interface_id = mono_get_unique_iid (class);
-
-	/*class->interfaces = mono_metadata_interfaces_from_typedef (image, type_token, &class->interface_count); */
 
 	if (class->enumtype)
 		class_compute_field_layout (class);

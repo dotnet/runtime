@@ -1273,6 +1273,8 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 	if (token)
 		return token;
 	klass = my_mono_class_from_mono_type (type);
+	if (!klass)
+		klass = mono_class_from_mono_type (type);
 	/*
 	 * If it's in the same module:
 	 */
@@ -2340,6 +2342,20 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
 	image->array_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 
+	image->delegate_begin_invoke_cache = 
+		g_hash_table_new ((GHashFunc)mono_signature_hash, 
+				  (GCompareFunc)mono_metadata_signature_equal);
+	image->delegate_end_invoke_cache = 
+		g_hash_table_new ((GHashFunc)mono_signature_hash, 
+				  (GCompareFunc)mono_metadata_signature_equal);
+	image->delegate_invoke_cache = 
+		g_hash_table_new ((GHashFunc)mono_signature_hash, 
+				  (GCompareFunc)mono_metadata_signature_equal);
+
+	image->runtime_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->managed_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->native_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->remoting_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->assembly.image = image;
 	
 }
@@ -2775,7 +2791,8 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 		mono_domain_unlock (domain);
 		return res;
 	}
-	if (klass->reflection_info) {
+	if (klass->reflection_info && !klass->wastypebuilder) {
+		//g_assert_not_reached ();
 		/* should this be considered an error condition? */
 		if (!type->byref) {
 			mono_domain_unlock (domain);
@@ -3763,6 +3780,7 @@ ctor_builder_to_signature (MonoReflectionCtorBuilder *ctor) {
 
 	sig = parameters_to_signature (ctor->parameters);
 	sig->hasthis = ctor->attrs & METHOD_ATTRIBUTE_STATIC? 0: 1;
+	sig->ret = &mono_defaults.void_class->byval_arg;
 	return sig;
 }
 
@@ -3772,6 +3790,7 @@ method_builder_to_signature (MonoReflectionMethodBuilder *method) {
 
 	sig = parameters_to_signature (method->parameters);
 	sig->hasthis = method->attrs & METHOD_ATTRIBUTE_STATIC? 0: 1;
+	sig->ret = method->rtype? method->rtype->type: &mono_defaults.void_class->byval_arg;
 	return sig;
 }
 
@@ -4137,6 +4156,8 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 
 		klass->enum_basetype = fb->type->type;
 		klass->element_class = my_mono_class_from_mono_type (klass->enum_basetype);
+		if (!klass->element_class)
+			klass->element_class = mono_class_from_mono_type (klass->enum_basetype);
 		klass->instance_size = klass->element_class->instance_size;
 		klass->size_inited = 1;
 		/* 
@@ -4159,7 +4180,8 @@ ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb) {
 	m->name = mb->attrs & METHOD_ATTRIBUTE_STATIC? ".cctor": ".ctor";
 	m->klass = klass;
 	m->signature = ctor_builder_to_signature (mb);
-	
+	/* FIXME: create header */
+	mb->mhandle = m;
 	return m;
 }
 
@@ -4181,33 +4203,22 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb)
 	m->name = mono_string_to_utf8 (mb->name);
 	m->klass = klass;
 	m->signature = method_builder_to_signature (mb);
+	/* FIXME: create header */
+	mb->mhandle = m;
 	return m;
 }
 
-MonoReflectionType*
-mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
+static void
+ensure_runtime_vtable (MonoClass *klass)
 {
-	MonoClass *klass;
+	MonoReflectionTypeBuilder *tb = klass->reflection_info;
 	int i, num, j;
 
-	klass = my_mono_class_from_mono_type (tb->type.type);
+	if (!tb || klass->wastypebuilder)
+		return;
+	if (klass->parent)
+		ensure_runtime_vtable (klass->parent);
 
-	return NULL;
-
-	return mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
-	/*
-	 * Fields to set in klass:
-	 * the various flags: delegate/unicode/contextbound etc.
-	 * nested_in
-	 * nested_classes
-	 * interface*
-	 * fields
-	 * methods
-	 * properties
-	 * events
-	 * vtable
-	 */
-	klass->flags = tb->attrs;
 	num = tb->ctors? mono_array_length (tb->ctors): 0;
 	num += tb->methods? mono_array_length (tb->methods): 0;
 	klass->method.count = num;
@@ -4219,8 +4230,95 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	j = i;
 	for (i = 0; i < num; ++i)
 		klass->methods [j++] = methodbuilder_to_mono_method (klass, mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i));
-				
-	return mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
+
+	klass->wastypebuilder = TRUE;
+	if (tb->interfaces) {
+		klass->interface_count = mono_array_length (tb->interfaces);
+		klass->interfaces = g_new (MonoClass*, klass->interface_count);
+		for (i = 0; i < klass->interface_count; ++i) {
+			MonoReflectionType *iface = mono_array_get (tb->interfaces, gpointer, i);
+			klass->interfaces [i] = mono_class_from_mono_type (iface->type);
+		}
+	}
+	mono_class_setup_vtable (klass);
+}
+
+static void
+typebuilder_setup_fields (MonoClass *klass)
+{
+	MonoReflectionTypeBuilder *tb = klass->reflection_info;
+	MonoReflectionFieldBuilder *fb;
+	MonoClassField *field;
+	int i;
+
+	klass->field.count = tb->fields? mono_array_length (tb->fields): 0;
+
+	if (klass->field.count || klass->fields)
+		return;
+	
+	klass->fields = g_new0 (MonoClassField, klass->field.count);
+
+	for (i = 0; i < klass->field.count; ++i) {
+		fb = mono_array_get (tb->fields, gpointer, i);
+		field = &klass->fields [i];
+		field->name = mono_string_to_utf8 (fb->name);
+		if (fb->attrs) {
+			/* FIXME: handle type modifiers */
+			field->type = g_memdup (fb->type->type, sizeof (MonoType));
+			field->type->attrs = fb->attrs;
+		} else {
+			field->type = fb->type->type;
+		}
+		if ((fb->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) && fb->rva_data)
+			field->data = mono_array_addr (fb->rva_data, char, 0);
+		if (fb->offset != -1)
+			field->offset = fb->offset;
+	}
+	mono_class_layout_fields (klass);
+}
+
+MonoReflectionType*
+mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
+{
+	MonoClass *klass;
+	MonoReflectionType* res;
+
+	klass = my_mono_class_from_mono_type (tb->type.type);
+
+	/*
+	 * Fields to set in klass:
+	 * the various flags: delegate/unicode/contextbound etc.
+	 * nested_in
+	 * nested_classes
+	 * properties
+	 * events
+	 */
+	klass->flags = tb->attrs;
+	klass->element_class = klass;
+
+	/* enums are done right away */
+	if (!klass->enumtype)
+		ensure_runtime_vtable (klass);
+
+	/* fields and object layout */
+	if (klass->parent) {
+		if (!klass->parent->size_inited)
+			mono_class_init (klass->parent);
+		klass->instance_size += klass->parent->instance_size;
+		klass->class_size += klass->parent->class_size;
+		klass->min_align = klass->parent->min_align;
+	} else {
+		klass->instance_size = sizeof (MonoObject);
+		klass->min_align = 1;
+	}
+	/* FIXME: handle packing_size and instance_size */
+	typebuilder_setup_fields (klass);
+
+	res = mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
+	/* with enums res == tb: need to fix that. */
+	if (!klass->enumtype)
+		g_assert (res != tb);
+	return res;
 }
 
 MonoArray *

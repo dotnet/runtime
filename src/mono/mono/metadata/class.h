@@ -47,9 +47,20 @@ typedef struct {
 
 struct _MonoClass {
 	MonoImage *image;
-	guint32    type_token;
 
-	guint dummy           : 1; /* temorary hack */
+	/*
+	 * relative numbering for fast type checking
+	 */
+	unsigned int baseval;
+	unsigned int diffval;
+
+	/* The underlying type of the enum */
+	MonoType *enum_basetype;
+	/* element class for arrays and enum */
+	MonoClass *element_class; 
+	/* array dimension */
+	guint32    rank;          
+
 	guint inited          : 1;
 	/* We use init_pending to detect cyclic calls to mono_class_init */
 	guint init_pending    : 1;
@@ -65,21 +76,26 @@ struct _MonoClass {
 	guint size_inited     : 1;
 	guint valuetype       : 1; /* derives from System.ValueType */
 	guint enumtype        : 1; /* derives from System.Enum */
+	guint blittable       : 1; /* class is blittable */
+	guint unicode         : 1; /* class uses unicode char when marshalled */
+	guint wastypebuilder  : 1; /* class was created at runtime from a TypeBuilder */
+	/* next byte */
+	guint min_align       : 4;
+	guint packing_size    : 4;
+	/* next byte */
 	guint ghcimpl         : 1; /* class has its own GetHashCode impl */ 
 	guint has_finalize    : 1; /* class has its own Finalize impl */ 
 	guint marshalbyref    : 1; /* class is a MarshalByRefObject */
 	guint contextbound    : 1; /* class is a ContextBoundObject */
 	guint delegate        : 1; /* class is a Delegate */
-	guint min_align       : 4;
-	guint packing_size    : 4;
-	guint blittable       : 1; /* class is blittable */
-	guint unicode         : 1; /* class uses unicode char when marshalled */
+	guint dummy           : 1; /* temorary hack */
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
 	GList      *nested_classes;
 	GList      *subclasses; /* list of all subclasses */
 
+	guint32    type_token;
 	const char *name;
 	const char *name_space;
 	
@@ -95,12 +111,6 @@ struct _MonoClass {
 	int        instance_size;
 	int        class_size;
 	int        vtable_size; /* number of slots */
-
-	/*
-	 * relative numbering for fast type checking
-	 */
-	unsigned int baseval;
-	unsigned int diffval;
 
 	/*
 	 * From the TypeDef table
@@ -124,13 +134,6 @@ struct _MonoClass {
 	MonoEvent *events;
 
 	MonoMethod **methods;
-
-	/* The underlying type of the enum */
-	MonoType *enum_basetype;
-	/* element class for arrays and enum */
-	MonoClass *element_class; 
-	/* array dimension */
-	guint32    rank;          
 
 	/* used as the type of the this argument and when passing the arg by value */
 	MonoType this_arg;
@@ -171,6 +174,9 @@ mono_class_get             (MonoImage *image, guint32 type_token);
 
 void
 mono_class_init            (MonoClass *klass);
+
+void
+mono_class_layout_fields   (MonoClass *klass);
 
 void
 mono_class_setup_vtable    (MonoClass *klass);

@@ -491,8 +491,8 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 {
 	int i, lastp;
 	MonoClass *klass = method->klass;
-	MonoTableInfo *methodt = &klass->image->tables [MONO_TABLE_METHOD];
-	MonoTableInfo *paramt = &klass->image->tables [MONO_TABLE_PARAM];
+	MonoTableInfo *methodt;
+	MonoTableInfo *paramt;
 
 	if (!method->signature->param_count)
 		return;
@@ -500,9 +500,12 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 		names [i] = "";
 
 	mono_class_init (klass);
-	if (!klass->methods)
+
+	if (klass->wastypebuilder) /* copy the names later */
 		return;
 
+	methodt = &klass->image->tables [MONO_TABLE_METHOD];
+	paramt = &klass->image->tables [MONO_TABLE_PARAM];
 	for (i = 0; i < klass->method.count; ++i) {
 		if (method == klass->methods [i]) {
 			guint32 idx = klass->method.first + i;

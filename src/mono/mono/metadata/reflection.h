@@ -190,6 +190,7 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
+	MonoMethod *mhandle;
 	MonoReflectionILGen *ilgen;
 	MonoArray *parameters;
 	guint32 attrs;
