@@ -565,11 +565,14 @@ static void
 ves_pinvoke_method (MonoInvocation *frame)
 {
 	jmp_buf env;
-	volatile MonoPIFunc func = mono_create_trampoline (frame->method);
-	if (setjmp(env)) {
-		g_free ((void*)func);
+	MonoPIFunc func;
+	
+	if (setjmp(env))
 		return;
-	}
+	if (!frame->method->info)
+		frame->method->info = mono_create_trampoline (frame->method);
+	func = (MonoPIFunc)frame->method->info;
+
 	/* 
 	 * frame->locals and args are unused for P/Invoke methods, so we reuse them. 
 	 * locals will point to the jmp_buf, while args will point to the previous
@@ -582,7 +585,6 @@ ves_pinvoke_method (MonoInvocation *frame)
 
 	func ((MonoFunc)frame->method->addr, &frame->retval->data.p, frame->obj, frame->stack_args);
 	stackval_from_data (frame->method->signature->ret, frame->retval, (const char*)&frame->retval->data.p);
-	g_free ((void*)func);
 }
 
 /*
@@ -607,11 +609,14 @@ ves_runtime_method (MonoInvocation *frame)
 	}
 	if (*name == 'I' && (strcmp (name, "Invoke") == 0) && obj &&
 			mono_object_isinst (obj, mono_defaults.delegate_class)) {
-		MonoPIFunc func = mono_create_trampoline (frame->method);
+		MonoPIFunc func;
+		
+		if (!frame->method->info)
+			frame->method->info = mono_create_trampoline (frame->method);
+		func = (MonoPIFunc)frame->method->info;
 		/* FIXME: need to handle exceptions across managed/unmanaged boundaries */
 		func ((MonoFunc)delegate->method_ptr, &frame->retval->data.p, delegate->target, frame->stack_args);
 		stackval_from_data (frame->method->signature->ret, frame->retval, (const char*)&frame->retval->data.p);
-		g_free ((void*)func);
 		return;
 	}
 	g_error ("Don't know how to exec runtime method %s.%s::%s", 
@@ -691,6 +696,37 @@ db_match_method (gpointer data, gpointer user_data)
 		break_on_method = 1;
 }
 
+static guint32*
+calc_offsets (MonoMethodHeader *header, MonoMethodSignature *signature)
+{
+	int i, align, size, offset = 0;
+	int hasthis = signature->hasthis;
+	guint32 *offsets = g_new0 (guint32, 2 + header->num_locals + signature->param_count + signature->hasthis);
+
+	for (i = 0; i < header->num_locals; ++i) {
+		offsets [2 + i] = offset;
+		size = mono_type_size (header->locals [i], &align);
+		offset += align - 1;
+		offset &= ~(align - 1);
+		offset += size;
+	}
+	offsets [0] = offset;
+	offset = 0;
+	if (hasthis) {
+		offsets [2 + header->num_locals] = offset;
+		offset += sizeof (gpointer);
+	}
+	for (i = 0; i < signature->param_count; ++i) {
+		offsets [2 + hasthis + header->num_locals + i] = offset;
+		size = mono_type_size (signature->params [i], &align);
+		offset += align - 1;
+		offset &= ~(align - 1);
+		offset += size;
+	}
+	offsets [1] = offset;
+	return offsets;
+}
+
 #define DEBUG_ENTER()	\
 	fcall_count++;	\
 	g_list_foreach (db_methods, db_match_method, (gpointer)frame->method->name);	\
@@ -717,7 +753,7 @@ db_match_method (gpointer data, gpointer user_data)
 
 #endif
 
-#define LOCAL_POS(n)            (locals_pointers [(n)])
+#define LOCAL_POS(n)            (frame->locals + offsets [2 + (n)])
 #define LOCAL_TYPE(header, n)   ((header)->locals [(n)])
 
 #define ARG_POS(n)              (args_pointers [(n)])
@@ -786,8 +822,8 @@ ves_exec_method (MonoInvocation *frame)
 	const unsigned char *endfinally_ip;
 	register const unsigned char *ip;
 	register stackval *sp;
-	void **locals_pointers;
 	void **args_pointers;
+	guint32 *offsets;
 	unsigned char tail_recursion = 0;
 	unsigned char unaligned_address = 0;
 	unsigned char volatile_address = 0;
@@ -843,46 +879,35 @@ ves_exec_method (MonoInvocation *frame)
 
 	sp = frame->stack = alloca (sizeof (stackval) * header->max_stack);
 
-	if (header->num_locals) {
-		int i, align, size, offset = 0;
+	if (!frame->method->info)
+		frame->method->info = calc_offsets (header, signature);
+	offsets = frame->method->info;
 
-		frame->locals = alloca (header->locals_size);
-		locals_pointers = alloca (sizeof(void*) * header->num_locals);
+	if (header->num_locals) {
+		frame->locals = alloca (offsets [0]);
 		/* 
 		 * yes, we do it unconditionally, because it needs to be done for
 		 * some cases anyway and checking for that would be even slower.
 		 */
-		memset (frame->locals, 0, header->locals_size);
-		for (i = 0; i < header->num_locals; ++i) {
-			locals_pointers [i] = frame->locals + offset;
-			size = mono_type_size (header->locals [i], &align);
-			offset += align - 1;
-			offset &= ~(align - 1);
-			offset += size;
-		}
+		memset (frame->locals, 0, offsets [0]);
 	}
 	/*
 	 * Copy args from stack_args to args.
 	 */
-	if (signature->params_size) {
-		int i, align, size, offset = 0;
+	if (signature->param_count || signature->hasthis) {
+		int i;
 		int has_this = signature->hasthis;
 
-		frame->args = alloca (signature->params_size);
+		frame->args = alloca (offsets [1]);
 		args_pointers = alloca (sizeof(void*) * (signature->param_count + has_this));
 		if (has_this) {
 			gpointer *this_arg;
 			this_arg = args_pointers [0] = frame->args;
 			*this_arg = frame->obj;
-			offset += sizeof (gpointer);
 		}
 		for (i = 0; i < signature->param_count; ++i) {
-			args_pointers [i + has_this] = frame->args + offset;
-			stackval_to_data (signature->params [i], frame->stack_args + i, frame->args + offset);
-			size = mono_type_size (signature->params [i], &align);
-			offset += align - 1;
-			offset &= ~(align - 1);
-			offset += size;
+			args_pointers [i + has_this] = frame->args + offsets [2 + header->num_locals + has_this + i];
+			stackval_to_data (signature->params [i], frame->stack_args + i, args_pointers [i + has_this]);
 		}
 	}
 

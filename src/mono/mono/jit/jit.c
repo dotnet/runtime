@@ -1503,14 +1503,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 	
 	cfg->args_start_index = firstarg = varnum + 1;
  
-	if (signature->params_size) {
+	if (signature->hasthis)
+		arch_allocate_var (cfg, sizeof (gpointer), sizeof (gpointer), MONO_ARGVAR, VAL_POINTER);
+	
+	if (signature->param_count) {
 		int align, size;
-		int has_this = signature->hasthis;
-
-		if (has_this) {
-			size = align = sizeof (gpointer);
-			arch_allocate_var (cfg, size, align, MONO_ARGVAR, VAL_POINTER);
-		}
 
 		for (i = 0; i < signature->param_count; ++i) {
 			size = mono_type_size (signature->params [i], &align);

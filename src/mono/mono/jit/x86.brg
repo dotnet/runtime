@@ -55,14 +55,13 @@ struct _MBTree {
 	unsigned      is_jump:1;
 	unsigned      last_instr:1;
 	
-	MonoValueType svt;
-
 	guint8    exclude_mask;
-
 
 	gint8     reg1;
 	gint8     reg2;
 	
+	MonoValueType svt;
+
 	union {
 		gint32 i;
 		gint64 l;

@@ -1124,7 +1124,7 @@ MonoMethodSignature *
 mono_metadata_parse_method_signature (MonoMetadata *m, int def, const char *ptr, const char **rptr)
 {
 	MonoMethodSignature *method;
-	int i, align, offset = 0;
+	int i;
 	guint32 hasthis = 0, explicit_this = 0, call_convention, param_count;
 
 	if (*ptr & 0x20)
@@ -1142,11 +1142,7 @@ mono_metadata_parse_method_signature (MonoMetadata *m, int def, const char *ptr,
 	method->call_convention = call_convention;
 	method->ret = mono_metadata_parse_type (m, MONO_PARSE_RET, 0, ptr, &ptr);
 
-	if (method->hasthis)
-		offset += sizeof(gpointer);
 	if (method->param_count) {
-		int size;
-		
 		method->sentinelpos = -1;
 		
 		for (i = 0; i < method->param_count; ++i) {
@@ -1157,13 +1153,8 @@ mono_metadata_parse_method_signature (MonoMetadata *m, int def, const char *ptr,
 				ptr++;
 			}
 			method->params [i] = mono_metadata_parse_type (m, MONO_PARSE_PARAM, 0, ptr, &ptr);
-			size = mono_type_size (method->params [i], &align);
-			offset += align - 1;
-			offset &= ~(align - 1);
-			offset += size;
 		}
 	}
-	method->params_size = offset;
 
 	if (rptr)
 		*rptr = ptr;
@@ -1466,7 +1457,6 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 		const char *ptr;
 		guint32 cols [MONO_STAND_ALONE_SIGNATURE_SIZE];
 		int len=0, i, bsize;
-		guint offset = 0;
 
 		mono_metadata_decode_row (t, (local_var_sig_tok & 0xffffff)-1, cols, 1);
 		ptr = mono_metadata_blob_heap (m, cols [MONO_STAND_ALONE_SIGNATURE]);
@@ -1477,17 +1467,8 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 		len = mono_metadata_decode_value (ptr, &ptr);
 		mh = g_malloc0 (sizeof (MonoMethodHeader) + (len - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
 		mh->num_locals = len;
-		for (i = 0; i < len; ++i) {
-			int val;
-			int align;
+		for (i = 0; i < len; ++i)
 			mh->locals [i] = mono_metadata_parse_type (m, MONO_PARSE_LOCAL, 0, ptr, &ptr);
-
-			val = mono_type_size (mh->locals [i], &align);
-			offset += align - 1;
-			offset &= ~(align - 1);
-			offset += val;
-		}
-		mh->locals_size = offset;
 	} else {
 		mh = g_new0 (MonoMethodHeader, 1);
 	}

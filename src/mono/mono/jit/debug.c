@@ -222,7 +222,8 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 	 */
 	for (i = 0; klass->methods && i < klass->method.count; ++i) {
 		if (klass->methods [i] == method) {
-			line = info->mlines [klass->method.first + i];
+			line = info->mlines [klass->method.first + i + 1];
+			/*g_print ("method %d found at line %d\n", klass->method.first + i + 1, line);*/
 			break;
 		}
 	}

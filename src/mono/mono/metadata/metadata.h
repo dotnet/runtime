@@ -187,7 +187,6 @@ struct _MonoMethodSignature {
 	guint16       param_count;
 	guint16       sentinelpos;
 	MonoType     *ret;
-	guint32       params_size;
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
 
@@ -199,7 +198,6 @@ typedef struct {
 	/* if num_locals != 0, then the following apply: */
 	unsigned int init_locals : 1;
 	guint16      num_locals;
-	guint32      locals_size;
 	MonoExceptionClause *clauses;
 	MonoType    *locals [MONO_ZERO_LEN_ARRAY];
 } MonoMethodHeader;
