@@ -8,7 +8,7 @@ WEB_FILES=														\
 	tds-providers status testing thanks tools								\
 	porting anoncvs monodoc-xml winforms
 
-OTHERS= pending resources-pending todo mono-build.sh mono-build-w32.sh
+OTHERS= pending resources-pending todo mono-build.sh mono-build-w32.sh print-stack
 
 EXTRA_DIST = $(WEB_FILES) README $(OTHERS)
 
