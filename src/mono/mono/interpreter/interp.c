@@ -1770,8 +1770,14 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_BRFALSE) /* Fall through */
 		CASE (CEE_BRFALSE_S) {
 			int result;
-			int near_jump = *ip == CEE_BRFALSE_S;
-			++ip;
+			int broffset;
+			if (*ip == CEE_BRFALSE_S) {
+				broffset = (signed char)ip [1];
+				ip += 2;
+			} else {
+				broffset = (gint32) read32 (ip + 1);
+				ip += 5;
+			}
 			--sp;
 			switch (sp->type) {
 			case VAL_I32: result = sp->data.i == 0; break;
@@ -1779,20 +1785,21 @@ ves_exec_method (MonoInvocation *frame)
 			case VAL_DOUBLE: result = sp->data.f ? 0: 1; break;
 			default: result = sp->data.p == NULL; break;
 			}
-			if (result) {
-				if (near_jump)
-					ip += (signed char)*ip;
-				else
-					ip += (gint32) read32 (ip);
-			}
-			ip += near_jump ? 1: 4;
+			if (result)
+				ip += broffset;
 			BREAK;
 		}
 		CASE (CEE_BRTRUE) /* Fall through */
 		CASE (CEE_BRTRUE_S) {
 			int result;
-			int near_jump = *ip == CEE_BRTRUE_S;
-			++ip;
+			int broffset;
+			if (*ip == CEE_BRTRUE_S) {
+				broffset = (signed char)ip [1];
+				ip += 2;
+			} else {
+				broffset = (gint32) read32 (ip + 1);
+				ip += 5;
+			}
 			--sp;
 			switch (sp->type) {
 			case VAL_I32: result = sp->data.i != 0; break;
@@ -1800,20 +1807,21 @@ ves_exec_method (MonoInvocation *frame)
 			case VAL_DOUBLE: result = sp->data.f ? 1 : 0; break;
 			default: result = sp->data.p != NULL; break;
 			}
-			if (result) {
-				if (near_jump)
-					ip += (signed char)*ip;
-				else
-					ip += (gint32) read32 (ip);
-			}
-			ip += near_jump ? 1: 4;
+			if (result)
+				ip += broffset;
 			BREAK;
 		}
 		CASE (CEE_BEQ) /* Fall through */
 		CASE (CEE_BEQ_S) {
 			int result;
-			int near_jump = *ip == CEE_BEQ_S;
-			++ip;
+			int broffset;
+			if (*ip == CEE_BEQ_S) {
+				broffset = (signed char)ip [1];
+				ip += 2;
+			} else {
+				broffset = (gint32) read32 (ip + 1);
+				ip += 5;
+			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
 				result = sp [0].data.i == (gint)GET_NATI (sp [1]);
@@ -1823,13 +1831,8 @@ ves_exec_method (MonoInvocation *frame)
 				result = sp [0].data.f == sp [1].data.f;
 			else
 				result = (gint)GET_NATI (sp [0]) == (gint)GET_NATI (sp [1]);
-			if (result) {
-				if (near_jump)
-					ip += (signed char)*ip;
-				else
-					ip += (gint32) read32 (ip);
-			}
-			ip += near_jump ? 1: 4;
+			if (result)
+				ip += broffset;
 			BREAK;
 		}
 		CASE (CEE_BGE) /* Fall through */
@@ -1859,8 +1862,14 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_BGT) /* Fall through */
 		CASE (CEE_BGT_S) {
 			int result;
-			int near_jump = *ip == CEE_BGT_S;
-			++ip;
+			int broffset;
+			if (*ip == CEE_BGT_S) {
+				broffset = (signed char)ip [1];
+				ip += 2;
+			} else {
+				broffset = (gint32) read32 (ip + 1);
+				ip += 5;
+			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
 				result = sp [0].data.i > (gint)GET_NATI (sp [1]);
@@ -1870,20 +1879,21 @@ ves_exec_method (MonoInvocation *frame)
 				result = sp [0].data.f > sp [1].data.f;
 			else
 				result = (gint)GET_NATI (sp [0]) > (gint)GET_NATI (sp [1]);
-			if (result) {
-				if (near_jump)
-					ip += (signed char)*ip;
-				else
-					ip += (gint32) read32 (ip);
-			}
-			ip += near_jump ? 1: 4;
+			if (result)
+				ip += broffset;
 			BREAK;
 		}
 		CASE (CEE_BLT) /* Fall through */
 		CASE (CEE_BLT_S) {
 			int result;
-			int near_jump = *ip == CEE_BLT_S;
-			++ip;
+			int broffset;
+			if (*ip == CEE_BLT_S) {
+				broffset = (signed char)ip [1];
+				ip += 2;
+			} else {
+				broffset = (gint32) read32 (ip + 1);
+				ip += 5;
+			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
 				result = sp[0].data.i < (gint)GET_NATI(sp[1]);
@@ -1893,22 +1903,21 @@ ves_exec_method (MonoInvocation *frame)
 				result = sp[0].data.f < sp[1].data.f;
 			else
 				result = (gint)GET_NATI(sp[0]) < (gint)GET_NATI(sp[1]);
-			if (result) {
-				if (near_jump)
-					ip += 1 + (signed char)*ip;
-				else
-					ip += 4 + (gint32) read32 (ip);
-				BREAK;
-			} else {
-				ip += near_jump ? 1: 4;
-				BREAK;
-			}
+			if (result)
+				ip += broffset;
+			BREAK;
 		}
 		CASE (CEE_BLE) /* fall through */
 		CASE (CEE_BLE_S) {
 			int result;
-			int near_jump = *ip == CEE_BLE_S;
-			++ip;
+			int broffset;
+			if (*ip == CEE_BLE_S) {
+				broffset = (signed char)ip [1];
+				ip += 2;
+			} else {
+				broffset = (gint32) read32 (ip + 1);
+				ip += 5;
+			}
 			sp -= 2;
 
 			if (sp->type == VAL_I32)
@@ -1925,20 +1934,21 @@ ves_exec_method (MonoInvocation *frame)
 				 */
 				result = (gint)GET_NATI (sp [0]) <= (gint)GET_NATI (sp [1]);
 			}
-			if (result) {
-				if (near_jump)
-					ip += (signed char)*ip;
-				else
-					ip += (gint32) read32 (ip);
-			}
-			ip += near_jump ? 1: 4;
+			if (result)
+				ip += broffset;
 			BREAK;
 		}
 		CASE (CEE_BNE_UN) /* Fall through */
 		CASE (CEE_BNE_UN_S) {
 			int result;
-			int near_jump = *ip == CEE_BNE_UN_S;
-			++ip;
+			int broffset;
+			if (*ip == CEE_BNE_UN_S) {
+				broffset = (signed char)ip [1];
+				ip += 2;
+			} else {
+				broffset = (gint32) read32 (ip + 1);
+				ip += 5;
+			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
 				result = (guint32)sp [0].data.i != (guint32)GET_NATI (sp [1]);
@@ -1949,20 +1959,21 @@ ves_exec_method (MonoInvocation *frame)
 					(sp [0].data.f != sp [1].data.f);
 			else
 				result = GET_NATI (sp [0]) != GET_NATI (sp [1]);
-			if (result) {
-				if (near_jump)
-					ip += (signed char)*ip;
-				else
-					ip += (gint32) read32 (ip);
-			}
-			ip += near_jump ? 1: 4;
+			if (result)
+				ip += broffset;
 			BREAK;
 		}
 		CASE (CEE_BGE_UN) /* Fall through */
 		CASE (CEE_BGE_UN_S) {
 			int result;
-			int near_jump = *ip == CEE_BGE_UN_S;
-			++ip;
+			int broffset;
+			if (*ip == CEE_BGE_UN_S) {
+				broffset = (signed char)ip [1];
+				ip += 2;
+			} else {
+				broffset = (gint32) read32 (ip + 1);
+				ip += 5;
+			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
 				result = (guint32)sp [0].data.i >= (guint32)GET_NATI (sp [1]);
@@ -1972,20 +1983,21 @@ ves_exec_method (MonoInvocation *frame)
 				result = !isless (sp [0].data.f,sp [1].data.f);
 			else
 				result = GET_NATI (sp [0]) >= GET_NATI (sp [1]);
-			if (result) {
-				if (near_jump)
-					ip += (signed char)*ip;
-				else
-					ip += (gint32) read32 (ip);
-			}
-			ip += near_jump ? 1: 4;
+			if (result)
+				ip += broffset;
 			BREAK;
 		}
 		CASE (CEE_BGT_UN) /* Fall through */
 		CASE (CEE_BGT_UN_S) {
 			int result;
-			int near_jump = *ip == CEE_BGT_UN_S;
-			++ip;
+			int broffset;
+			if (*ip == CEE_BGT_UN_S) {
+				broffset = (signed char)ip [1];
+				ip += 2;
+			} else {
+				broffset = (gint32) read32 (ip + 1);
+				ip += 5;
+			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
 				result = (guint32)sp [0].data.i > (guint32)GET_NATI (sp [1]);
@@ -1995,20 +2007,21 @@ ves_exec_method (MonoInvocation *frame)
 				result = isgreater (sp [0].data.f, sp [1].data.f);
 			else
 				result = GET_NATI (sp [0]) > GET_NATI (sp [1]);
-			if (result) {
-				if (near_jump)
-					ip += (signed char)*ip;
-				else
-					ip += (gint32) read32 (ip);
-			}
-			ip += near_jump ? 1: 4;
+			if (result)
+				ip += broffset;
 			BREAK;
 		}
 		CASE (CEE_BLE_UN) /* Fall through */
 		CASE (CEE_BLE_UN_S) {
 			int result;
-			int near_jump = *ip == CEE_BLE_UN_S;
-			++ip;
+			int broffset;
+			if (*ip == CEE_BLE_UN_S) {
+				broffset = (signed char)ip [1];
+				ip += 2;
+			} else {
+				broffset = (gint32) read32 (ip + 1);
+				ip += 5;
+			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
 				result = (guint32)sp [0].data.i <= (guint32)GET_NATI (sp [1]);
@@ -2018,20 +2031,21 @@ ves_exec_method (MonoInvocation *frame)
 				result = islessequal (sp [0].data.f, sp [1].data.f);
 			else
 				result = GET_NATI (sp [0]) <= GET_NATI (sp [1]);
-			if (result) {
-				if (near_jump)
-					ip += (signed char)*ip;
-				else
-					ip += (gint32) read32 (ip);
-			}
-			ip += near_jump ? 1: 4;
+			if (result)
+				ip += broffset;
 			BREAK;
 		}
 		CASE (CEE_BLT_UN) /* Fall through */
 		CASE (CEE_BLT_UN_S) {
 			int result;
-			int near_jump = *ip == CEE_BLT_UN_S;
-			++ip;
+			int broffset;
+			if (*ip == CEE_BLT_UN_S) {
+				broffset = (signed char)ip [1];
+				ip += 2;
+			} else {
+				broffset = (gint32) read32 (ip + 1);
+				ip += 5;
+			}
 			sp -= 2;
 			if (sp->type == VAL_I32)
 				result = (guint32)sp[0].data.i < (guint32)GET_NATI(sp[1]);
@@ -2042,13 +2056,8 @@ ves_exec_method (MonoInvocation *frame)
 					(sp [0].data.f < sp [1].data.f);
 			else
 				result = GET_NATI(sp[0]) < GET_NATI(sp[1]);
-			if (result) {
-				if (near_jump)
-					ip += (signed char)*ip;
-				else
-					ip += (gint32) read32 (ip);
-			}
-			ip += near_jump ? 1: 4;
+			if (result)
+				ip += broffset;
 			BREAK;
 		}
 		CASE (CEE_SWITCH) {
