@@ -2111,7 +2111,7 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoClassField *field
 {
 	MonoType *type;
 	guint32 token;
-	
+
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, field));
 	if (token)
 		return token;
@@ -2217,14 +2217,9 @@ mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *m)
 	if (gmethod->declaring->signature->generic_param_count)
 		token = method_encode_methodspec (assembly, gmethod);
 	else {
-		MonoClass *k;
-		guint32 sig;
-
-		k = gmethod->klass ? gmethod->klass : gmethod->generic_method->klass;
-
-		sig = method_encode_signature (assembly, gmethod->declaring->signature);
+		guint32 sig = method_encode_signature (assembly, gmethod->declaring->signature);
 		token = mono_image_get_memberref_token (
-			assembly, &k->byval_arg, gmethod->generic_method->name, sig);
+			assembly, &gmethod->klass->byval_arg, gmethod->generic_method->name, sig);
 	}
 
 	g_hash_table_insert (assembly->handleref, m, GUINT_TO_POINTER(token));
@@ -6805,49 +6800,10 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
 	if (!klass->gen_params && !klass->generic_inst)
 		return NULL;
 
-	if (klass->wastypebuilder && klass->reflection_info) {
-		tb = klass->reflection_info;
+	mono_loader_lock ();
 
-		if (tb->parent) {
-			parent = tb->parent->type;
-			pklass = mono_class_from_mono_type (parent);
-		}
-	} else {
-		pklass = klass->parent;
-		if (pklass)
-			parent = &pklass->byval_arg;
-	}
-
-	geninst = g_new0 (MonoType, 1);
-	geninst->type = MONO_TYPE_GENERICINST;
-	geninst->data.generic_inst = ginst = g_new0 (MonoGenericInst, 1);
-
+	ginst = g_new0 (MonoGenericInst, 1);
 	ginst->is_dynamic = 1;
-
-	if (pklass && pklass->generic_inst)
-		parent = mono_reflection_bind_generic_parameters (parent, types);
-	else if (!pklass) {
-		int icount;
-
-		pklass = mono_defaults.object_class;
-
-		icount = klass->interface_count;
-		ginst->ifaces = g_new0 (MonoType *, icount);
-
-		for (i = 0; i < icount; i++) {
-			MonoType *itype;
-
-			if (tb)
-				itype = mono_array_get (tb->interfaces, MonoReflectionType *, i)->type;
-			else
-				itype = &klass->interfaces [i]->byval_arg;
-			ginst->ifaces [i] = mono_reflection_bind_generic_parameters (itype, types);
-			if (!ginst->ifaces [i])
-				ginst->ifaces [i] = itype;
-		}
-	}
-
-	ginst->parent = parent;
 
 	if (klass->gen_params) {
 		ginst->type_argc = mono_array_length (types);
@@ -6888,7 +6844,61 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
 		ginst->generic_type = kginst->generic_type;
 	}
 
+	geninst = g_hash_table_lookup (klass->image->generic_inst_cache, ginst);
+	if (geninst) {
+		g_free (ginst->type_argv);
+		g_free (ginst);
+		mono_loader_unlock ();
+		return geninst;
+	}
+
+	if (klass->wastypebuilder && klass->reflection_info) {
+		tb = klass->reflection_info;
+
+		if (tb->parent) {
+			parent = tb->parent->type;
+			pklass = mono_class_from_mono_type (parent);
+		}
+	} else {
+		pklass = klass->parent;
+		if (pklass)
+			parent = &pklass->byval_arg;
+	}
+
+	geninst = g_new0 (MonoType, 1);
+	geninst->type = MONO_TYPE_GENERICINST;
+	geninst->data.generic_inst = ginst;
+
+	if (pklass && pklass->generic_inst)
+		parent = mono_reflection_bind_generic_parameters (parent, types);
+	else if (!pklass) {
+		int icount;
+
+		pklass = mono_defaults.object_class;
+
+		icount = klass->interface_count;
+		ginst->ifaces = g_new0 (MonoType *, icount);
+
+		for (i = 0; i < icount; i++) {
+			MonoType *itype;
+
+			if (tb)
+				itype = mono_array_get (tb->interfaces, MonoReflectionType *, i)->type;
+			else
+				itype = &klass->interfaces [i]->byval_arg;
+			ginst->ifaces [i] = mono_reflection_bind_generic_parameters (itype, types);
+			if (!ginst->ifaces [i])
+				ginst->ifaces [i] = itype;
+		}
+	}
+
+	ginst->parent = parent;
+
 	mono_class_create_generic (ginst);
+
+	g_hash_table_insert (klass->image->generic_inst_cache, ginst, geninst);
+
+	mono_loader_unlock ();
 
 	return geninst;
 }

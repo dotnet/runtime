@@ -249,10 +249,22 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst,
 			nginst->type_argv [i] = mono_class_inflate_generic_type (t, ginst, gmethod);
 		};
 
+		mono_loader_lock ();
+		nt = g_hash_table_lookup (oginst->klass->image->generic_inst_cache, nginst);
+
+		if (nt) {
+			g_free (nginst->type_argv);
+			g_free (nginst);
+			mono_loader_unlock ();
+			return nt;
+		}
+
 		mono_class_create_generic (nginst);
 
 		nt = dup_type (type);
 		nt->data.generic_inst = nginst;
+		g_hash_table_insert (oginst->klass->image->generic_inst_cache, nginst, nt);
+		mono_loader_unlock ();
 		return nt;
 	}
 	default:

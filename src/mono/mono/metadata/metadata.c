@@ -2401,6 +2401,28 @@ mono_type_stack_size (MonoType *t, gint *align)
 	return 0;
 }
 
+guint
+mono_metadata_generic_inst_hash (MonoGenericInst *ginst)
+{
+	return mono_metadata_type_hash (ginst->generic_type);
+}
+
+gboolean
+mono_metadata_generic_inst_equal (MonoGenericInst *g1, MonoGenericInst *g2)
+{
+	int i;
+
+	if (g1->type_argc != g2->type_argc)
+		return FALSE;
+	if (!mono_metadata_type_equal (g1->generic_type, g2->generic_type))
+		return FALSE;
+	for (i = 0; i < g1->type_argc; ++i) {
+		if (!mono_metadata_type_equal (g1->type_argv [i], g2->type_argv [i]))
+			return FALSE;
+	}
+	return TRUE;
+}
+
 /*
  * mono_metadata_type_hash:
  * @t1: a type
@@ -2424,7 +2446,7 @@ mono_metadata_type_hash (MonoType *t1)
 	case MONO_TYPE_ARRAY:
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (&t1->data.array->eklass->byval_arg);
 	case MONO_TYPE_GENERICINST:
-		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.generic_inst->generic_type);
+		return ((hash << 5) - hash) ^ mono_metadata_generic_inst_hash (t1->data.generic_inst);
 	}
 	return hash;
 }
@@ -2474,18 +2496,9 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 		if (t1->data.array->rank != t2->data.array->rank)
 			return FALSE;
 		return t1->data.array->eklass == t2->data.array->eklass;
-	case MONO_TYPE_GENERICINST: {
-		int i;
-		if (t1->data.generic_inst->type_argc != t2->data.generic_inst->type_argc)
-			return FALSE;
-		if (!mono_metadata_type_equal (t1->data.generic_inst->generic_type, t2->data.generic_inst->generic_type))
-			return FALSE;
-		for (i = 0; i < t1->data.generic_inst->type_argc; ++i) {
-			if (!mono_metadata_type_equal (t1->data.generic_inst->type_argv [i], t2->data.generic_inst->type_argv [i]))
-				return FALSE;
-		}
-		return TRUE;
-	}
+	case MONO_TYPE_GENERICINST:
+		return mono_metadata_generic_inst_equal (t1->data.generic_inst,
+							 t2->data.generic_inst);
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		return t1->data.generic_param->num == t2->data.generic_param->num;

@@ -562,6 +562,10 @@ mono_image_init (MonoImage *image)
 	image->synchronized_cache = g_hash_table_new (NULL, NULL);
 
 	image->typespec_cache = g_hash_table_new (NULL, NULL);
+
+	image->generic_inst_cache =
+		g_hash_table_new ((GHashFunc)mono_metadata_generic_inst_hash,
+				  (GCompareFunc)mono_metadata_generic_inst_equal);
 }
 
 static MonoImage *
@@ -948,6 +952,8 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->delegate_invoke_cache);
 	g_hash_table_destroy (image->remoting_invoke_cache);
 	g_hash_table_destroy (image->runtime_invoke_cache);
+	g_hash_table_destroy (image->typespec_cache);
+	g_hash_table_destroy (image->generic_inst_cache);
 	
 	if (image->raw_metadata != NULL)
 		mono_raw_buffer_free (image->raw_metadata);
