@@ -697,7 +697,7 @@ static char *
 dis_stringify_object_with_class (MonoImage *m, MonoClass *c)
 {
 	/* FIXME: handle MONO_TYPE_OBJECT ... */
-	const char *otype = c->byval_arg.type == MONO_TYPE_CLASS? "class" : "valuetype";
+	const char *otype = c->byval_arg.type == MONO_TYPE_VALUETYPE ? "valuetype" : "class" ;
 	char *assemblyref = NULL, *result, *esname;
 	if (m != c->image) {
 		if (c->image->assembly_name) {
