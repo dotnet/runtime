@@ -4115,7 +4115,7 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 				t1 += 60;
 				tt1 = *localtime (&t1);
 			} while (gmt_offset (&tt1, t1) == gmtoff);
-			
+			t1+=gmtoff;
 			strftime (tzone, sizeof (tzone), "%Z", &tt);
 			
 			/* Write data, if we're already in daylight saving, we're done. */
