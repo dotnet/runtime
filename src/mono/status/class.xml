@@ -1066,7 +1066,53 @@
             <maintainer>jason@injektilo.org</maintainer>
         </maintainers>
     </class>
-  
+
+    <class name="System.Xml.XmlDocument">
+        <last-activity>Jul-29-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>hildjj@cursive.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Xml.XmlAttribute">
+        <last-activity>Jul-29-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>hildjj@cursive.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Xml.XmlAttributeCollection">
+        <last-activity>Jul-29-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>hildjj@cursive.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Xml.XmlNode">
+        <last-activity>Jul-29-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>hildjj@cursive.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Xml.XmlElement">
+        <last-activity>Jul-29-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>hildjj@cursive.net</maintainer>
+        </maintainers>
+    </class>
+      
     <class name="System.Collections.SortedList">
         <last-activity>Jul-16-2001</last-activity>
         <implementation>no</implementation>

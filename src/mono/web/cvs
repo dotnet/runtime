@@ -20,7 +20,7 @@
 
 <pre>
 	export CVS_RSH=ssh
-	export CVS_ROOT=:username@mono-cvs.ximian.com:/cvs/public
+	export CVS_ROOT=username@mono-cvs.ximian.com:/cvs/public
 	cvs login
 	cvs -z3 co mcs mono
 </pre>
