@@ -291,7 +291,6 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeRemotingMetadataW3cXsd2001SoapYearClassTopic.asp">System.Runtime.Remoting.Metadata.W3cXsd2001.SoapYear</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeRemotingMetadataW3cXsd2001SoapYearMonthClassTopic.asp">System.Runtime.Remoting.Metadata.W3cXsd2001.SoapYearMonth</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeRemotingMetadataXmlFieldOrderOptionClassTopic.asp">System.Runtime.Remoting.Metadata.XmlFieldOrderOption</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeRemotingObjectHandleClassTopic.asp">System.Runtime.Remoting.ObjectHandle</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeRemotingProxiesProxyAttributeClassTopic.asp">System.Runtime.Remoting.Proxies.ProxyAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeRemotingProxiesRealProxyClassTopic.asp">System.Runtime.Remoting.Proxies.RealProxy</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeRemotingRemotingConfigurationClassTopic.asp">System.Runtime.Remoting.RemotingConfiguration</a><br>
@@ -322,6 +321,7 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeSerializationSerializationInfoEnumeratorClassTopic.asp">System.Runtime.Serialization.SerializationInfoEnumerator</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeSerializationSurrogateSelectorClassTopic.asp">System.Runtime.Serialization.SurrogateSelector</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeArgumentHandleClassTopic.asp">System.RuntimeArgumentHandle</a><br>
+	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityAllowPartiallyTrustedCallersAttributeClassTopic.asp">System.Security.AllowPartiallyTrustedCallersAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyCryptoConfigClassTopic.asp">System.Security.Cryptography.CryptoConfig</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyDSACryptoServiceProviderClassTopic.asp">System.Security.Cryptography.DSACryptoServiceProvider</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyHMACSHA1ClassTopic.asp">System.Security.Cryptography.HMACSHA1</a><br>
@@ -374,16 +374,13 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyAllMembershipConditionClassTopic.asp">System.Security.Policy.AllMembershipCondition</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyApplicationDirectoryClassTopic.asp">System.Security.Policy.ApplicationDirectory</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyApplicationDirectoryMembershipConditionClassTopic.asp">System.Security.Policy.ApplicationDirectoryMembershipCondition</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyCodeGroupClassTopic.asp">System.Security.Policy.CodeGroup</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyFileCodeGroupClassTopic.asp">System.Security.Policy.FileCodeGroup</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyFirstMatchCodeGroupClassTopic.asp">System.Security.Policy.FirstMatchCodeGroup</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyHashClassTopic.asp">System.Security.Policy.Hash</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyHashMembershipConditionClassTopic.asp">System.Security.Policy.HashMembershipCondition</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyNetCodeGroupClassTopic.asp">System.Security.Policy.NetCodeGroup</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyPermissionRequestEvidenceClassTopic.asp">System.Security.Policy.PermissionRequestEvidence</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyPolicyExceptionClassTopic.asp">System.Security.Policy.PolicyException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyPolicyStatementClassTopic.asp">System.Security.Policy.PolicyStatement</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyPolicyStatementAttributeClassTopic.asp">System.Security.Policy.PolicyStatementAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyPublisherClassTopic.asp">System.Security.Policy.Publisher</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyPublisherMembershipConditionClassTopic.asp">System.Security.Policy.PublisherMembershipCondition</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicySiteClassTopic.asp">System.Security.Policy.Site</a><br>
@@ -398,6 +395,7 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPrincipalWindowsIdentityClassTopic.asp">System.Security.Principal.WindowsIdentity</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPrincipalWindowsImpersonationContextClassTopic.asp">System.Security.Principal.WindowsImpersonationContext</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPrincipalWindowsPrincipalClassTopic.asp">System.Security.Principal.WindowsPrincipal</a><br>
+	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemThreadingCompressedStackClassTopic.asp">System.Threading.CompressedStack</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemThreadingIOCompletionCallbackClassTopic.asp">System.Threading.IOCompletionCallback</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemThreadingThreadStartClassTopic.asp">System.Threading.ThreadStart</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemThreadingTimerCallbackClassTopic.asp">System.Threading.TimerCallback</a><br>

@@ -137,7 +137,7 @@ mono_wrapper_readdir (gpointer dir)
 
 	/*
 	if (p)
-		return mono_string_new (p->d_name);
+		return p->d_name;
 	else 
 		return NULL;
 	*/

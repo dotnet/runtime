@@ -32,6 +32,9 @@
 	This license is an Open Source license, and is used by other projects
 	(most notably, the XFree86 project).   
 
+	The runtime (JIT, metadata library, interpreter) remains under
+	the LGPL and the C# compiler remains under the GPL.
+
 	Our <a
 	href="http://www.ximian.com/about_us/press_center/press_releases/mono_partners.html">Press
 	Release</a>

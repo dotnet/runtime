@@ -67,6 +67,25 @@
 	mail mono-list@ximian.com < file.diff
 </pre>
 
+** Keeping track of changes.
+
+	We provide two e-mail based mechanisms to keep track of
+	changes to the code base:
+	
+	<ul>
+		* <a href="mailto:mono-patches-request@ximian.com">
+		  mono-patches@ximian.com</a>: This mailing list receives
+		  in patch form all the changes that are being made to the
+		  CVS.
+
+		* <a href="mailto:mono-cvs-list-request@ximian.com">
+		  mono-cvs-list@ximian.com</a>: This mailing list only
+		  receives the CVS commit logs with a list of files
+		  modified.
+	</ul>
+
+	We hope to offer LXR and Bonsai in the future as well.
+
 ** Commiting your work
 
 	Once you get approval to commit to the CVS, or if you are
