@@ -707,6 +707,85 @@ ves_icall_type_Equals (MonoReflectionType *type, MonoReflectionType *c)
 	return 0;
 }
 
+/* System.TypeCode */
+typedef enum {
+	TYPECODE_EMPTY,
+	TYPECODE_OBJECT,
+	TYPECODE_DBNULL,
+	TYPECODE_BOOLEAN,
+	TYPECODE_CHAR,
+	TYPECODE_SBYTE,
+	TYPECODE_BYTE,
+	TYPECODE_INT16,
+	TYPECODE_UINT16,
+	TYPECODE_INT32,
+	TYPECODE_UINT32,
+	TYPECODE_INT64,
+	TYPECODE_UINT64,
+	TYPECODE_SINGLE,
+	TYPECODE_DOUBLE,
+	TYPECODE_DECIMAL,
+	TYPECODE_DATETIME,
+	TYPECODE_STRING = 18
+} TypeCode;
+
+static guint32
+ves_icall_type_GetTypeCode (MonoReflectionType *type)
+{
+	int t = type->type->type;
+handle_enum:
+	switch (t) {
+	case MONO_TYPE_VOID:
+		return TYPECODE_OBJECT;
+	case MONO_TYPE_BOOLEAN:
+		return TYPECODE_BOOLEAN;
+	case MONO_TYPE_U1:
+		return TYPECODE_BYTE;
+	case MONO_TYPE_I1:
+		return TYPECODE_SBYTE;
+	case MONO_TYPE_U2:
+		return TYPECODE_UINT16;
+	case MONO_TYPE_I2:
+		return TYPECODE_INT16;
+	case MONO_TYPE_CHAR:
+		return TYPECODE_CHAR;
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_U:
+	case MONO_TYPE_I:
+		return TYPECODE_OBJECT;
+	case MONO_TYPE_U4:
+		return TYPECODE_UINT32;
+	case MONO_TYPE_I4:
+		return TYPECODE_INT32;
+	case MONO_TYPE_U8:
+		return TYPECODE_UINT64;
+	case MONO_TYPE_I8:
+		return TYPECODE_INT64;
+	case MONO_TYPE_R4:
+		return TYPECODE_SINGLE;
+	case MONO_TYPE_R8:
+		return TYPECODE_DOUBLE;
+	case MONO_TYPE_VALUETYPE:
+		if (type->type->data.klass->valuetype) {
+			t = type->type->data.klass->enum_basetype->type;
+			goto handle_enum;
+		}
+		/* handle datetime, dbnull.. */
+		return TYPECODE_EMPTY; /* FIXME */
+	case MONO_TYPE_STRING:
+		return TYPECODE_STRING;
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_OBJECT:
+		return TYPECODE_OBJECT;
+	case MONO_TYPE_CLASS:
+		return TYPECODE_OBJECT;
+	default:
+		g_error ("type 0x%02x not handled in GetTypeCode()", t);
+	}
+	return 0;
+}
+
 static guint32
 ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c, MonoBoolean check_interfaces)
 {
@@ -2360,6 +2439,7 @@ static gconstpointer icall_map [] = {
 	"System.MonoType::get_attributes", ves_icall_get_attributes,
 	"System.Type::type_is_subtype_of", ves_icall_type_is_subtype_of,
 	"System.Type::Equals", ves_icall_type_Equals,
+	"System.Type::GetTypeCode", ves_icall_type_GetTypeCode,
 
 	/*
 	 * System.Runtime.CompilerServices.RuntimeHelpers

@@ -946,7 +946,7 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_LDLOC_3:
 			if (*ip - CEE_LDLOC_0 >= header->num_locals)
 				ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", *ip - CEE_LDLOC_0, ip_offset));
-			if (!local_state [*ip - CEE_LDLOC_0])
+			if (0 && !local_state [*ip - CEE_LDLOC_0])
 				ADD_INVALID (list, g_strdup_printf ("Local var %d is initialized at 0x%04x", *ip - CEE_LDLOC_0, ip_offset));
 			CHECK_STACK_OVERFLOW ();
 			++cur_stack;
@@ -983,7 +983,7 @@ mono_method_verify (MonoMethod *method, int level)
 			if (ip [1] >= header->num_locals)
 				ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", ip [1], ip_offset));
 			/* no need to check if the var is initialized if the address is taken */
-			if (*ip == CEE_LDLOC_S && !local_state [ip [1]])
+			if (0 && *ip == CEE_LDLOC_S && !local_state [ip [1]])
 				ADD_INVALID (list, g_strdup_printf ("Local var %d is initialized at 0x%04x", ip [1], ip_offset));
 			CHECK_STACK_OVERFLOW ();
 			++cur_stack;
@@ -1304,6 +1304,7 @@ mono_method_verify (MonoMethod *method, int level)
 			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
 			++ip;
+			start = 1;
 			break;
 		case CEE_LDFLD:
 			CHECK_STACK_UNDERFLOW (1);
@@ -1580,11 +1581,13 @@ mono_method_verify (MonoMethod *method, int level)
 				CHECK_STACK_OVERFLOW ();
 				token = read32 (ip + 1);
 				ip += 5;
+				cur_stack++;
 				break;
 			case CEE_LDVIRTFTN:
 				CHECK_STACK_UNDERFLOW (1);
 				token = read32 (ip + 1);
 				ip += 5;
+				cur_stack++;
 				break;
 			case CEE_UNUSED56:
 				++ip;
@@ -1609,7 +1612,7 @@ mono_method_verify (MonoMethod *method, int level)
 				if (read16 (ip + 1) >= header->num_locals)
 					ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", read16 (ip + 1), ip_offset));
 				/* no need to check if the var is initialized if the address is taken */
-				if (*ip == CEE_LDLOC && !local_state [read16 (ip + 1)])
+				if (0 && *ip == CEE_LDLOC && !local_state [read16 (ip + 1)])
 					ADD_INVALID (list, g_strdup_printf ("Local var %d is initialized at 0x%04x", read16 (ip + 1), ip_offset));
 				CHECK_STACK_OVERFLOW ();
 				++cur_stack;
