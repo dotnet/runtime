@@ -296,6 +296,7 @@ main (int argc, char *argv [])
 	if (!file)
 		usage (argv [0]);
 
+	g_set_prgname (file);
 	mono_config_parse (config_file);
 	mono_set_rootdir ();
 

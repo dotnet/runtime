@@ -4459,6 +4459,7 @@ main (int argc, char *argv [])
 	if (!file)
 		usage ();
 
+	g_set_prgname (file);
 	mono_set_rootdir ();
 	mono_config_parse (config_file);
 	
