@@ -2,7 +2,6 @@ System.Activator
 System.AppDomainSetup
 System.ArgIterator
 System.AssemblyLoadEventHandler
-System.CannotUnloadAppDomainException
 System.CharEnumerator
 System.CrossAppDomainDelegate
 System.DBNull
