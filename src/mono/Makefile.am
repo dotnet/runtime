@@ -173,4 +173,3 @@ win32getdeps:
 
 win32setup:
 	makensis /DMILESTONE=$(VERSION) /DSOURCE_INSTALL_DIR=$(SOURCE_INSTALL_DIR) /DBUILDNUM=$(BUILDNUM) monowiz.win32.nsi
-#makensis /DMILESTONE=$(VERSION) /DSOURCE_INSTALL_DIR=`cygpath -a -w c:/cygwin/home/propietario/go-mono/windowswizard/wins`\\* monowiz.win32.nsi
