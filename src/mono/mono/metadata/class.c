@@ -329,7 +329,14 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericMethod *gmetho
 		if (nmethod->header)
 			nmethod->header = inflate_generic_header (nmethod->header, gmethod);
 	}
-	result->klass = gmethod->klass;
+	if (gmethod->klass)
+		result->klass = gmethod->klass;
+	else {
+		MonoType *declaring = mono_class_inflate_generic_type (
+			&method->klass->byval_arg, gmethod->generic_inst, gmethod);
+		result->klass = gmethod->klass = mono_class_from_mono_type (declaring);
+	}
+
 	result->signature = inflate_generic_signature (
 		method->klass->image, result->signature, gmethod);
 	return result;
@@ -1161,7 +1168,6 @@ inflate_method (MonoGenericInst *ginst, MonoMethod *method)
 	gmethod->klass = ginst->klass;
 	gmethod->generic_method = method;
 	gmethod->generic_inst = ginst;
-	gmethod->declaring = method;
 
 	return mono_class_inflate_generic_method (method, gmethod);
 }

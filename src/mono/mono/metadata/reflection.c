@@ -2162,18 +2162,15 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoGenericMethod *gmethod
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 token, mtoken = 0, sig;
-	MonoClass *k;
 
 	table = &assembly->tables [MONO_TABLE_METHODSPEC];
 
 	g_assert (gmethod);
-	k = gmethod->klass ? gmethod->klass : gmethod->declaring->klass;
+	sig = method_encode_signature (assembly, gmethod->generic_method->signature);
+	mtoken = mono_image_get_memberref_token (assembly, &gmethod->klass->byval_arg,
+						 gmethod->generic_method->name, sig);
 
-	sig = method_encode_signature (assembly, gmethod->declaring->signature);
-	mtoken = mono_image_get_memberref_token (assembly, &k->byval_arg,
-						 gmethod->declaring->name, sig);
-
-	if (!gmethod->declaring->signature->generic_param_count)
+	if (!gmethod->generic_method->signature->generic_param_count)
 		return mtoken;
 
 	switch (mono_metadata_token_table (mtoken)) {
@@ -2214,10 +2211,10 @@ mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *m)
 
 	g_assert ((gmethod = m->signature->gen_method) != NULL);
 
-	if (gmethod->declaring->signature->generic_param_count)
+	if (gmethod->generic_method->signature->generic_param_count)
 		token = method_encode_methodspec (assembly, gmethod);
 	else {
-		guint32 sig = method_encode_signature (assembly, gmethod->declaring->signature);
+		guint32 sig = method_encode_signature (assembly, gmethod->generic_method->signature);
 		token = mono_image_get_memberref_token (
 			assembly, &gmethod->klass->byval_arg, gmethod->generic_method->name, sig);
 	}
@@ -6906,7 +6903,7 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
 MonoReflectionMethod*
 mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, MonoArray *types)
 {
-	MonoMethod *method, *inflated, *declaring;
+	MonoMethod *method, *inflated;
 	MonoReflectionMethodBuilder *mb = NULL;
 	MonoGenericMethod *gmethod;
 	int count, i;
@@ -6920,9 +6917,9 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 		tb = (MonoReflectionTypeBuilder *) mb->type;
 		klass = mono_class_from_mono_type (tb->type.type);
 
-		method = declaring = methodbuilder_to_mono_method (klass, mb);
+		method = methodbuilder_to_mono_method (klass, mb);
 	} else
-		method = declaring = rmethod->method;
+		method = rmethod->method;
 
 	count = method->signature->generic_param_count;
 	if (count != mono_array_length (types))
@@ -6938,8 +6935,6 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	}
 
 	gmethod->generic_inst = method->klass->generic_inst;
-	gmethod->declaring = declaring;
-	gmethod->klass = method->klass;
 
 	inflated = mono_class_inflate_generic_method (method, gmethod);
 
@@ -6959,7 +6954,6 @@ inflate_mono_method (MonoReflectionGenericInst *type, MonoMethod *method)
 	gmethod->generic_method = method;
 	gmethod->generic_inst = ginst;
 	gmethod->klass = ginst->klass;
-	gmethod->declaring = method;
 
 	return mono_class_inflate_generic_method (method, gmethod);
 }

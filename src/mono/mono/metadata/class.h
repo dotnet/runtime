@@ -249,9 +249,8 @@ struct _MonoDynamicGenericInst {
 
 struct _MonoGenericMethod {
 	MonoGenericInst *generic_inst;
-	MonoClass *klass;
-	MonoMethod *declaring;
 	MonoMethod *generic_method;
+	MonoClass *klass;
 	int mtype_argc;
 	MonoType **mtype_argv;
 	guint is_open       : 1;
