@@ -1219,7 +1219,7 @@ mono_thread_get_abort_signal (void)
 }
 
 #ifdef __MINGW32__
-static guint32 interruption_request_apc (gpointer param)
+static CALLBACK void interruption_request_apc (ULONG_PTR param)
 {
 	MonoException* exc = mono_thread_request_interruption (FALSE);
 	if (exc) mono_raise_exception (exc);
@@ -2151,11 +2151,16 @@ void mono_gc_start_world (void)
 	LeaveCriticalSection (&threads_mutex);
 }
 
-
+#ifdef __MINGW32__
+static CALLBACK void dummy_apc (ULONG_PTR param)
+{
+}
+#else
 static guint32 dummy_apc (gpointer param)
 {
 	return 0;
 }
+#endif
 
 /*
  * mono_thread_execute_interruption
