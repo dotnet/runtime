@@ -8,9 +8,6 @@ public class Test {
 		byte [] bytedest = new byte [20];
 
 		IntPtr dest = Marshal.AllocHGlobal (1024);
-
-		foreach (byte b in bytesrc)
-			b = 0;
 		
 		bytesrc [2] = 2;
 		bytesrc [11] = 11;		
