@@ -278,81 +278,56 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 MonoClass *
 mono_class_from_mono_type (MonoType *type)
 {
-	MonoImage *corlib;
-	MonoClass *res;
-
-	corlib = mono_defaults.corlib;
-
 	switch (type->type) {
 	case MONO_TYPE_OBJECT:
-		res = mono_defaults.object_class;
-		break;
+		return mono_defaults.object_class;
 	case MONO_TYPE_VOID:
-		res = mono_defaults.void_class;
-		break;
+		return mono_defaults.void_class;
 	case MONO_TYPE_BOOLEAN:
-		res = mono_defaults.boolean_class;
-		break;
+		return mono_defaults.boolean_class;
 	case MONO_TYPE_CHAR:
-		res = mono_defaults.char_class;
-		break;
+		return mono_defaults.char_class;
 	case MONO_TYPE_I1:
-		res = mono_defaults.byte_class;
-		break;
+		return mono_defaults.byte_class;
 	case MONO_TYPE_U1:
-		res = mono_defaults.sbyte_class;
-		break;
+		return mono_defaults.sbyte_class;
 	case MONO_TYPE_I2:
-		res = mono_defaults.int16_class;
-		break;
+		return mono_defaults.int16_class;
 	case MONO_TYPE_U2:
-		res = mono_defaults.uint16_class;
-		break;
+		return mono_defaults.uint16_class;
 	case MONO_TYPE_I4:
-		res = mono_defaults.int32_class;
-		break;
+		return mono_defaults.int32_class;
 	case MONO_TYPE_U4:
-		res = mono_defaults.uint32_class;
-		break;
+		return mono_defaults.uint32_class;
 	case MONO_TYPE_I:
-		res = mono_defaults.int_class;
-		break;
+		return mono_defaults.int_class;
 	case MONO_TYPE_U:
-		res = mono_defaults.uint_class;
-		break;
+		return mono_defaults.uint_class;
 	case MONO_TYPE_I8:
-		res = mono_defaults.int64_class;
-		break;
+		return mono_defaults.int64_class;
 	case MONO_TYPE_U8:
-		res = mono_defaults.uint64_class;
-		break;
+		return mono_defaults.uint64_class;
 	case MONO_TYPE_R4:
-		res = mono_defaults.single_class;
-		break;
+		return mono_defaults.single_class;
 	case MONO_TYPE_R8:
-		res = mono_defaults.double_class;
-		break;
+		return mono_defaults.double_class;
 	case MONO_TYPE_STRING:
-		res = mono_defaults.string_class;
-		break;
+		return mono_defaults.string_class;
 	case MONO_TYPE_ARRAY:
-		res = mono_defaults.array_class;
-		break;
+		return mono_defaults.array_class;
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_PTR:
 		/* Not really sure about these. */
-		res = mono_class_from_mono_type (type->data.type);
-		break;
+		return mono_class_from_mono_type (type->data.type);
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
-		res = type->data.klass;
-		break;
+		return type->data.klass;
 	default:
 		g_warning ("implement me %02x\n", type->type);
 		g_assert_not_reached ();
 	}
 	
-	return res;
+	return NULL;
 }
 
 /**
