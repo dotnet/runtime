@@ -14,6 +14,21 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
 
+/* This is a copy of System.Threading.ThreadState */
+typedef enum {
+	ThreadState_Running = 0x00000000,
+	ThreadState_StopRequested = 0x00000001,
+	ThreadState_SuspendRequested = 0x00000002,
+	ThreadState_Background = 0x00000004,
+	ThreadState_Unstarted = 0x00000008,
+	ThreadState_Stopped = 0x00000010,
+	ThreadState_WaitSleepJoin = 0x00000020,
+	ThreadState_Suspended = 0x00000040,
+	ThreadState_AbortRequested = 0x00000080,
+	ThreadState_Aborted = 0x00000100,
+} MonoThreadState;
+
+
 extern int  mono_thread_get_abort_signal (void);
 
 extern void mono_thread_init (MonoThreadStartCB start_cb,

@@ -935,6 +935,11 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 
 	if(wait->num<MAXIMUM_WAIT_OBJECTS) {
 		MonoThread *thread=(MonoThread *)value;
+
+		/* BUG: For now we just ignore background threads, we should abort them
+		*/
+		if (thread->state & ThreadState_Background)
+			return; /* just leave, ignore */
 		
 		wait->handles[wait->num]=thread->handle;
 		wait->threads[wait->num]=thread;
