@@ -394,6 +394,15 @@ mono_thread_attach (MonoDomain *domain)
 
 	tid=GetCurrentThreadId ();
 
+#ifdef PLATFORM_WIN32
+	/* 
+	 * The handle returned by GetCurrentThread () is a pseudo handle, so it can't be used to
+	 * refer to the thread from other threads for things like aborting.
+	 */
+	DuplicateHandle (GetCurrentProcess (), thread_handle, GetCurrentProcess (), &thread_handle, 
+					 THREAD_ALL_ACCESS, TRUE, 0);
+#endif
+
 	thread->handle=thread_handle;
 	thread->tid=tid;
 	thread->synch_lock=mono_object_new (domain, mono_defaults.object_class);
