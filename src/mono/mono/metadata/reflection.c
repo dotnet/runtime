@@ -3276,96 +3276,127 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
 	return type;
 }
 
+static void*
+load_cattr_value (MonoImage *image, MonoType *t, const char *p, const char **end)
+{
+	int slen, type = t->type;
+handle_enum:
+	switch (type) {
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_BOOLEAN: {
+		MonoBoolean *bval = g_malloc (sizeof (MonoBoolean));
+		*bval = *p;
+		*end = p + 1;
+		return bval;
+	}
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I2: {
+		guint16 *val = g_malloc (sizeof (guint16));
+		*val = read16 (p);
+		*end = p + 2;
+		return val;
+	}
+#if SIZEOF_VOID_P == 4
+	case MONO_TYPE_U:
+	case MONO_TYPE_I:
+#endif
+	case MONO_TYPE_R4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I4: {
+		guint32 *val = g_malloc (sizeof (guint32));
+		*val = read32 (p);
+		*end = p + 4;
+		return val;
+	}
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_U: /* error out instead? this should probably not happen */
+	case MONO_TYPE_I:
+#endif
+	case MONO_TYPE_R8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I8: {
+		guint64 *val = g_malloc (sizeof (guint64));
+		*val = read64 (p);
+		*end = p + 8;
+		return val;
+	}
+	case MONO_TYPE_VALUETYPE:
+		if (t->data.klass->enumtype) {
+			type = t->data.klass->enum_basetype->type;
+			goto handle_enum;
+		} else {
+			g_error ("generic valutype %s not handled in custom attr value decoding", t->data.klass->name);
+		}
+		break;
+	case MONO_TYPE_STRING: {
+		slen = mono_metadata_decode_value (p, &p);
+		*end = p + slen;
+		return mono_string_new_len (mono_domain_get (), p, slen);
+	}
+	case MONO_TYPE_CLASS: {
+		char *n;
+		MonoType *t;
+		slen = mono_metadata_decode_value (p, &p);
+		n = g_memdup (p, slen + 1);
+		n [slen] = 0;
+		t = mono_reflection_type_from_name (n, image);
+		if (!t)
+			g_warning ("Cannot load type '%s'", n);
+		g_free (n);
+		*end = p + slen;
+		return mono_type_get_object (mono_domain_get (), t);
+	}
+	default:
+		g_error ("Type 0x%02x not handled in custom attr value decoding", type);
+	}
+	return NULL;
+}
+
 /*
  * Optimization we could avoid mallocing() an little-endian archs that
  * don't crash with unaligned accesses.
  */
-static void
+static const char*
 fill_param_data (MonoImage *image, MonoMethodSignature *sig, guint32 blobidx, void **params) {
-	int len, i, slen, type;
+	int len, i;
 	const char *p = mono_metadata_blob_heap (image, blobidx);
 
 	len = mono_metadata_decode_value (p, &p);
 	if (len < 2 || read16 (p) != 0x0001) /* Prolog */
-		return;
+		return NULL;
 
 	/* skip prolog */
 	p += 2;
 	for (i = 0; i < sig->param_count; ++i) {
-		type = sig->params [i]->type;
-handle_enum:
-		switch (type) {
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_BOOLEAN: {
-			MonoBoolean *bval = params [i] = g_malloc (sizeof (MonoBoolean));
-			*bval = *p;
-			++p;
-			break;
-		}
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I2: {
-			guint16 *val = params [i] = g_malloc (sizeof (guint16));
-			*val = read16 (p);
-			p += 2;
-			break;
-		}
-#if SIZEOF_VOID_P == 4
-		case MONO_TYPE_U:
-		case MONO_TYPE_I:
-#endif
-		case MONO_TYPE_R4:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I4: {
-			guint32 *val = params [i] = g_malloc (sizeof (guint32));
-			*val = read32 (p);
-			p += 4;
-			break;
-		}
-#if SIZEOF_VOID_P == 8
-		case MONO_TYPE_U: /* error out instead? this should probably not happen */
-		case MONO_TYPE_I:
-#endif
-		case MONO_TYPE_R8:
-		case MONO_TYPE_U8:
-		case MONO_TYPE_I8: {
-			guint64 *val = params [i] = g_malloc (sizeof (guint64));
-			*val = read64 (p);
-			p += 8;
-			break;
-		}
-		case MONO_TYPE_VALUETYPE:
-			if (sig->params [i]->data.klass->enumtype) {
-				type = sig->params [i]->data.klass->enum_basetype->type;
-				goto handle_enum;
-			} else {
-				g_warning ("generic valutype %s not handled in custom attr value decoding", sig->params [i]->data.klass->name);
-			}
-			break;
-		case MONO_TYPE_STRING: {
-			slen = mono_metadata_decode_value (p, &p);
-			params [i] = mono_string_new_len (mono_domain_get (), p, slen);
-			p += slen;
-			break;
-		}
-		case MONO_TYPE_CLASS: {
-			char *n;
-			MonoType *t;
-			slen = mono_metadata_decode_value (p, &p);
-			n = g_memdup (p, slen + 1);
-			n [slen] = 0;
-			t = mono_reflection_type_from_name (n, image);
-			if (!t)
-				g_warning ("Cannot load type '%s'", n);
-			g_free (n);
-			params [i] = mono_type_get_object (mono_domain_get (), t);
-			break;
-		}
-		default:
-			g_warning ("Type 0x%02x not handled in custom attr value decoding", sig->params [i]->type);
-			break;
-		}
+		params [i] = load_cattr_value (image, sig->params [i], p, &p);
+	}
+	return p;
+}
+
+static gboolean
+type_is_reference (MonoType *type)
+{
+	switch (type->type) {
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_U:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_VALUETYPE:
+		return FALSE;
+	default:
+		return TRUE;
 	}
 }
 
@@ -3373,27 +3404,8 @@ static void
 free_param_data (MonoMethodSignature *sig, void **params) {
 	int i;
 	for (i = 0; i < sig->param_count; ++i) {
-		switch (sig->params [i]->type) {
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_U:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U8:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_R8:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_VALUETYPE:
+		if (!type_is_reference (sig->params [i]))
 			g_free (params [i]);
-			break;
-		default:
-			break;
-		}
 	}
 }
 
@@ -3553,6 +3565,8 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 	ca = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
 	/* the table is not sorted */
 	for (i = 0; i < ca->rows; ++i) {
+		const char *named;
+		gint j, num_named;
 		mono_metadata_decode_row (ca, i, cols, MONO_CUSTOM_ATTR_SIZE);
 		if (cols [MONO_CUSTOM_ATTR_PARENT] != idx)
 			continue;
@@ -3574,12 +3588,43 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 		mono_class_init (method->klass);
 		/*g_print ("got attr %s\n", method->klass->name);*/
 		params = g_new (void*, method->signature->param_count);
-		fill_param_data (image, method->signature, cols [MONO_CUSTOM_ATTR_VALUE], params);
+		named = fill_param_data (image, method->signature, cols [MONO_CUSTOM_ATTR_VALUE], params);
 		attr = mono_object_new (mono_domain_get (), method->klass);
 		mono_runtime_invoke (method, attr, params, NULL);
-		list = g_list_prepend (list, attr);
 		free_param_data (method->signature, params);
 		g_free (params);
+		num_named = read16 (named);
+		named += 2;
+		for (j = 0; j < num_named; j++) {
+			gint name_len;
+			char *name, named_type;
+			named_type = *named++;
+			named++; /* type of data */
+			name_len = mono_metadata_decode_blob_size (named, &named);
+			name = g_malloc (name_len + 1);
+			memcpy (name, named, name_len);
+			name [name_len] = 0;
+			named += name_len;
+			if (named_type == 0x53) {
+				MonoClassField *field = mono_class_get_field_from_name (mono_object_class (attr), name);
+				void *val = load_cattr_value (image, field->type, named, &named);
+				mono_field_set_value (attr, field, val);
+				if (!type_is_reference (field->type))
+					g_free (val);
+			} else if (named_type == 0x54) {
+				MonoProperty *prop = mono_class_get_property_from_name (mono_object_class (attr), name);
+				void *pparams [1];
+				MonoType *prop_type;
+				/* can we have more that 1 arg in a custom attr named property? */
+				prop_type = prop->get? prop->get->signature->ret: prop->set->signature->params [prop->set->signature->param_count - 1];
+				pparams [0] = load_cattr_value (image, prop_type, named, &named);
+				mono_property_set_value (prop, attr, pparams, NULL);
+				if (!type_is_reference (prop_type))
+					g_free (pparams [0]);
+			}
+			g_free (name);
+		}
+		list = g_list_prepend (list, attr);
 	}
 
 	len = g_list_length (list);
@@ -3853,6 +3898,7 @@ mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, Mo
 			prop = mono_array_get (properties, gpointer, i);
 			get_prop_name_and_type (prop, &pname, &ptype);
 			*p++ = 0x54; /* PROPERTY signature */
+			mono_metadata_encode_value (ptype->type, p, &p);
 			len = strlen (pname);
 			mono_metadata_encode_value (len, p, &p);
 			memcpy (p, pname, len);
@@ -3872,6 +3918,7 @@ mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, Mo
 			field = mono_array_get (fields, gpointer, i);
 			get_field_name_and_type (field, &fname, &ftype);
 			*p++ = 0x53; /* FIELD signature */
+			mono_metadata_encode_value (ftype->type, p, &p);
 			len = strlen (fname);
 			mono_metadata_encode_value (len, p, &p);
 			memcpy (p, fname, len);
