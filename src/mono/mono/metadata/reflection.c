@@ -1710,7 +1710,7 @@ mono_image_get_array_token (MonoDynamicAssembly *assembly, MonoReflectionArrayMe
 	am->sig = sig;
 	am->parent = m->parent->type;
 	am->token = mono_image_get_memberref_token (assembly, am->parent,
-		name,  method_encode_signature (assembly, sig));
+			name,  method_encode_signature (assembly, sig));
 	assembly->array_methods = g_list_prepend (assembly->array_methods, am);
 	m->table_idx = am->token & 0xffffff;
 	return am->token;
@@ -2254,6 +2254,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *a
 	MonoReflectionCtorBuilder *ctor;
 	MonoReflectionMethodBuilder *method;
 	MonoReflectionTypeBuilder *tb;
+	MonoReflectionArrayMethod *am;
 	guint32 i, idx;
 	unsigned char *target;
 
@@ -2291,6 +2292,12 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *a
 				g_assert_not_reached ();
 			tb = (MonoReflectionTypeBuilder *)iltoken->member;
 			idx = tb->table_idx;
+			break;
+		case MONO_TABLE_MEMBERREF:
+			if (strcmp (iltoken->member->vtable->klass->name, "MonoArrayMethod"))
+				g_assert_not_reached ();
+			am = (MonoReflectionArrayMethod*)iltoken->member;
+			idx = am->table_idx;
 			break;
 		default:
 			g_error ("got unexpected table 0x%02x in fixup", target [3]);
