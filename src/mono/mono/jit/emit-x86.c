@@ -1259,7 +1259,6 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 
 	if (ji) { /* we are inside managed code */
 		MonoMethod *m = ji->method;
-		unsigned next_bp;
 		int offset = 2;
 
 		if (ji->num_clauses) {
@@ -1331,11 +1330,10 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 		ctx->eip = *((int *)ctx->ebp + 1);
 		ctx->ebp = *((int *)ctx->ebp);
 		
-		if (next_bp < (unsigned)mono_end_of_stack)
+		if (ctx->ebp < (unsigned)mono_end_of_stack)
 			arch_handle_exception (ctx, obj);
 		else
 			mono_jit_abort (obj);
-
 	} else {
 		gpointer *lmf_addr = TlsGetValue (lmf_thread_id);
 		MonoLMF *lmf;
