@@ -833,7 +833,7 @@ case "$host" in
 	sparc*-*-*)
 		TARGET=SPARC;
 		arch_target=sparc;
-		#JIT_SUPPORTED=yes
+		JIT_SUPPORTED=yes
 		ACCESS_UNALIGNED="no"
 		;;
 #       alpha*-*-linux* | alpha*-*-osf*)
