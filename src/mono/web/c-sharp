@@ -1,20 +1,17 @@
 * MCS: The Ximian C# compiler
 
-	MCS is currently able to compile many C# programs (there is
-	a test suite included that you can use).  
+	MCS is currently able to compile itself and many more C#
+	programs (there is a test suite included that you can use).
 
 	We are in feature completion mode right now.  There are still
 	a couple of areas that are not covered by the Mono compiler, but
 	they are very very few at this point.
 
-	The compiler can compile itself, but the resulting image contains
-	a few errors that we are quickly fixing.
-
 	MCS was able to parse itself on April 2001, MCS compiled itself
-	for the first time on December 28 2001.  We hope to have the compiler
-	self hosting on Linux by the end of January.
+	for the first time on December 28 2001.  MCS became self hosting
+	on January 3rd, 2001. 
 
-	A test suite is being built currently to track the progress of
+	A test suite is maintained to track the progress of
 	the compiler and various programs are routinely compiled and
 	ran.
 
@@ -60,20 +57,10 @@
 	Simple tasks:
 
 	<ul>
-		* Extern declarations are missing.
-	</ul>
-
-	Larger tasks:
-
-	<ul>
-		* Finish constant folding, it is complete enough
-		  to compile itself, but it is lacking error reporting.
-
 		* Redo the way we deal with built-in operators.
 	</ul>
 
-	Interesting and Fun hacks to the compiler:
-
+	Larger tasks:
 	<ul>
 
 		* Jay does not work correctly with `error'
