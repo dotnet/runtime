@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #ifdef PLATFORM_WIN32
 #include <windows.h>
@@ -219,9 +220,29 @@ new_codechunk (int dynamic, int size)
 #endif
 	}
 
-	/* Make sure the thunks area is zeroed */
-	if (flags == CODE_FLAG_MALLOC)
-		memset (ptr, 0, bsize);
+	if (flags == CODE_FLAG_MALLOC) {
+		/*
+		 * AMD64 processors maintain icache coherency only for pages which are 
+		 * marked executable.
+		 */
+#ifndef PLATFORM_WIN32
+		{
+			char *page_start = (char *) (((unsigned long long) (ptr)) & ~ (pagesize - 1));
+			int pages = ((char*)ptr + chunk_size - page_start + pagesize - 1) / pagesize;
+			int err = mprotect (page_start, pages * pagesize, PROT_READ | PROT_WRITE | PROT_EXEC);
+			assert (!err);
+		}
+#else
+		{
+			DWORD oldp;
+			int err = VirtualProtect (ptr, chunk_size, PAGE_EXECUTE_READWRITE, &oldp);
+			assert (err);
+		}
+#endif
+
+			/* Make sure the thunks area is zeroed */
+			memset (ptr, 0, bsize);
+	}
 
 	chunk = malloc (sizeof (CodeChunk));
 	if (!chunk) {
