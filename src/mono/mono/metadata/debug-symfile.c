@@ -820,7 +820,8 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 }
 
 gchar *
-mono_debug_find_source_location (MonoDebugSymbolFile *symfile, MonoMethod *method, guint32 offset)
+mono_debug_find_source_location (MonoDebugSymbolFile *symfile, MonoMethod *method, guint32 offset,
+				 guint32 *line_number)
 {
 	MonoDebugLineNumberBlock *lnb;
 	const char *ptr;
@@ -848,8 +849,13 @@ mono_debug_find_source_location (MonoDebugSymbolFile *symfile, MonoMethod *metho
 		if (!row)
 			continue;
 
-		if (iloffset >= offset)
-			return g_strdup_printf ("%s:%d", lnb->source_file, row);
+		if (iloffset >= offset) {
+			if (line_number) {
+				*line_number = row;
+				return g_strdup (lnb->source_file);
+			} else
+				return g_strdup_printf ("%s:%d", lnb->source_file, row);
+		}
 	} while (1);
 
 	return NULL;
