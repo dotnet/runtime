@@ -61,7 +61,6 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_symbol_file_table_generation,
 	&debugger_notification_address,
 	&debugger_symbol_file_table,
-	&debugger_update_symbol_file_table,
 	&mono_compile_method,
 	&debugger_insert_breakpoint,
 	&debugger_remove_breakpoint,
@@ -1287,6 +1286,7 @@ static gpointer
 debugger_thread_func (gpointer ptr)
 {
 	void (*notification_code) (void) = ptr;
+	int last_generation = 0;
 
 	/*
 	 * Lock the mutex and raise a SIGSTOP to give the debugger a chance to
@@ -1310,6 +1310,12 @@ debugger_thread_func (gpointer ptr)
 
 		if (!debugger_symbol_file_table_modified)
 			continue;
+
+		/* Reload the symbol file table if necessary. */
+		if (debugger_symbol_file_table_generation > last_generation) {
+			debugger_update_symbol_file_table ();
+			last_generation = debugger_symbol_file_table_generation;
+		}
 
 		/*
 		 * Send notification - we'll stop on a breakpoint instruction at a special
