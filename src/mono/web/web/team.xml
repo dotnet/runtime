@@ -514,4 +514,17 @@
       <task>Host system integration</task>
     </tasks>
   </contributor>
+  <contributor>
+    <name>
+      <first-name>Alexandre</first-name>
+      <last-name>Pigolkine</last-name>
+    </name>
+    <e-mail>pigolkine@gmx.de</e-mail>
+    <image>none.png</image>
+    <location>Germany</location>
+    <description>External Contributor</description>
+    <tasks>
+      <task>System.Windows.Forms</task>
+    </tasks>
+  </contributor>
 </contributors>
