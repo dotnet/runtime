@@ -17,13 +17,15 @@
 void _wapi_calc_timeout(struct timespec *timeout, guint32 ms)
 {
 	struct timeval now;
-	div_t divvy;
+	div_t ms_divvy, overflow_divvy;
+	
+	gettimeofday (&now, NULL);
 
-	gettimeofday(&now, NULL);
-	divvy=div((now.tv_usec/1000)+ms, 1000);
+	ms_divvy = div (ms, 1000);
+	overflow_divvy = div ((now.tv_usec / 1000) + ms_divvy.rem, 1000);
 		
-	timeout->tv_sec=now.tv_sec+divvy.quot;
-	timeout->tv_nsec=divvy.rem*1000000;
+	timeout->tv_sec = now.tv_sec + ms_divvy.quot + overflow_divvy.quot;
+	timeout->tv_nsec = overflow_divvy.rem * 1000000;
 }
 
 /* This is used instead of g_renew when we need to keep unused
