@@ -141,6 +141,14 @@
   </tr>
 </table>
 
+@item Dec 21st: Mono on PowerPC Progress.
+
+	Paolo reports today that the Mono JIT on the PowerPC was able
+	to successfully run the Mono C# compiler to build its first
+	programs.  This is by no means complete (exception handling is
+	missing, and Boehm GC seems to fail on MacOS X), this shows
+	the excellent progress Paolo has been making.
+
 @item Dec 10th: Mono Debugger 0.5 released
 
 	Martin Baulig has <a
