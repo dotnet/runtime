@@ -35,8 +35,6 @@
 #include <mono/metadata/reflection.h>
 #include <mono/utils/mono-logger.h>
 
-static void mono_loader_wine_init   (void);
-
 MonoDefaults mono_defaults;
 
 /*
@@ -602,16 +600,6 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
 			"DllImport attempting to load: '%s'.", new_scope);
 
-#ifndef PLATFORM_WIN32
-	/*
-	 * If we are P/Invoking a library from System.Windows.Forms, load Wine
-	 */
-	if (wine_test_needed && strcmp (image->assembly_name, "System.Windows.Forms") == 0){
-		mono_loader_wine_init ();
-		wine_test_needed = 0;
-	}
-#endif
-	
 	/*
 	 * Try loading the module using a variety of names
 	 */
@@ -1140,35 +1128,6 @@ mono_method_get_last_managed (void)
 	stack_walk (last_managed, &m);
 	return m;
 }
-
-#ifndef PLATFORM_WIN32
-/*
- * This routine exists to load and init Wine due to the special Wine
- * requirements: basically the SharedWineInit must be called before
- * any modules are dlopened or they will fail to work.
- */
-static void
-mono_loader_wine_init ()
-{
-	GModule *module = g_module_open ("winelib.exe.so", G_MODULE_BIND_LAZY);
-	int (*shared_wine_init)();
-
-	if (module == NULL){
-		if (g_getenv("MONO_DEBUG") != NULL) {
-			fprintf (stderr, "Could not load winelib.exe.so");
-		}
-		return;
-	}
-
-	g_module_symbol (module, "SharedWineInit", &shared_wine_init);
-	if (shared_wine_init == NULL)
-		return;
-
-	shared_wine_init ();
-
-	return;
-}
-#endif
 
 void
 mono_loader_lock (void)
