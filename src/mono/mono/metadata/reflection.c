@@ -4322,9 +4322,21 @@ create_custom_attr (MonoImage *image, MonoMethod *method,
 	named += 2;
 	for (j = 0; j < num_named; j++) {
 		gint name_len;
-		char *name, named_type;
+		char *name, named_type, data_type;
 		named_type = *named++;
-		named++; /* type of data */
+		data_type = *named++; /* type of data */
+		if (data_type == 0x55) {
+			gint type_len;
+			char *type_name;
+			if (*named == 0x80) /* no idea what this is, but it looks optional */
+				named++;
+			type_len = mono_metadata_decode_blob_size (named, &named);
+			type_name = g_malloc (type_len + 1);
+			memcpy (type_name, named, type_len);
+			type_name [type_len] = 0;
+			named += type_len;
+			/* FIXME: lookup the type and check type consistency */
+		}
 		name_len = mono_metadata_decode_blob_size (named, &named);
 		name = g_malloc (name_len + 1);
 		memcpy (name, named, name_len);
@@ -4337,9 +4349,11 @@ create_custom_attr (MonoImage *image, MonoMethod *method,
 				if (!type_is_reference (field->type))
 					g_free (val);
 		} else if (named_type == 0x54) {
-			MonoProperty *prop = mono_class_get_property_from_name (mono_object_class (attr), name);
+			MonoProperty *prop;
 			void *pparams [1];
 			MonoType *prop_type;
+
+			prop = mono_class_get_property_from_name (mono_object_class (attr), name);
 			/* can we have more that 1 arg in a custom attr named property? */
 			prop_type = prop->get? prop->get->signature->ret: prop->set->signature->params [prop->set->signature->param_count - 1];
 			pparams [0] = load_cattr_value (image, prop_type, named, &named);
@@ -4907,7 +4921,29 @@ mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, Mo
 			prop = mono_array_get (properties, gpointer, i);
 			get_prop_name_and_type (prop, &pname, &ptype);
 			*p++ = 0x54; /* PROPERTY signature */
-			mono_metadata_encode_value (ptype->type, p, &p);
+			if (ptype->type == MONO_TYPE_VALUETYPE && ptype->data.klass->enumtype) {
+				char *str = type_get_qualified_name (ptype, NULL);
+				int slen = strlen (str);
+				if ((p-buffer) + 10 + slen >= buflen) {
+					char *newbuf;
+					buflen *= 2;
+					buflen += slen;
+					newbuf = g_realloc (buffer, buflen);
+					p = newbuf + (p-buffer);
+					buffer = newbuf;
+				}
+				*p++ = 0x55;
+				/*
+				 * This seems to be optional...
+				 * *p++ = 0x80;
+				 */
+				mono_metadata_encode_value (slen, p, &p);
+				memcpy (p, str, slen);
+				p += slen;
+				g_free (str);
+			} else {
+				mono_metadata_encode_value (ptype->type, p, &p);
+			}
 			len = strlen (pname);
 			mono_metadata_encode_value (len, p, &p);
 			memcpy (p, pname, len);
@@ -4927,7 +4963,29 @@ mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, Mo
 			field = mono_array_get (fields, gpointer, i);
 			get_field_name_and_type (field, &fname, &ftype);
 			*p++ = 0x53; /* FIELD signature */
-			mono_metadata_encode_value (ftype->type, p, &p);
+			if (ftype->type == MONO_TYPE_VALUETYPE && ftype->data.klass->enumtype) {
+				char *str = type_get_qualified_name (ftype, NULL);
+				int slen = strlen (str);
+				if ((p-buffer) + 10 + slen >= buflen) {
+					char *newbuf;
+					buflen *= 2;
+					buflen += slen;
+					newbuf = g_realloc (buffer, buflen);
+					p = newbuf + (p-buffer);
+					buffer = newbuf;
+				}
+				*p++ = 0x55;
+				/*
+				 * This seems to be optional...
+				 * *p++ = 0x80;
+				 */
+				mono_metadata_encode_value (slen, p, &p);
+				memcpy (p, str, slen);
+				p += slen;
+				g_free (str);
+			} else {
+				mono_metadata_encode_value (ftype->type, p, &p);
+			}
 			len = strlen (fname);
 			mono_metadata_encode_value (len, p, &p);
 			memcpy (p, fname, len);
