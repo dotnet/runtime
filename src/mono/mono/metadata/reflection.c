@@ -6584,9 +6584,13 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const char *data, guin
 	named += 2;
 	for (j = 0; j < num_named; j++) {
 		gint name_len;
+		gboolean is_boxed = FALSE;
 		char *name, named_type, data_type;
 		named_type = *named++;
 		data_type = *named++; /* type of data */
+		if (data_type == 0x51)
+			is_boxed = TRUE;
+
 		if (data_type == 0x55) {
 			gint type_len;
 			char *type_name;
@@ -7341,6 +7345,8 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 				memcpy (p, str, slen);
 				p += slen;
 				g_free (str);
+			} else if (ptype->type == MONO_TYPE_OBJECT) {
+				*p++ = 0x51;
 			} else {
 				mono_metadata_encode_value (ptype->type, p, &p);
 				if (ptype->type == MONO_TYPE_SZARRAY)
@@ -7385,6 +7391,8 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 				memcpy (p, str, slen);
 				p += slen;
 				g_free (str);
+			} else if (ftype->type == MONO_TYPE_OBJECT) {
+				*p++ = 0x51;
 			} else {
 				mono_metadata_encode_value (ftype->type, p, &p);
 				if (ftype->type == MONO_TYPE_SZARRAY)
