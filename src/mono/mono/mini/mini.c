@@ -2752,6 +2752,14 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 /* offset from br.s -> br like opcodes */
 #define BIG_BRANCH_OFFSET 13
 
+static gboolean
+ip_in_bb (MonoCompile *cfg, MonoBasicBlock *bb, const guint8* ip)
+{
+	MonoBasicBlock *b = g_hash_table_lookup (cfg->bb_hash, ip);
+	
+	return b == NULL || b == bb;
+}
+
 static int
 get_basic_blocks (MonoCompile *cfg, GHashTable *bbhash, MonoMethodHeader* header, guint real_offset, unsigned char *start, unsigned char *end, unsigned char **pos)
 {
@@ -4129,7 +4137,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 
-			if ((loc_index != -1) && ((g_hash_table_lookup (bbhash, ip + 5) == NULL) || (g_hash_table_lookup (bbhash, ip + 5) == bblock))) {
+			if ((loc_index != -1) && ip_in_bb (cfg, bblock, ip + 5)) {
 				CHECK_LOCAL (loc_index);
 				NEW_LOCSTORE (cfg, ins, loc_index, *sp);
 
@@ -5242,9 +5250,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else {
 				if ((ip [5] == CEE_CALL) && (cmethod = mono_get_method_full (image, read32 (ip + 6), NULL, generic_context)) &&
 						(cmethod->klass == mono_defaults.monotype_class->parent) &&
-						(strcmp (cmethod->name, "GetTypeFromHandle") == 0) && 
-					((g_hash_table_lookup (bbhash, ip + 5) == NULL) ||
-					 (g_hash_table_lookup (bbhash, ip + 5) == bblock))) {
+						(strcmp (cmethod->name, "GetTypeFromHandle") == 0) && ip_in_bb (cfg, bblock, ip + 5)) {
 					MonoClass *tclass = mono_class_from_mono_type (handle);
 					mono_class_init (tclass);
 					if (mono_compile_aot)
