@@ -1110,14 +1110,14 @@ handle_enum:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1: {
 		guint8 *p = (guint8*)dest;
-		*p = *(guint8*)value;
+		*p = value ? *(guint8*)value : 0;
 		return;
 	}
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR: {
 		guint16 *p = (guint16*)dest;
-		*p = *(guint16*)value;
+		*p = value ? *(guint16*)value : 0;
 		return;
 	}
 #if SIZEOF_VOID_P == 4
@@ -1127,7 +1127,7 @@ handle_enum:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4: {
 		gint32 *p = (gint32*)dest;
-		*p = *(gint32*)value;
+		*p = value ? *(gint32*)value : 0;
 		return;
 	}
 #if SIZEOF_VOID_P == 8
@@ -1137,17 +1137,17 @@ handle_enum:
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8: {
 		gint64 *p = (gint64*)dest;
-		*p = *(gint64*)value;
+		*p = value ? *(gint64*)value : 0;
 		return;
 	}
 	case MONO_TYPE_R4: {
 		float *p = (float*)dest;
-		*p = *(float*)value;
+		*p = value ? *(float*)value : 0;
 		return;
 	}
 	case MONO_TYPE_R8: {
 		double *p = (double*)dest;
-		*p = *(double*)value;
+		*p = value ? *(double*)value : 0;
 		return;
 	}
 	case MONO_TYPE_STRING:
@@ -1167,7 +1167,10 @@ handle_enum:
 		} else {
 			int size;
 			size = mono_class_value_size (type->data.klass, NULL);
-			memcpy (dest, value, size);
+			if (value == NULL)
+				memset (dest, 0, size);
+			else
+				memcpy (dest, value, size);
 		}
 		return;
 	default:
