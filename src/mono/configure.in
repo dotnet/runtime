@@ -2,7 +2,7 @@
 AC_INIT(README)
 AC_CANONICAL_SYSTEM
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(mono, 0.7)
+AM_INIT_AUTOMAKE(mono, 0.8)
 AM_MAINTAINER_MODE
 
 AC_CHECK_TOOL(CC, gcc, gcc)
@@ -302,6 +302,7 @@ mono/cil/Makefile
 mono/arch/Makefile
 mono/arch/x86/Makefile
 mono/arch/ppc/Makefile
+mono/arch/sparc/Makefile
 mono/interpreter/Makefile
 mono/tests/Makefile
 mono/wrapper/Makefile
@@ -310,7 +311,6 @@ mono/jit/Makefile
 mono/io-layer/Makefile
 runtime/Makefile
 scripts/Makefile
-scripts/mcs
 man/Makefile
 doc/Makefile
 ])
