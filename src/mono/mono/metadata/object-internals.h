@@ -716,6 +716,7 @@ struct _MonoReflectionModule {
 	MonoString *name;
 	MonoString *scopename;
 	MonoBoolean is_resource;
+	guint32 token;
 };
 
 typedef struct {
