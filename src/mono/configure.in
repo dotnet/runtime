@@ -1223,5 +1223,6 @@ echo "
 	SIGALTSTACK: $with_sigaltstack
 	Engine:      $jit_status
 	2.0 Alpha:   $PREVIEW
-	
+	JNI support: $jdk_headers_found
+
 "
