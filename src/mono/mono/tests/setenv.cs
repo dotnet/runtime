@@ -7,7 +7,7 @@ namespace Test {
 		[DllImport("libc")]
 		static extern int setenv(string name, string value, int overwrite);
 		[DllImport("libc")]
-		static extern string getenv(string name);
+		static extern IntPtr getenv(string name);
 
 		static int Main() {
 			try {
@@ -15,7 +15,7 @@ namespace Test {
 				string value = "val";
 
 				setenv (name, value, 1);
-				string ret = getenv (name);
+				string ret = Marshal.PtrToStringAnsi (getenv (name));
 
 				if (ret != value)
 					return 1;
