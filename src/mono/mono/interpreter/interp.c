@@ -5001,7 +5001,7 @@ quit_function (MonoDomain *domain, gpointer user_data)
 	mono_profiler_shutdown ();
 	
 	mono_runtime_cleanup (domain);
-	mono_domain_unload (domain, TRUE);
+	mono_domain_free (domain, TRUE);
 
 }
 
