@@ -25,7 +25,7 @@
 
 #include <locale.h>
 
-//#undef DEBUG
+#undef DEBUG
 
 static gint32 string_invariant_compare_char (gunichar2 c1, gunichar2 c2,
 					     gint32 options);
@@ -1875,15 +1875,6 @@ static gint32 string_invariant_compare_char (gunichar2 c1, gunichar2 c2,
 		/* No options. Kana, symbol and spacing options don't
 		 * apply to the invariant culture.
 		 */
-		if (c1type == G_UNICODE_UPPERCASE_LETTER &&
-		    c2type == G_UNICODE_LOWERCASE_LETTER) {
-			return(1);
-		}
-					
-		if (c1type == G_UNICODE_LOWERCASE_LETTER &&
-		    c2type == G_UNICODE_UPPERCASE_LETTER) {
-			return(-1);
-		}
 		
 		result = (gint32) c1 - c2;
 	}
