@@ -7781,7 +7781,6 @@ sigint_signal_handler (int _dummy)
 static void
 mono_runtime_install_handlers (void)
 {
-	gboolean skip_sigabort = FALSE;
 #ifndef PLATFORM_WIN32
 	struct sigaction sa;
 #endif
@@ -7835,14 +7834,7 @@ mono_runtime_install_handlers (void)
 	sa.sa_flags = 0;
 	//g_assert (syscall (SYS_sigaction, SIGILL, &sa, NULL) != -1);
 
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-	if (RUNNING_ON_VALGRIND)
-		/* valgrind 20030725 and earlier aborts on this call so we skip it */
-		skip_sigabort = TRUE;
-#endif
-
-	if (!skip_sigabort)
-		g_assert (sigaction (mono_thread_get_abort_signal (), &sa, NULL) != -1);
+	g_assert (sigaction (mono_thread_get_abort_signal (), &sa, NULL) != -1);
 
 #if 1
 	/* catch SIGSEGV */
