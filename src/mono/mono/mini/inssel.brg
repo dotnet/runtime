@@ -1233,6 +1233,8 @@ stmt: OP_ENDFILTER (reg) "2" {
 }
 
 stmt: OP_CHECK_THIS (reg) {
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -1788,6 +1790,7 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 	tree->dreg = state->reg1;
 	tree->opcode = virtop;
 	tree->sreg1 = slot_reg;
+	((MonoCallInst*)tree)->virtual = TRUE;
 	mono_bblock_add_inst (cfg->cbb, tree);
 }
 

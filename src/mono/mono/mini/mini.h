@@ -254,6 +254,7 @@ struct MonoCallInst {
 	MonoInst *out_args;
 	gconstpointer fptr;
 	guint stack_usage;
+	gboolean virtual;
 	regmask_t used_iregs;
 	regmask_t used_fregs;
 };
