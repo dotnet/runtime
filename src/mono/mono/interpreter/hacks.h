@@ -44,6 +44,17 @@
 
 #else
 
+/*  isunordered seems to crash on HPUX when built 64 bits
+    so use generic implementation.
+*/
+#if defined(__hpux) && SIZEOF_VOID_P == 8
+#undef isunordered
+#undef islessgreater
+#undef islessequal
+#undef isless
+#undef isgreater
+#endif
+
 #ifndef isunordered
 #   define isunordered(u, v) (isnan(u) || isnan(v))
 #endif
