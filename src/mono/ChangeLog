@@ -1,3 +1,8 @@
+2002-03-18  Dick Porter  <dick@ximian.com>
+
+	* configure.in: Only look for libgc on the system.  Default to not
+	using GC at all, because it doesn't work with the jit.
+
 2002-03-17  Miguel de Icaza  <miguel@ximian.com>
 
 	* configure.in: Add support for building the included boehm GC.

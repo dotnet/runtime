@@ -1163,9 +1163,9 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 		alloc_table (table, table->rows);
 		values = table->values + (i + 1) * MONO_INTERFACEIMPL_SIZE;
 		for (i = 0; i < mono_array_length (tb->interfaces); ++i) {
-			MonoReflectionType* interface = (MonoReflectionType*) mono_array_get (tb->interfaces, gpointer, i);
+			MonoReflectionType* iface = (MonoReflectionType*) mono_array_get (tb->interfaces, gpointer, i);
 			values [MONO_INTERFACEIMPL_CLASS] = tb->table_idx;
-			values [MONO_INTERFACEIMPL_INTERFACE] = mono_image_typedef_or_ref (assembly, interface->type);
+			values [MONO_INTERFACEIMPL_INTERFACE] = mono_image_typedef_or_ref (assembly, iface->type);
 			values += MONO_INTERFACEIMPL_SIZE;
 		}
 	}
