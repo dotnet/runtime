@@ -381,8 +381,10 @@ do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		}
 	}
 	g_free (name);
-	if (image)
+	if (image) {
+		InterlockedIncrement (&image->ref_count);
 		return image;
+	}
 #endif
 	image = mono_image_open (filename, status);
 	return image;
@@ -640,7 +642,7 @@ mono_assembly_close (MonoAssembly *assembly)
 			mono_image_close (image->references [i]->image);
 		g_free (image->references);
 	}
-	     
+
 	mono_image_close (assembly->image);
 
 	g_free (assembly->basedir);
