@@ -319,19 +319,6 @@ mini_regression (MonoImage *image, int verbose, int *total_run) {
 					code_size += cfg->code_len;
 					mono_destroy_compile (cfg);
 
-					if (mono_trace_coverage) {
-						MonoCoverageInfo *cov = mono_get_coverage_info (method);
-
-						if (cov) {
-							int k;
-							printf ("COVERAGE INFO %s\n", mono_method_full_name (method, TRUE));
-						
-							for (k = 0; k < cov->entries; k++) {
-								printf ("  BBLOCK %3d %d\n", cov->data [k].iloffset, cov->data [k].count);
-							}
-						}
-					}
-
 				} else {
 					cfailed++;
 					if (verbose)
@@ -494,7 +481,6 @@ mini_usage (void)
 		"Development:\n"
 		"    --statfile FILE        Sets the stat file to FILE\n"
 		"    --aot                  Compiles the assembly to native code\n"
-		"    --coverage             Performs coverage analysis\n"
 		"    --profile[=profiler]   Runs in profiling mode with the specified profiler module\n"
 		"    --graph[=TYPE] METHOD  Draws a graph of the specified method:\n");
 	
@@ -574,15 +560,11 @@ mono_main (int argc, char* argv[]) {
 			mono_jit_stats.enabled = TRUE;
 		} else if (strcmp (argv [i], "--aot") == 0) {
 			mono_compile_aot = TRUE;
-		} else if (strcmp (argv [i], "--coverage") == 0) {
-			mono_trace_coverage = TRUE;
 		} else if (strcmp (argv [i], "--compile-all") == 0) {
 			action = DO_COMPILE;
 		} else if (strcmp (argv [i], "--profile") == 0) {
-			mono_jit_profile = TRUE;
 			mono_profiler_load (NULL);
 		} else if (strncmp (argv [i], "--profile=", 10) == 0) {
-			mono_jit_profile = TRUE;
 			mono_profiler_load (argv [i] + 10);
 		} else if (strcmp (argv [i], "--compile") == 0) {
 			mname = argv [++i];
@@ -598,7 +580,7 @@ mono_main (int argc, char* argv[]) {
 		} else if (strcmp (argv [i], "--debug") == 0) {
 			enable_debugging = TRUE;
 		} else {
-			fprintf (stderr, "Unknown command line option: %s\n", argv [i]);
+			fprintf (stderr, "Unknown command line option: '%s'\n", argv [i]);
 			return 1;
 		}
 	}

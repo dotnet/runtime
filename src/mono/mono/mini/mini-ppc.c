@@ -1869,7 +1869,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	cpos = bb->max_offset;
 
-	if (mono_trace_coverage) {
+	if (cfg->prof_options & MONO_PROFILE_COVERAGE) {
 		//MonoCoverageInfo *cov = mono_get_coverage_info (cfg->method);
 		//g_assert (!mono_compile_aot);
 		//cpos += 6;
@@ -2671,7 +2671,7 @@ mono_arch_max_epilog_size (MonoCompile *cfg)
 	if (mono_jit_trace_calls)
 		max_epilog_size += 50;
 
-	if (mono_jit_profile)
+	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
 		max_epilog_size += 50;
 
 	/* count the number of exception infos */
@@ -2772,7 +2772,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			MonoInst *ins = bb->code;
 			bb->max_offset = max_offset;
 
-			if (mono_trace_coverage)
+			if (cfg->prof_options & MONO_PROFILE_COVERAGE)
 				max_offset += 6; 
 
 			while (ins) {

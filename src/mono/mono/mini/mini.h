@@ -84,8 +84,6 @@ extern gboolean mono_jit_trace_calls;
 extern gboolean mono_break_on_exc;
 extern int mono_exc_esp_offset;
 extern gboolean mono_compile_aot;
-extern gboolean mono_trace_coverage;
-extern gboolean mono_jit_profile;
 
 extern CRITICAL_SECTION *metadata_section;
 
@@ -440,6 +438,7 @@ typedef struct {
 	guint            epilog_begin;
 	guint32          used_int_regs;
 	guint32          opt;
+	guint32          prof_options;
 	guint32          flags;
 	guint32          comp_done;
 	guint32          verbose_level;
@@ -450,6 +449,7 @@ typedef struct {
 	gboolean         disable_aot;
 	gboolean         disable_ssa;
 	gpointer         debug_info;
+	gpointer         coverage_info;
 	guint16          *intvars;
 } MonoCompile;
 
@@ -457,14 +457,6 @@ typedef enum {
 	MONO_CFG_HAS_ALLOCA = 1 << 0,
 	MONO_CFG_HAS_CALLS  = 1 << 1
 } MonoCompileFlags;
-
-typedef struct {
-	int entries;
-	struct {
-		int iloffset;
-		int count;
-	} data [0];
-} MonoCoverageInfo;
 
 typedef struct {
 	gulong methods_compiled;
@@ -622,9 +614,6 @@ MonoJitICallInfo *mono_find_jit_icall_by_name  (const char *name);
 MonoJitICallInfo *mono_find_jit_icall_by_addr  (gconstpointer addr);
 MonoJitICallInfo *mono_register_jit_icall      (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save);
 gconstpointer     mono_icall_get_wrapper       (MonoJitICallInfo* callinfo);
-
-MonoCoverageInfo *mono_allocate_coverage_info (MonoMethod *method, int size);
-MonoCoverageInfo *mono_get_coverage_info      (MonoMethod *method);
 
 /* methods that must be provided by the arch-specific port */
 guint32   mono_arch_cpu_optimizazions           (guint32 *exclude_mask);

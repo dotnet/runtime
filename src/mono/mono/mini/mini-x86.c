@@ -1948,17 +1948,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	cpos = bb->max_offset;
 
-	if (mono_trace_coverage) {
-		MonoCoverageInfo *cov = mono_get_coverage_info (cfg->method);
+	if (cfg->prof_options & MONO_PROFILE_COVERAGE) {
+		MonoProfileCoverageInfo *cov = cfg->coverage_info;
 		g_assert (!mono_compile_aot);
 		cpos += 6;
 
-		// fixme: make this work with inlining
-		g_assert_not_reached ();
-		//if (bb->cil_code)
-		//cov->data [bb->dfn].iloffset = bb->cil_code - cfg->cil_code;
+		cov->data [bb->dfn].cil_code = bb->cil_code;
 		/* this is not thread save, but good enough */
-		/* fixme: howto handle overflows? */
 		x86_inc_mem (code, &cov->data [bb->dfn].count); 
 	}
 
@@ -2257,7 +2253,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			int pos = 0;
 
 			/* FIXME: no tracing support... */
-			if (mono_jit_profile)
+			if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
 				code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
 			/* reset offset to make max_len work */
 			offset = code - cfg->native_code;
@@ -3050,7 +3046,7 @@ mono_arch_max_epilog_size (MonoCompile *cfg)
 	if (mono_jit_trace_calls)
 		max_epilog_size += 50;
 
-	if (mono_jit_profile)
+	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
 		max_epilog_size += 50;
 
 	/* count the number of exception infos */
@@ -3145,7 +3141,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			MonoInst *ins = bb->code;
 			bb->max_offset = max_offset;
 
-			if (mono_trace_coverage)
+			if (cfg->prof_options & MONO_PROFILE_COVERAGE)
 				max_offset += 6; 
 
 			while (ins) {

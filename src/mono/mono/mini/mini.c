@@ -93,8 +93,6 @@ guint32 mono_jit_tls_id = 0;
 gboolean mono_jit_trace_calls = FALSE;
 gboolean mono_break_on_exc = FALSE;
 gboolean mono_compile_aot = FALSE;
-gboolean mono_trace_coverage = FALSE;
-gboolean mono_jit_profile = FALSE;
 
 CRITICAL_SECTION *metadata_section = NULL;
 
@@ -502,34 +500,6 @@ print_method_from_ip (void *ip)
 		(dest)->inst_right = (el2);	\
 	} while (0)
 
-static GHashTable *coverage_hash = NULL;
-
-MonoCoverageInfo *
-mono_allocate_coverage_info (MonoMethod *method, int size)
-{
-	MonoCoverageInfo *res;
-
-	if (!coverage_hash)
-		coverage_hash = g_hash_table_new (NULL, NULL);
-
-	res = g_malloc0 (sizeof (MonoCoverageInfo) + sizeof (int) * size * 2);
-
-	res->entries = size;
-
-	g_hash_table_insert (coverage_hash, method, res);
-
-	return res;
-}
-
-MonoCoverageInfo *
-mono_get_coverage_info (MonoMethod *method)
-{
-	if (!coverage_hash)
-		return NULL;
-
-	return g_hash_table_lookup (coverage_hash, method);
-}
-		
 #if 0
 static gint
 compare_bblock (gconstpointer a, gconstpointer b)
@@ -6134,12 +6104,12 @@ mono_codegen (MonoCompile *cfg)
 		mono_arch_local_regalloc (cfg, bb);
 	}
 
-	if (mono_trace_coverage)
-		mono_allocate_coverage_info (cfg->method, cfg->num_bblocks);
+	if (cfg->prof_options & MONO_PROFILE_COVERAGE)
+		cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, cfg->num_bblocks);
 
 	code = mono_arch_emit_prolog (cfg);
 
-	if (mono_jit_profile)
+	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
 		code = mono_arch_instrument_prolog (cfg, mono_profiler_method_enter, code, FALSE);
 
 	cfg->code_len = code - cfg->native_code;
@@ -6171,7 +6141,7 @@ mono_codegen (MonoCompile *cfg)
 
 	cfg->epilog_begin = cfg->code_len;
 
-	if (mono_jit_profile)
+	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
 		code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
 
 	cfg->code_len = code - cfg->native_code;
@@ -6407,13 +6377,14 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 	int dfn = 0, i, code_size_ratio;
 
 	mono_jit_stats.methods_compiled++;
-	if (mono_jit_profile)
+	if (mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)
 		mono_profiler_method_jit (method);
 
 	cfg = g_new0 (MonoCompile, 1);
 	cfg->method = method;
 	cfg->mempool = mono_mempool_new ();
 	cfg->opt = opts;
+	cfg->prof_options = mono_profiler_get_events ();
 	cfg->bb_hash = g_hash_table_new (g_direct_hash, NULL);
 	cfg->domain = domain;
 	cfg->verbose_level = mini_verbose;
@@ -6429,9 +6400,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 		g_print ("converting method %s\n", mono_method_full_name (method, TRUE));
 
 	if ((i = mono_method_to_ir (cfg, method, NULL, NULL, cfg->locals_start, NULL, NULL, NULL, 0, FALSE)) < 0) {
-		mono_destroy_compile (cfg);
-		if (mono_jit_profile)
+		if (cfg->prof_options & MONO_PROFILE_JIT_COMPILATION)
 			mono_profiler_method_end_jit (method, MONO_PROFILE_FAILED);
+		mono_destroy_compile (cfg);
 		return NULL;
 	}
 
@@ -6628,7 +6599,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 	}
 	mono_jit_stats.native_code_size += cfg->code_len;
 
-	if (mono_jit_profile)
+	if (cfg->prof_options & MONO_PROFILE_JIT_COMPILATION)
 		mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
 
 	return cfg;
