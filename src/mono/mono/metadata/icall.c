@@ -39,6 +39,8 @@ ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
 	gint32 i, pos, *ind, esize;
 	gpointer *ea;
 
+	MONO_CHECK_ARG_NULL (idxs);
+
 	io = (MonoArray *)idxs;
 	ic = (MonoClass *)io->obj.vtable->klass;
 	
@@ -46,7 +48,7 @@ ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
 	ac = (MonoClass *)ao->obj.vtable->klass;
 
 	g_assert (ic->rank == 1);
-	g_assert (io->bounds [0].length == ac->rank);
+	MONO_CHECK_ARG (idxs, io->bounds [0].length == ac->rank);
 
 	ind = (guint32 *)io->vector;
 
@@ -74,6 +76,8 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 	gint32 i, pos, *ind, esize;
 	gpointer *ea;
 
+	MONO_CHECK_ARG_NULL (idxs);
+
 	vo = (MonoArray *)value;
 	if (vo)
 		vc = (MonoClass *)vo->obj.vtable->klass;
@@ -87,9 +91,11 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 	ac = (MonoClass *)ao->obj.vtable->klass;
 
 	g_assert (ic->rank == 1);
-	g_assert (io->bounds [0].length == ac->rank);
+	MONO_CHECK_ARG (idxs, io->bounds [0].length == ac->rank);
+
 	if (vo && !mono_object_isinst (value, ac->element_class)) {
-		g_error ("Array not compatible: %s <= %s", ac->element_class->name, vc->name);
+		mono_raise_exception (mono_get_exception_array_type_mismatch ());
+		return;
 	}
 
 	ind = (guint32 *)io->vector;
@@ -107,7 +113,7 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 			g_assert (vc->valuetype);
 			memcpy (ea, (char *)vo + sizeof (MonoObject), esize);
 		} else
-			memset (ea, '0',  esize);
+			memset (ea, 0,  esize);
 	} else
 		*ea = (gpointer)vo;
 
@@ -116,10 +122,9 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 static void
 ves_icall_System_Array_CreateInstanceImpl ()
 {
-	g_warning ("not implemented");
-	g_assert_not_reached ();
+	g_warning (G_STRLOC ": not implemented");
+	mono_raise_exception (mono_get_exception_not_implemented ());
 }
-
 
 static gint32 
 ves_icall_System_Array_GetRank (MonoObject *this)
@@ -130,12 +135,16 @@ ves_icall_System_Array_GetRank (MonoObject *this)
 static gint32
 ves_icall_System_Array_GetLength (MonoArray *this, gint32 dimension)
 {
+	gint32 rank = ((MonoObject *)this)->vtable->klass->rank;
+	MONO_CHECK_ARG (dimension, (dimension >= 0) && (dimension <= rank));
 	return this->bounds [dimension].length;
 }
 
 static gint32
 ves_icall_System_Array_GetLowerBound (MonoArray *this, gint32 dimension)
 {
+	gint32 rank = ((MonoObject *)this)->vtable->klass->rank;
+	MONO_CHECK_ARG (dimension, (dimension >= 0) && (dimension <= rank));
 	return this->bounds [dimension].lower_bound;
 }
 
