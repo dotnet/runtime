@@ -122,7 +122,7 @@
                     <img src="images/macos-36.gif"><b>Mac OS X package</b>
 		  </td>
 		  <td>
-		    <a href="archive/beta3/macos/MonoFramework-1.0.dmg">MonoFramework-1.0.dmg</a> in /Library/Framework
+		    <a href="archive/1.0/macos/MonoFramework-1.0.dmg">MonoFramework-1.0.dmg</a> in /Library/Framework
 		  </td>
 		</tr>
              </table>
