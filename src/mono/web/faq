@@ -1352,6 +1352,11 @@ Q: Are you working on a GCC front-end to C#? A GCC back-end that will
 A: We would love to see a GCC modification that would generate CIL
    images, but there is nothing at this point.
 
+   The open64 compiler effort from SGI already has modified GCC to
+   generate a new intermediate language instead of RTL.  This could be
+   the foundation to generate CIL code, and to implement the upcoming
+   Managed extensions to C++ from ECMA.
+
 Q: What about making a front-end to GCC that takes CIL images and
    generates native code?
 
@@ -1636,8 +1641,12 @@ A: It's possible to run VC++ generated apps under Mono, but we do not
 
 Q: Does Mono support generics?.
 
-A: Mono doesn't support generics currently but a lot of work is being 
-   done towards it.
+A: Yes, the Mono runtime now supports the new Generics extensions, and
+   there is also support for generics in our new compiler: `gmcs'.
+
+   The Mono C# 1.0 compiler (mcs) will ship with various C# 2.0
+   features, but generics will remain on the separate compiler (gmcs)
+   as this code is not as tested as the main compiler.
 
 <a name="problems"></a>
 ** Mono Common Problems
