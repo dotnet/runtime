@@ -1,5 +1,11 @@
 2004-04-28  Jackson Harper  <jackson@ximian.com>
 
+	* runtime/net_1_1/Makefile.am: Grab libs from proper directory, do
+	not assume gacutil is installed.
+	* runtime/net_2_0/Makefile.am: Do not assume gacutil is installed.
+	
+2004-04-28  Jackson Harper  <jackson@ximian.com>
+
 	* configure.in: Add new Makefile.amS
 	* runtime/Makefile.am: libs are now in profile dependant
 	directories.
