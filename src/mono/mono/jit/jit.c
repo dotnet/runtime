@@ -3661,26 +3661,22 @@ mono_get_runtime_method (MonoMethod* method)
 {
 	MonoMethod *nm;
 	const char *name = method->name;
-	guint8 *addr = NULL;
-	gboolean delegate = FALSE;
 
-	if (method->klass->parent == mono_defaults.multicastdelegate_class)
-		delegate = TRUE;
-				
-	if (delegate && *name == '.' && (strcmp (name, ".ctor") == 0)) {
-		addr = (gpointer)mono_delegate_ctor;
-	} else if (delegate && *name == 'I' && (strcmp (name, "Invoke") == 0)) {
-		MonoMethod *invoke = mono_marshal_get_delegate_invoke (method);
-		addr = mono_compile_method (invoke);
-	} else if (delegate && *name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
-		nm = mono_marshal_get_delegate_begin_invoke (method);
-		addr = mono_compile_method (nm);
-	} else if (delegate && *name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
-		nm = mono_marshal_get_delegate_end_invoke (method);
-		addr = mono_compile_method (nm);
+	if (method->klass->parent == mono_defaults.multicastdelegate_class) {
+		if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
+			return (gpointer)mono_delegate_ctor;
+		} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
+		        nm = mono_marshal_get_delegate_invoke (method);
+			return mono_compile_method (nm);
+		} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
+			nm = mono_marshal_get_delegate_begin_invoke (method);
+			return mono_compile_method (nm);
+		} else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
+			nm = mono_marshal_get_delegate_end_invoke (method);
+			return mono_compile_method (nm);
+		}
 	}
-
-	return addr;
+	return NULL;
 }
 
 static int
