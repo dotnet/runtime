@@ -499,6 +499,24 @@ Q: What operating systems does Mono run on?
 
 A: Mono is known to run on Linux, Unix and Windows systems.   
 
+Q: Can I run Mono applications without using `mono program.exe'?
+
+A: Yes, this is possible on Linux systems, to do this, use something like:
+
+<pre>
+if [ ! -e /proc/sys/fs/binfmt_misc/register ]; then
+	/sbin/modprobe binfmt_misc
+	mount -t binfmt_misc none /proc/sys/fs/binfmt_misc
+fi
+
+if [ -e /proc/sys/fs/binfmt_misc/register ]; then
+	echo ':CLR:M::MZ::/usr/bin/mono:' > /proc/sys/fs/binfmt_misc/register
+else
+	echo "No binfmt_misc support"
+	exit 1
+fi
+</pre>
+
 Q: What architectures does Mono support?
 
 A: Mono today ships with a Just-in-Time compiler for x86-based
