@@ -1351,6 +1351,15 @@
             <maintainer>dholden@draper.com</maintainer>
         </maintainers>
     </class>
+    <class name="System.Globalization.NumberFormatInfo">
+        <last-activity>Jul-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>dholden@draper.com</maintainer>
+        </maintainers>
+    </class>
     
     <class name="System.Security.Criptography.HashAlgorithm">
         <last-activity>Jul-20-2001</last-activity>
