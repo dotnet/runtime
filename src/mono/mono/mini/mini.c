@@ -2061,8 +2061,9 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		cmethod->inline_info = 1;
 	}
 	/* allocate space to store the return value */
-	if (!MONO_TYPE_IS_VOID (fsig->ret)) 
+	if (!MONO_TYPE_IS_VOID (fsig->ret)) {
 		rvar =  mono_compile_create_var (cfg, fsig->ret, OP_LOCAL);
+	}
 
 	/* allocate local variables */
 	new_locals_offset = cfg->num_varinfo;
@@ -2684,14 +2685,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					GET_BBLOCK (cfg, bbhash, bblock, ip);
 					ebblock->next_bb = bblock;
 					link_bblock (cfg, ebblock, bblock);
+
  					if (!MONO_TYPE_IS_VOID (fsig->ret))
  						sp++;
 
 					if (sp != stack_start) {
 						handle_stack_args (cfg, ebblock, stack_start, sp - stack_start);
-						sp = stack_start;
+					       	sp = stack_start;
 					}
-					start_new_bblock = 1;
+				       	start_new_bblock = 1;
 
 					inline_costs += costs;
 					break;
@@ -3297,6 +3299,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_STFLD: {
 			MonoInst *offset_ins;
 			MonoClassField *field;
+			MonoBasicBlock *ebblock;
+			int costs;
 			guint foffset;
 
 			if (*ip == CEE_STFLD) {
@@ -3312,19 +3316,44 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 			field = mono_field_from_token (image, token, &klass);
 			mono_class_init (klass);
+
 			foffset = klass->valuetype? field->offset - sizeof (MonoObject): field->offset;
 			/* FIXME: mark instructions for use in SSA */
 			if (*ip == CEE_STFLD) {
 				if (klass->marshalbyref && !MONO_CHECK_THIS (sp [0])) {
-					/* fixme: we need to inline that call somehow */
 					MonoMethod *stfld_wrapper = mono_marshal_get_stfld_wrapper (field->type); 
 					MonoInst *iargs [5];
+
 					iargs [0] = sp [0];
 					NEW_CLASSCONST (cfg, iargs [1], klass);
 					NEW_FIELDCONST (cfg, iargs [2], field);
-					NEW_ICONST (cfg, iargs [3], klass->valuetype ? field->offset - sizeof (MonoObject) : field->offset);
+					NEW_ICONST (cfg, iargs [3], klass->valuetype ? field->offset - sizeof (MonoObject) : 
+						    field->offset);
 					iargs [4] = sp [1];
-					mono_emit_method_call_spilled (cfg, bblock, stfld_wrapper, iargs, ip, NULL);
+
+					if (cfg->opt & MONO_OPT_INLINE) {
+						costs = inline_method (cfg, stfld_wrapper, stfld_wrapper->signature, bblock, 
+								       iargs, ip, real_offset, dont_inline, &ebblock);
+						g_assert (costs > 0);
+						      
+						ip += 5;
+						real_offset += 5;
+
+						GET_BBLOCK (cfg, bbhash, bblock, ip);
+						ebblock->next_bb = bblock;
+						link_bblock (cfg, ebblock, bblock);
+
+						if (sp != stack_start) {
+							handle_stack_args (cfg, ebblock, stack_start, sp - stack_start);
+							sp = stack_start;
+						}
+						start_new_bblock = 1;
+
+						inline_costs += costs;
+						break;
+					} else {
+						mono_emit_method_call_spilled (cfg, bblock, stfld_wrapper, iargs, ip, NULL);
+					}
 				} else {
 					MonoInst *store;
 					NEW_ICONST (cfg, offset_ins, foffset);
@@ -3353,18 +3382,51 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoMethod *ldfld_wrapper = mono_marshal_get_ldfld_wrapper (field->type); 
 					MonoInst *iargs [4];
 					int temp;
+					
 					iargs [0] = sp [0];
 					NEW_CLASSCONST (cfg, iargs [1], klass);
 					NEW_FIELDCONST (cfg, iargs [2], field);
 					NEW_ICONST (cfg, iargs [3], klass->valuetype ? field->offset - sizeof (MonoObject) : field->offset);
-					temp = mono_emit_method_call_spilled (cfg, bblock, ldfld_wrapper, iargs, ip, NULL);
-					if (*ip == CEE_LDFLDA) {
-						/* not sure howto handle this */
-						NEW_TEMPLOADA (cfg, *sp, temp);
+					if (cfg->opt & MONO_OPT_INLINE) {
+						costs = inline_method (cfg, ldfld_wrapper, ldfld_wrapper->signature, bblock, 
+								       iargs, ip, real_offset, dont_inline, &ebblock);
+						g_assert (costs > 0);
+						      
+						ip += 5;
+						real_offset += 5;
+
+						GET_BBLOCK (cfg, bbhash, bblock, ip);
+						ebblock->next_bb = bblock;
+						link_bblock (cfg, ebblock, bblock);
+
+						temp = iargs [0]->inst_i0->inst_c0;
+
+						if (*ip == CEE_LDFLDA) {
+							/* not sure howto handle this */
+							NEW_TEMPLOADA (cfg, *sp, temp);
+						} else {
+							NEW_TEMPLOAD (cfg, *sp, temp);
+						}
+						sp++;
+
+						if (sp != stack_start) {
+							handle_stack_args (cfg, ebblock, stack_start, sp - stack_start);
+							sp = stack_start;
+						}
+						start_new_bblock = 1;
+						
+						inline_costs += costs;
+						break;
 					} else {
-						NEW_TEMPLOAD (cfg, *sp, temp);
+						temp = mono_emit_method_call_spilled (cfg, bblock, ldfld_wrapper, iargs, ip, NULL);
+						if (*ip == CEE_LDFLDA) {
+							/* not sure howto handle this */
+							NEW_TEMPLOADA (cfg, *sp, temp);
+						} else {
+							NEW_TEMPLOAD (cfg, *sp, temp);
+						}
+						sp++;
 					}
-					sp++;
 				} else {
 					NEW_ICONST (cfg, offset_ins, foffset);
 					MONO_INST_NEW (cfg, ins, CEE_ADD);
