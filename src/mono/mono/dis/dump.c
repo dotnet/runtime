@@ -839,3 +839,21 @@ dump_table_nestedclass (MonoImage *m)
 	
 }
 
+void
+dump_table_exported (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_EXPORTEDTYPE];
+	guint32 cols [MONO_EXP_TYPE_SIZE];
+	int i;
+	const char *name, *nspace;
+	fprintf (output, "ExportedType Table (1..%d)\n", t->rows);
+
+	for (i = 1; i <= t->rows; i++) {
+		mono_metadata_decode_row (t, i - 1, cols, MONO_EXP_TYPE_SIZE);
+		name = mono_metadata_string_heap (m, cols [MONO_EXP_TYPE_NAME]);
+		nspace = mono_metadata_string_heap (m, cols [MONO_EXP_TYPE_NAMESPACE]);
+		fprintf (output, "%d: %s %s\n", i, name, nspace);
+	}
+	
+}
+

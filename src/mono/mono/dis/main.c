@@ -805,6 +805,7 @@ struct {
 	{ "--param",       MONO_TABLE_PARAM,       dump_table_param },
 	{ "--typedef",     MONO_TABLE_TYPEDEF,     dump_table_typedef },
 	{ "--typeref",     MONO_TABLE_TYPEREF,     dump_table_typeref },
+	{ "--exported",    MONO_TABLE_EXPORTEDTYPE,     dump_table_exported },
 	{ "--nested",      MONO_TABLE_NESTEDCLASS, dump_table_nestedclass },
 	{ "--interface",   MONO_TABLE_INTERFACEIMPL,     dump_table_interfaceimpl },
 	{ "--classlayout", MONO_TABLE_CLASSLAYOUT, dump_table_class_layout },

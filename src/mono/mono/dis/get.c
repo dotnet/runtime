@@ -42,7 +42,7 @@ get_module (MonoImage *m, int idx)
 	 */
 	g_assert (idx == 1);
 	    
-	mono_metadata_decode_row (&m->tables [MONO_TABLE_MODULEREF], idx - 1, cols, MONO_MODULE_SIZE);
+	mono_metadata_decode_row (&m->tables [MONO_TABLE_MODULE], idx - 1, cols, MONO_MODULE_SIZE);
 
 	return g_strdup (mono_metadata_string_heap (m, cols [MONO_MODULE_NAME]));
 }
@@ -205,25 +205,21 @@ get_typeref (MonoImage *m, int idx)
 	t = mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAME]);
 	s = mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAMESPACE]);
 
-	rs_idx = cols [MONO_TYPEREF_SCOPE] >> 2;
-	/*
-	 * Two bits in Beta2.
-	 * ECMA spec claims 3 bits
-	 */
-	table = cols [MONO_TYPEREF_SCOPE] & 3;
+	rs_idx = cols [MONO_TYPEREF_SCOPE] >> RESOLTION_SCOPE_BITS;
+	table = cols [MONO_TYPEREF_SCOPE] & RESOLTION_SCOPE_MASK;
 	
 	switch (table){
-	case 0: /* Module */
+	case RESOLTION_SCOPE_MODULE: /* Module */
 		x = get_module (m, rs_idx);
-		ret = g_strdup_printf ("TODO:TypeRef-Module [%s] %s.%s", x, s, t);
+		ret = g_strdup_printf ("[%s] %s.%s", x, s, t);
 		g_free (x);
 		break;
 
-	case 1: /* ModuleRef */
+	case RESOLTION_SCOPE_MODULEREF: /* ModuleRef */
 		ret = g_strdup_printf ("TODO:TypeRef-ModuleRef (%s.%s)", s, t);
 		break;
 			      
-	case 2: /*
+	case RESOLTION_SCOPE_ASSEMBLYREF: /*
 		 * AssemblyRef (ECMA docs claim it is 3, but it looks to
 		 * me like it is 2 (tokens are prefixed with 0x23)
 		 */
@@ -232,7 +228,7 @@ get_typeref (MonoImage *m, int idx)
 		g_free (x);
 		break;
 		
-	case 4: /* TypeRef */
+	case RESOLTION_SCOPE_TYPEREF: /* TypeRef */
 		ret =  g_strdup_printf ("TODO:TypeRef-TypeRef: TYPEREF! (%s.%s)", s, t);
 		break;
 		
