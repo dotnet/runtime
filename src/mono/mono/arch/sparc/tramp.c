@@ -29,14 +29,16 @@
 static void
 fake_func (void (*callme)(gpointer, gpointer), stackval *retval, void *this_obj, stackval *arguments)
 {
-	//*(gpointer*)retval = (gpointer)(*callme) (arguments [0].data.p, arguments [1].data.p, arguments [2].data.p);
-	//*(gdouble*) retval = (gdouble)(*callme) (arguments [0].data.f);
+	/*
+	   *(gpointer*)retval = (gpointer)(*callme) (arguments [0].data.p, arguments [1].data.p, arguments [2].data.p);
+	   *(gdouble*) retval = (gdouble)(*callme) (arguments [0].data.f);
+	*/
 	
 	/* internal_from_handle() */
 	/* return (gpointer)(*callme) (((MonoType *)arguments [0].data.p)->data.klass); */
 	
 	/* InitializeArray() */
-	return (*callme) (arguments [0].data.p, arguments [1].data.p);
+	(*callme) (arguments [0].data.p, arguments [1].data.p);
 }
 
 static const char *
