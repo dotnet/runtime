@@ -5,6 +5,7 @@
 #include <mono/metadata/class.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
+#include <mono/metadata/debug-mono-symfile.h>
 #include <mono/jit/codegen.h>
 #include <mono/jit/debug.h>
 
@@ -64,15 +65,6 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 					debug_arg_warning ("The `objfile' argument can be given only once.");
 				debug->objfile = g_strdup (arg + 8);
 				continue;
-			} else if (!strcmp (arg, "install_il_files")) {
-				debug->flags |= MONO_DEBUG_FLAGS_INSTALL_IL_FILES;
-				continue;
-			} else if (!strcmp (arg, "dont_update_il_files")) {
-				debug->flags |= MONO_DEBUG_FLAGS_DONT_UPDATE_IL_FILES;
-				continue;
-			} else if (!strcmp (arg, "dont_create_il_files")) {
-				debug->flags |= MONO_DEBUG_FLAGS_DONT_CREATE_IL_FILES;
-				continue;
 			}
 			break;
 		case MONO_DEBUG_FORMAT_DWARF2_PLUS:
@@ -83,17 +75,34 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 				debug->flags |= MONO_DEBUG_FLAGS_DONT_PRECOMPILE;
 				continue;
 			}
+			debug->flags |= MONO_DEBUG_FLAGS_DONT_UPDATE_IL_FILES |
+				MONO_DEBUG_FLAGS_DONT_CREATE_IL_FILES;
+			break;
+		case MONO_DEBUG_FORMAT_MONO:
+			debug->flags |= MONO_DEBUG_FLAGS_DONT_UPDATE_IL_FILES |
+				MONO_DEBUG_FLAGS_DONT_CREATE_IL_FILES;
 			break;
 		default:
 			break;
 		}
 
-		if (!strcmp (arg, "dont_assemble")) {
-			debug->flags |= MONO_DEBUG_FLAGS_DONT_ASSEMBLE;
-			continue;
-		} else if (!strcmp (arg, "update_on_exit")) {
-			debug->flags |= MONO_DEBUG_FLAGS_UPDATE_ON_EXIT;
-			continue;
+		if (debug->format != MONO_DEBUG_FORMAT_MONO) {
+			if (!strcmp (arg, "dont_assemble")) {
+				debug->flags |= MONO_DEBUG_FLAGS_DONT_ASSEMBLE;
+				continue;
+			} else if (!strcmp (arg, "update_on_exit")) {
+				debug->flags |= MONO_DEBUG_FLAGS_UPDATE_ON_EXIT;
+				continue;
+			} else if (!strcmp (arg, "install_il_files")) {
+				debug->flags |= MONO_DEBUG_FLAGS_INSTALL_IL_FILES;
+				continue;
+			} else if (!strcmp (arg, "dont_update_il_files")) {
+				debug->flags |= MONO_DEBUG_FLAGS_DONT_UPDATE_IL_FILES;
+				continue;
+			} else if (!strcmp (arg, "dont_create_il_files")) {
+				debug->flags |= MONO_DEBUG_FLAGS_DONT_CREATE_IL_FILES;
+				continue;
+			}
 		}
 
 		message = g_strdup_printf ("Unknown argument `%s'.", arg);
@@ -117,6 +126,10 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 	case MONO_DEBUG_FORMAT_DWARF2_PLUS:
 		if (!mono_default_debug_handle && !(debug->flags & MONO_DEBUG_FLAGS_DONT_FALLBACK))
 			mono_debug_open (assembly, MONO_DEBUG_FORMAT_DWARF2, NULL);
+		break;
+	case MONO_DEBUG_FORMAT_MONO:
+		if (!debug->filename)
+			debug->filename = g_strdup_printf ("%s.dbg", g_basename (debug->name));
 		break;
 	default:
 		g_assert_not_reached ();
@@ -389,11 +402,18 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 		g_free (dirname);
 		break;
 	}
+
+	case MONO_DEBUG_FORMAT_MONO:
+		info->filename = g_strdup_printf ("%s.dbg", info->name);
+		info->mono_symfile = mono_debug_open_mono_symbol_file (info->image, info->filename, TRUE);
+		break;
+
 	default:
 		break;
 	}
 
-	if (debug->format != MONO_DEBUG_FORMAT_DWARF2_PLUS)
+	if ((debug->format != MONO_DEBUG_FORMAT_DWARF2_PLUS) &&
+	    (debug->format != MONO_DEBUG_FORMAT_MONO))
 		debug_load_method_lines (info);
 
 	return info;
@@ -449,6 +469,10 @@ mono_debug_close_assembly (AssemblyDebugInfo* info)
 	switch (info->format) {
 	case MONO_DEBUG_FORMAT_DWARF2_PLUS:
 		mono_debug_close_assembly_dwarf2_plus (info);
+		break;
+	case MONO_DEBUG_FORMAT_MONO:
+		if (info->mono_symfile != NULL)
+			mono_debug_close_mono_symbol_file (info->mono_symfile);
 		break;
 	default:
 		break;
@@ -780,13 +804,13 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address, gu
 	if (!minfo)
 		return NULL;
 
-	if (minfo->info->symfile) {
+	if (minfo->info->mono_symfile) {
 		gint32 offset = il_offset_from_address (minfo, address);
 		
 		if (offset < 0)
 			return NULL;
 
-		return mono_debug_find_source_location (minfo->info->symfile, method, offset, line_number);
+		return mono_debug_find_source_location (minfo->info->mono_symfile, method, offset, line_number);
 	}
 
 	if (!minfo->line_numbers)

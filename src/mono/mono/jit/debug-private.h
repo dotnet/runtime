@@ -2,6 +2,7 @@
 #define __MONO_JIT_DEBUG_PRIVATE_H__
 
 #include <mono/metadata/debug-symfile.h>
+#include <mono/metadata/debug-mono-symfile.h>
 
 #include "debug.h"
 
@@ -48,6 +49,7 @@ struct _AssemblyDebugInfo {
 	MonoDebugFormat format;
 	MonoDebugHandle *handle;
 	MonoDebugSymbolFile *symfile;
+	MonoSymbolFile *mono_symfile;
 	char *name;
 	char *ilfile;
 	char *filename;

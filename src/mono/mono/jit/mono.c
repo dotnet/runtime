@@ -270,12 +270,14 @@ main (int argc, char *argv [])
 				mono_debug_format = MONO_DEBUG_FORMAT_DWARF2;
 			else if (strcmp (format, "dwarf-plus") == 0)
 				mono_debug_format = MONO_DEBUG_FORMAT_DWARF2_PLUS;
+			else if (strcmp (format, "mono") == 0)
+				mono_debug_format = MONO_DEBUG_FORMAT_MONO;
 			else
 				g_error ("Unknown debugging format: %s", argv [i] + 8);
 		} else if (strcmp (argv [i], "--debug") == 0) {
 			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
 				g_error ("You can only use one debugging format.");
-			mono_debug_format = MONO_DEBUG_FORMAT_DWARF2_PLUS;
+			mono_debug_format = MONO_DEBUG_FORMAT_MONO;
 		} else if (strcmp (argv [i], "--debug-args") == 0) {
 			if (debug_args)
 				g_error ("You can use --debug-args only once.");
