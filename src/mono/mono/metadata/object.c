@@ -1762,7 +1762,7 @@ mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean *pass_size_in_words)
 {
 	*pass_size_in_words = FALSE;
 
-	if (vtable->klass->has_finalize || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
+	if (vtable->klass->has_finalize || vtable->klass->marshalbyref || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
 		return mono_object_new_specific;
 
 #if CREATION_SPEEDUP
