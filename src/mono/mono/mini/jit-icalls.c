@@ -229,6 +229,12 @@ mono_lldiv (gint64 a, gint64 b)
 {
 	MONO_ARCH_SAVE_REGS;
 
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	if (!b)
+		mono_raise_exception (mono_get_exception_divide_by_zero ());
+	else if (b == -1 && a == (-9223372036854775807LL - 1LL))
+		mono_raise_exception (mono_get_exception_arithmetic ());
+#endif
 	return a / b;
 }
 
@@ -237,6 +243,12 @@ mono_llrem (gint64 a, gint64 b)
 {
 	MONO_ARCH_SAVE_REGS;
 
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	if (!b)
+		mono_raise_exception (mono_get_exception_divide_by_zero ());
+	else if (b == -1 && a == (-9223372036854775807LL - 1LL))
+		mono_raise_exception (mono_get_exception_arithmetic ());
+#endif
 	return a % b;
 }
 
@@ -245,6 +257,10 @@ mono_lldiv_un (guint64 a, guint64 b)
 {
 	MONO_ARCH_SAVE_REGS;
 
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	if (!b)
+		mono_raise_exception (mono_get_exception_divide_by_zero ());
+#endif
 	return a / b;
 }
 
@@ -253,6 +269,10 @@ mono_llrem_un (guint64 a, guint64 b)
 {
 	MONO_ARCH_SAVE_REGS;
 
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	if (!b)
+		mono_raise_exception (mono_get_exception_divide_by_zero ());
+#endif
 	return a % b;
 }
 
