@@ -3777,6 +3777,7 @@ mono_thread_start_cb (gpointer stack_start)
 	TlsSetValue (mono_jit_tls_id, jit_tls);
 
 	jit_tls->abort_func = mono_thread_abort;
+	jit_tls->end_of_stack = stack_start;
 }
 
 static CRITICAL_SECTION ms;
