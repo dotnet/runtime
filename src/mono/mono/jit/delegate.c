@@ -36,11 +36,15 @@ typedef struct {
 	gpointer    code;
 	gpointer    cb_code;
 	gpointer    cb_target;
+	int         inside_cb;
 	MonoObject *state;
 	guint32     res_eax;
 	guint32     res_edx;
 	double      res_freg;
+	MonoObject *exc;
 } ASyncCall;
+
+static guint32 async_invoke_thread (void);
 
 static GList *async_call_queue = NULL;
 static CRITICAL_SECTION delegate_section;
@@ -110,6 +114,9 @@ arch_get_async_invoke ()
 	x86_mov_membase_reg (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, res_eax), X86_EAX, 4);
 	x86_mov_membase_reg (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, res_edx), X86_EDX, 4);
 	x86_fst_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, res_freg), TRUE, FALSE);
+
+	/* set inside_cb to 1 */
+	x86_mov_membase_imm (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, inside_cb), 1, 4);
 
 	/* call async callback */
 	/* push pointer to AsyncResult */
@@ -222,9 +229,9 @@ arch_end_invoke (MonoObject *this, gpointer handle, ...)
 	MonoAsyncResult *ares = (MonoAsyncResult *)handle;
 	ASyncCall *ac = (ASyncCall *)ares->data;
 	MonoMethodSignature *sig;
+	MonoDomain *domain = this->vtable->domain;
 	int type;
 	void *resp;
-	gboolean invoke = FALSE;
 	GList *l;
 	int res_eax, res_edx;
 	double res_freg;
@@ -240,13 +247,20 @@ arch_end_invoke (MonoObject *this, gpointer handle, ...)
 	EnterCriticalSection (&delegate_section);	
 	if ((l = g_list_find (async_call_queue, handle))) {
 		async_call_queue = g_list_remove_link (async_call_queue, l);
-		invoke = TRUE;
+		async_invoke (ares);
 	}		
 	LeaveCriticalSection (&delegate_section);
 
-	if (invoke)
-		async_invoke (ares);
-		
+	if (ac->exc) {
+		char *strace = mono_string_to_utf8 (((MonoException*)ac->exc)->stack_trace);
+		char  *tmp;
+		tmp = g_strdup_printf ("%s\nException Rethrown at:\n", strace);
+		g_free (strace);	
+		((MonoException*)ac->exc)->stack_trace = mono_string_new (domain, tmp);
+		g_free (tmp);
+		mono_raise_exception (ac->exc);
+	}
+
 	sig = ac->end_method->signature;
 
 	/* save return value */
@@ -434,12 +448,43 @@ arch_get_delegate_invoke (MonoMethod *method, int *size)
 	return addr;
 }
 
+static void
+async_invoke_abort (MonoObject *obj)
+{
+	MonoDomain *domain = obj->vtable->domain;
+	MonoAsyncResult *ares = TlsGetValue (async_result_id);
+	ASyncCall *ac = (ASyncCall *)ares->data;
+
+	ares->completed = 1;
+
+	if (!ac->exc)
+		ac->exc = obj;
+
+	/* we need to call the callback if not already called */
+	if (!ac->inside_cb) {
+		void (*async_cb) (gpointer target, MonoAsyncResult *ares);
+		ac->inside_cb = 1;
+		async_cb = ac->cb_code; 
+		async_cb (ac->cb_target, ares);
+	}
+
+	/* signal that we finished processing */
+	ReleaseSemaphore (ac->wait_semaphore, 1, NULL);
+
+	/* start a new worker */
+	mono_thread_create (domain, async_invoke_thread);
+	/* exit current one */
+	ExitThread (0);
+}
+
 static guint32
 async_invoke_thread ()
 {
 	MonoDomain *domain;
 	void (*async_invoke) (MonoAsyncResult *ar) = arch_get_async_invoke ();
-	volatile static int workers = 1;
+	static int workers = 1;
+
+	TlsSetValue (exc_cleanup_id, async_invoke_abort);
 
 	for (;;) {
 		MonoAsyncResult *ar;
@@ -477,6 +522,8 @@ async_invoke_thread ()
 		if (new_worker) 
 			mono_thread_create (domain, async_invoke_thread);
 
+		TlsSetValue (async_result_id, ar);
+
 		async_invoke (ar);
 	}
 
@@ -488,7 +535,6 @@ mono_delegate_init ()
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoObject *thread;
-	guint32 tid;
 
 	delegate_semaphore = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 	g_assert (delegate_semaphore != INVALID_HANDLE_VALUE);

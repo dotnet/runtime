@@ -108,6 +108,7 @@ arch_get_call_finally ()
 	return start;
 }
 
+
 /**
  * arch_handle_exception:
  * @ctx: saved processor state
@@ -121,7 +122,8 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 	gpointer ip = (gpointer)ctx->eip;
 	static void (*restore_context) (struct sigcontext *);
 	static void (*call_finally) (struct sigcontext *, unsigned long);
-       
+	void (*cleanup) (MonoObject *exc);
+
 	g_assert (ctx != NULL);
 	g_assert (obj != NULL);
 
@@ -132,6 +134,9 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 	
 	if (!call_finally)
 		call_finally = arch_get_call_finally ();
+
+	cleanup = TlsGetValue (exc_cleanup_id);
+	g_assert (cleanup);
 
 	if (ji) { /* we are inside managed code */
 		MonoMethod *m = ji->method;
@@ -209,7 +214,8 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 		if (ctx->ebp < (unsigned)mono_end_of_stack)
 			arch_handle_exception (ctx, obj);
 		else
-			mono_jit_abort (obj);
+			cleanup (obj);
+	
 	} else {
 		gpointer *lmf_addr = TlsGetValue (lmf_thread_id);
 		MonoLMF *lmf;
@@ -219,7 +225,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 		lmf = *((MonoLMF **)lmf_addr);
 
 		if (!lmf)
-			mono_jit_abort (obj);
+			cleanup (obj);
 
 		m = lmf->method;
 
@@ -250,8 +256,8 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 
 		if (ctx->eip < (unsigned)mono_end_of_stack)
 			arch_handle_exception (ctx, obj);
-		else
-			mono_jit_abort (obj);
+		else 
+			cleanup (obj);
 	}
 
 	g_assert_not_reached ();

@@ -205,6 +205,12 @@ gpointer mono_end_of_stack = NULL;
 /* last managed frame (used by pinvoke) */ 
 guint32 lmf_thread_id = 0;
 
+/* used to store a function pointer called after uncatched exceptions */ 
+guint32 exc_cleanup_id = 0;
+
+/* stores a pointer to async result used by exceptions */ 
+guint32 async_result_id = 0;
+
 MonoJitStats mono_jit_stats;
 
 CRITICAL_SECTION *metadata_section = NULL;
@@ -3190,7 +3196,7 @@ sigsegv_signal_handler (int _dummy)
  *
  * abort the program, print exception information and stack trace
  */
-void
+static void
 mono_jit_abort (MonoObject *obj)
 {
 	char *message = "";
@@ -3345,6 +3351,9 @@ main (int argc, char *argv [])
 
 	lmf_thread_id = TlsAlloc ();
 	TlsSetValue (lmf_thread_id, NULL);
+	exc_cleanup_id = TlsAlloc ();
+	TlsSetValue (exc_cleanup_id, mono_jit_abort);
+	async_result_id = TlsAlloc ();
 
 	mono_install_trampoline (arch_create_jit_trampoline);
 	mono_install_runtime_class_init (runtime_class_init);

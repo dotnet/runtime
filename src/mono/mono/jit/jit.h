@@ -142,6 +142,8 @@ extern gboolean mono_jit_trace_calls;
 extern gboolean mono_jit_share_code;
 extern gpointer mono_end_of_stack;
 extern guint32  lmf_thread_id;
+extern guint32  exc_cleanup_id;
+extern guint32  async_result_id;
 
 extern CRITICAL_SECTION *metadata_section;
 

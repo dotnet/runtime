@@ -2,7 +2,6 @@ using System;
 using System.Threading;
 using System.Runtime.InteropServices;
 
-namespace Bah {
 class Test {
 	delegate int SimpleDelegate (int a);
 
@@ -51,5 +50,4 @@ class Test {
 				
 		return 0;
 	}
-}
 }
