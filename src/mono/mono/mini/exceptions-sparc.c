@@ -22,6 +22,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/gc-internal.h>
+#include <mono/metadata/tokentype.h>
 
 #include "mini.h"
 #include "mini-sparc.h"
@@ -287,7 +288,64 @@ mono_arch_get_throw_exception_by_name (void)
 	g_assert ((code - start) < 32);
 
 	return start;
-}	
+}
+
+/**
+ * mono_arch_get_throw_corlib_exception:
+ *
+ * Returns a function pointer which can be used to raise 
+ * corlib exceptions. The returned function has the following 
+ * signature: void (*func) (guint32 ex_token, guint32 offset); 
+ * Here, offset is the offset which needs to be substracted from the caller IP 
+ * to get the IP of the throw. Passing the offset has the advantage that it 
+ * needs no relocations in the caller.
+ */
+gpointer 
+mono_arch_get_throw_corlib_exception (void)
+{
+	static guint32 start [64];
+	static int inited = 0;
+	guint32 *code;
+	int reg;
+
+	if (inited)
+		return start;
+
+	inited = 1;
+	code = start;
+
+#ifdef SPARCV9
+	reg = sparc_g4;
+#else
+	reg = sparc_g1;
+#endif
+
+	sparc_mov_reg_reg (code, sparc_o7, sparc_o2);
+	sparc_save_imm (code, sparc_sp, -160, sparc_sp);
+
+	sparc_set (code, MONO_TOKEN_TYPE_DEF, sparc_o7);
+	sparc_add (code, FALSE, sparc_i0, sparc_o7, sparc_o1);
+	sparc_set (code, mono_defaults.exception_class->image, sparc_o0);
+	sparc_set (code, mono_exception_from_token, sparc_o7);
+	sparc_jmpl (code, sparc_o7, sparc_g0, sparc_callsite);
+	sparc_nop (code);
+
+	/* Return to the caller, so exception handling does not see this frame */
+	sparc_restore (code, sparc_o0, sparc_g0, sparc_o0);
+
+	/* Compute throw ip */
+	sparc_sll_imm (code, sparc_o1, 2, sparc_o1);
+	sparc_sub (code, 0, sparc_o2, sparc_o1, sparc_o7);
+
+	sparc_set (code, mono_arch_get_throw_exception (), reg);
+	/* Use a jmp instead of a call so o7 is preserved */
+	sparc_jmpl_imm (code, reg, 0, sparc_g0);
+	sparc_nop (code);
+
+	g_assert ((code - start) < 32);
+
+	return start;
+}
 
 /* mono_arch_find_jit_info:
  *

@@ -24,6 +24,7 @@
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-math.h>
 
 #include "mini-sparc.h"
@@ -4195,6 +4196,8 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
 
 		switch (patch_info->type) {
+		case MONO_PATCH_INFO_NONE:
+			continue;
 		case MONO_PATCH_INFO_CLASS_INIT: {
 			guint32 *ip2 = (guint32*)ip;
 			/* Might already been changed to a nop */
@@ -4676,8 +4679,11 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 {
 	MonoJumpInfo *patch_info;
 	guint32 *code;
+	int nthrows = 0, i;
 	int exc_count = 0;
 	guint32 code_size;
+	MonoClass *exc_classes [16];
+	guint8 *exc_throw_start [16], *exc_throw_end [16];
 
 	/* Compute needed space */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
@@ -4703,20 +4709,92 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	code = (guint32*)(cfg->native_code + cfg->code_len);
 
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-		glong offset = patch_info->ip.i;
-
 		switch (patch_info->type) {
-		case MONO_PATCH_INFO_EXC:
+		case MONO_PATCH_INFO_EXC: {
+			MonoClass *exc_class;
+			guint32 *buf, *buf2;
+			guint32 throw_ip, type_idx;
+			gint32 disp;
+
 			sparc_patch ((guint32*)(cfg->native_code + patch_info->ip.i), code);
-			mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);
-			sparc_set_template (code, sparc_o0);
-			mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_METHOD_REL, (gpointer)offset);
-			sparc_set_template (code, sparc_o1);
-			patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
-			patch_info->data.name = "mono_arch_throw_exception_by_name";
-			patch_info->ip.i = (guint8*)code - cfg->native_code;
-			EMIT_CALL ();
+
+			exc_class = mono_class_from_name (mono_defaults.corlib, "System", patch_info->data.name);
+			type_idx = exc_class->type_token - MONO_TOKEN_TYPE_DEF;
+			g_assert (exc_class);
+			throw_ip = patch_info->ip.i;
+
+			/* Find a throw sequence for the same exception class */
+			for (i = 0; i < nthrows; ++i)
+				if (exc_classes [i] == exc_class)
+					break;
+
+			if (i < nthrows) {
+				guint32 throw_offset = (((guint8*)exc_throw_end [i] - cfg->native_code) - throw_ip) >> 2;
+				if (!sparc_is_imm13 (throw_offset))
+					sparc_set32 (code, throw_offset, sparc_o1);
+
+				disp = (exc_throw_start [i] - (guint8*)code) >> 2;
+				g_assert (sparc_is_imm22 (disp));
+				sparc_branch (code, 0, sparc_ba, disp);
+				if (sparc_is_imm13 (throw_offset))
+					sparc_set32 (code, throw_offset, sparc_o1);
+				else
+					sparc_nop (code);
+				patch_info->type = MONO_PATCH_INFO_NONE;
+			}
+			else {
+				/* Emit the template for setting o1 */
+				buf = code;
+				if (sparc_is_imm13 (((((guint8*)code - cfg->native_code) - throw_ip) >> 2) - 8))
+					/* Can use a short form */
+					sparc_nop (code);
+				else
+					sparc_set_template (code, sparc_o1);
+				buf2 = code;
+
+				if (nthrows < 16) {
+					exc_classes [nthrows] = exc_class;
+					exc_throw_start [nthrows] = (guint8*)code;
+				}
+
+				/*
+				mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_ABS, mono_sparc_break);
+				EMIT_CALL();
+				*/
+
+				/* first arg = type token */
+				/* Pass the type index to reduce the size of the sparc_set */
+				if (!sparc_is_imm13 (type_idx))
+					sparc_set32 (code, type_idx, sparc_o0);
+
+				/* second arg = offset between the throw ip and the current ip */
+				/* On sparc, the saved ip points to the call instruction */
+				disp = (((guint8*)code - cfg->native_code) - throw_ip) >> 2;
+				sparc_set32 (buf, disp, sparc_o1);
+				while (buf < buf2)
+					sparc_nop (buf);
+
+				if (nthrows < 16) {
+					exc_throw_end [nthrows] = (guint8*)code;
+					nthrows ++;
+				}
+
+				patch_info->data.name = "mono_arch_throw_corlib_exception";
+				patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
+				patch_info->ip.i = (guint8*)code - cfg->native_code;
+
+				EMIT_CALL ();
+
+				if (sparc_is_imm13 (type_idx)) {
+					/* Put it into the delay slot */
+					code --;
+					buf = code;
+					sparc_set32 (code, type_idx, sparc_o0);
+					g_assert (code - buf == 1);
+				}
+			}
 			break;
+		}
 		default:
 			/* do nothing */
 			break;
