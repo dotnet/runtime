@@ -633,4 +633,31 @@ COND:   ldloc.0
 			neg
 			ret
 	}
+
+	// bug #72148
+    .method private static int32 test_0_initlocals_float_ptr () {
+	.maxstack 3
+	.locals init (
+		float32[]	V_0,
+		float32& pinned	V_1,
+		unsigned int32	V_2)
+	  		ldc.i4.s 0x0f
+	  		newarr [mscorlib]System.Single
+	  		stloc.0 
+	  		ldloc.0 
+	  		ldc.i4.0 
+	  		ldc.r4 1.13
+	  		stelem.r4 
+	  		ldloc.0 
+	  		ldc.i4.0 
+	  		ldelema [mscorlib]System.Single
+	  		stloc.1 
+	  		ldloc.1 
+	  		conv.i 
+	  		ldind.u4 
+	  		stloc.2 
+			ldc.i4.0
+			ret
+	}
+
 }
