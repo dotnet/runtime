@@ -40,7 +40,8 @@ mono_aot_get_method (MonoMethod *method)
 	char *method_label, *info_label;
 	guint8 *code = NULL;
 	gpointer *info;
-	guint code_len, used_int_regs;
+	guint code_len, used_int_regs, used_strings;
+	int i;
 
 	if (!module)
 		return NULL;
@@ -70,6 +71,15 @@ mono_aot_get_method (MonoMethod *method)
 	info++;
 	used_int_regs = GPOINTER_TO_UINT (*((gpointer **)info));
 	info++;
+	used_strings = GPOINTER_TO_UINT (*((gpointer **)info));
+	info++;
+
+	for (i = 0; i < used_strings; i++) {
+		guint token =  GPOINTER_TO_UINT (*((gpointer **)info));
+		info++;
+		mono_ldstr (mono_root_domain, klass->image, mono_metadata_token_index (token));
+	}
+
 
 	if (info) {
 		MonoMemPool *mp = mono_mempool_new (); 
@@ -316,6 +326,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	MonoCompile *cfg;
 	MonoImage *image = ass->image;
 	MonoMethod *method;
+	GList *l;
 	char *com, *tmpfname;
 	FILE *tmpfp;
 	int i, j;
@@ -492,6 +503,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 		
 		fprintf (tmpfp, "\t.long %d\n", cfg->code_len);
 		fprintf (tmpfp, "\t.long %d\n", cfg->used_int_regs);
+
+		fprintf (tmpfp, "\t.long %d\n", g_list_length (cfg->ldstr_list));
+		for (l = cfg->ldstr_list; l; l = l->next) {
+			fprintf (tmpfp, "\t.long 0x%08x\n", l->data);
+		}
 
 		if (j) {
 			j = 0;

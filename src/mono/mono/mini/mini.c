@@ -3043,6 +3043,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK_OVF (1);
 			n = read32 (ip + 1);
 
+			if (mono_compile_aot) {
+				cfg->ldstr_list = g_list_prepend (cfg->ldstr_list, (gpointer)n);
+			}
+
 			if ((cfg->opt & MONO_OPT_SAHRED) || mono_compile_aot) {
 				int temp;
 				MonoInst *iargs [3];
@@ -4768,6 +4772,8 @@ mono_destroy_compile (MonoCompile *cfg)
 	//mono_mempool_stats (cfg->mempool);
 	g_hash_table_destroy (cfg->bb_hash);
 	mono_mempool_destroy (cfg->mempool);
+	g_list_free (cfg->ldstr_list);
+
 	g_free (cfg);
 }
 

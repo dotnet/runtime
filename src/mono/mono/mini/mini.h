@@ -420,6 +420,8 @@ typedef struct {
 
 	MonoInst        *exvar; /* the exception object passed to catch/filter blocks */
 	MonoInst        *domainvar; /* a cache for the current domain */
+
+	GList           *ldstr_list; /* used by AOT */
 	
 	MonoDomain      *domain;
 
