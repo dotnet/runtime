@@ -30,13 +30,16 @@ AC_SUBST(libmono_ldflags)
 dnl if linker handles the version script
 no_version_script=no
 
+# Set to yes if Unix sockets cannot be created in an anonymous namespace
+need_link_unlink=no
+
 # Thread configuration inspired by sleepycat's db
 AC_MSG_CHECKING([host platform characteristics])
 libgc_threads=no
 case "$host" in
 	*-*-mingw*|*-*-cygwin*)
 		platform_win32=yes
-		AC_DEFINE(PLATFORM_WIN32)
+		AC_DEFINE(PLATFORM_WIN32,1,[Platform is Win32])
 		CC="gcc -mno-cygwin"
 		HOST_CC="gcc"
 # latest libgc already defines GC_WIN32_THREADS
@@ -52,7 +55,7 @@ case "$host" in
 		libmono_cflags="-D_REENTRANT"
 		LDFLAGS="$LDFLAGS -pthread"
 		libmono_ldflags="-pthread"
-		AC_DEFINE(NEED_LINK_UNLINK)
+		need_link_unlink=yes
 		libdl=
 		libgc_threads=no
 		;;
@@ -62,7 +65,7 @@ case "$host" in
 		libmono_cflags="-D_THREAD_SAFE"
 		LDFLAGS="$LDFLAGS -pthread"
 		libmono_ldflags="-pthread"
-		AC_DEFINE(NEED_LINK_UNLINK)
+		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		libdl=
 		libgc_threads=pthreads
@@ -83,12 +86,12 @@ case "$host" in
 		libmono_cflags="-D_REENTRANT"
 		libmono_ldflags="-lpthread"
 		libgc_threads=pthreads
-		AC_DEFINE(NEED_LINK_UNLINK)
+		need_link_unlink=yes
                 ;;
 	*-*-solaris*)
 		platform_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT"
-		AC_DEFINE(NEED_LINK_UNLINK)
+		need_link_unlink=yes
 		libmono_cflags="-D_REENTRANT"
 		libgc_threads=pthreads
 		;;
@@ -98,7 +101,7 @@ case "$host" in
 		libmono_cflags="-D_THREAD_SAFE"
 		LDFLAGS="$LDFLAGS -pthread"
 		libmono_ldflags="-pthread"
-		AC_DEFINE(NEED_LINK_UNLINK)
+		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		AC_DEFINE(USE_MACH_SEMA)
 		no_version_script=yes
@@ -113,6 +116,11 @@ case "$host" in
 		;;
 esac
 AC_MSG_RESULT(ok)
+
+if test x$need_link_unlink = xyes; then
+   AC_DEFINE(NEED_LINK_UNLINK, 1, [Define if Unix sockets cannot be created in an anonymous namespace])
+fi
+
 AM_CONDITIONAL(PLATFORM_WIN32, test x$platform_win32 = xyes)
 
 AC_CHECK_TOOL(CC, gcc, gcc)
@@ -308,9 +316,9 @@ case "x$gc" in
 		;;
 esac
 
-we_are_embedded_in_mono=yes
-export we_are_embedded_in_mono
-export libgc_threads
+
+# tell libgc/configure about what we want
+ac_configure_args="$ac_configure_args --disable-embed-check --with-libgc-threads=$libgc_threads"
 
 AM_CONDITIONAL(INCLUDED_LIBGC, test x$use_included_gc = xyes)
 AC_SUBST(LIBGC_CFLAGS)

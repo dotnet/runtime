@@ -1,3 +1,10 @@
+2004-05-19  Raja R Harinath  <rharinath@novell.com>
+
+	* configure.in: Use proper autoconf idiom to pass additional
+	arguments to libgc/configure.
+	(PLATFORM_WIN32, NEED_LINK_UNLINK): Use three-argument AC_DEFINE.
+	* acconfig.h: Update to reflect changes.
+
 2004-05-17  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am (tmpinst-dir): Creates _tmpinst tree if
