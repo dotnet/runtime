@@ -289,8 +289,8 @@ storei2_membase_reg: dest:b src1:i len:9
 storei4_membase_imm: dest:b len:13
 storei4_membase_reg: dest:b src1:i len:9
 storei8_membase_imm: dest:b len:18
-storer4_membase_reg: dest:b src1:f len:14
-storer8_membase_reg: dest:b src1:f len:9
+storer4_membase_reg: dest:b src1:f len:15
+storer8_membase_reg: dest:b src1:f len:10
 load_membase: dest:i src1:b len:15
 loadi1_membase: dest:i src1:b len:9
 loadu1_membase: dest:i src1:b len:9
