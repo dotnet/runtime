@@ -7294,6 +7294,9 @@ encode_named_val (MonoReflectionAssembly *assembly, char *buffer, char *p, char 
 		g_free (str);
 	} else if (type->type == MONO_TYPE_OBJECT) {
 		*p++ = 0x51;
+	} else if (type->type == MONO_TYPE_CLASS) {
+		/* it should be a type: encode_cattr_value () has the check */
+		*p++ = 0x50;
 	} else {
 		mono_metadata_encode_value (type->type, p, &p);
 		if (type->type == MONO_TYPE_SZARRAY)
