@@ -11,7 +11,7 @@
  *
  * (C) 2001 Ximian, Inc.
  */
-#include <config.h>
+#include "config.h"
 #include <stdio.h>
 #include <string.h>
 #include <glib.h>
@@ -65,7 +65,7 @@ static char *opcode_names[] = {
 	NULL
 };
 
-#define GET_NATI(sp) ((guint32)(sp).data.i)
+#define GET_NATI(sp) ((sp).data.nati)
 #define CSIZE(x) (sizeof (x) / 4)
 
 #define INIT_FRAME(frame,parent_frame,obj_this,method_args,method_retval,mono_method)	\
@@ -131,7 +131,6 @@ init_class (MonoClass *klass)
 			INIT_FRAME (&call, NULL, NULL, NULL, NULL, method);
 	
 			ves_exec_method (&call);
-			mono_free_method (call.method);
 			return;
 		}
 	}
@@ -348,6 +347,26 @@ get_exception_invalid_cast ()
 	if (ex)
 		return ex;
 	ex = get_named_exception ("InvalidCastException");
+	return ex;
+}
+
+static MonoObject*
+get_exception_index_out_of_range ()
+{
+	static MonoObject *ex = NULL;
+	if (ex)
+		return ex;
+	ex = get_named_exception ("IndexOutOfRangeException");
+	return ex;
+}
+
+static MonoObject*
+get_exception_array_type_mismatch ()
+{
+	static MonoObject *ex = NULL;
+	if (ex)
+		return ex;
+	ex = get_named_exception ("ArrayTypeMismatchException");
 	return ex;
 }
 
@@ -643,8 +662,10 @@ dump_stack (stackval *stack, stackval *sp)
 #define DEBUG_INTERP 1
 #if DEBUG_INTERP
 
-unsigned long opcode_count = 0;
-unsigned long fcall_count = 0;
+static unsigned long opcode_count = 0;
+static unsigned long fcall_count = 0;
+static int break_on_method = 0;
+GList *db_methods = NULL;
 
 static void
 output_indent (void)
@@ -655,8 +676,21 @@ output_indent (void)
 		g_print ("  ");
 }
 
+static void
+db_match_method (gpointer data, gpointer user_data)
+{
+	/*
+	 * Make this function smarter (accept Class:method...)
+	 */
+	if (strcmp((char*)data, (char*)user_data) == 0)
+		break_on_method = 1;
+}
+
 #define DEBUG_ENTER()	\
 	fcall_count++;	\
+	g_list_foreach (db_methods, db_match_method, (gpointer)frame->method->name);	\
+	if (break_on_method) G_BREAKPOINT ();	\
+	break_on_method = 0;	\
 	if (tracing) {	\
 		MonoClass *klass = frame->method->klass;	\
 		debug_indent_level++;	\
@@ -1066,12 +1100,14 @@ ves_exec_method (MonoInvocation *frame)
 			BREAK;
 		CASE (CEE_JMP) ves_abort(); BREAK;
 		CASE (CEE_CALLVIRT) /* Fall through */
+		CASE (CEE_CALLI)    /* Fall through */
 		CASE (CEE_CALL) {
 			MonoMethodSignature *csignature;
 			stackval retval;
 			stackval *endsp = sp;
 			guint32 token;
 			int virtual = *ip == CEE_CALLVIRT;
+			int calli = *ip == CEE_CALLI;
 
 			/*
 			 * We ignore tail recursion for now.
@@ -1083,10 +1119,19 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			token = read32 (ip);
 			ip += 4;
-			if (virtual)
-				child_frame.method = get_virtual_method (image, token, sp);
-			else
-				child_frame.method = mono_get_method (image, token, NULL);
+			if (calli) {
+				unsigned char *code;
+				--sp;
+				code = sp->data.p;
+				/* check the signature we put in mono_create_method_pointer () */
+				g_assert (code [2] == 'M' && code [3] == 'o');
+				child_frame.method = *(gpointer*)(code + sizeof (gpointer));
+			} else {
+				if (virtual)
+					child_frame.method = get_virtual_method (image, token, sp);
+				else
+					child_frame.method = mono_get_method (image, token, NULL);
+			}
 			csignature = child_frame.method->signature;
 			g_assert (csignature->call_convention == MONO_CALL_DEFAULT);
 			/* decrement by the actual number of args */
@@ -1136,7 +1181,6 @@ ves_exec_method (MonoInvocation *frame)
 			}
 			BREAK;
 		}
-		CASE (CEE_CALLI) ves_abort(); BREAK;
 		CASE (CEE_RET)
 			if (signature->ret->type != MONO_TYPE_VOID) {
 				--sp;
@@ -1645,7 +1689,25 @@ ves_exec_method (MonoInvocation *frame)
 				(gint)GET_NATI (sp [-1]) %= (gint)GET_NATI (sp [0]);
 			}
 			BREAK;
-		CASE (CEE_REM_UN) ves_abort(); BREAK;
+		CASE (CEE_REM_UN)
+			++ip;
+			--sp;
+			if (sp->type == VAL_I32) {
+				if (GET_NATI (sp [0]) == 0)
+					THROW_EX (get_exception_divide_by_zero (), ip - 1);
+				(guint)sp [-1].data.i %= (guint)GET_NATI (sp [0]);
+			} else if (sp->type == VAL_I64) {
+				if (sp [0].data.l == 0)
+					THROW_EX (get_exception_divide_by_zero (), ip - 1);
+				(gulong)sp [-1].data.l %= (gulong)sp [0].data.l;
+			} else if (sp->type == VAL_DOUBLE) {
+				/* unspecified behaviour according to the spec */
+			} else {
+				if (GET_NATI (sp [0]) == 0)
+					THROW_EX (get_exception_divide_by_zero (), ip - 1);
+				(gulong)GET_NATI (sp [-1]) %= (gulong)GET_NATI (sp [0]);
+			}
+			BREAK;
 		CASE (CEE_AND)
 			++ip;
 			--sp;
@@ -1696,7 +1758,16 @@ ves_exec_method (MonoInvocation *frame)
 			else
 				(gint)GET_NATI (sp [-1]) >>= GET_NATI (sp [0]);
 			BREAK;
-		CASE (CEE_SHR_UN) ves_abort(); BREAK;
+		CASE (CEE_SHR_UN)
+			++ip;
+			--sp;
+			if (sp->type == VAL_I32)
+				(guint)sp [-1].data.i >>= GET_NATI (sp [0]);
+			else if (sp->type == VAL_I64)
+				(gulong)sp [-1].data.l >>= GET_NATI (sp [0]);
+			else
+				(gulong)GET_NATI (sp [-1]) >>= GET_NATI (sp [0]);
+			BREAK;
 		CASE (CEE_NEG)
 			++ip;
 			if (sp->type == VAL_I32)
@@ -1764,6 +1835,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_CONV_U4) /* Fall through */
 #if SIZEOF_VOID_P == 4
 		CASE (CEE_CONV_I) /* Fall through */
+		CASE (CEE_CONV_U) /* Fall through */
 #endif
 		CASE (CEE_CONV_I4) {
 			++ip;
@@ -1829,15 +1901,9 @@ ves_exec_method (MonoInvocation *frame)
 			sp [-1].type = VAL_DOUBLE;
 			BREAK;
 		}
-		CASE (CEE_CONV_U) 
-			++ip;
-			/* FIXME: handle other cases */
-			if (sp [-1].type == VAL_I32) {
-				/* defined as NOP */
-			} else {
-				ves_abort();
-			}
-			BREAK;
+#if SIZEOF_VOID_P == 8
+		CASE (CEE_CONV_U) /* Fall through */
+#endif
 		CASE (CEE_CONV_U8)
 			++ip;
 
@@ -1858,8 +1924,15 @@ ves_exec_method (MonoInvocation *frame)
 			}
 			sp [-1].type = VAL_I64;
 		        BREAK;
-			
-		CASE (CEE_CPOBJ) ves_abort(); BREAK;
+		CASE (CEE_CPOBJ) {
+			MonoClass *vtklass;
+			++ip;
+			vtklass = mono_class_get (image, read32 (ip));
+			ip += 4;
+			sp -= 2;
+			memcpy (sp [0].data.p, sp [1].data.p, mono_class_value_size (vtklass, NULL));
+			BREAK;
+		}
 		CASE (CEE_LDOBJ) {
 			guint32 token;
 			MonoClass *c;
@@ -1995,7 +2068,24 @@ ves_exec_method (MonoInvocation *frame)
 			ip += 4;
 			BREAK;
 		}
-		CASE (CEE_CONV_R_UN) ves_abort(); BREAK;
+		CASE (CEE_CONV_R_UN)
+			switch (sp [-1].type) {
+			case VAL_DOUBLE:
+				break;
+			case VAL_I64:
+				sp [-1].data.f = (double)(guint64)sp [-1].data.l;
+				break;
+			case VAL_VALUET:
+				ves_abort();
+			case VAL_I32:
+				sp [-1].data.f = (double)(guint32)sp [-1].data.i;
+				break;
+			default:
+				sp [-1].data.f = (double)(gulong)sp [-1].data.nati;
+				break;
+			}
+			sp [-1].type = VAL_DOUBLE;
+			BREAK;
 		CASE (CEE_UNUSED58)
 		CASE (CEE_UNUSED1) ves_abort(); BREAK;
 		CASE (CEE_UNBOX) {
@@ -2130,17 +2220,149 @@ ves_exec_method (MonoInvocation *frame)
 			vt_free (sp);
 			BREAK;
 		}
-		CASE (CEE_STOBJ) ves_abort(); BREAK;
-		CASE (CEE_CONV_OVF_I1_UN) ves_abort(); BREAK;
-		CASE (CEE_CONV_OVF_I2_UN) ves_abort(); BREAK;
-		CASE (CEE_CONV_OVF_I4_UN) ves_abort(); BREAK;
-		CASE (CEE_CONV_OVF_I8_UN) ves_abort(); BREAK;
-		CASE (CEE_CONV_OVF_U1_UN) ves_abort(); BREAK;
-		CASE (CEE_CONV_OVF_U2_UN) ves_abort(); BREAK;
-		CASE (CEE_CONV_OVF_U4_UN) ves_abort(); BREAK;
-		CASE (CEE_CONV_OVF_U8_UN) ves_abort(); BREAK;
-		CASE (CEE_CONV_OVF_I_UN) ves_abort(); BREAK;
-		CASE (CEE_CONV_OVF_U_UN) ves_abort(); BREAK;
+		CASE (CEE_STOBJ) {
+			MonoClass *vtklass;
+			++ip;
+			vtklass = mono_class_get (image, read32 (ip));
+			ip += 4;
+			sp -= 2;
+			memcpy (sp [0].data.p, sp [1].data.vt.vt, mono_class_value_size (vtklass, NULL));
+			BREAK;
+		}
+#if SIZEOF_VOID_P == 8
+		CASE (CEE_CONV_OVF_I_UN)
+#endif
+		CASE (CEE_CONV_OVF_I8_UN) {
+			switch (sp [-1].type) {
+			case VAL_DOUBLE:
+				if (sp [-1].data.f < 0 || sp [-1].data.f > 9223372036854775807L)
+					THROW_EX (get_exception_overflow (), ip);
+				sp [-1].data.l = (guint64)sp [-1].data.f;
+				break;
+			case VAL_I64:
+				if (sp [-1].data.l < 0)
+					THROW_EX (get_exception_overflow (), ip);
+				break;
+			case VAL_VALUET:
+				ves_abort();
+			case VAL_I32:
+				/* Can't overflow */
+				sp [-1].data.l = (guint64)sp [-1].data.i;
+				break;
+			default:
+				if ((gint64)sp [-1].data.nati < 0)
+					THROW_EX (get_exception_overflow (), ip);
+				sp [-1].data.l = (guint64)sp [-1].data.nati;
+				break;
+			}
+			sp [-1].type = VAL_I64;
+			++ip;
+			BREAK;
+		}
+#if SIZEOF_VOID_P == 8
+		CASE (CEE_CONV_OVF_U_UN) 
+#endif
+		CASE (CEE_CONV_OVF_U8_UN) {
+			switch (sp [-1].type) {
+			case VAL_DOUBLE:
+				if (sp [-1].data.f < 0 || sp [-1].data.f > 18446744073709551615UL)
+					THROW_EX (get_exception_overflow (), ip);
+				sp [-1].data.l = (guint64)sp [-1].data.f;
+				break;
+			case VAL_I64:
+				/* nothing to do */
+				break;
+			case VAL_VALUET:
+				ves_abort();
+			case VAL_I32:
+				/* Can't overflow */
+				sp [-1].data.l = (guint64)sp [-1].data.i;
+				break;
+			default:
+				/* Can't overflow */
+				sp [-1].data.l = (guint64)sp [-1].data.nati;
+				break;
+			}
+			sp [-1].type = VAL_I64;
+			++ip;
+			BREAK;
+		}
+#if SIZEOF_VOID_P == 4
+		CASE (CEE_CONV_OVF_I_UN)
+		CASE (CEE_CONV_OVF_U_UN) 
+#endif
+		CASE (CEE_CONV_OVF_I1_UN)
+		CASE (CEE_CONV_OVF_I2_UN)
+		CASE (CEE_CONV_OVF_I4_UN)
+		CASE (CEE_CONV_OVF_U1_UN)
+		CASE (CEE_CONV_OVF_U2_UN)
+		CASE (CEE_CONV_OVF_U4_UN) {
+			guint64 value;
+			switch (sp [-1].type) {
+			case VAL_DOUBLE:
+				value = (guint64)sp [-1].data.f;
+				break;
+			case VAL_I64:
+				value = (guint64)sp [-1].data.l;
+				break;
+			case VAL_VALUET:
+				ves_abort();
+			case VAL_I32:
+				value = (guint64)sp [-1].data.i;
+				break;
+			default:
+				value = (guint64)sp [-1].data.nati;
+				break;
+			}
+			switch (*ip) {
+			case CEE_CONV_OVF_I1_UN:
+				if (value > 127)
+					THROW_EX (get_exception_overflow (), ip);
+				sp [-1].data.i = value;
+				sp [-1].type = VAL_I32;
+				break;
+			case CEE_CONV_OVF_I2_UN:
+				if (value > 32767)
+					THROW_EX (get_exception_overflow (), ip);
+				sp [-1].data.i = value;
+				sp [-1].type = VAL_I32;
+				break;
+#if SIZEOF_VOID_P == 4
+			case CEE_CONV_OVF_I_UN: /* Fall through */
+#endif
+			case CEE_CONV_OVF_I4_UN:
+				if (value > 2147483647)
+					THROW_EX (get_exception_overflow (), ip);
+				sp [-1].data.i = value;
+				sp [-1].type = VAL_I32;
+				break;
+			case CEE_CONV_OVF_U1_UN:
+				if (value > 255)
+					THROW_EX (get_exception_overflow (), ip);
+				sp [-1].data.i = value;
+				sp [-1].type = VAL_I32;
+				break;
+			case CEE_CONV_OVF_U2_UN:
+				if (value > 65535)
+					THROW_EX (get_exception_overflow (), ip);
+				sp [-1].data.i = value;
+				sp [-1].type = VAL_I32;
+				break;
+#if SIZEOF_VOID_P == 4
+			case CEE_CONV_OVF_U_UN: /* Fall through */
+#endif
+			case CEE_CONV_OVF_U4_UN:
+				if (value > 4294967295U)
+					THROW_EX (get_exception_overflow (), ip);
+				sp [-1].data.i = value;
+				sp [-1].type = VAL_I32;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+			++ip;
+			BREAK;
+		}
 		CASE (CEE_BOX) {
 			guint32 token;
 			MonoClass *class;
@@ -2230,60 +2452,67 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDELEM_R8) /* fall through */
 		CASE (CEE_LDELEM_REF) {
 			MonoArrayObject *o;
+			mono_u aindex;
 
 			sp -= 2;
 
 			g_assert (sp [0].type == VAL_OBJ);
 			o = sp [0].data.p;
+			if (!o)
+				THROW_EX (get_exception_null_reference (), ip);
 
 			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
 			
-			g_assert (sp [1].data.i >= 0);
-			g_assert (sp [1].data.i < o->bounds [0].length);
+			aindex = sp [1].data.nati;
+			if (aindex >= o->bounds [0].length)
+				THROW_EX (get_exception_index_out_of_range (), ip);
 			
+			/*
+			 * FIXME: throw get_exception_array_type_mismatch () if needed 
+			 */
 			switch (*ip) {
 			case CEE_LDELEM_I1:
-				sp [0].data.i = ((gint8 *)o->vector)[sp [1].data.i]; 
+				sp [0].data.i = ((gint8 *)o->vector)[aindex];
 				sp [0].type = VAL_I32;
 				break;
 			case CEE_LDELEM_U1:
-				sp [0].data.i = ((guint8 *)o->vector)[sp [1].data.i]; 
+				sp [0].data.i = ((guint8 *)o->vector)[aindex];
 				sp [0].type = VAL_I32;
 				break;
 			case CEE_LDELEM_I2:
-				sp [0].data.i = ((gint16 *)o->vector)[sp [1].data.i]; 
+				sp [0].data.i = ((gint16 *)o->vector)[aindex];
 				sp [0].type = VAL_I32;
 				break;
 			case CEE_LDELEM_U2:
-				sp [0].data.i = ((guint16 *)o->vector)[sp [1].data.i]; 
+				sp [0].data.i = ((guint16 *)o->vector)[aindex];
 				sp [0].type = VAL_I32;
 				break;
 			case CEE_LDELEM_I:
-				sp [0].data.i = ((gint32 *)o->vector)[sp [1].data.i]; 
+				sp [0].data.nati = ((mono_i *)o->vector)[aindex];
 				sp [0].type = VAL_NATI;
 				break;
 			case CEE_LDELEM_I4:
-				sp [0].data.i = ((gint32 *)o->vector)[sp [1].data.i]; 
+				sp [0].data.i = ((gint32 *)o->vector)[aindex];
 				sp [0].type = VAL_I32;
 				break;
 			case CEE_LDELEM_U4:
-				sp [0].data.i = ((guint32 *)o->vector)[sp [1].data.i]; 
+				sp [0].data.i = ((guint32 *)o->vector)[aindex];
 				sp [0].type = VAL_I32;
 				break;
 			case CEE_LDELEM_I8:
-				sp [0].data.l = ((gint64 *)o->vector)[sp [1].data.i]; 
+				sp [0].data.l = ((gint64 *)o->vector)[aindex];
 				sp [0].type = VAL_I64;
 				break;
 			case CEE_LDELEM_R4:
-				sp [0].data.f = ((float *)o->vector)[sp [1].data.i]; 
+				sp [0].data.f = ((float *)o->vector)[aindex];
 				sp [0].type = VAL_DOUBLE;
 				break;
 			case CEE_LDELEM_R8:
-				sp [0].data.i = ((double *)o->vector)[sp [1].data.i]; 
+				sp [0].data.f = ((double *)o->vector)[aindex];
 				sp [0].type = VAL_DOUBLE;
 				break;
 			case CEE_LDELEM_REF:
-				sp [0].data.p = ((gpointer *)o->vector)[sp [1].data.i]; 
+				sp [0].data.p = ((gpointer *)o->vector)[aindex];
 				sp [0].data.vt.klass = NULL;
 				sp [0].type = VAL_OBJ;
 				break;
@@ -2293,7 +2522,6 @@ ves_exec_method (MonoInvocation *frame)
 
 			++ip;
 			++sp;
-
 			BREAK;
 		}
 		CASE (CEE_STELEM_I)  /* fall through */
@@ -2307,46 +2535,46 @@ ves_exec_method (MonoInvocation *frame)
 			MonoArrayObject *o;
 			MonoArrayClass *ac;
 			MonoObject *v;
+			mono_u aindex;
 
 			sp -= 3;
 
 			g_assert (sp [0].type == VAL_OBJ);
 			o = sp [0].data.p;
+			if (!o)
+				THROW_EX (get_exception_null_reference (), ip);
 
 			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
 			ac = (MonoArrayClass *)o->obj.klass;
 		    
-			g_assert (sp [1].data.i >= 0);
-			g_assert (sp [1].data.i < o->bounds [0].length);
+			aindex = sp [1].data.nati;
+			if (aindex >= o->bounds [0].length)
+				THROW_EX (get_exception_index_out_of_range (), ip);
 
+			/*
+			 * FIXME: throw get_exception_array_type_mismatch () if needed 
+			 */
 			switch (*ip) {
 			case CEE_STELEM_I:
-				((gint32 *)o->vector)[sp [1].data.i] = 
-					sp [2].data.i;
+				((mono_i *)o->vector)[aindex] = sp [2].data.nati;
 				break;
 			case CEE_STELEM_I1:
-				((gint8 *)o->vector)[sp [1].data.i] = 
-					sp [2].data.i;
+				((gint8 *)o->vector)[aindex] = sp [2].data.i;
 				break;
 			case CEE_STELEM_I2:
-				((gint16 *)o->vector)[sp [1].data.i] = 
-					sp [2].data.i;
+				((gint16 *)o->vector)[aindex] = sp [2].data.i;
 				break;
 			case CEE_STELEM_I4:
-				((gint32 *)o->vector)[sp [1].data.i] = 
-					sp [2].data.i;
+				((gint32 *)o->vector)[aindex] = sp [2].data.i;
 				break;
 			case CEE_STELEM_I8:
-				((gint64 *)o->vector)[sp [1].data.i] = 
-					sp [2].data.l;
+				((gint64 *)o->vector)[aindex] = sp [2].data.l;
 				break;
 			case CEE_STELEM_R4:
-				((float *)o->vector)[sp [1].data.i] = 
-					sp [2].data.f;
+				((float *)o->vector)[aindex] = sp [2].data.f;
 				break;
 			case CEE_STELEM_R8:
-				((double *)o->vector)[sp [1].data.i] = 
-					sp [2].data.f;
+				((double *)o->vector)[aindex] = sp [2].data.f;
 				break;
 			case CEE_STELEM_REF:
 				g_assert (sp [2].type == VAL_OBJ);
@@ -2356,15 +2584,13 @@ ves_exec_method (MonoInvocation *frame)
 				/*fixme: what about type conversions ? */
 				g_assert (v->klass == ac->element_class);
 
-				((gpointer *)o->vector)[sp [1].data.i] = 
-					sp [2].data.p;
+				((gpointer *)o->vector)[aindex] = sp [2].data.p;
 				break;
 			default:
 				ves_abort();
 			}
 
 			++ip;
-
 			BREAK;
 		}
 		CASE (CEE_UNUSED2) 
@@ -2383,7 +2609,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_UNUSED15) 
 		CASE (CEE_UNUSED16) 
 		CASE (CEE_UNUSED17) ves_abort(); BREAK;
-		CASE (CEE_CONV_OVF_I1) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_I1)
 		CASE (CEE_CONV_OVF_U1) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_I2) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_U2) ves_abort(); BREAK;
@@ -2884,6 +3110,7 @@ usage (void)
 	fprintf (stderr,
 		 "Valid Options are:\n"
 		 "--trace\n"
+		 "--debug method_name\n"
 		 "--opcode-count\n");
 	exit (1);
 }
@@ -2920,6 +3147,8 @@ main (int argc, char *argv [])
 			ocount = 1;
 		if (strcmp (argv [i], "--help") == 0)
 			usage ();
+		if (strcmp (argv [i], "--debug") == 0)
+			db_methods = g_list_append (db_methods, argv [++i]);
 	}
 	
 	file = argv [i];

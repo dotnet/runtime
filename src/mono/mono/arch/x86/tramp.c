@@ -7,6 +7,7 @@
  * 
  */
 
+#include "config.h"
 #include "x86-codegen.h"
 #include "mono/metadata/class.h"
 #include "mono/interpreter/interp.h"

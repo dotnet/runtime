@@ -16,6 +16,14 @@ enum {
 	VAL_VALUETA = 8
 };
 
+#if SIZEOF_VOID_P == 4
+typedef guint32 mono_u;
+typedef gint32  mono_i;
+#elif SIZEOF_VOID_P == 8
+typedef guint64 mono_u;
+typedef gint64  mono_i;
+#endif
+
 /*
  * Value types are represented on the eval stack as pointers to the
  * actual storage. The size field tells how much storage is allocated.
@@ -28,7 +36,7 @@ typedef struct {
 		double f;
 		/* native size integer and pointer types */
 		gpointer p;
-		guint nati; /* FIXME: not 64 bit clean */
+		mono_u nati;
 		struct {
 			gpointer vt;
 			MonoClass *klass;
