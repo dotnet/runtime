@@ -124,7 +124,7 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 
 			/* m->addr means pinvoke or icall */
 			if (m->addr || mono_method_same_domain (ji, target_ji)) {
-				*((guint32*)(code + 2)) = (guint)addr - ((guint)code + 1) - 5;
+				InterlockedExchange ((gint32*)(code + 2), (guint)addr - ((guint)code + 1) - 5);
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 				/* Tell valgrind to recompile the patched code */
 				VALGRIND_DISCARD_TRANSLATIONS (code + 2, code + 6);
@@ -197,18 +197,31 @@ static void
 x86_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi, 
 						   int ebx, guint8 *code, MonoVTable *vtable)
 {
-	int i;
-
 	mono_runtime_class_init (vtable);
 
 	code -= 5;
 	if (code [0] == 0xe8) {
-		/* 
-		 * FIXME: This is not thread safe, since another thread might execute
-		 * the partially changed code.
+		guint32 ops;
+		/*
+		 * Thread safe code patching using the algorithm from the paper
+		 * 'Practicing JUDO: Java Under Dynamic Optimizations'
 		 */
-		for (i = 0; i < 5; ++i)
-			x86_nop (code);
+		/* 
+		 * First atomically change the the first 2 bytes of the call to a
+		 * spinning jump.
+		 */
+		ops = 0xfeeb;
+		InterlockedExchange ((gint32*)code, ops);
+
+		/* Then change the other bytes to a nop */
+		code [2] = 0x90;
+		code [3] = 0x90;
+		code [4] = 0x90;
+
+		/* Then atomically change the first 4 bytes to a nop as well */
+		ops = 0x90909090;
+		InterlockedExchange ((guint32*)code, ops);
+
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 		/* FIXME: the calltree skin trips on the self modifying code above */
 
@@ -217,7 +230,7 @@ x86_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi,
 #endif
 	}
 	else
-		if (code [0] == 0x90)
+		if (code [0] == 0x90 || code [0] == 0xeb)
 			/* Already changed by another thread */
 			;
 		else {
