@@ -125,7 +125,7 @@ mono_marshal_init (void)
 	if (!module_initialized) {
 		module_initialized = TRUE;
 		InitializeCriticalSection (&marshal_mutex);
-		wrapper_hash = g_hash_table_new (NULL, NULL);
+		wrapper_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 		last_error_tls_id = TlsAlloc ();
 
 		register_icall (mono_marshal_string_to_utf16, "mono_marshal_string_to_utf16", "ptr obj", FALSE);

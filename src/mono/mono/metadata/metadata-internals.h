@@ -225,6 +225,9 @@ struct _MonoDynamicImage {
 	MonoDynamicTable tables [MONO_TABLE_NUM];
 };
 
+/* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
+guint mono_aligned_addr_hash (gconstpointer ptr);
+
 MonoClass**
 mono_metadata_interfaces_from_typedef_full  (MonoImage             *image,
 					     guint32                table_index,

@@ -3954,3 +3954,10 @@ mono_signature_explicit_this (MonoMethodSignature *sig)
 	return sig->explicit_this;
 }
 
+/* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
+guint
+mono_aligned_addr_hash (gconstpointer ptr)
+{
+	return GPOINTER_TO_UINT (ptr) >> 3;
+}
+

@@ -514,7 +514,7 @@ struct AssemblyPreLoadHook {
 	gpointer user_data;
 };
 
-AssemblyPreLoadHook *assembly_preload_hook = NULL;
+static AssemblyPreLoadHook *assembly_preload_hook = NULL;
 
 static MonoAssembly *
 invoke_assembly_preload_hook (MonoAssemblyName *aname, gchar **assemblies_path)

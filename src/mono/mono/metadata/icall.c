@@ -2775,7 +2775,7 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	MonoMethod *method;
 	MonoObject *member;
 	int i, len, match;
-	GHashTable *method_slots = g_hash_table_new (NULL, NULL);
+	GHashTable *method_slots = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	gchar *mname = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
 		
@@ -2925,7 +2925,7 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	int i, match;
 	int len = 0;
 	guint32 flags;
-	GHashTable *method_slots = g_hash_table_new (NULL, NULL);
+	GHashTable *method_slots = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	gchar *propname = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
 

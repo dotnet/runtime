@@ -1068,7 +1068,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 			vtable [dslot] = overrides [i*2 + 1];
 			vtable [dslot]->slot = dslot;
 			if (!override_map)
-				override_map = g_hash_table_new (NULL, NULL);
+				override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 			g_hash_table_insert (override_map, overrides [i * 2], overrides [i * 2 + 1]);
 		}
@@ -1277,7 +1277,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 						slot = k->methods [j]->slot;
 						g_assert (cm->slot < max_vtsize);
 						if (!override_map)
-							override_map = g_hash_table_new (NULL, NULL);
+							override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
 						g_hash_table_insert (override_map, m1, cm);
 						break;
 					}
@@ -1304,7 +1304,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 			vtable [decl->slot] = overrides [i*2 + 1];
  			overrides [i * 2 + 1]->slot = decl->slot;
 			if (!override_map)
-				override_map = g_hash_table_new (NULL, NULL);
+				override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
 			g_hash_table_insert (override_map, decl, overrides [i * 2 + 1]);
 		}
 	}
@@ -2208,7 +2208,7 @@ mono_ptr_class_get (MonoType *type)
 	mono_loader_lock ();
 
 	if (!ptr_hash)
-		ptr_hash = g_hash_table_new (NULL, NULL);
+		ptr_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	el_class = mono_class_from_mono_type (type);
 	if ((result = g_hash_table_lookup (ptr_hash, el_class))) {
 		mono_loader_unlock ();
@@ -2250,7 +2250,7 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 	mono_loader_lock ();
 
 	if (!ptr_hash)
-		ptr_hash = g_hash_table_new (NULL, NULL);
+		ptr_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	
 	if ((result = g_hash_table_lookup (ptr_hash, sig))) {
 		mono_loader_unlock ();

@@ -258,15 +258,15 @@ mono_domain_create (void)
 	domain->env = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
 	domain->assemblies_by_name = g_hash_table_new (g_str_hash, g_str_equal);
 	domain->assemblies = NULL;
-	domain->class_vtable_hash = g_hash_table_new (NULL, NULL);
+	domain->class_vtable_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->proxy_vtable_hash = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
-	domain->static_data_hash = mono_g_hash_table_new (NULL, NULL);
-	domain->jit_code_hash = g_hash_table_new (NULL, NULL);
+	domain->static_data_hash = mono_g_hash_table_new (mono_aligned_addr_hash, NULL);
+	domain->jit_code_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->ldstr_table = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
 	domain->jit_info_table = mono_jit_info_table_new ();
-	domain->class_init_trampoline_hash = g_hash_table_new (NULL, NULL);
-	domain->jump_trampoline_hash = g_hash_table_new (NULL, NULL);
-	domain->finalizable_objects_hash = g_hash_table_new (NULL, NULL);
+	domain->class_init_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	domain->jump_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	domain->finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->domain_id = InterlockedIncrement (&appdomain_id_counter);
 
 	InitializeCriticalSection (&domain->lock);
@@ -317,7 +317,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	/* FIXME: When should we release this memory? */
 	MONO_GC_REGISTER_ROOT (appdomains_list);
-	appdomains_list = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
+	appdomains_list = mono_g_hash_table_new (mono_aligned_addr_hash, g_direct_equal);
 
 	domain = mono_domain_create ();
 	mono_root_domain = domain;
@@ -683,7 +683,7 @@ mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 	 * inside the lock because that could lead to deadlocks.
 	 * We can do this because this function is not perf. critical.
 	 */
-	copy = mono_g_hash_table_new (NULL, NULL);
+	copy = mono_g_hash_table_new (mono_aligned_addr_hash, NULL);
 	EnterCriticalSection (&appdomains_mutex);
 	mono_g_hash_table_foreach (appdomains_list, copy_hash_entry, copy);
 	LeaveCriticalSection (&appdomains_mutex);

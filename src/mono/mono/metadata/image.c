@@ -591,7 +591,7 @@ mono_image_init (MonoImage *image)
 	image->class_cache = g_hash_table_new (NULL, NULL);
 	image->field_cache = g_hash_table_new (NULL, NULL);
 	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
-	image->array_cache = g_hash_table_new (NULL, NULL);
+	image->array_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	image->delegate_begin_invoke_cache = 
 		g_hash_table_new ((GHashFunc)mono_signature_hash, 
@@ -606,11 +606,11 @@ mono_image_init (MonoImage *image)
 		g_hash_table_new ((GHashFunc)mono_signature_hash, 
 				  (GCompareFunc)mono_metadata_signature_equal);
 	
-	image->managed_wrapper_cache = g_hash_table_new (NULL, NULL);
-	image->native_wrapper_cache = g_hash_table_new (NULL, NULL);
-	image->remoting_invoke_cache = g_hash_table_new (NULL, NULL);
-	image->synchronized_cache = g_hash_table_new (NULL, NULL);
-	image->unbox_wrapper_cache = g_hash_table_new (NULL, NULL);
+	image->managed_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	image->native_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	image->remoting_invoke_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	image->synchronized_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	image->unbox_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	image->typespec_cache = g_hash_table_new (NULL, NULL);
 	image->memberref_signatures = g_hash_table_new (NULL, NULL);
