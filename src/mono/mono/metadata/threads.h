@@ -27,8 +27,8 @@ extern MonoThread *mono_thread_current (void);
 
 typedef struct {
 	gpointer (* thread_start_compile_func) (MonoMethod *delegate);
-	void (* start_resume) (MonoThread *thread);
-	void (* end_resume) (MonoThread *thread);
+	void (* start_resume) (guint32 tid);
+	void (* end_resume) (guint32 tid);
 } MonoThreadCallbacks;
 
 extern void mono_install_thread_callbacks (MonoThreadCallbacks *callbacks);

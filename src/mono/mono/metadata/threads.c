@@ -396,12 +396,12 @@ void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this,
 	handle_store(this);
 
 	if (mono_thread_callbacks)
-		(* mono_thread_callbacks->start_resume) (this);
+		(* mono_thread_callbacks->start_resume) (this->tid);
 
 	ResumeThread(thread);
 
 	if (mono_thread_callbacks)
-		(* mono_thread_callbacks->end_resume) (this);
+		(* mono_thread_callbacks->end_resume) (this->tid);
 }
 
 void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
