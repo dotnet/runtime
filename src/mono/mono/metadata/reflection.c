@@ -4328,7 +4328,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method,
 		if (data_type == 0x55) {
 			gint type_len;
 			char *type_name;
-			if (*named == 0x80) /* no idea what this is, but it looks optional */
+			if ((unsigned char) *named == 0x80) /* no idea what this is, but it looks optional */
 				named++;
 			type_len = mono_metadata_decode_blob_size (named, &named);
 			type_name = g_malloc (type_len + 1);
