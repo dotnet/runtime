@@ -1,0 +1,55 @@
+.\" 
+.\" monoburg manual page.
+.\" (C) Ximian, Inc. 
+.\" Author:
+.\"   Dietmar Maurer (dietmar@ximian.com)
+.\"
+.TH Mono "Mono 1.0"
+.SH NAME
+monoburg \- code generator generator
+.SH SYNOPSIS
+.PP
+.B monoburg
+[\-h]  
+[\-d HEADER]
+FILE
+.SH DESCRIPTION
+The \fImonoburg\fP program is used to generate tree pattern matchers 
+from BURG specifications. \fImonoburg\fP accepts the following EBNF grammar.
+.PP
+.nf
+.RS
+.ft CW
+spec:      ccode `%%' { dcl } [`%%' ccode]
+
+dcl:       `%start' nonterm
+           `%term' { identifier [`=' integer] }
+           nonterm `:' tree [cost] [ `{' ccode `}' ] [costfunc]
+
+tree:      term `(' tree `,' tree `)'
+           term `(' tree `)'
+           term
+           nonterm
+
+cost:      `"' string '"'
+           integer
+
+costfunc: `cost' `{' ccode `}'
+.RE
+.fi
+.PP
+where \fIccode\fP is arbitrary C code.
+.SH OPTIONS
+The following options are supported:
+.TP
+.I "-h"
+Displays usage instructions.
+.TP
+.I "-d HEADER"
+Writes a separate header file which conatins all monoburg definitions.
+.PP
+.SH AUTHOR
+monoburg was written by Dietmar Maurer.
+.SH SEE ALSO
+.BR monodis(1)
+.BR pedump(1)
