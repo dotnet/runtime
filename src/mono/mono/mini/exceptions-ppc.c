@@ -296,7 +296,7 @@ arch_get_call_filter (void)
 }
 
 static void
-throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs)
+throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs, gboolean rethrow)
 {
 	static void (*restore_context) (MonoContext *);
 	MonoContext ctx;
@@ -317,7 +317,8 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
-		mono_ex->stack_trace = NULL;
+		if (!rethrow)
+			mono_ex->stack_trace = NULL;
 	}
 	arch_handle_exception (&ctx, exc, FALSE);
 	restore_context (&ctx);
@@ -325,6 +326,18 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 	g_assert_not_reached ();
 }
 
+gpointer
+mono_arch_get_rethrow_exception (void)
+{
+	static guint8 start [128];
+	static int inited = 0;
+
+	if (inited)
+		return start;
+	mono_arch_get_throw_exception_generic (start, sizeof (start), FALSE, TRUE);
+	inited = 1;
+	return start;
+}
 /**
  * arch_get_throw_exception_generic:
  *
@@ -335,7 +348,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
  *
  */
 static gpointer 
-mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name)
+mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gboolean rethrow)
 {
 	guint8 *code;
 	int alloc_size, pos, i;
@@ -385,6 +398,7 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name)
 	/* pointer to the saved int regs */
 	pos -= sizeof (gulong) * MONO_SAVED_GREGS;
 	ppc_addi (code, ppc_r6, ppc_sp, pos);
+	ppc_li (code, ppc_r8, rethrow);
 
 	ppc_bl (code, 0);
 	ppc_patch (code - 4, throw_exception);
@@ -414,7 +428,7 @@ mono_arch_get_throw_exception (void)
 
 	if (inited)
 		return start;
-	mono_arch_get_throw_exception_generic (start, sizeof (start), FALSE);
+	mono_arch_get_throw_exception_generic (start, sizeof (start), FALSE, FALSE);
 	inited = 1;
 	return start;
 }
@@ -439,7 +453,7 @@ mono_arch_get_throw_exception_by_name (void)
 
 	if (inited)
 		return start;
-	mono_arch_get_throw_exception_generic (start, sizeof (start), TRUE);
+	mono_arch_get_throw_exception_generic (start, sizeof (start), TRUE, FALSE);
 	inited = 1;
 	return start;
 }	

@@ -4,6 +4,7 @@
 #include <mono/arch/ppc/ppc-codegen.h>
 #include <glib.h>
 
+#define MONO_ARCH_HAVE_RETHROW 1
 #define MONO_MAX_IREGS 32
 #define MONO_MAX_FREGS 32
 

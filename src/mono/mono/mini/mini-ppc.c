@@ -2853,6 +2853,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_bl (code, 0);
 			break;
 		}
+		case OP_RETHROW: {
+			//ppc_break (code);
+			ppc_mr (code, ppc_r3, ins->sreg1);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+					     (gpointer)"mono_arch_rethrow_exception");
+			ppc_bl (code, 0);
+			break;
+		}
 		case OP_START_HANDLER:
 			ppc_mflr (code, ppc_r0);
 			if (ppc_is_imm16 (ins->inst_left->inst_offset)) {

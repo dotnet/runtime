@@ -165,6 +165,7 @@ isinst:
 conv.r.un: dest:f src1:i len:32
 unbox:
 throw: src1:i len:8
+op_rethrow: src1:i len:8
 ldfld:
 ldflda:
 stfld:
