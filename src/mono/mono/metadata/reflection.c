@@ -4094,6 +4094,9 @@ handle_type:
 
 		if (subt == 0x50) {
 			goto handle_type;
+		} else if (subt == 0x0E) {
+			type = MONO_TYPE_STRING;
+			goto handle_enum;
 		} else if (subt == 0x55) {
 			char *n;
 			MonoType *t;
@@ -4795,6 +4798,10 @@ handle_type:
 			goto handle_type;
 		} else if (klass->enumtype) {
 			*p++ = 0x55;
+		} else if (klass == mono_defaults.string_class) {
+			simple_type = MONO_TYPE_STRING;
+			*p++ = 0x0E;
+			goto handle_enum;
 		} else if (klass->byval_arg.type >= MONO_TYPE_BOOLEAN && klass->byval_arg.type <= MONO_TYPE_R8) {
 			*p++ = simple_type = klass->byval_arg.type;
 			goto handle_enum;
