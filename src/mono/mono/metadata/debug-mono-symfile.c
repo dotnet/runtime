@@ -348,6 +348,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	MonoSymbolFileMethodAddress *address;
 	MonoDebugVarInfo *var_table;
 	MonoDebugRangeInfo *range;
+	MonoMethodHeader *header;
 	guint32 size, num_variables, variable_size, variable_offset;
 	guint32 type_size, type_offset, *type_index_table;
 	gpointer *type_table;
@@ -356,6 +357,13 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 
 	if (!symfile->_priv->method_table)
 		return;
+
+	header = ((MonoMethodNormal *) method)->header;
+	if (!header) {
+		g_warning (G_STRLOC ": Internal error: method %s.%s doesn't have a header",
+			   method->klass->name, method->name);
+		return;
+	}
 
 	mep = g_hash_table_lookup (symfile->_priv->method_table, method);
 	if (!mep)
@@ -440,16 +448,20 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 		}
 	}
 
-	if (mep->minfo->jit->num_locals != mep->entry->num_locals) {
-#if 0
+	if (mep->minfo->jit->num_locals < mep->entry->num_locals) {
+#if 1
 		g_warning (G_STRLOC ": Method %s.%s has %d locals, but symbol file claims it has %d.",
 			   mep->method->klass->name, mep->method->name, mep->minfo->jit->num_locals,
 			   mep->entry->num_locals);
 #endif
 		var_table += mep->entry->num_locals;
-	} else
-		for (i = 0; i < mep->minfo->jit->num_locals; i++)
+	} else {
+		for (i = 0; i < mep->entry->num_locals; i++) {
+			MonoDebugVarInfo *var = &mep->minfo->jit->locals [i];
 			*var_table++ = mep->minfo->jit->locals [i];
+			*type_table++ = write_type (header->locals [i]);
+		}
+	}
 }
 
 void
