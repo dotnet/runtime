@@ -1295,6 +1295,7 @@ initialize_debugger_support ()
 {
 	guint8 *buf;
 	pthread_t thread;
+	int ret;
 
 	if (has_mono_debugger_support)
 		return;
@@ -1307,7 +1308,7 @@ initialize_debugger_support ()
 	x86_breakpoint (buf);
 	x86_ret (buf);
 
-	int ret = pthread_create (&thread, NULL, debugger_thread_func, NULL);
+	ret = pthread_create (&thread, NULL, debugger_thread_func, NULL);
 	g_assert (ret == 0);
 }
 
