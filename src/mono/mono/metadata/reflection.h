@@ -420,6 +420,7 @@ struct _MonoReflectionGenericInst {
 	MonoClass *klass;
 	MonoReflectionGenericInst *parent;
 	MonoReflectionType *generic_type;
+	MonoArray *interfaces;
 	MonoArray *methods;
 	MonoArray *ctors;
 	MonoArray *fields;
