@@ -98,12 +98,24 @@ typedef struct mcontext  * mcontext_t;
 
 */
 
+#ifdef __APPLE__
+
 /* we have the stack pointer, not the base pointer in sigcontext */
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_ir = (int)ip; } while (0); 
 #define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_sp = (int)bp; } while (0); 
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_ir))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->sc_sp))
+
+#else /* sigcontext is different on linux/ppc. See /usr/include/asm/ptrace.h. */
+
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->regs->nip = (unsigned long)ip; } while (0); 
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->regs->gpr[1] = (unsigned long)bp; } while (0); 
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->regs->nip))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs->gpr[1]))
+
+#endif
 
 /* disbale this for now */
 #undef MONO_USE_EXC_TABLES
