@@ -672,15 +672,29 @@ ves_icall_AssemblyBuilder_getDataChunk (MonoReflectionAssemblyBuilder *assb, Mon
 	return count;
 }
 
+static gboolean
+get_get_type_caller (MonoMethod *m, gint32 no, gint32 ilo, gpointer data) {
+	MonoImage **dest = data;
+
+	/* skip icalls and Type::GetType () */
+	if (m->wrapper_type || (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+			(strcmp (m->name, "GetType") == 0 && m->klass == mono_defaults.monotype_class->parent))
+		return FALSE;
+	*dest = m->klass->image;
+	return TRUE;
+}
+
 static MonoReflectionType*
 ves_icall_type_from_name (MonoString *name)
 {
+	MonoImage *image = NULL;
 	MonoType *type;
 	gchar *str;
-	
+
+	mono_stack_walk (get_get_type_caller, &image);
 	str = mono_string_to_utf8 (name);
 	/*g_print ("requested type %s\n", str);*/
-	type = mono_reflection_type_from_name (str, NULL);
+	type = mono_reflection_type_from_name (str, image);
 	g_free (str);
 	if (!type)
 		return NULL;
