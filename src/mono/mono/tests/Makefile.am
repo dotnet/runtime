@@ -354,7 +354,9 @@ noinst_LTLIBRARIES = libtest.la
 INCLUDES = $(GLIB_CFLAGS)
 
 if PLATFORM_WIN32
-libtest_la_LDFLAGS=-no-undefined -rpath `pwd`
+# the exported names created by gcc for stdcall functions are missing the leading _, so MS.NET
+# can't find them. So we use --kill-at to remove the @ suffix as well.
+libtest_la_LDFLAGS=-no-undefined -rpath `pwd` -Wl,--kill-at
 else
 libtest_la_LDFLAGS = -rpath `pwd`
 endif
