@@ -28,6 +28,12 @@ else
 	echo "Automake version new enough."
 fi
 
+# Make sure cygwin's libiconv is installed, or libtool blows its tiny mind
+if [ ! -f /usr/lib/libiconv.la ]; then
+    echo "You need to install the cygwin \"libiconv\" package!"
+    exit -1
+fi
+
 # Check mono out first, so we can run aclocal from inside the mono dir (it
 # needs to see which version of the real aclocal to run)
 test -z "$CVSROOT" && CVSROOT=:pserver:anonymous@anoncvs.go-mono.com:/mono
