@@ -96,14 +96,34 @@ mono_runtime_cleanup (MonoDomain *domain)
 	mono_network_cleanup ();
 }
 
+gboolean
+mono_domain_has_type_resolve (MonoDomain *domain)
+{
+	static MonoClassField *field = NULL;
+	MonoObject *o;
+
+	if (field == NULL) {
+		MonoClass *klass = mono_defaults.appdomain_class;
+		int i;
+
+		for (i = 0; i < klass->field.count; ++i)
+			if (strcmp (klass->fields [i].name, "TypeResolve") == 0)
+				field = &klass->fields [i];
+		g_assert (field);
+	}
+
+	mono_field_get_value ((MonoObject*)(domain->domain), field, &o);
+	return o != NULL;
+}
+
 MonoReflectionAssembly *
-mono_domain_try_type_resolve (MonoDomain *domain, MonoObject *name_or_tb)
+mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb)
 {
 	MonoClass *klass;
 	void *params [1];
 	static MonoMethod *method = NULL;
 
-	g_assert (domain != NULL && name_or_tb != NULL);
+	g_assert (domain != NULL && ((name != NULL) || (tb != NULL)));
 
 	if (method == NULL) {
 		klass = domain->domain->mbr.obj.vtable->klass;
@@ -116,7 +136,10 @@ mono_domain_try_type_resolve (MonoDomain *domain, MonoObject *name_or_tb)
 		}
 	}
 
-	*params = name_or_tb;
+	if (name)
+		*params = (MonoObject*)mono_string_new (mono_domain_get (), name);
+	else
+		*params = tb;
 	return (MonoReflectionAssembly *) mono_runtime_invoke (method, domain->domain, params, NULL);
 }
 

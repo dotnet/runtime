@@ -1424,6 +1424,7 @@ mono_image_typedef_or_ref_aux (MonoDynamicAssembly *assembly, MonoType *type,
 	klass = my_mono_class_from_mono_type (type);
 	if (!klass)
 		klass = mono_class_from_mono_type (type);
+
 	/*
 	 * If it's in the same module:
 	 */
@@ -3716,17 +3717,8 @@ mono_type_get_name (MonoType *type)
 	return g_string_free (result, FALSE);
 }
 
-/*
- * mono_reflection_get_type:
- * @image: a metadata context
- * @info: type description structure
- * @ignorecase: flag for case-insensitive string compares
- *
- * Build a MonoType from the type description in @info.
- * 
- */
-MonoType*
-mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase)
+static MonoType*
+mono_reflection_get_type_internal (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase)
 {
 	MonoClass *klass;
 	GList *mod;
@@ -3776,7 +3768,51 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 		}
 		mono_class_init (klass);
 	}
+
 	return &klass->byval_arg;
+}
+
+/*
+ * mono_reflection_get_type:
+ * @image: a metadata context
+ * @info: type description structure
+ * @ignorecase: flag for case-insensitive string compares
+ *
+ * Build a MonoType from the type description in @info.
+ * 
+ */
+
+MonoType*
+mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase)
+{
+	MonoType *type;
+	MonoReflectionAssembly *assembly;
+	GString *fullName;
+	GList *mod;
+
+	type = mono_reflection_get_type_internal (image, info, ignorecase);
+	if (type)
+		return type;
+	if (!image || !mono_domain_has_type_resolve (mono_domain_get ()))
+		return NULL;
+	
+	// Reconstruct the type name
+	fullName = g_string_new ("");
+	if (info->name_space && (info->name_space [0] != '\0'))
+		g_string_printf (fullName, "%s.%s", info->name_space, info->name);
+	else
+		g_string_printf (fullName, info->name);
+	for (mod = info->nested; mod; mod = mod->next)
+		g_string_append_printf (fullName, "+%s", (char*)mod->data);
+
+	assembly = 
+		mono_domain_try_type_resolve (
+			mono_domain_get (), fullName->str, NULL);
+	if (assembly)
+		type = mono_reflection_get_type_internal (assembly->assembly->image, 
+										 info, ignorecase);
+	g_string_free (fullName, TRUE);
+	return type;
 }
 
 /*
@@ -5169,7 +5205,7 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token)
 			/* Type is not yet created */
 			MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)mb->type;
 
-			mono_domain_try_type_resolve (mono_domain_get (), (MonoObject*)tb);
+			mono_domain_try_type_resolve (mono_domain_get (), NULL, (MonoObject*)tb);
 
 			/*
 			 * Hopefully this has been filled in by calling CreateType() on the
@@ -5189,7 +5225,7 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token)
 		if (!result) {
 			MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)cb->type;
 
-			mono_domain_try_type_resolve (mono_domain_get (), (MonoObject*)tb);
+			mono_domain_try_type_resolve (mono_domain_get (), NULL, (MonoObject*)tb);
 			result = cb->mhandle;
 		}
 	}
@@ -5204,7 +5240,7 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token)
 		if (!result) {
 			MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)fb->typeb;
 
-			mono_domain_try_type_resolve (mono_domain_get (), (MonoObject*)tb);
+			mono_domain_try_type_resolve (mono_domain_get (), NULL, (MonoObject*)tb);
 			result = fb->handle;
 		}
 	}
@@ -5218,7 +5254,7 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token)
 			result = klass;
 		}
 		else {
-			mono_domain_try_type_resolve (mono_domain_get (), (MonoObject*)tb);
+			mono_domain_try_type_resolve (mono_domain_get (), NULL, (MonoObject*)tb);
 			result = tb->type.type->data.klass;
 			g_assert (result);
 		}

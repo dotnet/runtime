@@ -142,8 +142,11 @@ mono_domain_finalize       (MonoDomain *domain);
 void
 mono_domain_unload         (MonoDomain *domain, gboolean force);
 
+gboolean
+mono_domain_has_type_resolve (MonoDomain *domain);
+
 MonoReflectionAssembly *
-mono_domain_try_type_resolve (MonoDomain *domain, MonoObject *name_or_tb);
+mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb);
 
 void
 mono_jit_info_table_add    (MonoDomain *domain, MonoJitInfo *ji);
