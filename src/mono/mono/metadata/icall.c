@@ -5233,6 +5233,7 @@ static const IcallEntry array_icalls [] = {
 static const IcallMap icall_entries [] = {
 	{"System.Activation", activator_icalls, G_N_ELEMENTS (activator_icalls)},
 	{"System.AppDomain", appdomain_icalls, G_N_ELEMENTS (appdomain_icalls)},
+	{"System.AppDomainSetup", appdomainsetup_icalls, G_N_ELEMENTS (appdomainsetup_icalls)},
 	{"System.ArgIterator", argiterator_icalls, G_N_ELEMENTS (argiterator_icalls)},
 	{"System.Array", array_icalls, G_N_ELEMENTS (array_icalls)},
 	{"System.Buffer", buffer_icalls, G_N_ELEMENTS (buffer_icalls)},
