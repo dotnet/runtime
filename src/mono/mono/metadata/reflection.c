@@ -825,6 +825,9 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicAssembly *
 	guint32 *values;
 	char *name;
 
+	/* maybe this fixup should be done in the C# code */
+	if (fb->attrs & FIELD_ATTRIBUTE_LITERAL)
+		fb->attrs |= FIELD_ATTRIBUTE_HAS_DEFAULT;
 	table = &assembly->tables [MONO_TABLE_FIELD];
 	fb->table_idx = table->next_idx ++;
 	values = table->values + fb->table_idx * MONO_FIELD_SIZE;
@@ -1022,7 +1025,7 @@ resolution_scope_from_image (MonoDynamicAssembly *assembly, MonoImage *image)
 	guint32 *values;
 	guint32 cols [MONO_ASSEMBLY_SIZE];
 
-	if ((token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, image))))
+	if ((token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, image))))
 		return token;
 
 	mono_metadata_decode_row (&image->tables [MONO_TABLE_ASSEMBLY], 0, cols, MONO_ASSEMBLY_SIZE);
@@ -1047,7 +1050,7 @@ resolution_scope_from_image (MonoDynamicAssembly *assembly, MonoImage *image)
 
 	token <<= RESOLTION_SCOPE_BITS;
 	token |= RESOLTION_SCOPE_ASSEMBLYREF;
-	g_hash_table_insert (assembly->typeref, image, GUINT_TO_POINTER (token));
+	g_hash_table_insert (assembly->handleref, image, GUINT_TO_POINTER (token));
 	return token;
 }
 
@@ -1174,12 +1177,12 @@ mono_image_get_methodref_token (MonoDynamicAssembly *assembly, MonoMethod *metho
 {
 	guint32 token;
 	
-	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, method));
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, method));
 	if (token)
 		return token;
 	token = mono_image_get_memberref_token (assembly, method->klass, 
 		method->name,  method_encode_signature (assembly, method->signature));
-	g_hash_table_insert (assembly->typeref, method, GUINT_TO_POINTER(token));
+	g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
 	return token;
 }
 
@@ -1188,12 +1191,12 @@ mono_image_get_fieldref_token (MonoDynamicAssembly *assembly, MonoClassField *fi
 {
 	guint32 token;
 	
-	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, field));
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, field));
 	if (token)
 		return token;
 	token = mono_image_get_memberref_token (assembly, klass, 
 		field->name,  fieldref_encode_signature (assembly, field));
-	g_hash_table_insert (assembly->typeref, field, GUINT_TO_POINTER(token));
+	g_hash_table_insert (assembly->handleref, field, GUINT_TO_POINTER(token));
 	return token;
 }
 
@@ -1358,7 +1361,12 @@ mono_image_fill_module_table (MonoDomain *domain, MonoReflectionModuleBuilder *m
 	name = mono_string_to_utf8 (mb->module.name);
 	table->values [mb->table_idx * MONO_MODULE_SIZE + MONO_MODULE_NAME] = string_heap_insert (&assembly->sheap, name);
 	g_free (name);
-	/* need to set mvid? */
+	i = mono_image_add_stream_data (&assembly->guid, mono_array_addr (mb->guid, char, 0), 16);
+	i /= 16;
+	++i;
+	table->values [mb->table_idx * MONO_MODULE_SIZE + MONO_MODULE_MVID] = i;
+	table->values [mb->table_idx * MONO_MODULE_SIZE + MONO_MODULE_ENC] = 0;
+	table->values [mb->table_idx * MONO_MODULE_SIZE + MONO_MODULE_ENCBASE] = 0;
 
 	mono_image_add_cattrs (assembly, mb->table_idx, CUSTOM_ATTR_MODULE, mb->cattrs);
 	/*
@@ -1658,6 +1666,7 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	values [MONO_ASSEMBLY_MINOR_VERSION] = 0;
 	values [MONO_ASSEMBLY_REV_NUMBER] = 0;
 	values [MONO_ASSEMBLY_BUILD_NUMBER] = 0;
+	values [MONO_ASSEMBLY_FLAGS] = 0;
 
 	mono_image_add_cattrs (assembly, 1, CUSTOM_ATTR_ASSEMBLY, assemblyb->cattrs);
 
@@ -1816,7 +1825,8 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 #endif
 
 	assembly->token_fixups = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
-	assembly->typeref = g_hash_table_new (g_direct_hash, g_direct_equal);
+	assembly->handleref = g_hash_table_new (g_direct_hash, g_direct_equal);
+	assembly->typeref = g_hash_table_new (mono_metadata_type_hash, mono_metadata_type_equal);
 
 	string_heap_init (&assembly->sheap);
 	mono_image_add_stream_data (&assembly->us, "", 1);

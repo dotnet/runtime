@@ -1710,6 +1710,8 @@ typebuilder_fields[] = {
 static const FieldDesc 
 modulebuilder_fields[] = {
 	{"types", G_STRUCT_OFFSET (MonoReflectionModuleBuilder, types)},
+	{"cattrs", G_STRUCT_OFFSET (MonoReflectionModuleBuilder, cattrs)},
+	{"guid", G_STRUCT_OFFSET (MonoReflectionModuleBuilder, guid)},
 	{"table_idx", G_STRUCT_OFFSET (MonoReflectionModuleBuilder, table_idx)},
 	{NULL, 0}
 };

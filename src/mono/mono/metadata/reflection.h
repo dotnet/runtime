@@ -212,6 +212,7 @@ typedef struct {
 	guint32 text_rva;
 	guint32 metadata_rva;
 	GHashTable *typeref;
+	GHashTable *handleref;
 	MonoGHashTable *token_fixups;
 	MonoDynamicStream sheap;
 	MonoDynamicStream code; /* used to store method headers and bytecode */
@@ -271,6 +272,7 @@ typedef struct {
 	MonoReflectionModule module;
 	MonoArray *types;
 	MonoArray *cattrs;
+	MonoArray *guid;
 	guint32    table_idx;
 	MonoReflectionAssemblyBuilder *assemblyb;
 } MonoReflectionModuleBuilder;
