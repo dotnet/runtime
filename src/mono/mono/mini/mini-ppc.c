@@ -3350,7 +3350,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			ppc_load (ip, ppc_r11, patch_info->data.target);
 			//*((gconstpointer *)(ip + 2)) = patch_info->data.target;
 
-			for (i = 0; i < patch_info->table_size; i++) {
+			for (i = 0; i < patch_info->data.table->table_size; i++) {
 				table [i] = (int)patch_info->data.table [i] + code;
 			}
 			/* we put into the table the absolute address, no need for ppc_patch in this case */
