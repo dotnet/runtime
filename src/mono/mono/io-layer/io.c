@@ -1691,93 +1691,127 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 		   gboolean fail_if_exists)
 {
-	gpointer src, dest;
-	guint32 attrs;
-	char buffer [32*1024];
+	gchar *utf8_src, *utf8_dest;
+	int src_fd, dest_fd;
+	int buf_size;
+	char *buf;
 	int remain, n;
-	int fd_in, fd_out;
 	struct stat st;
-	struct _WapiHandlePrivate_file *file_private_handle;
-	gboolean ok;
-
-	attrs = GetFileAttributes (name);
-	if (attrs == INVALID_FILE_ATTRIBUTES) {
-		SetLastError (ERROR_FILE_NOT_FOUND);
-		return  FALSE;
-	}
 	
-	src = CreateFile (name, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
-			  NULL, OPEN_EXISTING, 0, NULL);
-	if (src == INVALID_HANDLE_VALUE) {
-		_wapi_set_last_error_from_errno ();
-		return FALSE;
-	}
-	
-	dest = CreateFile (dest_name, GENERIC_WRITE, 0, NULL,
-			   fail_if_exists ? CREATE_NEW : CREATE_ALWAYS, attrs, NULL);
-	if (dest == INVALID_HANDLE_VALUE) {
-		_wapi_set_last_error_from_errno ();
-		CloseHandle (src);
-		return FALSE;
-	}
-
-	for (;;) {
-		if (ReadFile (src, &buffer,sizeof (buffer), &remain, NULL) == 0) {
-			_wapi_set_last_error_from_errno ();
+	utf8_src = mono_unicode_to_external (name);
+	if (utf8_src == NULL) {
 #ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION ": read failed.");
+		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion of source returned NULL");
 #endif
-			CloseHandle (dest);
-			CloseHandle (src);
-			return FALSE;
+
+		SetLastError (ERROR_INVALID_PARAMETER);
+		return(FALSE);
+	}
+	
+	utf8_dest = mono_unicode_to_external (dest_name);
+	if (utf8_dest == NULL) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion of dest returned NULL");
+#endif
+
+		SetLastError (ERROR_INVALID_PARAMETER);
+
+		g_free (utf8_src);
+		
+		return(FALSE);
+	}
+	
+	src_fd = open (utf8_src, O_RDONLY);
+	if (src_fd < 0) {
+		_wapi_set_last_error_from_errno ();
+
+		g_free (utf8_src);
+		g_free (utf8_dest);
+		
+		return(FALSE);
+	}
+
+	if (fstat (src_fd, &st) < 0) {
+		_wapi_set_last_error_from_errno ();
+
+		g_free (utf8_src);
+		g_free (utf8_dest);
+		close (src_fd);
+		
+		return(FALSE);
+	}
+	
+	if (fail_if_exists) {
+		dest_fd = open (utf8_dest, O_WRONLY | O_CREAT, st.st_mode);
+	} else {
+		dest_fd = open (utf8_dest, O_WRONLY | O_TRUNC, st.st_mode);
+		if (dest_fd < 0) {
+			/* O_TRUNC might cause a fail if the file
+			 * doesn't exist
+			 */
+			dest_fd = open (utf8_dest, O_WRONLY | O_CREAT,
+					st.st_mode);
+		}
+	}
+	if (dest_fd < 0) {
+		_wapi_set_last_error_from_errno ();
+
+		g_free (utf8_src);
+		g_free (utf8_dest);
+		close (src_fd);
+		
+		return(FALSE);
+	}
+	
+	buf_size = st.st_blksize;
+	buf = (char *) alloca (buf_size);
+	
+	for (;;) {
+		remain = read (src_fd, buf, buf_size);
+		if (remain < 0) {
+			if (errno == EINTR) {
+				continue;
+			}
+			
+			_wapi_set_last_error_from_errno ();
+
+			g_free (utf8_src);
+			g_free (utf8_dest);
+			close (src_fd);
+			close (dest_fd);
+			
+			return(FALSE);
+		}
+		
+		if (remain == 0) {
+			break;
 		}
 
-		if (remain == 0)
-			break;
-
 		while (remain > 0) {
-			if (WriteFile (dest, &buffer, remain, &n, NULL) == 0) {
+			if ((n = write (dest_fd, buf, remain)) < 0) {
 				_wapi_set_last_error_from_errno ();
 #ifdef DEBUG
 				g_message (G_GNUC_PRETTY_FUNCTION ": write failed.");
 #endif
-				CloseHandle (dest);
-				CloseHandle (src);
-				return FALSE;
+
+				g_free (utf8_src);
+				g_free (utf8_dest);
+				close (src_fd);
+				close (dest_fd);
+
+				return (FALSE);
 			}
 
 			remain -= n;
 		}
 	}
 
-	ok=_wapi_lookup_handle (src, WAPI_HANDLE_FILE,
-				NULL, (gpointer *)&file_private_handle);
-	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error looking up file handle %p", src);
+	g_free (utf8_src);
+	g_free (utf8_dest);
+	close (src_fd);
+	close (dest_fd);
 
-		goto done;
-	}
-
-	fd_in=file_private_handle->fd;
-	fstat(fd_in, &st);
-	
-	ok=_wapi_lookup_handle (dest, WAPI_HANDLE_FILE,
-				NULL, (gpointer *)&file_private_handle);
-	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error looking up file handle %p", dest);
-
-		goto done;
-	}
-
-	fd_out=file_private_handle->fd;
-	fchmod(fd_out, st.st_mode);
-
-done:
-	CloseHandle (dest);
-	CloseHandle (src);
-	return TRUE;
+	return(TRUE);
 }
 
 static mono_once_t stdhandle_once=MONO_ONCE_INIT;
@@ -3333,6 +3367,10 @@ write_cleanup:
 	g_assert (thr_ret == 0);
 	pthread_cleanup_pop (0);
 
+	if (unref_write) {
+		_wapi_handle_unref (write_handle);
+	}
+
 cleanup:
 	thr_ret =_wapi_handle_unlock_handle (read_handle);
 	g_assert (thr_ret == 0);
@@ -3343,9 +3381,6 @@ cleanup:
 	 */
 	if (unref_read) {
 		_wapi_handle_unref (read_handle);
-	}
-	if (unref_write) {
-		_wapi_handle_unref (write_handle);
 	}
 	
 	return(cp_ret);
