@@ -32,6 +32,7 @@
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/socket-private.h>
 #include <mono/io-layer/handles-private.h>
+#include <mono/io-layer/socket-wrappers.h>
 
 #undef DEBUG
 

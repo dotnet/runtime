@@ -4,7 +4,6 @@ INCLUDES = \
 	$(GLIB_CFLAGS)		\
 	$(GMODULE_CFLAGS)	\
 	$(LIBGC_CFLAGS)		\
-	-D_WAPI_BUILDING=1	\
 	-DMONO_BINDIR=\""$(bindir)"\"	\
 	-I$(top_srcdir)	
 
@@ -80,6 +79,7 @@ OTHER_SRC = \
 	sockets.c		\
 	sockets.h		\
 	socket-private.h	\
+	socket-wrappers.h	\
 	status.h		\
 	system.c		\
 	system.h		\
