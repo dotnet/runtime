@@ -105,9 +105,9 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params)
 	gpointer *pa;
 	int i;
 
-	pa = alloca (sizeof (gpointer) * params->bounds->length);
+	pa = alloca (sizeof (gpointer) * mono_array_length (params));
 
-	for (i = 0; i < params->bounds->length; i++) {
+	for (i = 0; i < mono_array_length (params); i++) {
 		if (sig->params [i]->byref) {
 			/* nothing to do */
 		}
@@ -269,6 +269,17 @@ mono_array_clone (MonoArray *array)
 	int size, i;
 	guint32 *sizes;
 	MonoClass *klass = array->obj.vtable->klass;
+
+	if (array->bounds == NULL) {
+		size = mono_array_length (array);
+		o = mono_array_new_full (((MonoObject *)array)->vtable->domain,
+					 klass, &size, NULL);
+
+		size *= mono_array_element_size (klass);
+		memcpy (o, array, sizeof (MonoArray) + size);
+
+		return o;
+	}
 	
 	sizes = alloca (klass->rank * sizeof(guint32) * 2);
 	size = mono_array_element_size (klass);
@@ -310,19 +321,25 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 	byte_len = mono_array_element_size (array_class);
 	len = 1;
 
-#if HAVE_BOEHM_GC
-	bounds = GC_debug_malloc (sizeof (MonoArrayBounds) * array_class->rank, "bounds", 0);
-#else
-	bounds = g_malloc0 (sizeof (MonoArrayBounds) * array_class->rank);
-#endif
-	for (i = 0; i < array_class->rank; ++i) {
-		bounds [i].length = lengths [i];
-		len *= lengths [i];
+	if (array_class->this_arg.type == MONO_TYPE_SZARRAY) {
+		bounds = NULL;
+		len = lengths [0];
+	} else {
+	#if HAVE_BOEHM_GC
+		bounds = GC_debug_malloc (sizeof (MonoArrayBounds) * array_class->rank, "bounds", 0);
+	#else
+		bounds = g_malloc0 (sizeof (MonoArrayBounds) * array_class->rank);
+	#endif
+		for (i = 0; i < array_class->rank; ++i) {
+			bounds [i].length = lengths [i];
+			len *= lengths [i];
+		}
+
+		if (lower_bounds)
+			for (i = 0; i < array_class->rank; ++i)
+				bounds [i].lower_bound = lower_bounds [i];
 	}
 
-	if (lower_bounds)
-		for (i = 0; i < array_class->rank; ++i)
-			bounds [i].lower_bound = lower_bounds [i];
 	byte_len *= len;
 	/* 
 	 * Following three lines almost taken from mono_object_new ():

@@ -1274,10 +1274,13 @@ ves_array_element_address (MonoArray *this, ...)
 
 	class = this->obj.vtable->klass;
 
-	ind = va_arg(ap, int) - this->bounds [0].lower_bound;
-	for (i = 1; i < class->rank; i++) {
-		ind = ind*this->bounds [i].length + va_arg(ap, int) -
-			this->bounds [i].lower_bound;;
+	ind = va_arg(ap, int);
+	if (this->bounds != NULL) {
+		ind -= this->bounds [0].lower_bound;
+		for (i = 1; i < class->rank; i++) {
+			ind = ind*this->bounds [i].length + va_arg(ap, int) -
+				this->bounds [i].lower_bound;;
+		}
 	}
 
 	esize = mono_array_element_size (class);

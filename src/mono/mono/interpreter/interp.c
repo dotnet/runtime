@@ -433,15 +433,18 @@ ves_array_set (MonoInvocation *frame)
 
 	g_assert (ac->rank >= 1);
 
-	pos = sp [0].data.i - ao->bounds [0].lower_bound;
-	for (i = 1; i < ac->rank; i++) {
-		if ((t = sp [i].data.i - ao->bounds [i].lower_bound) >= 
-		    ao->bounds [i].length) {
-			g_warning ("wrong array index");
-			g_assert_not_reached ();
+	pos = sp [0].data.i;
+	if (ao->bounds != NULL) {
+		pos -= ao->bounds [0].lower_bound;
+		for (i = 1; i < ac->rank; i++) {
+			if ((t = sp [i].data.i - ao->bounds [i].lower_bound) >= 
+			    ao->bounds [i].length) {
+				g_warning ("wrong array index");
+				g_assert_not_reached ();
+			}
+			pos = pos*ao->bounds [i].length + sp [i].data.i - 
+				ao->bounds [i].lower_bound;
 		}
-		pos = pos*ao->bounds [i].length + sp [i].data.i - 
-			ao->bounds [i].lower_bound;
 	}
 
 	esize = mono_array_element_size (ac);
@@ -468,10 +471,13 @@ ves_array_get (MonoInvocation *frame)
 
 	g_assert (ac->rank >= 1);
 
-	pos = sp [0].data.i - ao->bounds [0].lower_bound;
-	for (i = 1; i < ac->rank; i++)
-		pos = pos*ao->bounds [i].length + sp [i].data.i - 
-			ao->bounds [i].lower_bound;
+	pos = sp [0].data.i;
+	if (ao->bounds != NULL) {
+		pos -= ao->bounds [0].lower_bound;
+		for (i = 1; i < ac->rank; i++)
+			pos = pos*ao->bounds [i].length + sp [i].data.i - 
+				ao->bounds [i].lower_bound;
+	}
 
 	esize = mono_array_element_size (ac);
 	ea = mono_array_addr_with_size (ao, esize, pos);
@@ -496,10 +502,13 @@ ves_array_element_address (MonoInvocation *frame)
 
 	g_assert (ac->rank >= 1);
 
-	pos = sp [0].data.i - ao->bounds [0].lower_bound;
-	for (i = 1; i < ac->rank; i++)
-		pos = pos*ao->bounds [i].length + sp [i].data.i - 
-			ao->bounds [i].lower_bound;
+	pos = sp [0].data.i;
+	if (ao->bounds != NULL) {
+		pos -= ao->bounds [0].lower_bound;
+		for (i = 1; i < ac->rank; i++)
+			pos = pos*ao->bounds [i].length + sp [i].data.i - 
+				ao->bounds [i].lower_bound;
+	}
 
 	esize = mono_array_element_size (ac);
 	ea = mono_array_addr_with_size (ao, esize, pos);

@@ -400,15 +400,21 @@ mono_domain_transfer_object (MonoDomain *src, MonoDomain *dst, MonoObject *obj)
 		int esize, ecount, i;
 		guint32 *sizes;
 		
-		sizes = alloca (klass->rank * sizeof(guint32) * 2);
 		esize = mono_array_element_size (klass);
-		ecount = 1;
-		for (i = 0; i < klass->rank; ++i) {
-			sizes [i] = ao->bounds [i].length;
-			ecount *= ao->bounds [i].length;
-			sizes [i + klass->rank] = ao->bounds [i].lower_bound;
+		if (ao->bounds == NULL) {
+			ecount = mono_array_length (ao);
+			res = (MonoObject *)mono_array_new_full (dst, klass, &ecount, NULL);
 		}
-		res = (MonoObject *)mono_array_new_full (dst, klass, sizes, sizes + klass->rank);
+		else {
+			sizes = alloca (klass->rank * sizeof(guint32) * 2);
+			ecount = 1;
+			for (i = 0; i < klass->rank; ++i) {
+				sizes [i] = ao->bounds [i].length;
+				ecount *= ao->bounds [i].length;
+				sizes [i + klass->rank] = ao->bounds [i].lower_bound;
+			}
+			res = (MonoObject *)mono_array_new_full (dst, klass, sizes, sizes + klass->rank);
+		}
 		if (klass->element_class->valuetype) {
 			memcpy (res, (char *)ao + sizeof(MonoArray), esize * ecount);
 		} else {

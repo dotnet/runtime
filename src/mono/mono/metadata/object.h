@@ -67,6 +67,7 @@ typedef struct {
 
 typedef struct {
 	MonoObject obj;
+	/* bounds is NULL for szarrays */
 	MonoArrayBounds *bounds;
 	/* total number of elements of the array */
 	guint32 max_length; 

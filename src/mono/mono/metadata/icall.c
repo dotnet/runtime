@@ -84,10 +84,18 @@ ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
 	ac = (MonoClass *)ao->obj.vtable->klass;
 
 	g_assert (ic->rank == 1);
-	if (io->bounds [0].length != ac->rank)
+	if (io->bounds != NULL || io->max_length !=  ac->rank)
 		mono_raise_exception (mono_get_exception_argument (NULL, NULL));
 
 	ind = (guint32 *)io->vector;
+
+	if (ao->bounds == NULL) {
+		if (*ind < 0 || *ind >= ao->max_length)
+			mono_raise_exception (mono_get_exception_index_out_of_range ());
+
+		return ves_icall_System_Array_GetValueImpl (this, *ind);
+	}
+	
 	for (i = 0; i < ac->rank; i++)
 		if ((ind [i] < ao->bounds [i].lower_bound) ||
 		    (ind [i] >= ao->bounds [i].length + ao->bounds [i].lower_bound))
@@ -376,10 +384,19 @@ ves_icall_System_Array_SetValue (MonoArray *this, MonoObject *value,
 	ac = this->obj.vtable->klass;
 
 	g_assert (ic->rank == 1);
-	if (idxs->bounds [0].length != ac->rank)
+	if (idxs->bounds != NULL || idxs->max_length != ac->rank)
 		mono_raise_exception (mono_get_exception_argument (NULL, NULL));
 
 	ind = (guint32 *)idxs->vector;
+
+	if (this->bounds == NULL) {
+		if (*ind < 0 || *ind >= this->max_length)
+			mono_raise_exception (mono_get_exception_index_out_of_range ());
+
+		ves_icall_System_Array_SetValueImpl (this, value, *ind);
+		return;
+	}
+	
 	for (i = 0; i < ac->rank; i++)
 		if ((ind [i] < this->bounds [i].lower_bound) ||
 		    (ind [i] >= this->bounds [i].length + this->bounds [i].lower_bound))
@@ -439,6 +456,10 @@ ves_icall_System_Array_GetLength (MonoArray *this, gint32 dimension)
 	gint32 rank = ((MonoObject *)this)->vtable->klass->rank;
 	if ((dimension < 0) || (dimension >= rank))
 		mono_raise_exception (mono_get_exception_index_out_of_range ());
+	
+	if (this->bounds == NULL)
+		return this->max_length;
+	
 	return this->bounds [dimension].length;
 }
 
@@ -448,6 +469,10 @@ ves_icall_System_Array_GetLowerBound (MonoArray *this, gint32 dimension)
 	gint32 rank = ((MonoObject *)this)->vtable->klass->rank;
 	if ((dimension < 0) || (dimension >= rank))
 		mono_raise_exception (mono_get_exception_index_out_of_range ());
+	
+	if (this->bounds == NULL)
+		return 0;
+	
 	return this->bounds [dimension].lower_bound;
 }
 
@@ -470,8 +495,11 @@ ves_icall_InitializeArray (MonoArray *array, MonoClassField *field_handle)
 	guint32 size = mono_array_element_size (klass);
 	int i;
 
-	for (i = 0; i < klass->rank; ++i) 
-		size *= array->bounds [i].length;
+	if (array->bounds == NULL)
+		size *= array->max_length;
+	else
+		for (i = 0; i < klass->rank; ++i) 
+			size *= array->bounds [i].length;
 
 	memcpy (mono_array_addr (array, char, 0), field_handle->data, size);
 
@@ -589,7 +617,7 @@ ves_icall_AssemblyBuilder_getPEHeader (MonoReflectionAssemblyBuilder *assb, Mono
 	int count, hsize;
 	MonoDynamicAssembly *ass = assb->dynamic_assembly;
 
-	hsize = mono_image_get_header (assb, (char*)buf->vector, buf->bounds->length);
+	hsize = mono_image_get_header (assb, (char*)buf->vector, mono_array_length (buf));
 	if (hsize < 0)
 		return hsize;
 	count = ass->code.index + ass->meta_size;
@@ -958,14 +986,14 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 		}
 	}
 
-	for (i = 0; i < params->bounds->length; i++) {
+	for (i = 0; i < mono_array_length (params); i++) {
 		if (sig->params [i]->byref) 
 			outarg_count++;
 	}
 
 	out_args = mono_array_new (domain, mono_defaults.object_class, outarg_count);
 	
-	for (i = 0, j = 0; i < params->bounds->length; i++) {
+	for (i = 0, j = 0; i < mono_array_length (params); i++) {
 		if (sig->params [i]->byref) {
 			gpointer arg;
 			arg = mono_array_get (params, gpointer, i);
@@ -1833,9 +1861,13 @@ ves_icall_System_Buffer_ByteLengthInternal (MonoArray *array) {
 	if (etype < MONO_TYPE_BOOLEAN || etype > MONO_TYPE_R8)
 		return -1;
 
-	length = 0;
-	for (i = 0; i < klass->rank; ++ i)
-		length += array->bounds [i].length;
+	if (array->bounds == NULL)
+		length = array->max_length;
+	else {
+		length = 0;
+		for (i = 0; i < klass->rank; ++ i)
+			length += array->bounds [i].length;
+	}
 
 	esize = mono_array_element_size (klass);
 	return length * esize;

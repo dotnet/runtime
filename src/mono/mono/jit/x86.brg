@@ -1257,9 +1257,7 @@ reg: LDLEN (reg) {
 	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NE, TRUE, "NullReferenceException");
 
 	x86_mov_reg_membase (s->code, tree->reg1, tree->left->reg1,  
-			     G_STRUCT_OFFSET (MonoArray, bounds), 4);
-	x86_mov_reg_membase (s->code, tree->reg1, tree->reg1,  
-			     G_STRUCT_OFFSET (MonoArrayBounds, length), 4);
+			     G_STRUCT_OFFSET (MonoArray, max_length), 4);
 }
 
 reg: LDELEMA (reg, reg) {
