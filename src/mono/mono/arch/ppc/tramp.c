@@ -706,11 +706,11 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	stack_size = 1024;
 	stack_param = 0;
 
-	sig = method->signature;
+	sig = mono_method_signature (method);
 
 	p = code_buffer = g_malloc (code_size);
 
-	DEBUG (printf ("\nDelegate [start emiting] %s\n", method->name));
+	DEBUG (printf ("\nDelegate [start emiting] %s\n", mono_method_get_name (method)));
 
 	/* prolog */
 	ppc_stwu (p, ppc_r1, -stack_size, ppc_r1);     /* sp      <--- sp - stack_size, sp[0] <---- sp save sp, alloc stack */
