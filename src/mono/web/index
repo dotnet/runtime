@@ -23,6 +23,14 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Jan 28, 2002
+
+	The Mono Class Libraries have been relicensed under the terms of the
+	<a href="www.opensource.org/licenses/mit-license.html">MIT X11</a> license.
+
+	This license is an Open Source license, and is used by other projects
+	(most notably, the XFree86 project). 
+
 ** Jan 23, 2002
 
 	New mailing list: <a href="mailto:mono-patches-request@ximian.com">mono-patches@ximian.com</a>.

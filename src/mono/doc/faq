@@ -601,38 +601,21 @@ A: Yes.  The licensing scheme is planned to allow proprietary
    
 Q: What license or licenses are you using for the Mono Project?
 
-A: The C# Compiler is released under the terms of the GPL.  The class
-   libraries will be under the LGPL or the GPL with a special
-   exception.  The runtime libraries are under the LGPL.
-
-   Since the LGPL is not suitable for embedded systems development, we
-   are also licensing the libraries under the GPL with the following exception:
-
-   If you link this library against your own program, then you do not
-   need to release the source code for that program. However, any
-   changes that you make to the library itself, or to any native
-   methods upon which the library relies, must be re-distributed in
-   accordance with the terms of the GPL.
-
-   This is similar in spirit to <a
-   href="http://www.gnu.org/software/classpath/classpath.html">GNU
-   Classpath.</a>
-
-Q: Can I subclass objects within the LGPL licensed Mono code and still release
-   the resulting software under a closed license?
-
-A: Yes. Subclassing does not "count" as a modification to GPL'ed code.
-   This means that you may use subclasses when developing proprietary
-   code with Mono.
+A: The C# Compiler is released under the terms of the <a 
+   href="http://www.opensource.org/licenses/gpl-license.html">GNU GPL</a>.  The runtime
+   libraries are under the <a
+   href="http://www.opensource.org/licenses/lgpl-license.html">GNU
+   Library GPL</a>.  And the class libraries are released
+   under the terms of the <a
+   href="www.opensource.org/licenses/mit-license.html">MIT X11</a>
+   license.
 
 Q: I would like to contribute code to Mono under a particular
    license. What licenses will you accept?
 
 A: We will have to evaluate the licenses for compatibility first,
-   but as a general rule, we will accept all GPL and LGPL-compatible
-   licenses. If you want to use the BSD
-   license, make sure you use the BSD license without the
-   advertisement clause (The `Ousterhout License').
+   but as a general rule, we will accept the code under the same
+   terms of the "container" module. 
 
 <a name="etc"></a>
 ** Miscellaneous Questions
