@@ -40,7 +40,11 @@ typedef struct MonoCompileArch {
 } MonoCompileArch;
 
 #ifndef PLATFORM_WIN32
+
+#ifdef HAVE_WORKING_SIGALTSTACK
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK
+#endif
+
 #endif
 
 #define MONO_ARCH_BIGMUL_INTRINS 1
