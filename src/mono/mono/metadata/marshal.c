@@ -5195,6 +5195,10 @@ mono_marshal_alloc (gpointer size)
 
 	MONO_ARCH_SAVE_REGS;
 
+	if ((gulong)size == 0)
+		/* This returns a valid pointer for size 0 on MS.NET */
+		size = (gpointer)4;
+
 	res = g_try_malloc ((gulong)size);
 	if (!res)
 		mono_gc_out_of_memory ((gulong)size);
