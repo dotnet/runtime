@@ -1,3 +1,11 @@
+/*
+ * abcremoval.h: Array bounds check removal
+ *
+ * Author:
+ *   Massimiliano Mantione (massi@ximian.com)
+ *
+ * (C) 2004 Ximian, Inc.  http://www.ximian.com
+ */
 
 #ifndef __MONO_ABCREMOVAL_H__
 #define __MONO_ABCREMOVAL_H__

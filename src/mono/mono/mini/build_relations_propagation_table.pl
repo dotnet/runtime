@@ -1,5 +1,12 @@
 #!/usr/bin/perl
 
+# Generate helper table for array bounds check removal
+#
+# Author:
+#   Massimiliano Mantione (massi@ximian.com)
+#
+# (C) 2004 Ximian, Inc.  http://www.ximian.com
+
 @relations = (
   'MONO_NO_RELATION',  # 000
   'MONO_EQ_RELATION',  # 001
