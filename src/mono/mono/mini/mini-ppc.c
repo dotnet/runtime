@@ -1102,6 +1102,8 @@ handle_enum:
 		if (enable_arguments) {
 			/* FIXME: what reg?  */
 			ppc_fmr (code, ppc_f3, ppc_f1);
+			ppc_lwz (code, ppc_r4, cfg->stack_usage - 8, cfg->frame_reg);
+			ppc_lwz (code, ppc_r5, cfg->stack_usage - 4, cfg->frame_reg);
 		}
 		break;
 	case SAVE_STRUCT:
@@ -1141,7 +1143,7 @@ handle_enum:
 
 #define EMIT_COND_BRANCH(ins,cond) \
 if (ins->flags & MONO_INST_BRLABEL) { \
-        if (ins->inst_i0->inst_c0) { \
+        if (0 && ins->inst_i0->inst_c0) { \
 		ppc_bc (code, branch_b0_table [cond], branch_b1_table [cond], (code - cfg->native_code + ins->inst_i0->inst_c0) & 0xffff);	\
         } else { \
 	        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0); \
@@ -1960,8 +1962,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 						create_copy_ins (cfg, ppc_r0, ppc_r3, ins);
 					} else {
 						/* two forced copies */
-						create_copy_ins (cfg, val, ppc_r3, ins);
 						create_copy_ins (cfg, ins->dreg, ppc_r4, ins);
+						create_copy_ins (cfg, val, ppc_r3, ins);
 					}
 				} else {
 					if (val == ppc_r3) {

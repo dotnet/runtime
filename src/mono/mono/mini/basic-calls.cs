@@ -87,5 +87,12 @@ class Tests {
 	}
 
 
+	static int pass_many_types (int a, long b, int c, long d) {
+		return a + (int)b + c + (int)d;
+	}
+
+	static int test_5_pass_longs () {
+		return pass_many_types (1, 2, -5, 7);
+	}
 }
 

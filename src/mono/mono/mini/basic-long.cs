@@ -676,5 +676,14 @@ class Tests {
 			return 0;
 		return 4;
 	}
+
+	static int test_10_int_uint_compare () {
+		uint size = 10;
+		int j = 0;
+		for (int i = 0; i < size; ++i) {
+			j++;
+		}
+		return j;
+	}
 }
 
