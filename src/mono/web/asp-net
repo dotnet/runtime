@@ -9,8 +9,10 @@
 
 	There is work underway for both systems.  The Web Forms
 	support is more advanced at this point, and various ".aspx"
-	programs can be run using the Mono runtime (embedded into
-	either the XSP server or the mod_mono Apache module).
+	programs can be run using the Mono runtime, including IBuySpy.
+
+	ASP.NET works either embedded into
+	our XSP server test server or the mod_mono Apache module.
 
 	We are now working bug fixing and adding missing features
 	after making the whole pipeline compatible with MS.
@@ -19,14 +21,14 @@
 	SoapFormatter as part of the remoting infrastructure already
 	(contributed by Jesus), most people will be using the ASP.NET
 	Web Services support.  Work for the supporting class libraries
-	just started recently.
+	just started recently.  
+
+	The major missing element is a complete XmlSerializer.
 
 ** HttpRuntime
 
 	Patrik has authored most of the HttpRuntime support (both on
 	the System.Web and on the foundation).
-
-	We are currently working on this.
 
 ** XSP
 
@@ -39,7 +41,7 @@
 	classes of this new server can be reused/extended to make an apache
 	module/cgi using mono (MonoWorkerRequest and MonoApplicationHost).
 
-	There is also a bunch of .aspx pages to test the server along with
+	There is also a set of .aspx pages to test the server along with
 	a few user controls under xsp/test.
 
 	You can check it out from CVS and run 'make install' to test it.
@@ -56,18 +58,12 @@
 	DataGrid and DataList controls are being finished by Gaurav.
 	Xml control needs some work on System.Xml related to XSL.
 
-** Extending ASP.NET
+	Help in making the controls better is appreciated.
 
-	Currently you have to reference in your ASP.NET the control
-	and all of its properties, which works fine if you have a GUI
-	designer, but is harder for people used to develop using text
-	editors.
+** ASP.NET and free controls.
 
-	Since we have a parser, we could extend this parser to allow
-	people to still use ASP.NET controls, using a simpler syntax.
-	For example people doing blogs and editing their templates
-	over the web probably do not want to use direct ASP.NET but a
-	wrapper around it.
+	We want to encourage developers to create open source controls
+	that can be used both on Mono's ASP.NET and Microsoft's ASP.NET.  
 
 * Web Forms: The pieces (historical)
 
