@@ -26,6 +26,7 @@
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/daemon-messages.h>
 #include <mono/io-layer/timefuncs-private.h>
+#include <mono/io-layer/daemon-private.h>
 
 #undef DEBUG
 
@@ -684,7 +685,7 @@ static void read_message (guint32 idx)
 	}
 }
 
-int main(int argc, char **argv)
+void _wapi_daemon_main(void)
 {
 	struct sockaddr_un main_socket_address;
 	int ret;

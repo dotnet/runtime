@@ -40,6 +40,8 @@ OTHER_SRC = \
 	context.h		\
 	critical-sections.c	\
 	critical-sections.h	\
+	daemon.c		\
+	daemon-private.h	\
 	daemon-messages.c	\
 	daemon-messages.h	\
 	error.c			\
@@ -107,18 +109,6 @@ libwapiinclude_HEADERS = $(WINDOWS_H)
 else
 libwapi_a_SOURCES = $(OTHER_SRC)
 libwapiinclude_HEADERS = $(OTHER_H)
-
-bin_PROGRAMS = mono-handle-d
-
-mono_handle_d_SOURCES = \
-	daemon.c	\
-	daemon-messages.c	\
-	daemon-messages.h
-
-mono_handle_d_LDADD = \
-	$(GLIB_LIBS) \
-	$(top_builddir)/mono/io-layer/libwapi.a \
-	$(top_builddir)/mono/utils/libmonoutils.a
 endif
 
 EXTRA_DIST =	\

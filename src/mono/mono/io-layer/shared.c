@@ -53,6 +53,7 @@
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/shared.h>
+#include <mono/io-layer/daemon-private.h>
 
 #undef DEBUG
 
@@ -138,14 +139,25 @@ try_again:
 		} else if (pid==0) {
 			/* child */
 			setsid ();
-			execl (MONO_BINDIR "/mono-handle-d", "mono-handle-d",
-			       NULL);
-			g_warning (": exec of %s/mono-handle-d failed: %s",
-				   MONO_BINDIR, strerror (errno));
+			
+			/* FIXME: Clean up memory.  We can delete all
+			 * the managed data
+			 */
+			/* FIXME2: Set process title to something
+			 * informative
+			 */
+
+			/* _wapi_daemon_main() does not return */
+			_wapi_daemon_main ();
+			
+			/* But just in case... */
 			data->daemon_running=2;
 			exit (-1);
 		}
 		/* parent carries on */
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": Daemon pid %d", pid);
+#endif
 	} else {
 		/* Do some sanity checking on the shared memory we
 		 * attached

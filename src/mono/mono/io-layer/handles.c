@@ -30,8 +30,19 @@
 
 #undef DEBUG
 
-static WapiHandleCapability handle_caps[WAPI_HANDLE_COUNT]={0};
+/*
+ * This flag _MUST_ remain set to FALSE in the daemon process.  When
+ * we exec()d a standalone daemon, that happened because shared_init()
+ * didnt get called in the daemon process.  Now we just fork() without
+ * exec(), we need to ensure that the fork() happens when shared is
+ * still FALSE.
+ *
+ * This is further complicated by the second attempt to start the
+ * daemon if the connect() fails.
+ */
 static gboolean shared=FALSE;
+
+static WapiHandleCapability handle_caps[WAPI_HANDLE_COUNT]={0};
 static struct _WapiHandleOps *handle_ops[WAPI_HANDLE_COUNT]={
 	NULL,
 	&_wapi_file_ops,
@@ -57,11 +68,14 @@ int disable_shm = 0;
 static void shared_init (void)
 {
 	struct sockaddr_un shared_socket_address;
+	gboolean tried_once=FALSE;
 	int ret;
 
 	if (getenv ("MONO_ENABLE_SHM"))
 		disable_shm = 0;
 	
+attach_again:
+
 #ifndef DISABLE_SHARED_HANDLES
 	if(getenv ("MONO_DISABLE_SHM") || disable_shm)
 #endif
@@ -70,8 +84,15 @@ static void shared_init (void)
 #ifndef DISABLE_SHARED_HANDLES
 	} else {
 		int shm_id;
+		gboolean success;
 		
-		_wapi_shared_data=_wapi_shm_attach (FALSE, &shared, &shm_id);
+		/* Ensure that shared==FALSE while _wapi_shm_attach()
+		 * calls fork()
+		 */
+		shared=FALSE;
+		
+		_wapi_shared_data=_wapi_shm_attach (FALSE, &success, &shm_id);
+		shared=success;
 		if(shared==FALSE) {
 			g_warning ("Failed to attach shared memory! "
 				   "(tried shared memory ID 0x%x). "
@@ -89,11 +110,30 @@ static void shared_init (void)
 		ret=connect (daemon_sock, (struct sockaddr *)&shared_socket_address,
 			     sizeof(struct sockaddr_un));
 		if(ret==-1) {
-			g_warning (G_GNUC_PRETTY_FUNCTION
-				   "connect to daemon failed: %s",
-				   strerror (errno));
-			/* Fall back to private handles */
-			shared=FALSE;
+			if(tried_once==TRUE) {
+				g_warning (G_GNUC_PRETTY_FUNCTION
+					   "connect to daemon failed: %s",
+					   strerror (errno));
+				/* Fall back to private handles */
+				shared=FALSE;
+			} else {
+				/* It's possible that the daemon
+				 * crashed without destroying the
+				 * shared memory segment (thus fooling
+				 * subsequent processes into thinking
+				 * the daemon is still active).
+				 * 
+				 * Destroy the shared memory segment
+				 * and try once more.  This won't
+				 * break running apps, but no new apps
+				 * will be able to see the current
+				 * shared memory segment.
+				 */
+				tried_once=TRUE;
+				_wapi_shm_destroy ();
+				
+				goto attach_again;
+			}
 		}
 	}
 
