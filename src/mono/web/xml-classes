@@ -2,15 +2,15 @@
 
 ** Abstract
 
-  XML library is used by several field of Mono such as ADO.NET and XML 
-  Digital Signature (xmldsig). Here I write about System.Xml.dll and 
-  related tools. This page won't include any classes which are in other 
+  XML library is used by several areas of Mono such as ADO.NET and XML 
+  Digital Signature (xmldsig). Here I write about System.Xml.dll and
+  related tools. This page won't include any classes which are in other
   assemblies such as XmlDataDocument.
 
-  Note that current corlib has its own XML parser class named Mono.Xml.MiniParser.
+  Note that current corlib has its own XML parser class (Mono.Xml.MiniParser).
 
-  Basically System.XML.dll feature has finished, or almost finished, so
-  I write this page mainly for bugs and improvement hints.
+  Basically System.XML.dll feature is almost finished, so I write this
+  document mainly for bugs and improvement hints.
 
 
 ** System.Xml namespace
@@ -24,19 +24,16 @@
 		* ID constraint support is problematic because W3C DOM does not 
 		  specify handling of ID attributes into non-adapted element. 
 		  (MS.NET also looks incomplete in this area).
-		* I think, event feature is not fully tested. There are no
-		  concrete desctiption on which events are risen, so we have to
-		  do some experiment on MS.NET.
 	</ul>
 
 *** Xml Writer
 
   Here XmlWriter almost equals to XmlTextWriter. If you want to see
-  another implementation, check XmlNodeWriter.cs used in monodoc.
+  another implementation, check XmlNodeWriter.cs and DTMXPathDocumentWriter.cs
+  in System.XML sources.
 
-  XmlTextWriter is completed. However, it looks slower than MS.NET (I 
-  tried 1.1). After some optimization, it became better, but maybe it can be
-  done more.
+  XmlTextWriter is completed, though it looks a bit slower than MS.NET (I 
+  tried 1.1).
 
 *** XmlResolver
 
@@ -55,11 +52,13 @@
 
 *** XmlNameTable
 
-  XmlNameTable itself is implemented. However, it should be actually used in
+  NameTable itself is implemented. However, it should be actually used in
   several classes. Currently it makes sense if compared names are both in
-  the table, they should be simply compared using ReferenceEquals(). We 
-  have partially done in XmlNamespaceManager (in .NET 1.2 methods; if the
-  build is not NET_1_2 then it is internal use only).
+  the table, they should be simply compared using ReferenceEquals(). We
+  have done where it seems possible e.g. in XmlNamespaceManager (in .NET 
+  1.2 methods; if the build is not NET_1_2, it will be used internally).
+
+  NameTable also needs performance improvement.
 
 *** Xml Stream Reader
 
@@ -83,7 +82,6 @@
 		* Entity expansion and its well-formedness check is incomplete.
 		  It incorrectly allows divided content models. It incorrectly
 		  treats its Base URI, so some dtd fails.
-		* Unicode surrogate pair character is not supported yet.
 		* I won't add any XDR support on XmlValidatingReader. (I haven't
 		  ever seen XDR used other than Microsoft's BizTalk Server 2000,
 		  and Now they have 2002 with XML Schema support)
@@ -141,7 +139,6 @@
 		  compilation. Interestingly, MS.NET also fails around here,
 		  so it might be nature of ContentTypeParticle design)
 		* Some derivation by restriction (DBR) handling is incorrect.
-		* Some simple type restriction handling is still incorrect.
 	</ul>
 
 *** Validating Reader
@@ -175,14 +172,16 @@
 
   You might also interested in genxs, which enables you to create custom
   XML serializer. This is not included in Microsoft.NET. 
-  See mcs/tools/genxs for the details.
+  See <a 
+  href="http://primates.ximian.com/~lluis/blog/archives/000120.html">here</a>
+  and mcs/tools/genxs for the details.
 
 
 ** System.Xml.XPath and System.Xml.Xsl
 
   There are two implementations for XSLT. One (and historical) implementation
   is based on libxslt (aka Unmanaged XSLT). Now we uses fully implemented
-  managed XSLT. To use Unmanaged XSLT, set MONO_UNMANAGED_XSLT environment 
+  managed XSLT. To use Unmanaged XSLT, set MONO_UNMANAGED_XSLT environment
   value (any value is acceptable).
 
   As for Managed XSLT, we support msxsl:script.
@@ -190,16 +189,14 @@
   It would be nice if we can support <a href="http://www.exslt.org/">EXSLT</a>.
   <a href="http://msdn.microsoft.com/WebServices/default.aspx?pull=/library/en-us/dnexxml/html/xml05192003.asp">Microsoft has already done it</a>, but it
   is not good code since it depends on internal concrete derivatives of
-  XPathNodeIterator classes. In general, .NET's "extension objects" is not
+  XPathNodeIterator classes.
+
+  In general, .NET's "extension objects" (including msxsl:script) is not
   usable to return node-sets, so if we support EXSLT, it has to be done
   internally inside our System.XML.dll. Volunteers are welcome.
 
-  Our managed XSLT implementation is still inefficient. XslTransform.Load()
-  and .Transform() looks three times slower (However it depends on 
-  XmlTextReader which is also slow, so we are starting optimization from
-  that class, not XSLT itself). These number are only for specific cases,
-  and there might be more critical point on XSLT engine (mainly
-  XPathNodeIterator).
+  Our managed XSLT implementation is still inefficient. For some kind of
+  transformation, XslTransform.Load() and .Transform() looks slower than MS.
 
 
 ** System.Xml and ADO.NET v2.0
@@ -237,9 +234,11 @@
   XPathNavigator2 implementations. Firstly, its document structure and
   basic navigation feature will be implemented. And next, XPath2 engine
   should be implemented (XPathNavigator2 looks very different from
-  XPathNavigator). Another requirement is schema based validation feature.
-  It needs some schema improvements, such like IXmlInfosetReader support.
-  (IXmlInfosetReader is in MS.Internal.Xml.)
+  XPathNavigator). 
+
+  It is once described as to contain schema validation feature, but MS
+  guys said that they have removed that feature (It is just a beta version,
+  so anything might happen).
 
 *** XML Query
 
@@ -272,8 +271,8 @@
 
   XmlAdapter is used to support XML based query and update using 
   XPathDocument2 and XPathNavigator2. This class is designed to synthesize
-  ADO.NET and System.Xml. It connects to databases, and querys data however
-  in XML shape into XPathDocument2, using Mapping schema above. This must be
+  ADO.NET and System.Xml. It connects to databases, and querys data in XML
+  shape into XPathDocument2, using Mapping schema above. This must be
   done after several classes such as XPathDocument2 and MappingSchema.
 
 
@@ -302,6 +301,8 @@
 
 ** Miscellaneous
 
+*** Mutual assembly dependency
+
   Sometimes I hear complain about System.dll and System.Xml.dll mutual
   dependency: System.dll references to System.Xml.dll (e.g. 
   System.Configuration.ConfigXmlDocument extended from XmlDocument), while 
@@ -309,10 +310,9 @@
   Since they are in public method signatures, so at least we cannot get rid
   of these mutual references.
 
-  However, for those who really want to build System.Xml.dll without System.dll,
-  I created <a href="http://primates.ximian.com/~atsushi/System_DummyClasses.cs">dummy classes in System.dll</a>. To build System.Xml.dll in such way, remove 
-  <code>/r:System.dll</code> from Makefile, and add this source to 
-  System.Xml.dll.sources. Note that this is at the point of Mono 0.30 release.
+  Nowadays System.Xml.dll is built using incomplete System.dll (lacking
+  System.Xml dependent classes such as ConfigXmlDocument). Full System.dll
+  is built after System.Xml.dll is done.
 
   Also note that you still need System.dll to run mcs.
 
