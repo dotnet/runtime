@@ -1683,13 +1683,13 @@ ves_icall_System_Object_obj_address (MonoObject *this) {
 static gint32 
 ves_icall_System_Buffer_ByteLengthInternal (MonoArray *array) {
 	MonoClass *klass;
-	MonoType etype;
+	MonoTypeEnum etype;
 	int length, esize;
 	int i;
 
 	klass = array->obj.vtable->klass;
-	etype = klass->element_class->byval_arg;
-	if (etype.type < MONO_TYPE_BOOLEAN || etype.type > MONO_TYPE_R8)
+	etype = klass->element_class->byval_arg.type;
+	if (etype < MONO_TYPE_BOOLEAN || etype > MONO_TYPE_R8)
 		return -1;
 
 	length = 0;
@@ -1702,12 +1702,12 @@ ves_icall_System_Buffer_ByteLengthInternal (MonoArray *array) {
 
 static gint8 
 ves_icall_System_Buffer_GetByteInternal (MonoArray *array, gint32 index) {
-	return ((gint8 *)array->vector) [index];
+	return mono_array_get (array, gint8, index);
 }
 
 static void 
 ves_icall_System_Buffer_SetByteInternal (MonoArray *array, gint32 index, gint8 value) {
-	((gint8 *)array->vector) [index] = value;
+	mono_array_set (array, gint8, index, value);
 }
 
 static void 
