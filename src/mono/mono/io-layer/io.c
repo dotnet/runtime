@@ -3296,3 +3296,84 @@ cleanup:
 	return(ret);
 }
 
+gint32
+GetLogicalDriveStrings (guint32 len, gunichar2 *buf)
+{
+	FILE *fp;
+	gunichar2 *ptr, *dir;
+	glong length, total = 0;
+	gchar buffer [512];
+	gchar **splitted;
+
+	memset (buf, 0, sizeof (gunichar2) * (len + 1)); 
+	buf [0] = '/';
+	buf [1] = 0;
+	buf [2] = 0;
+
+	/* Sigh, mntent and friends don't work well.
+	 * It stops on the first line that doesn't begin with a '/'.
+	 * (linux 2.6.5, libc 2.3.2.ds1-12) - Gonz */
+	fp = fopen ("/etc/mtab", "rt");
+	if (fp == NULL) {
+		fp = fopen ("/etc/mnttab", "rt");
+		if (fp == NULL)
+			return 1;
+	}
+
+	ptr = buf;
+	while (fgets (buffer, 512, fp) != NULL) {
+		if (*buffer != '/')
+			continue;
+
+		splitted = g_strsplit (buffer, " ", 0);
+		if (!*splitted || !*(splitted + 1))
+			continue;
+
+		dir = g_utf8_to_utf16 (*(splitted + 1), -1, &length, NULL, NULL);
+		g_strfreev (splitted);
+		if (total + length + 1 > len) {
+			return len * 2; /* guess */
+		}
+
+		memcpy (ptr + total, dir, sizeof (gunichar2) * length);
+		g_free (dir);
+		total += length + 1;
+	}
+
+	fclose (fp);
+	return total;
+/* Commented out, does not work with my mtab!!! - Gonz */
+#ifdef NOTENABLED /* HAVE_MNTENT_H */
+{
+	FILE *fp;
+	struct mntent *mnt;
+	gunichar2 *ptr, *dir;
+	glong len, total = 0;
+	
+
+	fp = setmntent ("/etc/mtab", "rt");
+	if (fp == NULL) {
+		fp = setmntent ("/etc/mnttab", "rt");
+		if (fp == NULL)
+			return;
+	}
+
+	ptr = buf;
+	while ((mnt = getmntent (fp)) != NULL) {
+		g_print ("GOT %s\n", mnt->mnt_dir);
+		dir = g_utf8_to_utf16 (mnt->mnt_dir, &len, NULL, NULL, NULL);
+		if (total + len + 1 > len) {
+			return len * 2; /* guess */
+		}
+
+		memcpy (ptr + total, dir, sizeof (gunichar2) * len);
+		g_free (dir);
+		total += len + 1;
+	}
+
+	endmntent (fp);
+	return total;
+}
+#endif
+}
+

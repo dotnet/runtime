@@ -3030,7 +3030,7 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *asse
 	return res;
 }
 
-static MonoBoolean *
+static MonoBoolean
 ves_icall_System_Reflection_Assembly_get_global_assembly_cache (MonoReflectionAssembly *assembly)
 {
 	MonoAssembly *mass = assembly->assembly;
@@ -4353,6 +4353,57 @@ ves_icall_System_Environment_GetWindowsFolderPath (int folder)
 	return mono_string_new (mono_domain_get (), "");
 }
 
+static MonoArray *
+ves_icall_System_Environment_GetLogicalDrives (void)
+{
+        gunichar2 buf [128], *ptr, *dname;
+	gchar *u8;
+	gint initial_size = 127, size = 128;
+	gint ndrives;
+	MonoArray *result;
+	MonoString *drivestr;
+	MonoDomain *domain = mono_domain_get ();
+
+	MONO_ARCH_SAVE_REGS;
+
+        buf [0] = '\0';
+	ptr = buf;
+
+	while (size > initial_size) {
+		size = GetLogicalDriveStrings (initial_size, ptr);
+		if (size > initial_size) {
+			if (ptr != buf)
+				g_free (ptr);
+			ptr = g_malloc0 ((size + 1) * sizeof (gunichar2));
+			initial_size = size;
+			size++;
+		}
+	}
+
+	/* Count strings */
+	dname = ptr;
+	ndrives = 0;
+	do {
+		while (*dname++);
+		ndrives++;
+	} while (*dname);
+
+	dname = ptr;
+	result = mono_array_new (domain, mono_defaults.string_class, ndrives);
+	ndrives = 0;
+	do {
+		u8 = g_utf16_to_utf8 (dname, -1, NULL, NULL, NULL);
+		drivestr = mono_string_new (domain, u8);
+		g_free (u8);
+		mono_array_set (result, gpointer, ndrives++, drivestr);
+		while (*dname++);
+	} while (*dname);
+
+	if (ptr != buf)
+		g_free (ptr);
+
+	return result;
+}
 
 static const char *encodings [] = {
 	(char *) 1,
@@ -4962,6 +5013,7 @@ static const IcallEntry environment_icalls [] = {
 	{"GetCommandLineArgs", mono_runtime_get_main_args},
 	{"GetEnvironmentVariable", ves_icall_System_Environment_GetEnvironmentVariable},
 	{"GetEnvironmentVariableNames", ves_icall_System_Environment_GetEnvironmentVariableNames},
+	{"GetLogicalDrivesInternal", ves_icall_System_Environment_GetLogicalDrives },
 	{"GetMachineConfigPath",	ves_icall_System_Configuration_DefaultConfig_get_machine_config_path},
 	{"GetWindowsFolderPath", ves_icall_System_Environment_GetWindowsFolderPath},
 	{"get_ExitCode", mono_environment_exitcode_get},
