@@ -1,5 +1,5 @@
 <a href="#basics">Basics</a><br>
-<a href="#ximian">The Ximian Role in the Mono project</a><br>
+<a href="#novell">The Novell Role in the Mono project</a><br>
 <a href="#gnome">Mono and GNOME</a><br>
 <a href="#gui">Building GUI applications with Mono</a><br>
 <a href="#msft">Mono and Microsoft</a><br>
@@ -87,8 +87,7 @@ A: The ".NET Initiative" is a somewhat nebulous company-wide effort by
    Microsoft, one part of which is a cross-platform development
    framework.  Mono is an implementation of the development framework,
    but not an implementation of anything else related to the .NET
-   Initiative, such as Passport, software-as-a-service, or
-   corporate re-branding.
+   Initiative, such as Passport or software-as-a-service.
 
 Q: What technologies are included in Mono?
 
@@ -147,49 +146,26 @@ Q: Will you offer an ECMA-compliant set of class libraries?
 
 A: Eventually we will.  Our current focus is on inter-operating
    with the Microsoft SDK, but we will also offer an ECMA compliant
-   set of libraries. 
+   subset of the libraries. 
 
 Q: What does the name "Mono" mean?
 
-A: Mono is the word for `monkey' in Spanish. We like monkeys.
+A: Mono is the word for `monkey' in Spanish. We like monkeys.  
 
-Q: Is Mono usable?
+Q: Does Mono work today?
 
-A: The JIT engine is usable on Intel x86 machines.  An interpreter
-   can be used on other non-Intel x86 machines.  
+A: The execution engine works on various platforms, we support
+   Just-in-Time and Ahead-of-Time compilations on Intel x86 machines
+   (and soon PowerPC).
 
-   The class libraries are mature enough to run some real applications
-   (the compiler for instance, and every day more and more applications
-   are natively developed with Mono).
+   The class libraries are mature enough to run various real
+   applications: our C# compiler, ASP.NET, and Gtk#-based
+   applications.
 
-Q: When will you ship it?
+Q: When will you ship Mono?
 
-A: Different parts of Mono will achieve usability at different stages,
-   once we are comfortable with the compiler, we will release "Mono Core",
-   which contains everything needed to develop applications with the base
-   class libraries, this will happen soon and in the meantime you can 
-   download daily snapshots of our work. Also the full ASP.NET support is 
-   close to completion. 
-
-   Other higher level class libraries (ASP.NET, ADO.NET, WinForms) will
-   be released when they become stable. 
-
-Q: When will Mono 1.0 ship?
-
-A: We are planning on releasing Mono 1.0 (Mono Core) which will ship all the
-   components of Mono that are known to be stable in Q4 2003/Q1 2004.
-
-   This release will lack System.Windows.Forms  and
-   Enterprise.Services, as they will not be production ready on this timeframe.
-
-   Mono 1.2 should come in Q2 2004 and include the missing components
-   libraries that will make Mono feature-compatible with .NET 1.0
-
-Q: What major components will you include in Mono?
-
-A: Hopefully everything that Microsoft ships on their Framework
-   (ADO.NET, ASP.NET, WinForms), and we encourage third party developers to 
-   create reusable components that work on both Mono and Windows.
+A: Please see the <a href="mono-roadmap.html">Mono Roadmap</a> for
+   more details on the release plans.  
 
 Q: How can I contribute?
 
@@ -211,26 +187,26 @@ Q: Miguel said once that Mono was being implemented in COBOL. Is that true?.
 A: No. It was a joke.
 
 
-<a name="ximian"></a> 
+<a name="novell"></a> 
 
-** The Ximian Role in the Mono Project
+** The Novell Role in the Mono Project
 
-Q: Why is Ximian working on .NET?
+Q: Why is Novell working on .NET?
 
-A: Ximian is interested in providing the best tools for programmers to
-   develop applications for Free Operating Systems.  
+A: Novell is interested in providing the best tools for programmers to
+   develop applications for Free Operating Systems.
 
    For more information, read the project <a
    href="rationale.html">rationale</a> page.
 
-Q: Will Ximian be able to take on a project of this size?  
+Q: Will Novell be able to take on a project of this size?  
 
-A: Of course not. Ximian a supporter of the Mono project, but the only way
+A: Of course not.  Novell is a supporter of the Mono project, but the only way
    to implement something of this size is for the entire free software
    community to get involved. Visit the <a href="contributing.html">contributing</a> 
    page if you'd like to help out.
 
-Q: What pieces will Ximian be working on?
+Q: What pieces Novell be working on?
 
 A: We will devote most of our resources to work on the pieces which are
    on the critical path to release a development and execution
@@ -238,25 +214,30 @@ A: We will devote most of our resources to work on the pieces which are
    the real world, it will achieve a critical mass of developers to
    improve it further.
 
-Q: Will Ximian offer Mono commercially?
+Q: Will Novell offer Mono commercially?
 
 A: When Mono is ready to be shipped Ximian will offer a commercial
-   support and services for Mono. 
+   support and services for Mono. Mono components are also
+   available to be licensed commercially. For licensing details,
+   contact <a
+   href="mailto:mono-licensing@ximian.com">mono-licensing@ximian.com</a>
 
-Q: Does Ximian provide consulting services around Mono?
+Q: Does Novell provide consulting services around Mono?
 
-A: Yes, Ximian does provide consulting services around Mono to
+A: Yes, Novell does provide consulting services around Mono to
    make it suitable to your needs.  Porting the runtime engine,
    customizing it, working on specific classes or tuning the code
    for your particular needs. 
 
+   Please contact <a
+   href="mailto:mono-licensing@ximian.com">mono-licensing@ximian.com</a>
+   for consulting services information.
+
 Q: Will you wait until Mono is finished?
 
 A: Mono will ship on various stages as they mature.  Some people
-   require only a subset of the technologies, those will ship first.
-
-   More advanced features will take more time to develop.  A support
-   time line will be available in June 2002.
+   require only a subset of the technologies, those will ship first,
+   see the <a href="mono-roadmap.html">Mono Roadmap</a> for details
 
 <a name="gnome"></a> 
 ** Mono and GNOME
@@ -269,6 +250,10 @@ A: In a number of ways.  This project was born out of the need of
    are available.  For example, we plan to use Gtk+ and Libart to
    implement Winforms and the Drawing2D API and are considering
    GObject support.
+
+   Mono team members work actively on the <a
+   href="http://gtk-sharp.sf.net">Gtk#</a> project: a binding of the
+   GNOME class libraries for .NET and Mono.
 
 Q: Has the GNOME Foundation or the GNOME team adopted Mono?
 
@@ -298,7 +283,8 @@ A: Yes, we will provide a set of classes for implementing and using
 Q: Does Mono depend on GNOME?
 
 A: No, Mono does not depend on GNOME.  We use a few packages produced by
-   the GNOME team like the `glib' library.  
+   the GNOME team like the `glib' library, we also use other
+   third-party open source libraries like Cairo and ICU.
 
 Q: But will I be able to build GNOME applications?
 
@@ -306,26 +292,29 @@ A: Yes, we will enable people to write GNOME applications using Mono.
 
 Q: Do you have C# bindings for GNOME?.
 
-A: Yes, we currently bind libgnome, libgnomecanvas, and libgnomeui --
-   although I dare say I have no idea how functional the bindings are
-   outside of what I tested in the sample app. I imagine other libraries 
-   under the GNOME framework will be added on an as-needed (and as-requested) 
-   basis...although a truly good bonobo binding will have to wait on the CORBA 
-   remoting support which has been started recently.
+A: Yes, the <a href="http://gtk-sharp.sf.net">Gtk# project</a>
+   provides bindings for Gtk+, Gdk, Atk, libgnome, libgnomecanvas, and
+   libgnomeui.  Other libraries under the GNOME framework will be
+   added on an as-needed (and as-requested) basis.
 
 <a name="gui"></a>
 ** GUI applications
 
 Q: Will Mono enable GUI applications to be authored?
 
-A: Yes, you will be able to build GUI applications.  Indeed, that is our
-   main focus.  We will provide both the Windows.Forms API and the Gtk# API.
+A: Yes, you will be able to build GUI applications.  Indeed, that is
+   our main focus.  Today you can use Gtk# or #WT to develop GUI
+   applications, and support for Windows.Forms is underway.
 
 Q: What is the difference between Gtk# and System.Windows.Forms?
 
 A: Gtk# is a set of bindings for the Gtk+ toolkit for C# (and other
-   CIL-enabled languages).  System.Windows.Forms is an API defined
-   by Microsoft to build GUI applications.
+   CIL-enabled languages), it integrates natively with the Gnome
+   desktop.  System.Windows.Forms is an API defined by Microsoft to
+   build GUI applications.
+
+   Windows.Forms is currently being implemented on top of a modified
+   version of Wine that can be used as a library: WineLib.
 
 Q: Why not implement System.Windows.Forms on top of Gtk# or Qt#?
 
@@ -374,9 +363,7 @@ A: Gtk# is becoming very usable and you can create applications and
 
 Q: How can I compile my HelloWorld.cs which uses Gtk#?.
 
-A: Try: mcs --unsafe -o HelloWorld.exe -r glib-sharp -r pango-sharp -r
-        atk-sharp -r gdk-sharp -r gtk-sharp -r gdk-imaging-sharp
-        HelloWorld.cs
+A: Try: mcs -r:gtk-sharp HelloWorld.cs
 
 Q: Is there any way how to connect DataAdapter to some GTK# controls?
 
@@ -391,9 +378,8 @@ A: There is a sample file called `DbClient' in gtk-sharp/samples that you
 
 Q: Do you have an estimate for when Windows.Forms will be released?
 
-A: We do not know, volunteers are working on this, but there is no set
-   date yet.  The current approach is using the Wine Library to implement
-   it.
+A: The plan currently is aimed at Q3/2004.
+
 
 Q: Do you have a comparission chart about the various toolkit
    offerings?
@@ -417,7 +403,7 @@ A: There is no high level communication between Ximian and Microsoft
    Ximian was also invited to participate in the ECMA committee
    meetings for C# and the CLI.
 
-Q: Is Microsoft or Corel paying Ximian to do this?
+Q: Are Microsoft or Corel paying Ximian to do this?
 
 A: No.
 
@@ -1091,37 +1077,11 @@ A: Yes, Java could target the CLI, Microsoft's J# compiler does that.
 
 Q: Is it possible to write a JVM byte code to CIL converter?
 
-A: Yes, it is possible.  Here are a few starting point:
-
-	<ul>
-        	* A byte code representation is really a flattened forest of
-          	  trees.  Look at the Mono JIT engine to see how we compute
-          	  the basic blocks (this is used to figure out the "trees").
-
-          	  The forest is just an array of trees.
-
-          	  Indeed, run the JIT engine with -d (mono -d prog.exe) and
-          	  you will see how these trees look like.
-
-            	  You will have to do something similar for Java.
-
-        	* Each "forest of trees" has a meaning.  This meaning can now
-          	  be translated into the equivalent "meaning" in CLR-land.
-	</ul>
-
-   See also the <a href="http://weblog.ikvm.net/">IKVM project</a>
+A: Yes, this is what <a href="http://weblog.ikvm.net">IKVM</a> does.
 
 Q: Could mono become a hybrid CIL/java platform?
 
-A: No. It is quite far from the philosophy of the project. The idea of Mono 
-   is, to have only _one_ VM, on which all can run. And if there existing a 
-   binary-converter from Java-.class to IL and if there existing something 
-   like J-Sharp on Mono, you can write programs in Java, which than can run 
-   on Mono. You do not need two bindings (like your example: GTK-Sharp _and_ 
-   Java-Gnome). You need only _one_ of it (GTK-Sharp). Thats the idea of Mono.
-   An other point is, that there are no people, who use Open Source-JVMs. They 
-   all prefer Suns original. But for Unix there don't exist a .NET-Framework. 
-   So it is possible, that in the future Mono is the standard .NET for Unixes.
+A: This can be obtained easily with IKVM.
 
 Q: Do you plan to implement a Javascript compiler?
 
@@ -1162,7 +1122,7 @@ Q: Do you plan to Embrace and Extend .NET?
 
 A: Embracing a good technology is good.  Extending technologies in
    incompatible ways is bad for the users, so we do not plan on 
-   extending the technologies.
+   making incompatible changes to the technologies.
 
    If you have innovative ideas, and want to create new classes, we 
    encourage you to make those classes operate correctly well in both
@@ -1171,6 +1131,11 @@ A: Embracing a good technology is good.  Extending technologies in
    Today Mono ships with a number of extra libraries that were
    developed either by members of the Mono community, or other
    groups.  
+
+   In some cases, we have found the bits from Microsoft to be
+   incomplete, but we avoid breaking the API, instead we expose the
+   missing functionality in new assemblies (See Mono.Security and
+   System.Security).
 
 Q: Is there any way I can develop the class libraries using Linux yet?
 
@@ -1203,11 +1168,14 @@ A: Our main intention at Ximian is to be able to develop GNOME
 
 Q: What operating systems/CPUs do you support
 
-A: Mono currently runs on Linux, Windows, Solaris and FreeBSD.
+A: Mono currently runs on Linux, Windows, Solaris, FreeBSD, HP-UX and
+   MacOS X.
+
    There is a JIT engine available for x86 processors that can
    generate code and optimizations tailored for a particular CPU.
 
-   Interpreters exist for the SPARC, PowerPC and StrongARM CPUs.
+   Interpreters exist for the SPARC v8, SPARC v9, Itanium, HP-PA,
+   PowerPC and StrongARM CPUs.
 
 Q: Does Mono run on Windows?
 
@@ -1230,17 +1198,6 @@ A: It will depend only if you are using a particular assembly (for
    in Mono for implementing a `Hello World Enterprise P2P Web
    Service', you will not need any GNOME components.
 
-Q: Is anyone working on porting Mono to IA-64?
-
-A: Nobody is working on such port.
-
-Q: If I were about to start a Mono port to IA-64,would the same lburg code 
-   generator work for IA-64 also? or anything else need to be used for code 
-   generation(as the processor architecture is totally different from IA32)
-
-A: The lburg approach can be use for any processor architecture. But you might
-   think in another better approach.
-
 Q: Do you plan to port Rhino to C#?.
 
 A: Eto Demerzal has started a Rhino port to C#.
@@ -1260,29 +1217,12 @@ Q: What projects will you reuse or build upon?
 A: We want to get Mono in the hands of programmers soon.  We are
    interested in reusing existing open source software.
 
-Q: What about Intel's research JIT framework, ORP?
-
-A: At this time, we are investigating whether we can use elements of
-   ORP for Mono.   ORP is a research JIT engine that has a clearly
-   defined API that splits the JIT from the GC system and the actual
-   byte code implementation.
-
-   We are using some pieces of ORP (Their code generation interface)
-   and we use it as a source of inspiration for optimizations.  Paolo
-   and Dietmar consider ORP as being one of the best JIT engines out
-   there (and their research work and papers are very useful if you are
-   interested in JIT technology).
-
-Q: What about using GNU Lightning?
-
-A: We are not using GNU Lightning.  Our JIT is using an instruction
-   selector based on tree-pattern matching, and a code generation
-   interface that is very tied to the current architecture.
-
 Q: Will I be able to use Microsoft SQL Server 2000 or will I need to switch
    to a specific Open Source Database. Will I need to recode?
 
-A: There should not be any need to recode.
+A: There is no need to rewrite your code as long as you keep using
+   Microsoft SQL Server.  If you want to use an open source database,
+   you might need to make changes to your code.
 
 Q: What do I need to watch out for when programming in VB.NET so that I'm
    sure to be able to run those apps on Linux?
@@ -1296,7 +1236,7 @@ A: Not making any P/Invoke or DLL calls should and not using anything in
 Q: Will built-in reporting be supported for crystal reports? This is a
    heavily used part of our system.
 
-A: Probably not. Crystal Reports are propriety. Someone may try to emulate
+A: . Crystal Reports are propriety. Someone may try to emulate
    the behavior, but no-one has yet volunteered.
 
 Q: Who about writing to the registry? As I understand it, Linux does not have
@@ -1312,31 +1252,28 @@ A: Try to avoid it. Although there would be a emulation for registry in
 Q: System.Data.SqlClient with FreeTDS, will you port parts of these to C# and 
    use them?
 
-A: if their license is compatible with mono's, yes, we'd think about porting 
-   them. If not, we'll continue with the plan of using FreeTDS.
+A: This has been done.
 
 <a name="gcc"></a>
 ** Mono and GCC
 
 Q: Are you working on a GCC front-end to C#? A GCC back-end that will
-   generate CIL images? What about making a front-end to GCC that
-   takes CIL images and generates native code?
+   generate CIL images? 
 
-A: We are currently seeking volunteers for those projects.
-   Visit the <a href="contributing.html">contributing</a> section if
-   you are interested.
+A: We would love to see a GCC modification that would generate CIL
+   images, but there is nothing at this point.
+
+Q: What about making a front-end to GCC that takes CIL images and
+   generates native code?
+
+A: There is no active work on this area, but Mono already provides
+   pre-compilation services (Ahead-of-Time compilation).
 
 Q: But would this work around the GPL in the GCC compiler and allow
    people to work on non-free front-ends?
 
 A: People can already do this by targeting the JVM byte codes (there
    are about 130 compilers for various languages that target the JVM).
-
-Q: Why are you writing a JIT engine instead of a front-end to GCC?
-
-A: We want the JIT engine and runtime engine because they will be able
-   to execute CIL executables generated on Windows, and so no recompilation 
-   will be necessary.
 
 <a name="performance"></a>
 ** Performance
@@ -1346,11 +1283,9 @@ Q: How fast will Mono be?
 A: We can not predict the future, but a conservative estimate is that
    it would be at least `as fast as other JIT engines'.
 
-   We would like to ship various JIT engines with Mono, just like
-   Microsoft has done with their .NET development platform. We could
-   provide a faster, JIT for fast load times but lower performance,
-   and an and an optimizing JIT that would be slower at generating
-   code but produce more optimal output.
+   Mono's JIT engine has been recently re-architected, and it provides
+   many new features, and layers suitable for optimization.  It is
+   relatively easy to add new optimizations to Mono. 
 
    The CIL has some advantages over the Java byte code:  it is really
    an intermediate representation and there are a number of
@@ -1500,17 +1435,12 @@ Q: Will Ximian offer certifications on Mono or related technologies?.
 
 A: It's possible. But there is no plan about this. So the short answer is no.
 
-Q: Are there any Boehm's GC binaries?
-
-A: Yes. You can find RPMs <a href="http://java.thn.htu.se/~toor/">here</a>, though
-   if your distribution provides the correct packages, you should use those.
-   The suggested version of the Boehm GC is 6.1.
-
 Q: How can I report a bug?
 
-A: The best thing is to track down the bug and provide a simple test to
-   reproduce the bug. You can then add the bug to the 
-   <a href="http://bugzilla.ximian.com/enter_bug.cgi">bugtracking system</a>.
+A: The best thing is to track down the bug and provide a simple test
+   to reproduce the bug.  You can then add the bug to our bug tracking
+   system.  You can use our <a href="bugs.html">Bug Form</a> to enter
+   bugs for the appropriate component.
 
    Please provide information about what version of mono you're using
    and any relevant details to be able to reproduce the bug. Note that

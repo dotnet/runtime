@@ -34,6 +34,10 @@
 	a.topmenu:visited { color: #cccccc; }
 	a.topmenu:hover { color: #ee9900; text-decoration: underline; }
 
+	h1 {
+		border-bottom: 2px solid #dddddd;
+	}
+
 // --> 
 </style>
 #CSS#

@@ -1,20 +1,23 @@
 * Novell Forge
 
-	Novell Forge (http://forge.novell.com/) is a website managed by Novell
-	to promote the development of open source applications and solutions. 
-	Novell Forge features communities, akin to foundries on SourceForge.net,
-	which exist for the purpose of facilitating collaboration and
-	information exchange about certain technologies or solutions.
-	At Miguel's request, we have created a Mono community on Novell Forge
-	that is administered by Miguel.  This community, located at
-	http://forge.novell.com/modules/xfmod/community/?monocomm, provides a
-	resource for interaction and collaboration on Mono and associated
-	solutions.  Each community has the ability to provide forums, mailing
-	lists, FAQs, news, documentation, surveys, sample code, and links to
-	related applications.  The Mono community has been created for anyone
-	interested in Mono to use, and the exact set of features offered at the
-	community is determined by Miguel.
-	
+	Novell Forge (<a
+	href="http://forge.novell.com/">http://forge.novell.com/</a>)
+	is a website managed by Novell to promote the development of
+	open source applications and solutions.  Novell Forge features
+	communities, akin to foundries on SourceForge.net, which exist
+	for the purpose of facilitating collaboration and information
+	exchange about certain technologies or solutions.  At Miguel's
+	request, we have created a Mono community on Novell Forge that
+	is administered by Miguel.  This community, located at
+	http://forge.novell.com/modules/xfmod/community/?monocomm,
+	provides a resource for interaction and collaboration on Mono
+	and associated solutions.  Each community has the ability to
+	provide forums, mailing lists, FAQs, news, documentation,
+	surveys, sample code, and links to related applications.  The
+	Mono community has been created for anyone interested in Mono
+	to use, and the exact set of features offered at the community
+	is determined by Miguel.
+
 	Any individual or group that wishes to provide Mono-based solutions in
 	an open source fashion is encouraged to host their solution on the
 	Novell Forge website, free of charge.  Once the project is hosted on
@@ -23,9 +26,7 @@
 	relationship where the growth of Mono applications helps to improve
 	Mono, and the growth of Mono likewise helps to increase the visibility
 	and usefulness of your applications.
-
-
-
+	
 * Creating an Account
 
 	A Novell Forge account is required in order to create a project on
@@ -64,6 +65,8 @@
 * Important Links:
 
 	Novell Forge - <a href="http://forge.novell.com/">http://forge.novell.com/</a>
+
 	Mono Community - <a href="http://forge.novell.com/modules/xfmod/community/?monocomm">http://forge.novell.com/modules/xfmod/community/?monocomm</a>
+
 	Novell Forge Help - <a href="http://forge.novell.com/modules/xfmod/help/about.php">http://forge.novell.com/modules/xfmod/help/about.php</a>
 

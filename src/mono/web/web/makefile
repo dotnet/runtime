@@ -71,6 +71,8 @@ OBJECTS=									\
 	deploy/class-library.html						\
 	deploy/classlib-doc.html
 
+HTML_SOURCES = ../mono-roadmap.html
+
 #2,Configuration.Install,class-status-System.Configuration.Install.html,class-status-System.Configuration.Install.src,cm/cormissing.css,cm/cormissing.js
 #2,Runtime.Remoting,class-status-System.Runtime.Remoting.html,class-status-System.Runtime.Remoting.src,cm/cormissing.css,cm/cormissing.js
 
@@ -83,6 +85,7 @@ NON_HTML_SOURCES=		\
 
 all: $(OBJECTS) deploy/index.rss ../team
 	perl process.pl commands template.html.in deploy
+	cp $(HTML_SOURCES) deploy
 	-mkdir deploy/team
 	cp team/*png deploy/team
 
