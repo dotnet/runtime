@@ -1220,6 +1220,10 @@ handle_enum:
 		}
 	}
 
+	if (method->klass->valuetype)
+		/* Unbox the instance, since valuetype methods expect an interior pointer. */
+		obj = mono_object_unbox (obj);
+
 	/* chain with managed parent if any */
 	parent = TlsGetValue (frame_thread_id);
 	INIT_FRAME(&frame,parent,obj,args,&result,method);
