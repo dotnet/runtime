@@ -15,7 +15,10 @@ mono_SOURCES =			\
 	regset.h		\
 	regset.c		\
 	debug.h			\
+	debug-private.h		\
 	debug.c			\
+	debug-stabs.c		\
+	debug-dwarf2.c		\
 	jit.c
 
 mono_LDADD =				\

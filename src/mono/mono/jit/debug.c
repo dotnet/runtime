@@ -4,93 +4,18 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/jit/codegen.h>
+#include <mono/jit/debug.h>
 
-typedef struct {
-	FILE *f;
-	char *filename;
-	char *name;
-	int total_lines;
-	int *mlines;
-	int *moffsets;
-	int nmethods;
-	int next_idx;
-} AssemblyDebugInfo;
-
-struct _MonoDebugHandle {
-	char *name;
-	GList *info;
-};
-
-#include "debug.h"
-
-typedef struct {
-	char *name;
-	char *spec;
-} BaseTypes;
-
-/*
- * Not 64 bit clean.
- * Note: same order of MonoTypeEnum.
- */
-static BaseTypes
-base_types[] = {
-	{"", NULL},
-	{"Void", "(0,1)"},
-	{"Boolean", ";0;255;"},
-	{"Char", ";0;65535;"},
-	{"SByte", ";-128;127;"},
-	{"Byte", ";0;255;"},
-	{"Int16", ";-32768;32767;"},
-	{"UInt16", ";0;65535;"},
-	{"Int32", ";0020000000000;0017777777777;"},
-	{"UInt32", ";0000000000000;0037777777777;"},
-	{"Int64", ";01000000000000000000000;0777777777777777777777;"},
-	{"UInt64", ";0000000000000;01777777777777777777777;"},
-	{"Single", "r(0,8);4;0;"},
-	{"Double", "r(0,8);8;0;"},
-	{"String", "(0,41)=*(0,42)=xsMonoString:"}, /*string*/
-	{"", }, /*ptr*/
-	{"", }, /*byref*/
-	{"", }, /*valuetype*/
-	{"Class", "(0,44)=*(0,45)=xsMonoObject:"}, /*class*/
-	{"", }, /*unused*/
-	{"Array", }, /*array*/
-	{"", }, /*typedbyref*/
-	{"", }, /*unused*/
-	{"", }, /*unused*/
-	{"IntPtr", ";0020000000000;0017777777777;"},
-	{"UIntPtr", ";0000000000000;0037777777777;"},
-	{"", }, /*unused*/
-	{"FnPtr", "*(0,1)"}, /*fnptr*/
-	{"Object", "(0,47)=*(0,48)=xsMonoObject:"}, /*object*/
-	{"SzArray", "(0,50)=*(0,51))=xsMonoArray:"}, /*szarray*/
-	{NULL, NULL}
-};
-
-static void
-output_std_stuff (AssemblyDebugInfo* debug)
-{
-	int i;
-	for (i = 0; base_types [i].name; ++i) {
-		if (! base_types [i].spec)
-			continue;
-		fprintf (debug->f, ".stabs \"%s:t(0,%d)=", base_types [i].name, i);
-		if (base_types [i].spec [0] == ';') {
-			fprintf (debug->f, "r(0,%d)%s\"", i, base_types [i].spec);
-		} else {
-			fprintf (debug->f, "%s\"", base_types [i].spec);
-		}
-		fprintf (debug->f, ",128,0,0,0\n");
-	}
-}
+#include "debug-private.h"
 
 MonoDebugHandle*
-mono_debug_open_file (char *filename)
+mono_debug_open_file (char *filename, MonoDebugFormat format)
 {
 	MonoDebugHandle *debug;
 	
 	debug = g_new0 (MonoDebugHandle, 1);
 	debug->name = g_strdup (filename);
+	debug->format = format;
 	return debug;
 }
 
@@ -101,6 +26,7 @@ debug_load_method_lines (AssemblyDebugInfo* info)
 	char buf [1024];
 	int i, mnum;
 	char *name = g_strdup_printf ("%s.il", info->name);
+	int offset = -1;
 
 	/* use an env var with directories for searching. */
 	if (!(f = fopen (name, "r"))) {
@@ -115,11 +41,19 @@ debug_load_method_lines (AssemblyDebugInfo* info)
 	g_free (name);
 	i = 0;
 	while (fgets (buf, sizeof (buf), f)) {
-		int offset = 0, pos = i;
+		int pos = i;
 
-		++i;
+		info->moffsets [i++] = offset;
+		if (i + 2 >= info->total_lines) {
+			info->total_lines += 100;
+			info->moffsets = g_realloc (info->moffsets, info->total_lines * sizeof (int));
+			g_assert (info->moffsets);
+		}
+
 		if (!sscanf (buf, " // method line %d", &mnum))
 			continue;
+
+		offset = 0;
 
 		if (mnum >= info->nmethods)
 			break;
@@ -134,8 +68,10 @@ debug_load_method_lines (AssemblyDebugInfo* info)
 				g_assert (info->moffsets);
 			}
 
-			if (strstr (buf, "}"))
+			if (strstr (buf, "}")) {
+				offset = -1;
 				break;
+			}
 
 			if (sscanf (buf, " IL_%x:", &newoffset)) {
 				offset = newoffset;
@@ -151,8 +87,81 @@ debug_load_method_lines (AssemblyDebugInfo* info)
 	fclose (f);
 }
 
+static void
+record_line_number (DebugMethodInfo *minfo, gpointer address, guint32 line, int is_basic_block)
+{
+	DebugLineNumberInfo *lni = g_new0 (DebugLineNumberInfo, 1);
+
+	lni->address = address;
+	lni->line = line;
+	lni->is_basic_block = is_basic_block;
+	lni->source_file = 0;
+
+	g_ptr_array_add (minfo->line_numbers, lni);
+}
+
+static void
+debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, MonoFlowGraph* cfg)
+{
+	guint32 st_address, st_line;
+	int i;
+
+	minfo->line_numbers = g_ptr_array_new ();
+
+	st_line = minfo->start_line;
+	st_address = 1;
+
+	record_line_number (minfo, cfg->start + st_address, st_line, FALSE);
+
+	/* start lines of basic blocks */
+	for (i = 0; i < cfg->block_count; ++i) {
+		int j;
+
+		for (j = 0; j < cfg->bblocks [i].forest->len; ++j) {
+			MBTree *t = (MBTree *) g_ptr_array_index (cfg->bblocks [i].forest, j);
+			gint32 line_inc = 0, addr_inc;
+
+			if (!i && !j) {
+				st_line = minfo->first_line;
+				st_address = t->addr;
+
+				minfo->frame_start_offset = st_address;
+
+				record_line_number (minfo, cfg->start + st_address, st_line, TRUE);
+			}
+
+			if (t->cli_addr != -1) {
+				int *lines = info->moffsets + st_line;
+				int *k = lines;
+
+				while ((*k != -1) && (*k < t->cli_addr))
+					k++;
+
+				line_inc = k - lines;
+			}
+			addr_inc = t->addr - st_address;
+
+			st_line += line_inc;
+			st_address += addr_inc;
+
+			record_line_number (minfo, cfg->start + st_address, st_line, j == 0);
+		}
+	}
+}
+
+static void
+free_method_info (DebugMethodInfo *minfo)
+{
+	if (minfo->line_numbers)
+		g_ptr_array_free (minfo->line_numbers, TRUE);
+	g_free (minfo->params);
+	g_free (minfo->locals);
+	g_free (minfo->name);
+	g_free (minfo);
+}
+
 static AssemblyDebugInfo*
-mono_debug_open_ass (MonoDebugHandle* handle, MonoImage *image)
+mono_debug_open_assembly (MonoDebugHandle* handle, MonoImage *image)
 {
 	GList *tmp;
 	AssemblyDebugInfo* info;
@@ -163,16 +172,33 @@ mono_debug_open_ass (MonoDebugHandle* handle, MonoImage *image)
 			return info;
 	}
 	info = g_new0 (AssemblyDebugInfo, 1);
-	info->filename = g_strdup_printf ("%s-stabs.s", image->assembly_name);
-	if (!(info->f = fopen (info->filename, "w"))) {
-		g_free (info->filename);
-		g_free (info);
-		return NULL;
+	switch (handle->format) {
+	case MONO_DEBUG_FORMAT_STABS:
+		info->filename = g_strdup_printf ("%s-stabs.s", image->assembly_name);
+		break;
+	case MONO_DEBUG_FORMAT_DWARF2:
+		info->filename = g_strdup_printf ("%s-dwarf.s", image->assembly_name);
+		break;
 	}
+	info->image = image;
 	info->name = g_strdup (image->assembly_name);
+	info->methods = g_hash_table_new_full (g_direct_hash, g_direct_equal,
+					       NULL, (GDestroyNotify) free_method_info);
+	info->source_files = g_ptr_array_new ();
+	info->type_hash = g_hash_table_new (NULL, NULL);
 
-	fprintf (info->f, ".stabs \"%s.il\",100,0,0,0\n", image->assembly_name);
-	output_std_stuff (info);
+	g_ptr_array_add (info->source_files, g_strdup_printf ("%s.il", image->assembly_name));
+	info->producer_name = g_strdup_printf ("Mono JIT compiler version %s", VERSION);
+
+	switch (handle->format) {
+	case MONO_DEBUG_FORMAT_STABS:
+		mono_debug_open_assembly_stabs (info);
+		break;
+	case MONO_DEBUG_FORMAT_DWARF2:
+		mono_debug_open_assembly_dwarf2 (info);
+		break;
+	}
+
 	info->next_idx = 100;
 	handle->info = g_list_prepend (handle->info, info);
 
@@ -183,31 +209,52 @@ mono_debug_open_ass (MonoDebugHandle* handle, MonoImage *image)
 }
 
 void
-mono_debug_make_symbols (MonoDebugHandle* debug)
+mono_debug_make_symbols (void)
 {
 	GList *tmp;
 	char *buf;
 	AssemblyDebugInfo* info;
 
-	for (tmp = debug->info; tmp; tmp = tmp->next) {
+	if (!mono_debug_handle)
+		return;
+
+	for (tmp = mono_debug_handle->info; tmp; tmp = tmp->next) {
 		info = (AssemblyDebugInfo*)tmp->data;
+
+		if (!(info->f = fopen (info->filename, "w")))
+			continue;
+
+		switch (mono_debug_handle->format) {
+		case MONO_DEBUG_FORMAT_STABS:
+			mono_debug_write_assembly_stabs (info);
+			break;
+		case MONO_DEBUG_FORMAT_DWARF2:
+			mono_debug_write_assembly_dwarf2 (info);
+			break;
+		}
+
+		fclose (info->f);
+		info->f = NULL;
+
 		/* yes, it's completely unsafe */
 		buf = g_strdup_printf ("as %s -o /tmp/%s.o", info->filename, info->name);
-		fflush (info->f);
 		system (buf);
 		g_free (buf);
 	}
 }
 
 static void
-mono_debug_close_ass (AssemblyDebugInfo* debug)
+mono_debug_close_assembly (AssemblyDebugInfo* info)
 {
-	fclose (debug->f);
-	g_free (debug->mlines);
-	g_free (debug->moffsets);
-	g_free (debug->name);
-	g_free (debug->filename);
-	g_free (debug);
+	g_free (info->mlines);
+	g_free (info->moffsets);
+	g_free (info->name);
+	g_free (info->filename);
+	g_ptr_array_free (info->source_files, TRUE);
+	g_hash_table_destroy (info->type_hash);
+	g_hash_table_destroy (info->methods);
+	g_free (info->producer_name);
+	g_free (info);
 }
 
 void
@@ -216,32 +263,61 @@ mono_debug_close (MonoDebugHandle* debug)
 	GList *tmp;
 	AssemblyDebugInfo* info;
 
+	mono_debug_make_symbols ();
+
 	for (tmp = debug->info; tmp; tmp = tmp->next) {
 		info = (AssemblyDebugInfo*)tmp->data;
-		mono_debug_close_ass (info);
+
+		switch (debug->format) {
+		case MONO_DEBUG_FORMAT_STABS:
+			mono_debug_close_assembly_stabs (info);
+			break;
+		case MONO_DEBUG_FORMAT_DWARF2:
+			mono_debug_close_assembly_dwarf2 (info);
+			break;
+		}
+
+		mono_debug_close_assembly (info);
 	}
+
 	g_free (debug->name);
 	g_free (debug);
+}
+
+guint32
+mono_debug_get_type (AssemblyDebugInfo* info, MonoClass *klass)
+{
+	guint index;
+
+	mono_class_init (klass);
+
+	index = GPOINTER_TO_INT (g_hash_table_lookup (info->type_hash, klass));
+	if (index)
+		return index;
+
+	index = ++info->next_klass_idx;
+	g_hash_table_insert (info->type_hash, klass, GINT_TO_POINTER (index));
+
+	return index;
+}
+
+void
+mono_debug_add_type (MonoDebugHandle* debug, MonoClass *klass)
+{
+	AssemblyDebugInfo* info = mono_debug_open_assembly (debug, klass->image);
+
+	mono_debug_get_type (info, klass);
 }
 
 void
 mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 {
-	char *name;
-	int line = 0;
-	int i;
 	MonoMethod *method = cfg->method;
 	MonoClass *klass = method->klass;
-	MonoMethodSignature *sig = method->signature;
-	char **names = g_new (char*, sig->param_count);
-	AssemblyDebugInfo* info = mono_debug_open_ass (debug, klass->image);
-
-	/* FIXME: we should mangle the name better */
-	name = g_strdup_printf ("%s%s%s__%s_%p", klass->name_space, klass->name_space [0]? "_": "",
-			klass->name, method->name, method);
-
-	for (i = 0; name [i]; ++i)
-		if (name [i] == '.') name [i] = '_';
+	AssemblyDebugInfo* info = mono_debug_open_assembly (debug, klass->image);
+	int method_number = 0, line = 0, start_line, i;
+	DebugMethodInfo *minfo;
+	char *name;
 
 	mono_class_init (klass);
 	/*
@@ -249,105 +325,56 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 	 */
 	for (i = 0; klass->methods && i < klass->method.count; ++i) {
 		if (klass->methods [i] == method) {
-			line = info->mlines [klass->method.first + i + 1];
-			/*g_print ("method %d found at line %d\n", klass->method.first + i + 1, line);*/
+			method_number = klass->method.first + i + 1;
+			line = info->mlines [method_number];
 			break;
 		}
 	}
 
-	/*
-	 * We need to output all the basic info, if we change filename...
-	 * fprintf (info->f, ".stabs \"%s.il\",100,0,0,0\n", klass->image->assembly_name);
-	 */
-	fprintf (info->f, ".stabs \"%s:F(0,%d)\",36,0,%d,%p\n", name, sig->ret->type, line, cfg->start+1);
+	if (g_hash_table_lookup (info->methods, GINT_TO_POINTER (method_number)))
+		return;
 
-	/* params */
-	mono_method_get_param_names (cfg->method, (const char **)names);
-	if (sig->hasthis)
-		fprintf (info->f, ".stabs \"this:p(0,%d)=(0,%d)\",160,0,%d,%d\n", info->next_idx++, klass->byval_arg.type, line, 8); /* FIXME */
-	for (i = 0; i < sig->param_count; ++i) {
-		int stack_offset = g_array_index (cfg->varinfo, MonoVarInfo, cfg->args_start_index + i + sig->hasthis).offset;
-		fprintf (info->f, ".stabs \"%s:p(0,%d)=(0,%d)\",160,0,%d,%d\n", names [i], info->next_idx++, sig->params [i]->type, line, stack_offset);
+	/* info->moffsets contains -1 "outside" of functions. */
+	for (i = line; (i > 0) && (info->moffsets [i] == 0); i--)
+		;
+	start_line = i + 1;
+
+	/* FIXME: we should mangle the name better */
+	name = g_strdup_printf ("%s%s%s__%s_%p", klass->name_space, klass->name_space [0]? "_": "",
+				klass->name, method->name, method);
+
+	for (i = 0; name [i]; ++i)
+		if (name [i] == '.') name [i] = '_';
+
+	minfo = g_new0 (DebugMethodInfo, 1);
+	minfo->name = name;
+	minfo->start_line = start_line;
+	minfo->first_line = line;
+	minfo->code_start = cfg->start + 1;
+	minfo->code_size = cfg->code_size;
+	minfo->method_number = method_number;
+	minfo->method = method;
+	minfo->num_params = minfo->method->signature->param_count;
+	minfo->params = g_new0 (MonoVarInfo, minfo->num_params + 1);
+
+	if (minfo->method->signature->param_count) {
+		MonoVarInfo *ptr = ((MonoVarInfo *) cfg->varinfo->data) + cfg->args_start_index +
+			minfo->method->signature->hasthis;
+
+		memcpy (minfo->params, ptr, sizeof (MonoVarInfo) * minfo->num_params);
 	}
-	/* local vars */
+
 	if (!method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		MonoMethodHeader *header = ((MonoMethodNormal*)method)->header;
-		for (i = 0; i < header->num_locals; ++i) {
-			int stack_offset = g_array_index (cfg->varinfo, MonoVarInfo, cfg->locals_start_index + i).offset;
-			fprintf (info->f, ".stabs \"local_%d:(0,%d)=(0,%d)\",128,0,%d,%d\n", i, info->next_idx++, header->locals [i]->type, line, stack_offset);
-		}
+		MonoVarInfo *ptr = ((MonoVarInfo *) cfg->varinfo->data) + cfg->locals_start_index;
+
+		minfo->num_locals = header->num_locals;
+		minfo->locals = g_new0 (MonoVarInfo, minfo->num_locals + 1);
+
+		memcpy (minfo->locals, ptr, sizeof (MonoVarInfo) * minfo->num_locals);
 	}
 
-	fprintf (info->f, ".stabn 68,0,%d,%d\n", line, 0);
+	debug_generate_method_lines (info, minfo, cfg);
 
-	/* start lines of basic blocks */
-	for (i = 0; i < cfg->block_count; ++i) {
-		int j;
-		for (j = 0; j < cfg->bblocks [i].forest->len; ++j) {
-			MBTree *t = (MBTree *) g_ptr_array_index (cfg->bblocks [i].forest, j);
-			int *lines = info->moffsets + line, *k = lines;
-
-			while ((*k != -1) && (*k < t->cli_addr))
-				k++;
-
-			fprintf (info->f, ".stabn 68,0,%d,%d\n", line + (k-lines), t->addr-1);
-		}
-	}
-
-	/* end of function */
-	fprintf (info->f, ".stabs \"\",36,0,0,%d\n", cfg->code - cfg->start);
-	g_free (name);
-	g_free (names);
-	fflush (info->f);
+	g_hash_table_insert (info->methods, GINT_TO_POINTER (method_number), minfo);
 }
-
-static void
-get_enumvalue (MonoClass *klass, int index, char *buf)
-{
-	guint32 const_cols [MONO_CONSTANT_SIZE];
-	const char *ptr;
-	guint32 crow = mono_metadata_get_constant_index (klass->image, MONO_TOKEN_FIELD_DEF | (index + 1));
-
-	if (!crow) {
-		buf [0] = '0';
-		buf [1] = 0;
-		return;
-	}
-	mono_metadata_decode_row (&klass->image->tables [MONO_TABLE_CONSTANT], crow-1, const_cols, MONO_CONSTANT_SIZE);
-	ptr = mono_metadata_blob_heap (klass->image, const_cols [MONO_CONSTANT_VALUE]);
-	switch (const_cols [MONO_CONSTANT_TYPE]) {
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I4:
-		/* FIXME: add other types... */
-	default:
-		g_snprintf (buf, 64, "%d", *(gint32*)ptr);
-	}
-}
-
-void
-mono_debug_add_type (MonoDebugHandle* debug, MonoClass *klass)
-{
-	char *name;
-	int i;
-	char buf [64];
-	AssemblyDebugInfo* info = mono_debug_open_ass (debug, klass->image);
-
-	mono_class_init (klass);
-
-	/* output enums ...*/
-	if (klass->enumtype) {
-		name = g_strdup_printf ("%s%s%s", klass->name_space, klass->name_space [0]? "_": "", klass->name);
-		fprintf (info->f, ".stabs \"%s:T%d=e", name, ++info->next_idx);
-		g_free (name);
-		for (i = 0; i < klass->field.count; ++i) {
-			if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_LITERAL) {
-				get_enumvalue (klass, klass->field.first + i, buf);
-				fprintf (info->f, "%s_%s=%s,", klass->name, klass->fields [i].name, buf);
-			}
-		}
-		fprintf (info->f, ";\",128,0,0,0\n");
-	}
-	fflush (info->f);
-
-}
-

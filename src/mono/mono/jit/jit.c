@@ -3220,6 +3220,7 @@ usage (char *name)
 		 "--share-code     force jit to produce shared code\n"
 		 "--print-vtable   print the VTable of all used classes\n"
 		 "--stabs          write stabs debug information\n"
+		 "--dwarf          write dwarf2 debug information\n"
 		 "--stats          print statistics about the jit operations\n"
 		 "--compile cname  compile methods in given class (namespace.name[:methodname])\n"
 		 "--ncompile num   compile methods num times (default: 1000)\n"
@@ -3382,7 +3383,13 @@ main (int argc, char *argv [])
 			memset (&mono_jit_stats, 0, sizeof (MonoJitStats));
 			mono_jit_stats.enabled = TRUE;
 		} else if (strcmp (argv [i], "--stabs") == 0) {
-			mono_debug_handle = mono_debug_open_file ("");
+			if (mono_debug_handle)
+				g_error ("You can use either --stabs or --dwarf, but not both.");
+			mono_debug_handle = mono_debug_open_file ("", MONO_DEBUG_FORMAT_STABS);
+		} else if (strcmp (argv [i], "--dwarf") == 0) {
+			if (mono_debug_handle)
+				g_error ("You can use either --stabs or --dwarf, but not both.");
+			mono_debug_handle = mono_debug_open_file ("", MONO_DEBUG_FORMAT_DWARF2);
 		} else if (strcmp (argv [i], "--verbose") == 0) {
 			verbose = TRUE;;
 		} else
@@ -3505,6 +3512,9 @@ main (int argc, char *argv [])
 		retval = mono_jit_exec (domain, assembly, argc - i, argv + i);
 		printf ("RESULT: %d\n", retval);
 	}
+
+	if (mono_debug_handle)
+		mono_debug_close (mono_debug_handle);
 
 	mono_network_cleanup();
 	mono_thread_cleanup();
