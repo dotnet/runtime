@@ -734,7 +734,7 @@ mono_main (int argc, char* argv[])
 		error = mono_check_corlib_version ();
 		if (error) {
 			fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
-			fprintf (stderr, "Download a newer corlib or a newer runtime at http://go-mono/daily.\n");
+			fprintf (stderr, "Download a newer corlib or a newer runtime at http://www.go-mono.com/daily.\n");
 			exit (1);
 		}
 
