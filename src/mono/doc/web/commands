@@ -2,6 +2,7 @@
 1,FAQ,faq.html,faq.src
 0,Mono,rationale.html,rationale.src
 1,Runtime,runtime.html,runtime.src
+2,Embedding,embedded-api.html,embedded-api.src
 1,Classes,class-library.html,class-library.src
 1,Gtk#,http://gtk-sharp.sourceforge.net
 1,ASP.NET,asp-net.html,asp-net.src

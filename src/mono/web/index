@@ -10,7 +10,9 @@
 	Mono includes: <a href="c-sharp.html">a compiler</a> for the
 	C# language, a <a href="runtime.html">runtime</a> for the
 	Common Language Infrastructure (also referred as the CLR) and a
-	set of <a href="class-library.html">class libraries</a>.  
+	set of <a href="class-library.html">class libraries</a>.  The
+	runtime can be <a href="embedded-api.html">embedded</a> into your
+	application.
 
 	Mono has implementations of both <a href="ado-net">ADO.NET</a>
 	and <a href="asp-net">ASP.NET</a> as part of its distribution.

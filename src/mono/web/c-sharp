@@ -14,6 +14,13 @@
 	the compiler and various programs are routinely compiled and
 	ran.
 
+** Slides
+
+	Slides for the Mono C# Compiler presentation at .NET ONE are
+	available <a
+	href=http://primates.ximian.com/~miguel/slides-europe-nov-2002/Mono_C_Sharp_Overview_1007.sxi">here</a>
+	in StarOffice format.
+
 ** Obtaining MCS
 
 	The Mono C# compiler is part of the `mcs' module in the Mono CVS

@@ -17,49 +17,21 @@
 	</ul>
 
 	Currently we are using the Bohem conservative garbage
-	collector, but we working on incorporating the ORP GC engine. 
+	collector.
 
-** Executing MSIL/CIL images
+	The Mono runtime can be used as a stand-alone process, or it
+	can be <a href="embedded-api">embedded into applications</a> (see
+	the documentation in mono/samples/embed for more details).
 
-	The code will load an executable and map the references to
-	external assemblies to our own version of the assemblies on
-	Linux.
+	Embedding the Mono runtime allows applications to be extended
+	in C# while reusing all of the existing C and C++ code.  
 
-	Our roadmap looks like this, this has been updated as of
-	<b>Dec 18, 2001</b>:
+	Paolo Molaro did a presentation on the current JIT engine and
+	the new JIT engine.  You can find his <a
+	href="http://primates.ximian.com/~lupus/slides/jit/">slides
+	here</a>
 
-	<ul>
-
-		* Milestone 1: <b>Done</b> Fully read and parse all CIL byte-codes
-		  and metadata tokens (ie, a disassembler).  
-
-		* Milestone 2: <b>Done</b> Complete an interpreter for CIL byte
-		  codes.  This interpreter can be used temporarly to
-		  run CIL byte code on a system where no JIT is
-		  available.
-
-		* Milestone 3: <b>Done</b>Define an <i>lburg</i>-like
-		  instruction selector for the JITer for Intel.
-
-		* Milestone 4: <b>Done</b> Implement JITer.  This is where our
-		  current efforts are focused on, the JITer currently runs
-		  all of the code we have tested on it.  The major limitation
-		  is that our class libraries are not complete, and hence not
-		  every application can be ran.
-
-		* Milestone 5: Port of the JITer to non IA32 systems.
-	</ul>
-
-	A setup similar to the Kaffe JIT engine will be used to
-	layout the code to support non-IA32 architectures.  Our work
-	will be focused on getting a IA32 version running first.  
-
-	The JIT engine works on Linux and Win32, although you
-	will need to install the CygWin32 development tools to get a
-	Unix-like compilation environment (mostly we use GNU make in 
-	a few of the makefiles).
-
-** JIT Engine (<b>updated, July 8th, 2002</b>)
+** Current JIT Engine (<b>updated, July 8th, 2002</b>)
 
 	The JIT engine uses a code-generator generator approach for
 	compilation.  Given the properties of CIL byte codes, we can
@@ -102,15 +74,13 @@
 
 	</ul>
 
-** Future plans
+** New JIT engine.
 
-	We are evaluating the future directions for the JIT engine:
-	both from our needs (optimizations like inlining, better register allocation,
-	instruction scheduling, and porting to other CPUs).
-
-	We have not yet decided how we will evolve the JIT engine.  We
-	might just upgrade our current architecture, and provide optimizations as
-	an extra layer.
+	We are working on a new JIT engine.  The new JIT engine
+	focuses on portability and in two intermediate representations
+	that simplify the development of optimizations.  This together
+	with the Ahead-of-Time compilation will allow developers to
+	deploy applications that match the speed of natively compiled code.
 
 ** Garbage Collection
 

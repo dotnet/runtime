@@ -1,7 +1,12 @@
-WEB_FILES=  \
-	ado-net c-sharp class-library contact contributing documentation download \
-	faq gcc-frontend ideas index  passport rationale resources \
-	roadmap runtime status team testing thanks tools porting anoncvs monodoc-xml winforms
+WEB_FILES=														\
+	ado-net anoncvs asp-net books ccvs c-sharp class-library contact contributing devel-faq documentation download	\
+	embedded-api faq firebird gcc-frontend hackers ideas index							\
+	java jit-debug languages mailing-lists monodoc-xml mysql odbc							\
+	oledb papers													\
+	passport plans porting postgresql ppc projects rationale							\
+	resources roadmap runtime sqlclient sqlite sybase tdsclient							\
+	tds-providers team status team testing thanks tools								\
+	porting anoncvs monodoc-xml winforms
 
 OTHERS= pending resources-pending todo mono-build.sh mono-build-w32.sh
 
