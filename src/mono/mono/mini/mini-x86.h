@@ -72,10 +72,10 @@ struct MonoLMF {
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
 	MonoMethod *method;
-	guint32     ebp;
-	guint32     esi;
-	guint32     edi;
 	guint32     ebx;
+	guint32     edi;
+	guint32     esi;
+	guint32     ebp;
 	guint32     eip;
 };
 
