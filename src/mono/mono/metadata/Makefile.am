@@ -80,8 +80,6 @@ libmetadata_la_SOURCES = \
 	mempool.c	\
 	debug-helpers.c
 
-libmetadata_la_LIBADD = $(LIBGC_LIBS)
-
 libmetadataincludedir = $(includedir)/mono/metadata
 libmonoruntimeincludedir = $(includedir)/mono/metadata
 
