@@ -721,26 +721,44 @@ A: Replace the __stdcall attribute with the STDCALL macro, and include this
 <a name="asp">
 ** Mono and ASP.NET
 
-Q: Is Mono supporting ASP.NET?
+Q: Does Mono support ASP.NET?
 
-A: Yes. The development of the support for ASP.NET comes in various stages, 
-   here is what Gonzalo has been working on: 1. The Parser. 2. Getting the 
-   parser to generate output compatible with ASP.NET. 3. Running the sample 
-   output with the real Microsoft runtime but using our generated page. 4. 
-   Running the sample with our classes with the .NET runtime. 5. Running 
-   our sample code with our classes with our runtime. This is the process 
-   we are following. Currently Gonzalo has reached point 5.
+A: Yes. 
+
+   Mono supports ASP.NET, we have shown an unmodified IBuySpy
+   installation running on Mono as well as various other programs.  You can
+   try it yourself downloading the XSP server. 
 
 Q: Do I need install cygwin to work on ASP.NET in mono or Linux is enough since 
    it is self host right now.
 
 A: Linux is enough.
 
+Q: How can I run ASP.NET-based applications with Mono?
+
+A: You need the Mono runtime and a hosting web server.  Currently we distribute a 
+   small web server called `xsp' which is used to debug applications, or you can choose
+   to use Daniel's Apache 2 module.
+
 Q: Any plan to make ASP.NET in mono works with Apache in Linux?.
 
-A: Yes, we have plans to do so, but we need to wait for Patrik's patches to
-   HttpRuntime. Once that is there, writing a mod_mono should be trivial 
-   (look at mono/samples/embed for a sample embedded application).
+A: Daniel has authored an Apache2 Module for Mono that hosts the ASP.NET runtime
+   and is available here: <a
+   href="http://apacheworld.org/modmono/">http://apacheworld.org/modmono/</a>
+
+Q: Will you support Apache 1?
+
+A: Modules developed for Apache 2 are not compatible with Apache 1.3
+   Daniel plans to support Apache 1.3 in the future but the current focus is on
+   Apache 2, because of the better support for threading and Windows.
+
+Q: Can I run Apache 1 and Apache 2 on the same machine?
+
+   You can always keep a copy of Apache 2 running in paralell with your Apache
+   1.3 (either different port or using a reverse proxy).
+
+   You can also bind the two servers to different IP addresses on the
+   same physical machine.
 
 <a name="ado">
 ** Mono and ADO.NET
