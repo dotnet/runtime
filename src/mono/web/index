@@ -154,6 +154,18 @@
 	</a> Wikis.
 </p>
 
+@item May 2nd, 2004: mDnsResponder.Net;  Global Assembly Cache.
+
+	Brady Anderson has released the first version of his <a href=
+	"http://forge.novell.com/modules/xfmod/project/?mdnsresponder">multicast
+	DNS responder</a> written in C# for the Mono and .NET
+	platforms.  This is the foundation for implementing
+	rendezvous-like functionality in your applications.
+
+	The tree has started to stabilize after all the changes last
+	week to integrate the Global Assembly Cache work that Jackson,
+	Sebastien, Todd and all the volunteers helped us deploy.
+
 @item Apr 22nd, 2004: XSP 0.12 released.
 
 	A new release of XSP is available. It fixes a bug that made Web Services
