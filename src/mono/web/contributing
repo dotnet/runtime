@@ -18,6 +18,13 @@
 	something that would help tremendously would be to help with
 	small duties in the project that need to be addressed. 
 
+** To start contributing
+
+	To start developing classes or to contribute to the compiler,
+	you only need Windows and the .NET Beta 2 SDK.  Please notice
+	that you do not need Visual Studio (although you can use it if
+	you want).  
+
 ** Bug reporting
 
 	If you find bugs in Mono, please make sure you enter a bug
@@ -40,6 +47,9 @@
 		  packaged up in the official `distribution'
 	</ul>
 
+* Books on C#
+
+	
 * Special note
 
 	If you have looked at Microsoft's implementation of .NET or
