@@ -2129,11 +2129,16 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 		buffer1 = g_realloc(buffer1, buffer_size1);
 	}
 
-	while (gethostbyname2_r(hostname, AF_INET6, &he2, buffer2,
-				buffer_size2, &hp2, &herr) == ERANGE) {
-		buffer_size2 *= 2;
-		buffer2 = g_realloc(buffer2, buffer_size2);
+	if (hp1 == NULL)
+	{
+		while (gethostbyname2_r(hostname, AF_INET6, &he2, buffer2,
+					buffer_size2, &hp2, &herr) == ERANGE) {
+			buffer_size2 *= 2;
+			buffer2 = g_realloc(buffer2, buffer_size2);
+		}
 	}
+	else
+		hp2 = NULL;
 
 	return_value = hostent_to_IPHostEntry2(hp1, hp2, h_name, h_aliases,
 					       h_addr_list);

@@ -1016,7 +1016,7 @@ gint32 ves_icall_System_Globalization_CompareInfo_internal_compare (MonoCompareI
 						 len2, options));
 	}
 	
-	if (!mono_monitor_try_enter ((MonoObject *)this, INFINITE))
+	if (!mono_monitor_enter ((MonoObject *)this))
 		return(-1);
 	
 	set_collator_options (coll, options);
@@ -1060,7 +1060,7 @@ void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoCompareInfo 
 		return;
 	}
 	
-	if (!mono_monitor_try_enter ((MonoObject *)this, INFINITE))
+	if (!mono_monitor_enter ((MonoObject *)this))
 		return;
 	
 	set_collator_options (coll, options);
@@ -1121,7 +1121,7 @@ int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *
 			sizeof(UChar)*count);
 	}
 	
-	if (!mono_monitor_try_enter ((MonoObject *)this, INFINITE))
+	if (!mono_monitor_enter ((MonoObject *)this))
 		return(-1);
 	
 	ec=U_ZERO_ERROR;
@@ -1256,7 +1256,7 @@ int ves_icall_System_Globalization_CompareInfo_internal_index_char (MonoCompareI
 	}
 	uvalstr[0]=value;
 	
-	if (!mono_monitor_try_enter ((MonoObject *)this, INFINITE))
+	if (!mono_monitor_enter ((MonoObject *)this))
 		return(-1);
 	
 	ec=U_ZERO_ERROR;
@@ -1384,7 +1384,7 @@ MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, 
 		return(string_invariant_replace (this, old, new));
 	}
 	
-	if (!mono_monitor_try_enter ((MonoObject *)comp, INFINITE))
+	if (!mono_monitor_enter ((MonoObject *)comp))
 		return(NULL);
 	
 	ec=U_ZERO_ERROR;

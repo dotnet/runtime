@@ -162,11 +162,11 @@ static void handle_remove(guint32 tid)
 
 static void thread_cleanup (MonoThread *thread)
 {
-	if (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
+	if (!mono_monitor_enter (thread->synch_lock))
 		return;
 
 	thread->state |= ThreadState_Stopped;
-	mono_monitor_exit ((MonoObject *)thread);
+	mono_monitor_exit (thread->synch_lock);
 
 	mono_profiler_thread_end (thread->tid);
 	handle_remove (thread->tid);
@@ -330,6 +330,8 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	thread->handle=thread_handle;
 	thread->tid=tid;
 
+	thread->synch_lock=mono_object_new (domain, mono_defaults.object_class);
+						  
 	handle_store(thread);
 
 	ResumeThread (thread_handle);
@@ -529,13 +531,23 @@ void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this,
 
 void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 {
+	MonoThread *thread = mono_thread_current ();
+	
 	MONO_ARCH_SAVE_REGS;
 
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Sleeping for %d ms", ms);
 #endif
 
+	mono_monitor_enter (thread->synch_lock);
+	thread->state |= ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
+	
 	SleepEx(ms,TRUE);
+	
+	mono_monitor_enter (thread->synch_lock);
+	thread->state &= ~ThreadState_WaitSleepJoin;
+	mono_monitor_exit (thread->synch_lock);
 }
 
 gint32
@@ -593,6 +605,10 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 	
 	MONO_ARCH_SAVE_REGS;
 
+	mono_monitor_enter (this->synch_lock);
+	this->state |= ThreadState_WaitSleepJoin;
+	mono_monitor_exit (this->synch_lock);
+
 	if(ms== -1) {
 		ms=INFINITE;
 	}
@@ -603,6 +619,10 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 	
 	ret=WaitForSingleObjectEx (thread, ms, TRUE);
 
+	mono_monitor_enter (this->synch_lock);
+	this->state &= ~ThreadState_WaitSleepJoin;
+	mono_monitor_exit (this->synch_lock);
+	
 	if(ret==WAIT_OBJECT_0) {
 #ifdef THREAD_DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": join successful");
@@ -979,30 +999,29 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	if (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
-		return;
+	mono_monitor_enter (thread->synch_lock);
 
 	if ((thread->state & ThreadState_AbortRequested) != 0 || 
 		(thread->state & ThreadState_StopRequested) != 0) 
 	{
-		mono_monitor_exit ((MonoObject *)thread);
+		mono_monitor_exit (thread->synch_lock);
 		return;
 	}
-	
-	/* Make sure the thread is awake */
-	ves_icall_System_Threading_Thread_Resume (thread);
 
 	thread->state |= ThreadState_AbortRequested;
 	thread->abort_state = state;
 	thread->abort_exc = NULL;
 
-	mono_monitor_exit ((MonoObject *)thread);
+	mono_monitor_exit (thread->synch_lock);
 
 #ifdef THREAD_DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION
 		   ": (%d) Abort requested for %p (%d)", GetCurrentThreadId (),
 		   thread, thread->tid);
 #endif
+	
+	/* Make sure the thread is awake */
+	ves_icall_System_Threading_Thread_Resume (thread);
 	
 	signal_thread_state_change (thread);
 }
@@ -1014,21 +1033,20 @@ ves_icall_System_Threading_Thread_ResetAbort (void)
 
 	MONO_ARCH_SAVE_REGS;
 	
-	if (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
-		return;
+	mono_monitor_enter (thread->synch_lock);
 	
 	thread->state &= ~ThreadState_AbortRequested;
 	
 	if (!thread->abort_exc) {
 		const char *msg = "Unable to reset abort because no abort was requested";
-		mono_monitor_exit ((MonoObject *)thread);
+		mono_monitor_exit (thread->synch_lock);
 		mono_raise_exception (mono_get_exception_thread_state (msg));
 	} else {
 		thread->abort_exc = NULL;
 		thread->abort_state = NULL;
 	}
 	
-	mono_monitor_exit ((MonoObject *)thread);
+	mono_monitor_exit (thread->synch_lock);
 }
 
 void
@@ -1036,19 +1054,18 @@ ves_icall_System_Threading_Thread_Suspend (MonoThread *thread)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	if (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
-		return;
+	mono_monitor_enter (thread->synch_lock);
 
 	if ((thread->state & ThreadState_Suspended) != 0 || 
 		(thread->state & ThreadState_SuspendRequested) != 0 ||
 		(thread->state & ThreadState_StopRequested) != 0) 
 	{
-		mono_monitor_exit ((MonoObject *)thread);
+		mono_monitor_exit (thread->synch_lock);
 		return;
 	}
 	
 	thread->state |= ThreadState_SuspendRequested;
-	mono_monitor_exit ((MonoObject *)thread);
+	mono_monitor_exit (thread->synch_lock);
 
 	signal_thread_state_change (thread);
 }
@@ -1057,43 +1074,43 @@ void
 ves_icall_System_Threading_Thread_Resume (MonoThread *thread)
 {
 	MONO_ARCH_SAVE_REGS;
+	gpointer resume_event;
 
-	if (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
-		return;
+	mono_monitor_enter (thread->synch_lock);
 
 	if ((thread->state & ThreadState_SuspendRequested) != 0) {
 		thread->state &= ~ThreadState_SuspendRequested;
-		mono_monitor_exit ((MonoObject *)thread);
+		mono_monitor_exit (thread->synch_lock);
 		return;
 	}
 		
 	if ((thread->state & ThreadState_Suspended) == 0) 
 	{
-		mono_monitor_exit ((MonoObject *)thread);
+		mono_monitor_exit (thread->synch_lock);
 		return;
 	}
-
-	while (ResumeThread (thread->handle) == 0) {
-		/* A rare case: we may try to resume the thread when it has not still
-		   called SuspendThread. This my happen since SuspendThread can't be
-		   called from inside the thread lock. In this case, keep trying until
-		   the thread is actually resumed */
-		
-		Sleep (1);
-	}
 	
-	mono_monitor_exit ((MonoObject *)thread);
+	thread->resume_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+	
+	/* Awake the thread */
+	SetEvent (thread->suspend_event);
+
+	mono_monitor_exit (thread->synch_lock);
+
+	/* Wait for the thread to awake */
+	WaitForSingleObject (thread->resume_event, INFINITE);
+	CloseHandle (thread->resume_event);
+	thread->resume_event = NULL;
 }
 
 void mono_thread_stop (MonoThread *thread)
 {
-	if (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
-		return;
+	mono_monitor_enter (thread->synch_lock);
 
 	if ((thread->state & ThreadState_StopRequested) != 0 ||
 		(thread->state & ThreadState_Stopped) != 0)
 	{
-		mono_monitor_exit ((MonoObject *)thread);
+		mono_monitor_exit (thread->synch_lock);
 		return;
 	}
 	
@@ -1103,7 +1120,7 @@ void mono_thread_stop (MonoThread *thread)
 	thread->state |= ThreadState_StopRequested;
 	thread->state &= ~ThreadState_AbortRequested;
 	
-	mono_monitor_exit ((MonoObject *)thread);
+	mono_monitor_exit (thread->synch_lock);
 	
 	signal_thread_state_change (thread);
 }
@@ -1815,8 +1832,7 @@ static guint32 dummy_apc (gpointer param)
  */
 static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 {
-	while (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
-		;	/* we really need to get in */
+	mono_monitor_enter (thread->synch_lock);
 	
 	if (thread->interruption_requested) {
 		/* this will consume pending APC calls */
@@ -1829,29 +1845,37 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 
 	if ((thread->state & ThreadState_AbortRequested) != 0) {
 		thread->abort_exc = mono_get_exception_thread_abort ();
-		mono_monitor_exit ((MonoObject *)thread);
+		mono_monitor_exit (thread->synch_lock);
 		return thread->abort_exc;
 	}
 	else if ((thread->state & ThreadState_SuspendRequested) != 0) {
 		thread->state &= ~ThreadState_SuspendRequested;
 		thread->state |= ThreadState_Suspended;
-		mono_monitor_exit ((MonoObject *)thread);
+		thread->suspend_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+		mono_monitor_exit (thread->synch_lock);
 		
-		SuspendThread (thread->handle);
+		WaitForSingleObject (thread->suspend_event, INFINITE);
 		
-		mono_monitor_try_enter ((MonoObject *)thread, INFINITE);
+		mono_monitor_enter (thread->synch_lock);
+		CloseHandle (thread->suspend_event);
+		thread->suspend_event = NULL;
 		thread->state &= ~ThreadState_Suspended;
-		mono_monitor_exit ((MonoObject *)thread);
+	
+		/* The thread that requested the resume will have replaced this event
+	     * and will be waiting for it
+		 */
+		SetEvent (thread->resume_event);
+		mono_monitor_exit (thread->synch_lock);
 		return NULL;
 	}
 	else if ((thread->state & ThreadState_StopRequested) != 0) {
 		/* FIXME: do this through the JIT? */
-		mono_monitor_exit ((MonoObject *)thread);
+		mono_monitor_exit (thread->synch_lock);
 		ExitThread (-1);
 		return NULL;
 	}
 	
-	mono_monitor_exit ((MonoObject *)thread);
+	mono_monitor_exit (thread->synch_lock);
 	return NULL;
 }
 
@@ -1871,11 +1895,10 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 	if (thread == NULL) 
 		return NULL;
 	
-	if (!mono_monitor_try_enter ((MonoObject *)thread, INFINITE))
-		;
+	mono_monitor_enter (thread->synch_lock);
 	
 	if (thread->interruption_requested) {
-		mono_monitor_exit ((MonoObject *)thread);
+		mono_monitor_exit (thread->synch_lock);
 		return NULL;
 	}
 
@@ -1889,7 +1912,7 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 		LeaveCriticalSection (&interruption_mutex);
 		
 		thread->interruption_requested = TRUE;
-		mono_monitor_exit ((MonoObject *)thread);
+		mono_monitor_exit (thread->synch_lock);
 		
 		/* this will awake the thread if it is in WaitForSingleObject 
 	       or similar */
@@ -1898,7 +1921,7 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 		return NULL;
 	}
 	else {
-		mono_monitor_exit ((MonoObject *)thread);
+		mono_monitor_exit (thread->synch_lock);
 		return mono_thread_execute_interruption (thread);
 	}
 }

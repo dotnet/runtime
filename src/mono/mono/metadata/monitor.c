@@ -88,7 +88,10 @@ static MonoThreadsSync *mon_new(guint32 id)
 	return(new);
 }
 
-gboolean mono_monitor_try_enter (MonoObject *obj, guint32 ms)
+/* If allow_interruption==TRUE, the method will be interrumped if abort or suspend
+ * is requested. In this case it returns -1.
+ */ 
+static gint32 mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_interruption)
 {
 	MonoThreadsSync *mon;
 	guint32 id=GetCurrentThreadId ();
@@ -110,7 +113,7 @@ retry:
 		mon=mon_new(id);
 		if(InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, mon, NULL)==NULL) {
 			/* Successfully locked */
-			return(TRUE);
+			return(1);
 		} else {
 			/* Another thread got in first, so try again.
 			 * GC will take care of the monitor record
@@ -125,7 +128,7 @@ retry:
 	/* If the object is currently locked by this thread... */
 	if(mon->owner==id) {
 		mon->nest++;
-		return(TRUE);
+		return(1);
 	}
 
 	/* If the object has previously been locked but isn't now... */
@@ -141,7 +144,7 @@ retry:
 		if(InterlockedCompareExchange (&mon->owner, id, 0)==0) {
 			/* Success */
 			g_assert (mon->nest==1);
-			return(TRUE);
+			return(1);
 		} else {
 			/* Trumped again! */
 			goto retry;
@@ -157,7 +160,7 @@ retry:
 			   ": (%d) timed out, returning FALSE", id);
 #endif
 
-		return(FALSE);
+		return(0);
 	}
 
 	/* The slow path begins here.  We need to make sure theres a
@@ -195,7 +198,7 @@ retry:
 	}
 	
 	InterlockedIncrement (&mon->entry_count);
-	ret=WaitForSingleObjectEx (mon->entry_sem, waitms, TRUE);
+	ret=WaitForSingleObjectEx (mon->entry_sem, waitms, allow_interruption);
 	InterlockedDecrement (&mon->entry_count);
 
 	if(ms!=INFINITE) {
@@ -224,12 +227,12 @@ retry:
 			ms-=delta;
 		}
 
-		if(ret==WAIT_TIMEOUT && ms>0) {
+		if((ret==WAIT_TIMEOUT || (ret==WAIT_IO_COMPLETION && !allow_interruption)) && ms>0) {
 			/* More time left */
 			goto retry;
 		}
 	} else {
-		if(ret==WAIT_TIMEOUT) {
+		if(ret==WAIT_TIMEOUT || (ret==WAIT_IO_COMPLETION && !allow_interruption)) {
 			/* Infinite wait, so just try again */
 			goto retry;
 		}
@@ -246,7 +249,18 @@ retry:
 		   ": (%d) timed out waiting, returning FALSE", id);
 #endif
 
-	return(FALSE);
+	if (ret==WAIT_IO_COMPLETION) return(-1);
+	else return(0);
+}
+
+gboolean mono_monitor_enter (MonoObject *obj)
+{
+	return mono_monitor_try_enter_internal (obj, INFINITE, FALSE) == 1;
+}
+
+gboolean mono_monitor_try_enter (MonoObject *obj, guint32 ms)
+{
+	return mono_monitor_try_enter_internal (obj, ms, FALSE) == 1;
 }
 
 void mono_monitor_exit (MonoObject *obj)
@@ -306,9 +320,17 @@ void mono_monitor_exit (MonoObject *obj)
 gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 							      guint32 ms)
 {
+	gint32 res;
 	MONO_ARCH_SAVE_REGS;
 
-	return(mono_monitor_try_enter (obj, ms));
+	do {
+		res = mono_monitor_try_enter_internal (obj, ms, TRUE);
+		if (res == -1)
+			mono_thread_interruption_checkpoint ();
+	}
+	while (res == -1);
+	
+	return(res == 1);
 }
 
 void ves_icall_System_Threading_Monitor_Monitor_exit(MonoObject *obj)
@@ -456,7 +478,8 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	HANDLE event;
 	guint32 nest;
 	guint32 ret;
-	gboolean success=FALSE, regain;
+	gboolean success=FALSE;
+	gint32 regain;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -512,9 +535,14 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	}
 
 	/* Regain the lock with the previous nest count */
-	regain=mono_monitor_try_enter (obj, INFINITE);
-	
-	if(regain==FALSE) {
+	do {
+		regain=mono_monitor_try_enter_internal (obj, INFINITE, TRUE);
+		if (regain == -1) 
+			mono_thread_interruption_checkpoint ();
+	}
+	while (regain == -1);
+
+	if(regain==0) {
 		/* Something went wrong, so throw a
 		 * SynchronizationLockException
 		 */

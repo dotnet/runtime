@@ -249,6 +249,9 @@ typedef struct {
 	gpointer lock_data;
 	GSList *appdomain_refs;
 	MonoBoolean interruption_requested;
+	gpointer suspend_event;
+	gpointer resume_event;
+	MonoObject *synch_lock;
 } MonoThread;
 
 typedef struct {
@@ -473,6 +476,9 @@ mono_object_castclass_mbyref (MonoObject *obj, MonoClass *klass);
 
 gboolean 
 mono_monitor_try_enter       (MonoObject *obj, guint32 ms);
+
+gboolean
+mono_monitor_enter           (MonoObject *obj);
 
 void 
 mono_monitor_exit            (MonoObject *obj);

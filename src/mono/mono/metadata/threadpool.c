@@ -81,7 +81,7 @@ mono_async_invoke (MonoAsyncResult *ares)
 	}
 
 	/* notify listeners */
-	if(!mono_monitor_try_enter ((MonoObject *) ares, INFINITE))
+	if(!mono_monitor_enter ((MonoObject *) ares))
 		return;
 	
 	if (ares->handle != NULL) {
@@ -151,7 +151,7 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	*out_args = NULL;
 
 	/* check if already finished */
-	if (!mono_monitor_try_enter ((MonoObject *) ares, INFINITE)) {
+	if (!mono_monitor_enter ((MonoObject *) ares)) {
 		return NULL;
 	}
 	
