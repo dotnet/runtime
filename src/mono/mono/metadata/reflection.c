@@ -49,6 +49,7 @@ typedef struct {
 	MonoObject *type;
 	MonoString *name;
 	MonoBoolean init_locals;
+	MonoMethod *mhandle;
 } ReflectionMethodBuilder;
 
 const unsigned char table_sizes [64] = {
@@ -774,6 +775,7 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicAssembly *assem
 	/* room in this table is already allocated */
 	table = &assembly->tables [MONO_TABLE_METHOD];
 	*mb->table_idx = table->next_idx ++;
+	mono_g_hash_table_insert (assembly->method_to_table_idx, mb->mhandle, GUINT_TO_POINTER ((*mb->table_idx)));
 	values = table->values + *mb->table_idx * MONO_METHOD_SIZE;
 	if (mb->name) {
 		name = mono_string_to_utf8 (mb->name);
@@ -853,6 +855,7 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicAssembly
 	rmb.name = mb->name;
 	rmb.table_idx = &mb->table_idx;
 	rmb.init_locals = mb->init_locals;
+	rmb.mhandle = mb->mhandle;
 
 	mono_image_basic_method (&rmb, assembly);
 
@@ -920,6 +923,7 @@ mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, Mon
 	rmb.name = NULL;
 	rmb.table_idx = &mb->table_idx;
 	rmb.init_locals = mb->init_locals;
+	rmb.mhandle = mb->mhandle;
 
 	mono_image_basic_method (&rmb, assembly);
 
@@ -1137,6 +1141,7 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicAssembly *
 		fb->attrs |= FIELD_ATTRIBUTE_HAS_DEFAULT;
 	table = &assembly->tables [MONO_TABLE_FIELD];
 	fb->table_idx = table->next_idx ++;
+	mono_g_hash_table_insert (assembly->field_to_table_idx, fb->handle, GUINT_TO_POINTER (fb->table_idx));
 	values = table->values + fb->table_idx * MONO_FIELD_SIZE;
 	name = mono_string_to_utf8 (fb->name);
 	values [MONO_FIELD_NAME] = string_heap_insert (&assembly->sheap, name);
@@ -1449,8 +1454,7 @@ create_typespec (MonoDynamicAssembly *assembly, MonoType *type)
  * Despite the name, we handle also TypeSpec (with the above helper).
  */
 static guint32
-mono_image_typedef_or_ref_aux (MonoDynamicAssembly *assembly, MonoType *type,
-							   gboolean force_ref)
+mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 {
 	MonoDynamicTable *table;
 	guint32 *values;
@@ -1476,7 +1480,7 @@ mono_image_typedef_or_ref_aux (MonoDynamicAssembly *assembly, MonoType *type,
 	/*
 	 * If it's in the same module:
 	 */
-	if (!force_ref && (klass->image == assembly->assembly.image)) {
+	if (klass->image == assembly->assembly.image) {
 		MonoReflectionTypeBuilder *tb = klass->reflection_info;
 		token = TYPEDEFORREF_TYPEDEF | (tb->table_idx << TYPEDEFORREF_BITS);
 		mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), klass);
@@ -1504,12 +1508,6 @@ mono_image_typedef_or_ref_aux (MonoDynamicAssembly *assembly, MonoType *type,
 	return token;
 }
 
-static guint32
-mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
-{
-	return mono_image_typedef_or_ref_aux (assembly, type, FALSE);
-}
-
 /*
  * Insert a memberef row into the metadata: the token that point to the memberref
  * is returned. Caching is done in the caller (mono_image_get_methodref_token() or
@@ -1524,7 +1522,7 @@ mono_image_get_memberref_token (MonoDynamicAssembly *assembly, MonoType *type, c
 	guint32 token, pclass;
 	guint32 parent;
 
-	parent = mono_image_typedef_or_ref_aux (assembly, type, TRUE);
+	parent = mono_image_typedef_or_ref (assembly, type);
 	switch (parent & TYPEDEFORREF_MASK) {
 	case TYPEDEFORREF_TYPEREF:
 		pclass = MEMBERREF_PARENT_TYPEREF;
@@ -2264,10 +2262,15 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *a
 		target = assembly->code.data + code_idx + iltoken->code_pos;
 		switch (target [3]) {
 		case MONO_TABLE_FIELD:
-			if (strcmp (iltoken->member->vtable->klass->name, "FieldBuilder"))
+			if (!strcmp (iltoken->member->vtable->klass->name, "FieldBuilder")) {
+				field = (MonoReflectionFieldBuilder *)iltoken->member;
+				idx = field->table_idx;
+			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoField")) {
+				MonoClassField *f = ((MonoReflectionField*)iltoken->member)->field;
+				idx = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->field_to_table_idx, f));
+			} else {
 				g_assert_not_reached ();
-			field = (MonoReflectionFieldBuilder *)iltoken->member;
-			idx = field->table_idx;
+			}
 			break;
 		case MONO_TABLE_METHOD:
 			if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder")) {
@@ -2276,6 +2279,9 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *a
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "ConstructorBuilder")) {
 				ctor = (MonoReflectionCtorBuilder *)iltoken->member;
 				idx = ctor->table_idx;
+			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoMethod")) {
+				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
+				idx = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->method_to_table_idx, m));
 			} else {
 				g_assert_not_reached ();
 			}
@@ -2627,12 +2633,20 @@ mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 	else if (strcmp (klass->name, "MonoCMethod") == 0 ||
 			strcmp (klass->name, "MonoMethod") == 0) {
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
-		token = mono_image_get_methodref_token (assembly, m->method);
+		if (m->method->klass->image == assembly->assembly.image)
+			/* Will get fixed up */
+			token = MONO_TOKEN_METHOD_DEF | 0;
+		else
+			token = mono_image_get_methodref_token (assembly, m->method);
 		/*g_print ("got token 0x%08x for %s\n", token, m->method->name);*/
 	}
 	else if (strcmp (klass->name, "MonoField") == 0) {
 		MonoReflectionField *f = (MonoReflectionField *)obj;
-		token = mono_image_get_fieldref_token (assembly, f->field, f->klass);
+		if (f->klass->image == assembly->assembly.image)
+			/* Will get fixed up */
+			token = MONO_TOKEN_FIELD_DEF | 0;
+		else
+			token = mono_image_get_fieldref_token (assembly, f->field, f->klass);
 		/*g_print ("got token 0x%08x for %s\n", token, f->field->name);*/
 	}
 	else if (strcmp (klass->name, "MonoArrayMethod") == 0) {
@@ -2733,6 +2747,8 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly->assembly.dynamic = assembly;
 	assemblyb->assembly.assembly = (MonoAssembly*)assembly;
 	assembly->token_fixups = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
+	assembly->method_to_table_idx = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
+	assembly->field_to_table_idx = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->handleref = g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->tokens = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
@@ -4925,8 +4941,8 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	m->name = mono_string_to_utf8 (rmb->name);
 	m->klass = klass;
 	m->signature = sig;
+	m->token = MONO_TOKEN_METHOD_DEF | (*rmb->table_idx);
 
-	/* TODO: What about m->token ? */
 	if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		if (klass == mono_defaults.string_class && !strcmp (m->name, ".ctor"))
 			m->string_ctor = 1;

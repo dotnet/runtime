@@ -267,6 +267,8 @@ typedef struct {
 	GHashTable *blob_cache;
 	GList *array_methods;
 	MonoGHashTable *token_fixups;
+	MonoGHashTable *method_to_table_idx;
+	MonoGHashTable *field_to_table_idx;
 	char *strong_name;
 	guint32 strong_name_size;
 	MonoDynamicStream pefile;
