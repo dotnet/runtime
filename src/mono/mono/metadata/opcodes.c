@@ -7,7 +7,7 @@
  * (C) 2002 Ximian, Inc.
  */
 #include <mono/metadata/opcodes.h>
-#include <malloc.h> /* for NULL */
+#include <stddef.h> /* for NULL */
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	{ Mono ## e, MONO_FLOW_ ## j, ((g-1)<<8) | i },
