@@ -1,3 +1,6 @@
+2001-11-19	Daniel Weber <daniel-weber@austin.rr.co>
+	* class.xml : Added System.Xml classes
+	* maintainers.xml: Added myself
 2001-10-11
 
 	* ByMaintainer.xsl: support for sorting classnames

@@ -1428,51 +1428,126 @@
     </class>
 
     <class name="System.Xml.XmlDocument">
-        <last-activity>Jul-29-2001</last-activity>
-        <implementation>no</implementation>
+        <last-activity>Nov-19-2001</last-activity>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>5</completion>
         <maintainers>
-            <maintainer>hildjj@cursive.net</maintainer>
+            <maintainer>daniel-weber@austin.rr.com</maintainer>
         </maintainers>
     </class>
+	
+    <class name="System.Xml.XmlDocumentFragment">
+        <last-activity>Nov-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>5</completion>
+        <maintainers>
+            <maintainer>daniel-weber@austin.rr.com</maintainer>
+        </maintainers>
+    </class>
+	
     <class name="System.Xml.XmlAttribute">
         <last-activity>Jul-29-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>10</completion>
         <maintainers>
-            <maintainer>hildjj@cursive.net</maintainer>
+            <maintainer>daniel-weber@austin.rr.com</maintainer>
         </maintainers>
     </class>
+	
     <class name="System.Xml.XmlAttributeCollection">
-        <last-activity>Jul-29-2001</last-activity>
-        <implementation>no</implementation>
+        <last-activity>Nov-19-2001</last-activity>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>90</completion>
         <maintainers>
-            <maintainer>hildjj@cursive.net</maintainer>
+            <maintainer>daniel-weber@austin.rr.com</maintainer>
         </maintainers>
     </class>
+	
     <class name="System.Xml.XmlNode">
-        <last-activity>Jul-29-2001</last-activity>
-        <implementation>no</implementation>
+        <last-activity>Nov-19-2001</last-activity>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>5</completion>
         <maintainers>
-            <maintainer>hildjj@cursive.net</maintainer>
+            <maintainer>daniel-weber@austin.rr.com</maintainer>
         </maintainers>
     </class>
+	
     <class name="System.Xml.XmlElement">
-        <last-activity>Jul-29-2001</last-activity>
-        <implementation>no</implementation>
+        <last-activity>Nov-19-2001</last-activity>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>10</completion>
         <maintainers>
-            <maintainer>hildjj@cursive.net</maintainer>
+            <maintainer>daniel-weber@austin.rr.com</maintainer>
         </maintainers>
     </class>
       
+    <class name="System.Xml.XmlLinkedNode">
+        <last-activity>Nov-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>daniel-weber@austin.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Xml.XmlNamedNodeMap">
+        <last-activity>Nov-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>90</completion>
+        <maintainers>
+            <maintainer>daniel-weber@austin.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Xml.XmlComment">
+        <last-activity>Nov-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>5</completion>
+        <maintainers>
+            <maintainer>daniel-weber@austin.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Xml.XmlNodeChangedEventArgs">
+        <last-activity>Nov-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>90</completion>
+        <maintainers>
+            <maintainer>daniel-weber@austin.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Xml.XmlNodeList">
+        <last-activity>Nov-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>daniel-weber@austin.rr.com</maintainer>
+        </maintainers>
+    </class>
+	
+    <class name="System.Xml.XmlText">
+        <last-activity>Nov-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>daniel-weber@austin.rr.com</maintainer>
+        </maintainers>
+    </class>
+
+
     <class name="System.Collections.SortedList">
         <last-activity>Jul-16-2001</last-activity>
         <implementation>no</implementation>
