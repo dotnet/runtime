@@ -2346,6 +2346,9 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 	if (pcount != m->signature->param_count)
 		mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetParameterCountException"));
 
+	if ((m->klass->flags & TYPE_ATTRIBUTE_ABSTRACT) && !strcmp (m->name, ".ctor"))
+		mono_raise_exception (mono_exception_from_name_msg (mono_defaults.corlib, "System", "MethodAccessException", "Cannot invoke constructor of an abstract class."));
+
 	if (m->klass->rank && !strcmp (m->name, ".ctor")) {
 		int i;
 		guint32 *lengths;
