@@ -205,34 +205,6 @@ if test x$platform_win32 = xno; then
 		AC_MSG_RESULT(no)
 	])
 
-	dnl ************************************
-	dnl *** Checks for IP_ADD_MEMBERSHIP ***
-	dnl ************************************
-	AC_MSG_CHECKING(for IP_ADD_MEMBERSHIP)
-	AC_TRY_COMPILE([#include <netdb.h>], [
-		int level = IP_ADD_MEMBERSHIP;
-	], [
-		# Yes, we have it...
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_IP_ADD_MEMBERSHIP)
-	], [
-		AC_MSG_RESULT(no)
-	])
-
-	dnl *************************************
-	dnl *** Checks for IP_DROP_MEMBERSHIP ***
-	dnl *************************************
-	AC_MSG_CHECKING(for IP_DROP_MEMBERSHIP)
-	AC_TRY_COMPILE([#include <netdb.h>], [
-		int level = IP_DROP_MEMBERSHIP;
-	], [
-		# Yes, we have it...
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_IP_DROP_MEMBERSHIP)
-	], [
-		AC_MSG_RESULT(no)
-	])
-
 	dnl *********************************
 	dnl *** Check for struct ip_mreqn ***
 	dnl *********************************

@@ -1,8 +1,7 @@
 2002-02-16  Jeffrey Stedfast  <fejj@ximian.com>
 
-	* configure.in: Add checks for SOL_IP, SOL_TCP, IP_PKTINFO,
-	IP_ADD_MEMBERSHIP and IP_DROP_MEMBERSHIP. Also check for struct
-	ip_mreqn.
+	* configure.in: Add checks for SOL_IP, SOL_TCP, and
+	IP_PKTINFO. Also check for struct ip_mreqn.
 
 2002-02-14  Jeffrey Stedfast  <fejj@ximian.com>
 
