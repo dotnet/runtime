@@ -30,6 +30,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h>
 #include <mono/io-layer/io-layer.h>
+#include <mono/metadata/object-internals.h>
 
 #include <mono/os/gc_wrapper.h>
 
@@ -178,6 +179,8 @@ static void handle_remove(guint32 tid)
 
 static void thread_cleanup (MonoThread *thread)
 {
+	mono_release_type_locks (thread);
+
 	if (!mono_monitor_enter (thread->synch_lock))
 		return;
 
@@ -412,6 +415,17 @@ mono_thread_detach (MonoThread *thread)
 	SET_CURRENT_OBJECT (NULL);
 	
 	thread_cleanup (thread);
+}
+
+void
+mono_thread_exit ()
+{
+	MonoThread *thread = mono_thread_current ();
+
+	SET_CURRENT_OBJECT (NULL);
+	thread_cleanup (thread);
+
+	ExitThread (-1);
 }
 
 HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
@@ -1926,7 +1940,7 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 	else if ((thread->state & ThreadState_StopRequested) != 0) {
 		/* FIXME: do this through the JIT? */
 		mono_monitor_exit (thread->synch_lock);
-		ExitThread (-1);
+		mono_thread_exit ();
 		return NULL;
 	}
 	

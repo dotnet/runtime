@@ -265,6 +265,31 @@ mono_runtime_class_init (MonoVTable *vtable)
 	mono_raise_exception (exc_to_throw);
 }
 
+static
+gboolean release_type_locks (gpointer key, gpointer value, gpointer user)
+{
+	TypeInitializationLock *lock = (TypeInitializationLock*) value;
+	if (lock->initializing_tid == GPOINTER_TO_UINT (user)) {
+		lock->done = TRUE;
+		LeaveCriticalSection (&lock->initialization_section);
+		--lock->waiting_count;
+		if (lock->waiting_count == 0) {
+			DeleteCriticalSection (&lock->initialization_section);
+			g_free (lock);
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+void
+mono_release_type_locks (MonoThread *thread)
+{
+	EnterCriticalSection (&type_initialization_section);
+	mono_g_hash_table_foreach_remove (type_initialization_hash, release_type_locks, GUINT_TO_POINTER (thread->tid));
+	LeaveCriticalSection (&type_initialization_section);
+}
+
 static gpointer
 default_trampoline (MonoMethod *method)
 {
