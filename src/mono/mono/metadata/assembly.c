@@ -65,12 +65,12 @@ default_assembly_name_resolver (const char *base_dir, const char *name)
 
 	/* Full name already supplied */
 	path = g_strdup (name);
-	if (g_file_test (name, G_FILE_TEST_EXISTS))
+	if (g_file_test (name, G_FILE_TEST_IS_REGULAR))
 		return path;
 
 	g_free (path);
 	path = g_concat_dir_and_file (base_dir, name);
-	if (g_file_test (path, G_FILE_TEST_EXISTS))
+	if (g_file_test (path, G_FILE_TEST_IS_REGULAR))
 		return path;
 
 	file = path;
@@ -81,7 +81,7 @@ default_assembly_name_resolver (const char *base_dir, const char *name)
 	g_free (path);
 	
 	path = g_concat_dir_and_file (MONO_ASSEMBLIES, name);
-	if (g_file_test (path, G_FILE_TEST_EXISTS))
+	if (g_file_test (path, G_FILE_TEST_IS_REGULAR))
 		return path;
 	g_free (path);
 
