@@ -1267,35 +1267,23 @@ mono_get_domainvar (MonoCompile *cfg)
 	return cfg->domainvar;
 }
 
-static void
-realloc_var_info (MonoCompile *cfg, int count)
-{
-	gpointer data;
-	int num = cfg->varinfo_count;
-
-	g_assert (count > num);
-
-	cfg->varinfo_count = count;
-
-	data = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst*) * cfg->varinfo_count);
-	if (num)
-		memcpy (data, cfg->varinfo, sizeof (MonoInst*) * num);
-	cfg->varinfo = (MonoInst **)data;
-
-	data = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoMethodVar*) * cfg->varinfo_count);
-	if (num)
-		memcpy (data, cfg->vars, sizeof (MonoMethodVar*) * num);
-	cfg->vars = (MonoMethodVar **)data;		
-}
-
 MonoInst*
 mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 {
 	MonoInst *inst;
 	int num = cfg->num_varinfo;
 
-	if ((num + 1) >= cfg->varinfo_count)
- 		realloc_var_info (cfg, (cfg->varinfo_count + 2) * 2);
+	if ((num + 1) >= cfg->varinfo_count) {
+		if (!cfg->varinfo_count) {
+			cfg->varinfo_count = 16;
+			cfg->varinfo = (MonoInst **)g_malloc0 (sizeof (MonoInst*) * cfg->varinfo_count);
+			cfg->vars = (MonoMethodVar **)g_malloc0 (sizeof (MonoMethodVar*) * cfg->varinfo_count);
+		} else {
+			cfg->varinfo_count *= 2;
+			cfg->varinfo = (MonoInst **)g_realloc (cfg->varinfo, sizeof (MonoInst*) * cfg->varinfo_count);
+			cfg->vars = (MonoMethodVar **)g_realloc (cfg->vars, sizeof (MonoMethodVar*) * cfg->varinfo_count);			
+		}
+	}
 
 	mono_jit_stats.allocate_var++;
 
@@ -4789,6 +4777,8 @@ mono_destroy_compile (MonoCompile *cfg)
 	mono_mempool_destroy (cfg->mempool);
 	g_list_free (cfg->ldstr_list);
 
+	g_free (cfg->varinfo);
+	g_free (cfg->vars);
 	g_free (cfg);
 }
 
