@@ -781,7 +781,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	int idx = mono_metadata_token_index (token);
 	MonoTableInfo *tables = image->tables;
 	MonoGenericContainer *generic_container = NULL, *container = NULL;
-	const char *loc, *sig = NULL;
+	const char *sig = NULL;
 	int size, i;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 
