@@ -33,7 +33,7 @@
  		      <li><a href="archive/beta1/libgdiplus-0.5.tar.gz">libgdiplus 0.5</a>
  		      <li><a href="archive/beta1/winelib-0.2.tar.gz">winelib 0.2</a>
 		      <p>
-		      <li><a href="archive/beta1/monodoc-0.13.tar.gz">MonoDoc 0.15</a>
+		      <li><a href="archive/beta1/monodoc-0.15.tar.gz">MonoDoc 0.15</a>
  		      <li><a href="archive/beta1/xsp-0.13.tar.gz">XSP web server 0.13</a>
  		      <li><a href="archive/beta1/mod_mono-0.9.tar.gz">Apache Mono module 0.9</a>
 	            </ul>
@@ -68,7 +68,7 @@
                     <img src="images/windows-36.gif"><b>Windows installer</b>
 		  </td>
 		  <td>
-		    <a href="archive/beta/windows/mono-Beta1-win32-1.exe">Mono Setup</a>
+		    <a href="archive/beta1/windows/mono-Beta1-win32-1.exe">Mono Setup</a>
 		  </td>
 		</tr>
              </table>
