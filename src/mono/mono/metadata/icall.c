@@ -1270,7 +1270,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 static MonoObject *
 ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
 {
-	MonoDomain *domain = mono_object_domain (type); 
+	MonoDomain *domain; 
 	MonoClass *enumc, *objc;
 	gint32 s1, s2;
 	MonoObject *res;
@@ -1278,6 +1278,7 @@ ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
 	MONO_CHECK_ARG_NULL (type);
 	MONO_CHECK_ARG_NULL (obj);
 
+	domain = mono_object_domain (type); 
 	enumc = mono_class_from_mono_type (type->type);
 	objc = obj->vtable->klass;
 
