@@ -78,6 +78,15 @@ static void handle_store(HANDLE thread)
 	if(threads==NULL) {
 		threads=g_ptr_array_new();
 	}
+
+	/* Make sure there is only one instance in the array.  We
+	 * store the thread both in the start_wrapper (in the
+	 * subthread), and as soon as possible in the parent thread.
+	 * This is to minimise the window in which the thread exists
+	 * but we haven't recorded it.
+	 */
+	g_ptr_array_remove_fast (threads, thread);
+	
 	g_ptr_array_add(threads, thread);
 	LeaveCriticalSection(&threads_mutex);
 }
@@ -177,6 +186,8 @@ mono_thread_create (MonoDomain *domain, gpointer func)
 #endif
 	g_assert (thread_handle);
 
+	handle_store(thread);
+
 	*(gpointer *)(((char *)thread) + field->offset) = thread_handle; 
 
 	return thread;
@@ -218,7 +229,9 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
 				  ": CreateThread error 0x%x", GetLastError());
 			return(NULL);
 		}
-		
+
+		handle_store(thread);
+
 #ifdef THREAD_DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": Started thread ID %d (handle %p)", tid, thread);
