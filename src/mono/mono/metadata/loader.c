@@ -188,14 +188,14 @@ method_from_memberref (MonoImage *image, guint32 idx)
 	case MEMBERREF_PARENT_TYPEREF:
 		klass = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | nindex);
 		if (!klass) {
-			g_warning ("Missing method %s in typeref index %d", mname, nindex);
+			g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
 			mono_metadata_free_method_signature (sig);
 			return NULL;
 		}
 		mono_class_init (klass);
 		method = find_method (klass, mname, sig);
 		if (!method)
-			g_warning ("Missing method %s in typeref index %d", mname, nindex);
+			g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
 		mono_metadata_free_method_signature (sig);
 		return method;
 	case MEMBERREF_PARENT_TYPESPEC: {
