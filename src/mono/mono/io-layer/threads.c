@@ -292,6 +292,10 @@ WapiHandle *CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32
 	}
 	
 	thread_handle=(struct _WapiHandle_thread *)g_new0(struct _WapiHandle_thread, 1);
+
+	handle=(WapiHandle *)thread_handle;
+	_WAPI_HANDLE_INIT(handle, WAPI_HANDLE_THREAD, thread_ops);
+
 	thread_handle->state=THREAD_STATE_START;
 	
 	/* Lock around the thread create, so that the new thread cant
@@ -314,9 +318,6 @@ WapiHandle *CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32
 	g_hash_table_insert(thread_hash, &thread_handle->thread->id,
 			    thread_handle);
 	mono_mutex_unlock(&thread_hash_mutex);
-
-	handle=(WapiHandle *)thread_handle;
-	_WAPI_HANDLE_INIT(handle, WAPI_HANDLE_THREAD, thread_ops);
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
@@ -631,7 +632,7 @@ again:
 	if(ret==-1) {
 		/* Sleep interrupted with rem time remaining */
 #ifdef DEBUG
-		guint32 rems=rem.tv_sec*1000 + rem.tv_nsec/1000;
+		guint32 rems=rem.tv_sec*1000 + rem.tv_nsec/1000000;
 		
 		g_message(G_GNUC_PRETTY_FUNCTION ": Still got %d ms to go",
 			  rems);
