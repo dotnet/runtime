@@ -23,9 +23,9 @@
 Q: What is Mono exactly?
 
 A: The Mono Project is an open development initiative sponsored by
-   Ximian that is working to develop an open source, Linux-based
+   Ximian that is working to develop an open source, Unix
    version of the Microsoft .NET development platform.  Its objective
-   is to enable Linux developers to build and
+   is to enable Unix developers to build and
    deploy cross-platform .NET Applications.  The project will
    implement various technologies developed by Microsoft that have now
    been submitted to the ECMA for standardization.
@@ -572,7 +572,7 @@ A: Yes, it is possible.  Here are a few starting point:
 
 Q: Could mono become a hybrid cil/java platform?
 
-A: No. It is quite far from the phylosophy of the project. The idea of Mono 
+A: No. It is quite far from the philosophy of the project. The idea of Mono 
    is, to have only _one_ VM, on which all can run. And if there existing a 
    binary-converter from Java-.class to IL and if there existing something 
    like J-Sharp on Mono, you can write programs in Java, which than can run 
