@@ -1,7 +1,4 @@
 using System;
-using System.Data;
-using 
-System.Data.SqlTypes;
 
 namespace test {
 	public class tester {

@@ -1,3 +1,18 @@
+2003-05-08  Zoltan Varga  <vargaz@freemail.hu>
+
+	* mono/tests/Makefile.am: 
+	- Compile with mcs.
+	- Disable some warnings.
+	- Added executables to clean target.
+	- Make testjit the default target.
+	- Print list of failed tests at the end of a test run.
+	- Abort tests when Ctrl-C is pressed.
+
+	* mono/tests/test-driver: Return with a special exit code when 
+	SIGINT is detected.
+
+	* mono/tests/checked.cs: Make it compile.
+	
 2003-05-02  Miguel de Icaza  <miguel@ximian.com>
 
 	* runtime/Makefile.am ($(monobins_DATA)): Use explicit file names

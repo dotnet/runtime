@@ -30,11 +30,11 @@ public class Test {
 		if (r1.DoIt() != 5)
 			return 1;
 
+		//		Console.WriteLine ("TEST {0}", ((ICommon)r1).DoIt ());
+
 		if (((ICommon)r1).DoIt() != 3)
 			return 2;
 
-		//Console.WriteLine ("TEST {0}", ((ICommon)r1).DoIt ());
-		
 		if (r2.DoIt() != 5)
 			return 3;
 		

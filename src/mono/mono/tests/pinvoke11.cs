@@ -18,7 +18,7 @@ public struct su
 public struct cs
 {
 	public bool b1;
-        public int i1;
+	public int i1;
 	public su u1;
 }
 

@@ -15,7 +15,11 @@ my $res = system("$interpreter @ARGV $test 2>/dev/null 1>$stdout");
 
 if ($res) {
 	printf ("failed $? (%d) signal (%d).\n", $? >> 8, $? & 127);
-	exit (1);
+	if (($? & 127) == 2) {
+		exit (2);
+	} else {
+		exit (1);
+	}
 } elsif (-f $output) {
 	print "failed output.\n" if (read_file ($output) ne read_file ($stdout));
 	exit (1);

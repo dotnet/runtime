@@ -3,7 +3,8 @@ TEST_PROG=../interpreter/mint
 JITTEST_PROG=../mini/mono
 RUNTIME_ARGS=--config tests-config
 
-CSC=csc /unsafe
+#CSC=csc /unsafe
+CSC=mcs --unsafe -nowarn:0162
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
@@ -108,13 +109,12 @@ TEST_CS_SRC=			\
 	jit-float.cs		\
 	pop.cs			\
 	time.cs			\
-	appdomain.cs		\
+	appdomain.cs        \
 	appdomain1.cs		\
 	appdomain2.cs		\
 	appdomain3.cs		\
 	appdomain-client.cs	\
 	pointer.cs		\
-	vararg.cs		\
 	rounding.cs		\
 	hashcode.cs		\
 	delegate1.cs		\
@@ -154,7 +154,8 @@ TEST_CS_SRC=			\
 	interfacecast.cs	\
 	array3.cs		\
 	classinit.cs    \
-	synchronized.cs
+	synchronized.cs		\
+	vararg.cs
 
 TEST_IL_SRC=			\
 	cpblkTest.il		\
@@ -178,7 +179,7 @@ EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC)
 %.exe: %.cs
 	$(CSC) $<
 
-test:	test_cs test_il
+test:	testjit
 
 test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 	@failed=0; \
@@ -216,16 +217,20 @@ testb: $(TEST_PROG) $(TESTBS)
 testjit: $(JITTEST_PROG) $(TESTSI_CS) $(TESTSI_IL) $(TESTBS)
 	@failed=0; \
 	passed=0; \
+	failed_tests="";\
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS) $(TESTSI_IL) $(TESTBS); do	\
 		if ./test-driver $(JITTEST_PROG) $$i $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
+			if [ $$? = 2 ]; then break; fi; \
 			failed=`expr $${failed} + 1`; \
+			failed_tests="$${failed_tests} $$i"; \
 		fi \
 	done; \
-	echo "$${passed} test(s) passed. $${failed} test(s) failed."
+	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
+	if [ $$failed > 0 ]; then echo -e "\nFailed tests:\n"; for i in $${failed_tests}; do echo $${i}; done; fi; 
 
 testjitspeed: $(JITTEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\
@@ -240,3 +245,5 @@ noinst_LTLIBRARIES = libtest.la
 
 libtest_la_LDFLAGS = -rpath `pwd`
 libtest_la_SOURCES = libtest.c
+
+CLEANFILES = $(TESTSI_CS) $(TESTSI_IL)
