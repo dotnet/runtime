@@ -1654,6 +1654,12 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	}
 }
 
+static void
+arith_overflow ()
+{
+	mono_raise_exception (mono_get_exception_overflow ());
+}
+
 /**
  * mono_object_allocate:
  * @size: number of bytes to allocate
@@ -1944,12 +1950,18 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 	    (lower_bounds == NULL || lower_bounds [0] == 0)) {
 		bounds = NULL;
 		len = lengths [0];
+		if ((int) len < 0)
+			arith_overflow ();
 	} else {
 	#if HAVE_BOEHM_GC
 		bounds = GC_MALLOC (sizeof (MonoArrayBounds) * array_class->rank);
 	#else
 		bounds = g_malloc0 (sizeof (MonoArrayBounds) * array_class->rank);
 	#endif
+		for (i = 0; i < array_class->rank; ++i)
+			if ((int) lengths [i] < 0)
+				arith_overflow ();
+		
 		for (i = 0; i < array_class->rank; ++i) {
 			bounds [i].length = lengths [i];
 			if (CHECK_MUL_OVERFLOW_UN (len, lengths [i]))
@@ -2033,6 +2045,9 @@ mono_array_new_specific (MonoVTable *vtable, guint32 n)
 
 	MONO_ARCH_SAVE_REGS;
 
+	if ((int) n < 0)
+		arith_overflow ();
+	
 	elem_size = mono_array_element_size (vtable->klass);
 	if (CHECK_MUL_OVERFLOW_UN (n, elem_size))
 		mono_gc_out_of_memory (MYGUINT32_MAX);
