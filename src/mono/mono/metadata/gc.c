@@ -39,11 +39,7 @@ run_finalize (void *obj, void *data)
 		}
 	}
 	/* speedup later... */
-	/*
-	 * mono crashes (see bug#23778)
-	 g_print ("finalizer is run on %s at %p\n", mono_object_class(o)->name, o);
-	 mono_runtime_invoke (o->vtable->klass->vtable [finalize_slot], obj, NULL);
-	 */
+	 mono_runtime_invoke (o->vtable->klass->vtable [finalize_slot], o, NULL);
 }
 
 /*
@@ -59,9 +55,9 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 {
 #if HAVE_BOEHM_GC
 	guint offset = 0;
-	if (mono_object_class (obj)->ghcimpl)
+	if (!mono_object_class (obj)->ghcimpl)
 		offset += 4;
-	/*g_print ("registering %s at %p (base: %p)\n", mono_object_class (obj)->name, obj, GC_base (obj));*/
+	g_assert (GC_base (obj) == (char*)obj - offset);
 	GC_register_finalizer ((char*)obj - offset, run_finalize, GUINT_TO_POINTER (offset), NULL, NULL);
 #endif
 }
