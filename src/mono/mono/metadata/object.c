@@ -1580,7 +1580,7 @@ mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
 
 	if ((ji = mono_jit_info_table_find (domain, addr))) {
 		method = ji->method;
-		delegate->method_info = mono_method_get_object (domain, method);
+		delegate->method_info = mono_method_get_object (domain, method, NULL);
 	}
 
 	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
@@ -1611,10 +1611,10 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class); 
 	
 	if (invoke) {
-		mono_message_init (domain, msg, mono_method_get_object (domain, invoke), NULL);
+		mono_message_init (domain, msg, mono_method_get_object (domain, invoke, NULL), NULL);
 		count =  sig->param_count - 2;
 	} else {
-		mono_message_init (domain, msg, mono_method_get_object (domain, method), NULL);
+		mono_message_init (domain, msg, mono_method_get_object (domain, method, NULL), NULL);
 		count =  sig->param_count;
 	}
 
@@ -1751,7 +1751,7 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 
 	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
 	out_args = mono_array_new (domain, mono_defaults.object_class, 1);
-	mono_message_init (domain, msg, mono_method_get_object (domain, getter), out_args);
+	mono_message_init (domain, msg, mono_method_get_object (domain, getter, NULL), out_args);
 
 	mono_array_set (msg->args, gpointer, 0, mono_string_new (domain, klass->name));
 	mono_array_set (msg->args, gpointer, 1, mono_string_new (domain, field->name));
@@ -1813,7 +1813,7 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 		
 
 	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
-	mono_message_init (domain, msg, mono_method_get_object (domain, setter), NULL);
+	mono_message_init (domain, msg, mono_method_get_object (domain, setter, NULL), NULL);
 
 	mono_array_set (msg->args, gpointer, 0, mono_string_new (domain, klass->name));
 	mono_array_set (msg->args, gpointer, 1, mono_string_new (domain, field->name));

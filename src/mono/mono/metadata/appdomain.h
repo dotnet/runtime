@@ -75,6 +75,9 @@ struct _MonoDomain {
 	MonoGHashTable     *static_data_hash;
 	GHashTable         *jit_code_hash;
 	MonoJitInfoTable   *jit_info_table;
+	/* hashtables for Reflection handles */
+	MonoGHashTable     *type_hash;
+	MonoGHashTable     *refobject_hash;
 };
 
 /* This is a copy of System.AppDomain */

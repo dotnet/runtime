@@ -2622,23 +2622,51 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 
 /*
  * We need to return always the same object for MethodInfo, FieldInfo etc..
+ * but we need to consider the reflected type.
  * type uses a different hash, since it uses custom hash/equal functions.
  */
-static MonoGHashTable *object_cache = NULL;
-static MonoGHashTable *type_cache = NULL;
 
-#define CHECK_OBJECT(t,p)	\
+typedef struct {
+	gpointer item;
+	MonoClass *refclass;
+} ReflectedEntry;
+
+static gboolean
+reflected_equal (gconstpointer a, gconstpointer b) {
+	const ReflectedEntry *ea = a;
+	const ReflectedEntry *eb = b;
+
+	return (ea->item == eb->item) && (ea->refclass == eb->refclass);
+}
+
+static guint
+reflected_hash (gconstpointer a) {
+	const ReflectedEntry *ea = a;
+	return GPOINTER_TO_UINT (ea->item);
+}
+
+#define CHECK_OBJECT(t,p,k)	\
 	do {	\
 		t _obj;	\
-		if (!object_cache)	\
-			object_cache = mono_g_hash_table_new (g_direct_hash, g_direct_equal);	\
-		if ((_obj = mono_g_hash_table_lookup (object_cache, (p))))	\
+		ReflectedEntry e; 	\
+		e.item = (p);	\
+		e.refclass = (k);	\
+		mono_domain_lock (domain);	\
+		if (!domain->refobject_hash)	\
+			domain->refobject_hash = mono_g_hash_table_new (reflected_hash, reflected_equal);	\
+		if ((_obj = mono_g_hash_table_lookup (domain->refobject_hash, &e))) {	\
+			mono_domain_unlock (domain);	\
 			return _obj;	\
+		}	\
 	} while (0)
 
-#define CACHE_OBJECT(p,o)	\
+#define CACHE_OBJECT(p,o,k)	\
 	do {	\
-		mono_g_hash_table_insert (object_cache, p,o);	\
+		ReflectedEntry *e = mono_mempool_alloc (domain->mp, sizeof (ReflectedEntry)); 	\
+		e->item = (p);	\
+		e->refclass = (k);	\
+		mono_g_hash_table_insert (domain->refobject_hash, e,o);	\
+		mono_domain_unlock (domain);	\
 	} while (0)
 
 /*
@@ -2654,13 +2682,13 @@ mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 	static MonoClass *System_Reflection_Assembly;
 	MonoReflectionAssembly *res;
 	
-	CHECK_OBJECT (MonoReflectionAssembly *, assembly);
+	CHECK_OBJECT (MonoReflectionAssembly *, assembly, NULL);
 	if (!System_Reflection_Assembly)
 		System_Reflection_Assembly = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "Assembly");
 	res = (MonoReflectionAssembly *)mono_object_new (domain, System_Reflection_Assembly);
 	res->assembly = assembly;
-	CACHE_OBJECT (assembly, res);
+	CACHE_OBJECT (assembly, res, NULL);
 	return res;
 }
 
@@ -2741,20 +2769,26 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 	MonoReflectionType *res;
 	MonoClass *klass = mono_class_from_mono_type (type);
 
-	if (!type_cache)
-		type_cache = mono_g_hash_table_new ((GHashFunc)mymono_metadata_type_hash, 
+	mono_domain_lock (domain);
+	if (!domain->type_hash)
+		domain->type_hash = mono_g_hash_table_new ((GHashFunc)mymono_metadata_type_hash, 
 				(GCompareFunc)mymono_metadata_type_equal);
-	if ((res = mono_g_hash_table_lookup (type_cache, type)))
+	if ((res = mono_g_hash_table_lookup (domain->type_hash, type))) {
+		mono_domain_unlock (domain);
 		return res;
+	}
 	if (klass->reflection_info) {
 		/* should this be considered an error condition? */
-		if (!type->byref)
+		if (!type->byref) {
+			mono_domain_unlock (domain);
 			return klass->reflection_info;
+		}
 	}
 	mono_class_init (klass);
 	res = (MonoReflectionType *)mono_object_new (domain, mono_defaults.monotype_class);
 	res->type = type;
-	mono_g_hash_table_insert (type_cache, type, res);
+	mono_g_hash_table_insert (domain->type_hash, type, res);
+	mono_domain_unlock (domain);
 	return res;
 }
 
@@ -2762,11 +2796,12 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
  * mono_method_get_object:
  * @domain: an app domain
  * @method: a method
+ * @refclass: the reflected type (can be NULL)
  *
  * Return an System.Reflection.MonoMethod object representing the method @method.
  */
 MonoReflectionMethod*
-mono_method_get_object (MonoDomain *domain, MonoMethod *method)
+mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refclass)
 {
 	/*
 	 * We use the same C representation for methods and constructors, but the type 
@@ -2776,7 +2811,10 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method)
 	MonoClass *klass;
 	MonoReflectionMethod *ret;
 
-	CHECK_OBJECT (MonoReflectionMethod *, method);
+	if (!refclass)
+		refclass = method->klass;
+
+	CHECK_OBJECT (MonoReflectionMethod *, method, refclass);
 	if (*method->name == '.' && (strcmp (method->name, ".ctor") == 0 || strcmp (method->name, ".cctor") == 0))
 		cname = "MonoCMethod";
 	else
@@ -2786,7 +2824,8 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method)
 	ret = (MonoReflectionMethod*)mono_object_new (domain, klass);
 	ret->method = method;
 	ret->name = mono_string_new (domain, method->name);
-	CACHE_OBJECT (method, ret);
+	ret->reftype = mono_type_get_object (domain, &refclass->byval_arg);
+	CACHE_OBJECT (method, ret, refclass);
 	return ret;
 }
 
@@ -2805,12 +2844,12 @@ mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *fie
 	MonoReflectionField *res;
 	MonoClass *oklass;
 
-	CHECK_OBJECT (MonoReflectionField *, field);
+	CHECK_OBJECT (MonoReflectionField *, field, klass);
 	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoField");
 	res = (MonoReflectionField *)mono_object_new (domain, oklass);
 	res->klass = klass;
 	res->field = field;
-	CACHE_OBJECT (field, res);
+	CACHE_OBJECT (field, res, klass);
 	return res;
 }
 
@@ -2829,12 +2868,12 @@ mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *pr
 	MonoReflectionProperty *res;
 	MonoClass *oklass;
 
-	CHECK_OBJECT (MonoReflectionProperty *, property);
+	CHECK_OBJECT (MonoReflectionProperty *, property, klass);
 	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoProperty");
 	res = (MonoReflectionProperty *)mono_object_new (domain, oklass);
 	res->klass = klass;
 	res->property = property;
-	CACHE_OBJECT (property, res);
+	CACHE_OBJECT (property, res, klass);
 	return res;
 }
 
@@ -2853,12 +2892,12 @@ mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
 	MonoReflectionEvent *res;
 	MonoClass *oklass;
 
-	CHECK_OBJECT (MonoReflectionEvent *, event);
+	CHECK_OBJECT (MonoReflectionEvent *, event, klass);
 	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoEvent");
 	res = (MonoReflectionEvent *)mono_object_new (domain, oklass);
 	res->klass = klass;
 	res->event = event;
-	CACHE_OBJECT (event, res);
+	CACHE_OBJECT (event, res, klass);
 	return res;
 }
 
@@ -2882,14 +2921,14 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	if (!method->signature->param_count)
 		return NULL;
 
-	member = mono_method_get_object (domain, method);
+	member = mono_method_get_object (domain, method, NULL);
 	names = g_new (char *, method->signature->param_count);
 	mono_method_get_param_names (method, (const char **) names);
 	
 	/* Note: the cache is based on the address of the signature into the method
 	 * since we already cache MethodInfos with the method as keys.
 	 */
-	CHECK_OBJECT (MonoReflectionParameter**, &(method->signature));
+	CHECK_OBJECT (MonoReflectionParameter**, &(method->signature), NULL);
 	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "ParameterInfo");
 #if HAVE_BOEHM_GC
 	res = GC_malloc (sizeof (MonoReflectionParameter*) * method->signature->param_count);
@@ -2906,7 +2945,7 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 		res [i]->AttrsImpl = method->signature->params [i]->attrs;
 	}
 	g_free (names);
-	CACHE_OBJECT (&(method->signature), res);
+	CACHE_OBJECT (&(method->signature), res, NULL);
 	return res;
 }
 
@@ -3701,20 +3740,37 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 }
 
 static MonoMethodSignature*
-ctor_builder_to_signature (MonoReflectionCtorBuilder *ctor) {
+parameters_to_signature (MonoArray *parameters) {
 	MonoMethodSignature *sig;
 	int count, i;
 
-	count = ctor->parameters? mono_array_length (ctor->parameters): 0;
+	count = parameters? mono_array_length (parameters): 0;
 
 	sig = g_malloc0 (sizeof (MonoMethodSignature) + sizeof (MonoType*) * count);
-	sig->hasthis = 1;
 	sig->param_count = count;
 	sig->sentinelpos = -1; /* FIXME */
 	for (i = 0; i < count; ++i) {
-		MonoReflectionType *pt = mono_array_get (ctor->parameters, MonoReflectionType*, i);
+		MonoReflectionType *pt = mono_array_get (parameters, MonoReflectionType*, i);
 		sig->params [i] = pt->type;
 	}
+	return sig;
+}
+
+static MonoMethodSignature*
+ctor_builder_to_signature (MonoReflectionCtorBuilder *ctor) {
+	MonoMethodSignature *sig;
+
+	sig = parameters_to_signature (ctor->parameters);
+	sig->hasthis = ctor->attrs & METHOD_ATTRIBUTE_STATIC? 0: 1;
+	return sig;
+}
+
+static MonoMethodSignature*
+method_builder_to_signature (MonoReflectionMethodBuilder *method) {
+	MonoMethodSignature *sig;
+
+	sig = parameters_to_signature (method->parameters);
+	sig->hasthis = method->attrs & METHOD_ATTRIBUTE_STATIC? 0: 1;
 	return sig;
 }
 
@@ -4082,6 +4138,82 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 		 */
 		mono_class_setup_vtable (klass);
 	}
+}
+
+static MonoMethod*
+ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb) {
+	MonoMethod *m;
+	MonoMethodNormal *pm;
+	pm = g_new0 (MonoMethodNormal, 1);
+	m = (MonoMethod*)pm;
+
+	m->flags = mb->attrs;
+	m->iflags = mb->iattrs;
+	m->name = mb->attrs & METHOD_ATTRIBUTE_STATIC? ".cctor": ".ctor";
+	m->klass = klass;
+	m->signature = ctor_builder_to_signature (mb);
+	
+	return m;
+}
+
+static MonoMethod*
+methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb) {
+	MonoMethod *m;
+
+	if (mb->dll) {
+		MonoMethodPInvoke *pm;
+		pm = g_new0 (MonoMethodPInvoke, 1);
+		m = (MonoMethod*)pm;
+	} else {
+		MonoMethodNormal *pm;
+		pm = g_new0 (MonoMethodNormal, 1);
+		m = (MonoMethod*)pm;
+	}
+	m->flags = mb->attrs;
+	m->iflags = mb->iattrs;
+	m->name = mono_string_to_utf8 (mb->name);
+	m->klass = klass;
+	m->signature = method_builder_to_signature (mb);
+	return m;
+}
+
+MonoReflectionType*
+mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
+{
+	MonoClass *klass;
+	int i, num, j;
+
+	klass = my_mono_class_from_mono_type (tb->type.type);
+
+	return NULL;
+
+	return mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
+	/*
+	 * Fields to set in klass:
+	 * the various flags: delegate/unicode/contextbound etc.
+	 * nested_in
+	 * nested_classes
+	 * interface*
+	 * fields
+	 * methods
+	 * properties
+	 * events
+	 * vtable
+	 */
+	klass->flags = tb->attrs;
+	num = tb->ctors? mono_array_length (tb->ctors): 0;
+	num += tb->methods? mono_array_length (tb->methods): 0;
+	klass->method.count = num;
+	klass->methods = g_new (MonoMethod*, num);
+	num = tb->ctors? mono_array_length (tb->ctors): 0;
+	for (i = 0; i < num; ++i)
+		klass->methods [i] = ctorbuilder_to_mono_method (klass, mono_array_get (tb->ctors, MonoReflectionCtorBuilder*, i));
+	num = tb->methods? mono_array_length (tb->methods): 0;
+	j = i;
+	for (i = 0; i < num; ++i)
+		klass->methods [j++] = methodbuilder_to_mono_method (klass, mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i));
+				
+	return mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 }
 
 MonoArray *

@@ -942,8 +942,8 @@ ves_icall_get_property_info (MonoReflectionProperty *property, MonoPropertyInfo 
 	info->parent = mono_type_get_object (domain, &property->klass->byval_arg);
 	info->name = mono_string_new (domain, property->property->name);
 	info->attrs = property->property->attrs;
-	info->get = property->property->get ? mono_method_get_object (domain, property->property->get): NULL;
-	info->set = property->property->set ? mono_method_get_object (domain, property->property->set): NULL;
+	info->get = property->property->get ? mono_method_get_object (domain, property->property->get, NULL): NULL;
+	info->set = property->property->set ? mono_method_get_object (domain, property->property->set, NULL): NULL;
 	/* 
 	 * There may be other methods defined for properties, though, it seems they are not exposed 
 	 * in the reflection API 
@@ -958,9 +958,9 @@ ves_icall_get_event_info (MonoReflectionEvent *event, MonoEventInfo *info)
 	info->parent = mono_type_get_object (domain, &event->klass->byval_arg);
 	info->name = mono_string_new (domain, event->event->name);
 	info->attrs = event->event->attrs;
-	info->add_method = event->event->add ? mono_method_get_object (domain, event->event->add): NULL;
-	info->remove_method = event->event->remove ? mono_method_get_object (domain, event->event->remove): NULL;
-	info->raise_method = event->event->raise ? mono_method_get_object (domain, event->event->raise): NULL;
+	info->add_method = event->event->add ? mono_method_get_object (domain, event->event->add, NULL): NULL;
+	info->remove_method = event->event->remove ? mono_method_get_object (domain, event->event->remove, NULL): NULL;
+	info->raise_method = event->event->raise ? mono_method_get_object (domain, event->event->raise, NULL): NULL;
 }
 
 static MonoArray*
@@ -1006,6 +1006,7 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 	MonoClass *class = mono_class_from_mono_type (type);
 
 	info->parent = class->parent ? mono_type_get_object (domain, &class->parent->byval_arg): NULL;
+	info->nested_in = class->nested_in ? mono_type_get_object (domain, &class->nested_in->byval_arg): NULL;
 	info->name = mono_string_new (domain, class->name);
 	info->name_space = mono_string_new (domain, class->name_space);
 	info->attrs = class->flags;
@@ -1275,10 +1276,11 @@ ves_icall_get_constructor (MonoReflectionType *type, MonoArray *args)
 {
 	MonoDomain *domain = mono_domain_get (); 
 	MonoMethod *m;
+	MonoClass *refc = mono_class_from_mono_type (type->type);
 
 	m = search_method (type, ".ctor", METHOD_ATTRIBUTE_RT_SPECIAL_NAME, args);
 	if (m)
-		return mono_method_get_object (domain, m);
+		return mono_method_get_object (domain, m, refc);
 	return NULL;
 }
 
@@ -1287,12 +1289,13 @@ ves_icall_get_method (MonoReflectionType *type, MonoString *name, MonoArray *arg
 {
 	MonoDomain *domain = mono_domain_get (); 
 	MonoMethod *m;
+	MonoClass *refc = mono_class_from_mono_type (type->type);
 	char *n = mono_string_to_utf8 (name);
 
 	m = search_method (type, n, 0, args);
 	g_free (n);
 	if (m)
-		return mono_method_get_object (domain, m);
+		return mono_method_get_object (domain, m, refc);
 	return NULL;
 }
 
@@ -1493,7 +1496,7 @@ handle_parent:
 		if (!match)
 			continue;
 		match = 0;
-		member = (MonoObject*)mono_method_get_object (domain, method);
+		member = (MonoObject*)mono_method_get_object (domain, method, startklass);
 			
 		l = g_slist_prepend (l, member);
 	}
@@ -1554,7 +1557,7 @@ handle_parent:
 
 		if (!match)
 			continue;
-		member = (MonoObject*)mono_method_get_object (domain, method);
+		member = (MonoObject*)mono_method_get_object (domain, method, startklass);
 			
 		l = g_slist_prepend (l, member);
 	}
@@ -1786,7 +1789,7 @@ ves_icall_System_Reflection_Assembly_get_EntryPoint (MonoReflectionAssembly *ass
 	guint32 token = mono_image_get_entry_point (assembly->assembly->image);
 	if (!token)
 		return NULL;
-	return mono_method_get_object (mono_object_domain (assembly), mono_get_method (assembly->assembly->image, token, NULL));
+	return mono_method_get_object (mono_object_domain (assembly), mono_get_method (assembly->assembly->image, token, NULL), NULL);
 }
 
 static MonoArray*
@@ -1907,7 +1910,7 @@ ves_icall_System_Reflection_Assembly_GetFilesInternal (MonoReflectionAssembly *a
 static MonoReflectionMethod*
 ves_icall_GetCurrentMethod (void) {
 	MonoMethod *m = mono_method_get_last_managed ();
-	return mono_method_get_object (mono_domain_get (), m);
+	return mono_method_get_object (mono_domain_get (), m, NULL);
 }
 
 static MonoReflectionAssembly*
@@ -2631,7 +2634,7 @@ static gconstpointer icall_map [] = {
 	 */
 	"System.Reflection.Emit.TypeBuilder::setup_internal_class", mono_reflection_setup_internal_class,
 	"System.Reflection.Emit.TypeBuilder::create_internal_class", mono_reflection_create_internal_class,
-
+	"System.Reflection.Emit.TypeBuilder::create_runtime_class", mono_reflection_create_runtime_class,
 	
 	/*
 	 * MethodBuilder

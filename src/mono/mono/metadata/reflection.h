@@ -32,6 +32,7 @@ struct _MonoReflectionMethod {
 	MonoObject object;
 	MonoMethod *method;
 	MonoString *name;
+	MonoReflectionType *reftype;
 };
 
 struct _MonoDelegate {
@@ -125,6 +126,7 @@ typedef struct {
 	MonoString *name_space;
 	MonoReflectionType *parent;
 	MonoReflectionType *etype;
+	MonoReflectionType *nested_in;
 	MonoReflectionAssembly *assembly;
 	guint32 attrs;
 	guint32 rank;
@@ -418,7 +420,7 @@ guint32       mono_image_create_token  (MonoDynamicAssembly *assembly, MonoObjec
 
 MonoReflectionAssembly* mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly);
 MonoReflectionType*     mono_type_get_object     (MonoDomain *domain, MonoType *type);
-MonoReflectionMethod*   mono_method_get_object   (MonoDomain *domain, MonoMethod *method);
+MonoReflectionMethod*   mono_method_get_object   (MonoDomain *domain, MonoMethod *method, MonoClass *refclass);
 MonoReflectionField*    mono_field_get_object    (MonoDomain *domain, MonoClass *klass, MonoClassField *field);
 MonoReflectionProperty* mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *property);
 MonoReflectionEvent*    mono_event_get_object    (MonoDomain *domain, MonoClass *klass, MonoEvent *event);
@@ -431,6 +433,8 @@ MonoArray*  mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *
 void        mono_reflection_setup_internal_class  (MonoReflectionTypeBuilder *tb);
 
 void        mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb);
+
+MonoReflectionType* mono_reflection_create_runtime_class  (MonoReflectionTypeBuilder *tb);
 
 MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig);
 
