@@ -68,9 +68,10 @@ ves_icall_System_IO_FSW_ReadDirectoryChanges (  gpointer handle,
 
 	im = mono_get_delegate_invoke (delegate->vtable->klass);
 	func = mono_compile_method (im);
-	return ReadDirectoryChanges (handle, dest, size, includeSubdirs, filters,
+	return FALSE;
+	/* return ReadDirectoryChanges (handle, dest, size, includeSubdirs, filters,
 				     NULL, (LPOVERLAPPED) overlap,
-				     func);
+				     func); */
 }
 
 gboolean
