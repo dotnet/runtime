@@ -2148,5 +2148,50 @@
             <maintainer>bob@thestuff.net</maintainer>
         </maintainers>
     </class>
+    <class name="System.Configuration.ConfigurationException">
+        <last-activity>Aug-21-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>cpodurgiel@msn.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Configuration.IgnoreSectionHandler">
+        <last-activity>Aug-21-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>cpodurgiel@msn.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Configuration.IConfigurationSectionHandler">
+        <last-activity>Aug-21-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>cpodurgiel@msn.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Configuration.ConfigurationSettings">
+        <last-activity>Aug-21-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>cpodurgiel@msn.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Configuration.NameValueSectionHandler">
+        <last-activity>Aug-21-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>cpodurgiel@msn.com</maintainer>
+        </maintainers>
+    </class>
 </classes>
 
