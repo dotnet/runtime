@@ -31,6 +31,10 @@
 #ifdef HAVE_SYS_SOCKIO_H
 #include <sys/sockio.h>    /* defines SIOCATMARK */
 #endif
+#ifdef HAVE_SYS_UN_H
+#include <sys/un.h>
+#endif
+
 
 
 #undef DEBUG
@@ -626,8 +630,8 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		return(NULL);
 	}
 
-	mono_array_set(data, guint8, 0, family);
-	mono_array_set(data, guint8, 1, sa_size+2);
+	mono_array_set(data, guint8, 0, family & 0x0FF);
+	mono_array_set(data, guint8, 1, ((family << 8) & 0x0FFFF));
 	
 	if(saddr->sa_family==AF_INET) {
 		struct sockaddr_in *sa_in=(struct sockaddr_in *)saddr;
@@ -648,6 +652,17 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		*(MonoArray **)(((char *)sockaddr_obj) + field->offset)=data;
 
 		return(sockaddr_obj);
+#ifdef HAVE_SYS_UN_H
+	} else if (saddr->sa_family == AF_UNIX) {
+		int i;
+
+		for (i = 0; i < sa_size; i++)
+			mono_array_set (data, guint8, i + 2, saddr->sa_data [i]);
+		
+		*(MonoArray **)(((char *)sockaddr_obj) + field->offset) = data;
+
+		return sockaddr_obj;
+#endif
 	} else {
 		mono_raise_exception(get_socket_exception(WSAEAFNOSUPPORT));
 		return(NULL);
@@ -711,17 +726,20 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 	data=*(MonoArray **)(((char *)saddr_obj) + field->offset);
 
 	/* The data buffer is laid out as follows:
-	 * byte 0 is the address family
-	 * byte 1 is the buffer length
-	 * bytes 2 and 3 are the port info
-	 * the rest is the address info
+	 * byte 0 is the address family low byte
+	 * byte 1 is the address family high byte
+	 * INET:
+	 * 	bytes 2 and 3 are the port info
+	 * 	the rest is the address info
+	 * UNIX:
+	 * 	the rest is the file name
 	 */
-	len=mono_array_get(data, guint8, 1);
-	if((len<2) || (mono_array_length(data)!=len)) {
-		mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
+	len = mono_array_length (data);
+	if (len < 2) {
+		mono_raise_exception (mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
 	}
 	
-	family=convert_family(mono_array_get(data, guint8, 0));
+	family = convert_family (mono_array_get (data, guint16, 0));
 	if(family==AF_INET) {
 		struct sockaddr_in *sa=g_new0(struct sockaddr_in, 1);
 		guint16 port=(mono_array_get(data, guint8, 2) << 8) +
@@ -737,6 +755,22 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 
 		*sa_size=sizeof(struct sockaddr_in);
 		return((struct sockaddr *)sa);
+#ifdef HAVE_SYS_UN_H
+	} else if (family == AF_UNIX) {
+		struct sockaddr_un *sun = g_new0 (struct sockaddr_un, 1);
+		int i;
+
+		if (len - 2 > MONO_SIZEOF_SUNPATH)
+			mono_raise_exception (mono_get_exception_index_out_of_range ());
+
+		sun->sun_family = family;
+		for (i = 0; i < len - 2; i++)
+			sun->sun_path [i] = mono_array_get (data, guint8, i + 2);
+		sun->sun_path [len - 2] = '\0';
+		*sa_size = sizeof (struct sockaddr_un);
+
+		return sun;
+#endif
 	} else {
 		mono_raise_exception(get_socket_exception(WSAEAFNOSUPPORT));
 		return(0);

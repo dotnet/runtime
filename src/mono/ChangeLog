@@ -1,3 +1,7 @@
+2003-02-04  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: added check for sys/un.h.
+
 2003-01-29  Daniel Morgan <danmorg@sc.rr.com>
 
 	* doc/postgresql
