@@ -802,25 +802,6 @@ il_offset_from_address (MonoDebugMethodInfo *minfo, guint32 address)
 	return -1;
 }
 
-gint32
-_mono_debug_address_from_il_offset (MonoDebugMethodInfo *minfo, guint32 il_offset)
-{
-	int i;
-
-	if (!minfo->jit || !minfo->jit->line_numbers)
-		return -1;
-
-	for (i = minfo->jit->line_numbers->len - 1; i >= 0; i--) {
-		MonoDebugLineNumberEntry lne = g_array_index (
-			minfo->jit->line_numbers, MonoDebugLineNumberEntry, i);
-
-		if (lne.offset <= il_offset)
-			return lne.address;
-	}
-
-	return -1;
-}
-
 void
 mono_debug_add_type (MonoClass *klass)
 {

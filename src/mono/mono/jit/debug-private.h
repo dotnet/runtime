@@ -89,8 +89,6 @@ void                  mono_debug_codegen_ret                (guint8 **buf);
 
 MonoDebugMethodInfo *_mono_debug_lookup_method              (MonoMethod *method);
 
-gint32               _mono_debug_address_from_il_offset     (MonoDebugMethodInfo *minfo, guint32 il_offset);
-
 AssemblyDebugInfo   *_mono_debug_get_image                  (MonoDebugHandle* debug, MonoImage *image);
 
 void                 _mono_debug_generate_line_number       (MonoDebugMethodInfo *minfo, guint32 address,
