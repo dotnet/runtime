@@ -148,6 +148,7 @@ mono_domain_create (void)
 	domain->friendly_name = NULL;
 
 	domain->mp = mono_mempool_new ();
+	domain->code_mp = mono_mempool_new ();
 	domain->env = g_hash_table_new (g_str_hash, g_str_equal);
 	domain->assemblies = g_hash_table_new (g_str_hash, g_str_equal);
 	domain->class_vtable_hash = mono_g_hash_table_new (NULL, NULL);
@@ -451,6 +452,7 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 	mono_g_hash_table_destroy (domain->ldstr_table);
 	mono_jit_info_table_free (domain->jit_info_table);
 	mono_mempool_destroy (domain->mp);
+	mono_mempool_destroy (domain->code_mp);
 	DeleteCriticalSection (&domain->lock);
 	
 	/* FIXME: anything else required ? */

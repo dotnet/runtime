@@ -1268,7 +1268,14 @@ arch_jit_compile_cfg (MonoDomain *target_domain, MonoFlowGraph *cfg)
 	offset = cfg->code - cfg->start;
 	gap = cfg->code_size - offset;
 	if (gap > 0) {
+		char *org = cfg->start;
+#if 0
 		cfg->start = g_realloc (cfg->start, offset);
+#else
+		cfg->start = mono_mempool_alloc (target_domain->code_mp, offset);
+		memcpy (cfg->start, org, offset);
+		g_free (org);
+#endif
 		cfg->code_size = offset;
 		cfg->code = cfg->start + offset;
 	}
