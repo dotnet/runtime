@@ -50,6 +50,7 @@ typedef struct {
 	MonoClass *typehandle_class;
 	MonoClass *fieldhandle_class;
 	MonoClass *methodhandle_class;
+	MonoClass *type_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults;

@@ -366,13 +366,14 @@ inverse of this mapping.
 #define idx_size(tableidx) (meta->tables [(tableidx)].rows < 65536 ? 2 : 4)
 
 /* Reference: Partition II - 23.2.6 */
-static int
-compute_size (MonoMetadata *meta, MonoMetaTable *table, int tableindex, guint32 *result_bitfield)
+int
+mono_metadata_compute_size (MonoMetadata *meta, int tableindex, guint32 *result_bitfield)
 {
 	guint32 bitfield = 0;
 	int size = 0, field_size;
 	int i, n, code;
 	int shift = 0;
+	MonoMetaTable *table = tables [tableindex].table;
 
 	for (i = 0; (code = table [i].code) != MONO_MT_END; i++){
 		switch (code){
@@ -674,9 +675,8 @@ mono_metadata_compute_table_bases (MonoMetadata *meta)
 		if (meta->tables [i].rows == 0)
 			continue;
 
-		meta->tables [i].row_size = compute_size (
-			meta, tables [i].table, i,
-			&meta->tables [i].size_bitfield);
+		meta->tables [i].row_size = mono_metadata_compute_size (
+			meta, i, &meta->tables [i].size_bitfield);
 		meta->tables [i].base = base;
 		base += meta->tables [i].rows * meta->tables [i].row_size;
 	}
@@ -1457,12 +1457,12 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 	if (local_var_sig_tok) {
 		MonoTableInfo *t = &m->tables [MONO_TABLE_STANDALONESIG];
 		const char *ptr;
-		guint32 cols [MONO_STAND_ALONG_SIGNATURE_SIZE];
+		guint32 cols [MONO_STAND_ALONE_SIGNATURE_SIZE];
 		int len=0, i, bsize;
 		guint offset = 0;
 
 		mono_metadata_decode_row (t, (local_var_sig_tok & 0xffffff)-1, cols, 1);
-		ptr = mono_metadata_blob_heap (m, cols [MONO_STAND_ALONG_SIGNATURE]);
+		ptr = mono_metadata_blob_heap (m, cols [MONO_STAND_ALONE_SIGNATURE]);
 		bsize = mono_metadata_decode_blob_size (ptr, &ptr);
 		if (*ptr != 0x07)
 			g_warning ("wrong signature for locals blob");
@@ -1889,7 +1889,7 @@ mono_metadata_encode_value (guint32 value, char *buf, char **endbuf)
 	char *p = buf;
 	
 	if (value <= 127)
-		*p++ = 127;
+		*p++ = value;
 	else if (value <= 16384) {
 		p [0] = 0x80 | (value >> 8);
 		p [1] = value & 0xff;

@@ -235,10 +235,23 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 			class->valuetype = 1;
 			class->enumtype = 1;
 		}
-	}
-	if (class->valuetype) {
-		class->this_arg.type = MONO_TYPE_VALUETYPE;
-		class->byval_arg.type = MONO_TYPE_VALUETYPE;
+		if (class->valuetype) {
+			int t = MONO_TYPE_VALUETYPE;
+			/* 
+			 * FIXME: add more cases so that we use the simpler monotype
+			 * for the fundamental types.
+			 */
+			switch (*name) {
+			case 'I':
+				if (!strcmp (name, "Int32")) {
+					t = MONO_TYPE_I4;
+				}
+				break;
+			default:
+				break;
+			}
+			class->this_arg.type = class->byval_arg.type = t;
+		}
 	}
 	
 	/*
@@ -629,10 +642,14 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 {
 	switch (token & 0xff000000) {
 	case MONO_TOKEN_TYPE_DEF:
-	case MONO_TOKEN_TYPE_REF:
+	case MONO_TOKEN_TYPE_REF: {
+		MonoClass *class;
 		if (handle_class)
 			*handle_class = mono_defaults.typehandle_class;
-		return mono_class_get (image, token);
+		class = mono_class_get (image, token);
+		/* We return a MonoType* as handle */
+		return &class->byval_arg;
+	}
 	case MONO_TOKEN_METHOD_DEF:
 	case MONO_TOKEN_FIELD_DEF:
 	case MONO_TOKEN_MEMBER_REF:

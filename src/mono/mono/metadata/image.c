@@ -285,8 +285,10 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 			image->heap_guid.offset = read32 (ptr);
 			image->heap_guid.size = read32 (ptr + 4);
 			ptr += 8 + 6;
-		} else
+		} else {
 			g_message ("Unknown heap type: %s\n", ptr + 8);
+			ptr += 8 + strlen (ptr) + 1;
+		}
 		if (((guint32)ptr) % 4){
 			ptr += 4 - (((guint32)ptr) % 4);
 		}

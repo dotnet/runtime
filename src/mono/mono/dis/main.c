@@ -452,7 +452,7 @@ dis_method_list (MonoMetadata *m, guint32 start, guint32 end)
 		mono_metadata_decode_row (t, i, cols, MONO_METHOD_SIZE);
 
 		flags = method_flags (cols [MONO_METHOD_FLAGS]);
-		impl_flags = method_impl_flags (cols [MONO_METHOD_IMPLFALGS]);
+		impl_flags = method_impl_flags (cols [MONO_METHOD_IMPLFLAGS]);
 
 		sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 		mono_metadata_decode_blob_size (sig, &sig);
@@ -720,7 +720,7 @@ dis_type (MonoMetadata *m, int n)
 	else
 		last = m->tables [MONO_TABLE_METHOD].rows;
 	
-	if (cols [MONO_TYPEDEF_METHOD_LIST] < m->tables [MONO_TABLE_METHOD].rows)
+	if (cols [MONO_TYPEDEF_METHOD_LIST] && cols [MONO_TYPEDEF_METHOD_LIST] <= m->tables [MONO_TABLE_METHOD].rows)
 		dis_method_list (m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last);
 
 	dis_property_list (m, n);

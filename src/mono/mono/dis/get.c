@@ -503,6 +503,8 @@ dis_stringify_object (MonoMetadata *m, MonoType *type)
 	char *otype = type->type == MONO_TYPE_CLASS? "class" : "valuetype";
 	char *assemblyref = NULL;
 	MonoClass *c = type->data.klass;
+	if (!c)
+		return g_strdup ("Unknown");
 	if (m != c->image) {
 		/* we cheat */
 		if (!strcmp ("corlib", c->image->assembly_name))

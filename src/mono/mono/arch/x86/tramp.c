@@ -95,8 +95,8 @@ mono_create_trampoline (MonoMethod *method)
 			code_size += i < 10 ? 5 : 8;
 			break;
 		case MONO_TYPE_VALUETYPE:
-			if (!sig->params [i]->data.klass->enumtype)
-				g_error ("can only marshal enums, not generic structures");
+			if (!sig->params [i]->data.klass->enumtype && (mono_class_value_size (sig->params [i]->data.klass, NULL) != 4))
+				g_error ("can only marshal enums, not generic structures (size: %d)", mono_class_value_size (sig->params [i]->data.klass, NULL));
 			stack_size += 4;
 			code_size += i < 10 ? 5 : 8;
 			break;
@@ -172,8 +172,17 @@ mono_create_trampoline (MonoMethod *method)
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_R4:
-		case MONO_TYPE_VALUETYPE: /* only enums supported right now, anyway */
 			x86_push_membase (p, X86_EDX, arg_pos);
+			break;
+		case MONO_TYPE_VALUETYPE:
+			if (!sig->params [i - 1]->data.klass->enumtype) {
+				/* it's a structure that fits in 4 bytes, need to push the value pointed to */
+				x86_mov_reg_membase (p, X86_EAX, X86_EDX, arg_pos, 4);
+				x86_push_regp (p, X86_EAX);
+			} else {
+				/* it's an enum value */
+				x86_push_membase (p, X86_EDX, arg_pos);
+			}
 			break;
 		case MONO_TYPE_R8:
 			x86_alu_reg_imm (p, X86_SUB, X86_ESP, 8);

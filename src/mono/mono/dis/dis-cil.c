@@ -102,7 +102,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 
 	while (ptr < end){
 		for (i = 0; i < mh->num_clauses; ++i) {
-			if (!mh->clauses[i].flags && ptr == start + mh->clauses[i].try_offset) {
+			if ((mh->clauses[i].flags == 0 || mh->clauses[i].flags == 2) && ptr == start + mh->clauses[i].try_offset) {
 				fprintf (output, "\t%s.try { // %d\n", indent, i);
 				CODE_INDENT;
 			}
@@ -285,7 +285,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 
 		fprintf (output, "\n");
 		for (i = 0; i < mh->num_clauses; ++i) {
-			if (!mh->clauses[i].flags && ptr == start + mh->clauses[i].try_offset + mh->clauses[i].try_len) {
+			if ((mh->clauses[i].flags == 0 || mh->clauses[i].flags == 2)  && ptr == start + mh->clauses[i].try_offset + mh->clauses[i].try_len) {
 				CODE_UNINDENT;
 				fprintf (output, "\t%s} // end .try %d\n", indent, i);
 			}

@@ -166,9 +166,9 @@ mono_init (void)
                 mono_defaults.corlib, "System", "RuntimeFieldHandle");
 	g_assert (mono_defaults.fieldhandle_class != 0);
 
-	mono_defaults.typehandle_class = mono_class_from_name (
-                mono_defaults.corlib, "System", "RuntimeTypeHandle");
-	g_assert (mono_defaults.typehandle_class != 0);
+	mono_defaults.type_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Type");
+	g_assert (mono_defaults.type_class != 0);
 
 }
 

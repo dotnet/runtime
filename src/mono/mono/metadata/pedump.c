@@ -253,6 +253,8 @@ dump_methoddef (MonoMetadata *metadata, guint32 token)
 {
 	char *loc;
 
+	if (!token)
+		return;
 	loc = mono_metadata_locate_token (metadata, token);
 
 	printf ("RVA for Entry Point: 0x%08x\n", read32 (loc));

@@ -79,7 +79,9 @@ dump_table_typedef (MonoMetadata *m)
 
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPEDEF], i - 1, cols, MONO_TYPEDEF_SIZE);
 
-		fprintf (output, "%d: %s (flist=%d, mlist=%d)\n", i, s, cols [MONO_TYPEDEF_FIELD_LIST], cols [MONO_TYPEDEF_METHOD_LIST]);
+		fprintf (output, "%d: %s (flist=%d, mlist=%d, flags=0x%x, extends=0x%x)\n", i, s, 
+					cols [MONO_TYPEDEF_FIELD_LIST], cols [MONO_TYPEDEF_METHOD_LIST],
+					cols [MONO_TYPEDEF_FLAGS], cols [MONO_TYPEDEF_EXTENDS]);
 		g_free (s);
 	}
 	fprintf (output, "\n");

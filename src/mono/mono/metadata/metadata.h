@@ -95,6 +95,10 @@ guint32      mono_metadata_decode_row_col (MonoTableInfo *t,
 #define mono_metadata_table_size(bitfield,table) ((((bitfield) >> ((table)*2)) & 0x3) + 1)
 #define mono_metadata_table_count(bitfield) ((bitfield) >> 24)
 
+int mono_metadata_compute_size (MonoMetadata   *meta,
+                                int             tableindex,
+                                guint32        *result_bitfield);
+
 /*
  *
  */

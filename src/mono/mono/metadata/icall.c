@@ -206,16 +206,21 @@ my_mono_new_object (MonoClass *klass, gpointer data)
 }
 
 static gpointer
-object_impl_pointer (MonoObject *obj)
+object_field_pointer (MonoObject *obj, char *name)
 {
 	MonoClassField *field;
 	gpointer *slot;
 
-	field = mono_class_get_field_from_name (obj->klass, "_impl");
+	field = mono_class_get_field_from_name (obj->klass, name);
 	slot = (gpointer*)((char*)obj + field->offset);
 	return *slot;
 }
 
+static gpointer
+object_impl_pointer (MonoObject *obj)
+{
+	return object_field_pointer (obj, "_impl");
+}
 
 static MonoObject *
 ves_icall_app_define_assembly (MonoObject *appdomain, MonoObject *assembly_name, int access)
@@ -237,11 +242,29 @@ static gint32
 ves_icall_get_data_chunk (MonoObject *assb, gint32 type, MonoArrayObject *buf)
 {
 	MonoDynamicAssembly *ass = object_impl_pointer (assb);
+	MonoObject *ep;
 	int count;
+	/*
+	 * get some info from the object
+	 */
+	ep = object_field_pointer (assb, "entry_point");
+	if (ep)
+		ass->entry_point = object_impl_pointer (ep);
+	else
+		ass->entry_point = 0;
 
-	count = mono_image_get_header (ass, buf->vector, buf->bounds->length);
-	if (count != -1)
+	if (type == 0) { /* get the header */
+		count = mono_image_get_header (ass, buf->vector, buf->bounds->length);
+		if (count != -1)
+			return count;
+	} else {
+		count = ass->code.index + ass->meta_size;
+		if (count > buf->bounds->length)
+			return 0;
+		memcpy (buf->vector, ass->code.data, ass->code.index);
+		memcpy (buf->vector + ass->code.index, ass->assembly.image->raw_metadata, ass->meta_size);
 		return count;
+	}
 	
 	return 0;
 }
@@ -285,11 +308,52 @@ ves_icall_define_type (MonoObject *moduleb, MonoObject *name, int attrs)
 }
 
 static MonoObject *
-ves_icall_define_method (MonoObject *typeb, MonoObject *name, int attrs, int callconv, MonoObject *rettype, MonoObject *paramtypes)
+ves_icall_define_method (MonoObject *typeb, MonoObject *name, int attrs, int callconv, MonoObject *rettype, MonoArrayObject *paramtypes)
 {
 	MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection.Emit", "MethodBuilder");
+	MonoMethodBuilder *mb = g_new0 (MonoMethodBuilder, 1);
+	MonoTypeBuilder *tb = object_impl_pointer (typeb);
 
-	return mono_new_object (klass);
+	mb->name = mono_string_to_utf8 (name);
+	mb->attrs = attrs;
+	mb->callconv = callconv;
+	mb->ret = object_impl_pointer (rettype);
+	/* ignore params ... */
+
+	if (!tb->has_default_ctor) {
+		if (strcmp (".ctor", mb->name) == 0 && paramtypes->bounds->length == 0)
+			tb->has_default_ctor = 1;
+	}
+	
+	tb->methods = g_list_prepend (tb->methods, mb);
+
+	return my_mono_new_object (klass, mb);
+}
+
+static void
+ves_icall_set_method_body (MonoObject *methodb, MonoArrayObject *code, gint32 count)
+{
+	MonoMethodBuilder *mb = object_impl_pointer (methodb);
+	if (code->bounds->length < count) {
+		g_warning ("code len is less than count");
+		return;
+	}
+	g_free (mb->code);
+	mb->code = g_malloc (count);
+	mb->code_size = count;
+	memcpy (mb->code, code->vector, count);
+}
+
+static MonoObject*
+ves_icall_type_from_name (MonoObject *name)
+{
+	return NULL;
+}
+
+static MonoObject*
+ves_icall_type_from_handle (gpointer handle)
+{
+	return my_mono_new_object (mono_defaults.type_class, handle);
 }
 
 static gpointer icall_map [] = {
@@ -337,6 +401,17 @@ static gpointer icall_map [] = {
 	 * TypeBuilder
 	 */
 	"System.Reflection.Emit.TypeBuilder::defineMethod", ves_icall_define_method,
+	
+	/*
+	 * MethodBuilder
+	 */
+	"System.Reflection.Emit.MethodBuilder::set_method_body", ves_icall_set_method_body,
+	
+	/*
+	 * System.Type
+	 */
+	"System.Type::internal_from_name", ves_icall_type_from_name,
+	"System.Type::internal_from_handle", ves_icall_type_from_handle,
 	
 	/*
 	 * System.Threading
