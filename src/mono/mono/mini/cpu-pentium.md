@@ -16,9 +16,9 @@
 #	b  base register (used in address references)
 #	f  floating point register
 #	a  EAX register
-#       d  EDX register
+#	d  EDX register
 #	l  long reg (forced eax:edx)
-#		L  long reg (dynamic)
+#	L  long reg (dynamic)
 #
 # len:number         describe the maximun length in bytes of the instruction
 # 		     number is a positive integer.  If the length is not specified
@@ -38,6 +38,7 @@
 #   d  EAX and EDX are clobbered
 #	s  the src2 operand needs to be in ECX (shift opcodes)
 #	x  both the source operands are clobbered (xchg)
+#	b  the dest reg needs to be one of EAX,EBX,ECX,EDX (sete opcodes)
 #
 # flags:spec        describe if the instruction uses or sets the flags (unused)
 #
@@ -254,12 +255,12 @@ prefix2:
 prefix1:
 prefixref:
 arglist:
-ceq: dest:i len:6
-cgt: dest:i len:6
-cgt.un: dest:i len:6
-clt: dest:i len:6
-clt.un: dest:i len:6
-cne: dest:i len:6
+ceq: dest:i len:6 clob:b
+cgt: dest:i len:6 clob:b
+cgt.un: dest:i len:6 clob:b
+clt: dest:i len:6 clob:b
+clt.un: dest:i len:6 clob:b
+cne: dest:i len:6 clob:b
 ldftn:
 ldvirtftn:
 ldarg:
@@ -476,16 +477,16 @@ float_rem: dest:f src1:f src2:f len:17
 float_rem_un: dest:f src1:f src2:f len:17
 float_neg: dest:f src1:f len:2
 float_not: dest:f src1:f len:2
-float_conv_to_i1: dest:i src1:f len:39
-float_conv_to_i2: dest:i src1:f len:39
-float_conv_to_i4: dest:i src1:f len:39
-float_conv_to_i8: dest:L src1:f len:39
+float_conv_to_i1: dest:i src1:f len:39 clob:b
+float_conv_to_i2: dest:i src1:f len:39 clob:b
+float_conv_to_i4: dest:i src1:f len:39 clob:b
+float_conv_to_i8: dest:L src1:f len:39 clob:b
 float_conv_to_r4:
 float_conv_to_r8:
-float_conv_to_u4: dest:i src1:f len:39
-float_conv_to_u8: dest:L src1:f len:39
-float_conv_to_u2: dest:i src1:f len:39
-float_conv_to_u1: dest:i src1:f len:39
+float_conv_to_u4: dest:i src1:f len:39 clob:b
+float_conv_to_u8: dest:L src1:f len:39 clob:b
+float_conv_to_u2: dest:i src1:f len:39 clob:b
+float_conv_to_u1: dest:i src1:f len:39 clob:b
 float_conv_to_i: dest:i src1:f len:39
 float_conv_to_ovf_i: dest:a src1:f len:30
 float_conv_to_ovd_u: dest:a src1:f len:30
@@ -513,11 +514,11 @@ float_conv_to_ovf_i4:
 float_conv_to_ovf_u4:
 float_conv_to_ovf_i8:
 float_conv_to_ovf_u8:
-float_ceq: dest:i src1:f src2:f len:25
-float_cgt: dest:i src1:f src2:f len:25
-float_cgt_un: dest:i src1:f src2:f len:37
-float_clt: dest:i src1:f src2:f len:25
-float_clt_un: dest:i src1:f src2:f len:32
+float_ceq: dest:i src1:f src2:f len:25 clob:b
+float_cgt: dest:i src1:f src2:f len:25 clob:b
+float_cgt_un: dest:i src1:f src2:f len:37 clob:b
+float_clt: dest:i src1:f src2:f len:25 clob:b
+float_clt_un: dest:i src1:f src2:f len:32 clob:b
 float_conv_to_u: dest:i src1:f len:36
 call_handler: len:10
 aot_const: dest:i len:5
@@ -570,4 +571,4 @@ sext_i2: dest:i src1:i len:3
 tls_get: dest:i len:20
 atomic_add_i4: src1:b src2:i dest:i len:16
 atomic_add_new_i4: src1:b src2:i dest:i len:16
-atomic_exchange_i4: src1:b src2:i dest:i len:14
+atomic_exchange_i4: src1:b src2:i dest:i len:18

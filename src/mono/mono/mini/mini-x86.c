@@ -1740,8 +1740,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			src1_mask = 1 << X86_EAX;
 			src2_mask = 1 << X86_ECX;
-		}
-		if (spec [MONO_INST_DEST] == 'l') {
+		} else if (spec [MONO_INST_DEST] == 'l') {
 			int hreg;
 			val = rs->iassign [ins->dreg];
 			/* check special case when dreg have been moved from ecx (clob shift) */
@@ -1762,6 +1761,26 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				DEBUG (g_print ("\t(long-high) forced spill of R%d\n", rs->isymbolic [X86_EDX]));
 				get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [X86_EDX]);
 				mono_regstate_free_int (rs, X86_EDX);
+			}
+		} else if (spec [MONO_INST_CLOB] == 'b') {
+			/*
+			 * x86_set_reg instructions, dreg needs to be EAX..EDX
+			 */	
+			dest_mask = (1 << X86_EAX) | (1 << X86_EBX) | (1 << X86_ECX) | (1 << X86_EDX);
+			if ((ins->dreg < MONO_MAX_IREGS) && (! (dest_mask & (1 << ins->dreg)))) {
+				/* 
+				 * ins->dreg is already a hard reg, need to allocate another
+				 * suitable hard reg and make a copy.
+				 */
+				int new_dest = mono_x86_alloc_int_reg (cfg, tmp, ins, dest_mask, ins->dreg, reginfo [ins->dreg].flags);
+				g_assert (new_dest >= 0);
+
+				create_copy_ins (cfg, ins->dreg, new_dest, ins);
+				DEBUG (g_print ("\tclob:b changing dreg R%d to %s\n", ins->dreg, mono_arch_regname (new_dest)));
+				ins->dreg = new_dest;
+
+				/* The hard reg is no longer needed */
+				mono_regstate_free_int (rs, new_dest);
 			}
 		}
 
@@ -2240,6 +2259,25 @@ mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 		if (tree->dreg != X86_EAX && sreg != X86_EAX)
 			x86_pop_reg (code, X86_EAX);
 	}
+	return code;
+}
+
+
+static guint8*
+emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
+{
+	/* Move return value to the target register */
+	switch (ins->opcode) {
+	case CEE_CALL:
+	case OP_CALL_REG:
+	case OP_CALL_MEMBASE:
+		if (ins->dreg != X86_EAX)
+			x86_mov_reg_reg (code, ins->dreg, X86_EAX, 4);
+		break;
+	default:
+		break;
+	}
+
 	return code;
 }
 
@@ -2792,6 +2830,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
 				}
 			}
+			code = emit_move_return_value (cfg, ins, code);
 			break;
 		case OP_FCALL_REG:
 		case OP_LCALL_REG:
@@ -2806,6 +2845,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				else
 					x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
 			}
+			code = emit_move_return_value (cfg, ins, code);
 			break;
 		case OP_FCALL_MEMBASE:
 		case OP_LCALL_MEMBASE:
@@ -2820,6 +2860,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				else
 					x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
 			}
+			code = emit_move_return_value (cfg, ins, code);
 			break;
 		case OP_OUTARG:
 		case OP_X86_PUSH:
