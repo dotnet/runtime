@@ -43,11 +43,19 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 *** Released and tested packages
 
 	<ul>
+		<a name="august-22">
+		<b>August 22, 2001</b>
+		<ul>
+		* <a href="archive/mono-0.6.tar.gz">mono-0.5.tar.gz</a>: Mono Runtime 0.6 release.
+		* <a href="archive/mono-compiler-classes-0.6.tar.gz">mono-compiler-classes-0.6.tar.gz</a>: Mono Compiler and Classes 0.6 release.
+		* <a href="archive/mono-0.6">Release Notes.</a>
+		</ul>
+	
 	 	<a name="july-29">
 		<b>July 29, 2001</b>
 		<ul>
-		* <a href="archive/mono-0.5.tar.gz">mono-0.5.tar.gz</a>: Mono Runtime 0.5 release
-		* <a href="archive/mono-0.5">Release Notes</a>
+		* <a href="archive/mono-0.5.tar.gz">mono-0.5.tar.gz</a>: Mono Runtime 0.5 release.
+		* <a href="archive/mono-0.5">Release Notes.</a>
 		</ul>
 	
 		<a name="july-22">
@@ -55,7 +63,7 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 		<ul>
 		* <a href="archive/mcs-22-Jul-2001.tar.gz">mcs-22-Jul-2001.tar.gz</a>: CVS snapshot.
 		* <a href="archive/mcs-Jul-22-Jul-19-2001.tar.gz">Differences since 19</a>: CVS snapshot.
-		* <a href="archive/mcs-22">Release Notes</a>
+		* <a href="archive/mcs-22">Release Notes.</a>
 		</ul>
 
 		<a name="july-19">
@@ -63,7 +71,7 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 		<ul>
 		* <a href="archive/mcs-19-Jul-2001.tar.gz">mcs-19-Jul-2001.tar.gz</a>: CVS snapshot.
 		* <a href="archive/mcs-Jul-17-Jul-19-2001.tar.gz">Differences since 17</a>: CVS snapshot.
-		* <a href="archive/mcs-19">Release Notes</a>
+		* <a href="archive/mcs-19">Release Notes.</a>
 		</ul>
 
 		<a name="july-17">
@@ -71,7 +79,7 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 		<ul>
 		* <a href="archive/mcs-17-Jul-2001.tar.gz">mcs-17-Jul-2001.tar.gz</a>: CVS snapshot.
 		* <a href="archive/mcs-Jul-15-Jul-17-2001.tar.gz">Differences since 15</a>: CVS snapshot.
-		* <a href="archive/mcs-17">Release Notes</a>
+		* <a href="archive/mcs-17">Release Notes.</a>
 		</ul>
 
 		<a name="july-15">
@@ -79,7 +87,7 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 		<ul>
 		* <a href="archive/mcs-15-Jul-2001.tar.gz">mcs-15-Jul-2001.tar.gz</a>: CVS snapshot.
 		* <a href="archive/mono-0.4.tar.gz">mono-0.4.tar.gz</a>: Packaged Source Code.
-		* <a href="archive/mono-0.4">Release Notes</a>
+		* <a href="archive/mono-0.4">Release Notes.</a>
 		</ul>
 
 		<a name="july-14">
