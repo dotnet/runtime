@@ -97,6 +97,7 @@ case "$host" in
 		libmono_ldflags="-pthread"
 		AC_DEFINE(NEED_LINK_UNLINK)
 		AC_DEFINE(PTHREAD_POINTER_ID)
+		AC_DEFINE(USE_MACH_SEMA)
 		libdl=
 		libgc_threads=no
 		gc_default=none 

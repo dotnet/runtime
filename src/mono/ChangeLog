@@ -1,3 +1,8 @@
+
+Mon Dec 22 18:27:14 CET 2003 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in, acconfig.h: use mach semaphores on darwin.
+
 2003-12-22  Bernie Solomon  <bernard@ugsolutions.com>
 
 	* Makefile.am: Create mint.pc

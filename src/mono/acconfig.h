@@ -30,3 +30,4 @@
 #undef HAVE_ICU
 #undef HAVE_KW_THREAD
 #undef HAVE_SIGNBIT
+#undef USE_MACH_SEMA
