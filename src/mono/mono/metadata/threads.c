@@ -1769,6 +1769,30 @@ void mono_thread_abort_all_other_threads (void)
 	LeaveCriticalSection (&threads_mutex);
 }
 
+static void suspend_thread (gpointer key, gpointer value, gpointer user)
+{
+	MonoThread *thread=(MonoThread *)value;
+	guint32 self=GPOINTER_TO_UINT (user);
+	
+	if ((thread->tid!=self) && !mono_gc_is_finalizer_thread (thread))
+		SuspendThread (thread->handle);
+}
+
+/*
+ * mono_thread_suspend_all_other_threads:
+ *
+ *  Suspend all managed threads except the finalizer thread and this thread.
+ */
+void mono_thread_suspend_all_other_threads (void)
+{
+	guint32 self=GetCurrentThreadId ();
+
+	EnterCriticalSection (&threads_mutex);
+	mono_g_hash_table_foreach (threads, suspend_thread,
+				   GUINT_TO_POINTER (self));
+	LeaveCriticalSection (&threads_mutex);
+}
+
 /*
  * mono_thread_push_appdomain_ref:
  *

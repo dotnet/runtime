@@ -22,6 +22,7 @@ extern void mono_thread_init (MonoThreadStartCB start_cb,
 			      MonoThreadAttachCB attach_cb);
 extern void mono_thread_manage(void);
 extern void mono_thread_abort_all_other_threads (void);
+extern void mono_thread_suspend_all_other_threads (void);
 
 extern void mono_thread_push_appdomain_ref (MonoDomain *domain);
 extern void mono_thread_pop_appdomain_ref (void);
