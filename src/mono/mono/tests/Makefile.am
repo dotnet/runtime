@@ -168,7 +168,8 @@ TEST_CS_SRC=			\
 	threadpool.cs		\
 	threadpool1.cs		\
 	base-definition.cs	\
-	bug-27420.cs
+	bug-27420.cs		\
+	bug-47295.cs
 
 # These only compile with MS CSC
 TEST_CSC_SRC=			\
@@ -253,7 +254,7 @@ testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
 	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
 	if [ $$failed > 0 ]; then echo -e "\nFailed tests:\n"; for i in $${failed_tests}; do echo $${i}; done; fi; 
 
-testinterp: $(TESTSI_CS) $(TESTSI_IL) libtest.la
+testinterp: $(TESTSI_CS) libtest.la
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\

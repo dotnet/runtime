@@ -1,3 +1,7 @@
+2003-08-15  Zoltan Varga  <vargaz@freemail.hu>
+
+	* mono/tests/bug-47295.cs: Regression test for bug #47295.
+
 2003-08-11  Duncan Mak  <duncan@ximian.com>
 
 	* runtime/Makefile.am (assemblies_DATA): Add Mono.Cairo.dll.
