@@ -39,6 +39,48 @@ A: The Mono Project is an open development initiative sponsored by
    implement various technologies developed by Microsoft that have now
    been submitted to the ECMA for standardization.
 
+   The Mono project has also sparked a lot of interest in developing
+   C#-based components, libraries and frameworks.  Today Mono is not
+   limited to implement the .NET Framework, but also contains other
+   components.  Some of the components of the Mono platform were
+   developed by the Mono team, and some others we have incorporated
+   from other open source efforts, the most important ones:
+
+   <ul>
+	<li><a
+    	href="http://remoting-corba.sourceforge.net/">Remoting.CORBA</a>: A
+	CORBA implementation for Mono.
+
+	<li>Ginzu: An implementation on top of Remoting for the <a
+	href="http://www.zeroc.com">ICE</a> stack
+
+	<li><a href="http://gtk-sharp.sf.net">Gtk#</a>: Bindings for
+   	the popular Gtk+ GUI toolkit for Unix and Windows systems.
+	Other bindings are available: Diacanvas-Sharp and MrProject.
+
+	<li><a
+	href="http://www.icsharpcode.net/OpenSource/SharpZipLib/Default.aspx">#ZipLib</a>:
+	A library to manipulate various kinds of compressed files and
+	archives (Zip and tar).
+
+	<li>GlGen (available from the Mono CVS): Bindings for OpenGL.
+
+	<li>Mono.LDAP: LDAP access for .NET apps.
+
+	<li>Mono.Data: We ship support for Postgress, MySql, Sybase,
+	DB2, SqlLite, Tds (SQL server protocol) and Oracle databases. 
+
+	<li>Mono.Cairo: Bindings for the <a
+	href="http://www.cairographics.org">Cairo</a> rendering
+	engine (Our System.Drawing is implemented on top of this).
+
+	<li>Mono.Posix: Bindings for building POSIX applications using
+	C#. 
+
+	<li>Mono.Http: Support for creating custom, embedded HTTP
+	servers and common HTTP handlers for your applications.
+   </ul>
+
 Q: What is the difference between Mono and the .NET Initiative?
 
 A: The ".NET Initiative" is a somewhat nebulous company-wide effort by
@@ -59,7 +101,9 @@ A: Mono contains a number of components useful for building new
 		  compiler, and a garbage collecting runtime.
 
 		* A class library that can work with any language
-		  which works on the CLR.
+		  which works on the CLR.  Both .NET compatible class
+		  libraries as well as Mono-provided class libraries
+		  are included.
 
 		* A compiler for the C# language.  In the future we
 		  might work on other compilers that target the Common
@@ -133,7 +177,7 @@ A: Different parts of Mono will achieve usability at different stages,
 Q: When will Mono 1.0 ship?
 
 A: We are planning on releasing Mono 1.0 (Mono Core) which will ship all the
-   components of Mono that are known to be stable in Q4 2003.
+   components of Mono that are known to be stable in Q4 2003/Q1 2004.
 
    This release will lack System.Windows.Forms  and
    Enterprise.Services, as they will not be production ready on this timeframe.
@@ -303,9 +347,14 @@ A: There are several reasons for this.
    Win32 message loop.  In order to maintain compatibility, Wine must be used, 
    and this is being done; see the 
    <a href="/winforms.html">System.Windows.Forms effort page</a>.
-  
-   Additionally, Wine apps don't currently fit in -- visually -- with 
-   Gtk+ or Qt apps.
+
+Q: Wine applications do not look like native applications, what are
+   you going to do about this?  
+
+A: We have already a few patches into our version of Windows.Forms
+   that makes Wine use the colors and font settings from your desktop,
+   improving the integration a lot.   In the future, we will continue
+   to improve this interoperability scenario.
 
 Q: Will I be able to run my smart clients on systems powered by Mono?
 
@@ -345,6 +394,12 @@ Q: Do you have an estimate for when Windows.Forms will be released?
 A: We do not know, volunteers are working on this, but there is no set
    date yet.  The current approach is using the Wine Library to implement
    it.
+
+Q: Do you have a comparission chart about the various toolkit
+   offerings?
+
+A: A document explaining this is available at: <a
+   href="http://primates.ximian.com/~miguel/toolkits.html">http://primates.ximian.com/~miguel/toolkits.html</a>.
 
 <a name="msft"></a>
 ** Mono and Microsoft
@@ -487,6 +542,27 @@ A: Mono requires Unicode versions of Win32 APIs to run,
    sure that linker will resolve imports to adapter library instead of
    Win32 libs. This is achieved by inserting -lunimono before
    -lkerner32/user32 in the linker's specs file.
+
+Q: Why support Windows, when you can run the real thing?
+
+A: There are various reasons:
+
+   <ul>
+      <li> About half the contributors to Mono are Windows developers.
+           They have many different for contributing to the effort, and
+           we find it very important to let those developers run the runtime on Windows without forcing
+           them to use a new operating system. 
+          
+      <li> Supporting Windows helps us identify the portable portions
+           of Mono from the non-portable versions of it, helping Mono
+           become more portable in the future.
+
+      <li> Mono does not heavily modify the windows registry, update system DLLs,
+	   install DLLs to the Windows/System32 path.  Another words, I knew Mono would
+	   not cause any legacy enterprise applications to stop working - and it
+	   hasn't.  However, our CIO er is againt it because of the changes that would
+	   be made to Windows 2000, such as, affecting security.
+   </ul>
 
 <a name="compatibility"></a>
 ** Compatibility
@@ -1381,6 +1457,17 @@ A: First some background information.
    components, and things that we have developed (like Gtk#) or Apache
    integration.  
 
+Q: Is Mono only an implementation of the .NET Framework?
+
+A: Mono implements both the .NET Framework, as well as plenty of class
+   libraries that are either Unix specific, <a
+   href="http://www.gnome.org">Gnome</a> specific, or that are not
+   part of the .NET Framework but people find useful. 
+
+   The following map shows the relationship between the components:
+
+   <img src="http://primates.ximian.com/~miguel/tmp/map.png">
+
 <a name="etc"></a> 
 ** Miscellaneous Questions
 
@@ -1479,4 +1566,4 @@ A: It's possible to run VC++ generated apps under Mono, but we do not
 
 ** Credits
 
-   The FAQ contains material contributed by Miguel de Icaza, Jaime Anguiano, Lluis SÃ¡nchez.
+   The FAQ contains material contributed by Miguel de Icaza, Jaime Anguiano, Lluis Sánchez.
