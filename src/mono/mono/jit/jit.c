@@ -1995,7 +1995,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 					
 			for (k = csig->param_count - 1; k >= 0; k--) {
 				t1 = mono_ctree_new (mp, mono_map_arg_type (csig->params [k]), arg_sp [k], NULL);
-				t1->data.arg_info = arg_info [k];
+				t1->data.arg_info = arg_info [k + 1];
 				ADD_TREE (t1, cli_addr);
 			}
 
