@@ -69,14 +69,19 @@
   </tr>
 </table>
 
+** Feb 27, 2002
+
+	More compiler progress on Linux: our support runtime now
+	enables the compiler to compile `MIS' on Linux (MIS being
+	Dick's Mono sample HTTP server ;-)
+
 ** Feb 26, 2002
 
 	Paolo posted a list of <a
 	href="http://lists.ximian.com/archives/public/mono-list/2002-February/003266.html">ways
 	you can help</a> if you do not have Windows right now.  Sergey followed up with 
 	<a href="http://lists.ximian.com/archives/public/mono-list/2002-February/003268.html">his</a>
-	suggestions.pwd
-
+	suggestions.
 
 ** Feb 25, 2002
 
