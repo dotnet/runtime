@@ -198,8 +198,11 @@ mono_debug_close_method (MonoCompile *cfg)
 	int i;
 
 	info = (MiniDebugMethodInfo *) cfg->debug_info;
-	if (!info || !info->jit)
+	if (!info || !info->jit) {
+		if (info)
+			g_free (info);
 		return;
+	}
 
 	method = cfg->method;
 	header = mono_method_get_header (method);
@@ -231,6 +234,8 @@ mono_debug_close_method (MonoCompile *cfg)
 
 	if (info->breakpoint_id)
 		mono_debugger_breakpoint_callback (method, info->breakpoint_id);
+
+	g_free (info);
 }
 
 void
