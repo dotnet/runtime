@@ -796,6 +796,7 @@ arch_compile_method (MonoMethod *method)
 			method->addr = (gpointer)arch_end_invoke;
 			addr = arch_create_native_wrapper (method);
 		} else {
+			mono_profiler_method_end_jit (method, MONO_PROFILE_FAILED);
 			if (mono_debug_handle) 
 				return NULL;
 
@@ -809,6 +810,8 @@ arch_compile_method (MonoMethod *method)
 		MonoMemPool *mp;
 		gulong code_size_ratio;
 	
+		mono_profiler_method_jit (method);
+	
 		ji = mono_mempool_alloc0 (target_domain->mp, sizeof (MonoJitInfo));
 		
 		mp = mono_mempool_new ();
@@ -816,12 +819,16 @@ arch_compile_method (MonoMethod *method)
 		cfg = mono_cfg_new (method, mp);
 
 		mono_analyze_flow (cfg);
-		if (cfg->invalid) 
+		if (cfg->invalid) {
+			mono_profiler_method_end_jit (method, MONO_PROFILE_FAILED);
 			return NULL;
+		}
 		
 		mono_analyze_stack (cfg);
-		if (cfg->invalid) 
+		if (cfg->invalid) {
+			mono_profiler_method_end_jit (method, MONO_PROFILE_FAILED);
 			return NULL;
+		}
 		
 		cfg->rs = mono_regset_new (X86_NREG);
 		mono_regset_reserve_reg (cfg->rs, X86_ESP);
@@ -851,8 +858,10 @@ arch_compile_method (MonoMethod *method)
 		}
 	
 		mono_label_cfg (cfg);
-		if (cfg->invalid) 
+		if (cfg->invalid) {
+			mono_profiler_method_end_jit (method, MONO_PROFILE_FAILED);
 			return NULL;
+		}
 		
 		arch_allocate_regs (cfg);
 
@@ -937,6 +946,7 @@ arch_compile_method (MonoMethod *method)
 
 		mono_mempool_destroy (mp);
 
+		mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
 	}
 
 	if (mono_jit_trace_calls || mono_jit_dump_asm || mono_jit_dump_forest) {

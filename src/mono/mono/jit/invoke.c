@@ -335,6 +335,8 @@ arch_create_native_wrapper (MonoMethod *method)
 	GList *free_list = NULL;
 	gboolean end_invoke = FALSE;
 
+	mono_profiler_method_jit (method);
+
 	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		pinvoke = TRUE;
@@ -597,6 +599,7 @@ enum_marshal:
 
 	g_assert ((code - start) < 512);
 
+	mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
 	return start;
 }
 
