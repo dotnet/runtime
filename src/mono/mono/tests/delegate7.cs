@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-class Test {
+class Tests {
 	delegate void SimpleDelegate ();
 
 	public static int v = 0;
@@ -19,7 +19,11 @@ class Test {
 		Console.WriteLine ("Test.F3");
 	}
 
-	static int Main () {
+	public static int Main () {
+		return TestDriver.RunTests (typeof (Tests));
+	}
+
+	static public int test_0_test () {
 		SimpleDelegate t;
 		SimpleDelegate d1 = new SimpleDelegate (F1);
 		SimpleDelegate d2 = new SimpleDelegate (F2);
@@ -50,5 +54,13 @@ class Test {
 		
 		
 		return 0;
+	}
+
+	// Regression test for bug #50366
+	static public int test_0_delegate_equality () {
+		if (new SimpleDelegate (F1) == new SimpleDelegate (F1))
+			return 0;
+		else
+			return 1;
 	}
 }
