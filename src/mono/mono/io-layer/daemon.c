@@ -934,7 +934,7 @@ static void process_process_fork (GIOChannel *channel, ChannelData *channel_data
 				}
 				
 				/* Close all file descriptors */
-				for(i=3; i<getdtablesize (); i++) {
+				for (i = getdtablesize () - 1; i > 2; i--) {
 					close (i);
 				}
 			

@@ -95,6 +95,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 	gpointer stdin_handle, stdout_handle, stderr_handle;
 	guint32 pid, tid;
 	gpointer process_handle, thread_handle;
+	struct _WapiHandle_process *process_handle_data;
 	
 	mono_once (&process_ops_once, process_ops_init);
 	
@@ -421,12 +422,24 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		process_info->hThread=thread_handle;
 		process_info->dwProcessId=pid;
 		process_info->dwThreadId=tid;
-	} else if(ret==FALSE) {
+		/* Wait for possible execve failure */
+		if (WaitForSingleObject  (process_handle, 500) != WAIT_TIMEOUT) {
+			_wapi_lookup_handle (GUINT_TO_POINTER (process_handle),
+					     WAPI_HANDLE_PROCESS,
+					     (gpointer *) &process_handle_data,
+					     NULL);
+		
+			if (process_handle_data && process_handle_data->exec_errno != 0) {
+				ret = FALSE;
+				SetLastError (ERROR_PATH_NOT_FOUND);
+			}
+		}
+	} else if (ret==FALSE) {
 		/* FIXME: work out a better error code
 		 */
-		SetLastError(ERROR_PATH_NOT_FOUND);
+		SetLastError (ERROR_PATH_NOT_FOUND);
 	}
-	
+
 cleanup:
 	if(cmd!=NULL) {
 		g_free (cmd);
