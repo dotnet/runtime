@@ -100,6 +100,10 @@ gboolean mono_no_aot = FALSE;
 
 static int mini_verbose = 0;
 
+static CRITICAL_SECTION class_init_hash_mutex;
+
+static GHashTable *class_init_hash_addr = NULL;
+
 #ifdef MONO_USE_EXC_TABLES
 static gboolean
 mono_type_blittable (MonoType *type)
@@ -5661,8 +5665,6 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 	return info;
 }
 
-static GHashTable *class_init_hash_addr = NULL;
-
 gpointer
 mono_create_class_init_trampoline (MonoVTable *vtable)
 {
@@ -5685,10 +5687,11 @@ mono_create_class_init_trampoline (MonoVTable *vtable)
 							  vtable, code);
 	mono_domain_unlock (vtable->domain);
 
-	/* FIXME: locking */
+	EnterCriticalSection (&class_init_hash_mutex);
 	if (!class_init_hash_addr)
 		class_init_hash_addr = g_hash_table_new (NULL, NULL);
 	g_hash_table_insert (class_init_hash_addr, code, vtable);
+	LeaveCriticalSection (&class_init_hash_mutex);
 
 	return code;
 }
@@ -7437,6 +7440,8 @@ mini_init (const char *filename)
 
 	mono_jit_tls_id = TlsAlloc ();
 	setup_jit_tls_data ((gpointer)-1, mono_thread_abort);
+
+	InitializeCriticalSection (&class_init_hash_mutex);
 
 	mono_burg_init ();
 
