@@ -75,6 +75,8 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);
 	mono_install_lookup_dynamic_token (mono_reflection_lookup_dynamic_token);
 
+	mono_thread_init (start_cb, attach_cb);
+
 	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
 	setup = (MonoAppDomainSetup *) mono_object_new (domain, class);
 
@@ -90,8 +92,6 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_context_set (domain->default_context);
 
 	mono_type_initialization_init ();
-
-	mono_thread_init (start_cb, attach_cb);
 
 	/*
 	 * Create an instance early since we can't do it when there is no memory.
