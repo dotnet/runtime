@@ -227,6 +227,7 @@ mono_create_trampoline (MonoMethod *method)
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
+		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING: /* this is going to cause large pains... */
 			x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
@@ -403,6 +404,7 @@ mono_create_method_pointer (MonoMethod *method)
 		case MONO_TYPE_U:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
+		case MONO_TYPE_CLASS:
 			x86_mov_reg_membase (p, X86_EAX, X86_EAX, 0, 4);
 			break;
 		case MONO_TYPE_I8:
