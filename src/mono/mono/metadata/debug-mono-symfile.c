@@ -450,6 +450,12 @@ ves_icall_MonoDebugger_GetMethod (MonoReflectionAssembly *assembly, guint32 toke
 	return mono_method_get_object (mono_domain_get (), method, NULL);
 }
 
+int
+ves_icall_MonoDebugger_GetMethodToken (MonoReflectionAssembly *assembly, MonoReflectionMethod *method)
+{
+	return method->method->token;
+}
+
 MonoReflectionType *
 ves_icall_MonoDebugger_GetType (MonoReflectionAssembly *assembly, guint32 token)
 {
