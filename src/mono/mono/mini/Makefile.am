@@ -22,15 +22,15 @@ genmdesc_CFLAGS = $(AM_CFLAGS)
 
 regtests=basic.exe arrays.exe basic-float.exe basic-long.exe objects.exe iltests.exe exceptions.exe bench.exe
 
-bin_PROGRAMS = mini genmdesc
+bin_PROGRAMS = mono genmdesc
 
-lib_LTLIBRARIES = libmini.la
+lib_LTLIBRARIES = libmono.la
 
-mini_SOURCES = \
+mono_SOURCES = \
 	main.c
 
-mini_LDADD = \
-	libmini.la
+mono_LDADD = \
+	libmono.la
 
 genmdesc_SOURCES = \
 	mini.h		\
@@ -46,7 +46,7 @@ arch_sources = \
 	exceptions-x86.c	\
 	tramp-x86.c
 
-libmini_la_SOURCES = \
+libmono_la_SOURCES = \
 	mini.c		\
 	dominators.c	\
 	cfold.c		\
@@ -63,7 +63,7 @@ libmini_la_SOURCES = \
 	graph.c		\
 	$(arch_sources)
 
-libmini_la_LIBADD = \
+libmono_la_LIBADD = \
 	$(libs) -lgc -lm	\
 	$(MINI_LIBS)
 
@@ -84,44 +84,44 @@ BURGSRC= inssel.brg inssel-x86.brg inssel-long32.brg inssel-float.brg
 inssel.c inssel.h: $(BURGSRC)
 	$(monodir)/mono/monoburg/monoburg -c 1 -p -e $(BURGSRC) -d inssel.h -s inssel.c
 
-testi: mini test.exe
-	./mini -v -v --ncompile 1 --compile Test:$(mtest) test.exe
+testi: mono test.exe
+	./mono -v -v --ncompile 1 --compile Test:$(mtest) test.exe
 
 # ensure the tests are actually correct
 checktests: $(regtests)
 	for i in $(regtests); do $(RUNTIME) $$i; done
 
-check: mini $(regtests)
-	./mini --verbose --regression $(regtests)
+check: mono $(regtests)
+	./mono --verbose --regression $(regtests)
 
-aotcheck: mini $(regtests)
-	for i in $(regtests); do ./mini --aot $$i; done
-	./mini --verbose --regression $(regtests)
+aotcheck: mono $(regtests)
+	for i in $(regtests); do ./mono --aot $$i; done
+	./mono --verbose --regression $(regtests)
 	rm -f *.exe.so
 
-bench: mini test.exe
-	time ./mini --ncompile $(count) --compile Test:$(mtest) test.exe
+bench: mono test.exe
+	time ./mono --ncompile $(count) --compile Test:$(mtest) test.exe
 
 mbench: test.exe
 	time $(monodir)/mono/jit/mono --ncompile $(count) --compile Test:$(mtest) test.exe
 
-stat1: mini bench.exe
-	./mini --verbose --statfile stats.pl --regression bench.exe
+stat1: mono bench.exe
+	./mono --verbose --statfile stats.pl --regression bench.exe
 	perl viewstat.pl stats.pl
 
-stat2: mini basic.exe
-	./mini --verbose --statfile stats.pl --regression basic.exe
+stat2: mono basic.exe
+	./mono --verbose --statfile stats.pl --regression basic.exe
 	perl viewstat.pl -e stats.pl
 
-stat3: mini bench.exe
-	./mini --statfile stats.pl --ncompile 1000 --compile Tests:test_0_many_nested_loops bench.exe 
+stat3: mono bench.exe
+	./mono --statfile stats.pl --ncompile 1000 --compile Tests:test_0_many_nested_loops bench.exe 
 	perl viewstat.pl stats.pl
 
 docu: mini.sgm
 	docbook2txt mini.sgm
 
 clean:
-	rm -f mini a.out gmon.out *.o test.exe
+	rm -f mono a.out gmon.out *.o test.exe
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA= mini.pc
