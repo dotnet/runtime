@@ -2039,11 +2039,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			} else {
 				
-				if (!cm->addr)
-					cm->addr = arch_create_jit_trampoline (cm);
-
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
-				t2->data.p = (char *)cm->addr;
+				t2->data.p = arch_create_jit_trampoline (cm);
 
 				t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), this, t2);
 				t1->data.p = ci;
@@ -2191,12 +2188,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 					t2->data.m = cm;
 
 				} else {
-				
-					if (!cm->addr)
-						cm->addr = arch_create_jit_trampoline (cm);
-				
+			
 					t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
-					t2->data.p = (char *)cm->addr;
+					t2->data.p = arch_create_jit_trampoline (cm);
 				}
 
 				t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), this, t2);

@@ -422,11 +422,27 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 gpointer
 arch_create_jit_trampoline (MonoMethod *method)
 {
+	MonoDomain *domain = mono_domain_get ();
 	guint8 *code, *buf;
 	static guint8 *vc = NULL;
+	GHashTable *jit_code_hash;
 
+	/* icalls use method->addr */
 	if (method->addr)
 		return method->addr;
+
+	/* previously created trampoline code */
+	if (method->info)
+		return method->info;
+
+	/* check if we already have JITed code */
+	if (mono_jit_share_code)
+		jit_code_hash = mono_root_domain->jit_code_hash;
+	else
+		jit_code_hash = domain->jit_code_hash;
+
+	if ((code = g_hash_table_lookup (jit_code_hash, method)))
+		return code;
 
 	if (!vc) {
 		vc = buf = g_malloc (24);
@@ -455,6 +471,9 @@ arch_create_jit_trampoline (MonoMethod *method)
 	x86_push_imm (buf, method);
 	x86_jump_code (buf, vc);
 	g_assert ((buf - code) <= 16);
+
+	/* store trampoline address */
+	method->info = code;
 
 	return code;
 }
