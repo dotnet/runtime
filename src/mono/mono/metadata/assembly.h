@@ -8,15 +8,26 @@
 void          mono_assemblies_init     (void);
 MonoAssembly *mono_assembly_open       (const char *filename,
 				       	MonoImageOpenStatus *status);
+MonoAssembly *mono_assembly_open_full (const char *filename,
+				       	MonoImageOpenStatus *status,
+					gboolean refonly);
 MonoAssembly* mono_assembly_load       (MonoAssemblyName *aname, 
                                        	const char       *basedir, 
 				     	MonoImageOpenStatus *status);
+MonoAssembly* mono_assembly_load_full (MonoAssemblyName *aname, 
+                                       	const char       *basedir, 
+				     	MonoImageOpenStatus *status,
+					gboolean refonly);
 MonoAssembly* mono_assembly_load_from  (MonoImage *image, const char *fname,
 					MonoImageOpenStatus *status);
+MonoAssembly* mono_assembly_load_from_full  (MonoImage *image, const char *fname,
+					MonoImageOpenStatus *status,
+					gboolean refonly);
 
 MonoAssembly* mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *status);
 
 MonoAssembly* mono_assembly_loaded     (MonoAssemblyName *aname);
+MonoAssembly* mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly);
 void          mono_assembly_load_reference (MonoImage *image, int index);
 void          mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status);
 MonoImage*    mono_assembly_load_module (MonoAssembly *assembly, guint32 idx);
@@ -40,6 +51,7 @@ void          mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, gpoint
  */
 typedef MonoAssembly *(*MonoAssemblySearchFunc)         (MonoAssemblyName *aname, gpointer user_data);
 void          mono_install_assembly_search_hook (MonoAssemblySearchFunc func, gpointer user_data);
+void 	      mono_install_assembly_refonly_search_hook (MonoAssemblySearchFunc func, gpointer user_data);
 
 MonoAssembly* mono_assembly_invoke_search_hook (MonoAssemblyName *aname);
 
@@ -51,6 +63,8 @@ typedef MonoAssembly * (*MonoAssemblyPreLoadFunc) (MonoAssemblyName *aname,
 						   gpointer user_data);
 
 void          mono_install_assembly_preload_hook (MonoAssemblyPreLoadFunc func,
+						  gpointer user_data);
+void          mono_install_assembly_refonly_preload_hook (MonoAssemblyPreLoadFunc func,
 						  gpointer user_data);
 
 void          mono_assembly_invoke_load_hook (MonoAssembly *ass);

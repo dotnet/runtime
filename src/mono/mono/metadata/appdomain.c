@@ -83,8 +83,10 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_thread_pool_init ();
 	mono_marshal_init ();
 
-	mono_install_assembly_preload_hook (mono_domain_assembly_preload, NULL);
-	mono_install_assembly_search_hook (mono_domain_assembly_search, NULL);
+	mono_install_assembly_preload_hook (mono_domain_assembly_preload, GUINT_TO_POINTER (FALSE));
+	mono_install_assembly_refonly_preload_hook (mono_domain_assembly_preload, GUINT_TO_POINTER (TRUE));
+	mono_install_assembly_search_hook (mono_domain_assembly_search, GUINT_TO_POINTER (FALSE));
+	mono_install_assembly_refonly_search_hook (mono_domain_assembly_search, GUINT_TO_POINTER (TRUE));
 	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);
 	mono_install_lookup_dynamic_token (mono_reflection_lookup_dynamic_token);
 
@@ -442,7 +444,7 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 }
 
 MonoArray *
-ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad)
+ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad, MonoBoolean refonly)
 {
 	MonoDomain *domain = ad->data; 
 	MonoAssembly* ass;
@@ -462,6 +464,8 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad)
 	mono_domain_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		ass = tmp->data;
+		if (refonly && !ass->ref_only)
+			continue;
 		if (!ass->corlib_internal)
 			count++;
 	}
@@ -469,6 +473,8 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad)
 	i = 0;
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		ass = tmp->data;
+		if (refonly && !ass->ref_only)
+			continue;
 		if (ass->corlib_internal)
 			continue;
 		mono_array_set (res, gpointer, i, mono_assembly_get_object (domain, ass));
@@ -480,11 +486,12 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad)
 }
 
 static MonoReflectionAssembly *
-try_assembly_resolve (MonoDomain *domain, MonoString *fname)
+try_assembly_resolve (MonoDomain *domain, MonoString *fname, gboolean refonly)
 {
 	MonoClass *klass;
 	MonoMethod *method;
-	void *params [1];
+	MonoBoolean isrefonly;
+	gpointer params [2];
 
 	g_assert (domain != NULL && fname != NULL);
 
@@ -497,7 +504,9 @@ try_assembly_resolve (MonoDomain *domain, MonoString *fname)
 		return NULL;
 	}
 
-	*params = fname;
+	isrefonly = refonly ? 1 : 0;
+	params [0] = fname;
+	params [1] = &isrefonly;
 	return (MonoReflectionAssembly *) mono_runtime_invoke (method, domain->domain, params, NULL);
 }
 
@@ -738,21 +747,21 @@ set_domain_search_path (MonoDomain *domain)
 
 static gboolean
 try_load_from (MonoAssembly **assembly, const gchar *path1, const gchar *path2,
-					const gchar *path3, const gchar *path4)
+					const gchar *path3, const gchar *path4, gboolean refonly)
 {
 	gchar *fullpath;
 
 	*assembly = NULL;
 	fullpath = g_build_filename (path1, path2, path3, path4, NULL);
 	if (g_file_test (fullpath, G_FILE_TEST_IS_REGULAR))
-		*assembly = mono_assembly_open (fullpath, NULL);
+		*assembly = mono_assembly_open_full (fullpath, NULL, refonly);
 
 	g_free (fullpath);
 	return (*assembly != NULL);
 }
 
 static MonoAssembly *
-real_load (gchar **search_path, const gchar *culture, const gchar *name)
+real_load (gchar **search_path, const gchar *culture, const gchar *name, gboolean refonly)
 {
 	MonoAssembly *result = NULL;
 	gchar **path;
@@ -776,22 +785,22 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name)
 		/* See test cases in bug #58992 and bug #57710 */
 		/* 1st try: [culture]/[name].dll (culture may be empty) */
 		strcpy (filename + len - 4, ".dll");
-		if (try_load_from (&result, *path, local_culture, "", filename))
+		if (try_load_from (&result, *path, local_culture, "", filename, refonly))
 			break;
 
 		/* 2nd try: [culture]/[name].exe (culture may be empty) */
 		strcpy (filename + len - 4, ".exe");
-		if (try_load_from (&result, *path, local_culture, "", filename))
+		if (try_load_from (&result, *path, local_culture, "", filename, refonly))
 			break;
 
 		/* 3rd try: [culture]/[name]/[name].dll (culture may be empty) */
 		strcpy (filename + len - 4, ".dll");
-		if (try_load_from (&result, *path, local_culture, name, filename))
+		if (try_load_from (&result, *path, local_culture, name, filename, refonly))
 			break;
 
 		/* 4th try: [culture]/[name]/[name].exe (culture may be empty) */
 		strcpy (filename + len - 4, ".exe");
-		if (try_load_from (&result, *path, local_culture, name, filename))
+		if (try_load_from (&result, *path, local_culture, name, filename, refonly))
 			break;
 	}
 
@@ -810,15 +819,16 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoAssembly *result = NULL;
+	gboolean refonly = GPOINTER_TO_UINT (user_data);
 
 	set_domain_search_path (domain);
 
 	if (domain->search_path && domain->search_path [0] != NULL) {
-		result = real_load (domain->search_path, aname->culture, aname->name);
+		result = real_load (domain->search_path, aname->culture, aname->name, refonly);
 	}
 
 	if (result == NULL && assemblies_path && assemblies_path [0] != NULL) {
-		result = real_load (assemblies_path, aname->culture, aname->name);
+		result = real_load (assemblies_path, aname->culture, aname->name, refonly);
 	}
 
 	return result;
@@ -834,12 +844,13 @@ mono_domain_assembly_search (MonoAssemblyName *aname,
 	MonoDomain *domain = mono_domain_get ();
 	GSList *tmp;
 	MonoAssembly *ass;
+	gboolean refonly = GPOINTER_TO_UINT (user_data);
 
 	mono_domain_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		ass = tmp->data;
 		/* Dynamic assemblies can't match here in MS.NET */
-		if (ass->dynamic || !mono_assembly_names_equal (aname, &ass->aname))
+		if (ass->dynamic || refonly != ass->ref_only || !mono_assembly_names_equal (aname, &ass->aname))
 			continue;
 
 		mono_domain_unlock (domain);
@@ -851,7 +862,7 @@ mono_domain_assembly_search (MonoAssemblyName *aname,
 }
 
 MonoReflectionAssembly *
-ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname)
+ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname, MonoBoolean refOnly)
 {
 	MonoDomain *domain = mono_domain_get ();
 	char *name, *filename;
@@ -867,7 +878,7 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname)
 		
 	name = filename = mono_string_to_utf8 (fname);
 
-	ass = mono_assembly_open (filename, &status);
+	ass = mono_assembly_open_full (filename, &status, refOnly);
 	
 	g_free (name);
 
@@ -971,7 +982,8 @@ get_info_from_assembly_name (MonoString *assRef, MonoAssemblyName *aname)
 MonoReflectionAssembly *
 ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad, 
 											MonoArray *raw_assembly,
-											MonoArray *raw_symbol_store, MonoObject *evidence)
+											MonoArray *raw_symbol_store, MonoObject *evidence,
+											MonoBoolean refonly)
 {
 	MonoAssembly *ass;
 	MonoReflectionAssembly *refass = NULL;
@@ -988,7 +1000,7 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad,
 		return NULL;
 	}
 
-	ass = mono_assembly_load_from (image, "", &status);
+	ass = mono_assembly_load_from_full (image, "", &status, refonly);
 
 	if (!ass) {
 		mono_image_close (image);
@@ -1002,7 +1014,7 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad,
 }
 
 MonoReflectionAssembly *
-ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef, MonoObject *evidence)
+ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef, MonoObject *evidence, MonoBoolean refOnly)
 {
 	MonoDomain *domain = ad->data; 
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
@@ -1023,10 +1035,10 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 		mono_raise_exception (exc);
 	}
 
-	ass = mono_assembly_load (&aname, NULL, &status);
+	ass = mono_assembly_load_full (&aname, NULL, &status, refOnly);
 	free_assembly_name (&aname);
 
-	if (!ass && (refass = try_assembly_resolve (domain, assRef)) == NULL){
+	if (!ass && (refass = try_assembly_resolve (domain, assRef, refOnly)) == NULL){
 		/* FIXME: it doesn't make much sense since we really don't have a filename ... */
 		MonoException *exc = mono_get_exception_file_not_found (assRef);
 		mono_raise_exception (exc);

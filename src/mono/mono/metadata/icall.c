@@ -1304,6 +1304,10 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 
 	MONO_ARCH_SAVE_REGS;
 
+	if (field->klass->image->assembly->ref_only)
+		mono_raise_exception (mono_get_exception_invalid_operation (
+					"It is illegal to get the value on a field on a type loaded using the ReflectionOnly methods."));
+	
 	mono_class_init (field->klass);
 
 	switch (cf->type->type) {
@@ -1374,6 +1378,10 @@ ves_icall_FieldInfo_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 	gchar *v;
 
 	MONO_ARCH_SAVE_REGS;
+
+	if (field->klass->image->assembly->ref_only)
+		mono_raise_exception (mono_get_exception_invalid_operation (
+					"It is illegal to set the value on a field on a type loaded using the ReflectionOnly methods."));
 
 	v = (gchar *) value;
 	if (!cf->type->byref) {
@@ -2353,6 +2361,9 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 	if ((m->klass->flags & TYPE_ATTRIBUTE_ABSTRACT) && !strcmp (m->name, ".ctor"))
 		mono_raise_exception (mono_exception_from_name_msg (mono_defaults.corlib, "System", "MethodAccessException", "Cannot invoke constructor of an abstract class."));
 
+	if (m->klass->image->assembly->ref_only)
+		mono_raise_exception (mono_get_exception_invalid_operation ("It is illegal to invoke a method on a type loaded using the ReflectionOnly api."));
+	
 	if (m->klass->rank && !strcmp (m->name, ".ctor")) {
 		int i;
 		guint32 *lengths;
@@ -3378,6 +3389,14 @@ ves_icall_System_Reflection_Assembly_get_location (MonoReflectionAssembly *assem
 	res = mono_string_new (domain, mono_image_get_filename (assembly->assembly->image));
 
 	return res;
+}
+
+static MonoBoolean
+ves_icall_System_Reflection_Assembly_get_ReflectionOnly (MonoReflectionAssembly *assembly)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return assembly->assembly->ref_only;
 }
 
 static MonoString *
@@ -6115,6 +6134,7 @@ static const IcallEntry assembly_icalls [] = {
 	{"get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint},
 	{"get_ManifestModule", ves_icall_System_Reflection_Assembly_get_ManifestModule},
 	{"get_MetadataToken", mono_reflection_get_token},
+	{"get_ReflectionOnly", ves_icall_System_Reflection_Assembly_get_ReflectionOnly},
 	{"get_code_base", ves_icall_System_Reflection_Assembly_get_code_base},
 	{"get_global_assembly_cache", ves_icall_System_Reflection_Assembly_get_global_assembly_cache},
 	{"get_location", ves_icall_System_Reflection_Assembly_get_location},

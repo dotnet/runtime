@@ -16,6 +16,7 @@ struct _MonoAssembly {
 	guint8 in_gac;
 	guint8 dynamic;
 	guint8 corlib_internal;
+	gboolean ref_only;
 	/* security manager flags (one bit is for lazy initialization) */
 	guint32 ecma:2;		/* Has the ECMA key */
 	guint32 aptc:2;		/* Has the [AllowPartiallyTrustedCallers] attributes */

@@ -219,6 +219,13 @@ mono_get_exception_invalid_cast ()
 }
 
 MonoException *
+mono_get_exception_invalid_operation (const guchar *msg)
+{
+	return mono_exception_from_name_msg (mono_get_corlib (), "System",
+					"InvalidOperationException", msg);
+}
+
+MonoException *
 mono_get_exception_index_out_of_range ()
 {
 	return mono_exception_from_name (mono_get_corlib (), "System",

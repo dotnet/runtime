@@ -59,6 +59,9 @@ MonoException *
 mono_get_exception_invalid_cast        (void);
 
 MonoException *
+mono_get_exception_invalid_operation (const guchar *msg);
+
+MonoException *
 mono_get_exception_index_out_of_range  (void);
 
 MonoException *

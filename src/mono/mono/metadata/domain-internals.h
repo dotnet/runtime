@@ -168,7 +168,8 @@ MonoReflectionAssembly *
 ves_icall_System_AppDomain_LoadAssemblyRaw         (MonoAppDomain *ad,
     						    MonoArray *raw_assembly, 
 						    MonoArray *raw_symbol_store,
-						    MonoObject *evidence);
+						    MonoObject *evidence,
+						    MonoBoolean refonly);
 
 void
 ves_icall_System_AppDomain_SetData                 (MonoAppDomain *ad, 
@@ -182,15 +183,18 @@ MonoString *
 ves_icall_System_AppDomain_getFriendlyName         (MonoAppDomain *ad);
 
 MonoArray *
-ves_icall_System_AppDomain_GetAssemblies           (MonoAppDomain *ad);
+ves_icall_System_AppDomain_GetAssemblies           (MonoAppDomain *ad,
+						    MonoBoolean refonly);
 
 MonoReflectionAssembly *
-ves_icall_System_Reflection_Assembly_LoadFrom      (MonoString *fname);
+ves_icall_System_Reflection_Assembly_LoadFrom      (MonoString *fname,
+						    MonoBoolean refonly);
 
 MonoReflectionAssembly *
 ves_icall_System_AppDomain_LoadAssembly            (MonoAppDomain *ad, 
 						    MonoString *assRef,
-						    MonoObject    *evidence);
+						    MonoObject    *evidence,
+						    MonoBoolean refonly);
 
 gboolean
 ves_icall_System_AppDomain_InternalIsFinalizingForUnload (gint32 domain_id);

@@ -115,8 +115,14 @@ static CRITICAL_SECTION assemblies_mutex;
 /* A hastable of thread->assembly list mappings */
 static GHashTable *assemblies_loading;
 
+/* A hashtable of reflection only load thread->assemblies mappings */
+static GHashTable *assemblies_refonly_loading;
+
 /* If defined, points to the bundled assembly information */
 const MonoBundledAssembly **bundles;
+
+/* Reflection only private hook functions */
+static MonoAssembly* mono_assembly_refonly_invoke_search_hook (MonoAssemblyName *aname);
 
 static gchar*
 encode_public_tok (const guchar *token, gint32 len)
@@ -210,13 +216,13 @@ mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
 }
 
 static MonoAssembly*
-search_loaded (MonoAssemblyName* aname)
+search_loaded (MonoAssemblyName* aname, gboolean refonly)
 {
 	GList *tmp;
 	MonoAssembly *ass;
 	GList *loading;
 
-	ass = mono_assembly_invoke_search_hook (aname);
+	ass = refonly ? mono_assembly_refonly_invoke_search_hook (aname) : mono_assembly_invoke_search_hook (aname);
 	if (ass)
 		return ass;
 	
@@ -224,7 +230,7 @@ search_loaded (MonoAssemblyName* aname)
 	 * The assembly might be under load by this thread. In this case, it is
 	 * safe to return an incomplete instance to prevent loops.
 	 */
-	loading = g_hash_table_lookup (assemblies_loading, GetCurrentThread ());
+	loading = g_hash_table_lookup (refonly ? assemblies_refonly_loading : assemblies_loading, GetCurrentThread ());
 	for (tmp = loading; tmp; tmp = tmp->next) {
 		ass = tmp->data;
 		if (!mono_assembly_names_equal (aname, &ass->aname))
@@ -237,7 +243,7 @@ search_loaded (MonoAssemblyName* aname)
 }
 
 static MonoAssembly *
-load_in_path (const char *basename, const char** search_path, MonoImageOpenStatus *status)
+load_in_path (const char *basename, const char** search_path, MonoImageOpenStatus *status, MonoBoolean refonly)
 {
 	int i;
 	char *fullpath;
@@ -245,7 +251,7 @@ load_in_path (const char *basename, const char** search_path, MonoImageOpenStatu
 
 	for (i = 0; search_path [i]; ++i) {
 		fullpath = g_build_filename (search_path [i], basename, NULL);
-		result = mono_assembly_open (fullpath, status);
+		result = mono_assembly_open_full (fullpath, status, refonly);
 		g_free (fullpath);
 		if (result)
 			return result;
@@ -296,6 +302,7 @@ mono_assemblies_init (void)
 	InitializeCriticalSection (&assemblies_mutex);
 
 	assemblies_loading = g_hash_table_new (NULL, NULL);
+	assemblies_refonly_loading = g_hash_table_new (NULL, NULL);
 }
 
 gboolean
@@ -467,7 +474,20 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		memset (aname.public_key_token, 0, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 	}
 
-	reference = mono_assembly_load (&aname, image->assembly->basedir, &status);
+	if (image->assembly->ref_only) {
+		/* We use the loaded corlib */
+		if (!strcmp (aname.name, "mscorlib"))
+			reference = mono_assembly_load_full (&aname, image->assembly->basedir, &status, FALSE);
+		else
+			reference = mono_assembly_loaded_full (&aname, TRUE);
+		/*
+		 * Here we must advice that the error was due to
+		 * a non loaded reference using the ReflectionOnly api
+		*/
+		if (!reference)
+			reference = (gpointer)-1;
+	} else
+		reference = mono_assembly_load (&aname, image->assembly->basedir, &status);
 
 	if (reference == NULL){
 		char *extra_msg = g_strdup ("");
@@ -570,6 +590,7 @@ struct AssemblySearchHook {
 };
 
 AssemblySearchHook *assembly_search_hook = NULL;
+static AssemblySearchHook *assembly_refonly_search_hook = NULL;
 
 MonoAssembly*
 mono_assembly_invoke_search_hook (MonoAssemblyName *aname)
@@ -577,6 +598,20 @@ mono_assembly_invoke_search_hook (MonoAssemblyName *aname)
 	AssemblySearchHook *hook;
 
 	for (hook = assembly_search_hook; hook; hook = hook->next) {
+		MonoAssembly *ass = hook->func (aname, hook->user_data);
+		if (ass)
+			return ass;
+	}
+
+	return NULL;
+}
+
+static MonoAssembly*
+mono_assembly_refonly_invoke_search_hook (MonoAssemblyName *aname)
+{
+	AssemblySearchHook *hook;
+
+	for (hook = assembly_refonly_search_hook; hook; hook = hook->next) {
 		MonoAssembly *ass = hook->func (aname, hook->user_data);
 		if (ass)
 			return ass;
@@ -599,6 +634,20 @@ mono_install_assembly_search_hook (MonoAssemblySearchFunc func, gpointer user_da
 	assembly_search_hook = hook;
 }	
 
+void
+mono_install_assembly_refonly_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
+{
+	AssemblySearchHook *hook;
+
+	g_return_if_fail (func != NULL);
+
+	hook = g_new0 (AssemblySearchHook, 1);
+	hook->func = func;
+	hook->user_data = user_data;
+	hook->next = assembly_refonly_search_hook;
+	assembly_refonly_search_hook = hook;
+}
+
 typedef struct AssemblyPreLoadHook AssemblyPreLoadHook;
 struct AssemblyPreLoadHook {
 	AssemblyPreLoadHook *next;
@@ -607,6 +656,7 @@ struct AssemblyPreLoadHook {
 };
 
 static AssemblyPreLoadHook *assembly_preload_hook = NULL;
+static AssemblyPreLoadHook *assembly_refonly_preload_hook = NULL;
 
 static MonoAssembly *
 invoke_assembly_preload_hook (MonoAssemblyName *aname, gchar **assemblies_path)
@@ -615,6 +665,21 @@ invoke_assembly_preload_hook (MonoAssemblyName *aname, gchar **assemblies_path)
 	MonoAssembly *assembly;
 
 	for (hook = assembly_preload_hook; hook; hook = hook->next) {
+		assembly = hook->func (aname, assemblies_path, hook->user_data);
+		if (assembly != NULL)
+			return assembly;
+	}
+
+	return NULL;
+}
+
+static MonoAssembly *
+invoke_assembly_refonly_preload_hook (MonoAssemblyName *aname, gchar **assemblies_path)
+{
+	AssemblyPreLoadHook *hook;
+	MonoAssembly *assembly;
+
+	for (hook = assembly_refonly_preload_hook; hook; hook = hook->next) {
 		assembly = hook->func (aname, assemblies_path, hook->user_data);
 		if (assembly != NULL)
 			return assembly;
@@ -635,6 +700,20 @@ mono_install_assembly_preload_hook (MonoAssemblyPreLoadFunc func, gpointer user_
 	hook->user_data = user_data;
 	hook->next = assembly_preload_hook;
 	assembly_preload_hook = hook;
+}
+
+void
+mono_install_assembly_refonly_preload_hook (MonoAssemblyPreLoadFunc func, gpointer user_data)
+{
+	AssemblyPreLoadHook *hook;
+	
+	g_return_if_fail (func != NULL);
+
+	hook = g_new0 (AssemblyPreLoadHook, 1);
+	hook->func = func;
+	hook->user_data = user_data;
+	hook->next = assembly_refonly_preload_hook;
+	assembly_refonly_preload_hook = hook;
 }
 
 static gchar *
@@ -746,19 +825,8 @@ do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	return image;
 }
 
-/**
- * mono_assembly_open:
- * @filename: Opens the assembly pointed out by this name
- * @status: where a status code can be returned
- *
- * mono_assembly_open opens the PE-image pointed by @filename, and
- * loads any external assemblies referenced by it.
- *
- * NOTE: we could do lazy loading of the assemblies.  Or maybe not worth
- * it. 
- */
 MonoAssembly *
-mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
+mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboolean refonly)
 {
 	MonoImage *image;
 	MonoAssembly *ass;
@@ -810,12 +878,13 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		return NULL;
 	}
 
-	ass = mono_assembly_load_from (image, fname, status);
+	ass = mono_assembly_load_from_full (image, fname, status, refonly);
 
 	if (ass) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
 				"Assembly Loader loaded assembly from location: '%s'.", filename);
-		mono_config_for_assembly (ass->image);
+		if (!refonly)
+			mono_config_for_assembly (ass->image);
 	}
 
 	g_free (fname);
@@ -823,13 +892,31 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	return ass;
 }
 
+/**
+ * mono_assembly_open:
+ * @filename: Opens the assembly pointed out by this name
+ * @status: where a status code can be returned
+ *
+ * mono_assembly_open opens the PE-image pointed by @filename, and
+ * loads any external assemblies referenced by it.
+ *
+ * NOTE: we could do lazy loading of the assemblies.  Or maybe not worth
+ * it. 
+ */
 MonoAssembly *
-mono_assembly_load_from (MonoImage *image, const char*fname, 
-			 MonoImageOpenStatus *status)
+mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
+{
+	return mono_assembly_open_full (filename, status, FALSE);
+}
+
+MonoAssembly *
+mono_assembly_load_from_full (MonoImage *image, const char*fname, 
+			 MonoImageOpenStatus *status, gboolean refonly)
 {
 	MonoAssembly *ass, *ass2;
 	char *base_dir;
 	GList *loading;
+	GHashTable *ass_loading;
 
 #if defined (PLATFORM_WIN32)
 	{
@@ -862,6 +949,7 @@ mono_assembly_load_from (MonoImage *image, const char*fname,
 	 */
 	ass = g_new0 (MonoAssembly, 1);
 	ass->basedir = base_dir;
+	ass->ref_only = refonly;
 	ass->image = image;
 	ass->ref_count = 1;
 
@@ -871,9 +959,10 @@ mono_assembly_load_from (MonoImage *image, const char*fname,
 	 * Atomically search the loaded list and add ourselves to it if necessary.
 	 */
 	EnterCriticalSection (&assemblies_mutex);
-	if (ass->aname.name)
+	if (ass->aname.name) {
 		/* avoid loading the same assembly twice for now... */
-		if ((ass2 = search_loaded (&ass->aname))) {
+		ass2 = search_loaded (&ass->aname, refonly);
+		if (ass2) {
 			g_free (ass);
 			g_free (base_dir);
 			mono_image_close (image);
@@ -881,9 +970,11 @@ mono_assembly_load_from (MonoImage *image, const char*fname,
 			LeaveCriticalSection (&assemblies_mutex);
 			return ass2;
 		}
-	loading = g_hash_table_lookup (assemblies_loading, GetCurrentThread ());
+	}
+	ass_loading = refonly ? assemblies_refonly_loading : assemblies_loading;
+	loading = g_hash_table_lookup (ass_loading, GetCurrentThread ());
 	loading = g_list_prepend (loading, ass);
-	g_hash_table_insert (assemblies_loading, GetCurrentThread (), loading);
+	g_hash_table_insert (ass_loading, GetCurrentThread (), loading);
 	LeaveCriticalSection (&assemblies_mutex);
 
 	image->assembly = ass;
@@ -892,13 +983,13 @@ mono_assembly_load_from (MonoImage *image, const char*fname,
 
 	EnterCriticalSection (&assemblies_mutex);
 
-	loading = g_hash_table_lookup (assemblies_loading, GetCurrentThread ());
+	loading = g_hash_table_lookup (ass_loading, GetCurrentThread ());
 	loading = g_list_remove (loading, ass);
 	if (loading == NULL)
 		/* Prevent memory leaks */
-		g_hash_table_remove (assemblies_loading, GetCurrentThread ());
+		g_hash_table_remove (ass_loading, GetCurrentThread ());
 	else
-		g_hash_table_insert (assemblies_loading, GetCurrentThread (), loading);
+		g_hash_table_insert (ass_loading, GetCurrentThread (), loading);
 	if (*status != MONO_IMAGE_OK) {
 		LeaveCriticalSection (&assemblies_mutex);
 		mono_assembly_close (ass);
@@ -906,7 +997,7 @@ mono_assembly_load_from (MonoImage *image, const char*fname,
 	}
 
 	if (ass->aname.name) {
-		ass2 = search_loaded (&ass->aname);
+		ass2 = search_loaded (&ass->aname, refonly);
 		if (ass2) {
 			/* Somebody else has loaded the assembly before us */
 			LeaveCriticalSection (&assemblies_mutex);
@@ -921,6 +1012,13 @@ mono_assembly_load_from (MonoImage *image, const char*fname,
 	mono_assembly_invoke_load_hook (ass);
 
 	return ass;
+}
+
+MonoAssembly *
+mono_assembly_load_from (MonoImage *image, const char *fname,
+			 MonoImageOpenStatus *status)
+{
+	return mono_assembly_load_from_full (image, fname, status, FALSE);
 }
 
 static MonoAssembly*
@@ -1005,7 +1103,7 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
  * @aname: The assembly name object
  */
 static MonoAssembly*
-mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImageOpenStatus *status)
+mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImageOpenStatus *status, MonoBoolean refonly)
 {
 	MonoAssembly *result = NULL;
 	gchar *name, *version, *culture, *fullpath, *subpath;
@@ -1044,7 +1142,7 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 		paths = extra_gac_paths;
 		while (!result && *paths) {
 			fullpath = g_build_path (G_DIR_SEPARATOR_S, *paths, "lib", "mono", "gac", subpath, NULL);
-			result = mono_assembly_open (fullpath, status);
+			result = mono_assembly_open_full (fullpath, status, refonly);
 			g_free (fullpath);
 			paths++;
 		}
@@ -1058,7 +1156,7 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 
 	fullpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (),
 			"mono", "gac", subpath, NULL);
-	result = mono_assembly_open (fullpath, status);
+	result = mono_assembly_open_full (fullpath, status, refonly);
 	g_free (fullpath);
 
 	if (result)
@@ -1081,11 +1179,11 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	}
 	
 	if (assemblies_path) {
-		corlib = load_in_path ("mscorlib.dll", (const char**)assemblies_path, status);
+		corlib = load_in_path ("mscorlib.dll", (const char**)assemblies_path, status, FALSE);
 		if (corlib)
 			return corlib;
 	}
-	corlib = load_in_path ("mscorlib.dll", default_path, status);
+	corlib = load_in_path ("mscorlib.dll", default_path, status, FALSE);
 
 	if (corlib)
 		return corlib;
@@ -1094,13 +1192,13 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	
 	corlib_file = g_build_filename ("mono", runtime->framework_version, "mscorlib.dll", NULL);
 	if (assemblies_path) {
-		corlib = load_in_path (corlib_file, (const char**)assemblies_path, status);
+		corlib = load_in_path (corlib_file, (const char**)assemblies_path, status, FALSE);
 		if (corlib) {
 			g_free (corlib_file);
 			return corlib;
 		}
 	}
-	corlib = load_in_path (corlib_file, default_path, status);
+	corlib = load_in_path (corlib_file, default_path, status, FALSE);
 	g_free (corlib_file);
 
 	return corlib;
@@ -1108,26 +1206,27 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 
 
 MonoAssembly*
-mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status)
+mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status, gboolean refonly)
 {
 	MonoAssembly *result;
 	char *fullpath, *filename;
 	MonoAssemblyName maped_aname;
 
 	aname = mono_assembly_remap_version (aname, &maped_aname);
-
-	result = mono_assembly_loaded (aname);
+	
+	result = mono_assembly_loaded_full (aname, refonly);
 	if (result)
 		return result;
 
-	result = invoke_assembly_preload_hook (aname, assemblies_path);
+	result = refonly ? invoke_assembly_refonly_preload_hook (aname, assemblies_path) : invoke_assembly_preload_hook (aname, assemblies_path);
 	if (result) {
 		result->in_gac = FALSE;
 		return result;
 	}
 
-	/* g_print ("loading %s\n", aname->name); */
-	/* special case corlib */
+	/* Currently we retrieve the loaded corlib for reflection 
+	 * only requests, like a common reflection only assembly 
+	 */
 	if (strcmp (aname->name, "mscorlib") == 0 || strcmp (aname->name, "mscorlib.dll") == 0) {
 		return mono_assembly_load_corlib (mono_get_runtime_info (), status);
 	}
@@ -1137,7 +1236,7 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 	else
 		filename = g_strconcat (aname->name, ".dll", NULL);
 
-	result = mono_assembly_load_from_gac (aname, filename, status);
+	result = mono_assembly_load_from_gac (aname, filename, status, refonly);
 	if (result) {
 		g_free (filename);
 		return result;
@@ -1145,7 +1244,7 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 
 	if (basedir) {
 		fullpath = g_build_filename (basedir, filename, NULL);
-		result = mono_assembly_open (fullpath, status);
+		result = mono_assembly_open_full (fullpath, status, refonly);
 		g_free (fullpath);
 		if (result) {
 			result->in_gac = FALSE;
@@ -1154,7 +1253,7 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 		}
 	}
 
-	result = load_in_path (filename, default_path, status);
+	result = load_in_path (filename, default_path, status, refonly);
 	if (result)
 		result->in_gac = FALSE;
 	g_free (filename);
@@ -1162,7 +1261,13 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 }
 
 MonoAssembly*
-mono_assembly_loaded (MonoAssemblyName *aname)
+mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status)
+{
+	return mono_assembly_load_full (aname, basedir, status, FALSE);
+}
+	
+MonoAssembly*
+mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly)
 {
 	MonoAssembly *res;
 	MonoAssemblyName maped_aname;
@@ -1170,10 +1275,16 @@ mono_assembly_loaded (MonoAssemblyName *aname)
 	aname = mono_assembly_remap_version (aname, &maped_aname);
 
 	EnterCriticalSection (&assemblies_mutex);
-	res = search_loaded (aname);
+	res = search_loaded (aname, refonly);
 	LeaveCriticalSection (&assemblies_mutex);
 
 	return res;
+}
+
+MonoAssembly*
+mono_assembly_loaded (MonoAssemblyName *aname)
+{
+	return mono_assembly_loaded_full (aname, FALSE);
 }
 
 void
