@@ -734,20 +734,24 @@ dis_stringify_function_ptr (MonoImage *m, MonoMethodSignature *method)
 }
 
 static char *
-get_class_name (MonoClass *c)
+get_escaped_class_name (MonoClass *c)
 {
-	if (c->nested_in){
-		char *part_a = get_class_name (c->nested_in);
-		char *result;
+	char *result, *esname;
 
-		result = g_strdup_printf ("%s/%s", part_a, c->name);
+	esname = get_escaped_name (c->name);
+
+	if (c->nested_in){
+		char *part_a = get_escaped_class_name (c->nested_in);
+
+		result = g_strdup_printf ("%s/%s", part_a, esname);
 		g_free (part_a);
-		return result;
-	}
-	if (*c->name_space)
-		return g_strdup_printf ("%s.%s", c->name_space, c->name);
+	} else if (*c->name_space)
+		result = g_strdup_printf ("%s.%s", c->name_space, esname);
 	else
-		return g_strdup (c->name);
+		result = g_strdup (esname);
+
+	g_free (esname);
+	return result;
 }
 
 char *
@@ -773,10 +777,7 @@ dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean prefix, gb
 		}
 	}
 
-	result = get_class_name (c);
-	
-	esname = get_escaped_name (result);
-	g_free (result);
+	esname = get_escaped_class_name (c);
 
 	if (c->generic_class) {
 		MonoGenericClass *gclass = c->generic_class;
