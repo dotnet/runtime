@@ -103,6 +103,7 @@ mono_debugger_add_symbol_file (MonoDebugHandle *handle)
 
 	info = allocate_symbol_file_entry (mono_debugger_symbol_table);
 	info->symfile = handle->symfile;
+	info->image_file = handle->image_file;
 
 	mono_debugger_add_type (info, mono_defaults.object_class);
 
