@@ -1522,7 +1522,9 @@ mono_alloc_special_static_data (guint32 static_type, guint32 size, guint32 align
 	{
 		EnterCriticalSection (&threads_mutex);
 		offset = mono_alloc_static_data_slot (&thread_static_info, size, align);
-		mono_g_hash_table_foreach (threads, alloc_thread_static_data_helper, GUINT_TO_POINTER (offset));
+		/* This can be called during startup */
+		if (threads != NULL)
+			mono_g_hash_table_foreach (threads, alloc_thread_static_data_helper, GUINT_TO_POINTER (offset));
 		LeaveCriticalSection (&threads_mutex);
 	}
 	else
