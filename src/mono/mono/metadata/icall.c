@@ -5687,6 +5687,12 @@ custom_attrs_defined_internal (MonoObject *obj, MonoReflectionType *attr_type)
 	return found;
 }
 
+static MonoBoolean
+GCHandle_CheckCurrentDomain (guint32 gchandle)
+{
+	return mono_gchandle_is_in_domain (gchandle, mono_domain_get ());
+}
+
 /* icall map */
 typedef struct {
 	const char *method;
@@ -6239,6 +6245,7 @@ static const IcallEntry runtimehelpers_icalls [] = {
 };
 
 static const IcallEntry gchandle_icalls [] = {
+	{"CheckCurrentDomain", GCHandle_CheckCurrentDomain},
 	{"FreeHandle", ves_icall_System_GCHandle_FreeHandle},
 	{"GetAddrOfPinnedObject", ves_icall_System_GCHandle_GetAddrOfPinnedObject},
 	{"GetTarget", ves_icall_System_GCHandle_GetTarget},

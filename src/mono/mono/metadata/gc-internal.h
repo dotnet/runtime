@@ -53,5 +53,8 @@ void* mono_gc_make_descr_from_bitmap (unsigned int *bitmap, int numbits);
 void* mono_gc_alloc_fixed            (size_t size, void *descr);
 void  mono_gc_free_fixed             (void* addr);
 
+/* make sure the gchandle was allocated for an object in domain */
+gboolean mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain);
+
 #endif /* __MONO_METADATA_GC_H__ */
 

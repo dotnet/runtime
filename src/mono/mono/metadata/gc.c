@@ -369,6 +369,9 @@ typedef struct {
 	guint32   size;
 	guint8    type;
 	guint     slot_hint : 24; /* starting slot for search */
+	/* 2^16 appdomains should be enough for everyone (though I know I'll regret this in 20 years) */
+	/* we alloc this only for weak refs, since we can get the domain directly in the other cases */
+	guint16  *domain_ids;
 } HandleData;
 
 /* weak and weak-track arrays will be allocated in malloc memory 
@@ -405,6 +408,7 @@ alloc_handle (HandleData *handles, MonoObject *obj)
 			handles->entries = mono_gc_alloc_fixed (sizeof (gpointer) * handles->size, NULL);
 		} else {
 			handles->entries = g_malloc0 (sizeof (gpointer) * handles->size);
+			handles->domain_ids = g_malloc0 (sizeof (guint16) * handles->size);
 		}
 		handles->bitmap = g_malloc0 (handles->size / 8);
 	}
@@ -443,11 +447,14 @@ alloc_handle (HandleData *handles, MonoObject *obj)
 			handles->entries = entries;
 		} else {
 			gpointer *entries;
+			guint16 *domain_ids;
+			domain_ids = g_malloc0 (sizeof (guint16) * new_size);
 			entries = g_malloc (sizeof (gpointer) * new_size);
 			/* we disable GC because we could lose some disappearing link updates */
 			mono_gc_disable ();
 			memcpy (entries, handles->entries, sizeof (gpointer) * handles->size);
 			memset (entries + handles->size, 0, sizeof (gpointer) * handles->size);
+			memcpy (domain_ids, handles->domain_ids, sizeof (guint16) * handles->size);
 			for (i = 0; i < handles->size; ++i) {
 				MonoObject *obj = mono_gc_weak_link_get (&(handles->entries [i]));
 				mono_gc_weak_link_remove (&(handles->entries [i]));
@@ -457,7 +464,9 @@ alloc_handle (HandleData *handles, MonoObject *obj)
 				}
 			}
 			g_free (handles->entries);
+			g_free (handles->domain_ids);
 			handles->entries = entries;
+			handles->domain_ids = domain_ids;
 			mono_gc_enable ();
 		}
 
@@ -499,7 +508,7 @@ mono_gchandle_get_target (guint32 gchandle)
 	HandleData *handles = &gc_handles [gchandle & 3];
 	MonoObject *obj = NULL;
 	lock_handles (handles);
-	if (slot < handles->size) {
+	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
 		if (handles->type <= HANDLE_WEAK_TRACK) {
 			obj = mono_gc_weak_link_get (&handles->entries [slot]);
 		} else {
@@ -519,7 +528,7 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 	guint slot = gchandle >> 2;
 	HandleData *handles = &gc_handles [gchandle & 3];
 	lock_handles (handles);
-	if (slot < handles->size) {
+	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
 		if (handles->type <= HANDLE_WEAK_TRACK) {
 			mono_gc_weak_link_remove (&handles->entries [slot]);
 			mono_gc_weak_link_add (&handles->entries [slot], obj);
@@ -533,13 +542,35 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 	unlock_handles (handles);
 }
 
+gboolean
+mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
+{
+	guint slot = gchandle >> 2;
+	HandleData *handles = &gc_handles [gchandle & 3];
+	gboolean result = FALSE;
+	lock_handles (handles);
+	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
+		if (handles->type <= HANDLE_WEAK_TRACK) {
+			result = domain->domain_id == handles->domain_ids [slot];
+		} else {
+			MonoObject *obj;
+			obj = handles->entries [slot];
+			result = domain == mono_object_domain (obj);
+		}
+	} else {
+		/* print a warning? */
+	}
+	unlock_handles (handles);
+	return result;
+}
+
 void
 mono_gchandle_free (guint32 gchandle)
 {
 	guint slot = gchandle >> 2;
 	HandleData *handles = &gc_handles [gchandle & 3];
 	lock_handles (handles);
-	if (slot < handles->size) {
+	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
 		if (handles->type <= HANDLE_WEAK_TRACK)
 			mono_gc_weak_link_remove (&handles->entries [slot]);
 		handles->entries [slot] = NULL;
