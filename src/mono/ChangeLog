@@ -1,3 +1,11 @@
+2002-09-09  Dick Porter  <dick@ximian.com>
+
+	* acconfig.h: 
+	* configure.in: Simplify thread checks, by using canned rules for
+	particular systems (based on the sleepycat db configure.in).
+	Tested on linux/x86, freebsd and w32.  Solaris also added, but I
+	don't have a solaris machine to try it on.
+
 2002-09-04  Juli Mallett  <jmallett@FreeBSD.org>
 
 	* configure.in: Include <sys/types.h> when checking <sys/un.h> stuff.

@@ -4,10 +4,8 @@ AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(mono, 0.15)
 AM_MAINTAINER_MODE
 
-dnl ****************************************
-dnl *** Check if we're building on win32 ***
-dnl ****************************************
-AC_MSG_CHECKING([if building for some Win32 platform])
+# Thread configuration inspired by sleepycat's db
+AC_MSG_CHECKING([host platform characteristics])
 case "$host" in
 	*-*-mingw*|*-*-cygwin*)
 		platform_win32=yes
@@ -18,14 +16,26 @@ case "$host" in
 		;;
 	*-*-*bsd*)
 		platform_win32=no
+		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE"
+		LDFLAGS="$LDFLAGS -pthread"
 		libdl=
 		;;
+	*-*-linux*)
+		platform_win32=no
+		CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE -D_REENTRANT"
+		libdl="-ldl"
+		;;
+	*-*-solaris*)
+		platform_win32=no
+		CPPFLAGS="$CPPFLAGS -D_REENTRANT"
+		;;
 	*)
+		AC_MSG_WARN([*** Please add $host to configure.in checks!])
 		platform_win32=no
 		libdl="-ldl"
 		;;
 esac
-AC_MSG_RESULT($platform_win32)
+AC_MSG_RESULT(ok)
 AM_CONDITIONAL(PLATFORM_WIN32, test x$platform_win32 = xyes)
 
 AC_CHECK_TOOL(CC, gcc, gcc)
@@ -129,8 +139,7 @@ case "x$gc" in
 		AC_MSG_WARN("Compiling mono without GC.")
 		;;
 	*)
-dnl When the JIT works with libgc, use this chunk.
-dnl		# If libgc was found, use it.  Otherwise just warn.
+		# If libgc was found, use it.  Otherwise just warn.
 		if test "x$found_boehm" != "xyes"; then
 			AC_MSG_WARN("Compiling mono without GC.")
 		else
@@ -139,7 +148,6 @@ dnl		# If libgc was found, use it.  Otherwise just warn.
 			LIBS="$LIBS -lgc $libdl"
 			gc="boehm"
 		fi
-dnl		AC_MSG_WARN("Compiling mono without GC.")
 		;;
 esac
 
@@ -305,84 +313,18 @@ if test x$platform_win32 = xno; then
 	dnl *****************************
 	dnl *** Checks for libpthread ***
 	dnl *****************************
-	AC_SEARCH_LIBS(pthread_create, pthread c_r, [
-		AM_CONDITIONAL(THREADS_PTHREAD, true)
-		AC_DEFINE(HAVE_PTHREAD)
-
-		# Need pthread_mutex_timedlock
-		pthread_CFLAGS=""
-		orig_CPPFLAGS=$CPPFLAGS
-		# This is a gcc-specific error, but we already set
-		# gcc-specific options in CFLAGS
-		CPPFLAGS="$CPPFLAGS -Werror-implicit-function-declaration"
-		AC_MSG_CHECKING(for pthread_mutex_timedlock)
-		AC_TRY_COMPILE([ #include <pthread.h>], [
-			pthread_mutex_t mut=PTHREAD_MUTEX_INITIALIZER;
-			pthread_mutex_timedlock(&mut, NULL);
-		], [
-			# Works!
-			AC_MSG_RESULT(yes)
-			AC_DEFINE(HAVE_PTHREAD_MUTEX_TIMEDLOCK)
-		], [
-			AC_MSG_RESULT(no)
-
-			# glibc requires -D_GNU_SOURCE before it will declare
-			# this function
-			AC_MSG_CHECKING(whether _GNU_SOURCE is needed for pthread_mutex_timedlock)
-			CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"
-			AC_TRY_COMPILE([ #include <pthread.h>], [
-				pthread_mutex_t mut=PTHREAD_MUTEX_INITIALIZER;
-				pthread_mutex_timedlock(&mut, NULL);
-			], [
-				AC_MSG_RESULT(yes)
-				pthread_CFLAGS="-D_GNU_SOURCE"
-				AC_DEFINE(HAVE_PTHREAD_MUTEX_TIMEDLOCK)
-			], [
-				AC_MSG_RESULT(no)
-				dnl Add other variants here
-				AC_MSG_WARN(Working around pthread_mutex_timedlock)
-			])
-		])
-		CPPFLAGS=$orig_CPPFLAGS
-		CPPFLAGS="$CPPFLAGS $pthread_CFLAGS"
-
-		# Need PTHREAD_MUTEX_RECURSIVE
-		pthread_CFLAGS=""
-		orig_CPPFLAGS=$CPPFLAGS
-		# This is a gcc-specific error, but we already set
-		# gcc-specific options in CFLAGS
-		CPPFLAGS="$CPPFLAGS -Werror-implicit-function-declaration"
-		AC_MSG_CHECKING(for PTHREAD_MUTEX_RECURSIVE)
-		AC_TRY_COMPILE([ #include <pthread.h>], [
-			pthread_mutexattr_t attr;
-			pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-		], [
-			# Works!
-			AC_MSG_RESULT(ok)
-		], [
-			AC_MSG_RESULT(no)
-
-			# glibc requires -D_GNU_SOURCE before it will declare
-			# this macro
-			AC_MSG_CHECKING(whether _GNU_SOURCE is needed for PTHREAD_MUTEX_RECURSIVE)
-			CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"
-			AC_TRY_COMPILE([ #include <pthread.h>], [
-				pthread_mutexattr_t attr;
-				pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-			], [
-				AC_MSG_RESULT(ok)
-				pthread_CFLAGS="-D_GNU_SOURCE"
-			], [
-				AC_MSG_RESULT(no)
-				dnl Add other variants here
-				AC_MSG_WARN(Using mono_mutex_t for recursive mutexes)
-				AC_DEFINE(USE_MONO_MUTEX)
-			])
-		])
-		CPPFLAGS=$orig_CPPFLAGS
-		CPPFLAGS="$CPPFLAGS -D_REENTRANT $pthread_CFLAGS"
+	AC_CHECK_LIB(pthread, main, LIBS="$LIBS -lpthread")
+	AC_CHECK_FUNCS(pthread_mutex_timedlock)
+	AC_MSG_CHECKING(for PTHREAD_MUTEX_RECURSIVE)
+	AC_TRY_COMPILE([ #include <pthread.h>], [
+		pthread_mutexattr_t attr;
+		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
 	], [
-		AC_MSG_ERROR([libpthread is required on non-win32 hosts])
+		AC_MSG_RESULT(ok)
+	], [
+		AC_MSG_RESULT(no)
+		AC_MSG_WARN(Using mono_mutex_t for recursive mutexes)
+		AC_DEFINE(USE_MONO_MUTEX)
 	])
 
 	dnl ********************************
@@ -416,12 +358,7 @@ if test x$platform_win32 = xno; then
 		fi
 	fi
 else
-	AM_CONDITIONAL(THREADS_PTHREAD, false)
-	# This is a kludge, we really ought to test for libws2_32, but
-	# I can't make AC_CHECK_LIB link (the symbols seem to be mangled
-	# with @num suffixes)
-	LIBS="$LIBS -lws2_32"
-	CFLAGS="$CFLAGS -mno-cygwin"
+	AC_CHECK_LIB(ws2_32, main, LIBS="$LIBS -lws2_32", AC_ERROR(bad mingw install?))
 fi
 
 dnl ****************************
