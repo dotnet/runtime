@@ -782,15 +782,14 @@ A: Most of Mono is being written using C#, with only
           are important for advanced applications, compilers and
           dynamic code generation.
 
-     <li> Mono has a <a href="xml-classes">complete managed XML
+     <li> Mono has a <a href="xml-classes.html">complete managed XML
           stack</a>: XML, XPath, XML Serializer, XML Schema handling
           are fully functional, feature complete and tuned for
           performance.
 
-     <li> Mono has a complete cryptography stack: we have a complete
-          crypto stack: we implement the 1.0 and 1.1 APIs as well as
-          using our fully managed stack to implement the SSL/TLS
-          transports. 
+     <li> Mono has a <a href="crypto.html">complete cryptography stack
+	  </a>: we implement the 1.0 and 1.1 APIs as well as using our
+	  fully managed stack to implement the SSL/TLS transports. 
 
      <li> <a href="ado-net.html">Extensive database support</a>: Mono
           ships with database provides for <a
