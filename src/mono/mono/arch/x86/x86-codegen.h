@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.8 2001/09/17 07:18:11 dietmar Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.9 2001/09/18 07:26:43 lupus Exp $
 */
 
 #ifndef X86_H
@@ -96,30 +96,30 @@ typedef enum {
 
 static const unsigned char 
 x86_cc_unsigned_map [X86_NCC] = {
-	0x74, // eq
-	0x75, // ne
-	0x72, // lt
-	0x76, // le
-	0x77, // gt
-	0x73, // ge
-	0x78, // lz
-	0x79, // gez
-	0x7a, // p
-	0x7b, // np
+	0x74, /* eq  */
+	0x75, /* ne  */
+	0x72, /* lt  */
+	0x76, /* le  */
+	0x77, /* gt  */
+	0x73, /* ge  */
+	0x78, /* lz  */
+	0x79, /* gez */
+	0x7a, /* p   */
+	0x7b, /* np  */
 };
 
 static const unsigned char 
 x86_cc_signed_map [X86_NCC] = {
-	0x74, // eq
-	0x75, // ne
-	0x7c, // lt
-	0x7e, // le
-	0x7f, // gt
-	0x7d, // ge
-	0x78, // lz
-	0x79, // gez
-	0x7a, // p
-	0x7b, // np
+	0x74, /* eq  */
+	0x75, /* ne  */
+	0x7c, /* lt  */
+	0x7e, /* le  */
+	0x7f, /* gt  */
+	0x7d, /* ge  */
+	0x78, /* lz  */
+	0x79, /* gez */
+	0x7a, /* p   */
+	0x7b, /* np  */
 };
 
 typedef union {
