@@ -28,10 +28,27 @@ get_typedef (MonoImage *m, int idx)
 {
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	const char *ns;
-
+        guint32 token;
+        
 	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPEDEF], idx - 1, cols, MONO_TYPEDEF_SIZE);
 
-	ns = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE]);
+        ns = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE]);
+
+        /* Check if this is a nested type */
+        token = MONO_TOKEN_TYPE_DEF | (idx);
+        token = mono_metadata_nested_in_typedef (m, token);
+        if (token) {
+                char *outer, *result;
+                
+                outer = get_typedef (m, mono_metadata_token_index (token));
+                result = g_strdup_printf (
+                        "%s%s%s/%s", ns, *ns?".":"", outer,
+                        mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]));
+                g_free (outer);
+                return result;
+        }
+        
+	
 	return g_strdup_printf (
 		"%s%s%s", ns, *ns?".":"",
 		mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]));
