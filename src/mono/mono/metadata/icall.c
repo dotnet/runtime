@@ -3746,16 +3746,33 @@ ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly 
 
 	g_assert (assembly->assembly->image != NULL);
 
-	table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
-	file_count = table->rows;
+	if (assembly->assembly->dynamic) {
+		MonoReflectionAssemblyBuilder *assemblyb = (MonoReflectionAssemblyBuilder*)assembly;
 
-	modules = assembly->assembly->image->modules;
-	module_count = assembly->assembly->image->module_count;
+		if (assemblyb->modules)
+			module_count = mono_array_length (assemblyb->modules);
+		else
+			module_count = 0;
+		real_module_count = module_count;
 
-	real_module_count = 0;
-	for (i = 0; i < module_count; ++i)
-		if (modules [i])
-			real_module_count ++;
+		modules = g_new0 (MonoImage*, module_count);
+		for (i = 0; i < mono_array_length (assemblyb->modules); ++i) {
+			modules [i] = 
+				mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i)->module.image;
+		}
+	}
+	else {
+		table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
+		file_count = table->rows;
+
+		modules = assembly->assembly->image->modules;
+		module_count = assembly->assembly->image->module_count;
+
+		real_module_count = 0;
+		for (i = 0; i < module_count; ++i)
+			if (modules [i])
+				real_module_count ++;
+	}
 
 	klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Module");
 	res = mono_array_new (domain, klass, 1 + real_module_count + file_count);
@@ -3770,6 +3787,9 @@ ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly 
 
 	for (i = 0; i < file_count; ++i, ++j)
 		mono_array_set (res, gpointer, j, mono_module_file_get_object (domain, assembly->assembly->image, i));
+
+	if (assembly->assembly->dynamic)
+		g_free (modules);
 
 	return res;
 }
