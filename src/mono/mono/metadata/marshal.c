@@ -3613,9 +3613,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			break;
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
-			if (t->byref)
-				continue;
-
 			klass = mono_class_from_mono_type (t);
 
 			csig->params [argnum] = &mono_defaults.int_class->byval_arg;
@@ -3625,6 +3622,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				MonoMarshalNative encoding = mono_marshal_get_string_encoding (piinfo, spec);
 
 				mono_mb_emit_ldarg (mb, argnum);
+				if (t->byref)
+					mono_mb_emit_byte (mb, CEE_LDIND_I);
 
 				switch (encoding) {
 				case MONO_NATIVE_LPSTR:
@@ -3645,23 +3644,31 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			}
 			else if (klass->element_class->blittable) {
 				mono_mb_emit_ldarg (mb, argnum);
+				if (t->byref)
+					mono_mb_emit_byte (mb, CEE_LDIND_I);
 				mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_ARRAY_LPARRAY));
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
 			}
 			else {
 				MonoClass *eklass;
 				guint32 label1, label2, label3;
-				int index_var, dest_ptr, esize;
+				int index_var, src_var, dest_ptr, esize;
 				MonoMarshalNative encoding = mono_marshal_get_stringbuilder_to_ptr_encoding (piinfo, spec);
 
 				dest_ptr = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
 				eklass = klass->element_class;
 
+				src_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+				mono_mb_emit_ldarg (mb, argnum);
+				if (t->byref)
+					mono_mb_emit_byte (mb, CEE_LDIND_I);
+				mono_mb_emit_stloc (mb, src_var);
+
 				/* Check null */
-				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_ldloc (mb, src_var);
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
-				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_ldloc (mb, src_var);
 				mono_mb_emit_byte (mb, CEE_BRFALSE);
 				label1 = mb->pos;
 				mono_mb_emit_i4 (mb, 0);
@@ -3683,7 +3690,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 				/* allocate space for the native struct and store the address */
 				mono_mb_emit_icon (mb, esize);
-				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_ldloc (mb, src_var);
 				mono_mb_emit_byte (mb, CEE_LDLEN);
 				mono_mb_emit_byte (mb, CEE_MUL);
 				mono_mb_emit_byte (mb, CEE_PREFIX1);
@@ -3699,7 +3706,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_emit_stloc (mb, index_var);
 				label2 = mb->pos;
 				mono_mb_emit_ldloc (mb, index_var);
-				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_ldloc (mb, src_var);
 				mono_mb_emit_byte (mb, CEE_LDLEN);
 				mono_mb_emit_byte (mb, CEE_BGE);
 				label3 = mb->pos;
@@ -3709,7 +3716,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 				if (eklass == mono_defaults.stringbuilder_class) {
 					mono_mb_emit_ldloc (mb, dest_ptr);
-					mono_mb_emit_ldarg (mb, argnum);
+					mono_mb_emit_ldloc (mb, src_var);
 					mono_mb_emit_ldloc (mb, index_var);
 					mono_mb_emit_byte (mb, CEE_LDELEM_REF);
 					mono_mb_emit_icall (mb, conv_to_icall (encoding));
@@ -3717,7 +3724,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				}
 				else {
 					/* set the src_ptr */
-					mono_mb_emit_ldarg (mb, argnum);
+					mono_mb_emit_ldloc (mb, src_var);
 					mono_mb_emit_ldloc (mb, index_var);
 					mono_mb_emit_byte (mb, CEE_LDELEMA);
 					mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eklass));
@@ -3835,6 +3842,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_SZARRAY:
 				g_assert (tmp_locals [i]);
 				if (t->byref) 
 					mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
@@ -3846,15 +3855,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				 * convert it to a one byte UTF8 character, because an
 				 * unicode character may need more that one byte in UTF8 */
 				mono_mb_emit_ldarg (mb, argnum);
-				break;
-			case MONO_TYPE_ARRAY:
-			case MONO_TYPE_SZARRAY:
-				if (t->byref) {
-					mono_mb_emit_ldarg (mb, argnum);
-				} else {
-					g_assert (tmp_locals [i]);
-					mono_mb_emit_ldloc (mb, tmp_locals [i]);
-				}
 				break;
 			case MONO_TYPE_TYPEDBYREF:
 			case MONO_TYPE_FNPTR:
@@ -4238,9 +4238,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
 			break;
 		case MONO_TYPE_SZARRAY:
-			if (t->byref)
-				continue;
- 
 			klass = mono_class_from_mono_type (t);
 
 			if (klass->element_class == mono_defaults.string_class) {
@@ -4248,6 +4245,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				g_assert (tmp_locals [i]);
 
 				mono_mb_emit_ldarg (mb, argnum);
+				if (t->byref)
+					mono_mb_emit_byte (mb, CEE_LDIND_I);
 				mono_mb_emit_byte (mb, CEE_BRFALSE);
 				pos = mb->pos;
 				mono_mb_emit_i4 (mb, 0);
@@ -4264,6 +4263,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 					break;
 				default:
 					mono_mb_emit_ldarg (mb, argnum);
+					if (t->byref)
+						mono_mb_emit_byte (mb, CEE_LDIND_I);
 					mono_mb_emit_byte (mb, CEE_LDLEN);				
 					mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_FREE_ARRAY));
 					break;					
@@ -4271,6 +4272,13 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 				mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
 			}
+
+			if (t->byref)
+				/* 
+				 * FIXME: Need to convert data back but we don't know the
+				 * size of the array.
+				 */
+				continue;
 
 			/* Character arrays are implicitly marshalled as [Out] */
 			if ((klass->element_class == mono_defaults.char_class) || (klass->element_class == mono_defaults.stringbuilder_class) || (t->attrs & PARAM_ATTRIBUTE_OUT)) {
