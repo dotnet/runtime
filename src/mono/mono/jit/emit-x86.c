@@ -134,7 +134,8 @@ arch_compile_method (MonoMethod *method)
 	g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
 	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
 
-	printf ("Start JIT compilation of %s\n", method->name);
+	printf ("Start JIT compilation of %s.%s:%s\n", method->klass->name_space,
+		method->klass->name, method->name);
 
 	cgstat.forest = mono_create_forest (method, mp, &locals_size);
 	cgstat.code = NULL;
@@ -259,26 +260,10 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 		/* fixme: allocate floating point registers */
 		break;
 
-	case MB_NTERM_addr:
-		if (tree->op == MB_TERM_ADD) {
-			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
-			tree->reg2 = mono_regset_alloc_reg (rs, tree->right->reg1, tree->exclude_mask);
-		}
-		break;
-	case MB_NTERM_base:
-		if (tree->op == MB_TERM_ADD) {
-			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
-		}
-		break;
-	case MB_NTERM_index:
-		if (tree->op == MB_TERM_SHL ||
-		    tree->op == MB_TERM_MUL) {
-			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
-		}
-		break;
 	default:
 		/* do nothing */
 	}
+
 
 	tree->emit = mono_burg_func [ern];
 }
@@ -337,6 +322,19 @@ get_address (GPtrArray *forest, gint32 cli_addr, gint base, gint len)
 {
 	gint32 ind, pos;
 	MBTree *t1;
+	int i;
+
+	// use a simple search
+	for (i = base; i < (base + len); i++) {
+		t1 = (MBTree *) g_ptr_array_index (forest, i);
+		if (t1->cli_addr == cli_addr) {
+			t1->jump_target = 1;
+			return  t1->first_addr;
+		}
+	}
+	return -1;
+
+	// fixme: this binary search does not work - there is a bug somewhere ?
 
 	ind = (len / 2);
 	pos = base + ind;
@@ -436,6 +434,9 @@ emit_method (MonoMethod *method, MBCodeGenStatus *s)
 {
 	method->addr = s->start = s->code = g_malloc (1024);
 
+	if (mono_jit_dump_forest)
+		mono_print_forest (s->forest);
+
 	forest_label (s);
 
 	forest_allocate_regs (s);
@@ -444,9 +445,6 @@ emit_method (MonoMethod *method, MBCodeGenStatus *s)
 	arch_emit_epilogue (s);
 
 	compute_branches (s);
-
-	if (mono_jit_dump_forest)
-		mono_print_forest (s->forest);
 
 	if (mono_jit_dump_asm)
 		mono_disassemble_code (s->start, s->code - s->start);

@@ -14,9 +14,18 @@
 #include "cil-coff.h"
 #include "private.h"
 #include "mono-endian.h"
+#include <mono/metadata/class.h>
 
 gboolean dump_data = TRUE;
 gboolean dump_tables = FALSE;
+
+gpointer arch_compile_method (MonoMethod *method);
+
+gpointer 
+arch_compile_method (MonoMethod *method)
+{
+	return method;
+}
 
 static void
 hex_dump (char *buffer, int base, int count)

@@ -16,6 +16,7 @@
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
+#include <mono/metadata/object.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/arch/x86/x86-codegen.h>
@@ -135,6 +136,7 @@ map_stind_type (MonoType *type)
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_CLASS:
+	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
 		return MB_TERM_STIND_I4;
@@ -145,16 +147,25 @@ map_stind_type (MonoType *type)
 		return MB_TERM_STIND_R4;
 	case MONO_TYPE_R8:
 		return MB_TERM_STIND_R8;
-	case MONO_TYPE_VALUETYPE:
-		if (type->data.klass->enumtype)
-			return MB_TERM_STIND_I4;
+	case MONO_TYPE_VALUETYPE: {
+		int size =  type->data.klass->instance_size - sizeof (MonoObject);
 
-		return -1;
+		switch (size) {
+		case 4:
+			return MB_TERM_STIND_I4;
+		case 2:
+			return MB_TERM_STIND_I2;
+		case 1:
+			return MB_TERM_STIND_I1;
+		}
+		return MB_TERM_STIND_OBJ;
+	}
 	default:
 		g_warning ("unknown type %02x", type->type);
 		g_assert_not_reached ();
 	}
 
+	g_assert_not_reached ();
 	return -1;
 }
 
@@ -186,6 +197,7 @@ map_ldind_type (MonoType *type)
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_CLASS:
+	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
 		return MB_TERM_LDIND_I4;
@@ -196,16 +208,25 @@ map_ldind_type (MonoType *type)
 		return MB_TERM_LDIND_R4;
 	case MONO_TYPE_R8:
 		return MB_TERM_LDIND_R8;
-	case MONO_TYPE_VALUETYPE:
-		if (type->data.klass->enumtype)
-			return MB_TERM_LDIND_I4;
+	case MONO_TYPE_VALUETYPE: {
+		int size =  type->data.klass->instance_size - sizeof (MonoObject);
 
-		return -1;
+		switch (size) {
+		case 4:
+			return MB_TERM_LDIND_I4;
+		case 2:
+			return MB_TERM_LDIND_U2;
+		case 1:
+			return MB_TERM_LDIND_U1;
+		}
+		return MB_TERM_LDIND_OBJ;
+	}
 	default:
 		g_warning ("unknown type %02x", type->type);
 		g_assert_not_reached ();
 	}
 
+	g_assert_not_reached ();
 	return -1;
 }
 
@@ -231,6 +252,7 @@ map_call_type (MonoType *type)
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_CLASS:
+	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
 		return MB_TERM_CALL_I4;
@@ -245,6 +267,7 @@ map_call_type (MonoType *type)
 		g_assert_not_reached ();
 	}
 
+	g_assert_not_reached ();
 	return -1;
 }
 
@@ -364,6 +387,25 @@ ctree_create_store (MonoMemPool *mp, int addr_type, MBTree *s, MonoType *type, g
 	t = mono_ctree_new (mp, stind, t, s);
 
 	return t;
+}
+
+static MBTree *
+ctree_create_newobj (MonoMemPool *mp, MonoClass *klass)
+{
+	MBTree *t1, *t2;
+	static gpointer newobj_func = mono_object_new;
+
+	t1 = mono_ctree_new_leaf (mp, MB_TERM_ARG_END);
+	t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+	t2->data.p = klass;
+	t1 = mono_ctree_new (mp, MB_TERM_ARG, t1, t2);	
+
+	t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
+	t2->data.p = &newobj_func;
+	t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, t1, t2);
+	t1->size = sizeof (gpointer);
+
+	return t1;
 }
 
 /**
@@ -503,7 +545,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 	ip = header->code;
 	end = ip + header->code_size;
 
-	sp = stack = alloca (sizeof (MBTree *) * header->max_stack);
+	sp = stack = alloca (sizeof (MBTree *) * (header->max_stack + 1));
 	
 	if (header->num_locals) {
 		int i, size, align;
@@ -545,8 +587,87 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 
 	while (ip < end) {
 		guint32 cli_addr = ip - header->code;
+
+		printf ("IL%04x OPCODE %s %d\n", cli_addr, opcode_names [*ip], forest->len);
+
 		switch (*ip) {
 
+		case CEE_THROW: {
+			--sp;
+			ip++;
+			
+			// fixme: 
+
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_NOP);
+			t1->cli_addr = sp [0]->cli_addr;
+			ADD_TREE (t1);		
+			break;
+		}
+		case CEE_UNBOX: {
+			guint32 token;
+
+			++ip;
+			token = read32 (ip);
+			ip += 4;
+			sp--;
+
+			// fixme: add type check
+
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+			t1->data.i = sizeof (MonoObject);
+			t1 = mono_ctree_new (mp, MB_TERM_ADD, *sp, t1);
+
+			t1->cli_addr = sp [0]->cli_addr;
+			PUSH_TREE (t1);
+			break;
+		}
+		case CEE_LDOBJ: {
+			guint32 token;
+			MonoClass *c;
+			int size;
+
+			++ip;
+			token = read32 (ip);
+			ip += 4;
+			sp--;
+
+			c = mono_class_get (image, token);
+			g_assert (c->valuetype);
+
+			size = c->instance_size - sizeof (MonoObject);
+			switch (size) {
+			case 4:
+				t1 = mono_ctree_new (mp, MB_TERM_LDIND_I4, *sp, NULL);
+				break;
+			case 2:
+				t1 = mono_ctree_new (mp, MB_TERM_LDIND_U2, *sp, NULL);
+				break;
+			case 1:
+				t1 = mono_ctree_new (mp, MB_TERM_LDIND_U1, *sp, NULL);
+				break;
+			default:
+				t1 = mono_ctree_new (mp, MB_TERM_LDIND_OBJ, *sp, NULL);
+				break;
+			}
+			t1->cli_addr = sp [0]->cli_addr;
+			PUSH_TREE (t1);
+			break;
+		}
+		case CEE_LDSTR: {
+			MonoObject *o;
+			guint32 index;
+
+			++ip;
+			index = mono_metadata_token_index (read32 (ip));
+			ip += 4;
+
+			o = mono_ldstr (image, index);
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+			t1->data.p = o;
+
+			PUSH_TREE (t1);
+			break;
+		}
 		case CEE_LDSFLD:
 		case CEE_LDSFLDA: {
 			MonoClass *klass;
@@ -582,6 +703,44 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			PUSH_TREE (t1);
 			break;
 		}
+		case CEE_LDFLD:
+		case CEE_LDFLDA: {
+			MonoClass *klass;
+			MonoClassField *field;
+			guint32 token;
+			int load_addr = *ip == CEE_LDFLDA;
+
+			++ip;
+			token = read32 (ip);
+			ip += 4;
+			sp--;
+
+			/* need to handle fieldrefs */
+			klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | 
+			        mono_metadata_typedef_from_field (image, token & 0xffffff));
+
+			if (!klass->inited)
+				mono_jit_init_class (klass);
+
+			field = mono_class_get_field (klass, token);
+			g_assert (field);
+
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+			
+			if (klass->valuetype)
+				t1->data.i = field->offset - sizeof (MonoObject);
+			else 
+				t1->data.i = field->offset;
+
+			t1 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], t1);
+
+			if (!load_addr)
+				t1 = mono_ctree_new (mp, map_ldind_type (field->type), t1, NULL);
+	
+			t1->cli_addr = cli_addr;
+			PUSH_TREE (t1);
+			break;
+		}
 		case CEE_STSFLD: {
 			MonoClass *klass;
 			MonoClassField *field;
@@ -605,6 +764,42 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 
 			addr = MONO_CLASS_STATIC_FIELDS_BASE (klass) + field->offset;
 			t1 = ctree_create_store (mp, MB_TERM_ADDR_G, *sp, field->type, addr);
+
+			t1->cli_addr = sp [0]->cli_addr;
+			ADD_TREE (t1);
+			break;
+		}
+		case CEE_STFLD: {
+			MonoClass *klass;
+			MonoClassField *field;
+			guint32 token;
+
+			++ip;
+			token = read32 (ip);
+			ip += 4;
+			sp -= 2;
+
+			/* need to handle fieldrefs */
+			klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | 
+			        mono_metadata_typedef_from_field (image, token & 0xffffff));
+
+			if (!klass->inited)
+				mono_jit_init_class (klass);
+
+			field = mono_class_get_field (klass, token);
+			g_assert (field);
+
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+			
+			if (klass->valuetype)
+				t1->data.i = field->offset - sizeof (MonoObject);
+			else 
+				t1->data.i = field->offset;
+
+			t1 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], t1);
+			t1 = mono_ctree_new (mp, map_stind_type (field->type), t1, sp [1]);
+
+			t1->cli_addr = sp [0]->cli_addr;
 			ADD_TREE (t1);
 			break;
 		}
@@ -642,51 +837,109 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			ADD_TREE (t1);
 			break;
 		}
-		case CEE_CALL: {
+		case CEE_NEWOBJ:
+		case CEE_CALL: 
+		case CEE_CALLVIRT: {
 			MonoMethodSignature *csig;
 			MonoMethod *cm;
-			guint32 token, nargs;
-			int i, align, size, offset = 0;
+			MBTree *nobj, *this = NULL;
+			guint32 token;
+			int i, nargs, align, size, args_size = 0;
 			gint32 fa;
+			int virtual = *ip == CEE_CALLVIRT;
+			int newobj = *ip == CEE_NEWOBJ;
 
 			++ip;
 			token = read32 (ip);
 			ip += 4;
 
 			cm = mono_get_method (image, token, NULL);
+			g_assert (cm);
+
+			if (!cm->addr)
+				cm->addr = arch_create_jit_trampoline (cm);
+			
+			if ((cm->flags & METHOD_ATTRIBUTE_FINAL) ||
+			    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
+				virtual = 0;
+
+#warning disabled virtual calls
+			virtual = 0;
+
 			csig = cm->signature;
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
+
+			if (newobj) {
+				for (i = 0; i < csig->param_count; i++)
+					sp [-i] = sp [-i - 1];
+				local_offset += sizeof (gpointer);
+				nobj = ctree_create_newobj (mp, cm->klass);
+				nobj = ctree_create_store (mp, MB_TERM_ADDR_L, nobj, 
+							   &cm->klass->this_arg, 
+							   (gpointer)-local_offset);
+				nobj->cli_addr = cli_addr;
+				ADD_TREE (nobj);
+				sp [-i] =  ctree_create_dup (mp, nobj);
+				sp++;
+			} 
 			
+
+			nargs = csig->param_count;
+			if (csig->hasthis || virtual || newobj) {
+				nargs++;
+				sp = sp - nargs;
+				this =  *sp;
+			} else {
+				sp = sp - nargs;
+			}
+
+			if (virtual) {
+				t2 = ctree_create_dup (mp, this);
+
+				if (!cm->klass->metadata_inited)
+					mono_class_metadata_init (cm->klass);
+
+				if (cm->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+					t2 = mono_ctree_new (mp, MB_TERM_INTF_ADDR, t1, NULL);
+					t2->data.i = cm->klass->interface_id << 2;
+					printf ("SLOT %s %d %d\n", cm->name, cm->klass->metadata_inited, cm->slot);
+					t2->size = cm->slot << 2;
+				} else {
+					t2 = mono_ctree_new (mp, MB_TERM_VFUNC_ADDR, t1, NULL);
+					t2->data.i = cm->slot << 2;
+				}
+			} else {
+				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
+				t2->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
+			}
+
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_ARG_END);
 
-			if ((nargs = csig->param_count + csig->hasthis)) {
+			if (nargs) {
 
-				sp -= nargs;
 				fa = sp [0]->cli_addr;
+				printf ("FA %04x\n", fa);
+
 #ifdef ARCH_ARGS_RIGHT_TO_LEFT
 				for (i = nargs - 1; i >= 0; i--) {
 #else
 				for (i = 0; i < nargs; i++) {
 #endif
 					t1 = mono_ctree_new (mp, MB_TERM_ARG, t1, sp [i]);	
-
-					if (!i && csig->hasthis)
+					
+					if (!i && this)
 						size = mono_type_size (&cm->klass->this_arg, &align);
 					else
-						size = mono_type_size (cm->signature->params [i], &align);
+						size = mono_type_size (cm->signature->params [i - (this != NULL)], &align);
 
 					// fixme: does this really work ?
-					offset += (size + 3) & ~3;
+					args_size += (size + 3) & ~3;
 				}
 			} else
 				fa = cli_addr;
 
-			cm->addr = arch_create_jit_trampoline (cm);
-			
-			t1 = mono_ctree_new (mp, map_call_type (csig->ret), t1, NULL);
-			t1->data.p = cm;
-			t1->size = offset;
-			t1->cli_addr = fa;
+			t1 = mono_ctree_new (mp, map_call_type (csig->ret), t1, t2);
+			t1->size = args_size;
 			
 			if (csig->ret->type != MONO_TYPE_VOID) {
 				size = mono_type_size (csig->ret, &align);
@@ -702,9 +955,26 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 				t1 = ctree_create_dup (mp, t2);
 				PUSH_TREE (t1);
 			} else {
-				t1->cli_addr = fa;
-				ADD_TREE (t1);
+				if (newobj) {
+					ADD_TREE (t1);			
+					t1 = ctree_create_dup (mp, nobj);		
+					PUSH_TREE (t1);
+				} else {
+					t1->cli_addr = fa;
+					ADD_TREE (t1);
+				}
 			}
+			break;
+		}
+		case CEE_ISINST:
+		case CEE_CASTCLASS: {
+			guint32 token;
+			++ip;
+			token = read32 (ip);
+			
+			/* fixme: do something */
+
+			ip += 4;
 			break;
 		}
 		case CEE_LDC_I4_S: { 
@@ -978,9 +1248,11 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 
 			ADD_TREE (t1);
 
-			if (sp > stack)
-				g_warning ("more values on stack: %d", sp - stack);
-
+			if (sp > stack) {
+				g_warning ("more values on stack at IL_%04x: %d",  ip - header->code, sp - stack);
+				mono_print_ctree (sp [-1]);
+				printf ("\n");
+			}
 			break;
 		}
 		case CEE_LDARG_0:
@@ -1070,6 +1342,9 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 		case 0xFE:
 			++ip;			
 			switch (*ip) {
+				
+			MAKE_BI_ALU (CEQ)
+
 			case CEE_LDARG: {
 				guint32 n;
 				++ip;
@@ -1083,7 +1358,7 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 				break;
 			}
 			default:
-				g_error ("Unimplemented opcode at IL_%04x"
+				g_error ("Unimplemented opcode at IL_%04x "
 					 "0xFE %02x", ip - header->code, *ip);
 			}
 			break;
@@ -1122,7 +1397,10 @@ mono_jit_assembly (MonoAssembly *assembly)
 
 		printf ("\nMethod: %s\n\n", method->name);
 
-		arch_compile_method (method);
+		if (method->flags & METHOD_ATTRIBUTE_ABSTRACT)
+			printf ("ABSTARCT\n");
+		else
+			arch_compile_method (method);
 
 	}
 

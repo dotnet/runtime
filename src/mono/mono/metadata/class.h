@@ -29,9 +29,9 @@ struct _MonoClass {
 	const char *name;
 	const char *name_space;
 	
-	guint  interface_id; /* unique inderface id (for interfaces) */
-	gint  *interface_offsets;
-	guint  interface_count;
+	guint       interface_id; /* unique inderface id (for interfaces) */
+	gpointer   *interface_offsets;
+	guint       interface_count;
 	MonoClass **interfaces;
 
 	/*

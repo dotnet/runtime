@@ -85,6 +85,14 @@ void ves_exec_method (MonoInvocation *frame);
 
 typedef void (*ICallMethod) (MonoInvocation *frame);
 
+gpointer arch_compile_method (MonoMethod *method);
+
+gpointer 
+arch_compile_method (MonoMethod *method)
+{
+	return method;
+}
+
 static void
 ves_real_abort (int line, MonoMethod *mh,
 		const unsigned char *ip, stackval *stack, stackval *sp)
@@ -136,71 +144,8 @@ init_class (MonoClass *klass)
 	/* No class constructor found */
 }
 
-/*
- * newobj:
- * @image: image where the object is being referenced
- * @token: method token to invoke
- *
- * This routine creates a new object based on the class where the
- * constructor lives.x
- */
-static MonoObject *
-newobj (MonoImage *image, guint32 token)
-{
-	MonoObject *result = NULL;
-	
-	switch (mono_metadata_token_code (token)){
-	case MONO_TOKEN_METHOD_DEF: {
-		guint32 idx;
-
-		idx = mono_metadata_typedef_from_method (image, token);
-
-		result = mono_object_new_from_token (image, MONO_TOKEN_TYPE_DEF | idx);
-		break;
-	}
-	case MONO_TOKEN_MEMBER_REF: {
-		guint32 member_cols [MONO_MEMBERREF_SIZE];
-		guint32 mpr_token, table, idx;
-		
-		mono_metadata_decode_row (
-			&image->tables [MONO_TABLE_MEMBERREF],
-			mono_metadata_token_index (token) - 1,
-			member_cols, CSIZE (member_cols));
-		mpr_token = member_cols [MONO_MEMBERREF_CLASS];
-		table = mpr_token & 7;
-		idx = mpr_token >> 3;
-		
-		if (strcmp (mono_metadata_string_heap (image, member_cols[1]), ".ctor"))
-			g_error ("Unhandled: call to non constructor");
-
-		switch (table){
-		case 0: /* TypeDef */
-			result = mono_object_new_from_token (image, MONO_TOKEN_TYPE_DEF | idx);
-			break;
-		case 1: /* TypeRef */
-			result = mono_object_new_from_token (image, MONO_TOKEN_TYPE_REF | idx);
-			break;
-		case 2: /* ModuleRef */
-			g_error ("Unhandled: ModuleRef");
-			
-		case 3: /* MethodDef */
-			g_error ("Unhandled: MethodDef");
-			
-		case 4: /* TypeSpec */			
-			result = mono_object_new_from_token (image, MONO_TOKEN_TYPE_SPEC | idx);
-		}
-		break;
-	}
-	default:
-		g_warning ("dont know how to handle token %08x\n", token); 
-		g_assert_not_reached ();
-	}
-	
-	return result;
-}
-
 static MonoMethod*
-get_virtual_method (MonoImage *image, MonoMethod *m, stackval *objs)
+get_virtual_method (MonoMethod *m, stackval *objs)
 {
 	MonoObject *obj;
 	MonoClass *klass;
@@ -209,12 +154,14 @@ get_virtual_method (MonoImage *image, MonoMethod *m, stackval *objs)
 	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL))
 			return m;
 
+	g_assert (m->klass->metadata_inited);
+
 	obj = objs->data.p;
 	klass = obj->klass;
 	vtable = (MonoMethod **)klass->vtable;
 
 	if (m->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
-		return vtable [klass->interface_offsets [m->klass->interface_id] + m->slot];
+		return *(MonoMethod**)(klass->interface_offsets [m->klass->interface_id] + (m->slot<<2));
 
 	return vtable [m->slot];
 }
@@ -1161,7 +1108,7 @@ ves_exec_method (MonoInvocation *frame)
 					stackval *this_arg = &sp [-csignature->param_count-1];
 					if (!this_arg->data.p)
 						THROW_EX (get_exception_null_reference(), ip - 5);
-					child_frame.method = get_virtual_method (image, child_frame.method, this_arg);
+					child_frame.method = get_virtual_method (child_frame.method, this_arg);
 				}
 			}
 			g_assert (csignature->call_convention == MONO_CALL_DEFAULT);
@@ -2052,14 +1999,14 @@ ves_exec_method (MonoInvocation *frame)
 
 			ip++;
 			token = read32 (ip);
-			o = newobj (image, token);
 			ip += 4;
-			
-			/* call the contructor */
-			child_frame.method = mono_get_method (image, token, o->klass);
-			if (!child_frame.method)
+
+			if (!(child_frame.method = mono_get_method (image, token, NULL)))
 				THROW_EX (get_exception_missing_method (), ip -5);
+
 			csig = child_frame.method->signature;
+
+			o = mono_object_new (child_frame.method->klass);
 
 			/*
 			 * First arg is the object.
@@ -2951,7 +2898,7 @@ ves_exec_method (MonoInvocation *frame)
 					stackval *objs = &sp [-m->signature->param_count - 1];
 					if (!objs->data.p)
 						THROW_EX (get_exception_null_reference (), ip - 5);
-					m = get_virtual_method (image, m, objs);
+					m = get_virtual_method (m, objs);
 				}
 				sp->type = VAL_NATI;
 				sp->data.p = mono_create_method_pointer (m);

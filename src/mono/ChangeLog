@@ -1,3 +1,11 @@
+2001-10-15  Dietmar Maurer  <dietmar@ximian.com>
+
+	* mono/tests/Makefile.am: removed JITTESTS, simply run all tests for
+	target testjit. 
+
+2001-10-11  Dietmar Maurer  <dietmar@ximian.com>
+
+	* docs/object-layout: more documentation
 
 Mon Oct 8 20:27:50 CEST 2001 Paolo Molaro <lupus@ximian.com>
 

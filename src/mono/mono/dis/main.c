@@ -32,6 +32,14 @@ gboolean dump_header_data_p = FALSE;
 
 int dump_table = -1;
 
+gpointer arch_compile_method (MonoMethod *method);
+
+gpointer 
+arch_compile_method (MonoMethod *method)
+{
+	return method;
+}
+
 static void
 dump_header_data (MonoImage *img)
 {

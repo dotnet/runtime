@@ -322,7 +322,7 @@ method_from_memberref (MonoImage *image, guint32 index)
 			g_assert_not_reached ();		
 
 		result = (MonoMethod *)g_new0 (MonoMethodPInvoke, 1);
-		result->klass = mono_defaults.array_class;
+		result->klass = mono_class_get (image, MONO_TOKEN_TYPE_SPEC | nindex);
 		result->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
 		result->signature = sig;
 		result->name = mname;
@@ -436,12 +436,14 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 	int size;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 
-	if (table == MONO_TABLE_METHOD && (result = g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (token))))
+	if ((result = g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (token))))
 			return result;
 
 	if (table != MONO_TABLE_METHOD) {
 		g_assert (table == MONO_TABLE_MEMBERREF);
-		return method_from_memberref (image, index);
+		result = method_from_memberref (image, index);
+		g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);
+		return result;
 	}
 
 	mono_metadata_decode_row (&tables [table], index - 1, cols, 6);
