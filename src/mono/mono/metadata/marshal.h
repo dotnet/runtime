@@ -138,6 +138,9 @@ mono_mb_emit_ldstr (MonoMethodBuilder *mb, char *str);
 /* functions to create various architecture independent helper functions */
 
 MonoMethod *
+mono_marshal_method_from_wrapper (MonoMethod *wrapper);
+
+MonoMethod *
 mono_marshal_get_remoting_invoke (MonoMethod *method);
 
 MonoMethod *

@@ -79,6 +79,9 @@ static MonoDisHelper marshal_dh = {
 /* This mutex protects the various marshalling related caches in MonoImage */
 static CRITICAL_SECTION marshal_mutex;
 
+/* Maps wrapper methods to the methods they wrap */
+static MonoGHashTable *wrapper_hash;
+
 void
 mono_marshal_init (void)
 {
@@ -87,6 +90,7 @@ mono_marshal_init (void)
 	if (!module_initialized) {
 		module_initialized = TRUE;
 		InitializeCriticalSection (&marshal_mutex);
+		wrapper_hash = mono_g_hash_table_new (NULL, NULL);
 	}
 }
 
@@ -1131,6 +1135,7 @@ mono_mb_create_and_cache (GHashTable *cache, gpointer key,
 		/* This does not acquire any locks */
 		res = mono_mb_create_method (mb, sig, max_stack);
 		g_hash_table_insert (cache, key, res);
+		mono_g_hash_table_insert (wrapper_hash, res, key);
 	}
 	else
 		/* Somebody created it before us */
@@ -1139,6 +1144,26 @@ mono_mb_create_and_cache (GHashTable *cache, gpointer key,
 
 	return res;
 }		
+
+MonoMethod *
+mono_marshal_method_from_wrapper (MonoMethod *wrapper)
+{
+	MonoMethod *res;
+
+	g_assert (
+		(wrapper->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK) ||
+		(wrapper->wrapper_type == MONO_WRAPPER_SYNCHRONIZED));
+
+	EnterCriticalSection (&marshal_mutex);
+	res = mono_g_hash_table_lookup (wrapper_hash, wrapper);
+	LeaveCriticalSection (&marshal_mutex);
+
+	if (wrapper->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
+		/* See mono_marshal_get_remoting_invoke_with_check */
+		return (MonoMethod*)((char*)res - 1);
+	else
+		return res;
+}
 
 MonoMethod *
 mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
