@@ -26,6 +26,17 @@ typedef struct {
 	ffi_cif *cif;
 } MonoMethodPInvoke;
 
+typedef struct {
+	MonoImage *corlib;
+	guint32    array_token;
+	guint32    string_token;
+	guint32    char_token;
+} MonoDefaults;
+
+extern MonoDefaults mono_defaults;
+
+void
+mono_init                  (void);
 
 MonoMethod *
 mono_get_method            (MonoImage *image, guint32 token);
@@ -36,15 +47,6 @@ mono_free_method           (MonoMethod *method);
 guint32            
 mono_typedef_from_name     (MonoImage *image, const char *name, 
 			    const char *nspace, guint32 *mlist);
-
-MonoImage *
-mono_get_corlib            (void);
-
-guint32            
-mono_get_string_class_info (guint *ttoken, MonoImage **cl);
-
-void              
-mono_get_array_class_info  (guint *ttoken, MonoImage **cl);
 
 MonoImage *
 mono_load_image            (const char *fname, enum MonoImageOpenStatus *status);

@@ -49,7 +49,6 @@ enum {
 #undef OPDEF
 
 static int debug_indent_level = 0;
-static MonoImage *corlib = NULL;
 
 #define GET_NATI(sp) ((guint32)(sp).data.i)
 #define CSIZE(x) (sizeof (x) / 4)
@@ -174,7 +173,7 @@ newobj (MonoImage *image, guint32 token)
 		break;
 	}
 	default:
-		g_warning ("dont know how to handle token %p\n", token); 
+		g_warning ("dont know how to handle token %08x\n", token); 
 		g_assert_not_reached ();
 	}
 	
@@ -233,28 +232,31 @@ get_named_exception (const char *name)
 	MonoInvocation call;
 	MonoObject *o;
 	int i;
-	guint32 tdef = mono_typedef_from_name (corlib, name, "System", NULL);
-	stackval sv;
+	guint32 tdef = mono_typedef_from_name (mono_defaults.corlib, name, "System", NULL);
+	stackval sv[2];
 
-	o = mono_object_new (corlib, tdef);
+	o = mono_object_new (mono_defaults.corlib, tdef);
 	g_assert (o != NULL);
 
-	klass = mono_class_get (corlib, tdef);
+	klass = mono_class_get (mono_defaults.corlib, tdef);
 	call.method = NULL;
 
-	/* fixme: this returns the wrong constructor .ctor() without the
-	   string argument */
 	for (i = 0; i < klass->method.count; ++i) {
 		if (!strcmp (".ctor", klass->methods [i]->name) &&
-		    klass->methods [i]->signature->param_count == 0) {
+		    klass->methods [i]->signature->param_count == 1 &&
+		    klass->methods [i]->signature->params [0]->type->type == MONO_TYPE_STRING) {
 			call.method = klass->methods [i];
 			break;
 		}
 	}
-	sv.data.p = o;
-	sv.type = VAL_OBJ;
 
-	call.stack_args = &sv;
+	sv [0].data.p = o;
+	sv [0].type = VAL_OBJ;
+
+	sv [1].data.p = mono_new_string (name);
+	sv [1].type = VAL_OBJ;
+
+	call.stack_args = sv;
 	call.obj = o;
 
 	g_assert (call.method);
@@ -1427,14 +1429,11 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_CPOBJ) ves_abort(); BREAK;
 		CASE (CEE_LDOBJ) ves_abort(); BREAK;
 		CASE (CEE_LDSTR) {
-			guint32 ctor, ttoken;
 			MonoMetadata *m = &image->metadata;
 			MonoObject *o;
-			MonoImage *cl;
 			const char *name;
 			int len;
 			guint32 index;
-			guint16 *data;
 
 			ip++;
 			index = mono_metadata_token_index (read32 (ip));
@@ -1442,35 +1441,12 @@ ves_exec_method (MonoInvocation *frame)
 
 			name = mono_metadata_user_string (m, index);
 			len = mono_metadata_decode_blob_size (name, &name);
-			/* 
-			 * terminate with 0, maybe we should use another 
-			 * constructor and pass the len
-			 */
-			data = g_malloc (len + 2);
-			memcpy (data, name, len + 2);
-			data [len/2 + 1] = 0;
 
-			ctor = mono_get_string_class_info (&ttoken, &cl);
-			o = mono_object_new (cl, ttoken);
-			
-			g_assert (o != NULL);
-
-			child_frame.method = mono_get_method (cl, ctor);
-
-			child_frame.obj = o;
-			
-			sp->type = VAL_TP;
-			sp->data.p = data;
-			
-			child_frame.stack_args = sp;
-
-			g_assert (child_frame.method->signature->call_convention == MONO_CALL_DEFAULT);
-			ves_exec_method (&child_frame);
-
-			g_free (data);
+			o = mono_new_utf16_string (name, len);
 
 			sp->type = VAL_OBJ;
 			sp->data.p = o;
+
 			++sp;
 			BREAK;
 		}
@@ -2161,7 +2137,7 @@ main (int argc, char *argv [])
 
 	file = argv [1];
 
-	corlib = mono_get_corlib ();
+	mono_init ();
 
 	assembly = mono_assembly_open (file, NULL, NULL);
 	if (!assembly){

@@ -30,6 +30,12 @@ mono_object_new       (MonoImage *image, guint32 type_token);
 MonoObject *
 mono_new_szarray      (MonoImage *image, guint32 etype, guint32 n);
 
+MonoObject *
+mono_new_utf16_string (const char *text, gint32 len);
+
+MonoObject *
+mono_new_string       (const char *text);
+
 void       
 mono_object_free      (MonoObject *o);
 

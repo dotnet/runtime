@@ -28,6 +28,7 @@
 #include <mono/metadata/tabledefs.h>
 #include "cli.h"
 
+MonoDefaults mono_defaults;
 
 static char *dll_map[] = {
 	"libc", "libc.so.6",
@@ -72,134 +73,35 @@ mono_typedef_from_name (MonoImage *image, const char *name,
 	return 0;
 }
 
-MonoImage *
-mono_get_corlib ()
+void
+mono_init ()
 {
-	static MonoImage *corlib = NULL;
+	static gboolean initialized = FALSE;
 	MonoAssembly *ass;
 	enum MonoImageOpenStatus status = MONO_IMAGE_OK;
 
-	if (!corlib) {
-		ass = mono_assembly_open (CORLIB_NAME, NULL, &status);
-		g_assert (status == MONO_IMAGE_OK);
-		g_assert (ass != NULL);
-		g_assert (ass->image != NULL);
-		
-		corlib = ass->image;
-	}
+	if (initialized)
+		return;
 
-	return corlib;
-}
+	/* find the corlib */
+	ass = mono_assembly_open (CORLIB_NAME, NULL, &status);
+	g_assert (status == MONO_IMAGE_OK);
+	g_assert (ass != NULL);
+	mono_defaults.corlib = ass->image;
 
-/**
- * mono_get_array_class_info:
- * @ttoken: pointer to location to store type definition token
- * @cl: pointer where image will be stored
- *
- * This routine locates information about the System.Array class. A reference
- * to the image containing the class is returned in @cl. The type definition 
- * token is returned in @ttoken. 
- */
-void
-mono_get_array_class_info (guint *ttoken, MonoImage **cl)
-{
-	static guint32 arr_token = 0;
-	static MonoImage *corlib;
+	mono_defaults.array_token = mono_typedef_from_name (
+                mono_defaults.corlib, "Array", "System", NULL);
+	g_assert (mono_defaults.array_token != 0);
 
-	if (!arr_token) {
-		corlib = mono_get_corlib ();		
-		arr_token = mono_typedef_from_name (corlib, "Array", "System", NULL);
-		g_assert (arr_token != 0);
-	}
+	mono_defaults.char_token = mono_typedef_from_name (
+                mono_defaults.corlib, "Char", "System", NULL);
+	g_assert (mono_defaults.char_token != 0);
 
-	*ttoken = arr_token;
-	*cl = corlib;
-}
-
-/**
- * mono_get_string_class_info:
- * @ttoken: pointer to location to store type definition token
- * @cl: pointer where image will be stored
- *
- * This routine locates information about the System.String class. A reference
- * to the image containing the class is returned in @cl. The type definition 
- * token is returned in @ttoken. 
- *
- * Returns: the method definition token for System.String::.ctor (char *)
- */
-
-guint32
-mono_get_string_class_info (guint *ttoken, MonoImage **cl)
-{
-	static guint32 ctor = 0, tt = 0;
-	static MonoImage *corlib;
-	MonoMetadata *m;
-	MonoTableInfo *t;
-	guint32 cols [MAX (MONO_TYPEDEF_SIZE, MONO_METHOD_SIZE)];
-	guint32 ncols [MONO_TYPEDEF_SIZE];
-	guint32 i, first = 0, last = 0;
-	const char *name, *nspace;
-
-	if (ctor) {
-		*ttoken = tt;
-		*cl = corlib;
-		return ctor;
-	}
-
-	*cl = corlib = mono_get_corlib ();		
+	mono_defaults.string_token = mono_typedef_from_name (
+                mono_defaults.corlib, "String", "System", NULL);
 	
-	m = &corlib->metadata;
-	t = &m->tables [MONO_TABLE_TYPEDEF];
+	g_assert (mono_defaults.string_token != 0);
 
-	for (i = 0; i < t->rows; i++) {
-		mono_metadata_decode_row (t, i, cols, MONO_TYPEDEF_SIZE);
-		name = mono_metadata_string_heap (m, cols[1]);
-		nspace = mono_metadata_string_heap (m, cols[2]);
-
-		if (((cols [0] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS) &&
-		    !strcmp (nspace, "System") && !strcmp (name, "String")) {
-
-			*ttoken = tt = MONO_TOKEN_TYPE_DEF | (i + 1);
-
-			first = cols [5] - 1;
-
-			if (i + 1 < t->rows) {
-				mono_metadata_decode_row (t, i + 1, ncols, 
-							  MONO_TYPEDEF_SIZE);
-				last =  ncols [5] - 1;
-			} else
-				last = m->tables [MONO_TABLE_METHOD].rows;
-			break;
-		}
-	}
-
-	g_assert (last - first > 0);
-
-	t = &m->tables [MONO_TABLE_METHOD];
-	g_assert (last < t->rows);
-
-	for (i = first; i < last; i++) {
-		const char *ptr;
-		int len;
-		guint8 sig[] = { 0x20, 0x01, 0x01, 0x0f, 0x03 };
-		mono_metadata_decode_row (t, i, cols, MONO_METHOD_SIZE);
-
-		if (!strcmp (mono_metadata_string_heap (m, cols [3]), 
-			     ".ctor") &&
-		    (cols [2] & METHOD_ATTRIBUTE_SPECIAL_NAME)) {
-
-			ptr = mono_metadata_blob_heap (m, cols [4]);
-			len = mono_metadata_decode_value (ptr, &ptr);
-
-			if (len == 5 && !memcmp (ptr, sig, len)) {
-				ctor = MONO_TOKEN_METHOD_DEF | (i + 1);
-				break;
-			}
-		} 
-
-	}
-
-	return ctor;
 }
 
 static MonoMethod *

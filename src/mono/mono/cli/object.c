@@ -120,6 +120,48 @@ mono_new_szarray (MonoImage *image, guint32 etype, guint32 n)
 }
 
 MonoObject *
+mono_new_utf16_string (const char *text, gint32 len)
+{
+	MonoObject *s;
+	MonoArrayObject *ca;
+
+	s = mono_object_new (mono_defaults.corlib, mono_defaults.string_token);
+	g_assert (s != NULL);
+
+	ca = (MonoArrayObject *)mono_new_szarray (mono_defaults.corlib, mono_defaults.string_token, len);
+	g_assert (ca != NULL);
+	
+	((MonoStringObject *)s)->c_str = ca;
+	((MonoStringObject *)s)->length = len;
+
+	memcpy (ca->vector, text, len * 2);
+
+	return s;
+}
+
+MonoObject *
+mono_new_string (const char *text)
+{
+	MonoObject *o;
+	guint16 *ut;
+	int i, l;
+
+	/* fixme: use some kind of unicode library here */
+
+	l = strlen (text);
+	ut = g_malloc (l*2);
+
+	for (i = 0; i < l; i++)
+		ut [i] = text[i];
+	
+	o = mono_new_utf16_string ((char *)ut, l);
+
+	g_free (ut);
+
+	return o;
+}
+
+MonoObject *
 mono_value_box (MonoImage *image, guint32 etype, gpointer val)
 {
 	MonoObject *res;

@@ -253,7 +253,7 @@ mono_type_to_tydedef (MonoImage *image, MonoType *type, MonoImage **rimage)
 	MonoImage *corlib, *res;
 	guint32 etype;
 
-	res = corlib = mono_get_corlib ();
+	res = corlib = mono_defaults.corlib;
 
 	switch (type->type) {
 	case MONO_TYPE_BOOLEAN:
@@ -357,11 +357,8 @@ mono_array_class_get (MonoImage *image, guint32 etype, guint32 rank)
 	g_assert (rank <= 255);
 
 	if (!parent) {
-		guint32 arr_token;
-		MonoImage *corlib;
-
-		mono_get_array_class_info (&arr_token, &corlib);
-		parent = mono_class_get (corlib, arr_token);
+		parent = mono_class_get (mono_defaults.corlib, 
+					 mono_defaults.array_token);
 		g_assert (parent != NULL);
 	}
 
