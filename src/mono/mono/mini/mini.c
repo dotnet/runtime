@@ -4728,8 +4728,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins->inst_newa_class = klass;
 					ins->cil_code = ip;
 					*sp++ = ins;
+					ip += 5;
 				}
-				ip += 5;
 				break;
 			}
 
