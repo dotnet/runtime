@@ -41,6 +41,14 @@ IP 0x817f42a at offset 0x52 of method System.Collections.Hashtable:GetHash (obje
 $2 = void
 </pre>
 
+	Mono support libraries use a couple of signals internally that
+	confuse gdb, you might want to add this to your .gdbinit file:
+
+<pre>
+	handle SIGPWR nostop noprint 
+	handle SIGXCPU nostop noprint 
+</pre>
+
 * Mono Debugger 
 
 	The Mono debugger is written in C# and can debug both managed
