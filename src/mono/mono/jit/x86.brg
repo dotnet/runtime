@@ -1065,7 +1065,7 @@ reg: LDSFLDA (CONST_I4) {
 
 # array support
 reg: LDLEN (reg) {	
-	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 0);
+	x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
 	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NE, TRUE, "NullReferenceException");
 
 	x86_mov_reg_membase (s->code, tree->reg1, tree->left->reg1,  
@@ -1123,7 +1123,7 @@ reg: TOSTRING (reg) {
 	for (i = 0; i < 2; i++) {
 		s->code = start;
 
-		x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 0);
+		x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
 		x86_branch8 (s->code, X86_CC_EQ, le - l1, FALSE);
 		l1 = s->code;
 
@@ -1207,7 +1207,7 @@ reg: UNBOX (reg) {
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 
-	x86_alu_reg_imm (s->code, X86_CMP, tree->reg1, 0);
+	x86_test_reg_reg (s->code, tree->reg1, tree->reg1);
 	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NE, TRUE, "NullReferenceException");	
 
 	x86_push_reg (s->code, tree->reg1);
@@ -1233,7 +1233,7 @@ reg: CASTCLASS (reg) {
 		if (tree->reg1 != X86_EAX)
 			x86_push_reg (s->code, X86_EAX);
 
-		x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 0);
+		x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
 		x86_branch8 (s->code, X86_CC_EQ, le - l2, FALSE);
 		l2 = s->code;
 		x86_push_reg (s->code, X86_ECX);
@@ -1536,7 +1536,7 @@ stmt: BRTRUE (reg) {
 	gint32 offset;
 
 	tree->is_jump = TRUE;
-	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 0);
+	x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, TRUE);
 }
@@ -1545,7 +1545,7 @@ stmt: BRFALSE (reg) {
 	gint32 offset;
 
 	tree->is_jump = TRUE;
-	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 0);
+	x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, TRUE);
 }
