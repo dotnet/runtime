@@ -53,6 +53,9 @@ typedef struct {
 	MonoConstant    *def_value;
 } MonoClassField;
 
+/* a field is ignored if it's named "_Deleted" and it has the specialname and rtspecialname flags set */
+#define mono_field_is_deleted(field) ((field)->name[0] == '_' && ((field)->type->attrs & 0x600) && (strcmp ((field)->name, "_Deleted") == 0))
+
 typedef struct {
 	MonoClassField *field;
 	guint32 offset;

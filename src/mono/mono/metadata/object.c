@@ -437,6 +437,8 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		field = &class->fields [i - class->field.first];
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
+		if (mono_field_is_deleted (field))
+			continue;
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
 			gint32 special_static = field_is_special_static (class, field);
 			if (special_static != SPECIAL_STATIC_NONE) {

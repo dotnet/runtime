@@ -369,6 +369,8 @@ class_compute_field_layout (MonoClass *class)
 		g_assert (*sig == 0x06);
 		class->fields [i].type = mono_metadata_parse_field_type (
 			m, cols [MONO_FIELD_FLAGS], sig + 1, &sig);
+		if (mono_field_is_deleted (&class->fields [i]))
+			continue;
 		if (class->generic_inst) {
 			class->fields [i].type = mono_class_inflate_generic_type (class->fields [i].type, class->generic_inst->data.generic_inst);
 			class->fields [i].type->attrs = cols [MONO_FIELD_FLAGS];
@@ -473,6 +475,8 @@ mono_class_layout_fields (MonoClass *class)
 			for (i = 0; i < top; i++){
 				int size, align;
 
+				if (mono_field_is_deleted (&class->fields [i]))
+					continue;
 				if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
 					continue;
 
@@ -528,6 +532,8 @@ mono_class_layout_fields (MonoClass *class)
 			 * uses explicit layout.
 			 */
 
+			if (mono_field_is_deleted (&class->fields [i]))
+				continue;
 			if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
 
@@ -559,6 +565,8 @@ mono_class_layout_fields (MonoClass *class)
 		int size, align;
 			
 		if (!(class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC))
+			continue;
+		if (mono_field_is_deleted (&class->fields [i]))
 			continue;
 			
 		size = mono_type_size (class->fields [i].type, &align);

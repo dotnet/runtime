@@ -753,6 +753,8 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObject *this, MonoArray **fi
 		MonoClassField *field = &klass->fields [i];
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
+		if (mono_field_is_deleted (field))
+			continue;
 		/* FIXME: Add more types */
 		switch (field->type->type) {
 		case MONO_TYPE_I4:
@@ -810,6 +812,8 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray
 	for (i = 0; i < klass->field.count; ++i) {
 		MonoClassField *field = &klass->fields [i];
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		if (mono_field_is_deleted (field))
 			continue;
 		/* FIXME: Add more types */
 		switch (field->type->type) {
@@ -2009,6 +2013,8 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 		field = &enumc->fields [i];
 		if (strcmp ("value__", field->name) == 0)
 			continue;
+		if (mono_field_is_deleted (field))
+			continue;
 		mono_array_set (info->names, gpointer, j, mono_string_new (domain, field->name));
 		if (!field->data) {
 			crow = mono_metadata_get_constant_index (enumc->image, MONO_TOKEN_FIELD_DEF | (i+enumc->field.first+1), crow + 1);
@@ -2079,6 +2085,8 @@ handle_parent:
 	for (i = 0; i < klass->field.count; ++i) {
 		match = 0;
 		field = &klass->fields [i];
+		if (mono_field_is_deleted (field))
+			continue;
 		if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
 			if (bflags & BFLAGS_Public)
 				match++;
@@ -2136,6 +2144,8 @@ handle_parent:
 	for (i = 0; i < klass->field.count; ++i) {
 		match = 0;
 		field = &klass->fields [i];
+		if (mono_field_is_deleted (field))
+			continue;
 		if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
 			if (bflags & BFLAGS_Public)
 				match++;

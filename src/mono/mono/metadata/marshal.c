@@ -4486,6 +4486,8 @@ mono_marshal_load_type_info (MonoClass* klass)
 	for (i = 0; i < klass->field.count; ++i) {
 		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
+		if (mono_field_is_deleted (&klass->fields [i]))
+			continue;
 		count++;
 	}
 
@@ -4511,6 +4513,8 @@ mono_marshal_load_type_info (MonoClass* klass)
 		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 
+		if (mono_field_is_deleted (&klass->fields [i]))
+			continue;
 		if (klass->fields [i].type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL)
 			mono_metadata_field_info (klass->image, klass->field.first + i, 
 						  NULL, NULL, &info->fields [j].mspec);
