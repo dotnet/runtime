@@ -113,17 +113,24 @@ static inline void _wapi_handle_fd_offset_store (int fd, gpointer handle)
 static inline gpointer _wapi_handle_fd_offset_to_handle (gpointer fd_handle)
 {
 	int fd = GPOINTER_TO_INT (fd_handle);
+	gpointer handle;
 	
-	g_assert (fd < _wapi_fd_offset_table_size);
-	g_assert (_wapi_fd_offset_table[fd]!=NULL);
-	g_assert (GPOINTER_TO_UINT (_wapi_fd_offset_table[fd]) >= _wapi_fd_offset_table_size);
+	if (fd >= _wapi_fd_offset_table_size) {
+		return(NULL);
+	}
+	
+	handle = _wapi_fd_offset_table[fd];
+	
+	if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+		return(NULL);
+	}
 
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": Returning fd offset %d of %p", fd,
-		   _wapi_fd_offset_table[fd]);
+		   handle);
 #endif
 
-	return(_wapi_fd_offset_table[fd]);
+	return(handle);
 }
 
 static inline struct _WapiHandleShared_list *_wapi_handle_get_shared_segment (guint32 segment)

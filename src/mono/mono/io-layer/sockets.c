@@ -212,6 +212,12 @@ int closesocket(guint32 fd_handle)
 {
 	gpointer handle = _wapi_handle_fd_offset_to_handle (GUINT_TO_POINTER (fd_handle));
 	
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+		WSASetLastError (WSAENOTSOCK);
+		return(0);
+	}
+	
 	_wapi_handle_unref (handle);
 	return(0);
 }
@@ -231,7 +237,8 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 		return(INVALID_SOCKET);
 	}
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError(WSAENOTSOCK);
 		return(INVALID_SOCKET);
 	}
@@ -305,7 +312,8 @@ int _wapi_bind(guint32 fd, struct sockaddr *my_addr, socklen_t addrlen)
 		return(SOCKET_ERROR);
 	}
 
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError(WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -337,7 +345,8 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 		return(SOCKET_ERROR);
 	}
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError(WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -390,7 +399,8 @@ int _wapi_getpeername(guint32 fd, struct sockaddr *name, socklen_t *namelen)
 		return(SOCKET_ERROR);
 	}
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError(WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -422,7 +432,8 @@ int _wapi_getsockname(guint32 fd, struct sockaddr *name, socklen_t *namelen)
 		return(SOCKET_ERROR);
 	}
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError(WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -455,7 +466,8 @@ int _wapi_getsockopt(guint32 fd, int level, int optname, void *optval,
 		return(SOCKET_ERROR);
 	}
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError(WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -487,7 +499,8 @@ int _wapi_listen(guint32 fd, int backlog)
 		return(SOCKET_ERROR);
 	}
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError(WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -528,7 +541,8 @@ int _wapi_recvfrom(guint32 fd, void *buf, size_t len, int recv_flags,
 		return(SOCKET_ERROR);
 	}
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError(WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -576,7 +590,8 @@ int _wapi_send(guint32 fd, const void *msg, size_t len, int send_flags)
 		return(SOCKET_ERROR);
 	}
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError(WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -623,7 +638,8 @@ int _wapi_sendto(guint32 fd, const void *msg, size_t len, int send_flags,
 		return(SOCKET_ERROR);
 	}
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError(WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -667,7 +683,8 @@ int _wapi_setsockopt(guint32 fd, int level, int optname,
 		return(SOCKET_ERROR);
 	}
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError(WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -699,7 +716,8 @@ int _wapi_shutdown(guint32 fd, int how)
 		return(SOCKET_ERROR);
 	}
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError(WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -844,7 +862,8 @@ WSAIoctl (guint32 fd, gint32 command,
 		return(SOCKET_ERROR);
 	}
 
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return SOCKET_ERROR;
 	}
@@ -891,7 +910,8 @@ int ioctlsocket(guint32 fd, gint32 command, gpointer arg)
 		return(SOCKET_ERROR);
 	}
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError(WSAENOTSOCK);
 		return(SOCKET_ERROR);
 	}
@@ -975,7 +995,8 @@ void _wapi_FD_CLR(guint32 fd, fd_set *set)
 {
 	gpointer handle = _wapi_handle_fd_offset_to_handle (GUINT_TO_POINTER (fd));
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError(WSAENOTSOCK);
 		return;
 	}
@@ -987,7 +1008,8 @@ int _wapi_FD_ISSET(guint32 fd, fd_set *set)
 {
 	gpointer handle = _wapi_handle_fd_offset_to_handle (GUINT_TO_POINTER (fd));
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError(WSAENOTSOCK);
 		return(0);
 	}
@@ -999,7 +1021,8 @@ void _wapi_FD_SET(guint32 fd, fd_set *set)
 {
 	gpointer handle = _wapi_handle_fd_offset_to_handle (GUINT_TO_POINTER (fd));
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError(WSAENOTSOCK);
 		return;
 	}
@@ -1050,7 +1073,8 @@ do_aio_call (gboolean is_read, gpointer fd_handle, gpointer buffer,
 	int result;
 	notifier_data_t *ndata;
 	
-	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+	if (handle == NULL ||
+	    _wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
 		WSASetLastError (WSAENOTSOCK);
 		return FALSE;
 	}

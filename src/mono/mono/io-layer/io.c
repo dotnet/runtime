@@ -2167,9 +2167,17 @@ gboolean ReadFile(gpointer fd_handle, gpointer buffer, guint32 numbytes,
 		  guint32 *bytesread, WapiOverlapped *overlapped)
 {
 	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
-	WapiHandleType type=_wapi_handle_type (handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].readfile==NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -2206,9 +2214,17 @@ gboolean WriteFile(gpointer fd_handle, gconstpointer buffer, guint32 numbytes,
 		   guint32 *byteswritten, WapiOverlapped *overlapped)
 {
 	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
-	WapiHandleType type=_wapi_handle_type (handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].writefile==NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -2229,9 +2245,17 @@ gboolean WriteFile(gpointer fd_handle, gconstpointer buffer, guint32 numbytes,
 gboolean FlushFileBuffers(gpointer fd_handle)
 {
 	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
-	WapiHandleType type=_wapi_handle_type (handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].flushfile==NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -2251,9 +2275,17 @@ gboolean FlushFileBuffers(gpointer fd_handle)
 gboolean SetEndOfFile(gpointer fd_handle)
 {
 	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
-	WapiHandleType type=_wapi_handle_type (handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].setendoffile==NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -2293,10 +2325,18 @@ guint32 SetFilePointer(gpointer fd_handle, gint32 movedistance,
 		       gint32 *highmovedistance, WapiSeekMethod method)
 {
 	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
-	WapiHandleType type=_wapi_handle_type (handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(INVALID_SET_FILE_POINTER);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].seek==NULL) {
-		return(FALSE);
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(INVALID_SET_FILE_POINTER);
 	}
 	
 	return(io_ops[type].seek (handle, movedistance, highmovedistance,
@@ -2317,9 +2357,17 @@ guint32 SetFilePointer(gpointer fd_handle, gint32 movedistance,
 WapiFileType GetFileType(gpointer fd_handle)
 {
 	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
-	WapiHandleType type=_wapi_handle_type (handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FILE_TYPE_UNKNOWN);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].getfiletype==NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FILE_TYPE_UNKNOWN);
 	}
 	
@@ -2345,10 +2393,18 @@ WapiFileType GetFileType(gpointer fd_handle)
 guint32 GetFileSize(gpointer fd_handle, guint32 *highsize)
 {
 	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
-	WapiHandleType type=_wapi_handle_type (handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(INVALID_FILE_SIZE);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].getfilesize==NULL) {
-		return(FALSE);
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(INVALID_FILE_SIZE);
 	}
 	
 	return(io_ops[type].getfilesize (handle, highsize));
@@ -2383,9 +2439,17 @@ gboolean GetFileTime(gpointer fd_handle, WapiFileTime *create_time,
 		     WapiFileTime *last_access, WapiFileTime *last_write)
 {
 	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
-	WapiHandleType type=_wapi_handle_type (handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].getfiletime==NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -2421,9 +2485,17 @@ gboolean SetFileTime(gpointer fd_handle, const WapiFileTime *create_time,
 		     const WapiFileTime *last_write)
 {
 	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
-	WapiHandleType type=_wapi_handle_type (handle);
+	WapiHandleType type;
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
+	type = _wapi_handle_type (handle);
 	
 	if(io_ops[type].setfiletime==NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -3651,6 +3723,11 @@ _wapi_io_add_callback (gpointer fd_handle,
 	gboolean ret = FALSE;
 	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
 	
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
 				  (gpointer *) &file_handle,
 				  (gpointer *) &file_private_handle);
@@ -3831,6 +3908,11 @@ gboolean LockFile (gpointer fd_handle, guint32 offset_low, guint32 offset_high,
 	gboolean ok;
 	off_t offset, length;
 	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
 				  (gpointer *)&file_handle,
@@ -3885,6 +3967,11 @@ gboolean UnlockFile (gpointer fd_handle, guint32 offset_low,
 	gboolean ok;
 	off_t offset, length;
 	gpointer handle = _wapi_handle_fd_offset_to_handle (fd_handle);
+
+	if (handle == NULL) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
 				  (gpointer *)&file_handle,
