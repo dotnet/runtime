@@ -33,101 +33,14 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/reflection.h>
 
-static gboolean dummy_icall = TRUE;
-
 MonoDefaults mono_defaults;
 
 CRITICAL_SECTION loader_mutex;
-
-static GHashTable *icall_hash = NULL;
 
 void
 mono_loader_init ()
 {
 	InitializeCriticalSection (&loader_mutex);
-}
-
-void
-mono_add_internal_call (const char *name, gconstpointer method)
-{
-	mono_loader_lock ();
-
-	if (!icall_hash) {
-		dummy_icall = FALSE;
-		icall_hash = g_hash_table_new (g_str_hash , g_str_equal);
-	}
-
-	g_hash_table_insert (icall_hash, g_strdup (name), (gpointer) method);
-
-	mono_loader_unlock ();
-}
-
-static void
-ves_icall_dummy (void)
-{
-	g_warning ("the mono runtime is not initialized");
-	g_assert_not_reached ();
-}
-
-gpointer
-mono_lookup_internal_call (MonoMethod *method)
-{
-	char *name;
-	char *tmpsig;
-	gpointer res;
-
-	if (dummy_icall)
-		return ves_icall_dummy;
-
-	if (!method) {
-		g_warning ("can't resolve internal call, method is null");
-	}
-
-	if (!icall_hash) {
-		g_warning ("icall_hash not initialized");
-		g_assert_not_reached ();
-	}
-
-	mono_loader_lock ();
-
-	if (*method->klass->name_space)
-		name = g_strconcat (method->klass->name_space, ".", method->klass->name, "::", method->name, NULL);
-	else
-		name = g_strconcat (method->klass->name, "::", method->name, NULL);
-	if (!(res = g_hash_table_lookup (icall_hash, name))) {
-		/* trying to resolve with full signature */
-		g_free (name);
-	
-		tmpsig = mono_signature_get_desc(method->signature, TRUE);
-		if (*method->klass->name_space)
-			name = g_strconcat (method->klass->name_space, ".", method->klass->name, "::", method->name, "(", tmpsig, ")", NULL);
-		else
-			name = g_strconcat (method->klass->name, "::", method->name, "(", tmpsig, ")", NULL);
-		if (!(res = g_hash_table_lookup (icall_hash, name))) {
-			g_warning ("cant resolve internal call to \"%s\" (tested without signature also)", name);
-			g_print ("\nYour mono runtime and corlib are out of sync.\n");
-			g_print ("Corlib is: %s\n", method->klass->image->name);
-			g_print ("\nWhen you update one from cvs you need to update, compile and install\nthe other too.\n");
-			g_print ("Do not report this as a bug unless you're sure you have updated correctly:\nyou probably have a broken mono install.\n");
-			g_print ("If you see other errors or faults after this message they are probably related\n");
-			g_print ("and you need to fix your mono install first.\n");
-
-			g_free (name);
-			g_free (tmpsig);
-
-			mono_loader_unlock ();
-
-			return NULL;
-		}
-
-		g_free(tmpsig);
-	}
-
-	mono_loader_unlock ();
-
-	g_free (name);
-
-	return res;
 }
 
 MonoClassField*
