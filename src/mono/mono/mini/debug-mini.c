@@ -16,15 +16,15 @@
 #include "config.h"
 #include <mono/metadata/mono-debug-debugger.h>
 
-static void
+static inline void
 record_line_number (MonoDebugMethodJitInfo *jit, guint32 address, guint32 offset)
 {
-	MonoDebugLineNumberEntry *lne = g_new0 (MonoDebugLineNumberEntry, 1);
+	MonoDebugLineNumberEntry lne;
 
-	lne->address = address;
-	lne->offset = offset;
+	lne.address = address;
+	lne.offset = offset;
 
-	g_array_append_val (jit->line_numbers, *lne);
+	g_array_append_val (jit->line_numbers, lne);
 }
 
 typedef struct
