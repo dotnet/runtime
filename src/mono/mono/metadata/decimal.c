@@ -1508,7 +1508,7 @@ double mono_decimal2double(/*[In]*/decimal_repr* pA)
     ahi += 0x400;
     if ((ahi & LIT_GUINT64_HIGHBIT) == 0) { /* overflow ? */
         ahi >>= 1;
-        texp++;
+	texp--;
     } else if ((roundBits & 0x400) == 0) ahi &= ~1;
 
     /* 96 bit => 1 implizit bit and 52 explicit bits */
