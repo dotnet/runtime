@@ -35,6 +35,7 @@ OBJECTS=									\
 	deploy/ideas.html							\
 	deploy/ibmdb2.html							\
 	deploy/index.html							\
+	deploy/oldnews.html							\
 	deploy/java.html							\
 	deploy/jit-debug.html							\
 	deploy/languages.html							\
