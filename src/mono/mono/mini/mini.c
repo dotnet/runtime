@@ -2608,6 +2608,7 @@ mini_get_method (MonoImage *image, guint32 token, MonoMethod *calling_method)
 	gmethod = g_new0 (MonoGenericMethod, 1);
 	*gmethod = *calling_method->signature->gen_method;
 	gmethod->generic_method = method;
+	gmethod->generic_inst = calling_method->klass->generic_inst;
 
 	return mono_class_inflate_generic_method (method, gmethod, NULL);
 }
