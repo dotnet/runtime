@@ -18,3 +18,4 @@ cpu-g4.h
 mono
 cpu-sparc.h
 cpu-s390.h
+.hidden
