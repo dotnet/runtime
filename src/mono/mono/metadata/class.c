@@ -33,8 +33,6 @@
 #include <mono/metadata/reflection.h>
 #include <mono/os/gc_wrapper.h>
 
-#define CSIZE(x) (sizeof (x) / 4)
-
 MonoStats mono_stats;
 
 gboolean mono_print_vtable = FALSE;
@@ -362,7 +360,7 @@ class_compute_field_layout (MonoClass *class)
 		int idx = class->field.first + i;
 
 		field = &class->fields [i];
-		mono_metadata_decode_row (t, idx, cols, CSIZE (cols));
+		mono_metadata_decode_row (t, idx, cols, MONO_FIELD_SIZE);
 		/* The name is needed for fieldrefs */
 		field->name = mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]);
 		sig = mono_metadata_blob_heap (m, cols [MONO_FIELD_SIGNATURE]);
@@ -1572,7 +1570,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	class->method.first = cols [MONO_TYPEDEF_METHOD_LIST] - 1;
 
 	if (tt->rows > tidx){		
-		mono_metadata_decode_row (tt, tidx, cols_next, CSIZE (cols_next));
+		mono_metadata_decode_row (tt, tidx, cols_next, MONO_TYPEDEF_SIZE);
 		class->field.last  = cols_next [MONO_TYPEDEF_FIELD_LIST] - 1;
 		class->method.last = cols_next [MONO_TYPEDEF_METHOD_LIST] - 1;
 	} else {

@@ -1890,8 +1890,6 @@ typedef struct {
 	guint32 result;
 } locator_t;
 
-#define CSIZE(x) (sizeof (x) / 4)
-
 /*
  * How the row locator works.
  *
