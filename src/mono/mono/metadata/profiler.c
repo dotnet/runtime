@@ -2,7 +2,7 @@
 #include "mono/metadata/profiler-private.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/mono-debug.h"
-#include "mono/io-layer/critical-sections.h"
+#include "mono/io-layer/io-layer.h"
 #include <string.h>
 #include <gmodule.h>
 
