@@ -411,7 +411,7 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 		ppc_mtlr (buf, ppc_r0);
 		ppc_blrl (buf);
 		
-		/* Restore stack pointer, r31, LR and return to caler */
+		/* Restore stack pointer, r31, LR and return to caller */
 		ppc_lwz  (buf, ppc_r11,  0, ppc_r1);
 		ppc_lwz  (buf, ppc_r31, -4, ppc_r11);
 		ppc_mr   (buf, ppc_r1, ppc_r11);
@@ -419,7 +419,7 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 		ppc_mtlr (buf, ppc_r0);
 		ppc_blr  (buf);	
 		
-		/* Flush instruction cache, sice we've generated code */
+		/* Flush instruction cache, since we've generated code */
 		mono_arch_flush_icache (vc, buf - vc);
 	
 		/* Sanity check */
@@ -427,7 +427,7 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	}
 
 	/* This is the method-specific part of the trampoline. Its purpose is
-	to provide the generic part with  the MonoMethod *method pointer. We'll
+	to provide the generic part with the MonoMethod *method pointer. We'll
 	use r11 to keep that value, for instance. However, the generic part of
 	the trampoline relies on r11 having the same value it had before coming
 	here, so we must save it before. */
@@ -451,13 +451,13 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	ppc_ori  (buf, ppc_r11, ppc_r11, (guint32) method & 0xffff);
 	ppc_blr  (buf);
 	
-	/* Flush instruction cache, sice we've generated code */
+	/* Flush instruction cache, since we've generated code */
 	mono_arch_flush_icache (code, buf - code);
 		
 	/* Sanity check */
 	g_assert ((buf - code) <= METHOD_TRAMPOLINE_SIZE);
 	
-	/* store trampoline address */
+	/* Store trampoline address */
 	method->info = code;
 
 	mono_jit_stats.method_trampolines++;

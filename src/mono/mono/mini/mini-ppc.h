@@ -1,5 +1,5 @@
-#ifndef __MONO_MINI_X86_H__
-#define __MONO_MINI_X86_H__
+#ifndef __MONO_MINI_PPC_H__
+#define __MONO_MINI_PPC_H__
 
 #include <mono/arch/x86/x86-codegen.h>
 #include <mono/arch/ppc/ppc-codegen.h>
@@ -23,4 +23,4 @@ struct MonoLMF {
 	guint32     eip;
 };
 
-#endif /* __MONO_MINI_X86_H__ */  
+#endif /* __MONO_MINI_PPC_H__ */  
