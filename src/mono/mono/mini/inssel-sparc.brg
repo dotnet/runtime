@@ -406,11 +406,15 @@ stmt: CEE_STIND_I2 (OP_REGVAR, OP_ICONST) {
 }
 
 stmt: CEE_STIND_I4 (OP_REGVAR, CEE_ADD (reg, OP_ICONST)) {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_ADD_IMM, state->left->tree->dreg, state->right->left->tree->dreg, state->right->right->tree->inst_c0);
+	MONO_EMIT_BIALU_IMM (s, tree, OP_ADD_IMM, state->left->tree->dreg, state->right->left->reg1, state->right->right->tree->inst_c0);
 }
 
 stmt: CEE_STIND_I4 (OP_REGVAR, CEE_SUB (reg, OP_ICONST)) {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_SUB_IMM, state->left->tree->dreg, state->right->left->tree->dreg, state->right->right->tree->inst_c0);
+	MONO_EMIT_BIALU_IMM (s, tree, OP_SUB_IMM, state->left->tree->dreg, state->right->left->reg1, state->right->right->tree->inst_c0);
+}
+
+stmt: CEE_STIND_I4 (OP_REGVAR, CEE_ADD (reg, reg)) {
+	MONO_EMIT_BIALU (s, tree, CEE_ADD, state->left->tree->dreg, state->right->left->reg1, state->right->right->reg1);
 }
 
 stmt: OP_SETRET (CEE_LDIND_REF(base)) {
