@@ -3214,7 +3214,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					}
 				} else {
 					/* now call the actual ctor */
-					mono_emit_method_call_spilled (cfg, bblock, cmethod, sp, ip, NULL);
+					mono_emit_method_call_spilled (cfg, bblock, cmethod, sp, ip, sp[0]);
 				}
 			}
 
