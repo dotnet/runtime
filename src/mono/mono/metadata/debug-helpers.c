@@ -338,7 +338,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 	i = mono_opcode_value (&ip, end);
 	ip++;
 	opcode = &mono_opcodes [i];
-	g_string_sprintfa (str, "%-10s", mono_opcode_names [i]);
+	g_string_sprintfa (str, "%-10s", mono_opcode_name (i));
 
 	switch (opcode->argument) {
 	case MonoInlineNone:
