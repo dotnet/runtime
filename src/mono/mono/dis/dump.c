@@ -1001,7 +1001,14 @@ get_security_action (int val) {
 		return "RequestOptional";
 	case SECURITY_ACTION_REQREFUSE:
 		return "RequestRefuse";
-	/* Fx 2.0 actions */
+	/* Special actions (for non CAS permissions) */
+	case SECURITY_ACTION_NONCASDEMAND:
+		return "NonCasDemand";
+	case SECURITY_ACTION_NONCASLINKDEMAND:
+		return "NonCasLinkDemand";
+	case SECURITY_ACTION_NONCASINHERITANCE:
+		return "NonCasInheritance";
+	/* Fx 2.0 actions (for both CAS and non-CAS permissions) */
 	case SECURITY_ACTION_LINKDEMANDCHOICE:
 		return "LinkDemandChoice";
 	case SECURITY_ACTION_INHERITDEMANDCHOICE:

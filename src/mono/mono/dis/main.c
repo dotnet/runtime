@@ -92,7 +92,14 @@ get_il_security_action (int val)
 		return "reqopt";
 	case SECURITY_ACTION_REQREFUSE:
 		return "reqrefuse";
-	/* Fx 2.0 actions */
+	/* Special actions (for non CAS permissions) */
+	case SECURITY_ACTION_NONCASDEMAND:
+		return "noncasdemand";
+	case SECURITY_ACTION_NONCASLINKDEMAND:
+		return "noncaslinkdemand";
+	case SECURITY_ACTION_NONCASINHERITANCE:
+		return "noncasinheritance";
+	/* Fx 2.0 actions (for both CAS and non-CAS permissions) */
 	case SECURITY_ACTION_LINKDEMANDCHOICE:
 		return "linkdemandor";
 	case SECURITY_ACTION_INHERITDEMANDCHOICE:
