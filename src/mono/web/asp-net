@@ -8,7 +8,7 @@
 	</ul>
 
 	There is work underway for both systems.  The Web Forms
-	support is more advanced at this point, and various ".aspx"
+	support is quite advanced at this point, and various ".aspx"
 	programs can be run using the Mono runtime, including IBuySpy.
 
 	ASP.NET works either embedded into
@@ -17,13 +17,9 @@
 	We are now working bug fixing and adding missing features
 	after making the whole pipeline compatible with MS.
 
-	Tim started work on the Web Services.  Although we have a
-	SoapFormatter as part of the remoting infrastructure already
-	(contributed by Jesus), most people will be using the ASP.NET
-	Web Services support.  Work for the supporting class libraries
-	just started recently.  
-
-	The major missing element is a complete XmlSerializer.
+	Tim started work on the Web Services.  Lluis is in charge of
+	it now and web services are now supported. He also added a web
+	service sample to the XSP server set of tests.
 
 ** HttpRuntime
 
