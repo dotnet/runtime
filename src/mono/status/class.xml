@@ -2653,5 +2653,14 @@
             <maintainer>bob@thestuff.net</maintainer>
         </maintainers>
     </class>
+    <class name="System.Web.HttpWorkerRequest">
+        <last-activity>Aug-29-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>bob@thestuff.net</maintainer>
+        </maintainers>
+    </class>
 </classes>
 
