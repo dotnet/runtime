@@ -2916,3 +2916,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	g_assert (cfg->code_len < cfg->code_size);
 
 }
+
+void
+mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
+{
+}

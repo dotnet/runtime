@@ -6091,10 +6091,10 @@ mono_destroy_compile (MonoCompile *cfg)
 	g_free (cfg);
 }
 
-gpointer 
+MonoLMF **
 mono_get_lmf_addr (void)
 {
-	MonoJitTlsData *jit_tls;	
+	MonoJitTlsData *jit_tls;
 
 	if ((jit_tls = TlsGetValue (mono_jit_tls_id)))
 		return &jit_tls->lmf;
@@ -6137,6 +6137,9 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 	lmf->ebp = -1;
 
 	jit_tls->lmf = jit_tls->first_lmf = lmf;
+
+	mono_arch_setup_jit_tls_data (jit_tls);
+
 	return jit_tls;
 }
 
