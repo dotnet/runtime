@@ -1211,7 +1211,12 @@ mono_metadata_parse_mh (metadata_t *m, const char *ptr)
 		ptr++;
 		mh->max_stack = 8;
 		mh->local_var_sig_tok = 0;
-		mh->code_size = flags >> 3;
+
+		//
+		// The spec claims 3 bits, but the Beta2 is
+		// incorrect
+		//
+		mh->code_size = flags >> 2;
 		mh->code = ptr;
 		break;
 		
