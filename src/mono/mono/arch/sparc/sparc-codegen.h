@@ -813,7 +813,7 @@ typedef struct {
 #define sparc_neg(ins,reg) sparc_sub((ins),FALSE,sparc_g0,(reg),(reg))
 #define sparc_clr_reg(ins,reg) sparc_or((ins),FALSE,sparc_g0,sparc_g0,(reg))
 
-#define sparc_mov_reg_reg(ins,src,dest) sparc_or_imm((ins),FALSE,(src),0,(dest))
+#define sparc_mov_reg_reg(ins,src,dest) sparc_or((ins),FALSE,sparc_g0,(src),(dest))
 
 
 #endif /* __SPARC_CODEGEN_H__ */
