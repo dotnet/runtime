@@ -60,6 +60,9 @@ int mono_exc_esp_offset = 0;
 
 #define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))
 
+static int
+mono_spillvar_offset_float (MonoCompile *cfg, int spillvar);
+
 const char*
 mono_arch_regname (int reg) {
 	static const char * rnames[] = {
@@ -150,7 +153,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 			continue;
 
 		/* FIXME: Make arguments on stack allocateable to registers */
-		if (ins->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || (ins->opcode != OP_LOCAL))
+		if (ins->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || (ins->opcode == OP_REGVAR) || (ins->opcode == OP_ARG))
 			continue;
 
 		/* we can only allocate 32 bit values */
@@ -440,11 +443,8 @@ mono_arch_allocate_vars (MonoCompile *m)
 	MonoMethodHeader *header;
 	MonoInst *inst;
 	int i, offset, size, align, curinst;
-	int frame_reg = sparc_sp;
 	CallInfo *cinfo;
  
-	m->frame_reg = frame_reg;
-
 	header = ((MonoMethodNormal *)m->method)->header;
 
 	sig = m->method->signature;
@@ -475,16 +475,10 @@ mono_arch_allocate_vars (MonoCompile *m)
 	 * FIXME: Use something more optimized.
 	 */
 
-	offset = 64; /* register save area */
-	offset += 4; /* struct/union return pointer */
+	/* Locals are allocated backwards from %fp */
+	m->frame_reg = sparc_fp;
+	offset = 0;
 
-	/* add parameter area size for called functions */
-	if (m->param_area < 24)
-		/* Reserve space for the first 6 arguments even if it is unused */
-		offset += 24;
-	else
-		offset += m->param_area;
-	
 	curinst = m->locals_start;
 	for (i = curinst; i < m->num_varinfo; ++i) {
 		inst = m->varinfo [i];
@@ -507,12 +501,18 @@ mono_arch_allocate_vars (MonoCompile *m)
 		if (MONO_TYPE_ISSTRUCT (inst->inst_vtype))
 			align = 8;
 
+		/*
+		 * variables are accessed as negative offsets from %fp, so increase
+		 * the offset before assigning it to a variable
+		 */
+		offset += size;
+
 		offset += align - 1;
 		offset &= ~(align - 1);
-		inst->inst_offset = offset;
 		inst->opcode = OP_REGOFFSET;
-		inst->inst_basereg = frame_reg;
-		offset += size;
+		inst->inst_basereg = sparc_fp;
+		inst->inst_offset = -offset;
+
 		//g_print ("allocating local %d to %d\n", i, inst->inst_offset);
 	}
 
@@ -524,7 +524,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 			MonoType *arg_type;
 
 			if (sig->hasthis && (i == 0))
-				arg_type = mono_defaults.object_class;
+				arg_type = &mono_defaults.object_class->byval_arg;
 			else
 				arg_type = sig->params [i - sig->hasthis];
 
@@ -536,6 +536,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 				 */
 				inreg = FALSE;
 
+			/* FIXME: Allocate volatile arguments to registers */
 			if (inst->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))
 				inreg = FALSE;
 
@@ -570,12 +571,13 @@ mono_arch_allocate_vars (MonoCompile *m)
 					 * argument to a stack location in the prolog.
 					 */
 					if (inst->inst_offset % 8) {
-						inst->inst_basereg = sparc_sp;
+						inst->inst_basereg = sparc_fp;
+						offset += 8;
 						align = 8;
 						offset += align - 1;
 						offset &= ~(align - 1);
-						inst->inst_offset = offset;
-						offset += 8;
+						inst->inst_offset = -offset;
+
 					}
 				}
 				break;
@@ -598,14 +600,16 @@ mono_arch_allocate_vars (MonoCompile *m)
 		}
 	}
 
-	/* align the stack size to 8 bytes */
-	offset += 8 - 1;
-	offset &= ~(8 - 1);
-
-	/* Add a properly aligned dword for use by int<->float conversion opcodes */
-	offset += 8;
+	/* 
+	 * spillvars are stored between the normal locals and the storage reserved
+	 * by the ABI.
+	 */
 
 	m->stack_offset = offset;
+
+	/* Add a properly aligned dword for use by int<->float conversion opcodes */
+	m->spill_count ++;
+	mono_spillvar_offset_float (m, 0);
 
 	g_free (cinfo);
 }
@@ -1027,11 +1031,18 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	bb->last_ins = last_ins;
 }
 
+/* Parameters used by the register allocator */
+
+/* Use %l4..%l7 as local registers */
+#define ARCH_CALLER_REGS (0xf0<<16)
+/* Use %f2..%f30 as the double precision floating point local registers */
+#define ARCH_CALLER_FREGS (0x55555554)
+
 #undef DEBUG
 #define DEBUG(a) if (cfg->verbose_level > 1) a
 //#define DEBUG(a)
-#define reg_is_freeable(r) (TRUE)
-#define freg_is_freeable(r) (TRUE)
+#define reg_is_freeable(r) ((1 << (r)) & ARCH_CALLER_REGS)
+#define freg_is_freeable(r) (((1) << (r)) & ARCH_CALLER_FREGS)
 
 typedef struct {
 	int born_in;
@@ -1119,7 +1130,7 @@ inst_list_prepend (MonoMemPool *pool, InstList *list, MonoInst *data)
 
 /*
  * returns the offset used by spillvar. It allocates a new
- * spill variable if necessary. Likely incorrect for sparc.
+ * spill variable if necessary.
  */
 static int
 mono_spillvar_offset (MonoCompile *cfg, int spillvar)
@@ -1134,12 +1145,8 @@ mono_spillvar_offset (MonoCompile *cfg, int spillvar)
 		if (!*si) {
 			*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
 			info->next = NULL;
-#ifdef STACK_OFFSETS_POSITIVE
 			cfg->stack_offset += sizeof (gpointer);
-#else
-			cfg->stack_offset -= sizeof (gpointer);
-#endif
-			info->offset = cfg->stack_offset;
+			info->offset = - cfg->stack_offset;
 		}
 
 		if (i == spillvar)
@@ -1166,10 +1173,9 @@ mono_spillvar_offset_float (MonoCompile *cfg, int spillvar)
 		if (!*si) {
 			*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
 			info->next = NULL;
-			cfg->stack_offset += 7;
-			cfg->stack_offset &= ~7;
-			info->offset = cfg->stack_offset;
 			cfg->stack_offset += sizeof (double);
+			cfg->stack_offset = ALIGN_TO (cfg->stack_offset, 8);
+			info->offset = - cfg->stack_offset;
 		}
 
 		if (i == spillvar)
@@ -1439,13 +1445,6 @@ alloc_int_reg (MonoCompile *cfg, InstList *curinst, MonoInst *ins, int sym_reg, 
 	return val;
 }
 
-/* Parameters used by the register allocator */
-
-/* Use %l4..%l7 as local registers */
-#define ARCH_CALLER_REGS (0xf0<<16)
-/* Use %f2..%f30 as the double precision floating point local registers */
-#define ARCH_CALLER_FREGS (0x55555554)
-
 /* FIXME: Strange loads from the stack in basic-float.cs:test_2_rem */
 
 /*
@@ -1552,12 +1551,14 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		/* make the register available for allocation: FIXME add fp reg */
 		if (ins->opcode == OP_SETREG || ins->opcode == OP_SETREGIMM) {
 			/* Dont free register which can't be allocated */
-			if ((ins->dreg << 1) | ARCH_CALLER_REGS) {
+			if (reg_is_freeable (ins->dreg)) {
 				cur_iregs |= 1 << ins->dreg;
+				if (ins->dreg == sparc_o0)
+					printf ("OOPS.\n");
 				DEBUG (g_print ("adding %d to cur_iregs\n", ins->dreg));
 			}
 		} else if (ins->opcode == OP_SETFREG) {
-			if ((ins->dreg << 1) | ARCH_CALLER_FREGS) {
+			if (freg_is_freeable (ins->dreg)) {
 				cur_fregs |= 1 << ins->dreg;
 				DEBUG (g_print ("adding %d to cur_fregs\n", ins->dreg));
 			}
@@ -2328,8 +2329,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			break;
 		case OP_LOCALLOC:
-			NOT_IMPLEMENTED;
+			/* Keep alignment */
+			sparc_add_imm (code, FALSE, ins->sreg1, MONO_ARCH_FRAME_ALIGNMENT - 1, ins->dreg);
+			sparc_set (code, ~(MONO_ARCH_FRAME_ALIGNMENT - 1), sparc_o7);
+			sparc_or (code, FALSE, ins->dreg, sparc_o7, ins->dreg);
+			sparc_sub (code, FALSE, sparc_sp, ins->dreg, ins->dreg);
+			/* Keep %sp valid at all times */
+			sparc_mov_reg_reg (code, ins->dreg, sparc_sp);
 			break;
+		case OP_SPARC_LOCALLOC_IMM: {
+			guint32 offset = ins->inst_c0;
+			offset = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
+			if (sparc_is_imm13 (offset))
+				sparc_sub_imm (code, FALSE, sparc_sp, offset, sparc_sp);
+			else {
+				sparc_set (code, offset, sparc_o7);
+				sparc_sub (code, FALSE, sparc_sp, sparc_o7, sparc_sp);
+			}
+			sparc_mov_reg_reg (code, sparc_sp, ins->dreg);
+			break;
+		}
 		case CEE_RET:
 			/* The return is done in the epilog */
 			g_assert_not_reached ();
@@ -2484,41 +2503,42 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_fmovs (code, ins->sreg1, ins->dreg);
 			sparc_fmovs (code, ins->sreg1 + 1, ins->dreg + 1);
 			break;
-		case CEE_CONV_R4:
-			g_assert (sparc_is_imm13 (cfg->stack_offset));
-			sparc_st_imm (code, ins->sreg1, sparc_sp, cfg->stack_offset - 8);
-			sparc_ldf_imm (code, sparc_sp, cfg->stack_offset - 8, sparc_f0);
+		case CEE_CONV_R4: {
+			guint32 offset = mono_spillvar_offset_float (cfg, 0);
+			if (!sparc_is_imm13 (offset))
+				NOT_IMPLEMENTED;
+			sparc_st_imm (code, ins->sreg1, sparc_sp, offset);
+			sparc_ldf_imm (code, sparc_sp, offset, sparc_f0);
 			sparc_fitos (code, sparc_f0, sparc_f0);
 			sparc_fstod (code, sparc_f0, ins->dreg);
 			break;
-		case CEE_CONV_R8:
-			g_assert (sparc_is_imm13 (cfg->stack_offset));
-			sparc_st_imm (code, ins->sreg1, sparc_sp, cfg->stack_offset - 8);
-			sparc_ldf_imm (code, sparc_sp, cfg->stack_offset - 8, sparc_f0);
+		}
+		case CEE_CONV_R8: {
+			guint32 offset = mono_spillvar_offset_float (cfg, 0);
+			if (!sparc_is_imm13 (offset))
+				NOT_IMPLEMENTED;
+			sparc_st_imm (code, ins->sreg1, sparc_sp, offset);
+			sparc_ldf_imm (code, sparc_sp, offset, sparc_f0);
 			sparc_fitod (code, sparc_f0, ins->dreg);
 			break;
+		}
 		case OP_FCONV_TO_I1:
-			NOT_IMPLEMENTED;
-			break;
 		case OP_FCONV_TO_U1:
-			NOT_IMPLEMENTED;
-			break;
 		case OP_FCONV_TO_I2:
-			NOT_IMPLEMENTED;
-			break;
 		case OP_FCONV_TO_U2:
-			NOT_IMPLEMENTED;
-			break;
 		case OP_FCONV_TO_I4:
 		case OP_FCONV_TO_I:
-			sparc_fdtoi (code, ins->sreg1, sparc_f0);
-			sparc_stdf_imm (code, sparc_f0, sparc_sp, cfg->stack_offset - 8);
-			sparc_ld_imm (code, sparc_sp, cfg->stack_offset - 8, ins->dreg);
-			break;
 		case OP_FCONV_TO_U4:
-		case OP_FCONV_TO_U:
-			NOT_IMPLEMENTED;
+		case OP_FCONV_TO_U: {
+			guint32 offset = mono_spillvar_offset_float (cfg, 0);
+			if (!sparc_is_imm13 (offset))
+				NOT_IMPLEMENTED;
+			/* FIXME: Is having the same code for all of these ok ? */
+			sparc_fdtoi (code, ins->sreg1, sparc_f0);
+			sparc_stdf_imm (code, sparc_f0, sparc_sp, offset);
+			sparc_ld_imm (code, sparc_sp, offset, ins->dreg);
 			break;
+		}
 		case OP_FCONV_TO_I8:
 		case OP_FCONV_TO_U8:
 			NOT_IMPLEMENTED;
@@ -2665,7 +2685,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 		}
 
-		if ((cfg->opt & MONO_OPT_BRANCH) && (((guint8*)code - cfg->native_code - offset) > max_len)) {
+		if (((guint8*)code - cfg->native_code - offset) > max_len) {
 			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %d)",
 				   mono_inst_name (ins->opcode), max_len, (guint8*)code - cfg->native_code - offset);
 			g_assert_not_reached ();
@@ -3026,19 +3046,29 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
-	int alloc_size, pos, max_offset, i;
+	int alloc_size, max_offset, i;
 	guint8 *code;
 	CallInfo *cinfo;
+	guint32 offset;
 
 	cfg->code_size = 256;
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
-	/* 
-	 * Align stack_offset. It is aligned at the end of allocate_vars, but
-	 * spillvars may make in unaligned.
-	 */
-	cfg->stack_offset += (MONO_ARCH_FRAME_ALIGNMENT - 1);
-	cfg->stack_offset &= ~(MONO_ARCH_FRAME_ALIGNMENT - 1);
+	/* FIXME: Generate intermediate code instead */
+
+	offset = cfg->stack_offset;
+	offset += 64; /* register save area */
+	offset += 4; /* struct/union return pointer */
+
+	/* add parameter area size for called functions */
+	if (cfg->param_area < 24)
+		/* Reserve space for the first 6 arguments even if it is unused */
+		offset += 24;
+	else
+		offset += cfg->param_area;
+	
+	/* align the stack size to 8 bytes */
+	cfg->stack_offset = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
 
 	if (!sparc_is_imm13 (- cfg->stack_offset)) {
 		/* Can't use sparc_o7 here, since we're still in the caller's frame */
@@ -3049,16 +3079,19 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		sparc_save_imm (code, sparc_sp, - cfg->stack_offset, sparc_sp);
 
 	sig = method->signature;
-	pos = 0;
-	if (sig->hasthis)
-		pos ++;
 
 	cinfo = get_call_info (sig, FALSE);
 
-	for (i = 0; i < sig->param_count; ++i) {
-		ArgInfo *ainfo = cinfo->args + pos;
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		ArgInfo *ainfo = cinfo->args + i;
 		guint32 stack_offset;
-		inst = cfg->varinfo [pos];
+		MonoType *arg_type;
+		inst = cfg->varinfo [i];
+
+		if (sig->hasthis && (i == 0))
+			arg_type = mono_defaults.object_class;
+		else
+			arg_type = sig->params [i - sig->hasthis];
 
 		stack_offset = ainfo->offset + 68;
 
@@ -3071,7 +3104,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			sparc_st_imm (code, sparc_i5, inst->inst_basereg, stack_offset);
 		}
 
-		if (sig->params [i]->type == MONO_TYPE_R8) {
+		if (arg_type->type == MONO_TYPE_R8) {
 			/* Save the argument to a dword aligned stack location */
 			/*
 			 * stack_offset contains the offset of the argument on the stack.
@@ -3111,7 +3144,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				/* Argument in register, but need to be saved to stack */
 				if (!sparc_is_imm13 (stack_offset))
 					NOT_IMPLEMENTED;
-				sparc_st_imm (code, sparc_i0 + ainfo->reg, inst->inst_basereg, stack_offset);
+				if (stack_offset & 0x1)
+					sparc_stb_imm (code, sparc_i0 + ainfo->reg, inst->inst_basereg, stack_offset);
+				else
+					if (stack_offset & 0x2)
+						sparc_sth_imm (code, sparc_i0 + ainfo->reg, inst->inst_basereg, stack_offset);
+				else
+					sparc_st_imm (code, sparc_i0 + ainfo->reg, inst->inst_basereg, stack_offset);
 			}
 		else
 			if ((ainfo->storage == ArgInIRegPair) && (inst->opcode != OP_REGVAR)) {
@@ -3127,8 +3166,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			if (inst->opcode == OP_REGVAR)
 				/* FIXME: Load the argument into memory */
 				NOT_IMPLEMENTED;
-
-		pos++;
 	}
 
 	g_free (cinfo);

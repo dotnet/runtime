@@ -348,4 +348,4 @@ MINI_OP(OP_SPARC_OUTARG_MEM,       "sparc_outarg_mem")
 MINI_OP(OP_SPARC_OUTARG_MEMPAIR,   "sparc_outarg_mempair")
 MINI_OP(OP_SPARC_OUTARG_SPLIT_REG_STACK, "sparc_outarg_split_reg_stack")
 MINI_OP(OP_SPARC_INARG_VT,         "sparc_inarg_vt")
-
+MINI_OP(OP_SPARC_LOCALLOC_IMM,     "sparc_localloc_imm")
