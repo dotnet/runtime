@@ -384,12 +384,15 @@ stackval_from_data (MonoType *type, stackval *result, const char *data)
 		result->type = VAL_I32;
 		result->data.i = *(guint16*)data;
 		return;
-	case MONO_TYPE_I: /* FIXME: not 64 bit clean */
 	case MONO_TYPE_I4:
 		result->type = VAL_I32;
 		result->data.i = *(gint32*)data;
 		return;
-	case MONO_TYPE_U: /* FIXME: not 64 bit clean */
+	case MONO_TYPE_U:
+	case MONO_TYPE_I:
+		result->type = VAL_TP;
+		result->data.p = *(gpointer*)data;
+		return;
 	case MONO_TYPE_U4:
 		result->type = VAL_I32;
 		result->data.i = *(guint32*)data;
@@ -453,12 +456,18 @@ stackval_to_data (MonoType *type, stackval *val, char *data)
 	case MONO_TYPE_CHAR:
 		*(guint16*)data = val->data.i;
 		return;
-	case MONO_TYPE_I: /* FIXME: not 64 bit clean */
-	case MONO_TYPE_U: /* FIXME: not 64 bit clean */
+#if SIZEOF_VOID_P == 4
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		*(gint32*)data = val->data.i;
 		return;
+#if SIZEOF_VOID_P == 8
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
 	case MONO_TYPE_I8:
 		*(gint64*)data = val->data.l;
 		return;
@@ -579,20 +588,28 @@ ves_runtime_method (MonoInvocation *frame)
 {
 	const char *name = frame->method->name;
 	MonoObject *obj = frame->obj;
+	static guint target_offset = 0;
+	static guint method_offset = 0;
+
+	if (!target_offset) {
+		MonoClassField *field;
+
+		field = mono_class_get_field_from_name (mono_defaults.delegate_class, "target");
+		target_offset = field->offset;
+		field = mono_class_get_field_from_name (mono_defaults.delegate_class, "method_ptr");
+		method_offset = field->offset;
+	}
 	
 	if (*name == '.' && (strcmp (name, ".ctor") == 0) && obj &&
 			mono_object_isinst (obj, mono_defaults.delegate_class)) {
-		/* 
-		 * FIXME: query the offsets at runtime. 
-		 */
-		*(gpointer*)(((char*)obj) + sizeof (MonoObject) + 4) = frame->stack_args[0].data.p;
-		*(gpointer*)(((char*)obj) + sizeof (MonoObject) + 12) = frame->stack_args[1].data.p;
+		*(gpointer*)(((char*)obj) + target_offset) = frame->stack_args[0].data.p;
+		*(gpointer*)(((char*)obj) + method_offset) = frame->stack_args[1].data.p;
 		return;
 	}
 	if (*name == 'I' && (strcmp (name, "Invoke") == 0) && obj &&
 			mono_object_isinst (obj, mono_defaults.delegate_class)) {
 		MonoPIFunc func = mono_create_trampoline (frame->method);
-		void* faddr = *(gpointer*)(((char*)obj) + sizeof (MonoObject) + 12);
+		void* faddr = *(gpointer*)(((char*)obj) + method_offset);
 		func (faddr, &frame->retval->data.p, frame->obj, frame->stack_args);
 		stackval_from_data (frame->method->signature->ret, frame->retval, (const char*)&frame->retval->data.p);
 		g_free (func);
@@ -871,8 +888,13 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDLOC_3) {
 			int n = (*ip)-CEE_LDLOC_0;
 			++ip;
-			vt_alloc (LOCAL_TYPE (header, n), sp);
-			stackval_from_data (LOCAL_TYPE (header, n), sp, LOCAL_POS (n));
+			if ((LOCAL_TYPE (header, n))->type == MONO_TYPE_I4) {
+				sp->type = VAL_I32;
+				sp->data.i = *(gint32*) LOCAL_POS (n);
+			} else {
+				vt_alloc (LOCAL_TYPE (header, n), sp);
+				stackval_from_data (LOCAL_TYPE (header, n), sp, LOCAL_POS (n));
+			}
 			++sp;
 			BREAK;
 		}
@@ -883,8 +905,12 @@ ves_exec_method (MonoInvocation *frame)
 			int n = (*ip)-CEE_STLOC_0;
 			++ip;
 			--sp;
-			stackval_to_data (LOCAL_TYPE (header, n), sp, LOCAL_POS (n));
-			vt_free (sp);
+			if ((LOCAL_TYPE (header, n))->type == MONO_TYPE_I4) {
+				*(gint32*)LOCAL_POS (n) = sp->data.i;
+			} else {
+				stackval_to_data (LOCAL_TYPE (header, n), sp, LOCAL_POS (n));
+				vt_free (sp);
+			}
 			BREAK;
 		}
 		CASE (CEE_LDARG_S)
@@ -1736,7 +1762,9 @@ ves_exec_method (MonoInvocation *frame)
 			BREAK;
 		}
 		CASE (CEE_CONV_U4) /* Fall through */
-		CASE (CEE_CONV_I) /* Fall through: FIXME: not 64 bit clean */
+#if SIZEOF_VOID_P == 4
+		CASE (CEE_CONV_I) /* Fall through */
+#endif
 		CASE (CEE_CONV_I4) {
 			++ip;
 			switch (sp [-1].type) {
@@ -1757,6 +1785,9 @@ ves_exec_method (MonoInvocation *frame)
 			sp [-1].type = VAL_I32;
 			BREAK;
 		}
+#if SIZEOF_VOID_P == 8
+		CASE (CEE_CONV_I) /* Fall through */
+#endif
 		CASE (CEE_CONV_I8)
 			++ip;
 			switch (sp [-1].type) {
