@@ -13,6 +13,7 @@ typedef struct MonoSymbolFileMethodEntry	MonoSymbolFileMethodEntry;
 
 /* Keep in sync with OffsetTable in mcs/class/Mono.CSharp.Debugger/MonoSymbolTable.cs */
 struct MonoSymbolFileOffsetTable {
+	guint32 total_file_size;
 	guint32 source_table_offset;
 	guint32 source_table_size;
 	guint32 method_table_offset;
@@ -55,7 +56,7 @@ MonoSymbolFile *mono_debug_open_mono_symbol_file   (MonoImage                 *i
 						    const char                *filename,
 						    gboolean                   emit_warnings);
 
-typedef MonoDebugMethodInfo * (*MonoDebugGetMethodFunc) (MonoDebugSymbolFile *symbol_file,
+typedef MonoDebugMethodInfo * (*MonoDebugGetMethodFunc) (MonoSymbolFile      *symbol_file,
 							 MonoMethod          *method,
 							 gpointer             user_data);
 
