@@ -561,7 +561,7 @@ glist_to_array (GList *list)
  * start of the function or -1 if that info is not available.
  */
 static MonoJitInfo *
-mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *ctx, 
+mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoContext *ctx, 
 			 MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset,
 			 gboolean *managed)
 {
@@ -643,10 +643,12 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 		new_ctx->SC_EIP = *((int *)ctx->SC_EBP + 1) - 1;
 		new_ctx->SC_EBP = *((int *)ctx->SC_EBP);
 
-		return ji;
+		*res = *ji;
+		return res;
 #ifdef MONO_USE_EXC_TABLES
 	} else if ((ji = x86_unwind_native_frame (domain, jit_tls, ctx, new_ctx, *lmf, trace))) {
-		return ji;
+		*res = *ji;		
+		return res;
 #endif
 	} else if (*lmf) {
 		
@@ -657,9 +659,14 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 
 		if (trace)
 			*trace = g_strdup_printf ("in (unmanaged) %s", mono_method_full_name ((*lmf)->method, TRUE));
-		
-		ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->eip);
-		g_assert (ji != NULL);
+
+
+		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->eip))) {
+			*res = *ji;
+		} else {
+			memset (res, 0, sizeof (MonoJitInfo));
+			res->method = (*lmf)->method;
+		}
 
 		new_ctx->SC_ESI = (*lmf)->esi;
 		new_ctx->SC_EDI = (*lmf)->edi;
@@ -672,7 +679,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 
 		*lmf = (*lmf)->previous_lmf;
 
-		return ji;
+		return res;
 		
 	}
 
@@ -736,7 +743,7 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoLMF *lmf = jit_tls->lmf;
-	MonoJitInfo *ji;
+	MonoJitInfo *ji, rji;
 	gint native_offset, il_offset;
 	gboolean managed;
 
@@ -747,7 +754,7 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 
 	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
 		
-		ji = mono_arch_find_jit_info (domain, jit_tls, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
 		g_assert (ji);
 
 		if (ji == (gpointer)-1)
@@ -771,7 +778,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoLMF *lmf = jit_tls->lmf;
-	MonoJitInfo *ji;
+	MonoJitInfo *ji, rji;
 	MonoContext ctx, new_ctx;
 
 	MONO_CONTEXT_SET_IP (&ctx, ves_icall_get_frame_info);
@@ -780,7 +787,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	skip++;
 
 	do {
-		ji = mono_arch_find_jit_info (domain, jit_tls, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
 		ctx = new_ctx;
 		
 		if (!ji || ji == (gpointer)-1 || MONO_CONTEXT_GET_BP (&ctx) >= jit_tls->end_of_stack)
@@ -822,7 +829,7 @@ gboolean
 arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 {
 	MonoDomain *domain = mono_domain_get ();
-	MonoJitInfo *ji;
+	MonoJitInfo *ji, rji;
 	static int (*call_filter) (MonoContext *, gpointer, gpointer) = NULL;
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoLMF *lmf = jit_tls->lmf;		
@@ -860,7 +867,7 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		MonoContext new_ctx;
 		char *trace = NULL;
 		
-		ji = mono_arch_find_jit_info (domain, jit_tls, ctx, &new_ctx, 
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, ctx, &new_ctx, 
 					      test_only ? &trace : NULL, &lmf, NULL, NULL);
 
 		if (!ji) {
