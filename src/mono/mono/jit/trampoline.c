@@ -13,10 +13,10 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/arch/x86/x86-codegen.h>
+#include <mono/metadata/mono-debug-debugger.h>
 
 #include "jit.h"
 #include "codegen.h"
-#include "debug.h"
 
 /*
  * Address of the x86 trampoline code.  This is used by the debugger to check
@@ -141,9 +141,9 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 			reg = code [1] & 0x07;
 			disp = *((gint32*)(code + 2));
 		} else if ((code [1] == 0xe8)) {
-			breakpoint_id = mono_method_has_breakpoint (m, TRUE);
+			breakpoint_id = mono_debugger_method_has_breakpoint (m, TRUE);
 			if (breakpoint_id) {
-				mono_remove_breakpoint (breakpoint_id);
+				mono_debugger_remove_breakpoint (breakpoint_id);
 				trampoline = get_breakpoint_trampoline (m, breakpoint_id, addr);
 			} else
 				trampoline = addr;
@@ -187,9 +187,9 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 		trampoline = *((gpointer *)o) = addr;
 	}
 
-	breakpoint_id = mono_method_has_breakpoint (m, TRUE);
+	breakpoint_id = mono_debugger_method_has_breakpoint (m, TRUE);
 	if (breakpoint_id) {
-		mono_remove_breakpoint (breakpoint_id);
+		mono_debugger_remove_breakpoint (breakpoint_id);
 		return get_breakpoint_trampoline (m, breakpoint_id, trampoline);
 	} else {
 		return trampoline;

@@ -32,12 +32,14 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/mono-debug.h>
+#include <mono/metadata/mono-debug-debugger.h>
 
 #include "jit.h"
 #include "helpers.h"
 #include "regset.h"
 #include "codegen.h"
-#include "debug.h"
+#include "debug-jit.h"
 
 /* 
  * if OPT_BOOL is defined we use 32bit to store boolean local variables.  This
@@ -226,8 +228,6 @@ guint32  mono_jit_tls_id;
 
 /* issue a breakpoint on unhandled excepions */
 gboolean mono_break_on_exc = FALSE;
-
-MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
 
 MonoJitStats mono_jit_stats;
 
@@ -3886,7 +3886,7 @@ mono_jit_compile_method (MonoMethod *method)
 		cfg->code_size = MAX (header->code_size * 5, 256);
 		cfg->start = cfg->code = g_malloc (cfg->code_size);
 
-		if (mono_method_has_breakpoint (method, FALSE))
+		if (mono_debugger_method_has_breakpoint (method, FALSE))
 			x86_breakpoint (cfg->code);
 
 		if (!(ji = arch_jit_compile_cfg (target_domain, cfg))) {
@@ -3917,7 +3917,7 @@ mono_jit_compile_method (MonoMethod *method)
 			g_free (id);
 		}
 		if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
-			mono_debug_add_method (cfg);
+			mono_debug_jit_add_method (cfg);
 
 
 		mono_jit_stats.native_code_size += ji->code_size;
