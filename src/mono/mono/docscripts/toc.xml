@@ -1,0 +1,211 @@
+<?xml version="1.0"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:monodoc="http://www.go-mono.org/xml/monodoc">
+<head/>
+<body>
+  <object type="text/site properties">
+    <param name="Auto Generated" value="No"/>
+  </object>
+    <ul>
+      <li>
+        <object type="text/sitemap">
+          <param name="Name" value="Mono Runtime API"/>
+          <param name="Local" value="new/en/index.html"/>
+        </object>
+      </li>
+    <ul>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Assemblies"/>
+	<param name="Local" value="deploy/mono-api-assembly.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Classes"/>
+	<param name="Local" value="deploy/mono-api-class.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Code Generation"/>
+	<param name="Local" value="deploy/mono-api-codegen.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Debugging API"/>
+	<param name="Local" value="deploy/mono-api-debug.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Decimal Representation"/>
+	<param name="Local" value="deploy/mono-api-decimal.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Application Domains"/>
+	<param name="Local" value="deploy/mono-api-domains.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Dynamic Code Generation"/>
+	<param name="Local" value="deploy/mono-api-dynamic-codegen.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Exceptions"/>
+	<param name="Local" value="deploy/mono-api-exc.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="GC Handles"/>
+	<param name="Local" value="deploy/mono-api-gchandle.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Garbage Collection"/>
+	<param name="Local" value="deploy/mono-api-gc.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Internal Calls"/>
+	<param name="Local" value="deploy/mono-api-icall.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Images"/>
+	<param name="Local" value="deploy/mono-api-image.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Internals"/>
+	<param name="Local" value="deploy/mono-api-internal.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Interpreter"/>
+	<param name="Local" value="deploy/mono-api-interpreter.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Just in Time Compiler"/>
+	<param name="Local" value="deploy/mono-api-jit.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Marshalling"/>
+	<param name="Local" value="deploy/mono-api-marshal.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Metadata access"/>
+	<param name="Local" value="deploy/mono-api-metadata.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Methods"/>
+	<param name="Local" value="deploy/mono-api-methods.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Objects"/>
+	<param name="Local" value="deploy/mono-api-object.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Profiler"/>
+	<param name="Local" value="deploy/mono-api-profiler.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Reflection"/>
+	<param name="Local" value="deploy/mono-api-reflection.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Strings"/>
+	<param name="Local" value="deploy/mono-api-string.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Target Architecture"/>
+	<param name="Local" value="deploy/mono-api-target.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Threading API"/>
+	<param name="Local" value="deploy/mono-api-threads.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Tracing"/>
+	<param name="Local" value="deploy/mono-api-trace.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Types"/>
+	<param name="Local" value="deploy/mono-api-type.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Common Types"/>
+	<param name="Local" value="deploy/mono-api-types.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Unsorted"/>
+	<param name="Local" value="deploy/mono-api-unsorted.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Utility Functions"/>
+	<param name="Local" value="deploy/mono-api-utils.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="VES Internal Calls"/>
+	<param name="Local" value="deploy/mono-api-vesicall.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="VM calls"/>
+	<param name="Local" value="deploy/mono-api-vm.html"/>
+      </object>
+    </li>
+    <li>
+      <object type="text/sitemap">
+	<param name="Name" value="Portable Windows Layer"/>
+	<param name="Local" value="deploy/mono-api-wapi.html"/>
+      </object>
+    </li>
+    </ul>
+    </ul>
+</body>
+</html>
