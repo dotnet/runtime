@@ -2622,6 +2622,15 @@
 			<maintainer>ndrochak@gol.com</maintainer>
 		</maintainers>
 	</class>
+	<class name="System.Security.Permissions.IUnrestrictedPermission">
+		<last-activity>Jan-02-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>ndrochak@gol.com</maintainer>
+		</maintainers>
+	</class>
 	<class name="System.Security.PermissionSet">
 		<last-activity>Dec-30-2001</last-activity>
 		<implementation>yes</implementation>
