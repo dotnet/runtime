@@ -267,37 +267,43 @@ mono_class_from_mono_type (MonoType *type)
 
 	switch (type->type) {
 	case MONO_TYPE_BOOLEAN:
-		res = mono_class_from_name (corlib, "System", "Boolean");
+		res = mono_defaults.boolean_class;
 		break;
 	case MONO_TYPE_CHAR:
-		res = mono_class_from_name (corlib, "System", "Char");
+		res = mono_defaults.char_class;
 		break;
 	case MONO_TYPE_I1:
-		res = mono_class_from_name (corlib, "System", "Byte");
+		res = mono_defaults.byte_class;
+		break;
+	case MONO_TYPE_U1:
+		res = mono_defaults.sbyte_class;
 		break;
 	case MONO_TYPE_I2:
-		res = mono_class_from_name (corlib, "System", "Int16");
+		res = mono_defaults.int16_class;
 		break;
 	case MONO_TYPE_U2:
-		res = mono_class_from_name (corlib, "System", "UInt16");
+		res = mono_defaults.uint16_class;
 		break;
 	case MONO_TYPE_I4:
-		res = mono_class_from_name (corlib, "System", "Int32");
+		res = mono_defaults.int32_class;
 		break;
 	case MONO_TYPE_U4:
-		res = mono_class_from_name (corlib, "System", "UInt32");
+		res = mono_defaults.uint32_class;
 		break;
 	case MONO_TYPE_I8:
-		res = mono_class_from_name (corlib, "System", "Int64");
+		res = mono_defaults.int64_class;
 		break;
 	case MONO_TYPE_U8:
-		res = mono_class_from_name (corlib, "System", "UInt64");
+		res = mono_defaults.uint64_class;
+		break;
+	case MONO_TYPE_R4:
+		res = mono_defaults.single_class;
 		break;
 	case MONO_TYPE_R8:
-		res = mono_class_from_name (corlib, "System", "Double");
+		res = mono_defaults.double_class;
 		break;
 	case MONO_TYPE_STRING:
-		res = mono_class_from_name (corlib, "System", "String");
+		res = mono_defaults.string_class;
 		break;
 	case MONO_TYPE_CLASS:
 		res = type->data.klass;

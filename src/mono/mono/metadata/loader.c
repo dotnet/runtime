@@ -68,9 +68,53 @@ mono_init ()
 	g_assert (ass != NULL);
 	mono_defaults.corlib = ass->image;
 
-	mono_defaults.array_class = mono_class_from_name (
-                mono_defaults.corlib, "System", "Array");
-	g_assert (mono_defaults.array_class != 0);
+	mono_defaults.object_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Object");
+	g_assert (mono_defaults.object_class != 0);
+
+	mono_defaults.boolean_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Boolean");
+	g_assert (mono_defaults.boolean_class != 0);
+
+	mono_defaults.byte_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Byte");
+	g_assert (mono_defaults.byte_class != 0);
+
+	mono_defaults.sbyte_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "SByte");
+	g_assert (mono_defaults.sbyte_class != 0);
+
+	mono_defaults.int16_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Int16");
+	g_assert (mono_defaults.int16_class != 0);
+
+	mono_defaults.uint16_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "UInt16");
+	g_assert (mono_defaults.uint16_class != 0);
+
+	mono_defaults.int32_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Int32");
+	g_assert (mono_defaults.int32_class != 0);
+
+	mono_defaults.uint32_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "UInt32");
+	g_assert (mono_defaults.uint32_class != 0);
+
+	mono_defaults.int64_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Int64");
+	g_assert (mono_defaults.int64_class != 0);
+
+	mono_defaults.uint64_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "UInt64");
+	g_assert (mono_defaults.uint64_class != 0);
+
+	mono_defaults.single_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Single");
+	g_assert (mono_defaults.single_class != 0);
+
+	mono_defaults.double_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Double");
+	g_assert (mono_defaults.double_class != 0);
 
 	mono_defaults.char_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "Char");
@@ -80,6 +124,13 @@ mono_init ()
                 mono_defaults.corlib, "System", "String");
 	g_assert (mono_defaults.string_class != 0);
 
+	mono_defaults.enum_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Enum");
+	g_assert (mono_defaults.enum_class != 0);
+
+	mono_defaults.array_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Array");
+	g_assert (mono_defaults.array_class != 0);
 }
 
 static GHashTable *icall_hash = NULL;

@@ -28,9 +28,22 @@ typedef struct {
 
 typedef struct {
 	MonoImage *corlib;
-	MonoClass *array_class;
-	MonoClass *string_class;
+	MonoClass *object_class;
+	MonoClass *byte_class;
+	MonoClass *boolean_class;
+	MonoClass *sbyte_class;
+	MonoClass *int16_class;
+	MonoClass *uint16_class;
+	MonoClass *int32_class;
+	MonoClass *uint32_class;
+	MonoClass *int64_class;
+	MonoClass *uint64_class;
+	MonoClass *single_class;
+	MonoClass *double_class;
 	MonoClass *char_class;
+	MonoClass *string_class;
+	MonoClass *enum_class;
+	MonoClass *array_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults;
