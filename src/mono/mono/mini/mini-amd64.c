@@ -5015,7 +5015,7 @@ read_tls_offset_from_method (void* method)
 		/* mov fs:0, %rax ; mov <offset>(%rax), %rax ; retq */
 		((code [0] == 0x64) && (code [1] == 0x48) && (code [2] == 0x8b) &&
 		 (code [3] == 0x04) && (code [4] == 0x25) &&
-		 (code [9] == 0x48) && (code [10] == 0x8b) && (code [11] = 0x80) &&
+		 (code [9] == 0x48) && (code [10] == 0x8b) && (code [11] == 0x80) &&
 		 (code [16] == 0xc3)) {
 			return *(gint32*)&(code [12]);
 	} else if 
