@@ -40,12 +40,19 @@
 	standalone tests, please add one line here. It is also recommended that
 	you add some notes on how to build and run tests.
 
-	- Mono.Data/test/
-	- System.Web/Test/TestMonoWeb : see README
-	- System.Web.Services/Test/standalone : see README
-	- System.Windows.Forms/SWFTest/
-	- System.XML/System.Xml.Serialization/standalone_tests/
-	- System.XML/Tests/System.Xml.Xsl/standalone_tests : see README
+	<ul>
+
+		* Mono.Data/test/
+		* System.Data/Test, and some individual ADO.NET libraries:
+		  there are some standalone tests. See the bottom of <a href="ado-net.html">
+		  ADO.NET page</a> for detail.
+		* System.Web/Test/TestMonoWeb : see README
+		* System.Web.Services/Test/standalone : see README
+		* System.Windows.Forms/SWFTest/
+		* System.XML/System.Xml.Serialization/standalone_tests/
+		* System.XML/Tests/System.Xml.Xsl/standalone_tests : see README
+
+	</ul>
 
 ** Getting started
 
