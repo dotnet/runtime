@@ -26,7 +26,7 @@ struct _MonoProfiler {
 static void
 get_assembly (MonoAssembly* ass, MonoProfiler *prof)
 {
-	if (strcmp (prof->assembly_name, ass->aname.name) == 0)
+	if (strcmp (prof->assembly_name, mono_image_get_name (mono_assembly_get_image (ass))) == 0)
 		prof->assembly = ass;
 }
 
@@ -80,8 +80,8 @@ cov_shutdown (MonoProfiler *prof)
 		g_print ("Assembly '%s' was not loaded\n", prof->assembly_name);
 		return;
 	}
-	image = prof->assembly->image;
-	for (i = 1; i <= image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	image = mono_assembly_get_image (prof->assembly);
+	for (i = 1; i <= mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
 		method = mono_get_method (image, i | MONO_TOKEN_METHOD_DEF, NULL);
 		if (!method)
 			continue;
