@@ -76,9 +76,6 @@ A million repetitions of "a"
 #include "mono-digest.h"
 
 
-typedef gint32 int32;
-typedef guint32 uint32;
-
 /* #include <process.h> */	/* prototype for exit() - JHB */
 /* Using return() instead of exit() - SWR */
 
@@ -122,10 +119,10 @@ static void SHAPrintContext(MonoSHA1Context *context, char *msg){
 
 static void SHA1Transform(guint32 state[5], const guchar buffer[64])
 {
-uint32 a, b, c, d, e;
+guint32 a, b, c, d, e;
 typedef union {
     unsigned char c[64];
-    uint32 l[16];
+    guint32 l[16];
 } CHAR64LONG16;
 CHAR64LONG16* block;
 #ifdef SHA1HANDSOFF
@@ -192,7 +189,7 @@ void mono_sha1_init(MonoSHA1Context* context)
 void mono_sha1_update(MonoSHA1Context* context, const guchar* data, guint32 len)	/*
 JHB */
 {
-uint32 i, j;	/* JHB */
+guint32 i, j;	/* JHB */
 
 #ifdef VERBOSE
     SHAPrintContext(context, "before");
@@ -220,7 +217,7 @@ uint32 i, j;	/* JHB */
 
 void mono_sha1_final( MonoSHA1Context* context, unsigned char digest[20])
 {
-uint32 i;	/* JHB */
+guint32 i;	/* JHB */
 unsigned char finalcount[8];
 
     for (i = 0; i < 8; i++) {
