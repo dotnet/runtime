@@ -1646,7 +1646,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					spill = -val -1;
 				}
 				val = mono_regstate_alloc_int (rs, dest_mask);
-				if (val < 0) /* todo: should we force reg into eax, for opt reasons? */
+				if (val < 0)
 					val = get_register_spilling (cfg, tmp, ins, dest_mask, prev_dreg);
 				rs->iassign [prev_dreg] = val;
 				if (spill)
@@ -1666,20 +1666,21 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					spill = -val -1;
 				}
 				val = mono_regstate_alloc_int (rs, dest_mask);
-				if (val < 0) /* todo: should we force reg into edx, for opt reasons? */
+				if (val < 0)
 					val = get_register_spilling (cfg, tmp, ins, dest_mask, hreg);
 				rs->iassign [hreg] = val;
 				if (spill)
 					create_spilled_store (cfg, spill, val, hreg, ins);
 			}
 
-			DEBUG (g_print ("\tassigned hreg (long) %s to dest R%d\n", mono_arch_regname (val), hreg));
+			DEBUG (g_print ("\tassigned hreg (long-high) %s to dest R%d\n", mono_arch_regname (val), hreg));
 			rs->isymbolic [val] = hreg;
 			/* save reg allocating into unused */
 			ins->unused = val;
 
+			/* Free the extra reg if possible */
 			if (reg_is_freeable (val) && hreg >= 0 && reginfo [hreg].born_in >= i) {
-				DEBUG (g_print ("\tfreeable %s (R%d)\n", mono_arch_regname (val), hreg));
+				DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (val), hreg, reginfo [hreg].born_in));
 				mono_regstate_free_int (rs, val);
 			}
 		}
@@ -1706,8 +1707,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 				val = mono_regstate_alloc_int (rs, dest_mask);
 				if (val < 0)
-					val = get_register_spilling (cfg, tmp, ins, dest_mask, ins->dreg);
-				rs->iassign [ins->dreg] = val;
+					val = get_register_spilling (cfg, tmp, ins, dest_mask, prev_dreg);
+				rs->iassign [prev_dreg] = val;
 				if (spill)
 					create_spilled_store (cfg, spill, val, prev_dreg, ins);
 			}
