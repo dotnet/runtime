@@ -2461,6 +2461,7 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				break;
 			}
 			case CEE_MONO_LDPTR:
+			case CEE_MONO_CLASSCONST:
 				token = read32 (td.ip + 1);
 				td.ip += 5;
 				ADD_CODE(&td, MINT_MONO_LDPTR);
