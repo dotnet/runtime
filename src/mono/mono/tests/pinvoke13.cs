@@ -1,40 +1,58 @@
+//
+// pinvoke13.cs
+//
+//   Tests for pinvoke name mangling
+//
 using System;
 using System.Runtime.InteropServices;
 
-public class DumpTest
+public class Tests
 {
-	/* this should call HexDumpA with ANSI encoded string */
+	/*
+	 * These tests exercise the search order associated with the different charset values.
+	 */
+
+	/* This should call NameManglingAnsi */
 	[DllImport("libtest", CharSet=CharSet.Ansi)]
-	private static extern int HexDump (string data);
+	private static extern int NameManglingAnsi (string data);
 
-	/* this should call HexDump default version with Unicode string */
-	[DllImport("libtest", EntryPoint="HexDump", CharSet=CharSet.Unicode)]
-	private static extern int HexDump2(string data);
+	/* This should call NameManglingAnsi2A */
+	[DllImport ("libtest", CharSet=CharSet.Ansi)]
+	private static extern int NameManglingAnsi2 (string data);
 
-	/* this should call HexDump1W with unicode encoding */
-	[DllImport("libtest", CharSet=CharSet.Unicode)]
-	private static extern int HexDump1(string data);
+	/* This should call NameManglingUnicodeW */
+	[DllImport ("libtest", CharSet=CharSet.Unicode)]
+	private static extern int NameManglingUnicode (string data);
 
-	public static int Main()
-	{
+	/* This should call NameManglingUnicode2 */
+	[DllImport ("libtest", CharSet=CharSet.Unicode)]
+	private static extern int NameManglingUnicode2 (string data);
+
+	/* This should call NameManglingAutoW under windows, and NameManglingAuto under unix */
+	[DllImport ("libtest", CharSet=CharSet.Auto)]
+	private static extern int NameManglingAuto (string s);
+
+	public static int Main (String[] args) {
 		int res;
-		
-		res = HexDump ("First test");
-		Console.WriteLine (res);
-		if (res != 100769)
+
+		res = NameManglingAnsi ("ABC");
+		if (res != 198)
 			return 1;
-
-		res = HexDump2 ("First test");
-		Console.WriteLine (res);
-		if (res != 404)
+		res = NameManglingAnsi ("ABC");
+		if (res != 198)
 			return 2;
-
-		res = HexDump1 ("First test");
-		Console.WriteLine (res);
-		if (res != 1000404)
+		res = NameManglingUnicode ("ABC");
+		if (res != 131)
 			return 3;
+		res = NameManglingUnicode ("ABC");
+		if (res != 131)
+			return 4;
 
-		return 0;		
+		res = NameManglingAuto ("ABC");
+		if (res != 0)
+			return 5;
+		
+		return 0;
 	}
 }
 

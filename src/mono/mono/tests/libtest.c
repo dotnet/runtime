@@ -851,61 +851,72 @@ mono_test_byvalstr_check (ByValStrStruct* data, char* correctString)
 	return (ret != 0);
 }
 
-STDCALL int 
-HexDump(char *data)
+STDCALL int
+NameManglingAnsi (char *data)
 {
-	int i, res = 0;
-	char *p;
-
-	printf ("HEXDUMP DEFAULT VERSION\n");
-
-	p = data;
-	for (i=0; i < 8; ++i)
-	{
-		res += *p;
-		printf("%0x ", (int) *(p++));
-	}
-	putchar('\n');
-
-	return res;
+	return data [0] + data [1] + data [2];
 }
 
-STDCALL int 
-HexDumpA(char *data)
+STDCALL int
+NameManglingAnsiA (char *data)
 {
-	int i, res = 0;
-	char *p;
-
-	printf ("HEXDUMP ANSI VERSION\n");
-
-	p = data;
-	for (i=0; i < 8; ++i)
-	{
-		res += *p;
-		printf("%0x ", (int) *(p++));
-	}
-	putchar('\n');
-
-	return res + 100000;
+	g_assert_not_reached ();
 }
 
-STDCALL int 
-HexDump1W(char *data)
+STDCALL int
+NameManglingAnsiW (char *data)
 {
-	int i, res = 0;
-	char *p;
+	g_assert_not_reached ();
+}
 
-	printf ("HEXDUMP UNICODE VERSION\n");
+STDCALL int
+NameManglingAnsi2A (char *data)
+{
+	return data [0] + data [1] + data [2];
+}
 
-	p = data;
-	for (i=0; i < 8; ++i)
-	{
-		res += *p;
-		printf("%0x ", (int) *(p++));
-	}
-	putchar('\n');
+STDCALL int
+NameManglingAnsi2W (char *data)
+{
+	g_assert_not_reached ();
+}
 
-	return res + 1000000;
+STDCALL int
+NameManglingUnicode (char *data)
+{
+	g_assert_not_reached ();
+}
+
+STDCALL int
+NameManglingUnicodeW (char *data)
+{
+	return data [0] + data [1] + data [2];
+}
+
+STDCALL int
+NameManglingUnicode2 (char *data)
+{
+	return data [0] + data [1] + data [2];
+}
+
+STDCALL int
+NameManglingAutoW (char *data)
+{
+#ifdef WIN32
+	return (data [0] + data [1] + data [2]) == 131 ? 0 : 1;
+#else
+	g_assert_not_reached ();
+#endif
+}
+
+STDCALL int
+NameManglingAuto (char *data)
+{
+#ifndef WIN32
+	return (data [0] + data [1] + data [2]) == 131 ? 0 : 1;
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 typedef int (STDCALL *intcharFunc)(const char*);
