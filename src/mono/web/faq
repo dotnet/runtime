@@ -20,6 +20,7 @@
 <a href="#licensing">Licensing</a><br>
 <a href="#patents">Patents</a><br>
 <a href="#etc">Miscellaneous Questions</a><br>
+<a href="#obfuscation">Obfuscation</a></br>
 <a href="#problems">Mono Common Problems</a><br>
 
 A <a
@@ -1425,6 +1426,51 @@ A: Mono implements both the .NET Framework, as well as plenty of class
    The following map shows the relationship between the components:
 
    <img src="http://primates.ximian.com/~miguel/tmp/map.png">
+
+<a name="obfuscation"></a>
+** Obfuscation
+
+Q: Are there any obfuscation programs for Mono/Linux?
+
+A: We are not aware of these, but some from Windows might work.
+
+Q: What could I do to avoid people decompiling my program?
+
+A: You can use the bundle functionality in Mono. 
+
+   This would bundle your binary inside a Mono runtime instance, so
+   you distribute a single executable that contains the code inside.
+   Notice that for this to work and be practical, you need to get a
+   commercial license to the Mono runtime.
+
+   The reason is that the bundle functionality is covered by the LGPL:
+   so you would have to distribute your assemblies separatedly to allow
+   developers to relink mono which would defeat the purpose of bundling
+   for obscuring your code.
+
+   It is not impossible to break, just like any other obfuscators.
+
+   That being said, value these days does not lie in particular
+   tiny routines, but lies in the large body of work, and if someone
+   steals your code, you are likely going to find out anyways.
+
+Q: Any other option?
+
+A: You could precompile with --aot your code, then disassemble the
+   original .exe, and remove all the code, then re-assemble and ship
+   both the vessel .exe and the precompiled code.  
+
+   This is not a supported configuration of Mono, and you would be 
+   on your own in terms of dealing with bugs and problems here.
+
+   Get the companies that build the obfuscation packages to read 
+   the ECMA spec and fix the bugs in their products that generate 
+   non-standard binaries (or, if they expose a bug in mono, please
+   file a report in our bugzilla).  
+
+   Pay Ximian/Novell to spend the development time needed to get mono
+   to support the broken binaries that some of the obfuscation
+   packages generate (or contribute that support).
 
 <a name="etc"></a> 
 ** Miscellaneous Questions
