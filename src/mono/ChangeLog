@@ -1,3 +1,7 @@
+2004-08-03  Neale Ferguson <Neale.Ferguson@SoftwareAG-usa.com>
+
+	* configure.in: Enable S/390 64-bit JIT.
+
 2004-07-31  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Enable AMD64 JIT.

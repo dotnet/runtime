@@ -1232,6 +1232,12 @@ case "$host" in
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
 		;;
+	s390x-*-linux*)
+		TARGET=S390x;
+		arch_target=s390x;
+		ACCESS_UNALIGNED="no"
+		JIT_SUPPORTED=yes
+		;;
 esac
 
 AC_ARG_WITH(jit, [  --with-jit=yes,no       If you want to build scripts that default to the JIT],[
@@ -1322,6 +1328,7 @@ AM_CONDITIONAL(M68K, test x$TARGET = xM68K)
 AM_CONDITIONAL(POWERPC, test x$TARGET = xPOWERPC)
 AM_CONDITIONAL(ARM, test x$TARGET = xARM)
 AM_CONDITIONAL(S390, test x$TARGET = xS390)
+AM_CONDITIONAL(S390x, test x$TARGET = xS390x)
 AM_CONDITIONAL(HPPA, test x$TARGET = xHPPA)
 
 AM_CONDITIONAL(JIT_SUPPORTED, test x$JIT_SUPPORTED = xyes)
@@ -1353,6 +1360,7 @@ mono/arch/hppa/Makefile
 mono/arch/ppc/Makefile
 mono/arch/sparc/Makefile
 mono/arch/s390/Makefile
+mono/arch/s390x/Makefile
 mono/arch/arm/Makefile
 mono/arch/alpha/Makefile
 mono/interpreter/Makefile
