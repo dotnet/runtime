@@ -2802,7 +2802,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_FBEQ:
 			if (cfg->opt & MONO_OPT_FCMOV) {
+				guchar *jump = code;
+				x86_branch8 (code, X86_CC_P, 0, TRUE);
 				EMIT_COND_BRANCH (ins, X86_CC_EQ, FALSE);
+				x86_patch (jump, code);
 				break;
 			}
 			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x4000);
