@@ -1,3 +1,8 @@
+
+Wed May 19 13:22:19 EDT 2004 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: make MacOSX default to use the included libgc.
+
 2004-05-18  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Get rid of -DMONO_USE_EXC_TABLES.
