@@ -1,3 +1,7 @@
+2004-08-30  Zoltan Varga  <vargaz@freemail.hu>
+
+	* scripts/mcs.in: Remove obsolete comment.
+
 2004-08-27  Lluis Sanchez Gual  <lluis@novell.com>
 
 	* data/net_1_1/DefaultWsdlHelpGenerator.aspx: Little fix.
