@@ -2473,10 +2473,9 @@ mono_find_jit_opcode_emulation (int opcode)
 }
 
 static MonoInst*
-mini_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	int pc, op;
-	MonoInst *ins;
+	MonoInst *ins = NULL;
 	
 	static MonoClass *runtime_helpers_class = NULL;
 	if (! runtime_helpers_class)
@@ -2487,22 +2486,35 @@ mini_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
  		if (cmethod->name [0] != 'g')
  			return NULL;
  
- 		if (strcmp (cmethod->name, "get_Chars") == 0)
- 			op = OP_GETCHR;
- 		else if (strcmp (cmethod->name, "get_Length") == 0)
- 			op = OP_STRLEN;
- 		else return NULL;
+		if (strcmp (cmethod->name, "get_Chars") == 0) {
+ 			MONO_INST_NEW (cfg, ins, OP_GETCHR);
+			ins->inst_i0 = args [0];
+			ins->inst_i1 = args [1];
+			return ins;
+		} else if (strcmp (cmethod->name, "get_Length") == 0) {
+ 			MONO_INST_NEW (cfg, ins, OP_STRLEN);
+			ins->inst_i0 = args [0];
+			return ins;
+		} else 
+			return NULL;
 	} else if (cmethod->klass == mono_defaults.object_class) {
-		if (strcmp (cmethod->name, "GetType") == 0)
-			op = OP_GETTYPE;
-		else
+		if (strcmp (cmethod->name, "GetType") == 0) {
+ 			MONO_INST_NEW (cfg, ins, OP_GETTYPE);
+			ins->inst_i0 = args [0];
+			return ins;
+		} else
 			return NULL;
 	} else if (cmethod->klass == mono_defaults.array_class) {
-		if (strcmp (cmethod->name, "get_Rank") == 0)
-			op = OP_ARRAY_RANK;
-		else if (strcmp (cmethod->name, "get_Length") == 0)
-			op = CEE_LDLEN;
-		else
+ 		if (cmethod->name [0] != 'g')
+ 			return NULL;
+
+		if (strcmp (cmethod->name, "get_Rank") == 0) {
+ 			MONO_INST_NEW (cfg, ins, OP_ARRAY_RANK);
+			ins->inst_i0 = args [0];
+		} else if (strcmp (cmethod->name, "get_Length") == 0) {
+ 			MONO_INST_NEW (cfg, ins, CEE_LDLEN);
+			ins->inst_i0 = args [0];
+		} else
 			return NULL;
 	} else if (cmethod->klass == runtime_helpers_class) {
 		if (strcmp (cmethod->name, "get_OffsetToStringData") == 0) {
@@ -2514,21 +2526,9 @@ mini_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		if (strcmp (cmethod->name, "get_CurrentThread") == 0 && (ins = mono_arch_get_thread_intrinsic (cfg)))
 			return ins;
 		return NULL;
-	} else {
-		op = mono_arch_get_opcode_for_method (cfg, cmethod, fsig, args);
-		if (op < 0)
-			return NULL;
-	}
-	pc = fsig->param_count + fsig->hasthis;
-	MONO_INST_NEW (cfg, ins, op);
-
-	if (pc > 0) {
-		ins->inst_i0 = args [0];
-		if (pc > 1)
-			ins->inst_i1 = args [1];
 	}
 
-	return ins;
+	return mono_arch_get_inst_for_method (cfg, cmethod, fsig, args);
 }
 
 static void
@@ -3470,7 +3470,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins_flag = 0;
 				break;
 			}
-			if (cmethod && (cfg->opt & MONO_OPT_INTRINS) && (ins = mini_get_opcode_for_method (cfg, cmethod, fsig, sp))) {
+			if (cmethod && (cfg->opt & MONO_OPT_INTRINS) && (ins = mini_get_inst_for_method (cfg, cmethod, fsig, sp))) {
 				ins->cil_code = ip;
 
 				if (MONO_TYPE_IS_VOID (fsig->ret)) {

@@ -3331,7 +3331,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "ArithmeticException");
 			break;
 		}
-		
 		case OP_X86_TLS_GET: {
 			x86_prefix (code, X86_GS_PREFIX);
 			x86_mov_reg_mem (code, ins->dreg, ins->inst_offset, 4);			
@@ -3874,33 +3873,42 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 }
 
 
-gint
-mono_arch_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+MonoInst*
+mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
+	MonoInst *ins = NULL;
+
 	if (cmethod->klass == mono_defaults.math_class) {
-		if (strcmp (cmethod->name, "Sin") == 0)
-			return OP_SIN;
-		else if (strcmp (cmethod->name, "Cos") == 0)
-			return OP_COS;
-		else if (strcmp (cmethod->name, "Tan") == 0)
-			return OP_TAN;
-		else if (strcmp (cmethod->name, "Atan") == 0)
-			return OP_ATAN;
-		else if (strcmp (cmethod->name, "Sqrt") == 0)
-			return OP_SQRT;
-		else if (strcmp (cmethod->name, "Abs") == 0 && fsig->params [0]->type == MONO_TYPE_R8)
-			return OP_ABS;
+		if (strcmp (cmethod->name, "Sin") == 0) {
+			MONO_INST_NEW (cfg, ins, OP_SIN);
+			ins->inst_i0 = args [0];
+		} else if (strcmp (cmethod->name, "Cos") == 0) {
+			MONO_INST_NEW (cfg, ins, OP_COS);
+			ins->inst_i0 = args [0];
+		} else if (strcmp (cmethod->name, "Tan") == 0) {
+			MONO_INST_NEW (cfg, ins, OP_TAN);
+			ins->inst_i0 = args [0];
+		} else if (strcmp (cmethod->name, "Atan") == 0) {
+			MONO_INST_NEW (cfg, ins, OP_ATAN);
+			ins->inst_i0 = args [0];
+		} else if (strcmp (cmethod->name, "Sqrt") == 0) {
+			MONO_INST_NEW (cfg, ins, OP_SQRT);
+			ins->inst_i0 = args [0];
+		} else if (strcmp (cmethod->name, "Abs") == 0 && fsig->params [0]->type == MONO_TYPE_R8) {
+			MONO_INST_NEW (cfg, ins, OP_ABS);
+			ins->inst_i0 = args [0];
+		}
 #if 0
 		/* OP_FREM is not IEEE compatible */
-		else if (strcmp (cmethod->name, "IEEERemainder") == 0)
-			return OP_FREM;
+		else if (strcmp (cmethod->name, "IEEERemainder") == 0) {
+			MONO_INST_NEW (cfg, ins, OP_FREM);
+			ins->inst_i0 = args [0];
+			ins->inst_i1 = args [1];
+		}
 #endif
-		else
-			return -1;
-	} else {
-		return -1;
 	}
-	return -1;
+	
+	return ins;
 }
 
 

@@ -5381,21 +5381,25 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_get_opcode_for_method                   */
+/* Name		- mono_arch_get_inst_for_method                   */
 /*                                                                  */
 /* Function	- Check for opcodes we can handle directly in       */
 /*		  hardware.                    			    */
 /*		                               			    */
 /*------------------------------------------------------------------*/
 
-gint
-mono_arch_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+MonoInst*
+mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
+	MonoInst *ins = NULL;
+
 	if (cmethod->klass == mono_defaults.math_class) {
-		if (strcmp (cmethod->name, "Sqrt") == 0)
-			return OP_SQRT;
+		if (strcmp (cmethod->name, "Sqrt") == 0) {
+			MONO_INST_NEW (cfg, ins, OP_SQRT);
+			ins->inst_i0 = args [0];
+		}
 	}
-	return -1;
+	return ins;
 }
 
 /*========================= End of Function ========================*/
