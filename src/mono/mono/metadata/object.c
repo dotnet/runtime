@@ -299,6 +299,26 @@ mono_compile_method (MonoMethod *method)
 	return default_mono_compile_method (method);
 }
 
+static MonoFreeMethodFunc default_mono_free_method = NULL;
+
+void
+mono_install_free_method (MonoFreeMethodFunc func)
+{
+	default_mono_free_method = func;
+}
+
+void
+mono_runtime_free_method (MonoMethod *method)
+{
+	if (default_mono_free_method != NULL)
+		default_mono_free_method (method);
+
+	/* 
+	 * FIXME: This causes crashes because the types inside signatures and
+	 * locals are shared.
+	 */
+	mono_free_method (method);
+}
 
 #if 0 && HAVE_BOEHM_GC
 static void

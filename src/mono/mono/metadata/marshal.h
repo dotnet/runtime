@@ -74,6 +74,8 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate);
 MonoDelegate*
 mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);
 
+void mono_delegate_free_ftnptr (MonoDelegate *delegate);
+
 void * 
 mono_marshal_string_array (MonoArray *array);
 

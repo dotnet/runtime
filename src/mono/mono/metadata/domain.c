@@ -178,6 +178,21 @@ mono_jit_info_table_add (MonoDomain *domain, MonoJitInfo *ji)
 	mono_domain_unlock (domain);
 }
 
+void
+mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji)
+{
+	MonoJitInfoTable *table = domain->jit_info_table;
+	gpointer start = ji->code_start;
+	int pos;
+
+	mono_domain_lock (domain);
+	pos = mono_jit_info_table_index (table, start);
+	g_assert (g_array_index (table, gpointer, pos) == ji);
+
+	g_array_remove_index (table, pos);
+	mono_domain_unlock (domain);
+}	
+
 static int
 ldstr_hash (const char* str)
 {

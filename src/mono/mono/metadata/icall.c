@@ -3955,6 +3955,12 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 	return delegate;
 }
 
+static void
+ves_icall_System_Delegate_FreeTrampoline (MonoDelegate *this)
+{
+	mono_delegate_free_ftnptr (this);
+}
+
 /*
  * Magic number to convert a time which is relative to
  * Jan 1, 1970 into a value which is relative to Jan 1, 0001.
@@ -5166,7 +5172,8 @@ static const IcallEntry decimal_icalls [] = {
 };
 
 static const IcallEntry delegate_icalls [] = {
-	{"CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal}
+	{"CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal},
+	{"FreeTrampoline", ves_icall_System_Delegate_FreeTrampoline}
 };
 
 static const IcallEntry tracelist_icalls [] = {

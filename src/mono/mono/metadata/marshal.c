@@ -20,6 +20,7 @@
 #include "mono/metadata/threads.h"
 #include "mono/metadata/monitor.h"
 #include "mono/metadata/metadata-internals.h"
+#include "mono/metadata/domain-internals.h"
 #include <mono/os/gc_wrapper.h>
 #include <string.h>
 #include <errno.h>
@@ -185,6 +186,26 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 	mono_delegate_ctor ((MonoObject*)d, NULL, ftn);
 
 	return d;
+}
+
+void
+mono_delegate_free_ftnptr (MonoDelegate *delegate)
+{
+	MonoJitInfo *ji;
+	void *ptr2;
+
+	ptr2 = delegate->delegate_trampoline;
+
+	void *ptr = InterlockedExchangePointer (&delegate->delegate_trampoline, NULL);
+	ji = mono_jit_info_table_find (mono_domain_get (), ptr);
+	g_assert (ji);
+
+	if (!delegate->target) {
+		/* The wrapper method is shared between delegates -> no need to free it */
+		return;
+	}
+
+	mono_runtime_free_method (ji->method);
 }
 
 gpointer
@@ -2350,10 +2371,6 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 		alloc_sig->pinvoke = 1;
 	}
 
-	if (this) {
-		/* fime: howto free that memory ? */
-	}
-
 	sig = method->signature;
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
@@ -2970,8 +2987,10 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 	if (!this)
 		res = mono_mb_create_and_cache (cache, method,
 											 mb, csig, sig->param_count + 16);
-	else
+	else {
 		res = mono_mb_create_method (mb, csig, sig->param_count + 16);
+		res->dynamic = 1;
+	}
 	mono_mb_free (mb);
 
 	/* printf ("CODE FOR %s: \n%s.\n", mono_method_full_name (res, TRUE), mono_disasm_code (0, res, ((MonoMethodNormal*)res)->header->code, ((MonoMethodNormal*)res)->header->code + ((MonoMethodNormal*)res)->header->code_size)); */

@@ -56,6 +56,7 @@ struct _MonoMethod {
 	unsigned int wrapper_type:5;
 	unsigned int string_ctor:1;
 	unsigned int save_lmf:1;
+	unsigned int dynamic:1; /* created & destroyed during runtime */
 	gint16 inline_count;
 };
 

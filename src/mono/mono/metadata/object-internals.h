@@ -393,6 +393,9 @@ void
 mono_install_compile_method (MonoCompileFunc func);
 
 void
+mono_install_free_method    (MonoFreeMethodFunc func);
+
+void
 mono_type_initialization_init (void);
 
 /* Reflection and Reflection.Emit support */

@@ -325,8 +325,6 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 		mono_metadata_free_method_signature (sig);
 		return method;
 	case MONO_MEMBERREF_PARENT_TYPESPEC: {
-		guint32 bcols [MONO_TYPESPEC_SIZE];
-		guint32 len;
 		MonoType *type;
 		MonoMethod *result;
 		MonoClass *klass;
@@ -556,8 +554,6 @@ static void
 mono_dllmap_free (GHashTable *dll_map)
 {
 }
-
-static int wine_test_needed = 1;
 
 gpointer
 mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char **exc_arg)
@@ -882,7 +878,6 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 {
 	MonoMethod *method, *result;
 	MonoClass *ic = NULL;
-	int i;
 
 	mono_loader_lock ();
 

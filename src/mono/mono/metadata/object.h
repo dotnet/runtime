@@ -47,6 +47,7 @@ typedef struct {
 
 typedef MonoObject* (*MonoInvokeFunc)	     (MonoMethod *method, void *obj, void **params, MonoObject **exc);
 typedef gpointer    (*MonoCompileFunc)	     (MonoMethod *method);
+typedef void        (*MonoFreeMethodFunc)	 (MonoMethod *method);
 typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
 
 #define mono_object_class(obj) (((MonoObject*)(obj))->vtable->klass)
@@ -226,6 +227,9 @@ mono_print_unhandled_exception (MonoObject *exc);
 
 gpointer 
 mono_compile_method	   (MonoMethod *method);
+
+void
+mono_runtime_free_method (MonoMethod *method);
 
 MonoRemoteClass*
 mono_remote_class (MonoDomain *domain, MonoString *class_name, MonoClass *proxy_class);
