@@ -36,6 +36,10 @@ struct MonoLMF {
 	guint32     eip;
 };
 
+#ifndef PLATFORM_WIN32
+#define MONO_ARCH_SIGSEGV_ON_ALTSTACK
+#endif
+
 #define MONO_ARCH_BIGMUL_INTRINS 1
 
 #endif /* __MONO_MINI_X86_H__ */  

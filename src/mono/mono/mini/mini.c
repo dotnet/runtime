@@ -45,6 +45,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "inssel.h"
+#include "trace.h"
 
 #include "jit-icalls.c"
 
@@ -4519,7 +4520,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else {
 				MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
 				NEW_VTABLECONST (cfg, iargs [0], vtable);
-				if (1 || klass->has_finalize || (cfg->prof_options & MONO_PROFILE_ALLOCATIONS))
+				if (klass->has_finalize || (cfg->prof_options & MONO_PROFILE_ALLOCATIONS))
 					temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_specific, iargs, ip);
 				else
 					temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_fast, iargs, ip);
@@ -5756,6 +5757,15 @@ mono_print_tree (MonoInst *tree) {
 	case CEE_JMP:
 	case CEE_BREAK:
 		break;
+	case OP_LOAD_MEMBASE:
+	case OP_LOADI4_MEMBASE:
+	case OP_LOADU4_MEMBASE:
+	case OP_LOADU1_MEMBASE:
+	case OP_LOADI1_MEMBASE:
+	case OP_LOADU2_MEMBASE:
+	case OP_LOADI2_MEMBASE:
+		printf ("[%s] <- [%s + 0x%x]", mono_arch_regname (tree->dreg), mono_arch_regname (tree->inst_basereg), tree->inst_offset);
+		break;
 	case CEE_BR:
 		printf ("[B%d]", tree->inst_target_bb->block_num);
 		break;
@@ -6465,6 +6475,7 @@ mini_thread_cleanup (MonoThread *thread)
 	MonoJitTlsData *jit_tls = thread->jit_data;
 
 	if (jit_tls) {
+		mono_arch_free_jit_tls_data (jit_tls);
 		g_free (jit_tls->first_lmf);
 		g_free (jit_tls);
 		thread->jit_data = NULL;
@@ -7830,16 +7841,37 @@ sigill_signal_handler (int _dummy)
 	mono_arch_handle_exception (ctx, exc, FALSE);
 }
 
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+
 static void
-sigsegv_signal_handler (int _dummy)
+sigsegv_signal_handler (int _dummy, siginfo_t *info, void *context)
 {
 	MonoException *exc;
-	GET_CONTEXT
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	struct sigcontext *ctx = (struct sigcontext *)&(((ucontext_t*)context)->uc_mcontext);
 
-	exc = mono_get_exception_null_reference ();
-	
+	/* Can't allocate memory using Boehm GC on altstack */
+	if (jit_tls->stack_size && 
+		((guint8*)info->si_addr >= (guint8*)jit_tls->end_of_stack - jit_tls->stack_size) &&
+		((guint8*)info->si_addr < (guint8*)jit_tls->end_of_stack))
+		exc = mono_domain_get ()->stack_overflow_ex;
+	else
+		exc = mono_domain_get ()->null_reference_ex;
+			
 	mono_arch_handle_exception (ctx, exc, FALSE);
 }
+
+#else
+
+static void
+sigsegv_signal_handler (int _dummy )
+{
+	GET_CONTEXT;
+
+	mono_arch_handle_exception (ctx, NULL, FALSE);
+}
+
+#endif
 
 static void
 sigusr1_signal_handler (int _dummy)
@@ -7936,9 +7968,15 @@ mono_runtime_install_handlers (void)
 
 #if 1
 	/* catch SIGSEGV */
-	sa.sa_handler = sigsegv_signal_handler;
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+	sa.sa_sigaction = sigsegv_signal_handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = SA_SIGINFO | SA_STACK;
+#else
+	sa.sa_sighandler = sigsegv_signal_handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
+#endif
 	//g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
 	g_assert (sigaction (SIGSEGV, &sa, NULL) != -1);
 #endif
@@ -8027,6 +8065,8 @@ mini_init (const char *filename)
 	mono_arch_register_lowlevel_calls ();
 	mono_register_jit_icall (mono_profiler_method_enter, "mono_profiler_method_enter", NULL, TRUE);
 	mono_register_jit_icall (mono_profiler_method_leave, "mono_profiler_method_leave", NULL, TRUE);
+	mono_register_jit_icall (mono_trace_enter_method, "mono_trace_enter_method", NULL, TRUE);
+	mono_register_jit_icall (mono_trace_leave_method, "mono_trace_leave_method", NULL, TRUE);
 
 	mono_register_jit_icall (mono_get_lmf_addr, "mono_get_lmf_addr", helper_sig_ptr_void, TRUE);
 	mono_register_jit_icall (mono_domain_get, "mono_domain_get", helper_sig_domain_get, TRUE);

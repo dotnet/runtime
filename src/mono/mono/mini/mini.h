@@ -354,8 +354,11 @@ struct MonoMethodVar {
 
 typedef struct {
 	gpointer          end_of_stack;
+	guint32           stack_size;
 	MonoLMF          *lmf;
 	MonoLMF          *first_lmf;
+	gpointer         signal_stack;
+	guint32          signal_stack_size;
 	void            (*abort_func) (MonoObject *object);
 } MonoJitTlsData;
 
@@ -638,6 +641,12 @@ typedef struct {
 	MonoMethodSignature *sig;
 } MonoJitICallInfo;
 
+typedef struct {
+	guint16 size;
+	guint16 offset;
+	guint8  pad;
+} MonoJitArgumentInfo;
+
 typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
 
 /* main function */
@@ -725,8 +734,10 @@ void      mono_arch_local_regalloc              (MonoCompile *cfg, MonoBasicBloc
 void      mono_arch_output_basic_block          (MonoCompile *cfg, MonoBasicBlock *bb);
 gboolean  mono_arch_has_unwind_info             (gconstpointer addr);
 void      mono_arch_setup_jit_tls_data          (MonoJitTlsData *tls);
+void      mono_arch_free_jit_tls_data           (MonoJitTlsData *tls);
 void      mono_arch_emit_this_vret_args         (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg);
 void      mono_arch_allocate_vars               (MonoCompile *m);
+int       mono_arch_get_argument_info           (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info);
 void      mono_jit_walk_stack                   (MonoStackWalk func, gpointer user_data);
 MonoArray *ves_icall_get_trace                  (MonoException *exc, gint32 skip, MonoBoolean need_file_info);
 MonoBoolean ves_icall_get_frame_info            (gint32 skip, MonoBoolean need_file_info, 

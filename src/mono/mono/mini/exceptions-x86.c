@@ -18,10 +18,13 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-debug.h>
 
 #include "mini.h"
 #include "mini-x86.h"
+
+#define IS_ON_SIGALTSTACK(jit_tls) ((jit_tls) && ((guint8*)&(jit_tls) > (guint8*)(jit_tls)->signal_stack) && ((guint8*)&(jit_tls) < ((guint8*)(jit_tls)->signal_stack + (jit_tls)->signal_stack_size)))
 
 #ifdef PLATFORM_WIN32
 
@@ -701,14 +704,18 @@ glist_to_array (GList *list)
  * start of the function or -1 if that info is not available.
  */
 static MonoJitInfo *
-mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoContext *ctx, 
+mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
 			 MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset,
 			 gboolean *managed)
 {
 	MonoJitInfo *ji;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
 
-	ji = mono_jit_info_table_find (domain, ip);
+	/* Avoid costly table lookup during stack overflow */
+	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
+		ji = prev_ji;
+	else
+		ji = mono_jit_info_table_find (domain, ip);
 
 	if (trace)
 		*trace = NULL;
@@ -910,7 +917,7 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 
 	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
 		
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
 		g_assert (ji);
 
 		if (ji == (gpointer)-1)
@@ -943,7 +950,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	skip++;
 
 	do {
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
 
 		ctx = new_ctx;
 		
@@ -983,7 +990,6 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
  * @obj: the exception object
  * @test_only: only test if the exception is caught, but dont call handlers
  *
- *
  */
 gboolean
 mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
@@ -991,16 +997,36 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji, rji;
 	static int (*call_filter) (MonoContext *, gpointer) = NULL;
+	static void (*restore_context) (struct sigcontext *);
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoLMF *lmf = jit_tls->lmf;		
 	GList *trace_ips = NULL;
 	MonoException *mono_ex;
+	gboolean stack_overflow = FALSE;
+	MonoContext initial_ctx;
+	int frame_count = 0;
+	gboolean gc_disabled = FALSE;
+	
+	/*
+	 * This function might execute on an alternate signal stack, and Boehm GC
+	 * can't handle that.
+	 * Also, since the altstack is small, stack space intensive operations like
+	 * JIT compilation should be avoided.
+	 */
+	if (IS_ON_SIGALTSTACK (jit_tls)) {
+		/* 
+		 * FIXME: disabling/enabling GC while already on a signal stack might
+		 * not be safe either.
+		 */
+		/* Have to reenable it later */
+		gc_disabled = TRUE;
+		mono_gc_disable ();
+	}
 
 	g_assert (ctx != NULL);
 	if (!obj) {
 		MonoException *ex = mono_get_exception_null_reference ();
-		ex->message = mono_string_new (domain, 
-		        "Object reference not set to an instance of an object");
+		ex->message = mono_string_new (domain, "Object reference not set to an instance of an object");
 		obj = (MonoObject *)ex;
 	} 
 
@@ -1011,8 +1037,14 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		mono_ex = NULL;
 	}
 
+	if (obj == domain->stack_overflow_ex)
+		stack_overflow = TRUE;
+
 	if (!call_filter)
 		call_filter = arch_get_call_filter ();
+
+	if (!restore_context)
+		restore_context = arch_get_restore_context ();
 
 	g_assert (jit_tls->end_of_stack);
 	g_assert (jit_tls->abort_func);
@@ -1028,38 +1060,60 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		}
 	}
 
+	initial_ctx = *ctx;
+	memset (&rji, 0, sizeof (rji));
+
 	while (1) {
 		MonoContext new_ctx;
 		char *trace = NULL;
-		
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, ctx, &new_ctx, 
-					      test_only ? &trace : NULL, &lmf, NULL, NULL);
+		gboolean need_trace = FALSE;
+		guint32 free_stack;
+
+		if (test_only && (frame_count < 1000))
+			need_trace = TRUE;
+
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &rji, ctx, &new_ctx, 
+					      need_trace ? &trace : NULL, &lmf, NULL, NULL);
 		if (!ji) {
 			g_warning ("Exception inside function without unwind info");
 			g_assert_not_reached ();
 		}
 
 		if (ji != (gpointer)-1) {
-			
+			frame_count ++;
+			//printf ("M: %s %p %p %d.\n", mono_method_full_name (ji->method, TRUE), jit_tls->end_of_stack, ctx->ebp, count);
+
 			if (test_only && ji->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && mono_ex) {
 				char *tmp, *strace;
 
-				trace_ips = g_list_append (trace_ips, MONO_CONTEXT_GET_IP (ctx));
+				/* Avoid giant stack traces */
+				if (frame_count < 1000) {
+					trace_ips = g_list_append (trace_ips, MONO_CONTEXT_GET_IP (ctx));
 
-				if (!mono_ex->stack_trace)
-					strace = g_strdup ("");
-				else
-					strace = mono_string_to_utf8 (mono_ex->stack_trace);
+					if (!mono_ex->stack_trace)
+						strace = g_strdup ("");
+					else
+						strace = mono_string_to_utf8 (mono_ex->stack_trace);
 			
-				tmp = g_strdup_printf ("%s%s\n", strace, trace);
-				g_free (strace);
+					tmp = g_strdup_printf ("%s%s\n", strace, trace);
+					g_free (strace);
+					
+					mono_ex->stack_trace = mono_string_new (domain, tmp);
 
-				mono_ex->stack_trace = mono_string_new (domain, tmp);
-
-				g_free (tmp);
+					g_free (tmp);
+				}
 			}
 
-			if (ji->num_clauses) {
+			if (stack_overflow)
+				free_stack = (guint8*)(MONO_CONTEXT_GET_BP (ctx)) - (guint8*)(MONO_CONTEXT_GET_BP (&initial_ctx));
+			else
+				free_stack = 0xffffff;
+
+			/* 
+			 * During stack overflow, wait till the unwinding frees some stack
+			 * space before running handlers/finalizers.
+			 */
+			if ((free_stack > (64 * 1024)) && ji->num_clauses) {
 				int i;
 				
 				g_assert (ji->clauses);
@@ -1086,6 +1140,9 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 									mono_ex->trace_ips = glist_to_array (trace_ips);
 								g_list_free (trace_ips);
 								g_free (trace);
+
+								if (gc_disabled)
+									mono_gc_enable ();
 								return TRUE;
 							}
 							if (mono_jit_trace_calls != NULL && mono_trace_eval (ji->method))
@@ -1093,6 +1150,9 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 							jit_tls->lmf = lmf;
 							g_free (trace);
+
+							if (gc_disabled)
+								mono_gc_enable ();
 							return 0;
 						}
 						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
@@ -1113,9 +1173,22 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		*ctx = new_ctx;
 
 		if ((ji == (gpointer)-1) || MONO_CONTEXT_GET_BP (ctx) >= jit_tls->end_of_stack) {
+			if (gc_disabled)
+				mono_gc_enable ();
+
 			if (!test_only) {
 				jit_tls->lmf = lmf;
-				jit_tls->abort_func (obj);
+
+				if (IS_ON_SIGALTSTACK (jit_tls)) {
+					/* Switch back to normal stack */
+					if (stack_overflow)
+						/* Free up some stack space */
+						initial_ctx.SC_ESP += (64 * 1024);
+					initial_ctx.SC_EIP = (unsigned int)jit_tls->abort_func;
+					restore_context (&initial_ctx);
+				}
+				else
+					jit_tls->abort_func (obj);
 				g_assert_not_reached ();
 			} else {
 				if (mono_ex)

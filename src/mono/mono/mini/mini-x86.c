@@ -17,6 +17,11 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/utils/mono-math.h>
 
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+#include <valgrind/memcheck.h>
+#endif
+
+#include "trace.h"
 #include "mini-x86.h"
 #include "inssel.h"
 #include "cpu-pentium.h"
@@ -29,6 +34,8 @@ static gint lmf_tls_offset = -1;
 #else
 #define CALLCONV_IS_STDCALL(call_conv) ((call_conv) == MONO_CALL_STDCALL)
 #endif
+
+#define SIGNAL_STACK_SIZE (64 * 1024)
 
 static gpointer mono_arch_get_lmf_addr (void);
 
@@ -46,14 +53,8 @@ mono_arch_regname (int reg) {
 	return "unknown";
 }
 
-typedef struct {
-	guint16 size;
-	guint16 offset;
-	guint8  pad;
-} MonoJitArgumentInfo;
-
 /*
- * arch_get_argument_info:
+ * mono_arch_get_argument_info:
  * @csig:  a method signature
  * @param_count: the number of parameters to consider
  * @arg_info: an array to store the result infos
@@ -63,8 +64,8 @@ typedef struct {
  *
  * Returns the size of the activation frame.
  */
-static int
-arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
+int
+mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
 	int k, frame_size = 0;
 	int size, align, pad;
@@ -109,273 +110,6 @@ arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgum
 	arg_info [k].pad = pad;
 
 	return frame_size;
-}
-
-static int indent_level = 0;
-
-static void indent (int diff) {
-	int v;
-	if (diff < 0)
-		indent_level += diff;
-	v = indent_level;
-	while (v-- > 0) {
-		printf (". ");
-	}
-	if (diff > 0)
-		indent_level += diff;
-}
-
-static gboolean enable_trace = TRUE;
-
-static void
-enter_method (MonoMethod *method, char *ebp)
-{
-	int i, j;
-	MonoClass *class;
-	MonoObject *o;
-	MonoJitArgumentInfo *arg_info;
-	MonoMethodSignature *sig;
-	char *fname;
-
-	if (!enable_trace)
-		return;
-
-	fname = mono_method_full_name (method, TRUE);
-	indent (1);
-	printf ("ENTER: %s(", fname);
-	g_free (fname);
-	
-	if (((int)ebp & (MONO_ARCH_FRAME_ALIGNMENT - 1)) != 0) {
-		g_error ("unaligned stack detected (%p)", ebp);
-	}
-
-	sig = method->signature;
-
-	arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
-
-	arch_get_argument_info (sig, sig->param_count, arg_info);
-
-	if (MONO_TYPE_ISSTRUCT (method->signature->ret)) {
-		g_assert (!method->signature->ret->byref);
-
-		printf ("VALUERET:%p, ", *((gpointer *)(ebp + 8)));
-	}
-
-	if (method->signature->hasthis) {
-		gpointer *this = (gpointer *)(ebp + arg_info [0].offset);
-		if (method->klass->valuetype) {
-			printf ("value:%p, ", *this);
-		} else {
-			o = *((MonoObject **)this);
-
-			if (o) {
-				class = o->vtable->klass;
-
-				if (class == mono_defaults.string_class) {
-					printf ("this:[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
-				} else {
-					printf ("this:%p[%s.%s %s], ", o, class->name_space, class->name, o->vtable->domain->friendly_name);
-				}
-			} else 
-				printf ("this:NULL, ");
-		}
-	}
-
-	for (i = 0; i < method->signature->param_count; ++i) {
-		gpointer *cpos = (gpointer *)(ebp + arg_info [i + 1].offset);
-		int size = arg_info [i + 1].size;
-
-		MonoType *type = method->signature->params [i];
-		
-		if (type->byref) {
-			printf ("[BYREF:%p], ", *cpos); 
-		} else switch (type->type) {
-			
-		case MONO_TYPE_I:
-		case MONO_TYPE_U:
-			printf ("%p, ", (gpointer)*((int *)(cpos)));
-			break;
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-			printf ("%d, ", *((int *)(cpos)));
-			break;
-		case MONO_TYPE_STRING: {
-			MonoString *s = *((MonoString **)cpos);
-			if (s) {
-				g_assert (((MonoObject *)s)->vtable->klass == mono_defaults.string_class);
-				printf ("[STRING:%p:%s], ", s, mono_string_to_utf8 (s));
-			} else 
-				printf ("[STRING:null], ");
-			break;
-		}
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_OBJECT: {
-			o = *((MonoObject **)cpos);
-			if (o) {
-				class = o->vtable->klass;
-		    
-				if (class == mono_defaults.string_class) {
-					printf ("[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
-				} else if (class == mono_defaults.int32_class) {
-					printf ("[INT32:%p:%d], ", o, *(gint32 *)((char *)o + sizeof (MonoObject)));
-				} else
-					printf ("[%s.%s:%p], ", class->name_space, class->name, o);
-			} else {
-				printf ("%p, ", *((gpointer *)(cpos)));				
-			}
-			break;
-		}
-		case MONO_TYPE_PTR:
-		case MONO_TYPE_FNPTR:
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_SZARRAY:
-			printf ("%p, ", *((gpointer *)(cpos)));
-			break;
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-			printf ("0x%016llx, ", *((gint64 *)(cpos)));
-			break;
-		case MONO_TYPE_R4:
-			printf ("%f, ", *((float *)(cpos)));
-			break;
-		case MONO_TYPE_R8:
-			printf ("%f, ", *((double *)(cpos)));
-			break;
-		case MONO_TYPE_VALUETYPE: 
-			printf ("[");
-			for (j = 0; j < size; j++)
-				printf ("%02x,", *((guint8*)cpos +j));
-			printf ("], ");
-			break;
-		default:
-			printf ("XX, ");
-		}
-	}
-
-	printf (")\n");
-}
-
-static void
-leave_method (MonoMethod *method, ...)
-{
-	MonoType *type;
-	char *fname;
-	va_list ap;
-
-	if (!enable_trace)
-		return;
-
-	va_start(ap, method);
-
-	fname = mono_method_full_name (method, TRUE);
-	indent (-1);
-	printf ("LEAVE: %s", fname);
-	g_free (fname);
-
-	type = method->signature->ret;
-
-handle_enum:
-	switch (type->type) {
-	case MONO_TYPE_VOID:
-		break;
-	case MONO_TYPE_BOOLEAN: {
-		int eax = va_arg (ap, int);
-		if (eax)
-			printf ("TRUE:%d", eax);
-		else 
-			printf ("FALSE");
-			
-		break;
-	}
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U: {
-		int eax = va_arg (ap, int);
-		printf ("EAX=%d", eax);
-		break;
-	}
-	case MONO_TYPE_STRING: {
-		MonoString *s = va_arg (ap, MonoString *);
-;
-		if (s) {
-			g_assert (((MonoObject *)s)->vtable->klass == mono_defaults.string_class);
-			printf ("[STRING:%p:%s]", s, mono_string_to_utf8 (s));
-		} else 
-			printf ("[STRING:null], ");
-		break;
-	}
-	case MONO_TYPE_CLASS: 
-	case MONO_TYPE_OBJECT: {
-		MonoObject *o = va_arg (ap, MonoObject *);
-
-		if (o) {
-			if (o->vtable->klass == mono_defaults.boolean_class) {
-				printf ("[BOOLEAN:%p:%d]", o, *((guint8 *)o + sizeof (MonoObject)));		
-			} else if  (o->vtable->klass == mono_defaults.int32_class) {
-				printf ("[INT32:%p:%d]", o, *((gint32 *)((char *)o + sizeof (MonoObject))));	
-			} else if  (o->vtable->klass == mono_defaults.int64_class) {
-				printf ("[INT64:%p:%lld]", o, *((gint64 *)((char *)o + sizeof (MonoObject))));	
-			} else
-				printf ("[%s.%s:%p]", o->vtable->klass->name_space, o->vtable->klass->name, o);
-		} else
-			printf ("[OBJECT:%p]", o);
-	       
-		break;
-	}
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_FNPTR:
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_SZARRAY: {
-		gpointer p = va_arg (ap, gpointer);
-		printf ("EAX=%p", p);
-		break;
-	}
-	case MONO_TYPE_I8: {
-		gint64 l =  va_arg (ap, gint64);
-		printf ("EAX/EDX=0x%16llx", l);
-		break;
-	}
-	case MONO_TYPE_U8: {
-		gint64 l =  va_arg (ap, gint64);
-		printf ("EAX/EDX=0x%16llx", l);
-		break;
-	}
-	case MONO_TYPE_R8: {
-		double f = va_arg (ap, double);
-		printf ("FP=%f\n", f);
-		break;
-	}
-	case MONO_TYPE_VALUETYPE: 
-		if (type->data.klass->enumtype) {
-			type = type->data.klass->enum_basetype;
-			goto handle_enum;
-		} else {
-			guint8 *p = va_arg (ap, gpointer);
-			int j, size, align;
-			size = mono_type_size (type, &align);
-			printf ("[");
-			for (j = 0; p && j < size; j++)
-				printf ("%02x,", p [j]);
-			printf ("]");
-		}
-		break;
-	default:
-		printf ("(unknown return type %x)", method->signature->ret->type);
-	}
-
-	printf ("\n");
 }
 
 static const guchar cpuid_impl [] = {
@@ -979,6 +713,9 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 	x86_fnstsw (code); \
 } while (0); 
 
+/* FIXME: Add more instructions */
+#define INST_IGNORES_CFLAGS(ins) (((ins)->opcode == CEE_BR) || ((ins)->opcode == OP_STORE_MEMBASE_IMM))
+
 static void
 peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
@@ -991,8 +728,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ICONST:
 			/* reg = 0 -> XOR (reg, reg) */
 			/* XOR sets cflags on x86, so we cant do it always */
-			if (ins->inst_c0 == 0 && ins->next &&
-			    (ins->next->opcode == CEE_BR)) { 
+			if (ins->inst_c0 == 0 && ins->next && INST_IGNORES_CFLAGS (ins->next)) {
 				ins->opcode = CEE_XOR;
 				ins->sreg1 = ins->dreg;
 				ins->sreg2 = ins->dreg;
@@ -3222,8 +2958,6 @@ void
 mono_arch_register_lowlevel_calls (void)
 {
 	mono_register_jit_icall (mono_arch_get_lmf_addr, "mono_arch_get_lmf_addr", NULL, TRUE);
-	mono_register_jit_icall (enter_method, "mono_enter_method", NULL, TRUE);
-	mono_register_jit_icall (leave_method, "mono_leave_method", NULL, TRUE);
 }
 
 void
@@ -3515,7 +3249,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
-		code = mono_arch_instrument_prolog (cfg, enter_method, code, TRUE);
+		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
 
 	/* load arguments allocated to register from the stack */
 	sig = method->signature;
@@ -3549,7 +3283,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	code = cfg->native_code + cfg->code_len;
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
-		code = mono_arch_instrument_epilog (cfg, leave_method, code, TRUE);
+		code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
 
 	/* the code restoring the registers must be kept in sync with CEE_JMP */
 	pos = 0;
@@ -3606,7 +3340,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (CALLCONV_IS_STDCALL (sig->call_convention)) {
 	  MonoJitArgumentInfo *arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
 
-	  stack_to_pop = arch_get_argument_info (sig, sig->param_count, arg_info);
+	  stack_to_pop = mono_arch_get_argument_info (sig, sig->param_count, arg_info);
 	}
 	else
 	if (MONO_TYPE_ISSTRUCT (cfg->method->signature->ret))
@@ -3676,6 +3410,14 @@ mono_arch_get_lmf_addr (void)
 void
 mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 {
+#ifndef PLATFORM_WIN32
+	pthread_t self = pthread_self();
+	pthread_attr_t attr;
+	void *staddr = NULL;
+	size_t stsize = 0;
+	struct sigaltstack sa;
+#endif
+
 	if (!tls_offset_inited) {
 		guint8 *code;
 
@@ -3698,8 +3440,52 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 		}
 	}		
 
+#ifndef PLATFORM_WIN32
+
+	/* Determine stack boundaries */
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+	if (!RUNNING_ON_VALGRIND) {
+#endif
+	pthread_getattr_np( self, &attr );
+	pthread_attr_getstack( &attr, &staddr, &stsize );
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+	}
+#endif
+
+	/* 
+	 * staddr seems to be wrong for the main thread, so we keep the value in
+	 * tls->end_of_stack
+	 */
+	tls->stack_size = stsize;
+
+	/* Setup an alternate signal stack */
+	tls->signal_stack = g_malloc (SIGNAL_STACK_SIZE);
+	tls->signal_stack_size = SIGNAL_STACK_SIZE;
+
+	sa.ss_sp = tls->signal_stack;
+	sa.ss_size = SIGNAL_STACK_SIZE;
+	sa.ss_flags = SS_ONSTACK;
+	sigaltstack  (&sa, NULL);
+#endif
+
 #ifdef HAVE_KW_THREAD
 	mono_lmf_addr = &tls->lmf;
+#endif
+}
+
+void
+mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
+{
+#ifndef PLATFORM_WIN32
+	struct sigaltstack sa;
+
+	sa.ss_sp = tls->signal_stack;
+	sa.ss_size = SIGNAL_STACK_SIZE;
+	sa.ss_flags = SS_DISABLE;
+	sigaltstack  (&sa, NULL);
+
+	if (tls->signal_stack)
+		g_free (tls->signal_stack);
 #endif
 }
 
