@@ -179,13 +179,13 @@ throw_exception (MonoObject *exc, gpointer sp, gpointer ip, gboolean rethrow)
 gpointer 
 get_throw_exception (gboolean rethrow)
 {
-	guint32 start [36];
+	guint32 *start;
 	guint32 *code;
 
 	if (inited)
 		return start;
 
-	code = start;
+	code = start = g_new0 (16 * sizeof (guint32));
 
 	sparc_save_imm (code, sparc_sp, -512, sparc_sp);
 
@@ -198,7 +198,7 @@ get_throw_exception (gboolean rethrow)
 	sparc_jmpl (code, sparc_o7, sparc_g0, sparc_callsite);
 	sparc_nop (code);
 
-	g_assert ((code - start) < 36);
+	g_assert ((code - start) <= 16);
 
 	return start;
 }
