@@ -13,7 +13,9 @@ assembliesdir = $(libdir)
 confdir = $(sysconfdir)
 endif
 
-bin_PROGRAMS = monosn pedump
+bin_PROGRAMS = pedump
+# monosn is deprecated in favor of sn
+noinst_PROGRAMS = monosn
 
 noinst_LTLIBRARIES = libmetadata.la libmonoruntime.la
 
