@@ -963,11 +963,16 @@ handle_enum:
  * FIXME: return a MonoType/MonoClass for the byref and VALUETYPE cases.
  */
 static void
-type_to_eval_stack_type (MonoType *type, MonoInst *inst) {
+type_to_eval_stack_type (MonoType *type, MonoInst *inst)
+{
+	MonoClass *klass;
+
 	if (type->byref) {
 		inst->type = STACK_MP;
 		return;
 	}
+
+	klass = mono_class_from_mono_type (type);
 
 handle_enum:
 	switch (type->type) {
@@ -1007,7 +1012,7 @@ handle_enum:
 			type = type->data.klass->enum_basetype;
 			goto handle_enum;
 		} else {
-			inst->klass = type->data.klass;
+			inst->klass = klass;
 			inst->type = STACK_VTYPE;
 			return;
 		}
