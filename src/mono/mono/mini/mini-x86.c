@@ -22,11 +22,6 @@
 #include "inssel.h"
 #include "cpu-pentium.h"
 
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-/* valgrind chokes on __thread */
-#undef HAVE_KW_THREAD
-#endif
-
 static gint lmf_tls_offset = -1;
 
 #ifdef PLATFORM_WIN32
