@@ -301,8 +301,28 @@ OK4:
 		ldloc.0
 		ldind.i4
 		ldc.i4 999999
-		beq PASS
+		beq OK5
 		ldc.i4.5
+		br FAIL
+
+OK5:
+		// Try allocations bigger than one page
+		ldc.i4 8196
+		localloc
+		conv.i
+		stloc.3
+		ldloc.3
+		ldc.i4 8192
+		add
+		ldc.i4 99
+		stind.i4
+		ldloc.3
+		ldc.i4 8192
+		add
+		ldind.i4
+		ldc.i4 99
+		beq PASS
+		ldc.i4.6
 		br FAIL
 
 FAIL:
