@@ -5405,8 +5405,8 @@ typebuilder_setup_fields (MonoClass *klass)
 		mono_save_custom_attrs (klass->image, field, fb->cattrs);
 
 		if (fb->def_value) {
-			field->type->attrs |= FIELD_ATTRIBUTE_HAS_DEFAULT;
 			MonoDynamicAssembly *assembly = klass->image->assembly->dynamic;
+			field->type->attrs |= FIELD_ATTRIBUTE_HAS_DEFAULT;
 			field->def_value = g_new0 (MonoConstant, 1);
 			idx = encode_constant (assembly, fb->def_value, &field->def_value->type);
 			/* Copy the data from the blob since it might get realloc-ed */

@@ -1390,9 +1390,9 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 
 	if (m->klass->rank && !strcmp (m->name, ".ctor")) {
 		int i;
-		pcount = mono_array_length (params);
 		guint32 *lengths;
 		guint32 *lower_bounds;
+		pcount = mono_array_length (params);
 		lengths = alloca (sizeof (guint32) * pcount);
 		for (i = 0; i < pcount; ++i)
 			lengths [i] = *(gint32*) ((char*)mono_array_get (params, gpointer, i) + sizeof (MonoObject));
