@@ -3987,18 +3987,6 @@ mono_thread_abort (MonoObject *obj)
 	ExitThread (-1);
 }
 
-static MonoMethod *
-mono_method_get_last_managed (void)
-{
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoLMF *lmf = jit_tls->lmf;		
-
-	if (lmf)
-		return lmf->method;
-
-	return NULL;
-}
-		
 static void
 mono_thread_start_cb (gpointer stack_start)
 {
@@ -4078,6 +4066,7 @@ mono_jit_init (const char *file) {
 	mono_install_remoting_trampoline (mono_jit_create_remoting_trampoline);
 	mono_install_handler (arch_get_throw_exception ());
 	mono_install_runtime_invoke (mono_jit_runtime_invoke);
+	mono_install_stack_walk (mono_jit_walk_stack);
 
 	domain = mono_init (file);
 	mono_runtime_init (domain, mono_thread_start_cb);

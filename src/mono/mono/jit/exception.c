@@ -255,6 +255,44 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 	return res;
 }
 
+void
+mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
+	MonoDomain *domain = mono_domain_get ();
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoLMF *lmf = jit_tls->lmf;
+	MonoJitInfo *ji;
+	MonoMethod *m;
+	gpointer ip;
+	gpointer *bp;
+	gint native_offset, il_offset;
+
+	bp = (gpointer *)&func;
+	ip = bp [-1];
+	bp = &ip;
+
+	while ((unsigned)bp < (unsigned)jit_tls->end_of_stack) {
+		if ((ji = mono_jit_info_table_find (domain, ip))) {
+			m = ji->method;
+			native_offset = (char *)ip - (char *)ji->code_start;
+			ip = (gpointer)((char *)bp [1] - 5);
+			bp = bp [0];
+			il_offset = mono_debug_il_offset_from_address (m, native_offset);
+		} else {
+			if (!lmf)
+				break;
+			m = lmf->method;
+
+			bp = (gpointer)lmf->ebp;
+			ip = (gpointer)lmf->eip;
+			lmf = lmf->previous_lmf;
+
+			native_offset = il_offset = -1;
+		}
+		if (func (m, native_offset, il_offset, user_data))
+			return;
+	}
+}
+
 MonoBoolean
 ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
 			  MonoReflectionMethod **method, 

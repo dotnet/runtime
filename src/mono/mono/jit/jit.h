@@ -270,6 +270,9 @@ mono_cpu_detect            (void);
 
 /* architecture dependent functions */
 
+void
+mono_jit_walk_stack        (MonoStackWalk func, gpointer user_data);
+
 int
 arch_get_argument_info     (MonoMethodSignature *csig, int param_count, 
 			    MonoJitArgumentInfo *arg_info);
