@@ -495,7 +495,7 @@ dis_method_list (MonoImage *m, guint32 start, guint32 end)
 
 		sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 		mono_metadata_decode_blob_size (sig, &sig);
-		ms = mono_metadata_parse_method_signature (m, 1, sig, &sig);
+		ms = mono_metadata_parse_method_signature (m, i + 1, sig, &sig);
 		sig_str = dis_stringify_method_signature (m, ms, i + 1);
 			
 		fprintf (output, "    // method line %d\n", i + 1);

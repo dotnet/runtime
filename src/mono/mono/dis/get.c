@@ -463,7 +463,7 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 		if (!method) {
 			const char *sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 			mono_metadata_decode_blob_size (sig, &sig);
-			method = mono_metadata_parse_method_signature (m, 1, sig, &sig);
+			method = mono_metadata_parse_method_signature (m, methoddef_row, sig, &sig);
 			free_method = 1;
 		}
 	}
