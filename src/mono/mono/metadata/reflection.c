@@ -2965,6 +2965,8 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 
 	if (tb->parent)
 		parent = mono_class_from_mono_type (tb->parent->type);
+	else
+		g_assert_not_reached (); /* FIXME */
 	
 	klass->inited = 1; /* we lie to the runtime */
 	klass->name = mono_string_to_utf8 (tb->name);
