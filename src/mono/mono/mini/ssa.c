@@ -766,7 +766,7 @@ simulate_long_compare (int opcode, gint64 a, gint64 b)
 
 #define EVAL_CXX(name,op,cast)	\
 	case name:	\
-		if (inst->inst_i0->opcode == OP_COMPARE) { \
+		if ((inst->inst_i0->opcode == OP_COMPARE) || (inst->inst_i0->opcode == OP_LCOMPARE)) { \
 			r1 = evaluate_const_tree (cfg, inst->inst_i0->inst_i0, &a, carray); \
 			r2 = evaluate_const_tree (cfg, inst->inst_i0->inst_i1, &b, carray); \
 			if (r1 == 1 && r2 == 1) { \
@@ -867,7 +867,7 @@ fold_tree (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, MonoInst **carr
 	}
 
 	if ((inst->opcode >= CEE_BEQ && inst->opcode <= CEE_BLT_UN) &&
-	    inst->inst_i0->opcode == OP_COMPARE) {
+	    ((inst->inst_i0->opcode == OP_COMPARE) || (inst->inst_i0->opcode == OP_LCOMPARE))) {
 		MonoInst *v0 = inst->inst_i0->inst_i0;
 		MonoInst *v1 = inst->inst_i0->inst_i1;
 		MonoBasicBlock *target = NULL;
@@ -952,7 +952,7 @@ visit_inst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, GList **cvars,
 			}
 		}
 	} else if ((inst->opcode >= CEE_BEQ && inst->opcode <= CEE_BLT_UN) &&
-	    inst->inst_i0->opcode == OP_COMPARE) {
+	    ((inst->inst_i0->opcode == OP_COMPARE) || (inst->inst_i0->opcode == OP_LCOMPARE))) {
 		int a, b, r1, r2;
 		MonoInst *v0 = inst->inst_i0->inst_i0;
 		MonoInst *v1 = inst->inst_i0->inst_i1;
