@@ -172,17 +172,20 @@ mono_class_get             (MonoImage *image, guint32 type_token);
 void
 mono_class_init            (MonoClass *klass);
 
-MonoVTable *
-mono_class_vtable          (MonoDomain *domain, MonoClass *class);
+void
+mono_class_setup_vtable    (MonoClass *klass);
 
 MonoVTable *
-mono_class_proxy_vtable    (MonoDomain *domain, MonoClass *class);
+mono_class_vtable          (MonoDomain *domain, MonoClass *klass);
+
+MonoVTable *
+mono_class_proxy_vtable    (MonoDomain *domain, MonoClass *klass);
 
 void
-mono_class_setup_mono_type (MonoClass *class);
+mono_class_setup_mono_type (MonoClass *klass);
 
 void
-mono_class_setup_parent    (MonoClass *class, MonoClass *parent);
+mono_class_setup_parent    (MonoClass *klass, MonoClass *parent);
 
 MonoClass *
 mono_class_from_name       (MonoImage *image, const char* name_space, const char *name);

@@ -441,109 +441,26 @@ mono_get_unique_iid (MonoClass *class)
 	return iid - 1;
 }
 
-/**
- * mono_class_init:
- * @class: the class to initialize
- *
- * compute the instance_size, class_size and other infos that cannot be 
- * computed at mono_class_get() time. Also compute a generic vtable and 
- * the method slot numbers. We use this infos later to create a domain
- * specific vtable.  
- */
 void
-mono_class_init (MonoClass *class)
+mono_class_setup_vtable (MonoClass *class)
 {
 	MonoClass *k, *ic;
 	MonoMethod **vtable;
-	int i, max_vtsize = 0, max_iid, cur_slot = 0;
-	static MonoMethod *default_ghc = NULL;
-	static MonoMethod *default_finalize = NULL;
-	static int finalize_slot = -1;
-	static int ghc_slot = -1;
-	gint32 onum = 0;
-	guint32 packing_size = 0;
+	int i, onum = 0, max_vtsize = 0, max_iid, cur_slot = 0;
 	MonoMethod **overrides;
 
-	g_assert (class);
-
-	if (class->inited)
-		return;
-
-	if (class->init_pending) {
-		/* this indicates a cyclic dependency */
-		g_error ("pending init %s.%s\n", class->name_space, class->name);
-	}
-
-	class->init_pending = 1;
-
-	mono_stats.initialized_class_count++;
-
-	if (class->parent) {
-		if (!class->parent->inited)
-			mono_class_init (class->parent);
-		class->instance_size += class->parent->instance_size;
-		class->class_size += class->parent->class_size;
-		class->min_align = class->parent->min_align;
-		cur_slot = class->parent->vtable_size;
-	} else
-		class->min_align = 1;
-
-	if (mono_metadata_packing_from_typedef (class->image, class->type_token, &packing_size, &class->instance_size)) {
-		class->instance_size += sizeof (MonoObject);
-	}
-
-	g_assert ((packing_size & 0xfffffff0) == 0);
-	class->packing_size = packing_size;
-
-	/*
-	 * Computes the size used by the fields, and their locations
-	 */
-	if (!class->size_inited && class->field.count > 0){
-		class->fields = g_new0 (MonoClassField, class->field.count);
-		class_compute_field_layout (class);
-	}
-
-	if (!(class->flags & TYPE_ATTRIBUTE_INTERFACE)) {
-		for (i = 0; i < class->interface_count; i++) 
-			max_vtsize += class->interfaces [i]->method.count;
+	for (i = 0; i < class->interface_count; i++) 
+		max_vtsize += class->interfaces [i]->method.count;
 	
-		if (class->parent)
-			max_vtsize += class->parent->vtable_size;
-
-		max_vtsize += class->method.count;
+	if (class->parent) {
+		max_vtsize += class->parent->vtable_size;
+		cur_slot = class->parent->vtable_size;
 	}
+
+	max_vtsize += class->method.count;
 
 	vtable = alloca (sizeof (gpointer) * max_vtsize);
 	memset (vtable, 0, sizeof (gpointer) * max_vtsize);
-
-	/* initialize method pointers */
-	class->methods = g_new (MonoMethod*, class->method.count);
-	for (i = 0; i < class->method.count; ++i)
-		class->methods [i] = mono_get_method (class->image,
-		        MONO_TOKEN_METHOD_DEF | (i + class->method.first + 1), class);
-
-	init_properties (class);
-	init_events (class);
-
-	i = mono_metadata_nesting_typedef (class->image, class->type_token);
-	while (i) {
-		MonoClass* nclass;
-		guint32 cols [MONO_NESTED_CLASS_SIZE];
-		mono_metadata_decode_row (&class->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
-		if (cols [MONO_NESTED_CLASS_ENCLOSING] != mono_metadata_token_index (class->type_token))
-			break;
-		nclass = mono_class_create_from_typedef (class->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
-		class->nested_classes = g_list_prepend (class->nested_classes, nclass);
-		++i;
-	}
-
-	if (class->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		for (i = 0; i < class->method.count; ++i)
-			class->methods [i]->slot = i;
-		class->init_pending = 0;
-		class->inited = 1;
-		return;
-	}
 
 	/* printf ("METAINIT %s.%s\n", class->name_space, class->name); */
 
@@ -792,9 +709,6 @@ mono_class_init (MonoClass *class)
 	class->vtable = g_malloc0 (sizeof (gpointer) * class->vtable_size);
 	memcpy (class->vtable, vtable,  sizeof (gpointer) * class->vtable_size);
 
-	class->inited = 1;
-	class->init_pending = 0;
-
 	if (mono_print_vtable) {
 		int icount = 0;
 
@@ -839,11 +753,104 @@ mono_class_init (MonoClass *class)
 		}
 	}
 
+}
+
+/**
+ * mono_class_init:
+ * @class: the class to initialize
+ *
+ * compute the instance_size, class_size and other infos that cannot be 
+ * computed at mono_class_get() time. Also compute a generic vtable and 
+ * the method slot numbers. We use this infos later to create a domain
+ * specific vtable.  
+ */
+void
+mono_class_init (MonoClass *class)
+{
+	int i;
+	static MonoMethod *default_ghc = NULL;
+	static MonoMethod *default_finalize = NULL;
+	static int finalize_slot = -1;
+	static int ghc_slot = -1;
+	guint32 packing_size = 0;
+
+	g_assert (class);
+
+	if (class->inited)
+		return;
+
+	if (class->init_pending) {
+		/* this indicates a cyclic dependency */
+		g_error ("pending init %s.%s\n", class->name_space, class->name);
+	}
+
+	class->init_pending = 1;
+
+	mono_stats.initialized_class_count++;
+
+	if (class->parent) {
+		if (!class->parent->inited)
+			mono_class_init (class->parent);
+		class->instance_size += class->parent->instance_size;
+		class->class_size += class->parent->class_size;
+		class->min_align = class->parent->min_align;
+	} else
+		class->min_align = 1;
+
+	if (mono_metadata_packing_from_typedef (class->image, class->type_token, &packing_size, &class->instance_size)) {
+		class->instance_size += sizeof (MonoObject);
+	}
+
+	g_assert ((packing_size & 0xfffffff0) == 0);
+	class->packing_size = packing_size;
+
+	/*
+	 * Computes the size used by the fields, and their locations
+	 */
+	if (!class->size_inited && class->field.count > 0){
+		class->fields = g_new0 (MonoClassField, class->field.count);
+		class_compute_field_layout (class);
+	}
+
+	/* initialize method pointers */
+	class->methods = g_new (MonoMethod*, class->method.count);
+	for (i = 0; i < class->method.count; ++i)
+		class->methods [i] = mono_get_method (class->image,
+		        MONO_TOKEN_METHOD_DEF | (i + class->method.first + 1), class);
+
+	init_properties (class);
+	init_events (class);
+
+	i = mono_metadata_nesting_typedef (class->image, class->type_token);
+	while (i) {
+		MonoClass* nclass;
+		guint32 cols [MONO_NESTED_CLASS_SIZE];
+		mono_metadata_decode_row (&class->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
+		if (cols [MONO_NESTED_CLASS_ENCLOSING] != mono_metadata_token_index (class->type_token))
+			break;
+		nclass = mono_class_create_from_typedef (class->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
+		class->nested_classes = g_list_prepend (class->nested_classes, nclass);
+		++i;
+	}
+
+	if (class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		for (i = 0; i < class->method.count; ++i)
+			class->methods [i]->slot = i;
+		class->init_pending = 0;
+		class->inited = 1;
+		return;
+	}
+
+	mono_class_setup_vtable (class);
+
+	class->inited = 1;
+	class->init_pending = 0;
+
 	if (!default_ghc) {
 		if (class == mono_defaults.object_class) { 
 		       
 			for (i = 0; i < class->vtable_size; ++i) {
-				MonoMethod *cm = vtable [i];
+				MonoMethod *cm = class->vtable [i];
 	       
 				if (!strcmp (cm->name, "GetHashCode")) {
 					ghc_slot = i;
@@ -853,14 +860,14 @@ mono_class_init (MonoClass *class)
 
 			g_assert (ghc_slot > 0);
 
-			default_ghc = vtable [ghc_slot];
+			default_ghc = class->vtable [ghc_slot];
 		}
 	}
 	
 	class->ghcimpl = 1;
 	if (class != mono_defaults.object_class) { 
 
-		if (vtable [ghc_slot] == default_ghc) {
+		if (class->vtable [ghc_slot] == default_ghc) {
 			class->ghcimpl = 0;
 		}
 	}
@@ -869,7 +876,7 @@ mono_class_init (MonoClass *class)
 		if (class == mono_defaults.object_class) { 
 		       
 			for (i = 0; i < class->vtable_size; ++i) {
-				MonoMethod *cm = vtable [i];
+				MonoMethod *cm = class->vtable [i];
 	       
 				if (!strcmp (cm->name, "Finalize")) {
 					finalize_slot = i;
@@ -879,14 +886,14 @@ mono_class_init (MonoClass *class)
 
 			g_assert (finalize_slot > 0);
 
-			default_finalize = vtable [finalize_slot];
+			default_finalize = class->vtable [finalize_slot];
 		}
 	}
 
 	/* Object::Finalize should have empty implemenatation */
 	class->has_finalize = 0;
 	if (class != mono_defaults.object_class) { 
-		if (vtable [finalize_slot] != default_finalize)
+		if (class->vtable [finalize_slot] != default_finalize)
 			class->has_finalize = 1;
 	}
 }

@@ -3971,6 +3971,13 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 
 		klass->enum_basetype = fb->type->type;
 		klass->element_class = my_mono_class_from_mono_type (klass->enum_basetype);
+		klass->instance_size = klass->element_class->instance_size;
+		klass->size_inited = 1;
+		/* 
+		 * this is almost safe to do with enums and it's needed to be able
+		 * to create objects of the enum type (for use in SetConstant).
+		 */
+		mono_class_setup_vtable (klass);
 	}
 }
 
