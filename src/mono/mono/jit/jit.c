@@ -17,6 +17,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <mono/metadata/verify.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/cil-coff.h>
@@ -3325,7 +3326,7 @@ main (int argc, char *argv [])
 	int retval = 0, i;
 	int compile_times = 1000;
 	char *compile_class = NULL;
-	char *file;
+	char *file, *error;
 	gboolean testjit = FALSE;
 	int stack, verbose = FALSE;
 	CRITICAL_SECTION ms;
@@ -3438,6 +3439,11 @@ main (int argc, char *argv [])
 	mono_thread_init (domain);
 	mono_network_init ();
 
+	error = mono_verify_corlib ();
+	if (error) {
+		fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
+		exit (1);
+	}
 	assembly = mono_domain_assembly_open (domain, file);
 	if (!assembly){
 		fprintf (stderr, "Can not open image %s\n", file);
