@@ -1,3 +1,8 @@
+2002-12-06  Duncan Mak  <duncan@ximian.com>
+
+	* data/Makefile.am (EXTRA_DIST): Add machine.config
+	(DISTCLEANFILES): Add config.
+
 2002-11-30  Daniel Morgan <danmorg@sc.rr.com>
 
 	* man/sqlsharpcli.1: added file - a man page 
