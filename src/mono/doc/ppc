@@ -3,9 +3,9 @@
 
 ** Status
 
-78 test(s) passed. 11 test(s) failed. (same as x86 :-)
+It passes and compiles the same amount of mono tests as on the x86 architecture.
 
-mcs in interpreter could compile hello world application.
+mcs is self hosting on Linux/PPC.
 
 ** To do
 
