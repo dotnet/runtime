@@ -213,12 +213,7 @@ mono_domain_has_type_resolve (MonoDomain *domain)
 	MonoObject *o;
 
 	if (field == NULL) {
-		MonoClass *klass = mono_defaults.appdomain_class;
-		int i;
-
-		for (i = 0; i < klass->field.count; ++i)
-			if (strcmp (klass->fields [i].name, "TypeResolve") == 0)
-				field = &klass->fields [i];
+		field = mono_class_get_field_from_name (mono_defaults.appdomain_class, "TypeResolve");
 		g_assert (field);
 	}
 
