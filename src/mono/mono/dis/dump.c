@@ -815,11 +815,11 @@ handle_enum:
 			p += 4;
 			break;
 		case MONO_TYPE_U8:
-			g_string_sprintfa (res, "%lld", read64 (p));
+			g_string_sprintfa (res, "%lld", (long long)read64 (p));
 			p += 8;
 			break;
 		case MONO_TYPE_I8:
-			g_string_sprintfa (res, "%lld", (gint64)read64 (p));
+			g_string_sprintfa (res, "%lld", (long long)read64 (p));
 			p += 8;
 			break;
 		case MONO_TYPE_R4: {

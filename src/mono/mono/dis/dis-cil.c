@@ -254,8 +254,8 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContext *context
 			CODE_INDENT;
 			for (n = 0; n < count; n++){
 				fprintf (output, "\t%sIL_%04x%s", indent, 
-					endswitch-start+read32 (ptr), 
-					n == count - 1 ? ")" : ",\n");
+						 (int)(endswitch-start+read32 (ptr)), 
+						 n == count - 1 ? ")" : ",\n");
 				ptr += 4;
 			}
 			CODE_UNINDENT;
@@ -294,7 +294,7 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContext *context
 		case MonoShortInlineBrTarget: {
 			signed char x = *ptr;
 			
-			fprintf (output, "IL_%04x\n", ptr - start + 1 + x);
+			fprintf (output, "IL_%04x\n", (int)(ptr - start + 1 + x));
 			ptr++;
 			break;
 		}

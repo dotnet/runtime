@@ -1487,7 +1487,7 @@ get_memberref_parent (MonoImage *m, guint32 mrp_token, MonoGenericContext *conte
  * Since there is no backpointer in the Field table, we have to scan
  * the TypeDef table and locate the actual "owner" of the field
  */
-char *
+static char *
 get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericContext *context)
 {
 	int idx = mono_metadata_token_index (token);
