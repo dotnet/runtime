@@ -401,6 +401,18 @@ if test x$platform_win32 = xno; then
 			AC_MSG_RESULT(no)
 		])
 	])
+	
+	dnl **********************************
+	dnl *** Check for gethostbyname2_r ***
+	dnl **********************************
+	AC_MSG_CHECKING(for gethostbyname2_r)
+		AC_TRY_COMPILE([#include <netdb.h>], [
+		gethostbyname2_r(NULL,0,NULL,NULL,0,NULL,NULL);
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_GETHOSTBYNAME2_R)
+	])
 
 	dnl *****************************
 	dnl *** Checks for libnsl     ***

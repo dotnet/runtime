@@ -1,3 +1,10 @@
+2003-07-14  Jerome Laban <jlaban@wanadoo.fr>
+
+	* acconfig.h:
+	* configure.in: Check for gethostbyname2_r availability.
+	* data/machine.config: Added section system.net/settings. Added
+	option for IPv6 availability.	
+
 2003-07-13  Zoltan Varga  <vargaz@freemail.hu>
 
 	* mono/tests/cattr-object.cs: Make it run under both mono and MS.NET.
