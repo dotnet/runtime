@@ -375,6 +375,8 @@ mono_create_method_pointer (MonoMethod *method)
 	 * arg_pos is the offset from EBP to the incoming arg on the stack.
 	 * We just call stackval_from_data to handle all the (nasty) issues....
 	 */
+	x86_lea_membase (p, X86_EAX, X86_EBP, stackval_pos);
+	x86_mov_membase_reg (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, stack_args)), X86_EAX, 4);
 	for (i = 0; i < sig->param_count; ++i) {
 		x86_mov_reg_imm (p, X86_ECX, stackval_from_data);
 		x86_lea_membase (p, X86_EDX, X86_EBP, arg_pos);
@@ -455,6 +457,7 @@ mono_create_method_pointer (MonoMethod *method)
 	x86_leave (p);
 	x86_ret (p);
 
+	g_assert (p - code_buffer < 512);
 	return g_memdup (code_buffer, p - code_buffer);
 }
 
