@@ -121,7 +121,7 @@
 		  Some people observed problems with autoconf 2.52. Installing 
 		  autoconf 2.13 helped in those cases.
 
-		* Precompiled GLIB 1.3 and pkg-config packages (and
+		* Precompiled GLIB 2.0 and pkg-config packages (and
 		  their dependencies) by the <a href="http://www.gimp.org/~tml/gimp/win32//index.html">GIMP for Windows</a> project from
 		  <a href="http://www.go-mono.com/archive/pkgconfig-0.80-tml-20020101.zip">http://www.go-mono.com/archive/pkgconfig-0.80-tml-20020101.zip</a>
 		  <a href="http://www.go-mono.com/archive/glib-1.3.12-20020101.zip">http://www.go-mono.com/archive/glib-1.3.12-20020101.zip</a>
@@ -142,7 +142,7 @@
 	</ul>
 
 
-*** Install Cygwin and the GNU build tools, Microsoft's .NET Framework SDK and the precompiled GLIB 1.3 and pkg-config libraries.
+*** Install Cygwin and the GNU build tools, Microsoft's .NET Framework SDK and the precompiled GLIB 2.0 and pkg-config libraries.
 
 	<ul>
 
@@ -201,8 +201,8 @@ make install
 		
 		* Install <a href="http://www.freedesktop.org/software/pkgconfig">pkg-config</a>.
 
-		* Install glib 1.3. You can download it
-                  from <a href="ftp://ftp.gtk.org/pub/gtk/v1.3/glib-1.3.12.tar.gz">ftp.gtk.org</a>. Maybe you need
+		* Install glib 2.0. You can download it
+                  from <a href="ftp://ftp.gtk.org/pub/gtk/v2.0/glib-2.0.6.tar.gz">ftp.gtk.org</a>. Maybe you need
                   to modify your ACLOCAL_FLAGS for pkg-config, for example if
                   your install prefix is /usr/local:
 <pre>
@@ -223,7 +223,7 @@ make install</strong>
 </pre>
 	</ul>
 
-*** Notes on compiling GLIB 1.3 and pkg-config from source:
+*** Notes on compiling GLIB 2.0 and pkg-config from source:
 
 
 	<ul>
@@ -254,8 +254,8 @@ make install</strong>
 
  
 		* Download, compile and install the 
-		  <a href="ftp://ftp.gtk.org/pub/gtk/v1.3/glib-1.3.12.tar.gz">
-		  glib 1.3</a> from source.
+		  <a href="ftp://ftp.gtk.org/pub/gtk/v2.0/glib-2.0.6.tar.gz">
+		  glib 2.0</a> from source.
 
 	</ul>
 
