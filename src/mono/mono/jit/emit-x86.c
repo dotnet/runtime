@@ -144,9 +144,9 @@ enter_method (MonoMethod *method, char *ebp)
 			printf ("XX, ");
 		}
 
-		g_assert (align == 4);
-		ebp += size + 3;
-		ebp = (gpointer)((unsigned)ebp & ~(3));
+		g_assert (align == 4 || align == 8);
+		ebp += size + align - 1;
+		ebp = (gpointer)((unsigned)ebp & ~(align - 1));
 	}
 
 	printf (")\n");
