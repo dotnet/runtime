@@ -122,6 +122,24 @@ mono_bitset_test (const MonoBitSet *set, guint32 pos) {
 }
 
 /*
+ * mono_bitset_test_bulk:
+ * @set: bitset ptr
+ * @pos: test bit at this pos
+ *
+ * Return 32 bits from the bitset, starting from @pos, which must be divisible
+ * with 32.
+ */
+guint32
+mono_bitset_test_bulk (const MonoBitSet *set, guint32 pos) {
+	int j = pos / BITS_PER_CHUNK;
+
+	if (pos >= set->size)
+		return 0;
+	else
+		return set->data [j];
+}
+
+/*
  * mono_bitset_clear:
  * @set: bitset ptr
  * @pos: unset bit at this pos
@@ -468,7 +486,7 @@ mono_bitset_equal (const MonoBitSet *src, const MonoBitSet *src1) {
 	int i;
 	if (src->size != src1->size)
 		return FALSE;
- 
+
 	for (i = 0; i < src->size / BITS_PER_CHUNK; ++i)
 		if (src->data [i] != src1->data [i])
 			return FALSE;

@@ -29,6 +29,8 @@ void        mono_bitset_set_all      (MonoBitSet *set);
 
 int         mono_bitset_test         (const MonoBitSet *set, guint32 pos);
 
+guint32     mono_bitset_test_bulk    (const MonoBitSet *set, guint32 pos);
+
 void        mono_bitset_clear        (MonoBitSet *set, guint32 pos);
 
 void        mono_bitset_clear_all    (MonoBitSet *set);
@@ -38,6 +40,8 @@ void        mono_bitset_invert       (MonoBitSet *set);
 guint32     mono_bitset_size         (const MonoBitSet *set);
 
 guint32     mono_bitset_count        (const MonoBitSet *set);
+
+void        mono_bitset_low_high     (const MonoBitSet *set, guint32 *low, guint32 *high);
 
 int         mono_bitset_find_start   (const MonoBitSet *set);
 
