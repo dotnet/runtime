@@ -839,6 +839,7 @@ mono_image_open (const char *fname, MonoImageOpenStatus *status)
 		LeaveCriticalSection (&images_mutex);
 		mono_image_close (image);
 
+		image2->ref_count ++;
 		return image2;
 	}
 	g_hash_table_insert (loaded_images_hash, image->name, image);
