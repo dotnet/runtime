@@ -2405,7 +2405,7 @@ mono_type_stack_size (MonoType *t, gint *align)
 		return sizeof (gpointer);
 	case MONO_TYPE_TYPEDBYREF:
 		*align = __alignof__(gpointer);
-		return sizeof (gpointer) * 2;
+		return sizeof (gpointer) * 3;
 	case MONO_TYPE_R4:
 		*align = __alignof__(float);
 		return sizeof (float);		
