@@ -12,6 +12,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <math.h>
+#include <sys/time.h>
 
 #ifdef sun    // Solaris x86
 #include <sys/types.h>
@@ -66,6 +67,7 @@
 
 #define MONO_CHECK_THIS(ins) (cfg->method->signature->hasthis && (ins)->ssa_op == MONO_SSA_LOAD && (ins)->inst_left->inst_c0 == 0)
 
+static void setup_stat_profiler (void);
 gboolean  mono_arch_print_tree(MonoInst *tree, int arity);
 static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt);
 static gpointer mono_jit_compile_method (MonoMethod *method);
@@ -6891,6 +6893,8 @@ mono_thread_start_cb (guint32 tid, gpointer stack_start, gpointer func)
 	thread = mono_thread_current ();
 	if (thread)
 		thread->jit_data = jit_tls;
+	if (mono_profiler_get_events () & MONO_PROFILE_STATISTICAL)
+		setup_stat_profiler ();
 }
 
 void (*mono_thread_attach_aborted_cb ) (MonoObject *obj) = NULL;
@@ -8800,6 +8804,14 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 }
 
 static void
+SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
+{
+	GET_CONTEXT;
+
+	mono_profiler_stat_hit (mono_arch_ip_from_context (ctx), ctx);
+}
+
+static void
 SIG_HANDLER_SIGNATURE (sigquit_signal_handler)
 {
        MonoException *exc;
@@ -8882,6 +8894,22 @@ mono_runtime_install_handlers (void)
 #endif
 
 #endif /* PLATFORM_WIN32 */
+}
+
+static void
+setup_stat_profiler (void)
+{
+	struct itimerval itval;
+	static int inited = 0;
+
+	itval.it_interval.tv_usec = 1000;
+	itval.it_interval.tv_sec = 0;
+	itval.it_value = itval.it_interval;
+	setitimer (ITIMER_PROF, &itval, NULL);
+	if (inited)
+		return;
+	inited = 1;
+	add_signal_handler (SIGPROF, sigprof_signal_handler);
 }
 
 /* mono_jit_create_remoting_trampoline:
