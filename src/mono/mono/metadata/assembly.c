@@ -72,30 +72,6 @@ search_loaded (MonoAssemblyName* aname)
 	return NULL;
 }
 
-/**
- * g_concat_dir_and_file:
- * @dir:  directory name
- * @file: filename.
- *
- * returns a new allocated string that is the concatenation of dir and file,
- * takes care of the exact details for concatenating them.
- */
-static char *
-g_concat_dir_and_file (const char *dir, const char *file)
-{
-	g_return_val_if_fail (dir != NULL, NULL);
-	g_return_val_if_fail (file != NULL, NULL);
-
-        /*
-	 * If the directory name doesn't have a / on the end, we need
-	 * to add one so we get a proper path to the file
-	 */
-	if (dir [strlen(dir) - 1] != G_DIR_SEPARATOR)
-		return g_strconcat (dir, G_DIR_SEPARATOR_S, file, NULL);
-	else
-		return g_strconcat (dir, file, NULL);
-}
-
 static MonoAssembly *
 load_in_path (const char *basename, const char** search_path, MonoImageOpenStatus *status)
 {
@@ -104,7 +80,7 @@ load_in_path (const char *basename, const char** search_path, MonoImageOpenStatu
 	MonoAssembly *result;
 
 	for (i = 0; search_path [i]; ++i) {
-		fullpath = g_concat_dir_and_file (search_path [i], basename);
+		fullpath = g_build_filename (search_path [i], basename, NULL);
 		result = mono_assembly_open (fullpath, status);
 		g_free (fullpath);
 		if (result)
@@ -416,28 +392,19 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		mono_assembly_close (ass);
 		return NULL;
 	}
-	
-	t = &image->tables [MONO_TABLE_MODULEREF];
-	ass->modules = g_new0 (MonoImage *, t->rows);
-	for (i = 0; i < t->rows; i++){
-		char *module_ref;
-		const char *name;
-		guint32 cols [MONO_MODULEREF_SIZE];
 
-		mono_metadata_decode_row (t, i, cols, MONO_MODULEREF_SIZE);
-		name = mono_metadata_string_heap (image, cols [MONO_MODULEREF_NAME]);
-		module_ref = g_concat_dir_and_file (base_dir, name);
-		ass->modules [i] = mono_image_open (module_ref, status);
-		if (ass->modules [i]) {
-			ass->modules [i]->assembly = ass;
-			load_references (ass->modules [i], status);
+	/* resolve assembly references for modules */
+	t = &image->tables [MONO_TABLE_MODULEREF];
+	for (i = 0; i < t->rows; i++){
+		if (image->modules [i]) {
+			image->modules [i]->assembly = ass;
+			load_references (image->modules [i], status);
 		}
 		/* 
 		 * FIXME: what do we do here? it could be a native dll...
 		 * We should probably do lazy-loading of modules.
 		 */
 		*status = MONO_IMAGE_OK;
-		g_free (module_ref);
 	}
 
 	mono_assembly_invoke_load_hook (ass);
@@ -482,7 +449,7 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 	else
 		filename = g_strconcat (aname->name, ".dll", NULL);
 	if (basedir) {
-		fullpath = g_concat_dir_and_file (basedir, filename);
+		fullpath = g_build_filename (basedir, filename, NULL);
 		result = mono_assembly_open (fullpath, status);
 		g_free (fullpath);
 		if (result) {

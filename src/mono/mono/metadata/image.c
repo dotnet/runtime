@@ -22,6 +22,7 @@
 #include "mono-endian.h"
 #include "private.h"
 #include "tabledefs.h"
+#include "tokentype.h"
 
 #define INVALID_ADDRESS 0xffffffff
 
@@ -237,6 +238,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 	guint32 offset, size;
 	guint16 streams;
 	int i;
+	guint32 pad;
 	char *ptr;
 	
 	offset = mono_cli_rva_image_map (iinfo, iinfo->cli_cli_header.ch_metadata.rva);
@@ -255,8 +257,9 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 		version_string_len = read32 (ptr);
 		ptr += 4;
 		ptr += version_string_len;
-		if (((guint32) ptr) % 4)
-			ptr += 4 - (((guint32) ptr) %4);
+		pad = ptr - image->raw_metadata;
+		if (pad % 4)
+			ptr += 4 - (pad % 4);
 	} else
 		return FALSE;
 
@@ -291,9 +294,9 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 			g_message ("Unknown heap type: %s\n", ptr + 8);
 			ptr += 8 + strlen (ptr) + 1;
 		}
-		if (((guint32)ptr) % 4){
-			ptr += 4 - (((guint32)ptr) % 4);
-		}
+		pad = ptr - image->raw_metadata;
+		if (pad % 4)
+			ptr += 4 - (pad % 4);
 	}
 
 	g_assert (image->heap_guid.data);
@@ -371,6 +374,39 @@ mono_image_add_to_name_cache (MonoImage *image, const char *nspace,
 		g_hash_table_insert (name_cache, (char *)nspace, (char *)nspace_table);
 	}
 	g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (index));
+}
+
+static void
+load_modules (MonoImage *image, MonoImageOpenStatus *status)
+{
+	MonoTableInfo *t;
+	int i;
+	char *base_dir;
+
+	if (image->modules)
+		return;
+
+	t = &image->tables [MONO_TABLE_MODULEREF];
+	image->modules = g_new0 (MonoImage *, t->rows);
+	base_dir = g_path_get_dirname (image->name);
+	for (i = 0; i < t->rows; i++){
+		char *module_ref;
+		const char *name;
+		guint32 cols [MONO_MODULEREF_SIZE];
+
+		mono_metadata_decode_row (t, i, cols, MONO_MODULEREF_SIZE);
+		name = mono_metadata_string_heap (image, cols [MONO_MODULEREF_NAME]);
+		module_ref = g_build_filename (base_dir, name, NULL);
+		image->modules [i] = mono_image_open (module_ref, status);
+		/* 
+		 * FIXME: what do we do here? it could be a native dll...
+		 * We should probably do lazy-loading of modules.
+		 */
+		if (status)
+			*status = MONO_IMAGE_OK;
+		g_free (module_ref);
+	}
+	g_free (base_dir);
 }
 
 static void
@@ -573,6 +609,8 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	image->module_name = mono_metadata_string_heap (image, 
 			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_MODULE],
 					0, MONO_MODULE_NAME));
+
+	load_modules (image, status);
 
 	if (status)
 		*status = MONO_IMAGE_OK;

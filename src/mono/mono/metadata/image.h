@@ -22,7 +22,6 @@ typedef struct {
 	MonoAssemblyName aname;
 	GModule *aot_module;
 	MonoImage *image;
-	MonoImage **modules;
 	/* Load files here */
 	void *dynamic;
 } MonoAssembly;
@@ -79,6 +78,8 @@ struct _MonoImage {
 	 * It is NULL terminated.
 	 */
 	MonoAssembly **references;
+
+	MonoImage **modules;
 
 	/*
 	 * The Assembly this image was loaded from.
