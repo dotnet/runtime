@@ -1181,6 +1181,19 @@ get_escaped_name (const char *name)
 		return g_strdup (name);
 
 	for (s = name; *s; s++) {
+		char *first, *result;
+
+		if (*s != '/')
+			continue;
+
+		first = g_strndup (name, s-name);
+		result = g_strdup_printf ("%s/%s", get_escaped_name (first), get_escaped_name (s+1));
+		g_free (first);
+
+		return result;
+	}
+
+	for (s = name; *s; s++) {
 		if (isalnum (*s) || *s == '_' || *s == '$' || *s == '@' || *s == '?' || *s == '.' || *s == 0)
 			continue;
 
