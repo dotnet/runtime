@@ -238,7 +238,11 @@ dump_table_memberref (MonoImage *m)
 		
 		switch (kind){
 		case 0:
-			ks = "TypeDef"; break;
+			ks = "TypeDef";
+			xx = get_typedef (m, idx);
+			x = g_strconcat (xx, ".", mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]), NULL);
+			g_free (xx);
+			break;
 		case 1:
 			ks = "TypeRef";
 			xx = get_typeref (m, idx);
