@@ -163,8 +163,10 @@ class Tests {
 	}
 
 	static int test_2_bigremun_imm () {
-		uint b = (uint)-2;
-		return (int)(b % 3);
+		unchecked {
+			uint b = (uint)-2;
+			return (int)(b % 3);
+		}
 	}
 
 	static int test_2_rem () {
@@ -350,11 +352,13 @@ class Tests {
 	}
 	
 	static int test_0_bigunrshift_imm () {
-		uint b = (uint)-1;
-		b = b >> 1;
-		if (b != 0x7fffffff)
-			return 1;
-		return 0;
+		unchecked {
+			uint b = (uint)-1;
+			b = b >> 1;
+			if (b != 0x7fffffff)
+				return 1;
+			return 0;
+		}
 	}
 	
 	static int test_0_bigrshift_imm () {
@@ -378,12 +382,14 @@ class Tests {
 	}
 	
 	static int test_0_bigunrshift () {
-		uint b = (uint)-1;
-		int a = 1;
-		b = b >> a;
-		if (b != 0x7fffffff)
-			return 1;
-		return 0;
+		unchecked {
+			uint b = (uint)-1;
+			int a = 1;
+			b = b >> a;
+			if (b != 0x7fffffff)
+				return 1;
+			return 0;
+		}
 	}
 	
 	static int test_0_bigrshift () {

@@ -436,14 +436,18 @@ class Tests {
 	}
 
 	static int test_1431655764_bigdivun_imm () {
-		uint b = (uint)-2;
-		return (int)(b / 3);
+		unchecked {
+			uint b = (uint)-2;
+			return (int)(b / 3);
+		}
 	}
 
 	static int test_1431655764_bigdivun () {
-		uint b = (uint)-2;
-		int a = 3;
-		return (int)(b / a);
+		unchecked {
+			uint b = (uint)-2;
+			int a = 3;
+			return (int)(b / a);
+		}
 	}
 
 	static int test_1_remun () {
@@ -453,9 +457,11 @@ class Tests {
 	}
 
 	static int test_2_bigremun () {
-		uint b = (uint)-2;
-		int a = 3;
-		return (int)(b % a);
+		unchecked {
+			uint b = (uint)-2;
+			int a = 3;
+			return (int)(b % a);
+		}
 	}
 
 	static int test_0_ceq () {

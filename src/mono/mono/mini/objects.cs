@@ -270,6 +270,12 @@ class Tests {
 
 		long buf_start;
 		int buf_length, buf_offset;
+
+		public TestRegA () {
+			buf_start = 0;
+			buf_length = 0;
+			buf_offset = 0;
+		}
 	
 		public long Seek (long position) {
 			long pos = position;
