@@ -154,6 +154,9 @@ mono_runtime_install_cleanup (MonoDomainFunc func);
 void
 mono_runtime_quit (void);
 
+gboolean
+mono_runtime_is_shutting_down (void);
+
 const char*
 mono_check_corlib_version (void);
 

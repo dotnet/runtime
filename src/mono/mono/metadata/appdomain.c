@@ -32,6 +32,8 @@ CRITICAL_SECTION mono_delegate_section;
 static gunichar2 process_guid [36];
 static gboolean process_guid_set = FALSE;
 
+static gboolean shutting_down = FALSE;
+
 static MonoAssembly *
 mono_domain_assembly_preload (MonoAssemblyName *aname,
 			      gchar **assemblies_path,
@@ -148,6 +150,8 @@ mono_context_init (MonoDomain *domain)
 void
 mono_runtime_cleanup (MonoDomain *domain)
 {
+	shutting_down = TRUE;
+
 	/* This ends up calling any pending pending (for at most 2 seconds) */
 	mono_gc_cleanup ();
 	
@@ -167,6 +171,12 @@ mono_runtime_quit ()
 {
 	if (quit_function != NULL)
 		quit_function (mono_root_domain, NULL);
+}
+
+gboolean
+mono_runtime_is_shutting_down (void)
+{
+	return shutting_down;
 }
 
 gboolean
