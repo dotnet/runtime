@@ -10,6 +10,7 @@ INCLUDES = \
 libwapiincludedir = $(includedir)/mono/io-layer
 
 OTHER_H = \
+	access.h	\
 	atomic.h	\
 	context.h	\
 	critical-sections.h	\
@@ -34,6 +35,7 @@ OTHER_H = \
 	wapi.h	
 
 OTHER_SRC = \
+	access.h		\
 	atomic.c		\
 	atomic.h		\
 	context.c		\

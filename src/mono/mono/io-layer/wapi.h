@@ -14,6 +14,7 @@
 #include <mono/io-layer/macros.h>
 #include <mono/io-layer/handles.h>
 #include <mono/io-layer/io.h>
+#include <mono/io-layer/access.h>
 #include <mono/io-layer/atomic.h>
 #include <mono/io-layer/context.h>
 #include <mono/io-layer/critical-sections.h>

@@ -49,7 +49,7 @@ typedef void (*MonoProfileAssemblyResult) (MonoProfiler *prof, MonoAssembly *ass
 
 typedef void (*MonoProfileMethodInline)   (MonoProfiler *prof, MonoMethod   *parent, MonoMethod *child, int *ok);
 
-typedef void (*MonoProfileThreadFunc)     (MonoProfiler *prof, HANDLE thread);
+typedef void (*MonoProfileThreadFunc)     (MonoProfiler *prof, guint32 tid);
 typedef void (*MonoProfileAllocFunc)      (MonoProfiler *prof, MonoObject *obj, MonoClass *klass);
 
 /*

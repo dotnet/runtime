@@ -21,8 +21,8 @@ void mono_profiler_method_jit      (MonoMethod *method);
 void mono_profiler_method_end_jit  (MonoMethod *method, int result);
 
 void mono_profiler_code_transition (MonoMethod *method, int result);
-void mono_profiler_thread_start    (HANDLE thread);
-void mono_profiler_thread_end      (HANDLE thread);
+void mono_profiler_thread_start    (guint32 tid);
+void mono_profiler_thread_end      (guint32 tid);
 
 void mono_profiler_assembly_event  (MonoAssembly *assembly, int code);
 void mono_profiler_assembly_loaded (MonoAssembly *assembly, int result);

@@ -255,6 +255,22 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	return(handle);
 }
 
+gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, guint32 tid)
+{
+	gpointer ret=NULL;
+	
+	mono_mutex_lock(&thread_hash_mutex);
+
+	ret=g_hash_table_lookup(thread_hash, &tid);
+	mono_mutex_unlock(&thread_hash_mutex);
+	
+	if(ret!=NULL) {
+		_wapi_handle_ref (ret);
+	}
+	
+	return(ret);
+}
+
 /**
  * ExitThread:
  * @exitcode: Sets the thread's exit code, which can be read from

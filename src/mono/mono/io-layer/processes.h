@@ -12,7 +12,8 @@
 
 #include <glib.h>
 
-#include "mono/io-layer/handles.h"
+#include <mono/io-layer/handles.h>
+#include <mono/io-layer/access.h>
 
 typedef enum {
 	STARTF_USESHOWWINDOW=0x001,
@@ -86,13 +87,6 @@ struct _WapiProcessInformation
 #ifdef NEW_STUFF
 #define CREATE_PRESERVE_CODE_AUTHZ_LEVEL find out the value for this one...
 #endif
-
-/* These are general access control defines, not process-specific.
- * They will move to an access control-defining header when more
- * things use them.
- */
-#define SYNCHRONIZE			0x00100000
-#define STANDARD_RIGHTS_REQUIRED	0x000f0000
 
 #define	PROCESS_TERMINATE		0x0001
 #define	PROCESS_CREATE_THREAD		0x0002
