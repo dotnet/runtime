@@ -724,6 +724,14 @@ class Tests {
 		return 4;
 	}
 
+	static int test_1234_checked_i2_cast () {
+		long l = 1234;
+
+		checked {
+			return (short)l;
+		}
+	}
+
 	static int test_10_int_uint_compare () {
 		uint size = 10;
 		int j = 0;

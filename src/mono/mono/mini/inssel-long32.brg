@@ -812,7 +812,7 @@ reg: OP_LCONV_TO_OVF_I2 (lreg) {
 	MONO_EMIT_NEW_COND_EXC (s, LT_UN, "OverflowException");
 	mono_bblock_add_inst (s->cbb, end_label);
 
-	MONO_EMIT_UNALU (s, tree, CEE_CONV_I1, state->reg1, state->left->reg1);
+	MONO_EMIT_UNALU (s, tree, CEE_CONV_I2, state->reg1, state->left->reg1);
 }
 
 reg: OP_LCONV_TO_OVF_I2_UN (lreg) {
