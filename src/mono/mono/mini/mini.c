@@ -3617,7 +3617,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			*sp++ = ins;
 			break;
 		case CEE_LDC_R4: {
-			float *f = mono_mempool_alloc (cfg->domain->mp, sizeof (float));
+			float *f;
+			/* we should really allocate this only late in the compilation process */
+			mono_domain_lock (cfg->domain);
+			f = mono_mempool_alloc (cfg->domain->mp, sizeof (float));
+			mono_domain_unlock (cfg->domain);
 			CHECK_OPSIZE (5);
 			CHECK_STACK_OVF (1);
 			MONO_INST_NEW (cfg, ins, OP_R4CONST);
@@ -3631,7 +3635,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		}
 		case CEE_LDC_R8: {
-			double *d = mono_mempool_alloc (cfg->domain->mp, sizeof (double));
+			double *d;
+			mono_domain_lock (cfg->domain);
+			d = mono_mempool_alloc (cfg->domain->mp, sizeof (double));
+			mono_domain_unlock (cfg->domain);
 			CHECK_OPSIZE (9);
 			CHECK_STACK_OVF (1);
 			MONO_INST_NEW (cfg, ins, OP_R8CONST);
@@ -5113,9 +5120,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 */
 			if (!(cfg->opt & MONO_OPT_SHARED))
 				mono_class_vtable (cfg->domain, klass);
-			
+			mono_domain_lock (cfg->domain);
 			if (cfg->domain->special_static_fields)
 				addr = g_hash_table_lookup (cfg->domain->special_static_fields, field);
+			mono_domain_unlock (cfg->domain);
 
 			if ((cfg->opt & MONO_OPT_SHARED) || (cfg->compile_aot && addr)) {
 				int temp;
@@ -9068,10 +9076,14 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		g_free (id);
 	}
 	
-	if (cfg->method->dynamic)
+	if (cfg->method->dynamic) {
 		jinfo = g_malloc0 (sizeof (MonoJitInfo) + (header->num_clauses * sizeof (MonoJitExceptionInfo)));
-	else
+	} else {
+		/* we access cfg->domain->mp */
+		mono_domain_lock (cfg->domain);
 		jinfo = mono_mempool_alloc0 (cfg->domain->mp, sizeof (MonoJitInfo) + (header->num_clauses * sizeof (MonoJitExceptionInfo)));
+		mono_domain_unlock (cfg->domain);
+	}
 
 	jinfo->method = method;
 	jinfo->code_start = cfg->native_code;
@@ -9120,10 +9132,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	cfg->jit_info = jinfo;
 
+	mono_domain_lock (cfg->domain);
 	mono_jit_info_table_add (cfg->domain, jinfo);
 
 	if (cfg->method->dynamic)
 		mono_dynamic_code_hash_lookup (cfg->domain, cfg->method)->ji = jinfo;
+	mono_domain_unlock (cfg->domain);
 
 	/* collect statistics */
 	mono_jit_stats.allocated_code_size += cfg->code_len;
