@@ -191,7 +191,7 @@ read_line_numbers (MonoDebugSymbolFile *symfile)
 
 	while (ptr < end) {
 		MonoDebugLineNumberBlock *lnb;
-		guint32 token, length;
+		guint32 token, source_offset;
 		MonoMethod *method;
 
 		token = * ((guint32 *) ptr)++;
@@ -201,14 +201,10 @@ read_line_numbers (MonoDebugSymbolFile *symfile)
 
 		lnb = g_new0 (MonoDebugLineNumberBlock, 1);
 		lnb->token = token;
-		lnb->source_file_idx = * ((guint32 *) ptr)++;
-		length = * ((guint32 *) ptr)++;
-		lnb->source_file = (const char *) ptr;
-		ptr += length;
+		source_offset = * ((guint32 *) ptr)++;
+		lnb->source_file = (const char *) start + source_offset;
 		lnb->start_line = * ((guint32 *) ptr)++;
 		lnb->file_offset = * ((guint32 *) ptr)++;
-
-		g_message (G_STRLOC ": %ld - %p - %s", token, method, method->name);
 
 		g_hash_table_insert (symfile->line_number_table, method, lnb);
 	}
@@ -522,7 +518,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 					   "local variable %d, but method %s only has %d local variables.",
 					   symfile->file_name, original, minfo->method->name,
 					   minfo->num_locals);
-				g_message (G_STRLOC ": %ld", token);
+				g_message (G_STRLOC ": %d", token);
 				G_BREAKPOINT ();
 				continue;
 			}
@@ -594,7 +590,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			if (original > klass->field.count) {
 				g_warning ("Symbol file %s contains invalid field offset entry.",
 					   symfile->file_name);
-				g_message (G_STRLOC ": %ld", token);
+				g_message (G_STRLOC ": %d", token);
 				// G_BREAKPOINT ();
 				continue;
 			}
@@ -852,7 +848,6 @@ MonoReflectionMethodBuilder *
 ves_icall_Debugger_MonoSymbolWriter_method_from_token (MonoReflectionModuleBuilder *mb, guint32 token)
 {
 	MonoArrayList *methods = mb->assemblyb->methods;
-	MonoReflectionMethodBuilder *retval;
 	guint32 index = (token & 0xffffff) - 1;
 
 	g_assert (methods != NULL);

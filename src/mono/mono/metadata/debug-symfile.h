@@ -67,7 +67,6 @@ struct MonoDebugILOffsetInfo {
 
 struct MonoDebugLineNumberBlock {
 	guint32 token;
-	guint32 source_file_idx;
 	const char *source_file;
 	guint32 start_line;
 	guint32 file_offset;
@@ -92,7 +91,7 @@ struct MonoDebugSymbolFileSection {
 	gulong size;
 };
 
-#define MONO_DEBUG_SYMBOL_FILE_VERSION			11
+#define MONO_DEBUG_SYMBOL_FILE_VERSION			12
 
 /* Keep in sync with Mono.CSharp.Debugger.MonoDwarfFileWriter.Section */
 #define MONO_DEBUG_SYMBOL_SECTION_DEBUG_INFO		0x01
