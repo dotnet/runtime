@@ -1766,12 +1766,18 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 	if (!klass->inited)
 		mono_class_init (klass);
 
+	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		if ((klass->interface_id <= vt->max_interface_id) &&
+		    (vt->interface_offsets [klass->interface_id] != 0))
+			return obj;
+		else
+			return NULL;
+	}
+
 	if (oklass != klass && oklass == mono_defaults.transparent_proxy_class) {
 		/* fixme: add check for IRemotingTypeInfo */
-		MonoRealProxy *rp = ((MonoTransparentProxy *)obj)->rp;
-		MonoType *type;
-		type = rp->class_to_proxy->type;
-		oklass = mono_class_from_mono_type (type);
+		if (klass->marshalbyref)
+			oklass = ((MonoTransparentProxy *)obj)->klass;
 	}
 
 	return mono_class_is_assignable_from (klass, oklass) ? obj : NULL;
