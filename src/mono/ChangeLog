@@ -2,6 +2,10 @@
 
 	* tools/
 	* tools/Makefile.am: Add tools directory
+	* tools/locale-builder: Add the locale-builder tool, this tool is
+	not built by default as it is only needed by people that wish to
+	moidify culture data.
+	* Makefile.am: Add tools to build
 	
 Wed May 19 13:22:19 EDT 2004 Paolo Molaro <lupus@ximian.com>
 
