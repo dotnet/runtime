@@ -453,6 +453,8 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 	void * dest_addr = mono_array_addr_with_size (dest, element_size, dest_idx);
 	void * source_addr = mono_array_addr_with_size (source, element_size, source_idx);
 
+	g_assert (dest_idx + length <= mono_array_length (dest));
+	g_assert (source_idx + length <= mono_array_length (source));
 	memcpy (dest_addr, source_addr, element_size * length);
 }
 
@@ -824,7 +826,7 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 	info->name_space = mono_string_new (domain, class->name_space);
 	info->attrs = class->flags;
 	info->rank = class->rank;
-	info->assembly = NULL; /* FIXME */
+	info->assembly = mono_assembly_get_object (domain, class->image->assembly);
 	if (class->enumtype && class->enum_basetype) /* types that are modifierd typebuilkders may not have enum_basetype set */
 		info->etype = mono_type_get_object (domain, class->enum_basetype);
 	else if (class->element_class)
@@ -1606,6 +1608,42 @@ ves_icall_System_MonoType_assQualifiedName (MonoReflectionType *object)
 	return res;
 }
 
+static MonoArray*
+ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly, MonoBoolean exportedOnly)
+{
+	MonoDomain *domain = mono_domain_get (); 
+	MonoArray *res;
+	MonoClass *klass;
+	MonoTableInfo *tdef = &assembly->assembly->image->tables [MONO_TABLE_TYPEDEF];
+	int i, count;
+	guint32 attrs, visibility;
+
+	if (exportedOnly) {
+		count = 0;
+		for (i = 0; i < tdef->rows; ++i) {
+			attrs = mono_metadata_decode_row_col (tdef, i, MONO_TYPEDEF_FLAGS);
+			visibility = attrs & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+			if (visibility == TYPE_ATTRIBUTE_PUBLIC || visibility == TYPE_ATTRIBUTE_NESTED_PUBLIC)
+				count++;
+		}
+	} else {
+		count = tdef->rows;
+	}
+	res = mono_array_new (domain, mono_defaults.monotype_class, count);
+	count = 0;
+	for (i = 0; i < tdef->rows; ++i) {
+		attrs = mono_metadata_decode_row_col (tdef, i, MONO_TYPEDEF_FLAGS);
+		visibility = attrs & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+		if (!exportedOnly || (visibility == TYPE_ATTRIBUTE_PUBLIC || visibility == TYPE_ATTRIBUTE_NESTED_PUBLIC)) {
+			klass = mono_class_get (assembly->assembly->image, (i + 1) | MONO_TOKEN_TYPE_DEF);
+			mono_array_set (res, gpointer, count, mono_type_get_object (domain, &klass->byval_arg));
+			count++;
+		}
+	}
+	
+	return res;
+}
+
 static MonoReflectionType*
 ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, MonoString *smodifiers)
 {
@@ -2179,6 +2217,7 @@ static gconstpointer icall_map [] = {
 	"System.Runtime.InteropServices.Marshal::GetLastWin32Error", ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error,
 
 	"System.Reflection.Assembly::GetType", ves_icall_System_Reflection_Assembly_GetType,
+	"System.Reflection.Assembly::GetTypes", ves_icall_System_Reflection_Assembly_GetTypes,
 	"System.Reflection.Assembly::get_code_base", ves_icall_System_Reflection_Assembly_get_code_base,
 
 	/*

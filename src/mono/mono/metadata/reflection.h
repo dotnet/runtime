@@ -89,6 +89,11 @@ typedef struct {
 } MonoReflectionParameter;
 
 typedef struct {
+	MonoObject object;
+	MonoAssembly *assembly;
+} MonoReflectionAssembly;
+
+typedef struct {
 	MonoReflectionType *utype;
 	MonoArray *values;
 	MonoArray *names;
@@ -122,7 +127,7 @@ typedef struct {
 	MonoString *name_space;
 	MonoReflectionType *parent;
 	MonoReflectionType *etype;
-	MonoAssembly *assembly;
+	MonoReflectionAssembly *assembly;
 	guint32 attrs;
 	guint32 rank;
 	MonoBoolean isbyref, ispointer, isprimitive;
@@ -227,11 +232,6 @@ typedef struct {
 	MonoDynamicStream guid;
 	MonoDynamicTable tables [64];
 } MonoDynamicAssembly;
-
-typedef struct {
-	MonoObject object;
-	MonoAssembly *assembly;
-} MonoReflectionAssembly;
 
 typedef struct {
 	MonoReflectionAssembly assembly;

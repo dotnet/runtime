@@ -66,6 +66,11 @@ struct _MonoImage {
 	MonoAssembly **references;
 
 	/*
+	 * The Assembly this image was loaded from.
+	 */
+	MonoAssembly *assembly;
+
+	/*
 	 * Indexed by method tokens and typedef tokens.
 	 */
 	GHashTable *method_cache;

@@ -156,6 +156,8 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	ass->name = fullname;
 	ass->image = image;
 
+	image->assembly = ass;
+
 	g_hash_table_insert (assemblies, image->name, ass);
 	g_hash_table_insert (assemblies, ass->name, ass);
 	
