@@ -626,12 +626,15 @@ reg: CEE_CONV_U2 (reg) {
 
 reg: CEE_CONV_U4 (reg),
 reg: CEE_CONV_U (reg),
-reg: CEE_CONV_I (reg),
-reg: CEE_CONV_OVF_I4 (reg) {
+reg: CEE_CONV_I (reg) {
 	if (sizeof (void *) == 8)
 		MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
 	else
 		MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
+}
+
+reg: CEE_CONV_OVF_I4 (reg) {
+	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
 }
 
 reg: CEE_CONV_OVF_U4 (reg),
