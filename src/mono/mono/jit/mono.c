@@ -196,7 +196,7 @@ usage (char *name)
 		 "    --profile          record and dump profile info\n"
 		 "    --break NAME       insert a breakpoint at the start of method NAME\n"
 		 "                       (NAME is in `namespace.name:methodname' format)\n"
-		 "    --precomile name   precompile NAME before executing the main application:\n"
+		 "    --precompile name  precompile NAME before executing the main application:\n"
 		 "                       NAME is in one of the following formats:\n"
 		 "                         namespace.name          compile the given class\n"
 		 "                         namespace.name:method   compile the given method\n"
