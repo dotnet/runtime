@@ -214,6 +214,13 @@ mono_constant_fold_inst (MonoInst *inst, gpointer data)
 	 * 	*ovf* opcodes? I'ts slow and hard to do in C.
 	 *      switch can be replaced by a simple jump 
 	 */
+#if SIZEOF_VOID_P == 4
+	case CEE_CONV_I4:
+		if ((inst->inst_left->type == STACK_I4)||(inst->inst_left->type == STACK_PTR)) {
+			*inst = *inst->inst_left;
+		}
+		break;	
+#endif
 	default:
 		return;
 	}
