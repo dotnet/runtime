@@ -1,12 +1,12 @@
 INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
 
-bin_PROGRAMS = mono-vm
+bin_PROGRAMS = mono-int
 
-mono_vm_SOURCES =	\
+mono_int_SOURCES =	\
 	interp.c	\
 	interp.h
 
-mono_vm_LDADD =	\
+mono_int_LDADD =	\
 	../metadata/libmetadata.a	\
 	$(GLIB_LIBS)
 

@@ -1,0 +1,6 @@
+Makefile
+Makefile.in
+mono-int
+*.o
+.libs
+.deps
