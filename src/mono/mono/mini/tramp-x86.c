@@ -89,6 +89,10 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	LeaveCriticalSection (metadata_section);
 	g_assert (addr);
 
+	/* the method was jumped to */
+	if (!code)
+		return addr;
+
 	/* go to the start of the call instruction
 	 *
 	 * address_byte = (m << 6) | (o << 3) | reg
@@ -154,6 +158,145 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	}
 }
 
+static guchar*
+create_trampoline_code (int is_jump)
+{
+	guint8 *buf, *code;
+	static guint8* generic_jump_trampoline = NULL;
+	
+	if (is_jump) {
+		if (generic_jump_trampoline)
+			return generic_jump_trampoline;
+	} else {
+		if (mono_generic_trampoline_code)
+			return mono_generic_trampoline_code;
+	}
+	
+	code = buf = g_malloc (256);
+	/* save caller save regs because we need to do a call */ 
+	x86_push_reg (buf, X86_EDX);
+	x86_push_reg (buf, X86_EAX);
+	x86_push_reg (buf, X86_ECX);
+
+	/* save LMF begin */
+
+	/* save the IP (caller ip) */
+	if (is_jump)
+		x86_push_imm (buf, 0);
+	else
+		x86_push_membase (buf, X86_ESP, 16);
+
+	x86_push_reg (buf, X86_EBX);
+	x86_push_reg (buf, X86_EDI);
+	x86_push_reg (buf, X86_ESI);
+	x86_push_reg (buf, X86_EBP);
+
+	/* save method info */
+	x86_push_membase (buf, X86_ESP, 32);
+	/* get the address of lmf for the current thread */
+	x86_call_code (buf, mono_get_lmf_addr);
+	/* push lmf */
+	x86_push_reg (buf, X86_EAX); 
+	/* push *lfm (previous_lmf) */
+	x86_push_membase (buf, X86_EAX, 0);
+	/* *(lmf) = ESP */
+	x86_mov_membase_reg (buf, X86_EAX, 0, X86_ESP, 4);
+	/* save LFM end */
+
+	/* push the method info */
+	x86_push_membase (buf, X86_ESP, 44);
+	/* push the return address onto the stack */
+	if (is_jump)
+		x86_push_imm (buf, 0);
+	else
+		x86_push_membase (buf, X86_ESP, 52);
+
+	/* save all register values */
+	x86_push_reg (buf, X86_EBX);
+	x86_push_reg (buf, X86_EDI);
+	x86_push_reg (buf, X86_ESI);
+	x86_push_membase (buf, X86_ESP, 64); /* EDX */
+	x86_push_membase (buf, X86_ESP, 64); /* ECX */
+	x86_push_membase (buf, X86_ESP, 64); /* EAX */
+
+	x86_call_code (buf, x86_magic_trampoline);
+	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 8*4);
+
+	/* restore LMF start */
+	/* ebx = previous_lmf */
+	x86_pop_reg (buf, X86_EBX);
+	/* edi = lmf */
+	x86_pop_reg (buf, X86_EDI);
+	/* *(lmf) = previous_lmf */
+	x86_mov_membase_reg (buf, X86_EDI, 0, X86_EBX, 4);
+	/* discard method info */
+	x86_pop_reg (buf, X86_ESI);
+	/* restore caller saved regs */
+	x86_pop_reg (buf, X86_EBP);
+	x86_pop_reg (buf, X86_ESI);
+	x86_pop_reg (buf, X86_EDI);
+	x86_pop_reg (buf, X86_EBX);
+	/* discard save IP */
+	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);		
+	/* restore LMF end */
+
+	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 16);
+
+	/* call the compiled method */
+	x86_jump_reg (buf, X86_EAX);
+
+	g_assert ((buf - code) <= 256);
+
+	if (is_jump) {
+		return generic_jump_trampoline = code;
+	} else {
+		return mono_generic_trampoline_code = code;
+	}
+}
+
+#define TRAMPOLINE_SIZE 10
+
+gpointer
+mono_arch_create_jump_trampoline (MonoMethod *method)
+{
+	guint8 *code, *buf, *tramp;
+
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		return mono_arch_create_jump_trampoline (mono_marshal_get_synchronized_wrapper (method));
+
+	/* icalls use method->addr */
+	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+		MonoMethod *nm;
+		
+		if (!method->addr && (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+			mono_lookup_pinvoke_call (method);
+
+#ifdef MONO_USE_EXC_TABLES
+		if (mono_method_blittable (method)) {
+			return method->addr;
+		} else {
+#endif
+			nm = mono_marshal_get_native_wrapper (method);
+			return mono_compile_method (nm);
+#ifdef MONO_USE_EXC_TABLES
+		}
+#endif
+	}
+	
+	tramp = create_trampoline_code (TRUE);
+
+	code = buf = g_malloc (TRAMPOLINE_SIZE);
+	x86_push_imm (buf, method);
+	x86_jump_code (buf, tramp);
+	g_assert ((buf - code) <= TRAMPOLINE_SIZE);
+
+	mono_jit_stats.method_trampolines++;
+
+	return code;
+
+}
+
 /**
  * mono_arch_create_jit_trampoline:
  * @method: pointer to the method info
@@ -204,81 +347,12 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		return mono_arch_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
 
-	if (!mono_generic_trampoline_code) {
-		mono_generic_trampoline_code = buf = g_malloc (256);
-		/* save caller save regs because we need to do a call */ 
-		x86_push_reg (buf, X86_EDX);
-		x86_push_reg (buf, X86_EAX);
-		x86_push_reg (buf, X86_ECX);
+	create_trampoline_code (FALSE);
 
-		/* save LMF begin */
-
-		/* save the IP (caller ip) */
-		x86_push_membase (buf, X86_ESP, 16);
-
-		x86_push_reg (buf, X86_EBX);
-		x86_push_reg (buf, X86_EDI);
-		x86_push_reg (buf, X86_ESI);
-		x86_push_reg (buf, X86_EBP);
-
-		/* save method info */
-		x86_push_membase (buf, X86_ESP, 32);
-		/* get the address of lmf for the current thread */
-		x86_call_code (buf, mono_get_lmf_addr);
-		/* push lmf */
-		x86_push_reg (buf, X86_EAX); 
-		/* push *lfm (previous_lmf) */
-		x86_push_membase (buf, X86_EAX, 0);
-		/* *(lmf) = ESP */
-		x86_mov_membase_reg (buf, X86_EAX, 0, X86_ESP, 4);
-		/* save LFM end */
-
-		/* push the method info */
-		x86_push_membase (buf, X86_ESP, 44);
-		/* push the return address onto the stack */
-		x86_push_membase (buf, X86_ESP, 52);
-
-		/* save all register values */
-		x86_push_reg (buf, X86_EBX);
-		x86_push_reg (buf, X86_EDI);
-		x86_push_reg (buf, X86_ESI);
-		x86_push_membase (buf, X86_ESP, 64); /* EDX */
-		x86_push_membase (buf, X86_ESP, 64); /* ECX */
-		x86_push_membase (buf, X86_ESP, 64); /* EAX */
-
-		x86_call_code (buf, x86_magic_trampoline);
-		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 8*4);
-
-		/* restore LMF start */
-		/* ebx = previous_lmf */
-		x86_pop_reg (buf, X86_EBX);
-		/* edi = lmf */
-		x86_pop_reg (buf, X86_EDI);
-		/* *(lmf) = previous_lmf */
-		x86_mov_membase_reg (buf, X86_EDI, 0, X86_EBX, 4);
-		/* discard method info */
-		x86_pop_reg (buf, X86_ESI);
-		/* restore caller saved regs */
-		x86_pop_reg (buf, X86_EBP);
-		x86_pop_reg (buf, X86_ESI);
-		x86_pop_reg (buf, X86_EDI);
-		x86_pop_reg (buf, X86_EBX);
-		/* discard save IP */
-		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);		
-		/* restore LMF end */
-
-		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 16);
-
-		/* call the compiled method */
-		x86_jump_reg (buf, X86_EAX);
-
-		g_assert ((buf - mono_generic_trampoline_code) <= 256);
-	}
-
-	code = buf = g_malloc (16);
+	code = buf = g_malloc (TRAMPOLINE_SIZE);
 	x86_push_imm (buf, method);
 	x86_jump_code (buf, mono_generic_trampoline_code);
-	g_assert ((buf - code) <= 16);
+	g_assert ((buf - code) <= TRAMPOLINE_SIZE);
 
 	/* store trampoline address */
 	method->info = code;

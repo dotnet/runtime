@@ -2215,10 +2215,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_mov_reg_membase (code, X86_ESI, X86_EBP, pos, 4);
 				pos -= 4;
 			}
+			/* FIXME: no tracing or profiling support... */
 			/* restore ESP/EBP */
 			x86_leave (code);
 			offset = code - cfg->native_code;
-			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, ins->inst_p0);
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
 			x86_jump32 (code, 0);
 			break;
 		}
@@ -2890,12 +2891,18 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			target = mi->wrapper;
 			break;
 		}
+		case MONO_PATCH_INFO_METHOD_JUMP:
+			/* get the trampoline to the method from the domain */
+			if (!(target = g_hash_table_lookup (domain->jit_code_hash, patch_info->data.method)))
+				target = mono_arch_create_jump_trampoline (patch_info->data.method);
+			break;
 		case MONO_PATCH_INFO_METHOD:
 			if (patch_info->data.method == method) {
 				target = code;
 			} else {
 				/* get the trampoline to the method from the domain */
-				target = mono_arch_create_jit_trampoline (patch_info->data.method);
+				if (!(target = g_hash_table_lookup (domain->jit_code_hash, patch_info->data.method)))
+					target = mono_arch_create_jit_trampoline (patch_info->data.method);
 			}
 			break;
 		case MONO_PATCH_INFO_SWITCH: {

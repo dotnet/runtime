@@ -333,6 +333,7 @@ typedef enum {
 	MONO_PATCH_INFO_ABS,
 	MONO_PATCH_INFO_LABEL,
 	MONO_PATCH_INFO_METHOD,
+	MONO_PATCH_INFO_METHOD_JUMP,
 	MONO_PATCH_INFO_METHODCONST,
 	MONO_PATCH_INFO_INTERNAL_METHOD,
 	MONO_PATCH_INFO_SWITCH,
@@ -629,6 +630,7 @@ const char *mono_arch_regname                   (int reg);
 gpointer  mono_arch_get_throw_exception         (void);
 gpointer  mono_arch_get_throw_exception_by_name (void);
 gpointer  mono_arch_create_jit_trampoline       (MonoMethod *method);
+gpointer  mono_arch_create_jump_trampoline      (MonoMethod *method);
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg);
 GList    *mono_arch_get_global_int_regs         (MonoCompile *cfg);
 void      mono_arch_patch_code                  (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji);

@@ -2627,12 +2627,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 			/* FIXME: check the signature matches */
 			cmethod = mono_get_method (image, token, NULL);
-			/*
-			 * The current magic trampoline can't handle this
-			 * apparently, so we compile the method right away.
-			 * Later, we may need to fix the trampoline or use a different one.
-			 */
-			ins->inst_p0 = mono_compile_method (cmethod);
+			ins->inst_p0 = cmethod;
 			MONO_ADD_INS (bblock, ins);
 			ip += 5;
 			start_new_bblock = 1;
@@ -2698,6 +2693,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			sp -= n;
 
+			if ((ins_flag & MONO_INST_TAILCALL) && cmethod && (*ip == CEE_CALL)) {
+				int i;
+				for (i = 0; i < n; ++i) {
+					NEW_ARGSTORE (cfg, ins, i, sp [i]);
+					ins->cil_code = ip;
+					MONO_ADD_INS (bblock, ins);
+				}
+				MONO_INST_NEW (cfg, ins, CEE_JMP);
+				ins->cil_code = ip;
+				ins->inst_p0 = cmethod;
+				MONO_ADD_INS (bblock, ins);
+				start_new_bblock = 1;
+				/* skip CEE_RET as well */
+				ip += 6;
+				ins_flag = 0;
+				break;
+			}
 			if (cmethod && (cfg->opt & MONO_OPT_INTRINS) && (ins = mini_get_opcode_for_method (cfg, cmethod, fsig, sp))) {
 				ins->cil_code = ip;
 
