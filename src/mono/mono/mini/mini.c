@@ -686,8 +686,8 @@ mono_find_block_region (MonoCompile *cfg, int offset, int *filter_lengths)
 	/* first search for handlers and filters */
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
-		if ((clause->flags & MONO_EXCEPTION_CLAUSE_FILTER) && (offset >= clause->token_or_filter) &&
-		    (offset < (clause->token_or_filter + filter_lengths [i])))
+		if ((clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) && (offset >= clause->data.filter_offset) &&
+		    (offset < (clause->data.filter_offset + filter_lengths [i])))
 			return ((i + 1) << 8) | MONO_REGION_FILTER | clause->flags;
 			   
 		if (MONO_OFFSET_IN_HANDLER (clause, offset)) {
@@ -2883,8 +2883,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				tblock->in_stack [0] = cfg->exvar;
 				
 				if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-					GET_BBLOCK (cfg, bbhash, tblock, ip + clause->token_or_filter);
-					tblock->real_offset = clause->token_or_filter;
+					GET_BBLOCK (cfg, bbhash, tblock, ip + clause->data.filter_offset);
+					tblock->real_offset = clause->data.filter_offset;
 					tblock->in_scount = 1;
 					tblock->in_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*));
 					tblock->in_stack [0] = cfg->exvar;
@@ -5585,13 +5585,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				for (cc = 0; cc < header->num_clauses; ++cc) {
 					clause = &header->clauses [cc];
 					if ((clause->flags & MONO_EXCEPTION_CLAUSE_FILTER) &&
-					    (!nearest || (clause->token_or_filter > nearest->token_or_filter))) {
+					    (!nearest || (clause->data.filter_offset > nearest->data.filter_offset))) {
 						nearest = clause;
 						nearest_num = cc;
 					}
 				}
 				g_assert (nearest);
-				filter_lengths [nearest_num] = (ip - header->code) -  nearest->token_or_filter;
+				filter_lengths [nearest_num] = (ip - header->code) -  nearest->data.filter_offset;
 
 				break;
 			}
@@ -7849,11 +7849,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			ei->flags = ec->flags;
 
 			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-				tblock = g_hash_table_lookup (cfg->bb_hash, ip + ec->token_or_filter);
+				tblock = g_hash_table_lookup (cfg->bb_hash, ip + ec->data.filter_offset);
 				g_assert (tblock);
 				ei->data.filter = cfg->native_code + tblock->native_offset;
 			} else {
-				ei->data.token = ec->token_or_filter;
+				ei->data.catch_class = ec->data.catch_class;
 			}
 
 			tblock = g_hash_table_lookup (cfg->bb_hash, ip + ec->try_offset);

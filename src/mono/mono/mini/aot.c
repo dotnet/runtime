@@ -469,6 +469,8 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 
 					if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
 						ei->data.filter = (guint8*)ei->data.filter + offset;
+					else
+						ei->data.catch_class = header->clauses [i].data.catch_class;
 					ei->try_start = (guint8*)ei->try_start + offset;
 					ei->try_end = (guint8*)ei->try_end + offset;
 					ei->handler_start = (guint8*)ei->handler_start + offset;
@@ -560,7 +562,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
 				ei->data.filter = code + *(guint32*)info;
 			else
-				ei->data.token = *(guint32*)info;
+				ei->data.catch_class = ec->data.catch_class;
 			info += 4;
 			ei->try_start = code + *(guint32*)info;
 			info += 4;
@@ -1065,8 +1067,8 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
 				fprintf (tmpfp, "\t.long %d\n", (gint)((guint8*)ei->data.filter - code));
 			else
-				/* fixme: tokens are not global */
-				fprintf (tmpfp, "\t.long %d\n", ei->data.token);
+				/* the class is loaded from the header: optimize away later */
+				fprintf (tmpfp, "\t.long %d\n", 0);
 
 			fprintf (tmpfp, "\t.long %d\n", (gint)((guint8*)ei->try_start - code));
 			fprintf (tmpfp, "\t.long %d\n", (gint)((guint8*)ei->try_end - code));

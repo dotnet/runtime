@@ -440,7 +440,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 						}
 
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
-						     mono_object_isinst (obj, mono_class_get (ji->method->klass->image, ei->data.token))) || filtered) {
+						     mono_object_isinst (obj, ei->data.catch_class)) || filtered) {
 							if (test_only) {
 								if (mono_ex) {
 									trace_ips = g_list_reverse (trace_ips);

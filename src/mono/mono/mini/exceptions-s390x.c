@@ -1030,7 +1030,7 @@ mono_arch_handle_exception (void *uc, gpointer obj, gboolean test_only)
 					    MONO_CONTEXT_GET_IP (ctx) <= ei->try_end) { 
 						/* catch block */
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
-						     mono_object_isinst (obj, mono_class_get (ji->method->klass->image, ei->data.token))) ||
+						     mono_object_isinst (obj, ei->data.catch_class)) ||
 						    ((ei->flags == MONO_EXCEPTION_CLAUSE_FILTER &&
 						      call_filter (ctx, ei->data.filter, obj)))) {
 							if (test_only) {
