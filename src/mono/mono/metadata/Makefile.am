@@ -14,7 +14,7 @@ assembliesdir = $(libdir)
 confdir = $(sysconfdir)
 endif
 
-bin_PROGRAMS = pedump
+bin_PROGRAMS = pedump monodiet
 
 #
 # libtool is not capable of creating static/shared versions of the same
@@ -153,6 +153,19 @@ pedump_SOURCES =		\
 
 pedump_LDADD = libmetadata.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
 	$(LIBGC_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) -lm
+
+monodiet_SOURCES = monodiet.c
+
+monodiet_LDADD = \
+	libmonoruntime.la	\
+	libmetadata.la	\
+	../io-layer/libwapi.la		\
+	../utils/libmonoutils.la	\
+	$(LIBGC_LIBS)			\
+	$(GLIB_LIBS)			\
+	$(GMODULE_LIBS) 		\
+	$(ICU_LIBS)			\
+	-lm
 
 EXTRA_DIST = make-bundle.pl sample-bundle
 
