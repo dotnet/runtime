@@ -319,10 +319,7 @@ mono_thread_attach (MonoDomain *domain)
 	guint32 tid;
 
 	if ((thread = mono_thread_current ())) {
-		g_warning ("mono_thread_attach called for an already attached thread");
-		if (mono_thread_attach_cb) {
-			mono_thread_attach_cb (tid, &tid);
-		}
+		/* Already attached */
 		return thread;
 	}
 
@@ -1144,6 +1141,9 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 		if (mono_gc_is_finalizer_thread (thread))
 			return;
 
+		if (thread == mono_thread_current ())
+			return;
+
 		wait->handles[wait->num]=thread->handle;
 		wait->threads[wait->num]=thread;
 		wait->num++;
@@ -1254,7 +1254,9 @@ mono_thread_pop_appdomain_ref (void)
 	if (thread) {
 		//printf ("POP REF: %p -> %s.\n", thread, ((MonoDomain*)(thread->appdomain_refs->data))->friendly_name);
 		EnterCriticalSection (&threads_mutex);
-		thread->appdomain_refs = g_slist_remove (thread->appdomain_refs, thread->appdomain_refs->data);
+		// FIXME: How can the list be empty ?
+		if (thread->appdomain_refs)
+			thread->appdomain_refs = g_slist_remove (thread->appdomain_refs, thread->appdomain_refs->data);
 		LeaveCriticalSection (&threads_mutex);
 	}
 }
