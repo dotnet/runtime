@@ -929,6 +929,12 @@ type_from_op (int ins, ILStackDesc *arg) {
 	case CEE_CONV_OVF_U2:
 	case CEE_CONV_OVF_I4:
 	case CEE_CONV_OVF_U4:
+	case CEE_CONV_OVF_I1_UN:
+	case CEE_CONV_OVF_U1_UN:
+	case CEE_CONV_OVF_I2_UN:
+	case CEE_CONV_OVF_U2_UN:
+	case CEE_CONV_OVF_I4_UN:
+	case CEE_CONV_OVF_U4_UN:
 		if (arg->stype == TYPE_INV || arg->stype >= TYPE_MP)
 			return arg->stype = TYPE_INV;
 		return arg->stype = TYPE_I4;
@@ -936,6 +942,8 @@ type_from_op (int ins, ILStackDesc *arg) {
 	case CEE_CONV_U:
 	case CEE_CONV_OVF_I:
 	case CEE_CONV_OVF_U:
+	case CEE_CONV_OVF_I_UN:
+	case CEE_CONV_OVF_U_UN:
 		if (arg->stype == TYPE_INV || arg->stype == TYPE_VT)
 			return arg->stype = TYPE_INV;
 		return arg->stype = TYPE_PTR;
@@ -943,6 +951,8 @@ type_from_op (int ins, ILStackDesc *arg) {
 	case CEE_CONV_U8:
 	case CEE_CONV_OVF_I8:
 	case CEE_CONV_OVF_U8:
+	case CEE_CONV_OVF_I8_UN:
+	case CEE_CONV_OVF_U8_UN:
 		return arg->stype = TYPE_I8;
 	case CEE_CONV_R4:
 	case CEE_CONV_R8:
@@ -1400,7 +1410,7 @@ mono_method_verify (MonoMethod *method, int level)
 				CHECK_STACK_UNDERFLOW (1);
 				--cur_stack;
 				if (!can_store_type (stack + cur_stack, signature->ret))
-					ADD_INVALID (list, g_strdup_printf ("Incompatible type in ret at 0x%04x", ip_offset));
+					ADD_INVALID (list, g_strdup_printf ("Incompatible type %s in ret at 0x%04x", arg_name [stack [cur_stack].stype], ip_offset));
 			}
 			if (cur_stack)
 				ADD_INVALID (list, g_strdup_printf ("Stack not empty (%d) after ret at 0x%04x", cur_stack, ip_offset));
@@ -1641,7 +1651,7 @@ mono_method_verify (MonoMethod *method, int level)
 			token = read32 (ip + 1);
 			CHECK_STACK_UNDERFLOW (1);
 			if (stack [cur_stack - 1].stype != TYPE_OBJ)
-				ADD_INVALID (list, g_strdup_printf ("Invalid argument to unbox at 0x%04x", ip_offset));
+				ADD_INVALID (list, g_strdup_printf ("Invalid argument %s to unbox at 0x%04x", arg_name [stack [cur_stack - 1].stype], ip_offset));
 			stack [cur_stack - 1].stype = TYPE_MP;
 			stack [cur_stack - 1].type = NULL;
 			ip += 5;
@@ -1741,7 +1751,7 @@ mono_method_verify (MonoMethod *method, int level)
 			CHECK_STACK_UNDERFLOW (1);
 			token = read32 (ip + 1);
 			if (stack [cur_stack - 1].stype == TYPE_OBJ)
-				ADD_INVALID (list, g_strdup_printf ("Invalid argument to box at 0x%04x", ip_offset));
+				ADD_INVALID (list, g_strdup_printf ("Invalid argument %s to box at 0x%04x", arg_name [stack [cur_stack - 1].stype], ip_offset));
 			stack [cur_stack - 1].stype = TYPE_OBJ;
 			ip += 5;
 			break;
@@ -1975,6 +1985,8 @@ mono_method_verify (MonoMethod *method, int level)
 			case CEE_CLT_UN:
 				CHECK_STACK_UNDERFLOW (2);
 				--cur_stack;
+				if (type_from_op (256 + *ip, stack + cur_stack - 1) == TYPE_INV)
+					ADD_INVALID (list, g_strdup_printf ("Invalid arguments to opcode 0xFE 0x%02x at 0x%04x", *ip, ip_offset));
 				++ip;
 				break;
 			case CEE_LDFTN:
@@ -2012,21 +2024,26 @@ mono_method_verify (MonoMethod *method, int level)
 				break;
 			case CEE_LDLOC:
 			case CEE_LDLOCA:
-				if (read16 (ip + 1) >= header->num_locals)
-					ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", read16 (ip + 1), ip_offset));
+				n = read16 (ip + 1);
+				if (n >= header->num_locals)
+					ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", n, ip_offset));
 				/* no need to check if the var is initialized if the address is taken */
-				if (0 && *ip == CEE_LDLOC && !local_state [read16 (ip + 1)])
-					ADD_INVALID (list, g_strdup_printf ("Local var %d is initialized at 0x%04x", read16 (ip + 1), ip_offset));
+				if (0 && *ip == CEE_LDLOC && !local_state [n])
+					ADD_INVALID (list, g_strdup_printf ("Local var %d is initialized at 0x%04x", n, ip_offset));
 				CHECK_STACK_OVERFLOW ();
+				type_to_eval_stack_type (header->locals [n], stack + cur_stack, *ip == CEE_LDLOCA);
 				++cur_stack;
 				ip += 3;
 				break;
 			case CEE_STLOC:
-				if (read16 (ip + 1) >= header->num_locals)
-					ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", read16 (ip + 1), ip_offset));
-				local_state [read16 (ip + 1)] = 1;
+				n = read16 (ip + 1);
+				if (n >= header->num_locals)
+					ADD_INVALID (list, g_strdup_printf ("Method doesn't have local var %d at 0x%04x", n, ip_offset));
+				local_state [n] = 1;
 				CHECK_STACK_UNDERFLOW (1);
 				--cur_stack;
+				if (!can_store_type (stack + cur_stack, header->locals [n]))
+					ADD_INVALID (list, g_strdup_printf ("Incompatible type %s in store at 0x%04x", arg_name [stack [cur_stack].stype], ip_offset));
 				ip += 3;
 				break;
 			case CEE_LOCALLOC:
