@@ -2120,7 +2120,12 @@ mono_type_size (MonoType *t, gint *align)
 int
 mono_type_stack_size (MonoType *t, gint *align)
 {
+	int tmp;
+
 	g_assert (t != NULL);
+
+	if (!align)
+		align = &tmp;
 
 	if (t->byref) {
 		*align = __alignof__(gpointer);
@@ -2150,15 +2155,15 @@ mono_type_stack_size (MonoType *t, gint *align)
 		return sizeof (gpointer);
 	case MONO_TYPE_R4:
 		*align = __alignof__(float);
-		return 4;
-		
+		return sizeof (float);		
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		*align = __alignof__(gint64);
+		return sizeof (gint64);		
 	case MONO_TYPE_R8:
 		*align = __alignof__(double);
-		return 8;
-		
+		*align = 8;
+		return sizeof (double);
 	case MONO_TYPE_VALUETYPE: {
 		guint32 size;
 
@@ -2166,7 +2171,10 @@ mono_type_stack_size (MonoType *t, gint *align)
 			return mono_type_stack_size (t->data.klass->enum_basetype, align);
 		else {
 			size = mono_class_value_size (t->data.klass, align);
-			*align = __alignof__(gpointer);
+
+			*align = *align + __alignof__(gpointer) - 1;
+			*align &= ~(__alignof__(gpointer) - 1);
+
 			return size;
 		}
 	}
@@ -2176,33 +2184,74 @@ mono_type_stack_size (MonoType *t, gint *align)
 	return 0;
 }
 
-MonoType *
-mono_get_param_info (MonoMethodSignature *sig, int param_num, int *size, int *align)
+/*
+ * mono_type_native_stack_size:
+ * @t: the type to return the size it uses on the stack
+ *
+ * Returns: the number of bytes required to hold an instance of this
+ * type on the native stack
+ */
+int
+mono_type_native_stack_size (MonoType *t, gint *align)
 {
-	MonoType *type;
-	int s, a;
+	int tmp;
 
-	if (!size)
-		size = &s;
+	g_assert (t != NULL);
 
 	if (!align)
-		align = &a;
+		align = &tmp;
 
-	if (param_num == -1)
-		type = sig->ret;
-	else
-		type = sig->params [param_num];
-	
-	if (sig->pinvoke && MONO_TYPE_ISSTRUCT (type)) {
-		*size = mono_class_native_size (type->data.klass);
-		*align = type->data.klass->min_align;
-		*align = *align + __alignof__(gpointer) - 1;
-		*align &= ~(__alignof__(gpointer) - 1);
-	} else {
-		*size = mono_type_stack_size (type, align);
+	if (t->byref) {
+		*align = 4;
+		return 4;
 	}
 
-	return type;
+	switch (t->type){
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_TYPEDBYREF:
+		*align = 4;
+		return 4;
+	case MONO_TYPE_R4:
+		*align = 4;
+		return 4;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R8:
+		*align = 4;
+		return 8;
+	case MONO_TYPE_VALUETYPE: {
+		guint32 size;
+
+		if (t->data.klass->enumtype)
+			return mono_type_native_stack_size (t->data.klass->enum_basetype, align);
+		else {
+			size = mono_class_native_size (t->data.klass, align);
+			*align = *align + 3;
+			*align &= ~3;
+			
+			return size;
+		}
+	}
+	default:
+		g_error ("type 0x%02x unknown", t->type);
+	}
+	return 0;
 }
 
 /*
@@ -2892,13 +2941,13 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align,
 		return 4;
 	case MONO_NATIVE_I8:
 	case MONO_NATIVE_U8:
-		*align = 8;
+		*align = 4;
 		return 8;
 	case MONO_NATIVE_R4:
 		*align = 4;
 		return 4;
 	case MONO_NATIVE_R8:
-		*align = 8;
+		*align = 4;
 		return 8;
 	case MONO_NATIVE_INT:
 	case MONO_NATIVE_UINT:
@@ -2917,12 +2966,11 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align,
 	case MONO_NATIVE_VARIANTBOOL:
 	case MONO_NATIVE_FUNC:
 	case MONO_NATIVE_LPSTRUCT:
-		*align =  __alignof__(gpointer);
+		*align =  4;
 		return sizeof (gpointer);
 	case MONO_NATIVE_STRUCT: 
 		klass = mono_class_from_mono_type (type);
-		*align = mono_class_min_align (klass);
-		return mono_class_native_size (klass);
+		return mono_class_native_size (klass, align);
 	case MONO_NATIVE_BYVALTSTR: {
 		int esize = unicode ? 2: 1;
 		g_assert (mspec);
@@ -2932,8 +2980,7 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, gint32 *align,
 	case MONO_NATIVE_BYVALARRAY: {
 		int esize;
 		klass = mono_class_from_mono_type (type);
-		*align = mono_class_min_align (klass->element_class);
-		esize = mono_array_element_size (klass);
+		esize = mono_class_native_size (klass->element_class, align);
 		g_assert (mspec);
 		return mspec->num_elem * esize;
 	}

@@ -218,13 +218,13 @@ gint32
 mono_class_instance_size   (MonoClass *klass);
 
 gint32
-mono_class_value_size      (MonoClass *klass, guint32 *align);
-
-gint32
 mono_class_data_size       (MonoClass *klass);
 
 gint32
-mono_class_native_size     (MonoClass *klass);
+mono_class_value_size      (MonoClass *klass, guint32 *align);
+
+gint32
+mono_class_native_size     (MonoClass *klass, guint32 *align);
 
 MonoMarshalType *
 mono_marshal_load_type_info (MonoClass* klass);

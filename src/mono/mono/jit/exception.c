@@ -338,7 +338,6 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj, gboolean test_only)
 	MonoMethod *m;
 
 	g_assert (ctx != NULL);
-
 	if (!obj) {
 		MonoException *ex = mono_get_exception_null_reference ();
 		ex->message = mono_string_new (domain, 

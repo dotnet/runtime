@@ -42,6 +42,9 @@ enum {
 };
 #undef OPDEF
 
+/* alignment of activation frames */
+#define MONO_FRAME_ALIGNMENT 4
+
 void print_lmf (void);
 
 #define MBTREE_TYPE  MBTree
@@ -93,10 +96,8 @@ struct _MBTree {
 		X86AddressInfo ainfo;
 		MonoJitFieldInfo fi;
 		MonoJitBranchInfo bi;
-		struct {
-			gint32 size;
-			gint32 align;
-		} size_info;
+		MonoJitCallInfo call_info;	  
+		MonoJitArgumentInfo arg_info;	  
 	} data;
 };
 
@@ -194,25 +195,33 @@ debug_memcopy (void *dest, const void *src, size_t n);
 	        x86_call_code (s->code, 0);                    \
 	} while (0); 
 
-#define X86_CALL_END                                                        \
-	if (s->frame_size) {                                                \
-		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, s->frame_size); \
-		s->frame_size = 0;                                          \
-	}
+#define X86_CALL_END    do {                                       \
+        int size = tree->data.call_info.frame_size;                \
+        if (size)                                                  \
+	        x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, size); \
+} while (0)
 
-#define X86_CALL_BEGIN                                                      \
-	if (tree->left->op != MB_TERM_NOP) {                                \
-		s->frame_size += 4;                                         \
-		mono_assert (lreg >= 0);                                    \
-		x86_push_reg (s->code, lreg);                               \
-		x86_alu_membase_imm (s->code, X86_CMP, lreg, 0, 0);         \
+#define X86_CALL_BEGIN  do {                                                     \
+	if (tree->left->op != MB_TERM_NOP) {                                     \
+		mono_assert (lreg >= 0);                                         \
+		x86_push_reg (s->code, lreg);                                    \
+		x86_alu_membase_imm (s->code, X86_CMP, lreg, 0, 0);              \
+	}                                                                        \
+	if (tree->data.call_info.vtype_num) {                                    \
+		int offset = VARINFO (s, tree->data.call_info.vtype_num).offset; \
+		x86_lea_membase (s->code, treg, X86_EBP, offset);                \
+		x86_push_reg (s->code, treg);                                    \
+	}                                                                        \
+} while (0)
+
+#define X86_ARG_PAD(pad) do {                                               \
+	if (pad) {                                                          \
+		if (pad == 4)                                               \
+			x86_push_reg (s->code, X86_EAX);                    \
+		else                                                        \
+			x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, pad);   \
 	}                                                                   \
-	if (tree->data.i) {                                                 \
-		int offset = VARINFO (s, tree->data.i).offset;              \
-		s->frame_size += 4;                                         \
-		x86_lea_membase (s->code, treg, X86_EBP, offset);           \
-		x86_push_reg (s->code, treg);                               \
-	}
+} while (0)
 
 /* we use this macro to move one lreg to another - source and
    destination may overlap, but the register allocator has to
@@ -1679,7 +1688,7 @@ reg: NEWARR (reg) {
 	x86_push_imm (s->code, tree->data.p);
 	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, mono_array_new_wrapper);
 	x86_call_code (s->code, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer) + 4);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
 
 	x86_pop_reg (s->code, X86_EDX);
 	x86_pop_reg (s->code, X86_ECX);
@@ -1701,7 +1710,7 @@ reg: NEWARR_SPEC (reg) {
 	x86_push_imm (s->code, tree->data.p);
 	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, mono_array_new_specific);
 	x86_call_code (s->code, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer) + 4);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
 
 	x86_pop_reg (s->code, X86_EDX);
 	x86_pop_reg (s->code, X86_ECX);
@@ -1722,7 +1731,7 @@ reg: NEWOBJ {
 	x86_push_imm (s->code, tree->data.klass);
 	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, mono_object_new_wrapper);
 	x86_call_code (s->code, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer));
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
 
 	x86_pop_reg (s->code, X86_EDX);
 	x86_pop_reg (s->code, X86_ECX);
@@ -1742,7 +1751,7 @@ reg: NEWOBJ_SPEC {
 	x86_push_imm (s->code, tree->data.p);
 	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, mono_object_new_specific);
 	x86_call_code (s->code, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer));
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
 
 	x86_pop_reg (s->code, X86_EDX);
 	x86_pop_reg (s->code, X86_ECX);
@@ -1835,9 +1844,9 @@ reg: FUNC1 (reg) {
 
 reg: LOCALLOC (reg) {
 	int offset = 0;
-	/* size must be aligned to 4 bytes */
-	x86_alu_reg_imm (s->code, X86_ADD, tree->left->reg1, 3);
-	x86_alu_reg_imm (s->code, X86_AND, tree->left->reg1, ~3);
+	/* size must be aligned to MONO_FRAME_ALIGNMENT bytes */
+	x86_alu_reg_imm (s->code, X86_ADD, tree->left->reg1, MONO_FRAME_ALIGNMENT - 1);
+	x86_alu_reg_imm (s->code, X86_AND, tree->left->reg1, ~(MONO_FRAME_ALIGNMENT - 1));
 
 	/* allocate space on stack */
 	x86_alu_reg_reg (s->code, X86_SUB, X86_ESP, tree->left->reg1);
@@ -2658,11 +2667,11 @@ stmt: RET_VOID {
 	} 
 }
 
-
 stmt: ARG_I4 (LDIND_I4 (addr)) {
 	MBTree *at = tree->left->left;
+	int pad = tree->data.arg_info.pad;
 
-	s->frame_size += 4;
+	X86_ARG_PAD (pad);
 
 	switch (at->data.ainfo.amode) {
 
@@ -2687,7 +2696,9 @@ stmt: ARG_I4 (LDIND_I4 (addr)) {
 
 stmt: ARG_I4 (LDIND_I4 (ADDR_L)) {
 	int treg = VARINFO (s, tree->left->left->data.i).reg;
-	s->frame_size += 4;
+	int pad = tree->data.arg_info.pad;
+
+	X86_ARG_PAD (pad);
 	x86_push_reg (s->code, treg);
 } cost {
 	MBCOND ((VARINFO (data, tree->left->left->data.i).reg >= 0));
@@ -2695,18 +2706,23 @@ stmt: ARG_I4 (LDIND_I4 (ADDR_L)) {
 }
 
 stmt: ARG_I4 (reg) {
-	s->frame_size += 4;
+	int pad = tree->data.arg_info.pad;
+
+	X86_ARG_PAD (pad);
 	x86_push_reg (s->code, tree->left->reg1);
-	PRINT_REG ("ARG_I4",  tree->left->reg1);
 }
 
 stmt: ARG_I4 (ADDR_G) {
-	s->frame_size += 4;
+	int pad = tree->data.arg_info.pad;
+
+	X86_ARG_PAD (pad);
 	x86_push_imm (s->code, tree->left->data.p);
 }
 
 stmt: ARG_I4 (CONST_I4) "MB_USE_OPT1(0)" {
-	s->frame_size += 4;
+	int pad = tree->data.arg_info.pad;
+
+	X86_ARG_PAD (pad);
 	x86_push_imm (s->code, tree->left->data.i);
 }
 
@@ -2765,11 +2781,11 @@ reg: CALL_I4 (this, reg) {
 	if (lreg == treg || rreg == treg) 
 		mono_assert_not_reached ();
 
-	X86_CALL_BEGIN
+	X86_CALL_BEGIN;
 
 	x86_call_reg (s->code, rreg);
 
-	X86_CALL_END
+	X86_CALL_END;
 
 	mono_assert (tree->reg1 == X86_EAX);
 }
@@ -2781,12 +2797,12 @@ reg: CALL_I4 (this, ADDR_G) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 	
-	X86_CALL_BEGIN
+	X86_CALL_BEGIN;
 
 	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->right->data.p);
 	x86_call_code (s->code, 0);
 
-	X86_CALL_END
+	X86_CALL_END;
 
 	mono_assert (tree->reg1 == X86_EAX);
 }
@@ -2821,7 +2837,7 @@ reg: CALL_I4 (this, INTF_ADDR) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 
-	X86_CALL_BEGIN
+	X86_CALL_BEGIN;
 
 	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
 	x86_mov_reg_membase (s->code, lreg, lreg, 
@@ -2829,7 +2845,7 @@ reg: CALL_I4 (this, INTF_ADDR) {
 	x86_mov_reg_membase (s->code, lreg, lreg, tree->right->data.m->klass->interface_id << 2, 4);
 	x86_call_virtual (s->code, lreg, tree->right->data.m->slot << 2);
 
-	X86_CALL_END
+	X86_CALL_END;
 
 	mono_assert (tree->reg1 == X86_EAX);
 }
@@ -2884,13 +2900,13 @@ reg: CALL_I4 (this, VFUNC_ADDR) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 
-	X86_CALL_BEGIN
+	X86_CALL_BEGIN;
 
 	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);	
 	x86_call_virtual (s->code, lreg, 
 	        G_STRUCT_OFFSET (MonoVTable, vtable) + (tree->right->data.m->slot << 2));
 
-	X86_CALL_END
+	X86_CALL_END;
 
 	mono_assert (tree->reg1 == X86_EAX);
 }
@@ -2902,12 +2918,12 @@ stmt: CALL_VOID (this, ADDR_G) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 	
-	X86_CALL_BEGIN
+	X86_CALL_BEGIN;
 
 	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->right->data.p);
 	x86_call_code (s->code, 0);
 
-	X86_CALL_END
+	X86_CALL_END;
 }
 
 stmt: CALL_VOID (this, reg) {
@@ -2922,11 +2938,11 @@ stmt: CALL_VOID (this, reg) {
 	if (lreg == treg || rreg == treg) 
 		mono_assert_not_reached ();
 	
-	X86_CALL_BEGIN
+	X86_CALL_BEGIN;
 
 	x86_call_reg (s->code, tree->right->reg1);
 
-	X86_CALL_END
+	X86_CALL_END;
 }
 
 stmt: CALL_VOID (this, INTF_ADDR) {
@@ -2936,7 +2952,7 @@ stmt: CALL_VOID (this, INTF_ADDR) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 
-	X86_CALL_BEGIN
+	X86_CALL_BEGIN;
 
 	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
 	x86_mov_reg_membase (s->code, lreg, lreg, 
@@ -2944,7 +2960,7 @@ stmt: CALL_VOID (this, INTF_ADDR) {
 	x86_mov_reg_membase (s->code, lreg, lreg, tree->right->data.m->klass->interface_id << 2, 4);
 	x86_call_virtual (s->code, lreg, tree->right->data.m->slot << 2);
 
-	X86_CALL_END
+	X86_CALL_END;
 }
 
 stmt: CALL_VOID (this, VFUNC_ADDR) {
@@ -2954,13 +2970,13 @@ stmt: CALL_VOID (this, VFUNC_ADDR) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 
-	X86_CALL_BEGIN
+	X86_CALL_BEGIN;
 
 	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
 	x86_call_virtual (s->code, lreg, 
 	        G_STRUCT_OFFSET (MonoVTable, vtable) + (tree->right->data.m->slot << 2));
 
-	X86_CALL_END
+	X86_CALL_END;
 }
 
 stmt: SWITCH (reg) {
@@ -3629,11 +3645,11 @@ lreg: CALL_I8 (this, reg) {
 	if (lreg == treg || rreg == treg) 
 		mono_assert_not_reached ();
 
-	X86_CALL_BEGIN
+	X86_CALL_BEGIN;
 
 	x86_call_reg (s->code, rreg);
 
-	X86_CALL_END
+	X86_CALL_END;
 
 	mono_assert (tree->reg1 == X86_EAX);
 	mono_assert (tree->reg2 == X86_EDX);
@@ -3646,12 +3662,12 @@ lreg: CALL_I8 (this, ADDR_G) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 	
-	X86_CALL_BEGIN
+	X86_CALL_BEGIN;
 
 	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->right->data.p);
 	x86_call_code (s->code, 0);
 
-	X86_CALL_END
+	X86_CALL_END;
 
 	mono_assert (tree->reg1 == X86_EAX);
 	mono_assert (tree->reg2 == X86_EDX);
@@ -3664,13 +3680,13 @@ lreg: CALL_I8 (this, VFUNC_ADDR) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 
-	X86_CALL_BEGIN
+	X86_CALL_BEGIN;
 
 	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
 	x86_call_virtual (s->code, lreg, 
 	        G_STRUCT_OFFSET (MonoVTable, vtable) + (tree->right->data.m->slot << 2));
 
-	X86_CALL_END
+	X86_CALL_END;
 
 	mono_assert (tree->reg1 == X86_EAX);
 	mono_assert (tree->reg2 == X86_EDX);
@@ -3683,7 +3699,7 @@ lreg: CALL_I8 (this, INTF_ADDR) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 
-	X86_CALL_BEGIN
+	X86_CALL_BEGIN;
 
 	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
 	x86_mov_reg_membase (s->code, lreg, lreg, 
@@ -3691,7 +3707,7 @@ lreg: CALL_I8 (this, INTF_ADDR) {
 	x86_mov_reg_membase (s->code, lreg, lreg, tree->right->data.m->klass->interface_id << 2, 4);
 	x86_call_virtual (s->code, lreg, tree->right->data.m->slot << 2);
 
-	X86_CALL_END
+	X86_CALL_END;
 
 	mono_assert (tree->reg1 == X86_EAX);
 	mono_assert (tree->reg2 == X86_EDX);
@@ -3720,7 +3736,9 @@ stmt: RET (lreg) {
 
 
 stmt: ARG_I8 (lreg) {
-	s->frame_size += 8;
+	int pad = tree->data.arg_info.pad;
+
+	X86_ARG_PAD (pad);
 	x86_push_reg (s->code, tree->left->reg2);
 	x86_push_reg (s->code, tree->left->reg1);
 }
@@ -4435,14 +4453,16 @@ stmt: REMOTE_STIND_R8 (reg, freg) {
 }
 
 stmt: ARG_R4 (freg) {
-	s->frame_size += 4;
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+	int pad = tree->data.arg_info.pad;
+
+	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4 + pad);
 	x86_fst_membase (s->code, X86_ESP, 0, FALSE, TRUE);
 }
 
 stmt: ARG_R8 (freg) {
-	s->frame_size += 8;
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 8);
+	int pad = tree->data.arg_info.pad;
+
+	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 8 + pad);
 	x86_fst_membase (s->code, X86_ESP, 0, TRUE, TRUE);
 }
 
@@ -4518,11 +4538,11 @@ freg: CALL_R8 (this, reg) {
 	if (lreg == treg || rreg == treg) 
 		mono_assert_not_reached ();
 
-	X86_CALL_BEGIN
+	X86_CALL_BEGIN;
 
 	x86_call_reg (s->code, rreg);
 
-	X86_CALL_END
+	X86_CALL_END;
 }
 
 freg: CALL_R8 (this, ADDR_G) {
@@ -4532,12 +4552,12 @@ freg: CALL_R8 (this, ADDR_G) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 	
-	X86_CALL_BEGIN
+	X86_CALL_BEGIN;
 
 	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->right->data.p);
 	x86_call_code (s->code, 0);
 
-	X86_CALL_END
+	X86_CALL_END;
 }
 
 freg: CALL_R8 (this, INTF_ADDR) {
@@ -4547,7 +4567,7 @@ freg: CALL_R8 (this, INTF_ADDR) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 
-	X86_CALL_BEGIN
+	X86_CALL_BEGIN;
 
 	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
 	x86_mov_reg_membase (s->code, lreg, lreg, 
@@ -4555,7 +4575,7 @@ freg: CALL_R8 (this, INTF_ADDR) {
 	x86_mov_reg_membase (s->code, lreg, lreg, tree->right->data.m->klass->interface_id << 2, 4);
 	x86_call_virtual (s->code, lreg, tree->right->data.m->slot << 2);
 
-	X86_CALL_END
+	X86_CALL_END;
 }
 
 freg: CALL_R8 (this, VFUNC_ADDR) {
@@ -4565,13 +4585,13 @@ freg: CALL_R8 (this, VFUNC_ADDR) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 
-	X86_CALL_BEGIN
+	X86_CALL_BEGIN;
 
 	x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
 	x86_call_virtual (s->code, lreg, 
 	        G_STRUCT_OFFSET (MonoVTable, vtable) + (tree->right->data.m->slot << 2));
 
-	X86_CALL_END
+	X86_CALL_END;
 }
 
 stmt: RET (freg) {
@@ -4658,28 +4678,23 @@ stmt: REMOTE_STIND_OBJ (reg, reg) {
 }
 
 stmt: ARG_OBJ (CONST_I4) {
-	s->frame_size += 4;
+	int pad = tree->data.arg_info.pad;
+
+	X86_ARG_PAD (pad);
 	x86_push_imm (s->code, tree->left->data.i);	
 }
 
 stmt: ARG_OBJ (reg) {
-	int pad;
-	int size = tree->data.size_info.size;
-	int align = tree->data.size_info.align;
+	int size = tree->data.arg_info.size;
+	int pad = tree->data.arg_info.pad;
 	int sa;
 	
-	if (!size)
+	if (!size) {
+		g_warning ("pushing zero sized object");
 		return;
-
-	g_assert ((align & 3) == 0);
-
-	pad = (align - ((s->frame_size + size) & (align -1))) & (align - 1);
+	}
 
 	sa = size + pad;
-
-	s->frame_size += sa;
-
-	g_assert ((s->frame_size & (align - 1)) == 0);
 
 	/* reserve space for the argument */
 	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, sa);
@@ -4708,7 +4723,6 @@ stmt: RET_OBJ (reg) {
 	x86_push_imm (s->code, size);
 	x86_push_reg (s->code, tree->left->reg1);
 	x86_push_membase (s->code, X86_EBP, 8);
-
 
 	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, MEMCOPY);
 	x86_call_code (s->code, 0);

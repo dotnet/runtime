@@ -1335,6 +1335,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 	MonoImage *image;
 	MonoValueType svt;
 	MBTree **sp, **stack, **arg_sp, **arg_map = NULL, *t1, *t2, *t3;
+	MonoJitArgumentInfo *arg_info, default_arg_info [10];
 	register const unsigned char *ip, *end;
 	GPtrArray *forest;
 	int i, j, depth, repeat_count;
@@ -1391,7 +1392,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 		for (i = 0; i < signature->param_count; ++i) {
 			int argvar;
-			mono_get_param_info (signature, i, &size, &align);
+			if (signature->pinvoke)
+				size = mono_type_native_stack_size (signature->params [i], &align);
+			else
+				size = mono_type_stack_size (signature->params [i], &align);
+
 			argvar = arch_allocate_var (cfg, size, align, MONO_ARGVAR, VAL_UNKNOWN);
 			VARINFO (cfg, argvar).isvolatile = 1;
 		}
@@ -1924,7 +1929,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			MonoMethod *cm;
 			MBTree *this = NULL;
 			guint32 token;
-			int k, size, align;
+			int k, frame_size;
 			int newarr = FALSE;
 			int newstr = FALSE;
 
@@ -1980,15 +1985,19 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				g_assert (t1);
 				ADD_TREE (t1, cli_addr);
 			}
-			
+				
+			if (csig->param_count + 1 < 10)
+				arg_info = default_arg_info;
+			else 
+				arg_info = g_new (MonoJitArgumentInfo, csig->param_count + 1);
+
+			frame_size = arch_get_argument_info (csig, csig->param_count, arg_info);
+					
 			for (k = csig->param_count - 1; k >= 0; k--) {
-				MonoType *type = mono_get_param_info (cm->signature, k, &size, &align);
-				t1 = mono_ctree_new (mp, mono_map_arg_type (type), arg_sp [k], NULL);	
-				t1->data.size_info.size = size;
-				t1->data.size_info.align = align;
+				t1 = mono_ctree_new (mp, mono_map_arg_type (csig->params [k]), arg_sp [k], NULL);
+				t1->data.arg_info = arg_info [k];
 				ADD_TREE (t1, cli_addr);
 			}
-
 
 			if (newarr || newstr) {
 
@@ -2000,6 +2009,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				}
 
 				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, this, t2);
+				t1->data.call_info.pad = arg_info [0].pad;
+				t1->data.call_info.frame_size = frame_size;
 				t1->svt = VAL_POINTER;
 
 				t1 = mono_store_tree (cfg, -1, t1, &t2);
@@ -2013,6 +2024,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t2->data.p = arch_create_jit_trampoline (cm);
 
 				t1 = mono_ctree_new (mp, mono_map_call_type (csig->ret, &svt), this, t2);
+				t1->data.call_info.pad = arg_info [0].pad;
+				t1->data.call_info.frame_size = frame_size;
 				t1->svt = svt;
 
 				ADD_TREE (t1, cli_addr);
@@ -2026,6 +2039,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 					PUSH_TREE (t1, t1->svt);
 				}
 			}
+
+			if (csig->param_count > 9)
+				g_free (arg_info);
+
 			break;
 		}
 		case CEE_CALLI: 
@@ -2035,7 +2052,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			MonoMethod *cm;
 			MBTree *ftn, *this = NULL;
 			guint32 token;
-			int k, align, size;
+			int k, frame_size;
 			int virtual = *ip == CEE_CALLVIRT;
 			int calli = *ip == CEE_CALLI;
 			gboolean array_set = FALSE;
@@ -2157,33 +2174,46 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				}
 			}
 
+			
+			if (csig->param_count + 1 < 10)
+				arg_info = default_arg_info;
+			else 
+				arg_info = g_new (MonoJitArgumentInfo, csig->param_count + 1);
+
+			frame_size = arch_get_argument_info (csig, nargs, arg_info);
+
 			for (k = nargs - 1; k >= 0; k--) {
-				MonoType *type = mono_get_param_info (csig, k, &size, &align);
-				t1 = mono_ctree_new (mp, mono_map_arg_type (type), arg_sp [k], NULL);
-				t1->data.size_info.size = size;
-				t1->data.size_info.align = align;
+				t1 = mono_ctree_new (mp, mono_map_arg_type (csig->params [k]), arg_sp [k], NULL);
+				t1->data.arg_info = arg_info [k + 1];
 				ADD_TREE (t1, cli_addr);
 			}
 
-			if (csig->hasthis)
+			if (csig->hasthis) 
 				this = *(--sp);		
 			else
 				this = mono_ctree_new_leaf (mp, MB_TERM_NOP);
 
 			if (MONO_TYPE_ISSTRUCT (csig->ret)) {
-				mono_get_param_info (csig, -1, &size, &align);
+				int size, align;
+				if (csig->pinvoke)
+					size = mono_class_native_size (csig->ret->data.klass, &align);
+				else
+					size = mono_class_value_size (csig->ret->data.klass, &align);
+
 				vtype_num = arch_allocate_var (cfg, size, align, MONO_TEMPVAR, VAL_UNKNOWN);
 			}
 
 			if (array_get) {
-				int vnum;
+				int vnum, size, align;
 				
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 				t2->data.p = ves_array_element_address;
 
 				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, this, t2);
-				t1->data.i = vtype_num;
- 
+				t1->data.call_info.vtype_num = vtype_num;
+				t1->data.call_info.frame_size = frame_size;
+				t1->data.call_info.pad = arg_info [0].pad;
+
 				t1 = mono_ctree_new (mp, mono_map_ldind_type (csig->ret, &svt), t1, NULL);
 				t1->svt = svt;		
 
@@ -2205,7 +2235,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t2->data.p = ves_array_element_address;
 
 				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, this, t2);
-				t1->data.i = vtype_num;
+				t1->data.call_info.vtype_num = vtype_num;
+				t1->data.call_info.frame_size = frame_size;
+				t1->data.call_info.pad = arg_info [0].pad;
 
 				t1 = ctree_create_store (cfg, csig->params [nargs], t1, arg_sp [nargs], FALSE);
 				ADD_TREE (t1, cli_addr);
@@ -2233,7 +2265,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				}
 
 				t1 = mono_ctree_new (mp, mono_map_call_type (csig->ret, &svt), this, t2);
-				t1->data.i = vtype_num;
+				t1->data.call_info.vtype_num = vtype_num;
+				t1->data.call_info.frame_size = frame_size;
+				t1->data.call_info.pad = arg_info [0].pad;
 				t1->svt = svt;
 
 				if (csig->ret->type != MONO_TYPE_VOID) {
@@ -2254,6 +2288,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
    
 			}
 
+			if (csig->param_count > 9)
+				g_free (arg_info);
+			
 			break;
 		}
 		case CEE_ISINST: {

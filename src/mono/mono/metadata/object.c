@@ -21,6 +21,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/threadpool.h>
 #include "mono/metadata/debug-helpers.h"
+#include "mono/metadata/marshal.h"
 #if HAVE_BOEHM_GC
 #include <gc/gc.h>
 #endif
@@ -1503,10 +1504,12 @@ void
 mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args)
 {
 	MonoMethodSignature *sig = method->signature;
-	int i, j, type, size, align;
+	int i, j, type, size;
 	
 	for (i = 0, j = 0; i < sig->param_count; i++) {
-		MonoType *pt = mono_get_param_info (sig, i, &size, &align);
+		MonoType *pt = sig->params [i];
+
+		size = mono_type_stack_size (pt, NULL);
 
 		if (pt->byref) {
 			char *arg = mono_array_get (out_args, gpointer, j);

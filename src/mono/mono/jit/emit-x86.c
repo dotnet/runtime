@@ -109,6 +109,52 @@ mono_cpu_detect (void) {
 	}
 }
 
+/*
+ * arch_get_argument_info:
+ * @csig:  a method signature
+ * @param_count: the number of parameters to consider
+ * @arg_info: an array to store the result infos
+ *
+ * Gathers information on parameters such as size, alignment and
+ * padding. arg_info should be large enought to hold param_count + 1 entries. 
+ *
+ * Returns the size of the activation frame.
+ */
+int
+arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
+{
+	int k, frame_size = 0;
+	int size, align, pad;
+	
+	if (csig->hasthis)
+		frame_size += sizeof (gpointer);
+
+	if (MONO_TYPE_ISSTRUCT (csig->ret)) 
+		frame_size += sizeof (gpointer);
+	
+	arg_info [0].size = frame_size;
+
+	for (k = 0; k < param_count; k++) {
+		
+		if (csig->pinvoke)
+			size = mono_type_native_stack_size (csig->params [k], &align);
+		else
+			size = mono_type_stack_size (csig->params [k], &align);
+		
+		frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);	
+		arg_info [k].pad = pad;
+		frame_size += size;
+		arg_info [k + 1].pad = 0;
+		arg_info [k + 1].size = size;
+	}
+
+	align = MONO_FRAME_ALIGNMENT;
+	frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);
+	arg_info [k].pad = pad;
+
+	return frame_size;
+}
+
 static void
 enter_method (MonoMethod *method, char *ebp)
 {
@@ -121,18 +167,14 @@ enter_method (MonoMethod *method, char *ebp)
 	printf ("ENTER: %s\n(", fname);
 	g_free (fname);
 	
-	if (((int)ebp & 3) != 0) {
+	if (((int)ebp & (MONO_FRAME_ALIGNMENT - 1)) != 0) {
 		g_error ("unaligned stack detected (%p)", ebp);
 	}
 
 	ebp += 8;
 
 	if (MONO_TYPE_ISSTRUCT (method->signature->ret)) {
-		int size, align;
-		
 		g_assert (!method->signature->ret->byref);
-
-		mono_get_param_info (method->signature, -1, &size, &align);
 
 		printf ("VALUERET:%p, ", *((gpointer *)ebp));
 		ebp += sizeof (gpointer);
@@ -160,7 +202,12 @@ enter_method (MonoMethod *method, char *ebp)
 
 	for (i = 0; i < method->signature->param_count; ++i) {
 		int size, align;
-		MonoType *type = mono_get_param_info (method->signature, i, &size, &align);
+		MonoType *type = method->signature->params [i];
+
+		if (method->signature->pinvoke)
+			size = mono_type_native_stack_size (type, &align);
+		else
+			size = mono_type_stack_size (type, &align);
 
 		if (type->byref) {
 			printf ("[BYREF:%p], ", *((gpointer *)ebp)); 
@@ -361,6 +408,16 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 		/* *(lmf) = ESP */
 		x86_mov_membase_reg (cfg->code, X86_EAX, 0, X86_ESP, 4);
 	}
+
+#if 0
+	/* activation frame alignment check */
+	x86_mov_reg_reg (cfg->code, X86_EAX, X86_ESP, 4);
+	x86_alu_reg_imm (cfg->code, X86_AND, X86_EAX, MONO_FRAME_ALIGNMENT - 1);
+	x86_alu_reg_imm (cfg->code, X86_CMP, X86_EAX, 0);
+	x86_branch32 (cfg->code, X86_CC_EQ, 1, FALSE);
+	x86_breakpoint (cfg->code);
+
+#endif
 
 	if (mono_regset_reg_used (cfg->rs, X86_EBX)) {
 		x86_push_reg (cfg->code, X86_EBX);

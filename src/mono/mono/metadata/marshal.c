@@ -1909,7 +1909,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			
 			/* allocate space for the native struct and
 			 * store the address into local variable 1 (dest) */
-			mono_mb_emit_icon (mb, mono_class_native_size (klass));
+			mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
 			mono_mb_emit_byte (mb, CEE_PREFIX1);
 			mono_mb_emit_byte (mb, CEE_LOCALLOC);
 			mono_mb_emit_stloc (mb, tmp_locals [i]);
@@ -2424,7 +2424,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionType *rty
 
 	klass = mono_class_from_mono_type (rtype->type);
 
-	return mono_class_native_size (klass);
+	return mono_class_native_size (klass, NULL);
 }
 
 void

@@ -172,8 +172,6 @@ typedef struct {
 	gint             *spillvars; 
 	gint              spillcount;
 	MonoJumpInfo     *jump_info;
-
-	guint             frame_size;
 } MonoFlowGraph;
 
 typedef struct {
@@ -185,6 +183,17 @@ typedef struct {
 	MonoBBlock *target;
 	guint32 cond;
 } MonoJitBranchInfo;
+
+typedef struct {
+	guint16 size;
+	guint8  pad;
+} MonoJitArgumentInfo;
+
+typedef struct {
+	guint16 vtype_num;
+	guint16 frame_size;
+	guint8  pad;
+} MonoJitCallInfo;
 
 typedef struct {
 	gulong methods_compiled;
@@ -261,6 +270,10 @@ mono_cpu_detect            (void);
 
 /* architecture dependent functions */
 
+int
+arch_get_argument_info     (MonoMethodSignature *csig, int param_count, 
+			    MonoJitArgumentInfo *arg_info);
+
 MonoBoolean
 ves_icall_get_frame_info   (gint32 skip, MonoBoolean need_file_info,
 			    MonoReflectionMethod **method, 
@@ -295,6 +308,9 @@ mono_linear_scan           (MonoFlowGraph *cfg, guint32 *used_mask);
 
 const char *
 arch_get_reg_name          (int regnum);
+
+int 
+arch_activation_frame_size (MonoMethodSignature *sig);
 
 /* remoting support */
 

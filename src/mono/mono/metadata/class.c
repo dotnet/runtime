@@ -128,7 +128,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 	info->num_fields = count;
 	
 	if (klass->parent)
-		info->native_size = mono_class_native_size (klass->parent);
+		info->native_size = mono_class_native_size (klass->parent, NULL);
 
 	for (j = i = 0; i < klass->field.count; ++i) {
 		int size, align;
@@ -1373,11 +1373,14 @@ mono_class_instance_size (MonoClass *klass)
  * to unmanaged code) 
  */
 gint32
-mono_class_native_size (MonoClass *klass)
+mono_class_native_size (MonoClass *klass, guint32 *align)
 {
 	
 	if (!klass->marshal_info)
 		mono_marshal_load_type_info (klass);
+
+	if (align)
+		*align = klass->min_align;
 
 	return klass->marshal_info->native_size;
 }
