@@ -2,6 +2,9 @@
 #include <limits.h>
 #include <dirent.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <unistd.h>
+#include <stdio.h>
 
 #include "wrapper.h"
 
@@ -10,22 +13,36 @@ extern char **environ;
 gint64
 mono_wrapper_seek (gpointer fd, gint64 offset, gint32 whence)
 {
-	if (offset > INT_MAX || offset < INT_MIN)
-		return -1;
+	off_t code;
 
-	return lseek ((int)fd, offset, whence);
+	if (offset > INT_MAX || offset < INT_MIN)
+		return -EINVAL;
+
+	code = lseek ((int)fd, offset, whence);
+	if (code == -1)
+		return -errno;
+	else
+		return code;
 }
 
 gint32
 mono_wrapper_read (gpointer fd, void* buf, gint32 count)
 {
-	return read ((int)fd, buf, count);
+	int n = read ((int)fd, buf, count);
+
+	if (n == -1)
+		return -errno;
+	return n;
 }
 
 gint32
 mono_wrapper_write (gpointer fd, void* buf, gint32 count)
 {
-	return write ((int)fd, buf, count);
+	int n = write ((int)fd, buf, count);
+
+	if (n == -1)
+		return -errno;
+	return n;
 }
 
 gint32
@@ -33,8 +50,8 @@ mono_wrapper_fstat (gpointer fd, MonoWrapperStat* buf)
 {
 	struct stat fs;
 
-	if (fstat ((int)fd, &fs) != 0)
-		return -1;
+	if (fstat ((int)fd, &fs) == -1)
+		return -errno;
 
 	buf->st_dev = fs.st_dev;
 	buf->st_mode = fs.st_mode;
@@ -52,10 +69,15 @@ mono_wrapper_fstat (gpointer fd, MonoWrapperStat* buf)
 gint32
 mono_wrapper_ftruncate (gpointer fd, gint64 length) 
 {
+	int code;
+
 	if (length > INT_MAX || length < INT_MIN)
 		return -1;
 
-	return ftruncate ((int)fd, length);
+	code = ftruncate ((int)fd, length);
+	if (code == -1)
+		return -errno;
+	return code;
 }
 
 gpointer
@@ -94,7 +116,9 @@ mono_wrapper_stat (const char * path, MonoWrapperStat* buf)
 gint32
 mono_wrapper_unlink (const char * path)
 {
-	return unlink(path);
+	if (unlink(path) == -1)
+		return -errno;
+	return 0;
 }
 
 gpointer
@@ -131,19 +155,25 @@ mono_wrapper_environ ()
 int
 mono_wrapper_mkdir (const char *path, int mode)
 {
-	return mkdir (path, mode);
+	if (mkdir (path, mode) == -1)
+		return -errno;
+	return 0;
 }
 
 int
 mono_wrapper_rmdir (const char *path)
 {
-	return rmdir (path);
+	if (rmdir (path) == -1)
+		return -errno;
+	return 0;
 }
 
 int
 mono_wrapper_rename (const char *src, const char *dst)
 {
-	return rename (src, dst);
+	if (rename (src, dst) == -1)
+		return -errno;
+	return 0;
 }
 
 
