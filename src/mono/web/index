@@ -83,7 +83,7 @@
 @item Jun 20, 2002
 
 	Gonzalo has got the Mono ASP.NET implementation can now render all Html
-	Controls, and half of the Web Controls.  Session tracking is
+	Controls, and 21 out of the 26 Web Controls.  Session tracking is
 	next.  Look in xsp/test for a collection of tests that render with Mono.
 
 	Ajay has been very busy improving and extending the
