@@ -1410,4 +1410,31 @@
     </tasks>
     
   </contributor>
+  <contributor>
+
+    <name>
+
+      <first-name>John</first-name>
+
+      <last-name>Luke</last-name>
+
+    </name>
+
+    <e-mail>jluke@cfl.rr.com</e-mail>
+
+    <image>none.png</image>
+
+    <location>Daytona, FL</location>
+
+    <organization></organization>
+
+    <description>Contributor.</description>
+
+    <tasks>
+
+      <task>Gtk# Documentation.</task>
+
+    </tasks>
+
+  </contributor>
 </contributors>
