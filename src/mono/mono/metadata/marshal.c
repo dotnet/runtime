@@ -1992,6 +1992,28 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	return res;	
 }
 
+/*
+ * signature_dup_add_this:
+ *
+ *  Make a copy of @sig, adding an explicit this argument.
+ */
+static MonoMethodSignature*
+signature_dup_add_this (MonoMethodSignature *sig, MonoClass *klass)
+{
+	MonoMethodSignature *res;
+	int i;
+
+	res = mono_metadata_signature_alloc (klass->image, sig->param_count + 1);
+	memcpy (res, sig, sizeof (MonoMethodSignature));
+	res->param_count = sig->param_count + 1;
+	res->hasthis = FALSE;
+	for (i = sig->param_count - 1; i >= 0; i --)
+		res->params [i + 1] = sig->params [i];
+	sig->params [0] = &mono_ptr_class_get (&klass->byval_arg)->byval_arg;
+
+	return res;
+}
+
 typedef struct {
 	MonoMethod *ctor;
 	MonoMethodSignature *sig;
@@ -2045,7 +2067,15 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 			strsig_list = g_slist_prepend (strsig_list, cs);
 		}
 	} else {
-		callsig = method->signature;
+		if (method->klass->valuetype && method->signature->hasthis) {
+			/* 
+			 * Valuetype methods receive a managed pointer as the this argument.
+			 * Create a new signature to reflect this.
+			 */
+			callsig = signature_dup_add_this (method->signature, method->klass);
+		}
+		else
+			callsig = method->signature;
 	}
 
 	cache = method->klass->image->runtime_invoke_cache;
@@ -2071,7 +2101,10 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	csig = mono_metadata_signature_alloc (method->klass->image, 4);
 
 	csig->ret = &mono_defaults.object_class->byval_arg;
-	csig->params [0] = &mono_defaults.object_class->byval_arg;
+	if (method->klass->valuetype && method->signature->hasthis)
+		csig->params [0] = callsig->params [0];
+	else
+		csig->params [0] = &mono_defaults.object_class->byval_arg;
 	csig->params [1] = &mono_defaults.int_class->byval_arg;
 	csig->params [2] = &mono_defaults.int_class->byval_arg;
 	csig->params [3] = &mono_defaults.int_class->byval_arg;
@@ -3197,6 +3230,8 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 
 	csig = mono_metadata_signature_dup (sig);
 	csig->pinvoke = 0;
+	if (csig->call_convention == MONO_CALL_VARARG)
+		csig->call_convention = 0;
 
 	res = mono_mb_create_method (mb, csig, csig->param_count + 16);
 	mono_mb_free (mb);
