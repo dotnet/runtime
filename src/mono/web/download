@@ -231,6 +231,21 @@
 	The <a href="anoncvs.html">anoncvs</a> mirrors provided by
 	Hispalinux are updated every six hours.
 
+* Compiling the code
+
+	There are a number of ways of compiling Mono
+
+	<ul>
+		<li>From the <a href="#scripts">scripts</A>
+
+		<LI><a href="#install">Manually</a> for the first time. 
+
+		<li>Manually, <a href="#upgrade">while upgrading</a> to CVS
+	</ul>
+
+	(which is an easy way to get the latest CVS information)
+
+<a name="scripts">
 * Compiling with scripts
 
 	There are scripts to help build mono for both Unix and Windows.  Get
@@ -309,6 +324,7 @@
 
 		You can change /usr/local to something else if you want.
 	</ul>
+
 	
 *** On Windows, to install and work on the compiler and the class libraries:
 
@@ -431,3 +447,40 @@ make install
 
 	</ul>
 
+<a name="upgrading">
+** Upgrading
+
+	To upgrade your Mono installation from CVS, it is very
+	important that you update your Mono and MCS modules from CVS
+	at the same time.  Failure to do so might result in a
+	problematic installation as the runtime and the class
+	libraries will be out of sync.
+
+	Run the following commands to update your CVS tree (more
+	details in <a href="ccvs.html">Cvs and Mono</a> and the <A
+	href="anoncvs.html">AnonCVS and Mono</a> pages). 
+
+	<pre>
+	(cd mono; cvs update -dP .)
+	(cd mcs; cvs update -dP .)
+	</pre>
+
+	Once you have updated your sources, remove any cached
+	assemblies or old binaries from the Mono "runtime" directory,
+	and then compile each component:
+
+	<pre>
+	(cd mono/runtime; rm *exe *dll)
+	(cd mono; make)
+	(cd mcs; make)
+	</pre>
+
+	Now you can install the result:
+
+	<pre>
+	(cd mono; make install)
+	</pre>
+
+	Notice that following the above procedure does not require you
+	to manually install the software in the `mcs' directory, as
+	the relevant files will be copied by the `mono' makefiles.
