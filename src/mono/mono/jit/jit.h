@@ -9,6 +9,11 @@
 #define _MONO_JIT_JIT_H_
 
 #include <config.h>
+/*
+ * io-layer.h must be _BEFORE_ win32-exception.h to avoid problems when 
+ * compiling with version 1.2 of mingw and w32api.
+ */
+#include <mono/io-layer/io-layer.h>
 
 #ifdef PLATFORM_WIN32
 #include "win32-exception.h"
@@ -21,9 +26,6 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/reflection.h>
-#ifndef PLATFORM_WIN32
-#include <mono/io-layer/critical-sections.h>
-#endif
 
 #include "regset.h"
 
