@@ -4075,6 +4075,10 @@ handle_enum:
 	case MONO_TYPE_CLASS: {
 		char *n;
 		MonoType *t;
+		if (*p == (char)0xFF) {
+			*end = p + 1;
+			return NULL;
+		}
 handle_type:
 		slen = mono_metadata_decode_value (p, &p);
 		n = g_memdup (p, slen + 1);
@@ -4797,7 +4801,7 @@ handle_type:
 		*p++ = (len >> 24) & 0xff;
 		*retp = p;
 		*retbuffer = buffer;
-		eclass = mono_object_class (arg)->element_class;
+		eclass = mono_class_from_mono_type (type)->element_class;
 		for (i = 0; i < len; ++i) {
 			encode_cattr_value (buffer, p, &buffer, &p, buflen, &eclass->byval_arg, mono_array_get ((MonoArray*)arg, MonoObject*, i));
 		}
