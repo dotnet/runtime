@@ -2009,7 +2009,7 @@ signature_dup_add_this (MonoMethodSignature *sig, MonoClass *klass)
 	res->hasthis = FALSE;
 	for (i = sig->param_count - 1; i >= 0; i --)
 		res->params [i + 1] = sig->params [i];
-	sig->params [0] = &mono_ptr_class_get (&klass->byval_arg)->byval_arg;
+	res->params [0] = &mono_ptr_class_get (&klass->byval_arg)->byval_arg;
 
 	return res;
 }
