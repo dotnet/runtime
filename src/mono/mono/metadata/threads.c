@@ -533,6 +533,29 @@ ves_icall_System_Threading_Thread_GetDomainID (void)
 	return mono_domain_get()->domain_id;
 }
 
+MonoString* 
+ves_icall_System_Threading_Thread_GetName_internal (MonoThread *this_obj)
+{
+	if (!this_obj->name)
+		return NULL;
+	else
+		return mono_string_new_utf16 (mono_domain_get (), this_obj->name, this_obj->name_len);
+}
+
+void 
+ves_icall_System_Threading_Thread_SetName_internal (MonoThread *this_obj, MonoString *name)
+{
+	if (this_obj->name)
+		g_free (this_obj->name);
+	if (name) {
+		this_obj->name = g_new (gunichar2, mono_string_length (name));
+		memcpy (this_obj->name, mono_string_chars (name), mono_string_length (name) * 2);
+		this_obj->name_len = mono_string_length (name);
+	}
+	else
+		this_obj->name = NULL;
+}
+
 MonoThread *
 mono_thread_current (void)
 {

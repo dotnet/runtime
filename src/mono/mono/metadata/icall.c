@@ -4706,6 +4706,8 @@ static gconstpointer icall_map [] = {
 	"System.Threading.Thread::SlotHash_lookup", ves_icall_System_Threading_Thread_SlotHash_lookup,
 	"System.Threading.Thread::SlotHash_store", ves_icall_System_Threading_Thread_SlotHash_store,
 	"System.Threading.Thread::GetDomainID", ves_icall_System_Threading_Thread_GetDomainID,
+	"System.Threading.Thread::GetName_internal", ves_icall_System_Threading_Thread_GetName_internal,
+	"System.Threading.Thread::SetName_internal", ves_icall_System_Threading_Thread_SetName_internal,
 	"System.Threading.Monitor::Monitor_exit", ves_icall_System_Threading_Monitor_Monitor_exit,
 	"System.Threading.Monitor::Monitor_test_owner", ves_icall_System_Threading_Monitor_Monitor_test_owner,
 	"System.Threading.Monitor::Monitor_test_synchronised", ves_icall_System_Threading_Monitor_Monitor_test_synchronised,

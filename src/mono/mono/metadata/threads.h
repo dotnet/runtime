@@ -61,8 +61,7 @@ extern void mono_install_thread_callbacks (MonoThreadCallbacks *callbacks);
 
 extern void mono_thread_new_init (guint32 tid, gpointer stack_start,
 				  gpointer func);
-extern void mono_thread_create (MonoDomain *domain, gpointer func,
-				       gpointer arg);
+extern void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg);
 extern MonoThread *mono_thread_attach (MonoDomain *domain);
 
 void     mono_threads_install_cleanup   (MonoThreadCleanupFunc func);
@@ -82,6 +81,8 @@ extern void ves_icall_System_Threading_Thread_Start_internal(MonoThread *this_ob
 extern void ves_icall_System_Threading_Thread_Sleep_internal(int ms);
 extern gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms, HANDLE thread);
 extern gint32 ves_icall_System_Threading_Thread_GetDomainID (void);
+extern MonoString* ves_icall_System_Threading_Thread_GetName_internal (MonoThread *this_obj);
+extern void ves_icall_System_Threading_Thread_SetName_internal (MonoThread *this_obj, MonoString *name);
 extern void ves_icall_System_Threading_Thread_SlotHash_store(MonoObject *data);
 extern MonoObject *ves_icall_System_Threading_Thread_SlotHash_lookup(void);
 extern HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal(MonoBoolean owned, MonoString *name);
