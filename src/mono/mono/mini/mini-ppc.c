@@ -968,12 +968,20 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 {
 	guchar *code = p;
 	int save_mode = SAVE_NONE;
+	int offset;
 	MonoMethod *method = cfg->method;
 	int rtype = mono_type_get_underlying_type (mono_method_signature (method)->ret)->type;
 	int save_offset = PPC_STACK_PARAM_OFFSET + cfg->param_area;
 	save_offset += 15;
 	save_offset &= ~15;
 	
+	offset = code - cfg->native_code;
+	/* we need about 16 instructions */
+	if (offset > (cfg->code_size - 16 * 4)) {
+		cfg->code_size *= 2;
+		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+		code = cfg->native_code + offset;
+	}
 handle_enum:
 	switch (rtype) {
 	case MONO_TYPE_VOID:
