@@ -1453,8 +1453,21 @@ mono_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
 		return type->data.klass;
+		
+	case MONO_TYPE_GENERICINST:
+		g_warning ("mono_class_from_type: implement me MONO_TYPE_GENERICINST");
+		g_assert_not_reached ();
+		
+	case MONO_TYPE_VAR:
+		g_warning ("mono_class_from_type: implement me MONO_TYPE_VAR");
+		g_assert_not_reached ();
+
+	case MONO_TYPE_MVAR:
+		g_warning ("mono_class_from_type: implement me MONO_TYPE_MVAR");
+		g_assert_not_reached ();
+		
 	default:
-		g_warning ("implement me %02x\n", type->type);
+		g_warning ("implement me 0x%02x\n", type->type);
 		g_assert_not_reached ();
 	}
 	

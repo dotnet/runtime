@@ -21,6 +21,7 @@ monodis \- CIL image content dumper and disassembler.
 [\-\-exported]
 [\-\-fields]
 [\-\-file]
+[\-\-genericpar]
 [\-\-interface]
 [\-\-manifest]
 [\-\-memberref]
@@ -29,6 +30,7 @@ monodis \- CIL image content dumper and disassembler.
 [\-\-module]
 [\-\-moduleref]
 [\-\-param]
+[\-\-parconst]
 [\-\-property]
 [\-\-propertymap]
 [\-\-typedef]
@@ -74,6 +76,8 @@ Dumps the contents of the fields table
 .I "--file"
 Dumps the contents of the file table
 .TP
+.I "--genericpar"
+Dumps the contents of the generic parameter table.
 .I "--interface"
 Dumps the contents of the interface table
 .TP
@@ -86,6 +90,9 @@ Dumps the contents of the memberref table
 .I "--method"
 Dumps the contents of the method table
 .TP
+.I "--methodspec"
+Dumps the contents of the method spec table.
+.TP
 .I "--methodsem"
 Dumps the contents of the methodsem table
 .TP
@@ -97,6 +104,9 @@ Dumps the contents of the moduleref table
 .TP
 .I "--param"
 Dumps the contents of the param table
+.TP
+.I "--parconst"
+Dumps the contents of the gemeric parameter constraint table
 .TP
 .I "--property"
 Dumps the contents of the property table

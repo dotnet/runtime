@@ -904,7 +904,6 @@ mono_object_allocate (size_t size)
 #else
 	void *o = calloc (1, size);
 #endif
-
 	mono_stats.new_object_count++;
 
 	return o;

@@ -62,7 +62,10 @@ typedef enum {
 	MONO_TABLE_FILE,
 	MONO_TABLE_EXPORTEDTYPE,
 	MONO_TABLE_MANIFESTRESOURCE,
-	MONO_TABLE_NESTEDCLASS
+	MONO_TABLE_NESTEDCLASS,
+	MONO_TABLE_GENERICPARAM,
+	MONO_TABLE_METHODSPEC,
+	MONO_TABLE_GENERICPARAMCONSTRAINT
 
 #define MONO_TABLE_LAST MONO_TABLE_NESTEDCLASS
 } MonoMetaTableEnum;
@@ -241,6 +244,7 @@ typedef struct {
 } MonoExceptionClause;
 
 typedef struct _MonoType MonoType;
+typedef struct _MonoGenericInst MonoGenericInst;
 typedef struct _MonoArrayType MonoArrayType;
 typedef struct _MonoMethodSignature MonoMethodSignature;
 
@@ -258,12 +262,23 @@ struct _MonoArrayType {
 	int *lobounds;
 };
 
+/*
+ * Generic instantiation data type encoding.
+ */
+struct _MonoGenericInst {
+	MonoType *generic_type;
+	int type_argc;
+	MonoType **type_argv;
+};
+
 struct _MonoType {
 	union {
 		MonoClass *klass; /* for VALUETYPE and CLASS */
 		MonoType *type;   /* for PTR and SZARRAY */
 		MonoArrayType *array; /* for ARRAY */
 		MonoMethodSignature *method;
+		int type_param;
+		MonoGenericInst *generic_inst;
 	} data;
 	unsigned int attrs    : 16; /* param attributes or field flags */
 	unsigned int type     : 8;  /* ElementTypeEnum */

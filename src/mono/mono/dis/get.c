@@ -583,6 +583,30 @@ dis_stringify_type (MonoImage *m, MonoType *type)
 	case MONO_TYPE_VOID:
 		bare = g_strdup ("void");
 		break;
+	case MONO_TYPE_MVAR:
+		bare = g_strdup_printf ("!!%d", type->data.type_param);
+		break;
+	case MONO_TYPE_VAR:
+		bare = g_strdup_printf ("!%d", type->data.type_param);
+		break;
+	case MONO_TYPE_GENERICINST: {
+		GString *str = g_string_new ("");
+		int i;
+		char *generic_type = dis_stringify_type (m, type->data.generic_inst->generic_type);
+
+		for (i = 0; i < type->data.generic_inst->type_argc; i++){
+			char *t = dis_stringify_type (m, type->data.generic_inst->type_argv [i]);
+
+			g_string_append (str, t);
+			if (i+1 != type->data.generic_inst->type_argc)
+				g_string_append (str, ", ");
+			g_free (t);
+		}
+		bare = g_strdup_printf ("%s<%s>", generic_type, str->str);
+		g_string_free (str, TRUE);
+		break;
+	}
+		
 	default:
 		g_error ("Do not know how to stringify type 0x%x", type->type);
 	}

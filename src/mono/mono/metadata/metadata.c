@@ -288,6 +288,31 @@ static MonoMetaTable TypeSpecSchema [] = {
 	{ MONO_MT_END, NULL }
 };
 
+static MonoMetaTable GenericParamSchema [] = {
+	{ MONO_MT_UINT16,     "Number" },
+	{ MONO_MT_UINT16,     "Flags" },
+	{ MONO_MT_TABLE_IDX,  "Owner" }, /* TypeDef or MethodDef */
+	{ MONO_MT_STRING_IDX, "Name" },
+
+	/* soon to be removed */
+	{ MONO_MT_TABLE_IDX,  "Kind" }, 
+	{ MONO_MT_TABLE_IDX,  "DeprecatedConstraint" },
+	
+	{ MONO_MT_END, NULL }
+};
+
+static MonoMetaTable MethodSpecSchema [] = {
+	{ MONO_MT_MDOR_IDX,   "Method" },
+	{ MONO_MT_BLOB_IDX,   "Signature" },
+	{ MONO_MT_END, NULL }
+};
+
+static MonoMetaTable GenericParamConstraintSchema [] = {
+	{ MONO_MT_TABLE_IDX,  "GenericParam" },
+	{ MONO_MT_TDOR_IDX,   "Constraint" },
+	{ MONO_MT_END, NULL }
+};
+
 static struct {
 	MonoMetaTable *table;
 	const char    *name;
@@ -334,8 +359,9 @@ static struct {
 	/* 27 */ { ExportedTypeSchema,         "ExportedType" },
 	/* 28 */ { ManifestResourceSchema,     "ManifestResource" },
 	/* 29 */ { NestedClassSchema,          "NestedClass" },
-	/* 2A */ { NULL,                       NULL },
-	/* 2B */ { NULL,                       NULL },
+	/* 2A */ { GenericParamSchema,         "GenericParam" },
+	/* 2B */ { MethodSpecSchema,           "MethodSpec" },
+	/* 2C */ { GenericParamConstraintSchema, "GenericParamConstraint" },
 };
 
 /**
@@ -347,7 +373,7 @@ static struct {
 const char *
 mono_meta_table_name (int table)
 {
-	if ((table < 0) || (table > 0x29))
+	if ((table < 0) || (table > 0x2c))
 		return "";
 	
 	return tables [table].name;
@@ -469,8 +495,22 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			case MONO_TABLE_TYPEDEF:
 				g_assert (i == 4 || i == 5);
 				field_size = i == 4 ? idx_size (MONO_TABLE_FIELD):
-					idx_size(MONO_TABLE_METHOD); 
+					idx_size(MONO_TABLE_METHOD);
+			case MONO_TABLE_GENERICPARAM:
+				g_assert (i == 2 || i == 4 || i == 5);
+				if (i == 2)
+					field_size = MAX (idx_size (MONO_TABLE_METHOD), idx_size (MONO_TABLE_TYPEDEF));
+				else if (i == 4)
+					field_size = idx_size (MONO_TABLE_TYPEDEF);
+				else if (i == 5)
+					field_size = idx_size (MONO_TABLE_TYPEDEF);
 				break;
+
+			case MONO_TABLE_GENERICPARAMCONSTRAINT:
+				g_assert (i == 0);
+				field_size = idx_size (MONO_TABLE_GENERICPARAM);
+				break;
+				
 			default:
 				g_assert_not_reached ();
 			}
@@ -1349,6 +1389,25 @@ mono_metadata_free_method_signature (MonoMethodSignature *sig)
 	g_free (sig);
 }
 
+static MonoGenericInst *
+mono_metadata_parse_generic_inst (MonoImage *m, const char *ptr, const char **rptr)
+{
+	MonoGenericInst *generic_inst = g_new0 (MonoGenericInst, 1);
+	int i, count;
+	
+	generic_inst->generic_type = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	generic_inst->type_argc = count = mono_metadata_decode_value (ptr, &ptr);
+	generic_inst->type_argv = g_new0 (MonoType, count);
+
+	for (i = 0; i < generic_inst->type_argc; i++)
+		generic_inst->type_argv [i] = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	
+	if (rptr)
+		*rptr = ptr;
+
+	return generic_inst;
+}
+
 /* 
  * do_mono_metadata_parse_type:
  * @type: MonoType to be filled in with the return value
@@ -1405,8 +1464,18 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, const char *ptr, cons
 	case MONO_TYPE_ARRAY:
 		type->data.array = mono_metadata_parse_array (m, ptr, &ptr);
 		break;
+
+	case MONO_TYPE_MVAR:
+	case MONO_TYPE_VAR:
+		type->data.type_param = mono_metadata_decode_value (ptr, &ptr);
+		break;
+
+	case MONO_TYPE_GENERICINST:
+		type->data.generic_inst = mono_metadata_parse_generic_inst (m, ptr, &ptr);
+		break;
+		
 	default:
-		g_error ("type 0x%02x not handled in mono_metadata_parse_type", type->type);
+		g_error ("type 0x%02x not handled in do_mono_metadata_parse_type", type->type);
 	}
 	
 	if (rptr)
@@ -2117,7 +2186,7 @@ mono_type_size (MonoType *t, gint *align)
 		*align = __alignof__(gpointer);
 		return sizeof (gpointer);
 	default:
-		g_error ("type 0x%02x unknown", t->type);
+		g_error ("mono_type_size: type 0x%02x unknown", t->type);
 	}
 	return 0;
 }

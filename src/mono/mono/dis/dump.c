@@ -984,3 +984,69 @@ dump_table_declsec (MonoImage *m)
 	}
 }
 
+void 
+dump_table_genericpar (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_GENERICPARAM];
+	guint32 cols [MONO_GENERICPARAM_SIZE];
+	int i;
+	
+	fprintf (output, "GenericParameters (1..%d)\n", t->rows);
+
+	for (i = 1; i <= t->rows; i++) {
+		mono_metadata_decode_row (t, i - 1, cols, MONO_GENERICPARAM_SIZE);
+
+		fprintf (output, "%d: %d, flags=%d, owner=0x%x %s\n", i,
+			 cols [MONO_GENERICPARAM_NUMBER],
+			 cols [MONO_GENERICPARAM_FLAGS],
+			 cols [MONO_GENERICPARAM_OWNER],
+			 mono_metadata_string_heap (m, cols [MONO_GENERICPARAM_NAME]));
+	}
+}
+
+void
+dump_table_methodspec (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_METHODSPEC];
+	guint32 cols [MONO_METHODSPEC_SIZE];
+	int i;
+	
+	fprintf (output, "MethodSpec (1..%d)\n", t->rows);
+
+	for (i = 1; i <= t->rows; i++) {
+		const char *sigblob;
+		MonoMethodSignature *method_sig;
+		char *sig;
+		char *method;
+		
+		mono_metadata_decode_row (t, i - 1, cols, MONO_METHODSPEC_SIZE);
+
+		method = get_method (m, method_dor_to_token (cols [MONO_METHODSPEC_METHOD]));
+		sigblob = mono_metadata_blob_heap (m, cols [MONO_METHODSPEC_SIGNATURE]);
+		method_sig = mono_metadata_parse_method_signature (m, i, sigblob, &sigblob);
+		sig = dis_stringify_method_signature (m, method_sig, i);
+		fprintf (output, "%d: %s, %s\n", i, method, sig);
+		g_free (sig);
+		g_free (method);
+		mono_metadata_free_method_signature (method_sig);
+	}
+}
+
+void
+dump_table_parconstraint (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_GENERICPARAMCONSTRAINT];
+	guint32 cols [MONO_GENPARCONSTRAINT_SIZE];
+	int i;
+	
+	fprintf (output, "Generic Param Constraint (1..%d)\n", t->rows);
+
+	for (i = 1; i <= t->rows; i++) {
+		mono_metadata_decode_row (t, i - 1, cols, MONO_GENPARCONSTRAINT_SIZE);
+		
+		fprintf (output, "%d: gen-par=%d, Constraint=0x%x\n", i,
+			 cols [MONO_GENPARCONSTRAINT_GENERICPAR],
+			 cols [MONO_GENPARCONSTRAINT_CONSTRAINT]);
+	}
+}
+

@@ -210,7 +210,7 @@ gpointer _wapi_handle_new (WapiHandleType type)
 #endif
 	
 	mono_once (&shared_init_once, shared_init);
-	
+
 again:
 	if(shared==TRUE) {
 		new.type=WapiHandleRequestType_New;
