@@ -350,6 +350,21 @@ if test x$platform_win32 = xno; then
 	])
 
 	dnl *****************************
+	dnl *** Checks for SOL_IPV6     ***
+	dnl *****************************
+	AC_MSG_CHECKING(for SOL_IPV6)
+	AC_TRY_COMPILE([#include <netdb.h>], [
+		int level = SOL_IPV6;
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_SOL_IPV6)
+	], [
+		# We'll have to use getprotobyname
+		AC_MSG_RESULT(no)
+	])
+
+	dnl *****************************
 	dnl *** Checks for SOL_TCP    ***
 	dnl *****************************
 	AC_MSG_CHECKING(for SOL_TCP)
@@ -410,7 +425,7 @@ if test x$platform_win32 = xno; then
 	dnl *** Check for gethostbyname2_r ***
 	dnl **********************************
 	AC_MSG_CHECKING(for gethostbyname2_r)
-		AC_TRY_COMPILE([#include <netdb.h>], [
+		AC_TRY_LINK([#include <netdb.h>], [
 		gethostbyname2_r(NULL,0,NULL,NULL,0,NULL,NULL);
 	], [
 		# Yes, we have it...
