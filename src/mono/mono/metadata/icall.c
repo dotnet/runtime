@@ -2993,8 +2993,9 @@ static gconstpointer icall_map [] = {
 	"System.Net.Sockets.Socket::GetSocketOption_obj_internal", ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal,
 	"System.Net.Sockets.Socket::GetSocketOption_arr_internal", ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal,
 	"System.Net.Sockets.Socket::SetSocketOption_internal", ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal,
-	"System.Net.Dns::GetHostByName_internal", ves_icall_System_Net_Dns_GetHostByName_internal,
-	"System.Net.Dns::GetHostByAddr_internal", ves_icall_System_Net_Dns_GetHostByAddr_internal,
+	"System.Net.Dns::GetHostByName_internal(string,string&,string[]&,string[]&)", ves_icall_System_Net_Dns_GetHostByName_internal,
+	"System.Net.Dns::GetHostByAddr_internal(string,string&,string[]&,string[]&)", ves_icall_System_Net_Dns_GetHostByAddr_internal,
+	"System.Net.Dns::GetHostName_internal(string&)", ves_icall_System_Net_Dns_GetHostName_internal,
 
 	/*
 	 * System.Char

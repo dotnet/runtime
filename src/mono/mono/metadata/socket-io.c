@@ -12,6 +12,7 @@
 #include <glib.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
@@ -1289,7 +1290,7 @@ static gboolean hostent_to_IPHostEntry(struct hostent *he, MonoString **h_name,
 	return(TRUE);
 }
 
-extern gboolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
+extern MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
 {
 	char *hostname;
 	struct hostent *he;
@@ -1344,7 +1345,7 @@ inet_pton (int family, const char *address, void *inaddrp)
 }
 #endif /* !HAVE_INET_PTON */
 
-extern gboolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *addr, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
+extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *addr, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
 {
 	struct in_addr inaddr;
 	struct hostent *he;
@@ -1362,6 +1363,22 @@ extern gboolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *addr
 	
 	return(hostent_to_IPHostEntry(he, h_name, h_aliases, h_addr_list));
 }
+
+extern MonoBoolean ves_icall_System_Net_Dns_GetHostName_internal(MonoString **h_name)
+{
+	guchar hostname[256];
+	int ret;
+	
+	ret=gethostname (hostname, sizeof(hostname));
+	if(ret==-1) {
+		return(FALSE);
+	}
+	
+	*h_name=mono_string_new(mono_domain_get (), hostname);
+
+	return(TRUE);
+}
+
 
 void mono_network_init(void)
 {
