@@ -1177,6 +1177,36 @@
         </maintainers>
     </class>
 
+    <class name="System.Reflection.Emit.PEFileKinds">
+        <last-activity>Sept-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>80</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Reflection.Emit.Label">
+        <last-activity>Sept-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>5</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Reflection.Emit.ILGenerator">
+        <last-activity>Sept-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>5</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
     <class name="System.Reflection.Assembly">
         <last-activity>Sept-13-2001</last-activity>
         <implementation>yes</implementation>
