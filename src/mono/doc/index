@@ -12,6 +12,9 @@
 	Common Language Infrastructure (also referred as the CLR) and a
 	set of <a href="class-library.html">class libraries</a>.  
 
+	Mono has implementations of both <a href="ado-net">ADO.NET</a>
+	and <a href="asp-net">ASP.NET</a> as part of its distribution.
+
 	You can read our <a href="rationale.html">rationale</a> for
 	this project.  If you have questions about the project, please
 	read our list of <a href="faq.html">Frequently Asked
@@ -86,11 +89,48 @@
   </tr>
 </table>
 
-@item Nov 27th, 2002: Press release, tutorials
+@item Nov 27th, 2002: Press release, tutorials, Windows Forms, ADO.NET, Magazine.
 
-http://www.ximian.com/about_us/press_center/press_releases/index.html?pr=openlink_mono
+	<a
+	href="http://www.business2.com/articles/mag/0,1640,45454,FF.html">The
+	Penguin Takes Flight</a>: an article written by Erick
+	Schonfeld appears on the December issue of <a
+	href="http://www.business2.com/">Business 2.0</a> magazine.
 
-	SWF progress.
+	<a href="http://www.openlinksw.com">OpenLink</a> and <a
+	href="http://www.ximian.com">Ximian</a> made <a
+	href="http://www.ximian.com/about_us/press_center/press_releases/index.html?pr=openlink_mono">joint
+	announcement</a> on the plans of OpenLink to ship their <a
+	href="http://www.openlinksw.com/virtuoso/index.htm">Virtuoso</a>
+	server on Unix using Mono.
+
+	Martin Willemoes's <a href="gnometutorial">GNOME.NET
+	tutorial</a> is now available from the main Mono site.  This
+	tutorial is a collaborative effort to teach developers how to
+	use Mono to create Mono applications using <a href="http://gtk-sharp.sf.net">Gtk#</a>
+
+	Dennis Hayes has posted and <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-December/date.html">update</a>
+	on the work to get Windows.Forms working on Mono.  There is a
+	new test application that people can use to test their
+	controls.  If you are interested in working on Windows.Forms,
+	you can participate in the <a
+	href="http://lists.ximian.com/mailman/listinfo/mono-winforms-list">mono-winforms
+	mailing list</a>
+
+	Brian Ritchie has been working on an ADO.NET <a
+	href="http://brian.www1.dotnetplayground.com/ideas/adocodegen.aspx">data
+	layer</a> and an <a
+	href="http://brian.www1.dotnetplayground.com/ideas/appserver.aspx">application
+	server</a> for Mono.
+
+	Dan Morgan has checked in his Oracle provider, and Tim Coleman
+	continues to work on the TDS implementation of the data classes. 
+
+	The rest of the team has been working on bug fixing in the
+	runtime, the compiler, and the class libraries.  Also,
+	compilation speed has increased recently by performing a
+	number of simple optimizations in the compiler.
 
 @item Nov 19th, 2002: Crypto update; Books; Gtk# Datagrid; .NET ONE Slides
 

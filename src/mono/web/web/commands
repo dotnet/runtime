@@ -4,6 +4,8 @@
 1,Runtime,runtime.html,runtime.src
 1,Classes,class-library.html,class-library.src
 1,Gtk#,http://gtk-sharp.sourceforge.net
+1,ASP.NET,asp-net.html,asp-net.src
+1,ADO.NET,ado-net.html,ado-net.src
 1,Class Status,class-status.html,class-status.src,cm/cormissing.css,cm/cormissing.js
 2,corlib,class-status-corlib.html,class-status-corlib.src,cm/cormissing.css,cm/cormissing.js
 2,System,class-status-System.html,class-status-System.src,cm/cormissing.css,cm/cormissing.js
@@ -42,7 +44,6 @@
 2,SQL Lite,sqlite.html,sqlite.src
 2,Sybase,sybase.html,sybase.src
 2,TDS Generic,tdsclient.html,tdsclient.src
-1,ASP.NET,asp-net.html,asp-net.src
 1,Java,java.html,java.src
 1,Windows.Forms,winforms.html,winforms.src
 0,Resources,resources.html,resources.src

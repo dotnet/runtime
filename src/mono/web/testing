@@ -155,7 +155,7 @@
 	we'll forward this to the Microsoft people from time to time to help
 	them fix their documentation and runtime.
 
-** Unit tets.
+** Unit tests.
 
 	Why do unit testing? It becomes simple to run automated tests
 	for the whole library. Unit tests are a safety net - you can
