@@ -42,7 +42,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "16"
+#define MONO_AOT_FILE_VERSION "17"
 
 #if 1
 #define mono_bitset_test_fast(set,n) (((guint32*)set)[2+(n)/32] & (1 << ((n) % 32)))
@@ -776,6 +776,8 @@ void      mono_aot_init                     (void);
 MonoJitInfo*  mono_aot_get_method           (MonoDomain *domain,
 											 MonoMethod *method);
 gboolean  mono_aot_is_got_entry             (guint8 *code, guint8 *addr);
+gboolean  mono_aot_init_vtable              (MonoVTable *vtable);
+gboolean  mono_aot_get_cached_class_info    (MonoClass *klass, MonoCachedClassInfo *res);
 gboolean  mono_method_blittable             (MonoMethod *method);
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee);
 void      mono_register_opcode_emulation    (int opcode, const char* name, MonoMethodSignature *sig, gpointer func, gboolean no_throw);
@@ -815,6 +817,7 @@ gpointer  mono_arch_get_rethrow_exception       (void);
 gpointer  mono_arch_get_throw_exception_by_name (void);
 gpointer  mono_arch_get_throw_corlib_exception  (void);
 gpointer  mono_arch_create_jit_trampoline       (MonoMethod *method);
+gpointer  mono_arch_create_jit_trampoline_from_token (MonoImage *image, guint32 token);
 MonoJitInfo *mono_arch_create_jump_trampoline      (MonoMethod *method);
 gpointer  mono_arch_create_class_init_trampoline(MonoVTable *vtable);
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg);

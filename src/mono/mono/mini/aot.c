@@ -73,6 +73,8 @@ typedef struct MonoAotModule {
 	guint32 *code_offsets;
 	guint8 *method_infos;
 	guint32 *method_info_offsets;
+	guint8 *class_infos;
+	guint32 *class_info_offsets;
 } MonoAotModule;
 
 typedef struct MonoAotOptions {
@@ -82,6 +84,7 @@ typedef struct MonoAotOptions {
 } MonoAotOptions;
 
 typedef struct MonoAotCompile {
+	MonoImage *image;
 	FILE *fp;
 	GHashTable *icall_hash;
 	GPtrArray *icall_table;
@@ -502,6 +505,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	g_module_symbol (assembly->aot_module, "methods", (gpointer*)&info->code);
 	g_module_symbol (assembly->aot_module, "method_info_offsets", (gpointer*)&info->method_info_offsets);
 	g_module_symbol (assembly->aot_module, "method_infos", (gpointer*)&info->method_infos);
+	g_module_symbol (assembly->aot_module, "class_infos", (gpointer*)&info->class_infos);
+	g_module_symbol (assembly->aot_module, "class_info_offsets", (gpointer*)&info->class_info_offsets);
 
 	EnterCriticalSection (&aot_mutex);
 	g_hash_table_insert (aot_modules, assembly, info);
@@ -522,6 +527,109 @@ mono_aot_init (void)
 		mono_last_aot_method = atoi (getenv ("MONO_LASTAOT"));
 	if (getenv ("MONO_AOT_CACHE"))
 		use_aot_cache = TRUE;
+}
+
+static void
+decode_cached_class_info (MonoCachedClassInfo *info, char *buf, char **endbuf)
+{
+	guint32 flags;
+
+	info->vtable_size = decode_value (buf, &buf);
+	flags = decode_value (buf, &buf);
+	info->ghcimpl = (flags >> 0) & 0x1;
+	info->has_finalize = (flags >> 1) & 0x1;
+	info->has_cctor = (flags >> 2) & 0x1;
+	if (info->has_cctor)
+		info->cctor_token = MONO_TOKEN_METHOD_DEF | decode_value (buf, &buf);
+	if (info->has_finalize)
+		info->finalize_token = MONO_TOKEN_METHOD_DEF | decode_value (buf, &buf);
+
+	*endbuf = buf;
+}	
+
+gboolean
+mono_aot_init_vtable (MonoVTable *vtable)
+{
+	int i;
+	MonoAotModule *aot_module;
+	MonoClass *klass = vtable->klass;
+	guint8 *info;
+	MonoCachedClassInfo class_info;
+	char *p;
+
+	if (MONO_CLASS_IS_INTERFACE (klass) || klass->rank || !klass->image->assembly->aot_module)
+		return FALSE;
+
+	EnterCriticalSection (&aot_mutex);
+
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image->assembly);
+	if (!aot_module) {
+		LeaveCriticalSection (&aot_mutex);
+		return FALSE;
+	}
+
+	info = &aot_module->class_infos [aot_module->class_info_offsets [mono_metadata_token_index (klass->type_token) - 1]];
+	p = (char*)info;
+
+	decode_cached_class_info (&class_info, p, &p);
+
+	//printf ("VT0: %s.%s %d\n", klass->name_space, klass->name, vtable_size);
+	for (i = 0; i < class_info.vtable_size; ++i) {
+		guint32 image_index, token, value;
+		MonoImage *image;
+		MonoMethod *m;
+
+		vtable->vtable [i] = 0;
+
+		value = decode_value (p, &p);
+		if (!value)
+			continue;
+
+		image_index = value >> 24;
+		token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
+
+		image = load_image (aot_module, image_index);
+		if (!image) {
+			LeaveCriticalSection (&aot_mutex);
+			return FALSE;
+		}
+
+		m = mono_get_method (image, token, NULL);
+		g_assert (m);
+
+		//printf ("M: %d %p %s\n", i, &(vtable->vtable [i]), mono_method_full_name (m, TRUE));
+		vtable->vtable [i] = mono_create_jit_trampoline (m);
+	}
+
+	LeaveCriticalSection (&aot_mutex);
+
+	return TRUE;
+}
+
+gboolean
+mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
+{
+	MonoAotModule *aot_module;
+	char *p;
+
+	if (MONO_CLASS_IS_INTERFACE (klass) || klass->rank || !klass->image->assembly->aot_module)
+		return FALSE;
+
+	EnterCriticalSection (&aot_mutex);
+
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image->assembly);
+	if (!aot_module) {
+		LeaveCriticalSection (&aot_mutex);
+		return FALSE;
+	}
+
+	p = &aot_module->class_infos [aot_module->class_info_offsets [mono_metadata_token_index (klass->type_token) - 1]];
+
+	decode_cached_class_info (res, p, &p);
+
+	LeaveCriticalSection (&aot_mutex);
+
+	return TRUE;
 }
  
 static MonoJitInfo *
@@ -1219,8 +1327,6 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	code = cfg->native_code;
 	header = mono_method_get_header (method);
 
-	emit_section_change (tmpfp, ".text", 0);
-
 	/* Make the labels local */
 	mname = g_strdup_printf (".Lm_%x", mono_metadata_token_index (method->token));
 	mname_p = g_strdup_printf ("%s_p", mname);
@@ -1579,7 +1685,6 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	/* Emit method info */
 
-	emit_section_change (tmpfp, ".text", 1);
 	emit_label (tmpfp, mname_p);
 
 	g_assert (p - buf < buf_size);
@@ -1593,6 +1698,76 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	g_free (mname);
 	g_free (mname_p);
+}
+
+static void
+emit_klass_info (MonoAotCompile *acfg, guint32 token)
+{
+	MonoClass *klass = mono_class_get (acfg->image, token);
+	char *p, *buf;
+	int i, buf_size;
+	char *label;
+	FILE *tmpfp = acfg->fp;
+
+	buf_size = 10240;
+	p = buf = g_malloc (buf_size);
+
+	g_assert (klass);
+
+	mono_class_init (klass);
+
+	/* 
+	 * Emit all the information which is required for creating vtables so
+	 * the runtime does not need to create the MonoMethod structures which
+	 * take up a lot of space.
+	 */
+
+	if (!MONO_CLASS_IS_INTERFACE (klass)) {
+		encode_value (klass->vtable_size, p, &p);
+		encode_value ((klass->has_cctor << 2) | (klass->has_finalize << 1) | klass->ghcimpl, p, &p);
+		if (klass->has_cctor) {
+			MonoMethod *cctor = mono_class_get_cctor (klass);
+			g_assert (mono_metadata_token_table (cctor->token) == MONO_TABLE_METHOD);
+				
+			encode_value (mono_metadata_token_index (cctor->token), p, &p);
+		}
+		if (klass->has_finalize) {
+			guint32 finalize_slot = mono_class_get_method_from_name (mono_defaults.object_class, "Finalize", 0)->slot;
+			mono_class_setup_vtable (klass);
+			MonoMethod *finalize = klass->vtable [finalize_slot];
+			g_assert (mono_metadata_token_table (finalize->token) == MONO_TABLE_METHOD);
+				
+			encode_value (mono_metadata_token_index (finalize->token), p, &p);
+		}
+
+		for (i = 0; i < klass->vtable_size; ++i) {
+			MonoMethod *cm = klass->vtable [i];
+
+			if (cm) {
+				guint32 image_index = get_image_index (acfg, cm->klass->image);
+				guint32 token = cm->token;
+				g_assert (image_index < 256);
+				g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
+				
+				encode_value ((image_index << 24) + (mono_metadata_token_index (token)), p, &p);
+			}
+			else
+				encode_value (0, p, &p);
+		}
+	}
+
+	/* Emit the info */
+	label = g_strdup_printf (".LK_I_%x", token - MONO_TOKEN_TYPE_DEF - 1);
+	emit_label (tmpfp, label);
+
+	g_assert (p - buf < buf_size);
+	for (i = 0; i < p - buf; ++i) {
+		if ((i % 32) == 0)
+			fprintf (tmpfp, "\n.byte ");
+		fprintf (tmpfp, "%s%d", ((i % 32) == 0) ? "" : ",", (unsigned int) buf [i]);
+	}
+	fprintf (tmpfp, "\n");
+	g_free (buf);
 }
 
 static gboolean
@@ -1648,6 +1823,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->icall_table = g_ptr_array_new ();
 	acfg->image_hash = g_hash_table_new (NULL, NULL);
 	acfg->image_table = g_ptr_array_new ();
+	acfg->image = image;
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
 
@@ -1806,16 +1982,49 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	}
 
 	/* Emit code */
+	emit_section_change (tmpfp, ".text", 0);
 	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
 		if (cfgs [i])
 			emit_method_code (acfg, cfgs [i]);
 	}
 
 	/* Emit method info */
+	emit_section_change (tmpfp, ".text", 1);
 	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
 		if (cfgs [i])
 			emit_method_info (acfg, cfgs [i]);
 	}
+
+	/* Emit class info */
+
+	symbol = g_strdup_printf ("class_infos");
+	emit_section_change (tmpfp, ".text", 1);
+	emit_global (tmpfp, symbol, FALSE);
+	emit_alignment (tmpfp, 8);
+	emit_label (tmpfp, symbol);
+
+	for (i = 0; i < image->tables [MONO_TABLE_TYPEDEF].rows; ++i)
+		emit_klass_info (acfg, MONO_TOKEN_TYPE_DEF | (i + 1));
+
+	symbol = g_strdup_printf ("class_info_offsets");
+	emit_section_change (tmpfp, ".text", 1);
+	emit_global (tmpfp, symbol, FALSE);
+	emit_alignment (tmpfp, 8);
+	emit_label(tmpfp, symbol);
+
+	for (i = 0; i < image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
+		const char *sep;
+		if ((i % 32) == 0) {
+			fprintf (tmpfp, "\n.long ");
+			sep = "";
+		}
+		else
+			sep = ",";
+
+		symbol = g_strdup_printf (".LK_I_%x", i);
+		fprintf (tmpfp, "%s%s - class_infos", sep, symbol);
+	}
+	fprintf (tmpfp, "\n");
 
 	/*
 	 * The icall and image tables are small but referenced in a lot of places.

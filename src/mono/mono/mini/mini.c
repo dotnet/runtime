@@ -9601,6 +9601,8 @@ mini_init (const char *filename)
 	mono_install_handler (mono_arch_get_throw_exception ());
 #endif
 	mono_install_stack_walk (mono_jit_walk_stack);
+	mono_install_init_vtable (mono_aot_init_vtable);
+	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
 
 	domain = mono_init_from_assembly (filename, filename);
 	mono_icall_init ();
