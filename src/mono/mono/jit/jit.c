@@ -693,6 +693,9 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 	cfg->bcinfo = bcinfo;
 	cfg->bblocks = bblocks;
 	cfg->block_count = block_count;
+
+	mono_jit_stats.basic_blocks += block_count;
+	mono_jit_stats.max_basic_blocks = MAX (block_count, mono_jit_stats.max_basic_blocks);
        
 	for (i = 0; i < header->num_clauses; ++i) {
 		MonoBBlock *sbb, *tbb;
@@ -3733,6 +3736,8 @@ mono_jit_cleanup (MonoDomain *domain)
 		g_print ("Compiled methods:       %ld\n", mono_jit_stats.methods_compiled);
 		g_print ("Methods cache lookup:   %ld\n", mono_jit_stats.methods_lookups);
 		g_print ("Method trampolines:     %ld\n", mono_jit_stats.method_trampolines);
+		g_print ("Basic blocks:           %ld\n", mono_jit_stats.basic_blocks);
+		g_print ("Max basic blocks:       %ld\n", mono_jit_stats.max_basic_blocks);
 		g_print ("Allocated vars:         %ld\n", mono_jit_stats.allocate_var);
 		g_print ("Analyze stack repeat:   %ld\n", mono_jit_stats.analyze_stack_repeat);
 		g_print ("Compiled CIL code size: %ld\n", mono_jit_stats.cil_code_size);
