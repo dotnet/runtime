@@ -121,6 +121,7 @@ static MonoMethodSignature *helper_sig_int_double = NULL;
 static MonoMethodSignature *helper_sig_stelem_ref = NULL;
 static MonoMethodSignature *helper_sig_stelem_ref_check = NULL;
 static MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
+static MonoMethodSignature *helper_sig_compile_generic_method = NULL;
 
 static guint32 default_opt = MONO_OPT_PEEPHOLE;
 
@@ -3405,6 +3406,36 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (*ip != CEE_CALLI && check_call_signature (cfg, fsig, sp))
 				goto unverified;
 
+			if (cmethod && virtual && cmethod->signature->generic_param_count) {
+				MonoInst *this_temp, *store;
+				MonoInst *iargs [3];
+
+				g_assert (cmethod->signature->is_inflated);
+
+				this_temp = mono_compile_create_var (cfg, type_from_stack_type (sp [0]), OP_LOCAL);
+				this_temp->cil_code = ip;
+				NEW_TEMPSTORE (cfg, store, this_temp->inst_c0, sp [0]);
+
+				store->cil_code = ip;
+				MONO_ADD_INS (bblock, store);
+
+				NEW_TEMPLOAD (cfg, iargs [0], this_temp->inst_c0);
+				NEW_PCONST (cfg, iargs [1], cmethod);
+				NEW_PCONST (cfg, iargs [2], ((MonoMethodInflated *) cmethod)->context);
+				temp = mono_emit_jit_icall (cfg, bblock, helper_compile_generic_method, iargs, ip);
+
+				NEW_TEMPLOAD (cfg, addr, temp);
+				NEW_TEMPLOAD (cfg, sp [0], this_temp->inst_c0);
+
+				if ((temp = mono_emit_calli (cfg, bblock, fsig, sp, addr, ip)) != -1) {
+					NEW_TEMPLOAD (cfg, *sp, temp);
+					sp++;
+				}
+
+				ip += 5;
+				break;
+			}
+
 			if ((ins_flag & MONO_INST_TAILCALL) && cmethod && (*ip == CEE_CALL) && (mono_metadata_signature_equal (method->signature, cmethod->signature))) {
 				int i;
 				/* FIXME: This assumes the two methods has the same number and type of arguments */
@@ -6054,6 +6085,9 @@ create_helper_signature (void)
 	/* void stelem_ref_check (MonoArray *, MonoObject *) */
 	helper_sig_stelem_ref_check = make_icall_sig ("void object object");
 
+	/* void *helper_compile_generic_method (MonoObject *, MonoMethod *, MonoGenericContext *) */
+	helper_sig_compile_generic_method = make_icall_sig ("ptr object ptr ptr");
+
 	/* long amethod (long, long) */
 	helper_sig_long_long_long = make_icall_sig ("long long long");
 
@@ -8538,6 +8572,7 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_ldftn, "mono_ldftn", helper_sig_compile, FALSE);
 	mono_register_jit_icall (mono_ldftn_nosync, "mono_ldftn_nosync", helper_sig_compile, FALSE);
 	mono_register_jit_icall (mono_ldvirtfn, "mono_ldvirtfn", helper_sig_compile_virt, FALSE);
+	mono_register_jit_icall (helper_compile_generic_method, "compile_generic_method", helper_sig_compile_generic_method, FALSE);
 #endif
 
 #define JIT_RUNTIME_WORKS

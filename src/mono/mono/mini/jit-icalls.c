@@ -554,3 +554,15 @@ mono_lconv_to_r8_un (guint64 a)
 }
 #endif
 
+static gpointer
+helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericContext *context)
+{
+	MonoMethod *vmethod, *inflated;
+	gpointer addr;
+
+	vmethod = mono_object_get_virtual_method (obj, method);
+	inflated = mono_class_inflate_generic_method (vmethod, context, NULL);
+	addr = mono_compile_method (inflated);
+
+	return addr;
+}
