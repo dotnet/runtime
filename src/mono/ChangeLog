@@ -1,3 +1,7 @@
+2004-08-07  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Add proper checks for the 'undefined reference to '__tls_get_addr' problem.
+
 2004-08-06  Geoff Norton  <gnorton@customerdna.com>
 
 	* configure.in: Add a kqueue check
