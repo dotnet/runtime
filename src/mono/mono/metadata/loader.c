@@ -507,14 +507,14 @@ method_from_methodspec (MonoImage *image, guint32 idx)
 
 	ginst = g_new0 (MonoGenericInst, 1);
 	ginst->generic_method = method;
-	ginst->type_argc = param_count;
-	ginst->type_argv = g_new0 (MonoType *, param_count);
+	ginst->mtype_argc = param_count;
+	ginst->mtype_argv = g_new0 (MonoType *, param_count);
 	
 	for (i = 0; i < param_count; i++) {
-		ginst->type_argv [i] = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
+		ginst->mtype_argv [i] = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
 
 		if (!ginst->is_open)
-			ginst->is_open = mono_class_is_open_constructed_type (ginst->type_argv [i]);
+			ginst->is_open = mono_class_is_open_constructed_type (ginst->mtype_argv [i]);
 	}
 
 	return mono_class_inflate_generic_method (method, ginst);
