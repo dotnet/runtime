@@ -474,8 +474,17 @@ set_domain_search_path (MonoDomain *domain)
 		/* FIXME: is this needed? */
 		if (strncmp (*tmp, "file://", 7) == 0) {
 			gchar *file = *tmp;
-			*tmp = g_filename_from_uri (*tmp, NULL, &error);
+			gchar *uri = *tmp;
+
+			if (uri [7] != '/')
+				uri = g_strdup_printf ("file:///%s", uri + 7);
+
+			*tmp = g_filename_from_uri (uri, NULL, &error);
+			if (uri != file)
+				g_free (uri);
+
 			if (error != NULL) {
+				g_warning ("%s\n", error->message);
 				g_error_free (error);
 				*tmp = file;
 			} else {

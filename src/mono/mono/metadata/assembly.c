@@ -337,9 +337,21 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 
 	if (strncmp (filename, "file://", 7) == 0) {
 		GError *error = NULL;
+		gchar *uri = (gchar *) filename;
 
-		fname = g_filename_from_uri (filename, NULL, &error);
+		/*
+		 * MS allows file://c:/... and fails on file://localhost/c:/... 
+		 * They also throw an IndexOutOfRangeException if "file://"
+		 */
+		if (uri [7] != '/')
+			uri = g_strdup_printf ("file:///%s", uri + 7);
+		
+		fname = g_filename_from_uri (uri, NULL, &error);
+		if (uri != filename)
+			g_free (uri);
+
 		if (error != NULL) {
+			g_warning ("%s\n", error->message);
 			g_error_free (error);
 			fname = g_strdup (filename);
 		}
