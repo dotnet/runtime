@@ -3097,12 +3097,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_emit_byte (mb, CEE_CALLVIRT);
 				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_managed_to_native));
 
-				/*
-				 * The first 4 bytes are used by MS for something...
-				 */
-				mono_mb_emit_byte (mb, CEE_LDC_I4_4);
-				mono_mb_emit_byte (mb, CEE_ADD);
-				
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
 				break;
 
@@ -3750,6 +3744,49 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		MonoMarshalSpec *spec = mspecs [i + 1];
 
 		argnum = i + sig->hasthis;
+
+		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
+			MonoType *mtype;
+			MonoClass *mklass;
+			MonoMethod *get_instance;
+			MonoMethod *cleanup_native;
+
+			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, method->klass->image);
+			g_assert (mtype != NULL);
+			mklass = mono_class_from_mono_type (mtype);
+			g_assert (mklass != NULL);
+
+			get_instance = mono_find_method_by_name (mklass, "GetInstance", 1);
+			g_assert (get_instance);
+			cleanup_native = mono_find_method_by_name (mklass, "CleanUpNativeData", 1);
+			g_assert (get_instance);
+			
+			switch (t->type) {
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_SZARRAY:
+			case MONO_TYPE_VALUETYPE:
+				mono_mb_emit_ldstr (mb, spec->data.custom_data.cookie);
+
+				mono_mb_emit_byte (mb, CEE_CALL);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+				
+				mono_mb_emit_ldloc (mb, tmp_locals [i]);
+
+				mono_mb_emit_byte (mb, CEE_CALLVIRT);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_native));
+
+				break;
+
+			default:
+				g_warning ("custom marshalling of type %x is currently not supported", t->type);
+				g_assert_not_reached ();
+				break;
+			}
+			continue;
+		}
 
 		if (spec && spec->native == MONO_NATIVE_ASANY) {
 			MonoMarshalNative encoding = mono_marshal_get_string_encoding (piinfo, NULL);
