@@ -222,9 +222,6 @@ typedef struct {
 #define MONO_ARCH_HAVE_CREATE_VARS 1
 
 void
-mono_amd64_exceptions_init (void);
-
-void
 mono_amd64_tramp_init (void);
 
 gboolean
