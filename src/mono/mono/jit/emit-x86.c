@@ -299,15 +299,15 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 /*
  * get_unbox_trampoline:
  * @m: method pointer
+ * @addr: pointer to native code for @m
  *
  * when value type methods are called through the vtable we need to unbox the
  * this argument. This method returns a pointer to a trampoline which does
  * unboxing before calling the method
  */
 static gpointer
-get_unbox_trampoline (MonoMethod *m)
+get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
-	gpointer p = arch_compile_method (m);
 	guint8 *code, *start;
 	int this_pos = 4;
 
@@ -317,7 +317,7 @@ get_unbox_trampoline (MonoMethod *m)
 	start = code = g_malloc (16);
 
 	x86_alu_membase_imm (code, X86_ADD, X86_ESP, this_pos, sizeof (MonoObject));
-	x86_jump_code (code, p);
+	x86_jump_code (code, addr);
 	g_assert ((code - start) < 16);
 
 	return start;
@@ -350,6 +350,13 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	guint8 reg;
 	gint32 disp;
 	gpointer o;
+	gpointer addr;
+
+	EnterCriticalSection (metadata_section);
+	addr = arch_compile_method (m);
+	LeaveCriticalSection (metadata_section);
+	g_assert (addr);
+
 
 	/* go to the start of the call instruction
 	 *
@@ -367,8 +374,6 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 			reg = code [1] & 0x07;
 			disp = *((gint32*)(code + 2));
 		} else if ((code [1] == 0xe8)) {
-			gpointer addr = arch_compile_method (m);
-			g_assert (addr);
 			*((guint32*)(code + 2)) = (guint)addr - ((guint)code + 1) - 5; 
 			return addr;
 		} else {
@@ -404,9 +409,9 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	o += disp;
 
 	if (m->klass->valuetype) {
-		return *((gpointer *)o) = get_unbox_trampoline (m);
+		return *((gpointer *)o) = get_unbox_trampoline (m, addr);
 	} else
-		return *((gpointer *)o) = arch_compile_method (m);
+		return *((gpointer *)o) = addr;
 }
 
 /**
@@ -877,8 +882,6 @@ arch_compile_method (MonoMethod *method)
 	g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
 	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
 
-	EnterCriticalSection (metadata_section);
-
 	if (mono_jit_share_code)
 		jit_code_hash = mono_root_domain->jit_code_hash;
 	else
@@ -886,7 +889,6 @@ arch_compile_method (MonoMethod *method)
 
 	if ((addr = g_hash_table_lookup (jit_code_hash, method))) {
 		mono_jit_stats.methods_lookups++;
-		LeaveCriticalSection (metadata_section);
 		return addr;
 	}
 
@@ -1008,10 +1010,9 @@ arch_compile_method (MonoMethod *method)
 			g_assert ((code - (guint8*)addr) < (64 + arg_size));
 
 		} else {
-			if (mono_debug_handle) {
-				LeaveCriticalSection (metadata_section);
+			if (mono_debug_handle) 
 				return NULL;
-			}
+
 			g_error ("Don't know how to exec runtime method %s.%s::%s", 
 				 method->klass->name_space, method->klass->name, method->name);
 		}
@@ -1024,15 +1025,13 @@ arch_compile_method (MonoMethod *method)
 		cfg = mono_cfg_new (method, mp);
 
 		mono_analyze_flow (cfg);
-		if (cfg->invalid) {
-			LeaveCriticalSection (metadata_section);
+		if (cfg->invalid) 
 			return NULL;
-		}
+		
 		mono_analyze_stack (cfg);
-		if (cfg->invalid) {
-			LeaveCriticalSection (metadata_section);
+		if (cfg->invalid) 
 			return NULL;
-		}
+		
 		cfg->rs = mono_regset_new (X86_NREG);
 		mono_regset_reserve_reg (cfg->rs, X86_ESP);
 		mono_regset_reserve_reg (cfg->rs, X86_EBP);
@@ -1055,10 +1054,9 @@ arch_compile_method (MonoMethod *method)
 		}
 	
 		mono_label_cfg (cfg);
-		if (cfg->invalid) {
-			LeaveCriticalSection (metadata_section);
+		if (cfg->invalid) 
 			return NULL;
-		}
+		
 		arch_allocate_regs (cfg);
 
 		/* align to 8 byte boundary */
@@ -1145,7 +1143,6 @@ arch_compile_method (MonoMethod *method)
 
 	g_hash_table_insert (jit_code_hash, method, addr);
 
-	LeaveCriticalSection (metadata_section);
 	return addr;
 }
 
