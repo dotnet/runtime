@@ -140,7 +140,7 @@ MonoClassField*
 mono_field_from_memberref  (MonoImage *image, guint32 token, MonoClass **retklass);
 
 MonoClass *
-mono_array_class_get       (MonoClass *eclass, guint32 rank);
+mono_array_class_get       (MonoType *element_type, guint32 rank);
 
 MonoClassField *
 mono_class_get_field       (MonoClass *klass, guint32 field_token);

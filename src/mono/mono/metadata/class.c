@@ -1089,11 +1089,11 @@ mono_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_STRING:
 		return mono_defaults.string_class;
 	case MONO_TYPE_ARRAY:
-		return mono_array_class_get (mono_class_from_mono_type (type->data.array->type), type->data.array->rank);
+		return mono_array_class_get (type->data.array->type, type->data.array->rank);
 	case MONO_TYPE_PTR:
 		return mono_create_ptr_class (type->data.type);
 	case MONO_TYPE_SZARRAY:
-		return mono_array_class_get (mono_class_from_mono_type (type->data.type), 1);
+		return mono_array_class_get (type->data.type, 1);
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
 		return type->data.klass;
@@ -1113,18 +1113,16 @@ static MonoClass *
 mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 {
 	MonoType *type;
-	MonoClass *class, *eclass;
+	MonoClass *class;
 
 	type = mono_type_create_from_typespec (image, type_spec);
 
 	switch (type->type) {
 	case MONO_TYPE_ARRAY:
-		eclass = mono_class_from_mono_type (type->data.array->type);
-		class = mono_array_class_get (eclass, type->data.array->rank);
+		class = mono_array_class_get (type->data.array->type, type->data.array->rank);
 		break;
 	case MONO_TYPE_SZARRAY:
-		eclass = mono_class_from_mono_type (type->data.type);
-		class = mono_array_class_get (eclass, 1);
+		class = mono_array_class_get (type->data.type, 1);
 		break;
 	case MONO_TYPE_PTR:
 		class = mono_class_from_mono_type (type->data.type);
@@ -1141,21 +1139,23 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 
 /**
  * mono_array_class_get:
- * @eclass: element type class
+ * @element_type: element type 
  * @rank: the dimension of the array class
  *
- * Returns: a class object describing the array with element type @etype and 
+ * Returns: a class object describing the array with element type @element_type and 
  * dimension @rank. 
  */
 MonoClass *
-mono_array_class_get (MonoClass *eclass, guint32 rank)
+mono_array_class_get (MonoType *element_type, guint32 rank)
 {
+	MonoClass *eclass;
 	MonoImage *image;
 	MonoClass *class;
 	static MonoClass *parent = NULL;
 	guint32 key;
 	int rnum = 0;
 
+	eclass = mono_class_from_mono_type (element_type);
 	g_assert (rank <= 255);
 
 	if (!parent)
@@ -1190,7 +1190,11 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 	class->rank = rank;
 	class->element_class = eclass;
 	if (rank > 1) {
+		MonoArrayType *at = g_new0 (MonoArrayType, 1);
 		class->byval_arg.type = MONO_TYPE_ARRAY;
+		class->byval_arg.data.array = at;
+		at->type = &eclass->byval_arg;
+		at->rank = rank;
 		/* FIXME: complete.... */
 	} else {
 		class->byval_arg.type = MONO_TYPE_SZARRAY;

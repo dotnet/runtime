@@ -393,7 +393,6 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 static MonoArray *
 ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *lengths, MonoArray *bounds)
 {
-	MonoClass *klass;
 	MonoClass *aklass;
 	MonoArray *array;
 	gint32 *sizes, i;
@@ -409,8 +408,7 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *
 		if (mono_array_get (lengths, gint32, i) < 0)
 			mono_raise_exception (mono_get_exception_argument_out_of_range (NULL));
 
-	klass = mono_class_from_mono_type (type->type);
-	aklass = mono_array_class_get (klass, mono_array_length (lengths));
+	aklass = mono_array_class_get (type->type, mono_array_length (lengths));
 
 	sizes = alloca (aklass->rank * sizeof(guint32) * 2);
 	for (i = 0; i < aklass->rank; ++i) {
@@ -602,7 +600,7 @@ ves_icall_type_from_name (MonoString *name)
 		return NULL;
 	mono_class_init (klass);
 	if (info.rank)
-		klass = mono_array_class_get (klass, info.rank);
+		klass = mono_array_class_get (&klass->byval_arg, info.rank);
 	
 	if (info.isbyref || info.ispointer) /* hack */
 		return mono_type_get_object (domain, &klass->this_arg);
@@ -1350,7 +1348,7 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 		mono_class_init (klass);
 
 	if (isarray) {
-		klass = mono_array_class_get (klass, rank);
+		klass = mono_array_class_get (&klass->byval_arg, rank);
 		mono_class_init (klass);
 		/*g_print ("got array class %s [%d] (0x%x)\n", klass->element_class->name, klass->rank, klass->this_arg.type);*/
 	}
@@ -1386,13 +1384,27 @@ ves_icall_System_MonoType_assQualifiedName (MonoReflectionType *object)
 	char *append = NULL;
 
 	switch (object->type->type) {
+	case MONO_TYPE_ARRAY: {
+		int i, rank = object->type->data.array->rank;
+		char *tmp, *str = g_strdup ("[");
+		klass = mono_class_from_mono_type (object->type->data.array->type);
+		for (i = 1; i < rank; i++) {
+			tmp = g_strconcat (str, ",", NULL);
+			g_free (str);
+			str = tmp;
+		}
+		tmp = g_strconcat (str, "]", NULL);
+		g_free (str);
+		append = tmp;
+		break;
+	}
 	case MONO_TYPE_SZARRAY:
-		klass = object->type->data.type->data.klass;
-		append = "[]";
+		klass = mono_class_from_mono_type (object->type->data.type);
+		append = g_strdup ("[]");
 		break;
 	case MONO_TYPE_PTR:
-		klass = object->type->data.type->data.klass;
-		append = "*";
+		klass = mono_class_from_mono_type (object->type->data.type);
+		append = g_strdup ("*");
 		break;
 	default:
 		klass = object->type->data.klass;
@@ -1404,6 +1416,7 @@ ves_icall_System_MonoType_assQualifiedName (MonoReflectionType *object)
 	                           klass->image->assembly_name, NULL);
 	res = mono_string_new (domain, fullname);
 	g_free (fullname);
+	g_free (append);
 
 	return res;
 }
@@ -1413,9 +1426,11 @@ ves_icall_ModuleBuilder_create_modified_type (MonoReflectionType *tb, gint32 arr
 {
 	MonoClass *klass;
 
-	klass = mono_class_from_mono_type (tb->type);
 	if (arrayrank)
-		klass = mono_array_class_get (klass, arrayrank);
+		klass = mono_array_class_get (tb->type, arrayrank);
+	else
+		klass = mono_class_from_mono_type (tb->type);
+
 	return mono_type_get_object (mono_domain_get (), isbyref? &klass->this_arg: &klass->byval_arg);
 }
 

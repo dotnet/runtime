@@ -3366,7 +3366,7 @@ main (int argc, char *argv [])
 	sa.sa_handler = sigsegv_signal_handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
-	//g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
+	g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
 
 	mono_init_icall ();
 	mono_add_internal_call ("__array_Set", ves_array_set);
