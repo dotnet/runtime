@@ -1,4 +1,19 @@
-* Debugging support in Mono
+* Debugging information
+
+	Compile your programs using the `-g' flag in MCS, that will generate a file
+	with the extension .dbg containing the dwarf symbols for your executable.
+
+	To get stack traces with line number information, you need to run your 
+	program like this:
+
+	<b>
+	mono --debug program.exe
+	</b>
+
+	Notice that the program will need to be compiled with the -g
+	flag and that running with --debug will slow down the execution.
+
+* Mono Debugger 
 
 	A new debugger has been created in C# and using Gtk# for its
 	user interface, this will simplify the debugging of CLI applications.
