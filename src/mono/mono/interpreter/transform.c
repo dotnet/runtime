@@ -2405,14 +2405,24 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 							ADD_CODE (&td,MINT_ICALL_P_P);
 						break;
 					case 2:
-						if (MONO_TYPE_IS_VOID (info->sig->ret))
-							ADD_CODE (&td,MINT_ICALL_PP_V);
-						else
-							ADD_CODE (&td,MINT_ICALL_PP_P);
+						if (MONO_TYPE_IS_VOID (info->sig->ret)) {
+							if (info->sig->params [1]->type == MONO_TYPE_I4)
+								ADD_CODE (&td,MINT_ICALL_PI_V);
+							else
+								ADD_CODE (&td,MINT_ICALL_PP_V);
+						} else {
+							if (info->sig->params [1]->type == MONO_TYPE_I4)
+								ADD_CODE (&td,MINT_ICALL_PI_P);
+							else
+								ADD_CODE (&td,MINT_ICALL_PP_P);
+						}
 						break;
 					case 3:
 						g_assert (MONO_TYPE_IS_VOID (info->sig->ret));
-						ADD_CODE (&td,MINT_ICALL_PPP_V);
+						if (info->sig->params [2]->type == MONO_TYPE_I4)
+							ADD_CODE (&td,MINT_ICALL_PPI_V);
+						else
+							ADD_CODE (&td,MINT_ICALL_PPP_V);
 						break;
 					default:
 						g_assert_not_reached ();

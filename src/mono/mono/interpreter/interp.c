@@ -1196,6 +1196,84 @@ handle_enum:
 	return retval;
 }
 
+static stackval * 
+do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
+{
+	MonoInvocation *old_frame = context->current_frame;
+	MonoInvocation *old_env_frame = context->env_frame;
+	jmp_buf *old_env = context->current_env;
+	jmp_buf env;
+
+	if (setjmp (env)) {
+		context->current_frame = old_frame;
+		context->env_frame = old_env_frame;
+		context->current_env = old_env;
+		context->managed_code = 1;
+		return;
+	}
+
+	context->env_frame = context->current_frame;
+	context->current_env = &env;
+	context->managed_code = 0;
+
+	switch (op) {
+	case MINT_ICALL_P_V: {
+		void (*func)(gpointer) = ptr;
+        	func (sp [-1].data.p);
+		sp --;
+		break;
+	}
+	case MINT_ICALL_P_P: {
+		gpointer (*func)(gpointer) = ptr;
+		sp [-1].data.p = func (sp [-1].data.p);
+		break;
+	}
+	case MINT_ICALL_PP_V: {
+		void (*func)(gpointer,gpointer) = ptr;
+		sp -= 2;
+		func (sp [0].data.p, sp [1].data.p);
+		break;
+	}
+	case MINT_ICALL_PI_V: {
+		void (*func)(gpointer,int) = ptr;
+		sp -= 2;
+		func (sp [0].data.p, sp [1].data.i);
+		break;
+	}
+	case MINT_ICALL_PP_P: {
+		gpointer (*func)(gpointer,gpointer) = ptr;
+		--sp;
+		sp [-1].data.p = func (sp [-1].data.p, sp [0].data.p);
+		break;
+	}
+	case MINT_ICALL_PI_P: {
+		gpointer (*func)(gpointer,int) = ptr;
+		--sp;
+		sp [-1].data.p = func (sp [-1].data.p, sp [0].data.i);
+		break;
+	}
+	case MINT_ICALL_PPP_V: {
+		void (*func)(gpointer,gpointer,gpointer) = ptr;
+		sp -= 3;
+		func (sp [0].data.p, sp [1].data.p, sp [2].data.p);
+		break;
+	}
+	case MINT_ICALL_PPI_V: {
+		void (*func)(gpointer,gpointer,int) = ptr;
+		sp -= 3;
+		func (sp [0].data.p, sp [1].data.p, sp [2].data.i);
+		break;
+	}
+	default:
+		g_assert_not_reached ();
+	}
+
+	context->env_frame = old_env_frame;
+	context->current_env = old_env;
+
+	return sp;
+}
+
 static CRITICAL_SECTION create_method_pointer_mutex;
 
 static MonoGHashTable *method_pointer_hash = NULL;
@@ -3390,45 +3468,19 @@ array_constructed:
 			}
 			goto handle_finally;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_ICALL_P_V) {
-			void (*func)(gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
+		MINT_IN_CASE(MINT_ICALL_P_V) 
+		MINT_IN_CASE(MINT_ICALL_P_P)
+		MINT_IN_CASE(MINT_ICALL_PP_V)
+		MINT_IN_CASE(MINT_ICALL_PI_V)
+		MINT_IN_CASE(MINT_ICALL_PP_P)
+		MINT_IN_CASE(MINT_ICALL_PI_P)
+		MINT_IN_CASE(MINT_ICALL_PPP_V)
+		MINT_IN_CASE(MINT_ICALL_PPI_V)
+			sp = do_icall (context, *ip, sp, rtm->data_items [*(guint16 *)(ip + 1)]);
+			if (frame->ex != NULL)
+				goto handle_exception;
 			ip += 2;
-
-			func (sp [-1].data.p);
-			sp --;
 			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_ICALL_P_P) {
-			gpointer (*func)(gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
-			ip += 2;
-
-			sp [-1].data.p = func (sp [-1].data.p);
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_ICALL_PP_V) {
-			void (*func)(gpointer,gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
-			ip += 2;
-			sp -= 2;
-
-			func (sp [0].data.p, sp [1].data.p);
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_ICALL_PP_P) {
-			gpointer (*func)(gpointer,gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
-			ip += 2;
-			--sp;
-
-			sp [-1].data.p = func (sp [-1].data.p, sp [0].data.p);
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_ICALL_PPP_V) {
-			void (*func)(gpointer,gpointer,gpointer) = rtm->data_items [*(guint16 *)(ip + 1)];
-			ip += 2;
-			sp -= 3;
-
-			func (sp [0].data.p, sp [1].data.p, sp [2].data.p);
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_MONO_LDPTR) 
 			sp->data.p = rtm->data_items [*(guint16 *)(ip + 1)];
 			ip += 2;
