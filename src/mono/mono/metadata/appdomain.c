@@ -89,11 +89,11 @@ mono_runtime_cleanup (MonoDomain *domain)
 void
 ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoAppDomainSetup *setup)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDomain* domain = mono_domain_get ();
 	MonoAssembly *assembly;
 	gchar *str;
+
+	MONO_ARCH_SAVE_REGS;
 
 	assembly = domain->entry_assembly;
 	g_assert (assembly);
@@ -415,12 +415,12 @@ mono_domain_transfer_object (MonoDomain *src, MonoDomain *dst, MonoObject *obj)
 MonoObject *
 ves_icall_System_AppDomain_GetData (MonoAppDomain *ad, MonoString *name)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDomain *add = ad->data;
 	MonoDomain *cur = mono_domain_get ();
 	MonoObject *o;
 	char *str;
+
+	MONO_ARCH_SAVE_REGS;
 
 	g_assert (ad != NULL);
 	g_assert (name != NULL);
@@ -461,11 +461,11 @@ ves_icall_System_AppDomain_GetData (MonoAppDomain *ad, MonoString *name)
 void
 ves_icall_System_AppDomain_SetData (MonoAppDomain *ad, MonoString *name, MonoObject *data)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDomain *add = ad->data;
 	MonoDomain *cur = mono_domain_get ();
 	MonoObject *o;
+
+	MONO_ARCH_SAVE_REGS;
 
 	g_assert (ad != NULL);
 	g_assert (name != NULL);
@@ -503,22 +503,23 @@ ves_icall_System_AppDomain_getFriendlyName (MonoAppDomain *ad)
 MonoAppDomain *
 ves_icall_System_AppDomain_getCurDomain ()
 {
+	MonoDomain *add = mono_domain_get ();
+
 	MONO_ARCH_SAVE_REGS;
 
-	MonoDomain *add = mono_domain_get ();
 	return add->domain;
 }
 
 MonoAppDomain *
 ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomainSetup *setup)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDomain *domain = mono_domain_get (); 
 	MonoClass *adclass;
 	MonoAppDomain *ad;
 	MonoDomain *data;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	adclass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
 	
 	/* FIXME: pin all those objects */
@@ -550,13 +551,13 @@ add_assembly (gpointer key, gpointer value, gpointer user_data)
 MonoArray *
 ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDomain *domain = ad->data; 
 	static MonoClass *System_Reflection_Assembly;
 	MonoArray *res;
 	add_assembly_helper_t ah;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	if (!System_Reflection_Assembly)
 		System_Reflection_Assembly = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "Assembly");
@@ -659,12 +660,12 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 MonoReflectionAssembly *
 ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDomain *domain = mono_domain_get ();
 	char *name, *filename;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	MonoAssembly *ass;
+
+	MONO_ARCH_SAVE_REGS;
 
 	name = filename = mono_string_to_utf8 (fname);
 
@@ -688,14 +689,14 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname)
 MonoReflectionAssembly *
 ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssemblyName *assRef, MonoObject *evidence)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDomain *domain = ad->data; 
 	char *name;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	MonoAssembly *ass;
 	MonoAssemblyName aname;
 	MonoReflectionAssembly *refass = NULL;
+
+	MONO_ARCH_SAVE_REGS;
 
 	memset (&aname, 0, sizeof (aname));
 
@@ -736,8 +737,6 @@ gint32
 ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file, 
 					    MonoObject *evidence, MonoArray *args)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDomain *cdom = mono_domain_get ();
 	MonoAssembly *assembly;
 	MonoImage *image;
@@ -745,6 +744,8 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 	MonoObject *margs;
 	char *filename;
 	gint32 res;
+
+	MONO_ARCH_SAVE_REGS;
 
 	mono_domain_set (ad->data);
 

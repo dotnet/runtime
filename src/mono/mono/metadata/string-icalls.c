@@ -31,10 +31,10 @@ string_icall_cmp_char (gunichar2 c1, gunichar2 c2, gint16 mode);
 MonoString *
 ves_icall_System_String_ctor_charp (gpointer dummy, gunichar2 *value)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gint32 i, length;
 	MonoDomain *domain;
+
+	MONO_ARCH_SAVE_REGS;
 
 	domain = mono_domain_get ();
 
@@ -51,12 +51,12 @@ ves_icall_System_String_ctor_charp (gpointer dummy, gunichar2 *value)
 MonoString *
 ves_icall_System_String_ctor_char_int (gpointer dummy, gunichar2 value, gint32 count)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDomain *domain;
 	MonoString *res;
 	gunichar2 *chars;
 	gint32 i;
+
+	MONO_ARCH_SAVE_REGS;
 
 	domain = mono_domain_get ();
 	res = mono_string_new_size (domain, count);
@@ -71,11 +71,11 @@ ves_icall_System_String_ctor_char_int (gpointer dummy, gunichar2 value, gint32 c
 MonoString *
 ves_icall_System_String_ctor_charp_int_int (gpointer dummy, gunichar2 *value, gint32 sindex, gint32 length)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gunichar2 *begin;
 	MonoDomain * domain;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	domain = mono_domain_get ();
 
 	if ((value == NULL) && (length != 0))
@@ -97,10 +97,10 @@ ves_icall_System_String_ctor_charp_int_int (gpointer dummy, gunichar2 *value, gi
 MonoString *
 ves_icall_System_String_ctor_sbytep (gpointer dummy, gint8 *value)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDomain *domain;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	domain = mono_domain_get ();
 
 	if (NULL == value) {	/* fixme: return String.Empty here */
@@ -114,11 +114,11 @@ ves_icall_System_String_ctor_sbytep (gpointer dummy, gint8 *value)
 MonoString *
 ves_icall_System_String_ctor_sbytep_int_int (gpointer dummy, gint8 *value, gint32 sindex, gint32 length)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	char *begin;
 	MonoDomain *domain;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	domain = mono_domain_get ();
 
 	if ((value == NULL) && (length != 0))
@@ -135,9 +135,9 @@ ves_icall_System_String_ctor_sbytep_int_int (gpointer dummy, gint8 *value, gint3
 MonoString *
 ves_icall_System_String_ctor_chara (gpointer dummy, MonoArray *value)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDomain *domain;
+
+	MONO_ARCH_SAVE_REGS;
 
 	MONO_CHECK_ARG_NULL (value);
 	
@@ -150,9 +150,9 @@ MonoString *
 ves_icall_System_String_ctor_chara_int_int (gpointer dummy, MonoArray *value, 
 					 gint32 sindex, gint32 length)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDomain *domain;
+
+	MONO_ARCH_SAVE_REGS;
 
 	MONO_CHECK_ARG_NULL (value);
 
@@ -175,11 +175,11 @@ ves_icall_System_String_ctor_encoding (gpointer dummy, gint8 *value, gint32 sind
 MonoBoolean 
 ves_icall_System_String_InternalEquals (MonoString *str1, MonoString *str2)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gunichar2 *str1ptr;
 	gunichar2 *str2ptr;
 	gint32 str1len;
+
+	MONO_ARCH_SAVE_REGS;
 
 	/* Length checking is done in C# */
 	str1len = mono_string_length(str1);
@@ -193,8 +193,6 @@ ves_icall_System_String_InternalEquals (MonoString *str1, MonoString *str2)
 MonoString * 
 ves_icall_System_String_InternalJoin (MonoString *separator, MonoArray * value, gint32 sindex, gint32 count)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoString * ret;
 	gint32 length;
 	gint32 pos;
@@ -204,6 +202,8 @@ ves_icall_System_String_InternalJoin (MonoString *separator, MonoArray * value, 
 	gunichar2 *insert;
 	gunichar2 *dest;
 	gunichar2 *src;
+
+	MONO_ARCH_SAVE_REGS;
 
 	insert = mono_string_chars(separator);
 	insertlen = mono_string_length(separator);
@@ -238,14 +238,14 @@ ves_icall_System_String_InternalJoin (MonoString *separator, MonoArray * value, 
 MonoString * 
 ves_icall_System_String_InternalInsert (MonoString *me, gint32 sindex, MonoString *value)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoString * ret;
 	gunichar2 *src;
 	gunichar2 *insertsrc;
 	gunichar2 *dest;
 	gint32 srclen;
 	gint32 insertlen;
+
+	MONO_ARCH_SAVE_REGS;
 
 	src = mono_string_chars(me);
 	srclen = mono_string_length(me);
@@ -266,12 +266,12 @@ ves_icall_System_String_InternalInsert (MonoString *me, gint32 sindex, MonoStrin
 MonoString * 
 ves_icall_System_String_InternalReplace_Char (MonoString *me, gunichar2 oldChar, gunichar2 newChar)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoString *ret;
 	gunichar2 *src;
 	gunichar2 *dest;
 	gint32 i, srclen;
+
+	MONO_ARCH_SAVE_REGS;
 
 	src = mono_string_chars(me);
 	srclen = mono_string_length(me);
@@ -292,8 +292,6 @@ ves_icall_System_String_InternalReplace_Char (MonoString *me, gunichar2 oldChar,
 MonoString * 
 ves_icall_System_String_InternalReplace_Str (MonoString *me, MonoString *oldValue, MonoString *newValue)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoString *ret;
 	gunichar2 *src;
 	gunichar2 *dest;
@@ -305,6 +303,8 @@ ves_icall_System_String_InternalReplace_Str (MonoString *me, MonoString *oldValu
 	gint32 oldstrlen;
 	gint32 newstrlen;
 	gint32 srclen;
+
+	MONO_ARCH_SAVE_REGS;
 
 	occurr = 0;
 	destpos = 0;
@@ -354,12 +354,12 @@ ves_icall_System_String_InternalReplace_Str (MonoString *me, MonoString *oldValu
 MonoString * 
 ves_icall_System_String_InternalRemove (MonoString *me, gint32 sindex, gint32 count)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoString * ret;
 	gint32 srclen;
 	gunichar2 *dest;
 	gunichar2 *src;
+
+	MONO_ARCH_SAVE_REGS;
 
 	srclen = mono_string_length(me);
 	ret = mono_string_new_size( mono_domain_get (), srclen - count);
@@ -376,10 +376,10 @@ ves_icall_System_String_InternalRemove (MonoString *me, gint32 sindex, gint32 co
 void
 ves_icall_System_String_InternalCopyTo (MonoString *me, gint32 sindex, MonoArray *dest, gint32 dindex, gint32 count)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gunichar2 *destptr = (gunichar2 *) mono_array_addr(dest, gunichar2, dindex);
 	gunichar2 *src =  mono_string_chars(me);
+
+	MONO_ARCH_SAVE_REGS;
 
 	memcpy(destptr, src + sindex, sizeof(gunichar2) * count);
 }
@@ -387,8 +387,6 @@ ves_icall_System_String_InternalCopyTo (MonoString *me, gint32 sindex, MonoArray
 MonoArray * 
 ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gint32 count)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoString * tmpstr;
 	MonoArray * retarr;
 	gunichar2 *src;
@@ -398,6 +396,8 @@ ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gin
 	gunichar2 *tmpstrptr;
 
 	gunichar2 cmpchar;
+
+	MONO_ARCH_SAVE_REGS;
 
 	src = mono_string_chars(me);
 	srcsize = mono_string_length(me);
@@ -477,12 +477,12 @@ string_icall_is_in_array (MonoArray *chars, gint32 arraylength, gunichar2 chr)
 MonoString * 
 ves_icall_System_String_InternalTrim (MonoString *me, MonoArray *chars, gint32 typ)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoString * ret;
 	gunichar2 *src, *dest;
 	gint32 srclen, newlen, arrlen;
 	gint32 i, lenfirst, lenlast;
+
+	MONO_ARCH_SAVE_REGS;
 
 	srclen = mono_string_length(me);
 	src = mono_string_chars(me);
@@ -522,10 +522,10 @@ ves_icall_System_String_InternalTrim (MonoString *me, MonoArray *chars, gint32 t
 gint32 
 ves_icall_System_String_InternalIndexOf_Char (MonoString *me, gunichar2 value, gint32 sindex, gint32 count)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gint32 pos;
 	gunichar2 *src;
+
+	MONO_ARCH_SAVE_REGS;
 
 	src = mono_string_chars(me);
 	for (pos = sindex; pos != count + sindex; pos++) {
@@ -539,12 +539,12 @@ ves_icall_System_String_InternalIndexOf_Char (MonoString *me, gunichar2 value, g
 gint32 
 ves_icall_System_String_InternalIndexOf_Str (MonoString *me, MonoString *value, gint32 sindex, gint32 count)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gint32 lencmpstr;
 	gint32 pos, i;
 	gunichar2 *src;
 	gunichar2 *cmpstr;
+
+	MONO_ARCH_SAVE_REGS;
 
 	lencmpstr = mono_string_length(value);
 
@@ -565,12 +565,12 @@ ves_icall_System_String_InternalIndexOf_Str (MonoString *me, MonoString *value, 
 gint32 
 ves_icall_System_String_InternalIndexOfAny (MonoString *me, MonoArray *arr, gint32 sindex, gint32 count)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gint32 pos;
 	gint32 loop;
 	gint32 arraysize;
 	gunichar2 *src;
+
+	MONO_ARCH_SAVE_REGS;
 
 	arraysize = mono_array_length(arr);
 	src = mono_string_chars(me);
@@ -587,10 +587,10 @@ ves_icall_System_String_InternalIndexOfAny (MonoString *me, MonoArray *arr, gint
 gint32 
 ves_icall_System_String_InternalLastIndexOf_Char (MonoString *me, gunichar2 value, gint32 sindex, gint32 count)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gint32 pos;
 	gunichar2 *src;
+
+	MONO_ARCH_SAVE_REGS;
 
 	src = mono_string_chars(me);
 	for (pos = sindex; pos > sindex - count; pos--) {
@@ -604,12 +604,12 @@ ves_icall_System_String_InternalLastIndexOf_Char (MonoString *me, gunichar2 valu
 gint32 
 ves_icall_System_String_InternalLastIndexOf_Str (MonoString *me, MonoString *value, gint32 sindex, gint32 count)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gint32 lencmpstr;
 	gint32 pos;
 	gunichar2 *src;
 	gunichar2 *cmpstr;
+
+	MONO_ARCH_SAVE_REGS;
 
 	lencmpstr = mono_string_length(value);
 
@@ -627,12 +627,12 @@ ves_icall_System_String_InternalLastIndexOf_Str (MonoString *me, MonoString *val
 gint32 
 ves_icall_System_String_InternalLastIndexOfAny (MonoString *me, MonoArray *anyOf, gint32 sindex, gint32 count)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gint32 pos;
 	gint32 loop;
 	gint32 arraysize;
 	gunichar2 *src;
+
+	MONO_ARCH_SAVE_REGS;
 
 	arraysize = mono_array_length(anyOf);
 	src = mono_string_chars(me);
@@ -649,14 +649,14 @@ ves_icall_System_String_InternalLastIndexOfAny (MonoString *me, MonoArray *anyOf
 MonoString *
 ves_icall_System_String_InternalPad (MonoString *me, gint32 width, gunichar2 chr, MonoBoolean right)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoString * ret;
 	gunichar2 *src;
 	gunichar2 *dest;
 	gint32 fillcount;
 	gint32 srclen;
 	gint32 i;
+
+	MONO_ARCH_SAVE_REGS;
 
 	srclen = mono_string_length(me);
 	src = mono_string_chars(me);
@@ -685,12 +685,12 @@ ves_icall_System_String_InternalPad (MonoString *me, gint32 width, gunichar2 chr
 MonoString *
 ves_icall_System_String_InternalToLower (MonoString *me)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoString * ret;
 	gunichar2 *src; 
 	gunichar2 *dest;
 	gint32 i;
+
+	MONO_ARCH_SAVE_REGS;
 
 	ret = mono_string_new_size(mono_domain_get (), mono_string_length(me));
 
@@ -706,12 +706,12 @@ ves_icall_System_String_InternalToLower (MonoString *me)
 MonoString *
 ves_icall_System_String_InternalToUpper (MonoString *me)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	int i;
 	MonoString * ret;
 	gunichar2 *src; 
 	gunichar2 *dest;
+
+	MONO_ARCH_SAVE_REGS;
 
 	ret = mono_string_new_size(mono_domain_get (), mono_string_length(me));
 
@@ -735,10 +735,10 @@ ves_icall_System_String_InternalAllocateStr (gint32 length)
 void 
 ves_icall_System_String_InternalStrcpy_Str (MonoString *dest, gint32 destPos, MonoString *src)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gunichar2 *srcptr;
 	gunichar2 *destptr;
+
+	MONO_ARCH_SAVE_REGS;
 
 	srcptr = mono_string_chars (src);
 	destptr = mono_string_chars (dest);
@@ -749,10 +749,10 @@ ves_icall_System_String_InternalStrcpy_Str (MonoString *dest, gint32 destPos, Mo
 void 
 ves_icall_System_String_InternalStrcpy_StrN (MonoString *dest, gint32 destPos, MonoString *src, gint32 startPos, gint32 count)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gunichar2 *srcptr;
 	gunichar2 *destptr;
+
+	MONO_ARCH_SAVE_REGS;
 
 	srcptr = mono_string_chars (src);
 	destptr = mono_string_chars (dest);
@@ -778,8 +778,6 @@ ves_icall_System_String_InternalIsInterned (MonoString *str)
 gint32
 ves_icall_System_String_InternalCompareStr_N (MonoString *s1, gint32 i1, MonoString *s2, gint32 i2, gint32 length, MonoBoolean inCase)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	/* c translation of C# code from old string.cs.. :) */
 	gint32 lenstr1;
 	gint32 lenstr2;
@@ -790,6 +788,8 @@ ves_icall_System_String_InternalCompareStr_N (MonoString *s1, gint32 i1, MonoStr
 	gint32 pos;
 	gint16 mode;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	if (inCase)
 		mode = 1;
 	else
@@ -833,10 +833,10 @@ ves_icall_System_String_InternalCompareStr_N (MonoString *s1, gint32 i1, MonoStr
 gint32
 ves_icall_System_String_GetHashCode (MonoString *me)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	int i, h = 0;
 	gunichar2 *data = mono_string_chars (me);
+
+	MONO_ARCH_SAVE_REGS;
 
 	for (i = 0; i < mono_string_length (me); ++i)
 		h = (h << 5) - h + data [i];

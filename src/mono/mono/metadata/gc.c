@@ -250,10 +250,10 @@ typedef enum {
 MonoObject *
 ves_icall_System_GCHandle_GetTarget (guint32 handle)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoObject *obj;
 	gint32 type;
+
+	MONO_ARCH_SAVE_REGS;
 
 	if (gc_handles) {
 		type = handle & 0x3;
@@ -273,10 +273,10 @@ ves_icall_System_GCHandle_GetTarget (guint32 handle)
 guint32
 ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint32 type)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gpointer val = obj;
 	guint32 h, idx = next_handle++;
+
+	MONO_ARCH_SAVE_REGS;
 
 	if (idx >= array_size) {
 #if HAVE_BOEHM_GC
@@ -345,10 +345,10 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 void
 ves_icall_System_GCHandle_FreeHandle (guint32 handle)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	int idx = handle >> 2;
 	int type = handle & 0x3;
+
+	MONO_ARCH_SAVE_REGS;
 
 #ifdef HAVE_BOEHM_GC
 	g_assert (type == gc_handle_types [idx]);
@@ -367,10 +367,10 @@ ves_icall_System_GCHandle_FreeHandle (guint32 handle)
 gpointer
 ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoObject *obj;
 	int type = handle & 0x3;
+
+	MONO_ARCH_SAVE_REGS;
 
 	if (gc_handles) {
 		obj = gc_handles [handle >> 2];

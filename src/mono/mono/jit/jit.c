@@ -813,12 +813,12 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 static gpointer 
 ves_array_element_address (MonoArray *this, ...)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoClass *class;
 	va_list ap;
 	int i, ind, esize;
 	gpointer ea;
+
+	MONO_ARCH_SAVE_REGS;
 
 	g_assert (this != NULL);
 

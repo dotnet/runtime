@@ -2571,10 +2571,10 @@ void
 ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *src, gint32 start_index,
 								    gpointer dest, gint32 length)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	int element_size;
 	void *source_addr;
+
+	MONO_ARCH_SAVE_REGS;
 
 	MONO_CHECK_ARG_NULL (src);
 	MONO_CHECK_ARG_NULL (dest);
@@ -2594,10 +2594,10 @@ void
 ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gpointer src, gint32 start_index,
 								      MonoArray *dest, gint32 length)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	int element_size;
 	void *dest_addr;
+
+	MONO_ARCH_SAVE_REGS;
 
 	MONO_CHECK_ARG_NULL (src);
 	MONO_CHECK_ARG_NULL (dest);
@@ -2616,90 +2616,100 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gpointer s
 gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr (gpointer ptr, gint32 offset)
 {
+	char *p = ptr;
+
 	MONO_ARCH_SAVE_REGS;
 
-	char *p = ptr;
 	return *(gpointer*)(p + offset);
 }
 
 unsigned char
 ves_icall_System_Runtime_InteropServices_Marshal_ReadByte (gpointer ptr, gint32 offset)
 {
+	char *p = ptr;
+
 	MONO_ARCH_SAVE_REGS;
 
-	char *p = ptr;
 	return *(unsigned char*)(p + offset);
 }
 
 gint16
 ves_icall_System_Runtime_InteropServices_Marshal_ReadInt16 (gpointer ptr, gint32 offset)
 {
+	char *p = ptr;
+
 	MONO_ARCH_SAVE_REGS;
 
-	char *p = ptr;
 	return *(gint16*)(p + offset);
 }
 
 gint32
 ves_icall_System_Runtime_InteropServices_Marshal_ReadInt32 (gpointer ptr, gint32 offset)
 {
+	char *p = ptr;
+
 	MONO_ARCH_SAVE_REGS;
 
-	char *p = ptr;
 	return *(gint32*)(p + offset);
 }
 
 gint64
 ves_icall_System_Runtime_InteropServices_Marshal_ReadInt64 (gpointer ptr, gint32 offset)
 {
+	char *p = ptr;
+
 	MONO_ARCH_SAVE_REGS;
 
-	char *p = ptr;
 	return *(gint64*)(p + offset);
 }
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_WriteByte (gpointer ptr, gint32 offset, unsigned char val)
 {
+	char *p = ptr;
+
 	MONO_ARCH_SAVE_REGS;
 
-	char *p = ptr;
 	*(unsigned char*)(p + offset) = val;
 }
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_WriteIntPtr (gpointer ptr, gint32 offset, gpointer val)
 {
+	char *p = ptr;
+
 	MONO_ARCH_SAVE_REGS;
 
-	char *p = ptr;
 	*(gpointer*)(p + offset) = val;
 }
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_WriteInt16 (gpointer ptr, gint32 offset, gint16 val)
 {
+	char *p = ptr;
+
 	MONO_ARCH_SAVE_REGS;
 
-	char *p = ptr;
 	*(gint16*)(p + offset) = val;
 }
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_WriteInt32 (gpointer ptr, gint32 offset, gint32 val)
 {
+	char *p = ptr;
+
 	MONO_ARCH_SAVE_REGS;
 
-	char *p = ptr;
 	*(gint32*)(p + offset) = val;
 }
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_WriteInt64 (gpointer ptr, gint32 offset, gint64 val)
 {
+	char *p = ptr;
+
 	MONO_ARCH_SAVE_REGS;
 
-	char *p = ptr;
 	*(gint64*)(p + offset) = val;
 }
 
@@ -2722,11 +2732,11 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (char *ptr,
 MonoString *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (guint16 *ptr)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDomain *domain = mono_domain_get (); 
 	int len = 0;
 	guint16 *t = ptr;
+
+	MONO_ARCH_SAVE_REGS;
 
 	while (t++)
 		len++;
@@ -2737,9 +2747,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni (guint16 *ptr)
 MonoString *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (guint16 *ptr, gint32 len)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDomain *domain = mono_domain_get (); 
+
+	MONO_ARCH_SAVE_REGS;
 
 	return mono_string_new_utf16 (domain, ptr, len);
 }
@@ -2766,9 +2776,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void)
 guint32 
 ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionType *rtype)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoClass *klass;
+
+	MONO_ARCH_SAVE_REGS;
 
 	MONO_CHECK_ARG_NULL (rtype);
 
@@ -2780,10 +2790,10 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionType *rty
 void
 ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr (MonoObject *obj, gpointer dst, MonoBoolean delete_old)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoMethod *method;
 	gpointer pa [3];
+
+	MONO_ARCH_SAVE_REGS;
 
 	MONO_CHECK_ARG_NULL (obj);
 	MONO_CHECK_ARG_NULL (dst);
@@ -2800,10 +2810,10 @@ ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr (MonoObject *obj
 void
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, MonoObject *dst)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoMethod *method;
 	gpointer pa [2];
+
+	MONO_ARCH_SAVE_REGS;
 
 	MONO_CHECK_ARG_NULL (src);
 	MONO_CHECK_ARG_NULL (dst);
@@ -2819,10 +2829,10 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, M
 MonoObject *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer src, MonoReflectionType *type)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDomain *domain = mono_domain_get (); 
 	MonoObject *res;
+
+	MONO_ARCH_SAVE_REGS;
 
 	MONO_CHECK_ARG_NULL (src);
 	MONO_CHECK_ARG_NULL (type);
@@ -2837,12 +2847,12 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer s
 int
 ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *type, MonoString *field_name)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoMarshalType *info;
 	MonoClass *klass;
 	char *fname;
 	int i;
+
+	MONO_ARCH_SAVE_REGS;
 
 	MONO_CHECK_ARG_NULL (type);
 	MONO_CHECK_ARG_NULL (field_name);
@@ -2926,9 +2936,9 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 void
 ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src, MonoReflectionType *type)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoClass *klass;
+
+	MONO_ARCH_SAVE_REGS;
 
 	MONO_CHECK_ARG_NULL (src);
 	MONO_CHECK_ARG_NULL (type);

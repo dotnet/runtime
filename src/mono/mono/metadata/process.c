@@ -24,10 +24,10 @@
 
 HANDLE ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	HANDLE handle;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	/* GetCurrentProcess returns a pseudo-handle, so use
 	 * OpenProcess instead
 	 */
@@ -604,8 +604,6 @@ static void process_scan_modules (gpointer data, gpointer user_data)
 /* Returns an array of System.Diagnostics.ProcessModule */
 MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	/* I was going to use toolhelp for this, but then realised I
 	 * was being an idiot :)
 	 *
@@ -617,6 +615,8 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 	MonoArray *arr;
 	guint32 i;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	STASH_SYS_ASS (this);
 	
 	/* Make sure the first entry is the main module */
@@ -640,11 +640,11 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 
 void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject *this, MonoString *filename)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoImage *image;
 	guchar *filename_utf8;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	STASH_SYS_ASS (this);
 	
 	filename_utf8=mono_string_to_utf8 (filename);
@@ -668,13 +668,13 @@ void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoO
 
 MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd, MonoString *dirname, HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoProcInfo *process_info)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gboolean ret;
 	gunichar2 *dir;
 	STARTUPINFO startinfo={0};
 	PROCESS_INFORMATION procinfo;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	startinfo.cb=sizeof(STARTUPINFO);
 	startinfo.dwFlags=STARTF_USESTDHANDLES;
 	startinfo.hStdInput=stdin_handle;
@@ -704,10 +704,10 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd
 
 MonoBoolean ves_icall_System_Diagnostics_Process_WaitForExit_internal (MonoObject *this, HANDLE process, gint32 ms)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	guint32 ret;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	if(ms<0) {
 		/* Wait forever */
 		ret=WaitForSingleObject (process, INFINITE);
@@ -724,12 +724,12 @@ MonoBoolean ves_icall_System_Diagnostics_Process_WaitForExit_internal (MonoObjec
 
 gint64 ves_icall_System_Diagnostics_Process_ExitTime_internal (HANDLE process)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gboolean ret;
 	gint64 ticks;
 	FILETIME create_time, exit_time, kernel_time, user_time;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	ret=GetProcessTimes (process, &create_time, &exit_time, &kernel_time,
 			     &user_time);
 	if(ret==TRUE) {
@@ -744,12 +744,12 @@ gint64 ves_icall_System_Diagnostics_Process_ExitTime_internal (HANDLE process)
 
 gint64 ves_icall_System_Diagnostics_Process_StartTime_internal (HANDLE process)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gboolean ret;
 	gint64 ticks;
 	FILETIME create_time, exit_time, kernel_time, user_time;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	ret=GetProcessTimes (process, &create_time, &exit_time, &kernel_time,
 			     &user_time);
 	if(ret==TRUE) {
@@ -764,10 +764,10 @@ gint64 ves_icall_System_Diagnostics_Process_StartTime_internal (HANDLE process)
 
 gint32 ves_icall_System_Diagnostics_Process_ExitCode_internal (HANDLE process)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	guint32 code;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	GetExitCodeProcess (process, &code);
 	
 #ifdef DEBUG
@@ -779,8 +779,6 @@ gint32 ves_icall_System_Diagnostics_Process_ExitCode_internal (HANDLE process)
 
 MonoString *ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE process)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoString *string;
 	gboolean ok;
 	HMODULE mod;
@@ -788,6 +786,8 @@ MonoString *ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE pr
 	guint32 needed;
 	guint32 len;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	ok=EnumProcessModules (process, &mod, sizeof(mod), &needed);
 	if(ok==FALSE) {
 		return(NULL);
@@ -811,12 +811,12 @@ MonoString *ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE pr
 /* Returns an array of pids */
 MonoArray *ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoArray *procs;
 	gboolean ret;
 	guint32 needed, count, i;
 	guint32 pids[1024];
+
+	MONO_ARCH_SAVE_REGS;
 
 	ret=EnumProcesses (pids, sizeof(pids), &needed);
 	if(ret==FALSE) {
@@ -836,10 +836,10 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 
 MonoBoolean ves_icall_System_Diagnostics_Process_GetWorkingSet_internal (HANDLE process, guint32 *min, guint32 *max)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gboolean ret;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	ret=GetProcessWorkingSetSize (process, min, max);
 	
 	return(ret);
@@ -847,12 +847,12 @@ MonoBoolean ves_icall_System_Diagnostics_Process_GetWorkingSet_internal (HANDLE 
 
 MonoBoolean ves_icall_System_Diagnostics_Process_SetWorkingSet_internal (HANDLE process, guint32 min, guint32 max, MonoBoolean use_min)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gboolean ret;
 	guint32 ws_min;
 	guint32 ws_max;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	ret=GetProcessWorkingSetSize (process, &ws_min, &ws_max);
 	if(ret==FALSE) {
 		return(FALSE);

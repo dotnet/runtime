@@ -268,8 +268,6 @@ mono_thread_attach (MonoDomain *domain)
 HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 							 MonoObject *start)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoMulticastDelegate *delegate = (MonoMulticastDelegate*)start;
 	guint32 (*start_func)(void *);
 	struct StartInfo *start_info;
@@ -277,6 +275,8 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 	HANDLE thread;
 	guint32 tid;
 	
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": Trying to start a new thread: this (%p) start (%p)",
@@ -377,10 +377,10 @@ ves_icall_System_Threading_Thread_GetDomainID (void)
 MonoThread *
 mono_thread_current (void)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoThread *thread;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	/* Find the current thread object */
 	thread=TlsGetValue (current_object_key);
 	
@@ -394,10 +394,10 @@ mono_thread_current (void)
 gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 							 int ms, HANDLE thread)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gboolean ret;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	if(ms== -1) {
 		ms=INFINITE;
 	}
@@ -436,9 +436,9 @@ void ves_icall_System_Threading_Thread_SlotHash_store(MonoObject *data)
 
 MonoObject *ves_icall_System_Threading_Thread_SlotHash_lookup(void)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoObject *data;
+
+	MONO_ARCH_SAVE_REGS;
 
 	data=TlsGetValue(slothash_key);
 	
@@ -499,11 +499,11 @@ static MonoThreadsSync *mon_new(void)
 gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 							      int ms)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoThreadsSync *mon;
 	guint32 ret;
 	
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef THREAD_LOCK_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": (%d) Trying to lock object %p", GetCurrentThreadId(),
@@ -547,10 +547,10 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 
 void ves_icall_System_Threading_Monitor_Monitor_exit(MonoObject *obj)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoThreadsSync *mon;
 	
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef THREAD_LOCK_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) Unlocking %p",
 		  GetCurrentThreadId (), obj);
@@ -590,11 +590,11 @@ void ves_icall_System_Threading_Monitor_Monitor_exit(MonoObject *obj)
 
 gboolean ves_icall_System_Threading_Monitor_Monitor_test_owner(MonoObject *obj)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoThreadsSync *mon;
 	gboolean ret=FALSE;
 	
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef THREAD_LOCK_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": Testing if %p is owned by thread %d", obj,
@@ -628,11 +628,11 @@ finished:
 
 gboolean ves_icall_System_Threading_Monitor_Monitor_test_synchronised(MonoObject *obj)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoThreadsSync *mon;
 	gboolean ret=FALSE;
 	
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef THREAD_LOCK_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
 		  ": (%d) Testing if %p is owned by any thread",
@@ -663,11 +663,11 @@ finished:
 	
 void ves_icall_System_Threading_Monitor_Monitor_pulse(MonoObject *obj)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gboolean have_waiters;
 	MonoThreadsSync *mon;
 	
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef THREAD_LOCK_DEBUG
 	g_message("(%d) Pulsing %p", GetCurrentThreadId (), obj);
 #endif
@@ -697,11 +697,11 @@ void ves_icall_System_Threading_Monitor_Monitor_pulse(MonoObject *obj)
 
 void ves_icall_System_Threading_Monitor_Monitor_pulse_all(MonoObject *obj)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gboolean have_waiters=FALSE;
 	MonoThreadsSync *mon;
 	
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef THREAD_LOCK_DEBUG
 	g_message("(%d) Pulsing all %p", GetCurrentThreadId (), obj);
 #endif
@@ -741,12 +741,12 @@ void ves_icall_System_Threading_Monitor_Monitor_pulse_all(MonoObject *obj)
 gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 							 int ms)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gboolean last_waiter;
 	MonoThreadsSync *mon;
 	guint32 save_count;
 	
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef THREAD_LOCK_DEBUG
 	g_message("(%d) Trying to wait for %p with timeout %dms",
 		  GetCurrentThreadId (), obj, ms);
@@ -843,13 +843,13 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 /* FIXME: exitContext isnt documented */
 gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	HANDLE *handles;
 	guint32 numhandles;
 	guint32 ret;
 	guint32 i;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	numhandles=mono_array_length(mono_handles);
 	handles=g_new0(HANDLE, numhandles);
 	for(i=0; i<numhandles; i++) {
@@ -884,13 +884,13 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 /* FIXME: exitContext isnt documented */
 gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	HANDLE *handles;
 	guint32 numhandles;
 	guint32 ret;
 	guint32 i;
 	
+	MONO_ARCH_SAVE_REGS;
+
 	numhandles=mono_array_length(mono_handles);
 	handles=g_new0(HANDLE, numhandles);
 	for(i=0; i<numhandles; i++) {
@@ -916,10 +916,10 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 /* FIXME: exitContext isnt documented */
 gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this, HANDLE handle, gint32 ms, gboolean exitContext)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	guint32 ret;
 	
+	MONO_ARCH_SAVE_REGS;
+
 #ifdef THREAD_WAIT_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": (%d) waiting for %p",
 		  GetCurrentThreadId (), handle);
@@ -988,10 +988,10 @@ gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)
 
 gint64 ves_icall_System_Threading_Interlocked_Increment_Long (gint64 *location)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gint32 lowret;
 	gint32 highret;
+
+	MONO_ARCH_SAVE_REGS;
 
 	EnterCriticalSection(&interlocked_mutex);
 
@@ -1015,10 +1015,10 @@ gint32 ves_icall_System_Threading_Interlocked_Decrement_Int (gint32 *location)
 
 gint64 ves_icall_System_Threading_Interlocked_Decrement_Long (gint64 * location)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	gint32 lowret;
 	gint32 highret;
+
+	MONO_ARCH_SAVE_REGS;
 
 	EnterCriticalSection(&interlocked_mutex);
 
@@ -1049,9 +1049,9 @@ MonoObject * ves_icall_System_Threading_Interlocked_Exchange_Object (MonoObject 
 
 gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location1, gfloat value)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	IntFloatUnion val, ret;
+
+	MONO_ARCH_SAVE_REGS;
 
 	val.fval = value;
 	ret.ival = InterlockedExchange((gint32 *) location1, val.ival);
@@ -1075,9 +1075,9 @@ MonoObject * ves_icall_System_Threading_Interlocked_CompareExchange_Object (Mono
 
 gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *location1, gfloat value, gfloat comparand)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	IntFloatUnion val, ret, cmp;
+
+	MONO_ARCH_SAVE_REGS;
 
 	val.fval = value;
 	cmp.fval = comparand;
@@ -1110,10 +1110,10 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 void
 ves_icall_System_Threading_Thread_ResetAbort (void)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoThread *thread = mono_thread_current ();
 	
+	MONO_ARCH_SAVE_REGS;
+
 	if (!thread->abort_exc) {
 		const char *msg = "Unable to reset abort because no abort was requested";
 		mono_raise_exception (mono_get_exception_thread_state (msg));

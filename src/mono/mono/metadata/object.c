@@ -880,12 +880,12 @@ mono_object_clone (MonoObject *obj)
 MonoArray*
 mono_array_clone (MonoArray *array)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoArray *o;
 	int size, i;
 	guint32 *sizes;
 	MonoClass *klass = array->obj.vtable->klass;
+
+	MONO_ARCH_SAVE_REGS;
 
 	if (array->bounds == NULL) {
 		size = mono_array_length (array);

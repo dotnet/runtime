@@ -107,9 +107,10 @@ ves_icall_System_Char_IsUpper (gunichar2 c)
 gboolean 
 ves_icall_System_Char_IsNumber (gunichar2 c)
 {
+	GUnicodeType t = g_unichar_type (c);
+
 	MONO_ARCH_SAVE_REGS;
 
-	GUnicodeType t = g_unichar_type (c);
 	return t == G_UNICODE_DECIMAL_NUMBER ||
 		t == G_UNICODE_LETTER_NUMBER ||
 		t == G_UNICODE_OTHER_NUMBER;
@@ -126,9 +127,9 @@ ves_icall_System_Char_IsPunctuation (gunichar2 c)
 gboolean 
 ves_icall_System_Char_IsSeparator (gunichar2 c)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	GUnicodeType t = g_unichar_type (c);
+
+	MONO_ARCH_SAVE_REGS;
 
 	return (t == G_UNICODE_LINE_SEPARATOR ||
 		t == G_UNICODE_PARAGRAPH_SEPARATOR ||
@@ -146,9 +147,9 @@ ves_icall_System_Char_IsSurrogate (gunichar2 c)
 gboolean 
 ves_icall_System_Char_IsSymbol (gunichar2 c)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	GUnicodeType t = g_unichar_type (c);
+
+	MONO_ARCH_SAVE_REGS;
 
 	return (t == G_UNICODE_CURRENCY_SYMBOL ||
 		t == G_UNICODE_MODIFIER_SYMBOL ||
