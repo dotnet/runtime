@@ -245,6 +245,27 @@ method_from_memberref (MonoImage *image, guint32 index)
 			klass = mono_class_from_name (mimage, nspace, name);
 			mono_class_metadata_init (klass);
 
+			/* 
+			 * FIXME: this is a workaround for the different signatures
+			 * in delegates constructors you get in user code (native int)
+			 * and in mscorlib (native unsigned int)
+			 */
+			if (klass->parent && klass->parent->parent == mono_defaults.delegate_class) {
+				for (i = 0; i < klass->method.count; ++i) {
+					MonoMethod *m = klass->methods [i];
+					if (!strcmp (mname, m->name)) {
+						if (!strcmp (mname, ".ctor")) {
+							/* we assume signature is correct */
+							mono_metadata_free_method_signature (sig);
+							return m;
+						}
+						if (mono_metadata_signature_equal (sig, m->signature)) {
+							mono_metadata_free_method_signature (sig);
+							return m;
+						}
+					}
+				}
+			}
 			/* mostly dumb search for now */
 			for (i = 0; i < klass->method.count; ++i) {
 				MonoMethod *m = klass->methods [i];
