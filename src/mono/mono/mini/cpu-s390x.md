@@ -142,7 +142,7 @@ conv.ovf.u2:
 conv.ovf.u4.un:
 conv.ovf.u4:
 conv.ovf.u8.un:
-conv.ovf.u8:
+conv.ovf.u8: 
 conv.ovf.u:
 conv.r.un: dest:f src1:i len:30
 conv.r4: dest:f src1:i len:4
@@ -150,7 +150,7 @@ conv.r8: dest:f src1:i len:4
 conv.u1: dest:i src1:i len:8
 conv.u2: dest:i src1:i len:14
 conv.u4: dest:i src1:i
-conv.u8:
+conv.u8: dest:i src1:i
 conv.u: dest:i src1:i len:4
 cpblk:
 cpobj:
