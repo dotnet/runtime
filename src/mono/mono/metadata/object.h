@@ -230,6 +230,8 @@ typedef struct {
 	HANDLE      start_notify;
 	gpointer stack_ptr;
 	gpointer *static_data;
+	gpointer jit_data;
+	gpointer lock_data;
 } MonoThread;
 
 typedef struct {

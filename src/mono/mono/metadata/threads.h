@@ -28,6 +28,7 @@ typedef enum {
 	ThreadState_Aborted = 0x00000100,
 } MonoThreadState;
 
+typedef void (*MonoThreadCleanupFunc) (MonoThread* thread);
 
 extern int  mono_thread_get_abort_signal (void);
 
@@ -52,6 +53,8 @@ extern void mono_thread_new_init (guint32 tid, gpointer stack_start,
 extern void mono_thread_create (MonoDomain *domain, gpointer func,
 				       gpointer arg);
 extern MonoThread *mono_thread_attach (MonoDomain *domain);
+
+void     mono_threads_install_cleanup   (MonoThreadCleanupFunc func);
 
 guint32  mono_threads_alloc_static_data (guint32 size, guint32 align);
 gpointer mono_threads_get_static_data   (guint32 offset);

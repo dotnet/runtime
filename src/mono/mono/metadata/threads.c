@@ -64,6 +64,9 @@ static MonoThreadStartCB mono_thread_start_cb = NULL;
 /* function called at thread attach */
 static MonoThreadAttachCB mono_thread_attach_cb = NULL;
 
+/* function called at thread cleanup */
+static MonoThreadCleanupFunc mono_thread_cleanup = NULL;
+
 /* function called when a new thread has been created */
 static MonoThreadCallbacks *mono_thread_callbacks = NULL;
 
@@ -133,6 +136,8 @@ static void thread_cleanup (MonoThread *thread)
 	
 	mono_profiler_thread_end (thread->tid);
 	handle_remove (thread->tid);
+	if (mono_thread_cleanup)
+		mono_thread_cleanup (thread);
 }
 
 static guint32 start_wrapper(void *data)
@@ -155,6 +160,8 @@ static guint32 start_wrapper(void *data)
 	 */
 
 	tid=thread->tid;
+
+	TlsSetValue (current_object_key, thread);
 	
 	mono_domain_set (start_info->domain);
 
@@ -179,8 +186,6 @@ static guint32 start_wrapper(void *data)
 		   ": (%d) Setting current_object_key to %p",
 		   GetCurrentThreadId (), thread);
 #endif
-
-	TlsSetValue (current_object_key, thread);
 
 	mono_profiler_thread_start (tid);
 
@@ -923,6 +928,12 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	 * anything up.
 	 */
 	GetCurrentProcess ();
+}
+
+void
+mono_threads_install_cleanup (MonoThreadCleanupFunc func)
+{
+	mono_thread_cleanup = func;
 }
 
 void mono_install_thread_callbacks (MonoThreadCallbacks *callbacks)
