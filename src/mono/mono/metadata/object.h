@@ -125,6 +125,7 @@ typedef struct {
 typedef struct {
 	MonoType *type;
 	gpointer  value;
+	MonoClass *klass;
 } MonoTypedRef;
 
 typedef struct {

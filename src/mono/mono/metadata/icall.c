@@ -3820,6 +3820,7 @@ mono_ArgIterator_IntGetNextArg (MonoArgIterator *iter)
 	g_assert (i < iter->sig->param_count);
 
 	res.type = iter->sig->params [i];
+	res.klass = mono_class_from_mono_type (res.type);
 	/* FIXME: endianess issue... */
 	res.value = iter->args;
 	arg_size = mono_type_stack_size (res.type, &align);
@@ -3846,6 +3847,7 @@ mono_ArgIterator_IntGetNextArgT (MonoArgIterator *iter, MonoType *type)
 		if (!mono_metadata_type_equal (type, iter->sig->params [i]))
 			continue;
 		res.type = iter->sig->params [i];
+		res.klass = mono_class_from_mono_type (res.type);
 		/* FIXME: endianess issue... */
 		res.value = iter->args;
 		arg_size = mono_type_stack_size (res.type, &align);
@@ -3858,6 +3860,7 @@ mono_ArgIterator_IntGetNextArgT (MonoArgIterator *iter, MonoType *type)
 
 	res.type = NULL;
 	res.value = NULL;
+	res.klass = NULL;
 	return res;
 }
 
@@ -3884,9 +3887,8 @@ mono_TypedReference_ToObject (MonoTypedRef tref)
 		MonoObject** objp = tref.value;
 		return *objp;
 	}
-	klass = mono_class_from_mono_type (tref.type);
 
-	return mono_value_box (mono_domain_get (), klass, tref.value);
+	return mono_value_box (mono_domain_get (), tref.klass, tref.value);
 }
 
 static void
