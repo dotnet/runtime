@@ -3498,8 +3498,10 @@ handle_enum:
 	case MONO_TYPE_CLASS: {
 		char *str;
 		guint32 slen;
-		if (!mono_object_isinst (arg, mono_defaults.monotype_class))
-			g_error ("only types allowed");
+		MonoClass *k = mono_object_class (arg);
+		if (!mono_object_isinst (arg, mono_defaults.monotype_class) &&
+				(strcmp (k->name, "TypeBuilder") || strcmp (k->name_space, "System.Reflection.Emit")))
+			g_error ("only types allowed, not %s.%s", k->name_space, k->name);
 handle_type:
 		str = type_get_qualified_name (((MonoReflectionType*)arg)->type, NULL);
 		slen = strlen (str);
