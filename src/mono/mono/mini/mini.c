@@ -5750,9 +5750,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if (header->init_locals) {
 		MonoInst *store;
 		for (i = 0; i < header->num_locals; ++i) {
-			int t = header->locals [i]->type;
-			if (t == MONO_TYPE_VALUETYPE && header->locals [i]->data.klass->enumtype)
-				t = header->locals [i]->data.klass->enum_basetype->type;
+			MonoType *ptype = header->locals [i];
+			int t = ptype->type;
+			if (t == MONO_TYPE_GENERICINST) {
+				ptype = ptype->data.generic_inst->generic_type;
+				t = ptype->type;
+			}
+			if (t == MONO_TYPE_VALUETYPE && ptype->data.klass->enumtype)
+				t = ptype->data.klass->enum_basetype->type;
 			/* FIXME: use initobj for valuetypes, handle pointers, long, float. */
 			if (t >= MONO_TYPE_BOOLEAN && t <= MONO_TYPE_U4) {
 				NEW_ICONST (cfg, ins, 0);
@@ -5772,7 +5777,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_ADD_INS (init_localsbb, store);
 			} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF)) {
 				NEW_LOCLOADA (cfg, ins, i);
-				handle_initobj (cfg, init_localsbb, ins, NULL, mono_class_from_mono_type (header->locals [i]), NULL, NULL);
+				handle_initobj (cfg, init_localsbb, ins, NULL, mono_class_from_mono_type (ptype), NULL, NULL);
 				break;
 			} else {
 				NEW_PCONST (cfg, ins, NULL);
