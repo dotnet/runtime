@@ -215,3 +215,11 @@ mono_assembly_close (MonoAssembly *assembly)
 	g_free (assembly);
 }
 
+/*
+ * Temporary hack until we get AppDomains
+ */
+GHashTable *
+mono_get_assemblies ()
+{
+	return assemblies;
+}

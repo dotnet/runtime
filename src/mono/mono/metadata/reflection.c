@@ -5,7 +5,7 @@
  * Author:
  *   Paolo Molaro (lupus@ximian.com)
  *
- * (C) 2001 Ximian, Inc.  http://www.ximian.com
+ * (C) 2001, 2002 Ximian, Inc.  http://www.ximian.com
  *
  */
 #include <config.h>
@@ -1568,12 +1568,14 @@ static GHashTable *object_cache = NULL;
 MonoReflectionAssembly*
 mono_assembly_get_object (MonoAssembly *assembly)
 {
-	MonoClass *klass;
+	static MonoClass *System_Reflection_Assembly;
 	MonoReflectionAssembly *res;
 	
 	CHECK_OBJECT (MonoReflectionAssembly *, assembly);
-	klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Assembly");
-	res = (MonoReflectionAssembly *)mono_object_new (klass);
+	if (!System_Reflection_Assembly)
+		System_Reflection_Assembly = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "Assembly");
+	res = (MonoReflectionAssembly *)mono_object_new (System_Reflection_Assembly);
 	res->assembly = assembly;
 	CACHE_OBJECT (assembly, res);
 	return res;

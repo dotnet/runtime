@@ -179,11 +179,48 @@ ves_icall_System_Object_MemberwiseClone (MonoObject *this)
 }
 
 static MonoObject *
-ves_icall_app_get_cur_domain ()
+ves_icall_appdomain_get_cur_domain ()
 {
-	MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
+	static MonoClass *System_AppDomain;
 
-	return mono_object_new (klass);
+	if (!System_AppDomain)
+		System_AppDomain = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
+
+	return mono_object_new (System_AppDomain);
+}
+
+typedef struct {
+	MonoArray *res;
+	int idx;
+} add_assembly_helper_t;
+
+static void
+add_assembly (gpointer key, gpointer value, gpointer user_data)
+{
+	add_assembly_helper_t *ah = (add_assembly_helper_t *) user_data;
+
+	mono_array_set (ah->res, gpointer, ah->idx++, mono_assembly_get_object (value));
+}
+
+static MonoArray *
+ves_icall_appdomain_get_assemblies ()
+{
+	static MonoClass *System_Reflection_Assembly;
+	GHashTable *assemblies = mono_get_assemblies ();
+	MonoArray *res;
+	add_assembly_helper_t ah;
+	
+	if (!System_Reflection_Assembly)
+		System_Reflection_Assembly = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "Assembly");
+
+	res = mono_array_new (System_Reflection_Assembly, g_hash_table_size (assemblies));
+
+	ah.res = res;
+	ah.idx = 0;
+	g_hash_table_foreach (assemblies, add_assembly, &ah);
+	
+	return res;
 }
 
 static void
@@ -333,15 +370,18 @@ ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
 }
 
 static MonoArray*
-ves_icall_get_parameter_info (MonoMethod *method) {
+ves_icall_get_parameter_info (MonoMethod *method)
+{
 	MonoArray *res;
-	MonoClass *oklass;
+	static MonoClass *System_Reflection_ParameterInfo;
 	MonoReflectionParameter** args;
 	int i;
 
 	args = mono_param_get_objects (method);
-	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "ParameterInfo");
-	res = mono_array_new (oklass, method->signature->param_count);
+	if (!System_Reflection_ParameterInfo)
+		System_Reflection_ParameterInfo = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "ParameterInfo");
+	res = mono_array_new (System_Reflection_ParameterInfo, method->signature->param_count);
 	for (i = 0; i < method->signature->param_count; ++i) {
 		mono_array_set (res, gpointer, i, args [i]);
 	}
@@ -565,6 +605,7 @@ static MonoArray*
 ves_icall_type_find_members (MonoReflectionType *type, guint32 membertypes, guint32 bflags)
 {
 	GSList *l = NULL, *tmp;
+	static MonoClass *System_Reflection_MemberInfo;
 	MonoClass *startklass, *klass;
 	MonoArray *res;
 	MonoMethod *method;
@@ -647,8 +688,10 @@ handle_parent:
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
 	len = g_slist_length (l);
-	klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MemberInfo");
-	res = mono_array_new (klass, len);
+	if (!System_Reflection_MemberInfo)
+		System_Reflection_MemberInfo = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "MemberInfo");
+	res = mono_array_new (System_Reflection_MemberInfo, len);
 	i = 0;
 	tmp = l;
 	for (; tmp; tmp = tmp->next, ++i)
@@ -743,6 +786,18 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 }
 
 static MonoString *
+ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *assembly)
+{
+	MonoString *res;
+	char *name = g_strconcat (
+		"file://", assembly->assembly->image->name, NULL);
+	
+	res = mono_string_new (name);
+	g_free (name);
+	return res;
+}
+
+static MonoString *
 ves_icall_System_MonoType_assQualifiedName (MonoReflectionType *object)
 {
 	/* FIXME : real rules are more complicated (internal classes,
@@ -827,7 +882,8 @@ static gpointer icall_map [] = {
 	/*
 	 * System.AppDomain
 	 */
-	"System.AppDomain::getCurDomain", ves_icall_app_get_cur_domain,
+	"System.AppDomain::getCurDomain", ves_icall_appdomain_get_cur_domain,
+	"System.AppDomain::getAssemblies", ves_icall_appdomain_get_assemblies, 
 
 	/*
 	 * System.Decimal
@@ -925,8 +981,12 @@ static gpointer icall_map [] = {
 	"System.Runtime.InteropServices.Marshal::ReadIntPtr", ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr,
 	"System.Runtime.InteropServices.Marshal::PtrToStringAuto", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAuto,
 
+	/*
+	 * System.Reflection
+	 */
 	"System.Reflection.Assembly::LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom,
 	"System.Reflection.Assembly::GetType", ves_icall_System_Reflection_Assembly_GetType,
+	"System.Reflection.Assembly::get_code_base", ves_icall_System_Reflection_Assembly_get_code_base,
 
 	/*
 	 * System.MonoType.

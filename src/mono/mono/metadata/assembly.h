@@ -11,5 +11,6 @@ MonoAssembly *mono_assembly_open     (const char *fname,
 				      MonoAssemblyResolverFn resolver,
 				      enum MonoImageOpenStatus *status);
 void          mono_assembly_close    (MonoAssembly *assembly);
-	
+
+GHashTable   *mono_get_assemblies    ();
 #endif
