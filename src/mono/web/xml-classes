@@ -34,8 +34,9 @@
   Here XmlWriter almost equals to XmlTextWriter. If you want to see
   another implementation, check XmlNodeWriter.cs used in monodoc.
 
-  XmlTextWriter is completed. However, it looks nearly twice as slow as 
-  MS.NET (I tried 1.1)
+  XmlTextWriter is completed. However, it looks slower than MS.NET (I 
+  tried 1.1). After some optimization, it became better, but maybe it can be
+  done more.
 
 *** XmlResolver
 
@@ -77,8 +78,12 @@
   XmlTextReader, XmlNodeReader and XmlValidatingReader are almost finished.
 
 	<ul>
-		* Most of the OASIS conformance test passes as Microsoft 
-		  does, but about W3C tests, it is still not perfect.
+		* All OASIS conformance test passes as Microsoft does. Some 
+		  W3C tests fail, but it looks better.
+		* Entity expansion and its well-formedness check is incomplete.
+		  It incorrectly allows divided content models. It incorrectly
+		  treats its Base URI, so some dtd fails.
+		* Unicode surrogate pair character is not supported yet.
 		* I won't add any XDR support on XmlValidatingReader. (I haven't
 		  ever seen XDR used other than Microsoft's BizTalk Server 2000,
 		  and Now they have 2002 with XML Schema support)
@@ -136,6 +141,7 @@
 		  compilation. Interestingly, MS.NET also fails around here,
 		  so it might be nature of ContentTypeParticle design)
 		* Some derivation by restriction (DBR) handling is incorrect.
+		* Some simple type restriction handling is still incorrect.
 	</ul>
 
 *** Validating Reader
@@ -175,7 +181,9 @@
 ** System.Xml.XPath and System.Xml.Xsl
 
   There are two implementations for XSLT. One (and historical) implementation
-  is based on libxslt. Now we uses fully implemented managed XSLT.
+  is based on libxslt (aka Unmanaged XSLT). Now we uses fully implemented
+  managed XSLT. To use Unmanaged XSLT, set MONO_UNMANAGED_XSLT environment 
+  value (any value is acceptable).
 
   As for Managed XSLT, we support msxsl:script.
 
