@@ -866,10 +866,12 @@ ves_icall_System_String_get_Chars (MonoString *me, gint32 idx)
 	return mono_string_chars(me)[idx];
 }
 
-/* @mode :	0 = StringCompareModeDirect
-			1 = StringCompareModeCaseInsensitive
-			2 = StringCompareModeOrdinal
-*/
+/*
+ * @mode:
+ * 0 = StringCompareModeDirect
+ * 1 = StringCompareModeCaseInsensitive
+ * 2 = StringCompareModeOrdinal
+ */
 static gint32 
 string_icall_cmp_char (gunichar2 c1, gunichar2 c2, gint32 mode)
 {

@@ -2039,6 +2039,46 @@ handle_parent:
 	return res;
 }
 
+static MonoType *
+ves_icall_Type_GetNestedType (MonoReflectionType *type, MonoString *name, guint32 bflags)
+{
+	MonoDomain *domain; 
+	MonoClass *startklass, *klass;
+	MonoType *res;
+	MonoClass *nested;
+	GList *tmpn;
+	char *str;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	domain = ((MonoObject *)type)->vtable->domain;
+	klass = startklass = mono_class_from_mono_type (type->type);
+	str = mono_string_to_utf8 (name);
+
+ handle_parent:
+	for (tmpn = klass->nested_classes; tmpn; tmpn = tmpn->next) {
+		int match = 0;
+		nested = tmpn->data;
+		if ((nested->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK) == TYPE_ATTRIBUTE_NESTED_PUBLIC) {
+			if (bflags & BFLAGS_Public)
+				match++;
+		} else {
+			if (bflags & BFLAGS_NonPublic)
+				match++;
+		}
+		if (!match)
+			continue;
+		if (strcmp (nested->name, str) == 0){
+			g_free (str);
+			return mono_type_get_object (domain, &nested->byval_arg);
+		}
+	}
+	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
+		goto handle_parent;
+	g_free (str);
+	return NULL;
+}
+
 static MonoArray*
 ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 {
@@ -3566,6 +3606,7 @@ static gconstpointer icall_map [] = {
 	"System.MonoType::InternalGetEvent", ves_icall_MonoType_GetEvent,
 	"System.MonoType::GetInterfaces", ves_icall_Type_GetInterfaces,
 	"System.MonoType::GetNestedTypes", ves_icall_Type_GetNestedTypes,
+	"System.MonoType::GetNestedType", ves_icall_Type_GetNestedType,
 
 	/*
 	 * System.Net.Sockets I/O Services
