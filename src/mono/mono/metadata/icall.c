@@ -1694,8 +1694,10 @@ ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, Mon
 	while (*p) {
 		switch (*p) {
 		case '&':
-			if (isbyref) /* only one level allowed by the spec */
+			if (isbyref) { /* only one level allowed by the spec */
+				g_free (str);
 				return NULL;
+			}
 			isbyref = 1;
 			p++;
 			return mono_type_get_object (mono_domain_get (), &klass->this_arg);
@@ -1713,12 +1715,16 @@ ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, Mon
 					break;
 				if (*p == ',')
 					rank++;
-				else if (*p != '*') /* '*' means unknown lower bound */
+				else if (*p != '*') { /* '*' means unknown lower bound */
+					g_free (str);
 					return NULL;
+				}
 				++p;
 			}
-			if (*p != ']')
+			if (*p != ']') {
+				g_free (str);
 				return NULL;
+			}
 			p++;
 			klass = mono_array_class_get (&klass->byval_arg, rank);
 			mono_class_init (klass);

@@ -175,6 +175,7 @@ ves_icall_iconv_new_encoder (MonoString *name, MonoBoolean big_endian)
 	cd = iconv_open (n, "UTF-16");
 #endif
 	g_assert (cd != (iconv_t)-1);
+	g_free (n);
 
 	return (gpointer)cd;
 }
@@ -202,6 +203,7 @@ ves_icall_iconv_new_decoder (MonoString *name, MonoBoolean big_endian)
 	cd = iconv_open ("UTF-16", n);
 #endif
 	g_assert (cd != (iconv_t)-1);
+	g_free (n);
 
 	return (gpointer)cd;
 }

@@ -1281,7 +1281,7 @@ extern gboolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host
 	
 	hostname=mono_string_to_utf8(host);
 	he=gethostbyname(hostname);
-	free(hostname);
+	g_free(hostname);
 	
 	if(he==NULL) {
 		return(FALSE);
@@ -1337,10 +1337,11 @@ extern gboolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *addr
 	
 	address = mono_string_to_utf8 (addr);
 	if (inet_pton (AF_INET, address, &inaddr) <= 0) {
-		free (address);
+		g_free (address);
 		return FALSE;
 	}
 	
+	g_free (address);
 	if ((he = gethostbyaddr ((char *) &inaddr, sizeof (inaddr), AF_INET)) == NULL)
 		return FALSE;
 	
