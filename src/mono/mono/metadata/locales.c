@@ -238,11 +238,9 @@ construct_culture_from_specific_name (MonoCultureInfo *ci, gchar *name)
 
 	MONO_ARCH_SAVE_REGS;
 
-	key.name = mono_string_to_utf8 (name);
+	key.name = name;
 	ne = bsearch (&key, culture_name_entries, NUM_CULTURE_ENTRIES,
 			sizeof (CultureInfoNameEntry), culture_name_locator);
-
-	g_free ((gpointer) key.name);
 
 	if (ne == NULL)
 		return FALSE;
