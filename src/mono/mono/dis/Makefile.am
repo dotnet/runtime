@@ -2,7 +2,7 @@ INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
 
 bin_PROGRAMS = monodis
 
-lib_LIBRARIES = libmonodis.a
+noinst_LIBRARIES = libmonodis.a
 
 libmonodis_a_SOURCES =	\
 	get.c		\
@@ -20,9 +20,7 @@ monodis_SOURCES =	\
 
 monodis_LDADD = 			\
 	libmonodis.a			\
-	../metadata/libmetadata.a 	\
-	../io-layer/libwapi.a		\
-	../utils/libmonoutils.a 	\
+	../metadata/libmetadata.la 	\
 	$(GMODULE_LIBS) 		\
 	$(GLIB_LIBS) 
 

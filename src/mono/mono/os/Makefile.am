@@ -1,10 +1,19 @@
+DIST_SUBDIRS = unix win32
+
+INCLUDES = -I$(top_srcdir)
+
+noinst_LTLIBRARIES = libmonoos.la
+
 if PLATFORM_WIN32
-SUBDIRS = win32
+DIR=win32
 else
-SUBDIRS = unix
+DIR=unix
 endif
 
-EXTRA_DIST = util.h
+SUBDIRS = $(DIR)
 
-all:
-	cp */*.a .
+libmonoos_la_SOURCES = \
+	util.h
+
+libmonoos_la_LIBADD = $(DIR)/libmonoos.la
+

@@ -7,22 +7,22 @@ INCLUDES = 				\
 	$(GLIB_CFLAGS)
 
 hps_LDADD = \
-	../io-layer/libwapi.a		\
-	../utils/libmonoutils.a		\
+	../io-layer/libwapi.la		\
+	../utils/libmonoutils.la		\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm
 
 scratch_LDADD = \
-	../io-layer/libwapi.a		\
-	../utils/libmonoutils.a		\
+	../io-layer/libwapi.la		\
+	../utils/libmonoutils.la		\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm
 
 shmdel_LDADD = \
-	../io-layer/libwapi.a		\
-	../utils/libmonoutils.a		\
+	../io-layer/libwapi.la		\
+	../utils/libmonoutils.la		\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm

@@ -5,19 +5,20 @@ INCLUDES = 				\
 
 if X86
 bin_PROGRAMS = mono
-lib_LIBRARIES = libmono.a
+lib_LTLIBRARIES = libmono.la
+
+libmono_la_LIBADD = 	\
+	../metadata/libmonoruntime.la
+
 endif
 
-libmono_a_SOURCES =		\
+libmono_la_SOURCES =		\
 	win32-exception.c	\
 	win32-exception.h	\
 	codegen.h		\
 	codegen-x86.c		\
 	emit-x86.c		\
-	jit.h			\
-	regset.h		\
 	regset.c		\
-	debug.h			\
 	debug-private.h		\
 	debug.c			\
 	debug-stabs.c		\
@@ -31,15 +32,17 @@ libmono_a_SOURCES =		\
 	helpers.h		\
 	helpers.c
 
+libmonoincludedir = $(includedir)/mono/jit
+libmonoinclude_HEADERS = \
+	jit.h			\
+	debug.h			\
+	regset.h
+
 mono_SOURCES = mono.c
 
+#mono_LDFLAGS=-static
 mono_LDADD =				\
-	libmono.a			\
-	../metadata/libmonoruntime.a	\
-	../metadata/libmetadata.a	\
-	../io-layer/libwapi.a		\
-	../utils/libmonoutils.a 	\
-	../os/libmonoos.a		\
+	libmono.la			\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm

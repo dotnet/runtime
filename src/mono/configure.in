@@ -518,7 +518,7 @@ arm-*-linux-* | armv4l-*-linux-*) TARGET=ARM; arch_target=arm; ACCESS_UNALIGNED=
 esac
 
 if test ${TARGET} = unknown; then
-	CFLAGS="$CFLAGS -DNO_PORT"
+	CPPFLAGS="$CPPFLAGS -DNO_PORT"
 	AC_MSG_WARN("mono has not been ported to $host: some things may not work.")
 fi
 
@@ -537,9 +537,11 @@ AM_CONDITIONAL(ARM, test x$TARGET = xARM)
 
 AC_SUBST(arch_target)
 AC_SUBST(CFLAGS)
+AC_SUBST(CPPFLAGS)
 
 AC_OUTPUT([
 Makefile
+mono.pc
 mono/Makefile
 mono/utils/Makefile
 mono/metadata/Makefile

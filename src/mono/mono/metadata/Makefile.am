@@ -1,6 +1,6 @@
 noinst_PROGRAMS = pedump
 
-lib_LIBRARIES = libmetadata.a libmonoruntime.a
+noinst_LTLIBRARIES = libmetadata.la libmonoruntime.la
 
 #
 # Keep in sync with mono/runtime/Makefile.am
@@ -10,7 +10,10 @@ assembliesdir = $(libdir)
 INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)	-I$(top_srcdir)/mono \
 	-DMONO_ASSEMBLIES=\""$(assembliesdir)"\" -DMONO_CFG_DIR=\""$(sysconfdir)"\"
 
-libmonoruntime_a_SOURCES = \
+libmonoruntime_la_LIBADD = libmetadata.la
+libmetadata_la_LIBADD = ../io-layer/libwapi.la ../utils/libmonoutils.la ../os/libmonoos.la
+
+libmonoruntime_la_SOURCES = \
 	reflection.c	\
 	object.c	\
 	icall.c		\
@@ -21,10 +24,7 @@ libmonoruntime_a_SOURCES = \
 	marshal.c	\
 	marshal.h	\
 	threads.c	\
-	threads.h	\
 	threadpool.c	\
-	threadpool.h	\
-	threads-types.h	\
 	file-io.c	\
 	file-io.h	\
 	socket-io.c	\
@@ -33,10 +33,7 @@ libmonoruntime_a_SOURCES = \
 	exception.h	\
 	unicode.c	\
 	unicode.h	\
-	appdomain.h	\
 	appdomain.c	\
-	debug-helpers.h	\
-	debug-helpers.c	\
 	debug-symfile.h	\
 	debug-symfile.c	\
 	profiler.c	\
@@ -50,7 +47,7 @@ libmonoruntime_a_SOURCES = \
 	process.c	\
 	process.h
 
-libmetadata_a_SOURCES = \
+libmetadata_la_SOURCES = \
 	assembly.c	\
 	domain.c	\
 	opcodes.c	\
@@ -64,13 +61,17 @@ libmetadata_a_SOURCES = \
 	rawbuffer.c	\
 	loader.c	\
 	class.c		\
-	mempool.h	\
 	mempool.c	\
-	debug-helpers.h	\
 	debug-helpers.c
 
 libmetadataincludedir = $(includedir)/mono/metadata
 libmonoruntimeincludedir = $(includedir)/mono/metadata
+
+libmonoruntimeinclude_HEADERS = \
+	appdomain.h	\
+	threadpool.h	\
+	threads-types.h	\
+	threads.h
 
 libmetadatainclude_HEADERS = \
 	assembly.h	\
@@ -92,11 +93,13 @@ libmetadatainclude_HEADERS = \
 	exception.h	\
 	profiler.h	\
 	appdomain.h	\
+	debug-helpers.h	\
+	mempool.h	\
 	rand.h
 
 pedump_SOURCES =		\
-	pedump.c $(libmetadata_a_SOURCES)
+	pedump.c
 
-pedump_LDADD = ../io-layer/libwapi.a ../utils/libmonoutils.a $(GLIB_LIBS) $(GMODULE_LIBS) -lm
+pedump_LDADD = libmetadata.la $(GLIB_LIBS) $(GMODULE_LIBS) -lm
 
 

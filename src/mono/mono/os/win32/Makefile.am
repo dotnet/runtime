@@ -3,6 +3,6 @@ INCLUDES = 				\
 	$(GMODULE_CFLAGS)		\
 	$(GLIB_CFLAGS)
 
-noinst_LIBRARIES = libmonoos.a
+noinst_LTLIBRARIES = libmonoos.la
 
-libmonoos_a_SOURCES = util.c
+libmonoos_la_SOURCES = util.c

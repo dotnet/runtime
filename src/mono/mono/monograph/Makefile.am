@@ -7,9 +7,7 @@ INCLUDES = 				\
 	$(GLIB_CFLAGS)
 
 monograph_LDADD = \
-	../metadata/libmetadata.a	\
-	../io-layer/libwapi.a		\
-	../utils/libmonoutils.a 	\
+	../metadata/libmetadata.la	\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm

@@ -1,4 +1,4 @@
-lib_LIBRARIES = libwapi.a
+noinst_LTLIBRARIES = libwapi.la
 
 INCLUDES = \
 	$(GLIB_CFLAGS)		\
@@ -20,6 +20,7 @@ OTHER_H = \
 	io.h		\
 	io-layer.h	\
 	macros.h	\
+	mono-mutex.h	\
 	mutexes.h	\
 	processes.h	\
 	semaphores.h	\
@@ -65,7 +66,6 @@ OTHER_SRC = \
 	mutexes.h		\
 	mutex-private.h		\
 	mono-mutex.c		\
-	mono-mutex.h		\
 	processes.c		\
 	processes.h		\
 	process-private.h	\
@@ -106,10 +106,10 @@ WINDOWS_SRC = \
 	io-layer-dummy.c
 
 if PLATFORM_WIN32
-libwapi_a_SOURCES = $(WINDOWS_SRC)
+libwapi_la_SOURCES = $(WINDOWS_SRC)
 libwapiinclude_HEADERS = $(WINDOWS_H)
 else
-libwapi_a_SOURCES = $(OTHER_SRC)
+libwapi_la_SOURCES = $(OTHER_SRC)
 libwapiinclude_HEADERS = $(OTHER_H)
 endif
 

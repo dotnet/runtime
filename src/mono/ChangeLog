@@ -1,3 +1,11 @@
+
+Fri Jul 19 18:38:38 CEST 2002 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in, Makefile.am, mono.pc.in: add a mono.pc file for use
+	with pkg-config.
+	* */Makefile.am: makefile overhaul to create a shared libmono library.
+	* */*.h: do not include config.h in headers that should be installed.
+
 2002-07-12  Dick Porter  <dick@ximian.com>
 
 	* acconfig.h:

@@ -1,18 +1,18 @@
-lib_LIBRARIES = libmonoutils.a
+noinst_LTLIBRARIES = libmonoutils.la
 
 INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)	-I$(top_srcdir)/mono 
 
-libmonoutils_a_SOURCES = \
+libmonoutils_la_SOURCES = \
 	mono-hash.c	\
-	mono-hash.h	\
-	monobitset.h	\
 	monobitset.c	\
 	strtod.h	\
 	strtod.c
 
 libmonoutilsincludedir = $(includedir)/mono/utils
 
-libmonoutilsinclude_HEADERS = 
+libmonoutilsinclude_HEADERS = \
+	monobitset.h	\
+	mono-hash.h
 
 EXTRA_DIST = ChangeLog
 
