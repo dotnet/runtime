@@ -70,6 +70,7 @@ TESTSRC=			\
 	jit-float.cs		\
 	pop.cs			\
 	time.cs			\
+	appdomain.cs		\
 	pointer.cs
 
 
