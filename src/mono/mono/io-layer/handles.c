@@ -45,13 +45,17 @@ static pthread_condattr_t cond_shared_attr;
 struct _WapiHandleShared_list *_wapi_shared_data=NULL;
 struct _WapiHandlePrivate_list *_wapi_private_data=NULL;
 
+int disable_shm = 1;
 static void shared_init (void)
 {
 	struct sockaddr_un sun;
 	int ret;
+
+	if (getenv ("MONO_ENABLE_SHM"))
+		disable_shm = 0;
 	
 #ifndef DISABLE_SHARED_HANDLES
-	if(getenv ("MONO_DISABLE_SHM"))
+	if(getenv ("MONO_DISABLE_SHM") || disable_shm)
 #endif
 	{
 #ifdef DEBUG
