@@ -31,12 +31,16 @@
  * the gc needs to see all the appcontext
  */
 static guint32 context_thread_id = -1;
+static guint32 appdomain_thread_id = -1;
  
 #ifdef HAVE_KW_THREAD
 static __thread MonoDomain * tls_appdomain;
 static __thread MonoAppContext * tls_appcontext;
 #define GET_APPDOMAIN() tls_appdomain
-#define SET_APPDOMAIN(x) tls_appdomain = (x)
+#define SET_APPDOMAIN(x) do { \
+	tls_appdomain = x; \
+	TlsSetValue (appdomain_thread_id, x); \
+} while (FALSE)
 
 #define GET_APPCONTEXT() tls_appcontext
 #define SET_APPCONTEXT(x) do { \
@@ -45,8 +49,6 @@ static __thread MonoAppContext * tls_appcontext;
 } while (FALSE)
 
 #else
-static guint32 appdomain_thread_id = -1;
-
 #define GET_APPDOMAIN() ((MonoDomain *)TlsGetValue (appdomain_thread_id))
 #define SET_APPDOMAIN(x) TlsSetValue (appdomain_thread_id, x);
 
@@ -302,9 +304,8 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	if (domain)
 		g_assert_not_reached ();
-#ifndef HAVE_KW_THREAD
+	
 	appdomain_thread_id = TlsAlloc ();
-#endif
 	context_thread_id = TlsAlloc ();
 
 	InitializeCriticalSection (&appdomains_mutex);
@@ -812,7 +813,7 @@ mono_context_set (MonoAppContext * new_context)
 MonoAppContext * 
 mono_context_get (void)
 {
-	GET_APPCONTEXT ();
+	return GET_APPCONTEXT ();
 }
 
 MonoImage*
