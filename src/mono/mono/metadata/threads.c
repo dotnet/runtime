@@ -1151,12 +1151,15 @@ void mono_thread_manage (void)
 	g_message(G_GNUC_PRETTY_FUNCTION ": Joining each running thread...");
 #endif
 	
+	EnterCriticalSection (&threads_mutex);
 	if(threads==NULL) {
 #ifdef THREAD_DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": No threads");
 #endif
+		LeaveCriticalSection (&threads_mutex);
 		return;
 	}
+	LeaveCriticalSection (&threads_mutex);
 	
 	do {
 		EnterCriticalSection (&threads_mutex);

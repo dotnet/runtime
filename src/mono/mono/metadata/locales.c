@@ -495,6 +495,7 @@ static void set_collator_options (UCollator *coll, gint32 options)
 
 	if(options & CompareOptions_IgnoreCase) {
 		ucol_setAttribute (coll, UCOL_STRENGTH, UCOL_SECONDARY, &ec);
+		ucol_setAttribute (coll, UCOL_ALTERNATE_HANDLING, UCOL_NON_IGNORABLE, &ec);
 	}
 
 	if(options & CompareOptions_IgnoreWidth) {
@@ -533,7 +534,7 @@ gint32 ves_icall_System_Globalization_CompareInfo_internal_compare (MonoCompareI
 	UCollationResult result;
 	
 	MONO_ARCH_SAVE_REGS;
-	
+
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": Comparing [%s] and [%s]", mono_string_to_utf8 (str1), mono_string_to_utf8 (str2));
 #endif
