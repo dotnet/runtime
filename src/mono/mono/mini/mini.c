@@ -180,7 +180,7 @@ print_method_from_ip (void *ip)
 	method = mono_method_full_name (ji->method, TRUE);
 	source = mono_debug_source_location_from_address (ji->method, (int) ip, NULL, domain);
 
-	g_print ("IP at offset 0x%x of method %s (%p %p)\n", (char*)ip - (char*)ji->code_start, method, ji->code_start, (char*)ji->code_start + ji->code_size);
+	g_print ("IP %p at offset 0x%x of method %s (%p %p)\n", ip, (char*)ip - (char*)ji->code_start, method, ji->code_start, (char*)ji->code_start + ji->code_size);
 
 	if (source)
 		g_print ("%s\n", source);
