@@ -178,12 +178,16 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end)
 	}
 			
 	for (i = start; i < end; i++){
-		char *sig, *flags;
+		char *sig, *flags, *attrs = NULL;
+		guint32 field_offset = -1;
 		
 		mono_metadata_decode_row (t, i, cols, MONO_FIELD_SIZE);
 		sig = get_field_signature (m, cols [MONO_FIELD_SIGNATURE]);
 		flags = field_flags (cols [MONO_FIELD_FLAGS]);
 		
+		mono_metadata_field_info (m, i, &field_offset, NULL, NULL);
+		if (field_offset != -1)
+			attrs = g_strdup_printf ("[%d]", field_offset);
 		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_LITERAL){
 			char *lit;
 			guint32 const_cols [MONO_CONSTANT_SIZE];
@@ -202,9 +206,10 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end)
 			fprintf (output, "%s\n", lit);
 			g_free (lit);
 		} else 
-			fprintf (output, "    .field %s %s %s\n",
-				 flags, sig,
+			fprintf (output, "    .field %s %s %s %s\n",
+				 attrs? attrs: "", flags, sig,
 				 mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]));
+		g_free (attrs);
 		g_free (flags);
 		g_free (sig);
 	}
