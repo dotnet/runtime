@@ -26,7 +26,8 @@
 typedef enum {
 	MONO_TRAMPOLINE_GENERIC,
 	MONO_TRAMPOLINE_JUMP,
-	MONO_TRAMPOLINE_CLASS_INIT
+	MONO_TRAMPOLINE_CLASS_INIT,
+	MONO_TRAMPOLINE_AOT
 } MonoTrampolineType;
 
 /*
@@ -142,6 +143,48 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	return addr;
 }
 
+/*
+ * amd64_aot_trampoline:
+ *
+ *   This trampoline handles calls made from AOT code. We try to bypass the 
+ * normal JIT compilation logic to avoid loading the metadata for the method.
+ */
+static gpointer
+amd64_aot_trampoline (long *regs, guint8 *code, guint8 *token_info, 
+					  guint8* tramp)
+{
+	MonoImage *image;
+	guint32 token;
+	MonoMethod *method;
+	gpointer addr;
+	gpointer *vtable_slot;
+
+	image = *(gpointer*)token_info;
+	token_info += sizeof (gpointer);
+	token = *(guint32*)token_info;
+
+	/* Later we could avoid allocating the MonoMethod */
+	method = mono_get_method (image, token, NULL);
+	g_assert (method);
+
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		method = mono_marshal_get_synchronized_wrapper (method);
+
+	addr = mono_compile_method (method);
+	g_assert (addr);
+
+	vtable_slot = mono_amd64_get_vcall_slot_addr (code, regs);
+	g_assert (vtable_slot);
+
+	if (method->klass->valuetype)
+		addr = get_unbox_trampoline (method, addr);
+
+	if (mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
+		*vtable_slot = addr;
+
+	return addr;
+}
+
 /**
  * amd64_class_init_trampoline:
  *
@@ -195,23 +238,10 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code, *tramp;
 	int i, lmf_offset, offset, method_offset, tramp_offset, saved_regs_offset, saved_fpregs_offset, framesize;
-	static guint8* generic_jump_trampoline = NULL;
-	static guint8 *generic_class_init_trampoline = NULL;
+	static guint8 *trampoline_code [16];
 
-	switch (tramp_type) {
-	case MONO_TRAMPOLINE_GENERIC:
-		if (mono_generic_trampoline_code)
-			return mono_generic_trampoline_code;
-		break;
-	case MONO_TRAMPOLINE_JUMP:
-		if (generic_jump_trampoline)
-			return generic_jump_trampoline;
-		break;
-	case MONO_TRAMPOLINE_CLASS_INIT:
-		if (generic_class_init_trampoline)
-			return generic_class_init_trampoline;
-		break;
-	}
+	if (trampoline_code [tramp_type])
+		return trampoline_code [tramp_type];
 
 	code = buf = mono_global_codeman_reserve (512);
 
@@ -307,6 +337,8 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
 		tramp = (guint8*)amd64_class_init_trampoline;
+	else if (tramp_type == MONO_TRAMPOLINE_AOT)
+		tramp = (guint8*)amd64_aot_trampoline;
 	else
 		tramp = (guint8*)amd64_magic_trampoline;
 
@@ -340,17 +372,9 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 
 	mono_arch_flush_icache (buf, code - buf);
 
-	switch (tramp_type) {
-	case MONO_TRAMPOLINE_GENERIC:
+	if (tramp_type == MONO_TRAMPOLINE_GENERIC)
 		mono_generic_trampoline_code = buf;
-		break;
-	case MONO_TRAMPOLINE_JUMP:
-		generic_jump_trampoline = buf;
-		break;
-	case MONO_TRAMPOLINE_CLASS_INIT:
-		generic_class_init_trampoline = buf;
-		break;
-	}
+	trampoline_code [tramp_type] = buf;
 
 	return buf;
 }
@@ -421,6 +445,29 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	gpointer code_start;
 
 	ji = create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, mono_domain_get ());
+	code_start = ji->code_start;
+	g_free (ji);
+
+	return code_start;
+}
+
+gpointer
+mono_arch_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoJitInfo *ji;
+	gpointer code_start;
+	guint8 *buf, *start;
+
+	mono_domain_lock (domain);
+	buf = start = mono_code_manager_reserve (domain->code_mp, 2 * sizeof (gpointer));
+	mono_domain_unlock (domain);
+
+	*(gpointer*)buf = image;
+	buf += sizeof (gpointer);
+	*(guint32*)buf = token;
+
+	ji = create_specific_trampoline (start, MONO_TRAMPOLINE_AOT, domain);
 	code_start = ji->code_start;
 	g_free (ji);
 
