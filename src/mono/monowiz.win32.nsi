@@ -1,13 +1,16 @@
-; =====================================================
-; mono.nsi - Mono Setup wizard for windows
-; =====================================================
+; =================================================================
+; mono.nsi - This NSIS script creates Mono Setup wizard for Windows
+;
+;            Requires NSIS 2.0 (Nullsoft Scriptable Install System)
+;            From http://nsis.sourceforge.net/site/index.php
+; =================================================================
 ;
 ; (C) Copyright 2003 by Johannes Roith
-; (C) Copyright 2003 by Daniel Morgan
+; (C) Copyright 2003, 2004 by Daniel Morgan
 ;
 ; Authors: 
 ;       Johannes Roith <johannes@jroith.de>
-;       Daniel Morgan <danmorg@sc.rr.com>
+;       Daniel Morgan <danielmorgan@verizon.net>
 ;
 ; This .nsi includes code from the NSIS Archives:
 ; function StrReplace and VersionCheck 
@@ -23,9 +26,9 @@
 ; SET MILESTONE & SOURCE DIR
 ; =====================================================
 ; set by makefile!!
-;
-; !define MILESTONE "0.26" ;
-; !define SOURCE_INSTALL_DIR "/usr/monodist\\*" ;
+
+!define MILESTONE 0.29 
+!define SOURCE_INSTALL_DIR E:\cygwin\home\danmorg\mono029\*.*
 
 ; =====================================================
 ; SET LOGO
@@ -56,9 +59,6 @@
 ; 3. Type "make win32setup"
 ;
 ; 4. The output file is mono-[MILESTONE]-win32-1.exe
-;
-;
-;
 ;
 ;
 ; =====================================================
@@ -96,31 +96,59 @@
 ; GENERAL SETTING - NEED NOT TO BE CHANGED
 ; =====================================================
 
- !define NAME "Mono" ;
- !define TARGET_INSTALL_DIR "$PROGRAMFILES\Mono-${MILESTONE}" ;
- !define OUTFILE "mono-${MILESTONE}-win32-1.exe" ;
+!define NAME "Mono" 
+!define TARGET_INSTALL_DIR "$PROGRAMFILES\Mono-${MILESTONE}" 
+!define OUTFILE mono-${MILESTONE}-win32-1.exe
+
+Name ${NAME}
+Caption "Mono ${MILESTONE} Setup"
+
+!include "MUI.nsh"
+!include "Sections.nsh"
+
+SetCompressor lzma
+SilentInstall normal
+ShowInstDetails show
+SetDateSave on
+SetDatablockOptimize on
+CRCCheck on
+BGGradient 000000 800000 FFFFFF
+InstallColors FF8080 000030
+XPStyle on
+AutoCloseWindow false
 
 ; =====================================================
 ; SCRIPT
 ; =====================================================
 
- !define MUI_PRODUCT "${NAME}"
- !define MUI_VERSION "${MILESTONE}"
- !define FULLNAME "${MUI_PRODUCT} ${MUI_VERSION}"
- !define MUI_UI "${NSISDIR}\Contrib\UIs\modern2.exe"
- !define MUI_ICON "${NSISDIR}\Contrib\Icons\setup.ico"
- !define MUI_UNICON "${NSISDIR}\Contrib\Icons\normal-uninstall.ico"
- !define MUI_WELCOMEPAGE
- !define MUI_DIRECTORYPAGE
- !define MUI_DIRECTORYSELECTIONPAGE
- !include "${NSISDIR}\Contrib\Modern UI\System.nsh"
- !insertmacro MUI_SYSTEM
- !insertmacro MUI_LANGUAGE "ENGLISH"
+#!define MUI_WELCOMEPAGE
+#!define MUI_DIRECTORYPAGE
+#!define MUI_DIRECTORYSELECTIONPAGE
+ 
+!define MUI_WELCOMEPAGE_TEXT "This wizard will guide you through the installation of Mono for Windows.\r\n\r\n\r\n$_CLICK"
 
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_LICENSE "E:\cygwin\home\danmorg\mono029\license.txt"
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
 
- OutFile "${OUTFILE}"
- InstallDir "${TARGET_INSTALL_DIR}"
+!define MUI_FINISHPAGE_LINK "Visit Mono's website for the latest news"
+!define MUI_FINISHPAGE_LINK_LOCATION "http://www.go-mono.com/"
 
+!define MUI_FINISHPAGE_NOREBOOTSUPPORT
+
+!insertmacro MUI_PAGE_FINISH
+
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+ 
+!insertmacro MUI_LANGUAGE "ENGLISH"
+
+AutoCloseWindow false
+ShowInstDetails show
+
+OutFile ${OUTFILE}
+InstallDir "${TARGET_INSTALL_DIR}"
 
 ;========================
 ; Uninstaller
@@ -186,8 +214,11 @@ SectionEnd
 
  NoAskInstall:
 
+ DetailPrint "Installing Mono Files..."
+ SetOverwrite on
  SetOutPath $INSTDIR
- File /r "${SOURCE_INSTALL_DIR}"
+ File /r ${SOURCE_INSTALL_DIR}
+
  WriteUninstaller Uninst.exe
 
  WriteRegStr HKEY_LOCAL_MACHINE SOFTWARE\Mono\${MILESTONE} SdkInstallRoot $INSTDIR
@@ -320,7 +351,7 @@ FileClose $0
 FileOpen $0 "$WINDIR\monobasepath.bat" "w"
 FileWrite $0 'set MONO_BASEPATH="$INSTDIR"$\r$\n'
 FileWrite $0 'set MONO_PATH=$INSTDIR\lib$\r$\n'
-FileWrite $0 'set MONO_CFG_DIR="$INSTDIR\etc\mono"'
+FileWrite $0 'set MONO_CFG_DIR=$INSTDIR\etc'
 FileClose $0
 
 
@@ -573,7 +604,6 @@ FileClose $0
 
 FileOpen $0 "$WINDIR\cilc.bat" "w"
 
-
 FileWrite $0 "@echo off$\r$\n"
 FileWrite $0 "call monobasepath.bat$\r$\n"
 FileWrite $0 "set MONOARGS=$\r$\n"
@@ -588,6 +618,85 @@ FileWrite $0 'set path="$INSTDIR\bin\;$INSTDIR\lib\;%path%"$\r$\n'
 FileWrite $0 '"$INSTDIR\bin\mono.exe" "$INSTDIR\bin\cilc.exe" %MONOARGS%$\r$\n'
 FileWrite $0 "endlocal$\r$\n"
 
+FileClose $0
+
+; ============= glib-2.0.pc ===============
+FileOpen $0 "$INSTDIR\lib\pkgconfig\glib-2.0.pc" "w"
+FileWrite $0 "prefix=$6$\r$\n"
+FileWrite $0 "exec_prefix=$${prefix}$\r$\n"
+FileWrite $0 "libdir=$${exec_prefix}/lib$\r$\n"
+FileWrite $0 "includedir=$${prefix}/include$\r$\n"
+FileWrite $0 "$\r$\n"
+FileWrite $0 "glib_genmarshal=glib-genmarshal$\r$\n"
+FileWrite $0 "gobject_query=gobject-query$\r$\n"
+FileWrite $0 "glib_mkenums=glib-mkenums$\r$\n"
+FileWrite $0 "$\r$\n"
+FileWrite $0 "Name: GLib$\r$\n"
+FileWrite $0 "Description: C Utility Library$\r$\n"
+FileWrite $0 "Version: 2.0.4$\r$\n"
+FileWrite $0 "Libs: -L$${libdir} -lglib-2.0 -lintl -liconv $\r$\n"
+FileWrite $0 "Cflags: -I$${includedir}/glib-2.0 -I$${libdir}/glib-2.0/include $\r$\n"
+FileClose $0
+
+; ============= gmodule-2.0.pc ===============
+FileOpen $0 "$INSTDIR\lib\pkgconfig\gmodule-2.0.pc" "w"
+FileWrite $0 "prefix=$6$\r$\n"
+FileWrite $0 "exec_prefix=$${prefix}$\r$\n"
+FileWrite $0 "libdir=$${exec_prefix}/lib$\r$\n"
+FileWrite $0 "includedir=$${prefix}/include$\r$\n"
+FileWrite $0 "$\r$\n"
+FileWrite $0 "gmodule_supported=true$\r$\n"
+FileWrite $0 "$\r$\n"
+FileWrite $0 "Name: GModule$\r$\n"
+FileWrite $0 "Description: Dynamic module loader for GLib$\r$\n"
+FileWrite $0 "Requires: glib-2.0$\r$\n"
+FileWrite $0 "Version: 2.0.4$\r$\n"
+FileWrite $0 "Libs: -L$${libdir} -lgmodule-2.0 $\r$\n"
+FileWrite $0 "Cflags:$\r$\n"
+FileClose $0
+
+; ============= gobject-2.0.pc ===============
+FileOpen $0 "$INSTDIR\lib\pkgconfig\gobject-2.0.pc" "w"
+FileWrite $0 "prefix=$6$\r$\n"
+FileWrite $0 "exec_prefix=$${prefix}$\r$\n"
+FileWrite $0 "libdir=$${exec_prefix}/lib$\r$\n"
+FileWrite $0 "includedir=$${prefix}/include$\r$\n"
+FileWrite $0 "$\r$\n"
+FileWrite $0 "Name: GObject$\r$\n"
+FileWrite $0 "Description: GLib Type, Object, Parameter and Signal Library$\r$\n"
+FileWrite $0 "Requires: glib-2.0$\r$\n"
+FileWrite $0 "Version: 2.0.4$\r$\n"
+FileWrite $0 "Libs: -L$${libdir} -lgobject-2.0$\r$\n"
+FileWrite $0 "Cflags:$\r$\n"
+FileClose $0
+
+; ============= gthread-2.0.pc ===============
+FileOpen $0 "$INSTDIR\lib\pkgconfig\gthread-2.0.pc" "w"
+FileWrite $0 "prefix=$6$\r$\n"
+FileWrite $0 "exec_prefix=$${prefix}$\r$\n"
+FileWrite $0 "libdir=$${exec_prefix}/lib$\r$\n"
+FileWrite $0 "includedir=$${prefix}/include$\r$\n"
+FileWrite $0 "$\r$\n"
+FileWrite $0 "Name: GThread$\r$\n"
+FileWrite $0 "Description: Thread support for GLib$\r$\n"
+FileWrite $0 "Requires: glib-2.0$\r$\n"
+FileWrite $0 "Version: 2.0.4$\r$\n"
+FileWrite $0 "Libs: -L$${libdir} -lgthread-2.0 $\r$\n"
+FileWrite $0 "Cflags: -D_REENTRANT$\r$\n"
+FileClose $0
+
+; ============= libintl.pc ===============
+FileOpen $0 "$INSTDIR\lib\pkgconfig\libintl.pc" "w"
+FileWrite $0 "prefix=$6$\r$\n"
+FileWrite $0 "exec_prefix=$${prefix}$\r$\n"
+FileWrite $0 "libdir=$${exec_prefix}/lib$\r$\n"
+FileWrite $0 "includedir=$${prefix}/include$\r$\n"
+FileWrite $0 "$\r$\n"
+FileWrite $0 "Name: libintl$\r$\n"
+FileWrite $0 "Description: The intl library from GNU gettext$\r$\n"
+FileWrite $0 "Version: 0.10.40-tml$\r$\n"
+FileWrite $0 "Libs: -L$${libdir} -lintl$\r$\n"
+FileWrite $0 "Cflags: -I$${includedir}$\r$\n"
 FileClose $0
 
 NoInstall:

@@ -1,3 +1,8 @@
+2004-01-04  Daniel Morgan <danielmorgan@verizon.net>
+
+	* monowiz.win32.nsi: update the NSIS installer script for windows
+	  to support NSIS 2.0 rc1 and Mono 0.29
+
 2003-12-22  Bernie Solomon  <bernard@ugsolutions.com>
 
 	* configure.in: missed in my last change
