@@ -228,9 +228,6 @@ get_virtual_method (MonoDomain *domain, MonoMethod *m, stackval *objs)
 	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL))
 			return m;
 
-	mono_class_init (m->klass);
-	g_assert (m->klass->inited);
-
 	obj = objs->data.p;
 	klass = obj->vtable->klass;
 	vtable = (MonoMethod **)obj->vtable->vtable;
@@ -679,6 +676,8 @@ dump_frame (MonoInvocation *inv)
 	return g_string_free (str, FALSE);
 }
 
+CRITICAL_SECTION metadata_lock;
+
 static guint32*
 calc_offsets (MonoImage *image, MonoMethodHeader *header, MonoMethodSignature *signature)
 {
@@ -686,6 +685,10 @@ calc_offsets (MonoImage *image, MonoMethodHeader *header, MonoMethodSignature *s
 	int hasthis = signature->hasthis;
 	register const unsigned char *ip, *end;
 	const MonoOpcode *opcode;
+	guint32 token;
+	MonoMethod *method;
+	MonoClass *class;
+	MonoDomain *domain = mono_domain_get ();
 	guint32 *offsets = g_new0 (guint32, 2 + header->num_locals + signature->param_count + signature->hasthis);
 
 	for (i = 0; i < header->num_locals; ++i) {
@@ -712,6 +715,7 @@ calc_offsets (MonoImage *image, MonoMethodHeader *header, MonoMethodSignature *s
 	}
 	offsets [1] = offset;
 
+	EnterCriticalSection (&metadata_lock);
 	/* intern the strings in the method. */
 	ip = header->code;
 	end = ip + header->code_size;
@@ -727,13 +731,37 @@ calc_offsets (MonoImage *image, MonoMethodHeader *header, MonoMethodSignature *s
 			++ip;
 			break;
 		case MonoInlineString:
-			mono_ldstr (mono_domain_get (), image, mono_metadata_token_index (read32 (ip + 1)));
-			/* fall through */
+			mono_ldstr (domain, image, mono_metadata_token_index (read32 (ip + 1)));
+			ip += 5;
+			break;
 		case MonoInlineType:
+			class = mono_class_get (image, read32 (ip + 1));
+			mono_class_init (class);
+			if (!(class->flags & TYPE_ATTRIBUTE_INTERFACE))
+				mono_class_vtable (domain, class);
+			ip += 5;
+			break;
 		case MonoInlineField:
+			token = read32 (ip + 1);
+			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
+				mono_field_from_memberref (image, token, &class);
+			} else {
+				class = mono_class_get (image, 
+					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
+			}
+			mono_class_init (class);
+			mono_class_vtable (domain, class);
+			ip += 5;
+			break;
+		case MonoInlineMethod:
+			method = mono_get_method (image, read32 (ip + 1), NULL);
+			mono_class_init (method->klass);
+			if (!(method->klass->flags & TYPE_ATTRIBUTE_INTERFACE))
+				mono_class_vtable (domain, method->klass);
+			ip += 5;
+			break;
 		case MonoInlineTok:
 		case MonoInlineSig:
-		case MonoInlineMethod:
 		case MonoShortInlineR:
 		case MonoInlineI:
 		case MonoInlineBrTarget:
@@ -764,6 +792,7 @@ calc_offsets (MonoImage *image, MonoMethodHeader *header, MonoMethodSignature *s
 		}
 
 	}
+	LeaveCriticalSection (&metadata_lock);
 	return offsets;
 }
 
@@ -1005,7 +1034,6 @@ ves_exec_method (MonoInvocation *frame)
 	GOTO_LABEL_VARS;
 
 	signature = frame->method->signature;
-	mono_class_init (frame->method->klass);
 
 	DEBUG_ENTER ();
 
@@ -2365,8 +2393,6 @@ array_constructed:
 			token = read32 (ip);
 			c = mono_class_get (image, token);
 
-			mono_class_init (c);
-
 			g_assert (sp [-1].type == VAL_OBJ);
 
 			if ((o = sp [-1].data.p)) {
@@ -2438,7 +2464,6 @@ array_constructed:
 			token = read32 (ip);
 			
 			c = mono_class_get (image, token);
-			mono_class_init (c);
 			
 			o = sp [-1].data.p;
 			if (!o)
@@ -2550,11 +2575,9 @@ array_constructed:
 			/* need to handle fieldrefs */
 			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
 				field = mono_field_from_memberref (image, token, &klass);
-				mono_class_init (klass);
 			} else {
 				klass = mono_class_get (image, 
 					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
-				mono_class_init (klass);
 				field = mono_class_get_field (klass, token);
 			}
 			g_assert (field);
@@ -2588,11 +2611,9 @@ array_constructed:
 			/* need to handle fieldrefs */
 			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
 				field = mono_field_from_memberref (image, token, &klass);
-				mono_class_init (klass);
 			} else {
 				klass = mono_class_get (image, 
 					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
-				mono_class_init (klass);
 				field = mono_class_get_field (klass, token);
 			}
 			g_assert (field);
@@ -2755,7 +2776,6 @@ array_constructed:
 			token = read32 (ip);
 
 			class = mono_class_get (image, token);
-			mono_class_init (class);
 			g_assert (class != NULL);
 
 			sp [-1].type = VAL_OBJ;
@@ -3496,7 +3516,7 @@ array_constructed:
 				 * behavior described in Partition II, 3.5).
 				 */
 				--sp;
-				g_assert (sp->type == VAL_VALUETA);
+				g_assert (sp->type == VAL_VALUETA || sp->type == VAL_TP);
 				memset (sp->data.vt.vt, 0, mono_class_value_size (sp->data.vt.klass, NULL));
 				break;
 			}
@@ -3904,6 +3924,7 @@ main (int argc, char *argv [])
 
 	mono_install_handler (interp_ex_handler);
 
+	InitializeCriticalSection (&metadata_lock);
 	domain = mono_init (file);
 	mono_runtime_init (domain);
 	mono_thread_init (domain);
