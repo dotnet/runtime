@@ -50,6 +50,10 @@ static gpointer mono_jit_compile_method (MonoMethod *method);
 static void handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst *src, 
 			  const unsigned char *ip, MonoClass *klass, gboolean to_end, gboolean native);
 
+static int mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
+		   int locals_offset, MonoInst *return_var, GList *dont_inline, MonoInst **inline_args, 
+		   guint inline_offset);
+
 extern guint8 mono_burg_arity [];
 /* helper methods signature */
 static MonoMethodSignature *helper_sig_long_long_long = NULL;
@@ -2002,6 +2006,71 @@ mono_save_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignature *s
 	}
 }
 
+static int
+inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoBasicBlock *bblock, MonoInst **sp,
+		guchar *ip, guint real_offset, GList *dont_inline, MonoBasicBlock **last_b)
+{
+	MonoInst *ins, *rvar = NULL;
+	MonoMethodHeader *cheader;
+	MonoBasicBlock *ebblock, *sbblock;
+	int i, costs, new_locals_offset;
+				
+	if (cfg->verbose_level > 2)
+		g_print ("INLINE START %p %s\n", cmethod,  mono_method_full_name (cmethod, TRUE));
+
+	cheader = ((MonoMethodNormal *)cmethod)->header;
+
+	if (!cmethod->inline_info) {
+		mono_jit_stats.inlineable_methods++;
+		cmethod->inline_info = 1;
+	}
+	/* allocate space to store the return value */
+	if (!MONO_TYPE_IS_VOID (fsig->ret)) 
+		rvar =  mono_compile_create_var (cfg, fsig->ret, OP_LOCAL);
+
+	/* allocate local variables */
+	new_locals_offset = cfg->num_varinfo;
+	for (i = 0; i < cheader->num_locals; ++i)
+		mono_compile_create_var (cfg, cheader->locals [i], OP_LOCAL);
+	
+	/* allocate starte and end blocks */
+	sbblock = NEW_BBLOCK (cfg);
+	sbblock->block_num = cfg->num_bblocks++;
+	sbblock->real_offset = real_offset;
+
+	ebblock = NEW_BBLOCK (cfg);
+	ebblock->block_num = cfg->num_bblocks++;
+	ebblock->real_offset = real_offset;
+	
+	costs = mono_method_to_ir (cfg, cmethod, sbblock, ebblock, new_locals_offset, rvar, dont_inline, sp, real_offset);
+	
+	if (costs >= 0 && costs < 60) {
+		if (cfg->verbose_level > 2)
+			g_print ("INLINE END %s\n", mono_method_full_name (cmethod, TRUE));
+		
+		mono_jit_stats.inlined_methods++;
+
+		/* always add some code to avoid block split failures */
+		MONO_INST_NEW (cfg, ins, CEE_NOP);
+		MONO_ADD_INS (bblock, ins);
+		ins->cil_code = ip;
+
+		bblock->next_bb = sbblock;
+		link_bblock (cfg, bblock, sbblock);
+
+		if (rvar) {
+			NEW_TEMPLOAD (cfg, ins, rvar->inst_c0);
+			*sp++ = ins;
+		}
+		*last_b = ebblock;
+		return costs + 1;
+	} else {
+		if (cfg->verbose_level > 2)
+			g_print ("INLINE ABORTED %s\n", mono_method_full_name (cmethod, TRUE));
+	}
+	return 0;
+}
+
 /*
  * Some of these comments may well be out-of-date.
  * Design decisions: we do a single pass over the IL code (and we do bblock 
@@ -2079,6 +2148,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		bbhash = g_hash_table_new (g_direct_hash, NULL);
 	}
 
+	dont_inline = g_list_prepend (dont_inline, method);
 	if (cfg->method == method) {
 
 		/* ENTRY BLOCK */
@@ -2493,7 +2563,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_CALLVIRT: {
 			MonoInst *addr = NULL;
 			MonoMethodSignature *fsig = NULL;
-			MonoMethodHeader *cheader;
 			int temp, array_rank = 0;
 			int virtual = *ip == CEE_CALLVIRT;
 
@@ -2501,7 +2570,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (*ip == CEE_CALLI) {
 				cmethod = NULL;
-				cheader = NULL;
 				CHECK_STACK (1);
 				--sp;
 				addr = *sp;
@@ -2514,7 +2582,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			} else {
 				cmethod = mono_get_method (image, token, NULL);
-				cheader = ((MonoMethodNormal *)cmethod)->header;
 
 				if (!cmethod->klass->inited)
 					mono_class_init (cmethod->klass);
@@ -2567,83 +2634,31 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 
-			if ((cfg->opt & MONO_OPT_INLINE) && 
+			if ((cfg->opt & MONO_OPT_INLINE) && cmethod &&
 			    (!virtual || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || (cmethod->flags & METHOD_ATTRIBUTE_FINAL)) && 
-			    cmethod && cheader && mono_method_check_inlining (cmethod) &&
-			    method != cmethod && !g_list_find (dont_inline, cmethod)) {
-				MonoInst *rvar = NULL;
-				MonoBasicBlock *ebblock, *sbblock;
-				int costs, new_locals_offset;
+			    mono_method_check_inlining (cmethod) &&
+			    !g_list_find (dont_inline, cmethod)) {
+				int costs;
+				MonoBasicBlock *ebblock;
 				
-				if (cfg->verbose_level > 2)
-					g_print ("INLINE START %p %s\n", cmethod,  mono_method_full_name (cmethod, TRUE));
-
-				if (!cmethod->inline_info) {
-					mono_jit_stats.inlineable_methods++;
-					cmethod->inline_info = 1;
-				}
-				/* allocate space to store the return value */
-				if (!MONO_TYPE_IS_VOID (fsig->ret)) 
-					rvar =  mono_compile_create_var (cfg, fsig->ret, OP_LOCAL);
-
-				/* allocate local variables */
-				new_locals_offset = cfg->num_varinfo;
-				for (i = 0; i < cheader->num_locals; ++i)
-					mono_compile_create_var (cfg, cheader->locals [i], OP_LOCAL);
-				
-				/* allocate starte and end blocks */
-				sbblock = NEW_BBLOCK (cfg);
-				sbblock->block_num = cfg->num_bblocks++;
-				sbblock->real_offset = real_offset;
-
-				ebblock = NEW_BBLOCK (cfg);
-				ebblock->block_num = cfg->num_bblocks++;
-				ebblock->real_offset = real_offset;
-				
-				dont_inline = g_list_prepend (dont_inline, method);
-				costs = mono_method_to_ir (cfg, cmethod, sbblock, ebblock, new_locals_offset, rvar, dont_inline, sp, real_offset);
-				dont_inline = g_list_remove (dont_inline, method);
-				
-				if (costs >= 0 && costs < 60) {
-
-					mono_jit_stats.inlined_methods++;
-
-					/* always add some code to avoid block split failures */
-					MONO_INST_NEW (cfg, ins, CEE_NOP);
-					MONO_ADD_INS (bblock, ins);
-					ins->cil_code = ip;
-
+ 				if ((costs = inline_method (cfg, cmethod, fsig, bblock, sp, ip, real_offset, dont_inline, &ebblock))) {
 					ip += 5;
 					real_offset += 5;
-
-					bblock->next_bb = sbblock;
-					link_bblock (cfg, bblock, sbblock);
 
 					GET_BBLOCK (cfg, bbhash, bblock, ip);
 					ebblock->next_bb = bblock;
 					link_bblock (cfg, ebblock, bblock);
+ 					if (!MONO_TYPE_IS_VOID (fsig->ret))
+ 						sp++;
 
-					if (rvar) {
-						NEW_TEMPLOAD (cfg, ins, rvar->inst_c0);
-						*sp++ = ins;
-					}
 					if (sp != stack_start) {
 						handle_stack_args (cfg, ebblock, stack_start, sp - stack_start);
 						sp = stack_start;
 					}
 					start_new_bblock = 1;
-					if (cfg->verbose_level > 2)
-						g_print ("INLINE END %s\n", mono_method_full_name (cmethod, TRUE));
-					
-					// { static int c = 0; printf ("ICOUNT %d %d %s\n", c++, costs, mono_method_full_name (cmethod, TRUE)); }
 
 					inline_costs += costs;
 					break;
-				} else {
-
-					if (cfg->verbose_level > 2)
-						g_print ("INLINE ABORTED %s\n", mono_method_full_name (cmethod, TRUE));
-
 				}
 			}
 			
@@ -3144,8 +3159,31 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_TEMPLOAD (cfg, *sp, temp);
 				}
 
-				/* now call the actual ctor */
-				mono_emit_method_call_spilled (cfg, bblock, cmethod, sp, ip, NULL);
+				if ((cfg->opt & MONO_OPT_INLINE) && cmethod &&
+				    mono_method_check_inlining (cmethod) &&
+				    !mono_class_is_subclass_of (cmethod->klass, mono_defaults.exception_class, FALSE) &&
+				    !g_list_find (dont_inline, cmethod)) {
+					int costs;
+					MonoBasicBlock *ebblock;
+					if ((costs = inline_method (cfg, cmethod, cmethod->signature, bblock, sp, ip, real_offset, dont_inline, &ebblock))) {
+
+						GET_BBLOCK (cfg, bbhash, bblock, ip + 5);
+						ebblock->next_bb = bblock;
+						link_bblock (cfg, ebblock, bblock);
+
+						if (sp != stack_start) {
+							handle_stack_args (cfg, ebblock, stack_start, sp - stack_start);
+							sp = stack_start;
+						}
+						start_new_bblock = 1;
+
+						inline_costs += costs;
+						/*g_print ("inlined newobj for %s\n", cmethod->klass->name);*/
+					}
+				} else {
+					/* now call the actual ctor */
+					mono_emit_method_call_spilled (cfg, bblock, cmethod, sp, ip, NULL);
+				}
 			}
 
 			NEW_TEMPLOAD (cfg, *sp, temp);
@@ -4270,11 +4308,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		g_hash_table_destroy (bbhash);
 	}
 
+	dont_inline = g_list_remove (dont_inline, method);
 	return inline_costs;
 
  inline_failure:
 	if (cfg->method != method) 
 		g_hash_table_destroy (bbhash);
+	dont_inline = g_list_remove (dont_inline, method);
 	return -1;
 
  unverified:
@@ -4282,6 +4322,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		g_hash_table_destroy (bbhash);
 	g_error ("Invalid IL code at IL%04x in %s: %s\n", ip - header->code, 
 		 mono_method_full_name (method, TRUE), mono_disasm_code_one (NULL, method, ip, NULL));
+	dont_inline = g_list_remove (dont_inline, method);
 	return -1;
 }
 
