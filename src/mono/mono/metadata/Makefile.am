@@ -5,19 +5,19 @@ lib_LIBRARIES = libmetadata.a
 INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
 
 libmetadata_a_SOURCES = \
-	assembly.c	\
+	image.c		\
 	metadata.c	\
 	rawbuffer.c
 
 libmetadataincludedir = $(includedir)/mono/metadata
 
 libmetadatainclude_HEADERS = \
-	assembly.h	\
 	blobsig.h	\
 	cil-coff.h	\
 	eltype.h	\
 	endian.h	\
 	fieldattr.h	\
+	image.h		\
 	metadata.h	\
 	methodattr.h	\
 	methodheader.h	\

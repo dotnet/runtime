@@ -1,4 +1,4 @@
-#include <mono/metadata/assembly.h>
+#include <mono/metadata/image.h>
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/endian.h>
 #include <mono/metadata/typeattr.h>

@@ -891,6 +891,7 @@ mono_metadata_parse_typedef_or_ref (metadata_t *m, const char *ptr, const char *
 	guint32 token;
 	guint table;
 	ptr = mono_metadata_decode_value (ptr, &token);
+
 	switch (table & 0x03) {
 	case 0: table = META_TABLE_TYPEDEF; break;
 	case 1: table = META_TABLE_TYPEREF; break;

@@ -9,7 +9,7 @@
 #include <config.h>
 #include <stdio.h>
 #include <string.h>
-#include "assembly.h"
+#include "image.h"
 #include <glib.h>
 #include "cil-coff.h"
 
@@ -281,7 +281,7 @@ int
 main (int argc, char *argv [])
 {
 	cli_image_info_t *iinfo;
-	MonoAssembly *assembly;
+	MonoImage *image;
 	char *file = NULL;
 	int i;
 	
@@ -300,17 +300,17 @@ main (int argc, char *argv [])
 	if (!file)
 		usage ();
 
-	assembly = mono_assembly_open (file, NULL);
-	if (!assembly){
-		fprintf (stderr, "Can not open assembly %s\n", file);
+	image = mono_image_open (file, NULL);
+	if (!image){
+		fprintf (stderr, "Can not open image %s\n", file);
 		exit (1);
 	}
-	iinfo = assembly->image_info;
+	iinfo = image->image_info;
 
 	if (dump_data)
 		dump_dotnet_iinfo (iinfo);
 	
-	mono_assembly_close (assembly);
+	mono_image_close (image);
 	
 	return 0;
 }

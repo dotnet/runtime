@@ -30,7 +30,7 @@ gboolean dump_header_data_p = FALSE;
 int dump_table = -1;
 
 static void
-dump_header_data (MonoAssembly *ass)
+dump_header_data (MonoImage *img)
 {
 	if (!dump_header_data_p)
 		return;
@@ -600,50 +600,50 @@ struct {
 static void
 disassemble_file (const char *file)
 {
-	enum MonoAssemblyOpenStatus status;
-	MonoAssembly *ass;
+	enum MonoImageOpenStatus status;
+	MonoImage *img;
 	cli_image_info_t *ii;
 	metadata_t *m;
 
 	fprintf (output, "// Disassembling %s\n", file);
 
-	ass = mono_assembly_open (file, &status);
-	if (ass == NULL){
+	img = mono_image_open (file, &status);
+	if (img == NULL){
 		fprintf (stderr, "Error while trying to process %s\n", file);
 		return;
 	}
 
-	ii = ass->image_info;
+	ii = img->image_info;
 	m = &ii->cli_metadata;
 	
 	if (dump_table != -1){
 		(*table_list [dump_table].dumper) (m);
 	} else {
-		dump_header_data (ass);
+		dump_header_data (img);
 		
 		dis_directive_assemblyref (m);
 		dis_directive_assembly (m);
 		dis_types (m, ii);
 	}
 	
-	mono_assembly_close (ass);
+	mono_image_close (img);
 }
 
 static void
 usage (void)
 {
-	GString *args = g_string_new ("");
+	GString *args = g_string_new ("[--help]");
 	int i;
 	
 	for (i = 0; table_list [i].name != NULL; i++){
 		g_string_append (args, "[");
 		g_string_append (args, table_list [i].name);
 		g_string_append (args, "] ");
-		if ((i % 4) == 0)
+		if (((i-2) % 5) == 0)
 			g_string_append_c (args, '\n');
 	}
 	fprintf (stderr,
-		 "Usage is: monodis %s file ..\n", args);
+		 "Usage is: monodis %s file ..\n", args->str);
 	exit (1);
 }
 
