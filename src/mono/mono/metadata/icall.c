@@ -2578,6 +2578,7 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 
 	long int gmtoff;
 	int is_daylight = 0, day;
+	char tzone[10];
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -2614,7 +2615,6 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 
 		/* Daylight saving starts or ends here. */
 		if (gmt_offset (tt) != gmtoff) {
-			char tzone[10];
 			struct tm tt1;
 			time_t t1;
 
@@ -2653,6 +2653,17 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 
 		gmtoff = gmt_offset (tt);
 	}
+
+	if (!is_daylight) {
+		strftime (tzone, 10, "%Z", &tt);
+		mono_array_set ((*names), gpointer, 0, mono_string_new (domain, tzone));
+		mono_array_set ((*names), gpointer, 1, mono_string_new (domain, tzone));
+		mono_array_set ((*data), gint64, 0, 0);
+		mono_array_set ((*data), gint64, 1, 0);
+		mono_array_set ((*data), gint64, 2, (gint64) gmtoff * 10000000L);
+		mono_array_set ((*data), gint64, 3, 0);
+	}
+
 	return 1;
 #else
 	MonoDomain *domain = mono_domain_get ();
