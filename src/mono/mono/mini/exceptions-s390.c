@@ -921,6 +921,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 	MonoLMF *lmf = jit_tls->lmf;		
 	GList *trace_ips = NULL;
 	MonoException *mono_ex;
+	MonoString *initial_stack_trace;
 
 	g_assert (ctx != NULL);
 	if (!obj) {
@@ -932,7 +933,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 
 	if (mono_object_isinst (obj, mono_defaults.exception_class)) {
 		mono_ex = (MonoException*)obj;
-		mono_ex->stack_trace = NULL;
+		initial_stack_trace = mono_ex->stack_trace;
 	} else {
 		mono_ex = NULL;
 	}
@@ -971,19 +972,21 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 			if (test_only && ji->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && mono_ex) {
 				char *tmp, *strace;
 
-				trace_ips = g_list_append (trace_ips, MONO_CONTEXT_GET_IP (ctx));
+				if (!initial_stack_trace) {
+					trace_ips = g_list_append (trace_ips, MONO_CONTEXT_GET_IP (ctx));
 
-				if (!mono_ex->stack_trace)
-					strace = g_strdup ("");
-				else
-					strace = mono_string_to_utf8 (mono_ex->stack_trace);
+					if (!mono_ex->stack_trace)
+						strace = g_strdup ("");
+					else
+						strace = mono_string_to_utf8 (mono_ex->stack_trace);
 			
-				tmp = g_strdup_printf ("%s%s\n", strace, trace);
-				g_free (strace);
+					tmp = g_strdup_printf ("%s%s\n", strace, trace);
+					g_free (strace);
 
-				mono_ex->stack_trace = mono_string_new (domain, tmp);
+					mono_ex->stack_trace = mono_string_new (domain, tmp);
 
-				g_free (tmp);
+					g_free (tmp);
+				}
 			}
 
 			if (ji->num_clauses) {

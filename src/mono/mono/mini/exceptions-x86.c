@@ -1006,6 +1006,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 	MonoContext initial_ctx;
 	int frame_count = 0;
 	gboolean gc_disabled = FALSE;
+	MonoString *initial_stack_trace;
 	
 	/*
 	 * This function might execute on an alternate signal stack, and Boehm GC
@@ -1044,7 +1045,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 
 	if (mono_object_isinst (obj, mono_defaults.exception_class)) {
 		mono_ex = (MonoException*)obj;
-		mono_ex->stack_trace = NULL;
+		initial_stack_trace = mono_ex->stack_trace;
 	} else {
 		mono_ex = NULL;
 	}
@@ -1098,18 +1099,22 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 			if (test_only && ji->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && mono_ex) {
 				char *tmp, *strace;
 
-				/* Avoid giant stack traces */
-				if (frame_count < 1000) {
+				/* 
+				 * Avoid overwriting the stack trace if the exception is
+				 * rethrown. Also avoid giant stack traces during a stack
+				 * overflow.
+				 */
+				if (!initial_stack_trace && (frame_count < 1000)) {
 					trace_ips = g_list_append (trace_ips, MONO_CONTEXT_GET_IP (ctx));
 
 					if (!mono_ex->stack_trace)
 						strace = g_strdup ("");
 					else
 						strace = mono_string_to_utf8 (mono_ex->stack_trace);
-			
+
 					tmp = g_strdup_printf ("%s%s\n", strace, trace);
 					g_free (strace);
-					
+
 					mono_ex->stack_trace = mono_string_new (domain, tmp);
 
 					g_free (tmp);
