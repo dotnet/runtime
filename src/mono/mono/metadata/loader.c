@@ -81,7 +81,9 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	case MONO_MEMBERREF_PARENT_TYPEREF:
 		klass = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | nindex);
 		if (!klass) {
-			g_warning ("Missing field %s in typeref index %d", fname, nindex);
+			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_REF | nindex, context);
+			g_warning ("Missing field %s in class %s (typeref index %d)", fname, name, nindex);
+			g_free (name);
 			return NULL;
 		}
 		mono_class_init (klass);
@@ -303,21 +305,27 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 	case MONO_MEMBERREF_PARENT_TYPEREF:
 		klass = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | nindex);
 		if (!klass) {
-			g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
+			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_REF | nindex, context);
+			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, name);
+			g_free (name);
 			return NULL;
 		}
 		break;
 	case MONO_MEMBERREF_PARENT_TYPESPEC:
 		klass = mono_class_get_full (image, MONO_TOKEN_TYPE_SPEC | nindex, context);
 		if (!klass) {
-			g_warning ("Missing method %s in assembly %s typespec index %d", mname, image->name, nindex);
+			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_SPEC | nindex, context);
+			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, name);
+			g_free (name);
 			return NULL;
 		}
 		break;
 	case MONO_MEMBERREF_PARENT_TYPEDEF:
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | nindex);
 		if (!klass) {
-			g_warning ("Missing method %s in assembly %s typedef index %d", mname, image->name, nindex);
+			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_DEF | nindex, context);
+			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, name);
+			g_free (name);
 			return NULL;
 		}
 		break;
@@ -345,7 +353,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 	case MONO_MEMBERREF_PARENT_TYPEREF:
 		method = find_method (klass, NULL, mname, sig);
 		if (!method)
-			g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
+			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, mono_class_get_name (klass));
 		mono_metadata_free_method_signature (sig);
 		break;
 	case MONO_MEMBERREF_PARENT_TYPESPEC: {
@@ -357,7 +365,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 		if (type->type != MONO_TYPE_ARRAY && type->type != MONO_TYPE_SZARRAY) {
 			method = find_method (klass, NULL, mname, sig);
 			if (!method)
-				g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
+				g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, mono_class_get_name (klass));
 			else if (klass->generic_class && (klass != method->klass))
 				method = mono_class_inflate_generic_method (
 					method, klass->generic_class->context, klass);
@@ -403,7 +411,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 	case MONO_MEMBERREF_PARENT_TYPEDEF:
 		method = find_method (klass, NULL, mname, sig);
 		if (!method)
-			g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
+			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, mono_class_get_name (klass));
 		mono_metadata_free_method_signature (sig);
 		break;
 	default:

@@ -2837,7 +2837,7 @@ mono_class_get_property_token (MonoProperty *prop)
 	return 0;
 }
 
-static char *
+char *
 mono_class_name_from_token (MonoImage *image, guint32 type_token, MonoGenericContext *context)
 {
 	const char *name, *nspace;

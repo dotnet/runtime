@@ -250,4 +250,7 @@ mono_event_get_flags         (MonoEvent *event);
 MonoMethod *
 mono_class_get_method_from_name (MonoClass *klass, const char *name, int param_count);
 
+char *
+mono_class_name_from_token (MonoImage *image, guint32 type_token, MonoGenericContext *context);
+
 #endif /* _MONO_CLI_CLASS_H_ */
