@@ -3886,8 +3886,6 @@ mono_jit_compile_method (MonoMethod *method)
 
 		if (mono_method_has_breakpoint (method, FALSE))
 			x86_breakpoint (cfg->code);
-		else if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
-			x86_nop (cfg->code);
 
 		if (!(ji = arch_jit_compile_cfg (target_domain, cfg))) {
 			mono_profiler_method_end_jit (method, MONO_PROFILE_FAILED);
