@@ -74,7 +74,9 @@ case "$host" in
 		;;
         *-*-hpux*)
                 platform_win32=no
-                CPPFLAGS="$CPPFLAGS -DGC_HPUX_THREADS -D_HPUX_SOURCE -D_XOPEN_SOURCE_EXTENDED -D_REENTRANT"
+		CPPFLAGS="$CPPFLAGS -DGC_HPUX_THREADS -D_HPUX_SOURCE -D_XOPEN_SOURCE_EXTENDED -D_REENTRANT"
+		CFLAGS="$CFLAGS +ESdbgasm"
+		LDFLAGS="$LDFLAGS -z"
 		libmono_cflags="-D_REENTRANT"
 		libmono_ldflags="-lpthread"
 		libgc_threads=pthreads
@@ -160,8 +162,16 @@ AC_CHECK_SIZEOF(void *, 4)
 WARN=''
 if test x"$GCC" = xyes; then
         WARN='-Wall -Wunused -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes  -Wmissing-prototypes -Wnested-externs -Wpointer-arith -Wno-cast-qual -Wcast-align -Wwrite-strings'
+else
+	# The Sun Forte compiler complains about inline functions that access static variables
+	# so disable all inlining.
+	case "$host" in
+	*-*-solaris*)
+		CFLAGS="$CFLAGS -Dinline="
+		;;
+	esac
 fi
-CFLAGS="-g $WARN"
+CFLAGS="$CFLAGS -g $WARN"
 
 AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
 if test "x$PKG_CONFIG" = "xno"; then
@@ -567,6 +577,21 @@ if test x$platform_win32 = xno; then
 		fi
 	fi
 
+	dnl *********************************
+	dnl *** Checks for math functions ***
+	dnl *********************************
+        LIBS="$LIBS -lm";
+        AC_CHECK_FUNCS(finite, , AC_MSG_CHECKING(for finite in math.h)
+                AC_TRY_LINK([#include <math.h>], 
+                [ finite(0.0); ], 
+                AC_DEFINE(HAVE_FINITE) AC_MSG_RESULT(yes),
+                AC_MSG_RESULT(no)))
+        AC_CHECK_FUNCS(isfinite, , AC_MSG_CHECKING(for isfinite in math.h)
+                AC_TRY_LINK([#include <math.h>], 
+                [ isfinite(0.0); ], 
+                AC_DEFINE(HAVE_ISFINITE) AC_MSG_RESULT(yes),
+                AC_MSG_RESULT(no)))
+
 	dnl ****************************************************************
 	dnl *** Checks for working poll() (macosx defines it but doesn't ***
 	dnl *** have it in the library (duh))                            ***
@@ -703,6 +728,11 @@ case "$host" in
 #       m68k-*-linux*)
 #		TARGET=M68K
 #		;;
+	hppa2.0w-hp-hpux11.00 | hppa64-hp-hpux11.00)
+		TARGET=HPPA;
+		arch_target=hppa; 
+		ACCESS_UNALIGNED="no"
+		;;
 	macppc-*-openbsd* | powerpc-*-linux* | powerpc-*-openbsd* | \
         powerpc-*-sysv* | powerpc-*-darwin*)
 		TARGET=POWERPC;
@@ -759,6 +789,7 @@ AM_CONDITIONAL(M68K, test x$TARGET = xM68K)
 AM_CONDITIONAL(POWERPC, test x$TARGET = xPOWERPC)
 AM_CONDITIONAL(ARM, test x$TARGET = xARM)
 AM_CONDITIONAL(S390, test x$TARGET = xS390)
+AM_CONDITIONAL(HPPA, test x$TARGET = xHPPA)
 
 AM_CONDITIONAL(JIT_SUPPORTED, test x$JIT_SUPPORTED = xyes)
 
@@ -782,6 +813,7 @@ mono/os/Makefile
 mono/os/win32/Makefile
 mono/os/unix/Makefile
 mono/arch/x86/Makefile
+mono/arch/hppa/Makefile
 mono/arch/ppc/Makefile
 mono/arch/sparc/Makefile
 mono/arch/s390/Makefile
