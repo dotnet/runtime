@@ -88,6 +88,8 @@ NON_HTML_SOURCES=		\
 
 all: $(OBJECTS) deploy/index.rss ../team
 	perl process.pl commands template.html.in deploy
+	-mkdir deploy/team
+	cp team/*png deploy/team
 
 tutorial: mono-beginning.html.stamp mono-beginning.pdf 
 	cp -a mono-beginning mono-beginning.xml mono-beginning.pdf deploy

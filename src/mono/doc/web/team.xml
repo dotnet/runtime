@@ -7,7 +7,7 @@
       <last-name>Mak</last-name>
     </name>
     <e-mail>duncan@ximian.com</e-mail>
-    <image>duncan.png</image>
+    <image>none.png</image>
     <location>Boston / Hong Kong</location>
     <organization>Ximian Inc.</organization>
     <description>Ximian intern</description>
@@ -24,13 +24,13 @@
       <last-name>de Icaza</last-name>
     </name>
     <e-mail>miguel@ximian.com</e-mail>
-    <image>miguel.png</image>
+    <image>none.png</image>
     <location>Boston / Mexico City</location>
     <organization>Ximian Inc.</organization>
     <description>Ximian CTO</description>
     <tasks>
+      <task>Mono project manager</task>
       <task>MCS compiler</task>
-      <task>Cheerleading</task>
     </tasks>
   </contributor>
 
@@ -39,8 +39,8 @@
       <first-name>Paolo</first-name>
       <last-name>Molaro</last-name>
     </name>
-    <e-mail>miguel@ximian.com</e-mail>
-    <image>duncan.png</image>
+    <e-mail>lupus@ximian.com</e-mail>
+    <image>none.png</image>
     <location>Italy</location>
     <organization>Ximian Inc.</organization>
     <description>JIT hacker</description>
@@ -54,7 +54,7 @@
       <last-name>Maurer</last-name>
     </name>
     <e-mail>dietmar@ximian.com</e-mail>
-    <image>duncan.png</image>
+    <image>none.png</image>
     <location>Austria</location>
     <organization>Ximian</organization>
     <description>JIT hacker</description>
@@ -65,7 +65,7 @@
   <contributor>
     <name>
       <first-name>Juli</first-name>
-      <last-name>Mallett</first-name>
+      <last-name>Mallett</last-name>
     </name>
     <e-mail>jmallett@FreeBSD.org</e-mail>
     <location>Kansas City</location>

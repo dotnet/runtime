@@ -159,7 +159,7 @@ class Contributor {
                 img.SetAttribute ("border", "0");
                 img.SetAttribute ("height", "48");
                 img.SetAttribute ("width", "48");
-                img.SetAttribute ("src", image);
+                img.SetAttribute ("src", "team/" + image);
                 td.AppendChild (img);
 
                 td = document.CreateElement ("TD");
