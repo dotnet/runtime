@@ -993,7 +993,7 @@
 	</class>
 	<class name="System.Drawing.Rectangle">
 		<last-activity>Aug-10-2001</last-activity>
-		<implementation>no</implementation>
+		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
 		<completion>?</completion>
 		<maintainers>
@@ -1002,7 +1002,7 @@
 	</class>
 	<class name="System.Drawing.RectangleF">
 		<last-activity>Aug-10-2001</last-activity>
-		<implementation>no</implementation>
+		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
 		<completion>?</completion>
 		<maintainers>
