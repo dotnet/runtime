@@ -76,6 +76,18 @@ class Tests {
 		return (int)f;
 	}
 
+	static int test_5_double_conv_r4 () {
+		double d = 5.0;
+		float f = (float)d;
+		return (int)f;
+	}
+
+	static int test_5_float_conv_r8 () {
+		float f = 5.0F;
+		double d = (double)f;
+		return (int)d;
+	}
+
 	static int test_5_conv_r8 () {
 		int i = 5;
 		double f = (double)i;

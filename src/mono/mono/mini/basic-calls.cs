@@ -160,6 +160,17 @@ class Tests {
 		return pass_takeaddr_ints_longs (1, 2, 253, -253, System.Int64.MaxValue, 0, System.Int64.MinValue);
 	}
 
+	static void pass_byref_double (out double d) {
+		d = 5.0;
+	}
+
+	// Test byref double argument passing
+	static int test_0_sparc_byref_double_argument_passing () {
+		double d;
+		pass_byref_double (out d);
+		return (d == 5.0) ? 0 : 1;
+	}
+
 	static void shift_un_arg (ulong value) {
 		do {
 			value = value >> 4;
