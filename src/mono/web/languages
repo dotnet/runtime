@@ -143,6 +143,13 @@
 	LCC is not an open source compiler, but it is free as long as you
 	do not profit from selling it. 
 
+<a name="ada"></a>
+* ADA
+
+	A# is an ADA compiler for the CIL platform, it can be downloaded from:
+	<a
+	href="http://www.usafa.af.mil/dfcs/bios/mcc_html/a_sharp.html">http://www.usafa.af.mil/dfcs/bios/mcc_html/a_sharp.html</a>
+
 <a name="Java">
 * Java
 
