@@ -174,6 +174,7 @@ function clickHandler (evt)
 
 		if (elt.className == 'c' ||	// class
 			elt.className == 's' ||	// struct
+			elt.className == 'i' ||	// struct
 			elt.className == 'd' ||	// delegate
 			elt.className == 'en')	// enum
 		{
