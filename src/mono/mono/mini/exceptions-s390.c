@@ -754,6 +754,8 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 		/* skip all wrappers ??*/
 		if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE ||
+		    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE ||
+		    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_DISPATCH ||
 		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK ||
 		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE)
 			continue;

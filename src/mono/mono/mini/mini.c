@@ -4150,7 +4150,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (1);
 			--sp;
 			CHECK_OPSIZE (5);
-			klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
+			token = read32 (ip + 1);
+			if (method->wrapper_type != MONO_WRAPPER_NONE)
+				klass = mono_method_get_wrapper_data (method, token);
+			else
+				klass = mono_class_get_full (image, token, generic_context);
 			mono_class_init (klass);
 		
 			if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
@@ -4324,7 +4328,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (1);
 			--sp;
 			CHECK_OPSIZE (5);
-			klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
+			token = read32 (ip + 1);
+			if (method->wrapper_type != MONO_WRAPPER_NONE)
+				klass = mono_method_get_wrapper_data (method, token);
+			else
+				klass = mono_class_get_full (image, token, generic_context);
 			mono_class_init (klass);
 		
 			if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
@@ -8356,14 +8364,14 @@ mono_runtime_install_handlers (void)
  * Returns: a pointer to the newly created code 
  */
 static gpointer
-mono_jit_create_remoting_trampoline (MonoMethod *method)
+mono_jit_create_remoting_trampoline (MonoMethod *method, MonoRemotingTarget target)
 {
 	MonoMethod *nm;
 	guint8 *addr = NULL;
 
 	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || 
 	    (method->signature->hasthis && (method->klass->marshalbyref || method->klass == mono_defaults.object_class))) {
-		nm = mono_marshal_get_remoting_invoke (method);
+		nm = mono_marshal_get_remoting_invoke_for_target (method, target);
 		addr = mono_compile_method (nm);
 	} else {
 		addr = mono_compile_method (method);
