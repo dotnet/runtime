@@ -72,6 +72,13 @@
   </tr>
 </table>
 
+** Apr, 6, 2002
+
+	<a href="http://www.dotnetremoting.cc/book/AdvancedDotNetRemoting.asp">
+	Advanced .NET Remoting</a> from Ingo Rammer is now available. Ingo
+	helped us to implement the proxy support and the book is a valuable
+	resource for anyone interested in remoting.
+
 ** Apr, 5, 2002
 
 	Transparent proxy support has been finished, congrats to
