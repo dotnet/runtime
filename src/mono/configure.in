@@ -30,6 +30,9 @@ AM_PROG_LIBTOOL
 
 AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h)
 
+# for mono/metadata/debug-symfile.c
+AC_CHECK_HEADERS(elf.h)
+
 # not 64 bit clean in cross-compile
 AC_CHECK_SIZEOF(void *, 4)
 
