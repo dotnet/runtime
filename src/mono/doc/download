@@ -109,6 +109,14 @@
 		    </ul>
 	          </td>
 	        </tr>
+		<tr>
+		  <td bgcolor="#999999">
+		    <b>Windows Setup Wizard (NT/2000/XP)</b>
+		    <ul>
+	              <li><a href="archive/mono-0.16-stable.exe">Mono-Setup</a>
+	            </ul>
+	          </td>
+		</tr>
 	      </table>
 	    </td>
 	  </tr>
@@ -176,14 +184,6 @@
 	            </ul>
 		  </td>
 		  <td bgcolor="#999999">
-		    <b>Windows Setup Wizard (NT/2000/XP)</b>
-		    <ul>
-	              <li><a href="http://www.sport-huettn.de/mono/mono-0.15-stable.exe">Mono-Setup</a>
-	            </ul>
-	          </td>
-	        </tr>
-		<tr bgcolor="#999999">
-		  <td bgcolor="#999999">
 		    <b>Red Hat null-8.0/x86</b>
                     <ul>
 			<li><a href="archive/redhat-null-i386/libgc-6.1alpha5-1.i386.rpm">libgc-6.1alpha5-1.i386.rpm</a>
@@ -192,12 +192,7 @@
 			<li><a href="archive/redhat-null-i386/mono-devel-0.15-1.i386.rpm">mono-devel-0.15-1.i386.rpm</a>
 		    </ul>
 	          </td>
-		  <td bgcolor="#999999">
-			&nbsp;		    
-
-	          </td>
 	        </tr>
-
 	      </table>
 	    </td>
 	  </tr>
