@@ -31,6 +31,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/unicode.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/marshal.h>
 #include <mono/metadata/gc.h>
 #include <mono/metadata/rand.h>
 #include <mono/metadata/sysmath.h>
@@ -1597,9 +1598,73 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 }
 
 static gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr (gpointer ptr)
+ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr (gpointer ptr, gint32 offset)
 {
-	return (gpointer)(*(int *)ptr);
+	char *p = ptr;
+	return *(gpointer*)(p + offset);
+}
+
+static unsigned char
+ves_icall_System_Runtime_InteropServices_Marshal_ReadByte (gpointer ptr, gint32 offset)
+{
+	char *p = ptr;
+	return *(unsigned char*)(p + offset);
+}
+
+static gint16
+ves_icall_System_Runtime_InteropServices_Marshal_ReadInt16 (gpointer ptr, gint32 offset)
+{
+	char *p = ptr;
+	return *(gint16*)(p + offset);
+}
+
+static gint32
+ves_icall_System_Runtime_InteropServices_Marshal_ReadInt32 (gpointer ptr, gint32 offset)
+{
+	char *p = ptr;
+	return *(gint32*)(p + offset);
+}
+
+static gint64
+ves_icall_System_Runtime_InteropServices_Marshal_ReadInt64 (gpointer ptr, gint32 offset)
+{
+	char *p = ptr;
+	return *(gint64*)(p + offset);
+}
+
+static void
+ves_icall_System_Runtime_InteropServices_Marshal_WriteByte (gpointer ptr, gint32 offset, unsigned char val)
+{
+	char *p = ptr;
+	*(unsigned char*)(p + offset) = val;
+}
+
+static void
+ves_icall_System_Runtime_InteropServices_Marshal_WriteIntPtr (gpointer ptr, gint32 offset, gpointer val)
+{
+	char *p = ptr;
+	*(gpointer*)(p + offset) = val;
+}
+
+static void
+ves_icall_System_Runtime_InteropServices_Marshal_WriteInt16 (gpointer ptr, gint32 offset, gint16 val)
+{
+	char *p = ptr;
+	*(gint16*)(p + offset) = val;
+}
+
+static void
+ves_icall_System_Runtime_InteropServices_Marshal_WriteInt32 (gpointer ptr, gint32 offset, gint32 val)
+{
+	char *p = ptr;
+	*(gint32*)(p + offset) = val;
+}
+
+static void
+ves_icall_System_Runtime_InteropServices_Marshal_WriteInt64 (gpointer ptr, gint32 offset, gint64 val)
+{
+	char *p = ptr;
+	*(gint64*)(p + offset) = val;
 }
 
 static MonoString*
@@ -2384,8 +2449,20 @@ static gconstpointer icall_map [] = {
 	"System.Threading.WaitHandle::WaitOne_internal", ves_icall_System_Threading_WaitHandle_WaitOne_internal,
 
 	"System.Runtime.InteropServices.Marshal::ReadIntPtr", ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr,
+	"System.Runtime.InteropServices.Marshal::ReadByte", ves_icall_System_Runtime_InteropServices_Marshal_ReadByte,
+	"System.Runtime.InteropServices.Marshal::ReadInt16", ves_icall_System_Runtime_InteropServices_Marshal_ReadInt16,
+	"System.Runtime.InteropServices.Marshal::ReadInt32", ves_icall_System_Runtime_InteropServices_Marshal_ReadInt32,
+	"System.Runtime.InteropServices.Marshal::ReadInt64", ves_icall_System_Runtime_InteropServices_Marshal_ReadInt64,
+	"System.Runtime.InteropServices.Marshal::WriteIntPtr", ves_icall_System_Runtime_InteropServices_Marshal_WriteIntPtr,
+	"System.Runtime.InteropServices.Marshal::WriteByte", ves_icall_System_Runtime_InteropServices_Marshal_WriteByte,
+	"System.Runtime.InteropServices.Marshal::WriteInt16", ves_icall_System_Runtime_InteropServices_Marshal_WriteInt16,
+	"System.Runtime.InteropServices.Marshal::WriteInt32", ves_icall_System_Runtime_InteropServices_Marshal_WriteInt32,
+	"System.Runtime.InteropServices.Marshal::WriteInt64", ves_icall_System_Runtime_InteropServices_Marshal_WriteInt64,
 	"System.Runtime.InteropServices.Marshal::PtrToStringAuto", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAuto,
 	"System.Runtime.InteropServices.Marshal::GetLastWin32Error", ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error,
+	"System.Runtime.InteropServices.Marshal::AllocHGlobal", mono_marshal_alloc,
+	"System.Runtime.InteropServices.Marshal::FreeHGlobal", mono_marshal_free,
+	"System.Runtime.InteropServices.Marshal::ReAllocHGlobal", mono_marshal_realloc,
 
 	"System.Reflection.Assembly::LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom,
 	"System.Reflection.Assembly::GetType", ves_icall_System_Reflection_Assembly_GetType,

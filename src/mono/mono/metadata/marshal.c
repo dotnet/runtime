@@ -8,9 +8,26 @@
  *
  */
 
+#include "config.h"
 #include "object.h"
 #include "loader.h"
 #include "marshal.h"
+
+/* FIXME: on win32 we should probably use GlobalAlloc(). */
+void*
+mono_marshal_alloc (gpointer size) {
+	return g_try_malloc ((gulong)size);
+}
+
+void
+mono_marshal_free (gpointer ptr) {
+	g_free (ptr);
+}
+
+void*
+mono_marshal_realloc (gpointer ptr, gpointer size) {
+	return g_try_realloc (ptr, (gulong)size);
+}
 
 void*
 mono_marshal_string_array (MonoArray *array)
