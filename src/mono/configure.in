@@ -253,7 +253,7 @@ AC_CHECK_HEADERS(elf.h)
 AC_CHECK_HEADERS(wchar.h)
 AC_CHECK_HEADERS(ieeefp.h)
 AC_MSG_CHECKING(for isinf)
-AC_TRY_COMPILE([#include <math.h>], [
+AC_TRY_LINK([#include <math.h>], [
 	int f = isinf (1);
 ], [
 	AC_MSG_RESULT(yes)
