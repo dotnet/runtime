@@ -86,21 +86,22 @@ tree_emit (guint8 *cstart, guint8 **buf, MBTree *tree)
 		((MBEmitFunc)tree->emit) (tree, buf);
 }
 
-static gboolean
-tree_get_address (MBTree *tree, gint32 vaddr, gint32 *addr)
+static gint32
+tree_get_address (MBTree *tree, gint32 vaddr)
 {
-	if (tree->left && tree_get_address (tree->left, vaddr, addr))
-		return TRUE;
+	MBTree *t1, *first = NULL;
 
-	if (tree->right && tree_get_address (tree->right, vaddr, addr))
-		return TRUE;
-
-	if (tree->vaddr == vaddr) {
-		*addr = tree->addr;
-		return TRUE;
+	/* find the first instruction in the block */
+	for (t1 = tree; t1; t1 = t1->left) {
+		if (t1->vaddr >= 0)
+			first = t1;
 	}
 
-	return FALSE;
+	if (first && first->vaddr == vaddr) {
+		return first->addr;
+	}
+
+	return -1;
 }
 
 static gint32
@@ -111,7 +112,7 @@ get_address (GPtrArray *forest, guint32 vaddr)
 	for (i = 0; i < forest->len; i++) {
 		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
 
-		if (tree_get_address (t1, vaddr, &a))
+		if ((a = tree_get_address (t1, vaddr)) >= 0)
 			return a;
 	}
 
