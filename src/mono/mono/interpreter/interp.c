@@ -1807,7 +1807,27 @@ ves_exec_method (MonoInvocation *frame)
 				ves_abort();
 			}
 			BREAK;
-		CASE (CEE_CONV_U8) ves_abort(); BREAK;
+		CASE (CEE_CONV_U8)
+			++ip;
+
+			switch (sp [-1].type){
+			case VAL_DOUBLE:
+				sp [-1].data.l = (guint64)sp [-1].data.f;
+				break;
+			case VAL_I64:
+				break;
+			case VAL_VALUET:
+				ves_abort();
+			case VAL_I32:
+				sp [-1].data.l = (guint64) sp [-1].data.i;
+				break;
+			default:
+				sp [-1].data.l = (guint64) sp [-1].data.nati;
+				break;
+			}
+			sp [-1].type = VAL_I64;
+		        BREAK;
+			
 		CASE (CEE_CPOBJ) ves_abort(); BREAK;
 		CASE (CEE_LDOBJ) {
 			guint32 token;
