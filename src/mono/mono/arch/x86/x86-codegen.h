@@ -100,6 +100,29 @@ enum {
 	X86_FP_CC_MASK = 0x4500
 };
 
+/* FP control word */
+enum {
+	X86_FPCW_INVOPEX_MASK = 0x1,
+	X86_FPCW_DENOPEX_MASK = 0x2,
+	X86_FPCW_ZERODIV_MASK = 0x4,
+	X86_FPCW_OVFEX_MASK   = 0x8,
+	X86_FPCW_UNDFEX_MASK  = 0x10,
+	X86_FPCW_PRECEX_MASK  = 0x20,
+	X86_FPCW_PRECC_MASK   = 0x300,
+	X86_FPCW_ROUNDC_MASK  = 0xc00,
+
+	/* values for precision control */
+	X86_FPCW_PREC_SINGLE    = 0,
+	X86_FPCW_PREC_DOUBLE    = 0x200,
+	X86_FPCW_PREC_EXTENDED  = 0x300,
+
+	/* values for rounding control */
+	X86_FPCW_ROUND_NEAREST  = 0,
+	X86_FPCW_ROUND_DOWN     = 0x400,
+	X86_FPCW_ROUND_UP       = 0x800,
+	X86_FPCW_ROUND_TOZERO   = 0xc00
+};
+
 /*
 // prefix code
 */
