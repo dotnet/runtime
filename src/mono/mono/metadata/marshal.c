@@ -2132,6 +2132,13 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 			mono_mb_emit_byte (mb, CEE_STLOC_0);
 			
+			/* allocate space for the native struct and
+			 * store the address into local variable 1 (dest) */
+			mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
+			mono_mb_emit_byte (mb, CEE_PREFIX1);
+			mono_mb_emit_byte (mb, CEE_LOCALLOC);
+			mono_mb_emit_stloc (mb, tmp_locals [i]);
+
 			if (t->byref) {
 				mono_mb_emit_byte (mb, CEE_LDLOC_0);
 				mono_mb_emit_byte (mb, CEE_BRFALSE);
@@ -2139,12 +2146,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_emit_i4 (mb, 0);
 			}
 
-			/* allocate space for the native struct and
-			 * store the address into local variable 1 (dest) */
-			mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
-			mono_mb_emit_byte (mb, CEE_PREFIX1);
-			mono_mb_emit_byte (mb, CEE_LOCALLOC);
-			mono_mb_emit_stloc (mb, tmp_locals [i]);
 			/* set dst_ptr */
 			mono_mb_emit_ldloc (mb, tmp_locals [i]);
 			mono_mb_emit_byte (mb, CEE_STLOC_1);
