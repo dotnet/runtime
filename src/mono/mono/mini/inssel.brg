@@ -1566,7 +1566,26 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 		slot_reg = vtable_reg;
 		tree->inst_offset = G_STRUCT_OFFSET (MonoVTable, vtable) + (method->slot * SIZEOF_VOID_P);
 	}
-	
+
+	if (method->signature->generic_param_count) {
+#ifdef MONO_HAVE_EMIT_GENERIC_METHOD
+
+		/*
+		 * For generic methods, the vtable doesn't contain the method address (trampoline), but
+		 * the MonoMethod* itself.  This is because we still have to inflate the method before
+		 * we can compile it.
+		 *
+		 * The method is stored at offset `tree->inst_offset' in the `slot_reg' - the emitted
+		 * code returns the method's address in the `slot_reg'.
+		 */
+		mono_arch_emit_generic_call (cfg, slot_reg, tree->inst_offset, method);
+		tree->inst_offset = 0;
+		virtop = OP_CALL_REG;
+#else
+		g_error ("Cannot emit call to a virtual generic method.");
+#endif
+	}
+
 	tree->dreg = state->reg1;
 	tree->opcode = virtop;
 	tree->sreg1 = slot_reg;
