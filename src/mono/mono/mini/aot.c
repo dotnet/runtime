@@ -1420,12 +1420,23 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		skip = FALSE;
 		for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 			if ((patch_info->type == MONO_PATCH_INFO_METHOD ||
-			     patch_info->type == MONO_PATCH_INFO_METHODCONST) &&
-			    patch_info->data.method->wrapper_type) {
-				/* unable to handle this */
-				//printf ("Skip (wrapper call):   %s %d -> %s\n", mono_method_full_name (method, TRUE), patch_info->type, mono_method_full_name (patch_info->data.method, TRUE));
-				skip = TRUE;	
-				break;
+			     patch_info->type == MONO_PATCH_INFO_METHODCONST)) {
+				if (patch_info->data.method->wrapper_type) {
+					/* unable to handle this */
+					//printf ("Skip (wrapper call):   %s %d -> %s\n", mono_method_full_name (method, TRUE), patch_info->type, mono_method_full_name (patch_info->data.method, TRUE));
+					skip = TRUE;
+					break;
+				}
+				if (!patch_info->data.method->token) {
+					/*
+					 * The method is part of a constructed type like Int[,].Set (). It doesn't
+					 * have a token, and we can't make one, since the parent type is part of
+					 * assembly which contains the element type, and not the assembly which
+					 * referenced this type.
+					 */
+					skip = TRUE;
+					break;
+				}
 			}
 		}
 
