@@ -623,6 +623,10 @@ mono_arch_allocate_vars (MonoCompile *m)
 	offset += 16 - 1;
 	offset &= ~(16 - 1);
 
+	/* allow room to save the return value */
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (m->method))
+		offset += 8;
+
 	/* the MonoLMF structure is stored just below the stack pointer */
 
 #if 0
@@ -856,6 +860,9 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	int save_mode = SAVE_NONE;
 	MonoMethod *method = cfg->method;
 	int rtype = method->signature->ret->type;
+	int save_offset = PPC_STACK_PARAM_OFFSET + cfg->param_area;
+	save_offset += 15;
+	save_offset &= ~15;
 	
 handle_enum:
 	switch (rtype) {
@@ -888,26 +895,26 @@ handle_enum:
 
 	switch (save_mode) {
 	case SAVE_TWO:
-		ppc_stw (code, ppc_r3, cfg->stack_usage - 8, cfg->frame_reg);
-		ppc_stw (code, ppc_r4, cfg->stack_usage - 4, cfg->frame_reg);
+		ppc_stw (code, ppc_r3, save_offset, cfg->frame_reg);
+		ppc_stw (code, ppc_r4, save_offset + 4, cfg->frame_reg);
 		if (enable_arguments) {
 			ppc_mr (code, ppc_r5, ppc_r4);
 			ppc_mr (code, ppc_r4, ppc_r3);
 		}
 		break;
 	case SAVE_ONE:
-		ppc_stw (code, ppc_r3, cfg->stack_usage - 8, cfg->frame_reg);
+		ppc_stw (code, ppc_r3, save_offset, cfg->frame_reg);
 		if (enable_arguments) {
 			ppc_mr (code, ppc_r4, ppc_r3);
 		}
 		break;
 	case SAVE_FP:
-		ppc_stfd (code, ppc_f1, cfg->stack_usage - 8, cfg->frame_reg);
+		ppc_stfd (code, ppc_f1, save_offset, cfg->frame_reg);
 		if (enable_arguments) {
 			/* FIXME: what reg?  */
 			ppc_fmr (code, ppc_f3, ppc_f1);
-			ppc_lwz (code, ppc_r4, cfg->stack_usage - 8, cfg->frame_reg);
-			ppc_lwz (code, ppc_r5, cfg->stack_usage - 4, cfg->frame_reg);
+			ppc_lwz (code, ppc_r4, save_offset, cfg->frame_reg);
+			ppc_lwz (code, ppc_r5, save_offset + 4, cfg->frame_reg);
 		}
 		break;
 	case SAVE_STRUCT:
@@ -928,14 +935,14 @@ handle_enum:
 
 	switch (save_mode) {
 	case SAVE_TWO:
-		ppc_lwz (code, ppc_r3, cfg->stack_usage - 8, cfg->frame_reg);
-		ppc_lwz (code, ppc_r4, cfg->stack_usage - 4, cfg->frame_reg);
+		ppc_lwz (code, ppc_r3, save_offset, cfg->frame_reg);
+		ppc_lwz (code, ppc_r4, save_offset + 4, cfg->frame_reg);
 		break;
 	case SAVE_ONE:
-		ppc_lwz (code, ppc_r3, cfg->stack_usage - 8, cfg->frame_reg);
+		ppc_lwz (code, ppc_r3, save_offset, cfg->frame_reg);
 		break;
 	case SAVE_FP:
-		ppc_lfd (code, ppc_f1, cfg->stack_usage - 8, cfg->frame_reg);
+		ppc_lfd (code, ppc_f1, save_offset, cfg->frame_reg);
 		break;
 	case SAVE_NONE:
 	default:
@@ -2666,12 +2673,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			ppc_addic (code, ppc_sp, cfg->frame_reg, cfg->stack_usage);
 			if (!cfg->method->save_lmf) {
-				for (i = 13; i < 32; ++i) {
+				/*for (i = 31; i >= 14; --i) {
+					if (cfg->used_float_regs & (1 << i)) {
+						pos += 4;
+						ppc_lfd (code, i, -pos, cfg->frame_reg);
+					}
+				}*/
+				for (i = 31; i >= 13; --i) {
 					if (cfg->used_int_regs & (1 << i)) {
 						pos += 4;
 						ppc_lwz (code, i, -pos, cfg->frame_reg);
 					}
 				}
+			} else {
+				/* FIXME restore from MonoLMF: though this can't happen yet */
 			}
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
 			ppc_b (code, 0);
@@ -3246,15 +3261,15 @@ mono_arch_max_epilog_size (MonoCompile *cfg)
  * Stack frame layout:
  * 
  *   ------------------- sp
- *   	optional 8 bytes for tracing (later use a proper local variable?)
- *   -------------------
  *   	MonoLMF structure or saved registers
  *   -------------------
  *   	locals
  *   -------------------
- *   	param area
+ *   	optional 8 bytes for tracing
  *   -------------------
- *   	linkage area
+ *   	param area             size is cfg->param_area
+ *   -------------------
+ *   	linkage area           size is PPC_STACK_PARAM_OFFSET
  *   ------------------- sp
  *   	red zone
  */
@@ -3288,23 +3303,20 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	alloc_size = cfg->stack_offset;
 	pos = 0;
-	/* reserve room to save return value */
-	if (tracing)
-		pos += 8;
 
 	if (!method->save_lmf) {
-		for (i = 13; i < 32; ++i) {
-			if (cfg->used_int_regs & (1 << i)) {
-				pos += sizeof (gulong);
-				ppc_stw (code, i, -pos, ppc_sp);
-			}
-		}
-		/*for (i = 14; i < 32; ++i) {
+		/*for (i = 31; i >= 14; --i) {
 			if (cfg->used_float_regs & (1 << i)) {
 				pos += sizeof (gdouble);
 				ppc_stfd (code, i, -pos, ppc_sp);
 			}
 		}*/
+		for (i = 31; i >= 13; --i) {
+			if (cfg->used_int_regs & (1 << i)) {
+				pos += sizeof (gulong);
+				ppc_stw (code, i, -pos, ppc_sp);
+			}
+		}
 	} else {
 		int ofs;
 		pos += sizeof (MonoLMF);
@@ -3495,10 +3507,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
 		code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
-		pos = 8;
-	} else {
-		pos = 0;
 	}
+	pos = 0;
 
 	if (method->save_lmf) {
 		int lmf_offset;
@@ -3532,7 +3542,13 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		}
 		ppc_addic (code, ppc_sp, cfg->frame_reg, cfg->stack_usage);
 
-		for (i = 13; i < 32; ++i) {
+		/*for (i = 31; i >= 14; --i) {
+			if (cfg->used_float_regs & (1 << i)) {
+				pos += 4;
+				ppc_lfd (code, i, -pos, cfg->frame_reg);
+			}
+		}*/
+		for (i = 31; i >= 13; --i) {
 			if (cfg->used_int_regs & (1 << i)) {
 				pos += 4;
 				ppc_lwz (code, i, -pos, cfg->frame_reg);

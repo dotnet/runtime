@@ -584,6 +584,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 	MONO_CONTEXT_SET_BP (&ctx, esp);
 	MONO_CONTEXT_SET_IP (&ctx, eip);
 	memcpy (&ctx.regs, int_regs, sizeof (gulong) * MONO_SAVED_GREGS);
+	memcpy (&ctx.fregs, fp_regs, sizeof (double) * MONO_SAVED_FREGS);
 
 	arch_handle_exception (&ctx, exc, FALSE);
 	restore_context (&ctx);
@@ -835,10 +836,17 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		if (ji->used_regs) {
 			/* keep updated with emit_prolog in mini-ppc.c */
 			offset = 0;
-			for (i = 13; i < 32; ++i) {
+			/* FIXME handle floating point args 
+			for (i = 31; i >= 14; --i) {
+				if (ji->used_fregs & (1 << i)) {
+					offset += sizeof (gulong);
+					new_ctx->fregs [i - 14] = *(gulong*)((char*)sframe->sp - offset);
+				}
+			}*/
+			for (i = 31; i >= 13; --i) {
 				if (ji->used_regs & (1 << i)) {
 					offset += sizeof (gulong);
-					new_ctx->regs [i] = *(gulong*)((char*)sframe->sp - offset);
+					new_ctx->regs [i - 13] = *(gulong*)((char*)sframe->sp - offset);
 				}
 			}
 		}
