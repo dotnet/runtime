@@ -48,7 +48,9 @@ libmonoruntime_la_SOURCES = \
 	sysmath.h	\
 	sysmath.c	\
 	process.c	\
-	process.h
+	process.h	\
+	environment.c	\
+	environment.h
 
 libmetadata_la_SOURCES = \
 	assembly.c	\
@@ -75,7 +77,8 @@ libmonoruntimeinclude_HEADERS = \
 	debug-mono-symfile.h	\
 	threadpool.h	\
 	threads-types.h	\
-	threads.h
+	threads.h	\
+	environment.h
 
 libmetadatainclude_HEADERS = \
 	assembly.h	\

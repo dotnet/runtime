@@ -24,6 +24,8 @@
 #include <mono/metadata/marshal.h>
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/marshal.h"
+#include <mono/metadata/threads.h>
+#include <mono/metadata/environment.h>
 #include "mono/metadata/profiler-private.h"
 #include <mono/os/gc_wrapper.h>
 
@@ -671,6 +673,25 @@ mono_unhandled_exception (MonoObject *exc)
 }
 
 /*
+ * Launch a new thread to start all setup that requires managed code
+ * to be executed.
+ *
+ * main_func is called back from the thread with main_args as the
+ * parameter.  The callback function is expected to start Main()
+ * eventually.  This function then waits for all managed threads to
+ * finish.
+ */
+void
+mono_runtime_exec_managed_code (MonoDomain *domain,
+				MonoMainThreadFunc main_func,
+				gpointer main_args)
+{
+	mono_thread_create (domain, main_func, main_args);
+
+	mono_thread_manage ();
+}
+
+/*
  * Execute a standard Main() method (args doesn't contain the
  * executable name).
  */
@@ -700,12 +721,21 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 			rval = *(guint32 *)((char *)res + sizeof (MonoObject));
 		else
 			rval = -1;
+
+		mono_environment_exitcode_set (rval);
 	} else {
 		mono_runtime_invoke (method, NULL, pa, exc);
 		if (!exc || !*exc)
 			rval = 0;
-		else
+		else {
+			/* If the return type of Main is void, only
+			 * set the exitcode if an exception was thrown
+			 * (we don't want to blow away an
+			 * explicitly-set exit code)
+			 */
 			rval = -1;
+			mono_environment_exitcode_set (rval);
+		}
 	}
 
 	return rval;

@@ -18,9 +18,11 @@
 
 extern int  mono_thread_get_abort_signal (void);
 
-extern void mono_thread_init (MonoDomain *domain, MonoThreadStartCB start_cb,
+extern void mono_thread_init (MonoThreadStartCB start_cb,
 			      MonoThreadAttachCB attach_cb);
-extern void mono_thread_cleanup(void);
+extern void mono_thread_manage(void);
+extern void mono_thread_abort_all_other_threads (void);
+
 extern MonoThread *mono_thread_current (void);
 
 typedef struct {
@@ -31,10 +33,9 @@ typedef struct {
 
 extern void mono_install_thread_callbacks (MonoThreadCallbacks *callbacks);
 
-extern void mono_new_thread_init (MonoThread *thread_object,
-				  gpointer stack_start,
+extern void mono_new_thread_init (guint32 tid, gpointer stack_start,
 				  gpointer func);
-extern MonoThread *mono_thread_create (MonoDomain *domain, gpointer func,
+extern void mono_thread_create (MonoDomain *domain, gpointer func,
 				       gpointer arg);
 extern MonoThread *mono_thread_attach (MonoDomain *domain);
 

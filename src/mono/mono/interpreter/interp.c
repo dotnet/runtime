@@ -54,6 +54,7 @@
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/environment.h>
 #include <mono/os/util.h>
 
 /*#include <mono/cli/types.h>*/
@@ -4414,14 +4415,53 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 	return NULL;
 }
 
+typedef struct
+{
+	MonoDomain *domain;
+	char *file;
+	int argc;
+	char **argv;
+} MainThreadArgs;
+
+static void main_thread_handler (gpointer user_data)
+{
+	MainThreadArgs *main_args=(MainThreadArgs *)user_data;
+	MonoAssembly *assembly;
+	char *error;
+
+	assembly = mono_domain_assembly_open (main_args->domain,
+					      main_args->file);
+
+	if (!assembly){
+		fprintf (stderr, "Can not open image %s\n", main_args->file);
+		exit (1);
+	}
+
+
+#ifdef RUN_TEST
+	test_load_class (assembly->image);
+#else
+	error = mono_verify_corlib ();
+	if (error) {
+		fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
+		exit (1);
+	}
+	segv_exception = mono_get_exception_null_reference ();
+	segv_exception->message = mono_string_new (main_args->domain, "Segmentation fault");
+	signal (SIGSEGV, segv_handler);
+
+	ves_exec (main_args->domain, assembly, main_args->argc, main_args->argv);
+#endif
+}
+
 int 
 main (int argc, char *argv [])
 {
 	MonoDomain *domain;
-	MonoAssembly *assembly;
 	int retval = 0, i, ocount = 0;
-	char *file, *error, *config_file = NULL;
-
+	char *file, *config_file = NULL;
+	MainThreadArgs main_args;
+	
 	if (argc < 2)
 		usage ();
 
@@ -4489,32 +4529,21 @@ main (int argc, char *argv [])
 	domain = mono_init (file);
 	mono_runtime_init (domain, NULL, NULL);
 
-	assembly = mono_domain_assembly_open (domain, file);
-
-	if (!assembly){
-		fprintf (stderr, "Can not open image %s\n", file);
-		exit (1);
-	}
-
-
-#ifdef RUN_TEST
-	test_load_class (assembly->image);
-#else
-	error = mono_verify_corlib ();
-	if (error) {
-		fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
-		exit (1);
-	}
-	segv_exception = mono_get_exception_null_reference ();
-	segv_exception->message = mono_string_new (domain, "Segmentation fault");
-	signal (SIGSEGV, segv_handler);
-
-	retval = ves_exec (domain, assembly, argc - i, argv + i);
-#endif
+	main_args.domain=domain;
+	main_args.file=file;
+	main_args.argc=argc-i;
+	main_args.argv=argv+i;
+	
+	mono_runtime_exec_managed_code (domain, main_thread_handler,
+					&main_args);
+	
 	mono_profiler_shutdown ();
 	
 	mono_runtime_cleanup (domain);
 	mono_domain_unload (domain, TRUE);
+
+	/* Get the return value from System.Environment.ExitCode */
+	retval=mono_environment_exitcode_get ();
 
 #if DEBUG_INTERP
 	if (ocount) {

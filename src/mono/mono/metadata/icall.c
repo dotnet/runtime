@@ -38,6 +38,7 @@
 #include <mono/metadata/string-icalls.h>
 #include <mono/metadata/debug-mono-symfile.h>
 #include <mono/metadata/process.h>
+#include <mono/metadata/environment.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
 
@@ -3517,6 +3518,8 @@ static gconstpointer icall_map [] = {
 	"System.Environment::get_TickCount", ves_icall_System_Environment_get_TickCount,
 	"System.Environment::Exit", ves_icall_System_Environment_Exit,
 	"System.Environment::get_Platform", ves_icall_System_Environment_get_Platform,
+	"System.Environment::get_ExitCode", mono_environment_exitcode_get,
+	"System.Environment::set_ExitCode", mono_environment_exitcode_set,
 
 	/*
 	 * System.Runtime.Remoting

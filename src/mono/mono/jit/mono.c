@@ -16,6 +16,7 @@
 #include "mono/metadata/threadpool.h"
 #include "mono/metadata/mono-config.h"
 #include <mono/metadata/profiler-private.h>
+#include <mono/metadata/environment.h>
 #include <mono/os/util.h>
 #include <locale.h>
 
@@ -185,11 +186,73 @@ usage (char *name)
 	exit (1);
 }
 
+typedef struct 
+{
+	MonoDomain *domain;
+	char *file;
+	gboolean testjit;
+	char *debug_args;
+	char *compile_class;
+	int compile_times;
+	GList *precompile_classes;
+	int verbose;
+	int break_on_main;
+	int argc;
+	char **argv;
+} MainThreadArgs;
+
+static void main_thread_handler (gpointer user_data)
+{
+	MainThreadArgs *main_args=(MainThreadArgs *)user_data;
+	MonoAssembly *assembly;
+	MonoDebugHandle *debug = NULL;
+	
+	assembly = mono_domain_assembly_open (main_args->domain,
+					      main_args->file);
+	if (!assembly){
+		fprintf (stderr, "Can not open image %s\n", main_args->file);
+		exit (1);
+	}
+
+	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
+		gchar **args;
+
+		args = g_strsplit (main_args->debug_args ?
+				   main_args->debug_args : "", ",", -1);
+		debug = mono_debug_open (assembly, mono_debug_format, (const char **) args);
+		g_strfreev (args);
+	}
+
+	if (main_args->testjit) {
+		mono_jit_compile_image (assembly->image, TRUE);
+	} else if (main_args->compile_class) {
+		mono_jit_compile_class (assembly, main_args->compile_class, main_args->compile_times, TRUE);
+	} else {
+		GList *tmp;
+
+		for (tmp = main_args->precompile_classes; tmp; tmp = tmp->next)
+			mono_jit_compile_class (assembly, tmp->data, 1,
+						main_args->verbose);
+
+		if (main_args->break_on_main) {
+			MonoImage *image = assembly->image;
+			MonoMethodDesc *desc;
+			MonoMethod *method;
+
+			method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
+			desc = mono_method_desc_from_method (method);
+			mono_insert_breakpoint_full (desc, FALSE);
+		}
+
+		mono_jit_exec (main_args->domain, assembly, main_args->argc,
+			       main_args->argv);
+	}
+}
+
 int 
 main (int argc, char *argv [])
 {
 	MonoDomain *domain;
-	MonoAssembly *assembly;
 	int retval = 0, i;
 	int compile_times = 1000;
 	char *compile_class = NULL;
@@ -199,8 +262,7 @@ main (int argc, char *argv [])
 	int verbose = FALSE;
 	GList *precompile_classes = NULL;
 	int break_on_main = FALSE;
-	MonoDebugHandle *debug = NULL;
-
+	MainThreadArgs main_args;
 	
 	setlocale(LC_ALL, "");
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
@@ -309,46 +371,27 @@ main (int argc, char *argv [])
 		fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
 		exit (1);
 	}
-
-	assembly = mono_domain_assembly_open (domain, file);
-	if (!assembly){
-		fprintf (stderr, "Can not open image %s\n", file);
-		exit (1);
-	}
-
-	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
-		gchar **args;
-
-		args = g_strsplit (debug_args ? debug_args : "", ",", -1);
-		debug = mono_debug_open (assembly, mono_debug_format, (const char **) args);
-		g_strfreev (args);
-	}
-
-	if (testjit) {
-		mono_jit_compile_image (assembly->image, TRUE);
-	} else if (compile_class) {
-		mono_jit_compile_class (assembly, compile_class, compile_times, TRUE);
-	} else {
-		GList *tmp;
-
-		for (tmp = precompile_classes; tmp; tmp = tmp->next)
-			mono_jit_compile_class (assembly, tmp->data, 1, verbose);
-
-		if (break_on_main) {
-			MonoImage *image = assembly->image;
-			MonoMethodDesc *desc;
-			MonoMethod *method;
-
-			method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
-			desc = mono_method_desc_from_method (method);
-			mono_insert_breakpoint_full (desc, FALSE);
-		}
-
-		retval = mono_jit_exec (domain, assembly, argc - i, argv + i);
-	}
+	
+	main_args.domain=domain;
+	main_args.file=file;
+	main_args.testjit=testjit;
+	main_args.debug_args=debug_args;
+	main_args.compile_class=compile_class;
+	main_args.compile_times=compile_times;
+	main_args.precompile_classes=precompile_classes;
+	main_args.verbose=verbose;
+	main_args.break_on_main=break_on_main;
+	main_args.argc=argc-i;
+	main_args.argv=argv+i;
+	
+	mono_runtime_exec_managed_code (domain, main_thread_handler,
+					&main_args);
 
 	mono_profiler_shutdown ();
 	mono_jit_cleanup (domain);
 
+	/* Look up return value from System.Environment.ExitCode */
+	retval=mono_environment_exitcode_get ();
+	
 	return retval;
 }

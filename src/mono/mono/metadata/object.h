@@ -195,6 +195,7 @@ typedef struct {
 
 typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, void **params, MonoObject **exc);
 typedef gpointer    (*MonoCompileFunc)       (MonoMethod *method);
+typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
 
 #define mono_object_class(obj) (((MonoObject*)(obj))->vtable->klass)
 #define mono_object_domain(obj) (((MonoObject*)(obj))->vtable->domain)
@@ -322,6 +323,11 @@ mono_runtime_invoke_array   (MonoMethod *method, void *obj, MonoArray *params,
 
 MonoArray*
 mono_runtime_get_main_args  (void);
+
+void
+mono_runtime_exec_managed_code (MonoDomain *domain,
+				MonoMainThreadFunc main_func,
+				gpointer main_args);
 
 int
 mono_runtime_run_main       (MonoMethod *method, int argc, char* argv[], 

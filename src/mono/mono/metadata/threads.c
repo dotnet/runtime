@@ -18,6 +18,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/environment.h>
 #include <mono/io-layer/io-layer.h>
 
 #include <mono/os/gc_wrapper.h>
@@ -30,6 +31,7 @@ struct StartInfo
 {
 	guint32 (*func)(void *);
 	MonoThread *obj;
+	gboolean fake_thread;
 	void *this;
 	MonoDomain *domain;
 };
@@ -56,9 +58,6 @@ static CRITICAL_SECTION monitor_mutex;
  * before exit
  */
 static MonoGHashTable *threads=NULL;
-
-/* The MonoObject associated with the main thread */
-static MonoThread *main_thread;
 
 /* The TLS key that holds the MonoObject assigned to each thread */
 static guint32 current_object_key;
@@ -101,6 +100,7 @@ static void handle_store(MonoThread *thread)
 	 * the window in which the thread exists but we haven't
 	 * recorded it.
 	 */
+	mono_g_hash_table_remove (threads, &thread->tid);
 	
 	/* We don't need to duplicate thread->handle, because it is
 	 * only closed when the thread object is finalized by the GC.
@@ -148,30 +148,53 @@ static guint32 start_wrapper(void *data)
 	guint32 (*start_func)(void *);
 	void *this;
 	guint32 tid;
+	MonoThread *thread;
 	
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Start wrapper");
 #endif
 	
-	start_func = start_info->func;
+	/* We can be sure start_info->obj->tid and
+	 * start_info->obj->handle have been set, because the thread
+	 * was created suspended, and these values were set before the
+	 * thread resumed
+	 */
+
+	tid=start_info->obj->tid;
+	
 	mono_domain_set (start_info->domain);
+
+	/* This MUST be called before any managed code can be
+	 * executed, as it calls the callback function that (for the
+	 * jit) sets the lmf marker.
+	 */
+	mono_new_thread_init (tid, &tid, start_func);
+
+	if(start_info->fake_thread) {
+		thread = (MonoThread *)mono_object_new (start_info->domain, mono_defaults.thread_class);
+
+		thread->handle=start_info->obj->handle;
+		thread->tid=tid;
+	} else {
+		thread=start_info->obj;
+	}
+	
+	start_func = start_info->func;
 	this = start_info->this;
 
-	tid=GetCurrentThreadId ();
-	/* Set the thread ID here as well as in the parent thread,
-	 * because we don't know whether the thread object will
-	 * already have its ID set before we get to it.  This isn't a
-	 * race condition, because if we're not guaranteed to get the
-	 * same number in both the parent and child threads, then
-	 * something else is seriously broken.
-	 */
-	start_info->obj->tid=tid;
-	
-	handle_store(start_info->obj);
+	TlsSetValue (current_object_key, thread);
+
+	handle_store(thread);
+
+	if(start_info->fake_thread) {
+		/* This has to happen _after_ handle_store(), because
+		 * the fake thread is still in the threads hash until
+		 * this call.
+		 */
+		g_free (start_info->obj);
+	}
 
 	mono_profiler_thread_start (tid);
-
-	mono_new_thread_init (start_info->obj, &tid, start_func);
 
 	g_free (start_info);
 
@@ -191,39 +214,39 @@ static guint32 start_wrapper(void *data)
 	return(0);
 }
 
-void mono_new_thread_init (MonoThread *thread_object, gpointer stack_start, gpointer func)
+void mono_new_thread_init (guint32 tid, gpointer stack_start, gpointer func)
 {
-	/* FIXME: GC problem here with recorded object
-	 * pointer!
-	 *
-	 * This is recorded so CurrentThread can return the
-	 * Thread object.
-	 */
-	TlsSetValue (current_object_key, thread_object);
-
 	if (mono_thread_start_cb) {
-		mono_thread_start_cb (thread_object, stack_start, func);
+		mono_thread_start_cb (tid, stack_start, func);
 	}
 }
 
-MonoThread *mono_thread_create (MonoDomain *domain, gpointer func,
-				gpointer arg)
+void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 {
 	MonoThread *thread;
 	HANDLE thread_handle;
 	struct StartInfo *start_info;
 	guint32 tid;
 	
-	thread = (MonoThread *)mono_object_new (domain,
-						mono_defaults.thread_class);
+	/* This is just a temporary allocation.  The object will be
+	 * created properly with mono_object_new() inside
+	 * start_wrapper().  (This is so the main thread can be
+	 * created without needing to run any managed code.)
+	 */
+	thread=g_new0 (MonoThread, 1);
 
 	start_info=g_new0 (struct StartInfo, 1);
 	start_info->func = func;
 	start_info->obj = thread;
+	start_info->fake_thread = TRUE;
 	start_info->domain = domain;
 	start_info->this = arg;
 		
-	thread_handle = CreateThread(NULL, 0, start_wrapper, start_info, 0, &tid);
+	/* Create suspended, so we can do some housekeeping before the thread
+	 * starts
+	 */
+	thread_handle = CreateThread(NULL, 0, start_wrapper, start_info,
+				     CREATE_SUSPENDED, &tid);
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Started thread ID %d (handle %p)",
 		  tid, thread_handle);
@@ -235,7 +258,7 @@ MonoThread *mono_thread_create (MonoDomain *domain, gpointer func,
 
 	handle_store(thread);
 
-	return thread;
+	ResumeThread (thread_handle);
 }
 
 MonoThread *
@@ -248,7 +271,7 @@ mono_thread_attach (MonoDomain *domain)
 	if ((thread = mono_thread_current ())) {
 		g_warning ("mono_thread_attach called for an already attached thread");
 		if (mono_thread_attach_cb) {
-			mono_thread_attach_cb (thread, &tid);
+			mono_thread_attach_cb (tid, &tid);
 		}
 		return thread;
 	}
@@ -275,7 +298,7 @@ mono_thread_attach (MonoDomain *domain)
 	mono_domain_set (domain);
 
 	if (mono_thread_attach_cb) {
-		mono_thread_attach_cb (thread, &tid);
+		mono_thread_attach_cb (tid, &tid);
 	}
 
 	return(thread);
@@ -315,6 +338,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		start_info->func = start_func;
 		start_info->this = delegate;
 		start_info->obj = this;
+		start_info->fake_thread = FALSE;
 		start_info->domain = mono_domain_get ();
 
 		thread=CreateThread(NULL, 0, start_wrapper, start_info,
@@ -695,18 +719,31 @@ void ves_icall_System_Threading_Monitor_Monitor_pulse(MonoObject *obj)
 	MONO_ARCH_SAVE_REGS;
 
 #ifdef THREAD_LOCK_DEBUG
-	g_message("(%d) Pulsing %p", GetCurrentThreadId (), obj);
+	g_message(G_GNUC_PRETTY_FUNCTION "(%d) Pulsing %p",
+		  GetCurrentThreadId (), obj);
 #endif
 
 	EnterCriticalSection(&monitor_mutex);
 	
 	mon=obj->synchronisation;
 	if(mon==NULL) {
+#ifdef THREAD_LOCK_DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   "(%d) object %p not locked", GetCurrentThreadId (),
+			   obj);
+#endif
+
 		LeaveCriticalSection(&monitor_mutex);
 		return;
 	}
 
 	if(mon->tid!=GetCurrentThreadId()) {
+#ifdef THREAD_LOCK_DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   "(%d) doesn't own lock (owned by %d)",
+			   GetCurrentThreadId (), mon->tid);
+#endif
+
 		LeaveCriticalSection(&monitor_mutex);
 		return;
 	}
@@ -774,7 +811,8 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	MONO_ARCH_SAVE_REGS;
 
 #ifdef THREAD_LOCK_DEBUG
-	g_message("(%d) Trying to wait for %p with timeout %dms",
+	g_message(G_GNUC_PRETTY_FUNCTION
+		  "(%d) Trying to wait for %p with timeout %dms",
 		  GetCurrentThreadId (), obj, ms);
 #endif
 
@@ -1193,29 +1231,9 @@ ves_icall_System_Threading_Thread_ResetAbort (void)
 	}
 }
 
-void mono_thread_init (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb)
+void mono_thread_init (MonoThreadStartCB start_cb,
+		       MonoThreadAttachCB attach_cb)
 {
-	/* Build a System.Threading.Thread object instance to return
-	 * for the main line's Thread.CurrentThread property.
-	 */
-	
-	/* I wonder what happens if someone tries to destroy this
-	 * object? In theory, I guess the whole program should act as
-	 * though exit() were called :-)
-	 */
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": Starting to build main Thread object");
-#endif
-	main_thread = (MonoThread *)mono_object_new (domain, mono_defaults.thread_class);
-
-	main_thread->handle = GetCurrentThread ();
-
-#ifdef THREAD_DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": Finished building main Thread object: %p", main_thread);
-#endif
-
 	InitializeCriticalSection(&threads_mutex);
 	InitializeCriticalSection(&monitor_mutex);
 	InitializeCriticalSection(&interlocked_mutex);
@@ -1225,8 +1243,6 @@ void mono_thread_init (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThrea
 	g_message (G_GNUC_PRETTY_FUNCTION ": Allocated current_object_key %d",
 		   current_object_key);
 #endif
-
-	TlsSetValue(current_object_key, main_thread);
 
 	mono_thread_start_cb = start_cb;
 	mono_thread_attach_cb = attach_cb;
@@ -1327,7 +1343,7 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 	}
 }
 
-void mono_thread_cleanup(void)
+void mono_thread_manage (void)
 {
 	struct wait_data *wait=g_new0 (struct wait_data, 1);
 	
@@ -1366,4 +1382,31 @@ void mono_thread_cleanup(void)
 	
 	mono_g_hash_table_destroy(threads);
 	threads=NULL;
+}
+
+static void terminate_thread (gpointer key, gpointer value, gpointer user)
+{
+	MonoThread *thread=(MonoThread *)value;
+	guint32 self=GPOINTER_TO_UINT (user);
+	
+	if(thread->tid!=self) {
+		/*TerminateThread (thread->handle, -1);*/
+	}
+}
+
+void mono_thread_abort_all_other_threads (void)
+{
+	guint32 self=GetCurrentThreadId ();
+
+	EnterCriticalSection (&threads_mutex);
+#ifdef THREAD_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ":There are %d threads to abort",
+		  mono_g_hash_table_size (threads));
+	mono_g_hash_table_foreach (threads, print_tids, NULL);
+#endif
+
+	mono_g_hash_table_foreach (threads, terminate_thread,
+				   GUINT_TO_POINTER (self));
+	
+	LeaveCriticalSection (&threads_mutex);
 }

@@ -72,7 +72,7 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	g_assert (mono_delegate_semaphore != INVALID_HANDLE_VALUE);
 	InitializeCriticalSection (&mono_delegate_section);
 
-	mono_thread_init (domain, start_cb, attach_cb);
+	mono_thread_init (start_cb, attach_cb);
 	
 	/* GC init has to happen after thread init */
 	mono_gc_init ();
@@ -82,14 +82,15 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	return;
 }
 
+/* This must not be called while there are still running threads executing
+ * managed code.
+ */
 void
 mono_runtime_cleanup (MonoDomain *domain)
 {
-	mono_thread_cleanup ();
-
-	/* Do this after the thread cleanup, because subthreads might
-	 * still be doing socket calls.
-	 */
+	/* Not really needed, but do it anyway */
+	mono_gc_cleanup ();
+	
 	mono_network_cleanup ();
 }
 

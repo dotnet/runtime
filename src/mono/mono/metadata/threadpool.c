@@ -92,11 +92,8 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	ReleaseSemaphore (mono_delegate_semaphore, 1, NULL);
 
 	if (workers == 0) {
-		MonoThread *thread;
 		workers++;
-		thread = mono_thread_create (domain, async_invoke_thread,
-					     NULL);
-		g_assert (thread != NULL);
+		mono_thread_create (domain, async_invoke_thread, NULL);
 	}
 	LeaveCriticalSection (&mono_delegate_section);
 

@@ -158,16 +158,39 @@ finalize_static_data (MonoClass *class, MonoVTable *vtable, GHashTable *todo) {
 	finalize_fields (class, vtable->data, FALSE, todo);
 }
 
-void
-mono_domain_finalize (MonoDomain *domain) {
-
+static guint32
+internal_domain_finalize (gpointer data) {
+	MonoDomain *domain=(MonoDomain *)data;
 	GHashTable *todo = g_hash_table_new (NULL, NULL);
+
+	mono_new_thread_init (GetCurrentThreadId (), todo, NULL);
+	
 #if HAVE_BOEHM_GC
 	GC_gcollect ();
 #endif
 	mono_g_hash_table_foreach (domain->class_vtable_hash, (GHFunc)finalize_static_data, todo);
 	/* FIXME: finalize objects in todo... */
 	g_hash_table_destroy (todo);
+
+	return(0);
+}
+
+void
+mono_domain_finalize (MonoDomain *domain) 
+{
+	HANDLE finalize_thread;
+	
+	/* Need to run managed code in a subthread.
+	 * Mono_domain_finalize() is called from the main thread in
+	 * the jit and the embedded example, hence the thread creation
+	 * here.
+	 */
+	finalize_thread=CreateThread (NULL, 0, internal_domain_finalize, domain, 0, NULL);
+	if(finalize_thread==NULL) {
+		g_assert_not_reached ();
+	}
+	WaitForSingleObject (finalize_thread, INFINITE);
+	CloseHandle (finalize_thread);
 }
 
 void
@@ -415,7 +438,7 @@ static guint32 finalizer_thread (gpointer unused)
 {
 	guint32 stack_start;
 	
-	mono_new_thread_init (NULL, &stack_start, NULL);
+	mono_new_thread_init (GetCurrentThreadId (), &stack_start, NULL);
 	
 	while(!finished) {
 		/* Wait to be notified that there's at least one
@@ -438,7 +461,7 @@ static guint32 finalizer_thread (gpointer unused)
  * It's currently disabled because it still requires some
  * work in the rest of the runtime.
  */
-#undef ENABLE_FINALIZER_THREAD
+#define ENABLE_FINALIZER_THREAD
 
 void mono_gc_init (void)
 {

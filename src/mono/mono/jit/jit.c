@@ -4086,7 +4086,7 @@ mono_thread_abort (MonoObject *obj)
 }
 
 static void
-mono_thread_start_cb (MonoThread *thread, gpointer stack_start, gpointer func)
+mono_thread_start_cb (guint32 tid, gpointer stack_start, gpointer func)
 {
 	MonoJitTlsData *jit_tls;
 	MonoLMF *lmf;
@@ -4103,7 +4103,7 @@ mono_thread_start_cb (MonoThread *thread, gpointer stack_start, gpointer func)
 
 	jit_tls->lmf = lmf;
 
-	mono_debugger_event (MONO_DEBUGGER_EVENT_THREAD_CREATED, thread, func);
+	mono_debugger_event (MONO_DEBUGGER_EVENT_THREAD_CREATED, (gpointer)tid, func);
 }
 
 void (*mono_thread_attach_aborted_cb ) (MonoObject *obj) = NULL;
@@ -4118,7 +4118,7 @@ mono_thread_abort_dummy (MonoObject *obj)
 }
 
 static void
-mono_thread_attach_cb (MonoThread *thread, gpointer stack_start)
+mono_thread_attach_cb (guint32 tid, gpointer stack_start)
 {
 	MonoJitTlsData *jit_tls;
 	MonoLMF *lmf;
@@ -4212,7 +4212,13 @@ mono_jit_init (const char *file) {
 	InitializeCriticalSection (metadata_section);
 
 	mono_jit_tls_id = TlsAlloc ();
-	mono_thread_start_cb (NULL, (gpointer)-1, NULL);
+
+	/* Don't set up the main thread for managed code execution -
+	 * this will give a handy assertion fail in
+	 * mono_get_lmf_addr() if any buggy runtime code tries to run
+	 * managed code in this thread.
+	 */
+	/* mono_thread_start_cb (GetCurrentThreadId (), (gpointer)-1, NULL); */
 
 	mono_install_compile_method (mono_jit_compile_method);
 	mono_install_trampoline (arch_create_jit_trampoline);
@@ -4231,12 +4237,6 @@ mono_jit_init (const char *file) {
 void
 mono_jit_cleanup (MonoDomain *domain)
 {
-
-	/* 
-	 * mono_runtime_cleanup() needs to be called early since
-	 * it needs the execution engine still fully working (it will
-	 * wait for other threads to finish).
-	 */
 	mono_runtime_cleanup (domain);
 
 	mono_domain_finalize (domain);
