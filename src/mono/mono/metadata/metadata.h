@@ -309,6 +309,7 @@ struct _MonoMethodSignature {
 	unsigned int  ref_count : 23;
 	guint16       param_count;
 	guint16       sentinelpos;
+	MonoGenericInst *geninst;
 	MonoType     *ret;
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };

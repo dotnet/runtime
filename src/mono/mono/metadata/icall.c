@@ -1541,6 +1541,30 @@ ves_icall_TypeBuilder_get_IsUnboundGenericParameter (MonoReflectionTypeBuilder *
 	return FALSE;
 }
 
+static MonoReflectionType*
+ves_icall_TypeBuilder_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoReflectionGenericParam *gparam)
+{
+	guint32 index;
+
+	MONO_ARCH_SAVE_REGS;
+
+	index = mono_array_length (tb->generic_params) - 1;
+	return mono_reflection_define_generic_parameter (tb->module->assemblyb, index, FALSE, gparam);
+}
+
+static MonoReflectionType*
+ves_icall_MethodBuilder_define_generic_parameter (MonoReflectionMethodBuilder *mb, MonoReflectionGenericParam *gparam)
+{
+	MonoReflectionTypeBuilder *tb;
+	guint32 index;
+
+	MONO_ARCH_SAVE_REGS;
+
+	index = mono_array_length (mb->generic_params) - 1;
+	tb = (MonoReflectionTypeBuilder *) mb->type;
+	return mono_reflection_define_generic_parameter (tb->module->assemblyb, index, TRUE, gparam);
+}
+
 static MonoObject *
 ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params) 
 {
@@ -4057,16 +4081,17 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Emit.TypeBuilder::create_internal_class", mono_reflection_create_internal_class,
 	"System.Reflection.Emit.TypeBuilder::create_runtime_class", mono_reflection_create_runtime_class,
 	"System.Reflection.Emit.TypeBuilder::setup_generic_class", mono_reflection_setup_generic_class,
-	"System.Reflection.Emit.TypeBuilder::define_generic_parameter", mono_reflection_define_generic_parameter,
 
 	/*
 	 * TypeBuilder generics icalls.
 	 */
 	"System.Reflection.Emit.TypeBuilder::get_IsUnboundGenericParameter", ves_icall_TypeBuilder_get_IsUnboundGenericParameter,
+	"System.Reflection.Emit.TypeBuilder::define_generic_parameter", ves_icall_TypeBuilder_define_generic_parameter,
 	
 	/*
-	 * MethodBuilder
+	 * MethodBuilder generic icalls.
 	 */
+	"System.Reflection.Emit.MethodBuilder::define_generic_parameter", ves_icall_MethodBuilder_define_generic_parameter,
 	
 	/*
 	 * System.Type
@@ -4091,6 +4116,7 @@ static gconstpointer icall_map [] = {
 	"System.MonoType::get_HasGenericParameters", ves_icall_MonoType_get_HasGenericParameteres,
 	"System.MonoType::get_HasUnboundGenericParameters", ves_icall_MonoType_get_HasUnboundGenericParameters,
 	"System.MonoType::get_IsUnboundGenericParameter", ves_icall_MonoType_get_IsUnboundGenericParameter,
+
 
 	/*
 	 * System.Reflection.FieldInfo

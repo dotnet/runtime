@@ -225,6 +225,7 @@ typedef struct {
 	guint32 native_cc;
 	guint32 call_conv;
 	MonoBoolean init_locals;
+	MonoArray *generic_params;
 } MonoReflectionMethodBuilder;
 
 typedef struct {
@@ -387,8 +388,6 @@ typedef struct {
 	MonoObject obj;
 	MonoGenericParam *param;
 	MonoReflectionType *type;
-	/* zero for MONO_TYPE_VAR; non-zero for MONO_TYPE_MVAR. */
-	guint32 index;
 	MonoString *name;
 	guint32 flags;
 	MonoArray *constraints;
@@ -522,7 +521,8 @@ void        mono_reflection_setup_generic_class   (MonoReflectionTypeBuilder *tb
 
 MonoReflectionType* mono_reflection_create_runtime_class  (MonoReflectionTypeBuilder *tb);
 
-MonoReflectionType* mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoReflectionGenericParam *gparam);
+MonoReflectionType *mono_reflection_define_generic_parameter (MonoReflectionAssemblyBuilder *assemblyb, guint32 index, gboolean is_mvar, MonoReflectionGenericParam *gparam);
+
 MonoClass*
 mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *types);
 

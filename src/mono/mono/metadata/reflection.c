@@ -40,6 +40,7 @@ typedef struct {
 	MonoReflectionILGen *ilgen;
 	MonoReflectionType *rtype;
 	MonoArray *parameters;
+	MonoArray *generic_params;
 	MonoArray *pinfo;
 	guint32 attrs;
 	guint32 iattrs;
@@ -456,11 +457,12 @@ method_builder_encode_signature (MonoDynamicAssembly *assembly, ReflectionMethod
 	char *p;
 	int i;
 	guint32 nparams =  mb->parameters ? mono_array_length (mb->parameters): 0;
-	guint32 size = 10 + nparams * 10;
+	guint32 ngparams = mb->generic_params ? mono_array_length (mb->generic_params): 0;
+	guint32 size = 11 + nparams * 10;
 	guint32 idx;
 	char blob_size [6];
 	char *b = blob_size;
-	
+
 	p = buf = g_malloc (size);
 	/* LAMESPEC: all the call conv spec is foobared */
 	*p = mb->call_conv & 0x60; /* has-this, explicit-this */
@@ -468,7 +470,11 @@ method_builder_encode_signature (MonoDynamicAssembly *assembly, ReflectionMethod
 		*p |= 0x5; /* vararg */
 	if (!(mb->attrs & METHOD_ATTRIBUTE_STATIC))
 		*p |= 0x20; /* hasthis */
+	if (ngparams)
+		*p |= 0x10; /* generic */
 	p++;
+	if (ngparams)
+		mono_metadata_encode_value (ngparams, p, &p);
 	mono_metadata_encode_value (nparams, p, &p);
 	encode_reflection_type (assembly, mb->rtype, p, &p);
 	for (i = 0; i < nparams; ++i) {
@@ -919,16 +925,38 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicAssembly *assem
 }
 
 static void
+mono_image_get_generic_method_param_info (MonoType *type, guint32 owner, guint32 index, MonoDynamicAssembly *assembly)
+{
+	MonoDynamicTable *table;
+	guint32 *values;
+	guint32 table_idx;
+	gchar *name;
+
+	table = &assembly->tables [MONO_TABLE_GENERICPARAM];
+	table_idx = table->next_idx ++;
+	values = table->values + table_idx * MONO_GENERICPARAM_SIZE;
+
+	name = g_strdup_printf ("!!%d", index);
+
+	values [MONO_GENERICPARAM_OWNER] = owner;
+	values [MONO_GENERICPARAM_FLAGS] = 0;
+	values [MONO_GENERICPARAM_NUMBER] = index;
+	values [MONO_GENERICPARAM_NAME] = string_heap_insert (&assembly->sheap, name);
+}
+
+static void
 mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicAssembly *assembly)
 {
 	MonoDynamicTable *table;
 	guint32 *values;
 	char *name;
 	ReflectionMethodBuilder rmb;
+	int i;
 
 	rmb.ilgen = mb->ilgen;
 	rmb.rtype = mb->rtype;
 	rmb.parameters = mb->parameters;
+	rmb.generic_params = mb->generic_params;
 	rmb.pinfo = mb->pinfo;
 	rmb.attrs = mb->attrs;
 	rmb.iattrs = mb->iattrs;
@@ -991,6 +1019,19 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicAssembly
 		}
 		values [MONO_METHODIMPL_DECLARATION] = tok;
 	}
+
+	if (mb->generic_params) {
+		table = &assembly->tables [MONO_TABLE_GENERICPARAM];
+		table->rows += mono_array_length (mb->generic_params);
+		alloc_table (table, table->rows);
+		for (i = 0; i < mono_array_length (mb->generic_params); ++i) {
+			guint32 owner = MONO_TYPEORMETHOD_METHOD | (mb->table_idx << MONO_TYPEORMETHOD_BITS);
+
+			mono_image_get_generic_method_param_info (
+				mono_array_get (mb->generic_params, gpointer, i), owner, i, assembly);
+		}
+	}
+
 }
 
 static void
@@ -1001,6 +1042,7 @@ mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, Mon
 	rmb.ilgen = mb->ilgen;
 	rmb.rtype = mono_type_get_object (domain, &mono_defaults.void_class->byval_arg);
 	rmb.parameters = mb->parameters;
+	rmb.generic_params = NULL;
 	rmb.pinfo = mb->pinfo;
 	rmb.attrs = mb->attrs;
 	rmb.iattrs = mb->iattrs;
@@ -5540,6 +5582,7 @@ ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb)
 
 	rmb.ilgen = mb->ilgen;
 	rmb.parameters = mb->parameters;
+	rmb.generic_params = NULL;
 	rmb.pinfo = mb->pinfo;
 	rmb.attrs = mb->attrs | METHOD_ATTRIBUTE_RT_SPECIAL_NAME;
 	rmb.iattrs = mb->iattrs;
@@ -5571,6 +5614,7 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb)
 
 	rmb.ilgen = mb->ilgen;
 	rmb.parameters = mb->parameters;
+	rmb.generic_params = mb->generic_params;
 	rmb.pinfo = mb->pinfo;
 	rmb.attrs = mb->attrs;
 	rmb.iattrs = mb->iattrs;
@@ -5898,7 +5942,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 }
 
 MonoReflectionType *
-mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoReflectionGenericParam *gparam)
+mono_reflection_define_generic_parameter (MonoReflectionAssemblyBuilder *assemblyb, guint32 index, gboolean is_mvar, MonoReflectionGenericParam *gparam)
 {
 	MonoClass *klass;
 	MonoImage *image;
@@ -5907,11 +5951,11 @@ mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoRef
 
 	MONO_ARCH_SAVE_REGS;
 
-	image = tb->module->assemblyb->dynamic_assembly->assembly.image;
+	image = assemblyb->dynamic_assembly->assembly.image;
 
 	param = gparam->param = g_new0 (MonoGenericParam, 1);
 	param->name = mono_string_to_utf8 (gparam->name);
-	param->num = gparam->index ? gparam->index - 1 : mono_array_length (tb->generic_params) - 1;
+	param->num = index;
 
 	count = gparam->constraints ? mono_array_length (gparam->constraints) : 0;
 	param->constraints = g_new0 (MonoClass *, count + 1);
@@ -5952,20 +5996,20 @@ mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoRef
 		}
 	}
 
-	klass->name = g_strdup_printf (gparam->index ? "!!%d" : "!%d", param->num);
+	klass->name = g_strdup_printf (is_mvar ? "!!%d" : "!%d", param->num);
 	klass->name_space = "";
 	klass->image = image;
 	klass->cast_class = klass->element_class = klass;
 	klass->enum_basetype = &klass->element_class->byval_arg;
 	klass->flags = TYPE_ATTRIBUTE_INTERFACE;
 
-	klass->this_arg.type = klass->byval_arg.type = gparam->index ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
+	klass->this_arg.type = klass->byval_arg.type = is_mvar ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
 	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
 	klass->this_arg.byref = TRUE;
 
 	mono_class_init (klass);
 
-	gparam->type = mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
+	gparam->type = mono_type_get_object (mono_object_domain (assemblyb), &klass->byval_arg);
 
 	return gparam->type;
 }
