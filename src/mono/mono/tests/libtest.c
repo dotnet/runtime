@@ -540,6 +540,18 @@ mono_test_marshal_return_delegate (SimpleDelegate delegate)
 	return delegate;
 }
 
+static STDCALL int
+return_plus_one (int i)
+{
+	return i + 1;
+}
+
+STDCALL SimpleDelegate
+mono_test_marshal_return_delegate_2 ()
+{
+	return return_plus_one;
+}
+
 typedef simplestruct (STDCALL *SimpleDelegate2) (simplestruct ss);
 
 static gboolean

@@ -25,6 +25,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_return_delegate")]
 	public static extern IntPtr mono_test_marshal_return_delegate (SimpleDelegate d);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_return_delegate_2")]
+	public static extern IntPtr mono_test_marshal_return_delegate_2 ();
+
 	static int test_0_get_function_pointer_for_delegate () {
 		// This is a 2.0 feature
 		MethodInfo mi = typeof (Marshal).GetMethod ("GetFunctionPointerForDelegate");
@@ -47,6 +50,20 @@ public class Tests {
 
 		IntPtr ptr = mono_test_marshal_return_delegate (new SimpleDelegate (delegate_test));
 		
+		SimpleDelegate d = (SimpleDelegate)mi.Invoke (null, new object [] { ptr, typeof (SimpleDelegate) });
+
+		return d (5) == 6 ? 0 : 1;
+	}
+
+	/* Obtain a delegate from a native function pointer */
+	static int test_0_get_delegate_for_ftnptr_native () {
+		// This is a 2.0 feature
+		MethodInfo mi = typeof (Marshal).GetMethod ("GetDelegateForFunctionPointer");
+		if (mi == null)
+			return 0;
+
+		IntPtr ptr = mono_test_marshal_return_delegate_2 ();
+
 		SimpleDelegate d = (SimpleDelegate)mi.Invoke (null, new object [] { ptr, typeof (SimpleDelegate) });
 
 		return d (5) == 6 ? 0 : 1;
