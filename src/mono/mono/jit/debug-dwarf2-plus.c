@@ -15,8 +15,24 @@ void
 mono_debug_open_assembly_dwarf2_plus (AssemblyDebugInfo *info)
 {
 	AssemblyDebugInfoPrivate *priv = g_new0 (AssemblyDebugInfoPrivate, 1);
+	MonoTableInfo *t = &info->image->tables [MONO_TABLE_METHOD];
+	char *buf;
+	int i;
 
-	priv->symfile = mono_debug_open_symbol_file (info->image, info->filename, TRUE);
+	buf = g_strdup_printf ("as %s -o %s", info->filename, info->objfile);
+	system (buf);
+	g_free (buf);
+
+	for (i = 0; i < t->rows; i++) {
+		MonoMethod *method = mono_get_method (info->image, 
+						      (MONO_TABLE_METHOD << 24) | (i + 1), 
+						      NULL);
+
+		if (!(method->flags & METHOD_ATTRIBUTE_ABSTRACT))
+			arch_compile_method (method);
+	}
+
+	priv->symfile = mono_debug_open_symbol_file (info->image, info->objfile, TRUE);
 
 	info->_priv = priv;
 }
@@ -43,8 +59,7 @@ method_info_func (MonoDebugSymbolFile *symfile, guint32 token, gpointer user_dat
 	if (!method)
 		return NULL;
 
-	g_assert_not_reached (); // FIXME
-	// minfo = g_hash_table_lookup (info->methods, method);
+	minfo = g_hash_table_lookup (info->handle->methods, method);
 
 	return (MonoDebugMethodInfo *) minfo;
 }

@@ -48,6 +48,10 @@ mono_debug_open_file (const char *filename, MonoDebugFormat format)
 		debug->filename = g_strdup_printf ("%s-dwarf.s", g_basename (debug->name));
 		debug->objfile = g_strdup_printf ("%s.o", g_basename (debug->name));
 		break;
+	case MONO_DEBUG_FORMAT_DWARF2_PLUS:
+		if (!mono_default_debug_handle)
+			mono_debug_open_file (filename, MONO_DEBUG_FORMAT_DWARF2);
+		break;
 	default:
 		g_assert_not_reached ();
 	}
@@ -281,6 +285,8 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 	info->image = image;
 	info->image->ref_count++;
 	info->name = g_strdup (image->assembly_name);
+	info->format = debug->format;
+	info->handle = debug;
 
 	info->source_file = debug->source_files->len;
 	g_ptr_array_add (debug->source_files, g_strdup_printf ("%s.il", image->assembly_name));
@@ -289,6 +295,16 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 
 	info->nmethods = image->tables [MONO_TABLE_METHOD].rows + 1;
 	info->mlines = g_new0 (int, info->nmethods);
+
+	switch (info->format) {
+	case MONO_DEBUG_FORMAT_DWARF2_PLUS:
+		info->filename = g_strdup_printf ("%s-debug.s", info->name);
+		info->objfile = g_strdup_printf ("%s-debug.o", info->name);
+		mono_debug_open_assembly_dwarf2_plus (info);
+		break;
+	default:
+		break;
+	}
 
 	if (debug->format != MONO_DEBUG_FORMAT_DWARF2_PLUS)
 		debug_load_method_lines (info);
@@ -305,6 +321,8 @@ mono_debug_add_image (MonoDebugHandle* debug, MonoImage *image)
 void
 mono_debug_write_symbols (MonoDebugHandle *debug)
 {
+	GList *tmp;
+
 	if (!debug)
 		return;
 
@@ -314,6 +332,13 @@ mono_debug_write_symbols (MonoDebugHandle *debug)
 		break;
 	case MONO_DEBUG_FORMAT_DWARF2:
 		mono_debug_write_dwarf2 (debug);
+		break;
+	case MONO_DEBUG_FORMAT_DWARF2_PLUS:
+		for (tmp = debug->info; tmp; tmp = tmp->next) {
+			AssemblyDebugInfo *info = (AssemblyDebugInfo*)tmp->data;
+
+			mono_debug_write_assembly_dwarf2_plus (info);
+		}
 		break;
 	default:
 		g_assert_not_reached ();
@@ -332,6 +357,13 @@ mono_debug_make_symbols (void)
 static void
 mono_debug_close_assembly (AssemblyDebugInfo* info)
 {
+	switch (info->format) {
+	case MONO_DEBUG_FORMAT_DWARF2_PLUS:
+		mono_debug_close_assembly_dwarf2_plus (info);
+		break;
+	default:
+		break;
+	}
 	g_free (info->mlines);
 	g_free (info->moffsets);
 	g_free (info->name);

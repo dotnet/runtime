@@ -26,8 +26,10 @@ typedef struct {
 } DebugMethodInfo;
 
 struct _AssemblyDebugInfo {
-	char *filename;
+	MonoDebugFormat format;
+	MonoDebugHandle *handle;
 	char *name;
+	char *filename;
 	char *objfile;
 	int source_file;
 	int total_lines;
@@ -40,11 +42,11 @@ struct _AssemblyDebugInfo {
 
 struct _MonoDebugHandle {
 	MonoDebugHandle *next;
+	MonoDebugFormat format;
 	char *name;
 	char *filename;
 	char *objfile;
 	char *producer_name;
-	MonoDebugFormat format;
 	GHashTable *type_hash;
 	GHashTable *methods;
 	GPtrArray *source_files;
