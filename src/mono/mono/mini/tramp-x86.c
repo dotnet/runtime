@@ -89,9 +89,9 @@ static gpointer
 x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi, 
 		      int ebx, guint8 *code, MonoMethod *m)
 {
-	guint8 reg;
-	gint32 disp;
-	char *o;
+	guint8 reg = 0;
+	gint32 disp = 0;
+	char *o = NULL;
 	gpointer addr;
 
 	addr = mono_compile_method (m);

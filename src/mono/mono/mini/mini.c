@@ -6208,7 +6208,6 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 gpointer
 mono_create_jit_trampoline (MonoMethod *method)
 {
-	MonoJitInfo *ji;
 	MonoDomain *domain = mono_domain_get ();
 	gpointer tramp;
 

@@ -617,7 +617,7 @@ mono_main (int argc, char* argv[])
 	int mini_verbose = 0;
 	gboolean enable_profile = FALSE;
 	char *trace_options = NULL;
-	char *profile_options;
+	char *profile_options = NULL;
 	char *aot_options = NULL;
 
 	setlocale (LC_ALL, "");
