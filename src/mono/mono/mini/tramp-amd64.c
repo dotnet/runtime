@@ -77,7 +77,7 @@ static gpointer
 amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 {
 	gpointer addr;
-	gpointer *vtable_slot;
+	gpointer *vtable_slot, *method_ptr;
 
 	addr = mono_compile_method (m);
 	g_assert (addr);
@@ -102,14 +102,21 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	else {
 		/* Patch calling code */
 
-		if ((code [-13] == 0x49) && (code [-12] == 0xbb)) {
+		if (((code [-13] == 0x49) && (code [-12] == 0xbb)) ||
+			(code [-5] == 0xe8)) {
 			MonoJitInfo *ji = 
 				mono_jit_info_table_find (mono_domain_get (), code);
 			MonoJitInfo *target_ji = 
 				mono_jit_info_table_find (mono_domain_get (), addr);
 
 			if (mono_method_same_domain (ji, target_ji)) {
-				InterlockedExchangePointer ((gpointer*)(code - 11), addr);
+				if (code [-5] != 0xe8)
+					InterlockedExchangePointer ((gpointer*)(code - 11), addr);
+				else {
+					g_assert ((((guint64)(addr)) >> 32) == 0);
+					g_assert ((((guint64)(code)) >> 32) == 0);
+					InterlockedExchange ((guint32*)(code - 4), ((gint64)addr - (gint64)code));
+				}
 			}
 		}
 		else if ((code [-7] == 0x41) && (code [-6] == 0xff) && (code [-5] == 0x15)) {
@@ -124,19 +131,16 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 				InterlockedExchangePointer (got_entry, addr);
 			}
 		}
-		else {
-			/* FIXME: handle more cases */
-		}
+		else if ((method_ptr = mono_amd64_get_delegate_method_ptr_addr (code, regs))) {
+			/* This is a call inside a delegate wrapper to the target method */
+			MonoJitInfo *ji = 
+				mono_jit_info_table_find (mono_domain_get (), code);
+			MonoJitInfo *target_ji = 
+				mono_jit_info_table_find (mono_domain_get (), addr);
 
-		/* Patch trampoline */
-		/* FIXME: Make this thread safe */
-		if (!m->klass->valuetype) {
-			/* 
-			 * Valuetype method trampolines can't be patched since they are used for virtual
-			 * calls which need an unbox trampoline.
-			 */
-			amd64_mov_reg_imm (tramp, AMD64_R11, addr);
-			amd64_jump_reg (tramp, AMD64_R11);
+			if (ji && (ji->method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) && mono_method_same_domain (ji, target_ji)) {
+				InterlockedExchangePointer (method_ptr, addr);
+			}
 		}
 	}
 
@@ -219,8 +223,15 @@ amd64_class_init_trampoline (long *regs, guint8 *code, MonoVTable *vtable, guint
 			buf [11] = 0x66;
 			buf [12] = 0x90;
 		}
-	}
-	else if (code [0] == 0x90 || code [0] == 0xeb || code [0] == 0x66)
+	} else if (code [-2] == 0xe8) {
+		guint8 *buf = code - 2;
+
+		buf [0] = 0x66;
+		buf [1] = 0x66;
+		buf [2] = 0x90;
+		buf [3] = 0x66;
+		buf [4] = 0x90;
+	} else if (code [0] == 0x90 || code [0] == 0xeb || code [0] == 0x66)
 		/* Already changed by another thread */
 		;
 	else if ((code [-4] == 0x41) && (code [-3] == 0xff) && (code [-2] == 0x15))

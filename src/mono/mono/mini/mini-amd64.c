@@ -1245,20 +1245,50 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 static guint8*
 emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer data)
 {
-	/*
-	 * FIXME: Emitting a call template and patching it later is expensive on 
-	 * amd64, so try to determine the patch target immediately, and emit more 
-	 * efficient code if possible.
-	 */
-
 	mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
 
 	if (mono_compile_aot) {
 		amd64_call_membase (code, AMD64_RIP, 0);
 	}
 	else {
-		amd64_set_reg_template (code, GP_SCRATCH_REG);
-		amd64_call_reg (code, GP_SCRATCH_REG);
+		gboolean near_call = FALSE;
+
+		/*
+		 * Indirect calls are expensive so try to make a near call if possible.
+		 * The caller memory is allocated by the code manager so it is 
+		 * guaranteed to be at a 32 bit offset.
+		 */
+
+		if (patch_type != MONO_PATCH_INFO_ABS)
+			/* The target is in memory allocated using the code manager */
+			near_call = TRUE;
+		else {
+			if (mono_find_class_init_trampoline_by_addr (data))
+				near_call = TRUE;
+			else {
+				MonoJitICallInfo *info = mono_find_jit_icall_by_addr (data);
+				if (info) {
+					if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && 
+						strstr (cfg->method->name, info->name)) {
+						/* A call to the wrapped function */
+						if ((((guint64)data) >> 32) == 0)
+							near_call = TRUE;
+					}
+					else
+						near_call = TRUE;
+				}
+				else if ((((guint64)data) >> 32) == 0)
+					near_call = TRUE;
+			}
+		}
+
+		if (near_call) {
+			amd64_call_code (code, 0);
+		}
+		else {
+			amd64_set_reg_template (code, GP_SCRATCH_REG);
+			amd64_call_reg (code, GP_SCRATCH_REG);
+		}
 	}
 
 	return code;
@@ -4808,8 +4838,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			if (mono_compile_aot)
 				amd64_call_membase (ip2, AMD64_RIP, 0);
 			else {
-				amd64_set_reg_template (ip2, GP_SCRATCH_REG);
-				amd64_call_reg (ip2, GP_SCRATCH_REG);
+				amd64_call_code (ip2, 0);
 			}
 			break;
 		}
@@ -5609,6 +5638,9 @@ mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs)
 		reg = amd64_modrm_rm (code [6]);
 		disp = 0;
 	}
+	else if (code [2] == 0xe8)
+		/* call <ADDR> */
+		return NULL;
 	else
 		g_assert_not_reached ();
 
@@ -5618,6 +5650,28 @@ mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs)
 	g_assert (reg != AMD64_R11);
 
 	return (gpointer)((regs [reg]) + disp);
+}
+
+gpointer*
+mono_amd64_get_delegate_method_ptr_addr (guint8* code, guint64 *regs)
+{
+	guint32 reg;
+	guint32 disp;
+
+	code -= 10;
+
+	if (IS_REX (code [0]) && (code [1] == 0x8b) && (code [3] == 0x48) && (code [4] == 0x8b) && (code [5] == 0x40) && (code [7] == 0x48) && (code [8] == 0xff) && (code [9] == 0xd0)) {
+		/* mov REG, %rax; mov <OFFSET>(%rax), %rax; call *%rax */
+		reg = amd64_rex_b (code [0]) + amd64_modrm_rm (code [2]);
+		disp = code [6];
+
+		if (reg == AMD64_RAX)
+			return NULL;
+		else
+			return (gpointer*)(regs [reg] + disp);
+	}
+
+	return NULL;
 }
 
 /*

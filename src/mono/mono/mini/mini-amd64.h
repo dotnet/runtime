@@ -226,6 +226,9 @@ typedef struct {
 gpointer*
 mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs);
 
+gpointer*
+mono_amd64_get_delegate_method_ptr_addr (guint8* code, guint64 *regs);
+
 void
 mono_amd64_exceptions_init (void);
 
