@@ -304,8 +304,8 @@ MonoObject     *mono_debugger_runtime_invoke              (MonoMethod *method, v
 
 guint32         mono_debugger_lookup_type                 (const gchar *type_name);
 gint32          mono_debugger_lookup_assembly             (const gchar *name);
-gboolean        mono_debugger_unhandled_exception         (gpointer addr, MonoObject *exc);
-void            mono_debugger_handle_exception            (gpointer addr, int clause, MonoObject *exc);
+gboolean        mono_debugger_unhandled_exception         (gpointer addr, gpointer stack, MonoObject *exc);
+void            mono_debugger_handle_exception            (gpointer addr, gpointer stack, MonoObject *exc);
 
 
 void *

@@ -348,7 +348,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 				G_BREAKPOINT ();
 			mono_unhandled_exception (obj);
 
-			if (mono_debugger_unhandled_exception (original_ip, obj)) {
+			if (mono_debugger_unhandled_exception (original_ip, MONO_CONTEXT_GET_SP (ctx), obj)) {
 				/*
 				 * If this returns true, then we're running inside the
 				 * Mono Debugger and the debugger wants us to restore the
@@ -435,7 +435,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 						}
 
 						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-							mono_debugger_handle_exception (ei->data.filter, MONO_EXCEPTION_CLAUSE_FILTER, obj);
+							mono_debugger_handle_exception (ei->data.filter, MONO_CONTEXT_GET_SP (ctx), obj);
 							filtered = call_filter (ctx, ei->data.filter);
 					}
 
@@ -457,7 +457,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 							}
 							if (mono_jit_trace_calls != NULL && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
-							mono_debugger_handle_exception (ei->handler_start, MONO_EXCEPTION_CLAUSE_NONE, obj);
+							mono_debugger_handle_exception (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 							jit_tls->lmf = lmf;
 							g_free (trace);
@@ -473,7 +473,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 						    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
 							if (mono_jit_trace_calls != NULL && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
-							mono_debugger_handle_exception (ei->handler_start, MONO_EXCEPTION_CLAUSE_FINALLY, obj);
+							mono_debugger_handle_exception (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
 							call_filter (ctx, ei->handler_start);
 						}
 						

@@ -1332,7 +1332,7 @@ mono_debugger_breakpoint_callback (MonoMethod *method, guint32 index)
 }
 
 gboolean
-mono_debugger_unhandled_exception (gpointer addr, MonoObject *exc)
+mono_debugger_unhandled_exception (gpointer addr, gpointer stack, MonoObject *exc)
 {
 	if (!mono_debugger_initialized)
 		return FALSE;
@@ -1344,14 +1344,14 @@ mono_debugger_unhandled_exception (gpointer addr, MonoObject *exc)
 }
 
 void
-mono_debugger_handle_exception (gpointer addr, int clause, MonoObject *exc)
+mono_debugger_handle_exception (gpointer addr, gpointer stack, MonoObject *exc)
 {
 	if (!mono_debugger_initialized)
 		return FALSE;
 
 	// Prevent the object from being finalized.
 	last_exception = exc;
-	mono_debugger_event (MONO_DEBUGGER_EVENT_EXCEPTION, exc, addr);
+	mono_debugger_event (MONO_DEBUGGER_EVENT_EXCEPTION, stack, addr);
 }
 
 static gchar *
