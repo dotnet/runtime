@@ -1833,6 +1833,7 @@ static void
 handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst *src, const unsigned char *ip, MonoClass *klass, gboolean to_end, gboolean native) {
 	MonoInst *iargs [3];
 	int n;
+	guint32 align = 0;
 
 	g_assert (klass);
 	/*
@@ -1841,10 +1842,20 @@ handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst
 	 */
 
 	if (native)
-		n = mono_class_native_size (klass, NULL);
+		n = mono_class_native_size (klass, &align);
 	else
-		n = mono_class_value_size (klass, NULL);
+		n = mono_class_value_size (klass, &align);
 
+	if ((cfg->opt & MONO_OPT_INTRINS) && !to_end && n <= sizeof (gpointer) * 5) {
+		MonoInst *inst;
+		MONO_INST_NEW (cfg, inst, OP_MEMCPY);
+		inst->inst_left = dest;
+		inst->inst_right = src;
+		inst->cil_code = ip;
+		inst->unused = n;
+		MONO_ADD_INS (bblock, inst);
+		return;
+	}
 	iargs [0] = dest;
 	iargs [1] = src;
 	NEW_ICONST (cfg, iargs [2], n);
@@ -3098,11 +3109,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			n = mono_class_value_size (klass, NULL);
 			ins = mono_compile_create_var (cfg, &klass->byval_arg, OP_LOCAL);
 			NEW_TEMPLOADA (cfg, iargs [0], ins->inst_c0);
-			iargs [1] = *sp;
-			NEW_ICONST (cfg, iargs [2], n);
-			iargs [2]->cil_code = ip;
+			if ((cfg->opt & MONO_OPT_INTRINS) && n <= sizeof (gpointer) * 5) {
+				MonoInst *copy;
+				MONO_INST_NEW (cfg, copy, OP_MEMCPY);
+				copy->inst_left = iargs [0];
+				copy->inst_right = *sp;
+				copy->cil_code = ip;
+				copy->unused = n;
+				MONO_ADD_INS (bblock, copy);
+			} else {
+				iargs [1] = *sp;
+				NEW_ICONST (cfg, iargs [2], n);
+				iargs [2]->cil_code = ip;
 
-			mono_emit_jit_icall (cfg, bblock, helper_memcpy, iargs, ip);
+				mono_emit_jit_icall (cfg, bblock, helper_memcpy, iargs, ip);
+			}
 			NEW_TEMPLOAD (cfg, *sp, ins->inst_c0);
 			++sp;
 			ip += 5;

@@ -350,6 +350,13 @@ reg: CEE_LDOBJ (OP_REGOFFSET) {
 	}
 }
 
+reg: CEE_LDOBJ (reg) {
+	tree->opcode = OP_MOVE;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 reg: OP_OBJADDR (reg) {
 	tree->opcode = OP_MOVE;
 	tree->sreg1 = state->left->reg1;
@@ -525,6 +532,37 @@ stmt: CEE_STELEM_REF (OP_GROUP (reg, reg), reg) {
 
 reg: OP_GROUP (reg, reg) {
 	g_assert_not_reached ();
+}
+
+stmt: OP_MEMCPY (reg, reg) {
+	int size = tree->unused;
+	int cur_reg;
+	int cur_offset = 0;
+	/* FIXME: consider alignment for archs that need it. */
+	while (size > 0) {
+		cur_reg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, cur_reg,
+			state->right->reg1, cur_offset);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, state->left->reg1, cur_offset, cur_reg);
+		cur_offset += 4;
+		size -= 4;
+	}
+	while (size > 0) {
+		cur_reg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI2_MEMBASE, cur_reg,
+			state->right->reg1, cur_offset);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI2_MEMBASE_REG, state->left->reg1, cur_offset, cur_reg);
+		cur_offset += 2;
+		size -= 2;
+	}
+	while (size > 0) {
+		cur_reg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI1_MEMBASE, cur_reg,
+			state->right->reg1, cur_offset);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI1_MEMBASE_REG, state->left->reg1, cur_offset, cur_reg);
+		cur_offset += 1;
+		size -= 1;
+	}
 }
 
 reg: OP_LDELEMA2D (reg, OP_GROUP (reg, reg)) "20" {

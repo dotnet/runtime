@@ -296,6 +296,8 @@ MINI_OP(OP_SQRT,    "sqrt")
 MINI_OP(OP_GETCHR, "getchar")
 /* get adrress of element in a 2D array */
 MINI_OP(OP_LDELEMA2D, "getldelema2")
+/* inlined small memcpy with constant length */
+MINI_OP(OP_MEMCPY, "memcpy")
 
 /* x86 specific */
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null")
