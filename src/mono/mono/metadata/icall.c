@@ -1900,6 +1900,39 @@ ves_icall_MonoGenericInst_GetFields (MonoReflectionGenericInst *type,
 	return res;
 }
 
+static MonoArray*
+ves_icall_MonoGenericInst_GetProperties (MonoReflectionGenericInst *type,
+					 MonoReflectionType *reflected_type)
+{
+	static MonoClass *System_Reflection_PropertyInfo;
+	MonoGenericInst *ginst;
+	MonoDynamicGenericInst *dginst;
+	MonoDomain *domain;
+	MonoClass *refclass;
+	MonoArray *res;
+	int i;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (!System_Reflection_PropertyInfo)
+		System_Reflection_PropertyInfo = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "PropertyInfo");
+
+	ginst = type->type.type->data.generic_inst;
+	g_assert ((dginst = ginst->dynamic_info) != NULL);
+
+	refclass = mono_class_from_mono_type (reflected_type->type);
+
+	domain = mono_object_domain (type);
+	res = mono_array_new (domain, System_Reflection_PropertyInfo, dginst->count_properties);
+
+	for (i = 0; i < dginst->count_properties; i++)
+		mono_array_set (res, gpointer, i,
+				mono_property_get_object (domain, refclass, &dginst->properties [i]));
+
+	return res;
+}
+
 static void
 ves_icall_MonoGenericParam_initialize (MonoReflectionGenericParam *gparam)
 {
@@ -4972,6 +5005,7 @@ static const IcallEntry monogenericinst_icalls [] = {
 	{"GetInterfaces_internal", ves_icall_MonoGenericInst_GetInterfaces},
 	{"GetMethods_internal", ves_icall_MonoGenericInst_GetMethods},
 	{"GetParentType", ves_icall_MonoGenericInst_GetParentType},
+	{"GetProperties_internal", ves_icall_MonoGenericInst_GetProperties},
 	{"initialize", mono_reflection_generic_inst_initialize}
 };
 

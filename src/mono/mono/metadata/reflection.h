@@ -608,7 +608,7 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types);
 MonoReflectionMethod*
 mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *method, MonoArray *types);
 void
-mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type, MonoArray *methods, MonoArray *ctors, MonoArray *fields);
+mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type, MonoArray *methods, MonoArray *ctors, MonoArray *fields, MonoArray *properties);
 
 MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig);
 

@@ -243,6 +243,8 @@ struct _MonoDynamicGenericInst {
 	MonoMethod **ctors;
 	int count_fields;
 	MonoClassField *fields;
+	int count_properties;
+	MonoProperty *properties;
 };
 
 struct _MonoGenericMethod {
