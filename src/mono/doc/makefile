@@ -4,3 +4,6 @@ SOURCES=rationale roadmap c-sharp tools class-library \
 
 all-docs: $(SOURCES)
 	cat $(SOURCES) > all-docs
+
+clean:
+	rm all-docs

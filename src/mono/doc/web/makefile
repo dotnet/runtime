@@ -24,6 +24,11 @@ all:
 
 	perl process.pl commands template.html.in .
 
+clean:
+	for i in $(SOURCES); do \
+		rm -f `basename $$i`.src `basename $$i`.html; \
+	done;
+
 push:
 	scp *.html www@www.ximian.com:/web/cvsmodules/mono
 
