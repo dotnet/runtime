@@ -60,6 +60,17 @@
 		    </ul>
 		  </td>
 		  <td bgcolor="#999999">
+		    <b>Red Hat 7.2/x86</b>
+                    <ul>
+			<li><a href="archive/redhat-72-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
+			<li><a href="archive/redhat-72-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
+			<li><a href="archive/redhat-72-i386/mono-0.16-1.i386.rpm">mono-0.16-1.i386.rpm</a>
+			<li><a href="archive/redhat-72-i386/mono-devel-0.16-1.i386.rpm">mono-devel-0.16-1.i386.rpm</a>
+		    </ul>
+		  </td>
+		</tr>
+		<tr>
+		  <td bgcolor="#999999">
 		    <b>Red Hat 7.1/x86</b>
                     <ul>
 			<li><a href="archive/redhat-71-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
@@ -68,8 +79,6 @@
 			<li><a href="archive/redhat-71-i386/mono-devel-0.16-1.i386.rpm">mono-devel-0.16-1.i386.rpm</a>
 		    </ul>
 		  </td>
-		</tr>
-		<tr>
 		  <td bgcolor="#999999">
 		    <b>Mandrake 8.2/x86</b>
                     <ul>
@@ -79,6 +88,8 @@
 			<li><a href="archive/mandrake-82-i386/mono-devel-0.16-1.i586.rpm">mono-devel-0.16-1.i586.rpm</a>
 		    </ul>
 		  </td>
+	 	</tr>
+		<tr>
 		  <td bgcolor="#999999">
 		    <b>SuSE 8.0/x86</b>
                     <ul>

@@ -94,11 +94,17 @@
 	ONE 2002:</a></b> Come see Paolo, Mike and Miguel from the Mono team at the .NET ONE conference in Frankfurt.</ul>
 </ul>
 
-@item Oct 1st, 2002: Mono 0.16 released
+@item Oct 1st, 2002: Mono 0.16 released;  Debugger updates.
 
 	Mono 0.16 has been released.  Source and RPMs are <a
 	href="download.html">available</a>.  The release notes are <a
 	href="archive/mono-0.16">here</a>.  
+
+	Martin's debugger can debug both managed and unmanaged code.
+	Recently Martin added support for locals, parameters, and
+	breakpoints on top of the existing infrastructure (his
+	debugger supported instruction-level and source-code level
+	single-stepping).
 
 @item Sep 19th, 2002: Mono Survey.
 
