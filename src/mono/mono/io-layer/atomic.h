@@ -287,8 +287,9 @@ InterlockedCompareExchange(volatile gint32 *dest,
 
 	__asm__ __volatile__ ("\tL\t%1,%0\n"
 			      "\tLA\t1,%0\n"
-			      "\tCS\t%3,%2,0(1)\n"
-			      : "=m" (*dest), "=r" (old)
+			      "0:\tCS\t%3,%2,0(1)\n"
+			      "\tJNZ\t0b\n"
+			      : "+m" (*dest), "+r" (old)
 			      : "r" (exch), "r" (comp)
 			      : "1", "cc");	
 	return(old);
@@ -340,7 +341,7 @@ InterlockedExchange(volatile gint32 *val, gint32 new_val)
 			      "0:\tL\t%1,%0\n"
 			      "\tCS\t%1,%2,0(1)\n"
 			      "\tJNZ\t0b"
-			      : "+m" (*val), "=r" (ret)
+			      : "+m" (*val), "+r" (ret)
 			      : "r" (new_val)
 			      : "1", "cc");
 
