@@ -1,3 +1,7 @@
+2004-10-14  Joe Shaw  <joeshaw@novell.com>
+ 
+        * man/mono.1: Fix the syntax of the M: trace syntax
+
 2004-10-10  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Add some checks for cygwin weirdness.
