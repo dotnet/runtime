@@ -308,7 +308,7 @@ get_typeref (MonoImage *m, int idx)
 char *
 get_typedef_or_ref (MonoImage *m, guint32 dor_token)
 {
-	char *temp = NULL, *s;
+	char *temp = NULL, *s = NULL;
 	int table, idx;
 
 	/*
@@ -498,7 +498,7 @@ dis_stringify_modifiers (MonoImage *m, int n, MonoCustomMod *mod)
 		char *tok = dis_stringify_token (m, mod[i].token);
 		if (i > 0)
 			g_string_sprintfa (s, " ");
-		g_string_sprintfa (s, "%s (%s)", mod[i].required ? "modopt": "modreq", tok);
+		g_string_sprintfa (s, "%s (%s)", mod[i].required ? "modreq": "modopt", tok);
 		g_free (tok);
 	}
 	g_string_append_c (s, ' ');
@@ -1587,7 +1587,7 @@ get_token (MonoImage *m, guint32 token)
 char *
 get_token_type (MonoImage *m, guint32 token)
 {
-	char *temp = NULL, *s;
+	char *temp = NULL, *s = NULL;
 	int idx;
 
 	idx = mono_metadata_token_index (token);
