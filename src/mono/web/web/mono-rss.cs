@@ -67,6 +67,11 @@ class X {
 		c.Link = "http://www.go-mono.com";
 		c.Description =
 		"News from the Mono project: a portable implementation of the .NET Framework";
+		c.WebMaster = "webmaster@go-mono.com";
+		c.ManagingEditor = "miguel@ximian.com";
+		string t = File.GetLastWriteTime (input).ToString ("r");
+		c.PubDate = t;
+		c.LastBuildDate = t;
 
 		using (FileStream fs = new FileStream (input, FileMode.Open)){
 			using (StreamReader input_stream = new StreamReader (fs)){
