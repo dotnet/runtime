@@ -3464,6 +3464,10 @@ handle_enum:
 			mono_mb_emit_byte (mb, CEE_LDOBJ);
 			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, t->data.klass));
 			break;
+		case MONO_TYPE_GENERICINST:
+			t = &t->data.generic_class->container_class->byval_arg;
+			type = t->type;
+			goto handle_enum;
 		default:
 			g_assert_not_reached ();
 		}		
@@ -3499,6 +3503,7 @@ handle_enum:
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_GENERICINST:
 		/* box value types */
 		mono_mb_emit_byte (mb, CEE_BOX);
 		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (sig->ret)));
