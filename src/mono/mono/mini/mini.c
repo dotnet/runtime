@@ -169,7 +169,7 @@ print_method_from_ip (void *ip)
 	method = mono_method_full_name (ji->method, TRUE);
 	source = mono_debug_source_location_from_address (ji->method, (int) ip, NULL, domain);
 
-	g_print ("IP %p at offset 0x%x of method %s (%p %p)[domain %p - %s]\n", ip, (int)((char*)ip - (char*)ji->code_start), method, ji->code_start, (char*)ji->code_start + ji->code_size, domain, domain->friendly_name);
+	g_print ("IP %p at offset 0x%x of method %s (%p %p)[domain %p - %s]\n", ip, (char*)ip - (char*)ji->code_start, method, ji->code_start, (char*)ji->code_start + ji->code_size, domain, domain->friendly_name);
 
 	if (source)
 		g_print ("%s\n", source);
@@ -253,7 +253,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 #define CHECK_BBLOCK(target,ip,tblock) do {	\
 		if ((target) < (ip) && !(tblock)->code)	{	\
 			bb_recheck = g_list_prepend (bb_recheck, (tblock));	\
-			if (cfg->verbose_level > 2) g_print ("queued block %d for check at IL%04x from IL%04x\n", (tblock)->block_num, (int)((target) - header->code), (int)((ip) - header->code));	\
+			if (cfg->verbose_level > 2) g_print ("queued block %d for check at IL%04x from IL%04x\n", (tblock)->block_num, (target) - header->code, (ip) - header->code);	\
 		}	\
 	} while (0)
 
@@ -1726,7 +1726,7 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 			mono_add_ins_to_end (bb, inst);
 		}
 		if (cfg->verbose_level > 3)
-			g_print ("storing %d to temp %d\n", i, (int)locals [i]->inst_c0);
+			g_print ("storing %d to temp %d\n", i, locals [i]->inst_c0);
 	}
 
 	/*
@@ -2193,7 +2193,7 @@ mono_get_element_address_signature (int arity)
 	if (!sighash) {
 		sighash = g_hash_table_new (NULL, NULL);
 	}
-	else if ((res = g_hash_table_lookup (sighash, GINT_TO_POINTER (arity)))) {
+	else if ((res = g_hash_table_lookup (sighash, (gpointer)arity))) {
 		LeaveCriticalSection (&jit_mutex);
 		return res;
 	}
@@ -2212,7 +2212,7 @@ mono_get_element_address_signature (int arity)
 
 	res->ret = &mono_defaults.int_class->byval_arg;
 
-	g_hash_table_insert (sighash, GINT_TO_POINTER (arity), res);
+	g_hash_table_insert (sighash, (gpointer)arity, res);
 	LeaveCriticalSection (&jit_mutex);
 
 	return res;
@@ -2229,7 +2229,7 @@ mono_get_array_new_va_signature (int arity)
 	if (!sighash) {
 		sighash = g_hash_table_new (NULL, NULL);
 	}
-	else if ((res = g_hash_table_lookup (sighash, GINT_TO_POINTER (arity)))) {
+	else if ((res = g_hash_table_lookup (sighash, (gpointer)arity))) {
 		LeaveCriticalSection (&jit_mutex);
 		return res;
 	}
@@ -2248,7 +2248,7 @@ mono_get_array_new_va_signature (int arity)
 
 	res->ret = &mono_defaults.int_class->byval_arg;
 
-	g_hash_table_insert (sighash, GINT_TO_POINTER (arity), res);
+	g_hash_table_insert (sighash, (gpointer)arity, res);
 	LeaveCriticalSection (&jit_mutex);
 
 	return res;
@@ -3065,7 +3065,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			start_new_bblock = 0;
 			for (i = 0; i < bblock->in_scount; ++i) {
 				if (cfg->verbose_level > 3)
-					g_print ("loading %d from temp %d\n", i, (int)bblock->in_stack [i]->inst_c0);						
+					g_print ("loading %d from temp %d\n", i, bblock->in_stack [i]->inst_c0);						
 				NEW_TEMPLOAD (cfg, ins, bblock->in_stack [i]->inst_c0);
 				*sp++ = ins;
 			}
@@ -3080,7 +3080,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				bblock = tblock;
 				for (i = 0; i < bblock->in_scount; ++i) {
 					if (cfg->verbose_level > 3)
-						g_print ("loading %d from temp %d\n", i, (int)bblock->in_stack [i]->inst_c0);						
+						g_print ("loading %d from temp %d\n", i, bblock->in_stack [i]->inst_c0);						
 					NEW_TEMPLOAD (cfg, ins, bblock->in_stack [i]->inst_c0);
 					*sp++ = ins;
 				}
@@ -3110,7 +3110,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 
 		if (cfg->verbose_level > 3)
-			g_print ("converting (in B%d: stack: %d) %s", bblock->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
+			g_print ("converting (in B%d: stack: %d) %s", bblock->block_num, sp-stack_start, mono_disasm_code_one (NULL, method, ip, NULL));
 
 		switch (*ip) {
 		case CEE_NOP:
@@ -4088,8 +4088,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_LDOBJ: {
 			MonoInst *iargs [3];
-			int loc_index = -1;
-			int stloc_len = 0;
 			CHECK_OPSIZE (5);
 			CHECK_STACK (1);
 			--sp;
@@ -4111,37 +4109,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 5;
 				break;
 			}
-
-			/* Optimize the common ldobj+stloc combination */
-			switch (ip [5]) {
-			case CEE_STLOC_S:
-				loc_index = ip [6];
-				stloc_len = 2;
-				break;
-			case CEE_STLOC_0:
-			case CEE_STLOC_1:
-			case CEE_STLOC_2:
-			case CEE_STLOC_3:
-				loc_index = ip [5] - CEE_STLOC_0;
-				stloc_len = 1;
-				break;
-			default:
-				break;
-			}
-
-			if (loc_index != -1) {
-				handle_loaded_temps (cfg, bblock, stack_start, sp);
-				CHECK_LOCAL (loc_index);
-				NEW_LOCSTORE (cfg, ins, loc_index, *sp);
-				ins->cil_code = ip;
-				g_assert (ins->opcode == CEE_STOBJ);
-				NEW_LOCLOADA (cfg, ins, loc_index);
-				handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE);
-				ip += 5;
-				ip += stloc_len;
-				break;
-			}
-
 			n = mono_class_value_size (klass, NULL);
 			ins = mono_compile_create_var (cfg, &klass->byval_arg, OP_LOCAL);
 			NEW_TEMPLOADA (cfg, iargs [0], ins->inst_c0);
@@ -4193,7 +4160,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoInst *iargs [3];
 
 					if (mono_compile_aot) {
-						cfg->ldstr_list = g_list_prepend (cfg->ldstr_list, GINT_TO_POINTER (n));
+						cfg->ldstr_list = g_list_prepend (cfg->ldstr_list, (gpointer)n);
 					}
 
 					NEW_TEMPLOAD (cfg, iargs [0], mono_get_domainvar (cfg)->inst_c0);
@@ -6058,7 +6025,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
  unverified:
 	if (cfg->method != method) 
 		g_hash_table_destroy (bbhash);
-	g_error ("Invalid IL code at IL%04x in %s: %s\n", (int)(ip - header->code), 
+	g_error ("Invalid IL code at IL%04x in %s: %s\n", ip - header->code, 
 		 mono_method_full_name (method, TRUE), mono_disasm_code_one (NULL, method, ip, NULL));
 	dont_inline = g_list_remove (dont_inline, method);
 	return -1;
@@ -6077,10 +6044,10 @@ mono_print_tree (MonoInst *tree) {
 
 	switch (tree->opcode) {
 	case OP_ICONST:
-		printf ("[%d]", (int)tree->inst_c0);
+		printf ("[%d]", tree->inst_c0);
 		break;
 	case OP_I8CONST:
-		printf ("[%lld]", (long long)tree->inst_l);
+		printf ("[%lld]", tree->inst_l);
 		break;
 	case OP_R8CONST:
 		printf ("[%f]", *(double*)tree->inst_p0);
@@ -6090,13 +6057,13 @@ mono_print_tree (MonoInst *tree) {
 		break;
 	case OP_ARG:
 	case OP_LOCAL:
-		printf ("[%d]", (int)tree->inst_c0);
+		printf ("[%d]", tree->inst_c0);
 		break;
 	case OP_REGOFFSET:
 		if (tree->inst_offset < 0)
-			printf ("[-0x%x(%s)]", (int)(-tree->inst_offset), mono_arch_regname (tree->inst_basereg));
+			printf ("[-0x%x(%s)]", -tree->inst_offset, mono_arch_regname (tree->inst_basereg));
 		else
-			printf ("[0x%x(%s)]", (int)(tree->inst_offset), mono_arch_regname (tree->inst_basereg));
+			printf ("[0x%x(%s)]", tree->inst_offset, mono_arch_regname (tree->inst_basereg));
 		break;
 	case OP_REGVAR:
 		printf ("[%s]", mono_arch_regname (tree->dreg));
@@ -6122,7 +6089,7 @@ mono_print_tree (MonoInst *tree) {
 	}
 	case OP_PHI: {
 		int i;
-		printf ("[%d (", (int)tree->inst_c0);
+		printf ("[%d (", tree->inst_c0);
 		for (i = 0; i < tree->inst_phi_args [0]; i++) {
 			if (i)
 				printf (", ");
@@ -6144,7 +6111,7 @@ mono_print_tree (MonoInst *tree) {
 	case OP_LOADI1_MEMBASE:
 	case OP_LOADU2_MEMBASE:
 	case OP_LOADI2_MEMBASE:
-		printf ("[%s] <- [%s + 0x%x]", mono_arch_regname (tree->dreg), mono_arch_regname (tree->inst_basereg), (int)tree->inst_offset);
+		printf ("[%s] <- [%s + 0x%x]", mono_arch_regname (tree->dreg), mono_arch_regname (tree->inst_basereg), tree->inst_offset);
 		break;
 	case CEE_BR:
 	case OP_CALL_HANDLER:
@@ -6857,7 +6824,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		}
 
 		for (i = 0; i < patch_info->data.table->table_size; i++) {
-			jump_table [i] = code + GPOINTER_TO_INT (patch_info->data.table->table [i]);
+			jump_table [i] = code + (int)patch_info->data.table->table [i];
 		}
 		target = jump_table;
 		break;
@@ -6870,7 +6837,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	case MONO_PATCH_INFO_IID:
 		mono_class_init (patch_info->data.klass);
-		target = GINT_TO_POINTER (patch_info->data.klass->interface_id);
+		target = (gpointer)patch_info->data.klass->interface_id;
 		break;
 	case MONO_PATCH_INFO_VTABLE:
 		target = mono_class_vtable (domain, patch_info->data.klass);
@@ -7637,7 +7604,7 @@ mono_codegen (MonoCompile *cfg)
 				/* In the aot case, the patch already points to the correct location */
 				patch_info->ip.i = patch_info->ip.label->inst_c0;
 			for (i = 0; i < patch_info->data.table->table_size; i++) {
-				table [i] = GINT_TO_POINTER (patch_info->data.table->table [i]->native_offset);
+				table [i] = (gpointer)patch_info->data.table->table [i]->native_offset;
 			}
 			patch_info->data.table->table = (MonoBasicBlock**)table;
 			break;
