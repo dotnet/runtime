@@ -2492,7 +2492,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		case CEE_DIV: {
 			++ip;
 			sp -= 2;
-			if (sp [0]->op == MB_TERM_CONST_I4 && sp [1]->op == MB_TERM_CONST_I4) {
+			if (sp [0]->op == MB_TERM_CONST_I4 && sp [1]->op == MB_TERM_CONST_I4 
+			    && (sp[1]->data.i != 0) 
+			    && ((sp[0]->data.i != 0x080000000) || (sp[1]->data.i != -1))) {
 				t1 = mono_ctree_new_icon4 (mp, sp [0]->data.i / sp [1]->data.i);
 				PUSH_TREE (t1, sp [0]->svt);
 			} else {
