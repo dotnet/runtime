@@ -1,5 +1,13 @@
 2004-06-10  Raja R Harinath  <rharinath@novell.com>
 
+	* runtime/Makefile.am ($(monoone_DATA),$(monotwo_DATA),$(monobins_DATA)):
+	Don't copy from prefix.  Use $(LN_S) to point to the mcs/ tree.
+	* runtime/net_1_1/Makefile.am (mscorlib.dll,$(gac_assemblies)): 
+	Use $(LN_S) to point to the mcs/ tree, rather than copying.
+	* runtime/net_2_0/Makefile.am (mscorlib.dll,$(gac_assemblies)): Likewise.
+
+2004-06-10  Raja R Harinath  <rharinath@novell.com>	
+
 	Support the new assembly signing setup in mcs/.
 	* Makefile.am (mcs-do-basic-build): Pass 'USE_BOOT_COMPILE' to sub-makes.
 	($(tmpinst)/etc/mono/machine.config): New target.
