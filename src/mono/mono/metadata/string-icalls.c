@@ -114,8 +114,11 @@ ves_icall_System_String_ctor_sbytep (gpointer dummy, gint8 *value)
 MonoString *
 ves_icall_System_String_ctor_sbytep_int_int (gpointer dummy, gint8 *value, gint32 sindex, gint32 length)
 {
-	char *begin;
+	guchar *begin;
 	MonoDomain *domain;
+	MonoString *res;
+	gunichar2 *chars;
+	int i;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -127,9 +130,13 @@ ves_icall_System_String_ctor_sbytep_int_int (gpointer dummy, gint8 *value, gint3
 	if ((sindex < 0) || (length < 0))
 		mono_raise_exception (mono_get_exception_argument_out_of_range ("Out of range"));
 
-	begin = (char *) (value + sindex);
+	begin = (guchar *) (value + sindex);
+	res = mono_string_new_size (domain, length);
+	chars = mono_string_chars (res);
+	for (i = 0; i < length; ++i)
+		chars [i] = begin [i];
 
-	return mono_string_new_len (domain, begin, length);
+	return res;
 }
 
 MonoString *
