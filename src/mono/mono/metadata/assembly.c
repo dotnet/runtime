@@ -327,6 +327,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	int i;
 	char *base_dir, *aot_name;
 	MonoImageOpenStatus def_status;
+	gchar *fname;
 	
 	g_return_val_if_fail (filename != NULL, NULL);
 
@@ -334,18 +335,31 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		status = &def_status;
 	*status = MONO_IMAGE_OK;
 
-	/* g_print ("file loading %s\n", filename); */
-	image = mono_image_open (filename, status);
+	if (strncmp (filename, "file://", 7) == 0) {
+		GError *error = NULL;
+
+		fname = g_filename_from_uri (filename, NULL, &error);
+		if (error != NULL) {
+			g_error_free (error);
+			fname = g_strdup (filename);
+		}
+	} else {
+		fname = g_strdup (filename);
+	}
+
+	/* g_print ("file loading %s\n", fname); */
+	image = mono_image_open (fname, status);
 
 	if (!image){
 		*status = MONO_IMAGE_ERROR_ERRNO;
+		g_free (fname);
 		return NULL;
 	}
 
 #if defined (PLATFORM_WIN32)
 	{
 		gchar *tmp_fn;
-		tmp_fn = g_strdup (filename);
+		tmp_fn = g_strdup (fname);
 		for (i = strlen (tmp_fn) - 1; i >= 0; i--) {
 			if (tmp_fn [i] == '/')
 				tmp_fn [i] = '\\';
@@ -355,7 +369,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		g_free (tmp_fn);
 	}
 #else
-	base_dir = absolute_dir (filename);
+	base_dir = absolute_dir (fname);
 #endif
 
 	/*
@@ -366,7 +380,8 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	ass->image = image;
 
 	/* load aot compiled module */
-	aot_name = g_strdup_printf ("%s.so", filename);
+	aot_name = g_strdup_printf ("%s.so", fname);
+	g_free (fname);
 	ass->aot_module = g_module_open (aot_name, G_MODULE_BIND_LAZY);
 	g_free (aot_name);
 

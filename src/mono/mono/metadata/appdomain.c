@@ -438,6 +438,7 @@ set_domain_search_path (MonoDomain *domain)
 	gint i;
 	gint npaths = 0;
 	gchar **pvt_split = NULL;
+	GError *error = NULL;
 
 	if (domain->search_path != NULL)
 		return;
@@ -473,8 +474,13 @@ set_domain_search_path (MonoDomain *domain)
 		/* FIXME: is this needed? */
 		if (strncmp (*tmp, "file://", 7) == 0) {
 			gchar *file = *tmp;
-			*tmp = g_strdup (*tmp + 7);
-			g_free (file);
+			*tmp = g_filename_from_uri (*tmp, NULL, &error);
+			if (error != NULL) {
+				g_error_free (error);
+				*tmp = file;
+			} else {
+				g_free (file);
+			}
 		}
 		
 	} else {
@@ -592,10 +598,6 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname)
 	}
 		
 	name = filename = mono_string_to_utf8 (fname);
-
-	/* FIXME: move uri handling to mono_assembly_open */
-	if (strncmp (filename, "file://", 7) == 0)
-		filename += 7;
 
 	ass = mono_assembly_open (filename, &status);
 	

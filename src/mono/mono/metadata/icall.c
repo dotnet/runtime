@@ -2096,14 +2096,18 @@ static MonoString *
 ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *assembly)
 {
 	MonoDomain *domain = mono_object_domain (assembly); 
+	MonoAssembly *mass = assembly->assembly;
 	MonoString *res;
-	char *name = g_strconcat (
-		"file://", assembly->assembly->image->name, NULL);
+	gchar *uri;
+	gchar *absolute;
 	
 	MONO_ARCH_SAVE_REGS;
 
-	res = mono_string_new (domain, name);
-	g_free (name);
+	absolute = g_build_filename (mass->basedir, mass->image->module_name, NULL);
+	uri = g_filename_to_uri (absolute, NULL, NULL);
+	res = mono_string_new (domain, uri);
+	g_free (uri);
+	g_free (absolute);
 	return res;
 }
 
@@ -2186,7 +2190,7 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 			aname->name = mono_string_new (domain, assem->aname.name);
 		aname->major = assem->aname.major;
 
-		codebase = g_strconcat ("file://", assembly->assembly->image->references [i]->image->name, NULL);
+		codebase = g_filename_to_uri (assembly->assembly->image->references [i]->image->name, NULL, NULL);
 		aname->codebase = mono_string_new (domain, codebase);
 		g_free (codebase);
 		mono_array_set (result, gpointer, i, aname);
