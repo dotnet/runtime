@@ -3928,8 +3928,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly,
 	 * the support dlls. D'oh!
 	 * const char *version = "mono-" VERSION;
 	 */
-	// const char *version = "v1.0.3705";
-	const char *version = "v2.0.40301";
+	const char *version = "v1.0.3705";
 
 #if HAVE_BOEHM_GC
 	image = GC_MALLOC (sizeof (MonoDynamicImage));
