@@ -10,6 +10,7 @@ BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 TEST_CS_SRC=			\
 	array-init.cs		\
 	arraylist.cs		\
+	checked.cs		\
 	char-isnumber.cs	\
 	create-instance.cs	\
 	field-layout.cs		\
