@@ -75,6 +75,8 @@
                       <br>
 		      <li><a href="archive/redhat-90-i386/monodoc-0.5-1.ximian.6.1.i386.rpm">monodoc-0.5-1.ximian.6.1.i386.rpm</a>
                       <li><a href="archive/redhat-90-i386/monodoc-debuginfo-0.5-1.ximian.6.1.i386.rpm">monodoc-debuginfo-0.5-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/mono-wine-20030318-1.ximian.6.1.i386.rpm">mono-wine-20030318-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/mono-wine-debuginfo-20030318-1.ximian.6.1.i386.rpm">mono-wine-debuginfo-20030318-1.ximian.6.1.i386.rpm</a>
                     </ul>
                   </td>
                   <td bgcolor="#999999">
@@ -86,6 +88,7 @@
                       <li><a href="archive/redhat-80-i386/gtk-sharp-0.10-1.ximian.5.1.i386.rpm">gtk-sharp-0.10-1.ximian.5.1.i386.rpm</a>
                       <li><a href="archive/redhat-80-i386/gtk-sharp-gapi-0.10-1.ximian.5.1.i386.rpm">gtk-sharp-gapi-0.10-1.ximian.5.1.i386.rpm</a>
                       <li><a href="archive/redhat-80-i386/monodoc-0.5-1.ximian.5.1.i386.rpm">monodoc-0.5-1.ximian.5.1.i386.rpm</a>
+                      <li><a href="archive/mono-wine-20030318-1.ximian.5.1.i386.rpm">mono-wine-20030318-1.ximian.5.1.i386.rpm</a>
                     </ul>
                   </td>
 		</tr>
