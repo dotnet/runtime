@@ -47,6 +47,8 @@ libmetadata_a_SOURCES = \
 	debug-helpers.c	\
 	debug-symfile.h	\
 	debug-symfile.c	\
+	profiler.c	\
+	profiler-private.h	\
 	rand.h		\
 	rand.c		\
 	sysmath.h	\
@@ -72,6 +74,7 @@ libmetadatainclude_HEADERS = \
 	class.h		\
 	object.h	\
 	exception.h	\
+	profiler.h	\
 	appdomain.h	\
 	rand.h
 
