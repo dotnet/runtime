@@ -1521,7 +1521,12 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	gpointer handle;
 	gboolean ok;
 	int flags=convert_flags(fileaccess, createmode);
-	mode_t perms=convert_perms(sharemode);
+	/*mode_t perms=convert_perms(sharemode);*/
+	/* we don't use sharemode, because that relates to sharing of the file
+	 * when the file is open and is already handled by other code, perms instead
+	 * are the on-disk permissions and this is a sane default.
+	 */
+	mode_t perms=0644;
 	gchar *filename;
 	int fd, ret;
 	int thr_ret;
@@ -3257,7 +3262,7 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
 		SetLastError (ERROR_FILE_NOT_FOUND);
 		return FALSE;
 	}
-	
+
 	/* Contrary to the documentation, ms allows NORMAL to be
 	 * specified along with other attributes, so dont bother to
 	 * catch that case here.
