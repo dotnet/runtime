@@ -219,19 +219,19 @@ struct _MonoMethodSignature {
 	guint16       sentinelpos;
 	MonoRetType  *ret;
 	MonoParam   **params;
-	guint32      *param_offsets;
+	guint32       params_size;
 };
 
 typedef struct {
 	guint32      code_size;
-	const char  *code;
+	const unsigned char  *code;
 	guint16      max_stack;
 	unsigned int num_clauses : 15;
 	/* if num_locals != 0, then the following apply: */
 	unsigned int init_locals : 1;
 	guint16      num_locals;
 	MonoType   **locals;
-	guint32     *locals_offsets;
+	guint32      locals_size;
 	MonoExceptionClause *clauses;
 } MonoMethodHeader;
 

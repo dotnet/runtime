@@ -1021,7 +1021,7 @@ MonoMethodSignature *
 mono_metadata_parse_method_signature (MonoMetadata *m, int def, const char *ptr, const char **rptr)
 {
 	MonoMethodSignature *method = g_new0(MonoMethodSignature, 1);
-	int i, align;
+	int i, align, offset = 0;
 
 	if (*ptr & 0x20)
 		method->hasthis = 1;
@@ -1032,15 +1032,13 @@ mono_metadata_parse_method_signature (MonoMetadata *m, int def, const char *ptr,
 	method->param_count = mono_metadata_decode_value (ptr, &ptr);
 	method->ret = mono_metadata_parse_param (m, 1, ptr, &ptr);
 
+	if (method->hasthis)
+		offset += sizeof(gpointer);
 	if (method->param_count) {
-		int size, offset = 0;
+		int size;
 		
 		method->params = g_new0(MonoParam*, method->param_count);
-		method->param_offsets = g_new0(guint, method->param_count);
 		method->sentinelpos = -1;
-		
-		if (method->hasthis)
-			offset += sizeof(gpointer);
 		
 		for (i = 0; i < method->param_count; ++i) {
 			if (*ptr == MONO_TYPE_SENTINEL) {
@@ -1050,23 +1048,12 @@ mono_metadata_parse_method_signature (MonoMetadata *m, int def, const char *ptr,
 				ptr++;
 			}
 			method->params [i] = mono_metadata_parse_param (m, 0, ptr, &ptr);
-			method->param_offsets [i] = offset;
 			size = mono_type_size (method->params [i]->type, &align);
 			offset += (offset % align);
 			offset += size;
 		}
-		/*
-		 * The offset of the first item is always 0, so we use the slot
-		 * to store how much data we need in total.
-		 */
-		 method->param_offsets [0] = MAX (offset, mono_type_size (method->ret->type, &align));
-	} else {
-		/* FIXME: hasthis */
-		if (method->hasthis)
-			method->param_offsets = GUINT_TO_POINTER (MAX (sizeof (gpointer), mono_type_size (method->ret->type, &align)));
-		else
-			method->param_offsets = GUINT_TO_POINTER (mono_type_size (method->ret->type, &align));
 	}
+	method->params_size = offset;
 
 	if (rptr)
 		*rptr = ptr;
@@ -1081,8 +1068,6 @@ mono_metadata_free_method_signature (MonoMethodSignature *method)
 	for (i = 0; i < method->param_count; ++i)
 		mono_metadata_free_param (method->params[i]);
 
-	if (method->param_count)
-		g_free (method->param_offsets);
 	g_free (method->params);
 	g_free (method);
 }
@@ -1410,7 +1395,6 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 		if (!mh->num_locals)
 			return mh;
 		mh->locals = g_new (MonoType*, len);
-		mh->locals_offsets = g_new0 (guint32, len);
 		for (i = 0; i < len; ++i) {
 			int val;
 			int align;
@@ -1425,16 +1409,11 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 				p = ptr;
 			}
 			mh->locals [i] = mono_metadata_parse_type (m, p, &ptr);
-			mh->locals_offsets [i] = offset;
 			val = mono_type_size (mh->locals [i], &align);
 			offset += (offset % align);
 			offset += val;
 		}
-		/*
-		 * The offset of the first item is always 0, so we use the slot
-		 * to store how much data we need in total.
-		 */
-		mh->locals_offsets [0] = offset;
+		mh->locals_size = offset;
 	}
 	return mh;
 }
@@ -1446,7 +1425,6 @@ mono_metadata_free_mh (MonoMethodHeader *mh)
 	for (i = 0; i < mh->num_locals; ++i)
 		mono_metadata_free_type (mh->locals[i]);
 	g_free (mh->locals);
-	g_free (mh->locals_offsets);
 	g_free (mh->clauses);
 	g_free (mh);
 }

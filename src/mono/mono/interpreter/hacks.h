@@ -67,7 +67,7 @@
 #define CASE(l)	case l:
 #define DEFAULT	\
 		default:	\
-			g_error ("Unimplemented opcode: %x at 0x%x\n", *ip, ip-(unsigned char*)mm->header->code);
+			g_error ("Unimplemented opcode: %x at 0x%x\n", *ip, ip-header->code);
 #define SUB_SWITCH case 0xFE:
 #define GOTO_LABEL_VARS
 

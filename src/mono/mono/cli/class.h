@@ -3,6 +3,7 @@
 
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
+#include <mono/cli/cli.h>
 
 #define MONO_CLASS_IS_ARRAY(c) (c->type_token == 0)
 
@@ -43,6 +44,9 @@ struct _MonoClass {
 	 * Field information: Type and location from object base
 	 */
 	MonoClassField *fields;
+	
+	struct MonoMethod **methods;
+
 	/*
 	 * After the fields, there is room for the static fields...
 	 */

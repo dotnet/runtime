@@ -283,7 +283,7 @@ mono_lookup_internal_call (const char *name)
 
 		icall_hash = g_hash_table_new (g_str_hash , g_str_equal);
 		
-		while (n = icall_map [i]) {
+		while ((n = icall_map [i])) {
 			g_hash_table_insert (icall_hash, n, icall_map [i+1]);
 			i += 2;
 		}

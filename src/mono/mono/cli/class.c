@@ -234,6 +234,14 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		g_assert (class->instance_size == sizeof (MonoArrayObject));
 	}
 
+	if (class->method.count > 0) {
+		int i;
+		class->methods = g_new (MonoMethod*, class->method.count);
+		for (i = class->method.first; i < class->method.last; ++i)
+			class->methods [i - class->method.first] = mono_get_method (image,
+							MONO_TOKEN_METHOD_DEF | (i + 1));
+	}
+	
 	class = g_malloc0 (class->class_size);
 	*class = stack_class;
 	return class;

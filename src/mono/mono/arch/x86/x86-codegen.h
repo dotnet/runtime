@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.3 2001/08/08 17:21:29 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.4 2001/08/18 06:55:29 lupus Exp $
 */
 
 #ifndef X86_H
@@ -39,7 +39,7 @@ typedef enum {
 // opcodes for shift instructions
 */
 typedef enum {
-        X86_SHLD,
+	X86_SHLD,
 	X86_SHLR,
 	X86_SHL = 4,
 	X86_SHR = 5,
@@ -122,16 +122,21 @@ x86_cc_signed_map [X86_NCC] = {
 	0x7b, // np
 };
 
+typedef union {
+	int val;
+	unsigned char b [4];
+} x86_imm_buf;
+
 /*
 // bitvector mask for callee-saved registers
 */
-#define X86_CALLEE_ESI_MASK (1<<X86_ESI)
-#define X86_CALLEE_EDI_MASK (1<<X86_EDI)
-#define X86_CALLEE_EBX_MASK (1<<X86_EBX)
-#define X86_CALLEE_EBP_MASK (1<<X86_EBP)
+#define X86_ESI_MASK (1<<X86_ESI)
+#define X86_EDI_MASK (1<<X86_EDI)
+#define X86_EBX_MASK (1<<X86_EBX)
+#define X86_EBP_MASK (1<<X86_EBP)
 
-#define X86_CALLER_REGS ((1<<X86_EAX) | (1<<X86_ECX) | (1<<X86_EDX))
-#define X86_CALLEE_REGS ((1<<X86_EBX) | (1<<X86_EBP) | (1<<X86_ESI) | (1<<X86_EDI))
+#define X86_CALLEE_REGS ((1<<X86_EAX) | (1<<X86_ECX) | (1<<X86_EDX))
+#define X86_CALLER_REGS ((1<<X86_EBX) | (1<<X86_EBP) | (1<<X86_ESI) | (1<<X86_EDI))
 #define X86_BYTE_REGS   ((1<<X86_EAX) | (1<<X86_ECX) | (1<<X86_EDX) | (1<<X86_EBX))
 
 #define X86_IS_SCRATCH(reg) (X86_CALLER_REGS & (1 << (reg))) /* X86_EAX, X86_ECX, or X86_EDX */
@@ -181,13 +186,21 @@ x86_cc_signed_map [X86_NCC] = {
  * useful building blocks
  */
 #define x86_address_byte(inst,m,o,r) do { *(inst)++ = ((((m)&0x03)<<6)|(((o)&0x07)<<3)|(((r)&0x07))); } while (0)
-#define x86_imm_emit32(inst,imm)     do { *(int*)(inst) = (imm); (inst) += 4; } while (0)
+#define x86_imm_emit32(inst,imm)     \
+	do {	\
+			x86_imm_buf imb; imb.val = (int) (imm);	\
+			*(inst)++ = imb.b [0];	\
+			*(inst)++ = imb.b [1];	\
+			*(inst)++ = imb.b [2];	\
+			*(inst)++ = imb.b [3];	\
+	} while (0)
 #define x86_imm_emit16(inst,imm)     do { *(short*)(inst) = (imm); (inst) += 2; } while (0)
 #define x86_imm_emit8(inst,imm)      do { *(inst) = (unsigned char)((imm) & 0xff); ++(inst); } while (0)
 #define x86_is_imm8(imm)             (((int)(imm) >= -128 && (int)(imm) <= 127))
 #define x86_is_imm16(imm)            (((int)(imm) >= -(1<<16) && (int)(imm) <= ((1<<16)-1)))
 
 #define x86_reg_emit(inst,r,regno)   do { x86_address_byte ((inst), 3, (r), (regno)); } while (0)
+#define x86_regp_emit(inst,r,regno)  do { x86_address_byte ((inst), 0, (r), (regno)); } while (0)
 #define x86_mem_emit(inst,r,disp)    do { x86_address_byte ((inst), 0, (r), 5); x86_imm_emit32((inst), (disp)); } while (0)
 
 #define x86_membase_emit(inst,r,basereg,disp)	do {\
@@ -668,7 +681,7 @@ x86_cc_signed_map [X86_NCC] = {
 		x86_mem_emit ((inst), (reg), (mem));	\
 	} while (0)
 
-#define x86_mov_reg_membase(inst,reg,regbase,disp,size)	\
+#define x86_mov_reg_membase(inst,reg,basereg,disp,size)	\
 	do {	\
 		switch ((size)) {	\
 		case 1: *(inst)++ = (unsigned char)0x8a; break;	\
@@ -940,6 +953,12 @@ x86_cc_signed_map [X86_NCC] = {
 		*(inst)++ = (unsigned char)0x50 + (reg);	\
 	} while (0)
 
+#define x86_push_regp(inst,reg)	\
+	do {	\
+		*(inst)++ = (unsigned char)0xff;	\
+		x86_regp_emit ((inst), 6, (reg));	\
+	} while (0)
+
 #define x86_push_mem(inst,mem)	\
 	do {	\
 		*(inst)++ = (unsigned char)0xff;	\
@@ -1076,10 +1095,10 @@ x86_cc_signed_map [X86_NCC] = {
 		}	\
 	} while (0)
 
-#define x86_call_imm(inst,imm)	\
+#define x86_call_imm(inst,disp)	\
 	do {	\
 		*(inst)++ = (unsigned char)0xe8;	\
-		x86_imm_emit32 ((inst), (imm));	\
+		x86_imm_emit32 ((inst), (int)(disp));	\
 	} while (0)
 
 #define x86_call_reg(inst,reg)	\

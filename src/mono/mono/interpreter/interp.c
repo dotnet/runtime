@@ -29,7 +29,6 @@
 #   endif
 #endif
 
-#include "interp.h"
 /* trim excessive headers */
 #include <mono/metadata/image.h>
 #include <mono/metadata/assembly.h>
@@ -40,6 +39,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/cli/cli.h>
 #include <mono/cli/types.h>
+#include "interp.h"
 #include "hacks.h"
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -52,11 +52,12 @@ enum {
 #undef OPDEF
 
 static int debug_indent_level = 0;
+static MonoImage *corlib = NULL;
 
 #define GET_NATI(sp) ((guint32)(sp).data.i)
 #define CSIZE(x) (sizeof (x) / 4)
 
-static void ves_exec_method (MonoMethod *mh, stackval *args);
+static void ves_exec_method (MonoInvocation *frame);
 
 typedef void (*ICallMethod) (MonoMethod *mh, stackval *args);
 
@@ -68,14 +69,14 @@ ves_real_abort (int line, MonoMethod *mh,
 	MonoMethodNormal *mm = (MonoMethodNormal *)mh;
 	fprintf (stderr, "Execution aborted in method: %s\n", mh->name);
 	fprintf (stderr, "Line=%d IP=0x%04x, Aborted execution\n", line,
-		 ip-(unsigned char *)mm->header->code);
+		 ip-mm->header->code);
 	g_print ("0x%04x %02x\n",
-		 ip-(unsigned char*)mm->header->code, *ip);
+		 ip-mm->header->code, *ip);
 	if (sp > stack)
 		printf ("\t[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type, sp[-1].data.i, sp[-1].data.f);
 	exit (1);
 }
-#define ves_abort() ves_real_abort(__LINE__, mh, ip, stack, sp)
+#define ves_abort() ves_real_abort(__LINE__, frame->method, ip, frame->stack, sp)
 
 /*
  * init_class:
@@ -90,6 +91,12 @@ init_class (MonoClass *klass)
 	MonoMetadata *m;
 	MonoTableInfo *t;
 	int i;
+	MonoInvocation call;
+
+	call.parent = NULL;
+	call.retval = NULL;
+	call.obj = NULL;
+	call.stack_args = NULL;
 	
 	if (klass->inited)
 		return;
@@ -103,9 +110,9 @@ init_class (MonoClass *klass)
 		mono_metadata_decode_row (t, i, cols, MONO_METHOD_SIZE);
 		
 		if (strcmp (".cctor", mono_metadata_string_heap (m, cols [MONO_METHOD_NAME])) == 0) {
-			MonoMethod *cctor = mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (i + 1));
-			ves_exec_method (cctor, NULL);
-			mono_free_method (cctor);
+			call.method = mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (i + 1));
+			ves_exec_method (&call);
+			mono_free_method (call.method);
 			klass->inited = 1;
 			return;
 		}
@@ -186,53 +193,145 @@ get_virtual_method (MonoImage *image, guint32 token, stackval *args)
 	return NULL;
 }
 
+/*
+ * When this is tested, export it from cli/.
+ */
+static int
+match_signature (const char *name, MonoMethodSignature *sig, MonoMethod *method)
+{
+	int i;
+	MonoMethodSignature *sig2 = method->signature;
+	/* 
+	 * compare the signatures.
+	 * First the cheaper comparisons.
+	 */
+	if (sig->param_count != sig2->param_count)
+		return 0;
+	if (sig->hasthis != sig2->hasthis)
+		return 0;
+	/*if (!sig->ret) {
+		if (sig2->ret) return 0;
+	} else {
+		if (!sig2->ret) return 0;
+		if (sig->ret->type->type != sig2->ret->type->type)
+			return 0;
+	}*/
+	for (i = sig->param_count - 1; i >= 0; ++i) {
+		if (sig->params [i]->type->type != sig2->params [i]->type->type)
+			return 0;
+	}
+	/* compare the function name */
+	return strcmp (name, method->name) == 0;
+}
+
+static MonoObject*
+get_named_exception (const char *name)
+{
+	MonoClass *klass;
+	MonoInvocation call;
+	MonoObject *o;
+	MonoMethodSignature sig = {
+		1, /* hasthis */
+		0,
+		MONO_CALL_DEFAULT,
+		0, /* param count */
+		0, /* sentinel pos */
+		NULL, /* retval -> void */
+		NULL, /* params */
+		0
+	};
+	int i;
+	guint32 tdef = mono_typedef_from_name (corlib, name, "System", NULL);
+	o = newobj (corlib, tdef);
+	klass = mono_class_get (corlib, tdef);
+	call.method = NULL;
+	for (i = 0; i < klass->method.count; ++i) {
+		if (match_signature (".ctor", &sig, klass->methods [i])) {
+			call.method = klass->methods [i];
+			break;
+		}
+	}
+	g_assert (call.method);
+	call.obj = o;
+	ves_exec_method (&call);
+	return o;
+}
+
+static MonoObject*
+get_exception_divide_by_zero ()
+{
+	static MonoObject *ex = NULL;
+	if (ex)
+		return ex;
+	ex = get_named_exception ("DivideByZeroException");
+	return ex;
+}
+
+static int
+mono_isinst (MonoObject *obj, MonoClass *klass)
+{
+	MonoClass *oklass = obj->klass;
+	while (oklass) {
+		if (oklass == klass)
+			return 1;
+		oklass = oklass->parent;
+	}
+	return 0;
+}
+
 static stackval
-stackval_from_data (MonoType *type, const char *data, guint offset)
+stackval_from_data (MonoType *type, const char *data)
 {
 	stackval result;
+	if (type->byref) {
+		result.type = VAL_OBJ;
+		result.data.p = *(gpointer*)data;
+		return result;
+	}
 	switch (type->type) {
 	case MONO_TYPE_I1:
 		result.type = VAL_I32;
-		result.data.i = *(gint8*)(data + offset);
+		result.data.i = *(gint8*)data;
 		break;
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
 		result.type = VAL_I32;
-		result.data.i = *(guint8*)(data + offset);
+		result.data.i = *(guint8*)data;
 		break;
 	case MONO_TYPE_I2:
 		result.type = VAL_I32;
-		result.data.i = *(gint16*)(data + offset);
+		result.data.i = *(gint16*)data;
 		break;
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:
 		result.type = VAL_I32;
-		result.data.i = *(guint16*)(data + offset);
+		result.data.i = *(guint16*)data;
 		break;
 	case MONO_TYPE_I4:
 		result.type = VAL_I32;
-		result.data.i = *(gint32*)(data + offset);
+		result.data.i = *(gint32*)data;
 		break;
 	case MONO_TYPE_U4:
 		result.type = VAL_I32;
-		result.data.i = *(guint32*)(data + offset);
+		result.data.i = *(guint32*)data;
 		break;
 	case MONO_TYPE_R4:
 		result.type = VAL_DOUBLE;
-		result.data.f = *(float*)(data + offset);
+		result.data.f = *(float*)data;
 		break;
 	case MONO_TYPE_R8:
 		result.type = VAL_DOUBLE;
-		result.data.f = *(double*)(data + offset);
+		result.data.f = *(double*)data;
 		break;
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_PTR:
 		result.type = VAL_OBJ;
-		result.data.p = *(gpointer*)(data + offset);
-		break; 
+		result.data.p = *(gpointer*)data;
+		break;
 	default:
 		g_warning ("got type %x", type->type);
 		g_assert_not_reached ();
@@ -241,36 +340,41 @@ stackval_from_data (MonoType *type, const char *data, guint offset)
 }
 
 static void
-stackval_to_data (MonoType *type, stackval *val, char *data, guint offset)
+stackval_to_data (MonoType *type, stackval *val, char *data)
 {
+	if (type->byref) {
+		*(gpointer*)data = val->data.p;
+		return;
+	}
 	switch (type->type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
-		*(guint8*)(data + offset) = val->data.i;
+		*(guint8*)data = val->data.i;
 		break;
 	case MONO_TYPE_BOOLEAN:
-		*(guint8*)(data + offset) = (val->data.i != 0);
+		*(guint8*)data = (val->data.i != 0);
 		break;
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
-		*(guint16*)(data + offset) = val->data.i;
+		*(guint16*)data = val->data.i;
 		break;
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
-		*(gint32*)(data + offset) = val->data.i;
+		*(gint32*)data = val->data.i;
 		break;
 	case MONO_TYPE_R4:
-		*(float*)(data + offset) = val->data.f;
+		*(float*)data = val->data.f;
 		break;
 	case MONO_TYPE_R8:
-		*(double*)(data + offset) = val->data.f;
+		*(double*)data = val->data.f;
 		break;
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_ARRAY:
-		*(gpointer*)(data + offset) = val->data.p;
+	case MONO_TYPE_PTR:
+		*(gpointer*)data = val->data.p;
 		break;
 	default:
 		g_warning ("got type %x", type->type);
@@ -384,7 +488,8 @@ ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 	g_slist_free (l);
 
 	if (mh->signature->ret->type)
-		*sp = stackval_from_data (mh->signature->ret->type, res, 0);
+		*sp = stackval_from_data (mh->signature->ret->type, res);
+			
 }
 
 #define DEBUG_INTERP 0
@@ -394,6 +499,7 @@ static char *opcode_names[] = {
 #include "mono/cil/opcode.def"
 	NULL
 };
+#undef OPDEF
 
 static void
 output_indent (void)
@@ -428,12 +534,31 @@ dump_stack (stackval *stack, stackval *sp)
 
 #endif
 
-#define DEFAULT_LOCALS_SIZE	64
+static MonoType 
+method_this = {
+	MONO_TYPE_CLASS, 
+	0, 
+	1, /* byref */
+	0,
+	{0}
+};
+
+#define LOCAL_POS(n)            (locals_pointers [(n)])
+#define LOCAL_TYPE(header, n)   ((header)->locals [(n)])
+
+#define ARG_POS(n)              (args_pointers [(n)])
+#define ARG_TYPE(sig, n)        ((n) ? (sig)->params [(n) - (sig)->hasthis]->type : \
+				(sig)->hasthis ? &method_this: (sig)->params [(0)]->type)
+
+#define THROW_EX(exception,ex_ip)	\
+		do {\
+			frame->ip = (ex_ip);		\
+			frame->ex = (exception);	\
+			goto handle_exception;	\
+		} while (0)
 
 /*
  * Need to optimize ALU ops when natural int == int32 
- *
- * Need to design how exceptions are supposed to work...
  *
  * IDEA: if we maintain a stack of ip, sp to be checked
  * in the return opcode, we could inline simple methods that don't
@@ -442,68 +567,109 @@ dump_stack (stackval *stack, stackval *sp)
  * The {,.S} versions of many opcodes can/should be merged to reduce code
  * duplication.
  * 
- * -fomit-frame-pointer gives about 2% speedup. 
  */
 static void 
-ves_exec_method (MonoMethod *mh, stackval *args)
+ves_exec_method (MonoInvocation *frame)
 {
-	MonoMethodNormal *mm = (MonoMethodNormal *)mh;
-	stackval *stack;
+	MonoInvocation child_frame;
+	MonoMethodHeader *header;
+	MonoMethodSignature *signature;
+	MonoImage *image;
+	const unsigned char *endfinally_ip;
 	register const unsigned char *ip;
 	register stackval *sp;
-	char locals_store [DEFAULT_LOCALS_SIZE];
-	char *locals = locals_store;
+	void **locals_pointers;
+	void **args_pointers;
 	GOTO_LABEL_VARS;
 
-	if (mh->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
-		ICallMethod icall = mh->addr;
+	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+		ICallMethod icall = frame->method->addr;
 
-		icall (mh, args);
+		icall (frame->method, frame->stack_args);
 		return;
 	}
 
-	if (mh->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-		ves_pinvoke_method (mh, args);
+	if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+		ves_pinvoke_method (frame->method, frame->stack_args);
 		return;
 	} 
 
-	ip = mm->header->code;
+	header = ((MonoMethodNormal *)frame->method)->header;
+	signature = frame->method->signature;
+	image = frame->method->image;
 
 #if DEBUG_INTERP
 	debug_indent_level++;
 	output_indent ();
-	g_print ("Entering %s\n", mh->name);
+	g_print ("Entering %s\n", frame->method->name);
 #endif
 
 	/*
 	 * with alloca we get the expected huge performance gain
-	 * stackval *stack = g_new0(stackval, mh->max_stack);
+	 * stackval *stack = g_new0(stackval, header->max_stack);
 	 */
-	/* We allocate one more stack val and increase stack temporarily to handle
-	 * passing this to instance methods: this needs to be removed when we'll
-	 * use a different argument passing mechanism.
- 	 */
 
-	stack = alloca (sizeof (stackval) * (mm->header->max_stack + 1));
-	sp = stack + 1;
-	++stack;
+	sp = frame->stack = alloca (sizeof (stackval) * header->max_stack);
 
-	if (mm->header->num_locals && mm->header->locals_offsets [0] > DEFAULT_LOCALS_SIZE) {
-		locals = alloca (mm->header->locals_offsets [0]);
+	if (header->num_locals) {
+		int i, align, size, offset = 0;
+
+		frame->locals = alloca (header->locals_size);
+		locals_pointers = alloca (sizeof(void*) * header->num_locals);
+		/* 
+		 * yes, we do it unconditionally, because it needs to be done for
+		 * some cases anyway and checking for that would be even slower.
+		 */
+		memset (frame->locals, 0, header->locals_size);
+		for (i = 0; i < header->num_locals; ++i) {
+			locals_pointers [i] = frame->locals + offset;
+			size = mono_type_size (header->locals [i], &align);
+			offset += offset % align;
+			offset += size;
+		}
 	}
+	/*
+	 * Copy args from stack_args to args.
+	 */
+	if (signature->params_size) {
+		int i, align, size, offset = 0;
+		int has_this = signature->hasthis;
+
+		frame->args = alloca (signature->params_size);
+		args_pointers = alloca (sizeof(void*) * (signature->param_count + has_this));
+		if (has_this) {
+			args_pointers [0] = frame->args;
+			*(gpointer*) frame->args = frame->obj;
+			offset += sizeof (gpointer);
+		}
+		for (i = 0; i < signature->param_count; ++i) {
+			args_pointers [i + has_this] = frame->args + offset;
+			stackval_to_data (signature->params [i]->type, frame->stack_args + i, frame->args + offset);
+			size = mono_type_size (signature->params [i]->type, &align);
+			offset += offset % align;
+			offset += size;
+		}
+	}
+
+	child_frame.parent = frame;
+	frame->child = &child_frame;
+	frame->ex = NULL;
+
+	/* ready to go */
+	ip = header->code;
 
 	/*
 	 * using while (ip < end) may result in a 15% performance drop, 
 	 * but it may be useful for debug
 	 */
 	while (1) {
+	main_loop:
 		/*g_assert (sp >= stack);*/
 #if DEBUG_INTERP
-		dump_stack (stack, sp);
+		dump_stack (frame->stack, sp);
 		g_print ("\n");
 		output_indent ();
-		g_print ("0x%04x: %s\n",
-			 ip-(unsigned char*)mm->header->code,
+		g_print ("0x%04x: %s\n", ip-header->code,
 			 *ip == 0xfe ? opcode_names [256 + ip [1]] : opcode_names [*ip]);
 #endif
 		
@@ -518,19 +684,20 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		CASE (CEE_LDARG_0)
 		CASE (CEE_LDARG_1)
 		CASE (CEE_LDARG_2)
-		CASE (CEE_LDARG_3)
-			*sp = args [(*ip)-CEE_LDARG_0];
-			++sp;
+		CASE (CEE_LDARG_3) {
+			int n = (*ip)-CEE_LDARG_0;
 			++ip;
+			*sp = stackval_from_data (ARG_TYPE (signature, n), ARG_POS (n));
+			++sp;
 			BREAK;
+		}
 		CASE (CEE_LDLOC_0)
 		CASE (CEE_LDLOC_1)
 		CASE (CEE_LDLOC_2)
 		CASE (CEE_LDLOC_3) {
 			int n = (*ip)-CEE_LDLOC_0;
 			++ip;
-			*sp = stackval_from_data (mm->header->locals [n], locals,
-				n ? mm->header->locals_offsets [n]: 0);
+			*sp = stackval_from_data (LOCAL_TYPE (header, n), LOCAL_POS (n));
 			++sp;
 			BREAK;
 		}
@@ -541,43 +708,40 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			int n = (*ip)-CEE_STLOC_0;
 			++ip;
 			--sp;
-			stackval_to_data (mm->header->locals [n], sp, locals,
-				n ? mm->header->locals_offsets [n]: 0);
+			stackval_to_data (LOCAL_TYPE (header, n), sp, LOCAL_POS (n));
 			BREAK;
 		}
 		CASE (CEE_LDARG_S)
 			++ip;
-			*sp = args [*ip];
+			*sp = stackval_from_data (ARG_TYPE (signature, *ip), ARG_POS (*ip));
 			++sp;
 			++ip;
 			BREAK;
 		CASE (CEE_LDARGA_S)
 			++ip;
 			sp->type = VAL_TP;
-			sp->data.p = &(args [*ip]);
+			sp->data.p = ARG_POS (*ip);
 			++sp;
 			++ip;
 			BREAK;
 		CASE (CEE_STARG_S) ves_abort(); BREAK;
 		CASE (CEE_LDLOC_S)
 			++ip;
-			*sp = stackval_from_data (mm->header->locals [*ip], locals,
-				*ip ? mm->header->locals_offsets [*ip]: 0);
+			*sp = stackval_from_data (LOCAL_TYPE (header, *ip), LOCAL_POS (*ip));
 			++ip;
 			++sp;
 			BREAK;
 		CASE (CEE_LDLOCA_S)
 			++ip;
 			sp->type = VAL_TP;
-			sp->data.p = locals + (*ip ? mm->header->locals_offsets [*ip]: 0);
+			sp->data.p = LOCAL_POS (*ip);
 			++sp;
 			++ip;
 			BREAK;
 		CASE (CEE_STLOC_S)
 			++ip;
 			--sp;
-			stackval_to_data (mm->header->locals [*ip], sp, locals,
-				*ip ? mm->header->locals_offsets [*ip]: 0);
+			stackval_to_data (LOCAL_TYPE (header, *ip), sp, LOCAL_POS (*ip));
 			++ip;
 			BREAK;
 		CASE (CEE_LDNULL) 
@@ -656,45 +820,69 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		CASE (CEE_JMP) ves_abort(); BREAK;
 		CASE (CEE_CALLVIRT) /* Fall through */
 		CASE (CEE_CALL) {
-			MonoMethod *cmh;
+			MonoMethodSignature *csignature;
+			stackval retval;
 			guint32 token;
 			int virtual = *ip == CEE_CALLVIRT;
 
+			frame->ip = ip;
+			
 			++ip;
 			token = read32 (ip);
 			ip += 4;
 			if (virtual)
-				cmh = get_virtual_method (mh->image, token, sp);
+				child_frame.method = get_virtual_method (image, token, sp);
 			else
-				cmh = mono_get_method (mh->image, token);
-			g_assert (cmh->signature->call_convention == MONO_CALL_DEFAULT);
+				child_frame.method = mono_get_method (image, token);
+			csignature = child_frame.method->signature;
+			g_assert (csignature->call_convention == MONO_CALL_DEFAULT);
 
 			/* decrement by the actual number of args */
-			sp -= cmh->signature->param_count;
-			if (cmh->signature->hasthis) {
-				g_assert (sp >= stack);
+			if (csignature->param_count) {
+				sp -= csignature->param_count;
+				child_frame.stack_args = sp;
+			} else {
+				child_frame.stack_args = NULL;
+			}
+			if (csignature->hasthis) {
+				g_assert (sp >= frame->stack);
 				--sp;
 				g_assert (sp->type == VAL_OBJ);
+				child_frame.obj = sp->data.p;
+			} else {
+				child_frame.obj = NULL;
+			}
+			if (csignature->ret->type) {
+				/* FIXME: handle valuetype */
+				child_frame.retval = &retval;
+			} else {
+				child_frame.retval = NULL;
+			}
+			ves_exec_method (&child_frame);
+			if (child_frame.ex) {
+				/*
+				 * An exception occurred, need to run finally, fault and catch handlers..
+				 */
+				frame->ex = child_frame.ex;
+				goto handle_finally;
 			}
 
-			/* we need to truncate according to the type of args ... */
-			ves_exec_method (cmh, sp);
-
 			/* need to handle typedbyref ... */
-			if (cmh->signature->ret->type)
+			if (csignature->ret->type) {
+				*sp = retval;
 				sp++;
+			}
 			BREAK;
 		}
 		CASE (CEE_CALLI) ves_abort(); BREAK;
 		CASE (CEE_RET)
-			if (mh->signature->ret->type) {
+			if (signature->ret->type) {
 				--sp;
-				*args = *sp;
+				*frame->retval = *sp;
 			}
-			if (sp > stack)
-				g_warning ("more values on stack: %d", sp-stack);
+			if (sp > frame->stack)
+				g_warning ("more values on stack: %d", sp-frame->stack);
 
-			/* g_free (stack); */
 #if DEBUG_INTERP
 			debug_indent_level--;
 #endif
@@ -1069,9 +1257,14 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		CASE (CEE_DIV)
 			++ip;
 			--sp;
-			if (sp->type == VAL_I32)
+			if (sp->type == VAL_I32) {
+				/* 
+				 * FIXME: move to handle also the other types
+				 */
+				if (GET_NATI (sp [0]) == 0)
+					THROW_EX (get_exception_divide_by_zero (), ip - 1);
 				sp [-1].data.i /= GET_NATI (sp [0]);
-			else if (sp->type == VAL_I64)
+			} else if (sp->type == VAL_I64)
 				sp [-1].data.l /= sp [0].data.l;
 			else if (sp->type == VAL_DOUBLE)
 				sp [-1].data.f /= sp [0].data.f;
@@ -1225,11 +1418,10 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		CASE (CEE_LDOBJ) ves_abort(); BREAK;
 		CASE (CEE_LDSTR) {
 			guint32 ctor, ttoken;
-			MonoMetadata *m = &mh->image->metadata;
-			MonoMethod *cmh;
+			MonoMetadata *m = &image->metadata;
 			MonoObject *o;
 			MonoImage *cl;
-		        const char *name;
+			const char *name;
 			int len;
 			guint32 index;
 			guint16 *data;
@@ -1253,16 +1445,17 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			
 			g_assert (o != NULL);
 
-			cmh = mono_get_method (cl, ctor);
+			child_frame.method = mono_get_method (cl, ctor);
 
-			sp->type = VAL_OBJ;
-			sp->data.p = o;
+			child_frame.obj = o;
 			
-			sp[1].type = VAL_TP;
-			sp[1].data.p = data;
+			sp->type = VAL_TP;
+			sp->data.p = data;
+			
+			child_frame.stack_args = sp;
 
-			g_assert (cmh->signature->call_convention == MONO_CALL_DEFAULT);
-			ves_exec_method (cmh, sp);
+			g_assert (child_frame.method->signature->call_convention == MONO_CALL_DEFAULT);
+			ves_exec_method (&child_frame);
 
 			g_free (data);
 
@@ -1273,36 +1466,36 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		}
 		CASE (CEE_NEWOBJ) {
 			MonoObject *o;
-			MonoMethod *cmh;
+			MonoMethodSignature *csig;
 			guint32 token;
-			int pc;
 
 			ip++;
 			token = read32 (ip);
-			o = newobj (mh->image, token);
+			o = newobj (image, token);
 			ip += 4;
 			
 			/* call the contructor */
-			cmh = mono_get_method (mh->image, token);
+			child_frame.method = mono_get_method (image, token);
+			csig = child_frame.method->signature;
 
 			/*
-			 * decrement by the actual number of args 
-			 * need to pass object as first arg: we may overflow the stack here
-			 * until we use a different argument passing mechanism. 
-			 * we shift the args to make room for the object reference
+			 * First arg is the object.
 			 */
-			for (pc = 0; pc < cmh->signature->param_count; ++pc)
-				sp [-pc] = sp [-pc-1];
-			sp -= cmh->signature->param_count + 1;
-			sp->type = VAL_OBJ;
-			sp->data.p = o;
+			child_frame.obj = o;
 
-			g_assert (cmh->signature->call_convention == MONO_CALL_DEFAULT);
+			if (csig->param_count) {
+				sp -= csig->param_count;
+				child_frame.stack_args = sp;
+			} else {
+				child_frame.stack_args = NULL;
+			}
 
+			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
+
+			ves_exec_method (&child_frame);
 			/*
-			 * we need to truncate according to the type of args ...
+			 * FIXME: check for exceptions
 			 */
-			ves_exec_method (cmh, sp);
 			/*
 			 * a constructor returns void, but we need to return the object we created
 			 */
@@ -1311,7 +1504,6 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			++sp;
 			BREAK;
 		}
-		
 		CASE (CEE_CASTCLASS) {
 			MonoObject *o;
 			MonoClass *c;
@@ -1357,7 +1549,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			++ip;
 			token = read32 (ip);
 			
-			c = mono_class_get (mh->image, token);
+			c = mono_class_get (image, token);
 			
 			o = sp [-1].data.p;
 
@@ -1369,7 +1561,10 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			ip += 4;
 			BREAK;
 		}
-		CASE (CEE_THROW) ves_abort(); BREAK;
+		CASE (CEE_THROW)
+			--sp;
+			THROW_EX (sp->data.p, ip);
+			BREAK;
 		CASE (CEE_LDFLD) {
 			MonoObject *obj;
 			MonoClassField *field;
@@ -1383,7 +1578,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			obj = sp [-1].data.p;
 			field = mono_class_get_field (obj->klass, token);
 			g_assert (field);
-			sp [-1] = stackval_from_data (field->type->type, (char*)obj, field->offset);
+			sp [-1] = stackval_from_data (field->type->type, (char*)obj + field->offset);
 			BREAK;
 		}
 		CASE (CEE_LDFLDA) ves_abort(); BREAK;
@@ -1402,7 +1597,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			obj = sp [0].data.p;
 			field = mono_class_get_field (obj->klass, token);
 			g_assert (field);
-			stackval_to_data (field->type->type, &sp [1], (char*)obj, field->offset);
+			stackval_to_data (field->type->type, &sp [1], (char*)obj + field->offset);
 			BREAK;
 		}
 		CASE (CEE_LDSFLD) {
@@ -1415,11 +1610,11 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			ip += 4;
 			
 			/* need to handle fieldrefs */
-			klass = mono_class_get (mh->image, 
-				MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (&mh->image->metadata, token & 0xffffff));
+			klass = mono_class_get (image, 
+				MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (&image->metadata, token & 0xffffff));
 			field = mono_class_get_field (klass, token);
 			g_assert (field);
-			*sp = stackval_from_data (field->type->type, (char*)klass, field->offset);
+			*sp = stackval_from_data (field->type->type, (char*)klass + field->offset);
 			++sp;
 			BREAK;
 		}
@@ -1435,11 +1630,11 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			--sp;
 
 			/* need to handle fieldrefs */
-			klass = mono_class_get (mh->image, 
-				MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (&mh->image->metadata, token & 0xffffff));
+			klass = mono_class_get (image, 
+				MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (&image->metadata, token & 0xffffff));
 			field = mono_class_get_field (klass, token);
 			g_assert (field);
-			stackval_to_data (field->type->type, sp, (char*)klass, field->offset);
+			stackval_to_data (field->type->type, sp, (char*)klass + field->offset);
 			BREAK;
 		}
 		CASE (CEE_STOBJ) ves_abort(); BREAK;
@@ -1460,7 +1655,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			token = read32 (ip);
 
 			sp [-1].type = VAL_OBJ;
-			sp [-1].data.p = mono_value_box (mh->image, token, 
+			sp [-1].data.p = mono_value_box (image, token, 
 							 &sp [-1]);
 
 			ip += 4;
@@ -1473,7 +1668,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 
 			ip++;
 			token = read32 (ip);
-			o = mono_new_szarray (mh->image, token, sp [-1].data.i);
+			o = mono_new_szarray (image, token, sp [-1].data.i);
 			ip += 4;
 
 			sp [-1].type = VAL_OBJ;
@@ -1704,9 +1899,34 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		CASE (CEE_MUL_OVF_UN) ves_abort(); BREAK;
 		CASE (CEE_SUB_OVF) ves_abort(); BREAK;
 		CASE (CEE_SUB_OVF_UN) ves_abort(); BREAK;
-		CASE (CEE_ENDFINALLY) ves_abort(); BREAK;
+		CASE (CEE_ENDFINALLY)
+			if (frame->ex)
+				goto handle_fault;
+			/*
+			 * There was no exception, we continue normally at the target address.
+			 */
+			ip = endfinally_ip;
+			BREAK;
 		CASE (CEE_LEAVE) ves_abort(); BREAK;
-		CASE (CEE_LEAVE_S) ves_abort(); BREAK;
+		CASE (CEE_LEAVE_S)
+			++ip;
+			ip += (signed char) *ip;
+			/*
+			 * We may be either inside a try block or inside an handler.
+			 * In the first case there was no exception and we go on
+			 * executing the finally handlers and after that resume control
+			 * at endfinally_ip.
+			 * In the second case we need to clear the exception and
+			 * continue directly at the target ip.
+			 */
+			if (frame->ex) {
+				frame->ex = NULL;
+				frame->ex_handler = NULL;
+			} else {
+				endfinally_ip = ip;
+				goto handle_finally;
+			}
+			BREAK;
 		CASE (CEE_STIND_I) ves_abort(); BREAK;
 		CASE (CEE_UNUSED26) 
 		CASE (CEE_UNUSED27) 
@@ -1777,7 +1997,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			case CEE_UNUSED55: 
 			case CEE_UNUSED70: 
 			default:
-				g_error ("Unimplemented opcode: 0xFE %02x at 0x%x\n", *ip, ip-(unsigned char*)mm->header->code);
+				g_error ("Unimplemented opcode: 0xFE %02x at 0x%x\n", *ip, ip-header->code);
 			}
 			continue;
 		DEFAULT;
@@ -1785,6 +2005,110 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	}
 
 	g_assert_not_reached ();
+	/*
+	 * Exception handling code.
+	 * The exception object is stored in frame->ex.
+	 */
+#define OFFSET_IN_CLAUSE(clause,offset) \
+	((clause)->try_offset <= (offset) && (offset) < ((clause)->try_offset + (clause)->try_len))
+
+	handle_exception:
+	{
+		int i;
+		guint32 ip_offset;
+		MonoInvocation *inv;
+		MonoMethodHeader *hd;
+		MonoExceptionClause *clause;
+		
+		for (inv = frame; inv; inv = inv->parent) {
+			hd = ((MonoMethodNormal*)inv->method)->header;
+			ip_offset = inv->ip - hd->code;
+			for (i = 0; i < hd->num_clauses; ++i) {
+				clause = &hd->clauses [i];
+				if (clause->flags <= 1 && OFFSET_IN_CLAUSE (clause, ip_offset)) {
+					if (!clause->flags && mono_isinst (frame->ex, mono_class_get (inv->method->image, clause->token_or_filter))) {
+							/* 
+							 * OK, we found an handler, now we need to execute the finally
+							 * and fault blocks before branching to the handler code.
+							 */
+							inv->ex_handler = clause;
+							goto handle_finally;
+					} else {
+						/* FIXME: handle filter clauses */
+						g_assert (0);
+					}
+				}
+			}
+		}
+		/*
+		 * If we get here, no handler was found: print a stack trace.
+		 */
+		for (inv = frame, i = 0; inv; inv = inv->parent, ++i) {
+			/*
+			 * FIXME: print out also the arguments passed to the func.
+			 */
+			g_print ("Unhandled exception.\n");
+			g_print ("$%d: %s ()\n", i, inv->method->name);
+		}
+		exit (1);
+	}
+	handle_finally:
+	{
+		int i;
+		guint32 ip_offset;
+		MonoExceptionClause *clause;
+		
+		ip_offset = frame->ip - header->code;
+		for (i = 0; i < header->num_clauses; ++i) {
+			clause = &header->clauses [i];
+			if (clause->flags == 2 && OFFSET_IN_CLAUSE (clause, ip_offset)) {
+				ip = header->code + clause->handler_offset;
+				goto main_loop;
+			}
+		}
+		/*
+		 * If an exception is set, we need to execute the fault handler, too,
+		 * otherwise, we continue normally.
+		 */
+		if (frame->ex)
+			goto handle_fault;
+		ip = endfinally_ip;
+		goto main_loop;
+	}
+	handle_fault:
+	{
+		int i;
+		guint32 ip_offset;
+		MonoExceptionClause *clause;
+		
+		ip_offset = frame->ip - header->code;
+		for (i = 0; i < header->num_clauses; ++i) {
+			clause = &header->clauses [i];
+			if (clause->flags == 3 && OFFSET_IN_CLAUSE (clause, ip_offset)) {
+				ip = header->code + clause->handler_offset;
+				goto main_loop;
+			}
+		}
+		/*
+		 * If the handler for the exception was found in this method, we jump
+		 * to it right away, otherwise we return and let the caller run
+		 * the finally, fault and catch blocks.
+		 * This same code should be present in the endfault opcode, but it
+		 * is corrently not assigned in the ECMA specs: LAMESPEC.
+		 */
+		if (frame->ex_handler) {
+			ip = header->code + frame->ex_handler->handler_offset;
+			sp = frame->stack;
+			sp->type = VAL_OBJ;
+			sp->data.p = frame->ex;
+			goto main_loop;
+		}
+#if DEBUG_INTERP
+		debug_indent_level--;
+#endif
+		return;
+	}
+	
 }
 
 static int 
@@ -1793,15 +2117,17 @@ ves_exec (MonoAssembly *assembly)
 	MonoImage *image = assembly->image;
 	MonoCLIImageInfo *iinfo;
 	stackval result;
-	MonoMethod *mh;
+	MonoInvocation call;
 
 	iinfo = image->image_info;
 	
-	/* we need to exec the class and object constructors... */
-	mh = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point);
-	ves_exec_method (mh, &result);
-	fprintf (stderr, "result: %d\n", result.data.i);
-	mono_free_method (mh);
+	call.parent = NULL;
+	call.obj = NULL;
+	call.stack_args = NULL;
+	call.method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point);
+	call.retval = &result;
+	ves_exec_method (&call);
+	mono_free_method (call.method);
 
 	return result.data.i;
 }
@@ -1824,6 +2150,8 @@ main (int argc, char *argv [])
 		usage ();
 
 	file = argv [1];
+
+	corlib = mono_get_corlib ();
 
 	assembly = mono_assembly_open (file, NULL, NULL);
 	if (!assembly){

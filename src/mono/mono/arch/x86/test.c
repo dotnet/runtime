@@ -202,7 +202,7 @@ int main() {
 	x86_cmov_membase (p, X86_CC_GT, 0, X86_EAX, X86_EDX, -4);
 
 	x86_nop (p);
-	x86_epilog (p, X86_CALLEE_REGS);
+	x86_epilog (p, X86_CALLER_REGS);
 
 	size = p-code;
 	for (i = 0; i < size; ++i)
