@@ -1,0 +1,11 @@
+* ASP.NET
+
+	The classes for running ASP.NET are being actively written.
+	Gaurav, Leen and Patrik have been building the classes
+	required to run ASP.NET web application as well as a small
+	embeddable web server.
+
+	Currently ASP.NET does not work, but work is underway.  If you
+	are interested in helping the effort please contact the
+	mono-list mailing list.
+
