@@ -23,6 +23,55 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Feb 11, 2002
+
+	We would like to welcome all the new developers that have
+	joined the project in the last couple of days.  The classes
+	are rapidly moving.
+
+	An explanation of the relationship between <a
+	href="http://mail.gnome.org/archives/gnome-hackers/2002-February/msg00031.html">GNOME
+	and Mono</a>.  
+
+	Nick is still leading our test suite platform.  I can not
+	stress how important it is to have a good regression test suite
+	for our platform, as buggy class libraries are what are
+	stopping the compiler from running completely on Linux.
+
+	We are of course psyched to see Mono run on
+	non-Linux systems.  Work is moving on native code generation
+	for StrongARM, PowerPC, and SPARC as well as porting Mono to
+	other systems.
+
+	There are a couple of debates on the Mono list on implementing
+	a set of web server classes for <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-February/002911.html">enabling
+	ASP.NET</a> on Mono.
+
+** Feb 10, 2002
+
+	Mike Kestner has posted an <a
+	href="http://lists.ximian.com/archives/public/gtk-sharp-list/2002-February/000024.html">Update
+	on his Gtk#</a> activities.
+
+** Feb 4, 2002
+
+	Adam has done <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-February/002808.html">Qt
+	bindings</a> for .NET.  Adam is cool.
+
+** Jan 29, 2002
+
+	Dan Lewis has contributed a major missing set of classes to
+	Mono: <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-January/002745.html">
+	System.Text.RegularExpressions</a>.
+
+	This is a fully .NET compatible implementation of the .NET regular expressions,
+	fully Unicode aware.  This contribution is very appreciated, as implementing this
+	was not entirely trivial (supporting Unicode, plus a regex engine which is a super
+	set of the Perl regex engine). 
+
 ** Jan 28, 2002
 
 	The Mono contributors have relicensed the Class Libraries under
