@@ -127,11 +127,6 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
 
 #endif /* PLATFORM_WIN32 */
 
-void
-mono_amd64_exceptions_init ()
-{
-}
-
 /*
  * mono_arch_get_restore_context:
  *
