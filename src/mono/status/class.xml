@@ -2110,5 +2110,68 @@
             <maintainer>bob@thestuff.net</maintainer>
         </maintainers>
     </class>
+    <class name="System.Drawing.Color">
+        <last-activity>Aug-10-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>mkestner@speakeasy.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Point">
+        <last-activity>Aug-10-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>mkestner@speakeasy.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.PointF">
+        <last-activity>Aug-10-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>mkestner@speakeasy.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Rectangle">
+        <last-activity>Aug-10-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>mkestner@speakeasy.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.RectangleF">
+        <last-activity>Aug-10-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>mkestner@speakeasy.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.Size">
+        <last-activity>Aug-10-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>mkestner@speakeasy.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Drawing.SizeF">
+        <last-activity>Aug-10-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>mkestner@speakeasy.net</maintainer>
+        </maintainers>
+    </class>
 </classes>
 
