@@ -398,7 +398,7 @@ dis_stringify_array (MonoImage *m, MonoArrayType *array)
 	GString *s = g_string_new("");
 	int i;
 	
-	type = dis_stringify_type (m, array->type);
+	type = dis_stringify_type (m, &array->eklass->byval_arg);
 	g_string_append (s, type);
 	g_free (type);
 	g_string_append_c (s, '[');
@@ -575,12 +575,19 @@ dis_stringify_type (MonoImage *m, MonoType *type)
 	case MONO_TYPE_FNPTR:
 		bare = dis_stringify_method_signature (m, type->data.method, 0);
 		break;
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_SZARRAY: {
+	case MONO_TYPE_PTR: {
 		char *child_type;
 		child_type = dis_stringify_type (m, type->data.type);
 		
-		bare = g_strdup_printf (type->type == MONO_TYPE_PTR ? "%s*" : "%s[]", child_type);
+		bare = g_strdup_printf ("%s*", child_type);
+		g_free (child_type);
+		break;
+	}
+	case MONO_TYPE_SZARRAY: {
+		char *child_type;
+		child_type = dis_stringify_type (m, &type->data.klass->byval_arg);
+		
+		bare = g_strdup_printf ("%s[]", child_type);
 		g_free (child_type);
 		break;
 	}
