@@ -53,7 +53,6 @@ mono_declsec_cache_stack_modifiers (MonoJitInfo *jinfo)
 MonoSecurityFrame*
 mono_declsec_create_frame (MonoDomain *domain, MonoJitInfo *jinfo)
 {
-	MonoDeclSecurityEntry entry;
 	MonoSecurityFrame *frame = (MonoSecurityFrame*) mono_object_new (domain, mono_defaults.runtimesecurityframe_class);
 
 	if (!jinfo->cas_inited) {
