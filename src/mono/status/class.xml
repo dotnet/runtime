@@ -3369,5 +3369,14 @@
     </class>
 	
     
+    <class name="System.Decimal">
+        <last-activity>Oct-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>90</completion>
+        <maintainers>
+            <maintainer>martin.weindel@t-online.de</maintainer>
+        </maintainers>
+    </class>
 </classes>
 
