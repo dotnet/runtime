@@ -1253,6 +1253,27 @@ mono_object_new_specific (MonoVTable *vtable)
 }
 
 MonoObject *
+mono_object_new_fast (MonoVTable *vtable)
+{
+	MonoObject *o;
+	MONO_ARCH_SAVE_REGS;
+
+#if CREATION_SPEEDUP
+	if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
+		o = mono_object_allocate_spec (vtable->klass->instance_size, vtable);
+	} else {
+//		printf("OBJECT: %s.%s.\n", vtable->klass->name_space, vtable->klass->name);
+		o = mono_object_allocate (vtable->klass->instance_size);
+		o->vtable = vtable;
+	}
+#else
+	o = mono_object_allocate (vtable->klass->instance_size);
+	o->vtable = vtable;
+#endif
+	return o;
+}
+
+MonoObject *
 mono_object_new_alloc_specific (MonoVTable *vtable)
 {
 	MonoObject *o;

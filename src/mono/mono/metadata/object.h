@@ -263,6 +263,10 @@ mono_object_new             (MonoDomain *domain, MonoClass *klass);
 MonoObject *
 mono_object_new_specific    (MonoVTable *vtable);
 
+/* can be used for classes without finalizer in non-profiling mode */
+MonoObject *
+mono_object_new_fast        (MonoVTable *vtable);
+
 MonoObject *
 mono_object_new_alloc_specific (MonoVTable *vtable);
 
