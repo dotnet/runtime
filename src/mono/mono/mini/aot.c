@@ -1048,11 +1048,6 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		mono_debug_add_aot_method (domain, method, code, p, buf_len);
 
 #if MONO_ARCH_HAVE_PIC_AOT
-		mono_arch_flush_icache (code, code_len);
-
-		if (non_got_patches)
-			make_writable (code, code_len);
-
 		/* Do this outside the lock to avoid deadlocks */
 		LeaveCriticalSection (&aot_mutex);
 		non_got_patches = FALSE;
@@ -1068,6 +1063,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 				non_got_patches = TRUE;
 		}
 		if (non_got_patches) {
+			mono_arch_flush_icache (code, code_len);
 			make_writable (code, code_len);
 			mono_arch_patch_code (method, domain, code, patch_info, TRUE);
 		}
