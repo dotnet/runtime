@@ -378,14 +378,15 @@ typedef struct {
 	MonoArray *data;
 } MonoReflectionCustomAttr;
 
-typedef struct {
-	char *nest_name_space;
-	char *nest_name;
+typedef struct MonoTypeNameParse MonoTypeNameParse;
+
+struct MonoTypeNameParse {
 	char *name_space;
 	char *name;
 	char *assembly;
 	GList *modifiers; /* 0 -> byref, -1 -> pointer, > 0 -> array rank */
-} MonoTypeNameParse;
+	GList *nested;
+};
 
 typedef struct {
 	MonoObject object;

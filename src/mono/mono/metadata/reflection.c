@@ -2727,26 +2727,30 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 	start = p = w = name;
 
 	info->name = info->name_space = info->assembly = NULL;
-	info->nest_name = info->nest_name_space = NULL;
+	info->nested = NULL;
 	info->modifiers = NULL;
 
+	/* last_point separates the namespace from the name */
 	last_point = NULL;
 
 	while (*p) {
 		switch (*p) {
 		case '+':
-			/* we have parsed the nesting namespace + name */
-			if (last_point) {
-				info->nest_name_space = start;
-				*last_point = 0;
-				info->nest_name = last_point + 1;
-			} else {
-				info->nest_name_space = (char *)"";
-				info->nest_name = start;
-			}
-			*p = 0; /* NULL terminate */
-			last_point = NULL;
+			*p = 0; /* NULL terminate the name */
 			start = p + 1;
+			/* we have parsed the nesting namespace + name */
+			if (info->name) {
+				info->nested = g_list_append (info->nested, start);
+				break;
+			}
+			if (last_point) {
+				info->name_space = start;
+				*last_point = 0;
+				info->name = last_point + 1;
+			} else {
+				info->name_space = (char *)"";
+				info->name = start;
+			}
 			break;
 		case '.':
 			last_point = w;
@@ -2768,13 +2772,17 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 		*w++ = *p++;
 	}
 	
-	if (last_point) {
-		info->name_space = start;
-		*last_point = 0;
-		info->name = last_point + 1;
+	if (info->name) {
+		info->nested = g_list_append (info->nested, start);
 	} else {
-		info->name_space = (char *)"";
-		info->name = start;
+		if (last_point) {
+			info->name_space = start;
+			*last_point = 0;
+			info->name = last_point + 1;
+		} else {
+			info->name_space = (char *)"";
+			info->name = start;
+		}
 	}
 	while (*p) {
 		switch (*p) {
@@ -2824,8 +2832,6 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 	}
 	*w = 0; /* terminate class name */
 	if (!info->name || !*info->name)
-		return 0;
-	if (info->nest_name && !*info->nest_name)
 		return 0;
 	/* add other consistency checks */
 	return 1;
@@ -2913,24 +2919,24 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 	if (!image)
 		image = mono_defaults.corlib;
 
-	if (info->nest_name) {
-		klass = mono_class_from_name (image, info->nest_name_space, info->nest_name);
-		if (klass) {
-			GList *nested;
-			mono_class_init (klass);
-			nested = klass->nested_classes;
+	klass = mono_class_from_name (image, info->name_space, info->name);
+	if (!klass)
+		return NULL;
+	for (mod = info->nested; mod; mod = mod->next) {
+		GList *nested;
+
+		mono_class_init (klass);
+		nested = klass->nested_classes;
+		klass = NULL;
+		while (nested) {
+			klass = nested->data;
+			if (strcmp (klass->name, mod->data) == 0)
+				break;
 			klass = NULL;
-			while (nested) {
-				klass = nested->data;
-				if (strcmp (klass->name, info->nest_name) == 0 &&
-						strcmp (klass->name_space, info->nest_name_space) == 0)
-					break;
-				klass = NULL;
-				nested = nested->next;
-			}
+			nested = nested->next;
 		}
-	} else {
-		klass = mono_class_from_name (image, info->name_space, info->name);
+		if (!klass)
+			break;
 	}
 	if (!klass)
 		return NULL;

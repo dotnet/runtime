@@ -685,6 +685,7 @@ ves_icall_type_from_name (MonoString *name)
 	if (!mono_reflection_parse_type (str, &info)) {
 		g_free (str);
 		g_list_free (info.modifiers);
+		g_list_free (info.nested);
 		return NULL;
 	}
 
@@ -694,6 +695,7 @@ ves_icall_type_from_name (MonoString *name)
 		if (!image) {
 			g_free (str);
 			g_list_free (info.modifiers);
+			g_list_free (info.nested);
 			return NULL;
 		}
 	} else
@@ -702,6 +704,7 @@ ves_icall_type_from_name (MonoString *name)
 	type = mono_reflection_get_type (image, &info, FALSE);
 	g_free (str);
 	g_list_free (info.modifiers);
+	g_list_free (info.nested);
 	if (!type)
 		return NULL;
 	/*g_print ("got it\n");*/
@@ -1744,6 +1747,7 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 	if (!mono_reflection_parse_type (str, &info)) {
 		g_free (str);
 		g_list_free (info.modifiers);
+		g_list_free (info.nested);
 		if (throwOnError) /* uhm: this is a parse error, though... */
 			mono_raise_exception (mono_get_exception_type_load ());
 		/*g_print ("failed parse\n");*/
@@ -1753,6 +1757,7 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 	type = mono_reflection_get_type (assembly->assembly->image, &info, ignoreCase);
 	g_free (str);
 	g_list_free (info.modifiers);
+	g_list_free (info.nested);
 	if (!type) {
 		if (throwOnError)
 			mono_raise_exception (mono_get_exception_type_load ());
