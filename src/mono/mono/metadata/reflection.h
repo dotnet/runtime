@@ -166,6 +166,7 @@ typedef struct {
 	MonoObject object;
 	MonoReflectionType *type;
 	MonoString *name;
+	MonoBoolean is_pinned;
 } MonoReflectionLocalBuilder;
 
 typedef struct {

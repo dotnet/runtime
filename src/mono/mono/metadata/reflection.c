@@ -739,7 +739,7 @@ encode_locals (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen)
 	for (i = 0; i < nl; ++i) {
 		MonoReflectionLocalBuilder *lb = mono_array_get (ilgen->locals, MonoReflectionLocalBuilder*, i);
 		
-		if (lb->type->type->pinned)
+		if (lb->is_pinned)
 			mono_metadata_encode_value (MONO_TYPE_PINNED, p, &p);
 		
 		encode_reflection_type (assembly, lb->type, p, &p);
