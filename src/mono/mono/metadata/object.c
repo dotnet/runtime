@@ -248,9 +248,9 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 			case MONO_TYPE_U8:
 			case MONO_TYPE_R4:
 			case MONO_TYPE_R8:
+			case MONO_TYPE_I:
 //				printf ("F: %s %s %d %lld %llx.\n", class->name, field->name, field->offset, ((guint64)1) << pos, bitmap);
 				break;
-			case MONO_TYPE_I:
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_CLASS:
@@ -1400,6 +1400,8 @@ mono_array_new_specific (MonoVTable *vtable, guint32 n)
 	MonoArray *ao;
 	gsize byte_len;
 
+	MONO_ARCH_SAVE_REGS;
+
 	byte_len = n * mono_array_element_size (vtable->klass);
 #if CREATION_SPEEDUP
 	if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
@@ -1539,6 +1541,8 @@ mono_string_new (MonoDomain *domain, const char *text)
 MonoString*
 mono_string_new_wrapper (const char *text)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	MonoDomain *domain = mono_domain_get ();
 
 	if (text)

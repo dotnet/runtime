@@ -31,6 +31,15 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/os/gc_wrapper.h>
 
+/*
+ * Uncomment this to enable GC aware auto layout: in this mode, reference
+ * fields are grouped together inside objects, increasing collector 
+ * performance.
+ * Requires that all classes whose layout is known to the runtime be annotated
+ * with [StructLayout (LayoutKind.Sequential)]
+ */
+//#define GC_AWARE_AUTO_LAYOUT
+
 #define CSIZE(x) (sizeof (x) / 4)
 
 MonoStats mono_stats;
@@ -308,34 +317,63 @@ mono_class_layout_fields (MonoClass *class)
 	int i;
 	const int top = class->field.count;
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
+	guint32 pass, passes;
 
 	/*
 	 * Compute field layout and total size (not considering static fields)
 	 */
+
 	switch (layout) {
 	case TYPE_ATTRIBUTE_AUTO_LAYOUT:
 	case TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT:
-		for (i = 0; i < top; i++){
-			int size, align;
-			
-			if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
-				continue;
 
-			size = mono_type_size (class->fields [i].type, &align);
-			
-			/* FIXME (LAMESPEC): should we also change the min alignment according to pack? */
-			align = class->packing_size ? MIN (class->packing_size, align): align;
-			class->min_align = MAX (align, class->min_align);
-			class->fields [i].offset = class->instance_size;
-			class->fields [i].offset += align - 1;
-			class->fields [i].offset &= ~(align - 1);
-			class->instance_size = class->fields [i].offset + size;
+#ifdef GC_AWARE_AUTO_LAYOUT
+		passes = 2;
+#else
+		passes = 1;
+#endif
+		if (layout != TYPE_ATTRIBUTE_AUTO_LAYOUT)
+			passes = 1;
 
-		}
+		for (pass = 0; pass < passes; ++pass) {
+			for (i = 0; i < top; i++){
+				int size, align;
+
+				if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
+					continue;
+
+#ifdef GC_AWARE_AUTO_LAYOUT
+				/* FIXME: Fix mono_marshal_load_type_info () too */
+				if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
+					/* 
+					 * We process fields with reference type in the first pass,
+					 * and fields with non-reference type in the second pass.
+					 */
+					if (MONO_TYPE_IS_REFERENCE (class->fields [i].type)) {
+						if (pass == 1)
+							continue;
+					} else {
+						if (pass == 0)
+							continue;
+					}
+				}
+#endif
+
+				size = mono_type_size (class->fields [i].type, &align);
+			
+				/* FIXME (LAMESPEC): should we also change the min alignment according to pack? */
+				align = class->packing_size ? MIN (class->packing_size, align): align;
+				class->min_align = MAX (align, class->min_align);
+				class->fields [i].offset = class->instance_size;
+				class->fields [i].offset += align - 1;
+				class->fields [i].offset &= ~(align - 1);
+				class->instance_size = class->fields [i].offset + size;
+			}
        
-		if (class->instance_size & (class->min_align - 1)) {
-			class->instance_size += class->min_align - 1;
-			class->instance_size &= ~(class->min_align - 1);
+			if (class->instance_size & (class->min_align - 1)) {
+				class->instance_size += class->min_align - 1;
+				class->instance_size &= ~(class->min_align - 1);
+			}
 		}
 		break;
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
@@ -662,6 +700,10 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 			if (k == class) {
 				for (l = 0; l < ic->method.count; l++) {
 					MonoMethod *im = ic->methods [l];						
+
+					if (vtable [io + l] && !(vtable [io + l]->flags & METHOD_ATTRIBUTE_ABSTRACT))
+						continue;
+
 					for (j = 0; j < class->method.count; ++j) {
 						MonoMethod *cm = class->methods [j];
 						if (!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
