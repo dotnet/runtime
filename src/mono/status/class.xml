@@ -710,10 +710,10 @@
     </class>
 
     <class name="System.Math">
-        <last-activity>Jun-15-2001</last-activity>
-        <implementation>no</implementation>
+        <last-activity>Jun-19-2001</last-activity>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>95</completion>
         <maintainers>
             <maintainer>bob@thestuff.net</maintainer>
         </maintainers>
