@@ -525,18 +525,48 @@
 
 * SSA-based optimizations
 
-	SSA form simplifies many optimization because each variable has exactly
-	one definition site. All uses of a variable are "dominated" by its
-	definition, which enables us to implement algorithm like:
+	SSA form simplifies many optimization because each variable
+	has exactly one definition site.  This means that each
+	variable is only initialized once.  
 
-		* conditional constant propagation
+	For example, code like this:
 
-		* array bound check removal
+	    a = 1
+	    ..
+	    a = 2
+	    call (a)
 
-		* dead code elimination
+	Is internally turned into:
 
-	And we can implement those algorithm in a efficient way using SSA. 
+	    a1 = 1
+	    ..
+	    a2 = 2
+	    call (a2)
 
+	In the presence of branches, like:
+
+	    if (x)
+	         a = 1
+	    else
+		 a = 2
+
+            call (a)
+
+	The code is turned into:
+
+	    if (x)
+	         a1 = 1;
+	    else
+	         a2 = 2;
+	    a3 = phi (a1, a2)
+	    call (a3)
+
+	All uses of a variable are "dominated" by its definition
+
+	This representation is useful as it simplifies the
+	implementation of a number of optimizations like conditional
+	constant propagation, array bounds check removal and dead code
+	elimination. 
 
 * Register allocation.
 
