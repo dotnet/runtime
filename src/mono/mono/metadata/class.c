@@ -489,6 +489,7 @@ class_compute_field_layout (MonoClass *class)
 			class->instance_size = MAX (real_size, class->instance_size);
 		}
 		class->size_inited = 1;
+		class->blittable = blittable;
 		return;
 	}
 

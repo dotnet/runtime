@@ -3653,6 +3653,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				}
 
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
+			} else if (klass->blittable) {
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
+				mono_mb_emit_icon (mb, sizeof (MonoObject));
+				mono_mb_emit_byte (mb, CEE_ADD);
+				mono_mb_emit_stloc (mb, tmp_locals [i]);
+				break;
 			} else {
 				mono_mb_emit_byte (mb, CEE_LDNULL);
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
