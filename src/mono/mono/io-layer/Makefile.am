@@ -1,7 +1,5 @@
 lib_LIBRARIES = libwapi.a
 
-bin_PROGRAMS = mono-handle-d
-
 INCLUDES = \
 	$(GLIB_CFLAGS)		\
 	$(GMODULE_CFLAGS)	\
@@ -107,7 +105,8 @@ libwapiinclude_HEADERS = $(WINDOWS_H)
 else
 libwapi_a_SOURCES = $(OTHER_SRC)
 libwapiinclude_HEADERS = $(OTHER_H)
-endif
+
+bin_PROGRAMS = mono-handle-d
 
 mono_handle_d_SOURCES = \
 	daemon.c	\
@@ -118,6 +117,7 @@ mono_handle_d_LDADD = \
 	$(GLIB_LIBS) \
 	$(top_builddir)/mono/io-layer/libwapi.a \
 	$(top_builddir)/mono/utils/libmonoutils.a
+endif
 
 EXTRA_DIST =	\
 	$(WINDOWS_SRC)	\
