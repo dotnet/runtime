@@ -3644,7 +3644,7 @@ guint8 cond;
 				if (ins->dreg != ins->sreg1) {
 					s390_lr	  (code, ins->dreg, ins->sreg1);
 				}
-				s390_o 	  (code, ins->dreg, 0, s390_r13, 0);
+				s390_o 	  (code, ins->dreg, 0, s390_r13, 4);
 			}
 		}
 			break;
