@@ -2158,6 +2158,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			if (ISSTRUCT (csig->ret)) {
 				size = mono_type_size (csig->ret, &align);
 				vtype_num = arch_allocate_var (cfg, size, align, MONO_TEMPVAR, VAL_UNKNOWN);
+				/* we push a pointer to the vtype as argument */
+				args_size += sizeof (gpointer);
 			}
 
 			if (array_get) {
