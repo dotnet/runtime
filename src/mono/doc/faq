@@ -1152,6 +1152,12 @@ A: No.  First, its basic functional capabilities have pre-existed too
    open source software community with good development tools, which
    is the primary reason for developing Mono.  
 
+   There is also a statement from Jim Miller at Microsoft, one of the
+   inventors listed in the patent: <a href="https://mailserver.di.unipi.it/pipermail/dotnet-sscli/msg00218.html">here</a>.
+
+   For Linux desktop use, we only need the ECMA components, and things that
+   we have developed (like Gtk#).  
+
 <a name="etc"></a> 
 ** Miscellaneous Questions
 
