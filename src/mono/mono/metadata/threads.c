@@ -1106,37 +1106,37 @@ gint64 ves_icall_System_Threading_Interlocked_Decrement_Long (gint64 * location)
 	return ret;
 }
 
-gint32 ves_icall_System_Threading_Interlocked_Exchange_Int (gint32 *location1, gint32 value)
+gint32 ves_icall_System_Threading_Interlocked_Exchange_Int (gint32 *location, gint32 value)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return InterlockedExchange(location1, value);
+	return InterlockedExchange(location, value);
 }
 
-MonoObject * ves_icall_System_Threading_Interlocked_Exchange_Object (MonoObject **location1, MonoObject *value)
+MonoObject * ves_icall_System_Threading_Interlocked_Exchange_Object (MonoObject **location, MonoObject *value)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return (MonoObject *) InterlockedExchangePointer((gpointer *) location1, value);
+	return (MonoObject *) InterlockedExchangePointer((gpointer *) location, value);
 }
 
-gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location1, gfloat value)
+gfloat ves_icall_System_Threading_Interlocked_Exchange_Single (gfloat *location, gfloat value)
 {
 	IntFloatUnion val, ret;
 
 	MONO_ARCH_SAVE_REGS;
 
 	val.fval = value;
-	ret.ival = InterlockedExchange((gint32 *) location1, val.ival);
+	ret.ival = InterlockedExchange((gint32 *) location, val.ival);
 
 	return ret.fval;
 }
 
 gint64 
-ves_icall_System_Threading_Interlocked_Exchange_Long (gint64 *location1, gint64 value)
+ves_icall_System_Threading_Interlocked_Exchange_Long (gint64 *location, gint64 value)
 {
 #if SIZEOF_VOID_P == 8
-	return (gint64) InterlockedExchangePointer((gpointer *) location1, (gpointer)value);
+	return (gint64) InterlockedExchangePointer((gpointer *) location, (gpointer)value);
 #else
 	gint64 res;
 
@@ -1154,13 +1154,13 @@ ves_icall_System_Threading_Interlocked_Exchange_Long (gint64 *location1, gint64 
 }
 
 gdouble 
-ves_icall_System_Threading_Interlocked_Exchange_Double (gdouble *location1, gdouble value)
+ves_icall_System_Threading_Interlocked_Exchange_Double (gdouble *location, gdouble value)
 {
 #if SIZEOF_VOID_P == 8
 	LongDoubleUnion val, ret;
 
 	val.fval = value;
-	ret.ival = (gint64)InterlockedExchangePointer((gpointer *) location1, (gpointer)val.ival);
+	ret.ival = (gint64)InterlockedExchangePointer((gpointer *) location, (gpointer)val.ival);
 
 	return ret.fval;
 #else
@@ -1179,21 +1179,21 @@ ves_icall_System_Threading_Interlocked_Exchange_Double (gdouble *location1, gdou
 #endif
 }
 
-gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location1, gint32 value, gint32 comparand)
+gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location, gint32 value, gint32 comparand)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return InterlockedCompareExchange(location1, value, comparand);
+	return InterlockedCompareExchange(location, value, comparand);
 }
 
-MonoObject * ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject **location1, MonoObject *value, MonoObject *comparand)
+MonoObject * ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject **location, MonoObject *value, MonoObject *comparand)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return (MonoObject *) InterlockedCompareExchangePointer((gpointer *) location1, value, comparand);
+	return (MonoObject *) InterlockedCompareExchangePointer((gpointer *) location, value, comparand);
 }
 
-gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *location1, gfloat value, gfloat comparand)
+gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *location, gfloat value, gfloat comparand)
 {
 	IntFloatUnion val, ret, cmp;
 
@@ -1201,29 +1201,29 @@ gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *lo
 
 	val.fval = value;
 	cmp.fval = comparand;
-	ret.ival = InterlockedCompareExchange((gint32 *) location1, val.ival, cmp.ival);
+	ret.ival = InterlockedCompareExchange((gint32 *) location, val.ival, cmp.ival);
 
 	return ret.fval;
 }
 
 gdouble
-ves_icall_System_Threading_Interlocked_CompareExchange_Double (gdouble *location1, gdouble value, gdouble comparand)
+ves_icall_System_Threading_Interlocked_CompareExchange_Double (gdouble *location, gdouble value, gdouble comparand)
 {
 #if SIZEOF_VOID_P == 8
 	LongDoubleUnion val, comp, ret;
 
 	val.fval = value;
 	comp.fval = comparand;
-	ret.ival = (gint64)InterlockedCompareExchangePointer((gpointer *) location1, (gpointer)val.ival, (gpointer)comp.ival);
+	ret.ival = (gint64)InterlockedCompareExchangePointer((gpointer *) location, (gpointer)val.ival, (gpointer)comp.ival);
 
 	return ret.fval;
 #else
 	gdouble old;
 
 	EnterCriticalSection(&interlocked_mutex);
-	old = *location1;
+	old = *location;
 	if (old == comparand)
-		*location1 = value;
+		*location = value;
 	LeaveCriticalSection(&interlocked_mutex);
 
 	return old;
@@ -1231,17 +1231,17 @@ ves_icall_System_Threading_Interlocked_CompareExchange_Double (gdouble *location
 }
 
 gint64 
-ves_icall_System_Threading_Interlocked_CompareExchange_Long (gint64 *location1, gint64 value, gint64 comparand)
+ves_icall_System_Threading_Interlocked_CompareExchange_Long (gint64 *location, gint64 value, gint64 comparand)
 {
 #if SIZEOF_VOID_P == 8
-	return (gint64)InterlockedCompareExchangePointer((gpointer *) location1, (gpointer)value, (gpointer)comparand);
+	return (gint64)InterlockedCompareExchangePointer((gpointer *) location, (gpointer)value, (gpointer)comparand);
 #else
 	gint64 old;
 
 	EnterCriticalSection(&interlocked_mutex);
-	old = *location1;
+	old = *location;
 	if (old == comparand)
-		*location1 = value;
+		*location = value;
 	LeaveCriticalSection(&interlocked_mutex);
 	
 	return old;
@@ -1249,7 +1249,7 @@ ves_icall_System_Threading_Interlocked_CompareExchange_Long (gint64 *location1, 
 }
 
 gint32 
-ves_icall_System_Threading_Interlocked_Add_Int (gint32 *location1, gint32 value)
+ves_icall_System_Threading_Interlocked_Add_Int (gint32 *location, gint32 value)
 {
 #if SIZEOF_VOID_P == 8
 	/* Should be implemented as a JIT intrinsic */
@@ -1268,7 +1268,7 @@ ves_icall_System_Threading_Interlocked_Add_Int (gint32 *location1, gint32 value)
 }
 
 gint64 
-ves_icall_System_Threading_Interlocked_Add_Long (gint64 *location1, gint64 value)
+ves_icall_System_Threading_Interlocked_Add_Long (gint64 *location, gint64 value)
 {
 #if SIZEOF_VOID_P == 8
 	/* Should be implemented as a JIT intrinsic */
@@ -1287,16 +1287,16 @@ ves_icall_System_Threading_Interlocked_Add_Long (gint64 *location1, gint64 value
 }
 
 gint64 
-ves_icall_System_Threading_Interlocked_Read_Long (gint64 *location1)
+ves_icall_System_Threading_Interlocked_Read_Long (gint64 *location)
 {
 #if SIZEOF_VOID_P == 8
 	/* 64 bit reads are already atomic */
-	return *location1;
+	return *location;
 #else
 	gint64 res;
 
 	EnterCriticalSection(&interlocked_mutex);
-	res = *location1;
+	res = *location;
 	LeaveCriticalSection(&interlocked_mutex);
 
 	return res;
