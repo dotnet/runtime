@@ -1172,6 +1172,18 @@
     </tasks>
 
   </contributor>
-  
+  <contributor>
+    <name>
+      <first-name>Aleksey</first-name>
+      <last-name>Ryabchuk</last-name>
+    </name>
+    <e-mail>ryabchuk@yahoo.com</e-mail>
+    <image>aleksey.png</image>
+    <location>Ireland</location>
+    <description>External Contributor</description>
+    <tasks>
+      <task>System.Windows.Forms</task>
+    </tasks>
+  </contributor>
 </contributors>
 
