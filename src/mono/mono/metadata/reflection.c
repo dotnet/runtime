@@ -5293,7 +5293,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 		} else if (*p == 'C' && g_ascii_strncasecmp (p, "Culture=", 8) == 0) {
 			p += 8;
 			if (g_ascii_strncasecmp (p, "neutral", 7) == 0) {
-				assembly->culture = g_strdup ("");
+				assembly->culture = "";
 				p += 7;
 			} else {
 				assembly->culture = p;
@@ -6288,6 +6288,7 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 
 	if (cinfo) {
 		result = mono_custom_attrs_construct (cinfo);
+		mono_custom_attrs_free (cinfo);
 	} else {
 		klass = mono_class_from_name (mono_defaults.corlib, "System", "Attribute");
 		result = mono_array_new (mono_domain_get (), klass, 0);

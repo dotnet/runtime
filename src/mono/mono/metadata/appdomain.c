@@ -791,6 +791,7 @@ free_assembly_name (MonoAssemblyName *aname)
 	g_free ((void *) aname->name);
 	g_free ((void *) aname->culture);
 	g_free ((void *) aname->hash_value);
+	g_free ((void *) aname->public_tok_value);
 }
 
 static gboolean

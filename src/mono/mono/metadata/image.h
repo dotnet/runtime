@@ -109,6 +109,8 @@ struct _MonoImage {
 
 	/* indexed by typespec tokens. */
 	GHashTable *typespec_cache;
+	/* indexed by token */
+	GHashTable *memberref_signatures;
 
 	/*
 	 * Indexed by MonoGenericInst.

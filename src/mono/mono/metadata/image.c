@@ -564,6 +564,7 @@ mono_image_init (MonoImage *image)
 	image->synchronized_cache = g_hash_table_new (NULL, NULL);
 
 	image->typespec_cache = g_hash_table_new (NULL, NULL);
+	image->memberref_signatures = g_hash_table_new (NULL, NULL);
 
 	image->generic_inst_cache =
 		g_hash_table_new ((GHashFunc)mono_metadata_generic_inst_hash,
@@ -913,6 +914,12 @@ free_gs_list (gpointer key, gpointer val, gpointer user_data)
 	g_slist_free ((GSList*)val);
 }
 
+static void
+free_mr_signatures (gpointer key, gpointer val, gpointer user_data)
+{
+	mono_metadata_free_method_signature ((MonoMethodSignature*)val);
+}
+
 /**
  * mono_image_close:
  * @image: The image file we wish to add a reference to
@@ -980,6 +987,8 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->runtime_invoke_cache);
 	g_hash_table_destroy (image->typespec_cache);
 	g_hash_table_destroy (image->generic_inst_cache);
+	g_hash_table_foreach (image->memberref_signatures, free_mr_signatures, NULL);
+	g_hash_table_destroy (image->memberref_signatures);
 	
 	if (image->raw_metadata != NULL)
 		mono_raw_buffer_free (image->raw_metadata);

@@ -1579,6 +1579,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, const char *ptr, cons
 	case MONO_TYPE_SZARRAY: {
 		MonoType *etype = mono_metadata_parse_type (m, MONO_PARSE_MOD_TYPE, 0, ptr, &ptr);
 		type->data.klass = mono_class_from_mono_type (etype);
+		mono_metadata_free_type (etype);
 		break;
 	}
 	case MONO_TYPE_PTR:

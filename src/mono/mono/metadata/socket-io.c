@@ -2140,6 +2140,7 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 
 	g_free(buffer1);
 	g_free(buffer2);
+	g_free(hostname);
 
 	return(return_value);
 #endif /* HAVE_GETHOSTBYNAME2_R */

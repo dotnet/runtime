@@ -58,7 +58,7 @@ static char **extra_gac_paths = NULL;
 static gchar*
 encode_public_tok (const guchar *token, gint32 len)
 {
-	static gchar allowed [] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+	const static gchar allowed [] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 	gchar *res;
 	int i;
 
@@ -378,10 +378,12 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 					   aname.name, image->name, i,
 					   aname.major, aname.minor, aname.build, aname.revision,
 					   aname.public_tok_value);
+				g_free (aname.public_tok_value);
 				*status = MONO_IMAGE_MISSING_ASSEMBLYREF;
 				return;
 			}
 		}
+		g_free (aname.public_tok_value);
 
 		/* 
 		 * This check is disabled since lots of people seem to have an older
