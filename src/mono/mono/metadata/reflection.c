@@ -2550,6 +2550,14 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 				mono_image_get_method_info (
 					mono_array_get (mod->global_methods, MonoReflectionMethodBuilder*, i), assembly);
 		}
+		if (mod->global_fields) {
+			table = &assembly->tables [MONO_TABLE_FIELD];
+			table->rows += mono_array_length (mod->global_fields);
+			alloc_table (table, table->rows);
+			for (i = 0; i < mono_array_length (mod->global_fields); ++i)
+				mono_image_get_field_info (
+					mono_array_get (mod->global_fields, MonoReflectionFieldBuilder*, i), assembly);
+		}
 	}
 
 	if (assemblyb->modules) {
