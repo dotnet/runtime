@@ -86,6 +86,26 @@
   </tr>
 </table>
 
+<h3>Events</h3>
+
+<ul>
+	<li><b><a
+	href="http://www.sigs-datacom.de/sd/kongresse/dotnet_2002/index.htm">.NET
+	ONE 2002:</a></b> Come see Paolo, Mike and Miguel from the Mono team at the .NET ONE conference in Frankfurt.</ul>
+</ul>
+
+@item Sep 4th, 2002: .NET One 2002 Program available
+
+	The <a
+	href="http://www.sigs-datacom.de/sd/kongresse/dotnet_2002/index.htm">.NET
+	ONE 2002</a> conference in Frankfurt is now available.  Paolo
+	will be talking about the Mono JIT and embedding the Mono
+	runtime in your Windows and Linux applications.  Mike Kestner
+	will talk about <a href="http://gtk-sharp.sf.net">Gtk#</a> and
+	the automatic binding generator used by Gtk# and Miguel will
+	be talking about the Mono project on Monday's keynote and on
+	the Mono C# compiler on Tuesday.
+
 @item Sep 3rd, 2002: Apache integration
 
 	<a

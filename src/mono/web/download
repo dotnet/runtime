@@ -73,10 +73,10 @@
 		  <td bgcolor="#999999">
 		    <b>Mandrake 8.2/x86</b>
                     <ul>
-			<li><a href="archive/mandrake-82-i386/libgc-6.1alpha5-1.i386.rpm">libgc-6.1alpha5-1.i586.rpm</a>
-			<li><a href="archive/mandrake-82-i386/libgc-devel-6.1alpha5-1.i386.rpm">libgc-devel-6.1alpha5-1.i586.rpm</a>
-			<li><a href="archive/mandrake-82-i386/mono-0.15-1.i386.rpm">mono-0.15-1.i586.rpm</a>
-			<li><a href="archive/mandrake-82-i386/mono-devel-0.15-1.i386.rpm">mono-devel-0.15-1.i586.rpm</a>
+			<li><a href="archive/mandrake-82-i386/libgc-6.1alpha5-1.i586.rpm">libgc-6.1alpha5-1.i586.rpm</a>
+			<li><a href="archive/mandrake-82-i386/libgc-devel-6.1alpha5-1.i586.rpm">libgc-devel-6.1alpha5-1.i586.rpm</a>
+			<li><a href="archive/mandrake-82-i386/mono-0.15-1.i586.rpm">mono-0.15-1.i586.rpm</a>
+			<li><a href="archive/mandrake-82-i386/mono-devel-0.15-1.i586.rpm">mono-devel-0.15-1.i586.rpm</a>
 		    </ul>
 		  </td>
 		  <td bgcolor="#999999">
