@@ -152,6 +152,11 @@ class Tests {
 		return b / 2;
 	}
 
+	static int test_719177_div_destreg () {
+		int year = 1970;
+		return ((365* (year-1)) + ((year-1)/4));
+	}
+
 	static int test_1_remun_imm () {
 		uint b = 13;
 		return (int)(b % 3);

@@ -135,10 +135,10 @@ stind.r8: src1:b src2:f
 add: dest:i src1:i src2:i len:4
 sub: dest:i src1:i src2:i len:4
 mul: dest:i src1:i src2:i len:4
-div: dest:a src1:i src2:i len:4
-div.un: dest:a src1:i src2:i len:4
-rem: dest:d src1:i src2:i len:12
-rem.un: dest:d src1:i src2:i len:12
+div: dest:i src1:i src2:i len:4
+div.un: dest:i src1:i src2:i len:4
+rem: dest:i src1:i src2:i len:12
+rem.un: dest:i src1:i src2:i len:12
 and: dest:i src1:i src2:i len:4
 or: dest:i src1:i src2:i len:4
 xor: dest:i src1:i src2:i len:4
@@ -353,10 +353,10 @@ mul_imm: dest:i src1:i len:12
 # there is no actual support for division or reminder by immediate
 # we simulate them, though (but we need to change the burg rules 
 # to allocate a symbolic reg for src2)
-div_imm: dest:a src1:i src2:i len:12
-div_un_imm: dest:a src1:i src2:i len:12
-rem_imm: dest:d src1:i src2:i len:16
-rem_un_imm: dest:d src1:i src2:i len:16
+div_imm: dest:i src1:i src2:i len:12
+div_un_imm: dest:i src1:i src2:i len:12
+rem_imm: dest:i src1:i src2:i len:16
+rem_un_imm: dest:i src1:i src2:i len:16
 and_imm: dest:i src1:i len:12
 or_imm: dest:i src1:i len:12
 xor_imm: dest:i src1:i len:12
