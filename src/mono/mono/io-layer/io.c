@@ -3095,7 +3095,18 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
 	/* Ignore the other attributes for now */
 
 	if (attrs & 0x80000000){
-		result = chmod (utf8_name, buf.st_mode | S_IEXEC | S_IXOTH | S_IXGRP);
+		mode_t exec_mask = 0;
+
+		if ((buf.st_mode & S_IRUSR) != 0)
+			exec_mask |= S_IXUSR;
+
+		if ((buf.st_mode & S_IRGRP) != 0)
+			exec_mask |= S_IXGRP;
+
+		if ((buf.st_mode & S_IROTH) != 0)
+			exec_mask |= S_IXOTH;
+
+		result = chmod (utf8_name, buf.st_mode | exec_mask);
 	}
 	/* Don't bother to reset executable (might need to change this
 	 * policy)
