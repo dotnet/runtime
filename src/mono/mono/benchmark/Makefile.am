@@ -12,6 +12,7 @@ TESTSRC=			\
 	inline2.cs		\
 	inline3.cs		\
 	inline4.cs		\
+	inline5.cs		\
 	muldiv.cs		\
 	loops.cs		\
 	initlocals.cs		\
