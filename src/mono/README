@@ -61,7 +61,7 @@ This is Mono.
 	If you are upgrading from CVS you will need an existing Mono installation.
 	First verify that you have a working installation:
 
-		echo 'class X { static void Main () { System.Console.Write("OK");}'}' > x.cs
+		echo 'class X { static void Main () { System.Console.Write("OK");}}' > x.cs
 
 	Compile:
 
