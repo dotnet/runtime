@@ -1026,6 +1026,12 @@ mono_cfg_free (MonoFlowGraph *cfg)
 		g_ptr_array_free (cfg->bblocks [i].forest, TRUE);
 	}
 
+	if (cfg->bcinfo)
+		g_free (cfg->bcinfo);
+
+	if (cfg->bblocks)
+		g_free (cfg->bblocks);
+
 	g_array_free (cfg->varinfo, TRUE);
 }
 
@@ -1083,7 +1089,6 @@ void
 mono_analyze_flow (MonoFlowGraph *cfg)
 {
 	MonoMethod *method = cfg->method;
-	MonoMemPool *mp = cfg->mp;
 	register const unsigned char *ip, *end;
 	MonoMethodHeader *header;
 	MonoBytecodeInfo *bcinfo;
@@ -1094,7 +1099,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 
 	header = ((MonoMethodNormal *)method)->header;
 
-	bcinfo = mono_mempool_alloc0 (mp, header->code_size * sizeof (MonoBytecodeInfo));
+	bcinfo = g_malloc0 (header->code_size * sizeof (MonoBytecodeInfo));
 	bcinfo [0].is_block_start = 1;
 	block_count = 1;
 	block_end = FALSE;
@@ -1378,7 +1383,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 
 	g_assert (block_count);
 
-	bb = bblocks  = mono_mempool_alloc0 (mp, sizeof (MonoBBlock) * block_count);
+	bb = bblocks  = g_malloc0 (sizeof (MonoBBlock) * block_count);
 
 	block_count = 0;
 	bblocks [0].reached = 1;

@@ -1,16 +1,17 @@
 * impl. marshalling attributes for pinvoke
 * raise exceptions everywhere
 * implement all those CONV and CONV_OVF opcodes
-* impl. value type: simple thing works already
 * exceptions: handle exceptions inside unmanaged code
 * exceptions: save/restore floating point state
 * implement all floating point instruction in x86.brg, we also need to check
   the floating branch instruction - some of them seems to be wrong, we need to
   write better tests for that.
 * correctly align value types on the stack and in arrays
-* enum types can have several base types (not only int32)
 * document the functions and variables in the JIT 
 * implement a register set for FP registers (just count register usage on x86)
+
+* inline all calls in System.Math::*, we should use coprozessor instructions
+  directly whenever possible. 
 
 * Calling conventions:
 

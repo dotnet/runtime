@@ -66,6 +66,7 @@ typedef struct {
 	MonoMemPool      *mp;
 	guint8           *start;
 	guint8           *code;
+	gint32            code_size;
 	MonoRegSet       *rs;
 	guint32           epilog;
 	guint32           args_start_index;

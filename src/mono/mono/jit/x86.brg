@@ -117,7 +117,8 @@ x86_push_reg (s->code, X86_ECX); \
 x86_push_reg (s->code, reg); \
 x86_push_imm (s->code, reg); \
 x86_push_imm (s->code, text " %d %p\n"); \
-x86_call_code (s->code, printf); \
+x86_mov_reg_imm (s->code, X86_EAX, printf); \
+x86_call_reg (s->code, X86_EAX); \
 x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 3*4); \
 x86_pop_reg (s->code, X86_ECX); \
 x86_pop_reg (s->code, X86_EDX); \
@@ -139,6 +140,15 @@ x86_pop_reg (s->code, X86_EAX);
 		x86_address_byte ((inst), 2, 2, (basereg));    \
 		x86_imm_emit32 ((inst), (disp));	       \
 	} while (0)
+
+/* emit an exception if condition is fail */
+#define EMIT_COND_EXCEPTION(cond, exc)                                       \
+        do {                                                                 \
+	        x86_branch8 (s->code, cond, 12, TRUE);                       \
+	        x86_mov_reg_imm (s->code, X86_ECX, exc);                     \
+		x86_mov_reg_imm (s->code, X86_EAX, get_throw_exception ());  \
+	        x86_call_reg (s->code, X86_EAX);                             \
+	} while (0); 
 
 %%
 
@@ -274,6 +284,8 @@ reg: EXCEPTION {
 }
 
 stmt: THROW (reg) {
+	tree->is_jump = TRUE;
+
 	if (tree->left->reg1 != X86_ECX)
 		x86_mov_reg_reg (s->code, X86_ECX, tree->left->reg1, 4);
 
@@ -283,6 +295,8 @@ stmt: THROW (reg) {
 stmt: RETHROW {
 	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;
 
+	tree->is_jump = TRUE;
+
 	x86_mov_reg_membase (s->code, X86_ECX, X86_EBP, offset, 4);
 
 	x86_call_code (s->code, get_throw_exception ());
@@ -290,7 +304,7 @@ stmt: RETHROW {
 
 stmt: HANDLER {
 	gint32 addr = tree->data.bb->addr - tree->addr - 5;
-	tree->is_jump = 1;    
+	tree->is_jump = TRUE;    
 	x86_call_imm (s->code, addr); 
 }
 
@@ -564,9 +578,7 @@ reg: CONV_I4 (reg) {
 
 reg: CONV_OVF_U4 (reg) {
 	x86_test_reg_imm (s->code, tree->left->reg1, 0x8000000);
-	x86_branch8 (s->code, X86_CC_EQ, 10, TRUE);
-	x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
-	x86_call_code (s->code, get_throw_exception ());
+	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
@@ -574,12 +586,11 @@ reg: CONV_OVF_U4 (reg) {
 reg: CONV_OVF_I1 (reg) {
 	/* probe value to be within -128 to 127 */
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 127);
-	x86_branch8 (s->code, X86_CC_LE, 10, TRUE);
-	x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
-	x86_call_code (s->code, get_throw_exception ());
-	
+	EMIT_COND_EXCEPTION (X86_CC_LE, get_exception_overflow ());	
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, -128);
-	x86_branch8 (s->code, X86_CC_LT, -17, TRUE);
+	// fixme: check that branch distance
+	g_assert_not_reached ();
+	x86_branch8 (s->code, X86_CC_LT, -19, TRUE);
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
@@ -587,9 +598,7 @@ reg: CONV_OVF_I1 (reg) {
 reg: CONV_OVF_I1_UN (reg) {
 	/* probe values between 0 to 128 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffffff80);
-	x86_branch8 (s->code, X86_CC_EQ, 10, TRUE);
-	x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
-	x86_call_code (s->code, get_throw_exception ());
+	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
 }
@@ -597,22 +606,18 @@ reg: CONV_OVF_I1_UN (reg) {
 reg: CONV_OVF_U1 (reg) {
 	/* probe value to be within 0 to 255 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffffff00);
-	x86_branch8 (s->code, X86_CC_EQ, 10, TRUE);
-	x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
-	x86_call_code (s->code, get_throw_exception ());
+	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
 }
 
 reg: CONV_OVF_I2 (reg) {
 	/* Probe value to be within -32768 and 32767 */
-
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 32767);
-	x86_branch8 (s->code, X86_CC_LE, 10, TRUE);
-	x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
-	x86_call_code (s->code, get_throw_exception ());
-
+	EMIT_COND_EXCEPTION (X86_CC_LE, get_exception_overflow ());	
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, -32768);
+	// fixme: check branch
+	g_assert_not_reached ();
 	x86_branch8 (s->code, X86_CC_LT, -17, TRUE);
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -621,9 +626,7 @@ reg: CONV_OVF_I2 (reg) {
 reg: CONV_OVF_U2 (reg) {
 	/* Probe value to be within 0 and 65535 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffff0000);
-	x86_branch8 (s->code, X86_CC_EQ, 10, TRUE);
-	x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
-	x86_call_code (s->code, get_throw_exception ());
+	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
 }
@@ -631,9 +634,7 @@ reg: CONV_OVF_U2 (reg) {
 reg: CONV_OVF_I2_UN (reg) {
 	/* Convert uint value into short, value within 0 and 32767 */
 	x86_test_reg_imm (s->code, tree->left->reg1, 0xffff8000);
-	x86_branch8 (s->code, X86_CC_EQ, 10, TRUE);
-	x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
-	x86_call_code (s->code, get_throw_exception ());
+	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());	
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);	
 }
@@ -837,7 +838,8 @@ reg: NEWARR (reg) {
 
 	x86_push_reg (s->code, tree->left->reg1);
 	x86_push_imm (s->code, tree->data.p);
-	x86_call_code (s->code, mono_array_new);
+	x86_mov_reg_imm (s->code, X86_EAX, mono_array_new);
+	x86_call_reg (s->code, X86_EAX);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer) + 4);
 
 	x86_pop_reg (s->code, X86_EDX);
@@ -855,7 +857,8 @@ reg: NEWOBJ {
 	x86_push_reg (s->code, X86_EDX);
 
 	x86_push_imm (s->code, tree->data.klass);
-	x86_call_code (s->code, mono_object_new);
+	x86_mov_reg_imm (s->code, X86_EAX, mono_object_new);
+	x86_call_reg (s->code, X86_EAX);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer));
 
 	x86_pop_reg (s->code, X86_EDX);
@@ -880,40 +883,22 @@ reg: NEWSTRUCT {
 }
 
 reg: UNBOX (reg) {
-	guint8 *start = s->code, *l1, *l2, *l3, *le;
-	int i;
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 
-	tree->is_jump = TRUE;
-	l1 = l2 = l3 = le = NULL;
-
-	for (i = 0; i < 2; i++) {
-		s->code = start;
-
-		if (tree->reg1 != tree->left->reg1)
-			x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
-
-		x86_alu_reg_imm (s->code, X86_CMP, tree->reg1, 0);
-		x86_branch8 (s->code, X86_CC_NE, l2 - l1, FALSE);
-		l1 = s->code;
-		x86_mov_reg_imm (s->code, X86_ECX, get_exception_null_reference ());
-		x86_call_code (s->code, get_throw_exception ());
-		l2 = s->code;
-		x86_alu_membase_imm (s->code, X86_CMP, tree->reg1, 0, ((int)(tree->data.klass)));
-		x86_branch8 (s->code, X86_CC_EQ, le - l3, FALSE);
-		l3 = s->code;
-		x86_mov_reg_imm (s->code, X86_ECX, get_exception_invalid_cast ());
-		x86_call_code (s->code, get_throw_exception ());
-		le = s->code;
-		x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, sizeof (MonoObject));
-	}
+	x86_alu_reg_imm (s->code, X86_CMP, tree->reg1, 0);
+	EMIT_COND_EXCEPTION (X86_CC_NE, get_exception_null_reference ());	
+	x86_alu_membase_imm (s->code, X86_CMP, tree->reg1, 0, ((int)(tree->data.klass)));
+	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_invalid_cast ());	
+	x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, sizeof (MonoObject));
 }
 
 reg: CASTCLASS (reg) {
-	guint8 *start = s->code, *l1, *l2, *l3, *l4, *le;
+	guint8 *start = s->code, *l1, *l2, *le;
 	int i;
 
 	tree->is_jump = TRUE;
-	l1 = l2 = l3 = l4 = le = NULL;
+	l1 = l2 = le = NULL;
 
 	for (i = 0; i < 2; i++) {
 		s->code = start;
@@ -929,18 +914,14 @@ reg: CASTCLASS (reg) {
 
 		x86_push_imm (s->code, tree->data.klass);
 		x86_push_reg (s->code, tree->left->reg1);
-		x86_call_code (s->code, mono_object_isinst);
+		x86_mov_reg_imm (s->code, X86_EAX, mono_object_isinst);
+		x86_call_reg (s->code, X86_EAX);
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
 		x86_pop_reg (s->code, X86_EDX);
 		x86_pop_reg (s->code, X86_ECX);
 
 		x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0);
-		x86_branch8 (s->code, X86_CC_NE, le - l3, FALSE);
-		l3 = s->code;
-
-		x86_mov_reg_imm (s->code, X86_ECX, get_exception_invalid_cast ());
-		x86_call_code (s->code, get_throw_exception ());
-
+		EMIT_COND_EXCEPTION (X86_CC_NE, get_exception_invalid_cast ());	
 		le = s->code;
 
 	}
@@ -954,7 +935,8 @@ reg: ISINST (reg) {
 
 	x86_push_imm (s->code, tree->data.klass);
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_call_code (s->code, mono_object_isinst);
+	x86_mov_reg_imm (s->code, X86_EAX, mono_object_isinst);
+	x86_call_reg (s->code, X86_EAX);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
 
 	x86_pop_reg (s->code, X86_EDX);
@@ -1085,7 +1067,7 @@ stmt: POP (reg)
 
 stmt: BR {
 	gint32 addr = tree->data.bb->addr - tree->addr - 5;
-	tree->is_jump = 1;    
+	tree->is_jump = TRUE;    
 	
 	x86_jump32 (s->code, addr); 
 }
@@ -1093,7 +1075,7 @@ stmt: BR {
 stmt: BLT (reg, reg) 1 {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_LT, tree->data.bb->addr - offset, TRUE); 
@@ -1102,7 +1084,7 @@ stmt: BLT (reg, reg) 1 {
 stmt: BLT (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_LT, tree->data.bb->addr - offset, TRUE); 
@@ -1111,7 +1093,7 @@ stmt: BLT (reg, CONST_I4) "MB_USE_OPT1(0)" {
 stmt: BLT_UN (reg, reg) 1 {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_LT, tree->data.bb->addr - offset, FALSE); 
@@ -1120,7 +1102,7 @@ stmt: BLT_UN (reg, reg) 1 {
 stmt: BLT_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_LT, tree->data.bb->addr - offset, FALSE); 
@@ -1129,7 +1111,7 @@ stmt: BLT_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
 stmt: BGT (reg, reg) 1 {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_GT, tree->data.bb->addr - offset, TRUE); 
@@ -1138,7 +1120,7 @@ stmt: BGT (reg, reg) 1 {
 stmt: BGT (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_GT, tree->data.bb->addr - offset, TRUE); 
@@ -1147,7 +1129,7 @@ stmt: BGT (reg, CONST_I4) "MB_USE_OPT1(0)" {
 stmt: BGT_UN (reg, reg) 1 {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_GT, tree->data.bb->addr - offset, FALSE); 
@@ -1156,7 +1138,7 @@ stmt: BGT_UN (reg, reg) 1 {
 stmt: BGT_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_GT, tree->data.bb->addr - offset, FALSE); 
@@ -1165,7 +1147,7 @@ stmt: BGT_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
 stmt: BEQ (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, TRUE);
@@ -1174,7 +1156,7 @@ stmt: BEQ (reg, CONST_I4) "MB_USE_OPT1(0)" {
 stmt: BEQ (reg, reg) 1 {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, TRUE);
@@ -1183,7 +1165,7 @@ stmt: BEQ (reg, reg) 1 {
 stmt: BNE_UN (reg, reg) 1 {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
@@ -1192,7 +1174,7 @@ stmt: BNE_UN (reg, reg) 1 {
 stmt: BNE_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
@@ -1201,7 +1183,7 @@ stmt: BNE_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
 stmt: BGE (reg, reg) 1 {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_GE, tree->data.bb->addr - offset, TRUE);
@@ -1210,7 +1192,7 @@ stmt: BGE (reg, reg) 1 {
 stmt: BGE (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_GE, tree->data.bb->addr - offset, TRUE);
@@ -1219,7 +1201,7 @@ stmt: BGE (reg, CONST_I4) "MB_USE_OPT1(0)" {
 stmt: BGE_UN (reg, reg) 1 {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_GE, tree->data.bb->addr - offset, FALSE);
@@ -1228,7 +1210,7 @@ stmt: BGE_UN (reg, reg) 1 {
 stmt: BGE_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_GE, tree->data.bb->addr - offset, FALSE);
@@ -1237,7 +1219,7 @@ stmt: BGE_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
 stmt: BLE (reg, reg) 1 {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_LE, tree->data.bb->addr - offset, TRUE);
@@ -1246,7 +1228,7 @@ stmt: BLE (reg, reg) 1 {
 stmt: BLE (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_LE, tree->data.bb->addr - offset, TRUE);
@@ -1255,7 +1237,7 @@ stmt: BLE (reg, CONST_I4) "MB_USE_OPT1(0)" {
 stmt: BLE_UN (reg, reg) 1 {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_LE, tree->data.bb->addr - offset, FALSE);
@@ -1264,7 +1246,7 @@ stmt: BLE_UN (reg, reg) 1 {
 stmt: BLE_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_LE, tree->data.bb->addr - offset, FALSE);
@@ -1273,7 +1255,7 @@ stmt: BLE_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
 stmt: BRTRUE (reg) {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 0);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, TRUE);
@@ -1282,7 +1264,7 @@ stmt: BRTRUE (reg) {
 stmt: BRFALSE (reg) {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 0);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, TRUE);
@@ -1297,14 +1279,14 @@ stmt: RET (reg) {
 		x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
 
 	if (!tree->last_instr) {
-		tree->is_jump = 1;
+		tree->is_jump = TRUE;
 		x86_jump32 (s->code, s->epilog - 5);      
 	}
 }
 
 stmt: RET_VOID {
 	if (!tree->last_instr) {
-		tree->is_jump = 1;
+		tree->is_jump = TRUE;
 		x86_jump32 (s->code, s->epilog - 5);
 	} 
 }
@@ -1322,7 +1304,8 @@ stmt: ARG_STRING (reg) {
 	x86_push_reg (s->code, X86_EDX);
 
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_call_code (s->code, mono_string_to_utf8);
+	x86_mov_reg_imm (s->code, X86_EAX, mono_string_to_utf8);
+	x86_call_reg (s->code, X86_EAX);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
 	
 	x86_mov_membase_reg (s->code, X86_ESP, 12, X86_EAX, 4);
@@ -1559,7 +1542,7 @@ stmt: SWITCH (reg) {
 	guint32 offset;
 	guint32 *jt = (guint32 *)tree->data.p;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, jt [0]);
 	offset = 6 + (guint32)s->code;
@@ -1590,17 +1573,18 @@ reg: CONV_OVF_I4 (lreg){
 	
 	/* We are not negative (no top bit set, check for our top word to be zero */
 	x86_test_reg_reg (s->code, tree->left->reg2, tree->left->reg2);
-	x86_branch8 (s->code, X86_CC_EQ, 15, TRUE);
+	x86_branch8 (s->code, X86_CC_EQ, 17, TRUE);
 
 	/* throw exception */
 	x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
-	x86_call_code (s->code, get_throw_exception ());
+	x86_mov_reg_imm (s->code, X86_EAX, get_throw_exception ()); 
+	x86_call_reg (s->code, X86_EAX); 
 	
 	/* our top bit is set, check that top word is 0xfffffff */
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg2, 0xffffffff);
 
 	/* nope, emit exception */
-	x86_branch8 (s->code, X86_CC_NE, -15, TRUE);
+	x86_branch8 (s->code, X86_CC_NE, -17, TRUE);
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -1609,11 +1593,7 @@ reg: CONV_OVF_I4 (lreg){
 reg: CONV_OVF_U4 (lreg) {
 	/* top word must be 0 */
 	x86_test_reg_reg (s->code, tree->left->reg2, tree->left->reg2);
-	x86_branch8 (s->code, X86_CC_EQ, 15, TRUE);
-
-	x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
-	x86_call_code (s->code, get_throw_exception ());
-
+	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 }
@@ -1656,7 +1636,8 @@ lreg: CONV_U8 (CONST_I4) 1 {
 lreg: CONV_OVF_U8 (CONST_I4) {
 	if (tree->left->data.i < 0){
 		x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
-		x86_call_code (s->code, get_throw_exception ());
+		x86_mov_reg_imm (s->code, X86_EAX, get_throw_exception ()); 
+	        x86_call_reg (s->code, X86_EAX);                            
 	} else {
 		x86_mov_reg_imm (s->code, tree->reg1, tree->left->data.i);
 		x86_alu_reg_reg (s->code, X86_XOR, tree->reg2, tree->reg2);
@@ -1670,9 +1651,7 @@ lreg: CONV_OVF_I8_UN (CONST_I4) {
 
 lreg: CONV_OVF_U8 (reg) {
 	x86_test_reg_imm (s->code, tree->left->reg1, 0x8000000);
-	x86_branch8 (s->code, X86_CC_EQ, 10, TRUE);
-	x86_mov_reg_imm (s->code, X86_ECX, get_exception_overflow ());
-	x86_call_code (s->code, get_throw_exception ());
+	EMIT_COND_EXCEPTION (X86_CC_EQ, get_exception_overflow ());
 
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -1823,7 +1802,8 @@ lreg: MUL (lreg, lreg) {
 	x86_push_reg (s->code, tree->right->reg1);
 	x86_push_reg (s->code, tree->left->reg2);
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_call_code (s->code, mono_llmult);
+	x86_mov_reg_imm (s->code, X86_EAX, mono_llmult);
+	x86_call_reg (s->code, X86_EAX);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 16);
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
@@ -1838,7 +1818,8 @@ lreg: DIV (lreg, lreg) {
 	x86_push_reg (s->code, tree->right->reg1);
 	x86_push_reg (s->code, tree->left->reg2);
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_call_code (s->code, mono_lldiv);
+	x86_mov_reg_imm (s->code, X86_EAX, mono_lldiv);
+	x86_call_reg (s->code, X86_EAX);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 16);
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
@@ -1853,7 +1834,8 @@ lreg: REM (lreg, lreg) {
 	x86_push_reg (s->code, tree->right->reg1);
 	x86_push_reg (s->code, tree->left->reg2);
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_call_code (s->code, mono_llrem);
+	x86_mov_reg_imm (s->code, X86_EAX, mono_llrem);
+	x86_call_reg (s->code, X86_EAX);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 16);
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
@@ -1868,7 +1850,8 @@ lreg: DIV_UN (lreg, lreg) {
 	x86_push_reg (s->code, tree->right->reg1);
 	x86_push_reg (s->code, tree->left->reg2);
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_call_code (s->code, mono_lldiv_un);
+	x86_mov_reg_imm (s->code, X86_EAX, mono_lldiv_un);
+	x86_call_reg (s->code, X86_EAX);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 16);
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
@@ -1883,7 +1866,8 @@ lreg: REM_UN (lreg, lreg) {
 	x86_push_reg (s->code, tree->right->reg1);
 	x86_push_reg (s->code, tree->left->reg2);
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_call_code (s->code, mono_llrem_un);
+	x86_mov_reg_imm (s->code, X86_EAX, mono_llrem_un);
+	x86_call_reg (s->code, X86_EAX);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 16);
 
 	if (mono_regset_reg_used (s->rs, X86_ECX))
@@ -1934,7 +1918,7 @@ stmt: RET (lreg) {
 	}
 
 	if (!tree->last_instr) {
-		tree->is_jump = 1;
+		tree->is_jump = TRUE;
 		x86_jump32 (s->code, s->epilog - 5);      
 	}
 }
@@ -1949,7 +1933,7 @@ stmt: BEQ (lreg, lreg) {
 	guint8 *start = s->code;
 	gint32 o1, o2, i;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
@@ -1965,7 +1949,7 @@ stmt: BEQ (lreg, lreg) {
 stmt: BNE_UN (lreg, lreg) {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
 	offset = 6 + s->code - s->start;
@@ -1979,7 +1963,7 @@ stmt: BGE (lreg, lreg) {
 	guint8 *start = s->code;
 	gint32 o1, o2, oe, i;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
@@ -1999,7 +1983,7 @@ stmt: BGE_UN (lreg, lreg) {
 	guint8 *start = s->code;
 	gint32 o1, o2, oe, i;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
@@ -2019,7 +2003,7 @@ stmt: BGT (lreg, lreg) {
 	guint8 *start = s->code;
 	gint32 o1, o2, oe, i;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
@@ -2039,7 +2023,7 @@ stmt: BGT_UN (lreg, lreg) {
 	guint8 *start = s->code;
 	gint32 o1, o2, oe, i;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
@@ -2059,7 +2043,7 @@ stmt: BLT (lreg, lreg) {
 	guint8 *start = s->code;
 	gint32 o1, o2, oe, i;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
@@ -2079,7 +2063,7 @@ stmt: BLT_UN (lreg, lreg) {
 	guint8 *start = s->code;
 	gint32 o1, o2, oe, i;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
@@ -2099,7 +2083,7 @@ stmt: BLE (lreg, lreg) {
 	guint8 *start = s->code;
 	gint32 o1, o2, oe, i;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
@@ -2119,7 +2103,7 @@ stmt: BLE_UN (lreg, lreg) {
 	guint8 *start = s->code;
 	gint32 o1, o2, oe, i;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
@@ -2283,7 +2267,7 @@ stmt: ARG_R8 (freg) {
 stmt: BEQ (freg, freg) {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
@@ -2295,7 +2279,7 @@ stmt: BEQ (freg, freg) {
 stmt: BNE_UN (freg, freg) {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
@@ -2307,7 +2291,7 @@ stmt: BNE_UN (freg, freg) {
 stmt: BLT (freg, freg) {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
@@ -2318,7 +2302,7 @@ stmt: BLT (freg, freg) {
 stmt: BLT_UN (freg, freg) {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
@@ -2329,7 +2313,7 @@ stmt: BLT_UN (freg, freg) {
 stmt: BGE_UN (freg, freg) {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
@@ -2340,7 +2324,7 @@ stmt: BGE_UN (freg, freg) {
 stmt: BGT_UN (freg, freg) {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
@@ -2352,7 +2336,7 @@ stmt: BGT_UN (freg, freg) {
 stmt: BLE_UN (freg, freg) {
 	gint32 offset;
 
-	tree->is_jump = 1;
+	tree->is_jump = TRUE;
 	x86_fcompp (s->code);
 	x86_fnstsw (s->code);
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
@@ -2444,7 +2428,7 @@ freg: CALL_R8 (this, VFUNC_ADDR) {
 stmt: RET (freg) {
 
 	if (!tree->last_instr) {
-		tree->is_jump = 1;
+		tree->is_jump = TRUE;
 		x86_jump32 (s->code, s->epilog - 5);      
 	}
 }
@@ -2465,7 +2449,8 @@ stmt: STIND_OBJ (reg, reg) {
 	x86_push_imm (s->code, tree->data.i);
 	x86_push_reg (s->code, tree->right->reg1);
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_call_code (s->code, MEMCOPY);
+	x86_mov_reg_imm (s->code, X86_EAX, MEMCOPY);
+	x86_call_reg (s->code, X86_EAX);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
 
 	x86_pop_reg (s->code, X86_ECX);
@@ -2498,7 +2483,8 @@ stmt: ARG_OBJ (reg) {
 	x86_lea_membase (s->code, X86_EAX, X86_ESP, 5*4);
 	x86_push_reg (s->code, X86_EAX);
 
-	x86_call_code (s->code, MEMCOPY);
+	x86_mov_reg_imm (s->code, X86_EAX, MEMCOPY);
+	x86_call_reg (s->code, X86_EAX);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
 
 	x86_pop_reg (s->code, X86_ECX);
@@ -2513,11 +2499,13 @@ stmt: RET_OBJ (reg) {
 	x86_push_reg (s->code, tree->left->reg1);
 	x86_push_membase (s->code, X86_EBP, 8);
 
-	x86_call_code (s->code, MEMCOPY);
+	x86_mov_reg_imm (s->code, X86_EAX, MEMCOPY);
+	x86_call_reg (s->code, X86_EAX);
+
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
 
 	if (!tree->last_instr) {
-		tree->is_jump = 1;
+		tree->is_jump = TRUE;
 		x86_jump32 (s->code, s->epilog - 5);      
 	}
 }

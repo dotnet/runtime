@@ -243,7 +243,8 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 	if (mono_jit_trace_calls) {
 		x86_push_reg (cfg->code, X86_EBP);
 		x86_push_imm (cfg->code, cfg->method);
-		x86_call_code (cfg->code, enter_method);
+		x86_mov_reg_imm (cfg->code, X86_EAX, enter_method);
+		x86_call_reg (cfg->code, X86_EAX);
 		x86_alu_reg_imm (cfg->code, X86_ADD, X86_ESP, 8);
 	}
 }
@@ -264,7 +265,8 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 		x86_push_reg (cfg->code, X86_EAX);
 		x86_push_reg (cfg->code, X86_EDX);
 		x86_push_imm (cfg->code, cfg->method);
-		x86_call_code (cfg->code, leave_method);
+		x86_mov_reg_imm (cfg->code, X86_EAX, leave_method);
+		x86_call_reg (cfg->code, X86_EAX);
 		x86_alu_reg_imm (cfg->code, X86_ADD, X86_ESP, 4);
 		x86_pop_reg (cfg->code, X86_EDX);
 		x86_pop_reg (cfg->code, X86_EAX);
@@ -643,22 +645,35 @@ arch_allocate_regs (MonoFlowGraph *cfg)
 }
 
 static void
-tree_emit (int goal, MonoFlowGraph *s, MBTree *tree) 
+tree_emit (int goal, MonoFlowGraph *cfg, MBTree *tree) 
 {
 	MBTree *kids[10];
 	int i, ern = mono_burg_rule (tree->state, goal);
 	guint16 *nts = mono_burg_nts [ern];
 	MBEmitFunc emit;
+	int offset;
 
 	mono_burg_kids (tree, ern, kids);
 
 	for (i = 0; nts [i]; i++) 
-		tree_emit (nts [i], s, kids [i]);
+		tree_emit (nts [i], cfg, kids [i]);
 
-	tree->addr = s->code - s->start;
+	tree->addr = offset = cfg->code - cfg->start;
+
+	// we assume an instruction uses a maximum of 128 bytes
+	if ((cfg->code_size - offset) <= 128) {
+		int add = MIN ((cfg->code_size * 2), 1024);
+
+		cfg->code_size += add;
+		cfg->start = g_realloc (cfg->start, cfg->code_size);
+		g_assert (cfg->start);
+		cfg->code = cfg->start + offset;
+	}
 
 	if ((emit = mono_burg_func [ern]))
-		emit (tree, s);
+		emit (tree, cfg);
+
+	g_assert ((cfg->code - cfg->start) < cfg->code_size);
 }
 
 static void
@@ -675,6 +690,7 @@ mono_emit_cfg (MonoFlowGraph *cfg)
 	  
 		for (j = 0; j < top; j++) {
 			MBTree *t1 = (MBTree *) g_ptr_array_index (forest, j);
+			
 			tree_emit (1, cfg, t1);
 		}
 	}
@@ -843,7 +859,7 @@ arch_compile_method (MonoMethod *method)
 	} else {
 		MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
 		MonoJitInfo *ji = g_new0 (MonoJitInfo, 1);
-
+		
 		cfg = mono_cfg_new (method, mp);
 
 		mono_analyze_flow (cfg);
@@ -854,15 +870,13 @@ arch_compile_method (MonoMethod *method)
 		if (cfg->invalid)
 			return NULL;
 	
-		cfg->code = NULL;
 		cfg->rs = mono_regset_new (X86_NREG);
 		mono_regset_reserve_reg (cfg->rs, X86_ESP);
 		mono_regset_reserve_reg (cfg->rs, X86_EBP);
 
-		// fixme: remove limitation to 8192 bytes
-		ji->code_size = 8192*2;
-		method->addr = cfg->start = cfg->code = g_malloc (ji->code_size);
-		
+		cfg->code_size = 256;
+		cfg->start = cfg->code = g_malloc (cfg->code_size);
+
 		if (match_debug_method (method))
 			x86_breakpoint (cfg->code);
 
@@ -887,12 +901,10 @@ arch_compile_method (MonoMethod *method)
 		cfg->locals_size &= ~7;
 
 		arch_emit_prologue (cfg);
-
 		mono_emit_cfg (cfg);
+		arch_emit_epilogue (cfg);		
 
-		arch_emit_epilogue (cfg);
-
-		g_assert ((cfg->code - cfg->start) < ji->code_size);
+		method->addr = cfg->start;
 
 		mono_compute_branches (cfg);
 		
@@ -902,6 +914,7 @@ arch_compile_method (MonoMethod *method)
 		if (mono_debug_handle)
 			mono_debug_add_method (mono_debug_handle, cfg);
 
+		ji->code_size = cfg->code - cfg->start;
 		ji->used_regs = cfg->rs->used_mask;
 		ji->method = method;
 		ji->code_start = method->addr;
