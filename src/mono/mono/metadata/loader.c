@@ -222,7 +222,11 @@ method_from_memberref (MonoImage *image, guint32 index)
 			mimage = image->references [scopeindex-1]->image;
 
 			klass = mono_class_from_name (mimage, nspace, name);
-			g_assert (klass != NULL);
+			if (!klass) {
+				g_warning ("Missing method %s.%s::%s", nspace, name, mname);
+				mono_metadata_free_method_signature (sig);
+				return NULL;
+			}
 			mono_class_init (klass);
 
 			/* mostly dumb search for now */

@@ -25,7 +25,7 @@ typedef struct {
 typedef struct {
 	MonoMethod method;
 	guint16 piflags;  /* pinvoke flags */
-	void  (*code) ();
+	void  (*code) (void);
 } MonoMethodPInvoke;
 
 typedef struct {
