@@ -1,3 +1,8 @@
+2003-10-07  Bernie Solomon  <bernard@ugsolutions.com>
+
+	* mono/scripts/Makefile.am mono/scripts/*.in: fix
+	managed .exe paths so they are found under cygwin.
+
 2003-10-07  Zoltan Varga  <vargaz@freemail.hu>
 
 	* mono/tests/pinvoke2.cs mono/tests/libtest.c: Fix array of structs
