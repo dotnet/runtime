@@ -478,27 +478,32 @@ analyze_block (MonoBasicBlock *bb, MonoVariableRelationsEvaluationArea *evaluati
 					if (left_value.value_type == MONO_VARIABLE_SUMMARIZED_VALUE)number_of_variables++;
 					if (right_value.value_type == MONO_VARIABLE_SUMMARIZED_VALUE)number_of_variables++;
 					if (number_of_variables > 0) {
+						MonoBranchData *branch_true;
+						MonoBranchData *branch_false;
+
 						b->number_of_branches = 2;
 						b->branches = (MonoBranchData*) mono_mempool_alloc (
 							evaluation_area->pool, sizeof (MonoBranchData) * 2);
-						MonoBranchData *branch_true = &(b->branches [0]);
+						branch_true = &(b->branches [0]);
 						branch_true->destination_block = last_inst->inst_true_bb;
 						branch_true->number_of_conditions = number_of_variables;
 						branch_true->conditions = (MonoBranchCondition*)
 							mono_mempool_alloc (evaluation_area->pool, sizeof (MonoBranchCondition) * number_of_variables);
-						MonoBranchData *branch_false = &(b->branches [1]);
+						branch_false = &(b->branches [1]);
 						branch_false->destination_block = last_inst->inst_false_bb;
 						branch_false->number_of_conditions = number_of_variables;
 						branch_false->conditions = (MonoBranchCondition*)
 							mono_mempool_alloc (evaluation_area->pool, sizeof (MonoBranchCondition) * number_of_variables);
 						if (left_value.value_type == MONO_VARIABLE_SUMMARIZED_VALUE) {
 							MonoBranchCondition *condition_true = &(branch_true->conditions [current_variable]);
+							MonoBranchCondition *condition_false;
+
 							condition_true->variable = left_value.value.variable;
 							condition_true->value = right_value;
 							condition_true->value.relation_with_zero = MONO_ANY_RELATION;
 							condition_true->value.relation_with_one = MONO_ANY_RELATION;
 							condition_true->value.relation_with_value = relation;
-							MonoBranchCondition *condition_false = &(branch_false->conditions [current_variable]);
+							condition_false = &(branch_false->conditions [current_variable]);
 							condition_false->variable = left_value.value.variable;
 							condition_false->value = right_value;
 							condition_false->value.relation_with_zero = MONO_ANY_RELATION;
@@ -508,12 +513,14 @@ analyze_block (MonoBasicBlock *bb, MonoVariableRelationsEvaluationArea *evaluati
 						}
 						if (right_value.value_type == MONO_VARIABLE_SUMMARIZED_VALUE) {
 							MonoBranchCondition *condition_true = &(branch_true->conditions [current_variable]);
+							MonoBranchCondition *condition_false;
+
 							condition_true->variable = right_value.value.variable;
 							condition_true->value = left_value;
 							condition_true->value.relation_with_zero = MONO_ANY_RELATION;
 							condition_true->value.relation_with_one = MONO_ANY_RELATION;
 							condition_true->value.relation_with_value = symmetric_relation;
-							MonoBranchCondition *condition_false = &(branch_false->conditions [current_variable]);
+							condition_false = &(branch_false->conditions [current_variable]);
 							condition_false->variable = right_value.value.variable;
 							condition_false->value = left_value;
 							condition_false->value.relation_with_zero = MONO_ANY_RELATION;
