@@ -20,6 +20,77 @@
 #include <mono/metadata/rand.h>
 #include <mono/metadata/exception.h>
 
+#if !defined(PLATFORM_WIN32)
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <errno.h>
+
+static void
+get_entropy_from_server (const char *path, guchar *buf, int len)
+{
+    int file;
+    gint ret;
+    guint offset = 0;
+    struct sockaddr_un egd_addr;
+
+    file = socket (PF_UNIX, SOCK_STREAM, 0);
+    if (file < 0)
+        ret = -1;
+    else {
+        egd_addr.sun_family = AF_UNIX;
+        strncpy (egd_addr.sun_path, path, MONO_SIZEOF_SUNPATH - 1);
+        egd_addr.sun_path [MONO_SIZEOF_SUNPATH-1] = '\0';
+        ret = connect (file, (struct sockaddr *)&egd_addr, sizeof(egd_addr));
+    }
+    if (ret == -1) {
+        if (file >= 0)
+            close (file);
+    	g_warning ("Entropy problem! Can't create or connect to egd socket %s", path);
+        mono_raise_exception (mono_get_exception_execution_engine ("Failed to open egd socket"));
+    }
+
+    while (len > 0) {
+        guchar request[2];
+        gint count = 0;
+
+        request [0] = 2; /* block until daemon can return enough entropy */
+        request [1] = len < 255 ? len : 255;
+        while (count < 2) {
+            int sent = write (file, request + count, 2 - count);
+            if (sent >= 0)
+                count += sent;
+            else if (errno == EINTR)
+                continue;
+            else {
+                close (file);
+                g_warning ("Send egd request failed %d", errno);
+                mono_raise_exception (mono_get_exception_execution_engine ("Failed to send request to egd socket"));
+            }
+        }
+
+        count = 0;
+        while (count != request [1]) {
+            int received;
+            received = read(file, buf + offset, request [1] - count);
+            if (received > 0) {
+                count += received;
+                offset += received;
+            } else if (received < 0 && errno == EINTR) {
+                continue;
+            } else {
+                close (file);
+                g_warning ("Receive egd request failed %d", errno);
+                mono_raise_exception (mono_get_exception_execution_engine ("Failed to get response from egd socket"));
+            }
+        }
+
+        len -= request [1];
+    }
+
+    close (file);
+}
+#endif
+
 #if defined (PLATFORM_WIN32)
 
 #include <WinCrypt.h>
@@ -59,7 +130,7 @@ void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGet
        mono_raise_exception (mono_get_exception_execution_engine ("Failed to generate random bytes from CryptAPI"));
 }
 
-#elif defined (NAME_DEV_RANDOM) && defined (HAVE_CRYPT_RNG)
+#else
 
 #ifndef NAME_DEV_URANDOM
 #define NAME_DEV_URANDOM "/dev/urandom"
@@ -69,7 +140,7 @@ void
 ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes (MonoObject *self, MonoArray *arry)
 {
     guint32 len;
-    gint file;
+    gint file = -1;
     gint err;
     gint count;
     guchar *buf;
@@ -77,15 +148,23 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes
     len = mono_array_length(arry);
     buf = mono_array_addr(arry, guchar, 0);
 
+#if defined (NAME_DEV_URANDOM)
     file = open (NAME_DEV_URANDOM, O_RDONLY);
+#endif
 
+#if defined (NAME_DEV_RANDOM)
     if (file < 0)
 	    file = open (NAME_DEV_RANDOM, O_RDONLY);
+#endif
 
     if (file < 0) {
-    	g_warning ("Entropy problem! Can't open %s or %s", NAME_DEV_URANDOM, NAME_DEV_RANDOM);
+        const char *socket_path = getenv("MONO_EGD_SOCKET");
 
-        mono_raise_exception (mono_get_exception_execution_engine ("Failed to open /dev/urandom or /dev/random device"));
+        if (socket_path == NULL)
+            mono_raise_exception (mono_get_exception_execution_engine ("Failed to open /dev/urandom or /dev/random device, or find egd socket"));
+
+        get_entropy_from_server (socket_path, mono_array_addr(arry, guchar, 0), mono_array_length(arry));
+        return;
     }
 
     /* Read until the buffer is filled. This may block if using NAME_DEV_RANDOM. */
@@ -101,13 +180,6 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes
     }
 
     close(file);
-}
-
-#else
-
-void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes(MonoObject *self, MonoArray *arry)
-{
-    mono_raise_exception(mono_get_exception_not_implemented(NULL));
 }
 
 #endif /* OS definition */
