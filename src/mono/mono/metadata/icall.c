@@ -4994,21 +4994,7 @@ ves_icall_System_Environment_GetEnvironmentVariableNames (void)
 static gint32
 ves_icall_System_Environment_get_TickCount (void)
 {
-#if defined (PLATFORM_WIN32)
-	return GetTickCount();
-#else
-	struct timeval tv;
-	struct timezone tz;
-	gint32 res;
-
-	MONO_ARCH_SAVE_REGS;
-
-	res = (gint32) gettimeofday (&tv, &tz);
-
-	if (res != -1)
-		res = (gint32) ((tv.tv_sec & 0xFFFFF) * 1000 + (tv.tv_usec / 1000));
-	return res;
-#endif
+	return GetTickCount ();
 }
 
 
