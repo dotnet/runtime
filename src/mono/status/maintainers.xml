@@ -40,7 +40,7 @@
     <class name="System.Diagnostics.Trace" date="Jul-15-2001"/>
     <class name="System.Diagnostics.TraceListener" date="Jul-15-2001"/>
   </person>
-  <person email="czw@home.se" name="Jens Bäckman">
+  <person email="czw@home.se" name="Jens Backman">
     <class name="System.IO.BinaryReader" date="Jul-15-2001"/>
     <class name="System.IO.BinaryWriter" date="Jul-15-2001"/>
     <class name="System.IO.FileStream" date="Jul-15-2001"/>
