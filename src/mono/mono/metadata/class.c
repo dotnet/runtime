@@ -919,6 +919,7 @@ mono_get_unique_iid (MonoClass *class)
 
 	mono_loader_unlock ();
 
+	g_assert (iid <= 65535);
 	return iid - 1;
 }
 

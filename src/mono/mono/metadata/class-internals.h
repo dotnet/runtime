@@ -183,7 +183,7 @@ struct _MonoClass {
 	/* used for subtype checks */
 	MonoClass *cast_class; 
 	/* array dimension */
-	guint32    rank;          
+	guint8     rank;          
 
 	guint inited          : 1;
 	/* We use init_pending to detect cyclic calls to mono_class_init */
@@ -224,15 +224,15 @@ struct _MonoClass {
 	const char *name;
 	const char *name_space;
 	
-	guint       interface_count;
-	guint       interface_id;        /* unique inderface id (for interfaces) */
-	guint       max_interface_id;
+	/* for fast subtype checks */
+	MonoClass **supertypes;
+	guint16     idepth;
+
+	guint16     interface_count;
+	guint16     interface_id;        /* unique inderface id (for interfaces) */
+	guint16     max_interface_id;
         gint       *interface_offsets;   
 	MonoClass **interfaces;
-
-	/* for fast subtype checks */
-	guint       idepth;
-	MonoClass **supertypes;
 
 	/*
 	 * Computed object instance size, total.
@@ -291,10 +291,11 @@ struct MonoVTable {
 	 */
 	void *gc_descr; 	
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
-	guint32       max_interface_id;
         gpointer   *interface_offsets;   
         gpointer    data; /* to store static class data */
         gpointer    type; /* System.Type type for klass */
+	guint16     max_interface_id;
+	guint8      rank;
 	guint remote          : 1; /* class is remotely activated */
 	guint initialized     : 1; /* cctor has been run */
 	/* do not add any fields after vtable, the structure is dynamically extended */

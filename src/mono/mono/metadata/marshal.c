@@ -6576,11 +6576,11 @@ mono_marshal_get_stelemref ()
 	/* if (vklass->idepth < aklass->idepth) goto failue */
 	mono_mb_emit_ldloc (mb, vklass);
 	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoClass, idepth));
-	mono_mb_emit_byte (mb, CEE_LDIND_I4);
+	mono_mb_emit_byte (mb, CEE_LDIND_U2);
 	
 	mono_mb_emit_ldloc (mb, aklass);
 	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoClass, idepth));
-	mono_mb_emit_byte (mb, CEE_LDIND_I4);
+	mono_mb_emit_byte (mb, CEE_LDIND_U2);
 	
 	b2 = mono_mb_emit_branch (mb, CEE_BLT_UN);
 	
@@ -6591,7 +6591,7 @@ mono_marshal_get_stelemref ()
 	
 	mono_mb_emit_ldloc (mb, aklass);
 	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoClass, idepth));
-	mono_mb_emit_byte (mb, CEE_LDIND_I4);
+	mono_mb_emit_byte (mb, CEE_LDIND_U2);
 	mono_mb_emit_icon (mb, 1);
 	mono_mb_emit_byte (mb, CEE_SUB);
 	mono_mb_emit_icon (mb, sizeof (void*));

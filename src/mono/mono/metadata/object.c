@@ -635,6 +635,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	vt = mono_mempool_alloc0 (domain->mp,  vtable_size);
 
 	vt->klass = class;
+	vt->rank = class->rank;
 	vt->domain = domain;
 
 #if CREATION_SPEEDUP
