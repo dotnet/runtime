@@ -2345,6 +2345,30 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 }	
 
 /*
+ * mono_class_needs_cctor_run:
+ *
+ *  Determines whenever the class has a static constructor and whenever it
+ * needs to be called when executing CALLER.
+ */
+gboolean
+mono_class_needs_cctor_run (MonoClass *klass, MonoMethod *caller)
+{
+	int i;
+	MonoMethod *method;
+	
+	for (i = 0; i < klass->method.count; ++i) {
+		method = klass->methods [i];
+		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
+		    (strcmp (".cctor", method->name) == 0)) {
+			if (caller == method)
+				return FALSE;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+/*
  * Returns the nnumber of bytes an element of type klass
  * uses when stored into an array.
  */

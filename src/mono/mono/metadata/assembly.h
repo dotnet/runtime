@@ -7,9 +7,6 @@
 
 #define CORLIB_NAME "corlib.dll"
 
-/* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "1"
-
 void          mono_assemblies_init     (void);
 MonoAssembly *mono_assembly_open       (const char *filename,
 				       	MonoImageOpenStatus *status);

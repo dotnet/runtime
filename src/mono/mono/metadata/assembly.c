@@ -407,7 +407,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	MonoTableInfo *t;
 	guint32 cols [MONO_ASSEMBLY_SIZE];
 	int i;
-	char *base_dir, *aot_name;
+	char *base_dir;
 	MonoImageOpenStatus def_status;
 	gchar *fname;
 	GList *loading;
@@ -474,36 +474,6 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	ass->basedir = base_dir;
 	ass->image = image;
 
-	/* load aot compiled module */
-	aot_name = g_strdup_printf ("%s.so", fname);
-	ass->aot_module = g_module_open (aot_name, G_MODULE_BIND_LAZY);
-
-	if (ass->aot_module) {
-		gboolean usable = TRUE;
-		char *saved_guid = NULL;
-		char *aot_version = NULL;
-		g_module_symbol (ass->aot_module, "mono_assembly_guid", (gpointer *) &saved_guid);
-		g_module_symbol (ass->aot_module, "mono_aot_version", (gpointer *) &aot_version);
-
-		if (!aot_version || strcmp (aot_version, MONO_AOT_FILE_VERSION)) {
-			printf ("AOT module %s has wrong file format version (expected %s got %s)\n", aot_name, MONO_AOT_FILE_VERSION, aot_version);
-			usable = FALSE;
-		}
-		else
-			if (!saved_guid || strcmp (image->guid, saved_guid)) {
-				printf ("AOT module %s has a different GUID than the corresponding assembly.\n", aot_name);
-				usable = FALSE;
-			}
-
-		if (!usable) {
-			g_module_close (ass->aot_module);
-			ass->aot_module = NULL;
-		}
-	}
-	g_free (aot_name);
-
-	if (ass->aot_module)
-		printf ("Loaded AOT Module for %s.\n", fname);
 
 	g_free (fname);
 
