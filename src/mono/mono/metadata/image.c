@@ -515,7 +515,9 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 
 	load_class_names (image);
 
-	image->assembly_name = mono_metadata_string_heap (image, 
+	/* modules don't have an assembly table row */
+	if (image->tables [MONO_TABLE_ASSEMBLY].rows)
+		image->assembly_name = mono_metadata_string_heap (image, 
 			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_ASSEMBLY],
 					0, MONO_ASSEMBLY_NAME));
 
@@ -566,7 +568,8 @@ mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	if (!loaded_images_hash)
 		loaded_images_hash = g_hash_table_new (g_str_hash, g_str_equal);
 	g_hash_table_insert (loaded_images_hash, image->name, image);
-	g_hash_table_insert (loaded_images_hash, (char *) image->assembly_name, image);
+	if (image->assembly_name)
+		g_hash_table_insert (loaded_images_hash, (char *) image->assembly_name, image);
 	
 	return image;
 }
