@@ -3340,8 +3340,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		
 		case OP_X86_TLS_GET: {
 			x86_prefix (code, X86_GS_PREFIX);
-			x86_mov_reg_mem (code, X86_EAX, 0, 4);
-			x86_mov_reg_membase (code, X86_EAX, X86_EAX, ins->inst_offset, 4);			
+			x86_mov_reg_mem (code, ins->dreg, 0, 4);
+			x86_mov_reg_membase (code, ins->dreg, ins->dreg, ins->inst_offset, 4);			
 			break;
 		}
 		default:
@@ -3759,6 +3759,12 @@ static int read_tls_offset_from_method (void* method)
 		(code [3] == 0x65) && (code [4] == 0xa1)) {
 		return *(int*)&(code [5]);
 	}
+	/* 3.2.2 with -march=athlon */
+	if (
+		(code [0] == 0x55) && (code [1] == 0x65) && (code [2] == 0xa1)) {
+		return *(int*)&(code [3]);
+	}
+	
 	return -1;
 }
 void

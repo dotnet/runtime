@@ -725,6 +725,7 @@ lreg: OP_LSHR_UN (lreg, OP_ICONST) "0" {
 }
 
 reg: OP_X86_TLS_GET {
+	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
