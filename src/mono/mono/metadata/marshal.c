@@ -4177,15 +4177,6 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, CEE_LOCALLOC);
 			mono_mb_emit_stloc (mb, conv_arg);
 
-			if (eklass == mono_defaults.string_class) {
-				/* Null terminate */
-				mono_mb_emit_ldloc (mb, conv_arg);
-				mono_mb_emit_ldloc (mb, src_var);
-				mono_mb_emit_byte (mb, CEE_LDLEN);
-				mono_mb_emit_byte (mb, CEE_LDC_I4_0);
-				mono_mb_emit_byte (mb, CEE_STELEM_REF);
-			}
-
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_stloc (mb, dest_ptr);
 
@@ -4233,8 +4224,16 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, CEE_BR);
 			mono_mb_emit_i4 (mb, label2 - (mb->pos + 4));
 
-			mono_mb_patch_addr (mb, label1, mb->pos - (label1 + 4));
 			mono_mb_patch_addr (mb, label3, mb->pos - (label3 + 4));
+
+			if (eklass == mono_defaults.string_class) {
+				/* Null terminate */
+				mono_mb_emit_ldloc (mb, dest_ptr);
+				mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+				mono_mb_emit_byte (mb, CEE_STIND_REF);
+			}
+
+			mono_mb_patch_addr (mb, label1, mb->pos - (label1 + 4));
 		}
 
 		break;
