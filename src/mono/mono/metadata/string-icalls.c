@@ -443,11 +443,7 @@ ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gin
 	/* if no split chars found return the string */
 	if (splitsize == 0) {
 		retarr = mono_array_new(mono_domain_get(), mono_defaults.string_class, 1);
-		tmpstr = mono_string_new_size( mono_domain_get (), srcsize);
-		tmpstrptr = mono_string_chars(tmpstr);
-
-		memcpy(tmpstrptr, src, srcsize * sizeof(gunichar2));
-		mono_array_set(retarr, MonoString *, 0, tmpstr);
+		mono_array_set(retarr, MonoString *, 0, me);
 
 		return retarr;
 	}
