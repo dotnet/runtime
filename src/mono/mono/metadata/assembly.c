@@ -320,14 +320,39 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 
 		if (references [i] == NULL){
 			int j;
-			
-			for (j = 0; j < i; j++)
-				mono_assembly_close (references [j]);
-			g_free (references);
 
-			g_warning ("Could not find assembly %s", aname.name);
-			*status = MONO_IMAGE_MISSING_ASSEMBLYREF;
-			return;
+			/*
+			** Temporary work around: any System.* which are 3300 build, will get
+			** remapped, this is to keep old applications running that might have
+			** been linked against our 5000 API, before we were strongnamed, and
+			** hence were labeled as 3300 builds by reflection.c
+			*/
+			if (aname.build == 3300 && strncmp (aname.name, "System", 6) == 0){
+				aname.build = 5000;
+				
+				references [i] = mono_assembly_load (&aname, image->assembly->basedir, status);
+			}
+			if (references [i] != NULL){
+				if (getenv ("MONO_SILENT_WARNING") == NULL)
+					g_print ("Compat mode: the request from %s to load %s was remapped (http://www.go-mono.com/remap.html)\n",
+						 image->name, aname.name);
+				
+			} else {
+			
+				for (j = 0; j < i; j++)
+					mono_assembly_close (references [j]);
+				g_free (references);
+				
+				g_warning ("Could not find assembly %s, references from %s (assemblyref_index=%d)\n"
+					   "     Major/Minor: %d,%d\n"
+					   "     Build:       %d,%d\n"
+					   "     Token:       %s\n",
+					   aname.name, image->name, i,
+					   aname.major, aname.minor, aname.build, aname.revision,
+					   aname.public_tok_value);
+				*status = MONO_IMAGE_MISSING_ASSEMBLYREF;
+				return;
+			}
 		}
 
 		/* 
