@@ -80,6 +80,15 @@
   </tr>
 </table>
 
+@item Jun 19, 2002
+
+      You can now download a fresh tarball of the libraries and the MCS 
+      compiler daily from <a href="http://www.atoker.com/mono/">Alp Toker's
+      website</a>.
+      
+      New libgc RPMS for Redhat 7.3 are available on <a href="
+      http://java.thn.htu.se/~toor/">Richard Torkar's site</a>.
+
 @item Jun 10, 2002
 
 	Ajay <a
