@@ -119,6 +119,8 @@ mono_dynamic_stream_reset">mono_dynamic_stream_reset
 mono_allocate_stack_slots
 mono_get_inflated_method
 mono_debug_read_method
+mono_domain_get_tls_offset 
+mono_thread_get_tls_offset
 
 #
 # Most init/cleanup routines are internally called, so they do not need to be
@@ -159,3 +161,4 @@ mono_monitor_init
 mono_install_init_vtable
 mono_x86_tramp_init">mono_x86_tramp_init
 mono_install_get_cached_class_info
+
