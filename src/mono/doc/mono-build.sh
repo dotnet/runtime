@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /usr/bin/env bash
 
 # Script to automate the building of mono and its dependencies.
 # Relies on wget being installed (could make it fall back to using
@@ -16,6 +16,44 @@ echo "Building Mono and dependencies in $here, installing to $here/install"
 
 PATH=$here/install/bin:$PATH
 LD_LIBRARY_PATH=$here/install/lib:$LD_LIBRARY_PATH
+
+# Find a tool to fetch files. It must take an HTTP URL on the command line and
+# save the file in the current directory.  (It must also talk HTTP/1.1, which
+# rules out BSD's ftp(1), at least on FreeBSD 4.4.)
+viable_downloaders="wget fetch"
+for i in $viable_downloaders
+do
+    if which $i > /dev/null; then
+	downloader=`which $i`
+	break
+    fi
+done
+
+if [ -z "$downloader" ]; then
+    echo "Can't find a commandline download tool (tried: $viable_downloaders)"
+    exit -1
+else
+    echo "Using $downloader to fetch files"
+fi 
+
+# We need to prefer GNU make if there's a choice.  BSD make falls over in
+# the glib build if gtk-doc is disabled.
+viable_makers="gmake make"
+for i in $viable_makers
+do
+    if which $i > /dev/null; then
+	MAKE=$i
+	break
+    fi
+done
+
+if [ -z "$MAKE" ]; then
+    echo "Can't find a make tool (tried: $viable_makers)"
+    exit -1
+else
+    echo "Using $MAKE"
+    export MAKE
+fi
 
 # Need to install pkgconfig and set ACLOCAL_FLAGS if there is not a
 # pkgconfig installed already.  Otherwise set PKG_CONFIG_PATH to the
@@ -64,14 +102,14 @@ function install_package() {
 
     echo "Installing $name..."
     if [ ! -f $here/$tarfile ]; then
-	wget http://www.go-mono.org/archive/$tarfile
+	(cd $here && $downloader http://www.go-mono.com/archive/$tarfile)
     fi
 
     # Assume that the package built correctly if the dir is there
     if [ ! -d $here/$dirname ]; then
 	# Build and install package
-	tar xzf $here/$tarfile || exit -1
-	(cd $here/$dirname; ./configure --prefix=$here/install $configure_options || exit -1; make || exit -1; make install || exit -1)
+	(cd $here && tar xzf $tarfile) || exit -1
+	(cd $here/$dirname; ./configure --prefix=$here/install $configure_options || exit -1; $MAKE || exit -1; $MAKE install || exit -1)
 	success=$?
 	if [ $success -ne 0 ]; then
 	    echo "***** $name build failure. Run rm -rf $here/$dirname to have this script attempt to build $name again next time"
@@ -113,12 +151,23 @@ export LD_LIBRARY_PATH
 export ACLOCAL_FLAGS
 export PKG_CONFIG_PATH
 
-CPPFLAGS="$CPPFLAGS -I$here/install/include"
-LDFLAGS="$LDFLAGS -L$here/install/lib"
+# Freebsd puts iconv in /usr/local, so see if we need to add
+# /usr/local/include and /usr/local/lib to CPPFLAGS and LDFLAGS.  We could
+# skip this if it would add /usr/include and /usr/lib, but leaving it
+# shouldnt break anything.
+iconvh=`locate include/iconv.h`
+iconvh_dir=`dirname $iconvh`
+iconvlib_dir=`echo $iconvh_dir | sed -e 's/include/lib/'`
+
+echo "Adding $iconvh_dir to CPPFLAGS"
+echo "Adding $iconvlib_dir to LDFLAGS"
+
+CPPFLAGS="$CPPFLAGS -I$here/install/include -I$iconvh_dir"
+LDFLAGS="$LDFLAGS -L$here/install/lib -L$iconvlib_dir"
 export CPPFLAGS
 export LDFLAGS
 
-# Grab pkg-config-0.8, glib-1.3.12 if necessary
+# Grab pkg-config, glib and libgc if necessary
 
 if [ $install_pkgconfig = "yes" ]; then
     install_package pkgconfig-0.8.0.tar.gz pkgconfig-0.8.0 pkgconfig ""
@@ -127,16 +176,16 @@ else
 fi
 
 if [ $install_glib = "yes" ]; then
-    install_package glib-1.3.13.tar.gz glib-1.3.13 glib ""
+    install_package glib-2.0.6.tar.gz glib-2.0.6 glib ""
 else
     echo "Not installing glib, you already seem to have it installed"
 fi
 
 if [ $install_libgc = "yes" ]; then
-    LIBS="-ldl" install_package gc6.0.tar.gz gc6.0 libgc "--enable-threads=pthreads"
+    install_package gc6.1alpha5.tar.gz gc6.1alpha5 libgc "--enable-threads=pthreads"
     # make install didnt do the headers!
     mkdir -p $here/install/include/gc
-    cp -r $here/gc6.0/include/* $here/install/include/gc
+    cp -r $here/gc6.1alpha5/include/* $here/install/include/gc
 else
     echo "Not installing libgc, you already seem to have it installed"
 fi
@@ -166,12 +215,12 @@ elif [ ${CVSROOT:0:9} = ":pserver:" ]; then
     fi
 fi
 
-cvs checkout mono || exit -1
+(cd $here && cvs checkout mono) || exit -1
 
 # Build and install mono
 echo "Building and installing mono"
 
-(cd $here/mono; ./autogen.sh --prefix=$here/install || exit -1; make || exit -1; make install || exit -1) || exit -1
+(cd $here/mono; ./autogen.sh --prefix=$here/install || exit -1; $MAKE || exit -1; $MAKE install || exit -1) || exit -1
 
 
 echo ""

@@ -17,6 +17,17 @@ echo "Building Mono and dependencies in $here, installing to $here/install"
 
 PATH=$here/install/bin:$here/install/lib:$PATH
 
+echo "Checking automake version"
+automake_required="1.6.2"
+automake_version=`automake --version | head -1 | awk '{print $4}' | tr -d '[a-zA-Z]' | sed 's/-.*$//g'`
+echo "Found automake version $automake_version"
+if expr $automake_version \< $automake_required > /dev/null; then
+	echo "Your automake is too old!  You need version $automake_required or newer."
+	exit -1
+else
+	echo "Automake version new enough."
+fi
+
 # Check mono out first, so we can run aclocal from inside the mono dir (it
 # needs to see which version of the real aclocal to run)
 test -z "$CVSROOT" && CVSROOT=:pserver:anonymous@anoncvs.go-mono.com:/mono
@@ -110,15 +121,14 @@ fi
 
 # Fetch and install pkg-config, glib, iconv, intl
 
-install_package pkgconfig-0.80-tml-20020101.zip bin/pkg-config.exe pkgconfig
-install_package glib-1.3.12-20020101.zip lib/libglib-1.3-12.dll glib
-install_package glib-dev-1.3.12-20020101.zip lib/glib-1.3.lib glib-dev
+install_package pkgconfig-0.11-20020310.zip bin/pkg-config.exe pkgconfig
+install_package glib-2.0.4-20020703.zip lib/libglib-2.0-0.dll glib
+install_package glib-dev-2.0.4-20020703.zip lib/glib-2.0.lib glib-dev
 install_package libiconv-1.7.zip lib/iconv.dll iconv
-install_package libiconv-dev-1.7.zip lib/iconv.lib iconv-dev
 install_package libintl-0.10.40-20020101.zip lib/libintl-1.dll intl
 install_package libgc-dev.zip lib/gc.dll gc-dev
 
-# Needed to find the libiconv bits
+# Needed to find the libgc bits
 CPPFLAGS="$CPPFLAGS -I$here/install/include"
 LDFLAGS="$LDFLAGS -L$here/install/lib"
 export CPPFLAGS
