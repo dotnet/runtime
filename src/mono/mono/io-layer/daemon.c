@@ -32,6 +32,7 @@
 #include <mono/io-layer/daemon-messages.h>
 #include <mono/io-layer/timefuncs-private.h>
 #include <mono/io-layer/daemon-private.h>
+#include <mono/io-layer/socket-wrappers.h>
 
 #undef DEBUG
 
