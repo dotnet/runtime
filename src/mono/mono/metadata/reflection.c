@@ -3168,7 +3168,17 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	/* Compute table sizes */
 	/* the MonoImage has already been created in mono_image_basic_init() */
 	meta = &assembly->image;
-	
+
+	/* sizes should be multiple of 4 */
+	assembly->blob.index += 3;
+	assembly->blob.index &= ~3;
+	assembly->guid.index += 3;
+	assembly->guid.index &= ~3;
+	assembly->sheap.index += 3;
+	assembly->sheap.index &= ~3;
+	assembly->us.index += 3;
+	assembly->us.index &= ~3;
+
 	/* Setup the info used by compute_sizes () */
 	meta->idx_blob_wide = assembly->blob.index >= 65536 ? 1 : 0;
 	meta->idx_guid_wide = assembly->guid.index >= 65536 ? 1 : 0;
@@ -3193,6 +3203,9 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	}
 	heapt_size += 24; /* #~ header size */
 	heapt_size += ntables * 4;
+	/* make multiple of 4 */
+	heapt_size += 3;
+	heapt_size &= ~3;
 	meta_size += heapt_size;
 	meta->raw_metadata = g_malloc0 (meta_size);
 	p = meta->raw_metadata;
@@ -4562,19 +4575,20 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb) {
 	// Translate the PEFileKind value to the value expected by the Windows loader
 	//
 	{
-		short kind = assemblyb->pekind;
+		short kind;
 
 		//
+		// PEFileKinds.Dll == 1
 		// PEFileKinds.ConsoleApplication == 2
 		// PEFileKinds.WindowApplication == 3
 		//
 		// need to get:
 		//     IMAGE_SUBSYSTEM_WINDOWS_GUI 2 // Image runs in the Windows GUI subsystem.
                 //     IMAGE_SUBSYSTEM_WINDOWS_CUI 3 // Image runs in the Windows character subsystem.
-		if (kind == 2)
-			kind = 3;
-		else if (kind == 3)
+		if (assemblyb->pekind == 3)
 			kind = 2;
+		else
+			kind = 3;
 		
 		header->nt.pe_subsys_required = GUINT16_FROM_LE (kind);
 	}    
