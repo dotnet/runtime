@@ -1,6 +1,7 @@
 2004-06-18  Jackson Harper  <jackson@ximian.com>
 
-	* man/mono.1: Add MONO_LOG_LEVEL and MONO_LOG_MASK
+	* man/mono.1: Add MONO_LOG_LEVEL and MONO_LOG_MASK. Add
+	instructions on setting multiple mask values.
 		
 Fri Jun 18 19:39:09 CEST 2004 Paolo Molaro <lupus@ximian.com>
 
