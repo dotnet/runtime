@@ -1,16 +1,16 @@
 You can browse the status of the class library and see who has
 registered to work on what parts of the system.  You can view either
 by maintainer or by namespace.
-
+<p>
 The tables represent things that contributors are working on.  We
 register the date when they started working on a particular class, and
 whether a contributor has sent code in (the "implementation" column).  
-
+<p>
 If you want to contribute to Mono, you want to pick a class which is
 not listed here.  Alternatively, you can contact the maintainer of a
 class if you want for example to help him improve his code, make it
 faster, better, provide documentation or make comments.
-
+<p>
 Sometimes contributors will get too busy with other tasks, so they
 will abandon their work on a class.  That is why we keep track of the
 time when they "reserve" a class to work on.  If the contributor gets
