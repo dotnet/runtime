@@ -7,6 +7,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/metadata.h>
+#include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/tokentype.h>
 #include <string.h>
 #include <signal.h>

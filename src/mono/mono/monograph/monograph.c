@@ -32,14 +32,14 @@ print_subtypes (MonoImage *image, MonoClass *class, int depth) {
 	if (depth++ > max_depth)
 		return;
 
-	t = &image->tables [MONO_TABLE_TYPEDEF];
+	t = mono_image_get_table_info (image, MONO_TABLE_TYPEDEF);
 	
 	token = mono_metadata_token_index (class->type_token);
 	token <<= TYPEDEFORREF_BITS;
 	token |= TYPEDEFORREF_TYPEDEF;
 
 	/* use a subgraph? */
-	for (i = 0; i < t->rows; ++i) {
+	for (i = 0; i < mono_table_info_get_rows (t); ++i) {
 		if (token == mono_metadata_decode_row_col (t, i, MONO_TYPEDEF_EXTENDS)) {
 			child = mono_class_get (image, MONO_TOKEN_TYPE_DEF | (i + 1));
 			output_type_edge (class, child);
@@ -91,7 +91,7 @@ interface_graph (MonoImage *image, const char* cname) {
 	char *p;
 	guint32 cols [MONO_INTERFACEIMPL_SIZE];
 	guint32 token, i, count = 0;
-	MonoTableInfo *intf = &image->tables [MONO_TABLE_INTERFACEIMPL];
+	MonoTableInfo *intf = mono_image_get_table_info (image, MONO_TABLE_INTERFACEIMPL);
 
 	cname = g_strdup (cname);
 	p = strrchr (cname, '.');
@@ -114,7 +114,7 @@ interface_graph (MonoImage *image, const char* cname) {
 	token = mono_metadata_token_index (class->type_token);
 	token <<= TYPEDEFORREF_BITS;
 	token |= TYPEDEFORREF_TYPEDEF;
-	for (i = 0; i < intf->rows; ++i) {
+	for (i = 0; i < mono_table_info_get_rows (intf); ++i) {
 		mono_metadata_decode_row (intf, i, cols, MONO_INTERFACEIMPL_SIZE);
 		/*g_print ("index: %d [%d implements %d]\n", index, cols [MONO_INTERFACEIMPL_CLASS], cols [MONO_INTERFACEIMPL_INTERFACE]);*/
 		if (token == cols [MONO_INTERFACEIMPL_INTERFACE]) {
@@ -431,16 +431,16 @@ stats (MonoImage *image, const char *name) {
 	MonoMethod *method;
 	MonoClass *klass;
 	
-	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	num_methods = mono_image_get_table_rows (image, MONO_TABLE_METHOD);
+	for (i = 0; i < num_methods; ++i) {
 		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
 		method_stats (method);
 	}
-	num_methods = image->tables [MONO_TABLE_METHOD].rows;
-	for (i = 0; i < image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
+	num_types = mono_image_get_table_rows (image, MONO_TABLE_TYPEDEF);
+	for (i = 0; i < num_types; ++i) {
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | (i + 1));
 		type_stats (klass);
 	}
-	num_types = image->tables [MONO_TABLE_TYPEDEF].rows;
 
 	g_print ("Methods and code stats:\n");
 	g_print ("back branch waste: %d\n", back_branch_waste);
@@ -608,7 +608,7 @@ method_graph (MonoImage *image, const char *name) {
 	if (!name) {
 		guint32 token = mono_image_get_entry_point (image);
 		if (!token || !(method = mono_get_method (image, token, NULL))) {
-			g_print ("Cannot find entry point in %s: specify an explict method name.\n", image->name);
+			g_print ("Cannot find entry point in %s: specify an explict method name.\n", mono_image_get_filename (image));
 			exit (1);
 		}
 	} else {
@@ -919,7 +919,7 @@ method_cfg (MonoImage *image, const char *name) {
 	if (!name) {
 		guint32 token = mono_image_get_entry_point (image);
 		if (!token || !(method = mono_get_method (image, token, NULL))) {
-			g_print ("Cannot find entry point in %s: specify an explict method name.\n", image->name);
+			g_print ("Cannot find entry point in %s: specify an explict method name.\n", mono_image_get_filename (image));
 			exit (1);
 		}
 	} else {
@@ -999,6 +999,7 @@ enum {
 int
 main (int argc, char *argv[]) {
 	MonoAssembly *assembly;
+	MonoImage *image;
 	const char *cname = NULL;
 	const char *aname = NULL;
 	char *outputfile = NULL;
@@ -1080,21 +1081,22 @@ main (int argc, char *argv[]) {
 	if (cname && strchr (cname, ':') && graphtype == GRAPH_TYPES)
 		graphtype = GRAPH_CALL;
 
+	image = mono_assembly_get_image (assembly);
 	switch (graphtype) {
 	case GRAPH_TYPES:
-		type_graph (assembly->image, cname);
+		type_graph (image, cname);
 		break;
 	case GRAPH_CALL:
-		method_graph (assembly->image, cname);
+		method_graph (image, cname);
 		break;
 	case GRAPH_INTERFACE:
-		interface_graph (assembly->image, cname);
+		interface_graph (image, cname);
 		break;
 	case GRAPH_CONTROL_FLOW:
-		method_cfg (assembly->image, cname);
+		method_cfg (image, cname);
 		break;
 	case GRAPH_STATS:
-		stats (assembly->image, cname);
+		stats (image, cname);
 		break;
 	default:
 		g_error ("wrong graph type");

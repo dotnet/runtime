@@ -283,7 +283,7 @@ mono_init (const char *filename)
 		
 		exit (1);
 	}
-	mono_defaults.corlib = ass->image;
+	mono_defaults.corlib = mono_assembly_get_image (ass);
 
 	mono_defaults.object_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "Object");

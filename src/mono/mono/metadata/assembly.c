@@ -6,8 +6,6 @@
  *
  * (C) 2001 Ximian, Inc.  http://www.ximian.com
  *
- * TODO:
- *   Implement big-endian versions of the reading routines.
  */
 #include <config.h>
 #include <stdio.h>
@@ -24,6 +22,7 @@
 #endif
 #include <mono/metadata/loader.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/metadata/metadata-internals.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/metadata/mono-config.h>
@@ -1063,4 +1062,9 @@ mono_assembly_get_main (void)
 	return(main_assembly);
 }
 
+MonoImage*
+mono_assembly_get_image (MonoAssembly *assembly)
+{
+	return assembly->image;
+}
 

@@ -34,6 +34,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/unicode.h>
 #include <mono/metadata/domain-internals.h>
+#include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/rand.h>

@@ -14,6 +14,7 @@
 #include <string.h>
 #include "mini.h"
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/assembly.h>
 #include "trace.h"
 
 static MonoTraceSpec trace_spec;
@@ -32,7 +33,7 @@ mono_trace_eval (MonoMethod *method)
 		case MONO_TRACEOP_ALL:
 			inc = 1; break;
 		case MONO_TRACEOP_PROGRAM:
-			if (method->klass->image == trace_spec.assembly->image)
+			if (method->klass->image == mono_assembly_get_image (trace_spec.assembly))
 				inc = 1; break;
 		case MONO_TRACEOP_METHOD:
 			if (mono_method_desc_match ((MonoMethodDesc *) op->data, method))
@@ -43,7 +44,7 @@ mono_trace_eval (MonoMethod *method)
 					inc = 1;
 			break;
 		case MONO_TRACEOP_ASSEMBLY:
-			if (strcmp (method->klass->image->assembly_name, op->data) == 0)
+			if (strcmp (mono_image_get_name (method->klass->image), op->data) == 0)
 				inc = 1; break;
 		case MONO_TRACEOP_NAMESPACE:
 			if (strcmp (method->klass->name_space, op->data) == 0)

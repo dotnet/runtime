@@ -22,6 +22,7 @@
 #include "private.h"
 #include "tabledefs.h"
 #include "tokentype.h"
+#include "metadata-internals.h"
 #include <mono/io-layer/io-layer.h>
 
 #define INVALID_ADDRESS 0xffffffff
@@ -1284,5 +1285,57 @@ mono_image_get_public_key (MonoImage *image, guint32 *size)
 	if (size)
 		*size = len;
 	return pubkey;
+}
+
+const char*
+mono_image_get_name (MonoImage *image)
+{
+	return image->name;
+}
+
+const char*
+mono_image_get_filename (MonoImage *image)
+{
+	return image->assembly_name;
+}
+
+const MonoTableInfo*
+mono_image_get_table_info (MonoImage *image, int table_id)
+{
+	if (table_id < 0 || table_id >= 64)
+		return NULL;
+	return &image->tables [table_id];
+}
+
+int
+mono_image_get_table_rows (MonoImage *image, int table_id)
+{
+	if (table_id < 0 || table_id >= 64)
+		return 0;
+	return image->tables [table_id].rows;
+}
+
+int
+mono_table_info_get_rows (MonoTableInfo *table)
+{
+	return table->rows;
+}
+
+MonoAssembly* 
+mono_image_get_assembly (MonoImage *image)
+{
+	return image->assembly;
+}
+
+gboolean
+mono_image_is_dynamic (MonoImage *image)
+{
+	return image->dynamic;
+}
+
+char*
+mono_image_rva_map (MonoImage *image, guint32 rva)
+{
+	return mono_cli_rva_map (image->image_info, rva);
 }
 

@@ -64,8 +64,11 @@ mono_debug_init (MonoDomain *domain, MonoDebugFormat format)
 	mono_install_assembly_load_hook (mono_debug_add_assembly, NULL);
 
 	mono_debug_open_image (mono_defaults.corlib);
+	/*
+	 * FIXME: Ugh: what is this code supposed to do? corlib has no references.
 	for (ass = mono_defaults.corlib->references; ass && *ass; ass++)
 		mono_debug_open_image ((*ass)->image);
+	*/
 }
 
 /*
@@ -78,7 +81,7 @@ mono_debug_init_2 (MonoAssembly *assembly)
 {
 	MonoDebugHandle *handle;
 
-	mono_debug_open_image (assembly->image);
+	mono_debug_open_image (mono_assembly_get_image (assembly));
 
 	handle = _mono_debug_get_image (mono_defaults.corlib);
 	g_assert (handle);
@@ -111,13 +114,13 @@ mono_debug_open_image (MonoImage *image)
 
 	handle = g_new0 (MonoDebugHandle, 1);
 	handle->image = image;
-	handle->image->ref_count++;
-	handle->image_file = g_strdup (image->name);
+	mono_image_addref (image);
+	handle->image_file = g_strdup (mono_image_get_filename (image));
 	handle->_priv = g_new0 (MonoDebugHandlePriv, 1);
 
 	g_hash_table_insert (mono_debug_handles, image, handle);
 
-	if (image->assembly->dynamic)
+	if (mono_image_is_dynamic (image))
 		return handle;
 
 	handle->symfile = mono_debug_open_mono_symbol_file (handle, in_the_mono_debugger);
@@ -135,7 +138,9 @@ mono_debug_close_image (MonoDebugHandle *handle)
 {
 	if (handle->symfile)
 		mono_debug_close_mono_symbol_file (handle->symfile);
-	handle->image->ref_count--;
+	/* decrease the refcount added with mono_image_addref () */
+	mono_image_close (handle->image);
+	/* FIXME: should also free handle->image_file? */
 	g_free (handle->_priv);
 	g_free (handle);
 }
@@ -144,7 +149,7 @@ static void
 mono_debug_add_assembly (MonoAssembly *assembly, gpointer user_data)
 {
 	mono_debugger_lock ();
-	mono_debug_open_image (assembly->image);
+	mono_debug_open_image (mono_assembly_get_image (assembly));
 	mono_debugger_unlock ();
 }
 

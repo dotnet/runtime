@@ -7,24 +7,6 @@
 #include <mono/metadata/object.h>
 #include <mono/utils/mono-hash.h>
 
-typedef struct {
-	GHashTable *hash;
-	char *data;
-	guint32 alloc_size; /* malloced bytes */
-	guint32 index;
-	guint32 offset; /* from start of metadata */
-} MonoDynamicStream;
-
-typedef struct {
-	guint32 alloc_rows;
-	guint32 rows;
-	guint32 row_size; /*  calculated later with column_sizes */
-	guint32 columns;
-	guint32 column_sizes [9]; 
-	guint32 *values; /* rows * columns */
-	guint32 next_idx;
-} MonoDynamicTable;
-
 /*
  * The followinbg structure must match the C# implementation in our corlib.
  */
@@ -250,64 +232,8 @@ typedef struct {
 	guint32 call_conv;
 } MonoReflectionArrayMethod;
 
-enum {
-	MONO_SECTION_TEXT,
-	MONO_SECTION_RSRC,
-	MONO_SECTION_RELOC,
-	MONO_SECTION_MAX
-};
-
-typedef struct {
-	MonoAssembly assembly;
-	gboolean run;
-	gboolean save;
-	char *strong_name;
-	guint32 strong_name_size;
-} MonoDynamicAssembly;
-
-typedef struct {
-	MonoImage image;
-	guint32 meta_size;
-	guint32 text_rva;
-	guint32 metadata_rva;
-	guint32 image_base;
-	guint32 cli_header_offset;
-	guint32 iat_offset;
-	guint32 idt_offset;
-	guint32 ilt_offset;
-	guint32 imp_names_offset;
-	struct {
-		guint32 rva;
-		guint32 size;
-		guint32 offset;
-		guint32 attrs;
-	} sections [MONO_SECTION_MAX];
-	GHashTable *typespec;
-	GHashTable *typeref;
-	GHashTable *handleref;
-	MonoGHashTable *tokens;
-	MonoGHashTable *blob_cache;
-	GList *array_methods;
-	MonoGHashTable *token_fixups;
-	MonoGHashTable *method_to_table_idx;
-	MonoGHashTable *field_to_table_idx;
-	MonoGHashTable *method_aux_hash;
-	gboolean run;
-	gboolean save;
-	char *strong_name;
-	guint32 strong_name_size;
-	char *win32_res;
-	guint32 win32_res_size;
-	MonoDynamicStream pefile;
-	MonoDynamicStream sheap;
-	MonoDynamicStream code; /* used to store method headers and bytecode */
-	MonoDynamicStream resources; /* managed embedded resources */
-	MonoDynamicStream us;
-	MonoDynamicStream blob;
-	MonoDynamicStream tstream;
-	MonoDynamicStream guid;
-	MonoDynamicTable tables [64];
-} MonoDynamicImage;
+typedef struct _MonoDynamicAssembly MonoDynamicAssembly;
+typedef struct _MonoDynamicImage MonoDynamicImage;
 
 typedef struct {
 	MonoArray *data;

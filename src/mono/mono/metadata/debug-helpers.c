@@ -285,9 +285,9 @@ mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 		return mono_method_desc_search_in_class (desc, klass);
 	}
 
-	tdef = &image->tables [MONO_TABLE_TYPEDEF];
-	methods = &image->tables [MONO_TABLE_METHOD];
-	for (i = 0; i < methods->rows; ++i) {
+	tdef = mono_image_get_table_info (image, MONO_TABLE_TYPEDEF);
+	methods = mono_image_get_table_info (image, MONO_TABLE_METHOD);
+	for (i = 0; i < mono_table_info_get_rows (methods); ++i) {
 		guint32 token = mono_metadata_decode_row_col (methods, i, MONO_METHOD_NAME);
 		const char *n = mono_metadata_string_heap (image, token);
 
@@ -301,7 +301,7 @@ mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 }
 
 static const unsigned char*
-dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned char *ip)
+dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned char *ip, const unsigned char *end)
 {
 	MonoMethodHeader *header = ((MonoMethodNormal*)method)->header;
 	const MonoOpcode *opcode;
@@ -318,7 +318,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 	if (dh->label_format)
 		g_string_sprintfa (str, dh->label_format, label);
 	
-	i = mono_opcode_value (&ip);
+	i = mono_opcode_value (&ip, end);
 	ip++;
 	opcode = &mono_opcodes [i];
 	g_string_sprintfa (str, "%-10s", mono_opcode_names [i]);
@@ -440,7 +440,8 @@ mono_disasm_code_one (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, c
 
 	if (!dh)
 		dh = &default_dh;
-	ip = dis_one (res, dh, method, ip);
+	/* set ip + 2 as the end: this is just a debugging method */
+	ip = dis_one (res, dh, method, ip, ip + 2);
 	if (endp)
 		*endp = ip;
 	
@@ -458,7 +459,7 @@ mono_disasm_code (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, const
 	if (!dh)
 		dh = &default_dh;
 	while (ip < end) {
-		ip = dis_one (res, dh, method, ip);
+		ip = dis_one (res, dh, method, ip, end);
 	}
 	
 	result = res->str;

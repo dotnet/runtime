@@ -513,7 +513,7 @@ static void process_get_fileversion (MonoObject *filever, MonoImage *image)
 		return;
 	}
 	
-	data=mono_cli_rva_map (image->image_info,
+	data=mono_image_rva_map (image,
 			       version_info->rde_data_offset);
 	if(data==NULL) {
 		return;
@@ -611,6 +611,7 @@ static void process_add_module (GPtrArray *modules, MonoAssembly *ass)
 	MonoObject *item, *filever;
 	MonoDomain *domain=mono_domain_get ();
 	gchar *modulename;
+	const char* filename;
 	
 	/* Build a System.Diagnostics.ProcessModule with the data.
 	 * Leave BaseAddress and EntryPointAddress set to NULL,
@@ -632,13 +633,14 @@ static void process_add_module (GPtrArray *modules, MonoAssembly *ass)
 	g_message (G_GNUC_PRETTY_FUNCTION ": recording assembly: FileName [%s] FileVersionInfo [%d.%d.%d.%d], ModuleName [%s]", ass->image->name, ass->aname.major, ass->aname.minor, ass->aname.build, ass->aname.revision, ass->image->name);
 #endif
 
-	process_get_fileversion (filever, ass->image);
+	process_get_fileversion (filever, mono_assembly_get_image (ass));
 
-	process_set_field_string_utf8 (filever, "filename", ass->image->name);
-	process_set_field_string_utf8 (item, "filename", ass->image->name);
+	filename = mono_image_get_filename (mono_assembly_get_image (ass));
+	process_set_field_string_utf8 (filever, "filename", filename);
+	process_set_field_string_utf8 (item, "filename", filename);
 	process_set_field_object (item, "version_info", filever);
 
-	modulename=g_path_get_basename (ass->image->name);
+	modulename=g_path_get_basename (filename);
 	process_set_field_string_utf8 (item, "modulename", modulename);
 	g_free (modulename);
 
@@ -717,7 +719,7 @@ void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoO
 	}
 	
 	process_get_fileversion (this, image);
-	process_set_field_string_utf8 (this, "filename", image->name);
+	process_set_field_string_utf8 (this, "filename", mono_image_get_filename (image));
 	
 	mono_image_close (image);
 }

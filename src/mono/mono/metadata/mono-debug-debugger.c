@@ -967,7 +967,7 @@ ves_icall_MonoDebugger_GetMethod (MonoReflectionAssembly *assembly, guint32 toke
 {
 	MonoMethod *method;
 
-	method = mono_get_method (assembly->assembly->image, token, NULL);
+	method = mono_get_method (mono_assembly_get_image (assembly->assembly), token, NULL);
 
 	return mono_method_get_object (mono_domain_get (), method, NULL);
 }
@@ -983,7 +983,7 @@ ves_icall_MonoDebugger_GetType (MonoReflectionAssembly *assembly, guint32 token)
 {
 	MonoClass *klass;
 
-	klass = mono_class_get (assembly->assembly->image, token);
+	klass = mono_class_get (mono_assembly_get_image (assembly->assembly), token);
 	if (!klass) {
 		g_warning (G_STRLOC ": %x", token);
 		return NULL;
@@ -1005,7 +1005,7 @@ ves_icall_MonoDebugger_GetLocalTypeFromSignature (MonoReflectionAssembly *assemb
 	MONO_CHECK_ARG_NULL (signature);
 
 	domain = mono_domain_get();
-	image = assembly->assembly->image;
+	image = mono_assembly_get_image (assembly->assembly);
 
 	ptr = mono_array_addr (signature, char, 0);
 	g_assert (*ptr++ == 0x07);

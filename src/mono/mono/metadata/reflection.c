@@ -11,6 +11,7 @@
 #include "mono/utils/mono-digest.h"
 #include "mono/metadata/reflection.h"
 #include "mono/metadata/tabledefs.h"
+#include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/tokentype.h"
 #include "mono/metadata/domain-internals.h"
 #include "mono/metadata/opcodes.h"

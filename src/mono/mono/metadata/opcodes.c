@@ -32,20 +32,27 @@ mono_opcode_names [MONO_CEE_LAST + 1] = {
 };
 
 MonoOpcodeEnum
-mono_opcode_value (const guint8 **ip)
+mono_opcode_value (const guint8 **ip, const guint8 *end)
 {
 	MonoOpcodeEnum res;
+	const guint8 *p = *ip;
 
-	if (**ip == 0xfe) {
-		++*ip;
-		res = **ip + MONO_PREFIX1_OFFSET;
-	} else if (**ip == MONO_CUSTOM_PREFIX) {
-		++*ip;
-		res = **ip + MONO_CUSTOM_PREFIX_OFFSET;
+	if (p >= end)
+		return -1;
+	if (*p == 0xfe) {
+		++p;
+		if (p >= end)
+			return -1;
+		res = *p + MONO_PREFIX1_OFFSET;
+	} else if (*p == MONO_CUSTOM_PREFIX) {
+		++p;
+		if (p >= end)
+			return -1;
+		res = *p + MONO_CUSTOM_PREFIX_OFFSET;
 	} else {
-		res = **ip;
+		res = *p;
 	}
-	
+	*ip = p;
 	return res;
 }
 

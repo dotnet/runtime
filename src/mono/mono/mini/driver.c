@@ -270,7 +270,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run) {
 	}
 
 	/* load the metadata */
-	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
        	        method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
 		mono_class_init (method->klass);
 
@@ -291,13 +291,13 @@ mini_regression (MonoImage *image, int verbose, int *total_run) {
 		opt_flags = opt_sets [opt];
 		mono_set_defaults (verbose, opt_flags);
 		n = opt_descr (opt_flags);
-		g_print ("Test run: image=%s, opts=%s\n", image->name, n);
+		g_print ("Test run: image=%s, opts=%s\n", mono_image_get_filename (image), n);
 		g_free (n);
 		cfailed = failed = run = code_size = 0;
 		comp_time = elapsed = 0.0;
 
 		/* fixme: ugly hack - delete all previously compiled methods */
-		for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
 			method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
 			method->info = NULL;
 		}
@@ -305,7 +305,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run) {
 		g_timer_start (timer);
 		if (mini_stats_fd)
 			fprintf (mini_stats_fd, "[");
-		for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
         	        method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
 			if (strncmp (method->name, "test_", 5) == 0) {
 				expected = atoi (method->name + 5);
@@ -376,7 +376,7 @@ mini_regression_list (int verbose, int count, char *images [])
 			g_warning ("failed to load assembly: %s", images [i]);
 			continue;
 		}
-		total += mini_regression (ass->image, verbose, &run);
+		total += mini_regression (mono_assembly_get_image (ass), verbose, &run);
 		total_run += run;
 		mono_assembly_close (ass);
 	}
@@ -403,11 +403,11 @@ compile_all_methods_thread_main (CompileAllThreadArgs *args)
 {
 	MonoAssembly *ass = args->ass;
 	int verbose = args->verbose;
-	MonoImage *image = ass->image;
+	MonoImage *image = mono_assembly_get_image (ass);
 	MonoMethod *method;
 	int i, count = 0;
 
-	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
 		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
 		if (method->flags & METHOD_ATTRIBUTE_ABSTRACT)
 			continue;
@@ -453,12 +453,12 @@ compile_all_methods (MonoAssembly *ass, int verbose)
 int 
 mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 {
-	MonoImage *image = assembly->image;
+	MonoImage *image = mono_assembly_get_image (assembly);
 	MonoMethod *method;
 	guint32 entry = mono_image_get_entry_point (image);
 
 	if (!entry) {
-		g_print ("Assembly '%s' doesn't have an entry point.\n", image->name);
+		g_print ("Assembly '%s' doesn't have an entry point.\n", mono_image_get_filename (image));
 		/* FIXME: remove this silly requirement. */
 		mono_environment_exitcode_set (1);
 		return 1;
@@ -635,7 +635,7 @@ mono_main (int argc, char* argv[])
 				const guchar *clibpath;
 				mono_init ("mono");
 				cerror = mono_check_corlib_version ();
-				clibpath = mono_defaults.corlib? mono_defaults.corlib->name: "unknown";
+				clibpath = mono_defaults.corlib? mono_image_get_filename (mono_defaults.corlib): "unknown";
 				if (cerror) {
 					g_print ("The currently installed mscorlib doesn't match this runtime version.\n");
 					g_print ("The error is: %s\n", cerror);
@@ -815,7 +815,7 @@ mono_main (int argc, char* argv[])
 		mini_cleanup (domain);
 		return 3;
 	}
-	method = mono_method_desc_search_in_image (desc, assembly->image);
+	method = mono_method_desc_search_in_image (desc, mono_assembly_get_image (assembly));
 	if (!method) {
 		g_print ("Cannot find method %s\n", mname);
 		mini_cleanup (domain);

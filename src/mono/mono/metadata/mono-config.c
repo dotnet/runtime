@@ -256,7 +256,7 @@ get_assembly_filename (MonoImage *image, int state)
 {
 	switch (state) {
 	case 0:
-		return g_strdup (image->assembly_name);
+		return g_strdup (mono_image_get_name (image));
 	default:
 		return NULL;
 	}
@@ -271,11 +271,11 @@ mono_config_for_assembly (MonoImage *assembly)
 	const char *home;
 	
 	state.assembly = assembly;
-	cfg_name = g_strdup_printf ("%s.config", assembly->name);
+	cfg_name = g_strdup_printf ("%s.config", mono_image_get_filename (assembly));
 	mono_config_parse_file_with_context (&state, cfg_name);
 	g_free (cfg_name);
 
-	cfg_name = g_strdup_printf ("%s.config", assembly->assembly_name);
+	cfg_name = g_strdup_printf ("%s.config", mono_image_get_name (assembly));
 
 	home = g_get_home_dir ();
 

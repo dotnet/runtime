@@ -17,6 +17,7 @@
 #include "mono-endian.h"
 #include "cil-coff.h"
 #include "tokentype.h"
+#include "metadata-internals.h"
 #include "private.h"
 #include "class.h"
 

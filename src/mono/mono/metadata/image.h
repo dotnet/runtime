@@ -6,6 +6,8 @@
 #include <gmodule.h>
 
 typedef struct _MonoImage MonoImage;
+typedef struct _MonoAssembly MonoAssembly;
+typedef struct _MonoTableInfo MonoTableInfo;
 
 typedef struct {
 	const char *name;
@@ -18,146 +20,6 @@ typedef struct {
 	guint32 flags;
 	guint16 major, minor, build, revision;
 } MonoAssemblyName;
-
-typedef struct {
-	int   ref_count;
-	char *basedir;
-	gboolean in_gac;
-	MonoAssemblyName aname;
-	GModule *aot_module;
-	MonoImage *image;
-	/* Load files here */
-	gboolean dynamic;
-} MonoAssembly;
-
-typedef struct {
-	const char* data;
-	guint32  size;
-} MonoStreamHeader;
-
-typedef struct {
-	guint32   rows, row_size;
-	const char *base;
-
-	/*
-	 * Tables contain up to 9 columns and the possible sizes of the
-	 * fields in the documentation are 1, 2 and 4 bytes.  So we
-	 * can encode in 2 bits the size.
-	 *
-	 * A 32 bit value can encode the resulting size
-	 *
-	 * The top eight bits encode the number of columns in the table.
-	 * we only need 4, but 8 is aligned no shift required. 
-	 */
-	guint32   size_bitfield;
-} MonoTableInfo;
-
-struct _MonoImage {
-	int   ref_count;
-	FILE *f;
-	/* if f is NULL the image was loaded from raw data */
-	char *raw_data;
-	guint32 raw_data_len;
-	gboolean raw_data_allocated;
-	char *name;
-	const char *assembly_name;
-	const char *module_name;
-	const char *version;
-	char *guid;
-	void *image_info;
-
-	char                *raw_metadata;
-			    
-	gboolean             idx_string_wide, idx_guid_wide, idx_blob_wide;
-			    
-	MonoStreamHeader     heap_strings;
-	MonoStreamHeader     heap_us;
-	MonoStreamHeader     heap_blob;
-	MonoStreamHeader     heap_guid;
-	MonoStreamHeader     heap_tables;
-			    
-	const char          *tables_base;
-
-	MonoTableInfo        tables [64];
-
-	/*
-	 * references is initialized only by using the mono_assembly_open
-	 * function, and not by using the lowlevel mono_image_open.
-	 *
-	 * It is NULL terminated.
-	 */
-	MonoAssembly **references;
-
-	MonoImage **modules;
-
-	MonoImage **files;
-
-	/*
-	 * The Assembly this image was loaded from.
-	 */
-	MonoAssembly *assembly;
-
-	/*
-	 * Indexed by method tokens and typedef tokens.
-	 */
-	GHashTable *method_cache;
-	GHashTable *class_cache;
-	/*
-	 * Indexed by fielddef and memberref tokens
-	 */
-	GHashTable *field_cache;
-
-	/* indexed by typespec tokens. */
-	GHashTable *typespec_cache;
-	/* indexed by token */
-	GHashTable *memberref_signatures;
-
-	/*
-	 * Indexed by MonoGenericInst.
-	 */
-	GHashTable *generic_inst_cache;
-
-	/*
-	 * Indexes namespaces to hash tables that map class name to typedef token.
-	 */
-	GHashTable *name_cache;
-
-	/*
-	 * Indexed by ((rank << 24) | (typedef & 0xffffff)), which limits us to a
-	 * maximal rank of 255
-	 */
-	GHashTable *array_cache;
-
-	/*
-	 * indexed by MonoMethodSignature 
-	 */
-	GHashTable *delegate_begin_invoke_cache;
-	GHashTable *delegate_end_invoke_cache;
-	GHashTable *delegate_invoke_cache;
-
-	/*
-	 * indexed by MonoMethod pointers 
-	 */
-	GHashTable *runtime_invoke_cache;
-	GHashTable *managed_wrapper_cache;
-	GHashTable *native_wrapper_cache;
-	GHashTable *remoting_invoke_cache;
-	GHashTable *synchronized_cache;
-
-	void *reflection_info;
-
-	/*
-	 * user_info is a public field and is not touched by the
-	 * metadata engine
-	 */
-	void *user_info;
-
-	/* dll map entries */
-	GHashTable *dll_map;
-
-	/* Whenever this is a dynamically emitted module */
-	gboolean dynamic;
-};
 
 typedef enum {
 	MONO_IMAGE_OK,
@@ -187,6 +49,16 @@ int           mono_image_ensure_section_idx (MonoImage *image,
 guint32       mono_image_get_entry_point    (MonoImage *image);
 const char   *mono_image_get_resource       (MonoImage *image, guint32 offset, guint32 *size);
 MonoImage*    mono_image_load_file_for_image (MonoImage *image, int fileidx);
+
+const char*   mono_image_get_name       (MonoImage *image);
+const char*   mono_image_get_filename   (MonoImage *image);
+MonoAssembly* mono_image_get_assembly   (MonoImage *image);
+gboolean      mono_image_is_dynamic     (MonoImage *image);
+char*         mono_image_rva_map        (MonoImage *image, guint32 rva);
+
+const MonoTableInfo *mono_image_get_table_info (MonoImage *image, int table_id);
+int                  mono_image_get_table_rows (MonoImage *image, int table_id);
+int                  mono_table_info_get_rows  (MonoTableInfo *table);
 
 /* This actually returns a MonoPEResourceDataEntry *, but declaring it
  * causes an include file loop.

@@ -64,6 +64,6 @@ extern const MonoOpcode mono_opcodes [];
 extern const char* const mono_opcode_names [];
 
 MonoOpcodeEnum
-mono_opcode_value (const guint8 **ip);
+mono_opcode_value (const guint8 **ip, const guint8 *end);
 
 #endif /* __MONO_METADATA_OPCODES_H__ */

@@ -80,18 +80,19 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile)
 static gconstpointer
 open_symfile (MonoImage *image, guint32 *size)
 {
-	MonoTableInfo *table = &image->tables [MONO_TABLE_MANIFESTRESOURCE];
-	guint32 i;
+	MonoTableInfo *table = mono_image_get_table_info (image, MONO_TABLE_MANIFESTRESOURCE);
+	guint32 i, num_rows;
 	guint32 cols [MONO_MANIFEST_SIZE];
 	const char *val;
 
-	for (i = 0; i < table->rows; ++i) {
+	num_rows = mono_table_info_get_rows (table);
+	for (i = 0; i < num_rows; ++i) {
 		mono_metadata_decode_row (table, i, cols, MONO_MANIFEST_SIZE);
 		val = mono_metadata_string_heap (image, cols [MONO_MANIFEST_NAME]);
 		if (!strcmp (val, "MonoSymbolFile"))
 			break;
 	}
-	if (i == table->rows)
+	if (i == num_rows)
 		return NULL;
 	g_assert (!cols [MONO_MANIFEST_IMPLEMENTATION]);
 

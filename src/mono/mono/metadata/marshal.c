@@ -19,6 +19,7 @@
 #include "mono/metadata/threadpool.h"
 #include "mono/metadata/threads.h"
 #include "mono/metadata/monitor.h"
+#include "mono/metadata/metadata-internals.h"
 #include <string.h>
 #include <errno.h>
 

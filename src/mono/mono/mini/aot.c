@@ -30,6 +30,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/os/gc_wrapper.h>
 

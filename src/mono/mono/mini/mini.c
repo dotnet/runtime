@@ -2527,7 +2527,9 @@ get_basic_blocks (MonoCompile *cfg, GHashTable *bbhash, MonoMethodHeader* header
 
 	while (ip < end) {
 		cli_addr = ip - start;
-		i = mono_opcode_value ((const guint8 **)&ip);
+		i = mono_opcode_value ((const guint8 **)&ip, end);
+		if (i < 0)
+			goto unverified;
 		opcode = &mono_opcodes [i];
 		switch (opcode->argument) {
 		case MonoInlineNone:
@@ -8534,14 +8536,14 @@ mono_set_defaults (int verbose_level, guint32 opts)
 static void
 mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 {
-	MonoImage *image = ass->image;
+	MonoImage *image = mono_assembly_get_image (ass);
 	MonoMethod *method, *invoke;
 	int i, count = 0;
 
 	if (mini_verbose > 0)
-		printf ("PRECOMPILE: %s.\n", ass->image->name);
+		printf ("PRECOMPILE: %s.\n", mono_image_get_filename (image));
 
-	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
 		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
 		if (method->flags & METHOD_ATTRIBUTE_ABSTRACT)
 			continue;

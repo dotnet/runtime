@@ -14,8 +14,6 @@ confdir = $(sysconfdir)
 endif
 
 bin_PROGRAMS = pedump
-# monosn is deprecated in favor of sn
-noinst_PROGRAMS = monosn
 
 noinst_LTLIBRARIES = libmetadata.la libmonoruntime.la
 
@@ -95,13 +93,18 @@ libmetadata_la_SOURCES = \
 	domain-internals.h	\
 	opcodes.c	\
 	image.c		\
+	cil-coff.h	\
+	tabledefs.h	\
 	metadata.c	\
+	metadata-internals.h	\
 	verify.c	\
 	mono-endian.c	\
+	mono-endian.h	\
 	mono-config.c	\
 	mono-config.h	\
 	private.h	\
 	rawbuffer.c	\
+	rawbuffer.h	\
 	loader.c	\
 	class.c		\
 	mempool.c	\
@@ -117,22 +120,17 @@ libmonoruntimeinclude_HEADERS = \
 	mono-debug-debugger.h	\
 	debug-mono-symfile.h	\
 	threads.h	\
-	environment.h	\
-	locales.h
+	environment.h
 
 libmetadatainclude_HEADERS = \
 	assembly.h	\
 	opcodes.h	\
 	blob.h		\
-	cil-coff.h	\
-	mono-endian.h	\
 	image.h		\
 	metadata.h	\
 	verify.h	\
-	rawbuffer.h	\
 	reflection.h	\
 	row-indexes.h	\
-	tabledefs.h	\
 	tokentype.h	\
 	loader.h	\
 	class.h		\
@@ -141,24 +139,13 @@ libmetadatainclude_HEADERS = \
 	profiler.h	\
 	appdomain.h	\
 	debug-helpers.h	\
-	mempool.h	\
-	rand.h
+	mempool.h
 
 pedump_SOURCES =		\
 	pedump.c
 
 pedump_LDADD = libmetadata.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
 	$(LIBGC_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) -lm
-
-
-monosn_LDADD = \
-	libmetadata.la	\
-	../io-layer/libwapi.la		\
-	../utils/libmonoutils.la	\
-	$(LIBGC_LIBS)			\
-	$(GLIB_LIBS)			\
-	$(GMODULE_LIBS) 		\
-	-lm
 
 BUILT_SOURCES = $(bundle_srcs) libmetadata.la
 
