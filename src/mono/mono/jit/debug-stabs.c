@@ -9,8 +9,8 @@
 #include "debug-private.h"
 
 typedef struct {
-	char *name;
-	char *spec;
+	const char *name;
+	const char *spec;
 } BaseTypes;
 
 /*
@@ -119,11 +119,11 @@ write_method_stabs (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 }
 
 static void
-get_enumvalue (MonoClass *klass, int index, char *buf)
+get_enumvalue (MonoClass *klass, int idx, char *buf)
 {
 	guint32 const_cols [MONO_CONSTANT_SIZE];
 	const char *ptr;
-	guint32 crow = mono_metadata_get_constant_index (klass->image, MONO_TOKEN_FIELD_DEF | (index + 1));
+	guint32 crow = mono_metadata_get_constant_index (klass->image, MONO_TOKEN_FIELD_DEF | (idx + 1));
 
 	if (!crow) {
 		buf [0] = '0';
@@ -148,7 +148,7 @@ write_method_func (gpointer key, gpointer value, gpointer user_data)
 }
 
 static void
-write_class_stabs (AssemblyDebugInfo *info, MonoClass *klass, int index)
+write_class_stabs (AssemblyDebugInfo *info, MonoClass *klass, int idx)
 {
 	char *name;
 	int i;
