@@ -4,12 +4,13 @@
 
 .class public auto ansi sealed beforefieldinit Tests {
 
-	.method static public int32 Main() il managed {
+	.method static public int32 Main(string[] args) il managed {
 		.entrypoint
 		
 		ldtoken Tests
 		call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-		call       int32 [TestDriver]TestDriver::RunTests(class [mscorlib]System.Type)
+		ldarg.0
+		call       int32 [TestDriver]TestDriver::RunTests(class [mscorlib]System.Type, string[])
 		ret
 	}
 
@@ -623,5 +624,13 @@ COND:   ldloc.0
 	end:
 		ldloc.0
 		ret
+	}
+
+	.method public static int32 test_1_conv_ovf_i8_with_i4 () {
+			ldc.i4.m1 
+			conv.ovf.i8
+			conv.ovf.i4
+			neg
+			ret
 	}
 }

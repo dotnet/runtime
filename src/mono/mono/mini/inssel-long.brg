@@ -319,7 +319,7 @@ freg: OP_LCONV_TO_R_UN (lreg) {
 
 reg: CEE_CONV_OVF_I8 (reg) {
 	/* Sign extend the value in the lower word into the upper word */
-	MONO_EMIT_BIALU_IMM (s, tree, OP_SHR_IMM, state->reg1, state->left->reg1, 0);
+	MONO_EMIT_BIALU_IMM (s, tree, OP_LSHR_IMM, state->reg1, state->left->reg1, 0);
 }
 
 reg: CEE_CONV_OVF_I8_UN (reg) {
