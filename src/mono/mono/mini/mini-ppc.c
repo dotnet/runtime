@@ -663,12 +663,12 @@ mono_arch_allocate_vars (MonoCompile *m)
 	curinst = m->locals_start;
 	for (i = curinst; i < m->num_varinfo; ++i) {
 		inst = m->varinfo [i];
-		if (inst->opcode == OP_REGVAR)
+		if ((inst->flags & MONO_INST_IS_DEAD) || inst->opcode == OP_REGVAR)
 			continue;
 
 		/* inst->unused indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structure */
-		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype))
+		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
 			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
 		else
 			size = mono_type_size (inst->inst_vtype, &align);
@@ -2768,6 +2768,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
 			ppc_lwz (code, ppc_r0, 0, ins->sreg1);
+			break;
+		case OP_ARGLIST:
+			/* FIXME: implement */
 			break;
 		case OP_FCALL:
 		case OP_LCALL:
