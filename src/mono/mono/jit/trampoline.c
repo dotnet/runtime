@@ -18,28 +18,11 @@
 #include "codegen.h"
 #include "message.h"
 
-static void
-arch_remoting_invoke (MonoMethod *method, gpointer ip, gpointer first_arg)
+MonoObject *
+mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, 
+		      MonoObject **exc, MonoArray **out_args)
 {
-	MonoMethodSignature *sig = method->signature;
-	MonoMethodMessage *msg;
-	MonoTransparentProxy *this;
-	MonoObject *res, *exc;
-	MonoArray *out_args;
-	int this_pos = 0;
 	static MonoObject *(*invoke) (gpointer, gpointer, MonoObject **, MonoArray **) = NULL;
-
-	//printf ("REMOTING %s.%s:%s\n", method->klass->name_space, method->klass->name,
-	//method->name);
-
-	if (ISSTRUCT (sig->ret))
-		this_pos += 4;
-
-	this = *(MonoTransparentProxy **)(((char *)&first_arg) + this_pos);
-
-	g_assert (((MonoObject *)this)->vtable->klass == mono_defaults.transparent_proxy_class);
-
-	msg = mono_method_call_message_new (method, &first_arg);
 
 	/* fixme: make this domain dependent */
 	if (!invoke) {
@@ -59,8 +42,32 @@ arch_remoting_invoke (MonoMethod *method, gpointer ip, gpointer first_arg)
 		g_assert (invoke);
 	}
 
+	return invoke (real_proxy, msg, exc, out_args);
+}
 
-	res = invoke (this->rp, msg, &exc, &out_args);
+static void
+arch_remoting_invoke (MonoMethod *method, gpointer ip, gpointer first_arg)
+{
+	MonoMethodSignature *sig = method->signature;
+	MonoMethodMessage *msg;
+	MonoTransparentProxy *this;
+	MonoObject *res, *exc;
+	MonoArray *out_args;
+	int this_pos = 0;
+
+	//printf ("REMOTING %s.%s:%s\n", method->klass->name_space, method->klass->name,
+	//method->name);
+
+	if (ISSTRUCT (sig->ret))
+		this_pos += 4;
+
+	this = *(MonoTransparentProxy **)(((char *)&first_arg) + this_pos);
+
+	g_assert (((MonoObject *)this)->vtable->klass == mono_defaults.transparent_proxy_class);
+
+	msg = mono_method_call_message_new (method, &first_arg);
+
+	res = mono_remoting_invoke (this->rp, msg, &exc, &out_args);
 
 	if (exc)
 		mono_raise_exception ((MonoException *)exc);

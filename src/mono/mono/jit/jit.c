@@ -1716,17 +1716,24 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				field = mono_class_get_field (klass, token);
 			}
 			g_assert (field);
-
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 			
-			if (klass->valuetype)
-				t1->data.i = field->offset - sizeof (MonoObject);
-			else 
-				t1->data.i = field->offset;
+			if (klass->marshalbyref) {
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+				t1->data.klass = klass;
+				t1 = mono_ctree_new (mp, MB_TERM_REMOTE_FIELD, sp [0], t1);
+				t1->data.field = field;
+			} else {
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 
-			t1 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], t1);
+				if (klass->valuetype)
+					t1->data.i = field->offset - sizeof (MonoObject);
+				else 
+					t1->data.i = field->offset;
 
-			if (!load_addr)
+				t1 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], t1);
+			}
+
+			if (!load_addr) 
 				t1 = ctree_create_load (cfg, field->type, t1, &svt, FALSE);
 			else
 				svt = VAL_POINTER;

@@ -869,10 +869,11 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 			pa [i] = (char *)(((gpointer *)params->vector)[i]) + sizeof (MonoObject);
 			break;
 		case MONO_TYPE_STRING:
+		case MONO_TYPE_OBJECT:
 			pa [i] = (char *)(((gpointer *)params->vector)[i]);
 			break;
 		default:
-			g_error ("type 0x%x not handled in invoke", sig->params [i]->type);
+			g_error ("type 0x%x not handled in ves_icall_InternalInvoke", sig->params [i]->type);
 		}
 	}
 
@@ -888,10 +889,41 @@ static MonoObject *
 ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoArray *params, MonoArray **outArgs) 
 {
 	MonoDomain *domain = mono_domain_get (); 
-	MonoMethodSignature *sig = method->method->signature;
+	MonoMethod *m = method->method;
+	MonoMethodSignature *sig = m->signature;
 	MonoArray *out_args;
 	MonoObject *result;
 	int i, j, outarg_count = 0;
+
+	if (m->klass == mono_defaults.object_class && !strcmp (m->name, "FieldGetter")) {
+		MonoClass *k = this->vtable->klass;
+		MonoString *name = mono_array_get (params, MonoString *, 1);
+		char *str;
+
+		str = mono_string_to_utf8 (name);
+		
+		for (i = 0; i < k->field.count; i++) {
+			if (!strcmp (k->fields [i].name, str)) {
+				MonoClass *field_klass =  mono_class_from_mono_type (k->fields [i].type);
+				if (field_klass->valuetype)
+					result = mono_value_box (domain, field_klass,
+								 (char *)this + k->fields [i].offset);
+				else 
+					result = *((char *)this + k->fields [i].offset);
+				
+				g_assert (result);
+				out_args = mono_array_new (domain, mono_defaults.object_class, 1);
+				*outArgs = out_args;
+				mono_array_set (out_args, gpointer, 0, result);
+				g_free (str);
+				return NULL;
+			}
+		}
+
+		g_free (str);
+		g_assert_not_reached ();
+
+	}
 
 	for (i = 0; i < params->bounds->length; i++) {
 		if (sig->params [i]->byref) 
@@ -1878,11 +1910,11 @@ ves_icall_System_Environment_GetCommandLine ()
 
 
 void
-ves_icall_MonoMethodMessage_InitMessage (MonoMethodMessage *this, 
-					 MonoReflectionMethod *method,
-					 MonoArray *out_args)
+mono_message_init (MonoDomain *domain,
+		   MonoMethodMessage *this, 
+		   MonoReflectionMethod *method,
+		   MonoArray *out_args)
 {
-	MonoDomain *domain = mono_domain_get ();
 	MonoMethodSignature *sig = method->method->signature;
 	MonoString *name;
 	int i, j;
@@ -1915,13 +1947,23 @@ ves_icall_MonoMethodMessage_InitMessage (MonoMethodMessage *this,
 			}
 			arg_type = 2;
 			if (sig->params [i]->attrs & PARAM_ATTRIBUTE_IN)
-				arg_type = 1;
+				arg_type |= 1;
 		} else {
 			arg_type = 1;
 		}
 
 		mono_array_set (this->arg_types, guint8, i, arg_type);
 	}
+}
+
+static void
+ves_icall_MonoMethodMessage_InitMessage (MonoMethodMessage *this, 
+					 MonoReflectionMethod *method,
+					 MonoArray *out_args)
+{
+	MonoDomain *domain = mono_domain_get ();
+	
+	mono_message_init (domain, this, method, out_args);
 }
 
 static MonoBoolean

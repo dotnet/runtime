@@ -383,5 +383,11 @@ MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelp
 
 MonoArray  *mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig);
 
+void
+mono_message_init (MonoDomain *domain,
+		   MonoMethodMessage *this, 
+		   MonoReflectionMethod *method,
+		   MonoArray *out_args);
+
 #endif /* __METADATA_REFLECTION_H__ */
 

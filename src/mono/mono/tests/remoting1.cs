@@ -66,6 +66,8 @@ public struct MyStruct {
 	
 class R1 : MarshalByRefObject {
 
+	public int test_field = 5;
+	
 	public virtual MyStruct Add (int a, out int c, int b) {
 		Console.WriteLine ("ADD");
 		c = a + b;
@@ -137,6 +139,12 @@ class Test {
 			return 1;
 		
 		lres = test_call (o);
+
+		//o.test_field = 2;
+		
+		Console.WriteLine ("test_field: " + o.test_field);
+		if (o.test_field != 5)
+			return 1;
 
 		return 0;
 	}

@@ -172,22 +172,8 @@ mono_method_call_message_new (MonoMethod *method, gpointer stack)
 	guint8 arg_type;
 
 	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class); 
-
-	msg->method = mono_method_get_object (domain, method);
-
-	msg->args = mono_array_new (domain, mono_defaults.object_class, sig->param_count);
-	msg->arg_types = mono_array_new (domain, mono_defaults.byte_class, sig->param_count);
-
-	names = g_new (char *, sig->param_count);
-	mono_method_get_param_names (method, (const char **) names);
-	msg->names = mono_array_new (domain, mono_defaults.string_class, sig->param_count);
 	
-	for (i = 0; i < sig->param_count; i++) {
-		 name = mono_string_new (domain, names [i]);
-		 mono_array_set (msg->names, gpointer, i, name);	
-	}
-
-	g_free (names);
+	mono_message_init (domain, msg, mono_method_get_object (domain, method), NULL);
 
 	/* the first argument is an implizit reference for valuetype 
 	 * return values */
@@ -204,54 +190,70 @@ mono_method_call_message_new (MonoMethod *method, gpointer stack)
 
 		size = mono_type_stack_size (sig->params [i], &align);
 
-		if (sig->params [i]->byref) {
-			arg_type = 2;
+		if (sig->params [i]->byref)
 			vpos = *((gpointer *)cpos);
-			if (sig->params [i]->attrs & PARAM_ATTRIBUTE_IN)
-				arg_type = 1;
-		} else {
+		else 
 			vpos = cpos;
-			arg_type = 1;
-		}
 
 		type = sig->params [i]->type;
 		class = mono_class_from_mono_type (sig->params [i]);
 
-		switch (type) {
-		case MONO_TYPE_VOID:
-			g_assert_not_reached ();
-			break;
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_U:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-		case MONO_TYPE_VALUETYPE:
+		if (class->valuetype)
 			arg = mono_value_box (domain, class, vpos);
-			break;
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_CLASS: 
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_SZARRAY:
+		else 
 			arg = *((MonoObject **)vpos);
-			break;
-		default:
-			g_assert_not_reached ();
-		}
-       
+		      
 		mono_array_set (msg->args, gpointer, i, arg);
-		mono_array_set (msg->arg_types, guint8, i, arg_type);
 		cpos += size;
 	}
 	
 	return msg;
+}
+
+gpointer
+mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *field)
+{
+	static MonoMethod *getter = NULL;
+	MonoDomain *domain = mono_domain_get ();
+	MonoClass *field_class;
+	MonoMethodMessage *msg;
+	MonoArray *out_args;
+	MonoObject *exc;
+	MonoObject *res;
+
+	g_assert (this->vtable->klass == mono_defaults.transparent_proxy_class);
+
+	if (!getter) {
+		int i;
+
+		for (i = 0; i < mono_defaults.object_class->method.count; ++i) {
+			MonoMethod *cm = mono_defaults.object_class->methods [i];
+	       
+			if (!strcmp (cm->name, "FieldGetter")) {
+				getter = cm;
+				break;
+			}
+		}
+		g_assert (getter);
+	}
+	
+	field_class = mono_class_from_mono_type (field->type);
+
+	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
+	out_args = mono_array_new (domain, mono_defaults.object_class, 1);
+	mono_message_init (domain, msg, mono_method_get_object (domain, getter), out_args);
+
+	mono_array_set (msg->args, gpointer, 0, mono_string_new (domain, klass->name));
+	mono_array_set (msg->args, gpointer, 1, mono_string_new (domain, field->name));
+
+	printf ("TEST %p %p %p %p \n", ((MonoTransparentProxy *)this)->rp, msg, &exc, &out_args);
+	mono_remoting_invoke (((MonoTransparentProxy *)this)->rp, msg, &exc, &out_args);
+
+	res = mono_array_get (out_args, MonoObject *, 0);
+
+	if (field_class->valuetype) {
+		printf ("XTEST %d\n", *((int *)(((char *)res) + sizeof (MonoObject))));
+		return ((char *)res) + sizeof (MonoObject);
+	} else
+		return &res;
 }

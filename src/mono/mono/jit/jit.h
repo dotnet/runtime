@@ -219,6 +219,13 @@ arch_end_invoke            (MonoObject *this, gpointer handle, ...);
 gpointer
 arch_get_delegate_invoke   (MonoMethod *method, int *size);
 
+gpointer
+mono_load_remote_field     (MonoObject *this, MonoClass *klass, MonoClassField *field);
+
+MonoObject *
+mono_remoting_invoke       (MonoObject *real_proxy, MonoMethodMessage *msg, 
+			    MonoObject **exc, MonoArray **out_args);
+
 /* some handy debugging functions */
 
 void
