@@ -215,8 +215,13 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		if ((field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA)) {
 			MonoClass *fklass = mono_class_from_mono_type (field->type);
 			t = (char*)vt->data + field->offset;
-			g_assert (fklass->valuetype);
-			memcpy (t, field->data, mono_class_value_size (fklass, NULL));
+			if (fklass->valuetype) {
+				memcpy (t, field->data, mono_class_value_size (fklass, NULL));
+			} else {
+				/* it's a pointer type: add check */
+				g_assert (fklass->byval_arg.type == MONO_TYPE_PTR);
+				*t = *(gpointer*)field->data;
+			}
 			continue;
 		}
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT))
