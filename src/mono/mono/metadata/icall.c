@@ -43,6 +43,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/locales.h>
 #include <mono/metadata/filewatcher.h>
+#include <mono/metadata/char-conversions.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
 #include <mono/utils/monobitset.h>
@@ -4674,6 +4675,21 @@ ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll (MonoReflectionType 
 		prelink_method (klass->methods [i]);
 }
 
+static void
+ves_icall_System_Char_GetDataTablePointers (guint8 **category_data, guint16 **numeric_data,
+		gdouble **numeric_data_values, guint16 **to_lower_data_low,
+		guint16 **to_lower_data_high, guint16 **to_upper_data_low,
+		guint16 **to_upper_data_high)
+{
+	*category_data = CategoryData;
+	*numeric_data = NumericData;
+	*numeric_data_values = NumericDataValues;
+	*to_lower_data_low = ToLowerDataLow;
+	*to_lower_data_high = ToLowerDataHigh;
+	*to_upper_data_low = ToUpperDataLow;
+	*to_upper_data_high = ToUpperDataHigh;
+}
+
 /* icall map */
 typedef struct {
 	const char *method;
@@ -4745,6 +4761,7 @@ static const IcallEntry buffer_icalls [] = {
 };
 
 static const IcallEntry char_icalls [] = {
+	{"GetDataTablePointers", ves_icall_System_Char_GetDataTablePointers},
 	{"GetNumericValue", ves_icall_System_Char_GetNumericValue},
 	{"GetUnicodeCategory", ves_icall_System_Char_GetUnicodeCategory},
 	{"IsControl", ves_icall_System_Char_IsControl},
