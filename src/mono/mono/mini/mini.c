@@ -2575,6 +2575,19 @@ unverified:
 	return 1;
 }
 
+static MonoInst*
+emit_tree (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ins)
+{
+	MonoInst *store, *temp, *load;
+	temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
+	NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
+	store->cil_code = ins->cil_code;
+	MONO_ADD_INS (bblock, store);
+	NEW_TEMPLOAD (cfg, load, temp->inst_c0);
+	load->cil_code = ins->cil_code;
+	return load;
+}
+
 /*
  * mono_method_to_ir: translates IL into basic blocks containing trees
  */
@@ -3639,16 +3652,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
-				MonoInst *store, *temp, *load;
 				--sp;
-				temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
-				NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
-				store->cil_code = ins->cil_code;
-				MONO_ADD_INS (bblock, store);
-				NEW_TEMPLOAD (cfg, load, temp->inst_c0);
-				load->cil_code = ins->cil_code;
-				*sp++ = load;
-				/*g_print ("found emulation for %d\n", ins->opcode);*/
+				*sp++ = emit_tree (cfg, bblock, ins);
 			}
 			ip++;
 			break;
@@ -3668,16 +3673,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (1);
 			ADD_UNOP (*ip);
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
-				MonoInst *store, *temp, *load;
 				--sp;
-				temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
-				NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
-				store->cil_code = ins->cil_code;
-				MONO_ADD_INS (bblock, store);
-				NEW_TEMPLOAD (cfg, load, temp->inst_c0);
-				load->cil_code = ins->cil_code;
-				*sp++ = load;
-				/*g_print ("found emulation for %d\n", ins->opcode);*/
+				*sp++ = emit_tree (cfg, bblock, ins);
 			}
 			ip++;			
 			break;
@@ -4009,7 +4006,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->inst_left = *sp;
 				ins->inst_newa_class = klass;
 				ins->cil_code = ip;
-				*sp++ = ins;
+				*sp++ = emit_tree (cfg, bblock, ins);
 				ip += 5;
 			}
 			break;
@@ -4183,7 +4180,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->klass = klass;
 				ins->inst_newa_class = klass;
 				ins->cil_code = ip;
-				*sp++ = ins;
+				*sp++ = emit_tree (cfg, bblock, ins);
 				ip += 5;
 			}
 			break;
@@ -4914,16 +4911,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (2);
 			ADD_BINOP (*ip);
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
-				MonoInst *store, *temp, *load;
 				--sp;
-				temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
-				NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
-				store->cil_code = ins->cil_code;
-				MONO_ADD_INS (bblock, store);
-				NEW_TEMPLOAD (cfg, load, temp->inst_c0);
-				load->cil_code = ins->cil_code;
-				*sp++ = load;
-				/*g_print ("found emulation for %d\n", ins->opcode);*/
+				*sp++ = emit_tree (cfg, bblock, ins);
 			}
 			ip++;
 			break;
@@ -5286,7 +5275,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->inst_left = *sp;
 				ins->inst_newa_class = klass;
 				ins->cil_code = ip;
-				*sp++ = ins;
+				*sp++ = emit_tree (cfg, bblock, ins);
 				ip += 6;
 				break;
 			}
@@ -5359,15 +5348,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * and workaround bug 54209 
 				 */
 				if (cmp->inst_left->type == STACK_I8) {
-					MonoInst *store, *temp, *load;
 					--sp;
-					temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
-					NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
-					store->cil_code = ins->cil_code;
-					MONO_ADD_INS (bblock, store);
-					NEW_TEMPLOAD (cfg, load, temp->inst_c0);
-					load->cil_code = ins->cil_code;
-					*sp++ = load;
+					*sp++ = emit_tree (cfg, bblock, ins);
 				}
 				ip += 2;
 				break;
