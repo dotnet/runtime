@@ -58,7 +58,7 @@ typedef struct {
 		GTimer *timer;
 		MonoMethod *method;
 	} u;
-	gulong count;
+	guint64 count;
 	double total;
 } MethodProfile;
 
@@ -1867,7 +1867,7 @@ ves_exec_method (MonoInvocation *frame)
 				if (GET_NATI (sp [0]) == 0)
 					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
 				val = (mono_u)sp [-1].data.p;
-				val /= (gulong)sp [0].data.p;
+				val /= (guint64)sp [0].data.p;
 				sp [-1].data.p = (gpointer)val;
 			}
 			BREAK;
@@ -1901,13 +1901,13 @@ ves_exec_method (MonoInvocation *frame)
 			} else if (sp->type == VAL_I64) {
 				if (sp [0].data.l == 0)
 					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
-				(gulong)sp [-1].data.l %= (gulong)sp [0].data.l;
+				(guint64)sp [-1].data.l %= (guint64)sp [0].data.l;
 			} else if (sp->type == VAL_DOUBLE) {
 				/* unspecified behaviour according to the spec */
 			} else {
 				if (GET_NATI (sp [0]) == 0)
 					THROW_EX (mono_get_exception_divide_by_zero (), ip - 1);
-				(gulong)GET_NATI (sp [-1]) %= (gulong)GET_NATI (sp [0]);
+				(guint64)GET_NATI (sp [-1]) %= (guint64)GET_NATI (sp [0]);
 			}
 			BREAK;
 		CASE (CEE_AND)
@@ -1966,9 +1966,9 @@ ves_exec_method (MonoInvocation *frame)
 			if (sp [-1].type == VAL_I32)
 				(guint)sp [-1].data.i >>= GET_NATI (sp [0]);
 			else if (sp [-1].type == VAL_I64)
-				(gulong)sp [-1].data.l >>= GET_NATI (sp [0]);
+				(guint64)sp [-1].data.l >>= GET_NATI (sp [0]);
 			else
-				(gulong)GET_NATI (sp [-1]) >>= GET_NATI (sp [0]);
+				(guint64)GET_NATI (sp [-1]) >>= GET_NATI (sp [0]);
 			BREAK;
 		CASE (CEE_NEG)
 			++ip;
@@ -2318,7 +2318,7 @@ array_constructed:
 				sp [-1].data.f = (double)(guint32)sp [-1].data.i;
 				break;
 			default:
-				sp [-1].data.f = (double)(gulong)sp [-1].data.nati;
+				sp [-1].data.f = (double)(guint64)sp [-1].data.nati;
 				break;
 			}
 			sp [-1].type = VAL_DOUBLE;
@@ -3626,7 +3626,7 @@ test_load_class (MonoImage* image)
 
 typedef struct {
 	char *name;
-	gulong offset;
+	guint64 offset;
 } FieldDesc;
 
 typedef struct {
