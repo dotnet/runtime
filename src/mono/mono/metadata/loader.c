@@ -1214,14 +1214,14 @@ mono_method_has_marshal_info (MonoMethod *method)
 gpointer
 mono_method_get_wrapper_data (MonoMethod *method, guint32 id)
 {
-	GList *l;
+	void **data;
 	g_assert (method != NULL);
 	g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 
-	if (!(l = g_list_nth (((MonoMethodWrapper *)method)->data, id - 1)))
-		g_assert_not_reached ();
-
-	return l->data;
+	data = ((MonoMethodWrapper *)method)->method_data;
+	g_assert (data != NULL);
+	g_assert (id <= GPOINTER_TO_UINT (*data));
+	return data [id];
 }
 
 static void

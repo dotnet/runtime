@@ -536,6 +536,7 @@ MonoMethod *
 mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack)
 {
 	MonoMethodHeader *header;
+	MonoMethodWrapper *mw;
 	GList *l;
 	int i;
 
@@ -558,6 +559,21 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 	header->code_size = mb->pos;
 	header->num_locals = mb->locals;
 
+	mw = (MonoMethodWrapper*) mb->method;
+	i = g_list_length (mw->method_data);
+	if (i) {
+		GList *tmp;
+		void **data;
+		l = g_list_reverse (mw->method_data);
+		data = mw->method_data = g_new (gpointer, i + 1);
+		/* store the size in the first element */
+		data [0] = GUINT_TO_POINTER (i);
+		i = 1;
+		for (tmp = l; tmp; tmp = tmp->next) {
+			data [i++] = tmp->data;
+		}
+		g_list_free (l);
+	}
 	/*{
 		static int total_code = 0;
 		static int total_alloc = 0;
@@ -583,9 +599,10 @@ mono_mb_add_data (MonoMethodBuilder *mb, gpointer data)
 
 	mw = (MonoMethodWrapper *)mb->method;
 
-	mw->data = g_list_append (mw->data, data);
+	/* one O(n) is enough */
+	mw->method_data = g_list_prepend (mw->method_data, data);
 
-	return g_list_length (mw->data);
+	return g_list_length (mw->method_data);
 }
 
 void

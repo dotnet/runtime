@@ -74,7 +74,7 @@ struct _MonoMethodNormal {
 
 struct _MonoMethodWrapper {
 	MonoMethodNormal method;
-	GList *data;
+	void *method_data;
 };
 
 struct _MonoMethodInflated {

@@ -7725,11 +7725,14 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	if (rmb->refs) {
 		MonoMethodWrapper *mw = (MonoMethodWrapper*)m;
 		int i;
+		void **data;
 
 		m->wrapper_type = MONO_WRAPPER_DYNAMIC_METHOD;
 
+		mw->method_data = data = g_new (gpointer, rmb->nrefs + 1);
+		data [0] = GUINT_TO_POINTER (rmb->nrefs);
 		for (i = 0; i < rmb->nrefs; ++i)
-			mw->data = g_list_append (mw->data, rmb->refs [i]);
+			data [i + 1] = rmb->refs [i];
 	}
 
 	method_aux = NULL;
