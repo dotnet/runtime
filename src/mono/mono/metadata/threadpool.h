@@ -23,6 +23,14 @@ void
 ves_icall_System_Threading_ThreadPool_GetMaxThreads (int *workerThreads,
 						     int *completionPortThreads);
 
+void
+ves_icall_System_Threading_ThreadPool_GetMinThreads (gint *workerThreads, 
+								gint *completionPortThreads);
+
+void
+ves_icall_System_Threading_ThreadPool_SetMinThreads (gint workerThreads, 
+								gint completionPortThreads);
+
 MonoBoolean
 ves_icall_System_Threading_ThreadPool_BindHandle (gpointer handle);
 

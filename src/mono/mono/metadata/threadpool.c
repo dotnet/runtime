@@ -31,6 +31,8 @@
 
 /* maximum number of worker threads */
 int mono_max_worker_threads = 25; /* fixme: should be 25 per available CPU */
+int mono_min_worker_threads = 0;
+
 /* current number of worker threads */
 static int mono_worker_threads = 0;
 
@@ -210,6 +212,7 @@ async_invoke_thread (gpointer data)
 {
 	MonoDomain *domain;
 	MonoThread *thread;
+	int workers, min;
  
 	thread = mono_thread_current ();
 	thread->threadpool_thread = TRUE;
@@ -228,13 +231,27 @@ async_invoke_thread (gpointer data)
 		}
 
 		data = dequeue_job ();
+	
 		if (!data && WaitForSingleObject (job_added, 500) != WAIT_TIMEOUT)
 			data = dequeue_job ();
-
+		
+		if (!data) {
+			workers = (int) InterlockedCompareExchange (&mono_worker_threads, 0, -1); 
+			min = (int) InterlockedCompareExchange (&mono_min_worker_threads, 0, -1); 
+	
+			while (!data && workers <= min) {
+				WaitForSingleObject (job_added, INFINITE);
+				data = dequeue_job ();
+				workers = (int) InterlockedCompareExchange (&mono_worker_threads, 0, -1); 
+				min = (int) InterlockedCompareExchange (&mono_min_worker_threads, 0, -1); 
+			}
+		}
+	
 		if (!data) {
 			InterlockedDecrement (&mono_worker_threads);
 			return;
 		}
+		
 		InterlockedIncrement (&busy_worker_threads);
 	}
 
@@ -260,6 +277,26 @@ ves_icall_System_Threading_ThreadPool_GetMaxThreads (gint *workerThreads, gint *
 
 	*workerThreads = mono_max_worker_threads;
 	*completionPortThreads = 0;
+}
+
+void
+ves_icall_System_Threading_ThreadPool_GetMinThreads (gint *workerThreads, gint *completionPortThreads)
+{
+	gint workers;
+
+	MONO_ARCH_SAVE_REGS;
+
+	workers = (gint) InterlockedCompareExchange (&mono_min_worker_threads, 0, -1);
+	*workerThreads = workers;
+	*completionPortThreads = 0;
+}
+
+void
+ves_icall_System_Threading_ThreadPool_SetMinThreads (gint workerThreads, gint completionPortThreads)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	InterlockedExchange (&mono_min_worker_threads, workerThreads);
 }
 
 static void

@@ -5467,7 +5467,9 @@ static const IcallEntry thread_icalls [] = {
 static const IcallEntry threadpool_icalls [] = {
 	{"BindHandleInternal", ves_icall_System_Threading_ThreadPool_BindHandle},
 	{"GetAvailableThreads", ves_icall_System_Threading_ThreadPool_GetAvailableThreads},
-	{"GetMaxThreads", ves_icall_System_Threading_ThreadPool_GetMaxThreads}
+	{"GetMaxThreads", ves_icall_System_Threading_ThreadPool_GetMaxThreads},
+	{"GetMinThreads", ves_icall_System_Threading_ThreadPool_GetMinThreads},
+	{"SetMinThreads", ves_icall_System_Threading_ThreadPool_SetMinThreads}
 };
 
 static const IcallEntry waithandle_icalls [] = {
