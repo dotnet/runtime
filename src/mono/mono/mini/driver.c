@@ -51,6 +51,11 @@ static FILE *mini_stats_fd = NULL;
 
 static void mini_usage (void);
 
+/* This turns off command line globbing under win32 */
+#ifdef PLATFORM_WIN32
+int _CRT_glob = 0;
+#endif
+
 typedef void (*OptFunc) (const char *p);
 
 /* keep in sync with enum in mini.h */
