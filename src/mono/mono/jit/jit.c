@@ -2793,6 +2793,13 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			PUSH_TREE (t1, VAL_DOUBLE);		
 			break;
 		}
+		case CEE_CONV_R_UN: {
+			++ip;
+			sp--;
+			t1 = mono_ctree_new (mp, MB_TERM_CONV_R_UN, *sp, NULL);
+			PUSH_TREE (t1, VAL_DOUBLE);		
+			break;
+		}
 		case CEE_CONV_OVF_I:
 		case CEE_CONV_OVF_I4: {
 			++ip;

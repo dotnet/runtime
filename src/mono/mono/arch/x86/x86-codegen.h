@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.22 2002/02/11 07:42:10 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.23 2002/02/28 09:35:28 dietmar Exp $
 */
 
 #ifndef X86_H
@@ -1036,7 +1036,7 @@ typedef union {
 		x86_membase_emit ((inst), 0, (basereg), (disp));	\
 	} while (0)
 
-#define x86_fld80(inst,mem)	\
+#define x86_fld80_mem(inst,mem)	\
 	do {	\
 		*(inst)++ = (unsigned char)0xdb;	\
 		x86_mem_emit ((inst), 5, (mem));	\
@@ -1099,6 +1099,20 @@ typedef union {
 		*(inst)++ = (is_double) ? (unsigned char)0xdd: (unsigned char)0xd9;	\
 		x86_membase_emit ((inst), 2 + ((pop_stack) ? 1 : 0), (basereg), (disp));	\
 	} while (0)
+
+#define x86_fst80_mem(inst,mem)	\
+	do {	\
+		*(inst)++ = (unsigned char)0xdb;	\
+		x86_mem_emit ((inst), 7, (mem));	\
+	} while (0)
+
+
+#define x86_fst80_membase(inst,basereg,disp)	\
+	do {	\
+		*(inst)++ = (unsigned char)0xdb;	\
+		x86_membase_emit ((inst), 7, (basereg), (disp));	\
+	} while (0)
+
 
 #define x86_fist_pop(inst,mem,is_long)	\
 	do {	\
