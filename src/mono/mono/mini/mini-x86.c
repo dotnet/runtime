@@ -584,19 +584,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 /*
  * Allow tracing to work with this interface (with an optional argument)
  */
-
-/*
- * This may be needed on some archs or for debugging support.
- */
-void
-mono_arch_instrument_mem_needs (MonoMethod *method, int *stack, int *code)
-{
-	/* no stack room needed now (may be needed for FASTCALL-trace support) */
-	*stack = 0;
-	/* split prolog-epilog requirements? */
-	*code = 50; /* max bytes needed: check this number */
-}
-
 void*
 mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
@@ -3732,40 +3719,6 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 	}
 }
 
-int
-mono_arch_max_epilog_size (MonoCompile *cfg)
-{
-	int exc_count = 0, max_epilog_size = 16;
-	MonoJumpInfo *patch_info;
-	
-	if (cfg->method->save_lmf)
-		max_epilog_size += 128;
-	
-	if (mono_jit_trace_calls != NULL)
-		max_epilog_size += 50;
-
-	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
-		max_epilog_size += 50;
-
-	/* count the number of exception infos */
-     
-	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-		if (patch_info->type == MONO_PATCH_INFO_EXC)
-			exc_count++;
-	}
-
-	/* 
-	 * make sure we have enough space for exceptions
-	 * 16 is the size of two push_imm instructions and a call
-	 */
-	if (cfg->compile_aot)
-		max_epilog_size += exc_count * 32;
-	else
-		max_epilog_size += exc_count * 16;
-
-	return max_epilog_size;
-}
-
 guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
@@ -3915,14 +3868,24 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 void
 mono_arch_emit_epilog (MonoCompile *cfg)
 {
-	MonoJumpInfo *patch_info;
 	MonoMethod *method = cfg->method;
 	MonoMethodSignature *sig = method->signature;
-	int pos, nthrows, i;
+	int pos;
 	guint32 stack_to_pop;
 	guint8 *code;
-	MonoClass *exc_classes [16];
-	guint8 *exc_throw_start [16], *exc_throw_end [16];
+	int max_epilog_size = 16;
+	
+	if (cfg->method->save_lmf)
+		max_epilog_size += 128;
+	
+	if (mono_jit_trace_calls != NULL)
+		max_epilog_size += 50;
+
+	while (cfg->code_len + max_epilog_size > (cfg->code_size - 16)) {
+		cfg->code_size *= 2;
+		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+		mono_jit_stats.code_reallocs++;
+	}
 
 	code = cfg->native_code + cfg->code_len;
 
@@ -4010,7 +3973,46 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	else
 		x86_ret (code);
 
-	/* add code to raise exceptions */
+	cfg->code_len = code - cfg->native_code;
+
+	g_assert (cfg->code_len < cfg->code_size);
+
+}
+
+void
+mono_arch_emit_exceptions (MonoCompile *cfg)
+{
+	MonoJumpInfo *patch_info;
+	int nthrows, i;
+	guint8 *code;
+	MonoClass *exc_classes [16];
+	guint8 *exc_throw_start [16], *exc_throw_end [16];
+	guint32 code_size;
+	int exc_count = 0;
+
+	/* Compute needed space */
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		if (patch_info->type == MONO_PATCH_INFO_EXC)
+			exc_count++;
+	}
+
+	/* 
+	 * make sure we have enough space for exceptions
+	 * 16 is the size of two push_imm instructions and a call
+	 */
+	if (cfg->compile_aot)
+		code_size = exc_count * 32;
+	else
+		code_size = exc_count * 16;
+
+	while (cfg->code_len + code_size > (cfg->code_size - 16)) {
+		cfg->code_size *= 2;
+		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+		mono_jit_stats.code_reallocs++;
+	}
+
+	code = cfg->native_code + cfg->code_len;
+
 	nthrows = 0;
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
@@ -4111,7 +4113,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	cfg->code_len = code - cfg->native_code;
 
 	g_assert (cfg->code_len < cfg->code_size);
-
 }
 
 void

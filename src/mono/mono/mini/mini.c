@@ -4701,6 +4701,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			--sp;
 			ins->inst_left = *sp;
 			ins->cil_code = ip++;
+			bblock->out_of_line = TRUE;
 			MONO_ADD_INS (bblock, ins);
 			sp = stack_start;
 			link_bblock (cfg, bblock, end_bblock);
@@ -7265,6 +7266,25 @@ merge_basic_blocks (MonoBasicBlock *bb, MonoBasicBlock *bbn)
 	nullify_basic_block (bbn);
 }
 
+static void
+move_basic_block_to_end (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+	MonoBasicBlock *bbn;
+
+	/* Find the previous */
+	for (bbn = cfg->bb_entry; bbn->next_bb && bbn->next_bb != bb; bbn = bbn->next_bb)
+		;
+	if (bbn->next_bb) {
+		bbn->next_bb = bb->next_bb;
+	}
+
+	/* Find the last */
+	for (bbn = cfg->bb_entry; bbn->next_bb; bbn = bbn->next_bb)
+		;
+	bbn->next_bb = bb;
+	bb->next_bb = NULL;
+}
+
 /*
  * Optimizes the branches on the Control Flow Graph
  *
@@ -7434,6 +7454,20 @@ optimize_branches (MonoCompile *cfg)
 
 						changed = TRUE;
 						break;
+					}
+				}
+
+				if (bb->last_ins && (bb->last_ins->opcode == CEE_BNE_UN)) {
+					if (bb->last_ins->inst_false_bb->out_of_line) {
+						bb->last_ins->opcode = CEE_BEQ;
+						bbn = bb->last_ins->inst_false_bb;
+						bb->last_ins->inst_false_bb = bb->last_ins->inst_true_bb;
+						bb->last_ins->inst_true_bb = bbn;
+
+						move_basic_block_to_end (cfg, bb->last_ins->inst_true_bb);
+						if (cfg->verbose_level > 2)
+							g_print ("cbranch to throw block triggered %d.\n", 
+									 bb->block_num);
 					}
 				}
 			}
@@ -7717,12 +7751,31 @@ mono_codegen (MonoCompile *cfg)
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		bb->native_offset = cfg->code_len;
 		mono_arch_output_basic_block (cfg, bb);
+
+#ifdef MONO_ARCH_HAVE_OUT_OF_LINE_BBLOCKS
+		if (bb == cfg->bb_exit) {
+			cfg->epilog_begin = cfg->code_len;
+
+			if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE) {
+				code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, cfg->native_code, FALSE);
+				cfg->code_len = code - cfg->native_code;
+			}
+
+			mono_arch_emit_epilog (cfg);
+		}
+#endif
 	}
+
+#ifndef MONO_ARCH_HAVE_OUT_OF_LINE_BBLOCKS
 	cfg->bb_exit->native_offset = cfg->code_len;
+	max_epilog_size = mono_arch_max_epilog_size (cfg);
+#else
+	mono_arch_emit_exceptions (cfg);
+
+	max_epilog_size = 0;
+#endif
 
 	code = cfg->native_code + cfg->code_len;
-
-	max_epilog_size = mono_arch_max_epilog_size (cfg);
 
 	/* we always allocate code in cfg->domain->code_mp to increase locality */
 	cfg->code_size = cfg->code_len + max_epilog_size;
@@ -7750,6 +7803,7 @@ mono_codegen (MonoCompile *cfg)
   
 	/* g_assert (((int)cfg->native_code & (MONO_ARCH_CODE_ALIGNMENT - 1)) == 0); */
 
+#ifndef MONO_ARCH_HAVE_OUT_OF_LINE_BBLOCKS
 	cfg->epilog_begin = cfg->code_len;
 
 	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
@@ -7758,6 +7812,7 @@ mono_codegen (MonoCompile *cfg)
 	cfg->code_len = code - cfg->native_code;
 
 	mono_arch_emit_epilog (cfg);
+#endif
 
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {

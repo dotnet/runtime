@@ -217,6 +217,12 @@ struct MonoBasicBlock {
 
 	/* The current symbolic register number, used in local register allocation. */
 	guint32 max_ireg, max_freg;
+
+	/* 
+	 * Whenever the bblock is rarely executed so it should be emitted after
+	 * the function epilog.
+	 */
+	gboolean out_of_line;
 };
 
 /* BBlock flags */
@@ -787,6 +793,7 @@ void      mono_arch_flush_icache                (guint8 *code, gint size);
 int       mono_arch_max_epilog_size             (MonoCompile *cfg);
 guint8   *mono_arch_emit_prolog                 (MonoCompile *cfg);
 void      mono_arch_emit_epilog                 (MonoCompile *cfg);
+void      mono_arch_emit_exceptions             (MonoCompile *cfg);
 void      mono_arch_local_regalloc              (MonoCompile *cfg, MonoBasicBlock *bb);
 void      mono_arch_output_basic_block          (MonoCompile *cfg, MonoBasicBlock *bb);
 gboolean  mono_arch_has_unwind_info             (gconstpointer addr);
