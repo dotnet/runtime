@@ -3135,6 +3135,16 @@ compare_nested (const void *a, const void *b)
 	return a_values [MONO_NESTED_CLASS_NESTED] - b_values [MONO_NESTED_CLASS_NESTED];
 }
 
+static void
+pad_heap (MonoDynamicStream *sh)
+{
+	if (sh->index & 3) {
+		int sz = 4 - (sh->index & 3);
+		memset (sh->data + sh->index, 0, sz);
+		sh->index += sz;
+	}
+}
+
 /*
  * build_compressed_metadata() fills in the blob of data that represents the 
  * raw metadata as it will be saved in the PE file. The five streams are output 
@@ -3182,14 +3192,10 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	meta = &assembly->image;
 
 	/* sizes should be multiple of 4 */
-	assembly->blob.index += 3;
-	assembly->blob.index &= ~3;
-	assembly->guid.index += 3;
-	assembly->guid.index &= ~3;
-	assembly->sheap.index += 3;
-	assembly->sheap.index &= ~3;
-	assembly->us.index += 3;
-	assembly->us.index &= ~3;
+	pad_heap (&assembly->blob);
+	pad_heap (&assembly->guid);
+	pad_heap (&assembly->sheap);
+	pad_heap (&assembly->us);
 
 	/* Setup the info used by compute_sizes () */
 	meta->idx_blob_wide = assembly->blob.index >= 65536 ? 1 : 0;
