@@ -34,7 +34,10 @@
 	This helps because at this point you might be the best
 	qualified person to fix a problem found by the regression
 	test, or you might have a new class to implement in the .NET
-	world that only has a test suite.
+	world that only has a test suite.  
+	
+	To get started writing tests see the <a href="testing.html">Test Suite</a>
+	section.
 
 ** Bug reporting
 
