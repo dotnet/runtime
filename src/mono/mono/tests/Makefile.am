@@ -2,14 +2,13 @@
 TEST_PROG=../interpreter/mint
 CSC=csc
 
+BENCHSRC=fib.cs random.cs nested-loops.cs 
+
 TESTSRC=			\
 	test-ops.cs		\
-	fib.cs			\
 	obj.cs			\
-	random.cs		\
 	switch.cs		\
 	outparm.cs		\
-	nested-loops.cs		\
 	exception.cs		\
 	exception2.cs		\
 	exception3.cs		\
@@ -18,9 +17,15 @@ TESTSRC=			\
 	static-constructor.cs		\
 	pinvoke.cs		\
 	array.cs		\
+	enum.cs		\
+	property.cs		\
+	interface.cs		\
+	virtual-method.cs		\
+	intptrcast.cs	\
 	stream.cs
 
 TESTS=$(TESTSRC:.cs=.exe)
+TESTBS=$(BENCHSRC:.cs=.exe)
 
 EXTRA_DIST=test-driver $(TESTSRC)
 
@@ -29,6 +34,11 @@ EXTRA_DIST=test-driver $(TESTSRC)
 
 test: $(TEST_PROG) $(TESTS)
 	for i in $(TESTS); do	\
+		./test-driver $(TEST_PROG) $$i;	\
+	done
+
+testb: $(TEST_PROG) $(TESTBS)
+	for i in $(TESTBS); do	\
 		./test-driver $(TEST_PROG) $$i;	\
 	done
 

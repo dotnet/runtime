@@ -1,3 +1,10 @@
+
+Mon Aug 27 20:24:26 CEST 2001 Paolo Molaro <lupus@ximian.com>
+
+	* mono/tests/*: New test cases, mostly for virtual method dispatch.
+	Use make testb for the slow benchmarking programs,
+	make test for the usual regression test checks.
+
 2001-08-22  Rodrigo Moya <rodrigo@ximian.com>
 
 	* mono/cil/Makefile.am:
