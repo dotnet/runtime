@@ -3762,6 +3762,76 @@ handle_type:
 		g_free (val);
 		return obj;
 	}
+	case MONO_TYPE_SZARRAY:
+	{
+		MonoArray *arr;
+		guint32 i,alen;
+		alen=read32(p);
+		p+=4;
+		arr=mono_array_new(mono_domain_get(),mono_class_from_mono_type(t->data.type),alen);
+		switch (t->data.type->type)
+		{
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I1:
+			case MONO_TYPE_BOOLEAN:
+				for (i=0;i<alen;i++)
+				{
+					MonoBoolean val=*p++;
+					mono_array_set(arr,MonoBoolean,i,val);
+				}
+				break;
+			case MONO_TYPE_CHAR:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I2:
+				for (i=0;i<alen;i++)
+				{
+					guint16 val=read16(p);
+					mono_array_set(arr,guint16,i,val);
+					p+=2;
+				}
+				break;
+			case MONO_TYPE_R4:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I4:
+				for (i=0;i<alen;i++)
+				{
+					guint32 val=read32(p);
+					mono_array_set(arr,guint32,i,val);
+					p+=4;
+				}
+				break;
+			case MONO_TYPE_R8:
+			case MONO_TYPE_U8:
+			case MONO_TYPE_I8:
+				for (i=0;i<alen;i++)
+				{
+					guint64 val=read64(p);
+					mono_array_set(arr,guint64,i,val);
+					p+=8;
+				}
+				break;
+			case MONO_TYPE_STRING:
+				for (i=0;i<alen;i++)
+				{
+					if (*p==(char)0xff)
+					{
+						mono_array_set(arr,gpointer,i,NULL);
+						p++;
+					}
+					else
+					{
+						slen=mono_metadata_decode_value(p,&p);
+						mono_array_set(arr,gpointer,i,mono_string_new_len(mono_domain_get(),p,slen));
+						p+=slen;
+					}
+				}
+				break;
+			default:
+				g_error("Type 0x%02x not handled in custom attr array decoding",t->data.type->type);
+		}
+		*end=p;
+		return arr;
+	}
 	default:
 		g_error ("Type 0x%02x not handled in custom attr value decoding", type);
 	}
@@ -4322,8 +4392,32 @@ mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, Mo
 	*p++ = 1;
 	*p++ = 0;
 	for (i = 0; i < sig->param_count; ++i) {
-		arg = (MonoObject*)mono_array_get (ctorArgs, gpointer, i);
-		encode_cattr_value (buffer, p, &buffer, &p, &buflen, sig->params [i], arg);
+		if (sig->params[i]->type==MONO_TYPE_SZARRAY)
+		{
+			guint32 alen=mono_array_length(ctorArgs) - i;
+			guint32 j;
+			if ((p-buffer) + 10 >= buflen) {
+				char *newbuf;
+				buflen *= 2;
+				newbuf = g_realloc (buffer, buflen);
+				p = newbuf + (p-buffer);
+				buffer = newbuf;
+			}
+			*p++=alen&0xff;
+			*p++=(alen>>8)&0xff;
+			*p++=(alen>>16)&0xff;
+			*p++=(alen>>24)&0xff;
+			for (j=0;j<alen;j++)
+			{
+				arg=(MonoObject*)mono_array_get(ctorArgs,gpointer,i+j);
+				encode_cattr_value(buffer,p,&buffer,&p,&buflen,sig->params[i]->data.type,arg);
+			}
+		}
+		else
+		{
+			arg = (MonoObject*)mono_array_get (ctorArgs, gpointer, i);
+			encode_cattr_value (buffer, p, &buffer, &p, &buflen, sig->params [i], arg);
+		}
 	}
 	i = 0;
 	if (properties)
