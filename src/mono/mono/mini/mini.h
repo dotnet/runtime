@@ -17,6 +17,9 @@
 
 #define MONO_USE_AOT_COMPILER
 
+/* Version number of the AOT file format */
+#define MONO_AOT_FILE_VERSION "2"
+
 #if 1
 #define mono_bitset_test_fast(set,n) (((guint32*)set)[2+(n)/32] & (1 << ((n) % 32)))
 #else
@@ -84,6 +87,7 @@ extern gboolean mono_jit_trace_calls;
 extern gboolean mono_break_on_exc;
 extern int mono_exc_esp_offset;
 extern gboolean mono_compile_aot;
+extern gboolean mono_no_aot;
 
 struct MonoEdge {
 	MonoEdge *next;
@@ -341,9 +345,14 @@ typedef enum {
 	MONO_PATCH_INFO_EXC,
 	MONO_PATCH_INFO_EXC_NAME,
 	MONO_PATCH_INFO_CLASS,
-        MONO_PATCH_INFO_IMAGE,
-        MONO_PATCH_INFO_FIELD,
-        MONO_PATCH_INFO_R4,
+	MONO_PATCH_INFO_IMAGE,
+	MONO_PATCH_INFO_FIELD,
+	MONO_PATCH_INFO_VTABLE,
+	MONO_PATCH_INFO_SFLDA,
+	MONO_PATCH_INFO_LDSTR,
+	MONO_PATCH_INFO_LDTOKEN,
+	MONO_PATCH_INFO_TYPE_FROM_HANDLE,
+	MONO_PATCH_INFO_R4,
 	MONO_PATCH_INFO_R8,
 	MONO_PATCH_INFO_IP
 } MonoJumpInfoType;
@@ -368,7 +377,9 @@ struct MonoJumpInfo {
 		MonoClass      *klass;
 		MonoClassField *field;
 		MonoImage      *image;
+		MonoVTable     *vtable;
 		const char     *name;
+		guint32        token;
 	} data;
 
 	int table_size; /* use by switch */
@@ -609,7 +620,9 @@ void      mono_create_jump_table            (MonoCompile *cfg, MonoInst *label, 
 int       mono_compile_assembly             (MonoAssembly *ass, guint32 opts);
 MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, MonoDomain *domain, int parts);
 void      mono_destroy_compile              (MonoCompile *cfg);
-gpointer  mono_aot_get_method               (MonoMethod *method);
+void      mono_aot_init                     (void);
+gpointer  mono_aot_get_method               (MonoDomain *domain,
+											 MonoMethod *method);
 gboolean  mono_method_blittable             (MonoMethod *method);
 void      mono_register_opcode_emulation    (int opcode, const char* name, MonoMethodSignature *sig, gpointer func, gboolean no_throw);
 void      mono_arch_register_lowlevel_calls (void);

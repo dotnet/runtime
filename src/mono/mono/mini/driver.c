@@ -307,7 +307,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run) {
 					if (verbose >= 2)
 						g_print ("Running '%s' ...\n", method->name);
 #ifdef MONO_USE_AOT_COMPILER
-					if (!(func = mono_aot_get_method (method)))
+					if (!(func = mono_aot_get_method (mono_root_domain, method)))
 #endif
 						func = (TestMethod)cfg->native_code;
 					result = func ();
@@ -478,6 +478,7 @@ mini_usage (void)
 		"    --break METHOD         Inserts a breakpoint at METHOD entry\n"
 		"    --debug                Enable debugging support\n"
 	    "    --stats                Print statistics about the JIT operations\n"
+	    "    --no-aot               Disable loading of AOT code\n"
 		"\n"
 		"Development:\n"
 		"    --statfile FILE        Sets the stat file to FILE\n"
@@ -559,6 +560,8 @@ mono_main (int argc, char* argv[]) {
 			mono_print_vtable = TRUE;
 		} else if (strcmp (argv [i], "--stats") == 0) {
 			mono_jit_stats.enabled = TRUE;
+		} else if (strcmp (argv [i], "--no-aot") == 0) {
+			mono_no_aot = TRUE;
 		} else if (strcmp (argv [i], "--aot") == 0) {
 			mono_compile_aot = TRUE;
 		} else if (strcmp (argv [i], "--compile-all") == 0) {

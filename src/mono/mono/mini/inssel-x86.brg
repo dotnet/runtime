@@ -310,6 +310,12 @@ stmt: OP_OUTARG_VT (OP_ICONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+stmt: OP_OUTARG_VT (reg) {
+	tree->opcode = OP_X86_PUSH;
+	tree->sreg1 = state->left->tree->dreg;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 reg: OP_LDADDR (OP_REGOFFSET) "1" {
 	if (state->left->tree->inst_offset) {
 		tree->opcode = OP_X86_LEA_MEMBASE;

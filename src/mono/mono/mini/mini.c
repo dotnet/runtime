@@ -93,6 +93,7 @@ guint32 mono_jit_tls_id = -1;
 gboolean mono_jit_trace_calls = FALSE;
 gboolean mono_break_on_exc = FALSE;
 gboolean mono_compile_aot = FALSE;
+gboolean mono_no_aot = FALSE;
 
 static int mini_verbose = 0;
 
@@ -272,8 +273,48 @@ print_method_from_ip (void *ip)
 		(dest)->type = STACK_PTR;	\
 	} while (0)
 
+#define NEW_VTABLECONST(cfg,dest,vtable) do {	\
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_ICONST;	\
+		(dest)->inst_p0 = mono_compile_aot ? (gpointer)((vtable)->klass) : (vtable);	\
+		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_VTABLE; \
+		(dest)->type = STACK_PTR;	\
+	} while (0)
+
+#define NEW_SFLDACONST(cfg,dest,field) do {	\
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_ICONST;	\
+		(dest)->inst_p0 = (field);	\
+		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_SFLDA; \
+		(dest)->type = STACK_PTR;	\
+	} while (0)
+
+#define NEW_LDSTRCONST(cfg,dest,token) do {	\
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		(dest)->opcode = OP_AOTCONST;	\
+		(dest)->inst_p0 = (gpointer)(token);	\
+		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_LDSTR; \
+		(dest)->type = STACK_OBJ;	\
+	} while (0)
+
+#define NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,token) do {	\
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		(dest)->opcode = OP_AOTCONST;	\
+		(dest)->inst_p0 = (gpointer)(token);	\
+		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_TYPE_FROM_HANDLE; \
+		(dest)->type = STACK_OBJ;	\
+	} while (0)
+
+#define NEW_LDTOKENCONST(cfg,dest,token) do {	\
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		(dest)->opcode = OP_AOTCONST;	\
+		(dest)->inst_p0 = (gpointer)(token);	\
+		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_LDTOKEN; \
+		(dest)->type = STACK_PTR;	\
+	} while (0)
+
 #define NEW_DOMAINCONST(cfg,dest) do { \
-               if ((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot) { \
+               if (cfg->opt & MONO_OPT_SHARED) { \
                        NEW_TEMPLOAD (cfg, dest, mono_get_domainvar (cfg)->inst_c0); \
                } else { \
                        NEW_PCONST (cfg, dest, (cfg)->domain); \
@@ -2060,24 +2101,6 @@ handle_initobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, const 
 
 #define CODE_IS_STLOC(ip) (((ip) [0] >= CEE_STLOC_0 && (ip) [0] <= CEE_STLOC_3) || ((ip) [0] == CEE_STLOC_S))
 
-static gboolean 
-needs_cctor_run (MonoClass *klass, MonoMethod *caller)
-{
-	int i;
-	MonoMethod *method;
-	
-	for (i = 0; i < klass->method.count; ++i) {
-		method = klass->methods [i];
-		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
-		    (strcmp (".cctor", method->name) == 0)) {
-			if (caller == method)
-				return FALSE;
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
 static gboolean
 mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 {
@@ -2114,7 +2137,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 		vtable = mono_class_vtable (cfg->domain, method->klass);
 		if (method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)
 			mono_runtime_class_init (vtable);
-		else if (!vtable->initialized && needs_cctor_run (method->klass, NULL))
+		else if (!vtable->initialized && mono_class_needs_cctor_run (method->klass, NULL))
 			return FALSE;
 	} else {
 		/* 
@@ -2122,7 +2145,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 		 * the cctor will need to be run at aot method load time, for example,
 		 * or at the end of the compilation of the inlining method.
 		 */
-		if (needs_cctor_run (method->klass, NULL) && !((method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)))
+		if (mono_class_needs_cctor_run (method->klass, NULL) && !((method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)))
 			return FALSE;
 	}
 	//if (!MONO_TYPE_IS_VOID (signature->ret)) return FALSE;
@@ -2517,9 +2540,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		for (i = sig->hasthis + sig->param_count - 1; i >= 0; i--)
 			arg_array [i] = cfg->varinfo [i];
 
-		if (mono_compile_aot) 
-			cfg->opt |= MONO_OPT_SHARED;
-
 		if (header->num_clauses) {
 			int size = sizeof (int) * header->num_clauses;
 			filter_lengths = alloca (size);
@@ -2593,7 +2613,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 	
-	if ((header->init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SHARED)))) {
+	if ((header->init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SHARED))) || mono_compile_aot) {
 		/* we use a separate basic block for the initialization code */
 		cfg->bb_init = init_localsbb = NEW_BBLOCK (cfg);
 		init_localsbb->real_offset = real_offset;
@@ -3566,13 +3586,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			} else {
 
-				if (mono_compile_aot) {
-					cfg->ldstr_list = g_list_prepend (cfg->ldstr_list, (gpointer)n);
-				}
-
-				if ((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot) {
+				if (cfg->opt & MONO_OPT_SHARED) {
 					int temp;
 					MonoInst *iargs [3];
+
+					if (mono_compile_aot) {
+						cfg->ldstr_list = g_list_prepend (cfg->ldstr_list, (gpointer)n);
+					}
+
 					NEW_TEMPLOAD (cfg, iargs [0], mono_get_domainvar (cfg)->inst_c0);
 					NEW_IMAGECONST (cfg, iargs [1], image);
 					NEW_ICONST (cfg, iargs [2], mono_metadata_token_index (n));
@@ -3580,10 +3601,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_TEMPLOAD (cfg, *sp, temp);
 					mono_ldstr (cfg->domain, image, mono_metadata_token_index (n));
 				} else {
-					NEW_PCONST (cfg, ins, NULL);
-					ins->cil_code = ip;
-					ins->type = STACK_OBJ;
-					ins->inst_p0 = mono_ldstr (cfg->domain, image, mono_metadata_token_index (n));
+					if (mono_compile_aot)
+						NEW_LDSTRCONST (cfg, ins, n);
+					else {
+						NEW_PCONST (cfg, ins, NULL);
+						ins->cil_code = ip;
+						ins->type = STACK_OBJ;
+						ins->inst_p0 = mono_ldstr (cfg->domain, image, mono_metadata_token_index (n));
+					}
 					*sp = ins;
 				}
 			}
@@ -3632,14 +3657,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					temp = iargs [0]->inst_c0;
 					NEW_TEMPLOADA (cfg, *sp, temp);
 				} else {
-					if ((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot) {
+					if (cfg->opt & MONO_OPT_SHARED) {
 						NEW_DOMAINCONST (cfg, iargs [0]);
 						NEW_CLASSCONST (cfg, iargs [1], cmethod->klass);
 
 						temp = mono_emit_jit_icall (cfg, bblock, mono_object_new, iargs, ip);
 					} else {
 						MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
-						NEW_PCONST (cfg, iargs [0], vtable);
+						NEW_VTABLECONST (cfg, iargs [0], vtable);
 						if (cmethod->klass->has_finalize || cmethod->klass->marshalbyref || (cfg->prof_options & MONO_PROFILE_ALLOCATIONS))
 							temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_specific, iargs, ip);
 						else
@@ -3987,6 +4012,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_LDSFLDA:
 		case CEE_STSFLD: {
 			MonoClassField *field;
+			gpointer addr = NULL;
 
 			token = read32 (ip + 1);
 
@@ -3994,8 +4020,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			mono_class_init (klass);
 
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
-				
-			if (((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot)) {
+
+			if (cfg->domain->thread_static_fields)
+				addr = g_hash_table_lookup (cfg->domain->thread_static_fields, field);
+
+			if ((cfg->opt & MONO_OPT_SHARED) || (mono_compile_aot && addr)) {
 				int temp;
 				MonoInst *iargs [2];
 				g_assert (field->parent);
@@ -4004,13 +4033,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				temp = mono_emit_jit_icall (cfg, bblock, mono_class_static_field_address, iargs, ip);
 				NEW_TEMPLOAD (cfg, ins, temp);
 			} else {
-				gpointer addr;
 				MonoVTable *vtable;
 				vtable = mono_class_vtable (cfg->domain, klass);
-				if (!cfg->domain->thread_static_fields || !(addr = g_hash_table_lookup (cfg->domain->thread_static_fields, field))) {
-					if (!vtable->initialized && !(klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && needs_cctor_run (klass, method)) {
+				if (!addr) {
+					if ((!vtable->initialized || mono_compile_aot) && !(klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && mono_class_needs_cctor_run (klass, method)) {
 						MonoInst *iargs [1];
-						NEW_PCONST (cfg, iargs [0], vtable);
+						NEW_VTABLECONST (cfg, iargs [0], vtable);
 						mono_emit_jit_icall (cfg, bblock, mono_runtime_class_init, iargs, ip);
 						if (cfg->verbose_level > 2)
 							g_print ("class %s.%s needs init call for %s\n", klass->name_space, klass->name, field->name);
@@ -4018,7 +4046,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						mono_runtime_class_init (vtable);
 					}
 					addr = (char*)vtable->data + field->offset;
-					NEW_PCONST (cfg, ins, addr);
+
+					if (mono_compile_aot)
+						NEW_SFLDACONST (cfg, ins, field);
+					else
+						NEW_PCONST (cfg, ins, addr);
 					ins->cil_code = ip;
 				} else {
 					/* 
@@ -4184,14 +4216,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 			/* much like NEWOBJ */
-			if ((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot) {
+			if (cfg->opt & MONO_OPT_SHARED) {
 				NEW_DOMAINCONST (cfg, iargs [0]);
 				NEW_CLASSCONST (cfg, iargs [1], klass);
 
 				temp = mono_emit_jit_icall (cfg, bblock, mono_object_new, iargs, ip);
 			} else {
 				MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
-				NEW_PCONST (cfg, iargs [0], vtable);
+				NEW_VTABLECONST (cfg, iargs [0], vtable);
 				if (1 || klass->has_finalize || (cfg->prof_options & MONO_PROFILE_ALLOCATIONS))
 					temp = mono_emit_jit_icall (cfg, bblock, mono_object_new_specific, iargs, ip);
 				else
@@ -4230,7 +4262,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 
 			/* allocate the domainvar - becaus this is used in decompose_foreach */
-			if ((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot)
+			if (cfg->opt & MONO_OPT_SHARED)
 				mono_get_domainvar (cfg);
 			
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
@@ -4453,7 +4485,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			handle = mono_ldtoken (image, n, &handle_class);
 			mono_class_init (handle_class);
 
-			if (((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot)) {
+			if (cfg->opt & MONO_OPT_SHARED) {
 				int temp;
 				MonoInst *res, *store, *addr, *vtvar, *iargs [2];
 
@@ -4473,12 +4505,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						(strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
 					MonoClass *tclass = mono_class_from_mono_type (handle);
 					mono_class_init (tclass);
-					NEW_PCONST (cfg, ins, mono_type_get_object (cfg->domain, handle));
+					if (mono_compile_aot)
+						NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, n);
+					else
+						NEW_PCONST (cfg, ins, mono_type_get_object (cfg->domain, handle));
 					ins->type = STACK_OBJ;
 					ins->klass = cmethod->klass;
 					ip += 5;
 				} else {
-					NEW_PCONST (cfg, ins, handle);
+					if (mono_compile_aot)
+						NEW_LDTOKENCONST (cfg, ins, n);
+					else
+						NEW_PCONST (cfg, ins, handle);
 					ins->type = STACK_VTYPE;
 					ins->klass = handle_class;
 				}
@@ -5610,7 +5648,7 @@ decompose_foreach (MonoInst *tree, gpointer data)
 			g_assert (newarr_specific_info);
 		}
 
-		if ((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot) {
+		if (cfg->opt & MONO_OPT_SHARED) {
 			NEW_DOMAINCONST (cfg, iargs [0]);
 			NEW_CLASSCONST (cfg, iargs [1], tree->inst_newa_class);
 			iargs [2] = tree->inst_newa_len;
@@ -5620,7 +5658,7 @@ decompose_foreach (MonoInst *tree, gpointer data)
 		else {
 			MonoVTable *vtable = mono_class_vtable (cfg->domain, mono_array_class_get (tree->inst_newa_class, 1));
 
-			NEW_PCONST (cfg, iargs [0], vtable);
+			NEW_VTABLECONST (cfg, iargs [0], vtable);
 			iargs [1] = tree->inst_newa_len;
 
 			info = newarr_specific_info;
@@ -6421,7 +6459,7 @@ mini_select_instructions (MonoCompile *cfg)
 #endif
 
 			if (!(mbstate = mono_burg_label (tree, cfg))) {
-				g_warning ("unabled to label tree %p", tree);
+				g_warning ("unable to label tree %p", tree);
 				mono_print_tree (tree);
 				g_print ("\n");				
 				g_assert_not_reached ();
@@ -6904,7 +6942,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 	jinfo->code_start = cfg->native_code;
 	jinfo->code_size = cfg->code_len;
 	jinfo->used_regs = cfg->used_int_regs;
-	jinfo->domain_neutral = cfg->opt & MONO_OPT_SHARED;
+	jinfo->domain_neutral = (cfg->opt & MONO_OPT_SHARED) != 0;
 
 	if (header->num_clauses) {
 		int i;
@@ -6987,9 +7025,9 @@ mono_jit_compile_method (MonoMethod *method)
 	}
 
 #ifdef MONO_USE_AOT_COMPILER
-	if (!mono_compile_aot) {
+	if (!mono_compile_aot && !mono_no_aot) {
 		mono_class_init (method->klass);
-		if ((code = mono_aot_get_method (method))) {
+		if ((code = mono_aot_get_method (target_domain, method))) {
 			g_hash_table_insert (jit_code_hash, method, code);
 
 			/* make sure runtime_init is called */
@@ -7272,6 +7310,8 @@ mini_init (const char *filename)
 	setup_jit_tls_data ((gpointer)-1, NULL);
 
 	mono_burg_init ();
+
+	mono_aot_init ();
 
 	mono_runtime_install_handlers ();
 	mono_threads_install_cleanup (mini_thread_cleanup);

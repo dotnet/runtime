@@ -3033,13 +3033,13 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 				target = mono_arch_create_jit_trampoline (patch_info->data.method);
 			break;
 		case MONO_PATCH_INFO_SWITCH: {
-			gpointer *table = (gpointer *)patch_info->data.target;
+			gpointer *jump_table = mono_mempool_alloc (domain->code_mp, sizeof (gpointer) * patch_info->table_size);
 			int i;
 
-			*((gconstpointer *)(ip + 2)) = patch_info->data.target;
+			*((gconstpointer *)(ip + 2)) = jump_table;
 
 			for (i = 0; i < patch_info->table_size; i++) {
-				table [i] = (int)patch_info->data.table [i] + code;
+				jump_table [i] = code + (int)patch_info->data.table [i];
 			}
 			/* we put into the table the absolute address, no need for x86_patch in this case */
 			continue;
@@ -3050,6 +3050,21 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_FIELD:
 			*((gconstpointer *)(ip + 1)) = patch_info->data.target;
 			continue;
+		case MONO_PATCH_INFO_VTABLE:
+			*((gconstpointer *)(ip + 1)) = mono_class_vtable (domain, patch_info->data.klass);
+			continue;
+		case MONO_PATCH_INFO_SFLDA: {
+			MonoVTable *vtable = mono_class_vtable (domain, patch_info->data.field->parent);
+			if (!vtable->initialized && !(vtable->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && mono_class_needs_cctor_run (vtable->klass, method))
+				/* Done by the generated code */
+				;
+			else {
+				mono_runtime_class_init (vtable);
+			}
+			*((gconstpointer *)(ip + 1)) = 
+				(char*)vtable->data + patch_info->data.field->offset;
+			continue;
+		}
 		case MONO_PATCH_INFO_R4:
 		case MONO_PATCH_INFO_R8:
 			*((gconstpointer *)(ip + 2)) = patch_info->data.target;
@@ -3057,6 +3072,35 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_EXC_NAME:
 			*((gconstpointer *)(ip + 1)) = patch_info->data.name;
 			continue;
+		case MONO_PATCH_INFO_LDSTR:
+			*((gconstpointer *)(ip + 1)) = 
+				mono_ldstr (domain, method->klass->image, 
+							mono_metadata_token_index (patch_info->data.token));
+			continue;
+		case MONO_PATCH_INFO_TYPE_FROM_HANDLE: {
+			gpointer handle;
+			MonoClass *handle_class;
+
+			handle = mono_ldtoken (method->klass->image, 
+								   patch_info->data.token, &handle_class);
+			mono_class_init (handle_class);
+			mono_class_init (mono_class_from_mono_type (handle));
+
+			*((gconstpointer *)(ip + 1)) = 
+				mono_type_get_object (domain, handle);
+			continue;
+		}
+		case MONO_PATCH_INFO_LDTOKEN: {
+			gpointer handle;
+			MonoClass *handle_class;
+
+			handle = mono_ldtoken (method->klass->image, 
+								   patch_info->data.token, &handle_class);
+			mono_class_init (handle_class);
+
+			*((gconstpointer *)(ip + 1)) = handle;
+			continue;
+		}
 		default:
 			g_assert_not_reached ();
 		}
