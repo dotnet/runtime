@@ -1629,31 +1629,35 @@ get_instantiation_name (const char *name, MonoGenericInst *ginst)
 	return g_string_free (res, FALSE);
 }
 
-void
-mono_class_initialize_generic (MonoClass *class, gboolean inflate_methods)
+static void
+mono_class_initialize_generic (MonoGenericInst *ginst, gboolean inflate_methods)
 {
-	MonoGenericInst *ginst = class->generic_inst->data.generic_inst;
-	MonoClass *gklass = mono_class_from_mono_type (ginst->generic_type);
+	MonoClass *klass, *gklass;
 
-	if (class->name)
+	if (ginst->initialized || ginst->init_pending)
 		return;
 
-	class->name = get_instantiation_name (gklass->name, ginst);
+	gklass = mono_class_from_mono_type (ginst->generic_type);
+	mono_class_init (gklass);
+
+	klass = ginst->klass;
+	klass->name = get_instantiation_name (gklass->name, ginst);
+
+	mono_class_setup_parent (klass, gklass->parent);
+	mono_class_setup_mono_type (klass);
 
 	if (inflate_methods) {
 		int i;
 
-		mono_class_setup_parent (class, gklass->parent);
-		mono_class_setup_mono_type (class);
-
-		class->field = gklass->field;
-		class->method = gklass->method;
-		class->methods = g_new0 (MonoMethod *, class->method.count);
-		for (i = 0; i < class->method.count; i++)
-			class->methods [i] = mono_class_inflate_generic_method (gklass->methods [i], ginst);
+		klass->field = gklass->field;
+		klass->method = gklass->method;
+		klass->methods = g_new0 (MonoMethod *, klass->method.count);
+		for (i = 0; i < klass->method.count; i++)
+			klass->methods [i] = mono_class_inflate_generic_method (gklass->methods [i], ginst);
 	}
 
-	g_hash_table_insert (class->image->generics_cache, ginst->generic_type, class);
+	g_hash_table_insert (klass->image->generics_cache, ginst->generic_type, klass);
+	ginst->initialized = TRUE;
 }
 
 MonoClass*
@@ -1663,8 +1667,10 @@ mono_class_from_generic (MonoType *gtype, gboolean inflate_methods)
 	MonoClass *class, *gklass;
 	MonoImage *image;
 
-	if (ginst->klass)
+	if (ginst->klass) {
+		mono_class_initialize_generic (ginst, TRUE);
 		return ginst->klass;
+	}
 
 	mono_loader_lock ();
 

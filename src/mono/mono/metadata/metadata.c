@@ -1448,8 +1448,9 @@ do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, const char *p
 	 * See mcs/tests/gen-23.cs for an example.
 	 */
 
+	generic_inst->init_pending = TRUE;
+
 	gklass = mono_class_from_mono_type (generic_inst->generic_type);
-	mono_class_init (gklass);
 
 	klass->name_space = gklass->name_space;
 	klass->image = m;
@@ -1461,8 +1462,8 @@ do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, const char *p
 
 	for (i = 0; i < generic_inst->type_argc; i++)
 		generic_inst->type_argv [i] = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
-	
-	mono_class_initialize_generic (generic_inst->klass, TRUE);
+
+	generic_inst->init_pending = FALSE;
 	
 	if (rptr)
 		*rptr = ptr;

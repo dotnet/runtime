@@ -221,7 +221,9 @@ struct _MonoGenericInst {
 	MonoMethod *generic_method;
 	int type_argc;
 	MonoType **type_argv;
-	guint32 is_open;
+	guint is_open       : 1;
+	guint initialized   : 1;
+	guint init_pending  : 1;
 };
 
 struct _MonoGenericParam {
@@ -305,9 +307,6 @@ mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig
 
 MonoMethod*
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericInst *ginst);
-
-void
-mono_class_initialize_generic (MonoClass *class, gboolean inflate_methods);
 
 MonoClassField*
 mono_field_from_memberref  (MonoImage *image, guint32 token, MonoClass **retklass);
