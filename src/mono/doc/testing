@@ -49,6 +49,7 @@
 		* System.Web/Test/TestMonoWeb : see README
 		* System.Web.Services/Test/standalone : see README
 		* System.Windows.Forms/SWFTest/
+		* System.XML/Tests/System.Xml.Schema/standalone_tests : see README
 		* System.XML/System.Xml.Serialization/standalone_tests/
 		* System.XML/Tests/System.Xml.Xsl/standalone_tests : see README
 
