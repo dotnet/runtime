@@ -29,6 +29,12 @@ AC_PROG_CC
 AM_PROG_CC_STDC
 AC_PROG_INSTALL
 
+AC_CHECK_PROG(BISON, bison, ,no)
+if test "x$BISON" = "xno";
+then
+	AC_MSG_ERROR([You need to install bison])
+fi
+
 dnl may require a specific autoconf version
 dnl AC_PROG_CC_FOR_BUILD
 dnl CC_FOR_BUILD not automatically detected
