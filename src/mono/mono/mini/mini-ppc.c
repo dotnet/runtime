@@ -2067,7 +2067,7 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 			thunks += 4;
 			count++;
 		}
-		g_print ("failed thunk lookup for %p from %p at %p (%d entries)\n", pdata->target, pdata->code, data, count);
+		//g_print ("failed thunk lookup for %p from %p at %p (%d entries)\n", pdata->target, pdata->code, data, count);
 	}
 	return 0;
 }
@@ -2569,11 +2569,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_blr (code);
 			break;
 		case CEE_THROW: {
-			ppc_break (code);
-			/*ppc_mr (code, ppc_r3, ins->sreg1);
+			//ppc_break (code);
+			ppc_mr (code, ppc_r3, ins->sreg1);
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_throw_exception");
-			ppc_bl (code, 0);*/
+			ppc_bl (code, 0);
 			break;
 		}
 		case OP_START_HANDLER:
@@ -3112,11 +3112,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 	alloc_size += pos;
 	// align to PPC_STACK_ALIGNMENT bytes
-	if (alloc_size & (PPC_STACK_ALIGNMENT - 1))
-		alloc_size += PPC_STACK_ALIGNMENT - (alloc_size & (PPC_STACK_ALIGNMENT - 1));
+	if (alloc_size & (PPC_STACK_ALIGNMENT - 1)) {
+		alloc_size += PPC_STACK_ALIGNMENT - 1;
+		alloc_size &= ~(PPC_STACK_ALIGNMENT - 1);
+	}
 
 	cfg->stack_usage = alloc_size;
 	g_assert (ppc_is_imm16 (-alloc_size));
+	g_assert ((alloc_size & (PPC_STACK_ALIGNMENT-1)) == 0);
 	if (alloc_size)
 		ppc_stwu (code, ppc_sp, -alloc_size, ppc_sp);
 	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
@@ -3241,7 +3244,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				     (gpointer)"mono_get_lmf_addr");
 		ppc_bl (code, 0);
 		/* we build the MonoLMF structure on the stack - see mini-ppc.h */
-		ppc_addi (code, ppc_r11, ppc_sp, PPC_MINIMAL_STACK_SIZE + cfg->param_area);
+		pos = PPC_MINIMAL_STACK_SIZE + cfg->param_area;
+		pos += 16-1;
+		pos &= ~(16-1);
+		ppc_addi (code, ppc_r11, ppc_sp, pos);
 		ppc_stw (code, ppc_r3, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
 		/* new_lmf->previous_lmf = *lmf_addr */
 		ppc_lwz (code, ppc_r0, 0, ppc_r3);
@@ -3289,7 +3295,10 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 	
 	if (method->save_lmf) {
-		ppc_addi (code, ppc_r11, cfg->frame_reg, PPC_MINIMAL_STACK_SIZE + cfg->param_area);
+		int ofst = PPC_MINIMAL_STACK_SIZE + cfg->param_area;
+		ofst += 16-1;
+		ofst &= ~(16-1);
+		ppc_addi (code, ppc_r11, cfg->frame_reg, ofst);
 		/* r5 = previous_lmf */
 		ppc_lwz (code, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r11);
 		/* r6 = lmf_addr */

@@ -24,7 +24,11 @@
 #include "mini.h"
 #include "mini-ppc.h"
 
+#ifdef __APPLE__
 typedef struct sigcontext MonoContext;
+#else
+typedef struct ucontext MonoContext;
+#endif
 
 /*
 
@@ -96,6 +100,64 @@ struct mcontext {
 
 typedef struct mcontext  * mcontext_t;
 
+Linux/PPC instead has:
+struct sigcontext {
+        unsigned long   _unused[4];
+        int             signal;
+        unsigned long   handler;
+        unsigned long   oldmask;
+        struct pt_regs  *regs;
+};
+struct pt_regs {
+        unsigned long gpr[32];
+        unsigned long nip;
+        unsigned long msr;
+        unsigned long orig_gpr3;        // Used for restarting system calls 
+        unsigned long ctr;
+        unsigned long link;
+        unsigned long xer;
+        unsigned long ccr;
+        unsigned long mq;               // 601 only (not used at present) 
+                                        // Used on APUS to hold IPL value. 
+        unsigned long trap;             // Reason for being here 
+        // N.B. for critical exceptions on 4xx, the dar and dsisr
+        // fields are overloaded to hold srr0 and srr1. 
+        unsigned long dar;              // Fault registers 
+        unsigned long dsisr;            // on 4xx/Book-E used for ESR 
+        unsigned long result;           // Result of a system call 
+};
+struct mcontext {
+        elf_gregset_t   mc_gregs;
+        elf_fpregset_t  mc_fregs;
+        unsigned long   mc_pad[2];
+        elf_vrregset_t  mc_vregs __attribute__((__aligned__(16)));
+};
+
+struct ucontext {
+        unsigned long    uc_flags;
+        struct ucontext *uc_link;
+        stack_t          uc_stack;
+        int              uc_pad[7];
+        struct mcontext *uc_regs;       // points to uc_mcontext field 
+        sigset_t         uc_sigmask;
+        // glibc has 1024-bit signal masks, ours are 64-bit 
+        int              uc_maskext[30];
+        int              uc_pad2[3];
+        struct mcontext  uc_mcontext;
+};
+
+#define ELF_NGREG       48      // includes nip, msr, lr, etc. 
+#define ELF_NFPREG      33      // includes fpscr 
+
+// General registers 
+typedef unsigned long elf_greg_t;
+typedef elf_greg_t elf_gregset_t[ELF_NGREG];
+
+// Floating point registers 
+typedef double elf_fpreg_t;
+typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
+
+
 */
 
 #ifdef __APPLE__
@@ -113,13 +175,13 @@ typedef struct {
 	unsigned long lr;
 } MonoPPCStackFrame;
 
-#else /* sigcontext is different on linux/ppc. See /usr/include/asm/ptrace.h. */
+#else /* on linux/ppc we use ucontext. See /usr/include/asm/ptrace.h. */
 
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->regs->nip = (unsigned long)ip; } while (0); 
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->regs->gpr[1] = (unsigned long)bp; } while (0); 
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->uc_mcontext.uc_regs->gregs [PT_NIP] = (unsigned long)ip; } while (0); 
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->uc_mcontext.uc_regs->gregs [PT_R1] = (unsigned long)bp; } while (0); 
 
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->regs->nip))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs->gpr[1]))
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->uc_mcontext.uc_regs->gregs [PT_NIP]))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->uc_mcontext.uc_regs->gregs [PT_R1]))
 
 typedef struct {
 	unsigned long sp;
@@ -258,7 +320,7 @@ init_frame_state_for (void)
 
 #endif
 
-gboolean  mono_arch_handle_exception (struct sigcontext *ctx, gpointer obj, gboolean test_only);
+gboolean  mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only);
 
 /* mono_arch_has_unwind_info:
  *
@@ -307,8 +369,8 @@ struct stack_frame
 };
 
 static MonoJitInfo *
-ppc_unwind_native_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, struct sigcontext *ctx, 
-			 struct sigcontext *new_ctx, MonoLMF *lmf, char **trace)
+ppc_unwind_native_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *ctx, 
+			 MonoContext *new_ctx, MonoLMF *lmf, char **trace)
 {
 #if 0
 	struct stack_frame *frame;
@@ -409,46 +471,67 @@ ppc_unwind_native_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, struct sig
 
 #endif
 
+#ifdef __APPLE__
+	/* FIXME: restore the rest of the registers */
+#define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
+		ppc_lwz (code, ip_reg, G_STRUCT_OFFSET (struct sigcontext, sc_ir), ctx_reg);	\
+		ppc_lwz (code, ppc_sp, G_STRUCT_OFFSET (struct sigcontext, sc_sp), ctx_reg);	\
+	} while (0)
+
+/* nothing to do */
+#define setup_context(ctx)
+
+#else
+	/* FIXME: restore the rest of the registers */
+/* 
+ * The registers can be at different at different offsets in the ucontext,
+ * so we need to reference them from uctx->uc_mcontext.uc_regs 
+ */
+/* return the offset within uc_regs of register regnum (PT_*) */
+#define regoffset(regnum) (G_STRUCT_OFFSET (mcontext_t, gregs) + (regnum) * sizeof (unsigned long))
+
+#define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
+		ppc_lwz (code, tmp_reg, G_STRUCT_OFFSET (struct ucontext, uc_mcontext.uc_regs), ctx_reg);	\
+		ppc_lwz (code, ip_reg, regoffset (PT_NIP), tmp_reg);	\
+		ppc_lwz (code, ppc_sp, regoffset (PT_R1), tmp_reg);	\
+	} while (0)
+
+/* yes, very ugly, but we need to setup the pointer, since
+ * the mcontext could be at different offsets in the ucontext
+ * generated by the kernel.
+ */
+#define setup_context(ctx) do {	\
+		(ctx)->uc_mcontext.uc_regs = (mcontext_t*)&(ctx)->uc_reg_space;	\
+	} while (0)
+#endif
+
 /*
  * arch_get_restore_context:
  *
  * Returns a pointer to a method which restores a previously saved sigcontext.
+ * The first argument in r3 is the pointer to the context.
  */
 static gpointer
 arch_get_restore_context (void)
 {
-	static guint8 *start = NULL;
 	guint8 *code;
+	static guint8 start [64];
+	static int inited = 0;
 
-	if (start)
+	if (inited)
 		return start;
+	inited = 1;
 
-#if 0
-	/* restore_contect (struct sigcontext *ctx) */
-	/* we do not restore X86_EAX, X86_EDX */
-
-	start = code = g_malloc (1024);
-	
-	/* load ctx */
-	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
-
-	/* get return address, stored in EDX */
-	x86_mov_reg_membase (code, X86_EDX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EIP), 4);
-	/* restore EBX */
-	x86_mov_reg_membase (code, X86_EBX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBX), 4);
-	/* restore EDI */
-	x86_mov_reg_membase (code, X86_EDI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EDI), 4);
-	/* restore ESI */
-	x86_mov_reg_membase (code, X86_ESI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_ESI), 4);
-	/* restore ESP */
-	x86_mov_reg_membase (code, X86_ESP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_ESP), 4);
-	/* restore EBP */
-	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBP), 4);
-
+	code = start;
+	restore_regs_from_context (ppc_r3, ppc_r4, ppc_r5);
+	//ppc_break (code);
 	/* jump to the saved IP */
-	x86_jump_reg (code, X86_EDX);
+	ppc_mtctr (code, ppc_r4);
+	ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+	/* never reached */
+	ppc_break (code);
 
-#endif
+	g_assert ((code - start) < sizeof(start));
 	return start;
 }
 
@@ -462,7 +545,7 @@ arch_get_restore_context (void)
 static gpointer
 arch_get_call_filter (void)
 {
-	static guint8 start [196];
+	static guint8 start [256];
 	static int inited = 0;
 	guint8 *code;
 	int alloc_size, pos, i;
@@ -471,31 +554,34 @@ arch_get_call_filter (void)
 		return start;
 
 	inited = 1;
-	/* call_filter (struct sigcontext *ctx, unsigned long eip, gpointer exc) */
+	/* call_filter (MonoContext *ctx, unsigned long eip, gpointer exc) */
 	code = start;
 
 	ppc_mflr (code, ppc_r0);
 	ppc_stw (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
-	alloc_size = PPC_MINIMAL_STACK_SIZE + (sizeof (gulong) * 14 + sizeof (gdouble) * 14);
+	alloc_size = 32 + PPC_MINIMAL_STACK_SIZE + (sizeof (gulong) * 19 + sizeof (gdouble) * 18);
 	// align to PPC_STACK_ALIGNMENT bytes
 	if (alloc_size & (PPC_STACK_ALIGNMENT - 1))
 		alloc_size += PPC_STACK_ALIGNMENT - (alloc_size & (PPC_STACK_ALIGNMENT - 1));
+	g_assert ((alloc_size & (PPC_STACK_ALIGNMENT-1)) == 0);
 	ppc_stwu (code, ppc_sp, -alloc_size, ppc_sp);
 	/* save all the regs on the stack */
-	pos = PPC_MINIMAL_STACK_SIZE;
+	pos = 32 + PPC_MINIMAL_STACK_SIZE;
 	ppc_stmw (code, ppc_r13, ppc_sp, pos);
 	pos += sizeof (gulong) * 19;
 	for (i = 14; i < 32; ++i) {
 		ppc_stfd (code, i, pos, ppc_sp);
 		pos += sizeof (gdouble);
 	}
-	/* FIXME: restore all the regs from ctx (in r3) */
+	/* restore all the regs from ctx (in r3) */
+	/* FIXME: calling the filter code must not restore the stack pointer */
+	restore_regs_from_context (ppc_r3, ppc_r6, ppc_r7);
 	/* call handler at eip (r4) and set the first arg with the exception (r5) */
 	ppc_mtctr (code, ppc_r4);
 	ppc_mr (code, ppc_r3, ppc_r5);
 	ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 	/* restore all the regs from the stack */
-	pos = PPC_MINIMAL_STACK_SIZE;
+	pos = 32 + PPC_MINIMAL_STACK_SIZE;
 	ppc_lmw (code, ppc_r13, ppc_sp, pos);
 	pos += sizeof (gulong) * 19;
 	for (i = 14; i < 32; ++i) {
@@ -513,8 +599,8 @@ arch_get_call_filter (void)
 static void
 throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs)
 {
-	static void (*restore_context) (struct sigcontext *);
-	struct sigcontext ctx;
+	static void (*restore_context) (MonoContext *);
+	MonoContext ctx;
 
 	if (!restore_context)
 		restore_context = arch_get_restore_context ();
@@ -522,6 +608,9 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 	/* adjust eip so that it point into the call instruction */
 	eip -= 4;
 
+	setup_context (&ctx);
+
+	/*printf ("stack in throw: %p\n", esp);*/
 	MONO_CONTEXT_SET_BP (&ctx, esp);
 	MONO_CONTEXT_SET_IP (&ctx, eip);
 #if 0
@@ -560,10 +649,14 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name)
 
 	ppc_mflr (code, ppc_r0);
 	ppc_stw (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
-	alloc_size = PPC_MINIMAL_STACK_SIZE + (sizeof (gulong) * 14 + sizeof (gdouble) * 14);
+	alloc_size = 32 + PPC_MINIMAL_STACK_SIZE + (sizeof (gulong) * 19 + sizeof (gdouble) * 18);
 	// align to PPC_STACK_ALIGNMENT bytes
-	if (alloc_size & (PPC_STACK_ALIGNMENT - 1))
-		alloc_size += PPC_STACK_ALIGNMENT - (alloc_size & (PPC_STACK_ALIGNMENT - 1));
+	if (alloc_size & (PPC_STACK_ALIGNMENT - 1)) {
+		alloc_size += PPC_STACK_ALIGNMENT - 1;
+		alloc_size &= ~(PPC_STACK_ALIGNMENT - 1);
+	}
+	/*g_print ("alloc size = %d\n", alloc_size);*/
+	g_assert ((alloc_size & (PPC_STACK_ALIGNMENT-1)) == 0);
 	ppc_stwu (code, ppc_sp, -alloc_size, ppc_sp);
 	//ppc_break (code);
 	if (by_name) {
@@ -574,22 +667,26 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name)
 		ppc_patch (code - 4, mono_exception_from_name);
 	}
 	/* save all the regs on the stack */
-	pos = PPC_MINIMAL_STACK_SIZE;
+	pos = 32 + PPC_MINIMAL_STACK_SIZE;
 	ppc_stmw (code, ppc_r13, ppc_sp, pos);
 	pos += sizeof (gulong) * 19;
+	/* align for doubles */
+	pos += 7;
+	pos &= ~7;
 	for (i = 14; i < 32; ++i) {
 		ppc_stfd (code, i, pos, ppc_sp);
 		pos += sizeof (gdouble);
 	}
 	/* call throw_exception (exc, ip, sp, int_regs, fp_regs) */
+	/* caller sp */
+	ppc_lwz (code, ppc_r5, 0, ppc_sp); 
 	/* exc is already in place in r3 */
 	if (by_name)
-		ppc_mflr (code, ppc_r4);
+		ppc_lwz (code, ppc_r4, PPC_RET_ADDR_OFFSET, ppc_r5); 
 	else
 		ppc_mr (code, ppc_r4, ppc_r0); /* caller ip */
-	ppc_lwz (code, ppc_r5, 0, ppc_sp); /* caller sp */
 	/* pointer to the saved int regs */
-	pos = PPC_MINIMAL_STACK_SIZE;
+	pos = 32 + PPC_MINIMAL_STACK_SIZE;
 	ppc_addi (code, ppc_r6, ppc_sp, pos);
 	/* pointer to the saved fp regs */
 	pos += sizeof (gulong) * 19;
@@ -708,6 +805,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		int offset;
 
 		*new_ctx = *ctx;
+		setup_context (new_ctx);
 
 		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
 			/* remove any unused lmf */
@@ -765,7 +863,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 #endif
 		sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_BP (ctx);
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->sp);
-		MONO_CONTEXT_SET_IP (new_ctx, sframe->lr);
+		/* we substract 4, so that the IP points into the call instruction */
+		MONO_CONTEXT_SET_IP (new_ctx, sframe->lr - 4);
 		*res = *ji;
 		return res;
 #ifdef MONO_USE_EXC_TABLES
@@ -776,6 +875,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	} else if (*lmf) {
 		
 		*new_ctx = *ctx;
+		setup_context (new_ctx);
 
 		if (!(*lmf)->method)
 			return (gpointer)-1;
@@ -800,9 +900,11 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		 * expression points to a stack location which can be used as ESP */
 		new_ctx->SC_ESP = (unsigned long)&((*lmf)->eip);
 #endif
-		sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_BP (ctx);
+		/*sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_BP (ctx);
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->sp);
-		MONO_CONTEXT_SET_IP (new_ctx, sframe->lr);
+		MONO_CONTEXT_SET_IP (new_ctx, sframe->lr);*/
+		MONO_CONTEXT_SET_BP (new_ctx, (*lmf)->ebp);
+		MONO_CONTEXT_SET_IP (new_ctx, (*lmf)->eip);
 		*lmf = (*lmf)->previous_lmf;
 
 		return res;
@@ -986,6 +1088,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 
 	if (!test_only) {
 		MonoContext ctx_cp = *ctx;
+		setup_context (&ctx_cp);
 		if (mono_jit_trace_calls != NULL)
 			g_print ("EXCEPTION handling: %s\n", mono_object_class (obj)->name);
 		if (!mono_arch_handle_exception (&ctx_cp, obj, TRUE)) {
@@ -999,6 +1102,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		MonoContext new_ctx;
 		char *trace = NULL;
 		
+		setup_context (&new_ctx);
 		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, ctx, &new_ctx, 
 					      test_only ? &trace : NULL, &lmf, NULL, NULL);
 		if (!ji) {
@@ -1050,6 +1154,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 							}
 							if (mono_jit_trace_calls != NULL)
 								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
+							/*printf ("stack for catch: %p\n", MONO_CONTEXT_GET_BP (ctx));*/
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 							*((gpointer *)((char *)MONO_CONTEXT_GET_BP (ctx) + ji->exvar_offset)) = obj;
 							jit_tls->lmf = lmf;
@@ -1072,6 +1177,7 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		g_free (trace);
 			
 		*ctx = new_ctx;
+		setup_context (ctx);
 
 		if ((ji == (gpointer)-1) || MONO_CONTEXT_GET_BP (ctx) >= jit_tls->end_of_stack) {
 			if (!test_only) {
