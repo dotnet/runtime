@@ -130,6 +130,167 @@ interface_graph (MonoImage *image, const char* cname) {
 
 }
 
+static int back_branch_waste = 0;
+static int branch_waste = 0;
+static int var_waste = 0;
+static int int_waste = 0;
+static int nop_waste = 0;
+
+static void
+method_waste (MonoMethod *method) {
+	const MonoOpcode *opcode;
+	MonoMethodHeader *header;
+	const unsigned char *ip;
+	int i, n;
+	gint64 l;
+
+	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME))
+		return;
+	if (method->flags & (METHOD_ATTRIBUTE_PINVOKE_IMPL | METHOD_ATTRIBUTE_ABSTRACT))
+		return;
+
+	header = ((MonoMethodNormal *)method)->header;
+	ip = header->code;
+
+	while (ip < (header->code + header->code_size)) {
+		if (*ip == 0xfe) {
+			++ip;
+			i = *ip + 256;
+		} else {
+			i = *ip;
+		}
+
+		opcode = &mono_opcodes [i];
+
+		switch (opcode->argument) {
+		case MonoInlineNone:
+			if (i == MONO_CEE_NOP)
+				nop_waste++;
+			++ip;
+			break;
+		case MonoInlineI:
+			n = read32 (ip + 1);
+			if (n >= -1 && n <= 8) {
+				int_waste += 4;
+				g_print ("%s %d\n", mono_opcode_names [i], n);
+			} else if (n < 128 && n >= -128) {
+				int_waste += 3;
+				g_print ("%s %d\n", mono_opcode_names [i], n);
+			}
+			ip += 5;
+			break;
+		case MonoInlineType:
+		case MonoInlineField:
+		case MonoInlineTok:
+		case MonoInlineString:
+		case MonoInlineSig:
+		case MonoShortInlineR:
+		case MonoInlineBrTarget:
+			n = read32 (ip + 1);
+			if (n < 128 && n >= -128) {
+				branch_waste += 3;
+				if (n < 0)
+					back_branch_waste += 3;
+			}
+			ip += 5;
+			break;
+		case MonoInlineVar:
+			n = read16 (ip + 1);
+			if (n < 256) {
+				if (n < 4) {
+					switch (i) {
+					case MONO_CEE_LDARG:
+					case MONO_CEE_LDLOC:
+					case MONO_CEE_STLOC:
+						var_waste += 3;
+						g_print ("%s %d\n", mono_opcode_names [i], n);
+						break;
+					default:
+						var_waste += 2;
+						g_print ("%s %d\n", mono_opcode_names [i], n);
+						break;
+					}
+				} else {
+					var_waste += 2;
+					g_print ("%s %d\n", mono_opcode_names [i], n);
+				}
+			}
+			ip += 3;
+			break;
+		case MonoShortInlineVar:
+			if ((signed char)ip [1] < 4 && (signed char)ip [1] >= 0) {
+				switch (i) {
+				case MONO_CEE_LDARG_S:
+				case MONO_CEE_LDLOC_S:
+				case MONO_CEE_STLOC_S:
+					var_waste++;
+					g_print ("%s %d\n", mono_opcode_names [i], (signed char)ip [1]);
+					break;
+				default:
+					break;
+				}
+			}
+			ip += 2;
+			break;
+		case MonoShortInlineI:
+			if ((signed char)ip [1] <= 8 && (signed char)ip [1] >= -1) {
+				g_print ("%s %d\n", mono_opcode_names [i], (signed char)ip [1]);
+				int_waste ++;
+			}
+			ip += 2;
+			break;
+		case MonoShortInlineBrTarget:
+			ip += 2;
+			break;
+		case MonoInlineSwitch: {
+			gint32 n;
+			++ip;
+			n = read32 (ip);
+			ip += 4;
+			ip += 4 * n;
+			break;
+		}
+		case MonoInlineR:
+			ip += 9;
+			break;
+		case MonoInlineI8:
+			l = read64 (ip + 1);
+			/* should load and convert */
+			if (l >= -1 && l <= 8) {
+				int_waste += 7;
+			} else if (l < 128 && l >= -128) {
+				int_waste += 6;
+			} else if (l <= 2147483647 && l >= (-2147483647 -1)) {
+				int_waste += 3;
+			}
+			ip += 9;
+			break;
+		case MonoInlineMethod:
+			ip += 5;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+	}
+	return;
+}
+
+static void
+waste (MonoImage *image, const char *name) {
+	int i, waste = 0;
+	MonoMethod *method;
+	
+	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
+		method_waste (method);
+	}
+	g_print ("back branch waste: %d\n", back_branch_waste);
+	g_print ("branch waste: %d\n", branch_waste);
+	g_print ("var waste: %d\n", var_waste);
+	g_print ("int waste: %d\n", int_waste);
+	g_print ("nop waste: %d\n", nop_waste);
+}
+
 static char *
 get_signature (MonoMethod *method) {
 	GString *res;
@@ -638,7 +799,8 @@ enum {
 	GRAPH_TYPES,
 	GRAPH_CALL,
 	GRAPH_INTERFACE,
-	GRAPH_CONTROL_FLOW
+	GRAPH_CONTROL_FLOW,
+	GRAPH_WASTE
 };
 
 /*
@@ -677,6 +839,8 @@ main (int argc, char *argv[]) {
 			graphtype = GRAPH_CONTROL_FLOW;
 		} else if (strcmp (argv [i], "--interface") == 0 || strcmp (argv [i], "-i") == 0) {
 			graphtype = GRAPH_INTERFACE;
+		} else if (strcmp (argv [i], "--waste") == 0) {
+			graphtype = GRAPH_WASTE;
 		} else if (strcmp (argv [i], "--fullname") == 0 || strcmp (argv [i], "-f") == 0) {
 			include_namespace = 1;
 		} else if (strcmp (argv [i], "--neato") == 0 || strcmp (argv [i], "-n") == 0) {
@@ -749,6 +913,9 @@ main (int argc, char *argv[]) {
 		break;
 	case GRAPH_CONTROL_FLOW:
 		method_cfg (assembly->image, cname);
+		break;
+	case GRAPH_WASTE:
+		waste (assembly->image, cname);
 		break;
 	default:
 		g_error ("wrong graph type");
