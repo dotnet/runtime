@@ -310,13 +310,16 @@ mono_mb_add_data (MonoMethodBuilder *mb, gpointer data)
 
 	mw->data = g_list_append (mw->data, data);
 
-	return GUINT32_TO_LE (g_list_length (mw->data));
+	return g_list_length (mw->data);
 }
 
 void
 mono_mb_patch_addr (MonoMethodBuilder *mb, int pos, int value)
 {
-	*((gint32 *)(&mb->code [pos])) = value;
+	mb->code [pos] = value & 0xff;
+	mb->code [pos + 1] = (value >> 8) & 0xff;
+	mb->code [pos + 2] = (value >> 16) & 0xff;
+	mb->code [pos + 3] = (value >> 24) & 0xff;
 }
 
 void
@@ -344,7 +347,7 @@ mono_mb_emit_i4 (MonoMethodBuilder *mb, gint32 data)
 		mb->code = g_realloc (mb->code, mb->code_size);
 	}
 
-	*((gint32 *)(&mb->code [mb->pos])) = data;
+	mono_mb_patch_addr (mb, mb->pos, data);
 	mb->pos += 4;
 }
 
@@ -356,7 +359,8 @@ mono_mb_emit_i2 (MonoMethodBuilder *mb, gint16 data)
 		mb->code = g_realloc (mb->code, mb->code_size);
 	}
 
-	*((gint16 *)(&mb->code [mb->pos])) = data;
+	mb->code [mb->pos] = data & 0xff;
+	mb->code [mb->pos + 1] = (data >> 8) & 0xff;
 	mb->pos += 2;
 }
 
@@ -371,7 +375,7 @@ mono_mb_emit_ldarg (MonoMethodBuilder *mb, guint argnum)
 	} else {
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_LDARG);
-		mono_mb_emit_i4 (mb, argnum);
+		mono_mb_emit_i2 (mb, argnum);
 	}
 }
 
@@ -384,7 +388,7 @@ mono_mb_emit_ldarg_addr (MonoMethodBuilder *mb, guint argnum)
 	} else {
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_LDARGA);
-		mono_mb_emit_i4 (mb, argnum);
+		mono_mb_emit_i2 (mb, argnum);
 	}
 }
 
@@ -397,7 +401,7 @@ mono_mb_emit_ldloc_addr (MonoMethodBuilder *mb, guint locnum)
 	} else {
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_LDLOCA);
-		mono_mb_emit_i4 (mb, locnum);
+		mono_mb_emit_i2 (mb, locnum);
 	}
 }
 
@@ -412,7 +416,7 @@ mono_mb_emit_ldloc (MonoMethodBuilder *mb, guint num)
 	} else {
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_LDLOC);
-		mono_mb_emit_i4 (mb, num);
+		mono_mb_emit_i2 (mb, num);
 	}
 }
 
@@ -427,7 +431,7 @@ mono_mb_emit_stloc (MonoMethodBuilder *mb, guint num)
 	} else {
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_STLOC);
-		mono_mb_emit_i4 (mb, num);
+		mono_mb_emit_i2 (mb, num);
 	}
 }
 
