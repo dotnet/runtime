@@ -54,15 +54,15 @@ mono_wrapper_fstat (gpointer fd, MonoWrapperStat* buf)
 	if (fstat ((int)fd, &fs) == -1)
 		return -errno;
 
-	buf->st_dev = fs.st_dev;
-	buf->st_mode = fs.st_mode;
-	buf->st_nlink = fs.st_nlink;
-	buf->st_uid = fs.st_uid;
-	buf->st_gid = fs.st_gid;
-	buf->st_size = fs.st_size;
-	buf->st_atime = fs.st_atime;
-	buf->st_mtime = fs.st_ctime;
-	buf->st_ctime = fs.st_ctime;
+	buf->mst_dev = fs.st_dev;
+	buf->mst_mode = fs.st_mode;
+	buf->mst_nlink = fs.st_nlink;
+	buf->mst_uid = fs.st_uid;
+	buf->mst_gid = fs.st_gid;
+	buf->mst_size = fs.st_size;
+	buf->mst_atime = fs.st_atime;
+	buf->mst_mtime = fs.st_mtime;
+	buf->mst_ctime = fs.st_ctime;
 
 	return 0;
 }
@@ -101,15 +101,15 @@ mono_wrapper_stat (const char * path, MonoWrapperStat* buf)
 	if (stat (path, &fs) != 0)
 		return errno;
 
-	buf->st_dev = fs.st_dev;
-	buf->st_mode = fs.st_mode;
-	buf->st_nlink = fs.st_nlink;
-	buf->st_uid = fs.st_uid;
-	buf->st_gid = fs.st_gid;
-	buf->st_size = fs.st_size;
-	buf->st_atime = fs.st_atime;
-	buf->st_mtime = fs.st_ctime;
-	buf->st_ctime = fs.st_ctime;
+	buf->mst_dev = fs.st_dev;
+	buf->mst_mode = fs.st_mode;
+	buf->mst_nlink = fs.st_nlink;
+	buf->mst_uid = fs.st_uid;
+	buf->mst_gid = fs.st_gid;
+	buf->mst_size = fs.st_size;
+	buf->mst_atime = fs.st_atime;
+	buf->mst_mtime = fs.st_mtime;
+	buf->mst_ctime = fs.st_ctime;
 
 	return 0;
 }

@@ -25,15 +25,15 @@ if ($csmode){
    $res_struct .= "[CLSCompliant(false)]\n";
 }
 create_struct ("MonoWrapperStat", "stat",
-	       "uint", "st_dev",
-	       "uint", "st_mode",
-	       "uint", "st_nlink",
-	       "uint", "st_uid",
-	       "uint", "st_gid",
-	       "long", "st_size",
-	       "uint", "st_atime",
-	       "uint", "st_mtime",
-	       "uint", "st_ctime",
+	       "uint", "mst_dev",
+	       "uint", "mst_mode",
+	       "uint", "mst_nlink",
+	       "uint", "mst_uid",
+	       "uint", "mst_gid",
+	       "long", "mst_size",
+	       "uint", "mst_atime",
+	       "uint", "mst_mtime",
+	       "uint", "mst_ctime",
 	       );
 
 create_func ($lib, "", "seek", "long", 
