@@ -1,3 +1,7 @@
+2004-05-25 18:30 CET Patrik Torstensson <totte@hiddenpeaks.com>
+
+	* configure.in: Check for trunc instead of truncl (HAVE_TRUNC)
+
 2004-05-21  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* Makefile.am:

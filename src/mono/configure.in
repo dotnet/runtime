@@ -915,13 +915,13 @@ ac_cv_c_socklen_t=yes
 	AC_MSG_RESULT(no)
 ])
 
-AC_CHECK_FUNCS(truncl, , AC_MSG_CHECKING(for truncl in math.h)
+AC_CHECK_FUNCS(trunc, , AC_MSG_CHECKING(for trunc in math.h)
 	AC_TRY_LINK([#include <math.h>], 
-	[ truncl(0.0); ], 
+	[ trunc(0.0); ], 
 	[
-		AC_DEFINE(HAVE_TRUNCL) 
+		AC_DEFINE(HAVE_TRUNC) 
 		AC_MSG_RESULT(yes)
-		ac_cv_truncl=yes
+		ac_cv_trunc=yes
 	],
 	AC_MSG_RESULT(no)))
 
