@@ -68,6 +68,7 @@ static int tracing = 0;
 static int debug_indent_level = 0;
 
 static GHashTable *profiling = NULL;
+static GHashTable *profiling_classes = NULL;
 
 /*
  * Pull the list of opcodes
@@ -2192,6 +2193,12 @@ ves_exec_method (MonoInvocation *frame)
 
 			csig = child_frame.method->signature;
 			newobj_class = child_frame.method->klass;
+			if (profiling_classes) {
+				guint count = GPOINTER_TO_UINT (g_hash_table_lookup (profiling_classes, newobj_class));
+				count++;
+				g_hash_table_insert (profiling_classes, newobj_class, GUINT_TO_POINTER (count));
+			}
+				
 
 			if (newobj_class->parent == mono_defaults.array_class) {
 				sp -= csig->param_count;
@@ -2666,6 +2673,11 @@ array_constructed:
 
 			sp [-1].type = VAL_OBJ;
 			sp [-1].data.p = o;
+			if (profiling_classes) {
+				guint count = GPOINTER_TO_UINT (g_hash_table_lookup (profiling_classes, o->vtable->klass));
+				count++;
+				g_hash_table_insert (profiling_classes, o->vtable->klass, GUINT_TO_POINTER (count));
+			}
 
 			BREAK;
 		}
@@ -3825,11 +3837,59 @@ output_profile (GList *funcs)
 		g_print ("Method name\t\t\t\t\tTotal (ms) Calls Per call (ms)\n");
 	for (tmp = funcs; tmp; tmp = tmp->next) {
 		p = tmp->data;
+		if (!(gint)(p->total*1000))
+			continue;
 		g_snprintf (buf, sizeof (buf), "%s.%s::%s(%d)",
 			p->u.method->klass->name_space, p->u.method->klass->name,
 			p->u.method->name, p->u.method->signature->param_count);
 		printf ("%-52s %7d %7ld %7d\n", buf,
 			(gint)(p->total*1000), p->count, (gint)((p->total*1000)/p->count));
+	}
+}
+
+typedef struct {
+	MonoClass *klass;
+	guint count;
+} NewobjProfile;
+
+static gint
+compare_newobj_profile (NewobjProfile *profa, NewobjProfile *profb)
+{
+	return (gint)profb->count - (gint)profa->count;
+}
+
+static void
+build_newobj_profile (MonoClass *class, gpointer count, GList **funcs)
+{
+	NewobjProfile *prof = g_new (NewobjProfile, 1);
+	prof->klass = class;
+	prof->count = GPOINTER_TO_UINT (count);
+	*funcs = g_list_insert_sorted (*funcs, prof, (GCompareFunc)compare_newobj_profile);
+}
+
+static void
+output_newobj_profile (GList *proflist)
+{
+	GList *tmp;
+	NewobjProfile *p;
+	MonoClass *klass;
+	char* isarray;
+	char buf [256];
+
+	if (proflist)
+		g_print ("\n%-52s %9s\n", "Objects created:", "count");
+	for (tmp = proflist; tmp; tmp = tmp->next) {
+		p = tmp->data;
+		klass = p->klass;
+		if (strcmp (klass->name, "Array") == 0) {
+			isarray = "[]";
+			klass = klass->element_class;
+		} else {
+			isarray = "";
+		}
+		g_snprintf (buf, sizeof (buf), "%s.%s%s",
+			klass->name_space, klass->name, isarray);
+		g_print ("%-52s %9d\n", buf, p->count);
 	}
 }
 
@@ -3863,8 +3923,10 @@ main (int argc, char *argv [])
 			die_on_exception = 1;
 		if (strcmp (argv [i], "--print-vtable") == 0)
 			mono_print_vtable = TRUE;
-		if (strcmp (argv [i], "--profile") == 0)
+		if (strcmp (argv [i], "--profile") == 0) {
 			profiling = g_hash_table_new (g_direct_hash, g_direct_equal);
+			profiling_classes = g_hash_table_new (g_direct_hash, g_direct_equal);
+		}
 		if (strcmp (argv [i], "--opcode-count") == 0)
 			ocount = 1;
 		if (strcmp (argv [i], "--help") == 0)
@@ -3920,9 +3982,16 @@ main (int argc, char *argv [])
 	++i;
 	retval = ves_exec (domain, assembly, argc - i, argv + i);
 #endif
-	if (profiling)
+	if (profiling) {
 		g_hash_table_foreach (profiling, (GHFunc)build_profile, &profile);
-	output_profile (profile);
+		output_profile (profile);
+		g_list_free (profile);
+		profile = NULL;
+		
+		g_hash_table_foreach (profiling_classes, (GHFunc)build_newobj_profile, &profile);
+		output_newobj_profile (profile);
+		g_list_free (profile);
+	}
 	
 	mono_network_cleanup ();
 	mono_thread_cleanup ();
