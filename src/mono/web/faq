@@ -574,7 +574,10 @@ A: Yes, with some reservations.
    Microsoft.VisualBasic.dll implementation is incomplete.  It is recommended 
    to either avoid using this assembly in your own code, only use the 
    portions that Mono has implemented, or to help implement the missing
-   features.
+   features.  Additionally, you can set 'Option Strict On', which
+   eliminates the implicit calls to the unimplemented
+   Microsoft.VisualBasic.CompilerServices.ObjectType class.  
+   (Thanks to Jörg Rosenkranz.)
 
    Managed Extensions for C++ is least likely to operate under Mono.  Mono
    does not support mixed mode assemblies (that is, assemblies containing both
