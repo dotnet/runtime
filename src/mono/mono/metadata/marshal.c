@@ -972,6 +972,30 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 
 	g_assert (delegate);
 
+	if (delegate->target && mono_object_class (delegate->target) == mono_defaults.transparent_proxy_class) {
+
+		MonoTransparentProxy* tp = (MonoTransparentProxy *)delegate->target;
+		if (!tp->klass->contextbound || tp->rp->context != (MonoObject *) mono_context_get ()) {
+
+			// If the target is a proxy, make a direct call. Is proxy's work
+			// to make the call asynchronous.
+
+			MonoAsyncResult *ares;
+			MonoObject *exc;
+			MonoArray *out_args;
+			method = delegate->method_info->method;
+
+			msg = mono_method_call_message_new (method, params, NULL, &async_callback, &state);
+			HANDLE handle = CreateEvent (NULL, TRUE, FALSE, NULL);
+			ares = mono_async_result_new (mono_domain_get (), handle, state, handle);
+			ares->async_delegate = (MonoObject *)async_callback;
+			msg->async_result = ares;
+
+			mono_remoting_invoke ((MonoObject *)tp->rp, msg, &exc, &out_args);
+			return ares;
+		}
+	}
+
 	klass = delegate->object.vtable->klass;
 
 	method = mono_get_delegate_invoke (klass);
@@ -986,7 +1010,6 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 	g_assert (method != NULL);
 
 	im = mono_get_delegate_invoke (method->klass);
-	
 	msg = mono_method_call_message_new (method, params, im, &async_callback, &state);
 
 	return mono_thread_pool_add ((MonoObject *)delegate, msg, async_callback, state);
@@ -1146,7 +1169,15 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 	ares = mono_array_get (msg->args, gpointer, sig->param_count - 1);
 	g_assert (ares);
 
-	res = mono_thread_pool_finish (ares, &out_args, &exc);
+	if (delegate->target && mono_object_class (delegate->target) == mono_defaults.transparent_proxy_class) {
+		/* wait until we are really finished */
+		WaitForSingleObject ((HANDLE)ares->data, INFINITE);
+		out_args = ares->remoting_args;
+		res = ares->remoting_rval;
+		exc = ares->remoting_exc;
+	}
+	else
+		res = mono_thread_pool_finish (ares, &out_args, &exc);
 
 	if (exc) {
 		char *strace = mono_string_to_utf8 (((MonoException*)exc)->stack_trace);

@@ -176,6 +176,9 @@ typedef struct {
 	MonoBoolean  sync_completed;
 	MonoBoolean  completed;
 	MonoBoolean  endinvoke_called;
+	MonoArray   *remoting_args;
+	MonoObject  *remoting_rval;
+	MonoObject  *remoting_exc;
 } MonoAsyncResult;
 
 typedef struct {
@@ -206,6 +209,7 @@ typedef struct {
 	MonoObject *ctx;
 	MonoObject *rval;
 	MonoObject *exc;
+	MonoAsyncResult *async_result;
 } MonoMethodMessage;
 
 typedef struct {

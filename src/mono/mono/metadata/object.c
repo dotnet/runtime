@@ -2301,12 +2301,13 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 		mono_array_set (msg->args, gpointer, i, arg);
 	}
 
-	if (invoke) {
+	if (cb != NULL && state != NULL) {
 		*cb = *((MonoDelegate **)params [i]);
 		i++;
 		*state = *((MonoObject **)params [i]);
 	}
 
+	msg->async_result = NULL;
 	return msg;
 }
 
