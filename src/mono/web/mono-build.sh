@@ -155,8 +155,20 @@ export PKG_CONFIG_PATH
 # /usr/local/include and /usr/local/lib to CPPFLAGS and LDFLAGS.  We could
 # skip this if it would add /usr/include and /usr/lib, but leaving it
 # shouldnt break anything.
-iconvh=`locate include/iconv.h`
-iconvh_dir=`dirname $iconvh`
+iconvdirs="/usr/include /usr/local/include"
+for i in $iconvdirs
+do
+	if [ -f $i/iconv.h ]; then
+		iconvh_dir=$i
+		break
+	fi
+done
+
+if [ -z "$iconvh_dir" ]; then
+    echo "Can't find iconv headers (looked in $iconvdirs)"
+    exit -1
+fi
+
 iconvlib_dir=`echo $iconvh_dir | sed -e 's/include/lib/'`
 
 echo "Adding $iconvh_dir to CPPFLAGS"
