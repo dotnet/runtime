@@ -918,6 +918,7 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 			
 				for (i = 0; i < ji->num_clauses; i++) {
 					MonoJitExceptionInfo *ei = &ji->clauses [i];
+					gboolean filtered = FALSE;
 
 					if (ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
 					    MONO_CONTEXT_GET_IP (ctx) <= ei->try_end) { 
@@ -934,7 +935,7 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 						}
 
 						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
-							filtered = call_filter (ctx, ei->data.filter);
+							filtered = call_filter (ctx, ei->data.filter, mono_ex);
 
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
 						     mono_object_isinst (obj, mono_class_get (ji->method->klass->image, ei->data.token))) || filtered) {
