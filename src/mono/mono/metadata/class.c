@@ -200,11 +200,9 @@ mono_class_is_open_constructed_type (MonoType *t)
 	}
 }
 
-MonoType*
-mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
+static MonoType*
+inflate_generic_type (MonoType *type, MonoGenericContext *context)
 {
-	mono_stats.inflated_type_count++;
-
 	switch (type->type) {
 	case MONO_TYPE_MVAR:
 		if (context->gmethod && context->gmethod->mtype_argv)
@@ -212,14 +210,14 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 				context->gmethod->mtype_argv [type->data.generic_param->num],
 				type);
 		else
-			return type;
+			return NULL;
 	case MONO_TYPE_VAR:
 		if (context->ginst)
 			return dup_type (
 				context->ginst->type_argv [type->data.generic_param->num],
 				type);
 		else
-			return type;
+			return NULL;
 	case MONO_TYPE_SZARRAY: {
 		MonoClass *eclass = type->data.klass;
 		MonoClass *nclass;
@@ -229,9 +227,8 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 			nclass = mono_class_from_mono_type (context->gmethod->mtype_argv [eclass->byval_arg.data.generic_param->num]);
 		} else if ((eclass->byval_arg.type == MONO_TYPE_VAR) && context->ginst) {
 			nclass = mono_class_from_mono_type (context->ginst->type_argv [eclass->byval_arg.data.generic_param->num]);
-		} else {
-			return type;
-		}
+		} else
+			return NULL;
 		nt = dup_type (type, type);
 		nt->data.klass = nclass;
 		return nt;
@@ -289,9 +286,21 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		return nt;
 	}
 	default:
-		return type;
+		return NULL;
 	}
-	return type;
+	return NULL;
+}
+
+MonoType*
+mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
+{
+	MonoType *inflated = inflate_generic_type (type, context);
+
+	if (!inflated)
+		return type;
+
+	mono_stats.inflated_type_count++;
+	return inflated;
 }
 
 static MonoMethodSignature*
@@ -2434,10 +2443,24 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 	MonoClass *class = mono_class_get (image, type_token);
 	MonoType *inflated;
 
-	if (!class || !context || !class->generic_inst || !class->generic_inst->is_open)
+	if (!class || !context)
 		return class;
 
-	inflated = mono_class_inflate_generic_type (&class->byval_arg, context);
+	switch (class->byval_arg.type) {
+	case MONO_TYPE_GENERICINST:
+		if (!class->generic_inst->is_open)
+			return class;
+		break;
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		break;
+	default:
+		return class;
+	}
+
+	inflated = inflate_generic_type (&class->byval_arg, context);
+	if (!inflated)
+		return class;
 
 	return mono_class_from_mono_type (inflated);
 }
