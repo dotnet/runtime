@@ -92,9 +92,13 @@ This is Mono.
 		cd mono
 		./autogen.sh --prefix=/usr/local
 
-	Then compile using the special target `fullbuild':
+	Then compile using the special target `bootstrap':
 
-		make fullbuild
+		make bootstrap
+	
+	You can now install it:
+
+		make install
 
 	This step will compile and install at the same time.
 
