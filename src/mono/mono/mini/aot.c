@@ -1254,7 +1254,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	emit_label(tmpfp, mname);
 
 	if (cfg->verbose_level > 0)
-		g_print ("Emitted as %s\n", mname);
+		g_print ("Method %s emitted as %s\n", mono_method_full_name (method, TRUE), mname);
 
 	/* Sort relocations */
 	patches = g_ptr_array_new ();
