@@ -55,9 +55,6 @@ run_finalize (void *obj, void *data)
 	/*g_print ("Finalize run on %p %s.%s\n", o, mono_object_class (o)->name_space, mono_object_class (o)->name);*/
 	mono_domain_set (mono_object_domain (o));
 
-	/* fixme: running the finalizer break some tests, at least on rh7.3 */
-	return;
-
 	mono_runtime_invoke (o->vtable->klass->vtable [finalize_slot], o, NULL, &exc);
 
 	if (exc) {
@@ -441,6 +438,13 @@ void mono_gc_init (void)
 	HANDLE gc_thread;
 
 	InitializeCriticalSection (&handle_section);
+
+	/* 
+	 * A return here disables the separate finalizer thread.
+	 * It's currently disabled because it still requires some
+	 * work in the rest of the runtime.
+	 */
+	return;
 
 	if (getenv ("GC_DONT_GC"))
 		return;
