@@ -7046,10 +7046,12 @@ optimize_branches (MonoCompile *cfg)
 					    bbn->code->inst_target_bb->region == bb->region) {
 						
 						if (cfg->verbose_level > 2)
-							g_print ("in %s branch to branch triggered %d -> %d\n", cfg->method->name, 
-								 bb->block_num, bbn->block_num);
-						
-						replace_basic_block (bb, bb->out_bb [0], bbn->code->inst_target_bb);
+							g_print ("in %s branch to branch triggered %d -> %d -> %d\n", cfg->method->name, 
+								 bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num);
+
+						replace_in_block (bbn, bb, NULL);
+						replace_out_block (bb, bbn, bbn->code->inst_target_bb);
+						link_bblock (cfg, bb, bbn->code->inst_target_bb);
 						bb->last_ins->inst_target_bb = bbn->code->inst_target_bb;
 						changed = TRUE;
 						break;
