@@ -1266,6 +1266,11 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 
 	MONO_ARCH_SAVE_REGS;
 
+	if (class->rank) {
+		/* GetInterfaces() returns an empty array in MS.NET (this may be a bug) */
+		return mono_array_new (domain, mono_defaults.monotype_class, 0);
+	}
+
 	ninterf = 0;
 	for (parent = class; parent; parent = parent->parent) {
 		ninterf += parent->interface_count;
@@ -3500,8 +3505,19 @@ ves_icall_MonoMethod_get_base_definition (MonoReflectionMethod *m)
 	if (method->klass == NULL || (klass = method->klass->parent) == NULL)
 		return m;
 
-	if (klass->vtable_size > method->slot)
+	if (klass->vtable_size > method->slot) {
 		result = klass->vtable [method->slot];
+		if (result == NULL) {
+			/* It is an abstract method */
+			int i;
+			for (i=0; i<klass->method.count; i++) {
+				if (klass->methods [i]->slot == method->slot) {
+					result = klass->methods [i];
+					break;
+				}
+			}
+		}
+	}
 
 	if (result == NULL)
 		return m;

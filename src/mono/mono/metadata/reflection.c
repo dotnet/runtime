@@ -3733,7 +3733,7 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 		res [i]->DefaultValueImpl = NULL; /* FIXME */
 		res [i]->MemberImpl = (MonoObject*)member;
 		res [i]->NameImpl = mono_string_new (domain, names [i]);
-		res [i]->PositionImpl = i + 1;
+		res [i]->PositionImpl = i;
 		res [i]->AttrsImpl = method->signature->params [i]->attrs;
 	}
 	g_free (names);
@@ -4747,7 +4747,7 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 	} else if (strcmp ("ParameterInfo", klass->name) == 0) {
 		MonoReflectionParameter *param = (MonoReflectionParameter*)obj;
 		MonoReflectionMethod *rmethod = (MonoReflectionMethod*)param->MemberImpl;
-		cinfo = mono_custom_attrs_from_param (rmethod->method, param->PositionImpl);
+		cinfo = mono_custom_attrs_from_param (rmethod->method, param->PositionImpl + 1);
 	} else if (strcmp ("AssemblyBuilder", klass->name) == 0) {
 		MonoReflectionAssemblyBuilder *assemblyb = (MonoReflectionAssemblyBuilder*)obj;
 		cinfo = mono_custom_attrs_from_builders (assemblyb->assembly.assembly->image, assemblyb->cattrs);
