@@ -8032,7 +8032,7 @@ mini_init (const char *filename)
 	mono_runtime_init (domain, mono_thread_start_cb, mono_thread_attach_cb);
 #endif
 
-	//mono_thread_attach (domain);
+	mono_thread_attach (domain);
 	return domain;
 }
 
