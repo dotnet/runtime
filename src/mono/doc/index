@@ -122,6 +122,9 @@
 	The patches are available <a
 	href="http://www.openlinksw.com/mono/">here</a>.
 
+	Mono packages for the Linux/s390 are available now in the <a
+	href="download.html">download page</a>.
+
 @item May 10th, 2003: Eclipse runs on Mono
 
 	Today Zoltan Varga announced that he got the <a
