@@ -26,9 +26,12 @@
 ; SET MILESTONE & SOURCE DIR
 ; =====================================================
 ; set by makefile!!
+; !define MILESTONE 0.29 
+; !define SOURCE_INSTALL_DIR E:\cygwin\home\danmorg\mono029\*.*
 
-!define MILESTONE 0.29 
-!define SOURCE_INSTALL_DIR E:\cygwin\home\danmorg\mono029\*.*
+!define MILESTONE 0.31
+!define SOURCE_INSTALL_DIR c:\b\install\*.* 
+;E:\cygwin\home\danmorg\mono029\*.*
 
 ; =====================================================
 ; SET LOGO
@@ -106,7 +109,7 @@ Caption "Mono ${MILESTONE} Setup"
 !include "MUI.nsh"
 !include "Sections.nsh"
 
-SetCompressor lzma
+SetCompressor bzip2
 SilentInstall normal
 ShowInstDetails show
 SetDateSave on
@@ -128,7 +131,6 @@ AutoCloseWindow false
 !define MUI_WELCOMEPAGE_TEXT "This wizard will guide you through the installation of Mono for Windows.\r\n\r\n\r\n$_CLICK"
 
 !insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_LICENSE "E:\cygwin\home\danmorg\mono029\license.txt"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 
