@@ -1224,6 +1224,7 @@ arch_jit_compile_cfg (MonoDomain *target_domain, MonoFlowGraph *cfg)
 	MonoJitInfo *ji;
 	guint32 ls_used_mask = 0;
 	MonoMethod *method = cfg->method;
+	int offset, gap;
 
 	ji = mono_mempool_alloc0 (target_domain->mp, sizeof (MonoJitInfo));
 		
@@ -1263,6 +1264,14 @@ arch_jit_compile_cfg (MonoDomain *target_domain, MonoFlowGraph *cfg)
 	mono_emit_cfg (cfg);
 	arch_emit_epilogue (cfg);		
 	cfg->epilogue_end = cfg->code - cfg->start;
+
+	offset = cfg->code - cfg->start;
+	gap = cfg->code_size - offset;
+	if (gap > 0) {
+		cfg->start = g_realloc (cfg->start, offset);
+		cfg->code_size = offset;
+		cfg->code = cfg->start + offset;
+	}
 
 	mono_compute_branches (cfg);
 
