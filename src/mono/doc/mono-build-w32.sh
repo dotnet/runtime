@@ -100,6 +100,15 @@ function aclocal_scan () {
     return 1
 }
 
+function install_icuconfig() {
+    if [ ! -f $here/install/bin/icu-config ]; then
+        wget http://www.go-mono.com/archive/icu-config
+	mv icu-config $here/install/bin
+        chmod 755 $here/install/bin/icu-config
+    fi
+}
+
+
 function install_package() {
     zipfile=$1
     markerfile=$2
@@ -150,6 +159,9 @@ install_package glib-dev-2.0.4-20020703.zip lib/glib-2.0.lib glib-dev
 install_package libiconv-1.7.zip lib/iconv.dll iconv
 install_package libintl-0.10.40-20020101.zip lib/libintl-1.dll intl
 install_package libgc-dev.zip lib/gc.dll gc-dev
+install_package icu-2.6.1-Win32_msvc7.zip icu/bin/icuuc26.dll icu
+
+install_icuconfig
 
 if [ $install_pkgconfig = "no" ]; then
     echo "Fixing up the pkgconfig paths"
@@ -162,8 +174,9 @@ if [ $install_pkgconfig = "no" ]; then
 fi
 
 # Needed to find the libgc bits
-export CFLAGS="-I $here/install/include"
-export LDFLAGS="-L$here/install/lib"
+export CFLAGS="-I $here/install/include -I $here/install/icu/include"
+export LDFLAGS="-L$here/install/lib -L$here/install/icu/lib"
+export PATH="$here/install/icu/bin:$PATH"
 
 # Make sure we build native w32, not cygwin
 #CC="gcc -mno-cygwin"
