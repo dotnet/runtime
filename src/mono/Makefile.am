@@ -17,16 +17,16 @@ endif
 DISTCLEANFILES= mono.pc mint.pc
 
 #
-# The following target is used to compile and install
+# The following targets are used to compile and install
 # mono and mcs without running into the out-of-sync
 # problems by doing the compilation in the right order.
 #
 
 mcs_topdir=$(top_srcdir)/../mcs
 
-.PHONY: tmpinst-dir tmpinst-basic-build tmpinst-short-build tmpinst-full-build
-.PHONY: bootstrap faststrap fasterstrap one-stage-strap two-stage-strap three-stage-strap bootstrap-clean bootstrap-check
-.PHONY: mono-do-basic-build mcs-do-basic-build mcs-do-short-build mcs-do-full-build mcs-do-clean-profiles mcs-do-run-test
+.PHONY: bootstrap faststrap fasterstrap bootstrap-clean bootstrap-check get-monolite-latest monolite-bootstrap
+.PHONY: tmpinst-dir tmpinst-mcs-basic-build tmpinst-mcs-short-build tmpinst-mcs-full-build tmpinst-monolite
+.PHONY: mono-do-runtime-only mcs-do-basic-build mcs-do-short-build mcs-do-full-build mcs-do-clean-profiles mcs-do-run-test
 
 if USE_JIT
 mono_runtime = mono/mini/mono
@@ -34,69 +34,78 @@ else
 mono_runtime = mono/interpreter/mint
 endif
 
-bootstrap: three-stage-strap
+# Minimal set of directories to build, and files used to run the 'mcs' compiler
+MCS_BASIC_DIRS = jay mcs class/corlib class/System
+MCS_BASIC_FILES = \
+	$(mcs_topdir)/mcs/mcs.exe \
+	$(mcs_topdir)/class/lib/default/mscorlib.dll \
+	$(mcs_topdir)/class/lib/default/System.dll
 
-faststrap: mono-do-basic-build
-	$(MAKE) two-stage-strap
+# Set of directories and files the 'mcs' compiler can use
+## We build class/System twice to resolve the cyclic dependency of class/System.XML
+MCS_DIRS = $(MCS_BASIC_DIRS) class/System.XML class/System class/Mono.CSharp.Debugger
+MCS_FILES = $(MCS_BASIC_FILES) \
+	$(mcs_topdir)/class/lib/default/System.Xml.dll \
+	$(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll
 
-fasterstrap: mono-do-basic-build
-	$(MAKE) one-stage-strap
+bootstrap: tmpinst-mcs-basic-build mono-do-runtime-only
+	$(MAKE) tmpinst-mcs-short-build
+	$(MAKE) fasterstrap
 
-three-stage-strap: tmpinst-basic-build
-	$(MAKE) two-stage-strap
+faststrap: tmpinst-mcs-short-build
+	$(MAKE) mono-do-runtime-only
+	$(MAKE) fasterstrap
 
-two-stage-strap: tmpinst-short-build
-	$(MAKE) one-stage-strap
-
-one-stage-strap: tmpinst-full-build
+fasterstrap: tmpinst-mcs-full-build
 	rm -f $(top_srcdir)/runtime/*/*.dll $(top_srcdir)/runtime/*.exe
 	$(MAKE)
 
 bootstrap-clean: clean mcs-do-clean-profiles
 bootstrap-check: check mcs-do-run-test
 
-# (takes advantage of 'make -j': independent subtasks are separate dependencies)
-tmpinst-basic-build: mcs-do-basic-build mono-do-basic-build tmpinst-dir
-	mv -f $(mcs_topdir)/mcs/mcs.exe \
-	      $(mcs_topdir)/class/lib/default/mscorlib.dll \
-	      $(mcs_topdir)/class/lib/default/System.dll \
-	  _tmpinst/lib
+# building with monolite
 
-tmpinst-short-build: mcs-do-short-build
-	mv -f $(mcs_topdir)/mcs/mcs.exe \
-	      $(mcs_topdir)/class/lib/default/mscorlib.dll \
-	      $(mcs_topdir)/class/lib/default/System.dll \
-	      $(mcs_topdir)/class/lib/default/System.Xml.dll \
-	      $(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll \
-	  _tmpinst/lib
+get-monolite-latest:
+	wget -O $(srcdir)/../monolite-latest.tar.gz http://www.go-mono.com/daily/monolite-latest.tar.gz
 
-tmpinst-full-build: mcs-do-full-build
-	cp -f $(mcs_topdir)/mcs/mcs.exe \
-	      $(mcs_topdir)/class/lib/default/mscorlib.dll \
-	      $(mcs_topdir)/class/lib/default/System.dll \
-	      $(mcs_topdir)/class/lib/default/System.Xml.dll \
-	      $(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll \
-	  _tmpinst/lib
+monolite-bootstrap: tmpinst-monolite mono-do-runtime-only
+	rm -f $(MCS_FILES)
+	$(MAKE) tmpinst-mcs-short-build
+	$(MAKE) finalstrap
+
+# internal targets
+
+tmpinst-mcs-basic-build: mcs-do-basic-build tmpinst-dir
+	mv -f $(MCS_BASIC_FILES) _tmpinst/lib
+
+tmpinst-mcs-short-build: mcs-do-short-build
+	mv -f $(MCS_FILES) _tmpinst/lib
+
+tmpinst-mcs-full-build: mcs-do-full-build
+	cp -f $(MCS_FILES) _tmpinst/lib
+
+tmpinst-monolite: tmpinst-dir
+	-rm -f _tmpinst/lib/mcs.exe _tmpinst/lib/*.dll
+	-rm -fr _tmpinst/monolite-*
+	srcdir=`cd $(srcdir) && pwd` && cd _tmpinst && ( gzip -d -c $$srcdir/../monolite-latest.tar.gz | tar xf - )
+	mv -f _tmpinst/monolite-*/mcs.exe _tmpinst/monolite-*/*.dll _tmpinst/lib
+	rm -fr _tmpinst/monolite-*
 
 # Build enough of 'mono' to run the stage1 mcs.exe
-mono-do-basic-build: $(CONFIG_HEADER)
+mono-do-runtime-only: $(CONFIG_HEADER)
 	if test -z "$(libgc_dir)"; then :; else cd libgc && $(MAKE) ; fi
 	cd mono && $(MAKE)
 
-# Build stripped down versions of 'mcs', 'mscorlib.dll' and 'System.dll' with installed 'mcs'
-## remove System.Xml.dll since it's a soft-dependency of System.dll
-mcs-do-basic-build: 
-	rm -f $(mcs_topdir)/mcs/mcs.exe $(mcs_topdir)/class/lib/default/mscorlib.dll
-	rm -f $(mcs_topdir)/class/lib/default/System.dll $(mcs_topdir)/class/lib/default/System.Xml.dll
-	cd $(mcs_topdir)/jay && $(MAKE)
-	cd $(mcs_topdir)/mcs && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB"
-	cd $(mcs_topdir)/class/corlib && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB"
-	cd $(mcs_topdir)/class/System && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB"
+mcs-do-basic-build:
+	rm -f $(MCS_FILES)
+	for dir in $(MCS_BASIC_DIRS); do \
+	  (cd $(mcs_topdir)/$$dir && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB") || exit 1 ; \
+	done
 
 mcs-do-short-build:
 	tmpinst=`cd _tmpinst && pwd` ; \
 	PATH=$$tmpinst/bin:$$PATH; export PATH ; \
-	for dir in jay mcs class/corlib class/System class/System.XML class/System class/Mono.CSharp.Debugger; do \
+	for dir in $(MCS_DIRS); do \
 	  (cd $(mcs_topdir)/$$dir && $(MAKE) PROFILE=default) || exit 1 ; \
 	done
 
@@ -129,24 +138,6 @@ tmpinst-dir.stamp: Makefile.am
 
 tmpinst-dir: tmpinst-dir.stamp
 	@if test -d _tmpinst; then :; else rm -f tmpinst-dir.stamp; $(MAKE) tmpinst-dir.stamp; fi
-
-
-# building with monolite
-
-get-monolite-latest:
-	wget -O $(srcdir)/../monolite-latest.tar.gz http://www.go-mono.com/daily/monolite-latest.tar.gz
-
-tmpinst-monolite: tmpinst-dir
-	-rm -f _tmpinst/lib/mcs.exe _tmpinst/lib/*.dll
-	-rm -fr _tmpinst/monolite-*
-	srcdir=`cd $(srcdir) && pwd` && cd _tmpinst && ( gzip -d -c $$srcdir/../monolite-latest.tar.gz | tar xf - )
-	mv -f _tmpinst/monolite-*/mcs.exe _tmpinst/monolite-*/*.dll _tmpinst/lib
-	rm -fr _tmpinst/monolite-*
-
-monolite-bootstrap: tmpinst-monolite mono-do-basic-build
-	rm -f $(mcs_topdir)/mcs/mcs.exe $(mcs_topdir)/class/lib/default/mscorlib.dll
-	rm -f $(mcs_topdir)/class/lib/default/System.dll $(mcs_topdir)/class/lib/default/System.Xml.dll Mono.CSharp.Debugger.dll
-	$(MAKE) two-stage-strap
 
 # Obsolete target -- don't use.
 .PHONY: fullbuild
