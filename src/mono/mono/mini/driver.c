@@ -414,7 +414,7 @@ compile_all_methods (MonoAssembly *ass, int verbose)
  *
  * Start execution of a program.
  */
-static int 
+int 
 mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 {
 	MonoImage *image = assembly->image;
@@ -757,4 +757,17 @@ mini_main (int argc, char* argv[]) {
 	mini_cleanup (domain);
  	return 0;
 }
+
+MonoDomain * 
+mono_jit_init (const char *file)
+{
+	return mini_init (file);
+}
+
+void        
+mono_jit_cleanup (MonoDomain *domain)
+{
+	mini_cleanup (domain);
+}
+
 
