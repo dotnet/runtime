@@ -592,7 +592,20 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--verbose") == 0 || strcmp (argv [i], "-v") == 0) {
 			mini_verbose++;
 		} else if (strcmp (argv [i], "--version") == 0 || strcmp (argv [i], "-V") == 0) {
-			g_print ("Mono JIT compiler version %s, (C) 2002, 2003 Ximian, Inc.\n", VERSION);
+			g_print ("Mono JIT compiler version %s, (C) 2002-2004 Novell, Inc. www.go-mono.com\n", VERSION);
+			if (mini_verbose) {
+				const guchar *cerror;
+				const guchar *clibpath;
+				mono_init ("mono");
+				cerror = mono_check_corlib_version ();
+				clibpath = mono_defaults.corlib? mono_defaults.corlib->name: "unknown";
+				if (cerror) {
+					g_print ("The currently installed mscorlib doesn't match this runtime version.\n");
+					g_print ("The error is: %s\n", cerror);
+					g_print ("mscorlib.dll loaded at: %s\n", clibpath);
+					return 1;
+				}
+			}
 			return 0;
 		} else if (strcmp (argv [i], "--help") == 0 || strcmp (argv [i], "-h") == 0) {
 			mini_usage ();
@@ -726,7 +739,7 @@ mono_main (int argc, char* argv[])
 		mono_debug_init_2 (assembly);
 
 	if (mono_compile_aot || action == DO_EXEC) {
-		guint32 error;
+		const guchar *error;
 
 		mono_config_parse (config_file);
 		//mono_set_rootdir ();
