@@ -6631,7 +6631,7 @@ gpointer
 mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors)
 {
 	unsigned char *ip = patch_info->ip.i + code;
-	gpointer target = NULL;
+	gconstpointer target = NULL;
 
 	switch (patch_info->type) {
 	case MONO_PATCH_INFO_BB:
@@ -6695,7 +6695,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	case MONO_PATCH_INFO_IID:
 		mono_class_init (patch_info->data.klass);
-		target = patch_info->data.klass->interface_id;
+		target = (gpointer)patch_info->data.klass->interface_id;
 		break;
 	case MONO_PATCH_INFO_VTABLE:
 		target = mono_class_vtable (domain, patch_info->data.klass);
@@ -6755,7 +6755,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		g_assert_not_reached ();
 	}
 
-	return target;
+	return (gpointer)target;
 }
 
 static void
@@ -8190,7 +8190,7 @@ add_signal_handler (int signo, gpointer handler)
 static void
 mono_runtime_install_handlers (void)
 {
-#ifndef PLATFORM_WIN32
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	struct sigaction sa;
 #endif
 
