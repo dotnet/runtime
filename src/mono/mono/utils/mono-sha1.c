@@ -278,6 +278,8 @@ mono_sha1_get_digest_from_file (const gchar *filename, guchar digest [20])
 	if (ferror(fp)) {
 		fclose(fp);
 		return;
+	} else {
+		fclose(fp);
 	}
 
 	mono_sha1_final (&ctx, digest);
