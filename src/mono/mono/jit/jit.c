@@ -1712,10 +1712,16 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			g_assert (field);
 
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-			t1->data.i = field->offset;
-			t1 = mono_ctree_new (mp, MB_TERM_LDSFLDA, t1, NULL);
-			t1->data.klass = klass;
+			if (cfg->share_code) {
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+				t1->data.i = field->offset;
+				t1 = mono_ctree_new (mp, MB_TERM_LDSFLDA, t1, NULL);
+				t1->data.klass = klass;
+			} else {
+				MonoVTable *vt = mono_class_vtable (cfg->domain, klass);
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
+				t1->data.p = (char*)(vt->data) + field->offset;
+			}
 			
 			if (load_addr) {
 				svt = VAL_POINTER;
@@ -1790,10 +1796,16 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			}
 			g_assert (field);
 
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-			t1->data.i = field->offset;
-			t1 = mono_ctree_new (mp, MB_TERM_LDSFLDA, t1, NULL);
-			t1->data.klass = klass;
+			if (cfg->share_code) {
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+				t1->data.i = field->offset;
+				t1 = mono_ctree_new (mp, MB_TERM_LDSFLDA, t1, NULL);
+				t1->data.klass = klass;
+			} else {
+				MonoVTable *vt = mono_class_vtable (cfg->domain, klass);
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
+				t1->data.p = (char*)(vt->data) + field->offset;
+			}
 			t1 = ctree_create_store (cfg, field->type, t1, *sp, FALSE);
 
 			ADD_TREE (t1, cli_addr);
@@ -1852,14 +1864,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			if (class->valuetype)
 				esize -= sizeof (MonoObject);
 
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+			t1 = mono_ctree_new (mp, MB_TERM_LDELEMA, sp [0], sp [1]);
 			t1->data.i = esize;
-			t1 = mono_ctree_new (mp, MB_TERM_MUL, sp [1], t1);
-			t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-			t2->data.i = G_STRUCT_OFFSET (MonoArray, vector);
-			t2 = mono_ctree_new (mp, MB_TERM_ADD, sp [0], t2);
-			t1 = mono_ctree_new (mp, MB_TERM_ADD, t1, t2);
-
 			PUSH_TREE (t1, VAL_POINTER);
 			break;
 		}
