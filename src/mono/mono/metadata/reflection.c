@@ -4900,6 +4900,7 @@ mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, Mo
 	} else {
 		sig = ((MonoReflectionMethod*)ctor)->method->signature;
 	}
+	g_assert (mono_array_length (ctorArgs) == sig->param_count);
 	buflen = 256;
 	p = buffer = g_malloc (buflen);
 	/* write the prolog */
@@ -5631,6 +5632,7 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token)
 	}
 	return result;
 }
+
 
 
 
