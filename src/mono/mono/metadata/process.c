@@ -954,7 +954,7 @@ MonoString *ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE pr
 		return(NULL);
 	}
 	
-	len=GetModuleBaseName (process, mod, name, sizeof(name));
+	len=GetModuleBaseName (process, mod, name, MAX_PATH);
 	if(len==0) {
 		return(NULL);
 	}
