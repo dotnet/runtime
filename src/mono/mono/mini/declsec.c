@@ -166,8 +166,8 @@ mono_declsec_linkdemand_aptc (MonoDomain *domain, MonoMethod *caller, MonoMethod
 	assembly = mono_image_get_assembly (callee->klass->image);
 	if (!MONO_SECMAN_FLAG_INIT (assembly->aptc)) {
 		MonoCustomAttrInfo* cinfo = mono_custom_attrs_from_assembly (assembly);
-		secman = mono_security_manager_get_methods ();
 		gboolean result = FALSE;
+		secman = mono_security_manager_get_methods ();
 		if (secman && cinfo) {
 			/* look for AllowPartiallyTrustedCallersAttribute */
 			result = mono_custom_attrs_has_attr (cinfo, secman->aptc);
