@@ -828,6 +828,9 @@ get_info_from_assembly_name (MonoString *assRef, MonoAssemblyName *aname)
 				continue;
 			}
 		}
+
+		g_strfreev (parts);
+		return FALSE;
 	}
 
 	g_strfreev (parts);
