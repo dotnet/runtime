@@ -680,6 +680,7 @@ if test x$platform_win32 = xno; then
 		{
 			pid_t son;
 			int status;
+			int i;
 
 			son = fork ();
 			if (son == -1) {
@@ -691,10 +692,12 @@ if test x$platform_win32 = xno; then
 				return 0;
 			}
 
-			sleep (3);
-			waitpid (son, &status, WNOHANG);
-			if (WIFEXITED (status) && WEXITSTATUS (status) == 0)
-				return 0;
+			for (i = 0; i < 3; ++i) {
+				sleep (1);
+				waitpid (son, &status, WNOHANG);
+				if (WIFEXITED (status) && WEXITSTATUS (status) == 0)
+					return 0;
+			}
 
 			kill (son, SIGKILL);
 			return 1;

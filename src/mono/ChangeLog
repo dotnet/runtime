@@ -1,3 +1,7 @@
+2004-03-22  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Speedup successful sigaltstack test.
+
 2004-03-21  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: this test for sigaltstack works.
