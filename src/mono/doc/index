@@ -85,6 +85,18 @@
 	and <a
 	href="http://conferences.oreillynet.com/cs/os2002/view/e_sess/2996">here</a>)</b>
 
+@item Jul 23rd, 2002
+
+	Mono now has a verifier.  It is used by the runtime, or you can invoke it manually to 
+	verify an image by using the `pedump' tool.
+
+	Tim Coleman has started work on the System.Web.Services
+	assembly (you can also track the status here on the web page).
+	Contact him if you want to help in this assembly or with the
+	associated web service tools.  
+
+	Various samples for ASP.NET have landed in CVS. 
+
 @item Jul 20th, 2002
 
 	A spanish tutorial on using Mono is <a
