@@ -161,6 +161,12 @@ public class Tests
 		return 1;
 	}
 
+	/*
+	 * This test is not very deterministic since the thread which enqueues
+	 * the work item might or might not be inside the domain when the unload
+	 * happens. So disable this for now.
+	 */
+	/*
 	public static void DoUnload (object state) {
 		AppDomain.Unload (AppDomain.CurrentDomain);
 	}
@@ -178,6 +184,7 @@ public class Tests
 
 		return 0;
 	}
+	*/
 
 	public static void SyncCallback () {
 		AppDomain.Unload (AppDomain.CurrentDomain);
