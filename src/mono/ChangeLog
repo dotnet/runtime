@@ -1,3 +1,8 @@
+2004-10-31  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Fix up --with-jit=no so it actually works. Fixes 
+	#61320.
+
 2004-10-29 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* man/mono.1: documented MONO_THREADS_PER_CPU.

@@ -1283,7 +1283,11 @@ case "$host" in
 esac
 
 AC_ARG_WITH(jit, [  --with-jit=yes,no       If you want to build scripts that default to the JIT],[
-	jit_wanted=true
+	if test x$withval = xyes; then
+	   jit_wanted=true
+	else
+	   jit_wanted=false
+	fi
 ])
 
 USEJIT=false
