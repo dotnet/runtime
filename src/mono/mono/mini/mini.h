@@ -450,7 +450,8 @@ enum {
 	MONO_OPT_FCMOV    = 1 << 14,
 	MONO_OPT_LEAF     = 1 << 15,
 	MONO_OPT_AOT      = 1 << 16,
-	MONO_OPT_PRECOMP  = 1 << 17
+	MONO_OPT_PRECOMP  = 1 << 17,
+	MONO_OPT_ABCREM   = 1 << 18
 };
 
 /* Bit-fields in the MonoBasicBlock.region */

@@ -48,6 +48,7 @@
 #include "inssel.h"
 #include "trace.h"
 
+#include "abcremoval.h"
 #include "jit-icalls.c"
 
 #define MONO_IS_COND_BRANCH(op) ((op >= CEE_BEQ && op <= CEE_BLT_UN) || (op >= OP_LBEQ && op <= OP_LBLT_UN) || (op >= OP_FBEQ && op <= OP_FBLT_UN))
@@ -7805,7 +7806,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 #else 
 
 	/* fixme: add all optimizations which requires SSA */
-	if (cfg->opt & (MONO_OPT_DEADCE)) {
+	if ((cfg->opt & (MONO_OPT_DEADCE)) || (cfg->opt & (MONO_OPT_ABCREM))) {
 		if (!(cfg->comp_done & MONO_COMP_SSA) && !header->num_clauses && !cfg->disable_ssa) {
 			mono_local_cprop (cfg);
 			mono_ssa_compute (cfg);
@@ -7833,6 +7834,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		mono_ssa_deadce (cfg);
 
 		//mono_ssa_strength_reduction (cfg);
+
+		if (cfg->opt & MONO_OPT_ABCREM)
+		{
+			mono_perform_abc_removal (cfg);
+		}
 
 		mono_ssa_remove (cfg);
 
