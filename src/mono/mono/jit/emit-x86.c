@@ -21,6 +21,7 @@
 
 #include "jit.h"
 #include "codegen.h"
+#include "debug.h"
 
 static void
 enter_method (MonoMethod *method, gpointer ebp)
@@ -398,6 +399,9 @@ mono_label_cfg (MonoFlowGraph *cfg)
 
 			mbstate =  mono_burg_label (t1, cfg);
 			if (!mbstate) {
+				cfg->invalid = 1;
+				if (mono_debug_handle)
+					return;
 				g_warning ("tree does not match");
 				mono_print_ctree (t1); printf ("\n\n");
 
@@ -623,6 +627,19 @@ mono_compute_branches (MonoFlowGraph *cfg)
 	cfg->code = end;
 }
 
+static int
+match_debug_method (MonoMethod* method)
+{
+	GList *tmp = mono_debug_methods;
+
+	for (; tmp; tmp = tmp->next) {
+		if (strcmp (method->name, tmp->data) == 0) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 /**
  * arch_compile_method:
  * @method: pointer to the method info
@@ -723,6 +740,8 @@ arch_compile_method (MonoMethod *method)
 			g_assert ((code - (guint8*)method->addr) < 32);
 
 		} else {
+			if (mono_debug_handle)
+				return NULL;
 			g_error ("Don't know how to exec runtime method %s.%s::%s", 
 				 method->klass->name_space, method->klass->name, method->name);
 		}
@@ -734,8 +753,12 @@ arch_compile_method (MonoMethod *method)
 		cfg = mono_cfg_new (method, mp);
 
 		mono_analyze_flow (cfg);
+		if (cfg->invalid)
+			return NULL;
 
 		mono_analyze_stack (cfg);
+		if (cfg->invalid)
+			return NULL;
 	
 		cfg->code = NULL;
 		cfg->rs = mono_regset_new (X86_NREG);
@@ -746,6 +769,9 @@ arch_compile_method (MonoMethod *method)
 		ji->code_size = 8192;
 		method->addr = cfg->start = cfg->code = g_malloc (ji->code_size);
 		
+		if (match_debug_method (method))
+			x86_breakpoint (cfg->code);
+
 		if (mono_jit_dump_forest) {
 			int i;
 			for (i = 0; i < cfg->block_count; i++) {
@@ -755,6 +781,8 @@ arch_compile_method (MonoMethod *method)
 		}
 	
 		mono_label_cfg (cfg);
+		if (cfg->invalid)
+			return NULL;
 
 		arch_allocate_regs (cfg);
 
@@ -774,6 +802,9 @@ arch_compile_method (MonoMethod *method)
 		
 		if (mono_jit_dump_asm)
 			mono_disassemble_code (cfg->start, cfg->code - cfg->start);
+
+		if (mono_debug_handle)
+			mono_debug_add_method (mono_debug_handle, cfg);
 
 		ji->used_regs = cfg->rs->used_mask;
 		ji->method = method;

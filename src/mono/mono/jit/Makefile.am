@@ -12,6 +12,8 @@ mono_SOURCES =			\
 	jit.h			\
 	regset.h		\
 	regset.c		\
+	debug.h			\
+	debug.c			\
 	mempool.h		\
 	mempool.c		\
 	jit.c

@@ -203,7 +203,7 @@ mono_class_metadata_init (MonoClass *class)
 	 * Computes the size used by the fields, and their locations
 	 */
 	if (class->field.count > 0){
-		class->fields = g_new (MonoClassField, class->field.count);
+		class->fields = g_new0 (MonoClassField, class->field.count);
 		class_compute_field_layout (class);
 	}
 

@@ -463,6 +463,7 @@ dis_method_list (MonoMetadata *m, guint32 start, guint32 end)
 		ms = mono_metadata_parse_method_signature (m, 1, sig, &sig);
 		sig_str = dis_stringify_method_signature (m, ms, i + 1);
 			
+		fprintf (output, "    // method line %d\n", i + 1);
 		fprintf (output, "    .method %s", flags);
 
 		if (cols [MONO_METHOD_FLAGS] & METHOD_ATTRIBUTE_PINVOKE_IMPL)

@@ -572,3 +572,40 @@ mono_free_method  (MonoMethod *method)
 	g_free (method);
 }
 
+void
+mono_method_get_param_names (MonoMethod *method, const char **names)
+{
+	int i, lastp;
+	MonoClass *klass = method->klass;
+	MonoTableInfo *methodt = &klass->image->tables [MONO_TABLE_METHOD];
+	MonoTableInfo *paramt = &klass->image->tables [MONO_TABLE_PARAM];
+
+	if (!method->signature->param_count)
+		return;
+	for (i = 0; i < method->signature->param_count; ++i)
+		names [i] = "";
+
+	mono_class_metadata_init (klass);
+	if (!klass->methods)
+		return;
+
+	for (i = 0; i < klass->method.count; ++i) {
+		if (method == klass->methods [i]) {
+			guint32 index = klass->method.first + i;
+			guint32 cols [MONO_PARAM_SIZE];
+			guint param_index = mono_metadata_decode_row_col (methodt, index, MONO_METHOD_PARAMLIST);
+
+			if (index < methodt->rows)
+				lastp = mono_metadata_decode_row_col (methodt, index + 1, MONO_METHOD_PARAMLIST);
+			else
+				lastp = paramt->rows;
+			for (i = param_index; i < lastp; ++i) {
+				mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
+				if (cols [MONO_PARAM_SEQUENCE]) /* skip return param spec */
+					names [cols [MONO_PARAM_SEQUENCE] - 1] = mono_metadata_string_heap (klass->image, cols [MONO_PARAM_NAME]);
+			}
+			return;
+		}
+	}
+}
+

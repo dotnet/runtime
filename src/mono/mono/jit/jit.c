@@ -27,6 +27,7 @@
 #include "jit.h"
 #include "regset.h"
 #include "codegen.h"
+#include "debug.h"
 
 /*
  * Pull the list of opcodes
@@ -154,6 +155,9 @@ gboolean mono_jit_dump_forest = FALSE;
 /* Whether to print function call traces */
 gboolean mono_jit_trace_calls = FALSE;
 
+MonoDebugHandle *mono_debug_handle = NULL;
+GList *mono_debug_methods = NULL;
+
 gpointer mono_end_of_stack = NULL;
 
 MonoJitInfoTable *mono_jit_info_table = NULL;
@@ -260,12 +264,17 @@ mono_jit_init_class (MonoClass *klass)
 	
 	klass->inited = 1;
 
+	if (mono_debug_handle)
+		mono_debug_add_type (mono_debug_handle, klass);
+	
 	for (i = 0; i < klass->method.count; ++i) {
 		method = klass->methods [i];
 		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
 		    (strcmp (".cctor", method->name) == 0)) {
 	
 			cctor = arch_compile_method (method);
+			if (!cctor && mono_debug_handle)
+				return;
 			cctor ();
 			return;
 		}
@@ -1252,7 +1261,9 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 		default:
 			g_warning ("unknown instruction `%s' at IL_%04X", 
 				   opcode_names [*ip], ip - header->code);
-			g_assert_not_reached ();
+			//g_assert_not_reached ();
+			cfg->invalid = 1;
+			return;
 		}
 	}
 
@@ -1459,6 +1470,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		for (i = 0; i < header->num_locals; ++i) {
 			size = mono_type_size (header->locals [i], &align);
 			varnum = arch_allocate_var (cfg, size, align, MONO_LOCALVAR, VAL_UNKNOWN);
+			if (i == 0)
+				cfg->locals_start_index = varnum;
 		}
 	}
 
@@ -1473,7 +1486,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		//method->klass->name, method->name, size);
 	}
 	
-	firstarg = varnum + 1;
+	cfg->args_start_index = firstarg = varnum + 1;
  
 	if (signature->params_size) {
 		int align, size;
@@ -2743,6 +2756,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		default:
 			g_warning ("unknown instruction `%s' at IL_%04X", 
 				   opcode_names [*ip], ip - header->code);
+			if (mono_debug_handle) {
+				cfg->invalid = 1;
+				return;
+			}
 			mono_print_forest (forest);
 			g_assert_not_reached ();
 		}
@@ -2822,6 +2839,7 @@ mono_jit_assembly (MonoAssembly *assembly)
 }
 
 typedef int (*MonoMainIntVoid) ();
+typedef int (*MonoMainIntArgs) (MonoArray* args);
 
 /**
  * mono_jit_exec:
@@ -2837,19 +2855,22 @@ mono_jit_exec (MonoAssembly *assembly, int argc, char *argv[])
 	MonoImage *image = assembly->image;
 	MonoCLIImageInfo *iinfo;
 	MonoMethod *method;
+	MonoMainIntVoid mfunc;
 	int res = 0;
 
 	iinfo = image->image_info;
 	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
 
-	if (method->signature->param_count) {
-		g_warning ("Main () with arguments not yet supported");
-		exit (1);
-	} else {
-		MonoMainIntVoid mfunc;
+	mfunc = arch_compile_method (method);
+	mono_end_of_stack = &res; /* a pointer to a local variable is always < BP */
 
-		mfunc = arch_compile_method (method);
-		mono_end_of_stack = &res; /* a pointer to a local variable is always < BP */
+	if (method->signature->param_count) {
+		MonoArray *arr = (MonoArray*)mono_array_new (mono_defaults.string_class, argc);
+		int i;
+		for (i = 0; i < argc; ++i)
+			mono_array_set (arr, gpointer, i, mono_string_new (argv [i]));
+		res = ((MonoMainIntArgs)mfunc) (arr);
+	} else {
 		res = mfunc ();
 	}
 	
@@ -2868,6 +2889,8 @@ usage (char *name)
 		 "--dump-asm    dumps the assembly code generated\n"
 		 "--dump-forest dumps the reconstructed forest\n"
 		 "--trace-calls printf function call trace\n"
+		 "--stabs       write stabs debug information\n"
+		 "--debug name  insert a breakpoint at the start of method name\n"
 		 "--help        print this help message\n");
 	exit (1);
 }
@@ -3094,7 +3117,11 @@ main (int argc, char *argv [])
 			mono_jit_dump_forest = TRUE;
 		else if (strcmp (argv [i], "--trace-calls") == 0)
 			mono_jit_trace_calls = TRUE;
-		else
+		else if (strcmp (argv [i], "--debug") == 0) {
+			mono_debug_methods = g_list_append (mono_debug_methods, argv [++i]);
+		} else if (strcmp (argv [i], "--stabs") == 0) {
+			mono_debug_handle = mono_debug_open_file ("");
+		} else
 			usage (argv [0]);
 	}
 	
@@ -3117,7 +3144,12 @@ main (int argc, char *argv [])
 
 	mono_jit_info_table = mono_jit_info_table_new ();
 
-	mono_install_trampoline (arch_create_jit_trampoline);
+	/*
+	 * This doesn't seem to work... :-(
+	if (mono_debug_handle)
+		mono_install_trampoline (arch_compile_method);
+	else*/
+		mono_install_trampoline (arch_create_jit_trampoline);
 
 	assembly = mono_assembly_open (file, NULL, NULL);
 	if (!assembly){
@@ -3128,7 +3160,11 @@ main (int argc, char *argv [])
 	if (testjit) {
 		mono_jit_assembly (assembly);
 	} else {
-		retval = mono_jit_exec (assembly, argc, argv);
+		/*
+		 * skip the program name from the args.
+		 */
+		++i;
+		retval = mono_jit_exec (assembly, argc - i, argv + i);
 		printf ("RESULT: %d\n", retval);
 	}
 

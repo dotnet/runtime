@@ -66,6 +66,9 @@ typedef struct {
 	guint8           *code;
 	MonoRegSet       *rs;
 	guint32           epilog;
+	guint32           args_start_index;
+	guint32           locals_start_index;
+	gint              invalid;
 } MonoFlowGraph;
 
 typedef struct {

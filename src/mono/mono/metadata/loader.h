@@ -10,6 +10,7 @@ typedef struct {
 	MonoClass *klass;
 	MonoMethodSignature *signature;
 	gpointer addr;
+	gpointer info; /* runtime info */
 	gint slot;
 	/* name is useful mostly for debugging */
 	const char *name; 
@@ -76,5 +77,8 @@ mono_add_internal_call     (const char *name, gpointer method);
 
 gpointer
 mono_lookup_internal_call  (const char *name);
+
+void
+mono_method_get_param_names (MonoMethod *method, const char **names);
 
 #endif
