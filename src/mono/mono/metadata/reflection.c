@@ -1327,7 +1327,7 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 	 * if we have explicitlayout or sequentiallayouts, output data in the
 	 * ClassLayout table.
 	 */
-	if ((tb->attrs & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT) {
+	if (((tb->attrs & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT) && (tb->class_size != -1)) {
 		table = &assembly->tables [MONO_TABLE_CLASSLAYOUT];
 		table->rows++;
 		alloc_table (table, table->rows);
