@@ -28,6 +28,7 @@ mcs-tree-safe-build:
 xinstall-runtime:
 	if echo $(SUBDIRS) | grep "libgc " > /dev/null; then (cd libgc; $(MAKE) && $(MAKE) install); fi
 	(cd mono; $(MAKE) && $(MAKE) install)
+	(cd runtime; $(MAKE) install assemblies_DATA=mscorlib.dll monobins_DATA=mcs.exe)
 
 mcs-rest:
 	(cd ../mcs/class; $(MAKE))
