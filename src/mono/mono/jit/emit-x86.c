@@ -24,7 +24,6 @@
 #include "jit.h"
 #include "helpers.h"
 #include "codegen.h"
-#include "debug.h"
 
 
 //#define DEBUG_REGALLOC

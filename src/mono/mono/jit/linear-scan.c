@@ -13,7 +13,6 @@
 
 #include "jit.h"
 #include "codegen.h"
-#include "debug.h"
 
 //#define MNAME "nest_test"
 
