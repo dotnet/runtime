@@ -1,7 +1,7 @@
 * Debugging information
 
-	Compile your programs using the `-g' flag in MCS, that will generate a file
-	with the extension .dbg containing the dwarf symbols for your executable.
+	Compile your programs using the `-g' flag in MCS, that will all a special
+	resource containing debugging information to your executable.
 
 	To get stack traces with line number information, you need to run your 
 	program like this:

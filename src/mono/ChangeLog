@@ -1,3 +1,10 @@
+2003-02-16  Martin Baulig  <martin@ximian.com>
+
+	* doc/jit-debug-sample
+	* doc/jit-debug-sample2: Removed.
+
+	* doc/jit-debug: Updated.
+
 2003-02-13  Daniel Morgan <danmorg@sc.rr.com>
 
 	* doc/screenshots
