@@ -400,8 +400,13 @@ MINI_OP(OP_CISINST, "cisinst")
 MINI_OP(OP_CCASTCLASS, "ccastclass")
 MINI_OP(OP_SAVE_LMF, "save_lmf")
 MINI_OP(OP_RESTORE_LMF, "restore_lmf")
+
+/* arch-dep tls access */
+MINI_OP(OP_TLS_GET,            "tls_get")
+
 MINI_OP(OP_LOAD_GOTADDR, "load_gotaddr")
 MINI_OP(OP_DUMMY_USE, "dummy_use")
+
 
 /* Atomic specific
 
@@ -449,7 +454,6 @@ MINI_OP(OP_X86_SETNE_MEMBASE,      "x86_setne_membase")
 MINI_OP(OP_X86_ADD_MEMBASE,        "x86_add_membase")
 MINI_OP(OP_X86_SUB_MEMBASE,        "x86_sub_membase")
 MINI_OP(OP_X86_MUL_MEMBASE,        "x86_mul_membase")
-MINI_OP(OP_X86_TLS_GET,            "x86_tls_get")
 
 MINI_OP(OP_AMD64_TEST_NULL,              "amd64_test_null")
 MINI_OP(OP_AMD64_SET_XMMREG_R4,          "amd64_set_xmmreg_r4")

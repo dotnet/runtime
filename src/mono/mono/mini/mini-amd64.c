@@ -4616,7 +4616,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "ArithmeticException");
 			break;
 		}
-		case OP_X86_TLS_GET: {
+		case OP_TLS_GET: {
 			x86_prefix (code, X86_FS_PREFIX);
 			amd64_mov_reg_mem (code, ins->dreg, ins->inst_offset, 8);
 			break;
@@ -5676,7 +5676,7 @@ MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 	if (appdomain_tls_offset == -1)
 		return NULL;
 	
-	MONO_INST_NEW (cfg, ins, OP_X86_TLS_GET);
+	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
 	ins->inst_offset = appdomain_tls_offset;
 	return ins;
 }
@@ -5688,7 +5688,7 @@ MonoInst* mono_arch_get_thread_intrinsic (MonoCompile* cfg)
 	if (thread_tls_offset == -1)
 		return NULL;
 	
-	MONO_INST_NEW (cfg, ins, OP_X86_TLS_GET);
+	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
 	ins->inst_offset = thread_tls_offset;
 	return ins;
 }

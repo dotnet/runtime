@@ -500,7 +500,7 @@ x86_seteq_membase: src1:b len:9
 x86_add_membase: dest:i src1:i src2:b clob:1 len:13
 x86_sub_membase: dest:i src1:i src2:b clob:1 len:13
 x86_mul_membase: dest:i src1:i src2:b clob:1 len:14
-x86_tls_get: dest:i len:13
+tls_get: dest:i len:13
 amd64_test_null: src1:i len:5
 amd64_icompare_membase_reg: src1:b src2:i len:8
 amd64_icompare_membase_imm: src1:b len:13

@@ -719,6 +719,11 @@ stmt: CEE_BREAK "0" {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+reg: OP_TLS_GET {
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 stmt: CEE_SWITCH (reg) {
 	MonoInst *label;
 	int offset_reg = mono_regstate_next_int (s->rs);

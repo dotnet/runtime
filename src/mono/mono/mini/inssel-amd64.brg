@@ -747,9 +747,4 @@ reg: OP_LSHR_UN (reg, OP_ICONST) "0" {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_LSHR_UN_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
 }
 
-reg: OP_X86_TLS_GET {
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
 %%
