@@ -26,7 +26,7 @@ output_type_edge (MonoClass *first, MonoClass *second) {
 static void
 print_subtypes (MonoImage *image, MonoClass *class, int depth) {
 	int i, token;
-	MonoTableInfo *t;
+	const MonoTableInfo *t;
 	MonoClass *child;
 
 	if (depth++ > max_depth)
@@ -91,7 +91,7 @@ interface_graph (MonoImage *image, const char* cname) {
 	char *p;
 	guint32 cols [MONO_INTERFACEIMPL_SIZE];
 	guint32 token, i, count = 0;
-	MonoTableInfo *intf = mono_image_get_table_info (image, MONO_TABLE_INTERFACEIMPL);
+	const MonoTableInfo *intf = mono_image_get_table_info (image, MONO_TABLE_INTERFACEIMPL);
 
 	cname = g_strdup (cname);
 	p = strrchr (cname, '.');
