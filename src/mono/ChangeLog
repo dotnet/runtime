@@ -1,3 +1,8 @@
+2004-05-05  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* data/DefaultWsdlHelpGenerator.aspx: add any cookie in the request to
+	the request we do for the actual web service.
+
 2004-05-04  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: check for SIGEV_THREAD being defined before checking
