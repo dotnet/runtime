@@ -788,7 +788,18 @@ handle_enum:
 			goto handle_enum;
 		} else
 			g_error ("we can't encode valuetypes");
-	case MONO_TYPE_STRING:
+	case MONO_TYPE_STRING: {
+		MonoString *str = (MonoString*)val;
+		/* there is no signature */
+		len = str->length * 2;
+		mono_metadata_encode_value (len, b, &b);
+		idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
+		/* FIXME: ENOENDIAN */
+		mono_image_add_stream_data (&assembly->blob, mono_string_chars (str), len);
+
+		g_free (buf);
+		return idx;
+	}
 	default:
 		g_error ("we don't encode constant type 0x%02x yet", *ret_type);
 	}
@@ -2106,7 +2117,11 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	 */
 	CHECK_OBJECT (MonoReflectionParameter**, &(method->signature));
 	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "ParameterInfo");
+#if HAVE_BOEHM_GC
+	res = GC_malloc (sizeof (MonoReflectionParameter*) * method->signature->param_count);
+#else
 	res = g_new0 (MonoReflectionParameter*, method->signature->param_count);
+#endif
 	for (i = 0; i < method->signature->param_count; ++i) {
 		res [i] = (MonoReflectionParameter *)mono_object_new (domain, oklass);
 		res [i]->ClassImpl = mono_type_get_object (domain, method->signature->params [i]);
