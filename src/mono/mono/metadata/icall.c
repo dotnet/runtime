@@ -3701,26 +3701,29 @@ ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly 
 	MonoDomain *domain = mono_domain_get();
 	MonoArray *res;
 	MonoClass *klass;
-	int i, file_count = 0;
-	MonoImage **modules = assembly->assembly->image->modules;
-	guint32 module_count = assembly->assembly->image->module_count;
+	int i, j, file_count = 0;
+	MonoImage **modules;
+	guint32 module_count;
 	MonoTableInfo *table;
+
+	g_assert (assembly->assembly->image != NULL);
 
 	table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
 	file_count = table->rows;
 
-	g_assert( assembly->assembly->image != NULL);
-	++module_count;
+	modules = assembly->assembly->image->modules;
+	module_count = assembly->assembly->image->module_count;
 
-	klass = mono_class_from_name ( mono_defaults.corlib, "System.Reflection", "Module");
-	res = mono_array_new (domain, klass, module_count + file_count);
+	klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Module");
+	res = mono_array_new (domain, klass, 1 + module_count + file_count);
 
 	mono_array_set (res, gpointer, 0, mono_module_get_object (domain, assembly->assembly->image));
-	for ( i = 1; i < module_count; ++i )
-		mono_array_set (res, gpointer, i, mono_module_get_object (domain, modules[i]));
+	j = 1;
+	for (i = 0; i < module_count; ++i, ++j)
+		mono_array_set (res, gpointer, j, mono_module_get_object (domain, modules[i]));
 
-	for (i = 0; i < table->rows; ++i)
-		mono_array_set (res, gpointer, module_count + i, mono_module_file_get_object (domain, assembly->assembly->image, i));
+	for (i = 0; i < file_count; ++i, ++j)
+		mono_array_set (res, gpointer, j, mono_module_file_get_object (domain, assembly->assembly->image, i));
 
 	return res;
 }
