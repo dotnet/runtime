@@ -3584,6 +3584,9 @@ static gconstpointer icall_map [] = {
 	/*
 	 * System.Math
 	 */
+	"System.Math::Floor", ves_icall_System_Math_Floor,
+	"System.Math::Round", ves_icall_System_Math_Round,
+	"System.Math::Round2", ves_icall_System_Math_Round2,
 	"System.Math::Sin", ves_icall_System_Math_Sin,
         "System.Math::Cos", ves_icall_System_Math_Cos,
         "System.Math::Tan", ves_icall_System_Math_Tan,

@@ -29,6 +29,45 @@ static __huge_val_t __huge_val = { __HUGE_VAL_bytes };
 #  define HUGE_VAL      (__huge_val.__d)
 #endif
 
+
+gdouble ves_icall_System_Math_Floor (gdouble x) {
+	MONO_ARCH_SAVE_REGS;
+	return floor(x);
+}
+
+gdouble ves_icall_System_Math_Round (gdouble x) {
+	double int_part, dec_part;
+	MONO_ARCH_SAVE_REGS;
+	int_part = floor(x);
+	dec_part = x - int_part;
+	if (((dec_part == 0.5) &&
+		((2.0 * ((int_part / 2.0) - floor(int_part / 2.0))) != 0.0)) ||
+		(dec_part > 0.5)) {
+		int_part++;
+	}
+	return int_part;
+}
+
+gdouble ves_icall_System_Math_Round2 (gdouble value, gint32 digits) {
+	double p, int_part, dec_part;
+	MONO_ARCH_SAVE_REGS;
+	if (value == HUGE_VAL)
+		return HUGE_VAL;
+	if (value == -HUGE_VAL)
+		return -HUGE_VAL;
+	if (digits == 0)
+		return ves_icall_System_Math_Round(value);
+	p = pow(10, digits);
+	int_part = floor(value);
+	dec_part = value - int_part;
+	dec_part *= 1000000000000000;
+	dec_part = floor(dec_part);
+	dec_part /= (1000000000000000 / p);
+	dec_part = ves_icall_System_Math_Round(dec_part);
+	dec_part /= p;
+	return int_part + dec_part;
+}
+
 gdouble 
 ves_icall_System_Math_Sin (gdouble x)
 {
@@ -110,9 +149,17 @@ ves_icall_System_Math_Atan (gdouble x)
 gdouble 
 ves_icall_System_Math_Atan2 (gdouble y, gdouble x)
 {
+	double result;
 	MONO_ARCH_SAVE_REGS;
 
-	return atan2 (y, x);
+	if ((y == HUGE_VAL && x == HUGE_VAL) ||
+		(y == HUGE_VAL && x == -HUGE_VAL) ||
+		(y == -HUGE_VAL && x == HUGE_VAL) ||
+		(y == -HUGE_VAL && x == -HUGE_VAL)) {
+		return NAN;
+	}
+	result = atan2 (y, x);
+	return (result == -0)? 0: result;
 }
 
 gdouble 
@@ -152,9 +199,37 @@ ves_icall_System_Math_Log10 (gdouble x)
 gdouble 
 ves_icall_System_Math_Pow (gdouble x, gdouble y)
 {
+	double result;
 	MONO_ARCH_SAVE_REGS;
 
-	return pow (x, y);
+	if (isnan(x) || isnan(y)) {
+		return NAN;
+	}
+
+	if ((x == 1 || x == -1) && (y == HUGE_VAL || y == -HUGE_VAL)) {
+		return NAN;
+	}
+
+	/* This code is for return the same results as MS.NET for certain
+	 * limit values */
+	if (x < -9007199254740991.0) {
+		if (y > 9007199254740991.0)
+			return HUGE_VAL;
+		if (y < -9007199254740991.0)
+			return 0;
+	}
+
+	result = pow (x, y);
+
+	/* This code is for return the same results as MS.NET for certain
+	 * limit values */
+	if (isnan(result) &&
+		(x == -1.0) &&
+		((y > 9007199254740991.0) || (y < -9007199254740991.0))) {
+		return 1;
+	}
+
+	return (result == -0)? 0: result;
 }
 
 gdouble 

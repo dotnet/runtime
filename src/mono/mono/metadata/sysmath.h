@@ -13,6 +13,10 @@
 #include <config.h>
 #include <glib.h>
 
+extern gdouble ves_icall_System_Math_Floor (gdouble x);
+extern gdouble ves_icall_System_Math_Round (gdouble x);
+extern gdouble ves_icall_System_Math_Round2 (gdouble value, gint32 digits);
+
 extern gdouble 
 ves_icall_System_Math_Sin (gdouble x);
 
