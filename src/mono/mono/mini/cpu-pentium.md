@@ -230,7 +230,7 @@ add.ovf:
 add.ovf.un:
 mul.ovf: dest:i src1:i src2:i clob:1 len:9
 # this opcode is handled specially in the code generator
-mul.ovf.un: dest:i src1:i src2:i len:12
+mul.ovf.un: dest:i src1:i src2:i len:16
 sub.ovf:
 sub.ovf.un:
 endfinally:
