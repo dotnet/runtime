@@ -10,10 +10,11 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/endian.h>
+#include <mono/arch/x86/x86-codegen.h>
 
 #include "jit.h"
 #include "testjit.h"
-
+#include "regset.h"
 /*
  * Pull the list of opcodes
  */
@@ -26,10 +27,45 @@ enum {
 };
 #undef OPDEF
 
-static int cregnum = 0;
+static MonoRegSet *
+get_x86_regset ()
+{
+	MonoRegSet *rs;
+
+	rs = mono_regset_new (X86_NREG);
+
+	mono_regset_reserve_reg (rs, X86_ESP);
+	mono_regset_reserve_reg (rs, X86_EBP);
+
+	return rs;
+}
 
 static void
-reduce (MBTree *tree, int goal) 
+tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs) 
+{
+	MBTree *kids[10];
+	int ern = mono_burg_rule (tree->state, goal);
+	guint16 *nts = mono_burg_nts [ern];
+	int i;
+	
+	mono_burg_kids (tree, ern, kids);
+
+	for (i = 0; nts [i]; i++) 
+		tree_allocate_regs (kids [i], nts [i], rs);
+
+	if (goal == MB_NTERM_reg) {
+		if ((tree->reg = mono_regset_alloc_reg (rs, -1)) == -1) {
+			g_warning ("register allocation failed\n");
+			g_assert_not_reached ();
+		}
+	}
+
+	for (i = 0; nts [i]; i++) 
+		mono_regset_free_reg (rs, kids [i]->reg);
+}
+
+static void
+tree_emit (MBTree *tree, int goal) 
 {
 	MBTree *kids[10];
 	int ern = mono_burg_rule (tree->state, goal);
@@ -41,10 +77,7 @@ reduce (MBTree *tree, int goal)
 	// printf ("TEST %d %d %s %d\n", goal, ern, mono_burg_rule_string [ern], nts [0]);
 	
 	for (i = 0; nts [i]; i++) 
-		reduce (kids [i], nts [i]);
-
-	if (goal == MB_NTERM_reg)
-		tree->reg = ++cregnum;
+		tree_emit (kids [i], nts [i]);
 
 	n = (tree->left != NULL) + (tree->right != NULL);
 
@@ -70,6 +103,7 @@ ctree_new (int op, MonoTypeEnum type, MBTree *left, MBTree *right)
 	t->left = left;
 	t->right = right;
 	t->type = type;
+	t->reg = -1;
 	return t;
 }
 
@@ -118,7 +152,7 @@ print_forest (GPtrArray *forest)
 }
 
 static void
-label_forest (GPtrArray *forest)
+forest_label (GPtrArray *forest)
 {
 	const int top = forest->len;
 	int i;
@@ -127,21 +161,52 @@ label_forest (GPtrArray *forest)
 		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
 		MBState *s;
 
-		//printf ("%03d:", i++);print_tree ((MBTree *)l->data);printf ("\n");
-
 		s =  mono_burg_label (t1);
-		g_assert (s);
-		cregnum = 0;
-		reduce (t1, MB_NTERM_stmt);
+		if (!s) {
+			g_warning ("tree does not match");
+			print_tree (t1); printf ("\n");
+			g_assert_not_reached ();
+		}
 	}
+}
+
+static void
+forest_emit (GPtrArray *forest)
+{
+	const int top = forest->len;
+	int i;
+	
+	for (i = 0; i < top; i++) {
+		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
+		tree_emit (t1, 1);
+	}
+}
+
+static void
+forest_allocate_regs (GPtrArray *forest, MonoRegSet *rs)
+{
+	const int top = forest->len;
+	int i;
+	
+	for (i = 0; i < top; i++) {
+		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
+		tree_allocate_regs (t1, 1, rs);
+	}
+
 }
 
 static void
 emit_method (MonoMethod *method, GPtrArray *forest, int locals_size)
 {
-	arch_emit_prologue (method, locals_size);
-	label_forest (forest);
-	arch_emit_epilogue (method);
+	MonoRegSet *rs = get_x86_regset ();
+
+	forest_label (forest);
+	forest_allocate_regs (forest, rs);
+	arch_emit_prologue (method, locals_size, rs);
+	forest_emit (forest);
+	arch_emit_epilogue (method, rs);
+
+	mono_regset_free (rs);
 }
 
 #define ADD_TREE(t)     g_ptr_array_add (forest, (t))
@@ -158,13 +223,13 @@ mono_compile_method (MonoMethod *method)
 	MonoMethodHeader *header;
 	MonoMethodSignature *signature;
 	MonoImage *image;
-	MBTree **sp, **stack, *t1;
+	MBTree **sp, **stack, *t1, *t2;
 	register const unsigned char *ip, *end;
 	guint *locals_offsets;
 	guint *args_offsets;
 	GPtrArray *forest;
-	int locals_size = 0;
-	
+	int local_offset = 0;
+
 	g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
 	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
 
@@ -178,17 +243,15 @@ mono_compile_method (MonoMethod *method)
 	sp = stack = alloca (sizeof (MBTree *) * header->max_stack);
 	
 	if (header->num_locals) {
-		int i, size, align, offset = 0;
+		int i, size, align;
 		locals_offsets = alloca (sizeof (gint) * header->num_locals);
 
 		for (i = 0; i < header->num_locals; ++i) {
-			locals_offsets [i] = offset;
+			locals_offsets [i] = local_offset;
 			size = mono_type_size (header->locals [i], &align);
-			offset += offset % align;
-			offset += size;
+			local_offset += local_offset % align;
+			local_offset += size;
 		}
-		printf ("LOCALS ARE: %d\n", locals_size);
-		locals_size = offset;
 	}
 	
 	if (signature->params_size) {
@@ -237,7 +300,16 @@ mono_compile_method (MonoMethod *method)
 			}
 			
 			if (csig->ret->type != MONO_TYPE_VOID) {
+				int size, align;
 				t1 = ctree_new_leaf (MB_TERM_CALL, csig->ret->type);
+				t2 = ctree_new (MB_TERM_STLOC, csig->ret->type, t1, NULL);
+				size = mono_type_size (csig->ret, &align);
+				t2->data.i = local_offset;
+				local_offset += local_offset % align;
+				local_offset += size;
+				ADD_TREE (t2);
+				t1 = ctree_new_leaf (MB_TERM_LDLOC, t2->type);
+				t1->data.i = t2->data.i;
 				*sp = t1;
 				sp++;
 			} else {
@@ -443,8 +515,9 @@ mono_compile_method (MonoMethod *method)
 		}
 	}
 	
+	printf ("LOCALS ARE: %d\n", local_offset);
 	print_forest (forest);
-	emit_method (method, forest, locals_size);
+	emit_method (method, forest, local_offset);
 }
 
 static void

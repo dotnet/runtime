@@ -156,6 +156,11 @@ tar xzvf mono-XXX.tar.gz
 make
 make install
 </pre>
+
+		* Some people observed problems with autoconf 2.52. Installing 
+		  autoconf 2.13 helped in those cases (don't forget to do a
+		  `make maintainer-clean' after the update)
+
 	</ul>
 
 	To compile the mono runtime on Unix:

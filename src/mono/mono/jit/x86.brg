@@ -47,7 +47,7 @@ reg: LDLOC {
 	switch (tree->type) {
 	case MONO_TYPE_I4:
 		printf ("\tmov     dword ptr %d[%%ebp], R%d\n", 
-			tree->data.i, tree->reg);
+			-(tree->data.i + 4), tree->reg);
 		break;
 	default:
 		g_warning ("unknown type %02x", tree->type);
@@ -63,7 +63,7 @@ reg: LDARG {
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
 		printf ("\tmov     dword ptr %d[%%ebp], R%d\n", 
-			-tree->data.i, tree->reg);
+			tree->data.i + 8, tree->reg);
 		break;
 	default:
 		g_warning ("unknown type %02x", tree->type);
@@ -72,7 +72,7 @@ reg: LDARG {
 }
 
 reg: MUL (reg, reg) {
-	printf ("\tmov     R%d, R%d\n\timul     R%d, R%d\n", 
+	printf ("\tmov     R%d, R%d\n\timul    R%d, R%d\n", 
 		tree->left->reg, tree->reg,
 		tree->right->reg, tree->reg);
 } cost {
@@ -81,7 +81,7 @@ reg: MUL (reg, reg) {
 }
 
 reg: ADD (reg, con) {
-	printf ("\tmov     R%d, R%d\n\t    add R%d, %d\n", 
+	printf ("\tmov     R%d, R%d\n\tadd     R%d, %d\n", 
 		tree->left->reg, tree->reg, 
 		tree->right->data.i, tree->reg);
 } cost {
@@ -117,7 +117,7 @@ reg: SUB (reg, reg) {
 }
 
 stmt: STLOC (con) {
-	printf ("\tmov     %d, dword ptr %d[EBP]\n", 
+	printf ("\tmov     %d, dword ptr %d[%%ebp]\n", 
 		tree->left->data.i, tree->data.i);
 } cost {
 	MBCOND (tree->left->type == MONO_TYPE_I4);
@@ -127,7 +127,7 @@ stmt: STLOC (con) {
 stmt: STLOC (reg) {	
 	switch (tree->type) {
 	case MONO_TYPE_I4:
-		printf ("\tmov     R%d, dword ptr %d[EBP]\n", 
+		printf ("\tmov     R%d, dword ptr %d[%%ebp]\n", 
 			tree->left->reg, tree->data.i);
 		break;
 	default:
@@ -138,7 +138,7 @@ stmt: STLOC (reg) {
 
 stmt: BR {
 
-	printf ("\tjmp     %d[EIP]\n", tree->data.i);
+	printf ("\tjmp     label_%d\n", tree->data.i);
 }
 
 stmt: BLT (reg, con) {
@@ -173,7 +173,7 @@ stmt: RET {
 
 stmt: ARG (con) {
        
-      printf ("\tpush     %d\n", tree->left->data.i);
+      printf ("\tpush    %d\n", tree->left->data.i);
 }
 
 stmt: ARG (reg) {
@@ -183,7 +183,7 @@ stmt: ARG (reg) {
 reg: CALL {
 	switch (tree->type) {
 	case MONO_TYPE_I4:
-		printf ("\tR%d = call\n", tree->reg);
+		printf ("\t(R%d=)call\n", tree->reg);
 		break;
 	default:
 		g_warning ("unknown type %02x", tree->type);

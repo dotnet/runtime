@@ -8,8 +8,7 @@ lib_LIBRARIES = libmetadata.a
 assembliesdir = $(libdir)
 
 INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)	\
-	-DMONO_ASSEMBLIES=\""$(assembliesdir)"\"		\
-	-I$(top_srcdir)/libffi/include	
+	-DMONO_ASSEMBLIES=\""$(assembliesdir)"\"		
 
 
 libmetadata_a_SOURCES = \

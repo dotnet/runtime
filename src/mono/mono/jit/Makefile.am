@@ -10,6 +10,8 @@ testjit_SOURCES =		\
 	codegen-x86.c		\
 	emit-x86.c		\
 	jit.h			\
+	regset.h		\
+	regset.c		\
 	testjit.h		\
 	testjit.c
 
