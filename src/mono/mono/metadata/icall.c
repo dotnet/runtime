@@ -4517,6 +4517,14 @@ ves_icall_System_Environment_GetLogicalDrives (void)
 	return result;
 }
 
+static MonoString *
+ves_icall_System_Environment_InternalGetHome (void)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return mono_string_new (mono_domain_get (), g_get_home_dir ());
+}
+
 static const char *encodings [] = {
 	(char *) 1,
 		"ascii", "us_ascii", "us", "ansi_x3.4_1968",
@@ -5140,6 +5148,7 @@ static const IcallEntry environment_icalls [] = {
 	{"get_TickCount", ves_icall_System_Environment_get_TickCount},
 	{"get_UserName", ves_icall_System_Environment_get_UserName},
 	{"internalGetGacPath", ves_icall_System_Environment_GetGacPath},
+	{"internalGetHome", ves_icall_System_Environment_InternalGetHome},
 	{"set_ExitCode", mono_environment_exitcode_set}
 };
 
