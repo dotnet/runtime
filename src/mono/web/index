@@ -80,6 +80,11 @@
   </tr>
 </table>
 
+@item Jun 24, 2002
+
+        Duncan has written a few sample <a
+	href="http://primates.ximian.com/~duncan/Mono">gtk# demo apps</a>..
+
 @item Jun 20, 2002
 
 	Gonzalo has got the Mono ASP.NET implementation can now render all Html
