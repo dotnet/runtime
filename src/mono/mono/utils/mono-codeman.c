@@ -46,6 +46,7 @@ struct _CodeChunck {
 };
 
 struct _MonoCodeManager {
+	int dynamic;
 	CodeChunk *current;
 	CodeChunk *full;
 };
@@ -58,8 +59,18 @@ mono_code_manager_new (void)
 		return NULL;
 	cman->current = NULL;
 	cman->full = NULL;
+	cman->dynamic = 0;
 	return cman;
 }
+
+MonoCodeManager* 
+mono_code_manager_new_dynamic (void)
+{
+	MonoCodeManager *cman = mono_code_manager_new ();
+	cman->dynamic = 1;
+	return cman;
+}
+
 
 static void
 free_chunklist (CodeChunk *chunk)
@@ -141,7 +152,7 @@ query_pagesize (void)
 #endif
 
 static CodeChunk*
-new_codechunk (int size)
+new_codechunk (int dynamic, int size)
 {
 	static int pagesize = 0;
 	int minsize, flags = CODE_FLAG_MMAP;
@@ -149,46 +160,61 @@ new_codechunk (int size)
 	CodeChunk *chunk;
 	void *ptr;
 
-	if (!pagesize)
-		pagesize = query_pagesize ();
+#ifdef FORCE_MALLOC
+	flags = CODE_FLAG_MALLOC;
+#endif
 
-	minsize = pagesize * MIN_PAGES;
-	if (size < minsize)
-		chunk_size = minsize;
-	else {
+	if (dynamic) {
 		chunk_size = size;
-		chunk_size += pagesize - 1;
-		chunk_size &= ~ (pagesize - 1);
+		flags = CODE_FLAG_MALLOC;
+	}
+	else {
+		if (!pagesize)
+			pagesize = query_pagesize ();
+
+		minsize = pagesize * MIN_PAGES;
+		if (size < minsize)
+			chunk_size = minsize;
+		else {
+			chunk_size = size;
+			chunk_size += pagesize - 1;
+			chunk_size &= ~ (pagesize - 1);
+		}
 	}
 #ifdef BIND_ROOM
 	bsize = chunk_size / BIND_ROOM;
 	if (chunk_size - size < bsize) {
-		chunk_size += pagesize;
+		if (dynamic)
+			chunk_size = size + bsize;
+		else
+			chunk_size += pagesize;
 	}
 #endif
 
-#ifdef FORCE_MALLOC
 	/* does it make sense to use the mmap-like API? */
-	ptr = malloc (chunk_size);
-	if (!ptr)
-		return NULL;
-	flags = CODE_FLAG_MALLOC;
-#else
-	ptr = mmap (0, chunk_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-	if (ptr == (void*)-1) {
-		int fd = open ("/dev/zero", O_RDONLY);
-		if (fd != -1) {
-			ptr = mmap (0, chunk_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE, fd, 0);
-			close (fd);
-		}
+	if (flags == CODE_FLAG_MALLOC) {
+		ptr = malloc (chunk_size);
+		if (!ptr)
+			return NULL;
+
+	}
+	else {
+		ptr = mmap (0, chunk_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 		if (ptr == (void*)-1) {
-			ptr = malloc (chunk_size);
-			if (!ptr)
-				return NULL;
-			flags = CODE_FLAG_MALLOC;
+			int fd = open ("/dev/zero", O_RDONLY);
+			if (fd != -1) {
+				ptr = mmap (0, chunk_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE, fd, 0);
+				close (fd);
+			}
+			if (ptr == (void*)-1) {
+				ptr = malloc (chunk_size);
+				if (!ptr)
+					return NULL;
+				flags = CODE_FLAG_MALLOC;
+			}
 		}
 	}
-#endif
+
 	/* Make sure the thunks area is zeroed */
 	if (flags == CODE_FLAG_MALLOC)
 		memset (ptr, 0, bsize);
@@ -224,7 +250,7 @@ mono_code_manager_reserve (MonoCodeManager *cman, int size)
 	size &= ~ (MIN_ALIGN - 1);
 
 	if (!cman->current) {
-		cman->current = new_codechunk (size);
+		cman->current = new_codechunk (cman->dynamic, size);
 		if (!cman->current)
 			return NULL;
 	}
@@ -253,7 +279,7 @@ mono_code_manager_reserve (MonoCodeManager *cman, int size)
 		cman->full = chunk;
 		break;
 	}
-	chunk = new_codechunk (size);
+	chunk = new_codechunk (cman->dynamic, size);
 	if (!chunk)
 		return NULL;
 	chunk->next = cman->current;
