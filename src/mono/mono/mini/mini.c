@@ -46,6 +46,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/monitor.h>
+#include <mono/os/gc_wrapper.h>
 
 #include "mini.h"
 #include <string.h>
@@ -8199,6 +8200,8 @@ mini_init (const char *filename)
 
 	if (!g_thread_supported ())
 		g_thread_init (NULL);
+	
+	MONO_GC_PRE_INIT ();
 
 	mono_jit_tls_id = TlsAlloc ();
 	setup_jit_tls_data ((gpointer)-1, mono_thread_abort);
