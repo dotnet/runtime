@@ -19,6 +19,9 @@
 #include "image.h"
 #include "cil-coff.h"
 #include "rawbuffer.h"
+#ifdef WITH_BUNDLE
+#include "mono-bundle.h"
+#endif
 
 /* the default search path is just MONO_ASSEMBLIES */
 static const char*
@@ -310,6 +313,49 @@ absolute_dir (const gchar *filename)
 	return res;
 }
 
+static MonoImage*
+do_mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
+{
+	MonoImage *image = NULL;
+#ifdef WITH_BUNDLE
+	int i;
+	char *name = g_path_get_basename (filename);
+	char *dot = strrchr (name, '.');
+	GList *tmp;
+	MonoAssembly *ass;
+	
+	if (dot)
+		*dot = 0;
+	if (strcmp (name, "corlib") == 0) {
+		g_free (name);
+		name = g_strdup ("mscorlib");
+	}
+	/* we do a very simple search for bundled assemblies: it's not a general purpouse
+	 * assembly loading mechanism.
+	 */
+	for (tmp = loaded_assemblies; tmp; tmp = tmp->next) {
+		ass = tmp->data;
+		if (!ass->aname.name)
+			continue;
+		if (strcmp (name, ass->aname.name))
+			continue;
+		image = ass->image;
+		break;
+	}
+	for (i = 0; !image && bundled_assemblies [i]; ++i) {
+		if (strcmp (bundled_assemblies [i]->name, name) == 0) {
+			image = mono_image_open_from_data ((char*)bundled_assemblies [i]->data, bundled_assemblies [i]->size, FALSE, status);
+			break;
+		}
+	}
+	g_free (name);
+	if (image)
+		return image;
+#endif
+	image = mono_image_open (filename, status);
+	return image;
+}
+
 /**
  * mono_assembly_open:
  * @filename: Opens the assembly pointed out by this name
@@ -364,7 +410,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	}
 
 	/* g_print ("file loading %s\n", fname); */
-	image = mono_image_open (fname, status);
+	image = do_mono_assembly_open (fname, status);
 
 	if (!image){
 		*status = MONO_IMAGE_ERROR_ERRNO;

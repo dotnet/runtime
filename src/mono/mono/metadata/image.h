@@ -51,6 +51,10 @@ typedef struct {
 struct _MonoImage {
 	int   ref_count;
 	FILE *f;
+	/* if f is NULL the image was loaded rom raw data */
+	char *raw_data;
+	guint32 raw_data_len;
+	gboolean raw_data_allocated;
 	char *name;
 	const char *assembly_name;
 	const char *module_name;
@@ -136,8 +140,11 @@ typedef enum {
 
 MonoImage    *mono_image_open     (const char *fname,
 				   MonoImageOpenStatus *status);
+MonoImage    *mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy,
+                                         MonoImageOpenStatus *status);
 MonoImage    *mono_image_loaded   (const char *name);
 MonoImage    *mono_image_loaded_by_guid (const char *guid);
+void          mono_image_init     (MonoImage *image);
 void          mono_image_close    (MonoImage *image);
 const char   *mono_image_strerror (MonoImageOpenStatus status);
 

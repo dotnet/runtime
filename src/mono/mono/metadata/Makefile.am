@@ -21,6 +21,14 @@ noinst_LTLIBRARIES = libmetadata.la libmonoruntime.la
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $(GMODULE_CFLAGS) \
 	-DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
 
+if WITH_BUNDLE
+bundle_srcs = mono-bundle.s mono-bundle.h
+mono-bundle.s mono-bundle.h: $(BUNDLE_FILE) $(srcdir)/make-bundle.pl
+	perl $(srcdir)/make-bundle.pl $(BUNDLE_FILE) mono-bundle.h mono-bundle.s
+else
+bundle_srcs =
+endif
+
 libmonoruntime_la_SOURCES = \
 	reflection.c	\
 	object.c	\
@@ -78,6 +86,7 @@ libmetadata_la_SOURCES = \
 	loader.c	\
 	class.c		\
 	mempool.c	\
+	$(bundle_srcs)	\
 	debug-helpers.c
 
 libmetadataincludedir = $(includedir)/mono/metadata
@@ -133,4 +142,8 @@ monosn_LDADD = \
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm
+
+BUILT_SOURCES = $(bundle_srcs)
+
+EXTRA_DIST = make-bundle.pl sample-bundle
 

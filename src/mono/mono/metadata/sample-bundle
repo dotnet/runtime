@@ -1,0 +1,5 @@
+# sample bundle template for use with the configure option --with-bundle=...
+
+console: ../tests/console.exe
+mscorlib: /usr/local/lib/corlib.dll
+
