@@ -1793,7 +1793,7 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 		class = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
 		mono_class_init (class);
 		if (handle_class)
-				*handle_class = mono_class_from_name (mono_defaults.corlib, "System", "RuntimeFieldHandle");
+				*handle_class = mono_defaults.fieldhandle_class;
 		return mono_class_get_field (class, token);
 	}
 	case MONO_TOKEN_METHOD_DEF:
