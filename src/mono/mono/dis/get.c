@@ -457,8 +457,13 @@ char*
 dis_stringify_type (metadata_t *m, MonoType *type)
 {
 	char *bare = NULL;
-	char *byref = type->byref ? "ref " : "";
+	char *byref;
 	char *result;
+
+	if (!type)
+		return g_strdup ("void");
+
+	byref = type->byref ? "ref " : "";
 
 	switch (type->type){
 	case ELEMENT_TYPE_BOOLEAN:
@@ -501,7 +506,7 @@ dis_stringify_type (metadata_t *m, MonoType *type)
 			child_type = dis_stringify_type (m, type->data.type);
 		}
 		
-		bare = g_strdup_printf (type->type == ELEMENT_TYPE_PTR ? "%s*%s" : "%s%s[]", mods, child_type);
+		bare = g_strdup_printf (type->type == ELEMENT_TYPE_PTR ? "%s%s*" : "%s%s[]", mods, child_type);
 		g_free (child_type);
 		g_free (mods);
 		break;
@@ -910,14 +915,21 @@ get_method (metadata_t *m, guint32 token)
 {
 	int idx = mono_metadata_token_index (token);
 	guint32 member_cols [3], method_cols [6];
-	char *res, *class, *fancy_name;
+	char *res, *class, *fancy_name, *sig;
 	
 	switch (mono_metadata_token_code (token)){
 	case TOKEN_TYPE_METHOD_DEF:
-		return g_strdup_printf ("TODO:MethodDef call [%x]", token);
+
+		mono_metadata_decode_row (&m->tables [META_TABLE_METHOD], 
+					  idx - 1, method_cols, 6);
+
+		fancy_name = mono_metadata_string_heap (m, method_cols [3]);
+
+		sig = get_methodref_signature (m, method_cols [4], fancy_name);
+
+		return sig;
 		
 	case TOKEN_TYPE_MEMBER_REF: {
-		char *sig;
 		
 		mono_metadata_decode_row (&m->tables [META_TABLE_MEMBERREF],
 					  idx - 1, member_cols,
@@ -930,9 +942,10 @@ get_method (metadata_t *m, guint32 token)
 		
 		sig = get_methodref_signature (
 			m, member_cols [2], fancy_name);
+		g_free (fancy_name);
+
 		res = g_strdup_printf ("%s", sig);
 		g_free (sig);
-
 		return res;
 	}
 		

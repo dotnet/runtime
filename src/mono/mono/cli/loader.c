@@ -17,12 +17,14 @@
  */
 #include <config.h>
 #include <glib.h>
+#include <gmodule.h>
 #include <stdio.h>
 #include <string.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/cil-coff.h>
+#include <mono/metadata/tabledefs.h>
 #include "cli.h"
 
 static guint32
@@ -113,6 +115,117 @@ methoddef_from_memberref (MonoImage *image, guint32 index, MonoImage **rimage, g
 	}
 }
 
+static ffi_type *
+ves_map_ffi_type (MonoType *type)
+{
+	ffi_type *rettype;
+
+	if (!type)
+		return &ffi_type_void;
+
+	switch (type->type) {
+	case ELEMENT_TYPE_I1:
+		rettype = &ffi_type_sint8;
+		break;
+	case ELEMENT_TYPE_BOOLEAN:
+	case ELEMENT_TYPE_U1:
+		rettype = &ffi_type_uint8;
+		break;
+	case ELEMENT_TYPE_I2:
+		rettype = &ffi_type_sint16;
+		break;
+	case ELEMENT_TYPE_U2:
+	case ELEMENT_TYPE_CHAR:
+		rettype = &ffi_type_uint16;
+		break;
+	case ELEMENT_TYPE_I4:
+		rettype = &ffi_type_sint32;
+		break;
+	case ELEMENT_TYPE_U4:
+		rettype = &ffi_type_sint32;
+		break;
+	case ELEMENT_TYPE_R4:
+		rettype = &ffi_type_float;
+		break;
+	case ELEMENT_TYPE_R8:
+		rettype = &ffi_type_double;
+		break;
+	case ELEMENT_TYPE_STRING:
+		rettype = &ffi_type_pointer;
+		break;
+	default:
+		g_warning ("not implemented");
+		g_assert_not_reached ();
+	}
+
+	return rettype;
+}
+
+static void
+fill_pinvoke_info (MonoImage *image, MonoMethod *mh, int index, guint16 iflags)
+{
+	MonoMethodPInvokeInfo *piinfo;
+	metadata_tableinfo_t *tables = image->metadata.tables;
+	metadata_tableinfo_t *im = &tables [META_TABLE_IMPLMAP];
+	metadata_tableinfo_t *mr = &tables [META_TABLE_MODULEREF];
+	guint32 im_cols [4];
+	guint32 mr_cols [1];
+	const char *import = NULL;
+	const char *scope = NULL;
+	GModule *gmodule;
+	ffi_type **args, *rettype;
+	int i, acount;
+
+	for (i = 0; i < im->rows; i++) {
+			
+		mono_metadata_decode_row (im, i, im_cols, 4);
+
+		if ((im_cols[1] >> 1) == index + 1) {
+
+			import = mono_metadata_string_heap (&image->metadata, 
+							    im_cols [2]);
+
+			mono_metadata_decode_row (mr, im_cols [3] - 1, mr_cols,
+						  1);
+			
+			scope = mono_metadata_string_heap (&image->metadata, 
+							   mr_cols [0]);
+		}
+	}
+
+	g_assert (import && scope);
+
+	/* fixme: just a test */
+	scope = "libc.so.6"; import = "open";
+
+	gmodule = g_module_open (scope, G_MODULE_BIND_LAZY);
+
+	g_assert (gmodule);
+
+	piinfo = mh->data.piinfo = g_new0 (MonoMethodPInvokeInfo, 1);
+	piinfo->cif = g_new (ffi_cif , 1);
+	piinfo->iflags = iflags;
+	
+	g_module_symbol (gmodule, import, &piinfo->addr); 
+			
+	g_assert (piinfo->addr);
+
+	acount = mh->signature->param_count;
+
+	args = g_new (ffi_type *, acount);
+
+	for (i = 0; i < acount; i++)
+		args[i] = ves_map_ffi_type (mh->signature->params [i]->type);
+
+	rettype = ves_map_ffi_type (mh->signature->ret->type);
+
+	if (!ffi_prep_cif (piinfo->cif, FFI_DEFAULT_ABI, acount, rettype, 
+			   args) == FFI_OK) {
+		g_warning ("prepare pinvoke failed");
+ 		g_assert_not_reached ();
+	}
+}
+
 MonoMethod *
 mono_get_method (MonoImage *image, guint32 token)
 {
@@ -139,14 +252,22 @@ mono_get_method (MonoImage *image, guint32 token)
 	
 	mono_metadata_decode_row (&tables [table], index - 1, cols, 6);
 	result->name_idx = cols [3];
-	/* if this is a methodref from another module/assembly, this fails */
-	loc = cli_rva_map ((cli_image_info_t *)image->image_info, cols [0]);
-	g_assert (loc);
-	result->header = mono_metadata_parse_mh (&image->metadata, loc);
+
 	if (!sig) /* already taken from the methodref */
 		sig = mono_metadata_blob_heap (&image->metadata, cols [4]);
 	size = mono_metadata_decode_blob_size (sig, &sig);
 	result->signature = mono_metadata_parse_method_signature (&image->metadata, 0, sig, NULL);
+
+	result->flags = cols [2];
+
+	if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+		fill_pinvoke_info (image, result, index, cols [1]);
+	} else {
+		/* if this is a methodref from another module/assembly, this fails */
+		loc = cli_rva_map ((cli_image_info_t *)image->image_info, cols [0]);
+		g_assert (loc);
+		result->data.header = mono_metadata_parse_mh (&image->metadata, loc);
+	}
 
 	g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);
 
@@ -157,6 +278,13 @@ void
 mono_free_method  (MonoMethod *method)
 {
 	mono_metadata_free_method_signature (method->signature);
-	mono_metadata_free_mh (method->header);
+	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+		g_free (method->data.piinfo->cif->arg_types);
+		g_free (method->data.piinfo->cif);
+		g_free (method->data.piinfo);
+	} else {
+		mono_metadata_free_mh (method->data.header);
+	}
+
 	g_free (method);
 }

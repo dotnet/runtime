@@ -1,14 +1,25 @@
 #ifndef _MONO_CLI_CLI_H_
 #define _MONO_CLI_CLI_H_ 1
 
+#include <gmodule.h>
+#include <ffi.h>
 #include <mono/metadata/metadata.h>
 
 typedef struct {
+	guint16 iflags; /* method implementation flags */
+	ffi_cif *cif;
+	gpointer addr;
+} MonoMethodPInvokeInfo;
+
+typedef struct {
+	guint16 flags; /* method flags */
 	MonoImage *image;
-	MonoMetaMethodHeader *header;
 	MonoMethodSignature  *signature;
-	
 	guint32 name_idx; 
+	union {
+		MonoMetaMethodHeader *header;
+		MonoMethodPInvokeInfo *piinfo;
+	} data;
 } MonoMethod;
 
 MonoMethod        *mono_get_method    (MonoImage *image, guint32 token);

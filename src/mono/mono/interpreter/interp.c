@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <glib.h>
+#include <ffi.h>
 
 #ifdef HAVE_ALLOCA_H
 #   include <alloca.h>
@@ -62,9 +63,9 @@ ves_real_abort (int line, MonoMethod *mh,
 		
 	fprintf (stderr, "Execution aborted in method: %s\n", name);
 	fprintf (stderr, "Line=%d IP=0x%04x, Aborted execution\n", line,
-		 ip-(unsigned char *)mh->header->code);
+		 ip-(unsigned char *)mh->data.header->code);
 	g_print ("0x%04x %02x\n",
-		 ip-(unsigned char*)mh->header->code, *ip);
+		 ip-(unsigned char*)mh->data.header->code, *ip);
 	if (sp > stack)
 		printf ("\t[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type, sp[-1].data.i, sp[-1].data.f);
 	exit (1);
@@ -132,18 +133,46 @@ stackval_from_data (MonoType *type, const char *data, guint offset)
 {
 	stackval result;
 	switch (type->type) {
-	case ELEMENT_TYPE_I4:
+	case ELEMENT_TYPE_I1:
 		result.type = VAL_I32;
-		result.data.i = *(gint32*)(data + offset);
+		result.data.i = *(gint8*)(data + offset);
+		break;
+	case ELEMENT_TYPE_U1:
+	case ELEMENT_TYPE_BOOLEAN:
+		result.type = VAL_I32;
+		result.data.i = *(guint8*)(data + offset);
 		break;
 	case ELEMENT_TYPE_I2:
 		result.type = VAL_I32;
 		result.data.i = *(gint16*)(data + offset);
 		break;
+	case ELEMENT_TYPE_U2:
+	case ELEMENT_TYPE_CHAR:
+		result.type = VAL_I32;
+		result.data.i = *(guint16*)(data + offset);
+		break;
+	case ELEMENT_TYPE_I4:
+		result.type = VAL_I32;
+		result.data.i = *(gint32*)(data + offset);
+		break;
+	case ELEMENT_TYPE_U4:
+		result.type = VAL_I32;
+		result.data.i = *(guint32*)(data + offset);
+		break;
+	case ELEMENT_TYPE_R4:
+		result.type = VAL_DOUBLE;
+		result.data.f = *(float*)(data + offset);
+		break;
+	case ELEMENT_TYPE_R8:
+		result.type = VAL_DOUBLE;
+		result.data.f = *(double*)(data + offset);
+		break;
+
 	default:
 		g_warning ("got type %x", type->type);
 		g_assert_not_reached ();
 	}
+	g_print ("field value: %d\n", result.data.i);
 	return result;
 }
 
@@ -151,16 +180,88 @@ static void
 stackval_to_data (MonoType *type, stackval *val, char *data, guint offset)
 {
 	switch (type->type) {
-	case ELEMENT_TYPE_I4:
-		*(gint32*)(data + offset) = val->data.i;
+	case ELEMENT_TYPE_I1:
+	case ELEMENT_TYPE_U1:
+		*(guint8*)(data + offset) = val->data.i;
+		break;
+	case ELEMENT_TYPE_BOOLEAN:
+		*(guint8*)(data + offset) = (val->data.i != 0);
 		break;
 	case ELEMENT_TYPE_I2:
-		*(gint16*)(data + offset) = val->data.i;
+	case ELEMENT_TYPE_U2:
+		*(guint16*)(data + offset) = val->data.i;
+		break;
+	case ELEMENT_TYPE_I4:
+	case ELEMENT_TYPE_U4:
+		*(gint32*)(data + offset) = val->data.i;
+		break;
+	case ELEMENT_TYPE_R4:
+		*(float*)(data + offset) = val->data.f;
+		break;
+	case ELEMENT_TYPE_R8:
+		*(double*)(data + offset) = val->data.f;
 		break;
 	default:
 		g_warning ("got type %x", type->type);
 		g_assert_not_reached ();
 	}
+}
+
+static void 
+ves_pinvoke_method (MonoMethod *mh, stackval *sp)
+{
+	static void *values[256];
+	static float tmp_float[256];
+	int i, acount;
+	static char res[256]; /* fixme */
+
+	acount = mh->signature->param_count;
+
+	/* hardcoded limit of max 256 parameter - this prevents us from 
+	   dynamic memory alocation for args, values, ... */
+
+	g_assert (acount < 256);
+
+	/* fixme: only works on little endian mashines */
+
+	for (i = 0; i < acount; i++) {
+
+		switch (mh->signature->params [i]->type->type) {
+
+		case ELEMENT_TYPE_I1:
+		case ELEMENT_TYPE_U1:
+		case ELEMENT_TYPE_BOOLEAN:
+		case ELEMENT_TYPE_I2:
+		case ELEMENT_TYPE_U2:
+		case ELEMENT_TYPE_CHAR:
+		case ELEMENT_TYPE_I4:
+		case ELEMENT_TYPE_U4:
+			values[i] = &sp [i].data.i;
+			break;
+		case ELEMENT_TYPE_R4:
+			tmp_float [i] = sp [i].data.f;
+			values[i] = &tmp_float [i];
+			break;
+		case ELEMENT_TYPE_R8:
+			values[i] = &sp [i].data.f;
+			break;
+		case ELEMENT_TYPE_STRING: /* fixme: this is wrong ? */
+			values[i] = &sp [i].data.p;
+			break;
+ 		default:
+			g_warning ("not implemented %x", 
+				   mh->signature->params [i]->type->type);
+			g_assert_not_reached ();
+		}
+
+	}
+
+	ffi_call (mh->data.piinfo->cif, mh->data.piinfo->addr, res, values);
+		
+	if (mh->signature->ret->type)
+		*sp = stackval_from_data (mh->signature->ret->type, res, 0);
+			
+	g_assert (0); /* fixme: just for test purposes */
 }
 
 #define DEBUG_INTERP 0
@@ -186,30 +287,38 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	 * with alloca we get the expected huge performance gain
 	 * stackval *stack = g_new0(stackval, mh->max_stack);
 	 */
-	/*
-	 * We allocate one more stack val and increase stack temporarily to handle
-	 * passing this to instance methods: this needs to be removed when we'll
-	 * use a different argument passing mechanism.
-	 */
-	stackval *stack = alloca (sizeof (stackval) * (mh->header->max_stack+1));
-	register stackval *sp = stack+1;
-	register const unsigned char *ip = mh->header->code;
+	MonoMetaMethodHeader *header;
+	stackval *stack;
+	register const unsigned char *ip;
+	register stackval *sp;
 	/* FIXME: remove this hack */
 	static int fake_field = 42;
-#if DEBUG_INTERP
-	static int level = 0;
-#endif
 	stackval *locals;
 	GOTO_LABEL_VARS;
 
-	++stack;
+	if (mh->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+		ves_pinvoke_method (mh, args);
+		return;
+	}
 
-	if (mh->header->num_locals)
-		locals = alloca (sizeof (stackval) * mh->header->num_locals);
+	header = mh->data.header;
+	ip = header->code;
 
 #if DEBUG_INTERP
 	level++;
 #endif
+
+	/* We allocate one more stack val and increase stack temporarily to handle
+	 * passing this to instance methods: this needs to be removed when we'll
+	 * use a different argument passing mechanism.
+ 	 */
+
+	stack = alloca (sizeof (stackval) * header->max_stack + 1);
+	sp = stack + 1;
+
+	if (header->num_locals)
+		locals = alloca (sizeof (stackval) * header->num_locals);
+
 	/*
 	 * using while (ip < end) may result in a 15% performance drop, 
 	 * but it may be useful for debug
@@ -766,8 +875,25 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		CASE (CEE_CALLVIRT) ves_abort(); BREAK;
 		CASE (CEE_CPOBJ) ves_abort(); BREAK;
 		CASE (CEE_LDOBJ) ves_abort(); BREAK;
-		CASE (CEE_LDSTR) ves_abort(); BREAK;
+		CASE (CEE_LDSTR) {
+			metadata_t *m = &mh->image->metadata;
+		        const char *name;
+			guint32 index;
+			
+			ip++;
+			index = mono_metadata_token_index (read32 (ip));
+			name = mono_metadata_user_string (m, index);
+			mono_metadata_decode_blob_size (name, &name);
 
+			/* fixme: this is not correct */ 
+			sp->type = VAL_NATI;
+			sp->data.p = name;
+			++sp;
+
+			ip += 4;
+			BREAK;
+
+		}
 		CASE (CEE_NEWOBJ) {
 			MonoObject *o;
 			MonoMethod *cmh;
@@ -1023,7 +1149,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			case CEE_UNUSED55: 
 			case CEE_UNUSED70: 
 			default:
-				g_error ("Unimplemented opcode: 0xFE %02x at 0x%x\n", *ip, ip-(unsigned char*)mh->header->code);
+				g_error ("Unimplemented opcode: 0xFE %02x at 0x%x\n", *ip, ip-(unsigned char*)header->code);
 			}
 			continue;
 		DEFAULT;

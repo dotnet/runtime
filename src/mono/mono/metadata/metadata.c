@@ -1170,9 +1170,10 @@ mono_metadata_free_type (MonoType *type)
 	switch (type->type){
 	case ELEMENT_TYPE_SZARRAY:
 	case ELEMENT_TYPE_PTR:
-		if (!type->custom_mod)
-			mono_metadata_free_type (type->data.type);
-		else {
+		if (!type->custom_mod) {
+			if (type->data.type)
+				mono_metadata_free_type (type->data.type);
+		} else if (type->data.mtype) {
 			mono_metadata_free_type (type->data.mtype->type);
 			g_free (type->data.mtype);
 		}

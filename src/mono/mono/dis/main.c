@@ -412,6 +412,37 @@ free_method_signature (MethodSignature *ms)
 	g_free (ms);
 }
 
+
+static char *
+pinvoke_info (metadata_t *m, guint32 mindex)
+{
+	metadata_tableinfo_t *im = &m->tables [META_TABLE_IMPLMAP];
+	metadata_tableinfo_t *mr = &m->tables [META_TABLE_MODULEREF];
+	guint32 im_cols [4];
+	guint32 mr_cols [1];
+	const char *import, *scope;
+	int i;
+
+	for (i = 0; i < im->rows; i++) {
+
+		mono_metadata_decode_row (im, i, im_cols, CSIZE (im_cols));
+
+		if ((im_cols[1] >> 1) == mindex + 1) {
+
+			import = mono_metadata_string_heap (m, im_cols [2]);
+
+			mono_metadata_decode_row (mr, im_cols [3] - 1, 
+						  mr_cols, CSIZE (mr_cols));
+
+			scope = mono_metadata_string_heap (m, mr_cols [0]);
+				
+			return g_strdup_printf ("(%s:%s)", scope, import);
+		}
+	}
+
+	return NULL;
+}
+
 /**
  * dis_method_list:
  * @m: metadata context
@@ -448,11 +479,13 @@ dis_method_list (metadata_t *m, cli_image_info_t *ii, guint32 start, guint32 end
 
 		ms = parse_method_signature (m, cols [4]);
 			
+		fprintf (output, "    .method %s", flags);
+
+		if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+			fprintf (output, "%s", pinvoke_info (m, i));
+
 		fprintf (output,
-			 "    .method %s\n",
-			 flags);
-		fprintf (output,
-			 "           %s %s",
+			 "\n           %s %s",
 			 ms->ret_type,
 			 mono_metadata_string_heap (m, cols [3]));
 		if (ms->param_count > 0){
