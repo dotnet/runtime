@@ -19,16 +19,16 @@
 static MonoObject *
 ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
 {
+	MonoClass *ac, *ic;
 	MonoArray *ao, *io;
-	MonoArrayClass *ac, *ic;
 	gint32 i, pos, *ind, esize;
 	gpointer *ea;
 
 	io = (MonoArray *)idxs;
-	ic = (MonoArrayClass *)io->obj.klass;
+	ic = (MonoClass *)io->obj.klass;
 	
 	ao = (MonoArray *)this;
-	ac = (MonoArrayClass *)ao->obj.klass;
+	ac = (MonoClass *)ao->obj.klass;
 
 	g_assert (ic->rank == 1);
 	g_assert (io->bounds [0].length == ac->rank);
@@ -54,18 +54,18 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 				 MonoObject *idxs)
 {
 	MonoArray *ao, *io, *vo;
-	MonoArrayClass *ac, *ic, *vc;
+	MonoClass *ac, *ic, *vc;
 	gint32 i, pos, *ind, esize;
 	gpointer *ea;
 
 	vo = (MonoArray *)value;
-	vc = (MonoArrayClass *)vo->obj.klass;
+	vc = (MonoClass *)vo->obj.klass;
 
 	io = (MonoArray *)idxs;
-	ic = (MonoArrayClass *)io->obj.klass;
+	ic = (MonoClass *)io->obj.klass;
 	
 	ao = (MonoArray *)this;
-	ac = (MonoArrayClass *)ao->obj.klass;
+	ac = (MonoClass *)ao->obj.klass;
 
 	g_assert (ic->rank == 1);
 	g_assert (io->bounds [0].length == ac->rank);
@@ -82,7 +82,7 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 	ea = ao->vector + (pos * esize);
 
 	if (ac->element_class->valuetype) {
-		g_assert (vc->klass.valuetype);
+		g_assert (vc->valuetype);
 
 		memcpy (ea, (char *)vo + sizeof (MonoObject), esize);
 	} else
@@ -95,13 +95,13 @@ ves_icall_array_ctor (MonoObject *this, gint32 n1, ...)
 {
 	va_list ap;
 	MonoArray *ao;
-	MonoArrayClass *ac;
+	MonoClass *ac;
 	gint32 i, s, len, esize;
 
 	va_start (ap, n1);
 
 	ao = (MonoArray *)this;
-	ac = (MonoArrayClass *)this->klass;
+	ac = (MonoClass *)this->klass;
 
 	g_assert (ac->rank >= 1);
 
@@ -124,13 +124,13 @@ ves_icall_array_bound_ctor (MonoObject *this, gint32 n1, ...)
 {
 	va_list ap;
 	MonoArray *ao;
-	MonoArrayClass *ac;
+	MonoClass *ac;
 	gint32 i, s, len, esize;
 
 	va_start (ap, n1);
 
 	ao = (MonoArray *)this;
-	ac = (MonoArrayClass *)this->klass;
+	ac = (MonoClass *)this->klass;
 
 	g_assert (ac->rank >= 1);
 
@@ -163,7 +163,7 @@ ves_icall_System_Array_CreateInstance ()
 static gint32 
 ves_icall_System_Array_GetRank (MonoObject *this)
 {
-	return ((MonoArrayClass *)this->klass)->rank;
+	return this->klass->rank;
 }
 
 static gint32

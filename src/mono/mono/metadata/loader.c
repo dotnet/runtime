@@ -452,6 +452,7 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 	else 
 		result = (MonoMethod *)g_new0 (MonoMethodNormal, 1);
 	
+	result->slot = -1;
 	result->klass = klass;
 	result->flags = cols [2];
 	result->iflags = cols [1];

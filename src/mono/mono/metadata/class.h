@@ -25,16 +25,21 @@ struct _MonoClass {
 	guint enumtype        : 1; /* derives from System.Enum */
 
 	MonoClass *parent;
-	MonoClass **interfaces;
 
 	const char *name;
 	const char *name_space;
 	
+	guint  interface_id; /* unique inderface id (for interfaces) */
+	gint  *interface_offsets;
+	guint  interface_count;
+	MonoClass **interfaces;
+
 	/*
 	 * Computed object instance size, total.
 	 */
 	int        instance_size;
 	int        class_size;
+	int        vtable_size; /* number of slots */
 
 	/*
 	 * From the TypeDef table
@@ -52,21 +57,18 @@ struct _MonoClass {
 
 	MonoMethod **methods;
 
+	/* for arrays */
+	MonoClass *element_class; /* element class */
+	guint32    rank;          /* array dimension */
+
 	/* used as the type of the this argument and when passing the arg by value */
 	MonoType this_arg;
 	MonoType byval_arg;
 	
-	/* 
-	 * Static class data 
-	 */
 	gpointer data;
-};
 
-typedef struct {
-	MonoClass  klass;
-	MonoClass *element_class; /* element class */
-	guint32    rank;          /* array dimension */
-} MonoArrayClass;
+	gpointer vtable [0];
+};
 
 MonoClass *
 mono_class_get             (MonoImage *image, guint32 type_token);
@@ -87,7 +89,7 @@ MonoClassField *
 mono_class_get_field_from_name (MonoClass *klass, const char *name);
 
 gint32
-mono_array_element_size    (MonoArrayClass *ac);
+mono_array_element_size    (MonoClass *ac);
 
 gint32
 mono_class_instance_size   (MonoClass *klass);

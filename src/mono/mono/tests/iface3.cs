@@ -29,15 +29,20 @@ public class Test {
 
 		if (r1.DoIt() != 5)
 			return 1;
+
+		if (((ICommon)r1).DoIt() != 3)
+			return 2;
+
+		//Console.WriteLine ("TEST {0}", ((ICommon)r1).DoIt ());
 		
 		if (r2.DoIt() != 5)
-			return 2;
-		
-		if (r3.DoIt() != 2)
 			return 3;
 		
-		if (r4.DoIt() != 3)
+		if (r3.DoIt() != 2)
 			return 4;
+		
+		if (r4.DoIt() != 3)
+			return 5;
 		
 		return 0;
 	}

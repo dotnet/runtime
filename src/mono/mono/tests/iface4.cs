@@ -19,9 +19,9 @@ public class Derived1 : Base {
 
 public class Derived2 : Base, IVehicle {
 	// legal - we redeclared IVehicle support
-	int IVehicle.Start () { return 5; }
-	// legal - we redeclared IVehicle support
 	public new int Stop () { return 6; }
+	// legal - we redeclared IVehicle support
+	int IVehicle.Start () { return 5; }
 	// replaces IVehicle.Turn 
 	int IVehicle.Turn () { return 7; }
 	// replaces Base.Turn 
@@ -48,7 +48,10 @@ public class Test {
 		if (b2.Turn () != 8)
 			return 4;
 		
-		//Console.WriteLine ("TEST {0}", b2.Turn ());	
+		if (((IVehicle)b2).Turn () != 7)
+			return 5;
+		
+		//Console.WriteLine ("TEST {0}", ((IVehicle)b2).Turn ());	
 
 		return 0;
 	}

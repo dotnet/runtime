@@ -447,8 +447,6 @@ mono_jit_init_class (MonoClass *klass)
 	
 	klass->inited = 1;
 
-	klass->data = mono_alloc_static0 (klass->class_size);
-
 	for (i = 0; i < klass->method.count; ++i) {
 		method = klass->methods [i];
 		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 

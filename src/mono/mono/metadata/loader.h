@@ -10,6 +10,7 @@ typedef struct {
 	MonoClass *klass;
 	MonoMethodSignature *signature;
 	gpointer addr;
+	gint slot;
 	/* name is useful mostly for debugging */
 	const char *name; 
 } MonoMethod;

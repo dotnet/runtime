@@ -117,18 +117,16 @@ mono_object_clone (MonoObject *obj)
 MonoObject *
 mono_array_new (MonoClass *eclass, guint32 n)
 {
-	MonoClass *c;
 	MonoObject *o;
+	MonoClass *ac;
 	MonoArray *ao;
-	MonoArrayClass *ac;
 
-	c = mono_array_class_get (eclass, 1);
-	g_assert (c != NULL);
+	ac = mono_array_class_get (eclass, 1);
+	g_assert (ac != NULL);
 
-	o = mono_object_new (c);
+	o = mono_object_new (ac);
 
 	ao = (MonoArray *)o;
-	ac = (MonoArrayClass *)c;
 
 	ao->bounds = g_malloc0 (sizeof (MonoArrayBounds));
 	ao->bounds [0].length = n;

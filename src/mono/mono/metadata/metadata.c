@@ -1694,7 +1694,7 @@ mono_metadata_typedef_from_method (MonoMetadata *meta, guint32 index)
 }
 
 MonoClass**
-mono_metadata_interfaces_from_typedef (MonoMetadata *meta, guint32 index)
+mono_metadata_interfaces_from_typedef (MonoMetadata *meta, guint32 index, guint *count)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_INTERFACEIMPL];
 	locator_t loc;
@@ -1702,6 +1702,8 @@ mono_metadata_interfaces_from_typedef (MonoMetadata *meta, guint32 index)
 	guint32 cols [MONO_INTERFACEIMPL_SIZE];
 	MonoClass **result;
 	
+	*count = 0;
+
 	if (!tdef->base)
 		return NULL;
 
@@ -1728,12 +1730,11 @@ mono_metadata_interfaces_from_typedef (MonoMetadata *meta, guint32 index)
 		mono_metadata_decode_row (tdef, start, cols, MONO_INTERFACEIMPL_SIZE);
 		if (cols [MONO_INTERFACEIMPL_CLASS] != loc.idx)
 			break;
-		result = g_renew (MonoClass*, result, i + 2);
+		result = g_renew (MonoClass*, result, i + 1);
 		result [i] = mono_class_get (meta, mono_metadata_token_from_dor (cols [MONO_INTERFACEIMPL_INTERFACE]));
-		++i;
+		*count = ++i;
 		++start;
 	}
-	result [i] = NULL;
 	return result;
 }
 

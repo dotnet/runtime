@@ -118,12 +118,11 @@ init_class (MonoClass *klass)
 
 	if (klass->inited)
 		return;
+
 	if (klass->parent && !klass->parent->inited)
 		init_class (klass->parent);
 	
 	klass->inited = 1;
-
-	klass->data = g_malloc0 (klass->class_size);
 
 	for (i = 0; i < klass->method.count; ++i) {
 		method = klass->methods [i];
@@ -197,8 +196,6 @@ newobj (MonoImage *image, guint32 token)
 		g_assert_not_reached ();
 	}
 	
-	if (result)
-		init_class (result->klass);
 	return result;
 }
 
@@ -207,24 +204,19 @@ get_virtual_method (MonoImage *image, MonoMethod *m, stackval *objs)
 {
 	MonoObject *obj;
 	MonoClass *klass;
-	int i;
-	
+	MonoMethod **vtable;
+
 	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL))
 			return m;
+
 	obj = objs->data.p;
-	klass = objs->data.vt.klass ? objs->data.vt.klass: obj->klass;
-	if (!(m->klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)
-		klass = obj->klass;
-	for (; klass ; klass = klass->parent) {
-		for (i = 0; i < klass->method.count; ++i) {
-			if (!(klass->methods [i]->flags & METHOD_ATTRIBUTE_VIRTUAL))
-				continue;
-			if (!strcmp(m->name, klass->methods [i]->name) && mono_metadata_signature_equal (m->signature, klass->methods [i]->signature)) {
-				return klass->methods [i];
-			}
-		}
-	}
-	return m;
+	klass = obj->klass;
+	vtable = (MonoMethod **)klass->vtable;
+
+	if (m->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
+		return vtable [klass->interface_offsets [m->klass->interface_id] + m->slot];
+
+	return vtable [m->slot];
 }
 
 static MonoObject*
@@ -539,14 +531,14 @@ ves_array_set (MonoInvocation *frame)
 	stackval *sp = frame->stack_args;
 	MonoObject *o;
 	MonoArray *ao;
-	MonoArrayClass *ac;
+	MonoClass *ac;
 	gint32 i, t, pos, esize;
 	gpointer ea;
 	MonoType *mt;
 
 	o = frame->obj;
 	ao = (MonoArray *)o;
-	ac = (MonoArrayClass *)o->klass;
+	ac = o->klass;
 
 	g_assert (ac->rank >= 1);
 
@@ -574,14 +566,14 @@ ves_array_get (MonoInvocation *frame)
 	stackval *sp = frame->stack_args;
 	MonoObject *o;
 	MonoArray *ao;
-	MonoArrayClass *ac;
+	MonoClass *ac;
 	gint32 i, pos, esize;
 	gpointer ea;
 	MonoType *mt;
 
 	o = frame->obj;
 	ao = (MonoArray *)o;
-	ac = (MonoArrayClass *)o->klass;
+	ac = o->klass;
 
 	g_assert (ac->rank >= 1);
 
@@ -2103,6 +2095,7 @@ ves_exec_method (MonoInvocation *frame)
 			/*
 			 * a constructor returns void, but we need to return the object we created
 			 */
+
 			sp->type = VAL_OBJ;
 			sp->data.p = o;
 			sp->data.vt.klass = o->klass;
@@ -2512,11 +2505,12 @@ ves_exec_method (MonoInvocation *frame)
 				THROW_EX (get_exception_index_out_of_range (), ip - 5);
 
 			/* check the array element corresponds to token */
-			esize = mono_array_element_size ((MonoArrayClass *)o->obj.klass);
+			esize = mono_array_element_size (o->obj.klass);
 			
 			sp->type = VAL_MP;
 			sp->data.p = mono_array_addr_with_size (o, esize, sp [1].data.i);
-			sp->data.vt.klass = ((MonoArrayClass *)o->obj.klass)->element_class;
+			sp->data.vt.klass = o->obj.klass->element_class;
+
 			++sp;
 			BREAK;
 		}
@@ -2613,7 +2607,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_STELEM_R8) /* fall through */
 		CASE (CEE_STELEM_REF) {
 			MonoArray *o;
-			MonoArrayClass *ac;
+			MonoClass *ac;
 			mono_u aindex;
 
 			sp -= 3;
@@ -2624,7 +2618,7 @@ ves_exec_method (MonoInvocation *frame)
 				THROW_EX (get_exception_null_reference (), ip);
 
 			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
-			ac = (MonoArrayClass *)o->obj.klass;
+			ac = o->obj.klass;
 		    
 			aindex = sp [1].data.nati;
 			if (aindex >= mono_array_length (o))
