@@ -18,6 +18,11 @@ public class Test {
 	public static int Main () {
 		SimpleStruct ss = mono_test_return_vtype ();
 
+		Console.WriteLine ("A: " + ss.a);
+		Console.WriteLine ("B: " + ss.b);
+		Console.WriteLine ("C: " + ss.c);
+		Console.WriteLine ("D: " + ss.d);
+
 		if (!ss.a && ss.b && !ss.c && ss.d == "TEST")
 			return 0;
 		

@@ -48,9 +48,14 @@ mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 
 	if (sig->hasthis) {
 		stack_size += sizeof (gpointer);
-		code_size += 5;
+		code_size += 10;
 	}
 	
+	if (sig->ret->type == MONO_TYPE_VALUETYPE && !sig->ret->byref && !sig->ret->data.klass->enumtype) {
+		stack_size += sizeof (gpointer);
+		code_size += 5;
+	}
+
 	for (i = 0; i < sig->param_count; ++i) {
 		if (sig->params [i]->byref) {
 			stack_size += sizeof (gpointer);
@@ -229,6 +234,14 @@ enum_marshal:
 		}
 	}
 
+	if (sig->ret->type == MONO_TYPE_VALUETYPE && !sig->ret->byref) {
+		MonoClass *klass = sig->ret->data.klass;
+		if (!klass->enumtype) {
+			x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
+			x86_push_membase (p, X86_ECX, 0);
+		}
+	}
+
 	/* 
 	 * Insert call to function 
 	 */
@@ -317,7 +330,6 @@ enum_marshal:
 
 #define MINV_POS  (- sizeof (MonoInvocation))
 #define STACK_POS (MINV_POS - sizeof (stackval) * sig->param_count)
-#define OBJ_POS   8
 #define TYPE_OFFSET (G_STRUCT_OFFSET (stackval, type))
 
 /*
@@ -406,6 +418,10 @@ mono_create_method_pointer (MonoMethod *method)
 	 * Set the method pointer.
 	 */
 	x86_mov_membase_imm (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, method)), (int)method, 4);
+
+	if (sig->ret->type == MONO_TYPE_VALUETYPE && !sig->ret->byref && !sig->ret->data.klass->enumtype) 
+		arg_pos += 4;
+
 	/*
 	 * Handle this.
 	 */
@@ -414,7 +430,7 @@ mono_create_method_pointer (MonoMethod *method)
 			/*
 			 * Grab it from the stack, otherwise it's already in ECX.
 			 */
-			x86_mov_reg_membase (p, X86_ECX, X86_EBP, OBJ_POS, 4);
+			x86_mov_reg_membase (p, X86_ECX, X86_EBP, arg_pos, 4);
 			arg_pos += 4;
 		}
 		x86_mov_membase_reg (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, obj)), X86_ECX, 4);
@@ -441,6 +457,7 @@ mono_create_method_pointer (MonoMethod *method)
 		x86_call_reg (p, X86_ECX);
 		x86_alu_reg_imm (p, X86_SUB, X86_ESP, 16);
 		stackval_pos += sizeof (stackval);
+		/* fixme: alignment */
 		if (sig->pinvoke)
 			arg_pos += mono_type_native_stack_size (sig->params [i], &align);
 		else
@@ -452,6 +469,13 @@ mono_create_method_pointer (MonoMethod *method)
 	 */
 	x86_lea_membase (p, X86_EAX, X86_EBP, stackval_pos);
 	x86_mov_membase_reg (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, retval)), X86_EAX, 4);
+	if (sig->ret->type == MONO_TYPE_VALUETYPE && !sig->ret->byref) {
+		MonoClass *klass  = sig->ret->data.klass;
+		if (!klass->enumtype) {
+			x86_mov_reg_membase (p, X86_ECX, X86_EBP, 8, 4);
+			x86_mov_membase_reg (p, X86_EBP, stackval_pos, X86_ECX, 4);
+		}
+	}
 
 	/*
 	 * Call the method.
@@ -460,7 +484,7 @@ mono_create_method_pointer (MonoMethod *method)
 	x86_push_reg (p, X86_EAX);
 	x86_mov_reg_imm (p, X86_EDX, ves_exec_method);
 	x86_call_reg (p, X86_EDX);
-
+	
 	/*
 	 * Move the return value to the proper place.
 	 */
@@ -497,7 +521,16 @@ mono_create_method_pointer (MonoMethod *method)
 				simpletype = sig->ret->data.klass->enum_basetype->type;
 				goto enum_retvalue;
 			}
-			/* do nothing ? */
+		
+			x86_push_imm (p, sig->pinvoke);
+			x86_push_membase (p, X86_EBP, stackval_pos);
+			x86_push_reg (p, X86_EAX);
+			x86_push_imm (p, sig->ret);
+			x86_mov_reg_imm (p, X86_ECX, stackval_to_data);
+			x86_call_reg (p, X86_ECX);
+			//x86_breakpoint (p);
+			x86_alu_reg_imm (p, X86_SUB, X86_ESP, 16);
+			
 			break;
 		default:
 			g_error ("Type 0x%x not handled yet in thunk creation", sig->ret->type);

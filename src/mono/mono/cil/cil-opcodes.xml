@@ -302,5 +302,6 @@
 
 <opcode name="mono_vtaddr" input="Pop1" output="PushI" args="InlineNone" o1="0xF0" o2="0x06" flow="next"/>
 <opcode name="mono_newobj" input="Pop0" output="PushRef" args="InlineType" o1="0xF0" o2="0x07" flow="next"/>
+<opcode name="mono_retobj" input="PopI" output="Push0" args="InlineType" o1="0xF0" o2="0x08" flow="return"/>
 
 </opdesc>

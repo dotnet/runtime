@@ -30,7 +30,8 @@
 
 #undef DEBUG
 #undef TLS_DEBUG
-#undef TLS_PTHREAD_MUTEX
+#define TLS_PTHREAD_MUTEX
+
 
 /* Hash threads with tids. I thought of using TLS for this, but that
  * would have to set the data in the new thread, which is more hassle

@@ -402,7 +402,7 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 	}
 }
 
-static void inline
+void inline
 stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 {
 	if (type->byref) {
@@ -410,6 +410,7 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 		*p = val->data.p;
 		return;
 	}
+	//printf ("TODAT0 %p\n", data);
 	switch (type->type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1: {
@@ -479,6 +480,7 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 				size = mono_class_native_size (type->data.klass, NULL);
 			else
 				size = mono_class_value_size (type->data.klass, NULL);
+
 			memcpy (data, val->data.vt.vt, size);
 		}
 		return;
@@ -678,7 +680,7 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFunc ad
 	if (string_ctor) {
 		stackval_from_data (&mono_defaults.string_class->byval_arg, 
 				    frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
- 	} else
+ 	} else if (!MONO_TYPE_ISSTRUCT (sig->ret))
 		stackval_from_data (sig->ret, frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
 
 	TlsSetValue (frame_thread_id, frame->args);
@@ -3775,6 +3777,25 @@ array_constructed:
 				sp++;
 				break;
 			}
+			case CEE_MONO_RETOBJ: {
+				MonoClass *class;
+				guint32 token;
+
+				++ip;
+				token = read32 (ip);
+				ip += 4;
+
+				sp--;
+
+				class = (MonoClass *)mono_method_get_wrapper_data (frame->method, token);
+				
+				stackval_from_data (signature->ret, frame->retval, sp->data.vt.vt, signature->pinvoke);
+
+				if (sp > frame->stack)
+					g_warning ("more values on stack: %d", sp-frame->stack);
+				DEBUG_LEAVE ();
+				return;
+			}
 			default:
 				g_error ("Unimplemented opcode: 0xF0 %02x at 0x%x\n", *ip, ip-header->code);
 			}
@@ -4038,6 +4059,7 @@ array_constructed:
 					THROW_EX (mono_get_exception_execution_engine (NULL), ip - 1);
 				++ip;
 				sp->data.p = alloca (sp->data.i);
+				printf ("LOCALLOC %p %p\n", sp, sp->data.vt.vt);
 				sp->type = VAL_TP;
 				sp++;
 				break;

@@ -85,9 +85,35 @@ mono_test_return_vtype ()
 	res.b = 1;
 	res.c = 0;
 	res.d = "TEST";
-
+	printf ("mono_test_return_vtype\n");
 	return res;
 }
+
+typedef simplestruct (*ReturnVTypeDelegate) (simplestruct ss);
+
+simplestruct
+mono_test_return_vtype2 (ReturnVTypeDelegate func)
+{
+	simplestruct res;
+	simplestruct res1;
+
+	res.a = 1;
+	res.b = 0;
+	res.c = 1;
+	res.d = "TEST";
+	printf ("mono_test_return_vtype2\n");
+
+	res1 = func (res);
+
+	printf ("UA: %d\n", res1.a);
+	printf ("UB: %d\n", res1.b);
+	printf ("UC: %d\n", res1.c);
+	printf ("UD: %s\n", res1.d);
+
+	return res1;
+}
+
+
 
 typedef int (*RefVTypeDelegate) (int a, simplestruct *ss, int b);
 
