@@ -2371,8 +2371,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	}
 
 	if (!sig->ret->byref) {
-		type = sig->ret->type;
 		MonoMarshalSpec *spec = mspecs [0];
+		type = sig->ret->type;
 
 	handle_enum:
 		switch (type) {
