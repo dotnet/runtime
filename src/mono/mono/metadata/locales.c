@@ -183,7 +183,9 @@ static MonoObject *create_DateTimeFormat (const char *locale)
 	mono_runtime_object_init (new_dtf);
 	
 	ec=U_ZERO_ERROR;
-	conv=ucnv_open ("UTF-16LE", &ec);
+
+	/* Plain "UTF-16" adds a BOM, which confuses other stuff */
+	conv=ucnv_open ("UTF16_PlatformEndian", &ec);
 	if(U_FAILURE (ec)) {
 		goto error0;
 	}
@@ -307,7 +309,7 @@ void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoO
 	}
 	
 	ec=U_ZERO_ERROR;
-	conv=ucnv_open ("UTF-16LE", &ec);
+	conv=ucnv_open ("UTF16_PlatformEndian", &ec);
 	if(U_FAILURE (ec)) {
 		g_free (icu_locale);
 		mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
@@ -473,7 +475,7 @@ gint32 ves_icall_System_Globalization_CompareInfo_internal_compare (MonoObject *
 	}
 	
 	ec=U_ZERO_ERROR;
-	conv=ucnv_open ("UTF-16LE", &ec);
+	conv=ucnv_open ("UTF16_PlatformEndian", &ec);
 	if(U_FAILURE (ec)) {
 		return(0);
 	}
@@ -524,7 +526,7 @@ void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoObject *this
 	}
 	
 	ec=U_ZERO_ERROR;
-	conv=ucnv_open ("UTF-16LE", &ec);
+	conv=ucnv_open ("UTF16_PlatformEndian", &ec);
 	if(U_FAILURE (ec)) {
 		mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
 		return;

@@ -9,17 +9,18 @@
 
 #include <config.h>
 #include <glib.h>
+#include <string.h>
 
 #include "strenc.h"
 
 #undef DEBUG
 
-/* Tries to turn a NULL-terminated string into UTF16LE.
+/* Tries to turn a NULL-terminated string into UTF16.
  *
  * First, see if it's valid UTF8, in which case just turn it directly
- * into UTF16LE.  Next, run through the colon-separated encodings in
+ * into UTF16.  Next, run through the colon-separated encodings in
  * MONO_EXTERNAL_ENCODINGS and do an iconv conversion on each,
- * returning the first successful conversion to utf16.  If no
+ * returning the first successful conversion to UTF16.  If no
  * conversion succeeds, return NULL.
  *
  * Callers must free the returned string if not NULL. bytes holds the number
@@ -37,11 +38,9 @@ gunichar2 *mono_unicode_from_external (const gchar *in, gsize *bytes)
 	}
 	
 	if(g_utf8_validate (in, -1, NULL)) {
-		/* Use g_convert not g_utf8_to_utf16 because we need
-		 * to specify LE
-		 */
-		res=g_convert (in, -1, "UTF16LE", "UTF8", NULL, bytes, NULL);
-		return((gunichar2 *)res);
+		gunichar2 *unires=g_utf8_to_utf16 (in, -1, NULL, (glong *)bytes, NULL);
+		*bytes *= 2;
+		return(unires);
 	}
 
 	encoding_list=g_getenv ("MONO_EXTERNAL_ENCODINGS");
@@ -61,13 +60,13 @@ gunichar2 *mono_unicode_from_external (const gchar *in, gsize *bytes)
 			gchar *utf8=g_locale_to_utf8 (in, -1, NULL, NULL,
 						      NULL);
 			if(utf8!=NULL && g_utf8_validate (utf8, -1, NULL)) {
-				res=g_convert (utf8, -1, "UTF16LE",
+				res=g_convert (utf8, -1, "UTF16",
 					       encodings[i], NULL, bytes,
 					       NULL);
 			}
 			g_free (utf8);
 		} else {
-			res=g_convert (in, -1, "UTF16LE", encodings[i], NULL,
+			res=g_convert (in, -1, "UTF16", encodings[i], NULL,
 				       bytes, NULL);
 		}
 
@@ -146,7 +145,7 @@ gchar *mono_utf8_from_external (const gchar *in)
 	return(NULL);
 }
 
-/* Turns NULL-terminated UTF16LE into either UTF8, or the first
+/* Turns NULL-terminated UTF16 into either UTF8, or the first
  * working item in MONO_EXTERNAL_ENCODINGS if set.  If no conversions
  * work, then UTF8 is returned.
  *
