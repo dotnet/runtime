@@ -1287,6 +1287,14 @@ case "$host" in
 	LIBC="libc.so.12"
 	INTL="libintl.so.0"
 	;;
+    *-*-*freebsd*)
+    	LIBC="libc.so"
+	INTL="libintl.so"
+	;;
+    *-*-*openbsd*)
+    	LIBC="libc.so"
+	INTL="libintl.so"
+	;;
 esac
 AC_SUBST(libsuffix)
 
