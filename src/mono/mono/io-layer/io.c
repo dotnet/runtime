@@ -2328,6 +2328,7 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 		return(FALSE);
 	}
 
+retry:
 	if (find_handle->count >= find_handle->glob.gl_pathc) {
 		SetLastError (ERROR_NO_MORE_FILES);
 		return FALSE;
@@ -2336,7 +2337,7 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 	/* stat next glob match */
 
 	filename = find_handle->glob.gl_pathv [find_handle->count ++];
-	if (stat (filename, &buf) != 0) {
+	if (lstat (filename, &buf) != 0) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": stat failed: %s", filename);
 #endif
@@ -2344,6 +2345,18 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 		SetLastError (ERROR_NO_MORE_FILES);
 		return FALSE;
 	}
+
+	/* Check for dangling symlinks, and ignore them (principle of
+	 * least surprise, avoiding confusion where we report the file
+	 * exists, but when someone tries to open it we would report
+	 * it isn't there.)
+	 */
+	if(S_ISLNK (buf.st_mode)) {
+		if(stat (filename, &buf) != 0) {
+			goto retry;
+		}
+	}
+	
 
 	/* fill data block */
 
