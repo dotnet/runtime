@@ -1,4 +1,5 @@
 #include "regset.h"
+#include <mono/arch/x86/x86-codegen.h>
 
 MonoRegSet *
 mono_regset_new (int max_regs)
@@ -37,7 +38,7 @@ mono_regset_reserve_reg (MonoRegSet *rs, int regnum)
 }
 
 int
-mono_regset_alloc_reg (MonoRegSet *rs, int regnum)
+mono_regset_alloc_reg (MonoRegSet *rs, int regnum, gboolean exclude_edx)
 {
 	guint32 i, ind;
 
@@ -46,6 +47,8 @@ mono_regset_alloc_reg (MonoRegSet *rs, int regnum)
 
 	if (regnum < 0) {
 		for (i = 0, ind = 1; i < rs->max_regs; i++, ind = ind << 1) {
+			if (exclude_edx && i == X86_EDX)
+				continue;
 			if ((rs->free_mask & ind) && !(rs->reserved_mask & ind)) {
 				rs->free_mask &= ~ind;
 				rs->used_mask |= ind;
@@ -54,6 +57,9 @@ mono_regset_alloc_reg (MonoRegSet *rs, int regnum)
 		}
 		return -1;
 	} else {
+		if (exclude_edx && regnum == X86_EDX)
+			return -1;
+
 		ind = 1 << regnum;
 		if ((rs->free_mask & ind) && !(rs->reserved_mask & ind)) {
 			rs->free_mask &= ~ind;
@@ -89,7 +95,7 @@ mono_regset_reg_used (MonoRegSet *rs, int regnum)
 
 	g_return_val_if_fail (rs != NULL, FALSE);
 	g_return_val_if_fail (rs->max_regs > regnum, FALSE);
-	g_return_val_if_fail (regnum > 0, FALSE);
+	g_return_val_if_fail (regnum >= 0, FALSE);
 
 	ind = 1 << regnum;
 

@@ -25,8 +25,15 @@ public class TestIntOps {
 		return a*b;
 	}
 	
+	public static int int_div (int a, int b) {
+		return a/b;
+	}
+
 	public static int Main() {
 		int num = 1;
+
+		if (int_div (5, 2)   != 2)  return num;
+		num++;
 
 		if (int_add (1, 1)   != 2)  return num;
 		num++;

@@ -30,6 +30,7 @@ struct _MBTree {
 	guint is_jump:1;
 	guint last_instr:1;
 	guint jump_target:1;
+	guint exclude_edx:1;
 
 	gint32 cli_addr;   /* virtual cli address */
 	gint32 addr;       /* address of emitted instruction */
@@ -47,6 +48,9 @@ struct _MBTree {
 
 gboolean same_tree (MBTree *t1, MBTree *t2);
 
+gint64 mono_llmult (gint64 a, gint64 b);
+gint64 mono_lldiv  (gint64 a, gint64 b);
+
 %%
 
 #
@@ -56,8 +60,8 @@ gboolean same_tree (MBTree *t1, MBTree *t2);
 # constatnts
 %term CONST_I4 CONST_R8
 %term LDLOC LDARG STLOC BR RET RETV ARG CALL
-%term ADD SUB MUL
-%term BLT BEQ BGE BRTRUE
+%term ADD SUB MUL DIV
+%term BLT BEQ BGE BRTRUE BRFALSE
 %term CONV_I4 CONV_I1 CONV_I2 CONV_I8
 #
 # we start at stmt
@@ -171,6 +175,17 @@ reg: MUL (reg, reg) {
 	x86_imul_reg_reg (s->code, tree->reg1, tree->right->reg1);
 }
 
+reg: DIV (reg, reg) {
+	if (tree->left->reg1 != X86_EAX)
+		x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
+
+	x86_cdq (s->code);
+	x86_div_reg (s->code, tree->right->reg1, TRUE);
+
+	g_assert (tree->reg1 == X86_EAX &&
+		  tree->reg2 == X86_EDX);
+}
+
 reg: ADD (reg, CONST_I4) {
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -230,7 +245,8 @@ stmt: STLOC (reg) {
 }
 
 stmt: BR {
-	tree->is_jump = 1;
+	tree->is_jump = 1;    
+
 	x86_jump32 (s->code, tree->data.i - 5); 
 }
 
@@ -274,14 +290,24 @@ stmt: BRTRUE (reg) {
 	x86_branch32 (s->code, X86_CC_NE, tree->data.i - offset, TRUE);
 }
 
+stmt: BRFALSE (reg) {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, 0);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_EQ, tree->data.i - offset, TRUE);
+}
+
 stmt: RETV (reg) {
+	if (tree->left->reg1 != X86_EAX)
+		x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
 
 	if (!tree->last_instr) {
 		tree->is_jump = 1;
 		x86_jump32 (s->code, tree->data.i - 5);      
 	}
-
-	g_assert (tree->left->reg1 == X86_EAX); // return must be in EAX
 }
 
 stmt: RET {
@@ -341,7 +367,7 @@ stmt: CALL {
 # 64 bit integers
 #
 
-lreg: CONV_I8 (CONST_I4) {
+lreg: CONV_I8 (CONST_I4) 1 {
 	x86_mov_reg_imm (s->code, tree->reg1, tree->left->data.i);
 
 	if (tree->left->data.i >= 0)
@@ -397,6 +423,36 @@ lreg: ADD (lreg, lreg) {
 	x86_alu_reg_reg (s->code, X86_ADC, tree->reg2, tree->right->reg2);
 }
 
+lreg: MUL (lreg, lreg) {
+	if (mono_regset_reg_used (s->rs, X86_ECX)) 
+		x86_push_reg (s->code, X86_ECX);
+
+	x86_push_reg (s->code, tree->right->reg2);
+	x86_push_reg (s->code, tree->right->reg1);
+	x86_push_reg (s->code, tree->left->reg2);
+	x86_push_reg (s->code, tree->left->reg1);
+	x86_call_code (s->code, mono_llmult);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 16);
+
+	if (mono_regset_reg_used (s->rs, X86_ECX))
+		x86_pop_reg (s->code, X86_ECX);
+}
+
+lreg: DIV (lreg, lreg) {
+	if (mono_regset_reg_used (s->rs, X86_ECX)) 
+		x86_push_reg (s->code, X86_ECX);
+
+	x86_push_reg (s->code, tree->right->reg2);
+	x86_push_reg (s->code, tree->right->reg1);
+	x86_push_reg (s->code, tree->left->reg2);
+	x86_push_reg (s->code, tree->left->reg1);
+	x86_call_code (s->code, mono_lldiv);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 16);
+
+	if (mono_regset_reg_used (s->rs, X86_ECX))
+		x86_pop_reg (s->code, X86_ECX);
+}
+
 lreg: CALL {
 	x86_mov_reg_imm (s->code, X86_EAX, tree->data.p);
 	x86_call_membase (s->code, X86_EAX, 
@@ -408,13 +464,24 @@ lreg: CALL {
 }
 
 stmt: RETV (lreg) {
+	if (tree->left->reg1 != X86_EAX) {
+		if (tree->left->reg2 != X86_EAX) {
+			x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
+			if (tree->left->reg2 != X86_EDX)
+				x86_mov_reg_reg (s->code, X86_EDX, tree->left->reg2, 4);
+		} else { 
+			x86_mov_reg_reg (s->code, X86_ECX, tree->left->reg2, 4);
+			x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
+			x86_mov_reg_reg (s->code, X86_EDX, X86_ECX, 4);
+		}
+	} else if (tree->left->reg2 != X86_EDX) {
+		x86_mov_reg_reg (s->code, X86_EDX, tree->left->reg2, 4);
+	}
 
 	if (!tree->last_instr) {
 		tree->is_jump = 1;
 		x86_jump32 (s->code, tree->data.i - 5);      
 	}
-	g_assert (tree->left->reg1 == X86_EAX); // return must be in EAX
-	g_assert (tree->left->reg2 == X86_EDX); // return must be in EDX
 }
 
 
@@ -549,6 +616,17 @@ reg: ADD (locaddr, reg) {
 	return 0;
 }
 
+reg: ADD (reg, locaddr) {
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_alu_reg_membase (s->code, X86_ADD, tree->reg1, X86_EBP, 
+			     tree->right->data.i);	
+} cost {
+	MBCOND (tree->right->type == MONO_TYPE_I4 ||
+		tree->right->type == MONO_TYPE_U4);
+	return 0;
+}
+
 reg: MUL (locaddr, reg) {
 	if (tree->reg1 != tree->right->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->right->reg1, 4);
@@ -598,6 +676,14 @@ stmt: STLOC (ADD (LDLOC, CONST_I4)) {
 	return 0;
 }
 
+stmt: ARG (CONV_I8 (CONST_I4)) {
+	x86_push_imm (s->code, tree->left->left->data.i);
+
+	if (tree->left->data.i >= 0)
+		x86_push_imm (s->code, 0);
+	else 
+		x86_push_imm (s->code, -1);
+}
 
 %% 
 
@@ -617,4 +703,17 @@ same_tree (MBTree *t1, MBTree *t2)
 		return same_tree (t1->right, t2->right);
 	}
 	return FALSE;
+}
+
+gint64 
+mono_llmult (gint64 a, gint64 b)
+{
+	return a * b;
+}
+
+gint64 
+mono_lldiv (gint64 a, gint64 b)
+{
+	printf ("TEST %lld %lld %lld\n",a, b, a/b);
+	return a / b;
 }

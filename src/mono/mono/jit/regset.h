@@ -17,7 +17,7 @@ void
 mono_regset_free        (MonoRegSet *rs);
 
 int
-mono_regset_alloc_reg   (MonoRegSet *rs, int regnum);
+mono_regset_alloc_reg   (MonoRegSet *rs, int regnum, gboolean exclude_edx);
 
 void
 mono_regset_free_reg    (MonoRegSet *rs, int regnum);
