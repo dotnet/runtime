@@ -1,3 +1,8 @@
+2004-12-20  Raja R Harinath  <rharinath@novell.com>
+
+	* configure.in: Change from 'pax' format to 'ustar' format for the
+	tarfile, so that we can create packages on SuSE 9.0.
+
 2004-12-15 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: isinf can be a macro and the test from AC_CHECK_FUNCTION
