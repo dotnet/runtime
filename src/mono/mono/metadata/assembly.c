@@ -21,13 +21,43 @@
 
 #define CSIZE(x) (sizeof (x) / 4)
 
+/**
+ * g_concat_dir_and_file:
+ * @dir:  directory name
+ * @file: filename.
+ *
+ * returns a new allocated string that is the concatenation of dir and file,
+ * takes care of the exact details for concatenating them.
+ */
+static char *
+g_concat_dir_and_file (const char *dir, const char *file)
+{
+	g_return_val_if_fail (dir != NULL, NULL);
+	g_return_val_if_fail (file != NULL, NULL);
+
+        /*
+	 * If the directory name doesn't have a / on the end, we need
+	 * to add one so we get a proper path to the file
+	 */
+	if (dir [strlen(dir) - 1] != G_DIR_SEPARATOR)
+		return g_strconcat (dir, G_DIR_SEPARATOR, file, NULL);
+	else
+		return g_strconcat (dir, file, NULL);
+}
+
 static char *
 default_assembly_name_resolver (const char *name)
 {
+	char *file, *path;
+	
 	if (strcmp (name, "mscorlib") == 0)
-		return g_strdup (MONO_ASSEMBLIES "/" CORLIB_NAME);
+		return g_concat_dir_and_file (MONO_ASSEMBLIES, CORLIB_NAME);
 
-	return g_strconcat (MONO_ASSEMBLIES "/", name, ".dll", NULL);
+	file = g_strconcat (name, ".dll", NULL);
+	path = g_concat_dir_and_file (MONO_ASSEMBLIES, file);
+	g_free (file);
+
+	return path;
 }
 
 /**
@@ -52,7 +82,6 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	MonoMetadata *m;
 	int i;
 	const char *basename = strrchr (filename, '/');
-	const char *fullname = filename;
 	static MonoAssembly *corlib;
 	
 	g_return_val_if_fail (filename != NULL, NULL);
@@ -65,13 +94,17 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	/*
 	 * Temporary hack until we have a complete corlib.dll
 	 */
-	if (!strcmp (basename, CORLIB_NAME)) {
+	if (strcmp (basename, CORLIB_NAME) == 0) {
+		char *fullname;
+		
 		if (corlib != NULL)
 			return corlib;
-		fullname = MONO_ASSEMBLIES "/" CORLIB_NAME;
-	}
+		fullname = g_concat_dir_and_file (MONO_ASSEMBLIES, CORLIB_NAME);
+		image = mono_image_open (fullname, status);
+		g_free (fullname);
+	} else
+		image = mono_image_open (filename, status);
 	
-	image = mono_image_open (fullname, status);
 	if (!image){
 		if (status)
 			*status = MONO_IMAGE_ERROR_ERRNO;
