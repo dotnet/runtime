@@ -10,11 +10,6 @@
 #include <config.h>
 #include <glib.h>
 #include <pthread.h>
-#if HAVE_ICONV_H
-#include <iconv.h>
-#elif HAVE_GICONV_H
-#include <giconv.h>
-#endif
 #include <errno.h>
 
 #include "mono/io-layer/wapi.h"
