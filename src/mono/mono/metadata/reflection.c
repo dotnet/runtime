@@ -674,7 +674,7 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicAssembly *assem
 					mvalues [MONO_FIELD_MARSHAL_PARENT] = (table->next_idx << HAS_FIELD_MARSHAL_BITS) | HAS_FIELD_MARSHAL_PARAMDEF;
 					mvalues [MONO_FIELD_MARSHAL_NATIVE_TYPE] = encode_marshal_blob (assembly, pb->marshal_info);
 				}
-				table->next_idx++;
+				pb->table_idx = table->next_idx++;
 			}
 		}
 	}
