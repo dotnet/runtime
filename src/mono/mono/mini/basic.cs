@@ -498,7 +498,7 @@ class Tests {
 			c = -128;
 			b = (sbyte)c;
 		}
-		
+
 		return 0;
 	}
 	
@@ -520,6 +520,11 @@ class Tests {
 			c = 32767;
 			Int16 b = (Int16)c;
 			c = -32768;
+			b = (Int16)c;
+			unchecked {
+				uint u = 0xfffffffd;
+				c = (int)u;
+			}
 			b = (Int16)c;
 		}
 		
