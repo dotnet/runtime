@@ -1995,8 +1995,11 @@ mono_class_create_generic_2 (MonoGenericInst *ginst)
 
 	if (ginst->parent)
 		klass->parent = mono_class_from_mono_type (ginst->parent);
-	else
-		klass->parent = gklass->parent;
+	else if (gklass->parent) {
+		MonoType *inflated = mono_class_inflate_generic_type (&gklass->parent->byval_arg, ginst->context);
+
+		klass->parent = mono_class_from_mono_type (inflated);
+	}
 
 	mono_class_setup_parent (klass, klass->parent);
 }
