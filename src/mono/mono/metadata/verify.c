@@ -2245,7 +2245,6 @@ propertybuilder_fields[] = {
 static const FieldDesc 
 ilgenerator_fields[] = {
 	{"code", G_STRUCT_OFFSET (MonoReflectionILGen, code)},
-	{"mbuilder", G_STRUCT_OFFSET (MonoReflectionILGen, mbuilder)},
 	{"code_len", G_STRUCT_OFFSET (MonoReflectionILGen, code_len)},
 	{"max_stack", G_STRUCT_OFFSET (MonoReflectionILGen, max_stack)},
 	{"cur_stack", G_STRUCT_OFFSET (MonoReflectionILGen, cur_stack)},

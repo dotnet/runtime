@@ -137,7 +137,6 @@ typedef struct {
 typedef struct {
 	MonoObject object;
 	MonoArray *code;
-	MonoObject *mbuilder;
 	gint32 code_len;
 	gint32 max_stack;
 	gint32 cur_stack;
@@ -501,6 +500,8 @@ typedef struct {
 	gboolean skip_visibility;
 	gboolean init_locals;
 	MonoReflectionILGen *ilgen;
+	gint32 nrefs;
+	MonoArray *refs;
 } MonoReflectionDynamicMethod;	
 
 typedef struct MonoTypeNameParse MonoTypeNameParse;
@@ -590,6 +591,8 @@ void        mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb
 void        mono_reflection_setup_generic_class   (MonoReflectionTypeBuilder *tb);
 
 MonoReflectionType* mono_reflection_create_runtime_class  (MonoReflectionTypeBuilder *tb);
+
+void mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *m);
 
 MonoReflectionType *mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoReflectionMethodBuilder *mb, guint32 index, MonoReflectionGenericParam *gparam);
 
