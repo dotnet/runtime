@@ -114,8 +114,10 @@ gpointer mono_ldvirtftn     (MonoObject *this, int slot);
 gpointer mono_ldintftn      (MonoObject *this, int slot);
 gpointer mono_ldftn         (MonoMethod *method);
 
-void mono_emit_fast_iconv(MBCGEN_TYPE* s, MBTREE_TYPE* tree);
-void mono_emit_fast_iconv_i8(MBCGEN_TYPE* s, MBTREE_TYPE* tree);
+void mono_emit_fast_iconv        (MBCGEN_TYPE* s, MBTREE_TYPE* tree);
+void mono_emit_fast_iconv_i8     (MBCGEN_TYPE* s, MBTREE_TYPE* tree);
+void mono_emit_stack_alloc       (MBCGEN_TYPE* s, MBTREE_TYPE* tree);
+void mono_emit_stack_alloc_const (MBCGEN_TYPE* s, MBTREE_TYPE* tree, int size);
 
 MonoArray*
 mono_array_new_wrapper  (MonoClass *eclass, guint32 n);
@@ -1811,6 +1813,49 @@ reg: FUNC1 (reg) {
 	}
 }
 
+reg: LOCALLOC (CONST_I4) {
+	int size;
+	int offset;
+
+	size = (tree->left->data.i + (MONO_FRAME_ALIGNMENT - 1)) & ~(MONO_FRAME_ALIGNMENT - 1); // align to MONO_FRAME_ALIGNMENT boundary
+	offset = 0;
+
+	if (size) {
+		mono_emit_stack_alloc_const (s, tree, size);
+
+		if (tree->reg1 != X86_EAX && tree->left->reg1 != X86_EAX) {
+			x86_push_reg (s->code, X86_EAX);
+			offset += 4;
+		}
+		if (tree->reg1 != X86_ECX && tree->left->reg1 != X86_ECX) {
+			x86_push_reg (s->code, X86_ECX);
+			offset += 4;
+		}
+		if (tree->reg1 != X86_EDI && tree->left->reg1 != X86_EDI) {
+			x86_push_reg (s->code, X86_EDI);
+			offset += 4;
+		}
+		
+		x86_mov_reg_imm (s->code, X86_ECX, size >> 2);
+		x86_alu_reg_reg (s->code, X86_SUB, X86_EAX, X86_EAX);
+
+		x86_lea_membase (s->code, X86_EDI, X86_ESP, offset);
+		x86_cld (s->code);
+		x86_prefix (s->code, X86_REP_PREFIX);
+		x86_stosd (s->code);
+		
+		if (tree->reg1 != X86_ECX && tree->left->reg1 != X86_ECX)
+			x86_pop_reg (s->code, X86_ECX);
+		if (tree->reg1 != X86_EAX && tree->left->reg1 != X86_EAX)
+			x86_pop_reg (s->code, X86_EAX);
+		if (tree->reg1 != X86_EDI && tree->left->reg1 != X86_EDI)
+			x86_pop_reg (s->code, X86_EDI);
+	}
+
+	x86_mov_reg_reg (s->code, tree->reg1, X86_ESP, 4);
+}
+
+
 
 reg: LOCALLOC (reg) {
 	int offset = 0;
@@ -1819,7 +1864,7 @@ reg: LOCALLOC (reg) {
 	x86_alu_reg_imm (s->code, X86_AND, tree->left->reg1, ~(MONO_FRAME_ALIGNMENT - 1));
 
 	/* allocate space on stack */
-	x86_alu_reg_reg (s->code, X86_SUB, X86_ESP, tree->left->reg1);
+	mono_emit_stack_alloc (s, tree);
 
 	if (tree->data.i) {
 		/* initialize with zero */
@@ -4896,6 +4941,94 @@ void mono_emit_fast_iconv_i8 (MBCGEN_TYPE* s, MBTREE_TYPE* tree)
 	x86_alu_reg_imm (s->code, X86_SBB, tree->reg2, -1);
 	x86_patch (br[1], s->code);
 	x86_patch (br[2], s->code);
+}
+
+void mono_emit_stack_alloc (MBCGEN_TYPE* s, MBTREE_TYPE* tree)
+{
+#ifdef PLATFORM_WIN32
+	guint8* br[5];
+	int sreg;
+
+	/*
+	 * Under Windows:
+	 * If requested stack size is larger than one page,
+	 * perform stack-touch operation
+	 * (see comments in mono_emit_stack_alloc_const below).
+	 */
+	x86_test_reg_imm (s->code, tree->left->reg1, ~0xFFF);
+	br[0] = s->code; x86_branch8 (s->code, X86_CC_Z, 0, FALSE);
+
+	sreg = tree->left->reg1;
+
+	br[2] = s->code; /* loop */
+	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 0x1000);
+	x86_test_membase_reg (s->code, X86_ESP, 0, X86_ESP);
+	x86_alu_reg_imm (s->code, X86_SUB, sreg, 0x1000);
+	x86_alu_reg_imm (s->code, X86_CMP, sreg, 0x1000);
+	br[3] = s->code; x86_branch8 (s->code, X86_CC_AE, 0, FALSE);
+	x86_patch (br[3], br[2]);
+	x86_test_reg_reg (s->code, sreg, sreg);
+	br[4] = s->code; x86_branch8 (s->code, X86_CC_Z, 0, FALSE);
+	x86_alu_reg_reg (s->code, X86_SUB, X86_ESP, sreg);
+
+	br[1] = s->code; x86_jump8 (s->code, 0);
+
+	x86_patch (br[0], s->code);
+	x86_alu_reg_reg (s->code, X86_SUB, X86_ESP, tree->left->reg1);
+	x86_patch (br[1], s->code);
+	x86_patch (br[4], s->code);
+#else /* PLATFORM_WIN32 */
+	x86_alu_reg_reg (s->code, X86_SUB, X86_ESP, tree->left->reg1);
+#endif
+}
+
+void mono_emit_stack_alloc_const (MBCGEN_TYPE* s, MBTREE_TYPE* tree, int size)
+{
+#ifdef PLATFORM_WIN32
+	int i, npages;
+	guint8* br[2];
+
+	if (size > 0xFFE) {
+		/*
+		 * Generate stack probe code.
+		 * Under Windows, it is necessary to allocate one page at a time,
+		 * "touching" stack after each successful sub-allocation. This is
+		 * because of the way stack growth is implemented - there is a
+		 * guard page before the lowest stack page that is currently commited.
+		 * Stack normally grows sequentially so OS traps access to the
+		 * guard page and commits more pages when needed.
+		 */
+		npages = ((unsigned) size) >> 12;
+		if (npages > 4) {
+			if (tree->reg1 != X86_EAX && tree->left->reg1 != X86_EAX) {
+				x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 0x1000);
+				x86_test_membase_reg (s->code, X86_ESP, 0, X86_ESP);
+				x86_mov_membase_reg (s->code, X86_ESP, 0x1000 - 4, X86_EAX, 4); /* save EAX */
+				x86_mov_reg_imm (s->code, X86_EAX, npages - 1);
+			} else {
+				x86_mov_reg_imm (s->code, X86_EAX, npages);
+			}
+			br[0] = s->code; /* loop */
+			x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 0x1000);
+			x86_test_membase_reg (s->code, X86_ESP, 0, X86_ESP);
+			x86_dec_reg (s->code, X86_EAX);
+			br[1] = s->code; x86_branch8 (s->code, X86_CC_NZ, 0, TRUE);
+			x86_patch (br[1], br[0]);
+			if (tree->reg1 != X86_EAX && tree->left->reg1 != X86_EAX)
+				x86_mov_reg_membase (s->code, X86_EAX, X86_ESP, (npages * 0x1000) - 4, 4); /* restore EAX */
+		} else {
+			/* generate unrolled code for relatively small allocs */
+			for (i = npages; --i >= 0;) {
+				x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 0x1000);
+				x86_test_membase_reg (s->code, X86_ESP, 0, X86_ESP);
+			}
+		}
+	}
+
+	if (size & 0xFFF) x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, -(size & 0xFFF));
+#else /* PLATFORM_WIN32 */
+	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, size);
+#endif
 }
 
 gpointer 
