@@ -7886,6 +7886,10 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 		pklass = klass->parent;
 		if (pklass)
 			parent = mono_type_get_object (domain, &pklass->byval_arg);
+		else if (klass->generic_inst && klass->generic_inst->parent) {
+			parent = mono_type_get_object (domain, klass->generic_inst->parent);
+			pklass = mono_class_from_mono_type (klass->generic_inst->parent);
+		}
 	}
 
 	geninst = do_mono_reflection_bind_generic_parameters (type, type_argc, types);
