@@ -2152,7 +2152,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1 = mono_ctree_new (mp, mono_map_arg_type (type), arg_sp [k], NULL);
 				t1->data.size_info.size = size;
 				t1->data.size_info.align = align;
-				printf ("T1 %d\n", align);
 				ADD_TREE (t1, cli_addr);
 			}
 

@@ -4675,7 +4675,6 @@ stmt: ARG_OBJ (reg) {
 
 	pad = (align - ((s->frame_size + size) & (align -1))) & (align - 1);
 
-	printf ("TEST %d\n" , align);
 	sa = size + pad;
 
 	s->frame_size += sa;
