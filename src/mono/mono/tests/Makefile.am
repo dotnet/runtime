@@ -156,14 +156,15 @@ TEST_CS_SRC=			\
 	thread.cs		\
 	thread5.cs		\
 	thread6.cs		\
-	thread-static.cs		\
+	thread-static.cs	\
 	float-pop.cs		\
 	interfacecast.cs	\
 	array3.cs		\
 	classinit.cs		\
 	classinit2.cs		\
 	synchronized.cs		\
-	vararg.cs
+	vararg.cs		\
+	async_read.cs
 
 TEST_IL_SRC=			\
 	cpblkTest.il		\
