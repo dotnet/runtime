@@ -1,22 +1,22 @@
 <maintainers>
-        <dude email="miguel@ximian.com" name="Miguel de Icaza">
+        <person email="miguel@ximian.com" name="Miguel de Icaza">
                 <class name="System.Object"/>
                 <assembly name="mscorlib"/>
-        </dude>
-        <dude email="fejj@ximian.com" name="Jeffrey Stedfast">
+        </person>
+        <person email="fejj@ximian.com" name="Jeffrey Stedfast">
                 <class name="System.String"/>
-        </dude>
-        <dude email="jbarn@httcb.net" name="John Barnette">
+        </person>
+        <person email="jbarn@httcb.net" name="John Barnette">
                 <class name="System.Collections.Hashtable"/>
-        </dude>
-        <dude email="iain@ximian.com" name="Iain">
+        </person>
+        <person email="iain@ximian.com" name="Iain">
                 <class name="System.Collections.Queue"/>
-        </dude>
-        <dude email="bob@thestuff.net" name="Bob Smith">
+        </person>
+        <person email="bob@thestuff.net" name="Bob Smith">
                 <class name="System.Math"/>
-        </dude>
-        <dude email="joe@ximian.com" name="Joe Shaw">
+        </person>
+        <person email="joe@ximian.com" name="Joe Shaw">
                 <class name="System.Array"/>
-        </dude>
+        </person>
 </maintainers>
 

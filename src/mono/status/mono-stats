@@ -44,8 +44,8 @@ my %status_action = (
 	},
 	DUDE => sub {
 		my ($elem, %attrs) = @_;
-		malformed ($mfile, $elem, 'dude', \@status);
-		foreach(qw(email name)) {die "$_ not included in dude\n" unless defined $attrs{$_}}
+		malformed ($mfile, $elem, 'person', \@status);
+		foreach(qw(email name)) {die "$_ not included in person\n" unless defined $attrs{$_}}
 		$curm = $maintainer{$attrs{email}} = [$attrs{name}, {}, {}];
 		push @status, 'DUDE_CONTENT';
 	},
