@@ -659,7 +659,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 
 	/* printf ("Initialize array with elements of %s type\n", klass->element_class->name); */
 
-	switch (klass->element_class->byval_arg.type) {
+	switch (mono_type_get_underlying_type (&klass->element_class->byval_arg)->type) {
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
