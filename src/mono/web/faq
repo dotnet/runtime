@@ -329,24 +329,24 @@ A: Gtk# is a set of bindings for the Gtk+ toolkit for C# (and other
 
 Q: Why not implement System.Windows.Forms on top of Gtk# or Qt#?
 
-A: There are several reasons for this.
+A: Compatibility.
 
-   First of all, Gtk+ and Qt are standard toolkits on Linux, and their
-   proponents want to use their favorite toolkits when writing
-   applications.
-  
-   Related to this is the idea that System.Windows.Forms is 
-   brain-dead in certain areas, such as internationalization.  
-   System.Windows.Forms uses explicit sizes for all controls, as opposed 
-   to Gtk+ and Qt which use a box/packing model, which can better deal with 
-   the different string lengths different languages will have.
-  
-   Next is compatibility.  It is not possible to implement 
-   System.Windows.Forms on top of Gtk+/Qt and have 100% compatibility, 
-   because System.Windows.Forms exposes some Win32-isms, such as the 
-   Win32 message loop.  In order to maintain compatibility, Wine must be used, 
-   and this is being done; see the 
-   <a href="/winforms.html">System.Windows.Forms effort page</a>.
+   Although it is possible to run simple Windows.Forms applications
+   with the Gtk#-based backend of Windows.Forms, it is very unlikely
+   that the implementation will ever implement everything needed for
+   full compatibility with Windows.Forms.
+
+   The reason is that Windows.Forms is not a complete toolkit, and to
+   work around this problem some of the underlying Win32 foundation is
+   exposed to the programmer in the form of exposing the Windows
+   message handler (WndProc).  Any control can override this method.
+   Also developers often P/Invoke into Win32 to get to functionality
+   that was not wrapped. 
+
+   To achieve full compatibility, we would have to emulate this, and
+   it would take too long.
+
+   For more details see the <a href="winforms.html">winforms page</a>
 
 Q: Wine applications do not look like native applications, what are
    you going to do about this?  
@@ -632,12 +632,6 @@ A: Yes, with some reservations.
    The .NET program must either be a 100% .NET application, or (somehow) have
    all dependent assemblies available on all desired platforms.  (How to do so
    is outside the bounds of this FAQ.)
-
-   For example, since Mono's System.Windows.Forms implementation will use
-   Wine, System.Windows.Forms is only as portable as Wine is.  It's possible
-   that Mono may run on a platform, but Wine will not, in which case a
-   System.Windows.Forms app will not run on that platform.  This is similarly
-   true for all assemblies that are not 100% managed code.
 
    Mono must also have an implementation for the .NET assemblies used.  For
    example the System.EnterpriseServices namespace is part of .NET, but it
