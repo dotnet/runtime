@@ -201,6 +201,32 @@ find_method (MonoClass *klass, const char* name, MonoMethodSignature *sig)
 
 }
 
+/*
+ * token is the method_ref or method_def token used in a call IL instruction.
+ */
+MonoMethodSignature*
+mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
+{
+	int table = mono_metadata_token_table (token);
+	int idx = mono_metadata_token_index (token);
+	guint32 nindex, class;
+	guint32 cols [MONO_MEMBERREF_SIZE];
+	MonoMethodSignature *sig;
+	const char *ptr;
+
+	/* !table is for wrappers: we should really assign their own token to them */
+	if (!table || table == MONO_TABLE_METHOD)
+		return method->signature;
+
+	mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
+	
+	ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
+	mono_metadata_decode_blob_size (ptr, &ptr);
+	sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
+
+	return sig;
+}
+
 static MonoMethod *
 method_from_memberref (MonoImage *image, guint32 idx)
 {
@@ -312,6 +338,9 @@ method_from_memberref (MonoImage *image, guint32 idx)
 		if (!method)
 			g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
 		mono_metadata_free_method_signature (sig);
+		return method;
+	case MEMBERREF_PARENT_METHODDEF:
+		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | nindex, NULL);
 		return method;
 	default:
 		g_error ("Memberref parent unknown: class: %d, index %d", class, nindex);

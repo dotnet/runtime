@@ -3439,6 +3439,104 @@ ves_icall_MonoMethod_get_base_definition (MonoReflectionMethod *m)
 	return mono_method_get_object (mono_domain_get (), result, NULL);
 }
 
+static void
+mono_ArgIterator_Setup (MonoArgIterator *iter, char* argsp, char* start)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	iter->sig = *(MonoMethodSignature**)argsp;
+	
+	g_assert (iter->sig->sentinelpos <= iter->sig->param_count);
+	g_assert (iter->sig->call_convention == MONO_CALL_VARARG);
+
+	iter->next_arg = 0;
+	/* FIXME: it's not documented what start is exactly... */
+	iter->args = start? start: argsp + sizeof (gpointer);
+	iter->num_args = iter->sig->param_count - iter->sig->sentinelpos;
+
+	// g_print ("sig %p, param_count: %d, sent: %d\n", iter->sig, iter->sig->param_count, iter->sig->sentinelpos);
+}
+
+static MonoTypedRef
+mono_ArgIterator_IntGetNextArg (MonoArgIterator *iter)
+{
+	gint i, align, arg_size;
+	MonoTypedRef res;
+	MONO_ARCH_SAVE_REGS;
+
+	i = iter->sig->sentinelpos + iter->next_arg;
+
+	g_assert (i < iter->sig->param_count);
+
+	res.type = iter->sig->params [i];
+	res.value = iter->args;
+	arg_size = mono_type_stack_size (res.type, &align);
+	iter->args = (char*)iter->args + arg_size;
+	iter->next_arg++;
+
+	//g_print ("returning arg %d, type 0x%02x of size %d at %p\n", i, res.type->type, arg_size, res.value);
+
+	return res;
+}
+
+static MonoTypedRef
+mono_ArgIterator_IntGetNextArgT (MonoArgIterator *iter, MonoType *type)
+{
+	gint i, align, arg_size;
+	MonoTypedRef res;
+	MONO_ARCH_SAVE_REGS;
+
+	i = iter->sig->sentinelpos + iter->next_arg;
+
+	g_assert (i < iter->sig->param_count);
+
+	while (i < iter->sig->param_count) {
+		if (!mono_metadata_type_equal (type, iter->sig->params [i]))
+			continue;
+		res.type = iter->sig->params [i];
+		res.value = iter->args;
+		arg_size = mono_type_stack_size (res.type, &align);
+		iter->args = (char*)iter->args + arg_size;
+		iter->next_arg++;
+		//g_print ("returning arg %d, type 0x%02x of size %d at %p\n", i, res.type->type, arg_size, res.value);
+		return res;
+	}
+	//g_print ("arg type 0x%02x not found\n", res.type->type);
+
+	res.type = NULL;
+	res.value = NULL;
+	return res;
+}
+
+static MonoType*
+mono_ArgIterator_IntGetNextArgType (MonoArgIterator *iter)
+{
+	gint i;
+	MONO_ARCH_SAVE_REGS;
+	
+	i = iter->sig->sentinelpos + iter->next_arg;
+
+	g_assert (i < iter->sig->param_count);
+
+	return iter->sig->params [i];
+}
+
+static MonoObject*
+mono_TypedReference_ToObject (MonoTypedRef tref)
+{
+	MonoClass *klass;
+	MONO_ARCH_SAVE_REGS;
+
+	if (MONO_TYPE_IS_REFERENCE (tref.type)) {
+		MonoObject** objp = tref.value;
+		return *objp;
+	}
+	klass = mono_class_from_mono_type (tref.type);
+
+	/* FIXME: endianess issue... */
+	return mono_value_box (mono_domain_get (), klass, tref.value);
+}
+
 /* icall map */
 
 static gconstpointer icall_map [] = {
@@ -3455,6 +3553,19 @@ static gconstpointer icall_map [] = {
 	"System.Array::CreateInstanceImpl",   ves_icall_System_Array_CreateInstanceImpl,
 	"System.Array::FastCopy",         ves_icall_System_Array_FastCopy,
 	"System.Array::Clone",            mono_array_clone,
+
+	/*
+	 * System.ArgIterator
+	 */
+	"System.ArgIterator::Setup",                            mono_ArgIterator_Setup,
+	"System.ArgIterator::IntGetNextArg()",                  mono_ArgIterator_IntGetNextArg,
+	"System.ArgIterator::IntGetNextArg(System.RuntimeTypeHandle)", mono_ArgIterator_IntGetNextArgT,
+	"System.ArgIterator::IntGetNextArgType",                mono_ArgIterator_IntGetNextArgType,
+
+	/*
+	 * System.TypedReference
+	 */
+	"System.TypedReference::ToObject",                      mono_TypedReference_ToObject,
 
 	/*
 	 * System.Object
@@ -4015,7 +4126,6 @@ static gconstpointer icall_map [] = {
 	 */
 	"System.Activator::CreateInstanceInternal",
 	ves_icall_System_Activator_CreateInstanceInternal,
-
 	/*
 	 * add other internal calls here
 	 */

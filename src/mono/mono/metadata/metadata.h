@@ -14,9 +14,10 @@
 #define MONO_ZERO_LEN_ARRAY 1
 #endif
 
-#define MONO_TYPE_ISSTRUCT(t) (!t->byref && t->type == MONO_TYPE_VALUETYPE && !t->data.klass->enumtype)
+#define MONO_TYPE_ISSTRUCT(t) (!(t)->byref && (((t)->type == MONO_TYPE_VALUETYPE && !(t)->data.klass->enumtype) || ((t)->type == MONO_TYPE_TYPEDBYREF)))
 #define MONO_TYPE_IS_VOID(t) ((t) && ((t)->type == MONO_TYPE_VOID) && !(t)->byref)
-#define MONO_TYPE_IS_REFERENCE(t) ((t) && (((t)->byref || ((t)->type == MONO_TYPE_I) || (t)->type == MONO_TYPE_STRING) || ((t)->type == MONO_TYPE_SZARRAY) || ((t)->type == MONO_TYPE_CLASS) || ((t)->type == MONO_TYPE_CLASS) || ((t)->type == MONO_TYPE_OBJECT) || ((t)->type == MONO_TYPE_ARRAY) || ((t)->type == MONO_TYPE_PTR)))
+#define MONO_TYPE_IS_POINTER(t) ((t) && (((t)->byref || ((t)->type == MONO_TYPE_I) || (t)->type == MONO_TYPE_STRING) || ((t)->type == MONO_TYPE_SZARRAY) || ((t)->type == MONO_TYPE_CLASS) || ((t)->type == MONO_TYPE_CLASS) || ((t)->type == MONO_TYPE_OBJECT) || ((t)->type == MONO_TYPE_ARRAY) || ((t)->type == MONO_TYPE_PTR)))
+#define MONO_TYPE_IS_REFERENCE(t) ((t) && (((t)->type == MONO_TYPE_STRING) || ((t)->type == MONO_TYPE_SZARRAY) || ((t)->type == MONO_TYPE_CLASS) || ((t)->type == MONO_TYPE_OBJECT) || ((t)->type == MONO_TYPE_ARRAY)))
 
 typedef struct _MonoClass MonoClass;
 typedef struct _MonoDomain MonoDomain;

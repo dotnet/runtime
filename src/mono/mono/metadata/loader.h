@@ -106,6 +106,7 @@ typedef struct {
 	MonoClass *serializationinfo_class;
 	MonoClass *streamingcontext_class;
 	MonoClass *typed_reference_class;
+	MonoClass *argumenthandle_class;
 	MonoClass *marshalbyrefobject_class;
 	MonoClass *monitor_class;
 } MonoDefaults;
@@ -123,6 +124,9 @@ mono_get_method            (MonoImage *image, guint32 token, MonoClass *klass);
 
 void               
 mono_free_method           (MonoMethod *method);
+
+MonoMethodSignature* 
+mono_method_get_signature  (MonoMethod *method, MonoImage *image, guint32 token);
 
 MonoImage *
 mono_load_image            (const char *fname, MonoImageOpenStatus *status);

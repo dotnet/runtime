@@ -363,8 +363,11 @@ mono_class_layout_fields (MonoClass *class)
 					/* 
 					 * We process fields with reference type in the first pass,
 					 * and fields with non-reference type in the second pass.
+					 * We use IS_POINTER instead of IS_REFERENCE because in
+					 * some internal structures, we store GC_MALLOCed memory
+					 * in IntPtr fields...
 					 */
-					if (MONO_TYPE_IS_REFERENCE (class->fields [i].type)) {
+					if (MONO_TYPE_IS_POINTER (class->fields [i].type)) {
 						if (pass == 1)
 							continue;
 					} else {
@@ -1228,6 +1231,12 @@ mono_class_setup_mono_type (MonoClass *class)
 					class->blittable = TRUE;
 				} else if (!strcmp(name, "UIntPtr")) {
 					t = MONO_TYPE_U;
+					class->blittable = TRUE;
+				}
+				break;
+			case 'T':
+				if (!strcmp (name, "TypedReference")) {
+					t = MONO_TYPE_TYPEDBYREF;
 					class->blittable = TRUE;
 				}
 				break;

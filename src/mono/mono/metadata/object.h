@@ -100,6 +100,22 @@ typedef struct {
 } MonoReflectionType;
 
 typedef struct {
+	MonoType *type;
+	gpointer  value;
+} MonoTypedRef;
+
+typedef struct {
+	gpointer args;
+} MonoArgumentHandle;
+
+typedef struct {
+	MonoMethodSignature *sig;
+	gpointer args;
+	gint32 next_arg;
+	gint32 num_args;
+} MonoArgIterator;
+
+typedef struct {
 	MonoObject object;
 	MonoArray  *trace_ips;
 	MonoObject *inner_ex;
