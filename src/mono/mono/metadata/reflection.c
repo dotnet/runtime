@@ -2205,19 +2205,19 @@ mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtor
 }
 
 static guint32
-mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoClassField *field, MonoClass *klass)
+mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoReflectionField *f)
 {
 	MonoType *type;
 	guint32 token;
 
-	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, field));
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, f));
 	if (token)
 		return token;
-	field->parent = klass;
-	type = field->generic_type ? field->generic_type : field->type;
-	token = mono_image_get_memberref_token (assembly, &klass->byval_arg, 
-		field->name,  fieldref_encode_signature (assembly, type));
-	g_hash_table_insert (assembly->handleref, field, GUINT_TO_POINTER(token));
+	g_assert (f->field->parent);
+	type = f->field->generic_type ? f->field->generic_type : f->field->type;
+	token = mono_image_get_memberref_token (assembly, &f->klass->byval_arg, 
+		f->field->name,  fieldref_encode_signature (assembly, type));
+	g_hash_table_insert (assembly->handleref, f, GUINT_TO_POINTER(token));
 	return token;
 }
 
@@ -3784,7 +3784,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj)
 			field_table_idx --;
 			token = MONO_TOKEN_FIELD_DEF | field_table_idx;
 		} else
-			token = mono_image_get_fieldref_token (assembly, f->field, f->klass);
+			token = mono_image_get_fieldref_token (assembly, f);
 		/*g_print ("got token 0x%08x for %s\n", token, f->field->name);*/
 	}
 	else if (strcmp (klass->name, "MonoArrayMethod") == 0) {
