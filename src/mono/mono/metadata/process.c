@@ -875,7 +875,9 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *app
 
 	if(ret) {
 		process_info->process_handle=procinfo.hProcess;
-		process_info->thread_handle=procinfo.hThread;
+		/*process_info->thread_handle=procinfo.hThread;*/
+		process_info->thread_handle=NULL;
+		CloseHandle(procinfo.hThread);
 		process_info->pid=procinfo.dwProcessId;
 		process_info->tid=procinfo.dwThreadId;
 	} else {

@@ -830,21 +830,10 @@ static void send_reply (GIOChannel *channel, WapiHandleResponse *resp)
 	_wapi_daemon_response (g_io_channel_unix_get_fd (channel), resp);
 }
 
-/*
- * process_new:
- * @channel: The client making the request
- * @channel_data: Our data for this channel
- * @type: type to init handle to
- *
- * Find a free handle and initialize it to 'type', increase refcnt and
- * send back a reply to the client.
- */
-static void process_new (GIOChannel *channel, ChannelData *channel_data,
-			 WapiHandleType type)
+static guint32 new_handle_with_shared_check (WapiHandleType type)
 {
-	guint32 handle;
-	WapiHandleResponse resp={0};
-	
+	guint32 handle = 0;
+
 	while ((handle = _wapi_handle_new_internal (type)) == 0) {
 		/* Try and allocate a new shared segment, and have
 		 * another go
@@ -874,8 +863,29 @@ static void process_new (GIOChannel *channel, ChannelData *channel_data,
 			/* Map failed.  Just return 0 meaning "out of
 			 * handles"
 			 */
+			break;
 		}
 	}
+	
+	return(handle);
+}
+
+/*
+ * process_new:
+ * @channel: The client making the request
+ * @channel_data: Our data for this channel
+ * @type: type to init handle to
+ *
+ * Find a free handle and initialize it to 'type', increase refcnt and
+ * send back a reply to the client.
+ */
+static void process_new (GIOChannel *channel, ChannelData *channel_data,
+			 WapiHandleType type)
+{
+	guint32 handle;
+	WapiHandleResponse resp={0};
+	
+	handle = new_handle_with_shared_check (type);
 	
 	/* handle might still be set to 0.  This is handled at the
 	 * client end
@@ -1061,11 +1071,11 @@ static void process_process_fork (GIOChannel *channel, ChannelData *channel_data
 	 * client must check if either handle is 0 and take
 	 * appropriate error handling action.
 	 */
-	process_handle=_wapi_handle_new_internal (WAPI_HANDLE_PROCESS);
+	process_handle = new_handle_with_shared_check (WAPI_HANDLE_PROCESS);
 	ref_handle (daemon_channel_data, process_handle);
 	ref_handle (channel_data, process_handle);
 	
-	thread_handle=_wapi_handle_new_internal (WAPI_HANDLE_THREAD);
+	thread_handle = new_handle_with_shared_check (WAPI_HANDLE_THREAD);
 	ref_handle (daemon_channel_data, thread_handle);
 	ref_handle (channel_data, thread_handle);
 	
@@ -1243,7 +1253,7 @@ static void process_process_fork (GIOChannel *channel, ChannelData *channel_data
 
 		resp.u.process_fork.pid=pid;
 	}
-			
+
 	resp.u.process_fork.process_handle=process_handle;
 	resp.u.process_fork.thread_handle=thread_handle;
 

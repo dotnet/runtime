@@ -705,6 +705,7 @@ void _wapi_handle_unref (gpointer handle)
 
 		_wapi_handle_ops_close_private (handle);
 		_wapi_handle_get_shared_segment (segment)->handles[idx].type=WAPI_HANDLE_UNUSED;
+		_wapi_handle_get_private_segment (segment)->handles[idx].type=WAPI_HANDLE_UNUSED;
 		
 		/* Destroy the mutex and cond var.  We hope nobody
 		 * tried to grab them between the handle unlock and
@@ -1341,6 +1342,10 @@ gboolean CloseHandle(gpointer handle)
 		handle = _wapi_handle_fd_offset_to_handle (handle);
 	}
 
+	if (handle == NULL) {
+		return(FALSE);
+	}
+
 	_wapi_handle_unref (handle);
 	
 	return(TRUE);
@@ -1703,9 +1708,26 @@ gboolean _wapi_handle_process_fork (guint32 cmd, guint32 env, guint32 dir,
 		 * exec_errno will be set, and the handle will be
 		 * signalled immediately.
 		 */
-		if(process_handle==0 || thread_handle==0) {
+		if(*process_handle==0 || *thread_handle==0) {
 			return(FALSE);
 		} else {
+			/* This call returns new handles, so we need to do
+			 * a little bookkeeping
+			 */
+			if (_wapi_private_data != NULL) {
+				guint32 segment, idx;
+
+				_wapi_handle_segment (*process_handle,
+						      &segment, &idx);
+				_wapi_handle_ensure_mapped (segment);
+				_wapi_handle_get_private_segment (segment)->handles[idx].type = WAPI_HANDLE_PROCESS;
+
+				_wapi_handle_segment (*thread_handle,
+						      &segment, &idx);
+				_wapi_handle_ensure_mapped (segment);
+				_wapi_handle_get_private_segment (segment)->handles[idx].type = WAPI_HANDLE_THREAD;
+			}
+
 			return(TRUE);
 		}
 	} else {
