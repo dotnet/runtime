@@ -116,6 +116,24 @@
 
   <contributor>
     <name>
+      <first-name>Patrik</first-name>
+      <last-name>Torstensson</last-name>
+    </name>
+    <e-mail>Patrik.Torstensson AT intel.com</e-mail>
+    <image>none.png</image>
+    <location>Sweden</location>
+    <organization></organization>
+    <description>Mono hacker</description>
+    <tasks>
+      <task>System.Web core classes (ASP.NET)</task>
+      <task>Runtime implementation</task>
+      <task>Core class libraries (Threading, Remoting)</task>
+      <task>Random fixes (JIT)</task>
+    </tasks>
+  </contributor>
+
+  <contributor>
+    <name>
       <first-name>Juli</first-name>
       <last-name>Mallett</last-name>
     </name>
