@@ -21,6 +21,7 @@ mono_regstate_new (void)
 void
 mono_regstate_free (MonoRegState *rs) {
 	g_free (rs->iassign);
+	g_free (rs->fassign);
 	g_free (rs);
 }
 
