@@ -32,8 +32,8 @@
 /*
  * Enable experimental typed allocation using the GC_gcj_malloc function.
  */
-#ifdef HAVE_BOEHM_GC
-#define CREATION_SPEEDUP 0
+#ifdef HAVE_GC_GCJ_MALLOC
+#define CREATION_SPEEDUP 1
 #endif
 
 void
@@ -157,6 +157,14 @@ vtable_finalizer (void *obj, void *data) {
 
 #define GC_NO_DESCRIPTOR ((gpointer)(0 | GC_DS_LENGTH))
 
+/*
+ * The vtable is assumed to be reachable by other roots, since vtables
+ * are currently never freed. That might change in the future, but
+ * for now, this is a correct (and worthwhile) optimization.
+ */
+
+#define GC_HEADER_BITMAP (1 << (G_STRUCT_OFFSET (MonoObject,synchronisation) / sizeof(gpointer)))
+
 static void
 mono_class_compute_gc_descriptor (MonoClass *class)
 {
@@ -181,22 +189,16 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 	class->gc_descr = GC_NO_DESCRIPTOR;
 
 	if (class == mono_defaults.string_class) {
-		/*
-		 * The vtable is assumed to be reachable by other roots, since vtables
-		 * are currently never freed. That might change in the future, but
-		 * for now, this is a correct (and worthwhile) optimization.
-		 */
-		bitmap = 2; /* sync struct */
+		bitmap = GC_HEADER_BITMAP;
 		class->gc_descr = (gpointer)GC_make_descriptor ((GC_bitmap)&bitmap, 2);
 	}
 	else if (class->rank) {
 		mono_class_compute_gc_descriptor (class->element_class);
 
-		if (class->element_class->valuetype && (class->element_class->gc_descr != GC_NO_DESCRIPTOR) && (class->element_class->gc_bitmap == 2)) {
-			if (class->rank == 1)
-				bitmap = 2; /* sync struct */
-			else
-				bitmap = 2 + 4; /* sync struct + rank */
+		if (class->element_class->valuetype && (class->element_class->gc_descr != GC_NO_DESCRIPTOR) && (class->element_class->gc_bitmap == GC_HEADER_BITMAP)) {
+			bitmap = GC_HEADER_BITMAP;
+			if (class->rank > 1)
+				bitmap += 1 << (G_STRUCT_OFFSET (MonoArray,bounds) / sizeof(gpointer));
 			class->gc_descr = (gpointer)GC_make_descriptor ((GC_bitmap)&bitmap, 3);
 		}
 	}
@@ -205,8 +207,13 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		MonoClass *p;
 		guint32 pos;
 
-		/* The vtable is assumed to be reachable otherwise */
-		bitmap = 2; /* sync struct */
+		/* GC has trouble handling 64 bit descriptors... */
+		if ((class->instance_size / sizeof (gpointer)) > 30) {
+//			printf ("TOO LARGE: %s.\n", class->name);
+			return;
+		}
+
+		bitmap = GC_HEADER_BITMAP;
 
 		count ++;
 
@@ -268,11 +275,7 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 			}
 		}
 		}
-		/* GC has trouble handling 64 bit descriptors... */
-		if ((class->instance_size / sizeof (gpointer)) > 30) {
-//			printf ("TOO LARGE: %s.\n", class->name);
-			return;
-		}
+
 //		printf("CLASS: %s.%s -> %d %llx.\n", class->name_space, class->name, class->instance_size / sizeof (gpointer), bitmap);
 		class->gc_bitmap = bitmap;
 		class->gc_descr = (gpointer)GC_make_descriptor ((GC_bitmap)&bitmap, class->instance_size / sizeof (gpointer));
