@@ -324,5 +324,7 @@ MINI_OP(OP_X86_FP_LOAD_I8,         "x86_fp_load_i8")
 MINI_OP(OP_X86_FP_LOAD_I4,         "x86_fp_load_i4")
 MINI_OP(OP_X86_SETEQ_MEMBASE,      "x86_seteq_membase")
 
+MINI_OP(OP_PPC_SUBFIC,             "ppc_subfic")
+MINI_OP(OP_PPC_SUBFZE,             "ppc_subfze")
 
 

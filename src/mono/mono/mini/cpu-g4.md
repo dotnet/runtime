@@ -1,4 +1,4 @@
-# g4-class cpu description file
+# powerpc cpu description file
 # this file is read by genmdesc to pruduce a table with all the relevant information
 # about the cpu instructions that may be used by the regsiter allocator, the scheduler
 # and other parts of the arch-dependent part of mini.
@@ -609,3 +609,5 @@ adc_imm: dest:i src1:i len:8
 sbb: dest:i src1:i src2:i len:4
 sbb_imm: dest:i src1:i len:8
 br_reg: src1:i len:8
+ppc_subfic: dest:i src1:i len:4
+ppc_subfze: dest:i src1:i len:4
