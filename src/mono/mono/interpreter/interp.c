@@ -21,6 +21,7 @@
 #include <glib.h>
 #include <setjmp.h>
 #include <signal.h>
+#include <math.h>
 
 #include <mono/os/gc_wrapper.h>
 
@@ -229,7 +230,7 @@ interp_ex_handler (MonoException *ex) {
 		fprintf(stderr, "%s\n", strace);
 		g_free (strace);
 		if (ex->inner_ex != NULL) {
-			ex = ex->inner_ex;
+			ex = (MonoException *)ex->inner_ex;
 			fprintf(stderr, "Inner exception: %s", ex->object.vtable->klass->name);
 			if (ex->message != NULL) {
 				char *m = mono_string_to_utf8 (ex->message);
@@ -507,8 +508,8 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 #define THROW_EX(exception,ex_ip)	\
 	do {\
 		frame->ip = (ex_ip);		\
-		FILL_IN_TRACE(exception, frame); \
 		frame->ex = (MonoException*)(exception);	\
+		FILL_IN_TRACE(frame->ex, frame); \
 		goto handle_exception;	\
 	} while (0)
 
@@ -744,7 +745,6 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 {
 	const char *name = frame->method->name;
 	MonoObject *obj = (MonoObject*)frame->obj;
-	MonoMulticastDelegate *delegate = (MonoMulticastDelegate*)frame->obj;
 	MonoInvocation call;
 	MonoMethod *nm;
 
@@ -757,26 +757,10 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 			return;
 		}
 		if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
-			guchar *code;
-			MonoJitInfo *ji;
-			MonoMethod *method;
-		
-			while (delegate) {
-
-				code = (guchar*)delegate->delegate.method_ptr;
-				if ((ji = mono_jit_info_table_find (mono_root_domain, code))) {
-					method = ji->method;
-					INIT_FRAME(&call,frame,delegate->delegate.target,frame->stack_args,frame->retval,method);
-					ves_exec_method_with_context (&call, context);
-					frame->ex = call.ex;
-					if (frame->ex)
-						return;
-				} else {
-					g_assert_not_reached ();
-				}
-
-				delegate = delegate->prev;
-			}
+			nm = mono_marshal_get_delegate_invoke (frame->method);
+			INIT_FRAME(&call,frame,obj,frame->stack_args,frame->retval,nm);
+			ves_exec_method_with_context (&call, context);
+			frame->ex = call.ex;
 			return;
 		}
 		if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
@@ -1580,7 +1564,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 	GOTO_LABEL_VARS;
 
 	frame->ex = NULL;
-	frame->ip = NULL;
+	frame->ip = ip = NULL;
 	context->current_frame = frame;
 
 	if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
@@ -1932,7 +1916,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				if (child_frame.method && child_frame.method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 					child_frame.method = mono_marshal_get_synchronized_wrapper (child_frame.method);
 
-			g_assert (csignature->call_convention == MONO_CALL_DEFAULT);
+			g_assert (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C);
 			/* decrement by the actual number of args */
 			if (csignature->param_count) {
 				sp -= csignature->param_count;
@@ -3938,7 +3922,6 @@ array_constructed:
 			++ip;
 			BREAK;
 		CASE (CEE_MUL_OVF)
-			++ip;
 			--sp;
 			/* FIXME: check overflow */
 			if (sp->type == VAL_I32) {
@@ -3962,9 +3945,9 @@ array_constructed:
 				sp [-1].data.f *= sp [0].data.f;
 			else
 				ves_abort();
+			++ip;
 			BREAK;
 		CASE (CEE_MUL_OVF_UN)
-			++ip;
 			--sp;
 			/* FIXME: check overflow, make unsigned */
 			if (sp->type == VAL_I32) {
@@ -3988,9 +3971,9 @@ array_constructed:
 				sp [-1].data.f *= sp [0].data.f;
 			else
 				ves_abort();
+			++ip;
 			BREAK;
 		CASE (CEE_SUB_OVF)
-			++ip;
 			--sp;
 			/* FIXME: handle undeflow/unsigned */
 			/* should probably consider the pointers as unsigned */
@@ -4018,9 +4001,9 @@ array_constructed:
 				} else
 					sp [-1].data.nati = sp [-1].data.nati - sp [0].data.nati;
 			}
+			++ip;
 			BREAK;
 		CASE (CEE_SUB_OVF_UN)
-			++ip;
 			--sp;
 			/* FIXME: handle undeflow/unsigned */
 			/* should probably consider the pointers as unsigned */
@@ -4048,6 +4031,7 @@ array_constructed:
 				} else
 					sp [-1].data.nati = sp [-1].data.nati - sp [0].data.nati;
 			}
+			++ip;
 			BREAK;
 		CASE (CEE_ENDFINALLY)
 			if (finally_ips) {
@@ -4251,7 +4235,7 @@ array_constructed:
 				class = (MonoClass *)mono_method_get_wrapper_data (frame->method, token);
 				g_assert(class->valuetype);
 
-				sp [-1].type = VAL_VALUET;
+				sp [-1].type = VAL_MP;
 
 				break;
 			}
@@ -4809,7 +4793,7 @@ ves_exec_method (MonoInvocation *frame)
 			longjmp (*context->current_env, 1);
 		}
 		else
-			mono_unhandled_exception ((MonoException *)frame->ex);
+			mono_unhandled_exception (frame->ex);
 	}
 	if (context->base_frame == frame)
 		TlsSetValue (thread_context_id, NULL);
