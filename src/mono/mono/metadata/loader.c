@@ -36,31 +36,6 @@ static gboolean dummy_icall = TRUE;
 
 MonoDefaults mono_defaults;
 
-#ifdef __CYGWIN__
-#define mono_map_dll(name) (name)
-#else
-static const char *dll_map[] = {
-	"libc", "libc.so.6",
-	"libm", "libm.so.6",
-	"cygwin1.dll", "libc.so.6", 
-	NULL, NULL
-};
-
-static const char *
-mono_map_dll (const char *name)
-{
-	int i = 0;
-
-	while (dll_map [i]) {
-		if (!strcmp (dll_map [i], name))
-			return  dll_map [i + 1];
-		i += 2;
-	}
-
-	return name;
-}
-#endif
-
 static GHashTable *icall_hash = NULL;
 
 void
@@ -284,6 +259,67 @@ method_from_memberref (MonoImage *image, guint32 idx)
 	return NULL;
 }
 
+typedef struct MonoDllMap MonoDllMap;
+
+struct MonoDllMap {
+	char *name;
+	char *target;
+	char *dll;
+	MonoDllMap *next;
+};
+
+static GHashTable *dll_map;
+
+int 
+mono_dllmap_lookup (const char *dll, const char* func, const char **rdll, const char **rfunc) {
+	MonoDllMap *map, *tmp;
+
+	if (!dll_map)
+		return 0;
+	map = g_hash_table_lookup (dll_map, dll);
+	if (!map)
+		return 0;
+	*rdll = map->target? map->target: dll;
+		
+	for (tmp = map->next; tmp; tmp = tmp->next) {
+		if (strcmp (func, tmp->name) == 0) {
+			*rfunc = tmp->name;
+			if (tmp->dll)
+				*rdll = tmp->dll;
+			return 1;
+		}
+	}
+	*rfunc = func;
+	return 1;
+}
+
+void
+mono_dllmap_insert (const char *dll, const char *func, const char *tdll, const char *tfunc) {
+	MonoDllMap *map, *entry;
+
+	if (!dll_map)
+		dll_map = g_hash_table_new (g_str_hash, g_str_equal);
+
+	map = g_hash_table_lookup (dll_map, dll);
+	if (!map) {
+		map = g_new0 (MonoDllMap, 1);
+		map->dll = g_strdup (dll);
+		if (tdll)
+			map->target = g_strdup (tdll);
+		g_hash_table_insert (dll_map, map->dll, map);
+	}
+	if (func) {
+		entry = g_new0 (MonoDllMap, 1);
+		entry->name = g_strdup (func);
+		if (tfunc)
+			entry->target = g_strdup (tfunc);
+		if (tdll && map->target && strcmp (map->target, tdll))
+			entry->dll = g_strdup (tdll);
+		entry->next = map->next;
+		map->next = entry;
+	}
+}
+
 gpointer
 mono_lookup_pinvoke_call (MonoMethod *method)
 {
@@ -313,7 +349,8 @@ mono_lookup_pinvoke_call (MonoMethod *method)
 	scope_token = mono_metadata_decode_row_col (mr, im_cols [MONO_IMPLMAP_SCOPE] - 1, MONO_MODULEREF_NAME);
 	scope = mono_metadata_string_heap (image, scope_token);
 
-	scope = mono_map_dll (scope);
+	mono_dllmap_lookup (scope, import, &scope, &import);
+
 	full_name = g_module_build_path (NULL, scope);
 	gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
 

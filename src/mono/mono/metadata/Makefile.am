@@ -56,6 +56,8 @@ libmetadata_a_SOURCES = \
 	metadata.c	\
 	verify.c	\
 	mono-endian.c	\
+	mono-config.c	\
+	mono-config.h	\
 	private.h	\
 	rawbuffer.c	\
 	loader.c	\
