@@ -980,6 +980,7 @@ void mono_thread_cleanup(void)
 	HANDLE wait[MAXIMUM_WAIT_OBJECTS];
 	guint32 i, j;
 	
+#ifndef __MINGW32__
 	/* join each thread that's still running */
 #ifdef THREAD_DEBUG
 	g_message("Joining each running thread...");
@@ -1022,4 +1023,5 @@ void mono_thread_cleanup(void)
 	
 	g_array_free(threads, FALSE);
 	threads=NULL;
+#endif /* __MINGW32__ */
 }
