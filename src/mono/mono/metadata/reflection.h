@@ -387,6 +387,8 @@ typedef struct {
 	MonoObject obj;
 	MonoGenericParam *param;
 	MonoReflectionType *type;
+	/* zero for MONO_TYPE_VAR; non-zero for MONO_TYPE_MVAR. */
+	guint32 index;
 	MonoString *name;
 	guint32 flags;
 	MonoArray *constraints;

@@ -384,6 +384,7 @@ encode_type (MonoDynamicAssembly *assembly, MonoType *type, char *p, char **endb
 		break;
 	}
 	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
 		mono_metadata_encode_value (type->type, p, &p);
 		mono_metadata_encode_value (type->data.generic_param->num, p, &p);
 		break;
@@ -5910,7 +5911,7 @@ mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoRef
 
 	param = gparam->param = g_new0 (MonoGenericParam, 1);
 	param->name = mono_string_to_utf8 (gparam->name);
-	param->num = mono_array_length (tb->generic_params) - 1;
+	param->num = gparam->index ? gparam->index - 1 : mono_array_length (tb->generic_params) - 1;
 
 	count = gparam->constraints ? mono_array_length (gparam->constraints) : 0;
 	param->constraints = g_new0 (MonoClass *, count + 1);
@@ -5951,14 +5952,14 @@ mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoRef
 		}
 	}
 
-	klass->name = g_strdup_printf ("!%d", param->num);
+	klass->name = g_strdup_printf (gparam->index ? "!!%d" : "!%d", param->num);
 	klass->name_space = "";
 	klass->image = image;
 	klass->cast_class = klass->element_class = klass;
 	klass->enum_basetype = &klass->element_class->byval_arg;
 	klass->flags = TYPE_ATTRIBUTE_INTERFACE;
 
-	klass->this_arg.type = klass->byval_arg.type = MONO_TYPE_VAR;
+	klass->this_arg.type = klass->byval_arg.type = gparam->index ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
 	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
 	klass->this_arg.byref = TRUE;
 
