@@ -209,6 +209,16 @@ struct MonoVTable {
         gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
 };
 
+/*
+ * Generic instantiation data type encoding.
+ */
+struct _MonoGenericInst {
+	MonoType *generic_type;
+	MonoMethod *generic_method;
+	int type_argc;
+	MonoType **type_argv;
+};
+
 struct _MonoGenericParam {
 	MonoClass *pklass;
 	MonoMethod *method;

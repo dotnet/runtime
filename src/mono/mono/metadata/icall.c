@@ -1593,6 +1593,36 @@ ves_icall_MethodInfo_get_IsGenericMethodDefinition (MonoReflectionMethod *method
 	return method->method->signature->gen_params != NULL;
 }
 
+static MonoArray*
+ves_icall_MethodInfo_GetGenericArguments (MonoReflectionMethod *method)
+{
+	MonoArray *res;
+	int count, i;
+	MONO_ARCH_SAVE_REGS;
+
+	count = method->method->signature->generic_param_count;
+	res = mono_array_new (mono_object_domain (method), mono_defaults.monotype_class, count);
+
+	for (i = 0; i < count; i++) {
+		MonoGenericParam *param = &method->method->signature->gen_params [i];
+		MonoClass *pklass = mono_class_from_generic_parameter (param, method->method->klass->image, TRUE);
+		mono_array_set (res, gpointer, i, mono_type_get_object (mono_object_domain (method), &pklass->byval_arg));
+	}
+
+	return res;
+}
+
+static MonoReflectionMethod *
+ves_icall_MethodInfo_BindGenericParameters (MonoReflectionMethod *method, MonoArray *types)
+{
+	MonoMethod *inflated;
+
+	MONO_ARCH_SAVE_REGS;
+
+	inflated = mono_reflection_bind_generic_method_parameters (method, types);
+	return mono_method_get_object (mono_object_domain (method), inflated, method->method->klass);
+}
+
 static MonoObject *
 ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params) 
 {
@@ -4150,6 +4180,8 @@ static gconstpointer icall_map [] = {
 
 	/* Method generics icalls */
 	"System.Reflection.MethodInfo::get_IsGenericMethodDefinition", ves_icall_MethodInfo_get_IsGenericMethodDefinition,
+	"System.Reflection.MethodInfo::BindGenericParameters", ves_icall_MethodInfo_BindGenericParameters,
+	"System.Reflection.MethodInfo::GetGenericArguments", ves_icall_MethodInfo_GetGenericArguments,
 
 
 	/*

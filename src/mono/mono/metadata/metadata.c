@@ -1386,12 +1386,12 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
 	}
 	g_free (pattrs);
 
-	if (method->generic_param_count) {
+	if (method->generic_param_count && def) {
 		guint32 token;
 
 		g_assert (def);
 		token = mono_metadata_make_token (MONO_TABLE_METHOD, def);
-		method->gen_params = mono_metadata_load_generic_params (m, token, NULL, method);
+		method->gen_params = mono_metadata_load_generic_params (m, token, NULL);
 
 		for (i = 0; i < method->param_count; i++) {
 			MonoGenericParam *param;
@@ -2478,7 +2478,7 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		return t1->data.generic_param == t2->data.generic_param;
+		return t1->data.generic_param->num == t2->data.generic_param->num;
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
 		return FALSE;
@@ -3223,7 +3223,7 @@ get_constraints (MonoImage *image, int owner)
 }
 
 MonoGenericParam *
-mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num, MonoMethod *method)
+mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num)
 {
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAM];
 	guint32 cols [MONO_GENERICPARAM_SIZE];
@@ -3256,7 +3256,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num
 	do {
 		params = g_realloc (params, sizeof (MonoGenericParam) * n);
 		params [n - 1].pklass = NULL;
-		params [n - 1].method = method;
+		params [n - 1].method = NULL;
 		params [n - 1].flags = cols [MONO_GENERICPARAM_FLAGS];
 		params [n - 1].num = cols [MONO_GENERICPARAM_NUMBER];
 		params [n - 1].name = mono_metadata_string_heap (image, cols [MONO_GENERICPARAM_NAME]);

@@ -434,7 +434,11 @@ method_encode_signature (MonoDynamicAssembly *assembly, MonoMethodSignature *sig
 	*p = sig->call_convention;
 	if (sig->hasthis)
 		*p |= 0x20; /* hasthis */
+	if (sig->generic_param_count)
+		*p |= 0x10; /* generic */
 	p++;
+	if (sig->generic_param_count)
+		mono_metadata_encode_value (sig->generic_param_count, p, &p);
 	mono_metadata_encode_value (nparams, p, &p);
 	encode_type (assembly, sig->ret, p, &p);
 	for (i = 0; i < nparams; ++i)
@@ -1853,6 +1857,91 @@ mono_image_get_fieldref_token (MonoDynamicAssembly *assembly, MonoClassField *fi
 }
 
 static guint32
+encode_generic_method_sig (MonoDynamicAssembly *assembly, MonoGenericInst *ginst)
+{
+	char *buf;
+	char *p;
+	int i;
+	guint32 nparams =  ginst->type_argc;
+	guint32 size = 10 + nparams * 10;
+	guint32 idx;
+	char blob_size [6];
+	char *b = blob_size;
+
+	if (!assembly->save)
+		return 0;
+
+	p = buf = g_malloc (size);
+	/*
+	 * FIXME: vararg, explicit_this, differenc call_conv values...
+	 */
+	mono_metadata_encode_value (nparams, p, &p); /// FIXME FIXME FIXME
+	mono_metadata_encode_value (nparams, p, &p);
+
+	for (i = 0; i < nparams; i++)
+		encode_type (assembly, ginst->type_argv [i], p, &p);
+
+	/* store length */
+	g_assert (p - buf < size);
+	mono_metadata_encode_value (p-buf, b, &b);
+	idx = add_to_blob_cached (assembly, blob_size, b-blob_size, buf, p-buf);
+	g_free (buf);
+	return idx;
+}
+
+static guint32
+method_encode_methodspec (MonoDynamicAssembly *assembly, MonoGenericInst *ginst)
+{
+	MonoDynamicTable *table;
+	guint32 *values;
+	guint32 token, mtoken, sig;
+
+	table = &assembly->tables [MONO_TABLE_METHODSPEC];
+
+	g_assert (ginst && ginst->generic_method);
+	mtoken = mono_image_get_methodref_token (assembly, ginst->generic_method);
+
+	switch (mono_metadata_token_table (mtoken)) {
+	case MONO_TABLE_MEMBERREF:
+		mtoken = (mono_metadata_token_index (mtoken) << METHODDEFORREF_BITS) | METHODDEFORREF_METHODREF;
+		break;
+	case MONO_TABLE_METHOD:
+		mtoken = (mono_metadata_token_index (mtoken) << METHODDEFORREF_BITS) | METHODDEFORREF_METHODDEF;
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+
+	sig = encode_generic_method_sig (assembly, ginst);
+
+	if (assembly->save) {
+		alloc_table (table, table->rows + 1);
+		values = table->values + table->next_idx * MONO_METHODSPEC_SIZE;
+		values [MONO_METHODSPEC_METHOD] = mtoken;
+		values [MONO_METHODSPEC_SIGNATURE] = sig;
+	}
+
+	token = MONO_TOKEN_METHOD_SPEC | table->next_idx;
+	table->next_idx ++;
+
+	return token;
+}
+
+static guint32
+mono_image_get_methodspec_token (MonoDynamicAssembly *assembly, MonoMethod *method)
+{
+	guint32 token;
+	
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, method));
+	if (token)
+		return token;
+	token = method_encode_methodspec (assembly, ((MonoMethodNormal *) method)->header->geninst);
+	g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
+	return token;
+}
+
+
+static guint32
 mono_reflection_encode_sighelper (MonoDynamicAssembly *assembly, MonoReflectionSigHelper *helper)
 {
 	char *buf;
@@ -2949,7 +3038,9 @@ mono_image_create_token (MonoDynamicAssembly *assembly, MonoObject *obj)
 			 */
 			method_table_idx --;
 			token = MONO_TOKEN_METHOD_DEF | method_table_idx;
-		} else
+		} else if (m->method->signature->generic_param_count)
+			token = mono_image_get_methodspec_token (assembly, m->method);
+		else
 			token = mono_image_get_methodref_token (assembly, m->method);
 		/*g_print ("got token 0x%08x for %s\n", token, m->method->name);*/
 	}
@@ -5704,6 +5795,28 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *ty
 	}
 
 	return iklass;
+}
+
+MonoMethod*
+mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *method, MonoArray *types)
+{
+	MonoGenericInst *ginst;
+	int count, i;
+
+	count = method->method->signature->generic_param_count;
+	if (count != mono_array_length (types))
+		return NULL;
+
+	ginst = g_new0 (MonoGenericInst, 1);
+	ginst->generic_method = method->method;
+	ginst->type_argc = count;
+	ginst->type_argv = g_new0 (MonoType *, count);
+	for (i = 0; i < count; i++) {
+		MonoReflectionType *garg = mono_array_get (types, gpointer, i);
+		ginst->type_argv [i] = garg->type;
+	}
+
+	return mono_class_inflate_generic_method (method->method, NULL, ginst);
 }
 
 static void

@@ -275,15 +275,6 @@ struct _MonoArrayType {
 	int *lobounds;
 };
 
-/*
- * Generic instantiation data type encoding.
- */
-struct _MonoGenericInst {
-	MonoType *generic_type;
-	int type_argc;
-	MonoType **type_argv;
-};
-
 struct _MonoType {
 	union {
 		MonoClass *klass; /* for VALUETYPE and CLASS */
@@ -324,6 +315,7 @@ typedef struct {
 	unsigned int init_locals : 1;
 	guint16      num_locals;
 	MonoExceptionClause *clauses;
+	MonoGenericInst *geninst;
 	MonoType    *locals [MONO_ZERO_LEN_ARRAY];
 } MonoMethodHeader;
 

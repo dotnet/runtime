@@ -243,6 +243,7 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericInst *tgen, MonoGen
 	res->init_locals = header->init_locals;
 	res->num_locals = header->num_locals;
 	res->clauses = header->clauses;
+	res->geninst = mgen;
 	for (i = 0; i < header->num_locals; ++i) {
 		res->locals [i] = inflate_generic_type (header->locals [i], tgen, mgen);
 	}
@@ -1552,7 +1553,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	if ((type_token = mono_metadata_nested_in_typedef (image, type_token)))
 		class->nested_in = mono_class_create_from_typedef (image, type_token);
 
-	class->gen_params = mono_metadata_load_generic_params (image, class->type_token, &icount, NULL);
+	class->gen_params = mono_metadata_load_generic_params (image, class->type_token, &icount);
 	class->num_gen_params = icount;
 
 	mono_loader_unlock ();
