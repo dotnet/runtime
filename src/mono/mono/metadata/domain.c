@@ -27,37 +27,35 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-debug-debugger.h>
+#include <mono/metadata/appdomain.h>
+#include <metadata/threads.h>
 
 /* #define DEBUG_DOMAIN_UNLOAD */
 
 /* we need to use both the Tls* functions and __thread because
- * the gc needs to see all the appcontext
+ * some archs may generate faster jit code with one meachanism
+ * or the other (we used to do it because tls slots were GC-tracked,
+ * but we can't depend on this).
  */
-static guint32 context_thread_id = -1;
 static guint32 appdomain_thread_id = -1;
  
 #ifdef HAVE_KW_THREAD
 static __thread MonoDomain * tls_appdomain;
-static __thread MonoAppContext * tls_appcontext;
 #define GET_APPDOMAIN() tls_appdomain
 #define SET_APPDOMAIN(x) do { \
 	tls_appdomain = x; \
 	TlsSetValue (appdomain_thread_id, x); \
 } while (FALSE)
 
-#define GET_APPCONTEXT() tls_appcontext
-#define SET_APPCONTEXT(x) do { \
-	tls_appcontext = x; \
-	TlsSetValue (context_thread_id, x); \
-} while (FALSE)
-
 #else
+
 #define GET_APPDOMAIN() ((MonoDomain *)TlsGetValue (appdomain_thread_id))
 #define SET_APPDOMAIN(x) TlsSetValue (appdomain_thread_id, x);
 
-#define GET_APPCONTEXT() ((MonoAppContext *)TlsGetValue (context_thread_id))
-#define SET_APPCONTEXT(x) TlsSetValue (context_thread_id, x);
 #endif
+
+#define GET_APPCONTEXT() (mono_thread_current ()->current_appcontext)
+#define SET_APPCONTEXT(x) mono_thread_current ()->current_appcontext = (x)
 
 static guint16 appdomain_list_size = 0;
 static guint16 appdomain_next = 0;
@@ -339,7 +337,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	MONO_GC_PRE_INIT ();
 
 	appdomain_thread_id = TlsAlloc ();
-	context_thread_id = TlsAlloc ();
 
 	InitializeCriticalSection (&appdomains_mutex);
 

@@ -101,6 +101,7 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 
 	InitializeCriticalSection (&mono_delegate_section);
 
+	mono_thread_attach (domain);
 	mono_context_init (domain);
 	mono_context_set (domain->default_context);
 

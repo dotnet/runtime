@@ -21,7 +21,6 @@ typedef void (*MonoThreadStartCB) (guint32 tid, gpointer stack_start,
 typedef void (*MonoThreadAttachCB) (guint32 tid, gpointer stack_start);
 
 typedef struct _MonoAppDomain MonoAppDomain;
-typedef struct _MonoAppContext MonoAppContext;
 typedef struct _MonoJitInfo MonoJitInfo;
 
 typedef void (*MonoDomainFunc) (MonoDomain *domain, gpointer user_data);

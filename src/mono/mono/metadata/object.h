@@ -19,6 +19,7 @@ typedef struct _MonoThread MonoThread;
 typedef struct _MonoDynamicAssembly MonoDynamicAssembly;
 typedef struct _MonoDynamicImage MonoDynamicImage;
 typedef struct _MonoReflectionMethodBody MonoReflectionMethodBody;
+typedef struct _MonoAppContext MonoAppContext;
 
 typedef struct {
 	MonoVTable *vtable;
