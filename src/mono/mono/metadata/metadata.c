@@ -1154,6 +1154,7 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 	case MONO_PARSE_MOD_TYPE:
 	case MONO_PARSE_PARAM:
 	case MONO_PARSE_RET:
+	case MONO_PARSE_LOCAL: /* should not have modifiers according to the spec, but ms tools disagree */
 	case MONO_PARSE_FIELD: {
 		/* count the modifiers */
 		const char *tmp_ptr = ptr;
@@ -1172,7 +1173,6 @@ mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
 			break;
 		} /* fall through */
 	}
-	case MONO_PARSE_LOCAL:
 	case MONO_PARSE_TYPE:
 		/*
 		 * Later we can avoid doing this allocation.
