@@ -40,7 +40,7 @@ g_concat_dir_and_file (const char *dir, const char *file)
 	 * to add one so we get a proper path to the file
 	 */
 	if (dir [strlen(dir) - 1] != G_DIR_SEPARATOR)
-		return g_strconcat (dir, G_DIR_SEPARATOR, file, NULL);
+		return g_strconcat (dir, G_DIR_SEPARATOR_S, file, NULL);
 	else
 		return g_strconcat (dir, file, NULL);
 }
