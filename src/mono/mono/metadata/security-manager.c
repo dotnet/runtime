@@ -42,6 +42,10 @@ mono_security_manager_get_methods (void)
 		"InternalDemandChoice", 2);	
 	g_assert (secman.demandchoice);
 
+	secman.demandunmanaged = mono_class_get_method_from_name (secman.securitymanager,
+		"DemandUnmanaged", 0);
+	g_assert (secman.demandunmanaged);
+
 	secman.inheritancedemand = mono_class_get_method_from_name (secman.securitymanager,
 		"InheritanceDemand", 2);	
 	g_assert (secman.inheritancedemand);
@@ -66,9 +70,13 @@ mono_security_manager_get_methods (void)
 		"LinkDemandSecurityException", 3);
 	g_assert (secman.linkdemandsecurityexception);
 
-	secman.aptc = mono_class_from_name (mono_defaults.corlib, "System.Security", 
+	secman.allowpartiallytrustedcallers = mono_class_from_name (mono_defaults.corlib, "System.Security", 
 		"AllowPartiallyTrustedCallersAttribute");
-	g_assert (secman.aptc);
+	g_assert (secman.allowpartiallytrustedcallers);
+
+	secman.suppressunmanagedcodesecurity = mono_class_from_name (mono_defaults.corlib, "System.Security", 
+		"SuppressUnmanagedCodeSecurityAttribute");
+	g_assert (secman.suppressunmanagedcodesecurity);
 
 	return &secman;
 }

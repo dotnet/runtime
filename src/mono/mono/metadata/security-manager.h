@@ -39,13 +39,16 @@ typedef struct {
 	MonoClass *securitymanager;		/* System.Security.SecurityManager */
 	MonoMethod *demand;			/* SecurityManager.InternalDemand */
 	MonoMethod *demandchoice;		/* SecurityManager.InternalDemandChoice */
+	MonoMethod *demandunmanaged;		/* SecurityManager.DemandUnmanaged */
 	MonoMethod *inheritancedemand;		/* SecurityManager.InheritanceDemand */
 	MonoMethod *inheritsecurityexception;	/* SecurityManager.InheritanceDemandSecurityException */
 	MonoMethod *linkdemand;			/* SecurityManager.LinkDemand */
 	MonoMethod *linkdemandfulltrust;	/* SecurityManager.LinkDemandFullTrust */
 	MonoMethod *linkdemandunmanaged;	/* SecurityManager.LinkDemandUnmanaged */
 	MonoMethod *linkdemandsecurityexception;/* SecurityManager.LinkDemandSecurityException */
-	MonoClass *aptc;			/* System.Security.AllowPartiallyTrustedCallersAttribute */
+
+	MonoClass *allowpartiallytrustedcallers;	/* System.Security.AllowPartiallyTrustedCallersAttribute */
+	MonoClass *suppressunmanagedcodesecurity;	/* System.Security.SuppressUnmanagedCodeSecurityAttribute */
 } MonoSecurityManager;
 
 
