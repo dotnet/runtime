@@ -1,4 +1,12 @@
 2004-06-29  Raja R Harinath  <rharinath@novell.com>
+            Atsushi Enomoto  <atsushi@ximian.com>
+
+	* runtime/net_1_1/Makefile.am (GAC_ROOT_DIR): Renamed from GAC_DIR.
+	(GAC_DIR): New define that doesn't include $(DESTDIR).
+	(install-data-local,uninstall-local): Use them.  Use in-tree mono
+	runtime, not the installed one.
+
+2004-06-29  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am (gmcs_exe): New.  Set only if not W32.
 	(monotwo_DATA): Use it.
