@@ -3189,6 +3189,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_SYSTEM_EXCEPTION_GENERAL (code, sparc_boverflow, "ArithmeticException", TRUE, sparc_icc_short);
 			break;
 		case CEE_DIV_UN:
+		case OP_IDIV_UN:
 			sparc_wry (code, sparc_g0, sparc_g0);
 			sparc_udiv (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
