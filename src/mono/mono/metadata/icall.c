@@ -222,11 +222,16 @@ static gpointer icall_map [] = {
 	/*
 	 * System.Threading
 	 */
+	"System.Threading.Thread::Thread_internal", ves_icall_System_Threading_Thread_Thread_internal,
 	"System.Threading.Thread::Start_internal", ves_icall_System_Threading_Thread_Start_internal,
 	"System.Threading.Thread::Sleep_internal", ves_icall_System_Threading_Thread_Sleep_internal,
 	"System.Threading.Thread::Schedule_internal", ves_icall_System_Threading_Thread_Schedule_internal,
 	"System.Threading.Thread::CurrentThread_internal", ves_icall_System_Threading_Thread_CurrentThread_internal,
 	"System.Threading.Thread::Join_internal", ves_icall_System_Threading_Thread_Join_internal,
+	"System.Threading.Thread::DataSlot_register", ves_icall_System_Threading_Thread_DataSlot_register,
+	"System.Threading.Thread::DataSlot_store", ves_icall_System_Threading_Thread_DataSlot_store,
+	"System.Threading.Thread::DataSlot_retrieve", ves_icall_System_Threading_Thread_DataSlot_retrieve,
+	"System.LocalDataStoreSlot::DataSlot_unregister", ves_icall_System_LocalDataStoreSlot_DataSlot_unregister,
 
 	/*
 	 * add other internal calls here

@@ -13,6 +13,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/time.h>
 #include <errno.h>
 
 #include <mono/metadata/object.h>
@@ -25,19 +26,32 @@
 typedef struct {
 	pthread_t id;
 	MonoObject *object;
+	pthread_mutex_t launch_mutex;
+	pthread_cond_t launch_cond;
 	pthread_mutex_t join_mutex;
 	pthread_cond_t exit_cond;
 	void *(*start_routine)(void *arg);
 	void *arg;
 	void *status;
 	gboolean exiting;
+	gboolean launch_ack;
 } ThreadInfo;
 
 static pthread_key_t timed_thread_key;
 static pthread_once_t timed_thread_once = PTHREAD_ONCE_INIT;
 
+static pthread_mutex_t threads_mutex;
 static GHashTable *threads=NULL;
 static MonoObject *main_thread;
+
+typedef struct 
+{
+	MonoObject *slot;
+	pthread_key_t key;
+} DataSlot;
+
+static pthread_mutex_t data_slots_mutex;
+static GHashTable *data_slots=NULL;
 
 static void timed_thread_init()
 {
@@ -80,6 +94,12 @@ static void *timed_thread_start_routine(void *args)
 {
 	ThreadInfo *thread = (ThreadInfo *)args;
 	
+	/* Wait for the launch condition to be signalled */
+	pthread_mutex_lock(&thread->launch_mutex);
+	pthread_cond_wait(&thread->launch_cond, &thread->launch_mutex);
+	thread->launch_ack=TRUE;
+	pthread_mutex_unlock(&thread->launch_mutex);
+	
 	pthread_once(&timed_thread_once, timed_thread_init);
 	pthread_setspecific(timed_thread_key, (void *)thread);
 	timed_thread_exit((thread->start_routine)(thread->arg));
@@ -100,12 +120,15 @@ static int timed_thread_create(ThreadInfo **threadp,
 	int result;
 	
 	thread=(ThreadInfo *)g_new0(ThreadInfo, 1);
+	pthread_mutex_init(&thread->launch_mutex, NULL);
+	pthread_cond_init(&thread->launch_cond, NULL);
 	pthread_mutex_init(&thread->join_mutex, NULL);
 	pthread_cond_init(&thread->exit_cond, NULL);
 	thread->start_routine = start_routine;
 	thread->arg = arg;
 	thread->status = NULL;
 	thread->exiting = FALSE;
+	thread->launch_ack = FALSE;
 	
 	if((result = pthread_create(&thread->id, attr,
 				    timed_thread_start_routine,
@@ -150,8 +173,8 @@ static int timed_thread_join(ThreadInfo *thread, struct timespec *timeout,
 	return(result);
 }
 
-pthread_t ves_icall_System_Threading_Thread_Start_internal(MonoObject *this,
-							   MonoObject *start)
+pthread_t ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
+							    MonoObject *start)
 {
 	MonoClassField *field;
 	void *(*start_func)(void *);
@@ -185,18 +208,74 @@ pthread_t ves_icall_System_Threading_Thread_Start_internal(MonoObject *this,
 #endif
 
 		/* Store tid for cleanup later */
+		pthread_mutex_lock(&threads_mutex);
 		if(threads==NULL) {
 			threads=g_hash_table_new(g_int_hash, g_int_equal);
 		}
 
+		/* FIXME: GC problem here with recorded object
+		 * pointer!
+		 *
+		 * This is recorded so CurrentThread can return the
+		 * Thread object.
+		 */
 		thread->object=this;
 		
-		/* FIXME: need some locking around here */
 		g_hash_table_insert(threads, &thread->id, thread);
+		pthread_mutex_unlock(&threads_mutex);
 		
 		return(thread->id);
 	}
 }
+
+void ves_icall_System_Threading_Thread_Start_internal(MonoObject *this, pthread_t tid)
+{
+	ThreadInfo *thread;
+	pthread_t myid;
+	
+#ifdef THREAD_DEBUG
+	g_message("Launching thread %p id %ld", this, tid);
+#endif
+
+	myid=pthread_self();
+	if(myid==tid) {
+		g_warning("Trying to launch my own thread!");
+		return;
+	}
+	
+	pthread_mutex_lock(&threads_mutex);
+	if(threads!=NULL) {
+		thread=g_hash_table_lookup(threads, &tid);
+	} else {
+		/* No threads running yet! */
+		thread=NULL;
+	}
+	pthread_mutex_unlock(&threads_mutex);
+	
+	if(thread==NULL) {
+		g_warning("Can't find thread id %ld", tid);
+		return;
+	}
+
+	/* Tell the thread to get moving */
+	while(thread->launch_ack==FALSE) {
+		pthread_mutex_lock(&thread->launch_mutex);
+		pthread_cond_signal(&thread->launch_cond);
+		pthread_mutex_unlock(&thread->launch_mutex);
+
+		/* Try to avoid a race condition between creating a
+		 * thread and getting it going far enough to wait for
+		 * the go condition to be signalled
+		 */
+		sched_yield();
+	}
+	
+
+#ifdef THREAD_DEBUG
+	g_message("Launched thread id %ld", tid);
+#endif
+}
+
 
 gint32 ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 {
@@ -252,12 +331,14 @@ MonoObject *ves_icall_System_Threading_Thread_CurrentThread_internal(void)
 	tid=pthread_self();
 	
 	/* Look it up in the threads hash */
+	pthread_mutex_lock(&threads_mutex);
 	if(threads!=NULL) {
 		thread_info=g_hash_table_lookup(threads, &tid);
 	} else {
 		/* No threads running yet! */
 		thread_info=NULL;
 	}
+	pthread_mutex_unlock(&threads_mutex);
 	
 	/* Return the object associated with it */
 	if(thread_info==NULL) {
@@ -270,6 +351,7 @@ MonoObject *ves_icall_System_Threading_Thread_CurrentThread_internal(void)
 	}
 }
 
+/* The threads_mutex must be locked before calling this function */
 static void delete_thread(ThreadInfo *thread)
 {
 	g_assert(threads!=NULL);
@@ -301,12 +383,14 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoObject *this,
 		return(FALSE);
 	}
 	
+	pthread_mutex_lock(&threads_mutex);
 	if(threads!=NULL) {
 		thread=g_hash_table_lookup(threads, &tid);
 	} else {
 		/* No threads running yet! */
 		thread=NULL;
 	}
+	pthread_mutex_unlock(&threads_mutex);
 	
 	if(thread==NULL) {
 		g_warning("Can't find thread id %ld", tid);
@@ -318,7 +402,10 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoObject *this,
 		ret=timed_thread_join(thread, NULL, NULL);
 		
 		if(ret==0) {
+			pthread_mutex_lock(&threads_mutex);
 			delete_thread(thread);
+			pthread_mutex_unlock(&threads_mutex);
+			
 			return(TRUE);
 		} else {
 			g_warning("Join error: %s", strerror(ret));
@@ -327,18 +414,21 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoObject *this,
 	} else {
 		/* timeout in ms milliseconds */
 		struct timespec timeout;
-		time_t now;
+		struct timeval now;
 		div_t divvy;
 		
 		divvy=div(ms, 1000);
-		now=time(NULL);
+		gettimeofday(&now, NULL);
 		
-		timeout.tv_sec=now+divvy.quot;
-		timeout.tv_nsec=divvy.rem*1000;
+		timeout.tv_sec=now.tv_sec+divvy.quot;
+		timeout.tv_nsec=(now.tv_usec+divvy.rem)*1000;
 		
 		ret=timed_thread_join(thread, &timeout, NULL);
 		if(ret==0) {
+			pthread_mutex_lock(&threads_mutex);
 			delete_thread(thread);
+			pthread_mutex_unlock(&threads_mutex);
+			
 			return(TRUE);
 		} else {
 			if(ret!=ETIMEDOUT) {
@@ -350,6 +440,116 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoObject *this,
 	}
 }
 
+void ves_icall_System_Threading_Thread_DataSlot_register(MonoObject *slot)
+{
+	DataSlot *data;
+	
+#ifdef THREAD_DEBUG
+	g_message("DataSlot register: slot %p", slot);
+#endif
+
+	pthread_mutex_lock(&data_slots_mutex);
+	if(data_slots==NULL) {
+		data_slots=g_hash_table_new(g_direct_hash, g_direct_equal);
+	}
+	
+	data=g_new0(DataSlot, 1);
+
+	/* FIXME: GC problem here with recorded object pointer! */
+	data->slot=slot;
+	pthread_key_create(&data->key, NULL);
+
+	g_hash_table_insert(data_slots, data->slot, data);
+	
+	pthread_mutex_unlock(&data_slots_mutex);
+}
+
+void ves_icall_System_LocalDataStoreSlot_DataSlot_unregister(MonoObject *this)
+{
+	/* Remove the DataSlot from the hash */
+	DataSlot *data_slot;
+	
+#ifdef THREAD_DEBUG
+	g_message("DataSlot unregister: slot %p", this);
+#endif
+
+	pthread_mutex_lock(&data_slots_mutex);
+	if(data_slots!=NULL) {
+		data_slot=g_hash_table_lookup(data_slots, this);
+	} else {
+		data_slot=NULL;
+	}
+	pthread_mutex_unlock(&data_slots_mutex);
+	
+	if(data_slot==NULL) {
+		g_warning("Can't find data slot %p", this);
+		return;
+	}
+
+	pthread_mutex_lock(&data_slots_mutex);
+	g_hash_table_remove(data_slots, &data_slot);
+	pthread_mutex_unlock(&data_slots_mutex);
+
+	g_free(data_slot);
+}
+
+void ves_icall_System_Threading_Thread_DataSlot_store(MonoObject *slot,
+						      MonoObject *data)
+{
+	DataSlot *data_slot;
+	
+#ifdef THREAD_DEBUG
+	g_message("DataSlot store: slot %p data %p", slot, data);
+#endif
+
+	pthread_mutex_lock(&data_slots_mutex);
+	if(data_slots!=NULL) {
+		data_slot=g_hash_table_lookup(data_slots, slot);
+	} else {
+		data_slot=NULL;
+	}
+	pthread_mutex_unlock(&data_slots_mutex);
+	
+	if(data_slot==NULL) {
+		g_warning("Can't find data slot %p", slot);
+		return;
+	}
+
+	/* FIXME: GC problem here with recorded object pointer! */
+	pthread_setspecific(data_slot->key, data);
+}
+
+MonoObject *ves_icall_System_Threading_Thread_DataSlot_retrieve(MonoObject *slot)
+{
+	DataSlot *data_slot;
+	MonoObject *ret;
+	
+#ifdef THREAD_DEBUG
+	g_message("DataSlot retrieve: slot %p", slot);
+#endif
+
+	pthread_mutex_lock(&data_slots_mutex);
+	if(data_slots!=NULL) {
+		data_slot=g_hash_table_lookup(data_slots, slot);
+	} else {
+		data_slot=NULL;
+	}
+	pthread_mutex_unlock(&data_slots_mutex);
+	
+	if(data_slot==NULL) {
+		g_warning("Can't find data slot %p", slot);
+		return(NULL);
+	}
+
+	ret=pthread_getspecific(data_slot->key);
+
+#ifdef THREAD_DEBUG
+	g_message("DataSlot retrieve: returning %p", ret);
+#endif
+	
+	return(ret);
+}
+
 static void join_all_threads(gpointer key, gpointer value, gpointer user)
 {
 	ThreadInfo *thread_info=(ThreadInfo *)value;
@@ -357,7 +557,11 @@ static void join_all_threads(gpointer key, gpointer value, gpointer user)
 #ifdef THREAD_DEBUG
 	g_message("[%ld]", thread_info->id);
 #endif
-	timed_thread_join(thread_info, NULL, NULL);
+
+	if(thread_info->launch_ack==TRUE) {
+		/* Only try and join a thread that's actually been started */
+		timed_thread_join(thread_info, NULL, NULL);
+	}
 }
 
 static gboolean free_all_threadinfo(gpointer key, gpointer value, gpointer user)
@@ -381,6 +585,9 @@ void mono_thread_init(void)
 	 * though exit() were called :-)
 	 */
 	main_thread=mono_new_object(thread_class);
+
+	pthread_mutex_init(&threads_mutex, NULL);
+	pthread_mutex_init(&data_slots_mutex, NULL);
 }
 
 

@@ -15,11 +15,17 @@
 
 static MonoObject *main_thread;
 
-guint32 ves_icall_System_Threading_Thread_Start_internal(MonoObject *this,
-							 MonoObject *start)
+guint32 ves_icall_System_Threading_Thread_Thread_internal(MonoObject *this,
+							  MonoObject *start)
 {
 	return(0);
 }
+
+void ves_icall_System_Threading_Thread_Start_internal(MonoObject *this,
+						      guint32 id)
+{
+}
+
 
 gint32 ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 {
@@ -39,6 +45,24 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoObject *this,
 							 int ms, guint32 tid)
 {
 	return(TRUE);
+}
+
+void ves_icall_System_Threading_Thread_DataSlot_register(MonoObject *slot)
+{
+}
+
+void ves_icall_System_Threading_Thread_DataSlot_store(MonoObject *slot,
+						      MonoObject *data)
+{
+}
+
+MonoObject *ves_icall_System_Threading_Thread_DataSlot_retrieve(MonoObject *slot)
+{
+	return(NULL);
+}
+
+void ves_icall_System_LocalDataStoreSlot_DataSlot_unregister(MonoObject *this)
+{
 }
 
 void mono_thread_init(void)
