@@ -91,6 +91,42 @@
   </tr>
 </table>
 
+@item Jan, 19th: Mono Debugger released.
+
+	<table>
+	  <td>
+	    <tr>
+	After six month of extensive development, Martin Baulig has
+	released the first version of the Mono debugger.  The Mono
+	debugger is written in C# and can debug both managed and
+	unmanaged applications, support for multiple-threaded
+	applications and should be relatively easy to port to new
+	platforms.  
+	    </tr>
+            <tr>
+	      <a href="Screenshot-Debugger-1.png"><img src="images/Screenshot-Debugger-1-thumb.png"></a>
+	    </tr>
+	  </td>
+	</table>
+
+	Details of the release are available in <a
+	href="http://lists.ximian.com/archives/public/mono-list/2003-January/005192.html">post</a>. 
+
+	<table>
+	  <td>
+	    <tr>
+	      <a href="Screenshot-Debugger-2.png"><img src="images/Screenshot-Debugger-2-thumb.png"></a>
+	    </tr>
+	    <tr>
+	The debugger contains both Gtk# and command line interfaces.
+	The debugging file format used in Dwarf (its already supported
+	by our class libraries and the Mono C# compiler; To debug C
+	applications, you need a recent GCC, or to pass the -gdwarf-2
+	flag to gcc).
+	   </tr>
+	 </td>
+	</table>
+
 @item Jan, 17th: DB2 provider, MacOS X
 
 	Christopher Bockner has contributed a DB2 System.Data client. 
