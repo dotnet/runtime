@@ -6,6 +6,7 @@ libmonoutils_la_SOURCES = \
 	mono-hash.c	\
 	mono-md5.c	\
 	mono-sha1.c	\
+	mono-logger.c	\
 	monobitset.c	\
 	strtod.h	\
 	strtod.c
@@ -15,6 +16,7 @@ libmonoutilsincludedir = $(includedir)/mono/utils
 libmonoutilsinclude_HEADERS = \
 	monobitset.h	\
 	mono-digest.h	\
+	mono-logger.h	\
 	mono-hash.h
 
 EXTRA_DIST = ChangeLog
