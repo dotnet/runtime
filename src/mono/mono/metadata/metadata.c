@@ -296,7 +296,6 @@ const static MonoMetaTable GenericParamSchema [] = {
 
 	/* soon to be removed */
 	{ MONO_MT_TABLE_IDX,  "Kind" }, 
-	{ MONO_MT_TABLE_IDX,  "DeprecatedConstraint" },
 	
 	{ MONO_MT_END, NULL }
 };

@@ -1954,7 +1954,6 @@ mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 o
 	values [MONO_GENERICPARAM_NUMBER] = param->num;
 	values [MONO_GENERICPARAM_NAME] = string_heap_insert (&assembly->sheap, param->name);
 	values [MONO_GENERICPARAM_KIND] = 0;
-	values [MONO_GENERICPARAM_DEPRECATED_CONSTRAINT] = 0;
 
 	if (gparam->constraints)
 		encode_constraints (gparam, table_idx, assembly);
@@ -3218,8 +3217,17 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	int32val = (guint32*)p;
 	*int32val = GUINT32_TO_LE (0); /* reserved */
 	p += 4;
-	*p++ = 1; /* version */
-	*p++ = 0;
+
+	if ((assembly->tables [MONO_TABLE_GENERICPARAM].rows > 0) ||
+	    (assembly->tables [MONO_TABLE_METHODSPEC].rows > 0) ||
+	    (assembly->tables [MONO_TABLE_GENERICPARAMCONSTRAINT].rows > 0)) {
+		*p++ = 1; /* version */
+		*p++ = 1;
+	} else {
+		*p++ = 1; /* version */
+		*p++ = 0;
+	}
+
 	if (meta->idx_string_wide)
 		*p |= 0x01;
 	if (meta->idx_guid_wide)
