@@ -401,6 +401,9 @@ class Tests {
 		if (!ok)
 			return 5;
 
+		if (!(o is ICloneable[]))
+			return 6;
+
 		/* add tests for interfaces that 'inherit' interfaces */
 		return 0;
 	}
