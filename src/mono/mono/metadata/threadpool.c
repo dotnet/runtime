@@ -24,6 +24,9 @@ int mono_max_worker_threads = 25; /* fixme: should be 25 per available CPU */
 /* current number of worker threads */
 int mono_worker_threads = 0;
 
+/* current number of busy threads */
+static int busy_worker_threads = 0;
+
 /* we use this to store a reference to the AsyncResult to avoid GC */
 static MonoGHashTable *ares_htable = NULL;
 
@@ -102,7 +105,7 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	async_call_queue = g_list_append (async_call_queue, ares); 
 	ReleaseSemaphore (mono_delegate_semaphore, 1, NULL);
 
-	if (mono_worker_threads == 0) {
+	if (mono_worker_threads <= busy_worker_threads) {
 		mono_worker_threads++;
 		mono_thread_create (domain, async_invoke_thread, NULL);
 	}
@@ -166,7 +169,6 @@ async_invoke_thread ()
 	thread->threadpool_thread = TRUE;
 	for (;;) {
 		MonoAsyncResult *ar;
-		gboolean new_worker = FALSE;
 
 		if (WaitForSingleObject (mono_delegate_semaphore, 500) == WAIT_TIMEOUT) {
 			EnterCriticalSection (&mono_delegate_section);
@@ -180,11 +182,6 @@ async_invoke_thread ()
 		
 		if (async_call_queue) {
 			GList *tmp;
-			if ((g_list_length (async_call_queue) > 1) && 
-			    (mono_worker_threads < mono_max_worker_threads)) {
-				new_worker = TRUE;
-				mono_worker_threads++;
-			}
 
 			ar = (MonoAsyncResult *)async_call_queue->data;
 			tmp = async_call_queue;
@@ -192,20 +189,25 @@ async_invoke_thread ()
 			g_list_free_1 (tmp);
 		}
 
-		LeaveCriticalSection (&mono_delegate_section);
-
-		if (!ar)
+		if (!ar) {
+			LeaveCriticalSection (&mono_delegate_section);
 			continue;
+		}
 		
+		busy_worker_threads++;
+
+		LeaveCriticalSection (&mono_delegate_section);
 		/* worker threads invokes methods in different domains,
 		 * so we need to set the right domain here */
 		domain = ((MonoObject *)ar)->vtable->domain;
 		mono_domain_set (domain);
 
-		if (new_worker)
-			mono_thread_create (domain, async_invoke_thread, NULL);
-
 		mono_async_invoke (ar);
+
+		EnterCriticalSection (&mono_delegate_section);
+		busy_worker_threads--;
+		LeaveCriticalSection (&mono_delegate_section);
+
 	}
 
 	g_assert_not_reached ();
