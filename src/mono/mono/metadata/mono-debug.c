@@ -200,6 +200,10 @@ mono_debug_add_assembly (MonoAssembly *assembly, gpointer user_data)
 	mono_debug_unlock ();
 }
 
+/*
+ * This is called via the `mono_debugger_class_init_func' from mono_class_init() each time
+ * a new class is initialized.
+ */
 static void
 mono_debug_add_type (MonoClass *klass)
 {
@@ -359,6 +363,16 @@ il_offset_from_address (MonoDebugMethodInfo *minfo, guint32 address)
 	return -1;
 }
 
+/*
+ * Used by the exception code to get a source location from a machine address.
+ *
+ * Returns a textual representation of the specified address which is suitable to be displayed to
+ * the user (for instance "/home/martin/monocvs/debugger/test/Y.cs:8").
+ *
+ * If the optional @line_number argument is not NULL, the line number is stored there and just the
+ * source file is returned (ie. it'd return "/home/martin/monocvs/debugger/test/Y.cs" and store the
+ * line number 8 in the variable pointed to by @line_number).
+ */
 gchar *
 mono_debug_source_location_from_address (MonoMethod *method, guint32 address, guint32 *line_number)
 {
@@ -379,6 +393,10 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address, gu
 	return NULL;
 }
 
+/*
+ * Returns the IL offset corresponding to machine address @address which is an offset
+ * relative to the beginning of the method @method.
+ */
 gint32
 mono_debug_il_offset_from_address (MonoMethod *method, gint32 address)
 {
@@ -394,6 +412,10 @@ mono_debug_il_offset_from_address (MonoMethod *method, gint32 address)
 	return il_offset_from_address (minfo, address);
 }
 
+/*
+ * Returns the machine address corresponding to IL offset @il_offset.
+ * The returned value is an offset relative to the beginning of the method @method.
+ */
 gint32
 mono_debug_address_from_il_offset (MonoMethod *method, gint32 il_offset)
 {
