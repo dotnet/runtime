@@ -749,10 +749,13 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 		ctx = new_ctx;
 		
-		if (!ji || ji == (gpointer)-1 || MONO_CONTEXT_GET_BP (&ctx) >= jit_tls->end_of_stack)
+		if (!ji || ji == (gpointer)-1 || 
+		    MONO_CONTEXT_GET_BP (&ctx) >= jit_tls->end_of_stack)
 			return FALSE;
 
-		/* skip all wrappers ??*/
+		/*---------------------------------------------------*/
+		/* skip all wrappers ??				     */
+		/*---------------------------------------------------*/
 		if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE ||
 		    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE ||
 		    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_DISPATCH ||
@@ -992,3 +995,5 @@ mono_arch_ip_from_context (void *sigctx)
 	return context_get_ip (sigctx);
 }
 
+
+/*========================= End of Function ========================*/
