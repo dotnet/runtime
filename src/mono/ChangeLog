@@ -1,3 +1,9 @@
+2002-09-02  Diego Sevilla Ruiz  <dsevilla@um.es>
+
+	* doc/ccvs: Added how to convert SSH keys (from SSH Communications
+	Security) to the OpenSSH keys required by mono CVS
+	access.
+
 2002-09-01  Juli Mallett  <jmallett@FreeBSD.org>
 
 	* configure.in, mono/interpreter/interp.c,

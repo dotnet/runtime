@@ -6,10 +6,11 @@
 	If you are not a developer, but want to track the development, please
 	see the <a href="anoncvs.html">AnonCVS</a> instructions.
 
-	Send an e-mail to miguel with your public SSH key for this
-	purpose.  Please specify if the key was generated with SSH1 or SSH2.
+	Send an e-mail to miguel with your public OpenSSH key for this
+	purpose.  Please specify if the key was generated with SSH version 1
+	or version 2.
 
-	If you are using SSH2, please generate your key using:
+	If you are using SSH version 2, please generate your key using:
 
 <pre>
 	ssh-keygen -t rsa
@@ -17,12 +18,31 @@
 
 	And mail me the id_rsa.pub file.
 
-	If you are using SSH1, run:
+	If you are using SSH version 1, run:
 <pre>
 	ssh-keygen
 </pre>
 
 	And mail me your identity.pub file.
+
+	If you are using SSH from SSH Communications Security (they offer
+	a free SSH client for personal use), you have to use OpenSSH to
+	convert your public key to the required format. You have to use 
+	OpenSSH's ssh-keygen program and write the following:
+
+<pre>
+	ssh-keygen -i -f id_XXX.pub > my_public_key.pub
+</pre>
+	
+	where the file <pre>id_XXX.pub</pre> is your public key file, 
+	normally located under <pre>~/.ssh/</pre> or <pre>~/.ssh2/</pre>.
+	Send to miguel the <pre>my_public_key.pub</pre> file. 
+
+	The *exact* format for this file must be:
+
+<pre>
+	ssh-rsa XXXXX....
+</pre>
 
 	You will need CVS and SSH.  Windows users can get both by
 	installing Cygwin (<a
