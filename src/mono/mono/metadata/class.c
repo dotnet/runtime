@@ -572,7 +572,8 @@ class_compute_field_layout (MonoClass *class)
 		class->instance_size = MAX (real_size, class->instance_size);
 	}
 
-	if (class->gen_params)
+	if (class->gen_params ||
+	    (class->generic_inst && class->generic_inst->is_open))
 		return;
 
 	mono_class_layout_fields (class);
