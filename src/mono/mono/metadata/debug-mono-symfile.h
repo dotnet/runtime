@@ -158,5 +158,9 @@ MonoDebugMethodInfo *
 mono_debug_find_method             (MonoSymbolFile           *symfile,
 				    MonoMethod               *method);
 
+MonoReflectionMethod *
+ves_icall_MonoDebugger_GetMethod   (MonoReflectionAssembly   *assembly,
+				    guint32                   token);
+
 #endif /* __MONO_SYMFILE_H__ */
 

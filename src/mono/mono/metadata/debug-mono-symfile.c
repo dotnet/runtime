@@ -747,3 +747,13 @@ write_string_table (MonoSymbolFile *symfile)
 	g_hash_table_foreach (symfile->_priv->method_table, write_method_name, symfile);
 	return TRUE;
 }
+
+MonoReflectionMethod *
+ves_icall_MonoDebugger_GetMethod (MonoReflectionAssembly *assembly, guint32 token)
+{
+	MonoMethod *method;
+
+	method = mono_get_method (assembly->assembly->image, token, NULL);
+
+	return mono_method_get_object (mono_domain_get (), method, NULL);
+}

@@ -36,6 +36,7 @@
 #include <mono/metadata/rand.h>
 #include <mono/metadata/sysmath.h>
 #include <mono/metadata/string-icalls.h>
+#include <mono/metadata/debug-mono-symfile.h>
 #include <mono/metadata/process.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
@@ -3108,6 +3109,12 @@ static gconstpointer icall_map [] = {
 	 * System.IO.Path
 	 */
 	"System.IO.Path::get_temp_path", ves_icall_System_IO_get_temp_path,
+
+	/*
+	 * Private icalls for the Mono Debugger
+	 */
+	"System.Reflection.Assembly::MonoDebugger_GetMethod",
+	ves_icall_MonoDebugger_GetMethod,
 
 	/*
 	 * add other internal calls here
