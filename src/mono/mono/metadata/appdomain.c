@@ -25,7 +25,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h>
 
-#define MONO_CORLIB_VERSION 1
+#define MONO_CORLIB_VERSION 2
 
 CRITICAL_SECTION mono_delegate_section;
 
