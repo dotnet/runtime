@@ -120,6 +120,7 @@ mono_debugger_initialize (MonoDomain *domain)
 	g_assert (!mono_debugger_initialized);
 
 	InitializeCriticalSection (&debugger_lock_mutex);
+	mono_debugger_initialized = TRUE;
 
 	mono_debugger_lock ();
 
@@ -136,7 +137,6 @@ mono_debugger_initialize (MonoDomain *domain)
 	class_info_table = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 	mono_debugger_symbol_table = symbol_table;
-	mono_debugger_initialized = TRUE;
 
 	mono_debugger_unlock ();
 }
