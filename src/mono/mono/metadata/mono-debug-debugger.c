@@ -1347,7 +1347,7 @@ void
 mono_debugger_handle_exception (gpointer addr, gpointer stack, MonoObject *exc)
 {
 	if (!mono_debugger_initialized)
-		return FALSE;
+		return;
 
 	// Prevent the object from being finalized.
 	last_exception = exc;
