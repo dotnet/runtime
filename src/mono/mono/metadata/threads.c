@@ -1340,10 +1340,14 @@ static void wait_for_tids (struct wait_data *wait, guint32 timeout)
 		return;
 	}
 	
+	for(i=0; i<wait->num; i++)
+		CloseHandle (wait->handles[i]);
+
+	if (ret == WAIT_TIMEOUT)
+		return;
 
 	for(i=0; i<wait->num; i++) {
 		guint32 tid=wait->threads[i]->tid;
-		CloseHandle (wait->handles[i]);
 		
 		if(mono_g_hash_table_lookup (threads, GUINT_TO_POINTER(tid))!=NULL) {
 			/* This thread must have been killed, because
@@ -1586,7 +1590,7 @@ abort_appdomain_thread (gpointer key, gpointer value, gpointer user_data)
 	MonoDomain *domain = data->domain;
 
 	if (mono_thread_has_appdomain_ref (thread, domain)) {
-		/* printf ("ABORTING THREAD %p BECAUSE IT REFERENCES DOMAIN %s.\n", thread, domain->friendly_name); */
+		/* printf ("ABORTING THREAD %p BECAUSE IT REFERENCES DOMAIN %s.\n", thread->tid, domain->friendly_name); */
 		HANDLE handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
 		if (handle == NULL)
 			return;
@@ -1927,7 +1931,7 @@ static guint32 dummy_apc (gpointer param)
 static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 {
 	mono_monitor_enter (thread->synch_lock);
-	
+
 	if (thread->interruption_requested) {
 		/* this will consume pending APC calls */
 		WaitForSingleObjectEx (GetCurrentThread(), 0, TRUE);
