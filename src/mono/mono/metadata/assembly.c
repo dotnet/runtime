@@ -830,7 +830,7 @@ MonoAssembly*
 mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status)
 {
 	MonoAssembly *result;
-	char *fullpath, *filename, *currentpath;
+	char *fullpath, *filename;
 
 	result = invoke_assembly_preload_hook (aname, assemblies_path);
 	if (result)
