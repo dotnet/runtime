@@ -252,6 +252,7 @@ async_invoke_thread (gpointer data)
 	thread = mono_thread_current ();
 	thread->threadpool_thread = TRUE;
 	thread->state |= ThreadState_Background;
+
 	for (;;) {
 		MonoAsyncResult *ar;
 
@@ -274,7 +275,8 @@ async_invoke_thread (gpointer data)
 			
 			do {
 				wr = WaitForSingleObjectEx (job_added, (guint32)timeout, TRUE);
-				mono_thread_interruption_checkpoint ();
+				if ((thread->state & ThreadState_StopRequested)!=0)
+					mono_thread_interruption_checkpoint ();
 			
 				timeout -= GetTickCount () - start_time;
 			
@@ -290,7 +292,8 @@ async_invoke_thread (gpointer data)
 	
 			while (!data && workers <= min) {
 				WaitForSingleObjectEx (job_added, INFINITE, TRUE);
-				mono_thread_interruption_checkpoint ();
+				if ((thread->state & ThreadState_StopRequested)!=0)
+					mono_thread_interruption_checkpoint ();
 			
 				data = dequeue_job ();
 				workers = (int) InterlockedCompareExchange (&mono_worker_threads, 0, -1); 

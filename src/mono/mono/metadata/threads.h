@@ -64,6 +64,7 @@ void mono_gc_start_world (void);
 extern MonoException* mono_thread_request_interruption (gboolean running_managed);
 extern gboolean mono_thread_interruption_requested (void);
 extern void mono_thread_interruption_checkpoint (void);
+extern void mono_thread_force_interruption_checkpoint (void);
 extern gint32* mono_thread_interruption_request_flag (void);
 
 #endif /* _MONO_METADATA_THREADS_H_ */

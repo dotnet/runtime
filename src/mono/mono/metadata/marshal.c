@@ -22,6 +22,7 @@
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/domain-internals.h"
 #include "mono/metadata/gc-internal.h"
+#include "mono/metadata/threads-types.h"
 #include <mono/os/gc_wrapper.h>
 #include <string.h>
 #include <errno.h>
@@ -1254,7 +1255,7 @@ emit_struct_free (MonoMethodBuilder *mb, MonoClass *klass, int struct_var)
 }
 
 static void
-emit_thread_interrupt_checkpoint (MonoMethodBuilder *mb)
+emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb, gpointer checkpoint_func)
 {
 	static MonoMethodSignature *state_check_sig = NULL;
 	int pos_noabort;
@@ -1271,9 +1272,21 @@ emit_thread_interrupt_checkpoint (MonoMethodBuilder *mb)
 	mono_mb_emit_byte (mb, CEE_LDIND_I4);
 	pos_noabort = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
-	mono_mb_emit_native_call (mb, state_check_sig, mono_thread_interruption_checkpoint);
+	mono_mb_emit_native_call (mb, state_check_sig, checkpoint_func);
 	
 	mono_mb_patch_addr (mb, pos_noabort, mb->pos - (pos_noabort + 4));
+}
+
+static void
+emit_thread_interrupt_checkpoint (MonoMethodBuilder *mb)
+{
+	emit_thread_interrupt_checkpoint_call (mb, mono_thread_interruption_checkpoint);
+}
+
+static void
+emit_thread_force_interrupt_checkpoint (MonoMethodBuilder *mb)
+{
+	emit_thread_interrupt_checkpoint_call (mb, mono_thread_force_interruption_checkpoint);
 }
 
 static MonoAsyncResult *
@@ -2145,6 +2158,8 @@ typedef struct {
 	MonoMethodSignature *sig;
 } CtorSigPair;
 
+
+
 /*
  * generates IL code for the runtime invoke function 
  * MonoObject *runtime_invoke (MonoObject *this, void **params, MonoObject **exc, void* method)
@@ -2163,7 +2178,8 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	MonoMethod *res = NULL;
 	GSList *item;
 	static MonoString *string_dummy = NULL;
-	int i, pos;
+	static MonoMethodSignature *dealy_abort_sig = NULL;
+	int i, pos, posna;
 	char *name;
 
 	g_assert (method);
@@ -2214,6 +2230,12 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 		return res;
 	}
 
+	if (!dealy_abort_sig) {
+		dealy_abort_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+		dealy_abort_sig->ret = &mono_defaults.void_class->byval_arg;
+		dealy_abort_sig->pinvoke = 0;
+	}
+	
 	target_klass = mono_defaults.object_class;
 
 	/* to make it work with our special string constructors */
@@ -2335,6 +2357,7 @@ handle_enum:
 	}
 	
 	mono_mb_emit_ldarg (mb, 3);
+	emit_thread_force_interrupt_checkpoint (mb);
 	mono_mb_emit_calli (mb, callsig);
 
 	if (sig->ret->byref) {
@@ -2413,6 +2436,18 @@ handle_enum:
 	mono_mb_emit_byte (mb, CEE_LDC_I4_0);
 	mono_mb_emit_stloc (mb, 0);
 
+	/* Check for the abort exception */
+	mono_mb_emit_ldloc (mb, 1);
+	mono_mb_emit_byte (mb, CEE_ISINST);
+	mono_mb_emit_i4 (mb, mono_defaults.threadabortexception_class->type_token);
+	mono_mb_emit_byte (mb, CEE_BRFALSE_S);
+	posna = mb->pos;
+	mono_mb_emit_byte (mb, 0);
+
+	/* Delay the abort exception */
+	mono_mb_emit_native_call (mb, dealy_abort_sig, ves_icall_System_Threading_Thread_ResetAbort);
+
+	mono_mb_patch_addr_s (mb, posna, mb->pos - posna - 1);
 	mono_mb_emit_byte (mb, CEE_LEAVE);
 	mono_mb_emit_i4 (mb, 0);
 

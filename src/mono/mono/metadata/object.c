@@ -2685,6 +2685,9 @@ mono_raise_exception (MonoException *ex)
 	 * will point into the next function in the executable, not this one.
 	 */
 
+	if (((MonoObject*)ex)->vtable->klass == mono_defaults.threadabortexception_class)
+		mono_thread_current ()->abort_exc = ex;
+	
 	ex_handler (ex);
 }
 

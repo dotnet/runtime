@@ -1159,6 +1159,27 @@ ves_icall_System_Threading_Thread_Resume (MonoThread *thread)
 	thread->resume_event = NULL;
 }
 
+static gboolean
+find_wrapper (MonoMethod *m, gint no, gint ilo, gboolean managed, gpointer data)
+{
+	if (managed)
+		return TRUE;
+
+	if (m->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
+		*((gboolean*)data) = TRUE;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean 
+is_running_protected_wrapper (void)
+{
+	gboolean found = FALSE;
+	mono_stack_walk (find_wrapper, &found);
+	return found;
+}
+
 void mono_thread_stop (MonoThread *thread)
 {
 	mono_monitor_enter (thread->synch_lock);
@@ -1632,7 +1653,7 @@ mono_thread_get_pending_exception (void)
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (thread && thread->abort_exc) {
+	if (thread && thread->abort_exc && !is_running_protected_wrapper ()) {
 		/*
 		 * FIXME: Clear the abort exception and return an AppDomainUnloaded 
 		 * exception if the thread no longer references a dying appdomain.
@@ -1913,7 +1934,8 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 	}
 
 	if ((thread->state & ThreadState_AbortRequested) != 0) {
-		thread->abort_exc = mono_get_exception_thread_abort ();
+		if (thread->abort_exc == NULL)
+			thread->abort_exc = mono_get_exception_thread_abort ();
 		mono_monitor_exit (thread->synch_lock);
 		return thread->abort_exc;
 	}
@@ -1971,7 +1993,7 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 		return NULL;
 	}
 
-	if (!running_managed) {
+	if (!running_managed || is_running_protected_wrapper ()) {
 		/* Can't stop while in unmanaged code. Increase the global interruption
 		   request count. When exiting the unmanaged method the count will be
 		   checked and the thread will be interrupted. */
@@ -2006,21 +2028,35 @@ gboolean mono_thread_interruption_requested ()
 	return FALSE;
 }
 
-/*
- * Performs the interruption of the current thread, if one has been requested.
- */
-void mono_thread_interruption_checkpoint ()
+static void mono_thread_interruption_checkpoint_request (gboolean bypass_abort_protection)
 {
 	MonoThread *thread = mono_thread_current ();
-	
+
 	/* The thread may already be stopping */
 	if (thread == NULL) 
 		return;
 	
-	if (thread->interruption_requested) {
+	if (thread->interruption_requested && (bypass_abort_protection || !is_running_protected_wrapper ())) {
 		MonoException* exc = mono_thread_execute_interruption (thread);
 		if (exc) mono_raise_exception (exc);
 	}
+}
+
+/*
+ * Performs the interruption of the current thread, if one has been requested,
+ * and the thread is not running a protected wrapper.
+ */
+void mono_thread_interruption_checkpoint ()
+{
+	mono_thread_interruption_checkpoint_request (FALSE);
+}
+
+/*
+ * Performs the interruption of the current thread, if one has been requested.
+ */
+void mono_thread_force_interruption_checkpoint ()
+{
+	mono_thread_interruption_checkpoint_request (TRUE);
 }
 
 /*
