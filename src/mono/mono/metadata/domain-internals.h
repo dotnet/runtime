@@ -48,9 +48,9 @@ typedef struct {
 struct _MonoJitInfo {
 	MonoMethod *method;
 	gpointer    code_start;
-	int         code_size;
 	guint32     used_regs;
-	unsigned    num_clauses;
+	int         code_size;
+	guint32     num_clauses:24;
 	/* Whenever the code is domain neutral or 'shared' */
 	gboolean    domain_neutral:1;
 	gboolean    cas_inited:1;
@@ -60,7 +60,7 @@ struct _MonoJitInfo {
 	gboolean    cas_method_assert:1;
 	gboolean    cas_method_deny:1;
 	gboolean    cas_method_permitonly:1;
-	MonoJitExceptionInfo *clauses;
+	MonoJitExceptionInfo clauses [MONO_ZERO_LEN_ARRAY];
 };
 
 typedef struct {

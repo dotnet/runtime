@@ -17,6 +17,7 @@
 #include <mono/os/gc_wrapper.h>
 
 #include <mono/metadata/object.h>
+#include <mono/metadata/object-internals.h>
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/assembly.h>
