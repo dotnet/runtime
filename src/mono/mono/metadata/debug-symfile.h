@@ -16,7 +16,7 @@ typedef struct MonoDebugILOffsetInfo		MonoDebugILOffsetInfo;
  * mono_debug_update_symbol_file (). */
 struct MonoDebugMethodInfo {
 	MonoMethod *method;
-	gpointer code_start;
+	char *code_start;
 	guint32 code_size;
 	guint32 num_params;
 	guint32 this_offset;
@@ -38,7 +38,7 @@ struct MonoDebugSymbolFile {
 	char *file_name;
 	MonoImage *image;
 	/* Pointer to the mmap()ed contents of the file. */
-	void *raw_contents;
+	char *raw_contents;
 	size_t raw_contents_size;
 	/* Array of MONO_DEBUG_SYMBOL_SECTION_MAX elements. */
 	MonoDebugSymbolFileSection *section_offsets;

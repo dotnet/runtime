@@ -56,7 +56,7 @@ get_sections_elf32 (MonoDebugSymbolFile *symfile, gboolean emit_warnings)
 	const char *strtab;
 	int i;
 
-	header = symfile->raw_contents;
+	header = (Elf32_Ehdr *)symfile->raw_contents;
 	if (header->e_version != EV_CURRENT) {
 		if (emit_warnings)
 			g_warning ("Symbol file %s has unknown ELF version %d",
@@ -81,9 +81,9 @@ get_sections_elf32 (MonoDebugSymbolFile *symfile, gboolean emit_warnings)
 
 	symfile->section_offsets = g_new0 (MonoDebugSymbolFileSection, MONO_DEBUG_SYMBOL_SECTION_MAX);
 
-	section = (Elf32_Shdr *)((char *)symfile->raw_contents + header->e_shoff);
+	section = (Elf32_Shdr *)(symfile->raw_contents + header->e_shoff);
 	strtab_section = section + header->e_shstrndx;
-	strtab = (char *)symfile->raw_contents + strtab_section->sh_offset;
+	strtab = symfile->raw_contents + strtab_section->sh_offset;
 
 	for (i = 0; i < header->e_shnum; i++, section++) {
 		const gchar *name = strtab + section->sh_name;
@@ -223,7 +223,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 	if (!symfile->section_offsets [MONO_DEBUG_SYMBOL_SECTION_MONO_RELOC_TABLE].file_offset)
 		return;
 
-	reloc_ptr = reloc_start = (char *)symfile->raw_contents +
+	reloc_ptr = reloc_start = symfile->raw_contents +
 		symfile->section_offsets [MONO_DEBUG_SYMBOL_SECTION_MONO_RELOC_TABLE].file_offset;
 
 	version = *((guint16 *) reloc_ptr)++;
@@ -243,7 +243,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 	while (reloc_ptr < reloc_end) {
 		int type, size, section, offset;
 		const char *tmp_ptr;
-		void *base_ptr;
+		char *base_ptr;
 
 		type = *reloc_ptr++;
 		size = * ((guint32 *) reloc_ptr)++;
@@ -266,8 +266,8 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			continue;
 		}
 
-		base_ptr = (char *)symfile->raw_contents + symfile->section_offsets [section].file_offset;
-		base_ptr = (char *)base_ptr + offset;
+		base_ptr = symfile->raw_contents + symfile->section_offsets [section].file_offset;
+		base_ptr = base_ptr + offset;
 
 		switch (type) {
 		case MRT_target_address_size:
@@ -338,7 +338,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				   minfo->code_start + address);
 #endif
 
-			* (void **) base_ptr = (char *)minfo->code_start + address;
+			* (void **) base_ptr = minfo->code_start + address;
 
 			break;
 		}
