@@ -503,8 +503,10 @@ ves_pinvoke_method (MonoInvocation *frame)
 	jmp_buf env;
 	MonoPIFunc func;
 	
-	if (setjmp(env))
+	if (setjmp(env)) {
+		TlsSetValue (frame_thread_id, frame->args);
 		return;
+	}
 	if (!frame->method->info)
 		frame->method->info = mono_create_trampoline (frame->method, 0);
 	func = (MonoPIFunc)frame->method->info;
@@ -521,6 +523,7 @@ ves_pinvoke_method (MonoInvocation *frame)
 
 	func ((MonoFunc)frame->method->addr, &frame->retval->data.p, frame->obj, frame->stack_args);
 	stackval_from_data (frame->method->signature->ret, frame->retval, (const char*)&frame->retval->data.p);
+	TlsSetValue (frame_thread_id, frame->args);
 }
 
 /*
@@ -942,6 +945,7 @@ ves_exec_method (MonoInvocation *frame)
 	register stackval *sp;
 	void **args_pointers;
 	guint32 *offsets;
+	gint il_ins_count = -1;
 	unsigned char tail_recursion = 0;
 	unsigned char unaligned_address = 0;
 	unsigned char volatile_address = 0;
@@ -1066,6 +1070,9 @@ ves_exec_method (MonoInvocation *frame)
 			g_print ("%s", ins);
 			g_free (ins);
 		}
+		if (il_ins_count > 0)
+			if (!(--il_ins_count))
+				G_BREAKPOINT ();
 #endif
 		
 		SWITCH (*ip) {
@@ -2381,6 +2388,7 @@ array_constructed:
 		}
 		CASE (CEE_THROW)
 			--sp;
+			frame->ex_handler = NULL;
 			THROW_EX (sp->data.p, ip);
 			BREAK;
 		CASE (CEE_LDFLDA) /* Fall through */
