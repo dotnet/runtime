@@ -46,7 +46,7 @@ typedef union {
  */
 static MonoClassField *wait_handle_os_handle_field = NULL;
 
-/* Controls access to the 'threads' array */
+/* Controls access to the 'threads' hash table */
 static CRITICAL_SECTION threads_mutex;
 
 /* Controls access to the sync field in MonoObjects, to avoid race
@@ -90,7 +90,7 @@ static void handle_store(MonoThread *thread)
 #endif
 
 	if(threads==NULL) {
-		threads=mono_g_hash_table_new(g_int_hash, g_int_equal);
+		threads=mono_g_hash_table_new(g_direct_hash, g_direct_equal);
 	}
 
 	/* GHashTable will remove a previous entry if a duplicate key
@@ -100,12 +100,12 @@ static void handle_store(MonoThread *thread)
 	 * the window in which the thread exists but we haven't
 	 * recorded it.
 	 */
-	mono_g_hash_table_remove (threads, &thread->tid);
+	mono_g_hash_table_remove (threads, GUINT_TO_POINTER(thread->tid));
 	
 	/* We don't need to duplicate thread->handle, because it is
 	 * only closed when the thread object is finalized by the GC.
 	 */
-	mono_g_hash_table_insert(threads, &thread->tid, thread);
+	mono_g_hash_table_insert(threads, GUINT_TO_POINTER(thread->tid), thread);
 	LeaveCriticalSection(&threads_mutex);
 }
 
@@ -117,7 +117,7 @@ static void handle_remove(guint32 tid)
 
 	EnterCriticalSection(&threads_mutex);
 
-	mono_g_hash_table_remove (threads, &tid);
+	mono_g_hash_table_remove (threads, GUINT_TO_POINTER(tid));
 	
 	LeaveCriticalSection(&threads_mutex);
 
@@ -1265,7 +1265,7 @@ void mono_install_thread_callbacks (MonoThreadCallbacks *callbacks)
 #ifdef THREAD_DEBUG
 static void print_tids (gpointer key, gpointer value, gpointer user)
 {
-	g_message ("Waiting for: %d", *(guint32 *)key);
+	g_message ("Waiting for: %d", GPOINTER_TO_UINT(key));
 }
 #endif
 
@@ -1298,7 +1298,7 @@ static void wait_for_tids (struct wait_data *wait)
 	for(i=0; i<wait->num; i++) {
 		guint32 tid=wait->threads[i]->tid;
 		
-		if(mono_g_hash_table_lookup (threads, &tid)!=NULL) {
+		if(mono_g_hash_table_lookup (threads, GUINT_TO_POINTER(tid))!=NULL) {
 			/* This thread must have been killed, because
 			 * it hasn't cleaned itself up. (It's just
 			 * possible that the thread exited before the
