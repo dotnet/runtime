@@ -2492,13 +2492,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ADD_OVF_UN_CARRY:
 			/* check XER [0-3] (SO, OV, CA): we can't use mcrxr
-			 * FIXME: missing ovf check
 			 */
-			/*ppc_addeo (code, ins->dreg, ins->sreg1, ins->sreg2);*/
-			ppc_addco (code, ins->dreg, ins->sreg1, ins->sreg2);
-			/*ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_addeo (code, ins->dreg, ins->sreg1, ins->sreg2);
+			ppc_mfspr (code, ppc_r0, ppc_xer);
 			ppc_andisd (code, ppc_r0, ppc_r0, (1<<13));
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "OverflowException");*/
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "OverflowException");
 			break;
 		case OP_SUB_OVF_CARRY:
 			/* check XER [0-3] (SO, OV, CA): we can't use mcrxr
@@ -2510,13 +2508,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_SUB_OVF_UN_CARRY:
 			/* check XER [0-3] (SO, OV, CA): we can't use mcrxr
-			 * FIXME: missing ovf check
 			 */
-			/*ppc_subfeo (code, ins->dreg, ins->sreg2, ins->sreg1);*/
-			ppc_subfc (code, ins->dreg, ins->sreg2, ins->sreg1);
-			/*ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_subfeo (code, ins->dreg, ins->sreg2, ins->sreg1);
+			ppc_mfspr (code, ppc_r0, ppc_xer);
 			ppc_andisd (code, ppc_r0, ppc_r0, (1<<13));
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_EQ, "OverflowException");*/
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_EQ, "OverflowException");
 			break;
 		case OP_SUBCC:
 			ppc_subfc (code, ins->dreg, ins->sreg2, ins->sreg1);
@@ -2562,50 +2558,50 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case CEE_DIV:
-			/* clear the summary overflow flag */
-			ppc_crxor (code, 28, 28, 28);
+			 /* XER format: SO, OV, CA, reserved [21 bits], count [8 bits]
+			 */
 			ppc_divwod (code, ins->dreg, ins->sreg1, ins->sreg2);
+			ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
 			/* FIXME: use OverflowException for 0x80000000/-1 */
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_SO, "DivideByZeroException");
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "DivideByZeroException");
 			break;
 		case CEE_DIV_UN:
-			/* clear the summary overflow flag */
-			ppc_crxor (code, 28, 28, 28);
 			ppc_divwuod (code, ins->dreg, ins->sreg1, ins->sreg2);
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_SO, "DivideByZeroException");
+			ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "DivideByZeroException");
 			break;
 		case OP_DIV_IMM:
+			g_assert_not_reached ();
+#if 0
 			ppc_load (code, ppc_r11, ins->inst_imm);
-			/* clear the summary overflow flag */
-			ppc_crxor (code, 28, 28, 28);
 			ppc_divwod (code, ins->dreg, ins->sreg1, ppc_r11);
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_SO, "DivideByZeroException");
+			ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
+			/* FIXME: use OverflowException for 0x80000000/-1 */
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "DivideByZeroException");
 			break;
+#endif
 		case CEE_REM:
-			/* clear the summary overflow flag */
-			ppc_crxor (code, 28, 28, 28);
 			ppc_divwod (code, ppc_r11, ins->sreg1, ins->sreg2);
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_SO, "DivideByZeroException");
+			ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
+			/* FIXME: use OverflowException for 0x80000000/-1 */
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "DivideByZeroException");
 			ppc_mullw (code, ppc_r11, ppc_r11, ins->sreg2);
 			ppc_subf (code, ins->dreg, ppc_r11, ins->sreg1);
 			break;
 		case CEE_REM_UN:
-			/* clear the summary overflow flag */
-			ppc_crxor (code, 28, 28, 28);
 			ppc_divwuod (code, ppc_r11, ins->sreg1, ins->sreg2);
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_SO, "DivideByZeroException");
+			ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "DivideByZeroException");
 			ppc_mullw (code, ppc_r11, ppc_r11, ins->sreg2);
 			ppc_subf (code, ins->dreg, ppc_r11, ins->sreg1);
 			break;
 		case OP_REM_IMM:
-			ppc_load (code, ppc_r11, ins->inst_imm);
-			/* clear the summary overflow flag */
-			ppc_crxor (code, 28, 28, 28);
-			ppc_divwod (code, ins->dreg, ins->sreg1, ppc_r11);
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_SO, "DivideByZeroException");
-			ppc_mullw (code, ins->dreg, ins->dreg, ppc_r11);
-			ppc_subf (code, ins->dreg, ins->dreg, ins->sreg1);
-			break;
+			g_assert_not_reached ();
 		case CEE_OR:
 			ppc_or (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
