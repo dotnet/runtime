@@ -87,7 +87,12 @@ do
     echo processing $dr
     macrodirs=`sed -n -e 's,AM_ACLOCAL_INCLUDE(\(.*\)),\1,gp' < $coin`
     ( cd $dr
-      macrosdir=`find . -name macros -print`
+      aclocalinclude="$ACLOCAL_FLAGS"
+      for k in $macrodirs; do
+	if test -d $k; then
+	  aclocalinclude="$aclocalinclude -I $k"
+	fi
+      done
       if grep "^AM_GNU_GETTEXT" configure.in >/dev/null; then
 	if grep "sed.*POTFILES" configure.in >/dev/null; then
 	  : do nothing -- we still have an old unmodified configure.in

@@ -1,3 +1,8 @@
+2001-09-05  Dick Porter  <dick@ximian.com>
+
+	* autogen.sh: Fixed the section that adds $ACLOCAL_FLAGS to the
+	aclocal invocation, so putting aclocal files in /usr/local works
+
 2001-08-30  Dietmar Maurer  <dietmar@ximian.com>
 
 	* *: removed the libffi dependency, mono now compiles on cygwin 
