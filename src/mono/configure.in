@@ -299,6 +299,27 @@ AC_SUBST(GLIB_LIBS)
 AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 
+if test x$platform_win32 = xyes; then   
+   AC_MSG_CHECKING(for cygwin glib2-dev package)
+   if [ cygcheck --f /usr/lib/libglib-2.0.dll.a | grep -q glib2-devel ]; then
+      AC_MSG_RESULT(found)
+	  AC_MSG_ERROR([Mono cannot be built with the cygwin glib2-devel package installed, because that package doesn't work with -mno-cygwin. Please uninstall it then re-run configure.])
+   else
+      AC_MSG_RESULT(not found, ok)
+   fi
+
+   AC_MSG_CHECKING(for broken gwin32.h)
+   glib_include=`$PKG_CONFIG --cflags-only-I glib-2.0 | sed -e 's/ -I.*//g' | sed -e 's/-I//g'`
+   if test -f $glib_include/glib/gwin32.h; then
+	  if [ grep ftruncate $glib_include/glib/gwin32.h | grep -q define ]; then
+		 AC_MSG_RESULT(failed)
+		 hashmark='#'
+		 AC_MSG_ERROR([Your version of gwin32.h is broken and will cause compilation errors when building mono. Please fix it by deleting the line: '$hashmark   define ftruncate...' from '$glib_include/glib/gwin32.h' then re-run configure.])
+	  fi
+   fi
+   AC_MSG_RESULT(ok)
+fi
+
 AC_ARG_WITH(gc, [  --with-gc=boehm,included,none],[gc=$with_gc],[gc=$gc_default])
 
 # Enable support for fast thread-local storage

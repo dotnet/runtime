@@ -1,3 +1,7 @@
+2004-10-10  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Add some checks for cygwin weirdness.
+
 2004-09-04 Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: added check for kqueue. Patch from Geoff Norton
