@@ -228,6 +228,33 @@ construct_culture (MonoCultureInfo *this, const CultureInfoEntry *ci)
 	return TRUE;
 }
 
+gboolean
+construct_culture_from_specific_name (MonoCultureInfo *ci, gchar *name)
+{
+	const CultureInfoEntry *entry;
+	CultureInfoNameEntry key;
+	const CultureInfoNameEntry *ne;
+
+	MONO_ARCH_SAVE_REGS;
+
+	key.name = mono_string_to_utf8 (name);
+	ne = bsearch (&key, culture_name_entries, NUM_CULTURE_ENTRIES,
+			sizeof (CultureInfoNameEntry), culture_name_locator);
+
+	g_free ((gpointer) key.name);
+
+	if (ne == NULL)
+		return FALSE;
+
+	entry = &culture_entries [ne->culture_entry_index];
+
+	/* try avoiding another lookup, often the culture is its own specific culture */
+	if (entry->lcid != entry->specific_lcid)
+		entry = culture_info_entry_from_lcid (entry->specific_lcid);
+
+	return construct_culture (ci, entry);
+}
+
 static const CultureInfoEntry*
 culture_info_entry_from_lcid (int lcid)
 {
@@ -335,8 +362,7 @@ MonoBoolean
 ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_current_locale (MonoCultureInfo *ci)
 {
 	gchar *locale;
-	CultureInfoNameEntry key;
-	const CultureInfoNameEntry *ne;
+	gboolean ret;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -344,16 +370,10 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_curren
 	if (locale == NULL)
 		return FALSE;
 
-	key.name = locale;
-	ne = bsearch (&key, culture_name_entries, NUM_CULTURE_ENTRIES,
-			sizeof (CultureInfoNameEntry), culture_name_locator);
+	ret = construct_culture_from_specific_name (ci, locale);
+	g_free (locale);
 
-        g_free (locale);
-
-	if (ne == NULL)
-		return FALSE;
-
-	return construct_culture (ci, &culture_entries [ne->culture_entry_index]);
+	return ret;
 }
 
 MonoBoolean
@@ -386,8 +406,10 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (
 
         g_free ((gpointer) key.name);
 
-	if (ne == NULL)
+	if (ne == NULL) {
+                g_print ("ne (%s) is null\n", key.name);
 		return FALSE;
+        }
 
 	return construct_culture (this, &culture_entries [ne->culture_entry_index]);
 }
@@ -396,28 +418,16 @@ MonoBoolean
 ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_specific_name (MonoCultureInfo *ci,
 		MonoString *name)
 {
-	const CultureInfoEntry *entry;
-	CultureInfoNameEntry key;
-	const CultureInfoNameEntry *ne;
+	gchar *name;
+	gboolean ret;
 
 	MONO_ARCH_SAVE_REGS;
 
-	key.name = mono_string_to_utf8 (name);
-	ne = bsearch (&key, culture_name_entries, NUM_CULTURE_ENTRIES,
-			sizeof (CultureInfoNameEntry), culture_name_locator);
+	name = mono_string_to_utf8 (name);
+	ret = construct_culture_from_specific_name (ci, name);
+	g_free (name);
 
-        g_free ((gpointer) key.name);
-
-	if (ne == NULL)
-		return FALSE;
-
-	entry = &culture_entries [ne->culture_entry_index];
-
-	/* try avoiding another lookup, often the culture is its own specific culture */
-	if (entry->lcid != entry->specific_lcid)
-		entry = culture_info_entry_from_lcid (entry->specific_lcid);
-
-	return construct_culture (ci, entry);
+	return ret;
 }
 
 MonoArray*
