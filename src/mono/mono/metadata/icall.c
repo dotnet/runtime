@@ -950,12 +950,15 @@ type_from_name (const char *str, MonoBoolean ignoreCase)
 	MonoType *type = NULL;
 	MonoAssembly *assembly;
 	MonoTypeNameParse info;
+	char *temp_str = g_strdup (str);
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (!mono_reflection_parse_type (str, &info)) {
+	/* mono_reflection_parse_type() mangles the string */
+	if (!mono_reflection_parse_type (temp_str, &info)) {
 		g_list_free (info.modifiers);
 		g_list_free (info.nested);
+		g_free (temp_str);
 		return NULL;
 	}
 
@@ -976,12 +979,15 @@ type_from_name (const char *str, MonoBoolean ignoreCase)
 
 	g_list_free (info.modifiers);
 	g_list_free (info.nested);
+	g_free (temp_str);
+
 	if (!type) 
 		return NULL;
 
 	return mono_type_get_object (mono_domain_get (), type);
 }
 
+#ifdef UNUSED
 MonoReflectionType *
 mono_type_get (const char *str)
 {
@@ -991,6 +997,7 @@ mono_type_get (const char *str)
 	g_free (copy);
 	return type;
 }
+#endif
 
 static MonoReflectionType*
 ves_icall_type_from_name (MonoString *name,
@@ -3144,14 +3151,11 @@ ves_icall_System_Reflection_Assembly_get_location (MonoReflectionAssembly *assem
 {
 	MonoDomain *domain = mono_object_domain (assembly); 
 	MonoString *res;
-	char *name = g_build_filename (
-		assembly->assembly->basedir,
-		assembly->assembly->image->module_name, NULL);
 
 	MONO_ARCH_SAVE_REGS;
 
-	res = mono_string_new (domain, name);
-	g_free (name);
+	res = mono_string_new (domain, mono_image_get_filename (assembly->assembly->image));
+
 	return res;
 }
 
@@ -4619,7 +4623,8 @@ static MonoString*
 ves_icall_System_Text_Encoding_InternalCodePage (gint32 *int_code_page) 
 {
 	const char *cset;
-	char *p;
+	const char *p;
+	char *c;
 	char *codepage = NULL;
 	int code;
 	int want_name = *int_code_page;
@@ -4629,12 +4634,12 @@ ves_icall_System_Text_Encoding_InternalCodePage (gint32 *int_code_page)
 	MONO_ARCH_SAVE_REGS;
 
 	g_get_charset (&cset);
-	p = codepage = strdup (cset);
-	for (p = codepage; *p; p++){
-		if (isascii (*p) && isalpha (*p))
-			*p = tolower (*p);
-		if (*p == '-')
-			*p = '_';
+	c = codepage = strdup (cset);
+	for (c = codepage; *c; c++){
+		if (isascii (*c) && isalpha (*c))
+			*c = tolower (*c);
+		if (*c == '-')
+			*c = '_';
 	}
 	/* g_print ("charset: %s\n", cset); */
 	
@@ -5039,11 +5044,15 @@ ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll (MonoReflectionType 
 		prelink_method (klass->methods [i]);
 }
 
+/* These parameters are "readonly" in corlib/System/Char.cs */
 static void
-ves_icall_System_Char_GetDataTablePointers (guint8 **category_data, guint8 **numeric_data,
-		gdouble **numeric_data_values, guint16 **to_lower_data_low,
-		guint16 **to_lower_data_high, guint16 **to_upper_data_low,
-		guint16 **to_upper_data_high)
+ves_icall_System_Char_GetDataTablePointers (guint8 const **category_data,
+					    guint8 const **numeric_data,
+					    gdouble const **numeric_data_values,
+					    guint16 const **to_lower_data_low,
+					    guint16 const **to_lower_data_high,
+					    guint16 const **to_upper_data_low,
+					    guint16 const **to_upper_data_high)
 {
 	*category_data = CategoryData;
 	*numeric_data = NumericData;
@@ -6099,7 +6108,7 @@ mono_lookup_internal_call (MonoMethod *method)
 static MonoType*
 type_from_typename (char *typename)
 {
-	MonoClass *klass;
+	MonoClass *klass = NULL;	/* assignment to shut GCC warning up */
 
 	if (!strcmp (typename, "int"))
 		klass = mono_defaults.int_class;
