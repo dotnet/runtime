@@ -1334,7 +1334,7 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
 		if (def < methodt->rows)
 			lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
 		else
-			lastp = paramt->rows;
+			lastp = paramt->rows + 1;
 		for (i = param_index; i < lastp; ++i) {
 			mono_metadata_decode_row (paramt, i - 1, cols, MONO_PARAM_SIZE);
 			if (!cols [MONO_PARAM_SEQUENCE])
