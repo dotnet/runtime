@@ -902,7 +902,9 @@ static gint32
 ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilder *mb, MonoObject *obj)
 {
 	MONO_ARCH_SAVE_REGS;
-
+	
+	MONO_CHECK_ARG_NULL (obj);
+	
 	return mono_image_create_token (mb->dynamic_image, obj, TRUE);
 }
 
@@ -913,6 +915,8 @@ ves_icall_ModuleBuilder_getMethodToken (MonoReflectionModuleBuilder *mb,
 {
 	MONO_ARCH_SAVE_REGS;
 
+	MONO_CHECK_ARG_NULL (method);
+	
 	return mono_image_create_method_token (
 		mb->dynamic_image, (MonoObject *) method, opt_param_types);
 }
