@@ -455,41 +455,49 @@ static void analyze_block(MonoBasicBlock *bb, MonoVariableRelationsEvaluationAre
 			case CEE_BGT_UN:
 			case CEE_BGE_UN: {
 				if (last_inst->inst_left->opcode == OP_COMPARE){
+					int number_of_variables;
+					int current_variable;
+
 					MonoSummarizedValue left_value;
 					MonoSummarizedValue right_value;
 					MonoValueRelation relation = get_relation_from_branch_instruction(last_inst->opcode);
 					MonoValueRelation symmetric_relation = MONO_SYMMETRIC_RELATION(relation);
 					summarize_value(last_inst->inst_left->inst_left, &left_value);
 					summarize_value(last_inst->inst_left->inst_right, &right_value);
-					int number_of_variables = 0;
-					int current_variable = 0;
+					number_of_variables = 0;
+					current_variable = 0;
 					/* It is actually possible to handle some more case... */
 					if ((left_value.relation_with_value == MONO_EQ_RELATION) &&
 						(right_value.relation_with_value == MONO_EQ_RELATION)){
 						if (left_value.value_type == MONO_VARIABLE_SUMMARIZED_VALUE)number_of_variables++;
 						if (right_value.value_type == MONO_VARIABLE_SUMMARIZED_VALUE)number_of_variables++;
 						if (number_of_variables > 0){
+							MonoBranchData *branch_true;
+							MonoBranchData *branch_false;
+
 							b->number_of_branches = 2;
 							b->branches = (MonoBranchData*) mono_mempool_alloc(
 								evaluation_area->pool, sizeof(MonoBranchData) * 2);
-							MonoBranchData *branch_true = &(b->branches [0]);
+							branch_true = &(b->branches [0]);
 							branch_true->destination_block = last_inst->inst_true_bb;
 							branch_true->number_of_conditions = number_of_variables;
 							branch_true->conditions = (MonoBranchCondition*)
 								mono_mempool_alloc(evaluation_area->pool, sizeof(MonoBranchCondition) * number_of_variables);
-							MonoBranchData *branch_false = &(b->branches [1]);
+							branch_false = &(b->branches [1]);
 							branch_false->destination_block = last_inst->inst_false_bb;
 							branch_false->number_of_conditions = number_of_variables;
 							branch_false->conditions = (MonoBranchCondition*)
 								mono_mempool_alloc(evaluation_area->pool, sizeof(MonoBranchCondition) * number_of_variables);
 							if (left_value.value_type == MONO_VARIABLE_SUMMARIZED_VALUE){
 								MonoBranchCondition *condition_true = &(branch_true->conditions [current_variable]);
+								MonoBranchCondition *condition_false;
+
 								condition_true->variable = left_value.value.variable;
 								condition_true->value = right_value;
 								condition_true->value.relation_with_zero = MONO_ANY_RELATION;
 								condition_true->value.relation_with_one = MONO_ANY_RELATION;
 								condition_true->value.relation_with_value = relation;
-								MonoBranchCondition *condition_false = &(branch_false->conditions [current_variable]);
+								condition_false = &(branch_false->conditions [current_variable]);
 								condition_false->variable = left_value.value.variable;
 								condition_false->value = right_value;
 								condition_false->value.relation_with_zero = MONO_ANY_RELATION;
@@ -499,12 +507,14 @@ static void analyze_block(MonoBasicBlock *bb, MonoVariableRelationsEvaluationAre
 							}
 							if (right_value.value_type == MONO_VARIABLE_SUMMARIZED_VALUE){
 								MonoBranchCondition *condition_true = &(branch_true->conditions [current_variable]);
+								MonoBranchCondition *condition_false;
+
 								condition_true->variable = right_value.value.variable;
 								condition_true->value = left_value;
 								condition_true->value.relation_with_zero = MONO_ANY_RELATION;
 								condition_true->value.relation_with_one = MONO_ANY_RELATION;
 								condition_true->value.relation_with_value = symmetric_relation;
-								MonoBranchCondition *condition_false = &(branch_false->conditions [current_variable]);
+								condition_false = &(branch_false->conditions [current_variable]);
 								condition_false->variable = right_value.value.variable;
 								condition_false->value = left_value;
 								condition_false->value.relation_with_zero = MONO_ANY_RELATION;
@@ -570,11 +580,13 @@ static void analyze_block(MonoBasicBlock *bb, MonoVariableRelationsEvaluationAre
 
 
 static void evaluate_variable_relations(gssize variable, MonoVariableRelationsEvaluationArea *evaluation_area, MonoRelationsEvaluationContext *father_context){
+	MonoVariableRelations *relations;
+	MonoRelationsEvaluationContext context;
+
 	if (TRACE_ABC_REMOVAL) {
 	printf("Applying definition of variable %d\n", variable);
 	}
-	MonoVariableRelations *relations = &(evaluation_area->variable_relations [variable]);
-	MonoRelationsEvaluationContext context;
+	relations = &(evaluation_area->variable_relations [variable]);
 	context.father_context = father_context;
 	context.variable = variable;
 	switch (relations->evaluation_step) {
@@ -634,13 +646,14 @@ static void evaluate_variable_relations(gssize variable, MonoVariableRelationsEv
 			break;
 		}
 		case MONO_RELATIONS_EVALUATION_IN_PROGRESS: {
+			MonoVariableRelations *recursive_value_relations = NULL;
+			unsigned char recursive_relation = MONO_ANY_RELATION;
+			MonoRelationsEvaluationContext *current_context = context.father_context;
+
 			if (TRACE_ABC_REMOVAL) {
 				printf("Current step is MONO_RELATIONS_EVALUATION_IN_PROGRESS\n");
 			}
 			relations->definition_is_recursive = 1;
-			MonoVariableRelations *recursive_value_relations = NULL;
-			unsigned char recursive_relation = MONO_ANY_RELATION;
-			MonoRelationsEvaluationContext *current_context = context.father_context;
 			while (current_context != NULL && current_context->variable != variable){
 				MonoVariableRelations *context_relations = &(evaluation_area->variable_relations [current_context->variable]);
 				MonoSummarizedValue *context_value = &(evaluation_area->variable_definitions [current_context->variable]);
@@ -829,11 +842,13 @@ static void remove_abc_from_block(MonoSummarizedBasicBlock *b, MonoVariableRelat
 				MonoSummarizedBasicBlock *in_b = &(evaluation_area->blocks [in_bb->dfn]);
 				for (out_index = 0; out_index < in_b->number_of_branches; out_index++){
 					if (in_b->branches [out_index].destination_block == bb){
+						MonoBranchData *branch;
+						int condition_index;
+
 						if (TRACE_ABC_REMOVAL) {
 							printf("Applying conditions of branch %d -> %d\n", in_b->block->block_num, bb->block_num);
 						}
-						MonoBranchData *branch = &(in_b->branches [out_index]);
-						int condition_index;
+						branch = &(in_b->branches [out_index]);
 						for (condition_index = 0; condition_index < branch->number_of_conditions; condition_index++) {
 							MonoBranchCondition *condition = &(branch->conditions [condition_index]);
 							MonoVariableRelations *relations = &(evaluation_area->variable_relations [condition->variable]);
