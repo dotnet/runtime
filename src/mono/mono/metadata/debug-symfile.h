@@ -3,6 +3,7 @@
 
 #include <glib.h>
 #include <mono/metadata/class.h>
+#include <mono/metadata/reflection.h>
 
 typedef struct MonoDebugSymbolFile		MonoDebugSymbolFile;
 typedef struct MonoDebugSymbolFileSection	MonoDebugSymbolFileSection;
@@ -78,6 +79,13 @@ void    mono_debug_update_symbol_file (MonoDebugSymbolFile      *symbol_file,
 				       gpointer                  user_data);
 
 void    mono_debug_close_symbol_file  (MonoDebugSymbolFile      *symbol_file);
+
+MonoReflectionType *mono_debug_local_type_from_signature (MonoReflectionAssembly *assembly,
+							  MonoArray *signature);
+
+MonoReflectionMethod *mono_debug_method_from_token (MonoReflectionAssembly *assembly,
+						    guint32 token);
+
 
 #endif /* __MONO_DEBUG_SYMFILE_H__ */
 

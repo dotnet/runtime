@@ -3,6 +3,8 @@
 #include <string.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/rawbuffer.h>
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/exception.h>
 #include <mono/metadata/debug-symfile.h>
 
 #include <fcntl.h>
@@ -375,4 +377,51 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 	}
 
 	mono_raw_buffer_update (symfile->raw_contents, symfile->raw_contents_size);
+}
+
+MonoReflectionType *
+mono_debug_local_type_from_signature (MonoReflectionAssembly *assembly, MonoArray *signature)
+{
+	MonoDomain *domain; 
+	MonoImage *image;
+	MonoClass *klass;
+	MonoType *type;
+	const char *ptr;
+	int len = 0;
+
+	MONO_CHECK_ARG_NULL (assembly);
+	MONO_CHECK_ARG_NULL (signature);
+
+	domain = mono_domain_get();
+	image = assembly->assembly->image;
+
+	ptr = mono_array_addr (signature, char, 0);
+	g_assert (*ptr++ == 0x07);
+	len = mono_metadata_decode_value (ptr, &ptr);
+	g_assert (len == 1);
+
+	type = mono_metadata_parse_type (image, MONO_PARSE_LOCAL, 0, ptr, &ptr);
+
+	klass = mono_class_from_mono_type (type);
+
+	mono_class_init (klass);
+
+	return mono_type_get_object (domain, type);
+}
+
+MonoReflectionMethod *
+mono_debug_method_from_token (MonoReflectionAssembly *assembly, guint32 token)
+{
+	MonoDomain *domain; 
+	MonoImage *image;
+	MonoMethod *method;
+
+	MONO_CHECK_ARG_NULL (assembly);
+
+	domain = mono_domain_get();
+	image = assembly->assembly->image;
+
+	method = mono_get_method (image, token, NULL);
+
+	return mono_method_get_object (domain, method);
 }

@@ -29,6 +29,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/rand.h>
 #include <mono/metadata/sysmath.h>
+#include <mono/metadata/debug-symfile.h>
 #include <mono/io-layer/io-layer.h>
 #include "decimal.h"
 
@@ -1837,6 +1838,7 @@ static gpointer icall_map [] = {
 	 * TypeBuilder
 	 */
 	"System.Reflection.Emit.TypeBuilder::setup_internal_class", mono_reflection_setup_internal_class,
+
 	
 	/*
 	 * MethodBuilder
@@ -2021,6 +2023,13 @@ static gpointer icall_map [] = {
         "System.Math::Log10", ves_icall_System_Math_Log10,
         "System.Math::Pow", ves_icall_System_Math_Pow,
         "System.Math::Sqrt", ves_icall_System_Math_Sqrt,
+
+	/*
+	 * Mono.CSharp.Debugger
+	 */
+	"Mono.CSharp.Debugger.MonoSymbolWriter::get_local_type_from_sig", mono_debug_local_type_from_signature,
+	"Mono.CSharp.Debugger.MonoSymbolWriter::get_method", mono_debug_method_from_token,
+
 
 	/*
 	 * add other internal calls here
