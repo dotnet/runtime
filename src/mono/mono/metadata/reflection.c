@@ -346,7 +346,6 @@ encode_locals (MonoDynamicAssembly *assembly, MonoReflectionILGen *ilgen)
 static guint32
 method_encode_code (MonoDynamicAssembly *assembly, ReflectionMethodBuilder *mb)
 {
-	/* we use only tiny formats now: need  to implement ILGenerator */
 	char flags = 0;
 	guint32 idx;
 	guint32 code_size;
@@ -424,6 +423,10 @@ fat_header:
 	intp = (guint32*)(fat_header + 8);
 	*intp = local_sig;
 	idx = mono_image_add_stream_data (&assembly->code, fat_header, 12);
+	/* add to the fixup todo list */
+	if (mb->ilgen && mb->ilgen->num_token_fixups)
+		g_hash_table_insert (assembly->token_fixups, mb->ilgen, GUINT_TO_POINTER (idx + 12));
+	
 	mono_image_add_stream_data (&assembly->code, mono_array_addr (code, char, 0), code_size);
 	if (num_exception) {
 		unsigned char sheader [4];
@@ -1016,9 +1019,6 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 	guint32 token;
 	MonoClass *klass;
 
-	if (!assembly->typeref)
-		assembly->typeref = g_hash_table_new (g_direct_hash, g_direct_equal);
-	
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, type));
 	if (token)
 		return token;
@@ -1083,8 +1083,6 @@ static guint32
 mono_image_get_methodref_token (MonoDynamicAssembly *assembly, MonoMethod *method)
 {
 	guint32 token;
-	if (!assembly->typeref)
-		assembly->typeref = g_hash_table_new (g_direct_hash, g_direct_equal);
 	
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, method));
 	if (token)
@@ -1099,8 +1097,6 @@ static guint32
 mono_image_get_fieldref_token (MonoDynamicAssembly *assembly, MonoClassField *field, MonoClass *klass)
 {
 	guint32 token;
-	if (!assembly->typeref)
-		assembly->typeref = g_hash_table_new (g_direct_hash, g_direct_equal);
 	
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, field));
 	if (token)
@@ -1154,6 +1150,16 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 	 * as they are defined (according to table_idx).
 	 */
 
+	/* handle fields */
+	if (tb->fields) {
+		table = &assembly->tables [MONO_TABLE_FIELD];
+		table->rows += mono_array_length (tb->fields);
+		alloc_table (table, table->rows);
+		for (i = 0; i < mono_array_length (tb->fields); ++i)
+			mono_image_get_field_info (
+				mono_array_get (tb->fields, MonoReflectionFieldBuilder*, i), assembly);
+	}
+
 	/* handle constructors */
 	if (tb->ctors) {
 		table = &assembly->tables [MONO_TABLE_METHOD];
@@ -1174,34 +1180,11 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 				mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i), assembly);
 	}
 
-	/* handle fields */
-	if (tb->fields) {
-		table = &assembly->tables [MONO_TABLE_FIELD];
-		table->rows += mono_array_length (tb->fields);
-		alloc_table (table, table->rows);
-		for (i = 0; i < mono_array_length (tb->fields); ++i)
-			mono_image_get_field_info (
-				mono_array_get (tb->fields, MonoReflectionFieldBuilder*, i), assembly);
-	}
-
 	/* Do the same with properties etc.. */
 	/*
-	 * FIXME: note that the methodsemantics table needs to be sorted...
+	 * FIXME: note that the methodsemantics table needs to be sorted, so events
+	 * go before properties; not sure if this is enough...
 	 */
-	if (tb->properties && mono_array_length (tb->properties)) {
-		table = &assembly->tables [MONO_TABLE_PROPERTY];
-		table->rows += mono_array_length (tb->properties);
-		alloc_table (table, table->rows);
-		table = &assembly->tables [MONO_TABLE_PROPERTYMAP];
-		table->rows ++;
-		alloc_table (table, table->rows);
-		values = table->values + table->rows * MONO_PROPERTY_MAP_SIZE;
-		values [MONO_PROPERTY_MAP_PARENT] = tb->table_idx;
-		values [MONO_PROPERTY_MAP_PROPERTY_LIST] = assembly->tables [MONO_TABLE_PROPERTY].next_idx;
-		for (i = 0; i < mono_array_length (tb->properties); ++i)
-			mono_image_get_property_info (
-				mono_array_get (tb->properties, MonoReflectionPropertyBuilder*, i), assembly);
-	}
 	if (tb->events && mono_array_length (tb->events)) {
 		table = &assembly->tables [MONO_TABLE_EVENT];
 		table->rows += mono_array_length (tb->events);
@@ -1215,6 +1198,20 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 		for (i = 0; i < mono_array_length (tb->events); ++i)
 			mono_image_get_event_info (
 				mono_array_get (tb->events, MonoReflectionEventBuilder*, i), assembly);
+	}
+	if (tb->properties && mono_array_length (tb->properties)) {
+		table = &assembly->tables [MONO_TABLE_PROPERTY];
+		table->rows += mono_array_length (tb->properties);
+		alloc_table (table, table->rows);
+		table = &assembly->tables [MONO_TABLE_PROPERTYMAP];
+		table->rows ++;
+		alloc_table (table, table->rows);
+		values = table->values + table->rows * MONO_PROPERTY_MAP_SIZE;
+		values [MONO_PROPERTY_MAP_PARENT] = tb->table_idx;
+		values [MONO_PROPERTY_MAP_PROPERTY_LIST] = assembly->tables [MONO_TABLE_PROPERTY].next_idx;
+		for (i = 0; i < mono_array_length (tb->properties); ++i)
+			mono_image_get_property_info (
+				mono_array_get (tb->properties, MonoReflectionPropertyBuilder*, i), assembly);
 	}
 	if (tb->subtypes) {
 		MonoDynamicTable *ntable;
@@ -1487,6 +1484,46 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 }
 
 static void
+fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *assembly) {
+	guint32 code_idx = GPOINTER_TO_UINT (value);
+	MonoReflectionILTokenInfo *iltoken;
+	MonoReflectionFieldBuilder *field;
+	MonoReflectionCtorBuilder *ctor;
+	MonoReflectionMethodBuilder *method;
+	guint32 i, index;
+	unsigned char *target;
+
+	for (i = 0; i < ilgen->num_token_fixups; ++i) {
+		iltoken = (MonoReflectionILTokenInfo *)mono_array_addr_with_size (ilgen->token_fixups, sizeof (MonoReflectionILTokenInfo), i);
+		target = assembly->code.data + code_idx + iltoken->code_pos;
+		switch (target [3]) {
+		case MONO_TABLE_FIELD:
+			if (strcmp (iltoken->member->vtable->klass->name, "FieldBuilder"))
+				g_assert_not_reached ();
+			field = (MonoReflectionFieldBuilder *)iltoken->member;
+			index = field->table_idx;
+			break;
+		case MONO_TABLE_METHOD:
+			if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder")) {
+				method = (MonoReflectionMethodBuilder *)iltoken->member;
+				index = method->table_idx;
+			} else if (!strcmp (iltoken->member->vtable->klass->name, "ConstructorBuilder")) {
+				ctor = (MonoReflectionCtorBuilder *)iltoken->member;
+				index = ctor->table_idx;
+			} else {
+				g_assert_not_reached ();
+			}
+			break;
+		default:
+			g_error ("got unexpected table 0x%02x in fixup", target [3]);
+		}
+		target [0] = index & 0xff;
+		target [1] = (index >> 8) & 0xff;
+		target [2] = (index >> 16) & 0xff;
+	}
+}
+
+static void
 mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 {
 	MonoDynamicTable *table;
@@ -1548,6 +1585,9 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 	values [MONO_TYPEDEF_FIELD_LIST] = 1;
 	values [MONO_TYPEDEF_METHOD_LIST] = 1;
 
+	/* fixup tokens */
+	g_hash_table_foreach (assembly->token_fixups, (GHFunc)fixup_method, assembly);
+	
 	build_compressed_metadata (assembly);
 }
 
@@ -1639,6 +1679,9 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 		return;
 
 	assembly = assemblyb->dynamic_assembly = g_new0 (MonoDynamicAssembly, 1);
+
+	assembly->token_fixups = g_hash_table_new (g_direct_hash, g_direct_equal);
+	assembly->typeref = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 	string_heap_init (&assembly->sheap);
 	mono_image_add_stream_data (&assembly->us, "", 1);
@@ -1892,6 +1935,7 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 		if (!type->byref)
 			return klass->reflection_info;
 	}
+	mono_class_init (klass);
 	res = (MonoReflectionType *)mono_object_new (domain, mono_defaults.monotype_class);
 	res->type = type;
 	g_hash_table_insert (type_cache, type, res);
@@ -1949,6 +1993,21 @@ mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *pr
 	res->klass = klass;
 	res->property = property;
 	CACHE_OBJECT (property, res);
+	return res;
+}
+
+MonoReflectionEvent*
+mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
+{
+	MonoReflectionEvent *res;
+	MonoClass *oklass;
+
+	CHECK_OBJECT (MonoReflectionEvent *, event);
+	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoEvent");
+	res = (MonoReflectionEvent *)mono_object_new (domain, oklass);
+	res->klass = klass;
+	res->event = event;
+	CACHE_OBJECT (event, res);
 	return res;
 }
 
@@ -2265,7 +2324,7 @@ find_field_index (MonoClass *klass, MonoClassField *field) {
 }
 
 /*
- * Find the property index in the metadata FieldDef table.
+ * Find the property index in the metadata Property table.
  */
 static guint32
 find_property_index (MonoClass *klass, MonoProperty *property) {
@@ -2274,6 +2333,20 @@ find_property_index (MonoClass *klass, MonoProperty *property) {
 	for (i = 0; i < klass->property.count; ++i) {
 		if (property == &klass->properties [i])
 			return klass->property.first + 1 + i;
+	}
+	return 0;
+}
+
+/*
+ * Find the event index in the metadata Event table.
+ */
+static guint32
+find_event_index (MonoClass *klass, MonoEvent *event) {
+	int i;
+
+	for (i = 0; i < klass->event.count; ++i) {
+		if (event == &klass->events [i])
+			return klass->event.first + 1 + i;
 	}
 	return 0;
 }
@@ -2293,7 +2366,7 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 	void **params;
 	
 	klass = obj->vtable->klass;
-	/* FIXME: need to handle: Module, MonoProperty */
+	/* FIXME: need to handle: Module */
 	if (klass == mono_defaults.monotype_class) {
 		MonoReflectionType *rtype = (MonoReflectionType*)obj;
 		klass = mono_class_from_mono_type (rtype->type);
@@ -2313,6 +2386,12 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 		index <<= CUSTOM_ATTR_BITS;
 		index |= CUSTOM_ATTR_PROPERTY;
 		image = rprop->klass->image;
+	} else if (strcmp ("MonoEvent", klass->name) == 0) {
+		MonoReflectionEvent *revent = (MonoReflectionEvent*)obj;
+		index = find_event_index (revent->klass, revent->event);
+		index <<= CUSTOM_ATTR_BITS;
+		index |= CUSTOM_ATTR_EVENT;
+		image = revent->klass->image;
 	} else if (strcmp ("MonoField", klass->name) == 0) {
 		MonoReflectionField *rfield = (MonoReflectionField*)obj;
 		index = find_field_index (rfield->klass, rfield->field);
@@ -2343,7 +2422,7 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 			ca = &image->tables [MONO_TABLE_PARAM];
 		}
 		found = 0;
-		for (i = param_list; i < param_list; ++i) {
+		for (i = param_list; i < param_last; ++i) {
 			param_pos = mono_metadata_decode_row_col (ca, i - 1, MONO_PARAM_SEQUENCE);
 			if (param_pos == param->PositionImpl) {
 				found = 1;

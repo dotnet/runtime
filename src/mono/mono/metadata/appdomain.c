@@ -11,6 +11,10 @@
 #include <glib.h>
 #include <string.h>
 
+#if HAVE_BOEHM_GC
+#include <gc/gc.h>
+#endif
+
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
@@ -51,7 +55,11 @@ mono_create_domain ()
 {
 	MonoDomain *domain;
 
+#if HAVE_BOEHM_GC
+	domain = GC_malloc (sizeof (MonoDomain));
+#else
 	domain = g_new0 (MonoDomain, 1);
+#endif
 	domain->domain = NULL;
 	domain->setup = NULL;
 	domain->friendly_name = NULL;
@@ -559,7 +567,10 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 	
 	// fixme: anything else required ? */
 
+#if HAVE_BOEHM_GC
+#else
 	g_free (domain);
+#endif
 
 	if ((domain == mono_root_domain))
 		mono_root_domain = NULL;

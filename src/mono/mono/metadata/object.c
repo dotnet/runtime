@@ -15,6 +15,9 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
+#if HAVE_BOEHM_GC
+#include <gc/gc.h>
+#endif
 
 static void
 default_runtime_object_init (MonoObject *o)
@@ -49,7 +52,11 @@ mono_install_runtime_exec_main (MonoRuntimeExecMain func)
 void *
 mono_object_allocate (size_t size)
 {
+#if HAVE_BOEHM_GC
+	void *o = GC_malloc (size);
+#else
 	void *o = calloc (1, size);
+#endif
 
 	return o;
 }
@@ -63,10 +70,14 @@ mono_object_allocate (size_t size)
 void
 mono_object_free (MonoObject *o)
 {
+#if HAVE_BOEHM_GC
+	g_error ("mono_object_free called with boehm gc.");
+#else
 	MonoClass *c = o->vtable->klass;
 	
 	memset (o, 0, c->instance_size);
 	free (o);
+#endif
 }
 
 /**
@@ -245,8 +256,7 @@ mono_string_new_utf16 (MonoDomain *domain, const guint16 *text, gint32 len)
 }
 
 MonoString*
-mono_string_new_len
-(MonoDomain *domain, const char *text, guint length)
+mono_string_new_len (MonoDomain *domain, const char *text, guint length)
 {
 	GError *error = NULL;
 	MonoString *o = NULL;

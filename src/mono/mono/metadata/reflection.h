@@ -59,6 +59,12 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
+	MonoClass *klass;
+	MonoEvent *event;
+} MonoReflectionEvent;
+
+typedef struct {
+	MonoObject object;
 	MonoReflectionType *ClassImpl;
 	MonoObject *DefaultValueImpl;
 	MonoObject *MemberImpl;
@@ -108,6 +114,11 @@ typedef struct {
 } MonoTypeInfo;
 
 typedef struct {
+	MonoObject *member;
+	gint32 code_pos;
+} MonoReflectionILTokenInfo;
+
+typedef struct {
 	MonoObject object;
 	MonoArray *code;
 	MonoObject *mbuilder;
@@ -116,6 +127,8 @@ typedef struct {
 	gint32 cur_stack;
 	MonoArray *locals;
 	MonoArray *ex_handlers;
+	gint32 num_token_fixups;
+	MonoArray *token_fixups;
 } MonoReflectionILGen;
 
 typedef struct {
@@ -190,6 +203,7 @@ typedef struct {
 	guint32 text_rva;
 	guint32 metadata_rva;
 	GHashTable *typeref;
+	GHashTable *token_fixups;
 	MonoStringHeap sheap;
 	MonoDynamicStream code; /* used to store method headers and bytecode */
 	MonoDynamicStream us;
@@ -326,6 +340,7 @@ MonoReflectionType*     mono_type_get_object     (MonoDomain *domain, MonoType *
 MonoReflectionMethod*   mono_method_get_object   (MonoDomain *domain, MonoMethod *method);
 MonoReflectionField*    mono_field_get_object    (MonoDomain *domain, MonoClass *klass, MonoClassField *field);
 MonoReflectionProperty* mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *property);
+MonoReflectionEvent*    mono_event_get_object    (MonoDomain *domain, MonoClass *klass, MonoEvent *event);
 /* note: this one is slightly different: we keep the whole array of params in the cache */
 MonoReflectionParameter** mono_param_get_objects  (MonoDomain *domain, MonoMethod *method);
 

@@ -529,24 +529,34 @@ ves_icall_AssemblyBuilder_getToken (MonoReflectionAssemblyBuilder *assb, MonoObj
 }
 
 static gint32
-ves_icall_get_data_chunk (MonoReflectionAssemblyBuilder *assb, gint32 type, MonoArray *buf)
+ves_icall_get_data_chunk (MonoReflectionAssemblyBuilder *assb, gint32 offset, MonoArray *buf)
 {
 	int count;
 
-	if (type == 0) { /* get the header */
+	if (offset == 0) { /* get the header */
 		count = mono_image_get_header (assb, (char*)buf->vector, buf->bounds->length);
 		if (count != -1)
 			return count;
 	} else {
 		MonoDynamicAssembly *ass = assb->dynamic_assembly;
 		char *p = mono_array_addr (buf, char, 0);
+		int chunklen;
+		offset--;
 		count = ass->code.index + ass->meta_size;
-		if (count > buf->bounds->length) {
-			g_print ("assembly data exceed supplied buffer\n");
-			return 0;
-		}
-		memcpy (p, ass->code.data, ass->code.index);
-		memcpy (p + ass->code.index, ass->assembly.image->raw_metadata, ass->meta_size);
+		if (count - offset > buf->bounds->length) {
+			count =  buf->bounds->length;
+		} else
+			count = count - offset;
+		if (offset < ass->code.index) {
+			chunklen = ass->code.index - offset;
+			memcpy (p, ass->code.data + offset, chunklen);
+			offset += chunklen;
+			p += chunklen;
+			chunklen = count - chunklen;
+		} else
+			chunklen = count;
+		offset -= ass->code.index;
+		memcpy (p, ass->assembly.image->raw_metadata + offset, chunklen);
 		return count;
 	}
 	
@@ -599,8 +609,10 @@ ves_icall_type_from_name (MonoString *name)
 	if (!klass)
 		return NULL;
 	mono_class_init (klass);
-	if (info.rank)
+	if (info.rank) {
 		klass = mono_array_class_get (&klass->byval_arg, info.rank);
+		mono_class_init (klass);
+	}
 	
 	if (info.isbyref || info.ispointer) /* hack */
 		return mono_type_get_object (domain, &klass->this_arg);
@@ -612,8 +624,9 @@ static MonoReflectionType*
 ves_icall_type_from_handle (MonoType *handle)
 {
 	MonoDomain *domain = mono_domain_get (); 
+	MonoClass *klass = mono_class_from_mono_type (handle);
 
-	mono_class_init (handle->data.klass);
+	mono_class_init (klass);
 	return mono_type_get_object (domain, handle);
 }
 
@@ -1262,13 +1275,73 @@ handle_parent:
 		match = 0;
 		l = g_slist_prepend (l, mono_property_get_object (domain, klass, prop));
 	}
-	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
+	if (!l && (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent)))
 		goto handle_parent;
 	len = g_slist_length (l);
 	if (!System_Reflection_PropertyInfo)
 		System_Reflection_PropertyInfo = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "PropertyInfo");
 	res = mono_array_new (domain, System_Reflection_PropertyInfo, len);
+	i = 0;
+	tmp = l;
+	for (; tmp; tmp = tmp->next, ++i)
+		mono_array_set (res, gpointer, i, tmp->data);
+	g_slist_free (l);
+	return res;
+}
+
+static MonoArray*
+ves_icall_Type_GetEvents (MonoReflectionType *type, guint32 bflags)
+{
+	MonoDomain *domain; 
+	GSList *l = NULL, *tmp;
+	static MonoClass *System_Reflection_EventInfo;
+	MonoClass *startklass, *klass;
+	MonoArray *res;
+	MonoMethod *method;
+	MonoEvent *event;
+	int i, len, match;
+
+	domain = ((MonoObject *)type)->vtable->domain;
+	klass = startklass = mono_class_from_mono_type (type->type);
+
+handle_parent:	
+	for (i = 0; i < klass->event.count; ++i) {
+		event = &klass->events [i];
+		match = 0;
+		method = event->add;
+		if (!method)
+			method = event->remove;
+		if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
+			if (bflags & BFLAGS_Public)
+				match++;
+		} else {
+			if (bflags & BFLAGS_NonPublic)
+				match++;
+		}
+		if (!match)
+			continue;
+		match = 0;
+		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+			if (bflags & BFLAGS_Static)
+				match++;
+		} else {
+			if (bflags & BFLAGS_Instance)
+				match++;
+		}
+
+		if (!match)
+			continue;
+		match = 0;
+		l = g_slist_prepend (l, mono_event_get_object (domain, klass, event));
+	}
+	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
+		goto handle_parent;
+	len = g_slist_length (l);
+	if (!System_Reflection_EventInfo)
+		System_Reflection_EventInfo = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "EventInfo");
+	res = mono_array_new (domain, System_Reflection_EventInfo, len);
 	i = 0;
 	tmp = l;
 	for (; tmp; tmp = tmp->next, ++i)
@@ -1302,8 +1375,8 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 	MonoDomain *domain = mono_domain_get (); 
 	/* FIXME : use ignoreCase */
 	gchar *name, *namespace, *str;
-	char *byref, *isarray, *ispointer;
-	guint rank;
+	char *byref, *isarray, *ispointer, *isa2;
+	guint rank, recarray = 0;
 	MonoClass *klass;
 
 	str = namespace = mono_string_to_utf8 (type);
@@ -1329,6 +1402,13 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 		}
 	}
 
+	isa2 = strrchr (str, '[');
+	if (isa2 && *isa2 == '[') {
+		/* g_print ("recarray for: type name search: %s.%s\n", namespace, name); */
+		recarray = 1;
+		*isa2 = 0;
+	}
+
 	if (name) {
 		*name = 0;
 		++name;
@@ -1337,6 +1417,7 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 		name = str;
 	}
 
+	/*g_print ("type name search: %s.%s\n", namespace, name);*/
 	klass = mono_class_from_name (assembly->assembly->image, namespace, name);
 	g_free (str);
 	if (!klass) {
@@ -1350,6 +1431,10 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 	if (isarray) {
 		klass = mono_array_class_get (&klass->byval_arg, rank);
 		mono_class_init (klass);
+		if (recarray) {
+			klass = mono_array_class_get (klass, rank);
+			mono_class_init (klass);
+		}
 		/*g_print ("got array class %s [%d] (0x%x)\n", klass->element_class->name, klass->rank, klass->this_arg.type);*/
 	}
 
@@ -1733,6 +1818,7 @@ static gpointer icall_map [] = {
 	"System.MonoType::GetMethods", ves_icall_Type_GetMethods,
 	"System.MonoType::GetConstructors", ves_icall_Type_GetConstructors,
 	"System.MonoType::GetProperties", ves_icall_Type_GetProperties,
+	"System.MonoType::GetEvents", ves_icall_Type_GetEvents,
 	"System.MonoType::GetInterfaces", ves_icall_Type_GetInterfaces,
 
 	"System.PAL.OpSys::GetCurrentDirectory", ves_icall_System_PAL_GetCurrentDirectory,
