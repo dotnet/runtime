@@ -1797,5 +1797,6 @@ typedef enum {
 
 extern guint32 GetLastError(void);
 extern void SetLastError(guint32 code);
+extern guint32 errno_to_WSA (guint32 code, const char *function_name);
 
 #endif /* _WAPI_ERROR_H_ */

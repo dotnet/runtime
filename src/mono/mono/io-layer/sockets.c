@@ -175,25 +175,15 @@ int closesocket(guint32 handle)
 	
 	ret=close(socket_private_handle->fd);
 	if(ret==-1) {
+		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": close error: %s",
 			  strerror(errno));
 #endif
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
 
-		switch(errno) {
-		case EBADF:
-			WSASetLastError(WSAENOTSOCK);
-			break;
-		case EINTR:
-			WSASetLastError(WSAEINTR);
-			break;
-		case EIO:	
-		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
-			break;
-		}
-		
-		return(SOCKET_ERROR);
+		return SOCKET_ERROR;
 	}
 	return(ret);
 }
@@ -223,58 +213,14 @@ guint32 _wapi_accept(guint32 handle, struct sockaddr *addr,
 	
 	fd=accept(socket_private_handle->fd, addr, addrlen);
 	if(fd==-1) {
+		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": accept error: %s",
 			  strerror(errno));
 #endif
 
-		switch(errno) {
-#if EAGAIN != EWOULDBLOCK
-		case EAGAIN:
-#endif
-		case EWOULDBLOCK:
-			WSASetLastError(WSAEWOULDBLOCK);
-			break;
-		case EBADF:
-			break;
-		case ENOTSOCK:
-			WSASetLastError(WSAENOTSOCK);
-			break;
-		case EOPNOTSUPP:
-			WSASetLastError(WSAEOPNOTSUPP);
-			break;
-		case EFAULT:
-			WSASetLastError(WSAEFAULT);
-			break;
-		case EPERM:
-			WSASetLastError(WSAENETDOWN);
-			break;
-		case ENOBUFS:
-		case ENOMEM:
-			WSASetLastError(WSAENOBUFS);
-			break;
-		case EMFILE:
-			WSASetLastError(WSAEMFILE);
-			break;
-		case EINVAL:
-			WSASetLastError(WSAEINVAL);
-			break;
-#ifdef ENOSR
-		case ENOSR:
-#endif
-		case ECONNABORTED:
-		case ESOCKTNOSUPPORT:
-		case EPROTONOSUPPORT:
-		case ETIMEDOUT:
-#ifdef ERESTARTSYS
-		case ERESTARTSYS:
-#endif
-			WSASetLastError(WSAENETDOWN);
-			break;
-		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
-			break;
-		}
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
 		
 		return(INVALID_SOCKET);
 	}
@@ -332,42 +278,13 @@ int _wapi_bind(guint32 handle, struct sockaddr *my_addr, socklen_t addrlen)
 	
 	ret=bind(socket_private_handle->fd, my_addr, addrlen);
 	if(ret==-1) {
+		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": bind error: %s",
 			  strerror(errno));
 #endif
-
-		switch(errno) {
-		case EINVAL:
-			WSASetLastError(WSAEINVAL);
-			break;
-		case EACCES:
-			WSASetLastError(WSAEACCES);
-			break;
-		case EBADF:
-		case ENOTSOCK:
-			WSASetLastError(WSAENOTSOCK);
-			break;
-			
-			/* The following apply to Unix domain sockets */
-		case EFAULT:
-			WSASetLastError(WSAEFAULT);
-			break;
-	
-		case EADDRINUSE:
-			WSASetLastError(WSAEADDRINUSE);
-			break;
-
-		case EROFS:
-		case ENAMETOOLONG:
-		case ENOENT:
-		case ENOMEM:
-		case ENOTDIR:
-		case ELOOP:
-		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
-			break;
-		}
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
 		
 		return(SOCKET_ERROR);
 	}
@@ -397,52 +314,13 @@ int _wapi_connect(guint32 handle, const struct sockaddr *serv_addr,
 	
 	ret=connect(socket_private_handle->fd, serv_addr, addrlen);
 	if(ret==-1) {
+		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": bind error: %s",
 			  strerror(errno));
 #endif
-
-		switch(errno) {
-		case EBADF:
-		case ENOTSOCK:
-			WSASetLastError(WSAENOTSOCK);
-			break;
-		case EFAULT:
-			WSASetLastError(WSAEFAULT);
-			break;
-		case EISCONN:
-			WSASetLastError(WSAEISCONN);
-			break;
-		case ECONNREFUSED:
-			WSASetLastError(WSAECONNREFUSED);
-			break;
-		case ETIMEDOUT:
-			WSASetLastError(WSAETIMEDOUT);
-			break;
-		case ENETUNREACH:
-			WSASetLastError(WSAENETUNREACH);
-			break;
-		case EADDRINUSE:
-			WSASetLastError(WSAEADDRINUSE);
-			break;
-		case EINPROGRESS:
-			WSASetLastError(WSAEINPROGRESS);
-			break;
-		case EALREADY:
-			WSASetLastError(WSAEALREADY);
-			break;
-		case EAFNOSUPPORT:
-			WSASetLastError(WSAEAFNOSUPPORT);
-			break;
-		case EACCES:
-		case EPERM:
-			WSASetLastError(WSAEACCES);
-			break;
-		case EAGAIN:
-		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
-			break;
-		}
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
 		
 		return(SOCKET_ERROR);
 	}
@@ -472,30 +350,14 @@ int _wapi_getpeername(guint32 handle, struct sockaddr *name,
 
 	ret=getpeername(socket_private_handle->fd, name, namelen);
 	if(ret==-1) {
+		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": getpeername error: %s",
 			  strerror(errno));
 #endif
 
-		switch(errno) {
-		case EBADF:
-		case ENOTSOCK:
-			WSASetLastError(WSAENOTSOCK);
-			break;
-		case ENOTCONN:
-			WSASetLastError(WSAENOTCONN);
-			break;
-		case ENOBUFS:
-			/* not documented */
-			WSASetLastError(WSAENOBUFS);
-			break;
-		case EFAULT:
-			WSASetLastError(WSAEFAULT);
-			break;
-		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
-			break;
-		}
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
 
 		return(SOCKET_ERROR);
 	}
@@ -526,27 +388,14 @@ int _wapi_getsockname(guint32 handle, struct sockaddr *name,
 
 	ret=getsockname(socket_private_handle->fd, name, namelen);
 	if(ret==-1) {
+		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": getsockname error: %s",
 			  strerror(errno));
 #endif
 
-		switch(errno) {
-		case EBADF:
-		case ENOTSOCK:
-			WSASetLastError(WSAENOTSOCK);
-			break;
-		case ENOBUFS:
-			/* not documented */
-			WSASetLastError(WSAENOBUFS);
-			break;
-		case EFAULT:
-			WSASetLastError(WSAEFAULT);
-			break;
-		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
-			break;
-		}
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
 
 		return(SOCKET_ERROR);
 	}
@@ -578,26 +427,14 @@ int _wapi_getsockopt(guint32 handle, int level, int optname, void *optval,
 	ret=getsockopt(socket_private_handle->fd, level, optname, optval,
 		       optlen);
 	if(ret==-1) {
+		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": getsockopt error: %s",
 			  strerror(errno));
 #endif
 
-		switch(errno) {
-		case EBADF:
-		case ENOTSOCK:
-			WSASetLastError(WSAENOTSOCK);
-			break;
-		case ENOPROTOOPT:
-			WSASetLastError(WSAENOPROTOOPT);
-			break;
-		case EFAULT:
-			WSASetLastError(WSAEFAULT);
-			break;
-		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
-			break;
-		}
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
 		
 		return(SOCKET_ERROR);
 	}
@@ -627,26 +464,14 @@ int _wapi_listen(guint32 handle, int backlog)
 	
 	ret=listen(socket_private_handle->fd, backlog);
 	if(ret==-1) {
+		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": listen error: %s",
 			  strerror(errno));
 #endif
 
-		switch(errno) {
-		case EADDRINUSE:
-			WSASetLastError(WSAEADDRINUSE);
-			break;
-		case EBADF:
-		case ENOTSOCK:
-			WSASetLastError(WSAENOTSOCK);
-			break;
-		case EOPNOTSUPP:
-			WSASetLastError(WSAEOPNOTSUPP);
-			break;
-		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
-			break;
-		}
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
 
 		return(SOCKET_ERROR);
 	}
@@ -694,43 +519,14 @@ int _wapi_recvfrom(guint32 handle, void *buf, size_t len, int recv_flags,
 #endif
 
 	if(ret==-1) {
+		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": recv error: %s",
 			  strerror(errno));
 #endif
 
-		switch(errno) {
-		case EBADF:
-		case ENOTSOCK:
-			WSASetLastError(WSAENOTSOCK);
-			break;
-		case ECONNREFUSED:
-			/* Not documented */
-			WSASetLastError(WSAECONNREFUSED);
-			break;
-		case ENOTCONN:
-			WSASetLastError(WSAENOTCONN);
-			break;
-		case EAGAIN:
-			WSASetLastError(WSAEWOULDBLOCK);
-			break;
-		case EINTR:
-			WSASetLastError(WSAEINTR);
-			break;
-		case EFAULT:
-			WSASetLastError(WSAEFAULT);
-			break;
-		case EINVAL:
-			WSASetLastError(WSAEINVAL);
-			break;
-		case ECONNRESET:
-			WSASetLastError(WSAECONNRESET);
-			break;
-		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate %d [%s] into winsock error",
-				  errno, strerror (errno));
-			break;
-		}
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
 		
 		return(SOCKET_ERROR);
 	}
@@ -768,45 +564,14 @@ int _wapi_send(guint32 handle, const void *msg, size_t len, int send_flags)
 	signal(SIGPIPE, old_sigpipe);
 #endif
 	if(ret==-1) {
+		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": send error: %s",
 			  strerror(errno));
 #endif
 
-		switch(errno) {
-		case EBADF:
-		case ENOTSOCK:
-			WSASetLastError(WSAENOTSOCK);
-			break;
-		case EFAULT:
-			WSASetLastError(WSAEFAULT);
-			break;
-		case EMSGSIZE:
-			WSASetLastError(WSAEMSGSIZE);
-			break;
-#if EAGAIN != EWOULDBLOCK
-		case EAGAIN:
-#endif
-		case EWOULDBLOCK:
-			WSASetLastError(WSAEWOULDBLOCK);
-			break;
-		case ENOBUFS:
-			WSASetLastError(WSAENOBUFS);
-			break;
-		case EINTR:
-			WSASetLastError(WSAEINTR);
-			break;
-		case EINVAL:
-			WSASetLastError(WSAEINVAL);
-			break;
-		case EPIPE:
-			WSASetLastError(WSAESHUTDOWN);
-			break;
-		case ENOMEM:
-		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
-			break;
-		}
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
 		
 		return(SOCKET_ERROR);
 	}
@@ -845,45 +610,14 @@ int _wapi_sendto(guint32 handle, const void *msg, size_t len, int send_flags,
 	signal(SIGPIPE, old_sigpipe);
 #endif
 	if(ret==-1) {
+		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": send error: %s",
 			  strerror(errno));
 #endif
 
-		switch(errno) {
-		case EBADF:
-		case ENOTSOCK:
-			WSASetLastError(WSAENOTSOCK);
-			break;
-		case EFAULT:
-			WSASetLastError(WSAEFAULT);
-			break;
-		case EMSGSIZE:
-			WSASetLastError(WSAEMSGSIZE);
-			break;
-#if EAGAIN != EWOULDBLOCK
-		case EAGAIN:
-#endif
-		case EWOULDBLOCK:
-			WSASetLastError(WSAEWOULDBLOCK);
-			break;
-		case ENOBUFS:
-			WSASetLastError(WSAENOBUFS);
-			break;
-		case EINTR:
-			WSASetLastError(WSAEINTR);
-			break;
-		case EINVAL:
-			WSASetLastError(WSAEINVAL);
-			break;
-		case EPIPE:
-			WSASetLastError(WSAESHUTDOWN);
-			break;
-		case ENOMEM:
-		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
-			break;
-		}
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
 		
 		return(SOCKET_ERROR);
 	}
@@ -914,26 +648,14 @@ int _wapi_setsockopt(guint32 handle, int level, int optname,
 	ret=setsockopt(socket_private_handle->fd, level, optname, optval,
 		       optlen);
 	if(ret==-1) {
+		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": setsockopt error: %s",
 			  strerror(errno));
 #endif
 
-		switch(errno) {
-		case EBADF:
-		case ENOTSOCK:
-			WSASetLastError(WSAENOTSOCK);
-			break;
-		case ENOPROTOOPT:
-			WSASetLastError(WSAENOPROTOOPT);
-			break;
-		case EFAULT:
-			WSASetLastError(WSAEFAULT);
-			break;
-		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
-			break;
-		}
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
 		
 		return(SOCKET_ERROR);
 	}
@@ -963,23 +685,14 @@ int _wapi_shutdown(guint32 handle, int how)
 	
 	ret=shutdown(socket_private_handle->fd, how);
 	if(ret==-1) {
+		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": shutdown error: %s",
 			  strerror(errno));
 #endif
 
-		switch(errno) {
-		case EBADF:
-		case ENOTSOCK:
-			WSASetLastError(WSAENOTSOCK);
-			break;
-		case ENOTCONN:
-			WSASetLastError(WSAENOTCONN);
-			break;
-		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
-			break;
-		}
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
 		
 		return(SOCKET_ERROR);
 	}
@@ -1048,8 +761,8 @@ struct hostent *_wapi_gethostbyname(const char *hostname)
 	he=gethostbyname(hostname);
 	if(he==NULL) {
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": listen error: %s",
-			  strerror(errno));
+		g_message(G_GNUC_PRETTY_FUNCTION ": gethostbyname error: %s",
+			  strerror(h_errno));
 #endif
 
 		switch(h_errno) {
@@ -1069,7 +782,7 @@ struct hostent *_wapi_gethostbyname(const char *hostname)
 			WSASetLastError(WSATRY_AGAIN);
 			break;
 		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
+			g_warning (G_GNUC_PRETTY_FUNCTION ": Need to translate %d into winsock error", h_errno);
 			break;
 		}
 	}
@@ -1122,25 +835,14 @@ int ioctlsocket(guint32 handle, gint32 command, gpointer arg)
 		ret=ioctl(socket_private_handle->fd, command, arg);
 	}
 	if(ret==-1) {
+		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": ioctl error: %s",
 			  strerror(errno));
 #endif
-		switch(errno) {
-		case ENOTTY:
-		case EBADF:
-			WSASetLastError(WSAENOTSOCK);
-			break;
-		case EFAULT:
-			WSASetLastError(WSAEFAULT);
-			break;
-		case EINVAL:
-			WSASetLastError(WSAEINVAL);
-			break;
-		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
-			break;
-		}
+
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
 		
 		return(SOCKET_ERROR);
 	}
@@ -1160,27 +862,13 @@ int _wapi_select(int nfds G_GNUC_UNUSED, fd_set *readfds, fd_set *writefds,
 
 	ret=select(getdtablesize(), readfds, writefds, exceptfds, timeout);
 	if(ret==-1) {
+		gint errnum = errno;
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": select error: %s",
 			  strerror(errno));
 #endif
-		switch(errno) {
-		case EBADF:
-			WSASetLastError(WSAENOTSOCK);
-			break;
-		case EINTR:
-			WSASetLastError(WSAEINTR);
-			break;
-		case EINVAL:
-			WSASetLastError(WSAEINVAL);
-			break;
-		case ENOMEM:
-			WSASetLastError(WSAEFAULT);
-			break;
-		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
-			break;
-		}
+		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+		WSASetLastError (errnum);
 		
 		return(SOCKET_ERROR);
 	}
