@@ -163,19 +163,28 @@ mono_method_blittable (MonoMethod *method)
 #endif
 
 /* debug function */
-static void
+G_GNUC_UNUSED static void
 print_method_from_ip (void *ip)
 {
 	MonoJitInfo *ji;
 	char *method;
+	char *source;
+	MonoDomain *domain = mono_domain_get ();
 	
-	ji = mono_jit_info_table_find (mono_domain_get (), ip);
+	ji = mono_jit_info_table_find (domain, ip);
 	if (!ji) {
 		g_print ("No method at %p\n", ip);
 		return;
 	}
 	method = mono_method_full_name (ji->method, TRUE);
+	source = mono_debug_source_location_from_address (ji->method, (int) ip, NULL, domain);
+
 	g_print ("IP at offset 0x%x of method %s (%p %p)\n", (char*)ip - (char*)ji->code_start, method, ji->code_start, (char*)ji->code_start + ji->code_size);
+
+	if (source)
+		g_print ("%s\n", source);
+
+	g_free (source);
 	g_free (method);
 
 }
