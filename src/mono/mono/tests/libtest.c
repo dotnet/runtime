@@ -152,6 +152,8 @@ mono_test_marshal_stringbuilder (char *s, int n)
 typedef struct {
 } EmptyStruct;
 
+/* this does not work on Redhat gcc 2.96 */
+#if 0
 int 
 mono_test_empty_struct (int a, EmptyStruct es, int b)
 {
@@ -159,3 +161,4 @@ mono_test_empty_struct (int a, EmptyStruct es, int b)
 		return 0;
 	return 1;
 }
+#endif
