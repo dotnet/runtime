@@ -301,6 +301,11 @@ MINI_OP(OP_SUBCC,   "subcc")
 MINI_OP(OP_BR_REG,  "br_reg")
 MINI_OP(OP_SEXT_I1,  "sext_i1")
 MINI_OP(OP_SEXT_I2,  "sext_i2")
+/* to implement the upper half of long32 add and sub */
+MINI_OP(OP_ADD_OVF_CARRY,   "add_ovf_carry")
+MINI_OP(OP_SUB_OVF_CARRY,   "sub_ovf_carry")
+MINI_OP(OP_ADD_OVF_UN_CARRY,   "add_ovf_un_carry")
+MINI_OP(OP_SUB_OVF_UN_CARRY,   "sub_ovf_un_carry")
 
 /* FP functions usually done by the CPU */
 MINI_OP(OP_SIN,     "sin")

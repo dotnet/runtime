@@ -222,13 +222,17 @@ conv.u1: dest:i src1:i len:4
 conv.i: dest:i src1:i len:4
 conv.ovf.i:
 conv.ovf.u:
-add.ovf: dest:i src1:i src2:i len:32
-add.ovf.un:
-mul.ovf: dest:i src1:i src2:i len:12
+add.ovf: dest:i src1:i src2:i len:16
+add.ovf.un: dest:i src1:i src2:i len:16
+mul.ovf: dest:i src1:i src2:i len:16
 # this opcode is handled specially in the code generator
 mul.ovf.un: dest:i src1:i src2:i len:16
-sub.ovf:
-sub.ovf.un:
+sub.ovf: dest:i src1:i src2:i len:16
+sub.ovf.un: dest:i src1:i src2:i len:16
+add_ovf_carry: dest:i src1:i src2:i len:16
+sub_ovf_carry: dest:i src1:i src2:i len:16
+add_ovf_un_carry: dest:i src1:i src2:i len:16
+sub_ovf_un_carry: dest:i src1:i src2:i len:16
 start_handler: len:8
 endfinally: len:12
 leave:

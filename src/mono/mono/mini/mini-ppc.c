@@ -2451,15 +2451,72 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_adde (code, ins->dreg, ins->sreg1, ppc_r11);
 			break;
 		case CEE_ADD_OVF:
-#if 0
-			/* clear summary overflow */
-			ppc_crxor (code, 28, 28, 28);
-			//ppc_break (code);
-			ppc_addod (code, ins->dreg, ins->sreg1, ins->sreg2);
-			//ppc_break (code);
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_SO, "OverflowException");
-#endif
-			ppc_addc (code, ins->dreg, ins->sreg1, ins->sreg2);
+			/* check XER [0-3] (SO, OV, CA): we can't use mcrxr
+			 */
+			ppc_addo (code, ins->dreg, ins->sreg1, ins->sreg2);
+			ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "OverflowException");
+			break;
+		case CEE_ADD_OVF_UN:
+			/* check XER [0-3] (SO, OV, CA): we can't use mcrxr
+			 */
+			ppc_addco (code, ins->dreg, ins->sreg1, ins->sreg2);
+			ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1<<13));
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "OverflowException");
+			break;
+		case CEE_SUB_OVF:
+			/* check XER [0-3] (SO, OV, CA): we can't use mcrxr
+			 */
+			ppc_subfo (code, ins->dreg, ins->sreg2, ins->sreg1);
+			ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "OverflowException");
+			break;
+		case CEE_SUB_OVF_UN:
+			/* check XER [0-3] (SO, OV, CA): we can't use mcrxr
+			 */
+			ppc_subfc (code, ins->dreg, ins->sreg2, ins->sreg1);
+			ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1<<13));
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_EQ, "OverflowException");
+			break;
+		case OP_ADD_OVF_CARRY:
+			/* check XER [0-3] (SO, OV, CA): we can't use mcrxr
+			 */
+			ppc_addeo (code, ins->dreg, ins->sreg1, ins->sreg2);
+			ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "OverflowException");
+			break;
+		case OP_ADD_OVF_UN_CARRY:
+			/* check XER [0-3] (SO, OV, CA): we can't use mcrxr
+			 * FIXME: missing ovf check
+			 */
+			/*ppc_addeo (code, ins->dreg, ins->sreg1, ins->sreg2);*/
+			ppc_addco (code, ins->dreg, ins->sreg1, ins->sreg2);
+			/*ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1<<13));
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "OverflowException");*/
+			break;
+		case OP_SUB_OVF_CARRY:
+			/* check XER [0-3] (SO, OV, CA): we can't use mcrxr
+			 */
+			ppc_subfeo (code, ins->dreg, ins->sreg2, ins->sreg1);
+			ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "OverflowException");
+			break;
+		case OP_SUB_OVF_UN_CARRY:
+			/* check XER [0-3] (SO, OV, CA): we can't use mcrxr
+			 * FIXME: missing ovf check
+			 */
+			/*ppc_subfeo (code, ins->dreg, ins->sreg2, ins->sreg1);*/
+			ppc_subfc (code, ins->dreg, ins->sreg2, ins->sreg1);
+			/*ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1<<13));
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_EQ, "OverflowException");*/
 			break;
 		case OP_SUBCC:
 			ppc_subfc (code, ins->dreg, ins->sreg2, ins->sreg1);
@@ -2593,9 +2650,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_srawi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x1f));
 			break;
 		case OP_SHR_UN_IMM:
-			ppc_load (code, ppc_r11, ins->inst_imm);
-			ppc_srw (code, ins->dreg, ins->sreg1, ppc_r11);
-			//ppc_rlwinm (code, ins->dreg, ins->sreg1, (32 - (ins->inst_imm & 0xf)), (ins->inst_imm & 0xf), 31);
+			/*ppc_load (code, ppc_r11, ins->inst_imm);
+			ppc_srw (code, ins->dreg, ins->sreg1, ppc_r11);*/
+			ppc_rlwinm (code, ins->dreg, ins->sreg1, (32 - (ins->inst_imm & 0x1f)), (ins->inst_imm & 0x1f), 31);
 			break;
 		case CEE_SHR_UN:
 			ppc_srw (code, ins->dreg, ins->sreg1, ins->sreg2);
@@ -2614,9 +2671,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_mullw (code, ins->dreg, ins->sreg1, ppc_r11);
 			break;
 		case CEE_MUL_OVF:
+			/* we annot use mcrxr, since it's not implemented on some processors 
+			 * XER format: SO, OV, CA, reserved [21 bits], count [8 bits]
+			 */
 			ppc_mullwo (code, ins->dreg, ins->sreg1, ins->sreg2);
-			ppc_mcrxr (code, 0);
-			EMIT_COND_SYSTEM_EXCEPTION (CEE_BGT - CEE_BEQ, ins->inst_p1);
+			ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "OverflowException");
 			break;
 		case CEE_MUL_OVF_UN:
 			/* we first multiply to get the high word and compare to 0
@@ -2853,17 +2914,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_SYSTEM_EXCEPTION (ins->opcode - OP_COND_EXC_EQ, ins->inst_p1);
 			break;
 		case OP_COND_EXC_C:
-			/* move XER [0-3] (SO, OV, CA) into CR 
-			 * this translates to LT, GT, EQ.
-			 * FIXME: test for all the conditions occourring
+			/* check XER [0-3] (SO, OV, CA): we can't use mcrxr
 			 */
-			ppc_mcrxr (code, 0);
-			EMIT_COND_SYSTEM_EXCEPTION (CEE_BEQ - CEE_BEQ, ins->inst_p1);
-			break;
+			/*ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "OverflowException");
+			break;*/
 		case OP_COND_EXC_OV:
-			ppc_mcrxr (code, 0);
+			/*ppc_mcrxr (code, 0);
 			EMIT_COND_SYSTEM_EXCEPTION (CEE_BGT - CEE_BEQ, ins->inst_p1);
-			break;
+			break;*/
 		case OP_COND_EXC_NC:
 		case OP_COND_EXC_NO:
 			g_assert_not_reached ();
@@ -3544,12 +3604,15 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		ppc_lwz (code, ppc_r6, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
 		/* *(lmf_addr) = previous_lmf */
 		ppc_stw (code, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r6);
+		/* FIXME: speedup: there is no actual need to restore the registers if
+		 * we didn't actually change them (idea from Zoltan).
+		 */
 		/* restore iregs */
 		ppc_lmw (code, ppc_r13, ppc_r11, G_STRUCT_OFFSET(MonoLMF, iregs));
 		/* restore fregs */
-		for (i = 14; i < 32; i++) {
+		/*for (i = 14; i < 32; i++) {
 			ppc_lfd (code, i, G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble)), ppc_r11);
-		}
+		}*/
 		g_assert (ppc_is_imm16 (cfg->stack_usage + PPC_RET_ADDR_OFFSET));
 		/* use the saved copy of the frame reg in r8 */
 		if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
