@@ -481,6 +481,7 @@ generate_line_number (MonoDebugMethodInfo *minfo, guint32 address, guint32 offse
 static void
 debug_update_il_offsets (AssemblyDebugInfo *info, MonoDebugMethodInfo *minfo, MonoFlowGraph* cfg)
 {
+	MonoMethodHeader *header;
 	guint32 address, offset;
 	int debug = 0;
 	int i;
@@ -494,6 +495,9 @@ debug_update_il_offsets (AssemblyDebugInfo *info, MonoDebugMethodInfo *minfo, Mo
 
 	address = minfo->jit->prologue_end;
 	offset = 0;
+
+	g_assert (((MonoMethodNormal*)minfo->method)->header);
+	header = ((MonoMethodNormal*)minfo->method)->header;
 
 #if 0
 	if (!strcmp (minfo->method->name, "Main")) {
@@ -528,8 +532,7 @@ debug_update_il_offsets (AssemblyDebugInfo *info, MonoDebugMethodInfo *minfo, Mo
 		}
 	}
 
-	if (address < minfo->jit->epilogue_begin)
-		generate_line_number (minfo, minfo->jit->epilogue_begin, offset);
+	generate_line_number (minfo, minfo->jit->epilogue_begin, header->code_size);
 
 	if (debug) {
 		for (i = 0; i < minfo->jit->line_numbers->len; i++) {
