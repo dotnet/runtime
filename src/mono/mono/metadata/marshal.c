@@ -1462,6 +1462,9 @@ emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb, gpointer checkpoin
 	mono_mb_emit_byte (mb, CEE_LDIND_I4);
 	pos_noabort = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_NOT_TAKEN);
+
 	mono_mb_emit_icall (mb, checkpoint_func);
 	
 	mono_mb_patch_addr (mb, pos_noabort, mb->pos - (pos_noabort + 4));
