@@ -60,8 +60,10 @@ MonoDebuggerIOLayer mono_debugger_io_layer = {
 void
 mono_debugger_lock (void)
 {
-	if (!mono_debugger_initialized)
+	if (!mono_debugger_initialized) {
+		debugger_lock_level++;
 		return;
+	}
 
 	EnterCriticalSection (&debugger_lock_mutex);
 	debugger_lock_level++;
@@ -70,8 +72,12 @@ mono_debugger_lock (void)
 void
 mono_debugger_unlock (void)
 {
-	if (!mono_debugger_initialized)
+	g_assert (debugger_lock_level > 0);
+
+	if (!mono_debugger_initialized) {
+		debugger_lock_level--;
 		return;
+	}
 
 	if (debugger_lock_level == 1) {
 		if (must_reload_symtabs) {
@@ -144,8 +150,10 @@ mono_debugger_add_symbol_file (MonoDebugHandle *handle)
 	mono_debugger_lock ();
 
 	info = g_hash_table_lookup (images, handle->image);
-	if (info)
+	if (info) {
+		mono_debugger_unlock ();
 		return info;
+	}
 
 	info = allocate_symbol_file_entry (mono_debugger_symbol_table);
 	info->symfile = handle->symfile;

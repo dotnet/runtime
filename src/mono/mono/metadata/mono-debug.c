@@ -82,8 +82,6 @@ mono_debug_init_2 (MonoAssembly *assembly)
 
 	handle = _mono_debug_get_image (mono_defaults.corlib);
 	g_assert (handle);
-
-	mono_debugger_unlock ();
 }
 
 void
@@ -281,6 +279,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	if (domain_data->jit [minfo->index]) {
 		// FIXME FIXME FIXME
 		// This is bug #48591.
+		mono_debugger_unlock ();
 		return;
 	}
 
