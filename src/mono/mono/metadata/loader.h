@@ -16,6 +16,7 @@ typedef enum {
 	MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK,
 	MONO_WRAPPER_LDFLD,
 	MONO_WRAPPER_STFLD,
+	MONO_WRAPPER_SYNCHRONIZED,
 	MONO_WRAPPER_UNKNOWN
 } MonoWrapperType;
 
@@ -106,6 +107,7 @@ typedef struct {
 	MonoClass *streamingcontext_class;
 	MonoClass *typed_reference_class;
 	MonoClass *marshalbyrefobject_class;
+	MonoClass *monitor_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults;

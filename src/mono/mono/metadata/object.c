@@ -207,9 +207,9 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		MonoClass *p;
 		guint32 pos;
 
-		/* GC has trouble handling 64 bit descriptors... */
+		/* GC 6.1 has trouble handling 64 bit descriptors... */
 		if ((class->instance_size / sizeof (gpointer)) > 30) {
-//			printf ("TOO LARGE: %s.\n", class->name);
+//			printf ("TOO LARGE: %s %d.\n", class->name, class->instance_size / sizeof (gpointer));
 			return;
 		}
 

@@ -265,7 +265,7 @@ add_to_blob_cached (MonoDynamicAssembly *assembly, char *b1, int s1, char *b2, i
 	guint32 idx;
 	char *copy;
 	gpointer oldkey, oldval;
-
+	
 	copy = ALLOC_ATOMIC (s1+s2);
 	memcpy (copy, b1, s1);
 	memcpy (copy + s1, b2, s2);
@@ -2779,6 +2779,7 @@ create_dynamic_mono_image (char *assembly_name, char *module_name)
 	image->managed_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->native_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->remoting_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->synchronized_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 	return image;
 }

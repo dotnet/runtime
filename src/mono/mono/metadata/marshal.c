@@ -17,6 +17,7 @@
 #include "metadata/appdomain.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threadpool.h"
+#include "mono/metadata/monitor.h"
 #include <string.h>
 
 //#define DEBUG_RUNTIME_CODE
@@ -3041,6 +3042,138 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 
 	klass->ptr_to_str = res;
 	return res;
+}
+
+static MonoReflectionType *
+type_from_handle (MonoType *handle)
+{
+	MonoDomain *domain = mono_domain_get (); 
+	MonoClass *klass = mono_class_from_mono_type (handle);
+
+	MONO_ARCH_SAVE_REGS;
+
+	mono_class_init (klass);
+	return mono_type_get_object (domain, handle);
+}
+
+/*
+ * generates IL code for the synchronized wrapper: the generated method
+ * calls METHOD while locking 'this' or the parent type.
+ */
+MonoMethod *
+mono_marshal_get_synchronized_wrapper (MonoMethod *method)
+{
+	static MonoMethodSignature *from_handle_sig = NULL;
+	static MonoMethod *enter_method, *exit_method;
+	MonoMethodSignature *sig;
+	MonoExceptionClause *clause;
+	MonoMethodHeader *header;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	GHashTable *cache;
+	int i, pos, this_local, ret_local;
+
+	g_assert (method);
+
+	if (method->wrapper_type == MONO_WRAPPER_SYNCHRONIZED)
+		return method;
+
+	cache = method->klass->image->synchronized_cache;
+	if ((res = (MonoMethod *)g_hash_table_lookup (cache, method)))
+		return res;
+
+	sig = method->signature;
+
+	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_SYNCHRONIZED);
+
+	/* result */
+	if (!MONO_TYPE_IS_VOID (sig->ret))
+		ret_local = mono_mb_add_local (mb, sig->ret);
+
+	/* this */
+	this_local = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+
+	clause = g_new0 (MonoExceptionClause, 1);
+	clause->flags = MONO_EXCEPTION_CLAUSE_FINALLY;
+
+	if (!enter_method) {
+		MonoMethodDesc *desc;
+
+		desc = mono_method_desc_new ("Monitor:Enter", FALSE);
+		enter_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
+		g_assert (enter_method);
+		mono_method_desc_free (desc);
+		desc = mono_method_desc_new ("Monitor:Exit", FALSE);
+		exit_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
+		g_assert (exit_method);
+		mono_method_desc_free (desc);
+
+		/*
+		 * GetTypeFromHandle isn't called as a managed method because it has
+		 * a funky calling sequence, e.g. ldtoken+GetTypeFromHandle gets
+		 * transformed into something else by the JIT.
+		 */
+		from_handle_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
+		from_handle_sig->params [0] = &mono_defaults.object_class->byval_arg;
+		from_handle_sig->ret = &mono_defaults.object_class->byval_arg;
+	}
+
+	/* Push this or the type object */
+	if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, &method->klass->byval_arg));
+		mono_mb_emit_native_call (mb, from_handle_sig, type_from_handle);
+	}
+	else
+		mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_stloc (mb, this_local);
+
+	/* Call Monitor::Enter() */
+	mono_mb_emit_ldloc (mb, this_local);
+	mono_mb_emit_managed_call (mb, enter_method, NULL);
+
+	clause->try_offset = mb->pos;
+
+	/* Call the method */
+	if (sig->hasthis)
+		mono_mb_emit_ldarg (mb, 0);
+	for (i = 0; i < sig->param_count; i++)
+		mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
+	mono_mb_emit_managed_call (mb, method, method->signature);
+	if (!MONO_TYPE_IS_VOID (sig->ret))
+		mono_mb_emit_stloc (mb, ret_local);
+
+	mono_mb_emit_byte (mb, CEE_LEAVE);
+	pos = mb->pos;
+	mono_mb_emit_i4 (mb, 0);
+
+	clause->try_len = mb->pos - clause->try_offset;
+	clause->handler_offset = mb->pos;
+
+	/* Call Monitor::Exit() */
+	mono_mb_emit_ldloc (mb, this_local);
+//	mono_mb_emit_native_call (mb, exit_sig, mono_monitor_exit);
+	mono_mb_emit_managed_call (mb, exit_method, NULL);
+	mono_mb_emit_byte (mb, CEE_ENDFINALLY);
+
+	clause->handler_len = mb->pos - clause->handler_offset;
+
+	mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
+	if (!MONO_TYPE_IS_VOID (sig->ret))
+		mono_mb_emit_ldloc (mb, ret_local);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
+	mono_mb_free (mb);
+
+	header = ((MonoMethodNormal *)res)->header;
+	header->num_clauses = 1;
+	header->clauses = clause;
+
+	g_hash_table_insert (cache, method, res);
+
+	return res;	
 }
 
 /* FIXME: on win32 we should probably use GlobalAlloc(). */

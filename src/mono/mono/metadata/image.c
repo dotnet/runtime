@@ -473,6 +473,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	image->managed_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->native_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->remoting_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->synchronized_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 	header = &iinfo->cli_header;
 		
