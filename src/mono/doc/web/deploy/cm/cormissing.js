@@ -310,12 +310,18 @@ function filterTree ()
 {
 	var eltMissing = document.getElementById ('missing');
 	var eltTodo = document.getElementById ('todo');
+	var eltExtra = document.getElementById ('extra');
+	var eltErrors = document.getElementById ('errors');
 
 	var dictTypes = new Object ();
 	if (eltMissing.checked)
 		dictTypes ['sm'] = true;
 	if (eltTodo.checked)
 		dictTypes ['st'] = true;
+	if (eltErrors.checked)
+		dictTypes ['se'] = true;
+	if (eltExtra.checked)
+		dictTypes ['sx'] = true;
 	dictTypes ['sc'] = true;
 
 	viewAll (document.getElementById ('ROOT'), dictTypes);
@@ -323,19 +329,43 @@ function filterTree ()
 
 function selectMissing ()
 {
-	var eltMissing = document.getElementById ('missing');
-	var eltTodo = document.getElementById ('todo');
-	if (!eltTodo.checked && !eltMissing.checked)
-		eltTodo.checked = true;
-	filterTree ();
+	toggleFilter ('missing');
 }
 
 function selectTodo ()
 {
-	var eltMissing = document.getElementById ('missing');
+	toggleFilter ('todo');
+}
+
+function selectExtra ()
+{
+	toggleFilter ('extra');
+}
+
+function selectErrors ()
+{
+	toggleFilter ('errors');
+}
+
+function toggleFilter (strFilter)
+{
 	var eltTodo = document.getElementById ('todo');
-	if (!eltTodo.checked && !eltMissing.checked)
-		eltMissing.checked = true;
+	var eltMissing = document.getElementById ('missing');
+	var eltExtra = document.getElementById ('extra');
+	var eltErrors = document.getElementById ('errors');
+
+	var eltToggle = document.getElementById (strFilter);
+	if (window && window.event && window.event.shiftKey)
+	{
+		eltMissing.checked = eltTodo.checked = eltExtra.checked = eltErrors.checked = false;
+		eltToggle.checked = true;
+	}
+	else
+	if (!eltTodo.checked && !eltMissing.checked && !eltExtra.checked && !eltErrors.checked)
+	{
+		eltMissing.checked = eltTodo.checked = eltExtra.checked = eltErrors.checked = true;
+		eltToggle.checked = false;
+	}
 	filterTree ();
 }
 
@@ -343,8 +373,9 @@ function onLoad ()
 {
 	var eltMissing = document.getElementById ('missing');
 	var eltTodo = document.getElementById ('todo');
-	eltMissing.checked = true;
-	eltTodo.checked = true;
+	var eltExtra = document.getElementById ('extra');
+	var eltErrors = document.getElementById ('errors');
+	eltMissing.checked = eltTodo.checked = eltExtra.checked = eltErrors.checked = true;
 }
 
 if (document.layers)

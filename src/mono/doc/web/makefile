@@ -1,5 +1,7 @@
 CSCRIPT = $(SYSTEMROOT)/system32/cscript.exe
 
+CORCOMPARE=../../../mcs/tools/corcompare
+
 OBJECTS=	\
 	deploy/anoncvs.html			\
 	deploy/contributing.html		\
@@ -71,17 +73,17 @@ src/%.src: ../% commands makefile template.html.in
 
 
 .PRECIOUS: src/%.html.in
-src/%.html.in: src/%.xml ../../../mcs/tools/corcompare/transform.js ../../../mcs/tools/corcompare/cormissing.xsl
-	$(CSCRIPT) /nologo ../../../mcs/tools/corcompare/transform.js $< ../../../mcs/tools/corcompare/cormissing.xsl > $@
+src/%.html.in: src/%.xml $(CORCOMPARE)/transform.js $(CORCOMPARE)/cormissing.xsl
+	$(CSCRIPT) /nologo $(CORCOMPARE)/transform.js $< $(CORCOMPARE)/cormissing.xsl > $@
 
 
 
 .PRECIOUS: src/%.xml
-src/%.xml: ../../../mcs/class/lib/%.dll
-	../../../mcs/tools/corcompare/CorCompare.exe -x $@ $<
+src/%.xml: ../../../mcs/class/lib/%.dll $(CORCOMPARE)/CorCompare.exe
+	$(CORCOMPARE)/CorCompare.exe -x $@ $<
 
-src/corlib.xml: ../../../mcs/class/lib/corlib_cmp.dll
-	../../../mcs/tools/corcompare/CorCompare.exe -f corlib -ms mscorlib -x $@ $<
+src/corlib.xml: ../../../mcs/class/lib/corlib_cmp.dll $(CORCOMPARE)/CorCompare.exe
+	$(CORCOMPARE)/CorCompare.exe -f corlib -ms mscorlib -x $@ $<
 
 
 ../class-status: ../class-status.in
