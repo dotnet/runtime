@@ -4879,6 +4879,11 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file) {
 		g_error ("WriteFile returned %d\n", GetLastError ());
 	
 	mono_dynamic_stream_reset (pefile);
+	mono_dynamic_stream_reset (&assembly->code);
+	mono_dynamic_stream_reset (&assembly->us);
+	mono_dynamic_stream_reset (&assembly->blob);
+	mono_dynamic_stream_reset (&assembly->guid);
+	mono_dynamic_stream_reset (&assembly->sheap);
 }
 
 MonoReflectionModule *
