@@ -3,6 +3,7 @@
 
 #include <glib.h>
 #include <stdio.h>
+#include <mono/metadata/debug-symfile.h>
 #include <mono/metadata/loader.h>
 #include <mono/jit/jit.h>
 
@@ -66,6 +67,12 @@ MonoDebugHandle* mono_debug_handle_from_class (MonoClass *klass);
 void           mono_debug_add_method (MonoFlowGraph *cfg);
 
 void           mono_debug_add_type (MonoClass *klass);
+
+gchar *
+mono_debug_source_location_from_address (MonoMethod *method, guint32 address);
+
+gint32
+mono_debug_il_offset_from_address (MonoMethod *method, guint32 address);
 
 /* DEBUGGER PUBLIC FUNCTION:
  *

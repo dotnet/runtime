@@ -18,6 +18,7 @@
 
 #include "jit.h"
 #include "codegen.h"
+#include "debug.h"
 
 #ifdef __FreeBSD__
 # define SC_EAX sc_eax
@@ -171,18 +172,34 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 		int offset;
 
 		if (mono_object_isinst (obj, mono_defaults.exception_class)) {
-			char  *strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
-			char  *tmp, *tmpsig;
+			char    *strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
+			char    *tmp, *tmpsig, *source_location, *tmpaddr;
+			gint32   address, iloffset;
 
 			if (!strcmp (strace, "TODO: implement stack traces")){
 				g_free (strace);
 				strace = g_strdup ("");
 			}
 
+			address = (char *)ip - (char *)ji->code_start;
+
+			source_location = mono_debug_source_location_from_address (m, address);
+			iloffset = mono_debug_il_offset_from_address (m, address);
+
+			if (iloffset < 0)
+				tmpaddr = g_strdup_printf ("<0x%05x>", address);
+			else
+				tmpaddr = g_strdup_printf ("[0x%05x]", iloffset);
+
 			tmpsig = mono_signature_get_desc(m->signature, TRUE);
-			tmp = g_strdup_printf ("%sin 0x%05x %s.%s:%s (%s)\n", strace, 
-					       (char *)ip - (char *)ji->code_start,
-					       m->klass->name_space, m->klass->name, m->name, tmpsig);
+			if (source_location)
+				tmp = g_strdup_printf ("%sin %s (at %s) %s.%s:%s (%s)\n", strace, tmpaddr,
+						       source_location, m->klass->name_space, m->klass->name,
+						       m->name, tmpsig);
+			else
+				tmp = g_strdup_printf ("%sin %s %s.%s:%s (%s)\n", strace, tmpaddr,
+						       m->klass->name_space, m->klass->name, m->name, tmpsig);
+			g_free (source_location);
 			g_free (tmpsig);
 			g_free (strace);
 

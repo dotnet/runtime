@@ -229,7 +229,7 @@ record_line_number (DebugMethodInfo *minfo, gpointer address, guint32 line, int 
 	lni->address = address;
 	lni->line = line;
 	lni->is_basic_block = is_basic_block;
-	lni->source_file = 0;
+	lni->source_file = minfo->source_file;
 
 	g_ptr_array_add (minfo->line_numbers, lni);
 }
@@ -664,4 +664,61 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 	debug_generate_method_lines (info, minfo, cfg);
 
 	g_hash_table_insert (debug->methods, method, minfo);
+}
+
+gchar *
+mono_debug_source_location_from_address (MonoMethod *method, guint32 address)
+{
+	MonoDebugHandle *debug;
+	DebugMethodInfo *minfo = NULL;
+	int i;
+
+	for (debug = mono_debug_handles; debug; debug = debug->next) {
+		minfo = g_hash_table_lookup (debug->methods, method);
+
+		if (minfo)
+			break;
+	}
+
+	if (!minfo || !minfo->line_numbers)
+		return NULL;
+
+	for (i = 0; i < minfo->line_numbers->len; i++) {
+		DebugLineNumberInfo *lni = g_ptr_array_index (minfo->line_numbers, i);
+
+		if ((gchar *)lni->address > minfo->method_info.code_start + address) {
+			gchar *source_file = g_ptr_array_index (debug->source_files, lni->source_file);
+
+			return g_strdup_printf ("%s:%d", source_file, lni->line);
+		}
+	}
+
+	return NULL;
+}
+
+gint32
+mono_debug_il_offset_from_address (MonoMethod *method, guint32 address)
+{
+	MonoDebugHandle *debug;
+	MonoDebugMethodInfo *minfo = NULL;
+	int i;
+
+	for (debug = mono_debug_handles; debug; debug = debug->next) {
+		minfo = g_hash_table_lookup (debug->methods, method);
+
+		if (minfo)
+			break;
+	}
+
+	if (!minfo || !minfo->il_offsets)
+		return -1;
+
+	for (i = 0; i < minfo->num_il_offsets; i++) {
+		MonoDebugILOffsetInfo *ilo = &minfo->il_offsets [i];
+
+		if (ilo->address > address)
+			return ilo->offset;
+	}
+
+	return -1;
 }
