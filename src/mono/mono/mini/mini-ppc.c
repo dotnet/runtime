@@ -1093,12 +1093,6 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 	        x86_branch32 (code, cond, 0, signed);               \
 	} while (0); 
 
-#define EMIT_FPCOMPARE(code) do { \
-	x86_fcompp (code); \
-	x86_fnstsw (code); \
-	x86_alu_reg_imm (code, X86_AND, X86_EAX, 0x4500); \
-} while (0); 
-
 static void
 peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
@@ -2178,28 +2172,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	if (cfg->opt & MONO_OPT_PEEPHOLE)
 		peephole_pass (cfg, bb);
 
-#if 0
-	/* 
-	 * various stratgies to align BBs. Using real loop detection or simply
-	 * aligning every block leads to more consistent benchmark results,
-	 * but usually slows down the code
-	 * we should do the alignment outside this function or we should adjust
-	 * bb->native offset as well or the code is effectively slowed down!
-	 */
-	/* align all blocks */
-//	if ((pad = (cfg->code_len & (align - 1)))) {
-	/* poor man loop start detection */
-//	if (bb->code && bb->in_count && bb->in_bb [0]->cil_code > bb->cil_code && (pad = (cfg->code_len & (align - 1)))) {
-	/* consider real loop detection and nesting level */
-//	if (bb->loop_blocks && bb->nesting < 3 && (pad = (cfg->code_len & (align - 1)))) {
-	/* consider real loop detection */
-	if (/*bb->loop_blocks &&*/ (pad = (cfg->code_len & (align - 1)))) {
-		pad = align - pad;
-		x86_padding (code, pad);
-		cfg->code_len += pad;
-		bb->native_offset = cfg->code_len;
-	}
-#endif
+	/* we don't align basic blocks of loops on ppc */
 
 	if (cfg->verbose_level > 2)
 		g_print ("Basic block %d starting at offset 0x%x\n", bb->block_num, bb->native_offset);
@@ -2374,9 +2347,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			// we add the negated value
 			if (ppc_is_imm16 (-ins->inst_imm))
 				ppc_addi (code, ins->dreg, ins->sreg1, -ins->inst_imm);
-			else
+			else {
 				ppc_load (code, ppc_r11, ins->inst_imm);
-				ppc_subf (code, ins->dreg, ins->sreg2, ppc_r11);
+				ppc_sub (code, ins->dreg, ins->sreg1, ppc_r11);
+			}
 			break;
 		case OP_SBB_IMM:
 			ppc_load (code, ppc_r11, ins->inst_imm);
@@ -2400,7 +2374,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_andisd (code, ins->sreg1, ins->dreg, ((guint32)ins->inst_imm >> 16));
 			} else {
 				ppc_load (code, ppc_r11, ins->inst_imm);
-				ppc_and (code, ins->sreg1, ins->dreg, ins->sreg2);
+				ppc_and (code, ins->sreg1, ins->dreg, ppc_r11);
 			}
 			break;
 		case CEE_DIV:
@@ -2439,7 +2413,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_oris (code, ins->sreg1, ins->dreg, ((guint32)(ins->inst_imm) >> 16));
 			} else {
 				ppc_load (code, ppc_r11, ins->inst_imm);
-				ppc_or (code, ins->sreg1, ins->dreg, ins->sreg2);
+				ppc_or (code, ins->sreg1, ins->dreg, ppc_r11);
 			}
 			break;
 		case CEE_XOR:
@@ -2452,7 +2426,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_xoris (code, ins->sreg1, ins->dreg, ((guint32)(ins->inst_imm) >> 16));
 			} else {
 				ppc_load (code, ppc_r11, ins->inst_imm);
-				ppc_xor (code, ins->sreg1, ins->dreg, ins->sreg2);
+				ppc_xor (code, ins->sreg1, ins->dreg, ppc_r11);
 			}
 			break;
 		case CEE_SHL:
@@ -2886,6 +2860,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_BRANCH (ins, CEE_BLE_UN - CEE_BEQ);
 			break;
 		case CEE_CKFINITE: {
+			ppc_stfd (code, ins->sreg1, -8, ppc_sp);
+			ppc_lwz (code, ppc_r0, -8, ppc_sp);
+			ppc_rlwinm (code, ppc_r0, ppc_r0, 0, 1, 31);
+			ppc_xoris (code, ppc_r11, ppc_r0, 0x7ff0);
+			ppc_neg (code, ppc_r0, ppc_r11);
+			ppc_rlwinm (code, ppc_r0, ppc_r0, 1, 31, 31);
 			g_assert_not_reached ();
 			x86_push_reg (code, X86_EAX);
 			x86_fxam (code);

@@ -357,9 +357,9 @@ div_imm: dest:a src1:i src2:i len:12
 div_un_imm: dest:a src1:i src2:i len:12
 rem_imm: dest:d src1:i src2:i len:16
 rem_un_imm: dest:d src1:i src2:i len:16
-and_imm: dest:i src1:i len:8
-or_imm: dest:i src1:i len:8
-xor_imm: dest:i src1:i len:8
+and_imm: dest:i src1:i len:12
+or_imm: dest:i src1:i len:12
+xor_imm: dest:i src1:i len:12
 shl_imm: dest:i src1:i len:8
 shr_imm: dest:i src1:i len:8
 shr_un_imm: dest:i src1:i len:8

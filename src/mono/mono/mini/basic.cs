@@ -100,6 +100,11 @@ class Tests {
 		return b - 1;
 	}
 
+	static int test_2_sub_large_imm () {
+		int b = 0xff0f0f;
+		return b - 0xff0f0d;
+	}
+
 	static int test_0_sub_inv_imm () {
 		int b = 2;
 		return 2 - b;
@@ -119,6 +124,11 @@ class Tests {
 	static int test_0_and_large_imm () {
 		int b = 2;
 		return b & 0x10000000;
+	}
+
+	static int test_0_and_large_imm2 () {
+		int b = 2;
+		return b & 0x100000f0;
 	}
 
 	static int test_2_div () {
@@ -244,6 +254,27 @@ class Tests {
 	static int test_268435458_or_large_imm () {
 		int b = 2;
 		return b | 0x10000000;
+	}
+
+	static int test_268435459_or_large_imm2 () {
+		int b = 2;
+		return b | 0x10000001;
+	}
+
+	static int test_1_xor () {
+		int b = 2;
+		int a = 3;
+		return b ^ a;
+	}
+
+	static int test_1_xor_imm () {
+		int b = 2;
+		return b ^ 3;
+	}
+
+	static int test_983041_xor_imm_large () {
+		int b = 2;
+		return b ^ 0xf0003;
 	}
 
 	static int test_1_neg () {

@@ -29,6 +29,11 @@ class Tests {
 		return TestDriver.RunTests (typeof (Tests));
 	}
 
+	static int test_10_simple_cast () {
+		long a = 10;
+		return (int)a;
+	}
+
 	static int test_1_bigmul1 () {
 		int a;
 		int b;
