@@ -4115,6 +4115,22 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gpointer s
 	memcpy (dest_addr, src, length * element_size);
 }
 
+#if NO_UNALIGNED_ACCESS
+#define RETURN_UNALIGNED(type, addr) \
+	{ \
+		type val; \
+		memcpy(&val, p + offset, sizeof(val)); \
+		return val; \
+	}
+#define WRITE_UNALIGNED(type, addr, val) \
+	memcpy(addr, &val, sizeof(type))
+#else
+#define RETURN_UNALIGNED(type, addr) \
+	return *(type*)(p + offset);
+#define WRITE_UNALIGNED(type, addr, val) \
+	(*(type *)(addr) = (val))
+#endif
+
 gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr (gpointer ptr, gint32 offset)
 {
@@ -4122,7 +4138,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr (gpointer ptr, gint3
 
 	MONO_ARCH_SAVE_REGS;
 
-	return *(gpointer*)(p + offset);
+	RETURN_UNALIGNED(gpointer, p + offset);
 }
 
 unsigned char
@@ -4142,7 +4158,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReadInt16 (gpointer ptr, gint32
 
 	MONO_ARCH_SAVE_REGS;
 
-	return *(gint16*)(p + offset);
+	RETURN_UNALIGNED(gint16, p + offset);
 }
 
 gint32
@@ -4152,7 +4168,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReadInt32 (gpointer ptr, gint32
 
 	MONO_ARCH_SAVE_REGS;
 
-	return *(gint32*)(p + offset);
+	RETURN_UNALIGNED(gint32, p + offset);
 }
 
 gint64
@@ -4162,7 +4178,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReadInt64 (gpointer ptr, gint32
 
 	MONO_ARCH_SAVE_REGS;
 
-	return *(gint64*)(p + offset);
+	RETURN_UNALIGNED(gint64, p + offset);
 }
 
 void
@@ -4182,7 +4198,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_WriteIntPtr (gpointer ptr, gint
 
 	MONO_ARCH_SAVE_REGS;
 
-	*(gpointer*)(p + offset) = val;
+	WRITE_UNALIGNED(gpointer, p + offset, val);
 }
 
 void
@@ -4192,7 +4208,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_WriteInt16 (gpointer ptr, gint3
 
 	MONO_ARCH_SAVE_REGS;
 
-	*(gint16*)(p + offset) = val;
+	WRITE_UNALIGNED(gint16, p + offset, val);
 }
 
 void
@@ -4202,7 +4218,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_WriteInt32 (gpointer ptr, gint3
 
 	MONO_ARCH_SAVE_REGS;
 
-	*(gint32*)(p + offset) = val;
+	WRITE_UNALIGNED(gint32, p + offset, val);
 }
 
 void
@@ -4212,7 +4228,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_WriteInt64 (gpointer ptr, gint3
 
 	MONO_ARCH_SAVE_REGS;
 
-	*(gint64*)(p + offset) = val;
+	WRITE_UNALIGNED(gint64, p + offset, val);
 }
 
 MonoString *
