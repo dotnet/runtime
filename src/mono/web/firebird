@@ -46,6 +46,8 @@
 <ul>
 	<li>Firebird Embedded Server support.</li>
 	<li>New FbScript class implementation.</li>
+	<li>Improved connection pooling.</li>
+	<li>Improved array datatype support.</li>
 </ul>
    
 ** Testing
