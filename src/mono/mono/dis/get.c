@@ -455,16 +455,26 @@ dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method, in
 	guint32 pcols [MONO_PARAM_SIZE];
 	guint32 param_index = 0;
 	const char *name = "";
-	char *retval = dis_stringify_param (m, method->ret);
+	int free_method = 0;
+	char *retval;
 	GString *result = g_string_new ("");
 	int i;
+
+	g_assert (method || methoddef_row);
 
 	if (methoddef_row) {
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], methoddef_row -1, cols, MONO_METHOD_SIZE);
 		name = mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]);
 		param_index = cols [MONO_METHOD_PARAMLIST];
+		if (!method) {
+			const char *sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
+			mono_metadata_decode_blob_size (sig, &sig);
+			method = mono_metadata_parse_method_signature (m, 1, sig, &sig);
+			free_method = 1;
+		}
 	}
 	
+	retval = dis_stringify_param (m, method->ret);
 	if (method->hasthis)
 		g_string_append (result, "instance ");
 	g_string_append (result, map (method->call_convention, call_conv_type_map));
@@ -487,8 +497,11 @@ dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method, in
 	}
 	g_string_append (result, ") ");
 
+	if (free_method)
+		mono_metadata_free_method_signature (method);
 	retval = result->str;
 	g_string_free (result, FALSE);
+
 	return retval;
 }
 
@@ -1127,6 +1140,8 @@ get_token (MonoMetadata *m, guint32 token)
 		return get_typedef (m, idx);
 	case MONO_TOKEN_TYPE_REF:
 		return get_typeref (m, idx);
+	case MONO_TOKEN_TYPE_SPEC:
+		return get_typespec (m, idx);
 	default:		
 		g_error ("Do not know how to decode tokens of type 0x%08x", token);
 	}

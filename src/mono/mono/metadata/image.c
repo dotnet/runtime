@@ -148,6 +148,8 @@ load_section_tables (MonoImage *image, MonoCLIImageInfo *iinfo)
 		t->st_lineno_ptr = le32_to_cpu (t->st_lineno_ptr);
 		t->st_reloc_count = le16_to_cpu (t->st_reloc_count);
 		t->st_line_count = le16_to_cpu (t->st_line_count);
+
+		/* consistency checks here */
 	}
 
 	for (i = 0; i < top; i++)
@@ -341,10 +343,25 @@ do_mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
 	if (fread (&msdos, sizeof (msdos), 1, image->f) != 1)
 		goto invalid_image;
 	
-	if (!(msdos.msdos_header [0] == 0x4d && msdos.msdos_header [1] == 0x5a))
+	if (!(msdos.msdos_header [0] == 'M' && msdos.msdos_header [1] == 'Z'))
 		goto invalid_image;
 	
+	if (msdos.pe_offset != sizeof (msdos))
+		fseek (image->f, msdos.pe_offset, SEEK_SET);
+	
 	if ((n = fread (header, sizeof (MonoDotNetHeader), 1, image->f)) != 1)
+		goto invalid_image;
+
+	if (header->coff.coff_machine != 0x14c) /* FIXME: ENOENDIAN */
+		goto invalid_image;
+
+	if (header->coff.coff_opt_header_size != (sizeof (MonoDotNetHeader) - sizeof (MonoCOFFHeader) - 4))
+		goto invalid_image;
+
+	if (header->pe.pe_magic != 0x10B) /* FIXME: ENOENDIAN */
+		goto invalid_image;
+
+	if (header->pe.pe_major != 6 || header->pe.pe_minor != 0)
 		goto invalid_image;
 
 	/*

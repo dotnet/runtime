@@ -33,7 +33,7 @@ typedef enum {
 	MONO_TYPE_VALUETYPE  = 0x11,       /* arg: <type> token */
 	MONO_TYPE_CLASS      = 0x12,       /* arg: <type> token */
 	MONO_TYPE_ARRAY      = 0x14,       /* type, rank, boundsCount, bound1, loCount, lo1 */
-	MONO_TYPE_TYPEDBYREF = 0x15,
+	MONO_TYPE_TYPEDBYREF = 0x16,
 	MONO_TYPE_I          = 0x18,
 	MONO_TYPE_U          = 0x19,
 	MONO_TYPE_FNPTR      = 0x1b,	      /* arg: full method signature */

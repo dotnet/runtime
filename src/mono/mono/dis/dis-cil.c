@@ -77,7 +77,7 @@ get_encoded_user_string (const char *ptr)
 	return res;
 }
 
-#define CODE_INDENT g_assert (indent_level < 127); \
+#define CODE_INDENT g_assert (indent_level < 512); \
 	indent[indent_level*2] = ' ';	\
 	indent[indent_level*2+1] = ' ';	\
 	++indent_level;	\
@@ -94,7 +94,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 	const unsigned char *end = start + size;
 	const unsigned char *ptr = start;
 	opcode_t *entry;
-	char indent[256];
+	char indent[1024];
 	int i, indent_level = 0;
 	char *clause_names[] = {"catch", "filter", "finally", "fault"};
 

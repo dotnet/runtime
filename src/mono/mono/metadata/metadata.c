@@ -582,10 +582,12 @@ compute_size (MonoMetadata *meta, MonoMetaTable *table, int tableindex, guint32 
 
 			/*
 			 * TypeDefOrRef: TypeDef, ParamDef, TypeSpec
+			 * LAMESPEC
+			 * It is TypeDef, _TypeRef_, TypeSpec, instead.
 			 */
 		case MONO_MT_TDOR_IDX:
 			n = MAX (meta->tables [MONO_TABLE_TYPEDEF].rows,
-				 meta->tables [MONO_TABLE_PARAM].rows);
+				 meta->tables [MONO_TABLE_TYPEREF].rows);
 			n = MAX (n, meta->tables [MONO_TABLE_TYPESPEC].rows);
 
 			/* 2 bits to encode */
@@ -593,14 +595,15 @@ compute_size (MonoMetadata *meta, MonoMetaTable *table, int tableindex, guint32 
 			break;
 
 			/*
-			 * MemberRefParent: TypeDef, TypeRef, ModuleDef, ModuleRef, TypeSpec
+			 * MemberRefParent: TypeDef, TypeRef, MethodDef, ModuleRef, TypeSpec, MemberRef
 			 */
 		case MONO_MT_MRP_IDX:
 			n = MAX (meta->tables [MONO_TABLE_TYPEDEF].rows,
 				 meta->tables [MONO_TABLE_TYPEREF].rows);
-			n = MAX (n, meta->tables [MONO_TABLE_MODULE].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_METHOD].rows);
 			n = MAX (n, meta->tables [MONO_TABLE_MODULEREF].rows);
 			n = MAX (n, meta->tables [MONO_TABLE_TYPESPEC].rows);
+			n = MAX (n, meta->tables [MONO_TABLE_MEMBERREF].rows);
 
 			/* 3 bits to encode */
 			field_size = rtsize (n, 16 - 3);
@@ -1109,6 +1112,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoMetadata *m, const char *ptr, c
 	case MONO_TYPE_U:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_TYPEDBYREF:
 		break;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
@@ -1237,7 +1241,7 @@ parse_section_data (MonoMethodHeader *mh, const unsigned char *ptr)
 		
 		is_fat = sect_data_flags & METHOD_HEADER_SECTION_FAT_FORMAT;
 		if (is_fat) {
-			sect_data_len = (ptr [0] << 16) | (ptr [1] << 8) | ptr [2];
+			sect_data_len = (ptr [2] << 16) | (ptr [1] << 8) | ptr [0];
 			ptr += 3;
 		} else {
 			sect_data_len = ptr [0];
@@ -1476,18 +1480,48 @@ mono_metadata_token_from_dor (guint32 dor_index)
 }
 
 /*
- * We use this to pass context information to the typedef locator
+ * We use this to pass context information to the row locator
  */
 typedef struct {
-	int idx;		 /* The index that we are trying to locate */
-	int col_idx;		 /* The index in the row where idx is stored */
-	MonoMetadata *m;		 /* the metadata context */
-	MonoTableInfo *t; /* pointer to the typedef table */
+	int idx;			/* The index that we are trying to locate */
+	int col_idx;		/* The index in the row where idx may be stored */
+	MonoTableInfo *t;	/* pointer to the table */
 	guint32 result;
 } locator_t;
 
 #define CSIZE(x) (sizeof (x) / 4)
 
+/*
+ * How the row locator works.
+ *
+ *   Table A
+ *   ___|___
+ *   ___|___         Table B
+ *   ___|___------>  _______
+ *   ___|___         _______
+ *   
+ * A column in the rows of table A references an index in table B.
+ * For example A may be the TYPEDEF table and B the METHODDEF table.
+ * 
+ * Given an index in table B we want to get the row in table A
+ * where the column n references our index in B.
+ *
+ * In the locator_t structure:
+ * 	t is table A
+ * 	col_idx is the column number
+ * 	index is the index in table B
+ * 	result will be the index in table A
+ *
+ * Examples:
+ * Table A		Table B		column (in table A)
+ * TYPEDEF		METHODDEF   MONO_TYPEDEF_METHOD_LIST
+ * TYPEDEF		FIELD		MONO_TYPEDEF_FIELD_LIST
+ * PROPERTYMAP	PROPERTY	MONO_PROPERTY_MAP_PROPERTY_LIST
+ * METHODSEM	PROPERTY	ASSOCIATION (encoded index)
+ *
+ * Note that we still don't support encoded indexes.
+ *
+ */
 static int
 typedef_locator (const void *a, const void *b)
 {
@@ -1637,6 +1671,7 @@ mono_type_size (MonoType *t, gint *align)
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_TYPEDBYREF: /* we may want to use a struct {MonoType* type, void *data } instead ...*/
 		*align = __alignof__(gpointer);
 		return sizeof (gpointer);
 	default:

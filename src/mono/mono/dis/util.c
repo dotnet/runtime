@@ -47,8 +47,11 @@ flags (guint32 code, map_t *table)
 	buffer [0] = 0;
 	
 	for (i = 0; table [i].str != NULL; i++)
-		if (table [i].code & code)
+		if (table [i].code & code) {
+			if (buffer [0])
+				strcat (buffer, " ");
 			strcat (buffer, table [i].str);
+		}
 
 	return buffer;
 }

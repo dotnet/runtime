@@ -269,6 +269,25 @@ dump_table_constant (MonoMetadata *m)
 }
 
 void
+dump_table_property_map (MonoMetadata *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_PROPERTYMAP];
+	int i;
+	char *s;
+	
+	fprintf (output, "Property Map Table (1..%d)\n", t->rows);
+	
+	for (i = 0; i < t->rows; i++){
+		guint32 cols [MONO_PROPERTY_MAP_SIZE];
+		
+		mono_metadata_decode_row (t, i, cols, MONO_PROPERTY_MAP_SIZE);
+		s = get_typedef (m, cols [MONO_PROPERTY_MAP_PARENT]);
+		fprintf (output, "%d: %s %d\n", i + 1, s, cols [MONO_PROPERTY_MAP_PROPERTY_LIST]);
+		g_free (s);
+	}
+}
+
+void
 dump_table_property (MonoMetadata *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_PROPERTY];
@@ -276,7 +295,7 @@ dump_table_property (MonoMetadata *m)
 	const char *ptr;
 	char flags[128];
 
-	fprintf (output, "Property Table (0..%d)\n", t->rows);
+	fprintf (output, "Property Table (1..%d)\n", t->rows);
 
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [MONO_PROPERTY_SIZE];
@@ -303,7 +322,7 @@ dump_table_property (MonoMetadata *m)
 		pcount = mono_metadata_decode_value (ptr, &ptr);
 		ptr = get_type (m, ptr, &type);
 		fprintf (output, "%d: %s %s (",
-			 i, type, mono_metadata_string_heap (m, cols [MONO_PROPERTY_NAME]));
+			 i + 1, type, mono_metadata_string_heap (m, cols [MONO_PROPERTY_NAME]));
 		g_free (type);
 
 		for (j = 0; j < pcount; j++){
@@ -416,5 +435,37 @@ dump_table_method (MonoMetadata *m)
 		mono_metadata_free_method_signature (method);
 	}
 	
+}
+
+static map_t semantics_map [] = {
+		{1, "setter"},
+		{2, "getter"},
+		{4, "other"},
+		{8, "add-on"},
+		{0x10, "remove-on"},
+		{0x20, "fire"},
+		{0, NULL},
+};
+
+void
+dump_table_methodsem (MonoMetadata *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_METHODSEMANTICS];
+	int i, is_property, index;
+	const char *semantics;
+	
+	fprintf (output, "Method Semantics Table (1..%d)\n", t->rows);
+	for (i = 1; i <= t->rows; i++){
+		guint32 cols [MONO_METHOD_SEMA_SIZE];
+		
+		mono_metadata_decode_row (t, i - 1, cols, MONO_METHOD_SEMA_SIZE);
+		semantics = flags (cols [MONO_METHOD_SEMA_SEMANTICS], semantics_map);
+		is_property = cols [MONO_METHOD_SEMA_ASSOCIATION] & 1;
+		index = cols [MONO_METHOD_SEMA_ASSOCIATION] >> 1;
+		fprintf (output, "%d: %s method: %d %s %d\n", i, semantics,
+						cols [MONO_METHOD_SEMA_METHOD] - 1, 
+						is_property? "property" : "event",
+						index);
+	}
 }
 

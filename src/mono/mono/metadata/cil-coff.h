@@ -27,10 +27,14 @@
 #define METHOD_HEADER_SECTION_FAT_FORMAT  0x40
 #define METHOD_HEADER_SECTION_MORE_SECTS  0x80
 
+/* 128 bytes */
 typedef struct {
-	char msdos_header [128];
+	char    msdos_header [60];
+	guint32 pe_offset;
+	char    msdos_header2 [64];
 } MonoMSDOSHeader;
 
+/* 20 bytes */
 typedef struct {
 	guint16  coff_machine;
 	guint16  coff_sections;
@@ -44,6 +48,7 @@ typedef struct {
 #define COFF_ATTRIBUTE_EXECUTABLE_IMAGE 0x0002
 #define COFF_ATTRIBUTE_LIBRARY_IMAGE    0x2000
 
+/* 28 bytes */
 typedef struct {
 	guint16 pe_magic;
 	guchar  pe_major;
@@ -56,6 +61,7 @@ typedef struct {
 	guint32 pe_rva_data_base;
 } MonoPEHeader;
 
+/* 68 bytes */
 typedef struct {
 	guint32 pe_image_base;		/* must be 0x400000 */
 	guint32 pe_section_align;       /* must be 8192 */
@@ -85,6 +91,7 @@ typedef struct {
 	guint32 size;
 } MonoPEDirEntry;
 
+/* 128 bytes */
 typedef struct {
 	MonoPEDirEntry pe_export_table;
 	MonoPEDirEntry pe_import_table;
@@ -104,6 +111,7 @@ typedef struct {
 	MonoPEDirEntry pe_reserved;
 } MonoPEDatadir;
 
+/* 248 bytes */
 typedef struct {
 	char            pesig [4];
 	MonoCOFFHeader  coff;

@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <glib.h>
+#include <stdlib.h>
 #include "meta.h"
 #include "util.h"
 #include "dump.h"
@@ -474,6 +475,152 @@ dis_method_list (MonoMetadata *m, MonoCLIImageInfo *ii, guint32 start, guint32 e
 	}
 }
 
+typedef struct {
+	MonoTableInfo *t;
+	guint32 col_idx;
+	guint32 idx;
+	guint32 result;
+} plocator_t;
+
+static int
+table_locator (const void *a, const void *b)
+{
+	plocator_t *loc = (plocator_t *) a;
+	char *bb = (char *) b;
+	guint32 table_index = (bb - loc->t->base) / loc->t->row_size;
+	guint32 col;
+	
+	col = mono_metadata_decode_row_col (loc->t, table_index, loc->col_idx);
+
+	if (loc->idx == col) {
+		loc->result = table_index;
+		return 0;
+	}
+	if (loc->idx < col)
+		return -1;
+	else 
+		return 1;
+}
+
+static void
+dis_property_methods (MonoMetadata *m, guint32 prop)
+{
+	plocator_t loc;
+	guint start;
+	guint32 cols [MONO_METHOD_SEMA_SIZE];
+	MonoTableInfo *msemt = &m->tables [MONO_TABLE_METHODSEMANTICS];
+	char *sig;
+	char *type[] = {NULL, ".set", ".get", NULL, ".other"};
+
+	loc.t = msemt;
+	loc.col_idx = MONO_METHOD_SEMA_ASSOCIATION;
+	loc.idx = (prop << 1) | 1; /* Method association coded index */
+
+	if (!bsearch (&loc, msemt->base, msemt->rows, msemt->row_size, table_locator))
+		return;
+
+	start = loc.result;
+	/*
+	 * We may end up in the middle of the rows... 
+	 */
+	while (start > 0) {
+		if (loc.idx == mono_metadata_decode_row_col (msemt, start - 1, MONO_METHOD_SEMA_ASSOCIATION))
+			start--;
+		else
+			break;
+	}
+	while (start < msemt->rows) {
+		mono_metadata_decode_row (msemt, start, cols, MONO_METHOD_SEMA_SIZE);
+		if (cols [MONO_METHOD_SEMA_ASSOCIATION] != loc.idx)
+			break;
+		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD]);
+		fprintf (output, "\t\t%s %s\n", type [cols [MONO_METHOD_SEMA_SEMANTICS]], sig);
+		g_free (sig);
+		++start;
+	}
+}
+
+static char*
+dis_property_signature (MonoMetadata *m, guint32 prop_idx)
+{
+	MonoTableInfo *propt = &m->tables [MONO_TABLE_PROPERTY];
+	const char *ptr;
+	guint32 pcount, i;
+	guint32 cols [MONO_PROPERTY_SIZE];
+	MonoType *type;
+	MonoParam *param;
+	char *blurb;
+	const char *name;
+	int prop_flags;
+	GString *res = g_string_new ("");
+
+	mono_metadata_decode_row (propt, prop_idx, cols, MONO_PROPERTY_SIZE);
+	name = mono_metadata_string_heap (m, cols [MONO_PROPERTY_NAME]);
+	prop_flags = cols [MONO_PROPERTY_FLAGS];
+	ptr = mono_metadata_blob_heap (m, cols [MONO_PROPERTY_TYPE]);
+	mono_metadata_decode_blob_size (ptr, &ptr);
+	/* ECMA claims 0x08 ... */
+	if (*ptr != 0x28 && *ptr != 0x08)
+		g_warning("incorrect signature in propert blob: 0x%x", *ptr);
+	ptr++;
+	pcount = mono_metadata_decode_value (ptr, &ptr);
+	type = mono_metadata_parse_type (m, ptr, &ptr);
+	blurb = dis_stringify_type (m, type);
+	if (prop_flags & 0x0200)
+		g_string_append (res, "special ");
+	if (prop_flags & 0x0400)
+		g_string_append (res, "runtime ");
+	if (prop_flags & 0x1000)
+		g_string_append (res, "hasdefault ");
+	g_string_sprintfa (res, "%s %s (", blurb, name);
+	g_free (blurb);
+	mono_metadata_free_type (type);
+	for (i = 0; i < pcount; i++) {
+		if (i)
+			g_string_append (res, ", ");
+		param = mono_metadata_parse_param (m, 0, ptr, &ptr);
+		blurb = dis_stringify_param (m, param);
+		g_string_append (res, blurb);
+		mono_metadata_free_param (param);
+		g_free (blurb);
+	}
+	g_string_append_c (res, ')');
+	blurb = res->str;
+	g_string_free (res, FALSE);
+	return blurb;
+
+}
+
+static void
+dis_property_list (MonoMetadata *m, guint32 typedef_row)
+{
+	plocator_t loc;
+	guint32 start, end, i;
+	MonoTableInfo *tdef  = &m->tables [MONO_TABLE_PROPERTYMAP];
+
+	loc.t = tdef;
+	loc.col_idx = MONO_PROPERTY_MAP_PARENT;
+	loc.idx = typedef_row + 1;
+
+	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
+		return;
+	
+	start = mono_metadata_decode_row_col (tdef, loc.result, MONO_PROPERTY_MAP_PROPERTY_LIST);
+	if (loc.result + 1 < tdef->rows) {
+		end = mono_metadata_decode_row_col (tdef, loc.result + 1, MONO_PROPERTY_MAP_PROPERTY_LIST) - 1;
+	} else {
+		end = m->tables [MONO_TABLE_PROPERTY].rows;
+	}
+
+	for (i = start - 1; i < end; ++i) {
+		char *sig = dis_property_signature (m, i);
+		fprintf (output, "\t.property %s\n\t{\n", sig);
+		dis_property_methods (m, i + 1);
+		fprintf (output, "\t}\n");
+		g_free (sig);
+	}
+}
+
 /**
  * dis_type:
  * @m: metadata context
@@ -533,6 +680,8 @@ dis_type (MonoMetadata *m, MonoCLIImageInfo *ii, int n)
 	if (cols [MONO_TYPEDEF_METHOD_LIST] < m->tables [MONO_TABLE_METHOD].rows)
 		dis_method_list (m, ii, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last);
 
+	dis_property_list (m, n);
+	
 	fprintf (output, "  }\n}\n\n");
 }
 
@@ -567,10 +716,12 @@ struct {
 	{ "--classlayout", MONO_TABLE_CLASSLAYOUT, dump_table_class_layout },
 	{ "--constant",    MONO_TABLE_CONSTANT,    dump_table_constant },
 	{ "--property",    MONO_TABLE_PROPERTY,    dump_table_property },
+	{ "--propertymap", MONO_TABLE_PROPERTYMAP, dump_table_property_map },
 	{ "--event",       MONO_TABLE_EVENT,       dump_table_event },
 	{ "--file",        MONO_TABLE_FILE,        dump_table_file },
 	{ "--moduleref",   MONO_TABLE_MODULEREF,   dump_table_moduleref },
 	{ "--method",      MONO_TABLE_METHOD,      dump_table_method },
+	{ "--methodsem",   MONO_TABLE_METHODSEMANTICS,      dump_table_methodsem },
 	{ NULL, -1 }
 };
 
