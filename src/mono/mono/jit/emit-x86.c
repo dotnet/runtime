@@ -410,8 +410,9 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 
 	if (m->klass->valuetype) {
 		return *((gpointer *)o) = get_unbox_trampoline (m, addr);
-	} else
+	} else {
 		return *((gpointer *)o) = addr;
+	}
 }
 
 /**
@@ -455,6 +456,11 @@ arch_create_jit_trampoline (MonoMethod *method)
 	if (!vc) {
 		vc = buf = g_malloc (256);
 
+		/* save caller save regs because we need to do a call */ 
+		x86_push_reg (buf, X86_EDX);
+		x86_push_reg (buf, X86_EAX);
+		x86_push_reg (buf, X86_ECX);
+
 		/* save LMF begin */
 		x86_push_reg (buf, X86_EBX);
 		x86_push_reg (buf, X86_EDI);
@@ -462,10 +468,10 @@ arch_create_jit_trampoline (MonoMethod *method)
 		x86_push_reg (buf, X86_EBP);
 
 		/* save the IP (caller ip) */
-		x86_push_membase (buf, X86_ESP, 20);
+		x86_push_membase (buf, X86_ESP, 32);
 
 		/* save method info */
-		x86_push_membase (buf, X86_ESP, 20);
+		x86_push_membase (buf, X86_ESP, 32);
 		/* get the address of lmf for the current thread */
 		x86_call_code (buf, arch_get_lmf_addr);
 		/* push lmf */
@@ -477,17 +483,17 @@ arch_create_jit_trampoline (MonoMethod *method)
 		/* save LFM end */
 
 		/* push the method info */
-		x86_push_membase (buf, X86_ESP, 32);
+		x86_push_membase (buf, X86_ESP, 44);
 		/* push the return address onto the stack */
-		x86_push_membase (buf, X86_ESP, 40);
+		x86_push_membase (buf, X86_ESP, 52);
 
 		/* save all register values */
 		x86_push_reg (buf, X86_EBX);
 		x86_push_reg (buf, X86_EDI);
 		x86_push_reg (buf, X86_ESI);
-		x86_push_reg (buf, X86_EDX);
-		x86_push_reg (buf, X86_ECX);
-		x86_push_reg (buf, X86_EAX);
+		x86_push_membase (buf, X86_ESP, 64); /* EDX */
+		x86_push_membase (buf, X86_ESP, 64); /* ECX */
+		x86_push_membase (buf, X86_ESP, 64); /* EAX */
 
 		x86_call_code (buf, x86_magic_trampoline);
 		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 8*4);
@@ -510,7 +516,7 @@ arch_create_jit_trampoline (MonoMethod *method)
 		x86_pop_reg (buf, X86_EBX);
 		/* restore LMF end */
 
-		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);
+		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 16);
 
 		/* call the compiled method */
 		x86_jump_reg (buf, X86_EAX);
