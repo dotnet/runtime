@@ -574,7 +574,7 @@ static void
 cattrs_for_method (MonoImage *m, guint32 midx, MonoMethodSignature *sig) {
 	MonoTableInfo *methodt;
 	MonoTableInfo *paramt;
-	guint param_index, lastp, i, pid;
+	guint param_index, lastp, i;
 
 	methodt = &m->tables [MONO_TABLE_METHOD];
 	paramt = &m->tables [MONO_TABLE_PARAM];
@@ -584,8 +584,26 @@ cattrs_for_method (MonoImage *m, guint32 midx, MonoMethodSignature *sig) {
 	else
 		lastp = paramt->rows + 1;
 	for (i = param_index; i < lastp; ++i) {
-		pid = mono_metadata_decode_row_col (paramt, i - 1, MONO_PARAM_SEQUENCE);
-		fprintf (output, "\t.param [%d]\n", pid);
+	  	char *lit;
+	  	int crow;
+		guint32 param_cols [MONO_PARAM_SIZE];
+		mono_metadata_decode_row (paramt, i-1, param_cols, MONO_PARAM_SIZE);
+
+		if (param_cols[MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_DEFAULT) {
+			fprintf (output, "\t.param [%d] = ", param_cols[MONO_PARAM_SEQUENCE]);
+		  
+			if(crow = mono_metadata_get_constant_index(m, MONO_TOKEN_PARAM_DEF | i, 0)) {
+				guint32 const_cols [MONO_CONSTANT_SIZE];
+				mono_metadata_decode_row( &m->tables[MONO_TABLE_CONSTANT], crow-1, const_cols, MONO_CONSTANT_SIZE);
+				lit = get_constant(m, const_cols [MONO_CONSTANT_TYPE], const_cols [MONO_CONSTANT_VALUE]);
+			}
+			else {
+				lit = g_strdup ("not found");
+			}
+		  fprintf(output, "%s\n", lit);
+		  g_free(lit);
+		}
+
 		dump_cattrs (m, MONO_TOKEN_PARAM_DEF | i, "\t");
 	}
 }

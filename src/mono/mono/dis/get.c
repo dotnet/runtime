@@ -1607,7 +1607,7 @@ get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name)
 char *
 get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 {
-	const char *ptr = mono_metadata_blob_heap (m, blob_index);
+	const unsigned char *ptr = mono_metadata_blob_heap (m, blob_index);
 	int len;
 	
 	len = mono_metadata_decode_value (ptr, &ptr);
@@ -1617,7 +1617,7 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 		return g_strdup_printf ("%s", *ptr ? "bool(true)" : "bool(false)");
 		
 	case MONO_TYPE_CHAR:
-		return g_strdup_printf ("%c", *ptr); /* FIXME: unicode char */
+		return g_strdup_printf ("char(0x%04x)", read16(ptr)); 
 		
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I1:
@@ -1636,7 +1636,7 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 		guint32 low, high;
 		low = read32 (ptr);
 		high = read32 (ptr + 4);
-		return g_strdup_printf ("0x%08x%08x", high, low);
+		return g_strdup_printf ("int64(0x%08x%08x)", high, low);
 	}
 	case MONO_TYPE_U8: {
 		guint32 low, high;
@@ -1655,42 +1655,39 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 		return g_strdup_printf ("float64(%g)", r);
 	}
 	case MONO_TYPE_STRING: {
-		int i, j, e;
-		char *res;
-		e = len = 0;
-		for (i = 0; !ptr [i+1]; i += 2){
-			len++;
-			switch (ptr [i]) {
-			case '"':
-			case '\\':
-			case '\n': /* add more */
-				e++;
-			}
-		}
-		res = g_malloc (len + e + 3);
-		j = 1;
-		res [0] = '"';
+		gchar *str;
+		int i, j, tspaces = (len%16);
+		GString *res = g_string_new ("bytearray (\n\t");
 
-		for (i = 0; i < len; i += 2){
-			switch(ptr[i]) {
-			case '"': 
-				res[j++] = '\\';
-				res[j++] = '"';
-			case '\\': 
-				res[j++] = '\\';
-				res[j++] = '\\';
-			case '\n':
-				res[j++] = '\\';
-				res[j++] = 'n';
-				break;
-			default:
-				res[j++] = isprint (ptr [i]) ? ptr [i] : '.';
-				break;
+		for(i = 1; i <= len; ++i) {
+			g_string_append_printf(res, "%02x ", ptr[i-1]);
+
+			if(i%16 == 0) {
+				if(i == len)
+					g_string_append(res, ")// ");
+				else
+					g_string_append(res, " // ");
+
+				for(j = i-16; j < i; ++j) 
+					g_string_append_printf(res, "%c", isprint(ptr[j]) ? ptr[j] : '.');
+				g_string_append(res, "\n\t");
 			}
 		}
-		res[j++] = '"';
-		res[j] = 0;
-		return res;
+
+		if(tspaces) {
+			g_string_append(res, ")  ");
+			for(i = tspaces+1; i < 16; ++i)
+				g_string_append_printf(res, "   ");
+
+			g_string_append(res, " // ");
+			for(i = len-tspaces; i < len; ++i)
+				g_string_append_printf(res, "%c", isprint(ptr[i]) ? ptr[i] : '.');
+			g_string_append(res, "\n\t");
+		} 
+
+		str = res->str;
+		g_string_free(res, FALSE);
+		return str;
 	}
 		
 	case MONO_TYPE_CLASS:
