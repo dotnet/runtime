@@ -2831,9 +2831,9 @@ ves_icall_System_Buffer_ByteLengthInternal (MonoArray *array)
 	if (array->bounds == NULL)
 		length = array->max_length;
 	else {
-		length = 0;
+		length = 1;
 		for (i = 0; i < klass->rank; ++ i)
-			length += array->bounds [i].length;
+			length *= array->bounds [i].length;
 	}
 
 	esize = mono_array_element_size (klass);
