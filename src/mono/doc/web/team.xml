@@ -1560,4 +1560,33 @@
     </tasks>
 
   </contributor>
+  
+  <contributor>
+
+    <name>
+
+      <first-name>Pedro</first-name>
+
+      <last-name>Abelleira Seco</last-name>
+
+    </name>
+
+    <e-mail>pedroabelleira@yahoo.es</e-mail>
+
+    <image>pedroas.png</image>
+
+    <location>Galicia, Spain</location>
+
+    <organization></organization>
+
+    <description>Developer</description>
+
+    <tasks>
+
+      <task>MonoDevelop</task>
+
+    </tasks>
+
+  </contributor>
+
 </contributors>
