@@ -151,7 +151,16 @@
   </tr>
 </table>
 
-@item Aug 6th, 2003: Winforms samples 
+@item Aug 9th, 2003: Python for .NET Preview 2 available
+
+	Brian Lloyd has <a
+	href="http://lists.ximian.com/archives/public/mono-list/2003-August/015313.html">announced</a>
+	the availability of his Python binding to .NET.  This works
+	with .NET and Mono.  For more information about it, see
+	Brian's site at <a href="
+	http://zope.org/Members/Brian/PythonNet/">http://zope.org/Members/Brian/PythonNet/</a>
+
+@item Aug 6th, 2003: Winforms samples
 
 	Timothy Parez is coordinating the effort to create sample
 	programs that exercise the various Windows.Forms controls.  We
