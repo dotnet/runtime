@@ -473,15 +473,15 @@ static guint32 finalizer_thread (gpointer unused)
 		g_message (G_GNUC_PRETTY_FUNCTION ": invoking finalizers");
 #endif
 
-		/* Can't run finalizers if we're finishing up, because the
-		 * domain has already been destroyed
+		/* If finished == TRUE, mono_gc_cleanup has been called (from mono_runtime_cleanup),
+		 * before the domain is unloaded.
 		 *
 		 * There is a bug in GC_invoke_finalizer () in versions <= 6.2alpha4:
 		 * the 'mem_freed' variable is not initialized when there are no
 		 * objects to finalize, which leads to strange behavior later on.
 		 * The check is necessary to work around that bug.
 		 */
-		if(!finished && GC_should_invoke_finalizers ()) {
+		if (GC_should_invoke_finalizers ()) {
 			GC_invoke_finalizers ();
 		}
 		SetEvent (pending_done_event);

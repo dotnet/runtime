@@ -110,7 +110,7 @@ mono_context_init (MonoDomain *domain)
 void
 mono_runtime_cleanup (MonoDomain *domain)
 {
-	/* Not really needed, but do it anyway */
+	/* This ends up calling any pending pending (for at most 2 seconds) */
 	mono_gc_cleanup ();
 	
 	mono_network_cleanup ();
