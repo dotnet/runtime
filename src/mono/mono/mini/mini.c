@@ -47,6 +47,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/monitor.h>
+#include <mono/metadata/security-manager.h>
 #include <mono/utils/mono-math.h>
 #include <mono/os/gc_wrapper.h>
 
@@ -135,6 +136,7 @@ gboolean mono_break_on_exc = FALSE;
 #ifndef DISABLE_AOT
 gboolean mono_compile_aot = FALSE;
 #endif
+gboolean mono_use_security_manager = FALSE;
 
 static int mini_verbose = 0;
 
@@ -2992,6 +2994,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	int *filter_lengths = NULL;
 	int breakpoint_id = 0;
 	guint real_offset, num_args;
+	MonoBoolean security;
+	MonoDeclSecurityActions actions;
 
 	image = method->klass->image;
 	header = mono_method_get_header (method);
@@ -3116,8 +3120,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_ADD_INS (bblock, ins);
 		}
 	}
+
+	security = mono_use_security_manager && mono_method_has_declsec (method);
+	/* at this point having security doesn't mean we have any code to generate */
+	if (security && (cfg->method == method)) {
+		/* Only Demand, NonCasDemand and DemandChoice requires code generation.
+		 * And we do not want to enter the next section (with allocation) if we
+		 * have nothing to generate */
+		security = mono_declsec_get_demands (method, &actions);
+	}
 	
-	if ((header->init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SHARED))) || cfg->compile_aot) {
+	if ((header->init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SHARED))) || mono_compile_aot || security) {
 		/* we use a separate basic block for the initialization code */
 		cfg->bb_init = init_localsbb = NEW_BBLOCK (cfg);
 		init_localsbb->real_offset = real_offset;
@@ -3129,6 +3142,35 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	} else {
 		start_bblock->next_bb = bblock;
 		link_bblock (cfg, start_bblock, bblock);
+	}
+
+	/* at this point we know, if security is TRUE, that some code needs to be generated */
+	if (security && (cfg->method == method)) {
+		MonoInst *args [2];
+		MonoSecurityManager* secman = mono_security_manager_get_methods ();
+
+		if (actions.demand.blob) {
+			/* Add code for SecurityAction.Demand */
+			NEW_PCONST (cfg, args [0], actions.demand.blob);
+			NEW_ICONST (cfg, args [1], actions.demand.size);
+			/* Calls static void SecurityManager.InternalDemand (byte* permissions, int size); */
+			mono_emit_method_call_spilled (cfg, init_localsbb, secman->demand, secman->demand->signature, args, ip, NULL);
+		}
+		if (actions.noncasdemand.blob) {
+			/* CLR 1.x uses a .noncasdemand (but 2.x doesn't) */
+			/* For Mono we re-route non-CAS Demand to Demand (as the managed code must deal with it anyway) */
+			NEW_PCONST (cfg, args [0], actions.noncasdemand.blob);
+			NEW_ICONST (cfg, args [1], actions.noncasdemand.size);
+			/* Calls static void SecurityManager.InternalDemand (byte* permissions, int size); */
+			mono_emit_method_call_spilled (cfg, init_localsbb, secman->demand, secman->demand->signature, args, ip, NULL);
+		}
+		if (actions.demandchoice.blob) {
+			/* New in 2.0, Demand must succeed for one of the permissions (i.e. not all) */
+			NEW_PCONST (cfg, args [0], actions.demandchoice.blob);
+			NEW_ICONST (cfg, args [1], actions.demandchoice.size);
+			/* Calls static void SecurityManager.InternalDemandChoice (byte* permissions, int size); */
+			mono_emit_method_call_spilled (cfg, init_localsbb, secman->demandchoice, secman->demandchoice->signature, args, ip, NULL);
+		}
 	}
 
 	if (get_basic_blocks (cfg, bbhash, header, real_offset, ip, end, &err_pos)) {

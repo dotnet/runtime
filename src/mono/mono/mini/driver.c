@@ -552,6 +552,9 @@ mini_usage (void)
 
 	for (i = 0; i < G_N_ELEMENTS (opt_names); ++i)
 		fprintf (stdout, "                           %-10s %s\n", opt_names [i].name, opt_names [i].desc);
+
+	fprintf (stdout,
+		"    --security             Turns on the security manager (unsupported, default is off)\n");
 }
 
 static void
@@ -715,6 +718,8 @@ mono_main (int argc, char* argv[])
 			action = DO_DRAW;
 		} else if (strcmp (argv [i], "--debug") == 0) {
 			enable_debugging = TRUE;
+		} else if (strcmp (argv [i], "--security") == 0) {
+			mono_use_security_manager = TRUE;
 		} else {
 			fprintf (stderr, "Unknown command line option: '%s'\n", argv [i]);
 			return 1;
@@ -744,6 +749,11 @@ mono_main (int argc, char* argv[])
 		mono_jit_trace_calls = mono_trace_parse_options (trace_options);
 		if (mono_jit_trace_calls == NULL)
 			exit (1);
+	}
+
+	if (mono_compile_aot && mono_use_security_manager) {
+		mono_use_security_manager = FALSE;
+		g_warning ("Current security manager implementation isn't compatible with AOT - disabling security manager.");
 	}
 
 	mono_set_defaults (mini_verbose, opt);

@@ -110,6 +110,7 @@ extern int mono_exc_esp_offset;
 #else
 extern gboolean mono_compile_aot;
 #endif
+extern gboolean mono_use_security_manager;
 
 struct MonoEdge {
 	MonoEdge *next;
