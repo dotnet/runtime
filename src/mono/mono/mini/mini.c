@@ -1295,7 +1295,7 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 	int num = cfg->num_varinfo;
 
 	if ((num + 1) >= cfg->varinfo_count)
- 		realloc_var_info (cfg, cfg->varinfo_count + 16);
+ 		realloc_var_info (cfg, (cfg->varinfo_count + 2) * 2);
 
 	mono_jit_stats.allocate_var++;
 
