@@ -1,5 +1,5 @@
 /*
- * exception.c: exception support
+ * exceptions-x86.c: exception support for x86
  *
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)
@@ -1010,7 +1010,6 @@ mono_arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 	} else {
 		mono_ex = NULL;
 	}
-
 
 	if (!call_filter)
 		call_filter = arch_get_call_filter ();

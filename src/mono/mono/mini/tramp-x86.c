@@ -1,5 +1,5 @@
 /*
- * trampoline.c: JIT trampoline code
+ * tramp-x86.c: JIT trampoline code for x86
  *
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)

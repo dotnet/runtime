@@ -1,5 +1,5 @@
 /*
- * exceptionsparc.c: exception support for 64 bit sparc
+ * exceptions-sparc.c: exception support for 64 bit sparc
  *
  * Authors:
  *   Mark Crichton (crichton@gimp.org)

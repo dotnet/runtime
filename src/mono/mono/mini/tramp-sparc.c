@@ -1,5 +1,5 @@
 /*
- * trampolinesparc.c: JIT trampoline code for Sparc 64
+ * tramp-sparc.c: JIT trampoline code for Sparc 64
  *
  * Authors:
  *   Mark Crichton (crichton@gimp.org)

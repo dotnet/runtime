@@ -1,5 +1,5 @@
 /*
- * trampoline.c: JIT trampoline code
+ * tramp-ppc.c: JIT trampoline code for PowerPC
  *
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)
