@@ -28,6 +28,18 @@
 #include <signal.h>
 #endif
 
+#ifndef PLATFORM_WIN32
+#ifdef HAVE_AIO_H
+#include <aio.h>
+#define USE_AIO	1
+#elif defined(HAVE_SYS_AIO_H)
+#include <sys/aio.h>
+#define USE_AIO 1
+#else
+#undef USE_AIO
+#endif
+#endif
+
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/socket-private.h>
@@ -1039,8 +1051,7 @@ void _wapi_FD_SET(guint32 handle, fd_set *set)
 	FD_SET(socket_private_handle->fd, set);
 }
 
-#ifndef PLATFORM_WIN32
-#include <aio.h>
+#ifdef USE_AIO
 
 typedef struct {
 	struct aiocb *aio;
@@ -1149,5 +1160,5 @@ gboolean _wapi_socket_async_write (gpointer handle, gpointer buffer,
 	return do_aio_call (FALSE, handle, buffer, numbytes, byteswritten, ares, callback);
 }
 
-#endif /* !PLATFORM_WIN32 */
+#endif /* USE_AIO */
 

@@ -56,8 +56,20 @@
 /* Define to 1 if you have the <gc.h> header file. */
 #undef HAVE_GC_H
 
+/* Define to 1 if you have the `getgrgid_r' function. */
+#undef HAVE_GETGRGID_R
+
+/* Define to 1 if you have the `getgrnam_r' function. */
+#undef HAVE_GETGRNAM_R
+
+/* Define to 1 if you have the `getpwnam_r' function. */
+#undef HAVE_GETPWNAM_R
+
 /* Define to 1 if you have the `getpwuid_r' function. */
 #undef HAVE_GETPWUID_R
+
+/* Define to 1 if you have the `getresuid' function. */
+#undef HAVE_GETRESUID
 
 /* Define to 1 if you have the `inet_aton' function. */
 #undef HAVE_INET_ATON
@@ -80,8 +92,14 @@
 /* Define to 1 if you have the `poll' function. */
 #undef HAVE_POLL
 
+/* Define to 1 if you have the `pthread_attr_get_np' function. */
+#undef HAVE_PTHREAD_ATTR_GET_NP
+
 /* Define to 1 if you have the `pthread_attr_setstacksize' function. */
 #undef HAVE_PTHREAD_ATTR_SETSTACKSIZE
+
+/* Define to 1 if you have the `pthread_getattr_np' function. */
+#undef HAVE_PTHREAD_GETATTR_NP
 
 /* Define to 1 if you have the <pthread.h> header file. */
 #undef HAVE_PTHREAD_H
@@ -91,6 +109,9 @@
 
 /* Define to 1 if you have the <semaphore.h> header file. */
 #undef HAVE_SEMAPHORE_H
+
+/* Define to 1 if you have the `setresuid' function. */
+#undef HAVE_SETRESUID
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
@@ -103,6 +124,9 @@
 
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/aio.h> header file. */
+#undef HAVE_SYS_AIO_H
 
 /* Define to 1 if you have the <sys/filio.h> header file. */
 #undef HAVE_SYS_FILIO_H

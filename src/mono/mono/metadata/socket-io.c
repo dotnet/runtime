@@ -15,6 +15,18 @@
 #include <unistd.h>
 #include <errno.h>
 
+#ifndef PLATFORM_WIN32
+#ifdef HAVE_AIO_H
+#include <aio.h>
+#define USE_AIO	1
+#elif defined(HAVE_SYS_AIO_H)
+#include <sys/aio.h>
+#define USE_AIO 1
+#else
+#undef USE_AIO
+#endif
+#endif
+
 #include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/socket-io.h>
@@ -2287,7 +2299,7 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostName_internal(MonoString **h_
 
 
 /* Async interface */
-#if defined(PLATFORM_WIN32) || !defined(HAVE_AIO_H)
+#ifndef USE_AIO
 void
 ves_icall_System_Net_Sockets_Socket_AsyncReceive (MonoSocketAsyncResult *ares, gint *error)
 {
@@ -2369,7 +2381,7 @@ ves_icall_System_Net_Sockets_Socket_AsyncSend (MonoSocketAsyncResult *ares, gint
 		wsa_overlapped_callback (0, byteswritten, ares);
 	}
 }
-#endif
+#endif /* USE_AIO */
 
 void mono_network_init(void)
 {

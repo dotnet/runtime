@@ -14,8 +14,16 @@
 #include <signal.h>
 #include <unistd.h>
 
-#if !defined PLATFORM_WIN32 && defined HAVE_AIO_H
+#ifndef PLATFORM_WIN32
+#ifdef HAVE_AIO_H
 #include <aio.h>
+#define USE_AIO	1
+#elif defined(HAVE_SYS_AIO_H)
+#include <sys/aio.h>
+#define USE_AIO 1
+#else
+#undef USE_AIO
+#endif
 #endif
 
 #include <mono/metadata/object.h>
@@ -902,15 +910,13 @@ ves_icall_System_IO_MonoIO_GetSupportsAsync (void)
 	 */
 	return FALSE;	
 	/* return (g_getenv ("MONO_DISABLE_AIO") == NULL && WINVER >= 0x500); */
-#else
-  #ifdef HAVE_AIO_H
+#elif defined(USE_AIO)
 	if (aio_cancel (-1, NULL) == -1 && errno == ENOSYS)
 		return FALSE;
 
 	return (g_getenv ("MONO_DISABLE_AIO") == NULL);
-  #else
+#else
 	return FALSE;
-  #endif
 #endif
 }
 

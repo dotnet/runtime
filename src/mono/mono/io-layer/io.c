@@ -19,8 +19,17 @@
 #include <fnmatch.h>
 #include <stdio.h>
 #include <utime.h>
+
+#ifndef PLATFORM_WIN32
 #ifdef HAVE_AIO_H
 #include <aio.h>
+#define USE_AIO	1
+#elif defined(HAVE_SYS_AIO_H)
+#include <sys/aio.h>
+#define USE_AIO 1
+#else
+#undef USE_AIO
+#endif
 #endif
 
 #include <mono/io-layer/wapi.h>
@@ -266,7 +275,7 @@ static WapiFileType file_getfiletype(void)
 	return(FILE_TYPE_DISK);
 }
 
-#ifdef HAVE_AIO_H
+#ifdef USE_AIO
 typedef struct {
 	struct aiocb *aio;
 	WapiOverlapped *overlapped;
@@ -294,7 +303,7 @@ async_notifier (union sigval sig)
 	g_free (ndata);
 }
 
-#endif /* HAVE_AIO_H */
+#endif /* USE_AIO */
 
 static gboolean file_read(gpointer handle, gpointer buffer,
 			  guint32 numbytes, guint32 *bytesread,
@@ -348,7 +357,7 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 		return(TRUE);
 	}
 
-#ifndef HAVE_AIO_H
+#ifndef USE_AIO
 	SetLastError (ERROR_NOT_SUPPORTED);
 	return FALSE;
 #else
@@ -455,7 +464,7 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 		return(TRUE);
 	}
 
-#ifndef HAVE_AIO_H
+#ifndef USE_AIO
 	SetLastError (ERROR_NOT_SUPPORTED);
 	return FALSE;
 #else
