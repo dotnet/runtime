@@ -1278,7 +1278,7 @@ int ves_icall_System_Globalization_CompareInfo_internal_index_char (MonoCompareI
 	
 	mono_monitor_exit ((MonoObject *)this);
 	
-	g_free (uvalstr);
+	g_free (usrcstr);
 
 	return(pos);
 }
