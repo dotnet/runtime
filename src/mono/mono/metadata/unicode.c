@@ -206,7 +206,7 @@ static int
 iconv_get_length (iconv_t cd, guchar *src, int len, gboolean encode)
 {
 	guchar buf [512];
-	int i, res;
+	int res;
 	guchar *outp;
 	guchar *p;
 	guint inbytes_remaining;
@@ -214,12 +214,14 @@ iconv_get_length (iconv_t cd, guchar *src, int len, gboolean encode)
 	guint outbuf_size;
 	gboolean have_error = FALSE;
 	size_t err;
-
+	
 	g_assert (cd);
 	g_assert (src);
 
 #ifndef HAVE_NEW_ICONV
 	if (G_BYTE_ORDER == G_LITTLE_ENDIAN && encode) {
+		int i;
+		
 		src = g_memdup (src, len);
 		for (i = 0; i < len; i += 2) {
 			char t = src [i];
@@ -303,7 +305,6 @@ ves_icall_iconv_get_byte_count (gpointer converter, MonoArray *chars, gint32 ind
 static int
 iconv_convert (iconv_t cd, guchar *src, int len, guchar *dest, int max_len, gboolean encode)
 {
-	int i;
 	guchar *p, *outp;
 	guint inbytes_remaining;
 	guint outbytes_remaining;
@@ -317,6 +318,8 @@ iconv_convert (iconv_t cd, guchar *src, int len, guchar *dest, int max_len, gboo
 
 #ifndef HAVE_NEW_ICONV
 	if (G_BYTE_ORDER == G_LITTLE_ENDIAN && encode) {
+		int i;
+		
 		src = g_memdup (src, len);
 		for (i = 0; i < len; i += 2) {
 			char t = src [i];

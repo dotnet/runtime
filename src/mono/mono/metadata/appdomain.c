@@ -463,7 +463,7 @@ mono_domain_assembly_open (MonoDomain *domain, char *name)
 	g_hash_table_insert (domain->assemblies, ass->name, ass);
 
 	// fixme: maybe this must be recursive ?
-	for (i = 0; tmp = ass->image->references [i]; i++) {
+	for (i = 0; (tmp = ass->image->references [i]) != NULL; i++) {
 		if (!g_hash_table_lookup (domain->assemblies, tmp->name))
 			g_hash_table_insert (domain->assemblies, tmp->name, tmp);
 	}

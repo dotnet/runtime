@@ -1718,8 +1718,8 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 		return NULL;
 
 	member = mono_method_get_object (domain, method);
-	names = g_new (char*, method->signature->param_count);
-	mono_method_get_param_names (method, names);
+	names = g_new (char *, method->signature->param_count);
+	mono_method_get_param_names (method, (const char **) names);
 	
 	/* Note: the cache is based on the address of the signature into the method
 	 * since we already cache MethodInfos with the method as keys.
