@@ -1305,6 +1305,9 @@ case "$host" in
 		LIBC="libc.so"
 		INTL="libintl.so"
 		jit_wanted=true
+		if test x"$GCC" = xyes; then
+			CFLAGS="$CFLAGS -Wno-cast-align"
+		fi
 		;;
        alpha*-*-linux* | alpha*-*-osf*)
 		TARGET=ALPHA;
