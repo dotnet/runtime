@@ -74,20 +74,9 @@ A million repetitions of "a"
 #include <string.h>
 #include "mono-digest.h"
 
-#ifndef  i386   /* For ALPHA  (SAK) */
-#define LITTLE_ENDIAN 
-typedef          long int int64;
-typedef unsigned long int uint64;
-typedef          int int32;
-typedef unsigned int uint32;
-#else  /*i386*/
-#define LITTLE_ENDIAN 
-typedef          long long int int64;
-typedef unsigned long long int uint64;
+
 typedef          long int int32;
 typedef unsigned long int uint32;
-#endif /*i386*/
-
 
 /* #include <process.h> */	/* prototype for exit() - JHB */
 /* Using return() instead of exit() - SWR */
@@ -98,7 +87,7 @@ static void SHA1Transform(guint32 state[5], const guchar buffer[64]);
 
 /* blk0() and blk() perform the initial expand. */
 /* I got the idea of expanding during the round function from SSLeay */
-#ifdef LITTLE_ENDIAN
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 #define blk0(i) (block->l[i] = (rol(block->l[i],24)&0xFF00FF00) \
     |(rol(block->l[i],8)&0x00FF00FF))
 #else
