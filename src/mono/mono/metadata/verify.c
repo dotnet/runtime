@@ -2399,6 +2399,7 @@ async_result_fields[] = {
 	{"sync_completed", G_STRUCT_OFFSET (MonoAsyncResult, sync_completed)},
 	{"completed", G_STRUCT_OFFSET (MonoAsyncResult, completed)},
 	{"endinvoke_called", G_STRUCT_OFFSET (MonoAsyncResult, endinvoke_called)},
+	{"async_callback", G_STRUCT_OFFSET (MonoAsyncResult, async_callback)},
 	{NULL, 0}
 };
 

@@ -176,6 +176,7 @@ typedef struct {
 	MonoBoolean  sync_completed;
 	MonoBoolean  completed;
 	MonoBoolean  endinvoke_called;
+	MonoObject  *async_callback;
 } MonoAsyncResult;
 
 typedef struct {
