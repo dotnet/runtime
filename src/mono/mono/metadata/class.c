@@ -2266,7 +2266,7 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec,
 		break;
 	}
 
-	if (!class || !context)
+	if (!class || !context || (!context->gclass && !context->gmethod))
 		return class;
 
 	inflated = mono_class_inflate_generic_type (&class->byval_arg, context);
