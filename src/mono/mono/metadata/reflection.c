@@ -1148,10 +1148,20 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 		values [MONO_CLASS_LAYOUT_PACKING_SIZE] = tb->packing_size;
 	}
 
-	/*
-	 * FIXME: constructors and methods need to be output in the same order
-	 * as they are defined (according to table_idx).
-	 */
+	/* handle interfaces */
+	if (tb->interfaces) {
+		table = &assembly->tables [MONO_TABLE_INTERFACEIMPL];
+		i = table->rows;
+		table->rows += mono_array_length (tb->interfaces);
+		alloc_table (table, table->rows);
+		values = table->values + (i + 1) * MONO_INTERFACEIMPL_SIZE;
+		for (i = 0; i < mono_array_length (tb->interfaces); ++i) {
+			MonoReflectionType* interface = (MonoReflectionType*) mono_array_get (tb->interfaces, gpointer, i);
+			values [MONO_INTERFACEIMPL_CLASS] = tb->table_idx;
+			values [MONO_INTERFACEIMPL_INTERFACE] = mono_image_typedef_or_ref (assembly, interface->type);
+			values += MONO_INTERFACEIMPL_SIZE;
+		}
+	}
 
 	/* handle fields */
 	if (tb->fields) {
@@ -1778,7 +1788,7 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 	header->nt.pe_stack_commit = 0x00001000;
 	header->nt.pe_heap_reserve = 0x00100000;
 	header->nt.pe_heap_commit = 0x00001000;
-	header->nt.pe_loader_flags = 1;
+	header->nt.pe_loader_flags = 0;
 	header->nt.pe_data_dir_count = 16;
 
 #if 0
