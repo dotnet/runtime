@@ -292,6 +292,6 @@ EXTRA_DIST = $(common_BURGSRC) jit-icalls.c cprop.c TestDriver.cs ldscript $(tes
 	$(amd64_sources) inssel-amd64.brg cpu-amd64.md \
 	$(ppc_sources) inssel-ppc.brg cpu-g4.md \
 	$(sparc_sources) inssel-sparc.brg cpu-sparc.md \
-	$(s390_sources) inssel-s390.brg cpu-s390.md
+	$(s390_sources) inssel-s390.brg cpu-s390.md \
 	$(s390x_sources) inssel-s390x.brg cpu-s390x.md
 
