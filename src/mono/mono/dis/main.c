@@ -47,6 +47,19 @@ dump_header_data (MonoImage *img)
 }
 
 static void
+dump_cattrs (MonoImage *m, guint32 token, const char *indent)
+{
+	GList *tmp, *list;
+
+	list = dis_get_custom_attrs (m, token);
+	for (tmp = list; tmp; tmp = tmp->next) {
+		fprintf (output, "%s%s\n", indent, (char*)tmp->data);
+		g_free (tmp->data);
+	}
+	g_list_free (list);
+}
+
+static void
 dis_directive_assembly (MonoImage *m)
 {
 	MonoTableInfo *t  = &m->tables [MONO_TABLE_ASSEMBLY];
@@ -57,16 +70,16 @@ dis_directive_assembly (MonoImage *m)
 
 	mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
 	
+	fprintf (output, ".assembly '%s'\n{\n",
+		 mono_metadata_string_heap (m, cols [MONO_ASSEMBLY_NAME]));
+	dump_cattrs (m, MONO_TOKEN_ASSEMBLY | 1, "  ");
 	fprintf (output,
-		 ".assembly '%s'\n"
-		 "{\n"
 		 "  .hash algorithm 0x%08x\n"
 		 "  .ver  %d:%d:%d:%d"
 		 "%s %s"
 		 "%s"
 		 "\n"
 		 "}\n",
-		 mono_metadata_string_heap (m, cols [MONO_ASSEMBLY_NAME]),
 		 cols [MONO_ASSEMBLY_HASH_ALG],
 		 cols [MONO_ASSEMBLY_MAJOR_VERSION], cols [MONO_ASSEMBLY_MINOR_VERSION], 
 		 cols [MONO_ASSEMBLY_BUILD_NUMBER], cols [MONO_ASSEMBLY_REV_NUMBER],
@@ -221,6 +234,7 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end)
 		g_free (attrs);
 		g_free (flags);
 		g_free (sig);
+		dump_cattrs (m, MONO_TOKEN_FIELD_DEF | (i + 1), "    ");
 	}
 }
 
@@ -492,6 +506,8 @@ dis_method_list (MonoImage *m, guint32 start, guint32 end)
 		g_free (impl_flags);
 		
 		fprintf (output, "    {\n");
+		dump_cattrs (m, MONO_TOKEN_METHOD_DEF | (i + 1), "        ");
+		/* FIXME: need to sump also param custom attributes */
 		fprintf (output, "        // Method begins at RVA 0x%x\n", cols [MONO_METHOD_RVA]);
 		dis_code (m, cols [MONO_METHOD_RVA]);
 		fprintf (output, "    } // end of method %s\n\n", sig_str);
@@ -606,6 +622,7 @@ dis_property_list (MonoImage *m, guint32 typedef_row)
 	for (i = start; i < end; ++i) {
 		char *sig = dis_property_signature (m, i);
 		fprintf (output, "\t.property %s\n\t{\n", sig);
+		dump_cattrs (m, MONO_TOKEN_PROPERTY | (i + 1), "\t\t");
 		dis_property_methods (m, i);
 		fprintf (output, "\t}\n");
 		g_free (sig);
@@ -669,6 +686,7 @@ dis_event_list (MonoImage *m, guint32 typedef_row)
 	for (i = start; i < end; ++i) {
 		char *sig = dis_event_signature (m, i);
 		fprintf (output, "\t.event %s\n\t{\n", sig);
+		dump_cattrs (m, MONO_TOKEN_EVENT | (i + 1), "\t\t");
 		dis_event_methods (m, i);
 		fprintf (output, "\t}\n");
 		g_free (sig);
@@ -755,6 +773,7 @@ dis_type (MonoImage *m, int n)
 	
 	dis_interfaces (m, n + 1);
 	fprintf (output, "  {\n");
+	dump_cattrs (m, MONO_TOKEN_TYPE_DEF | (n + 1), "    ");
 
 	if (mono_metadata_packing_from_typedef (m, n + 1, &packing_size, &class_size)) {
 		fprintf (output, "    .pack %d\n", packing_size);

@@ -769,10 +769,15 @@ handle_enum:
 			break;
 		}
 	}
-	/*
-	 * FIXME: handle named args only when all the type are handled in fixed args.
-	 * slen = read16 (p);
-	 */
+	slen = read16 (p);
+	if (slen) {
+		g_string_sprintfa (res, " %d named args: (", slen);
+		slen = len - (p - value) + 1;
+		for (i = 0; i < slen; ++i) {
+			g_string_sprintfa (res, " %02X", (p [i] & 0xff));
+		}
+		g_string_append_c (res, ')');
+	}
 	s = res->str;
 	g_string_free (res, FALSE);
 	return s;

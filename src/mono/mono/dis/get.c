@@ -1216,3 +1216,81 @@ get_guid (MonoImage *m, guint32 guid_index)
 			guid [8], guid [9], guid [10], guid [11], guid [12], guid [13], guid [14], guid [15]);
 	return result;
 }
+
+GList *
+dis_get_custom_attrs (MonoImage *m, guint32 token)
+{
+	GList *list = NULL;
+	guint32 idx, i, j, len, mtoken;
+	guint32 cols [MONO_CUSTOM_ATTR_SIZE];
+	MonoTableInfo *ca;
+	char *method;
+	GString *attr;
+	const char *val;
+
+	idx = mono_metadata_token_index (token);
+	idx <<= CUSTOM_ATTR_BITS;
+	
+	switch (mono_metadata_token_table (token)) {
+	case MONO_TABLE_TYPEDEF:
+		idx |= CUSTOM_ATTR_TYPEDEF;
+		break;
+	case MONO_TABLE_ASSEMBLY:
+		idx |= CUSTOM_ATTR_ASSEMBLY;
+		break;
+	case MONO_TABLE_PROPERTY:
+		idx |= CUSTOM_ATTR_PROPERTY;
+		break;
+	case MONO_TABLE_EVENT:
+		idx |= CUSTOM_ATTR_EVENT;
+		break;
+	case MONO_TABLE_FIELD:
+		idx |= CUSTOM_ATTR_FIELDDEF;
+		break;
+	case MONO_TABLE_METHOD:
+		idx |= CUSTOM_ATTR_METHODDEF;
+		break;
+	case MONO_TABLE_PARAM:
+		idx |= CUSTOM_ATTR_PARAMDEF;
+		break;
+	default:
+		g_print ("Missing custom attr get support for token 0x%08x\n", token);
+		return NULL;
+	}
+
+	ca = &m->tables [MONO_TABLE_CUSTOMATTRIBUTE];
+	/* the table is not sorted */
+	for (i = 0; i < ca->rows; ++i) {
+		mono_metadata_decode_row (ca, i, cols, MONO_CUSTOM_ATTR_SIZE);
+		if (cols [MONO_CUSTOM_ATTR_PARENT] != idx)
+			continue;
+		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> CUSTOM_ATTR_TYPE_BITS;
+		switch (cols [MONO_CUSTOM_ATTR_TYPE] & CUSTOM_ATTR_TYPE_MASK) {
+		case CUSTOM_ATTR_TYPE_METHODDEF:
+			mtoken |= MONO_TOKEN_METHOD_DEF;
+			break;
+		case CUSTOM_ATTR_TYPE_MEMBERREF:
+			mtoken |= MONO_TOKEN_MEMBER_REF;
+			break;
+		default:
+			g_error ("Unknown table for custom attr type %08x", cols [MONO_CUSTOM_ATTR_TYPE]);
+			break;
+		}
+		method = get_method (m, mtoken);
+		val = mono_metadata_blob_heap (m, cols [MONO_CUSTOM_ATTR_VALUE]);
+		len = mono_metadata_decode_value (val, &val);
+		attr = g_string_new (".custom ");
+		g_string_sprintfa (attr, "%s = (", method);
+		for (j = 0; j < len; ++j) {
+			if (len > 4 && !(j % 16))
+				g_string_append (attr, "\n\t\t");
+			g_string_sprintfa (attr, " %02X", (val [j] & 0xff));
+		}
+		g_string_append_c (attr, ')');
+		list = g_list_append (list, attr->str);
+		g_string_free (attr, FALSE);
+		g_free (method);
+	}
+	return list;
+}
+
