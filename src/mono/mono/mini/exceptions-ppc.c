@@ -735,9 +735,9 @@ glist_to_array (GList *list)
  * start of the function or -1 if that info is not available.
  */
 MonoJitInfo *
-mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoContext *ctx, 
-			 MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset,
-			 gboolean *managed)
+mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji,
+			 MonoContext *ctx, MonoContext *new_ctx, char **trace, MonoLMF **lmf,
+			 int *native_offset, gboolean *managed)
 {
 	MonoJitInfo *ji;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
@@ -745,7 +745,11 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	char *p;
 	MonoPPCStackFrame *sframe;
 
-	ji = mono_jit_info_table_find (domain, ip);
+	/* Avoid costly table lookup during stack overflow */
+	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
+		ji = prev_ji;
+	else
+		ji = mono_jit_info_table_find (domain, ip);
 
 	if (trace)
 		*trace = NULL;
@@ -952,7 +956,7 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 
 	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
 		
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &rji, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
 		g_assert (ji);
 
 		if (ji == (gpointer)-1)
@@ -986,7 +990,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	skip++;
 
 	do {
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &rji, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
 
 		ctx = new_ctx;
 		
@@ -1131,7 +1135,7 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		char *trace = NULL;
 		
 		setup_context (&new_ctx);
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, ctx, &new_ctx, 
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &rji, ctx, &new_ctx, 
 					      test_only ? &trace : NULL, &lmf, NULL, NULL);
 		if (!ji) {
 			g_warning ("Exception inside function without unwind info");

@@ -746,15 +746,15 @@ void      mono_arch_allocate_vars               (MonoCompile *m);
 int       mono_arch_get_argument_info           (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info);
 gboolean  mono_arch_print_tree			(MonoInst *tree, int arity);
 MonoJitInfo *mono_arch_find_jit_info            (MonoDomain *domain, 
-												 MonoJitTlsData *jit_tls, 
-												 MonoJitInfo *res, 
-												 MonoJitInfo *prev_ji, 
-												 MonoContext *ctx, 
-												 MonoContext *new_ctx, 
-												 char **trace, 
-												 MonoLMF **lmf, 
-												 int *native_offset,
-												 gboolean *managed);
+						 MonoJitTlsData *jit_tls, 
+						 MonoJitInfo *res, 
+						 MonoJitInfo *prev_ji, 
+						 MonoContext *ctx, 
+						 MonoContext *new_ctx, 
+						 char **trace, 
+						 MonoLMF **lmf, 
+						 int *native_offset,
+						 gboolean *managed);
 gpointer mono_arch_get_call_filter              (void);
 gpointer mono_arch_get_restore_context          (void);
 gboolean mono_arch_handle_exception             (void *sigctx, gpointer obj, gboolean test_only);
