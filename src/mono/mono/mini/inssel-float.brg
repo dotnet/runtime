@@ -1,0 +1,233 @@
+%%
+
+#
+# inssel-float.brg: burg file for floating point instructions
+#
+# Author:
+#   Dietmar Maurer (dietmar@ximian.com)
+#
+# (C) 2002 Ximian, Inc.
+#
+
+#
+# load/store
+#
+
+freg: CEE_LDIND_R4 (base) {
+	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADR4_MEMBASE, state->reg1, 
+				   state->left->tree->inst_basereg, state->left->tree->inst_offset);
+}
+
+freg: CEE_LDIND_R8 (base) {
+	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADR8_MEMBASE, state->reg1, 
+				   state->left->tree->inst_basereg, state->left->tree->inst_offset);
+}
+
+stmt: CEE_STIND_R4 (base, freg) {
+	MONO_EMIT_STORE_MEMBASE (s, tree, OP_STORER4_MEMBASE_REG, state->left->tree->inst_basereg,
+				 state->left->tree->inst_offset, state->right->reg1);
+}
+
+stmt: CEE_STIND_R8 (base, freg) {
+	MONO_EMIT_STORE_MEMBASE (s, tree, OP_STORER8_MEMBASE_REG, state->left->tree->inst_basereg,
+				 state->left->tree->inst_offset, state->right->reg1);
+}
+
+freg: OP_R4CONST {
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+freg: OP_R8CONST {
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+#
+# fp alu operations 
+
+
+freg: OP_FADD (freg, freg) {
+	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+}
+
+freg: OP_FSUB (freg, freg) {
+	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+}
+
+freg: OP_FMUL (freg, freg) {
+	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+}
+
+freg: OP_FDIV (freg, freg) {
+	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+}
+
+freg: OP_FREM (freg, freg) {
+	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+}
+
+freg: OP_FNEG (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+freg: CEE_CKFINITE (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+freg: OP_SIN (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+freg: OP_COS (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+freg: OP_ABS (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+freg: OP_TAN (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+freg: OP_ATAN (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+freg: OP_SQRT (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+#
+# floating point conversions
+#
+
+reg: OP_FCONV_TO_I4 (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+reg: OP_FCONV_TO_U4 (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+reg: OP_FCONV_TO_OVF_I4 (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+reg: OP_FCONV_TO_OVF_U4 (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+reg: OP_FCONV_TO_OVF_I8 (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+reg: OP_FCONV_TO_OVF_U8 (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+reg: OP_FCONV_TO_OVF_I (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+reg: OP_FCONV_TO_OVF_U (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+reg: OP_FCONV_TO_I (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+reg: OP_FCONV_TO_U (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+reg: OP_FCONV_TO_I2 (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+reg: OP_FCONV_TO_U2 (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+reg: OP_FCONV_TO_I1 (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+reg: OP_FCONV_TO_U1 (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+freg: OP_FCONV_TO_R8 (freg) {
+	/* nothing to do */
+}
+
+freg: OP_FCONV_TO_R4 (freg) {
+	/* fixme: nothing to do ??*/
+}
+
+freg: CEE_CONV_R4 (reg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+freg: CEE_CONV_R8 (reg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+freg: CEE_CONV_R_UN (reg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+#
+# control flow
+#
+
+# CPUs using the same condition flags for integers and float
+# can use the following chain rule:
+# cflags: fpcflags "0"
+# that way all branches are handled by inssel.brg
+
+fpcflags: OP_COMPARE (freg, freg) {
+	tree->opcode = OP_FCOMPARE;
+	tree->sreg1 = state->left->reg1;
+	tree->sreg2 = state->right->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+#
+# miscellaneous fp operations
+#
+
+stmt: CEE_POP (freg) {
+	/* do nothing */
+}     
+
+
+freg: CEE_CKFINITE (freg) {
+	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%

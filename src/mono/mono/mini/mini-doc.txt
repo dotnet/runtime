@@ -1,0 +1,628 @@
+
+	       A new JIT compiler for the Mono Project
+
+	   Miguel de Icaza (miguel@{ximian.com,gnome.org}),
+
+  
+* Abstract
+
+	Mini is a new compilation engine for the Mono runtime.  The
+	new engine is designed to bring new code generation
+	optimizations, portability and precompilation. 
+
+	In this document we describe the design decisions and the
+	architecture of the new compilation engine. 
+
+* Introduction
+
+	First we discuss the overall architecture of the Mono runtime,
+	and how code generation fits into it; Then we discuss the
+	development and basic architecture of our first JIT compiler
+	for the ECMA CIL framework.  The next section covers the
+	objectives for the work on the new JIT compiler, then we
+	discuss the new features available in the new JIT compiler,
+	and finally a technical description of the new code generation
+	engine.
+
+* Architecture of the Mono Runtime
+
+	The Mono runtime is an implementation of the ECMA Common
+	Language Infrastructure (CLI), whose aim is to be a common
+	platform for executing code in multiple languages.
+
+	Languages that target the CLI generate images that contain
+	code in high-level intermediate representation called the
+	"Common Intermediate Language".  This intermediate language is
+	rich enough to allow for programs and pre-compiled libraries
+	to be reflected.  The execution environment allows for an
+	object oriented execution environment with single inheritance
+	and multiple interface implementations.
+
+	This runtime provides a number of services for programs that
+	are targeted to it: Just-in-Time compilation of CIL code into
+	native code, garbage collection, thread management, I/O
+	routines, single, double and decimal floating point,
+	asynchronous method invocation, application domains, and a
+	framework for building arbitrary RPC systems (remoting) and
+	integration with system libraries through the Platform Invoke
+	functionality.
+
+	The focus of this document is on the services provided by the
+	Mono runtime to transform CIL bytecodes into code that is
+	native to the underlying architecture.
+
+	The code generation interface is a set of macros that allow a
+	C programmer to generate code on the fly, this is done
+	through a set of macros found in the mono/jit/arch/ directory.
+	These macros are used by the JIT compiler to generate native
+	code. 
+
+	The platform invocation code is interesting, as it generates
+	CIL code on the fly to marshal parameters, and then this
+	code is in turned processed by the JIT engine.
+
+* Previous Experiences
+
+	Mono has built a JIT engine, which has been used to bootstrap
+	Mono since January, 2002.  This JIT engine has reasonable
+	performance, and uses an tree pattern matching instruction
+	selector based on the BURS technology.  This JIT compiler was
+	designed by Dietmar Maurer, Paolo Molaro and Miguel de Icaza.
+
+	The existing JIT compiler has three phases:
+
+		* Re-creation of the semantic tree from CIL
+		  byte-codes.
+
+		* Instruction selection, with a cost-driven
+		  engine. 
+
+		* Code generation and register allocation.
+
+	It is also hooked into the rest of the runtime to provide
+	services like marshaling, just-in-time compilation and
+	invocation of "internal calls". 
+
+	This engine constructed a collection of trees, which we
+	referred to as the "forest of trees", this forest is created by
+	"hydrating" the CIL instruction stream.
+
+	The first step was to identify the basic blocks on the method,
+	and computing the control flow graph (cfg) for it.  Once this
+	information was computed, a stack analysis on each basic block
+	was performed to create a forest of trees for each one of
+	them. 
+
+	So for example, the following statement:
+
+	       int a, b;
+	       ...
+	       b = a + 1;
+
+	Which would be represented in CIL as:
+
+			ldloc.0 
+			ldc.i4.1 
+			add 
+			stloc.1 
+
+	After the stack analysis would create the following tree:
+
+               (STIND_I4 ADDR_L[EBX|2] (
+			 ADD (LDIND_I4 ADDR_L[ESI|1]) 
+			 CONST_I4[1]))
+
+        This tree contains information from the stack analysis: for
+        instance, notice that the operations explicitly encode the
+        data types they are operating on, there is no longer an
+        ambiguity on the types, because this information has been
+        inferred. 
+
+	At this point the JIT would pass the constructed forest of
+	trees to the architecture-dependant JIT compiler.  
+
+	The architecture dependent code then performed register
+	allocation (optionally using linear scan allocation for
+	variables, based on life analysis).  
+
+	Once variables had been assigned, a tree pattern matching with
+	dynamic programming is used (the tree pattern matcher is
+	custom build for each architecture, using a code
+	generator: monoburg). The instruction selector used cost
+	functions to select the best instruction patterns.  
+
+	The instruction selector is able to produce instructions that
+	take advantage of the x86 instruction indexing instructions
+	for example. 
+
+	One problem though is that the code emitter and the register
+	allocator did not have any visibility outside the current
+	tree, which meant that some redundant instructions were
+	generated.  A peephole optimizer with this architecture was
+	hard to write, given the tree-based representation that is
+	used.
+
+	This JIT was functional, but it did not provide a good
+	architecture to base future optimizations on.  Also the
+	line between architecture neutral and architecture
+	specific code and optimizations was hard to draw.
+
+	The JIT engine supported two code generation modes to support
+	the two optimization modes for applications that host multiple
+	application domains: generate code that will be shared across
+	application domains, or generate code that will not be shared
+	across application domains.
+
+* Objectives of the new JIT engine.
+
+	We wanted to support a number of features that were missing:
+
+	   * Ahead-of-time compilation.  
+
+	     The idea is to allow developers to pre-compile their code
+	     to native code to reduce startup time, and the working
+	     set that is used at runtime in the just-in-time compiler.
+
+	     Although in Mono this has not been a visible problem, we
+	     wanted to pro-actively address this problem.
+
+	     When an assembly (a Mono/.NET executable) is installed in
+	     the system, it would then be possible to pre-compile the
+	     code, and have the JIT compiler tune the generated code
+	     to the particular CPU on which the software is
+	     installed. 
+
+	     This is done in the Microsoft.NET world with a tool
+	     called ngen.exe
+
+	   * Have a good platform for doing code optimizations. 
+
+	     The design called for a good architecture that would
+	     enable various levels of optimizations: some
+	     optimizations are better performed on high-level
+	     intermediate representations, some on medium-level and
+	     some at low-level representations.
+
+	     Also it should be possible to conditionally turn these on
+	     or off.  Some optimizations are too expensive to be used
+	     in just-in-time compilation scenarios, but these
+	     expensive optimizations can be turned on for
+	     ahead-of-time compilations or when using profile-guided
+	     optimizations on a subset of the executed methods.
+
+	   * Reduce the effort required to port the Mono code
+             generator to new architectures.
+
+	     For Mono to gain wide adoption in the Unix world, it is
+	     necessary that the JIT engine works in most of today's
+	     commercial hardware platforms. 
+
+* Features of the new JIT engine.
+
+	The new JIT engine was architected by Dietmar Maurer and Paolo
+	Molaro, based on the new objectives.
+
+	Mono provides a number of services to applications running
+	with the new JIT compiler:
+
+	     * Just-in-Time compilation of CLI code into native code.
+
+	     * Ahead-of-Time compilation of CLI code, to reduce
+               startup time of applications. 
+
+	A number of software development features are also available:
+
+	     * Execution time profiling (--profile)
+
+	       Generates a report of the times consumed by routines,
+	       as well as the invocation times, as well as the
+	       callers.
+
+	     * Memory usage profiling (--profile)
+
+	       Generates a report of the memory usage by a program
+	       that is ran under the Mono JIT.
+
+	     * Code coverage (--coverage)
+
+	     * Execution tracing.
+
+        People who are interested in developing and improving the Mini
+        JIT compiler will also find a few useful routines:
+
+	     * Compilation times
+
+	       This is used to time the execution time for the JIT
+	       when compiling a routine. 
+
+	     * Control Flow Graph and Dominator Tree drawing.
+
+	       These are visual aids for the JIT developer: they
+	       render representations of the Control Flow graph, and
+	       for the more advanced optimizations, they draw the
+	       dominator tree graph. 
+
+	       This requires Dot (from the graphwiz package) and Ghostview.
+
+	     * Code generator regression tests.  
+
+	       The engine contains support for running regression
+	       tests on the virtual machine, which is very helpful to
+	       developers interested in improving the engine.
+
+	     * Optimization benchmark framework.
+
+	       The JIT engine will generate graphs that compare
+	       various benchmarks embedded in an assembly, and run the
+	       various tests with different optimization flags.  
+
+	       This requires Perl, GD::Graph.
+
+* Flexibility
+
+	This is probably the most important component of the new code
+	generation engine.  The internals are relatively easy to
+	replace and update, even large passes can be replaced and
+	implemented differently.
+
+* New code generator
+
+	Compiling a method begins with the `mini_method_to_ir' routine
+	that converts the CIL representation into a medium
+	intermediate representation.
+
+	The mini_method_to_ir routine performs a number of operations:
+
+	    * Flow analysis and control flow graph computation.
+
+	      Unlike the previous version, stack analysis and control
+	      flow graphs are computed in a single pass in the
+	      mini_method_to_ir function, this is done for performance
+	      reasons: although the complexity increases, the benefit
+	      for a JIT compiler is that there is more time available
+	      for performing other optimizations.
+
+	    * Basic block computation.
+
+	      mini_method_to_ir populates the MonoCompile structure
+	      with an array of basic blocks each of which contains
+	      forest of trees made up of MonoInst structures.
+
+	    * Inlining
+
+	      Inlining is no longer restricted to methods containing
+	      one single basic block, instead it is possible to inline
+	      arbitrary complex methods.
+
+	      The heuristics to choose what to inline are likely going
+	      to be tuned in the future.
+
+	    * Method to opcode conversion.
+
+	      Some method call invocations like `call Math.Sin' are
+	      transformed into an opcode: this transforms the call
+	      into a semantically rich node, which is later inline
+	      into an FPU instruction.
+
+	      Various Array methods invocations are turned into
+	      opcodes as well (The Get, Set and Address methods)
+
+	    * Tail recursion elimination
+
+	Basic blocks ****
+
+	The MonoInst structure holds the actual decoded instruction,
+	with the semantic information from the stack analysis.
+	MonoInst is interesting because initially it is part of a tree
+	structure, here is a sample of the same tree with the new JIT
+	engine:
+
+		 (stind.i4 regoffset[0xffffffd4(%ebp)] 
+			   (add (ldind.i4 regoffset[0xffffffd8(%ebp)])
+			         iconst[1]))
+
+	This is a medium-level intermediate representation (MIR). 
+
+	Some complex opcodes are decomposed at this stage into a
+	collection of simpler opcodes.  Not every complex opcode is
+	decomposed at this stage, as we need to preserve the semantic
+	information during various optimization phases.  
+
+	For example a NEWARR opcode carries the length and the type of
+	the array that could be used later to avoid type checking or
+	array bounds check.
+
+        There are a number of operations supported on this
+	representation:
+
+		* Branch optimizations.
+
+		* Variable liveness.
+
+		* Loop optimizations: the dominator trees are
+		  computed, loops are detected, and their nesting
+		  level computed.
+
+		* Conversion of the method into static single assignment
+                  form (SSA form).
+
+	        * Dead code elimination.
+
+		* Constant propagation.
+
+		* Copy propagation.
+
+		* Constant folding.
+
+	Once the above optimizations are optionally performed, a
+	decomposition phase is used to turn some complex opcodes into
+	internal method calls.  In the initial version of the JIT
+	engine, various operations on longs are emulated instead of
+	being inlined.  Also the newarr invocation is turned into a
+	call to the runtime.
+
+	At this point, after computing variable liveness, it is
+	possible to use the linear scan algorithm for allocating
+	variables to registers.  The linear scan pass uses the
+	information that was previously gathered by the loop nesting
+	and loop structure computation to favor variables in inner
+	loops. 
+
+	Stack space is then reserved for the local variables and any
+	temporary variables generated during the various
+	optimizations.
+
+** Instruction selection 
+
+	At this point, the BURS instruction selector is invoked to
+	transform the tree-based representation into a list of
+	instructions.  This is done using a tree pattern matcher that
+	is generated for the architecture using the `monoburg' tool. 
+
+	Monoburg takes as input a file that describes tree patterns,
+	which are matched against the trees that were produced by the
+	engine in the previous stages.
+
+	The pattern matching might have more than one match for a
+	particular tree.  In this case, the match selected is the one
+	whose cost is the smallest.  A cost can be attached to each
+	rule, and if no cost is provided, the implicit cost is one.
+	Smaller costs are selected over higher costs.
+
+	The cost function can be used to select particular blocks of
+	code for a given architecture, or by using a prohibitive high
+	number to avoid having the rule match.
+
+	The various rules that our JIT engine uses transform a tree of
+	MonoInsts into a list of monoinsts:
+
+	+-----------------------------------------------------------+
+	| Tree                                           List       |
+	| of           ===> Instruction selection ===>   of         |
+	| MonoInst                                       MonoInst.  |
+        +-----------------------------------------------------------+
+
+	During this process various "types" of MonoInst kinds 
+	disappear and turned into lower-level representations.  The
+	JIT compiler just happens to reuse the same structure (this is
+	done to reduce memory usage and improve memory locality).
+
+	The instruction selection rules are split in a number of
+	files, each one with a particular purpose:
+
+	        inssel.brg
+			Contains the generic instruction selection
+			patterns.
+
+		inssel-x86.brg
+			Contains x86 specific rules.
+
+		inssel-ppc.brg
+			Contains PowerPC specific rules.
+
+		inssel-long32.brg
+			burg file for 64bit instructions on 32bit architectures.
+
+		inssel-long.brg
+			burg file for 64bit architectures.
+
+		inssel-float.brg
+			burg file for floating point instructions
+		
+	For a given build, a set of those files would be included.
+	For example, for the build of Mono on the x86, the following
+	set is used:
+
+	    inssel.brg inssel-x86.brg inssel-long32.brg inssel-float.brg
+
+** Native method generation
+
+	The native method generation has a number of steps:
+
+		* Architecture specific register allocation.
+
+		  The information about loop nesting that was
+		  previously gathered is used here to hint the
+		  register allocator. 
+
+		* Generating the method prolog/epilog.
+
+		* Optionally generate code to introduce tracing facilities.
+
+		* Hooking into the debugger.
+
+		* Performing any pending fixups. 
+
+		* Code generation.
+
+*** Code Generation
+
+	The actual code generation is contained in the architecture
+	specific portion of the compiler.  The input to the code
+	generator is each one of the basic blocks with its list of
+	instructions that were produced in the instruction selection
+	phase.
+
+	During the instruction selection phase, virtual registers are
+	assigned.  Just before the peephole optimization is performed,
+	physical registers are assigned.
+
+	A simple peephole and algebraic optimizer is ran at this
+	stage.  
+
+	The peephole optimizer removes some redundant operations at
+	this point.  This is possible because the code generation at
+	this point has visibility into the basic block that spans the
+	original trees.  
+
+	The algebraic optimizer performs some simple algebraic
+	optimizations that replace expensive operations with cheaper
+	operations if possible.
+
+	The rest of the code generation is fairly simple: a switch
+	statement is used to generate code for each of the MonoInsts
+
+	We always try to allocate code in sequence, instead of just using
+	malloc. This way we increase spatial locality which gives a massive
+	speedup on most architectures.
+
+*** Ahead of Time compilation
+
+	Ahead-of-Time compilation is a new feature of our new
+	compilation engine.  The compilation engine is shared by the
+	Just-in-Time (JIT) compiler and the Ahead-of-Time compiler
+	(AOT).
+
+	The difference is on the set of optimizations that are turned
+	on for each mode: Just-in-Time compilation should be as fast
+	as possible, while Ahead-of-Time compilation can take as long
+	as required, because this is not done at a time criticial
+	time. 
+
+	With AOT compilation, we can afford to turn all of the
+	computationally expensive optimizations on.
+
+	After the code generation phase is done, the code and any
+	required fixup information is saved into a file that is
+	readable by "as" (the native assembler available on all
+	systems). This assembly file is then passed to the native
+	assembler, which generates a loadable module.
+
+	At execution time, when an assembly is loaded from the disk,
+	the runtime engine will probe for the existance of a
+	pre-compiled image.  If the pre-compiled image exists, then it
+	is loaded, and the method invocations are resolved to the code
+	contained in the loaded module.
+
+	The code generated under the AOT scenario is slightly
+	different than the JIT scenario.  It generates code that is
+	application-domain relative and that can be shared among
+	multiple thread.
+
+	This is the same code generation that is used when the runtime
+	is instructed to maximize code sharing on a multi-application
+	domain scenario.
+
+* SSA-based optimizations
+
+	SSA form simplifies many optimization because each variable has exactly
+	one definition site. All uses of a variable are "dominated" by its
+	definition, which enables us to implement algorithm like:
+
+		* conditional constant propagation
+
+		* array bound check removal
+
+		* dead code elimination
+
+	And we can implement those algorithm in a efficient way using SSA. 
+
+
+* Register allocation.
+
+	Global register allocation is performed on the medium
+	intermediate representation just before instruction selection
+	is performed on the method.  Local register allocation is
+	later performed at the basic-block level on the 
+
+	Global register allocation uses the following input:
+
+        1) set of register-sized variables that can be allocated to a
+        register (this is an architecture specific setting, for x86
+        these registers are the callee saved register ESI, EDI and
+        EBX). 
+
+        2) liveness information for the variables
+
+        3) (optionally) loop info to favour variables that are used in
+        inner loops.
+
+	During instruction selection phase, symbolic registers are
+	assigned to temporary values in expressions.
+
+	Local register allocation assigns hard registers to the
+	symbolic registers, and it is performed just before the code
+	is actually emitted and is performed at the basic block level.
+	A CPU description file describes the input registers, output
+	registers, fixed registers and clobbered registers by each
+	operation.
+
+
+----------
+* Bootstrap 
+
+	The Mini bootstrap parses the arguments passed on the command
+	line, and initializes the JIT runtime. Each time the
+	mini_init() routine is invoked, a new Application Domain will
+	be returned.
+
+* Signal handlers
+
+	mono_runtime_install_handlers
+
+* BURG Code Generator Generator
+
+       monoburg was written by Dietmar Maurer. It is based on the
+       papers from Christopher W. Fraser, Robert R. Henry and Todd
+       A. Proebsting: "BURG - Fast Optimal Instruction Selection and
+       Tree Parsing" and "Engineering a Simple, Efficient Code
+       Generator Generator".
+
+       The original BURG implementation is unable to work on DAGs, instead only
+       trees are allowed. Our monoburg implementations is able to generate tree
+       matcher which works on DAGs, and we use this feature in the new
+       JIT. This simplifies the code because we can directly pass DAGs and
+       don't need to convert them to trees.
+
+* Future
+
+        Profile-based optimization is something that we are very
+        interested in supporting.  There are two possible usage
+        scenarios: 
+
+	   * Based on the profile information gathered during
+             the execution of a program, hot methods can be compiled
+             with the highest level of optimizations, while bootstrap
+             code and cold methods can be compiled with the least set
+             of optimizations and placed in a discardable list.
+
+	   * Code reordering: this profile-based optimization would
+             only make sense for pre-compiled code.  The profile
+             information is used to re-order the assembly code on disk
+             so that the code is placed on the disk in a way that
+             increments locality.  
+
+	     This is the same principle under which SGI's cord program
+	     works.  
+
+	The nature of the CIL allows the above optimizations to be
+	easy to implement and deploy.  Since we live and define our
+	universe for these things, there are no interactions with
+	system tools required, nor upgrades on the underlying
+	infrastructure required.
+
+	Instruction scheduling is important for certain kinds of
+	processors, and some of the framework exists today in our
+	register allocator and the instruction selector to cope with
+	this, but has not been finished.  The instruction selection
+	would happen at the same time as local register allocation. 

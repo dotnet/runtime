@@ -1,0 +1,13 @@
+* use a pool of MBState structures to speedup monoburg instead of using a
+  mempool.
+* the decode tables in the burg-generated could use short instead of int
+  (this should save about 1 KB)
+* track the use of ESP, so that we can avoid the x86_lea in the epilog
+
+
+Other Ideas:
+
+* the ORP people avoids optimizations inside catch handlers - just to save
+  memory (for example allocation of strings - instead they allocate strings when
+  the code is executed (like the --shared option)). But there are only a few
+  functions using catch handlers, so I consider this a minor issue.

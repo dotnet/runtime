@@ -1,0 +1,86 @@
+%%
+
+#
+# emullong.brg: emulate 64 bit instructions with 32bit instructions
+#
+# we dont use this, its just a prototype!
+#
+# Author:
+#   Dietmar Maurer (dietmar@ximian.com)
+#
+# (C) 2002 Ximian, Inc.
+#
+
+lreg: OP_I8CONST {
+	MonoInst *inst;
+
+	MONO_INST_NEW (s, inst, OP_ICONST);
+	inst->dreg = state->reg1;
+	inst->inst_c0 = tree->inst_c0;
+	mono_bblock_add_inst (s->cbb, inst);
+
+	tree->opcode = OP_ICONST;
+	tree->dreg = state->reg2;
+	tree->inst_c0 = tree->inst_c1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+lreg: CEE_CONV_I8 (OP_ICONST) {
+	MonoInst *inst;
+
+	inst = state->left->tree;
+	inst->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, inst);
+	
+	tree->opcode = OP_ICONST;
+	tree->dreg = state->reg2;
+
+	if (inst->inst_c0 >= 0)
+		tree->inst_c0 = 0;
+	else
+		tree->inst_c0 = -1;
+
+	mono_bblock_add_inst (s->cbb, inst);
+}
+
+lreg: CEE_CONV_U8 (OP_ICONST) {
+	MonoInst *inst;
+
+	inst = state->left->tree;
+	inst->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, inst);
+
+	tree->opcode = OP_ICONST;
+	tree->dreg = state->reg2;
+	tree->inst_c0 = 0;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+lreg: CEE_CONV_U8 (reg) {
+	MonoInst *inst;
+	
+	if (state->reg1 != state->left->reg1) {
+		MONO_INST_NEW (s, inst, OP_MOVE);
+		inst->dreg = state->reg1;
+		inst->sreg1 = state->left->reg1;
+		mono_bblock_add_inst (s->cbb, inst);
+	}
+
+	tree->opcode = OP_ICONST;
+	tree->dreg = state->reg2;
+	tree->inst_c0 = 0;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+lreg: CONV_OVF_I8_UN (OP_ICONST) {
+	state->left->tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, state->left->tree);
+
+	tree->opcode = OP_ICONST;
+	tree->dreg = state->reg2;
+	tree->inst_c0 = 0;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+
+%%

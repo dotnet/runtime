@@ -1,0 +1,28 @@
+;; -*- Prcs -*-
+(Created-By-Prcs-Version 1 3 2)
+(Project-Description "The mono SSA-based JIT.")
+(Project-Version mini 0 3)
+(Parent-Version mini 0 2)
+(Version-Log "")
+(New-Version-Log "")
+(Checkin-Time "Sat, 21 Sep 2002 12:11:29 +0200")
+(Checkin-Login lupus)
+(Populate-Ignore ())
+(Project-Keywords)
+(Files
+;; This is a comment.  Fill in files here.
+;; For example:  (prcs/checkout.cc ())
+
+;; Files added by populate at Sat, 08 Jun 2002 17:27:56 +0200,
+;; to version 0.0(w), by lupus:
+
+  (regalloc.c (mini/0_regalloc.c 1.1 664))
+  (cfold.c (mini/1_cfold.c 1.1 664))
+  (mini-x86.c (mini/2_mini-x86.c 1.2 664))
+  (mini.h (mini/3_mini.h 1.3 664))
+  (makefile (mini/4_makefile 1.3 664))
+  (test.cs (mini/5_test.cs 1.1 664))
+  (mini.c (mini/6_mini.c 1.3 664))
+)
+(Merge-Parents)
+(New-Merge-Parents)

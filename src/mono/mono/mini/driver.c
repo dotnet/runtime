@@ -1,0 +1,733 @@
+/*
+ * driver.c: The new mono JIT compiler.
+ *
+ * Author:
+ *   Paolo Molaro (lupus@ximian.com)
+ *   Dietmar Maurer (dietmar@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
+#include <config.h>
+#include <signal.h>
+#include <unistd.h>
+
+#include <mono/metadata/assembly.h>
+#include <mono/metadata/loader.h>
+#include <mono/metadata/cil-coff.h>
+#include <mono/metadata/tabledefs.h>
+#include <mono/metadata/class.h>
+#include <mono/metadata/object.h>
+#include <mono/metadata/exception.h>
+#include <mono/metadata/opcodes.h>
+#include <mono/metadata/mono-endian.h>
+#include <mono/metadata/tokentype.h>
+#include <mono/metadata/tabledefs.h>
+#include <mono/metadata/threads.h>
+#include <mono/metadata/marshal.h>
+#include <mono/metadata/socket-io.h>
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/debug-helpers.h>
+#include <mono/io-layer/io-layer.h>
+#include "mono/metadata/profiler.h"
+#include <mono/metadata/profiler-private.h>
+#include <mono/metadata/mono-config.h>
+#include <mono/metadata/environment.h>
+
+#include "mini.h"
+#include <string.h>
+#include <ctype.h>
+#include "inssel.h"
+#include "debug.h"
+
+static FILE *mini_stats_fd = NULL;
+
+static void mini_usage (void);
+
+typedef void (*OptFunc) (const char *p);
+
+/* keep in sync with enum in mini.h */
+typedef struct {
+	const char* name;
+	const char* desc;
+	const OptFunc func;
+} OptName;
+
+static const OptName 
+opt_names [] = {
+	{"peephole", "Peephole postpass"},
+	{"branch",   "Branch optimizations"},
+	{"inline",   "Inline method calls"},
+	{"cfold",    "Constant folding"},
+	{"consprop", "Constant propagation"},
+	{"copyprop", "Copy propagation"},
+	{"deadce",   "Dead code elimination"},
+	{"linears",  "Linear scan global reg allocation"},
+	{"cmov",     "Conditional moves"},
+	{"shared",   "Emit per-domain code"},
+	{"sched",    "Instruction scheduling"},
+	{"instrins", "Intrinsic method implementations"},
+	{"tailc",    "Tail recursion and tail calls"},
+	{"loop",     "Loop related optimizations"},
+	{"fcmov",    "Fast x86 FP compares"}
+};
+
+static guint32
+parse_optimizations (const char* p)
+{
+	/* the default value */
+	guint32 opt = MONO_OPT_PEEPHOLE | MONO_OPT_CFOLD /* | MONO_OPT_CONSPROP | MONO_OPT_INLINE*/ | MONO_OPT_BRANCH | /* | MONO_OPT_SAHRED |*/ MONO_OPT_LINEARS;
+	const char *n;
+	int i, invert, len;
+
+	/* call out to cpu detection code here that sets the defaults ... */
+	opt |= mono_arch_cpu_optimizazions ();
+	if (!p)
+		return opt;
+
+	while (*p) {
+		if (*p == '-') {
+			p++;
+			invert = TRUE;
+		} else {
+			invert = FALSE;
+		}
+		for (i = 0; i < G_N_ELEMENTS (opt_names); ++i) {
+			n = opt_names [i].name;
+			len = strlen (n);
+			if (strncmp (p, n, len) == 0) {
+				if (invert)
+					opt &= ~ (1 << i);
+				else
+					opt |= 1 << i;
+				p += len;
+				if (*p == ',') {
+					p++;
+					break;
+				} else if (*p == '=') {
+					p++;
+					if (opt_names [i].func)
+						opt_names [i].func (p);
+					while (*p && *p++ != ',');
+					break;
+				}
+				/* error out */
+				break;
+			}
+		}
+		if (i == G_N_ELEMENTS (opt_names)) {
+			if (strncmp (p, "all", 3) == 0) {
+				if (invert)
+					opt = 0;
+				else
+					opt = ~(MONO_OPT_SAHRED);
+				p += 3;
+				if (*p == ',')
+					p++;
+			} else {
+				fprintf (stderr, "Invalid optimization name `%s'\n", p);
+				exit (1);
+			}
+		}
+	}
+	return opt;
+}
+
+typedef struct {
+	const char* name;
+	const char* desc;
+	MonoGraphOptions value;
+} GraphName;
+
+static const GraphName 
+graph_names [] = {
+	{"cfg",      "Control Flow Graph (CFG)" ,               MONO_GRAPH_CFG},
+	{"dtree",    "Dominator Tree",                          MONO_GRAPH_DTREE},
+	{"code",     "CFG showing code",                        MONO_GRAPH_CFG_CODE},
+	{"ssa",      "CFG showing code after SSA translation",  MONO_GRAPH_CFG_SSA},
+	{"optcode",  "CFG showing code after IR optimizations", MONO_GRAPH_CFG_OPTCODE}
+};
+
+static MonoGraphOptions
+mono_parse_graph_options (const char* p)
+{
+	const char *n;
+	int i, len;
+
+	for (i = 0; i < G_N_ELEMENTS (graph_names); ++i) {
+		n = graph_names [i].name;
+		len = strlen (n);
+		if (strncmp (p, n, len) == 0)
+			return graph_names [i].value;
+	}
+
+	fprintf (stderr, "Invalid graph name provided: %s\n", p);
+	exit (1);
+}
+
+int
+mini_parse_default_optimizations (const char* p)
+{
+	guint32 opt;
+
+	opt = parse_optimizations (p);
+	return opt;
+}
+
+static char*
+opt_descr (guint32 flags) {
+	GString *str = g_string_new ("");
+	int i, need_comma;
+
+	need_comma = 0;
+	for (i = 0; i < G_N_ELEMENTS (opt_names); ++i) {
+		if (flags & (1 << i)) {
+			if (need_comma)
+				g_string_append_c (str, ',');
+			g_string_append (str, opt_names [i].name);
+			need_comma = 1;
+		}
+	}
+	return g_string_free (str, FALSE);
+}
+
+static const guint32
+opt_sets [] = {
+       0,
+       MONO_OPT_PEEPHOLE,
+       MONO_OPT_BRANCH,
+       MONO_OPT_CFOLD,
+       MONO_OPT_FCMOV,
+       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE,
+       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS,
+       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP,
+       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_CFOLD,
+       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE,
+       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP
+};
+
+typedef int (*TestMethod) (void);
+
+#if 0
+static void
+domain_dump_native_code (MonoDomain *domain) {
+	// need to poke into the domain, move to metadata/domain.c
+	// need to empty jit_info_table and code_mp
+}
+#endif
+
+static int
+mini_regression (MonoImage *image, int verbose) {
+	guint32 i, opt, opt_flags;
+	MonoMethod *method;
+	MonoCompile *cfg;
+	char *n;
+	int result, expected, failed, cfailed, run, code_size, total;
+	TestMethod func;
+	GTimer *timer = g_timer_new ();
+
+	if (mini_stats_fd) {
+		fprintf (mini_stats_fd, "$stattitle = \'Mono Benchmark Results (various optimizations)\';\n");
+
+		fprintf (mini_stats_fd, "$graph->set_legend(qw(");
+		for (opt = 0; opt < G_N_ELEMENTS (opt_sets); opt++) {
+			opt_flags = opt_sets [opt];
+			n = opt_descr (opt_flags);
+			if (!n [0])
+				n = (char *)"none";
+			if (opt)
+				fprintf (mini_stats_fd, " ");
+			fprintf (mini_stats_fd, "%s", n);
+		
+
+		}
+		fprintf (mini_stats_fd, "));\n");
+
+		fprintf (mini_stats_fd, "@data = (\n");
+		fprintf (mini_stats_fd, "[");
+	}
+
+	/* load the metadata */
+	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+       	        method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
+		mono_class_init (method->klass);
+
+		if (!strncmp (method->name, "test_", 5) && mini_stats_fd) {
+			fprintf (mini_stats_fd, "\"%s\",", method->name);
+		}
+	}
+	if (mini_stats_fd)
+		fprintf (mini_stats_fd, "],\n");
+
+
+	total = 0;
+	for (opt = 0; opt < G_N_ELEMENTS (opt_sets); ++opt) {
+		double elapsed, comp_time, start_time;
+		opt_flags = opt_sets [opt];
+		mini_set_defaults (verbose, opt_flags);
+		n = opt_descr (opt_flags);
+		g_print ("Test run: image=%s, opts=%s\n", image->name, n);
+		g_free (n);
+		cfailed = failed = run = code_size = 0;
+		comp_time = elapsed = 0.0;
+
+		/* fixme: ugly hack - delete all previously compiled methods */
+		for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+			method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
+			method->info = NULL;
+		}
+
+		g_timer_start (timer);
+		if (mini_stats_fd)
+			fprintf (mini_stats_fd, "[");
+		for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+        	        method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
+			if (strncmp (method->name, "test_", 5) == 0) {
+				expected = atoi (method->name + 5);
+				run++;
+				start_time = g_timer_elapsed (timer, NULL);
+				comp_time -= start_time; 
+				cfg = mini_method_compile (method, opt_flags, mono_root_domain, 0);
+				comp_time += g_timer_elapsed (timer, NULL);
+				if (cfg) {
+					if (verbose >= 2)
+						g_print ("Running '%s' ...\n", method->name);
+#ifdef MONO_USE_AOT_COMPILER
+					if (!(func = mono_aot_get_method (method)))
+#endif
+						func = (TestMethod)cfg->native_code;
+					result = func ();
+					if (result != expected) {
+						failed++;
+						if (verbose)
+							g_print ("Test '%s' failed result (got %d, expected %d).\n", method->name, result, expected);
+					}
+					code_size += cfg->code_len;
+					mono_destroy_compile (cfg);
+
+					if (mono_trace_coverage) {
+						MonoCoverageInfo *cov = mono_get_coverage_info (method);
+
+						if (cov) {
+							int k;
+							printf ("COVERAGE INFO %s\n", mono_method_full_name (method, TRUE));
+						
+							for (k = 0; k < cov->entries; k++) {
+								printf ("  BBLOCK %3d %d\n", cov->data [k].iloffset, cov->data [k].count);
+							}
+						}
+					}
+
+				} else {
+					cfailed++;
+					if (verbose)
+						g_print ("Test '%s' failed compilation.\n", method->name);
+				}
+				if (mini_stats_fd)
+					fprintf (mini_stats_fd, "%f, ", 
+						 g_timer_elapsed (timer, NULL) - start_time);
+			}
+		}
+		if (mini_stats_fd)
+			fprintf (mini_stats_fd, "],\n");
+		g_timer_stop (timer);
+		elapsed = g_timer_elapsed (timer, NULL);
+		g_print ("Results: total tests: %d, failed: %d, cfailed: %d (pass: %.2f%%)\n", 
+			run, failed, cfailed, 100.0*(run-failed-cfailed)/run);
+		g_print ("Elapsed time: %f secs (%f, %f), Code size: %d\n\n", elapsed, 
+			 elapsed - comp_time, comp_time, code_size);
+		total += failed + cfailed;
+	}
+
+	if (mini_stats_fd) {
+		fprintf (mini_stats_fd, ");\n");
+		fflush (mini_stats_fd);
+	}
+
+	g_timer_destroy (timer);
+	return total;
+}
+
+static int
+mini_regression_list (int verbose, int count, char *images [])
+{
+	int i, total;
+	MonoAssembly *ass;
+	
+	total = 0;
+	for (i = 0; i < count; ++i) {
+		ass = mono_assembly_open (images [i], NULL);
+		if (!ass) {
+			g_warning ("failed to load assembly: %s", images [i]);
+			continue;
+		}
+		total += mini_regression (ass->image, verbose);
+		mono_assembly_close (ass);
+	}
+	return total;
+}
+
+enum {
+	DO_BENCH,
+	DO_REGRESSION,
+	DO_COMPILE,
+	DO_EXEC,
+	DO_DRAW,
+};
+
+static void
+compile_all_methods (MonoAssembly *ass, int verbose)
+{
+	MonoImage *image = ass->image;
+	MonoMethod *method;
+	int i, count = 0;
+
+	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
+		if (method->flags & METHOD_ATTRIBUTE_ABSTRACT)
+			continue;
+		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+			continue;
+
+		count++;
+		if (verbose) {
+			char * desc = mono_method_full_name (method, TRUE);
+			g_print ("Compiling %d %s\n", count, desc + 3);
+			g_free (desc);
+		}
+		mono_compile_method (method);
+	}
+
+}
+
+/**
+ * mono_jit_exec:
+ * @assembly: reference to an assembly
+ * @argc: argument count
+ * @argv: argument vector
+ *
+ * Start execution of a program.
+ */
+static int 
+mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
+{
+	MonoImage *image = assembly->image;
+	MonoMethod *method;
+
+	method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
+
+	return mono_runtime_run_main (method, argc, argv, NULL);
+}
+
+typedef struct 
+{
+	MonoDomain *domain;
+	const char *file;
+	int argc;
+	char **argv;
+	guint32 opts;
+} MainThreadArgs;
+
+static void main_thread_handler (gpointer user_data)
+{
+	MainThreadArgs *main_args = user_data;
+	MonoAssembly *assembly;
+	
+	assembly = mono_domain_assembly_open (main_args->domain, main_args->file);
+	if (!assembly){
+		fprintf (stderr, "Can not open image %s\n", main_args->file);
+		exit (1);
+	}
+
+	if (mono_compile_aot) {
+		int res = mono_compile_assembly (assembly, main_args->opts);
+		printf ("AOT RESULT %d\n", res);
+	} else {
+		mono_jit_exec (main_args->domain, assembly, main_args->argc, main_args->argv);
+	}
+}
+
+static void
+mini_usage (void)
+{
+	int i;
+
+	fprintf (stderr,
+		"Usage is: mini [options] assembly\n\n"
+		"Runtime and JIT debugging:\n"
+		"    --compile METHOD       Just compile METHOD in assembly\n"
+		"    --ncompile N           Number of times to compile METHOD (default: 1)\n"
+		"    --regression           Runs the regression test contained in the assembly\n"
+		"    --trace                Enable tracing\n"
+		"    --compile-all          Compiles all the methods in the assembly\n"
+		"    --breakonex            Inserts a breakpoint on exceptions\n"
+		"    --break METHOD         Inserts a breakpoint at METHOD entry\n"
+		"\n"
+		"Development:\n"
+		"    --statfile FILE        Sets the stat file to FILE\n"
+		"    --aot                  Compiles the assembly to native code\n"
+		"    --coverage             Performs coverage analysis\n"
+		"    --profile              Runs in profiling mode\n"
+		"    --graph[=TYPE] METHOD  Draws a graph of the specified method:\n");
+	
+	for (i = 0; i < G_N_ELEMENTS (graph_names); ++i) {
+		fprintf (stderr, "                           %-10s %s\n", graph_names [i].name, graph_names [i].desc);
+	}
+
+	fprintf (stderr,
+		"\n"
+		"Runtime:\n"
+		"    --config FILE          Loads FILE as the Mono config\n"
+		"    --verbose, -v          Increases the verbosity level\n"
+		"    --help, -h             Show usage information\n"
+		"    --optimize=OPT         Turns on a specific optimization:\n");
+
+	for (i = 0; i < G_N_ELEMENTS (opt_names); ++i)
+		fprintf (stderr, "                           %-10s %s\n", opt_names [i].name, opt_names [i].desc);
+}
+
+int
+mini_main (int argc, char* argv[]) {
+	MainThreadArgs main_args;
+	MonoAssembly *assembly;
+	MonoMethodDesc *desc;
+	MonoMethod *method;
+	MonoCompile *cfg;
+	MonoDomain *domain;
+	const char* aname, *mname = NULL;
+	char *config_file = NULL;
+	int i, count = 1;
+	guint32 opt, action = DO_EXEC;
+	MonoGraphOptions mono_graph_options = 0;
+	int mini_verbose = 0;
+
+	opt = parse_optimizations (NULL);
+
+	for (i = 1; i < argc; ++i) {
+		if (argv [i] [0] != '-')
+			break;
+		if (strcmp (argv [i], "--regression") == 0) {
+			action = DO_REGRESSION;
+		} else if (strcmp (argv [i], "--verbose") == 0 || strcmp (argv [i], "-v") == 0) {
+			mini_verbose++;
+		} else if (strcmp (argv [i], "--help") == 0 || strcmp (argv [i], "-h") == 0) {
+			mini_usage ();
+			return 0;
+		} else if (strncmp (argv [i], "--statfile", 10) == 0) {
+			mini_stats_fd = fopen (argv [++i], "w+");
+		} else if (strncmp (argv [i], "--optimize=", 11) == 0) {
+			opt = parse_optimizations (argv [i] + 11);
+		} else if (strncmp (argv [i], "-O=", 3) == 0) {
+			opt = parse_optimizations (argv [i] + 3);
+		} else if (strcmp (argv [i], "--config") == 0) {
+			config_file = argv [++i];
+		} else if (strcmp (argv [i], "--ncompile") == 0) {
+			count = atoi (argv [++i]);
+			action = DO_BENCH;
+		} else if (strcmp (argv [i], "--trace") == 0) {
+			mono_jit_trace_calls = TRUE;
+		} else if (strcmp (argv [i], "--breakonex") == 0) {
+			mono_break_on_exc = TRUE;
+		} else if (strcmp (argv [i], "--break") == 0) {
+			if (!mono_insert_breakpoint (argv [++i], FALSE))
+				g_error ("Invalid method name '%s'", argv [i]);
+		} else if (strcmp (argv [i], "--stats") == 0) {
+			mono_jit_stats.enabled = TRUE;
+		} else if (strcmp (argv [i], "--aot") == 0) {
+			mono_compile_aot = TRUE;
+		} else if (strcmp (argv [i], "--coverage") == 0) {
+			mono_trace_coverage = TRUE;
+		} else if (strcmp (argv [i], "--compile-all") == 0) {
+			action = DO_COMPILE;
+		} else if (strcmp (argv [i], "--profile") == 0) {
+			mono_jit_profile = TRUE;
+			mono_profiler_install_simple ();
+		} else if (strcmp (argv [i], "--compile") == 0) {
+			mname = argv [++i];
+			action = DO_BENCH;
+		} else if (strncmp (argv [i], "--graph=", 8) == 0) {
+			mono_graph_options = mono_parse_graph_options (argv [i] + 8);
+			mname = argv [++i];
+			action = DO_DRAW;
+		} else if (strcmp (argv [i], "--graph") == 0) {
+			mname = argv [++i];
+			mono_graph_options = MONO_GRAPH_CFG;
+			action = DO_DRAW;
+		} else {
+			fprintf (stderr, "Unknown command line option: %s", argv [i]);
+			return 1;
+		}
+	}
+
+	mini_set_defaults (mini_verbose, opt);
+	domain = mini_init (argv [0]);
+
+	switch (action) {
+	case DO_REGRESSION:
+		if (mini_regression_list (mini_verbose, argc -i, argv + i)) {
+			g_print ("Regression ERRORS!\n");
+			mini_cleanup (domain);
+			return 1;
+		}
+		mini_cleanup (domain);
+		return 0;
+	case DO_BENCH:
+		if (argc - i != 1 || mname == NULL) {
+			g_print ("Usage: mini --ncompile num --compile method assembly\n");
+			mini_cleanup (domain);
+			return 1;
+		}
+		aname = argv [i];
+		break;
+	case DO_COMPILE:
+		if (argc - i != 1) {
+			fprintf (stderr, "Missing assembly name in --compile-all");
+			mini_cleanup (domain);
+			return 1;
+		}
+		aname = argv [i];
+		break;
+	case DO_DRAW:
+		if (argc - i != 1 || mname == NULL) {
+			fprintf (stderr, "Usage: mini --graph[=TYPE] method assembly\n");
+			mini_cleanup (domain);
+			return 1;
+		}
+		aname = argv [i];
+		break;
+	default:
+		if (argc - i < 1) {
+			mini_usage ();
+			mini_cleanup (domain);
+			return 1;
+		}
+		aname = argv [i];
+		break;
+	}
+
+	assembly = mono_assembly_open (aname, NULL);
+	if (!assembly) {
+		fprintf (stderr, "cannot open assembly %s\n", aname);
+		mini_cleanup (domain);
+		return 2;
+	}
+
+	if (mono_compile_aot || action == DO_EXEC) {
+		g_set_prgname (aname);
+		mono_config_parse (config_file);
+		//mono_set_rootdir ();
+
+		main_args.domain = domain;
+		main_args.file = aname;		
+		main_args.argc = argc - i;
+		main_args.argv = argv + i;
+		main_args.opts = opt;
+	     
+		mono_runtime_exec_managed_code (domain, main_thread_handler, &main_args);
+		mini_cleanup (domain);
+		/* Look up return value from System.Environment.ExitCode */
+		i = mono_environment_exitcode_get ();
+		return i;
+	} else if (action == DO_COMPILE) {
+		compile_all_methods (assembly, mini_verbose);
+		mini_cleanup (domain);
+		return 0;
+	}
+	desc = mono_method_desc_new (mname, 0);
+	if (!desc) {
+		g_print ("Invalid method name %s\n", mname);
+		mini_cleanup (domain);
+		return 3;
+	}
+	method = mono_method_desc_search_in_image (desc, assembly->image);
+	if (!method) {
+		g_print ("Cannot find method %s\n", mname);
+		mini_cleanup (domain);
+		return 3;
+	}
+
+	if (action == DO_DRAW) {
+		int part = 0;
+
+		switch (mono_graph_options) {
+		case MONO_GRAPH_DTREE:
+			part = 1;
+			opt |= MONO_OPT_LOOP;
+			break;
+		case MONO_GRAPH_CFG_CODE:
+			part = 1;
+			break;
+		case MONO_GRAPH_CFG_SSA:
+			part = 2;
+			break;
+		case MONO_GRAPH_CFG_OPTCODE:
+			part = 3;
+			break;
+		default:
+			break;
+		}
+
+		cfg = mini_method_compile (method, opt, mono_root_domain, part);
+		if ((mono_graph_options & MONO_GRAPH_CFG_SSA) && !(cfg->comp_done & MONO_COMP_SSA)) {
+			g_warning ("no SSA info available (use -O=deadce)");
+			return 1;
+		}
+		mono_draw_graph (cfg, mono_graph_options);
+		mono_destroy_compile (cfg);
+
+	} else if (action == DO_BENCH) {
+		if (mini_stats_fd) {
+			const char *n;
+			double no_opt_time = 0.0;
+			GTimer *timer = g_timer_new ();
+			fprintf (mini_stats_fd, "$stattitle = \'Compilations times for %s\';\n", 
+				 mono_method_full_name (method, TRUE));
+			fprintf (mini_stats_fd, "@data = (\n");
+			fprintf (mini_stats_fd, "[");
+			for (i = 0; i < G_N_ELEMENTS (opt_sets); i++) {
+				opt = opt_sets [i];
+				n = opt_descr (opt);
+				if (!n [0])
+					n = "none";
+				fprintf (mini_stats_fd, "\"%s\",", n);
+			}
+			fprintf (mini_stats_fd, "],\n[");
+
+			for (i = 0; i < G_N_ELEMENTS (opt_sets); i++) {
+				int j;
+				double elapsed;
+				opt = opt_sets [i];
+				g_timer_start (timer);
+				for (j = 0; j < count; ++j) {
+					cfg = mini_method_compile (method, opt, mono_root_domain, 0);
+					mono_destroy_compile (cfg);
+				}
+				g_timer_stop (timer);
+				elapsed = g_timer_elapsed (timer, NULL);
+				if (!opt)
+					no_opt_time = elapsed;
+				fprintf (mini_stats_fd, "%f, ", elapsed);
+			}
+			fprintf (mini_stats_fd, "]");
+			if (no_opt_time > 0.0) {
+				fprintf (mini_stats_fd, ", \n[");
+				for (i = 0; i < G_N_ELEMENTS (opt_sets); i++) 
+					fprintf (mini_stats_fd, "%f,", no_opt_time);
+				fprintf (mini_stats_fd, "]");
+			}
+			fprintf (mini_stats_fd, ");\n");
+		} else {
+			for (i = 0; i < count; ++i) {
+				cfg = mini_method_compile (method, opt, mono_root_domain, 0);
+				mono_destroy_compile (cfg);
+			}
+		}
+	} else {
+		cfg = mini_method_compile (method, opt, mono_root_domain, 0);
+		mono_destroy_compile (cfg);
+	}
+
+	mini_cleanup (domain);
+ 	return 0;
+}
+

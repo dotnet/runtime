@@ -1,0 +1,47 @@
+%%
+
+#
+# inssel-long.brg: burg file for 64bit architectures
+#
+# Author:
+#   Dietmar Maurer (dietmar@ximian.com)
+#
+# (C) 2002 Ximian, Inc.
+#
+
+reg: CEE_LDIND_I8 (base) {
+	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADI8_MEMBASE, state->reg1, 
+				   state->left->tree->inst_basereg, state->left->tree->inst_offset);
+}
+
+stmt: CEE_STIND_I8 (base, reg) {
+	MONO_EMIT_STORE_MEMBASE (s, tree, OP_STOREI8_MEMBASE_REG, state->left->tree->inst_basereg,
+				 state->left->tree->inst_offset, state->right->reg1);
+}
+
+stmt: CEE_STIND_I8 (base, OP_ICONST) {
+	MONO_EMIT_STORE_MEMBASE_IMM (s, tree, OP_STOREI8_MEMBASE_IMM, state->left->tree->inst_basereg,
+				     state->left->tree->inst_offset, state->right->tree->inst_c0);
+}
+
+reg: OP_FCONV_TO_I8 (freg) {
+	g_assert_not_reached ();
+}
+
+reg: OP_FCONV_TO_U8 (freg) {
+	g_assert_not_reached ();
+}
+
+freg: CEE_CONV_R_UN (reg) {
+	g_assert_not_reached ();
+}
+
+freg: CEE_CONV_R4 (reg) {
+	g_assert_not_reached ();
+}
+
+freg: CEE_CONV_R8 (reg) {
+	g_assert_not_reached ();
+}
+
+%%

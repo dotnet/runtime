@@ -1,0 +1,5 @@
+mini
+mono-debugger-mini-wrapper
+.libs
+*.o
+test.exe
