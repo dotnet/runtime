@@ -7682,6 +7682,8 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 	image = &gparam->tbuilder->module->dynamic_image->image;
 	mono_class_from_generic_parameter (param, image, gparam->mbuilder != NULL);
 
+	param->pklass->reflection_info = gparam;
+
 	gparam->type.type = g_new0 (MonoType, 1);
 	gparam->type.type->type = gparam->mbuilder ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
 	gparam->type.type->data.generic_param = param;
