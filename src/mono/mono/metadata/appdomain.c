@@ -632,12 +632,15 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 	}
 
 	image = assembly->image;
+
 	method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
 
 	if (!method)
 		g_error ("No entry point method found in %s", image->name);
 
 	margs = mono_domain_transfer_object (cdom, ad->data, (MonoObject *)args);
+	if (!margs)
+		margs = mono_array_new (ad->data, mono_defaults.string_class, 0);
 	res = mono_runtime_exec_main (method, (MonoArray *)margs, NULL);
 
 	mono_domain_set (cdom);

@@ -862,7 +862,7 @@ ves_icall_get_attributes (MonoReflectionType *type)
 static void
 ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
 {
-	MonoDomain *domain = mono_domain_get (); 
+	MonoDomain *domain = mono_domain_get ();
 
 	info->parent = mono_type_get_object (domain, &method->klass->byval_arg);
 	info->ret = mono_type_get_object (domain, method->signature->ret);
@@ -1983,6 +1983,15 @@ get_caller (MonoMethod *m, gint32 no, gint32 ilo, gpointer data)
 }
 
 static MonoReflectionAssembly*
+ves_icall_System_Reflection_Assembly_GetEntryAssembly (void)
+{
+	MonoDomain* domain = mono_domain_get ();
+	g_assert (domain->entry_assembly);
+	return mono_assembly_get_object (domain, domain->entry_assembly);
+}
+
+
+static MonoReflectionAssembly*
 ves_icall_System_Reflection_Assembly_GetCallingAssembly (void)
 {
 	MonoMethod *m = mono_method_get_last_managed ();
@@ -2803,6 +2812,7 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Assembly::FillName", ves_icall_System_Reflection_Assembly_FillName,
 	"System.Reflection.Assembly::get_code_base", ves_icall_System_Reflection_Assembly_get_code_base,
 	"System.Reflection.Assembly::GetExecutingAssembly", ves_icall_System_Reflection_Assembly_GetExecutingAssembly,
+	"System.Reflection.Assembly::GetEntryAssembly", ves_icall_System_Reflection_Assembly_GetEntryAssembly,
 	"System.Reflection.Assembly::GetCallingAssembly", ves_icall_System_Reflection_Assembly_GetCallingAssembly,
 	"System.Reflection.Assembly::get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint,
 	"System.Reflection.Assembly::GetManifestResourceNames", ves_icall_System_Reflection_Assembly_GetManifestResourceNames,

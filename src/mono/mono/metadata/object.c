@@ -615,10 +615,17 @@ mono_unhandled_exception (MonoObject *exc)
 int
 mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 {
+	MonoDomain *domain;
 	gpointer pa [1];
 	int rval;
 
+	g_assert (args);
+
 	pa [0] = args;
+
+	domain = mono_object_domain (args);
+	g_assert (!domain->entry_assembly);
+	domain->entry_assembly = method->klass->image->assembly;
 
 	/* FIXME: check signature of method */
 	if (method->signature->ret->type == MONO_TYPE_I4) {
