@@ -455,7 +455,7 @@ mono_class_value_size      (MonoClass *klass, guint32 *align)
 	/* fixme: check disable, because we still have external revereces to
 	 * mscorlib and Dummy Objects 
 	 */
-	//g_assert (klass->valuetype);
+	/*g_assert (klass->valuetype);*/
 
 	size = mono_class_instance_size (klass) - sizeof (MonoObject);
 
@@ -525,6 +525,21 @@ mono_class_get_field (MonoClass *class, guint32 field_token)
 	g_assert (mono_metadata_token_code (field_token) == MONO_TOKEN_FIELD_DEF);
 
 	return mono_class_get_field_idx (class, idx - 1);
+}
+
+MonoClassField *
+mono_class_get_field_from_name (MonoClass *klass, const char *name)
+{
+	int i;
+	guint32 token;
+	MonoTableInfo *t = &klass->image->tables [MONO_TABLE_FIELD];
+
+	for (i = 0; i < klass->field.count; ++i) {
+		token = mono_metadata_decode_row_col (t, klass->field.first + i, MONO_FIELD_NAME);
+		if (strcmp (name, mono_metadata_string_heap (klass->image, token)) == 0)
+			return &klass->fields [i];
+	}
+	return NULL;
 }
 
 /**

@@ -55,7 +55,7 @@ mono_cli_rva_map (MonoCLIImageInfo *iinfo, guint32 addr)
 	for (i = 0; i < top; i++){
 		if ((addr >= tables->st_virtual_address) &&
 		    (addr < tables->st_virtual_address + tables->st_raw_data_size)){
-			return iinfo->cli_sections [i] +
+			return (char*)iinfo->cli_sections [i] +
 				(addr - tables->st_virtual_address);
 		}
 		tables++;

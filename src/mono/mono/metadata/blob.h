@@ -45,7 +45,7 @@ typedef enum {
 
 	MONO_TYPE_MODIFIER   = 0x40,       /* Or with the following types */
 	MONO_TYPE_SENTINEL   = 0x41,       /* Sentinel for varargs method signature */
-	MONO_TYPE_PINNED     = 0x45,       /* Local var that points to pinned object */
+	MONO_TYPE_PINNED     = 0x45       /* Local var that points to pinned object */
 } MonoTypeEnum;
 
 #endif

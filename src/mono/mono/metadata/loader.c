@@ -367,7 +367,8 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 
 	g_module_symbol (gmodule, import, &mh->addr); 
 
-	g_assert (mh->addr);
+	if (!mh->addr)
+		g_error ("Failed to load function %s from %s", import, scope);
 
 	mh->flags |= METHOD_ATTRIBUTE_PINVOKE_IMPL;
 }

@@ -848,7 +848,7 @@ mono_metadata_decode_row_col (MonoTableInfo *t, int idx, guint col)
 guint32
 mono_metadata_decode_blob_size (const char *xptr, const char **rptr)
 {
-	const unsigned char *ptr = xptr;
+	const unsigned char *ptr = (const unsigned char *)xptr;
 	guint32 size;
 	
 	if ((*ptr & 0x80) == 0){
@@ -1415,10 +1415,10 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 		mh->max_stack = 8;
 		local_var_sig_tok = 0;
 
-		//
-		// The spec claims 3 bits, but the Beta2 is
-		// incorrect
-		//
+		/*
+		 * The spec claims 3 bits, but the Beta2 is
+		 * incorrect
+		 */
 		mh->code_size = flags >> 2;
 		mh->code = ptr;
 		return mh;

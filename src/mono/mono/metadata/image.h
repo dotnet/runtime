@@ -38,7 +38,7 @@ struct _MonoImage {
 	int   ref_count;
 	FILE *f;
 	char *name;
-	char *assembly_name;
+	const char *assembly_name;
 	void *image_info;
 
 	char                *raw_metadata;
