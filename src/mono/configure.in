@@ -2,7 +2,7 @@
 AC_INIT(README)
 AC_CANONICAL_SYSTEM
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(mono, 0.12)
+AM_INIT_AUTOMAKE(mono, 0.13)
 AM_MAINTAINER_MODE
 
 dnl ****************************************
