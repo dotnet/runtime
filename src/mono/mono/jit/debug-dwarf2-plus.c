@@ -16,11 +16,7 @@ method_info_func (MonoDebugSymbolFile *symfile, guint32 token, gpointer user_dat
 	MonoMethod *method;
 	DebugMethodInfo *minfo;
 
-#if 1
 	method = g_hash_table_lookup (info->image->method_cache, GINT_TO_POINTER (token));
-#else
-	method = mono_get_method (info->image, token, NULL);
-#endif
 	if (!method)
 		return NULL;
 

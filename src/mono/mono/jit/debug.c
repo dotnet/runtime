@@ -40,6 +40,7 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 	debug->format = format;
 	debug->producer_name = g_strdup_printf ("Mono JIT compiler version %s", VERSION);
 	debug->next_idx = 100;
+	debug->dirty = TRUE;
 
 	debug->type_hash = g_hash_table_new (NULL, NULL);
 	debug->methods = g_hash_table_new_full (g_direct_hash, g_direct_equal,
@@ -126,8 +127,6 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 
 	if (!mono_default_debug_handle && (debug->format != MONO_DEBUG_FORMAT_DWARF2_PLUS))
 		mono_default_debug_handle = debug;
-
-	mono_debug_add_image (debug, assembly->image);
 
 	return debug;
 }
@@ -355,6 +354,8 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 	if (info != NULL)
 		return info;
 
+	debug->dirty = TRUE;
+
 	info = g_new0 (AssemblyDebugInfo, 1);
 	info->image = image;
 	info->image->ref_count++;
@@ -406,7 +407,7 @@ mono_debug_write_symbols (MonoDebugHandle *debug)
 {
 	GList *tmp;
 
-	if (!debug)
+	if (!debug || !debug->dirty)
 		return;
 
 	switch (debug->format) {
@@ -426,6 +427,8 @@ mono_debug_write_symbols (MonoDebugHandle *debug)
 	default:
 		g_assert_not_reached ();
 	}
+
+	debug->dirty = FALSE;
 }
 
 void
@@ -498,6 +501,8 @@ mono_debug_get_type (MonoDebugHandle *debug, MonoClass *klass)
 	index = GPOINTER_TO_INT (g_hash_table_lookup (debug->type_hash, klass));
 	if (index)
 		return index;
+
+	debug->dirty = TRUE;
 
 	index = ++debug->next_klass_idx;
 	g_hash_table_insert (debug->type_hash, klass, GINT_TO_POINTER (index));
@@ -614,6 +619,8 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 
 	if (g_hash_table_lookup (debug->methods, method))
 		return;
+
+	debug->dirty = TRUE;
 
 	if (info->moffsets) {
 		/* info->moffsets contains -1 "outside" of functions. */

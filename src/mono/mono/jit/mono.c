@@ -322,10 +322,12 @@ main (int argc, char *argv [])
 	}
 
 	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
+		MonoDebugHandle *debug;
 		gchar **args;
 
 		args = g_strsplit (debug_args ? debug_args : "", ",", -1);
-		mono_debug_open (assembly, mono_debug_format, (const char **) args);
+		debug = mono_debug_open (assembly, mono_debug_format, (const char **) args);
+		mono_debug_add_image (debug, assembly->image);
 		g_strfreev (args);
 	}
 

@@ -74,6 +74,7 @@ struct _MonoDebugHandle {
 	GPtrArray *source_files;
 	int next_idx;
 	int next_klass_idx;
+	int dirty;
 	GList *info;
 	FILE *f;
 };

@@ -3733,11 +3733,14 @@ mono_thread_abort (MonoObject *obj)
 	
 	g_assert (obj);
 
+	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
+		mono_debug_make_symbols ();
+		G_BREAKPOINT ();
+	}
+
 	if (jit_tls->env) {	
 		longjmp (*jit_tls->env, obj);
 	}
-
-	G_BREAKPOINT ();
 
 	ExitThread (-1);
 }
