@@ -347,13 +347,17 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 	/* Indexes start from 1 since 0 means the handle is not allocated */
 	idx = ++next_handle;
 	if (idx >= array_size) {
-#if HAVE_BOEHM_GC
 		gpointer *new_array;
 		guint8 *new_type_array;
 		if (!array_size)
 			array_size = 16;
+#if HAVE_BOEHM_GC
 		new_array = GC_MALLOC (sizeof (gpointer) * (array_size * 2));
 		new_type_array = GC_MALLOC (sizeof (guint8) * (array_size * 2));
+#else
+		new_array = g_malloc0 (sizeof (gpointer) * (array_size * 2));
+		new_type_array = g_malloc0 (sizeof (guint8) * (array_size * 2));
+#endif
 		if (gc_handles) {
 			int i;
 			memcpy (new_array, gc_handles, sizeof (gpointer) * array_size);
@@ -370,20 +374,22 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 #else
 				if (((gulong)new_array [i]) & 0x1) {
 #endif
+#if HAVE_BOEHM_GC
 					if (gc_handles [i] != (gpointer)-1)
 						GC_unregister_disappearing_link (&(gc_handles [i]));
 					if (new_array [i] != (gpointer)-1)
 						GC_GENERAL_REGISTER_DISAPPEARING_LINK (&(new_array [i]), REVEAL_POINTER (new_array [i]));
+#endif
 				}
 			}
 		}
 		array_size *= 2;
+#ifndef HAVE_BOEHM_GC
+		g_free (gc_handles);
+		g_free (gc_handle_types);
+#endif
 		gc_handles = new_array;
 		gc_handle_types = new_type_array;
-#else
-		LeaveCriticalSection (&handle_section);
-		mono_raise_exception (mono_get_exception_execution_engine ("No GCHandle support built-in"));
-#endif
 	}
 
 	/* resuse the type from the old target */
@@ -399,9 +405,6 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 #if HAVE_BOEHM_GC
 		if (gc_handles [idx] != (gpointer)-1)
 			GC_GENERAL_REGISTER_DISAPPEARING_LINK (&(gc_handles [idx]), obj);
-#else
-		LeaveCriticalSection (&handle_section);
-		mono_raise_exception (mono_get_exception_execution_engine ("No weakref support"));
 #endif
 		break;
 	default:
@@ -429,9 +432,6 @@ ves_icall_System_GCHandle_FreeHandle (guint32 handle)
 		if (gc_handles [idx] != (gpointer)-1)
 			GC_unregister_disappearing_link (&(gc_handles [idx]));
 	}
-#else
-	LeaveCriticalSection (&handle_section);
-	mono_raise_exception (mono_get_exception_execution_engine ("No GCHandle support"));
 #endif
 
 	gc_handles [idx] = (gpointer)-1;
@@ -457,9 +457,48 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 			if (obj == (MonoObject *) -1)
 				return NULL;
 		}
-		return obj;
+		if (obj) {
+			MonoClass *klass = mono_object_class (obj);
+			if (klass == mono_defaults.string_class) {
+				return mono_string_chars ((MonoString*)obj);
+			} else if (klass->rank) {
+				return mono_array_addr ((MonoArray*)obj, char, 0);
+			} else {
+				/* the C# code will check and throw the exception */
+				/* FIXME: missing !klass->blittable test, see bug #61134,
+				 * disabled in 1.0 untill the blittable-using code is audited.
+				if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
+					return (gpointer)-1; */
+				return (char*)obj + sizeof (MonoObject);
+			}
+		}
 	}
 	return NULL;
+}
+
+guint32
+mono_gchandle_new (MonoObject *obj, gboolean pinned)
+{
+	return ves_icall_System_GCHandle_GetTargetHandle (obj, 0, pinned? HANDLE_PINNED: HANDLE_NORMAL);
+}
+
+guint32
+mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection)
+{
+	return ves_icall_System_GCHandle_GetTargetHandle (obj, 0, track_resurrection? HANDLE_WEAK_TRACK: HANDLE_WEAK);
+}
+
+/* This will return NULL for a collected object if using a weakref handle */
+MonoObject*
+mono_gchandle_get_target (guint32 gchandle)
+{
+	return ves_icall_System_GCHandle_GetTarget (gchandle);
+}
+
+void
+mono_gchandle_free (guint32 gchandle)
+{
+	ves_icall_System_GCHandle_FreeHandle (gchandle);
 }
 
 #if HAVE_BOEHM_GC
