@@ -204,7 +204,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 	for (i = 0; i < sig->param_count; ++i) {
 		ArgInfo *ainfo = &cinfo->args [sig->hasthis + i];
 
-		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos - sig->hasthis)) {
+		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 			/* We allways pass the sig cookie on the stack for simplicity */
 			/* 
 			 * Prevent implicit arguments + the sig cookie from being passed 
@@ -267,6 +267,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 					NOT_IMPLEMENTED;
 			}
 
+			ainfo->offset = stack_size;
 			stack_size += size;
 			ainfo->storage = ArgOnStack;
 			break;
@@ -384,9 +385,7 @@ enum_retvalue:
 int
 mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
-	int k, frame_size = 0;
-	int size, align, pad;
-	int offset = 8;
+	int k;
 
 	/* The arguments are saved to a stack area in mono_arch_instrument_prolog */
 	if (csig->hasthis) {
@@ -747,30 +746,43 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
 
+		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
+			MonoMethodSignature *tmp_sig;
+			
+			/* Emit the signature cookie just before the implicit arguments */
+			MonoInst *sig_arg;
+			/* FIXME: Add support for signature tokens to AOT */
+			cfg->disable_aot = TRUE;
+
+			g_assert (cinfo->sig_cookie.storage == ArgOnStack);
+
+			/*
+			 * mono_ArgIterator_Setup assumes the signature cookie is 
+			 * passed first and all the arguments which were before it are
+			 * passed on the stack after the signature. So compensate by 
+			 * passing a different signature.
+			 */
+			tmp_sig = mono_metadata_signature_dup (call->signature);
+			tmp_sig->param_count -= call->signature->sentinelpos;
+			tmp_sig->sentinelpos = 0;
+			memcpy (tmp_sig->params, call->signature->params + call->signature->sentinelpos, tmp_sig->param_count * sizeof (MonoType*));
+
+			MONO_INST_NEW (cfg, sig_arg, OP_ICONST);
+			sig_arg->inst_p0 = tmp_sig;
+
+			MONO_INST_NEW (cfg, arg, OP_OUTARG);
+			arg->inst_left = sig_arg;
+			arg->type = STACK_PTR;
+
+			/* prepend, so they get reversed */
+			arg->next = call->out_args;
+			call->out_args = arg;
+		}
+
 		if (is_virtual && i == 0) {
 			/* the argument will be attached to the call instruction */
 			in = call->args [i];
 		} else {
-			if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i - sig->hasthis == sig->sentinelpos)) {
-				/* Emit the signature cookie just before the implicit arguments */
-				MonoInst *sig_arg;
-				/* FIXME: Add support for signature tokens to AOT */
-				cfg->disable_aot = TRUE;
-
-				g_assert (cinfo->sig_cookie.storage == ArgOnStack);
-
-				MONO_INST_NEW (cfg, sig_arg, OP_ICONST);
-				sig_arg->inst_p0 = call->signature;
-
-				MONO_INST_NEW (cfg, arg, OP_OUTARG);
-				arg->inst_left = sig_arg;
-				arg->type = STACK_PTR;
-
-				/* prepend, so they get reversed */
-				arg->next = call->out_args;
-				call->out_args = arg;
-			}
-
 			MONO_INST_NEW (cfg, arg, OP_OUTARG);
 			in = call->args [i];
 			arg->cil_code = in->cil_code;
@@ -781,9 +793,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			call->out_args = arg;
 
 			if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis]))) {
-				MonoInst *inst;
 				gint align;
-				guint32 offset, pad;
 				guint32 size;
 
 				if (sig->params [i - sig->hasthis]->type == MONO_TYPE_TYPEDBYREF) {
@@ -2303,7 +2313,7 @@ mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 			offset += 8;
 		}
 		
-		amd64_shift_reg_imm (code, X86_SHR, sreg, 2);
+		amd64_shift_reg_imm (code, X86_SHR, sreg, 4);
 		if (sreg != AMD64_RCX)
 			amd64_mov_reg_reg (code, AMD64_RCX, sreg, 8);
 		amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
@@ -2555,13 +2565,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case CEE_LDIND_I:
-			amd64_mov_reg_mem (code, ins->dreg, ins->inst_p0, sizeof (gpointer));
+			amd64_mov_reg_mem (code, ins->dreg, (gssize)ins->inst_p0, sizeof (gpointer));
 			break;
 		case CEE_LDIND_I4:
-			amd64_mov_reg_mem (code, ins->dreg, ins->inst_p0, 4);
+			amd64_mov_reg_mem (code, ins->dreg, (gssize)ins->inst_p0, 4);
 			break;
 		case CEE_LDIND_U4:
-			amd64_mov_reg_mem (code, ins->dreg, ins->inst_p0, 4);
+			amd64_mov_reg_mem (code, ins->dreg, (gssize)ins->inst_p0, 4);
 			break;
 		case OP_LOADU4_MEM:
 			amd64_mov_reg_imm (code, ins->dreg, ins->inst_p0);
@@ -2979,9 +2989,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_BRANCH (ins, opcode_to_x86_cond (ins->opcode), FALSE);
 			break;
 		case OP_COND_EXC_IOV:
-		case OP_COND_EXC_IC:
 			EMIT_COND_SYSTEM_EXCEPTION (opcode_to_x86_cond (ins->opcode),
 										TRUE, ins->inst_p1);
+			break;
+		case OP_COND_EXC_IC:
+			EMIT_COND_SYSTEM_EXCEPTION (opcode_to_x86_cond (ins->opcode),
+										FALSE, ins->inst_p1);
 			break;
 		case CEE_NOT:
 			amd64_not_reg (code, ins->sreg1);
@@ -3852,7 +3865,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			continue;
 		}
 		case MONO_PATCH_INFO_IID:
-			*((guint32 *)(ip + 2)) = (guint32)target;
+			*((guint32 *)(ip + 2)) = (guint32)(guint64)target;
 			continue;			
 		case MONO_PATCH_INFO_CLASS_INIT: {
 			/* FIXME: Might already been changed to a nop */
@@ -4180,7 +4193,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			amd64_patch (patch_info->ip.i + cfg->native_code, code);
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);
 			amd64_set_reg_template (code, AMD64_RDI);
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_REL, (gpointer)patch_info->ip.i);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_REL, (gpointer)(gssize)patch_info->ip.i);
 			amd64_set_reg_template (code, AMD64_RSI);
 			patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
 			patch_info->data.name = "mono_arch_throw_exception_by_name";
@@ -4199,7 +4212,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_R8: {
-			code = ALIGN_TO (code, 8);
+			code = (guint8*)ALIGN_TO (code, 8);
 
 			guint8* pos = cfg->native_code + patch_info->ip.i;
 
@@ -4212,7 +4225,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			break;
 		}
 		case MONO_PATCH_INFO_R4: {
-			code = ALIGN_TO (code, 8);
+			code = (guint8*)ALIGN_TO (code, 8);
 
 			guint8* pos = cfg->native_code + patch_info->ip.i;
 
@@ -4645,6 +4658,8 @@ void
 mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg)
 {
 	int out_reg = param_regs [0];
+
+	/* FIXME: RDI and RSI might get clobbered */
 
 	if (vt_reg != -1) {
 		MonoInst *vtarg;
