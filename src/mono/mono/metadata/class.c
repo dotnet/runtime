@@ -249,6 +249,8 @@ class_compute_field_layout (MonoClass *class)
 	for (i = 0; i < top; i++){
 		const char *sig;
 		guint32 cols [MONO_FIELD_SIZE];
+		guint32 constant_cols [MONO_CONSTANT_SIZE];
+		guint32 cindex;
 		int idx = class->field.first + i;
 		
 		mono_metadata_decode_row (t, idx, cols, CSIZE (cols));
@@ -289,6 +291,19 @@ class_compute_field_layout (MonoClass *class)
 			class->enum_basetype = class->fields [i].type;
 			class->cast_class = class->element_class = mono_class_from_mono_type (class->enum_basetype);
 			blittable = class->element_class->blittable;
+		}
+
+		if ((class->fields [i].type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT) &&
+			(class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)) {
+			cindex = mono_metadata_get_constant_index (class->image, MONO_TOKEN_FIELD_DEF | (class->field.first + i + 1));
+			if (!cindex) {
+				g_warning ("constant for field %s:%s not found", class->name, class->fields [i].name);
+				continue;
+			}
+			mono_metadata_decode_row (&class->image->tables [MONO_TABLE_CONSTANT], cindex - 1, constant_cols, MONO_CONSTANT_SIZE);
+			class->fields [i].def_value = g_new0 (MonoConstant, 1);
+			class->fields [i].def_value->type = constant_cols [MONO_CONSTANT_TYPE];
+			class->fields [i].def_value->value = (gpointer)mono_metadata_blob_heap (class->image, constant_cols [MONO_CONSTANT_VALUE]);
 		}
 	}
 

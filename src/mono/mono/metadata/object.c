@@ -315,8 +315,6 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 {
 	MonoVTable *vt;
 	MonoClassField *field;
-	guint32 cindex;
-	guint32 cols [MONO_CONSTANT_SIZE];
 	const char *p;
 	char *t;
 	int i, len;
@@ -391,17 +389,11 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		}
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT))
 			continue;
-		cindex = mono_metadata_get_constant_index (class->image, MONO_TOKEN_FIELD_DEF | (i + 1));
-		if (!cindex) {
-			g_warning ("constant for field %s not found", field->name);
-			continue;
-		}
-		mono_metadata_decode_row (&class->image->tables [MONO_TABLE_CONSTANT], cindex - 1, cols, MONO_CONSTANT_SIZE);
-		p = mono_metadata_blob_heap (class->image, cols [MONO_CONSTANT_VALUE]);
+		p = field->def_value->value;
 		len = mono_metadata_decode_blob_size (p, &p);
 		t = (char*)vt->data + field->offset;
 		/* should we check that the type matches? */
-		switch (cols [MONO_CONSTANT_TYPE]) {
+		switch (field->def_value->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_U1:
 		case MONO_TYPE_I1:
@@ -456,7 +448,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 			/* nothing to do, we malloc0 the data and the value can be 0 only */
 			break;
 		default:
-			g_warning ("type 0x%02x should not be in constant table", cols [MONO_CONSTANT_TYPE]);
+			g_warning ("type 0x%02x should not be in constant table", field->def_value->type);
 		}
 	}
 

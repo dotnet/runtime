@@ -5372,7 +5372,9 @@ typebuilder_setup_fields (MonoClass *klass)
 	MonoReflectionTypeBuilder *tb = klass->reflection_info;
 	MonoReflectionFieldBuilder *fb;
 	MonoClassField *field;
+	const char *p, *p2;
 	int i;
+	guint32 len, idx;
 
 	klass->field.count = tb->fields? mono_array_length (tb->fields): 0;
 	klass->field.first = 0;
@@ -5401,6 +5403,19 @@ typebuilder_setup_fields (MonoClass *klass)
 		field->parent = klass;
 		fb->handle = field;
 		mono_save_custom_attrs (klass->image, field, fb->cattrs);
+
+		if (fb->def_value) {
+			field->type->attrs |= FIELD_ATTRIBUTE_HAS_DEFAULT;
+			MonoDynamicAssembly *assembly = klass->image->assembly->dynamic;
+			field->def_value = g_new0 (MonoConstant, 1);
+			idx = encode_constant (assembly, fb->def_value, &field->def_value->type);
+			/* Copy the data from the blob since it might get realloc-ed */
+			p = assembly->blob.data + idx;
+			len = mono_metadata_decode_blob_size (p, &p2);
+			len += p2 - p;
+			field->def_value->value = g_malloc (len);
+			memcpy (field->def_value->value, p, len);
+		}
 	}
 	mono_class_layout_fields (klass);
 }

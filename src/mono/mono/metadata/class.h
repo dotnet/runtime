@@ -13,11 +13,17 @@ extern gboolean mono_print_vtable;
 typedef struct MonoVTable MonoVTable;
 
 typedef struct {
+	MonoTypeEnum type;
+	gpointer value;
+} MonoConstant;
+
+typedef struct {
 	MonoType        *type;
 	int              offset;
 	const char      *name;
 	const char      *data;
 	MonoClass       *parent;
+	MonoConstant    *def_value;
 } MonoClassField;
 
 typedef struct {
