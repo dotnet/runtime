@@ -1,3 +1,7 @@
+2003-11-14  Jackson Harper <jackson@ximian.com>
+
+	* Makefile.am: delete mscorlib.dll
+	
 2003-11-12 Jackson Harper <jackson@ximian.com>
 
 	* Makefile.am: corlib is now named mscorlib.dll

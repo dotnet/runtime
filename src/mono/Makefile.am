@@ -33,7 +33,7 @@ mcs-rest:
 	(cd ../mcs/class; $(MAKE))
 
 remove-binaries:
-	rm ../mcs/class/lib/corlib.dll ../mcs/mcs/mcs.exe runtime/*dll runtime/*.exe >& /dev/null; echo
+	rm ../mcs/class/lib/mscorlib.dll ../mcs/mcs/mcs.exe runtime/*dll runtime/*.exe >& /dev/null; echo
 
 
 win32getdeps:
