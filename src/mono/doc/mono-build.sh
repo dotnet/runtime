@@ -97,6 +97,12 @@ else
     PKG_CONFIG_PATH="$here/install/lib/pkgconfig:$PKG_CONFIG_PATH"
 fi
 
+if [ -f /usr/include/gc/gc.h ]; then
+    install_libgc=no
+else
+    install_libgc=yes
+fi
+
 if [ $install_pkgconfig = "yes" -o $install_glib = "yes" ]; then
     ACLOCAL_FLAGS="-I $here/install/share/aclocal $ACLOCAL_FLAGS"
 fi
@@ -105,6 +111,11 @@ export PATH
 export LD_LIBRARY_PATH
 export ACLOCAL_FLAGS
 export PKG_CONFIG_PATH
+
+CPPFLAGS="$CPPFLAGS -I$here/install/include"
+LDFLAGS="$LDFLAGS -L$here/install/lib"
+export CPPFLAGS
+export LDFLAGS
 
 # Grab pkg-config-0.8, glib-1.3.12 if necessary
 
@@ -118,6 +129,15 @@ if [ $install_glib = "yes" ]; then
     install_package glib-1.3.13.tar.gz glib-1.3.13 glib
 else
     echo "Not installing glib, you already seem to have it installed"
+fi
+
+if [ $install_libgc = "yes" ]; then
+    install_package gc6.0.tar.gz gc6.0 libgc
+    # make install didnt do the headers!
+    mkdir -p $here/install/include/gc
+    cp -r $here/gc6.0/include/* $here/install/include/gc
+else
+    echo "Not installing libgc, you already seem to have it installed"
 fi
 
 # End of build dependencies, now get the latest mono checkout and build that

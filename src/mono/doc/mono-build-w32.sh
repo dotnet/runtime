@@ -58,7 +58,40 @@ cvs checkout mono || exit -1
 # dont need PKG_CONFIG_PATH (the internal pkgconfig config file
 # $prefix is handled similarly).
 
-if [ ! -f `(cd mono; aclocal --print-ac-dir)`/pkg.m4 ]; then
+function aclocal_scan () {
+    # Quietly ignore the rogue '-I' and other aclocal flags that
+    # aren't actually directories...
+    #
+    # cd into mono/ so that the aclocal wrapper can work out which version
+    # of aclocal to run
+    for i in `(cd mono && aclocal --print-ac-dir)` $ACLOCAL_FLAGS
+    do
+	if [ -f $i/$1 ]; then
+	    return 0
+	fi
+    done
+
+    return 1
+}
+
+function install_package() {
+    zipfile=$1
+    markerfile=$2
+    name=$3
+
+    echo "Installing $name..."
+    if [ ! -f $here/$zipfile ]; then
+	wget http://www.go-mono.com/archive/$zipfile
+    fi
+
+    # Assume that the package is installed correctly if the marker
+    # file is there
+    if [ ! -f $here/install/$markerfile ]; then
+	(cd $here/install || exit -1; unzip -o $here/$zipfile || exit -1) || exit -1
+    fi
+}
+
+if ! aclocal_scan pkg.m4 ; then
     ACLOCAL_FLAGS="-I $here/install/share/aclocal $ACLOCAL_FLAGS"
 fi
 
@@ -68,18 +101,21 @@ export ACLOCAL_FLAGS
 # Grab pkg-config, glib etc
 if [ ! -d $here/install ]; then
     mkdir $here/install || exit -1
-
-    # Fetch and install pkg-config, glib, iconv, intl
-    for i in pkgconfig-0.80-tml-20020101.zip glib-1.3.12-20020101.zip glib-dev-1.3.12-20020101.zip libiconv-1.7.zip libiconv-dev-1.7.zip libintl-0.10.40-20020101.zip
-    do
-	wget http://www.go-mono.org/archive/$i
-	(cd $here/install || exit -1; unzip -o ../$i || exit -1) || exit -1
-    done
 fi
 
+# Fetch and install pkg-config, glib, iconv, intl
+
+install_package pkgconfig-0.80-tml-20020101.zip bin/pkg-config.exe pkgconfig
+install_package glib-1.3.12-20020101.zip lib/libglib-1.3-12.dll glib
+install_package glib-dev-1.3.12-20020101.zip lib/glib-1.3.lib glib-dev
+install_package libiconv-1.7.zip lib/iconv.dll iconv
+install_package libiconv-dev-1.7.zip lib/iconv.lib iconv-dev
+install_package libintl-0.10.40-20020101.zip lib/libintl-1.dll intl
+install_package libgc-dev.zip lib/gc.dll gc-dev
+
 # Needed to find the libiconv bits
-CPPFLAGS="-I$here/install/include"
-LDFLAGS="-L$here/install/lib"
+CPPFLAGS="$CPPFLAGS -I$here/install/include"
+LDFLAGS="$LDFLAGS -L$here/install/lib"
 export CPPFLAGS
 export LDFLAGS
 
