@@ -167,12 +167,12 @@ mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text)
 	l = strlen (text);
 
 	ut = g_utf8_to_utf16 (text, l, NULL, &items_written, &error);
-
-	if (items_written > sb->capacity)
-		items_written = sb->capacity;
+	
+	if (items_written > mono_stringbuilder_capacity (sb))
+		items_written = mono_stringbuilder_capacity (sb);
 	
 	if (!error) {
-		memcpy (sb->chars->vector, ut, items_written * 2);
+		memcpy (mono_string_chars (sb->str), ut, items_written * 2);
 		sb->length = items_written;
 	} else 
 		g_error_free (error);
@@ -183,15 +183,17 @@ mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text)
 gpointer
 mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 {
-	char *res;
+	GError *error = NULL;
+	gchar *res;
 
 	if (!sb)
 		return NULL;
 
-	res = g_malloc (sb->capacity + 1);
-
-	/* fixme: copy the content of the string builder? */
-	res [0] = 0;
+	res = g_utf16_to_utf8 (mono_string_chars (sb->str), sb->length, NULL, NULL, &error);
+	if (error) {
+		g_error_free (error);
+		mono_raise_exception (mono_get_exception_execution_engine ("Failed to convert StringBuilder from utf16 to utf8"));
+	}
 
 	return res;
 }

@@ -26,7 +26,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/utils/mono-uri.h>
 
-#define MONO_CORLIB_VERSION 7
+#define MONO_CORLIB_VERSION 8
 
 CRITICAL_SECTION mono_delegate_section;
 

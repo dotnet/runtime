@@ -112,9 +112,8 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
-	gint32 capacity;
 	gint32 length;
-	MonoArray *chars;
+	MonoString *str;
 } MonoStringBuilder;
 
 typedef struct {
@@ -373,6 +372,7 @@ typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
 
 #define mono_string_chars(s) ((gunichar2*)(s)->chars)
 #define mono_string_length(s) ((s)->length)
+#define mono_stringbuilder_capacity(sb) ((sb)->str->length)
 
 MonoObject *
 mono_object_new             (MonoDomain *domain, MonoClass *klass);
