@@ -126,6 +126,15 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 }
 
 gpointer
+mono_get_unmanaged_thunk_for_managed_method_ptr (void *method, void *signature)
+{
+	MonoMethodSignature *ms;
+
+	ms = mono_metadata_parse_method_signature (NULL, FALSE, signature, NULL);
+	
+}
+
+gpointer
 mono_array_to_savearray (MonoArray *array)
 {
 	if (!array)
@@ -916,6 +925,7 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 				break;
 			case MONO_TYPE_I2:
 			case MONO_TYPE_U2:
+			case MONO_TYPE_CHAR:
 				mono_mb_emit_byte (mb, CEE_LDLOC_1);
 				mono_mb_emit_byte (mb, CEE_LDLOC_0);
 				mono_mb_emit_byte (mb, CEE_LDIND_I2);
