@@ -509,7 +509,8 @@ mono_create_method_pointer (MonoMethod *method)
 	MonoMethodSignature *sig;
 	MonoJitInfo *ji;
 	guint8 *p, *code_buffer;
-	guint i, align, code_size, stack_size, stackval_arg_pos, local_pos, local_start, reg_param, stack_param;
+	guint i, align = 0, code_size, stack_size, stackval_arg_pos, local_pos, local_start, reg_param, stack_param,
+		this_flag;
 	guint32 simpletype;
 
 	code_size = 1024;
@@ -547,13 +548,22 @@ mono_create_method_pointer (MonoMethod *method)
 	if (sig->hasthis) {
 		ppc_stw  (p, ppc_r3, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, obj)), ppc_r31);
 		reg_param = 1;
-	} else {
+	} else if (sig->param_count) {
+		DEBUG (printf ("save r%d\n", 3));
 		ppc_stw  (p, ppc_r3, local_pos, ppc_r31);
 		local_pos += 4;
 		reg_param = 0;
 	}
-	ppc_stw (p, ppc_r4, local_pos, ppc_r31); local_pos += 4;
-	ppc_stw (p, ppc_r5, local_pos, ppc_r31); local_pos += 4;
+
+	this_flag = (sig->hasthis ? 1 : 0);
+	if (sig->param_count) {
+		gint save_count = MAX (3, MIN (8, sig->param_count - 1));
+		for (i = reg_param; i < save_count; i ++) {
+			ppc_stw (p, ppc_r4 + i, local_pos, ppc_r31);
+			local_pos += 4;
+			DEBUG (printf ("save r%d\n", 4 + i));
+		}
+	}
 
 	/* set MonoInvocation::stack_args */
 	stackval_arg_pos = MINV_POS + sizeof (MonoInvocation);
@@ -562,12 +572,8 @@ mono_create_method_pointer (MonoMethod *method)
 
 	/* add stackval arguments */
 	for (i = 0; i < sig->param_count; ++i) {
-		if (reg_param < 3 - (sig->hasthis ? 1 : 0)) {
-			ppc_addi (p, ppc_r5, ppc_r31, local_start + (reg_param - (sig->hasthis ? 1 : 0))*4);
-			reg_param ++;
-		} else if (reg_param < 8) {
-			ppc_stw  (p, ppc_r3 + reg_param, local_pos, ppc_r31);
-			ppc_addi (p, ppc_r5, ppc_r31, local_pos);
+		if (reg_param < 8) {
+			ppc_addi (p, ppc_r5, ppc_r31, local_start + (reg_param - this_flag)*4);
 			reg_param ++;
 		} else {
 			ppc_addi (p, ppc_r5, stack_size + 8 + stack_param, ppc_r31);
@@ -584,10 +590,12 @@ mono_create_method_pointer (MonoMethod *method)
 		ppc_blrl (p);
 
 		/* fixme: alignment */
+		DEBUG (printf ("arg_pos %d --> ", stackval_arg_pos));
 		if (sig->pinvoke)
-			stackval_arg_pos += mono_type_native_stack_size (sig->params [i], &align);
+			stackval_arg_pos += 4*mono_type_native_stack_size (sig->params [i], &align);
 		else
-			stackval_arg_pos += mono_type_stack_size (sig->params [i], &align);
+			stackval_arg_pos += 4*mono_type_stack_size (sig->params [i], &align);
+		DEBUG (printf ("%d\n", stackval_arg_pos));
 	}
 
 	/* return value storage */
