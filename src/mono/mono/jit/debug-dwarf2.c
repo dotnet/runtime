@@ -104,7 +104,11 @@
 #define DW_OP_const1s			0x09
 #define DW_OP_constu			0x10
 #define DW_OP_consts			0x11
+#define DW_OP_plus			0x22
+#define DW_OP_reg0			0x50
+#define DW_OP_breg0			0x70
 #define DW_OP_fbreg			0x91
+#define DW_OP_piece			0x93
 
 #define DW_CC_normal			1
 #define DW_CC_program			2
@@ -788,8 +792,64 @@ dwarf2_write_class (AssemblyDebugInfo *info, MonoClass *klass, int idx)
 }
 
 static void
+dwarf2_write_variable_location (AssemblyDebugInfo *info, MonoDebugVarInfo *var)
+{
+	switch (var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS) {
+	case MONO_DEBUG_VAR_ADDRESS_MODE_STACK:
+		/*
+		 * Variable is on the stack.
+		 *
+		 * If `index' is zero, use the normal frame register.  Otherwise, bits
+		 * 0..4 of `index' contain the frame register.
+		 *
+		 */
+
+		if (!var->index)
+			/* Use the normal frame register (%ebp on the i386). */
+			dwarf2_write_byte (info->f, DW_OP_fbreg);
+		else
+			/* Use a custom frame register. */
+			dwarf2_write_byte (info->f, DW_OP_breg0 + (var->index & 0x001f));
+		dwarf2_write_sleb128 (info->f, var->offset);
+		break;
+
+	case MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER:
+		/*
+		 * Variable is in the register whose number is contained in bits 0..4
+		 * of `index'.
+		 *
+		 */
+		dwarf2_write_byte (info->f, DW_OP_reg0 + (var->index & 0x001f));
+		if (var->offset) {
+			dwarf2_write_byte (info->f, DW_OP_consts);
+			dwarf2_write_sleb128 (info->f, var->offset);
+			dwarf2_write_byte (info->f, DW_OP_plus);
+		}
+		break;
+
+	case MONO_DEBUG_VAR_ADDRESS_MODE_TWO_REGISTERS:
+		/*
+		 * Variable is in two registers whose numbers are in bits 0..4 and 5..9 of 
+		 * the `index' field.
+		 */
+		dwarf2_write_byte (info->f, DW_OP_reg0 + (var->index & 0x001f));
+		dwarf2_write_byte (info->f, DW_OP_piece);
+		dwarf2_write_byte (info->f, sizeof (int));
+
+		dwarf2_write_byte (info->f, DW_OP_reg0 + ((var->index & 0x1f0) >> 5));
+		dwarf2_write_byte (info->f, DW_OP_piece);
+		dwarf2_write_byte (info->f, sizeof (int));
+
+		break;
+
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+static void
 dwarf2_write_parameter (AssemblyDebugInfo *info, DebugMethodInfo *minfo, const gchar *name,
-			int stack_offset, MonoClass *klass)
+			MonoDebugVarInfo *var, MonoClass *klass)
 {
 	static long label_index = 0;
 	int type_index = mono_debug_get_type (info, klass);
@@ -807,15 +867,14 @@ dwarf2_write_parameter (AssemblyDebugInfo *info, DebugMethodInfo *minfo, const g
 		dwarf2_write_type_ptr_ref (info->f, type_index);
 	dwarf2_write_section_size (info->f, start, end);
 	dwarf2_write_label (info->f, start);
-	dwarf2_write_byte (info->f, DW_OP_fbreg);
-	dwarf2_write_sleb128 (info->f, stack_offset);
+	dwarf2_write_variable_location (info, var);
 	dwarf2_write_label (info->f, end);
 	dwarf2_write_long (info->f, minfo->method_info.prologue_end);
 }
 
 static void
 dwarf2_write_variable (AssemblyDebugInfo *info, DebugMethodInfo *minfo, const gchar *name,
-		       MonoDebugVarInfo *local, MonoClass *klass)
+		       MonoDebugVarInfo *var, MonoClass *klass)
 {
 	static long label_index = 0;
 	int type_index = mono_debug_get_type (info, klass);
@@ -833,11 +892,10 @@ dwarf2_write_variable (AssemblyDebugInfo *info, DebugMethodInfo *minfo, const gc
 		dwarf2_write_type_ptr_ref (info->f, type_index);
 	dwarf2_write_section_size (info->f, start, end);
 	dwarf2_write_label (info->f, start);
-	dwarf2_write_byte (info->f, DW_OP_fbreg);
-	dwarf2_write_sleb128 (info->f, local->offset);
+	dwarf2_write_variable_location (info, var);
 	dwarf2_write_label (info->f, end);
-	dwarf2_write_address (info->f, minfo->method_info.code_start + local->begin_scope);
-	dwarf2_write_address (info->f, minfo->method_info.code_start + local->end_scope);
+	dwarf2_write_address (info->f, minfo->method_info.code_start + var->begin_scope);
+	dwarf2_write_address (info->f, minfo->method_info.code_start + var->end_scope);
 }
 
 static void 
@@ -1046,7 +1104,7 @@ write_method_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 	}
 
 	if (minfo->method_info.method->signature->hasthis)
-		dwarf2_write_parameter (info, minfo, "this", minfo->method_info.this_var->offset,
+		dwarf2_write_parameter (info, minfo, "this", minfo->method_info.this_var,
 					minfo->method_info.method->klass);
 
 	names = g_new (char *, minfo->method_info.method->signature->param_count);
@@ -1056,7 +1114,7 @@ write_method_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 		MonoType *type = minfo->method_info.method->signature->params [i];
 		MonoClass *klass = mono_class_from_mono_type (type);
 
-		dwarf2_write_parameter (info, minfo, names [i], minfo->method_info.params [i].offset, klass);
+		dwarf2_write_parameter (info, minfo, names [i], &minfo->method_info.params [i], klass);
 	}
 
 	g_free (names);
