@@ -44,7 +44,7 @@
 		  <td>
 		    <ul>
 			<li><a href="archive/libgc-6.1-1.src.rpm">libgc-6.1-1.src.rpm</a>
-			<li><a href="archive/mono-0.17-1.src.rpm">mono-0.17-1.src.rpm</a>
+			<li><a href="archive/mono-0.17-2.src.rpm">mono-0.17-2.src.rpm</a>
 		    </ul>
 		  </td>
 	        </tr>
@@ -57,8 +57,8 @@
                     <ul>
 			<li><a href="archive/redhat-73-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
 			<li><a href="archive/redhat-73-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
-			<li><a href="archive/redhat-73-i386/mono-0.17-1.i386.rpm">mono-0.17-1.i386.rpm</a>
-			<li><a href="archive/redhat-73-i386/mono-devel-0.17-1.i386.rpm">mono-devel-0.17-1.i386.rpm</a>
+			<li><a href="archive/redhat-73-i386/mono-0.17-2.i386.rpm">mono-0.17-2.i386.rpm</a>
+			<li><a href="archive/redhat-73-i386/mono-devel-0.17-2.i386.rpm">mono-devel-0.17-2.i386.rpm</a>
 		    </ul>
 		  </td>
 		  <td bgcolor="#999999">
@@ -66,8 +66,8 @@
                     <ul>
 			<li><a href="archive/redhat-72-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
 			<li><a href="archive/redhat-72-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
-			<li><a href="archive/redhat-72-i386/mono-0.17-1.i386.rpm">mono-0.17-1.i386.rpm</a>
-			<li><a href="archive/redhat-72-i386/mono-devel-0.17-1.i386.rpm">mono-devel-0.17-1.i386.rpm</a>
+			<li><a href="archive/redhat-72-i386/mono-0.17-2.i386.rpm">mono-0.17-2.i386.rpm</a>
+			<li><a href="archive/redhat-72-i386/mono-devel-0.17-2.i386.rpm">mono-devel-0.17-2.i386.rpm</a>
 		    </ul>
 		  </td>
 		</tr>
@@ -77,8 +77,8 @@
                     <ul>
 			<li><a href="archive/redhat-71-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
 			<li><a href="archive/redhat-71-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
-			<li><a href="archive/redhat-71-i386/mono-0.17-1.i386.rpm">mono-0.17-1.i386.rpm</a>
-			<li><a href="archive/redhat-71-i386/mono-devel-0.17-1.i386.rpm">mono-devel-0.17-1.i386.rpm</a>
+			<li><a href="archive/redhat-71-i386/mono-0.17-2.i386.rpm">mono-0.17-2.i386.rpm</a>
+			<li><a href="archive/redhat-71-i386/mono-devel-0.17-2.i386.rpm">mono-devel-0.17-2.i386.rpm</a>
 		    </ul>
 		  </td>
 		  <td bgcolor="#999999">
@@ -86,8 +86,8 @@
                     <ul>
 			<li><a href="archive/mandrake-82-i386/libgc-6.1-1.i586.rpm">libgc-6.1-1.i586.rpm</a>
 			<li><a href="archive/mandrake-82-i386/libgc-devel-6.1-1.i586.rpm">libgc-devel-6.1-1.i586.rpm</a>
-			<li><a href="archive/mandrake-82-i386/mono-0.17-1.i586.rpm">mono-0.17-1.i586.rpm</a>
-			<li><a href="archive/mandrake-82-i386/mono-devel-0.17-1.i586.rpm">mono-devel-0.17-1.i586.rpm</a>
+			<li><a href="archive/mandrake-82-i386/mono-0.17-2.i586.rpm">mono-0.17-2.i586.rpm</a>
+			<li><a href="archive/mandrake-82-i386/mono-devel-0.17-2.i586.rpm">mono-devel-0.17-2.i586.rpm</a>
 		    </ul>
 		  </td>
 	 	</tr>
@@ -106,11 +106,25 @@
                     <ul>
 			<li><a href="archive/redhat-80-i386/libgc-6.1-1.i386.rpm">libgc-6.1-1.i386.rpm</a>
 			<li><a href="archive/redhat-80-i386/libgc-devel-6.1-1.i386.rpm">libgc-devel-6.1-1.i386.rpm</a>
-			<li><a href="archive/redhat-80-i386/mono-0.17-1.i386.rpm">mono-0.17-1.i386.rpm</a>
-			<li><a href="archive/redhat-80-i386/mono-devel-0.17-1.i386.rpm">mono-devel-0.17-1.i386.rpm</a>
+			<li><a href="archive/redhat-80-i386/mono-0.17-2.i386.rpm">mono-0.17-2.i386.rpm</a>
+			<li><a href="archive/redhat-80-i386/mono-devel-0.17-2.i386.rpm">mono-devel-0.17-2.i386.rpm</a>
 		    </ul>
 	          </td>
 	        </tr>
+		<tr>
+		  <td bgcolor="#999999">
+		    <b>Windows Setup Wizard (NT/2000/XP)</b>
+		    <ul>
+	              <li><a href="archive/mono-0.17-stable.exe">Mono-Setup</a>
+	            </ul>
+	          </td>
+		  <td bgcolor="#999999">
+		    <b>Debian packages</b>
+		    <ul>
+	              <li><a href="http://www.atoker.com/mono/">Alp's web site</a>
+	            </ul>
+	          </td>
+		</tr>
 	      </table>
 	    </td>
 	  </tr>
@@ -181,12 +195,6 @@
 			<li><a href="archive/s390/mono-0.16-1.s390.rpm">mono-0.16-1.s390.rpm</a>
 			<li><a href="archive/s390/mono-devel-0.16-1.s390.rpm">mono-devel-0.16-1.s390.rpm</a>
 		    </ul>
-	          </td>
-		  <td bgcolor="#999999">
-		    <b>Windows Setup Wizard (NT/2000/XP)</b>
-		    <ul>
-	              <li><a href="archive/mono-0.16-stable.exe">Mono-Setup</a>
-	            </ul>
 	          </td>
 		</tr>
 	      </table>

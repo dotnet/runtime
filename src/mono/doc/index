@@ -91,6 +91,20 @@
   </tr>
 </table>
 
+@item Dec 10th, 2002: Gtk# 0.6 released;  Mono 0.17 packages for Windows and Debian.
+
+	Mike Kestner <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-December/003961.html">announced
+	Gtk# 0.6</a>.  This new release includes many new features and
+	bug fixes, and is the perfect companion to the <a
+	href="archive/mono-0.17">Mono 0.17</a> release.
+
+	Johannes has contributed a Windows-ready package of Mono 0.17,
+	and its available from our <a
+	href="download.html">download</a> page.
+
+	Alp Toker has <a href="http://www.atoker.com/mono/">Debian packages</a>
+
 @item Dec 9th, 2002: Mono 0.17 has been released
 
 	Mono 0.17 has been released.  Check out the <a
