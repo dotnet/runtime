@@ -58,28 +58,53 @@ mono_runtime_object_init (MonoObject *this)
 
 /*
  * mono_runtime_class_init:
- * @klass: klass that needs to be initialized
+ * @vtable: vtable that needs to be initialized
  *
- * This routine calls the class constructor for @class.
+ * This routine calls the class constructor for @vtable.
  */
 void
-mono_runtime_class_init (MonoClass *klass)
+mono_runtime_class_init (MonoVTable *vtable)
 {
 	int i;
-	MonoException *exc = NULL;
+	MonoException *exc;
 	MonoException *exc_to_throw;
 	MonoMethod *method;
+	MonoClass *klass;
 	gchar *full_name;
+	gboolean found;
 
+	MONO_ARCH_SAVE_REGS;
+
+	if (vtable->initialized || vtable->initializing)
+		return;
+
+	exc = NULL;
+	found = FALSE;
+	klass = vtable->klass;
+	
 	for (i = 0; i < klass->method.count; ++i) {
 		method = klass->methods [i];
 		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
 		    (strcmp (".cctor", method->name) == 0)) {
-			mono_runtime_invoke (method, NULL, NULL, (MonoObject **) &exc);
-			if (exc != NULL)
-				break;
-			return;
+			found = TRUE;
+			break;
 		}
+	}
+
+	if (found) {
+		mono_domain_lock (vtable->domain);
+		/* double check... */
+		if (vtable->initialized || vtable->initializing)
+			return;
+		vtable->initializing = 1;
+		mono_runtime_invoke (method, NULL, NULL, (MonoObject **) &exc);
+		vtable->initialized = 1;
+		vtable->initializing = 0;
+		/* FIXME: if the cctor fails, the type must be marked as unusable */
+		mono_domain_unlock (vtable->domain);
+	} else {
+		vtable->initialized = 1;
+		return;
 	}
 
 	if (exc == NULL ||
@@ -486,8 +511,6 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	if (class->parent)
 		mono_class_vtable (domain, class->parent);
 
-	mono_runtime_class_init (class);
-	
 	if (class->contextbound)
 		vt->remote = 1;
 	else

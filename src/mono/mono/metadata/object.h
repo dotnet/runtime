@@ -303,7 +303,7 @@ void
 mono_runtime_object_init    (MonoObject *this_obj);
 
 void
-mono_runtime_class_init     (MonoClass *klass);
+mono_runtime_class_init     (MonoVTable *vtable);
 
 void        
 mono_install_runtime_invoke (MonoInvokeFunc func);
