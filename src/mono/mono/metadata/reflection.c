@@ -3594,7 +3594,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 	assembly->name = p;
 	assembly->culture = "";
 	
-	while (*p && (isalnum (*p) || *p == '.'))
+	while (*p && (isalnum (*p) || *p == '.' || *p == '-'))
 		p++;
 	found_sep = 0;
 	while (*p == ' ' || *p == ',') {
@@ -5006,6 +5006,11 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 
 	tb->type.type = &klass->byval_arg;
 
+	if (tb->nesting_type) {
+		g_assert (tb->nesting_type->type);
+		klass->nested_in = mono_class_from_mono_type (tb->nesting_type->type);
+	}
+
 	/*g_print ("setup %s as %s (%p)\n", klass->name, ((MonoObject*)tb)->vtable->klass->name, tb);*/
 }
 
@@ -5359,11 +5364,6 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	} else {
 		klass->instance_size = sizeof (MonoObject);
 		klass->min_align = 1;
-	}
-
-	if (tb->nesting_type) {
-		g_assert (tb->nesting_type->type);
-		klass->nested_in = mono_class_from_mono_type (tb->nesting_type->type);
 	}
 
 	/* FIXME: handle packing_size and instance_size */
