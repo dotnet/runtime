@@ -3,7 +3,9 @@ INCLUDES = 				\
 	$(GMODULE_CFLAGS)		\
 	$(GLIB_CFLAGS)			
 
+if X86
 bin_PROGRAMS = mono
+endif
 
 mono_SOURCES =			\
 	codegen.h		\
