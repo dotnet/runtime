@@ -3391,11 +3391,14 @@ handle_enum:
 			g_error ("generic valutype %s not handled in custom attr value decoding", t->data.klass->name);
 		}
 		break;
-	case MONO_TYPE_STRING: {
+	case MONO_TYPE_STRING:
+		if (*p == (char)0xFF) {
+			*end = p + 1;
+			return NULL;
+		}
 		slen = mono_metadata_decode_value (p, &p);
 		*end = p + slen;
 		return mono_string_new_len (mono_domain_get (), p, slen);
-	}
 	case MONO_TYPE_CLASS: {
 		char *n;
 		MonoType *t;
@@ -3877,8 +3880,14 @@ handle_enum:
 		}
 		break;
 	case MONO_TYPE_STRING: {
-		char *str = mono_string_to_utf8 ((MonoString*)arg);
-		guint32 slen = strlen (str);
+		char *str;
+		guint32 slen;
+		if (!arg) {
+			*p++ = 0xFF;
+			break;
+		}
+		str = mono_string_to_utf8 ((MonoString*)arg);
+		slen = strlen (str);
 		if ((p-buffer) + 10 + slen >= *buflen) {
 			char *newbuf;
 			*buflen *= 2;
