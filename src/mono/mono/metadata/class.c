@@ -2390,6 +2390,12 @@ mono_class_get_field_from_name (MonoClass *klass, const char *name)
 	return NULL;
 }
 
+void *
+mono_vtable_get_static_field_data (MonoVTable *vt)
+{
+	return vt->data;
+}
+
 MonoProperty*
 mono_class_get_property_from_name (MonoClass *klass, const char *name)
 {

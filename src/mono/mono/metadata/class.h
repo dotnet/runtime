@@ -190,6 +190,9 @@ mono_field_get_parent (MonoClassField *field);
 guint32
 mono_field_get_flags  (MonoClassField *field);
 
+void *
+mono_vtable_get_static_field_data (MonoVTable *vt);
+
 /* MonoProperty acessors */
 const char*
 mono_property_get_name       (MonoProperty *prop);
