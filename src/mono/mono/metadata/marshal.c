@@ -3042,7 +3042,6 @@ mono_marshal_free_array (gpointer *ptr, int size)
 {
 	int i;
 
-	printf ("TESTFREE %p\n", ptr);
 	if (!ptr)
 		return;
 
