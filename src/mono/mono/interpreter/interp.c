@@ -1050,7 +1050,7 @@ static MonoObject*
 interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {
 	MonoInvocation frame;
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext * volatile context = TlsGetValue (thread_context_id);
 	MonoObject *retval = NULL;
 	MonoMethodSignature *sig = method->signature;
 	MonoClass *klass = mono_class_from_mono_type (sig->ret);
@@ -1065,7 +1065,12 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 	frame.ex = NULL;
 
 	if (setjmp(env)) {
-		g_warning ("caught it");
+		if (context != &context_struct) {
+			context->domain = mono_domain_get ();
+			context->current_frame = old_frame;
+			context->managed_code = 0;
+		} else 
+			TlsSetValue (thread_context_id, NULL);
 		if (exc != NULL)
 			*exc = (MonoObject *)frame.ex;
 		return retval;

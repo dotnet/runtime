@@ -115,6 +115,7 @@ grow_code (TransformData *td)
 {
 	unsigned int old_ip_offset = td->new_ip - td->new_code;
 	unsigned int old_last_ip_offset = td->last_new_ip - td->new_code;
+	g_assert (old_ip_offset <= td->max_code_size);
 	td->new_code = g_realloc (td->new_code, (td->max_code_size *= 2) * sizeof (td->new_code [0]));
 	td->new_code_end = td->new_code + td->max_code_size;
 	td->new_ip = td->new_code + old_ip_offset;
@@ -1742,15 +1743,16 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			CHECK_STACK (&td, 1);
 			token = read32 (td.ip + 1);
 			klass = mono_class_get_full (image, token, generic_context);
-			*td.new_ip ++ = MINT_CASTCLASS;
+			ADD_CODE(&td, MINT_CASTCLASS);
 			ADD_CODE(&td, get_data_item_index (&td, klass));
+			td.sp [-1].klass = klass;
 			td.ip += 5;
 			break;
 		case CEE_ISINST:
 			CHECK_STACK (&td, 1);
 			token = read32 (td.ip + 1);
 			klass = mono_class_get_full (image, token, generic_context);
-			*td.new_ip ++ = MINT_ISINST;
+			ADD_CODE(&td, MINT_ISINST);
 			ADD_CODE(&td, get_data_item_index (&td, klass));
 			td.ip += 5;
 			break;
@@ -1779,7 +1781,7 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			else 
 				klass = mono_class_get_full (image, token, generic_context);
 			
-			*td.new_ip ++ = MINT_UNBOX;
+			ADD_CODE(&td, MINT_UNBOX);
 			ADD_CODE(&td, get_data_item_index (&td, klass));
 			SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_MP);
 			td.ip += 5;
