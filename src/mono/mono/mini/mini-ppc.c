@@ -400,9 +400,12 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 				simpletype = sig->params [i]->data.klass->enum_basetype->type;
 				goto enum_calc_size;
 			}
-			size = mono_class_value_size (sig->params [i]->data.klass, NULL);
+			if (is_pinvoke)
+			    size = mono_class_native_size (sig->params [i]->data.klass, NULL);
+			else
+			    size = mono_class_value_size (sig->params [i]->data.klass, NULL);
 			DEBUG(printf ("load %d bytes struct\n",
-				      mono_class_value_size (sig->params [i]->data.klass, NULL)));
+				      mono_class_native_size (sig->params [i]->data.klass, NULL)));
 #if PPC_PASS_STRUCTS_BY_VALUE
 			{
 				int nwords = (size + sizeof (gpointer) -1 ) / sizeof (gpointer);
@@ -2681,8 +2684,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_mullw (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_MUL_IMM:
-			ppc_load (code, ppc_r11, ins->inst_imm);
-			ppc_mullw (code, ins->dreg, ins->sreg1, ppc_r11);
+			if (ppc_is_imm16 (ins->inst_imm)) {
+			    ppc_mulli (code, ins->dreg, ins->sreg1, ins->inst_imm);
+			} else {
+			    ppc_load (code, ppc_r11, ins->inst_imm);
+			    ppc_mullw (code, ins->dreg, ins->sreg1, ppc_r11);
+			}
 			break;
 		case CEE_MUL_OVF:
 			/* we annot use mcrxr, since it's not implemented on some processors 
