@@ -621,7 +621,21 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	MonoDomain *domain = mono_domain_get ();
 
 	main_args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
-	for (i = 0; i < argc; ++i) {
+
+	if (!g_path_is_absolute (argv [0])) {
+		gchar *basename = g_path_get_basename (argv [0]);
+		gchar *fullpath = g_build_filename (method->klass->image->assembly->basedir,
+						    basename,
+						    NULL);
+		
+		mono_array_set (main_args, gpointer, 0, mono_string_new (domain, fullpath));
+		g_free (fullpath);
+		g_free (basename);
+	} else {
+		mono_array_set (main_args, gpointer, 0, mono_string_new (domain, argv [0]));
+	}
+
+	for (i = 1; i < argc; ++i) {
 		MonoString *arg = mono_string_new (domain, argv [i]);
 		mono_array_set (main_args, gpointer, i, arg);
 	}
