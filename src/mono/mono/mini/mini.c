@@ -9645,6 +9645,8 @@ mini_init (const char *filename)
 				ves_icall_get_frame_info);
 	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", 
 				ves_icall_get_trace);
+	mono_add_internal_call ("System.Exception::get_trace", 
+				ves_icall_System_Exception_get_trace);
 	mono_add_internal_call ("System.Security.SecurityFrame::_GetSecurityFrame",
 				ves_icall_System_Security_SecurityFrame_GetSecurityFrame);
 	mono_add_internal_call ("System.Security.SecurityFrame::_GetSecurityStack",

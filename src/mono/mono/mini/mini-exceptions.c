@@ -106,6 +106,62 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 
 #endif /* mono_find_jit_info */
 
+MonoString *
+ves_icall_System_Exception_get_trace (MonoException *ex)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoString *res;
+	MonoArray *ta = ex->trace_ips;
+	int i, len;
+	GString *trace_str;
+	char tmpaddr [256];
+
+	if (ta == NULL)
+		/* Exception is not thrown yet */
+		return NULL;
+
+	len = mono_array_length (ta);
+	trace_str = g_string_new ("");
+	for (i = 0; i < len; i++) {
+		MonoJitInfo *ji;
+		gpointer ip = mono_array_get (ta, gpointer, i);
+
+		ji = mono_jit_info_table_find (domain, ip);
+		if (ji == NULL) {
+			/* Unmanaged frame */
+			g_string_append_printf (trace_str, "in (unmanaged) %p\n", ip);
+		} else {
+			char *source_location, *fname;
+			gint32 address, iloffset;
+
+			address = (char *)ip - (char *)ji->code_start;
+
+			source_location = mono_debug_source_location_from_address (ji->method, address, NULL, ex->object.vtable->domain);
+			iloffset = mono_debug_il_offset_from_address (ji->method, address, ex->object.vtable->domain);
+
+			if (iloffset < 0)
+				sprintf (tmpaddr, "<0x%05x>", address);
+			else
+				sprintf (tmpaddr, "[0x%05x]", iloffset);
+		
+			fname = mono_method_full_name (ji->method, TRUE);
+
+			if (source_location)
+				g_string_append_printf (trace_str, "in %s (at %s) %s\n", tmpaddr, source_location, fname);
+			else
+				g_string_append_printf (trace_str, "in %s %s\n", tmpaddr, fname);
+
+			g_free (fname);
+			g_free (source_location);
+		}
+	}
+
+	res = mono_string_new (ex->object.vtable->domain, trace_str->str);
+	g_string_free (trace_str, TRUE);
+
+	return res;
+}
+
 MonoArray *
 ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info)
 {
@@ -158,7 +214,6 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 
 	return res;
 }
-
 
 /**
  * mono_walk_stack:
@@ -450,14 +505,13 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 	static void (*restore_context) (void *);
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoLMF *lmf = jit_tls->lmf;		
+	MonoArray *initial_trace_ips = NULL;
 	GList *trace_ips = NULL;
 	MonoException *mono_ex;
 	gboolean stack_overflow = FALSE;
 	MonoContext initial_ctx;
 	int frame_count = 0;
 	gboolean gc_disabled = FALSE;
-	MonoString *initial_stack_trace = NULL;
-	GString *trace_str = NULL;
 	
 	/*
 	 * This function might execute on an alternate signal stack, and Boehm GC
@@ -496,7 +550,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 
 	if (mono_object_isinst (obj, mono_defaults.exception_class)) {
 		mono_ex = (MonoException*)obj;
-		initial_stack_trace = mono_ex->stack_trace;
+		initial_trace_ips = mono_ex->trace_ips;
 	} else {
 		mono_ex = NULL;
 	}
@@ -542,18 +596,10 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 
 	while (1) {
 		MonoContext new_ctx;
-		char *trace = NULL;
-		gboolean need_trace = FALSE;
 		guint32 free_stack;
 
-		if (test_only && (frame_count < 1000) && !initial_stack_trace && mono_ex) {
-			need_trace = TRUE;
-			if (!trace_str)
-				trace_str = g_string_new ("");
-		}
-
 		ji = mono_find_jit_info (domain, jit_tls, &rji, &rji, ctx, &new_ctx, 
-								 need_trace ? &trace : NULL, &lmf, NULL, NULL);
+								 NULL, &lmf, NULL, NULL);
 		if (!ji) {
 			g_warning ("Exception inside function without unwind info");
 			g_assert_not_reached ();
@@ -569,11 +615,8 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 				 * rethrown. Also avoid giant stack traces during a stack
 				 * overflow.
 				 */
-				if (!initial_stack_trace && (frame_count < 1000)) {
+				if (!initial_trace_ips && (frame_count < 1000)) {
 					trace_ips = g_list_prepend (trace_ips, MONO_CONTEXT_GET_IP (ctx));
-
-					g_string_append (trace_str, trace);
-					g_string_append_c (trace_str, '\n');
 				}
 			}
 
@@ -607,9 +650,6 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 							/* store the exception object int cfg->excvar */
 							g_assert (ei->exvar_offset);
 							*((gpointer *)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = obj;
-							if (!initial_stack_trace && trace_str) {
-								mono_ex->stack_trace = mono_string_new (domain, trace_str->str);
-							}
 						}
 
 						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
@@ -620,17 +660,14 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
 						     mono_object_isinst (obj, ei->data.catch_class)) || filtered) {
 							if (test_only) {
-								if (mono_ex) {
+								if (mono_ex && !initial_trace_ips) {
 									trace_ips = g_list_reverse (trace_ips);
 									mono_ex->trace_ips = glist_to_array (trace_ips, mono_defaults.int_class);
 								}
 								g_list_free (trace_ips);
-								g_free (trace);
 
 								if (gc_disabled)
 									mono_gc_enable ();
-								if (trace_str)
-									g_string_free (trace_str, TRUE);
 								return TRUE;
 							}
 							if (mono_jit_trace_calls != NULL && mono_trace_eval (ji->method))
@@ -638,12 +675,9 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 							mono_debugger_handle_exception (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 							jit_tls->lmf = lmf;
-							g_free (trace);
 
 							if (gc_disabled)
 								mono_gc_enable ();
-							if (trace_str)
-								g_string_free (trace_str, TRUE);
 							return 0;
 						}
 						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
@@ -660,8 +694,6 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 			}
 		}
 
-		g_free (trace);
-			
 		*ctx = new_ctx;
 
 		if ((ji == (gpointer)-1) || MONO_CONTEXT_GET_BP (ctx) >= jit_tls->end_of_stack) {
@@ -683,13 +715,11 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 					jit_tls->abort_func (obj);
 				g_assert_not_reached ();
 			} else {
-				if (mono_ex) {
+				if (mono_ex && !initial_trace_ips) {
 					trace_ips = g_list_reverse (trace_ips);
 					mono_ex->trace_ips = glist_to_array (trace_ips, mono_defaults.int_class);
 				}
 				g_list_free (trace_ips);
-				if (trace_str)
-					g_string_free (trace_str, TRUE);
 				return FALSE;
 			}
 		}
