@@ -115,6 +115,7 @@ TEST_CS_SRC=			\
 	appdomain3.cs		\
 	appdomain-client.cs	\
 	appdomain-unload.cs \
+	loader.cs       \
 	pointer.cs		\
 	rounding.cs		\
 	hashcode.cs		\
