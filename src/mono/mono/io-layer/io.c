@@ -236,6 +236,7 @@ static void file_close_shared (gpointer handle)
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up file handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return;
 	}
 	
@@ -263,6 +264,7 @@ static void file_close_private (gpointer handle)
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up file handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return;
 	}
 	
@@ -329,6 +331,7 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up file handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -342,6 +345,7 @@ static gboolean file_read(gpointer handle, gpointer buffer,
 		g_message(G_GNUC_PRETTY_FUNCTION": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
 #endif
 
+		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
 
@@ -444,6 +448,7 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up file handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -457,6 +462,7 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
 #endif
 
+		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
 	
@@ -498,6 +504,7 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 				  file_private_handle->fd, strerror(errno));
 #endif
 
+			_wapi_set_last_error_from_errno ();
 			return(FALSE);
 		}
 		if(byteswritten!=NULL) {
@@ -578,6 +585,7 @@ static gboolean file_flush(gpointer handle)
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up file handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 
@@ -587,6 +595,7 @@ static gboolean file_flush(gpointer handle)
 		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
 #endif
 
+		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
 
@@ -594,10 +603,11 @@ static gboolean file_flush(gpointer handle)
 	if (ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
-			  ": write of handle %p fd %d error: %s", handle,
+			  ": fsync of handle %p fd %d error: %s", handle,
 			  file_private_handle->fd, strerror(errno));
 #endif
 
+		_wapi_set_last_error_from_errno ();
 		return(FALSE);
 	}
 	
@@ -744,6 +754,7 @@ static gboolean file_setendoffile(gpointer handle)
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up file handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -753,6 +764,7 @@ static gboolean file_setendoffile(gpointer handle)
 		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
 #endif
 
+		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
 
@@ -770,6 +782,7 @@ static gboolean file_setendoffile(gpointer handle)
 			  file_private_handle->fd, strerror(errno));
 #endif
 
+		_wapi_set_last_error_from_errno ();
 		return(FALSE);
 	}
 	size=statbuf.st_size;
@@ -782,6 +795,7 @@ static gboolean file_setendoffile(gpointer handle)
 			  file_private_handle->fd, strerror(errno));
 #endif
 
+		_wapi_set_last_error_from_errno ();
 		return(FALSE);
 	}
 	
@@ -800,6 +814,7 @@ static gboolean file_setendoffile(gpointer handle)
 				  strerror(errno));
 #endif
 
+			_wapi_set_last_error_from_errno ();
 			return(FALSE);
 		}
 	}
@@ -819,6 +834,7 @@ static gboolean file_setendoffile(gpointer handle)
 			  file_private_handle->fd, strerror(errno));
 #endif
 		
+		_wapi_set_last_error_from_errno ();
 		return(FALSE);
 	}
 		
@@ -840,6 +856,7 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up file handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(INVALID_FILE_SIZE);
 	}
 	
@@ -850,6 +867,7 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ or GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
 #endif
 
+		SetLastError (ERROR_ACCESS_DENIED);
 		return(INVALID_FILE_SIZE);
 	}
 
@@ -861,6 +879,7 @@ static guint32 file_getfilesize(gpointer handle, guint32 *highsize)
 			  file_private_handle->fd, strerror(errno));
 #endif
 
+		_wapi_set_last_error_from_errno ();
 		return(INVALID_FILE_SIZE);
 	}
 	
@@ -902,6 +921,7 @@ static gboolean file_getfiletime(gpointer handle, WapiFileTime *create_time,
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up file handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -911,6 +931,7 @@ static gboolean file_getfiletime(gpointer handle, WapiFileTime *create_time,
 		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
 #endif
 
+		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
 	
@@ -922,6 +943,7 @@ static gboolean file_getfiletime(gpointer handle, WapiFileTime *create_time,
 			  file_private_handle->fd, strerror(errno));
 #endif
 
+		_wapi_set_last_error_from_errno ();
 		return(FALSE);
 	}
 
@@ -1109,6 +1131,7 @@ static void console_close_shared (gpointer handle)
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up console handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return;
 	}
 	
@@ -1136,6 +1159,7 @@ static void console_close_private (gpointer handle)
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up console handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return;
 	}
 	
@@ -1171,6 +1195,7 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up console handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -1184,6 +1209,7 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 		g_message(G_GNUC_PRETTY_FUNCTION": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, console_private_handle->fd, console_handle->fileaccess);
 #endif
 
+		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
 	
@@ -1199,6 +1225,7 @@ static gboolean console_read(gpointer handle, gpointer buffer,
 			  console_private_handle->fd, strerror(errno));
 #endif
 
+		_wapi_set_last_error_from_errno ();
 		return(FALSE);
 	}
 	
@@ -1224,6 +1251,7 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up console handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -1237,6 +1265,7 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, console_private_handle->fd, console_handle->fileaccess);
 #endif
 
+		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
 	
@@ -1252,6 +1281,7 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 			  console_private_handle->fd, strerror(errno));
 #endif
 
+		_wapi_set_last_error_from_errno ();
 		return(FALSE);
 	}
 	if(byteswritten!=NULL) {
@@ -1271,6 +1301,7 @@ static void pipe_close_shared (gpointer handle)
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up pipe handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return;
 	}
 	
@@ -1298,6 +1329,7 @@ static void pipe_close_private (gpointer handle)
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up pipe handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return;
 	}
 	
@@ -1333,6 +1365,7 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up pipe handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -1346,6 +1379,7 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 		g_message(G_GNUC_PRETTY_FUNCTION": handle %p fd %d doesn't have GENERIC_READ access: %u", handle, pipe_private_handle->fd, pipe_handle->fileaccess);
 #endif
 
+		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
 	
@@ -1367,6 +1401,7 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 			  pipe_private_handle->fd, strerror(errno));
 #endif
 
+		_wapi_set_last_error_from_errno ();
 		return(FALSE);
 	}
 	
@@ -1396,6 +1431,7 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up pipe handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
 	
@@ -1409,6 +1445,7 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 		g_message(G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_WRITE access: %u", handle, pipe_private_handle->fd, pipe_handle->fileaccess);
 #endif
 
+		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
 	
@@ -1430,6 +1467,7 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 			  pipe_private_handle->fd, strerror(errno));
 #endif
 
+		_wapi_set_last_error_from_errno ();
 		return(FALSE);
 	}
 	if(byteswritten!=NULL) {
@@ -1584,6 +1622,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		g_message(G_GNUC_PRETTY_FUNCTION ": name is NULL");
 #endif
 
+		SetLastError (ERROR_INVALID_NAME);
 		return(INVALID_HANDLE_VALUE);
 	}
 
@@ -1594,6 +1633,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 			  ": unicode conversion returned NULL");
 #endif
 
+		SetLastError (ERROR_INVALID_NAME);
 		return(INVALID_HANDLE_VALUE);
 	}
 	
@@ -1710,6 +1750,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		g_free (filename);
 		close (fd);
 		
+		SetLastError (ERROR_GEN_FAILURE);
 		return(INVALID_HANDLE_VALUE);
 	}
 
@@ -1724,6 +1765,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up file handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		close (fd);
 		goto cleanup;
 	}
@@ -1782,6 +1824,7 @@ gboolean DeleteFile(const gunichar2 *name)
 		g_message(G_GNUC_PRETTY_FUNCTION ": name is NULL");
 #endif
 
+		SetLastError (ERROR_INVALID_NAME);
 		return(FALSE);
 	}
 
@@ -1792,6 +1835,7 @@ gboolean DeleteFile(const gunichar2 *name)
 			  ": unicode conversion returned NULL");
 #endif
 
+		SetLastError (ERROR_INVALID_NAME);
 		return(FALSE);
 	}
 	
@@ -1822,6 +1866,15 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 {
 	gchar *utf8_name, *utf8_dest_name;
 	int result;
+	
+	if(name==NULL) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": name is NULL");
+#endif
+
+		SetLastError (ERROR_INVALID_NAME);
+		return(FALSE);
+	}
 
 	utf8_name = mono_unicode_to_external (name);
 	if (utf8_name == NULL) {
@@ -1829,7 +1882,18 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
 #endif
 		
+		SetLastError (ERROR_INVALID_NAME);
 		return FALSE;
+	}
+	
+	if(dest_name==NULL) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": name is NULL");
+#endif
+
+		g_free (utf8_name);
+		SetLastError (ERROR_INVALID_NAME);
+		return(FALSE);
 	}
 
 	utf8_dest_name = mono_unicode_to_external (dest_name);
@@ -1839,6 +1903,7 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 #endif
 
 		g_free (utf8_name);
+		SetLastError (ERROR_INVALID_NAME);
 		return FALSE;
 	}
 
@@ -1849,6 +1914,7 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	if (result != 0 && errno == EXDEV) {
 		/* Try a copy to the new location, and delete the source */
 		if (CopyFile (name, dest_name, TRUE)==FALSE) {
+			/* CopyFile will set the error */
 			return(FALSE);
 		}
 		
@@ -1894,6 +1960,15 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 	int remain, n;
 	struct stat st;
 	
+	if(name==NULL) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": name is NULL");
+#endif
+
+		SetLastError (ERROR_INVALID_NAME);
+		return(FALSE);
+	}
+	
 	utf8_src = mono_unicode_to_external (name);
 	if (utf8_src == NULL) {
 #ifdef DEBUG
@@ -1901,6 +1976,16 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 #endif
 
 		SetLastError (ERROR_INVALID_PARAMETER);
+		return(FALSE);
+	}
+	
+	if(dest_name==NULL) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": name is NULL");
+#endif
+
+		g_free (utf8_src);
+		SetLastError (ERROR_INVALID_NAME);
 		return(FALSE);
 	}
 	
@@ -2048,6 +2133,7 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 			  fd, strerror(errno));
 #endif
 
+		_wapi_set_last_error_from_errno ();
 		return(INVALID_HANDLE_VALUE);
 	}
 
@@ -2055,6 +2141,7 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 	if(handle==_WAPI_HANDLE_INVALID) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error creating file handle");
+		SetLastError (ERROR_GEN_FAILURE);
 		return(INVALID_HANDLE_VALUE);
 	}
 
@@ -2069,6 +2156,7 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up console handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
 		goto cleanup;
 	}
 
@@ -2141,6 +2229,7 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 			  ": unknown standard handle type");
 #endif
 
+		SetLastError (ERROR_INVALID_PARAMETER);
 		return(INVALID_HANDLE_VALUE);
 	}
 
@@ -2561,6 +2650,7 @@ gboolean FileTimeToSystemTime(const WapiFileTime *file_time,
 		g_message(G_GNUC_PRETTY_FUNCTION ": system_time NULL");
 #endif
 
+		SetLastError (ERROR_INVALID_PARAMETER);
 		return(FALSE);
 	}
 	
@@ -2576,6 +2666,7 @@ gboolean FileTimeToSystemTime(const WapiFileTime *file_time,
 		g_message(G_GNUC_PRETTY_FUNCTION ": file_time too big");
 #endif
 
+		SetLastError (ERROR_INVALID_PARAMETER);
 		return(FALSE);
 	}
 
@@ -2912,6 +3003,7 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 		g_free (dir_part);
 		g_free (entry_part);
 		g_free (utf8_pattern);
+		SetLastError (ERROR_GEN_FAILURE);
 		
 		return(INVALID_HANDLE_VALUE);
 	}
@@ -2932,6 +3024,7 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 		entry_part = NULL;
 		g_free (utf8_pattern);
 		utf8_pattern = NULL;
+		SetLastError (ERROR_INVALID_HANDLE);
 		goto cleanup;
 	}
 
@@ -3200,12 +3293,22 @@ gboolean CreateDirectory (const gunichar2 *name, WapiSecurityAttributes *securit
 	struct stat buf;
 	guint32 attrs;
 	
+	if (name == NULL) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": name is NULL");
+#endif
+
+		SetLastError (ERROR_INVALID_NAME);
+		return(FALSE);
+	}
+	
 	utf8_name = mono_unicode_to_external (name);
 	if (utf8_name == NULL) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
 #endif
 	
+		SetLastError (ERROR_INVALID_NAME);
 		return FALSE;
 	}
 
@@ -3252,6 +3355,15 @@ gboolean RemoveDirectory (const gunichar2 *name)
 {
 	gchar *utf8_name;
 	int result;
+	
+	if (name == NULL) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": name is NULL");
+#endif
+
+		SetLastError (ERROR_INVALID_NAME);
+		return(FALSE);
+	}
 
 	utf8_name = mono_unicode_to_external (name);
 	if (utf8_name == NULL) {
@@ -3259,6 +3371,7 @@ gboolean RemoveDirectory (const gunichar2 *name)
 		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
 #endif
 		
+		SetLastError (ERROR_INVALID_NAME);
 		return FALSE;
 	}
 
@@ -3285,6 +3398,15 @@ guint32 GetFileAttributes (const gunichar2 *name)
 	gchar *utf8_name;
 	struct stat buf;
 	int result;
+	
+	if (name == NULL) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": name is NULL");
+#endif
+
+		SetLastError (ERROR_INVALID_NAME);
+		return(FALSE);
+	}
 	
 	utf8_name = mono_unicode_to_external (name);
 	if (utf8_name == NULL) {
@@ -3332,7 +3454,17 @@ gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels lev
 		g_message (G_GNUC_PRETTY_FUNCTION ": info level %d not supported.", level);
 #endif
 
+		SetLastError (ERROR_INVALID_PARAMETER);
 		return FALSE;
+	}
+	
+	if (name == NULL) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": name is NULL");
+#endif
+
+		SetLastError (ERROR_INVALID_NAME);
+		return(FALSE);
 	}
 
 	utf8_name = mono_unicode_to_external (name);
@@ -3400,8 +3532,26 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
 	 * Currently we only handle one *internal* case, with a value that is
 	 * not standard: 0x80000000, which means `set executable bit'
 	 */
+	
+	if (name == NULL) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": name is NULL");
+#endif
+
+		SetLastError (ERROR_INVALID_NAME);
+		return(FALSE);
+	}
 
 	utf8_name = mono_unicode_to_external (name);
+	if (utf8_name == NULL) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
+#endif
+
+		SetLastError (ERROR_INVALID_NAME);
+		return FALSE;
+	}
+
 	result = stat (utf8_name, &buf);
 	if (result != 0) {
 		g_free (utf8_name);
@@ -3539,6 +3689,7 @@ int _wapi_file_handle_to_fd (gpointer fd_handle)
 				g_message (G_GNUC_PRETTY_FUNCTION
 					   ": returning -1");
 #endif
+				SetLastError (ERROR_INVALID_HANDLE);
 				return(-1);
 			}
 		}
@@ -3609,6 +3760,8 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 			   ": error creating pipe read handle");
 		close (filedes[0]);
 		close (filedes[1]);
+		SetLastError (ERROR_GEN_FAILURE);
+		
 		return(FALSE);
 	}
 	
@@ -3624,6 +3777,7 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 		g_warning (G_GNUC_PRETTY_FUNCTION ": error looking up pipe handle %p", read_handle);
 		close (filedes[0]);
 		close (filedes[1]);
+		SetLastError (ERROR_INVALID_HANDLE);
 		goto cleanup;
 	}
 	
@@ -3635,6 +3789,8 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 		
 		close (filedes[0]);
 		close (filedes[1]);
+		SetLastError (ERROR_GEN_FAILURE);
+		
 		goto cleanup;
 	}
 	
@@ -3653,6 +3809,7 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 		
 		close (filedes[0]);
 		close (filedes[1]);
+		SetLastError (ERROR_INVALID_HANDLE);
 		goto write_cleanup;
 	}
 	cp_ret = TRUE;
