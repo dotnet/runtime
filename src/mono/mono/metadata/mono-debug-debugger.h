@@ -322,4 +322,7 @@ ves_icall_MonoDebugger_GetLocalTypeFromSignature (MonoReflectionAssembly *assemb
 MonoReflectionType *
 ves_icall_MonoDebugger_GetType (MonoReflectionAssembly *assembly, guint32 token);
 
+gchar *
+mono_debugger_check_runtime_version (const char *filename);
+
 #endif /* __MONO_DEBUG_DEBUGGER_H__ */

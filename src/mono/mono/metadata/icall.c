@@ -5250,6 +5250,23 @@ ves_icall_System_Char_GetDataTablePointers (guint8 const **category_data,
 	*to_upper_data_high = ToUpperDataHigh;
 }
 
+static MonoString *
+ves_icall_MonoDebugger_check_runtime_version (MonoString *fname)
+{
+	gchar *filename, *error = NULL;
+
+	MONO_ARCH_SAVE_REGS;
+
+	filename = mono_string_to_utf8 (fname);
+	error = mono_debugger_check_runtime_version (filename);
+	g_free (filename);
+
+	if (error)
+		return mono_string_new (mono_domain_get (), error);
+	else
+		return NULL;
+}
+
 /* icall map */
 typedef struct {
 	const char *method;
@@ -5591,10 +5608,12 @@ static const IcallEntry assembly_icalls [] = {
 	/*
 	 * Private icalls for the Mono Debugger
 	 */
+	{"MonoDebugger_CheckRuntimeVersion", ves_icall_MonoDebugger_check_runtime_version},
 	{"MonoDebugger_GetLocalTypeFromSignature", ves_icall_MonoDebugger_GetLocalTypeFromSignature},
 	{"MonoDebugger_GetMethod", ves_icall_MonoDebugger_GetMethod},
 	{"MonoDebugger_GetMethodToken", ves_icall_MonoDebugger_GetMethodToken},
 	{"MonoDebugger_GetType", ves_icall_MonoDebugger_GetType},
+
 	/* normal icalls again */
 	{"get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint},
 	{"get_ManifestModule", ves_icall_System_Reflection_Assembly_get_ManifestModule},

@@ -24,6 +24,7 @@
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/rawbuffer.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/mono-debug-debugger.h>
 
 /* #define DEBUG_DOMAIN_UNLOAD */
 
@@ -1149,4 +1150,21 @@ const char*
 mono_get_runtime_version (void)
 {
 	return current_runtime->runtime_version;
+}
+
+gchar *
+mono_debugger_check_runtime_version (const char *filename)
+{
+	RuntimeInfo *rinfo;
+
+	rinfo = get_runtime_from_exe (filename);
+	if (!rinfo)
+		return g_strdup_printf ("Cannot get runtime version from assembly `%s'", filename);
+
+	if (rinfo != current_runtime)
+		return g_strdup_printf ("The Mono Debugger is currently using the `%s' runtime, but "
+					"the assembly `%s' requires version `%s'", current_runtime->runtime_version,
+					filename, rinfo->runtime_version);
+
+	return NULL;
 }
