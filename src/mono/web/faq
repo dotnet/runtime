@@ -84,10 +84,12 @@ A: Mono contains a number of components useful for building new
    
 Q: Where can I find the specification for these technologies?
 
-A: You can find the work-in-progress documentation from the T3G ECMA
-   group here:
+A: You can find the information here:
  
-   <a href="http://www.dotnetexperts.com">http://www.dotnetexperts.com</a>
+
+   C# <a href="http://www.ecma.ch/ecma1/STAND/ecma-334.htm">http://www.ecma.ch/ecma1/STAND/ecma-334.htm</a>
+
+   CLI <a href="http://www.ecma.ch/ecma1/STAND/ecma-335.htm">http://www.ecma.ch/ecma1/STAND/ecma-335.htm</a>
 
 Q: Will you implement the .NET Framework SDK class libraries?
 
