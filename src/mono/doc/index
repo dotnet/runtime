@@ -107,6 +107,16 @@
   </tr>
 </table>
 
+@item Apr 19th, 2003: RelaxNG validating reader; Activities.
+
+	Atsushi has created a <a
+	href="http://www24.brinkster.com/ginga/RelaxngValidatingReader/">RelaxNG</a>
+	validating XML reader.
+
+	There is activity on the <a
+	href="http://www.gotmono.com">GotMono forums</a> and the <a
+	href="http://www.nullenvoid.com/gtksharp/wiki/">Gtk# Wiki</a>
+
 @item Apr 11th, 2003: First Mono Book is out;  Team pages.
 
 	The first book to cover Mono is out.  This book is currently
