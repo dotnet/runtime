@@ -23,6 +23,75 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Nov 5, 2001
+
+	Dietmar's new set of patches to the JIT have 20 out of 33
+	tests running now.
+
+** Nov 4, 2001
+
+	Mike Kestner, main Gtk# contributor has posted a very interesting <a
+	href="http://mail.ximian.com/archives/public/gtk-sharp-list/2001-November/000013.html">
+	update</a> on his work on Gtk#.  
+
+	Ravi commited the initial support for Attributes in the
+	compiler. 
+
+	Many HTML Controls from Leen checked into CVS.
+
+	Paolo checked in his new System.Reflection and
+	System.Reflection.Emit implementations.  He has been working
+	steadily on this huge task for a few weeks now.  This is the
+	foundation for the Mono C# compiler, and hence a very
+	important piece of the puzzle.
+
+** Nov 3, 2001
+
+	Many clean ups have been going into the class library by Nick Drochak. 
+
+	Mega patch from Dietmar: he commited the flow analysis code
+	for the JITer. 
+
+	A lot of work has been going into the WebControls by Gaurav (4
+	new controls plus improved and bug fixed base classes).
+
+** Nov 1, 2001
+
+	Ravi commited the caller-side method selection of methods with
+	variable length arguments.  Now he depends on Miguel finishing
+	the array handling support. 
+
+** Oct 27, 2001
+
+	Lots of classes for System.Web from Gaurav were commited this
+	morning.
+
+	Some large recent developments:
+
+	The Decimal implementation from Martin Weindel has been
+	partially integrated (we need to put the internalcalls in
+	place now and compile and link the decimal code).
+
+	Derek Holden commited recently the IntegerFormatter code into
+	the CVS, so we got a pretty comprehensive integer formatting
+	engine that we can finally use all over the place. 
+
+	Compiler got support for lock as well as assorted bug fixes.
+	Ravi is still working on array support (and then we can
+	optimize foreach for the array case).   
+
+	Dietmar is busy working on flow analysis on the JITer, the
+	previous mechanism of generating the forest was wrong.  Paolo
+	has been a busy bee reworking the System.Reflection.Emit
+	support code, and we should have some pretty nice stuff next
+	week.  Dick on the other hand is still working on the
+	WaitOne/WaitAll emulation code.  WaitAll is like select on
+	steroids: it can wait for different kinds of objects: files,
+	mutexes, events and a couple of others.
+
+	Mike Kestner is busy working on Gtk# which is now using the
+	.defs files to quickly wrap the API.
+
 ** Oct 18, 2001
 
 	Reworking expressions to support cleanly indexers and
