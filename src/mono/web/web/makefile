@@ -55,10 +55,10 @@ NON_HTML_SOURCES=	\
 	../mono-build-w32.sh
 
 
-all: $(OBJECTS) index.rss
+all: $(OBJECTS) deploy/index.rss
 	perl process.pl commands template.html.in deploy
 
-index.rss: mono-rss.exe ../index
+deploy/index.rss: mono-rss.exe ../index
 	./mono-rss.exe ../index deploy/index.rss
 
 mono-rss.exe: mono-rss.cs rss.cs 
