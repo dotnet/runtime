@@ -783,4 +783,14 @@ class Tests {
 
 		return 0;
 	}
+	
+	static int test_16_cmov () 
+	{
+		int n = 0;
+		if (n == 0)
+			n = 16;
+		
+		return n;
+	}
+	
 }
