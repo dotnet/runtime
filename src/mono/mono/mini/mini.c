@@ -4028,14 +4028,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					link_bblock (cfg, bblock, tblock);
 					ins->inst_target_bb = tblock;
 					start_new_bblock = 1;
-					ip += 5;
-					
+
 					if (!MONO_TYPE_IS_VOID (fsig->ret)) {
 						/* just create a dummy - the value is never used */
 						ins = mono_compile_create_var (cfg, fsig->ret, OP_LOCAL);
 						NEW_TEMPLOAD (cfg, *sp, ins->inst_c0);
 						sp++;
+						MONO_INST_NEW (cfg, ins, CEE_POP);
+						MONO_ADD_INS (bblock, ins);
+						--sp;
+						ins->inst_i0 = *sp;
 					}
+					/* skip the CEE_RET, too */
+					if (ip_in_bb (cfg, bblock, ip + 5))
+						ip += 6;
+					else
+						ip += 5;
 
 					break;
 				}
