@@ -3187,7 +3187,7 @@ mono_image_fill_export_table_from_module (MonoDomain *domain, MonoReflectionModu
 	} while (0)
 
 static int
-compare_semantics (const void *a, const void *b)
+compare_constants (const void *a, const void *b)
 {
 	const guint32 *a_values = a;
 	const guint32 *b_values = b;
@@ -3195,7 +3195,7 @@ compare_semantics (const void *a, const void *b)
 }
 
 static int
-compare_constants (const void *a, const void *b)
+compare_semantics (const void *a, const void *b)
 {
 	const guint32 *a_values = a;
 	const guint32 *b_values = b;
