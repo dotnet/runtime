@@ -8,10 +8,12 @@ libmetadata_a_SOURCES = \
 	assembly.h	\
 	assembly.c	\
 	cil-coff.h	\
+	endian.h	\
 	metadata.c	\
 	metadata.h	\
 	rawbuffer.c	\
-	rawbuffer.h
+	rawbuffer.h	\
+	typeattr.h
 
 pedump_SOURCES =		\
 	pedump.c $(libmetadata_a_SOURCES)

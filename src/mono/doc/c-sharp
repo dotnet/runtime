@@ -110,6 +110,10 @@ A: Compiling MCS currently requires you to run my port of <a
    C#</a> on a Unix system to generate the parser, and then you need
    to use Microsoft's .NET csc.exe compiler to compile the compiler.
 
+   You only need to compile the compiler compiler (C code), the
+   samples are Java samples that I did not port, and you do not need
+   them.
+
    It might be simple to port Jay.cs to Windows, but I have not tried
    this. 
 

@@ -339,34 +339,36 @@ mono_meta_table_name (int table)
 #define rtsize(s,b) (((s) > (1 << (b)) ? 4 : 2))
 		 
 static int
-compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount)
+compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount, guint32 *result_bitfield)
 {
+	guint32 bitfield = 0;
 	int tsize =  rowcount > 65536 ? 4 : 2;
-	int size = 0;
+	int size = 0, field_size;
 	int i, n, code;
+	int shift = 0;
 
 	for (i = 0; (code = table [i].code) != MONO_MT_END; i++){
 		switch (code){
 		case MONO_MT_UINT32:
-			size += 4; break;
+			field_size = 4; break;
 			
 		case MONO_MT_UINT16:
-			size += 2; break;
+			field_size = 2; break;
 			
 		case MONO_MT_UINT8:
-			size += 1; break;
+			field_size = 1; break;
 			
 		case MONO_MT_BLOB_IDX:
-			size += meta->idx_blob_wide ? 4 : 2; break;
+			field_size = meta->idx_blob_wide ? 4 : 2; break;
 			
 		case MONO_MT_STRING_IDX:
-			size += meta->idx_string_wide ? 4 : 2; break;
+			field_size = meta->idx_string_wide ? 4 : 2; break;
 			
 		case MONO_MT_GUID_IDX:
-			size += meta->idx_string_wide ? 4 : 2; break;
+			field_size = meta->idx_string_wide ? 4 : 2; break;
 
 		case MONO_MT_TABLE_IDX:
-			size += tsize; break;
+			field_size = tsize; break;
 
 			/*
 			 * HasConstant: ParamDef, FieldDef, Property
@@ -377,7 +379,7 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount)
 			n = MAX (n, meta->tables [META_TABLE_PROPERTY].rows);
 
 			/* 2 bits to encode tag */
-			size += rtsize (n, 16-2);
+			field_size = rtsize (n, 16-2);
 			break;
 
 			/*
@@ -391,7 +393,7 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount)
 			 * we should consider the blob size first
 			 */
 			if (meta->idx_blob_wide){
-				size += 4;
+				field_size = 4;
 				break;
 			}
 			
@@ -416,7 +418,7 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount)
 			n = MAX (n, meta->tables [META_TABLE_MANIFESTRESOURCE].rows);
 
 			/* 5 bits to encode */
-			size += rtsize (n, 16-5);
+			field_size = rtsize (n, 16-5);
 			break;
 
 			/*
@@ -426,7 +428,7 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount)
 		case MONO_MT_CAT_IDX:
 			/* String is a heap, if it is wide, we know the size */
 			if (meta->idx_string_wide){
-				size += 4;
+				field_size = 4;
 				break;
 			}
 			
@@ -436,7 +438,7 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount)
 			n = MAX (n, meta->tables [META_TABLE_MEMBERREF].rows);
 
 			/* 3 bits to encode */
-			size += rtsize (n, 16-3);
+			field_size = rtsize (n, 16-3);
 			break;
 
 			/*
@@ -448,7 +450,7 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount)
 			n = MAX (n, meta->tables [META_TABLE_ASSEMBLY].rows);
 
 			/* 2 bits to encode */
-			size += rtsize (n, 16-2);
+			field_size = rtsize (n, 16-2);
 			break;
 
 			/*
@@ -460,7 +462,7 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount)
 			n = MAX (n, meta->tables [META_TABLE_EXPORTEDTYPE].rows);
 
 			/* 2 bits to encode tag */
-			size += rtsize (n, 16-2);
+			field_size = rtsize (n, 16-2);
 			break;
 
 			/*
@@ -471,7 +473,7 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount)
 				 meta->tables [META_TABLE_PARAM].rows);
 
 			/* 1 bit used to encode tag */
-			size += rtsize (n, 16-1);
+			field_size = rtsize (n, 16-1);
 			break;
 
 			/*
@@ -482,7 +484,7 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount)
 				 meta->tables [META_TABLE_METHOD].rows);
 
 			/* 1 bit used to encode tag */
-			size += rtsize (n, 16-1);
+			field_size = rtsize (n, 16-1);
 			break;
 
 			/*
@@ -494,7 +496,7 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount)
 			n = MAX (n, meta->tables [META_TABLE_TYPESPEC].rows);
 
 			/* 2 bits to encode */
-			size += rtsize (n, 16-2);
+			field_size = rtsize (n, 16-2);
 			break;
 
 			/*
@@ -508,7 +510,7 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount)
 			n = MAX (n, meta->tables [META_TABLE_TYPESPEC].rows);
 
 			/* 3 bits to encode */
-			size += rtsize (n, 16 - 3);
+			field_size = rtsize (n, 16 - 3);
 			break;
 			
 		case MONO_MT_MDOR_IDX:
@@ -521,7 +523,7 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount)
 				 meta->tables [META_TABLE_MEMBERREF].rows);
 
 			/* 1 bit used to encode tag */
-			size += rtsize (n, 16-1);
+			field_size = rtsize (n, 16-1);
 			break;
 
 			/*
@@ -534,11 +536,24 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount)
 			n = MAX (n, meta->tables [META_TABLE_TYPEREF].rows);
 
 			/* 3 bits used to encode tag */
-			size += rtsize (n, 16 - 3);
+			field_size = rtsize (n, 16 - 3);
 			break;
 		}
+
+		/*
+		 * encode field size as follows (we just need to
+		 * distinguish them).
+		 *
+		 * 4 -> 3
+		 * 2 -> 1
+		 * 1 -> 0
+		 */
+		bitfield |= (field_size-1) << shift;
+		shift += 2;
+		size += field_size;
 	}
 
+	*result_bitfield = (i << 24) | bitfield;
 	return size;
 }
 
@@ -553,7 +568,8 @@ mono_metadata_compute_table_bases (metadata_t *meta)
 			continue;
 
 		meta->tables [i].row_size = compute_size (
-			meta, tables [i].table, meta->tables [i].rows);
+			meta, tables [i].table, meta->tables [i].rows,
+			&meta->tables [i].size_bitfield);
 		meta->tables [i].base = base;
 		base += meta->tables [i].rows * meta->tables [i].row_size;
 	}
@@ -571,4 +587,20 @@ char *
 mono_metadata_locate_token (metadata_t *meta, guint32 token)
 {
 	return mono_metadata_locate (meta, token >> 24, token & 0xffffff);
+}
+
+MonoMetaTable *
+mono_metadata_get_table (MetaTableEnum table)
+{
+	int x = (int) table;
+
+	g_return_val_if_fail ((x > 0) && (x <= META_TABLE_LAST), NULL);
+
+	return tables [table].table;
+}
+
+const char *
+mono_metadata_string_heap (metadata_t *meta, guint32 index)
+{
+	return meta->raw_metadata + meta->heap_strings.sh_offset + index;
 }

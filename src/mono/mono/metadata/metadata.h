@@ -1,10 +1,10 @@
 
 typedef struct {
-	guint32 sh_offset;
-	guint32 sh_size;
+	guint32  sh_offset;
+	guint32  sh_size;
 } stream_header_t;
 
-enum {
+typedef enum {
 	META_TABLE_MODULE,
 	META_TABLE_TYPEREF,
 	META_TABLE_TYPEDEF,
@@ -46,13 +46,34 @@ enum {
 	META_TABLE_FILE,
 	META_TABLE_EXPORTEDTYPE,
 	META_TABLE_MANIFESTRESOURCE,
-	META_TABLE_NESTEDCLASS
-};
+	META_TABLE_NESTEDCLASS,
+
+#define META_TABLE_LAST META_TABLE_NESTEDCLASS
+} MetaTableEnum;
 
 typedef struct {
 	guint32   rows, row_size;
 	char     *base;
+
+	/*
+	 * Tables contain up to 9 rows and the possible sizes of the
+	 * fields in the documentation are 1, 2 and 4 bytes.  So we
+	 * can encode in 2 bits the size.
+	 *
+	 * A 32 bit value can encode the resulting size
+	 *
+	 * The top eight bits encode the number of columns in the table.
+	 * we only need 4, but 8 is aligned no shift required. 
+	 */
+	guint32   size_bitfield;
 } metadata_tableinfo_t;
+
+/*
+ * This macro is used to extract the size of the table encoded in
+ * the size_bitfield of metadata_tableinfo_t.
+ */
+#define meta_table_size(bitfield,table) ((((bitfield) >> ((table)*2)) & 0x3) + 1)
+#define meta_table_count(bitfield) ((bitfield) >> 24)
 
 typedef struct {
 	char                *raw_metadata;
@@ -70,6 +91,10 @@ typedef struct {
 	metadata_tableinfo_t tables [64];
 } metadata_t;
 
+/*
+ * This enumeration is used to describe the data types in the metadata
+ * tables
+ */
 enum {
 	MONO_MT_END,
 
@@ -135,7 +160,14 @@ typedef struct {
 const char *mono_meta_table_name (int table);
 
 /* Internal functions */
-void  mono_metadata_compute_table_bases (metadata_t *meta);
+void           mono_metadata_compute_table_bases (metadata_t *meta);
 
-char *mono_metadata_locate       (metadata_t *meta, int table, int idx);
-char *mono_metadata_locate_token (metadata_t *meta, guint32 token);
+MonoMetaTable *mono_metadata_get_table    (MetaTableEnum table);
+
+/*
+ *
+ */
+char          *mono_metadata_locate       (metadata_t *meta, int table, int idx);
+char          *mono_metadata_locate_token (metadata_t *meta, guint32 token);
+
+const char    *mono_metadata_string_heap  (metadata_t *meta, guint32 index);

@@ -18,16 +18,9 @@
 #include "assembly.h"
 #include "cil-coff.h"
 #include "rawbuffer.h"
+#include "endian.h"
 
 #define INVALID_ADDRESS 0xffffffff
-
-/* FIXME: implement big endian versions */
-#define le64_to_cpu(x) (x)
-#define le32_to_cpu(x) (x)
-#define le16_to_cpu(x) (x)
-#define read32(x) le32_to_cpu (*((guint32 *) (x)))
-#define read16(x) le16_to_cpu (*((guint16 *) (x)))
-#define read64(x) le64_to_cpu (*((guint64 *) (x)))
 
 guint32
 cli_rva_image_map (cli_image_info_t *iinfo, guint32 addr)

@@ -12,6 +12,8 @@
 #include <glib.h>
 #include "cil-coff.h"
 
+gboolean dump_data = TRUE;
+
 static void
 hex_dump (char *buffer, int base, int count)
 {
@@ -268,7 +270,7 @@ dump_dotnet_iinfo (cli_image_info_t *iinfo)
 static void
 usage (void)
 {
-	printf ("Usage is: pedump [-m] file.exe\n");
+	printf ("Usage is: pedump file.exe\n");
 	exit (1);
 }
 
@@ -300,7 +302,8 @@ main (int argc, char *argv [])
 	}
 	iinfo = assembly->image_info;
 
-	dump_dotnet_iinfo (iinfo);
+	if (dump_data)
+		dump_dotnet_iinfo (iinfo);
 
 	mono_assembly_close (assembly);
 	
