@@ -386,9 +386,16 @@ enum {
 	DO_DRAW,
 };
 
+typedef struct CompileAllThreadArgs {
+	MonoAssembly *ass;
+	int verbose;
+} CompileAllThreadArgs;
+
 static void
-compile_all_methods (MonoAssembly *ass, int verbose)
+compile_all_methods_thread_main (CompileAllThreadArgs *args)
 {
+	MonoAssembly *ass = args->ass;
+	int verbose = args->verbose;
 	MonoImage *image = ass->image;
 	MonoMethod *method;
 	int i, count = 0;
@@ -403,12 +410,29 @@ compile_all_methods (MonoAssembly *ass, int verbose)
 		count++;
 		if (verbose) {
 			char * desc = mono_method_full_name (method, TRUE);
-			g_print ("Compiling %d %s\n", count, desc + 3);
+			g_print ("Compiling %d %s\n", count, desc);
 			g_free (desc);
 		}
 		mono_compile_method (method);
 	}
 
+}
+
+static void
+compile_all_methods (MonoAssembly *ass, int verbose)
+{
+	CompileAllThreadArgs args;
+
+	args.ass = ass;
+	args.verbose = verbose;
+
+	/* 
+	 * Need to create a mono thread since compilation might trigger
+	 * running of managed code.
+	 */
+	mono_thread_create (mono_domain_get (), compile_all_methods_thread_main, &args);
+
+	mono_thread_manage ();
 }
 
 /**
