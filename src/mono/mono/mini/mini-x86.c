@@ -291,12 +291,17 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 {
 	MonoInst *ins = cfg->varinfo [vmv->idx];
 
+	return 3;
+
+	/* FIXME: this does not work yet */
+#if 0
 	if (cfg->method->save_lmf)
 		/* The register is already saved */
 		return (ins->opcode == OP_ARG) ? 1 : 0;
 	else
 		/* push+pop+possible load if it is an argument */
 		return (ins->opcode == OP_ARG) ? 3 : 2;
+#endif
 }
  
 /*
