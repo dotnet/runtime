@@ -1039,6 +1039,12 @@ stmt: CEE_BLE_UN (cflags) {
 
 stmt: CEE_POP (reg)
 
+# remove some common pops without side effects
+stmt: CEE_POP (OP_ICONST)
+stmt: CEE_POP (CEE_LDIND_REF (base))
+stmt: CEE_POP (CEE_LDIND_I4 (base))
+stmt: CEE_POP (CEE_LDIND_U1 (base))
+
 stmt: CEE_JMP "0" {
 	mono_bblock_add_inst (s->cbb, tree);
 }
