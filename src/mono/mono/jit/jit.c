@@ -2188,6 +2188,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			--sp;
 
 			c = mono_class_get (image, token);
+			if (!c->inited)
+				mono_class_init (c);
 
 			t1 = mono_ctree_new (mp, MB_TERM_ISINST, *sp, NULL);
 			t1->data.klass = c;
@@ -2205,6 +2207,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			--sp;
 
 			c = mono_class_get (image, token);
+			if (!c->inited)
+				mono_class_init (c);
 
 			t1 = mono_ctree_new (mp, MB_TERM_CASTCLASS, *sp, NULL);
 			t1->data.klass = c;

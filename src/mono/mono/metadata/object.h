@@ -128,8 +128,9 @@ typedef struct {
 } MonoRealProxy;
 
 typedef struct {
-	MonoObject  object;
+	MonoObject     object;
 	MonoRealProxy *rp;	
+	MonoClass     *klass; 
 } MonoTransparentProxy;
 
 typedef struct {

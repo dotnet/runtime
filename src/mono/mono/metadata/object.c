@@ -513,15 +513,14 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 	} else {
 		if (oklass == mono_defaults.transparent_proxy_class) {
 			/* fixme: add check for IRemotingTypeInfo */
-			MonoRealProxy *rp = ((MonoTransparentProxy *)obj)->rp;
-			MonoType *type;
-			type = ((MonoReflectionType *)rp->class_to_proxy)->type;
-			oklass = mono_class_from_mono_type (type);
+			oklass = ((MonoTransparentProxy *)obj)->klass;
 		}
-		if (oklass->rank && oklass->rank == klass->rank) {
-			if ((oklass->element_class->baseval - klass->element_class->baseval) <= 
+		if (klass->rank) {
+			if (oklass->rank == klass->rank && 
+			    (oklass->element_class->baseval - klass->element_class->baseval) <= 
 			    klass->element_class->diffval)
 				return obj;
+			
 		} else if ((oklass->baseval - klass->baseval) <= klass->diffval)
 			return obj;
 	}

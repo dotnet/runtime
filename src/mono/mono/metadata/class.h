@@ -126,6 +126,7 @@ struct _MonoClass {
 typedef struct {
 	MonoClass  *klass;
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
+	guint       max_interface_id;
         gpointer   *interface_offsets;   
         gpointer    data;
         gpointer    vtable [0];	

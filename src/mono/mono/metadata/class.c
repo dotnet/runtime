@@ -864,6 +864,8 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		}
 	}
 
+	vt->max_interface_id = class->max_interface_id;
+	
 	vt->interface_offsets = mono_mempool_alloc0 (domain->mp, 
 	        sizeof (gpointer) * (class->max_interface_id + 1));
 

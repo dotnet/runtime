@@ -4,7 +4,9 @@ CSC=mcs
 
 
 TESTSRC=			\
-	fib.cs 
+	fib.cs 			\
+	castclass.cs		\
+	isinst.cs
 
 TESTSI=$(TESTSRC:.cs=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)

@@ -1981,6 +1981,7 @@ messaging_classes_to_check [] = {
 static FieldDesc 
 transparent_proxy_fields[] = {
 	{"_rp", G_STRUCT_OFFSET (MonoTransparentProxy, rp)},
+	{"_class", G_STRUCT_OFFSET (MonoTransparentProxy, klass)},
 	{NULL, 0}
 };
 

@@ -1869,6 +1869,8 @@ ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this)
 	type = ((MonoReflectionType *)rp->class_to_proxy)->type;
 	klass = mono_class_from_mono_type (type);
 
+	((MonoTransparentProxy *)res)->klass = klass;
+
 	res->vtable = mono_class_proxy_vtable (domain, klass);
 
 	return res;

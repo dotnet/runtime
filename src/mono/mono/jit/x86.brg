@@ -1374,63 +1374,146 @@ reg: UNBOX (reg) {
 }
 
 reg: CASTCLASS (reg) {
-	guint8 *start = s->code, *l1, *l2, *le;
-	int i;
+	MonoClass *klass = tree->data.klass;
+	guint8 *br [2], *pos [2];
+	int lreg = tree->left->reg1;
+	
+	x86_push_reg (s->code, lreg);
+	x86_test_reg_reg (s->code, lreg, lreg);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_EQ, 0, FALSE);
+	pos [0] = s->code;
 
-	l1 = l2 = le = NULL;
+	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		/* lreg = obj->vtable */
+		x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
 
-	for (i = 0; i < 2; i++) {
-		s->code = start;
+		x86_alu_membase_imm (s->code, X86_CMP, lreg, G_STRUCT_OFFSET (MonoVTable, max_interface_id), 
+				     klass->interface_id);
+		EMIT_COND_SYSTEM_EXCEPTION (X86_CC_GE, FALSE, "InvalidCastException");
+		/* lreg = obj->vtable->interface_offsets */
+		x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoVTable, interface_offsets), 4);
+		x86_alu_membase_imm (s->code, X86_CMP, lreg, klass->interface_id << 2, 0);
+		EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NE, FALSE, "InvalidCastException");
+	} else {
 
-		if (tree->reg1 != X86_EAX)
-			x86_push_reg (s->code, X86_EAX);
+		/* lreg = obj->vtable */
+		x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
+		/* lreg = obj->vtable->klass */
+		x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
 
-		x86_test_reg_reg (s->code, tree->left->reg1, tree->left->reg1);
-		x86_branch8 (s->code, X86_CC_EQ, le - l2, FALSE);
-		l2 = s->code;
-		x86_push_reg (s->code, X86_ECX);
-		x86_push_reg (s->code, X86_EDX);
+		if (klass->rank) {
 
-		x86_push_imm (s->code, tree->data.klass);
-		x86_push_reg (s->code, tree->left->reg1);
-		mono_add_jump_info (s, s->code + 1, MONO_JUMP_INFO_ABS, mono_object_isinst);
-		x86_call_code (s->code, 0);
-		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
+			x86_alu_membase_imm (s->code, X86_CMP, lreg, G_STRUCT_OFFSET (MonoClass, rank), klass->rank);
+			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "InvalidCastException");
+			x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoClass, element_class), 4);
+			x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoClass, baseval), 4);
+			x86_alu_reg_mem (s->code, X86_SUB, lreg, &klass->element_class->baseval);
+			x86_alu_reg_mem (s->code, X86_CMP, lreg, &klass->element_class->diffval);
+			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_LE, FALSE, "InvalidCastException");
 
-		x86_pop_reg (s->code, X86_EDX);
-		x86_pop_reg (s->code, X86_ECX);
+		} else {
 
-		x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0);
-		EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NE, TRUE, "InvalidCastException");	
-		if (tree->reg1 != X86_EAX) {
-			x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
-			x86_pop_reg (s->code, X86_EAX);
+			if (klass->marshalbyref) {
+				/* check for transparent_proxy */		
+				x86_alu_reg_imm (s->code, X86_CMP, lreg, (int)mono_defaults.transparent_proxy_class);
+				br [1] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
+				pos [1] = s->code;
+		
+				/* lreg = obj */
+				x86_mov_reg_membase (s->code, lreg, X86_ESP, 0, 4);
+				x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoTransparentProxy, 
+											   klass), 4);
+
+				x86_branch8 (br [1], X86_CC_NE, s->code - pos [1], FALSE);
+			}
+
+			x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoClass, baseval), 4);
+			x86_alu_reg_mem (s->code, X86_SUB, lreg, &klass->baseval);
+			x86_alu_reg_mem (s->code, X86_CMP, lreg, &klass->diffval);
+			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_LE, FALSE, "InvalidCastException");		
 		}
-
-		le = s->code;
-
 	}
+
+	x86_branch8 (br [0], X86_CC_EQ, s->code - pos [0], FALSE);
+	x86_pop_reg (s->code, tree->reg1);
 }
 
 reg: ISINST (reg) {
-	if (tree->reg1 != X86_EAX)
-		x86_push_reg (s->code, X86_EAX);
-	x86_push_reg (s->code, X86_ECX);
-	x86_push_reg (s->code, X86_EDX);
+	MonoClass *klass = tree->data.klass;
+	guint8 *br [3], *pos [3];
+	int lreg = tree->left->reg1;
+	
+	x86_push_reg (s->code, lreg);
+	x86_test_reg_reg (s->code, lreg, lreg);
+	br [0] = s->code; x86_branch8 (s->code, X86_CC_EQ, 0, FALSE);
+	pos [0] = s->code;
 
-	x86_push_imm (s->code, tree->data.klass);
-	x86_push_reg (s->code, tree->left->reg1);
-	mono_add_jump_info (s, s->code + 1, MONO_JUMP_INFO_ABS, mono_object_isinst);
-	x86_call_code (s->code, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
+	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		/* lreg = obj->vtable */
+		x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
 
-	x86_pop_reg (s->code, X86_EDX);
-	x86_pop_reg (s->code, X86_ECX);
-	if (tree->reg1 != X86_EAX) {
-		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
-		x86_pop_reg (s->code, X86_EAX);
+		x86_alu_membase_imm (s->code, X86_CMP, lreg, G_STRUCT_OFFSET (MonoVTable, max_interface_id), 
+				     klass->interface_id);
+		br [1] = s->code; x86_branch8 (s->code, X86_CC_LT, 0, FALSE);
+		pos [1] = s->code;
+		/* lreg = obj->vtable->interface_offsets */
+		x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoVTable, interface_offsets), 4);
+		x86_alu_membase_imm (s->code, X86_CMP, lreg, klass->interface_id << 2, 0);
+		br [2] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
+		pos [2] = s->code;
+		x86_branch8 (br [1], X86_CC_LT, s->code - pos [1], FALSE);
+		x86_mov_membase_imm (s->code, X86_ESP, 0, 0, 4);
+		x86_branch8 (br [2], X86_CC_NE, s->code - pos [2], FALSE);
+
+	} else {
+
+		/* lreg = obj->vtable */
+		x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
+		/* lreg = obj->vtable->klass */
+		x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);
+
+		if (klass->rank) {
+
+			x86_alu_membase_imm (s->code, X86_CMP, lreg, G_STRUCT_OFFSET (MonoClass, rank), klass->rank);
+			br [1] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
+			pos [1] = s->code;
+			x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoClass, element_class), 4);
+			x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoClass, baseval), 4);
+			x86_alu_reg_mem (s->code, X86_SUB, lreg, &klass->element_class->baseval);
+			x86_alu_reg_mem (s->code, X86_CMP, lreg, &klass->element_class->diffval);
+			br [2] = s->code; x86_branch8 (s->code, X86_CC_LE, 0, FALSE);
+			pos [2] = s->code;
+			x86_branch8 (br [1], X86_CC_NE, s->code - pos [1], FALSE);
+			x86_mov_membase_imm (s->code, X86_ESP, 0, 0, 4);
+			x86_branch8 (br [2], X86_CC_LE, s->code - pos [2], FALSE);
+
+		} else {
+
+			if (klass->marshalbyref) {
+				/* check for transparent_proxy */		
+				x86_alu_reg_imm (s->code, X86_CMP, lreg, (int)mono_defaults.transparent_proxy_class);
+				br [1] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);
+				pos [1] = s->code;
+		
+				/* lreg = obj */
+				x86_mov_reg_membase (s->code, lreg, X86_ESP, 0, 4);
+				x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoTransparentProxy, 
+											   klass), 4);
+				x86_branch8 (br [1], X86_CC_NE, s->code - pos [1], FALSE);
+			}
+
+			x86_mov_reg_membase (s->code, lreg, lreg, G_STRUCT_OFFSET (MonoClass, baseval), 4);
+			x86_alu_reg_mem (s->code, X86_SUB, lreg, &klass->baseval);
+			x86_alu_reg_mem (s->code, X86_CMP, lreg, &klass->diffval);
+			br [2] = s->code; x86_branch8 (s->code, X86_CC_LE, 0, FALSE);
+			pos [2] = s->code;
+			x86_mov_membase_imm (s->code, X86_ESP, 0, 0, 4);
+			x86_branch8 (br [2], X86_CC_LE, s->code - pos [2], FALSE);
+		}
 	}
 
+	x86_branch8 (br [0], X86_CC_EQ, s->code - pos [0], FALSE);
+	x86_pop_reg (s->code, tree->reg1);
 }
 
 stmt: INITOBJ (reg) {
