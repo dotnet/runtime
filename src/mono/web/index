@@ -154,6 +154,20 @@
 	</a> Wikis.
 </p>
 
+@item May 4th, 2004: Mono Beta 1 available 
+
+	<table>
+	<tr>
+	  <td>
+	    <img
+	    src="http://www.go-mono.com/images/beta1-anim.gif"></td>
+	  <td>Mono Beta 1 has been released.  See our <a
+	   href="http://www.go-mono.com/archive/beta1/beta1.html">Release
+	   Notes</a>, or go directly to the <a href="download.html">download</a> page. 
+	  </td>
+	</tr>
+	</table>
+
 @item May 2nd, 2004: mDnsResponder.Net;  Global Assembly Cache.
 
 	Brady Anderson has released the first version of his <a href=

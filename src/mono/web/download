@@ -11,6 +11,70 @@
 	Some useful links: the <a
 	href="http://www.go-mono.org/faq.html">FAQ</a>.
 
+
+	<table>
+	  <tbody>
+ 	  <tr bgcolor="#DDDDDD">
+	    <td>
+	      <b>Beta 1</b><br>
+	      <a href="archive/beta1/beta1.html">Release notes</a><br>
+	       May 5th, 2004
+	    </td>
+	    <td>
+	      <table cellspacing="1" cellpadding="3">
+		<tr bgcolor="#BBBBBB">
+		  <td>
+		    <b>Source Code</b>
+	          </td>
+		  <td>
+	 	    <ul>
+	              <li><a href="archive/beta1/mono-0.91.tar.gz">Mono Runtime 0.91</a>
+	 	      <li><a href="archive/beta1/mcs-0.91.tar.gz">Mono Class Libraries and C# Compiler 0.31</a>
+ 		      <li><a href="archive/beta1/libgdiplus-0.5.tar.gz">libgdiplus 0.5</a>
+ 		      <li><a href="archive/beta1/winelib-0.2.tar.gz">winelib 0.2</a>
+		      <p>
+		      <li><a href="archive/beta1/monodoc-0.13.tar.gz">MonoDoc 0.15</a>
+ 		      <li><a href="archive/beta1/xsp-0.13.tar.gz">XSP web server 0.13</a>
+ 		      <li><a href="archive/beta1/mod_mono-0.9.tar.gz">Apache Mono module 0.9</a>
+	            </ul>
+		  </td>
+	        </tr>
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
+                    <img src="images/redhat-36.gif"><b>Red Hat 9.0/x86</b><br>
+		  </td>
+  		  <td>
+		    <a href="archive/beta1/redhat-9-i386">Packages</a>
+		  </td>
+	        </tr>
+<!-- 		<tr bgcolor="#bbbbbb"> -->
+<!-- 		  <td bgcolor="#999999"> -->
+<!--                     <img src="images/redhat-36.gif"><b>Fedora Core 1/x86</b><br> -->
+<!-- 		  </td> -->
+<!--   		  <td> -->
+<!-- 		    <a href="archive/beta1/fedora-1-i386">Packages</a> -->
+<!-- 		  </td> -->
+<!-- 	        </tr> -->
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
+                    <img src="images/suse-36.gif"><b>SUSE 9/x86</b><br>
+		  </td>
+  		  <td>
+		    <a href="archive/beta1/suse-90-i586/">Packages</a>
+		  </td>
+	        </tr>
+		<tr>
+		  <td bgcolor="#999999">
+                    <img src="images/windows-36.gif"><b>Windows installer</b>
+		  </td>
+		  <td>
+		    <a href="archive/beta/windows/mono-Beta1-win32-1.exe">Mono Setup</a>
+		  </td>
+		</tr>
+             </table>
+            </td>
+	</table>
+
 	<table>
 	  <tbody>
  	  <tr bgcolor="#DDDDDD">
