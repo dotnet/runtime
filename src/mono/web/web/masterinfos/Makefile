@@ -2,6 +2,7 @@
 
 # Customize to indicate your own installation dir.
 DLL_PATH=c:/WINDOWS/Microsoft.NET/Framework/v1.1.4322
+# DLL_PATH=c:/WINDOWS/Microsoft.NET/Framework/v1.2.30703
 
 all: \
 	mscorlib.xml \
@@ -15,6 +16,7 @@ all: \
 	System.Security.xml \
 	System.DirectoryServices.xml \
 	System.Windows.Forms.xml \
+	Microsoft.VisualBasic.xml \
 	Cscompmgd.xml
 
 mscorlib.xml :
@@ -53,8 +55,10 @@ System.Windows.Forms.xml :
 Cscompmgd.xml :
 	mono-api-info $(DLL_PATH)/Cscompmgd.dll > Cscompmgd.xml
 
+Microsoft.VisualBasic.xml :
+	mono-api-info $(DLL_PATH)/Microsoft.VisualBasic.dll > Microsoft.VisualBasic.xml
 
 clean:
-	rm mscorlib.xml System.xml System.Xml.xml System.Data.xml System.Web.xml System.Web.Services.xml System.Runtime.Serialization.Formatters.Soap.xml System.Drawing.xml System.Security.xml System.DirectoryServices.xml System.Windows.Forms.xml Cscompmgd.xml 
+	rm mscorlib.xml System.xml System.Xml.xml System.Data.xml System.Web.xml System.Web.Services.xml System.Runtime.Serialization.Formatters.Soap.xml System.Drawing.xml System.Security.xml System.DirectoryServices.xml System.Windows.Forms.xml Cscompmgd.xml Microsoft.VisualBasic.xml
 
 
