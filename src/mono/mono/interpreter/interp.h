@@ -46,7 +46,6 @@ typedef struct _MonoInvocation MonoInvocation;
 
 struct _MonoInvocation {
 	MonoInvocation *parent; /* parent */
-	MonoInvocation *child;
 	MonoMethod     *method; /* parent */
 	stackval       *retval; /* parent */
 	void           *obj;    /* this - parent */

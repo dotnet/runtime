@@ -109,7 +109,6 @@ enum {
 		(frame)->method = (mono_method);	\
 		(frame)->ex_handler = NULL;	\
 		(frame)->ex = NULL;	\
-		(frame)->child = NULL;	\
 		(frame)->ip = NULL;	\
 		(frame)->invoke_trap = 0;	\
 	} while (0)
@@ -1709,7 +1708,6 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 	}
 
 	child_frame.parent = frame;
-	frame->child = &child_frame;
 	frame->ex = NULL;
 
 	/* ready to go */
