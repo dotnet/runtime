@@ -1,3 +1,7 @@
+2005-03-24  Raja R Harinath  <harinath@acm.org>
+
+	* runtime/Makefile.am (wrapper-config): Remove temporary file.
+
 2005-03-23  Raja R Harinath  <rharinath@novell.com>
 
 	Allow testing of System.Drawing with a libgdiplus snapshot.
