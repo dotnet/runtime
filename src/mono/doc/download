@@ -13,7 +13,7 @@
 	In order to make mcs and the class libraries you will need a computer
 	running Windows with the <strong>GNU make tools</strong> from the 
 	<strong>Cygwin</strong> environment, <strong>Microsoft's .NET Framework
-	SDK</strong>, <strong>GLIB 1.3</strong> and 
+	SDK</strong>, <strong>GLIB 2.0</strong> and 
 	<strong>pkg-config</strong>.  
 
         When installing Cygwin, don't forget to include

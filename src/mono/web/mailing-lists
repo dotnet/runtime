@@ -60,16 +60,6 @@
 	  </tr>
 	  <tr>
 	    <td>
-		<b><a
-	href="http://lists.ximian.com/mailman/listinfo/mono-patches">mono-patches</a></b>
-	    </td>
-	    <td>
-	Track the development of Mono in realtime: receive patches to the Mono repository
-	by email.
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>
 		<b><a href="http://lists.ximian.com/mailman/listinfo/mono-bugs">mono-bugs</a></b>
 	    </td>
 	    <td>
@@ -88,3 +78,121 @@
 	this general purpose mailing list.
 	</ul>
 	</ul>
+
+* Google search of the archives
+
+<!-- Google Search with mods -->
+<center>
+
+<table>
+<tr>
+<td><a href="http://www.google.com/search"><img src="mailing-lists_files/Logo_40wht.gif" border="0" alt="Google" align="middle"></a></td>
+
+<td>
+<table>
+
+<tr><td>
+<FORM method=GET action=http://www.google.com/custom>
+<TABLE bgcolor=#FFFFFF cellspacing=0 border=0>
+<tr valign=top>
+<td>
+<INPUT TYPE=text name=q size=31 maxlength=255 value="">
+<INPUT TYPE=hidden name=q size=31 maxlength=255 value="mono">
+<INPUT type=submit name=sa VALUE="Search">
+<input type="hidden" name="cof" value="GIMP:#00ff00;T:#ffffff;LW:401;BIMG:http://www.go-mono.com/images/bgsquares.gif;ALC:#ffffff;L:http://www.go-mono.com/images/mono.gif;GFNT:#cc7700;LC:#ee9900;LH:80;BGC:#444444;AH:center;VLC:#cccccc;S:http://www.go-mono.com;GALT:#eeee00;AWFID:45753ce73241ef7a;">
+<font face="arial,sans-serif" size="-1"><input type="hidden" name="domains" value="www.go-mono.com;lists.ximian.com"><br><input type="radio" name="sitesearch" value="www.go-mono.com"> Search www.go-mono.com <input type="radio" name="sitesearch" value="lists.ximian.com"> Search lists.ximian.com </font><br>
+</td></tr></TABLE>
+</FORM>
+</tr></td>
+
+<tr><td>
+<FORM method=GET action=http://www.google.com/custom>
+<TABLE bgcolor=#FFFFFF cellspacing=0 border=0>
+<tr valign=top>
+<td>
+<INPUT TYPE=text name=q size=31 maxlength=255 value="">
+<INPUT TYPE=hidden name=q size=31 maxlength=255 value="mono-list">
+<INPUT type=submit name=sa VALUE="Search">
+<input type="hidden" name="cof" value="GIMP:#00ff00;T:#ffffff;LW:401;BIMG:http://www.go-mono.com/images/bgsquares.gif;ALC:#ffffff;L:http://www.go-mono.com/images/mono.gif;GFNT:#cc7700;LC:#ee9900;LH:80;BGC:#444444;AH:center;VLC:#cccccc;S:http://www.go-mono.com;GALT:#eeee00;AWFID:45753ce73241ef7a;">
+<font face=arial,sans-serif size=-1><input type=hidden name=domains value="lists.ximian.com"><br> <input type=hidden name=sitesearch value="lists.ximian.com"> Search mono-<b>list</b> </font><br>
+</td></tr></TABLE>
+</FORM>
+</tr></td>
+
+<tr><td>
+<FORM method=GET action=http://www.google.com/custom>
+<TABLE bgcolor=#FFFFFF cellspacing=0 border=0>
+<tr valign=top>
+<td>
+<INPUT TYPE=text name=q size=31 maxlength=255 value="">
+<INPUT TYPE=hidden name=q size=31 maxlength=255 value="mono-announce-list">
+<INPUT type=submit name=sa VALUE="Search">
+<input type="hidden" name="cof" value="GIMP:#00ff00;T:#ffffff;LW:401;BIMG:http://www.go-mono.com/images/bgsquares.gif;ALC:#ffffff;L:http://www.go-mono.com/images/mono.gif;GFNT:#cc7700;LC:#ee9900;LH:80;BGC:#444444;AH:center;VLC:#cccccc;S:http://www.go-mono.com;GALT:#eeee00;AWFID:45753ce73241ef7a;">
+<font face=arial,sans-serif size=-1><input type=hidden name=domains value="lists.ximian.com"><br> <input type=hidden name=sitesearch value="lists.ximian.com"> Search mono-<b>announce-list</b> </font><br>
+</td></tr></TABLE>
+</FORM>
+</tr></td>
+
+<tr><td>
+<FORM method=GET action=http://www.google.com/custom>
+<TABLE bgcolor=#FFFFFF cellspacing=0 border=0>
+<tr valign=top>
+<td>
+<INPUT TYPE=text name=q size=31 maxlength=255 value="">
+<INPUT TYPE=hidden name=q size=31 maxlength=255 value="mono-bugs">
+<INPUT type=submit name=sa VALUE="Search">
+<input type="hidden" name="cof" value="GIMP:#00ff00;T:#ffffff;LW:401;BIMG:http://www.go-mono.com/images/bgsquares.gif;ALC:#ffffff;L:http://www.go-mono.com/images/mono.gif;GFNT:#cc7700;LC:#ee9900;LH:80;BGC:#444444;AH:center;VLC:#cccccc;S:http://www.go-mono.com;GALT:#eeee00;AWFID:45753ce73241ef7a;">
+<font face=arial,sans-serif size=-1><input type=hidden name=domains value="lists.ximian.com"><br> <input type=hidden name=sitesearch value="lists.ximian.com"> Search mono-<b>bugs</b> </font><br>
+</td></tr></TABLE>
+</FORM>
+</tr></td>
+
+<tr><td>
+<FORM method=GET action=http://www.google.com/custom>
+<TABLE bgcolor=#FFFFFF cellspacing=0 border=0>
+<tr valign=top>
+<td>
+<INPUT TYPE=text name=q size=31 maxlength=255 value="">
+<INPUT TYPE=hidden name=q size=31 maxlength=255 value="mono-gc-list">
+<INPUT type=submit name=sa VALUE="Search">
+<input type="hidden" name="cof" value="GIMP:#00ff00;T:#ffffff;LW:401;BIMG:http://www.go-mono.com/images/bgsquares.gif;ALC:#ffffff;L:http://www.go-mono.com/images/mono.gif;GFNT:#cc7700;LC:#ee9900;LH:80;BGC:#444444;AH:center;VLC:#cccccc;S:http://www.go-mono.com;GALT:#eeee00;AWFID:45753ce73241ef7a;">
+<font face=arial,sans-serif size=-1><input type=hidden name=domains value="lists.ximian.com"><br> <input type=hidden name=sitesearch value="lists.ximian.com"> Search mono-<b>gc-list</b> </font><br>
+</td></tr></TABLE>
+</FORM>
+</tr></td>
+
+<tr><td>
+<FORM method=GET action=http://www.google.com/custom>
+<TABLE bgcolor=#FFFFFF cellspacing=0 border=0>
+<tr valign=top>
+<td>
+<INPUT TYPE=text name=q size=31 maxlength=255 value="">
+<INPUT TYPE=hidden name=q size=31 maxlength=255 value="mono-cvs-list">
+<INPUT type=submit name=sa VALUE="Search">
+<input type="hidden" name="cof" value="GIMP:#00ff00;T:#ffffff;LW:401;BIMG:http://www.go-mono.com/images/bgsquares.gif;ALC:#ffffff;L:http://www.go-mono.com/images/mono.gif;GFNT:#cc7700;LC:#ee9900;LH:80;BGC:#444444;AH:center;VLC:#cccccc;S:http://www.go-mono.com;GALT:#eeee00;AWFID:45753ce73241ef7a;">
+<font face=arial,sans-serif size=-1><input type=hidden name=domains value="lists.ximian.com"><br> <input type=hidden name=sitesearch value="lists.ximian.com"> Search mono-<b>cvs-list</b> </font><br>
+</td></tr></TABLE>
+</FORM>
+</tr></td>
+
+<tr><td>
+<FORM method=GET action=http://www.google.com/custom>
+<TABLE bgcolor=#FFFFFF cellspacing=0 border=0>
+<tr valign=top>
+<td>
+<INPUT TYPE=text name=q size=31 maxlength=255 value="">
+<INPUT TYPE=hidden name=q size=31 maxlength=255 value="mono-patches">
+<INPUT type=submit name=sa VALUE="Search">
+<input type="hidden" name="cof" value="GIMP:#00ff00;T:#ffffff;LW:401;BIMG:http://www.go-mono.com/images/bgsquares.gif;ALC:#ffffff;L:http://www.go-mono.com/images/mono.gif;GFNT:#cc7700;LC:#ee9900;LH:80;BGC:#444444;AH:center;VLC:#cccccc;S:http://www.go-mono.com;GALT:#eeee00;AWFID:45753ce73241ef7a;">
+<font face=arial,sans-serif size=-1><input type=hidden name=domains value="lists.ximian.com"><br> <input type=hidden name=sitesearch value="lists.ximian.com"> Search mono-<b>patches</b> </font><br>
+</td></tr></TABLE>
+</FORM>
+</tr></td>
+
+
+</table>
+</tr>
+</table>
+
+</center>
+<!-- /Google Search with mods -->

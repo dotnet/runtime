@@ -18,6 +18,12 @@
 		* <a href="#c">C</a>
 	</ul>
 
+	Some experimental languages:
+
+	<ul>
+		* <a href="#Tachy">Tachy</a> (scheme-like)
+	</ul>
+
 <a name="MonoLogo">
 ** MonoLogo
 
@@ -52,6 +58,12 @@
 	 Page</a> and <a href="http://www.dataman.ro/dforth/index.html">more
 	 details here</a>.
 	 
+
+<a name="Tachy">
+** Tachy
+
+	A subset of Scheme language called <a
+	href="http://radio.weblogs.com/0101156/stories/2002/03/19/tachy.html">Tachy</a>
 
 * Missing languages
 
