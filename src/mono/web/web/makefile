@@ -168,7 +168,7 @@ src/%.html.in: src/%.xml transform.exe $(CORCOMPARE)/mono-api.xsl
 
 
 .PRECIOUS: infos/%.xml
-infos/%.xml: ../../../mcs/class/lib/%.dll $(CORCOMPARE)/mono-api-info.exe
+infos/%.xml: ../../../mcs/class/lib/default/%.dll $(CORCOMPARE)/mono-api-info.exe
 	$(RUN_MONO) $(CORCOMPARE)/mono-api-info.exe $< > $@ || (rm -f $@ && exit 1)
 
 .PRECIOUS: src/%.xml
@@ -176,21 +176,21 @@ src/%.xml: infos/%.xml $(CORCOMPARE)/mono-api-diff.exe
 	$(RUN_MONO) $(CORCOMPARE)/mono-api-diff.exe masterinfos/$(notdir $<) $< > $@ || (rm -f $@ && exit 1)
 
 # corlib, corlib...
-infos/mscorlib.xml: ../../../mcs/class/lib/mscorlib.dll $(CORCOMPARE)/mono-api-info.exe
+infos/mscorlib.xml: ../../../mcs/class/lib/default/mscorlib.dll $(CORCOMPARE)/mono-api-info.exe
 	$(RUN_MONO) $(CORCOMPARE)/mono-api-info.exe $(notdir $(basename $<)) > $@ || (rm -f $@ && exit 1)
 
 src/corlib.xml: infos/mscorlib.xml $(CORCOMPARE)/mono-api-diff.exe 
 	$(RUN_MONO) $(CORCOMPARE)/mono-api-diff.exe masterinfos/mscorlib.xml $< > $@ || (rm -f $@ && exit 1)
 
 # System
-infos/System.xml: ../../../mcs/class/lib/System.dll $(CORCOMPARE)/mono-api-info.exe
+infos/System.xml: ../../../mcs/class/lib/default/System.dll $(CORCOMPARE)/mono-api-info.exe
 	$(RUN_MONO) $(CORCOMPARE)/mono-api-info.exe $(notdir $(basename $<)) > $@ || (rm -f $@ && exit 1)
 
 src/System.xml: infos/System.xml $(CORCOMPARE)/mono-api-diff.exe 
 	$(RUN_MONO) $(CORCOMPARE)/mono-api-diff.exe masterinfos/System.xml $< > $@ || (rm -f $@ && exit 1)
 
 # System.Xml
-infos/System.Xml.xml: ../../../mcs/class/lib/System.Xml.dll $(CORCOMPARE)/mono-api-info.exe
+infos/System.Xml.xml: ../../../mcs/class/lib/default/System.Xml.dll $(CORCOMPARE)/mono-api-info.exe
 	$(RUN_MONO) $(CORCOMPARE)/mono-api-info.exe $(notdir $(basename $<)) > $@ || (rm -f $@ && exit 1)
 
 src/System.Xml.xml: infos/System.Xml.xml $(CORCOMPARE)/mono-api-diff.exe 
