@@ -71,9 +71,9 @@ void           mono_debug_add_type (MonoClass *klass);
 gchar *        mono_debug_source_location_from_address (MonoMethod *method, guint32 address,
 							guint32 *line_number);
 
-gint32         mono_debug_il_offset_from_address (MonoMethod *method, guint32 address);
+gint32         mono_debug_il_offset_from_address (MonoMethod *method, gint32 address);
 
-gint32         mono_debug_address_from_il_offset (MonoMethod *method, guint32 il_offset);
+gint32         mono_debug_address_from_il_offset (MonoMethod *method, gint32 il_offset);
 
 /* DEBUGGER PUBLIC FUNCTION:
  *
