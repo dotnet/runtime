@@ -1,6 +1,8 @@
-* Debugging support
+* Debugging support in Mono
 
-	There 
+	A new debugger has been created in C# and using Gtk# for its
+	user interface, this will simplify the debugging of CLI applications.
 
+	Stay turned for its first public release.
 
-
+	
