@@ -8535,7 +8535,7 @@ static void
 mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 {
 	MonoImage *image = ass->image;
-	MonoMethod *method;
+	MonoMethod *method, *invoke;
 	int i, count = 0;
 
 	if (mini_verbose > 0)
@@ -8545,8 +8545,6 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
 		if (method->flags & METHOD_ATTRIBUTE_ABSTRACT)
 			continue;
-		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
-			continue;
 
 		count++;
 		if (mini_verbose > 1) {
@@ -8555,6 +8553,14 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 			g_free (desc);
 		}
 		mono_compile_method (method);
+		if (strcmp (method->name, "Finalize") == 0) {
+			invoke = mono_marshal_get_runtime_invoke (method);
+			mono_compile_method (invoke);
+		}
+		if (method->klass->marshalbyref && method->signature->hasthis) {
+			invoke = mono_marshal_get_remoting_invoke_with_check (method);
+			mono_compile_method (invoke);
+		}
 	}
 }
 
