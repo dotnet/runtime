@@ -454,3 +454,10 @@ string_marshal_test3 (char *str)
 
 	return 0;
 }
+
+char *
+functionReturningString (void)
+{
+    return "ABC";
+}
+

@@ -2921,99 +2921,143 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		MonoMarshalSpec *spec = mspecs [0];
 		type = sig->ret->type;
 
-	handle_enum:
-		switch (type) {
-		case MONO_TYPE_VOID:
-			break;
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U:
-		case MONO_TYPE_PTR:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-			/* no conversions necessary */
-			mono_mb_emit_byte (mb, CEE_STLOC_3);
-			break;
-		case MONO_TYPE_BOOLEAN:
-			/* maybe we need to make sure that it fits within 8 bits */
-			mono_mb_emit_byte (mb, CEE_STLOC_3);
-			break;
-		case MONO_TYPE_VALUETYPE:
-			klass = sig->ret->data.klass;
-			if (klass->enumtype) {
-				type = sig->ret->data.klass->enum_basetype->type;
-				goto handle_enum;
-			}
+		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
+			MonoType *mtype;
+			MonoClass *mklass;
+			MonoMethod *marshal_native_to_managed;
+			MonoMethod *get_instance;
 
-			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			    klass->blittable) {
+			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, method->klass->image);
+			g_assert (mtype != NULL);
+			mklass = mono_class_from_mono_type (mtype);
+			g_assert (mklass != NULL);
+
+			marshal_native_to_managed = mono_find_method_by_name (mklass, "MarshalNativeToManaged", 1);
+			g_assert (marshal_native_to_managed);
+			get_instance = mono_find_method_by_name (mklass, "GetInstance", 1);
+			g_assert (get_instance);
+			
+			switch (type) {
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_SZARRAY:
+				mono_mb_emit_byte (mb, CEE_STLOC_3);
+
+				mono_mb_emit_ldstr (mb, spec->data.custom_data.cookie);
+
+				mono_mb_emit_byte (mb, CEE_CALL);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+				
+				mono_mb_emit_byte (mb, CEE_LDLOC_3);
+				
+				mono_mb_emit_byte (mb, CEE_CALLVIRT);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_native_to_managed));
+				
 				mono_mb_emit_byte (mb, CEE_STLOC_3);
 				break;
+			default:
+				g_warning ("custom marshalling of type %x is currently not supported", type);
+				g_assert_not_reached ();
+				break;
 			}
-			/* load pointer to returned value type */
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
-			/* store the address of the source into local variable 0 */
-			mono_mb_emit_byte (mb, CEE_STLOC_0);
-			/* set dst_ptr */
-			mono_mb_emit_ldloc_addr (mb, 3);
-			mono_mb_emit_byte (mb, CEE_STLOC_1);
+		} else {
 
-			/* emit valuetype conversion code */
-			emit_struct_conv (mb, sig->ret->data.klass, TRUE);
-			break;
-		case MONO_TYPE_STRING:
-#ifdef GTK_SHARP_FIXED
-			mono_mb_emit_byte (mb, CEE_STLOC_0);
-			mono_mb_emit_byte (mb, CEE_LDLOC_0);
-#endif
-			
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
-			if (spec) {
-				switch (spec->native) {
-				case MONO_NATIVE_LPWSTR:
-					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPWSTR_STR);
-					break;
-				default:
-					g_warning ("marshalling conversion not implemented");
-					g_assert_not_reached ();
+		handle_enum:
+			switch (type) {
+			case MONO_TYPE_VOID:
+				break;
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+			case MONO_TYPE_PTR:
+			case MONO_TYPE_R4:
+			case MONO_TYPE_R8:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:
+				/* no conversions necessary */
+				mono_mb_emit_byte (mb, CEE_STLOC_3);
+				break;
+			case MONO_TYPE_BOOLEAN:
+				/* maybe we need to make sure that it fits within 8 bits */
+				mono_mb_emit_byte (mb, CEE_STLOC_3);
+				break;
+			case MONO_TYPE_VALUETYPE:
+				klass = sig->ret->data.klass;
+				if (klass->enumtype) {
+					type = sig->ret->data.klass->enum_basetype->type;
+					goto handle_enum;
 				}
-			} else {
-				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
-			}
-			mono_mb_emit_byte (mb, CEE_STLOC_3);
+				
+				if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+				    klass->blittable) {
+					mono_mb_emit_byte (mb, CEE_STLOC_3);
+					break;
+				}
+				/* load pointer to returned value type */
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
+				/* store the address of the source into local variable 0 */
+				mono_mb_emit_byte (mb, CEE_STLOC_0);
+				/* set dst_ptr */
+				mono_mb_emit_ldloc_addr (mb, 3);
+				mono_mb_emit_byte (mb, CEE_STLOC_1);
+				
+				/* emit valuetype conversion code */
+				emit_struct_conv (mb, sig->ret->data.klass, TRUE);
+				break;
+			case MONO_TYPE_STRING:
+#ifdef GTK_SHARP_FIXED
+				mono_mb_emit_byte (mb, CEE_STLOC_0);
+				mono_mb_emit_byte (mb, CEE_LDLOC_0);
+#endif
+				
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
+				if (spec) {
+					switch (spec->native) {
+					case MONO_NATIVE_LPWSTR:
+						mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPWSTR_STR);
+						break;
+					default:
+						g_warning ("marshalling conversion not implemented");
+						g_assert_not_reached ();
+					}
+				} else {
+					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
+				}
+				mono_mb_emit_byte (mb, CEE_STLOC_3);
 
 #ifdef GTK_SHARP_FIXED
-			/* free the string */
-			mono_mb_emit_byte (mb, CEE_LDLOC_0);
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_FREE);
+				/* free the string */
+				mono_mb_emit_byte (mb, CEE_LDLOC_0);
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_byte (mb, CEE_MONO_FREE);
 #endif
-			break;
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_SZARRAY:
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_OBJECT:
-			/* fixme: we need conversions here */
-			mono_mb_emit_byte (mb, CEE_STLOC_3);
-			break;
-		case MONO_TYPE_CHAR:
-			/* fixme: we need conversions here */
-			mono_mb_emit_byte (mb, CEE_STLOC_3);
-			break;
-		case MONO_TYPE_TYPEDBYREF:
-		case MONO_TYPE_FNPTR:
-		default:
-			g_warning ("return type 0x%02x unknown", sig->ret->type);	
-			g_assert_not_reached ();
+				break;
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_SZARRAY:
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_OBJECT:
+				/* fixme: we need conversions here */
+				mono_mb_emit_byte (mb, CEE_STLOC_3);
+				break;
+			case MONO_TYPE_CHAR:
+				/* fixme: we need conversions here */
+				mono_mb_emit_byte (mb, CEE_STLOC_3);
+				break;
+			case MONO_TYPE_TYPEDBYREF:
+			case MONO_TYPE_FNPTR:
+			default:
+				g_warning ("return type 0x%02x unknown", sig->ret->type);	
+				g_assert_not_reached ();
+			}
 		}
 	} else {
 		mono_mb_emit_byte (mb, CEE_STLOC_3);

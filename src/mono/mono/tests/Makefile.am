@@ -151,6 +151,7 @@ TEST_CS_SRC=			\
 	marshal7.cs		\
 	marshal8.cs		\
 	marshal9.cs		\
+	marshal10.cs		\
 	thread.cs		\
 	thread5.cs		\
 	thread6.cs		\
