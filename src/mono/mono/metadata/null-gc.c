@@ -87,7 +87,7 @@ mono_gc_alloc_fixed (size_t size, void *descr)
 void
 mono_gc_free_fixed (void* addr)
 {
-	g_free (size);
+	g_free (addr);
 }
 
 #endif
