@@ -6765,6 +6765,9 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 	} else if (strcmp ("TypeBuilder", klass->name) == 0) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)obj;
 		cinfo = mono_custom_attrs_from_builders (&tb->module->dynamic_image->image, tb->cattrs);
+	} else if (strcmp ("ModuleBuilder", klass->name) == 0) {
+		MonoReflectionModuleBuilder *mb = (MonoReflectionModuleBuilder*)obj;
+		cinfo = mono_custom_attrs_from_builders (&mb->dynamic_image->image, mb->cattrs);
 	} else { /* handle other types here... */
 		g_error ("get custom attrs not yet supported for %s", klass->name);
 	}
