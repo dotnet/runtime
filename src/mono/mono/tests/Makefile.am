@@ -90,7 +90,8 @@ TESTSRC=			\
 	delegate4.cs		\
 	remoting1.cs		\
 	remoting2.cs		\
-	remoting3.cs
+	remoting3.cs		\
+	nonvirt.cs
 
 
 TESTSI=$(TESTSRC:.cs=.exe)
