@@ -105,7 +105,8 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	async_call_queue = g_list_append (async_call_queue, ares); 
 	ReleaseSemaphore (mono_delegate_semaphore, 1, NULL);
 
-	if (mono_worker_threads <= busy_worker_threads) {
+	if (mono_worker_threads <= busy_worker_threads &&
+	    mono_worker_threads < mono_max_worker_threads) {
 		mono_worker_threads++;
 		mono_thread_create (domain, async_invoke_thread, NULL);
 	}
