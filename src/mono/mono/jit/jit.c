@@ -82,7 +82,6 @@ case CEE_##name: {                                                            \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
 	t1 = mono_ctree_new (mp, MB_TERM_##name, sp [0], sp [1]);             \
-        g_assert (sp [0]->svt == sp [1]->svt);                                \
 	PUSH_TREE (t1, sp [0]->svt);                                          \
 	break;                                                                \
 }
@@ -3214,6 +3213,20 @@ sigfpe_signal_handler (int _dummy)
 }
 
 static void
+sigill_signal_handler (int _dummy)
+{
+	MonoException *exc;
+	void **_p = (void **)&_dummy;
+	struct sigcontext *ctx = (struct sigcontext *)++_p;
+
+	exc = mono_get_exception_execution_engine ();
+	
+	arch_handle_exception (ctx, exc);
+
+	g_error ("we should never reach this code");
+}
+
+static void
 sigsegv_signal_handler (int _dummy)
 {
 	MonoException *exc;
@@ -3322,6 +3335,12 @@ main (int argc, char *argv [])
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 	g_assert (syscall (SYS_sigaction, SIGFPE, &sa, NULL) != -1);
+
+	/* catch SIGILL */
+	sa.sa_handler = sigill_signal_handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = 0;
+	g_assert (syscall (SYS_sigaction, SIGILL, &sa, NULL) != -1);
 
 	/* catch SIGSEGV */
 	sa.sa_handler = sigsegv_signal_handler;

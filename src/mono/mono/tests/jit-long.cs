@@ -1,14 +1,16 @@
+using System;
+
 public class TestJit {
 
 	public static long test_call (long a, long b) {
 		return a+b;
 	}
 
-	public static int test_shift ()
+	public static int test_shift_1 ()
 	{
 		long a = 9;
 		int b = 1;
-
+		
 		if ((a >> b) != 4)
 			return 1;
 		
@@ -24,6 +26,63 @@ public class TestJit {
 		a = -9;
 		if ((a >> b) != -5)
 			return 1;
+
+		return 0;
+	}
+
+	public static int test_shift_2 ()
+	{
+		unchecked {
+			long c = (long)0x800000ff00000000;
+			long d = (long)0x8ef0abcd00000000;
+			long t;
+			int sa;
+			
+			t = c>>4;
+			Console.WriteLine (t.ToString ("X"));
+			if (t != (long)0xf800000ff0000000)
+				return 1;
+
+			if ((t << 4) != c)
+				return 1;
+			
+			t = d>>40;
+			Console.WriteLine (t.ToString ("X"));
+			if (t != (long)0xffffffffff8ef0ab)
+				return 1;
+
+			if ((t << 40) != (long)0x8ef0ab0000000000)
+				return 1;
+			
+			
+		}
+		
+		return 0;
+	}
+
+	public static int test_shift_3 ()
+	{
+		checked {
+			ulong c = 0x800000ff00000000;
+			ulong d = 0x8ef0abcd00000000;
+			ulong t;
+			
+			t = c >> 4;
+			Console.WriteLine (t.ToString ("X"));
+			if (t != 0x0800000ff0000000)
+				return 1;
+
+			if ((t << 4) != c)
+				return 1;
+			
+			t = d >> 40;
+			Console.WriteLine (t.ToString ("X"));
+			if (t != 0x8ef0ab)
+				return 1;
+
+			if ((t << 40) != 0x8ef0ab0000000000)
+				return 1;
+		}
 
 		return 0;
 	}
@@ -89,22 +148,29 @@ public class TestJit {
 	}
 
 	public static int Main() {
-		int num = 1;
+		int num = 0;
 
-		if (test_shift () != 0)
+		num++;
+		if (test_shift_1 () != 0)
 			return num;
+		num++;
+		if (test_shift_2 () != 0)
+			return num;
+		num++;
+		if (test_shift_3 () != 0)
+			return num;
+		
 		num++;
 		if (test_call (3, 5) != 8)
 			return num;
-		num++;
 
+		num++;
 		if (test_branch () != 0)
 			return num;
+
 		num++;
-		
 		if (test_alu () != 0)
 			return num;
-		num++;
 		
 		return 0;
 	}
