@@ -34,15 +34,16 @@ get-monolite-latest:
 	cd $(mcslib) && { wget -O- http://www.go-mono.com/daily/monolite-latest.tar.gz | gzip -d | tar xf - ; }
 	cd $(mcslib) && mv -f monolite-* monolite
 
-compiler-tests:
-	cd runtime && $(MAKE) clean-local
-	$(MAKE)
+compiler-tests: mcs-do-clean
+	$(MAKE) all
 	$(MAKE) mcs-do-compiler-tests
 
 bootstrap-world: compiler-tests
 	$(MAKE) install
 
 # internal targets
+mcs-do-clean:
+	cd runtime && $(MAKE) clean-local
 mcs-do-compiler-tests:
 	cd runtime && $(MAKE) test_select='TEST_SUBDIRS="tests errors"' check-local
 
