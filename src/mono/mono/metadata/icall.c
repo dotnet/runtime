@@ -1805,6 +1805,31 @@ ves_icall_Type_GetGenericParameterAttributes (MonoReflectionType *type)
 	return type->type->data.generic_param->flags;
 }
 
+static MonoArray *
+ves_icall_Type_GetGenericParameterConstraints (MonoReflectionType *type)
+{
+	MonoGenericParam *param;
+	MonoDomain *domain;
+	MonoClass **ptr;
+	MonoArray *res;
+	int i, count;
+
+	MONO_ARCH_SAVE_REGS;
+
+	domain = mono_object_domain (type);
+	param = type->type->data.generic_param;
+	for (count = 0, ptr = param->constraints; ptr && *ptr; ptr++, count++)
+		;
+
+	res = mono_array_new (domain, mono_defaults.monotype_class, count);
+	for (i = 0; i < count; i++)
+		mono_array_set (res, gpointer, i,
+				mono_type_get_object (domain, &param->constraints [i]->byval_arg));
+
+
+	return res;
+}
+
 static MonoBoolean
 ves_icall_MonoType_get_HasGenericArguments (MonoReflectionType *type)
 {
@@ -6154,6 +6179,7 @@ static const IcallEntry type_icalls [] = {
 	{"BindGenericParameters", ves_icall_Type_BindGenericParameters},
 	{"Equals", ves_icall_type_Equals},
 	{"GetGenericParameterAttributes", ves_icall_Type_GetGenericParameterAttributes},
+	{"GetGenericParameterConstraints_impl", ves_icall_Type_GetGenericParameterConstraints},
 	{"GetGenericParameterPosition", ves_icall_Type_GetGenericParameterPosition},
 	{"GetGenericTypeDefinition_impl", ves_icall_Type_GetGenericTypeDefinition_impl},
 	{"GetInterfaceMapData", ves_icall_Type_GetInterfaceMapData},
