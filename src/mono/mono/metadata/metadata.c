@@ -2679,6 +2679,27 @@ mono_metadata_generic_inst_equal (MonoGenericInst *g1, MonoGenericInst *g2)
 	return _mono_metadata_generic_inst_equal (g1, g2, FALSE);
 }
 
+guint
+mono_metadata_generic_method_hash (MonoGenericMethod *gmethod)
+{
+	return gmethod->mtype_argc;
+}
+
+gboolean
+mono_metadata_generic_method_equal (MonoGenericMethod *g1, MonoGenericMethod *g2)
+{
+	int i;
+
+	if (g1->mtype_argc != g2->mtype_argc)
+		return FALSE;
+	for (i = 0; i < g1->mtype_argc; ++i) {
+		if (!mono_metadata_type_equal (g1->mtype_argv [i], g2->mtype_argv [i]))
+			return FALSE;
+	}
+	return TRUE;
+}
+
+
 /*
  * mono_metadata_type_hash:
  * @t1: a type

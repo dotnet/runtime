@@ -43,6 +43,7 @@ typedef struct {
 	MonoReflectionType *rtype;
 	MonoArray *parameters;
 	MonoArray *generic_params;
+	MonoGenericContainer *generic_container;
 	MonoArray *pinfo;
 	MonoArray *opt_types;
 	guint32 attrs;
@@ -1293,6 +1294,7 @@ reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, Mono
 	rmb->rtype = mb->rtype;
 	rmb->parameters = mb->parameters;
 	rmb->generic_params = mb->generic_params;
+	rmb->generic_container = mb->generic_container;
 	rmb->opt_types = NULL;
 	rmb->pinfo = mb->pinfo;
 	rmb->attrs = mb->attrs;
@@ -1330,6 +1332,7 @@ reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoRe
 	rmb->rtype = mono_type_get_object (mono_domain_get (), &mono_defaults.void_class->byval_arg);
 	rmb->parameters = mb->parameters;
 	rmb->generic_params = NULL;
+	rmb->generic_container = NULL;
 	rmb->opt_types = NULL;
 	rmb->pinfo = mb->pinfo;
 	rmb->attrs = mb->attrs;
@@ -1357,6 +1360,7 @@ reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, Mono
 	rmb->rtype = mb->rtype;
 	rmb->parameters = mb->parameters;
 	rmb->generic_params = NULL;
+	rmb->generic_container = NULL;
 	rmb->opt_types = NULL;
 	rmb->pinfo = NULL;
 	rmb->attrs = mb->attrs;
@@ -7619,7 +7623,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		int count = mono_array_length (rmb->generic_params);
 		MonoGenericContainer *container;
 
-		pm->generic_container = container = g_new0 (MonoGenericContainer, 1);
+		pm->generic_container = container = rmb->generic_container;
 		container->type_argc = count;
 		container->type_params = g_new0 (MonoGenericParam, count);
 
@@ -7962,6 +7966,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 {
 	MonoMethod *method, *inflated;
 	MonoReflectionMethodBuilder *mb = NULL;
+	MonoGenericContainer *container;
 	MonoGenericMethod *gmethod;
 	MonoGenericContext *context;
 	int count, i;
@@ -7984,12 +7989,27 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	if (count != mono_array_length (types))
 		return NULL;
 
+	container = ((MonoMethodNormal*) method)->generic_container;
+	g_assert (container);
+
+	if (!container->method_hash)
+		container->method_hash = g_hash_table_new (
+			mono_metadata_generic_method_hash, mono_metadata_generic_method_equal);
+
 	gmethod = g_new0 (MonoGenericMethod, 1);
 	gmethod->mtype_argc = count;
 	gmethod->mtype_argv = g_new0 (MonoType *, count);
 	for (i = 0; i < count; i++) {
 		MonoReflectionType *garg = mono_array_get (types, gpointer, i);
 		gmethod->mtype_argv [i] = garg->type;
+	}
+
+	inflated = g_hash_table_lookup (container->method_hash, gmethod);
+	if (inflated) {
+		g_free (gmethod->mtype_argv);
+		g_free (gmethod);
+
+		return mono_method_get_object (mono_object_domain (rmethod), inflated, NULL);
 	}
 
 	gmethod->reflection_info = rmethod;
@@ -7999,9 +8019,9 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	context->gmethod = gmethod;
 
 	inflated = mono_class_inflate_generic_method (method, context, NULL);
+	g_hash_table_insert (container->method_hash, gmethod, inflated);
 
-	return mono_method_get_object (
-		mono_object_domain (rmethod), inflated, NULL);
+	return mono_method_get_object (mono_object_domain (rmethod), inflated, NULL);
 }
 
 static MonoMethod *

@@ -268,5 +268,12 @@ mono_metadata_parse_mh_full                 (MonoImage             *image,
 					     MonoGenericContainer  *generic_container,
 					     const char            *ptr);
 
+guint
+mono_metadata_generic_method_hash           (MonoGenericMethod     *gmethod);
+
+gboolean
+mono_metadata_generic_method_equal          (MonoGenericMethod     *g1,
+					     MonoGenericMethod     *g2);
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

@@ -347,6 +347,7 @@ struct _MonoGenericContext {
 struct _MonoGenericContainer {
 	MonoGenericContainer *parent;
 	MonoGenericContext *context;
+	GHashTable *method_hash;
 	MonoClass *klass;
 	int type_argc    : 6;
 	int is_method    : 1;

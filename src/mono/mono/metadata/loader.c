@@ -477,6 +477,18 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 			gmethod->is_open = mono_class_is_open_constructed_type (gmethod->mtype_argv [i]);
 	}
 
+	if (!container->method_hash)
+		container->method_hash = g_hash_table_new (
+			mono_metadata_generic_method_hash, mono_metadata_generic_method_equal);
+
+	inflated = g_hash_table_lookup (container->method_hash, gmethod);
+	if (inflated) {
+		g_free (gmethod->mtype_argv);
+		g_free (gmethod);
+
+		return inflated;
+	}
+
 	if (!context) {
 		new_context = g_new0 (MonoGenericContext, 1);
 		new_context->gmethod = gmethod;
@@ -488,6 +500,7 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 		sizeof (MonoGenericContext) + param_count * sizeof (MonoType);
 
 	inflated = mono_class_inflate_generic_method (method, context, NULL);
+	g_hash_table_insert (container->method_hash, gmethod, inflated);
 
 	if (new_context)
 		context->ginst = inflated->klass->generic_inst;
