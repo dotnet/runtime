@@ -27,6 +27,9 @@ struct MonoSymbolFileOffsetTable {
 	guint32 method_table_size;
 	guint32 line_number_table_offset;
 	guint32 line_number_table_size;
+	guint32 type_count;
+	guint32 type_index_table_offset;
+	guint32 type_index_table_size;
 	guint32 address_table_size;
 };
 
@@ -34,10 +37,11 @@ struct MonoSymbolFileMethodEntry {
 	guint32 token;
 	guint32 start_row;
 	guint32 end_row;
-	guint32 has_this;
+	guint32 this_type_index;
 	guint32 num_parameters;
 	guint32 num_locals;
 	guint32 num_line_numbers;
+	guint32 type_index_table_offset;
 	guint32 source_file_offset;
 	guint32 line_number_table_offset;
 	guint32 address_table_offset;
@@ -136,7 +140,7 @@ struct MonoSymbolFile {
 	MonoSymbolFilePriv *_priv;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		23
+#define MONO_SYMBOL_FILE_VERSION		24
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
 MonoSymbolFile *

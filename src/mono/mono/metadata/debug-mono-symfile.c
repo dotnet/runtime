@@ -350,7 +350,7 @@ update_method_func (gpointer key, gpointer value, gpointer user_data)
 	var_table = (MonoDebugVarInfo *)
 		(symfile->address_table + mep->entry->variable_table_offset);
 
-	if (mep->entry->has_this) {
+	if (mep->entry->this_type_index) {
 		if (!mep->minfo->jit->this_var) {
 			g_warning (G_STRLOC ": Method %s.%s doesn't have `this'.",
 				   mep->method->klass->name, mep->method->name);
