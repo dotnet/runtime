@@ -2604,6 +2604,15 @@
 			<maintainer>miguel@ximian.com</maintainer>
 		</maintainers>
 	</class>
+	<class name="System.Security.ISecurityPolicyEncodable">
+		<last-activity>Dec-29-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>ndrochak@gol.com</maintainer>
+		</maintainers>
+	</class>
 	<class name="System.Security.Policy">
 		<last-activity>Jul-17-2001</last-activity>
 		<implementation>no</implementation>
@@ -2613,6 +2622,24 @@
 			<maintainer>tomasr@mvps.org</maintainer>
 		</maintainers>
 	</class>
+	<class name="System.Security.Policy.PolicyLevel">
+		<last-activity>Dec-29-2001</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>1</completion>
+		<maintainers>
+			<maintainer>ndrochak@gol.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Security.PolicyLevelType">
+		<last-activity>Dec-29-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>ndrochak@gol.com</maintainer>
+		</maintainers>
+	</class>
 	<class name="System.Security.SecurityElement">
 		<last-activity>Dec-21-2001</last-activity>
 		<implementation>yes</implementation>
@@ -2620,6 +2647,51 @@
 		<completion>80</completion>
 		<maintainers>
 			<maintainer>miguel@ximian.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Security.SecurityException">
+		<last-activity>Dec-29-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>ndrochak@gol.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Security.SecurityZone">
+		<last-activity>Dec-29-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>ndrochak@gol.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Security.SuppressUnmanagedCodeSecurityAttribute">
+		<last-activity>Dec-29-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>ndrochak@gol.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Security.XmlSyntaxException">
+		<last-activity>Dec-29-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>ndrochak@gol.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Security.UnverifiableCodeAttribute">
+		<last-activity>Dec-29-2001</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>ndrochak@gol.com</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Single">
