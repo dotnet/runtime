@@ -320,12 +320,25 @@ mono_install_remoting_trampoline (MonoRemotingTrampoline func)
 
 static MonoCompileFunc default_mono_compile_method = NULL;
 
+/**
+ * mono_install_compile_method:
+ * @func: function to install
+ *
+ * This is a VM internal routine
+ */
 void        
 mono_install_compile_method (MonoCompileFunc func)
 {
 	default_mono_compile_method = func;
 }
 
+/**
+ * mono_compile_method:
+ * @method: The method to compile.
+ *
+ * This JIT-compiles the method, and returns the pointer to the native code
+ * produced.
+ */
 gpointer 
 mono_compile_method (MonoMethod *method)
 {
@@ -338,12 +351,32 @@ mono_compile_method (MonoMethod *method)
 
 static MonoFreeMethodFunc default_mono_free_method = NULL;
 
+/**
+ * mono_install_free_method:
+ * @func: pointer to the MonoFreeMethodFunc used to release a method
+ *
+ * This is an internal VM routine, it is used for the engines to
+ * register a handler to release the resources associated with a method.
+ *
+ * Methods are freed when no more references to the delegate that holds
+ * them are left.
+ */
 void
 mono_install_free_method (MonoFreeMethodFunc func)
 {
 	default_mono_free_method = func;
 }
 
+/**
+ * mono_runtime_free_method:
+ * @domain; domain where the method is hosted
+ * @method: method to release
+ *
+ * This routine is invoked to free the resources associated with
+ * a method that has been JIT compiled.  This is used to discard
+ * methods that were used only temporarily (for example, used in marshalling)
+ *
+ */
 void
 mono_runtime_free_method (MonoDomain *domain, MonoMethod *method)
 {
@@ -1040,7 +1073,8 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 }
 
 static void
-set_value (MonoType *type, void *dest, void *value, int deref_pointer) {
+set_value (MonoType *type, void *dest, void *value, int deref_pointer)
+{
 	int t;
 	if (type->byref) {
 		gpointer *p = (gpointer*)dest;
@@ -1120,6 +1154,17 @@ handle_enum:
 	}
 }
 
+/**
+ * mono_field_set_value:
+ * @obj: Instance object
+ * @field: MonoClassField describing the field to set
+ * @value: The value to be set
+ *
+ * Sets the value of the field described by `field' in the object instance `obj'
+ * to the value passed in `value'.
+ *
+ * The value must be on the native format of the field type. 
+ */
 void
 mono_field_set_value (MonoObject *obj, MonoClassField *field, void *value)
 {
@@ -1131,6 +1176,16 @@ mono_field_set_value (MonoObject *obj, MonoClassField *field, void *value)
 	set_value (field->type, dest, value, FALSE);
 }
 
+/**
+ * mono_field_static_set_value:
+ * @field: MonoClassField describing the field to set
+ * @value: The value to be set
+ *
+ * Sets the value of the static field described by `field' 
+ * to the value passed in `value'.
+ *
+ * The value must be on the native format of the field type. 
+ */
 void
 mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value)
 {
@@ -1144,6 +1199,23 @@ mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value)
 	set_value (field->type, dest, value, FALSE);
 }
 
+/**
+ * mono_field_get_value:
+ * @obj: Object instance
+ * @field: MonoClassField describing the field to fetch information from
+ * @value: pointer to the location where the value will be stored
+ *
+ * Use this routine to get the value of the field `field' in the object
+ * passed.
+ *
+ * The pointer provided by value must be of the field type, for reference
+ * types this is a MonoObject*, for value types its the actual pointer to
+ * the value type.
+ *
+ * For example:
+ *     int i;
+ *     mono_field_get_value (obj, int_field, &i);
+ */
 void
 mono_field_get_value (MonoObject *obj, MonoClassField *field, void *value)
 {
@@ -1155,6 +1227,16 @@ mono_field_get_value (MonoObject *obj, MonoClassField *field, void *value)
 	set_value (field->type, value, src, TRUE);
 }
 
+/**
+ * mono_field_get_value_object:
+ * @domain: domain where the object will be created (if boxing)
+ * @field: MonoClassField describing the field to fetch information from
+ * @obj: The object instance for the field.
+ *
+ * Returns a new MonoObject with the value from the given field.  If the
+ * field represents a value type, the value is boxed.
+ *
+ */
 MonoObject *
 mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObject *obj)
 {	
@@ -1277,7 +1359,22 @@ get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value)
 	mono_get_constant_value_from_blob (domain, field->def_type, field->data, value);
 }
 
-
+/**
+ * mono_field_static_get_value:
+ * @vt: vtable to the object
+ * @field: MonoClassField describing the field to fetch information from
+ * @value: where the value is returned
+ *
+ * Use this routine to get the value of the static field `field' value.
+ *
+ * The pointer provided by value must be of the field type, for reference
+ * types this is a MonoObject*, for value types its the actual pointer to
+ * the value type.
+ *
+ * For example:
+ *     int i;
+ *     mono_field_static_get_value (vt, int_field, &i);
+ */
 void
 mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
 {
@@ -1294,12 +1391,44 @@ mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
 	set_value (field->type, value, src, TRUE);
 }
 
+/**
+ * mono_property_set_value:
+ * @prop: MonoProperty to set
+ * @obj: instance object on which to act
+ * @params: parameters to pass to the propery
+ * @exc: optional exception
+ *
+ * Invokes the property's set method with the given arguments on the
+ * object instance obj (or NULL for static properties). 
+ * 
+ * You can pass NULL as the exc argument if you don't want to
+ * catch exceptions, otherwise, *exc will be set to the exception
+ * thrown, if any.  if an exception is thrown, you can't use the
+ * MonoObject* result from the function.
+ */
 void
 mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc)
 {
 	default_mono_runtime_invoke (prop->set, obj, params, exc);
 }
 
+/**
+ * mono_property_get_value:
+ * @prop: MonoProperty to fetch
+ * @obj: instance object on which to act
+ * @params: parameters to pass to the propery
+ * @exc: optional exception
+ *
+ * Invokes the property's get method with the given arguments on the
+ * object instance obj (or NULL for static properties). 
+ * 
+ * You can pass NULL as the exc argument if you don't want to
+ * catch exceptions, otherwise, *exc will be set to the exception
+ * thrown, if any.  if an exception is thrown, you can't use the
+ * MonoObject* result from the function.
+ *
+ * Returns: the value from invoking the get method on the property.
+ */
 MonoObject*
 mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc)
 {
@@ -1307,6 +1436,12 @@ mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObjec
 }
 
 
+/**
+ * mono_get_delegate_invoke:
+ * @klass: The delegate class
+ *
+ * Returns the MonoMethod for the "Invoke" method in the delegate klass
+ */
 MonoMethod *
 mono_get_delegate_invoke (MonoClass *klass)
 {
@@ -1327,6 +1462,19 @@ mono_get_delegate_invoke (MonoClass *klass)
 	return im;
 }
 
+/**
+ * mono_runtime_delegate_invoke:
+ * @delegate: pointer to a delegate object.
+ * @params: parameters for the delegate.
+ * @exc: Pointer to the exception result.
+ *
+ * Invokes the delegate method `delegate' with the parameters provided.
+ *
+ * You can pass NULL as the exc argument if you don't want to
+ * catch exceptions, otherwise, *exc will be set to the exception
+ * thrown, if any.  if an exception is thrown, you can't use the
+ * MonoObject* result from the function.
+ */
 MonoObject*
 mono_runtime_delegate_invoke (MonoObject *delegate, void **params, MonoObject **exc)
 {
@@ -1340,6 +1488,11 @@ mono_runtime_delegate_invoke (MonoObject *delegate, void **params, MonoObject **
 
 static MonoArray* main_args;
 
+/**
+ * mono_runtime_get_main_args:
+ *
+ * Returns a MonOArray with the arguments passed to the main program
+ */
 MonoArray*
 mono_runtime_get_main_args (void)
 {
@@ -1369,10 +1522,18 @@ fire_process_exit_event (void)
 	mono_runtime_delegate_invoke (delegate, pa, &exc);
 }
 
-/*
+/**
+ * mono_runtime_run_main:
+ * @method: the method to start the application with (usually Main)
+ * @argc: number of arguments from the command line
+ * @argv: array of strings from the command line
+ * @exc: excetption results
+ *
  * Execute a standard Main() method (argc/argv contains the
  * executable name). This method also sets the command line argument value
  * needed by System.Environment.
+ *
+ * 
  */
 int
 mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
@@ -1498,9 +1659,15 @@ create_unhandled_exception_eventargs (MonoObject *exc)
 	return obj;
 }
 
-/*
+/**
+ * mono_unhandled_exception:
+ * @exc: exception thrown
+ *
+ * This is a VM internal routine.
+ *
  * We call this function when we detect an unhandled exception
  * in the default domain.
+ *
  * It invokes the * UnhandledException event in AppDomain or prints
  * a warning to the console 
  */
@@ -1619,6 +1786,12 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 	return rval;
 }
 
+/**
+ * mono_install_runtime_invoke:
+ * @func: Function to install
+ *
+ * This is a VM internal routine
+ */
 void
 mono_install_runtime_invoke (MonoInvokeFunc func)
 {
@@ -1873,7 +2046,11 @@ mono_object_new_fast (MonoVTable *vtable)
 
 #endif
 
-/*
+/**
+ * mono_class_get_allocation_ftn:
+ * @vtable: vtable
+ * @pass_size_in_words: 
+ *
  * Return the allocation function appropriate for the given class.
  */
 
@@ -1950,8 +2127,11 @@ mono_object_clone (MonoObject *obj)
 	return o;
 }
 
-/** 
- * mono_array_full_copy
+/**
+ * mono_array_full_copy:
+ * @src: source array to copy
+ * @dest: destination array
+ *
  * Copies the content of one array to another with exactly the same type and size.
  */
 void
@@ -1970,6 +2150,14 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest)
 	memcpy (&dest->vector, &src->vector, size);
 }
 
+/**
+ * mono_array_clone_in_domain:
+ * @domain: the domain in which the array will be cloned into
+ * @array: the array to clone
+ *
+ * This routine returns a copy of the array that is hosted on the
+ * specified MonoDomain.
+ */
 MonoArray*
 mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 {
@@ -2022,7 +2210,7 @@ mono_array_clone (MonoArray *array)
         ((guint32)(a) == 0) || ((guint32)(b) == 0) ? 0 : \
         (guint32)(b) > ((MYGUINT32_MAX) / (guint32)(a))
 
-/*
+/**
  * mono_array_new_full:
  * @domain: domain where the object is created
  * @array_class: array class
@@ -2110,7 +2298,7 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 	return array;
 }
 
-/*
+/**
  * mono_array_new:
  * @domain: domain where the object is created
  * @eclass: element class
@@ -2131,7 +2319,7 @@ mono_array_new (MonoDomain *domain, MonoClass *eclass, guint32 n)
 	return mono_array_new_specific (mono_class_vtable (domain, ac), n);
 }
 
-/*
+/**
  * mono_array_new_specific:
  * @vtable: a vtable in the appropriate domain for an initialized class
  * @n: number of array elements
@@ -2237,7 +2425,7 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 	return s;
 }
 
-/*
+/**
  * mono_string_new_len:
  * @text: a pointer to an utf8 string
  * @length: number of bytes in @text to consider
@@ -2293,7 +2481,7 @@ mono_string_new (MonoDomain *domain, const char *text)
 	return o;
 }
 
-/*
+/**
  * mono_string_new_wrapper:
  * @text: pointer to utf8 characters.
  *
@@ -2361,18 +2549,39 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 	return res;
 }
 
+/**
+ * mono_object_get_domain:
+ * @obj: object to query
+ * 
+ * Returns the MonoDomain where the object is hosted
+ */
 MonoDomain*
 mono_object_get_domain (MonoObject *obj)
 {
 	return mono_object_domain (obj);
 }
 
+/**
+ * mono_object_get_class:
+ * @obj: object to query
+ * 
+ * Returns the MonOClass of the object.
+ */
 MonoClass*
 mono_object_get_class (MonoObject *obj)
 {
 	return mono_object_class (obj);
 }
 
+/**
+ * mono_object_unbox:
+ * @obj: object to unbox
+ * 
+ * Returns a pointer to the start of the valuetype boxed in this
+ * object.
+ *
+ * This method will assert if the object passed is not a valuetype.
+ */
 gpointer
 mono_object_unbox (MonoObject *obj)
 {
@@ -2565,19 +2774,31 @@ mono_string_is_interned_lookup (MonoString *str, int insert)
 	return NULL;
 }
 
+/**
+ * mono_string_is_interned:
+ * @o: String to probe
+ *
+ * Returns whether the string has been interned.
+ */
 MonoString*
 mono_string_is_interned (MonoString *o)
 {
 	return mono_string_is_interned_lookup (o, FALSE);
 }
 
+/**
+ * mono_string_interne:
+ * @o: String to intern
+ *
+ * Interns the string passed.  The interned string is returned.
+ */
 MonoString*
 mono_string_intern (MonoString *str)
 {
 	return mono_string_is_interned_lookup (str, TRUE);
 }
 
-/*
+/**
  * mono_ldstr:
  * @domain: the domain where the string will be used.
  * @image: a metadata context
@@ -2596,12 +2817,12 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 		return mono_ldstr_metdata_sig (domain, mono_metadata_user_string (image, idx));
 }
 
-/*
+/**
  * mono_ldstr_metdata_sig
  * @domain: the domain for the string
  * @sig: the signature of a metadata string
  *
- * returns a MonoString for a string stored in the metadata
+ * Returns a MonoString for a string stored in the metadata
  */
 static MonoString*
 mono_ldstr_metdata_sig (MonoDomain *domain, const char* sig)
@@ -2636,7 +2857,7 @@ mono_ldstr_metdata_sig (MonoDomain *domain, const char* sig)
 	return o;
 }
 
-/*
+/**
  * mono_string_to_utf8:
  * @s: a System.String
  *
@@ -2664,7 +2885,7 @@ mono_string_to_utf8 (MonoString *s)
 	return as;
 }
 
-/*
+/**
  * mono_string_to_utf16:
  * @s: a MonoString
  *
@@ -2693,8 +2914,13 @@ mono_string_to_utf16 (MonoString *s)
 	return (gunichar2 *)(as);
 }
 
-/*
- * Converts a NULL terminated UTF16 string (LPWSTR) to a MonoString
+/**
+ * mono_string_from_utf16:
+ * @data: the UTF16 string (LPWSTR) to convert
+ *
+ * Converts a NULL terminated UTF16 string (LPWSTR) to a MonoString.
+ *
+ * Returns: a MonoString.
  */
 MonoString *
 mono_string_from_utf16 (gunichar2 *data)
@@ -2720,13 +2946,20 @@ default_ex_handler (MonoException *ex)
 
 static MonoExceptionFunc ex_handler = default_ex_handler;
 
+/**
+ * mono_install_handler:
+ * @func: exception handler
+ *
+ * This is an internal JIT routine used to install the handler for exceptions
+ * being throwh.
+ */
 void
-mono_install_handler        (MonoExceptionFunc func)
+mono_install_handler (MonoExceptionFunc func)
 {
 	ex_handler = func? func: default_ex_handler;
 }
 
-/*
+/**
  * mono_raise_exception:
  * @ex: exception object
  *
@@ -2748,6 +2981,13 @@ mono_raise_exception (MonoException *ex)
 	ex_handler (ex);
 }
 
+/**
+ * mono_wait_handle_new:
+ * @domain: Domain where the object will be created
+ * @handle: Handle for the wait handle
+ *
+ * Returns: A new MonoWaitHandle created in the given domain for the given handle
+ */
 MonoWaitHandle *
 mono_wait_handle_new (MonoDomain *domain, HANDLE handle)
 {
@@ -2760,6 +3000,17 @@ mono_wait_handle_new (MonoDomain *domain, HANDLE handle)
 	return res;
 }
 
+/**
+ * mono_async_result_new:
+ * @domain:domain where the object will be created.
+ * @handle: wait handle.
+ * @state: state to pass to AsyncResult
+ * @data: C closure data.
+ *
+ * Creates a new MonoAsyncResult (AsyncResult C# class) in the given domain.
+ * If the handle is not null, the handle is initialized to a MonOWaitHandle.
+ *
+ */
 MonoAsyncResult *
 mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpointer data)
 {
@@ -2920,6 +3171,12 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 	return ret;
 }
 
+/**
+ * mono_print_unhandled_exception:
+ * @exc: The exception
+ *
+ * Prints the unhandled exception.
+ */
 void
 mono_print_unhandled_exception (MonoObject *exc)
 {
@@ -3191,6 +3448,14 @@ mono_load_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fiel
 		return res;
 }
 
+/**
+ * mono_load_remote_field_new:
+ * @this: 
+ * @klass: 
+ * @field:
+ *
+ * Missing documentation.
+ */
 MonoObject *
 mono_load_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *field)
 {
@@ -3313,6 +3578,15 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 	if (exc) mono_raise_exception ((MonoException *)exc);
 }
 
+/**
+ * mono_store_remote_field_new:
+ * @this:
+ * @klass:
+ * @field:
+ * @arg:
+ *
+ * Missing documentation
+ */
 void
 mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField *field, MonoObject *arg)
 {
