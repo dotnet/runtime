@@ -439,7 +439,7 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		return method;
 
-	if (method->is_inflated || method->signature->is_inflated) {
+	if (method->is_inflated || mono_method_signature (method)->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
 
 		context = inflate_generic_context (imethod->context, context);
@@ -491,7 +491,7 @@ mono_get_inflated_method (MonoMethod *method)
 	rklass = res->nmethod.method.klass = mono_class_from_mono_type (dtype);
 
 	res->nmethod.method.signature = mono_class_inflate_generic_signature (
-		method->klass->image, method->signature, imethod->context);
+		method->klass->image, mono_method_signature (method), imethod->context);
 
 	return (MonoMethod *) res;
 }
@@ -1102,7 +1102,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 						    !(cm->flags & METHOD_ATTRIBUTE_NEW_SLOT))
 							continue;
 						if (!strcmp(cm->name, im->name) && 
-						    mono_metadata_signature_equal (cm->signature, im->signature)) {
+						    mono_metadata_signature_equal (mono_method_signature (cm), mono_method_signature (im))) {
 							g_assert (io + l <= max_vtsize);
 							vtable [io + l] = cm;
 						}
@@ -1132,7 +1132,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 							continue;
 						
 						if (!strcmp(cm->name, im->name) && 
-						    mono_metadata_signature_equal (cm->signature, im->signature)) {
+						    mono_metadata_signature_equal (mono_method_signature (cm), mono_method_signature (im))) {
 							g_assert (io + l <= max_vtsize);
 							vtable [io + l] = cm;
 							break;
@@ -1176,7 +1176,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 							continue;
 					
 						if (((fqname && !strcmp (cm->name, fqname)) || !strcmp (cm->name, qname)) &&
-						    mono_metadata_signature_equal (cm->signature, im->signature)) {
+						    mono_metadata_signature_equal (mono_method_signature (cm), mono_method_signature (im))) {
 							g_assert (io + l <= max_vtsize);
 							vtable [io + l] = cm;
 							break;
@@ -1215,13 +1215,13 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 							g_print (" at slot %d: %s (%d) overrides %s (%d)\n", io+l, overrides [j*2+1]->name, 
 								 overrides [j*2+1]->slot, overrides [j*2]->name, overrides [j*2]->slot);
 						}
-						msig = mono_signature_get_desc (im->signature, FALSE);
+						msig = mono_signature_get_desc (mono_method_signature (im), FALSE);
 						printf ("no implementation for interface method %s.%s::%s(%s) in class %s.%s\n",
 							ic->name_space, ic->name, im->name, msig, class->name_space, class->name);
 						g_free (msig);
 						for (j = 0; j < class->method.count; ++j) {
 							MonoMethod *cm = class->methods [j];
-							msig = mono_signature_get_desc (cm->signature, FALSE);
+							msig = mono_signature_get_desc (mono_method_signature (cm), FALSE);
 							
 							printf ("METHOD %s(%s)\n", cm->name, msig);
 							g_free (msig);
@@ -1273,7 +1273,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 					if (!(m1->flags & METHOD_ATTRIBUTE_VIRTUAL))
 						continue;
 					if (!strcmp(cm->name, m1->name) && 
-					    mono_metadata_signature_equal (cm->signature, m1->signature)) {
+					    mono_metadata_signature_equal (mono_method_signature (cm), mono_method_signature (m1))) {
 						slot = k->methods [j]->slot;
 						g_assert (cm->slot < max_vtsize);
 						if (!override_map)
@@ -1292,7 +1292,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 		if (cm->slot < 0)
 			cm->slot = cur_slot++;
 
-		if (!(cm->flags & METHOD_ATTRIBUTE_ABSTRACT) && !cm->signature->generic_param_count)
+		if (!(cm->flags & METHOD_ATTRIBUTE_ABSTRACT) && ! mono_method_signature (cm)->generic_param_count)
 			vtable [cm->slot] = cm;
 	}
 
@@ -3901,7 +3901,7 @@ mono_class_get_method_from_name (MonoClass *klass, const char *name, int param_c
 	for (i = 0; i < klass->method.count; ++i) {
 		if (klass->methods [i]->name[0] == name [0] && 
 		    !strcmp (name, klass->methods [i]->name) &&
-		    (param_count == -1 || klass->methods [i]->signature->param_count == param_count)) {
+		    (param_count == -1 || mono_method_signature (klass->methods [i])->param_count == param_count)) {
 			res = klass->methods [i];
 			break;
 		}

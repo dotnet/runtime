@@ -114,8 +114,8 @@ get_unbox_trampoline (MonoMethod *method, gpointer addr)
 
 	start = addr;
 	if ((method->klass->valuetype)) {
-		if ((!method->signature->ret->byref) && 
-		    (MONO_TYPE_ISSTRUCT (method->signature->ret)))
+		if ((!mono_method_signature (method)->ret->byref) && 
+		    (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret)))
 			this_pos = s390_r3;
 	    
 		start = code = g_malloc (28);

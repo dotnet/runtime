@@ -795,7 +795,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 	header = mono_method_get_header (m->method);
 
-	sig = m->method->signature;
+	sig = mono_method_signature (m->method);
 
 	cinfo = get_call_info (sig, FALSE);
 
@@ -3063,7 +3063,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 
 	/* FIXME: Generate intermediate code instead */
 
-	sig = method->signature;
+	sig = mono_method_signature (method);
 
 	cinfo = get_call_info (sig, FALSE);
 	
@@ -4828,7 +4828,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 	}
 
-	sig = method->signature;
+	sig = mono_method_signature (method);
 	pos = 0;
 
 	cinfo = get_call_info (sig, FALSE);
@@ -5197,7 +5197,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 
 	if (enable_arguments) {
 		/* Allocate a new area on the stack and save arguments there */
-		sig = cfg->method->signature;
+		sig = mono_method_signature (cfg->method);
 
 		cinfo = get_call_info (sig, FALSE);
 
@@ -5247,7 +5247,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	guchar *code = p;
 	int save_mode = SAVE_NONE;
 	MonoMethod *method = cfg->method;
-	int rtype = mono_type_get_underlying_type (method->signature->ret)->type;
+	int rtype = mono_type_get_underlying_type (mono_method_signature (method)->ret)->type;
 	
 	switch (rtype) {
 	case MONO_TYPE_VOID:

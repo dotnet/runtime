@@ -1157,7 +1157,7 @@ mono_method_verify (MonoMethod *method, int level)
 			(method->flags & (METHOD_ATTRIBUTE_PINVOKE_IMPL | METHOD_ATTRIBUTE_ABSTRACT))) {
 		return NULL;
 	}
-	signature = method->signature;
+	signature = mono_method_signature (method);
 	header = mono_method_get_header (method);
 	ip = header->code;
 	end = ip + header->code_size;
@@ -1176,7 +1176,7 @@ mono_method_verify (MonoMethod *method, int level)
 		params = signature->params;
 	}
 
-	if (method->signature->is_inflated)
+	if (signature->is_inflated)
 		generic_context = ((MonoMethodInflated *) method)->context;
 
 	if (header->num_locals) {
@@ -1396,8 +1396,8 @@ mono_method_verify (MonoMethod *method, int level)
 			cmethod = mono_get_method_full (image, token, NULL, generic_context);
 			if (!cmethod)
 				ADD_INVALID (list, g_strdup_printf ("Method 0x%08x not found at 0x%04x", token, ip_offset));
-			if (cmethod->signature->pinvoke) {
-				csig = cmethod->signature;
+			if (mono_method_signature (cmethod)) {
+				csig = mono_method_signature (cmethod);
 			} else {
 				csig = mono_method_get_signature (cmethod, image, token);
 			}
@@ -1638,7 +1638,7 @@ mono_method_verify (MonoMethod *method, int level)
 			cmethod = mono_get_method_full (image, token, NULL, generic_context);
 			if (!cmethod)
 				ADD_INVALID (list, g_strdup_printf ("Constructor 0x%08x not found at 0x%04x", token, ip_offset));
-			csig = cmethod->signature;
+			csig = mono_method_signature (cmethod);
 			CHECK_STACK_UNDERFLOW (csig->param_count);
 			cur_stack -= csig->param_count;
 			CHECK_STACK_OVERFLOW ();

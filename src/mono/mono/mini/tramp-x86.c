@@ -54,7 +54,7 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	int this_pos = 4;
 	MonoDomain *domain = mono_domain_get ();
 
-	if (!m->signature->ret->byref && MONO_TYPE_ISSTRUCT (m->signature->ret))
+	if (!mono_method_signature (m)->ret->byref && MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
 		this_pos = 8;
 	    
 	mono_domain_lock (domain);

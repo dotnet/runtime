@@ -207,10 +207,10 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 				continue;
 
 			if (sig->call_convention == MONO_CALL_VARARG) {
-				if (mono_metadata_signature_vararg_match (sig, m->signature))
+				if (mono_metadata_signature_vararg_match (sig, mono_method_signature (m)))
 					return m;
 			} else {
-				if (mono_metadata_signature_equal (sig, m->signature))
+				if (mono_metadata_signature_equal (sig, mono_method_signature (m)))
 					return m;
 			}
 		}
@@ -238,23 +238,23 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 
 	/* !table is for wrappers: we should really assign their own token to them */
 	if (!table || table == MONO_TABLE_METHOD)
-		return method->signature;
+		return mono_method_signature (method);
 
 	if (table == MONO_TABLE_METHODSPEC) {
 		g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) &&
 			  !(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
-			  method->signature);
+			  mono_method_signature (method));
 		g_assert (method->is_inflated);
 
-		return method->signature;
+		return mono_method_signature (method);
 	}
 
 	if (method->klass->generic_class)
-		return method->signature;
+		return mono_method_signature (method);
 
 	if (image->dynamic)
 		/* FIXME: This might be incorrect for vararg methods */
-		return method->signature;
+		return mono_method_signature (method);
 
 	if (!(sig = g_hash_table_lookup (image->memberref_signatures, GUINT_TO_POINTER (token)))) {
 		mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
@@ -769,12 +769,12 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		/* Try the stdcall mangled name */
 		if (!piinfo->addr) {
 			/* FIX: Compute this correctly */
-			mangled_name = g_strdup_printf ("%s@%d", import, method->signature->param_count * sizeof (gpointer));
+			mangled_name = g_strdup_printf ("%s@%d", import, mono_method_signature (method)->param_count * sizeof (gpointer));
 			g_module_symbol (gmodule, mangled_name, &piinfo->addr); 
 			g_free (mangled_name);
 		}
 		if (!piinfo->addr) {
-			mangled_name = g_strdup_printf ("_%s@%d", import, method->signature->param_count * sizeof (gpointer));
+			mangled_name = g_strdup_printf ("_%s@%d", import, mono_method_signature (method)->param_count * sizeof (gpointer));
 			g_module_symbol (gmodule, mangled_name, &piinfo->addr); 
 			g_free (mangled_name);
 		}
@@ -851,8 +851,12 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (!sig) /* already taken from the methodref */
 		sig = mono_metadata_blob_heap (image, cols [4]);
 	size = mono_metadata_decode_blob_size (sig, &sig);
-	result->signature = mono_metadata_parse_method_signature_full (
-		image, (MonoGenericContext *) container, idx, sig, NULL);
+	
+	/* there are generic params, or a container. FIXME: be lazy here for generics*/
+	if (* sig & 0x10 || container)
+		result->signature = mono_metadata_parse_method_signature_full (
+		    image, (MonoGenericContext *) container, idx, sig, NULL);
+
 
 	if (!result->klass) {
 		guint32 type = mono_metadata_typedef_from_method (image, token);
@@ -862,42 +866,14 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		if (result->klass == mono_defaults.string_class && !strcmp (result->name, ".ctor"))
 			result->string_ctor = 1;
-
-		result->signature->pinvoke = 1;
 	} else if ((cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) && (!(cols [1] & METHOD_IMPL_ATTRIBUTE_NATIVE))) {
 		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)result;
 		MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
-		MonoCallConvention conv = 0;
-
-		result->signature->pinvoke = 1;
+		
 		piinfo->implmap_idx = mono_metadata_implmap_from_method (image, idx - 1);
 		piinfo->piflags = mono_metadata_decode_row_col (im, piinfo->implmap_idx - 1, MONO_IMPLMAP_FLAGS);
-
-		switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CALL_CONV_MASK) {
-		case PINVOKE_ATTRIBUTE_CALL_CONV_WINAPI:
-			conv = MONO_CALL_DEFAULT;
-			break;
-		case PINVOKE_ATTRIBUTE_CALL_CONV_CDECL:
-			conv = MONO_CALL_C;
-			break;
-		case PINVOKE_ATTRIBUTE_CALL_CONV_STDCALL:
-			conv = MONO_CALL_STDCALL;
-			break;
-		case PINVOKE_ATTRIBUTE_CALL_CONV_THISCALL:
-			conv = MONO_CALL_THISCALL;
-			break;
-		case PINVOKE_ATTRIBUTE_CALL_CONV_FASTCALL:
-			conv = MONO_CALL_FASTCALL;
-			break;
-		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERIC:
-		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERICINST:
-		default:
-			g_warning ("unsupported calling convention");
-			g_assert_not_reached ();
-		}	
-		result->signature->call_convention = conv;
 	} else {
-		if (result->signature->generic_param_count) {
+		if (result->signature && result->signature->generic_param_count) {
 			MonoMethodSignature *sig = result->signature;
 
 			for (i = 0; i < sig->generic_param_count; i++) {
@@ -992,7 +968,7 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 	if (constrained_class->generic_class)
 		gclass = constrained_class->generic_class;
 
-	result = find_method (constrained_class, ic, method->name, method->signature);
+	result = find_method (constrained_class, ic, method->name, mono_method_signature (method));
 	if (!result)
 		g_warning ("Missing method %s in assembly %s token %x", method->name,
 			   image->name, token);
@@ -1007,7 +983,8 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 void
 mono_free_method  (MonoMethod *method)
 {
-	mono_metadata_free_method_signature (method->signature);
+	if (method->signature)
+		mono_metadata_free_method_signature (method->signature);
 	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && ((MonoMethodNormal *)method)->header) {
 		mono_metadata_free_mh (((MonoMethodNormal *)method)->header);
 	}
@@ -1023,9 +1000,9 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 	MonoTableInfo *methodt;
 	MonoTableInfo *paramt;
 
-	if (!method->signature->param_count)
+	if (!mono_method_signature (method)->param_count)
 		return;
-	for (i = 0; i < method->signature->param_count; ++i)
+	for (i = 0; i < mono_method_signature (method)->param_count; ++i)
 		names [i] = "";
 
 	if (klass->generic_class) /* copy the names later */
@@ -1038,7 +1015,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 			g_hash_table_lookup (
 				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		if (method_aux && method_aux->param_names) {
-			for (i = 0; i < method->signature->param_count; ++i)
+			for (i = 0; i < mono_method_signature (method)->param_count; ++i)
 				if (method_aux->param_names [i + 1])
 					names [i] = method_aux->param_names [i + 1];
 		}
@@ -1104,7 +1081,7 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 	MonoTableInfo *methodt;
 	MonoTableInfo *paramt;
 
-	for (i = 0; i < method->signature->param_count + 1; ++i)
+	for (i = 0; i < mono_method_signature (method)->param_count + 1; ++i)
 		mspecs [i] = NULL;
 
 	if (method->klass->image->dynamic) {
@@ -1113,7 +1090,7 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		if (method_aux && method_aux->param_marshall) {
 			MonoMarshalSpec **dyn_specs = method_aux->param_marshall;
-			for (i = 0; i < method->signature->param_count + 1; ++i)
+			for (i = 0; i < mono_method_signature (method)->param_count + 1; ++i)
 				if (dyn_specs [i]) {
 					mspecs [i] = g_new0 (MonoMarshalSpec, 1);
 					memcpy (mspecs [i], dyn_specs [i], sizeof (MonoMarshalSpec));
@@ -1168,7 +1145,7 @@ mono_method_has_marshal_info (MonoMethod *method)
 				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		MonoMarshalSpec **dyn_specs = method_aux->param_marshall;
 		if (dyn_specs) {
-			for (i = 0; i < method->signature->param_count + 1; ++i)
+			for (i = 0; i < mono_method_signature (method)->param_count + 1; ++i)
 				if (dyn_specs [i])
 					return TRUE;
 		}
@@ -1272,9 +1249,66 @@ mono_loader_unlock (void)
 }
 
 MonoMethodSignature* 
-mono_method_signature (MonoMethod *method)
+mono_method_signature (MonoMethod *m)
 {
-	return method->signature;
+	int idx;
+	int size;
+	MonoImage* img;
+	gpointer sig;
+	
+	if (m->signature)
+		return m->signature;
+		
+	mono_loader_lock ();
+	
+	if (m->signature) {
+		mono_loader_unlock ();
+		return m->signature;
+	}
+	
+	g_assert (mono_metadata_token_table (m->token) == MONO_TABLE_METHOD);
+	idx = mono_metadata_token_index (m->token);
+	img = m->klass->image;
+	
+	sig = mono_metadata_blob_heap (img, mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_SIGNATURE));
+	size = mono_metadata_decode_blob_size (sig, &sig);
+	
+	m->signature = mono_metadata_parse_method_signature_full (img, NULL, idx, sig, NULL);
+	
+	if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+		m->signature->pinvoke = 1;
+	else if ((m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) && (!(m->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE))) {
+		MonoCallConvention conv = 0;
+		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)m;
+		m->signature->pinvoke = 1;
+		
+		switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CALL_CONV_MASK) {
+		case PINVOKE_ATTRIBUTE_CALL_CONV_WINAPI:
+			conv = MONO_CALL_DEFAULT;
+			break;
+		case PINVOKE_ATTRIBUTE_CALL_CONV_CDECL:
+			conv = MONO_CALL_C;
+			break;
+		case PINVOKE_ATTRIBUTE_CALL_CONV_STDCALL:
+			conv = MONO_CALL_STDCALL;
+			break;
+		case PINVOKE_ATTRIBUTE_CALL_CONV_THISCALL:
+			conv = MONO_CALL_THISCALL;
+			break;
+		case PINVOKE_ATTRIBUTE_CALL_CONV_FASTCALL:
+			conv = MONO_CALL_FASTCALL;
+			break;
+		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERIC:
+		case PINVOKE_ATTRIBUTE_CALL_CONV_GENERICINST:
+		default:
+			g_warning ("unsupported calling convention");
+			g_assert_not_reached ();
+		}	
+		m->signature->call_convention = conv;
+	}
+	
+	mono_loader_unlock ();
+	return m->signature;
 }
 
 const char*

@@ -270,8 +270,8 @@ mono_interp_get_runtime_method (MonoMethod *method)
 	rtm = mono_mempool_alloc (domain->mp, sizeof (RuntimeMethod));
 	memset (rtm, 0, sizeof (*rtm));
 	rtm->method = method;
-	rtm->param_count = method->signature->param_count;
-	rtm->hasthis = method->signature->hasthis;
+	rtm->param_count = mono_method_signature (method)->param_count;
+	rtm->hasthis = mono_method_signature (method)->hasthis;
 	rtm->valuetype = method->klass->valuetype;
 	g_hash_table_insert (domain->jit_code_hash, method, rtm);
 	LeaveCriticalSection (&runtime_method_lookup_section);
@@ -578,7 +578,7 @@ ves_array_set (MonoInvocation *frame)
 	esize = mono_array_element_size (ac);
 	ea = mono_array_addr_with_size (ao, esize, pos);
 
-	mt = frame->runtime_method->method->signature->params [ac->rank];
+	mt = mono_method_signature (frame->runtime_method->method)->params [ac->rank];
 	stackval_to_data (mt, &sp [ac->rank], ea, FALSE);
 }
 
@@ -622,7 +622,7 @@ ves_array_get (MonoInvocation *frame)
 	esize = mono_array_element_size (ac);
 	ea = mono_array_addr_with_size (ao, esize, pos);
 
-	mt = frame->runtime_method->method->signature->ret;
+	mt = mono_method_signature (frame->runtime_method->method)->ret;
 	stackval_from_data (mt, frame->retval, ea, FALSE);
 }
 
@@ -886,7 +886,7 @@ dump_args (MonoInvocation *inv)
 {
 	GString *str = g_string_new ("");
 	int i;
-	MonoMethodSignature *signature = inv->runtime_method->method->signature;
+	MonoMethodSignature *signature = mono_method_signature (inv->runtime_method->method);
 	
 	if (signature->param_count == 0)
 		return g_string_free (str, FALSE);
@@ -904,7 +904,7 @@ static char*
 dump_retval (MonoInvocation *inv)
 {
 	GString *str = g_string_new ("");
-	MonoType *ret = inv->runtime_method->method->signature->ret;
+	MonoType *ret = mono_method_signature (inv->runtime_method->method)->ret;
 
 	if (ret->type != MONO_TYPE_VOID)
 		dump_stackval (str, inv->retval, ret);
@@ -1071,7 +1071,7 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 	MonoInvocation frame;
 	ThreadContext * volatile context = TlsGetValue (thread_context_id);
 	MonoObject *retval = NULL;
-	MonoMethodSignature *sig = method->signature;
+	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoClass *klass = mono_class_from_mono_type (sig->ret);
 	int i, type, isobject = 0;
 	void *ret = NULL;
@@ -1863,7 +1863,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLINT)
-			ves_pinvoke_method (frame, frame->runtime_method->method->signature, ((MonoMethodPInvoke*) frame->runtime_method->method)->addr, 
+			ves_pinvoke_method (frame, mono_method_signature (frame->runtime_method->method), ((MonoMethodPInvoke*) frame->runtime_method->method)->addr, 
 				    frame->runtime_method->method->string_ctor, context);
 			if (frame->ex) {
 				rtm = NULL;
@@ -2577,7 +2577,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			ip += 2;
 
 			child_frame.runtime_method = rtm->data_items [token];
-			csig = child_frame.runtime_method->method->signature;
+			csig = mono_method_signature (child_frame.runtime_method->method);
 			newobj_class = child_frame.runtime_method->method->klass;
 			/*if (profiling_classes) {
 				guint count = GPOINTER_TO_UINT (g_hash_table_lookup (profiling_classes, newobj_class));
@@ -3525,7 +3525,8 @@ array_constructed:
 		MINT_IN_CASE(MINT_MONO_RETOBJ)
 			++ip;
 			sp--;
-			stackval_from_data (frame->runtime_method->method->signature->ret, frame->retval, sp->data.p, frame->runtime_method->method->signature->pinvoke);
+			stackval_from_data (mono_method_signature frame->runtime_method->method)->ret, frame->retval, sp->data.p,
+			     mono_method_signature (frame->runtime_method->method)->pinvoke);
 			if (sp > frame->stack)
 				g_warning ("retobj: more values on stack: %d", sp-frame->stack);
 			goto exit_frame;

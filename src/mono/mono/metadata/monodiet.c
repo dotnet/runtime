@@ -106,8 +106,8 @@ add_types_from_method (MonoMethod *method) {
 	cattrs = mono_custom_attrs_from_method (method);
 	handle_cattrs (cattrs);
 	add_type (method->klass);
-	add_types_from_signature (method->signature);
-	for (i = 0; i < method->signature->param_count + 1; ++i) {
+	add_types_from_signature (mono_method_signature (method));
+	for (i = 0; i < mono_method_signature (method)->param_count + 1; ++i) {
 		cattrs = mono_custom_attrs_from_param (method, i);
 		handle_cattrs (cattrs);
 	}

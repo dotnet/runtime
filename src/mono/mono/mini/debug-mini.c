@@ -194,6 +194,7 @@ mono_debug_close_method (MonoCompile *cfg)
 	MiniDebugMethodInfo *info;
 	MonoDebugMethodJitInfo *jit;
 	MonoMethodHeader *header;
+	MonoMethodSignature *sig;
 	MonoMethod *method;
 	int i;
 
@@ -206,6 +207,7 @@ mono_debug_close_method (MonoCompile *cfg)
 
 	method = cfg->method;
 	header = mono_method_get_header (method);
+	sig = mono_method_signature (method);
 
 	jit = info->jit;
 	jit->code_start = cfg->native_code;
@@ -214,19 +216,19 @@ mono_debug_close_method (MonoCompile *cfg)
 
 	record_line_number (jit, jit->epilogue_begin, header->code_size);
 
-	jit->num_params = method->signature->param_count;
+	jit->num_params = sig->param_count;
 	jit->params = g_new0 (MonoDebugVarInfo, jit->num_params);
 
 	for (i = 0; i < jit->num_locals; i++)
 		write_variable (cfg->varinfo [cfg->locals_start + i], &jit->locals [i]);
 
-	if (method->signature->hasthis) {
+	if (sig->hasthis) {
 		jit->this_var = g_new0 (MonoDebugVarInfo, 1);
 		write_variable (cfg->varinfo [0], jit->this_var);
 	}
 
 	for (i = 0; i < jit->num_params; i++)
-		write_variable (cfg->varinfo [i + method->signature->hasthis], &jit->params [i]);
+		write_variable (cfg->varinfo [i + sig->hasthis], &jit->params [i]);
 
 	mono_debug_add_method (method, jit, cfg->domain);
 
@@ -378,7 +380,7 @@ mono_debug_serialize_debug_info (MonoCompile *cfg,
 	for (i = 0; i < jit->num_params; ++i)
 		serialize_variable (&jit->params [i], p, &p);
 
-	if (cfg->method->signature->hasthis)
+	if (mono_method_signature (cfg->method)->hasthis)
 		serialize_variable (jit->this_var, p, &p);
 
 	for (i = 0; i < jit->num_locals; i++)
@@ -445,7 +447,7 @@ deserialize_debug_info (MonoMethod *method,
 	jit->line_numbers = g_array_new (FALSE, TRUE, sizeof (MonoDebugLineNumberEntry));
 	jit->num_locals = header->num_locals;
 	jit->locals = g_new0 (MonoDebugVarInfo, jit->num_locals);
-	jit->num_params = method->signature->param_count;
+	jit->num_params = mono_method_signature (method)->param_count;
 	jit->params = g_new0 (MonoDebugVarInfo, jit->num_params);
 
 	p = buf;
@@ -456,7 +458,7 @@ deserialize_debug_info (MonoMethod *method,
 	for (i = 0; i < jit->num_params; ++i)
 		deserialize_variable (&jit->params [i], p, &p);
 
-	if (method->signature->hasthis) {
+	if (mono_method_signature (method)->hasthis) {
 		jit->this_var = g_new0 (MonoDebugVarInfo, 1);
 		deserialize_variable (jit->this_var, p, &p);
 	}

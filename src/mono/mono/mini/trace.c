@@ -289,19 +289,19 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 		g_error ("unaligned stack detected (%p)", ebp);
 	}
 
-	sig = method->signature;
+	sig = mono_method_signature (method);
 
 	arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
 
 	mono_arch_get_argument_info (sig, sig->param_count, arg_info);
 
-	if (MONO_TYPE_ISSTRUCT (method->signature->ret)) {
-		g_assert (!method->signature->ret->byref);
+	if (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret)) {
+		g_assert (!mono_method_signature (method)->ret->byref);
 
 		printf ("VALUERET:%p, ", *((gpointer *)(ebp + 8)));
 	}
 
-	if (method->signature->hasthis) {
+	if (mono_method_signature (method)->hasthis) {
 		gpointer *this = (gpointer *)(ebp + arg_info [0].offset);
 		if (method->klass->valuetype) {
 			printf ("value:%p, ", *this);
@@ -321,11 +321,11 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 		}
 	}
 
-	for (i = 0; i < method->signature->param_count; ++i) {
+	for (i = 0; i < mono_method_signature (method)->param_count; ++i) {
 		gpointer *cpos = (gpointer *)(ebp + arg_info [i + 1].offset);
 		int size = arg_info [i + 1].size;
 
-		MonoType *type = method->signature->params [i];
+		MonoType *type = mono_method_signature (method)->params [i];
 		
 		if (type->byref) {
 			printf ("[BYREF:%p], ", *cpos); 
@@ -422,7 +422,7 @@ mono_trace_leave_method (MonoMethod *method, ...)
 	printf ("LEAVE: %s", fname);
 	g_free (fname);
 
-	type = method->signature->ret;
+	type = mono_method_signature (method)->ret;
 
 handle_enum:
 	switch (type->type) {
@@ -517,7 +517,7 @@ handle_enum:
 		}
 		break;
 	default:
-		printf ("(unknown return type %x)", method->signature->ret->type);
+		printf ("(unknown return type %x)", mono_method_signature (method)->ret->type);
 	}
 
 	//printf (" ip: %p\n", __builtin_return_address (1));

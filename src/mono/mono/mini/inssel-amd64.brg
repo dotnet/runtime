@@ -169,7 +169,7 @@ stmt: OP_SETRET (CEE_LDIND_I (OP_REGVAR)) {
 }
 
 stmt: OP_SETRET (freg) {
-	if (s->method->signature->ret->type == MONO_TYPE_R4)
+	if (mono_method_signature (s->method)->ret->type == MONO_TYPE_R4)
 		tree->opcode = OP_AMD64_SET_XMMREG_R4;
 	else
 		tree->opcode = OP_AMD64_SET_XMMREG_R8;

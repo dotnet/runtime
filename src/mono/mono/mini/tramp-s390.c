@@ -113,8 +113,8 @@ get_unbox_trampoline (MonoMethod *method, gpointer addr)
 	int this_pos = s390_r2;
 
 	start = addr;
-	if ((!method->signature->ret->byref) && 
-	    (MONO_TYPE_ISSTRUCT (method->signature->ret)))
+	if ((!mono_method_signature (method)->ret->byref) && 
+	    (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret)))
 		this_pos = s390_r3;
     
 	start = code = mono_global_codeman_reserve (28);

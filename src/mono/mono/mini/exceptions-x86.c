@@ -506,9 +506,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 		/* Pop arguments off the stack */
 		{
-			MonoJitArgumentInfo *arg_info = alloca (sizeof (MonoJitArgumentInfo) * (ji->method->signature->param_count + 1));
+			MonoJitArgumentInfo *arg_info = g_newa (MonoJitArgumentInfo, mono_method_signature (ji->method)->param_count + 1);
 
-			guint32 stack_to_pop = mono_arch_get_argument_info (ji->method->signature, ji->method->signature->param_count, arg_info);
+			guint32 stack_to_pop = mono_arch_get_argument_info (mono_method_signature (ji->method), mono_method_signature (ji->method)->param_count, arg_info);
 			new_ctx->SC_ESP += stack_to_pop;
 		}
 

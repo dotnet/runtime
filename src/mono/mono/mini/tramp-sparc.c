@@ -50,7 +50,7 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	guint8 *code, *start;
 	int this_pos = 4, reg;
 
-	if (!m->signature->ret->byref && MONO_TYPE_ISSTRUCT (m->signature->ret))
+	if (!mono_method_signature (m)->ret->byref && MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
 		this_pos = 8;
 	    
 	start = code = mono_global_codeman_reserve (36);

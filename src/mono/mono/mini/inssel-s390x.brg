@@ -114,7 +114,7 @@ stmt: OP_SETRET (reg) {
 # }
 
 stmt: OP_SETRET (freg) {
-	if (s->method->signature->ret->type == MONO_TYPE_R4) {
+	if (mono_method_signature (s->method)->ret->type == MONO_TYPE_R4) {
 		tree->opcode = OP_S390_SETF4RET;
 		tree->sreg1  = state->left->reg1;
 		tree->dreg   = s390_f0;

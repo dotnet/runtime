@@ -56,7 +56,7 @@ mono_runtime_object_init (MonoObject *this)
 
 	for (i = 0; i < klass->method.count; ++i) {
 		if (!strcmp (".ctor", klass->methods [i]->name) &&
-		    klass->methods [i]->signature->param_count == 0) {
+		    mono_method_signature (klass->methods [i])->param_count == 0) {
 			method = klass->methods [i];
 			break;
 		}
@@ -746,7 +746,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		MonoMethod *cm;
 	       
 		if ((cm = class->vtable [i])) {
-			if (cm->signature->generic_param_count)
+			if (mono_method_signature (cm)->generic_param_count)
 				vt->vtable [i] = cm;
 			else
 				vt->vtable [i] = arch_create_jit_trampoline (cm);
@@ -1631,7 +1631,7 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	}
 	argc--;
 	argv++;
-	if (method->signature->param_count) {
+	if (mono_method_signature (method)->param_count) {
 		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
 		for (i = 0; i < argc; ++i) {
 			/* The encodings should all work, given that
@@ -1674,7 +1674,7 @@ create_unhandled_exception_eventargs (MonoObject *exc)
 	for (i = 0; i < klass->method.count; ++i) {
 		method = klass->methods [i];
 		if (!strcmp (".ctor", method->name) &&
-		    method->signature->param_count == 2 &&
+		    mono_method_signature (method)->param_count == 2 &&
 		    method->flags & METHOD_ATTRIBUTE_PUBLIC)
 			break;
 		method = NULL;
@@ -1793,7 +1793,7 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 	}
 
 	/* FIXME: check signature of method */
-	if (method->signature->ret->type == MONO_TYPE_I4) {
+	if (mono_method_signature (method)->ret->type == MONO_TYPE_I4) {
 		MonoObject *res;
 		res = mono_runtime_invoke (method, NULL, pa, exc);
 		if (!exc || !*exc)
@@ -1873,7 +1873,7 @@ MonoObject*
 mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			   MonoObject **exc)
 {
-	MonoMethodSignature *sig = method->signature;
+	MonoMethodSignature *sig = mono_method_signature (method);
 	gpointer *pa = NULL;
 	int i;
 		
@@ -2028,7 +2028,7 @@ mono_object_new_specific (MonoVTable *vtable)
 
 			for (i = 0; i < klass->method.count; ++i) {
 				if (!strcmp ("CreateProxyForType", klass->methods [i]->name) &&
-					klass->methods [i]->signature->param_count == 1) {
+					mono_method_signature (klass->methods [i])->param_count == 1) {
 					im = klass->methods [i];
 					break;
 				}
@@ -3063,7 +3063,7 @@ mono_message_init (MonoDomain *domain,
 		   MonoReflectionMethod *method,
 		   MonoArray *out_args)
 {
-	MonoMethodSignature *sig = method->method->signature;
+	MonoMethodSignature *sig = mono_method_signature (method->method);
 	MonoString *name;
 	int i, j;
 	char **names;
@@ -3135,7 +3135,7 @@ mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg,
 		       
 		for (i = 0; i < klass->method.count; ++i) {
 			if (!strcmp ("PrivateInvoke", klass->methods [i]->name) &&
-			    klass->methods [i]->signature->param_count == 4) {
+			    mono_method_signature (klass->methods [i])->param_count == 4) {
 				im = klass->methods [i];
 				break;
 			}
@@ -3175,7 +3175,7 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 
 	domain = mono_domain_get (); 
 	method = msg->method->method;
-	sig = method->signature;
+	sig = mono_method_signature (method);
 
 	for (i = 0; i < sig->param_count; i++) {
 		if (sig->params [i]->byref) 
@@ -3222,7 +3222,7 @@ mono_print_unhandled_exception (MonoObject *exc)
 			for (i = 0; i < klass->method.count; ++i) {
 				method = klass->methods [i];
 				if (!strcmp ("ToString", method->name) &&
-				    method->signature->param_count == 0 &&
+				    mono_method_signature (method)->param_count == 0 &&
 				    method->flags & METHOD_ATTRIBUTE_VIRTUAL &&
 				    method->flags & METHOD_ATTRIBUTE_PUBLIC) {
 					break;
@@ -3286,7 +3286,7 @@ mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
 		method = mono_marshal_get_remoting_invoke (method);
 		delegate->method_ptr = mono_compile_method (method);
 		delegate->target = target;
-	} else if (method->signature->hasthis && method->klass->valuetype) {
+	} else if (mono_method_signature (method)->hasthis && method->klass->valuetype) {
 		method = mono_marshal_get_unbox_wrapper (method);
 		delegate->method_ptr = mono_compile_method (method);
 		delegate->target = target;
@@ -3311,7 +3311,7 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 			      MonoDelegate **cb, MonoObject **state)
 {
 	MonoDomain *domain = mono_domain_get ();
-	MonoMethodSignature *sig = method->signature;
+	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoMethodMessage *msg;
 	int i, count, type;
 
@@ -3363,7 +3363,7 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 void
 mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args)
 {
-	MonoMethodSignature *sig = method->signature;
+	MonoMethodSignature *sig = mono_method_signature (method);
 	int i, j, type, size;
 	for (i = 0, j = 0; i < sig->param_count; i++) {
 		MonoType *pt = sig->params [i];

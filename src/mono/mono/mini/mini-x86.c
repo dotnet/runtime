@@ -674,8 +674,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	gint32 *offsets;
 
 	header = mono_method_get_header (m->method);
-
-	sig = m->method->signature;
+	sig = mono_method_signature (m->method);
 
 	offset = 8;
 	curinst = 0;
@@ -977,7 +976,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	int arg_size = 0, save_mode = SAVE_NONE;
 	MonoMethod *method = cfg->method;
 	
-	switch (mono_type_get_underlying_type (method->signature->ret)->type) {
+	switch (mono_type_get_underlying_type (mono_method_signature (method)->ret)->type) {
 	case MONO_TYPE_VOID:
 		/* special case string .ctor icall */
 		if (strcmp (".ctor", method->name) && method->klass == mono_defaults.string_class)
@@ -4225,7 +4224,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
 
 	/* load arguments allocated to register from the stack */
-	sig = method->signature;
+	sig = mono_method_signature (method);
 	pos = 0;
 
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
@@ -4247,7 +4246,7 @@ void
 mono_arch_emit_epilog (MonoCompile *cfg)
 {
 	MonoMethod *method = cfg->method;
-	MonoMethodSignature *sig = method->signature;
+	MonoMethodSignature *sig = mono_method_signature (method);
 	int pos;
 	guint32 stack_to_pop;
 	guint8 *code;
@@ -4341,7 +4340,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		MonoJitArgumentInfo *arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
 
 		stack_to_pop = mono_arch_get_argument_info (sig, sig->param_count, arg_info);
-	} else if (MONO_TYPE_ISSTRUCT (cfg->method->signature->ret))
+	} else if (MONO_TYPE_ISSTRUCT (mono_method_signature (cfg->method)->ret))
 		stack_to_pop = 4;
 	else
 		stack_to_pop = 0;

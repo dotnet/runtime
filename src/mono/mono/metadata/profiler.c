@@ -703,7 +703,7 @@ method_get_name (MonoMethod* method)
 {
 	char *sig, *res;
 	
-	sig = mono_signature_get_desc (method->signature, FALSE);
+	sig = mono_signature_get_desc (mono_method_signature (method), FALSE);
 	res = g_strdup_printf ("%s.%s::%s(%s)", method->klass->name_space, method->klass->name,
 		method->name, sig);
 	g_free (sig);

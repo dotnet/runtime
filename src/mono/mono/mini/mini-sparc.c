@@ -727,7 +727,7 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	MonoMethodSignature *sig;
 	CallInfo *cinfo;
 
-	sig = cfg->method->signature;
+	sig = mono_method_signature (cfg->method);
 
 	cinfo = get_call_info (sig, FALSE);
 
@@ -772,7 +772,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 	header = mono_method_get_header (m->method);
 
-	sig = m->method->signature;
+	sig = mono_method_signature (m->method);
 
 	cinfo = get_call_info (sig, FALSE);
 
@@ -2749,7 +2749,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint32 *code)
 
 	/* FIXME: Generate intermediate code instead */
 
-	sig = method->signature;
+	sig = mono_method_signature (method);
 
 	cinfo = get_call_info (sig, FALSE);
 	
@@ -3517,7 +3517,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_move_return_value (ins, code);
 			break;
 		case OP_SETFRET:
-			if (cfg->method->signature->ret->type == MONO_TYPE_R4)
+			if (mono_method_signature (cfg->method)->ret->type == MONO_TYPE_R4)
 				sparc_fdtos (code, ins->sreg1, sparc_f0);
 			else {
 #ifdef SPARCV9
@@ -4230,7 +4230,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 {
 	int i;
 	guint32 *code = (guint32*)p;
-	MonoMethodSignature *sig = cfg->method->signature;
+	MonoMethodSignature *sig = mono_method_signature (cfg->method);
 	CallInfo *cinfo;
 
 	/* Save registers to stack */
@@ -4301,7 +4301,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	int save_mode = SAVE_NONE;
 	MonoMethod *method = cfg->method;
 
-	switch (mono_type_get_underlying_type (method->signature->ret)->type) {
+	switch (mono_type_get_underlying_type (mono_method_signature (method)->ret)->type) {
 	case MONO_TYPE_VOID:
 		/* special case string .ctor icall */
 		if (strcmp (".ctor", method->name) && method->klass == mono_defaults.string_class)
@@ -4447,7 +4447,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 */
 
-	sig = method->signature;
+	sig = mono_method_signature (method);
 
 	cinfo = get_call_info (sig, FALSE);
 
@@ -4640,7 +4640,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	 * The V8 ABI requires that calls to functions which return a structure
 	 * return to %i7+12
 	 */
-	if (!v64 && cfg->method->signature->pinvoke && MONO_TYPE_ISSTRUCT(cfg->method->signature->ret))
+	if (!v64 && mono_method_signature (cfg->method)->pinvoke && MONO_TYPE_ISSTRUCT(mono_method_signature (cfg->method)->ret))
 		sparc_jmpl_imm (code, sparc_i7, 12, sparc_g0);
 	else
 		sparc_ret (code);

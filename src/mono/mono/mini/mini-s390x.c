@@ -659,7 +659,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	if (rParm == NULL)
 		return;
 	
-	sig = method->signature;
+	sig = mono_method_signature (method);
 	
 	cinfo = calculate_sizes (sig, &sz, sig->pinvoke);
 
@@ -771,7 +771,7 @@ leave_method (MonoMethod *method, ...)
 	printf ("LEAVE: %s", fname);
 	g_free (fname);
 
-	type = method->signature->ret;
+	type = mono_method_signature (method)->ret;
 
 handle_enum:
 	switch (type->type) {
@@ -900,7 +900,7 @@ handle_enum:
 		break;
 	default:
 		printf ("(unknown return type %x)", 
-			method->signature->ret->type);
+			mono_method_signature (method)->ret->type);
 	}
 
 	ip = ((gint64) __builtin_return_address (0));
@@ -1383,7 +1383,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	if (frame_reg != STK_BASE) 
 		m->used_int_regs |= 1 << frame_reg;		
 
-	sig     = m->method->signature;
+	sig     = mono_method_signature (m->method);
 	
 	cinfo   = calculate_sizes (sig, &sz, sig->pinvoke);
 
@@ -1725,7 +1725,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	int   	   save_mode = SAVE_NONE,
 		   saveOffset;
 	MonoMethod *method = cfg->method;
-	int        rtype = method->signature->ret->type;
+	int        rtype = mono_method_signature (method)->ret->type;
 
 	saveOffset = cfg->stack_usage - S390_TRACE_STACK_SIZE;
 	if (method->save_lmf)
@@ -1749,8 +1749,8 @@ handle_enum:
 		save_mode = SAVE_FP;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		if (method->signature->ret->data.klass->enumtype) {
-			rtype = method->signature->ret->data.klass->enum_basetype->type;
+		if (mono_method_signature (method)->ret->data.klass->enumtype) {
+			rtype = mono_method_signature (method)->ret->data.klass->enum_basetype->type;
 			goto handle_enum;
 		}
 		save_mode = SAVE_STRUCT;
@@ -5219,7 +5219,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	/* load arguments allocated to register from the stack */
-	sig = method->signature;
+	sig = mono_method_signature (method);
 	pos = 0;
 
 	cinfo = calculate_sizes (sig, &sz, sig->pinvoke);
@@ -5446,7 +5446,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 {
 	MonoJumpInfo *patch_info;
 	MonoMethod *method = cfg->method;
-	MonoMethodSignature *sig = method->signature;
+	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoInst *inst;
 	int i, tracing = 0;
 	guint8 *code;

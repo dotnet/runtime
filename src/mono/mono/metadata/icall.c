@@ -1234,25 +1234,27 @@ static void
 ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
 {
 	MonoDomain *domain = mono_domain_get ();
-
+	MonoMethodSignature* sig;
 	MONO_ARCH_SAVE_REGS;
 
 	if (method->is_inflated)
 		method = mono_get_inflated_method (method);
 
+	sig = mono_method_signature (method);
+	
 	info->parent = mono_type_get_object (domain, &method->klass->byval_arg);
-	info->ret = mono_type_get_object (domain, method->signature->ret);
+	info->ret = mono_type_get_object (domain, sig->ret);
 	info->attrs = method->flags;
 	info->implattrs = method->iflags;
-	if (method->signature->call_convention == MONO_CALL_DEFAULT)
+	if (sig->call_convention == MONO_CALL_DEFAULT)
 		info->callconv = 1;
 	else {
-		if (method->signature->call_convention == MONO_CALL_VARARG)
+		if (sig->call_convention == MONO_CALL_VARARG)
 			info->callconv = 2;
 		else
 			info->callconv = 0;
 	}
-	info->callconv |= (method->signature->hasthis << 5) | (method->signature->explicit_this << 6); 
+	info->callconv |= (sig->hasthis << 5) | (sig->explicit_this << 6); 
 }
 
 static MonoArray*
@@ -2212,7 +2214,7 @@ ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
 	MONO_ARCH_SAVE_REGS;
 
 	if (!method->method->is_inflated) {
-		if (method->method->signature->generic_param_count)
+		if (mono_method_signature (method->method)->generic_param_count)
 			return method;
 
 		return NULL;
@@ -2235,7 +2237,7 @@ ves_icall_MonoMethod_get_HasGenericParameters (MonoReflectionMethod *method)
 	    (method->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		return FALSE;
 
-	return method->method->signature->generic_param_count != 0;
+	return mono_method_signature (method->method)->generic_param_count != 0;
 }
 
 static gboolean
@@ -2259,7 +2261,7 @@ ves_icall_MonoMethod_get_IsGenericMethodDefinition (MonoReflectionMethod *method
 	    (method->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		return FALSE;
 
-	return method->method->signature->generic_param_count != 0;
+	return mono_method_signature (method->method)->generic_param_count != 0;
 }
 
 static MonoArray*
@@ -2296,7 +2298,7 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 	}
 
 	mn = (MonoMethodNormal *) method->method;
-	count = method->method->signature->generic_param_count;
+	count = mono_method_signature (method->method)->generic_param_count;
 	res = mono_array_new (domain, mono_defaults.monotype_class, count);
 
 	for (i = 0; i < count; i++) {
@@ -2335,7 +2337,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 		mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetException"));
 
 	pcount = params? mono_array_length (params): 0;
-	if (pcount != m->signature->param_count)
+	if (pcount != mono_method_signature (m)->param_count)
 		mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetParameterCountException"));
 
 	if ((m->klass->flags & TYPE_ATTRIBUTE_ABSTRACT) && !strcmp (m->name, ".ctor"))
@@ -2370,7 +2372,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 {
 	MonoDomain *domain = mono_object_domain (method); 
 	MonoMethod *m = method->method;
-	MonoMethodSignature *sig = m->signature;
+	MonoMethodSignature *sig = mono_method_signature (m);
 	MonoArray *out_args;
 	MonoObject *result;
 	int i, j, outarg_count = 0;
@@ -6727,7 +6729,7 @@ mono_lookup_internal_call (MonoMethod *method)
 	sigstart = mname + typelen + 2 + mlen;
 	*sigstart = 0;
 
-	tmpsig = mono_signature_get_desc (method->signature, TRUE);
+	tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
 	siglen = strlen (tmpsig);
 	if (typelen + mlen + siglen + 6 > sizeof (mname))
 		return NULL;

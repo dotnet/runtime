@@ -586,7 +586,7 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoDebugMethodInfo *
 
 	for (i = 0; i < jit->num_params; i++) {
 		*var_table++ = jit->params [i];
-		*type_table++ = write_type (mono_debugger_symbol_table, minfo->method->signature->params [i]);
+		*type_table++ = write_type (mono_debugger_symbol_table, mono_method_signature (minfo->method)->params [i]);
 	}
 
 	if (jit->num_locals < read32(&(minfo->entry->_num_locals))) {
@@ -879,7 +879,7 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 
 		if (!strcmp (method->name, ".ctor")) {
 			++num_ctors;
-			num_ctor_params += method->signature->param_count;
+			num_ctor_params += mono_method_signature (method)->param_count;
 			g_ptr_array_add (ctors, method);
 			continue;
 		}
@@ -895,11 +895,11 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 
 		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
 			++num_static_methods;
-			num_static_params += method->signature->param_count;
+			num_static_params += mono_method_signature (method)->param_count;
 			g_ptr_array_add (static_methods, method);
 		} else {
 			++num_methods;
-			num_params += method->signature->param_count;
+			num_params += mono_method_signature (method)->param_count;
 			g_ptr_array_add (methods, method);
 		}
 	}
@@ -995,7 +995,7 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 			continue;
 
 		if (klass->properties [i].get)
-			WRITE_UINT32 (ptr, write_type (table, klass->properties [i].get->signature->ret));
+			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (klass->properties [i].get)->ret));
 		else
 			WRITE_UINT32 (ptr, 0);
 		WRITE_POINTER (ptr, klass->properties [i].get);
@@ -1007,7 +1007,7 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 			continue;
 
 		if (klass->events [i].add) {
-			WRITE_UINT32 (ptr, write_type (table, klass->events [i].add->signature->params[0]));
+			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (klass->events [i].add)->params[0]));
 		}
 		else {
 			g_warning ("event add method not defined");
@@ -1023,13 +1023,13 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 		int j;
 
 		WRITE_POINTER (ptr, method);
-		if ((method->signature->ret) && (method->signature->ret->type != MONO_TYPE_VOID))
-			WRITE_UINT32 (ptr, write_type (table, method->signature->ret));
+		if ((mono_method_signature (method)->ret) && (mono_method_signature (method)->ret->type != MONO_TYPE_VOID))
+			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (method)->ret));
 		else
 			WRITE_UINT32 (ptr, 0);
-		WRITE_UINT32 (ptr, method->signature->param_count);
-		for (j = 0; j < method->signature->param_count; j++)
-			WRITE_UINT32 (ptr, write_type (table, method->signature->params [j]));
+		WRITE_UINT32 (ptr, mono_method_signature (method)->param_count);
+		for (j = 0; j < mono_method_signature (method)->param_count; j++)
+			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (method)->params [j]));
 	}
 
 	g_ptr_array_free (methods, FALSE);
@@ -1047,7 +1047,7 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 			continue;
 
 		if (klass->properties [i].get)
-			WRITE_UINT32 (ptr, write_type (table, klass->properties [i].get->signature->ret));
+			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (klass->properties [i].get)->ret));
 		else
 			WRITE_UINT32 (ptr, 0);
 		WRITE_POINTER (ptr, klass->properties [i].get);
@@ -1059,7 +1059,7 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 			continue;
 
 		if (klass->events [i].add) {
-			WRITE_UINT32 (ptr, write_type (table, klass->events [i].add->signature->params[0]));
+			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (klass->events [i].add)->params[0]));
 		}
 		else {
 			g_warning ("event add method not defined");
@@ -1075,13 +1075,13 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 		int j;
 
 		WRITE_POINTER (ptr, method);
-		if ((method->signature->ret) && (method->signature->ret->type != MONO_TYPE_VOID))
-			WRITE_UINT32 (ptr, write_type (table, method->signature->ret));
+		if ((mono_method_signature (method)->ret) && (mono_method_signature (method)->ret->type != MONO_TYPE_VOID))
+			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (method)->ret));
 		else
 			WRITE_UINT32 (ptr, 0);
-		WRITE_UINT32 (ptr, method->signature->param_count);
-		for (j = 0; j < method->signature->param_count; j++)
-			WRITE_UINT32 (ptr, write_type (table, method->signature->params [j]));
+		WRITE_UINT32 (ptr, mono_method_signature (method)->param_count);
+		for (j = 0; j < mono_method_signature (method)->param_count; j++)
+			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (method)->params [j]));
 	}
 
 	g_ptr_array_free (static_methods, FALSE);
@@ -1092,9 +1092,9 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 
 		WRITE_POINTER (ptr, ctor);
 		WRITE_UINT32 (ptr, 0);
-		WRITE_UINT32 (ptr, ctor->signature->param_count);
-		for (j = 0; j < ctor->signature->param_count; j++)
-			WRITE_UINT32 (ptr, write_type (table, ctor->signature->params [j]));
+		WRITE_UINT32 (ptr, mono_method_signature (ctor)->param_count);
+		for (j = 0; j < mono_method_signature (ctor)->param_count; j++)
+			WRITE_UINT32 (ptr, write_type (table, mono_method_signature (ctor)->params [j]));
 	}
 
 	g_ptr_array_free (ctors, FALSE);
@@ -1476,7 +1476,7 @@ get_exception_message (MonoObject *exc)
 			for (i = 0; i < klass->method.count; ++i) {
 				method = klass->methods [i];
 				if (!strcmp ("ToString", method->name) &&
-				    method->signature->param_count == 0 &&
+				    mono_method_signature (method)->param_count == 0 &&
 				    method->flags & METHOD_ATTRIBUTE_VIRTUAL &&
 				    method->flags & METHOD_ATTRIBUTE_PUBLIC) {
 					break;

@@ -201,7 +201,7 @@ mono_print_label (FILE *fp, MonoInst *tree) {
 	case OP_VOIDCALLVIRT: {
 		MonoCallInst *call = (MonoCallInst*)tree;
 		if (call->method) {
-			if (call->method->signature->hasthis && tree->inst_left) {
+			if (mono_method_signature (call->method)->hasthis && tree->inst_left) {
 				mono_print_label (fp, tree->inst_left);
 			}
 			fprintf (fp, "[%s]", call->method->name);

@@ -436,7 +436,7 @@ load_arg(TransformData *td, int n)
 {
 	int mt;
 	MonoClass *klass = NULL;
-	if (n == 0 && td->method->signature->hasthis) {
+	if (n == 0 && mono_method_signature (td->method)->hasthis) {
 		if (td->method->klass->valuetype)
 			mt = MINT_TYPE_P;
 		else {
@@ -446,12 +446,12 @@ load_arg(TransformData *td, int n)
 		ADD_CODE(td, MINT_LDTHIS);
 	} else {
 		MonoType *type;
-		n -= td->method->signature->hasthis;
-		type = td->method->signature->params [n];
+		n -= mono_method_signature (td->method)->hasthis;
+		type = mono_method_signature (td->method)->params [n];
 		mt = mint_type (type);
 		if (mt == MINT_TYPE_VT) {
 			gint32 size;
-			if (td->method->signature->pinvoke)
+			if (mono_method_signature (td->method)->pinvoke)
 				size = mono_class_native_size (type->data.klass, NULL);
 			else
 				size = mono_class_value_size (type->data.klass, NULL);
@@ -475,16 +475,16 @@ store_arg(TransformData *td, int n)
 {
 	int mt;
 	CHECK_STACK (td, 1);
-	if (n == 0 && td->method->signature->hasthis)
+	if (n == 0 && mono_method_signature (td->method)->hasthis)
 		ADD_CODE(td, MINT_STTHIS);
 	else {
 		MonoType *type;
-		n -= td->method->signature->hasthis;
-		type = td->method->signature->params [n];
+		n -= mono_method_signature (td->method)->hasthis;
+		type = mono_method_signature (td->method)->params [n];
 		mt = mint_type (type);
 		if (mt == MINT_TYPE_VT) {
 			gint32 size;
-			if (td->method->signature->pinvoke)
+			if (mono_method_signature (td->method)->pinvoke)
 				size = mono_class_native_size (type->data.klass, NULL);
 			else
 				size = mono_class_value_size (type->data.klass, NULL);
@@ -504,11 +504,11 @@ store_arg(TransformData *td, int n)
 static void 
 store_inarg(TransformData *td, int n)
 {
-	MonoType *type = td->method->signature->params [n];
+	MonoType *type = mono_method_signature (td->method)->params [n];
 	int mt = mint_type (type);
 	if (mt == MINT_TYPE_VT) {
 		gint32 size;
-		if (td->method->signature->pinvoke)
+		if (mono_method_signature (td->method)->pinvoke)
 			size = mono_class_native_size (type->data.klass, NULL);
 		else
 			size = mono_class_value_size (type->data.klass, NULL);
@@ -612,7 +612,7 @@ static void
 generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 {
 	MonoMethodHeader *header = mono_method_get_header (method);
-	MonoMethodSignature *signature = method->signature;
+	MonoMethodSignature *signature = mono_method_signature (method);
 	MonoImage *image = method->klass->image;
 	MonoDomain *domain = mono_domain_get ();
 	MonoGenericContext *generic_context = NULL;
@@ -629,7 +629,7 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 	TransformData td;
 	int generating_code = 1;
 
-	if (method->signature->is_inflated)
+	if (mono_method_signature (method)->is_inflated)
 		generic_context = ((MonoMethodInflated *) method)->context;
 
 	memset(&td, 0, sizeof(td));
@@ -971,7 +971,7 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 					m = mono_get_method_full (image, token, NULL, generic_context);
 				else
 					m = (MonoMethod *)mono_method_get_wrapper_data (method, token);
-				csignature = m->signature;
+				csignature = mono_method_signature (m);
 				if (m->klass == mono_defaults.string_class) {
 			 		if (m->name [0] == 'g') {
 				 		if (strcmp (m->name, "get_Chars") == 0)
@@ -1718,7 +1718,7 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			else 
 				m = mono_get_method_full (image, token, NULL, generic_context);
 
-			csignature = m->signature;
+			csignature = mono_method_signature (m);
 			klass = m->klass;
 			td.sp -= csignature->param_count;
 			ADD_CODE(&td, MINT_NEWOBJ);
@@ -2805,7 +2805,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	MonoMethod *method = runtime_method->method;
 	MonoImage *image = method->klass->image;
 	MonoMethodHeader *header = mono_method_get_header (method);
-	MonoMethodSignature *signature = method->signature;
+	MonoMethodSignature *signature = mono_method_signature (method);
 	register const unsigned char *ip, *end;
 	const MonoOpcode *opcode;
 	MonoMethod *m;
@@ -2839,7 +2839,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 
 	mono_profiler_method_jit (method); /* sort of... */
 
-	if (method->signature->is_inflated)
+	if (mono_method_signature (method)->is_inflated)
 		generic_context = ((MonoMethodInflated *) method)->context;
 
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
@@ -2853,12 +2853,12 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 
 		/* assumes all internal calls with an array this are built in... */
 		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL &&
-			(!method->signature->hasthis || method->klass->rank == 0)) {
+			(! mono_method_signature (method)->hasthis || method->klass->rank == 0)) {
 			runtime_method->code = g_malloc(sizeof(short));
 			runtime_method->code[0] = MINT_CALLINT;
 			if (((MonoMethodPInvoke*) method)->addr == NULL)
 				((MonoMethodPInvoke*) method)->addr = mono_lookup_internal_call (method);
-			runtime_method->func = mono_arch_create_trampoline (method->signature, method->string_ctor);
+			runtime_method->func = mono_arch_create_trampoline (mono_method_signature (method), method->string_ctor);
 		} else {
 			const char *name = method->name;
 			if (method->klass->parent == mono_defaults.multicastdelegate_class) {

@@ -399,7 +399,7 @@ mono_array_new_va (MonoMethod *cm, ...)
 
 	MONO_ARCH_SAVE_REGS;
 
-	pcount = cm->signature->param_count;
+	pcount = mono_method_signature (cm)->param_count;
 	rank = cm->klass->rank;
 
 	va_start (ap, cm);

@@ -66,7 +66,7 @@
 #define MONO_IS_COND_BRANCH_OP(ins) (((ins)->opcode >= CEE_BEQ && (ins)->opcode <= CEE_BLT_UN) || ((ins)->opcode >= OP_LBEQ && (ins)->opcode <= OP_LBLT_UN) || ((ins)->opcode >= OP_FBEQ && (ins)->opcode <= OP_FBLT_UN) || ((ins)->opcode >= OP_IBEQ && (ins)->opcode <= OP_IBLT_UN))
 #define MONO_IS_COND_BRANCH_NOFP(ins) (MONO_IS_COND_BRANCH_OP(ins) && (ins)->inst_left->inst_left->type != STACK_R8)
 
-#define MONO_CHECK_THIS(ins) (cfg->method->signature->hasthis && (ins)->ssa_op == MONO_SSA_LOAD && (ins)->inst_left->inst_c0 == 0)
+#define MONO_CHECK_THIS(ins) (mono_method_signature (cfg->method)->hasthis && (ins)->ssa_op == MONO_SSA_LOAD && (ins)->inst_left->inst_c0 == 0)
 
 static void setup_stat_profiler (void);
 gboolean  mono_arch_print_tree(MonoInst *tree, int arity);
@@ -2593,7 +2593,7 @@ static gboolean
 mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 {
 	MonoMethodHeader *header = mono_method_get_header (method);
-	MonoMethodSignature *signature = method->signature;
+	MonoMethodSignature *signature = mono_method_signature (method);
 	MonoVTable *vtable;
 	int i;
 
@@ -2675,7 +2675,7 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 	char *name;
 	MonoJitICallInfo *info;
 
-	rank = cmethod->signature->param_count - (is_set? 1: 0);
+	rank = mono_method_signature (cmethod)->param_count - (is_set? 1: 0);
 
 	if (rank == 2 && (cfg->opt & MONO_OPT_INTRINS)) {
 		MonoInst *indexes;
@@ -3088,18 +3088,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	image = method->klass->image;
 	header = mono_method_get_header (method);
 	generic_container = ((MonoMethodNormal *)method)->generic_container;
-	sig = method->signature;
+	sig = mono_method_signature (method);
 	num_args = sig->hasthis + sig->param_count;
 	ip = (unsigned char*)header->code;
 	end = ip + header->code_size;
 	mono_jit_stats.cil_code_size += header->code_size;
 
-	if (method->signature->is_inflated)
+	if (sig->is_inflated)
 		generic_context = ((MonoMethodInflated *) method)->context;
 	else if (generic_container)
 		generic_context = &generic_container->context;
 
-	g_assert (!method->signature->has_type_parameters);
+	g_assert (!sig->has_type_parameters);
 
 	if (cfg->method == method) {
 		real_offset = 0;
@@ -3244,7 +3244,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			NEW_DECLSECCONST (cfg, args[0], image, actions.demand);
 			NEW_ICONST (cfg, args [1], actions.demand.size);
 			/* Calls static void SecurityManager.InternalDemand (byte* permissions, int size); */
-			mono_emit_method_call_spilled (cfg, init_localsbb, secman->demand, secman->demand->signature, args, ip, NULL);
+			mono_emit_method_call_spilled (cfg, init_localsbb, secman->demand, mono_method_signature (secman->demand), args, ip, NULL);
 		}
 		if (actions.noncasdemand.blob) {
 			/* CLR 1.x uses a .noncasdemand (but 2.x doesn't) */
@@ -3252,14 +3252,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			NEW_DECLSECCONST (cfg, args[0], image, actions.noncasdemand);
 			NEW_ICONST (cfg, args [1], actions.noncasdemand.size);
 			/* Calls static void SecurityManager.InternalDemand (byte* permissions, int size); */
-			mono_emit_method_call_spilled (cfg, init_localsbb, secman->demand, secman->demand->signature, args, ip, NULL);
+			mono_emit_method_call_spilled (cfg, init_localsbb, secman->demand, mono_method_signature (secman->demand), args, ip, NULL);
 		}
 		if (actions.demandchoice.blob) {
 			/* New in 2.0, Demand must succeed for one of the permissions (i.e. not all) */
 			NEW_DECLSECCONST (cfg, args[0], image, actions.demandchoice);
 			NEW_ICONST (cfg, args [1], actions.demandchoice.size);
 			/* Calls static void SecurityManager.InternalDemandChoice (byte* permissions, int size); */
-			mono_emit_method_call_spilled (cfg, init_localsbb, secman->demandchoice, secman->demandchoice->signature, args, ip, NULL);
+			mono_emit_method_call_spilled (cfg, init_localsbb, secman->demandchoice, mono_method_signature (secman->demandchoice), args, ip, NULL);
 		}
 	}
 
@@ -3665,11 +3665,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (!cmethod->klass->inited)
 					mono_class_init (cmethod->klass);
 
-				if (cmethod->signature->pinvoke) {
+				if (mono_method_signature (cmethod)->pinvoke) {
 					MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod);
-					fsig = wrapper->signature;
+					fsig = mono_method_signature (wrapper);
 				} else if (constrained_call) {
-					fsig = cmethod->signature;
+					fsig = mono_method_signature (cmethod);
 				} else {
 					fsig = mono_method_get_signature_full (cmethod, image, token, generic_context);
 				}
@@ -3749,11 +3749,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				goto unverified;
 			}
 
-			if (cmethod && virtual && cmethod->signature->generic_param_count) {
+			if (cmethod && virtual && mono_method_signature (cmethod)->generic_param_count) {
 				MonoInst *this_temp, *store;
 				MonoInst *iargs [3];
 
-				g_assert (cmethod->signature->is_inflated);
+				g_assert (mono_method_signature (cmethod)->is_inflated);
 
 				this_temp = mono_compile_create_var (cfg, type_from_stack_type (sp [0]), OP_LOCAL);
 				this_temp->cil_code = ip;
@@ -3779,7 +3779,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 
-			if ((ins_flag & MONO_INST_TAILCALL) && cmethod && (*ip == CEE_CALL) && (mono_metadata_signature_equal (method->signature, cmethod->signature))) {
+			if ((ins_flag & MONO_INST_TAILCALL) && cmethod && (*ip == CEE_CALL) &&
+				 (mono_metadata_signature_equal (mono_method_signature (method), mono_method_signature (cmethod)))) {
 				int i;
 				/* FIXME: This assumes the two methods has the same number and type of arguments */
 				for (i = 0; i < n; ++i) {
@@ -3871,7 +3872,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				
 				/* keep it simple */
 				for (i =  fsig->param_count - 1; i >= 0; i--) {
-					if (MONO_TYPE_ISSTRUCT (cmethod->signature->params [i])) 
+					if (MONO_TYPE_ISSTRUCT (mono_method_signature (cmethod)->params [i])) 
 						has_vtargs = TRUE;
 				}
 
@@ -4007,7 +4008,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					CHECK_STACK (1);
 					--sp;
 					MONO_INST_NEW (cfg, ins, CEE_NOP);
-					ins->opcode = mono_type_to_stind (method->signature->ret);
+					ins->opcode = mono_type_to_stind (mono_method_signature (method)->ret);
 					if (ins->opcode == CEE_STOBJ) {
 						NEW_RETLOADA (cfg, ins);
 						handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE);
@@ -4606,7 +4607,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				mono_isinst = mono_marshal_get_isinst (klass); 
 				iargs [0] = sp [0];
 				
-				costs = inline_method (cfg, mono_isinst, mono_isinst->signature, bblock, 
+				costs = inline_method (cfg, mono_isinst, mono_method_signature (mono_isinst), bblock, 
 							   iargs, ip, real_offset, dont_inline, &ebblock, TRUE);
 			
 				g_assert (costs > 0);
@@ -4662,7 +4663,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					mono_castclass = mono_marshal_get_castclass (klass); 
 					iargs [0] = sp [0];
 					
-					costs = inline_method (cfg, mono_castclass, mono_castclass->signature, bblock, 
+					costs = inline_method (cfg, mono_castclass, mono_method_signature (mono_castclass), bblock, 
 								   iargs, ip, real_offset, dont_inline, &ebblock, TRUE);
 				
 					g_assert (costs > 0);
@@ -4790,7 +4791,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				mono_castclass = mono_marshal_get_castclass (klass); 
 				iargs [0] = sp [0];
 				
-				costs = inline_method (cfg, mono_castclass, mono_castclass->signature, bblock, 
+				costs = inline_method (cfg, mono_castclass, mono_method_signature (mono_castclass), bblock, 
 							   iargs, ip, real_offset, dont_inline, &ebblock, TRUE);
 			
 				g_assert (costs > 0);
@@ -4871,7 +4872,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					iargs [4] = sp [1];
 
 					if (cfg->opt & MONO_OPT_INLINE) {
-						costs = inline_method (cfg, stfld_wrapper, stfld_wrapper->signature, bblock, 
+						costs = inline_method (cfg, stfld_wrapper, mono_method_signature (stfld_wrapper), bblock, 
 								       iargs, ip, real_offset, dont_inline, &ebblock, TRUE);
 						g_assert (costs > 0);
 						      
@@ -4889,7 +4890,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						inline_costs += costs;
 						break;
 					} else {
-						mono_emit_method_call_spilled (cfg, bblock, stfld_wrapper, stfld_wrapper->signature, iargs, ip, NULL);
+						mono_emit_method_call_spilled (cfg, bblock, stfld_wrapper, mono_method_signature (stfld_wrapper), iargs, ip, NULL);
 					}
 				} else {
 					MonoInst *store;
@@ -4924,8 +4925,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_CLASSCONST (cfg, iargs [1], klass);
 					NEW_FIELDCONST (cfg, iargs [2], field);
 					NEW_ICONST (cfg, iargs [3], klass->valuetype ? field->offset - sizeof (MonoObject) : field->offset);
-					if ((cfg->opt & MONO_OPT_INLINE) && !MONO_TYPE_ISSTRUCT (ldfld_wrapper->signature->ret)) {
-						costs = inline_method (cfg, ldfld_wrapper, ldfld_wrapper->signature, bblock, 
+					if ((cfg->opt & MONO_OPT_INLINE) && !MONO_TYPE_ISSTRUCT (mono_method_signature (ldfld_wrapper)->ret)) {
+						costs = inline_method (cfg, ldfld_wrapper, mono_method_signature (ldfld_wrapper), bblock, 
 								       iargs, ip, real_offset, dont_inline, &ebblock, TRUE);
 						g_assert (costs > 0);
 						      
@@ -4953,7 +4954,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						inline_costs += costs;
 						break;
 					} else {
-						temp = mono_emit_method_call_spilled (cfg, bblock, ldfld_wrapper, ldfld_wrapper->signature, iargs, ip, NULL);
+						temp = mono_emit_method_call_spilled (cfg, bblock, ldfld_wrapper, mono_method_signature (ldfld_wrapper), iargs, ip, NULL);
 						if (*ip == CEE_LDFLDA) {
 							/* not sure howto handle this */
 							NEW_TEMPLOADA (cfg, *sp, temp);
@@ -5393,7 +5394,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				iargs [1] = sp [1];
 				iargs [0] = sp [0];
 				
-				mono_emit_method_call_spilled (cfg, bblock, helper, helper->signature, iargs, ip, NULL);
+				mono_emit_method_call_spilled (cfg, bblock, helper, mono_method_signature (helper), iargs, ip, NULL);
 			} else {
 				NEW_LDELEMA (cfg, load, sp, klass);
 				load->cil_code = ip;
@@ -5427,7 +5428,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			iargs [1] = sp [1];
 			iargs [0] = sp [0];
 			
-			mono_emit_method_call_spilled (cfg, bblock, helper, helper->signature, iargs, ip, NULL);
+			mono_emit_method_call_spilled (cfg, bblock, helper, mono_method_signature (helper), iargs, ip, NULL);
 
 			/*
 			MonoInst *group;
@@ -5791,7 +5792,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			case CEE_MONO_RETOBJ:
 				g_assert (cfg->ret);
-				g_assert (method->signature->pinvoke); 
+				g_assert (mono_method_signature (method)->pinvoke); 
 				CHECK_STACK (1);
 				--sp;
 				
@@ -8003,7 +8004,7 @@ mono_compile_create_vars (MonoCompile *cfg)
 
 	header = mono_method_get_header (cfg->method);
 
-	sig = cfg->method->signature;
+	sig = mono_method_signature (cfg->method);
 	
 	if (!MONO_TYPE_IS_VOID (sig->ret)) {
 		cfg->ret = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
@@ -9543,7 +9544,7 @@ mono_jit_create_remoting_trampoline (MonoMethod *method, MonoRemotingTarget targ
 	guint8 *addr = NULL;
 
 	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || 
-	    (method->signature->hasthis && (method->klass->marshalbyref || method->klass == mono_defaults.object_class))) {
+	    (mono_method_signature (method)->hasthis && (method->klass->marshalbyref || method->klass == mono_defaults.object_class))) {
 		nm = mono_marshal_get_remoting_invoke_for_target (method, target);
 		addr = mono_compile_method (nm);
 	} else {
@@ -9835,7 +9836,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 			invoke = mono_marshal_get_runtime_invoke (method);
 			mono_compile_method (invoke);
 		}
-		if (method->klass->marshalbyref && method->signature->hasthis) {
+		if (method->klass->marshalbyref && mono_method_signature (method)->hasthis) {
 			invoke = mono_marshal_get_remoting_invoke_with_check (method);
 			mono_compile_method (invoke);
 		}
