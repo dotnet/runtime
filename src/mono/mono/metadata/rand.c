@@ -173,13 +173,13 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes
 	    err = read(file, buf + count, len - count);
 	    count += err;
     } while (err >= 0 && count < len);
+    close(file);
 
     if (err < 0) {
-        g_warning("Entropy error! Error in read.");
+        g_warning("Entropy error! Error in read (%s).", strerror (errno));
         mono_raise_exception (mono_get_exception_execution_engine ("Failed to read a random byte from /dev/urandom or /dev/random device"));
     }
 
-    close(file);
 }
 
 #endif /* OS definition */
