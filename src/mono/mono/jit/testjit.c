@@ -30,6 +30,8 @@ enum {
 };
 #undef OPDEF
 
+static gpointer mono_compile_method (MonoMethod *method);
+
 static MonoRegSet *
 get_x86_regset ()
 {
@@ -252,7 +254,7 @@ emit_method (MonoMethod *method, GPtrArray *forest, int locals_size)
 	guint8 *buf, *start;
 	guint32 epilog;
 
-	start = buf = g_malloc (1024);
+	method->addr = start = buf = g_malloc (1024);
 
 	forest_label (forest);
 	forest_allocate_regs (forest, rs);
@@ -269,6 +271,43 @@ emit_method (MonoMethod *method, GPtrArray *forest, int locals_size)
 	mono_disassemble_code (start, buf - start);
 }
 
+static gpointer
+create_jit_trampoline (MonoMethod *method)
+{
+	guint8 *code, *buf;
+
+	if (method->addr)
+		return method->addr;
+
+	code = buf = g_malloc (64);
+
+	x86_push_reg (buf, X86_EBP);
+	x86_mov_reg_reg (buf, X86_EBP, X86_ESP, 4);
+
+	x86_push_imm (buf, method);
+	x86_call_code (buf, mono_compile_method);
+	x86_mov_reg_imm (buf, X86_ECX, method);
+	x86_mov_membase_reg (buf, X86_ECX, G_STRUCT_OFFSET (MonoMethod, addr),
+			     X86_EAX, 4);
+
+	/* free the allocated code buffer */
+	x86_push_reg (buf, X86_EAX);
+	x86_push_imm (buf, code);
+	x86_call_code (buf, g_free);
+	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);
+	x86_pop_reg (buf, X86_EAX);
+
+	x86_leave (buf);
+
+	/* jump to the compiled method */
+	x86_jump_reg (buf, X86_EAX);
+
+	g_assert ((buf - code) < 64);
+
+	return code;
+}
+
+
 #define ADD_TREE(t)     do { t->vaddr = vaddr; g_ptr_array_add (forest, (t)); } while (0)
 
 #define LOCAL_POS(n)    (locals_offsets [(n)])
@@ -277,7 +316,8 @@ emit_method (MonoMethod *method, GPtrArray *forest, int locals_size)
 #define ARG_POS(n)      (args_offsets [(n)])
 #define ARG_TYPE(n)     ((n) ? (signature)->params [(n) - (signature)->hasthis] : \
 			(signature)->hasthis ? &method->klass->this_arg: (signature)->params [(0)])
-static void
+
+static gpointer
 mono_compile_method (MonoMethod *method)
 {
 	MonoMethodHeader *header;
@@ -292,6 +332,8 @@ mono_compile_method (MonoMethod *method)
 
 	g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
 	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
+
+	printf ("Start JIT compilation of %s\n", method->name);
 
 	header = ((MonoMethodNormal *)method)->header;
 	signature = method->signature;
@@ -323,6 +365,7 @@ mono_compile_method (MonoMethod *method)
 			args_offsets [0] = 0;
 			offset += sizeof (gpointer);
 		}
+
 		for (i = 0; i < signature->param_count; ++i) {
 			args_offsets [i + has_this] = offset;
 			size = mono_type_size (signature->params [i], &align);
@@ -353,16 +396,19 @@ mono_compile_method (MonoMethod *method)
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
 			
 			nargs = csig->param_count + csig->hasthis;
-			sp -= nargs;
 
 			for (i = 0; i < nargs; i++) {
-				t1 = ctree_new (MB_TERM_ARG, 0, sp [i], NULL);
+				sp--;
+				t1 = ctree_new (MB_TERM_ARG, 0, *sp, NULL);
 				ADD_TREE (t1);
 			}
+			
+			cm->addr = create_jit_trampoline (cm);
 			
 			if (csig->ret->type != MONO_TYPE_VOID) {
 				int size, align;
 				t1 = ctree_new_leaf (MB_TERM_CALL, csig->ret->type);
+				t1->data.p = cm;
 				t2 = ctree_new (MB_TERM_STLOC, csig->ret->type, t1, NULL);
 				size = mono_type_size (csig->ret, &align);
 				t2->data.i = local_offset;
@@ -375,6 +421,7 @@ mono_compile_method (MonoMethod *method)
 				sp++;
 			} else {
 				t1 = ctree_new_leaf (MB_TERM_CALL, MONO_TYPE_VOID);
+				t1->data.p = cm;
 				ADD_TREE (t1);
 			}
 			break;
@@ -581,6 +628,10 @@ mono_compile_method (MonoMethod *method)
 	printf ("LOCALS ARE: %d\n", local_offset);
 	print_forest (forest);
 	emit_method (method, forest, local_offset);
+
+	// printf ("COMPILED %p %p\n", method, method->addr);
+
+	return method->addr;
 }
 
 static void
@@ -605,12 +656,15 @@ jit_assembly (MonoAssembly *assembly)
 
 }
 
+typedef int (*MonoMainIntVoid) ();
+
 static int 
 ves_exec (MonoAssembly *assembly, int argc, char *argv[])
 {
 	MonoImage *image = assembly->image;
 	MonoCLIImageInfo *iinfo;
 	MonoMethod *method;
+	int res = 0;
 
 	iinfo = image->image_info;
 	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
@@ -619,10 +673,13 @@ ves_exec (MonoAssembly *assembly, int argc, char *argv[])
 		g_warning ("Main () with arguments not yet supported");
 		exit (1);
 	} else {
-		mono_compile_method (method);
+		MonoMainIntVoid mfunc;
+
+		mfunc = create_jit_trampoline (method);
+		res = mfunc ();
 	}
 	
-	return 0;
+	return res;
 }
 
 static void
@@ -666,10 +723,12 @@ main (int argc, char *argv [])
 	}
 
 
-	//retval = ves_exec (assembly, argc, argv);
-	jit_assembly (assembly);
+	retval = ves_exec (assembly, argc, argv);
+	//jit_assembly (assembly);
 
 	mono_assembly_close (assembly);
+
+	printf ("RESULT: %d\n", retval);
 
 	return retval;
 }

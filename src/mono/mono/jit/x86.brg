@@ -3,6 +3,7 @@
 
 #include <mono/metadata/blob.h>
 #include <mono/metadata/metadata.h>
+#include <mono/metadata/loader.h>
 #include <mono/arch/x86/x86-codegen.h>
 
 #define MBTREE_TYPE  MBTree
@@ -24,6 +25,7 @@ struct _MBTree {
 
 	union {
 		int i;
+		gpointer p;
 	} data;
 };
 
@@ -124,7 +126,7 @@ reg: SUB (reg, reg) {
 }
 
 stmt: STLOC (con) {
-	x86_mov_membase_reg (*code, X86_EBP, - tree->data.i - 4,
+	x86_mov_membase_imm (*code, X86_EBP, - tree->data.i - 4,
 			     tree->left->data.i, 4);
 } cost {
 	MBCOND (tree->left->type == MONO_TYPE_I4);
@@ -188,7 +190,9 @@ stmt: ARG (reg) {
 reg: CALL {
 	switch (tree->type) {
 	case MONO_TYPE_I4:
-		x86_call_imm (*code, 0); // FIXME:
+		x86_mov_reg_imm (*code, X86_EAX, tree->data.p);
+		x86_call_membase (*code, X86_EAX, 
+				  G_STRUCT_OFFSET (MonoMethod, addr));
 		g_assert (tree->reg == X86_EAX);
 		break;
 	default:
@@ -198,7 +202,8 @@ reg: CALL {
 }
 
 stmt: CALL {
-	x86_call_imm (*code, 0); // FIXME:
+	x86_mov_reg_imm (*code, X86_EAX, tree->data.p);
+	x86_call_membase (*code, X86_EAX, G_STRUCT_OFFSET (MonoMethod, addr));
 }
 
 %% 
