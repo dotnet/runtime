@@ -35,6 +35,13 @@ libmintincludedir = $(includedir)/mono/interpreter
 libmintinclude_HEADERS = 	\
 	embed.h
 
+# This is needed for automake dependency generation
+if INCLUDED_LIBGC
+libgc_libs=../../libgc/libmonogc.la
+else
+libgc_libs=$(LIBGC_LIBS)
+endif
+
 libmint_la_LIBADD =				\
 	../arch/libmonoarch.la		\
 	../metadata/libmonoruntime.la	\
@@ -42,7 +49,7 @@ libmint_la_LIBADD =				\
 	../io-layer/libwapi.la		\
 	../utils/libmonoutils.la	\
 	../os/libmonoos.la		\
-	$(LIBGC_LIBS)			\
+	$(libgc_libs)			\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	$(ICU_LIBS)			\

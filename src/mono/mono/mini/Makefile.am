@@ -1,6 +1,16 @@
 count=100000
 mtest=for_loop
 monodir=$(top_builddir)
+
+# This is needed for automake dependency generation
+if INCLUDED_LIBGC
+libgc_libs=$(monodir)/libgc/libmonogc.la
+libgc_static_libs=$(monodir)/libgc/libmonogc-static.la
+else
+libgc_libs=$(LIBGC_LIBS)
+libgc_static_libs=$(LIBGC_STATIC_LIBS)
+endif
+
 libs=	\
 	$(monodir)/mono/metadata/libmonoruntime.la	\
 	$(monodir)/mono/metadata/libmetadata.la	\
@@ -8,7 +18,7 @@ libs=	\
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GMODULE_LIBS)	\
 	$(GLIB_LIBS)	\
-	$(LIBGC_LIBS)	\
+	$(libgc_libs)	\
 	$(ICU_LIBS)
 
 static_libs=	\
@@ -18,7 +28,7 @@ static_libs=	\
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GMODULE_LIBS)	\
 	$(GLIB_LIBS)	\
-	$(LIBGC_STATIC_LIBS)	\
+	$(libgc_static_libs) \
 	$(ICU_LIBS)
 
 MCS=mcs
