@@ -3198,6 +3198,8 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 
 	if (klass->generic_class)
 		klass = klass->generic_class->container_class;
+	if (oklass->generic_class)
+		oklass = oklass->generic_class->container_class;
 
 	if (MONO_CLASS_IS_INTERFACE (klass)) {
 		if ((klass->interface_id <= oklass->max_interface_id) &&
