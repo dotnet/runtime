@@ -6684,7 +6684,7 @@ gpointer
 mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, 
 							 gboolean add_sync_wrapper)
 {
-	MonoJitInfo *ji, *ji2;
+	MonoJitInfo *ji;
 	gpointer code;
 
 	if (add_sync_wrapper && method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
@@ -6702,25 +6702,18 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 
 	ji = mono_arch_create_jump_trampoline (method);
 
-	/* Allocate a new JitInfo in the mempool as with the other JitInfos */
-	mono_domain_lock (domain);
-	ji2 = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo));
-	mono_domain_unlock (domain);
-	memcpy (ji2, ji, sizeof (MonoJitInfo));
-	g_free (ji);
-
 	/*
 	 * mono_delegate_ctor needs to find the method metadata from the 
 	 * trampoline address, so we save it here.
 	 */
 
-	mono_jit_info_table_add (mono_get_root_domain (), ji2);
+	mono_jit_info_table_add (mono_get_root_domain (), ji);
 
 	mono_domain_lock (domain);
-	g_hash_table_insert (domain->jump_trampoline_hash, method, ji2->code_start);
+	g_hash_table_insert (domain->jump_trampoline_hash, method, ji->code_start);
 	mono_domain_unlock (domain);
 
-	return ji2->code_start;
+	return ji->code_start;
 }
 
 gpointer
