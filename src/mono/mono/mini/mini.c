@@ -7150,6 +7150,17 @@ sigquit_signal_handler (int _dummy)
 
 
 static void
+sigint_signal_handler (int _dummy)
+{
+	MonoException *exc;
+	GET_CONTEXT
+
+	exc = mono_get_exception_execution_engine ("Interrupted (SIGINT).");
+	
+	mono_arch_handle_exception (ctx, exc, FALSE);
+}
+
+static void
 mono_runtime_install_handlers (void)
 {
 #ifndef PLATFORM_WIN32
@@ -7161,6 +7172,8 @@ mono_runtime_install_handlers (void)
 	win32_seh_set_handler(SIGFPE, sigfpe_signal_handler);
 	win32_seh_set_handler(SIGILL, sigill_signal_handler);
 	win32_seh_set_handler(SIGSEGV, sigsegv_signal_handler);
+	if (getenv ("MONO_DEBUG"))
+		win32_seh_set_handler(SIGINT, sigint_signal_handler);
 #else /* !PLATFORM_WIN32 */
 
 	/* libpthreads has its own implementation of sigaction(),
@@ -7168,6 +7181,15 @@ mono_runtime_install_handlers (void)
 	 * handlers. If not we must call syscall directly instead 
 	 * of sigaction */
 	
+	if (getenv ("MONO_DEBUG")) {
+		/* catch SIGINT */
+		sa.sa_handler = sigint_signal_handler;
+		sigemptyset (&sa.sa_mask);
+		sa.sa_flags = 0;
+		//g_assert (syscall (SYS_sigaction, SIGINT, &sa, NULL) != -1);
+		g_assert (sigaction (SIGINT, &sa, NULL) != -1);
+	}
+
 	/* catch SIGFPE */
 	sa.sa_handler = sigfpe_signal_handler;
 	sigemptyset (&sa.sa_mask);
