@@ -1,3 +1,7 @@
+2004-11-29  Atsushi Enomoto <atsushi@ximian.com>
+
+	* xml-classes : updates mainly 2.0 stuff (XQuery dropping, etc.)
+
 2004-10-11  Neale Ferguson <Neale.Ferguson@SoftwareAG-usa.com>
 
 	* web/team.xml: Update my info.

@@ -40,15 +40,14 @@
   implemented, but it requires CAS (code access security) feature. We need to
   fixup this class after ongoing CAS effort works.
 
-  You might also be interested in an improved <a href="http://codeblogs.ximian.com/blogs/benm/archives/000039.html">XmlCachingResolver</a> by Ben Maurer. 
-  If even one time download is not acceptable, you can use <a href="http://primates.ximian.com/~atsushi/XmlStoredResolver.cs">this one</a>.
+  You might also be interested in some improved implementations which resides
+  in Mono.Xml.Ext.dll.
 
-  [2.0] XmlDataSourceResolver is not implemented as yet.
+  [2.0] XmlDataSourceResolver <del>is not implemented as yet</del><ins>vanished</ins>.
 
 **** XmlNameTable
 
   NameTable is implemented, but also needs performance improvement.
-  It affects on the whole XML processing performance so much.
   Optimization hackings are welcome. There is also a <a 
   href="http://bugzilla.ximian.com/show_bug.cgi?id=59537">bugzilla entry</a> 
   for this matter.
@@ -59,7 +58,7 @@
 
 	<ul>
 		* All OASIS conformance test passes as Microsoft does. Some 
-		  W3C tests fail, but it looks better.
+		  W3C tests fail, but it looks better than Microsoft.
 		* Entity expansion and its well-formedness check is incomplete.
 		  It incorrectly allows divided content models. It incorrectly
 		  treats its Base URI, so some dtd parse fails.
@@ -135,7 +134,8 @@
 
 *** System.Xml.Serialization
 
-  Lluis rules ;-)
+  Lluis Sanchez is the maintainer of this namespace (as well as
+  System.Web.Services).
 
   Well, in fact XmlSerializer is almost finished and is on bugfix phase.
 
@@ -230,17 +230,33 @@
   System.Xml 2.0 contains several features such as:
 
 	<ul>
-		* new XPathNavigator <del>and XPathDocument</del><ins>XPathDocument is <a href="http://blogs.msdn.com/dareobasanjo/archive/2004/08/25/220251.aspx">being reverted</a></ins>
+		* new XPathNavigator members that supports editing XmlDocument
 		* XmlReaderSettings, XmlWriterSettings and factory methods
-		* Strongly typed XmlReader and XmlWriter.
+		* Strongly typed XmlReader, XmlWriter and XPathNavigator.
 		* XML Schema design changes
 		* XSD Inference
 		* Well-documented and improved XmlSerializer.
-		* XQuery execution engine
-		* XQuery and XSLT per-stylesheet assembly generator
+		* XSLT per-stylesheet assembly generator
 	</ul>
 
 *** System.Xml 2.0
+
+**** Summary
+
+  <a href="http://mono.ximian.com/class-status/mono-HEAD-vs-fx-2/class-status-System.Xml.html">
+  Here</a> is the latest status of mono's System.Xml 2.0.
+
+  Major remaining tasks are:
+
+	<ul>
+		* binary content support on XmlReader
+		* IXmlSchemaInfo support for DOM and XmlValidatingReader
+		* XmlSchemaObject.Parent support
+		* XmlValueConverter
+		* possibly XmlSchemaValidator (but no description about this
+		  class right now).
+		* XslCompiledTransform (not available in .NET FX 2.0 as yet)
+	</ul>
 
 **** XmlReader/XmlWrier Factory methods
 
@@ -249,19 +265,26 @@
   alternative way to create XmlNodeReader). Similarly, there are
   XmlWriter.Create() overloads.
 
-  Currently, Microsoft's XmlWriter.Create() is unreliable and maybe there
-  will be changes. So basically XmlWriter.Create() is supposed to be done
-  after the next beta version of .NET 2.0.
+  Currently, Microsoft's XmlWriter.Create() is unstable and there will
+  be changes. So basically remaining XmlWriter.Create() is supposed to be
+  done after the next beta version of .NET 2.0.
 
   Some of XmlReader.Create() overloads are implemented, with limited
   XmlReaderSettings support.
 
 
-**** Typed XmlReader/XmlWriter
+**** Strongly typed XmlReader/XmlWriter
 
   In .NET 2.0, XmlReader is supposed to support strongly-typed data reading.
   They are based on W3C "XML Schema Datatypes" Recommendation and "XQuery 1.0
   and XPath 2.0 Data Model" Working Draft.
+
+  Note that this W3C specification is just a Working Draft and there might
+  be incompatible changes for those strongly-typed API. For example, in the
+  latest version of the spec (as of November 2004), xs:QName is specified as
+  to have prefix, local name and namespace URI, while .NET XML classes just
+  treat it as XmlQualifiedName which does not contain prefix. So this part of
+  API might become obsolete or useless.
 
   Some of XmlReader.ReadValueAsXxx() and XmlWriter.WriteValue() overloads are
   implemented, though incompletely. They are based on internal XQueryConvert.
@@ -281,78 +304,75 @@
   Microsoft had to redesign System.Xml.Schema classes. We also have to
   change many things.
 
-  1) It does not expose XmlSchemaDatatype anymore (except for obsolete
-  members). Primitive types are represented as XmlSchemaSimpleType
-  instances (thus there are ElementSchemaType, AttributeSchemaType,
-  BaseXmlSchemaType that replace some existing properties).
+	<ul>
+		* It does not expose XmlSchemaDatatype as a type of an
+		  element or an attribute (except for obsolete members). 
+		  Primitive types are represented as XmlSchemaSimpleType 
+		  instances (thus there are ElementSchemaType, 
+		  AttributeSchemaType, BaseXmlSchemaType that replace some 
+		  existing properties). Note that XmlSchemaDatatype itself is 
+		  not deprecated as yet.
 
-  2) "XQuery 1.0 and XPath 2.0 Data Model" datatypes (such as
-  xdt:dayTimeDuration) are newly supported. They are partially implemented
-  yet. This task is partly done.
+		* "XQuery 1.0 and XPath 2.0 Data Model" datatypes (such as
+		  xdt:dayTimeDuration) are newly supported. They are partially
+		  implemented yet.
 
-  3) schema structures are now bound in parent-child relationship. It is
-  not yet implemented. With related to it, there seems bunch of schema
-  compilation bugfixes.
+		* schema structures are now bound in parent-child
+		  relationship. It is not yet implemented. With related to
+		  it, there seems bunch of schema compilation bugfixes.
 
-  4) XmlSchemaCollection is not used anymore to represent effective set of
-  schemas. Instead, new XmlSchemaSet class is used. It should affect on
-  schema compilation design. In fact, I've implemented XmlSchemaCollection
-  as more conformant to W3C specification, but there are still many changes
-  required. This task is partly done.
+		* XmlSchemaCollection is not used anymore to represent
+		  effective set of schemas. Instead, new XmlSchemaSet class
+		  is used. It should affect on schema compilation design.
+	</ul>
 
 
 **** XSD Inference
 
-  In .NET 2.0, there is an XML Schema inference implementation. Now that
-  XmlSchemaSet is basically implemented, it can be separately done by anyone.
-  Volunteer efforts are welcome here.
+  In .NET 2.0, there is an XML Schema inference implementation. The API (or
+  implementation design) is not cool and Microsoft will make changes in
+  later version of beta or .NET Framework.
 
 
 *** System.Xml.XPath 2.0
 
-**** Editable XPathDocument
+**** Editable XPathNavigator
 
-  <del>
-  in .NET 2.0 XPathDocument is supposed to be editable. Currently we provide
-  fast document table model based implementation (DTMXPathNavigator), but
-  by that design change, we (and they) cannot provide fast read only
-  XPathNavigator from XPathDocument anymore.
-  </del><ins>
-  It is being reverted to the original (.NET 1.x) XPathDocument. We still have
-  them, but we'll revert them too in the future. So our XPathDocument will be still faster one.
-  </ins>
+  In System.Xml 2.0, XPathNavigator has many editing API (that used to be
+  "XPathEditableNavigator"). It enables developers to edit XmlDocument
+  (not for XPathDocument; it is read-only).
 
-  Currently, new XPathDocument implementation is provided. The actual
-  implementation is Mono.Xml.XPath.XPathDocument2, that is simple dom-like
-  tree model. XPathDocument2 implements the same interfaces as XPathDocument
-  does. And XPathDocument delegates most of the methods to that class (for
-  example, XPathDocument.CreateEditor() calls XPathDocument2.CreateEditor()).
-
-  Currently Mono.Xml.XPath.XPathDocument2 is unstable (it does not pass
-  the standalone XSLT tests unlike existing DTMXPathDocument does). So
-  it did not replace existing XPathDocument implementation, but you can use
-  new implementation by explicitly setting environment value
-  USE_XPATH_DOCUMENT_2 = yes. Currently it supports (well, is supposed 
-  to support) basic editor feature such as AppendChild(). Other members
-  are untested (such as RejectChanges()).
-
-**** extra stuff - XPathEditableDocument
-
-  Currently we provide another IXPathEditable; XPathEditableDocument. That is
-  based on the idea that handles XmlDocument as editor target. It is
-  implemented as Mono.Xml.XPath.XPathEditableDocument. We might provide this
-  class as extra set (might be different mono-specific XML assembly).
+  (In the early stage of .NET 2.0, XPathDocument is supposed to be editable.
+  Also, the new version of editable XPathNavigator had been already
+  implemented in Mono, as Mono.Xml.XPath.XPathEditableDocument.)
 
 
-**** System.Xml.XQuery
+*** System.Xml.Xsl 2.0
 
-  In this namespace, there are two significant classes. XsltCommand and 
-  XQueryCommand.
+  There used to be System.Xml.Query.XsltCommand class, and it now disappeared
+  and it is said (by Microsoft developers) that there will be a class named
+  XslCompiledTransform - so it will be included in the next beta version.
+  It is regarded as the identical thing to XsltCommand.
 
-  XsltCommand implements XSLT transformation. It is almost the same as
-  System.Xml.Xsl.XslTransform, but this class transforms documents twice
-  to four times as fast as XslTransform. Instead, stylesheet compilation
-  is much slower, because it generates compiled stylesheet assembly.
+  XslCompiledtransform seems almost the same as System.Xml.Xsl.XslTransform,
+  but this class transforms documents twice to four times as fast as
+  XslTransform. Instead, stylesheet compilation is much slower, because
+  it generates compiled stylesheet assembly.
+
+
+
+** External assemblies for Mono 2.0
+
+*** Mono.Xml.Ext
+
+  (<strong>IMPORTANT</strong>: There used to be System.Xml.Query.XQueryCommand
+  class that implemented XQuery, but now Microsoft dropped it for .NET 2.0.
+  So we moved them out to external assembly named Mono.Xml.Ext.dll, but I
+  haven't changed thing so much when I just extracted them. Thus, this
+  section is kept as is, and basically old stuff.)
+
+  Mono.Xml.Ext.dll contains mainly XQuery implementation, and some utility 
+  classes.
 
   XQueryCommand implements XQuery. XQuery is a new face XML document
   manipulation language (at least new face in .NET world). It is similar
@@ -407,7 +427,7 @@
   http://sourceforge.net/projects/dotnetopensrc/</a>). With a few changes,
   it can be used with mono.
   
-  We also don't have multi-language based validation support, namely
+  We don't have multi-language based validation support, namely
   Namespace-based Validation Dispatch Language (NVDL). To support unwrapping,
   one special XmlReader implementation is required (other schema validation
   support can be done by ReadSubtree()). Note that we had seen RELAX
@@ -415,7 +435,7 @@
   - that is, standardization effort is still ongoing (though NVDL looks
   mostly the same as NRL).
 
-  In Mono 1.2, there might be improvements on Commons.Xml.Relaxng.
+  In Mono 2.0, there might be improvements on Commons.Xml.Relaxng.
 
 	<ul>
 		* Currently RelaxngPattern.Compile() provides cheap compilation
@@ -440,6 +460,8 @@
 
   See <a href="ado-net.html">ADO.NET page</a>.
 
+  Note that xsd.exe does not support XmlSchemaInference in System.Xml 2.0.
+
 
 ** Miscellaneous
 
@@ -459,6 +481,6 @@
   Note that you still need System.dll to run mcs.
 
 
-  Atsushi Eno <asushi@ximian.com>
-  last updated 09/02/2004
+  Atsushi Eno <atsushi@ximian.com>
+  last updated 11/29/2004
 
