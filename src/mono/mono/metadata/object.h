@@ -98,6 +98,21 @@ typedef struct {
 	MonoString *param_name;
 } MonoArgumentException;
 
+typedef struct {
+	MonoObject   object;
+	MonoObject  *async_state;
+	MonoObject  *handle;
+	gpointer     data;
+	MonoBoolean  sync_completed;
+	MonoBoolean  completed;
+} MonoAsyncResult;
+
+typedef struct {
+	MonoObject   object;
+	gpointer     handle;
+	MonoBoolean  disposed;
+} MonoWaitHandle;
+
 typedef void   (*MonoRuntimeObjectInit) (MonoObject *o);
 typedef gint32 (*MonoRuntimeExecMain)   (MonoMethod *method, MonoArray *args);
 
@@ -187,6 +202,13 @@ mono_install_runtime_object_init (MonoRuntimeObjectInit func);
 
 void
 mono_install_runtime_exec_main   (MonoRuntimeExecMain func);
+
+MonoAsyncResult *
+mono_async_result_new       (MonoDomain *domain, HANDLE handle, 
+			     MonoObject *state, gpointer data);
+
+MonoWaitHandle *
+mono_wait_handle_new        (MonoDomain *domain, HANDLE handle);
 
 #endif
 

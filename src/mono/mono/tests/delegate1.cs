@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Runtime.InteropServices;
 
 namespace Bah {
@@ -22,8 +23,20 @@ class Test {
 		
 		IAsyncResult ar = d.BeginInvoke (3, ac, state);
 		
-		d.EndInvoke (ar);
+		int res = d.EndInvoke (ar);
+
+		Console.WriteLine ("Result = " + res);
+
+		try {
+			d.EndInvoke (ar);
+		} catch (InvalidOperationException) {
+			Console.WriteLine ("cant execute EndInvoke twice ... OK");
+		}
+
+		ar.AsyncWaitHandle.WaitOne ();
 		
+		Console.WriteLine ("completed: " + ar.IsCompleted);
+				
 		return 0;
 	}
 }

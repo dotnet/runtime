@@ -552,3 +552,31 @@ mono_raise_exception (MonoException *ex)
 	ex_handler (ex);
 }
 
+MonoWaitHandle *
+mono_wait_handle_new (MonoDomain *domain, HANDLE handle)
+{
+	MonoWaitHandle *res;
+
+	res = (MonoWaitHandle *)mono_object_new (domain, mono_defaults.waithandle_class);
+
+	res->handle = handle;
+
+	return res;
+}
+
+MonoAsyncResult *
+mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpointer data)
+{
+	MonoAsyncResult *res;
+
+	res = (MonoAsyncResult *)mono_object_new (domain, mono_defaults.asyncresult_class);
+
+	res->data = data;
+	res->async_state = state;
+	res->handle = mono_wait_handle_new (domain, handle);
+	res->sync_completed = FALSE;
+	res->completed = FALSE;
+
+	return res;
+}
+

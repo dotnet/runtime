@@ -49,6 +49,8 @@ typedef struct {
 	MonoClass *enum_class;
 	MonoClass *array_class;
 	MonoClass *multicastdelegate_class;
+	MonoClass *asyncresult_class;
+	MonoClass *waithandle_class;
 	MonoClass *typehandle_class;
 	MonoClass *fieldhandle_class;
 	MonoClass *methodhandle_class;

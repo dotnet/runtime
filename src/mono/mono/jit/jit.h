@@ -7,6 +7,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/mempool.h>
+#include <mono/metadata/reflection.h>
 #include <mono/io-layer/critical-sections.h>
 
 #include "regset.h"
@@ -192,6 +193,26 @@ arch_runtime_invoke        (MonoMethod *method, void *obj, void **params);
 
 gpointer
 arch_create_native_wrapper (MonoMethod *method);
+
+/* delegate support functions */
+
+void
+mono_delegate_init         (void);
+
+void
+mono_delegate_cleanup      (void);
+
+void
+mono_delegate_ctor         (MonoDelegate *this, MonoObject *target, gpointer addr);
+
+gpointer 
+arch_begin_invoke          (MonoMethod *method, gpointer ret_ip, MonoObject *this, ...);
+
+void
+arch_end_invoke            (MonoObject *this, gpointer handle, ...);
+
+gpointer
+arch_get_delegate_invoke   (MonoMethod *method, int *size);
 
 /* some handy debugging functions */
 

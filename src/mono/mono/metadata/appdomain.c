@@ -278,6 +278,14 @@ mono_init (const char *filename)
 		mono_defaults.corlib, "System", "MulticastDelegate");
 	g_assert (mono_defaults.multicastdelegate_class != 0 );
 
+	mono_defaults.asyncresult_class = mono_class_from_name (
+		mono_defaults.corlib, "System", "MonoAsyncResult");
+	g_assert (mono_defaults.asyncresult_class != 0 );
+
+	mono_defaults.waithandle_class = mono_class_from_name (
+		mono_defaults.corlib, "System.Threading", "WaitHandle");
+	g_assert (mono_defaults.waithandle_class != 0 );
+
 	mono_defaults.typehandle_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "RuntimeTypeHandle");
 	g_assert (mono_defaults.typehandle_class != 0);

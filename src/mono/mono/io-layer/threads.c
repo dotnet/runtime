@@ -624,7 +624,7 @@ void Sleep(guint32 ms)
 	divvy=div((int)ms, 1000);
 	
 	req.tv_sec=divvy.quot;
-	req.tv_nsec=divvy.rem*1000;
+	req.tv_nsec=divvy.rem*1000000;
 	
 again:
 	ret=nanosleep(&req, &rem);

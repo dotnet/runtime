@@ -3362,6 +3362,9 @@ main (int argc, char *argv [])
 		fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
 		exit (1);
 	}
+
+	mono_delegate_init ();
+
 	assembly = mono_domain_assembly_open (domain, file);
 	if (!assembly){
 		fprintf (stderr, "Can not open image %s\n", file);
@@ -3427,8 +3430,9 @@ main (int argc, char *argv [])
 	if (mono_debug_handle)
 		mono_debug_close (mono_debug_handle);
 
-	mono_network_cleanup();
-	mono_thread_cleanup();
+	mono_delegate_cleanup ();
+	mono_network_cleanup ();
+	mono_thread_cleanup ();
 
 	mono_domain_unload (domain, TRUE);
 

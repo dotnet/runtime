@@ -19,7 +19,11 @@ mono_SOURCES =			\
 	debug.c			\
 	debug-stabs.c		\
 	debug-dwarf2.c		\
-	jit.c
+	jit.c			\
+	trampoline.c		\
+	delegate.c		\
+	exception.c		\
+	invoke.c	
 
 mono_LDADD =				\
 	../metadata/libmetadata.a	\
