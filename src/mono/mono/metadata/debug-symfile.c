@@ -142,17 +142,9 @@ static MonoClass *
 mono_debug_class_get (MonoDebugSymbolFile *symfile, guint32 type_token)
 {
 	MonoClass *klass;
-	MonoAssembly **ptr;
 
 	if ((klass = g_hash_table_lookup (symfile->image->class_cache, GUINT_TO_POINTER (type_token))))
 		return klass;
-
-	for (ptr = symfile->image->references; ptr && *ptr; ptr++) {
-		MonoImage *image = (*ptr)->image;
-
-		if ((klass = g_hash_table_lookup (image->class_cache, GUINT_TO_POINTER (type_token))))
-			return klass;
-	}
 
 	return NULL;
 }
@@ -427,14 +419,15 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			guint32 token = *((guint32 *) tmp_ptr)++;
 			MonoClass *klass = mono_debug_class_get (symfile, token);
 
-			if (!klass || !klass->inited)
+			if (!klass)
 				continue;
 
-#if 0
-			g_message ("Setting size of type %u to %d", token, klass->instance_size);
-#endif
+			mono_class_init (klass);
 
-			* (gint8 *) base_ptr = klass->instance_size;
+			if (klass->enumtype || klass->valuetype)
+				* (gint8 *) base_ptr = klass->instance_size - sizeof (MonoObject);
+			else
+				* (gint8 *) base_ptr = klass->instance_size;
 
 			break;
 		}
@@ -444,8 +437,10 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			MonoClass *klass = mono_debug_class_get (symfile, token);
 			guint32 offset;
 
-			if (!klass || !klass->inited)
+			if (!klass)
 				continue;
+
+			mono_class_init (klass);
 
 			if (original > klass->field.count) {
 				g_warning ("Symbol file %s contains invalid field offset entry.",
@@ -572,7 +567,6 @@ ves_icall_Debugger_MonoSymbolWriter_get_local_type_from_sig (MonoReflectionAssem
 {
 	MonoDomain *domain; 
 	MonoImage *image;
-	MonoClass *klass;
 	MonoType *type;
 	const char *ptr;
 	int len = 0;
@@ -589,10 +583,6 @@ ves_icall_Debugger_MonoSymbolWriter_get_local_type_from_sig (MonoReflectionAssem
 	g_assert (len == 1);
 
 	type = mono_metadata_parse_type (image, MONO_PARSE_LOCAL, 0, ptr, &ptr);
-
-	klass = mono_class_from_mono_type (type);
-
-	mono_class_init (klass);
 
 	return mono_type_get_object (domain, type);
 }
