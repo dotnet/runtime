@@ -31,6 +31,11 @@ typedef struct {
 	MonoObject object;
 	MonoObject *inner_ex;
 	MonoString *message;
+	MonoString *help_link;
+	MonoString *class_name;
+	MonoString *stack_trace;
+	gint32      hresult;
+	MonoString *source;
 } MonoException;
 
 typedef struct {

@@ -4,6 +4,7 @@
 #include <signal.h>
 
 #include <mono/metadata/loader.h>
+#include <mono/metadata/object.h>
 
 #include "regset.h"
 #include "mempool.h"
@@ -117,6 +118,9 @@ mono_jit_info_table_find   (MonoJitInfoTable *table, gpointer addr);
 
 void
 arch_handle_exception      (struct sigcontext *ctx, gpointer obj);
+
+void
+mono_jit_abort             (MonoObject *obj);
 
 MonoFlowGraph *
 mono_cfg_new               (MonoMethod *method, MonoMemPool *mp);

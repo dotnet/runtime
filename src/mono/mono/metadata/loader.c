@@ -169,6 +169,10 @@ mono_init (void)
 	mono_defaults.monotype_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "MonoType");
 	g_assert (mono_defaults.monotype_class != 0);
+
+	mono_defaults.exception_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "Exception");
+	g_assert (mono_defaults.exception_class != 0);
 }
 
 static GHashTable *icall_hash = NULL;

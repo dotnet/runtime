@@ -150,7 +150,7 @@ x86_pop_reg (s->code, X86_EAX);
 %term ADD SUB MUL DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN NEG NOT
 %term BLT BLT_UN BEQ BNE_UN BRTRUE BRFALSE BGE BGE_UN BLE BLE_UN BGT BGT_UN 
 %term CEQ CLT
-%term CONV_I4 CONV_I1 CONV_I2 CONV_I8 CONV_U8 CONV_R8
+%term CONV_I4 CONV_I1 CONV_I2 CONV_I8 CONV_U8 CONV_R4 CONV_R8
 %term INTF_ADDR VFUNC_ADDR NOP NEWARR NEWOBJ CPOBJ POP INITOBJ VTYPE 
 %term EXCEPTION THROW RETHROW HANDLER
 %term LDLEN
@@ -1864,11 +1864,25 @@ stmt: BLE_UN (lreg, lreg) {
 #	x86_fist_pop_membase (s->code, X86_EBP, tree->data.i, FALSE);
 #} 
 
+freg: CONV_R8 (freg) {
+	/* nothing to do */
+}
+
 freg: CONV_R8 (LDIND_I4 (ADDR_G)) {
 	x86_fild (s->code, tree->left->left->data.p, FALSE);
 }
 
 freg: CONV_R8 (reg) {
+	/* I found no direct way to move an integer register to 
+	 * the floating point stack, so we need to store the register
+	 * to memory
+	 */
+	x86_push_reg (s->code, tree->left->reg1);
+	x86_fild_membase (s->code, X86_ESP, 0, FALSE);
+	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+}
+
+freg: CONV_R4 (reg) {
 	/* I found no direct way to move an integer register to 
 	 * the floating point stack, so we need to store the register
 	 * to memory

@@ -598,11 +598,6 @@ mono_emit_cfg (MonoFlowGraph *cfg)
 		for (j = 0; j < top; j++) {
 			MBTree *t1 = (MBTree *) g_ptr_array_index (forest, j);
 			tree_emit (1, cfg, t1);
-
-			/* debug infos 
-			if (t1->cli_addr >= 0)
-				printf ("CLIADDR: %IL%05x %p\n", t1->cli_addr, cfg->start + t1->addr);
-			*/
 		}
 	}
 		
@@ -876,6 +871,192 @@ arch_compile_method (MonoMethod *method)
 	}
 
 	return method->addr;
+}
+
+/*
+ * arch_get_restore_context:
+ *
+ * Returns a pointer to a method which restores a previously saved sigcontext.
+ */
+static gpointer
+arch_get_restore_context ()
+{
+	static guint8 *start = NULL;
+	guint8 *code;
+
+	if (start)
+		return start;
+
+	/* restore_contect (struct sigcontext *ctx) */
+	/* we do not restore X86_EAX, X86_EDX */
+
+	start = code = malloc (1024);
+	
+	/* load ctx */
+	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
+
+	/* get return address, stored in EDX */
+	x86_mov_reg_membase (code, X86_EDX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, eip), 4);
+
+	/* restore EBX */
+	x86_mov_reg_membase (code, X86_EBX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, ebx), 4);
+	/* restore EDI */
+	x86_mov_reg_membase (code, X86_EDI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, edi), 4);
+	/* restore ESI */
+	x86_mov_reg_membase (code, X86_ESI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, esi), 4);
+	/* restore ESP */
+	x86_mov_reg_membase (code, X86_ESP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, esp), 4);
+	/* restore EBP */
+	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, ebp), 4);
+	/* restore ECX. the exception object is passed here to the catch handler */
+	x86_mov_reg_membase (code, X86_ECX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, ecx), 4);
+
+	/* jump to the saved IP */
+	x86_jump_reg (code, X86_EDX);
+
+	return start;
+}
+
+/*
+ * arch_get_call_finally:
+ *
+ * Returns a pointer to a method which calls a finally handler.
+ */
+static gpointer
+arch_get_call_finally ()
+{
+	static guint8 *start = NULL;
+	guint8 *code;
+
+	if (start)
+		return start;
+
+	/* call_finally (struct sigcontext *ctx, unsigned long eip) */
+	start = code = malloc (1024);
+
+	x86_push_reg (code, X86_EBP);
+	x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
+	x86_push_reg (code, X86_EBX);
+	x86_push_reg (code, X86_EDI);
+	x86_push_reg (code, X86_ESI);
+
+	/* load ctx */
+	x86_mov_reg_membase (code, X86_EAX, X86_EBP, 8, 4);
+	/* load eip */
+	x86_mov_reg_membase (code, X86_ECX, X86_EBP, 12, 4);
+	/* save EBP */
+	x86_push_reg (code, X86_EBP);
+	/* set new EBP */
+	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, ebp), 4);
+	/* call the handler */
+	x86_call_reg (code, X86_ECX);
+	/* restore EBP */
+	x86_pop_reg (code, X86_EBP);
+	/* restore saved regs */
+	x86_pop_reg (code, X86_ESI);
+	x86_pop_reg (code, X86_EDI);
+	x86_pop_reg (code, X86_EBX);
+	x86_leave (code);
+	x86_ret (code);
+
+	return start;
+}
+
+/**
+ * arch_handle_exception:
+ * @ctx: saved processor state
+ * @obj:
+ */
+void
+arch_handle_exception (struct sigcontext *ctx, gpointer obj)
+{
+	MonoJitInfo *ji;
+	gpointer ip = (gpointer)ctx->eip;
+	static void (*restore_context) (struct sigcontext *);
+	static void (*call_finally) (struct sigcontext *, unsigned long);
+
+	ji = mono_jit_info_table_find (mono_jit_info_table, ip);
+
+	if (!restore_context)
+		restore_context = arch_get_restore_context ();
+	
+	if (!call_finally)
+		call_finally = arch_get_call_finally ();
+
+	if (ji) { /* we are inside managed code */
+		MonoMethod *m = ji->method;
+		unsigned next_bp, next_ip;
+		int offset = 2;
+
+		if (ji->num_clauses) {
+			int i;
+
+			g_assert (ji->clauses);
+			
+			for (i = 0; i < ji->num_clauses; i++) {
+				MonoJitExceptionInfo *ei = &ji->clauses [i];
+
+				if (ei->try_start <= ip && ip < (ei->try_end)) { 
+				
+					/* catch block */
+					if (ei->flags == 0 && mono_object_isinst (obj, 
+					        mono_class_get (m->klass->image, ei->token_or_filter))) {
+					
+						ctx->eip = (unsigned long)ei->handler_start;
+						ctx->ecx = (unsigned long)obj;
+						restore_context (ctx);
+						g_assert_not_reached ();
+					}
+				}
+			}
+
+			/* no handler found - we need to call all finally handlers */
+			for (i = 0; i < ji->num_clauses; i++) {
+				MonoJitExceptionInfo *ei = &ji->clauses [i];
+
+				if (ei->try_start <= ip && ip < (ei->try_end) &&
+				    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
+					call_finally (ctx, (unsigned long)ei->handler_start);
+				}
+			}
+		}
+
+		/* continue unwinding */
+
+		/* restore caller saved registers */
+		if (ji->used_regs & X86_ESI_MASK) {
+			ctx->esi = *((int *)ctx->ebp + offset);
+			offset++;
+		}
+		if (ji->used_regs & X86_EDI_MASK) {
+			ctx->edi = *((int *)ctx->ebp + offset);
+			offset++;
+		}
+		if (ji->used_regs & X86_EBX_MASK) {
+			ctx->ebx = *((int *)ctx->ebp + offset);
+		}
+
+		ctx->esp = ctx->ebp;
+
+		next_bp = *((int *)ctx->ebp);
+		next_ip = *((int *)ctx->ebp + 1);
+		
+		if (next_bp < (unsigned)mono_end_of_stack) {
+
+			ctx->eip = next_ip;
+			ctx->ebp = next_bp;
+			arch_handle_exception (ctx, obj);
+
+		} else {
+			mono_jit_abort (obj);
+		}
+
+	} else {
+		/* fixme: implement exceptions inside unmanaged code */
+		mono_jit_abort (obj);
+	}
+
+	g_assert_not_reached ();
 }
 
 

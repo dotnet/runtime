@@ -1,3 +1,5 @@
+* exceptions: handle exceptions inside unmanaged code
+* exceptions: save/restore floating point state
 * implementet all floating point instruction in x86.brg, we also need to check
   the floating branch instruction - some of them seems to be wrong, we need to
   write better tests for that.
