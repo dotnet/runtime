@@ -24,6 +24,22 @@
 #define MRT_method_parameter		0x06
 #define MRT_type_sizeof			0x07
 #define MRT_type_field_offset		0x08
+#define MRT_mono_string_sizeof		0x09
+#define MRT_mono_string_offset		0x0a
+#define MRT_mono_array_sizeof		0x0b
+#define MRT_mono_array_offset		0x0c
+#define MRT_mono_array_bounds_sizeof	0x0d
+#define MRT_mono_array_bounds_offset	0x0e
+
+#define MRI_string_offset_length	0x00
+#define MRI_string_offset_vector	0x01
+
+#define MRI_array_offset_bounds		0x00
+#define MRI_array_offset_max_length	0x01
+#define MRI_array_offset_vector		0x02
+
+#define MRI_array_bounds_offset_lower	0x00
+#define MRI_array_bounds_offset_length	0x01
 
 #define MRS_debug_info			0x01
 #define MRS_debug_abbrev		0x02
@@ -120,6 +136,25 @@ get_sections (MonoDebugSymbolFile *symfile, gboolean emit_warnings)
 		g_warning ("Symbol file %s has unknown file format", symfile->file_name);
 
 	return FALSE;
+}
+
+static MonoClass *
+mono_debug_class_get (MonoDebugSymbolFile *symfile, guint32 type_token)
+{
+	MonoClass *klass;
+	MonoAssembly **ptr;
+
+	if ((klass = g_hash_table_lookup (symfile->image->class_cache, GUINT_TO_POINTER (type_token))))
+		return klass;
+
+	for (ptr = symfile->image->references; ptr && *ptr; ptr++) {
+		MonoImage *image = (*ptr)->image;
+
+		if ((klass = g_hash_table_lookup (image->class_cache, GUINT_TO_POINTER (type_token))))
+			return klass;
+	}
+
+	return NULL;
 }
 
 MonoDebugSymbolFile *
@@ -381,7 +416,10 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 		}
 		case MRT_type_sizeof: {
 			guint32 token = *((guint32 *) tmp_ptr)++;
-			MonoClass *klass = mono_class_get (symfile->image, token);
+			MonoClass *klass = mono_debug_class_get (symfile, token);
+
+			if (!klass || !klass->inited)
+				continue;
 
 			g_message ("Setting size of type %u to %d", token, klass->instance_size);
 
@@ -392,8 +430,11 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 		case MRT_type_field_offset: {
 			guint32 token = *((guint32 *) tmp_ptr)++;
 			guint32 original = *((guint32 *) tmp_ptr)++;
-			MonoClass *klass = mono_class_get (symfile->image, token);
+			MonoClass *klass = mono_debug_class_get (symfile, token);
 			guint32 offset;
+
+			if (!klass || !klass->inited)
+				continue;
 
 			if (original > klass->field.count) {
 				g_warning ("Symbol file %s contains invalid field offset entry.",
@@ -412,6 +453,96 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 
 			break;
 		}
+		case MRT_mono_string_sizeof:
+			* (gint8 *) base_ptr = sizeof (MonoString);
+			break;
+
+		case MRT_mono_string_offset: {
+			guint32 index = *((guint32 *) tmp_ptr)++;
+			MonoString string;
+			guint32 offset;
+
+			switch (index) {
+			case MRI_string_offset_length:
+				offset = (guchar *) &string.length - (guchar *) &string;
+				break;
+
+			case MRI_string_offset_vector:
+				offset = (guchar *) &string.c_str - (guchar *) &string;
+				break;
+
+			default:
+				g_warning ("Symbol file %s contains invalid string offset entry",
+					   symfile->file_name);
+				continue;
+			}
+
+			* (guint32 *) base_ptr = offset;
+
+			break;
+		}
+		case MRT_mono_array_sizeof:
+			* (gint8 *) base_ptr = sizeof (MonoArray);
+			break;
+
+		case MRT_mono_array_offset: {
+			guint32 index = *((guint32 *) tmp_ptr)++;
+			MonoArray array;
+			guint32 offset;
+
+			switch (index) {
+			case MRI_array_offset_bounds:
+				offset = (guchar *) &array.bounds - (guchar *) &array;
+				break;
+
+			case MRI_array_offset_max_length:
+				offset = (guchar *) &array.max_length - (guchar *) &array;
+				break;
+
+			case MRI_array_offset_vector:
+				offset = (guchar *) &array.vector - (guchar *) &array;
+				break;
+
+			default:
+				g_warning ("Symbol file %s contains invalid array offset entry",
+					   symfile->file_name);
+				continue;
+			}
+
+			* (guint32 *) base_ptr = offset;
+
+			break;
+		}
+
+		case MRT_mono_array_bounds_sizeof:
+			* (gint8 *) base_ptr = sizeof (MonoArrayBounds);
+			break;
+
+		case MRT_mono_array_bounds_offset: {
+			guint32 index = *((guint32 *) tmp_ptr)++;
+			MonoArrayBounds bounds;
+			guint32 offset;
+
+			switch (index) {
+			case MRI_array_bounds_offset_lower:
+				offset = (guchar *) &bounds.lower_bound - (guchar *) &bounds;
+				break;
+
+			case MRI_array_bounds_offset_length:
+				offset = (guchar *) &bounds.length - (guchar *) &bounds;
+				break;
+
+			default:
+				g_warning ("Symbol file %s contains invalid array bounds offset entry",
+					   symfile->file_name);
+				continue;
+			}
+
+			* (guint32 *) base_ptr = offset;
+
+			break;
+		}
+
 		default:
 			g_warning ("Symbol file %s contains unknown relocation entry %d",
 				   symfile->file_name, type);
@@ -473,9 +604,9 @@ ves_icall_Debugger_MonoSymbolWriter_method_from_token (MonoReflectionAssembly *a
 guint32
 ves_icall_Debugger_DwarfFileWriter_get_type_token (MonoReflectionType *type)
 {
-    MonoClass *klass = mono_class_from_mono_type (type->type);
+	MonoClass *klass = mono_class_from_mono_type (type->type);
 
-    mono_class_init (klass);
+	mono_class_init (klass);
 
-    return klass->type_token;
+	return klass->type_token;
 }
