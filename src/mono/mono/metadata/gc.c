@@ -319,7 +319,7 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 		gc_handles = new_array;
 		gc_handle_types = new_type_array;
 #else
-		g_error ("No GCHandle support built-in");
+		mono_raise_exception (mono_get_exception_execution_engine ("No GCHandle support built-in"));
 #endif
 	}
 
@@ -337,7 +337,7 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 		if (gc_handles [idx] != (gpointer)-1)
 			GC_GENERAL_REGISTER_DISAPPEARING_LINK (&(gc_handles [idx]), obj);
 #else
-		g_error ("No weakref support");
+		mono_raise_exception (mono_get_exception_execution_engine ("No weakref support"));
 #endif
 		break;
 	default:
@@ -366,7 +366,7 @@ ves_icall_System_GCHandle_FreeHandle (guint32 handle)
 			GC_unregister_disappearing_link (&(gc_handles [idx]));
 	}
 #else
-	g_error ("No GCHandle support");
+	mono_raise_exception (mono_get_exception_execution_engine ("No GCHandle support"));
 #endif
 
 	gc_handles [idx] = (gpointer)-1;
