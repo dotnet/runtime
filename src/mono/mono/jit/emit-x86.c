@@ -19,6 +19,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/arch/x86/x86-codegen.h>
+#include <mono/metadata/profiler-private.h>
 
 #include "jit.h"
 #include "codegen.h"
@@ -262,6 +263,12 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 		x86_call_reg (cfg->code, X86_EAX);
 		x86_alu_reg_imm (cfg->code, X86_ADD, X86_ESP, 8);
 	}
+	if (mono_jit_profile) {
+		x86_push_imm (cfg->code, cfg->method);
+		x86_mov_reg_imm (cfg->code, X86_EAX, mono_profiler_method_enter);
+		x86_call_reg (cfg->code, X86_EAX);
+		x86_alu_reg_imm (cfg->code, X86_ADD, X86_ESP, 4);
+	}
 
 	/* initialize local vars */
 	if (header->num_locals) {
@@ -336,6 +343,9 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 static void
 arch_emit_epilogue (MonoFlowGraph *cfg)
 {
+	/*
+	 * note: with trace and profiling the value on the FP stack may get clobbered.
+	 */
 	if (mono_jit_trace_calls) {
 		x86_fld_reg (cfg->code, 0);
 		x86_alu_reg_imm (cfg->code, X86_SUB, X86_ESP, 8);
@@ -349,6 +359,16 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 		x86_pop_reg (cfg->code, X86_EDX);
 		x86_pop_reg (cfg->code, X86_EAX);
 		x86_alu_reg_imm (cfg->code, X86_ADD, X86_ESP, 8);
+	}
+	if (mono_jit_profile) {
+		x86_push_reg (cfg->code, X86_EAX);
+		x86_push_reg (cfg->code, X86_EDX);
+		x86_push_imm (cfg->code, cfg->method);
+		x86_mov_reg_imm (cfg->code, X86_EAX, mono_profiler_method_leave);
+		x86_call_reg (cfg->code, X86_EAX);
+		x86_alu_reg_imm (cfg->code, X86_ADD, X86_ESP, 4);
+		x86_pop_reg (cfg->code, X86_EDX);
+		x86_pop_reg (cfg->code, X86_EAX);
 	}
 
 	if (mono_regset_reg_used (cfg->rs, X86_ESI))

@@ -188,6 +188,9 @@ gboolean mono_jit_dump_forest = FALSE;
 /* Whether to print function call traces */
 gboolean mono_jit_trace_calls = FALSE;
 
+/* Whether to insert in the code profile callbacks */
+gboolean mono_jit_profile = FALSE;
+
 /* Force jit to share code between application domains */
 gboolean mono_jit_share_code = FALSE;
 

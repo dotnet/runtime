@@ -13,6 +13,7 @@
 #include <mono/arch/x86/x86-codegen.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/metadata/profiler-private.h>
 
 #include "jit.h"
 #include "codegen.h"
@@ -359,6 +360,12 @@ arch_create_native_wrapper (MonoMethod *method)
 
 	start = code = g_malloc (512);
 
+	if (mono_jit_profile) {
+		x86_push_imm (code, method);
+		x86_mov_reg_imm (code, X86_EAX, mono_profiler_method_enter);
+		x86_call_reg (code, X86_EAX);
+		x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
+	}
 	/* save LMF - the instruction pointer is already on the 
 	 * stack (return address) */
 
@@ -566,6 +573,16 @@ enum_marshal:
 	x86_pop_reg (code, X86_EDI);
 	x86_pop_reg (code, X86_EBX);
 
+	if (mono_jit_profile) {
+		x86_push_reg (code, X86_EAX);
+		x86_push_reg (code, X86_EDX);
+		x86_push_imm (code, method);
+		x86_mov_reg_imm (code, X86_EAX, mono_profiler_method_leave);
+		x86_call_reg (code, X86_EAX);
+		x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
+		x86_pop_reg (code, X86_EDX);
+		x86_pop_reg (code, X86_EAX);
+	}
 	x86_ret (code);
 
 	/* we store a dummy jit info (code size 4), so that mono_delegate_ctor

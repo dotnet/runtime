@@ -163,6 +163,7 @@ extern MonoJitStats mono_jit_stats;
 extern gboolean mono_jit_dump_asm;
 extern gboolean mono_jit_dump_forest;
 extern gboolean mono_jit_trace_calls;
+extern gboolean mono_jit_profile;
 extern gboolean mono_jit_share_code;
 extern gpointer mono_end_of_stack;
 extern int      mono_worker_threads;

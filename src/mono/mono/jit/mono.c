@@ -5,6 +5,7 @@
 #include "debug.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/verify.h"
+#include "mono/metadata/profiler.h"
 
 /**
  * mono_jit_assembly:
@@ -50,6 +51,7 @@ usage (char *name)
 		 "--dump-asm       dumps the assembly code generated\n"
 		 "--dump-forest    dumps the reconstructed forest\n"
 		 "--trace          printf function call trace\n"
+		 "--profile        record and dump profile info\n"
 		 "--share-code     force jit to produce shared code\n"
 		 "--print-vtable   print the VTable of all used classes\n"
 		 "--workers n      maximum number of worker threads\n"
@@ -110,6 +112,9 @@ main (int argc, char *argv [])
 			mono_worker_threads = atoi (argv [++i]);
 			if (mono_worker_threads < 1)
 				mono_worker_threads = 1;
+		} else if (strcmp (argv [i], "--profile") == 0) {
+			mono_jit_profile = TRUE;
+			mono_profiler_install_simple ();
 		} else if (strcmp (argv [i], "--compile") == 0) {
 			compile_class = argv [++i];
 		} else if (strcmp (argv [i], "--ncompile") == 0) {
@@ -210,6 +215,7 @@ main (int argc, char *argv [])
 		printf ("RESULT: %d\n", retval);
 	}
 
+	mono_profiler_shutdown ();
 	mono_jit_cleanup (domain);
 
 	return retval;
