@@ -2924,22 +2924,26 @@ load_public_key (MonoArray *pkey, MonoDynamicAssembly *assembly) {
 
 /*
  * mono_image_build_metadata() will fill the info in all the needed metadata tables
- * for the AssemblyBuilder @assemblyb: it iterates over the assembly modules
- * and recursively outputs the info for a module. Each module will output all the info
- * about it's types etc.
- * At the end of the process, method and field tokens are fixed up and the on-disk
- * compressed metadata representation is created.
+ * for the modulebuilder @moduleb.
+ * At the end of the process, method and field tokens are fixed up and the 
+ * on-disk compressed metadata representation is created.
  */
 void
-mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
+mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 {
 	MonoDynamicTable *table;
-	MonoDynamicAssembly *assembly = assemblyb->dynamic_assembly;
-	MonoDomain *domain = mono_object_domain (assemblyb);
+	MonoDynamicAssembly *assembly;
+	MonoReflectionAssemblyBuilder *assemblyb;
+	MonoDomain *domain;
 	guint32 len;
 	guint32 *values;
 	char *name;
 	int i, module_index;
+
+	/* FIXME: modules */
+	assemblyb = moduleb->assemblyb;
+	assembly = assemblyb->dynamic_assembly;
+	domain = mono_object_domain (assemblyb);
 
 	if (assembly->text_rva)
 		return;
@@ -3055,20 +3059,24 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 
 /*
  * mono_image_insert_string:
- * @assembly: assembly builder object
+ * @module: module builder object
  * @str: a string
  *
- * Insert @str into the user string stream of @assembly.
+ * Insert @str into the user string stream of @module.
  */
 guint32
-mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *str)
+mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str)
 {
+	MonoReflectionAssemblyBuilder *assembly;
 	guint32 idx;
 	char buf [16];
 	char *b = buf;
 	
 	MONO_ARCH_SAVE_REGS;
 
+	/* FIXME: modules */
+	assembly = module->assemblyb;
+	
 	if (!assembly->dynamic_assembly)
 		mono_image_basic_init (assembly);
 
@@ -3219,10 +3227,12 @@ typedef struct {
 
 static void register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly);
 
-static MonoImage*
+static MonoDynamicImage*
 create_dynamic_mono_image (char *assembly_name, char *module_name)
 {
-	MonoImage *image;
+	static const guchar entrycode [16] = {0xff, 0x25, 0};
+	MonoDynamicImage *image;
+	int i;
 
 	/*
 	 * We need to use the current ms version or the ms runtime it won't find
@@ -3231,39 +3241,76 @@ create_dynamic_mono_image (char *assembly_name, char *module_name)
 	 */
 	const char *version = "v1.0.3705";
 
-	image = g_new0 (MonoImage, 1);
-	
+#if HAVE_BOEHM_GC
+	image = GC_MALLOC (sizeof (MonoDynamicImage));
+#else
+	image = g_new0 (MonoDynamicImage, 1);
+#endif
+
 	/* keep in sync with image.c */
-	image->name = assembly_name;
-	image->assembly_name = image->name; /* they may be different */
-	image->module_name = module_name;
-	image->version = g_strdup (version);
+	image->image.name = assembly_name;
+	image->image.assembly_name = image->image.name; /* they may be different */
+	image->image.module_name = module_name;
+	image->image.version = g_strdup (version);
 
-	image->references = g_new0 (MonoAssembly*, 1);
-	image->references [0] = NULL;
+	image->image.references = g_new0 (MonoAssembly*, 1);
+	image->image.references [0] = NULL;
 
-	image->method_cache = g_hash_table_new (NULL, NULL);
-	image->class_cache = g_hash_table_new (NULL, NULL);
-	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
-	image->array_cache = g_hash_table_new (NULL, NULL);
+	image->image.method_cache = g_hash_table_new (NULL, NULL);
+	image->image.class_cache = g_hash_table_new (NULL, NULL);
+	image->image.name_cache = g_hash_table_new (g_str_hash, g_str_equal);
+	image->image.array_cache = g_hash_table_new (NULL, NULL);
 
-	image->delegate_begin_invoke_cache = 
+	image->image.delegate_begin_invoke_cache = 
 		g_hash_table_new ((GHashFunc)mono_signature_hash, 
 				  (GCompareFunc)mono_metadata_signature_equal);
-	image->delegate_end_invoke_cache = 
+	image->image.delegate_end_invoke_cache = 
 		g_hash_table_new ((GHashFunc)mono_signature_hash, 
 				  (GCompareFunc)mono_metadata_signature_equal);
-	image->delegate_invoke_cache = 
+	image->image.delegate_invoke_cache = 
 		g_hash_table_new ((GHashFunc)mono_signature_hash, 
 				  (GCompareFunc)mono_metadata_signature_equal);
 
-	image->runtime_invoke_cache = g_hash_table_new (NULL, NULL);
-	image->managed_wrapper_cache = g_hash_table_new (NULL, NULL);
-	image->native_wrapper_cache = g_hash_table_new (NULL, NULL);
-	image->remoting_invoke_cache = g_hash_table_new (NULL, NULL);
-	image->synchronized_cache = g_hash_table_new (NULL, NULL);
+	image->image.runtime_invoke_cache = g_hash_table_new (NULL, NULL);
+	image->image.managed_wrapper_cache = g_hash_table_new (NULL, NULL);
+	image->image.native_wrapper_cache = g_hash_table_new (NULL, NULL);
+	image->image.remoting_invoke_cache = g_hash_table_new (NULL, NULL);
+	image->image.synchronized_cache = g_hash_table_new (NULL, NULL);
 
-	image->generics_cache = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GEqualFunc)mono_metadata_type_equal);
+	image->image.generics_cache = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GEqualFunc)mono_metadata_type_equal);
+
+	image->token_fixups = mono_g_hash_table_new (NULL, NULL);
+	image->method_to_table_idx = mono_g_hash_table_new (NULL, NULL);
+	image->field_to_table_idx = mono_g_hash_table_new (NULL, NULL);
+	image->method_aux_hash = mono_g_hash_table_new (NULL, NULL);
+	image->handleref = g_hash_table_new (NULL, NULL);
+	image->tokens = mono_g_hash_table_new (NULL, NULL);
+	image->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
+	image->blob_cache = mono_g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
+
+	string_heap_init (&image->sheap);
+	mono_image_add_stream_data (&image->us, "", 1);
+	/* FIXME: modules */
+	//add_to_blob_cached (image, (char*) "", 1, NULL, 0);
+	/* import tables... */
+	mono_image_add_stream_data (&image->code, entrycode, sizeof (entrycode));
+	image->iat_offset = mono_image_add_stream_zero (&image->code, 8); /* two IAT entries */
+	image->idt_offset = mono_image_add_stream_zero (&image->code, 2 * sizeof (MonoIDT)); /* two IDT entries */
+	mono_image_add_stream_zero (&image->code, 2); /* flags for name entry */
+	image->imp_names_offset = mono_image_add_stream_data (&image->code, "_CorExeMain", 12);
+	mono_image_add_stream_data (&image->code, "mscoree.dll", 12);
+	image->ilt_offset = mono_image_add_stream_zero (&image->code, 8); /* two ILT entries */
+	stream_data_align (&image->code);
+
+	image->cli_header_offset = mono_image_add_stream_zero (&image->code, sizeof (MonoCLIHeader));
+
+	for (i=0; i < 64; ++i) {
+		image->tables [i].next_idx = 1;
+		image->tables [i].columns = table_sizes [i];
+	}
+
+	image->run = TRUE;
+	image->save = TRUE;
 
 	return image;
 }
@@ -3280,7 +3327,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 {
 	static const guchar entrycode [16] = {0xff, 0x25, 0};
 	MonoDynamicAssembly *assembly;
-	MonoImage *image;
+	MonoDynamicImage *image;
 	int i;
 	
 	MONO_ARCH_SAVE_REGS;
@@ -3329,9 +3376,9 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly->save = assemblyb->access != 1;
 
 	image = create_dynamic_mono_image (mono_string_to_utf8 (assemblyb->name), g_strdup ("RefEmit_YouForgotToDefineAModule"));
-	assembly->assembly.aname.name = image->name;
-	image->assembly = (MonoAssembly*)assembly;
-	assembly->assembly.image = image;
+	assembly->assembly.aname.name = image->image.name;
+	image->image.assembly = (MonoAssembly*)assembly;
+	assembly->assembly.image = &image->image;
 
 	register_assembly (mono_object_domain (assemblyb), &assemblyb->assembly, &assembly->assembly);
 	mono_assembly_invoke_load_hook ((MonoAssembly*)assembly);
@@ -3363,15 +3410,13 @@ calc_section_size (MonoDynamicAssembly *assembly)
 
 /*
  * mono_image_create_pefile:
- * @assemblyb: an assembly builder object
+ * @mb: a module builder object
  * 
- * When we need to save an assembly, we first call this function that ensures the metadata 
- * tables are built for all the modules in the assembly. This function creates the PE-COFF
- * header, the image sections, the CLI header etc. all the data is written in
+ * This function creates the PE-COFF header, the image sections, the CLI header  * etc. all the data is written in
  * assembly->pefile where it can be easily retrieved later in chunks.
  */
 void
-mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
+mono_image_create_pefile (MonoReflectionModuleBuilder *mb) {
 	MonoMSDOSHeader *msdos;
 	MonoDotNetHeader *header;
 	MonoSectionTable *section;
@@ -3379,6 +3424,7 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 	guint32 size, image_size, virtual_base, text_offset;
 	guint32 header_start, section_start, file_offset, virtual_offset;
 	MonoDynamicAssembly *assembly;
+	MonoReflectionAssemblyBuilder *assemblyb;
 	MonoDynamicStream *pefile;
 	int i, nsections;
 	guint32 *rva, value;
@@ -3395,6 +3441,9 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 		0x6d, 0x6f, 0x64, 0x65, 0x2e, 0x0d, 0x0d, 0x0a,  0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
 
+	/* FIXME: modules */
+	assemblyb = mb->assemblyb;
+
 	mono_image_basic_init (assemblyb);
 	assembly = assemblyb->dynamic_assembly;
 
@@ -3402,7 +3451,7 @@ mono_image_create_pefile (MonoReflectionAssemblyBuilder *assemblyb) {
 	if (assembly->pefile.index)
 		return;
 	
-	mono_image_build_metadata (assemblyb);
+	mono_image_build_metadata (mb);
 
 	if (assemblyb->resources) {
 		int len = mono_array_length (assemblyb->resources);
@@ -3728,7 +3777,7 @@ register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly
 }
 
 static void
-register_module (MonoDomain *domain, MonoReflectionModuleBuilder *res, MonoImage *module)
+register_module (MonoDomain *domain, MonoReflectionModuleBuilder *res, MonoDynamicImage *module)
 {
 	/* this is done only once */
 	mono_domain_lock (domain);
@@ -3738,16 +3787,17 @@ register_module (MonoDomain *domain, MonoReflectionModuleBuilder *res, MonoImage
 void
 mono_image_module_basic_init (MonoReflectionModuleBuilder *moduleb)
 {
-	MonoImage *image = moduleb->module.image;
+	MonoDynamicImage *image = moduleb->dynamic_image;
 	MonoReflectionAssemblyBuilder *ab = moduleb->assemblyb;
 	if (!image) {
 		if (!ab->modules) {
 			/* a MonoImage was already created in mono_image_basic_init () */
-			image = ab->dynamic_assembly->assembly.image;
+			image = (MonoDynamicImage*)ab->dynamic_assembly->assembly.image;
 		} else {
 			image = create_dynamic_mono_image (mono_string_to_utf8 (ab->name), mono_string_to_utf8 (moduleb->module.name));
 		}
-		moduleb->module.image = image;
+		moduleb->module.image = &image->image;
+		moduleb->dynamic_image = image;
 		register_module (mono_object_domain (moduleb), moduleb, image);
 	}
 }

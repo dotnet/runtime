@@ -297,13 +297,52 @@ typedef struct {
 } MonoDynamicAssembly;
 
 typedef struct {
+	MonoImage image;
+	guint32 meta_size;
+	guint32 text_rva;
+	guint32 metadata_rva;
+	guint32 image_base;
+	guint32 cli_header_offset;
+	guint32 iat_offset;
+	guint32 idt_offset;
+	guint32 ilt_offset;
+	guint32 imp_names_offset;
+	struct {
+		guint32 rva;
+		guint32 size;
+		guint32 offset;
+		guint32 attrs;
+	} sections [MONO_SECTION_MAX];
+	GHashTable *typeref;
+	GHashTable *handleref;
+	MonoGHashTable *tokens;
+	MonoGHashTable *blob_cache;
+	GList *array_methods;
+	MonoGHashTable *token_fixups;
+	MonoGHashTable *method_to_table_idx;
+	MonoGHashTable *field_to_table_idx;
+	MonoGHashTable *method_aux_hash;
+	gboolean run;
+	gboolean save;
+	char *strong_name;
+	guint32 strong_name_size;
+	MonoDynamicStream pefile;
+	MonoDynamicStream sheap;
+	MonoDynamicStream code; /* used to store method headers and bytecode */
+	MonoDynamicStream resources; /* managed embedded resources */
+	MonoDynamicStream us;
+	MonoDynamicStream blob;
+	MonoDynamicStream tstream;
+	MonoDynamicStream guid;
+	MonoDynamicTable tables [64];
+} MonoDynamicImage;
+
+typedef struct {
 	MonoArray *data;
 	MonoString *name;
 	MonoString *filename;
 	guint32 attrs;
 } MonoReflectionResource;
-
-struct MonoReflectionModuleBuilder;
 
 typedef struct {
 	MonoReflectionAssembly assembly;
@@ -322,7 +361,7 @@ typedef struct {
 	guint32 pekind;
 	MonoBoolean delay_sign;
 	guint32 access;
-	struct MonoReflectionModuleBuilder *main_module;
+	gpointer main_module;
 } MonoReflectionAssemblyBuilder;
 
 typedef struct {
@@ -365,6 +404,7 @@ typedef struct {
 
 typedef struct {
 	MonoReflectionModule module;
+	MonoDynamicImage *dynamic_image;
 	MonoArray *types;
 	MonoArray *cattrs;
 	MonoArray *guid;
@@ -519,9 +559,9 @@ int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);
 MonoType*     mono_reflection_get_type   (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase);
 MonoType*     mono_reflection_type_from_name (char *name, MonoImage *image);
 
-void          mono_image_create_pefile (MonoReflectionAssemblyBuilder *assembly);
+void          mono_image_create_pefile (MonoReflectionModuleBuilder *module);
 void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);
-guint32       mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *str);
+guint32       mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str);
 guint32       mono_image_create_token  (MonoDynamicAssembly *assembly, MonoObject *obj);
 void          mono_image_module_basic_init (MonoReflectionModuleBuilder *module);
 
@@ -577,7 +617,7 @@ gpointer
 mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token);
 
 void
-mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb);
+mono_image_build_metadata (MonoReflectionModuleBuilder *module);
 
 #endif /* __METADATA_REFLECTION_H__ */
 

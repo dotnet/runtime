@@ -792,23 +792,23 @@ mono_type_type_from_obj (MonoReflectionType *mtype, MonoObject *obj)
 }
 
 static gint32
-ves_icall_AssemblyBuilder_getToken (MonoReflectionAssemblyBuilder *assb, MonoObject *obj)
+ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilder *mb, MonoObject *obj)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return mono_image_create_token (assb->dynamic_assembly, obj);
+	return mono_image_create_token (mb->assemblyb->dynamic_assembly, obj);
 }
 
 static gint32
-ves_icall_AssemblyBuilder_getDataChunk (MonoReflectionAssemblyBuilder *assb, MonoArray *buf, gint32 offset)
+ves_icall_ModuleBuilder_getDataChunk (MonoReflectionModuleBuilder *mb, MonoArray *buf, gint32 offset)
 {
 	int count;
-	MonoDynamicAssembly *ass = assb->dynamic_assembly;
+	MonoDynamicAssembly *ass = mb->assemblyb->dynamic_assembly;
 	char *p = mono_array_addr (buf, char, 0);
 
 	MONO_ARCH_SAVE_REGS;
 
-	mono_image_create_pefile (assb);
+	mono_image_create_pefile (mb);
 
 	if (offset >= ass->pefile.index)
 		return 0;
@@ -821,11 +821,11 @@ ves_icall_AssemblyBuilder_getDataChunk (MonoReflectionAssemblyBuilder *assb, Mon
 }
 
 static void
-ves_icall_AssemblyBuilder_build_metadata (MonoReflectionAssemblyBuilder *assb)
+ves_icall_ModuleBuilder_build_metadata (MonoReflectionModuleBuilder *mb)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	mono_image_build_metadata (assb);
+	mono_image_build_metadata (mb);
 }
 
 static MonoReflectionType*
@@ -4104,17 +4104,17 @@ static gconstpointer icall_map [] = {
 	/*
 	 * ModuleBuilder
 	 */
+	"System.Reflection.Emit.ModuleBuilder::getUSIndex", mono_image_insert_string,
+	"System.Reflection.Emit.ModuleBuilder::getToken", ves_icall_ModuleBuilder_getToken,
 	"System.Reflection.Emit.ModuleBuilder::create_modified_type", ves_icall_ModuleBuilder_create_modified_type,
 	"System.Reflection.Emit.ModuleBuilder::basic_init", mono_image_module_basic_init,
+	"System.Reflection.Emit.ModuleBuilder::build_metadata", ves_icall_ModuleBuilder_build_metadata,
+	"System.Reflection.Emit.ModuleBuilder::getDataChunk", ves_icall_ModuleBuilder_getDataChunk,
 	
 	/*
 	 * AssemblyBuilder
 	 */
-	"System.Reflection.Emit.AssemblyBuilder::getDataChunk", ves_icall_AssemblyBuilder_getDataChunk,
-	"System.Reflection.Emit.AssemblyBuilder::getUSIndex", mono_image_insert_string,
-	"System.Reflection.Emit.AssemblyBuilder::getToken", ves_icall_AssemblyBuilder_getToken,
 	"System.Reflection.Emit.AssemblyBuilder::basic_init", mono_image_basic_init,
-	"System.Reflection.Emit.AssemblyBuilder::build_metadata", ves_icall_AssemblyBuilder_build_metadata,
 
 	/*
 	 * Reflection stuff.
