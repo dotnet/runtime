@@ -6,7 +6,8 @@ libs=	\
 	$(monodir)/mono/metadata/libmetadata.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
-	$(LIBGC_LIBS)
+	$(LIBGC_LIBS)	\
+	$(ICU_LIBS)
 
 MCS=mcs
 RUNTIME=mono
@@ -45,7 +46,8 @@ mono_SOURCES = \
 mono_LDADD = \
 	libmono.la		\
 	$(GLIB_LIBS)		\
-	$(GMODULE_LIBS) -lm
+	$(GMODULE_LIBS) -lm	\
+	$(ICU_LIBS)
 
 mono_LDFLAGS = \
 	-export-dynamic

@@ -41,6 +41,7 @@
 #include <mono/metadata/process.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/profiler-private.h>
+#include <mono/metadata/locales.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
 
@@ -4502,6 +4503,15 @@ static gconstpointer icall_map [] = {
 
 	"System.Web.Util.ICalls::GetMachineInstallDirectory",
 	ves_icall_System_Web_Util_ICalls_get_machine_install_dir,
+
+	/*
+	 * System.Globalization
+	 */
+	"System.Globalization.CultureInfo::construct_internal_locale(string)", ves_icall_System_Globalization_CultureInfo_construct_internal_locale,
+	"System.Globalization.CultureInfo::construct_compareinfo(object,string)", ves_icall_System_Globalization_CultureInfo_construct_compareinfo,
+	"System.Globalization.CompareInfo::internal_compare(string,string,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_internal_compare,
+	"System.Globalization.CompareInfo::free_internal_collator()", ves_icall_System_Globalization_CompareInfo_free_internal_collator,
+	"System.Globalization.CompareInfo::assign_sortkey(object,string,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_assign_sortkey,
 
 	/*
 	 * add other internal calls here

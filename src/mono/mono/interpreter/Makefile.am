@@ -28,6 +28,7 @@ mint_LDADD =				\
 	$(LIBGC_LIBS)			\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
+	$(ICU_LIBS)			\
 	-lm
 
 man_MANS = mint.1

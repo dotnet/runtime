@@ -649,6 +649,19 @@ if test "x$try_shared_handles" != "xyes"; then
 	AC_SUBST(DISABLE_SHARED_HANDLES)
 fi
 
+ICU_CFLAGS=""
+ICU_LIBS=""
+AC_PATH_PROG(ICU_CONFIG, icu-config, no)
+if test "x$ICU_CONFIG" = "xno"; then
+	AC_MSG_WARN([Only invariant locale available; install ICU for I18N support])
+else
+	AC_DEFINE(HAVE_ICU)
+	ICU_CFLAGS=`$ICU_CONFIG --cppflags`
+	ICU_LIBS=`$ICU_CONFIG --ldflags`
+fi
+AC_SUBST(ICU_CFLAGS)
+AC_SUBST(ICU_LIBS)
+
 TARGET="unknown"
 ACCESS_UNALIGNED="yes"
 

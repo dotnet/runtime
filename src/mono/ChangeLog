@@ -1,3 +1,8 @@
+2003-10-09  Dick Porter  <dick@ximian.com>
+
+	* acconfig.h:
+	* configure.in: Check for ICU availability
+
 2003-10-09  Bernie Solomon  <bernard@ugsolutions.com>
 
 	* mono/tests/libtest.c: fix after merge of pinvoke2.cs

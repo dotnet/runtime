@@ -18,7 +18,7 @@ bin_PROGRAMS = monosn pedump
 noinst_LTLIBRARIES = libmetadata.la libmonoruntime.la
 
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $(GMODULE_CFLAGS) \
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $(GMODULE_CFLAGS) $(ICU_CFLAGS) \
 	-DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
 
 if WITH_BUNDLE
@@ -69,7 +69,9 @@ libmonoruntime_la_SOURCES = \
 	process.c	\
 	process.h	\
 	environment.c	\
-	environment.h
+	environment.h	\
+	locales.c	\
+	locales.h
 
 libmetadata_la_SOURCES = \
 	assembly.c	\
@@ -101,7 +103,8 @@ libmonoruntimeinclude_HEADERS = \
 	threads-types.h	\
 	threads.h	\
 	environment.h	\
-	monitor.h
+	monitor.h	\
+	locales.h
 
 libmetadatainclude_HEADERS = \
 	assembly.h	\
