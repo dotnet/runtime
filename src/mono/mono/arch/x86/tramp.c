@@ -376,7 +376,7 @@ mono_create_method_pointer (MonoMethod *method)
 	unsigned char *p, *code_buffer;
 	gint32 local_size;
 	gint32 stackval_pos, arg_pos = 8;
-	int i;
+	int i, align;
 
 	/*
 	 * If it is a static P/Invoke method, we can just return the pointer
@@ -444,19 +444,7 @@ mono_create_method_pointer (MonoMethod *method)
 		x86_call_reg (p, X86_ECX);
 		x86_alu_reg_imm (p, X86_SUB, X86_ESP, 12);
 		stackval_pos += sizeof (stackval);
-		arg_pos += 4;
-		if (!sig->params [i]->byref) {
-			switch (sig->params [i]->type) {
-			case MONO_TYPE_I8:
-			case MONO_TYPE_R8:
-				arg_pos += 4;
-				break;
-			case MONO_TYPE_VALUETYPE:
-				g_assert_not_reached (); /* Not implemented yet. */
-			default:
-				break;
-			}
-		}
+		arg_pos += mono_type_stack_size (sig->params [i], &align);
 	}
 
 	/*
