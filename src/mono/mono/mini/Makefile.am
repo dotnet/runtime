@@ -204,15 +204,10 @@ stat3: mono bench.exe
 	./mono --statfile stats.pl --ncompile 1000 --compile Tests:test_0_many_nested_loops bench.exe 
 	perl viewstat.pl stats.pl
 
-docu: mini.sgm
-	docbook2txt mini.sgm
-
 clean:
 	rm -f mono a.out gmon.out *.o test.exe
 
 pkgconfigdir = $(libdir)/pkgconfig
-
-documents=mini-doc.txt mini-porting.txt
 
 if JIT_SUPPORTED
 BUILT_SOURCES= inssel.c inssel.h cpu-pentium.h cpu-g4.h cpu-sparc.h
