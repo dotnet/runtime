@@ -274,7 +274,7 @@ debug_memcopy (void *dest, const void *src, size_t n);
 %term REMOTE_STIND_I8 REMOTE_STIND_R4 REMOTE_STIND_R8 REMOTE_STIND_OBJ
 %term SIN COS SQRT
 
-%term FUNC1 PROC3 FREE OBJADDR VTADDR
+%term FUNC1 PROC2 PROC3 FREE OBJADDR VTADDR
 
 #
 # we start at stmt
@@ -1768,51 +1768,27 @@ reg: VTADDR (ADDR_L) {
 }
 
 stmt: FREE (reg) {
-	x86_push_reg (s->code, X86_EAX);
-	x86_push_reg (s->code, X86_ECX);
-	x86_push_reg (s->code, X86_EDX);
-
 	x86_push_reg (s->code, tree->left->reg1);
-
 	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, g_free);
 	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
-	
-	x86_pop_reg (s->code, X86_EDX);
-	x86_pop_reg (s->code, X86_ECX);
-	x86_pop_reg (s->code, X86_EAX);
+}
+
+stmt: PROC2 (reg, reg) {
+	x86_push_reg (s->code, tree->right->reg1);
+	x86_push_reg (s->code, tree->left->reg1);
+	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->data.p);
+	x86_call_code (s->code, 0);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
 }
 
 stmt: PROC3 (reg, CPSRC (reg, reg)) {
-	int dest_reg = tree->left->reg1;
-	int source_reg = tree->right->left->reg1;
-	int size_reg = tree->right->right->reg1;
-
-	x86_push_reg (s->code, X86_EAX);
-	x86_push_reg (s->code, X86_ECX);
-	x86_push_reg (s->code, X86_EDX);
-
-	x86_push_reg (s->code, size_reg);
-	x86_push_reg (s->code, source_reg);
-	x86_push_reg (s->code, dest_reg);
-
-	switch (tree->data.i) {
-	case MONO_MARSHAL_CONV_STR_BYVALSTR:
-		mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, mono_string_to_byvalstr);
-		break;
-	case MONO_MARSHAL_CONV_STR_BYVALWSTR:
-		mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, mono_string_to_byvalwstr);
-		break;
-	default:
-		g_assert_not_reached ();
-	}
-
+	x86_push_reg (s->code, tree->right->right->reg1);
+	x86_push_reg (s->code, tree->right->left->reg1);
+	x86_push_reg (s->code, tree->left->reg1);
+	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->data.p);
 	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
-
-	x86_pop_reg (s->code, X86_EDX);
-	x86_pop_reg (s->code, X86_ECX);
-	x86_pop_reg (s->code, X86_EAX);
 }
 
 reg: FUNC1 (reg) {

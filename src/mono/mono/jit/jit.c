@@ -3173,6 +3173,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				case MONO_MARSHAL_CONV_STR_ANSIBSTR:
 					t1->data.p = mono_string_to_ansibstr;
 					break;
+				case MONO_MARSHAL_CONV_SB_LPSTR:
+					t1->data.p = mono_string_builder_to_utf8;
+					break;
 				case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
 					t1->data.p = mono_array_to_savearray;
 					break;
@@ -3188,19 +3191,46 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				PUSH_TREE (t1, VAL_POINTER); 
 				break;
 			}
+			case CEE_MONO_PROC2: {
+				MonoMarshalConv conv;
+				++ip;
+				conv = *ip;
+				++ip;
+
+				sp -= 2;
+				t1 = mono_ctree_new (mp, MB_TERM_PROC2, sp [0], sp [1]);
+
+				switch (conv) {
+				case MONO_MARSHAL_CONV_LPSTR_SB:
+					t1->data.p = mono_string_utf8_to_builder;
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+				ADD_TREE (t1, cli_addr); 
+				break;
+			}
 			case CEE_MONO_PROC3: {
 				MonoMarshalConv conv;
 				++ip;
-
 				conv = *ip;
-
 				++ip;
 
 				sp -= 3;
 
 				t1 = mono_ctree_new (mp, MB_TERM_CPSRC, sp [1], sp [2]);
 				t1 = mono_ctree_new (mp, MB_TERM_PROC3, sp [0], t1);
-				t1->data.i = conv;
+
+				switch (conv) {
+				case MONO_MARSHAL_CONV_STR_BYVALSTR:
+					t1->data.p = mono_string_to_byvalstr;
+					break;
+				case MONO_MARSHAL_CONV_STR_BYVALWSTR:
+					t1->data.p = mono_string_to_byvalwstr;
+					break;
+				default:
+					g_assert_not_reached ();
+				}
 
 				ADD_TREE (t1, cli_addr);
 				break;
