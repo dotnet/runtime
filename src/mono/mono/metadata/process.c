@@ -771,7 +771,7 @@ complete_path (const gunichar2 *appname, gunichar2 **completed)
 		*completed = g_utf8_to_utf16 (quoted8, -1, NULL, NULL, NULL);
 		g_free (quoted8);
 		g_free (utf8app);
-		return FALSE;
+		return TRUE;
 	}
 	
 	found = g_find_program_in_path (utf8app);
