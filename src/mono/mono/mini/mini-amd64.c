@@ -5105,36 +5105,13 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, stack_area);
 
 		for (i = 0; i < n; ++i) {
-			ArgInfo *ainfo = cinfo->args + i;
-			gint32 stack_offset;
-			MonoType *arg_type;
 			inst = cfg->varinfo [i];
 
-			if (sig->hasthis && (i == 0))
-				arg_type = &mono_defaults.object_class->byval_arg;
-			else
-				arg_type = sig->params [i - sig->hasthis];
-
-			stack_offset = ainfo->offset + ARGS_OFFSET;
-
-			switch (ainfo->storage) {
-			case ArgInIReg:
-				amd64_mov_membase_reg (code, AMD64_RSP, (i * 8), ainfo->reg, 8);				
-				break;
-			case ArgInFloatSSEReg:
-				amd64_movsd_membase_reg (code, AMD64_RSP, (i * 8), ainfo->reg);
-				break;
-			case ArgInDoubleSSEReg:
-				amd64_movsd_membase_reg (code, AMD64_RSP, (i * 8), ainfo->reg);
-				break;
-			case ArgOnStack:
-				/* Copy from original stack location to the argument area */
-				/* FIXME: valuetypes etc */
+			if (inst->opcode == OP_REGVAR)
+				amd64_mov_membase_reg (code, AMD64_RSP, (i * 8), inst->dreg, 8);
+			else {
 				amd64_mov_reg_membase (code, AMD64_R11, inst->inst_basereg, inst->inst_offset, 8);
 				amd64_mov_membase_reg (code, AMD64_RSP, (i * 8), AMD64_R11, 8);
-				break;
-			default:
-				g_assert_not_reached ();
 			}
 		}
 	}
