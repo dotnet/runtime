@@ -62,6 +62,7 @@ get_typedef (MonoImage *m, int idx)
 		mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]),
 		tstring ? tstring : "");
 	g_free (tstring);
+
 	return result;
 }
 
@@ -197,6 +198,7 @@ get_typespec (MonoImage *m, guint32 idx)
 			if (s)
 				g_string_append (res, s);
 		}
+		g_string_append (res, "*");
 		break;
 		
 	case MONO_TYPE_FNPTR:
