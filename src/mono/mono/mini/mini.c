@@ -7776,7 +7776,8 @@ mini_init (const char *filename)
 
 	mono_arch_cpu_init ();
 
-	g_thread_init (NULL);
+	if (!g_thread_supported ())
+		g_thread_init (NULL);
 
 	mono_jit_tls_id = TlsAlloc ();
 	setup_jit_tls_data ((gpointer)-1, mono_thread_abort);
