@@ -3362,6 +3362,11 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	/* not needed */
 }
 
+void
+mono_arch_flush_register_windows (void)
+{
+}
+
 /*
  * Support for fast access to the thread-local lmf structure using the GS
  * segment register on NPTL + kernel 2.6.x.

@@ -63,11 +63,13 @@ typedef struct MonoCompileArch {
 
 typedef struct sigcontext MonoContext;
 
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->SC_EIP = (long)ip; } while (0); 
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->SC_EBP = (long)bp; } while (0); 
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->SC_EIP = (long)(ip); } while (0); 
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->SC_EBP = (long)(bp); } while (0); 
+#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->SC_ESP = (long)(esp); } while (0); 
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->SC_EIP))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->SC_EBP))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->SC_ESP))
 
 #ifndef PLATFORM_WIN32
 

@@ -35,6 +35,14 @@ typedef struct MonoCompileArch {
 	guint32 localloc_offset;
 } MonoCompileArch;
 
+#define MONO_CONTEXT_SET_IP(ctx,eip) do { (ctx)->ip = (long)(eip); } while (0); 
+#define MONO_CONTEXT_SET_BP(ctx,ebp) do { (ctx)->fp = (long)(ebp); } while (0); 
+#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->sp = (long)(esp); } while (0); 
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->ip))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->fp))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sp))
+
 #define MONO_ARCH_USE_SIGACTION 1
 
 #define MONO_ARCH_EMULATE_FCONV_TO_I8   1

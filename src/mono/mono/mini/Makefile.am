@@ -81,6 +81,7 @@ ppc_sources = \
 sparc_sources = \
 	mini-sparc.c		\
 	mini-sparc.h		\
+    mini-exceptions.c	\
 	exceptions-sparc.c	\
 	tramp-sparc.c
 

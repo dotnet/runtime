@@ -212,6 +212,12 @@ mono_sparc_flushw (void)
 	flushw ();
 }
 
+void
+mono_arch_flush_register_windows (void)
+{
+	mono_sparc_flushw ();
+}
+
 gboolean 
 mono_sparc_is_v9 (void) {
 	return sparcv9;

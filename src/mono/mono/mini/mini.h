@@ -758,6 +758,7 @@ MonoJitInfo *mono_arch_find_jit_info            (MonoDomain *domain,
 gpointer mono_arch_get_call_filter              (void);
 gpointer mono_arch_get_restore_context          (void);
 gboolean mono_arch_handle_exception             (void *sigctx, gpointer obj, gboolean test_only);
+void     mono_arch_flush_register_windows       (void);
 
 /* Exception handling */
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj, gboolean test_only);

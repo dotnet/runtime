@@ -88,6 +88,8 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 
 	MonoContext ctx, new_ctx;
 
+	mono_arch_flush_register_windows ();
+
 	MONO_CONTEXT_SET_IP (&ctx, __builtin_return_address (0));
 	MONO_CONTEXT_SET_BP (&ctx, __builtin_frame_address (1));
 
@@ -395,8 +397,8 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 					/* Switch back to normal stack */
 					if (stack_overflow)
 						/* Free up some stack space */
-						initial_ctx.SC_ESP += (64 * 1024);
-					initial_ctx.SC_EIP = (unsigned int)jit_tls->abort_func;
+						MONO_CONTEXT_SET_SP (&initial_ctx, (guint32)(MONO_CONTEXT_GET_SP (&initial_ctx)) + (64 * 1024));
+					MONO_CONTEXT_SET_IP (&initial_ctx, (unsigned int)jit_tls->abort_func);
 					restore_context (&initial_ctx);
 				}
 				else
