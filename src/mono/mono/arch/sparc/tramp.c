@@ -18,6 +18,7 @@
 #include "mono/metadata/tabledefs.h"
 #include "mono/interpreter/interp.h"
 #include "mono/metadata/appdomain.h"
+#include "mono/metadata/debug-helpers.h"
 
 
 #define ARG_SIZE	sizeof (stackval)
@@ -33,6 +34,29 @@
 
 /* Some assembly... */
 #define flushi(addr)    __asm__ __volatile__ ("flush %0"::"r"(addr):"memory")
+
+static char*
+sig_to_name (MonoMethodSignature *sig, const char *prefix)
+{
+        int i;
+        char *result;
+        GString *res = g_string_new ("");
+
+        if (prefix) {
+                g_string_append (res, prefix);
+                g_string_append_c (res, '_');
+        }
+
+        mono_type_get_desc (res, sig->ret, TRUE);
+
+        for (i = 0; i < sig->param_count; ++i) {
+                g_string_append_c (res, '_');
+                mono_type_get_desc (res, sig->params [i], TRUE);
+        }
+        result = res->str;
+        g_string_free (res, FALSE);
+        return result;
+}
 
 static void
 add_general (guint *gr, guint *stack_size, guint *code_size, gboolean simple)
@@ -51,8 +75,6 @@ add_general (guint *gr, guint *stack_size, guint *code_size, gboolean simple)
 		} else {
 			*code_size += 16;
 		}
-		if ((*gr) && 1)
-			(*gr)++;
 		(*gr)++;
 	}
 	(*gr)++;
@@ -221,6 +243,7 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 {
 	guint i, fr, gr, stack_par_pos, struct_pos, cur_struct_pos;
 	guint32 simpletype;
+	GString *res = g_string_new("");
 
 	fr = gr = 0;
 	stack_par_pos = MINIMAL_STACK_SIZE * 4;
@@ -286,6 +309,8 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 	}
 #endif
 
+	fprintf(stderr, "%s\n", sig_to_name(sig, FALSE));
+
 	for (i = 0; i < sig->param_count; i++) {
 		if (sig->params[i]->byref) {
 			SAVE_4_IN_GENERIC_REGISTER;
@@ -331,8 +356,6 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 		case MONO_TYPE_R8:
 			/* this will break in subtle ways... */
 			if (gr < 5) {
-				if (gr & 1)
-					gr ++;
 				sparc_ld_imm (p, ARG_BASE, ARG_SIZE, sparc_o0 + gr);
 				gr ++;
 				
@@ -454,13 +477,15 @@ mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 	p = emit_call_and_store_retval (p, sig, stack_size, string_ctor);
 	p = emit_epilog (p, sig, stack_size);
 	
+#if 1
 	{
                 guchar *cp;
-                printf (".text\n.align 4\n.globl main\n.type main,@function\nmain:\n");
+                fprintf (stderr,".text\n.align 4\n.globl main\n.type main,@function\nmain:\n");
                 for (cp = code_buffer; cp < p; cp++) {
-                        printf (".byte 0x%x\n", *cp);
+                        fprintf (stderr, ".byte 0x%x\n", *cp);
                 }
 	}
+#endif
 
 	/* So here's the deal...
 	 * UltraSPARC will flush a whole cache line at a time
@@ -476,13 +501,18 @@ mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 	return (MonoPIFunc) code_buffer;
 }
 
+#define MINV_POS (MINIMAL_STACK_SIZE * 4)
 void *
 mono_create_method_pointer (MonoMethod *method)
 {
 	MonoMethodSignature *sig;
 	MonoJitInfo *ji;
-	guint32 stack_size;
-	unsigned char *p, *code_buffer;
+	guint stack_size, code_size, stackval_arg_pos, local_pos;
+	guint i, local_start, reg_param, stack_param, this_flag, cpos, vt_cur;
+	guint align = 0;
+	guint32 *p, *code_buffer;
+	gint *vtbuf;
+	gint32 simpletype;
 
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL && method->addr) {
 		ji = g_new0 (MonoJitInfo, 1);
@@ -494,5 +524,201 @@ mono_create_method_pointer (MonoMethod *method)
 		return method->addr;
 	}
 
-	return 0xdeadbeef;
+	code_size = 1024;
+	stack_size = 1024;
+	stack_param = 0;
+
+	sig = method->signature;
+
+	p = code_buffer = g_malloc (code_size);
+
+	emit_prolog (p, sig, stack_size);
+
+	/* fill MonoInvocation */
+	sparc_st (p, sparc_g0, sparc_sp,
+		  (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex)));
+	sparc_st (p, sparc_g0, sparc_sp,
+		  (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex_handler)));
+	sparc_st (p, sparc_g0, sparc_sp,
+		  (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, child)));
+	sparc_st (p, sparc_g0, sparc_sp,
+		  (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, parent)));
+
+	sparc_set (p, (guint32)method, sparc_l0);
+	sparc_st (p, sparc_l0, sparc_sp,
+		  (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, method)));
+
+	local_start = local_pos = MINV_POS + sizeof (MonoInvocation) + 
+		(sig->param_count + 1) * sizeof (stackval);
+
+	if (sig->hasthis) {
+		sparc_st (p, sparc_i0, sparc_sp,
+			  (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, obj)));
+		reg_param = 1;
+	} else if (sig->param_count) {
+		sparc_st (p, sparc_i0, sparc_sp, local_pos);
+		local_pos += 4;
+		reg_param = 0;
+	}
+
+	this_flag = (sig->hasthis ? 1 : 0);
+
+	if (sig->param_count) {
+		gint save_count = MIN (OUT_REGS, sig->param_count - 1);
+		for (i = reg_param; i < save_count; i++) {
+			sparc_st (p, sparc_i1, sparc_sp, local_pos);
+			local_pos += 4;
+		}
+	}
+
+	/* prepare space for valuetypes */
+        vt_cur = local_pos;
+        vtbuf = alloca (sizeof(int)*sig->param_count);
+        cpos = 0;
+        for (i = 0; i < sig->param_count; i++) {
+                MonoType *type = sig->params [i];
+                vtbuf [i] = -1;
+                if (type->type == MONO_TYPE_VALUETYPE) {
+                        MonoClass *klass = type->data.klass;
+                        gint size;
+			
+                        if (klass->enumtype)
+                                continue;
+                        size = mono_class_native_size (klass, &align);
+                        cpos += align - 1;
+                        cpos &= ~(align - 1);
+                        vtbuf [i] = cpos;
+                        cpos += size;
+                }
+        }
+        cpos += 3;
+        cpos &= ~3;
+	
+	local_pos += cpos;
+	
+	/* set MonoInvocation::stack_args */
+	stackval_arg_pos = MINV_POS + sizeof (MonoInvocation);
+	sparc_add_imm (p, 0, sparc_sp, stackval_arg_pos, sparc_l0);
+	sparc_st (p, sparc_l0, sparc_sp,
+		  (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, stack_args)));
+
+	/* add stackval arguments */
+	/* something is bizzare here... */
+	for (i=0; i < sig->param_count; i++) {
+		if (reg_param < OUT_REGS) {
+			sparc_add_imm (p, 0, sparc_sp,
+				       local_start + (reg_param - this_flag)*4,
+				       sparc_o2);
+			reg_param++;
+		} else {
+			sparc_add_imm (p, 0, sparc_sp,
+				       stack_size + 8 + stack_param, sparc_o2);
+			stack_param++;
+		}
+
+		if (vtbuf[i] >= 0) {
+			sparc_add_imm (p, 0, sparc_sp, vt_cur, sparc_o1);
+			sparc_st (p, sparc_o1, sparc_sp, stackval_arg_pos);
+			sparc_add_imm (p, 0, sparc_sp, stackval_arg_pos, 
+				       sparc_o1);
+			sparc_ld (p, sparc_o2, 0, sparc_o2);
+			vt_cur += vtbuf[i];
+		} else {
+			sparc_add_imm (p, 0, sparc_sp, stackval_arg_pos, 
+				       sparc_o1);
+		}
+
+		sparc_set (p, sparc_o0, (guint32)sig->params[i]);
+
+		/* YOU make the CALL! */
+		sparc_set (p, sparc_l0, (guint32)stackval_from_data);
+		sparc_jmpl_imm (p, sparc_l0, 0, sparc_callsite);
+		sparc_nop (p);
+
+		if (sig->pinvoke)
+			stackval_arg_pos += 4 * 
+				mono_type_native_stack_size (sig->params[i],
+							     &align);
+		else
+			stackval_arg_pos += 4 *
+				mono_type_stack_size (sig->params[i], &align);
+	}
+
+	/* return value storage */
+	if (sig->param_count) {
+		sparc_add_imm (p, 0, sparc_sp, stackval_arg_pos, sparc_l0);
+	}
+
+	sparc_st (p, sparc_g0, sparc_sp,
+		  (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, retval)));
+
+	/* call ves_exec_method */
+	sparc_add_imm (p, 0, sparc_o0, MINV_POS, sparc_sp);
+	sparc_set (p, sparc_l0, (guint32)ves_exec_method);
+	sparc_jmpl_imm (p, sparc_l0, 0, sparc_callsite);
+	sparc_nop (p);
+
+	/* move retval from stackval to proper place (r3/r4/...) */
+        if (sig->ret->byref) {
+		sparc_ld (p, sparc_sp, stackval_arg_pos, sparc_i0 );
+        } else {
+        enum_retvalue:
+                switch (sig->ret->type) {
+                case MONO_TYPE_VOID:
+                        break;
+                case MONO_TYPE_BOOLEAN:
+                case MONO_TYPE_I1:
+                case MONO_TYPE_U1:
+			sparc_ldub (p, sparc_sp, stackval_arg_pos, sparc_i0);
+                        break;
+                case MONO_TYPE_I2:
+                case MONO_TYPE_U2:
+                        sparc_lduh (p, sparc_sp, stackval_arg_pos, sparc_i0);
+                        break;
+                case MONO_TYPE_I4:
+                case MONO_TYPE_U4:
+                case MONO_TYPE_I:
+                case MONO_TYPE_U:
+                case MONO_TYPE_OBJECT:
+		case MONO_TYPE_STRING:
+                case MONO_TYPE_CLASS:
+                        sparc_ld (p, sparc_sp, stackval_arg_pos, sparc_i0);
+                        break;
+                case MONO_TYPE_I8:
+                        sparc_ld (p, sparc_sp, stackval_arg_pos, sparc_i0);
+                        sparc_ld (p, sparc_sp, stackval_arg_pos + 4, sparc_i1);
+                        break;
+                case MONO_TYPE_R4:
+                        sparc_ldf (p, sparc_sp, stackval_arg_pos, sparc_f0);
+                        break;
+                case MONO_TYPE_R8:
+                        sparc_lddf (p, sparc_sp, stackval_arg_pos, sparc_f0);
+                        break;
+                case MONO_TYPE_VALUETYPE:
+                        if (sig->ret->data.klass->enumtype) {
+                                simpletype = sig->ret->data.klass->enum_basetype->type;
+                                goto enum_retvalue;
+                        }
+                        NOT_IMPL("value type as ret val from delegate");
+                        break;
+                default: 
+			g_error ("Type 0x%x not handled yet in thunk creation",
+				 sig->ret->type);
+                        break;
+                }
+        }
+
+	emit_epilog (p, sig, stack_size);
+
+	for (i = 0; i < ((p - code_buffer)/2); i++)
+		flushi((code_buffer + (i*8)));
+	
+	ji = g_new0 (MonoJitInfo, 1);
+        ji->method = method;
+        ji->code_size = p - code_buffer;
+	ji->code_start = code_buffer;
+	
+	mono_jit_info_table_add (mono_root_domain, ji);
+	
+	return ji->code_start;
 }
