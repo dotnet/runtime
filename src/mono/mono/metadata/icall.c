@@ -135,12 +135,41 @@ ves_icall_InitializeArray (MonoArray *array, MonoClassField *field_handle)
 	MonoClass *klass = array->obj.klass;
 	guint32 size = mono_array_element_size (klass);
 	int i;
+
 	for (i = 0; i < klass->rank; ++i)
 		size *= array->bounds [i].length;
-	/*
-	 * FIXME: ENOENDIAN: we need to byteswap as needed.
-	 */
 	memcpy (mono_array_addr (array, char, 0), field_handle->data, size);
+
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+#define SWAP(n) {\
+	gint i; \
+	guint ## n tmp; \
+	guint ## n *data = (guint ## n *) mono_array_addr (array, char, 0); \
+\
+	for (i = 0; i < size; i += n/8, data++) { \
+		tmp = read ## n (data); \
+		*data = tmp; \
+	} \
+}
+
+	printf ("Initialize array with elements of %s type\n", klass->element_class->name);
+
+	switch (klass->element_class->byval_arg.type) {
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		SWAP (16);
+		break;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		SWAP (32);
+		break;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		SWAP (64);
+		break;
+	}
+#endif
 }
 
 static MonoObject *

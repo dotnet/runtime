@@ -4,6 +4,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/mono-endian.h>
 #include <string.h>
+#include <signal.h>
 #include <ctype.h>
 
 /*

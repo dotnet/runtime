@@ -12,19 +12,19 @@ int main() {
 
 	printf (".text\n.align 4\n.globl main\n.type main,@function\nmain:\n");
 
-	stwu (p, r1, -32, r1);
-	mflr (p, r0);
-	stw  (p, r31, 28, r1);
-	or   (p, r1, r2, r3);
-	mr   (p, r31, r1);
-	lwz  (p, r11, 0, r1);
-	mtlr (p, r0);
-	blr  (p);
-	addi (p, r6, r6, 16);
-
+	ppc_stwu (p, ppc_r1, -32, ppc_r1);
+	ppc_mflr (p, ppc_r0);
+	ppc_stw  (p, ppc_r31, 28, ppc_r1);
+	ppc_or   (p, ppc_r1, ppc_r2, ppc_r3);
+	ppc_mr   (p, ppc_r31, ppc_r1);
+	ppc_lwz  (p, ppc_r11, 0, ppc_r1);
+	ppc_mtlr (p, ppc_r0);
+	ppc_blr  (p);
+	ppc_addi (p, ppc_r6, ppc_r6, 16);
+		     
 	for (cp = code; cp < p; cp++) {
 		printf (".byte 0x%x\n", *cp);
-	}
-
-	return 0;
+	}	     
+		     
+	return 0;    
 }

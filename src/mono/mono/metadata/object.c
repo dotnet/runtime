@@ -9,6 +9,7 @@
 #include <config.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <signal.h>
 #include <string.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/loader.h>
@@ -398,6 +399,7 @@ mono_ldstr (MonoImage *image, guint32 index)
 		mprotect ((void *) ((int) str & ~(PAGESIZE - 1)), len2 + ((int) str & (PAGESIZE - 1)),
 				    PROT_READ | PROT_WRITE | PROT_EXEC);
 		len2 >>= 1;
+		/* printf ("swap %p\n", str); */
 		for (i = 0, s = (guint16 *) str; i < len2; i++, s++) {
 			*s = ((*s & 0xff) << 8) | (*s >> 8);
 		}
