@@ -176,6 +176,11 @@ typedef struct {
 } MonoFlowGraph;
 
 typedef struct {
+	gpointer p;
+	MonoMethod *method;
+} MonoJitNonVirtualCallInfo;
+
+typedef struct {
 	MonoClass *klass;
 	MonoClassField *field;
 } MonoJitFieldInfo;

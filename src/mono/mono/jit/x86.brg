@@ -3,6 +3,7 @@
  *
  * Author:
  *   Dietmar Maurer (dietmar@ximian.com)
+ *   Patrik Torstensson
  *
  * (C) 2001 Ximian, Inc.
  */
@@ -99,6 +100,7 @@ struct _MBTree {
 		MonoJitBranchInfo bi;
 		MonoJitCallInfo call_info;	  
 		MonoJitArgumentInfo arg_info;	  
+		MonoJitNonVirtualCallInfo nonvirt_info;
 	} data;
 };
 
@@ -247,7 +249,35 @@ debug_memcopy (void *dest, const void *src, size_t n);
 				x86_mov_reg_reg (s->code, d1, s1, 4); \
 		}                                                     \
 	} while (0); 
-        
+   
+#define X86_REMOTING_CHECK	tree->left->op != MB_TERM_NOP && tree->right->data.nonvirt_info.method &&	\
+		 (tree->right->data.nonvirt_info.method->klass->marshalbyref || \
+		  tree->right->data.nonvirt_info.method->klass == mono_defaults.object_class)
+
+/* 
+ This macro adds transparant proxy checks for non-virtual methods in a MBR object 
+ and methods that belongs to System::Object.
+*/
+#define X86_REMOTING_CALL do {		\
+		guint8 *br[2]; \
+		x86_push_reg (s->code, lreg);	\
+		x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);	\
+		x86_mov_reg_membase (s->code, lreg, lreg, 0, 4);	\
+		x86_alu_reg_imm (s->code, X86_CMP, lreg, (int)mono_defaults.transparent_proxy_class);	\
+		x86_pop_reg (s->code, lreg);	\
+		br [0] = s->code; x86_branch8 (s->code, X86_CC_NE, 0, FALSE);	\
+		X86_CALL_BEGIN;	\
+		mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, mono_jit_create_remoting_trampoline (tree->right->data.nonvirt_info.method));	\
+		x86_call_code (s->code, 0);	\
+		X86_CALL_END;	\
+		br [1] = s->code; x86_jump8 (s->code, 0);	\
+		x86_patch (br [0], s->code);	\
+		X86_CALL_BEGIN;	\
+		mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->right->data.nonvirt_info.p);	\
+		x86_call_code (s->code, 0);	\
+		X86_CALL_END;	\
+		x86_patch (br [1], s->code);	\
+	} while (0);
 
 %%
 
@@ -2836,13 +2866,19 @@ reg: CALL_I4 (this, ADDR_G) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 	
-	X86_CALL_BEGIN;
+	if (X86_REMOTING_CHECK) 
+	{
+		X86_REMOTING_CALL;
+	} else
+	{	
+		X86_CALL_BEGIN;
 
-	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->right->data.p);
-	x86_call_code (s->code, 0);
+		mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->right->data.p);
+		x86_call_code (s->code, 0);
 
-	X86_CALL_END;
-
+		X86_CALL_END;
+	}
+	
 	mono_assert (tree->reg1 == X86_EAX);
 }
 
@@ -2957,12 +2993,18 @@ stmt: CALL_VOID (this, ADDR_G) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 	
-	X86_CALL_BEGIN;
+	if (X86_REMOTING_CHECK) 
+	{
+		X86_REMOTING_CALL;
+	} else
+	{
+		X86_CALL_BEGIN;
 
-	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->right->data.p);
-	x86_call_code (s->code, 0);
+		mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->right->data.p);
+		x86_call_code (s->code, 0);
 
-	X86_CALL_END;
+		X86_CALL_END;
+	}
 }
 
 stmt: CALL_VOID (this, reg) {
@@ -3658,13 +3700,19 @@ lreg: CALL_I8 (this, ADDR_G) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 	
-	X86_CALL_BEGIN;
+	if (X86_REMOTING_CHECK) 
+	{
+		X86_REMOTING_CALL;
+	} else
+	{
+		X86_CALL_BEGIN;
 
-	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->right->data.p);
-	x86_call_code (s->code, 0);
+		mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->right->data.p);
+		x86_call_code (s->code, 0);
 
-	X86_CALL_END;
-
+		X86_CALL_END;
+	}
+	
 	mono_assert (tree->reg1 == X86_EAX);
 	mono_assert (tree->reg2 == X86_EDX);
 }
@@ -4550,12 +4598,18 @@ freg: CALL_R8 (this, ADDR_G) {
 	if (lreg == treg) 
 		treg = X86_EDX;
 	
-	X86_CALL_BEGIN;
+	if (X86_REMOTING_CHECK) 
+	{
+		X86_REMOTING_CALL;
+	} else
+	{
+		X86_CALL_BEGIN;
 
-	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->right->data.p);
-	x86_call_code (s->code, 0);
+		mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, tree->right->data.p);
+		x86_call_code (s->code, 0);
 
-	X86_CALL_END;
+		X86_CALL_END;
+	}
 }
 
 freg: CALL_R8 (this, INTF_ADDR) {

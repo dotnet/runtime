@@ -1979,10 +1979,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			if (newarr || newstr) {
 
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
+				t2->data.nonvirt_info.method = cm;
 				if (newarr) {
-					t2->data.p = mono_array_new_va;
+					t2->data.nonvirt_info.p = mono_array_new_va;
 				} else {
-					t2->data.p = arch_create_jit_trampoline (cm);
+					t2->data.nonvirt_info.p = arch_create_jit_trampoline (cm);
 				}
 
 				t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, this, t2);
@@ -1998,7 +1999,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			} else {
 
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
-				t2->data.p = arch_create_jit_trampoline (cm);
+				t2->data.nonvirt_info.p = arch_create_jit_trampoline (cm);
+				t2->data.nonvirt_info.method = cm;
 
 				t1 = mono_ctree_new (mp, mono_map_call_type (csig->ret, &svt), this, t2);
 				t1->data.call_info.pad = arg_info [0].pad;
@@ -2247,7 +2249,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				} else {
 					t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
-					t2->data.p = arch_create_jit_trampoline (cm);
+					t2->data.nonvirt_info.p = arch_create_jit_trampoline (cm);
+					t2->data.nonvirt_info.method = cm;
 				}
 	       
 
@@ -4247,6 +4250,10 @@ mono_jit_init (const char *file) {
 	 * this will give a handy assertion fail in
 	 * mono_get_lmf_addr() if any buggy runtime code tries to run
 	 * managed code in this thread.
+	 *
+	 * Note, adding static initializer/objects to thread.cs will 
+	 *       also cause mon_get_lmf_addr assertion
+	 *
 	 */
 	/* mono_thread_start_cb (GetCurrentThreadId (), (gpointer)-1, NULL); */
 
