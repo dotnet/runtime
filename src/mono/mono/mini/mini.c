@@ -3280,12 +3280,19 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * We have the `constrained.' prefix opcode.
 				 */
 				if (constrained_call->valuetype && !cmethod->klass->valuetype) {
+					MonoInst *load;
 					/*
 					 * The type parameter is instantiated as a valuetype,
 					 * but that type doesn't override the method we're
 					 * calling, so we need to box `this'.
+					 * sp [0] is a pointer to the data: we need the value
+					 * in handle_box (), so load it here.
 					 */
-					sp [0] = handle_box (cfg, bblock, sp [0], ip, constrained_call);
+					MONO_INST_NEW (cfg, load, mono_type_to_ldind (&constrained_call->byval_arg));
+					type_to_eval_stack_type (&constrained_call->byval_arg, load);
+					load->cil_code = ip;
+					load->inst_left = sp [0];
+					sp [0] = handle_box (cfg, bblock, load, ip, constrained_call);
 				} else if (!constrained_call->valuetype) {
 					MonoInst *ins;
 
