@@ -3297,7 +3297,43 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				break;
 			}
+			case CEE_MONO_RETOBJ: {
+				MonoType *ret = signature->ret;
+				MonoClass *class;
+				guint32 token;
 
+				++ip;
+				token = read32 (ip);
+				ip += 4;
+
+				class = (MonoClass *)mono_method_get_wrapper_data (method, token);
+
+				sp--;
+
+				g_assert (MONO_TYPE_ISSTRUCT (ret));
+
+				t1 = ctree_create_load (cfg, &class->byval_arg, *sp, &svt, FALSE);
+				t1 = mono_ctree_new (mp, MB_TERM_RET_OBJ, t1, NULL);
+				
+				if (signature->pinvoke)
+					t1->data.i = mono_class_native_size (ret->data.klass, NULL);
+				else
+					t1->data.i = mono_class_value_size (ret->data.klass, NULL);
+
+				t1->last_instr = (ip == (header->code + header->code_size));
+
+				ADD_TREE (t1, cli_addr);
+
+				if (sp > stack) {
+					g_warning ("more values on stack at %s IL_%04x: %d",  
+						   mono_method_full_name (method, TRUE), 
+						   ip - header->code, sp - stack);
+					mono_print_ctree (cfg, sp [-1]);
+					printf ("\n");
+				}
+				superblock_end = TRUE;
+				break;
+			}
 			default:
 				g_error ("Unimplemented opcode at IL_%04x "
 					 "%02x %02x", ip - header->code, MONO_CUSTOM_PREFIX, *ip);
