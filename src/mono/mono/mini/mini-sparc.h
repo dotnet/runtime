@@ -77,9 +77,15 @@ static void * __builtin_return_address(int depth)
 	asm("sub     %i0, 1, %i0");
 	asm("tst     %i0");
 	asm("bne     retAddr_Start");
+#if SPARCV9
+	asm("ldx     [%l0+2159], %l0");
+	asm("retAddr_End:");
+	asm("ldx     [%l0+2167], %i0");
+#else
 	asm("ld      [%l0+56], %l0");
 	asm("retAddr_End:");
 	asm("ld      [%l0+60], %i0");
+#endif
 }
 
 static void * __builtin_frame_address(int depth)
@@ -92,9 +98,15 @@ static void * __builtin_frame_address(int depth)
 	asm("sub     %i0, 1, %i0");
 	asm("tst     %i0");
 	asm("bne     frameAddr_Start");
+#if SPARCV9
+	asm("ldx     [%l0+2159], %l0");
+	asm("frameAddr_End:");
+	asm("ldx     [%l0+2159], %i0");
+#else
 	asm("ld      [%l0+56], %l0");
 	asm("frameAddr_End:");
 	asm("ld      [%l0+56], %i0");
+#endif
 }
 #endif
 
