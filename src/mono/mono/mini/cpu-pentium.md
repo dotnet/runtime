@@ -360,6 +360,7 @@ fcompare: src1:f src2:f clob:a len:9
 lcompare:
 local:
 arg:
+oparglist: src1:b len:10
 outarg: src1:i len:1
 outarg_imm: len:5
 retarg:

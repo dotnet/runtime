@@ -551,6 +551,11 @@ mono_arch_allocate_vars (MonoCompile *m)
 		curinst++;
 	}
 
+	if (sig->call_convention == MONO_CALL_VARARG) {
+		m->sig_cookie = offset;
+		offset += sizeof (gpointer);
+	}
+
 	for (i = 0; i < sig->param_count; ++i) {
 		inst = m->varinfo [curinst];
 		if (inst->opcode != OP_REGVAR) {
@@ -593,7 +598,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 		/* inst->unused indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structure */
-		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype))
+		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
 			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
 		else
 			size = mono_type_size (inst->inst_vtype, &align);
@@ -713,9 +718,15 @@ handle_enum:
 						goto handle_enum;
 					}
 					break;
+				case MONO_TYPE_TYPEDBYREF:
+					stack_size += sizeof (MonoTypedRef);
+					arg->opcode = OP_OUTARG_VT;
+					arg->klass = in->klass;
+					arg->unused = sig->pinvoke;
+					arg->inst_imm = sizeof (MonoTypedRef); 
+					break;
 				default:
-					g_warning ("unknown type 0x%02x\n", type);
-					g_assert_not_reached ();
+					g_error ("unknown type 0x%02x in mono_arch_call_opcode\n", type);
 				}
 			} else {
 				/* the this argument */
@@ -724,6 +735,9 @@ handle_enum:
 		}
 	}
 	/* they need to be pushed in reverse order */
+	/* if the function returns a struct, the called method already does a ret $0x4 */
+	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret))
+		stack_size -= 4;
 	call->args = rev_args;
 	call->stack_usage = stack_size;
 	/* 
@@ -2266,12 +2280,25 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* ensure ins->sreg1 is not NULL */
 			x86_alu_membase_imm (code, X86_CMP, ins->sreg1, 0, 0);
 			break;
+		case OP_ARGLIST: {
+			int hreg = ins->sreg1 == X86_EAX? X86_ECX: X86_EAX;
+			x86_push_reg (code, hreg);
+			x86_lea_membase (code, hreg, X86_EBP, cfg->sig_cookie);
+			x86_mov_membase_reg (code, ins->sreg1, 0, hreg, 4);
+			x86_pop_reg (code, hreg);
+			break;
+		}
 		case OP_FCALL:
 		case OP_LCALL:
 		case OP_VCALL:
 		case OP_VOIDCALL:
 		case CEE_CALL:
 			call = (MonoCallInst*)ins;
+			if (call->signature->call_convention == MONO_CALL_VARARG) {
+				/* FIXME: hack */
+				x86_push_imm (code, call->signature);
+				offset = code - cfg->native_code;
+			}
 			if (ins->flags & MONO_INST_HAS_METHOD)
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
 			else {
@@ -2911,7 +2938,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 				g_warning ("unknown MONO_PATCH_INFO_INTERNAL_METHOD %s", patch_info->data.name);
 				g_assert_not_reached ();
 			}
-			target = mi->wrapper;
+			target = mono_icall_get_wrapper (mi);
 			break;
 		}
 		case MONO_PATCH_INFO_METHOD_JUMP:
@@ -3167,7 +3194,11 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	x86_leave (code);
-	x86_ret (code);
+	/* FIXME: add another check to support stdcall convention here */
+	if (MONO_TYPE_ISSTRUCT (cfg->method->signature->ret))
+		x86_ret_imm (code, 4);
+	else
+		x86_ret (code);
 
 	/* add code to raise exceptions */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {

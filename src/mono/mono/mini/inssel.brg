@@ -989,6 +989,10 @@ stmt: CEE_BR "0" {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+stmt: OP_ARGLIST (reg) {
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 reg: CEE_CALL {
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);

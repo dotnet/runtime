@@ -446,6 +446,7 @@ typedef struct {
 	guint32          stack_usage;
 	guint32          param_area;
 	guint32          frame_reg;
+	gint32           sig_cookie;
 	gboolean         disable_aot;
 	gboolean         disable_ssa;
 	gpointer         debug_info;

@@ -798,6 +798,8 @@ handle_enum:
 			goto handle_enum;
 		}
 		return CEE_LDOBJ;
+	case MONO_TYPE_TYPEDBYREF:
+		return CEE_LDOBJ;
 	default:
 		g_error ("unknown type 0x%02x in type_to_ldind", type->type);
 	}
@@ -849,9 +851,10 @@ handle_enum:
 			goto handle_enum;
 		}
 		return CEE_STOBJ;
-		/* fail right now */
+	case MONO_TYPE_TYPEDBYREF:
+		return CEE_STOBJ;
 	default:
-		g_error ("unknown type %02x in type_to_stind", type->type);
+		g_error ("unknown type 0x%02x in type_to_stind", type->type);
 	}
 	return -1;
 }
@@ -911,6 +914,10 @@ handle_enum:
 			inst->type = STACK_VTYPE;
 			return;
 		}
+	case MONO_TYPE_TYPEDBYREF:
+		inst->klass = mono_defaults.typed_reference_class;
+		inst->type = STACK_VTYPE;
+		return;
 	default:
 		g_error ("unknown type 0x%02x in eval stack type", type->type);
 	}
@@ -1581,8 +1588,10 @@ handle_enum:
 			goto handle_enum;
 		} else
 			return calli? OP_VCALL_REG: virt? OP_VCALLVIRT: OP_VCALL;
+	case MONO_TYPE_TYPEDBYREF:
+		return calli? OP_VCALL_REG: virt? OP_VCALLVIRT: OP_VCALL;
 	default:
-		g_error ("unknown type %02x in ret_type_to_call_opcode", type->type);
+		g_error ("unknown type 0x%02x in ret_type_to_call_opcode", type->type);
 	}
 	return -1;
 }
@@ -1724,6 +1733,10 @@ handle_enum:
 			if (args [i]->type != STACK_VTYPE)
 				return 1;
 			continue;
+		case MONO_TYPE_TYPEDBYREF:
+			if (args [i]->type != STACK_VTYPE)
+				return 1;
+			continue;
 		default:
 			g_error ("unknown type 0x%02x in check_call_signature", simple_type);
 		}
@@ -1844,11 +1857,11 @@ mono_emit_method_call (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *met
 
 inline static int
 mono_emit_method_call_spilled (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *method,  
-		       MonoInst **args, const guint8 *ip, MonoInst *this)
+		       MonoMethodSignature *signature, MonoInst **args, const guint8 *ip, MonoInst *this)
 {
-	MonoCallInst *call = mono_emit_method_call (cfg, bblock, method, method->signature, args, ip, this);
+	MonoCallInst *call = mono_emit_method_call (cfg, bblock, method, signature, args, ip, this);
 
-	return mono_spill_call (cfg, bblock, call, method->signature, method->string_ctor, ip, FALSE);
+	return mono_spill_call (cfg, bblock, call, signature, method->string_ctor, ip, FALSE);
 }
 
 inline static int
@@ -2902,7 +2915,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					}
 #endif
 				} else {
-					fsig = cmethod->signature;
+					fsig = mono_method_get_signature (cmethod, image, token);
 				}
 
 				n = fsig->param_count + fsig->hasthis;
@@ -3065,7 +3078,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins = (MonoInst*)mono_emit_method_call (cfg, bblock, cmethod, fsig, sp, ip, virtual ? sp [0] : NULL);
 					*sp++ = ins;
 				} else {
-					if ((temp = mono_emit_method_call_spilled (cfg, bblock, cmethod, sp, ip, virtual ? sp [0] : NULL)) != -1) {
+					if ((temp = mono_emit_method_call_spilled (cfg, bblock, cmethod, fsig, sp, ip, virtual ? sp [0] : NULL)) != -1) {
 						NEW_TEMPLOAD (cfg, *sp, temp);
 						sp++;
 					}
@@ -3438,6 +3451,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_NEWOBJ: {
 			MonoInst *iargs [2];
+			MonoMethodSignature *fsig;
 			int temp;
 
 			token = read32 (ip + 1);
@@ -3445,10 +3459,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				cmethod = mono_method_get_wrapper_data (method, token);
 			} else
 				cmethod = mono_get_method (image, token, NULL);
+			fsig = mono_method_get_signature (cmethod, image, token);
 
 			mono_class_init (cmethod->klass);
 
-			n = cmethod->signature->param_count;
+			n = fsig->param_count;
 			CHECK_STACK (n);
 
 			/* move the args to allow room for 'this' in the first position */
@@ -3462,13 +3477,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (cmethod->klass->parent == mono_defaults.array_class) {
 				NEW_METHODCONST (cfg, *sp, cmethod);
-				temp = mono_emit_native_call (cfg, bblock, mono_array_new_va, cmethod->signature, sp, ip, FALSE);
+				temp = mono_emit_native_call (cfg, bblock, mono_array_new_va, fsig, sp, ip, FALSE);
 
 			} else if (cmethod->string_ctor) {
 				/* we simply pass a null pointer */
 				NEW_PCONST (cfg, *sp, NULL); 
 				/* now call the string ctor */
-				temp = mono_emit_method_call_spilled (cfg, bblock, cmethod, sp, ip, NULL);
+				temp = mono_emit_method_call_spilled (cfg, bblock, cmethod, fsig, sp, ip, NULL);
 			} else {
 				if (cmethod->klass->valuetype) {
 					iargs [0] = mono_compile_create_var (cfg, &cmethod->klass->byval_arg, OP_LOCAL);
@@ -3494,7 +3509,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				    !g_list_find (dont_inline, cmethod)) {
 					int costs;
 					MonoBasicBlock *ebblock;
-					if ((costs = inline_method (cfg, cmethod, cmethod->signature, bblock, sp, ip, real_offset, dont_inline, &ebblock))) {
+					if ((costs = inline_method (cfg, cmethod, fsig, bblock, sp, ip, real_offset, dont_inline, &ebblock))) {
 
 						ip += 5;
 						real_offset += 5;
@@ -3514,11 +3529,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						break;
 						
 					} else {
-						mono_emit_method_call_spilled (cfg, bblock, cmethod, sp, ip, sp[0]);
+						mono_emit_method_call_spilled (cfg, bblock, cmethod, fsig, sp, ip, sp[0]);
 					}
 				} else {
 					/* now call the actual ctor */
-					mono_emit_method_call_spilled (cfg, bblock, cmethod, sp, ip, sp[0]);
+					mono_emit_method_call_spilled (cfg, bblock, cmethod, fsig, sp, ip, sp[0]);
 				}
 			}
 
@@ -3652,7 +3667,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						inline_costs += costs;
 						break;
 					} else {
-						mono_emit_method_call_spilled (cfg, bblock, stfld_wrapper, iargs, ip, NULL);
+						mono_emit_method_call_spilled (cfg, bblock, stfld_wrapper, stfld_wrapper->signature, iargs, ip, NULL);
 					}
 				} else {
 					MonoInst *store;
@@ -3716,7 +3731,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						inline_costs += costs;
 						break;
 					} else {
-						temp = mono_emit_method_call_spilled (cfg, bblock, ldfld_wrapper, iargs, ip, NULL);
+						temp = mono_emit_method_call_spilled (cfg, bblock, ldfld_wrapper, ldfld_wrapper->signature, iargs, ip, NULL);
 						if (*ip == CEE_LDFLDA) {
 							/* not sure howto handle this */
 							NEW_TEMPLOADA (cfg, *sp, temp);
@@ -4397,9 +4412,24 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 		case CEE_PREFIX1: {
 			switch (ip [1]) {
-			case CEE_ARGLIST:
-				g_error ("opcode 0xfe 0x%02x not handled", ip [1]);
+			case CEE_ARGLIST: {
+				/* somewhat similar to LDTOKEN */
+				MonoInst *addr, *vtvar;
+				CHECK_STACK (1);
+				vtvar = mono_compile_create_var (cfg, &mono_defaults.argumenthandle_class->byval_arg, OP_LOCAL); 
+
+				NEW_TEMPLOADA (cfg, addr, vtvar->inst_c0);
+				addr->cil_code = ip;
+				MONO_INST_NEW (cfg, ins, OP_ARGLIST);
+				ins->cil_code = ip;
+				ins->inst_left = addr;
+				MONO_ADD_INS (bblock, ins);
+				NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
+				ins->cil_code = ip;
+				*sp++ = ins;
+				ip += 2;
 				break;
+			}
 			case CEE_CEQ:
 			case CEE_CGT:
 			case CEE_CGT_UN:
