@@ -31,7 +31,6 @@ struct StartInfo
 {
 	guint32 (*func)(void *);
 	MonoThread *obj;
-	gboolean fake_thread;
 	void *this;
 	MonoDomain *domain;
 };
@@ -148,7 +147,6 @@ static guint32 start_wrapper(void *data)
 	guint32 (*start_func)(void *);
 	void *this;
 	guint32 tid;
-	MonoThread *thread;
 	
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Start wrapper");
@@ -173,26 +171,8 @@ static guint32 start_wrapper(void *data)
 	 */
 	mono_thread_new_init (tid, &tid, start_func);
 
-	if(start_info->fake_thread) {
-		thread = (MonoThread *)mono_object_new (start_info->domain, mono_defaults.thread_class);
-
-		thread->handle=start_info->obj->handle;
-		thread->tid=tid;
-	} else {
-		thread=start_info->obj;
-	}
-	
-	TlsSetValue (current_object_key, thread);
-
-	handle_store(thread);
-
-	if(start_info->fake_thread) {
-		/* This has to happen _after_ handle_store(), because
-		 * the fake thread is still in the threads hash until
-		 * this call.
-		 */
-		g_free (start_info->obj);
-	}
+	TlsSetValue (current_object_key, start_info->obj);
+	handle_store(start_info->obj);
 
 	mono_profiler_thread_start (tid);
 
@@ -228,17 +208,12 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	struct StartInfo *start_info;
 	guint32 tid;
 	
-	/* This is just a temporary allocation.  The object will be
-	 * created properly with mono_object_new() inside
-	 * start_wrapper().  (This is so the main thread can be
-	 * created without needing to run any managed code.)
-	 */
-	thread=g_new0 (MonoThread, 1);
+	thread=(MonoThread *)mono_object_new (domain,
+					      mono_defaults.thread_class);
 
 	start_info=g_new0 (struct StartInfo, 1);
 	start_info->func = func;
 	start_info->obj = thread;
-	start_info->fake_thread = TRUE;
 	start_info->domain = domain;
 	start_info->this = arg;
 		
@@ -338,7 +313,6 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		start_info->func = start_func;
 		start_info->this = delegate;
 		start_info->obj = this;
-		start_info->fake_thread = FALSE;
 		start_info->domain = mono_domain_get ();
 
 		thread=CreateThread(NULL, 0, start_wrapper, start_info,
