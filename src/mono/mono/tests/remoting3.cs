@@ -102,7 +102,7 @@ class Test {
 		RemoteDelegate1 d1 = new RemoteDelegate1 (o.Add);
 
 		IAsyncResult ar = d1.BeginInvoke (2, out res, 3, null, null);
-		MyStruct myres = d1.EndInvoke (ar);
+		MyStruct myres = d1.EndInvoke (out res, ar);
 
 		Console.WriteLine ("Result: " + myres.a + " " +
 				   myres.b + " " + myres.c +  " " + res);
