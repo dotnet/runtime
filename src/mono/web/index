@@ -80,9 +80,108 @@
   </tr>
 </table>
 
-@item Jul 15th, 2002
+	Mono at the O'Reilly Open Source Conference (<a
+	href="http://conferences.oreillynet.com/cs/os2002/view/e_sess/2994">here</a>
+	and <a
+	href="http://conferences.oreillynet.com/cs/os2002/view/e_sess/2996">here</a>)
 
-	More progress on the ASP.NET front: user defined controls are now being rendered. 
+@item Jul 17th, 2002
+
+	More progress on the ASP.NET front: user defined controls are
+	now being rendered, as well as many of the sample programs
+	from www.asp.net.  Gonzalo's work can be found on module XSP
+	(this implements the .aspx compiler).
+
+	Sergey Chaban has got Gtk# working on Windows, you can see
+	some screenshots: <a href="sshots/Gtksharp-1.jpg">sample apps</a> and
+	<a href="sshots/Gtksharp-2.jpg">running with a russian charset</a>.
+
+@item Jul 16th, 2002
+
+	Paolo today got mono to complete host itself on Linux.  This
+	means that we can now compile the `corlib' using the Mono C#
+	compiler and the Mono runtime.
+
+	Compiling the corlib was rather tricky, because the types that
+	the compiler uses during the compilation process will come
+	from the source code it is compiling.  
+
+	After a few months of work, we have finally fleshed out all
+	the remaining bugs.  Now the next step is to update the makefiles
+	to compile with the Mono tool-chain.
+
+	A recapitulation:
+	<ul>
+		* The Mono C# compiler was able to compile itself on December 28th, 2001.
+		  The resulting image contained errors though.
+
+		* The Mono C# compiler was able to self-compile in on
+		  January 3rd, 2002.  Becoming a self-hosting compiler on Windows.
+
+		* The Mono runtime matured enough by March 12, 2002 that it
+		  was able to bootstrap the Mono C# compiler on Linux using our interpreter.
+		  This means that our development tool was self sufficient.
+
+		* On March 26th, the JIT engine was fixed, so we could use this to
+		  run the compiler on Linux.
+
+		* Martin fixed the remaining bugs in the compiler that stopped it from
+	 	  compiling the `corlib'.  The resuling image still contained errors though.
+
+		* On July 8th, Radek got the PowerPC port to bootstrap
+		  the C# compiler.  This is important, because it exposed
+	  	  various tricky issues in a big-endian system.
+
+		* Today: we can bootstrap the compiler using libraries
+		  and the compiler compiled with itself on Linux.  The process is complete.
+	</ul>
+
+	In the meantime, Dietmar has quietly implemented the remaining
+	pieces of Marshalling in the Mono runtime.   This is very
+	important for the Gtk# guys to move on with their bindings.
+
+	To make things more interesting, he replaced most of the
+	architecture specific code generation for trampolines
+	(delegates, invocations, function and p/invoke trampolines) to
+	use CIL.  This CIL is then compiled on the flight by the JIT
+	Compiler engine.  By doing this, we have reduced the burden to
+	port the JITer to new architectures, and that our trampoline
+	code is cross platform.
+
+@item Looking for volunteers
+
+	We are looking for volunteers to help complete various pieces
+	of Mono and help move the project forward, we need
+	contributions to:
+
+	<ul>
+		* More tests to the existing class libraries.
+	
+		* Finish existing class libraries, check our <a
+		href="class-status.html">class status</a> pages to see
+		all the missing things.  There are open tasks all over
+		the place: XML, Database access, enterprise services,
+		configuration, ASP.NET, Drawing APIs, and more.
+
+		* Since we have now ASP.NET running, we would like to 
+		create an ASP.NET application to maintain our class
+		library documentation.
+
+		We have some special needs (read them <a
+	 	href="classlib-doc.html">here</a>).     There is a
+		prototype written using Windows.Forms, but we believe
+		it will be faster to have this done using ASP.NET (and
+		it is also a nice way of stress testing it).
+
+		* Support for the VB runtime: we need contributions
+		to make our VB runtime mature enough to host
+		applications compiled with the VB.NET to run with
+		Mono.
+
+		* We need people to help write the documentation: you
+		can start editing our XML files by hand, and once we
+		have the ASP.NET tool, upgrade to that. 
+	</ul> 
 
 @item Jul 9th, 2002
 
