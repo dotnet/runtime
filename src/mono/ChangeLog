@@ -1,3 +1,10 @@
+2004-06-11  Raja R Harinath  <rharinath@novell.com>
+
+	* Makefile.am (populate-runtime-subdir): New target.  Does a
+	controlled "make install" in the 'mcs/' directory to populate the
+	'runtime' directory.
+	(fasterstrap): Use it.
+
 2004-06-10  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am ($(monoone_DATA),$(monotwo_DATA),$(monobins_DATA)):

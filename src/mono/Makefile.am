@@ -58,8 +58,20 @@ faststrap: tmpinst-mcs-short-build
 	$(MAKE) mono-do-runtime-only
 	$(MAKE) fasterstrap
 
+.PHONY: populate-runtime-subdir
+## *** warning ***: tested only with GNU make
+populate-runtime-subdir:
+	srcdir=`cd $(srcdir) && pwd`; tmpinst=`pwd`/$(tmpinst) ; \
+	cd $(mcs_topdir) \
+	&& $(MAKE) PROGRAM_INSTALL_DIR=$$srcdir/runtime LIBRARY_INSTALL_DIR=$$srcdir/runtime/net_1_1 prefix=$$tmpinst/prefix PROFILE=default install \
+	&& $(MAKE) PROGRAM_INSTALL_DIR=$$srcdir/runtime LIBRARY_INSTALL_DIR=$$srcdir/runtime/net_2_0 prefix=$$tmpinst/prefix PROFILE=net_2_0 install
+	test -z "`find $(tmpinst)/prefix -name '*.dll'`"
+	test -z "`find $(tmpinst)/prefix -name '*.exe'`"
+	set fnord `find $(tmpinst)/prefix -type f | wc -l` ; test "$$2" = 9
+	rm -rf $(tmpinst)/prefix
+
 fasterstrap: tmpinst-mcs-full-build
-	rm -f $(top_srcdir)/runtime/*/*.dll $(top_srcdir)/runtime/*.exe
+	$(MAKE) populate-runtime-subdir
 	$(MAKE)
 
 bootstrap-clean: clean mcs-do-clean-profiles
@@ -80,10 +92,10 @@ monolite-bootstrap: tmpinst-monolite mono-do-runtime-only
 tmpinst-mcs-basic-build: mcs-do-basic-build tmpinst-dir
 	mv -f $(MCS_BASIC_FILES) $(tmpinst)/lib
 
-tmpinst-mcs-short-build: mcs-do-short-build
+tmpinst-mcs-short-build: mcs-do-short-build tmpinst-dir
 	mv -f $(MCS_FILES) $(tmpinst)/lib
 
-tmpinst-mcs-full-build: mcs-do-full-build
+tmpinst-mcs-full-build: mcs-do-full-build tmpinst-dir
 	cp -f $(MCS_FILES) $(tmpinst)/lib
 
 tmpinst-monolite: tmpinst-dir
