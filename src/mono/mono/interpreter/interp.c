@@ -233,7 +233,7 @@ get_virtual_method (MonoDomain *domain, MonoMethod *m, stackval *objs)
 	vtable = (MonoMethod **)klass->vtable;
 
 	if (m->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		res = *(MonoMethod**)((char*)obj->vtable->interface_offsets [m->klass->interface_id] + (m->slot<<2));
+		res = ((MonoMethod **)obj->vtable->interface_offsets [m->klass->interface_id]) [m->slot];
 	} else {
 		res = vtable [m->slot];
 	}
@@ -3176,6 +3176,7 @@ array_constructed:
 		CASE (CEE_LDELEMA) {
 			MonoArray *o;
 			guint32 esize, token;
+			mono_u aindex;
 			
 			++ip;
 			token = read32 (ip);
@@ -3187,14 +3188,15 @@ array_constructed:
 
 			g_assert (MONO_CLASS_IS_ARRAY (o->obj.vtable->klass));
 			
-			if (sp [1].data.nati >= mono_array_length (o))
+			aindex = sp [1].type == VAL_I32? sp [1].data.i: sp [1].data.nati;
+			if (aindex >= mono_array_length (o))
 				THROW_EX (mono_get_exception_index_out_of_range (), ip - 5);
 
 			/* check the array element corresponds to token */
 			esize = mono_array_element_size (o->obj.vtable->klass);
 			
 			sp->type = VAL_MP;
-			sp->data.p = mono_array_addr_with_size (o, esize, sp [1].data.i);
+			sp->data.p = mono_array_addr_with_size (o, esize, aindex);
 			sp->data.vt.klass = o->obj.vtable->klass->element_class;
 
 			++sp;
@@ -3223,7 +3225,7 @@ array_constructed:
 
 			g_assert (MONO_CLASS_IS_ARRAY (o->obj.vtable->klass));
 			
-			aindex = sp [1].data.nati;
+			aindex = sp [1].type == VAL_I32? sp [1].data.i: sp [1].data.nati;
 			if (aindex >= mono_array_length (o))
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
       		
@@ -3306,7 +3308,7 @@ array_constructed:
 			ac = o->obj.vtable->klass;
 			g_assert (MONO_CLASS_IS_ARRAY (ac));
 		    
-			aindex = sp [1].data.nati;
+			aindex = sp [1].type == VAL_I32? sp [1].data.i: sp [1].data.nati;
 			if (aindex >= mono_array_length (o))
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
 
@@ -4494,6 +4496,16 @@ mono_runtime_install_handlers (void)
 	/* FIXME: anything to do here? */
 }
 
+static void
+quit_function (MonoDomain *domain, gpointer user_data)
+{
+	mono_profiler_shutdown ();
+	
+	mono_runtime_cleanup (domain);
+	mono_domain_unload (domain, TRUE);
+
+}
+
 int 
 main (int argc, char *argv [])
 {
@@ -4568,6 +4580,7 @@ main (int argc, char *argv [])
 
 	mono_install_handler (interp_ex_handler);
 	mono_install_stack_walk (interp_walk_stack);
+	mono_runtime_install_cleanup (quit_function);
 
 	InitializeCriticalSection (&metadata_lock);
 	domain = mono_init (file);
@@ -4581,11 +4594,8 @@ main (int argc, char *argv [])
 	
 	mono_runtime_exec_managed_code (domain, main_thread_handler,
 					&main_args);
-	
-	mono_profiler_shutdown ();
-	
-	mono_runtime_cleanup (domain);
-	mono_domain_unload (domain, TRUE);
+
+	quit_function (domain, NULL);
 
 	/* Get the return value from System.Environment.ExitCode */
 	retval=mono_environment_exitcode_get ();
