@@ -15,6 +15,7 @@ using System.Xml;
 class Write {
 
         static Contributor [] list;
+	static public XmlNamespaceManager nsmgr;
 
         static void Main (string [] args)
         {
@@ -28,7 +29,9 @@ class Write {
                 XmlDocument document = new XmlDocument ();
                 document.Load (input);
 
-                XmlNodeList contributors = document.SelectNodes ("/contributors/contributor");
+		nsmgr = new XmlNamespaceManager (document.NameTable);
+		nsmgr.AddNamespace ("t", "http://go-mono.org/team.xsd");
+                XmlNodeList contributors = document.SelectNodes ("/t:contributors/t:contributor", nsmgr);
                 list = new Contributor [contributors.Count];
 
                 Page p = new Page ();
@@ -82,10 +85,10 @@ class Contributor {
 
                 name         = GetName (node);
                 image        = GetImage (node);
-                email        = GetField (node, "e-mail");
-                location     = GetField (node, "location");
-                organization = GetField (node, "organization");
-                description  = GetField (node, "description");
+                email        = GetField (node, "t:e-mail");
+                location     = GetField (node, "t:location");
+                organization = GetField (node, "t:organization");
+                description  = GetField (node, "t:description");
                 tasks        = GetTasks (node);
 
                 this.document = document;
@@ -98,7 +101,7 @@ class Contributor {
 
         public static string GetImage (XmlNode node)
         {
-                string result = GetField (node, "image");
+                string result = GetField (node, "t:image");
 
                 if (result == String.Empty)
                         return "none.png";
@@ -109,7 +112,7 @@ class Contributor {
 
         public static string GetField (XmlNode node, string selector)
         {
-                XmlNode result = node.SelectSingleNode (selector);
+                XmlNode result = node.SelectSingleNode (selector, Write.nsmgr);
 
                 if (result == null)
                         return String.Empty;
@@ -119,15 +122,15 @@ class Contributor {
 
         public static Name GetName (XmlNode node)
         {
-                string first_name = GetField (node, "name/first-name");
-                string last_name = GetField (node, "name/last-name");
+                string first_name = GetField (node, "t:name/t:first-name");
+                string last_name = GetField (node, "t:name/t:last-name");
 
                 return new Name (first_name, last_name);
         }
 
         public static string [] GetTasks (XmlNode node)
         {
-                XmlNodeList nodes = node.SelectNodes ("tasks/task");
+                XmlNodeList nodes = node.SelectNodes ("t:tasks/t:task", Write.nsmgr);
 
                 string [] result = new string [nodes.Count];
 
