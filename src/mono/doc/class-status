@@ -23,12 +23,9 @@
 This is a list of pending classes, and links to their documentation on MSDN.Microsoft.com<p><p>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemActivatorClassTopic.asp">System.Activator</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemAppDomainSetupClassTopic.asp">System.AppDomainSetup</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemAppDomainUnloadedExceptionClassTopic.asp">System.AppDomainUnloadedException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemArgIteratorClassTopic.asp">System.ArgIterator</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemAssemblyLoadEventHandlerClassTopic.asp">System.AssemblyLoadEventHandler</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemCannotUnloadAppDomainExceptionClassTopic.asp">System.CannotUnloadAppDomainException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemCharEnumeratorClassTopic.asp">System.CharEnumerator</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemContextMarshalExceptionClassTopic.asp">System.ContextMarshalException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemCrossAppDomainDelegateClassTopic.asp">System.CrossAppDomainDelegate</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDBNullClassTopic.asp">System.DBNull</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsDebuggerClassTopic.asp">System.Diagnostics.Debugger</a><br>
@@ -40,8 +37,6 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsSymbolStoreSymLanguageTypeClassTopic.asp">System.Diagnostics.SymbolStore.SymLanguageType</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsSymbolStoreSymLanguageVendorClassTopic.asp">System.Diagnostics.SymbolStore.SymLanguageVendor</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDllNotFoundExceptionClassTopic.asp">System.DllNotFoundException</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemEntryPointNotFoundExceptionClassTopic.asp">System.EntryPointNotFoundException</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemFieldAccessExceptionClassTopic.asp">System.FieldAccessException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationCompareInfoClassTopic.asp">System.Globalization.CompareInfo</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationHebrewCalendarClassTopic.asp">System.Globalization.HebrewCalendar</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationHijriCalendarClassTopic.asp">System.Globalization.HijriCalendar</a><br>
@@ -61,8 +56,6 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemIOPathTooLongExceptionClassTopic.asp">System.IO.PathTooLongException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemLoaderOptimizationClassTopic.asp">System.LoaderOptimization</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemLoaderOptimizationAttributeClassTopic.asp">System.LoaderOptimizationAttribute</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemMethodAccessExceptionClassTopic.asp">System.MethodAccessException</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemMissingFieldExceptionClassTopic.asp">System.MissingFieldException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemMTAThreadAttributeClassTopic.asp">System.MTAThreadAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemObsoleteAttributeClassTopic.asp">System.ObsoleteAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemPlatformNotSupportedExceptionClassTopic.asp">System.PlatformNotSupportedException</a><br>
@@ -97,13 +90,10 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemReflectionTargetParameterCountExceptionClassTopic.asp">System.Reflection.TargetParameterCountException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemReflectionTypeDelegatorClassTopic.asp">System.Reflection.TypeDelegator</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemResolveEventArgsClassTopic.asp">System.ResolveEventArgs</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemResourcesMissingManifestResourceExceptionClassTopic.asp">System.Resources.MissingManifestResourceException</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemResourcesNeutralResourcesLanguageAttributeClassTopic.asp">System.Resources.NeutralResourcesLanguageAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemResourcesResourceManagerClassTopic.asp">System.Resources.ResourceManager</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemResourcesResourceReaderClassTopic.asp">System.Resources.ResourceReader</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemResourcesResourceSetClassTopic.asp">System.Resources.ResourceSet</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemResourcesResourceWriterClassTopic.asp">System.Resources.ResourceWriter</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemResourcesSatelliteContractVersionAttributeClassTopic.asp">System.Resources.SatelliteContractVersionAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeCompilerServicesAccessedThroughPropertyAttributeClassTopic.asp">System.Runtime.CompilerServices.AccessedThroughPropertyAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeCompilerServicesCallConvCdeclClassTopic.asp">System.Runtime.CompilerServices.CallConvCdecl</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeCompilerServicesCallConvFastcallClassTopic.asp">System.Runtime.CompilerServices.CallConvFastcall</a><br>
@@ -400,41 +390,23 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyTripleDESCryptoServiceProviderClassTopic.asp">System.Security.Cryptography.TripleDESCryptoServiceProvider</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyX509CertificatesX509CertificateClassTopic.asp">System.Security.Cryptography.X509Certificates.X509Certificate</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityNamedPermissionSetClassTopic.asp">System.Security.NamedPermissionSet</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsCodeAccessSecurityAttributeClassTopic.asp">System.Security.Permissions.CodeAccessSecurityAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsEnvironmentPermissionClassTopic.asp">System.Security.Permissions.EnvironmentPermission</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsEnvironmentPermissionAttributeClassTopic.asp">System.Security.Permissions.EnvironmentPermissionAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsFileDialogPermissionClassTopic.asp">System.Security.Permissions.FileDialogPermission</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsFileDialogPermissionAccessClassTopic.asp">System.Security.Permissions.FileDialogPermissionAccess</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsFileDialogPermissionAttributeClassTopic.asp">System.Security.Permissions.FileDialogPermissionAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsFileIOPermissionClassTopic.asp">System.Security.Permissions.FileIOPermission</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsFileIOPermissionAttributeClassTopic.asp">System.Security.Permissions.FileIOPermissionAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsIsolatedStorageFilePermissionClassTopic.asp">System.Security.Permissions.IsolatedStorageFilePermission</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsIsolatedStorageFilePermissionAttributeClassTopic.asp">System.Security.Permissions.IsolatedStorageFilePermissionAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsIsolatedStoragePermissionClassTopic.asp">System.Security.Permissions.IsolatedStoragePermission</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsIsolatedStoragePermissionAttributeClassTopic.asp">System.Security.Permissions.IsolatedStoragePermissionAttribute</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsPermissionSetAttributeClassTopic.asp">System.Security.Permissions.PermissionSetAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsPrincipalPermissionClassTopic.asp">System.Security.Permissions.PrincipalPermission</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsPrincipalPermissionAttributeClassTopic.asp">System.Security.Permissions.PrincipalPermissionAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsPublisherIdentityPermissionClassTopic.asp">System.Security.Permissions.PublisherIdentityPermission</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsPublisherIdentityPermissionAttributeClassTopic.asp">System.Security.Permissions.PublisherIdentityPermissionAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsReflectionPermissionClassTopic.asp">System.Security.Permissions.ReflectionPermission</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsReflectionPermissionAttributeClassTopic.asp">System.Security.Permissions.ReflectionPermissionAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsRegistryPermissionClassTopic.asp">System.Security.Permissions.RegistryPermission</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsRegistryPermissionAttributeClassTopic.asp">System.Security.Permissions.RegistryPermissionAttribute</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsSecurityAttributeClassTopic.asp">System.Security.Permissions.SecurityAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsSecurityPermissionClassTopic.asp">System.Security.Permissions.SecurityPermission</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsSecurityPermissionAttributeClassTopic.asp">System.Security.Permissions.SecurityPermissionAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsSiteIdentityPermissionClassTopic.asp">System.Security.Permissions.SiteIdentityPermission</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsSiteIdentityPermissionAttributeClassTopic.asp">System.Security.Permissions.SiteIdentityPermissionAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsStrongNameIdentityPermissionClassTopic.asp">System.Security.Permissions.StrongNameIdentityPermission</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsStrongNameIdentityPermissionAttributeClassTopic.asp">System.Security.Permissions.StrongNameIdentityPermissionAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsStrongNamePublicKeyBlobClassTopic.asp">System.Security.Permissions.StrongNamePublicKeyBlob</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsUIPermissionClassTopic.asp">System.Security.Permissions.UIPermission</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsUIPermissionAttributeClassTopic.asp">System.Security.Permissions.UIPermissionAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsUrlIdentityPermissionClassTopic.asp">System.Security.Permissions.UrlIdentityPermission</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsUrlIdentityPermissionAttributeClassTopic.asp">System.Security.Permissions.UrlIdentityPermissionAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsZoneIdentityPermissionClassTopic.asp">System.Security.Permissions.ZoneIdentityPermission</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPermissionsZoneIdentityPermissionAttributeClassTopic.asp">System.Security.Permissions.ZoneIdentityPermissionAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyAllMembershipConditionClassTopic.asp">System.Security.Policy.AllMembershipCondition</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyApplicationDirectoryClassTopic.asp">System.Security.Policy.ApplicationDirectory</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyApplicationDirectoryMembershipConditionClassTopic.asp">System.Security.Policy.ApplicationDirectoryMembershipCondition</a><br>
@@ -469,6 +441,5 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemThreadStaticAttributeClassTopic.asp">System.ThreadStaticAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemTimeZoneClassTopic.asp">System.TimeZone</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemTypedReferenceClassTopic.asp">System.TypedReference</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemTypeUnloadedExceptionClassTopic.asp">System.TypeUnloadedException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemUnhandledExceptionEventHandlerClassTopic.asp">System.UnhandledExceptionEventHandler</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemWeakReferenceClassTopic.asp">System.WeakReference</a><br>

@@ -23,6 +23,21 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Jan 21, 2002
+
+	Dick has got a simple web server running with Mono (`MIS: Mono
+	Internet Server') that is mostly used to test our IO layer, a
+	<a href="http://primates.ximian.com/~miguel/dick-mis-server.png">screenshot</a>
+
+	Paolo and Dietmar are busy making our runtime self sufficient on 
+	non-Windows platforms.  
+
+	C# compiler front:  A lot of focus in the past weeks after
+	the C# became self hosting has been in making the compiler a useful
+	tool for development: improve error handling, provide better error
+	reports, fixing all known bugs, and finally profiling of the compiler
+	has begun.
+
 ** Jan 8, 2002
 
 	Our compiler has been self-supporting since January 3rd.  In
