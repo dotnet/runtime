@@ -137,6 +137,8 @@ ldstr_hash (const char* str)
 static gboolean
 ldstr_equal (const char *str1, const char *str2) {
 	int len, len2;
+	if (str1 == str2)
+		return TRUE;
 	len = mono_metadata_decode_blob_size (str1, NULL) - 1;
 	len2 = mono_metadata_decode_blob_size (str2, NULL) - 1;
 	if (len != len2)
