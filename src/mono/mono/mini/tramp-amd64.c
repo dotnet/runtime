@@ -401,7 +401,11 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDo
 	ji = g_new0 (MonoJitInfo, 1);
 
 	mono_domain_lock (domain);
-	ji->code_start = mono_code_manager_reserve (domain->code_mp, code - buf);
+	/* 
+	 * FIXME: Changing the size to code - buf causes strange crashes during
+	 * mcs bootstrap.
+	 */
+	ji->code_start = mono_code_manager_reserve (domain->code_mp, TRAMPOLINE_SIZE);
 	ji->code_size = code - buf;
 	mono_domain_unlock (domain);
 
