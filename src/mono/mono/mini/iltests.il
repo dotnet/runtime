@@ -198,4 +198,20 @@
         IL_0:  ldc.i4.5
 		ret
     }
+
+	.method public static int32 test_0_conv_ovf_i8_neg () il managed {
+		.maxstack 16
+
+		ldc.i4.m1
+		conv.ovf.i8
+		conv.i4
+		ldc.i4.m1
+		beq L_OK
+		ldc.i4.1
+		ret
+	L_OK:
+		ldc.i4.0
+		ret
+	}		
+		
 }
