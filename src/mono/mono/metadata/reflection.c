@@ -100,7 +100,8 @@ const unsigned char table_sizes [64] = {
 
 /**
  * These macros can be used to allocate long living atomic data so it won't be
- * tracked by the garbage collector.
+ * tracked by the garbage collector. We use libgc because it's apparently faster
+ * than g_malloc.
  */
 #ifdef HAVE_BOEHM_GC
 #define ALLOC_ATOMIC(size) GC_MALLOC_ATOMIC (size)
@@ -130,7 +131,10 @@ alloc_table (MonoDynamicTable *table, guint nrows)
 			else
 				table->alloc_rows *= 2;
 
-		table->values = REALLOC_ATOMIC (table->values, (table->alloc_rows) * table->columns * sizeof (guint32));
+		if (table->values)
+			table->values = REALLOC_ATOMIC (table->values, (table->alloc_rows) * table->columns * sizeof (guint32));
+		else
+			table->values = ALLOC_ATOMIC ((table->alloc_rows) * table->columns * sizeof (guint32));
 	}
 }
 
@@ -143,7 +147,10 @@ make_room_in_stream (MonoDynamicStream *stream, int size)
 		else
 			stream->alloc_size *= 2;
 	}
-	stream->data = REALLOC_ATOMIC (stream->data, stream->alloc_size);
+	if (stream->data)
+		stream->data = REALLOC_ATOMIC (stream->data, stream->alloc_size);
+	else
+		stream->data = ALLOC_ATOMIC (stream->alloc_size);
 }	
 
 static guint32
@@ -5788,6 +5795,7 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token)
 	}
 	return result;
 }
+
 
 
 
