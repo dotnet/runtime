@@ -340,16 +340,14 @@ static gboolean unref_handle (ChannelData *channel_data, guint32 handle)
 		   channel_data->open_handles[handle]);
 #endif
 
-	if(channel_data->open_handles[handle]==0) {
-		/* This client has released the handle */
-		destroy=TRUE;
-	}
-	
-	if(_wapi_shared_data[segment]->handles[idx].ref==0) {
+	if (_wapi_shared_data[segment]->handles[idx].ref == 0) {
 		gboolean was_file;
 		dev_t device = 0;
 		ino_t inode = 0;
 		
+		/* This client has released the handle */
+		destroy=TRUE;
+	
 		if (channel_data->open_handles[handle]!=0) {
 			g_warning (G_GNUC_PRETTY_FUNCTION ": per-process open_handles mismatch, set to %d, should be 0", 
 					channel_data->open_handles[handle]);
