@@ -4,6 +4,7 @@ void dump_table_assembly     (MonoMetadata *m);
 void dump_table_assemblyref  (MonoMetadata *m);
 void dump_table_class_layout (MonoMetadata *m);
 void dump_table_constant     (MonoMetadata *m);
+void dump_table_customattr   (MonoMetadata *m);
 void dump_table_property     (MonoMetadata *m);
 void dump_table_property_map (MonoMetadata *m);
 void dump_table_event        (MonoMetadata *m);

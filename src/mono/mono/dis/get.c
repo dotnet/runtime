@@ -473,7 +473,7 @@ dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method, in
 	g_string_sprintfa (result, " %s %s(", retval, name);
 	g_free (retval);
 	for (i = 0; i < method->param_count; ++i) {
-		if (param_index) {
+		if (param_index && param_index < m->tables [MONO_TABLE_PARAM].rows) {
 			mono_metadata_decode_row (&m->tables [MONO_TABLE_PARAM], param_index - 1, pcols, MONO_PARAM_SIZE);
 			name = mono_metadata_string_heap (m, pcols [MONO_PARAM_NAME]);
 			method->params [i]->attrs = pcols [MONO_PARAM_FLAGS];
@@ -801,6 +801,10 @@ static map_t field_flags_map [] = {
 	{ FIELD_ATTRIBUTE_NOT_SERIALIZED,      "notserialized " },
 	{ FIELD_ATTRIBUTE_SPECIAL_NAME,        "specialname " },
 	{ FIELD_ATTRIBUTE_PINVOKE_IMPL,        "FIXME:pinvokeimpl " },
+	{ FIELD_ATTRIBUTE_RT_SPECIAL_NAME,        "rtspecialname " },
+	{ FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL,        "hasfieldmarshal " },
+	{ FIELD_ATTRIBUTE_HAS_DEFAULT,        "hasdefault " },
+	{ FIELD_ATTRIBUTE_HAS_FIELD_RVA,        "hasfieldrva " },
 	{ 0, NULL }
 };
 

@@ -14,6 +14,8 @@
 #include "util.h"
 #include "dump.h"
 #include "get.h"
+#include "mono/metadata/loader.h"
+#include "mono/metadata/class.h"
 
 void
 dump_table_assembly (MonoMetadata *m)
@@ -145,12 +147,14 @@ dump_table_field (MonoMetadata *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
 	MonoTableInfo *td = &m->tables [MONO_TABLE_TYPEDEF];
-	int i, current_type;
+	MonoTableInfo *fl = &m->tables [MONO_TABLE_FIELDLAYOUT];
+	MonoTableInfo *rva = &m->tables [MONO_TABLE_FIELDRVA];
+	int i, current_type, offset_row, rva_row;
 	guint32 first_m, last_m;
 
 	fprintf (output, "Field Table (1..%d)\n", t->rows);
 	
-	current_type = 1;
+	rva_row = offset_row = current_type = 1;
 	last_m = first_m = 1;
 	for (i = 1; i <= t->rows; i++){
 		guint32 cols [MONO_FIELD_SIZE];
@@ -178,6 +182,14 @@ dump_table_field (MonoMetadata *m)
 			 flags);
 		g_free (sig);
 		g_free (flags);
+		if (offset_row <= fl->rows && (mono_metadata_decode_row_col (fl, offset_row - 1, MONO_FIELD_LAYOUT_FIELD) == i)) {
+			fprintf (output, "\texplicit offset: %d\n", mono_metadata_decode_row_col (fl, offset_row - 1, MONO_FIELD_LAYOUT_OFFSET));
+			offset_row ++;
+		}
+		if (rva_row <= rva->rows && (mono_metadata_decode_row_col (rva, rva_row - 1, MONO_FIELD_RVA_FIELD) == i)) {
+			fprintf (output, "\trva: %d\n", mono_metadata_decode_row_col (rva, rva_row - 1, MONO_FIELD_RVA_RVA));
+			rva_row ++;
+		}
 	}
 	fprintf (output, "\n");
 }
@@ -188,6 +200,8 @@ dump_table_memberref (MonoMetadata *m)
 	MonoTableInfo *t = &m->tables [MONO_TABLE_MEMBERREF];
 	int i, kind, idx;
 	char *ks, *x, *xx;
+	char *sig;
+	const char *blob;
 
 	fprintf (output, "MemberRef Table (0..%d)\n", t->rows);
 
@@ -219,16 +233,23 @@ dump_table_memberref (MonoMetadata *m)
 		default:
 			g_error ("Unknown tag: %d\n", kind);
 		}
-		
+		blob = mono_metadata_blob_heap (m, cols [MONO_MEMBERREF_SIGNATURE]);
+		mono_metadata_decode_blob_size (blob, &blob);
+		if (*blob == 0x6) { /* it's a field */
+			sig = get_field_signature (m, cols [MONO_MEMBERREF_SIGNATURE]);
+		} else {
+			sig = get_methodref_signature (m, cols [MONO_MEMBERREF_SIGNATURE], NULL);
+		}
 		fprintf (output, "%d: %s[%d] %s\n\tResolved: %s\n\tSignature: %s\n\t\n",
 			 i,
 			 ks, idx,
 			 mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]),
 			 x ? x : "",
-			 get_methodref_signature (m, cols [MONO_MEMBERREF_SIGNATURE], NULL));
+			 sig);
 
 		if (x)
 			g_free (x);
+		g_free (sig);
 	}
 }
 
@@ -485,5 +506,173 @@ dump_table_interfaceimpl (MonoMetadata *m)
 		fprintf (output, "%d: %s implements %s\n", i,
 			get_typedef (m, cols [MONO_INTERFACEIMPL_CLASS]),
 			get_typedef_or_ref (m, cols [MONO_INTERFACEIMPL_INTERFACE]));
+	}
+}
+
+static char*
+has_cattr_get_table (MonoMetadata *m, guint32 val)
+{
+	guint32 t = val & CUSTOM_ATTR_MASK;
+	guint32 index = val >> CUSTOM_ATTR_BITS;
+	char *table;
+
+	switch (t) {
+	case CUSTOM_ATTR_METHODDEF:
+		table = "MethodDef";
+		break;
+	case CUSTOM_ATTR_FIELDDEF:
+		table = "FieldDef";
+		break;
+	case CUSTOM_ATTR_TYPEREF:
+		table = "TypeRef";
+		break;
+	case CUSTOM_ATTR_TYPEDEF:
+		table = "TypeDef";
+		break;
+	case CUSTOM_ATTR_PARAMDEF:
+		table = "Param";
+		break;
+	case CUSTOM_ATTR_INTERFACE:
+		table = "InterfaceImpl";
+		break;
+	case CUSTOM_ATTR_MEMBERREF:
+		table = "MemberRef";
+		break;
+	case CUSTOM_ATTR_MODULE:
+		table = "Module";
+		break;
+	case CUSTOM_ATTR_PERMISSION:
+		table = "DeclSecurity?";
+		break;
+	case CUSTOM_ATTR_PROPERTY:
+		table = "Property";
+		break;
+	case CUSTOM_ATTR_EVENT:
+		table = "Event";
+		break;
+	case CUSTOM_ATTR_SIGNATURE:
+		table = "StandAloneSignature";
+		break;
+	case CUSTOM_ATTR_MODULEREF:
+		table = "ModuleRef";
+		break;
+	case CUSTOM_ATTR_TYPESPEC:
+		table = "TypeSpec";
+		break;
+	case CUSTOM_ATTR_ASSEMBLY:
+		table = "Assembly";
+		break;
+	case CUSTOM_ATTR_ASSEMBLYREF:
+		table = "AssemblyRef";
+		break;
+	case CUSTOM_ATTR_FILE:
+		table = "File";
+		break;
+	case CUSTOM_ATTR_EXP_TYPE:
+		table = "ExportedType";
+		break;
+	case CUSTOM_ATTR_MANIFEST:
+		table = "Manifest";
+		break;
+	default:
+		table = "Unknown";
+		break;
+	}
+	/*
+	 * FIXME: we should decode the index into something more uman-friendly.
+	 */
+	return g_strdup_printf ("%s: %d", table, index);
+}
+
+static char*
+custom_attr_params (MonoMetadata *m, MonoMethodSignature* sig, const char* value)
+{
+	int len, i, slen;
+	GString *res;
+	char *s;
+	const char *p = value;
+
+	len = mono_metadata_decode_value (p, &p);
+	if (len < 2 || read16 (p) != 0x0001) /* Prolog */
+		return g_strdup ("");
+
+	res = g_string_new ("");
+	for (i = 0; i < sig->param_count; ++i) {
+		if (i != 0)
+			g_string_append (res, ", ");
+		switch (sig->params [i]->type) {
+		case MONO_TYPE_BOOLEAN:
+			g_string_sprintfa (res, "%s", *p?"true":"false");
+			++p;
+			break;
+		case MONO_TYPE_VALUETYPE:
+			if (sig->params [i]->data.klass->enumtype) {
+				/*
+				 * FIXME: we should check the unrelying eum type...
+				 */
+				g_string_sprintfa (res, "0x%x", read32 (p));
+				p += 4;
+			} else {
+				g_warning ("generic valutype not handled in custom attr value decoding");
+			}
+			break;
+		case MONO_TYPE_STRING:
+			slen = mono_metadata_decode_value (p, &p);
+			++p;
+			g_string_append_c (res, '"');
+			g_string_append (res, p);
+			g_string_append_c (res, '"');
+			p += slen;
+			break;
+		default:
+			g_warning ("Type %02x not handled in custom attr value decoding", sig->params [i]->type);
+			break;
+		}
+	}
+	/*
+	 * FIXME: handle named args only when all the type are handled in fixed args.
+	 * slen = read16 (p);
+	 */
+	s = res->str;
+	g_string_free (res, FALSE);
+	return s;
+}
+
+void
+dump_table_customattr (MonoMetadata *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_CUSTOMATTRIBUTE];
+	int i;
+
+	fprintf (output, "Custom Attributes Table (1..%d)\n", t->rows);
+	for (i = 1; i <= t->rows; i++) {
+		guint32 cols [MONO_CUSTOM_ATTR_SIZE];
+		guint32 mtoken;
+		char * desc;
+		char *method;
+		char *params;
+		MonoMethod *meth;
+		
+		mono_metadata_decode_row (t, i - 1, cols, MONO_CUSTOM_ATTR_SIZE);
+		desc = has_cattr_get_table (m, cols [MONO_CUSTOM_ATTR_PARENT]);
+		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> CUSTOM_ATTR_TYPE_BITS;
+		switch (cols [MONO_CUSTOM_ATTR_TYPE] & CUSTOM_ATTR_TYPE_MASK) {
+		case CUSTOM_ATTR_TYPE_METHODDEF:
+			mtoken |= MONO_TOKEN_METHOD_DEF;
+			break;
+		case CUSTOM_ATTR_TYPE_MEMBERREF:
+			mtoken |= MONO_TOKEN_MEMBER_REF;
+			break;
+		default:
+			g_warning ("Unknown table for custom attr type %08x", cols [MONO_CUSTOM_ATTR_TYPE]);
+			break;
+		}
+		method = get_method (m, mtoken);
+		meth = mono_get_method (m, mtoken, NULL);
+		params = custom_attr_params (m, meth->signature, mono_metadata_blob_heap (m, cols [MONO_CUSTOM_ATTR_VALUE]));
+		fprintf (output, "%d: %s: %s [%s]\n", i, desc, method, params);
+		g_free (desc);
+		g_free (method);
+		g_free (params);
 	}
 }
