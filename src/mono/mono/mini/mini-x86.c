@@ -3733,11 +3733,16 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 #else
 #ifdef HAVE_PTHREAD_ATTR_GET_NP
 		pthread_attr_get_np( self, &attr );
+#elif defined(sun)
+		pthread_attr_init( &attr );
+		pthread_attr_getstacksize( &attr, &stsize );
 #else
 #error "Not implemented"
 #endif
 #endif
+#ifndef sun
 		pthread_attr_getstack( &attr, &staddr, &stsize );
+#endif
 	}
 
 	/* 

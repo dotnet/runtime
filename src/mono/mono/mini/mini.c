@@ -13,6 +13,11 @@
 #include <unistd.h>
 #include <math.h>
 
+#ifdef sun    // Solaris x86
+#include <sys/types.h>
+#include <sys/ucontext.h>
+#endif
+
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
 #endif
@@ -8093,6 +8098,10 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 #ifdef __sparc
 #define GET_CONTEXT \
     void *ctx = context;
+#elif defined(sun)    // Solaris x86
+#define GET_CONTEXT \
+    ucontext_t *uctx = context; \
+    struct sigcontext *ctx = (struct sigcontext *)&(uctx->uc_mcontext);
 #elif defined(__ppc__) || defined (__powerpc__) || defined (__s390__)
 #define GET_CONTEXT \
     void *ctx = context;
