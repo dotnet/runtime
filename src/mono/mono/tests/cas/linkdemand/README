@@ -5,6 +5,13 @@ cas2.cs		LinkDemand restricted by RequestRefuse -> Unhandled
 cas3.cs		Partial execution before (handled) exception
 cas4.cs		Reflection on a method protected by LinkDemand (granted)
 cas5.cs		Reflection on a method protected by LinkDemand (denied)
+cas6.cs		LinkDemand on constructor (newobj)
+cas7.cs		Instance method used via delegate (ldftn)
+cas8.cs		Instance virtual method used via delegate (ldvirtftn)
+cas9.cs		Static method used via delegate (ldftn)
+cas10.cs	Original source code JMP sample (can't be used directly)
+cas10.il	Modified source to use JMP - not assembled ATM -
+		see source file (cas10.cs) for details
 
 noncas1.cs	Non CAS (PrincipalPermission) on class (success)
 noncas2.cs	Non CAS (PrincipalPermission) on class (failure)
