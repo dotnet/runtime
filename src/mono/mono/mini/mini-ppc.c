@@ -408,18 +408,22 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 				      mono_class_native_size (sig->params [i]->data.klass, NULL)));
 #if PPC_PASS_STRUCTS_BY_VALUE
 			{
-				int nwords = (size + sizeof (gpointer) -1 ) / sizeof (gpointer);
+				int align_size = size;
+				int nwords = 0;
+				align_size += (sizeof (gpointer) - 1);
+				align_size &= ~(sizeof (gpointer) - 1);
+				nwords = (align_size + sizeof (gpointer) -1 ) / sizeof (gpointer);
 				cinfo->args [n].regtype = RegTypeStructByVal;
-				if (gr <= PPC_LAST_ARG_REG) {
+				if (gr > PPC_LAST_ARG_REG || (size >= 3 && size % 4 != 0)) {
+					cinfo->args [n].size = 0;
+					cinfo->args [n].vtsize = nwords;
+				} else {
 					int rest = PPC_LAST_ARG_REG - gr + 1;
 					int n_in_regs = rest >= nwords? nwords: rest;
 					cinfo->args [n].size = n_in_regs;
 					cinfo->args [n].vtsize = nwords - n_in_regs;
 					cinfo->args [n].reg = gr;
 					gr += n_in_regs;
-				} else {
-					cinfo->args [n].size = 0;
-					cinfo->args [n].vtsize = nwords;
 				}
 				cinfo->args [n].offset = PPC_STACK_PARAM_OFFSET + stack_size;
 				/*g_print ("offset for arg %d at %d\n", n, PPC_STACK_PARAM_OFFSET + stack_size);*/
@@ -3538,10 +3542,24 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				int doffset = inst->inst_offset;
 				int soffset = 0;
 				int cur_reg;
+				int size = 0;
 				g_assert (ppc_is_imm16 (inst->inst_offset));
 				g_assert (ppc_is_imm16 (inst->inst_offset + ainfo->size * sizeof (gpointer)));
+				if (inst->inst_vtype->data.klass)
+					size = mono_class_native_size (inst->inst_vtype->data.klass, NULL);
 				for (cur_reg = 0; cur_reg < ainfo->size; ++cur_reg) {
-					ppc_stw (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+/*
+Darwin handles 1 and 2 byte structs specially by loading h/b into the arg
+register.  Should this case include linux/ppc?
+*/
+#if __APPLE__
+					if (size == 2)
+						ppc_sth (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+					else if (size == 1)
+						ppc_stb (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+					else 
+#endif
+						ppc_stw (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
 					soffset += sizeof (gpointer);
 					doffset += sizeof (gpointer);
 				}

@@ -280,7 +280,23 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 	int nregs = (tree->unused >> 8) & 0xff;
 	int ovf_size = (tree->unused >> 16) & 0xffff;
 	int i, tmpr, soffset;
+	int size = 0;
 	soffset = vt->inst_offset;
+/*
+  Darwin needs some special handling for 1 and 2 byte arguments
+*/
+#ifdef __APPLE__
+	if (vt->inst_vtype && MONO_TYPE_ISSTRUCT (vt->inst_vtype) && vt->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
+	    size =  mono_class_native_size (vt->inst_vtype->data.klass, NULL);
+	if (size == 2 || size == 1) {
+		tmpr = mono_regstate_next_int (s->rs);
+		if (size == 1)
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI1_MEMBASE, tmpr, vt->inst_basereg, soffset);
+		else
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI2_MEMBASE, tmpr, vt->inst_basereg, soffset);
+		MONO_EMIT_NEW_UNALU (s, OP_SETREG, start_reg, tmpr);
+	} else
+#endif
 	for (i = 0; i < nregs; ++i) {
 		tmpr = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, vt->inst_basereg, soffset);
