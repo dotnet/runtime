@@ -16,6 +16,7 @@ typedef struct {
 } MonoDynamicStream;
 
 typedef struct {
+	guint32 alloc_rows;
 	guint32 rows;
 	guint32 row_size; /*  calculated later with column_sizes */
 	guint32 columns;
@@ -269,6 +270,8 @@ typedef struct {
 	MonoGHashTable *token_fixups;
 	MonoGHashTable *method_to_table_idx;
 	MonoGHashTable *field_to_table_idx;
+	gboolean run;
+	gboolean save;
 	char *strong_name;
 	guint32 strong_name_size;
 	MonoDynamicStream pefile;
@@ -305,6 +308,7 @@ typedef struct {
 	guint32 flags;
 	guint32 pekind;
 	MonoBoolean delay_sign;
+	guint32 access;
 } MonoReflectionAssemblyBuilder;
 
 typedef struct {

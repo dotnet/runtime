@@ -108,7 +108,15 @@ alloc_table (MonoDynamicTable *table, guint nrows)
 {
 	table->rows = nrows;
 	g_assert (table->columns);
-	table->values = g_realloc (table->values, (1 + table->rows) * table->columns * sizeof (guint32));
+	if (nrows + 1 >= table->alloc_rows) {
+		while (nrows + 1 >= table->alloc_rows)
+			if (table->alloc_rows == 0)
+				table->alloc_rows = 16;
+			else
+				table->alloc_rows *= 2;
+
+		table->values = g_realloc (table->values, (table->alloc_rows) * table->columns * sizeof (guint32));
+	}
 }
 
 static guint32
@@ -236,7 +244,7 @@ add_to_blob_cached (MonoDynamicAssembly *assembly, char *b1, int s1, char *b2, i
 	guint32 idx;
 	char *copy;
 	gpointer oldkey, oldval;
-	
+
 	copy = g_malloc (s1+s2);
 	memcpy (copy, b1, s1);
 	memcpy (copy + s1, b2, s2);
@@ -357,7 +365,10 @@ method_encode_signature (MonoDynamicAssembly *assembly, MonoMethodSignature *sig
 	guint32 idx;
 	char blob_size [6];
 	char *b = blob_size;
-	
+
+	if (!assembly->save)
+		return 0;
+
 	p = buf = g_malloc (size);
 	/*
 	 * FIXME: vararg, explicit_this, differenc call_conv values...
@@ -940,7 +951,10 @@ fieldref_encode_signature (MonoDynamicAssembly *assembly, MonoClassField *field)
 	char *p;
 	char* buf;
 	guint32 idx;
-	
+
+	if (!assembly->save)
+		return 0;
+
 	p = buf = g_malloc (64);
 	
 	mono_metadata_encode_value (0x06, p, &p);
@@ -1437,15 +1451,16 @@ create_typespec (MonoDynamicAssembly *assembly, MonoType *type)
 	default:
 		return 0;
 	}
-	
-	g_assert (p-sig < 128);
-	mono_metadata_encode_value (p-sig, b, &b);
-	token = add_to_blob_cached (assembly, blob_size, b-blob_size, sig, p-sig);
 
 	table = &assembly->tables [MONO_TABLE_TYPESPEC];
-	alloc_table (table, table->rows + 1);
-	values = table->values + table->next_idx * MONO_TYPESPEC_SIZE;
-	values [MONO_TYPESPEC_SIGNATURE] = token;
+	if (assembly->save) {
+		g_assert (p-sig < 128);
+		mono_metadata_encode_value (p-sig, b, &b);
+		token = add_to_blob_cached (assembly, blob_size, b-blob_size, sig, p-sig);
+		alloc_table (table, table->rows + 1);
+		values = table->values + table->next_idx * MONO_TYPESPEC_SIZE;
+		values [MONO_TYPESPEC_SIGNATURE] = token;
+	}
 
 	token = TYPEDEFORREF_TYPESPEC | (table->next_idx << TYPEDEFORREF_BITS);
 	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));
@@ -1499,11 +1514,13 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 		scope = resolution_scope_from_image (assembly, klass->image);
 	}
 	table = &assembly->tables [MONO_TABLE_TYPEREF];
-	alloc_table (table, table->rows + 1);
-	values = table->values + table->next_idx * MONO_TYPEREF_SIZE;
-	values [MONO_TYPEREF_SCOPE] = scope;
-	values [MONO_TYPEREF_NAME] = string_heap_insert (&assembly->sheap, klass->name);
-	values [MONO_TYPEREF_NAMESPACE] = string_heap_insert (&assembly->sheap, klass->name_space);
+	if (assembly->save) {
+		alloc_table (table, table->rows + 1);
+		values = table->values + table->next_idx * MONO_TYPEREF_SIZE;
+		values [MONO_TYPEREF_SCOPE] = scope;
+		values [MONO_TYPEREF_NAME] = string_heap_insert (&assembly->sheap, klass->name);
+		values [MONO_TYPEREF_NAMESPACE] = string_heap_insert (&assembly->sheap, klass->name_space);
+	}
 	token = TYPEDEFORREF_TYPEREF | (table->next_idx << TYPEDEFORREF_BITS); /* typeref */
 	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));
 	table->next_idx ++;
@@ -1543,11 +1560,15 @@ mono_image_get_memberref_token (MonoDynamicAssembly *assembly, MonoType *type, c
 	parent >>= TYPEDEFORREF_BITS;
 
 	table = &assembly->tables [MONO_TABLE_MEMBERREF];
-	alloc_table (table, table->rows + 1);
-	values = table->values + table->next_idx * MONO_MEMBERREF_SIZE;
-	values [MONO_MEMBERREF_CLASS] = pclass | (parent << MEMBERREF_PARENT_BITS);
-	values [MONO_MEMBERREF_NAME] = string_heap_insert (&assembly->sheap, name);
-	values [MONO_MEMBERREF_SIGNATURE] = sig;
+
+	if (assembly->save) {
+		alloc_table (table, table->rows + 1);
+		values = table->values + table->next_idx * MONO_MEMBERREF_SIZE;
+		values [MONO_MEMBERREF_CLASS] = pclass | (parent << MEMBERREF_PARENT_BITS);
+		values [MONO_MEMBERREF_NAME] = string_heap_insert (&assembly->sheap, name);
+		values [MONO_MEMBERREF_SIGNATURE] = sig;
+	}
+
 	token = MONO_TOKEN_MEMBER_REF | table->next_idx;
 	table->next_idx ++;
 
@@ -1593,6 +1614,9 @@ mono_reflection_encode_sighelper (MonoDynamicAssembly *assembly, MonoReflectionS
 	guint32 i, idx;
 	char blob_size [6];
 	char *b = blob_size;
+
+	if (!assembly->save)
+		return 0;
 
 	/* FIXME: */
 	g_assert (helper->type == 2);
@@ -2569,8 +2593,10 @@ mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *s
 
 	if (!assembly->dynamic_assembly)
 		mono_image_basic_init (assembly);
-	mono_metadata_encode_value (1 | (str->length * 2), b, &b);
-	idx = mono_image_add_stream_data (&assembly->dynamic_assembly->us, buf, b-buf);
+
+	if (assembly->dynamic_assembly->save) {
+		mono_metadata_encode_value (1 | (str->length * 2), b, &b);
+		idx = mono_image_add_stream_data (&assembly->dynamic_assembly->us, buf, b-buf);
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 	{
 		char *swapped = g_malloc (2 * mono_string_length (str));
@@ -2584,6 +2610,9 @@ mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *s
 	mono_image_add_stream_data (&assembly->dynamic_assembly->us, (const char*)mono_string_chars (str), str->length * 2);
 #endif
 	mono_image_add_stream_data (&assembly->dynamic_assembly->us, "", 1);
+	}
+	else
+		idx = assembly->dynamic_assembly->us.index ++;
 
 	mono_g_hash_table_insert (assembly->dynamic_assembly->tokens, 
 							  GUINT_TO_POINTER (MONO_TOKEN_STRING | idx), str);
@@ -2790,6 +2819,9 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 		assembly->tables [i].next_idx = 1;
 		assembly->tables [i].columns = table_sizes [i];
 	}
+
+	assembly->run = assemblyb->access != 2;
+	assembly->save = assemblyb->access != 1;
 
 	image = create_dynamic_mono_image (mono_string_to_utf8 (assemblyb->name), g_strdup ("RefEmit_YouForgotToDefineAModule"));
 	assembly->assembly.aname.name = image->name;
@@ -5114,6 +5146,12 @@ ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb)
 
 	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig);
 	mono_save_custom_attrs (klass->image, mb->mhandle, mb->cattrs);
+
+	if (!((MonoDynamicAssembly*)klass->image->assembly->dynamic)->save) {
+		/* ilgen is no longer needed */
+		mb->ilgen = NULL;
+	}
+
 	return mb->mhandle;
 }
 
@@ -5139,6 +5177,11 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb)
 
 	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig);
 	mono_save_custom_attrs (klass->image, mb->mhandle, mb->cattrs);
+
+	if (!((MonoDynamicAssembly*)klass->image->assembly->dynamic)->save) {
+		/* ilgen is no longer needed */
+		mb->ilgen = NULL;
+	}
 	return mb->mhandle;
 }
 
