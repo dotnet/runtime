@@ -672,6 +672,10 @@ typedef struct {
 	guint32 access;
 	MonoArray *loaded_modules;
 	MonoArray *win32_resources;
+	/* CAS related */
+	MonoArray *permissions_minimum;
+	MonoArray *permissions_optional;
+	MonoArray *permissions_refused;
 } MonoReflectionAssemblyBuilder;
 
 typedef struct {

@@ -3876,6 +3876,14 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 	/* add all the custom attributes at the end, once all the indexes are stable */
 	mono_image_add_cattrs (assembly, 1, MONO_CUSTOM_ATTR_ASSEMBLY, assemblyb->cattrs);
 
+	/* CAS assembly permissions */
+	if (assemblyb->permissions_minimum)
+		mono_image_add_decl_security (assembly, mono_metadata_make_token (MONO_TABLE_ASSEMBLY, 1), assemblyb->permissions_minimum);
+	if (assemblyb->permissions_optional)
+		mono_image_add_decl_security (assembly, mono_metadata_make_token (MONO_TABLE_ASSEMBLY, 1), assemblyb->permissions_optional);
+	if (assemblyb->permissions_refused)
+		mono_image_add_decl_security (assembly, mono_metadata_make_token (MONO_TABLE_ASSEMBLY, 1), assemblyb->permissions_refused);
+
 	module_add_cattrs (assembly, moduleb);
 
 	/* fixup tokens */
