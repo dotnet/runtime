@@ -5594,6 +5594,15 @@ optimize_branches (MonoCompile *cfg) {
 			if (bb->region != -1)
 				continue;
 
+			if ((bbn = bb->next_bb) && bbn->in_count == 0 && bb->region == bbn->region) {
+				if (cfg->verbose_level > 2)
+					g_print ("nullify block triggered %d\n", bbn->block_num);
+
+				bb->next_bb = bbn->next_bb;
+				nullify_basic_block (bbn);			
+				changed = TRUE;
+			}
+
 			if (bb->out_count == 1) {
 				bbn = bb->out_bb [0];
 
@@ -5625,23 +5634,39 @@ optimize_branches (MonoCompile *cfg) {
 
 						//mono_print_bb_code (bb);
 					}
-				} else {
-					if (bb->last_ins && bb->last_ins->opcode == CEE_BR) {
-						bbn = bb->last_ins->inst_target_bb;
-						if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR &&
-						    bbn->code->inst_target_bb->region == bb->region) {
-							
-							if (cfg->verbose_level > 2)
-								g_print ("in %s branch to branch triggered %d -> %d\n", cfg->method->name, 
-									 bb->block_num, bbn->block_num);
+				}
+			}
+		}
+	} while (changed);
 
-							replace_basic_block (bb, bb->out_bb [0], bbn->code->inst_target_bb);
-							bb->last_ins->inst_target_bb = bbn->code->inst_target_bb;
-							changed = TRUE;
-						}
+	do {
+		changed = FALSE;
+
+		/* we skip the entry block (exit is handled specially instead ) */
+		for (bb = cfg->bb_entry->next_bb; bb; bb = bb->next_bb) {
+
+			/* dont touch code inside exception clauses */
+			if (bb->region != -1)
+				continue;
+
+			if (bb->out_count == 1) {
+				bbn = bb->out_bb [0];
+
+				if (bb->last_ins && bb->last_ins->opcode == CEE_BR) {
+					bbn = bb->last_ins->inst_target_bb;
+					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR &&
+					    bbn->code->inst_target_bb->region == bb->region) {
+						
+						if (cfg->verbose_level > 2)
+							g_print ("in %s branch to branch triggered %d -> %d\n", cfg->method->name, 
+								 bb->block_num, bbn->block_num);
+						
+						replace_basic_block (bb, bb->out_bb [0], bbn->code->inst_target_bb);
+						bb->last_ins->inst_target_bb = bbn->code->inst_target_bb;
+						changed = TRUE;
+						break;
 					}
 				}
-
 			} else if (bb->out_count == 2) {
 				/* fixme: this does not correctly - no idea whats wrong */
 				if (0 && bb->last_ins && bb->last_ins->opcode >= CEE_BEQ && bb->last_ins->opcode <= CEE_BLT_UN) {
@@ -5667,11 +5692,13 @@ optimize_branches (MonoCompile *cfg) {
 						replace_basic_block (bb, bb->out_bb [0], bbn->code->inst_target_bb);
 						bb->last_ins->inst_false_bb = bbn->code->inst_target_bb;
 						changed = TRUE;
+						break;
 					}
 				}
 			}
 		}
 	} while (changed);
+
 }
 
 static void
