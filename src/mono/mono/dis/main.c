@@ -818,6 +818,7 @@ struct {
 	{ "--module",      MONO_TABLE_MODULE,      dump_table_module },
 	{ "--method",      MONO_TABLE_METHOD,      dump_table_method },
 	{ "--methodsem",   MONO_TABLE_METHODSEMANTICS,      dump_table_methodsem },
+	{ "--manifest",    MONO_TABLE_MANIFESTRESOURCE,     dump_table_manifest },
 	{ NULL, -1 }
 };
 

@@ -14,6 +14,7 @@ void dump_table_module       (MonoImage *m);
 void dump_table_method       (MonoImage *m);
 void dump_table_methodsem    (MonoImage *m);
 void dump_table_field        (MonoImage *m);
+void dump_table_manifest     (MonoImage *m);
 void dump_table_memberref    (MonoImage *m);
 void dump_table_param        (MonoImage *m);
 void dump_table_typedef      (MonoImage *m);

@@ -411,6 +411,63 @@ dump_table_file (MonoImage *m)
 	
 }
 
+static char*
+get_manifest_implementation (MonoImage *m, guint32 idx)
+{
+	guint32 row;
+	const char* table = "";
+	if (!idx)
+		return g_strdup ("current module");
+	row = idx >> IMPLEMENTATION_BITS;
+	switch (idx & IMPLEMENTATION_MASK) {
+	case IMPLEMENTATION_FILE:
+		table = "file";
+		break;
+	case IMPLEMENTATION_ASSEMBLYREF:
+		table = "assemblyref";
+		break;
+	case IMPLEMENTATION_EXP_TYPE:
+	default:
+		g_assert_not_reached ();
+	}
+	return g_strdup_printf ("%s %d", table, row);
+}
+
+static const char*
+get_manifest_flags (guint32 mf)
+{
+	mf &= 3;
+	switch (mf) {
+	case 1: return "public";
+	case 2: return "private";
+	default:
+		return "";
+	}
+}
+
+void
+dump_table_manifest (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_MANIFESTRESOURCE];
+	int i;
+	fprintf (output, "Manifestresource Table (1..%d)\n", t->rows);
+
+	for (i = 0; i < t->rows; i++){
+		guint32 cols [MONO_MANIFEST_SIZE];
+		const char *name, *mf;
+		char *impl;
+		
+		mono_metadata_decode_row (t, i, cols, MONO_MANIFEST_SIZE);
+
+		name = mono_metadata_string_heap (m, cols [MONO_MANIFEST_NAME]);
+		mf = get_manifest_flags (cols [MONO_MANIFEST_FLAGS]);
+		impl = get_manifest_implementation (m, cols [MONO_MANIFEST_IMPLEMENTATION]);
+		fprintf (output, "%d: %s '%s' at offset %u in %s\n", i + 1, mf, name, cols [MONO_MANIFEST_OFFSET], impl);
+		g_free (impl);
+	}
+	
+}
+
 void
 dump_table_moduleref (MonoImage *m)
 {
