@@ -444,6 +444,12 @@ set_domain_search_path (MonoDomain *domain)
 
 		tmp [i] = g_build_filename (tmp [0], pvt_split [i - 1], NULL);
 	}
+	
+	if (setup->private_bin_path_probe != NULL && setup->application_base) {
+		g_free (tmp [0]);
+		tmp [0] = g_strdup ("");
+	}
+		
 
 	g_strfreev (pvt_split);
 }
