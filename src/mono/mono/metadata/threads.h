@@ -25,6 +25,7 @@ extern void mono_thread_abort_all_other_threads (void);
 
 extern void mono_thread_push_appdomain_ref (MonoDomain *domain);
 extern void mono_thread_pop_appdomain_ref (void);
+extern gboolean mono_thread_has_appdomain_ref (MonoThread *thread, MonoDomain *domain);
 
 extern MonoException * mono_thread_get_pending_exception (void);
 

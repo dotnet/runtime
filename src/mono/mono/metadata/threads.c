@@ -1545,7 +1545,7 @@ mono_thread_push_appdomain_ref (MonoDomain *domain)
 	MonoThread *thread = mono_thread_current ();
 
 	if (thread) {
-		/* printf ("PUSH REF: %p -> %s.\n", thread, domain->friendly_name); */
+		/* printf ("PUSH REF: %x -> %s.\n", thread->tid, domain->friendly_name); */
 		EnterCriticalSection (&threads_mutex);
 		thread->appdomain_refs = g_slist_prepend (thread->appdomain_refs, domain);
 		LeaveCriticalSection (&threads_mutex);
@@ -1558,7 +1558,7 @@ mono_thread_pop_appdomain_ref (void)
 	MonoThread *thread = mono_thread_current ();
 
 	if (thread) {
-		/* printf ("POP REF: %p -> %s.\n", thread, ((MonoDomain*)(thread->appdomain_refs->data))->friendly_name); */
+		/* printf ("POP REF: %x -> %s.\n", thread->tid, ((MonoDomain*)(thread->appdomain_refs->data))->friendly_name); */
 		EnterCriticalSection (&threads_mutex);
 		/* FIXME: How can the list be empty ? */
 		if (thread->appdomain_refs)
@@ -1567,7 +1567,7 @@ mono_thread_pop_appdomain_ref (void)
 	}
 }
 
-static gboolean
+gboolean
 mono_thread_has_appdomain_ref (MonoThread *thread, MonoDomain *domain)
 {
 	gboolean res;
