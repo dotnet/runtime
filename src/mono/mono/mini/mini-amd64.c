@@ -337,7 +337,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	 * The X87 and SSEUP stuff is left out since there are no such types in
 	 * the CLR.
 	 */
-	info = mono_marshal_load_type_info (type->data.klass);
+	info = mono_marshal_load_type_info (klass);
 	g_assert (info);
 	if (info->native_size > 16) {
 		ainfo->offset = *stack_size;
@@ -355,7 +355,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		for (i = 0; i < info->num_fields; ++i) {
 			size = mono_marshal_type_size (info->fields [i].field->type, 
 										   info->fields [i].mspec, 
-										   &align, TRUE, type->data.klass->unicode);
+										   &align, TRUE, klass->unicode);
 			if ((info->fields [i].offset < 8) && (info->fields [i].offset + size) > 8) {
 				/* Unaligned field */
 				NOT_IMPLEMENTED;
@@ -709,6 +709,7 @@ static gboolean
 is_regsize_var (MonoType *t) {
 	if (t->byref)
 		return TRUE;
+ again:
 	switch (t->type) {
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
@@ -726,6 +727,9 @@ is_regsize_var (MonoType *t) {
 		if (t->data.klass->enumtype)
 			return is_regsize_var (t->data.klass->enum_basetype);
 		return FALSE;
+	case MONO_TYPE_GENERICINST:
+		t = t->data.generic_inst->generic_type;
+		goto again;
 	}
 	return FALSE;
 }
@@ -844,7 +848,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 		case ArgInIReg:
 		case ArgInFloatSSEReg:
 		case ArgInDoubleSSEReg:
-			if (((sig->ret->type == MONO_TYPE_VALUETYPE) && !sig->ret->data.klass->enumtype) || (sig->ret->type == MONO_TYPE_TYPEDBYREF)) {
+			if ((MONO_TYPE_ISSTRUCT (sig->ret) && !mono_class_from_mono_type (sig->ret)->enumtype) || (sig->ret->type == MONO_TYPE_TYPEDBYREF)) {
 				/* The register is volatile */
 				m->ret->opcode = OP_REGOFFSET;
 				m->ret->inst_basereg = AMD64_RBP;
@@ -874,7 +878,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 		/* inst->unused indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structure */
 		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
-			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
+			size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), &align);
 		else
 			size = mono_type_stack_size (inst->inst_vtype, &align);
 
