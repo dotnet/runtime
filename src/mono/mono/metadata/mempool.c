@@ -46,7 +46,7 @@ mono_mempool_new ()
 
 	MonoMemPool *pool = g_malloc (MONO_MEMPOOL_PAGESIZE);
 	pool->next = NULL;
-	pool->pos = (gpointer)pool + sizeof (MonoMemPool);
+	pool->pos = (char *)pool + sizeof (MonoMemPool);
 	pool->rest = MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
 	return pool;
 }
@@ -91,7 +91,7 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 		MonoMemPool *np = g_malloc (sizeof (MonoMemPool) + size);
 		np->next = pool->next;
 		pool->next = np;
-		return (gpointer)np + sizeof (MonoMemPool);
+		return (char *)np + sizeof (MonoMemPool);
 	}
 
 	size = (size + MEM_ALIGN - 1) & ~(MEM_ALIGN - 1);
@@ -100,13 +100,13 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 		MonoMemPool *np = g_malloc (MONO_MEMPOOL_PAGESIZE);
 		np->next = pool->next;
 		pool->next = np;
-		pool->pos = (gpointer)np + sizeof (MonoMemPool);
+		pool->pos = (char *)np + sizeof (MonoMemPool);
 		pool->rest = MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
 	}
 
 	rval = pool->pos;
 	pool->rest -= size;
-	pool->pos += size;
+	pool->pos = (char *)pool->pos + size;
 
 	return rval;
 }

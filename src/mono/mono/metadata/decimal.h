@@ -31,7 +31,7 @@ gint32 mono_decimalDiv(/*[Out]*/decimal_repr* pC, /*[In]*/decimal_repr* pA, /*[I
 gint32 mono_decimalIntDiv(/*[Out]*/decimal_repr* pC, /*[In]*/decimal_repr* pA, /*[In]*/decimal_repr* pB);
 gint32 mono_decimalCompare(/*[In]*/decimal_repr* pA, /*[In]*/decimal_repr* pB);
 double mono_decimal2double(/*[In]*/decimal_repr* pA);
-gint32 mono_decimalSetExponent(/*[In, Out]*/decimal_repr* pA, gint32 exp);
+gint32 mono_decimalSetExponent(/*[In, Out]*/decimal_repr* pA, gint32 texp);
 
 gint32 mono_string2decimal(/*[Out]*/decimal_repr* pA, /*[In]*/MonoString* s, gint32 decrDecimal, gint32 sign);
 gint32 mono_decimal2string(/*[In]*/decimal_repr* pA, int digits, int decimals,

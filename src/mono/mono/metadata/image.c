@@ -369,7 +369,7 @@ load_class_names (MonoImage *image)
 		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 		if (!(nspace_table = g_hash_table_lookup (name_cache, nspace))) {
 			nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
-			g_hash_table_insert (name_cache, (char *) nspace, nspace_table);
+			g_hash_table_insert (name_cache, (char *)nspace, (char *)nspace_table);
 		}
 		g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (i));
 	}

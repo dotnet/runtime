@@ -1281,6 +1281,7 @@ mono_metadata_free_type (MonoType *type)
 	g_free (type);
 }
 
+#if 0
 static void
 hex_dump (const char *buffer, int base, int count)
 {
@@ -1301,6 +1302,7 @@ hex_dump (const char *buffer, int base, int count)
 	}
 	fflush (stdout);
 }
+#endif
 
 /** 
  * @mh: The Method header

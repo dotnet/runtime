@@ -458,13 +458,13 @@ mono_string_intern (MonoString *str)
 }
 
 MonoString*
-mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 index)
+mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 {
 	const char *str, *sig;
 	MonoString *o;
 	size_t len2;
 		
-	sig = str = mono_metadata_user_string (image, index);
+	sig = str = mono_metadata_user_string (image, idx);
 	
 	if ((o = mono_g_hash_table_lookup (domain->ldstr_table, sig)))
 		return o;
@@ -572,7 +572,7 @@ mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpo
 
 	res->data = data;
 	res->async_state = state;
-	res->handle = mono_wait_handle_new (domain, handle);
+	res->handle = (MonoObject *)mono_wait_handle_new (domain, handle);
 	res->sync_completed = FALSE;
 	res->completed = FALSE;
 

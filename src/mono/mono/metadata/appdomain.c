@@ -24,7 +24,7 @@
 static guint32 appdomain_thread_id = 0;
 
 static MonoJitInfoTable *
-mono_jit_info_table_new ()
+mono_jit_info_table_new (void)
 {
 	return g_array_new (FALSE, FALSE, sizeof (gpointer));
 }
@@ -44,7 +44,7 @@ mono_jit_info_table_index (MonoJitInfoTable *table, gpointer addr)
 		int pos = (left + right) / 2;
 		MonoJitInfo *ji = g_array_index (table, gpointer, pos);
 		gpointer start = ji->code_start;
-		gpointer end = start + ji->code_size;
+		gpointer end = (char *)start + ji->code_size;
 
 		if (addr < start)
 			right = pos;
@@ -67,7 +67,7 @@ mono_jit_info_table_find (MonoDomain *domain, gpointer addr)
 		int pos = (left + right) / 2;
 		MonoJitInfo *ji = g_array_index (table, gpointer, pos);
 		gpointer start = ji->code_start;
-		gpointer end = start + ji->code_size;
+		gpointer end = (char *)start + ji->code_size;
 
 		if (addr < start)
 			right = pos;
@@ -129,7 +129,7 @@ domain_finalizer (void *obj, void *data) {
 #endif
 
 static MonoDomain *
-mono_create_domain ()
+mono_create_domain (void)
 {
 	MonoDomain *domain;
 

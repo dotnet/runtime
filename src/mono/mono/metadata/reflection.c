@@ -141,6 +141,7 @@ string_heap_init (MonoDynamicStream *sh)
 	string_heap_insert (sh, "");
 }
 
+#if 0 /* never used */
 static void
 string_heap_free (MonoDynamicStream *sh)
 {
@@ -148,6 +149,7 @@ string_heap_free (MonoDynamicStream *sh)
 	g_hash_table_foreach (sh->hash, (GHFunc)g_free, NULL);
 	g_hash_table_destroy (sh->hash);
 }
+#endif
 
 static guint32
 mono_image_add_stream_data (MonoDynamicStream *stream, const char *data, guint32 len)
@@ -2170,7 +2172,7 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 				*last_point = 0;
 				info->nest_name = last_point + 1;
 			} else {
-				info->nest_name_space = "";
+				info->nest_name_space = (char *)"";
 				info->nest_name = start;
 			}
 			*p = 0; /* NULL terminate */
@@ -2202,7 +2204,7 @@ mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {
 		*last_point = 0;
 		info->name = last_point + 1;
 	} else {
-		info->name_space = "";
+		info->name_space = (char *)"";
 		info->name = start;
 	}
 	while (*p) {

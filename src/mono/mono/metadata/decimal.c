@@ -303,12 +303,12 @@ DECINLINE static int mult128by32(guint64* pclo, guint64* pchi, guint32 factor, i
 
 DECINLINE static int mult128DecadeFactor(guint64* pclo, guint64* pchi, int powerOfTen)
 {
-    int index, rc;
+    int idx, rc;
 
     while (powerOfTen > 0) {
-        index = (powerOfTen >= DECIMAL_MAX_INTFACTORS) ? DECIMAL_MAX_INTFACTORS : powerOfTen;
-        powerOfTen -= index;
-        rc = mult128by32(pclo, pchi, constantsDecadeInt32Factors[index], 0);
+        idx = (powerOfTen >= DECIMAL_MAX_INTFACTORS) ? DECIMAL_MAX_INTFACTORS : powerOfTen;
+        powerOfTen -= idx;
+        rc = mult128by32(pclo, pchi, constantsDecadeInt32Factors[idx], 0);
         if (rc != DECIMAL_SUCCESS) return rc;
     }
     return DECIMAL_SUCCESS;
@@ -542,69 +542,69 @@ DECINLINE static void rshift192(guint64* pclo, guint64* pcmi, guint64* pchi)
 /* returns log2(a) or DECIMAL_LOG_NEGINF for a = 0 */
 DECINLINE static int log2_32(guint32 a)
 {
-    int log2 = 0;
+    int tlog2 = 0;
 
     if (a == 0) return DECIMAL_LOG_NEGINF;
 
     if ((a >> 16) != 0) {
         a >>= 16;
-        log2 += 16;
+        tlog2 += 16;
     }
     if ((a >> 8) != 0) {
         a >>= 8;
-        log2 += 8;
+        tlog2 += 8;
     }
     if ((a >> 4) != 0) {
         a >>= 4;
-        log2 += 4;
+        tlog2 += 4;
     }
     if ((a >> 2) != 0) {
         a >>= 2;
-        log2 += 2;
+        tlog2 += 2;
     }
     if ((a >> 1) != 0) {
         a >>= 1;
-        log2 += 1;
+        tlog2 += 1;
     }
-    log2 += (int) a;
+    tlog2 += (int) a;
 
-    return log2;
+    return tlog2;
 }
 
 /* returns log2(a) or DECIMAL_LOG_NEGINF for a = 0 */
 DECINLINE static int log2_64(guint64 a)
 {
-    int log2 = 0;
+    int tlog2 = 0;
 
     if (a == 0) return DECIMAL_LOG_NEGINF;
 
     if ((a >> 32) != 0) {
         a >>= 32;
-        log2 += 32;
+        tlog2 += 32;
     }
     if ((a >> 16) != 0) {
         a >>= 16;
-        log2 += 16;
+        tlog2 += 16;
     }
     if ((a >> 8) != 0) {
         a >>= 8;
-        log2 += 8;
+        tlog2 += 8;
     }
     if ((a >> 4) != 0) {
         a >>= 4;
-        log2 += 4;
+        tlog2 += 4;
     }
     if ((a >> 2) != 0) {
         a >>= 2;
-        log2 += 2;
+        tlog2 += 2;
     }
     if ((a >> 1) != 0) {
         a >>= 1;
-        log2 += 1;
+        tlog2 += 1;
     }
-    log2 += (int) a;
+    tlog2 += (int) a;
 
-    return log2;
+    return tlog2;
 }
 
 /* returns log2(a) or DECIMAL_LOG_NEGINF for a = 0 */
@@ -617,9 +617,9 @@ DECINLINE static int log2_128(guint64 alo, guint64 ahi)
 /* returns a upper limit for log2(a) considering scale */
 DECINLINE static int log2withScale_128(guint64 alo, guint64 ahi, int scale)
 {
-    int log2 = log2_128(alo, ahi);
-    if (log2 < 0) log2 = 0;
-    return log2 - (scale * 33219) / 10000;
+    int tlog2 = log2_128(alo, ahi);
+    if (tlog2 < 0) tlog2 = 0;
+    return tlog2 - (scale * 33219) / 10000;
 }
 
 DECINLINE static int pack128toDecimal(/*[Out]*/decimal_repr* pA, guint64 alo, guint64 ahi,
@@ -644,22 +644,22 @@ DECINLINE static int pack128toDecimal(/*[Out]*/decimal_repr* pA, guint64 alo, gu
 
 DECINLINE static int adjustScale128(guint64* palo, guint64* pahi, int deltaScale)
 {
-    int index, rc;
+    int idx, rc;
 
     if (deltaScale < 0) {
         deltaScale *= -1;
         if (deltaScale > DECIMAL_MAX_SCALE) return DECIMAL_INTERNAL_ERROR;
         while (deltaScale > 0) {
-            index = (deltaScale > DECIMAL_MAX_INTFACTORS) ? DECIMAL_MAX_INTFACTORS : deltaScale;
-            deltaScale -= index;
-            div128by32(palo, pahi, constantsDecadeInt32Factors[index], 0);
+            idx = (deltaScale > DECIMAL_MAX_INTFACTORS) ? DECIMAL_MAX_INTFACTORS : deltaScale;
+            deltaScale -= idx;
+            div128by32(palo, pahi, constantsDecadeInt32Factors[idx], 0);
         }
     } else if (deltaScale > 0) {
         if (deltaScale > DECIMAL_MAX_SCALE) return DECIMAL_INTERNAL_ERROR;
         while (deltaScale > 0) {
-            index = (deltaScale > DECIMAL_MAX_INTFACTORS) ? DECIMAL_MAX_INTFACTORS : deltaScale;
-            deltaScale -= index;
-            rc = mult128by32(palo, pahi, constantsDecadeInt32Factors[index], 0);
+            idx = (deltaScale > DECIMAL_MAX_INTFACTORS) ? DECIMAL_MAX_INTFACTORS : deltaScale;
+            deltaScale -= idx;
+            rc = mult128by32(palo, pahi, constantsDecadeInt32Factors[idx], 0);
             if (rc != DECIMAL_SUCCESS) return rc;
         }
     }
@@ -670,44 +670,44 @@ DECINLINE static int adjustScale128(guint64* palo, guint64* pahi, int deltaScale
 /* input: c * 10^-(*pScale) * 2^-exp
    output: c * 10^-(*pScale) with 
    minScale <= *pScale <= maxScale and (chi >> 32) == 0 */
-DECINLINE static int rescale128(guint64* pclo, guint64* pchi, int* pScale, int exp,
+DECINLINE static int rescale128(guint64* pclo, guint64* pchi, int* pScale, int texp,
                                 int minScale, int maxScale, int roundFlag)
 {
     guint32 factor, overhang;
     int scale, i, rc, roundBit = 0;
 
-    PRECONDITION(exp >= 0);
+    PRECONDITION(texp >= 0);
 
     scale = *pScale;
 
-    if (exp > 0) {
+    if (texp > 0) {
         /* reduce exp */
-        while (exp > 0 && scale <= maxScale) {
+        while (texp > 0 && scale <= maxScale) {
             overhang = (guint32)(*pchi >> 32);
-            while (exp > 0 && ((*pclo & 1) == 0 || overhang > (2<<DECIMAL_MAX_INTFACTORS))) {
-                if (--exp == 0) roundBit = (int)(*pclo & 1);
+            while (texp > 0 && ((*pclo & 1) == 0 || overhang > (2<<DECIMAL_MAX_INTFACTORS))) {
+                if (--texp == 0) roundBit = (int)(*pclo & 1);
                 rshift128(pclo, pchi);
                 overhang = (guint32)(*pchi >> 32);
             }
 
-            if (exp > DECIMAL_MAX_INTFACTORS) i = DECIMAL_MAX_INTFACTORS;
-            else i = exp;
+            if (texp > DECIMAL_MAX_INTFACTORS) i = DECIMAL_MAX_INTFACTORS;
+            else i = texp;
             if (scale + i > maxScale) i = maxScale - scale;
             if (i == 0) break;
-            exp -= i;
+            texp -= i;
             scale += i;
             factor = constantsDecadeInt32Factors[i] >> i; /* 10^i/2^i=5^i */
             mult128by32(pclo, pchi, factor, 0);
-    //printf("3: %.17e\n", (((double)chi) * pow(2,64) + clo) * pow(10, -scale) * pow(2, -exp));
+    //printf("3: %.17e\n", (((double)chi) * pow(2,64) + clo) * pow(10, -scale) * pow(2, -texp));
         }
 
-        while (exp > 0) {
-            if (--exp == 0) roundBit = (int)(*pclo & 1);
+        while (texp > 0) {
+            if (--texp == 0) roundBit = (int)(*pclo & 1);
             rshift128(pclo, pchi);
         }
     }
 
-    TEST(exp == 0);
+    TEST(texp == 0);
 
     while (scale > maxScale) {
         i = scale - maxScale;
@@ -805,16 +805,16 @@ gint32 mono_decimalIncr(/*[In, Out]*/decimal_repr* pA, /*[In]*/decimal_repr* pB)
     return pack128toDecimal(pA, alo, ahi, scaleA, sign);
 }
 
-/* performs a += factor * constants[index] */
-static int incMultConstant128(guint64* palo, guint64* pahi, int index, int factor)
+/* performs a += factor * constants[idx] */
+static int incMultConstant128(guint64* palo, guint64* pahi, int idx, int factor)
 {
     guint64 blo, bhi, h;
 
-    PRECONDITION(index >= 0 && index <= DECIMAL_MAX_SCALE);
+    PRECONDITION(idx >= 0 && idx <= DECIMAL_MAX_SCALE);
     PRECONDITION(factor > 0 && factor <= 9);
 
-    blo = dec128decadeFactors[index].lo;
-    h = bhi = dec128decadeFactors[index].hi;
+    blo = dec128decadeFactors[idx].lo;
+    h = bhi = dec128decadeFactors[idx].hi;
     if (factor != 1) {
         mult128by32(&blo, &bhi, factor, 0);
         if (h > bhi) return DECIMAL_OVERFLOW;
@@ -827,12 +827,12 @@ static int incMultConstant128(guint64* palo, guint64* pahi, int index, int facto
 
 DECINLINE static void div128DecadeFactor(guint64* palo, guint64* pahi, int powerOfTen)
 {
-    int index, roundBit = 0;
+    int idx, roundBit = 0;
 
     while (powerOfTen > 0) {
-        index = (powerOfTen > DECIMAL_MAX_INTFACTORS) ? DECIMAL_MAX_INTFACTORS : powerOfTen;
-        powerOfTen -= index;
-        roundBit = div128by32(palo, pahi, constantsDecadeInt32Factors[index], 0);
+        idx = (powerOfTen > DECIMAL_MAX_INTFACTORS) ? DECIMAL_MAX_INTFACTORS : powerOfTen;
+        powerOfTen -= idx;
+        roundBit = div128by32(palo, pahi, constantsDecadeInt32Factors[idx], 0);
     }
 
     if (roundBit) roundUp128(palo, pahi);
@@ -841,34 +841,34 @@ DECINLINE static void div128DecadeFactor(guint64* palo, guint64* pahi, int power
 /* calc significant digits of mantisse */
 DECINLINE static int calcDigits(guint64 alo, guint64 ahi)
 {
-    int log2 = 0;
-    int log10;
+    int tlog2 = 0;
+    int tlog10;
 
     if (ahi == 0) {
         if (alo == 0) {
             return 0; /* zero has no signficant digits */
         } else {
-            log2 = log2_64(alo);
+            tlog2 = log2_64(alo);
         }
     } else {
-        log2 = 64 + log2_64(ahi);
+        tlog2 = 64 + log2_64(ahi);
     }
 
-    log10 = (log2 * 1000) / 3322;
+    tlog10 = (tlog2 * 1000) / 3322;
     /* we need an exact floor value of log10(a) */
-    if (dec128decadeFactors[log10].hi > ahi
-            || (dec128decadeFactors[log10].hi == ahi
-                    && dec128decadeFactors[log10].lo > alo)) {
-        --log10;
+    if (dec128decadeFactors[tlog10].hi > ahi
+            || (dec128decadeFactors[tlog10].hi == ahi
+                    && dec128decadeFactors[tlog10].lo > alo)) {
+        --tlog10;
     }
-    return log10+1;
+    return tlog10+1;
 }
 
 gint32 mono_double2decimal(/*[Out]*/decimal_repr* pA, double val, gint32 digits)
 {
     guint64 alo, ahi;
     guint64* p = (guint64*)(&val);
-    int sigDigits, sign, exp, rc, scale;
+    int sigDigits, sign, texp, rc, scale;
     guint16 k;
 
     PRECONDITION(digits <= 15);
@@ -878,22 +878,22 @@ gint32 mono_double2decimal(/*[Out]*/decimal_repr* pA, double val, gint32 digits)
     alo = (*p & LIT_GUINT64(0xFFFFFFFFFFFFF)) | LIT_GUINT64(0x10000000000000);
     ahi = 0;
 
-    exp = (k & 0x7FF) - 0x3FF;
-    if (k == 0x7FF || exp >= 96) return DECIMAL_OVERFLOW; /* NaNs, SNaNs, Infinities or >= 2^96 */
-    if (k == 0 || exp <= -94) { /* Subnormals, Zeros or < 2^-94 */
+    texp = (k & 0x7FF) - 0x3FF;
+    if (k == 0x7FF || texp >= 96) return DECIMAL_OVERFLOW; /* NaNs, SNaNs, Infinities or >= 2^96 */
+    if (k == 0 || texp <= -94) { /* Subnormals, Zeros or < 2^-94 */
         DECINIT(pA); /* return zero */
         return DECIMAL_SUCCESS;
     }
 
-    exp -= 52;
-    if (exp > 0) {
-        for (; exp > 0; exp--) {
+    texp -= 52;
+    if (texp > 0) {
+        for (; texp > 0; texp--) {
             lshift128(&alo, &ahi);
         }
     }
 
     scale = 0;
-    rc = rescale128(&alo, &ahi, &scale, -exp, 0, DECIMAL_MAX_SCALE, 0);
+    rc = rescale128(&alo, &ahi, &scale, -texp, 0, DECIMAL_MAX_SCALE, 0);
     if (rc != DECIMAL_SUCCESS) return rc;
 
     sigDigits = calcDigits(alo, ahi);
@@ -1190,7 +1190,7 @@ void mono_decimalFloorAndTrunc(/*[In, Out]*/decimal_repr* pA, gint32 floorFlag)
 {
     guint64 alo, ahi;
     guint32 factor, rest;
-    int scale, sign, index;
+    int scale, sign, idx;
     int hasRest = 0;
 
     scale = pA->signscale.scale;
@@ -1200,9 +1200,9 @@ void mono_decimalFloorAndTrunc(/*[In, Out]*/decimal_repr* pA, gint32 floorFlag)
     sign = pA->signscale.sign;
 
     while (scale > 0) {
-        index = (scale > DECIMAL_MAX_INTFACTORS) ? DECIMAL_MAX_INTFACTORS : scale;
-        factor = constantsDecadeInt32Factors[index];
-        scale -= index;
+        idx = (scale > DECIMAL_MAX_INTFACTORS) ? DECIMAL_MAX_INTFACTORS : scale;
+        factor = constantsDecadeInt32Factors[idx];
+        scale -= idx;
         div128by32(&alo, &ahi, factor, &rest);
         hasRest = hasRest || (rest != 0);
     }
@@ -1269,7 +1269,7 @@ static int decimalDivSub(/*[In]*/decimal_repr* pA, /*[In]*/decimal_repr* pB,
     guint64 alo, ami, ahi;
     guint64 tlo, tmi, thi;
     guint32 blo, bmi, bhi;
-    int ashift, bshift, extraBit, exp;
+    int ashift, bshift, extraBit, texp;
 
     ahi = (((guint64)(pA->hi32)) << 32) | pA->mid32;
     ami = ((guint64)(pA->lo32)) << 32;
@@ -1308,22 +1308,22 @@ static int decimalDivSub(/*[In]*/decimal_repr* pA, /*[In]*/decimal_repr* pB,
     }
 
     div192by96to128(alo, ami, ahi, blo, bmi, bhi, pclo, pchi);
-    exp = 128 + ashift - bshift;
+    texp = 128 + ashift - bshift;
 
     if (extraBit) {
         rshift128(pclo, pchi);
         *pchi += LIT_GUINT64_HIGHBIT;
-        exp--;
+        texp--;
     }
 
     /* try loss free right shift */
-    while (exp > 0 && (*pclo & 1) == 0) {
+    while (texp > 0 && (*pclo & 1) == 0) {
         /* right shift */
         rshift128(pclo, pchi);
-        exp--;
+        texp--;
     }
 
-    *pExp = exp;
+    *pExp = texp;
 
     return DECIMAL_SUCCESS;
 }
@@ -1331,9 +1331,9 @@ static int decimalDivSub(/*[In]*/decimal_repr* pA, /*[In]*/decimal_repr* pB,
 gint32 mono_decimalDiv(/*[Out]*/decimal_repr* pC, /*[In]*/decimal_repr* pA, /*[In]*/decimal_repr* pB)
 {
     guint64 clo, chi; /* result */
-    int scale, exp, rc;
+    int scale, texp, rc;
 
-    rc = decimalDivSub(pA, pB, &clo, &chi, &exp);
+    rc = decimalDivSub(pA, pB, &clo, &chi, &texp);
     if (rc != DECIMAL_SUCCESS) {
         if (rc == DECIMAL_FINISHED) rc = DECIMAL_SUCCESS;
         return rc;
@@ -1343,7 +1343,7 @@ gint32 mono_decimalDiv(/*[Out]*/decimal_repr* pC, /*[In]*/decimal_repr* pA, /*[I
     scale = (int)pA->signscale.scale - (int)pB->signscale.scale;
 
     //test: printf("0: %.17e\n", (((double)chi) * pow(2,64) + clo) * pow(10, -scale) * pow(2, -exp));
-    rc = rescale128(&clo, &chi, &scale, exp, 0, DECIMAL_MAX_SCALE, 1);
+    rc = rescale128(&clo, &chi, &scale, texp, 0, DECIMAL_MAX_SCALE, 1);
     if (rc != DECIMAL_SUCCESS) return rc;
 
     return pack128toDecimal(pC, clo, chi, scale, pA->signscale.sign ^ pB->signscale.sign);
@@ -1352,9 +1352,9 @@ gint32 mono_decimalDiv(/*[Out]*/decimal_repr* pC, /*[In]*/decimal_repr* pA, /*[I
 gint32 mono_decimalIntDiv(/*[Out]*/decimal_repr* pC, /*[In]*/decimal_repr* pA, /*[In]*/decimal_repr* pB)
 {
     guint64 clo, chi; /* result */
-    int scale, exp, rc;
+    int scale, texp, rc;
 
-    rc = decimalDivSub(pA, pB, &clo, &chi, &exp);
+    rc = decimalDivSub(pA, pB, &clo, &chi, &texp);
     if (rc != DECIMAL_SUCCESS) {
         if (rc == DECIMAL_FINISHED) rc = DECIMAL_SUCCESS;
         return rc;
@@ -1364,7 +1364,7 @@ gint32 mono_decimalIntDiv(/*[Out]*/decimal_repr* pC, /*[In]*/decimal_repr* pA, /
     scale = (int)pA->signscale.scale - (int)pB->signscale.scale;
 
     /* truncate result to integer */
-    rc = rescale128(&clo, &chi, &scale, exp, 0, 0, 0);
+    rc = rescale128(&clo, &chi, &scale, texp, 0, 0, 0);
     if (rc != DECIMAL_SUCCESS) return rc;
 
     return pack128toDecimal(pC, clo, chi, scale, pA->signscale.sign);
@@ -1374,18 +1374,18 @@ gint32 mono_decimalIntDiv(/*[Out]*/decimal_repr* pC, /*[In]*/decimal_repr* pA, /
    If q is the exact value for log2(a), then q <= decimalLog2(a) <= q+1 */
 DECINLINE static int decimalLog2(/*[In]*/decimal_repr* pA)
 {
-    int log2;
+    int tlog2;
     int scale = pA->signscale.scale;
 
-    if (pA->hi32 != 0) log2 = 64 + log2_32(pA->hi32);
-    else if (pA->mid32 != 0) log2 = 32 + log2_32(pA->mid32);
-    else log2 = log2_32(pA->lo32);
+    if (pA->hi32 != 0) tlog2 = 64 + log2_32(pA->hi32);
+    else if (pA->mid32 != 0) tlog2 = 32 + log2_32(pA->mid32);
+    else tlog2 = log2_32(pA->lo32);
 
-    if (log2 != DECIMAL_LOG_NEGINF) {
-        log2 -= (scale * 33219) / 10000;
+    if (tlog2 != DECIMAL_LOG_NEGINF) {
+        tlog2 -= (scale * 33219) / 10000;
     }
 
-    return log2;
+    return tlog2;
 }
 
 DECINLINE static int decimalIsZero(/*[In]*/decimal_repr* pA)
@@ -1423,12 +1423,12 @@ gint32 mono_decimalCompare(/*[In]*/decimal_repr* pA, /*[In]*/decimal_repr* pB)
 }
 
 /* d=(-1)^sign * n * 2^(k-52) with sign (1bit), k(11bit), n-2^52(52bit) */  
-DECINLINE static void buildIEEE754Double(double* pd, int sign, int exp, guint64 mantisse)
+DECINLINE static void buildIEEE754Double(double* pd, int sign, int texp, guint64 mantisse)
 {
     guint64* p = (guint64*) pd;
 
     PRECONDITION(sign == 0 || sign == 1);
-    *p = (((guint64)sign) << 63) | (((guint64)((1023+exp)&0x7ff)) << 52) | mantisse;
+    *p = (((guint64)sign) << 63) | (((guint64)((1023+texp)&0x7ff)) << 52) | mantisse;
 }
 
 double mono_decimal2double(/*[In]*/decimal_repr* pA)
@@ -1436,7 +1436,7 @@ double mono_decimal2double(/*[In]*/decimal_repr* pA)
     double d;
     guint64 alo, ahi, mantisse;
     guint32 overhang, factor, roundBits;
-    int scale, exp, log5, i;
+    int scale, texp, log5, i;
 
     ahi = (((guint64)(pA->hi32)) << 32) | pA->mid32;
     alo = ((guint64)(pA->lo32)) << 32;
@@ -1444,14 +1444,14 @@ double mono_decimal2double(/*[In]*/decimal_repr* pA)
     /* special case zero */
     if (ahi == 0 && alo == 0) return 0.0;
 
-    exp = 0;
+    texp = 0;
     scale = pA->signscale.scale;
 
     /* transform n * 10^-scale and exp = 0 => m * 2^-exp and scale = 0 */
     while (scale > 0) {
         while ((ahi & LIT_GUINT64_HIGHBIT) == 0) {
             lshift128(&alo, &ahi);
-            exp++;
+            texp++;
         }
 
         overhang = (guint32) (ahi >> 32);
@@ -1470,14 +1470,14 @@ double mono_decimal2double(/*[In]*/decimal_repr* pA)
             /* n * 10^-scale * 2^-exp => m * 10^-(scale-i) * 2^-(exp+i) with m = n * 5^-i */
             div128by32(&alo, &ahi, factor, 0);
             scale -= i;
-            exp += i;
+            texp += i;
         }
     }
 
     /* normalize significand (highest bit should be 1) */
     while ((ahi & LIT_GUINT64_HIGHBIT) == 0) {
         lshift128(&alo, &ahi);
-        exp++;
+        texp++;
     }
 
     /* round to nearest even */
@@ -1485,25 +1485,25 @@ double mono_decimal2double(/*[In]*/decimal_repr* pA)
     ahi += 0x400;
     if ((ahi & LIT_GUINT64_HIGHBIT) == 0) { /* overflow ? */
         ahi >>= 1;
-        exp++;
+        texp++;
     } else if ((roundBits & 0x400) == 0) ahi &= ~1;
 
     /* 96 bit => 1 implizit bit and 52 explicit bits */
     mantisse = (ahi & ~LIT_GUINT64_HIGHBIT) >> 11;
 
-    buildIEEE754Double(&d, pA->signscale.sign, -exp+95, mantisse);
+    buildIEEE754Double(&d, pA->signscale.sign, -texp+95, mantisse);
 
     return d;
 }
 
 /* a *= 10^exp */
-gint32 mono_decimalSetExponent(/*[In, Out]*/decimal_repr* pA, gint32 exp)
+gint32 mono_decimalSetExponent(/*[In, Out]*/decimal_repr* pA, gint32 texp)
 {
     guint64 alo, ahi;
     int rc;
     int scale = pA->signscale.scale;
 
-    scale -= exp;
+    scale -= texp;
 
     if (scale < 0 || scale > DECIMAL_MAX_SCALE) {
         DECTO128(pA, alo, ahi);

@@ -81,9 +81,9 @@ get_sections_elf32 (MonoDebugSymbolFile *symfile, gboolean emit_warnings)
 
 	symfile->section_offsets = g_new0 (MonoDebugSymbolFileSection, MONO_DEBUG_SYMBOL_SECTION_MAX);
 
-	section = symfile->raw_contents + header->e_shoff;
+	section = (Elf32_Shdr *)((char *)symfile->raw_contents + header->e_shoff);
 	strtab_section = section + header->e_shstrndx;
-	strtab = symfile->raw_contents + strtab_section->sh_offset;
+	strtab = (char *)symfile->raw_contents + strtab_section->sh_offset;
 
 	for (i = 0; i < header->e_shnum; i++, section++) {
 		const gchar *name = strtab + section->sh_name;
@@ -223,7 +223,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 	if (!symfile->section_offsets [MONO_DEBUG_SYMBOL_SECTION_MONO_RELOC_TABLE].file_offset)
 		return;
 
-	reloc_ptr = reloc_start = symfile->raw_contents +
+	reloc_ptr = reloc_start = (char *)symfile->raw_contents +
 		symfile->section_offsets [MONO_DEBUG_SYMBOL_SECTION_MONO_RELOC_TABLE].file_offset;
 
 	version = *((guint16 *) reloc_ptr)++;
@@ -266,8 +266,8 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			continue;
 		}
 
-		base_ptr = symfile->raw_contents + symfile->section_offsets [section].file_offset;
-		base_ptr += offset;
+		base_ptr = (char *)symfile->raw_contents + symfile->section_offsets [section].file_offset;
+		base_ptr = (char *)base_ptr + offset;
 
 		switch (type) {
 		case MRT_target_address_size:
@@ -303,7 +303,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				continue;
 			}
 
-			* (void **) base_ptr = minfo->code_start + minfo->code_size;
+			* (void **) base_ptr = (char *)minfo->code_start + minfo->code_size;
 
 			break;
 		}
@@ -338,7 +338,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				   minfo->code_start + address);
 #endif
 
-			* (void **) base_ptr = minfo->code_start + address;
+			* (void **) base_ptr = (char *)minfo->code_start + address;
 
 			break;
 		}
@@ -435,7 +435,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			guint32 token = *((guint32 *) tmp_ptr)++;
 			guint32 original = *((guint32 *) tmp_ptr)++;
 			MonoClass *klass = mono_debug_class_get (symfile, token);
-			guint32 offset;
+			guint32 off;
 
 			if (!klass)
 				continue;
@@ -451,16 +451,16 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			if (!klass->fields)
 				continue;
 
-			offset = klass->fields [original].offset;
+			off = klass->fields [original].offset;
 			if (klass->byval_arg.type == MONO_TYPE_VALUETYPE)
-				offset -= sizeof (MonoObject);
+				off -= sizeof (MonoObject);
 
 #if 0
 			g_message ("Setting field %d of type %u to offset %d", original,
-				   token, offset);
+				   token, off);
 #endif
 
-			* (guint32 *) base_ptr = offset;
+			* (guint32 *) base_ptr = off;
 
 			break;
 		}
@@ -469,17 +469,17 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			break;
 
 		case MRT_mono_string_offset: {
-			guint32 index = *((guint32 *) tmp_ptr)++;
+			guint32 idx = *((guint32 *) tmp_ptr)++;
 			MonoString string;
-			guint32 offset;
+			guint32 off;
 
-			switch (index) {
+			switch (idx) {
 			case MRI_string_offset_length:
-				offset = (guchar *) &string.length - (guchar *) &string;
+				off = (guchar *) &string.length - (guchar *) &string;
 				break;
 
 			case MRI_string_offset_vector:
-				offset = (guchar *) &string.c_str - (guchar *) &string;
+				off = (guchar *) &string.c_str - (guchar *) &string;
 				break;
 
 			default:
@@ -488,7 +488,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				continue;
 			}
 
-			* (guint32 *) base_ptr = offset;
+			* (guint32 *) base_ptr = off;
 
 			break;
 		}
@@ -497,21 +497,21 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			break;
 
 		case MRT_mono_array_offset: {
-			guint32 index = *((guint32 *) tmp_ptr)++;
+			guint32 idx = *((guint32 *) tmp_ptr)++;
 			MonoArray array;
-			guint32 offset;
+			guint32 off;
 
-			switch (index) {
+			switch (idx) {
 			case MRI_array_offset_bounds:
-				offset = (guchar *) &array.bounds - (guchar *) &array;
+				off = (guchar *) &array.bounds - (guchar *) &array;
 				break;
 
 			case MRI_array_offset_max_length:
-				offset = (guchar *) &array.max_length - (guchar *) &array;
+				off = (guchar *) &array.max_length - (guchar *) &array;
 				break;
 
 			case MRI_array_offset_vector:
-				offset = (guchar *) &array.vector - (guchar *) &array;
+				off = (guchar *) &array.vector - (guchar *) &array;
 				break;
 
 			default:
@@ -520,7 +520,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				continue;
 			}
 
-			* (guint32 *) base_ptr = offset;
+			* (guint32 *) base_ptr = off;
 
 			break;
 		}
@@ -530,17 +530,17 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			break;
 
 		case MRT_mono_array_bounds_offset: {
-			guint32 index = *((guint32 *) tmp_ptr)++;
+			guint32 idx = *((guint32 *) tmp_ptr)++;
 			MonoArrayBounds bounds;
-			guint32 offset;
+			guint32 off;
 
-			switch (index) {
+			switch (idx) {
 			case MRI_array_bounds_offset_lower:
-				offset = (guchar *) &bounds.lower_bound - (guchar *) &bounds;
+				off = (guchar *) &bounds.lower_bound - (guchar *) &bounds;
 				break;
 
 			case MRI_array_bounds_offset_length:
-				offset = (guchar *) &bounds.length - (guchar *) &bounds;
+				off = (guchar *) &bounds.length - (guchar *) &bounds;
 				break;
 
 			default:
@@ -549,7 +549,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				continue;
 			}
 
-			* (guint32 *) base_ptr = offset;
+			* (guint32 *) base_ptr = off;
 
 			break;
 		}
