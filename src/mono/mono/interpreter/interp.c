@@ -4552,8 +4552,6 @@ quit_function (MonoDomain *domain, gpointer user_data)
 
 }
 
-static CRITICAL_SECTION ms;
-
 int 
 main (int argc, char *argv [])
 {
@@ -4609,17 +4607,11 @@ main (int argc, char *argv [])
 
 	g_set_prgname (file);
 	mono_set_rootdir ();
-	mono_config_parse (config_file);
 	
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
 	g_thread_init (NULL);
-
-	mono_init_icall ();
-	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", ves_icall_get_frame_info);
-	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", ves_icall_get_trace);
-	mono_add_internal_call ("Mono.Runtime::mono_runtime_install_handlers", mono_runtime_install_handlers);
 
 	frame_thread_id = TlsAlloc ();
 	TlsSetValue (frame_thread_id, NULL);
@@ -4633,6 +4625,12 @@ main (int argc, char *argv [])
 	mono_runtime_install_cleanup (quit_function);
 
 	domain = mono_init (file);
+	mono_config_parse (config_file);
+	mono_init_icall ();
+	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", ves_icall_get_frame_info);
+	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", ves_icall_get_trace);
+	mono_add_internal_call ("Mono.Runtime::mono_runtime_install_handlers", mono_runtime_install_handlers);
+
 	mono_runtime_init (domain, NULL, NULL);
 
 	main_args.domain=domain;
