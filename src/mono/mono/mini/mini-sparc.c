@@ -3596,7 +3596,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				int i;
 
 				if (offset <= 16) {
-					for (i = 0; i < offset; ++i) {
+					i = 0;
+					while (i < offset) {
 						if (sparcv9) {
 							sparc_stx_imm (code, sparc_g0, ins->dreg, i);
 							i += 8;
