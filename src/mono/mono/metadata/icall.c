@@ -74,6 +74,14 @@ mono_double_ParseImpl (char *ptr)
 	return result;
 }
 
+static void
+ves_icall_System_Double_AssertEndianity (double *value)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	MONO_DOUBLE_ASSERT_ENDIANITY (value);
+}
+
 static MonoObject *
 ves_icall_System_Array_GetValueImpl (MonoObject *this, guint32 pos)
 {
@@ -3895,6 +3903,7 @@ static gconstpointer icall_map [] = {
 	 * System.Double
 	 */
 	"System.Double::ParseImpl",    mono_double_ParseImpl,
+	"System.Double::AssertEndianity", ves_icall_System_Double_AssertEndianity,
 
 	/*
 	 * System.Decimal

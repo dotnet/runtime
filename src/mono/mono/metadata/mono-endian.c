@@ -76,30 +76,4 @@ mono_read64 (const unsigned char *x)
 	return r.i;
 }
 
-guint64
-mono_read64_swap_words (const unsigned char *x)
-{
-	mono_rint64 r;
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-	r.c [0] = x [4];
-	r.c [1] = x [5];
-	r.c [2] = x [6];
-	r.c [3] = x [7];
-	r.c [4] = x [0];
-	r.c [5] = x [1];
-	r.c [6] = x [2];
-	r.c [7] = x [3];
-#else
-	r.c [7] = x [4];
-	r.c [6] = x [5];
-	r.c [5] = x [6];
-	r.c [4] = x [7];
-	r.c [3] = x [0];
-	r.c [2] = x [1];
-	r.c [1] = x [2];
-	r.c [0] = x [3];
-#endif
-	return r.i;
-}
-
 #endif

@@ -11,14 +11,27 @@ typedef union {
 typedef union {
 	guint64 ival;
 	double fval;
+	unsigned char cval [8];
 } mono_rdouble;
+
+#if defined(__arm__) && G_BYTE_ORDER == G_LITTLE_ENDIAN
+#define MONO_DOUBLE_ASSERT_ENDIANITY(dbl_ptr) \
+	do { \
+		mono_rdouble r;	\
+		r.fval = *dbl_ptr;	\
+		r.ival = (guint64) *((guint32 *) r.cval) << 32 |	\
+				*((guint32 *) (r.cval + 4));	\
+		*dbl_ptr = r.fval;	\
+	} while (0)
+#else
+#define MONO_DOUBLE_ASSERT_ENDIANITY(dbl_ptr)
+#endif
 
 #if NO_UNALIGNED_ACCESS
 
 guint16 mono_read16 (const unsigned char *x);
 guint32 mono_read32 (const unsigned char *x);
 guint64 mono_read64 (const unsigned char *x);
-guint64 mono_read64_swap_words (const unsigned char *x);
 
 #define read16(x) (mono_read16 ((const unsigned char *)(x)))
 #define read32(x) (mono_read32 ((const unsigned char *)(x)))
@@ -39,23 +52,12 @@ guint64 mono_read64_swap_words (const unsigned char *x);
 		*(dest) = mf.fval;	\
 	} while (0)
 
-#ifdef __arm__
-
-#define readr8(x,dest)	\
-	do {	\
-		mono_rdouble mf;	\
-		mf.ival = mono_read64_swap_words ((x));	\
-		*(dest) = mf.fval;	\
-	} while (0)
-#else
-
 #define readr8(x,dest)	\
 	do {	\
 		mono_rdouble mf;	\
 		mf.ival = read64 ((x));	\
+		MONO_DOUBLE_ASSERT_ENDIANITY (&mf.fval);	\
 		*(dest) = mf.fval;	\
 	} while (0)
-
-#endif /* __arm__ */
 
 #endif /* _MONO_METADATA_ENDIAN_H_ */
