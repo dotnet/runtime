@@ -173,6 +173,7 @@ TEST_IL_SRC=			\
 	locallocTest.il		\
 	initblkTest.il		\
 	even-odd.il		\
+	qt-instance.il		\
 	bug-29859.il
 
 
