@@ -6201,6 +6201,8 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 
 	g_assert (klass != NULL);
 
+	mono_marshal_load_type_info (klass);
+
 	if (klass->str_to_ptr)
 		return klass->str_to_ptr;
 
@@ -6263,6 +6265,8 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 	MonoMethod *res;
 
 	g_assert (klass != NULL);
+
+	mono_marshal_load_type_info (klass);
 
 	if (klass->ptr_to_str)
 		return klass->ptr_to_str;
@@ -7308,8 +7312,7 @@ mono_marshal_load_type_info (MonoClass* klass)
  */
 gint32
 mono_class_native_size (MonoClass *klass, guint32 *align)
-{
-	
+{	
 	if (!klass->marshal_info)
 		mono_marshal_load_type_info (klass);
 
