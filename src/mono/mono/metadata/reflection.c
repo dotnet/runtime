@@ -86,6 +86,8 @@ const unsigned char table_sizes [64] = {
 	0	/* 0x2A */
 };
 
+static guint32 mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type);
+
 static void
 alloc_table (MonoDynamicTable *table, guint nrows)
 {
@@ -158,10 +160,10 @@ mono_image_add_stream_data (MonoDynamicStream *stream, char *data, guint32 len)
 }
 
 static void
-encode_type (MonoType *type, char *p, char **endbuf)
+encode_type (MonoDynamicAssembly *assembly, MonoType *type, char *p, char **endbuf)
 {
 	if (!type) {
-		mono_metadata_encode_value (MONO_TYPE_VOID, p, endbuf);
+		g_assert_not_reached ();
 		return;
 	}
 		
@@ -187,16 +189,37 @@ encode_type (MonoType *type, char *p, char **endbuf)
 		mono_metadata_encode_value (type->type, p, endbuf);
 		break;
 	case MONO_TYPE_SZARRAY:
-		mono_metadata_encode_value (type->type, p, endbuf);
-		encode_type (type->data.type, p, endbuf);
+		mono_metadata_encode_value (type->type, p, &p);
+		encode_type (assembly, type->data.type, p, endbuf);
 		break;
+	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
-		mono_metadata_encode_value (type->type, p, endbuf);
-		g_warning ("need to encode class %s", type->data.klass->name);
+		mono_metadata_encode_value (type->type, p, &p);
+		mono_metadata_encode_value (mono_image_typedef_or_ref (assembly, type), p, endbuf);
 		break;
 	default:
 		g_error ("need to encode type %x", type->type);
 	}
+}
+
+static void
+encode_reflection_type (MonoDynamicAssembly *assembly, MonoReflectionType *type, char *p, char **endbuf)
+{
+	MonoReflectionTypeBuilder *tb;
+	guint32 token;
+	
+	if (type->type) {
+		encode_type (assembly, type->type, p, endbuf);
+		return;
+	}
+
+	tb = (MonoReflectionTypeBuilder*) type;
+	token = TYPEDEFORREF_TYPEDEF | (tb->table_idx << TYPEDEFORREF_BITS); /* typedef */
+
+	/* FIXME: handle other base types ... */
+	mono_metadata_encode_value (MONO_TYPE_CLASS, p, &p);
+	mono_metadata_encode_value (token, p, endbuf);
+	/*g_print ("encoding type %s to 0x%08x\n", mono_string_to_utf8 (tb->name), token);*/
 }
 
 static guint32
@@ -220,9 +243,9 @@ method_encode_signature (MonoDynamicAssembly *assembly, MonoMethodSignature *sig
 		*p |= 0x20; /* hasthis */
 	p++;
 	mono_metadata_encode_value (nparams, p, &p);
-	encode_type (sig->ret, p, &p);
+	encode_type (assembly, sig->ret, p, &p);
 	for (i = 0; i < nparams; ++i)
-		encode_type (sig->params [i], p, &p);
+		encode_type (assembly, sig->params [i], p, &p);
 	/* store length */
 	mono_metadata_encode_value (p-buf, b, &b);
 	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
@@ -255,10 +278,10 @@ method_builder_encode_signature (MonoDynamicAssembly *assembly, ReflectionMethod
 		*p |= 0x20; /* hasthis */
 	p++;
 	mono_metadata_encode_value (nparams, p, &p);
-	encode_type (mb->rtype->type, p, &p);
+	encode_reflection_type (assembly, mb->rtype, p, &p);
 	for (i = 0; i < nparams; ++i) {
 		MonoReflectionType *pt = mono_array_get (mb->parameters, MonoReflectionType*, i);
-		encode_type (pt->type, p, &p);
+		encode_reflection_type (assembly, pt, p, &p);
 	}
 	/* store length */
 	mono_metadata_encode_value (p-buf, b, &b);
@@ -292,7 +315,7 @@ encode_locals (MonoDynamicAssembly *assembly, MonoReflectionILGen *ilgen)
 	mono_metadata_encode_value (nl, p, &p);
 	for (i = 0; i < nl; ++i) {
 		MonoReflectionLocalBuilder *lb = mono_array_get (ilgen->locals, MonoReflectionLocalBuilder*, i);
-		encode_type (lb->type->type, p, &p);
+		encode_reflection_type (assembly, lb->type, p, &p);
 	}
 	mono_metadata_encode_value (p-buf, b, &b);
 	sig_idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
@@ -322,6 +345,8 @@ method_encode_code (MonoDynamicAssembly *assembly, ReflectionMethodBuilder *mb)
 	guint32 local_sig = 0;
 	MonoArray *code;
 
+	/*if (mb->name)
+		g_print ("Encode method %s\n", mono_string_to_utf8 (mb->name));*/
 	if (mb->ilgen) {
 		code = mb->ilgen->code;
 		code_size = mb->ilgen->code_len;
@@ -477,6 +502,30 @@ mono_image_get_ctor_info (MonoReflectionCtorBuilder *mb, MonoDynamicAssembly *as
 }
 
 static guint32
+fieldref_encode_signature (MonoDynamicAssembly *assembly, MonoClassField *field)
+{
+	char blob_size [64];
+	char *b = blob_size;
+	char *p;
+	char* buf;
+	guint32 idx;
+	
+	p = buf = g_malloc (64);
+	
+	/* No start code with field refs...
+	 * mono_metadata_encode_value (0x06, p, &p);
+	 */
+	/* encode custom attributes before the type */
+	encode_type (assembly, field->type, p, &p);
+	g_assert (p-buf < 64);
+	mono_metadata_encode_value (p-buf, b, &b);
+	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
+	mono_image_add_stream_data (&assembly->blob, buf, p-buf);
+	g_free (buf);
+	return idx;
+}
+
+static guint32
 field_encode_signature (MonoDynamicAssembly *assembly, MonoReflectionFieldBuilder *fb)
 {
 	char blob_size [64];
@@ -489,7 +538,7 @@ field_encode_signature (MonoDynamicAssembly *assembly, MonoReflectionFieldBuilde
 	
 	mono_metadata_encode_value (0x06, p, &p);
 	/* encode custom attributes before the type */
-	encode_type (fb->type->type, p, &p);
+	encode_reflection_type (assembly, fb->type, p, &p);
 	g_assert (p-buf < 64);
 	mono_metadata_encode_value (p-buf, b, &b);
 	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
@@ -541,10 +590,10 @@ property_encode_signature (MonoDynamicAssembly *assembly, MonoReflectionProperty
 	p++;
 	mono_metadata_encode_value (nparams, p, &p);
 	if (mb) {
-		encode_type (mb->rtype->type, p, &p);
+		encode_reflection_type (assembly, mb->rtype, p, &p);
 		for (i = 0; i < nparams; ++i) {
 			MonoReflectionType *pt = mono_array_get (mb->parameters, MonoReflectionType*, i);
-			encode_type (pt->type, p, &p);
+			encode_reflection_type (assembly, pt, p, &p);
 		}
 	} else {
 		*p++ = 1; /* void: a property should probably not be allowed without a getter */
@@ -648,7 +697,7 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 }
 
 static guint32
-mono_image_get_methodref_token (MonoDynamicAssembly *assembly, MonoMethod *method)
+mono_image_get_memberref_token (MonoDynamicAssembly *assembly, MonoClass *klass, const char *name, guint32 sig)
 {
 	MonoDynamicTable *table;
 	guint32 *values;
@@ -658,7 +707,7 @@ mono_image_get_methodref_token (MonoDynamicAssembly *assembly, MonoMethod *metho
 	/*
 	 * FIXME: we need to cache the token.
 	 */
-	parent = mono_image_typedef_or_ref (assembly, &method->klass->byval_arg);
+	parent = mono_image_typedef_or_ref (assembly, &klass->byval_arg);
 	switch (parent & TYPEDEFORREF_MASK) {
 	case TYPEDEFORREF_TYPEREF:
 		pclass = MEMBERREF_PARENT_TYPEREF;
@@ -678,12 +727,26 @@ mono_image_get_methodref_token (MonoDynamicAssembly *assembly, MonoMethod *metho
 	alloc_table (table, table->rows + 1);
 	values = table->values + table->next_idx * MONO_MEMBERREF_SIZE;
 	values [MONO_MEMBERREF_CLASS] = pclass | (parent << MEMBERREF_PARENT_BITS);
-	values [MONO_MEMBERREF_NAME] = string_heap_insert (&assembly->sheap, method->name);
-	values [MONO_MEMBERREF_SIGNATURE] = method_encode_signature (assembly, method->signature);
+	values [MONO_MEMBERREF_NAME] = string_heap_insert (&assembly->sheap, name);
+	values [MONO_MEMBERREF_SIGNATURE] = sig;
 	token = MONO_TOKEN_MEMBER_REF | table->next_idx;
 	table->next_idx ++;
 
 	return token;
+}
+
+static guint32
+mono_image_get_methodref_token (MonoDynamicAssembly *assembly, MonoMethod *method)
+{
+	return mono_image_get_memberref_token (assembly, method->klass, 
+		method->name,  method_encode_signature (assembly, method->signature));
+}
+
+static guint32
+mono_image_get_fieldref_token (MonoDynamicAssembly *assembly, MonoClassField *field, MonoClass *klass)
+{
+	return mono_image_get_memberref_token (assembly, klass, 
+		field->name,  fieldref_encode_signature (assembly, field));
 }
 
 static void
@@ -1048,7 +1111,7 @@ mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *s
 	
 	if (!assembly->dynamic_assembly)
 		mono_image_basic_init (assembly);
-	mono_metadata_encode_value (str->length, b, &b);
+	mono_metadata_encode_value (str->length * 2, b, &b);
 	index = mono_image_add_stream_data (&assembly->dynamic_assembly->us, buf, b-buf);
 	/* FIXME: ENOENDIAN */
 	mono_image_add_stream_data (&assembly->dynamic_assembly->us, (char*)mono_string_chars (str), str->length * 2);
@@ -1079,11 +1142,18 @@ mono_image_create_token (MonoReflectionAssemblyBuilder *assembly, MonoObject *ob
 		/*g_print ("got token 0x%08x for %s\n", token, mono_string_to_utf8 (mb->name));*/
 		return token;
 	}
+	if (strcmp (klass->name, "ConstructorBuilder") == 0) {
+		MonoReflectionCtorBuilder *mb = (MonoReflectionCtorBuilder *)obj;
+		token = mb->table_idx | MONO_TOKEN_METHOD_DEF;
+		/*g_print ("got token 0x%08x for %s\n", token, mono_string_to_utf8 (mb->name));*/
+		return token;
+	}
 	if (strcmp (klass->name, "FieldBuilder") == 0) {
 		MonoReflectionFieldBuilder *mb = (MonoReflectionFieldBuilder *)obj;
 		return mb->table_idx | MONO_TOKEN_FIELD_DEF;
 	}
-	if (strcmp (klass->name, "MonoCMethod") == 0) {
+	if (strcmp (klass->name, "MonoCMethod") == 0 ||
+			strcmp (klass->name, "MonoMethod") == 0) {
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
 		token = mono_image_get_methodref_token (assembly->dynamic_assembly, m->method);
 		/*g_print ("got token 0x%08x for %s\n", token, m->method->name);*/
@@ -1266,7 +1336,22 @@ MonoReflectionType*
 mono_type_get_object (MonoType *type)
 {
 	MonoReflectionType *res;
+	MonoClass *klass;
 
+	/* 
+	 * FIXME: type may come from the cache in metadata.c, we hand out only
+	 * the types from a MonoClass structure: the long term fix is to just
+	 * load corlib always and remove the cache in metadata.c altogether.
+	 * Or we may still handle it this way so we can store in MonoType additional info
+	 * as we do now.
+	 */
+	klass = mono_class_from_mono_type (type);
+	if ((type != &klass->byval_arg) && (type != &klass->this_arg)) {
+		if (type->byref)
+			type = &klass->this_arg;
+		else
+			type = &klass->byval_arg;
+	}
 	CHECK_OBJECT (MonoReflectionType *, type);
 	res = (MonoReflectionType *)mono_object_new (mono_defaults.monotype_class);
 	res->type = type;

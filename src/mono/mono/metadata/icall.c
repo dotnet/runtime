@@ -212,6 +212,7 @@ ves_icall_type_from_name (MonoString *name)
 static MonoReflectionType*
 ves_icall_type_from_handle (MonoType *handle)
 {
+	mono_class_init (handle->data.klass);
 	return mono_type_get_object (handle);
 }
 
@@ -224,6 +225,11 @@ ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c)
 	while (!type->type) { /* FIXME: hack for TypeBuilder */
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)type;
 		type = tb->parent;
+	}
+
+	while (!c->type) { /* FIXME: hack for TypeBuilder */
+		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)c;
+		c = tb->parent;
 	}
 
 	klass = mono_class_from_mono_type (type->type);
@@ -390,21 +396,24 @@ search_method (MonoReflectionType *type, char *name, guint32 flags, MonoArray *a
 	int i, j;
 
 	klass = mono_class_from_mono_type (type->type);
-	for (i = 0; i < klass->method.count; ++i) {
-		m = klass->methods [i];
-		if (!((m->flags & flags) == flags))
-			continue;
-		if (strcmp(m->name, name))
-			continue;
-		if (m->signature->param_count != mono_array_length (args))
-			continue;
-		for (j = 0; j < m->signature->param_count; ++j) {
-			paramt = mono_array_get (args, MonoReflectionType*, j);
-			if (!mono_metadata_type_equal (paramt->type, m->signature->params [j]))
-				break;
+	while (klass) {
+		for (i = 0; i < klass->method.count; ++i) {
+			m = klass->methods [i];
+			if (!((m->flags & flags) == flags))
+				continue;
+			if (strcmp(m->name, name))
+				continue;
+			if (m->signature->param_count != mono_array_length (args))
+				continue;
+			for (j = 0; j < m->signature->param_count; ++j) {
+				paramt = mono_array_get (args, MonoReflectionType*, j);
+				if (!mono_metadata_type_equal (paramt->type, m->signature->params [j]))
+					break;
+			}
+			if (j == m->signature->param_count)
+				return m;
 		}
-		if (j == m->signature->param_count)
-			return m;
+		klass = klass->parent;
 	}
 	g_print ("Method %s::%s (%d) not found\n", klass->name, name, mono_array_length (args));
 	return NULL;
