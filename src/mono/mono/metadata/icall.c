@@ -1822,7 +1822,11 @@ handle_parent:
 		goto handle_parent;
 	res = mono_array_new (domain, mono_defaults.method_info_class, len);
 	i = 0;
+#ifdef FIXED_MCS_45127
 	tmp = g_slist_reverse (l);
+#else
+	tmp = l;
+#endif
 	for (; tmp; tmp = tmp->next, ++i)
 		mono_array_set (res, gpointer, i, tmp->data);
 	g_slist_free (l);
@@ -1951,7 +1955,11 @@ handle_parent:
 			mono_defaults.corlib, "System.Reflection", "PropertyInfo");
 	res = mono_array_new (domain, System_Reflection_PropertyInfo, len);
 	i = 0;
+#ifdef FIXED_MCS_45127
 	tmp = g_slist_reverse (l);
+#else
+	tmp = l;
+#endif
 	for (; tmp; tmp = tmp->next, ++i)
 		mono_array_set (res, gpointer, i, tmp->data);
 	g_slist_free (l);
@@ -2059,7 +2067,11 @@ handle_parent:
 			mono_defaults.corlib, "System.Reflection", "EventInfo");
 	res = mono_array_new (domain, System_Reflection_EventInfo, len);
 	i = 0;
+#ifdef FIXED_MCS_45127
 	tmp = g_slist_reverse (l);
+#else
+	tmp = l;
+#endif
 	for (; tmp; tmp = tmp->next, ++i)
 		mono_array_set (res, gpointer, i, tmp->data);
 	g_slist_free (l);
