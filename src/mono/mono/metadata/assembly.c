@@ -216,6 +216,61 @@ mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, gpointer user_data)
 	assembly_load_hook = hook;
 }
 
+static gchar *
+absolute_dir (const gchar *filename)
+{
+	gchar *cwd;
+	gchar *mixed;
+	gchar **parts;
+	gchar *part;
+	GSList *list, *tmp;
+	GString *result;
+	gchar *res;
+	gint i;
+
+	if (g_path_is_absolute (filename))
+		return g_path_get_dirname (filename);
+
+	cwd = g_get_current_dir ();
+	mixed = g_build_filename (cwd, filename, NULL);
+	parts = g_strsplit (mixed, G_DIR_SEPARATOR_S, 0);
+	g_free (mixed);
+	g_free (cwd);
+
+	list = NULL;
+	for (i = 0; (part = parts [i]) != NULL; i++) {
+		if (!strcmp (part, "."))
+			continue;
+
+		if (!strcmp (part, "..")) {
+			if (list && list->next) /* Don't remove root */
+				list = g_slist_delete_link (list, list);
+		} else {
+			list = g_slist_prepend (list, part);
+		}
+	}
+
+	result = g_string_new ("");
+	list = g_slist_reverse (list);
+
+	/* Ignores last data pointer, which should be the filename */
+	for (tmp = list; tmp && tmp->next != NULL; tmp = tmp->next)
+		if (tmp->data)
+			g_string_append_printf (result, "%s%c", (char *) tmp->data,
+								G_DIR_SEPARATOR);
+	
+	res = result->str;
+	g_string_free (result, FALSE);
+	g_slist_free (list);
+	g_strfreev (parts);
+	if (*res == '\0') {
+		g_free (res);
+		return g_strdup (".");
+	}
+
+	return res;
+}
+
 /**
  * mono_assembly_open:
  * @filename: Opens the assembly pointed out by this name
@@ -252,8 +307,22 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		return NULL;
 	}
 
-	base_dir = g_path_get_dirname (filename);
-	
+#if defined (PLATFORM_WIN32)
+	{
+		gchar *tmp_fn;
+		tmp_fn = g_strdup (filename);
+		for (i = strlen (tmp_fn) - 1; i >= 0; i--) {
+			if (tmp_fn [i] == '/')
+				tmp_fn [i] = '\\';
+		}
+
+		base_dir = absolute_dir (tmp_fn);
+		g_free (tmp_fn);
+	}
+#else
+	base_dir = absolute_dir (filename);
+#endif
+
 	/*
 	 * Create assembly struct, and enter it into the assembly cache
 	 */
@@ -275,7 +344,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		ass->aname.build = cols [MONO_ASSEMBLY_BUILD_NUMBER];
 		ass->aname.revision = cols [MONO_ASSEMBLY_REV_NUMBER];
 
-		/* avoid loading the same assembly twixe for now... */
+		/* avoid loading the same assembly twice for now... */
 		if ((ass2 = search_loaded (&ass->aname))) {
 			g_free (ass);
 			g_free (base_dir);

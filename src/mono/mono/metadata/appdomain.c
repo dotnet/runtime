@@ -36,6 +36,10 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data);
  * Initialize the core AppDomain: this function will run also some
  * IL initialization code, so it needs the execution engine to be fully 
  * operational.
+ *
+ * AppDomain.SetupInformation is set up in mono_runtime_exec_main, where
+ * we know the entry_assembly.
+ *
  */
 void
 mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb)
@@ -48,7 +52,6 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb)
 
 	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
 	setup = (MonoAppDomainSetup *) mono_object_new (domain, class);
-	ves_icall_System_AppDomainSetup_InitAppDomainSetup (setup);
 
 	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
 	ad = (MonoAppDomain *) mono_object_new (domain, class);
@@ -81,7 +84,18 @@ mono_runtime_cleanup (MonoDomain *domain)
 void
 ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoAppDomainSetup *setup)
 {
-	/* FIXME: implement me */
+	MonoDomain* domain = mono_domain_get ();
+	MonoAssembly *assembly;
+	gchar *str;
+
+	assembly = domain->entry_assembly;
+	g_assert (assembly);
+
+	setup->application_base = mono_string_new (domain, assembly->basedir);
+	str = g_strconcat (assembly->basedir, assembly->aname.name,
+			   ".exe.config", NULL);
+	setup->configuration_file = mono_string_new (domain, str);
+	g_free (str);
 }
 
 /*

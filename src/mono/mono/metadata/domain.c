@@ -498,6 +498,7 @@ mono_domain_unload (MonoDomain *domain, gboolean force)
 	mono_mempool_destroy (domain->mp);
 	mono_mempool_destroy (domain->code_mp);
 	DeleteCriticalSection (&domain->lock);
+	domain->setup = NULL;
 	
 	/* FIXME: anything else required ? */
 

@@ -668,8 +668,10 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 	pa [0] = args;
 
 	domain = mono_object_domain (args);
-	if (!domain->entry_assembly)
+	if (!domain->entry_assembly) {
 		domain->entry_assembly = method->klass->image->assembly;
+		ves_icall_System_AppDomainSetup_InitAppDomainSetup (domain->setup);
+	}
 
 	/* FIXME: check signature of method */
 	if (method->signature->ret->type == MONO_TYPE_I4) {
