@@ -103,6 +103,7 @@ typedef struct {
 	MonoClass *iserializeable_class;
 	MonoClass *serializationinfo_class;
 	MonoClass *streamingcontext_class;
+	MonoClass *typed_reference_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults;

@@ -1298,6 +1298,8 @@ mono_class_from_mono_type (MonoType *type)
 		return mono_defaults.double_class;
 	case MONO_TYPE_STRING:
 		return mono_defaults.string_class;
+	case MONO_TYPE_TYPEDBYREF:
+		return mono_defaults.typed_reference_class;
 	case MONO_TYPE_ARRAY:
 		return mono_array_class_get (type->data.array->type, type->data.array->rank);
 	case MONO_TYPE_PTR:
