@@ -144,6 +144,10 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 
 	g_assert (class);
 
+	vt = class->cached_vtable;
+	if (vt && vt->domain == domain)
+		return vt;
+
 	/* can interfaces have static fields? */
 	if (class->flags & TYPE_ATTRIBUTE_INTERFACE)
 		g_assert_not_reached ();
@@ -273,6 +277,9 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	}
 
 	mono_g_hash_table_insert (domain->class_vtable_hash, class, vt);
+	if (!class->cached_vtable)
+		class->cached_vtable = vt;
+
 	mono_domain_unlock (domain);
 
 	/* make sure the the parent is initialized */

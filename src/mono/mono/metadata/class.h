@@ -8,6 +8,7 @@
 #define MONO_CLASS_IS_ARRAY(c) ((c)->rank)
 
 extern gboolean mono_print_vtable;
+typedef struct MonoVTable MonoVTable;
 
 typedef struct {
 	MonoType        *type;
@@ -140,17 +141,18 @@ struct _MonoClass {
 	MonoMethod *ptr_to_str;
 	MonoMethod *str_to_ptr;
 
+	MonoVTable *cached_vtable;
         MonoMethod **vtable;	
 };
 
-typedef struct {
+struct MonoVTable {
 	MonoClass  *klass;
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
 	guint       max_interface_id;
         gpointer   *interface_offsets;   
         gpointer    data;
         gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
-} MonoVTable;
+};
 
 typedef struct {
 	gulong new_object_count;
