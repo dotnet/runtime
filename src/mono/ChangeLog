@@ -1,3 +1,13 @@
+2003-05-02  Miguel de Icaza  <miguel@ximian.com>
+
+	* runtime/Makefile.am ($(monobins_DATA)): Use explicit file names
+	for the target exe binaries.
+
+	Copy cilc.exe and secutil.exe from the right paths to the right
+	location.
+
+	Add missing assemblies.
+
 2003-05-02  Alp Toker  <alp@atoker.com>
 
 	* data/config.in: new dll mapping entry for libglade
