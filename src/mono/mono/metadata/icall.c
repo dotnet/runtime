@@ -1857,6 +1857,7 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflection
 		val = mono_metadata_string_heap (assembly->assembly->image, i);
 		n = g_concat_dir_and_file (assembly->assembly->basedir, val);
 		result = (MonoObject*)mono_string_new (mono_object_domain (assembly), n);
+		/* check hash if needed */
 		g_free (n);
 		return result;
 	case IMPLEMENTATION_ASSEMBLYREF:
@@ -1865,6 +1866,42 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflection
 		break;
 	}
 	return NULL;
+}
+
+static MonoObject*
+ves_icall_System_Reflection_Assembly_GetFilesInternal (MonoReflectionAssembly *assembly, MonoString *name) {
+	MonoTableInfo *table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
+	MonoArray *result;
+	int i;
+	const char *val;
+	char *n;
+
+	/* check hash if needed */
+	if (name) {
+		n = mono_string_to_utf8 (name);
+		for (i = 0; i < table->rows; ++i) {
+			val = mono_metadata_string_heap (assembly->assembly->image, mono_metadata_decode_row_col (table, i, MONO_FILE_NAME));
+			if (strcmp (val, n) == 0) {
+				MonoString *fn;
+				g_free (n);
+				n = g_concat_dir_and_file (assembly->assembly->basedir, val);
+				fn = mono_string_new (mono_object_domain (assembly), n);
+				g_free (n);
+				return (MonoObject*)fn;
+			}
+		}
+		g_free (n);
+		return NULL;
+	}
+
+	for (i = 0; i < table->rows; ++i) {
+		result = mono_array_new (mono_object_domain (assembly), mono_defaults.string_class, table->rows);
+		val = mono_metadata_string_heap (assembly->assembly->image, mono_metadata_decode_row_col (table, i, MONO_FILE_NAME));
+		n = g_concat_dir_and_file (assembly->assembly->basedir, val);
+		mono_array_set (result, gpointer, i, mono_string_new (mono_object_domain (assembly), n));
+		g_free (n);
+	}
+	return (MonoObject*)result;
 }
 
 static MonoReflectionMethod*
@@ -2699,6 +2736,7 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Assembly::get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint,
 	"System.Reflection.Assembly::GetManifestResourceNames", ves_icall_System_Reflection_Assembly_GetManifestResourceNames,
 	"System.Reflection.Assembly::GetManifestResourceInternal", ves_icall_System_Reflection_Assembly_GetManifestResourceInternal,
+	"System.Reflection.Assembly::GetFilesInternal", ves_icall_System_Reflection_Assembly_GetFilesInternal,
 
 	/*
 	 * System.MonoType.
