@@ -519,7 +519,10 @@ void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock)
 
 gint32 ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal(void)
 {
+#ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": returning %d", WSAGetLastError());
+#endif
+
 	return(WSAGetLastError());
 }
 

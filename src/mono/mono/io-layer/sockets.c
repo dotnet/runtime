@@ -22,6 +22,7 @@
 #include <sys/sockio.h>    /* defines SIOCATMARK */
 #endif
 #include <unistd.h>
+#include <fcntl.h>
 
 #ifndef HAVE_MSG_NOSIGNAL
 #include <signal.h>
@@ -1106,7 +1107,20 @@ int ioctlsocket(guint32 handle, gint32 command, gpointer arg)
 		return(SOCKET_ERROR);
 	}
 
-	ret=ioctl(socket_private_handle->fd, command, arg);
+#ifdef O_NONBLOCK
+	/* This works better than ioctl(...FIONBIO...) on Linux (it causes
+	 * connect to return EINPROGRESS, but the ioctl doesn't seem to)
+	 */
+	if(command==FIONBIO) {
+		ret=fcntl(socket_private_handle->fd, F_GETFL, 0);
+		if(ret!=-1) {
+			ret=fcntl(socket_private_handle->fd, F_SETFL, ret|O_NONBLOCK);
+		}
+	} else
+#endif /* O_NONBLOCK */
+	{
+		ret=ioctl(socket_private_handle->fd, command, arg);
+	}
 	if(ret==-1) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION ": ioctl error: %s",
