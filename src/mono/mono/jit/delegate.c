@@ -14,8 +14,10 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
+#ifndef PLATFORM_WIN32
 #include "mono/io-layer/wapi.h"
 #include "mono/io-layer/uglify.h"
+#endif
 
 #include "jit.h"
 #include "codegen.h"

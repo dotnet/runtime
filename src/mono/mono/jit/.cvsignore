@@ -1,6 +1,7 @@
 Makefile
 Makefile.in
 *.o
+*.exe
 .libs
 .deps
 testjit

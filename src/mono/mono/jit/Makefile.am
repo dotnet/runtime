@@ -9,6 +9,8 @@ lib_LIBRARIES = libmono.a
 endif
 
 libmono_a_SOURCES =			\
+	win32-exception.c	\
+	win32-exception.h	\
 	codegen.h		\
 	codegen-x86.c		\
 	emit-x86.c		\

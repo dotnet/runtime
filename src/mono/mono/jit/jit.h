@@ -8,14 +8,22 @@
 #ifndef _MONO_JIT_JIT_H_
 #define _MONO_JIT_JIT_H_
 
+#include <config.h>
+
+#ifdef PLATFORM_WIN32
+#include "win32-exception.h"
+#else
 #include <signal.h>
+#endif
 
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/reflection.h>
+#ifndef PLATFORM_WIN32
 #include <mono/io-layer/critical-sections.h>
+#endif
 
 #include "regset.h"
 

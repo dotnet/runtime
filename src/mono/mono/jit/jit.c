@@ -3092,12 +3092,20 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 	return mono_runtime_exec_main (method, args);
 }
 
+#ifdef PLATFORM_WIN32
+#define GET_CONTEXT \
+	struct sigcontext *ctx = (struct sigcontext*)_dummy;
+#else
+#define GET_CONTEXT \
+	void **_p = (void **)&_dummy; \
+	struct sigcontext *ctx = (struct sigcontext *)++_p;
+#endif
+
 static void
 sigfpe_signal_handler (int _dummy)
 {
 	MonoException *exc;
-	void **_p = (void **)&_dummy;
-	struct sigcontext *ctx = (struct sigcontext *)++_p;
+	GET_CONTEXT
 
 	exc = mono_get_exception_divide_by_zero ();
 	
@@ -3110,8 +3118,7 @@ static void
 sigill_signal_handler (int _dummy)
 {
 	MonoException *exc;
-	void **_p = (void **)&_dummy;
-	struct sigcontext *ctx = (struct sigcontext *)++_p;
+	GET_CONTEXT
 
 	exc = mono_get_exception_execution_engine ("SIGILL");
 	
@@ -3124,8 +3131,7 @@ static void
 sigsegv_signal_handler (int _dummy)
 {
 	MonoException *exc;
-	void **_p = (void **)&_dummy;
-	struct sigcontext *ctx = (struct sigcontext *)++_p;
+	GET_CONTEXT
 
 	exc = mono_get_exception_null_reference ();
 	
@@ -3171,9 +3177,18 @@ static CRITICAL_SECTION ms;
 
 MonoDomain*
 mono_jit_init (char *file) {
+#ifndef PLATFORM_WIN32
 	struct sigaction sa;
+#endif
 	MonoDomain *domain;
 
+
+#ifdef PLATFORM_WIN32
+	win32_seh_init();
+	win32_seh_set_handler(SIGFPE, sigfpe_signal_handler);
+	win32_seh_set_handler(SIGILL, sigill_signal_handler);
+	win32_seh_set_handler(SIGSEGV, sigsegv_signal_handler);
+#else /* !PLATFORM_WIN32 */
 	/* catch SIGFPE */
 	sa.sa_handler = sigfpe_signal_handler;
 	sigemptyset (&sa.sa_mask);
@@ -3193,6 +3208,7 @@ mono_jit_init (char *file) {
 	sa.sa_flags = 0;
 	g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
 #endif
+#endif /* PLATFORM_WIN32 */
 
 	mono_init_icall ();
 	mono_add_internal_call ("__array_Set", ves_array_set);
@@ -3227,6 +3243,10 @@ mono_jit_cleanup (MonoDomain *domain)
 {
 	if (mono_debug_handle)
 		mono_debug_close (mono_debug_handle);
+
+#ifdef PLATFORM_WIN32
+	win32_seh_cleanup();
+#endif
 
 	mono_delegate_cleanup ();
 	mono_network_cleanup ();
