@@ -1007,7 +1007,9 @@ mono_image_close (MonoImage *image)
 		g_free (image->image_info);
 	}
 
-	g_free (image);
+	if (!image->dynamic)
+		/* Dynamic images are GC_MALLOCed */
+		g_free (image);
 }
 
 /** 
