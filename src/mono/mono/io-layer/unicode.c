@@ -8,17 +8,17 @@
 #include "unicode.h"
 
 /* This is a nasty kludge */
-static guint32 unicode_len(const gunichar2 *str)
+static guint32 
+unicode_len (const gunichar2 *str)
 {
-	guint32 len=0;
+	guint32 len = 0;
 	
 	do {
-		if(str[len]=='\0' && str[len+1]=='\0') {
-			return(len);
-		}
+		if (str [len] == '\0')
+			return len * 2;
 
-		len+=2;
-	} while(1);
+		len++;
+	} while (1);
 }
 
 gchar *_wapi_unicode_to_utf8(const gunichar2 *uni)
