@@ -6807,6 +6807,7 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 		g_free (klass->supertypes);
 		klass->supertypes = NULL;
 		mono_class_setup_parent (klass, parent);
+		mono_class_setup_mono_type (klass);
 		return;
 	}
 	
