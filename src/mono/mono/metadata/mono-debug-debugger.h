@@ -27,7 +27,8 @@ typedef enum {
 	MONO_DEBUGGER_EVENT_BREAKPOINT,
 	MONO_DEBUGGER_EVENT_RELOAD_SYMTABS,
 	MONO_DEBUGGER_EVENT_UNHANDLED_EXCEPTION,
-	MONO_DEBUGGER_EVENT_EXCEPTION
+	MONO_DEBUGGER_EVENT_EXCEPTION,
+	MONO_DEBUGGER_EVENT_THROW_EXCEPTION
 } MonoDebuggerEvent;
 
 typedef enum {
@@ -306,6 +307,8 @@ guint32         mono_debugger_lookup_type                 (const gchar *type_nam
 gint32          mono_debugger_lookup_assembly             (const gchar *name);
 gboolean        mono_debugger_unhandled_exception         (gpointer addr, gpointer stack, MonoObject *exc);
 void            mono_debugger_handle_exception            (gpointer addr, gpointer stack, MonoObject *exc);
+gboolean        mono_debugger_throw_exception             (gpointer addr, gpointer stack, MonoObject *exc);
+
 
 
 void *
