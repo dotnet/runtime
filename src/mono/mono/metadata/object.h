@@ -224,6 +224,9 @@ MonoObject *
 mono_object_new_specific    (MonoVTable *vtable);
 
 MonoObject *
+mono_object_new_alloc_specific (MonoVTable *vtable);
+
+MonoObject *
 mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, guint32 token);
 
 MonoArray*

@@ -3002,7 +3002,6 @@ static MonoObject *
 ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClassInstance (MonoReflectionType *type)
 {
 	MonoClass *klass;
-	MonoObject *obj;
 	MonoDomain *domain;
 	
 	MONO_ARCH_SAVE_REGS;

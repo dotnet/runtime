@@ -10,6 +10,7 @@
 #include <config.h>
 
 #include <glib.h>
+#include <string.h>
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/process.h>
