@@ -309,6 +309,48 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
 	return default_mono_runtime_invoke (method, obj, params);
 }
 
+static MonoArray* main_args;
+
+MonoArray*
+mono_runtime_get_main_args (void)
+{
+	return main_args;
+}
+
+/*
+ * Execute a standard Main() method (argc/argv contains the
+ * executable name). This method also sets the command line argument value
+ * needed by System.Environment.
+ */
+int
+mono_runtime_run_main (MonoMethod *method, int argc, char* argv[])
+{
+	int i;
+	MonoArray *args = NULL;
+	MonoDomain *domain = mono_domain_get ();
+
+	main_args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
+	for (i = 0; i < argc; ++i) {
+		MonoString *arg = mono_string_new (domain, argv [i]);
+		mono_array_set (main_args, gpointer, i, arg);
+	}
+	argc--;
+	argv++;
+	if (method->signature->param_count) {
+		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
+		for (i = 0; i < argc; ++i) {
+			MonoString *arg = mono_string_new (domain, argv [i]);
+			mono_array_set (args, gpointer, i, arg);
+		}
+	}
+	
+	return mono_runtime_exec_main (method, args);
+}
+
+/*
+ * Execute a standard Main() method (args doesn't contain the
+ * executable name).
+ */
 int
 mono_runtime_exec_main (MonoMethod *method, MonoArray *args)
 {
@@ -316,6 +358,7 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args)
 
 	pa [0] = args;
 
+	/* FIXME: check signature of method */
 	if (method->signature->ret->type == MONO_TYPE_I4) {
 		MonoObject *res;
 		res = mono_runtime_invoke (method, NULL, pa);
@@ -694,7 +737,7 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 	 * enable to get a good speedup: we still need to figure out
 	 * how the sync structure is freed.
 	 */
-#ifdef 0 && HAVE_BOEHM_GC
+#if 0
 	s = GC_malloc_atomic (sizeof (MonoString) + ((len + 1) * 2));
 	s->object.synchronisation = 0;
 	mono_string_chars (s) [len] = 0;

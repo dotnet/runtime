@@ -263,6 +263,12 @@ mono_runtime_invoke         (MonoMethod *method, void *obj, void **params);
 MonoObject*
 mono_runtime_invoke_array   (MonoMethod *method, void *obj, MonoArray *params);
 
+MonoArray*
+mono_runtime_get_main_args  (void);
+
+int
+mono_runtime_run_main       (MonoMethod *method, int argc, char* argv[]);
+
 int
 mono_runtime_exec_main      (MonoMethod *method, MonoArray *args);
 
