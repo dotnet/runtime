@@ -4,6 +4,13 @@ AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(mono, 0.17)
 AM_MAINTAINER_MODE
 
+#
+# These are the flags that need to be stored in the mono.pc file for 
+# compiling code that will embed Mono
+#
+libmono_cflags=""
+AC_SUBST(libmono_cflags)
+
 # Thread configuration inspired by sleepycat's db
 AC_MSG_CHECKING([host platform characteristics])
 case "$host" in
@@ -18,6 +25,7 @@ case "$host" in
 	*-*-*bsd*)
 		platform_win32=no
 		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE"
+		libmono_cflags="-D_THREAD_SAFE"
 		LDFLAGS="$LDFLAGS -pthread"
 		AC_DEFINE(NEED_LINK_UNLINK)
 		AC_DEFINE(PTHREAD_POINTER_ID)
@@ -25,14 +33,15 @@ case "$host" in
 		;;
 	*-*-linux*)
 		platform_win32=no
-		AC_DEFINE(MONO_USE_EXC_TABLES)
-		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -fexceptions"
+		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -DMONO_USE_EXC_TABLES -D_GNU_SOURCE -D_REENTRANT -fexceptions"
+		libmono_cflags="-DMONO_USE_EXC_TABLES -fexceptions -D_REENTRANT"
 		libdl="-ldl"
 		;;
 	*-*-solaris*)
 		platform_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT"
 		AC_DEFINE(NEED_LINK_UNLINK)
+		libmono_cflags="-D_REENTRANT"
 		;;
 	*)
 		AC_MSG_WARN([*** Please add $host to configure.in checks!])
