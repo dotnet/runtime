@@ -867,6 +867,15 @@
 			<maintainer>ndrochak@gol.com</maintainer>
 		</maintainers>
 	</class>
+	<class name="System.Diagnostics.DefaultTraceListener">
+		<last-activity>May-29-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>99</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
 	<class name="System.Diagnostics.DiagnosticsConfigurationHandler">
 		<last-activity>Jul-15-2001</last-activity>
 		<implementation>no</implementation>
@@ -874,6 +883,87 @@
 		<completion>?</completion>
 		<maintainers>
 			<maintainer>angryjohn69@nc.rr.com</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.FileVersionInfo">
+		<last-activity>Apr-03-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>??</completion>
+		<maintainers>
+			<maintainer>??</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.Process">
+		<last-activity>Apr-04-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>??</completion>
+		<maintainers>
+			<maintainer>??</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.ProcessModule">
+		<last-activity>Mar-31-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>??</completion>
+		<maintainers>
+			<maintainer>??</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.ProcessModuleCollection">
+		<last-activity>Apr-04-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>??</completion>
+		<maintainers>
+			<maintainer>??</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.ProcessPriorityClass">
+		<last-activity>Mar-31-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>??</completion>
+		<maintainers>
+			<maintainer>??</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.ProcessStartInfo">
+		<last-activity>May-08-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>??</completion>
+		<maintainers>
+			<maintainer>??</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.ProcessThread">
+		<last-activity>Apr-04-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>??</completion>
+		<maintainers>
+			<maintainer>??</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.ProcessThreadCollection">
+		<last-activity>Apr-04-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>??</completion>
+		<maintainers>
+			<maintainer>??</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.ProcessWindowStyle">
+		<last-activity>Apr-04-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>??</completion>
+		<maintainers>
+			<maintainer>??</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Diagnostics.StackFrame">
@@ -903,6 +993,42 @@
 			<maintainer>angryjohn69@nc.rr.com</maintainer>
 		</maintainers>
 	</class>
+	<class name="System.Diagnostics.TextWriterTraceListener">
+		<last-activity>May-27-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>No</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.ThreadPriorityLevel">
+		<last-activity>Apr-04-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>No</test-suite>
+		<completion>??</completion>
+		<maintainers>
+			<maintainer>??</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.ThreadState">
+		<last-activity>Apr-04-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>No</test-suite>
+		<completion>??</completion>
+		<maintainers>
+			<maintainer>??</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.ThreadWaitReason">
+		<last-activity>Apr-04-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>No</test-suite>
+		<completion>??</completion>
+		<maintainers>
+			<maintainer>??</maintainer>
+		</maintainers>
+	</class>
 	<class name="System.Diagnostics.Trace">
 		<last-activity>April-06-2002</last-activity>
 		<implementation>yes</implementation>
@@ -916,16 +1042,25 @@
 		<last-activity>Jul-15-2001</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>?</completion>
+		<completion>100</completion>
 		<maintainers>
 			<maintainer>angryjohn69@nc.rr.com</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Diagnostics.TraceListener">
-		<last-activity>Apr-07-2002</last-activity>
+		<last-activity>May-27-2002</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>99</completion>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>jonpryor@vt.edu</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Diagnostics.TraceListenerCollection">
+		<last-activity>Apr-27-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
 		<maintainers>
 			<maintainer>jonpryor@vt.edu</maintainer>
 		</maintainers>
