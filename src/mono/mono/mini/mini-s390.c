@@ -251,7 +251,8 @@ static void decodeParm (MonoType *, void *, int);
 static void enter_method (MonoMethod *, RegParm *, char *);
 static void leave_method (MonoMethod *, ...);
 static gboolean is_regsize_var (MonoType *);
-static void add_general (guint *, size_data *, ArgInfo *, gboolean);
+static inline void add_general (guint *, size_data *, ArgInfo *, gboolean);
+static inline void add_float (guint *, size_data *, ArgInfo *);
 static CallInfo * calculate_sizes (MonoMethodSignature *, size_data *, gboolean);
 static void peephole_pass (MonoCompile *, MonoBasicBlock *);
 static int mono_spillvar_offset (MonoCompile *, int);
@@ -623,11 +624,30 @@ enum_parmtype:
 				break;
 			case MONO_TYPE_VALUETYPE : {
 				int i;
+				MonoMarshalType *info;
+
 				if (type->data.klass->enumtype) {
 					simpleType = type->data.klass->enum_basetype->type;
 					printf("{VALUETYPE} - ");
 					goto enum_parmtype;
 				}
+
+				info = mono_marshal_load_type_info (type->data.klass);
+
+				if ((info->native_size == sizeof(float)) &&
+				    (info->num_fields  == 1) &&
+				    (info->fields[0].field->type->type == MONO_TYPE_R4)) {
+					printf("[FLOAT4:%f], ", *((float *) (curParm)));
+					break;
+				}
+
+				if ((info->native_size == sizeof(double)) &&
+				    (info->num_fields  == 1) &&
+				    (info->fields[0].field->type->type == MONO_TYPE_R8)) {
+					printf("[FLOAT8:%g], ", *((double *) (curParm)));
+					break;
+				}
+
 				printf("[VALUETYPE:");
 				for (i = 0; i < size; i++)
 					printf("%02x,", *((guint8 *)curParm+i));
@@ -675,8 +695,6 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	void *curParm;
 
 	fname = mono_method_full_name (method, TRUE);
-if (strcmp("(wrapper native-to-managed) Tests:call_int_delegate (Tests/return_int_delegate)",fname) == 0)
-printf("!!\n");
 	indent (1);
 	printf ("ENTER: %s(", fname);
 	g_free (fname);
@@ -910,13 +928,33 @@ handle_enum:
 		printf ("[FLOAT8:%g]\n", f);
 		break;
 	}
-	case MONO_TYPE_VALUETYPE: 
+	case MONO_TYPE_VALUETYPE: {
+		MonoMarshalType *info;
 		if (type->data.klass->enumtype) {
 			type = type->data.klass->enum_basetype;
 			goto handle_enum;
 		} else {
 			guint8 *p = va_arg (ap, gpointer);
 			int j, size, align;
+
+			info = mono_marshal_load_type_info (type->data.klass);
+
+			if ((info->native_size == sizeof(float)) &&
+			    (info->num_fields  == 1) &&
+			    (info->fields[0].field->type->type == MONO_TYPE_R4)) {
+				double f = va_arg (ap, double);
+				printf("[FLOAT4:%f]\n", (float) f);
+				break;
+			}
+
+			if ((info->native_size == sizeof(double)) &&
+			    (info->num_fields  == 1) &&
+			    (info->fields[0].field->type->type == MONO_TYPE_R8)) {
+				double f = va_arg (ap, double);
+				printf("[FLOAT8:%g]\n", f);
+				break;
+			}
+
 			size = mono_type_size (type, &align);
 			printf ("[");
 			for (j = 0; p && j < size; j++)
@@ -924,6 +962,7 @@ handle_enum:
 			printf ("]");
 		}
 		break;
+	}
 	case MONO_TYPE_TYPEDBYREF: {
 		guint8 *p = va_arg (ap, gpointer);
 		int j, size, align;
@@ -1152,6 +1191,35 @@ add_general (guint *gr, size_data *sz, ArgInfo *ainfo, gboolean simple)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
+/* Name		- add_float                                         */
+/*                                                                  */
+/* Function	- Determine code and stack size incremements for a  */
+/* 		  float parameter.                                  */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+static void inline
+add_float (guint *fr,  size_data *sz, ArgInfo *ainfo)
+{
+	if ((*fr) <= S390_LAST_FPARG_REG) {
+		ainfo->regtype = RegTypeFP;
+		ainfo->reg     = *fr;
+		sz->code_size += 4;
+		(*fr) += 2;
+	}
+	else {
+		ainfo->offset   = sz->stack_size;
+		ainfo->reg      = STK_BASE;
+		ainfo->regtype  = RegTypeBase;
+		sz->code_size  += 4;
+		sz->stack_size += ainfo->size;
+	}
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
 /* Name		- calculate_sizes                                   */
 /*                                                                  */
 /* Function	- Determine the amount of space required for code   */
@@ -1165,7 +1233,7 @@ static CallInfo *
 calculate_sizes (MonoMethodSignature *sig, size_data *sz, 
 		 gboolean string_ctor)
 {
-	guint i, fr, gr, size, nWords;
+	guint i, fr, gr, size;
 	int nParm = sig->hasthis + sig->param_count;
 	guint32 simpletype, align;
 	CallInfo *cinfo = g_malloc0 (sizeof (CallInfo) + sizeof (ArgInfo) * nParm);
@@ -1227,6 +1295,7 @@ enum_retvalue:
 				size = mono_class_native_size (klass, &align);
 			else
                         	size = mono_class_value_size (klass, &align);
+	
 			cinfo->ret.reg    = s390_r2;
 			cinfo->struct_ret = 1;
 			cinfo->ret.size   = size;
@@ -1282,7 +1351,6 @@ enum_retvalue:
 			continue;
 		}
 		simpletype = mono_type_get_underlying_type(sig->params [i])->type;
-	enum_calc_size:
 		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -1316,14 +1384,47 @@ enum_retvalue:
 			add_general (&gr, sz, cinfo->args+nParm, TRUE);
 			nParm++;
 			break;
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+			cinfo->args[nParm].size = sizeof(long long);
+			add_general (&gr, sz, cinfo->args+nParm, FALSE);
+			nParm++;
+			break;
+		case MONO_TYPE_R4:
+			cinfo->args[nParm].size = sizeof(float);
+			add_float (&fr, sz, cinfo->args+nParm);
+			nParm++;
+			break;
+		case MONO_TYPE_R8:
+			cinfo->args[nParm].size = sizeof(double);
+			add_float (&fr, sz, cinfo->args+nParm);
+			nParm++;
+			break;
 		case MONO_TYPE_VALUETYPE: {
+			MonoMarshalType *info;
 			MonoClass *klass = mono_class_from_mono_type (sig->params [i]);
 			if (sig->pinvoke)
 				size = mono_class_native_size (klass, &align);
 			else
 				size = mono_class_value_size (klass, &align);
-			nWords = (size + sizeof(gpointer) - 1) /
-			         sizeof(gpointer);
+	
+			info = mono_marshal_load_type_info (klass);
+
+			if ((info->native_size == sizeof(float)) &&
+			    (info->num_fields  == 1) &&
+			    (info->fields[0].field->type->type == MONO_TYPE_R4)) {
+				cinfo->args[nParm].size = sizeof(float);
+				add_float(&fr, sz, cinfo->args+nParm);
+				break;
+			}
+
+			if ((info->native_size == sizeof(double)) &&
+			    (info->num_fields  == 1) &&
+			    (info->fields[0].field->type->type == MONO_TYPE_R8)) {
+				cinfo->args[nParm].size = sizeof(double);
+				add_float(&fr, sz, cinfo->args+nParm);
+				break;
+			}
 
 			cinfo->args[nParm].vtsize  = 0;
 			cinfo->args[nParm].size    = 0;
@@ -1368,9 +1469,6 @@ enum_retvalue:
 		case MONO_TYPE_TYPEDBYREF: {
 			int size = sizeof (MonoTypedRef);
 
-			nWords = (size + sizeof(gpointer) - 1) /
-			         sizeof(gpointer);
-
 			cinfo->args[nParm].vtsize  = 0;
 			cinfo->args[nParm].size    = 0;
 			cinfo->args[nParm].offparm = sz->local_size;
@@ -1410,45 +1508,6 @@ enum_retvalue:
 					nParm++;
 			}
 		}
-			break;
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-			cinfo->args[nParm].size = sizeof(long long);
-			add_general (&gr, sz, cinfo->args+nParm, FALSE);
-			nParm++;
-			break;
-		case MONO_TYPE_R4:
-			cinfo->args[nParm].size = sizeof(float);
-			if (fr <= S390_LAST_FPARG_REG) {
-				cinfo->args[nParm].regtype = RegTypeFP;
-				cinfo->args[nParm].reg	   = fr;
-				sz->code_size += 4;
-				fr += 2;
-			}
-			else {
-				cinfo->args[nParm].offset  = sz->stack_size;
-				cinfo->args[nParm].reg	   = STK_BASE;
-				cinfo->args[nParm].regtype = RegTypeBase;
-				sz->code_size  += 4;
-				sz->stack_size += sizeof(float);
-			}
-			nParm++;
-			break;
-		case MONO_TYPE_R8:
-			cinfo->args[nParm].size = sizeof(double);
-			if (fr <= S390_LAST_FPARG_REG) {
-				cinfo->args[nParm].regtype = RegTypeFP;
-				cinfo->args[nParm].reg	   = fr;
-				sz->code_size += 4;
-				fr += 2;
-			} else {
-				cinfo->args[nParm].offset  = sz->stack_size;
-				cinfo->args[nParm].reg	   = STK_BASE;
-				cinfo->args[nParm].regtype = RegTypeBase;
-				sz->code_size  += 4;
-				sz->stack_size += sizeof(double);
-			}
-			nParm++;
 			break;
 		default:
 			g_error ("Can't trampoline 0x%x", sig->params [i]->type);

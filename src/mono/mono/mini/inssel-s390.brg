@@ -280,7 +280,8 @@ stmt: OP_OUTARG_R4 (freg) {
 
 stmt: OP_OUTARG_R8 (freg) {
 	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, STK_BASE, tree->inst_imm, state->left->reg1);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, STK_BASE, 
+					     tree->inst_imm, state->left->reg1);
 		return;
 	}
 	tree->opcode = OP_SETFREG;
@@ -288,6 +289,34 @@ stmt: OP_OUTARG_R8 (freg) {
 	tree->dreg = tree->unused;
 	mono_bblock_add_inst (s->cbb, tree);
 }
+
+stmt: OP_OUTARG_R8 (CEE_LDOBJ (OP_REGOFFSET)) {
+	if (tree->inst_imm) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, STK_BASE, 
+					     tree->inst_imm, state->left->reg1);
+		return;
+	}
+	tree->opcode = OP_SETFREG;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = tree->unused;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+freg: OP_FCONV_TO_R4 (CEE_LDOBJ (OP_REGOFFSET)) {
+	MonoInst *vt = state->left->left->tree;
+ 
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADR4_MEMBASE, state->reg1, vt->inst_basereg, 
+				       vt->inst_offset);
+	MONO_EMIT_NEW_UNALU (s, OP_FCONV_TO_R4, state->reg1, state->reg1);
+}
+
+freg: OP_FCONV_TO_R8 (CEE_LDOBJ (OP_REGOFFSET)) {
+	tree->opcode = OP_SETFREG;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = tree->unused;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 
 stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 	MonoInst *vt  = state->left->left->tree;
