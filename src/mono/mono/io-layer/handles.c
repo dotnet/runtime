@@ -77,6 +77,9 @@ pthread_mutex_t _wapi_shared_mutex=PTHREAD_MUTEX_INITIALIZER;
  */
 guint32 _wapi_shm_mapped_segments;
 
+guint32 _wapi_fd_offset_table_size;
+gpointer *_wapi_fd_offset_table=NULL;
+
 static void shared_init (void)
 {
 	struct sockaddr_un shared_socket_address;
@@ -86,6 +89,13 @@ static void shared_init (void)
 	
 	_wapi_shared_data=g_new0 (struct _WapiHandleShared_list *, 1);
 	_wapi_private_data=g_new0 (struct _WapiHandlePrivate_list *, 1);
+
+	/* Build this array at runtime, because I'm guessing that
+	 * getdtablesize() won't be a fixed value on all systems (or
+	 * why would it be a function rather than a constant define?)
+	 */
+	_wapi_fd_offset_table_size=getdtablesize ();
+	_wapi_fd_offset_table=g_new0 (gpointer, _wapi_fd_offset_table_size);
 	
 attach_again:
 
@@ -259,8 +269,11 @@ again:
 		for(j=idx; j<_WAPI_HANDLES_PER_SEGMENT; j++) {
 			struct _WapiHandleShared *shared;
 		
-			/* Make sure we dont try and assign handle 0 */
-			if (i==0 && j==0) {
+			/* Make sure we dont try and assign the
+			 * handles that would clash with fds
+			 */
+			if (i==0 && j < _wapi_fd_offset_table_size) {
+				j = _wapi_fd_offset_table_size;
 				continue;
 			}
 			
@@ -314,7 +327,7 @@ gpointer _wapi_handle_new (WapiHandleType type)
 	int thr_ret;
 	
 	mono_once (&shared_init_once, shared_init);
-
+	
 again:
 	if(shared==TRUE) {
 		new.type=WapiHandleRequestType_New;
@@ -361,6 +374,9 @@ again:
 		pthread_cleanup_pop (0);
 	}
 		
+	/* Make sure we left the space for fd mappings */
+	g_assert (handle_idx >= _wapi_fd_offset_table_size);
+	
 	if(handle_idx==0) {
 		g_warning (G_GNUC_PRETTY_FUNCTION ": Ran out of handles!");
 
@@ -414,6 +430,8 @@ gboolean _wapi_lookup_handle (gpointer handle, WapiHandleType type,
 	guint32 idx;
 	guint32 segment;
 
+	g_assert (GPOINTER_TO_UINT (handle) >= _wapi_fd_offset_table_size);
+	
 	_wapi_handle_segment (handle, &segment, &idx);
 	_wapi_handle_ensure_mapped (segment);
 	
@@ -592,6 +610,8 @@ gpointer _wapi_search_handle_namespace (WapiHandleType type,
 
 void _wapi_handle_ref (gpointer handle)
 {
+	g_assert (GPOINTER_TO_UINT (handle) >= _wapi_fd_offset_table_size);
+	
 	if(shared==TRUE) {
 		WapiHandleRequest req={0};
 		WapiHandleResponse resp={0};
@@ -627,6 +647,8 @@ void _wapi_handle_unref (gpointer handle)
 	guint32 idx, segment;
 	gboolean destroy = FALSE;
 	int thr_ret;
+	
+	g_assert (GPOINTER_TO_UINT (handle) >= _wapi_fd_offset_table_size);
 	
 	_wapi_handle_segment (handle, &segment, &idx);
 	
@@ -1180,6 +1202,10 @@ gboolean _wapi_handle_test_capabilities (gpointer handle,
 	guint32 idx, segment;
 	WapiHandleType type;
 
+	if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+		handle = _wapi_handle_fd_offset_to_handle (handle);
+	}
+	
 	_wapi_handle_segment (handle, &segment, &idx);
 	
 	type=_wapi_handle_get_shared_segment (segment)->handles[idx].type;
@@ -1197,6 +1223,10 @@ void _wapi_handle_ops_close_shared (gpointer handle)
 	guint32 idx, segment;
 	WapiHandleType type;
 
+	if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+		handle = _wapi_handle_fd_offset_to_handle (handle);
+	}
+
 	_wapi_handle_segment (handle, &segment, &idx);
 	
 	type=_wapi_handle_get_shared_segment (segment)->handles[idx].type;
@@ -1210,6 +1240,10 @@ void _wapi_handle_ops_close_private (gpointer handle)
 {
 	guint32 idx, segment;
 	WapiHandleType type;
+
+	if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+		handle = _wapi_handle_fd_offset_to_handle (handle);
+	}
 
 	_wapi_handle_segment (handle, &segment, &idx);
 
@@ -1232,6 +1266,10 @@ void _wapi_handle_ops_signal (gpointer handle)
 	guint32 idx, segment;
 	WapiHandleType type;
 
+	if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+		handle = _wapi_handle_fd_offset_to_handle (handle);
+	}
+
 	_wapi_handle_segment (handle, &segment, &idx);
 
 	type=_wapi_handle_get_shared_segment (segment)->handles[idx].type;
@@ -1246,6 +1284,10 @@ void _wapi_handle_ops_own (gpointer handle)
 	guint32 idx, segment;
 	WapiHandleType type;
 
+	if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+		handle = _wapi_handle_fd_offset_to_handle (handle);
+	}
+
 	_wapi_handle_segment (handle, &segment, &idx);
 	
 	type=_wapi_handle_get_shared_segment (segment)->handles[idx].type;
@@ -1259,6 +1301,10 @@ gboolean _wapi_handle_ops_isowned (gpointer handle)
 {
 	guint32 idx, segment;
 	WapiHandleType type;
+
+	if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+		handle = _wapi_handle_fd_offset_to_handle (handle);
+	}
 
 	_wapi_handle_segment (handle, &segment, &idx);
 	
@@ -1284,6 +1330,10 @@ gboolean _wapi_handle_ops_isowned (gpointer handle)
  */
 gboolean CloseHandle(gpointer handle)
 {
+	if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+		handle = _wapi_handle_fd_offset_to_handle (handle);
+	}
+
 	_wapi_handle_unref (handle);
 	
 	return(TRUE);
@@ -1303,12 +1353,17 @@ gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 again:
 	for(i=0; i<numhandles; i++) {
 		guint32 idx, segment;
+		gpointer handle = handles[i];
 		
-		_wapi_handle_segment (handles[i], &segment, &idx);
+		if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+			handle = _wapi_handle_fd_offset_to_handle (handle);
+		}
+		
+		_wapi_handle_segment (handle, &segment, &idx);
 		
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": attempting to lock %p",
-			   handles[i]);
+			   handle);
 #endif
 
 		ret=mono_mutex_trylock (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex);
@@ -1317,11 +1372,11 @@ again:
 			struct timespec sleepytime;
 			
 #ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION ": attempt failed for %p", handles[i]);
+			g_message (G_GNUC_PRETTY_FUNCTION ": attempt failed for %p", handle);
 #endif
 
 			while(i--) {
-				_wapi_handle_segment (handles[i], &segment, &idx);
+				_wapi_handle_segment (handle, &segment, &idx);
 				thr_ret = mono_mutex_unlock (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex);
 				g_assert (thr_ret == 0);
 			}
@@ -1359,24 +1414,29 @@ again:
 	
 	for(i=0; i<numhandles; i++) {
 		guint32 idx, segment;
-
-		_wapi_handle_ref (handles[i]);
+		gpointer handle = handles[i];
 		
-		_wapi_handle_segment (handles[i], &segment, &idx);
+		if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+			handle = _wapi_handle_fd_offset_to_handle (handle);
+		}
+		
+		_wapi_handle_ref (handle);
+		
+		_wapi_handle_segment (handle, &segment, &idx);
 		
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": Checking handle %p",
-			   handles[i]);
+			   handle);
 #endif
 
-		if(((_wapi_handle_test_capabilities (handles[i], WAPI_HANDLE_CAP_OWN)==TRUE) &&
-		    (_wapi_handle_ops_isowned (handles[i])==TRUE)) ||
+		if(((_wapi_handle_test_capabilities (handle, WAPI_HANDLE_CAP_OWN)==TRUE) &&
+		    (_wapi_handle_ops_isowned (handle)==TRUE)) ||
 		   (_wapi_handle_get_shared_segment (segment)->handles[idx].signalled==TRUE)) {
 			count++;
 			
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION
-				   ": Handle %p signalled", handles[i]);
+				   ": Handle %p signalled", handle);
 #endif
 			if(*lowest>i) {
 				*lowest=i;
@@ -1412,18 +1472,23 @@ void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles)
 	
 	for(i=0; i<numhandles; i++) {
 		guint32 idx, segment;
-
-		_wapi_handle_segment (handles[i], &segment, &idx);
+		gpointer handle = handles[i];
+		
+		if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+			handle = _wapi_handle_fd_offset_to_handle (handle);
+		}
+		
+		_wapi_handle_segment (handle, &segment, &idx);
 
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handle %p",
-			   handles[i]);
+			   handle);
 #endif
 
 		thr_ret = mono_mutex_unlock (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex);
 		g_assert (thr_ret == 0);
 
-		_wapi_handle_unref (handles[i]);
+		_wapi_handle_unref (handle);
 	}
 }
 
@@ -1495,6 +1560,10 @@ int _wapi_handle_wait_signal_handle (gpointer handle)
 #if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 	guint32 idx, segment;
 
+	if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+		handle = _wapi_handle_fd_offset_to_handle (handle);
+	}
+
 	_wapi_handle_segment (handle, &segment, &idx);
 	
 	return(mono_cond_wait (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_cond,
@@ -1504,6 +1573,10 @@ int _wapi_handle_wait_signal_handle (gpointer handle)
 	struct timespec fake_timeout;
 	int ret;
 	
+	if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+		handle = _wapi_handle_fd_offset_to_handle (handle);
+	}
+
 	_wapi_handle_segment (handle, &segment, &idx);
 	_wapi_calc_timeout (&fake_timeout, 100);
 	
@@ -1524,6 +1597,10 @@ int _wapi_handle_timedwait_signal_handle (gpointer handle,
 #if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 	guint32 idx, segment;
 
+	if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+		handle = _wapi_handle_fd_offset_to_handle (handle);
+	}
+
 	_wapi_handle_segment (handle, &segment, &idx);
 	
 	return(mono_cond_timedwait (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_cond,
@@ -1534,6 +1611,10 @@ int _wapi_handle_timedwait_signal_handle (gpointer handle,
 	struct timespec fake_timeout;
 	int ret;
 	
+	if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+		handle = _wapi_handle_fd_offset_to_handle (handle);
+	}
+
 	_wapi_handle_segment (handle, &segment, &idx);
 	_wapi_calc_timeout (&fake_timeout, 100);
 	
