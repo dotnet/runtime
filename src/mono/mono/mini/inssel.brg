@@ -420,20 +420,8 @@ reg: OP_VTADDR (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-reg: CEE_LDIND_REF (OP_REGVAR) {
-	tree->opcode = OP_MOVE;
-	tree->sreg1 = state->left->tree->dreg;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-reg: CEE_LDIND_I4 (OP_REGVAR) {
-	tree->opcode = OP_MOVE;
-	tree->sreg1 = state->left->tree->dreg;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
+reg: CEE_LDIND_REF (OP_REGVAR),
+reg: CEE_LDIND_I4 (OP_REGVAR),
 reg: CEE_LDIND_U4 (OP_REGVAR) {
 	tree->opcode = OP_MOVE;
 	tree->sreg1 = state->left->tree->dreg;
@@ -1656,46 +1644,16 @@ reg: OP_CCASTCLASS (reg) {
 	mono_bblock_add_inst (s->cbb, end_label);
 }
 
-reg: CEE_NEWARR (reg) {
-	g_assert_not_reached ();
-}
-
-lreg: OP_LMUL (lreg, lreg) {
-	g_assert_not_reached ();
-}
-
-lreg: OP_LMUL_OVF (lreg, lreg) {
-	g_assert_not_reached ();
-}
-
-lreg: OP_LMUL_OVF_UN (lreg, lreg) {
-	g_assert_not_reached ();
-}
-
-lreg: OP_LDIV (lreg, lreg) {
-	g_assert_not_reached ();
-}
-
-lreg: OP_LDIV_UN (lreg, lreg) {
-	g_assert_not_reached ();
-}
-
-lreg: OP_LREM (lreg, lreg) {
-	g_assert_not_reached ();
-}
-
-lreg: OP_LREM_UN (lreg, lreg) {
-	g_assert_not_reached ();
-}
-
-lreg: OP_LSHL (lreg, reg) {
-	g_assert_not_reached ();
-}
-
-lreg: OP_LSHR (lreg, reg) {
-	g_assert_not_reached ();
-}
-
+reg: CEE_NEWARR (reg),
+lreg: OP_LMUL (lreg, lreg),
+lreg: OP_LMUL_OVF (lreg, lreg),
+lreg: OP_LMUL_OVF_UN (lreg, lreg),
+lreg: OP_LDIV (lreg, lreg),
+lreg: OP_LDIV_UN (lreg, lreg),
+lreg: OP_LREM (lreg, lreg),
+lreg: OP_LREM_UN (lreg, lreg),
+lreg: OP_LSHL (lreg, reg),
+lreg: OP_LSHR (lreg, reg),
 lreg: OP_LSHR_UN (lreg, reg) {
 	g_assert_not_reached ();
 }
