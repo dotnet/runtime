@@ -407,24 +407,12 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 {
 	guint8 *code, *buf, *tramp;
 
-	/* previously created trampoline code */
-	if (method->info)
-		return method->info;
-
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		return mono_arch_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
-
 	tramp = create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
 
 	code = buf = g_malloc (TRAMPOLINE_SIZE);
 	x86_push_imm (buf, method);
 	x86_jump_code (buf, tramp);
 	g_assert ((buf - code) <= TRAMPOLINE_SIZE);
-
-	/* store trampoline address */
-	method->info = code;
-
-	mono_jit_stats.method_trampolines++;
 
 	return code;
 }
