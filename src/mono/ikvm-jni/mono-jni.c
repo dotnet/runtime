@@ -10,6 +10,39 @@
 #include <mono/metadata/appdomain.h>
 
 #include <string.h>
+#include <varargs.h>
+
+/*
+ * PROTOTYPES
+ */
+
+void * native_load_native_library (char *filename);
+
+int native_lookup_symbol (GModule *module, char *symbol_name, gpointer *symbol);
+void mono_jni_jnienv_init (
+	void *makelocalref_func,
+	void *unwrap_func,
+	void *makeglobalref_func,
+	void *deleteref_func,
+	void *getfieldcookie_func,
+	void *getmethodcookie_func,
+	void *setfieldvalue_func,
+	void *getfieldvalue_func,
+	void *getclassfromobject_func,
+	void *exceptioncheck_func,
+	void *getpendingexception_func,
+	void *setpendingexception_func,
+	void *invokemethod_func,
+	void *getmethodarglist_func,
+	void *findclass_func,
+	void *getjnienv_func);
+
+void* mono_jni_get_func_table (void);
+
+void mono_jni_set_jnifunc (int index, void *func);
+
+jint JNICALL GetJavaVM (JNIEnv *env, JavaVM **vm);
+
 
 void *
 native_load_native_library (char *filename)
@@ -40,7 +73,7 @@ typedef struct MonoJniFunctions {
 	void * (*InvokeMethod) (JNIEnv *env, void *cookie, void *obj, void *args, int virtual);
 	void * (*GetMethodArgList) (void *cookie);
 	void * (*FindClass) (void *name);
-	void * (*GetJniEnv) ();
+	void * (*GetJniEnv) (void);
 } MonoJniFunctions;
 
 static MonoJniFunctions jniFuncs;
@@ -91,7 +124,7 @@ static void *vm_func_table[64];
 static void ***vm_ptr = NULL;
 
 void*
-mono_jni_get_func_table ()
+mono_jni_get_func_table (void)
 {
 	if (!jni_ptr) {
 		jni_ptr = (void***)&jni_func_table;
@@ -106,7 +139,7 @@ mono_jni_set_jnifunc (int index, void *func)
 	jni_func_table [index] = func;
 }
 
-MonoString *
+static MonoString *
 StringFromUTF8 (const char* psz)
 {
 	/* TODO: */
@@ -156,123 +189,124 @@ StringFromUTF8 (const char* psz)
 /***************************************************************************/
 
 
-jint JNICALL GetVersion (JNIEnv *env) { printf ("JNI Function GetVersion is not implemented.\n"); g_assert_not_reached (); }
+static jint JNICALL GetVersion (JNIEnv *env) { printf ("JNI Function GetVersion is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jclass JNICALL DefineClass (JNIEnv *env, const char *name, jobject loader, const jbyte *buf, jsize len) { printf ("JNI Function DefineClass is not implemented.\n"); g_assert_not_reached (); }
-jclass JNICALL FindClass (JNIEnv *env, const char *name)
+static jclass JNICALL DefineClass (JNIEnv *env, const char *name, jobject loader, const jbyte *buf, jsize len) { printf ("JNI Function DefineClass is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jclass JNICALL FindClass (JNIEnv *env, const char *name)
 {
 	return (jclass)(jniFuncs.MakeLocalRef (env, jniFuncs.FindClass (StringFromUTF8(name))));
 }
 
-jmethodID JNICALL FromReflectedMethod (JNIEnv *env, jobject method) { printf ("JNI Function FromReflectedMethod is not implemented.\n"); g_assert_not_reached (); }
-jfieldID JNICALL FromReflectedField (JNIEnv *env, jobject field) { printf ("JNI Function FromReflectedField is not implemented.\n"); g_assert_not_reached (); }
+static jmethodID JNICALL FromReflectedMethod (JNIEnv *env, jobject method) { printf ("JNI Function FromReflectedMethod is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jfieldID JNICALL FromReflectedField (JNIEnv *env, jobject field) { printf ("JNI Function FromReflectedField is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jobject JNICALL ToReflectedMethod (JNIEnv *env, jclass cls, jmethodID methodID, jboolean isStatic) { printf ("JNI Function ToReflectedMethod is not implemented.\n"); g_assert_not_reached (); }
+static jobject JNICALL ToReflectedMethod (JNIEnv *env, jclass cls, jmethodID methodID, jboolean isStatic) { printf ("JNI Function ToReflectedMethod is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jclass JNICALL GetSuperclass (JNIEnv *env, jclass sub) { printf ("JNI Function GetSuperclass is not implemented.\n"); g_assert_not_reached (); }
-jboolean JNICALL IsAssignableFrom (JNIEnv *env, jclass sub, jclass sup) { printf ("JNI Function IsAssignableFrom is not implemented.\n"); g_assert_not_reached (); }
+static jclass JNICALL GetSuperclass (JNIEnv *env, jclass sub) { printf ("JNI Function GetSuperclass is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jboolean JNICALL IsAssignableFrom (JNIEnv *env, jclass sub, jclass sup) { printf ("JNI Function IsAssignableFrom is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jobject JNICALL ToReflectedField (JNIEnv *env, jclass cls, jfieldID fieldID, jboolean isStatic) { printf ("JNI Function ToReflectedField is not implemented.\n"); g_assert_not_reached (); }
+static jobject JNICALL ToReflectedField (JNIEnv *env, jclass cls, jfieldID fieldID, jboolean isStatic) { printf ("JNI Function ToReflectedField is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jint JNICALL Throw (JNIEnv *env, jthrowable obj) { printf ("JNI Function Throw is not implemented.\n"); g_assert_not_reached (); }
-jint JNICALL ThrowNew (JNIEnv *env, jclass clazz, const char *msg) { printf ("JNI Function ThrowNew is not implemented.\n"); g_assert_not_reached (); }
+static jint JNICALL Throw (JNIEnv *env, jthrowable obj) { printf ("JNI Function Throw is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jint JNICALL ThrowNew (JNIEnv *env, jclass clazz, const char *msg) { printf ("JNI Function ThrowNew is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jthrowable JNICALL ExceptionOccurred (JNIEnv *env)
+static jthrowable JNICALL ExceptionOccurred (JNIEnv *env)
 {
 	return (jthrowable)jniFuncs.MakeLocalRef (env, jniFuncs.GetPendingException (env));
 }
 
-void JNICALL ExceptionDescribe (JNIEnv *env) { printf ("JNI Function ExceptionDescribe is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL ExceptionClear (JNIEnv *env) { printf ("JNI Function ExceptionClear is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL FatalError (JNIEnv *env, const char *msg) { printf ("JNI Function FatalError is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL ExceptionDescribe (JNIEnv *env) { printf ("JNI Function ExceptionDescribe is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL ExceptionClear (JNIEnv *env) { printf ("JNI Function ExceptionClear is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL FatalError (JNIEnv *env, const char *msg) { printf ("JNI Function FatalError is not implemented.\n"); g_assert_not_reached (); }
 
-jint JNICALL PushLocalFrame (JNIEnv *env, jint capacity) { printf ("JNI Function PushLocalFrame is not implemented.\n"); g_assert_not_reached (); }
-jobject JNICALL PopLocalFrame (JNIEnv *env, jobject result) { printf ("JNI Function PopLocalFrame is not implemented.\n"); g_assert_not_reached (); }
+static jint JNICALL PushLocalFrame (JNIEnv *env, jint capacity) { printf ("JNI Function PushLocalFrame is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jobject JNICALL PopLocalFrame (JNIEnv *env, jobject result) { printf ("JNI Function PopLocalFrame is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jobject JNICALL NewGlobalRef (JNIEnv *env, jobject lobj)
+static jobject JNICALL NewGlobalRef (JNIEnv *env, jobject lobj)
 {
 	return (jobject)jniFuncs.MakeGlobalRef (jniFuncs.UnwrapRef (env, lobj));
 }
 
-void JNICALL DeleteGlobalRef (JNIEnv *env, jobject gref)
+static void JNICALL DeleteGlobalRef (JNIEnv *env, jobject gref)
 {
 	jniFuncs.DeleteRef (env, gref);
 }
 
-void JNICALL DeleteLocalRef (JNIEnv *env, jobject obj)
+static void JNICALL DeleteLocalRef (JNIEnv *env, jobject obj)
 {
 	jniFuncs.DeleteRef (env, obj);
 }
 
-jboolean JNICALL IsSameObject (JNIEnv *env, jobject obj1, jobject obj2) { printf ("JNI Function IsSameObject is not implemented.\n"); g_assert_not_reached (); }
-jobject JNICALL NewLocalRef (JNIEnv *env, jobject ref) { printf ("JNI Function NewLocalRef is not implemented.\n"); g_assert_not_reached (); }
-jint JNICALL EnsureLocalCapacity (JNIEnv *env, jint capacity) { printf ("JNI Function EnsureLocalCapacity is not implemented.\n"); g_assert_not_reached (); }
+static jboolean JNICALL IsSameObject (JNIEnv *env, jobject obj1, jobject obj2) { printf ("JNI Function IsSameObject is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jobject JNICALL NewLocalRef (JNIEnv *env, jobject ref) { printf ("JNI Function NewLocalRef is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jint JNICALL EnsureLocalCapacity (JNIEnv *env, jint capacity) { printf ("JNI Function EnsureLocalCapacity is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jobject JNICALL AllocObject (JNIEnv *env, jclass clazz) { printf ("JNI Function AllocObject is not implemented.\n"); g_assert_not_reached (); }
+static jobject JNICALL AllocObject (JNIEnv *env, jclass clazz) { printf ("JNI Function AllocObject is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jclass JNICALL GetObjectClass (JNIEnv *env, jobject obj)
+static jclass JNICALL GetObjectClass (JNIEnv *env, jobject obj)
 {
 	g_assert (obj);
 
 	return (jclass)jniFuncs.MakeLocalRef (env, jniFuncs.GetClassFromObject (jniFuncs.UnwrapRef (env, obj)));
 }
 	
-jboolean JNICALL IsInstanceOf (JNIEnv *env, jobject obj, jclass clazz) { printf ("JNI Function IsInstanceOf is not implemented.\n"); g_assert_not_reached (); }
+static jboolean JNICALL IsInstanceOf (JNIEnv *env, jobject obj, jclass clazz) { printf ("JNI Function IsInstanceOf is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jobject JNICALL CallObjectMethodA (JNIEnv *env, jobject obj, jmethodID methodID, jvalue * args) { printf ("JNI Function CallObjectMethodA is not implemented.\n"); g_assert_not_reached (); }
+static jobject JNICALL CallObjectMethodA (JNIEnv *env, jobject obj, jmethodID methodID, jvalue * args) { printf ("JNI Function CallObjectMethodA is not implemented.\n"); g_assert_not_reached (); return 0; }
 
 #define BOXED_VALUE(obj) ((char*)(obj) + sizeof (MonoObject))
 
-MonoObject *
+static MonoObject *
 box_Boolean (jboolean val)
 {
 	return mono_value_box (mono_domain_get (), mono_defaults.boolean_class, &val);
 }
 
-MonoObject *
+static MonoObject *
 box_Byte (jbyte val)
 {
 	/* Sbyte ! */
 	return mono_value_box (mono_domain_get (), mono_defaults.sbyte_class, &val);
 }
 
-MonoObject *
+static MonoObject *
 box_Char (jchar val)
 {
 	return mono_value_box (mono_domain_get (), mono_defaults.char_class, &val);
 }
 
-MonoObject *
+static MonoObject *
 box_Short (jshort val)
 {
 	return mono_value_box (mono_domain_get (), mono_defaults.int16_class, &val);
 }
 
-MonoObject *
+static MonoObject *
 box_Int (jint val)
 {
 	return mono_value_box (mono_domain_get (), mono_defaults.int32_class, &val);
 }
 
-MonoObject *
+static MonoObject *
 box_Long (jlong val)
 {
 	return mono_value_box (mono_domain_get (), mono_defaults.int64_class, &val);
 }
 
-MonoObject *
+static MonoObject *
 box_Float (jfloat val)
 {
 	return mono_value_box (mono_domain_get (), mono_defaults.single_class, &val);
 }
 
-MonoObject *
+static MonoObject *
 box_Double (jdouble val)
 {
 	return mono_value_box (mono_domain_get (), mono_defaults.double_class, &val);
 }
 
-static int GetMethodArgs (jmethodID methodID, char* sig)
+static int 
+GetMethodArgs (jmethodID methodID, char* sig)
 {
 	char *res;
 
@@ -281,7 +315,7 @@ static int GetMethodArgs (jmethodID methodID, char* sig)
 	return strlen (sig);
 }
 
-MonoObject* 
+static MonoObject* 
 InvokeHelper (JNIEnv *env, jobject object, jmethodID methodID, jvalue* args)
 {
 	char sig[257];
@@ -338,7 +372,7 @@ InvokeHelper (JNIEnv *env, jobject object, jmethodID methodID, jvalue* args)
 }
 
 #define METHOD_IMPL_MANAGED(Type,type,cpptype) \
-type JNICALL Call##Type##MethodA(JNIEnv *env, jobject obj, jmethodID methodID, jvalue* args)\
+static type JNICALL Call##Type##MethodA(JNIEnv *env, jobject obj, jmethodID methodID, jvalue* args)\
 {\
 	MonoObject* ret = InvokeHelper(env, obj, methodID, args);\
 	if(ret)	return *(type*)BOXED_VALUE(ret);\
@@ -346,7 +380,7 @@ type JNICALL Call##Type##MethodA(JNIEnv *env, jobject obj, jmethodID methodID, j
 }
 
 #define METHOD_IMPL(Type,type) \
-type JNICALL Call##Type##MethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args)\
+static type JNICALL Call##Type##MethodV(JNIEnv *env, jobject obj, jmethodID methodID, va_list args)\
 {\
 	char sig[257];\
     int i;\
@@ -379,13 +413,29 @@ type JNICALL Call##Type##MethodV(JNIEnv *env, jobject obj, jmethodID methodID, v
 	}\
 	return Call##Type##MethodA(env, obj, methodID, argarray);\
 }\
-type Call##Type##Method(JNIEnv *env, jobject obj, jmethodID methodID, ...) \
+static type Call##Type##Method(JNIEnv *env, jobject obj, jmethodID methodID, ...) \
 {\
 	va_list args;\
+    type ret;\
 	va_start(args, methodID);\
-	type ret = Call##Type##MethodV(env, obj, methodID, args);\
+	ret = Call##Type##MethodV(env, obj, methodID, args);\
 	va_end(args);\
 	return ret;\
+}\
+static type JNICALL CallNonvirtual##Type##Method (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) \
+{\
+    printf ("JNI Function CallNonvirtual" #Type "Method is not implemented.\n"); g_assert_not_reached ();\
+    return 0;\
+}\
+static type JNICALL CallNonvirtual##Type##MethodV (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, va_list args) \
+{\
+    printf ("JNI Function CallNonvirtual" #Type "MethodV is not implemented.\n"); g_assert_not_reached ();\
+    return 0;\
+}\
+static type JNICALL CallNonvirtual##Type##MethodA (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, jvalue *args) \
+{\
+    printf ("JNI Function CallNonvirtual" #Type "MethodA is not implemented.\n"); g_assert_not_reached ();\
+    return 0;\
 }
 
 METHOD_IMPL_MANAGED(Boolean,jboolean,gboolean)
@@ -422,15 +472,17 @@ METHOD_IMPL(Double,jdouble)
 
 
 // TODO: These should be put into the macros above... 
-void JNICALL CallVoidMethodA (JNIEnv *env, jobject obj, jmethodID methodID, jvalue * args) { 
+static void JNICALL CallVoidMethodA (JNIEnv *env, jobject obj, jmethodID methodID, jvalue * args) { 
 	InvokeHelper(env, obj, methodID, args);
 }
 
-void JNICALL CallVoidMethodV (JNIEnv *env, jobject obj, jmethodID methodID, va_list args) { 
+static void JNICALL CallVoidMethodV (JNIEnv *env, jobject obj, jmethodID methodID, va_list args) { 
 	char sig[257];
 	int argc, i;
+	jvalue* argarray;
+
 	argc = GetMethodArgs(methodID, sig);
-	jvalue* argarray = (jvalue*)alloca(argc * sizeof(jvalue));
+	argarray = (jvalue*)alloca(argc * sizeof(jvalue));
 
 	for(i = 0; i < argc; i++)
 	{
@@ -460,101 +512,65 @@ void JNICALL CallVoidMethodV (JNIEnv *env, jobject obj, jmethodID methodID, va_l
 	CallVoidMethodA(env, obj, methodID, argarray);
 }
 
-void JNICALL CallVoidMethod (JNIEnv *env, jobject obj, jmethodID methodID, ...) {
+static void JNICALL CallVoidMethod (JNIEnv *env, jobject obj, jmethodID methodID, ...) {
 	va_list args;
 	va_start(args, methodID);
 	CallVoidMethodV(env, obj, methodID, args);
 	va_end(args);
 }
 
-jobject JNICALL CallNonvirtualObjectMethod (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallNonvirtualObjectMethod is not implemented.\n"); g_assert_not_reached (); }
-jobject JNICALL CallNonvirtualObjectMethodV (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       va_list args) { printf ("JNI Function CallNonvirtualObjectMethodV is not implemented.\n"); g_assert_not_reached (); }
-jobject JNICALL CallNonvirtualObjectMethodA (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       jvalue * args) { printf ("JNI Function CallNonvirtualObjectMethodA is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL CallNonvirtualVoidMethod (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallNonvirtualVoidMethod is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL CallNonvirtualVoidMethodV (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       va_list args) { printf ("JNI Function CallNonvirtualVoidMethodV is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL CallNonvirtualVoidMethodA (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       jvalue * args) { printf ("JNI Function CallNonvirtualVoidMethodA is not implemented.\n"); g_assert_not_reached (); }
 
-jboolean JNICALL CallNonvirtualBooleanMethod (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallNonvirtualBooleanMethod is not implemented.\n"); g_assert_not_reached (); }
-jboolean JNICALL CallNonvirtualBooleanMethodV (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       va_list args) { printf ("JNI Function CallNonvirtualBooleanMethodV is not implemented.\n"); g_assert_not_reached (); }
-jboolean JNICALL CallNonvirtualBooleanMethodA (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       jvalue * args) { printf ("JNI Function CallNonvirtualBooleanMethodA is not implemented.\n"); g_assert_not_reached (); }
-
-jbyte JNICALL CallNonvirtualByteMethod (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallNonvirtualByteMethod is not implemented.\n"); g_assert_not_reached (); }
-jbyte JNICALL CallNonvirtualByteMethodV (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       va_list args) { printf ("JNI Function CallNonvirtualByteMethodV is not implemented.\n"); g_assert_not_reached (); }
-jbyte JNICALL CallNonvirtualByteMethodA (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       jvalue *args) { printf ("JNI Function CallNonvirtualByteMethodA is not implemented.\n"); g_assert_not_reached (); }
-
-jchar JNICALL CallNonvirtualCharMethod (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallNonvirtualCharMethod is not implemented.\n"); g_assert_not_reached (); }
-jchar JNICALL CallNonvirtualCharMethodV (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       va_list args) { printf ("JNI Function CallNonvirtualCharMethodV is not implemented.\n"); g_assert_not_reached (); }
-jchar JNICALL CallNonvirtualCharMethodA (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       jvalue *args) { printf ("JNI Function CallNonvirtualCharMethodA is not implemented.\n"); g_assert_not_reached (); }
-
-jshort JNICALL CallNonvirtualShortMethod (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallNonvirtualShortMethod is not implemented.\n"); g_assert_not_reached (); }
-jshort JNICALL CallNonvirtualShortMethodV (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       va_list args) { printf ("JNI Function CallNonvirtualShortMethodV is not implemented.\n"); g_assert_not_reached (); }
-jshort JNICALL CallNonvirtualShortMethodA (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       jvalue *args) { printf ("JNI Function CallNonvirtualShortMethodA is not implemented.\n"); g_assert_not_reached (); }
-
-jint JNICALL CallNonvirtualIntMethod (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallNonvirtualIntMethod is not implemented.\n"); g_assert_not_reached (); }
-jint JNICALL CallNonvirtualIntMethodV (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       va_list args) { printf ("JNI Function CallNonvirtualIntMethodV is not implemented.\n"); g_assert_not_reached (); }
-jint JNICALL CallNonvirtualIntMethodA (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       jvalue *args) { printf ("JNI Function CallNonvirtualIntMethodA is not implemented.\n"); g_assert_not_reached (); }
-
-jlong JNICALL CallNonvirtualLongMethod (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallNonvirtualLongMethod is not implemented.\n"); g_assert_not_reached (); }
-jlong JNICALL CallNonvirtualLongMethodV (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       va_list args) { printf ("JNI Function CallNonvirtualLongMethodV is not implemented.\n"); g_assert_not_reached (); }
-jlong JNICALL CallNonvirtualLongMethodA (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       jvalue *args) { printf ("JNI Function CallNonvirtualLongMethodA is not implemented.\n"); g_assert_not_reached (); }
-
-jfloat JNICALL CallNonvirtualFloatMethod (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallNonvirtualFloatMethod is not implemented.\n"); g_assert_not_reached (); }
-jfloat JNICALL CallNonvirtualFloatMethodV (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       va_list args) { printf ("JNI Function CallNonvirtualFloatMethodV is not implemented.\n"); g_assert_not_reached (); }
-jfloat JNICALL CallNonvirtualFloatMethodA (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       jvalue *args) { printf ("JNI Function CallNonvirtualFloatMethodA is not implemented.\n"); g_assert_not_reached (); }
-
-jdouble JNICALL CallNonvirtualDoubleMethod (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallNonvirtualDoubleMethod is not implemented.\n"); g_assert_not_reached (); }
-jdouble JNICALL CallNonvirtualDoubleMethodV (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       va_list args) { printf ("JNI Function CallNonvirtualDoubleMethodV is not implemented.\n"); g_assert_not_reached (); }
-jdouble JNICALL CallNonvirtualDoubleMethodA (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       jvalue *args) { printf ("JNI Function CallNonvirtualDoubleMethodA is not implemented.\n"); g_assert_not_reached (); }
-
-void JNICALL CallNonvirtualVoidMethod (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallNonvirtualVoidMethod is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL CallNonvirtualVoidMethodV (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       va_list args) { printf ("JNI Function CallNonvirtualVoidMethodV is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL CallNonvirtualVoidMethodA (JNIEnv *env, jobject obj, jclass clazz, jmethodID methodID,       jvalue * args) { printf ("JNI Function CallNonvirtualVoidMethodA is not implemented.\n"); g_assert_not_reached (); }
-
-jfieldID FindFieldID(JNIEnv *env, jclass cls, const char* name, const char* sig, gboolean isstatic)
+static jfieldID FindFieldID(JNIEnv *env, jclass cls, const char* name, const char* sig, gboolean isstatic)
 {
 	return (jfieldID)jniFuncs.GetFieldCookie (jniFuncs.UnwrapRef (env, cls), StringFromUTF8 (name), StringFromUTF8 (sig), isstatic);
 }
 
-jmethodID FindMethodID(JNIEnv *env, jclass cls, const char* name, const char* sig, gboolean isstatic)
+static jmethodID FindMethodID(JNIEnv *env, jclass cls, const char* name, const char* sig, gboolean isstatic)
 {
 	return (jmethodID)jniFuncs.GetMethodCookie (
 		jniFuncs.UnwrapRef (env, cls), StringFromUTF8(name), StringFromUTF8(sig), isstatic);
 }
 
-jmethodID JNICALL GetMethodID (JNIEnv *env, jclass clazz, const char *name, const char *sig)
+static jmethodID JNICALL GetMethodID (JNIEnv *env, jclass clazz, const char *name, const char *sig)
 {
 	return FindMethodID (env, clazz, name, sig, FALSE);
 }
 
 
-jfieldID JNICALL GetFieldID (JNIEnv *env, jclass clazz, const char *name, const char *sig)
+static jfieldID JNICALL GetFieldID (JNIEnv *env, jclass clazz, const char *name, const char *sig)
 {
 	return FindFieldID (env, clazz, name, sig, FALSE);
 }
 
-jfieldID JNICALL GetStaticFieldID (JNIEnv *env, jclass clazz, const char *name, const char *sig) 
+static jfieldID JNICALL GetStaticFieldID (JNIEnv *env, jclass clazz, const char *name, const char *sig) 
 { 	
 	return FindFieldID (env, clazz, name, sig, TRUE);
 }
 
-jmethodID JNICALL GetStaticMethodID (JNIEnv *env, jclass clazz, const char *name, const char *sig)
+static jmethodID JNICALL GetStaticMethodID (JNIEnv *env, jclass clazz, const char *name, const char *sig)
 {
 	return FindMethodID (env, clazz, name, sig, TRUE);
 }
 
 #define GET_SET_FIELD(Type,type,cpptype) \
-void JNICALL Set##Type##Field(JNIEnv *env, jobject obj, jfieldID fieldID, type val)\
+static void JNICALL Set##Type##Field(JNIEnv *env, jobject obj, jfieldID fieldID, type val)\
 {\
     jniFuncs.SetFieldValue (fieldID, jniFuncs.UnwrapRef (env, obj), \
                             box_##Type (val));\
 }\
-type JNICALL Get##Type##Field(JNIEnv *env, jobject obj, jfieldID fieldID)\
+static type JNICALL Get##Type##Field(JNIEnv *env, jobject obj, jfieldID fieldID)\
 {\
     return *(cpptype*)BOXED_VALUE(jniFuncs.GetFieldValue (fieldID, jniFuncs.UnwrapRef (env, obj)));\
 }\
-void JNICALL SetStatic##Type##Field (JNIEnv *env, jclass clazz, jfieldID fieldID, jint value)\
+static void JNICALL SetStatic##Type##Field (JNIEnv *env, jclass clazz, jfieldID fieldID, jint value)\
 {\
     jniFuncs.SetFieldValue (fieldID, NULL, \
                             box_##Type (value));\
 }\
-type JNICALL GetStatic##Type##Field(JNIEnv *env, jclass clazz, jfieldID fieldID)\
+static type JNICALL GetStatic##Type##Field(JNIEnv *env, jclass clazz, jfieldID fieldID)\
 {\
     return *(cpptype*)BOXED_VALUE(jniFuncs.GetFieldValue (fieldID, NULL));\
 }\
@@ -572,81 +588,81 @@ GET_SET_FIELD(Long,jlong, gint64)
 GET_SET_FIELD(Float,jfloat,float)
 GET_SET_FIELD(Double,jdouble,double)
 
-jobject JNICALL GetObjectField (JNIEnv *env, jobject obj, jfieldID fieldID)
+static jobject JNICALL GetObjectField (JNIEnv *env, jobject obj, jfieldID fieldID)
 {
 	return (jobject)(jniFuncs.MakeLocalRef (env, jniFuncs.GetFieldValue (fieldID, jniFuncs.UnwrapRef (env, obj))));
 }
 
-void JNICALL SetObjectField (JNIEnv *env, jobject obj, jfieldID fieldID, jobject val)
+static void JNICALL SetObjectField (JNIEnv *env, jobject obj, jfieldID fieldID, jobject val)
 {
 	jniFuncs.SetFieldValue (fieldID, jniFuncs.UnwrapRef (env, obj), jniFuncs.UnwrapRef (env, val));
 }
 
-jobject JNICALL GetStaticObjectField (JNIEnv *env, jclass clazz, jfieldID fieldID)
+static jobject JNICALL GetStaticObjectField (JNIEnv *env, jclass clazz, jfieldID fieldID)
 {
 	return (jobject)(jniFuncs.MakeLocalRef (env, jniFuncs.GetFieldValue (fieldID, NULL)));
 }	
 
-void JNICALL SetStaticObjectField (JNIEnv *env, jclass clazz, jfieldID fieldID, jobject value)
+static void JNICALL SetStaticObjectField (JNIEnv *env, jclass clazz, jfieldID fieldID, jobject value)
 {
 	jniFuncs.SetFieldValue (fieldID, NULL, jniFuncs.UnwrapRef (env, value));
 }	
 
 
 
-jobject JNICALL CallStaticObjectMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticObjectMethod is not implemented.\n"); g_assert_not_reached (); }
-jobject JNICALL CallStaticObjectMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticObjectMethodV is not implemented.\n"); g_assert_not_reached (); }
-jobject JNICALL CallStaticObjectMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticObjectMethodA is not implemented.\n"); g_assert_not_reached (); }
+static jobject JNICALL CallStaticObjectMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticObjectMethod is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jobject JNICALL CallStaticObjectMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticObjectMethodV is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jobject JNICALL CallStaticObjectMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticObjectMethodA is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jboolean JNICALL CallStaticBooleanMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticBooleanMethod is not implemented.\n"); g_assert_not_reached (); }
-jboolean JNICALL CallStaticBooleanMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticBooleanMethodV is not implemented.\n"); g_assert_not_reached (); }
-jboolean JNICALL CallStaticBooleanMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticBooleanMethodA is not implemented.\n"); g_assert_not_reached (); }
+static jboolean JNICALL CallStaticBooleanMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticBooleanMethod is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jboolean JNICALL CallStaticBooleanMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticBooleanMethodV is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jboolean JNICALL CallStaticBooleanMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticBooleanMethodA is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jbyte JNICALL CallStaticByteMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticByteMethod is not implemented.\n"); g_assert_not_reached (); }
-jbyte JNICALL CallStaticByteMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticByteMethodV is not implemented.\n"); g_assert_not_reached (); }
-jbyte JNICALL CallStaticByteMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticByteMethodA is not implemented.\n"); g_assert_not_reached (); }
+static jbyte JNICALL CallStaticByteMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticByteMethod is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jbyte JNICALL CallStaticByteMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticByteMethodV is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jbyte JNICALL CallStaticByteMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticByteMethodA is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jchar JNICALL CallStaticCharMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticCharMethod is not implemented.\n"); g_assert_not_reached (); }
-jchar JNICALL CallStaticCharMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticCharMethodV is not implemented.\n"); g_assert_not_reached (); }
-jchar JNICALL CallStaticCharMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticCharMethodA is not implemented.\n"); g_assert_not_reached (); }
+static jchar JNICALL CallStaticCharMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticCharMethod is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jchar JNICALL CallStaticCharMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticCharMethodV is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jchar JNICALL CallStaticCharMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticCharMethodA is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jshort JNICALL CallStaticShortMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticShortMethod is not implemented.\n"); g_assert_not_reached (); }
-jshort JNICALL CallStaticShortMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticShortMethodV is not implemented.\n"); g_assert_not_reached (); }
-jshort JNICALL CallStaticShortMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticShortMethodA is not implemented.\n"); g_assert_not_reached (); }
+static jshort JNICALL CallStaticShortMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticShortMethod is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jshort JNICALL CallStaticShortMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticShortMethodV is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jshort JNICALL CallStaticShortMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticShortMethodA is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jint JNICALL CallStaticIntMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticIntMethod is not implemented.\n"); g_assert_not_reached (); }
-jint JNICALL CallStaticIntMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticIntMethodV is not implemented.\n"); g_assert_not_reached (); }
-jint JNICALL CallStaticIntMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticIntMethodA is not implemented.\n"); g_assert_not_reached (); }
+static jint JNICALL CallStaticIntMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticIntMethod is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jint JNICALL CallStaticIntMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticIntMethodV is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jint JNICALL CallStaticIntMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticIntMethodA is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jlong JNICALL CallStaticLongMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticLongMethod is not implemented.\n"); g_assert_not_reached (); }
-jlong JNICALL CallStaticLongMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticLongMethodV is not implemented.\n"); g_assert_not_reached (); }
-jlong JNICALL CallStaticLongMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticLongMethodA is not implemented.\n"); g_assert_not_reached (); }
+static jlong JNICALL CallStaticLongMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticLongMethod is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jlong JNICALL CallStaticLongMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticLongMethodV is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jlong JNICALL CallStaticLongMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticLongMethodA is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jfloat JNICALL CallStaticFloatMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticFloatMethod is not implemented.\n"); g_assert_not_reached (); }
-jfloat JNICALL CallStaticFloatMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticFloatMethodV is not implemented.\n"); g_assert_not_reached (); }
-jfloat JNICALL CallStaticFloatMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticFloatMethodA is not implemented.\n"); g_assert_not_reached (); }
+static jfloat JNICALL CallStaticFloatMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticFloatMethod is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jfloat JNICALL CallStaticFloatMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticFloatMethodV is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jfloat JNICALL CallStaticFloatMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticFloatMethodA is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jdouble JNICALL CallStaticDoubleMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticDoubleMethod is not implemented.\n"); g_assert_not_reached (); }
-jdouble JNICALL CallStaticDoubleMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticDoubleMethodV is not implemented.\n"); g_assert_not_reached (); }
-jdouble JNICALL CallStaticDoubleMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticDoubleMethodA is not implemented.\n"); g_assert_not_reached (); }
+static jdouble JNICALL CallStaticDoubleMethod (JNIEnv *env, jclass clazz, jmethodID methodID, ...) { printf ("JNI Function CallStaticDoubleMethod is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jdouble JNICALL CallStaticDoubleMethodV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticDoubleMethodV is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jdouble JNICALL CallStaticDoubleMethodA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args) { printf ("JNI Function CallStaticDoubleMethodA is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-void JNICALL CallStaticVoidMethod (JNIEnv *env, jclass cls, jmethodID methodID, ...) { printf ("JNI Function CallStaticVoidMethod is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL CallStaticVoidMethodV (JNIEnv *env, jclass cls, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticVoidMethodV is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL CallStaticVoidMethodA (JNIEnv *env, jclass cls, jmethodID methodID, jvalue * args) { printf ("JNI Function CallStaticVoidMethodA is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL CallStaticVoidMethod (JNIEnv *env, jclass cls, jmethodID methodID, ...) { printf ("JNI Function CallStaticVoidMethod is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL CallStaticVoidMethodV (JNIEnv *env, jclass cls, jmethodID methodID, va_list args) { printf ("JNI Function CallStaticVoidMethodV is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL CallStaticVoidMethodA (JNIEnv *env, jclass cls, jmethodID methodID, jvalue * args) { printf ("JNI Function CallStaticVoidMethodA is not implemented.\n"); g_assert_not_reached (); }
 
-jstring JNICALL NewString (JNIEnv *env, const jchar *unicode, jsize len) { printf ("JNI Function NewString is not implemented.\n"); g_assert_not_reached (); }
-jsize JNICALL GetStringLength (JNIEnv *env, jstring str) { printf ("JNI Function GetStringLength is not implemented.\n"); g_assert_not_reached (); }
-const jchar *JNICALL GetStringChars (JNIEnv *env, jstring str, jboolean *isCopy) { printf ("JNI Function GetStringChars is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL ReleaseStringChars (JNIEnv *env, jstring str, const jchar *chars) { printf ("JNI Function ReleaseStringChars is not implemented.\n"); g_assert_not_reached (); }
+static jstring JNICALL NewString (JNIEnv *env, const jchar *unicode, jsize len) { printf ("JNI Function NewString is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jsize JNICALL GetStringLength (JNIEnv *env, jstring str) { printf ("JNI Function GetStringLength is not implemented.\n"); g_assert_not_reached (); return 0; }
+static const jchar *JNICALL GetStringChars (JNIEnv *env, jstring str, jboolean *isCopy) { printf ("JNI Function GetStringChars is not implemented.\n"); g_assert_not_reached (); return 0; }
+static void JNICALL ReleaseStringChars (JNIEnv *env, jstring str, const jchar *chars) { printf ("JNI Function ReleaseStringChars is not implemented.\n"); g_assert_not_reached (); }
 
-jstring JNICALL NewStringUTF (JNIEnv *env, const char *utf)
+static jstring JNICALL NewStringUTF (JNIEnv *env, const char *utf)
 {
 	return (jstring)jniFuncs.MakeLocalRef (env, StringFromUTF8 (utf));
 }
 
-jsize JNICALL GetStringUTFLength (JNIEnv *env, jstring str) { printf ("JNI Function GetStringUTFLength is not implemented.\n"); g_assert_not_reached (); }
+static jsize JNICALL GetStringUTFLength (JNIEnv *env, jstring str) { printf ("JNI Function GetStringUTFLength is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-const char* JNICALL GetStringUTFChars (JNIEnv *env, jstring str, jboolean *isCopy)
+static const char* JNICALL GetStringUTFChars (JNIEnv *env, jstring str, jboolean *isCopy)
 {
 	MonoString *s;
 	char *buf;
@@ -691,63 +707,63 @@ const char* JNICALL GetStringUTFChars (JNIEnv *env, jstring str, jboolean *isCop
 	return buf;
 }
 	
-void JNICALL ReleaseStringUTFChars (JNIEnv *env, jstring str, const char* chars)
+static void JNICALL ReleaseStringUTFChars (JNIEnv *env, jstring str, const char* chars)
 {
 	g_free ((char*)chars);
 }
 
-jsize JNICALL GetArrayLength (JNIEnv *env, jarray array)
+static jsize JNICALL GetArrayLength (JNIEnv *env, jarray array)
 {
 	MonoArray *arr = jniFuncs.UnwrapRef (env, array);
 	return mono_array_length (arr);
 }
 
-jobject JNICALL GetObjectArrayElement (JNIEnv *env, jobjectArray array, jsize index) { printf ("JNI Function GetObjectArrayElement is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL SetObjectArrayElement (JNIEnv *env, jobjectArray array, jsize index, jobject val) { printf ("JNI Function SetObjectArrayElement is not implemented.\n"); g_assert_not_reached (); }
+static jobject JNICALL GetObjectArrayElement (JNIEnv *env, jobjectArray array, jsize index) { printf ("JNI Function GetObjectArrayElement is not implemented.\n"); g_assert_not_reached (); return 0; }
+static void JNICALL SetObjectArrayElement (JNIEnv *env, jobjectArray array, jsize index, jobject val) { printf ("JNI Function SetObjectArrayElement is not implemented.\n"); g_assert_not_reached (); }
 
-int new_java_array (JNIEnv *env, MonoClass *eclass, jsize len)
+static int new_java_array (JNIEnv *env, MonoClass *eclass, jsize len)
 {
 	return jniFuncs.MakeLocalRef (env, mono_array_new (mono_domain_get (), eclass, len));
 }	
 
-jobjectArray JNICALL NewObjectArray (JNIEnv *env, jsize len, jclass clazz, jobject init) { printf ("JNI Function NewObjectArray is not implemented.\n"); g_assert_not_reached (); }
+static jobjectArray JNICALL NewObjectArray (JNIEnv *env, jsize len, jclass clazz, jobject init) { printf ("JNI Function NewObjectArray is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jbooleanArray JNICALL NewBooleanArray (JNIEnv *env, jsize len)
+static jbooleanArray JNICALL NewBooleanArray (JNIEnv *env, jsize len)
 {
 	return (jbooleanArray)new_java_array (env, mono_defaults.boolean_class, len);
 }	
 
-jbyteArray JNICALL NewByteArray (JNIEnv *env, jsize len)
+static jbyteArray JNICALL NewByteArray (JNIEnv *env, jsize len)
 {
 	return (jbyteArray)new_java_array (env, mono_defaults.sbyte_class, len);
 }
 	
-jcharArray JNICALL NewCharArray (JNIEnv *env, jsize len)
+static jcharArray JNICALL NewCharArray (JNIEnv *env, jsize len)
 {
 	return (jcharArray)new_java_array (env, mono_defaults.char_class, len);
 }
 	
-jshortArray JNICALL NewShortArray (JNIEnv *env, jsize len)
+static jshortArray JNICALL NewShortArray (JNIEnv *env, jsize len)
 {
 	return (jshortArray)new_java_array (env, mono_defaults.int16_class, len);
 }	
 
-jintArray JNICALL NewIntArray (JNIEnv *env, jsize len)
+static jintArray JNICALL NewIntArray (JNIEnv *env, jsize len)
 {
 	return (jintArray)new_java_array (env, mono_defaults.int32_class, len);
 }
 
-jlongArray JNICALL NewLongArray (JNIEnv *env, jsize len)
+static jlongArray JNICALL NewLongArray (JNIEnv *env, jsize len)
 {
 	return (jlongArray)new_java_array (env, mono_defaults.int64_class, len);
 }
 
-jfloatArray JNICALL NewFloatArray (JNIEnv *env, jsize len)
+static jfloatArray JNICALL NewFloatArray (JNIEnv *env, jsize len)
 {
 	return (jfloatArray)new_java_array (env, mono_defaults.single_class, len);
 }
 
-jdoubleArray JNICALL NewDoubleArray (JNIEnv *env, jsize len)
+static jdoubleArray JNICALL NewDoubleArray (JNIEnv *env, jsize len)
 {
 	return (jdoubleArray)new_java_array (env, mono_defaults.double_class, len);
 }
@@ -755,7 +771,7 @@ jdoubleArray JNICALL NewDoubleArray (JNIEnv *env, jsize len)
 /* Original version with copy */
 #if 0
 #define GET_SET_ARRAY_ELEMENTS(Type,type,cpptype) \
-type* JNICALL Get##Type##ArrayElements(JNIEnv *env, type##Array array, jboolean *isCopy)\
+static type* JNICALL Get##Type##ArrayElements(JNIEnv *env, type##Array array, jboolean *isCopy)\
 {\
 	int i; \
 	MonoArray *obj; \
@@ -772,7 +788,7 @@ type* JNICALL Get##Type##ArrayElements(JNIEnv *env, type##Array array, jboolean 
 	return res; \
 } \
 \
-void JNICALL Release##Type##ArrayElements(JNIEnv *env, type##Array array, type *elems, jint mode)\
+static void JNICALL Release##Type##ArrayElements(JNIEnv *env, type##Array array, type *elems, jint mode)\
 {\
 	int i; \
 	MonoArray *obj; \
@@ -803,7 +819,7 @@ void JNICALL Release##Type##ArrayElements(JNIEnv *env, type##Array array, type *
  * non-copying.
  */
 #define GET_SET_ARRAY_ELEMENTS(Type,type,cpptype) \
-type* JNICALL Get##Type##ArrayElements(JNIEnv *env, type##Array array, jboolean *isCopy)\
+static type* JNICALL Get##Type##ArrayElements(JNIEnv *env, type##Array array, jboolean *isCopy)\
 {\
 	MonoArray *obj; \
 \
@@ -813,7 +829,7 @@ type* JNICALL Get##Type##ArrayElements(JNIEnv *env, type##Array array, jboolean 
     return (type*)mono_array_addr (obj, cpptype, 0); \
 } \
 \
-void JNICALL Release##Type##ArrayElements(JNIEnv *env, type##Array array, type *elems, jint mode)\
+static void JNICALL Release##Type##ArrayElements(JNIEnv *env, type##Array array, type *elems, jint mode)\
 {\
     return; \
 }
@@ -827,30 +843,30 @@ GET_SET_ARRAY_ELEMENTS(Long,jlong,glong)
 GET_SET_ARRAY_ELEMENTS(Float,jfloat,float)
 GET_SET_ARRAY_ELEMENTS(Double,jdouble,double)
 
-void JNICALL GetBooleanArrayRegion (JNIEnv *env, jbooleanArray array, jsize start, jsize l, jboolean *buf) { printf ("JNI Function GetBooleanArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL GetByteArrayRegion (JNIEnv *env, jbyteArray array, jsize start, jsize len, jbyte *buf) { printf ("JNI Function GetByteArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL GetCharArrayRegion (JNIEnv *env, jcharArray array, jsize start, jsize len, jchar *buf) { printf ("JNI Function GetCharArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL GetShortArrayRegion (JNIEnv *env, jshortArray array, jsize start, jsize len, jshort *buf) { printf ("JNI Function GetShortArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL GetIntArrayRegion (JNIEnv *env, jintArray array, jsize start, jsize len, jint *buf) { printf ("JNI Function GetIntArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL GetLongArrayRegion (JNIEnv *env, jlongArray array, jsize start, jsize len, jlong *buf) { printf ("JNI Function GetLongArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL GetFloatArrayRegion (JNIEnv *env, jfloatArray array, jsize start, jsize len, jfloat *buf) { printf ("JNI Function GetFloatArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL GetDoubleArrayRegion (JNIEnv *env, jdoubleArray array, jsize start, jsize len, jdouble *buf) { printf ("JNI Function GetDoubleArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL GetBooleanArrayRegion (JNIEnv *env, jbooleanArray array, jsize start, jsize l, jboolean *buf) { printf ("JNI Function GetBooleanArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL GetByteArrayRegion (JNIEnv *env, jbyteArray array, jsize start, jsize len, jbyte *buf) { printf ("JNI Function GetByteArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL GetCharArrayRegion (JNIEnv *env, jcharArray array, jsize start, jsize len, jchar *buf) { printf ("JNI Function GetCharArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL GetShortArrayRegion (JNIEnv *env, jshortArray array, jsize start, jsize len, jshort *buf) { printf ("JNI Function GetShortArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL GetIntArrayRegion (JNIEnv *env, jintArray array, jsize start, jsize len, jint *buf) { printf ("JNI Function GetIntArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL GetLongArrayRegion (JNIEnv *env, jlongArray array, jsize start, jsize len, jlong *buf) { printf ("JNI Function GetLongArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL GetFloatArrayRegion (JNIEnv *env, jfloatArray array, jsize start, jsize len, jfloat *buf) { printf ("JNI Function GetFloatArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL GetDoubleArrayRegion (JNIEnv *env, jdoubleArray array, jsize start, jsize len, jdouble *buf) { printf ("JNI Function GetDoubleArrayRegion is not implemented.\n"); g_assert_not_reached (); }
 
-void JNICALL SetBooleanArrayRegion (JNIEnv *env, jbooleanArray array, jsize start, jsize l, jboolean *buf) { printf ("JNI Function SetBooleanArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL SetByteArrayRegion (JNIEnv *env, jbyteArray array, jsize start, jsize len, jbyte *buf) { printf ("JNI Function SetByteArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL SetCharArrayRegion (JNIEnv *env, jcharArray array, jsize start, jsize len, jchar *buf) { printf ("JNI Function SetCharArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL SetShortArrayRegion (JNIEnv *env, jshortArray array, jsize start, jsize len, jshort *buf) { printf ("JNI Function SetShortArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL SetIntArrayRegion (JNIEnv *env, jintArray array, jsize start, jsize len, jint *buf) { printf ("JNI Function SetIntArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL SetLongArrayRegion (JNIEnv *env, jlongArray array, jsize start, jsize len, jlong *buf) { printf ("JNI Function SetLongArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL SetFloatArrayRegion (JNIEnv *env, jfloatArray array, jsize start, jsize len, jfloat *buf) { printf ("JNI Function SetFloatArrayRegion is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL SetDoubleArrayRegion (JNIEnv *env, jdoubleArray array, jsize start, jsize len, jdouble *buf) { printf ("JNI Function SetDoubleArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL SetBooleanArrayRegion (JNIEnv *env, jbooleanArray array, jsize start, jsize l, jboolean *buf) { printf ("JNI Function SetBooleanArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL SetByteArrayRegion (JNIEnv *env, jbyteArray array, jsize start, jsize len, jbyte *buf) { printf ("JNI Function SetByteArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL SetCharArrayRegion (JNIEnv *env, jcharArray array, jsize start, jsize len, jchar *buf) { printf ("JNI Function SetCharArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL SetShortArrayRegion (JNIEnv *env, jshortArray array, jsize start, jsize len, jshort *buf) { printf ("JNI Function SetShortArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL SetIntArrayRegion (JNIEnv *env, jintArray array, jsize start, jsize len, jint *buf) { printf ("JNI Function SetIntArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL SetLongArrayRegion (JNIEnv *env, jlongArray array, jsize start, jsize len, jlong *buf) { printf ("JNI Function SetLongArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL SetFloatArrayRegion (JNIEnv *env, jfloatArray array, jsize start, jsize len, jfloat *buf) { printf ("JNI Function SetFloatArrayRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL SetDoubleArrayRegion (JNIEnv *env, jdoubleArray array, jsize start, jsize len, jdouble *buf) { printf ("JNI Function SetDoubleArrayRegion is not implemented.\n"); g_assert_not_reached (); }
 
-jobject JNICALL NewObjectA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args)
+static jobject JNICALL NewObjectA (JNIEnv *env, jclass clazz, jmethodID methodID, jvalue *args)
 {
 	return (jobject)jniFuncs.MakeLocalRef (env, InvokeHelper (env, NULL, methodID, args));
 }
 
-jobject JNICALL NewObjectV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args)
+static jobject JNICALL NewObjectV (JNIEnv *env, jclass clazz, jmethodID methodID, va_list args)
 {
 	char sig[257];
 	int i;
@@ -888,20 +904,21 @@ jobject JNICALL NewObjectV (JNIEnv *env, jclass clazz, jmethodID methodID, va_li
 	return NewObjectA (env, clazz, methodID, argarray);
 }
 
-jobject JNICALL NewObject (JNIEnv *env, jclass clazz, jmethodID methodID, ...)
+static jobject JNICALL NewObject (JNIEnv *env, jclass clazz, jmethodID methodID, ...)
 {
 	va_list args;
+	jobject o;
 	va_start(args, methodID);
-	jobject o = NewObjectV(env, clazz, methodID, args);
+	o = NewObjectV(env, clazz, methodID, args);
 	va_end(args);
 	return o;
 }
 
-jint JNICALL RegisterNatives (JNIEnv *env, jclass clazz, const JNINativeMethod *methods,       jint nMethods) { printf ("JNI Function RegisterNatives is not implemented.\n"); g_assert_not_reached (); }
-jint JNICALL UnregisterNatives (JNIEnv *env, jclass clazz) { printf ("JNI Function UnregisterNatives is not implemented.\n"); g_assert_not_reached (); }
+static jint JNICALL RegisterNatives (JNIEnv *env, jclass clazz, const JNINativeMethod *methods,       jint nMethods) { printf ("JNI Function RegisterNatives is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jint JNICALL UnregisterNatives (JNIEnv *env, jclass clazz) { printf ("JNI Function UnregisterNatives is not implemented.\n"); g_assert_not_reached (); return 0; }
 
-jint JNICALL MonitorEnter (JNIEnv *env, jobject obj) { printf ("JNI Function MonitorEnter is not implemented.\n"); g_assert_not_reached (); }
-jint JNICALL MonitorExit (JNIEnv *env, jobject obj) { printf ("JNI Function MonitorExit is not implemented.\n"); g_assert_not_reached (); }
+static jint JNICALL MonitorEnter (JNIEnv *env, jobject obj) { printf ("JNI Function MonitorEnter is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jint JNICALL MonitorExit (JNIEnv *env, jobject obj) { printf ("JNI Function MonitorExit is not implemented.\n"); g_assert_not_reached (); return 0; }
 
 jint JNICALL GetJavaVM (JNIEnv *env, JavaVM **vm)
 {
@@ -909,49 +926,54 @@ jint JNICALL GetJavaVM (JNIEnv *env, JavaVM **vm)
 		vm_ptr = (void***)&vm_func_table;
 
 	*vm = (JavaVM*)&vm_ptr;
+
+	return JNI_OK;
 }
 
-void JNICALL GetStringRegion (JNIEnv *env, jstring str, jsize start, jsize len, jchar *buf) { printf ("JNI Function GetStringRegion is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL GetStringUTFRegion (JNIEnv *env, jstring str, jsize start, jsize len, char *buf) { printf ("JNI Function GetStringUTFRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL GetStringRegion (JNIEnv *env, jstring str, jsize start, jsize len, jchar *buf) { printf ("JNI Function GetStringRegion is not implemented.\n"); g_assert_not_reached (); }
+static void JNICALL GetStringUTFRegion (JNIEnv *env, jstring str, jsize start, jsize len, char *buf) { printf ("JNI Function GetStringUTFRegion is not implemented.\n"); g_assert_not_reached (); }
 
-void * JNICALL GetPrimitiveArrayCritical (JNIEnv *env, jarray array, jboolean *isCopy) { printf ("JNI Function GetPrimitiveArrayCritical is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL ReleasePrimitiveArrayCritical (JNIEnv *env, jarray array, void *carray, jint mode) { printf ("JNI Function ReleasePrimitiveArrayCritical is not implemented.\n"); g_assert_not_reached (); }
+static void * JNICALL GetPrimitiveArrayCritical (JNIEnv *env, jarray array, jboolean *isCopy) { printf ("JNI Function GetPrimitiveArrayCritical is not implemented.\n"); g_assert_not_reached (); return NULL; }
+static void JNICALL ReleasePrimitiveArrayCritical (JNIEnv *env, jarray array, void *carray, jint mode) { printf ("JNI Function ReleasePrimitiveArrayCritical is not implemented.\n"); g_assert_not_reached (); }
 
-const jchar * JNICALL GetStringCritical (JNIEnv *env, jstring string, jboolean *isCopy) { printf ("JNI Function GetStringCritical is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL ReleaseStringCritical (JNIEnv *env, jstring string, const jchar *cstring) { printf ("JNI Function ReleaseStringCritical is not implemented.\n"); g_assert_not_reached (); }
+static const jchar * JNICALL GetStringCritical (JNIEnv *env, jstring string, jboolean *isCopy) { printf ("JNI Function GetStringCritical is not implemented.\n"); g_assert_not_reached (); return NULL; }
+static void JNICALL ReleaseStringCritical (JNIEnv *env, jstring string, const jchar *cstring) { printf ("JNI Function ReleaseStringCritical is not implemented.\n"); g_assert_not_reached (); }
 
-jweak JNICALL NewWeakGlobalRef (JNIEnv *env, jobject obj) { printf ("JNI Function NewWeakGlobalRef is not implemented.\n"); g_assert_not_reached (); }
-void JNICALL DeleteWeakGlobalRef (JNIEnv *env, jweak ref) { printf ("JNI Function DeleteWeakGlobalRef is not implemented.\n"); g_assert_not_reached (); }
+static jweak JNICALL NewWeakGlobalRef (JNIEnv *env, jobject obj) { printf ("JNI Function NewWeakGlobalRef is not implemented.\n"); g_assert_not_reached (); return 0; }
+static void JNICALL DeleteWeakGlobalRef (JNIEnv *env, jweak ref) { printf ("JNI Function DeleteWeakGlobalRef is not implemented.\n"); g_assert_not_reached (); }
 
-jboolean JNICALL ExceptionCheck (JNIEnv *env) { 
+static jboolean JNICALL ExceptionCheck (JNIEnv *env) { 
 	return jniFuncs.ExceptionCheck (env);
 }
 
-jobject JNICALL NewDirectByteBuffer (JNIEnv* env, void* address, jlong capacity) { printf ("JNI Function NewDirectByteBuffer is not implemented.\n"); g_assert_not_reached (); }
-void* JNICALL GetDirectBufferAddress (JNIEnv* env, jobject buf) { printf ("JNI Function GetDirectBufferAddress is not implemented.\n"); g_assert_not_reached (); }
-jlong JNICALL GetDirectBufferCapacity (JNIEnv* env, jobject buf) { printf ("JNI Function GetDirectBufferCapacity is not implemented.\n"); g_assert_not_reached (); }
+static jobject JNICALL NewDirectByteBuffer (JNIEnv* env, void* address, jlong capacity) { printf ("JNI Function NewDirectByteBuffer is not implemented.\n"); g_assert_not_reached (); return 0; }
+static void* JNICALL GetDirectBufferAddress (JNIEnv* env, jobject buf) { printf ("JNI Function GetDirectBufferAddress is not implemented.\n"); g_assert_not_reached (); return 0; }
+static jlong JNICALL GetDirectBufferCapacity (JNIEnv* env, jobject buf) { printf ("JNI Function GetDirectBufferCapacity is not implemented.\n"); g_assert_not_reached (); return 0; }
 
 
 /***************************************************************************/
 /*                         VM FUNCTIONS                                    */
 /***************************************************************************/
 
-jint DestroyJavaVM (void *vm)
+static jint DestroyJavaVM (void *vm)
 {
 	g_assert_not_reached ();
+	return 0;
 }
 
-jint AttachCurrentThread (void *vm, void **penv, void *args)
+static jint AttachCurrentThread (void *vm, void **penv, void *args)
 {
 	g_assert_not_reached ();
+	return 0;
 }
 
-jint DetachCurrentThread (void *vm)
+static jint DetachCurrentThread (void *vm)
 {
 	g_assert_not_reached ();
+	return 0;
 }
 
-jint GetEnv (void *vm, void **penv, jint version)
+static jint GetEnv (void *vm, void **penv, jint version)
 {
 	void *env = jniFuncs.GetJniEnv ();
 	if (env) {
@@ -964,9 +986,10 @@ jint GetEnv (void *vm, void **penv, jint version)
 	}
 }
 
-jint AttachCurrentThreadAsDaemon (void *vm, void **penv, void *args)
+static jint AttachCurrentThreadAsDaemon (void *vm, void **penv, void *args)
 {
 	g_assert_not_reached ();
+	return 0;
 }
 
 
