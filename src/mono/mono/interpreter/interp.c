@@ -87,7 +87,6 @@ newobj (MonoImage *image, guint32 token)
 	switch (mono_metadata_token_code (token)){
 	case TOKEN_TYPE_METHOD_DEF: {
 		guint32 idx = mono_metadata_typedef_from_method (m, token);
-		g_print ("GOT typedef %d from token 0x%x\n", idx, token);
 		return mono_object_new (image, TOKEN_TYPE_TYPE_DEF | idx);
 	}
 	case TOKEN_TYPE_MEMBER_REF: {
@@ -145,11 +144,10 @@ stackval_from_data (MonoType *type, const char *data, guint offset)
 		g_warning ("got type %x", type->type);
 		g_assert_not_reached ();
 	}
-	g_print ("field value: %d\n", result.data.i);
 	return result;
 }
 
-void
+static void
 stackval_to_data (MonoType *type, stackval *val, char *data, guint offset)
 {
 	switch (type->type) {
@@ -164,6 +162,8 @@ stackval_to_data (MonoType *type, stackval *val, char *data, guint offset)
 		g_assert_not_reached ();
 	}
 }
+
+#define DEBUG_INTERP 0
 
 /*
  * Need to optimize ALU ops when natural int == int32 
@@ -186,17 +186,30 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	 * with alloca we get the expected huge performance gain
 	 * stackval *stack = g_new0(stackval, mh->max_stack);
 	 */
-	stackval *stack = alloca (sizeof (stackval) * mh->header->max_stack);
+	/*
+	 * We allocate one more stack val and increase stack temporarily to handle
+	 * passing this to instance methods: this needs to be removed when we'll
+	 * use a different argument passing mechanism.
+	 */
+	stackval *stack = alloca (sizeof (stackval) * (mh->header->max_stack+1));
+	register stackval *sp = stack+1;
 	register const unsigned char *ip = mh->header->code;
-	register stackval *sp = stack;
 	/* FIXME: remove this hack */
 	static int fake_field = 42;
+#if DEBUG_INTERP
+	static int level = 0;
+#endif
 	stackval *locals;
 	GOTO_LABEL_VARS;
+
+	++stack;
 
 	if (mh->header->num_locals)
 		locals = alloca (sizeof (stackval) * mh->header->num_locals);
 
+#if DEBUG_INTERP
+	level++;
+#endif
 	/*
 	 * using while (ip < end) may result in a 15% performance drop, 
 	 * but it may be useful for debug
@@ -204,10 +217,16 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	while (1) {
 		/*count++;*/
 
+		/*g_assert (sp >= stack);*/
 #if DEBUG_INTERP
+		{
+			int h;
+			for (h=0; h < level; ++h)
+				g_print ("\t");
+		}
 		g_print ("0x%04x %02x\n", ip-(unsigned char*)mh->header->code, *ip);
-		if (sp > stack){
-			printf ("\t[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type,
+		if (sp != stack){
+			printf ("[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type,
 				sp[-1].data.i, sp[-1].data.f);
 		}
 #endif
@@ -353,10 +372,15 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			token = read32 (ip);
 			ip += 4;
 			cmh = mono_get_method (mh->image, token);
+			g_assert (cmh->signature->call_convention == MONO_CALL_DEFAULT);
 
 			/* decrement by the actual number of args */
 			sp -= cmh->signature->param_count;
-			g_assert (cmh->signature->call_convention == MONO_CALL_DEFAULT);
+			if (cmh->signature->hasthis) {
+				g_assert (sp >= stack);
+				--sp;
+				g_assert (sp->type == VAL_OBJ);
+			}
 
 			/* we need to truncate according to the type of args ... */
 			ves_exec_method (cmh, sp);
@@ -368,14 +392,19 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		}
 		CASE (CEE_CALLI) ves_abort(); BREAK;
 		CASE (CEE_RET)
-			--sp;
-			*args = *sp;
-			if (sp != stack)
+			if (mh->signature->ret->type) {
+				--sp;
+				*args = *sp;
+			}
+			if (sp > stack)
 				g_warning ("more values on stack: %d", sp-stack);
 
 			/*if (sp->type == VAL_DOUBLE)
 					g_print("%.9f\n", sp->data.f);*/
 			/*g_free (stack);*/
+#if DEBUG_INTERP
+			level--;
+#endif
 			return;
 		CASE (CEE_BR_S)
 			++ip;
@@ -757,7 +786,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			 * until we use a different argument passing mechanism. */
 			/* we shift the args to make room for the object reference */
 			for (pc = 0; pc < cmh->signature->param_count; ++pc)
-				sp[-pc] = sp[-pc-1];
+				sp [-pc] = sp [-pc-1];
 			sp -= cmh->signature->param_count + 1;
 			sp->type = VAL_OBJ;
 			sp->data.p = o;
@@ -766,6 +795,10 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 
 			/* we need to truncate according to the type of args ... */
 			ves_exec_method (cmh, sp);
+			/* a constructor returns void, but we need to return the object we created */
+			sp->type = VAL_OBJ;
+			sp->data.p = o;
+			++sp;
 			BREAK;
 		}
 		
