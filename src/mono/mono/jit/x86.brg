@@ -7,11 +7,15 @@
  * (C) 2001 Ximian, Inc.
  */
 
+#include <config.h>
+
 #include <glib.h>
 #include <stdio.h>
 #include <string.h>
+#ifndef PLATFORM_WIN32
 #include <signal.h>
 #include <sys/syscall.h>
+#endif
 
 #include <mono/metadata/blob.h>
 #include <mono/metadata/metadata.h>
