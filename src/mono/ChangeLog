@@ -1,3 +1,7 @@
+2004-05-03  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* data/machine.config: added version and publickeytoken.
+
 2004-05-01  Duncan Mak  <duncan@ximian.com>
 
 	* runtime/net_1_1/Makefile.am:
