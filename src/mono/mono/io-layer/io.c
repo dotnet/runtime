@@ -2289,6 +2289,11 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 		
 		return INVALID_HANDLE_VALUE;
 	}
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": looking for [%s]",
+		utf8_pattern);
+#endif
 	
 	handle=_wapi_handle_new (WAPI_HANDLE_FIND);
 	if(handle==_WAPI_HANDLE_INVALID) {
@@ -2312,7 +2317,44 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 		return(INVALID_HANDLE_VALUE);
 	}
 	
+#ifdef GLOB_PERIOD
+	/* glibc extension */
+	result = glob (utf8_pattern, GLOB_PERIOD, NULL, &find_handle->glob);
+#else
 	result = glob (utf8_pattern, 0, NULL, &find_handle->glob);
+	if (result == 0) {
+		/* If the last element of the pattern begins
+		 * '<slash>*' (stupid compiler) then add a '/.*'
+		 * pattern too.
+		 */
+		int len=strlen(utf8_pattern);
+		if(len==1 && utf8_pattern[0]=='*') {
+			result = glob (".*", GLOB_APPEND, NULL,
+					&find_handle->glob);
+		} else {
+			gchar *last_star=g_strrstr(utf8_pattern, "/*");
+			gchar *last_slash=g_strrstr(utf8_pattern, "/");
+			if(last_star==last_slash) {
+				gchar *append_pattern;
+				int dotpos=(int)(last_slash-utf8_pattern)+1;
+
+				append_pattern=g_new0(gchar, len+2);
+				strncpy(append_pattern, utf8_pattern, dotpos);
+				append_pattern[dotpos]='.';
+				strcpy(append_pattern+dotpos+1, last_slash+1);
+
+#ifdef DEBUG
+				g_message (G_GNUC_PRETTY_FUNCTION ": appending glob [%s]", append_pattern);
+#endif
+				result = glob (append_pattern, GLOB_APPEND,
+						NULL, &find_handle->glob);
+
+				g_free (append_pattern);
+			}
+		}
+	}
+#endif /* !GLOB_PERIOD */
+
 	g_free (utf8_pattern);
 
 	if (result != 0) {
@@ -2929,7 +2971,7 @@ guint32 GetTempPath (guint32 len, gunichar2 *buf)
 		if(dirlen+1>len) {
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION
-				   ": Size %d smaller than needed (%d)", len,
+				   ": Size %d smaller than needed (%ld)", len,
 				   dirlen+1);
 #endif
 		
