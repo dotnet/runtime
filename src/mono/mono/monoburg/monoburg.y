@@ -234,6 +234,7 @@ yylex (void)
 	case '{': d++; break;
 	case '}': d--; break;
 	default:
+		break;
 	}
       }
       buf [--i] = '\0';
