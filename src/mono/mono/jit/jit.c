@@ -1106,7 +1106,7 @@ mono_find_final_block (MonoFlowGraph *cfg, guint32 ip, int type)
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		if (MONO_OFFSET_IN_HANDLER (clause, ip))
-			continue;
+			return NULL;
 
 		if (MONO_OFFSET_IN_CLAUSE (clause, ip)) {
 			if (clause->flags & type) {
