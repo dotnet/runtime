@@ -252,7 +252,6 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 stmt: OP_OUTARG_VT (OP_ICONST) {
 	int start_reg = tree->unused & 0xff;
 	int nregs = (tree->unused >> 8) & 0xff;
-	int ovf_size = (tree->unused >> 16) & 0xffff;
 	if (nregs) {
 		tree->opcode = OP_SETREGIMM;
 		tree->dreg = start_reg;
@@ -266,7 +265,6 @@ stmt: OP_OUTARG_VT (OP_ICONST) {
 stmt: OP_OUTARG_VT (reg) {
 	int start_reg = tree->unused & 0xff;
 	int nregs = (tree->unused >> 8) & 0xff;
-	int ovf_size = (tree->unused >> 16) & 0xffff;
 	if (nregs) {
 		tree->opcode = OP_SETREG;
 		tree->dreg = start_reg;
