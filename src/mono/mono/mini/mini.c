@@ -95,6 +95,7 @@ static MonoMethodSignature *helper_sig_memset = NULL;
 static MonoMethodSignature *helper_sig_ulong_double = NULL;
 static MonoMethodSignature *helper_sig_long_double = NULL;
 static MonoMethodSignature *helper_sig_double_long = NULL;
+static MonoMethodSignature *helper_sig_double_int = NULL;
 static MonoMethodSignature *helper_sig_float_long = NULL;
 static MonoMethodSignature *helper_sig_double_double_double = NULL;
 static MonoMethodSignature *helper_sig_uint_double = NULL;
@@ -2120,6 +2121,7 @@ mono_get_element_address_signature (int arity)
 
 	res = mono_metadata_signature_alloc (mono_defaults.corlib, arity + 1);
 
+	res->pinvoke = 1;
 	res->params [0] = &mono_defaults.array_class->byval_arg; 
 	
 	for (i = 1; i <= arity; i++)
@@ -2282,6 +2284,8 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 	int temp, rank;
 	MonoInst *addr;
 	MonoMethodSignature *esig;
+	char icall_name [256];
+	MonoJitICallInfo *info;
 
 	rank = cmethod->signature->param_count - (is_set? 1: 0);
 
@@ -2296,8 +2300,18 @@ mini_get_ldelema_ins (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *cmet
 		addr->klass = cmethod->klass;
 		return addr;
 	}
-	esig = mono_get_element_address_signature (rank);
-	temp = mono_emit_native_call (cfg, bblock, ves_array_element_address, esig, sp, ip, FALSE);
+
+	/* Need to register the icall so it gets an icall wrapper */
+	sprintf (icall_name, "ves_array_element_address_%d", rank);
+
+	info = mono_find_jit_icall_by_name (icall_name);
+	if (info == NULL) {
+		esig = mono_get_element_address_signature (rank);
+		info = mono_register_jit_icall (ves_array_element_address, g_strdup (icall_name), esig, FALSE);
+	}
+
+	temp = mono_emit_native_call (cfg, bblock, mono_icall_get_wrapper (info), info->sig, sp, ip, FALSE);
+
 	NEW_TEMPLOAD (cfg, addr, temp);
 	return addr;
 }
@@ -5819,7 +5833,10 @@ mono_print_tree (MonoInst *tree) {
 		printf ("[%d]", tree->inst_c0);
 		break;
 	case OP_REGOFFSET:
-		printf ("[0x%x(%s)]", tree->inst_offset, mono_arch_regname (tree->inst_basereg));
+		if (tree->inst_offset < 0)
+			printf ("[-0x%x(%s)]", -tree->inst_offset, mono_arch_regname (tree->inst_basereg));
+		else
+			printf ("[0x%x(%s)]", tree->inst_offset, mono_arch_regname (tree->inst_basereg));
 		break;
 	case OP_REGVAR:
 		printf ("[%s]", mono_arch_regname (tree->dreg));
@@ -6077,6 +6094,12 @@ create_helper_signature (void)
 	helper_sig_double_long->params [0] = &mono_defaults.int64_class->byval_arg;
 	helper_sig_double_long->ret = &mono_defaults.double_class->byval_arg;
 	helper_sig_double_long->pinvoke = 1;
+
+	/* double amethod (int) */
+	helper_sig_double_int = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
+	helper_sig_double_int->params [0] = &mono_defaults.int32_class->byval_arg;
+	helper_sig_double_int->ret = &mono_defaults.double_class->byval_arg;
+	helper_sig_double_int->pinvoke = 1;
 
 	/* float amethod (long) */
 	helper_sig_float_long = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
@@ -7910,13 +7933,24 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 #define GET_CONTEXT \
 	struct sigcontext *ctx = (struct sigcontext*)_dummy;
 #else
+#ifdef __sparc
+#define GET_CONTEXT \
+    void *ctx = context;
+#else
 #define GET_CONTEXT \
 	void **_p = (void **)&_dummy; \
 	struct sigcontext *ctx = (struct sigcontext *)++_p;
 #endif
+#endif
+
+#ifdef MONO_ARCH_USE_SIGACTION
+#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, siginfo_t *info, void *context)
+#else
+#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy)
+#endif
 
 static void
-sigfpe_signal_handler (int _dummy)
+SIG_HANDLER_SIGNATURE (sigfpe_signal_handler)
 {
 	MonoException *exc;
 	GET_CONTEXT
@@ -7927,7 +7961,7 @@ sigfpe_signal_handler (int _dummy)
 }
 
 static void
-sigill_signal_handler (int _dummy)
+SIG_HANDLER_SIGNATURE (sigill_signal_handler)
 {
 	MonoException *exc;
 	GET_CONTEXT
@@ -7959,7 +7993,7 @@ sigsegv_signal_handler (int _dummy, siginfo_t *info, void *context)
 #else
 
 static void
-sigsegv_signal_handler (int _dummy )
+SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 {
 	GET_CONTEXT;
 
@@ -7969,7 +8003,7 @@ sigsegv_signal_handler (int _dummy )
 #endif
 
 static void
-sigusr1_signal_handler (int _dummy)
+SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 {
 	MonoThread *thread;
 	GET_CONTEXT
@@ -7982,7 +8016,7 @@ sigusr1_signal_handler (int _dummy)
 }
 
 static void
-sigquit_signal_handler (int _dummy)
+SIG_HANDLER_SIGNATURE (sigquit_signal_handler)
 {
        MonoException *exc;
        GET_CONTEXT
@@ -7993,7 +8027,7 @@ sigquit_signal_handler (int _dummy)
 }
 
 static void
-sigint_signal_handler (int _dummy)
+SIG_HANDLER_SIGNATURE (sigint_signal_handler)
 {
 	MonoException *exc;
 	GET_CONTEXT
@@ -8001,6 +8035,23 @@ sigint_signal_handler (int _dummy)
 	exc = mono_get_exception_execution_engine ("Interrupted (SIGINT).");
 	
 	mono_arch_handle_exception (ctx, exc, FALSE);
+}
+
+static void
+add_signal_handler (int signo, gpointer handler)
+{
+	struct sigaction sa;
+
+#ifdef MONO_ARCH_USE_SIGACTION
+	sa.sa_sigaction = handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = SA_SIGINFO;
+#else
+	sa.sa_handler = handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = 0;
+#endif
+	g_assert (sigaction (signo, &sa, NULL) != -1);
 }
 
 static void
@@ -8025,56 +8076,24 @@ mono_runtime_install_handlers (void)
 	 * of sigaction */
 	
 	if (getenv ("MONO_DEBUG")) {
-		/* catch SIGINT */
-		sa.sa_handler = sigint_signal_handler;
-		sigemptyset (&sa.sa_mask);
-		sa.sa_flags = 0;
-		//g_assert (syscall (SYS_sigaction, SIGINT, &sa, NULL) != -1);
-		g_assert (sigaction (SIGINT, &sa, NULL) != -1);
+		add_signal_handler (SIGINT, sigint_signal_handler);
 	}
 
-	/* catch SIGFPE */
-	sa.sa_handler = sigfpe_signal_handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-	//g_assert (syscall (SYS_sigaction, SIGFPE, &sa, NULL) != -1);
-	g_assert (sigaction (SIGFPE, &sa, NULL) != -1);
+	add_signal_handler (SIGFPE, sigfpe_signal_handler);
+	add_signal_handler (SIGQUIT, sigquit_signal_handler);
+	add_signal_handler (SIGILL, sigill_signal_handler);
+	add_signal_handler (mono_thread_get_abort_signal (), sigusr1_signal_handler);
 
-	/* catch SIGQUIT */
-	sa.sa_handler = sigquit_signal_handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-	g_assert (sigaction (SIGQUIT, &sa, NULL) != -1);
-
-	/* catch SIGILL */
-	sa.sa_handler = sigill_signal_handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-	//g_assert (syscall (SYS_sigaction, SIGILL, &sa, NULL) != -1);
-	g_assert (sigaction (SIGILL, &sa, NULL) != -1);
-
-	/* catch thread abort signal */
-	sa.sa_handler = sigusr1_signal_handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-	//g_assert (syscall (SYS_sigaction, SIGILL, &sa, NULL) != -1);
-
-	g_assert (sigaction (mono_thread_get_abort_signal (), &sa, NULL) != -1);
-
-#if 1
 	/* catch SIGSEGV */
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	sa.sa_sigaction = sigsegv_signal_handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = SA_SIGINFO | SA_STACK;
-#else
-	sa.sa_handler = sigsegv_signal_handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-#endif
-	//g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
 	g_assert (sigaction (SIGSEGV, &sa, NULL) != -1);
+#else
+	add_signal_handler (SIGSEGV, sigsegv_signal_handler);
 #endif
+
 #endif /* PLATFORM_WIN32 */
 }
 
@@ -8199,6 +8218,9 @@ mini_init (const char *filename)
 
 #ifdef MONO_ARCH_EMULATE_FCONV_TO_I8
 	mono_register_opcode_emulation (OP_FCONV_TO_I8, "__emul_fconv_to_i8", helper_sig_long_double, mono_fconv_i8, FALSE);
+#endif
+#ifdef MONO_ARCH_EMULATE_CONV_R8_UN
+	mono_register_opcode_emulation (CEE_CONV_R_UN, "__emul_conv_r_un", helper_sig_double_int, mono_conv_to_r8_un, FALSE);
 #endif
 #ifdef MONO_ARCH_EMULATE_LCONV_TO_R8
 	mono_register_opcode_emulation (OP_LCONV_TO_R8, "__emul_lconv_to_r8", helper_sig_double_long, mono_lconv_to_r8, FALSE);
