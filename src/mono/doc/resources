@@ -123,31 +123,53 @@
 
 	There are a number of related projects to Mono:
 
+	<li><b>Development tools</b></li>
 	<ul>
-		
-		* <a
-		  href="http://qtcsharp.sourceforge.net">Qt#:</a> 
-		  C# bindings for the Qt toolkit.
-
 		* <a
 		  href="http://www.icsharpcode.net/OpenSource/SD/default.asp">Sharp
 		  Develop:</a> an IDE for the C# language written in C#.
 
-		* <a
-		  href="http://www.improve-technologies.com/alpha/esharp/">Eclipse
-	 	  Plugin for C#</a>
-
-		* <a 
-		  href="http://janet-js.sourceforge.net/">Janet:</a>
-		  an implemention of ECMAScript (the standarized
-		  version of JavaScript) in C#
+		* <a href="http://nunit.sourceforge.net">NUnit:</a> A
+		  testing framework for .NET classes.
 
 		* <a
 		  href="http://xmarks.sourceforge.net/doc.html">XMarks DOC.NET:</a> For
 		  creating online documentation you can browse for your own classes. 
 
-		* <a href="http://nunit.sourceforge.net">NUnit:</a> A
-		  testing framework for .NET classes.
+	</ul>
+
+	<li><b>Class Libraries</b></li>
+	<ul>
+		* <a href="http://9mm.com/~ogl/sdldotnet/">SDL for
+		.NET:</a> Bindings for the popular SDL graphics library.
+
+
+		* C# bindings for OpenGL and SDL are available here: <a
+		  href="http://csgl.sourceforge.net">http://csgl.sourceforge.net</a>
+
+		* <a
+		  href="http://qtcsharp.sourceforge.net">Qt#:</a> 
+		  C# bindings for the Qt toolkit.
+
+		* <a
+	          href="http://codigolivre.org.br/projects/monoqle">Project MonoQLE:</a> a C# Message Queue Server. 
+		  Sorry only in portuguese, for now.
+
+	</ul>
+
+	<li><b>Programming languages:</b></li>
+	<ul>
+		* <a 
+		  href="http://janet-js.sourceforge.net/">Janet:</a>
+		  an implemention of ECMAScript (the standarized
+		  version of JavaScript) in C#
+	</ul>
+
+	<li><b>Other projects</b></li>
+	<ul>
+		* <a
+		  href="http://www.improve-technologies.com/alpha/esharp/">Eclipse
+	 	  Plugin for C#</a>
 
 		* <a href="http://www.kaffe.org">Kaffe:</a> A popular
 		  Free Software JIT engine for Java.
@@ -155,19 +177,13 @@
 		* <a href="http://www.intel.com/research/mrl/orp">ORP:</a> A research
 		  JIT/VM/GC system from Intel.
 
-		* C# bindings for OpenGL and SDL are available here: <a
-		  href="http://csgl.sourceforge.net">http://csgl.sourceforge.net</a>
-
 		* <a
 	          href="http://www.southern-storm.com.au/portable_net.html">Portable.NET:</a>
 		  Another implementation of the CLI and C# compiler.
 
-		* A Free (GFDL) tutorial on C# in Spanish with examples, slides, and extras (under development). Get it <a href="http://geneura.ugr.es/~jaime/csharp/">here</a>. 
-
-		* <a
-	          href="http://codigolivre.org.br/projects/monoqle">Project MonoQLE:</a> a C# Message Queue Server. 
-		  Sorry only in portuguese, for now.
-
+		* A Free (GFDL) tutorial on C# in Spanish with
+		  examples, slides, and extras (under development). Get it <a
+	 	  href="http://geneura.ugr.es/~jaime/csharp/">here</a>.
 	</ul>
 
 ** GNOME Documentation
