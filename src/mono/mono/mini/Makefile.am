@@ -240,9 +240,9 @@ BUILT_SOURCES= inssel.c inssel.h $(arch_built)
 endif
 
 CLEANFILES= $(BUILT_SOURCES)
-EXTRA_DIST = $(common_BURGSRC) inssel-x86.brg inssel-ppc.brg inssel-s390.brg \
-	$(x86_sources) $(ppc_sources) $(sparc_sources) $(test_sources) \
-	jit-icalls.c cprop.c inssel-sparc.brg \
-	cpu-pentium.md cpu-g4.md ldscript cpu-sparc.md cpu-s390.md TestDriver.cs
-
+EXTRA_DIST = $(common_BURGSRC) jit-icalls.c cprop.c TestDriver.cs ldscript $(test_sources) \
+	$(x86_sources) inssel-x86.brg cpu-pentium.md \
+	$(ppc_sources) inssel-ppc.brg cpu-g4.md \
+	$(sparc_sources) inssel-sparc.brg cpu-sparc.md \
+	$(s390_sources) inssel-s390.brg cpu-s390.md
 
