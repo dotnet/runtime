@@ -74,6 +74,21 @@
 
 ** Apr 24, 2002
 
+	<b>Mono 0.11 is out!</b> Mostly performance improvements, bug
+	fixes and more classes are included.
+
+	A new version of the runtime, compiler and class libraries has
+	been packaged for your download pleasure.  Binaries are
+	included.  The <a href="archive/mono-0.11">Release Notes</a>
+	are available.
+
+	You can get it <a
+	href="download.html#apr-24">Here</a> (quick links: <a
+	href="archive/mono-0.11.tar.gz">runtime</a> and <a
+	href="archive/mcs-0.11.tar.gz">compiler/classes</a>).
+
+** Apr 23, 2002
+
 	SharpDevelop 0.88a <a href="http://www.icsharpcode.net/OpenSource/SD">is out!</a>
 
 	Congratulations to the developers behind SharpDevelop for
