@@ -75,6 +75,48 @@ mono_image_rva_map (MonoImage *image, guint32 addr)
 	return NULL;
 }
 
+static gchar *
+canonicalize_path (const char *path)
+{
+	gchar *abspath, *pos, *lastpos, *dest;
+	int backc;
+
+	if (g_path_is_absolute (path)) {
+		abspath = g_strdup (path);
+	} else {
+		gchar *tmpdir = g_get_current_dir ();
+		abspath = g_build_filename (tmpdir, path, NULL);
+		g_free (tmpdir);
+	}
+
+	abspath = g_strreverse (abspath);
+
+	backc = 0;
+	dest = lastpos = abspath;
+	pos = strchr (lastpos, G_DIR_SEPARATOR);
+
+	while (pos != NULL) {
+		int len = pos - lastpos;
+		if (len == 1 && lastpos [0] == '.') {
+			// nop
+		} else if (len == 2 && lastpos [0] == '.' && lastpos [1] == '.') {
+			backc++;
+		} else if (len > 0) {
+			if (backc > 0) {
+				backc--;
+			} else {
+				if (dest != lastpos) strncpy (dest, lastpos, len + 1);
+				dest += len + 1;
+			}
+		}
+		lastpos = pos + 1;
+		pos = strchr (lastpos, G_DIR_SEPARATOR);
+	}
+	
+	if (dest != lastpos) strcpy (dest, lastpos);
+	return g_strreverse (abspath);
+}
+
 /**
  * mono_images_init:
  *
@@ -771,14 +813,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	image->f = filed;
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
-
-	if (g_path_is_absolute (fname))
-		image->name = g_strdup (fname);
-	else {
-		gchar *path = g_get_current_dir ();
-		image->name = g_build_filename (path, fname, NULL);
-		g_free (path);
-	}
+	image->name = canonicalize_path (fname);
 
 	return do_mono_image_load (image, status);
 }
@@ -856,13 +891,7 @@ mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	
 	g_return_val_if_fail (fname != NULL, NULL);
 	
-	if (g_path_is_absolute (fname)) 
-		absfname = (char*)fname;
-	else {
-		gchar *path = g_get_current_dir ();
-		absfname = g_build_filename (path, fname, NULL);
-		g_free (path);
-	}
+	absfname = canonicalize_path (fname);
 
 	/*
 	 * The easiest solution would be to do all the loading inside the mutex,
@@ -872,9 +901,7 @@ mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	 */
 	EnterCriticalSection (&images_mutex);
 	image = g_hash_table_lookup (loaded_images_hash, absfname);
-	
-	if (absfname != fname)
-		g_free (absfname);
+	g_free (absfname);
 	
 	if (image){
 		image->ref_count++;
@@ -888,13 +915,13 @@ mono_image_open (const char *fname, MonoImageOpenStatus *status)
 		return NULL;
 
 	EnterCriticalSection (&images_mutex);
-	image2 = g_hash_table_lookup (loaded_images_hash, fname);
+	image2 = g_hash_table_lookup (loaded_images_hash, image->name);
+
 	if (image2) {
 		/* Somebody else beat us to it */
 		image2->ref_count ++;
 		LeaveCriticalSection (&images_mutex);
 		mono_image_close (image);
-
 		return image2;
 	}
 	g_hash_table_insert (loaded_images_hash, image->name, image);
