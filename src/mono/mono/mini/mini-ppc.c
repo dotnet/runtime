@@ -493,6 +493,7 @@ typedef struct {
 typedef struct {
 	int nargs;
 	guint32 stack_usage;
+	guint32 struct_ret;
 	ArgInfo ret;
 	ArgInfo args [1];
 } CallInfo;
@@ -547,6 +548,10 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 	gr = 3;
 
 	/* FIXME: handle returning a struct */
+	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+		add_general (&gr, &stack_size, &cinfo->ret, TRUE);
+		cinfo->struct_ret = ppc_r3;
+	}
 
 	n = 0;
 	if (sig->hasthis) {
@@ -747,6 +752,15 @@ mono_arch_allocate_vars (MonoCompile *m)
 	mono_exc_esp_offset = offset;
 #endif
 
+	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+		inst = m->ret;
+		offset += sizeof(gpointer) - 1;
+		offset &= ~(sizeof(gpointer) - 1);
+		inst->inst_offset = offset;
+		inst->opcode = OP_REGOFFSET;
+		inst->inst_basereg = frame_reg;
+		offset += sizeof(gpointer);
+	}
 	curinst = m->locals_start;
 	for (i = curinst; i < m->num_varinfo; ++i) {
 		inst = m->varinfo [i];
@@ -830,12 +844,15 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	n = sig->param_count + sig->hasthis;
 	
 	cinfo = calculate_sizes (sig, sig->pinvoke);
+	if (cinfo->struct_ret)
+		call->used_iregs |= 1 << cinfo->struct_ret;
 
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
 		if (is_virtual && i == 0) {
 			/* the argument will be attached to the call instrucion */
 			in = call->args [i];
+			call->used_iregs |= 1 << ainfo->reg;
 		} else {
 			MONO_INST_NEW (cfg, arg, OP_OUTARG);
 			in = call->args [i];
@@ -3142,6 +3159,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	cinfo = calculate_sizes (sig, sig->pinvoke);
 
+	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+		ArgInfo *ainfo = &cinfo->ret;
+		inst = cfg->ret;
+		ppc_stw (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+	}
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
 		inst = cfg->varinfo [pos];
