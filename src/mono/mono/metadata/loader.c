@@ -871,6 +871,8 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 		return NULL;
 	}
 
+	mono_class_init (constrained_class);
+
 	if ((constrained_class != method->klass) && (method->klass->interface_id != 0))
 		ic = method->klass;
 
