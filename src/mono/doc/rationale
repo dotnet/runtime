@@ -8,13 +8,13 @@ The Mono Project
 	desktop applications.  We also realized early on that language
 	independence was important, and that is why GNOME APIs were
 	coded using a standard that allowed the APIs to be easily
-	wrapper for other languages.  Our APIs are available on most
+	wrapped for other languages.  Our APIs are available on most
 	programming languages on Unix (Perl, Python, Scheme, C++,
 	Objective-C, Ada). 
 
 	Later on we decided to use better methods for encapsulating
 	our APIs, and we started to use CORBA to define interfaces to
-	components, and we complemented it policy and a set of
+	components we complemented it with policy and a set of
 	standard GNOME interfaces for easily creating reusable and
 	language independent components, controls and compound
 	documents.  This technology is known as <a
@@ -36,8 +36,8 @@ The Mono Project
 	user applications.  
 
 	Depending who you ask, you will probably get a different
-	answer on what .NET is, .NET is a branding name that has been
-	applied to:
+	answer on what .NET is, as .NET is a branding formative that
+	has been applied to:
 
 		* The .NET development platform, a new platform for
 		  writing software.
@@ -56,7 +56,7 @@ The Mono Project
 
 * The .NET development platform.
 
-	Microsoft has created a new development platform, the
+	Microsoft has created a new development platform.  The
 	highlights of this new development platform are:
 
 		* A runtime environment that provides garbage
@@ -65,7 +65,7 @@ The Mono Project
 
 		* A comprehensive class library.  
 
-		* A new language, C#.  Very similar to Java, that
+		* A new language, C#.  Very similar to Java.  C#
 		  allows programmers to use all the features available
 		  on the .NET runtime.
 
@@ -85,7 +85,7 @@ The Mono Project
   	runtime on the CIL byte codes ensures that it is possible to
   	do a good job at optimizing the code in a JIT compiler. 
 
-	There is not really a lot of innovation in this platform, we
+	There is not really a lot of innovation in this platform: we
 	have seen all of these concepts before, and we are all
 	familiar with how these things work.
 
@@ -95,7 +95,7 @@ The Mono Project
 
 	The .NET development platform is essentially a new foundation
 	for program development that gives Microsoft a room to grow
-  	for the next years. 
+  	for the coming years. 
 
 * ECMA standards.
 

@@ -15,13 +15,13 @@
 
 	The compiler has a number of phases:
 
-		* Lexical analizer: hand-coded lexical analizer that
-		  provides token to the parser.
+		* Lexical analyzer: hand-coded lexical analyzer that
+		  provides tokens to the parser.
 
 		* The Parser: the parser is implemented using Jay (A
 		  Berkeley Yacc port to Java, that I ported to C#).
-		  The parser does minimal work and checking, and only
-		  constructs a parsed tree.  
+		  The parser does minimal work and syntax checking,
+		  and only constructs a parsed tree.
 
 		  Each language element gets its own class.  The code
 		  convention is to use an uppercase name for the
@@ -31,9 +31,10 @@
 		  from the "Statement" class, and Expressions from the
 		  Expr class.
 
-		* Parent class resolution: before process can happen
-		  on the actual code generation, we need to resolve
-		  the parents for interfaces, classes and structs.
+		* Parent class resolution: before the actual code
+		  generation, we need to resolve the parents and
+		  interfaces for interface, classe and struct
+		  definitions.
 
 		* Semantic analysis: since C# can not resolve in a
 		  top-down pass what identifiers actually mean, we
@@ -46,13 +47,13 @@
 
 ** Current pending tasks
 
-	Arrays declarations are currently being ignored, 
+	Array declarations are currently being ignored, 
 
 	PInvoke is not supported.
 
 	Pre-processing is not supported.
 
-	Attribute declarations and passing is currently ignored.
+	Attribute declarations and passing currently ignored.
 
 	Compiler does not pass around line/col information from tokenizer for error reporting.
 
@@ -62,7 +63,7 @@
 
 Q: Why not write a C# front-end for GCC?
 
-A: I wanted to learn about C#, and this was an excercise in this
+A: I wanted to learn about C#, and this was an exercise in this
    task.  The resulting compiler is highly object-oriented, which has
    lead to a very nice, easy to follow and simple implementation of
    the compiler.
@@ -70,11 +71,11 @@ A: I wanted to learn about C#, and this was an excercise in this
    I found that the design of this compiler is very similar to
    Guavac's implementation.
 
-   Targeting the CIL/MSIL byte codes would require to re-architect
+   Targeting the CIL/MSIL byte codes would require to re-architecting
    GCC, as GCC is mostly designed to be used for register machines.
    
-   The GCC Java engine that generates java byte codes cheats: it does
-   not use the GCC backend, it has a special backend just for Java, so
+   The GCC Java engine that generates Java byte codes cheats: it does
+   not use the GCC backend; it has a special backend just for Java, so
    you can not really generate Java bytecodes from the other languages
    supported by GCC. 
 
@@ -82,22 +83,22 @@ Q: If your C# compiler is written in C#, how do you plan on getting
    this working on a non-Microsoft environment.
 
    The compiler will have two output mechanisms: IL code or C code.
-   A compiled version of the compiler could be ran on Unix by just
+   A compiled version of the compiler could be run on Unix
    using the JIT runtime.
 
    The C output generation bit is just intended to be a temporary
    measure to allow Unix hackers to contribute to the effort without
    requiring Windows and Microsoft's .NET implementation to work on
    the compiler.  So the MCS C# compiler will compile itself to C,
-   this code then compiled on Unix and voila!  We have a native
-   compiler for GNU/Linux. 
+   this code then compiled to an executable on Unix and voila!  We
+   have a native compiler for GNU/Linux.
 
 Q: Do you use Bison?
 
 A: No, currently I am using Jay which is a port of Berkeley Yacc to
    Java that I later ported to C#.  This means that error recovery is
    not as nice as I would like to, and for some reason error
-   productions are not being catched.  
+   productions are not being caught.  
 
    In the future I want to port one of the Bison/Java ports to C# for
    the parser.
