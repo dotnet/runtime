@@ -151,7 +151,7 @@
   </tr>
 </table>
 
-@item JUl 14th, 2003: New build system;  IPV6 support.
+@item Jul 14th, 2003: New build system;  IPV6 support.
 
 	Peter Williams has contributed a new build system that
 	addresses many of the annoyance we had with our previous build
