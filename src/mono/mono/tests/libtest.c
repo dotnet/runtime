@@ -145,11 +145,11 @@ typedef struct {
 	int a;
 	int b;
 	int c;
-	char *d;
+	const char *d;
 } simplestruct;
 
 simplestruct
-mono_test_return_vtype ()
+mono_test_return_vtype (void)
 {
 	simplestruct res;
 
@@ -162,7 +162,7 @@ mono_test_return_vtype ()
 }
 
 void
-mono_test_delegate_struct ()
+mono_test_delegate_struct (void)
 {
 	printf ("TEST\n");
 }
@@ -191,7 +191,7 @@ mono_test_return_vtype2 (ReturnVTypeDelegate func)
 	return res1;
 }
 
-typedef char* (*ReturnStringDelegate) (char *s);
+typedef char* (*ReturnStringDelegate) (const char *s);
 
 char *
 mono_test_return_string (ReturnStringDelegate func)
@@ -337,7 +337,6 @@ ByValStrStruct *
 mono_test_byvalstr_gen (void)
 {
 	ByValStrStruct *ret;
-	int i;
        
 	ret = malloc(sizeof(ByValStrStruct));
 	memset(ret, 'a', sizeof(ByValStrStruct)-1);
@@ -416,7 +415,7 @@ HexDump1W(char *data)
 	return res + 1000000;
 }
 
-typedef int (*intcharFunc)(char*);
+typedef int (*intcharFunc)(const char*);
 
 void 
 callFunction (intcharFunc f)
@@ -433,7 +432,7 @@ printInt (int* number)
 
 
 typedef struct {
-        char* str;
+        const char* str;
         int i;
 } SimpleObj;
 
@@ -493,7 +492,7 @@ string_marshal_test0 (char *str)
 }
 
 void
-string_marshal_test1 (char **str)
+string_marshal_test1 (const char **str)
 {
 	*str = "TEST1";
 }
@@ -518,7 +517,7 @@ string_marshal_test3 (char *str)
 	return 0;
 }
 
-char *
+const char *
 functionReturningString (void)
 {
     return "ABC";

@@ -1,3 +1,8 @@
+2003-10-04  Bernie Solomon  <bernard@ugsolutions.com>
+
+	* mono/tests/libtest.c: remove warnings except
+	"no previous prototype"
+
 2003-10-03  Bernie Solomon  <bernard@ugsolutions.com>
 
 	* mono/tests/libtest.c: (test_lpwstr_marshal) remove undefined
