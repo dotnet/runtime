@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.25 2002/03/30 11:19:25 dietmar Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.26 2002/04/22 07:32:11 lupus Exp $
 */
 
 #ifndef X86_H
@@ -260,15 +260,33 @@ typedef union {
 		}	\
 	} while (0)
 
-/* disp will need to be relative to the start position... */
-#define x86_patch(ins,disp)	\
+/*
+ * target is the position in the code where to jump to:
+ * target = code;
+ * .. output loop code...
+ * x86_mov_reg_imm (code, X86_EAX, 0);
+ * loop = code;
+ * x86_loop (code, -1);
+ * ... finish method
+ *
+ * patch displacement
+ * x86_patch (loop, target);
+ *
+ * ins should point at the start of the instruction that encodes a target.
+ * the instruction is inspected for validity and the correct displacement
+ * is inserted.
+ */
+#define x86_patch(ins,target)	\
 	do {	\
 		unsigned char* pos = (ins) + 1;	\
-		int size = 0;	\
+		int disp, size = 0;	\
 		switch (*(ins)) {	\
-		case 0xe9: ++size; break;	\
-		case 0x0f: ++size; ++pos; break;	\
-		case 0xeb:	\
+		case 0xe9: ++size; break; /* jump32 */	\
+		case 0x0f: if (!(*pos >= 0x70 && *pos <= 0x7f)) assert (0);	\
+		   ++size; ++pos; break; /* prefix for 32-bit disp */	\
+		case 0xe0: case 0xe1: case 0xe2: /* loop */	\
+		case 0xeb: /* jump8 */	\
+		/* conditional jump opcodes */	\
 		case 0x70: case 0x71: case 0x72: case 0x73:	\
 		case 0x74: case 0x75: case 0x76: case 0x77:	\
 		case 0x78: case 0x79: case 0x7a: case 0x7b:	\
@@ -276,8 +294,10 @@ typedef union {
 			break;	\
 		default: assert (0);	\
 		}	\
-		if (size) x86_imm_emit32 (pos, (disp));	\
-		else x86_imm_emit8 (pos, (disp));	\
+		disp = (target) - pos;	\
+		if (size) x86_imm_emit32 (pos, disp - 4);	\
+		else if (x86_is_imm8 (disp)) x86_imm_emit8 (pos, disp - 1);	\
+		else assert (0);	\
 	} while (0)
 
 #define x86_breakpoint(inst) \
@@ -1193,6 +1213,24 @@ typedef union {
 #define x86_pushfd(inst) do { *(inst)++ = (unsigned char)0x9c; } while (0)
 #define x86_popad(inst)  do { *(inst)++ = (unsigned char)0x61; } while (0)
 #define x86_popfd(inst)  do { *(inst)++ = (unsigned char)0x9d; } while (0)
+
+#define x86_loop(inst,imm)	\
+	do {	\
+		*(inst)++ = (unsigned char)0xe2;	\
+		x86_imm_emit8 ((inst), (imm));	\
+	} while (0)
+
+#define x86_loope(inst,imm)	\
+	do {	\
+		*(inst)++ = (unsigned char)0xe1;	\
+		x86_imm_emit8 ((inst), (imm));	\
+	} while (0)
+
+#define x86_loopne(inst,imm)	\
+	do {	\
+		*(inst)++ = (unsigned char)0xe0;	\
+		x86_imm_emit8 ((inst), (imm));	\
+	} while (0)
 
 #define x86_jump32(inst,imm)	\
 	do {	\

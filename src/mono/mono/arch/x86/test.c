@@ -8,7 +8,7 @@
 int main() {
 	unsigned char code [16000];
 	unsigned char *p = code;
-	unsigned char *target;
+	unsigned char *target, *start, *end;
 	unsigned long mem_addr = 0xdeadbeef;
 	int size, i;
 
@@ -174,8 +174,12 @@ int main() {
 
 	target = p;
 
+	start = p;
 	x86_jump32 (p, mem_addr);
+	x86_patch (start, target);
+	start = p;
 	x86_jump8 (p, 12);
+	x86_patch (start, target);
 	x86_jump_reg (p, X86_EAX);
 	x86_jump_membase (p, X86_EDX, 16);
 
