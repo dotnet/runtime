@@ -164,8 +164,10 @@ dis_field_list (metadata_t *m, guint32 start, guint32 end)
 	guint32 cols [3];
 	int i;
 
-	if (end > t->rows + 1)
-		g_error ("ERROR index out of range in fields");
+	if (end > t->rows + 1) {
+		g_warning ("ERROR index out of range in fields");
+		end = t->rows;
+	}
 			
 	for (i = start; i < end; i++){
 		char *sig, *flags;
@@ -285,19 +287,58 @@ method_impl_flags (guint32 f)
 }
 
 static void
+dis_locals (metadata_t *m, guint32 token) 
+{
+	metadata_tableinfo_t *t = &m->tables [META_TABLE_STANDALONESIG];
+	const char *ptr;
+	int len, i;
+
+	/*fprintf(stderr, "rows: %d\n", t->rows);*/
+	expand (t, token&0xffffff, &len, 1);
+	ptr = mono_metadata_blob_heap (m, len);
+	ptr = get_encoded_value (ptr, &len);
+	fprintf(output, "\t.locals ( // %d\n", len);
+	for (i=0; i < len; ++i) {
+		int val;
+		char * desc = NULL;
+		const char *p = ptr;
+		ptr = get_encoded_value (ptr, &val);
+		if (val == ELEMENT_TYPE_PINNED) {
+			fprintf(output, "//pinned\n");
+			p = ptr;
+			ptr = get_encoded_value (ptr, &val);
+		}
+		if (val == ELEMENT_TYPE_BYREF) {
+			fprintf(output, "// byref\n");
+			p = ptr;
+		}
+		ptr = get_type(m, p, &desc);
+		fprintf(output, "\t\t%s\tlocal%d\n", desc, i);
+		g_free(desc);
+	}
+	fprintf(output, "\t)\n");
+}
+
+static void
 dis_code (metadata_t *m, cli_image_info_t *ii, guint32 rva)
 {
 	MonoMetaMethodHeader *mh;
 	const char *ptr = cli_rva_map (ii, rva);
+	char *loc;
 
 	if (rva == 0)
 		return;
 
 	mh = mono_metadata_parse_mh (ptr);
+	loc = mono_metadata_locate_token (m, ii->cli_cli_header.ch_entry_point);
+	if (rva == read32(loc))
+		fprintf (output, "\t.entrypoint\n");
 	fprintf (output, "\t.maxstack %d\n", mh->max_stack);
 	fprintf (output, "\t// Code size=%d (0x%x)\n", mh->code_size, mh->code_size);
 	printf ("\t// Values Code Size=%d/0x%x\n\t// LocalTok=%x\n\n",
 		mh->code_size, mh->code_size, mh->local_var_sig_tok);
+	if (mh->local_var_sig_tok)
+		dis_locals (m, mh->local_var_sig_tok);
 	dissasemble_cil (m, mh->code, mh->code_size);
 	
 /*
@@ -328,10 +369,8 @@ typedef struct {
 static MethodSignature *
 parse_method_signature (metadata_t *m, guint32 blob_signature)
 {
-	GString *res = g_string_new ("");
 	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
 	MethodSignature *ms = g_new0 (MethodSignature, 1);
-	char *s;
 	int i, len;
 
 	ptr = get_encoded_value (ptr, &len);
@@ -348,8 +387,6 @@ parse_method_signature (metadata_t *m, guint32 blob_signature)
 	for (i = 0; i < ms->param_count; i++)
 		ptr = get_param (m, ptr, &(ms->param [i]));
 
-	s = res->str;
-	g_string_free (res, FALSE);
 	return ms;
 }
 
@@ -385,7 +422,8 @@ dis_method_list (metadata_t *m, cli_image_info_t *ii, guint32 start, guint32 end
 
 	if (end > t->rows){
 		fprintf (output, "ERROR index out of range in methods");
-		exit (1);
+		/*exit (1);*/
+		end = t->rows;
 	}
 
 	for (i = start; i < end; i++){
@@ -528,6 +566,7 @@ struct {
 	{ "--typeref",     META_TABLE_TYPEREF,     dump_table_typeref },
 	{ "--classlayout", META_TABLE_CLASSLAYOUT, dump_table_class_layout },
 	{ "--constant",    META_TABLE_CONSTANT,    dump_table_constant },
+	{ "--property",    META_TABLE_PROPERTY,    dump_table_property },
 	{ NULL, -1 }
 };
 
@@ -545,6 +584,7 @@ disassemble_file (const char *file)
 	cli_image_info_t *ii;
 	metadata_t *m;
 
+	fprintf (output, "// Disassembling %s\n", file);
 
 	ass = mono_assembly_open (file, &status);
 	if (ass == NULL){

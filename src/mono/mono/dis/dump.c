@@ -233,3 +233,28 @@ dump_table_constant (metadata_t *m)
 	}
 	
 }
+
+void
+dump_table_property (metadata_t *m)
+{
+	metadata_tableinfo_t *t = &m->tables [META_TABLE_PROPERTY];
+	int i;
+	char flags[128];
+	fprintf (output, "Property Table (0..%d)\n", t->rows);
+
+	for (i = 0; i < t->rows; i++){
+		guint32 cols [3];
+		
+		expand (t, i, cols, CSIZE (cols));
+		flags[0] = 0;
+		if (cols[0] & 0x0200)
+			strcat(flags, "special ");
+		if (cols[0] & 0x0400)
+			strcat(flags, "runtime ");
+		if (cols[0] & 0x1000)
+			strcat(flags, "hasdefault ");
+
+		fprintf (output, "%d: %s %s\n", i, mono_metadata_string_heap (m, cols [1]), flags);
+	}
+	
+}
