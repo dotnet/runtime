@@ -1,6 +1,7 @@
 #include <config.h>
 #if HAVE_BOEHM_GC
 #include <gc/gc.h>
+#include "mono/utils/mono-hash.h"
 #endif
 #include <glib.h>
 #include <string.h>
@@ -44,7 +45,7 @@ static mono_mutex_t thread_hash_mutex = MONO_MUTEX_INITIALIZER;
 static GHashTable *thread_hash=NULL;
 
 #if HAVE_BOEHM_GC
-static GHashTable *tls_gc_hash = NULL;
+static MonoGHashTable *tls_gc_hash = NULL;
 #endif
 
 static void thread_close(WapiHandle *handle);
@@ -527,7 +528,7 @@ gboolean TlsFree(guint32 idx)
 	pthread_key_delete(TLS_keys[idx]);
 	
 #if HAVE_BOEHM_GC
-	g_hash_table_remove (tls_gc_hash, GUINT_TO_POINTER (idx));
+	mono_g_hash_table_remove (tls_gc_hash, GUINT_TO_POINTER (idx));
 #endif
 	mono_mutex_unlock(&TLS_mutex);
 	
@@ -590,8 +591,9 @@ gboolean TlsSetValue(guint32 idx, gpointer value)
 	
 #if HAVE_BOEHM_GC
 	if (!tls_gc_hash)
-		tls_gc_hash = g_hash_table_new(g_direct_hash, g_direct_equal);
-	g_hash_table_insert (tls_gc_hash, GUINT_TO_POINTER (idx), value);
+		tls_gc_hash = mono_g_hash_table_new(g_direct_hash, g_direct_equal);
+	/* FIXME: index needs to encode the thread id, too */
+	mono_g_hash_table_insert (tls_gc_hash, GUINT_TO_POINTER (idx), value);
 #endif
 	mono_mutex_unlock(&TLS_mutex);
 	
