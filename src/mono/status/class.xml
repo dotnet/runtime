@@ -1067,22 +1067,22 @@
     </class>
 
     <class name="System.Diagnostics.StackFrame">
-        <last-activity>Jul-15-2001</last-activity>
-        <implementation>no</implementation>
-        <test-suite>no</test-suite>
+        <last-activity>Aug-29-2001</last-activity>
+        <implementation>10</implementation>
+        <test-suite>yes</test-suite>
         <completion>?</completion>
         <maintainers>
-            <maintainer>angryjohn69@nc.rr.com</maintainer>
+            <maintainer>klyubin@aqris.com</maintainer>
         </maintainers>
     </class>
 
     <class name="System.Diagnostics.StackTrace">
-        <last-activity>Jul-15-2001</last-activity>
-        <implementation>no</implementation>
-        <test-suite>no</test-suite>
+        <last-activity>Aug-29-2001</last-activity>
+        <implementation>10</implementation>
+        <test-suite>yes</test-suite>
         <completion>?</completion>
         <maintainers>
-            <maintainer>angryjohn69@nc.rr.com</maintainer>
+            <maintainer>klyubin@aqris.com</maintainer>
         </maintainers>
     </class>
 
