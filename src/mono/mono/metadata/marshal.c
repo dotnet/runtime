@@ -618,6 +618,7 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "BeginInvoke"));
 
+
 	sig = method->signature;
 
 	if (sig->ret->byref)
@@ -1108,6 +1109,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 	/* we copy the signature, so that we can modify it */
 	sigsize = sizeof (MonoMethodSignature) + sig->param_count * sizeof (MonoType *);
 	csig = g_memdup (sig, sigsize);
+	csig->hasthis = 0;
 
 	/* fixme: howto handle this ? */
 	if (sig->hasthis) {
@@ -1126,7 +1128,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
-
+		
 		switch (t->type) {
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:

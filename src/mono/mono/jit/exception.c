@@ -184,7 +184,7 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 			
 			if (mono_object_isinst (obj, mono_defaults.exception_class)) {
 				char    *strace;
-				char    *tmp, *tmpsig, *source_location, *tmpaddr, *fname;
+				char    *tmp, *source_location, *tmpaddr, *fname;
 				gint32   address, iloffset;
 
 				trace_ips = g_list_append (trace_ips, ip);
@@ -204,19 +204,16 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 				else
 					tmpaddr = g_strdup_printf ("[0x%05x]", iloffset);
 
-				tmpsig = mono_signature_get_desc (m->signature, TRUE);
-
-				fname = mono_method_full_name (m);
+				fname = mono_method_full_name (m, TRUE);
 
 				if (source_location)
-					tmp = g_strdup_printf ("%sin %s (at %s) %s (%s)\n", strace, tmpaddr,
-							       source_location, fname, tmpsig);
+					tmp = g_strdup_printf ("%sin %s (at %s) %s\n", strace, tmpaddr,
+							       source_location, fname);
 				else
-					tmp = g_strdup_printf ("%sin %s %s (%s)\n", strace, tmpaddr,
-							       fname, tmpsig);
+					tmp = g_strdup_printf ("%sin %s %s\n", strace, tmpaddr,
+							       fname);
 				g_free (fname);
 				g_free (source_location);
-				g_free (tmpsig);
 				g_free (strace);
 
 				((MonoException*)obj)->stack_trace = mono_string_new (domain, tmp);

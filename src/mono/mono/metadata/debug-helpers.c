@@ -415,15 +415,27 @@ mono_disasm_code (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, const
 }
 
 char *
-mono_method_full_name (MonoMethod *method)
+mono_method_full_name (MonoMethod *method, gboolean signature)
 {
 	const char *prefix = "";
+	char *res;
 
 	if (method->is_wrapper)
 		prefix = "(runtime) ";
 
-	return g_strdup_printf ("%s%s.%s:%s", prefix, method->klass->name_space, 
-				method->klass->name, method->name);
+	if (signature) {
+		char *tmpsig = mono_signature_get_desc (method->signature, TRUE);
+
+		res = g_strdup_printf ("%s%s.%s:%s (%s)", prefix, method->klass->name_space, 
+				       method->klass->name, method->name, tmpsig);
+		g_free (tmpsig);
+	} else {
+
+		res = g_strdup_printf ("%s%s.%s:%s", prefix, method->klass->name_space, 
+				       method->klass->name, method->name);
+	}
+
+	return res;
 }
 
 

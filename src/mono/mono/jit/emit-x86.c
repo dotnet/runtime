@@ -111,13 +111,11 @@ enter_method (MonoMethod *method, char *ebp)
 	int i, j;
 	MonoClass *class;
 	MonoObject *o;
-	char *tmpsig, *fname;
+	char *fname;
 
-	tmpsig = mono_signature_get_desc (method->signature, TRUE);
-	fname = mono_method_full_name (method);
-	printf ("ENTER: %s (%s)\n(", fname, tmpsig);
+	fname = mono_method_full_name (method, TRUE);
+	printf ("ENTER: %s\n(", fname);
 	g_free (fname);
-	g_free (tmpsig);
 	
 	if (((int)ebp & 3) != 0) {
 		g_error ("unaligned stack detected (%p)", ebp);
@@ -240,14 +238,11 @@ static void
 leave_method (MonoMethod *method, int edx, int eax, double test)
 {
 	gint64 l;
-	char *tmpsig, *fname;
+	char *fname;
 
-	tmpsig = mono_signature_get_desc (method->signature, TRUE);
-	fname = mono_method_full_name (method);
-	printf ("LEAVE: %s (%s) ", fname, tmpsig);
+	fname = mono_method_full_name (method, TRUE);
+	printf ("LEAVE: %s", fname);
 	g_free (fname);
-	g_free (tmpsig);
-
 
 	switch (method->signature->ret->type) {
 	case MONO_TYPE_VOID:
@@ -652,7 +647,8 @@ mono_label_cfg (MonoFlowGraph *cfg)
 			if (!mbstate) {
 				if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
 					return FALSE;
-				g_warning ("tree does not match");
+				g_warning ("tree does not match in %s",
+					   mono_method_full_name (cfg->method, TRUE));
 				mono_print_ctree (cfg, t1); printf ("\n\n");
 
 				mono_print_forest (cfg, forest);
@@ -1170,11 +1166,10 @@ arch_jit_compile_cfg (MonoDomain *target_domain, MonoFlowGraph *cfg)
 		mono_linear_scan (cfg, &ls_used_mask);
 		cfg->rs->used_mask |= ls_used_mask;
 	}
-
+	
 	if (mono_jit_dump_forest) {
 		int i;
-		printf ("FOREST %s.%s:%s\n", method->klass->name_space,
-			method->klass->name, method->name);
+		printf ("FOREST %s\n", mono_method_full_name (method, TRUE));
 		for (i = 0; i < cfg->block_count; i++) {
 			printf ("BLOCK %d:\n", i);
 			mono_print_forest (cfg, cfg->bblocks [i].forest);
