@@ -1070,6 +1070,27 @@ verify_method (MonoMethod *m)
 #define CHECK_ADD_OVERFLOW64_UN(a,b) \
 	(guint64)(MYGUINT64_MAX) - (guint64)(b) < (guint64)(a) ? -1 : 0
 
+/* Resolves to TRUE if the operands would overflow */
+#define CHECK_MUL_OVERFLOW(a,b) \
+	((gint32)(a) == 0) || ((gint32)(b) == 0) ? 0 : \
+	(((gint32)(a) > 0) && ((gint32)(b) > 0)) || (((gint32)(a) < 0) && ((gint32)(b) < 0)) ? \
+		(gint32)(b) > ((MYGINT32_MAX) / (gint32)(a)) : \
+		(gint32)(b) < ((MYGINT32_MIN) / (gint32)(a))
+
+#define CHECK_MUL_OVERFLOW_UN(a,b) \
+	((guint32)(a) == 0) || ((guint32)(b) == 0) ? 0 : \
+	(guint32)(b) > ((MYGUINT32_MAX) / (guint32)(a))
+ 
+#define CHECK_MUL_OVERFLOW64(a,b) \
+	((gint64)(a) == 0) || ((gint64)(b) == 0) ? 0 : \
+	(((gint64)(a) > 0) && ((gint64)(b) > 0)) || (((gint64)(a) < 0) && ((gint64)(b) < 0)) ? \
+		(gint64)(b) > ((MYGINT64_MAX) / (gint64)(a)) : \
+		(gint64)(b) < ((MYGINT64_MIN) / (gint64)(a))
+
+#define CHECK_MUL_OVERFLOW64_UN(a,b) \
+	((guint64)(a) == 0) || ((guint64)(b) == 0) ? 0 : \
+	(guint64)(b) > ((MYGUINT64_MAX) / (guint64)(a))
+
 static MonoObject*
 interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {
@@ -3501,10 +3522,16 @@ array_constructed:
 			++ip;
 			--sp;
 			/* FIXME: check overflow */
-			if (sp->type == VAL_I32)
+			if (sp->type == VAL_I32) {
+				if (CHECK_MUL_OVERFLOW (sp [-1].data.i, GET_NATI (sp [0])))
+					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.i *= (gint)GET_NATI (sp [0]);
-			else if (sp->type == VAL_I64)
+			}
+			else if (sp->type == VAL_I64) {
+				if (CHECK_MUL_OVERFLOW64 (sp [-1].data.l, sp [0].data.l))
+					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.l *= sp [0].data.l;
+			}
 			else if (sp->type == VAL_DOUBLE)
 				sp [-1].data.f *= sp [0].data.f;
 			BREAK;
@@ -3512,10 +3539,16 @@ array_constructed:
 			++ip;
 			--sp;
 			/* FIXME: check overflow, make unsigned */
-			if (sp->type == VAL_I32)
+			if (sp->type == VAL_I32) {
+				if (CHECK_MUL_OVERFLOW_UN (sp [-1].data.i, GET_NATI (sp [0])))
+					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.i *= (gint)GET_NATI (sp [0]);
-			else if (sp->type == VAL_I64)
+			}
+			else if (sp->type == VAL_I64) {
+				if (CHECK_MUL_OVERFLOW64_UN (sp [-1].data.l, sp [0].data.l))
+					THROW_EX (mono_get_exception_overflow (), ip);
 				sp [-1].data.l *= sp [0].data.l;
+			}
 			else if (sp->type == VAL_DOUBLE)
 				sp [-1].data.f *= sp [0].data.f;
 			BREAK;
