@@ -200,7 +200,8 @@ TEST_CS_SRC=			\
 	desweak.cs
 
 if X86
-PLATFORM_DISABLED_TESTS=
+# bug #71274
+PLATFORM_DISABLED_TESTS=finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
 endif
 
 if AMD64
