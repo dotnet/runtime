@@ -1321,8 +1321,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	printf ("%d methods contain wrapper references (%d%%)\n", wrappercount, mcount ? (wrappercount*100)/mcount : 100);
 	printf ("%d methods contain lmf pointers (%d%%)\n", lmfcount, mcount ? (lmfcount*100)/mcount : 100);
 	printf ("%d methods have other problems (%d%%)\n", ocount, mcount ? (ocount*100)/mcount : 100);
-	printf ("Retained input file.\n");
-	//unlink (tmpfname);
+	//printf ("Retained input file.\n");
+	unlink (tmpfname);
 
 	return 0;
 }
