@@ -2827,6 +2827,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		if (cfg->verbose_level > 3)
 			g_print ("converting (in B%d: stack: %d) %s", bblock->block_num, sp-stack_start, mono_disasm_code_one (NULL, method, ip, NULL));
 
+		/* Workaround for bug #51126 */
+		bblock->real_offset = real_offset;
+
 		switch (*ip) {
 		case CEE_NOP:
 			++ip;
