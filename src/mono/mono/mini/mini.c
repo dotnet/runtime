@@ -6154,7 +6154,7 @@ mono_jit_create_remoting_trampoline (MonoMethod *method)
 	guint8 *addr = NULL;
 
 	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || 
-	    method->signature->hasthis && (method->klass->marshalbyref || method->klass == mono_defaults.object_class)) {
+	    (method->signature->hasthis && (method->klass->marshalbyref || method->klass == mono_defaults.object_class))) {
 		nm = mono_marshal_get_remoting_invoke (method);
 		addr = mono_compile_method (nm);
 	} else {

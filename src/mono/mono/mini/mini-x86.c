@@ -453,7 +453,7 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:
-		return FALSE;
+		return TRUE;
 	case MONO_TYPE_VALUETYPE:
 		if (t->data.klass->enumtype)
 			return is_regsize_var (t->data.klass->enum_basetype);
