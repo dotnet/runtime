@@ -58,6 +58,12 @@ class Tests {
 		return 0;
 	}
 
+	static int test_5_conv_r4 () {
+		int i = 5;
+		float f = (float)i;
+		return (int)f;
+	}
+
 	static int test_5_add () {
 		double a = 2.0;
 		double b = 3.0;		
@@ -132,6 +138,8 @@ class Tests {
 		return 4;
 	}
 
+	/* FIXME: This only works on little-endian machines */
+	/*
 	static unsafe int test_2_negative_zero () {
 		int result = 0;
 		double d = -0.0;
@@ -149,8 +157,9 @@ class Tests {
 
 		return result;
 	}
+	*/
 
-	static int test_15_float_cmp () {
+	static int test_16_float_cmp () {
 		double a = 2.0;
 		double b = 1.0;
 		int result = 0;
@@ -158,6 +167,11 @@ class Tests {
 		
 		val = a == a;
 		if (!val)
+			return result;
+		result++;
+
+		val = (a != a);
+		if (val)
 			return result;
 		result++;
 

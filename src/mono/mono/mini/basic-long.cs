@@ -647,14 +647,6 @@ class Tests {
 		m = (long) value;
 	}
 	
-	static int test_0_ftol_clobber () {
-		long m;
-		doit (1.3, out m);
-		if (m != 1)
-			return 2;
-		return 0;
-	}
-
 	static int test_3_checked_cast_un () {
                 ulong i = 2;
                 long j;
@@ -684,6 +676,14 @@ class Tests {
 			j++;
 		}
 		return j;
+	}
+
+	static int test_0_ftol_clobber () {
+		long m;
+		doit (1.3, out m);
+		if (m != 1)
+			return 2;
+		return 0;
 	}
 }
 

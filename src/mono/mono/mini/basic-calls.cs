@@ -86,7 +86,6 @@ class Tests {
 		return GetFloat (f) == f? 2: 1;
 	}
 
-
 	static int pass_many_types (int a, long b, int c, long d) {
 		return a + (int)b + c + (int)d;
 	}
@@ -101,6 +100,51 @@ class Tests {
 
 	static int test_55_pass_even_more () {
 		return overflow_registers (1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+	}
+
+	static int pass_ints_longs (int a, long b, long c, long d, long e, int f, long g) {
+		return (int)(a + b + c + d + e + f + g);
+	}
+
+	static int test_1_sparc_argument_passing () {
+		// The 4. argument tests split reg/mem argument passing
+		// The 5. argument tests mem argument passing
+		// The 7. argument tests passing longs in misaligned memory
+		// The MaxValues are needed so the MS word of the long is not 0
+		return pass_ints_longs (1, 2, System.Int64.MaxValue, System.Int64.MinValue, System.Int64.MaxValue, 0, System.Int64.MinValue);
+	}
+
+	static int pass_bytes (byte a, byte b, byte c, byte d, byte e, byte f, byte g) {
+		return (int)(a + b + c + d + e + f + g);
+	}
+
+	static int test_21_sparc_byte_argument_passing () {
+		return pass_bytes (0, 1, 2, 3, 4, 5, 6);
+	}
+
+	static int pass_shorts (short a, short b, short c, short d, short e, short f, short g) {
+		return (int)(a + b + c + d + e + f + g);
+	}
+
+	static int test_21_sparc_short_argument_passing () {
+		return pass_shorts (0, 1, 2, 3, 4, 5, 6);
+	}
+
+	static int pass_floats_doubles (float a, double b, double c, double d, double e, float f, double g) {
+		return (int)(a + b + c + d + e + f + g);
+	}
+
+	static int test_721_sparc_float_argument_passing () {
+		return pass_floats_doubles (100.0f, 101.0, 102.0, 103.0, 104.0, 105.0f, 106.0);
+	}
+
+	static bool isnan (float f) {
+		return (f != f);
+	}
+
+	static int test_0_isnan () {
+		float f = 1.0f;
+		return isnan (f) ? 1 : 0;
 	}
 }
 

@@ -169,6 +169,25 @@ class Tests {
 		return 5;
 	}
 
+	struct AStruct {
+		public int i;
+
+		public AStruct (int i) {
+			this.i = i;
+		}
+
+		public override int GetHashCode () {
+			return i;
+		}
+	}
+
+	// Test that vtypes are unboxed during a virtual call
+	static int test_44_unbox_trampoline () {
+		AStruct s = new AStruct (44);
+		object o = s;
+		return o.GetHashCode ();
+	}
+
 	class TestRegA {
 
 		long buf_start;
