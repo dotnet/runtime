@@ -858,14 +858,6 @@ callFunction (intcharFunc f)
 	f ("ABC");
 }
 
-int
-printInt (int* number)
-{
-	printf( "<%d>\n", *number );
-	return *number + 1;
-}
-
-
 typedef struct {
         const char* str;
         int i;
@@ -950,12 +942,6 @@ string_marshal_test3 (char *str)
 		return -1;
 
 	return 0;
-}
-
-const char *
-functionReturningString (void)
-{
-    return "ABC";
 }
 
 typedef struct {
@@ -1200,3 +1186,27 @@ mono_test_marshal_amd64_pass_return_struct4 (amd64_struct4 s)
 
 	return s;
 }
+
+void*
+mono_test_marshal_pass_return_custom (int i, guint32 *ptr, int j)
+{
+	/* ptr will be freed by CleanupNative, so make a copy */
+	guint32 *res = g_new0 (guint32, 1);
+
+	*res = *ptr;
+	return res;
+}
+
+typedef void *(*PassReturnPtrDelegate) (void *ptr);
+
+int
+mono_test_marshal_pass_return_custom_in_delegate (PassReturnPtrDelegate del)
+{
+	guint32 num = 10;
+
+	guint32 *ptr = del (&num);
+
+	return *ptr;
+}
+
+

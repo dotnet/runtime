@@ -1,43 +1,47 @@
-// A demonstration of a custom marshaler that marshals
-// unmanaged to managed data.
+//
+// marshal9.cs: tests for custom marshalling
+//
 
 using System;
 using System.Runtime.InteropServices;
 
-public class MyMarshal: ICustomMarshaler
+public class Marshal1 : ICustomMarshaler
 {
+	int param;
 
-	// GetInstance() is not part of ICustomMarshaler, but
-	// custom marshalers are required to implement this
-	// method.
-	public static ICustomMarshaler GetInstance (string s)
-	{
-		Console.WriteLine ("GetInstance called");
-		return new MyMarshal ();
+	public static int cleanup_managed_count = 0;
+
+	public static int cleanup_native_count = 0;
+
+	public Marshal1 (int param) {
+		this.param = param;
 	}
-	
+
+	public static ICustomMarshaler GetInstance (string s) {
+		int param = Int32.Parse (s);
+		return new Marshal1 (param);
+	}
+
 	public void CleanUpManagedData (object managedObj)
 	{
-		Console.WriteLine ("CleanUpManagedData called");
+		//Console.WriteLine ("CleanUpManagedData called");
+		cleanup_managed_count ++;
 	}
 
 	public void CleanUpNativeData (IntPtr pNativeData)
 	{
-		Console.WriteLine("CleanUpNativeData called");
-		if (pNativeData != IntPtr.Zero) {
-			IntPtr realPtr = new IntPtr (pNativeData.ToInt64 () - Marshal.SizeOf (typeof (int)));
-
-			Marshal.FreeHGlobal (realPtr);
-		}
+		//Console.WriteLine("CleanUpNativeData:" + pNativeData);
+		/* Might be allocated in libtest.c using g_new0 so dont free it */
+		//Marshal.FreeHGlobal (pNativeData);
+		cleanup_native_count ++;
 	}
-
 
 	// I really do not understand the purpose of this method
 	// or went it would be called. In fact, Rotor never seems
 	// to call it.
 	public int GetNativeDataSize ()
 	{
-		Console.WriteLine("GetNativeDataSize() called");
+		//Console.WriteLine("GetNativeDataSize() called");
 		return 4;
 	}
 
@@ -46,57 +50,70 @@ public class MyMarshal: ICustomMarshaler
 		int number;
 		IntPtr ptr;
 
-		try {
-			number = Convert.ToInt32 (managedObj);
-			ptr = Marshal.AllocHGlobal (8);
-			Marshal.WriteInt32 (ptr, 0);
-			Marshal.WriteInt32 (new IntPtr (ptr.ToInt64 () + Marshal.SizeOf (typeof(int))), number);
-			return new IntPtr (ptr.ToInt64 () + Marshal.SizeOf (typeof (int)));
-		} catch {
-			return IntPtr.Zero;
-		}
+		number = Convert.ToInt32 (managedObj);
+		ptr = Marshal.AllocHGlobal (4);
+		Marshal.WriteInt32 (ptr, number);
+
+		//Console.WriteLine ("ToNative: " + ptr);
+		return ptr;
  	}
 
-
-	// Convert a pointer to unmanaged data into a System.Object.
-	// This method simply converts the unmanaged Ansi C-string
-	// into a System.String and surrounds it with asterisks
-	// to differentiate it from the default marshaler.
 	public object MarshalNativeToManaged (IntPtr pNativeData)
 	{
-		return "*" + Marshal.PtrToStringAnsi( pNativeData ) + "*";
+		//Console.WriteLine ("ToManaged: " + pNativeData);
+		return param + Marshal.ReadInt32 (pNativeData);
 	}
 }
 
-public class Testing
+public class Tests
 {
-	[DllImport("libtest")]
-	private static extern int printInt([MarshalAs( UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(MyMarshal ))] object number );
-
-	[DllImport("libtest")]
-	private static extern void callFunction (Delegate d);
-
-	delegate void Del ([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(MyMarshal))] string x);
-
-	public static void TestMethod (string s)
-	{
-		Console.WriteLine("s = {0}", s);
-		if (s != "*ABC*")
-			throw new Exception ("received wrong value");
+	public static int Main (string[] args) {
+		return TestDriver.RunTests (typeof (Tests));
 	}
 
-	public static int Main()
-	{
-		object x = 5;
-		if (printInt (x) != 6)
+	[DllImport ("libtest")]
+	[return : MarshalAs(UnmanagedType.CustomMarshaler,MarshalTypeRef = typeof
+						(Marshal1), MarshalCookie = "5")]
+	private static extern object mono_test_marshal_pass_return_custom (int i,  
+																	[MarshalAs( UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof (Marshal1), MarshalCookie = "5")] object number, int j);
+
+	public static int test_0_pass_return () {
+
+		Marshal1.cleanup_managed_count = 0;
+		Marshal1.cleanup_native_count = 0;
+
+		int res = (int)mono_test_marshal_pass_return_custom (5, 10, 5);
+
+		if (Marshal1.cleanup_managed_count != 0)
 			return 1;
+		if (Marshal1.cleanup_native_count != 2)
+			return 2;
 
-		Del del = new Del (TestMethod);
-		callFunction (del);
-
-		return 0;
+		return res == 15 ? 0 : 3;
 	}
 
+	[return : MarshalAs(UnmanagedType.CustomMarshaler,MarshalTypeRef = typeof
+(Marshal1), MarshalCookie = "5")] public delegate object pass_return_int_delegate ([MarshalAs (UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof (Marshal1), MarshalCookie = "5")] object o);
 
+	[DllImport ("libtest")]
+	private static extern int mono_test_marshal_pass_return_custom_in_delegate (pass_return_int_delegate del);
 
+	private static object pass_return_int (object i) {
+		return (int)i;
+	}
+
+	public static int test_0_pass_return_delegate () {
+
+		Marshal1.cleanup_managed_count = 0;
+		Marshal1.cleanup_native_count = 0;
+
+		int res = mono_test_marshal_pass_return_custom_in_delegate (new pass_return_int_delegate (pass_return_int));
+
+		if (Marshal1.cleanup_managed_count != 2)
+			return 1;
+		if (Marshal1.cleanup_native_count != 0)
+			return 2;
+
+		return res == 15 ? 0 : 3;
+	}
 }
