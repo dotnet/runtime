@@ -46,6 +46,9 @@
     <class name="System.IO.FileStream" date="Jul-15-2001"/>
     <class name="System.IO.Stream" date="Jul-15-2001"/>
   </person>
+  <person email="jason@injektilo.org" name="Jason Diamon">
+    <class name="System.XML.XmlReader" date="Jul-15-2001"/>
+  </person>
 </maintainers>
 
 
