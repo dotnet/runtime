@@ -610,7 +610,7 @@ mono_test_marshal_string_array (char **array)
 }
 
 int
-mono_test_marshal_unicode_string_array (gunichar2 **array)
+mono_test_marshal_unicode_string_array (gunichar2 **array, char **array2)
 {
 	GError *error = NULL;
 	char *s;
@@ -622,6 +622,12 @@ mono_test_marshal_unicode_string_array (gunichar2 **array)
 	s = g_utf16_to_utf8 (array [1], -1, NULL, NULL, &error);
 	if (strcmp (s, "DEF"))
 		return 2;
+
+	if (strcmp (array2 [0], "ABC"))
+		return 3;
+
+	if (strcmp (array2 [1], "DEF"))
+		return 4;
 
 	return 0;
 }
