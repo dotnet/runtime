@@ -5583,7 +5583,7 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token)
 	g_assert (obj);
 
 	if (strcmp (obj->vtable->klass->name, "String") == 0) {
-		result = obj;
+		result = mono_string_intern ((MonoString*)obj);
 		g_assert (result);
 	}
 	else if (strcmp (obj->vtable->klass->name, "MonoType") == 0) {

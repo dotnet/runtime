@@ -248,9 +248,9 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 			case MONO_TYPE_U8:
 			case MONO_TYPE_R4:
 			case MONO_TYPE_R8:
-			case MONO_TYPE_I:
 //				printf ("F: %s %s %d %lld %llx.\n", class->name, field->name, field->offset, ((guint64)1) << pos, bitmap);
 				break;
+			case MONO_TYPE_I:
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_CLASS:

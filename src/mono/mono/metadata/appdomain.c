@@ -443,7 +443,7 @@ set_domain_search_path (MonoDomain *domain)
 	gchar **pvt_split = NULL;
 	GError *error = NULL;
 
-	if (domain->search_path != NULL)
+	if ((domain->search_path != NULL) && !domain->setup->path_changed)
 		return;
 
 	setup = domain->setup;
@@ -470,10 +470,14 @@ set_domain_search_path (MonoDomain *domain)
 		return;
 	}
 
+	if (domain->search_path)
+		g_strfreev (domain->search_path);
+
 	domain->search_path = tmp = g_malloc ((npaths + 1) * sizeof (gchar *));
 	tmp [npaths] = NULL;
 	if (setup->application_base) {
 		*tmp = mono_string_to_utf8 (setup->application_base);
+
 		/* FIXME: is this needed? */
 		if (strncmp (*tmp, "file://", 7) == 0) {
 			gchar *file = *tmp;
@@ -513,6 +517,7 @@ set_domain_search_path (MonoDomain *domain)
 		tmp [0] = g_strdup ("");
 	}
 		
+	domain->setup->path_changed = FALSE;
 
 	g_strfreev (pvt_split);
 }
