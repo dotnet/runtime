@@ -59,6 +59,8 @@ typedef struct {
 	guint32     used_regs;
 	unsigned    num_clauses;
 	signed      exvar_offset;
+	/* Whenever the code is domain neutral or 'shared' */
+	gboolean    domain_neutral:1;
 	MonoJitExceptionInfo *clauses;
 } MonoJitInfo;
 

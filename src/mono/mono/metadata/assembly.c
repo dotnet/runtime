@@ -428,7 +428,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		 */
 		if (uri [7] != '/')
 			uri = g_strdup_printf ("file:///%s", uri + 7);
-		
+	
 		fname = g_filename_from_uri (uri, NULL, &error);
 		if (uri != filename)
 			g_free (uri);
@@ -476,19 +476,36 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 
 	/* load aot compiled module */
 	aot_name = g_strdup_printf ("%s.so", fname);
-	g_free (fname);
 	ass->aot_module = g_module_open (aot_name, G_MODULE_BIND_LAZY);
-	g_free (aot_name);
 
 	if (ass->aot_module) {
+		gboolean usable = TRUE;
 		char *saved_guid = NULL;
+		char *aot_version = NULL;
 		g_module_symbol (ass->aot_module, "mono_assembly_guid", (gpointer *) &saved_guid);
+		g_module_symbol (ass->aot_module, "mono_aot_version", (gpointer *) &aot_version);
 
-		if (!saved_guid || strcmp (image->guid, saved_guid)) {
+		if (!aot_version || strcmp (aot_version, MONO_AOT_FILE_VERSION)) {
+			printf ("AOT module %s has wrong file format version (expected %s got %s)\n", aot_name, MONO_AOT_FILE_VERSION, aot_version);
+			usable = FALSE;
+		}
+		else
+			if (!saved_guid || strcmp (image->guid, saved_guid)) {
+				printf ("AOT module %s has a different GUID than the corresponding assembly.\n", aot_name);
+				usable = FALSE;
+			}
+
+		if (!usable) {
 			g_module_close (ass->aot_module);
 			ass->aot_module = NULL;
 		}
 	}
+	g_free (aot_name);
+
+	if (ass->aot_module)
+		printf ("Loaded AOT Module for %s.\n", fname);
+
+	g_free (fname);
 
 	t = &image->tables [MONO_TABLE_ASSEMBLY];
 	if (t->rows) {
@@ -514,6 +531,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		if ((ass2 = search_loaded (&ass->aname))) {
 			g_free (ass);
 			g_free (base_dir);
+			mono_image_close (image);
 			*status = MONO_IMAGE_OK;
 			LeaveCriticalSection (&assemblies_mutex);
 			return ass2;
