@@ -30,13 +30,16 @@ method_info_func (MonoDebugSymbolFile *symfile, guint32 token, gpointer user_dat
 void
 mono_debug_open_assembly_dwarf2_plus (AssemblyDebugInfo *info)
 {
-	char *buf;
+	if (!(info->handle->flags & MONO_DEBUG_FLAGS_DONT_ASSEMBLE)) {
+		char *buf;
 
-	buf = g_strdup_printf ("as %s -o %s", info->filename, info->objfile);
-	system (buf);
-	g_free (buf);
+		buf = g_strdup_printf ("as %s -o %s", info->filename, info->objfile);
+		system (buf);
+		g_free (buf);
+	}
 
-	mono_jit_compile_image (info->image, FALSE);
+	if (!(info->handle->flags & MONO_DEBUG_FLAGS_DONT_PRECOMPILE))
+		mono_jit_compile_image (info->image, FALSE);
 
 	info->symfile = mono_debug_open_symbol_file (info->image, info->objfile, TRUE);
 }

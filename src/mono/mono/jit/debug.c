@@ -81,6 +81,12 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 			if (!strcmp (arg, "dont_fallback")) {
 				debug->flags |= MONO_DEBUG_FLAGS_DONT_FALLBACK;
 				continue;
+			} else if (!strcmp (arg, "dont_assemble")) {
+				debug->flags |= MONO_DEBUG_FLAGS_DONT_ASSEMBLE;
+				continue;
+			} else if (!strcmp (arg, "dont_precompile")) {
+				debug->flags |= MONO_DEBUG_FLAGS_DONT_PRECOMPILE;
+				continue;
 			}
 			break;
 		default:
@@ -743,7 +749,7 @@ mono_debug_il_offset_from_address (MonoMethod *method, guint32 address)
 
 	for (i = 0; i < minfo->num_il_offsets; i++) {
 		MonoDebugILOffsetInfo *ilo = &minfo->il_offsets [i];
-
+		
 		if (ilo->address > address)
 			return ilo->offset;
 	}

@@ -25,7 +25,9 @@ typedef enum {
 	// Don't create any new *.il files.
 	MONO_DEBUG_FLAGS_DONT_CREATE_IL_FILES	= (1 << 4),
 	// Don't fallback to normal dwarf2.
-	MONO_DEBUG_FLAGS_DONT_FALLBACK		= (1 << 5)
+	MONO_DEBUG_FLAGS_DONT_FALLBACK		= (1 << 5),
+	// Don't precompile image.
+	MONO_DEBUG_FLAGS_DONT_PRECOMPILE	= (1 << 6)
 } MonoDebugFlags;
 
 typedef struct {
