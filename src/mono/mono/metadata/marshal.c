@@ -345,7 +345,7 @@ mono_string_to_lpstr (MonoString *s)
 		return as;
 	}
 #else
-	return mono_string_to_utf8 (string_obj);
+	return mono_string_to_utf8 (s);
 #endif
 }	
 
@@ -5499,7 +5499,7 @@ mono_marshal_get_stelemref ()
 	return ret;
 }
 
-static void*
+void*
 mono_marshal_alloc (gulong size)
 {
 	gpointer res;
@@ -5514,7 +5514,7 @@ mono_marshal_alloc (gulong size)
 	return res;
 }
 
-static void
+void
 mono_marshal_free (gpointer ptr)
 {
 #ifdef PLATFORM_WIN32
@@ -6025,7 +6025,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (int size)
 
 	if ((gulong)size == 0)
 		/* This returns a valid pointer for size 0 on MS.NET */
-		size = (gpointer)4;
+		size = 4;
 
 	res = g_try_malloc ((gulong)size);
 	if (!res)
