@@ -30,17 +30,12 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemAssemblyLoadEventHandlerClassTopic.asp">System.AssemblyLoadEventHandler</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemAsyncCallbackClassTopic.asp">System.AsyncCallback</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemCrossAppDomainDelegateClassTopic.asp">System.CrossAppDomainDelegate</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDBNullClassTopic.asp">System.DBNull</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsSymbolStoreSymDocumentTypeClassTopic.asp">System.Diagnostics.SymbolStore.SymDocumentType</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsSymbolStoreSymLanguageTypeClassTopic.asp">System.Diagnostics.SymbolStore.SymLanguageType</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemDiagnosticsSymbolStoreSymLanguageVendorClassTopic.asp">System.Diagnostics.SymbolStore.SymLanguageVendor</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemEventHandlerClassTopic.asp">System.EventHandler</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationCompareInfoClassTopic.asp">System.Globalization.CompareInfo</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationHebrewCalendarClassTopic.asp">System.Globalization.HebrewCalendar</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationHijriCalendarClassTopic.asp">System.Globalization.HijriCalendar</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationJapaneseCalendarClassTopic.asp">System.Globalization.JapaneseCalendar</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationKoreanCalendarClassTopic.asp">System.Globalization.KoreanCalendar</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationRegionInfoClassTopic.asp">System.Globalization.RegionInfo</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationSortKeyClassTopic.asp">System.Globalization.SortKey</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationStringInfoClassTopic.asp">System.Globalization.StringInfo</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationTaiwanCalendarClassTopic.asp">System.Globalization.TaiwanCalendar</a><br>
@@ -48,17 +43,13 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationTextInfoClassTopic.asp">System.Globalization.TextInfo</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemGlobalizationThaiBuddhistCalendarClassTopic.asp">System.Globalization.ThaiBuddhistCalendar</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemIOEndOfStreamExceptionClassTopic.asp">System.IO.EndOfStreamException</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemIOIsolatedStorageIsolatedStorageClassTopic.asp">System.IO.IsolatedStorage.IsolatedStorage</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemIOIsolatedStorageIsolatedStorageExceptionClassTopic.asp">System.IO.IsolatedStorage.IsolatedStorageException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemIOIsolatedStorageIsolatedStorageFileClassTopic.asp">System.IO.IsolatedStorage.IsolatedStorageFile</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemIOPathTooLongExceptionClassTopic.asp">System.IO.PathTooLongException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemReflectionEmitMethodRentalClassTopic.asp">System.Reflection.Emit.MethodRental</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemReflectionMemberFilterClassTopic.asp">System.Reflection.MemberFilter</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemReflectionMissingClassTopic.asp">System.Reflection.Missing</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemReflectionModuleResolveEventHandlerClassTopic.asp">System.Reflection.ModuleResolveEventHandler</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemReflectionPointerClassTopic.asp">System.Reflection.Pointer</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemReflectionStrongNameKeyPairClassTopic.asp">System.Reflection.StrongNameKeyPair</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemReflectionTargetExceptionClassTopic.asp">System.Reflection.TargetException</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemReflectionTypeFilterClassTopic.asp">System.Reflection.TypeFilter</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemResolveEventHandlerClassTopic.asp">System.ResolveEventHandler</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeCompilerServicesAccessedThroughPropertyAttributeClassTopic.asp">System.Runtime.CompilerServices.AccessedThroughPropertyAttribute</a><br>
@@ -320,7 +311,6 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeSerializationSerializationEntryClassTopic.asp">System.Runtime.Serialization.SerializationEntry</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeSerializationSerializationInfoEnumeratorClassTopic.asp">System.Runtime.Serialization.SerializationInfoEnumerator</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeSerializationSurrogateSelectorClassTopic.asp">System.Runtime.Serialization.SurrogateSelector</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemRuntimeArgumentHandleClassTopic.asp">System.RuntimeArgumentHandle</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityAllowPartiallyTrustedCallersAttributeClassTopic.asp">System.Security.AllowPartiallyTrustedCallersAttribute</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyCryptoConfigClassTopic.asp">System.Security.Cryptography.CryptoConfig</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityCryptographyDSACryptoServiceProviderClassTopic.asp">System.Security.Cryptography.DSACryptoServiceProvider</a><br>
@@ -374,7 +364,6 @@ This is a list of pending classes, and links to their documentation on MSDN.Micr
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyAllMembershipConditionClassTopic.asp">System.Security.Policy.AllMembershipCondition</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyApplicationDirectoryClassTopic.asp">System.Security.Policy.ApplicationDirectory</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyApplicationDirectoryMembershipConditionClassTopic.asp">System.Security.Policy.ApplicationDirectoryMembershipCondition</a><br>
-	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyFileCodeGroupClassTopic.asp">System.Security.Policy.FileCodeGroup</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyFirstMatchCodeGroupClassTopic.asp">System.Security.Policy.FirstMatchCodeGroup</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyHashClassTopic.asp">System.Security.Policy.Hash</a><br>
 	<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfSystemSecurityPolicyHashMembershipConditionClassTopic.asp">System.Security.Policy.HashMembershipCondition</a><br>
