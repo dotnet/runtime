@@ -910,12 +910,6 @@ free_hash_table (gpointer key, gpointer val, gpointer user_data)
 }
 
 static void
-free_gs_list (gpointer key, gpointer val, gpointer user_data)
-{
-	g_slist_free ((GSList*)val);
-}
-
-static void
 free_mr_signatures (gpointer key, gpointer val, gpointer user_data)
 {
 	mono_metadata_free_method_signature ((MonoMethodSignature*)val);
@@ -984,7 +978,6 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->delegate_end_invoke_cache);
 	g_hash_table_destroy (image->delegate_invoke_cache);
 	g_hash_table_destroy (image->remoting_invoke_cache);
-	g_hash_table_foreach (image->runtime_invoke_cache, free_gs_list, NULL);
 	g_hash_table_destroy (image->runtime_invoke_cache);
 	g_hash_table_destroy (image->typespec_cache);
 	g_hash_table_destroy (image->generic_inst_cache);

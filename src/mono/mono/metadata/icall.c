@@ -2151,6 +2151,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 	 */
 	MonoMethod *m = method->method;
 	int pcount;
+	void *obj = this;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -2158,6 +2159,9 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 		if (!mono_object_isinst (this, m->klass))
 			mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetException"));
 		m = mono_object_get_virtual_method (this, m);
+		/* must pass the pointer to the value for valuetype methods */
+		if (m->klass->valuetype)
+			obj = mono_object_unbox (this);
 	} else if (!(m->flags & METHOD_ATTRIBUTE_STATIC) && strcmp (m->name, ".ctor") && !m->wrapper_type)
 		mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetException"));
 
@@ -2186,7 +2190,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 
 		return (MonoObject*)mono_array_new_full (mono_object_domain (params), m->klass, lengths, lower_bounds);
 	}
-	return mono_runtime_invoke_array (m, this, params, NULL);
+	return mono_runtime_invoke_array (m, obj, params, NULL);
 }
 
 static MonoObject *
@@ -2276,6 +2280,8 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 	if (!strcmp (method->method->name, ".ctor"))
 		g_assert_not_reached ();
 
+	/* This can be called only on MBR objects, so no need to unbox for valuetypes. */
+	g_assert (!method->method->klass->valuetype);
 	result = mono_runtime_invoke_array (method->method, this, params, NULL);
 
 	for (i = 0, j = 0; i < mono_array_length (params); i++) {

@@ -58,6 +58,8 @@ mono_runtime_object_init (MonoObject *this)
 
 	g_assert (method);
 
+	if (method->klass->valuetype)
+		this = mono_object_unbox (this);
 	mono_runtime_invoke (method, this, NULL, NULL);
 }
 
@@ -1545,16 +1547,23 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	}
 
 	if (!strcmp (method->name, ".ctor") && method->klass != mono_defaults.string_class) {
+		void *o = obj;
 		if (!obj) {
 			obj = mono_object_new (mono_domain_get (), method->klass);
 			if (mono_object_class(obj) == mono_defaults.transparent_proxy_class) {
 				method = mono_marshal_get_remoting_invoke (method->slot == -1 ? method : method->klass->vtable [method->slot]);
 			}
+			if (method->klass->valuetype)
+				o = mono_object_unbox (obj);
+			else
+				o = obj;
 		}
-		mono_runtime_invoke (method, obj, pa, exc);
+		mono_runtime_invoke (method, o, pa, exc);
 		return obj;
-	} else
+	} else {
+		/* obj must be already unboxed if needed */
 		return mono_runtime_invoke (method, obj, pa, exc);
+	}
 }
 
 static void
@@ -2149,6 +2158,7 @@ gpointer
 mono_object_unbox (MonoObject *obj)
 {
 	/* add assert for valuetypes? */
+	g_assert (obj->vtable->klass->valuetype);
 	return ((char*)obj) + sizeof (MonoObject);
 }
 
@@ -2671,7 +2681,7 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 		}
 	}
 
-	return mono_runtime_invoke_array (method, target, msg->args, exc);
+	return mono_runtime_invoke_array (method, method->klass->valuetype? mono_object_unbox (target): target, msg->args, exc);
 }
 
 void

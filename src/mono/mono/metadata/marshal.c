@@ -45,7 +45,7 @@ struct _MonoMethodBuilder {
 static void
 emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object);
 
-gint 
+static gint 
 mono_marshal_runtime_glist_find_klass (gconstpointer a, gconstpointer b);
 
 static MonoMethod *
@@ -1618,7 +1618,7 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 			}
 		}
 
-		return mono_runtime_invoke (method, this, mparams, NULL);
+		return mono_runtime_invoke (method, method->klass->valuetype? mono_object_unbox (this): this, mparams, NULL);
 	}
 
 	msg = mono_method_call_message_new (method, params, NULL, NULL, NULL);
@@ -1858,10 +1858,10 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	return res;	
 }
 
-gint mono_marshal_runtime_glist_find_klass (gconstpointer a, gconstpointer b) 
-{
-	return !(((MonoMethod *)a)->klass == ((MonoMethod *)b)->klass);
-}
+typedef struct {
+	MonoMethod *ctor;
+	MonoMethodSignature *sig;
+} CtorSigPair;
 
 /*
  * generates IL code for the runtime invoke function 
@@ -1879,52 +1879,52 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	GHashTable *cache = NULL;
 	MonoClass *target_klass;
 	MonoMethod *res = NULL;
-	GSList *list = NULL;
 	GSList *item;
 	static MonoString *string_dummy = NULL;
 	int i, pos;
 	char *name;
-	gboolean list_lookup = FALSE;
 
 	g_assert (method);
 
 	target_klass = method->klass;
 	
-	if (method->string_ctor) {
-		static MonoMethodSignature *strsig = NULL;
-		if (!strsig) {
-			strsig = mono_metadata_signature_dup (method->signature);
-			strsig->ret = &mono_defaults.string_class->byval_arg;
-		}
-		
-		callsig = strsig;
-		list_lookup = TRUE;
-	} else
-		callsig = method->signature;
+	EnterCriticalSection (&marshal_mutex);
 
-	if (method->signature->hasthis && method->klass->valuetype)
-		list_lookup = TRUE;
+	if (method->string_ctor) {
+		static GSList *strsig_list = NULL;
+		CtorSigPair *cs;
+
+		callsig = NULL;
+		for (item = strsig_list; item; item = item->next) {
+			cs = item->data;
+			if (mono_metadata_signature_equal (method->signature, cs->ctor->signature)) {
+				callsig = cs->sig;
+				break;
+			}
+		}
+		if (!callsig) {
+			callsig = mono_metadata_signature_dup (method->signature);
+			callsig->ret = &mono_defaults.string_class->byval_arg;
+			cs = g_new (CtorSigPair, 1);
+			cs->sig = callsig;
+			cs->ctor = method;
+			strsig_list = g_slist_prepend (strsig_list, cs);
+		}
+	} else {
+		callsig = method->signature;
+	}
 
 	cache = method->klass->image->runtime_invoke_cache;
 
 	/* from mono_marshal_find_in_cache */
-	EnterCriticalSection (&marshal_mutex);
-	list = g_hash_table_lookup (cache, callsig);
+	res = g_hash_table_lookup (cache, callsig);
 	LeaveCriticalSection (&marshal_mutex);
 
-	if (list) {
-		if (!list_lookup)
-			return (MonoMethod *)list->data;
-
-		/* lookup the wrapper for our class */
-		item = g_slist_find_custom (list, method->klass, mono_marshal_runtime_glist_find_klass);
-		if (item) 
-			return (MonoMethod *)item->data;
+	if (res) {
+		return res;
 	}
 
-	if (!list_lookup)
-		/* place runtime_invoke method in object class instead of random class */
-		target_klass = mono_defaults.object_class;
+	target_klass = mono_defaults.object_class;
 
 	/* to make it work with our special string constructors */
 	if (!string_dummy)
@@ -1964,10 +1964,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, string_dummy));
 		} else {
 			mono_mb_emit_ldarg (mb, 0);
-			if (method->klass->valuetype) {
-				mono_mb_emit_byte (mb, CEE_UNBOX);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, method->klass));
-			} 
 		}
 	}
 
@@ -2135,27 +2131,11 @@ handle_enum:
 	/* taken from mono_mb_create_and_cache */
 	EnterCriticalSection (&marshal_mutex);
 
-	list = g_hash_table_lookup (cache, callsig);
-	if (list) {
-		/* Somebody may have created it before us */
-		/* we use the list_lookup flag to be a bit smarter */
-		if (list_lookup) {
-			/* check if someone has created our wrapper, or just one with the same signature */
-			item = g_slist_find_custom (list, method->klass, mono_marshal_runtime_glist_find_klass);
-			if (item) 
-				res = (MonoMethod *) item->data;
-			else /* we didn't find our wrapper */
-				res = NULL;
-		} else
-			res = (MonoMethod *) list->data;
-	}	
-
-	if (!list || (list_lookup && list && !res)) {
+	res = g_hash_table_lookup (cache, callsig);
+	/* Somebody may have created it before us */
+	if (!res) {
 		res = mono_mb_create_method (mb, csig, sig->param_count + 16);
-
-		/* we add the wrapper to a slist and put that into value */
-		list = g_slist_append (list, res);
-		g_hash_table_insert (cache, callsig, list);
+		g_hash_table_insert (cache, callsig, res);
 		mono_g_hash_table_insert (wrapper_hash, res, callsig);
 	}
 
