@@ -6887,7 +6887,8 @@ mono_cprop_copy_values (MonoCompile *cfg, MonoInst *tree, MonoInst **acp)
 			mono_cprop_copy_values (cfg, tree->inst_i0, acp);
 			if (cfg->opt & MONO_OPT_CFOLD)
 				mono_constant_fold_inst (tree, NULL); 
-			if (arity > 1) {
+			/* The opcode may have changed */
+			if (mono_burg_arity [tree->opcode] > 1) {
 				mono_cprop_copy_values (cfg, tree->inst_i1, acp);
 				if (cfg->opt & MONO_OPT_CFOLD)
 					mono_constant_fold_inst (tree, NULL); 
