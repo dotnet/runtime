@@ -724,46 +724,6 @@ reg: OP_ATOMIC_ADD_I4 (base, reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: OP_ATOMIC_ADD_I4 (base, OP_ICONST) {
-	tree->opcode = OP_ATOMIC_ADD_IMM_PREV_I4;
-	tree->inst_basereg = state->left->tree->inst_basereg; 
-	tree->inst_offset = state->left->tree->inst_offset; 
-	tree->dreg = state->reg1;
-	tree->inst_imm = state->right->tree->inst_c0;
-    
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_STIND_I4 (OP_REGVAR, OP_ATOMIC_ADD_I4 (base, OP_ICONST)) {
-	tree->opcode = OP_ATOMIC_ADD_IMM_PREV_I4;
-	tree->inst_basereg = state->right->left->tree->inst_basereg; 
-	tree->inst_offset = state->right->left->tree->inst_offset; 
-	tree->dreg = state->left->tree->dreg;
-	tree->inst_imm = state->right->right->tree->inst_c0;
-    
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-reg: OP_ATOMIC_ADD_IMM_I4 (base, OP_ICONST) {
-	tree->opcode = OP_ATOMIC_ADD_IMM_I4;
-	tree->inst_basereg = state->left->tree->inst_basereg; 
-	tree->inst_offset = state->left->tree->inst_offset; 
-	tree->dreg = state->reg1;
-	tree->inst_imm = state->right->tree->inst_c0;
-    
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-stmt: CEE_STIND_I4 (OP_REGVAR, OP_ATOMIC_ADD_IMM_I4 (base, OP_ICONST)) {
-	tree->opcode = OP_ATOMIC_ADD_IMM_I4;
-	tree->inst_basereg = state->right->left->tree->inst_basereg; 
-	tree->inst_offset = state->right->left->tree->inst_offset; 
-	tree->dreg = state->left->tree->dreg;
-	tree->inst_imm = state->right->right->tree->inst_c0;
-    
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
 reg: OP_ATOMIC_EXCHANGE_I4 (base, reg) {
     tree->opcode = OP_ATOMIC_EXCHANGE_I4;
     tree->dreg = state->reg1;

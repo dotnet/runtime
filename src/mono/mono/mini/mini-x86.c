@@ -3209,7 +3209,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_jump8 (code, 0);
 				x86_patch (is_not_zero_check, code);
 				x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_CC_MASK);
-
+	
 				x86_patch (end_jump, code);
 			}
 			x86_set_reg (code, X86_CC_EQ, ins->dreg, TRUE);
@@ -3362,52 +3362,48 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_mov_reg_reg (code, ins->dreg, ins->sreg2, 4);
 			break;
 		}
-		case OP_ATOMIC_ADD_IMM_PREV_I4: {
-			/* used by Interlocked::Add and returns the prev value before add */
-			x86_mov_reg_imm (code, ins->dreg, ins->inst_imm);
-			x86_prefix (code, X86_LOCK_PREFIX);
-			x86_xadd_membase_reg (code, ins->inst_basereg, ins->inst_offset, ins->dreg, 4);
-			break;
-		}
-		case OP_ATOMIC_ADD_IMM_I4: {
-			/* used by Interlocked::Increment/Decrement and returns the added value */
-			x86_mov_reg_imm (code, ins->dreg, ins->inst_imm);
-			x86_prefix (code, X86_LOCK_PREFIX);
-			x86_xadd_membase_reg (code, ins->inst_basereg, ins->inst_offset, ins->dreg, 4);
-			x86_alu_reg_imm (code, X86_ADD, ins->dreg, ins->inst_imm);
-			break;
-		}
 		case OP_ATOMIC_EXCHANGE_I4: {
 			guchar *br[2];
 			int sreg2 = ins->sreg2;
+			int breg = ins->inst_basereg;
 
-			/* cmpxchg uses eax as comperand, need to make sure we can use it */
-			/* hack to overcome limits in x86 reg allocator (req: dreg == eax and sreg2 != eax) */
-			if (ins->dreg != X86_EAX) {
+			/* cmpxchg uses eax as comperand, need to make sure we can use it
+			 * hack to overcome limits in x86 reg allocator 
+			 * (req: dreg == eax and sreg2 != eax and breg != eax) 
+			 */
+			if (ins->dreg != X86_EAX)
 				x86_push_reg (code, X86_EAX);
-			}
 			
+			/* We need the EAX reg for the cmpxchg */
 			if (ins->sreg2 == X86_EAX) {
 				x86_push_reg (code, X86_EDX);
 				x86_mov_reg_reg (code, X86_EDX, X86_EAX, 4);
 				sreg2 = X86_EDX;
 			}
 
-			x86_mov_reg_membase (code, X86_EAX, ins->inst_basereg, ins->inst_offset, 4);
+			if (breg == X86_EAX) {
+				x86_push_reg (code, X86_ESI);
+				x86_mov_reg_reg (code, X86_ESI, X86_EAX, 4);
+				breg = X86_ESI;
+			}
+
+			x86_mov_reg_membase (code, X86_EAX, breg, ins->inst_offset, 4);
 
 			br [0] = code; x86_prefix (code, X86_LOCK_PREFIX);
-			x86_cmpxchg_membase_reg (code, ins->inst_basereg, ins->inst_offset, sreg2);
+			x86_cmpxchg_membase_reg (code, breg, ins->inst_offset, sreg2);
 			br [1] = code; x86_branch8 (code, X86_CC_NE, -1, FALSE);
 			x86_patch (br [1], br [0]);
+
+			if (breg != ins->inst_basereg)
+				x86_pop_reg (code, X86_ESI);
 
 			if (ins->dreg != X86_EAX) {
 				x86_mov_reg_reg (code, ins->dreg, X86_EAX, 4);
 				x86_pop_reg (code, X86_EAX);
 			}
 
-			if (ins->sreg2 != sreg2) {
+			if (ins->sreg2 != sreg2)
 				x86_pop_reg (code, X86_EDX);
-			}
 
 			break;
 		}
@@ -4057,11 +4053,14 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 			ins->inst_i1 = args [1];
 		}
 #endif
-	} /* else if (strcmp (cmethod->klass->name, "Interlocked") == 0) {
+	} else if(cmethod->klass->image == mono_defaults.corlib &&
+			   (strcmp (cmethod->klass->name_space, "System.Threading") == 0) &&
+			   (strcmp (cmethod->klass->name, "Interlocked") == 0)) {
+
 		if (strcmp (cmethod->name, "Increment") == 0 && fsig->params [0]->type == MONO_TYPE_I4) {
 			MonoInst *ins_iconst;
 
-			MONO_INST_NEW (cfg, ins, OP_ATOMIC_ADD_IMM_I4);
+			MONO_INST_NEW (cfg, ins, OP_ATOMIC_ADD_I4);
 			MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
 			ins_iconst->inst_c0 = 1;
 
@@ -4070,7 +4069,7 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 		} else if (strcmp (cmethod->name, "Decrement") == 0 && fsig->params [0]->type == MONO_TYPE_I4) {
 			MonoInst *ins_iconst;
 
-			MONO_INST_NEW (cfg, ins, OP_ATOMIC_ADD_IMM_I4);
+			MONO_INST_NEW (cfg, ins, OP_ATOMIC_ADD_I4);
 			MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
 			ins_iconst->inst_c0 = -1;
 
@@ -4086,9 +4085,9 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 
 			ins->inst_i0 = args [0];
 			ins->inst_i1 = args [1];
-		} 
-	} */
-	
+		}
+	}
+
 	return ins;
 }
 
