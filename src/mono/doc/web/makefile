@@ -65,9 +65,6 @@ all: $(OBJECTS) deploy/index.rss
 tutorial: mono-beginning.html.stamp mono-beginning.pdf 
 	cp -a mono-beginning mono-beginning.xml mono-beginning.pdf deploy
 
-tutorial-windows: mono-beginning-windows.html.stamp mono-beginning-windows.pdf
-	cp -a mono-beginning-windows.xml mono-beginning-windows.pdf deploy 
-
 mono-beginning.html.stamp: mono-beginning.xml
 	db2html mono-beginning.xml
 	touch mono-beginning.html.stamp
@@ -77,16 +74,6 @@ mono-beginning.pdf: mono-beginning.xml
 
 mono-beginning.xml: ../mono-beginning.xml
 	cp ../mono-beginning.xml .
-
-mono-beginning-windows.html.stamp: mono-beginning-windows.xml
-	db2html mono-beginning-windows.xml
-	touch mono-beginning-windows.html.stamp
-
-mono-beginning-windows.pdf: mono-beginning-windows.xml
-	db2pdf mono-beginning-windows.xml
-
-mono-beginning-windows.xml: ../mono-beginning-windows.xml
-	cp ../mono-beginning-windows.xml .
 
 deploy/index.rss: mono-rss.exe ../index
 	./mono-rss.exe ../index deploy/index.rss
