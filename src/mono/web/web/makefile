@@ -68,6 +68,7 @@ OBJECTS=									\
 	deploy/team.html							\
 	deploy/testing.html							\
 	deploy/tools.html							\
+	deploy/remap.html							\
 	deploy/winforms.html							\
 	deploy/xml-classes.html							\
 	deploy/class-library.html						\
