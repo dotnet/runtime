@@ -578,8 +578,11 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		if (!(*lmf)->method)
 			return (gpointer)-1;
 
-		if (trace)
-			*trace = g_strdup_printf ("in (unmanaged) %s", mono_method_full_name ((*lmf)->method, TRUE));
+		if (trace) {
+			char *fname = mono_method_full_name ((*lmf)->method, TRUE);
+			*trace = g_strdup_printf ("in (unmanaged) %s", fname);
+			g_free (fname);
+		}
 		
 		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->eip))) {
 			*res = *ji;
