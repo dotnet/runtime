@@ -71,9 +71,9 @@
 	    </td>
 	    <td>
 	      Working:<br>
-	      Linux/x86, Linux/PPC, S390<br>
+	      Linux/x86, Linux/PPC, S390, StrongARM<br>
 	      In progress:<br>
-	      StrongARM, SPARC.
+	      SPARC.
 	    </td>
 	  </tr>
 	  <tr>
@@ -101,6 +101,11 @@
     </td>
   </tr>
 </table>
+
+@item Mar 28th: Mono community site.
+
+	<a href="http://www.gotmono.com">www.gotmono.com</a> has
+	openend its door: Got Mono is a Mono Community site.
 
 @item Mar 25th: Second Mono Survey
 
