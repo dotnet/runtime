@@ -5,6 +5,7 @@ CSC=mcs
 
 TESTSRC=			\
 	fib.cs 			\
+	life.cs 		\
 	castclass.cs		\
 	isinst.cs		\
 	inline1.cs		\
