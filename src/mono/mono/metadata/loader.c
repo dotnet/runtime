@@ -141,6 +141,27 @@ mono_field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass
 	}
 }
 
+MonoClassField*
+mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass)
+{
+	MonoClass *k;
+	guint32 type;
+	
+	if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
+		return mono_field_from_memberref (image, token, retklass);
+
+	type = mono_metadata_typedef_from_field (image, mono_metadata_token_index (token));
+	if (!type)
+		return NULL;
+	k = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
+	mono_class_init (k);
+	if (!k)
+		return NULL;
+	if (retklass)
+		*retklass = k;
+	return mono_class_get_field (k, token);
+}
+
 static MonoMethod *
 find_method (MonoClass *klass, const char* name, MonoMethodSignature *sig)
 {

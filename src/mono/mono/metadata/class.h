@@ -194,6 +194,9 @@ mono_class_from_typeref    (MonoImage *image, guint32 type_token);
 MonoClassField*
 mono_field_from_memberref  (MonoImage *image, guint32 token, MonoClass **retklass);
 
+MonoClassField*
+mono_field_from_token      (MonoImage *image, guint32 token, MonoClass **retklass);
+
 MonoClass *
 mono_array_class_get       (MonoType *element_type, guint32 rank);
 

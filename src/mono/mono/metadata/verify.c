@@ -671,63 +671,92 @@ mono_image_verify_tables (MonoImage *image, int level)
 }
 
 enum {
-	TYPE_INVALID = 0, /* leave at 0. */
-	TYPE_INT32 = 1,
-	TYPE_INT64 = 2,
-	TYPE_NINT  = 3,
-	TYPE_FLOAT = 4,
-	TYPE_MANP = 5,
-	TYPE_OBJREF = 6,
-	TYPE_MAX = 7
+	TYPE_INV = 0, /* leave at 0. */
+	TYPE_I4  = 1,
+	TYPE_I8  = 2,
+	TYPE_PTR = 3,
+	TYPE_R8  = 4,
+	TYPE_MP  = 5,
+	TYPE_OBJ = 6,
+	TYPE_VT  = 7,
+	TYPE_MAX = 8
 };
 
-const static unsigned char 
-valid_binops [TYPE_MAX] [TYPE_MAX] = {
-	{TYPE_INVALID},
-	{TYPE_INVALID, TYPE_INT32,   TYPE_INVALID, TYPE_NINT,    TYPE_INVALID, TYPE_MANP},
-	{TYPE_INVALID, TYPE_INVALID, TYPE_INT64,   TYPE_INVALID},
-	{TYPE_INVALID, TYPE_NINT,    TYPE_INVALID, TYPE_NINT,    TYPE_INVALID, TYPE_MANP},
-	{TYPE_INVALID, TYPE_INVALID, TYPE_INVALID, TYPE_INVALID, TYPE_FLOAT},
-	{TYPE_INVALID, TYPE_MANP,    TYPE_INVALID, TYPE_MANP,    TYPE_INVALID, TYPE_NINT},
-	{TYPE_INVALID}
-	               /* int32 */   /* int64 */   /* native */  /* float */   /* managed p */ /* objref */
+static const char* 
+arg_name [TYPE_MAX] = {
+	"Invalid",
+	"Int32",
+	"Int64",
+	"IntPtr",
+	"Double",
+	"Managed Pointer",
+	"ObjRef",
+	"ValueType"
 };
 
-const static unsigned char 
-valid_unnops [TYPE_MAX] = {
-	TYPE_INVALID, TYPE_INT32,    TYPE_INT64,   TYPE_NINT,    TYPE_FLOAT,   TYPE_INVALID
-	               /* int32 */   /* int64 */   /* native */  /* float */   /* managed p */ /* objref */
+static const char
+bin_num_table [TYPE_MAX] [TYPE_MAX] = {
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_I4,  TYPE_INV, TYPE_PTR, TYPE_INV, TYPE_MP,  TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_I8,  TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_PTR, TYPE_INV, TYPE_PTR, TYPE_INV, TYPE_MP,  TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_R8,  TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_MP,  TYPE_INV, TYPE_MP,  TYPE_INV, TYPE_PTR, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV}
 };
 
-/* note: the resulting type is always a boolean */
-const static unsigned char 
-valid_bincomp [TYPE_MAX] [TYPE_MAX] = {
-	{TYPE_INVALID},
-	{TYPE_INVALID, TYPE_INT32,   TYPE_INVALID, TYPE_INT32,   TYPE_INVALID},
-	{TYPE_INVALID, TYPE_INVALID, TYPE_INT32,   TYPE_INVALID},
-	{TYPE_INVALID, TYPE_INT32,   TYPE_INVALID, TYPE_INT32,   TYPE_INVALID, TYPE_INT32},
-	{TYPE_INVALID, TYPE_INVALID, TYPE_INVALID, TYPE_INVALID, TYPE_INT32},
-	{TYPE_INVALID, TYPE_INVALID, TYPE_INVALID, TYPE_INT32,   TYPE_INVALID, TYPE_INT32},
-	{TYPE_INVALID, TYPE_INVALID, TYPE_INVALID, TYPE_INVALID, TYPE_INVALID, TYPE_INVALID, TYPE_INT32}
-	               /* int32 */   /* int64 */   /* native */  /* float */   /* managed p */ /* objref */
+static const char 
+neg_table [] = {
+	TYPE_INV, TYPE_I4, TYPE_I8, TYPE_PTR, TYPE_R8, TYPE_INV, TYPE_INV, TYPE_INV
 };
 
-const static unsigned char 
-valid_intops [TYPE_MAX] [TYPE_MAX] = {
-	{TYPE_INVALID},
-	{TYPE_INVALID, TYPE_INT32,   TYPE_INVALID, TYPE_NINT},
-	{TYPE_INVALID, TYPE_INVALID, TYPE_INT64},
-	{TYPE_INVALID, TYPE_NINT,    TYPE_INVALID, TYPE_NINT},
-	{TYPE_INVALID}
+/* reduce the size of this table */
+static const char
+bin_int_table [TYPE_MAX] [TYPE_MAX] = {
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_I4,  TYPE_INV, TYPE_PTR, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_I8,  TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_PTR, TYPE_INV, TYPE_PTR, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV}
 };
 
-const static unsigned char 
-valid_shiftops [TYPE_MAX] [TYPE_MAX] = {
-	{TYPE_INVALID},
-	{TYPE_INVALID, TYPE_INT32,   TYPE_INVALID, TYPE_INT32},
-	{TYPE_INVALID, TYPE_INT64,   TYPE_INVALID, TYPE_INT64},
-	{TYPE_INVALID, TYPE_NINT,    TYPE_INVALID, TYPE_NINT},
-	{TYPE_INVALID}
+static const char
+bin_comp_table [TYPE_MAX] [TYPE_MAX] = {
+	{0},
+	{0, 1, 0, 1, 0, 0, 0, 0},
+	{0, 0, 1, 0, 0, 0, 0, 0},
+	{0, 1, 0, 1, 0, 2, 0, 0},
+	{0, 0, 0, 0, 1, 0, 0, 0},
+	{0, 0, 0, 2, 0, 1, 0, 0},
+	{0, 0, 0, 0, 0, 0, 3, 0},
+	{0, 0, 0, 0, 0, 0, 0, 0},
+};
+
+/* reduce the size of this table */
+static const char
+shift_table [TYPE_MAX] [TYPE_MAX] = {
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_I4,  TYPE_INV, TYPE_I4,  TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_I8,  TYPE_INV, TYPE_I8,  TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_PTR, TYPE_INV, TYPE_PTR, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV}
+};
+
+static const char 
+ldind_type [] = {
+	TYPE_I4, TYPE_I4, TYPE_I4, TYPE_I4, TYPE_I4, TYPE_I4, TYPE_I8, TYPE_PTR, TYPE_R8, TYPE_R8, TYPE_OBJ
+};
+
+static const char
+ldelem_type [] = {
+	TYPE_I4, TYPE_I4, TYPE_I4, TYPE_I4, TYPE_I4, TYPE_I4, TYPE_I8, TYPE_PTR, TYPE_R8, TYPE_R8, TYPE_OBJ
 };
 
 #define ADD_INVALID(list,msg)	\
@@ -765,8 +794,8 @@ enum {
 };
 
 typedef struct {
-	MonoClass *klass;
-	int type;
+	MonoType *type;
+	int stype;
 } ILStackDesc;
 
 typedef struct {
@@ -774,6 +803,156 @@ typedef struct {
 	guint16 stack_count;
 	guint16 flags;
 } ILCodeDesc;
+
+static void
+type_to_eval_stack_type (MonoType *type, ILStackDesc *stack, int take_addr) {
+	int t = type->type;
+
+	stack->type = type;
+	if (type->byref || take_addr) { /* fix double addr issue */
+		stack->stype = TYPE_MP;
+		return;
+	}
+
+handle_enum:
+	switch (t) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		stack->stype = TYPE_I4;
+		return;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+		stack->stype = TYPE_PTR;
+		return;
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:    
+		stack->stype = TYPE_OBJ;
+		return;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		stack->stype = TYPE_I8;
+		return;
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+		stack->stype = TYPE_R8;
+		return;
+	case MONO_TYPE_VALUETYPE:
+		if (type->data.klass->enumtype) {
+			t = type->data.klass->enum_basetype->type;
+			goto handle_enum;
+		} else {
+			stack->stype = TYPE_VT;
+			return;
+		}
+	default:
+		g_error ("unknown type %02x in eval stack type", type->type);
+	}
+	return;
+}
+
+static int
+type_from_op (int ins, ILStackDesc *arg) {
+	switch (ins) {
+	/* binops */
+	case CEE_ADD:
+	case CEE_SUB:
+	case CEE_MUL:
+	case CEE_DIV:
+	case CEE_REM:
+		/* FIXME: check unverifiable args for TYPE_MP */
+		return arg->stype = bin_num_table [arg->stype] [arg [1].stype];
+	case CEE_DIV_UN:
+	case CEE_REM_UN:
+	case CEE_AND:
+	case CEE_OR:
+	case CEE_XOR:
+		return arg->stype = bin_int_table [arg->stype] [arg [1].stype];
+	case CEE_SHL:
+	case CEE_SHR:
+	case CEE_SHR_UN:
+		return arg->stype = shift_table [arg->stype] [arg [1].stype];
+	case CEE_BEQ_S:
+	case CEE_BGE_S:
+	case CEE_BGT_S:
+	case CEE_BLE_S:
+	case CEE_BLT_S:
+	case CEE_BNE_UN_S:
+	case CEE_BGE_UN_S:
+	case CEE_BGT_UN_S:
+	case CEE_BLE_UN_S:
+	case CEE_BLT_UN_S:
+	case CEE_BEQ:
+	case CEE_BGE:
+	case CEE_BGT:
+	case CEE_BLE:
+	case CEE_BLT:
+	case CEE_BNE_UN:
+	case CEE_BGE_UN:
+	case CEE_BGT_UN:
+	case CEE_BLE_UN:
+	case CEE_BLT_UN:
+		/* FIXME: handle some specifics with ins->next->type */
+		return bin_comp_table [arg->stype] [arg [1].stype] ? TYPE_I4: TYPE_INV;
+	case 256+CEE_CEQ:
+	case 256+CEE_CGT:
+	case 256+CEE_CGT_UN:
+	case 256+CEE_CLT:
+	case 256+CEE_CLT_UN:
+		return arg->stype = bin_comp_table [arg->stype] [arg [1].stype] ? TYPE_I4: TYPE_INV;
+	/* unops */
+	case CEE_NEG:
+		return arg->stype = neg_table [arg->stype];
+	case CEE_NOT:
+		if (arg->stype >= TYPE_I4 && arg->stype <= TYPE_PTR)
+			return arg->stype;
+		else
+			return arg->stype = TYPE_INV;
+	case CEE_CONV_I1:
+	case CEE_CONV_U1:
+	case CEE_CONV_I2:
+	case CEE_CONV_U2:
+	case CEE_CONV_I4:
+	case CEE_CONV_U4:
+	case CEE_CONV_OVF_I1:
+	case CEE_CONV_OVF_U1:
+	case CEE_CONV_OVF_I2:
+	case CEE_CONV_OVF_U2:
+	case CEE_CONV_OVF_I4:
+	case CEE_CONV_OVF_U4:
+		if (arg->stype == TYPE_INV || arg->stype >= TYPE_MP)
+			return arg->stype = TYPE_INV;
+		return arg->stype = TYPE_I4;
+	case CEE_CONV_I:
+	case CEE_CONV_U:
+	case CEE_CONV_OVF_I:
+	case CEE_CONV_OVF_U:
+		if (arg->stype == TYPE_INV || arg->stype == TYPE_VT)
+			return arg->stype = TYPE_INV;
+		return arg->stype = TYPE_PTR;
+	case CEE_CONV_I8:
+	case CEE_CONV_U8:
+	case CEE_CONV_OVF_I8:
+	case CEE_CONV_OVF_U8:
+		return arg->stype = TYPE_I8;
+	case CEE_CONV_R4:
+	case CEE_CONV_R8:
+		return arg->stype = TYPE_R8;
+	default:
+		g_error ("opcode 0x%04x not handled in type from op", ins);
+		break;
+	}
+	return FALSE;
+}
 
 static int
 in_any_block (MonoMethodHeader *header, guint offset)
@@ -842,6 +1021,97 @@ can_merge_stack (ILCodeDesc *a, ILCodeDesc *b)
 	return 1;
 }
 
+static int
+is_valid_bool_arg (ILStackDesc *arg)
+{
+	switch (arg->stype) {
+	case TYPE_I4:
+	case TYPE_I8:
+	case TYPE_PTR:
+	case TYPE_MP:
+	case TYPE_OBJ:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+static int
+can_store_type (ILStackDesc *arg, MonoType *type)
+{
+	int t = type->type;
+	if (type->byref && arg->stype != TYPE_MP)
+		return FALSE;
+handle_enum:
+	switch (t) {
+	case MONO_TYPE_VOID:
+		return FALSE;
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		if (arg->stype == TYPE_I4 || arg->stype == TYPE_PTR)
+			return TRUE;
+		return FALSE;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+		return TRUE;
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:    
+		return TRUE; /* FIXME */
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		if (arg->stype == TYPE_I8)
+			return TRUE;
+		return FALSE;
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+		if (arg->stype == TYPE_R8)
+			return TRUE;
+		return FALSE;
+	case MONO_TYPE_VALUETYPE:
+		if (type->data.klass->enumtype) {
+			t = type->data.klass->enum_basetype->type;
+			goto handle_enum;
+		} else {
+			if (arg->type->data.klass != type->data.klass)
+				return FALSE;
+			return TRUE;
+		}
+	default:
+		g_error ("unknown type %02x in store type", type->type);
+	}
+	return FALSE;
+}
+
+static int
+stind_type (int op, int type) {
+	switch (op) {
+	case CEE_STIND_REF:
+		return type == TYPE_OBJ;
+	case CEE_STIND_I1:
+	case CEE_STIND_I2:
+	case CEE_STIND_I4:
+		return type == TYPE_I4;
+	case CEE_STIND_I8:
+		return type == TYPE_I8;
+	case CEE_STIND_R4:
+	case CEE_STIND_R8:
+		return type == TYPE_R8;
+	default:
+		g_assert_not_reached ();
+	}
+	return FALSE;
+}
+
 /*
  * FIXME: need to distinguish between valid and verifiable.
  * Need to keep track of types on the stack.
@@ -853,7 +1123,11 @@ mono_method_verify (MonoMethod *method, int level)
 	MonoMethodHeader *header;
 	MonoMethodSignature *signature, *csig;
 	MonoMethod *cmethod;
+	MonoClassField *field;
+	MonoClass *klass;
 	MonoImage *image;
+	MonoType **params;
+	ILStackDesc *stack;
 	register const unsigned char *ip;
 	register const unsigned char *end;
 	const unsigned char *target; /* branch target */
@@ -872,12 +1146,20 @@ mono_method_verify (MonoMethod *method, int level)
 	header = ((MonoMethodNormal *)method)->header;
 	ip = header->code;
 	end = ip + header->code_size;
-	max_args = method->signature->param_count + method->signature->hasthis;
+	max_args = signature->param_count + signature->hasthis;
 	max_stack = header->max_stack;
 	need_merge = cur_stack = 0;
 	start = 1;
 	image = method->klass->image;
 	code = g_new0 (ILCodeDesc, header->code_size);
+	stack = g_new0 (ILStackDesc, max_stack);
+	if (signature->hasthis) {
+		params = g_new0 (MonoType*, max_args);
+		params [0] = &method->klass->this_arg;
+		memcpy (params + 1, signature->params, sizeof (MonoType*) * signature->param_count);
+	} else {
+		params = signature->params;
+	}
 
 	if (header->num_locals) {
 		local_state = g_new (char, header->num_locals);
@@ -937,6 +1219,7 @@ mono_method_verify (MonoMethod *method, int level)
 			if (*ip - CEE_LDARG_0 >= max_args)
 				ADD_INVALID (list, g_strdup_printf ("Method doesn't have argument %d at 0x%04x", *ip - CEE_LDARG_0, ip_offset));
 			CHECK_STACK_OVERFLOW ();
+			type_to_eval_stack_type (params [*ip - CEE_LDARG_0], stack + cur_stack, FALSE);
 			++cur_stack;
 			++ip;
 			break;
@@ -949,6 +1232,7 @@ mono_method_verify (MonoMethod *method, int level)
 			if (0 && !local_state [*ip - CEE_LDLOC_0])
 				ADD_INVALID (list, g_strdup_printf ("Local var %d is initialized at 0x%04x", *ip - CEE_LDLOC_0, ip_offset));
 			CHECK_STACK_OVERFLOW ();
+			type_to_eval_stack_type (header->locals [*ip - CEE_LDLOC_0], stack + cur_stack, FALSE);
 			++cur_stack;
 			++ip;
 			break;
@@ -961,6 +1245,8 @@ mono_method_verify (MonoMethod *method, int level)
 			local_state [*ip - CEE_STLOC_0] = 1;
 			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
+			if (!can_store_type (stack + cur_stack, header->locals [*ip - CEE_STLOC_0]))
+				ADD_INVALID (list, g_strdup_printf ("Incompatible type %s in store at 0x%04x", arg_name [stack [cur_stack].stype], ip_offset));
 			++ip;
 			break;
 		case CEE_LDARG_S:
@@ -968,6 +1254,7 @@ mono_method_verify (MonoMethod *method, int level)
 			if (ip [1] >= max_args)
 				ADD_INVALID (list, g_strdup_printf ("Method doesn't have argument %d at 0x%04x", ip [1], ip_offset));
 			CHECK_STACK_OVERFLOW ();
+			type_to_eval_stack_type (params [ip [1]], stack + cur_stack, *ip == CEE_LDARGA_S);
 			++cur_stack;
 			ip += 2;
 			break;
@@ -986,6 +1273,7 @@ mono_method_verify (MonoMethod *method, int level)
 			if (0 && *ip == CEE_LDLOC_S && !local_state [ip [1]])
 				ADD_INVALID (list, g_strdup_printf ("Local var %d is initialized at 0x%04x", ip [1], ip_offset));
 			CHECK_STACK_OVERFLOW ();
+			type_to_eval_stack_type (header->locals [ip [1]], stack + cur_stack, *ip == CEE_LDLOCA_S);
 			++cur_stack;
 			ip += 2;
 			break;
@@ -995,10 +1283,14 @@ mono_method_verify (MonoMethod *method, int level)
 			local_state [ip [1]] = 1;
 			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
+			if (!can_store_type (stack + cur_stack, header->locals [ip [1]]))
+				ADD_INVALID (list, g_strdup_printf ("Incompatible type %s in store at 0x%04x", arg_name [stack [cur_stack].stype], ip_offset));
 			ip += 2;
 			break;
 		case CEE_LDNULL:
 			CHECK_STACK_OVERFLOW ();
+			stack [cur_stack].type = &mono_defaults.object_class->byval_arg;
+			stack [cur_stack].stype = TYPE_OBJ;
 			++cur_stack;
 			++ip;
 			break;
@@ -1013,31 +1305,43 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_LDC_I4_7:
 		case CEE_LDC_I4_8:
 			CHECK_STACK_OVERFLOW ();
+			stack [cur_stack].type = &mono_defaults.int_class->byval_arg;
+			stack [cur_stack].stype = TYPE_I4;
 			++cur_stack;
 			++ip;
 			break;
 		case CEE_LDC_I4_S:
 			CHECK_STACK_OVERFLOW ();
+			stack [cur_stack].type = &mono_defaults.int_class->byval_arg;
+			stack [cur_stack].stype = TYPE_I4;
 			++cur_stack;
 			ip += 2;
 			break;
 		case CEE_LDC_I4:
 			CHECK_STACK_OVERFLOW ();
+			stack [cur_stack].type = &mono_defaults.int_class->byval_arg;
+			stack [cur_stack].stype = TYPE_I4;
 			++cur_stack;
 			ip += 5;
 			break;
 		case CEE_LDC_I8:
 			CHECK_STACK_OVERFLOW ();
+			stack [cur_stack].type = &mono_defaults.int64_class->byval_arg;
+			stack [cur_stack].stype = TYPE_I8;
 			++cur_stack;
 			ip += 9;
 			break;
 		case CEE_LDC_R4:
 			CHECK_STACK_OVERFLOW ();
+			stack [cur_stack].type = &mono_defaults.double_class->byval_arg;
+			stack [cur_stack].stype = TYPE_R8;
 			++cur_stack;
 			ip += 5;
 			break;
 		case CEE_LDC_R8:
 			CHECK_STACK_OVERFLOW ();
+			stack [cur_stack].type = &mono_defaults.double_class->byval_arg;
+			stack [cur_stack].stype = TYPE_R8;
 			++cur_stack;
 			ip += 9;
 			break;
@@ -1045,6 +1349,7 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_DUP:
 			CHECK_STACK_UNDERFLOW (1);
 			CHECK_STACK_OVERFLOW ();
+			stack [cur_stack] = stack [cur_stack - 1];
 			++cur_stack;
 			++ip;
 			break;
@@ -1078,6 +1383,7 @@ mono_method_verify (MonoMethod *method, int level)
 			cur_stack -= csig->param_count + csig->hasthis;
 			if (csig->ret->type != MONO_TYPE_VOID) {
 				CHECK_STACK_OVERFLOW ();
+				type_to_eval_stack_type (csig->ret, stack + cur_stack, FALSE);
 				++cur_stack;
 			}
 			ip += 5;
@@ -1093,6 +1399,8 @@ mono_method_verify (MonoMethod *method, int level)
 			if (signature->ret->type != MONO_TYPE_VOID) {
 				CHECK_STACK_UNDERFLOW (1);
 				--cur_stack;
+				if (!can_store_type (stack + cur_stack, signature->ret))
+					ADD_INVALID (list, g_strdup_printf ("Incompatible type in ret at 0x%04x", ip_offset));
 			}
 			if (cur_stack)
 				ADD_INVALID (list, g_strdup_printf ("Stack not empty (%d) after ret at 0x%04x", cur_stack, ip_offset));
@@ -1119,6 +1427,8 @@ mono_method_verify (MonoMethod *method, int level)
 				ADD_INVALID (list, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ip_offset));
 			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
+			if (!is_valid_bool_arg (stack + cur_stack))
+				ADD_INVALID (list, g_strdup_printf ("Argument type %s not valid for brtrue/brfalse at 0x%04x", arg_name [stack [cur_stack].stype], ip_offset));
 			ip += 2;
 			need_merge = 1;
 			break;
@@ -1139,6 +1449,8 @@ mono_method_verify (MonoMethod *method, int level)
 				ADD_INVALID (list, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ip_offset));
 			CHECK_STACK_UNDERFLOW (2);
 			cur_stack -= 2;
+			if (type_from_op (*ip, stack + cur_stack) == TYPE_INV)
+				ADD_INVALID (list, g_strdup_printf ("Invalid arguments to opcode 0x%02x at 0x%04x", *ip, ip_offset));
 			ip += 2;
 			need_merge = 1;
 			break;
@@ -1160,6 +1472,8 @@ mono_method_verify (MonoMethod *method, int level)
 				ADD_INVALID (list, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ip_offset));
 			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
+			if (!is_valid_bool_arg (stack + cur_stack))
+				ADD_INVALID (list, g_strdup_printf ("Argument type %s not valid for brtrue/brfalse at 0x%04x", arg_name [stack [cur_stack].stype], ip_offset));
 			ip += 5;
 			need_merge = 1;
 			break;
@@ -1180,6 +1494,8 @@ mono_method_verify (MonoMethod *method, int level)
 				ADD_INVALID (list, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ip_offset));
 			CHECK_STACK_UNDERFLOW (2);
 			cur_stack -= 2;
+			if (type_from_op (*ip, stack + cur_stack) == TYPE_INV)
+				ADD_INVALID (list, g_strdup_printf ("Invalid arguments to opcode 0x%02x at 0x%04x", *ip, ip_offset));
 			ip += 5;
 			need_merge = 1;
 			break;
@@ -1192,6 +1508,8 @@ mono_method_verify (MonoMethod *method, int level)
 					ADD_INVALID (list, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
 			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
+			if (stack [cur_stack].stype != TYPE_I4)
+				ADD_INVALID (list, g_strdup_printf ("Invalid argument to switch at 0x%04x", ip_offset));
 			ip += 5 + sizeof (guint32) * n;
 			break;
 		case CEE_LDIND_I1:
@@ -1206,6 +1524,9 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_LDIND_R8:
 		case CEE_LDIND_REF:
 			CHECK_STACK_UNDERFLOW (1);
+			if (stack [cur_stack - 1].stype != TYPE_PTR && stack [cur_stack - 1].stype != TYPE_MP)
+				ADD_INVALID (list, g_strdup_printf ("Invalid argument to ldind at 0x%04x", ip_offset));
+			stack [cur_stack - 1].stype = ldind_type [*ip - CEE_LDIND_I1];
 			++ip;
 			break;
 		case CEE_STIND_REF:
@@ -1217,6 +1538,10 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_STIND_R8:
 			CHECK_STACK_UNDERFLOW (2);
 			cur_stack -= 2;
+			if (stack [cur_stack].stype != TYPE_PTR && stack [cur_stack].stype != TYPE_MP)
+				ADD_INVALID (list, g_strdup_printf ("Invalid pointer argument to stind at 0x%04x", ip_offset));
+			if (!stind_type (*ip, stack [cur_stack + 1].stype))
+				ADD_INVALID (list, g_strdup_printf ("Incompatible value argument to stind at 0x%04x", ip_offset));
 			++ip;
 			break;
 		case CEE_ADD:
@@ -1234,6 +1559,8 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_SHR_UN:
 			CHECK_STACK_UNDERFLOW (2);
 			--cur_stack;
+			if (type_from_op (*ip, stack + cur_stack - 1) == TYPE_INV)
+				ADD_INVALID (list, g_strdup_printf ("Invalid arguments to opcode 0x%02x at 0x%04x", *ip, ip_offset));
 			++ip;
 			break;
 		case CEE_NEG:
@@ -1247,6 +1574,8 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_CONV_U4:
 		case CEE_CONV_U8:
 			CHECK_STACK_UNDERFLOW (1);
+			if (type_from_op (*ip, stack + cur_stack - 1) == TYPE_INV)
+				ADD_INVALID (list, g_strdup_printf ("Invalid arguments to opcode 0x%02x at 0x%04x", *ip, ip_offset));
 			++ip;
 			break;
 		case CEE_CPOBJ:
@@ -1258,11 +1587,22 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_LDOBJ:
 			token = read32 (ip + 1);
 			CHECK_STACK_UNDERFLOW (1);
+			if (stack [cur_stack - 1].stype != TYPE_MP)
+				ADD_INVALID (list, g_strdup_printf ("Invalid argument to ldobj at 0x%04x", ip_offset));
+			klass = mono_class_get (image, token);
+			if (!klass)
+				ADD_INVALID (list, g_strdup_printf ("Cannot load class from token 0x%08x at 0x%04x", token, ip_offset));
+			if (!klass->valuetype)
+				ADD_INVALID (list, g_strdup_printf ("Class is not a valuetype at 0x%04x", ip_offset));
+			stack [cur_stack - 1].stype = TYPE_VT;
+			stack [cur_stack - 1].type = &klass->byval_arg;
 			ip += 5;
 			break;
 		case CEE_LDSTR:
 			token = read32 (ip + 1);
 			CHECK_STACK_OVERFLOW ();
+			stack [cur_stack].type = &mono_defaults.string_class->byval_arg;
+			stack [cur_stack].stype = TYPE_OBJ;
 			++cur_stack;
 			ip += 5;
 			break;
@@ -1278,6 +1618,8 @@ mono_method_verify (MonoMethod *method, int level)
 			CHECK_STACK_UNDERFLOW (csig->param_count);
 			cur_stack -= csig->param_count;
 			CHECK_STACK_OVERFLOW ();
+			stack [cur_stack].type = &cmethod->klass->byval_arg;
+			stack [cur_stack].stype = cmethod->klass->valuetype? TYPE_VT: TYPE_OBJ;
 			++cur_stack;
 			ip += 5;
 			break;
@@ -1298,6 +1640,10 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_UNBOX:
 			token = read32 (ip + 1);
 			CHECK_STACK_UNDERFLOW (1);
+			if (stack [cur_stack - 1].stype != TYPE_OBJ)
+				ADD_INVALID (list, g_strdup_printf ("Invalid argument to unbox at 0x%04x", ip_offset));
+			stack [cur_stack - 1].stype = TYPE_MP;
+			stack [cur_stack - 1].type = NULL;
 			ip += 5;
 			break;
 		case CEE_THROW:
@@ -1308,29 +1654,55 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 		case CEE_LDFLD:
 			CHECK_STACK_UNDERFLOW (1);
+			if (stack [cur_stack - 1].stype != TYPE_OBJ && stack [cur_stack - 1].stype != TYPE_MP)
+				ADD_INVALID (list, g_strdup_printf ("Invalid argument %s to ldfld at 0x%04x", arg_name [stack [cur_stack].stype], ip_offset));
 			token = read32 (ip + 1);
+			field = mono_field_from_token (image, token, &klass);
+			if (!field)
+				ADD_INVALID (list, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
+			type_to_eval_stack_type (field->type, stack + cur_stack - 1, FALSE);
 			ip += 5;
 			break;
 		case CEE_LDFLDA:
 			CHECK_STACK_UNDERFLOW (1);
+			if (stack [cur_stack - 1].stype != TYPE_OBJ && stack [cur_stack - 1].stype != TYPE_MP)
+				ADD_INVALID (list, g_strdup_printf ("Invalid argument to ldflda at 0x%04x", ip_offset));
 			token = read32 (ip + 1);
+			field = mono_field_from_token (image, token, &klass);
+			if (!field)
+				ADD_INVALID (list, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
+			type_to_eval_stack_type (field->type, stack + cur_stack - 1, TRUE);
 			ip += 5;
 			break;
 		case CEE_STFLD:
 			CHECK_STACK_UNDERFLOW (2);
 			cur_stack -= 2;
+			if (stack [cur_stack].stype != TYPE_OBJ && stack [cur_stack].stype != TYPE_MP)
+				ADD_INVALID (list, g_strdup_printf ("Invalid argument to stfld at 0x%04x", ip_offset));
 			token = read32 (ip + 1);
+			field = mono_field_from_token (image, token, &klass);
+			if (!field)
+				ADD_INVALID (list, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
+			/* can_store */
 			ip += 5;
 			break;
 		case CEE_LDSFLD:
 			CHECK_STACK_OVERFLOW ();
 			token = read32 (ip + 1);
+			field = mono_field_from_token (image, token, &klass);
+			if (!field)
+				ADD_INVALID (list, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
+			type_to_eval_stack_type (field->type, stack + cur_stack, FALSE);
 			++cur_stack;
 			ip += 5;
 			break;
 		case CEE_LDSFLDA:
 			CHECK_STACK_OVERFLOW ();
 			token = read32 (ip + 1);
+			field = mono_field_from_token (image, token, &klass);
+			if (!field)
+				ADD_INVALID (list, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
+			type_to_eval_stack_type (field->type, stack + cur_stack, TRUE);
 			++cur_stack;
 			ip += 5;
 			break;
@@ -1338,6 +1710,10 @@ mono_method_verify (MonoMethod *method, int level)
 			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
 			token = read32 (ip + 1);
+			field = mono_field_from_token (image, token, &klass);
+			if (!field)
+				ADD_INVALID (list, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
+			/* can store */
 			ip += 5;
 			break;
 		case CEE_STOBJ:
@@ -1357,25 +1733,40 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_CONV_OVF_I_UN:
 		case CEE_CONV_OVF_U_UN:
 			CHECK_STACK_UNDERFLOW (1);
+			if (type_from_op (*ip, stack + cur_stack - 1) == TYPE_INV)
+				ADD_INVALID (list, g_strdup_printf ("Invalid arguments to opcode 0x%02x at 0x%04x", *ip, ip_offset));
 			++ip;
 			break;
 		case CEE_BOX:
 			CHECK_STACK_UNDERFLOW (1);
 			token = read32 (ip + 1);
+			if (stack [cur_stack - 1].stype == TYPE_OBJ)
+				ADD_INVALID (list, g_strdup_printf ("Invalid argument to box at 0x%04x", ip_offset));
+			stack [cur_stack - 1].stype = TYPE_OBJ;
 			ip += 5;
 			break;
 		case CEE_NEWARR:
 			CHECK_STACK_UNDERFLOW (1);
 			token = read32 (ip + 1);
+			stack [cur_stack - 1].stype = TYPE_OBJ;
 			ip += 5;
 			break;
 		case CEE_LDLEN:
 			CHECK_STACK_UNDERFLOW (1);
+			if (stack [cur_stack - 1].stype != TYPE_OBJ)
+				ADD_INVALID (list, g_strdup_printf ("Invalid argument to ldlen at 0x%04x", ip_offset));
+			stack [cur_stack - 1].type = &mono_defaults.int_class->byval_arg; /* FIXME: use a native int type */
+			stack [cur_stack - 1].stype = TYPE_PTR;
 			++ip;
 			break;
 		case CEE_LDELEMA:
 			CHECK_STACK_UNDERFLOW (2);
 			--cur_stack;
+			if (stack [cur_stack - 1].stype != TYPE_OBJ)
+				ADD_INVALID (list, g_strdup_printf ("Invalid array argument to ldelema at 0x%04x", ip_offset));
+			if (stack [cur_stack].stype != TYPE_I4 && stack [cur_stack].stype != TYPE_PTR)
+				ADD_INVALID (list, g_strdup_printf ("Array index needs to be Int32 or IntPtr at 0x%04x", ip_offset));
+			stack [cur_stack - 1].stype = TYPE_MP;
 			token = read32 (ip + 1);
 			ip += 5;
 			break;
@@ -1392,6 +1783,11 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_LDELEM_REF:
 			CHECK_STACK_UNDERFLOW (2);
 			--cur_stack;
+			if (stack [cur_stack - 1].stype != TYPE_OBJ)
+				ADD_INVALID (list, g_strdup_printf ("Invalid array argument to ldelem at 0x%04x", ip_offset));
+			if (stack [cur_stack].stype != TYPE_I4 && stack [cur_stack].stype != TYPE_PTR)
+				ADD_INVALID (list, g_strdup_printf ("Array index needs to be Int32 or IntPtr at 0x%04x", ip_offset));
+			stack [cur_stack - 1].stype = ldelem_type [*ip - CEE_LDELEM_I1];
 			++ip;
 			break;
 		case CEE_STELEM_I:
@@ -1433,6 +1829,8 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_CONV_OVF_I8:
 		case CEE_CONV_OVF_U8:
 			CHECK_STACK_UNDERFLOW (1);
+			if (type_from_op (*ip, stack + cur_stack - 1) == TYPE_INV)
+				ADD_INVALID (list, g_strdup_printf ("Invalid arguments to opcode 0x%02x at 0x%04x", *ip, ip_offset));
 			++ip;
 			break;
 		case CEE_UNUSED50:
@@ -1484,6 +1882,8 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_CONV_OVF_I:
 		case CEE_CONV_OVF_U:
 			CHECK_STACK_UNDERFLOW (1);
+			if (type_from_op (*ip, stack + cur_stack - 1) == TYPE_INV)
+				ADD_INVALID (list, g_strdup_printf ("Invalid arguments to opcode 0x%02x at 0x%04x", *ip, ip_offset));
 			++ip;
 			break;
 		case CEE_ADD_OVF:
@@ -1581,13 +1981,16 @@ mono_method_verify (MonoMethod *method, int level)
 				CHECK_STACK_OVERFLOW ();
 				token = read32 (ip + 1);
 				ip += 5;
+				stack [cur_stack].stype = TYPE_PTR;
 				cur_stack++;
 				break;
 			case CEE_LDVIRTFTN:
 				CHECK_STACK_UNDERFLOW (1);
 				token = read32 (ip + 1);
 				ip += 5;
-				cur_stack++;
+				if (stack [cur_stack - 1].stype != TYPE_OBJ)
+					ADD_INVALID (list, g_strdup_printf ("Invalid argument to ldvirtftn at 0x%04x", ip_offset));
+				stack [cur_stack - 1].stype = TYPE_PTR;
 				break;
 			case CEE_UNUSED56:
 				++ip;
@@ -1629,6 +2032,9 @@ mono_method_verify (MonoMethod *method, int level)
 			case CEE_LOCALLOC:
 				if (cur_stack != 1)
 					ADD_INVALID (list, g_strdup_printf ("Stack must have only size item in localloc at 0x%04x", ip_offset));
+				if (stack [cur_stack -1].stype != TYPE_I4 && stack [cur_stack -1].stype != TYPE_PTR)
+					ADD_INVALID (list, g_strdup_printf ("Invalid argument to localloc at 0x%04x", ip_offset));
+				stack [cur_stack -1].stype = TYPE_MP;
 				++ip;
 				break;
 			case CEE_UNUSED57:
@@ -1683,6 +2089,8 @@ mono_method_verify (MonoMethod *method, int level)
 				CHECK_STACK_OVERFLOW ();
 				token = read32 (ip + 1);
 				ip += 5;
+				stack [cur_stack].type = &mono_defaults.uint_class->byval_arg;
+				stack [cur_stack].stype = TYPE_I4;
 				cur_stack++;
 				break;
 			case CEE_REFANYTYPE:
@@ -1706,6 +2114,9 @@ invalid_cil:
 
 	g_free (local_state);
 	g_free (code);
+	g_free (stack);
+	if (signature->hasthis)
+		g_free (params);
 	return list;
 }
 
