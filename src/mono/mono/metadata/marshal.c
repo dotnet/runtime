@@ -3641,7 +3641,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				continue;
  
 			klass = mono_class_from_mono_type (t);
-			
+
 			if (klass->element_class == mono_defaults.string_class) {
 				g_assert (tmp_locals [i]);
 
@@ -3660,8 +3660,62 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
 			}
 
-			break;
+			if (t->attrs & PARAM_ATTRIBUTE_OUT) {
+				/* FIXME: Optimize blittable case */
+				MonoClass *eklass;
+				guint32 label1, label2, label3;
+				int index_var, src_ptr;
 
+				eklass = klass->element_class;
+				src_ptr = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+
+				/* Check null */
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_byte (mb, CEE_BRFALSE);
+				label1 = mb->pos;
+				mono_mb_emit_i4 (mb, 0);
+
+				mono_mb_emit_ldloc (mb, tmp_locals [i]);
+				mono_mb_emit_stloc (mb, src_ptr);
+
+				/* Emit marshalling loop */
+				index_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);				
+				mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+				mono_mb_emit_stloc (mb, index_var);
+				label2 = mb->pos;
+				mono_mb_emit_ldloc (mb, index_var);
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_byte (mb, CEE_LDLEN);
+				mono_mb_emit_byte (mb, CEE_BGE);
+				label3 = mb->pos;
+				mono_mb_emit_i4 (mb, 0);
+
+				/* Emit marshalling code */
+
+				/* set the src_ptr */
+				mono_mb_emit_ldloc (mb, src_ptr);
+				mono_mb_emit_byte (mb, CEE_STLOC_0);
+
+				/* set dst_ptr */
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_ldloc (mb, index_var);
+				mono_mb_emit_byte (mb, CEE_LDELEMA);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, eklass));
+				mono_mb_emit_byte (mb, CEE_STLOC_1);
+
+				/* emit valuetype conversion code */
+				emit_struct_conv (mb, eklass, TRUE);
+
+				mono_mb_emit_add_to_local (mb, index_var, 1);
+				mono_mb_emit_add_to_local (mb, src_ptr, mono_class_native_size (eklass, NULL));
+
+				mono_mb_emit_byte (mb, CEE_BR);
+				mono_mb_emit_i4 (mb, label2 - (mb->pos + 4));
+
+				mono_mb_patch_addr (mb, label1, mb->pos - (label1 + 4));
+				mono_mb_patch_addr (mb, label3, mb->pos - (label3 + 4));
+			}
+			break;
 		case MONO_TYPE_BOOLEAN:
 			if (!t->byref)
 				continue;
