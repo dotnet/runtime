@@ -161,8 +161,6 @@ int           mono_image_ensure_section_idx (MonoImage *image,
 guint32       mono_image_get_entry_point    (MonoImage *image);
 const char   *mono_image_get_resource       (MonoImage *image, guint32 offset, guint32 *size);
 
-void          mono_image_load_references    (MonoImage *image, MonoImageOpenStatus *status);
-
 /* This actually returns a MonoPEResourceDataEntry *, but declaring it
  * causes an include file loop.
  */
