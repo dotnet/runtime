@@ -102,16 +102,13 @@
   </tr>
 </table>
 
-<b>Upcoming presentations</b>
+@item Feb, 23rd, 2003: Mono 0.20 released.
 
-	Paolo Molaro, core Mono architect and developer will be
-	talking about Mono on Florence on Saturday 22nd, February at
-	the the Italian <a
-	href="http://http://www.it.gnome.org/GUADIC">Guadic</a> Conference.
-
-	Gonzalo Paniagua, core Mono developer (responsible for ASP.NET
-	in Mono) is doing a talk on Thursday in Badajoz, Spain.
-	Details are <a href="http://www.gulex.org/actividades.htm">here</a>
+	Mono 0.20 has been released.  Check out the <a
+	href="archive/mono-0.20">release notes</a> for an overview of
+	the changes.  You can get it <a href="download.html">here</a>.
+	There are no major features in this release, mostly bug fixes
+	and performance improvements.
 
 @item Feb 18th, 2003: Volunteers to document Gtk#
 
