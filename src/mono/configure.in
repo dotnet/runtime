@@ -369,24 +369,24 @@ if test x$platform_win32 = xno; then
 	dnl ********************************
 	dnl *** Checks for timezone stuff **
 	dnl ********************************
-	AC_CACHE_CHECK(for timezone variable, ac_cv_var_timezone,
+	AC_CACHE_CHECK(for tm_gmtoff in struct tm, ac_cv_struct_tm_gmtoff,
 		AC_TRY_COMPILE([
 			#include <time.h>
-		], [
-			timezone = 1;
-		], ac_cv_var_timezone=yes, ac_cv_var_timezone=no))
-	if test $ac_cv_var_timezone = yes; then
-		AC_DEFINE(HAVE_TIMEZONE)
+			], [
+			struct tm tm;
+			tm.tm_gmtoff = 1;
+			], ac_cv_struct_tm_gmtoff=yes, ac_cv_struct_tm_gmtoff=no))
+	if test $ac_cv_struct_tm_gmtoff = yes; then
+		AC_DEFINE(HAVE_TM_GMTOFF)
 	else
-		AC_CACHE_CHECK(for tm_gmtoff in struct tm, ac_cv_struct_tm_gmtoff,
+		AC_CACHE_CHECK(for timezone variable, ac_cv_var_timezone,
 			AC_TRY_COMPILE([
 				#include <time.h>
-				], [
-				struct tm tm;
-				tm.tm_gmtoff = 1;
-				], ac_cv_struct_tm_gmtoff=yes, ac_cv_struct_tm_gmtoff=no))
-		if test $ac_cv_struct_tm_gmtoff = yes; then
-			AC_DEFINE(HAVE_TM_GMTOFF)
+			], [
+				timezone = 1;
+			], ac_cv_var_timezone=yes, ac_cv_var_timezone=no))
+		if test $ac_cv_var_timezone = yes; then
+			AC_DEFINE(HAVE_TIMEZONE)
 		else
 			AC_ERROR(unable to find a way to determine timezone)
 		fi
