@@ -155,6 +155,7 @@ TEST_CS_SRC=			\
 	thread5.cs		\
 	thread6.cs		\
 	thread-static.cs	\
+	context-static.cs	\
 	float-pop.cs		\
 	interfacecast.cs	\
 	array3.cs		\
