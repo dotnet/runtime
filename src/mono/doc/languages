@@ -8,6 +8,14 @@
 		* <a href="#MonoLogo">MonoLogo</a>
 		* <a href="#Oberon">Oberon</a>
 		* <a href="#Forth">Forth</a>
+		* <a href="#mbas">Mono Basic</a> (Mono's VB.NET compiler)
+	</ul>
+
+	Languages which are known to run, but we have not done a
+	complete ran of all their regression tests to validate it:
+
+	<ul>
+		* Kylix.NET.
 	</ul>
 
 	Languages we would like to have supported, with links to resources:
@@ -28,8 +36,11 @@
 ** Java
 
 	There is a very interesting project to make a JavaVM for .NET
-	<a href="http://radio.weblogs.com/0109845/">here</a>
+	<a href="http://radio.weblogs.com/0109845/">here</a>.
+	Currently this will not work with Mono, as they use some
+	pieces of Managed C++ to implement the JNI interface.
 
+	A workaround has been discussed, contact the author if you want to contribute. 
 
 <a name="MonoLogo">
 ** MonoLogo
@@ -39,6 +50,13 @@
 	The <A href="http://monologo.sf.net">Mono Logo</a> compiler is
 	hosted in the <a href="ccvs.html">Mono CVS</a> repository
 	and also available on the <a href="anoncvs.html">AnonCVS</a> mirrors.
+
+<a name="mbas">
+** Mono Basic (Mono's VB.NET compiler)
+
+	Work has resumed on the Mono Visual Basic compiler (currently
+	called mbas).  It is part of the standard Mono distribution,
+	but its still an early compiler.
 
 <a name="Oberon">
 ** Oberon
