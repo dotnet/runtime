@@ -380,6 +380,7 @@ typedef struct {
 typedef struct {
 	MonoReflectionModule module;
 	MonoDynamicImage *dynamic_image;
+	gint32     num_types;
 	MonoArray *types;
 	MonoArray *cattrs;
 	MonoArray *guid;
@@ -397,9 +398,11 @@ typedef struct {
 	MonoReflectionType *parent;
 	MonoReflectionType *nesting_type;
 	MonoArray *interfaces;
+	gint32     num_methods;
 	MonoArray *methods;
 	MonoArray *ctors;
 	MonoArray *properties;
+	gint32     num_fields;
 	MonoArray *fields;
 	MonoArray *events;
 	MonoArray *cattrs;

@@ -2419,9 +2419,9 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 	/* handle fields */
 	if (tb->fields) {
 		table = &assembly->tables [MONO_TABLE_FIELD];
-		table->rows += mono_array_length (tb->fields);
+		table->rows += tb->num_fields;
 		alloc_table (table, table->rows);
-		for (i = 0; i < mono_array_length (tb->fields); ++i)
+		for (i = 0; i < tb->num_fields; ++i)
 			mono_image_get_field_info (
 				mono_array_get (tb->fields, MonoReflectionFieldBuilder*, i), assembly);
 	}
@@ -2439,9 +2439,9 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 	/* handle methods */
 	if (tb->methods) {
 		table = &assembly->tables [MONO_TABLE_METHOD];
-		table->rows += mono_array_length (tb->methods);
+		table->rows += tb->num_methods;
 		alloc_table (table, table->rows);
-		for (i = 0; i < mono_array_length (tb->methods); ++i)
+		for (i = 0; i < tb->num_methods; ++i)
 			mono_image_get_method_info (
 				mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i), assembly);
 	}
@@ -2548,7 +2548,7 @@ type_add_cattrs (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb) {
 	
 	mono_image_add_cattrs (assembly, tb->table_idx, CUSTOM_ATTR_TYPEDEF, tb->cattrs);
 	if (tb->fields) {
-		for (i = 0; i < mono_array_length (tb->fields); ++i) {
+		for (i = 0; i < tb->num_fields; ++i) {
 			MonoReflectionFieldBuilder* fb;
 			fb = mono_array_get (tb->fields, MonoReflectionFieldBuilder*, i);
 			mono_image_add_cattrs (assembly, fb->table_idx, CUSTOM_ATTR_FIELDDEF, fb->cattrs);
@@ -2578,7 +2578,7 @@ type_add_cattrs (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb) {
 	}
 
 	if (tb->methods) {
-		for (i = 0; i < mono_array_length (tb->methods); ++i) {
+		for (i = 0; i < tb->num_methods; ++i) {
 			MonoReflectionMethodBuilder* mb;
 			mb = mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i);
 			mono_image_add_cattrs (assembly, mb->table_idx, CUSTOM_ATTR_METHODDEF, mb->cattrs);
@@ -2602,7 +2602,7 @@ module_add_cattrs (MonoDynamicImage *assembly, MonoReflectionModuleBuilder *mb) 
 	if (!mb->types)
 		return;
 	
-	for (i = 0; i < mono_array_length (mb->types); ++i)
+	for (i = 0; i < mb->num_types; ++i)
 		type_add_cattrs (assembly, mono_array_get (mb->types, MonoReflectionTypeBuilder*, i));
 }
 
@@ -3206,7 +3206,7 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 				mono_image_fill_file_table (domain, file_module, assembly);
 				module_index ++;
 				if (file_module->types) {
-					for (j = 0; j < mono_array_length (file_module->types); ++j) {
+					for (j = 0; j < file_module->num_types; ++j) {
 						MonoReflectionTypeBuilder *tb = mono_array_get (file_module->types, MonoReflectionTypeBuilder*, j);
 						mono_image_fill_export_table (domain, tb, module_index, 0,
 													  assembly);
@@ -3262,7 +3262,7 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 		GPtrArray *types = g_ptr_array_new ();
 
 		if (moduleb->types)
-			for (i = 0; i < mono_array_length (moduleb->types); ++i) {
+			for (i = 0; i < moduleb->num_types; ++i) {
 				MonoReflectionTypeBuilder *type = mono_array_get (moduleb->types, MonoReflectionTypeBuilder*, i);
 				collect_types (types, type);
 			}
@@ -6491,13 +6491,13 @@ ensure_runtime_vtable (MonoClass *klass)
 		ensure_runtime_vtable (klass->parent);
 
 	num = tb->ctors? mono_array_length (tb->ctors): 0;
-	num += tb->methods? mono_array_length (tb->methods): 0;
+	num += tb->num_methods;
 	klass->method.count = num;
 	klass->methods = g_new (MonoMethod*, num);
 	num = tb->ctors? mono_array_length (tb->ctors): 0;
 	for (i = 0; i < num; ++i)
 		klass->methods [i] = ctorbuilder_to_mono_method (klass, mono_array_get (tb->ctors, MonoReflectionCtorBuilder*, i));
-	num = tb->methods? mono_array_length (tb->methods): 0;
+	num = tb->num_methods;
 	j = i;
 	for (i = 0; i < num; ++i)
 		klass->methods [j++] = methodbuilder_to_mono_method (klass, mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i));
@@ -6519,7 +6519,7 @@ ensure_runtime_vtable (MonoClass *klass)
 	/* Overrides */
 	onum = 0;
 	if (tb->methods) {
-		for (i = 0; i < mono_array_length (tb->methods); ++i) {
+		for (i = 0; i < tb->num_methods; ++i) {
 			MonoReflectionMethodBuilder *mb = 
 				mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i);
 			if (mb->override_method)
@@ -6531,7 +6531,7 @@ ensure_runtime_vtable (MonoClass *klass)
 
 	if (tb->methods) {
 		onum = 0;
-		for (i = 0; i < mono_array_length (tb->methods); ++i) {
+		for (i = 0; i < tb->num_methods; ++i) {
 			MonoReflectionMethodBuilder *mb = 
 				mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i);
 			if (mb->override_method) {
@@ -6561,7 +6561,7 @@ typebuilder_setup_fields (MonoClass *klass)
 	int i;
 	guint32 len, idx;
 
-	klass->field.count = tb->fields? mono_array_length (tb->fields): 0;
+	klass->field.count = tb->num_fields;
 	klass->field.first = 0;
 	klass->field.last = klass->field.count;
 
