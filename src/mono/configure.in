@@ -1480,6 +1480,14 @@ if test "x$with_tls" = "x__thread"; then
    # Pass the information to libgc
 	CPPFLAGS="$CPPFLAGS -DUSE_COMPILER_TLS"
 	export CPPFLAGS
+	AC_MSG_CHECKING(if the tls_model attribute is supported)
+	AC_TRY_COMPILE([static __thread int foo __attribute__((tls_model("initial-exec")));], [
+		], [
+			AC_MSG_RESULT(yes)
+			AC_DEFINE(HAVE_TLS_MODEL_ATTR, 1, [tld_model available])
+		], [
+			AC_MSG_RESULT(no)
+	])
 fi
 
 if test ${TARGET} = ARM; then

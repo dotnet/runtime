@@ -1,4 +1,9 @@
 
+Thu Feb 24 15:16:18 CET 2005 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: add a check for compiler support of the
+	tls_model sttribute.
+
 Mon Feb 21 17:14:34 CET 2005 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in: don't imply that enabling ICU support is a good
