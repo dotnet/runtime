@@ -20,6 +20,8 @@ struct MonoSymbolFilePriv
 	int error;
 	char *file_name;
 	char *source_file;
+	guint32 string_table_size;
+	guint32 string_offset_size;
 	MonoImage *image;
 	GHashTable *method_table;
 	GHashTable *method_hash;
@@ -32,8 +34,12 @@ typedef struct
 	MonoMethod *method;
 	MonoDebugMethodInfo *minfo;
 	MonoSymbolFileMethodEntry *entry;
+	guint32 method_name_offset;
+	guint32 index;
+	gchar *name;
 } MonoSymbolFileMethodEntryPriv;
 
+static int write_string_table (MonoSymbolFile *symfile);
 static int create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings);
 static void close_symfile (MonoSymbolFile *symfile);
 
@@ -106,10 +112,19 @@ load_symfile (MonoSymbolFile *symfile)
 		mep->method = method;
 		mep->minfo = minfo;
 		mep->entry = me;
+		mep->index = i;
+
+		mep->method_name_offset = priv->string_table_size;
+		mep->name = g_strdup_printf ("%s%s.%s", method->klass->name_space,
+					     method->klass->name, method->name);
+		priv->string_table_size += strlen (mep->name) + 1;
 
 		g_hash_table_insert (priv->method_table, method, mep);
 		g_hash_table_insert (priv->method_hash, method, minfo);
 	}
+
+	if (!write_string_table (symfile))
+		return FALSE;
 
 	return TRUE;
 }
@@ -122,8 +137,6 @@ mono_debug_open_mono_symbol_file (MonoImage *image, const char *filename, gboole
 	off_t file_size;
 	void *ptr;
 	int fd;
-
-	g_message (G_STRLOC ": %s - %s", image->name, filename);
 
 	fd = open (filename, O_RDONLY);
 	if (fd == -1) {
@@ -434,6 +447,7 @@ mono_debug_update_mono_symbol_file (MonoSymbolFile *symfile)
 static void
 free_method_entry (MonoSymbolFileMethodEntryPriv *mep)
 {
+	g_free (mep->name);
 	g_free (mep->entry);
 	g_free (mep);
 }
@@ -450,6 +464,11 @@ create_method (MonoSymbolFile *symfile, guint32 token, MonoMethod *method)
 	mep->entry = g_new0 (MonoSymbolFileMethodEntry, 1);
 	mep->entry->token = token;
 	mep->entry->source_file_offset = symfile->_priv->offset_table->source_table_offset;
+
+	mep->method_name_offset = symfile->_priv->string_table_size;
+	mep->name = g_strdup_printf ("%s%s.%s", method->klass->name_space,
+				     method->klass->name, method->name);
+	symfile->_priv->string_table_size += strlen (mep->name) + 1;
 
 	minfo = g_new0 (MonoDebugMethodInfo, 1);
 	minfo->method = method;
@@ -676,6 +695,9 @@ create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings)
 	if (priv->error)
 		return FALSE;
 
+	if (!write_string_table (symfile))
+		return FALSE;
+
 	return TRUE;
 }
 
@@ -693,8 +715,6 @@ mono_debug_create_mono_symbol_file (MonoImage *image)
 	symfile->_priv = g_new0 (MonoSymbolFilePriv, 1);
 	symfile->_priv->image = image;
 
-	g_message (G_STRLOC ": %s", image->name);
-
 	if (!create_symfile (symfile, TRUE)) {
 		mono_debug_close_mono_symbol_file (symfile);
 		return NULL;
@@ -707,4 +727,36 @@ MonoDebugMethodInfo *
 mono_debug_find_method (MonoSymbolFile *symfile, MonoMethod *method)
 {
 	return g_hash_table_lookup (symfile->_priv->method_hash, method);
+}
+
+static void
+write_method_name (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoSymbolFile *symfile = (MonoSymbolFile *) user_data;
+	MonoSymbolFileMethodEntryPriv *mep = (MonoSymbolFileMethodEntryPriv *) value;
+	MonoSymbolFilePriv *priv = symfile->_priv;
+	guint8 *offset_ptr, *string_ptr;
+	guint32 offset;
+
+	offset = mep->method_name_offset + priv->string_offset_size;
+
+	offset_ptr = symfile->string_table + mep->index * 4;
+	string_ptr = symfile->string_table + offset;
+
+	*((guint32 *) offset_ptr) = offset;
+	strcpy (string_ptr, mep->name);
+}
+
+static int
+write_string_table (MonoSymbolFile *symfile)
+{
+	MonoSymbolFilePriv *priv = symfile->_priv;
+
+	priv->string_offset_size = priv->offset_table->method_count * 4;
+
+	symfile->string_table_size = priv->string_table_size + priv->string_offset_size;
+	symfile->string_table = g_malloc0 (symfile->string_table_size);
+
+	g_hash_table_foreach (symfile->_priv->method_table, write_method_name, symfile);
+	return TRUE;
 }

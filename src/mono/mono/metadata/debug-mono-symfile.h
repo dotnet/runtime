@@ -116,7 +116,7 @@ struct MonoSymbolFile {
 	guint32 is_dynamic;
 	char *image_file;
 	/* Pointer to the mmap()ed contents of the file. */
-	char *raw_contents;
+	guint8 *raw_contents;
 	guint32 raw_contents_size;
 	/* Pointer to the malloced address table. */
 	char *address_table;
@@ -124,11 +124,14 @@ struct MonoSymbolFile {
 	/* Pointer to the malloced range table. */
 	MonoDebugRangeInfo *range_table;
 	guint32 range_table_size;
+	/* Pointer to the malloced string table. */
+	guint8 *string_table;
+	guint32 string_table_size;
 	/* Private. */
 	MonoSymbolFilePriv *_priv;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		19
+#define MONO_SYMBOL_FILE_VERSION		20
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
 MonoSymbolFile *
