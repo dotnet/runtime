@@ -281,14 +281,49 @@ dis_directive_file (MonoImage *m)
 		hash = mono_metadata_blob_heap (m, cols [MONO_FILE_HASH_VALUE]);
 		len = mono_metadata_decode_blob_size (hash, &hash);
 
-		fprintf (output, ".file %s%s .hash = (", name,
-				cols [MONO_FILE_FLAGS] & FILE_CONTAINS_NO_METADATA ? " nometadata" : "");
+		fprintf (output, ".file %s%s .hash = (",
+				cols [MONO_FILE_FLAGS] & FILE_CONTAINS_NO_METADATA ? "nometadata " : "", name);
 
 		for (j = 0; j < len; ++j)
 			fprintf (output, " %02X", hash [j] & 0xff);
 
 		token = mono_metadata_make_token (MONO_TABLE_FILE, i + 1);
 		fprintf (output, " )%s\n", (token == entry_point) ? " .entrypoint" : "");
+	}
+	
+}
+
+static void
+dis_directive_mresource (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_MANIFESTRESOURCE];
+	int i;
+
+	for (i = 0; i < t->rows; i++){
+		guint32 cols [MONO_MANIFEST_SIZE];
+		const char *name;
+		guint32 impl, idx, name_token;
+
+		mono_metadata_decode_row (t, i, cols, MONO_MANIFEST_SIZE);
+
+		name = mono_metadata_string_heap (m, cols [MONO_MANIFEST_NAME]);
+
+		fprintf (output, ".mresource %s '%s'\n", (cols [MONO_MANIFEST_FLAGS] & MANIFEST_RESOURCE_VISIBILITY_MASK) == (MANIFEST_RESOURCE_PUBLIC) ? "public" : "private", name);
+		fprintf (output, "{\n");
+		impl = cols [MONO_MANIFEST_IMPLEMENTATION];
+		if (impl) {
+			idx = impl >> MONO_IMPLEMENTATION_BITS;
+			if ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_FILE) {
+				name_token = mono_metadata_decode_row_col (&m->tables [MONO_TABLE_FILE], idx - 1, MONO_FILE_NAME);
+
+				fprintf (output, "    .file '%s' at 0x0\n", mono_metadata_string_heap (m, name_token));
+			}
+			if ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_ASSEMBLYREF) {
+				name_token = mono_metadata_decode_row_col (&m->tables [MONO_TABLE_ASSEMBLYREF], idx - 1, MONO_ASSEMBLYREF_NAME);
+				fprintf (output, "    .assembly extern '%s'\n", mono_metadata_string_heap (m, name_token));
+			}
+		}				
+		fprintf (output, "}\n");
 	}
 	
 }
@@ -1331,6 +1366,7 @@ disassemble_file (const char *file)
 		dis_directive_assemblyref (img);
 		dis_directive_assembly (img);
 		dis_directive_file (img);
+		dis_directive_mresource (img);
 		dis_directive_module (img);
 		dis_directive_moduleref (img);
 		dis_types (img);
