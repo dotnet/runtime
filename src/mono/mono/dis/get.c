@@ -206,6 +206,13 @@ get_typespec (MonoImage *m, guint32 idx)
 		g_string_append (res, s);
 		g_string_append (res, "[]");
 		g_free (s);
+
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		ptr = get_type (m, ptr-1, &s);
+		g_string_append (res, s);
+		g_free (s);
+		break;
 	}
 
 	result = res->str;
