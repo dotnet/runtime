@@ -2370,7 +2370,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 		return;
 
 #if HAVE_BOEHM_GC
-	assembly = assemblyb->dynamic_assembly = GC_malloc (sizeof (MonoDynamicAssembly));
+	assembly = assemblyb->dynamic_assembly = GC_MALLOC (sizeof (MonoDynamicAssembly));
 #else
 	assembly = assemblyb->dynamic_assembly = g_new0 (MonoDynamicAssembly, 1);
 #endif
@@ -3081,7 +3081,7 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	CHECK_OBJECT (MonoReflectionParameter**, &(method->signature), NULL);
 	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "ParameterInfo");
 #if HAVE_BOEHM_GC
-	res = GC_malloc (sizeof (MonoReflectionParameter*) * method->signature->param_count);
+	res = GC_MALLOC (sizeof (MonoReflectionParameter*) * method->signature->param_count);
 #else
 	res = g_new0 (MonoReflectionParameter*, method->signature->param_count);
 #endif

@@ -165,8 +165,8 @@ mono_domain_create (void)
 	MonoDomain *domain;
 
 #if HAVE_BOEHM_GC
-	domain = GC_malloc (sizeof (MonoDomain));
-	GC_register_finalizer (domain, domain_finalizer, NULL, NULL, NULL);
+	domain = GC_MALLOC (sizeof (MonoDomain));
+	GC_REGISTER_FINALIZER (domain, domain_finalizer, NULL, NULL, NULL);
 #else
 	domain = g_new0 (MonoDomain, 1);
 #endif

@@ -25,6 +25,8 @@ guint32     ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 
 void        ves_icall_System_GCHandle_FreeHandle (guint32 handle);
 gpointer    ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle);
 
+extern void mono_gc_init (void);
+extern void mono_gc_cleanup (void);
 
 #endif /* __MONO_METADATA_GC_H__ */
 

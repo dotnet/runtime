@@ -144,14 +144,7 @@ static guint32 start_wrapper(void *data)
 #ifdef THREAD_DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Start wrapper");
 #endif
-
-	/* FIXME: GC problem here with recorded object
-	 * pointer!
-	 *
-	 * This is recorded so CurrentThread can return the
-	 * Thread object.
-	 */
-	TlsSetValue (current_object_key, start_info->obj);
+	
 	start_func = start_info->func;
 	mono_domain_set (start_info->domain);
 	this = start_info->this;
@@ -167,12 +160,13 @@ static guint32 start_wrapper(void *data)
 	start_info->obj->tid=tid;
 	
 	handle_store(start_info->obj);
-	g_free (start_info);
 
 	mono_profiler_thread_start (tid);
 
-	if (mono_thread_start_cb)
-		mono_thread_start_cb (&tid);
+	mono_new_thread_init (start_info->obj, &tid);
+
+	g_free (start_info);
+
 	start_func (this);
 
 	/* If the thread calls ExitThread at all, this remaining code
@@ -187,6 +181,21 @@ static guint32 start_wrapper(void *data)
 	thread_cleanup (tid);
 	
 	return(0);
+}
+
+void mono_new_thread_init (MonoThread *thread_object, gpointer stack_start)
+{
+	/* FIXME: GC problem here with recorded object
+	 * pointer!
+	 *
+	 * This is recorded so CurrentThread can return the
+	 * Thread object.
+	 */
+	TlsSetValue (current_object_key, thread_object);
+
+	if (mono_thread_start_cb) {
+		mono_thread_start_cb (stack_start);
+	}
 }
 
 MonoThread *mono_thread_create (MonoDomain *domain, gpointer func,

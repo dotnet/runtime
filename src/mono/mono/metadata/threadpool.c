@@ -14,10 +14,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/exception.h>
-#ifndef PLATFORM_WIN32
-#include "mono/io-layer/wapi.h"
-#include "mono/io-layer/uglify.h"
-#endif
+#include <mono/io-layer/io-layer.h>
 
 #include "threadpool.h"
 

@@ -149,7 +149,7 @@ mono_g_hash_table_new_full (GHashFunc       hash_func,
   MonoGHashTable *hash_table;
   
 #if HAVE_BOEHM_GC
-  hash_table = GC_malloc (sizeof (MonoGHashTable));
+  hash_table = GC_MALLOC (sizeof (MonoGHashTable));
 #else
   hash_table = g_new (MonoGHashTable, 1);
 #endif
@@ -160,7 +160,7 @@ mono_g_hash_table_new_full (GHashFunc       hash_func,
   hash_table->key_destroy_func   = key_destroy_func;
   hash_table->value_destroy_func = value_destroy_func;
 #if HAVE_BOEHM_GC
-  hash_table->nodes              = GC_malloc (sizeof (MonoGHashNode*) * hash_table->size);
+  hash_table->nodes              = GC_MALLOC (sizeof (MonoGHashNode*) * hash_table->size);
 #else
   hash_table->nodes              = g_new0 (MonoGHashNode*, hash_table->size);
 #endif
@@ -603,7 +603,7 @@ g_hash_table_resize (MonoGHashTable *hash_table)
   new_size = CLAMP (new_size, HASH_TABLE_MIN_SIZE, HASH_TABLE_MAX_SIZE);
  
 #if HAVE_BOEHM_GC
-  new_nodes              = GC_malloc (sizeof (MonoGHashNode*) * new_size);
+  new_nodes              = GC_MALLOC (sizeof (MonoGHashNode*) * new_size);
 #else
   new_nodes              = g_new0 (MonoGHashNode*, new_size);
 #endif
@@ -642,7 +642,7 @@ g_hash_node_new (gpointer key,
   else
     {
 #if HAVE_BOEHM_GC
-      hash_node = GC_malloc (sizeof (MonoGHashNode));
+      hash_node = GC_MALLOC (sizeof (MonoGHashNode));
 #else
       if (!node_mem_chunk)
 	node_mem_chunk = g_mem_chunk_new ("hash node mem chunk",

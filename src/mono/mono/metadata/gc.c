@@ -47,6 +47,7 @@ run_finalize (void *obj, void *data)
 	}
 	/* speedup later... and use a timeout */
 	/*g_print ("Finalize run on %p %s.%s\n", o, mono_object_class (o)->name_space, mono_object_class (o)->name);*/
+	mono_domain_set (mono_object_domain (o));
 	mono_runtime_invoke (o->vtable->klass->vtable [finalize_slot], o, NULL, &exc);
 
 	if (exc) {
@@ -69,7 +70,7 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 	guint offset = 0;
 
 	g_assert (GC_base (obj) == (char*)obj - offset);
-	GC_register_finalizer ((char*)obj - offset, callback, GUINT_TO_POINTER (offset), NULL, NULL);
+	GC_REGISTER_FINALIZER_NO_ORDER ((char*)obj - offset, callback, GUINT_TO_POINTER (offset), NULL, NULL);
 #endif
 }
 
@@ -263,19 +264,28 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 		guint8 *new_type_array;
 		if (!array_size)
 			array_size = 16;
-		new_array = GC_malloc (sizeof (gpointer) * (array_size * 2));
-		new_type_array = GC_malloc (sizeof (guint8) * (array_size * 2));
+		new_array = GC_MALLOC (sizeof (gpointer) * (array_size * 2));
+		new_type_array = GC_MALLOC (sizeof (guint8) * (array_size * 2));
 		if (gc_handles) {
 			int i;
 			memcpy (new_array, gc_handles, sizeof (gpointer) * array_size);
 			memcpy (new_type_array, gc_handle_types, sizeof (guint8) * array_size);
 			/* need to re-register links for weak refs. test if GC_realloc needs the same */
 			for (i = 0; i < array_size; ++i) {
+#if 0 /* This breaks the threaded finalizer, by causing segfaults deep
+       * inside libgc.  I assume it will also break without the
+       * threaded finalizer, just that the stress test (bug 31333)
+       * deadlocks too early without it.  Reverting to the previous
+       * version here stops the segfault.
+       */
 				if ((gc_handle_types[i] == HANDLE_WEAK) || (gc_handle_types[i] == HANDLE_WEAK_TRACK)) { /* all and only disguised pointers have it set */
+#else
+				if (((gulong)new_array [i]) & 0x1) {
+#endif
 					if (gc_handles [i] != (gpointer)-1)
 						GC_unregister_disappearing_link (&(gc_handles [i]));
 					if (new_array [i] != (gpointer)-1)
-						GC_general_register_disappearing_link (&(new_array [i]), REVEAL_POINTER (new_array [i]));
+						GC_GENERAL_REGISTER_DISAPPEARING_LINK (&(new_array [i]), REVEAL_POINTER (new_array [i]));
 				}
 			}
 		}
@@ -299,7 +309,7 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint
 		gc_handle_types [idx] = type;
 #if HAVE_BOEHM_GC
 		if (gc_handles [idx] != (gpointer)-1)
-			GC_general_register_disappearing_link (&(gc_handles [idx]), obj);
+			GC_GENERAL_REGISTER_DISAPPEARING_LINK (&(gc_handles [idx]), obj);
 #else
 		g_error ("No weakref support");
 #endif
@@ -351,4 +361,68 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 	return NULL;
 }
 
+static HANDLE finalizer_event;
+static volatile gboolean finished=FALSE;
 
+static void finalize_notify (void)
+{
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": prodding finalizer");
+#endif
+
+	SetEvent (finalizer_event);
+}
+
+static guint32 finalizer_thread (gpointer unused)
+{
+	guint32 stack_start;
+	
+	mono_new_thread_init (NULL, &stack_start);
+	
+	while(!finished) {
+		/* Wait to be notified that there's at least one
+		 * finaliser to run
+		 */
+		WaitForSingleObject (finalizer_event, INFINITE);
+
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": invoking finalizers");
+#endif
+
+		GC_invoke_finalizers ();
+	}
+	
+	return(0);
+}
+
+void mono_gc_init (void)
+{
+	HANDLE gc_thread;
+
+	finalizer_event=CreateEvent (NULL, FALSE, FALSE, NULL);
+	if(finalizer_event==NULL) {
+		g_assert_not_reached ();
+	}
+	
+	GC_finalize_on_demand=1;
+	GC_finalizer_notifier=finalize_notify;
+	
+	/* Don't use mono_thread_create here, because we don't want
+	 * the runtime to wait for this thread to exit when it's
+	 * cleaning up.
+	 */
+	gc_thread=CreateThread (NULL, 0, finalizer_thread, NULL, 0, NULL);
+	if(gc_thread==NULL) {
+		g_assert_not_reached ();
+	}
+}
+
+void mono_gc_cleanup (void)
+{
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": cleaning up finalizer");
+#endif
+
+	finished=TRUE;
+	finalize_notify ();
+}

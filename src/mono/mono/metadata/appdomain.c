@@ -20,6 +20,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/metadata/gc.h>
 
 HANDLE mono_delegate_semaphore = NULL;
 CRITICAL_SECTION mono_delegate_section;
@@ -66,6 +67,8 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 
 	mono_thread_init (domain, start_cb, attach_cb);
 	
+	/* GC init has to happen after thread init */
+	mono_gc_init ();
 
 	mono_network_init ();
 

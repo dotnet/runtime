@@ -21,6 +21,8 @@ extern void mono_thread_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 extern void mono_thread_cleanup(void);
 extern MonoThread *mono_thread_current (void);
 
+extern void mono_new_thread_init (MonoThread *thread_object,
+				  gpointer stack_start);
 extern MonoThread *mono_thread_create (MonoDomain *domain, gpointer func,
 				       gpointer arg);
 extern MonoThread *mono_thread_attach (MonoDomain *domain);

@@ -177,7 +177,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 
 	if (class->class_size) {
 #if HAVE_BOEHM_GC
-		vt->data = GC_malloc (class->class_size + 8);
+		vt->data = GC_MALLOC (class->class_size + 8);
 		/*vt->data = GC_debug_malloc (class->class_size + 8, class->name, 2);*/
 		/*GC_register_finalizer (vt->data, vtable_finalizer, class->name, NULL, NULL);*/
 		mono_g_hash_table_insert (domain->static_data_hash, class, vt->data);
@@ -767,7 +767,7 @@ mono_object_allocate (size_t size)
 {
 #if HAVE_BOEHM_GC
 	/* if this is changed to GC_debug_malloc(), we need to change also metadata/gc.c */
-	void *o = GC_malloc (size);
+	void *o = GC_MALLOC (size);
 #else
 	void *o = calloc (1, size);
 #endif
@@ -941,7 +941,7 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 		len = lengths [0];
 	} else {
 	#if HAVE_BOEHM_GC
-		bounds = GC_malloc (sizeof (MonoArrayBounds) * array_class->rank);
+		bounds = GC_MALLOC (sizeof (MonoArrayBounds) * array_class->rank);
 	#else
 		bounds = g_malloc0 (sizeof (MonoArrayBounds) * array_class->rank);
 	#endif
@@ -1010,7 +1010,7 @@ mono_array_new_specific (MonoVTable *vtable, guint32 n)
 	byte_len = n * mono_array_element_size (vtable->klass);
 #if CREATION_SPEEDUP
 	if (vtable->klass->element_class->byval_arg.type >= MONO_TYPE_BOOLEAN && vtable->klass->element_class->byval_arg.type <= MONO_TYPE_R4) {
-		o = GC_malloc_atomic (sizeof (MonoArray) + byte_len);
+		o = GC_MALLOC_ATOMIC (sizeof (MonoArray) + byte_len);
 		o->synchronisation = 0;
 		memset (((MonoArray*)o)->vector, 0, byte_len);
 	} else {
@@ -1063,7 +1063,7 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 	MonoString *s;
 
 #if CREATION_SPEEDUP
-	s = GC_malloc_atomic (sizeof (MonoString) + ((len + 1) * 2));
+	s = GC_MALLOC_ATOMIC (sizeof (MonoString) + ((len + 1) * 2));
 	s->object.synchronisation = 0;
 	mono_string_chars (s) [len] = 0;
 #else
