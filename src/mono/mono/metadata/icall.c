@@ -2320,11 +2320,11 @@ handle_parent:
 }
 
 static MonoArray*
-ves_icall_Type_GetFields (MonoReflectionType *type, guint32 bflags)
+ves_icall_Type_GetFields_internal (MonoReflectionType *type, guint32 bflags, MonoReflectionType *reftype)
 {
 	MonoDomain *domain; 
 	GSList *l = NULL, *tmp;
-	MonoClass *startklass, *klass;
+	MonoClass *startklass, *klass, *refklass;
 	MonoArray *res;
 	MonoObject *member;
 	int i, len, match;
@@ -2334,6 +2334,7 @@ ves_icall_Type_GetFields (MonoReflectionType *type, guint32 bflags)
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
+	refklass = mono_class_from_mono_type (reftype->type);
 
 handle_parent:	
 	for (i = 0; i < klass->field.count; ++i) {
@@ -2362,7 +2363,7 @@ handle_parent:
 
 		if (!match)
 			continue;
-		member = (MonoObject*)mono_field_get_object (domain, klass, field);
+		member = (MonoObject*)mono_field_get_object (domain, refklass, field);
 		l = g_slist_prepend (l, member);
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
@@ -2378,11 +2379,11 @@ handle_parent:
 }
 
 static MonoArray*
-ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case)
+ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case, MonoReflectionType *reftype)
 {
 	MonoDomain *domain; 
 	GSList *l = NULL, *tmp;
-	MonoClass *startklass, *klass;
+	MonoClass *startklass, *klass, *refklass;
 	MonoArray *res;
 	MonoMethod *method;
 	MonoObject *member;
@@ -2395,6 +2396,7 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
+	refklass = mono_class_from_mono_type (reftype->type);
 	len = 0;
 	if (name != NULL) {
 		mname = mono_string_to_utf8 (name);
@@ -2438,7 +2440,7 @@ handle_parent:
 		if (g_hash_table_lookup (method_slots, GUINT_TO_POINTER (method->slot)))
 			continue;
 		g_hash_table_insert (method_slots, GUINT_TO_POINTER (method->slot), method);
-		member = (MonoObject*)mono_method_get_object (domain, method, startklass);
+		member = (MonoObject*)mono_method_get_object (domain, method, refklass);
 		
 		l = g_slist_prepend (l, member);
 		len++;
@@ -2460,12 +2462,12 @@ handle_parent:
 }
 
 static MonoArray*
-ves_icall_Type_GetConstructors (MonoReflectionType *type, guint32 bflags)
+ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflags, MonoReflectionType *reftype)
 {
 	MonoDomain *domain; 
 	GSList *l = NULL, *tmp;
 	static MonoClass *System_Reflection_ConstructorInfo;
-	MonoClass *startklass, *klass;
+	MonoClass *startklass, *klass, *refklass;
 	MonoArray *res;
 	MonoMethod *method;
 	MonoObject *member;
@@ -2475,6 +2477,7 @@ ves_icall_Type_GetConstructors (MonoReflectionType *type, guint32 bflags)
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
+	refklass = mono_class_from_mono_type (reftype->type);
 
 	for (i = 0; i < klass->method.count; ++i) {
 		match = 0;
@@ -2502,7 +2505,7 @@ ves_icall_Type_GetConstructors (MonoReflectionType *type, guint32 bflags)
 
 		if (!match)
 			continue;
-		member = (MonoObject*)mono_method_get_object (domain, method, startklass);
+		member = (MonoObject*)mono_method_get_object (domain, method, refklass);
 			
 		l = g_slist_prepend (l, member);
 	}
@@ -2520,12 +2523,12 @@ ves_icall_Type_GetConstructors (MonoReflectionType *type, guint32 bflags)
 }
 
 static MonoArray*
-ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case)
+ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case, MonoReflectionType *reftype)
 {
 	MonoDomain *domain; 
 	GSList *l = NULL, *tmp;
 	static MonoClass *System_Reflection_PropertyInfo;
-	MonoClass *startklass, *klass;
+	MonoClass *startklass, *klass, *refklass;
 	MonoArray *res;
 	MonoMethod *method;
 	MonoProperty *prop;
@@ -2539,6 +2542,7 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
+	refklass = mono_class_from_mono_type (reftype->type);
 	if (name != NULL) {
 		propname = mono_string_to_utf8 (name);
 		compare_func = (ignore_case) ? g_strcasecmp : strcmp;
@@ -2583,7 +2587,7 @@ handle_parent:
 			continue;
 		g_hash_table_insert (method_slots, GUINT_TO_POINTER (method->slot), prop);
 
-		l = g_slist_prepend (l, mono_property_get_object (domain, klass, prop));
+		l = g_slist_prepend (l, mono_property_get_object (domain, refklass, prop));
 		len++;
 	}
 	if ((!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent)))
@@ -2651,12 +2655,12 @@ handle_parent:
 }
 
 static MonoArray*
-ves_icall_Type_GetEvents (MonoReflectionType *type, guint32 bflags)
+ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, MonoReflectionType *reftype)
 {
 	MonoDomain *domain; 
 	GSList *l = NULL, *tmp;
 	static MonoClass *System_Reflection_EventInfo;
-	MonoClass *startklass, *klass;
+	MonoClass *startklass, *klass, *refklass;
 	MonoArray *res;
 	MonoMethod *method;
 	MonoEvent *event;
@@ -2666,6 +2670,7 @@ ves_icall_Type_GetEvents (MonoReflectionType *type, guint32 bflags)
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
+	refklass = mono_class_from_mono_type (reftype->type);
 
 handle_parent:	
 	for (i = 0; i < klass->event.count; ++i) {
@@ -2696,7 +2701,7 @@ handle_parent:
 		if (!match)
 			continue;
 		match = 0;
-		l = g_slist_prepend (l, mono_event_get_object (domain, klass, event));
+		l = g_slist_prepend (l, mono_event_get_object (domain, refklass, event));
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
@@ -4871,11 +4876,12 @@ static const IcallEntry fieldinfo_icalls [] = {
 
 static const IcallEntry monotype_icalls [] = {
 	{"GetArrayRank", ves_icall_MonoType_GetArrayRank},
-	{"GetConstructors", ves_icall_Type_GetConstructors},
+	{"GetConstructors", ves_icall_Type_GetConstructors_internal},
+	{"GetConstructors_internal", ves_icall_Type_GetConstructors_internal},
 	{"GetElementType", ves_icall_MonoType_GetElementType},
-	{"GetEvents", ves_icall_Type_GetEvents},
+	{"GetEvents_internal", ves_icall_Type_GetEvents_internal},
 	{"GetField", ves_icall_Type_GetField},
-	{"GetFields", ves_icall_Type_GetFields},
+	{"GetFields_internal", ves_icall_Type_GetFields_internal},
 	{"GetInterfaces", ves_icall_Type_GetInterfaces},
 	{"GetMethodsByName", ves_icall_Type_GetMethodsByName},
 	{"GetNestedType", ves_icall_Type_GetNestedType},
