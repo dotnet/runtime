@@ -11,9 +11,23 @@ monodis \- CIL image content dumper and disassembler.
 .PP
 .B monodis
 [\-hd] [\-\-help] 
+[\-\-assembly]
+[\-\-assemblyref]
+[\-\-classlayout]
+[\-\-constant]
+[\-\-event]
+[\-\-fields]
+[\-\-file]
+[\-\-interface]
+[\-\-memberref]
+[\-\-method]
+[\-\-methodsem]
+[\-\-moduleref]
+[\-\-param]
+[\-\-property]
+[\-\-propertymap]
+[\-\-typedef]
 [\-\-typeref]
-[\-\-typedefl]
-[\-\-assemblyref] 
 [FILES...]
 .SH DESCRIPTION
 The \fImonodis\fP program is used to dump the contents a CIL image
@@ -24,18 +38,44 @@ The following Generic options are supported:
 .I "--help", "-h"
 Displays usage instructions.
 .TP
-.I "--typeref"
-Dumps the contents of the typeref table.
-.TP
-.I "--typedef"
-Dumps the contents of the typedef table.
-.TP
+.I "--assembly"
+Dumps the contents of the assembly table
 .I "--assemblyref"
-Dumps the contents of the assemblyref table.
+Dumps the contents of the assemblyref table
+.I "--classlayout"
+Dumps the contents of the classlayout table
+.I "--constant"
+Dumps the contents of the constant table
+.I "--event"
+Dumps the contents of the event table
+.I "--fields"
+Dumps the contents of the fields table
+.I "--file"
+Dumps the contents of the file table
+.I "--interface"
+Dumps the contents of the interface table
+.I "--memberref"
+Dumps the contents of the memberref table
+.I "--method"
+Dumps the contents of the method table
+.I "--methodsem"
+Dumps the contents of the methodsem table
+.I "--moduleref"
+Dumps the contents of the moduleref table
+.I "--param"
+Dumps the contents of the param table
+.I "--property"
+Dumps the contents of the property table
+.I "--propertymap"
+Dumps the contents of the propertymap table
+.I "--typedef"
+Dumps the contents of the typedef table
+.I "--typeref"
+Dumps the contents of the typeref table
 .PP
 If no flags are specified the program dumps the content of the image
 in a format that can be used to rountrip the code. 
 .SH AUTHOR
-monodis was written by Miguel de Icaza
+monodis was written by Miguel de Icaza, Paolo Molaro and Dietmar Maurer.
 .SH SEE ALSO
-.BR pedump(1), 
+.BR pedump(1)
