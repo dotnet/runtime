@@ -764,7 +764,8 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		mono_class_init (class);
 		
 #if HAVE_BOEHM_GC
-	vt = GC_debug_malloc (sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer), class->name, 1);
+	vt = GC_malloc (sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer));
+	/*vt = GC_debug_malloc (sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer), class->name, 1);*/
 	GC_register_finalizer (vt, vtable_finalizer, "vtable", NULL, NULL);
 #else
 	vt = g_malloc0 (sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer));
@@ -774,7 +775,8 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 
 	if (class->class_size) {
 #if HAVE_BOEHM_GC
-		vt->data = GC_debug_malloc (class->class_size + 8, class->name, 2);
+		vt->data = GC_malloc (class->class_size + 8);
+		/*vt->data = GC_debug_malloc (class->class_size + 8, class->name, 2);*/
 		GC_register_finalizer (vt->data, vtable_finalizer, class->name, NULL, NULL);
 #else
 		vt->data = g_malloc0 (class->class_size + 8);
