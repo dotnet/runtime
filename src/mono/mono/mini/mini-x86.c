@@ -9,6 +9,7 @@
  */
 #include "mini.h"
 #include <string.h>
+#include <math.h>
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
@@ -2403,7 +2404,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_R8CONST: {
 			double d = *(double *)ins->inst_p0;
 
-			if (d == 0.0) {
+			if ((d == 0.0) && (signbit (d) == 0)) {
 				x86_fldz (code);
 			} else if (d == 1.0) {
 				x86_fld1 (code);
@@ -2416,7 +2417,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_R4CONST: {
 			float f = *(float *)ins->inst_p0;
 
-			if (f == 0.0) {
+			if ((f == 0.0) && (signbit (f) == 0)) {
 				x86_fldz (code);
 			} else if (f == 1.0) {
 				x86_fld1 (code);

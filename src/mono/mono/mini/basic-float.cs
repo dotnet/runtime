@@ -117,6 +117,23 @@ class Tests {
 		return 4;
 	}
 
+	static unsafe int test_2_negative_zero () {
+		int result = 0;
+		double d = -0.0;
+		float f = -0.0f;
+
+		byte *ptr = (byte*)&d;
+		if (ptr [7] == 0)
+			return result;
+		result ++;
+
+		ptr = (byte*)&f;
+		if (ptr [3] == 0)
+			return result;
+		result ++;
+
+		return result;
+	}
 
 	static int test_15_float_cmp () {
 		double a = 2.0;
