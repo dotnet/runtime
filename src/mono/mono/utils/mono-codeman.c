@@ -215,7 +215,7 @@ new_codechunk (int dynamic, int size)
 			}
 		}
 #else
-		g_assert_not_reached ();
+		return NULL;
 #endif
 	}
 
