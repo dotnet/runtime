@@ -114,7 +114,7 @@ conv.i4: dest:i src1:i len:3
 conv.i8: dest:i src1:i len:3
 conv.r4: dest:f src1:i len:9
 conv.r8: dest:f src1:i len:9
-conv.u4: dest:i src1:i
+conv.u4: dest:i src1:i len:3
 conv.u8: dest:i src1:i len:3
 callvirt:
 cpobj:

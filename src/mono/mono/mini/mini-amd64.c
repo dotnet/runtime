@@ -3342,6 +3342,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_set_reg_template (code, ins->dreg);
 			break;
 		case CEE_CONV_I4:
+		case CEE_CONV_U4:
 		case OP_MOVE:
 		case OP_SETREG:
 			amd64_mov_reg_reg (code, ins->dreg, ins->sreg1, sizeof (gpointer));
@@ -3360,8 +3361,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_movsd_reg_membase (code, ins->unused, AMD64_RSP, -8);
 			break;
 		}
-		case CEE_CONV_U4:
-			g_assert_not_reached ();
 		case CEE_JMP: {
 			/*
 			 * Note: this 'frame destruction' logic is useful for tail calls, too.
