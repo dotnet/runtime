@@ -24,7 +24,9 @@ TESTSRC=			\
 	readonly.cs		\
 	bulkcpy.il		\
 	math.cs			\
-	boxtest.cs
+	boxtest.cs		\
+	valuetype1.cs		\
+	valuetype2.cs
 
 TESTSI_TMP=$(TESTSRC:.cs=.exe)
 TESTSI=$(TESTSI_TMP:.il=.exe)
