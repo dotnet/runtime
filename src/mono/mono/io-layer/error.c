@@ -194,6 +194,14 @@ _wapi_get_win32_file_error (gint err)
 		ret = ERROR_NOT_SUPPORTED;
 		break;
 	
+	case EBADF:
+		ret = ERROR_INVALID_HANDLE;
+		break;
+		
+	case EIO:
+		ret = ERROR_INVALID_HANDLE;
+		break;
+		
 	default:
 		g_message ("Unknown errno: %s\n", strerror (err));
 		ret = ERROR_GEN_FAILURE;
