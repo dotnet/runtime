@@ -474,6 +474,8 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 #if defined (PLATFORM_WIN32)
 	{
 		gchar *tmp_fn;
+		int i;
+
 		tmp_fn = g_strdup (fname);
 		for (i = strlen (tmp_fn) - 1; i >= 0; i--) {
 			if (tmp_fn [i] == '/')
