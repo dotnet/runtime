@@ -432,7 +432,7 @@ void mono_gc_init (void)
 	if (finalizer_event == NULL) {
 		g_assert_not_reached ();
 	}
-	
+
 	GC_finalize_on_demand = 1;
 	GC_finalizer_notifier = finalize_notify;
 	

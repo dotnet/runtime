@@ -3676,10 +3676,6 @@ mono_cfg_new (MonoMethod *method)
 
 	/* reserve space to save LMF */
 	cfg->locals_size = sizeof (MonoLMF);
-	/* reserve space to save caller saved registers */
-	/* fixme: this is arch dependent */
-	/* we save EAX, EDX, ECX - and ESP if we call finally handlers */
-	cfg->locals_size += 16;
 	
 	mono_exc_esp_offset = - cfg->locals_size;
 

@@ -417,31 +417,31 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 		x86_push_membase (cfg->code, X86_EAX, 0);
 		/* *(lmf) = ESP */
 		x86_mov_membase_reg (cfg->code, X86_EAX, 0, X86_ESP, 4);
-	}
+	} else {
 
 #if 0
-	/* activation frame alignment check */
-	x86_mov_reg_reg (cfg->code, X86_EAX, X86_ESP, 4);
-	x86_alu_reg_imm (cfg->code, X86_AND, X86_EAX, MONO_FRAME_ALIGNMENT - 1);
-	x86_alu_reg_imm (cfg->code, X86_CMP, X86_EAX, 0);
-	x86_branch32 (cfg->code, X86_CC_EQ, 1, FALSE);
-	x86_breakpoint (cfg->code);
-
+		/* activation frame alignment check */
+		x86_mov_reg_reg (cfg->code, X86_EAX, X86_ESP, 4);
+		x86_alu_reg_imm (cfg->code, X86_AND, X86_EAX, MONO_FRAME_ALIGNMENT - 1);
+		x86_alu_reg_imm (cfg->code, X86_CMP, X86_EAX, 0);
+		x86_branch32 (cfg->code, X86_CC_EQ, 1, FALSE);
+		x86_breakpoint (cfg->code);
 #endif
 
-	if (mono_regset_reg_used (cfg->rs, X86_EBX)) {
-		x86_push_reg (cfg->code, X86_EBX);
-		pos += 4;
-	}
+		if (mono_regset_reg_used (cfg->rs, X86_EBX)) {
+			x86_push_reg (cfg->code, X86_EBX);
+			pos += 4;
+		}
 
-	if (mono_regset_reg_used (cfg->rs, X86_EDI)) {
-		x86_push_reg (cfg->code, X86_EDI);
-		pos += 4;
-	}
+		if (mono_regset_reg_used (cfg->rs, X86_EDI)) {
+			x86_push_reg (cfg->code, X86_EDI);
+			pos += 4;
+		}
 
-	if (mono_regset_reg_used (cfg->rs, X86_ESI)) {
-		x86_push_reg (cfg->code, X86_ESI);
-		pos += 4;
+		if (mono_regset_reg_used (cfg->rs, X86_ESI)) {
+			x86_push_reg (cfg->code, X86_ESI);
+			pos += 4;
+		}
 	}
 
 	alloc_size -= pos;
@@ -605,31 +605,21 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 
 	pos = 0;
 	
-	if (cfg->method->save_lmf)
+	if (cfg->method->save_lmf) {
 		pos = -sizeof (MonoLMF);
-	
-	if (mono_regset_reg_used (cfg->rs, X86_EBX)) {
-		pos -= 4;
+	} else {
+		if (mono_regset_reg_used (cfg->rs, X86_EBX)) {
+			pos -= 4;
 	}
-	if (mono_regset_reg_used (cfg->rs, X86_EDI)) {
-		pos -= 4;
+		if (mono_regset_reg_used (cfg->rs, X86_EDI)) {
+			pos -= 4;
+		}
+		if (mono_regset_reg_used (cfg->rs, X86_ESI)) {
+			pos -= 4;
+		}
 	}
-	if (mono_regset_reg_used (cfg->rs, X86_ESI)) {
-		pos -= 4;
-	}
-
 	if (pos)
 		x86_lea_membase (cfg->code, X86_ESP, X86_EBP, pos);
-
-	if (mono_regset_reg_used (cfg->rs, X86_ESI)) {
-		x86_pop_reg (cfg->code, X86_ESI);
-	}
-	if (mono_regset_reg_used (cfg->rs, X86_EDI)) {
-		x86_pop_reg (cfg->code, X86_EDI);
-	}
-	if (mono_regset_reg_used (cfg->rs, X86_EBX)) {
-		x86_pop_reg (cfg->code, X86_EBX);
-	}
 
 	if (cfg->method->save_lmf) {
 		/* ebx = previous_lmf */
@@ -648,6 +638,17 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 		x86_pop_reg (cfg->code, X86_EDI);
 		x86_pop_reg (cfg->code, X86_EBX);
 
+	} else {
+
+		if (mono_regset_reg_used (cfg->rs, X86_ESI)) {
+			x86_pop_reg (cfg->code, X86_ESI);
+		}
+		if (mono_regset_reg_used (cfg->rs, X86_EDI)) {
+			x86_pop_reg (cfg->code, X86_EDI);
+		}
+		if (mono_regset_reg_used (cfg->rs, X86_EBX)) {
+			x86_pop_reg (cfg->code, X86_EBX);
+		}
 	}
 
 	x86_leave (cfg->code);
