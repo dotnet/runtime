@@ -100,6 +100,12 @@ Total memory allocated: 448 KB
 	performance gains in MCS for example came from reducing its
 	memory usage, as opposed to changes in the execution path.
 
+** Profiling without JIT instrumentation
+
+	You might also be interested in using mono --aot to generate
+	precompiled code, and then use a system like `oprofile' to 
+	profile your programs. 
+
 ** Memory Management in the .NET/Mono world.
 
 	Since Mono and .NET offer automatic garbage collection, the
