@@ -3094,6 +3094,32 @@ mini_get_method (MonoImage *image, guint32 token, MonoClass *klass, MonoGenericC
 	return method;
 }
 
+static
+void check_linkdemand (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee, MonoBasicBlock *bblock, unsigned char *ip)
+{
+	guint32 result = mono_declsec_linkdemand (cfg->domain, caller, callee);
+	if (result == MONO_JIT_SECURITY_OK)
+		return;
+
+	if (result == MONO_JIT_LINKDEMAND_ECMA) {
+		/* Generate code to throw a SecurityException before the actual call/link */
+		MonoAssembly *assembly = mono_image_get_assembly (caller->klass->image);
+		MonoReflectionAssembly *refass = (MonoReflectionAssembly*) mono_assembly_get_object (cfg->domain, assembly);
+		MonoSecurityManager* secman = mono_security_manager_get_methods ();
+		MonoInst *args [3];
+
+		NEW_ICONST (cfg, args [0], 4);
+		NEW_PCONST (cfg, args [1], refass);
+		NEW_PCONST (cfg, args [2], caller);
+		mono_emit_method_call_spilled (cfg, bblock, secman->linkdemandsecurityexception, mono_method_signature (secman->linkdemandsecurityexception), args, ip, NULL);
+	} else if (cfg->exception_type == MONO_EXCEPTION_NONE) {
+		 /* don't hide previous results */
+		cfg->exception_type = MONO_EXCEPTION_SECURITY;
+		cfg->exception_data = result;
+	}
+}
+
+
 /*
  * mono_method_to_ir: translates IL into basic blocks containing trees
  */
@@ -3672,6 +3698,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 			/* FIXME: check the signature matches */
 			cmethod = mini_get_method (image, token, NULL, generic_context);
+
+			if (mono_use_security_manager) {
+				check_linkdemand (cfg, method, cmethod, bblock, ip);
+			}
+
 			ins->inst_p0 = cmethod;
 			MONO_ADD_INS (bblock, ins);
 			ip += 5;
@@ -3726,24 +3757,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				n = fsig->param_count + fsig->hasthis;
 
 				if (mono_use_security_manager) {
-					/* LinkDemand, NonCasLinkDemand, LinkDemandChoice and other special cases */
-					guint32 result = mono_declsec_linkdemand (cfg->domain, method, cmethod);
-					if (result == MONO_JIT_LINKDEMAND_ECMA) {
-						/* Generate code to throw a SecurityException before the actual call/link */
-						MonoAssembly *assembly = mono_image_get_assembly (method->klass->image);
-						MonoReflectionAssembly *refass = (MonoReflectionAssembly*) mono_assembly_get_object (cfg->domain, assembly);
-						MonoSecurityManager* secman = mono_security_manager_get_methods ();
-						MonoInst *args [3];
-
-						NEW_ICONST (cfg, args [0], 4);
-						NEW_PCONST (cfg, args [1], refass);
-						NEW_PCONST (cfg, args [2], method);
-						mono_emit_method_call_spilled (cfg, bblock, secman->linkdemandsecurityexception, mono_method_signature (secman->linkdemandsecurityexception), args, ip, NULL);
-					} else if ((result != MONO_JIT_SECURITY_OK) && (cfg->exception_type == MONO_EXCEPTION_NONE)) {
-						 /* don't hide previous results */
-						cfg->exception_type = MONO_EXCEPTION_SECURITY;
-						cfg->exception_data = result;
-					}
+					check_linkdemand (cfg, method, cmethod, bblock, ip);
 				}
 
 				if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL &&
@@ -4582,6 +4596,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			fsig = mono_method_get_signature (cmethod, image, token);
 
 			mono_class_init (cmethod->klass);
+
+			if (mono_use_security_manager) {
+				check_linkdemand (cfg, method, cmethod, bblock, ip);
+			}
 
 			n = fsig->param_count;
 			CHECK_STACK (n);
@@ -6005,6 +6023,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 				mono_class_init (cmethod->klass);
+
+				if (mono_use_security_manager) {
+					check_linkdemand (cfg, method, cmethod, bblock, ip);
+				}
+
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
 
 				NEW_METHODCONST (cfg, argconst, cmethod);
@@ -6032,6 +6055,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					cmethod = mini_get_method (image, n, NULL, generic_context);
 
 				mono_class_init (cmethod->klass);
+
+				if (mono_use_security_manager) {
+					check_linkdemand (cfg, method, cmethod, bblock, ip);
+				}
+
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
 
 				--sp;
