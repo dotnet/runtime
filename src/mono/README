@@ -8,23 +8,50 @@ Installation:
 
 		http://www.go-mono.com/download.html
 
-A directory roadmap:
+* Using Mono
+
+	Once you have installed the software, you can run a few programs:
+
+	* runtime engine
+
+		mono program.exe
+	  or
+		mint program.exe
+
+	* C# compiler
+
+		mcs program.cs
+
+	* CIL Disassembler
+
+		monodis program.exe
+
+	See the man pages for mono(1), mint(1), monodis(1) and mcs(2)
+	for further details.
+
+* A directory roadmap:
 
 	doc/
 		Contains documentation and the web site contents.
 
 	mono/
-		The core of the executable.
+		The core of the Mono Runtime.
 
 		metadata/
-			The library to deal with executables and libraries for
-			.NET
+			The object system and metadata reader.
+
+		jit/
+			The Just in Time Compiler.
 
 		dis/
 			CIL executable Disassembler
 
 		cli/
 			Common code for the JIT and the interpreter.
+
+		io-layer/
+			The I/O layer and system abstraction for 
+			emulating the .NET IO model.
 
 		cil/
 			Common Intermediate Representation, XML
@@ -33,20 +60,7 @@ A directory roadmap:
 		interp/
 			Interpreter for CLI executables.
 
-* Using Mono
-
-	Once you have installed the software, you can run a few programs:
-
-		monodis program.exe
-
-	That will dump the bytecodes for program.exe.  Monodis support
-	a number of options that dumps various metadata tables
-	(chapter 23 of the Partition III).
-
-	You can try the interpreter like this:
-
-		mint program.exe
-
-
+		arch/
+			Architecture specific portions.
 
 
