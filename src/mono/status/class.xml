@@ -770,9 +770,9 @@
     </class>
 
     <class name="System.IO.MemoryStream">
-        <last-activity>Jun-15-2001</last-activity>
-        <implementation>no</implementation>
-        <test-suite>no</test-suite>
+        <last-activity>Jun-19-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
         <completion>?</completion>
         <maintainers>
             <maintainer>marcins@zipworld.com.au</maintainer>
@@ -1060,7 +1060,7 @@
     </class>
     <class name="System.Collections.Specialized.StringCollection">
         <last-activity>Jun-16-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -1078,7 +1078,7 @@
     </class>
     <class name="System.Collections.Specialized.StringEnumerator">
         <last-activity>Jun-16-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
