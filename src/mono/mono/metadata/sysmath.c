@@ -4,6 +4,30 @@
 #include <math.h>
 #include <mono/metadata/sysmath.h>
 
+#ifndef NAN
+# if G_BYTE_ORDER == G_BIG_ENDIAN
+#  define __nan_bytes           { 0x7f, 0xc0, 0, 0 }
+# endif
+# if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#  define __nan_bytes           { 0, 0, 0xc0, 0x7f }
+# endif
+
+static union { unsigned char __c[4]; float __d; } __nan_union = { __nan_bytes };
+# define NAN    (__nan_union.__d)
+#endif
+
+#ifndef HUGE_VAL
+#define __huge_val_t   union { unsigned char __c[8]; double __d; }
+# if G_BYTE_ORDER == G_BIG_ENDIAN
+#  define __HUGE_VAL_bytes       { 0x7f, 0xf0, 0, 0, 0, 0, 0, 0 }
+# endif
+# if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#  define __HUGE_VAL_bytes       { 0, 0, 0, 0, 0, 0, 0xf0, 0x7f }
+# endif
+static __huge_val_t __huge_val = { __HUGE_VAL_bytes };
+#  define HUGE_VAL      (__huge_val.__d)
+#endif
+
 gdouble 
 ves_icall_System_Math_Sin (gdouble x)
 {
