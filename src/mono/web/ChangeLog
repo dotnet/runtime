@@ -1,3 +1,8 @@
+2004-06-15  Sebastien Pouliot  <sebastien@ximian.com>
+
+	* crypto: Updated status for beta 3. Removed stuff that is better 
+	documented in monodoc.
+
 2004-06-08  Duncan Mak  <duncan@ximian.com>
 
 	* download: Add MacOS X installer.
