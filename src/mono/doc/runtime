@@ -96,7 +96,15 @@
 		* Garbage collection list and FAQ:<br>
 		  <a href="http://www.iecc.com/gclist/">http://www.iecc.com/gclist/</a>
 
-		* The Microsoft .NET Garbage Collection Implementation:<br>
+		* "GC points in a Threaded Environment":<br>
+		  <a href="http://research.sun.com/techrep/1998/abstract-70.html">
+		  http://research.sun.com/techrep/1998/abstract-70.html</a>
+
+		* "A Generational Mostly-concurrent Garbage Collector":
+		  <a href="http://http://research.sun.com/techrep/2000/abstract-88.html">
+		  http://http://research.sun.com/techrep/2000/abstract-88.html</a>
+
+		* Details on The Microsoft .NET Garbage Collection Implementation:<br>
 		  <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnmag00/html/GCI.asp">http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnmag00/html/GCI.asp</a>
 		  <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnmag00/html/GCI.asp">http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnmag00/html/GCI.asp</a>
 	</ul>

@@ -4,12 +4,7 @@
 	registered to work on what parts of the system.  These list
 	work-in-progress components currently.
 
-	<ul>
-		* Per <a href="class-status/bn/index.html">By Namespace</a>
-	</ul>
-
-	A better mechanism will soon be in place, I just did this
-	really quickly, as we already got one duplicated implementation.
+	Browse the current <a href="class-status/index.html">status</a>.
 
 	You can also download the XML <a
 	href="class-status/maintainers.xml">maintainers</a> file that
