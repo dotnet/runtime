@@ -51,7 +51,7 @@ create_rule (char *id, Tree *tree, char *code, char *cost, char *cfunc)
 		if (cost)
 			yyerror ("duplicated costs (constant costs and cost function)");
 		else 
-			rule->cost = g_strdup_printf ("mono_burg_cost_%d (tree)",
+			rule->cost = g_strdup_printf ("mono_burg_cost_%d (tree, data)",
 						      g_list_length (rule_list));
 	}
 
@@ -223,7 +223,8 @@ emit_header ()
 	output ("#ifndef MBTREE_RIGHT\n#define MBTREE_RIGHT(t) ((t)->right)\n#endif\n");
 	output ("#ifndef MBTREE_STATE\n#define MBTREE_STATE(t) ((t)->state)\n#endif\n");
 	output ("#ifndef MBCGEN_TYPE\n#define MBCGEN_TYPE int\n#endif\n");
-
+	output ("#ifndef MBALLOC_STATE\n#define MBALLOC_STATE g_new (MBState, 1)\n#endif\n");
+	output ("#ifndef MBCOST_DATA\n#define MBCOST_DATA gpointer\n#endif\n");
 	output ("\n");
 	output ("#define MBMAXCOST 32768\n");
 
@@ -397,7 +398,7 @@ emit_label_func ()
 	int i;
 
 	output ("static MBState *\n");
-	output ("mono_burg_label_priv (MBTREE_TYPE *tree) {\n");
+	output ("mono_burg_label_priv (MBTREE_TYPE *tree, MBCOST_DATA *data) {\n");
 
 	output ("\tint arity;\n");
 	output ("\tint c;\n");
@@ -409,18 +410,19 @@ emit_label_func ()
 	output ("\t\tright = NULL;\n");
 	output ("\t\tbreak;\n");
 	output ("\tcase 1:\n");
-	output ("\t\tleft = mono_burg_label_priv (MBTREE_LEFT(tree));\n");
+	output ("\t\tleft = mono_burg_label_priv (MBTREE_LEFT(tree), data);\n");
 	output ("\t\tright = NULL;\n");
 	output ("\t\tbreak;\n");
 	output ("\tcase 2:\n");
-	output ("\t\tleft = mono_burg_label_priv (MBTREE_LEFT(tree));\n");
-	output ("\t\tright = mono_burg_label_priv (MBTREE_RIGHT(tree));\n");
+	output ("\t\tleft = mono_burg_label_priv (MBTREE_LEFT(tree), data);\n");
+	output ("\t\tright = mono_burg_label_priv (MBTREE_RIGHT(tree), data);\n");
 	output ("\t}\n\n");
 
 	output ("\tarity = (left != NULL) + (right != NULL);\n");
 	output ("\tg_assert (arity == mono_burg_arity [MBTREE_OP(tree)]);\n\n");
 
-	output ("\tp = g_new0 (MBState, 1);\n");
+	output ("\tp = MBALLOC_STATE;\n");
+	output ("\tmemset (p, 0, sizeof (MBState));\n");
 	output ("\tp->op = MBTREE_OP(tree);\n");
 	output ("\tp->left = left;\n");
 	output ("\tp->right = right;\n");
@@ -471,8 +473,8 @@ emit_label_func ()
 	output ("}\n\n");
 
 	output ("MBState *\n");
-	output ("mono_burg_label (MBTREE_TYPE *tree)\n{\n");
-	output ("\tMBState *p = mono_burg_label_priv (tree);\n");
+	output ("mono_burg_label (MBTREE_TYPE *tree, MBCOST_DATA *data)\n{\n");
+	output ("\tMBState *p = mono_burg_label_priv (tree, data);\n");
 	output ("\treturn p->rule_%s ? p : NULL;\n", ((NonTerm *)nonterm_list->data)->name);
 	output ("}\n\n");
 }
@@ -613,11 +615,11 @@ emit_cost_func ()
 		Rule *rule = (Rule *)l->data;
 		
 		if (rule->cfunc) {
-			output ("static guint16\n");
+			output ("inline static guint16\n");
 
 			emit_rule_string (rule, "");
 
-			output ("mono_burg_cost_%d (MBTREE_TYPE *tree)\n", i + 1);
+			output ("mono_burg_cost_%d (MBTREE_TYPE *tree, MBCOST_DATA *data)\n", i + 1);
 			output ("{\n");
 			output ("%s\n", rule->cfunc);
 			output ("}\n\n");
@@ -752,7 +754,7 @@ emit_prototypes ()
 	output ("extern guint16 *mono_burg_nts [];\n");
 	output ("extern MBEmitFunc mono_burg_func [];\n");
 
-	output ("MBState *mono_burg_label (MBTREE_TYPE *tree);\n");
+	output ("MBState *mono_burg_label (MBTREE_TYPE *tree, MBCOST_DATA *data);\n");
 	output ("int mono_burg_rule (MBState *state, int goal);\n");
 	output ("MBTREE_TYPE **mono_burg_kids (MBTREE_TYPE *tree, int rulenr, MBTREE_TYPE *kids []);\n");
 

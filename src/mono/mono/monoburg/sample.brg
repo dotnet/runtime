@@ -134,7 +134,7 @@ main ()
 
 	t = create_tree (MB_TERM_Fetch, l, NULL);
 
-	s = mono_burg_label (t);
+	s = mono_burg_label (t, NULL);
 
 	g_assert (s);
 

@@ -7,18 +7,12 @@
 #include <mono/arch/x86/x86-codegen.h>
 
 #include "regset.h"
+#include "jit.h"
 
 #define MBTREE_TYPE  MBTree
 #define MBCGEN_TYPE  MBCodeGenStatus
-
-typedef struct {
-	guint8 *start;
-	guint8 *code;
-	gint32 locals_size;
-	GPtrArray *forest;
-	MonoRegSet *rs;
-	guint32 epilog;
-} MBCodeGenStatus;
+#define MBCOST_DATA  MBCodeGenStatus
+#define MBALLOC_STATE mono_mempool_alloc (data->mp, sizeof (MBState))
 
 typedef struct _MBTree MBTree;
 struct _MBTree {
@@ -39,9 +33,11 @@ struct _MBTree {
 	gint8 reg1;
 	gint8 reg2;
 	MonoTypeEnum type;
+	gint32 size;
 
 	union {
-		int i;
+		gint32 i;
+		gint64 l;
 		gpointer p;
 	} data;
 };
@@ -73,11 +69,12 @@ gint64 mono_lldiv  (gint64 a, gint64 b);
 #
 
 # constatnts
-%term CONST_I4 CONST_R8
+%term CONST_I4 CONST_I8 CONST_R4 CONST_R8
 %term LDLOC LDARG STLOC BR RET RETV ARG CALL BREAK
-%term ADD SUB MUL DIV
-%term BLT BLT_UN BEQ BNE_UN BRTRUE BRFALSE BGE BGE_UN  BLE BLE_UN BGT BGT_UN 
+%term ADD SUB MUL DIV AND OR XOR
+%term BLT BLT_UN BEQ BNE_UN BRTRUE BRFALSE BGE BGE_UN BLE BLE_UN BGT BGT_UN 
 %term CONV_I4 CONV_I1 CONV_I2 CONV_I8
+
 #
 # we start at stmt
 #
@@ -229,6 +226,24 @@ reg: SUB (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_SUB, tree->reg1, tree->right->reg1);
 }
 
+reg: AND (reg, reg) {
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_alu_reg_reg (s->code, X86_AND, tree->reg1, tree->right->reg1);
+}
+
+reg: OR (reg, reg) {
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_alu_reg_reg (s->code, X86_OR, tree->reg1, tree->right->reg1);
+}
+
+reg: XOR (reg, reg) {
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	x86_alu_reg_reg (s->code, X86_XOR, tree->reg1, tree->right->reg1);
+}
+
 stmt: STLOC (CONST_I4) "MB_USE_OPT1(0)" {
 	x86_mov_membase_imm (s->code, X86_EBP, tree->data.i,
 			     tree->left->data.i, 4);
@@ -327,6 +342,26 @@ stmt: BGT (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 	offset = 6 + s->code - start;
 	x86_branch32 (s->code, X86_CC_GT, tree->data.i - offset, TRUE); 
+}
+
+stmt: BGT_UN (reg, reg) 1 {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_GT, tree->data.i - offset, FALSE); 
+}
+
+stmt: BGT_UN (reg, CONST_I4) "MB_USE_OPT1(0)" {
+	guint8 *start = s->code;
+	gint32 offset;
+
+	tree->is_jump = 1;
+	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
+	offset = 6 + s->code - start;
+	x86_branch32 (s->code, X86_CC_GT, tree->data.i - offset, FALSE); 
 }
 
 stmt: BEQ (reg, CONST_I4) "MB_USE_OPT1(0)" {
@@ -515,6 +550,9 @@ reg: CALL {
 		x86_mov_reg_imm (s->code, X86_EAX, tree->data.p);
 		x86_call_membase (s->code, X86_EAX, 
 				  G_STRUCT_OFFSET (MonoMethod, addr));
+		if (tree->size)
+			x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
+
 		g_assert (tree->reg1 == X86_EAX);
 		break;
 	default:
@@ -534,11 +572,18 @@ reg: CALL {
 stmt: CALL {
 	x86_mov_reg_imm (s->code, X86_EAX, tree->data.p);
 	x86_call_membase (s->code, X86_EAX, G_STRUCT_OFFSET (MonoMethod, addr));
+	if (tree->size)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
 }
 
 #
 # 64 bit integers
 #
+
+lreg: CONST_I8 1 {
+	x86_mov_reg_imm (s->code, tree->reg1, tree->data.i);
+	x86_mov_reg_imm (s->code, tree->reg2, *(gint32 *)(&tree->data.p + 4));
+}
 
 lreg: CONV_I8 (CONST_I4) 1 {
 	x86_mov_reg_imm (s->code, tree->reg1, tree->left->data.i);
@@ -630,6 +675,8 @@ lreg: CALL {
 	x86_mov_reg_imm (s->code, X86_EAX, tree->data.p);
 	x86_call_membase (s->code, X86_EAX, 
 			  G_STRUCT_OFFSET (MonoMethod, addr));
+	if (tree->size)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
 } cost {
 	MBCOND (tree->type == MONO_TYPE_I8 ||
 		tree->type == MONO_TYPE_U8);
@@ -701,7 +748,10 @@ stmt: BGE (lreg, lreg) {
 
 #
 # floating point 
-# fixme: dont know how to assign registers?
+
+freg: CONST_R4 {
+	x86_fld (s->code, tree->data.p, FALSE);
+}
 
 freg: CONST_R8 {
 	x86_fld (s->code, tree->data.p, TRUE);
@@ -759,6 +809,8 @@ freg: CALL {
 	x86_mov_reg_imm (s->code, X86_EAX, tree->data.p);
 	x86_call_membase (s->code, X86_EAX, 
 			  G_STRUCT_OFFSET (MonoMethod, addr));
+	if (tree->size)
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->size);
 } cost {
 	MBCOND (tree->type == MONO_TYPE_R4 ||
 		tree->type == MONO_TYPE_R8);

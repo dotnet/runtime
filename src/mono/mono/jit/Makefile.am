@@ -12,6 +12,7 @@ testjit_SOURCES =		\
 	jit.h			\
 	regset.h		\
 	regset.c		\
+	mempool.c		\
 	testjit.h		\
 	testjit.c
 
