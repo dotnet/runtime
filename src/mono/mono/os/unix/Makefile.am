@@ -1,5 +1,5 @@
 
-INCLUDES += -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir)
 
 noinst_LIBRARIES = libmonoos.a
 
