@@ -1450,6 +1450,14 @@ void mono_thread_manage (void)
 		/* Something to wait for */
 		wait_for_tids (wait, INFINITE);
 	}
+	/* 
+	 * give the subthreads a chance to really quit (this is mainly needed
+	 * to get correct user and system times from getrusage/wait/time(1)).
+	 * This could be removed if we avoid pthread_detach() and use pthread_join().
+	 */
+#ifndef PLATFORM_WIN32
+	sched_yield ();
+#endif
 
 	g_free (wait);
 }
