@@ -1052,7 +1052,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	MonoAotCompile *acfg;
 	gboolean *emitted;
 
-	printf ("Mono AOT compiler - compiling assembly %s\n", image->name);
+	printf ("Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
 
 	i = g_file_open_tmp ("mono_aot_XXXXXX", &tmpfname, NULL);
 	tmpfp = fdopen (i, "w+");
