@@ -986,6 +986,9 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 
 	MonoContext ctx, new_ctx;
 
+	setup_context (&ctx);
+	setup_context (&new_ctx);
+
 #ifdef __APPLE__
 	__asm__ volatile("lwz   %0,0(r1)" : "=r" (sframe));
 #else
@@ -1008,6 +1011,7 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 			return;
 		
 		ctx = new_ctx;
+		setup_context (&ctx);
 	}
 }
 
