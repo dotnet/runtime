@@ -694,7 +694,11 @@ reg: REM_UN (reg, reg) {
 reg: ADD (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
-	x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, tree->right->data.i);
+
+	if (tree->right->data.i == 1)
+		x86_inc_reg (s->code, tree->reg1);
+	else 
+		x86_alu_reg_imm (s->code, X86_ADD, tree->reg1, tree->right->data.i);
 }
 
 reg: ADD (reg, reg) {
@@ -706,7 +710,11 @@ reg: ADD (reg, reg) {
 reg: SUB (reg, CONST_I4) "MB_USE_OPT1(0)" {
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
-	x86_alu_reg_imm (s->code, X86_SUB, tree->reg1, tree->right->data.i);
+
+	if (tree->right->data.i == 1)
+		x86_dec_reg (s->code, tree->reg1);
+	else
+		x86_alu_reg_imm (s->code, X86_SUB, tree->reg1, tree->right->data.i);
 }
 
 reg: SUB (reg, reg) {

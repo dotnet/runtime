@@ -302,10 +302,12 @@ static gint64
 ves_icall_System_DateTime_GetNow ()
 {
 	struct timeval tv;
+	gint64 res;
 
 	// fixme: it seems that .Net has another base time than Unix??
 	if (gettimeofday (&tv, NULL) == 0) {
-		return (gint64)tv.tv_sec * 1000000000 + tv.tv_usec*10;
+		res = ((gint64)tv.tv_sec * 1000000 + tv.tv_usec)*10;
+		return res;
 	}
 
 	
