@@ -1351,22 +1351,15 @@ emit_struct_free (MonoMethodBuilder *mb, MonoClass *klass, int struct_var)
 static void
 emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb, gpointer checkpoint_func)
 {
-	static MonoMethodSignature *state_check_sig = NULL;
 	int pos_noabort;
-	
-	if (!state_check_sig) {
-		state_check_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
-		state_check_sig->ret = &mono_defaults.void_class->byval_arg;
-		state_check_sig->pinvoke = 0;
-	}
-	
+
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
 	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, (gpointer) mono_thread_interruption_request_flag ()));
 	mono_mb_emit_byte (mb, CEE_LDIND_I4);
 	pos_noabort = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
-	mono_mb_emit_native_call (mb, state_check_sig, checkpoint_func);
+	mono_mb_emit_icall (mb, checkpoint_func);
 	
 	mono_mb_patch_addr (mb, pos_noabort, mb->pos - (pos_noabort + 4));
 }
@@ -1374,6 +1367,9 @@ emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb, gpointer checkpoin
 static void
 emit_thread_interrupt_checkpoint (MonoMethodBuilder *mb)
 {
+	if (strstr (mb->method->name, "mono_thread_interruption_checkpoint"))
+		return;
+	
 	emit_thread_interrupt_checkpoint_call (mb, mono_thread_interruption_checkpoint);
 }
 
@@ -2287,13 +2283,18 @@ mono_marshal_supports_fast_xdomain (MonoMethod *method)
 }
 
 static gint32
-mono_marshal_set_domain_by_id (gint32 id)
+mono_marshal_set_domain_by_id (gint32 id, MonoBoolean push)
 {
 	MonoDomain *current_domain = mono_domain_get ();
 	MonoDomain *domain = mono_domain_get_by_id (id);
 
 	if (!domain || !mono_domain_set (domain, FALSE))	
 		mono_raise_exception (mono_get_exception_appdomain_unloaded ());
+
+	if (push)
+		mono_thread_push_appdomain_ref (domain);
+	else
+		mono_thread_pop_appdomain_ref ();
 
 	return current_domain->domain_id;
 }
@@ -2303,8 +2304,9 @@ mono_marshal_emit_switch_domain (MonoMethodBuilder *mb)
 {
 	static MonoMethodSignature *csig = NULL;
 	if (!csig) {
-		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
+		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
 		csig->params [0] = &mono_defaults.int32_class->byval_arg;
+		csig->params [1] = &mono_defaults.int32_class->byval_arg;
 		csig->ret = &mono_defaults.int32_class->byval_arg;
 		csig->pinvoke = 1;
 	}
@@ -2776,6 +2778,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 
 	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoRealProxy, target_domain_id));
 	mono_mb_emit_byte (mb, CEE_LDIND_I4);
+	mono_mb_emit_byte (mb, CEE_LDC_I4_1);
 
 	/* switch domain */
 
@@ -2826,6 +2829,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	/* Switch domain */
 
 	mono_mb_emit_ldloc (mb, loc_old_domainid);
+	mono_mb_emit_byte (mb, CEE_LDC_I4_0);
 	mono_marshal_emit_switch_domain (mb);
 	mono_mb_emit_byte (mb, CEE_POP);
 	
