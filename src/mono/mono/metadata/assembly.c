@@ -183,6 +183,15 @@ load_references (MonoImage *image, MonoImageOpenStatus *status) {
 
 }
 
+static MonoOpenAssemblyFunc mono_open_assembly_func = NULL;
+
+void
+mono_install_open_assembly_hook (MonoOpenAssemblyFunc func)
+{
+	g_assert (!mono_open_assembly_func);
+	mono_open_assembly_func = func;
+}
+
 /**
  * mono_assembly_open:
  * @filename: Opens the assembly pointed out by this name
@@ -285,6 +294,9 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		g_free (module_ref);
 	}
 
+	if (mono_open_assembly_func)
+		mono_open_assembly_func (ass);
+	
 	return ass;
 }
 

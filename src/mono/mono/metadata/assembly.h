@@ -18,4 +18,8 @@ void	      mono_assembly_foreach    (GFunc func, gpointer user_data);
 void          mono_assembly_set_main   (MonoAssembly *assembly);
 MonoAssembly *mono_assembly_get_main   (void);
 
+/* Installs a function which is called each time a new assembly is loaded. */
+typedef void  (*MonoOpenAssemblyFunc)         (MonoAssembly *assembly);
+void          mono_install_open_assembly_hook (MonoOpenAssemblyFunc func);
+
 #endif

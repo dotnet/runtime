@@ -75,6 +75,8 @@ struct MonoDebugMethodInfo {
 	MonoSymbolFile *symfile;
 	guint32 file_offset;
 	guint32 num_il_offsets;
+	guint32 start_line;
+	guint32 end_line;
 	MonoSymbolFileLineNumberEntry *il_offsets;
 	MonoDebugMethodJitInfo *jit;
 	gpointer user_data;
@@ -196,6 +198,7 @@ mono_debug_close_mono_symbol_file  (MonoSymbolFile           *symfile);
 
 MonoSymbolFile *
 mono_debug_create_mono_symbol_file (MonoImage                *image,
+				    const gchar              *ilfile,
 				    GHashTable               *method_hash);
 
 gchar *
