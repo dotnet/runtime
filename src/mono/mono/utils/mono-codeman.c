@@ -34,6 +34,12 @@
 #endif
 #endif
 
+#ifdef __x86_64__
+#define ARCH_MAP_FLAGS MAP_32BIT
+#else
+#define ARCH_MAP_FLAGS 0
+#endif
+
 typedef struct _CodeChunck CodeChunk;
 
 enum {
@@ -210,11 +216,11 @@ new_codechunk (int dynamic, int size)
 	}
 	else {
 #ifndef FORCE_MALLOC
-		ptr = mmap (0, chunk_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+		ptr = mmap (0, chunk_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS|ARCH_MAP_FLAGS, -1, 0);
 		if (ptr == (void*)-1) {
 			int fd = open ("/dev/zero", O_RDONLY);
 			if (fd != -1) {
-				ptr = mmap (0, chunk_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE, fd, 0);
+				ptr = mmap (0, chunk_size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_PRIVATE|ARCH_MAP_FLAGS, fd, 0);
 				close (fd);
 			}
 			if (ptr == (void*)-1) {
