@@ -3305,7 +3305,7 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	if (meta->idx_blob_wide)
 		*p |= 0x04;
 	++p;
-	*p++ = 0; /* reserved */
+	*p++ = 1; /* reserved */
 	int64val = (guint64*)p;
 	*int64val++ = GUINT64_TO_LE (valid_mask);
 	*int64val++ = GUINT64_TO_LE (valid_mask & sorted_mask); /* bitvector of sorted tables  */
@@ -4129,8 +4129,8 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly,
 	mono_image_add_stream_data (&image->code, entrycode, sizeof (entrycode));
 	image->iat_offset = mono_image_add_stream_zero (&image->code, 8); /* two IAT entries */
 	image->idt_offset = mono_image_add_stream_zero (&image->code, 2 * sizeof (MonoIDT)); /* two IDT entries */
-	mono_image_add_stream_zero (&image->code, 2); /* flags for name entry */
-	image->imp_names_offset = mono_image_add_stream_data (&image->code, "_CorExeMain", 12);
+	image->imp_names_offset = mono_image_add_stream_zero (&image->code, 2); /* flags for name entry */
+	mono_image_add_stream_data (&image->code, "_CorExeMain", 12);
 	mono_image_add_stream_data (&image->code, "mscoree.dll", 12);
 	image->ilt_offset = mono_image_add_stream_zero (&image->code, 8); /* two ILT entries */
 	stream_data_align (&image->code);
@@ -4644,6 +4644,11 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb) {
 	header->datadir.pe_cli_header.rva = GUINT32_FROM_LE (assembly->text_rva + assembly->cli_header_offset);
 	header->datadir.pe_iat.size = GUINT32_FROM_LE (8);
 	header->datadir.pe_iat.rva = GUINT32_FROM_LE (assembly->text_rva + assembly->iat_offset);
+	/* patch entrypoint name */
+	if (assemblyb->pekind == 1)
+		memcpy (assembly->code.data + assembly->imp_names_offset + 2, "_CorDllMain", 12);
+	else
+		memcpy (assembly->code.data + assembly->imp_names_offset + 2, "_CorExeMain", 12);
 	/* patch imported function RVA name */
 	rva = (guint32*)(assembly->code.data + assembly->iat_offset);
 	*rva = GUINT32_FROM_LE (assembly->text_rva + assembly->imp_names_offset);
@@ -4653,14 +4658,14 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb) {
 	header->datadir.pe_import_table.rva = GUINT32_FROM_LE (assembly->text_rva + assembly->idt_offset);
 	/* patch imported dll RVA name and other entries in the dir */
 	rva = (guint32*)(assembly->code.data + assembly->idt_offset + G_STRUCT_OFFSET (MonoIDT, name_rva));
-	*rva = GUINT32_FROM_LE (assembly->text_rva + assembly->imp_names_offset + 12); /* 12 is strlen+1 of func name */
+	*rva = GUINT32_FROM_LE (assembly->text_rva + assembly->imp_names_offset + 14); /* 14 is hint+strlen+1 of func name */
 	rva = (guint32*)(assembly->code.data + assembly->idt_offset + G_STRUCT_OFFSET (MonoIDT, import_address_table_rva));
 	*rva = GUINT32_FROM_LE (assembly->text_rva + assembly->iat_offset);
 	rva = (guint32*)(assembly->code.data + assembly->idt_offset + G_STRUCT_OFFSET (MonoIDT, import_lookup_table));
 	*rva = GUINT32_FROM_LE (assembly->text_rva + assembly->ilt_offset);
 
 	p = (assembly->code.data + assembly->ilt_offset);
-	value = (assembly->text_rva + assembly->imp_names_offset - 2);
+	value = (assembly->text_rva + assembly->imp_names_offset);
 	*p++ = (value) & 0xff;
 	*p++ = (value >> 8) & (0xff);
 	*p++ = (value >> 16) & (0xff);
