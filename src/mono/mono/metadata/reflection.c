@@ -8146,13 +8146,15 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 	return geninst;
 }
 
-static MonoType*
+static inline MonoType*
 dup_type (const MonoType *original)
 {
 	MonoType *r = g_new0 (MonoType, 1);
 	*r = *original;
 	r->attrs = original->attrs;
 	r->byref = original->byref;
+	if (original->type == MONO_TYPE_PTR)
+		r->data.type = dup_type (original->data.type);
 	mono_stats.generics_metadata_size += sizeof (MonoType);
 	return r;
 }

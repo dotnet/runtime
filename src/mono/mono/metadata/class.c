@@ -98,13 +98,15 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 	return mono_class_from_name (image, nspace, name);
 }
 
-static MonoType*
+static inline MonoType*
 dup_type (MonoType* t, const MonoType *original)
 {
 	MonoType *r = g_new0 (MonoType, 1);
 	*r = *t;
 	r->attrs = original->attrs;
 	r->byref = original->byref;
+	if (t->type == MONO_TYPE_PTR)
+		t->data.type = dup_type (t->data.type, original->data.type);
 	mono_stats.generics_metadata_size += sizeof (MonoType);
 	return r;
 }
