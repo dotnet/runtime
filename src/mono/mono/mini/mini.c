@@ -5355,7 +5355,6 @@ optimize_branches (MonoCompile *cfg) {
 						if (cfg->verbose_level > 2)
 							g_print ("br removal triggered %d -> %d\n", bb->block_num, bbn->block_num);
 					}
-					/* fixme: this causes problems with inlining */
 					if (bbn->in_count == 1) {
 
 						if (bbn != cfg->bb_exit) {
@@ -5371,11 +5370,14 @@ optimize_branches (MonoCompile *cfg) {
 					if (bb->last_ins && bb->last_ins->opcode == CEE_BR) {
 						bbn = bb->last_ins->inst_target_bb;
 						if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR) {
-							/*
+							
 							if (cfg->verbose_level > 2)
-								g_print ("in %s branch to branch triggered %d -> %d\n", cfg->method->name, bb->block_num, bbn->block_num);
-							bb->out_bb [0] = bb->last_ins->inst_target_bb = bbn->code->inst_target_bb;
-							changed = TRUE;*/
+								g_print ("in %s branch to branch triggered %d -> %d\n", cfg->method->name, 
+									 bb->block_num, bbn->block_num);
+
+							replace_basic_block (bb, bb->out_bb [0], bbn->code->inst_target_bb);
+							bb->last_ins->inst_target_bb = bbn->code->inst_target_bb;
+							changed = TRUE;
 						}
 					}
 				}
