@@ -23,6 +23,7 @@ libmetadata_a_HEADERS = \
 	paramattr.h	\
 	propertyattr.h	\
 	rawbuffer.h	\
+	tokentype.h	\
 	typeattr.h
 
 pedump_SOURCES =		\

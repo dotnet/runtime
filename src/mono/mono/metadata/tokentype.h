@@ -1,0 +1,39 @@
+#ifndef _MONO_METADATA_TOKENTYPE_H_
+#define _MONO_METADATA_TOKENTYPE_H_
+
+/*
+ * These tokens match the table ID except for the last
+ * three (string, name and base type which are special)
+ */
+ 
+typedef enum {
+	TOKEN_TYPE_MODULE            = 0x00000000,
+	TOKEN_TYPE_TYPE_REF          = 0x01000000,
+	TOKEN_TYPE_TYPE_DEF          = 0x02000000,
+	TOKEN_TYPE_FIELD_DEF         = 0x04000000,
+	TOKEN_TYPE_METHOD_DEF        = 0x06000000, 
+	TOKEN_TYPE_PARAM_DEF         = 0x08000000,
+	TOKEN_TYPE_INTERFACE_IMPL    = 0x09000000,
+	TOKEN_TYPE_MEMBER_REF        = 0x0a000000,
+	TOKEN_TYPE_CUSTOM_ATTRIBUTE  = 0x0c000000,
+	TOKEN_TYPE_PERMISSION        = 0x0e000000,
+	TOKEN_TYPE_SIGNATURE         = 0x11000000,
+	TOKEN_TYPE_EVENT             = 0x14000000,
+	TOKEN_TYPE_PROPERTY          = 0x17000000,
+	TOKEN_TYPE_MODULE_REF        = 0x1a000000,
+	TOKEN_TYPE_TYPE_SPEC         = 0x1b000000,
+	TOKEN_TYPE_ASSEMBLY          = 0x20000000,
+	TOKEN_TYPE_ASSEMBLY_REF      = 0x23000000,
+	TOKEN_TYPE_FILE              = 0x26000000,
+	TOKEN_TYPE_EXPORTED_TYPE     = 0x27000000,
+	TOKEN_TYPE_MANIFEST_RESOURCE = 0x28000000,
+
+	/*
+	 * These do not match metadata tables directly
+	 */
+	TOKEN_TYPE_STRING            = 0x70000000,
+	TOKEN_TYPE_NAME              = 0x71000000,
+	TOKEN_TYPE_BASE_TYPE         = 0x72000000
+} TokenType;
+
+#endif /* _MONO_METADATA_TOKENTYPE_H_ */

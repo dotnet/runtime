@@ -219,6 +219,8 @@ void                  mono_metadata_free_mh  (MonoMetaMethodHeader *mh);
 #define mono_metadata_token_index(token) ((token & 0xffffff))
 
 
+#define mono_metadata_token_code(token) ((token & 0xff000000))
+
 /*
  * FIXME: put all of the table codes here
  */
