@@ -1,6 +1,7 @@
 Makefile
 Makefile.in
 pedump
+monosn
 .libs
 .deps
 *.lo
