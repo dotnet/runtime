@@ -1,6 +1,6 @@
 
 TEST_PROG=../interpreter/mint
-JITTEST_PROG=../jit/testjit
+JITTEST_PROG=../jit/mono
 
 CSC=csc
 

@@ -25,7 +25,7 @@
 static void
 enter_method (MonoMethod *method, gpointer ebp)
 {
-	int i;
+	int i, j;
 	MonoClass *class;
 	MonoObject *o;
 
@@ -33,17 +33,31 @@ enter_method (MonoMethod *method, gpointer ebp)
 		method->klass->name, method->name);
 
 	ebp += 8;
-	
+
+	if (method->signature->ret->type == MONO_TYPE_VALUETYPE) {
+		int size, align;
+
+		if ((size = mono_type_size (method->signature->ret, &align)) > 4 || size == 3) {
+			printf ("VALUERET:%p, ", *((gpointer *)ebp));
+			ebp += sizeof (gpointer);
+		}
+	}
+
 	if (method->signature->hasthis) {
-		o = *((MonoObject **)ebp);
-		class = o->klass;
-		printf ("this:%p[%s.%s], ", o, class->name_space, class->name);
+		if (method->klass->valuetype) {
+			printf ("value:%p, ", *((gpointer *)ebp));
+		} else {
+			o = *((MonoObject **)ebp);
+			class = o->klass;
+			printf ("this:%p[%s.%s], ", o, class->name_space, class->name);
+		}
 		ebp += sizeof (gpointer);
 	}
 
 	for (i = 0; i < method->signature->param_count; ++i) {
 		MonoType *type = method->signature->params [i];
 		int size, align;
+		size = mono_type_size (type, &align);
 
 		switch (type->type) {
 		case MONO_TYPE_BOOLEAN:
@@ -73,17 +87,18 @@ enter_method (MonoMethod *method, gpointer ebp)
 		case MONO_TYPE_R8:
 			printf ("%f, ", *((double *)(ebp)));
 			break;
-
+		case MONO_TYPE_VALUETYPE: 
+			printf ("[");
+			for (j = 0; j < size; j++)
+				printf ("%02x,", *((guint8*)ebp +j));
+			printf ("], ");
+			break;
 		default:
 			printf ("XX, ");
 		}
 
-		size = mono_type_size (type, &align);
-		if (size < 4) 
-			size = 4;
-
-		ebp += size;
-
+		ebp += size + 3;
+		ebp = (gpointer)((unsigned)ebp & ~(3));
 	}
 
 	printf (")\n");
@@ -433,15 +448,18 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 
 	//printf ("RALLOC START %d %p %d\n",  tree->op, rs->free_mask, goal);
 
+	if (nts [0] && kids [0] == tree) {
+		/* chain rule */
+		tree_allocate_regs (kids [0], nts [0], rs);
+		return;
+	}
+
 	for (i = 0; nts [i]; i++)
-		if (kids [i] != tree) /* don't allocate regs for chain rules */
-			tree_allocate_regs (kids [i], nts [i], rs);
+		tree_allocate_regs (kids [i], nts [i], rs);
 
 	for (i = 0; nts [i]; i++) {
-		if (kids [i] != tree) { /* we do not free register for chain rules */
-			mono_regset_free_reg (rs, kids [i]->reg1);
-			mono_regset_free_reg (rs, kids [i]->reg2);
-		}
+		mono_regset_free_reg (rs, kids [i]->reg1);
+		mono_regset_free_reg (rs, kids [i]->reg2);
 	}
 
 	switch (goal) {
@@ -631,8 +649,8 @@ arch_compile_method (MonoMethod *method)
 	mono_regset_reserve_reg (cfg->rs, X86_ESP);
 	mono_regset_reserve_reg (cfg->rs, X86_EBP);
 
-	// fixme: remove limitation to 1024 bytes
-	method->addr = cfg->start = cfg->code = g_malloc (1024);
+	// fixme: remove limitation to 4096 bytes
+	method->addr = cfg->start = cfg->code = g_malloc (4096);
 
 	if (mono_jit_dump_forest) {
 		int i;

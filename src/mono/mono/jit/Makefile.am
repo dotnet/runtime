@@ -3,9 +3,9 @@ INCLUDES = 				\
 	$(GMODULE_CFLAGS)		\
 	$(GLIB_CFLAGS)			
 
-bin_PROGRAMS = testjit
+bin_PROGRAMS = mono
 
-testjit_SOURCES =		\
+mono_SOURCES =			\
 	codegen.h		\
 	codegen-x86.c		\
 	emit-x86.c		\
@@ -14,9 +14,9 @@ testjit_SOURCES =		\
 	regset.c		\
 	mempool.h		\
 	mempool.c		\
-	testjit.c
+	jit.c
 
-testjit_LDADD =				\
+mono_LDADD =				\
 	../metadata/libmetadata.a	\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\

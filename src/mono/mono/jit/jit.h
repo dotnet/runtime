@@ -26,6 +26,7 @@ typedef struct {
 	MonoValueType type;
 	MonoValueKind kind;
 	int offset;
+	int size;
 } MonoVarInfo;
 
 typedef struct {
@@ -42,6 +43,8 @@ typedef struct {
 	GPtrArray    *forest;
 	MBTree      **instack;
 	gint32        indepth;
+	MBTree      **outstack;
+	gint32        outdepth;
 	gint32        addr;
 } MonoBBlock;
 
@@ -53,7 +56,7 @@ typedef struct {
 	GArray           *varinfo;
 	gint32            locals_size;
 	gint32            args_size;
-	guint16         **intvars;
+	guint16          *intvars;
 
 	MonoMemPool      *mp;
 	guint8           *start;

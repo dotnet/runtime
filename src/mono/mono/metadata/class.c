@@ -946,6 +946,7 @@ mono_class_get (MonoImage *image, guint32 type_token)
 		class = mono_class_create_from_typespec (image, type_token);
 		break;
 	default:
+		g_warning ("unknown token type %x", type_token & 0xff000000);
 		g_assert_not_reached ();
 	}
 	
