@@ -9,6 +9,7 @@ TESTSRC=			\
 	obj.cs			\
 	switch.cs		\
 	outparm.cs		\
+	delegate.cs		\
 	exception.cs		\
 	exception2.cs		\
 	exception3.cs		\
