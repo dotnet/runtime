@@ -25,8 +25,6 @@
 #include <mono/cli/types.h>
 #include <mono/cli/object.h>
 
-static GHashTable *class_hash;
-
 #define CSIZE(x) (sizeof (x) / 4)
 
 /*
@@ -185,15 +183,27 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	metadata_t *m = &iinfo->cli_metadata;
 	metadata_tableinfo_t *tt = &m->tables [META_TABLE_TYPEDEF];
 	MonoClass *class;
-	guint32 cols [6];
+	guint32 cols [6], parent_token;
 	guint tidx = type_token & 0xffffff;
 	
-	class = g_new0 (MonoClass, 1);
-	class->image = image;
-	class->type_token = tidx;
-
 	mono_metadata_decode_row (tt, tidx, cols, CSIZE (cols));
 
+	class = g_new0 (MonoClass, 1);
+
+	/*
+	 * If root of the hierarchy
+	 */
+	if (cols [3] == 0){
+		class->instance_size = sizeof (MonoObject);
+		class->parent = NULL;
+	} else {
+		parent_token = mono_metadata_token_from_dor (cols [3]);
+		class->parent = mono_class_get (image, parent_token);
+		class->instance_size = class->parent->instance_size;
+	}
+	
+	class->image = image;
+	class->type_token = tidx;
 	class->flags = cols [0];
 	
 	/*
@@ -227,48 +237,53 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	 * Computes the size used by the fields, and their locations
 	 */
 	if (class->field.count > 0){
-		class->fields = g_new (MonoClassFields, class->field.count);
+		class->fields = g_new (MonoClassField, class->field.count);
 		class_compute_field_layout (m, class);
 	}
 
 	return class;
 }
 
-/**
- * mono_class_get:
- * @image: the image where the class resides
- * @type_token: the token for the class
+/*
+ * Auxiliary routine to mono_class_get_field
  *
- * Returns: the MonoClass that represents @type_token in @image
+ * Takes a field index instead of a field token.
  */
-MonoClass *
-mono_class_get (MonoImage *image, guint32 type_token)
+static MonoClassField *
+mono_class_get_field_idx (MonoClass *class, int idx)
 {
-	MonoClass *class, hash_lookup;
-
-	hash_lookup.image = image;
-	hash_lookup.type_token = type_token;
-	
-	class = g_hash_table_lookup (class_hash, &hash_lookup);
-
-	if (class)
-		return class;
-
-	switch (type_token & 0xff000000){
-	case TOKEN_TYPE_TYPE_DEF:
-		class = mono_class_create_from_typedef (image, type_token);
-		break;
-		
-	case TOKEN_TYPE_TYPE_REF:
-		g_error ("Can not handle class creation of TypeRefs yet");
-		
-	default:
-		g_assert_not_reached ();
+	if (class->field.count){
+		if ((idx >= class->field.first) && (idx < class->field.last)){
+			return &class->fields [idx - class->field.first];
+		}
 	}
-	
-	g_hash_table_insert (class_hash, class, class);
 
-	return class;
+	if (!class->parent)
+		return NULL;
+	
+	return mono_class_get_field_idx (class->parent, idx);
+}
+
+/**
+ * mono_class_get_field:
+ * @class: the class to lookup the field.
+ * @field_token: the field token
+ *
+ * Returns: A MonoClassField representing the type and offset of
+ * the field, or a NULL value if the field does not belong to this
+ * class.
+ */
+MonoClassField *
+mono_class_get_field (MonoClass *class, guint32 field_token)
+{
+	int idx = mono_metadata_token_index (field_token);
+
+	if (mono_metadata_token_code (field_token) == TOKEN_TYPE_MEMBER_REF)
+		g_error ("Unsupported Field Token is a MemberRef, implement me");
+
+	g_assert (mono_metadata_token_code (field_token) == TOKEN_TYPE_FIELD_DEF);
+
+	return mono_class_get_field_idx (class, idx);
 }
 
 static guint
@@ -292,13 +307,48 @@ mono_class_equal (gconstpointer ap, gconstpointer bp)
 }
 
 /**
- * mono_class_init:
+ * mono_class_get:
+ * @image: the image where the class resides
+ * @type_token: the token for the class
  *
- * Initializes the runtime class system
+ * Returns: the MonoClass that represents @type_token in @image
  */
-void
-mono_class_init (void)
+MonoClass *
+mono_class_get (MonoImage *image, guint32 type_token)
 {
-	class_hash = g_hash_table_new (
-		mono_class_hash, mono_class_equal);
+	MonoClass *class, hash_lookup;
+	static GHashTable *class_hash;
+
+	hash_lookup.image = image;
+	hash_lookup.type_token = type_token;
+
+	if (!class_hash){
+		class_hash = g_hash_table_new (
+			mono_class_hash, mono_class_equal);
+	}
+	
+	class = g_hash_table_lookup (class_hash, &hash_lookup);
+
+	if (class)
+		return class;
+
+	switch (type_token & 0xff000000){
+	case TOKEN_TYPE_TYPE_DEF:
+		class = mono_class_create_from_typedef (image, type_token);
+		break;
+		
+	case TOKEN_TYPE_TYPE_REF:
+		g_error ("Can not handle class creation of TypeRefs yet");
+
+	case TOKEN_TYPE_TYPE_SPEC:
+		g_error ("Can not handle class creation of TypeSpecs yet");
+		
+	default:
+		g_assert_not_reached ();
+	}
+	
+	g_hash_table_insert (class_hash, class, class);
+
+	return class;
 }
+

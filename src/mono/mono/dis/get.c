@@ -1005,7 +1005,7 @@ char *
 get_method (metadata_t *m, guint32 token)
 {
 	int idx = mono_metadata_token_index (token);
-	guint32 member_cols [3];
+	guint32 member_cols [3], method_cols [6];
 	char *res, *class, *fancy_name;
 	
 	switch (mono_metadata_token_code (token)){

@@ -353,11 +353,6 @@ void                  mono_metadata_free_mh  (MonoMetaMethodHeader *mh);
 
 #define mono_metadata_token_code(token) ((token & 0xff000000))
 
-/*
- * FIXME: put all of the table codes here
- */
-enum {
-	TOKEN_TABLE_XXX = 0
-} MonoMetadataTableCodes;
+guint32 mono_metadata_token_from_dor (guint32 dor_index);
 
 #endif /* __MONO_METADATA_H__ */

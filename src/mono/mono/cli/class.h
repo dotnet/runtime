@@ -8,12 +8,16 @@ typedef struct {
 	MonoFieldType *type;
 	int            offset;
 	guint32        flags;
-} MonoClassFields;
-	
-typedef struct {
+} MonoClassField;
+
+typedef struct _MonoClass MonoClass;
+
+struct _MonoClass {
 	MonoImage *image;
 	guint32    type_token;
 
+	MonoClass *parent;
+	
 	/*
 	 * Computed object instance size, total.
 	 */
@@ -32,12 +36,12 @@ typedef struct {
 	/*
 	 * Field information: Type and location from object base
 	 */
-	MonoClassFields *fields;
-} MonoClass;
+	MonoClassField *fields;
+};
 
 MonoClass *mono_class_get       (MonoImage *image, guint32 type_token);
-void       mono_class_init      (void);
 
-int        mono_field_type_size (MonoFieldType *ft);
+int             mono_field_type_size (MonoFieldType *ft);
+MonoClassField *mono_class_get_field (MonoClass *class, guint32 field_token);
 
 #endif /* _MONO_CLI_CLASS_H_ */

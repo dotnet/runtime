@@ -760,8 +760,10 @@ ves_exec_method (MonoImage *image, MonoMethod *mh, stackval *args)
 
 		CASE (CEE_NEWOBJ) {
 			MonoObject *o;
-			guint32 token = read32 (ip);
-			
+			guint32 token;
+
+			ip++;
+			token = read32 (ip);
 			o = newobj (image, token);
 			ip += 4;
 			BREAK;

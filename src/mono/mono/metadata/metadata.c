@@ -14,6 +14,7 @@
 #include "tabledefs.h"
 #include "endian.h"
 #include "cil-coff.h"
+#include "tokentype.h"
 
 /*
  * Encoding of the "description" argument:
@@ -1357,3 +1358,37 @@ mono_metadata_parse_field_type (metadata_t *m, const char *ptr, const char **rpt
 	return ft;
 }
 
+/*
+ * mono_metadata_token_from_dor:
+ * @dor_token: A TypeDefOrRef coded index
+ *
+ * dor_token is a TypeDefOrRef coded index: it contains either
+ * a TypeDef, TypeRef or TypeSpec in the lower bits, and the upper
+ * bits contain an index into the table.
+ *
+ * Returns: an expanded token
+ */
+guint32
+mono_metadata_token_from_dor (guint32 dor_index)
+{
+	int table, idx;
+
+	table = dor_index & 0x03;
+	idx = dor_index >> 2;
+
+	switch (table){
+	case 0: /* TypeDef */
+		return TOKEN_TYPE_TYPE_DEF | idx;
+
+	case 1: /* TypeRef */
+		return TOKEN_TYPE_TYPE_REF | idx;
+
+	case 2: /* TypeSpec */
+		return TOKEN_TYPE_TYPE_SPEC | idx;
+
+	default:
+		g_assert_not_reached ();
+	}
+
+	return 0;
+}
