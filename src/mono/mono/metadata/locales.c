@@ -280,9 +280,7 @@ get_current_locale_name (void)
 	gchar *locale;
 	gchar *corrected = NULL;
 	const gchar *p;
-	const gchar *q;
         gchar *c;
-	gint32 len;
 
 #ifdef PLATFORM_WIN32
 	locale = g_win32_getlocale ();
@@ -386,7 +384,7 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (
 	ne = bsearch (&key, culture_name_entries, NUM_CULTURE_ENTRIES,
 			sizeof (CultureInfoNameEntry), culture_name_locator);
 
-        g_free (key.name);
+        g_free ((gpointer) key.name);
 
 	if (ne == NULL)
 		return FALSE;
@@ -408,7 +406,7 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_specif
 	ne = bsearch (&key, culture_name_entries, NUM_CULTURE_ENTRIES,
 			sizeof (CultureInfoNameEntry), culture_name_locator);
 
-        g_free (key.name);
+        g_free ((gpointer) key.name);
 
 	if (ne == NULL)
 		return FALSE;
