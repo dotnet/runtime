@@ -917,25 +917,17 @@ ves_icall_ModuleBuilder_getMethodToken (MonoReflectionModuleBuilder *mb,
 		mb->dynamic_image, (MonoObject *) method, opt_param_types);
 }
 
-static gint32
-ves_icall_ModuleBuilder_getDataChunk (MonoReflectionModuleBuilder *mb, MonoArray *buf, gint32 offset)
+static void
+ves_icall_ModuleBuilder_WriteToFile (MonoReflectionModuleBuilder *mb, HANDLE file)
 {
-	int count;
 	MonoDynamicImage *image = mb->dynamic_image;
-	char *p = mono_array_addr (buf, char, 0);
-
+	
 	MONO_ARCH_SAVE_REGS;
 
 	mono_image_create_pefile (mb);
 
-	if (offset >= image->pefile.index)
-		return 0;
-	count = mono_array_length (buf);
-	count = MIN (count, image->pefile.index - offset);
-	
-	memcpy (p, image->pefile.data + offset, count);
-
-	return count;
+	if (!WriteFile (file, image->pefile.data, image->pefile.index , NULL, NULL))
+		g_error ("WriteFile returned %d\n", GetLastError ());
 }
 
 static void
@@ -6137,10 +6129,10 @@ static const IcallEntry methodbuilder_icalls [] = {
 };
 
 static const IcallEntry modulebuilder_icalls [] = {
+	{"WriteToFile", ves_icall_ModuleBuilder_WriteToFile},
 	{"basic_init", mono_image_module_basic_init},
 	{"build_metadata", ves_icall_ModuleBuilder_build_metadata},
 	{"create_modified_type", ves_icall_ModuleBuilder_create_modified_type},
-	{"getDataChunk", ves_icall_ModuleBuilder_getDataChunk},
 	{"getMethodToken", ves_icall_ModuleBuilder_getMethodToken},
 	{"getToken", ves_icall_ModuleBuilder_getToken},
 	{"getUSIndex", mono_image_insert_string}
