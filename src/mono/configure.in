@@ -94,7 +94,7 @@ case "$host" in
 		;;
 	*-*-darwin*)
 		platform_win32=no
-		CPPFLAGS="$CPPFLAGS -no-cpp-precomp -D_THREAD_SAFE"
+		CPPFLAGS="$CPPFLAGS -no-cpp-precomp -D_THREAD_SAFE -DGC_MACOSX_THREADS"
 		libmono_cflags="-D_THREAD_SAFE"
 		LDFLAGS="$LDFLAGS -pthread"
 		libmono_ldflags="-pthread"
@@ -1053,6 +1053,7 @@ case "$host" in
 		TARGET=POWERPC;
 		arch_target=ppc;
 		JIT_SUPPORTED=yes
+		jit_wanted=true
 		;;
 	arm-*-linux-* | armv4l-*-linux-*)
 		TARGET=ARM;
