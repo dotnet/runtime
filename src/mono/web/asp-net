@@ -7,31 +7,35 @@
 		* Web Services (the SOAP-based rpc system).
 	</ul>
 
-	Both are functional at this point, and applications like
-	"IBuySpy" run with Mono.
-
-	ASP.NET works either embedded into
-	our XSP server test server or the mod_mono Apache module.
-
-	We are now working on bug fixing and adding missing features
-	after making the whole pipeline compatible with MS.
-
-	Tim started work on the Web Services. After that, Lluis is in
-	charge and has been working hard on them as part of our
-	<a href="http://www.ximian.com/about_us/press_center/press_releases/index.html?pr=sourcegear">SourceGear</a> contract.
+	Both are fully functional at this point.
 	
-	Web services are now supported and there are some samples in the
-	XSP set of tests.
+	Publicly available applications such as <a
+	href="http://www.asp.net/Default.aspx?tabindex=5&tabid=42">
+	IBuySpy</a>, <a href="http://www.ngallery.org/">nGallery</a> and
+	many others are known to work.
 
-** Hosting
+	Web Services stack is being used for commercial applications
+	such as <a
+	href="http://www.ximian.com/about_us/press_center/press_releases/index.html?pr=sourcegear">
+	SourceGear</a>'s <a
+	href="http://www.sourcegear.com/vault/index.asp">Vault</a>. They
+	even funded the development of our Web Services classes back in
+	2002.
 
-	ASP.NET provides a hosting interface.  Today we ship support
-	for two different hosting mechanisms:
+* Hosting ASP.NET
+
+	Using ASP.NET System.Web.Hosting namespace classes you can make
+	your own ASP.NET enabled server.
+
+	However, if you want to take the easy path, we provide two
+	different mechanisms for hosting ASP.NET applications:
 	<ul>
-		* <a href="#xsp">XSP</a>: A light-weight C# web server.
+		* <a href="#xsp">XSP</a>: A light-weight web server
+		written in C#.
 
-		* <a href="#mod_mono">mod_mono</a>: An apache module
-		  that can host the Mono runtime and the ASP.NET runtime
+		* <a href="#mod_mono">mod_mono</a>: An <a
+		href="http://httpd.apache.org">Apache</a> module that
+		works with both 1.3 and 2.0 versions.
 	</ul>
 
 <a name="xsp">
@@ -41,67 +45,32 @@
 	run your ASP.NET applications.  The code is available from our
 	<a href="download.html">download page</a> or from the <a
 	href="anoncvs.html">Anonymous CVS</a> repository (module name:
-	xsp)/.
+	xsp).
 	
-	This is where initial development of the .aspx/.ascx/.asax
-	compiler to C# took place. That compiler is now integrated in
-	System.Web classes mostly under System.Web.Compilation
-	namespace.  We added a new web server that works with mono and
-	MS runtime and is being used to debug our classes.  It resides
-	in xsp/server.
-
 	A couple of classes of this new server can be reused/extended
 	to make an apache module/cgi using mono (MonoWorkerRequest and
 	MonoApplicationHost).  This server also uses a couple of
 	plugins distributed with Mono to support gzip HTTP transfers.
 
-	There is also a set of .aspx pages to test the server along with
-	a few user controls under xsp/test.
+	There is also a set of pages, controls and web services that you
+	can use to test the server and see how ASP.NET looks like.
 
-	You can check it out from CVS and run 'make install' to test it.
-
+	As XSP is written in C# and uses System.Web classes to perform
+	its job, it also works under MS runtime.
+	
 <a name="mod_mono">
-* mod_mono
+** mod_mono
 
 	This Apache module is available from our <a
 	href="download.html">download page</a>. The <a href="anoncvs.html">
-	cvs</a> module name is mod_mono. It works with both 1.3 and 2.0
-	versions of the <a href="http://httpd.apache.org">apache server</a>.
+	cvs</a> module name is mod_mono.
 
-	It allows apache to serve ASP.NET pages.
+	It allows apache to serve ASP.NET pages by proxying the requests
+	to a slightly modified version of our XSP called mod-mono-server
+	that is installed along with XSP.
 
-	Work is underway to improve it.
+	It does not work on Windows.
 
-** Controls
-
-	A lot of work has been put in the various classes that
-	implement the controls (UI.HtmlControls and UI.WebControls).
-	They have been coded mostly in the dark, and without being
-	able to test them in real life: Gaurav and Leen worked very
-	hard on this namespace. After that, we keep fixing bugs on
-	them.
-
-	We can now render all HtmlControls and all WebControls.
-
-	Help in making the controls better is appreciated.
-
-** ASP.NET and free controls.
-
-	We want to encourage developers to create open source controls
-	that can be used both on Mono's ASP.NET and Microsoft's ASP.NET.  
-
-** How to Help
-
-        Testing and fixing HtmlControls, WebControls and validators is an
-	easy way to help.
-
-        In the CVS module XSP you can find a small web server used for
-	testing and a directory containing sample aspx pages.
-
-        You have some documentation under doc directory and in the README
-        file of each directory. They explain how to test our System.Web.
-        Testing is really easy!
-
-	As the server also works with MS runtime, you can use it to check
-	what the expected results are.
-
+<div align="bottom">
+<small>Last updated: Sat, 29 May 2004 02:53:44 GMT</small>
+</div>
