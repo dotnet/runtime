@@ -736,10 +736,8 @@ tree_emit (int goal, MonoFlowGraph *cfg, MBTree *tree)
 
 	// we assume an instruction uses a maximum of 128 bytes
 	if ((cfg->code_size - offset) <= 128) {
-		int add = MIN ((cfg->code_size * 2), 1024);
-
+		int add = MIN (cfg->code_size, 128);
 		cfg->code_size += add;
-		mono_jit_stats.allocated_code_size += add;
 		mono_jit_stats.code_reallocs++;
 		cfg->start = g_realloc (cfg->start, cfg->code_size);
 		g_assert (cfg->start);
@@ -1038,7 +1036,6 @@ arch_compile_method (MonoMethod *method)
 
 		cfg->code_size = MAX (header->code_size * 5, 256);
 		cfg->start = cfg->code = g_malloc (cfg->code_size);
-		mono_jit_stats.allocated_code_size += cfg->code_size;
 
 		if (match_debug_method (method))
 			x86_breakpoint (cfg->code);
@@ -1068,6 +1065,8 @@ arch_compile_method (MonoMethod *method)
 		arch_emit_epilogue (cfg);		
 
 		addr = cfg->start;
+
+		mono_jit_stats.allocated_code_size += cfg->code_size;
 
 		code_size_ratio = cfg->code - cfg->start;
 		if (code_size_ratio > mono_jit_stats.biggest_method_size) {
