@@ -54,6 +54,7 @@ case "$host" in
 		gc_default=boehm 
 		with_nptl=no
 		with_sigaltstack=no
+		LN_S=cp
 
 		;;
 	*-*-*netbsd*)
