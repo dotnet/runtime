@@ -314,8 +314,21 @@ A: Gtk# is a set of bindings for the Gtk+ toolkit for C# (and other
    desktop.  System.Windows.Forms is an API defined by Microsoft to
    build GUI applications.
 
-   Windows.Forms is currently being implemented on top of a modified
+Q: What are you using to implement Windows.Forms?
+
+A: Windows.Forms is currently being implemented on top of a modified
    version of Wine that can be used as a library: WineLib.
+
+   Essentially Wine is used as a library that happens to implement the
+   "Win32" toolkit and our Windows.Forms becomes a managed layer on
+   top of this toolkit.
+
+   There are several advantages in this approach: we get Wndproc
+   message compatibility for free (Wndproc is an overridable method in
+   the Control class and it is used to perform advanced tricks with
+   the GUI toolkit) as well as allowing third-party controls that are
+   used to P/Invoke into Win32 in the Windows world to work out of the
+   box on Linux/MacOS.
 
 Q: Why not implement System.Windows.Forms on top of Gtk# or Qt#?
 
@@ -379,7 +392,7 @@ A: There is a sample file called `DbClient' in gtk-sharp/samples that you
 
 Q: Do you have an estimate for when Windows.Forms will be released?
 
-A: The plan currently is aimed at Q3/2004.
+A: The plan currently is aimed at Q4/2004.
 
 
 Q: Do you have a comparission chart about the various toolkit
