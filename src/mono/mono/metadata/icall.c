@@ -5685,7 +5685,7 @@ static const IcallEntry math_icalls [] = {
 };
 
 static const IcallEntry customattrs_icalls [] = {
-	{"GetCustomAttributes", mono_reflection_get_custom_attrs}
+	{"GetCustomAttributesInternal", mono_reflection_get_custom_attrs}
 };
 
 static const IcallEntry enuminfo_icalls [] = {
