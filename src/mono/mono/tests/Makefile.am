@@ -171,7 +171,8 @@ TEST_CS_SRC=			\
 	bug-47295.cs		\
 	bug-46781.cs		\
 	bug-48015.cs		\
-	bug-42136.cs
+	bug-42136.cs		\
+	cross-domain.cs
 
 if X86
 PLATFORM_DISABLED_TESTS=
