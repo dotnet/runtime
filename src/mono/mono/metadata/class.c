@@ -2476,6 +2476,22 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 	return mono_class_from_mono_type (inflated);
 }
 
+/**
+ * mono_class_from_name_case:
+ * @image: The MonoImage where the type is looked up in, or NULL for looking up in all loaded assemblies
+ * @name_space: the type namespace
+ * @name: the type short name.
+ *
+ * Obtains a MonoClass with a given namespace and a given name which
+ * is located in the given MonoImage.   The namespace and name
+ * lookups are case insensitive.
+ *
+ * You can also pass `NULL' to the image, and that will lookup for
+ * a type with the given namespace and name in all of the loaded
+ * assemblies: notice that since there might be a name clash in this
+ * case, passing NULL is not encouraged if you need a precise type.
+ *
+ */
 MonoClass *
 mono_class_from_name_case (MonoImage *image, const char* name_space, const char *name)
 {
@@ -2521,6 +2537,22 @@ return_nested_in (MonoClass *class, char *nested) {
 	return NULL;
 }
 
+
+/**
+ * mono_class_from_name_case:
+ * @image: The MonoImage where the type is looked up in, or NULL for looking up in all loaded assemblies
+ * @name_space: the type namespace
+ * @name: the type short name.
+ *
+ * Obtains a MonoClass with a given namespace and a given name which
+ * is located in the given MonoImage.   
+ *
+ * You can also pass `NULL' to the image, and that will lookup for
+ * a type with the given namespace and name in all of the loaded
+ * assemblies: notice that since there might be a name clash in this
+ * case, passing NULL is not encouraged if you need a precise type.
+ *
+ */
 MonoClass *
 mono_class_from_name (MonoImage *image, const char* name_space, const char *name)
 {
@@ -2876,102 +2908,216 @@ mono_class_get_image (MonoClass *klass)
 	return klass->image;
 }
 
+/**
+ * mono_class_get_element_class:
+ * @klass: the MonoClass to act on
+ *
+ * Returns the element class of an array or an enumeration.
+ */
 MonoClass*
 mono_class_get_element_class (MonoClass *klass)
 {
 	return klass->element_class;
 }
 
+/**
+ * mono_class_is_valuetype:
+ * @klass: the MonoClass to act on
+ *
+ * Returns true if the MonoClass represents a ValueType.
+ */
 gboolean
 mono_class_is_valuetype (MonoClass *klass)
 {
 	return klass->valuetype;
 }
 
+/**
+ * mono_class_is_enum:
+ * @klass: the MonoClass to act on
+ *
+ * Returns true if the MonoClass represents an enumeration.
+ */
 gboolean
 mono_class_is_enum (MonoClass *klass)
 {
 	return klass->enumtype;
 }
 
+/**
+ * mono_class_enum_basetype:
+ * @klass: the MonoClass to act on
+ *
+ * Returns the underlying type representation for an enumeration.
+ */
 MonoType*
 mono_class_enum_basetype (MonoClass *klass)
 {
 	return klass->enum_basetype;
 }
 
+/**
+ * mono_class_get_parent
+ * @klass: the MonoClass to act on
+ *
+ * Returns the parent class for this class.
+ */
 MonoClass*
 mono_class_get_parent (MonoClass *klass)
 {
 	return klass->parent;
 }
 
+/**
+ * mono_class_get_nesting_type;
+ * @klass: the MonoClass to act on
+ *
+ * Returns the container type where this type is nested or NULL if this type is not a nested type.
+ */
 MonoClass*
 mono_class_get_nesting_type (MonoClass *klass)
 {
 	return klass->nested_in;
 }
 
+/**
+ * mono_class_get_rank:
+ * @klass: the MonoClass to act on
+ *
+ * Returns the rank for the array (the number of dimensions).
+ */
 int
 mono_class_get_rank (MonoClass *klass)
 {
 	return klass->rank;
 }
 
+/**
+ * mono_class_get_flags:
+ * @klass: the MonoClass to act on
+ *
+ * The type flags from the TypeDef table from the metadata.
+ * see the TYPE_ATTRIBUTE_* definitions on tabledefs.h for the
+ * different values.
+ *
+ * Returns the flags from the TypeDef table.
+ */
 guint32
 mono_class_get_flags (MonoClass *klass)
 {
 	return klass->flags;
 }
 
+/**
+ * mono_class_get_name
+ * @klass: the MonoClass to act on
+ *
+ * Returns the name of the class.
+ */
 const char*
 mono_class_get_name (MonoClass *klass)
 {
 	return klass->name;
 }
 
+/**
+ * mono_class_get_namespace:
+ * @klass: the MonoClass to act on
+ *
+ * Returns the namespace of the class.
+ */
 const char*
 mono_class_get_namespace (MonoClass *klass)
 {
 	return klass->name_space;
 }
 
+/**
+ * mono_class_get_type:
+ * @klass: the MonoClass to act on
+ *
+ * This method returns the internal Type representation for the class.
+ *
+ * Returns the MonoType from the class.
+ */
 MonoType*
 mono_class_get_type (MonoClass *klass)
 {
 	return &klass->byval_arg;
 }
 
+/**
+ * mono_class_get_byref_type:
+ * @klass: the MonoClass to act on
+ *
+ * 
+ */
 MonoType*
 mono_class_get_byref_type (MonoClass *klass)
 {
 	return &klass->this_arg;
 }
 
+/**
+ * mono_class_num_fields:
+ * @klass: the MonoClass to act on
+ *
+ * Returns the number of static and instance fields in the class.
+ */
 int
 mono_class_num_fields (MonoClass *klass)
 {
 	return klass->field.count;
 }
 
+/**
+ * mono_class_num_methods:
+ * @klass: the MonoClass to act on
+ *
+ * Returns the number of methods in the class.
+ */
 int
 mono_class_num_methods (MonoClass *klass)
 {
 	return klass->method.count;
 }
 
+/**
+ * mono_class_num_properties
+ * @klass: the MonoClass to act on
+ *
+ * Returns the number of properties in the class.
+ */
 int
 mono_class_num_properties (MonoClass *klass)
 {
 	return klass->property.count;
 }
 
+/**
+ * mono_class_num_events:
+ * @klass: the MonoClass to act on
+ *
+ * Returns the number of events in the class.
+ */
 int
 mono_class_num_events (MonoClass *klass)
 {
 	return klass->event.count;
 }
 
+/**
+ * mono_class_get_fields:
+ * @klass: the MonoClass to act on
+ *
+ * This routine is an iterator routine for retrieving the fields in a class.
+ *
+ * You must pass a gpointer that points to zero and is treated as an opaque handle to
+ * iterate over all of the elements.  When no more values are
+ * available, the return value is NULL.
+ *
+ * Returns a `MonoClassField *' on each iteration, or NULL when no more fields are available.
+ */
 MonoClassField*
 mono_class_get_fields (MonoClass* klass, gpointer *iter)
 {
@@ -2997,6 +3143,18 @@ mono_class_get_fields (MonoClass* klass, gpointer *iter)
 	return NULL;
 }
 
+/**
+ * mono_class_get_methods
+ * @klass: the MonoClass to act on
+ *
+ * This routine is an iterator routine for retrieving the fields in a class.
+ *
+ * You must pass a gpointer that points to zero and is treated as an opaque handle to
+ * iterate over all of the elements.  When no more values are
+ * available, the return value is NULL.
+ *
+ * Returns a MonoMethod on each iteration or NULL when no more methods are available.
+ */
 MonoMethod*
 mono_class_get_methods (MonoClass* klass, gpointer *iter)
 {
@@ -3024,6 +3182,18 @@ mono_class_get_methods (MonoClass* klass, gpointer *iter)
 	return NULL;
 }
 
+/**
+ * mono_class_get_properties:
+ * @klass: the MonoClass to act on
+ *
+ * This routine is an iterator routine for retrieving the properties in a class.
+ *
+ * You must pass a gpointer that points to zero and is treated as an opaque handle to
+ * iterate over all of the elements.  When no more values are
+ * available, the return value is NULL.
+ *
+ * Returns a `MonoProperty *' on each invocation, or NULL when no more are available.
+ */
 MonoProperty*
 mono_class_get_properties (MonoClass* klass, gpointer *iter)
 {
@@ -3049,6 +3219,18 @@ mono_class_get_properties (MonoClass* klass, gpointer *iter)
 	return NULL;
 }
 
+/**
+ * mono_class_get_events:
+ * @klass: the MonoClass to act on
+ *
+ * This routine is an iterator routine for retrieving the properties in a class.
+ *
+ * You must pass a gpointer that points to zero and is treated as an opaque handle to
+ * iterate over all of the elements.  When no more values are
+ * available, the return value is NULL.
+ *
+ * Returns a `MonoEvent *' on each invocation, or NULL when no more are available.
+ */
 MonoEvent*
 mono_class_get_events (MonoClass* klass, gpointer *iter)
 {
@@ -3074,6 +3256,18 @@ mono_class_get_events (MonoClass* klass, gpointer *iter)
 	return NULL;
 }
 
+/**
+ * mono_class_get_interfaaces
+ * @klass: the MonoClass to act on
+ *
+ * This routine is an iterator routine for retrieving the interfaces implemented by this class.
+ *
+ * You must pass a gpointer that points to zero and is treated as an opaque handle to
+ * iterate over all of the elements.  When no more values are
+ * available, the return value is NULL.
+ *
+ * Returns a `Monoclass *' on each invocation, or NULL when no more are available.
+ */
 MonoClass*
 mono_class_get_interfaces (MonoClass* klass, gpointer *iter)
 {
@@ -3101,6 +3295,18 @@ mono_class_get_interfaces (MonoClass* klass, gpointer *iter)
 	return NULL;
 }
 
+/**
+ * mono_class_get_interfaaces
+ * @klass: the MonoClass to act on
+ *
+ * This routine is an iterator routine for retrieving the nested types of a class.
+ *
+ * You must pass a gpointer that points to zero and is treated as an opaque handle to
+ * iterate over all of the elements.  When no more values are
+ * available, the return value is NULL.
+ *
+ * Returns a `Monoclass *' on each invocation, or NULL when no more are available.
+ */
 MonoClass*
 mono_class_get_nested_types (MonoClass* klass, gpointer *iter)
 {
@@ -3128,90 +3334,189 @@ mono_class_get_nested_types (MonoClass* klass, gpointer *iter)
 	return NULL;
 }
 
+/**
+ * mono_field_get_name:
+ * @field: the MonoClassField to act on
+ *
+ * Returns the name of the field.
+ */
 const char*
 mono_field_get_name (MonoClassField *field)
 {
 	return field->name;
 }
 
+/**
+ * mono_field_get_type:
+ * @field: the MonoClassField to act on
+ *
+ * Returns MonoType of the field.
+ */
 MonoType*
 mono_field_get_type (MonoClassField *field)
 {
 	return field->type;
 }
 
+/**
+ * mono_field_get_type:
+ * @field: the MonoClassField to act on
+ *
+ * Returns MonoClass where the field was defined.
+ */
 MonoClass*
 mono_field_get_parent (MonoClassField *field)
 {
 	return field->parent;
 }
 
+/**
+ * mono_field_get_flags;
+ * @field: the MonoClassField to act on
+ *
+ * The metadata flags for a field are encoded using the
+ * FIELD_ATTRIBUTE_* constants.  See the tabledefs.h file for details.
+ *
+ * Returns the flags for the field.
+ */
 guint32
 mono_field_get_flags (MonoClassField *field)
 {
 	return field->type->attrs;
 }
 
+/**
+ * mono_property_get_name: 
+ * @prop: the MonoProperty to act on
+ *
+ * Returns the name of the property
+ */
 const char*
 mono_property_get_name (MonoProperty *prop)
 {
 	return prop->name;
 }
 
+/**
+ * mono_property_get_set_method
+ * @prop: the MonoProperty to act on.
+ *
+ * Returns the setter method of the property (A MonoMethod)
+ */
 MonoMethod*
 mono_property_get_set_method (MonoProperty *prop)
 {
 	return prop->set;
 }
 
+/**
+ * mono_property_get_get_method
+ * @prop: the MonoProperty to act on.
+ *
+ * Returns the setter method of the property (A MonoMethod)
+ */
 MonoMethod*
 mono_property_get_get_method (MonoProperty *prop)
 {
 	return prop->get;
 }
 
+/**
+ * mono_property_get_parent:
+ * @prop: the MonoProperty to act on.
+ *
+ * Returns the MonoClass where the property was defined.
+ */
 MonoClass*
 mono_property_get_parent (MonoProperty *prop)
 {
 	return prop->parent;
 }
 
+/**
+ * mono_property_get_flags:
+ * @prop: the MonoProperty to act on.
+ *
+ * The metadata flags for a property are encoded using the
+ * PROPERTY_ATTRIBUTE_* constants.  See the tabledefs.h file for details.
+ *
+ * Returns the flags for the property.
+ */
 guint32
 mono_property_get_flags (MonoProperty *prop)
 {
 	return prop->attrs;
 }
 
+/**
+ * mono_event_get_name:
+ * @event: the MonoEvent to act on
+ *
+ * Returns the name of the event.
+ */
 const char*
 mono_event_get_name (MonoEvent *event)
 {
 	return event->name;
 }
 
+/**
+ * mono_event_get_add_method:
+ * @event: The MonoEvent to act on.
+ *
+ * Returns the `add' method for the event (a MonoMethod).
+ */
 MonoMethod*
 mono_event_get_add_method (MonoEvent *event)
 {
 	return event->add;
 }
 
+/**
+ * mono_event_get_remove_method:
+ * @event: The MonoEvent to act on.
+ *
+ * Returns the `remove' method for the event (a MonoMethod).
+ */
 MonoMethod*
 mono_event_get_remove_method (MonoEvent *event)
 {
 	return event->remove;
 }
 
+/**
+ * mono_event_get_raise_method:
+ * @event: The MonoEvent to act on.
+ *
+ * Returns the `raise' method for the event (a MonoMethod).
+ */
 MonoMethod*
 mono_event_get_raise_method (MonoEvent *event)
 {
 	return event->raise;
 }
 
+/**
+ * mono_event_get_parent:
+ * @event: the MonoEvent to act on.
+ *
+ * Returns the MonoClass where the event is defined.
+ */
 MonoClass*
 mono_event_get_parent (MonoEvent *event)
 {
 	return event->parent;
 }
 
+/**
+ * mono_event_get_flags
+ * @event: the MonoEvent to act on.
+ *
+ * The metadata flags for an event are encoded using the
+ * EVENT_* constants.  See the tabledefs.h file for details.
+ *
+ * Returns the flags for the event.
+ */
 guint32
 mono_event_get_flags (MonoEvent *event)
 {
