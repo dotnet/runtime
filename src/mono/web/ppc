@@ -5,6 +5,8 @@
 
 78 test(s) passed. 11 test(s) failed. (same as x86 :-)
 
+mcs in interpreter could compile hello world application.
+
 ** To do
 
 *** Interpreter
