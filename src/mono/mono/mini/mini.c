@@ -2783,6 +2783,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	static double r8_0 = 0.0;
 	MonoMethodSignature *sig;
 	MonoGenericContext *generic_context = NULL;
+	MonoGenericContainer *generic_container = NULL;
 	MonoType **param_types;
 	GList *bb_recheck = NULL, *tmp;
 	int i, n, start_new_bblock, align;
@@ -2793,6 +2794,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	image = method->klass->image;
 	header = ((MonoMethodNormal *)method)->header;
+	generic_container = ((MonoMethodNormal *)method)->generic_container;
 	sig = method->signature;
 	num_args = sig->hasthis + sig->param_count;
 	ip = (unsigned char*)header->code;
@@ -2801,6 +2803,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	if (method->signature->is_inflated)
 		generic_context = ((MonoMethodInflated *) method)->context;
+	else if (generic_container) {
+		generic_context = g_new0 (MonoGenericContext, 1);
+		generic_context->container = generic_container;
+	}
 
 	if (cfg->method == method) {
 		real_offset = 0;
