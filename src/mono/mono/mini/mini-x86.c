@@ -2061,11 +2061,12 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					prev_dreg = ins->dreg;
 					assign_ireg (rs, ins->dreg, dest_reg);
 					ins->dreg = dest_reg;
+					val = dest_reg;
 				}
 			}
 
 			//DEBUG (g_print ("dest reg in div assigned: %s\n", mono_arch_regname (val)));
-			if (ins->dreg != dest_reg) { /* force a copy */
+			if (val != dest_reg) { /* force a copy */
 				create_copy_ins (cfg, val, dest_reg, ins);
 				if (!(rs->ifree_mask & (1 << dest_reg)) && rs->isymbolic [dest_reg] >= MONO_MAX_IREGS) {
 					DEBUG (g_print ("\tforced spill of R%d\n", rs->isymbolic [dest_reg]));

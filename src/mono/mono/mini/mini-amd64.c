@@ -2303,24 +2303,22 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					DEBUG (g_print ("\tassigned dreg %s to dest R%d\n", mono_arch_regname (val), ins->dreg));
 					rs->isymbolic [val] = prev_dreg;
 					ins->dreg = val;
-					if (val != dest_reg) { /* force a copy */
-						create_copy_ins (cfg, val, dest_reg, ins, FALSE);
-					}
 				} else {
 					DEBUG (g_print ("\tshortcut assignment of R%d to %s\n", ins->dreg, mono_arch_regname (dest_reg)));
 					prev_dreg = ins->dreg;
 					assign_ireg (rs, ins->dreg, dest_reg);
 					ins->dreg = dest_reg;
+					val = dest_reg;
 				}
-			} else {
-				//DEBUG (g_print ("dest reg in div assigned: %s\n", mono_arch_regname (val)));
-				if (val != dest_reg) { /* force a copy */
-					create_copy_ins (cfg, val, dest_reg, ins, FALSE);
-					if (!(rs->ifree_mask & (1 << dest_reg)) && rs->isymbolic [dest_reg] >= MONO_MAX_IREGS) {
-						DEBUG (g_print ("\tforced spill of R%d\n", rs->isymbolic [dest_reg]));
-						get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [dest_reg], FALSE);
-						mono_regstate_free_int (rs, dest_reg);
-					}
+			}
+
+			//DEBUG (g_print ("dest reg in div assigned: %s\n", mono_arch_regname (val)));
+			if (val != dest_reg) { /* force a copy */
+				create_copy_ins (cfg, val, dest_reg, ins, FALSE);
+				if (!(rs->ifree_mask & (1 << dest_reg)) && rs->isymbolic [dest_reg] >= MONO_MAX_IREGS) {
+					DEBUG (g_print ("\tforced spill of R%d\n", rs->isymbolic [dest_reg]));
+					get_register_force_spilling (cfg, tmp, ins, rs->isymbolic [dest_reg], FALSE);
+					mono_regstate_free_int (rs, dest_reg);
 				}
 			}
 			if (!(rs->ifree_mask & (1 << clob_reg)) && (clob_reg != val) && (rs->isymbolic [clob_reg] >= MONO_MAX_IREGS)) {
