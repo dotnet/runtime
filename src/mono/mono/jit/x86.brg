@@ -4668,22 +4668,14 @@ stmt: ARG_OBJ (reg) {
 	/* reserve space for the argument */
 	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, sa);
 
-	x86_push_reg (s->code, X86_EAX);
-	x86_push_reg (s->code, X86_EDX);
-	x86_push_reg (s->code, X86_ECX);
-
 	x86_push_imm (s->code, size);
 	x86_push_reg (s->code, tree->left->reg1);
-	x86_lea_membase (s->code, X86_EAX, X86_ESP, 5*4);
+	x86_lea_membase (s->code, X86_EAX, X86_ESP, 2*4);
 	x86_push_reg (s->code, X86_EAX);
 
 	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, MEMCOPY);
 	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
-
-	x86_pop_reg (s->code, X86_ECX);
-	x86_pop_reg (s->code, X86_EDX);
-	x86_pop_reg (s->code, X86_EAX);
 }
 
 stmt: RET_OBJ (reg) {
