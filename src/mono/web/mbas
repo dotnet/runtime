@@ -1,9 +1,9 @@
-* mbas: Mono's Basic.NET Compiler.
+* mbas: Mono's VisualBasic.NET Compiler.
 
-	MBAS is a CIL compiler for the Visual Basic language, an extended 
-	version of VisualBasic.NET. It's based on the MCS compiler
+	MonoBASIC (mbas) is a CIL compiler for the VisualBasic.NET language, 
+	an extended version of Visual Basic. It's based on the MCS compiler
 	and still in heavy development, though many language features are
-	already supported.
+	already supported. See mcs/mbas/
 
 ** What works
 
@@ -12,7 +12,7 @@
 		* Classes, Fields and Methods. Properties are still
 		  being worked on.
 
-		* Module definition and Sub functionality (TODO: Function's)
+		* Module definition and Sub/Function functionality
 
 	 	* Namespace Import, so can you reference, instantiate
 		  and call external assemblies
@@ -39,16 +39,19 @@
 	</ul>
 	
 	A lot of this stuff is implemented rebuilding proper expressions and 
-	statements on top of the classes provided by mcs (look at the grammar - 
-	mb-parser.jay - and compare it with cs-parser.jay, if interested).
+	statements on top of the classes based on those of mcs (look at the grammar - 
+	mb-parser.jay - and compare it with cs-parser.jay, if interested), but some 
+	are getting deeply changed, to better conform to VB.NET semantics.
 	
 ** TODO-list
 
 	At this stage almost every element of the language must be still checked for 
-	conformance to MS'implementation.  Help is particularly needed for those areas 
-	I know little of (mcs internals are still quite obscure to me). I'd like to 
-	implement class properties, the missing statements, exception handling, 
+	conformance to MS' implementation. 
+	We'd like to implement the missing statements, exception handling, 
 	structures and actual event support (not necessarily in this order). Once we 
 	have all this stuff set up and reasonably bug-free, more work could be done 
-	on helper functions and Object-vars handling. 
+	on helper functions and Object-vars handling.
 
+	Also work on the supporting library (we don't currently depend on it as much
+	as MS vbc-compiled programs, but especially for late-binding scenarios we will)
+	is surely needed: it's in mcs/class/Microsoft.VisualBasic/
