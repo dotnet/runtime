@@ -148,6 +148,66 @@ static gboolean mutex_is_owned (gpointer handle)
 	}
 }
 
+struct mutex_check_data
+{
+	pid_t pid;
+	pthread_t tid;
+};
+
+static gboolean mutex_check (gpointer handle, gpointer user_data)
+{
+	struct _WapiHandle_mutex *mutex_handle;
+	gboolean ok;
+	struct mutex_check_data *data = (struct mutex_check_data *)user_data;
+	int thr_ret;
+	
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_MUTEX,
+				  (gpointer *)&mutex_handle, NULL);
+	if (ok == FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up mutex handle %p", handle);
+		return(FALSE);
+	}
+
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
+	
+	if (mutex_handle->pid == data->pid &&
+	    mutex_handle->tid == data->tid) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   ": Mutex handle %p abandoned!", handle);
+#endif
+
+		mutex_handle->recursion = 0;
+		mutex_handle->pid = 0;
+		mutex_handle->tid = 0;
+		
+		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
+	}
+
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+	
+	/* Return false to keep searching */
+	return(FALSE);
+}
+
+/* When a thread exits, any mutexes it still holds need to be signalled */
+void _wapi_mutex_check_abandoned (pid_t pid, pthread_t tid)
+{
+	struct mutex_check_data data;
+
+	data.pid = pid;
+	data.tid = tid;
+	
+	_wapi_search_handle (WAPI_HANDLE_MUTEX, mutex_check, &data, NULL,
+			     NULL);
+}
+
 /**
  * CreateMutex:
  * @security: Ignored for now.

@@ -20,6 +20,8 @@
 #include <sched.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
@@ -29,6 +31,7 @@
 #include <mono/io-layer/mono-mutex.h>
 #include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/mono-spinlock.h>
+#include <mono/io-layer/mutex-private.h>
 
 #if HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
@@ -138,6 +141,9 @@ static void thread_exit(guint32 exitstatus, gpointer handle)
 			   ": error looking up thread handle %p", handle);
 		return;
 	}
+	
+	_wapi_mutex_check_abandoned (getpid (),
+				     thread_private_handle->thread->id);
 
 	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
 			      handle);

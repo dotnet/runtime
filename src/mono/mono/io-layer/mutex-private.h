@@ -30,4 +30,6 @@ struct _WapiHandlePrivate_mutex
 	int dummy;
 };
 
+extern void _wapi_mutex_check_abandoned (pid_t pid, pthread_t tid);
+
 #endif /* _WAPI_MUTEX_PRIVATE_H_ */

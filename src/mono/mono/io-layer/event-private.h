@@ -21,6 +21,7 @@ extern struct _WapiHandleOps _wapi_event_ops;
 struct _WapiHandle_event
 {
 	gboolean manual;
+	guint32 set_count;
 };
 
 struct _WapiHandlePrivate_event

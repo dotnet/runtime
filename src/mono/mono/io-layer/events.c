@@ -85,7 +85,11 @@ static void event_own (gpointer handle)
 #endif
 
 	if(event_handle->manual==FALSE) {
-		_wapi_handle_set_signal_state (handle, FALSE, FALSE);
+		g_assert (event_handle->set_count > 0);
+		
+		if (--event_handle->set_count == 0) {
+			_wapi_handle_set_signal_state (handle, FALSE, FALSE);
+		}
 	}
 }
 
@@ -142,6 +146,7 @@ gpointer CreateEvent(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean ma
 	ret = handle;
 	
 	event_handle->manual=manual;
+	event_handle->set_count = 0;
 
 	if(initial==TRUE) {
 		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
@@ -202,6 +207,7 @@ gboolean PulseEvent(gpointer handle)
 	if(event_handle->manual==TRUE) {
 		_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 	} else {
+		event_handle->set_count++;
 		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 	}
 
@@ -289,6 +295,8 @@ gboolean ResetEvent(gpointer handle)
 		_wapi_handle_set_signal_state (handle, FALSE, FALSE);
 	}
 	
+	event_handle->set_count = 0;
+	
 	thr_ret = _wapi_handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
 	
@@ -337,6 +345,7 @@ gboolean SetEvent(gpointer handle)
 	if(event_handle->manual==TRUE) {
 		_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 	} else {
+		event_handle->set_count++;
 		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 	}
 

@@ -355,7 +355,9 @@ static gboolean test_and_own (guint32 numobjects, gpointer *handles,
 						     waitall, count, lowest);
 	if (done == TRUE) {
 		for (i = 0; i < numobjects; i++) {
-			_wapi_handle_ops_own (handles[i]);
+			if (_wapi_handle_issignalled (handles[i])) {
+				_wapi_handle_ops_own (handles[i]);
+			}
 		}
 	}
 	
