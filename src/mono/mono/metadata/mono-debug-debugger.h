@@ -267,14 +267,14 @@ extern MonoDebuggerIOLayer mono_debugger_io_layer;
 
 #endif
 
-extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, guint32 arg);
+extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
 void            mono_debugger_initialize                  (void);
 void            mono_debugger_cleanup                     (void);
 
 void            mono_debugger_lock                        (void);
 void            mono_debugger_unlock                      (void);
-void            mono_debugger_event                       (MonoDebuggerEvent event, gpointer data, guint32 arg);
+void            mono_debugger_event                       (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
 MonoDebuggerSymbolFile   *_mono_debugger_get_symfile      (MonoImage *image);
 MonoDebuggerSymbolFile   *mono_debugger_add_symbol_file   (MonoDebugHandle *handle);

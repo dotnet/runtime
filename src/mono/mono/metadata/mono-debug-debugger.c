@@ -46,7 +46,7 @@ static guint32 do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass,
 static guint32 write_class (MonoDebuggerSymbolTable *table, MonoClass *klass);
 
 MonoDebuggerSymbolTable *mono_debugger_symbol_table = NULL;
-void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, guint32 arg) = NULL;
+void (*mono_debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg) = NULL;
 
 #define WRITE_UINT32(ptr,value) G_STMT_START {	\
 	* ((guint32 *) ptr) = value;		\
@@ -104,7 +104,7 @@ mono_debugger_unlock (void)
 
 	if (debugger_lock_level == 1) {
 		if (must_reload_symtabs) {
-			mono_debugger_event (MONO_DEBUGGER_EVENT_RELOAD_SYMTABS, NULL, 0);
+			mono_debugger_event (MONO_DEBUGGER_EVENT_RELOAD_SYMTABS, 0, 0);
 			must_reload_symtabs = FALSE;
 		}
 	}
@@ -1308,7 +1308,7 @@ ves_icall_MonoDebugger_GetLocalTypeFromSignature (MonoReflectionAssembly *assemb
 }
 
 void
-mono_debugger_event (MonoDebuggerEvent event, gpointer data, guint32 arg)
+mono_debugger_event (MonoDebuggerEvent event, guint64 data, guint64 arg)
 {
 	if (mono_debugger_event_handler)
 		(* mono_debugger_event_handler) (event, data, arg);
@@ -1406,7 +1406,7 @@ mono_debugger_method_has_breakpoint (MonoMethod *method)
 void
 mono_debugger_breakpoint_callback (MonoMethod *method, guint32 index)
 {
-	mono_debugger_event (MONO_DEBUGGER_EVENT_BREAKPOINT, method, index);
+	mono_debugger_event (MONO_DEBUGGER_EVENT_BREAKPOINT, GPOINTER_TO_UINT (method), index);
 }
 
 gboolean
@@ -1417,7 +1417,8 @@ mono_debugger_unhandled_exception (gpointer addr, gpointer stack, MonoObject *ex
 
 	// Prevent the object from being finalized.
 	last_exception = exc;
-	mono_debugger_event (MONO_DEBUGGER_EVENT_UNHANDLED_EXCEPTION, exc, addr);
+	mono_debugger_event (MONO_DEBUGGER_EVENT_UNHANDLED_EXCEPTION,
+			     GPOINTER_TO_UINT (exc), GPOINTER_TO_UINT (addr));
 	return TRUE;
 }
 
@@ -1436,7 +1437,8 @@ mono_debugger_handle_exception (gpointer addr, gpointer stack, MonoObject *exc)
 	info.exception_obj = exc;
 	info.stop = 0;
 
-	mono_debugger_event (MONO_DEBUGGER_EVENT_EXCEPTION, &info, addr);
+	mono_debugger_event (MONO_DEBUGGER_EVENT_EXCEPTION, GPOINTER_TO_UINT (&info),
+			     GPOINTER_TO_UINT (addr));
 }
 
 gboolean
@@ -1454,7 +1456,8 @@ mono_debugger_throw_exception (gpointer addr, gpointer stack, MonoObject *exc)
 	info.exception_obj = exc;
 	info.stop = 0;
 
-	mono_debugger_event (MONO_DEBUGGER_EVENT_THROW_EXCEPTION, &info, addr);
+	mono_debugger_event (MONO_DEBUGGER_EVENT_THROW_EXCEPTION, GPOINTER_TO_UINT (&info),
+			     GPOINTER_TO_UINT (addr));
 	return info.stop != 0;
 }
 
