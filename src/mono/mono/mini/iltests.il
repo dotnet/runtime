@@ -13,6 +13,21 @@
 		ret
 	}
 
+	// make sure the register allocator works when the return value of
+	// 'div' is discarded
+	.method static public int32 test_0_div_regalloc () il managed {
+		.locals init (
+			int32 i
+		)
+
+		ldloc 0
+		ldc.i4.s 0xa
+		div
+		pop
+		ldc.i4.0
+		ret
+	}
+
 	.method static public int32 test_3_copy_used_bug () il managed {
 
 		.locals init (
