@@ -142,7 +142,7 @@ db_match_method (gpointer data, gpointer user_data)
 		g_print ("(%d) Entering %s.%s::%s (", GetCurrentThreadId(), klass->name_space, klass->name, frame->method->name);	\
 		if (signature->hasthis) { \
 			if (global_no_pointers) { \
-				g_print ("this "); \
+				g_print ("this%s ", frame->obj ? "" : "=null"); \
 			} else { \
 				g_print ("%p ", frame->obj); } \
 		} \
@@ -622,7 +622,7 @@ dump_stack (stackval *stack, stackval *sp)
 			if (!global_no_pointers)
 				g_string_sprintfa (str, "[vt: %p] ", s->data.vt.vt);
 			else
-				g_string_sprintfa (str, "[vt] ");
+				g_string_sprintfa (str, "[vt%s] ", s->data.vt.vt ? "" : "=null");
 			break;
 #if 0
 		case VAL_OBJ: {
@@ -639,7 +639,7 @@ dump_stack (stackval *stack, stackval *sp)
 			if (!global_no_pointers)
 				g_string_sprintfa (str, "[%p] ", s->data.p);
 			else
-				g_string_sprintfa (str, "[ptr] ");
+				g_string_sprintfa (str, s->data.p ? "[ptr] " : "[null] ");
 			break;
 		}
 		++s;
