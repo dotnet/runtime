@@ -49,8 +49,7 @@ enter_method (MonoMethod *method, gpointer ebp)
 		} else {
 			o = *((MonoObject **)ebp);
 			class = o->klass;
-			if (!strcmp (class->name_space, "System") &&
-			    !strcmp (class->name, "String")) {
+			if (class == mono_defaults.string_class) {
 				printf ("this:%p[STRING:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
 
 			} else 
