@@ -23,6 +23,8 @@
 #define MBCOST_DATA  MBCodeGenStatus
 #define MBALLOC_STATE mono_mempool_alloc (data->mp, sizeof (MBState))
 
+#define ARCH_ARGS_RIGHT_TO_LEFT
+
 typedef enum {
 	AMImmediate       = 0,  // ptr
 	AMBase            = 1,  // V[REG]  
@@ -110,7 +112,7 @@ guint64 mono_llrem_un  (guint64 a, guint64 b);
 %term LDIND_I1 LDIND_U1 LDIND_I2 LDIND_U2 LDIND_I4 LDIND_I8 LDIND_R4 LDIND_R8
 %term LDIND_U4
 %term STIND_I1 STIND_I2 STIND_I4 STIND_I8 STIND_R4 STIND_R8
-%term ADDR_L ADDR_A ADDR_G ARG CALL_I4 CALL_I8 CALL_R8
+%term ADDR_L ADDR_A ADDR_G ARG ARG_END CALL_I4 CALL_I8 CALL_R8
 %term BREAK SWITCH BR RET RETV 
 %term ADD SUB MUL DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN NEG NOT
 %term BLT BLT_UN BEQ BNE_UN BRTRUE BRFALSE BGE BGE_UN BLE BLE_UN BGT BGT_UN 
@@ -764,15 +766,17 @@ stmt: RET {
 	} 
 }
 
-stmt: ARG (reg) 1 {
-	x86_push_reg (s->code, tree->left->reg1);
+argl: ARG_END
+
+argl: ARG (argl, reg) {
+	x86_push_reg (s->code, tree->right->reg1);
 }
 
-stmt: ARG (CONST_I4) "MB_USE_OPT1(0)" {
-	x86_push_imm (s->code, tree->left->data.i);
+argl: ARG (argl, CONST_I4) "MB_USE_OPT1(0)" {
+	x86_push_imm (s->code, tree->right->data.i);
 }
 
-reg: CALL_I4 {
+reg: CALL_I4 (argl) {
 	x86_mov_reg_imm (s->code, X86_EAX, tree->data.p);
 	x86_call_membase (s->code, X86_EAX, 
 			  G_STRUCT_OFFSET (MonoMethod, addr));
@@ -782,7 +786,7 @@ reg: CALL_I4 {
 	g_assert (tree->reg1 == X86_EAX);
 }
 
-stmt: CALL_I4 {
+stmt: CALL_I4 (argl) {
 	x86_mov_reg_imm (s->code, X86_EAX, tree->data.p);
 	x86_call_membase (s->code, X86_EAX, G_STRUCT_OFFSET (MonoMethod, addr));
 	if (tree->size)
@@ -972,7 +976,7 @@ lreg: REM_UN (lreg, lreg) {
 		x86_pop_reg (s->code, X86_ECX);
 }
 
-lreg: CALL_I8 {
+lreg: CALL_I8 (argl) {
 	x86_mov_reg_imm (s->code, X86_EAX, tree->data.p);
 	x86_call_membase (s->code, X86_EAX, 
 			  G_STRUCT_OFFSET (MonoMethod, addr));
@@ -1005,9 +1009,9 @@ stmt: RETV (lreg) {
 }
 
 
-stmt: ARG (lreg) {
-	x86_push_reg (s->code, tree->left->reg2);
-	x86_push_reg (s->code, tree->left->reg1);
+argl: ARG (argl, lreg) {
+	x86_push_reg (s->code, tree->right->reg2);
+	x86_push_reg (s->code, tree->right->reg1);
 }
 
 stmt: BEQ (lreg, lreg) {
@@ -1263,7 +1267,7 @@ stmt: STIND_R8 (locaddr, freg) {
 	x86_fst_membase (s->code, X86_EBP, tree->left->data.i, TRUE, TRUE);
 }
 
-stmt: ARG (freg) {
+argl: ARG (argl, freg) {
 	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 8);
 	x86_fst_membase (s->code, X86_ESP, 0, TRUE, TRUE);
 }
@@ -1344,7 +1348,7 @@ stmt: BLE_UN (freg, freg) {
 	x86_branch32 (s->code, X86_CC_NE, tree->data.i - offset, TRUE);
 }
 
-freg: CALL_R8 {
+freg: CALL_R8 (argl) {
 	x86_mov_reg_imm (s->code, X86_EAX, tree->data.p);
 	x86_call_membase (s->code, X86_EAX, 
 			  G_STRUCT_OFFSET (MonoMethod, addr));

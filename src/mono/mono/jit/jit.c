@@ -375,54 +375,49 @@ ctree_create_store (MonoMemPool *mp, int addr_type, MBTree *s, MonoType *type, g
  * another tree which loads that value back. We can then
  * duplicate the second tree.
  */
-inline static MBTree *
+static MBTree *
 ctree_create_dup (MonoMemPool *mp, MBTree *s)
 {
 	MBTree *t;
 
 	switch (s->op) {
+	case MB_TERM_ADDR_L:
+	case MB_TERM_ADDR_A:
+	case MB_TERM_ADDR_G:
+		t = mono_ctree_new_leaf (mp, s->op);
+		t->data.i = s->data.i;
+		return t;
 	case MB_TERM_STIND_I1:
 	case MB_TERM_LDIND_I1:
-		t = mono_mempool_alloc (mp, sizeof (MBTree));
-		*t = *s->left;
-		t = mono_ctree_new (mp, MB_TERM_LDIND_I1, t, NULL);
-		break;
+		t = ctree_create_dup (mp, s->left);
+		return mono_ctree_new (mp, MB_TERM_LDIND_I1, t, NULL);
 	case MB_TERM_STIND_I2:
 	case MB_TERM_LDIND_I2:
-		t = mono_mempool_alloc (mp, sizeof (MBTree));
-		*t = *s->left;
-		t = mono_ctree_new (mp, MB_TERM_LDIND_I2, t, NULL);
-		break;
+		t = ctree_create_dup (mp, s->left);
+		return mono_ctree_new (mp, MB_TERM_LDIND_I2, t, NULL);
 	case MB_TERM_STIND_I4:
 	case MB_TERM_LDIND_I4:
-		t = mono_mempool_alloc (mp, sizeof (MBTree));
-		*t = *s->left;
-		t = mono_ctree_new (mp, MB_TERM_LDIND_I4, t, NULL);
-		break;
+		t = ctree_create_dup (mp, s->left);
+		return mono_ctree_new (mp, MB_TERM_LDIND_I4, t, NULL);
 	case MB_TERM_STIND_I8:
 	case MB_TERM_LDIND_I8:
-		t = mono_mempool_alloc (mp, sizeof (MBTree));
-		*t = *s->left;
-		t = mono_ctree_new (mp, MB_TERM_LDIND_I8, t, NULL);
-		break;
+		t = ctree_create_dup (mp, s->left);
+		return mono_ctree_new (mp, MB_TERM_LDIND_I8, t, NULL);
 	case MB_TERM_STIND_R4:
 	case MB_TERM_LDIND_R4:
-		t = mono_mempool_alloc (mp, sizeof (MBTree));
-		*t = *s->left;
-		t = mono_ctree_new (mp, MB_TERM_LDIND_R4, t, NULL);
-		break;
+		t = ctree_create_dup (mp, s->left);
+		return mono_ctree_new (mp, MB_TERM_LDIND_R4, t, NULL);
 	case MB_TERM_STIND_R8:
 	case MB_TERM_LDIND_R8:
-		t = mono_mempool_alloc (mp, sizeof (MBTree));
-		*t = *s->left;
-		t = mono_ctree_new (mp, MB_TERM_LDIND_R8, t, NULL);
-		break;
+		t = ctree_create_dup (mp, s->left);
+		return mono_ctree_new (mp, MB_TERM_LDIND_R8, t, NULL);
 	default:
 		g_warning ("unknown op \"%s\"", mono_burg_term_string [s->op]);
 		g_assert_not_reached ();
 	}
 
-	return t;
+	g_assert_not_reached ();
+	return NULL;
 }
 
 typedef void (*MonoCCtor) (void);
@@ -664,14 +659,19 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 			csig = cm->signature;
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
 			
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_ARG_END);
+
 			if ((nargs = csig->param_count + csig->hasthis)) {
 
-				fa = sp [-nargs]->cli_addr;
-
+				sp -= nargs;
+				fa = sp [0]->cli_addr;
+#ifdef ARCH_ARGS_RIGHT_TO_LEFT
 				for (i = nargs - 1; i >= 0; i--) {
-					sp--;
-					t1 = mono_ctree_new (mp, MB_TERM_ARG, *sp, NULL);	
-					ADD_TREE (t1);
+#else
+				for (i = 0; i < nargs; i++) {
+#endif
+					t1 = mono_ctree_new (mp, MB_TERM_ARG, t1, sp [i]);	
+
 					if (!i && csig->hasthis)
 						size = mono_type_size (&cm->klass->this_arg, &align);
 					else
@@ -680,17 +680,15 @@ mono_create_forest (MonoMethod *method, MonoMemPool *mp, guint *locals_size)
 					// fixme: does this really work ?
 					offset += (size + 3) & ~3;
 				}
-
-				t1->cli_addr = fa;
-				fa = -1;
 			} else
 				fa = cli_addr;
 
 			cm->addr = arch_create_jit_trampoline (cm);
 			
-			t1 = mono_ctree_new_leaf (mp, map_call_type (csig->ret));
+			t1 = mono_ctree_new (mp, map_call_type (csig->ret), t1, NULL);
 			t1->data.p = cm;
 			t1->size = offset;
+			t1->cli_addr = fa;
 			
 			if (csig->ret->type != MONO_TYPE_VOID) {
 				size = mono_type_size (csig->ret, &align);
