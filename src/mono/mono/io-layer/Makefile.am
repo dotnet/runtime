@@ -11,6 +11,7 @@ libwapiincludedir = $(includedir)/mono/io-layer
 OTHER_H = \
 	critical-sections.h	\
 	error.h		\
+	events.h	\
 	handles.h	\
 	io.h		\
 	io-layer.h	\
@@ -28,6 +29,8 @@ OTHER_SRC = \
 	critical-sections.h	\
 	error.c			\
 	error.h			\
+	events.c		\
+	events.h		\
 	handles.c		\
 	handles.h		\
 	handles-private.h	\
