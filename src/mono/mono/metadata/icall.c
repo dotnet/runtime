@@ -1777,6 +1777,25 @@ ves_icall_MethodBuilder_define_generic_parameter (MonoReflectionMethodBuilder *m
 }
 
 static MonoReflectionType*
+ves_icall_MonoGenericInst_GetDeclaringType (MonoReflectionGenericInst *type)
+{
+	MonoGenericInst *ginst;
+	MonoClass *klass;
+
+	MONO_ARCH_SAVE_REGS;
+
+	ginst = type->type.type->data.generic_inst;
+	if (!ginst || !ginst->nested_in || (ginst->nested_in->type != MONO_TYPE_GENERICINST))
+		return NULL;
+
+	klass = mono_class_from_mono_type (ginst->nested_in);
+	if (!klass->generic_inst && !klass->gen_params)
+		return NULL;
+
+	return mono_type_get_object (mono_object_domain (type), ginst->nested_in);
+}
+
+static MonoReflectionType*
 ves_icall_MonoGenericInst_GetParentType (MonoReflectionGenericInst *type)
 {
 	MonoGenericInst *ginst;
@@ -5143,6 +5162,7 @@ static const IcallEntry monofield_icalls [] = {
 
 static const IcallEntry monogenericinst_icalls [] = {
 	{"GetConstructors_internal", ves_icall_MonoGenericInst_GetConstructors},
+	{"GetDeclaringType", ves_icall_MonoGenericInst_GetDeclaringType},
 	{"GetEvents_internal", ves_icall_MonoGenericInst_GetEvents},
 	{"GetFields_internal", ves_icall_MonoGenericInst_GetFields},
 	{"GetInterfaces_internal", ves_icall_MonoGenericInst_GetInterfaces},
