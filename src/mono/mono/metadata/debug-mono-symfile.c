@@ -188,7 +188,8 @@ update_method_func (gpointer key, gpointer value, gpointer user_data)
 	if (!minfo)
 		return;
 
-	me->address = minfo->code_start;
+	me->start_address = minfo->code_start;
+	me->end_address = minfo->code_start + minfo->code_size;
 
 	ptr = mydata->symfile->raw_contents + me->line_number_table_offset;
 	end = mydata->symfile->raw_contents + mydata->symfile->offset_table->line_number_table_offset +

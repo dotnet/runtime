@@ -27,7 +27,8 @@ struct MonoSymbolFileMethodEntry {
 	guint32 source_file_offset;
 	guint32 line_number_table_offset;
 	guint32 start_row;
-	guint64 address;
+	guint64 start_address;
+	guint64 end_address;
 };
 
 struct MonoSymbolFileLineNumberEntry {
