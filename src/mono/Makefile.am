@@ -143,7 +143,7 @@ tmpinst-monolite: tmpinst-dir
 	mv -f _tmpinst/monolite-*/mcs.exe _tmpinst/monolite-*/*.dll _tmpinst/lib
 	rm -fr _tmpinst/monolite-*
 
-monolite-bootstrap: tmpinst-monolite
+monolite-bootstrap: tmpinst-monolite mono-do-basic-build
 	rm -f $(mcs_topdir)/mcs/mcs.exe $(mcs_topdir)/class/lib/default/mscorlib.dll
 	rm -f $(mcs_topdir)/class/lib/default/System.dll $(mcs_topdir)/class/lib/default/System.Xml.dll Mono.CSharp.Debugger.dll
 	$(MAKE) two-stage-strap
