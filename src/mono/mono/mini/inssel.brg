@@ -1433,12 +1433,7 @@ reg: OP_GETTYPE (reg) {
 reg: OP_GETHASHCODE (reg) {
 	int t1 = mono_regstate_next_int (s->rs);
 	
-	#if HAVE_BOEHM_GC
 	#define MONO_OBJECT_ALIGNMENT_SHIFT	3
-	#else
-	#define MONO_OBJECT_ALIGNMENT_SHIFT	2
-	#endif
-
 
 	/* return (GPOINTER_TO_UINT (this) >> MONO_OBJECT_ALIGNMENT_SHIFT) * 2654435761u; */
 	

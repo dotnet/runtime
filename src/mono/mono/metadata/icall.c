@@ -721,11 +721,7 @@ ves_icall_System_Object_MemberwiseClone (MonoObject *this)
 	return mono_object_clone (this);
 }
 
-#if HAVE_BOEHM_GC
 #define MONO_OBJECT_ALIGNMENT_SHIFT	3
-#else
-#define MONO_OBJECT_ALIGNMENT_SHIFT	2
-#endif
 
 /*
  * Return hashcode based on object address. This function will need to be
