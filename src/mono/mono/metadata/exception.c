@@ -171,9 +171,6 @@ mono_get_exception_execution_engine (const guchar *msg)
 MonoException *
 mono_get_exception_serialization (const guchar *msg)
 {
-	MonoException *ex;
-	MonoDomain *domain;
-
 	return mono_exception_from_name_msg (mono_defaults.corlib, "System.Runtime.Serialization",
 										 "SerializationException", msg);
 }
@@ -345,4 +342,10 @@ MonoException *
 mono_get_exception_cannot_unload_appdomain (const guchar *msg)
 {
 	return mono_exception_from_name_msg (mono_defaults.corlib, "System", "CannotUnloadAppDomainException", msg);
+}
+
+MonoException *
+mono_get_exception_appdomain_unloaded (void)
+{
+	return mono_exception_from_name (mono_defaults.corlib, "System", "AppDomainUnloadedException");
 }

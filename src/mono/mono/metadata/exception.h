@@ -91,4 +91,7 @@ mono_get_exception_synchronization_lock (const guchar *msg);
 MonoException *
 mono_get_exception_cannot_unload_appdomain (const guchar *msg);
 
+MonoException *
+mono_get_exception_appdomain_unloaded (void);
+
 #endif /* _MONO_METADATA_EXCEPTION_H_ */
