@@ -118,8 +118,8 @@
                     <img src="images/macos-36.gif"><b>Mac OS X package</b>
 		  </td>
 		  <td>
-		    <a href="archive/beta3/macos/mono-0.96-framework.dmg">mono-0.96-framework.dmg</a>: on /Library/Framework.<br>
-		    <a href="archive/beta3/macos/mono-0.96.dmg">mono-0.96.dmg</a> On /opt.
+		    <a href="archive/beta3/macos/mono-0.96-framework.dmg">mono-0.96-framework.dmg</a>: in /Library/Framework.<br>
+		    <a href="archive/beta3/macos/mono-0.96.dmg">mono-0.96.dmg</a> in /opt.
 		  </td>
 		</tr>
              </table>
