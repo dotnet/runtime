@@ -6,6 +6,7 @@
 	libs to the GAC.
 	* runtime/net_2_0/Makefile.am: Install and Uninstall the .net 2.0
 	libs to the GAC.
+	* data/Makefile.am: cleanup browscap.ini
 	
 2004-04-28  Bernie Solomon  <bernard@ugsolutions.com>
 
