@@ -52,7 +52,7 @@ static char **extra_gac_paths = NULL;
 /* The list of system assemblies what will be remapped to the running
  * runtime version. WARNING: this list must be sorted.
  */
-static AssemblyVersionMap framework_assemblies [] = {
+static const AssemblyVersionMap framework_assemblies [] = {
 	{"Accessibility", 0},
 	{"Commons.Xml.Relaxng", 0},
 	{"I18N", 0},
@@ -1071,7 +1071,7 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 
 
 MonoAssembly*
-mono_assembly_load_corlib (MonoRuntimeInfo *runtime, MonoImageOpenStatus *status)
+mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *status)
 {
 	char *corlib_file;
 

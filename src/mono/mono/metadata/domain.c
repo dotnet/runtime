@@ -75,11 +75,11 @@ typedef struct {
 	int startup_count;
 } AppConfigInfo;
 
-static MonoRuntimeInfo *current_runtime = NULL;
+static const MonoRuntimeInfo *current_runtime = NULL;
 
 /* This is the list of runtime versions supported by this JIT.
  */
-static MonoRuntimeInfo supported_runtimes[] = {
+static const MonoRuntimeInfo supported_runtimes[] = {
 	{"v1.0.3705", "1.0", { {1,0,5000,0}, {7,0,5000,0} }	},
 	{"v1.1.4322", "1.0", { {1,0,5000,0}, {7,0,5000,0} }	},
 	{"v2.0.40607","2.0", { {2,0,3600,0}, {8,0,3600,0} }	}
@@ -90,9 +90,9 @@ static MonoRuntimeInfo supported_runtimes[] = {
 #define DEFAULT_RUNTIME_VERSION "v1.1.4322"
 
 static void
-get_runtimes_from_exe (const char *exe_file, MonoRuntimeInfo** runtimes);
+get_runtimes_from_exe (const char *exe_file, const MonoRuntimeInfo** runtimes);
 
-static MonoRuntimeInfo*
+static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
 
 guint32
@@ -330,7 +330,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	static MonoDomain *domain = NULL;
 	MonoAssembly *ass = NULL;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
-	MonoRuntimeInfo* runtimes [G_N_ELEMENTS (supported_runtimes) + 1];
+	const MonoRuntimeInfo* runtimes [G_N_ELEMENTS (supported_runtimes) + 1];
 	int n;
 
 	if (domain)
@@ -365,7 +365,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	}
 
 	if (runtimes [0] == NULL) {
-		MonoRuntimeInfo *default_runtime = get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
+		const MonoRuntimeInfo *default_runtime = get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
 		runtimes [0] = default_runtime;
 		runtimes [1] = NULL;
 		g_print ("WARNING: The runtime version supported by this application is unavailable.\n");
@@ -1136,7 +1136,7 @@ app_config_free (AppConfigInfo* app_config)
 }
 
 
-static MonoRuntimeInfo*
+static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version)
 {
 	int n;
@@ -1150,12 +1150,12 @@ get_runtime_by_version (const char *version)
 }
 
 static void
-get_runtimes_from_exe (const char *exe_file, MonoRuntimeInfo** runtimes)
+get_runtimes_from_exe (const char *exe_file, const MonoRuntimeInfo** runtimes)
 {
 	AppConfigInfo* app_config;
 	char *version;
 	char *config_name;
-	MonoRuntimeInfo* runtime = NULL;
+	const MonoRuntimeInfo* runtime = NULL;
 	MonoImage *image = NULL;
 	
 	config_name = g_strconcat (exe_file, ".config", NULL);
@@ -1213,7 +1213,7 @@ get_runtimes_from_exe (const char *exe_file, MonoRuntimeInfo** runtimes)
  *
  * Returns: the version of the current runtime instance.
  */
-MonoRuntimeInfo*
+const MonoRuntimeInfo*
 mono_get_runtime_info (void)
 {
 	return current_runtime;
@@ -1222,8 +1222,8 @@ mono_get_runtime_info (void)
 gchar *
 mono_debugger_check_runtime_version (const char *filename)
 {
-	MonoRuntimeInfo* runtimes [G_N_ELEMENTS (supported_runtimes) + 1];
-	MonoRuntimeInfo *rinfo;
+	const MonoRuntimeInfo* runtimes [G_N_ELEMENTS (supported_runtimes) + 1];
+	const MonoRuntimeInfo *rinfo;
 
 	get_runtimes_from_exe (filename, runtimes);
 	rinfo = runtimes [0];

@@ -136,9 +136,9 @@ typedef struct  {
 
 /* MonoRuntimeInfo: Contains information about versions supported by this runtime */
 typedef struct  {
-	const char* runtime_version;
-	const char* framework_version;
-	AssemblyVersionSet version_sets [2];
+	const char runtime_version [12];
+	const char framework_version [4];
+	const AssemblyVersionSet version_sets [2];
 } MonoRuntimeInfo;
 
 #define mono_domain_lock(domain)   EnterCriticalSection(&(domain)->lock)
@@ -235,9 +235,9 @@ MonoString *
 ves_icall_System_AppDomain_InternalGetProcessGuid (MonoString* newguid);
 
 MonoAssembly *
-mono_assembly_load_corlib (MonoRuntimeInfo *runtime, MonoImageOpenStatus *status);
+mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *status);
 
-MonoRuntimeInfo*
+const MonoRuntimeInfo*
 mono_get_runtime_info (void);
 
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */
