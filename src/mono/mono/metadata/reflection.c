@@ -1179,6 +1179,8 @@ encode_marshal_blob (MonoDynamicAssembly *assembly, MonoReflectionMarshal *minfo
 			memcpy (p, str, len);
 			p += len;
 			g_free (str);
+		} else {
+			mono_metadata_encode_value (0, p, &p);
 		}
 		if (minfo->marshaltype) {
 			str = mono_string_to_utf8 (minfo->marshaltype);
@@ -1193,6 +1195,8 @@ encode_marshal_blob (MonoDynamicAssembly *assembly, MonoReflectionMarshal *minfo
 			memcpy (p, str, len);
 			p += len;
 			g_free (str);
+		} else {
+			mono_metadata_encode_value (0, p, &p);
 		}
 		if (minfo->marshaltyperef) {
 			str = type_get_qualified_name (minfo->marshaltyperef->type, &assembly->assembly);
@@ -1207,6 +1211,8 @@ encode_marshal_blob (MonoDynamicAssembly *assembly, MonoReflectionMarshal *minfo
 			memcpy (p, str, len);
 			p += len;
 			g_free (str);
+		} else {
+			mono_metadata_encode_value (0, p, &p);
 		}
 		if (minfo->mcookie) {
 			str = mono_string_to_utf8 (minfo->mcookie);
@@ -1221,6 +1227,8 @@ encode_marshal_blob (MonoDynamicAssembly *assembly, MonoReflectionMarshal *minfo
 			memcpy (p, str, len);
 			p += len;
 			g_free (str);
+		} else {
+			mono_metadata_encode_value (0, p, &p);
 		}
 		break;
 	default:
