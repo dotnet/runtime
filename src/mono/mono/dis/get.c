@@ -25,12 +25,14 @@ get_memberref_parent (MonoImage *m, guint32 mrp_token);
 
 GHashTable *key_table = NULL;
 gboolean show_method_tokens = FALSE;
+gboolean show_tokens = FALSE;
 
 char *
 get_typedef (MonoImage *m, int idx)
 {
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	const char *ns;
+	char *tstring, *result;
         guint32 token;
         
 	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPEDEF], idx - 1, cols, MONO_TYPEDEF_SIZE);
@@ -40,21 +42,27 @@ get_typedef (MonoImage *m, int idx)
         /* Check if this is a nested type */
         token = MONO_TOKEN_TYPE_DEF | (idx);
         token = mono_metadata_nested_in_typedef (m, token);
+	tstring = show_tokens ? g_strdup_printf ("/*%08x*/", token) : NULL;
         if (token) {
-                char *outer, *result;
+                char *outer;
                 
                 outer = get_typedef (m, mono_metadata_token_index (token));
                 result = g_strdup_printf (
-                        "%s%s%s/%s", ns, *ns?".":"", outer,
-                        mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]));
+                        "%s%s%s/%s%s", ns, *ns?".":"", outer,
+                        mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]),
+			tstring ? tstring : "");
                 g_free (outer);
+		g_free (tstring);
                 return result;
         }
         
 	
-	return g_strdup_printf (
-		"%s%s%s", ns, *ns?".":"",
-		mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]));
+	result = g_strdup_printf (
+		"%s%s%s%s", ns, *ns?".":"",
+		mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]),
+		tstring ? tstring : "");
+	g_free (tstring);
+	return result;
 }
 
 char *
@@ -239,7 +247,12 @@ get_typespec (MonoImage *m, guint32 idx)
 		break;
 	}
 
-	result = res->str;
+	if (show_tokens) {
+		int token = mono_metadata_make_token (MONO_TABLE_TYPESPEC, idx);
+		result = g_strdup_printf ("%s/*%08x*/", res->str, token);
+	} else
+		result = res->str;
+
 	g_string_free (res, FALSE);
 
 	return result;
@@ -290,6 +303,13 @@ get_typeref (MonoImage *m, int idx)
 		
 	default:
 		ret = g_strdup_printf ("Unknown table in TypeRef %d", table);
+	}
+
+	if (show_tokens) {
+		int token = mono_metadata_make_token (MONO_TABLE_TYPEREF, idx);
+		char *temp = g_strdup_printf ("%s/*%08x*/", ret, token);
+		g_free (ret);
+		ret = temp;
 	}
 
 	return ret;
@@ -807,9 +827,62 @@ dis_stringify_type (MonoImage *m, MonoType *type)
 const char *
 get_type (MonoImage *m, const char *ptr, char **result)
 {
-	MonoType *type = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
-	*result = dis_stringify_type (m, type);
-	mono_metadata_free_type (type);
+	const char *start = ptr;
+	guint32 type;
+	MonoType *t;
+
+	if (*ptr == MONO_TYPE_BYREF)
+		++ptr;
+
+	type = mono_metadata_decode_value (ptr, &ptr);
+
+	switch (type){
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS: {
+		guint32 token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
+		MonoClass *klass = mono_class_get (m, token);
+		char *temp = dis_stringify_object_with_class (m, klass);
+
+		if (show_tokens) {
+			*result = g_strdup_printf ("%s/*%08x*/", temp, token);
+			g_free (temp);
+		} else
+			*result = temp;
+		break;
+	}
+
+	case MONO_TYPE_GENERICINST: {
+		GString *str = g_string_new ("");
+		int count, i;
+		char *temp;
+
+		ptr = get_type (m, ptr, &temp);
+		g_string_append (str, temp);
+		g_free (temp);
+
+		count = mono_metadata_decode_value (ptr, &ptr);
+		g_string_append (str, "<");
+
+		for (i = 0; i < count; i++) {
+			if (i)
+				g_string_append (str, ",");
+			ptr = get_type (m, ptr, &temp);
+			g_string_append (str, temp);
+		}
+
+		g_string_append (str, ">");
+		*result = str->str;
+		g_string_free (str, FALSE);
+		break;
+	}
+
+	default:
+		t = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, start, &ptr);
+		*result = dis_stringify_type (m, t);
+		mono_metadata_free_type (t);
+		break;
+	}
+
 	return ptr;
 }
 
@@ -1259,7 +1332,10 @@ get_method (MonoImage *m, guint32 token)
 	if (mh) {
 		esname = get_escaped_name (mh->name);
 		sig = dis_stringify_object_with_class (m, mh->klass);
-		name = g_strdup_printf ("%s::%s", sig, esname);
+		if (show_tokens)
+			name = g_strdup_printf ("%s/*%08x*/::%s", sig, token, esname);
+		else
+			name = g_strdup_printf ("%s::%s", sig, esname);
 		g_free (sig);
 		g_free (esname);
 	} else
@@ -1271,7 +1347,7 @@ get_method (MonoImage *m, guint32 token)
 					  idx - 1, method_cols, MONO_METHOD_SIZE);
 
 		sig = get_methodref_signature (m, method_cols [MONO_METHOD_SIGNATURE], name);
-		return sig;
+		break;
 		
 	case MONO_TOKEN_MEMBER_REF: {
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_MEMBERREF],
@@ -1282,20 +1358,26 @@ get_method (MonoImage *m, guint32 token)
 					mono_metadata_string_heap (m, member_cols [MONO_MEMBERREF_NAME]));
 		sig = get_methodref_signature (
 			m, member_cols [MONO_MEMBERREF_SIGNATURE], name);
-		return sig;
+		break;
 	}
 	case MONO_TOKEN_METHOD_SPEC: {
                 mono_metadata_decode_row (&m->tables [MONO_TABLE_METHODSPEC],
                                 idx - 1, member_cols, MONO_METHODSPEC_SIZE);
 		token = member_cols [MONO_METHODSPEC_METHOD];
-                return get_methodspec (m, idx, token, name);
+                sig = get_methodspec (m, idx, token, name);
+		break;
 	}
 
 	default:
 		g_assert_not_reached ();
 	}
-	g_assert_not_reached ();
-	return NULL;
+
+	if (show_tokens) {
+		char *retval = g_strdup_printf ("%s /* %08x */", sig, token);
+		g_free (sig);
+		return retval;
+	} else
+		return sig;
 }
 
 /**

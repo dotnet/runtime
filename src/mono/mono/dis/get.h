@@ -69,3 +69,4 @@ MonoTypeEnum get_field_literal_type (MonoImage *m, guint32 blob_signature);
 void init_key_table (void);
 
 extern gboolean show_method_tokens;
+extern gboolean show_tokens;
