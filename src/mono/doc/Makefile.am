@@ -5,7 +5,7 @@ WEB_FILES=														\
 	oledb papers													\
 	passport plans porting postgresql ppc projects rationale							\
 	resources roadmap runtime sqlclient sqlite sybase tdsclient							\
-	tds-providers team status team testing thanks tools								\
+	tds-providers team status testing thanks tools								\
 	porting anoncvs monodoc-xml winforms
 
 OTHERS= pending resources-pending todo mono-build.sh mono-build-w32.sh
