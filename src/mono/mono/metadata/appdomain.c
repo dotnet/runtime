@@ -100,8 +100,17 @@ mono_init (const char *filename)
 	/* find the corlib */
 	ass = mono_assembly_open (CORLIB_NAME, NULL, &status);
 	if ((status != MONO_IMAGE_OK) || (ass == NULL)) {
-		g_print ("The assembly corlib.dll was not found or could not be loaded.\n");
-		g_print ("It should have been installed in the `%s' directory.\n", MONO_ASSEMBLIES);
+		switch (status){
+		case MONO_IMAGE_ERROR_ERRNO:
+			g_print ("The assembly corlib.dll was not found or could not be loaded.\n");
+			g_print ("It should have been installed in the `%s' directory.\n", MONO_ASSEMBLIES);
+			break;
+
+		case MONO_IMAGE_IMAGE_INVALID:
+			g_print ("The file %s/corlib.dll is an invalid CIL image", MONO_ASSEMBLIES);
+			break;
+		}
+		
 		exit (0);
 	}
 	mono_defaults.corlib = ass->image;
