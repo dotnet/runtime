@@ -735,16 +735,16 @@
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
-            <maintainer>genesis@houston.rr.com</maintainer>
+            <maintainer>develop@wtfo-guru.com</maintainer>
         </maintainers>
     </class>
     <class name="System.IO.Path">
         <last-activity>Jul-20-2001</last-activity>
-        <implementation>no</implementation>
-        <test-suite>no</test-suite>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
         <completion>?</completion>
         <maintainers>
-            <maintainer>marcins@zipworld.com.au</maintainer>
+            <maintainer>develop@wtfo-guru.com</maintainer>
         </maintainers>
     </class>
   
