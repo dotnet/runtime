@@ -3534,6 +3534,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->inst_p0 = cmethod;
 				ins->inst_p1 = arg_array [0];
 				MONO_ADD_INS (bblock, ins);
+				link_bblock (cfg, bblock, end_bblock);			
 				start_new_bblock = 1;
 				/* skip CEE_RET as well */
 				ip += 6;
@@ -4517,6 +4518,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->cil_code = ip++;
 			MONO_ADD_INS (bblock, ins);
 			sp = stack_start;
+			link_bblock (cfg, bblock, end_bblock);
 			start_new_bblock = 1;
 			break;
 		case CEE_LDFLD:
@@ -5851,6 +5853,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->cil_code = ip;
 				MONO_ADD_INS (bblock, ins);
 				sp = stack_start;
+				link_bblock (cfg, bblock, end_bblock);
 				start_new_bblock = 1;
 				ip += 2;
 				break;
@@ -5902,7 +5905,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	bblock->cil_length = ip - bblock->cil_code;
 	bblock->next_bb = end_bblock;
-	link_bblock (cfg, bblock, end_bblock);
 
 	if (cfg->method == method && cfg->domainvar) {
 		MonoInst *store;
@@ -8005,7 +8007,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (cfg->opt & MONO_OPT_BRANCH)
 		optimize_branches (cfg);
 
-	if ((cfg->opt & MONO_OPT_SSAPRE) && ! (cfg->opt & (MONO_OPT_CONSPROP|MONO_OPT_COPYPROP))) {
+	if (cfg->opt & MONO_OPT_SSAPRE) {
 		remove_critical_edges (cfg);
 	}
 
@@ -8088,7 +8090,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		if ((cfg->flags & MONO_CFG_HAS_LDELEMA) && (cfg->opt & MONO_OPT_ABCREM))
 			mono_perform_abc_removal (cfg);
 		
-		if ((cfg->opt & MONO_OPT_SSAPRE) && ! (cfg->opt & (MONO_OPT_CONSPROP|MONO_OPT_COPYPROP)))
+		if (cfg->opt & MONO_OPT_SSAPRE)
 			mono_perform_ssapre (cfg);
 		
 		mono_ssa_remove (cfg);
