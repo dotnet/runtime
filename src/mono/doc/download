@@ -10,17 +10,6 @@
 	test suite and the class library are in the `mcs' package, we
 	will move this later into `mono' itself. 
 
-	In order to make mcs and the class libraries you will need a computer
-	running Windows with the <strong>GNU make tools</strong> from the 
-	<strong>Cygwin</strong> environment, <strong>Microsoft's .NET Framework
-	SDK</strong>, <strong>GLIB 2.0</strong> and 
-	<strong>pkg-config</strong>.  
-
-        When installing Cygwin, don't forget to include
-	<tt>mingw-runtime</tt>. If you omit this, you will encounter
-	configure problems regarding not being able to generate
-	executables.
-
 <a name="sources">
 *** Sources
 

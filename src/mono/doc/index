@@ -84,6 +84,16 @@
   </tr>
 </table>
 
+@item Aug 21th, 2002: Portable.NET encodings integrated into Mono.
+
+	Rhys Weatherley has contributed the Portable.NET encoders to
+	the Mono class libraries.  This is a great step towards
+	cooperation between these projects.  Thanks to Paolo for doing the
+	merger on our side.
+
+	His encoders are more complete than the iconv-based approach
+	that mono used, which was unreliable under certain
+	circumstances.  
 
 @item Aug 20th, 2002: Remoting work, Resources, SPARC checkins, ADO.NET
 
