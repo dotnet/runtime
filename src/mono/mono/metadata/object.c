@@ -29,11 +29,12 @@
 #include "mono/metadata/profiler-private.h"
 #include <mono/os/gc_wrapper.h>
 
-/* 
- * enable to get a good speedup: we still need to figure out
- * how the sync structure is freed.
+/*
+ * Enable experimental typed allocation using the GC_gcj_malloc function.
  */
+#ifdef HAVE_BOEHM_GC
 #define CREATION_SPEEDUP 0
+#endif
 
 void
 mono_runtime_object_init (MonoObject *this)
@@ -152,6 +153,133 @@ vtable_finalizer (void *obj, void *data) {
 }
 #endif
 
+#if CREATION_SPEEDUP
+
+#define GC_NO_DESCRIPTOR ((gpointer)(0 | GC_DS_LENGTH))
+
+static void
+mono_class_compute_gc_descriptor (MonoClass *class)
+{
+	MonoClassField *field;
+	guint64 bitmap;
+	int i;
+	static gboolean gcj_inited = FALSE;
+
+	if (!gcj_inited) {
+		gcj_inited = TRUE;
+
+		GC_init_gcj_malloc (5, NULL);
+	}
+
+	if (!class->inited)
+		mono_class_init (class);
+
+	if (class->gc_descr_inited)
+		return;
+
+	class->gc_descr_inited = TRUE;
+	class->gc_descr = GC_NO_DESCRIPTOR;
+
+	if (class == mono_defaults.string_class) {
+		/*
+		 * The vtable is assumed to be reachable by other roots, since vtables
+		 * are currently never freed. That might change in the future, but
+		 * for now, this is a correct (and worthwhile) optimization.
+		 */
+		bitmap = 2; /* sync struct */
+		class->gc_descr = (gpointer)GC_make_descriptor ((GC_bitmap)&bitmap, 2);
+	}
+	else if (class->rank) {
+		mono_class_compute_gc_descriptor (class->element_class);
+
+		if (class->element_class->valuetype && (class->element_class->gc_descr != GC_NO_DESCRIPTOR) && (class->element_class->gc_bitmap == 2)) {
+			if (class->rank == 1)
+				bitmap = 2; /* sync struct */
+			else
+				bitmap = 2 + 4; /* sync struct + rank */
+			class->gc_descr = (gpointer)GC_make_descriptor ((GC_bitmap)&bitmap, 3);
+		}
+	}
+	else {
+		static int count = 0;
+		MonoClass *p;
+		guint32 pos;
+
+		/* The vtable is assumed to be reachable otherwise */
+		bitmap = 2; /* sync struct */
+
+		count ++;
+
+//		if (count > 442)
+//			return;
+
+//		printf("KLASS: %s.\n", class->name);
+
+		for (p = class; p != NULL; p = p->parent) {
+		for (i = 0; i < p->field.count; ++i) {
+			field = &p->fields [i];
+			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+				continue;
+			if (field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA)
+				return;
+
+			pos = field->offset / sizeof (gpointer);
+			
+			if (field->type->byref)
+				return;
+
+			switch (field->type->type) {
+			case MONO_TYPE_BOOLEAN:
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_CHAR:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:
+			case MONO_TYPE_R4:
+			case MONO_TYPE_R8:
+//				printf ("F: %s %s %d %lld %llx.\n", class->name, field->name, field->offset, ((guint64)1) << pos, bitmap);
+				break;
+			case MONO_TYPE_I:
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_SZARRAY:
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_PTR:
+				g_assert ((field->offset % sizeof(gpointer)) == 0);
+
+				bitmap |= ((guint64)1) << pos;
+//				printf ("F: %s %s %d %d %lld %llx.\n", class->name, field->name, field->offset, pos, ((guint64)(1)) << pos, bitmap);
+				break;
+			case MONO_TYPE_VALUETYPE: {
+				MonoClass *fclass = field->type->data.klass;
+				if (!fclass->enumtype) {
+					mono_class_compute_gc_descriptor (fclass);
+					bitmap |= (fclass->gc_bitmap & ~2) << pos;
+				}
+				break;
+			}
+			default:
+				return;
+			}
+		}
+		}
+		/* GC has trouble handling 64 bit descriptors... */
+		if ((class->instance_size / sizeof (gpointer)) > 30) {
+//			printf ("TOO LARGE: %s.\n", class->name);
+			return;
+		}
+//		printf("CLASS: %s.%s -> %d %llx.\n", class->name_space, class->name, class->instance_size / sizeof (gpointer), bitmap);
+		class->gc_bitmap = bitmap;
+		class->gc_descr = (gpointer)GC_make_descriptor ((GC_bitmap)&bitmap, class->instance_size / sizeof (gpointer));
+	}
+}
+#endif /* CREATION_SPEEDUP */
+
 /**
  * mono_class_vtable:
  * @domain: the application domain
@@ -193,6 +321,11 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 				  class->vtable_size * sizeof (gpointer));
 	vt->klass = class;
 	vt->domain = domain;
+
+#if CREATION_SPEEDUP
+	mono_class_compute_gc_descriptor (class);
+	vt->gc_descr = class->gc_descr;
+#endif
 
 	if (class->class_size) {
 #if HAVE_BOEHM_GC
@@ -988,8 +1121,21 @@ mono_object_new_specific (MonoVTable *vtable)
 MonoObject *
 mono_object_new_alloc_specific (MonoVTable *vtable)
 {
-	MonoObject *o = mono_object_allocate (vtable->klass->instance_size);
+	MonoObject *o;
+
+#if CREATION_SPEEDUP
+	if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
+		o = GC_GCJ_MALLOC (vtable->klass->instance_size, vtable);
+	}
+	else {
+//		printf("OBJECT: %s.%s.\n", vtable->klass->name_space, vtable->klass->name);
+		o = mono_object_allocate (vtable->klass->instance_size);
+		o->vtable = vtable;
+	}
+#else
+	o = mono_object_allocate (vtable->klass->instance_size);
 	o->vtable = vtable;
+#endif
 	if (vtable->klass->has_finalize)
 		mono_object_register_finalizer (o);
 	
@@ -1098,6 +1244,7 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 	MonoObject *o;
 	MonoArray *array;
 	MonoArrayBounds *bounds;
+	MonoVTable *vtable;
 	int i;
 
 	if (!array_class->inited)
@@ -1131,10 +1278,22 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 	 * Following three lines almost taken from mono_object_new ():
 	 * they need to be kept in sync.
 	 */
+	vtable = mono_class_vtable (domain, array_class);
+#if CREATION_SPEEDUP
+	if (vtable->gc_descr != GC_NO_DESCRIPTOR)
+		o = GC_GCJ_MALLOC (sizeof (MonoArray) + byte_len, vtable);
+	else {
+		o = mono_object_allocate (sizeof (MonoArray) + byte_len);
+		if (!o)
+			G_BREAKPOINT ();
+		o->vtable = vtable;
+	}
+#else
 	o = mono_object_allocate (sizeof (MonoArray) + byte_len);
 	if (!o)
 		G_BREAKPOINT ();
-	o->vtable = mono_class_vtable (domain, array_class);
+	o->vtable = vtable;
+#endif
 
 	array = (MonoArray*)o;
 
@@ -1182,19 +1341,19 @@ mono_array_new_specific (MonoVTable *vtable, guint32 n)
 
 	byte_len = n * mono_array_element_size (vtable->klass);
 #if CREATION_SPEEDUP
-	if (vtable->klass->element_class->byval_arg.type >= MONO_TYPE_BOOLEAN && vtable->klass->element_class->byval_arg.type <= MONO_TYPE_R4) {
-		o = GC_MALLOC_ATOMIC (sizeof (MonoArray) + byte_len);
-		o->synchronisation = 0;
-		memset (((MonoArray*)o)->vector, 0, byte_len);
+	if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
+		o = GC_GCJ_MALLOC (sizeof (MonoArray) + byte_len, vtable);
 	} else {
+//		printf("ARRAY: %s.%s.\n", vtable->klass->name_space, vtable->klass->name);
 		o = mono_object_allocate (sizeof (MonoArray) + byte_len);
+		o->vtable = vtable;
 	}
 #else
 	o = mono_object_allocate (sizeof (MonoArray) + byte_len);
+	o->vtable = vtable;
 #endif
 	if (!o)
 		G_BREAKPOINT ();
-	o->vtable = vtable;
 
 	ao = (MonoArray *)o;
 	ao->bounds = NULL;
@@ -1235,18 +1394,19 @@ MonoString *
 mono_string_new_size (MonoDomain *domain, gint32 len)
 {
 	MonoString *s;
+	MonoVTable *vtable;
+
+	vtable = mono_class_vtable (domain, mono_defaults.string_class);
 
 #if CREATION_SPEEDUP
-	s = GC_MALLOC_ATOMIC (sizeof (MonoString) + ((len + 1) * 2));
-	s->object.synchronisation = 0;
-	mono_string_chars (s) [len] = 0;
+	s = GC_GCJ_MALLOC (sizeof (MonoString) + ((len + 1) * 2), vtable);
 #else
 	s = (MonoString*)mono_object_allocate (sizeof (MonoString) + ((len + 1) * 2));
+	s->object.vtable = vtable;
 #endif
 	if (!s)
 		G_BREAKPOINT ();
 
-	s->object.vtable = mono_class_vtable (domain, mono_defaults.string_class);
 	s->length = len;
 	mono_profiler_allocation ((MonoObject*)s, mono_defaults.string_class);
 
@@ -1268,7 +1428,6 @@ mono_string_new_len (MonoDomain *domain, const char *text, guint length)
 	guint16 *ut;
 	glong items_written;
 
-	
 	ut = g_utf8_to_utf16 (text, length, NULL, &items_written, &error);
 
 	if (!error)
@@ -1339,12 +1498,14 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 {
 	MonoObject *res;
 	int size;
+	MonoVTable *vtable;
 
 	g_assert (class->valuetype);
 
+	vtable = mono_class_vtable (domain, class);
 	size = mono_class_instance_size (class);
 	res = mono_object_allocate (size);
-	res->vtable = mono_class_vtable (domain, class);
+	res->vtable = vtable;
 	mono_profiler_allocation (res, class);
 
 	size = size - sizeof (MonoObject);

@@ -93,7 +93,8 @@ struct _MonoClass {
 	guint marshalbyref    : 1; /* class is a MarshalByRefObject */
 	guint contextbound    : 1; /* class is a ContextBoundObject */
 	guint delegate        : 1; /* class is a Delegate */
-	guint dummy           : 1; /* temorary hack */
+	guint gc_descr_inited : 1; /* gc_descr is initialized */
+	guint dummy           : 1; /* temporary hack */
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
@@ -150,6 +151,9 @@ struct _MonoClass {
 
 	void *reflection_info;
 
+	void *gc_descr;
+	guint64 gc_bitmap;
+
 	MonoMethod *ptr_to_str;
 	MonoMethod *str_to_ptr;
 
@@ -159,6 +163,11 @@ struct _MonoClass {
 
 struct MonoVTable {
 	MonoClass  *klass;
+    /*
+	 * According to comments in gc_gcj.h, this should be the second word in
+	 * the vtable.
+	 */
+	void *gc_descr; 	
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
 	guint       max_interface_id;
         gpointer   *interface_offsets;   
