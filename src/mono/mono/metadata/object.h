@@ -95,11 +95,14 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
+	MonoArray  *trace_ips;
 	MonoObject *inner_ex;
 	MonoString *message;
 	MonoString *help_link;
 	MonoString *class_name;
 	MonoString *stack_trace;
+	MonoString *remote_stack_trace;
+	gint32     *remote_stack_index;
 	gint32      hresult;
 	MonoString *source;
 } MonoException;
@@ -151,6 +154,16 @@ typedef struct {
 	MonoObject *rval;
 	MonoObject *exc;
 } MonoMethodMessage;
+
+typedef struct {
+	MonoObject obj;
+	gint32 il_offset;
+	gint32 native_offset;
+	MonoReflectionMethod *method;
+	MonoString *filename;
+	gint32 line;
+	gint32 column;
+} MonoStackFrame;
 
 typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, void **params, MonoObject **exc);
 

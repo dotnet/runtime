@@ -268,6 +268,10 @@ ves_icall_get_frame_info   (gint32 skip, MonoBoolean need_file_info,
 			    gint32 *iloffset, gint32 *native_offset,
 			    MonoString **file, gint32 *line, gint32 *column);
 
+MonoArray *
+ves_icall_get_trace        (MonoException *exc, gint32 skip, 
+			    MonoBoolean need_file_info);
+
 void
 arch_handle_exception      (struct sigcontext *ctx, gpointer obj);
 

@@ -1950,11 +1950,44 @@ async_result_fields[] = {
 	{NULL, 0}
 };
 
+static FieldDesc 
+exception_fields[] = {
+	{"trace_ips", G_STRUCT_OFFSET (MonoException, trace_ips)},
+	{"inner_exception", G_STRUCT_OFFSET (MonoException, inner_ex)},
+	{"message", G_STRUCT_OFFSET (MonoException, message)},
+	{"help_link", G_STRUCT_OFFSET (MonoException, help_link)},
+	{"class_name", G_STRUCT_OFFSET (MonoException, class_name)},
+	{"stack_trace", G_STRUCT_OFFSET (MonoException, stack_trace)},
+	{"remote_stack_trace", G_STRUCT_OFFSET (MonoException, remote_stack_trace)},
+	{"remote_stack_index", G_STRUCT_OFFSET (MonoException, remote_stack_index)},
+	{"hresult", G_STRUCT_OFFSET (MonoException, hresult)},
+	{"source", G_STRUCT_OFFSET (MonoException, source)},
+	{NULL, 0}
+};
+
 static const ClassDesc
 system_classes_to_check [] = {
+	{"Exception", exception_fields},
 	{"MonoEnumInfo", enuminfo_fields},
 	{"Delegate", delegate_fields},
 	{"MulticastDelegate", multicast_delegate_fields},
+	{NULL, NULL}
+};
+
+static FieldDesc 
+stack_frame_fields [] = {
+	{"ilOffset", G_STRUCT_OFFSET (MonoStackFrame, il_offset)},
+	{"nativeOffset", G_STRUCT_OFFSET (MonoStackFrame, native_offset)},
+	{"methodBase", G_STRUCT_OFFSET (MonoStackFrame, method)},
+	{"fileName", G_STRUCT_OFFSET (MonoStackFrame, filename)},
+	{"lineNumber", G_STRUCT_OFFSET (MonoStackFrame, line)},
+	{"columnNumber", G_STRUCT_OFFSET (MonoStackFrame, column)},
+	{NULL, 0}
+};
+
+static const ClassDesc
+system_diagnostics_classes_to_check [] = {
+	{"StackFrame", stack_frame_fields},
 	{NULL, NULL}
 };
 
@@ -2022,6 +2055,7 @@ namespaces_to_check[] = {
 	{"System.Reflection.Emit", emit_classes_to_check},
 	{"System.Reflection", reflection_classes_to_check},
 	{"System.Threading", threading_classes_to_check},
+	{"System.Diagnostics", system_diagnostics_classes_to_check},
 	{"System", system_classes_to_check},
 	{NULL, NULL}
 };

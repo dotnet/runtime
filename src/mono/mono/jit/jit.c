@@ -1103,7 +1103,6 @@ check_inlining (MonoMethod *method)
 		case CEE_CPOBJ:
 		case CEE_LDOBJ:
 		case CEE_LDSTR:
-		case CEE_NEWOBJ:
 		case CEE_CASTCLASS:
 		case CEE_ISINST:
 		case CEE_UNBOX:
@@ -1124,6 +1123,7 @@ check_inlining (MonoMethod *method)
 		case CEE_LDC_R8:
 			ip += 9;
 			break;
+		case CEE_NEWOBJ:
 		case CEE_CALL:
 		case CEE_CALLVIRT: {
 			MonoMethod *cm;
@@ -1138,6 +1138,12 @@ check_inlining (MonoMethod *method)
 			if (cm == method)
 				goto fail;
 
+			/* we do not inline functions containing calls to 
+			   stack query functions */ 
+			if (cm->klass == mono_defaults.stack_frame_class ||
+			    cm->klass == mono_defaults.stack_trace_class)
+				goto fail;
+				
 			break;
 		}
 		case CEE_LDARG_0:
@@ -3748,6 +3754,8 @@ mono_jit_init (char *file) {
 	mono_add_internal_call ("System.Array::Address", ves_array_element_address);
 	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", 
 				ves_icall_get_frame_info);
+	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", 
+				ves_icall_get_trace);
 
 	metadata_section = &ms;
 	InitializeCriticalSection (metadata_section);

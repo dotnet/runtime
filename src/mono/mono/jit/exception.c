@@ -135,6 +135,25 @@ arch_get_call_finally (void)
 	return start;
 }
 
+static MonoArray *
+glist_to_array (GList *list) 
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoArray *res;
+	int len, i;
+
+	if (!list)
+		return NULL;
+
+	len = g_list_length (list);
+	res = mono_array_new (domain, mono_defaults.int_class, len);
+
+	for (i = 0; list; list = list->next, i++)
+		mono_array_set (res, gpointer, i, list->data);
+
+	return res;
+}
+
 /*
  * return TRUE if the exception is catched. It also sets the 
  * stack_trace String. 
@@ -147,6 +166,7 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 	gpointer *end_of_stack;
 	MonoLMF *lmf = jit_tls->lmf;
 	MonoMethod *m;
+	GList *trace_ips = NULL;
 	int i;
 
 	end_of_stack = jit_tls->end_of_stack;
@@ -163,6 +183,8 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 				char    *strace;
 				char    *tmp, *tmpsig, *source_location, *tmpaddr;
 				gint32   address, iloffset;
+
+				trace_ips = g_list_append (trace_ips, ip);
 
 				if (!((MonoException*)obj)->stack_trace)
 					strace = g_strdup ("");
@@ -206,6 +228,8 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 						/* catch block */
 						if (ei->flags == 0 && mono_object_isinst (obj, 
 						        mono_class_get (m->klass->image, ei->token_or_filter))) {
+							((MonoException*)obj)->trace_ips = glist_to_array (trace_ips);
+							g_list_free (trace_ips);
 							return TRUE;
 						}
 					}
@@ -218,14 +242,19 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 			bp = (gpointer)(*((int *)bp));
 
 			if (bp >= end_of_stack) {
+				((MonoException*)obj)->trace_ips = glist_to_array (trace_ips);
+				g_list_free (trace_ips);
 				if (!jit_tls->env)
 					return FALSE;
 				return TRUE;
 			}
 	
 		} else {
-			if (!lmf)
+			if (!lmf) {
+				((MonoException*)obj)->trace_ips = glist_to_array (trace_ips);
+				g_list_free (trace_ips);
 				return FALSE;
+			}
 
 			bp = (gpointer)lmf->ebp;
 			ip = (gpointer)lmf->eip;
@@ -235,6 +264,8 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 			if (mono_object_isinst (obj, mono_defaults.exception_class)) {
 				char  *strace; 
 				char  *tmp;
+
+				trace_ips = g_list_append (trace_ips, lmf->method->info);
 
 				if (!((MonoException*)obj)->stack_trace)
 					strace = g_strdup ("");
@@ -253,6 +284,8 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 			lmf = lmf->previous_lmf;
 
 			if (bp >= end_of_stack) {
+				((MonoException*)obj)->trace_ips = glist_to_array (trace_ips);
+				g_list_free (trace_ips);
 				if (!jit_tls->env)
 					return FALSE;
 				return TRUE;
@@ -263,6 +296,41 @@ arch_exc_is_caught (MonoDomain *domain, MonoJitTlsData *jit_tls, gpointer ip,
 	return FALSE;
 }
 
+MonoArray *
+ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoArray *res;
+	MonoArray *ta = exc->trace_ips;
+	int i, len;
+	
+	len = mono_array_length (ta);
+
+	res = mono_array_new (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0);
+
+	for (i = skip; i < len; i++) {
+		MonoJitInfo *ji;
+		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new (domain, mono_defaults.stack_frame_class);
+		gpointer ip = mono_array_get (ta, gpointer, i);
+
+		ji = mono_jit_info_table_find (domain, ip);
+		g_assert (ji != NULL);
+
+		sf->method = mono_method_get_object (domain, ji->method);
+		sf->native_offset = (char *)ip - (char *)ji->code_start;
+		sf->il_offset = mono_debug_il_offset_from_address (ji->method, sf->native_offset);
+
+		if (need_file_info) {
+			sf->filename = mono_string_new (domain, ji->method->klass->image->name);
+			sf->line = 0; // fixme:
+			sf->column = 0; // fixme:
+		}
+
+		mono_array_set (res, gpointer, i, sf);
+	}
+
+	return res;
+}
 
 MonoBoolean
 ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
@@ -281,7 +349,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	do {
 		MonoJitInfo *ji;
-		addr = 0;
+		addr = -1; /* unknown */
 
 		if ((ji = mono_jit_info_table_find (domain, ip))) {
 			m = ji->method;
