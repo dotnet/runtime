@@ -225,6 +225,8 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 	}
 
 	if (!ec->valuetype) {
+		if (!mono_object_isinst (value, ec))
+			INVALID_CAST;
 		*ea = (gpointer)value;
 		return;
 	}
