@@ -5760,7 +5760,8 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *ty
 	if (klass->wastypebuilder && klass->reflection_info) {
 		tb = klass->reflection_info;
 
-		parent = mono_reflection_bind_generic_parameters (tb->parent, types);
+		if (klass->parent)
+			parent = mono_reflection_bind_generic_parameters (tb->parent, types);
 	}
 
 	geninst = g_new0 (MonoType, 1);
