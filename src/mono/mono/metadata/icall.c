@@ -2396,7 +2396,7 @@ handle_parent:
 
 		if (!match)
 			continue;
-		member = (MonoObject*)mono_field_get_object (domain, refklass, field);
+		member = (MonoObject*)mono_field_get_object (domain, klass, field);
 		l = g_slist_prepend (l, member);
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
@@ -2473,7 +2473,7 @@ handle_parent:
 		if (g_hash_table_lookup (method_slots, GUINT_TO_POINTER (method->slot)))
 			continue;
 		g_hash_table_insert (method_slots, GUINT_TO_POINTER (method->slot), method);
-		member = (MonoObject*)mono_method_get_object (domain, method, refklass);
+		member = (MonoObject*)mono_method_get_object (domain, method, startklass);
 		
 		l = g_slist_prepend (l, member);
 		len++;
@@ -2538,7 +2538,7 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 
 		if (!match)
 			continue;
-		member = (MonoObject*)mono_method_get_object (domain, method, refklass);
+		member = (MonoObject*)mono_method_get_object (domain, method, startklass);
 			
 		l = g_slist_prepend (l, member);
 	}
@@ -2620,7 +2620,7 @@ handle_parent:
 			continue;
 		g_hash_table_insert (method_slots, GUINT_TO_POINTER (method->slot), prop);
 
-		l = g_slist_prepend (l, mono_property_get_object (domain, refklass, prop));
+		l = g_slist_prepend (l, mono_property_get_object (domain, klass, prop));
 		len++;
 	}
 	if ((!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent)))
@@ -2734,7 +2734,7 @@ handle_parent:
 		if (!match)
 			continue;
 		match = 0;
-		l = g_slist_prepend (l, mono_event_get_object (domain, refklass, event));
+		l = g_slist_prepend (l, mono_event_get_object (domain, klass, event));
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
