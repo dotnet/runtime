@@ -48,7 +48,7 @@ MCS_BASIC_FILES = \
 MCS_DIRS = $(MCS_BASIC_DIRS) class/System.XML class/System class/Mono.CSharp.Debugger
 MCS_FILES = $(MCS_BASIC_FILES) \
 	$(mcs_topdir)/class/lib/default/System.Xml.dll \
-	$(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll
+	$(mcs_topdir)/class/lib/default/Mono.CompilerServices.SymbolWriter.dll
 
 tmpinst = _tmpinst
 

@@ -1,3 +1,8 @@
+2004-07-30  Martin Baulig  <martin@ximian.com>
+
+	* Makefile.am: The symbol writer is now called
+	Mono.CompilerServices.SymbolWriter.dll.	
+
 2004-07-30  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am (monoone_DATA): Add mcs.exe.config.
