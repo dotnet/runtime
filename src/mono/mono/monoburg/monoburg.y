@@ -231,7 +231,7 @@ nextchar ()
 	case 0:
 	  if (ll) {
 	    next_state = 1;
-	  } else 
+	  } else
 	    fputs (input, outputfd);
 	  break;
 	case 1:
@@ -258,6 +258,7 @@ yyparsetail (void)
   fputs (input, outputfd);
   while (fgets (input, sizeof (input), inputfd))
     fputs (input, outputfd);
+  input [0] = '\0';
 }
 
 int 
