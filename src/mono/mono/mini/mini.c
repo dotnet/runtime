@@ -1633,15 +1633,6 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 		if (!found) {
 			bb->out_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * count);
 			for (i = 0; i < count; ++i) {
-/* see bug#58863, but removing this code causes regressions in gtk-sharp build 
- * (SEGV running Method::Initialize() in gapi_codegen.exe) 
- */
-				gboolean bug = FALSE;
-
-				if (strstr (cfg->method->klass->name, "Method") && strstr (cfg->method->name, "Initialize")) {
-					bug = TRUE;
-				}
-
 				/* 
 				 * try to reuse temps already allocated for this purpouse, if they occupy the same
 				 * stack slot and if they are of the same type.
