@@ -113,7 +113,9 @@ TESTSRC=			\
 	cpblkTest.il		\
 	jmpTest.il		\
 	calliTest.il		\
-	ckfiniteTest.il
+	ckfiniteTest.il		\
+	locallocTest.il		\
+	initblkTest.il
 
 
 TESTSI_TMP=$(TESTSRC:.cs=.exe)

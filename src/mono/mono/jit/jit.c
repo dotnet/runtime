@@ -1905,8 +1905,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				this->data.m = cm;
 			} else {				
 				if (cm->klass->valuetype) {
-					this = mono_ctree_new_leaf (mp, MB_TERM_NEWSTRUCT);
-					this->data.i =  mono_class_value_size (cm->klass, NULL);
+					t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+					t1->data.i = mono_class_value_size (cm->klass, NULL);
+					this = mono_ctree_new (mp, MB_TERM_LOCALLOC, t1, NULL);
+					this->data.i = TRUE;
 				} else if (cfg->share_code) {
 					this = mono_ctree_new_leaf (mp, MB_TERM_NEWOBJ);
 					this->data.klass = cm->klass;
@@ -3155,15 +3157,23 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			}
 			case CEE_SIZEOF: {
 				guint32 token;
-				MonoType *type;
 				int align;
 				++ip;
 				token = read32 (ip);
 				ip += 4;
-				type = mono_type_create_from_typespec (image, token);
+
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-				t1->data.i = mono_type_size (type, &align);
-				mono_metadata_free_type (type);
+				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC) {
+					MonoType *type = mono_type_create_from_typespec (image, token);
+					t1->data.i = mono_type_size (type, &align);
+					mono_metadata_free_type (type);
+				} else {
+					MonoClass *szclass = mono_class_get (image, token);
+					mono_class_init (szclass);
+					g_assert (szclass->valuetype);
+					t1->data.i = mono_class_value_size (szclass, &align);
+				}
+
 				PUSH_TREE (t1, VAL_I32);
 				break;
 			}
@@ -3184,6 +3194,24 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			case CEE_VOLATILE_: {
 				++ip;
 				// fixme: implement me				
+				break;
+			}
+			case CEE_LOCALLOC: {
+				++ip;
+				--sp;
+
+				t1 = mono_ctree_new (mp, MB_TERM_LOCALLOC, *sp, NULL);
+				t1->data.i = header->init_locals;
+				PUSH_TREE (t1, VAL_POINTER);
+				break;
+			}
+			case CEE_INITBLK: {
+				++ip;
+				sp -= 3;
+
+				t1 = mono_ctree_new (mp, MB_TERM_CPSRC, sp [1], sp [2]);
+				t1 = mono_ctree_new (mp, MB_TERM_INITBLK, sp [0], t1);
+				ADD_TREE (t1, cli_addr);
 				break;
 			}
 			default:

@@ -3865,6 +3865,7 @@ array_constructed:
 				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC) {
 					MonoType *type = mono_type_create_from_typespec (image, token);
 					sp->data.i = mono_type_size (type, &align);
+					mono_metadata_free_type (type);
 				} else {
 					MonoClass *szclass = mono_class_get (image, token);
 					mono_class_init (szclass);
