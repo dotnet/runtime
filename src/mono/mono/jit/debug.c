@@ -44,6 +44,7 @@ static pthread_mutex_t debugger_start_mutex = PTHREAD_MUTEX_INITIALIZER;
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
 static int debugger_update_symbol_file_table (void);
+static gpointer debugger_compile_method (MonoMethod *method);
 
 static void mono_debug_add_assembly (MonoAssembly *assembly, gpointer user_data);
 static void mono_debug_close_assembly (AssemblyDebugInfo* info);
@@ -61,7 +62,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_symbol_file_table_generation,
 	&debugger_notification_address,
 	&debugger_symbol_file_table,
-	&mono_compile_method,
+	&debugger_compile_method,
 	&debugger_insert_breakpoint,
 	&debugger_remove_breakpoint,
 	&mono_runtime_invoke
@@ -1416,6 +1417,18 @@ debugger_remove_breakpoint (guint64 breakpoint)
 	}
 
 	return 0;
+}
+
+static gpointer
+debugger_compile_method (MonoMethod *method)
+{
+	gpointer retval;
+
+	mono_debugger_lock ();
+	retval = mono_compile_method (method);
+	mono_debugger_signal ();
+	mono_debugger_unlock ();
+	return retval;
 }
 
 int
