@@ -748,5 +748,13 @@ class Tests {
 		u --;
 		return (u == 4257145736) ? 0 : 1;
 	}
+
+	static int test_0_shift_regress () {
+		long a = 0; 
+		int b = 6; 
+		UInt16 c = 3;
+
+		return ((a >> (b - c)) == 0) ? 0 : 1;
+	}
 }
 

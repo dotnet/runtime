@@ -234,6 +234,7 @@ mono_arch_is_int_overflow (void *sigctx)
 			break;
 		default:
 			g_assert_not_reached ();
+			reg = -1;
 		}
 
 		if (reg == -1)
@@ -1899,6 +1900,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* force source to be same as dest */
 			rs->iassign [ins->sreg1] = ins->dreg;
 			rs->iassign [ins->sreg1 + 1] = ins->unused;
+			rs->isymbolic [ins->dreg] = ins->sreg1;
+			rs->isymbolic [ins->unused] = ins->sreg1 + 1;
 
 			DEBUG (g_print ("\tassigned sreg1 (long) %s to sreg1 R%d\n", mono_arch_regname (ins->dreg), ins->sreg1));
 			DEBUG (g_print ("\tassigned sreg1 (long-high) %s to sreg1 R%d\n", mono_arch_regname (ins->unused), ins->sreg1 + 1));
