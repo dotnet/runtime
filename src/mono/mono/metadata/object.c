@@ -29,8 +29,6 @@
 #include "mono/metadata/profiler-private.h"
 #include <mono/os/gc_wrapper.h>
 
-CRITICAL_SECTION *metadata_section = NULL;
-
 /*
  * Enable experimental typed allocation using the GC_gcj_malloc function.
  */
@@ -94,12 +92,10 @@ mono_runtime_class_init (MonoVTable *vtable)
 	}
 
 	if (found) {
-		EnterCriticalSection (metadata_section);
 		mono_domain_lock (vtable->domain);
 		/* double check... */
 		if (vtable->initialized || vtable->initializing) {
 			mono_domain_unlock (vtable->domain);
-			LeaveCriticalSection (metadata_section);
 			return;
 		}
 		vtable->initializing = 1;
@@ -108,7 +104,6 @@ mono_runtime_class_init (MonoVTable *vtable)
 		vtable->initializing = 0;
 		/* FIXME: if the cctor fails, the type must be marked as unusable */
 		mono_domain_unlock (vtable->domain);
-		LeaveCriticalSection (metadata_section);
 	} else {
 		vtable->initialized = 1;
 		return;

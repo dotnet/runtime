@@ -416,10 +416,13 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass)
 {
 	gint i;
 
-	if (g_hash_table_lookup (domain->assemblies, ass->aname.name))
-		return; /* This is ok while no lazy loading of assemblies */
-
 	mono_domain_lock (domain);
+
+	if (g_hash_table_lookup (domain->assemblies, ass->aname.name)) {
+		mono_domain_unlock (domain);
+		return; /* This is ok while no lazy loading of assemblies */
+	}
+
 	g_hash_table_insert (domain->assemblies, (gpointer) ass->aname.name, ass);
 	mono_domain_unlock (domain);
 
