@@ -2620,7 +2620,7 @@ handle_parent:
 			continue;
 		g_hash_table_insert (method_slots, GUINT_TO_POINTER (method->slot), prop);
 
-		l = g_slist_prepend (l, mono_property_get_object (domain, klass, prop));
+		l = g_slist_prepend (l, mono_property_get_object (domain, refklass, prop));
 		len++;
 	}
 	if ((!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent)))
@@ -2734,7 +2734,7 @@ handle_parent:
 		if (!match)
 			continue;
 		match = 0;
-		l = g_slist_prepend (l, mono_event_get_object (domain, klass, event));
+		l = g_slist_prepend (l, mono_event_get_object (domain, refklass, event));
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
