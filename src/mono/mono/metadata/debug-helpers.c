@@ -500,7 +500,7 @@ mono_method_full_name (MonoMethod *method, gboolean signature)
 
 	nspace = method->klass->name_space;
 
-	if (signature && method->signature) {
+	if (signature) {
 		char *tmpsig = mono_signature_get_desc (method->signature, TRUE);
 
 		if (method->wrapper_type != MONO_WRAPPER_NONE)

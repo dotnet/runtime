@@ -462,9 +462,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		if (!(*lmf)->method)
 			return (gpointer)-1;
 
-		if (trace)
-			*trace = g_strdup_printf ("in (unmanaged) %s", mono_method_full_name ((*lmf)->method, TRUE));
-		
 		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->eip))) {
 			*res = *ji;
 		} else {
@@ -472,6 +469,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			res->method = (*lmf)->method;
 		}
 
+		if (trace)
+			*trace = g_strdup_printf ("in (unmanaged) %s", mono_method_full_name (res->method, TRUE));
+		
 		new_ctx->SC_ESI = (*lmf)->esi;
 		new_ctx->SC_EDI = (*lmf)->edi;
 		new_ctx->SC_EBX = (*lmf)->ebx;
