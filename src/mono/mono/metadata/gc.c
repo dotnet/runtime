@@ -764,6 +764,8 @@ void mono_gc_cleanup (void)
 		if (WaitForSingleObjectEx (shutdown_event, 2000, FALSE) == WAIT_TIMEOUT) {
 			mono_thread_stop (gc_thread);
 		}
+		gc_thread = NULL;
+		GC_finalizer_notifier = NULL;
 	}
 
 #endif

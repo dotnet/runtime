@@ -444,6 +444,9 @@ mono_thread_exit ()
 	SET_CURRENT_OBJECT (NULL);
 	thread_cleanup (thread);
 
+	/* we could add a callback here for embedders to use. */
+	if (thread == mono_thread_get_main ())
+		exit (mono_environment_exitcode_get ());
 	ExitThread (-1);
 }
 
