@@ -43,8 +43,6 @@ static gint32 string_invariant_indexof_char (MonoString *source, gint32 sindex,
 					     gint32 count, gunichar2 value,
 					     MonoBoolean first);
 
-static MonoString *string_invariant_tolower (MonoString *this);
-static MonoString *string_invariant_toupper (MonoString *this);
 static const CultureInfoEntry* culture_info_entry_from_lcid (int lcid);
 
 static int
@@ -90,7 +88,7 @@ create_group_sizes_array (const gint *gs, gint ml)
 }
 
 static MonoArray*
-create_names_array (const gchar **names, int ml)
+create_names_array (const gchar *const *names, int ml)
 {
 	MonoArray *ret;
 	MonoDomain *domain;
@@ -237,7 +235,7 @@ construct_culture (MonoCultureInfo *this, const CultureInfoEntry *ci)
 	return TRUE;
 }
 
-gboolean
+static gboolean
 construct_culture_from_specific_name (MonoCultureInfo *ci, gchar *name)
 {
 	const CultureInfoEntry *entry;
@@ -1019,7 +1017,7 @@ gint32 ves_icall_System_Globalization_CompareInfo_internal_compare (MonoCompareI
 	}
 	
 	if (!mono_monitor_try_enter ((MonoObject *)this, INFINITE))
-		return(NULL);
+		return(-1);
 	
 	set_collator_options (coll, options);
 			
@@ -1680,6 +1678,9 @@ gunichar2 ves_icall_System_Char_InternalToLower_Comp (gunichar2 c, MonoCultureIn
 }
 
 #else /* HAVE_ICU */
+static MonoString *string_invariant_tolower (MonoString *this);
+static MonoString *string_invariant_toupper (MonoString *this);
+
 void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoCultureInfo *this, MonoString *locale)
 {
 	MONO_ARCH_SAVE_REGS;
@@ -1789,6 +1790,46 @@ gunichar2 ves_icall_System_Char_InternalToLower_Comp (gunichar2 c, MonoCultureIn
 	MONO_ARCH_SAVE_REGS;
 
 	return g_unichar_tolower (c);
+}
+
+static MonoString *string_invariant_tolower (MonoString *this)
+{
+	MonoString *ret;
+	gunichar2 *src; 
+	gunichar2 *dest;
+	gint32 i;
+
+	ret = mono_string_new_size(mono_domain_get (),
+				   mono_string_length(this));
+
+	src = mono_string_chars (this);
+	dest = mono_string_chars (ret);
+
+	for (i = 0; i < mono_string_length (this); ++i) {
+		dest[i] = g_unichar_tolower(src[i]);
+	}
+
+	return(ret);
+}
+
+static MonoString *string_invariant_toupper (MonoString *this)
+{
+	MonoString *ret;
+	gunichar2 *src; 
+	gunichar2 *dest;
+	guint32 i;
+
+	ret = mono_string_new_size(mono_domain_get (),
+				   mono_string_length(this));
+
+	src = mono_string_chars (this);
+	dest = mono_string_chars (ret);
+
+	for (i = 0; i < mono_string_length (this); ++i) {
+		dest[i] = g_unichar_toupper(src[i]);
+	}
+
+	return(ret);
 }
 
 #endif /* HAVE_ICU */
@@ -2020,45 +2061,5 @@ static gint32 string_invariant_indexof_char (MonoString *source, gint32 sindex,
 
 		return(-1);
 	}
-}
-
-static MonoString *string_invariant_tolower (MonoString *this)
-{
-	MonoString *ret;
-	gunichar2 *src; 
-	gunichar2 *dest;
-	gint32 i;
-
-	ret = mono_string_new_size(mono_domain_get (),
-				   mono_string_length(this));
-
-	src = mono_string_chars (this);
-	dest = mono_string_chars (ret);
-
-	for (i = 0; i < mono_string_length (this); ++i) {
-		dest[i] = g_unichar_tolower(src[i]);
-	}
-
-	return(ret);
-}
-
-static MonoString *string_invariant_toupper (MonoString *this)
-{
-	MonoString *ret;
-	gunichar2 *src; 
-	gunichar2 *dest;
-	guint32 i;
-
-	ret = mono_string_new_size(mono_domain_get (),
-				   mono_string_length(this));
-
-	src = mono_string_chars (this);
-	dest = mono_string_chars (ret);
-
-	for (i = 0; i < mono_string_length (this); ++i) {
-		dest[i] = g_unichar_toupper(src[i]);
-	}
-
-	return(ret);
 }
 
