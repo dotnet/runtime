@@ -100,7 +100,7 @@ This is Mono.
 	version 0.31 or later, continue.  Otherwise, you can try option
 	(ii) below.
 
-	You are ready ready to start your CVS upgrade.  Compile with
+	You are ready to start your CVS upgrade.  Compile with
 
 		make bootstrap
 
@@ -131,8 +131,8 @@ This is Mono.
 
 		make monolite-bootstrap
 
-	This will automatically gunzip and untar the file, and place the
-	files appropriately, and then completes the bootstrap.
+	This will automatically gunzip and untar the tarball, and place
+	the files appropriately, and then completes the bootstrap.
 
 	iii. Testing and Installation
 	     ------------------------
