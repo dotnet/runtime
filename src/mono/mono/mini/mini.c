@@ -3105,12 +3105,13 @@ void check_linkdemand (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee,
 		/* Generate code to throw a SecurityException before the actual call/link */
 		MonoAssembly *assembly = mono_image_get_assembly (caller->klass->image);
 		MonoReflectionAssembly *refass = (MonoReflectionAssembly*) mono_assembly_get_object (cfg->domain, assembly);
-		MonoSecurityManager* secman = mono_security_manager_get_methods ();
+		MonoReflectionMethod *refmet = mono_method_get_object (cfg->domain, caller, NULL);
+		MonoSecurityManager *secman = mono_security_manager_get_methods ();
 		MonoInst *args [3];
 
 		NEW_ICONST (cfg, args [0], 4);
 		NEW_PCONST (cfg, args [1], refass);
-		NEW_PCONST (cfg, args [2], caller);
+		NEW_PCONST (cfg, args [2], refmet);
 		mono_emit_method_call_spilled (cfg, bblock, secman->linkdemandsecurityexception, mono_method_signature (secman->linkdemandsecurityexception), args, ip, NULL);
 	} else if (cfg->exception_type == MONO_EXCEPTION_NONE) {
 		 /* don't hide previous results */
@@ -9106,13 +9107,16 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	/* this can only be set if the security manager is active */
 	if (cfg->exception_type == MONO_EXCEPTION_SECURITY) {
+		MonoAssembly *assembly = mono_image_get_assembly (method->klass->image);
+		MonoReflectionAssembly *refass = (MonoReflectionAssembly*) mono_assembly_get_object (domain, assembly);
+		MonoReflectionMethod *refmet = mono_method_get_object (domain, method, NULL);
 		MonoSecurityManager* secman = mono_security_manager_get_methods ();
 		MonoObject *exc = NULL;
 		gpointer args [3];
 
 		args [0] = &cfg->exception_data;
-		args [1] = mono_assembly_get_object (domain, mono_image_get_assembly (method->klass->image));
-		args [2] = method;
+		args [1] = refass;
+		args [2] = refmet;
 		mono_runtime_invoke (secman->linkdemandsecurityexception, NULL, args, &exc);
 
 		mono_destroy_compile (cfg);
