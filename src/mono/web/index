@@ -140,6 +140,11 @@
   </tr>
 </table>
 
+@item Oct 25th: GTK# 0.11+ Windows Installer available
+
+	Johannes created a <a href="http://java.thn.htu.se/~toor/gtk-sharp/gtk-sharp-0.11-cvs.exe">Windows Installer for GTK# 0.11+</a> and works
+	with Mono 0.28 for Windows.
+
 @item Oct 21st: Mono Community at Novell Forge
 
 	Mono Developers that are looking for a public repository for
