@@ -197,9 +197,9 @@ static dis_map_t visibility_map [] = {
 	{ TYPE_ATTRIBUTE_NESTED_PUBLIC,        "nested public " },
 	{ TYPE_ATTRIBUTE_NESTED_PRIVATE,       "nested private " },
 	{ TYPE_ATTRIBUTE_NESTED_FAMILY,	       "nested family " },
-	{ TYPE_ATTRIBUTE_NESTED_ASSEMBLY,      "nested assembly" },
-	{ TYPE_ATTRIBUTE_NESTED_FAM_AND_ASSEM, "nested famandassem" },
-	{ TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM,  "nested famorassem" },
+	{ TYPE_ATTRIBUTE_NESTED_ASSEMBLY,      "nested assembly " },
+	{ TYPE_ATTRIBUTE_NESTED_FAM_AND_ASSEM, "nested famandassem " },
+	{ TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM,  "nested famorassem " },
 	{ 0, NULL }
 };
 
