@@ -5,13 +5,7 @@
 	work-in-progress components currently.
 
 	<ul>
-		* Per <a href="class-status/per-assembly.html">Assembly</a>
-
-		* Per <a href="class-status/per-completion.html">Completion</a>
-
-		* Per <a href="class-status/per-maintainer.html">Maintainer</a>
-
-		* Per <a href="class-status/per-unimplemented.html">Unimplemented</a>
+		* Per <a href="class-status/bn/index.html">By Namespace</a>
 	</ul>
 
 	A better mechanism will soon be in place, I just did this
@@ -21,7 +15,7 @@
 	href="class-status/maintainers.xml">maintainers</a> file that
 	contains the actual maintainers list.  
 
-	I am sure we can generate better reports, if you are
-	interested in contributing, let <a
-	href="mailto:miguel@ximian.com">me</a> know.
+	You can also download the master <a
+	href="class-status/class.xml">Class Status XML</a> file.
+
 

@@ -138,8 +138,8 @@ A: We like the features that the CLI and its related technologies
 Q: Will I be able to write proprietary applications that run with
    Mono?
 
-A: Yes.  We will make sure that the licensing will allow developers to
-   create proprietary applications.  
+A: Yes.  The licensing scheme is planned to allow proprietary
+   developers to write applications with Mono.
    
 Q: What license is Mono on?
 
@@ -147,10 +147,8 @@ A: The C# Compiler is released under the terms of the GPL.  The class
    libraries will be under the LGPL or the GPL with a special
    exception.  The runtime libraries are under the LGPL.
 
-   Here is the exception for the class libraries:
-
-   The library is distributed under the terms of the GNU General
-   Public License with the following exception:
+   Since the LGPL is not suitable for embedded systems development, we
+   are also licensing the libraries under the GPL with the following exception:
 
    If you link this library against your own program, then you do not
    need to release the source code for that program. However, any
@@ -161,6 +159,15 @@ A: The C# Compiler is released under the terms of the GPL.  The class
    This is similar in spirit to <a
    href="http://www.gnu.org/software/classpath/classpath.html">GNU
    Classpath.</a>
+
+Q: But in Object Oriented Programming I need to subclass your library
+   functions, does that mean that I am making modifications to your
+   library and hence I would have to distribute my sources under the
+   LGPL?
+
+A: No.  Object Oriented Programming in the class library is a well
+   understood interface barrier, so you can actually develop
+   proprietary applications with the Mono libraries. 
 
 Q: Will you accept code under the XXX License?
 
