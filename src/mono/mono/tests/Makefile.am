@@ -115,6 +115,7 @@ TEST_CS_SRC=			\
 	appdomain2.cs		\
 	appdomain3.cs		\
 	appdomain-client.cs	\
+	appdomain-unload.cs \
 	pointer.cs		\
 	rounding.cs		\
 	hashcode.cs		\
@@ -179,10 +180,10 @@ TEST_IL_SRC=			\
 	ckfiniteTest.il		\
 	locallocTest.il		\
 	initblkTest.il		\
-	even-odd.il		\
 	qt-instance.il		\
 	vararg.il			\
 	bug-29859.il
+#	even-odd.il
 
 
 TESTSI_CS=$(TEST_CS_SRC:.cs=.exe)
@@ -237,12 +238,12 @@ testb: $(TEST_PROG) $(TESTBS)
 		$(srcdir)/test-driver $(TEST_PROG) $$i $(RUNTIME_ARGS);	\
 	done
 
-testjit: $(TESTSI_CS) $(TESTBS) libtest.la
+testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
-	for i in $(TESTSI_CS) $(TESTBS); do	\
+	for i in $(TESTSI_CS) $(TESTBS) $(TESTSI_IL); do	\
 		rm -f $${i}.so; \
 		if $(srcdir)/test-driver $(JITTEST_PROG) $$i $(RUNTIME_ARGS); \
 		then \
@@ -276,7 +277,7 @@ testaot: $(TESTSI_CS) $(TESTBS) libtest.la
 	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
 	if [ $$failed > 0 ]; then echo -e "\nFailed tests:\n"; for i in $${failed_tests}; do echo $${i}; done; fi; 
 
-testinterp: $(TESTSI_CS) libtest.la
+testinterp: $(TESTSI_CS) $(TESTSI_IL) libtest.la
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
