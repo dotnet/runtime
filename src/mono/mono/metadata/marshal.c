@@ -4930,13 +4930,15 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_i4 (mb, 0);
 		}
 
-		/* set dst_ptr */
-		mono_mb_emit_ldloc (mb, conv_arg);
-		mono_mb_emit_byte (mb, CEE_STLOC_1);
+		if (!(t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT))) {
+			/* set dst_ptr */
+			mono_mb_emit_ldloc (mb, conv_arg);
+			mono_mb_emit_byte (mb, CEE_STLOC_1);
 
-		/* emit valuetype conversion code */
-		emit_struct_conv (mb, klass, FALSE);
-			
+			/* emit valuetype conversion code */
+			emit_struct_conv (mb, klass, FALSE);
+		}
+
 		if (t->byref)
 			mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
 		break;
