@@ -59,7 +59,6 @@ mono_runtime_class_init (MonoClass *klass)
 		}
 	}
 	/* No class constructor found */
-
 }
 
 static MonoInvokeFunc default_mono_runtime_invoke = NULL;
