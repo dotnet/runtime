@@ -92,10 +92,17 @@ void
 mono_code_manager_invalidate (MonoCodeManager *cman)
 {
 	CodeChunk *chunk;
+
+#ifdef __i386__
+	int fill_value = 0xcc; /* x86 break */
+#else
+	int fill_value = 0x2a;
+#endif
+
 	for (chunk = cman->current; chunk; chunk = chunk->next)
-		memset (chunk->data, 42, chunk->size);
+		memset (chunk->data, fill_value, chunk->size);
 	for (chunk = cman->full; chunk; chunk = chunk->next)
-		memset (chunk->data, 42, chunk->size);
+		memset (chunk->data, fill_value, chunk->size);
 }
 
 void
