@@ -1,4 +1,4 @@
-* Writing performant .NET and Mono applications
+* Writing better performing .NET and Mono applications
 
 <center>
 Miguel de Icaza (miguel@novell.com)<br>
@@ -75,7 +75,7 @@ Total memory allocated: 448 KB
 	
 	Two warnings must be given about the method data. First,
 	the profiler has an overhead associated with it. As such,
-	a high number of calls to a method may show up as comsuming
+	a high number of calls to a method may show up as consuming
 	lots of time, when in reality they do not consume much time
 	at all. If you see a method that has a very high number of
 	calls, you may be able to ignore it. However, do consider
@@ -84,7 +84,7 @@ Total memory allocated: 448 KB
 	of built in collection types.
 	
 	Secondly, due to the nature of the profiler, recursive calls
-	have extermely large times (because the profiler double counts
+	have extremely large times (because the profiler double counts
 	when the method calls itself). One easy way to see this problem
 	is that if a method is shown as taking more time than the Main
 	method, it is very likely recursive, and causing this problem.
@@ -122,21 +122,21 @@ Total memory allocated: 448 KB
 	memory pool.
 	
 *** Boxing
-	The .NET framework provides a rich hierchy of object types.
+	The .NET framework provides a rich hierarchy of object types.
 	Each object not only has value information, but also type
 	information associated with it. This type information makes
 	many types of programs easier to write. It also has a cost
 	associated with it. The type information takes up space.
 	
 	In order to reduce the cost of type information, almost every
-	Object Oriented language has the concept of `primitatives'.
-	They usually map to types such as integers and bools. These
+	Object Oriented language has the concept of `primitives'.
+	They usually map to types such as integers and booleans. These
 	types do not have any type information associated with them.
 	
-	However, the language also must be able to treat primitatives
+	However, the language also must be able to treat primitives
 	as first class datums -- in the class with objects. Languages
 	handle this issue in different ways. Some choose to make a
-	special class for each primative, and force the user to do an
+	special class for each primitive, and force the user to do an
 	operation such as:
 <pre class="shell">
 // This is Java
@@ -150,10 +150,10 @@ System.out.println (list.get (1).intValue ());
 	Boxing preforms the same thing as Java's <code>new Integer (1)</code>.
 	The user is not forced to write the extra code. However,
 	behind the scenes the <em>same thing</em> is being done
-	by the runtime. Each time a primative is cast to an object,
+	by the runtime. Each time a primitive is cast to an object,
 	a new object is allocated.
 	
-	You must be careful when casting a primative to an object.
+	You must be careful when casting a primitive to an object.
 	Note that because it is an implicit conversion, you will
 	not see it in your code. For example, boxing is happening here:
 
@@ -182,7 +182,7 @@ foo.Add (1);
 	terms of releasing and finalizing objects on time, you can
 	assist the garbage collector by clearing the fields that
 	points to objects.  This means that some objects might be
-	elegible for collection earlier than they would, this can help
+	eligible for collection earlier than they would, this can help
 	reduce the memory consumption and reduce the work that the GC
 	has to do.
 
@@ -201,7 +201,7 @@ foo.Add (1);
 	like ArrayList is more efficient than using the ArrayList
 	indexer, the pressure introduced due to the extra memory
 	requirements and the demands on the garbage collector make it
-	more inneficient.
+	more inefficient.
 
 	There is no straight-forward rule on when to use foreach, and
 	when to use a manual loop.  The best thing to do is to always
