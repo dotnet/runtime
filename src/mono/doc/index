@@ -80,6 +80,22 @@
   </tr>
 </table>
 
+@item Jun 10, 2002
+
+	Ajay <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-June/000128.html">announced</a>
+	today that the reading code for XmlSchemas is almost complete.
+
+@item Jun 7, 2002
+
+	<b>Mono 0.12 is out!</b> More classes!  More working code!
+	Better compiler!  Faster runtime!  Less bugs! 
+
+	You can get it <a
+	href="download.html#jun-7">Here</a> (quick links: <a
+	href="archive/mono-0.12.tar.gz">runtime</a> and <a
+	href="archive/mcs-0.12.tar.gz">compiler/classes</a>).
+
 @item Jun 3rd, 2002
 
 	CodeDOM implementation from Daniel Stodden has got C# output support.
