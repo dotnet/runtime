@@ -3926,15 +3926,6 @@ ves_array_get (MonoArray *this, ...)
 	g_assert_not_reached ();
 }
 
-/* This is the implementation of the ldftn opcode
- * used to implement CreateDelegate
- */
-static void *
-ves_delegate_createdelegate (MonoReflectionMethod *info)
-{
-	return mono_compile_method (info->method);
-}
-
 /**
  * mono_jit_exec:
  * @assembly: reference to an assembly
@@ -4094,7 +4085,6 @@ mono_jit_init (const char *file) {
 	mono_add_internal_call ("System.Array::Set", ves_array_set);
 	mono_add_internal_call ("System.Array::Get", ves_array_get);
 	mono_add_internal_call ("System.Array::Address", ves_array_element_address);
-	mono_add_internal_call ("System.Delegate::CreateDelegate_internal", ves_delegate_createdelegate);
 	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", 
 				ves_icall_get_frame_info);
 	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", 

@@ -1252,6 +1252,8 @@ search_method (MonoReflectionType *type, const char *name, guint32 flags, MonoAr
 				continue;
 			if (strcmp(m->name, name))
 				continue;
+			if (!args)
+				return m;
 			if (m->signature->param_count != mono_array_length (args))
 				continue;
 			for (j = 0; j < m->signature->param_count; ++j) {
@@ -2026,6 +2028,25 @@ ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, Mon
 	return mono_type_get_object (mono_domain_get (), &klass->byval_arg);
 }
 
+static MonoObject *
+ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, MonoObject *target,
+						   MonoReflectionMethod *info)
+{
+	MonoClass *delegate_class = mono_class_from_mono_type (type->type);
+	MonoObject *delegate;
+	gpointer func;
+
+	mono_assert (delegate_class->parent == mono_defaults.multicastdelegate_class);
+
+	delegate = mono_object_new (target->vtable->domain, delegate_class);
+
+	func = mono_compile_method (info->method);
+
+	mono_delegate_ctor (delegate, target, func);
+
+	return delegate;
+}
+
 /*
  * Magic number to convert a time which is relative to
  * Jan 1, 1970 into a value which is relative to Jan 1, 0001.
@@ -2586,7 +2607,7 @@ static gconstpointer icall_map [] = {
 	"System.Type::internal_from_handle", ves_icall_type_from_handle,
 	"System.Type::get_constructor", ves_icall_get_constructor,
 	"System.Type::get_property", ves_icall_get_property,
-	"System.Type::get_method", ves_icall_get_method,
+	"System.MonoType::get_method", ves_icall_get_method,
 	"System.MonoType::get_attributes", ves_icall_get_attributes,
 	"System.Type::type_is_subtype_of", ves_icall_type_is_subtype_of,
 	"System.Type::Equals", ves_icall_type_Equals,
@@ -2893,6 +2914,11 @@ static gconstpointer icall_map [] = {
 	"System.Diagnostics.Process::StartTime_internal(intptr)", ves_icall_System_Diagnostics_Process_StartTime_internal,
 	"System.Diagnostics.Process::ExitCode_internal(intptr)", ves_icall_System_Diagnostics_Process_ExitCode_internal,
 	"System.Diagnostics.FileVersionInfo::GetVersionInfo_internal(string)", ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal,
+
+	/* 
+	 * System.Delegate
+	 */
+	"System.Delegate::CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal,
 
 	/*
 	 * add other internal calls here
