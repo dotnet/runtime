@@ -971,9 +971,11 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssem
 	g_assert (assRef->name != NULL);
 
 	if (!get_info_from_assembly_name (assRef, &aname)) {
+		MonoException *exc;
+
 		free_assembly_name (&aname);
 		/* This is a parse error... */
-		MonoException *exc = mono_get_exception_file_not_found (assRef->name);
+		exc = mono_get_exception_file_not_found (assRef->name);
 		mono_raise_exception (exc);
 	}
 
