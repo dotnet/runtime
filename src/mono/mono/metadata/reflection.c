@@ -3003,6 +3003,111 @@ ctor_builder_to_signature (MonoReflectionCtorBuilder *ctor) {
 	return sig;
 }
 
+static void
+get_prop_name_and_type (MonoObject *prop, char **name, MonoType **type)
+{
+	MonoClass *klass = mono_object_class (prop);
+	if (strcmp (klass->name, "PropertyBuilder") == 0) {
+		MonoReflectionPropertyBuilder *pb = (MonoReflectionPropertyBuilder *)prop;
+		*name = mono_string_to_utf8 (pb->name);
+		*type = pb->type->type;
+	} else {
+		MonoReflectionProperty *p = (MonoReflectionProperty *)prop;
+		*name = g_strdup (p->property->name);
+		if (p->property->get)
+			*type = p->property->get->signature->ret;
+		else
+			*type = p->property->set->signature->params [p->property->set->signature->param_count - 1];
+	}
+}
+
+static void
+get_field_name_and_type (MonoObject *field, char **name, MonoType **type)
+{
+	MonoClass *klass = mono_object_class (field);
+	if (strcmp (klass->name, "FieldBuilder") == 0) {
+		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)field;
+		*name = mono_string_to_utf8 (fb->name);
+		*type = fb->type->type;
+	} else {
+		MonoReflectionField *f = (MonoReflectionField *)field;
+		*name = g_strdup (f->field->name);
+		*type = f->field->type;
+	}
+}
+
+static void
+encode_cattr_value (char *buffer, char *p, char **retbuffer, char **retp, guint32 *buflen, MonoType *type, MonoObject *arg)
+{
+	char *argval;
+	MonoTypeEnum simple_type;
+	
+	if ((p-buffer) + 10 >= *buflen) {
+		char *newbuf;
+		*buflen *= 2;
+		newbuf = g_realloc (buffer, *buflen);
+		p = newbuf + (p-buffer);
+		buffer = newbuf;
+	}
+	argval = ((char*)arg + sizeof (MonoObject));
+	simple_type = type->type;
+handle_enum:
+	switch (simple_type) {
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I1:
+		*p++ = *argval;
+		break;
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I2:
+		swap_with_size (p, argval, 2, 1);
+		p += 2;
+		break;
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_R4:
+		swap_with_size (p, argval, 4, 1);
+		p += 4;
+		break;
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_R8:
+		swap_with_size (p, argval, 8, 1);
+		p += 8;
+		break;
+	case MONO_TYPE_VALUETYPE:
+		if (type->data.klass->enumtype) {
+			simple_type = type->data.klass->enum_basetype->type;
+			goto handle_enum;
+		} else {
+			g_warning ("generic valutype %s not handled in custom attr value decoding", type->data.klass->name);
+		}
+		break;
+	case MONO_TYPE_STRING: {
+		char *str = mono_string_to_utf8 ((MonoString*)arg);
+		guint32 slen = strlen (str);
+		if ((p-buffer) + 10 + slen >= *buflen) {
+			char *newbuf;
+			*buflen *= 2;
+			*buflen += slen;
+			newbuf = g_realloc (buffer, *buflen);
+			p = newbuf + (p-buffer);
+			buffer = newbuf;
+		}
+		mono_metadata_encode_value (slen, p, &p);
+		memcpy (p, str, slen);
+		p += slen;
+		g_free (str);
+		break;
+	}
+	default:
+		g_error ("type 0x%02x not yet supported in custom attr encoder", simple_type);
+	}
+	*retp = p;
+	*retbuffer = buffer;
+}
+
 /*
  * mono_reflection_get_custom_attrs_blob:
  * @ctor: custom attribute constructor
@@ -3021,8 +3126,8 @@ mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, Mo
 	MonoArray *result;
 	MonoMethodSignature *sig;
 	MonoObject *arg;
-	char *buffer, *p, *argval;
-	guint32 buflen, i, type;
+	char *buffer, *p;
+	guint32 buflen, i;
 
 	if (strcmp (ctor->vtable->klass->name, "MonoCMethod")) {
 		sig = ctor_builder_to_signature ((MonoReflectionCtorBuilder*)ctor);
@@ -3035,75 +3140,55 @@ mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, Mo
 	*p++ = 1;
 	*p++ = 0;
 	for (i = 0; i < sig->param_count; ++i) {
-		if ((p-buffer) + 10 >= buflen) {
-			char *newbuf;
-			buflen *= 2;
-			newbuf = g_realloc (buffer, buflen);
-			p = newbuf + (p-buffer);
-			buffer = newbuf;
-		}
 		arg = (MonoObject*)mono_array_get (ctorArgs, gpointer, i);
-		argval = ((char*)arg + sizeof (MonoObject));
-		type = sig->params [i]->type;
-handle_enum:
-		switch (type) {
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I1:
-			*p++ = *argval;
-			break;
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I2:
-			swap_with_size (p, argval, 2, 1);
-			p += 2;
-			break;
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_R4:
-			swap_with_size (p, argval, 4, 1);
-			p += 4;
-			break;
-		case MONO_TYPE_U8:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_R8:
-			swap_with_size (p, argval, 8, 1);
-			p += 8;
-			break;
-		case MONO_TYPE_VALUETYPE:
-			if (sig->params [i]->data.klass->enumtype) {
-				type = sig->params [i]->data.klass->enum_basetype->type;
-				goto handle_enum;
-			} else {
-				g_warning ("generic valutype %s not handled in custom attr value decoding", sig->params [i]->data.klass->name);
-			}
-			break;
-		case MONO_TYPE_STRING: {
-			char *str = mono_string_to_utf8 ((MonoString*)arg);
-			guint32 slen = strlen (str);
-			if ((p-buffer) + 10 + slen >= buflen) {
-				char *newbuf;
-				buflen *= 2;
-				buflen += slen;
-				newbuf = g_realloc (buffer, buflen);
-				p = newbuf + (p-buffer);
-				buffer = newbuf;
-			}
-			mono_metadata_encode_value (slen, p, &p);
-			memcpy (p, str, slen);
-			p += slen;
-			g_free (str);
-			break;
-		}
-		default:
-			g_error ("type 0x%02x not yet supported in custom attr encoder", type);
+		encode_cattr_value (buffer, p, &buffer, &p, &buflen, sig->params [i], arg);
+	}
+	i = 0;
+	if (properties)
+		i += mono_array_length (properties);
+	if (fields)
+		i += mono_array_length (fields);
+	*p++ = i & 0xff;
+	*p++ = (i >> 8) & 0xff;
+	if (properties) {
+		MonoObject *prop;
+		for (i = 0; i < mono_array_length (properties); ++i) {
+			MonoType *ptype;
+			char *pname;
+			int len;
+			
+			prop = mono_array_get (properties, gpointer, i);
+			get_prop_name_and_type (prop, &pname, &ptype);
+			*p++ = 0x54; /* PROPERTY signature */
+			len = strlen (pname);
+			mono_metadata_encode_value (len, p, &p);
+			memcpy (p, pname, len);
+			p += len;
+			encode_cattr_value (buffer, p, &buffer, &p, &buflen, ptype, (MonoObject*)mono_array_get (propValues, gpointer, i));
+			g_free (pname);
 		}
 	}
-	/* 
-	 * we don't support properties and fields, yet, set to 0.
-	 */
-	*p++ = 0;
-	*p++ = 0;
+
+	if (fields) {
+		MonoObject *field;
+		for (i = 0; i < mono_array_length (fields); ++i) {
+			MonoType *ftype;
+			char *fname;
+			int len;
+			
+			field = mono_array_get (fields, gpointer, i);
+			get_field_name_and_type (field, &fname, &ftype);
+			*p++ = 0x53; /* FIELD signature */
+			len = strlen (fname);
+			mono_metadata_encode_value (len, p, &p);
+			memcpy (p, fname, len);
+			p += len;
+			encode_cattr_value (buffer, p, &buffer, &p, &buflen, ftype, (MonoObject*)mono_array_get (fieldValues, gpointer, i));
+			g_free (fname);
+		}
+	}
+
+	g_assert (p - buffer <= buflen);
 	buflen = p - buffer;
 	result = mono_array_new (mono_domain_get (), mono_defaults.byte_class, buflen);
 	p = mono_array_addr (result, char, 0);
