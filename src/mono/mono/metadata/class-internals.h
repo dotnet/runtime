@@ -188,6 +188,15 @@ enum {
 	/* add other exception type */
 };
 
+/* This struct collects the info needed for the runtime use of a class,
+ * like the vtables for a domain, the GC descriptor, etc.
+ */
+typedef struct {
+	guint16 max_domain;
+	/* domain_vtables is indexed by the domain id and the size is max_domain + 1 */
+	MonoVTable *domain_vtables [MONO_ZERO_LEN_ARRAY];
+} MonoClassRuntimeInfo;
+
 struct _MonoClass {
 	MonoImage *image;
 
@@ -300,7 +309,7 @@ struct _MonoClass {
 	void *gc_descr;
 	guint64 gc_bitmap;
 
-	MonoVTable *cached_vtable;
+	MonoClassRuntimeInfo *runtime_info;
 
 	/* Generic vtable. Initialized by a call to mono_class_setup_vtable () */
 	MonoMethod **vtable;	

@@ -1240,11 +1240,11 @@ clear_cached_vtable (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoClass *klass = (MonoClass*)key;
 	MonoDomain *domain = (MonoDomain*)user_data;
-	MonoVTable *vt;
+	MonoClassRuntimeInfo *runtime_info;
 
-	vt = klass->cached_vtable;
-	if (vt && vt->domain == domain)
-		klass->cached_vtable = NULL;
+	runtime_info = klass->runtime_info;
+	if (runtime_info && runtime_info->max_domain >= domain->domain_id)
+		runtime_info->domain_vtables [domain->domain_id] = NULL;
 }
 
 typedef struct unload_data {
@@ -1273,10 +1273,14 @@ unload_thread_main (void *arg)
 		return 1;
 	}
 
-	/* Clear references to our vtables in class->cached_vtable */
+	/* Clear references to our vtables in class->runtime_info.
+	 * We also hold the loader lock because we're going to change
+	 * class->runtime_info.
+	 */
 	mono_domain_lock (domain);
-	g_hash_table_foreach (domain->class_vtable_hash, clear_cached_vtable,
-						  domain);
+	mono_loader_lock ();
+	g_hash_table_foreach (domain->class_vtable_hash, clear_cached_vtable, domain);
+	mono_loader_unlock ();
 	mono_domain_unlock (domain);
 
 	mono_threads_clear_cached_culture (domain);

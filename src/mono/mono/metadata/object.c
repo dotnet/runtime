@@ -598,6 +598,8 @@ field_is_special_static (MonoClass *fklass, MonoClassField *field)
 	return SPECIAL_STATIC_NONE;
 }
 
+static MonoVTable *mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class);
+
 /**
  * mono_class_vtable:
  * @domain: the application domain
@@ -609,7 +611,22 @@ field_is_special_static (MonoClass *fklass, MonoClassField *field)
 MonoVTable *
 mono_class_vtable (MonoDomain *domain, MonoClass *class)
 {
-	MonoVTable *vt = NULL;
+	MonoClassRuntimeInfo *runtime_info;
+
+	g_assert (class);
+
+	/* this check can be inlined in jitted code, too */
+	runtime_info = class->runtime_info;
+	if (runtime_info && runtime_info->max_domain >= domain->domain_id && runtime_info->domain_vtables [domain->domain_id])
+		return runtime_info->domain_vtables [domain->domain_id];
+	return mono_class_create_runtime_vtable (domain, class);
+}
+
+static MonoVTable *
+mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
+{
+	MonoVTable *vt;
+	MonoClassRuntimeInfo *runtime_info, *old_info;
 	MonoClassField *field;
 	char *t;
 	int i;
@@ -619,18 +636,12 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	guint32 constant_cols [MONO_CONSTANT_SIZE];
 	gpointer iter;
 
-	g_assert (class);
-
-	vt = class->cached_vtable;
-	if (vt && vt->domain == domain)
-		return vt;
-
 	mono_domain_lock (domain);
-	if ((vt = g_hash_table_lookup (domain->class_vtable_hash, class))) {
+	runtime_info = class->runtime_info;
+	if (runtime_info && runtime_info->max_domain >= domain->domain_id && runtime_info->domain_vtables [domain->domain_id]) {
 		mono_domain_unlock (domain);
-		return vt;
+		return runtime_info->domain_vtables [domain->domain_id];
 	}
-	
 	if (!class->inited)
 		mono_class_init (class);
 
@@ -736,9 +747,45 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	 * arch_create_jit_trampoline () can recursively call this function again
 	 * because it compiles icall methods right away.
 	 */
+	/* FIXME: class_vtable_hash is basically obsolete now: remove as soon
+	 * as we change the code in appdomain.c to invalidate vtables by
+	 * looking at the possible MonoClasses created for the domain.
+	 * Or we can reuse static_data_hash, by using vtable as a key
+	 * and always inserting into that hash.
+	 */
 	g_hash_table_insert (domain->class_vtable_hash, class, vt);
-	if (!class->cached_vtable)
-		class->cached_vtable = vt;
+	/* class->runtime_info is protected by the loader lock, both when
+	 * it it enlarged and when it is stored info.
+	 */
+	mono_loader_lock ();
+	old_info = class->runtime_info;
+	if (old_info && old_info->max_domain >= domain->domain_id) {
+		/* someone already created a large enough runtime info */
+		old_info->domain_vtables [domain->domain_id] = vt;
+	} else {
+		int new_size = domain->domain_id;
+		if (old_info)
+			new_size = MAX (new_size, old_info->max_domain);
+		new_size++;
+		/* make the new size a power of two */
+		i = 2;
+		while (new_size > i)
+			i <<= 1;
+		new_size = i;
+		/* this is a bounded memory retention issue: may want to 
+		 * handle it differently when we'll have a rcu-like system.
+		 */
+		runtime_info = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoClassRuntimeInfo) + new_size * sizeof (gpointer));
+		runtime_info->max_domain = new_size - 1;
+		/* copy the stuff from the older info */
+		if (old_info) {
+			memcpy (runtime_info->domain_vtables, old_info->domain_vtables, (old_info->max_domain + 1) * sizeof (gpointer));
+		}
+		runtime_info->domain_vtables [domain->domain_id] = vt;
+		/* keep this last (add membarrier) */
+		class->runtime_info = runtime_info;
+	}
+	mono_loader_unlock ();
 
 	/* initialize vtable */
 	if (init_vtable_func)
