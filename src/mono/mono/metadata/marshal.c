@@ -134,6 +134,21 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 	return delegate->delegate_trampoline;
 }
 
+MonoDelegate*
+mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
+{
+	MonoDelegate *d;
+
+	d = mono_object_new (mono_domain_get (), klass);
+
+	/* FIXME: Add a managed->native wrapper */
+	g_assert_not_reached ();
+
+	mono_delegate_ctor ((MonoObject*)d, NULL, ftn);
+
+	return d;
+}
+
 gpointer
 mono_array_to_savearray (MonoArray *array)
 {
@@ -2226,10 +2241,23 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 		case MONO_TYPE_CLASS: {
 			klass = t->data.klass;
 
+			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+
+			if (klass->delegate) {
+				g_assert (!t->byref);
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
+				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+				mono_mb_emit_ldarg (mb, i);
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_byte (mb, CEE_MONO_FUNC2);
+				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_FTN_DEL);
+				mono_mb_emit_stloc (mb, tmp_locals [i]);
+				break;
+			}
+
 			/* FIXME: Raise a MarshalDirectiveException here */
 			g_assert ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT);
-
-			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
 			if (t->attrs & PARAM_ATTRIBUTE_OUT) {
 				mono_mb_emit_byte (mb, CEE_LDNULL);

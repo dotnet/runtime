@@ -70,6 +70,9 @@ mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size);
 gpointer
 mono_delegate_to_ftnptr (MonoDelegate *delegate);
 
+MonoDelegate*
+mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);
+
 void * 
 mono_marshal_string_array (MonoArray *array);
 
