@@ -582,7 +582,8 @@ mono_ssa_avoid_copies (MonoCompile *cfg)
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		for (inst = bb->code; inst; inst = inst->next) {
-			if (inst->ssa_op == MONO_SSA_STORE && inst->inst_i0->opcode == OP_LOCAL) {
+			if (inst->ssa_op == MONO_SSA_STORE && inst->inst_i0->opcode == OP_LOCAL &&
+			    !IS_CALL (inst->inst_i1->opcode)) {
 				i1 = cfg->vars [inst->inst_i0->inst_c0];
 
 				if ((next = inst->next) && next->ssa_op == MONO_SSA_STORE && next->inst_i0->opcode == OP_LOCAL &&
