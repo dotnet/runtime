@@ -190,6 +190,7 @@ reg: OP_LOCALLOC (OP_ICONST) {
 
 reg: OP_LOCALLOC (reg) {
 	tree->sreg1 = state->left->tree->dreg;
+	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
