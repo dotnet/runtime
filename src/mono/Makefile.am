@@ -80,10 +80,12 @@ tmpinst-dir:
 	rootme=`pwd`; tmpinst=$$rootme/_tmpinst ; \
 	mkdir -p $$tmpinst $$tmpinst/bin $$tmpinst/lib ; \
 	echo '#! /bin/sh' > $$tmpinst/bin/mono ; \
-	echo ": \$${MONO_PATH=$$tmpinst/lib} ; export MONO_PATH" >> $$tmpinst/bin/mono ; \
-	echo "exec $$rootme/libtool --mode=execute $$rootme/$(mono_runtime) \$$@" >> $$tmpinst/bin/mono ; \
+	echo 'if test -z "$$MONO_PATH" ; then MONO_PATH="'"$$tmpinst/lib"'"' >> $$tmpinst/bin/mono ; \
+	echo 'else MONO_PATH=$${MONO_PATH}:"'"$$tmpinst/lib"'" ; fi' >> $$tmpinst/bin/mono ; \
+	echo 'export MONO_PATH' >> $$tmpinst/bin/mono ; \
+	echo 'exec "'"$$rootme/libtool"'" --mode=execute "'"$$rootme/$(mono_runtime)"'" "$$@"' >> $$tmpinst/bin/mono ; \
 	echo '#! /bin/sh' > $$tmpinst/bin/mcs ; \
-	echo "exec $$tmpinst/bin/mono $$tmpinst/lib/mcs.exe \$$@" >> $$tmpinst/bin/mcs ; \
+	echo 'exec "'"$$tmpinst/bin/mono"'" "'"$$tmpinst/lib/mcs.exe"'" "$$@"' >> $$tmpinst/bin/mcs ; \
 	chmod +x $$tmpinst/bin/mono $$tmpinst/bin/mcs
 
 tmpinst-runtime:

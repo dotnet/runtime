@@ -1,3 +1,8 @@
+2004-05-10  Raja R Harinath  <rharinath@novell.com>
+
+	* Makefile.am (tmpinst-dir): Always add $tmpinst/lib to MONO_PATH.
+	Fix quoting of commands.
+
 2004-05-08  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* monowiz.win32.nsi: some changes i made to build the 0.91 win32 setup
