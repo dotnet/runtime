@@ -534,6 +534,7 @@ if test x$platform_win32 = xno; then
 		AC_MSG_WARN(Using mono_mutex_t for recursive mutexes)
 		AC_DEFINE(USE_MONO_MUTEX)
 	])
+	AC_CHECK_FUNCS(pthread_attr_setstacksize)
 
 	dnl ********************************
 	dnl *** Checks for semaphore lib ***

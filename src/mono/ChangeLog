@@ -1,5 +1,7 @@
 2003-10-13  Zoltan Varga  <vargaz@freemail.hu>
 
+	* configure.in: Added check for pthread_attr_setstacksize.
+
 	* mono/tests/ChangeLog: New file.
 	
 2003-10-13  Zoltan Varga  <vargaz@freemail.hu>
