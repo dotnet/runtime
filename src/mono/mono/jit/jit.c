@@ -2644,6 +2644,8 @@ main (int argc, char *argv [])
 	mono_add_internal_call ("__array_Set", ves_array_set);
 	mono_add_internal_call ("__array_Get", ves_array_get);
 
+	mono_install_trampoline (arch_create_jit_trampoline);
+
 	assembly = mono_assembly_open (file, NULL, NULL);
 	if (!assembly){
 		fprintf (stderr, "Can not open image %s\n", file);

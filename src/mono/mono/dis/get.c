@@ -1040,22 +1040,26 @@ get_constant (MonoMetadata *m, MonoTypeEnum t, guint32 blob_index)
 		return g_strdup_printf ("%s", *ptr ? "true" : "false");
 		
 	case MONO_TYPE_CHAR:
-		return g_strdup_printf ("%c", *ptr);
+		return g_strdup_printf ("%c", *ptr); /* FIXME: unicode char */
 		
 	case MONO_TYPE_U1:
-		return g_strdup_printf ("0x%02x", (int) (*ptr));
+	case MONO_TYPE_I1:
+		return g_strdup_printf ("int8(0x%02x)", (int) (*ptr));
 		break;
 		
+	case MONO_TYPE_U2:
 	case MONO_TYPE_I2:
-		return g_strdup_printf ("%d", (int) read16 (ptr));
+		return g_strdup_printf ("int16(0x%08x)", (int) read16 (ptr));
 		
+	case MONO_TYPE_U4:
 	case MONO_TYPE_I4:
-		return g_strdup_printf ("%d", read32 (ptr));
+		return g_strdup_printf ("int32(%d)", read32 (ptr));
 		
 	case MONO_TYPE_I8:
 		/*
 		 * FIXME: This is not endian portable, does only 
 		 * matter for debugging, but still.
+		 * Need also to fix unaligned access.
 		 */
 		return g_strdup_printf ("0x%08x%08x", *(guint32 *) ptr, *(guint32 *) (ptr + 4));
 		
@@ -1108,18 +1112,6 @@ get_constant (MonoMetadata *m, MonoTypeEnum t, guint32 blob_index)
 		
 	case MONO_TYPE_CLASS:
 		return g_strdup ("CLASS CONSTANT.  MUST BE ZERO");
-		
-		/*
-		 * These are non CLS compliant:
-		 */
-	case MONO_TYPE_I1:
-		return g_strdup_printf ("%d", (int) *ptr);
-
-	case MONO_TYPE_U2:
-		return g_strdup_printf ("0x%04x", (unsigned int) read16 (ptr));
-		
-	case MONO_TYPE_U4:
-		return g_strdup_printf ("0x%04x", (unsigned int) read32 (ptr));
 		
 	default:
 		g_error ("Unknown MONO_TYPE (%d) on constant at Blob index (0x%08x)\n",

@@ -120,6 +120,8 @@ void        mono_metadata_field_info (MonoMetadata *meta,
 				      const char  **rva,
 				      const char  **marshal_info);
 
+guint32     mono_metadata_get_constant_index (MonoMetadata *meta, guint32 token);
+
 /*
  * Functions to extract information from the Blobs
  */

@@ -33,6 +33,14 @@ typedef struct {
 	MonoString *message;
 } MonoException;
 
+typedef struct {
+	MonoObject object;
+	MonoObject *target_type;
+	MonoObject *target;
+	MonoString *method;
+	gpointer    method_ptr;
+} MonoDelegate;
+
 #define mono_array_length(array) ((array)->bounds->length)
 #define mono_array_addr(array,type,index) ( ((char*)(array)->vector) + sizeof (type) * (index) )
 #define mono_array_addr_with_size(array,size,index) ( ((char*)(array)->vector) + (size) * (index) )
@@ -86,6 +94,14 @@ mono_object_clone           (MonoObject *obj);
 
 gboolean
 mono_object_isinst          (MonoObject *obj, MonoClass *klass);
+
+typedef void (*MonoExceptionFunc) (MonoException *ex);
+
+void
+mono_install_handler        (MonoExceptionFunc func);
+
+void
+mono_raise_exception        (MonoException *ex);
 
 #endif
 

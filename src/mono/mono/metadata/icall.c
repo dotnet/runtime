@@ -349,6 +349,7 @@ static gpointer icall_map [] = {
 	 * AssemblyBuilder
 	 */
 	"System.Reflection.Emit.AssemblyBuilder::getDataChunk", ves_icall_get_data_chunk,
+	"System.Reflection.Emit.AssemblyBuilder::getUSIndex", mono_image_insert_string,
 	
 	/*
 	 * TypeBuilder

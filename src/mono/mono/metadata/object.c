@@ -389,3 +389,24 @@ mono_string_to_utf8 (MonoString *s)
 	return as;
 }
 
+static void
+default_ex_handler (MonoException *ex)
+{
+	MonoObject *o = (MonoObject*)ex;
+	g_error ("Exception %s.%s raised in C code", o->klass->name_space, o->klass->name);
+}
+
+static MonoExceptionFunc ex_handler = default_ex_handler;
+
+void
+mono_install_handler        (MonoExceptionFunc func)
+{
+	ex_handler = func? func: default_ex_handler;
+}
+
+void
+mono_raise_exception (MonoException *ex) 
+{
+	ex_handler (ex);
+}
+

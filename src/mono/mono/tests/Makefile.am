@@ -4,7 +4,7 @@ JITTEST_PROG=../jit/mono
 
 CSC=csc
 
-BENCHSRC=fib.cs random.cs nested-loops.cs 
+BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
 TESTSRC=			\
 	array-init.cs		\
@@ -70,3 +70,10 @@ testjit: $(JITTEST_PROG) $(TESTS)
 	for i in $(TESTS); do	\
 		./test-driver $(JITTEST_PROG) $$i;	\
 	done
+
+testjitspeed: $(JITTEST_PROG) $(TESTBS)
+	for i in $(TESTBS); do	\
+		echo $$i;	\
+		time $(JITTEST_PROG) $$i;	\
+	done
+

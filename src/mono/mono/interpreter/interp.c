@@ -16,6 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <glib.h>
+#include <setjmp.h>
 
 #ifdef HAVE_ALLOCA_H
 #   include <alloca.h>
@@ -37,6 +38,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/reflection.h>
 #include <mono/arch/x86/x86-codegen.h>
+#include <mono/io-layer/io-layer.h>
 /*#include <mono/cli/types.h>*/
 #include "interp.h"
 #include "hacks.h"
@@ -87,12 +89,13 @@ void ves_exec_method (MonoInvocation *frame);
 
 typedef void (*ICallMethod) (MonoInvocation *frame);
 
-gpointer arch_create_jit_trampoline (MonoMethod *method);
+static guint32 frame_thread_id = 0;
 
-gpointer 
-arch_create_jit_trampoline (MonoMethod *method)
-{
-	return method;
+static void
+interp_ex_handler (MonoException *ex) {
+	MonoInvocation *frame = TlsGetValue (frame_thread_id);
+	frame->ex = ex;
+	longjmp (*(jmp_buf*)frame->locals, 1);
 }
 
 static void
@@ -378,9 +381,7 @@ stackval_from_data (MonoType *type, stackval *result, const char *data)
 		return;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			result->type = VAL_I32;
-			result->data.i = *(guint32*)data;
-			result->data.vt.klass = mono_class_from_mono_type (type);
+			return stackval_from_data (type->data.klass->enum_basetype, result, data);
 		} else {
 			result->type = VAL_VALUET;
 			result->data.vt.klass = type->data.klass;
@@ -462,8 +463,7 @@ stackval_to_data (MonoType *type, stackval *val, char *data)
 	}
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			gint32 *p = (gint32*)data;
-			*p = val->data.i;
+			return stackval_to_data (type->data.klass->enum_basetype, val, data);
 		} else {
 			memcpy (data, val->data.vt.vt, mono_class_value_size (type->data.klass, NULL));
 		}
@@ -564,20 +564,28 @@ ves_array_get (MonoInvocation *frame)
 static void 
 ves_pinvoke_method (MonoInvocation *frame)
 {
-	MonoPIFunc func = mono_create_trampoline (frame->method);
+	jmp_buf env;
+	volatile MonoPIFunc func = mono_create_trampoline (frame->method);
+	if (setjmp(env)) {
+		g_free ((void*)func);
+		return;
+	}
+	/* 
+	 * frame->locals and args are unused for P/Invoke methods, so we reuse them. 
+	 * locals will point to the jmp_buf, while args will point to the previous
+	 * MonoInvocation frame: this is needed to make exception searching work across
+	 * managed/unmanaged boundaries.
+	 */
+	frame->locals = (char*)&env;
+	frame->args = (char*)TlsGetValue (frame_thread_id);
+	TlsSetValue (frame_thread_id, frame);
+
 	func ((MonoFunc)frame->method->addr, &frame->retval->data.p, frame->obj, frame->stack_args);
 	stackval_from_data (frame->method->signature->ret, frame->retval, (const char*)&frame->retval->data.p);
 	g_free ((void*)func);
 }
 
 /*
- * This is a hack, you don't want to see the code in this function. Go away.
- *
- * We need a way to easily find the offset in an object of a field we may be
- * interested in: it's needed here and in several other code where the C#
- * implementation is highly tied to the internals (Array and String are other good 
- * examples).
- *
  * From the spec:
  * runtime specifies that the implementation of the method is automatically
  * provided by the runtime and is primarily used for the methods of delegates.
@@ -586,35 +594,22 @@ static void
 ves_runtime_method (MonoInvocation *frame)
 {
 	const char *name = frame->method->name;
-	MonoObject *obj = frame->obj;
-	static guint target_offset = 0;
-	static guint method_offset = 0;
+	MonoObject *obj = (MonoObject*)frame->obj;
+	MonoDelegate *delegate = (MonoDelegate*)frame->obj;
 
 	init_class(mono_defaults.delegate_class);
 	
-	if (!target_offset) {
-		MonoClassField *field;
-
-		field = mono_class_get_field_from_name (mono_defaults.delegate_class, "m_target");
-		target_offset = field->offset;
-		field = mono_class_get_field_from_name (mono_defaults.delegate_class, "method_ptr");
-		method_offset = field->offset;
-	}
-	
 	if (*name == '.' && (strcmp (name, ".ctor") == 0) && obj &&
 			mono_object_isinst (obj, mono_defaults.delegate_class)) {
-		gpointer *p;
-		p = (gpointer*)(((char*)obj) + target_offset);
-		*p = frame->stack_args[0].data.p;
-		p = (gpointer*)(((char*)obj) + method_offset);
-		*p = frame->stack_args[1].data.p;
+		delegate->target = frame->stack_args[0].data.p;
+		delegate->method_ptr = frame->stack_args[1].data.p;
 		return;
 	}
 	if (*name == 'I' && (strcmp (name, "Invoke") == 0) && obj &&
 			mono_object_isinst (obj, mono_defaults.delegate_class)) {
 		MonoPIFunc func = mono_create_trampoline (frame->method);
-		void* faddr = *(gpointer*)(((char*)obj) + method_offset);
-		func ((MonoFunc)faddr, &frame->retval->data.p, frame->obj, frame->stack_args);
+		/* FIXME: need to handle exceptions across managed/unmanaged boundaries */
+		func ((MonoFunc)delegate->method_ptr, &frame->retval->data.p, delegate->target, frame->stack_args);
 		stackval_from_data (frame->method->signature->ret, frame->retval, (const char*)&frame->retval->data.p);
 		g_free ((void*)func);
 		return;
@@ -2205,10 +2200,13 @@ array_constructed:
 			guint32 token, offset;
 			int load_addr = *ip == CEE_LDFLDA;
 
+			if (!sp [-1].data.p)
+				THROW_EX (get_exception_null_reference (), ip);
+			
 			++ip;
 			token = read32 (ip);
 			ip += 4;
-			
+
 			if (sp [-1].type == VAL_OBJ) {
 				obj = sp [-1].data.p;
 				field = mono_class_get_field (obj->klass, token);
@@ -2968,10 +2966,10 @@ array_constructed:
 				if (!m)
 					THROW_EX (get_exception_missing_method (), ip - 5);
 				if (virtual) {
-					stackval *objs = &sp [-m->signature->param_count - 1];
-					if (!objs->data.p)
+					--sp;
+					if (!sp->data.p)
 						THROW_EX (get_exception_null_reference (), ip - 5);
-					m = get_virtual_method (m, objs);
+					m = get_virtual_method (m, sp);
 				}
 				sp->type = VAL_NATI;
 				sp->data.p = mono_create_method_pointer (m);
@@ -3182,21 +3180,21 @@ array_constructed:
 				clause = &hd->clauses [i];
 				if (clause->flags <= 1 && OFFSET_IN_CLAUSE (clause, ip_offset)) {
 					if (!clause->flags) {
-							if (mono_object_isinst ((MonoObject*)frame->ex, mono_class_get (inv->method->klass->image, clause->token_or_filter))) {
-								/* 
-								 * OK, we found an handler, now we need to execute the finally
-								 * and fault blocks before branching to the handler code.
-								 */
-								inv->ex_handler = clause;
-								/*
-								 * It seems that if the catch handler is found in the same method,
-								 * it gets executed before the finally handler.
-								 */
-								if (inv == frame)
-									goto handle_fault;
-								else
-									goto handle_finally;
-							}
+						if (mono_object_isinst ((MonoObject*)frame->ex, mono_class_get (inv->method->klass->image, clause->token_or_filter))) {
+							/* 
+							 * OK, we found an handler, now we need to execute the finally
+							 * and fault blocks before branching to the handler code.
+							 */
+							inv->ex_handler = clause;
+							/*
+							 * It seems that if the catch handler is found in the same method,
+							 * it gets executed before the finally handler.
+							 */
+							if (inv == frame)
+								goto handle_fault;
+							else
+								goto handle_finally;
+						}
 					} else {
 						/* FIXME: handle filter clauses */
 						g_assert (0);
@@ -3377,13 +3375,35 @@ assemblybuilder_fields[] = {
 };
 
 static FieldDesc 
+ctorbuilder_fields[] = {
+	{"ilgen", G_STRUCT_OFFSET (MonoReflectionCtorBuilder, ilgen)},
+	{"parameters", G_STRUCT_OFFSET (MonoReflectionCtorBuilder, parameters)},
+	{"attrs", G_STRUCT_OFFSET (MonoReflectionCtorBuilder, attrs)},
+	{"iattrs", G_STRUCT_OFFSET (MonoReflectionCtorBuilder, iattrs)},
+	{"table_idx", G_STRUCT_OFFSET (MonoReflectionCtorBuilder, table_idx)},
+	{"call_conv", G_STRUCT_OFFSET (MonoReflectionCtorBuilder, call_conv)},
+	{"type", G_STRUCT_OFFSET (MonoReflectionCtorBuilder, type)},
+	{NULL, 0}
+};
+
+static FieldDesc 
 methodbuilder_fields[] = {
+	{"mhandle", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, mhandle)},
 	{"rtype", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, rtype)},
 	{"parameters", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, parameters)},
 	{"attrs", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, attrs)},
+	{"iattrs", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, iattrs)},
 	{"name", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, name)},
 	{"table_idx", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, table_idx)},
 	{"code", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, code)},
+	{"ilgen", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, ilgen)},
+	{"type", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, type)},
+	{"pinfo", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, pinfo)},
+	{"pi_dll", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, dll)},
+	{"pi_entry", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, dllentry)},
+	{"ncharset", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, charset)},
+	{"native_cc", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, native_cc)},
+	{"call_conv", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, call_conv)},
 	{NULL, 0}
 };
 
@@ -3412,13 +3432,41 @@ propertybuilder_fields[] = {
 };
 
 static ClassDesc
-classes_to_check [] = {
+emit_classes_to_check [] = {
 	{"TypeBuilder", typebuilder_fields},
 	{"ModuleBuilder", modulebuilder_fields},
 	{"AssemblyBuilder", assemblybuilder_fields},
+	{"ConstructorBuilder", ctorbuilder_fields},
 	{"MethodBuilder", methodbuilder_fields},
 	{"FieldBuilder", fieldbuilder_fields},
 	{"PropertyBuilder", propertybuilder_fields},
+	{NULL, NULL}
+};
+
+static FieldDesc 
+delegate_fields[] = {
+	{"target_type", G_STRUCT_OFFSET (MonoDelegate, target_type)},
+	{"m_target", G_STRUCT_OFFSET (MonoDelegate, target)},
+	{"method", G_STRUCT_OFFSET (MonoDelegate, method)},
+	{"method_ptr", G_STRUCT_OFFSET (MonoDelegate, method_ptr)},
+	{NULL, 0}
+};
+
+static ClassDesc
+system_classes_to_check [] = {
+	{"Delegate", delegate_fields},
+	{NULL, NULL}
+};
+
+typedef struct {
+	char *name;
+	ClassDesc *types;
+} NameSpaceDesc;
+
+static NameSpaceDesc
+namespaces_to_check[] = {
+	{"System.Reflection.Emit", emit_classes_to_check},
+	{"System", system_classes_to_check},
 	{NULL, NULL}
 };
 
@@ -3429,17 +3477,19 @@ check_corlib (MonoImage *corlib)
 	MonoClassField *field;
 	FieldDesc *fdesc;
 	ClassDesc *cdesc;
-	const char *refl = "System.Reflection.Emit";
+	NameSpaceDesc *ndesc;
 
-	for (cdesc = classes_to_check; cdesc->name; ++cdesc) {
-		klass = mono_class_from_name (corlib, refl, cdesc->name);
-		if (!klass)
-			g_error ("Cannot find class %s", cdesc->name);
-		mono_class_metadata_init (klass);
-		for (fdesc = cdesc->fields; fdesc->name; ++fdesc) {
-			field = mono_class_get_field_from_name (klass, fdesc->name);
-			if (!field || (field->offset != fdesc->offset))
-				g_error ("filed %s mismatch in class %s (%ld != %ld)", fdesc->name, cdesc->name, (long) fdesc->offset, (long) (field?field->offset:-1));
+	for (ndesc = namespaces_to_check; ndesc->name; ++ndesc) {
+		for (cdesc = ndesc->types; cdesc->name; ++cdesc) {
+			klass = mono_class_from_name (corlib, ndesc->name, cdesc->name);
+			if (!klass)
+				g_error ("Cannot find class %s", cdesc->name);
+			mono_class_metadata_init (klass);
+			for (fdesc = cdesc->fields; fdesc->name; ++fdesc) {
+				field = mono_class_get_field_from_name (klass, fdesc->name);
+				if (!field || (field->offset != fdesc->offset))
+					g_error ("field %s mismatch in class %s (%ld != %ld)", fdesc->name, cdesc->name, (long) fdesc->offset, (long) (field?field->offset:-1));
+			}
 		}
 	}
 }
@@ -3474,6 +3524,7 @@ main (int argc, char *argv [])
 
 	mono_init ();
 	mono_init_icall ();
+	mono_install_handler (interp_ex_handler);
 
 	mono_add_internal_call ("__array_Set", ves_array_set);
 	mono_add_internal_call ("__array_Get", ves_array_get);
@@ -3485,6 +3536,9 @@ main (int argc, char *argv [])
 	}
 
 	mono_thread_init();
+
+	frame_thread_id = TlsAlloc ();
+	TlsSetValue (frame_thread_id, NULL);
 
 #ifdef RUN_TEST
 	test_load_class (assembly->image);

@@ -20,14 +20,6 @@
 gboolean dump_data = TRUE;
 gboolean dump_tables = FALSE;
 
-gpointer arch_create_jit_trampoline (MonoMethod *method);
-
-gpointer 
-arch_create_jit_trampoline (MonoMethod *method)
-{
-	return method;
-}
-
 static void
 hex_dump (char *buffer, int base, int count)
 {

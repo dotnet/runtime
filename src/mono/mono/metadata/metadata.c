@@ -1972,3 +1972,46 @@ mono_metadata_field_info (MonoMetadata *meta, guint32 index, guint32 *offset, co
 	}
 
 }
+
+/*
+ * mono_metadata_get_constant_index:
+ * @meta: the Image the field is defined in
+ * @index: the token that may have a row defined in the constants table
+ *
+ * @token must be a FieldDef, ParamDef or PropertyDef token.
+ *
+ * Returns: the index into the Constsnts table or 0 if not found.
+ */
+guint32
+mono_metadata_get_constant_index (MonoMetadata *meta, guint32 token)
+{
+	MonoTableInfo *tdef;
+	locator_t loc;
+	guint32 index = mono_metadata_token_index (token);
+
+	tdef = &meta->tables [MONO_TABLE_CONSTANT];
+	index <<= HASCOSTANT_BITS;
+	switch (mono_metadata_token_table (token)) {
+	case MONO_TABLE_FIELD:
+		index |= HASCOSTANT_FIEDDEF;
+		break;
+	case MONO_TABLE_PARAM:
+		index |= HASCOSTANT_PARAM;
+		break;
+	case MONO_TABLE_PROPERTY:
+		index |= HASCOSTANT_PROPERTY;
+		break;
+	default:
+		g_warning ("Not a valid token for the constant table: 0x%08x", token);
+		return 0;
+	}
+	loc.idx = index;
+	loc.col_idx = MONO_CONSTANT_PARENT;
+	loc.t = tdef;
+
+	if (tdef->base && bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator)) {
+		return loc.result + 1;
+	}
+	return 0;
+}
+

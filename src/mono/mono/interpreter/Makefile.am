@@ -13,6 +13,7 @@ mint_SOURCES =		\
 mint_LDADD =				\
 	../arch/libmonoarch.la	\
 	../metadata/libmetadata.a	\
+	../io-layer/libwapi.a	\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm

@@ -32,7 +32,7 @@ mono_create_trampoline (MonoMethod *method)
 	MonoMethodSignature *sig;
 	unsigned char *p, *code_buffer;
 	guint32 local_size = 0, stack_size = 0, code_size = 30;
-	guint32 arg_pos;
+	guint32 arg_pos, simpletype;
 	int i, stringp;
 
 	sig = method->signature;
@@ -48,7 +48,9 @@ mono_create_trampoline (MonoMethod *method)
 			code_size += i < 10 ? 5 : 8;
 			continue;
 		}
-		switch (sig->params [i]->type) {
+		simpletype = sig->params [i]->type;
+enum_calc_size:
+		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I1:
@@ -68,7 +70,11 @@ mono_create_trampoline (MonoMethod *method)
 			code_size += i < 10 ? 5 : 8;
 			break;
 		case MONO_TYPE_VALUETYPE:
-			if (!sig->params [i]->data.klass->enumtype && (mono_class_value_size (sig->params [i]->data.klass, NULL) != 4))
+			if (sig->params [i]->data.klass->enumtype) {
+				simpletype = sig->params [i]->data.klass->enum_basetype->type;
+				goto enum_calc_size;
+			}
+			if (mono_class_value_size (sig->params [i]->data.klass, NULL) != 4)
 				g_error ("can only marshal enums, not generic structures (size: %d)", mono_class_value_size (sig->params [i]->data.klass, NULL));
 			stack_size += 4;
 			code_size += i < 10 ? 5 : 8;
@@ -129,7 +135,9 @@ mono_create_trampoline (MonoMethod *method)
 			x86_push_membase (p, X86_EDX, arg_pos);
 			continue;
 		}
-		switch (sig->params [i - 1]->type) {
+		simpletype = sig->params [i - 1]->type;
+enum_marshal:
+		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
@@ -154,7 +162,8 @@ mono_create_trampoline (MonoMethod *method)
 				x86_push_regp (p, X86_EAX);
 			} else {
 				/* it's an enum value */
-				x86_push_membase (p, X86_EDX, arg_pos);
+				simpletype = sig->params [i - 1]->data.klass->enum_basetype->type;
+				goto enum_marshal;
 			}
 			break;
 		case MONO_TYPE_R8:
@@ -222,7 +231,9 @@ mono_create_trampoline (MonoMethod *method)
 		x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
 		x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
 	} else {
-		switch (sig->ret->type) {
+		simpletype = sig->ret->type;
+enum_retvalue:
+		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
@@ -252,6 +263,11 @@ mono_create_trampoline (MonoMethod *method)
 			x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
 			x86_mov_membase_reg (p, X86_ECX, 4, X86_EDX, 4);
 			break;
+		case MONO_TYPE_VALUETYPE:
+			if (sig->ret->data.klass->enumtype) {
+				simpletype = sig->ret->data.klass->enum_basetype->type;
+				goto enum_retvalue;
+			}
 		case MONO_TYPE_VOID:
 			break;
 		default:

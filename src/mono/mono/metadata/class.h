@@ -47,7 +47,7 @@ struct _MonoClass {
 	int        vtable_size; /* number of slots */
 
 	/*
-	 * relartive numbering for fast type checking
+	 * relative numbering for fast type checking
 	 */
 	unsigned int baseval;
 	unsigned int diffval;
@@ -68,6 +68,8 @@ struct _MonoClass {
 
 	MonoMethod **methods;
 
+	/* The underlying type of the enum */
+	MonoType *enum_basetype;
 	/* for arrays */
 	MonoClass *element_class; /* element class */
 	guint32    rank;          /* array dimension */
@@ -119,5 +121,10 @@ mono_class_from_mono_type  (MonoType *type);
 
 gpointer
 mono_ldtoken               (MonoImage *image, guint32 token, MonoClass **retclass);
+
+typedef gpointer (*MonoTrampoline) (MonoMethod *method);
+
+void
+mono_install_trampoline (MonoTrampoline func);
 
 #endif /* _MONO_CLI_CLASS_H_ */

@@ -28,7 +28,18 @@
 
 #define CSIZE(x) (sizeof (x) / 4)
 
-gpointer arch_create_jit_trampoline (MonoMethod *method);
+static gpointer
+default_trampoline (MonoMethod *method)
+{
+	return method;
+}
+
+static MonoTrampoline arch_create_jit_trampoline = default_trampoline;
+
+void
+mono_install_trampoline (MonoTrampoline func) {
+	arch_create_jit_trampoline = func? func: default_trampoline;
+}
 
 static MonoClass *
 mono_class_create_from_typeref (MonoImage *image, guint32 type_token)
@@ -48,7 +59,7 @@ mono_class_create_from_typeref (MonoImage *image, guint32 type_token)
 		 * detected a reference to mscorlib, we simply return a reference to a dummy 
 		 * until we have a better solution.
 		 */
-		fprintf(stderr, "Sending dummy where %s expected\n", mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME])); 
+		fprintf(stderr, "Sending dummy where %s.%s expected\n", mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]), mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME])); 
 		res = mono_class_from_name (image, "System", "MonoDummy");
 		/* prevent method loading */
 		res->dummy = 1;
@@ -107,6 +118,8 @@ class_compute_field_layout (MonoClass *class)
 			if (!class->fields [i].data)
 				g_warning ("field %s in %s should have RVA data, but hasn't", class->fields [i].name, class->name);
 		}
+		if (class->enumtype && !(cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_STATIC))
+			class->enum_basetype = class->fields [i].type;
 	}
 	/*
 	 * Compute field layout and total size.

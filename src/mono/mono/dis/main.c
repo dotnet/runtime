@@ -32,14 +32,6 @@ gboolean dump_header_data_p = FALSE;
 
 int dump_table = -1;
 
-gpointer arch_create_jit_trampoline (MonoMethod *method);
-
-gpointer 
-arch_create_jit_trampoline (MonoMethod *method)
-{
-	return method;
-}
-
 static void
 dump_header_data (MonoImage *img)
 {
@@ -190,12 +182,16 @@ dis_field_list (MonoMetadata *m, guint32 start, guint32 end)
 		flags = field_flags (cols [MONO_FIELD_FLAGS]);
 		
 		if (cols [MONO_FIELD_FLAGS] & FIELD_ATTRIBUTE_LITERAL){
-			MonoTypeEnum type;
 			char *lit;
+			guint32 const_cols [MONO_CONSTANT_SIZE];
+			guint32 crow;
 			
-			type = get_field_literal_type (m, cols [MONO_FIELD_SIGNATURE]);
-			lit = g_strdup ("FIXME:Do-not-know-how-to-get-this-from-the-constants-table");
-			/* get_constant (m, type, cols [2]); */
+			if ((crow = mono_metadata_get_constant_index (m, MONO_TOKEN_FIELD_DEF | (i+1)))) {
+				mono_metadata_decode_row (&m->tables [MONO_TABLE_CONSTANT], crow-1, const_cols, MONO_CONSTANT_SIZE);
+				lit = get_constant (m, const_cols [MONO_CONSTANT_TYPE], const_cols [MONO_CONSTANT_VALUE]);
+			} else {
+				lit = g_strdup ("not found");
+			}
 			
 			fprintf (output, "    .field %s %s %s = ",
 				 flags, sig,
