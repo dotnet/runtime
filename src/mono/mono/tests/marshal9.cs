@@ -32,7 +32,9 @@ public class Marshal1 : ICustomMarshaler
 	{
 		//Console.WriteLine("CleanUpNativeData:" + pNativeData);
 		/* Might be allocated in libtest.c using g_new0 so dont free it */
-		//Marshal.FreeHGlobal (pNativeData);
+		int alloc_type = Marshal.ReadInt32 (pNativeData);
+		if (alloc_type == 1)
+			Marshal.FreeHGlobal (pNativeData);
 		cleanup_native_count ++;
 	}
 
@@ -51,8 +53,9 @@ public class Marshal1 : ICustomMarshaler
 		IntPtr ptr;
 
 		number = Convert.ToInt32 (managedObj);
-		ptr = Marshal.AllocHGlobal (4);
-		Marshal.WriteInt32 (ptr, number);
+		ptr = Marshal.AllocHGlobal (8);
+		Marshal.WriteInt32 (ptr, 1);  /* Allocated by AllocHGlobal */
+		Marshal.WriteInt32(new IntPtr (ptr.ToInt64 () + 4), number);
 
 		//Console.WriteLine ("ToNative: " + ptr);
 		return ptr;
@@ -61,7 +64,7 @@ public class Marshal1 : ICustomMarshaler
 	public object MarshalNativeToManaged (IntPtr pNativeData)
 	{
 		//Console.WriteLine ("ToManaged: " + pNativeData);
-		return param + Marshal.ReadInt32 (pNativeData);
+		return param + Marshal.ReadInt32 (new IntPtr (pNativeData.ToInt64 () + 4));
 	}
 }
 

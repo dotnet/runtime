@@ -1187,14 +1187,16 @@ mono_test_marshal_amd64_pass_return_struct4 (amd64_struct4 s)
 	return s;
 }
 
+static guint32 custom_res [2];
+
 void*
 mono_test_marshal_pass_return_custom (int i, guint32 *ptr, int j)
 {
 	/* ptr will be freed by CleanupNative, so make a copy */
-	guint32 *res = g_new0 (guint32, 1);
+	custom_res [0] = 0; /* not allocated by AllocHGlobal */
+	custom_res [1] = ptr [1];
 
-	*res = *ptr;
-	return res;
+	return &custom_res;
 }
 
 typedef void *(*PassReturnPtrDelegate) (void *ptr);
@@ -1202,11 +1204,23 @@ typedef void *(*PassReturnPtrDelegate) (void *ptr);
 int
 mono_test_marshal_pass_return_custom_in_delegate (PassReturnPtrDelegate del)
 {
-	guint32 num = 10;
+	guint32 buf [2];
+	guint32 res;
 
-	guint32 *ptr = del (&num);
+	buf [0] = 0;
+	buf [1] = 10;
 
-	return *ptr;
+	guint32 *ptr = del (&buf);
+
+	res = ptr [1];
+
+#ifdef WIN32
+	/* FIXME: Freed with FreeHGlobal */
+#else
+	g_free (ptr);
+#endif
+
+	return res;
 }
 
 
