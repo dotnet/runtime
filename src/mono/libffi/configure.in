@@ -34,8 +34,7 @@ AC_EXEEXT
 AM_MAINTAINER_MODE
 
 AC_PROG_CC
-AC_PROG_LIBTOOL
-AM_PROG_LIBTOOL
+AC_PROG_RANLIB
 AC_PROG_LN_S
 
 dnl The -no-testsuite modules omit the test subdir.

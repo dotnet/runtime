@@ -15,7 +15,7 @@ mono_int_SOURCES =	\
 mono_int_LDADD =			\
 	../metadata/libmetadata.a	\
 	../cli/libmonocli.a		\
-	../../libffi/.libs/libffi.a	\
+	../../libffi/libffi.a		\
 	$(GMODULE_LIBS)			\
 	$(GLIB_LIBS)			\
 	-lm

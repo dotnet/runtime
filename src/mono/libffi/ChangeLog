@@ -1,3 +1,11 @@
+2001-08-16  Alex Graveley  <alex@ximian.com>
+
+	* libffi/include/fficonfig.h: Remove as this is auto generated.
+
+	* Makefile.am: Only generate libffi.a.
+
+	* configure.in: replace A[CM]_PROG_LIBTOOL with AC_PROG_RANLIB.
+
 Sun Apr 22 15:50:08 2001  Anthony Green  <green@redhat.com>
 
 	* include/ffi_common.h: Delete, after moving contents to...
