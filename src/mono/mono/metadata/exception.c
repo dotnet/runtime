@@ -306,3 +306,36 @@ mono_get_exception_file_not_found (MonoString *fname)
 		mono_defaults.corlib, "System.IO", "FileNotFoundException", fname, fname);
 }
 
+MonoException *
+mono_get_exception_type_initialization (const gchar *type_name, MonoException *inner)
+{
+	MonoClass *klass;
+	gpointer args [2];
+	MonoObject *exc;
+	MonoMethod *method;
+	gint i;
+
+	klass = mono_class_from_name (mono_defaults.corlib, "System", "TypeInitializationException");
+	g_assert (klass);
+
+	mono_class_init (klass);
+
+	/* TypeInitializationException only has 1 ctor with 2 args */
+	for (i = 0; i < klass->method.count; ++i) {
+		method = klass->methods [i];
+		if (!strcmp (".ctor", method->name) && method->signature->param_count == 2)
+			break;
+		method = NULL;
+	}
+
+	g_assert (method);
+
+	args [0] = mono_string_new (mono_domain_get (), type_name);
+	args [1] = inner;
+
+	exc = mono_object_new (mono_domain_get (), klass);
+	mono_runtime_invoke (method, exc, args, NULL);
+
+	return (MonoException *) exc;
+}
+

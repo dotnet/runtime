@@ -63,17 +63,37 @@ void
 mono_runtime_class_init (MonoClass *klass)
 {
 	int i;
+	MonoException *exc = NULL;
+	MonoException *exc_to_throw;
+	MonoMethod *method;
+	gchar *full_name;
 
 	for (i = 0; i < klass->method.count; ++i) {
-		MonoMethod *method = klass->methods [i];
+		method = klass->methods [i];
 		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
 		    (strcmp (".cctor", method->name) == 0)) {
-			mono_runtime_invoke (method, NULL, NULL, NULL);
+			mono_runtime_invoke (method, NULL, NULL, (MonoObject **) &exc);
+			if (exc != NULL)
+				break;
 			return;
 		}
 	}
 
-	/* No class constructor found */
+	if (exc == NULL ||
+	    (klass->image == mono_defaults.corlib &&		
+	     !strcmp (klass->name_space, "System") &&
+	     !strcmp (klass->name, "TypeInitializationException")))
+		return; /* No static constructor found or avoid infinite loop */
+
+	if (klass->name_space && *klass->name_space)
+		full_name = g_strdup_printf ("%s.%s", klass->name_space, klass->name);
+	else
+		full_name = g_strdup (klass->name);
+
+	exc_to_throw = mono_get_exception_type_initialization (full_name, exc);
+	g_free (full_name);
+
+	mono_raise_exception (exc_to_throw);
 }
 
 static gpointer
@@ -1940,7 +1960,4 @@ mono_store_remote_field (MonoObject *this, MonoClass *klass, MonoClassField *fie
 
 	mono_remoting_invoke ((MonoObject *)((MonoTransparentProxy *)this)->rp, msg, &exc, &out_args);
 }
-
-
-
 
