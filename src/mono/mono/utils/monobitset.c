@@ -18,6 +18,10 @@ struct MonoBitSet {
 };
 
 /*
+ * mono_bitset_alloc_size:
+ * @max_size: The numer of bits you want to hold
+ * @flags: unused
+ *
  * Return the number of bytes required to hold the bitset.
  * Useful to allocate it on the stack or with mempool.
  * Use with mono_bitset_mem_new ().
@@ -29,6 +33,14 @@ mono_bitset_alloc_size (guint32 max_size, guint32 flags) {
 	return sizeof (MonoBitSet) + sizeof (guint32) * (real_size - MONO_ZERO_LEN_ARRAY);
 }
 
+/*
+ * mono_bitset_new:
+ * @max_size: The numer of bits you want to hold
+ * @flags: bitfield of flags
+ *
+ * Return a bitset of size max_size. It must be freed using
+ * mono_bitset_free.
+ */
 MonoBitSet *
 mono_bitset_new (guint32 max_size, guint32 flags) {
 	guint32 real_size = (max_size + BITS_PER_CHUNK - 1) / BITS_PER_CHUNK;
@@ -41,8 +53,14 @@ mono_bitset_new (guint32 max_size, guint32 flags) {
 }
 
 /*
- * We could require mem_size here, instead of max_size, so we could do
- * some out of range checking...
+ * mono_bitset_mem_new:
+ * @mem: The location the bitset is stored
+ * @max_size: The number of bits you want to hold
+ * @flags: bitfield of flags
+ *
+ * Return mem, which is now a initialized bitset of size max_size. It is
+ * not freed even if called with mono_bitset_free. mem must be at least
+ * as big as mono_bitset_alloc_size returns for the same max_size.
  */
 MonoBitSet *
 mono_bitset_mem_new (gpointer mem, guint32 max_size, guint32 flags) {
@@ -54,12 +72,27 @@ mono_bitset_mem_new (gpointer mem, guint32 max_size, guint32 flags) {
 	return result;
 }
 
+/*
+ * mono_bitset_free:
+ * @set: bitset ptr to free
+ *
+ * Free bitset unless flags have MONO_BITSET_DONT_FREE set. Does not
+ * free anything if flag MONO_BITSET_DONT_FREE is set or bitset was
+ * made with mono_bitset_mem_new.
+ */
 void
 mono_bitset_free (MonoBitSet *set) {
 	if (!(set->flags & MONO_BITSET_DONT_FREE))
 		g_free (set);
 }
 
+/*
+ * mono_bitset_set:
+ * @set: bitset ptr
+ * @pos: set bit at this pos
+ *
+ * Set bit at pos @pos, counting from 0.
+ */
 void
 mono_bitset_set (MonoBitSet *set, guint32 pos) {
 	int j = pos / BITS_PER_CHUNK;
@@ -70,8 +103,16 @@ mono_bitset_set (MonoBitSet *set, guint32 pos) {
 	set->data [j] |= 1 << bit;
 }
 
+/*
+ * mono_bitset_test:
+ * @set: bitset ptr
+ * @pos: test bit at this pos
+ *
+ * Test bit at pos @pos, counting from 0.
+ * Returns a value != 0 if set, 0 otherwise.
+ */
 int
-mono_bitset_test (MonoBitSet *set, guint32 pos) {
+mono_bitset_test (const MonoBitSet *set, guint32 pos) {
 	int j = pos / BITS_PER_CHUNK;
 	int bit = pos % BITS_PER_CHUNK;
 
@@ -80,6 +121,13 @@ mono_bitset_test (MonoBitSet *set, guint32 pos) {
 	return set->data [j] & (1 << bit);
 }
 
+/*
+ * mono_bitset_clear:
+ * @set: bitset ptr
+ * @pos: unset bit at this pos
+ *
+ * Unset bit at pos 'pos', counting from 0.
+ */
 void
 mono_bitset_clear (MonoBitSet *set, guint32 pos) {
 	int j = pos / BITS_PER_CHUNK;
@@ -90,6 +138,12 @@ mono_bitset_clear (MonoBitSet *set, guint32 pos) {
 	set->data [j] &= ~(1 << bit);
 }
 
+/*
+ * mono_bitset_clear_all:
+ * @set: bitset ptr
+ *
+ * Unset all bits.
+ */
 void
 mono_bitset_clear_all (MonoBitSet *set) {
 	int i;
@@ -97,6 +151,12 @@ mono_bitset_clear_all (MonoBitSet *set) {
 		set->data [i] = 0;
 }
 
+/*
+ * mono_bitset_invert:
+ * @set: bitset ptr
+ *
+ * Flip all bits.
+ */
 void
 mono_bitset_invert (MonoBitSet *set) {
 	int i;
@@ -104,17 +164,30 @@ mono_bitset_invert (MonoBitSet *set) {
 		set->data [i] = ~set->data [i];
 }
 
+/*
+ * mono_bitset_size:
+ * @set: bitset ptr
+ *
+ * Returns the number of bits this bitset can hold.
+ */
 guint32
-mono_bitset_size (MonoBitSet *set) {
+mono_bitset_size (const MonoBitSet *set) {
 	return set->size;
 }
 
-#if 1
 /* 
  * should test wich version is faster.
  */
+#if 1
+
+/*
+ * mono_bitset_count:
+ * @set: bitset ptr
+ *
+ * return number of bits that is set.
+ */
 guint32
-mono_bitset_count (MonoBitSet *set) {
+mono_bitset_count (const MonoBitSet *set) {
 	static const unsigned char table [16] = {
 		0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4
 	};
@@ -140,7 +213,7 @@ mono_bitset_count (MonoBitSet *set) {
 }
 #else
 guint32
-mono_bitset_count (MonoBitSet *set) {
+mono_bitset_count (const MonoBitSet *set) {
 	static const guint32 table [] = {
 		0x55555555, 0x33333333, 0x0F0F0F0F, 0x00FF00FF, 0x0000FFFF
 	};
@@ -155,7 +228,7 @@ mono_bitset_count (MonoBitSet *set) {
 			val = (val & table [2]) ((val >> 4) & table [2]);
 			val = (val & table [3]) ((val >> 8) & table [3]);
 			val = (val & table [4]) ((val >> 16) & table [4]);
-			count= val;
+			count += val;
 		}
 	}
 	return count;
@@ -182,7 +255,7 @@ bitstart_mask [] = {
 
 #else
 static inline gint
-my_g_bit_nth_lsf (gulong mask, gint nth_bit)
+my_g_bit_nth_lsf (guint32 mask, gint nth_bit)
 {
 	do {
 		nth_bit++;
@@ -194,8 +267,14 @@ my_g_bit_nth_lsf (gulong mask, gint nth_bit)
 #define my_g_bit_nth_lsf_nomask(m) (my_g_bit_nth_lsf((m),-1))
 #endif
 
+/*
+ * mono_bitset_find_start:
+ * @set: bitset ptr
+ *
+ * Equivalent to mono_bitset_find_first (set, -1) but faster.
+ */
 int
-mono_bitset_find_start   (MonoBitSet *set)
+mono_bitset_find_start   (const MonoBitSet *set)
 {
 	int i;
 
@@ -206,13 +285,21 @@ mono_bitset_find_start   (MonoBitSet *set)
 	return -1;
 }
 
+/*
+ * mono_bitset_find_first:
+ * @set: bitset ptr
+ * @pos: pos to search _after_ (not including)
+ *
+ * Returns position of first set bit after @pos. If pos < 0 begin search from
+ * start. Return -1 if no bit set is found.
+ */
 int
-mono_bitset_find_first (MonoBitSet *set, gint pos) {
+mono_bitset_find_first (const MonoBitSet *set, gint pos) {
 	int j;
 	int bit;
 	int result, i;
 
-	if (pos == -1) {
+	if (pos < 0) {
 		j = 0;
 		bit = -1;
 	} else {
@@ -234,11 +321,19 @@ mono_bitset_find_first (MonoBitSet *set, gint pos) {
 	return -1;
 }
 
+/*
+ * mono_bitset_find_last:
+ * @set: bitset ptr
+ * @pos: pos to search _before_ (not including)
+ *
+ * Returns position of last set bit before pos. If pos < 0 search is
+ * started from the end. Returns -1 if no set bit is found.
+ */
 int
-mono_bitset_find_last (MonoBitSet *set, gint pos) {
+mono_bitset_find_last (const MonoBitSet *set, gint pos) {
 	int j, bit, result, i;
 
-	if (pos == -1)
+	if (pos < 0)
 		pos = set->size - 1;
 		
 	j = pos / BITS_PER_CHUNK;
@@ -258,20 +353,36 @@ mono_bitset_find_last (MonoBitSet *set, gint pos) {
 	return -1;
 }
 
+/*
+ * mono_bitset_clone:
+ * @set: bitset ptr to clone
+ * @new_size: number of bits the cloned bitset can hold
+ *
+ * Return a cloned bitset of size new_size. MONO_BITSET_DONT_FREE
+ * unset in cloned bitset. If new_size is 0, the cloned object is just
+ * as big.
+ */
 MonoBitSet*
-mono_bitset_clone (MonoBitSet *set, guint32 new_size) {
+mono_bitset_clone (const MonoBitSet *set, guint32 new_size) {
 	MonoBitSet *result;
 
 	if (!new_size)
 		new_size = set->size;
 	result = mono_bitset_new (new_size, set->flags);
 	result->flags &= ~MONO_BITSET_DONT_FREE;
-	memcpy (result->data, set->data, result->size / 8);
+	memcpy (result->data, set->data, set->size / 8);
 	return result;
 }
 
+/*
+ * mono_bitset_copyto:
+ * @src: bitset ptr to copy from
+ * @dest: bitset ptr to copy to
+ *
+ * Copy one bitset to another.
+ */
 void
-mono_bitset_copyto (MonoBitSet *src, MonoBitSet *dest) {
+mono_bitset_copyto (const MonoBitSet *src, MonoBitSet *dest) {
 	int i;
 
 	g_return_if_fail (dest->size <= src->size);
@@ -280,8 +391,15 @@ mono_bitset_copyto (MonoBitSet *src, MonoBitSet *dest) {
 		dest->data [i] = src->data [i];
 }
 
+/*
+ * mono_bitset_union:
+ * @dest: bitset ptr to hold union
+ * @src: bitset ptr to copy
+ *
+ * Make union of one bitset and another.
+ */
 void
-mono_bitset_union (MonoBitSet *dest, MonoBitSet *src) {
+mono_bitset_union (MonoBitSet *dest, const MonoBitSet *src) {
 	int i;
 
 	g_return_if_fail (src->size <= dest->size);
@@ -290,8 +408,15 @@ mono_bitset_union (MonoBitSet *dest, MonoBitSet *src) {
 		dest->data [i] |= src->data [i];
 }
 
+/*
+ * mono_bitset_intersection:
+ * @dest: bitset ptr to hold intersection
+ * @src: bitset ptr to copy
+ *
+ * Make intersection of one bitset and another.
+ */
 void
-mono_bitset_intersection (MonoBitSet *dest, MonoBitSet *src) {
+mono_bitset_intersection (MonoBitSet *dest, const MonoBitSet *src) {
 	int i;
 
 	g_return_if_fail (src->size <= dest->size);
@@ -300,8 +425,15 @@ mono_bitset_intersection (MonoBitSet *dest, MonoBitSet *src) {
 		dest->data [i] = dest->data [i] & src->data [i];
 }
 
+/*
+ * mono_bitset_sub:
+ * @dest: bitset ptr to hold bitset - src
+ * @src: bitset ptr to copy
+ *
+ * Unset all bits in dest, which are set in src.
+ */
 void
-mono_bitset_sub (MonoBitSet *dest, MonoBitSet *src) {
+mono_bitset_sub (MonoBitSet *dest, const MonoBitSet *src) {
 	int i;
 
 	g_return_if_fail (src->size <= dest->size);
@@ -310,8 +442,16 @@ mono_bitset_sub (MonoBitSet *dest, MonoBitSet *src) {
 		dest->data [i] &= ~src->data [i];
 }
 
+/*
+ * mono_bitset_equal:
+ * @src: bitset ptr
+ * @src1: bitset ptr
+ *
+ * return TRUE if their size are the same and the same bits are set in
+ * both bitsets.
+ */
 gboolean
-mono_bitset_equal (MonoBitSet *src, MonoBitSet *src1) {
+mono_bitset_equal (const MonoBitSet *src, const MonoBitSet *src1) {
 	int i;
 	if (src->size != src1->size)
 		return FALSE;
@@ -322,6 +462,15 @@ mono_bitset_equal (MonoBitSet *src, MonoBitSet *src1) {
 	return TRUE;
 }
 
+/*
+ * mono_bitset_foreach:
+ * @set: bitset ptr
+ * @func: Function to call for every set bit
+ * @data: pass this as second arg to func
+ *
+ * Calls func for every bit set in bitset. Argument 1 is the number of
+ * the bit set, argument 2 is data
+ */
 void
 mono_bitset_foreach (MonoBitSet *set, MonoBitSetFunc func, gpointer data)
 {
@@ -359,13 +508,18 @@ main() {
 		return error;
 	error++;
 
-	g_print("should be 33: %d\n", mono_bitset_find_first (set1, 0));
+	//g_print("should be 33: %d\n", mono_bitset_find_first (set1, 0));
 	
 	if (mono_bitset_find_first (set1, 0) != 33)
 		return error;
 	error++;
 
 	if (mono_bitset_find_first (set1, 33) != -1)
+		return error;
+	error++;
+
+	/* test 5 */
+	if (mono_bitset_find_first (set1, -100) != 33)
 		return error;
 	error++;
 
@@ -377,10 +531,15 @@ main() {
 		return error;
 	error++;
 
+	if (mono_bitset_find_last (set1, -100) != 33)
+		return error;
+	error++;
+
 	if (mono_bitset_find_last (set1, 34) != 33)
 		return error;
 	error++;
 
+	/* test 10 */
 	if (!mono_bitset_test (set1, 33))
 		return error;
 	error++;
@@ -389,7 +548,6 @@ main() {
 		return error;
 	error++;
 
-	/* test 10 */
 	set2 = mono_bitset_clone (set1, 0);
 	if (mono_bitset_count (set2) != 1)
 		return error;
@@ -405,6 +563,7 @@ main() {
 		return error;
 	error++;
 
+	/* test 15 */
 	set3 = mono_bitset_clone (set2, 0);
 	mono_bitset_union (set3, set1);
 	if (mono_bitset_count (set3) != (mono_bitset_size (set3) - 1))
@@ -431,21 +590,44 @@ main() {
 	count = 0;
 	for (i = mono_bitset_find_first (set4, -1); i != -1; i = mono_bitset_find_first (set4, i)) {
 		count ++;
-		g_print ("count got: %d at %d\n", count, i);
+		switch (count) {
+		case 1:
+		  if (i != 0)
+		    return error;
+		  break;
+		case 2:
+		  if (i != 1)
+		    return error;
+		  break;
+		case 3:
+		  if (i != 10)
+		    return error;
+		  break;
+		}
+		//g_print ("count got: %d at %d\n", count, i);
 	}
 	if (count != 3)
 		return error;
 	error++;
-	g_print ("count passed\n");
 
 	if (mono_bitset_find_first (set4, -1) != 0)
 		return error;
 	error++;
 
+	/* 20 */
 	mono_bitset_set (set4, 31);
 	if (mono_bitset_find_first (set4, 10) != 31)
 		return error;
 	error++;
+
+	mono_bitset_free (set1);
+
+	set1 = mono_bitset_new (200, 0);
+	mono_bitset_set (set1, 0);
+	mono_bitset_set (set1, 1);
+	mono_bitset_set (set1, 10);
+	mono_bitset_set (set1, 31);
+	mono_bitset_set (set1, 150);
 
 	mono_bitset_free (set1);
 	mono_bitset_free (set2);
