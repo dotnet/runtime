@@ -23,7 +23,7 @@ DISTCLEANFILES= mono.pc mint.pc
 
 mcs_topdir=$(top_srcdir)/../mcs
 
-.PHONY: tmpinst-dir tmpinst-runtime bootstrap stage1 stage2 stage3 stage1-mono stage1-mcs
+.PHONY: tmpinst-dir tmpinst-runtime bootstrap stage1 stage2 stage3 stage1-mono stage1-mcs bootstrap-clean bootstrap-check
 
 if USE_JIT
 mono_runtime = mono/mini/mono
@@ -34,6 +34,18 @@ endif
 bootstrap: stage3
 	rm -f $(top_srcdir)/runtime/*/*.dll $(top_srcdir)/runtime/*.exe
 	$(MAKE)
+
+bootstrap-clean: clean mcs-do-clean-profiles
+bootstrap-check: check mcs-do-run-test
+
+.PHONY: mcs-do-clean-profiles mcs-do-run-test
+mcs-do-clean-profiles:
+	cd $(mcs_topdir) && $(MAKE) clean-profiles
+
+mcs-do-run-test: tmpinst-dir
+	tmpinst=`cd _tmpinst && pwd` ; mcs_topdir=`cd $(mcs_topdir) && pwd`; \
+	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
+	cd $(mcs_topdir) && $(MAKE) PROFILE=default TEST_RUNTIME="MONO_PATH=$$mcs_topdir/class/lib/default mono" run-test
 
 # Build stripped down versions of 'mcs', 'mscorlib.dll' and 'System.dll' with installed 'mcs'
 ## remove System.Xml.dll since it's a soft-dependency of System.dll
@@ -73,9 +85,8 @@ stage3: stage2
 	tmpinst=`cd _tmpinst && pwd` ; \
 	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
 	cd $(mcs_topdir) && $(MAKE) all-profiles
-	-rm -fr _tmpinst
 
-tmpinst-dir:
+tmpinst-dir.stamp: Makefile.am
 	set -e ; \
 	rootme=`pwd`; tmpinst=$$rootme/_tmpinst ; \
 	mkdir -p $$tmpinst $$tmpinst/bin $$tmpinst/lib ; \
@@ -87,6 +98,10 @@ tmpinst-dir:
 	echo '#! /bin/sh' > $$tmpinst/bin/mcs ; \
 	echo 'exec "'"$$tmpinst/bin/mono"'" "'"$$tmpinst/lib/mcs.exe"'" "$$@"' >> $$tmpinst/bin/mcs ; \
 	chmod +x $$tmpinst/bin/mono $$tmpinst/bin/mcs
+	echo "stamp" > $@
+
+tmpinst-dir: tmpinst-dir.stamp
+	@if test -d _tmpinst; then :; else rm -f tmpinst-dir.stamp; $(MAKE) tmpinst-dir.stamp; fi
 
 tmpinst-runtime:
 	tmpinst=`cd _tmpinst && pwd` && \

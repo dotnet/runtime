@@ -1,3 +1,12 @@
+2004-05-17  Raja R Harinath  <rharinath@novell.com>
+
+	* Makefile.am (tmpinst-dir): Creates _tmpinst tree if
+	necessary. Move body ...
+	(tmpinst-dir.stamp): ... here.
+	(stage3): Don't remove _tmpinst tree.
+	(bootstrap-clean, bootstrap-check): New rules.  They run the
+	corresponding rules in the mcs/ tree.
+
 2004-05-14  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am: Revert unlogged unexplained changes.
