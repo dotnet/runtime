@@ -4836,14 +4836,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mono_class_get_full (image, token, generic_context);
 			mono_class_init (klass);
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+				MonoMethod* helper = mono_marshal_get_stelemref ();
 				MonoInst *iargs [3];
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
 
 				iargs [2] = sp [2];
 				iargs [1] = sp [1];
 				iargs [0] = sp [0];
-			
-				mono_emit_jit_icall (cfg, bblock, helper_stelem_ref, iargs, ip);
+				
+				mono_emit_method_call_spilled (cfg, bblock, helper, helper->signature, iargs, ip, NULL);
 			} else {
 				NEW_LDELEMA (cfg, load, sp, klass);
 				load->cil_code = ip;
@@ -4866,6 +4867,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 		case CEE_STELEM_REF: {
 			MonoInst *iargs [3];
+			MonoMethod* helper = mono_marshal_get_stelemref ();
 
 			CHECK_STACK (3);
 			sp -= 3;
@@ -4876,7 +4878,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			iargs [1] = sp [1];
 			iargs [0] = sp [0];
 			
-			mono_emit_jit_icall (cfg, bblock, helper_stelem_ref, iargs, ip);
+			mono_emit_method_call_spilled (cfg, bblock, helper, helper->signature, iargs, ip, NULL);
 
 			/*
 			MonoInst *group;

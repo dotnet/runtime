@@ -2040,6 +2040,40 @@ class Tests {
 		}
 
 		return 1;
-	}			
+	}
+	
+	interface IFace {}
+	class Face : IFace {}
+		
+	static int test_1_array_mismatch_2 () {
+		try {
+			object [] o = new Face [1];
+			o [0] = 1;
+			return 0;
+		} catch (ArrayTypeMismatchException) {
+			return 1;
+		}
+	}
+	
+	static int test_1_array_mismatch_3 () {
+		try {
+			object [] o = new IFace [1];
+			o [0] = 1;
+			return 0;
+		} catch (ArrayTypeMismatchException) {
+			return 1;
+		}
+	}
+	
+	static int test_1_array_mismatch_4 () {
+		try {
+			object [][] o = new Face [5] [];
+			o [0] = new object [5];
+			
+			return 0;
+		} catch (ArrayTypeMismatchException) {
+			return 1;
+		}
+	}
 }
 

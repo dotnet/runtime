@@ -156,5 +156,36 @@ class Tests {
 		helper1 h = new helper1 ();
 		return 2;
 	}
+	
+	public static int test_0_stelemref_1 () {
+		object [] o = new object [1];
+		o [0] = null;
+		
+		return 0;
+	}
+	
+	public static int test_0_stelemref_2 () {
+		object [] o = new object [1];
+		o [0] = 1;
+		
+		return 0;
+	}
+	
+	interface IFace {}
+	class Face : IFace {}
+	
+	public static int test_0_stelemref_3 () {
+		object [] o = new IFace [1];
+		o [0] = new Face ();
+		
+		return 0;
+	}
+	
+	public static int test_0_stelemref_4 () {
+		object [][] o = new object [5] [];
+		o [0] = new object [5];
+		
+		return 0;
+	}
 }
 
