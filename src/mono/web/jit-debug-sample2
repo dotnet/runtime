@@ -1,0 +1,70 @@
+* A debugging session using a symbol file which has been created by MCS.
+
+	Let's assume we have the following C# application which we want to debug:
+
+	<pre>
+	using System;
+
+	public class Foo
+	{
+		public struct MyStruct {
+			int a;
+			long b;
+			double c;
+		}
+
+		public static void Main ()
+		{
+			Int32 value = 5;
+			long test = 512;
+
+			MyStruct my_struct;
+			my_struct.a = 5;
+			my_struct.b = test;
+			my_struct.c = 23323.5235;
+		}
+	}
+	</pre>
+
+	First of all, we need to compile it with MCS, assemble the generated .s file and
+	create the .il files for all referenced assemblies which were not compiled with MCS:
+
+	<pre>
+	$ mcs -g ./Foo.cs
+	$ as -o Foo-debug.o Foo-debug.s
+	$ monodis /home/export/martin/MONO-LINUX/lib/corlib.dll > corlib.il
+	</pre>
+
+	Now we can start the JIT in the debugger:
+
+	<pre>
+	$ gdb ~/monocvs/mono/mono/jit/mono
+	(gdb) r --dwarf-plus --debug Foo:Main ./Foo.exe
+	Starting program: /home/martin/monocvs/mono/mono/jit/mono --dwarf-plus --debug Foo:Main ./Foo.exe
+	Program received signal SIGTRAP, Trace/breakpoint trap.
+	0x081e8681 in ?? ()
+	(gdb) call mono_debug_make_symbols ()
+	(gdb) add-symbol-file Foo-debug.o
+	(gdb) add-symbol-file /tmp/corlib.o
+`	(gdb) frame
+	#0  Main () at ./Foo.cs:11
+	11              public static void Main ()
+	(gdb) n
+	Main () at ./Foo.cs:13
+	13                      Int32 value = 5;
+	(gdb)
+	14                      long test = 512;
+	(gdb)
+	17                      my_struct.a = 5;
+	(gdb)
+	18                      my_struct.b = test;
+	(gdb)
+	19                      my_struct.c = 23323.5235;
+	(gdb)
+	20              }
+	(gdb) info locals
+	value = 5
+	test = 512
+	my_struct = { a = 5, b = 512, c = 23323.5235 }
+	</pre>
+

@@ -1,0 +1,86 @@
+* A debugging session using a dynamically generated symbol file.
+
+	Let's assume we have the following C# application which we want to debug:
+
+	<pre>
+	using System;
+
+	public class Foo
+	{
+		public struct MyStruct {
+			int a;
+			long b;
+			double c;
+		}
+
+		public static void Main ()
+		{
+			Int32 value = 5;
+			long test = 512;
+
+			MyStruct my_struct;
+			my_struct.a = 5;
+			my_struct.b = test;
+			my_struct.c = 23323.5235;
+		}
+	}
+	</pre>
+
+	First of all, we need to compile it and create the .il files:
+
+	<pre>
+	$ mcs ./Foo.cs
+	$ monodis /home/export/martin/MONO-LINUX/lib/corlib.dll > corlib.il
+	$ monodis Foo.exe > Foo.il
+	</pre>
+
+	Now we can start the JIT in the debugger:
+
+	<pre>
+	$ gdb ~/monocvs/mono/mono/jit/mono
+	(gdb) r --dwarf --debug Foo:Main ./Foo.exe
+	Starting program: /home/martin/monocvs/mono/mono/jit/mono --dwarf --debug Foo:Main ./Foo.exe
+	0x081e8911 in ?? ()
+	(gdb) call mono_debug_make_symbols ()
+	(gdb) add-symbol-file /tmp/Foo.o
+	Reading symbols from /tmp/Foo.o...done.
+	Current language:  auto; currently c++
+	(gdb) frame
+	#0  Foo.Main () at Foo.il:26
+	26          // method line 2
+	(gdb) n
+	Foo.Main () at Foo.il:38
+	38              IL_0000: ldc.i4.5
+	(gdb) list
+	33              .maxstack 2
+	34              .locals (
+	35                      int32   V_0,
+	36                      int64   V_1,
+	37                      valuetype MyStruct      V_2)
+	38              IL_0000: ldc.i4.5
+	39              IL_0001: stloc.0
+	40              IL_0002: ldc.i4 512
+	41              IL_0007: conv.i8
+	42              IL_0008: stloc.1
+	43              IL_0009: ldloca.s 2
+	44              IL_000b: ldc.i4.5
+	45              IL_000c: stfld  int32 .MyStruct::a
+	46              IL_0011: ldloca.s 2
+	47              IL_0013: ldloc.1
+	48              IL_0014: stfld  int64 .MyStruct::b
+	49              IL_0019: ldloca.s 2
+	50              IL_001b: ldc.r8 23323.5
+	51              IL_0024: stfld  float64 .MyStruct::c
+	52              IL_0029: ret
+	(gdb) until 52
+	Foo.Main () at Foo.il:53
+	53          }
+	(gdb) info locals
+	V_0 = 5
+	V_1 = 512
+	V_2 = {a = 5, b = 512, c = 23323.523499999999}
+	</pre>
+
+	As you see in this example, you need to know IL code to use this debugging method - but
+	it may be the only way to debug a library.
+

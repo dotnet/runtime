@@ -1,3 +1,12 @@
+2002-03-29  Martin Baulig  <martin@gnome.org>
+
+	* doc/jit-debug, docs/jit-debug-sample, docs/jit-debug-sample2:
+	New files, added documentation for the debugging code.
+
+	* doc/web/commands: Added the debugging pages.
+
+	* docs/jit-debug: Removed, this is now on the web site.
+
 2002-03-24  Martin Baulig  <martin@gnome.org>
 
 	* man/mcs.1: Documented the new --debug option and added a section

@@ -22,6 +22,9 @@ OBJECTS=	\
 	deploy/gcc-frontend.html		\
 	deploy/index.html			\
 	deploy/ideas.html			\
+	deploy/jit-debug.html			\
+	deploy/jit-debug-sample.html		\
+	deploy/jit-debug-sample2.html		\
 	deploy/mailing-lists.html		\
 	deploy/monodoc-xml.html			\
 	deploy/passport.html			\
