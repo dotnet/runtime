@@ -4637,8 +4637,10 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			m->string_ctor = 1;
 
 		m->addr = mono_lookup_internal_call (m);
+		m->signature->pinvoke = 1;
 	} else if (m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		/* TODO */
+		m->signature->pinvoke = 1;
 		return m;
 	} else if (!m->klass->dummy && 
 			   !(m->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
