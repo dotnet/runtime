@@ -713,95 +713,79 @@ get_info_from_assembly_name (MonoReflectionAssemblyName *assRef, MonoAssemblyNam
 		return TRUE;
 	}
 
-	value = g_strstrip (*tmp);
-	if (strncmp (value, "Version=", 8)) {
-		g_strfreev (parts);
-		return FALSE;
-	}
-	
-	if (sscanf (value + 8, "%u.%u.%u.%u", &major, &minor, &build, &revision) != 4) {
-		g_strfreev (parts);
-		return FALSE;
-	}
-
-	/* g_print ("Version: %u.%u.%u.%u\n", major, minor, build, revision); */
-	aname->major = major;
-	aname->minor = minor;
-	aname->build = build;
-	aname->revision = revision;
-	tmp++;
-
-	if (!*tmp) {
-		g_strfreev (parts);
-		return FALSE;
-	}
-
-	value = g_strstrip (*tmp);
-	if (strncmp (value, "Culture=", 8)) {
-		g_strfreev (parts);
-		return FALSE;
-	}
-
-	/* g_print ("Culture: %s\n", aname->culture); */
-	aname->culture = g_strstrip (g_strdup (value + 8));
-	tmp++;
-
-	if (!*tmp) {
-		g_strfreev (parts);
-		return FALSE;
-	}
-
-	value = g_strstrip (*tmp);
-	if (strncmp (value, "PublicKeyToken=", 15)) {
-		g_strfreev (parts);
-		return FALSE;
-	}
-
-	value += 15;
-	if (*value && strcmp (value, "null")) {
-		gint i, len;
-		gchar h, l;
-		gchar *result;
-		
-		value = g_strstrip (g_strdup (value));
-		len = strlen (value);
-		if (len % 2) {
-			g_free (value);
-			g_strfreev (parts);
-			return FALSE;
+	while (*tmp) {
+		value = g_strstrip (*tmp);
+		if (!strncmp (value, "Version=", 8)) {
+			if (sscanf (value + 8, "%u.%u.%u.%u",
+				    &major, &minor, &build, &revision) != 4) {
+				g_strfreev (parts);
+				return FALSE;
+			}
+			/* g_print ("Version: %u.%u.%u.%u\n", major, minor, build, revision); */
+			aname->major = major;
+			aname->minor = minor;
+			aname->build = build;
+			aname->revision = revision;
+			tmp++;
+			continue;
 		}
-		
-		aname->hash_len = len / 2;
-		aname->hash_value = g_malloc0 (aname->hash_len);
-		result = (gchar *) aname->hash_value;
-		
-		for (i = 0; i < len; i++) {
-			if (i % 2) {
-				l = g_ascii_xdigit_value (value [i]);
-				if (l == -1) {
+
+		if (!strncmp (value, "Culture=", 8)) {
+			/* g_print ("Culture: %s\n", aname->culture); */
+			aname->culture = g_strstrip (g_strdup (value + 8));
+			tmp++;
+			continue;
+		}
+
+		if (!strncmp (value, "PublicKeyToken=", 15)) {
+			tmp++;
+			value += 15;
+			if (*value && strcmp (value, "null")) {
+				gint i, len;
+				gchar h, l;
+				gchar *result;
+				
+				value = g_strstrip (g_strdup (value));
+				len = strlen (value);
+				if (len % 2) {
 					g_free (value);
 					g_strfreev (parts);
 					return FALSE;
 				}
-				result [i / 2] = (h * 16) + l;
-			} else {
-				h = g_ascii_xdigit_value (value [i]);
-				if (h == -1) {
-					g_free (value);
-					g_strfreev (parts);
-					return FALSE;
+				
+				aname->hash_len = len / 2;
+				aname->hash_value = g_malloc0 (aname->hash_len);
+				result = (gchar *) aname->hash_value;
+				
+				for (i = 0; i < len; i++) {
+					if (i % 2) {
+						l = g_ascii_xdigit_value (value [i]);
+						if (l == -1) {
+							g_free (value);
+							g_strfreev (parts);
+							return FALSE;
+						}
+						result [i / 2] = (h * 16) + l;
+					} else {
+						h = g_ascii_xdigit_value (value [i]);
+						if (h == -1) {
+							g_free (value);
+							g_strfreev (parts);
+							return FALSE;
+						}
+					}
 				}
+				g_free (value);
+
+				/*
+				g_print ("PublicKeyToken: ");
+				for (i = 0; i < aname->hash_len; i++) {
+					g_print ("%x", 0x00FF & aname->hash_value [i]); 
+				}
+				g_print ("\n");
+				*/
 			}
 		}
-		g_free (value);
-
-		/*
-		g_print ("PublicKeyToken: ");
-		for (i = 0; i < aname->hash_len; i++) {
-			g_print ("%x", 0x00FF & aname->hash_value [i]); 
-		}
-		g_print ("\n");
-		*/
 	}
 
 	g_strfreev (parts);
