@@ -546,9 +546,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 void
 mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
+#ifdef MONO_ARCH_USE_SIGACTION
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 	
-#ifdef MONO_ARCH_USE_SIGACTION
 	mctx->eax = ctx->uc_mcontext.gregs [REG_EAX];
 	mctx->ebx = ctx->uc_mcontext.gregs [REG_EBX];
 	mctx->ecx = ctx->uc_mcontext.gregs [REG_ECX];
@@ -566,9 +566,9 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 void
 mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 {
+#ifdef MONO_ARCH_USE_SIGACTION
 	ucontext_t *ctx = (ucontext_t*)sigctx;
 
-#ifdef MONO_ARCH_USE_SIGACTION
 	ctx->uc_mcontext.gregs [REG_EAX] = mctx->eax;
 	ctx->uc_mcontext.gregs [REG_EBX] = mctx->ebx;
 	ctx->uc_mcontext.gregs [REG_ECX] = mctx->ecx;
@@ -579,7 +579,7 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	ctx->uc_mcontext.gregs [REG_EDI] = mctx->edi;
 	ctx->uc_mcontext.gregs [REG_EIP] = mctx->eip;
 #else
-	memcpy (ctx, mctx, sizeof (MonoContext));
+	memcpy (sigctx, mctx, sizeof (MonoContext));
 #endif
 }	
 
