@@ -32,9 +32,9 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace) {
 	case MONO_TYPE_I2:
 		g_string_append (res, "int16"); break;
 	case MONO_TYPE_U4:
-		g_string_append (res, "int"); break;
-	case MONO_TYPE_I4:
 		g_string_append (res, "uint"); break;
+	case MONO_TYPE_I4:
+		g_string_append (res, "int"); break;
 	case MONO_TYPE_U8:
 		g_string_append (res, "ulong"); break;
 	case MONO_TYPE_I8:
