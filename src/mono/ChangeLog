@@ -1,3 +1,7 @@
+2005-01-03  Ben Maurer  <bmaurer@ximian.com>
+
+	* configure.in: Add mono-nunit to output
+	
 2005-01-03  Jonathan Pryor  <jonpryor@vt.edu>
 
 	* Makefile.am: Change build order so that support is built before runtime.
