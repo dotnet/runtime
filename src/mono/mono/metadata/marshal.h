@@ -195,7 +195,7 @@ MonoMethod *
 mono_marshal_get_native_wrapper (MonoMethod *method);
 
 MonoMethod *
-mono_marshal_get_native_func_wrapper (MonoMethodSignature *sig, MonoMarshalSpec **mspecs, gpointer func);
+mono_marshal_get_native_func_wrapper (MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func);
 
 MonoMethod *
 mono_marshal_get_struct_to_ptr (MonoClass *klass);

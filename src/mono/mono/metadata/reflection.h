@@ -76,6 +76,7 @@ MonoCustomAttrInfo* mono_custom_attrs_from_event    (MonoClass *klass, MonoEvent
 MonoCustomAttrInfo* mono_custom_attrs_from_field    (MonoClass *klass, MonoClassField *field);
 MonoCustomAttrInfo* mono_custom_attrs_from_param    (MonoMethod *method, guint32 param);
 gboolean            mono_custom_attrs_has_attr      (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass);
+MonoObject*         mono_custom_attrs_get_attr      (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass);
 void                mono_custom_attrs_free          (MonoCustomAttrInfo *ainfo);
 
 

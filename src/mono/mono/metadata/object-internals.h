@@ -914,6 +914,15 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
+	gint32 call_conv;
+	gint32 charset;
+	MonoBoolean set_last_error;
+	MonoBoolean best_fit_mapping;
+	MonoBoolean throw_on_unmappable;
+} MonoReflectionUnmanagedFunctionPointerAttribute;
+
+typedef struct {
+	MonoObject object;
 	MonoMethod *mhandle;
 	MonoString *name;
 	MonoReflectionType *rtype;

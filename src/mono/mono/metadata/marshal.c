@@ -280,18 +280,41 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 	LeaveCriticalSection (&marshal_mutex);
 	if (d == NULL) {
 		/* This is a native function, so construct a delegate for it */
+		static MonoClass *UnmanagedFunctionPointerAttribute;
 		MonoMethodSignature *sig;
 		MonoMethod *wrapper;
 		MonoMarshalSpec **mspecs;
+		MonoCustomAttrInfo *cinfo;
+		MonoReflectionUnmanagedFunctionPointerAttribute *attr;
 		MonoMethod *invoke = mono_get_delegate_invoke (klass);
+		MonoMethodPInvoke piinfo;
 		int i;
+
+		memset (&piinfo, 0, sizeof (piinfo));
+		if (!UnmanagedFunctionPointerAttribute)
+			UnmanagedFunctionPointerAttribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "UnmanagedFunctionPointerAttribute");
+
+		/* The attribute is only available in Net 2.0 */
+		if (UnmanagedFunctionPointerAttribute) {
+			/* 
+			 * The pinvoke attributes are stored in a real custom attribute so we have to
+			 * construct it.
+			 */
+			cinfo = mono_custom_attrs_from_class (klass);
+			attr = (MonoReflectionUnmanagedFunctionPointerAttribute*)mono_custom_attrs_get_attr (cinfo, UnmanagedFunctionPointerAttribute);
+			if (attr) {
+				piinfo.piflags = (attr->call_conv << 8) | (attr->charset ? (attr->charset - 1) * 2 : 1) | attr->set_last_error;
+			}
+			if (!cinfo->cached)
+				mono_custom_attrs_free (cinfo);
+		}
 
 		mspecs = g_new0 (MonoMarshalSpec*, mono_method_signature (invoke)->param_count + 1);
 		mono_method_get_marshal_info (invoke, mspecs);
 		sig = mono_metadata_signature_dup (mono_method_signature (invoke));
 		sig->hasthis = 0;
 
-		wrapper = mono_marshal_get_native_func_wrapper (sig, mspecs, ftn);
+		wrapper = mono_marshal_get_native_func_wrapper (sig, &piinfo, mspecs, ftn);
 
 		for (i = mono_method_signature (invoke)->param_count; i >= 0; i--)
 			if (mspecs [i])
@@ -6111,10 +6134,11 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
  * wrapper.
  */
 MonoMethod *
-mono_marshal_get_native_func_wrapper (MonoMethodSignature *sig, MonoMarshalSpec **mspecs, gpointer func)
+mono_marshal_get_native_func_wrapper (MonoMethodSignature *sig, 
+									  MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func)
 {
 	MonoMethodSignature *csig;
-	MonoMethodPInvoke piinfo;
+
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
@@ -6124,15 +6148,11 @@ mono_marshal_get_native_func_wrapper (MonoMethodSignature *sig, MonoMarshalSpec 
 	if ((res = mono_marshal_find_in_cache (cache, func)))
 		return res;
 
-
 	name = g_strdup_printf ("wrapper_native_%p", func);
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 	mb->method->save_lmf = 1;
 
-	/* FIXME: Collect piinfo */
-	memset (&piinfo, 0, sizeof (piinfo));
-
-	mono_marshal_emit_native_wrapper (mb, sig, &piinfo, mspecs, func);
+	mono_marshal_emit_native_wrapper (mb, sig, piinfo, mspecs, func);
 
 	csig = mono_metadata_signature_dup (sig);
 	csig->pinvoke = 0;
