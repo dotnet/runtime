@@ -5401,11 +5401,13 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
 				patch_info->ip.i = code - cfg->native_code;
 
-				if (mono_compile_aot)
+				if (mono_compile_aot) {
 					amd64_mov_reg_membase (code, GP_SCRATCH_REG, AMD64_RIP, 0, 8);
-				else
-					amd64_set_reg_template (code, GP_SCRATCH_REG);
-				amd64_call_reg (code, GP_SCRATCH_REG);
+					amd64_call_reg (code, GP_SCRATCH_REG);
+				} else {
+					/* The callee is in memory allocated using the code manager */
+					amd64_call_code (code, 0);
+				}
 
 				amd64_mov_reg_imm (buf, AMD64_RSI, (code - cfg->native_code) - throw_ip);
 				while (buf < buf2)
