@@ -1027,7 +1027,7 @@ gint32 mono_string2decimal(/*[Out]*/decimal_repr* pA, MonoString* str, gint32 de
  * returns minimal number of digit string to represent decimal
  * No leading or trailing zeros !
  * Examples:
- * *pA == 0            =>   buf = "", *pDecPos = 0, *pSign = 0
+ * *pA == 0            =>   buf = "", *pDecPos = 1, *pSign = 0
  * *pA == 12.34        =>   buf = "1234", *pDecPos = 2, *pSign = 0
  * *pA == -1000.0000   =>   buf = "1", *pDecPos = 4, *pSign = 1
  * *pA == -0.00000076  =>   buf = "76", *pDecPos = -6, *pSign = 0
