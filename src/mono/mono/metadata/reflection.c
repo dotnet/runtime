@@ -584,6 +584,9 @@ method_encode_code (MonoDynamicAssembly *assembly, ReflectionMethodBuilder *mb)
 			num_exception = method_count_clauses (mb->ilgen);
 	} else {
 		code = mb->code;
+		if (code == NULL)
+			mono_raise_exception (mono_get_exception_argument (NULL, "a method does not have any IL associated"));
+
 		code_size = mono_array_length (code);
 		max_stack = 8; /* we probably need to run a verifier on the code... */
 	}
