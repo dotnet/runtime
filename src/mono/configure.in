@@ -1041,6 +1041,7 @@ if test x$platform_win32 = xno; then
 	AC_CHECK_FUNCS(posix_fadvise)
 	AC_CHECK_FUNCS(posix_fallocate)
 	AC_CHECK_FUNCS(posix_madvise)
+	AC_CHECK_FUNCS(vsnprintf)
 	AC_CHECK_FUNCS(sendfile)
 	AC_CHECK_FUNCS(sethostid)
 	AC_CHECK_FUNCS(statfs)
