@@ -227,4 +227,19 @@
     </tasks>
   </contributor>
 
+  <contributor>
+    <name>
+      <first-name>Sebastien</first-name>
+      <last-name>Pouliot</last-name>
+    </name>
+    <e-mail>spouliot@motus.com</e-mail>
+    <image>none.png</image>
+    <location>Quebec City, Canada</location>
+    <organization>Motus Technologies</organization>
+    <tasks>
+      <task>Cryptography</task>
+      <task>Security</task>
+    </tasks>
+  </contributor>
+
 </contributors>
