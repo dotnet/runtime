@@ -185,6 +185,9 @@ int main() {
 	x86_branch (p, X86_CC_GT, target, 0);
 	x86_branch_disp (p, X86_CC_NE, -4, 0);
 
+	x86_set_reg (p, X86_CC_EQ, X86_EAX, 0);
+	x86_set_membase (p, X86_CC_LE, X86_EBP, -8, 0);
+
 	x86_call_code (p, printf);
 	x86_call_reg (p, X86_ECX);
 

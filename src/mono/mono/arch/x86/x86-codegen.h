@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.12 2001/09/27 09:38:19 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.13 2001/10/10 10:11:17 lupus Exp $
 */
 
 #ifndef X86_H
@@ -1173,6 +1173,36 @@ typedef union {
 			offset -= 4;	\
 			x86_branch32 ((inst), (cond), offset, (is_signed));	\
 		}	\
+	} while (0)
+
+#define x86_set_reg(inst,cond,reg,is_signed)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x0f;	\
+		if ((is_signed))	\
+			*(inst)++ = x86_cc_signed_map [(cond)] + 0x20;	\
+		else	\
+			*(inst)++ = x86_cc_unsigned_map [(cond)] + 0x20;	\
+		x86_reg_emit ((inst), 0, (reg));	\
+	} while (0)
+
+#define x86_set_mem(inst,cond,mem,is_signed)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x0f;	\
+		if ((is_signed))	\
+			*(inst)++ = x86_cc_signed_map [(cond)] + 0x20;	\
+		else	\
+			*(inst)++ = x86_cc_unsigned_map [(cond)] + 0x20;	\
+		x86_mem_emit ((inst), 0, (mem));	\
+	} while (0)
+
+#define x86_set_membase(inst,cond,basereg,disp,is_signed)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x0f;	\
+		if ((is_signed))	\
+			*(inst)++ = x86_cc_signed_map [(cond)] + 0x20;	\
+		else	\
+			*(inst)++ = x86_cc_unsigned_map [(cond)] + 0x20;	\
+		x86_membase_emit ((inst), 0, (basereg), (disp));	\
 	} while (0)
 
 #define x86_call_imm(inst,disp)	\
