@@ -24,12 +24,13 @@ OBJECTS=	\
 	deploy/gcc-frontend.html		\
 	deploy/index.html			\
 	deploy/ideas.html			\
+	deploy/java.html			\
 	deploy/jit-debug.html			\
 	deploy/jit-debug-sample.html		\
 	deploy/jit-debug-sample2.html		\
+	deploy/languages.html			\
 	deploy/mailing-lists.html		\
 	deploy/monodoc-xml.html			\
-	deploy/java.html			\
 	deploy/papers.html			\
 	deploy/passport.html			\
 	deploy/plans.html			\

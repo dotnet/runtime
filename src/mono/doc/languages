@@ -1,0 +1,15 @@
+* Compilers for other languages
+
+	Here are some other free compilers for other languages that
+	target .NET and should work with Mono with no problem:
+
+* Oberon
+
+	This Oberon compiler is written in Oberon.NET (another self
+	hosting compiler):
+
+	<a href="http://www.superin.formativ.net/mono/oberon/oberon.zip">http://www.superin.formativ.net/mono/oberon/oberon.zip</a>
+
+* 
+
+	
