@@ -56,6 +56,9 @@ typedef struct {
 	MonoObject object;
 	MonoClass *klass;
 	MonoClassField *field;
+	MonoString *name;
+	MonoReflectionType *type;
+	guint32 attrs;
 } MonoReflectionField;
 
 typedef struct {
@@ -114,13 +117,6 @@ typedef struct {
 	MonoReflectionMethod *raise_method;
 	guint32 attrs;
 } MonoEventInfo;
-
-typedef struct {
-	MonoReflectionType *parent;
-	MonoReflectionType *type;
-	MonoString *name;
-	guint32 attrs;
-} MonoFieldInfo;
 
 typedef struct {
 	MonoString *name;

@@ -3645,6 +3645,9 @@ mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *fie
 	res = (MonoReflectionField *)mono_object_new (domain, oklass);
 	res->klass = klass;
 	res->field = field;
+	res->name = mono_string_new (domain, field->name);
+	res->attrs = field->type->attrs;
+	res->type = mono_type_get_object (domain, field->type);
 	CACHE_OBJECT (field, res, klass);
 	return res;
 }

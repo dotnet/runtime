@@ -2329,15 +2329,6 @@ monopropertyinfo_fields[] = {
 };
 
 static const FieldDesc 
-monofieldinfo_fields[] = {
-	{"parent", G_STRUCT_OFFSET (MonoFieldInfo, parent)},
-	{"type", G_STRUCT_OFFSET (MonoFieldInfo, type)},
-	{"name", G_STRUCT_OFFSET (MonoFieldInfo, name)},
-	{"attrs", G_STRUCT_OFFSET (MonoFieldInfo, attrs)},
-	{NULL, 0}
-};
-
-static const FieldDesc 
 monomethod_fields[] = {
 	{"mhandle", G_STRUCT_OFFSET (MonoReflectionMethod, method)},
 	{NULL, 0}
@@ -2367,7 +2358,6 @@ reflection_classes_to_check [] = {
 	{"MonoField", monofield_fields},
 	{"MonoMethodInfo", monomethodinfo_fields},
 	{"MonoPropertyInfo", monopropertyinfo_fields},
-	{"MonoFieldInfo", monofieldinfo_fields},
 	{"MonoMethod", monomethod_fields},
 	{"MonoCMethod", monocmethod_fields},
 	{"ParameterInfo", pinfo_fields},

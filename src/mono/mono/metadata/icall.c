@@ -1038,16 +1038,14 @@ ves_icall_get_attributes (MonoReflectionType *type)
 	return klass->flags;
 }
 
-static MonoFieldInfo*
+static MonoReflectionField*
 ves_icall_System_Reflection_FieldInfo_internal_from_handle (MonoClassField *handle)
 {
 	MONO_ARCH_SAVE_REGS;
 
 	g_assert (handle);
 
-	return (MonoFieldInfo*) mono_field_get_object (mono_domain_get (), 
-												   handle->parent,
-												   handle);
+	return mono_field_get_object (mono_domain_get (), handle->parent, handle);
 }
 
 static void
@@ -1085,17 +1083,15 @@ ves_icall_get_parameter_info (MonoMethod *method)
 	return res;
 }
 
-static void
-ves_icall_get_field_info (MonoReflectionField *field, MonoFieldInfo *info)
+static MonoReflectionType*
+ves_icall_MonoField_GetParentType (MonoReflectionField *field, MonoBoolean declaring)
 {
-	MonoDomain *domain = mono_object_domain (field); 
-
+	MonoClass *parent;
 	MONO_ARCH_SAVE_REGS;
 
-	info->parent = mono_type_get_object (domain, &field->klass->byval_arg);
-	info->type = mono_type_get_object (domain, field->field->type);
-	info->name = mono_string_new (domain, field->field->name);
-	info->attrs = field->field->type->attrs;
+	parent = declaring? field->field->parent: field->klass;
+
+	return mono_type_get_object (mono_object_domain (field), &parent->byval_arg);
 }
 
 static MonoObject *
@@ -1346,6 +1342,14 @@ ves_icall_type_ispointer (MonoReflectionType *type)
 	MONO_ARCH_SAVE_REGS;
 
 	return type->type->type == MONO_TYPE_PTR;
+}
+
+static MonoBoolean
+ves_icall_type_isprimitive (MonoReflectionType *type)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return (!type->type->byref && (type->type->type >= MONO_TYPE_BOOLEAN) && (type->type->type <= MONO_TYPE_R8));
 }
 
 static MonoBoolean
@@ -1672,7 +1676,7 @@ enum {
 	BFLAGS_OptionalParamBinding = 0x40000
 };
 
-static MonoFieldInfo *
+static MonoReflectionField *
 ves_icall_Type_GetField (MonoReflectionType *type, MonoString *name, guint32 bflags)
 {
 	MonoDomain *domain; 
@@ -1721,7 +1725,7 @@ handle_parent:
 		}
 		g_free (utf8_name);
 		
-		return (MonoFieldInfo *)mono_field_get_object (domain, klass, field);
+		return mono_field_get_object (domain, klass, field);
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
@@ -3783,7 +3787,6 @@ static gconstpointer icall_map [] = {
 	 */
 	"System.Reflection.MonoMethodInfo::get_method_info", ves_icall_get_method_info,
 	"System.Reflection.MonoMethodInfo::get_parameter_info", ves_icall_get_parameter_info,
-	"System.Reflection.MonoFieldInfo::get_field_info", ves_icall_get_field_info,
 	"System.Reflection.MonoPropertyInfo::get_property_info", ves_icall_get_property_info,
 	"System.Reflection.MonoEventInfo::get_event_info", ves_icall_get_event_info,
 	"System.Reflection.MonoMethod::InternalInvoke", ves_icall_InternalInvoke,
@@ -3791,6 +3794,7 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.MethodBase::GetCurrentMethod", ves_icall_GetCurrentMethod,
 	"System.MonoCustomAttrs::GetCustomAttributes", mono_reflection_get_custom_attrs,
 	"System.Reflection.Emit.CustomAttributeBuilder::GetBlob", mono_reflection_get_custom_attrs_blob,
+	"System.Reflection.MonoField::GetParentType", ves_icall_MonoField_GetParentType,
 	"System.Reflection.MonoField::GetValueInternal", ves_icall_MonoField_GetValueInternal,
 	"System.Reflection.MonoField::SetValueInternal", ves_icall_FieldInfo_SetValueInternal,
 	"System.Reflection.Emit.SignatureHelper::get_signature_local", mono_reflection_sighelper_get_signature_local,
@@ -3954,6 +3958,7 @@ static gconstpointer icall_map [] = {
 	"System.MonoType::get_BaseType", ves_icall_get_type_parent,
 	"System.MonoType::get_Module", ves_icall_MonoType_get_Module,
 	"System.MonoType::IsPointerImpl", ves_icall_type_ispointer,
+	"System.MonoType::IsPrimitiveImpl", ves_icall_type_isprimitive,
 	"System.MonoType::IsByRefImpl", ves_icall_type_isbyref,
 	"System.MonoType::GetField", ves_icall_Type_GetField,
 	"System.MonoType::GetFields", ves_icall_Type_GetFields,
