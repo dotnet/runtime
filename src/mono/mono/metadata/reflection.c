@@ -912,7 +912,8 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicAssembly
 		table->rows ++;
 		alloc_table (table, table->rows);
 		values = table->values + table->rows * MONO_IMPLMAP_SIZE;
-		values [MONO_IMPLMAP_FLAGS] = (mb->native_cc << 8) | mb->charset;
+		/* map CharSet values to on-disk values */
+		values [MONO_IMPLMAP_FLAGS] = (mb->native_cc << 8) | (mb->charset ? (mb->charset - 1) * 2: 1);
 		values [MONO_IMPLMAP_MEMBER] = (mb->table_idx << 1) | 1; /* memberforwarded: method */
 		name = mono_string_to_utf8 (mb->dllentry);
 		values [MONO_IMPLMAP_NAME] = string_heap_insert (&assembly->sheap, name);
