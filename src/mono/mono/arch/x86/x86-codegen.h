@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.19 2001/12/17 06:50:02 dietmar Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.20 2002/01/14 07:00:24 lupus Exp $
 */
 
 #ifndef X86_H
@@ -64,16 +64,18 @@ typedef enum {
 // integer conditions codes
 */
 typedef enum {
-	X86_CC_EQ = 0,
-	X86_CC_NE,
-	X86_CC_LT,
-	X86_CC_LE,
-	X86_CC_GT,
-	X86_CC_GE,
-	X86_CC_LZ,
-	X86_CC_GEZ,
-	X86_CC_P,
-	X86_CC_NP,
+	X86_CC_EQ = 0, X86_CC_E = 0, X86_CC_Z = 0,
+	X86_CC_NE = 1, X86_CC_NZ = 1,
+	X86_CC_LT = 2, X86_CC_B = 2, X86_CC_C = 2, X86_CC_NAE = 2,
+	X86_CC_LE = 3, X86_CC_BE = 3, X86_CC_NA = 3,
+	X86_CC_GT = 4, X86_CC_A = 4, X86_CC_NBE = 4,
+	X86_CC_GE = 5, X86_CC_AE = 5, X86_CC_NB = 5, X86_CC_NC = 5,
+	X86_CC_LZ = 6, X86_CC_S = 6,
+	X86_CC_GEZ = 7, X86_CC_NS = 7,
+	X86_CC_P = 8, X86_CC_PE = 8,
+	X86_CC_NP = 9, X86_CC_PO = 9,
+	X86_CC_O = 10,
+	X86_CC_NO = 11,
 	X86_NCC
 } X86_CC;
 /*
@@ -106,6 +108,8 @@ x86_cc_unsigned_map [X86_NCC] = {
 	0x79, /* gez */
 	0x7a, /* p   */
 	0x7b, /* np  */
+	0x70, /* o  */
+	0x71, /* no  */
 };
 
 static const unsigned char 
@@ -120,6 +124,8 @@ x86_cc_signed_map [X86_NCC] = {
 	0x79, /* gez */
 	0x7a, /* p   */
 	0x7b, /* np  */
+	0x70, /* o  */
+	0x71, /* no  */
 };
 
 typedef union {
