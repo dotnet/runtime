@@ -13,31 +13,31 @@
 #include "jit.h"
 
 int
-map_store_svt_type         (int svt);
+mono_map_store_svt_type    (int svt);
 
 void
 mono_get_val_sizes         (MonoValueType type, int *size, int *align);
 
 int
-map_stind_type             (MonoType *type);
+mono_map_stind_type        (MonoType *type);
 
 int
-map_remote_stind_type      (MonoType *type);
+mono_map_remote_stind_type (MonoType *type);
 
 int
-map_starg_type             (MonoType *type);
+mono_map_starg_type        (MonoType *type);
 
 int
-map_arg_type               (MonoType *type);
+mono_map_arg_type          (MonoType *type);
 
 int
-map_ldind_type             (MonoType *type, MonoValueType *svt);
+mono_map_ldind_type        (MonoType *type, MonoValueType *svt);
 
 int
-map_ldarg_type             (MonoType *type, MonoValueType *svt);
+mono_map_ldarg_type        (MonoType *type, MonoValueType *svt);
 
 int
-map_call_type              (MonoType *type, MonoValueType *svt);
+mono_map_call_type         (MonoType *type, MonoValueType *svt);
 
 MBTree *
 mono_ctree_new             (MonoMemPool *mp, int op, MBTree *left, 

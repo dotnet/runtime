@@ -308,9 +308,9 @@ ctree_create_load (MonoFlowGraph *cfg, MonoType *type, MBTree *addr, MonoValueTy
 	MBTree *t;
 
 	if (arg)
-		ldind = map_ldarg_type (type, svt);
+		ldind = mono_map_ldarg_type (type, svt);
 	else
-		ldind = map_ldind_type (type, svt);
+		ldind = mono_map_ldind_type (type, svt);
 
 	t = mono_ctree_new (mp, ldind, addr, NULL);
 
@@ -336,9 +336,9 @@ ctree_create_store (MonoFlowGraph *cfg, MonoType *type, MBTree *addr,
 	MBTree *t;
 	
 	if (arg)
-		stind = map_starg_type (type);
+		stind = mono_map_starg_type (type);
 	else
-		stind = map_stind_type (type);
+		stind = mono_map_stind_type (type);
 
 	t = mono_ctree_new (mp, stind, addr, s);
 
@@ -477,7 +477,7 @@ mono_store_tree (MonoFlowGraph *cfg, int slot, MBTree *s, MBTree **tdup)
 			t = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 			t->data.i = vnum;
 		       
-			t = mono_ctree_new (mp, map_store_svt_type (s->svt), t, s);
+			t = mono_ctree_new (mp, mono_map_store_svt_type (s->svt), t, s);
 			t->svt = s->svt;
 		}
 	}
@@ -909,7 +909,7 @@ mono_copy_used_var (MonoFlowGraph *cfg, MBTree *tree, int varnum, MBTree **copy)
 			t2->data.i = varnum;
 			t2 = mono_ctree_new (cfg->mp, tree->op, t2, NULL);
 
-			t2 = mono_ctree_new (cfg->mp, map_store_svt_type (tree->svt), t1, t2);
+			t2 = mono_ctree_new (cfg->mp, mono_map_store_svt_type (tree->svt), t1, t2);
 			t2->svt = tree->svt;
 
 			tree->left->data.i = v;
@@ -1333,7 +1333,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		for (i = 0; i < header->num_locals; ++i) {
 			MonoValueType svt;
 			size = mono_type_size (LOCAL_TYPE (i), &align);
-			map_ldind_type (header->locals [i], &svt);
+			mono_map_ldind_type (header->locals [i], &svt);
 			varnum = arch_allocate_var (cfg, size, align, MONO_LOCALVAR, svt);
 			if (i == 0)
 				cfg->locals_start_index = varnum;
@@ -1730,7 +1730,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			g_assert (field);
 
 			if (klass->marshalbyref) {
-				t1 = mono_ctree_new (mp, map_remote_stind_type (field->type), sp [0], sp [1]);
+				t1 = mono_ctree_new (mp, mono_map_remote_stind_type (field->type), sp [0], sp [1]);
 				t1->data.fi.klass = klass;
 				t1->data.fi.field = field;
 			} else {
@@ -1931,7 +1931,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				MonoType *type = cm->signature->params [k];
 
 				size = mono_type_stack_size (type, &align);
-				t1 = mono_ctree_new (mp, map_arg_type (type), arg_sp [k], NULL);	
+				t1 = mono_ctree_new (mp, mono_map_arg_type (type), arg_sp [k], NULL);	
 				t1->data.i = size;
 				ADD_TREE (t1, cli_addr);
 				args_size += size;
@@ -1963,7 +1963,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
 				t2->data.p = arch_create_jit_trampoline (cm);
 
-				t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), this, t2);
+				t1 = mono_ctree_new (mp, mono_map_call_type (csig->ret, &svt), this, t2);
 				t1->data.ci.args_size = args_size;
 				t1->data.ci.vtype_num = 0;
 				t1->svt = svt;
@@ -2075,7 +2075,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			for (k = nargs - 1; k >= 0; k--) {
 				MonoType *type = csig->params [k];
-				t1 = mono_ctree_new (mp, map_arg_type (type), arg_sp [k], NULL);
+				t1 = mono_ctree_new (mp, mono_map_arg_type (type), arg_sp [k], NULL);
 				size = mono_type_stack_size (type, &align);
 				t1->data.i = size;
 				ADD_TREE (t1, cli_addr);
@@ -2104,7 +2104,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1->data.ci.args_size = args_size;
 				t1->data.ci.vtype_num = vtype_num;
  
-				t1 = mono_ctree_new (mp, map_ldind_type (csig->ret, &svt), t1, NULL);
+				t1 = mono_ctree_new (mp, mono_map_ldind_type (csig->ret, &svt), t1, NULL);
 				t1->svt = svt;		
 
 				mono_get_val_sizes (t1->svt, &size, &align);
@@ -2112,7 +2112,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 				t2->data.i = vnum;
-				t1 = mono_ctree_new (mp, map_store_svt_type (svt), t2, t1);
+				t1 = mono_ctree_new (mp, mono_map_store_svt_type (svt), t2, t1);
 				t1->svt = svt;
 
 				ADD_TREE (t1, cli_addr);
@@ -2153,7 +2153,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 					t2->data.p = arch_create_jit_trampoline (cm);
 				}
 
-				t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), this, t2);
+				t1 = mono_ctree_new (mp, mono_map_call_type (csig->ret, &svt), this, t2);
 				t1->data.ci.args_size = args_size;
 				t1->data.ci.vtype_num = vtype_num;
 				t1->svt = svt;
@@ -2813,7 +2813,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 				t1->data.i = vnum;
 		       
-				t2 = mono_ctree_new (mp, map_store_svt_type (sp [0]->svt), t1, sp [0]);
+				t2 = mono_ctree_new (mp, mono_map_store_svt_type (sp [0]->svt), t1, sp [0]);
 				t2->svt = sp [0]->svt;
 				ADD_TREE (t2, cli_addr);
 
@@ -2848,7 +2848,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		       
 			t2 = mono_ctree_new (mp, MB_TERM_CKFINITE, *sp, NULL);
 
-			t2 = mono_ctree_new (mp, map_store_svt_type (sp [0]->svt), t1, t2);
+			t2 = mono_ctree_new (mp, mono_map_store_svt_type (sp [0]->svt), t1, t2);
 			t2->svt = sp [0]->svt;
 			ADD_TREE (t2, cli_addr);
 

@@ -17,7 +17,7 @@
 #include "helpers.h"
 
 int
-map_store_svt_type (int svt)
+mono_map_store_svt_type (int svt)
 {
 	switch (svt) {
 	case VAL_I32:
@@ -57,14 +57,14 @@ mono_get_val_sizes (MonoValueType type, int *size, int *align)
 }
 
 /**
- * map_stind_type:
+ * mono_map_stind_type:
  * @type: the type to map
  *
  * Translates the MonoType @type into the corresponding store opcode 
  * for the code generator.
  */
 int
-map_stind_type (MonoType *type)
+mono_map_stind_type (MonoType *type)
 {
 	if (type->byref) 
 		return MB_TERM_STIND_REF;
@@ -99,7 +99,7 @@ map_stind_type (MonoType *type)
 		return MB_TERM_STIND_R8;
 	case MONO_TYPE_VALUETYPE: 
 		if (type->data.klass->enumtype)
-			return map_stind_type (type->data.klass->enum_basetype);
+			return mono_map_stind_type (type->data.klass->enum_basetype);
 		else
 			return MB_TERM_STIND_OBJ;
 	default:
@@ -112,14 +112,14 @@ map_stind_type (MonoType *type)
 }
 
 /**
- * map_remote_stind_type:
+ * mono_map_remote_stind_type:
  * @type: the type to map
  *
  * Translates the MonoType @type into the corresponding remote store opcode 
  * for the code generator.
  */
 int
-map_remote_stind_type (MonoType *type)
+mono_map_remote_stind_type (MonoType *type)
 {
 	if (type->byref) {
 		return MB_TERM_REMOTE_STIND_REF;
@@ -154,7 +154,7 @@ map_remote_stind_type (MonoType *type)
 		return MB_TERM_REMOTE_STIND_R8;
 	case MONO_TYPE_VALUETYPE: 
 		if (type->data.klass->enumtype)
-			return map_remote_stind_type (type->data.klass->enum_basetype);
+			return mono_map_remote_stind_type (type->data.klass->enum_basetype);
 		else
 			return MB_TERM_REMOTE_STIND_OBJ;
 	default:
@@ -167,7 +167,7 @@ map_remote_stind_type (MonoType *type)
 }
 
 int
-map_starg_type (MonoType *type)
+mono_map_starg_type (MonoType *type)
 {
 	if (type->byref) 
 		return MB_TERM_STIND_REF;
@@ -199,7 +199,7 @@ map_starg_type (MonoType *type)
 		return MB_TERM_STIND_R8;
 	case MONO_TYPE_VALUETYPE: 
 		if (type->data.klass->enumtype)
-			return map_starg_type (type->data.klass->enum_basetype);
+			return mono_map_starg_type (type->data.klass->enum_basetype);
 		else
 			return MB_TERM_STIND_OBJ;
 	default:
@@ -212,7 +212,7 @@ map_starg_type (MonoType *type)
 }
 
 int
-map_arg_type (MonoType *type)
+mono_map_arg_type (MonoType *type)
 {
 	if (type->byref) 
 		return MB_TERM_ARG_I4;
@@ -245,7 +245,7 @@ map_arg_type (MonoType *type)
 		return MB_TERM_ARG_R8;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype)
-			return map_arg_type (type->data.klass->enum_basetype);
+			return mono_map_arg_type (type->data.klass->enum_basetype);
 		else
 			return MB_TERM_ARG_OBJ;
 	default:
@@ -258,14 +258,14 @@ map_arg_type (MonoType *type)
 }
 
 /**
- * map_ldind_type:
+ * mono_map_ldind_type:
  * @type: the type to map
  *
  * Translates the MonoType @type into the corresponding load opcode 
  * for the code generator.
  */
 int
-map_ldind_type (MonoType *type, MonoValueType *svt)
+mono_map_ldind_type (MonoType *type, MonoValueType *svt)
 {
 	if (type->byref) {
 		*svt = VAL_POINTER;
@@ -314,7 +314,7 @@ map_ldind_type (MonoType *type, MonoValueType *svt)
 		return MB_TERM_LDIND_R8;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			return map_ldind_type (type->data.klass->enum_basetype, svt);
+			return mono_map_ldind_type (type->data.klass->enum_basetype, svt);
 		} else {
 			*svt = VAL_UNKNOWN;
 			return MB_TERM_LDIND_OBJ;
@@ -329,7 +329,7 @@ map_ldind_type (MonoType *type, MonoValueType *svt)
 }
 
 int
-map_ldarg_type (MonoType *type, MonoValueType *svt)
+mono_map_ldarg_type (MonoType *type, MonoValueType *svt)
 {
 	if (type->byref) {
 		*svt = VAL_POINTER;
@@ -368,7 +368,7 @@ map_ldarg_type (MonoType *type, MonoValueType *svt)
 		return MB_TERM_LDIND_R8;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			return map_ldarg_type (type->data.klass->enum_basetype, svt);
+			return mono_map_ldarg_type (type->data.klass->enum_basetype, svt);
 		} else {
 			*svt = VAL_UNKNOWN;
 			return MB_TERM_LDIND_OBJ;
@@ -383,14 +383,14 @@ map_ldarg_type (MonoType *type, MonoValueType *svt)
 }
 
 /**
- * map_call_type:
+ * mono_map_call_type:
  * @type: the type to map
  *
  * Translates the MonoType @type into the corresponding call opcode 
  * for the code generator.
  */
 int
-map_call_type (MonoType *type, MonoValueType *svt)
+mono_map_call_type (MonoType *type, MonoValueType *svt)
 {
 	if (type->byref) 
 		return MB_TERM_CALL_I4;
@@ -412,7 +412,7 @@ map_call_type (MonoType *type, MonoValueType *svt)
 		return MB_TERM_CALL_I4;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			return map_call_type (type->data.klass->enum_basetype, svt);
+			return mono_map_call_type (type->data.klass->enum_basetype, svt);
 		} else {
 			*svt = VAL_I32;
 			return MB_TERM_CALL_VOID;
