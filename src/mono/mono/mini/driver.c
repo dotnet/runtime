@@ -567,7 +567,7 @@ mini_trace_usage (void)
 
 static const char *info = ""
 #ifdef HAVE_KW_THREAD
-	"\tTLS:           NPTL\n"
+	"\tTLS:           __thread\n"
 #else
 	"\tTLS:           normal\n"
 #endif /* HAVE_KW_THREAD */
