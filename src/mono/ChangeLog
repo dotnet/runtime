@@ -1,3 +1,9 @@
+2004-04-29  Raja R Harinath  <rharinath@novell.com>
+
+	* Makefile.am (fullbuild): Update to changes in tree layout.
+	* runtime/net_1_1/Makefile.am (install-data-local): Allow empty
+	$(gac_assemblies_list).
+
 2004-04-28  Jackson Harper  <jackson@ximian.com>
 
 	* runtime/net_1_1/Makefile.am: Grab libs from proper directory, do

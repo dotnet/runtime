@@ -28,25 +28,27 @@ mcs_topdir=$(top_srcdir)/../mcs
 .PHONY: fullbuild remove-binaries mcs-tree-safe-build xinstall-runtime mcs-rest
 
 fullbuild: mcs-rest
+	$(MAKE)
 	$(MAKE) install
 
 mcs-tree-safe-build: remove-binaries
-	cd $(mcs_topdir)/jay; $(MAKE)
-	cd $(mcs_topdir)/mcs; $(MAKE) MCS=mcs BOOTSTRAP_MCS=mcs
-	cd $(mcs_topdir)/class/corlib; $(MAKE) MCS=mcs BOOTSTRAP_MCS=mcs
-	cp $(mcs_topdir)/class/lib/default/mscorlib.dll $(top_srcdir)/runtime
+	cd $(mcs_topdir)/jay && $(MAKE)
+	cd $(mcs_topdir)/mcs && $(MAKE) MCS=mcs BOOTSTRAP_MCS=mcs PROFILE=default
+	cd $(mcs_topdir)/class/corlib && $(MAKE) MCS=mcs BOOTSTRAP_MCS=mcs PROFILE=default
+	cp $(mcs_topdir)/class/lib/default/mscorlib.dll $(top_srcdir)/runtime/net_1_1
 	cp $(mcs_topdir)/mcs/mcs.exe $(top_srcdir)/runtime
 
-xinstall-runtime: mcs-tree-safe-build
-	if test -z "$(libgc_dir)"; then :; else cd libgc; $(MAKE) && $(MAKE) install ; fi
-	cd mono; $(MAKE) && $(MAKE) install
-	cd runtime; $(MAKE) install assemblies_DATA=mscorlib.dll monobins_DATA=mcs.exe
+xinstall-runtime: mcs-tree-safe-build $(CONFIG_HEADER)
+	if test -z "$(libgc_dir)"; then :; else cd libgc && $(MAKE) && $(MAKE) install ; fi
+	cd mono && $(MAKE) && $(MAKE) install
+	cd runtime && $(MAKE) install SUBDIRS= monobins_DATA=mcs.exe
+	cd runtime/net_1_1 && $(MAKE) install assemblies_DATA=mscorlib.dll gac_assemblies_list=
 
 mcs-rest: xinstall-runtime
-	cd $(mcs_topdir)/class; $(MAKE)
+	cd $(mcs_topdir) && $(MAKE)
 
 remove-binaries:
-	rm -f $(mcs_topdir)/class/lib/default/mscorlib.dll $(mcs_topdir)/mcs/mcs.exe $(top_srcdir)/runtime/*.dll $(top_srcdir)/runtime/*.exe
+	rm -f $(mcs_topdir)/class/lib/default/mscorlib.dll $(mcs_topdir)/mcs/mcs.exe $(top_srcdir)/runtime/*/*.dll $(top_srcdir)/runtime/*.exe
 
 
 win32getdeps:
