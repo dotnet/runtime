@@ -104,15 +104,15 @@
 		    <a href="archive/beta3/suse-91-i586/">Packages</a>
 		  </td>
 	        </tr>
-<!-- 		<tr> -->
-<!-- 		  <td bgcolor="#999999"> -->
-<!-- 		    <div align="left"><img src="images/windows-36.gif"></div> -->
-<!-- 		    <div align="right"><b>Windows installer</b><br><small>Win2k and above</small></div> -->
-<!-- 		  </td> -->
-<!-- 		  <td> -->
-<!-- 		    <a href="archive/beta2/windows/mono-Beta2-win32-1.exe">Mono Setup</a> -->
-<!-- 		  </td> -->
-<!-- 		</tr> -->
+ 		<tr>
+ 		  <td bgcolor="#999999">
+ 		    <div align="left"><img src="images/windows-36.gif"></div>
+ 		    <div align="right"><b>Windows installer</b><br><small>Win2k and above</small></div>
+ 		  </td>
+ 		  <td>
+ 		    <a href="archive/beta3/windows/mono-Beta3-win32-1.exe">Mono Setup</a>
+ 		  </td>
+ 		</tr>
 <!-- 		<tr> -->
 <!-- 		  <td bgcolor="#999999"> -->
 <!--                     <img src="images/macos-36.gif"><b>Mac OS X package</b> -->
