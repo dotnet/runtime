@@ -111,17 +111,18 @@ static int count = 0;
  * 
  * The {,.S} versions of many opcodes can/should be merged to reduce code
  * duplication.
- *
+ * 
+ * -fomit-frame-pointer gives about 2% speedup. 
  */
-static void 
-ves_exec_method (cli_image_info_t *iinfo, MonoMetaMethodHeader *mh, stackval *args)
+void 
+ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 {
 	/*
 	 * with alloca we get the expected huge performance gain
 	 * stackval *stack = g_new0(stackval, mh->max_stack);
 	 */
-	stackval *stack = alloca(sizeof(stackval) * mh->max_stack);
-	register const unsigned char *ip = mh->code;
+	stackval *stack = alloca(sizeof(stackval) * mh->header->max_stack);
+	register const unsigned char *ip = mh->header->code;
 	register stackval *sp = stack;
 	/* FIXME: remove this hack */
 	static int fake_field = 42;
@@ -148,7 +149,7 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMetaMethodHeader *mh, stackval *ar
 #ifdef GOTO_LABEL
 		START:
 #endif
-		/*g_print ("0x%04x %02x\n", ip-(unsigned char*)mh->code, *ip);
+		/*g_print ("0x%04x %02x\n", ip-(unsigned char*)mh->header->code, *ip);
 		if (sp > stack)
 				printf ("\t[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type, sp[-1].data.i, sp[-1].data.f);
 		*/
@@ -286,28 +287,24 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMetaMethodHeader *mh, stackval *ar
 			BREAK;
 		CASE (CEE_JMP) g_assert_not_reached(); BREAK;
 		CASE (CEE_CALL) {
-			/* lookup mh, numargs, retval*/
-			char *loc;
-			gint32 entryp;
 			guint32 token;
-			MonoMetaMethodHeader *cmh;
+			MonoMethod *cmh;
 
 			++ip;
 			token = read32(ip);
 			ip += 4;
 			if (!(cmh=g_hash_table_lookup(method_cache, GINT_TO_POINTER(token)))) {
-				loc = mono_metadata_locate_token (&iinfo->cli_metadata, token);
-				entryp = read32(loc);
-				loc = cli_rva_map (iinfo, entryp);
-				cmh = mono_metadata_parse_mh (loc);
+				cmh = mono_get_method (iinfo, token);
 				g_hash_table_insert (method_cache, GINT_TO_POINTER(token), cmh);
 			}
 			/* decrement by the actual number of args */
-			sp--;
+			sp -= cmh->signature->param_count;
+			g_assert (cmh->signature->call_convention == MONO_CALL_DEFAULT);
 			/* we need to truncate according to the type of args ... */
 			ves_exec_method (iinfo, cmh, sp);
-			/* we assume we got a value here */
-			sp++;
+			/* need to handle typedbyref ... */
+			if (cmh->signature->ret->type)
+				sp++;
 			BREAK;
 		}
 		CASE (CEE_CALLI) g_assert_not_reached(); BREAK;
@@ -526,7 +523,16 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMetaMethodHeader *mh, stackval *ar
 			else if (sp->type == VAL_DOUBLE)
 				sp[-1].data.f /= sp[0].data.f;
 			BREAK;
-		CASE (CEE_DIV_UN) g_assert_not_reached(); BREAK;
+		CASE (CEE_DIV_UN)
+			++ip;
+			--sp;
+			if (sp->type == VAL_I32)
+				(guint32)sp[-1].data.i /= (guint32)GET_NATI(sp[0]);
+			else if (sp->type == VAL_I64)
+				(guint64)sp[-1].data.l /= (guint64)sp[0].data.l;
+			else if (sp->type == VAL_NATI)
+				(gulong)sp[-1].data.p /= (gulong)sp[0].data.p;
+			BREAK;
 		CASE (CEE_REM)
 			++ip;
 			--sp;
@@ -614,16 +620,38 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMetaMethodHeader *mh, stackval *ar
 			BREAK;
 		CASE (CEE_CONV_I1) g_assert_not_reached(); BREAK;
 		CASE (CEE_CONV_I2) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_I4) g_assert_not_reached(); BREAK;
+		CASE (CEE_CONV_I4)
+			++ip;
+			/* FIXME: handle other cases. what about sign? */
+			if (sp[-1].type == VAL_DOUBLE) {
+				sp[-1].data.i = (gint32)sp[-1].data.f;
+				sp[-1].type = VAL_I32;
+			} else {
+				g_assert_not_reached();
+			}
+			BREAK;
 		CASE (CEE_CONV_I8) g_assert_not_reached(); BREAK;
 		CASE (CEE_CONV_R4) g_assert_not_reached(); BREAK;
 		CASE (CEE_CONV_R8)
 			++ip;
 			/* FIXME: handle other cases. what about sign? */
-			sp[-1].data.f = (double)sp[-1].data.i;
-			sp[-1].type = VAL_DOUBLE;
+			if (sp[-1].type == VAL_I32) {
+				sp[-1].data.f = (double)sp[-1].data.i;
+				sp[-1].type = VAL_DOUBLE;
+			} else {
+				g_assert_not_reached();
+			}
 			BREAK;
-		CASE (CEE_CONV_U4) g_assert_not_reached(); BREAK;
+		CASE (CEE_CONV_U4)
+			++ip;
+			/* FIXME: handle other cases. what about sign? */
+			if (sp[-1].type == VAL_DOUBLE) {
+				sp[-1].data.i = (guint32)sp[-1].data.f;
+				sp[-1].type = VAL_I32;
+			} else {
+				g_assert_not_reached();
+			}
+			BREAK;
 		CASE (CEE_CONV_U8) g_assert_not_reached(); BREAK;
 		CASE (CEE_CALLVIRT) g_assert_not_reached(); BREAK;
 		CASE (CEE_CPOBJ) g_assert_not_reached(); BREAK;
@@ -823,12 +851,12 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMetaMethodHeader *mh, stackval *ar
 			CEE_ILLEGAL_LABEL:
 			CEE_ENDMAC_LABEL:
 #endif
-				g_error ("Unimplemented opcode: 0xFE %02x at 0x%x\n", *ip, ip-(unsigned char*)mh->code);
+				g_error ("Unimplemented opcode: 0xFE %02x at 0x%x\n", *ip, ip-(unsigned char*)mh->header->code);
 			}
 			continue;
 #ifndef GOTO_LABEL
 		default:
-			g_error ("Unimplemented opcode: %x at 0x%x\n", *ip, ip-(unsigned char*)mh->code);
+			g_error ("Unimplemented opcode: %x at 0x%x\n", *ip, ip-(unsigned char*)mh->header->code);
 #endif
 		}
 	}
@@ -839,20 +867,16 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMetaMethodHeader *mh, stackval *ar
 static int 
 ves_exec (cli_image_info_t *iinfo)
 {
-	gint32 entryp;
-	char * loc, *ptr;
 	stackval result;
-	MonoMetaMethodHeader *mh;
+	MonoMethod *mh;
 
 	/* we need to exec the class and object constructors... */
 	method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
-	ptr = loc = mono_metadata_locate_token (&iinfo->cli_metadata, iinfo->cli_cli_header.ch_entry_point);
-	entryp = read32(loc);
-	loc = cli_rva_map (iinfo, entryp);
-	mh = mono_metadata_parse_mh (loc);
+
+	mh = mono_get_method (iinfo, iinfo->cli_cli_header.ch_entry_point);
 	ves_exec_method (iinfo, mh, &result);
-	mono_metadata_free_mh (mh);
 	fprintf (stderr, "result: %d\n", result.data.i);
+	mono_free_method (mh);
 
 	return 0;
 }
