@@ -3522,6 +3522,7 @@ handle_enum:
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_TYPEDBYREF:
 	case MONO_TYPE_GENERICINST:
 		/* box value types */
 		mono_mb_emit_byte (mb, CEE_BOX);
