@@ -230,10 +230,6 @@ mono_trace_parse_options (MonoAssembly *assembly, char *options)
 			continue;
 	}
 	trace_spec.len = last_used;
-	for (size = 0; size < last_used; size++){
-		MonoTraceOperation *op = &trace_spec.ops [size];
-		printf ("%s%s %s\n", op->exclude ? "-" : "", xmap (op->op), (char *) op->data);
-	}
 	cleanup ();
 	return &trace_spec;
 }
