@@ -249,6 +249,20 @@
 			<task>JScript compiler</task>
 		</tasks>
 	</contributor>
+    <contributor>
+        <name>
+            <first-name>Hector</first-name>
+            <last-name>Gomez Morales</last-name>
+        </name>
+        <e-mail>hgomez_36@flashmail.com</e-mail>
+        <image>none.png</image>
+        <location>Mexico City/Tijuana, BC.</location>
+        <description>Contributor</description>
+        <tasks>
+            <task>Random little patches</task>
+            <task>Documentation</task>
+        </tasks>
+    </contributor>
 	<contributor>
 		<name>
 			<first-name>Jackson </first-name>
