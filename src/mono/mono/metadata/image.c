@@ -475,13 +475,14 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 	MonoTableInfo *t;
 	int i;
 	char *base_dir;
+	MonoImage **modules;
 
 	if (image->modules)
 		return;
 
 	t = &image->tables [MONO_TABLE_MODULEREF];
 	image->modules = g_new0 (MonoImage *, t->rows);
-	image->module_count = t->rows;
+	image->module_count = 0;
 	base_dir = g_path_get_dirname (image->name);
 	for (i = 0; i < t->rows; i++){
 		char *module_ref;
@@ -491,8 +492,9 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 		mono_metadata_decode_row (t, i, cols, MONO_MODULEREF_SIZE);
 		name = mono_metadata_string_heap (image, cols [MONO_MODULEREF_NAME]);
 		module_ref = g_build_filename (base_dir, name, NULL);
-		image->modules [i] = mono_image_open (module_ref, status);
-		if (image->modules [i]) {
+		image->modules [image->module_count] = mono_image_open (module_ref, status);
+		if (image->modules [image->module_count]) {
+			image->module_count ++;
 			/* g_print ("loaded module %s from %s (%p)\n", module_ref, image->name, image->assembly); */
 		}
 		/* 
