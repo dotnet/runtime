@@ -806,7 +806,7 @@ merge_methods (MonoMethod *method, MethodProfile *profile, MonoProfiler *prof)
 	MethodProfile *mprof;
 	AllocInfo *talloc_info, *alloc_info;
 	CallerInfo *tcaller_info, *caller_info;
-	
+
 	mprof = g_hash_table_lookup (prof->methods, method);
 	if (!mprof) {
 		/* the master thread didn't see this method, just transfer the info as is */
@@ -848,7 +848,7 @@ merge_methods (MonoMethod *method, MethodProfile *profile, MonoProfiler *prof)
 			caller_info = mono_mempool_alloc0 (prof->mempool, sizeof (CallerInfo));
 			*caller_info = *tcaller_info;
 			caller_info->next = mprof->caller_info;
-			mprof->caller_info = caller_info->next;
+			mprof->caller_info = caller_info;
 		}
 	}
 }
