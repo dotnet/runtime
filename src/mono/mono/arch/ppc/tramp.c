@@ -11,6 +11,7 @@
 #include "mono/metadata/class.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/interpreter/interp.h"
+#include "mono/metadata/appdomain.h"
 
 #ifdef NEED_MPROTECT
 #include <sys/mman.h>
@@ -184,8 +185,13 @@ enum_retvalue:
 		case MONO_TYPE_R8:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
+			*code_size += 8;
+			break;
 		case MONO_TYPE_STRING:
 			*code_size += 8;
+			if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && !runtime) {
+				*code_size += 16;
+			}
 			break;
 		case MONO_TYPE_I8:
 			*code_size += 12;
@@ -414,8 +420,14 @@ alloc_code_memory (guint code_size)
 	return p;
 }
 
+static MonoString*
+mono_string_new_wrapper (const char *text)
+{
+	return text ? mono_string_new (mono_domain_get (), text) : NULL;
+}
+
 static inline guint8 *
-emit_call_and_store_retval (guint8 *p, MonoMethod *method, guint strings)
+emit_call_and_store_retval (guint8 *p, MonoMethod *method, guint strings, gint runtime)
 {
 	MonoMethodSignature *sig = method->signature;
 	guint32 simpletype;
@@ -452,9 +464,20 @@ enum_retvalue:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_STRING:
 			ppc_lwz  (p, ppc_r9, 8, ppc_r31);        /* load "retval" address */
 			ppc_stw  (p, ppc_r3, 0, ppc_r9);         /* save return value (r3) to "retval" */
+			break;
+		case MONO_TYPE_STRING:
+			if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && !runtime) {
+				ppc_lis  (p, ppc_r0,     (guint32) mono_string_new_wrapper >> 16);
+				ppc_ori  (p, ppc_r0, ppc_r0, (guint32) mono_string_new_wrapper & 0xffff);
+				ppc_mtlr (p, ppc_r0);
+				ppc_blrl (p);
+			}
+
+			ppc_lwz  (p, ppc_r9, 8, ppc_r31);        /* load "retval" address */
+			ppc_stw  (p, ppc_r3, 0, ppc_r9);         /* save return value (r3) to "retval" */
+
 			break;
 		case MONO_TYPE_R4:
 			ppc_lwz  (p, ppc_r9, 8, ppc_r31);        /* load "retval" address */
@@ -539,7 +562,7 @@ mono_create_trampoline (MonoMethod *method, int runtime)
 	p = code_buffer = alloc_code_memory (code_size);
 	p = emit_prolog (p, method, stack_size, strings);
 	p = emit_save_parameters (p, method, stack_size, strings, runtime);
-	p = emit_call_and_store_retval (p, method, strings);
+	p = emit_call_and_store_retval (p, method, strings, runtime);
 	p = emit_epilog (p, method, stack_size, strings, runtime);
 
 	/* {
