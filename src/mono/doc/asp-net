@@ -54,9 +54,7 @@
 	able to test them in real life: Gaurav and Leen worked very
 	hard on this namespace.
 
-	We can now render all HtmlControls and almost all WebControls.
-	DataGrid and DataList controls are being finished by Gaurav.
-	Xml control needs some work on System.Xml related to XSL.
+	We can now render all HtmlControls and all WebControls.
 
 	Help in making the controls better is appreciated.
 
