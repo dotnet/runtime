@@ -222,6 +222,7 @@ struct MonoCallInst {
 	MonoMethodSignature *signature;
 	MonoMethod *method;
 	MonoInst **args;
+	MonoInst *out_args;
 	gconstpointer fptr;
 	guint stack_usage;
 	guint32 used_iregs;

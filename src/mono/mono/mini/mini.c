@@ -1780,6 +1780,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignatu
 		     MonoInst **args, int calli, int virtual, const guint8 *ip, gboolean to_end)
 {
 	MonoCallInst *call;
+	MonoInst *arg;
 	int i;
 
 	MONO_INST_NEW_CALL (cfg, call, ret_type_to_call_opcode (sig->ret, calli, virtual));
@@ -1789,15 +1790,16 @@ mono_emit_call_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignatu
 	call->signature = sig;
 	call = mono_arch_call_opcode (cfg, bblock, call, virtual);
 
-	for (i = 0; i < (sig->param_count + sig->hasthis); ++i) {
-		if (call->args [i]) {
-			if (!call->args [i]->cil_code)
-				call->args [i]->cil_code = ip;
-			if (to_end)
-				mono_add_ins_to_end (bblock, call->args [i]);
-			else
-				MONO_ADD_INS (bblock, call->args [i]);
-		}
+	for (arg = call->out_args; arg;) {
+		MonoInst *narg = arg->next;
+		arg->next = NULL;
+		if (!arg->cil_code)
+			arg->cil_code = ip;
+		if (to_end)
+			mono_add_ins_to_end (bblock, arg);
+		else
+			MONO_ADD_INS (bblock, arg);
+		arg = narg;
 	}
 	return call;
 }
@@ -1874,6 +1876,7 @@ static void
 mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJitICallInfo *info)
 {
 	MonoInst *ins, *temp = NULL, *store, *load;
+	MonoInst *last_arg = NULL;
 	int i, nargs;
 	MonoCallInst *call;
 
@@ -1899,23 +1902,21 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 
 	nargs = info->sig->param_count + info->sig->hasthis;
 
-	for (i = 1; i < nargs; i++) {
-		call->args [i - 1]->next = call->args [i];
-	}
+	for (last_arg = call->out_args; last_arg && last_arg->next; last_arg = last_arg->next) ;
 
 	if (nargs)
-		call->args [nargs - 1]->next = store;
+		last_arg->next = store;
 
 	if (cfg->prev_ins) {
 		store->next = cfg->prev_ins->next;
 		if (nargs)
-			cfg->prev_ins->next =  call->args [0];
+			cfg->prev_ins->next = call->out_args;
 		else
 			cfg->prev_ins->next = store;
 	} else {
 		store->next = cfg->cbb->code;
 		if (nargs)		
-			cfg->cbb->code = call->args [0];
+			cfg->cbb->code = call->out_args;
 		else
 			cfg->cbb->code = store;
 	}

@@ -826,7 +826,7 @@ mono_arch_allocate_vars (MonoCompile *m)
  */
 MonoCallInst*
 mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call, int is_virtual) {
-	MonoInst *arg, *in, **new_args;
+	MonoInst *arg, *in;
 	MonoMethodSignature *sig;
 	int i, n, type;
 	MonoType *ptype;
@@ -835,7 +835,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
-	new_args = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * n);
 	
 	cinfo = calculate_sizes (sig, sig->pinvoke);
 
@@ -843,7 +842,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 		ainfo = cinfo->args + i;
 		if (is_virtual && i == 0) {
 			/* the argument will be attached to the call instrucion */
-			new_args [n] = arg = NULL;
 			in = call->args [i];
 		} else {
 			MONO_INST_NEW (cfg, arg, OP_OUTARG);
@@ -851,7 +849,9 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			arg->cil_code = in->cil_code;
 			arg->inst_left = in;
 			arg->type = in->type;
-			new_args [i] = arg;
+			/* prepend, we'll need to reverse them later */
+			arg->next = call->out_args;
+			call->out_args = arg;
 			if (ainfo->regtype == 0) {
 				arg->unused = ainfo->reg;
 				call->used_iregs |= 1 << ainfo->reg;
@@ -866,7 +866,18 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			}
 		}
 	}
-	call->args = new_args;
+	/*
+	 * Reverse the call->out_args list.
+	 */
+	{
+		MonoInst *prev = NULL, *list = call->out_args, *next;
+		while (list) {
+			next = list->next;
+			list->next = prev;
+			prev = list;
+			list = next;
+		}
+	}
 	call->stack_usage = cinfo->stack_usage;
 	cfg->param_area = MAX (cfg->param_area, cinfo->stack_usage);
 	cfg->flags |= MONO_CFG_HAS_CALLS;

@@ -648,14 +648,13 @@ mono_arch_allocate_vars (MonoCompile *m)
  */
 MonoCallInst*
 mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call, int is_virtual) {
-	MonoInst *arg, *in, **rev_args;
+	MonoInst *arg, *in;
 	MonoMethodSignature *sig;
 	int i, n, stack_size, type;
 	MonoType *ptype;
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
-	rev_args = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * n);
 
 	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret))
 		stack_size = 4;
@@ -664,7 +663,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	for (i = 0; i < n; ++i) {
 		if (is_virtual && i == 0) {
 			/* the argument will be attached to the call instrucion */
-			rev_args [n - 1] = arg = NULL;
 			in = call->args [i];
 			stack_size += 4;
 		} else {
@@ -673,7 +671,9 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			arg->cil_code = in->cil_code;
 			arg->inst_left = in;
 			arg->type = in->type;
-			rev_args [n - i - 1] = arg;
+			/* prepend, so they get reversed */
+			arg->next = call->out_args;
+			call->out_args = arg;
 			if (i >= sig->hasthis) {
 				ptype = sig->params [i - sig->hasthis];
 				if (ptype->byref)
@@ -752,7 +752,6 @@ handle_enum:
 	/* if the function returns a struct, the called method already does a ret $0x4 */
 	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret))
 		stack_size -= 4;
-	call->args = rev_args;
 	call->stack_usage = stack_size;
 	/* 
 	 * should set more info in call, such as the stack space
