@@ -1,3 +1,9 @@
+2002-02-19  Radek Doulik  <rodo@ximian.com>
+
+	* mono/tests/libtest.c (mono_test_many_short_arguments): new test
+	method
+	(mono_test_many_byte_arguments): ditto
+
 2002-02-18  Radek Doulik  <rodo@ximian.com>
 
 	* mono/tests/Makefile.am: added small test library for pinvoke
