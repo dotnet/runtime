@@ -19,7 +19,6 @@
 #include "dis-cil.h"
 #include "mono/metadata/opcodes.h"
 
-#ifndef HAVE_ISINF
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
 int isinf (double);
@@ -38,6 +37,7 @@ isinf (double num)
 	return 0;
 }
 #else
+#ifndef HAVE_ISINF
 #error "Don't know how to implement isinf for this platform."
 #endif
 #endif
