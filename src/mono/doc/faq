@@ -359,6 +359,18 @@ A: You can get very good tools for doing Java development on free
    wide variety of programming languages, and has a set of rules
    designed to be optimal for JITers.
 
+   Alex Graveley pointed out to this article: <a
+   href="http://www.objectwatch.com/issue_33.htm">http://www.objectwatch.com/issue_33.htm</a>.
+   
+   Alex said: <i>``Just found this article about the reality of Java's
+   language neutrality.  It does not point to any technical reason why
+   language neutrality is not possible in java, but rather attempts to
+   analyse real-world non-java-the-language java bytecode compiler
+   implementations.''</i> and finally added: <i>``Keep in mind of course
+   that Roger Sessions is strongly tied to Microsoft, COM, and now
+   .NET on a career-enabling basis. Still interesting nonetheless.''</i>
+
+
 Q: What kind of rules make the Common Intermediate Language useful for
    JITers?
 
