@@ -3266,7 +3266,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				store->cil_code = ip;
 				if (store->opcode == CEE_STOBJ) {
 					NEW_TEMPLOADA (cfg, store, temp->inst_c0);
-					handle_stobj (cfg, bblock, store, sp [i], sp [i]->cil_code, store->klass, TRUE, FALSE);
+					handle_stobj (cfg, bblock, store, ins, ins->cil_code, store->klass, TRUE, FALSE);
 				} else
 					MONO_ADD_INS (bblock, store);
 				NEW_TEMPLOAD (cfg, ins, temp->inst_c0);
