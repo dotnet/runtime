@@ -26,7 +26,7 @@
     <e-mail>miguel@ximian.com</e-mail>
     <image>none.png</image>
     <location>Boston / Mexico City</location>
-    <organization>Ximian.</organization>
+    <organization>Ximian/Gnome.</organization>
     <description>Ximian CTO</description>
     <tasks>
       <task>Mono Project Manager</task>
@@ -44,7 +44,7 @@
     <e-mail>lupus@ximian.com</e-mail>
     <image>none.png</image>
     <location>Italy</location>
-    <organization>Ximian.</organization>
+    <organization>Ximian/Debian/Gnome.</organization>
     <description>Mono hacker</description>
     <tasks>
       <task>Runtime implementation</task>
@@ -61,7 +61,7 @@
     <e-mail>dietmar@ximian.com</e-mail>
     <image>none.png</image>
     <location>Austria</location>
-    <organization>Ximian</organization>
+    <organization>Dietmar IT/Ximian</organization>
     <description>Mono hacker</description>
     <tasks>
       <task>Runtime implementation</task>
