@@ -23,6 +23,17 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Sep 5, 2001
+
+	The MCS compiler can compile the sample Hello World
+	application and generate a Windows/CIL executable that runs.
+	This executable runs with the Mono Interpreter.
+
+** Sep 4, 2001
+
+	Dietmar checked into CVS the `monoburg' architecture
+	independent instruction selector for the JIT engine.
+
 ** Aug 28, 2001
 
 	<b>.NET Hello World is working under Mono!</b>  The latest snapshots
