@@ -58,14 +58,6 @@ mono_runtime_class_init (MonoClass *klass)
 {
 	int i;
 
-	if (klass->runtime_inited)
-		return;
-
-	if (klass->parent && !klass->parent->runtime_inited)
-		mono_runtime_class_init (klass->parent);
-
-	klass->runtime_inited = 1;
-
 	for (i = 0; i < klass->method.count; ++i) {
 		MonoMethod *method = klass->methods [i];
 		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
@@ -259,9 +251,12 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	mono_g_hash_table_insert (domain->class_vtable_hash, class, vt);
 	mono_domain_unlock (domain);
 
-	if (!class->runtime_inited)
-		mono_runtime_class_init (class);
+	/* make sure the the parent is initialized */
+	if (class->parent)
+		mono_class_vtable (domain, class->parent);
 
+	mono_runtime_class_init (class);
+	
 	return vt;
 }
 
