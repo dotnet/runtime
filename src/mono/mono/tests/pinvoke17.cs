@@ -22,7 +22,7 @@ public class LibWrap
 	public static extern int GetVersionEx ([In, Out] OSVersionInfo osvi);
 
         [DllImport ("libtest")]
-	public static extern int BugGetVersionEx (int a, int b, int c, int d, int e, int f, int g, int h, OSVersionInfo osvi);
+	public static extern int BugGetVersionEx (int a, int b, int c, int d, int e, int f, int g, int h, [In, Out] OSVersionInfo osvi);
     
 	[DllImport ("libtest", EntryPoint="GetVersionEx" )] 
 	public static extern int GetVersionEx2 (ref OSVersionInfo2 osvi);  
