@@ -79,7 +79,8 @@ opt_names [] = {
 	{"leaf",     "Leaf procedures optimizations"},
 	{"aot",      "Usage of Ahead Of Time compiled code"},
 	{"precomp",  "Precompile all methods before executing Main"},
-	{"abcrem",   "Array bound checks removal"}
+	{"abcrem",   "Array bound checks removal"},	
+	{"ssapre",   "SSA based Partial Redundancy Elimination"}
 };
 
 #define DEFAULT_OPTIMIZATIONS (	\
@@ -89,7 +90,7 @@ opt_names [] = {
 	MONO_OPT_LINEARS |	\
 	MONO_OPT_INTRINS |  \
 	MONO_OPT_LOOP |  \
-    MONO_OPT_AOT)
+	MONO_OPT_AOT)
 
 #define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP)
 
@@ -228,6 +229,7 @@ opt_sets [] = {
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_ABCREM,
+       MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_SSAPRE,
        MONO_OPT_BRANCH | MONO_OPT_PEEPHOLE | MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP | MONO_OPT_DEADCE | MONO_OPT_LOOP | MONO_OPT_INLINE | MONO_OPT_INTRINS | MONO_OPT_ABCREM | MONO_OPT_SHARED
 };
 
@@ -958,5 +960,3 @@ mono_jit_cleanup (MonoDomain *domain)
 {
 	mini_cleanup (domain);
 }
-
-

@@ -1436,6 +1436,39 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 	return inst;
 }
 
+/*
+ * Transform a MonoInst into a load from the variable of index var_index.
+ */
+void
+mono_compile_make_var_load (MonoCompile *cfg, MonoInst *dest, gssize var_index) {
+	memset (dest, 0, sizeof (MonoInst));
+	dest->ssa_op = MONO_SSA_LOAD;
+	dest->inst_i0 = cfg->varinfo [var_index];
+	dest->opcode = mono_type_to_ldind (dest->inst_i0->inst_vtype);
+	type_to_eval_stack_type (dest->inst_i0->inst_vtype, dest);
+	dest->klass = dest->inst_i0->klass;
+}
+
+/*
+ * Create a MonoInst that is a load from the variable of index var_index.
+ */
+MonoInst*
+mono_compile_create_var_load (MonoCompile *cfg, gssize var_index) {
+	MonoInst *dest;
+	NEW_TEMPLOAD (cfg,dest,var_index);
+	return dest;
+}
+
+/*
+ * Create a MonoInst that is a store of the given value into the variable of index var_index.
+ */
+MonoInst*
+mono_compile_create_var_store (MonoCompile *cfg, gssize var_index, MonoInst *value) {
+	MonoInst *dest;
+	NEW_TEMPSTORE (cfg, dest, var_index, value);
+	return dest;
+}
+
 static MonoType*
 type_from_stack_type (MonoInst *ins) {
 	switch (ins->type) {
@@ -1450,6 +1483,11 @@ type_from_stack_type (MonoInst *ins) {
 		g_error ("stack type %d to montype not handled\n", ins->type);
 	}
 	return NULL;
+}
+
+MonoType*
+mono_type_from_stack_type (MonoInst *ins) {
+	return type_from_stack_type (ins);
 }
 
 static MonoClass*
@@ -1492,7 +1530,7 @@ array_access_to_klass (int opcode)
 	return NULL;
 }
 
-static void
+void
 mono_add_ins_to_end (MonoBasicBlock *bb, MonoInst *inst)
 {
 	MonoInst *prev;
@@ -6002,6 +6040,7 @@ mono_print_tree (MonoInst *tree) {
 		printf ("[%s] <- [%s + 0x%x]", mono_arch_regname (tree->dreg), mono_arch_regname (tree->inst_basereg), tree->inst_offset);
 		break;
 	case CEE_BR:
+	case OP_CALL_HANDLER:
 		printf ("[B%d]", tree->inst_target_bb->block_num);
 		break;
 	case CEE_SWITCH:
@@ -7152,8 +7191,12 @@ mono_compile_create_vars (MonoCompile *cfg)
 	if (sig->hasthis)
 		mono_compile_create_var (cfg, &cfg->method->klass->this_arg, OP_ARG);
 
-	for (i = 0; i < sig->param_count; ++i)
+	for (i = 0; i < sig->param_count; ++i) {
 		mono_compile_create_var (cfg, sig->params [i], OP_ARG);
+		if (sig->params [i]->byref) {
+			cfg->disable_ssa = TRUE;
+		}
+	}
 
 	cfg->locals_start = cfg->num_varinfo;
 
@@ -7697,6 +7740,136 @@ mono_local_cprop (MonoCompile *cfg)
 	}
 }
 
+static void
+remove_critical_edges (MonoCompile *cfg) {
+	MonoBasicBlock *bb;
+	
+	if (cfg->verbose_level > 3) {
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+			int i;
+			printf ("remove_critical_edges %s, BEFORE BB%d (in:", mono_method_full_name (cfg->method, TRUE), bb->block_num);
+			for (i = 0; i < bb->in_count; i++) {
+				printf (" %d", bb->in_bb [i]->block_num);
+			}
+			printf (") (out:");
+			for (i = 0; i < bb->out_count; i++) {
+				printf (" %d", bb->out_bb [i]->block_num);
+			}
+			printf (")");
+			if (bb->last_ins != NULL) {
+				printf (" ");
+				mono_print_tree (bb->last_ins);
+			}
+			printf ("\n");
+		}
+	}
+	
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		if (bb->out_count > 1) {
+			int out_bb_index;
+			for (out_bb_index = 0; out_bb_index < bb->out_count; out_bb_index++) {
+				MonoBasicBlock *out_bb = bb->out_bb [out_bb_index];
+				if (out_bb->in_count > 1) {
+					MonoInst *inst;
+					MonoBasicBlock *new_bb = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
+					new_bb->block_num = cfg->num_bblocks++;
+					new_bb->next_bb = bb->next_bb;
+					bb->next_bb = new_bb;
+					new_bb->in_bb = mono_mempool_alloc ((cfg)->mempool, sizeof (MonoBasicBlock*));
+					new_bb->in_bb [0] = bb;
+					new_bb->in_count = 1;
+					new_bb->out_bb = mono_mempool_alloc ((cfg)->mempool, sizeof (MonoBasicBlock*));
+					new_bb->out_bb [0] = out_bb;
+					new_bb->out_count = 1;
+					replace_out_block (bb, out_bb, new_bb);
+					replace_in_block (out_bb, bb, new_bb);
+					for (inst = bb->code; inst != NULL; inst = inst->next) {
+						if (inst->opcode == OP_CALL_HANDLER) {
+							if (inst->inst_target_bb == out_bb) {
+								inst->inst_target_bb = new_bb;
+							}
+						}
+					}
+					if (bb->last_ins != NULL) {
+						switch (bb->last_ins->opcode) {
+						case CEE_BR:
+							if (bb->last_ins->inst_target_bb == out_bb) {
+								bb->last_ins->inst_target_bb = new_bb;
+							}
+							break;
+						case CEE_SWITCH: {
+							int i;
+							int n = GPOINTER_TO_INT (bb->last_ins->klass);
+							for (i = 0; i < n; i++ ) {
+								if (bb->last_ins->inst_many_bb [i] == out_bb) {
+									bb->last_ins->inst_many_bb [i] = new_bb;
+									break;
+								}
+							}
+							break;
+						}
+						case CEE_BNE_UN:
+						case CEE_BEQ:
+						case CEE_BLT:
+						case CEE_BLT_UN:
+						case CEE_BGT:
+						case CEE_BGT_UN:
+						case CEE_BGE:
+						case CEE_BGE_UN:
+						case CEE_BLE:
+						case CEE_BLE_UN:
+							if (bb->last_ins->inst_true_bb == out_bb) {
+								bb->last_ins->inst_true_bb = new_bb;
+							}
+							if (bb->last_ins->inst_false_bb == out_bb) {
+								bb->last_ins->inst_false_bb = new_bb;
+							}
+							break;
+						default:
+							break;
+						}
+					}
+//					new_bb->real_offset = bb->real_offset;
+					new_bb->region = bb->region;
+					
+					if (new_bb->next_bb != out_bb) {
+						MonoInst *jump;
+						MONO_INST_NEW (cfg, jump, CEE_BR);
+						MONO_ADD_INS (new_bb, jump);
+						jump->cil_code = bb->cil_code;
+						jump->inst_target_bb = out_bb;
+					}
+					
+					if (cfg->verbose_level > 2) {
+						printf ("remove_critical_edges %s, removed critical edge from BB%d to BB%d (added BB%d)\n", mono_method_full_name (cfg->method, TRUE), bb->block_num, out_bb->block_num, new_bb->block_num);
+					}
+				}
+			}
+		}
+	}
+	
+	if (cfg->verbose_level > 3) {
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+			int i;
+			printf ("remove_critical_edges %s, AFTER BB%d (in:", mono_method_full_name (cfg->method, TRUE), bb->block_num);
+			for (i = 0; i < bb->in_count; i++) {
+				printf (" %d", bb->in_bb [i]->block_num);
+			}
+			printf (") (out:");
+			for (i = 0; i < bb->out_count; i++) {
+				printf (" %d", bb->out_bb [i]->block_num);
+			}
+			printf (")");
+			if (bb->last_ins != NULL) {
+				printf (" ");
+				mono_print_tree (bb->last_ins);
+			}
+			printf ("\n");
+		}
+	}
+}
+
+
 MonoCompile*
 mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, int parts)
 {
@@ -7751,11 +7924,15 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 	/*g_print ("numblocks = %d\n", cfg->num_bblocks);*/
 
-	/* Depth-first ordering on basic blocks */
-	cfg->bblocks = mono_mempool_alloc (cfg->mempool, sizeof (MonoBasicBlock*) * (cfg->num_bblocks + 1));
-
 	if (cfg->opt & MONO_OPT_BRANCH)
 		optimize_branches (cfg);
+
+	if ((cfg->opt & MONO_OPT_SSAPRE) && ! (cfg->opt & (MONO_OPT_CONSPROP|MONO_OPT_COPYPROP))) {
+		remove_critical_edges (cfg);
+	}
+
+	/* Depth-first ordering on basic blocks */
+	cfg->bblocks = mono_mempool_alloc (cfg->mempool, sizeof (MonoBasicBlock*) * (cfg->num_bblocks + 1));
 
 	df_visit (cfg->bb_entry, &dfn, cfg->bblocks);
 	if (cfg->num_bblocks != dfn + 1) {
@@ -7801,7 +7978,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 #else 
 
 	/* fixme: add all optimizations which requires SSA */
-	if (cfg->opt & (MONO_OPT_DEADCE | MONO_OPT_ABCREM)) {
+	if (cfg->opt & (MONO_OPT_DEADCE | MONO_OPT_ABCREM | MONO_OPT_SSAPRE)) {
 		if (!(cfg->comp_done & MONO_COMP_SSA) && !header->num_clauses && !cfg->disable_ssa) {
 			mono_local_cprop (cfg);
 			mono_ssa_compute (cfg);
@@ -7817,7 +7994,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (parts == 2)
 		return cfg;
 
-	if ((cfg->opt & MONO_OPT_CONSPROP) ||  (cfg->opt & MONO_OPT_COPYPROP)) {
+	if ((cfg->opt & MONO_OPT_CONSPROP) || (cfg->opt & MONO_OPT_COPYPROP)) {
 		if (cfg->comp_done & MONO_COMP_SSA) {
 			mono_ssa_cprop (cfg);
 		} else {
@@ -7832,7 +8009,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 		if ((cfg->flags & MONO_CFG_HAS_LDELEMA) && (cfg->opt & MONO_OPT_ABCREM))
 			mono_perform_abc_removal (cfg);
-
+		
+		if ((cfg->opt & MONO_OPT_SSAPRE) && ! (cfg->opt & (MONO_OPT_CONSPROP|MONO_OPT_COPYPROP)))
+			mono_perform_ssapre (cfg);
+		
 		mono_ssa_remove (cfg);
 
 		if (cfg->opt & MONO_OPT_BRANCH)

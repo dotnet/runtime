@@ -147,7 +147,7 @@ extends_live (MonoInst *inst)
 	arity = mono_burg_arity [inst->opcode];
 
 	if (inst->ssa_op == MONO_SSA_LOAD && 
-	    (inst->inst_i0->opcode == OP_LOCAL /*|| inst->inst_i0->opcode == OP_ARG*/)) {
+	    (inst->inst_i0->opcode == OP_LOCAL || inst->inst_i0->opcode == OP_ARG)) {
 		return 1;
 	} else {
 		if (arity) {

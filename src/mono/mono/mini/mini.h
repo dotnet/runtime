@@ -464,7 +464,8 @@ enum {
 	MONO_OPT_LEAF     = 1 << 15,
 	MONO_OPT_AOT      = 1 << 16,
 	MONO_OPT_PRECOMP  = 1 << 17,
-	MONO_OPT_ABCREM   = 1 << 18
+	MONO_OPT_ABCREM   = 1 << 18,
+	MONO_OPT_SSAPRE   = 1 << 19
 };
 
 /* Bit-fields in the MonoBasicBlock.region */
@@ -696,6 +697,10 @@ void      mono_constant_fold_inst           (MonoInst *inst, gpointer data);
 int       mono_is_power_of_two              (guint32 val);
 void      mono_cprop_local                  (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **acp, int acp_size);
 MonoInst* mono_compile_create_var           (MonoCompile *cfg, MonoType *type, int opcode);
+void      mono_compile_make_var_load        (MonoCompile *cfg, MonoInst *dest, gssize var_index);
+MonoInst* mono_compile_create_var_load      (MonoCompile *cfg, gssize var_index);
+MonoInst* mono_compile_create_var_store     (MonoCompile *cfg, gssize var_index, MonoInst *value);
+MonoType* mono_type_from_stack_type         (MonoInst *ins);
 void      mono_blockset_print               (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom);
 void      mono_print_tree                   (MonoInst *tree);
 void      mono_print_tree_nl                (MonoInst *tree);
@@ -728,6 +733,7 @@ void      mono_register_opcode_emulation    (int opcode, const char* name, MonoM
 void      mono_arch_register_lowlevel_calls (void);
 void      mono_draw_graph                   (MonoCompile *cfg, MonoGraphOptions draw_options);
 void      mono_add_varcopy_to_end           (MonoCompile *cfg, MonoBasicBlock *bb, int src, int dest);
+void      mono_add_ins_to_end               (MonoBasicBlock *bb, MonoInst *inst);
 
 int               mono_find_method_opcode      (MonoMethod *method);
 MonoJitICallInfo *mono_find_jit_icall_by_name  (const char *name);
@@ -840,5 +846,7 @@ gboolean       mono_trace_eval                  (MonoMethod *method);
 
 extern void
 mono_perform_abc_removal (MonoCompile *cfg);
+extern void
+mono_perform_ssapre (MonoCompile *cfg);
 
-#endif /* __MONO_MINI_H__ */  
+#endif /* __MONO_MINI_H__ */
