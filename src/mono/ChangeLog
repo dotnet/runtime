@@ -1,3 +1,8 @@
+2004-07-23  Dick Porter  <dick@ximian.com>
+
+	* configure.in: Changes for FreeBSD thread support by John
+	Merryweather Cooper <john_m_cooper@yahoo.com>.
+
 2004-07-03  Zoltan Varga  <vargaz@freemail.hu>
  
  	* configure.in: Add --with-tls option to replace the misnamed 
