@@ -1610,8 +1610,11 @@ resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image)
 	if (image->assembly->dynamic)
 		/* FIXME: */
 		memset (cols, 0, sizeof (cols));
-	else
+	else {
+		/* image->assembly->image is the manifest module */
+		image = image->assembly->image;
 		mono_metadata_decode_row (&image->tables [MONO_TABLE_ASSEMBLY], 0, cols, MONO_ASSEMBLY_SIZE);
+	}
 
 	table = &assembly->tables [MONO_TABLE_ASSEMBLYREF];
 	token = table->next_idx ++;
