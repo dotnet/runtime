@@ -72,6 +72,7 @@ libmonoruntimeincludedir = $(includedir)/mono/metadata
 
 libmonoruntimeinclude_HEADERS = \
 	appdomain.h	\
+	debug-mono-symfile.h	\
 	threadpool.h	\
 	threads-types.h	\
 	threads.h
