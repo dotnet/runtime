@@ -49,27 +49,11 @@ mono_ldvirtfn (MonoObject *obj, MonoMethod *method)
 }
 
 static void
-helper_initobj (void *addr, int size)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	memset (addr, 0, size);
-}
-
-static void
 helper_memcpy (void *addr, void *src, int size)
 {
 	MONO_ARCH_SAVE_REGS;
 
 	memcpy (addr, src, size);
-}
-
-static void
-helper_memset (void *addr, int val, int size)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	memset (addr, val, size);
 }
 
 static void

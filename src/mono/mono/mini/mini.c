@@ -112,9 +112,7 @@ static MonoMethodSignature *helper_sig_ptr_ptr_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_ptr_obj = NULL;
 static MonoMethodSignature *helper_sig_ptr_obj_int = NULL;
 static MonoMethodSignature *helper_sig_ptr_int = NULL;
-static MonoMethodSignature *helper_sig_initobj = NULL;
 static MonoMethodSignature *helper_sig_memcpy = NULL;
-static MonoMethodSignature *helper_sig_memset = NULL;
 static MonoMethodSignature *helper_sig_ulong_double = NULL;
 static MonoMethodSignature *helper_sig_long_double = NULL;
 static MonoMethodSignature *helper_sig_double_long = NULL;
@@ -2424,12 +2422,25 @@ handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst
 	mono_emit_native_call (cfg, bblock, helper_memcpy, helper_sig_memcpy, iargs, ip, FALSE, to_end);
 }
 
+static MonoMethod*
+get_memset_method (void)
+{
+	static MonoMethod *memset_method = NULL;
+	if (!memset_method) {
+		memset_method = mono_class_get_method_from_name (mono_defaults.string_class, "memset", 3);
+		if (!memset_method)
+			g_error ("Old corlib found. Install a new one");
+	}
+	return memset_method;
+}
+
 static void
 handle_initobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, const guchar *ip, MonoClass *klass, MonoInst **stack_start, MonoInst **sp)
 {
-	MonoInst *iargs [2];
+	MonoInst *iargs [3];
 	MonoInst *ins, *zero_int32;
 	int n;
+	MonoMethod *memset_method;
 
 	NEW_ICONST (cfg, zero_int32, 0);
 
@@ -2460,11 +2471,12 @@ handle_initobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, const 
 			MONO_ADD_INS (bblock, ins);
 			break;
 		}
+		memset_method = get_memset_method ();
 		handle_loaded_temps (cfg, bblock, stack_start, sp);
-		NEW_ICONST (cfg, ins, n);
 		iargs [0] = dest;
-		iargs [1] = ins;
-		mono_emit_jit_icall (cfg, bblock, helper_initobj, iargs, ip);
+		NEW_ICONST (cfg, iargs [1], 0);
+		NEW_ICONST (cfg, iargs [2], n);
+		mono_emit_method_call_spilled (cfg, bblock, memset_method, memset_method->signature, iargs, ip, NULL);
 		break;
 	}
 }
@@ -6179,7 +6191,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (ip [1] == CEE_CPBLK) {
 					mono_emit_jit_icall (cfg, bblock, helper_memcpy, iargs, ip);
 				} else {
-					mono_emit_jit_icall (cfg, bblock, helper_memset, iargs, ip);
+					MonoMethod *memset_method = get_memset_method ();
+					mono_emit_method_call_spilled (cfg, bblock, memset_method, memset_method->signature, iargs, ip, NULL);
 				}
 				ip += 2;
 				inline_costs += 1;
@@ -6627,14 +6640,8 @@ create_helper_signature (void)
 	/* int amethod (double) */
 	helper_sig_int_double = make_icall_sig ("int32 double");
 
-	/* void  initobj (intptr, int size) */
-	helper_sig_initobj = make_icall_sig ("void ptr int32");
-
 	/* void  memcpy (intptr, intptr, int size) */
 	helper_sig_memcpy = make_icall_sig ("void ptr ptr int32");
-
-	/* void  memset (intptr, int val, int size) */
-	helper_sig_memset = make_icall_sig ("void ptr int32 int32");
 
 	helper_sig_class_init_trampoline = make_icall_sig ("void");
 }
@@ -9721,8 +9728,6 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_get_special_static_data, "mono_get_special_static_data", helper_sig_ptr_int, FALSE);
 	mono_register_jit_icall (mono_ldstr, "mono_ldstr", helper_sig_ldstr, FALSE);
 	mono_register_jit_icall (helper_memcpy, "helper_memcpy", helper_sig_memcpy, FALSE);
-	mono_register_jit_icall (helper_memset, "helper_memset", helper_sig_memset, FALSE);
-	mono_register_jit_icall (helper_initobj, "helper_initobj", helper_sig_initobj, FALSE);
 	mono_register_jit_icall (helper_stelem_ref, "helper_stelem_ref", helper_sig_stelem_ref, FALSE);
 	mono_register_jit_icall (helper_stelem_ref_check, "helper_stelem_ref_check", helper_sig_stelem_ref_check, FALSE);
 	mono_register_jit_icall (mono_object_new, "mono_object_new", helper_sig_object_new, FALSE);
