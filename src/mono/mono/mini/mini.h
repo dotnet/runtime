@@ -674,6 +674,11 @@ typedef struct {
 	guint8  pad;
 } MonoJitArgumentInfo;
 
+typedef struct {
+	MonoJitInfo *ji;
+	MonoCodeManager *code_mp;
+} MonoJitDynamicMethodInfo;
+
 typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
 
 /* main function */
