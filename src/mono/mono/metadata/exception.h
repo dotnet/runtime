@@ -94,4 +94,7 @@ mono_get_exception_cannot_unload_appdomain (const guchar *msg);
 MonoException *
 mono_get_exception_appdomain_unloaded (void);
 
+MonoException *
+mono_get_exception_bad_image_format (const guchar *msg);
+
 #endif /* _MONO_METADATA_EXCEPTION_H_ */

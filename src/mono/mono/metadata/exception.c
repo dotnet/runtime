@@ -349,3 +349,9 @@ mono_get_exception_appdomain_unloaded (void)
 {
 	return mono_exception_from_name (mono_defaults.corlib, "System", "AppDomainUnloadedException");
 }
+
+MonoException *
+mono_get_exception_bad_image_format (const guchar *msg)
+{
+	return mono_exception_from_name_msg (mono_defaults.corlib, "System", "BadImageFormatException", msg);
+}	
