@@ -1,2 +1,5 @@
 Makefile
 Makefile.in
+pedump
+.libs
+.deps
