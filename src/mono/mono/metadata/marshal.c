@@ -4769,12 +4769,27 @@ guint32
 ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionType *rtype)
 {
 	MonoClass *klass;
+	MonoType *type;
+	guint32 layout;
 
 	MONO_ARCH_SAVE_REGS;
 
 	MONO_CHECK_ARG_NULL (rtype);
 
-	klass = mono_class_from_mono_type (rtype->type);
+	type = rtype->type;
+	klass = mono_class_from_mono_type (type);
+	layout = (klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK);
+
+	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
+		gchar *msg;
+		MonoException *exc;
+
+		msg = g_strdup_printf ("Type %s cannot be marshaled as an unmanaged structure.", klass->name);
+		exc = mono_get_exception_argument ("t", msg);
+		g_free (msg);
+		mono_raise_exception (exc);
+	}
+
 
 	return mono_class_native_size (klass, NULL);
 }
