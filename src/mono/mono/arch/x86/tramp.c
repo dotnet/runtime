@@ -138,7 +138,8 @@ mono_create_trampoline (MonoMethod *method)
 	} else {
 		stack_size = stack_size % 16;
 	}
-	x86_alu_reg_imm (p, X86_SUB, X86_ESP, stack_size);
+	if (stack_size)
+		x86_alu_reg_imm (p, X86_SUB, X86_ESP, stack_size);
 
 	/*
 	 * EDX has the pointer to the args.
@@ -192,7 +193,7 @@ mono_create_trampoline (MonoMethod *method)
 			x86_push_membase (p, X86_EDX, arg_pos);
 			x86_mov_reg_imm (p, X86_EDX, mono_get_ansi_string);
 			x86_call_reg (p, X86_EDX);
-			x86_alu_reg_imm (p, X86_SUB, X86_ESP, 4);
+			x86_alu_reg_imm (p, X86_ADD, X86_ESP, 4);
 			x86_push_reg (p, X86_EAX);
 			/*
 			 * Store the pointer in a local we'll free later.
@@ -202,7 +203,8 @@ mono_create_trampoline (MonoMethod *method)
 			/*
 			 * we didn't save the reg: restore it here.
 			 */
-			x86_mov_reg_membase (p, X86_EDX, X86_EBP, ARGP_POS, 4);
+			if (i > 1)
+				x86_mov_reg_membase (p, X86_EDX, X86_EBP, ARGP_POS, 4);
 			break;
 		case MONO_TYPE_I8:
 			x86_push_membase (p, X86_EDX, arg_pos + 4);
