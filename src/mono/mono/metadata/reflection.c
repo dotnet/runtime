@@ -2231,7 +2231,7 @@ mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoReflectionInfla
 		g_assert (m->ginst);
 		k = m->ginst->klass ? m->ginst->klass : m->ginst->generic_method->klass;
 
-		sig = method_encode_signature (assembly, m->ginst->generic_method->signature);
+		sig = method_encode_signature (assembly, m->declaring->method->signature);
 		token = mono_image_get_memberref_token (
 			assembly, &k->byval_arg, m->ginst->generic_method->name, sig);
 	}
