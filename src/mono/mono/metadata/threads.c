@@ -231,7 +231,7 @@ static guint32 start_wrapper(void *data)
 	thread_adjust_static_data (thread);
 #ifndef PLATFORM_WIN32
 #ifdef DEBUG
-	g_print ("start_wrapper for %d\n", thread->tid);
+	g_message (G_GNUC_PRETTY_FUNCTION "start_wrapper for %d\n", thread->tid);
 #endif
 	pthread_cleanup_push ((void (*) (void *)) mono_thread_detach, thread);
 #endif
@@ -375,7 +375,7 @@ mono_thread_detach (MonoThread *thread)
 	g_return_if_fail (thread != NULL);
 
 #ifdef DEBUG
-	g_print ("mono_thread_detach for %d\n", thread->tid);
+	g_message (G_GNUC_PRETTY_FUNCTION "mono_thread_detach for %d\n", thread->tid);
 #endif
 	TlsSetValue (current_object_key, NULL);
 	
@@ -1156,6 +1156,15 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 	}
 }
 
+static gboolean
+remove_threads (gpointer key, gpointer value, gpointer user)
+{
+	guint32 self = GPOINTER_TO_UINT (user);
+	MonoThread *thread = (MonoThread *) value;
+
+	return (thread->tid != self && !mono_gc_is_finalizer_thread (thread));
+}
+
 void mono_thread_manage (void)
 {
 	struct wait_data *wait=g_new0 (struct wait_data, 1);
@@ -1183,10 +1192,9 @@ void mono_thread_manage (void)
 			  mono_g_hash_table_size (threads));
 		mono_g_hash_table_foreach (threads, print_tids, NULL);
 #endif
-
+	
 		wait->num=0;
 		mono_g_hash_table_foreach (threads, build_wait_tids, wait);
-	
 		LeaveCriticalSection (&threads_mutex);
 		if(wait->num>0) {
 			/* Something to wait for */
@@ -1197,9 +1205,9 @@ void mono_thread_manage (void)
 	g_free (wait);
 
 	EnterCriticalSection(&threads_mutex);
-
-	mono_g_hash_table_destroy(threads);
-	threads=NULL;
+	/* Remove everything but the finalizer thread and self */
+	mono_g_hash_table_foreach_remove (threads, remove_threads,
+					  GUINT_TO_POINTER (GetCurrentThreadId ()));
 
 	LeaveCriticalSection(&threads_mutex);
 }
