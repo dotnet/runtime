@@ -1116,7 +1116,7 @@ mono_metadata_free_array (MonoArrayType *array)
  * private static
  * private static literal
  */
-static MonoType
+static const MonoType
 builtin_types[] = {
 	/* data, attrs, type,              nmods, byref, pinned */
 	{{NULL}, 0,     MONO_TYPE_VOID,    0,     0,     0},
@@ -1238,7 +1238,7 @@ mono_metadata_init (void)
 	generic_class_cache = g_hash_table_new (mono_generic_class_hash, mono_generic_class_equal);
 
 	for (i = 0; i < NBUILTIN_TYPES (); ++i)
-		g_hash_table_insert (type_cache, &builtin_types [i], &builtin_types [i]);
+		g_hash_table_insert (type_cache, (gpointer) &builtin_types [i], (gpointer) &builtin_types [i]);
 }
 
 /**
