@@ -8,6 +8,7 @@ public class Switch {
 		default:
 			return 0xff;
 		}
+		return 100;
 	}
 	public static int Main () {
 		if (test(0) != 1)

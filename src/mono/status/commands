@@ -6,6 +6,7 @@
 1,System.ComponentModel,System.ComponentModel.html,bn/System.ComponentModel
 1,System.Configuration,System.Configuration.html,bn/System.Configuration
 1,System.Configuration.Assemblies,System.Configuration.Assemblies.html,bn/System.Configuration.Assemblies
+1,System.Data,System.Data.html,bn/System.Data
 1,System.Diagnostics,System.Diagnostics.html,bn/System.Diagnostics
 1,System.Drawing,System.Drawing.html,bn/System.Drawing
 1,System.Drawing.Drawing2D,System.Drawing.Drawing2D.html,bn/System.Drawing.Drawing2D
@@ -13,8 +14,10 @@
 1,System.Globalization.Calendar,System.Globalization.Calendar.html,bn/System.Globalization.Calendar
 1,System.IO,System.IO.html,bn/System.IO
 1,System.Net,System.Net.html,bn/System.Net
+1,System.Net.Sockets,System.Net.Sockets.html,bn/System.Net.Sockets
 1,System.Reflection,System.Reflection.html,bn/System.Reflection
 1,System.Reflection.Emit,System.Reflection.Emit.html,bn/System.Reflection.Emit
+1,System.Resources,System.Resources.html,bn/System.Resources
 1,System.Runtime.Remoting,System.Runtime.Remoting.html,bn/System.Runtime.Remoting
 1,System.Runtime.Remoting.Activation,System.Runtime.Remoting.Activation.html,bn/System.Runtime.Remoting.Activation
 1,System.Runtime.Remoting.Contexts,System.Runtime.Remoting.Contexts.html,bn/System.Runtime.Remoting.Contexts
@@ -22,6 +25,8 @@
 1,System.Runtime.Serialization,System.Runtime.Serialization.html,bn/System.Runtime.Serialization
 1,System.Security,System.Security.html,bn/System.Security
 1,System.Security.Cryptography,System.Security.Cryptography.html,bn/System.Security.Cryptography
+1,System.Security.Permissions,System.Security.Permissions.html,bn/System.Security.Permissions
+1,System.Security.Policy,System.Security.Policy.html,bn/System.Security.Policy
 1,System.Text,System.Text.html,bn/System.Text
 1,System.Threading,System.Threading.html,bn/System.Threading
 1,System.Web,System.Web.html,bn/System.Web
@@ -30,14 +35,17 @@
 1,System.Web.UI,System.Web.UI.html,bn/System.Web.UI
 1,System.Web.UI.HtmlControlls,System.Web.UI.HtmlControlls.html,bn/System.Web.UI.HtmlControlls
 1,System.Web.UI.WebControls,System.Web.UI.WebControls.html,bn/System.Web.UI.WebControls
+1,System.Web.Utils,System.Web.Utils.html,bn/System.Web.Utils
 1,System.Xml,System.Xml.html,bn/System.Xml
 0,Maintainer,maintainer.html,maintainer.src
 1,Matthew.S.Ford@rose-hulman.edu,Matthew.S.Ford@rose-hulman.edu.html,bm/Matthew.S.Ford@rose-hulman.edu
 1,Patrik.Torstensson@framfablabs.com,Patrik.Torstensson@framfablabs.com.html,bm/Patrik.Torstensson@framfablabs.com
+1,Patrik.Torstensson@labs2.com,Patrik.Torstensson@labs2.com.html,bm/Patrik.Torstensson@labs2.com
 1,angryjohn69@nc.rr.com,angryjohn69@nc.rr.com.html,bm/angryjohn69@nc.rr.com
 1,bob@thestuff.net,bob@thestuff.net.html,bm/bob@thestuff.net
 1,cpodurgiel@msn.com,cpodurgiel@msn.com.html,bm/cpodurgiel@msn.com
 1,czw@home.se,czw@home.se.html,bm/czw@home.se
+1,daniel-weber@austin.rr.com,daniel-weber@austin.rr.com.html,bm/daniel-weber@austin.rr.com
 1,develop@wtfo-guru.com,develop@wtfo-guru.com.html,bm/develop@wtfo-guru.com
 1,dholden@draper.com,dholden@draper.com.html,bm/dholden@draper.com
 1,dick@ximian.com,dick@ximian.com.html,bm/dick@ximian.com
@@ -66,6 +74,7 @@
 1,scott@stonecobra.com,scott@stonecobra.com.html,bm/scott@stonecobra.com
 1,serge@wildwestsoftware.com,serge@wildwestsoftware.com.html,bm/serge@wildwestsoftware.com
 1,sm@cg.tuwien.ac.at,sm@cg.tuwien.ac.at.html,bm/sm@cg.tuwien.ac.at
+1,swildermuth@adoguy.com,swildermuth@adoguy.com.html,bm/swildermuth@adoguy.com
 1,toelen@hotmail.com,toelen@hotmail.com.html,bm/toelen@hotmail.com
 1,tomasr@mvps.org,tomasr@mvps.org.html,bm/tomasr@mvps.org
 1,tome@sbox.tugraz.at,tome@sbox.tugraz.at.html,bm/tome@sbox.tugraz.at

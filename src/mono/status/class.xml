@@ -4864,4 +4864,25 @@
 			<maintainer>jason@injektilo.org</maintainer>
 		</maintainers>
 	</class>
+
+	<class name="System.Data.DataTable">
+		<last-activity>Jan-8-2001</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>swildermuth@adoguy.com</maintainer>
+		</maintainers>
+	</class>
+
+	<class name="System.Data.DataRow">
+		<last-activity>Jan-8-2001</last-activity>
+		<implementation>no</implementation>
+		<test-suite>no</test-suite>
+		<completion>?</completion>
+		<maintainers>
+			<maintainer>swildermuth@adoguy.com</maintainer>
+		</maintainers>
+	</class>
+
 </classes>

@@ -3,8 +3,10 @@ using System.Runtime.InteropServices;
 
 public class Test {
 
-	[DllImport("cygwin1.dll", EntryPoint="puts", CharSet=CharSet.Ansi)]
-	public static extern int puts (string name);
+	static void puts (string s)
+	{
+		Console.WriteLine (s);
+	}
 
 	public static int jagged ()
 	{
@@ -40,9 +42,10 @@ public class Test {
 		sa [20] = "stupid";
 		sa [21] = "Test";
 
-		for (int i = 0; i < sa.Length; i++)
+		for (int i = 0; i < sa.Length; i++){
 			if (sa [i] != null)
 				puts (sa [i]);
+		}
 		
 		return 0;
 	}
@@ -80,35 +83,39 @@ public class Test {
 				return 1;
 		
 		if (ia.Rank != 1)
-			return 1;
+			return 2;
 
 		if (ia.GetValue (2) == null)
-			return 1;
+			return 3;
 
 		for (int i = 0; i <ia.Length; i++)
 			ia.SetValue (i*i*i, i);
 
 		for (int i = 0; i <ia.Length; i++)
-			if ((int)ia.GetValue (i) != i*i*i)
-				return 1;
+			if ((int)ia.GetValue (i) != i*i*i){
+				puts ("Crap: " + i + " " + (int) ia.GetValue (i) );
+
+				return 4;
+			}
 		
 		return 0;
 	}
 	
 
 	public static int Main () {
-
+		puts ("a");
 		if (atest () != 0)
-			return 1;
-		
+			return atest ();
+	 	puts ("b");	
 		if (atest2 () != 0)
 			return 1;
+		puts ("c");
 		if (atest2 () != 0)
 			return 1;
-		
+		puts ("d");	
 		if (stest () != 0)
 			return 1;
-		
+	 	puts ("e");	
 		if (jagged () != 0)
 			return 1;
 		
