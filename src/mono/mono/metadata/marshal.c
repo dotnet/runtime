@@ -3637,16 +3637,12 @@ handle_enum:
 }
 
 static void
-raise_auto_layout_exception (MonoClass *klass)
+mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass)
 {
 	char *msg = g_strdup_printf ("The type `%s.%s' layout needs to be Sequential or Explicit",
 				     klass->name_space, klass->name);
-				
-	MonoException *e = mono_exception_from_name_msg (
-		mono_get_corlib (), "System.Runtime.InteropServices",
-		"MarshalDirectiveException", msg);
-	g_free (msg);
-	mono_raise_exception (e);
+
+	mono_mb_emit_exception_marshal_directive (mb, msg);
 }
 
 /*
@@ -4122,6 +4118,8 @@ typedef struct {
 	MonoMethodSignature *sig;
 	MonoMethodPInvoke *piinfo;
 	int *orig_conv_args; /* Locals containing the original values of byref args */
+	int retobj_var;
+	MonoClass *retobj_class;
 } EmitMarshalContext;
 
 typedef enum {
@@ -4129,7 +4127,9 @@ typedef enum {
 	MARSHAL_ACTION_PUSH,
 	MARSHAL_ACTION_CONV_OUT,
 	MARSHAL_ACTION_CONV_RESULT,
-	MARSHAL_ACTION_MANAGED_CONV_IN
+	MARSHAL_ACTION_MANAGED_CONV_IN,
+	MARSHAL_ACTION_MANAGED_CONV_OUT,
+	MARSHAL_ACTION_MANAGED_CONV_RESULT
 } MarshalAction;
 
 static int
@@ -4140,7 +4140,7 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 {
 	MonoType *mtype;
 	MonoClass *mklass;
-	MonoMethod *get_instance, *cleanup_native;
+	MonoMethod *get_instance, *cleanup_native, *cleanup_managed;
 	MonoMethod *marshal_managed_to_native, *marshal_native_to_managed;
 	MonoMethodBuilder *mb = m->mb;
 	guint32 loc1;
@@ -4154,6 +4154,8 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 	g_assert (get_instance);
 	cleanup_native = mono_class_get_method_from_name (mklass, "CleanUpNativeData", 1);
 	g_assert (cleanup_native);
+	cleanup_managed = mono_class_get_method_from_name (mklass, "CleanUpManagedData", 1);
+	g_assert (cleanup_managed);
 	marshal_managed_to_native = mono_class_get_method_from_name (mklass, "MarshalManagedToNative", 1);
 	g_assert (marshal_managed_to_native);
 	marshal_native_to_managed = mono_class_get_method_from_name (mklass, "MarshalNativeToManaged", 1);
@@ -4168,32 +4170,6 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_VALUETYPE:
-			if (t->byref)
-				break;
-
-			conv_arg = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-
-			mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
-
-			mono_mb_emit_byte (mb, CEE_CALL);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
-				
-			mono_mb_emit_ldarg (mb, argnum);
-
-			if (t->type == MONO_TYPE_VALUETYPE) {
-				/*
-				 * Since we can't determine the type of the argument, we
-				 * will assume the unmanaged function takes a pointer.
-				 */
-				*conv_arg_type = &mono_defaults.int_class->byval_arg;
-
-				mono_mb_emit_byte (mb, CEE_BOX);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (t)));
-			}
-
-			mono_mb_emit_byte (mb, CEE_CALLVIRT);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_managed_to_native));
-			mono_mb_emit_stloc (mb, conv_arg);
 			break;
 
 		default:
@@ -4201,34 +4177,46 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 			g_assert_not_reached ();
 			break;
 		}
-		
+
+		if (t->byref)
+			break;
+
+		conv_arg = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+
+		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
+
+		mono_mb_emit_byte (mb, CEE_CALL);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+				
+		mono_mb_emit_ldarg (mb, argnum);
+
+		if (t->type == MONO_TYPE_VALUETYPE) {
+			/*
+			 * Since we can't determine the type of the argument, we
+			 * will assume the unmanaged function takes a pointer.
+			 */
+			*conv_arg_type = &mono_defaults.int_class->byval_arg;
+
+			mono_mb_emit_byte (mb, CEE_BOX);
+			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_from_mono_type (t)));
+		}
+
+		mono_mb_emit_byte (mb, CEE_CALLVIRT);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_managed_to_native));
+		mono_mb_emit_stloc (mb, conv_arg);
 		break;
 
 	case MARSHAL_ACTION_CONV_OUT:
-		switch (t->type) {
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_SZARRAY:
-		case MONO_TYPE_VALUETYPE:
-			mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
+		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 			
-			mono_mb_emit_byte (mb, CEE_CALL);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+		mono_mb_emit_byte (mb, CEE_CALL);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
 				
-			mono_mb_emit_ldloc (mb, conv_arg);
+		mono_mb_emit_ldloc (mb, conv_arg);
 
-			mono_mb_emit_byte (mb, CEE_CALLVIRT);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_native));
+		mono_mb_emit_byte (mb, CEE_CALLVIRT);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_native));
 
-			break;
-
-		default:
-			g_warning ("custom marshalling of type %x is currently not supported", t->type);
-			g_assert_not_reached ();
-			break;
-		}
 		break;
 
 	case MARSHAL_ACTION_PUSH:
@@ -4238,37 +4226,86 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MARSHAL_ACTION_CONV_RESULT:
 		loc1 = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 			
-		switch (t->type) {
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_SZARRAY:
-			mono_mb_emit_byte (mb, CEE_STLOC_3);
+		mono_mb_emit_byte (mb, CEE_STLOC_3);
 
-			mono_mb_emit_byte (mb, CEE_LDLOC_3);
-			mono_mb_emit_stloc (mb, loc1);
+		mono_mb_emit_byte (mb, CEE_LDLOC_3);
+		mono_mb_emit_stloc (mb, loc1);
 
-			mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
+		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
 
-			mono_mb_emit_byte (mb, CEE_CALL);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
-			mono_mb_emit_byte (mb, CEE_DUP);
+		mono_mb_emit_byte (mb, CEE_CALL);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+		mono_mb_emit_byte (mb, CEE_DUP);
 
-			mono_mb_emit_byte (mb, CEE_LDLOC_3);
-			mono_mb_emit_byte (mb, CEE_CALLVIRT);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_native_to_managed));
-			mono_mb_emit_byte (mb, CEE_STLOC_3);
+		mono_mb_emit_byte (mb, CEE_LDLOC_3);
+		mono_mb_emit_byte (mb, CEE_CALLVIRT);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_native_to_managed));
+		mono_mb_emit_byte (mb, CEE_STLOC_3);
 
-			mono_mb_emit_ldloc (mb, loc1);
-			mono_mb_emit_byte (mb, CEE_CALLVIRT);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_native));
+		mono_mb_emit_ldloc (mb, loc1);
+		mono_mb_emit_byte (mb, CEE_CALLVIRT);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_native));
 
-			break;
-		default:
-			g_assert_not_reached ();
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_IN:
+		if (t->byref) {
+			conv_arg = 0;
 			break;
 		}
+
+		conv_arg = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+
+		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
+		mono_mb_emit_byte (mb, CEE_CALL);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+				
+		mono_mb_emit_ldarg (mb, argnum);
+				
+		mono_mb_emit_byte (mb, CEE_CALLVIRT);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_native_to_managed));
+		mono_mb_emit_stloc (mb, conv_arg);
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
+		g_assert (!t->byref);
+
+		loc1 = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+			
+		mono_mb_emit_byte (mb, CEE_STLOC_3);
+			
+		mono_mb_emit_byte (mb, CEE_LDLOC_3);
+		mono_mb_emit_stloc (mb, loc1);
+
+		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
+		mono_mb_emit_byte (mb, CEE_CALL);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+		mono_mb_emit_byte (mb, CEE_DUP);
+
+		mono_mb_emit_byte (mb, CEE_LDLOC_3);
+		mono_mb_emit_byte (mb, CEE_CALLVIRT);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_managed_to_native));
+		mono_mb_emit_byte (mb, CEE_STLOC_3);
+
+		mono_mb_emit_ldloc (mb, loc1);
+		mono_mb_emit_byte (mb, CEE_CALLVIRT);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_managed));
+
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_OUT:
+		g_assert (!t->byref);
+
+		/* Call CleanUpManagedData */
+		mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
+
+		mono_mb_emit_byte (mb, CEE_CALL);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
+				
+		mono_mb_emit_ldloc (mb, conv_arg);
+		mono_mb_emit_byte (mb, CEE_CALLVIRT);
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_managed));
+				
 		break;
 
 	default:
@@ -4330,7 +4367,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 {
 	MonoMethodBuilder *mb = m->mb;
 	MonoClass *klass;
-	int pos = 0;
+	int pos = 0, pos2;
 
 	klass = t->data.klass;
 
@@ -4439,6 +4476,95 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 		emit_struct_conv (mb, klass, TRUE);
 		break;
 
+	case MARSHAL_ACTION_MANAGED_CONV_IN:
+		if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+			klass->blittable || klass->enumtype) {
+			conv_arg = 0;
+			break;
+		}
+
+		conv_arg = mono_mb_add_local (mb, &klass->byval_arg);
+
+		if (t->attrs & PARAM_ATTRIBUTE_OUT)
+			break;
+
+		if (t->byref) 
+			mono_mb_emit_ldarg (mb, argnum);
+		else
+			mono_mb_emit_ldarg_addr (mb, argnum);
+		mono_mb_emit_byte (mb, CEE_STLOC_0);
+
+		if (t->byref) {
+			mono_mb_emit_byte (mb, CEE_LDLOC_0);
+			mono_mb_emit_byte (mb, CEE_BRFALSE);
+			pos = mb->pos;
+			mono_mb_emit_i4 (mb, 0);
+		}			
+
+		mono_mb_emit_ldloc_addr (mb, conv_arg);
+		mono_mb_emit_byte (mb, CEE_STLOC_1);
+
+		/* emit valuetype conversion code */
+		emit_struct_conv (mb, klass, TRUE);
+
+		if (t->byref)
+			mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_OUT:
+		if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+			klass->blittable || klass->enumtype) {
+			break;
+		}
+
+		/* Check for null */
+		mono_mb_emit_ldarg (mb, argnum);
+		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+		/* Set src */
+		mono_mb_emit_ldloc_addr (mb, conv_arg);
+		mono_mb_emit_byte (mb, CEE_STLOC_0);
+
+		/* Set dest */
+		mono_mb_emit_ldarg (mb, argnum);
+		mono_mb_emit_byte (mb, CEE_STLOC_1);
+
+		/* emit valuetype conversion code */
+		emit_struct_conv (mb, klass, FALSE);
+
+		mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
+		if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+			klass->blittable || klass->enumtype) {
+			mono_mb_emit_byte (mb, CEE_STLOC_3);
+			m->retobj_var = 0;
+			break;
+		}
+			
+		/* load pointer to returned value type */
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
+			
+		/* store the address of the source into local variable 0 */
+		mono_mb_emit_byte (mb, CEE_STLOC_0);
+		/* allocate space for the native struct and
+		 * store the address into dst_ptr */
+		m->retobj_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		m->retobj_class = klass;
+		g_assert (m->retobj_var);
+		mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
+		mono_mb_emit_byte (mb, CEE_CONV_I);
+		mono_mb_emit_icall (mb, mono_marshal_alloc);
+		mono_mb_emit_byte (mb, CEE_STLOC_1);
+		mono_mb_emit_byte (mb, CEE_LDLOC_1);
+		mono_mb_emit_stloc (mb, m->retobj_var);
+
+		/* emit valuetype conversion code */
+		emit_struct_conv (mb, klass, FALSE);
+		break;
+
 	default:
 		g_assert_not_reached ();
 	}
@@ -4455,6 +4581,7 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 	MonoMethodBuilder *mb = m->mb;
 	MonoMarshalNative encoding = mono_marshal_get_string_encoding (m->piinfo, spec);
 	MonoMarshalConv conv = mono_marshal_get_string_to_ptr_conv (m->piinfo, spec);
+	gboolean need_free;
 
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
@@ -4519,6 +4646,32 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 		/* free the string */
 		mono_mb_emit_byte (mb, CEE_LDLOC_0);
 		mono_mb_emit_icall (mb, g_free);
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_IN:
+		if (t->byref) {
+			conv_arg = 0;
+			break;
+		}
+
+		conv_arg = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+
+		conv = mono_marshal_get_ptr_to_string_conv (m->piinfo, spec, &need_free);
+		if (conv == -1) {
+			char *msg = g_strdup_printf ("string marshalling conversion %d not implemented", encoding);
+			mono_mb_emit_exception_marshal_directive (mb, msg);
+			break;
+		}
+
+		mono_mb_emit_ldarg (mb, argnum);
+		mono_mb_emit_icall (mb, conv_to_icall (conv));
+		mono_mb_emit_stloc (mb, conv_arg);
+		break;	
+
+	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
+		mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_STR_LPSTR));
+		mono_mb_emit_byte (mb, CEE_STLOC_3);
 		break;
 
 	default:
@@ -4781,6 +4934,157 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_icall (mb, g_free);
 			mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
 		}
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_IN:
+		conv_arg = mono_mb_add_local (mb, &klass->byval_arg);
+
+		if (klass->delegate) {
+			g_assert (!t->byref);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_CLASSCONST);
+			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL));
+			mono_mb_emit_stloc (mb, conv_arg);
+			break;
+		}
+
+		/* The class can not have an automatic layout */
+		if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
+			mono_mb_emit_auto_layout_exception (mb, klass);
+			break;
+		}
+
+		if (t->attrs & PARAM_ATTRIBUTE_OUT) {
+			mono_mb_emit_byte (mb, CEE_LDNULL);
+			mono_mb_emit_stloc (mb, conv_arg);
+			break;
+		}
+
+		/* Set src */
+		mono_mb_emit_ldarg (mb, argnum);
+		if (t->byref) {
+			int pos2;
+
+			/* Check for NULL and raise an exception */
+			mono_mb_emit_byte (mb, CEE_BRTRUE);
+			pos2 = mb->pos;
+			mono_mb_emit_i4 (mb, 0);
+
+			mono_mb_emit_exception (mb, "ArgumentNullException", NULL);
+
+			mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_byte (mb, CEE_LDIND_I);
+		}				
+
+		mono_mb_emit_byte (mb, CEE_STLOC_0);
+
+		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+		mono_mb_emit_stloc (mb, conv_arg);
+
+		mono_mb_emit_byte (mb, CEE_LDLOC_0);
+		mono_mb_emit_byte (mb, CEE_BRFALSE);
+		pos = mb->pos;
+		mono_mb_emit_i4 (mb, 0);
+
+		/* Create and set dst */
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_NEWOBJ);	
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+		mono_mb_emit_stloc (mb, conv_arg);
+		mono_mb_emit_ldloc (mb, conv_arg);
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
+		mono_mb_emit_icon (mb, sizeof (MonoObject));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_STLOC_1); 
+
+		/* emit valuetype conversion code */
+		emit_struct_conv (mb, klass, TRUE);
+
+		mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_OUT:
+		/* Check for null */
+		mono_mb_emit_ldloc (mb, conv_arg);
+		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
+		mono_mb_emit_ldarg (mb, argnum);
+		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+		mono_mb_emit_byte (mb, CEE_STIND_I);
+		pos2 = mono_mb_emit_branch (mb, CEE_BR);
+
+		mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));			
+			
+		/* Set src */
+		mono_mb_emit_ldloc (mb, conv_arg);
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
+		mono_mb_emit_icon (mb, sizeof (MonoObject));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_STLOC_0);
+
+		/* Allocate and set dest */
+		mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
+		mono_mb_emit_byte (mb, CEE_CONV_I);
+		mono_mb_emit_icall (mb, mono_marshal_alloc);
+		mono_mb_emit_byte (mb, CEE_STLOC_1);
+
+		/* Update argument pointer */
+		mono_mb_emit_ldarg (mb, argnum);
+		mono_mb_emit_byte (mb, CEE_LDLOC_1);
+		mono_mb_emit_byte (mb, CEE_STIND_I);
+		
+		/* emit valuetype conversion code */
+		emit_struct_conv (mb, klass, FALSE);
+
+		mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
+		if (klass->delegate) {
+			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_DEL_FTN));
+			mono_mb_emit_byte (mb, CEE_STLOC_3);
+			break;
+		}
+
+		/* The class can not have an automatic layout */
+		if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
+			mono_mb_emit_auto_layout_exception (mb, klass);
+			break;
+		}
+
+		mono_mb_emit_byte (mb, CEE_STLOC_0);
+		/* Check for null */
+		mono_mb_emit_byte (mb, CEE_LDLOC_0);
+		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
+		mono_mb_emit_byte (mb, CEE_LDNULL);
+		mono_mb_emit_byte (mb, CEE_STLOC_3);
+		pos2 = mono_mb_emit_branch (mb, CEE_BR);
+
+		mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
+
+		/* Set src */
+		mono_mb_emit_byte (mb, CEE_LDLOC_0);
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
+		mono_mb_emit_icon (mb, sizeof (MonoObject));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_STLOC_0);
+
+		/* Allocate and set dest */
+		mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
+		mono_mb_emit_byte (mb, CEE_CONV_I);
+		mono_mb_emit_icall (mb, mono_marshal_alloc);
+		mono_mb_emit_byte (mb, CEE_DUP);
+		mono_mb_emit_byte (mb, CEE_STLOC_1);
+		mono_mb_emit_byte (mb, CEE_STLOC_3);
+
+		emit_struct_conv (mb, klass, FALSE);
+
+		mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
 		break;
 
 	default:
@@ -5081,12 +5385,12 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		if (t->byref) {
 			char *msg = g_strdup ("Byref array marshalling to managed code is not implemented.");
-			mono_mb_emit_exception_marshal_directive (m->mb, msg);
+			mono_mb_emit_exception_marshal_directive (mb, msg);
 			return conv_arg;
 		}
 		if (spec->native != MONO_NATIVE_LPARRAY) {
 			char *msg = g_strdup ("Non LPArray marshalling of arrays to managed code is not implemented.");
-			mono_mb_emit_exception_marshal_directive (m->mb, msg);
+			mono_mb_emit_exception_marshal_directive (mb, msg);
 			return conv_arg;			
 		}
 
@@ -5102,7 +5406,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (param_num == -1) {
 			if (num_elem <= 0) {
 				char *msg = g_strdup ("Either SizeConst or SizeParamIndex should be specified when marshalling arrays to managed code.");
-				mono_mb_emit_exception_marshal_directive (m->mb, msg);
+				mono_mb_emit_exception_marshal_directive (mb, msg);
 				return conv_arg;
 			}
 		}
@@ -5135,7 +5439,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (param_num != -1) {
 			if (param_num >= m->sig->param_count) {
 				char *msg = g_strdup ("Array size control parameter index is out of range.");
-				mono_mb_emit_exception_marshal_directive (m->mb, msg);
+				mono_mb_emit_exception_marshal_directive (mb, msg);
 				return conv_arg;
 			}
 			switch (m->sig->params [param_num]->type) {
@@ -5152,7 +5456,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 				break;
 			default: {
 				char *msg = g_strdup ("Array size control parameter must be an integral type.");
-				mono_mb_emit_exception_marshal_directive (m->mb, msg);
+				mono_mb_emit_exception_marshal_directive (mb, msg);
 				return conv_arg;
 			}
 			}
@@ -5216,7 +5520,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 		else {
 			char *msg = g_strdup ("Marshalling of non-string arrays to managed code is not implemented.");
-			mono_mb_emit_exception_marshal_directive (m->mb, msg);
+			mono_mb_emit_exception_marshal_directive (mb, msg);
 			return conv_arg;
 		}
 
@@ -5742,12 +6046,9 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 {
 	MonoMethodSignature *sig, *csig;
 	MonoMethodBuilder *mb;
-	MonoClass *klass = NULL;
 	MonoMethod *res;
 	GHashTable *cache;
-	int i, pos = 0, *tmp_locals;
-	static MonoMethodSignature *alloc_sig = NULL;
-	int retobj_var = 0;
+	int i, *tmp_locals;
 	EmitMarshalContext m;
 
 	g_assert (method != NULL);
@@ -5761,14 +6062,6 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 	cache = method->klass->image->managed_wrapper_cache;
 	if (!this && (res = mono_marshal_find_in_cache (cache, method)))
 		return res;
-
-	/* Under MS, the allocation should be done using CoTaskMemAlloc */
-	if (!alloc_sig) {
-		alloc_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-		alloc_sig->params [0] = &mono_defaults.int_class->byval_arg;
-		alloc_sig->ret = &mono_defaults.int_class->byval_arg;
-		alloc_sig->pinvoke = 1;
-	}
 
 	sig = mono_method_signature (method);
 
@@ -5820,206 +6113,25 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 	m.mb = mb;
 	m.sig = sig;
 	m.piinfo = NULL;
+	m.retobj_var = 0;
 
 	/* we first do all conversions */
 	tmp_locals = alloca (sizeof (int) * sig->param_count);
 	for (i = 0; i < sig->param_count; i ++) {
 		MonoType *t = sig->params [i];
-		MonoMarshalSpec *spec = mspecs [i + 1];
-
-		tmp_locals [i] = 0;
 		
-		/* Ensure that we have marshalling info for this param */
-		mono_marshal_load_type_info (mono_class_from_mono_type (t));
-
-		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
-			MonoType *mtype;
-			MonoClass *mklass;
-			MonoMethod *marshal_native_to_managed;
-			MonoMethod *get_instance;
-
-			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, method->klass->image);
-			g_assert (mtype != NULL);
-			mklass = mono_class_from_mono_type (mtype);
-			g_assert (mklass != NULL);
-
-			marshal_native_to_managed = mono_class_get_method_from_name (mklass, "MarshalNativeToManaged", 1);
-			g_assert (marshal_native_to_managed);
-			get_instance = mono_class_get_method_from_name (mklass, "GetInstance", 1);
-			g_assert (get_instance);
-			
-			switch (t->type) {
-			case MONO_TYPE_CLASS:
-			case MONO_TYPE_OBJECT:
-			case MONO_TYPE_STRING:
-			case MONO_TYPE_ARRAY:
-			case MONO_TYPE_SZARRAY:
-				if (t->byref)
-					break;
-
-				tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
-
-				mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
-
-				mono_mb_emit_byte (mb, CEE_CALL);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
-				
-				mono_mb_emit_ldarg (mb, i);
-				
-				mono_mb_emit_byte (mb, CEE_CALLVIRT);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_native_to_managed));
-				
-				mono_mb_emit_stloc (mb, tmp_locals [i]);
-				break;
-			default:
-				g_warning ("custom marshalling of type %x is currently not supported", t->type);
-				g_assert_not_reached ();
-				break;
-			}
-			continue;
-		}
-
 		switch (t->type) {
-		case MONO_TYPE_CLASS: {
-			klass = t->data.klass;
-
-			tmp_locals [i] = mono_mb_add_local (mb, &klass->byval_arg);
-
-			if (klass->delegate) {
-				g_assert (!t->byref);
-				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-				mono_mb_emit_byte (mb, CEE_MONO_CLASSCONST);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
-				mono_mb_emit_ldarg (mb, i);
-				mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL));
-				mono_mb_emit_stloc (mb, tmp_locals [i]);
-				break;
-			}
-
-			/* The class can not have an automatic layout */
-			if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
-				raise_auto_layout_exception (klass);
-
-			if (t->attrs & PARAM_ATTRIBUTE_OUT) {
-				mono_mb_emit_byte (mb, CEE_LDNULL);
-				mono_mb_emit_stloc (mb, tmp_locals [i]);
-				break;
-			}
-
-			/* Set src */
-			mono_mb_emit_ldarg (mb, i);
-			if (t->byref) {
-				int pos2;
-
-				/* Check for NULL and raise an exception */
-				mono_mb_emit_byte (mb, CEE_BRTRUE);
-				pos2 = mb->pos;
-				mono_mb_emit_i4 (mb, 0);
-
-				mono_mb_emit_exception (mb, "ArgumentNullException", NULL);
-
-				mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
-				mono_mb_emit_ldarg (mb, i);
-				mono_mb_emit_byte (mb, CEE_LDIND_I);
-			}				
-
-			mono_mb_emit_byte (mb, CEE_STLOC_0);
-
-			mono_mb_emit_byte (mb, CEE_LDC_I4_0);
-			mono_mb_emit_stloc (mb, tmp_locals [i]);
-
-			mono_mb_emit_byte (mb, CEE_LDLOC_0);
-			mono_mb_emit_byte (mb, CEE_BRFALSE);
-			pos = mb->pos;
-			mono_mb_emit_i4 (mb, 0);
-
-			/* Create and set dst */
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_NEWOBJ);	
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
-			mono_mb_emit_stloc (mb, tmp_locals [i]);
-			mono_mb_emit_ldloc (mb, tmp_locals [i]);
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-			mono_mb_emit_icon (mb, sizeof (MonoObject));
-			mono_mb_emit_byte (mb, CEE_ADD);
-			mono_mb_emit_byte (mb, CEE_STLOC_1); 
-
-			/* emit valuetype conversion code */
-			emit_struct_conv (mb, klass, TRUE);
-
-			mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
-			break;
-		}
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_CLASS:
 		case MONO_TYPE_VALUETYPE:
-			
-			klass = sig->params [i]->data.klass;
-			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			    klass->blittable || klass->enumtype)
-				break;
-
-			tmp_locals [i] = mono_mb_add_local (mb, &klass->byval_arg);
-
-			if (t->attrs & PARAM_ATTRIBUTE_OUT)
-				break;
-
-			if (t->byref) 
-				mono_mb_emit_ldarg (mb, i);
-			else
-				mono_mb_emit_ldarg_addr (mb, i);
-			mono_mb_emit_byte (mb, CEE_STLOC_0);
-
-			if (t->byref) {
-				mono_mb_emit_byte (mb, CEE_LDLOC_0);
-				mono_mb_emit_byte (mb, CEE_BRFALSE);
-				pos = mb->pos;
-				mono_mb_emit_i4 (mb, 0);
-			}			
-
-			mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
-			mono_mb_emit_byte (mb, CEE_STLOC_1);
-
-			/* emit valuetype conversion code */
-			emit_struct_conv (mb, klass, TRUE);
-
-			if (t->byref)
-				mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
-			break;
-		case MONO_TYPE_STRING: {
-			MonoMarshalNative encoding = mono_marshal_get_string_encoding (NULL, spec);
-
-			if (t->byref)
-				continue;
-
-			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
-			csig->params [i] = &mono_defaults.int_class->byval_arg;
-
-			mono_mb_emit_ldarg (mb, i);
-
-			switch (encoding) {
-			case MONO_NATIVE_LPWSTR:
-				mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_LPWSTR_STR));
-				break;
-			case MONO_NATIVE_LPSTR:
-				mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_LPSTR_STR));
-				break;
-			default: {
-					char *msg = g_strdup_printf ("string marshalling conversion %d not implemented", encoding);
-					MonoException *exc = mono_get_exception_not_implemented (msg);
-					g_warning (msg);
-					g_free (msg);
-					mono_raise_exception (exc);
-				}
-			}
-
-			mono_mb_emit_stloc (mb, tmp_locals [i]);
-			break;	
-		}
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
-
+		case MONO_TYPE_STRING:
 			tmp_locals [i] = emit_marshal (&m, i + sig->hasthis, sig->params [i], mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
 
+			break;
+		default:
+			tmp_locals [i] = 0;
 			break;
 		}
 	}
@@ -6029,116 +6141,20 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
 
-		switch (t->type) {
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U:
-		case MONO_TYPE_PTR:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-			mono_mb_emit_ldarg (mb, i);
-			break;
-		case MONO_TYPE_STRING:
-			if (t->byref) {
-				mono_mb_emit_ldarg (mb, i);
-			} else {
-				g_assert (tmp_locals [i]);
-				mono_mb_emit_ldloc (mb, tmp_locals [i]);
-			}
-			break;	
-		case MONO_TYPE_CLASS:  
+		if (tmp_locals [i]) {
 			if (t->byref)
 				mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
 			else
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
-			break;
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_SZARRAY:
-		case MONO_TYPE_OBJECT:
-			if (tmp_locals [i])
-				mono_mb_emit_ldloc (mb, tmp_locals [i]);
-			else
-				mono_mb_emit_ldarg (mb, i);
-			break;
-		case MONO_TYPE_VALUETYPE:
-			klass = sig->params [i]->data.klass;
-			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			    klass->blittable || klass->enumtype) {
-				mono_mb_emit_ldarg (mb, i);
-				break;
-			}
-
-			g_assert (tmp_locals [i]);
-			if (t->byref)
-				mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
-			else
-				mono_mb_emit_ldloc (mb, tmp_locals [i]);
-			break;
-		default:
-			g_warning ("type 0x%02x unknown", t->type);	
-			g_assert_not_reached ();
 		}
+		else
+			mono_mb_emit_ldarg (mb, i);
 	}
 
 	mono_mb_emit_managed_call (mb, method, NULL);
 
-	/* Ensure that we have marshalling info for the return */
-	mono_marshal_load_type_info (mono_class_from_mono_type (sig->ret));
-
 	if (mspecs [0] && mspecs [0]->native == MONO_NATIVE_CUSTOM) {
-		MonoMarshalSpec *spec = mspecs [0];
-		MonoType *mtype;
-		MonoClass *mklass;
-		guint32 loc1;
-
-		g_assert (!sig->ret->byref);
-
-		mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, method->klass->image);
-		g_assert (mtype);
-		mklass = mono_class_from_mono_type (mtype);
-		g_assert (mklass);
-
-		loc1 = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
-			
-		switch (sig->ret->type) {
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_SZARRAY:
-			mono_mb_emit_byte (mb, CEE_STLOC_3);
-			
-			mono_mb_emit_byte (mb, CEE_LDLOC_3);
-			mono_mb_emit_stloc (mb, loc1);
-
-			mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
-			mono_mb_emit_byte (mb, CEE_CALL);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_get_method_from_name (mklass, "GetInstance", 1)));
-			mono_mb_emit_byte (mb, CEE_DUP);
-
-			mono_mb_emit_byte (mb, CEE_LDLOC_3);
-			mono_mb_emit_byte (mb, CEE_CALLVIRT);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_get_method_from_name (mklass, "MarshalManagedToNative", 1)));
-			mono_mb_emit_byte (mb, CEE_STLOC_3);
-
-			mono_mb_emit_ldloc (mb, loc1);
-			mono_mb_emit_byte (mb, CEE_CALLVIRT);
-			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_class_get_method_from_name (mklass, "CleanUpManagedData", 1)));
-
-			break;
-		default:
-			g_warning ("custom marshalling of type %x is currently not supported", sig->ret->type);
-			g_assert_not_reached ();
-			break;
-		}
+		emit_marshal (&m, 0, sig->ret, mspecs [0], 0, NULL, MARSHAL_ACTION_MANAGED_CONV_RESULT);
 	}
 	else
 	if (!sig->ret->byref) { 
@@ -6162,88 +6178,14 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 		case MONO_TYPE_OBJECT:
 			mono_mb_emit_byte (mb, CEE_STLOC_3);
 			break;
-		case MONO_TYPE_STRING:		
+		case MONO_TYPE_STRING:
 			csig->ret = &mono_defaults.int_class->byval_arg;
-
-			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_STR_LPSTR));
-			mono_mb_emit_byte (mb, CEE_STLOC_3);
+			emit_marshal (&m, 0, sig->ret, mspecs [0], 0, NULL, MARSHAL_ACTION_MANAGED_CONV_RESULT);
 			break;
 		case MONO_TYPE_VALUETYPE:
-			klass = sig->ret->data.klass;
-			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			    klass->blittable || klass->enumtype) {
-				mono_mb_emit_byte (mb, CEE_STLOC_3);
-				break;
-			}
-			
-			/* load pointer to returned value type */
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
-			
-			/* store the address of the source into local variable 0 */
-			mono_mb_emit_byte (mb, CEE_STLOC_0);
-			/* allocate space for the native struct and
-			 * store the address into dst_ptr */
-			retobj_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-			g_assert (retobj_var);
-			mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
-			mono_mb_emit_byte (mb, CEE_CONV_I);
-			mono_mb_emit_native_call (mb, alloc_sig, mono_marshal_alloc);
-			emit_thread_interrupt_checkpoint (mb);
-			mono_mb_emit_byte (mb, CEE_STLOC_1);
-			mono_mb_emit_byte (mb, CEE_LDLOC_1);
-			mono_mb_emit_stloc (mb, retobj_var);
-
-			/* emit valuetype conversion code */
-			emit_struct_conv (mb, klass, FALSE);
+		case MONO_TYPE_CLASS:
+			emit_marshal (&m, 0, sig->ret, mspecs [0], 0, NULL, MARSHAL_ACTION_MANAGED_CONV_RESULT);
 			break;
-		case MONO_TYPE_CLASS: {
-			int pos2;
-
-			klass = sig->ret->data.klass;
-
-			if (klass->delegate) {
-				mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_DEL_FTN));
-				mono_mb_emit_byte (mb, CEE_STLOC_3);
-				break;
-			}
-
-			/* The class can not have an automatic layout */
-			if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
-				raise_auto_layout_exception (klass);
-
-			mono_mb_emit_byte (mb, CEE_STLOC_0);
-			/* Check for null */
-			mono_mb_emit_byte (mb, CEE_LDLOC_0);
-			pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
-			mono_mb_emit_byte (mb, CEE_LDNULL);
-			mono_mb_emit_byte (mb, CEE_STLOC_3);
-			pos2 = mono_mb_emit_branch (mb, CEE_BR);
-
-			mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
-
-			/* Set src */
-			mono_mb_emit_byte (mb, CEE_LDLOC_0);
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-			mono_mb_emit_icon (mb, sizeof (MonoObject));
-			mono_mb_emit_byte (mb, CEE_ADD);
-			mono_mb_emit_byte (mb, CEE_STLOC_0);
-
-			/* Allocate and set dest */
-			mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
-			mono_mb_emit_byte (mb, CEE_CONV_I);
-			mono_mb_emit_native_call (mb, alloc_sig, mono_marshal_alloc);
-			emit_thread_interrupt_checkpoint (mb);
-			mono_mb_emit_byte (mb, CEE_DUP);
-			mono_mb_emit_byte (mb, CEE_STLOC_1);
-			mono_mb_emit_byte (mb, CEE_STLOC_3);
-
-			emit_struct_conv (mb, klass, FALSE);
-
-			mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
-			break;
-		}
 		default:
 			g_warning ("return type 0x%02x unknown", sig->ret->type);	
 			g_assert_not_reached ();
@@ -6258,131 +6200,23 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 		MonoMarshalSpec *spec = mspecs [i + 1];
 
 		if (spec && spec->native == MONO_NATIVE_CUSTOM) {
-			MonoType *mtype;
-			MonoClass *mklass;
-			MonoMethod *cleanup_managed;
-			MonoMethod *get_instance;
-
-			mtype = mono_reflection_type_from_name (spec->data.custom_data.custom_name, method->klass->image);
-			g_assert (mtype != NULL);
-			mklass = mono_class_from_mono_type (mtype);
-			g_assert (mklass != NULL);
-
-			get_instance = mono_class_get_method_from_name (mklass, "GetInstance", 1);
-			g_assert (get_instance);
-			cleanup_managed = mono_class_get_method_from_name (mklass, "CleanUpManagedData", 1);
-			g_assert (cleanup_managed);
-
+			emit_marshal (&m, i, t, mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_MANAGED_CONV_OUT);
+		}
+		else if (t->byref) {
 			switch (t->type) {
 			case MONO_TYPE_CLASS:
-			case MONO_TYPE_OBJECT:
-			case MONO_TYPE_STRING:
-			case MONO_TYPE_ARRAY:
-			case MONO_TYPE_SZARRAY:
-				if (t->byref)
-					g_assert_not_reached ();
-
-				/* Call CleanUpManagedData */
-
-				mono_mb_emit_ldstr (mb, g_strdup (spec->data.custom_data.cookie));
-
-				mono_mb_emit_byte (mb, CEE_CALL);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
-				
-				mono_mb_emit_ldloc (mb, tmp_locals [i]);
-				mono_mb_emit_byte (mb, CEE_CALLVIRT);
-				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, cleanup_managed));
-				
-				break;
-			default:
-				g_warning ("custom marshalling of type %x is currently not supported", t->type);
-				g_assert_not_reached ();
+			case MONO_TYPE_VALUETYPE:
+				emit_marshal (&m, i, t, mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_MANAGED_CONV_OUT);
 				break;
 			}
-			continue;
-		}
-
-		if (!t->byref)
-			continue;
-
-		switch (t->type) {
-		case MONO_TYPE_CLASS: {
-			int pos2;
-
-			klass = t->data.klass;
-
-			/* Check for null */
-			mono_mb_emit_ldloc (mb, tmp_locals [i]);
-			pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
-			mono_mb_emit_ldarg (mb, i);
-			mono_mb_emit_byte (mb, CEE_LDC_I4_0);
-			mono_mb_emit_byte (mb, CEE_STIND_I);
-			pos2 = mono_mb_emit_branch (mb, CEE_BR);
-
-			mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));			
-			
-			/* Set src */
-			mono_mb_emit_ldloc (mb, tmp_locals [i]);
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
-			mono_mb_emit_icon (mb, sizeof (MonoObject));
-			mono_mb_emit_byte (mb, CEE_ADD);
-			mono_mb_emit_byte (mb, CEE_STLOC_0);
-
-			/* Allocate and set dest */
-			mono_mb_emit_icon (mb, mono_class_native_size (klass, NULL));
-			mono_mb_emit_byte (mb, CEE_CONV_I);
-			mono_mb_emit_native_call (mb, alloc_sig, mono_marshal_alloc);
-			emit_thread_interrupt_checkpoint (mb);
-			mono_mb_emit_byte (mb, CEE_STLOC_1);
-
-			/* Update argument pointer */
-			mono_mb_emit_ldarg (mb, i);
-			mono_mb_emit_byte (mb, CEE_LDLOC_1);
-			mono_mb_emit_byte (mb, CEE_STIND_I);
-
-			/* emit valuetype conversion code */
-			emit_struct_conv (mb, klass, FALSE);
-
-			mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
-			break;
-		}
-		case MONO_TYPE_VALUETYPE: {
-			int pos2;
-
-			klass = t->data.klass;
-
-			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
-			    klass->blittable || klass->enumtype) {
-				break;
-			}
-
-			/* Check for null */
-			mono_mb_emit_ldarg (mb, i);
-			pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
-
-			/* Set src */
-			mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
-			mono_mb_emit_byte (mb, CEE_STLOC_0);
-
-			/* Set dest */
-			mono_mb_emit_ldarg (mb, i);
-			mono_mb_emit_byte (mb, CEE_STLOC_1);
-
-			/* emit valuetype conversion code */
-			emit_struct_conv (mb, klass, FALSE);
-
-			mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
-			break;
-		}
 		}
 	}
 
-	if (retobj_var) {
-		mono_mb_emit_ldloc (mb, retobj_var);
+	if (m.retobj_var) {
+		mono_mb_emit_ldloc (mb, m.retobj_var);
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 		mono_mb_emit_byte (mb, CEE_MONO_RETOBJ);
-		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, klass));
+		mono_mb_emit_i4 (mb, mono_mb_add_data (mb, m.retobj_class));
 	}
 	else {
 		if (!MONO_TYPE_IS_VOID(sig->ret))
