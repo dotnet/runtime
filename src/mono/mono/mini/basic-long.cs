@@ -708,5 +708,13 @@ class Tests {
 			return 2;
 		return 0;
 	}
+
+	static int test_71_long_shift_right () {
+		ulong value = 38654838087;
+		int x = 0;
+		byte [] buffer = new byte [1];
+		buffer [x] = ((byte)(value >> x));
+		return buffer [x];
+	}
 }
 

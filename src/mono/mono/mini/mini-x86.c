@@ -1542,11 +1542,6 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				rs->isymbolic [X86_ECX] = ins->sreg2;
 				ins->sreg2 = X86_ECX;
 				rs->ifree_mask &= ~ (1 << X86_ECX);
-
-				if (clob_dreg != -1 && reg_is_freeable (ins->dreg) && clob_dreg >= 0 && reginfo [clob_dreg].born_in >= i) {
-					DEBUG (g_print ("\tfreeable moved reg %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), clob_dreg, reginfo [clob_dreg].born_in));
-					mono_regstate_free_int (rs, ins->dreg);
-				}
 			}
 		} else if (spec [MONO_INST_CLOB] == 'd') { /* division */
 			int dest_reg = X86_EAX;
@@ -1652,15 +1647,15 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 				val = mono_regstate_alloc_int (rs, dest_mask);
 				if (val < 0) /* todo: should we force reg into eax, for opt reasons? */
-					val = get_register_spilling (cfg, tmp, ins, dest_mask, ins->dreg);
-				rs->iassign [ins->dreg] = val;
+					val = get_register_spilling (cfg, tmp, ins, dest_mask, prev_dreg);
+				rs->iassign [prev_dreg] = val;
 				if (spill)
 					create_spilled_store (cfg, spill, val, prev_dreg, ins);
 			}
 
-			DEBUG (g_print ("\tassigned dreg (long) %s to dest R%d\n", mono_arch_regname (val), hreg - 1));
+			DEBUG (g_print ("\tassigned dreg (long) %s to dest R%d\n", mono_arch_regname (val), prev_dreg));
 
-			rs->isymbolic [val] = hreg - 1;
+			rs->isymbolic [val] = prev_dreg;
 			ins->dreg = val;
 			
 			val = rs->iassign [hreg];
