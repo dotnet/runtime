@@ -628,11 +628,60 @@ dump_stack (stackval *stack, stackval *sp)
 			break;
 		case VAL_OBJ: {
 			MonoObject *obj =  s->data.p;
-			if (global_no_pointers && obj && mono_object_class (obj) == mono_defaults.string_class) {
-				char *utf8 = mono_string_to_utf8 ((MonoString*) obj);
-				g_string_sprintfa (str, "[str:%s] ", utf8);
-				g_free (utf8);
-				break;
+			if (global_no_pointers && obj && obj->vtable) {
+				MonoClass *klass = mono_object_class (obj);
+				if (klass == mono_defaults.string_class) {
+					char *utf8 = mono_string_to_utf8 ((MonoString*) obj);
+					g_string_sprintfa (str, "[str:%s] ", utf8);
+					g_free (utf8);
+					break;
+				} else if (klass == mono_defaults.sbyte_class) {
+					g_string_sprintfa (str, "[b:%d] ",
+							   *(gint8 *)((guint8 *) obj + sizeof (MonoObject)));
+					break;
+				} else if (klass == mono_defaults.int16_class) {
+					g_string_sprintfa (str, "[b:%d] ",
+							   *(gint16 *)((guint8 *) obj + sizeof (MonoObject)));
+					break;
+				} else if (klass == mono_defaults.int32_class) {
+					g_string_sprintfa (str, "[b:%d] ",
+							   *(gint32 *)((guint8 *) obj + sizeof (MonoObject)));
+					break;
+				} else if (klass == mono_defaults.byte_class) {
+					g_string_sprintfa (str, "[b:%u] ",
+							   *(guint8 *)((guint8 *) obj + sizeof (MonoObject)));
+					break;
+				} else if (klass == mono_defaults.char_class
+					   || klass == mono_defaults.uint16_class) {
+					g_string_sprintfa (str, "[b:%u] ",
+							   *(guint16 *)((guint8 *) obj + sizeof (MonoObject)));
+					break;
+				} else if (klass == mono_defaults.uint32_class) {
+					g_string_sprintfa (str, "[b:%u] ",
+							   *(guint32 *)((guint8 *) obj + sizeof (MonoObject)));
+					break;
+				} else if (klass == mono_defaults.int64_class) {
+					g_string_sprintfa (str, "[b:%lld] ",
+							   *(gint64 *)((guint8 *) obj + sizeof (MonoObject)));
+					break;
+				} else if (klass == mono_defaults.uint64_class) {
+					g_string_sprintfa (str, "[b:%llu] ",
+							   *(guint64 *)((guint8 *) obj + sizeof (MonoObject)));
+					break;
+				} else if (klass == mono_defaults.double_class) {
+					g_string_sprintfa (str, "[b:%0.5f] ",
+							   *(gdouble *)((guint8 *) obj + sizeof (MonoObject)));
+					break;
+				} else if (klass == mono_defaults.single_class) {
+					g_string_sprintfa (str, "[b:%0.5f] ",
+							   *(gfloat *)((guint8 *) obj + sizeof (MonoObject)));
+					break;
+				} else if (klass == mono_defaults.boolean_class) {
+					g_string_sprintfa (str, "[b:%s] ",
+							   *(gboolean *)((guint8 *) obj + sizeof (MonoObject))
+							   ? "true" : "false");
+					break;
+				}
 			}
 			/* fall thru */
 		}
