@@ -1055,13 +1055,21 @@ thread_alloc_static_data (MonoThread *thread, guint32 offset)
 	int i;
 
 	if (!thread->static_data) {
+#if HAVE_BOEHM_GC
 		thread->static_data = GC_MALLOC (static_data_size [0]);
+#else
+		thread->static_data = g_malloc0 (static_data_size [0]);
+#endif
 		thread->static_data [0] = thread->static_data;
 	}
 	for (i = 1; i < idx; ++i) {
 		if (thread->static_data [i])
 			continue;
+#if HAVE_BOEHM_GC
 		thread->static_data [i] = GC_MALLOC (static_data_size [i]);
+#else
+		thread->static_data [i] = g_malloc0 (static_data_size [i]);
+#endif
 	}
 	
 }
