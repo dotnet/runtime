@@ -320,6 +320,10 @@ typedef union {
 #define x86_cld(inst) do { *(inst)++ =(unsigned char)0xfc; } while (0)
 #define x86_stosb(inst) do { *(inst)++ =(unsigned char)0xaa; } while (0)
 #define x86_stosl(inst) do { *(inst)++ =(unsigned char)0xab; } while (0)
+#define x86_stosd(inst) x86_stosl((inst))
+#define x86_movsb(inst) do { *(inst)++ =(unsigned char)0xa4; } while (0)
+#define x86_movsl(inst) do { *(inst)++ =(unsigned char)0xa5; } while (0)
+#define x86_movsd(inst) x86_movsl((inst))
 
 #define x86_prefix(inst,p) do { *(inst)++ =(unsigned char) (p); } while (0)
 

@@ -214,6 +214,9 @@ gboolean mono_use_linear_scan = TRUE;
 /* inline code */
 gboolean mono_jit_inline_code = TRUE;
 
+/* inline memcpy */
+gboolean mono_inline_memcpy = TRUE;
+
 /* Use alternative (faster) sequence to convert FP values to integers */
 gboolean mono_use_fast_iconv = FALSE;
 

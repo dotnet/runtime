@@ -225,6 +225,7 @@ extern gboolean mono_jit_inline_code;
 extern gboolean mono_use_linear_scan;
 extern gboolean mono_use_fast_iconv;
 extern gboolean mono_break_on_exc;
+extern gboolean mono_inline_memcpy;
 
 extern guint32  mono_jit_tls_id;
 

@@ -1713,8 +1713,8 @@ reg: NEWOBJ_SPEC {
 }
 
 reg: LOCALLOC (reg) {
-
-	/* size must be aligne to 4 bytes */
+	int offset = 0;
+	/* size must be aligned to 4 bytes */
 	x86_alu_reg_imm (s->code, X86_ADD, tree->left->reg1, 3);
 	x86_alu_reg_imm (s->code, X86_AND, tree->left->reg1, ~3);
 
@@ -1723,16 +1723,25 @@ reg: LOCALLOC (reg) {
 
 	if (tree->data.i) {
 		/* initialize with zero */
-
-		if (tree->reg1 != X86_EAX && tree->left->reg1 != X86_EAX)
+		if (tree->reg1 != X86_EAX && tree->left->reg1 != X86_EAX) {
 			x86_push_reg (s->code, X86_EAX);
-		if (tree->reg1 != X86_ECX && tree->left->reg1 != X86_ECX)
+			offset += 4;
+		}
+		if (tree->reg1 != X86_ECX && tree->left->reg1 != X86_ECX) {
 			x86_push_reg (s->code, X86_ECX);
-
+			offset += 4;
+		}
+		if (tree->reg1 != X86_EDI && tree->left->reg1 != X86_EDI) {
+			x86_push_reg (s->code, X86_EDI);
+			offset += 4;
+		}
+		
 		x86_shift_reg_imm (s->code, X86_SHR, tree->left->reg1, 2);
 		if (tree->left->reg1 != X86_ECX)
 			x86_mov_reg_imm (s->code, X86_ECX, tree->left->reg1);
 		x86_alu_reg_reg (s->code, X86_XOR, X86_EAX, X86_EAX);
+				
+		x86_lea_membase (s->code, X86_EDI, X86_ESP, offset);
 		x86_cld (s->code);
 		x86_prefix (s->code, X86_REP_PREFIX);
 		x86_stosl (s->code);
@@ -1741,6 +1750,8 @@ reg: LOCALLOC (reg) {
 			x86_pop_reg (s->code, X86_ECX);
 		if (tree->reg1 != X86_EAX && tree->left->reg1 != X86_EAX)
 			x86_pop_reg (s->code, X86_EAX);
+		if (tree->reg1 != X86_EDI && tree->left->reg1 != X86_EDI)
+			x86_pop_reg (s->code, X86_EDI);
 	}
 
 	x86_mov_reg_reg (s->code, tree->reg1, X86_ESP, 4);
@@ -1907,21 +1918,17 @@ stmt: INITOBJ (reg) {
 	i = tree->data.i / 4;
 	j = tree->data.i % 4;
 
-	x86_push_reg (s->code, X86_EAX);
-	
 	if (tree->left->reg1 != X86_EDI) {
 		x86_push_reg (s->code, X86_EDI);
 		x86_mov_reg_reg (s->code, X86_EDI, tree->left->reg1, 4);
 	}
 
 	if (i) {
-		x86_push_reg (s->code, X86_ECX);
 		x86_alu_reg_reg (s->code, X86_XOR, X86_EAX, X86_EAX);
 		x86_mov_reg_imm (s->code, X86_ECX, i);
 		x86_cld (s->code);
 		x86_prefix (s->code, X86_REP_PREFIX);
 		x86_stosl (s->code);
-		x86_pop_reg (s->code, X86_ECX);
 
 		for (i = 0; i < j; i++)
 			x86_stosb (s->code);
@@ -1936,34 +1943,448 @@ stmt: INITOBJ (reg) {
 
 	if (tree->left->reg1 != X86_EDI)
 		x86_pop_reg (s->code, X86_EDI);
+}
+
+stmt: CPBLK (reg, CPSRC (reg, CONST_I4)) {
+	int dest_reg = tree->left->reg1;
+	int source_reg = tree->right->left->reg1;
+	int count = tree->right->right->data.i;
+	int sreg = dest_reg != X86_EAX ? X86_EAX : X86_EDX;
+	int spill_pos = 0, dest_offset = 0, source_offset = 0;
+	int save_esi = FALSE, save_edi = FALSE;
+
+	// TODO: handle unaligned. prefix
+
+	switch (count) {
+	case 0:
+		break;
+	case 1:
+		x86_mov_reg_membase (s->code, sreg, source_reg, 0, 1);
+		x86_mov_membase_reg (s->code, dest_reg, 0, sreg, 1);
+		break;
+	case 2:
+		x86_mov_reg_membase (s->code, sreg, source_reg, 0, 2);
+		x86_mov_membase_reg (s->code, dest_reg, 0, sreg, 2);
+		break;
+	case 3:
+		x86_mov_reg_membase (s->code, sreg, source_reg, 0, 2);
+		x86_mov_membase_reg (s->code, dest_reg, 0, sreg, 2);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 2, 1);
+		x86_mov_membase_reg (s->code, dest_reg, 2, sreg, 1);
+		break;
+	case 4:
+		x86_mov_reg_membase (s->code, sreg, source_reg, 0, 4);
+		x86_mov_membase_reg (s->code, dest_reg, 0, sreg, 4);
+		break;
+	case 5:
+		x86_mov_reg_membase (s->code, sreg, source_reg, 0, 4);
+		x86_mov_membase_reg (s->code, dest_reg, 0, sreg, 4);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 4, 1);
+		x86_mov_membase_reg (s->code, dest_reg, 4, sreg, 1);
+		break;
+	case 6:
+		x86_mov_reg_membase (s->code, sreg, source_reg, 0, 4);
+		x86_mov_membase_reg (s->code, dest_reg, 0, sreg, 4);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 4, 2);
+		x86_mov_membase_reg (s->code, dest_reg, 4, sreg, 2);
+		break;
+	case 7:
+		x86_mov_reg_membase (s->code, sreg, source_reg, 0, 4);
+		x86_mov_membase_reg (s->code, dest_reg, 0, sreg, 4);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 4, 2);
+		x86_mov_membase_reg (s->code, dest_reg, 4, sreg, 2);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 6, 1);
+		x86_mov_membase_reg (s->code, dest_reg, 6, sreg, 1);
+		break;
+	case 8:
+		x86_fild_membase (s->code, source_reg, 0, TRUE);
+		x86_fist_pop_membase (s->code, dest_reg, 0, TRUE);
+		break;
+	case 9:
+		x86_fild_membase (s->code, source_reg, 0, TRUE);
+		x86_fist_pop_membase (s->code, dest_reg, 0, TRUE);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 8, 1);
+		x86_mov_membase_reg (s->code, dest_reg, 8, sreg, 1);
+		break;
+	case 10:
+		x86_fild_membase (s->code, source_reg, 0, TRUE);
+		x86_fist_pop_membase (s->code, dest_reg, 0, TRUE);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 8, 2);
+		x86_mov_membase_reg (s->code, dest_reg, 8, sreg, 2);
+		break;
+	case 11:
+		x86_fild_membase (s->code, source_reg, 0, TRUE);
+		x86_fist_pop_membase (s->code, dest_reg, 0, TRUE);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 8, 2);
+		x86_mov_membase_reg (s->code, dest_reg, 8, sreg, 2);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 10, 1);
+		x86_mov_membase_reg (s->code, dest_reg, 10, sreg, 1);
+		break;
+	case 12:
+		x86_fild_membase (s->code, source_reg, 0, TRUE);
+		x86_fist_pop_membase (s->code, dest_reg, 0, TRUE);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 8, 4);
+		x86_mov_membase_reg (s->code, dest_reg, 8, sreg, 4);
+		break;
+	case 13:
+		x86_fild_membase (s->code, source_reg, 0, TRUE);
+		x86_fist_pop_membase (s->code, dest_reg, 0, TRUE);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 8, 4);
+		x86_mov_membase_reg (s->code, dest_reg, 8, sreg, 4);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 12, 1);
+		x86_mov_membase_reg (s->code, dest_reg, 12, sreg, 1);
+		break;
+	case 14:
+		x86_fild_membase (s->code, source_reg, 0, TRUE);
+		x86_fist_pop_membase (s->code, dest_reg, 0, TRUE);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 8, 4);
+		x86_mov_membase_reg (s->code, dest_reg, 8, sreg, 4);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 12, 2);
+		x86_mov_membase_reg (s->code, dest_reg, 12, sreg, 2);
+		break;
+	case 15:
+		x86_fild_membase (s->code, source_reg, 0, TRUE);
+		x86_fist_pop_membase (s->code, dest_reg, 0, TRUE);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 8, 4);
+		x86_mov_membase_reg (s->code, dest_reg, 8, sreg, 4);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 12, 2);
+		x86_mov_membase_reg (s->code, dest_reg, 12, sreg, 2);
+		x86_mov_reg_membase (s->code, sreg, source_reg, 14, 1);
+		x86_mov_membase_reg (s->code, dest_reg, 14, sreg, 1);
+		break;
+	default: 
+		g_assert (count > 15);
+
+		if (dest_reg != X86_ESI && source_reg != X86_ESI &&
+		    mono_regset_reg_used (s->rs, X86_ESI))
+			save_esi = TRUE;
+		if (dest_reg != X86_EDI && source_reg != X86_EDI &&
+		    mono_regset_reg_used (s->rs, X86_EDI))
+			save_edi = TRUE;
+
+		if (save_esi)
+			x86_push_reg (s->code, X86_ESI);
+		if (save_edi)
+			x86_push_reg (s->code, X86_EDI);
+
+		if (dest_reg == X86_ESI) {
+			dest_offset = ++spill_pos; 
+		}	   
+		if (source_reg == X86_EDI) {
+			source_offset = ++spill_pos; 
+		}	   
+
+		if (source_offset)
+			x86_push_reg (s->code, source_reg);
+		if (dest_offset)
+			x86_push_reg (s->code, dest_reg);
 	
-	x86_pop_reg (s->code, X86_EAX);
+		if (source_reg != X86_ESI) {
+			if (source_offset)
+				x86_mov_reg_membase (s->code, X86_ESI, X86_ESP, (source_offset-1)<<2, 4);
+			else
+				x86_mov_reg_reg (s->code, X86_ESI, source_reg, 4);
+		}
+		if (dest_reg != X86_EDI) {
+			if (dest_offset)
+				x86_mov_reg_membase (s->code, X86_EDI, X86_ESP, (dest_offset-1)<<2, 4);
+			else
+				x86_mov_reg_reg (s->code, X86_EDI, dest_reg, 4);
+		}
+
+		x86_mov_reg_imm (s->code, X86_ECX, count >> 2);	
+		x86_cld (s->code);
+		x86_prefix (s->code, X86_REP_PREFIX);
+		x86_movsd (s->code);
+
+		switch (count & 3) {
+		case 1:
+			x86_mov_reg_membase (s->code, sreg, X86_ESI, 0, 1);
+			x86_mov_membase_reg (s->code, X86_EDI, 0, sreg, 1);
+			break;
+		case 2:
+			x86_mov_reg_membase (s->code, sreg, X86_ESI, 0, 2);
+			x86_mov_membase_reg (s->code, X86_EDI, 0, sreg, 2);
+			break;
+		case 3:
+			x86_mov_reg_membase (s->code, sreg, X86_ESI, 0, 2);
+			x86_mov_membase_reg (s->code, X86_EDI, 0, sreg, 2);
+			x86_mov_reg_membase (s->code, sreg, X86_ESI, 2, 1);
+			x86_mov_membase_reg (s->code, X86_EDI, 2, sreg, 1);
+			break;
+		default:
+			break;
+		}
+
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, spill_pos<<2);
+
+		if (save_edi)
+			x86_pop_reg (s->code, X86_EDI);
+		if (save_esi)
+			x86_pop_reg (s->code, X86_ESI);
+
+		break;
+	}
+} cost {
+	MBCOND (mono_inline_memcpy);
+	return 0;
 }
 
 stmt: CPBLK (reg, CPSRC (reg, reg)) {
 	int dest_reg = tree->left->reg1;
 	int source_reg = tree->right->left->reg1;
 	int size_reg = tree->right->right->reg1;
+	int spill_pos = 0, size_offset = 0, dest_offset = 0, source_offset = 0;
+	int save_esi = FALSE, save_edi = FALSE;
 
-	x86_push_reg (s->code, size_reg);
-	x86_push_reg (s->code, source_reg);
-	x86_push_reg (s->code, dest_reg);
-	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, memmove);
-	x86_call_code (s->code, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
+	if (!mono_inline_memcpy) {
+		x86_push_reg (s->code, size_reg);
+		x86_push_reg (s->code, source_reg);
+		x86_push_reg (s->code, dest_reg);
+		mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, memmove);
+		x86_call_code (s->code, 0);
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
+	} else {
+		if (dest_reg != X86_ESI && source_reg != X86_ESI && size_reg != X86_ESI &&
+		    mono_regset_reg_used (s->rs, X86_ESI))
+			save_esi = TRUE;
+		if (dest_reg != X86_EDI && source_reg != X86_EDI && size_reg != X86_EDI &&
+		    mono_regset_reg_used (s->rs, X86_EDI))
+			save_edi = TRUE;
+
+		if (save_esi)
+			x86_push_reg (s->code, X86_ESI);
+		if (save_edi)
+			x86_push_reg (s->code, X86_EDI);
+
+		if (size_reg == X86_EDI || size_reg == X86_ESI) {
+			size_offset = ++spill_pos; 
+		}	   
+		if (dest_reg == X86_ECX || dest_reg == X86_ESI) {
+			dest_offset = ++spill_pos; 
+		}	   
+		if (source_reg == X86_ECX || source_reg == X86_EDI) {
+			source_offset = ++spill_pos; 
+		}	   
+
+		if (source_offset)
+			x86_push_reg (s->code, source_reg);
+		if (dest_offset)
+			x86_push_reg (s->code, dest_reg);
+		if (size_offset)
+			x86_push_reg (s->code, size_reg);
+	
+		if (source_reg != X86_ESI) {
+			if (source_offset)
+				x86_mov_reg_membase (s->code, X86_ESI, X86_ESP, (source_offset-1)<<2, 4);
+			else
+				x86_mov_reg_reg (s->code, X86_ESI, source_reg, 4);
+		}
+		if (dest_reg != X86_EDI) {
+			if (dest_offset)
+				x86_mov_reg_membase (s->code, X86_EDI, X86_ESP, (dest_offset-1)<<2, 4);
+			else
+				x86_mov_reg_reg (s->code, X86_EDI, dest_reg, 4);
+		}
+		if (size_reg != X86_ECX) {
+			if (size_offset)
+				x86_mov_reg_membase (s->code, X86_ECX, X86_ESP, (size_offset-1)<<2, 4);
+			else
+				x86_mov_reg_reg (s->code, X86_ECX, size_reg, 4);
+		}
+
+		x86_push_reg (s->code, X86_ECX);
+		x86_shift_reg_imm (s->code, X86_SHR, X86_ECX, 2);
+
+		x86_cld (s->code);
+	
+		// move whole dwords first
+		x86_prefix (s->code, X86_REP_PREFIX);
+		x86_movsd (s->code);
+
+		x86_pop_reg (s->code, X86_ECX);
+		x86_alu_reg_imm (s->code, X86_AND, X86_ECX, 3);
+
+		// move remaining bytes (if any)
+		x86_prefix (s->code, X86_REP_PREFIX);
+		x86_movsb (s->code);
+
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, spill_pos<<2);
+		
+		if (save_edi)
+			x86_pop_reg (s->code, X86_EDI);
+		if (save_esi)
+			x86_pop_reg (s->code, X86_ESI);
+	}
+}
+
+stmt: INITBLK (reg, CPSRC (reg, CONST_I4)) {
+	int dest_reg = tree->left->reg1;
+	int value_reg = tree->right->left->reg1;
+	int size = tree->right->right->data.i;
+	int spill_pos = 0, dest_offset = 0, value_offset = 0;
+	int save_edi = FALSE;
+	int i, j;
+
+	i = size / 4;
+	j = size % 4;
+
+	if (mono_inline_memcpy) {
+
+		if (dest_reg != X86_EDI && value_reg != X86_EDI &&
+		    mono_regset_reg_used (s->rs, X86_EDI)) {
+			save_edi = TRUE;
+			x86_push_reg (s->code, X86_EDI);
+		}
+
+		if (dest_reg == X86_ECX || dest_reg == X86_EAX) {
+			dest_offset = ++spill_pos; 
+		}	   
+		if (value_reg == X86_ECX || value_reg == X86_EDI) {
+			value_offset = ++spill_pos; 
+		}	   
+
+		if (value_offset)
+			x86_push_reg (s->code, value_reg);
+		if (dest_offset)
+			x86_push_reg (s->code, dest_reg);
+
+		if (value_reg != X86_EAX) {
+			if (value_offset)
+				x86_mov_reg_membase (s->code, X86_EAX, X86_ESP, (value_offset-1)<<2, 4);
+			else
+				x86_mov_reg_reg (s->code, X86_EAX, value_reg, 4);
+		}
+		if (dest_reg != X86_EDI) {
+			if (dest_offset)
+				x86_mov_reg_membase (s->code, X86_EDI, X86_ESP, (dest_offset-1)<<2, 4);
+			else
+				x86_mov_reg_reg (s->code, X86_EDI, dest_reg, 4);
+		}
+
+		x86_widen_reg (s->code, X86_EAX, X86_EAX, FALSE, FALSE);
+		x86_mov_reg_reg (s->code, X86_EDX, X86_EAX, 4);
+		x86_shift_reg_imm (s->code, X86_SHL, X86_EAX, 8);
+		x86_alu_reg_reg (s->code, X86_OR, X86_EAX, X86_EDX);
+		x86_mov_reg_reg (s->code, X86_EDX, X86_EAX, 4);
+		x86_shift_reg_imm (s->code, X86_SHL, X86_EAX, 16);
+		x86_alu_reg_reg (s->code, X86_OR, X86_EAX, X86_EDX);
+
+		if (i) {
+			x86_mov_reg_imm (s->code, X86_ECX, i);
+			x86_cld (s->code);
+			x86_prefix (s->code, X86_REP_PREFIX);
+			x86_stosd (s->code);
+		}
+
+		for (i = 0; i < j; i++)
+			x86_stosb (s->code);
+	
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, spill_pos<<2);
+
+		if (save_edi)
+			x86_pop_reg (s->code, X86_EDI);
+
+	} else {
+		x86_push_imm (s->code, size);
+		x86_push_reg (s->code, value_reg);
+		x86_push_reg (s->code, dest_reg);
+		mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, memset);
+		x86_call_code (s->code, 0);
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
+	}
+} cost {
+	MBCOND (mono_inline_memcpy);
+	return 0;
 }
 
 stmt: INITBLK (reg, CPSRC (reg, reg)) {
 	int dest_reg = tree->left->reg1;
-	int source_reg = tree->right->left->reg1;
+	int value_reg = tree->right->left->reg1;
 	int size_reg = tree->right->right->reg1;
+	int spill_pos = 0, size_offset = 0, dest_offset = 0, value_offset = 0;
+	int save_edi = FALSE;
 
-	x86_push_reg (s->code, size_reg);
-	x86_push_reg (s->code, source_reg);
-	x86_push_reg (s->code, dest_reg);
-	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, memset);
-	x86_call_code (s->code, 0);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
+	if (mono_inline_memcpy) {
+
+		if (dest_reg != X86_EDI && size_reg != X86_EDI && size_reg != X86_EDI &&
+		    mono_regset_reg_used (s->rs, X86_EDI)) {
+			save_edi = TRUE;
+			x86_push_reg (s->code, X86_EDI);
+		}
+
+		if (size_reg == X86_EDI || size_reg == X86_EAX) {
+			size_offset = ++spill_pos; 
+		}	   
+		if (dest_reg == X86_ECX || dest_reg == X86_EAX) {
+			dest_offset = ++spill_pos; 
+		}	   
+		if (value_reg == X86_ECX || value_reg == X86_EDI) {
+			value_offset = ++spill_pos; 
+		}	   
+
+		if (value_offset)
+			x86_push_reg (s->code, value_reg);
+		if (dest_offset)
+			x86_push_reg (s->code, dest_reg);
+		if (size_offset)
+			x86_push_reg (s->code, size_reg);
+
+		if (value_reg != X86_EAX) {
+			if (value_offset)
+				x86_mov_reg_membase (s->code, X86_EAX, X86_ESP, (value_offset-1)<<2, 4);
+			else
+				x86_mov_reg_reg (s->code, X86_EAX, value_reg, 4);
+		}
+		if (dest_reg != X86_EDI) {
+			if (dest_offset)
+				x86_mov_reg_membase (s->code, X86_EDI, X86_ESP, (dest_offset-1)<<2, 4);
+			else
+				x86_mov_reg_reg (s->code, X86_EDI, dest_reg, 4);
+		}
+		if (size_reg != X86_ECX) {
+			if (size_offset)
+				x86_mov_reg_membase (s->code, X86_ECX, X86_ESP, (size_offset-1)<<2, 4);
+			else
+				x86_mov_reg_reg (s->code, X86_ECX, size_reg, 4);
+		}
+
+		x86_widen_reg (s->code, X86_EAX, X86_EAX, FALSE, FALSE);
+		x86_mov_reg_reg (s->code, X86_EDX, X86_EAX, 4);
+		x86_shift_reg_imm (s->code, X86_SHL, X86_EAX, 8);
+		x86_alu_reg_reg (s->code, X86_OR, X86_EAX, X86_EDX);
+		x86_mov_reg_reg (s->code, X86_EDX, X86_EAX, 4);
+		x86_shift_reg_imm (s->code, X86_SHL, X86_EAX, 16);
+		x86_alu_reg_reg (s->code, X86_OR, X86_EAX, X86_EDX);
+
+		x86_push_reg (s->code, X86_ECX);
+		x86_shift_reg_imm (s->code, X86_SHR, X86_ECX, 2);
+		x86_cld (s->code);
+
+		// init whole dwords first
+		x86_prefix (s->code, X86_REP_PREFIX);
+		x86_stosd (s->code);
+
+		x86_pop_reg (s->code, X86_ECX);
+		x86_alu_reg_imm (s->code, X86_AND, X86_ECX, 3);
+
+		// init remaining bytes (if any)
+		x86_prefix (s->code, X86_REP_PREFIX);
+		x86_stosb (s->code);
+
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, spill_pos<<2);
+
+		if (save_edi)
+			x86_pop_reg (s->code, X86_EDI);
+
+	} else {
+		x86_push_reg (s->code, size_reg);
+		x86_push_reg (s->code, value_reg);
+		x86_push_reg (s->code, dest_reg);
+		mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, memset);
+		x86_call_code (s->code, 0);
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
+	}
 }
 
 stmt: NOP

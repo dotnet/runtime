@@ -206,6 +206,7 @@ usage (char *name)
 		 "Runtime:\n"
 		 "    --fast-iconv       Use fast floating point integer conversion\n"
 		 "    --noinline         Disable code inliner\n"
+		 "    --nointrinsic      Disable memcopy inliner\n"
 		 "    --nols             disable linear scan register allocation\n"
 		 "    --share-code       force jit to produce shared code\n"
 		 "    --workers n        maximum number of worker threads\n"
@@ -250,6 +251,8 @@ main (int argc, char *argv [])
 			mono_jit_share_code = TRUE;
 		else if (strcmp (argv [i], "--noinline") == 0)
 			mono_jit_inline_code = FALSE;
+		else if (strcmp (argv [i], "--nointrinsic") == 0)
+			mono_inline_memcpy = FALSE;
 		else if (strcmp (argv [i], "--nols") == 0)
 			mono_use_linear_scan = FALSE;
 		else if (strcmp (argv [i], "--breakonex") == 0)
