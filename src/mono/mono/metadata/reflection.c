@@ -490,7 +490,7 @@ fat_header:
 					mono_image_add_stream_data (&assembly->code, (char*)&clause, sizeof (clause));
 				}
 			} else {
-				g_error ("No clauses");
+				g_error ("No clauses for ex info block %d", i);
 			}
 		}
 	}

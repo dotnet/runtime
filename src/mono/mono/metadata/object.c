@@ -206,14 +206,13 @@ mono_object_new (MonoDomain *domain, MonoClass *klass)
 
 	if (klass->ghcimpl) {
 		o = mono_object_allocate (klass->instance_size);
-		o->vtable = mono_class_vtable (domain, klass);
 	} else {
 		guint32 *t;
 		t = mono_object_allocate (klass->instance_size + 4);
 		*t = ++uoid;
 		o = (MonoObject *)(++t);
-		o->vtable = mono_class_vtable (domain, klass);
 	}
+	o->vtable = mono_class_vtable (domain, klass);
 
 	return o;
 }
@@ -299,7 +298,7 @@ MonoArray*
 mono_array_new_full (MonoDomain *domain, MonoClass *array_class, 
 		     guint32 *lengths, guint32 *lower_bounds)
 {
-	guint32 byte_len;
+	guint32 byte_len, len;
 	MonoObject *o;
 	MonoArray *array;
 	MonoArrayBounds *bounds;
@@ -309,6 +308,7 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 		mono_class_init (array_class);
 
 	byte_len = mono_array_element_size (array_class);
+	len = 1;
 
 #if HAVE_BOEHM_GC
 	bounds = GC_debug_malloc (sizeof (MonoArrayBounds) * array_class->rank, "bounds", 0);
@@ -317,12 +317,13 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 #endif
 	for (i = 0; i < array_class->rank; ++i) {
 		bounds [i].length = lengths [i];
-		byte_len *= lengths [i];
+		len *= lengths [i];
 	}
 
 	if (lower_bounds)
 		for (i = 0; i < array_class->rank; ++i)
 			bounds [i].lower_bound = lower_bounds [i];
+	byte_len *= len;
 	/* 
 	 * Following three lines almost taken from mono_object_new ():
 	 * they need to be kept in sync.
@@ -335,7 +336,7 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 	array = (MonoArray*)o;
 
 	array->bounds = bounds;
-	array->max_length = bounds [0].length;
+	array->max_length = len;
 
 	return array;
 }

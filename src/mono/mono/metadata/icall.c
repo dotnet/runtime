@@ -1997,6 +1997,21 @@ ves_icall_IsTransparentProxy (MonoObject *proxy)
 	return 0;
 }
 
+static gint32
+ves_icall_System_String_InternalIndexOfAny (MonoString *str, MonoArray *chars, gint32 start, gint32 count)
+{
+	int i, j;
+	gunichar2 *data = mono_string_chars (str);
+
+	for (i = start; i < start + count; ++i) {
+		for (j = 0; j < mono_array_length (chars); ++j) {
+			if (data [i] == mono_array_get (chars, guint16, j))
+				return i;
+		}
+	}
+	return -1;
+}
+
 /* icall map */
 
 static gconstpointer icall_map [] = {
@@ -2033,6 +2048,7 @@ static gconstpointer icall_map [] = {
 	 */
 	"System.String::_IsInterned", mono_string_is_interned,
 	"System.String::_Intern", mono_string_intern,
+	"System.String::InternalIndexOfAny", ves_icall_System_String_InternalIndexOfAny,
 
 	/*
 	 * System.AppDomain

@@ -68,7 +68,7 @@ typedef struct {
 typedef struct {
 	MonoObject obj;
 	MonoArrayBounds *bounds;
-	/* used by single dimensional arrays to speed up bound checking */
+	/* total number of elements of the array */
 	guint32 max_length; 
 	/* we use double to ensure proper alignment on platforms that need it */
 	double vector [MONO_ZERO_LEN_ARRAY];
@@ -153,7 +153,9 @@ typedef struct {
 
 typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, void **params);
 
-#define mono_array_length(array) ((array)->bounds->length)
+#define mono_object_class(obj) (((MonoObject*)(obj))->vtable->klass)
+
+#define mono_array_length(array) ((array)->max_length)
 #define mono_array_addr(array,type,index) ( ((char*)(array)->vector) + sizeof (type) * (index) )
 #define mono_array_addr_with_size(array,size,index) ( ((char*)(array)->vector) + (size) * (index) )
 #define mono_array_get(array,type,index) ( *(type*)mono_array_addr ((array), type, (index)) ) 
@@ -164,6 +166,7 @@ typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, voi
 	} while (0)
 
 #define mono_string_chars(s) ((gushort*)(s)->c_str->vector)
+#define mono_string_length(s) ((s)->length)
 
 extern MonoStats mono_stats;
 
