@@ -1134,6 +1134,7 @@ mono_method_verify (MonoMethod *method, int level)
 {
 	MonoMethodHeader *header;
 	MonoMethodSignature *signature, *csig;
+	MonoGenericContext *generic_context = NULL;
 	MonoMethod *cmethod;
 	MonoClassField *field;
 	MonoClass *klass;
@@ -1172,6 +1173,9 @@ mono_method_verify (MonoMethod *method, int level)
 	} else {
 		params = signature->params;
 	}
+
+	if (method->signature->is_inflated)
+		generic_context = ((MonoMethodInflated *) method)->context;
 
 	if (header->num_locals) {
 		local_state = g_new (char, header->num_locals);
@@ -1387,7 +1391,7 @@ mono_method_verify (MonoMethod *method, int level)
 			/*
 			 * FIXME: we could just load the signature ...
 			 */
-			cmethod = mono_get_method (image, token, NULL);
+			cmethod = mono_get_method_full (image, token, NULL, generic_context);
 			if (!cmethod)
 				ADD_INVALID (list, g_strdup_printf ("Method 0x%08x not found at 0x%04x", token, ip_offset));
 			csig = cmethod->signature;
@@ -1602,7 +1606,7 @@ mono_method_verify (MonoMethod *method, int level)
 			CHECK_STACK_UNDERFLOW (1);
 			if (stack [cur_stack - 1].stype != TYPE_MP)
 				ADD_INVALID (list, g_strdup_printf ("Invalid argument to ldobj at 0x%04x", ip_offset));
-			klass = mono_class_get (image, token);
+			klass = mono_class_get_full (image, token, generic_context);
 			if (!klass)
 				ADD_INVALID (list, g_strdup_printf ("Cannot load class from token 0x%08x at 0x%04x", token, ip_offset));
 			if (!klass->valuetype)
@@ -1624,7 +1628,7 @@ mono_method_verify (MonoMethod *method, int level)
 			/*
 			 * FIXME: we could just load the signature ...
 			 */
-			cmethod = mono_get_method (image, token, NULL);
+			cmethod = mono_get_method_full (image, token, NULL, generic_context);
 			if (!cmethod)
 				ADD_INVALID (list, g_strdup_printf ("Constructor 0x%08x not found at 0x%04x", token, ip_offset));
 			csig = cmethod->signature;
@@ -1670,7 +1674,7 @@ mono_method_verify (MonoMethod *method, int level)
 			if (stack [cur_stack - 1].stype != TYPE_OBJ && stack [cur_stack - 1].stype != TYPE_MP)
 				ADD_INVALID (list, g_strdup_printf ("Invalid argument %s to ldfld at 0x%04x", arg_name [stack [cur_stack].stype], ip_offset));
 			token = read32 (ip + 1);
-			field = mono_field_from_token (image, token, &klass);
+			field = mono_field_from_token (image, token, &klass, generic_context);
 			if (!field)
 				ADD_INVALID (list, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
 			type_to_eval_stack_type (field->type, stack + cur_stack - 1, FALSE);
@@ -1681,7 +1685,7 @@ mono_method_verify (MonoMethod *method, int level)
 			if (stack [cur_stack - 1].stype != TYPE_OBJ && stack [cur_stack - 1].stype != TYPE_MP)
 				ADD_INVALID (list, g_strdup_printf ("Invalid argument to ldflda at 0x%04x", ip_offset));
 			token = read32 (ip + 1);
-			field = mono_field_from_token (image, token, &klass);
+			field = mono_field_from_token (image, token, &klass, generic_context);
 			if (!field)
 				ADD_INVALID (list, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
 			type_to_eval_stack_type (field->type, stack + cur_stack - 1, TRUE);
@@ -1693,7 +1697,7 @@ mono_method_verify (MonoMethod *method, int level)
 			if (stack [cur_stack].stype != TYPE_OBJ && stack [cur_stack].stype != TYPE_MP)
 				ADD_INVALID (list, g_strdup_printf ("Invalid argument to stfld at 0x%04x", ip_offset));
 			token = read32 (ip + 1);
-			field = mono_field_from_token (image, token, &klass);
+			field = mono_field_from_token (image, token, &klass, generic_context);
 			if (!field)
 				ADD_INVALID (list, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
 			/* can_store */
@@ -1702,7 +1706,7 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_LDSFLD:
 			CHECK_STACK_OVERFLOW ();
 			token = read32 (ip + 1);
-			field = mono_field_from_token (image, token, &klass);
+			field = mono_field_from_token (image, token, &klass, generic_context);
 			if (!field)
 				ADD_INVALID (list, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
 			type_to_eval_stack_type (field->type, stack + cur_stack, FALSE);
@@ -1712,7 +1716,7 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_LDSFLDA:
 			CHECK_STACK_OVERFLOW ();
 			token = read32 (ip + 1);
-			field = mono_field_from_token (image, token, &klass);
+			field = mono_field_from_token (image, token, &klass, generic_context);
 			if (!field)
 				ADD_INVALID (list, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
 			type_to_eval_stack_type (field->type, stack + cur_stack, TRUE);
@@ -1723,7 +1727,7 @@ mono_method_verify (MonoMethod *method, int level)
 			CHECK_STACK_UNDERFLOW (1);
 			--cur_stack;
 			token = read32 (ip + 1);
-			field = mono_field_from_token (image, token, &klass);
+			field = mono_field_from_token (image, token, &klass, generic_context);
 			if (!field)
 				ADD_INVALID (list, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ip_offset));
 			/* can store */

@@ -143,6 +143,9 @@ mono_init_icall            (void);
 MonoMethod *
 mono_get_method            (MonoImage *image, guint32 token, MonoClass *klass);
 
+MonoMethod *
+mono_get_method_full       (MonoImage *image, guint32 token, MonoClass *klass, MonoGenericContext *context);
+
 void               
 mono_free_method           (MonoMethod *method);
 

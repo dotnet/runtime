@@ -2405,6 +2405,20 @@ mono_class_get (MonoImage *image, guint32 type_token)
 }
 
 MonoClass *
+mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *context)
+{
+	MonoClass *class = mono_class_get (image, type_token);
+	MonoType *inflated;
+
+	if (!class || !context || !class->generic_inst || !class->generic_inst->is_open)
+		return class;
+
+	inflated = mono_class_inflate_generic_type (&class->byval_arg, context);
+
+	return mono_class_from_mono_type (inflated);
+}
+
+MonoClass *
 mono_class_from_name_case (MonoImage *image, const char* name_space, const char *name)
 {
 	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEDEF];
@@ -2760,7 +2774,7 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 		if (*sig == 0x6) { /* it's a field */
 			MonoClass *klass;
 			MonoClassField *field;
-			field = mono_field_from_token (image, token, &klass);
+			field = mono_field_from_token (image, token, &klass, NULL);
 			if (handle_class)
 				*handle_class = mono_defaults.fieldhandle_class;
 			return field;

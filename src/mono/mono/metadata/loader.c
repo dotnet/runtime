@@ -43,8 +43,9 @@ mono_loader_init ()
 	InitializeCriticalSection (&loader_mutex);
 }
 
-MonoClassField*
-mono_field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass)
+static MonoClassField*
+field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
+		      MonoGenericContext *context)
 {
 	MonoClass *klass;
 	MonoTableInfo *tables = image->tables;
@@ -95,7 +96,7 @@ mono_field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass
 		klass = mono_class_from_mono_type (type);
 		mono_class_init (klass);
 		g_print ("type in sig: %s\n", klass->name);*/
-		klass = mono_class_get (image, MONO_TOKEN_TYPE_SPEC | nindex);
+		klass = mono_class_get_full (image, MONO_TOKEN_TYPE_SPEC | nindex, context);
 		mono_class_init (klass);
 		if (retklass)
 			*retklass = klass;
@@ -108,7 +109,8 @@ mono_field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass
 }
 
 MonoClassField*
-mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass)
+mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass,
+		       MonoGenericContext *context)
 {
 	MonoClass *k;
 	guint32 type;
@@ -129,7 +131,7 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass)
 	mono_loader_unlock ();
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
-		field = mono_field_from_memberref (image, token, retklass);
+		field = field_from_memberref (image, token, retklass, context);
 	else {
 		type = mono_metadata_typedef_from_field (image, mono_metadata_token_index (token));
 		if (!type)
@@ -144,7 +146,8 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass)
 	}
 
 	mono_loader_lock ();
-	g_hash_table_insert (image->field_cache, GUINT_TO_POINTER (token), field);
+	if (!field->parent->generic_inst)
+		g_hash_table_insert (image->field_cache, GUINT_TO_POINTER (token), field);
 	mono_loader_unlock ();
 	return field;
 }
@@ -271,7 +274,7 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 }
 
 static MonoMethod *
-method_from_memberref (MonoImage *image, guint32 idx)
+method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *context)
 {
 	MonoClass *klass;
 	MonoMethod *method;
@@ -313,15 +316,12 @@ method_from_memberref (MonoImage *image, guint32 idx)
 		guint32 len;
 		MonoType *type;
 		MonoMethod *result;
+		MonoClass *klass;
 
-		mono_metadata_decode_row (&tables [MONO_TABLE_TYPESPEC], nindex - 1, 
-					  bcols, MONO_TYPESPEC_SIZE);
-		ptr = mono_metadata_blob_heap (image, bcols [MONO_TYPESPEC_SIGNATURE]);
-		len = mono_metadata_decode_value (ptr, &ptr);	
-		type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
+		klass = mono_class_get_full (image, MONO_TOKEN_TYPE_SPEC | nindex, context);
+		type = &klass->byval_arg;
 
 		if (type->type != MONO_TYPE_ARRAY && type->type != MONO_TYPE_SZARRAY) {
-			klass = mono_class_from_mono_type (type);
 			mono_class_init (klass);
 			method = find_method (klass, mname, sig);
 			if (!method)
@@ -655,7 +655,8 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 }
 
 static MonoMethod *
-mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass)
+mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
+			    MonoGenericContext *context)
 {
 	MonoMethod *result;
 	int table = mono_metadata_token_table (token);
@@ -674,7 +675,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass)
 		if (table != MONO_TABLE_MEMBERREF)
 			g_print("got wrong token: 0x%08x\n", token);
 		g_assert (table == MONO_TABLE_MEMBERREF);
-		result = method_from_memberref (image, idx);
+		result = method_from_memberref (image, idx, context);
 
 		return result;
 	}
@@ -767,6 +768,13 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass)
 MonoMethod *
 mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 {
+	return mono_get_method_full (image, token, klass, NULL);
+}
+
+MonoMethod *
+mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
+		      MonoGenericContext *context)
+{
 	MonoMethod *result;
 
 	/* We do everything inside the lock to prevent creation races */
@@ -778,9 +786,10 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 		return result;
 	}
 
-	result = mono_get_method_from_token (image, token, klass);
+	result = mono_get_method_from_token (image, token, klass, context);
 
-	g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);
+	if (!(result && result->signature->is_inflated))
+		g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);
 
 	mono_loader_unlock ();
 

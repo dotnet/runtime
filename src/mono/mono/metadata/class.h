@@ -306,6 +306,9 @@ mono_classes_init (void);
 MonoClass *
 mono_class_get             (MonoImage *image, guint32 type_token);
 
+MonoClass *
+mono_class_get_full        (MonoImage *image, guint32 type_token, MonoGenericContext *context);
+
 void
 mono_class_init            (MonoClass *klass);
 
@@ -355,10 +358,7 @@ MonoMethod*
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context, MonoClass *klass);
 
 MonoClassField*
-mono_field_from_memberref  (MonoImage *image, guint32 token, MonoClass **retklass);
-
-MonoClassField*
-mono_field_from_token      (MonoImage *image, guint32 token, MonoClass **retklass);
+mono_field_from_token      (MonoImage *image, guint32 token, MonoClass **retklass, MonoGenericContext *context);
 
 MonoMethod**
 mono_class_get_overrides   (MonoImage *image, guint32 type_token, gint32 *num_overrides);
