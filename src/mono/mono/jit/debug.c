@@ -175,6 +175,7 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 	debug = g_new0 (MonoDebugHandle, 1);
 	debug->name = g_strdup (assembly->image->name);
 	debug->format = format;
+	debug->source_files = g_ptr_array_new ();
 	debug->producer_name = g_strdup_printf ("Mono JIT compiler version %s", VERSION);
 	debug->next_idx = 100;
 	debug->dirty = TRUE;
