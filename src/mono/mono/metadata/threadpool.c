@@ -60,9 +60,6 @@ mono_async_invoke (MonoAsyncResult *ares)
 
 	ares->completed = 1;
 
-	/* notify listeners */
-	ReleaseSemaphore (ac->wait_semaphore, 0x7fffffff, NULL);
-		
 	/* call async callback if cb_method != null*/
 	if (ac->cb_method) {
 		MonoObject *exc = NULL;
@@ -71,6 +68,9 @@ mono_async_invoke (MonoAsyncResult *ares)
 		if (!ac->msg->exc)
 			ac->msg->exc = exc;
 	}
+
+	/* notify listeners */
+	ReleaseSemaphore (ac->wait_semaphore, 0x7fffffff, NULL);
 
 	mono_g_hash_table_remove (ares_htable, ares);
 }
