@@ -1,5 +1,13 @@
 2004-06-16  Raja R Harinath  <rharinath@novell.com>
 
+	* Makefile.am (bootstrap) [PLATFORM_WIN32]: Open code.  Don't
+	build and populate net_2_0 profile.
+	(populate-runtime-subdir): Make into subroutine that takes list of
+	profiles to populate.
+	(faststrap): Update.
+
+2004-06-16  Raja R Harinath  <rharinath@novell.com>
+
 	Include prototype completely-untested 'make bootstrap' support for W32.
 	* Makefile.am (bootstrap): Define to fasterstrap for W32.
 	(MCS_DIRS, MCS_FILES): Don't refer to Mono.CSharp.Debugger in W32.

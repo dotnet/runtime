@@ -28,6 +28,7 @@ mcs_topdir=$(top_srcdir)/../mcs
 .PHONY: bootstrap faststrap fasterstrap bootstrap-clean bootstrap-check get-monolite-latest monolite-bootstrap
 .PHONY: tmpinst-dir tmpinst-mcs-basic-build tmpinst-mcs-short-build tmpinst-mcs-full-build tmpinst-monolite
 .PHONY: mono-do-runtime-only mcs-do-basic-build mcs-do-short-build mcs-do-full-build mcs-do-clean-profiles mcs-do-run-test
+.PHONY: populate-runtime-subdir
 
 if USE_JIT
 mono_runtime = mono/mini/mono
@@ -52,7 +53,10 @@ tmpinst = _tmpinst
 if PLATFORM_WIN32
 
 # bootstraps using the .NET C# compiler
-bootstrap: fasterstrap
+bootstrap: tmpinst-dir
+	cd $(mcs_topdir) && $(MAKE) PROFILE=default all
+	$(MAKE) populate_profiles='default:net_1_1' populate-runtime-subdir
+	$(MAKE)
 
 else
 
@@ -69,21 +73,8 @@ faststrap: tmpinst-mcs-short-build
 	$(MAKE) mono-do-runtime-only
 	$(MAKE) fasterstrap
 
-.PHONY: populate-runtime-subdir
-## *** warning ***: tested only with GNU make
-populate-runtime-subdir:
-	srcdir=`cd $(srcdir) && pwd`; tmpinst=`pwd`/$(tmpinst) ; \
-	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
-	cd $(mcs_topdir) \
-	&& $(MAKE) PROGRAM_INSTALL_DIR=$$srcdir/runtime LIBRARY_INSTALL_DIR=$$srcdir/runtime/net_1_1 prefix=$$tmpinst/prefix PROFILE=default install \
-	&& $(MAKE) PROGRAM_INSTALL_DIR=$$srcdir/runtime LIBRARY_INSTALL_DIR=$$srcdir/runtime/net_2_0 prefix=$$tmpinst/prefix PROFILE=net_2_0 install
-	test -z "`find $(tmpinst)/prefix -name '*.dll'`"
-	test -z "`find $(tmpinst)/prefix -name '*.exe'`"
-	set fnord `find $(tmpinst)/prefix -type f | wc -l` ; test "$$2" = 9
-	rm -rf $(tmpinst)/prefix
-
 fasterstrap: tmpinst-mcs-full-build
-	$(MAKE) populate-runtime-subdir
+	$(MAKE) populate_profiles='default:net_1_1 net_2_0:net_2_0' populate-runtime-subdir
 	$(MAKE)
 
 bootstrap-clean: clean mcs-do-clean-profiles
@@ -148,6 +139,21 @@ mcs-do-run-test: tmpinst-dir
 	tmpinst=`cd $(tmpinst) && pwd` ; \
 	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
 	cd $(mcs_topdir) && $(MAKE) PROFILE=default run-test
+
+populate-runtime-subdir:
+	test -n '$(populate_profiles)'
+	@srcdir=`cd $(srcdir) && pwd`; tmpinst=`pwd`/$(tmpinst) ; \
+	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
+	for profile in $(populate_profiles); do \
+	  ( set fnord `echo $$profile | sed 's,:, ,g'` && \
+	    echo "cd $(mcs_topdir) && $(MAKE) PROGRAM_INSTALL_DIR=$$srcdir/runtime PROFILE=$$2 LIBRARY_INSTALL_DIR=$$srcdir/runtime/$$3 prefix=$$tmpinst/prefix install" && \
+	    cd $(mcs_topdir) && \
+	    $(MAKE) PROGRAM_INSTALL_DIR=$$srcdir/runtime PROFILE=$$2 LIBRARY_INSTALL_DIR=$$srcdir/runtime/$$3 prefix=$$tmpinst/prefix install ) || exit 1 ; \
+	done
+	test -z "`find $(tmpinst)/prefix -name '*.dll' -print`"
+	test -z "`find $(tmpinst)/prefix -name '*.exe' -print`"
+	set fnord `find $(tmpinst)/prefix -type f -print | wc -l` ; test "$$2" = 9
+	rm -rf $(tmpinst)/prefix
 
 tmpinst-dir: 
 	mkdir -p $(tmpinst) $(tmpinst)/bin $(tmpinst)/lib $(tmpinst)/etc/mono
