@@ -3,11 +3,14 @@
 1,System,System.html,bn/System
 1,System.Collections,System.Collections.html,bn/System.Collections
 1,System.Collections.Specialized,System.Collections.Specialized.html,bn/System.Collections.Specialized
+1,System.Configuration.Assemblies,System.Configuration.Assemblies.html,bn/System.Configuration.Assemblies
 1,System.Diagnostics,System.Diagnostics.html,bn/System.Diagnostics
 1,System.Globalization,System.Globalization.html,bn/System.Globalization
 1,System.IO,System.IO.html,bn/System.IO
 1,System.Net,System.Net.html,bn/System.Net
+1,System.Security,System.Security.html,bn/System.Security
 1,System.Text,System.Text.html,bn/System.Text
+1,System.Web,System.Web.html,bn/System.Web
 1,System.Xml,System.Xml.html,bn/System.Xml
 0,Maintainer,maintainer.html,maintainer.src
 1,angryjohn69@nc.rr.com,angryjohn69@nc.rr.com.html,bm/angryjohn69@nc.rr.com
