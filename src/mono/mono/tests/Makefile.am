@@ -44,6 +44,7 @@ TESTSRC=			\
 	pinvoke2.cs		\
 	pinvoke3.cs		\
 	pinvoke4.cs		\
+	invoke.cs		\
 	box.cs			\
 	array.cs		\
 	enum.cs			\

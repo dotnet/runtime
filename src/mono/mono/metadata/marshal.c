@@ -701,7 +701,7 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 				continue;
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_OBJECT:
-				/* fixme: handle MONO_TYPE_CLASS and delegates */
+				/* fixme: handle MONO_TYPE_CLASS and delegates? */
 				g_assert_not_reached ();
 				break;
 			default:
@@ -1429,8 +1429,8 @@ handle_enum:
 				type = t->data.klass->enum_basetype->type;
 				goto handle_enum;
 			}
-			/* fixme: impl. value types */
-			g_assert_not_reached ();
+			mono_mb_emit_byte (mb, CEE_LDOBJ);
+			mono_mb_emit_i4 (mb, mono_mb_add_data (mb, t->data.klass));
 			break;
 		default:
 			g_assert_not_reached ();

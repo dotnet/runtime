@@ -14,10 +14,19 @@ class Test {
 		return a + b;
 	}
 
+	public static int Add2 (int a, int b) {
+		Console.WriteLine ("Test.Add2 from delegate: " + a +  " + " + b);
+		return a + b;
+	}
+
 	static int Main () {
 		SimpleDelegate d = new SimpleDelegate (Add);
+		SimpleDelegate d2 = new SimpleDelegate (Add2);
 		
 		if (mono_invoke_delegate (d) != 5)
+			return 1;
+
+		if (mono_invoke_delegate (d2) != 5)
 			return 1;
 
 		return 0;
