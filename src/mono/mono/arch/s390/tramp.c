@@ -43,6 +43,7 @@
 #include "mono/metadata/tabledefs.h"
 #include "mono/interpreter/interp.h"
 #include "mono/metadata/appdomain.h"
+#include "mono/metadata/marshal.h"
 
 /*========================= End of Includes ========================*/
 

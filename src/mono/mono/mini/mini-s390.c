@@ -124,6 +124,8 @@ if (ins->flags & MONO_INST_BRLABEL) { 							\
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/profiler-private.h>
+#include <mono/utils/mono-math.h>
 
 #include "mini-s390.h"
 #include "inssel.h"
@@ -543,7 +545,7 @@ enum_parmtype:
 static void
 enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 {
-	int i, oParm = 0;
+	int i, oParm = 0, iParm = 0;
 	MonoClass *class;
 	MonoObject *obj;
 	MonoJitArgumentInfo *arg_info;
@@ -552,6 +554,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
 	size_data sz;
+	void *curParm;
 
 	fname = mono_method_full_name (method, TRUE);
 	indent (1);
@@ -569,11 +572,11 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 
 	if (cinfo->struct_ret) {
 		printf ("[VALUERET:%p], ", rParm->gr[0]);
-		oParm = 1;
+		iParm = 1;
 	}
 
 	if (sig->hasthis) {
-		gpointer *this = (gpointer *) rParm->gr[oParm];
+		gpointer *this = (gpointer *) rParm->gr[iParm];
 		obj = (MonoObject *) this;
 		if (method->klass->valuetype) { 
 			if (obj) {
@@ -598,7 +601,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	}
 					
 	for (i = 0; i < sig->param_count; ++i) {
-		ainfo = cinfo->args + i + oParm;
+		ainfo = cinfo->args + (i + oParm);
 		switch (ainfo->regtype) {
 			case RegTypeGeneral :
 				decodeParm(sig->params[i], &(rParm->gr[ainfo->reg-2]), ainfo->size);
@@ -611,24 +614,24 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 				break;
 			case RegTypeStructByVal :
 				if (ainfo->reg != STK_BASE) 
-					decodeParm(sig->params[i], 
-						   &(rParm->gr[ainfo->reg-2]), 
-						   ainfo->size);
+					curParm = &(rParm->gr[ainfo->reg-2]);
 				else
-					switch (ainfo->vtsize) {
-						case 0:
-						case 1:
-						case 2:
-						case 4:
-						case 8:
-							decodeParm(sig->params[i], 
-					 	           sp+ainfo->offset,
-						           ainfo->vtsize);
-							break;
-						default:
-							decodeParm(sig->params[i], 
-					 	           *((char **) (sp+ainfo->offset)),
-						           ainfo->vtsize);
+					curParm = sp+ainfo->offset;
+
+				switch (ainfo->vtsize) {
+					case 0:
+					case 1:
+					case 2:
+					case 4:
+					case 8:
+						decodeParm(sig->params[i], 
+				 	           curParm,
+					           ainfo->size);
+						break;
+					default:
+						decodeParm(sig->params[i], 
+				 	           *((char **) curParm),
+					           ainfo->vtsize);
 					}
 				break;
 			default :
@@ -1017,9 +1020,13 @@ calculate_sizes (MonoMethodSignature *sig, size_data *sz,
 	/* area that the callee will use.			    */
 	/*----------------------------------------------------------*/
 
-	if (sig->ret->byref || string_ctor) {
-		sz->code_size += 8;
-	} else {
+//	if (sig->ret->byref || string_ctor) {
+//		sz->code_size += 8;
+//		add_general (&gr, sz, cinfo->args+nParm, TRUE);
+//		cinfo->args[nParm].size = sizeof(gpointer);
+//		nParm++;
+//	} else {
+	{
 		simpletype = sig->ret->type;
 enum_retvalue:
 		switch (simpletype) {
@@ -1176,6 +1183,8 @@ enum_retvalue:
 					cinfo->args[nParm].vtsize  = size;
 					sz->code_size  += 40;
 					sz->local_size += size;
+					if (cinfo->args[nParm].reg == STK_BASE)
+						sz->local_size += sizeof(gpointer);
 					nParm++;
 			}
 			break;
@@ -3911,7 +3920,7 @@ guint8 cond;
 		}
 			break;
 		case CEE_CONV_R4: {
-			s390_cefbr (code, ins->dreg, ins->sreg1);
+			s390_cdfbr (code, ins->dreg, ins->sreg1);
 		}
 			break;
 		case CEE_CONV_R8: {
