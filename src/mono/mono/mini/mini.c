@@ -7094,8 +7094,17 @@ mono_codegen (MonoCompile *cfg)
 			MonoJitICallInfo *info = mono_find_jit_icall_by_addr (patch_info->data.target);
 			if (info) {
 				//printf ("TEST %s %p\n", info->name, patch_info->data.target);
-				patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
-				patch_info->data.name = info->name;
+				if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && 
+					strstr (cfg->method->name, info->name))
+					/*
+					 * This is an icall wrapper, and this is a call to the
+					 * wrapped function.
+					 */
+					;
+				else {
+					patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
+					patch_info->data.name = info->name;
+				}
 			}
 			else {
 				MonoVTable *vtable = mono_find_class_init_trampoline_by_addr (patch_info->data.target);
@@ -7725,7 +7734,6 @@ mono_jit_find_compiled_method (MonoDomain *domain, MonoMethod *method)
 {
 	MonoDomain *target_domain;
 	MonoJitInfo *info;
-	gpointer code;
 
 	if (default_opt & MONO_OPT_SHARED)
 		target_domain = mono_root_domain;
