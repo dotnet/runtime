@@ -1295,6 +1295,18 @@ mono_image_get_fieldref_token (MonoDynamicAssembly *assembly, MonoClassField *fi
 	return token;
 }
 
+static int
+reflection_cc_to_file (int call_conv) {
+	switch (call_conv & 0x3) {
+	case 0:
+	case 1: return MONO_CALL_DEFAULT;
+	case 2: return MONO_CALL_VARARG;
+	default:
+		g_assert_not_reached ();
+	}
+	return 0;
+}
+
 typedef struct {
 	MonoType *parent;
 	MonoMethodSignature *sig;
@@ -1315,7 +1327,7 @@ mono_image_get_array_token (MonoDynamicAssembly *assembly, MonoReflectionArrayMe
 	nparams = mono_array_length (m->parameters);
 	sig = g_malloc0 (sizeof (MonoMethodSignature) + sizeof (MonoType*) * nparams);
 	sig->hasthis = 1;
-	sig->call_convention = m->call_conv;
+	sig->call_convention = reflection_cc_to_file (m->call_conv);
 	sig->param_count = nparams;
 	sig->ret = m->ret? m->ret->type: &mono_defaults.void_class->byval_arg;
 	for (i = 0; i < nparams; ++i) {
