@@ -663,6 +663,8 @@ void mono_gc_init (void)
 	gc_thread_vtable = &mono_gc_thread_vtable;
 #endif
 
+	GC_set_warn_proc (mono_gc_warning);
+	
 #ifdef ENABLE_FINALIZER_THREAD
 
 	if (g_getenv ("GC_DONT_GC")) {
