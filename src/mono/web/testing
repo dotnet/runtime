@@ -84,8 +84,8 @@
 	testing.
 	
 	Once all of that is done, you can do a 'make test' from the top mcs
-	directory.  Your test class will be automagically included in the
-	build and the tests will be run along with all the others.
+	directory.  Your test class needs also to be listed in the
+	.sources file at the top of the Test directory.
 
 * Tips on writing Unit tests.
 
