@@ -239,6 +239,15 @@ typedef struct {
 	guint32 call_conv;
 } MonoReflectionArrayMethod;
 
+/* 
+ * Information which isn't in the MonoMethod structure is stored here for
+ * dynamic methods.
+ */
+typedef struct {
+	char **param_names;
+	MonoMarshalSpec **param_marshall;
+} MonoReflectionMethodAux;
+
 enum {
 	MONO_SECTION_TEXT,
 	MONO_SECTION_RSRC,
@@ -271,7 +280,7 @@ typedef struct {
 	MonoGHashTable *token_fixups;
 	MonoGHashTable *method_to_table_idx;
 	MonoGHashTable *field_to_table_idx;
-	MonoGHashTable *param_marshalling;
+	MonoGHashTable *method_aux_hash;
 	gboolean run;
 	gboolean save;
 	char *strong_name;

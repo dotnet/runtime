@@ -3182,7 +3182,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly->token_fixups = mono_g_hash_table_new (NULL, NULL);
 	assembly->method_to_table_idx = mono_g_hash_table_new (NULL, NULL);
 	assembly->field_to_table_idx = mono_g_hash_table_new (NULL, NULL);
-	assembly->param_marshalling = mono_g_hash_table_new (NULL, NULL);
+	assembly->method_aux_hash = mono_g_hash_table_new (NULL, NULL);
 	assembly->handleref = g_hash_table_new (NULL, NULL);
 	assembly->tokens = mono_g_hash_table_new (NULL, NULL);
 	assembly->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
@@ -5569,6 +5569,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	MonoMethod *m;
 	MonoMethodNormal *pm;
 	MonoMarshalSpec **specs;
+	MonoReflectionMethodAux *method_aux;
 	int i;
 
 	if ((rmb->attrs & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
@@ -5656,6 +5657,20 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		pm->header = header;
 	}
 
+	method_aux = g_new0 (MonoReflectionMethodAux, 1);
+
+	/* Parameter names */
+	if (rmb->parameters) {
+		method_aux->param_names = g_new0 (char *, m->signature->param_count);
+		for (i = 0; i < m->signature->param_count; ++i) {
+			MonoReflectionParamBuilder *pb;
+			if ((pb = mono_array_get (rmb->parameters, MonoReflectionParamBuilder*, i))) {
+				if (pb->name)
+					method_aux->param_names [i] = mono_string_to_utf8 (pb->name);
+			}
+		}
+	}
+
 	/* Parameter marshalling */
 	specs = NULL;
 	if (rmb->pinfo)		
@@ -5671,9 +5686,9 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			}
 		}
 	if (specs != NULL)
-		mono_g_hash_table_insert (
-			((MonoDynamicAssembly*)klass->image->assembly->dynamic)->param_marshalling,
-			m, specs);
+		method_aux->param_marshall = specs;
+
+	mono_g_hash_table_insert (((MonoDynamicAssembly*)klass->image->assembly->dynamic)->method_aux_hash, m, method_aux);
 
 	return m;
 }	

@@ -824,6 +824,18 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 	if (klass->wastypebuilder || klass->generic_inst) /* copy the names later */
 		return;
 
+	if (klass->image->assembly->dynamic) {
+		MonoReflectionMethodAux *method_aux = 
+			mono_g_hash_table_lookup (
+				((MonoDynamicAssembly*)method->klass->image->assembly->dynamic)->method_aux_hash, method);
+		if (method_aux && method_aux->param_names) {
+			for (i = 0; i < method->signature->param_count; ++i)
+				if (method_aux->param_names [i])
+					names [i] = method_aux->param_names [i];
+		}
+		return;
+	}
+
 	methodt = &klass->image->tables [MONO_TABLE_METHOD];
 	paramt = &klass->image->tables [MONO_TABLE_PARAM];
 	for (i = 0; i < klass->method.count; ++i) {
@@ -858,10 +870,11 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 		mspecs [i] = NULL;
 
 	if (method->klass->image->assembly->dynamic) {
-		MonoMarshalSpec **dyn_specs = mono_g_hash_table_lookup (
-			((MonoDynamicAssembly*)method->klass->image->assembly->dynamic)->param_marshalling,
-			method);
-		if (dyn_specs) {
+		MonoReflectionMethodAux *method_aux = 
+			mono_g_hash_table_lookup (
+				((MonoDynamicAssembly*)method->klass->image->assembly->dynamic)->method_aux_hash, method);
+		if (method_aux && method_aux->param_marshall) {
+			MonoMarshalSpec **dyn_specs = method_aux->param_marshall;
 			for (i = 0; i < method->signature->param_count + 1; ++i)
 				if (dyn_specs [i]) {
 					mspecs [i] = g_new0 (MonoMarshalSpec, 1);
@@ -912,9 +925,10 @@ mono_method_has_marshal_info (MonoMethod *method)
 	MonoTableInfo *paramt;
 
 	if (method->klass->image->assembly->dynamic) {
-		MonoMarshalSpec **dyn_specs = mono_g_hash_table_lookup (
-			((MonoDynamicAssembly*)method->klass->image->assembly->dynamic)->param_marshalling,
-			method);
+		MonoReflectionMethodAux *method_aux = 
+			mono_g_hash_table_lookup (
+				((MonoDynamicAssembly*)method->klass->image->assembly->dynamic)->method_aux_hash, method);
+		MonoMarshalSpec **dyn_specs = method_aux->param_marshall;
 		if (dyn_specs) {
 			for (i = 0; i < method->signature->param_count + 1; ++i)
 				if (dyn_specs [i])
