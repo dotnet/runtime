@@ -1606,7 +1606,6 @@ MonoGenericClass *
 mono_metadata_lookup_generic_class (MonoGenericClass *gclass)
 {
 	MonoGenericClass *cached;
-	int i;
 
 	cached = g_hash_table_lookup (generic_class_cache, gclass);
 	if (cached)
@@ -1619,7 +1618,7 @@ mono_metadata_lookup_generic_class (MonoGenericClass *gclass)
 MonoGenericInst *
 mono_metadata_inflate_generic_inst (MonoGenericInst *ginst, MonoGenericContext *context)
 {
-	MonoGenericInst *nginst, *cached;
+	MonoGenericInst *nginst;
 	int i;
 
 	nginst = g_new0 (MonoGenericInst, 1);
@@ -1668,12 +1667,10 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 				      const char *ptr, const char **rptr)
 {
 	MonoGenericClass *gclass = g_new0 (MonoGenericClass, 1);
-	MonoGenericContainer *container;
 	MonoGenericClass *cached;
-	MonoGenericInst *ginst;
 	MonoClass *gklass;
 	MonoType *gtype;
-	int i, count;
+	int count;
 
 	type->data.generic_class = gclass;
 
@@ -3568,7 +3565,7 @@ handle_enum:
 					*conv = MONO_MARSHAL_CONV_STR_BYVALSTR;
 				return MONO_NATIVE_BYVALTSTR;
 			default:
-				g_error ("cant marshal string to native type %02x", mspec->native);
+				g_error ("Can not marshal string to native type '%02x': Invalid managed/unmanaged type combination (String fields must be paired with LPStr, LPWStr, BStr or ByValTStr).", mspec->native);
 			}
 		} 	
 		*conv = MONO_MARSHAL_CONV_STR_LPTSTR;
@@ -3792,7 +3789,6 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	guint32 cols [MONO_GENERICPARAM_SIZE];
 	guint32 i, owner = 0, last_num, n;
 	MonoGenericContainer *container;
-	MonoGenericClass *gclass;
 	MonoGenericParam *params;
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_TYPEDEF)
