@@ -234,8 +234,8 @@ mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 	tdef = &image->tables [MONO_TABLE_TYPEDEF];
 	methods = &image->tables [MONO_TABLE_METHOD];
 	for (i = 0; i < methods->rows; ++i) {
-		guint32 index = mono_metadata_decode_row_col (methods, i, MONO_METHOD_NAME);
-		const char *n = mono_metadata_string_heap (image, index);
+		guint32 token = mono_metadata_decode_row_col (methods, i, MONO_METHOD_NAME);
+		const char *n = mono_metadata_string_heap (image, token);
 
 		if (strcmp (n, desc->name))
 			continue;
@@ -312,7 +312,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 			g_string_sprintfa (str, "%d", sval);
 		break;
 	case MonoShortInlineBrTarget:
-		sval = *(signed char*)ip;
+		sval = *(const signed char*)ip;
 		ip ++;
 		if (dh->label_target)
 			g_string_sprintfa (str, dh->label_target, ip + sval - header->code);
@@ -357,7 +357,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 		ip += 4;
 		break;
 	case MonoShortInlineI:
-		g_string_sprintfa (str, "%d", *(signed char*)ip);
+		g_string_sprintfa (str, "%d", *(const signed char*)ip);
 		ip ++;
 		break;
 	case MonoInlineI8:

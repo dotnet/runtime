@@ -113,16 +113,16 @@ is_valid_assembly_flags (guint32 flags) {
 }
 
 static int
-is_valid_blob (MonoImage *image, guint32 index, int notnull)
+is_valid_blob (MonoImage *image, guint32 blob_index, int notnull)
 {
 	guint32 size;
-	const char *p, *send;
+	const char *p, *blob_end;
 	
-	if (index >= image->heap_blob.size)
+	if (blob_index >= image->heap_blob.size)
 		return 0;
-	p = mono_metadata_blob_heap (image, index);
-	size = mono_metadata_decode_blob_size (p, &send);
-	if (index + size + (send-p) > image->heap_blob.size)
+	p = mono_metadata_blob_heap (image, blob_index);
+	size = mono_metadata_decode_blob_size (p, &blob_end);
+	if (blob_index + size + (blob_end-p) > image->heap_blob.size)
 		return 0;
 	if (notnull && !size)
 		return 0;
@@ -130,20 +130,20 @@ is_valid_blob (MonoImage *image, guint32 index, int notnull)
 }
 
 static const char*
-is_valid_string (MonoImage *image, guint32 index, int notnull)
+is_valid_string (MonoImage *image, guint32 str_index, int notnull)
 {
-	const char *p, *send, *res;
+	const char *p, *blob_end, *res;
 	
-	if (index >= image->heap_strings.size)
+	if (str_index >= image->heap_strings.size)
 		return NULL;
-	res = p = mono_metadata_string_heap (image, index);
-	send = mono_metadata_string_heap (image, image->heap_strings.size - 1);
+	res = p = mono_metadata_string_heap (image, str_index);
+	blob_end = mono_metadata_string_heap (image, image->heap_strings.size - 1);
 	if (notnull && !*p)
 		return 0;
 	/* 
 	 * FIXME: should check it's a valid utf8 string, too.
 	 */
-	while (p <= send) {
+	while (p <= blob_end) {
 		if (!*p)
 			return res;
 		++p;

@@ -150,7 +150,7 @@ string_heap_free (MonoDynamicStream *sh)
 }
 
 static guint32
-mono_image_add_stream_data (MonoDynamicStream *stream, char *data, guint32 len)
+mono_image_add_stream_data (MonoDynamicStream *stream, const char *data, guint32 len)
 {
 	guint32 idx;
 	if (stream->alloc_size < stream->index + len) {
@@ -496,7 +496,7 @@ fat_header:
 }
 
 static guint32
-find_index_in_table (MonoDynamicAssembly *assembly, int table_idx, int col, guint32 index)
+find_index_in_table (MonoDynamicAssembly *assembly, int table_idx, int col, guint32 token)
 {
 	int i;
 	MonoDynamicTable *table;
@@ -508,18 +508,18 @@ find_index_in_table (MonoDynamicAssembly *assembly, int table_idx, int col, guin
 
 	values = table->values + table->columns;
 	for (i = 1; i <= table->rows; ++i) {
-		if (values [col] == index)
+		if (values [col] == token)
 			return i;
 	}
 	return 0;
 }
 
 /*
- * index is the table index of the object
+ * idx is the table index of the object
  * type is one of CUSTOM_ATTR_*
  */
 static void
-mono_image_add_cattrs (MonoDynamicAssembly *assembly, guint32 index, guint32 type, MonoArray *cattrs)
+mono_image_add_cattrs (MonoDynamicAssembly *assembly, guint32 idx, guint32 type, MonoArray *cattrs)
 {
 	MonoDynamicTable *table;
 	MonoReflectionCustomAttr *cattr;
@@ -536,11 +536,11 @@ mono_image_add_cattrs (MonoDynamicAssembly *assembly, guint32 index, guint32 typ
 	table->rows += count;
 	alloc_table (table, table->rows);
 	values = table->values + table->next_idx * MONO_CUSTOM_ATTR_SIZE;
-	index <<= CUSTOM_ATTR_BITS;
-	index |= type;
+	idx <<= CUSTOM_ATTR_BITS;
+	idx |= type;
 	for (i = 0; i < count; ++i) {
 		cattr = (MonoReflectionCustomAttr*)mono_array_get (cattrs, gpointer, i);
-		values [MONO_CUSTOM_ATTR_PARENT] = index;
+		values [MONO_CUSTOM_ATTR_PARENT] = idx;
 		token = mono_image_create_token (assembly, (MonoObject*)cattr->ctor);
 		type = mono_metadata_token_index (token);
 		type <<= CUSTOM_ATTR_TYPE_BITS;
@@ -798,7 +798,7 @@ handle_enum:
 		mono_metadata_encode_value (len, b, &b);
 		idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
 		/* FIXME: ENOENDIAN */
-		mono_image_add_stream_data (&assembly->blob, mono_string_chars (str), len);
+		mono_image_add_stream_data (&assembly->blob, (const char*)mono_string_chars (str), len);
 
 		g_free (buf);
 		return idx;
@@ -1369,7 +1369,7 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	guint16 *int16val;
 	MonoImage *meta;
 	unsigned char *p;
-	char *version = "mono" VERSION;
+	const char *version = "mono" VERSION;
 	struct StreamDesc {
 		const char *name;
 		MonoDynamicStream *stream;
@@ -1518,7 +1518,7 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 				}
 			}
 		}
-		g_assert ((p - (unsigned char*)meta->tables [i].base) == (meta->tables [i].rows * meta->tables [i].row_size));
+		g_assert ((p - (const unsigned char*)meta->tables [i].base) == (meta->tables [i].rows * meta->tables [i].row_size));
 	}
 	
 	g_assert (assembly->guid.offset + assembly->guid.index < meta_size);
@@ -1546,7 +1546,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *a
 	MonoReflectionFieldBuilder *field;
 	MonoReflectionCtorBuilder *ctor;
 	MonoReflectionMethodBuilder *method;
-	guint32 i, index;
+	guint32 i, idx;
 	unsigned char *target;
 
 	for (i = 0; i < ilgen->num_token_fixups; ++i) {
@@ -1557,15 +1557,15 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *a
 			if (strcmp (iltoken->member->vtable->klass->name, "FieldBuilder"))
 				g_assert_not_reached ();
 			field = (MonoReflectionFieldBuilder *)iltoken->member;
-			index = field->table_idx;
+			idx = field->table_idx;
 			break;
 		case MONO_TABLE_METHOD:
 			if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder")) {
 				method = (MonoReflectionMethodBuilder *)iltoken->member;
-				index = method->table_idx;
+				idx = method->table_idx;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "ConstructorBuilder")) {
 				ctor = (MonoReflectionCtorBuilder *)iltoken->member;
-				index = ctor->table_idx;
+				idx = ctor->table_idx;
 			} else {
 				g_assert_not_reached ();
 			}
@@ -1573,9 +1573,9 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicAssembly *a
 		default:
 			g_error ("got unexpected table 0x%02x in fixup", target [3]);
 		}
-		target [0] = index & 0xff;
-		target [1] = (index >> 8) & 0xff;
-		target [2] = (index >> 16) & 0xff;
+		target [0] = idx & 0xff;
+		target [1] = (idx >> 8) & 0xff;
+		target [2] = (idx >> 16) & 0xff;
 	}
 }
 
@@ -1658,18 +1658,18 @@ mono_image_build_metadata (MonoReflectionAssemblyBuilder *assemblyb)
 guint32
 mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *str)
 {
-	guint32 index;
+	guint32 idx;
 	char buf [16];
 	char *b = buf;
 	
 	if (!assembly->dynamic_assembly)
 		mono_image_basic_init (assembly);
 	mono_metadata_encode_value (1 | (str->length * 2), b, &b);
-	index = mono_image_add_stream_data (&assembly->dynamic_assembly->us, buf, b-buf);
+	idx = mono_image_add_stream_data (&assembly->dynamic_assembly->us, buf, b-buf);
 	/* FIXME: ENOENDIAN */
-	mono_image_add_stream_data (&assembly->dynamic_assembly->us, (char*)mono_string_chars (str), str->length * 2);
+	mono_image_add_stream_data (&assembly->dynamic_assembly->us, (const char*)mono_string_chars (str), str->length * 2);
 	mono_image_add_stream_data (&assembly->dynamic_assembly->us, "", 1);
-	return MONO_TOKEN_STRING | index;
+	return MONO_TOKEN_STRING | idx;
 }
 
 /*
@@ -2037,7 +2037,7 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method)
 	 * We use the same C representation for methods and constructors, but the type 
 	 * name in C# is different.
 	 */
-	char *cname;
+	const char *cname;
 	MonoClass *klass;
 	MonoReflectionMethod *ret;
 
@@ -2503,7 +2503,7 @@ find_event_index (MonoClass *klass, MonoEvent *event) {
 MonoArray*
 mono_reflection_get_custom_attrs (MonoObject *obj)
 {
-	guint32 index, mtoken, i;
+	guint32 idx, mtoken, i, len;
 	guint32 cols [MONO_CUSTOM_ATTR_SIZE];
 	MonoClass *klass;
 	MonoImage *image;
@@ -2519,39 +2519,39 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 	if (klass == mono_defaults.monotype_class) {
 		MonoReflectionType *rtype = (MonoReflectionType*)obj;
 		klass = mono_class_from_mono_type (rtype->type);
-		index = mono_metadata_token_index (klass->type_token);
-		index <<= CUSTOM_ATTR_BITS;
-		index |= CUSTOM_ATTR_TYPEDEF;
+		idx = mono_metadata_token_index (klass->type_token);
+		idx <<= CUSTOM_ATTR_BITS;
+		idx |= CUSTOM_ATTR_TYPEDEF;
 		image = klass->image;
 	} else if (strcmp ("Assembly", klass->name) == 0) {
 		MonoReflectionAssembly *rassembly = (MonoReflectionAssembly*)obj;
-		index = 1; /* there is only one assembly */
-		index <<= CUSTOM_ATTR_BITS;
-		index |= CUSTOM_ATTR_ASSEMBLY;
+		idx = 1; /* there is only one assembly */
+		idx <<= CUSTOM_ATTR_BITS;
+		idx |= CUSTOM_ATTR_ASSEMBLY;
 		image = rassembly->assembly->image;
 	} else if (strcmp ("MonoProperty", klass->name) == 0) {
 		MonoReflectionProperty *rprop = (MonoReflectionProperty*)obj;
-		index = find_property_index (rprop->klass, rprop->property);
-		index <<= CUSTOM_ATTR_BITS;
-		index |= CUSTOM_ATTR_PROPERTY;
+		idx = find_property_index (rprop->klass, rprop->property);
+		idx <<= CUSTOM_ATTR_BITS;
+		idx |= CUSTOM_ATTR_PROPERTY;
 		image = rprop->klass->image;
 	} else if (strcmp ("MonoEvent", klass->name) == 0) {
 		MonoReflectionEvent *revent = (MonoReflectionEvent*)obj;
-		index = find_event_index (revent->klass, revent->event);
-		index <<= CUSTOM_ATTR_BITS;
-		index |= CUSTOM_ATTR_EVENT;
+		idx = find_event_index (revent->klass, revent->event);
+		idx <<= CUSTOM_ATTR_BITS;
+		idx |= CUSTOM_ATTR_EVENT;
 		image = revent->klass->image;
 	} else if (strcmp ("MonoField", klass->name) == 0) {
 		MonoReflectionField *rfield = (MonoReflectionField*)obj;
-		index = find_field_index (rfield->klass, rfield->field);
-		index <<= CUSTOM_ATTR_BITS;
-		index |= CUSTOM_ATTR_FIELDDEF;
+		idx = find_field_index (rfield->klass, rfield->field);
+		idx <<= CUSTOM_ATTR_BITS;
+		idx |= CUSTOM_ATTR_FIELDDEF;
 		image = rfield->klass->image;
 	} else if ((strcmp ("MonoMethod", klass->name) == 0) || (strcmp ("MonoCMethod", klass->name) == 0)) {
 		MonoReflectionMethod *rmethod = (MonoReflectionMethod*)obj;
-		index = find_method_index (rmethod->method);
-		index <<= CUSTOM_ATTR_BITS;
-		index |= CUSTOM_ATTR_METHODDEF;
+		idx = find_method_index (rmethod->method);
+		idx <<= CUSTOM_ATTR_BITS;
+		idx |= CUSTOM_ATTR_METHODDEF;
 		image = method->klass->image;
 	} else if (strcmp ("ParameterInfo", klass->name) == 0) {
 		MonoReflectionParameter *param = (MonoReflectionParameter*)obj;
@@ -2580,9 +2580,9 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 		}
 		if (!found)
 			return mono_array_new (mono_domain_get (), mono_defaults.object_class, 0);
-		index = i;
-		index <<= CUSTOM_ATTR_BITS;
-		index |= CUSTOM_ATTR_PARAMDEF;
+		idx = i;
+		idx <<= CUSTOM_ATTR_BITS;
+		idx |= CUSTOM_ATTR_PARAMDEF;
 	} else { /* handle other types here... */
 		g_error ("get custom attrs not yet supported for %s", klass->name);
 	}
@@ -2592,7 +2592,7 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 	/* the table is not sorted */
 	for (i = 0; i < ca->rows; ++i) {
 		mono_metadata_decode_row (ca, i, cols, MONO_CUSTOM_ATTR_SIZE);
-		if (cols [MONO_CUSTOM_ATTR_PARENT] != index)
+		if (cols [MONO_CUSTOM_ATTR_PARENT] != idx)
 			continue;
 		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> CUSTOM_ATTR_TYPE_BITS;
 		switch (cols [MONO_CUSTOM_ATTR_TYPE] & CUSTOM_ATTR_TYPE_MASK) {
@@ -2620,15 +2620,15 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 		g_free (params);
 	}
 
-	index = g_list_length (list);
+	len = g_list_length (list);
 	/*
 	 * The return type is really object[], but System/Attribute.cs does a cast
 	 * to (Attribute []) and that is not allowed: I'm lazy for now, but we should
 	 * probably fix that.
 	 */
 	klass = mono_class_from_name (mono_defaults.corlib, "System", "Attribute");
-	result = mono_array_new (mono_domain_get (), klass, index);
-	for (i = 0; i < index; ++i) {
+	result = mono_array_new (mono_domain_get (), klass, len);
+	for (i = 0; i < len; ++i) {
 		mono_array_set (result, gpointer, i, list->data);
 		list = list->next;
 	}

@@ -21,7 +21,7 @@ typedef struct {
 
 typedef struct {
 	guint32   rows, row_size;
-	char     *base;
+	const char *base;
 
 	/*
 	 * Tables contain up to 9 columns and the possible sizes of the
@@ -53,7 +53,7 @@ struct _MonoImage {
 	MonoStreamHeader     heap_guid;
 	MonoStreamHeader     heap_tables;
 			    
-	char                *tables_base;
+	const char          *tables_base;
 
 	MonoTableInfo        tables [64];
 

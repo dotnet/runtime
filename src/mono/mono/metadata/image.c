@@ -303,8 +303,8 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 static gboolean
 load_tables (MonoImage *image)
 {
-	char *heap_tables = image->heap_tables.data;
-	guint32 *rows;
+	const char *heap_tables = image->heap_tables.data;
+	const guint32 *rows;
 	guint64 valid_mask;
 	int valid = 0, table;
 	int heap_sizes;
@@ -315,7 +315,7 @@ load_tables (MonoImage *image)
 	image->idx_blob_wide   = ((heap_sizes & 0x04) == 4);
 	
 	valid_mask = read64 (heap_tables + 8);
-	rows = (guint32 *) (heap_tables + 24);
+	rows = (const guint32 *) (heap_tables + 24);
 	
 	for (table = 0; table < 64; table++){
 		if ((valid_mask & ((guint64) 1 << table)) == 0){
@@ -333,7 +333,7 @@ load_tables (MonoImage *image)
 	image->tables_base = (heap_tables + 24) + (4 * valid);
 
 	/* They must be the same */
-	g_assert ((void *) image->tables_base == (void *) rows);
+	g_assert ((const void *) image->tables_base == (const void *) rows);
 
 	mono_metadata_compute_table_bases (image);
 	return TRUE;

@@ -22,7 +22,7 @@ gboolean dump_data = TRUE;
 gboolean verify_pe = FALSE;
 
 static void
-hex_dump (char *buffer, int base, int count)
+hex_dump (const char *buffer, int base, int count)
 {
 	int i;
 	
@@ -35,19 +35,19 @@ hex_dump (char *buffer, int base, int count)
 }
 
 static void
-hex8 (char *label, unsigned char x)
+hex8 (const char *label, unsigned char x)
 {
 	printf ("\t%s: 0x%02x\n", label, (unsigned char) x);
 }
 
 static void
-hex16 (char *label, guint16 x)
+hex16 (const char *label, guint16 x)
 {
 	printf ("\t%s: 0x%04x\n", label, x);
 }
 
 static void
-hex32 (char *label, guint32 x)
+hex32 (const char *label, guint32 x)
 {
 	printf ("\t%s: 0x%08x\n", label, x);
 }
@@ -204,7 +204,7 @@ dump_cli_header (MonoCLIHeader *ch)
 }	
 
 static void
-dsh (char *label, MonoImage *meta, MonoStreamHeader *sh)
+dsh (const char *label, MonoImage *meta, MonoStreamHeader *sh)
 {
 	printf ("%s: 0x%08x - 0x%08x [%d == 0x%08x]\n",
 		label,
@@ -246,7 +246,7 @@ dump_metadata (MonoImage *meta)
 static void
 dump_methoddef (MonoImage *metadata, guint32 token)
 {
-	char *loc;
+	const char *loc;
 
 	if (!token)
 		return;
@@ -298,7 +298,7 @@ main (int argc, char *argv [])
 	MonoImage *image;
 	char *file = NULL;
 	char *flags = NULL;
-	char *flag_desc [] = {"error", "warn", "cls", "all", NULL};
+	const char *flag_desc [] = {"error", "warn", "cls", "all", NULL};
 	guint flag_vals [] = {MONO_VERIFY_ERROR, MONO_VERIFY_WARNING, MONO_VERIFY_CLS, MONO_VERIFY_ALL};
 	int i;
 	

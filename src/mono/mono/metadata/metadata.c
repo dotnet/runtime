@@ -669,7 +669,7 @@ void
 mono_metadata_compute_table_bases (MonoImage *meta)
 {
 	int i;
-	char *base = meta->tables_base;
+	const char *base = meta->tables_base;
 	
 	for (i = 0; i < 64; i++){
 		if (meta->tables [i].rows == 0)
@@ -777,7 +777,7 @@ mono_metadata_decode_row (MonoTableInfo *t, int idx, guint32 *res, int res_size)
 {
 	guint32 bitfield = t->size_bitfield;
 	int i, count = mono_metadata_table_count (bitfield);
-	char *data = t->base + idx * t->row_size;
+	const char *data = t->base + idx * t->row_size;
 	
 	g_assert (res_size == count);
 	
@@ -814,7 +814,7 @@ mono_metadata_decode_row_col (MonoTableInfo *t, int idx, guint col)
 {
 	guint32 bitfield = t->size_bitfield;
 	int i;
-	register char *data = t->base + idx * t->row_size;
+	register const char *data = t->base + idx * t->row_size;
 	register int n;
 	
 	g_assert (col < mono_metadata_table_count (bitfield));

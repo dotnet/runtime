@@ -95,7 +95,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	MonoTableInfo *t;
 	int i;
 	char *fullname;
-	const char *basename = strrchr (filename, G_DIR_SEPARATOR);
+	const char *base_name = strrchr (filename, G_DIR_SEPARATOR);
 	static MonoAssembly *corlib;
 	
 	g_return_val_if_fail (filename != NULL, NULL);
@@ -108,10 +108,10 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 		return ass;
 	}
 	
-	if (basename == NULL)
-		basename = filename;
+	if (base_name == NULL)
+		base_name = filename;
 	else
-		basename++;
+		base_name++;
 
 	if (resolver == NULL)
 		resolver = default_assembly_name_resolver;
@@ -158,7 +158,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 		 * ie, references to mscorlib from corlib.dll are ignored 
 		 * and we do not load corlib twice.
 		 */
-		if (strcmp (basename, CORLIB_NAME) == 0){
+		if (strcmp (base_name, CORLIB_NAME) == 0){
 			if (corlib == NULL)
 				corlib = ass;
 			

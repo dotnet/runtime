@@ -29,7 +29,7 @@ static GHashTable *mmap_map = NULL;
 static size_t alignment = 0;
 
 static void
-get_alignment ()
+get_alignment (void)
 {
 #ifdef USE_WIN32_API
 	SYSTEM_INFO info;
