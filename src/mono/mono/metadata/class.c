@@ -1201,6 +1201,7 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 		/*class->enumtype = class->parent->enumtype; */
 		class->parent->subclasses = g_list_prepend (class->parent->subclasses, class);
 		mono_compute_relative_numbering (mono_defaults.object_class, &rnum);
+		mono_class_setup_supertypes (class);
 	} else {
 		class->parent = NULL;
 	}
@@ -1212,6 +1213,9 @@ mono_class_setup_supertypes (MonoClass *class)
 {
 	MonoClass *k;
 	int ms, i;
+
+	if (class->supertypes)
+		return;
 
 	class->idepth = 0;
 	for (k = class; k ; k = k->parent) {
@@ -1533,9 +1537,6 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 
 	if (!parent->inited)
 		mono_class_init (parent);
-
-	if (!eclass->inited)
-		mono_class_init (eclass);
 
 	image = eclass->image;
 
