@@ -15,7 +15,7 @@ using System.Xml;
 class Write {
 
         static Contributor [] list;
-	static public XmlNamespaceManager nsmgr;
+        static public XmlNamespaceManager nsmgr;
 
         static void Main (string [] args)
         {
@@ -29,8 +29,8 @@ class Write {
                 XmlDocument document = new XmlDocument ();
                 document.Load (input);
 
-		nsmgr = new XmlNamespaceManager (document.NameTable);
-		nsmgr.AddNamespace ("t", "http://go-mono.org/team.xsd");
+                nsmgr = new XmlNamespaceManager (document.NameTable);
+                nsmgr.AddNamespace ("t", "http://go-mono.org/team.xsd");
                 XmlNodeList contributors = document.SelectNodes ("/t:contributors/t:contributor", nsmgr);
                 list = new Contributor [contributors.Count];
 
@@ -64,7 +64,10 @@ public class ContributorComparer : IComparer
 {
         public int Compare (object x, object y)
         {
-                return String.Compare (x as string , y as string);
+                string a = (string) x;
+                string b = (string) y;
+
+                return String.Compare (a, b);
         }
 }
 
