@@ -500,12 +500,6 @@ enum {
 
 #define MONO_BBLOCK_IS_IN_REGION(bblock, regtype) (((bblock)->region & (0xf << 4)) == (regtype))
 
-enum {
-	MONO_EXCEPTION_NONE = 0,
-	MONO_EXCEPTION_SECURITY = 1
-	/* add other exception type */
-};
-
 /*
  * Control Flow Graph and compilation unit information
  */

@@ -3115,7 +3115,7 @@ void check_linkdemand (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee,
 		mono_emit_method_call_spilled (cfg, bblock, secman->linkdemandsecurityexception, mono_method_signature (secman->linkdemandsecurityexception), args, ip, NULL);
 	} else if (cfg->exception_type == MONO_EXCEPTION_NONE) {
 		 /* don't hide previous results */
-		cfg->exception_type = MONO_EXCEPTION_SECURITY;
+		cfg->exception_type = MONO_EXCEPTION_SECURITY_LINKDEMAND;
 		cfg->exception_data = result;
 	}
 }
@@ -9106,7 +9106,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
 
 	/* this can only be set if the security manager is active */
-	if (cfg->exception_type == MONO_EXCEPTION_SECURITY) {
+	if (cfg->exception_type == MONO_EXCEPTION_SECURITY_LINKDEMAND) {
 		MonoAssembly *assembly = mono_image_get_assembly (method->klass->image);
 		MonoReflectionAssembly *refass = (MonoReflectionAssembly*) mono_assembly_get_object (domain, assembly);
 		MonoReflectionMethod *refmet = mono_method_get_object (domain, method, NULL);
