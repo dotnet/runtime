@@ -6296,7 +6296,7 @@ get_field_name_and_type (MonoObject *field, char **name, MonoType **type)
 }
 
 static void
-encode_cattr_value (char *buffer, char *p, char **retbuffer, char **retp, guint32 *buflen, MonoType *type, MonoObject *arg)
+encode_cattr_value (MonoAssembly *assembly, char *buffer, char *p, char **retbuffer, char **retp, guint32 *buflen, MonoType *type, MonoObject *arg)
 {
 	char *argval;
 	MonoTypeEnum simple_type;
@@ -6379,7 +6379,7 @@ handle_enum:
 				(strcmp (k->name, "TypeBuilder") || strcmp (k->name_space, "System.Reflection.Emit")))
 			g_error ("only types allowed, not %s.%s", k->name_space, k->name);
 handle_type:
-		str = type_get_qualified_name (((MonoReflectionType*)arg)->type, NULL);
+		str = type_get_qualified_name (((MonoReflectionType*)arg)->type, assembly);
 		slen = strlen (str);
 		if ((p-buffer) + 10 + slen >= *buflen) {
 			char *newbuf;
@@ -6412,7 +6412,7 @@ handle_type:
 		*retbuffer = buffer;
 		eclass = type->data.klass;
 		for (i = 0; i < len; ++i) {
-			encode_cattr_value (buffer, p, &buffer, &p, buflen, &eclass->byval_arg, mono_array_get ((MonoArray*)arg, MonoObject*, i));
+			encode_cattr_value (assembly, buffer, p, &buffer, &p, buflen, &eclass->byval_arg, mono_array_get ((MonoArray*)arg, MonoObject*, i));
 		}
 		break;
 	}
@@ -6475,7 +6475,7 @@ handle_type:
  * Returns: a Byte array representing the blob of data.
  */
 MonoArray*
-mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues) 
+mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues) 
 {
 	MonoArray *result;
 	MonoMethodSignature *sig;
@@ -6498,7 +6498,7 @@ mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, Mo
 	*p++ = 0;
 	for (i = 0; i < sig->param_count; ++i) {
 		arg = mono_array_get (ctorArgs, MonoObject*, i);
-		encode_cattr_value (buffer, p, &buffer, &p, &buflen, sig->params [i], arg);
+		encode_cattr_value (assembly->assembly, buffer, p, &buffer, &p, &buflen, sig->params [i], arg);
 	}
 	i = 0;
 	if (properties)
@@ -6559,7 +6559,7 @@ mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, Mo
 			mono_metadata_encode_value (len, p, &p);
 			memcpy (p, pname, len);
 			p += len;
-			encode_cattr_value (buffer, p, &buffer, &p, &buflen, ptype, (MonoObject*)mono_array_get (propValues, gpointer, i));
+			encode_cattr_value (assembly->assembly, buffer, p, &buffer, &p, &buflen, ptype, (MonoObject*)mono_array_get (propValues, gpointer, i));
 			g_free (pname);
 		}
 	}
@@ -6601,7 +6601,7 @@ mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, Mo
 			mono_metadata_encode_value (len, p, &p);
 			memcpy (p, fname, len);
 			p += len;
-			encode_cattr_value (buffer, p, &buffer, &p, &buflen, ftype, (MonoObject*)mono_array_get (fieldValues, gpointer, i));
+			encode_cattr_value (assembly->assembly, buffer, p, &buffer, &p, &buflen, ftype, (MonoObject*)mono_array_get (fieldValues, gpointer, i));
 			g_free (fname);
 		}
 	}

@@ -584,7 +584,7 @@ MonoReflectionEvent*    mono_event_get_object    (MonoDomain *domain, MonoClass 
 MonoArray* mono_param_get_objects  (MonoDomain *domain, MonoMethod *method);
 
 MonoArray*  mono_reflection_get_custom_attrs (MonoObject *obj);
-MonoArray*  mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *porpValues, MonoArray *fields, MonoArray* fieldValues);
+MonoArray*  mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *porpValues, MonoArray *fields, MonoArray* fieldValues);
 
 MonoArray*  mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo);
 MonoCustomAttrInfo* mono_custom_attrs_from_index    (MonoImage *image, guint32 idx);
