@@ -158,24 +158,24 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			MonoGenericInst *ginst = klass->generic_inst;
 			int i;
 
-			g_string_append_c (str, '<');
+			g_string_append_c (str, '[');
 			for (i = 0; i < ginst->type_argc; i++) {
 				if (i)
 					g_string_append_c (str, ',');
 				mono_type_get_name_recurse (
 					ginst->type_argv [i], str, FALSE, include_ns, include_arity);
 			}
-			g_string_append_c (str, '>');
+			g_string_append_c (str, ']');
 		} else if (klass->generic_container) {
 			int i;
 
-			g_string_append_c (str, '<');
+			g_string_append_c (str, '[');
 			for (i = 0; i < klass->generic_container->type_argc; i++) {
 				if (i)
 					g_string_append_c (str, ',');
 				g_string_append (str, klass->generic_container->type_params [i].name);
 			}
-			g_string_append_c (str, '>');
+			g_string_append_c (str, ']');
 		}
 		break;
 	}
