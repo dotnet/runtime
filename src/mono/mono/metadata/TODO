@@ -1,15 +1,4 @@
 
-* mono_class_from_name
-
-	In many places we call mono_class_from_name with static values,
-	we should cache that instead:
-
-	static MonoClass *klass;
-
-	if (!klass){
-		klass = mono_class_from_name (...);
-	}
-
 * Uniform names
 
 	We have a mess of names in the icall.c file, we need to sort that out.
