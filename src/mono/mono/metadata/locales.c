@@ -1572,6 +1572,7 @@ gunichar2 ves_icall_System_Char_InternalToUpper_Comp (gunichar2 c, MonoCultureIn
 	
 	ec=U_ZERO_ERROR;
 	len=u_strToUpper (&udest, 1, &c, 1, icu_loc, &ec);
+	g_free (icu_loc);
 
 	if(U_SUCCESS (ec) && len==1) {
 		return udest;
@@ -1599,6 +1600,7 @@ gunichar2 ves_icall_System_Char_InternalToLower_Comp (gunichar2 c, MonoCultureIn
 	
 	ec=U_ZERO_ERROR;
 	len=u_strToLower (&udest, 1, &c, 1, icu_loc, &ec);
+	g_free (icu_loc);
 
 	if(U_SUCCESS (ec) && len==1) {
 		return udest;
