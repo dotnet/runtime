@@ -1,0 +1,4 @@
+mono_free_verify_list
+mono_image_verify_tables
+mono_method_verify
+mono_verify_corlib

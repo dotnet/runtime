@@ -1,0 +1,103 @@
+<h3>Metadata Loader Locking</h3>
+
+	<p>The locking functions here are used by code in class.c and
+	metadata.c to lock access to the shared hashtables inside the
+	MonoImage
+	
+<h4><a name="api:mono_loader_lock">mono_loader_lock</a></h4>
+<h4><a name="api:mono_loader_unlock">mono_loader_unlock</a></h4>
+
+<h3>Metadata access API</h3>
+
+	<p>This is the low-level API for accessing the metadata
+	images.
+	
+<h4><a name="api:mono_cli_rva_image_map">mono_cli_rva_image_map</a></h4>
+<h4><a name="api:mono_meta_table_name">mono_meta_table_name</a></h4>
+<h4><a name="api:mono_metadata_blob_heap">mono_metadata_blob_heap</a></h4>
+<h4><a name="api:mono_metadata_compute_size">mono_metadata_compute_size</a></h4>
+<h4><a name="api:mono_metadata_compute_table_bases">mono_metadata_compute_table_bases</a></h4>
+<h4><a name="api:mono_metadata_custom_attrs_from_index">mono_metadata_custom_attrs_from_index</a></h4>
+<h4><a name="api:mono_metadata_decode_blob_size">mono_metadata_decode_blob_size</a></h4>
+<h4><a name="api:mono_metadata_decode_row_col">mono_metadata_decode_row_col</a></h4>
+<h4><a name="api:mono_metadata_decode_row">mono_metadata_decode_row</a></h4>
+<h4><a name="api:mono_metadata_decode_value">mono_metadata_decode_value</a></h4>
+<h4><a name="api:mono_metadata_encode_value">mono_metadata_encode_value</a></h4>
+<h4><a name="api:mono_metadata_events_from_typedef">mono_metadata_events_from_typedef</a></h4>
+<h4><a name="api:mono_metadata_field_info">mono_metadata_field_info</a></h4>
+<h4><a name="api:mono_metadata_free_array">mono_metadata_free_array</a></h4>
+<h4><a name="api:mono_metadata_free_marshal_spec">mono_metadata_free_marshal_spec</a></h4>
+<h4><a name="api:mono_metadata_free_method_signature">mono_metadata_free_method_signature</a></h4>
+<h4><a name="api:mono_metadata_free_mh">mono_metadata_free_mh</a></h4>
+<h4><a name="api:mono_metadata_free_type">mono_metadata_free_type</a></h4>
+<h4><a name="api:mono_metadata_generic_inst_equal">mono_metadata_generic_inst_equal</a></h4>
+<h4><a name="api:mono_metadata_generic_inst_hash">mono_metadata_generic_inst_hash</a></h4>
+<h4><a name="api:mono_metadata_generic_inst_is_valuetype">mono_metadata_generic_inst_is_valuetype</a></h4>
+<h4><a name="api:mono_metadata_generic_method_equal">mono_metadata_generic_method_equal</a></h4>
+<h4><a name="api:mono_metadata_generic_method_hash">mono_metadata_generic_method_hash</a></h4>
+<h4><a name="api:mono_metadata_get_constant_index">mono_metadata_get_constant_index</a></h4>
+<h4><a name="api:mono_metadata_get_marshal_info">mono_metadata_get_marshal_info</a></h4>
+<h4><a name="api:mono_metadata_get_table">mono_metadata_get_table</a></h4>
+<h4><a name="api:mono_metadata_guid_heap">mono_metadata_guid_heap</a></h4>
+<h4><a name="api:mono_metadata_implmap_from_method">mono_metadata_implmap_from_method</a></h4>
+<h4><a name="api:mono_metadata_interfaces_from_typedef_full">mono_metadata_interfaces_from_typedef_full</a></h4>
+<h4><a name="api:mono_metadata_interfaces_from_typedef">mono_metadata_interfaces_from_typedef</a></h4>
+<h4><a name="api:mono_metadata_load_generic_params">mono_metadata_load_generic_params</a></h4>
+<h4><a name="api:mono_metadata_locate">mono_metadata_locate</a></h4>
+<h4><a name="api:mono_metadata_locate_token">mono_metadata_locate_token</a></h4>
+<h4><a name="api:mono_metadata_methods_from_event">mono_metadata_methods_from_event</a></h4>
+<h4><a name="api:mono_metadata_methods_from_property">mono_metadata_methods_from_property</a></h4>
+<h4><a name="api:mono_metadata_nested_in_typedef">mono_metadata_nested_in_typedef</a></h4>
+<h4><a name="api:mono_metadata_nesting_typedef">mono_metadata_nesting_typedef</a></h4>
+<h4><a name="api:mono_metadata_packing_from_typedef">mono_metadata_packing_from_typedef</a></h4>
+<h4><a name="api:mono_metadata_parse_array_full">mono_metadata_parse_array_full</a></h4>
+<h4><a name="api:mono_metadata_parse_array">mono_metadata_parse_array</a></h4>
+<h4><a name="api:mono_metadata_parse_custom_mod">mono_metadata_parse_custom_mod</a></h4>
+<h4><a name="api:mono_metadata_parse_field_type">mono_metadata_parse_field_type</a></h4>
+<h4><a name="api:mono_metadata_parse_marshal_spec">mono_metadata_parse_marshal_spec</a></h4>
+<h4><a name="api:mono_metadata_parse_method_signature_full">mono_metadata_parse_method_signature_full</a></h4>
+<h4><a name="api:mono_metadata_parse_method_signature">mono_metadata_parse_method_signature</a></h4>
+<h4><a name="api:mono_metadata_parse_mh_full">mono_metadata_parse_mh_full</a></h4>
+<h4><a name="api:mono_metadata_parse_mh">mono_metadata_parse_mh</a></h4>
+<h4><a name="api:mono_metadata_parse_param">mono_metadata_parse_param</a></h4>
+<h4><a name="api:mono_metadata_parse_signature_full">mono_metadata_parse_signature_full</a></h4>
+<h4><a name="api:mono_metadata_parse_signature">mono_metadata_parse_signature</a></h4>
+<h4><a name="api:mono_metadata_parse_typedef_or_ref">mono_metadata_parse_typedef_or_ref</a></h4>
+<h4><a name="api:mono_metadata_parse_type_full">mono_metadata_parse_type_full</a></h4>
+<h4><a name="api:mono_metadata_parse_type">mono_metadata_parse_type</a></h4>
+<h4><a name="api:mono_metadata_properties_from_typedef">mono_metadata_properties_from_typedef</a></h4>
+<h4><a name="api:mono_metadata_signature_alloc">mono_metadata_signature_alloc</a></h4>
+<h4><a name="api:mono_metadata_signature_dup">mono_metadata_signature_dup</a></h4>
+<h4><a name="api:mono_metadata_signature_equal">mono_metadata_signature_equal</a></h4>
+<h4><a name="api:mono_metadata_string_heap">mono_metadata_string_heap</a></h4>
+<h4><a name="api:mono_metadata_token_from_dor">mono_metadata_token_from_dor</a></h4>
+<h4><a name="api:mono_metadata_typedef_from_field">mono_metadata_typedef_from_field</a></h4>
+<h4><a name="api:mono_metadata_typedef_from_method">mono_metadata_typedef_from_method</a></h4>
+<h4><a name="api:mono_metadata_type_equal">mono_metadata_type_equal</a></h4>
+<h4><a name="api:mono_metadata_type_hash">mono_metadata_type_hash</a></h4>
+<h4><a name="api:mono_metadata_user_string">mono_metadata_user_string</a></h4>
+
+<h3>Tokens</h3>
+
+<h4><a name="api:mono_ldtoken">mono_ldtoken</a></h4>
+<h4><a name="api:mono_lookup_dynamic_token">mono_lookup_dynamic_token</a></h4>
+<h4><a name="api:mono_ldstr">mono_ldstr</a></h4>
+
+<h3>Working with signatures</h3>
+
+<h4><a name="api:mono_signature_explicit_this">mono_signature_explicit_this</a></h4>
+<h4><a name="api:mono_signature_get_call_conv">mono_signature_get_call_conv</a></h4>
+<h4><a name="api:mono_signature_get_desc">mono_signature_get_desc</a></h4>
+<h4><a name="api:mono_signature_get_param_count">mono_signature_get_param_count</a></h4>
+<h4><a name="api:mono_signature_get_params">mono_signature_get_params</a></h4>
+<h4><a name="api:mono_signature_get_return_type">mono_signature_get_return_type</a></h4>
+<h4><a name="api:mono_signature_hash">mono_signature_hash</a></h4>
+<h4><a name="api:mono_signature_is_instance">mono_signature_is_instance</a></h4>
+<h4><a name="api:mono_signature_vararg_start">mono_signature_vararg_start</a></h4>
+
+
+<h3>OpCodes</h3>
+
+<h4><a name="api:mono_opcode_name">mono_opcode_name</a></h4>
+<h4><a name="api:mono_opcode_value">mono_opcode_value</a></h4>
+

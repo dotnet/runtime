@@ -1,0 +1,40 @@
+<h1>Code Generator Internals</h1>
+
+	<p>The functions in this document are internal to the JIT,
+	they are here for completeness, but you should refer to the
+	source code for more details.
+	
+<h3>BURG public API</h3>
+
+<h4><a name="api:mono_burg_kids">mono_burg_kids</a></h4>
+<h4><a name="api:mono_burg_label">mono_burg_label</a></h4>
+<h4><a name="api:mono_burg_rule">mono_burg_rule</a></h4>
+
+<h3>SSA public API</h3>
+
+<h4><a name="api:mono_ssa_compute">mono_ssa_compute</a></h4>
+<h4><a name="api:mono_ssa_cprop">mono_ssa_cprop</a></h4>
+<h4><a name="api:mono_ssa_deadce">mono_ssa_deadce</a></h4>
+<h4><a name="api:mono_ssa_remove">mono_ssa_remove</a></h4>
+
+<h3>Internal representation</h3>
+<h4><a name="api:mono_analyze_liveness">mono_analyze_liveness</a></h4>
+<h4><a name="api:mono_compile_dominator_info">mono_compile_dominator_info</a></h4>
+<h4><a name="api:mono_compile_iterated_dfrontier">mono_compile_iterated_dfrontier</a></h4>
+<h4><a name="api:mono_compute_natural_loops">mono_compute_natural_loops</a></h4>
+<h4><a name="api:mono_free_loop_info">mono_free_loop_info</a></h4>
+
+<h4><a name="api:mono_compile_create_var">mono_compile_create_var</a></h4>
+
+<h4><a name="api:mono_codegen">mono_codegen</a></h4>
+
+<h3>Utilities</h1>
+
+<h4><a name="api:mono_blockset_print">mono_blockset_print</a></h4>
+
+<h4><a name="api:mono_constant_fold_inst">mono_constant_fold_inst</a></h4>
+<h4><a name="api:mono_constant_fold">mono_constant_fold</a></h4>
+
+<h4><a name="api:mono_linear_scan">mono_linear_scan</a></h4>
+
+<h4><a name="api:mono_draw_graph">mono_draw_graph</a></h4>

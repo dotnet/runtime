@@ -1,0 +1,16 @@
+#!/bin/sh
+add_h4()
+{
+	sed -e 's,^\(.*\)$,<h4><a name="api:\1">\1</a></h4>,'
+}
+
+dir=`dirname $0`
+sh $dir/produce-lists
+cat $dir/public-api $dir/wapi | add_h4 > $dir/current-api
+for i in `cat $dir/current-api`; do
+	if grep "$i" $dir/sources/mono-api-*.html > /dev/null; then
+		true;
+	else
+		echo "Missing: $i from the template";
+	fi
+done

@@ -1,0 +1,30 @@
+#!/bin/sh
+#
+# Produces two lists in docscripts:
+#    public-api with the public API except the Wapi 
+#    wapi       the public WAPI API
+#
+
+dir=`dirname $0`
+add_h4()
+{
+	sed -e 's/^\t<h4>//' -e 's/$/<\/h4>/'
+}
+
+ignore_known()
+{
+	egrep -v -f $dir/ignore
+}
+
+clean_nm ()
+{
+	grep ' T ' | sed 's/.* T //'
+}
+
+ignore_wapi ()
+{
+	grep -v _wapi | fgrep -v -f $dir/wapi
+}
+
+nm  $dir/../io-layer/.libs/*.o | clean_nm | grep -v _wapi | ignore_known > $dir/wapi
+nm  $dir/../*/.libs/*.o | clean_nm | ignore_known | ignore_wapi | grep -v ^ves_icall | grep -v ^mono_arch_ > $dir/public-api

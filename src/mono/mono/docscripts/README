@@ -1,0 +1,71 @@
+* Scripts to maintain the Mono VM internal API
+
+Layout
+------
+
+	sources/
+		mono-api-*.html
+
+		Contains the various source files, each source file
+		contains HTML, and a line for each API call like this:
+
+		<h4><a name="api:mono_something">mono_something</a></h4>
+
+		The format is static, notice that the tools actually search
+		for the above format and process that (both the tools here, 
+	  	as well as the upcoming Monodoc tools and index creation
+		tools).
+
+		The files can contain any ammount of extra information.
+
+		The documentation from the source code is then merged with 
+		these files and the header/footer information to produce
+		the deploy directory.
+
+	deploy/
+
+		Scripts produce a ready-to-use set of XHTML files that can
+		be either fed into a monodoc XHTML provider or can be published
+		directly on the web.
+
+PROGRAMS
+--------
+* check-coverage
+
+	Run this script every once in a while to make sure that a
+	public symbol that has been added to Mono has a corresponding
+	section on the mono-vm-api.html
+
+	This works by looking for the <h4>APICALL</h4> pattern on the
+	HTML file.
+	
+* produce-lists
+
+	Produces the public-api and wapi files that contain the public
+	libmono API.
+
+* exdoc
+
+	Extracts the embedded documentation from the sources.
+
+* check
+
+	This script is used to verify which routines are missing inline
+	documentation, usage:
+
+		check mono/metadata/*.c
+
+DATAFILES:
+---------
+
+	ignore
+
+		Contains the list of public symbols that should be
+		ignored, they come from tests for example, or are known
+		to be exposed.
+
+	
+	public-api 
+	wapi
+		These two are produced by the produce-lists script
+		and it documents all the public methods.

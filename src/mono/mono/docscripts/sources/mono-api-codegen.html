@@ -1,0 +1,57 @@
+<h3>Code manager</h3>
+
+<h4><a name="api:mono_code_manager_commit">mono_code_manager_commit</a></h4>
+<h4><a name="api:mono_code_manager_destroy">mono_code_manager_destroy</a></h4>
+<h4><a name="api:mono_code_manager_foreach">mono_code_manager_foreach</a></h4>
+<h4><a name="api:mono_code_manager_invalidate">mono_code_manager_invalidate</a></h4>
+<h4><a name="api:mono_code_manager_new_dynamic">mono_code_manager_new_dynamic</a></h4>
+<h4><a name="api:mono_code_manager_new">mono_code_manager_new</a></h4>
+<h4><a name="api:mono_code_manager_reserve">mono_code_manager_reserve</a></h4>
+
+<h3>Register Allocator State</h3>
+
+<h4><a name="api:mono_regstate_alloc_float">mono_regstate_alloc_float</a></h4>
+<h4><a name="api:mono_regstate_alloc_int">mono_regstate_alloc_int</a></h4>
+<h4><a name="api:mono_regstate_assign">mono_regstate_assign</a></h4>
+<h4><a name="api:mono_regstate_free_float">mono_regstate_free_float</a></h4>
+<h4><a name="api:mono_regstate_free_int">mono_regstate_free_int</a></h4>
+<h4><a name="api:mono_regstate_free">mono_regstate_free</a></h4>
+<h4><a name="api:mono_regstate_new">mono_regstate_new</a></h4>
+<h4><a name="api:mono_regstate_next_long">mono_regstate_next_long</a></h4>
+<h4><a name="api:mono_regstate_reset">mono_regstate_reset</a></h4>
+
+<h3>Registration services</h3>
+
+	<p>The core services of Mono are independent of the execution
+	system.  The interpreter and the native code generator both
+	use the functions in the following section to register
+	handlers to execute code with the execution system.
+
+	<p>These APIs would allow a different execution engine (code
+	generator or interpreter) to be hooked to the rest of the Mono
+	VM. 
+	
+<h4><a name="api:mono_install_assembly_load_hook">mono_install_assembly_load_hook</a></h4>
+<h4><a name="api:mono_install_assembly_preload_hook">mono_install_assembly_preload_hook</a></h4>
+<h4><a name="api:mono_install_assembly_search_hook">mono_install_assembly_search_hook</a></h4>
+<h4><a name="api:mono_install_compile_method">mono_install_compile_method</a></h4>
+<h4><a name="api:mono_install_free_method">mono_install_free_method</a></h4>
+<h4><a name="api:mono_install_handler">mono_install_handler</a></h4>
+<h4><a name="api:mono_install_lookup_dynamic_token">mono_install_lookup_dynamic_token</a></h4>
+<h4><a name="api:mono_install_remoting_trampoline">mono_install_remoting_trampoline</a></h4>
+<h4><a name="api:mono_install_runtime_invoke">mono_install_runtime_invoke</a></h4>
+<h4><a name="api:mono_install_stack_walk">mono_install_stack_walk</a></h4>
+<h4><a name="api:mono_install_thread_callbacks">mono_install_thread_callbacks</a></h4>
+<h4><a name="api:mono_install_trampoline">mono_install_trampoline</a></h4>
+<h4><a name="api:mono_install_runtime_cleanup">mono_install_runtime_cleanup</a></h4>
+
+<h3>Compiled Method Information</h3>
+
+	<p>These methods are used internally by the JIT and the
+	interpreter.  MonoJitInfo objects track the information about
+	a method that has been JIT compiled (notice that even the
+	interpreter uses this information).
+	
+<h4><a name="api:mono_jit_info_table_add">mono_jit_info_table_add</a></h4>
+<h4><a name="api:mono_jit_info_table_find">mono_jit_info_table_find</a></h4>
+<h4><a name="api:mono_jit_info_table_remove">mono_jit_info_table_remove</a></h4>

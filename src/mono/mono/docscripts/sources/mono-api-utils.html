@@ -1,0 +1,99 @@
+<h2>Utility Methods</h2>
+
+<h3>Bitsets</h3>
+
+
+<h4><a name="api:mono_bitset_alloc_size">mono_bitset_alloc_size</a></h4>
+<h4><a name="api:mono_bitset_clear">mono_bitset_clear</a></h4>
+<h4><a name="api:mono_bitset_clear_all">mono_bitset_clear_all</a></h4>
+<h4><a name="api:mono_bitset_clone">mono_bitset_clone</a></h4>
+<h4><a name="api:mono_bitset_copyto">mono_bitset_copyto</a></h4>
+<h4><a name="api:mono_bitset_count">mono_bitset_count</a></h4>
+<h4><a name="api:mono_bitset_equal">mono_bitset_equal</a></h4>
+<h4><a name="api:mono_bitset_find_first">mono_bitset_find_first</a></h4>
+<h4><a name="api:mono_bitset_find_last">mono_bitset_find_last</a></h4>
+<h4><a name="api:mono_bitset_find_start">mono_bitset_find_start</a></h4>
+<h4><a name="api:mono_bitset_foreach">mono_bitset_foreach</a></h4>
+<h4><a name="api:mono_bitset_free">mono_bitset_free</a></h4>
+<h4><a name="api:mono_bitset_intersection">mono_bitset_intersection</a></h4>
+<h4><a name="api:mono_bitset_invert">mono_bitset_invert</a></h4>
+<h4><a name="api:mono_bitset_mem_new">mono_bitset_mem_new</a></h4>
+<h4><a name="api:mono_bitset_new">mono_bitset_new</a></h4>
+<h4><a name="api:mono_bitset_set">mono_bitset_set</a></h4>
+<h4><a name="api:mono_bitset_set_all">mono_bitset_set_all</a></h4>
+<h4><a name="api:mono_bitset_size">mono_bitset_size</a></h4>
+<h4><a name="api:mono_bitset_sub">mono_bitset_sub</a></h4>
+<h4><a name="api:mono_bitset_test">mono_bitset_test</a></h4>
+<h4><a name="api:mono_bitset_test_bulk">mono_bitset_test_bulk</a></h4>
+<h4><a name="api:mono_bitset_union">mono_bitset_union</a></h4>
+
+<h3>Hashtable</h3>
+
+<h4><a name="api:mono_g_hash_table_destroy">mono_g_hash_table_destroy</a></h4>
+<h4><a name="api:mono_g_hash_table_foreach">mono_g_hash_table_foreach</a></h4>
+<h4><a name="api:mono_g_hash_table_foreach_remove">mono_g_hash_table_foreach_remove</a></h4>
+<h4><a name="api:mono_g_hash_table_foreach_steal">mono_g_hash_table_foreach_steal</a></h4>
+<h4><a name="api:mono_g_hash_table_insert">mono_g_hash_table_insert</a></h4>
+<h4><a name="api:mono_g_hash_table_lookup">mono_g_hash_table_lookup</a></h4>
+<h4><a name="api:mono_g_hash_table_lookup_extended">mono_g_hash_table_lookup_extended</a></h4>
+<h4><a name="api:mono_g_hash_table_new">mono_g_hash_table_new</a></h4>
+<h4><a name="api:mono_g_hash_table_new_full">mono_g_hash_table_new_full</a></h4>
+<h4><a name="api:mono_g_hash_table_remap">mono_g_hash_table_remap</a></h4>
+<h4><a name="api:mono_g_hash_table_remove">mono_g_hash_table_remove</a></h4>
+<h4><a name="api:mono_g_hash_table_replace">mono_g_hash_table_replace</a></h4>
+<h4><a name="api:mono_g_hash_table_size">mono_g_hash_table_size</a></h4>
+<h4><a name="api:mono_g_hash_table_steal">mono_g_hash_table_steal</a></h4>
+
+<h3>Raw buffer</h3>
+
+<h4><a name="api:mono_raw_buffer_load">mono_raw_buffer_load</a></h4>
+<h4><a name="api:mono_raw_buffer_update">mono_raw_buffer_update</a></h4>
+<h4><a name="api:mono_raw_buffer_free">mono_raw_buffer_free</a></h4>
+
+<h3>SHA1 Signatures</h3>
+
+<h4><a name="api:mono_sha1_init">mono_sha1_init</a></h4>
+<h4><a name="api:mono_sha1_update">mono_sha1_update</a></h4>
+<h4><a name="api:mono_sha1_get_digest_from_file">mono_sha1_get_digest_from_file</a></h4>
+<h4><a name="api:mono_sha1_get_digest">mono_sha1_get_digest</a></h4>
+<h4><a name="api:mono_sha1_final">mono_sha1_final</a></h4>
+
+<h3>MD5 Signatures</h3>
+
+<h4><a name="api:mono_md5_init">mono_md5_init</a></h4>
+<h4><a name="api:mono_md5_update">mono_md5_update</a></h4>
+<h4><a name="api:mono_md5_get_digest_from_file">mono_md5_get_digest_from_file</a></h4>
+<h4><a name="api:mono_md5_get_digest">mono_md5_get_digest</a></h4>
+<h4><a name="api:mono_md5_final">mono_md5_final</a></h4>
+
+<h4><a name="api:mono_digest_get_public_token">mono_digest_get_public_token</a></h4>
+
+<h3>Memory Pools</h3>
+
+<h4><a name="api:mono_mempool_alloc0">mono_mempool_alloc0</a></h4>
+<h4><a name="api:mono_mempool_alloc">mono_mempool_alloc</a></h4>
+<h4><a name="api:mono_mempool_destroy">mono_mempool_destroy</a></h4>
+<h4><a name="api:mono_mempool_empty">mono_mempool_empty</a></h4>
+<h4><a name="api:mono_mempool_invalidate">mono_mempool_invalidate</a></h4>
+<h4><a name="api:mono_mempool_new">mono_mempool_new</a></h4>
+<h4><a name="api:mono_mempool_stats">mono_mempool_stats</a></h4>
+ 
+<h3>JIT utilities</h3>
+
+<h4><a name="api:mono_is_power_of_two">mono_is_power_of_two</a></h4>
+<h4><a name="api:mono_signbit_double">mono_signbit_double</a></h4>
+<h4><a name="api:mono_signbit_float">mono_signbit_float</a></h4>
+
+<h3>Disassembling Generated Code</h3>
+
+	<p>Routines used to debug the JIT-produced code.
+	
+<h4><a name="api:mono_disasm_code">mono_disasm_code</a></h4>
+<h4><a name="api:mono_disasm_code_one">mono_disasm_code_one</a></h4>
+<h4><a name="api:mono_disassemble_code">mono_disassemble_code</a></h4>
+
+<h3>Others</h3>
+
+<h4><a name="api:mono_escape_uri_string">mono_escape_uri_string</a></h4>
+<h4><a name="api:mono_guid_to_string">mono_guid_to_string</a></h4>
+
