@@ -739,9 +739,10 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoReflectionAssem
 void
 ves_icall_System_AppDomain_InternalUnload (gint32 domain_id)
 {
+	MonoDomain * domain = mono_domain_get_by_id (domain_id);
+
 	MONO_ARCH_SAVE_REGS;
 
-	MonoDomain * domain = mono_domain_get_by_id (domain_id);
 	if (NULL == domain) {
 		MonoException *exc = mono_get_exception_execution_engine ("Failed to unload domain, domain id not found");
 		mono_raise_exception (exc);
