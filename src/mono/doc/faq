@@ -120,7 +120,7 @@ A: Different parts of Mono will achieve usability at different stages,
 
 Q: What major components will you include in Mono?
 
-A: Hopefully eveyrthing that Microsoft ships on their Framework
+A: Hopefully everything that Microsoft ships on their Framework
    (ADO.NET, ASP.NET, Windows.Forms), and
    we encourage third party developers to create reusable components that
    work on both Mono and Windows.
