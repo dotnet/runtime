@@ -23,6 +23,8 @@ class Test {
 	delegate void SimpleDelegate ();
 	delegate string NotSimpleDelegate (int a);
 	delegate int AnotherDelegate (string s);
+
+	delegate string StringDelegate (); 
 	
 	public int data;
 	
@@ -85,6 +87,12 @@ class Test {
 		Console.WriteLine (d4.Method);
 		Console.WriteLine (d4.Method.Name);
 		Console.WriteLine (d4.Method.DeclaringType);
+
+		// Check unboxing of this argument
+		int x = 10;
+		StringDelegate d5 = new StringDelegate (x.ToString);
+		if (d5 () != "10")
+			return 1;
 		
 		return 0;
 
