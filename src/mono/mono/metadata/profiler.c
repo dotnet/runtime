@@ -1,6 +1,7 @@
 
 #include "mono/metadata/profiler-private.h"
 #include "mono/metadata/debug-helpers.h"
+#include <string.h>
 
 static MonoProfiler * current_profiler = NULL;
 
@@ -312,17 +313,86 @@ mono_profiler_shutdown (void)
  * and improve it to do graphs and more accurate timestamping with rdtsc.
  */
 
+#define USE_X86TSC 0
+#if USE_X86TSC
+
+typedef struct {
+	unsigned int lows, highs, lowe, highe;
+} MonoRdtscTimer;
+
+#define rdtsc(low,high) \
+        __asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high))
+
+static int freq;
+
+static double
+rdtsc_elapsed (MonoRdtscTimer *t)
+{
+	unsigned long long diff;
+	unsigned int highe = t->highe;
+	if (t->lowe < t->lows)
+		highe--;
+	diff = (((unsigned long long) highe - t->highs) << 32) + (t->lowe - t->lows);
+	return ((double)diff / freq) / 1000000; /* have to return the result in seconds */
+}
+
+static int 
+have_rdtsc (void) {
+	char buf[256];
+	int have_freq = 0;
+	int have_flag = 0;
+	float val;
+	FILE *cpuinfo;
+
+	if (!(cpuinfo = fopen ("/proc/cpuinfo", "r")))
+		return 0;
+	while (fgets (buf, sizeof(buf), cpuinfo)) {
+		if (sscanf (buf, "cpu MHz : %f", &val) == 1) {
+			/*printf ("got mh: %f\n", val);*/
+			have_freq = val;
+		}
+		if (strncmp (buf, "flags", 5) == 0) {
+			if (strstr (buf, "tsc")) {
+				have_flag = 1;
+				/*printf ("have tsc\n");*/
+			}
+		}
+	}
+	fclose (cpuinfo);
+	return have_flag? have_freq: 0;
+}
+
+#define MONO_TIMER_STARTUP 	\
+	if (!(freq = have_rdtsc ())) g_error ("Compiled with TSC support, but none found");
+#define MONO_TIMER_TYPE  MonoRdtscTimer
+#define MONO_TIMER_INIT(t)
+#define MONO_TIMER_DESTROY(t)
+#define MONO_TIMER_START(t) rdtsc ((t).lows, (t).highs);
+#define MONO_TIMER_STOP(t) rdtsc ((t).lowe, (t).highe);
+#define MONO_TIMER_ELAPSED(t) rdtsc_elapsed (&(t))
+
+#else
+
+#define MONO_TIMER_STARTUP
+#define MONO_TIMER_TYPE GTimer *
+#define MONO_TIMER_INIT(t) (t) = g_timer_new ()
+#define MONO_TIMER_DESTROY(t) g_timer_destroy ((t))
+#define MONO_TIMER_START(t) g_timer_start ((t))
+#define MONO_TIMER_STOP(t) g_timer_stop ((t))
+#define MONO_TIMER_ELAPSED(t) g_timer_elapsed ((t), NULL)
+#endif
+
 struct _MonoProfiler {
 	GHashTable *methods;
 	GHashTable *newobjs;
-	GTimer     *jit_timer;
+	MONO_TIMER_TYPE jit_timer;
 	double      jit_time;
 	int         methods_jitted;
 };
 
 typedef struct {
 	union {
-		GTimer *timer;
+		MONO_TIMER_TYPE timer;
 		MonoMethod *method;
 	} u;
 	guint64 count;
@@ -338,7 +408,7 @@ compare_profile (MethodProfile *profa, MethodProfile *profb)
 static void
 build_profile (MonoMethod *m, MethodProfile *prof, GList **funcs)
 {
-	g_timer_destroy (prof->u.timer);
+	MONO_TIMER_DESTROY (prof->u.timer);
 	prof->u.method = m;
 	*funcs = g_list_insert_sorted (*funcs, prof, (GCompareFunc)compare_profile);
 }
@@ -419,11 +489,11 @@ simple_method_enter (MonoProfiler *prof, MonoMethod *method)
 	MethodProfile *profile_info;
 	if (!(profile_info = g_hash_table_lookup (prof->methods, method))) {
 		profile_info = g_new0 (MethodProfile, 1);
-		profile_info->u.timer = g_timer_new ();
+		MONO_TIMER_INIT (profile_info->u.timer);
 		g_hash_table_insert (prof->methods, method, profile_info);
 	}
 	profile_info->count++;
-	g_timer_start (profile_info->u.timer);
+	MONO_TIMER_START (profile_info->u.timer);
 }
 
 static void
@@ -433,22 +503,22 @@ simple_method_leave (MonoProfiler *prof, MonoMethod *method)
 	if (!(profile_info = g_hash_table_lookup (prof->methods, method)))
 		g_assert_not_reached ();
 
-	g_timer_stop (profile_info->u.timer);
-	profile_info->total += g_timer_elapsed (profile_info->u.timer, NULL);
+	MONO_TIMER_STOP (profile_info->u.timer);
+	profile_info->total += MONO_TIMER_ELAPSED (profile_info->u.timer);
 }
 
 static void
 simple_method_jit (MonoProfiler *prof, MonoMethod *method)
 {
-	g_timer_start (prof->jit_timer);
+	MONO_TIMER_START (prof->jit_timer);
 	prof->methods_jitted++;
 }
 
 static void
 simple_method_end_jit (MonoProfiler *prof, MonoMethod *method, int result)
 {
-	g_timer_stop (prof->jit_timer);
-	prof->jit_time += g_timer_elapsed (prof->jit_timer, NULL);
+	MONO_TIMER_STOP (prof->jit_timer);
+	prof->jit_time += MONO_TIMER_ELAPSED (prof->jit_timer);
 }
 
 static void
@@ -472,9 +542,11 @@ mono_profiler_install_simple (void)
 {
 	MonoProfiler *prof = g_new0 (MonoProfiler, 1);
 
+	MONO_TIMER_STARTUP;
+
 	prof->methods = g_hash_table_new (g_direct_hash, g_direct_equal);
 	prof->newobjs = g_hash_table_new (g_direct_hash, g_direct_equal);
-	prof->jit_timer = g_timer_new ();
+	MONO_TIMER_INIT (prof->jit_timer);
 
 	mono_profiler_install (prof, simple_shutdown);
 	/* later do also object creation */
