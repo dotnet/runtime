@@ -30,18 +30,18 @@
 	be browsed <a href="http://cvs.hispalinux.es/cgi-bin/cvsweb/?cvsroot=Mono#dirlist">here</a>
 
 <a name="jun-7">
-	<b>Mono 0.12</b>
+	<b>Mono 0.13</b>
 
 	New packaged versions of the Mono C# compiler and Mono runtime
-	are now available.  The latest version is 0.12.
+	are now available.  The latest version is 0.13.
 
 	<ul>
-		* <a href="archive/mono-0.12">Mono 0.12 release notes</a>
+		* <a href="archive/mono-0.13">Mono 0.13 release notes</a>
 
-		* <a href="archive/mcs-0.12.tar.gz">mcs-0.12.tar.gz</a>
+		* <a href="archive/mcs-0.13.tar.gz">mcs-0.13.tar.gz</a>
 		Mono C# compiler with class library source code.
 
-		* <a href="archive/mono-0.12.tar.gz">mono-0.12.tar.gz</a>
+		* <a href="archive/mono-0.13.tar.gz">mono-0.13.tar.gz</a>
 		Mono runtime.
 	</ul>
 
