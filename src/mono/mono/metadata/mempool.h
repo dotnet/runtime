@@ -9,6 +9,12 @@ mono_mempool_new           (void);
 void
 mono_mempool_destroy       (MonoMemPool *pool);
 
+void
+mono_mempool_empty         (MonoMemPool *pool);
+
+void
+mono_mempool_stats         (MonoMemPool *pool);
+
 gpointer
 mono_mempool_alloc         (MonoMemPool *pool, 
 			    guint        size);

@@ -29,7 +29,10 @@ struct _MonoMemPool {
 	MonoMemPool *next;
 	gint rest;
 	gpointer pos;
-	double pad; /* to assure proper alignment */
+	union {
+		double pad; /* to assure proper alignment */
+		guint32 allocated;
+	} d;
 };
 
 /**
@@ -45,6 +48,7 @@ mono_mempool_new ()
 	pool->next = NULL;
 	pool->pos = (char *)pool + sizeof (MonoMemPool);
 	pool->rest = MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
+	pool->d.allocated = MONO_MEMPOOL_PAGESIZE;
 	return pool;
 }
 
@@ -64,6 +68,41 @@ mono_mempool_destroy (MonoMemPool *pool)
 		n = p->next;
 		g_free (p);
 		p = n;
+	}
+}
+
+void
+mono_mempool_empty (MonoMemPool *pool)
+{
+	pool->pos = (char *)pool + sizeof (MonoMemPool);
+	pool->rest = MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
+}
+
+/**
+ * mono_mempool_stats:
+ * @pool: the momory pool we need stats for
+ *
+ * Print a few stats about the mempool
+ */
+void
+mono_mempool_stats (MonoMemPool *pool)
+{
+	MonoMemPool *p, *n;
+	int count = 0;
+	guint32 still_free = 0;
+
+	p = pool;
+	while (p) {
+		still_free += p->rest;
+		n = p->next;
+		p = n;
+		count++;
+	}
+	if (pool) {
+		g_print ("Mempool %p stats:\n", pool);
+		g_print ("Total mem allocated: %d\n", pool->d.allocated);
+		g_print ("Num chunks: %d\n", count);
+		g_print ("Free memory: %d\n", still_free);
 	}
 }
 
@@ -91,6 +130,7 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 			MonoMemPool *np = g_malloc (sizeof (MonoMemPool) + size);
 			np->next = pool->next;
 			pool->next = np;
+			pool->d.allocated += sizeof (MonoMemPool) + size;
 			return (char *)np + sizeof (MonoMemPool);
 		} else {
 			MonoMemPool *np = g_malloc (MONO_MEMPOOL_PAGESIZE);
@@ -98,6 +138,7 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 			pool->next = np;
 			pool->pos = (char *)np + sizeof (MonoMemPool);
 			pool->rest = MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
+			pool->d.allocated += MONO_MEMPOOL_PAGESIZE;
 		}
 	}
 
