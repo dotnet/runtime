@@ -17,6 +17,28 @@
 #include "jit.h"
 #include "codegen.h"
 
+#ifdef __FreeBSD__
+# define SC_EAX sc_eax
+# define SC_EBX sc_ebx
+# define SC_ECX sc_ecx
+# define SC_EDX sc_edx
+# define SC_EBP sc_ebp
+# define SC_EIP sc_eip
+# define SC_ESP sc_esp
+# define SC_EDI sc_edi
+# define SC_ESI sc_esi
+#else
+# define SC_EAX eax
+# define SC_EBX ebx
+# define SC_ECX ecx
+# define SC_EDX edx
+# define SC_EBP ebp
+# define SC_EIP eip
+# define SC_ESP esp
+# define SC_EDI edi
+# define SC_ESI esi
+#endif
+
 /*
  * arch_get_restore_context:
  *
@@ -40,19 +62,19 @@ arch_get_restore_context (void)
 	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
 
 	/* get return address, stored in EDX */
-	x86_mov_reg_membase (code, X86_EDX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, eip), 4);
+	x86_mov_reg_membase (code, X86_EDX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EIP), 4);
 	/* restore EBX */
-	x86_mov_reg_membase (code, X86_EBX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, ebx), 4);
+	x86_mov_reg_membase (code, X86_EBX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBX), 4);
 	/* restore EDI */
-	x86_mov_reg_membase (code, X86_EDI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, edi), 4);
+	x86_mov_reg_membase (code, X86_EDI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EDI), 4);
 	/* restore ESI */
-	x86_mov_reg_membase (code, X86_ESI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, esi), 4);
+	x86_mov_reg_membase (code, X86_ESI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_ESI), 4);
 	/* restore ESP */
-	x86_mov_reg_membase (code, X86_ESP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, esp), 4);
+	x86_mov_reg_membase (code, X86_ESP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_ESP), 4);
 	/* restore EBP */
-	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, ebp), 4);
+	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBP), 4);
 	/* restore ECX. the exception object is passed here to the catch handler */
-	x86_mov_reg_membase (code, X86_ECX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, ecx), 4);
+	x86_mov_reg_membase (code, X86_ECX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_ECX), 4);
 
 	/* jump to the saved IP */
 	x86_jump_reg (code, X86_EDX);
@@ -92,7 +114,7 @@ arch_get_call_finally (void)
 	/* save EBP */
 	x86_push_reg (code, X86_EBP);
 	/* set new EBP */
-	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, ebp), 4);
+	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBP), 4);
 	/* call the handler */
 	x86_call_reg (code, X86_ECX);
 	/* restore EBP */
@@ -119,7 +141,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji;
-	gpointer ip = (gpointer)ctx->eip;
+	gpointer ip = (gpointer)ctx->SC_EIP;
 	static void (*restore_context) (struct sigcontext *);
 	static void (*call_finally) (struct sigcontext *, unsigned long);
 	void (*cleanup) (MonoObject *exc);
@@ -154,8 +176,8 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 					if (ei->flags == 0 && mono_object_isinst (obj, 
 					        mono_class_get (m->klass->image, ei->token_or_filter))) {
 					
-						ctx->eip = (unsigned long)ei->handler_start;
-						ctx->ecx = (unsigned long)obj;
+						ctx->SC_EIP = (unsigned long)ei->handler_start;
+						ctx->SC_ECX = (unsigned long)obj;
 						restore_context (ctx);
 						g_assert_not_reached ();
 					}
@@ -195,22 +217,22 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 
 		/* restore caller saved registers */
 		if (ji->used_regs & X86_ESI_MASK) {
-			ctx->esi = *((int *)ctx->ebp + offset);
+			ctx->SC_ESI = *((int *)ctx->SC_EBP + offset);
 			offset++;
 		}
 		if (ji->used_regs & X86_EDI_MASK) {
-			ctx->edi = *((int *)ctx->ebp + offset);
+			ctx->SC_EDI = *((int *)ctx->SC_EBP + offset);
 			offset++;
 		}
 		if (ji->used_regs & X86_EBX_MASK) {
-			ctx->ebx = *((int *)ctx->ebp + offset);
+			ctx->SC_EBX = *((int *)ctx->SC_EBP + offset);
 		}
 
-		ctx->esp = ctx->ebp;
-		ctx->eip = *((int *)ctx->ebp + 1);
-		ctx->ebp = *((int *)ctx->ebp);
+		ctx->SC_ESP = ctx->SC_EBP;
+		ctx->SC_EIP = *((int *)ctx->SC_EBP + 1);
+		ctx->SC_EBP = *((int *)ctx->SC_EBP);
 		
-		if (ctx->ebp < (unsigned)mono_end_of_stack)
+		if (ctx->SC_EBP < (unsigned)mono_end_of_stack)
 			arch_handle_exception (ctx, obj);
 		else {
 			g_assert (cleanup);
@@ -233,12 +255,12 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 
 		*lmf_addr = lmf->previous_lmf;
 
-		ctx->esi = lmf->esi;
-		ctx->edi = lmf->edi;
-		ctx->ebx = lmf->ebx;
-		ctx->ebp = lmf->ebp;
-		ctx->eip = lmf->eip;
-		ctx->esp = (unsigned long)&lmf->eip;
+		ctx->SC_ESI = lmf->esi;
+		ctx->SC_EDI = lmf->edi;
+		ctx->SC_EBX = lmf->ebx;
+		ctx->SC_EBP = lmf->ebp;
+		ctx->SC_EIP = lmf->eip;
+		ctx->SC_ESP = (unsigned long)&lmf->eip;
 
 		if (mono_object_isinst (obj, mono_defaults.exception_class)) {
 			char  *strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
@@ -256,7 +278,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 			g_free (tmp);
 		}
 
-		if (ctx->eip < (unsigned)mono_end_of_stack)
+		if (ctx->SC_EIP < (unsigned)mono_end_of_stack)
 			arch_handle_exception (ctx, obj);
 		else {
 			g_assert (cleanup);
@@ -274,15 +296,15 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 {
 	struct sigcontext ctx;
 
-	ctx.esp = esp;
-	ctx.eip = eip;
-	ctx.ebp = ebp;
-	ctx.edi = edi;
-	ctx.esi = esi;
-	ctx.ebx = ebx;
-	ctx.edx = edx;
-	ctx.ecx = ecx;
-	ctx.eax = eax;
+	ctx.SC_ESP = esp;
+	ctx.SC_EIP = eip;
+	ctx.SC_EBP = ebp;
+	ctx.SC_EDI = edi;
+	ctx.SC_ESI = esi;
+	ctx.SC_EBX = ebx;
+	ctx.SC_EDX = edx;
+	ctx.SC_ECX = ecx;
+	ctx.SC_EAX = eax;
 	
 	arch_handle_exception (&ctx, exc);
 
