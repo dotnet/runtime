@@ -114,6 +114,7 @@ dup_type (MonoType* t, const MonoType *original)
 	MonoType *r = g_new0 (MonoType, 1);
 	*r = *t;
 	r->attrs = original->attrs;
+	r->byref = original->byref;
 	mono_stats.generics_metadata_size += sizeof (MonoType);
 	return r;
 }
@@ -306,7 +307,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 			g_free (nginst->type_argv);
 			g_free (nginst);
 			mono_loader_unlock ();
-			return nt;
+			return dup_type (nt, type);
 		}
 
 		nginst->dynamic_info = NULL;
