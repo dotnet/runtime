@@ -191,7 +191,7 @@ dis_directive_file (MonoImage *m)
 	
 }
 
-static map_t visibility_map [] = {
+static dis_map_t visibility_map [] = {
 	{ TYPE_ATTRIBUTE_NOT_PUBLIC,           "private " },
 	{ TYPE_ATTRIBUTE_PUBLIC,               "public " },
 	{ TYPE_ATTRIBUTE_NESTED_PUBLIC,        "nested public " },
@@ -203,14 +203,14 @@ static map_t visibility_map [] = {
 	{ 0, NULL }
 };
 
-static map_t layout_map [] = {
+static dis_map_t layout_map [] = {
 	{ TYPE_ATTRIBUTE_AUTO_LAYOUT,          "auto " },
 	{ TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT,    "sequential " },
 	{ TYPE_ATTRIBUTE_EXPLICIT_LAYOUT,      "explicit " },
 	{ 0, NULL }
 };
 
-static map_t format_map [] = {
+static dis_map_t format_map [] = {
 	{ TYPE_ATTRIBUTE_ANSI_CLASS,           "ansi " },
 	{ TYPE_ATTRIBUTE_UNICODE_CLASS,	       "unicode " },
 	{ TYPE_ATTRIBUTE_AUTO_CLASS,           "auto " },
@@ -317,7 +317,7 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end)
 	}
 }
 
-static map_t method_access_map [] = {
+static dis_map_t method_access_map [] = {
 	{ METHOD_ATTRIBUTE_COMPILER_CONTROLLED, "compilercontrolled " },
 	{ METHOD_ATTRIBUTE_PRIVATE,             "private " },
 	{ METHOD_ATTRIBUTE_FAM_AND_ASSEM,       "famandassem " },
@@ -328,7 +328,7 @@ static map_t method_access_map [] = {
 	{ 0, NULL }
 };
 
-static map_t method_flags_map [] = {
+static dis_map_t method_flags_map [] = {
 	{ METHOD_ATTRIBUTE_STATIC,              "static " },
 	{ METHOD_ATTRIBUTE_FINAL,               "final " },
 	{ METHOD_ATTRIBUTE_VIRTUAL,             "virtual " },
@@ -365,13 +365,13 @@ method_flags (guint32 f)
 	return s;
 }
 
-static map_t pinvoke_flags_map [] = {
+static dis_map_t pinvoke_flags_map [] = {
 	{ PINVOKE_ATTRIBUTE_NO_MANGLE ,            "nomangle " },
 	{ PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR,   "lasterr " },
 	{ 0, NULL }
 };
 
-static map_t pinvoke_call_conv_map [] = {
+static dis_map_t pinvoke_call_conv_map [] = {
 	{ PINVOKE_ATTRIBUTE_CALL_CONV_WINAPI,      "winapi " },
 	{ PINVOKE_ATTRIBUTE_CALL_CONV_CDECL,       "cdecl " },
 	{ PINVOKE_ATTRIBUTE_CALL_CONV_STDCALL,     "stdcall " },
@@ -380,7 +380,7 @@ static map_t pinvoke_call_conv_map [] = {
 	{ 0, NULL }
 };
 
-static map_t pinvoke_char_set_map [] = {
+static dis_map_t pinvoke_char_set_map [] = {
 	{ PINVOKE_ATTRIBUTE_CHAR_SET_NOT_SPEC,     "" },
 	{ PINVOKE_ATTRIBUTE_CHAR_SET_ANSI,         "ansi " },
 	{ PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE ,     "unicode " },
@@ -411,7 +411,7 @@ pinvoke_flags (guint32 f)
 	return s;
 }
 
-static map_t method_impl_map [] = {
+static dis_map_t method_impl_map [] = {
 	{ METHOD_IMPL_ATTRIBUTE_IL,              "cil " },
 	{ METHOD_IMPL_ATTRIBUTE_NATIVE,          "native " },
 	{ METHOD_IMPL_ATTRIBUTE_OPTIL,           "optil " },
@@ -419,13 +419,13 @@ static map_t method_impl_map [] = {
 	{ 0, NULL }
 };
 
-static map_t managed_type_map [] = {
+static dis_map_t managed_type_map [] = {
 	{ METHOD_IMPL_ATTRIBUTE_UNMANAGED,       "unmanaged " },
 	{ METHOD_IMPL_ATTRIBUTE_MANAGED,         "managed " },
 	{ 0, NULL }
 };
 
-static map_t managed_impl_flags [] = {
+static dis_map_t managed_impl_flags [] = {
 	{ METHOD_IMPL_ATTRIBUTE_FORWARD_REF,     "fwdref " },
 	{ METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG,    "preservesig " },
 	{ METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL,   "internalcall " },

@@ -641,7 +641,7 @@ dump_table_methodimpl (MonoImage *m)
 	
 }
 
-static map_t semantics_map [] = {
+static dis_map_t semantics_map [] = {
 		{1, "setter"},
 		{2, "getter"},
 		{4, "other"},

@@ -20,7 +20,7 @@
  * Warning: returns static buffer.
  */
 const char *
-map (guint32 code, map_t *table)
+map (guint32 code, dis_map_t *table)
 {
 	int i;
 
@@ -38,7 +38,7 @@ map (guint32 code, map_t *table)
  * Warning: returns static buffer.
  */
 const char *
-flags (guint32 code, map_t *table)
+flags (guint32 code, dis_map_t *table)
 {
 	static char buffer [1024];
 	int i;

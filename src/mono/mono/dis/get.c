@@ -435,7 +435,7 @@ get_custom_mod (MonoImage *m, const char *ptr, char **return_value)
 }
 
 
-static map_t element_type_map [] = {
+static dis_map_t element_type_map [] = {
 	{ MONO_TYPE_END        , "end" },
 	{ MONO_TYPE_VOID       , "void" },
 	{ MONO_TYPE_BOOLEAN    , "bool" },
@@ -458,7 +458,7 @@ static map_t element_type_map [] = {
 	{ 0, NULL }
 };
 
-static map_t call_conv_type_map [] = {
+static dis_map_t call_conv_type_map [] = {
 	{ MONO_CALL_DEFAULT     , "default" },
 	{ MONO_CALL_C           , "c" },
 	{ MONO_CALL_STDCALL     , "stdcall" },
@@ -1077,7 +1077,7 @@ get_escaped_name (const char *name)
 	return g_strdup (name);
 }
 
-static map_t param_map [] = {
+static dis_map_t param_map [] = {
 	{ PARAM_ATTRIBUTE_IN,                "[in] " },
 	{ PARAM_ATTRIBUTE_OUT,               "[out] " },
 	{ PARAM_ATTRIBUTE_OPTIONAL,          "optional " },
@@ -1092,7 +1092,7 @@ param_flags (guint32 f)
 	return g_strdup (flags (f, param_map));
 }
 
-static map_t field_access_map [] = {
+static dis_map_t field_access_map [] = {
 	{ FIELD_ATTRIBUTE_COMPILER_CONTROLLED, "compilercontrolled " },
 	{ FIELD_ATTRIBUTE_PRIVATE,             "private " },
 	{ FIELD_ATTRIBUTE_FAM_AND_ASSEM,       "famandassem " },
@@ -1103,7 +1103,7 @@ static map_t field_access_map [] = {
 	{ 0, NULL }
 };
 
-static map_t field_flags_map [] = {
+static dis_map_t field_flags_map [] = {
 	{ FIELD_ATTRIBUTE_STATIC,              "static " },
 	{ FIELD_ATTRIBUTE_INIT_ONLY,           "initonly " },
 	{ FIELD_ATTRIBUTE_LITERAL,             "literal " },
