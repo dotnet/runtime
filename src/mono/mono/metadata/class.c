@@ -189,6 +189,35 @@ class_compute_field_layout (MonoClass *class)
 	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELD];
 	int i, blittable = TRUE;
 	guint32 rva;
+	guint32 packing_size = 0;
+
+	if (class->size_inited)
+		return;
+
+	if (class->parent) {
+		if (!class->parent->size_inited)
+			class_compute_field_layout (class->parent);
+		class->instance_size += class->parent->instance_size;
+		class->class_size += class->parent->class_size;
+		class->min_align = class->parent->min_align;
+	} else {
+		class->instance_size = sizeof (MonoObject);
+		class->min_align = 1;
+	}
+
+	if (mono_metadata_packing_from_typedef (class->image, class->type_token, &packing_size, &class->instance_size)) {
+		class->instance_size += sizeof (MonoObject);
+	}
+
+	g_assert ((packing_size & 0xfffffff0) == 0);
+	class->packing_size = packing_size;
+
+	if (!top) {
+		class->size_inited = 1;
+		return;
+	}
+
+	class->fields = g_new0 (MonoClassField, top);
 
 	/*
 	 * Fetch all the field information.
@@ -772,7 +801,6 @@ mono_class_init (MonoClass *class)
 	static MonoMethod *default_finalize = NULL;
 	static int finalize_slot = -1;
 	static int ghc_slot = -1;
-	guint32 packing_size = 0;
 
 	g_assert (class);
 
@@ -788,29 +816,14 @@ mono_class_init (MonoClass *class)
 
 	mono_stats.initialized_class_count++;
 
-	if (class->parent) {
-		if (!class->parent->inited)
-			mono_class_init (class->parent);
-		class->instance_size += class->parent->instance_size;
-		class->class_size += class->parent->class_size;
-		class->min_align = class->parent->min_align;
-	} else
-		class->min_align = 1;
-
-	if (mono_metadata_packing_from_typedef (class->image, class->type_token, &packing_size, &class->instance_size)) {
-		class->instance_size += sizeof (MonoObject);
-	}
-
-	g_assert ((packing_size & 0xfffffff0) == 0);
-	class->packing_size = packing_size;
+	if (class->parent && !class->parent->inited)
+		mono_class_init (class->parent);
 
 	/*
 	 * Computes the size used by the fields, and their locations
 	 */
-	if (!class->size_inited && class->field.count > 0){
-		class->fields = g_new0 (MonoClassField, class->field.count);
+	if (!class->size_inited)
 		class_compute_field_layout (class);
-	}
 
 	/* initialize method pointers */
 	class->methods = g_new (MonoMethod*, class->method.count);
@@ -1097,7 +1110,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	guint icount = 0; 
 	MonoClass **interfaces;
 
-	if ((class = g_hash_table_lookup (image->class_cache, GUINT_TO_POINTER (type_token))))
+	if ((class = g_hash_table_lookup (image->class_cache, GUINT_TO_POINTER (type_token)))) 
 		return class;
 
 	g_assert (mono_metadata_token_table (type_token) == MONO_TABLE_TYPEDEF);
@@ -1177,11 +1190,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	/*class->interfaces = mono_metadata_interfaces_from_typedef (image, type_token, &class->interface_count); */
 
-	if (class->enumtype) {
-		class->instance_size = sizeof (MonoObject);
-		class->fields = g_new0 (MonoClassField, class->field.count);
+	if (class->enumtype)
 		class_compute_field_layout (class);
-	} 
 
 	if ((type_token = mono_metadata_nested_in_typedef (image, type_token)))
 		class->nested_in = mono_class_create_from_typedef (image, type_token);
