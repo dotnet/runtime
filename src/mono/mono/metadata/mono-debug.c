@@ -336,10 +336,16 @@ il_offset_from_address (MonoDebugMethodJitInfo *jit, guint32 address)
 	return -1;
 }
 
-/*
+/**
+ * mono_debug_source_location_from_address:
+ * @method:
+ * @address:
+ * @line_number:
+ * @domain:
+ *
  * Used by the exception code to get a source location from a machine address.
  *
- * Returns a textual representation of the specified address which is suitable to be displayed to
+ * Returns: a textual representation of the specified address which is suitable to be displayed to
  * the user (for instance "/home/martin/monocvs/debugger/test/Y.cs:8").
  *
  * If the optional @line_number argument is not NULL, the line number is stored there and just the
@@ -381,7 +387,12 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address, gu
 	return NULL;
 }
 
-/*
+/**
+ * mono_debug_source_location_from_il_offset:
+ * @method:
+ * @offset:
+ * @line_number:
+ *
  * Used by the exception code to get a source location from an IL offset.
  *
  * Returns a textual representation of the specified address which is suitable to be displayed to
@@ -409,8 +420,13 @@ mono_debug_source_location_from_il_offset (MonoMethod *method, guint32 offset, g
 	return res;
 }
 
-/*
- * Returns the IL offset corresponding to machine address @address which is an offset
+/**
+ * mono_debug_il_offset_from_address:
+ * @method:
+ * @address:
+ * @domain:
+ *
+ * Returns: the IL offset corresponding to machine address @address which is an offset
  * relative to the beginning of the method @method.
  */
 gint32
@@ -438,8 +454,13 @@ mono_debug_il_offset_from_address (MonoMethod *method, gint32 address, MonoDomai
 	return res;
 }
 
-/*
- * Returns the machine address corresponding to IL offset @il_offset.
+/**
+ * mono_debug_address_from_il_offset:
+ * @method:
+ * @il_offset:
+ * @domain:
+ *
+ * Returns: the machine address corresponding to IL offset @il_offset.
  * The returned value is an offset relative to the beginning of the method @method.
  */
 gint32

@@ -5759,8 +5759,10 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
  * extracted in the info structure.
  * the name param will be mangled, so, make a copy before passing it to this function.
  * The fields in info will be valid until the memory pointed to by name is valid.
- * Returns 0 on parse error.
+ *
  * See also mono_type_get_name () below.
+ *
+ * Returns: 0 on parse error.
  */
 int
 mono_reflection_parse_type (char *name, MonoTypeNameParse *info) {

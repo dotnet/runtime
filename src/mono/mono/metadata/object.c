@@ -544,7 +544,7 @@ mono_class_compute_gc_descriptor (MonoClass *class)
  * @fklass: The MonoClass to look up.
  * @field: The MonoClassField describing the field.
  *
- * Returns SPECIAL_STATIC_THREAD if the field is thread static, SPECIAL_STATIC_CONTEXT if it is context static,
+ * Returns: SPECIAL_STATIC_THREAD if the field is thread static, SPECIAL_STATIC_CONTEXT if it is context static,
  * SPECIAL_STATIC_NONE otherwise.
  */
 static gint32
@@ -1233,7 +1233,7 @@ mono_field_get_value (MonoObject *obj, MonoClassField *field, void *value)
  * @field: MonoClassField describing the field to fetch information from
  * @obj: The object instance for the field.
  *
- * Returns a new MonoObject with the value from the given field.  If the
+ * Returns: a new MonoObject with the value from the given field.  If the
  * field represents a value type, the value is boxed.
  *
  */
@@ -1440,7 +1440,7 @@ mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObjec
  * mono_get_delegate_invoke:
  * @klass: The delegate class
  *
- * Returns the MonoMethod for the "Invoke" method in the delegate klass
+ * Returns: the MonoMethod for the "Invoke" method in the delegate klass
  */
 MonoMethod *
 mono_get_delegate_invoke (MonoClass *klass)
@@ -1491,7 +1491,7 @@ static MonoArray* main_args;
 /**
  * mono_runtime_get_main_args:
  *
- * Returns a MonOArray with the arguments passed to the main program
+ * Returns: a MonoArray with the arguments passed to the main program
  */
 MonoArray*
 mono_runtime_get_main_args (void)
@@ -1954,7 +1954,7 @@ mono_object_allocate_spec (size_t size, void *gcdescr)
  * mono_object_new:
  * @klass: the class of the object that we want to create
  *
- * Returns a newly created object whose definition is
+ * Returns: a newly created object whose definition is
  * looked up using @klass.   This will not invoke any constructors, 
  * so the consumer of this routine has to invoke any constructors on
  * its own to initialize the object.
@@ -2553,7 +2553,7 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
  * mono_object_get_domain:
  * @obj: object to query
  * 
- * Returns the MonoDomain where the object is hosted
+ * Returns: the MonoDomain where the object is hosted
  */
 MonoDomain*
 mono_object_get_domain (MonoObject *obj)
@@ -2565,7 +2565,7 @@ mono_object_get_domain (MonoObject *obj)
  * mono_object_get_class:
  * @obj: object to query
  * 
- * Returns the MonOClass of the object.
+ * Returns: the MonOClass of the object.
  */
 MonoClass*
 mono_object_get_class (MonoObject *obj)
@@ -2577,7 +2577,7 @@ mono_object_get_class (MonoObject *obj)
  * mono_object_unbox:
  * @obj: object to unbox
  * 
- * Returns a pointer to the start of the valuetype boxed in this
+ * Returns: a pointer to the start of the valuetype boxed in this
  * object.
  *
  * This method will assert if the object passed is not a valuetype.
@@ -2790,7 +2790,8 @@ mono_string_is_interned (MonoString *o)
  * mono_string_interne:
  * @o: String to intern
  *
- * Interns the string passed.  The interned string is returned.
+ * Interns the string passed.  
+ * Returns: The interned string.
  */
 MonoString*
 mono_string_intern (MonoString *str)
@@ -2805,6 +2806,7 @@ mono_string_intern (MonoString *str)
  * @idx: index into the user string table.
  * 
  * Implementation for the ldstr opcode.
+ * Returns: a loaded string from the @image/@idx combination.
  */
 MonoString*
 mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
@@ -2822,7 +2824,7 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
  * @domain: the domain for the string
  * @sig: the signature of a metadata string
  *
- * Returns a MonoString for a string stored in the metadata
+ * Returns: a MonoString for a string stored in the metadata
  */
 static MonoString*
 mono_ldstr_metdata_sig (MonoDomain *domain, const char* sig)

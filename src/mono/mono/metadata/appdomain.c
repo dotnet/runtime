@@ -253,14 +253,17 @@ mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb)
 	return (MonoReflectionAssembly *) mono_runtime_invoke (method, domain->domain, params, NULL);
 }
 
-/*
+/**
  * mono_domain_set:
+ * @domain: domain
+ * @force: force setting.
  *
  *   Set the current appdomain to @domain. If @force is set, set it even
  * if it is being unloaded.
+ *
  * Returns:
- *   - TRUE on success
- *   - FALSE if the domain is unloaded
+ *   TRUE on success;
+ *   FALSE if the domain is unloaded
  */
 gboolean
 mono_domain_set (MonoDomain *domain, gboolean force)

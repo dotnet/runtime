@@ -181,11 +181,11 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 	}
 }
 
-/*
+/**
  * mono_type_get_name:
  * @type: a type
  *
- * Returns the string representation for type as required by System.Reflection.
+ * Returns: the string representation for type as required by System.Reflection.
  * The inverse of mono_reflection_parse_type ().
  */
 static char*
@@ -2941,8 +2941,11 @@ mono_class_needs_cctor_run (MonoClass *klass, MonoMethod *caller)
 	return FALSE;
 }
 
-/*
- * Returns the nnumber of bytes an element of type klass
+/**
+ * mono_class_array_element_size:
+ * @klass: 
+ *
+ * Returns: the number of bytes an element of type @klass
  * uses when stored into an array.
  */
 gint32
@@ -3125,7 +3128,7 @@ mono_class_get_image (MonoClass *klass)
  * mono_class_get_element_class:
  * @klass: the MonoClass to act on
  *
- * Returns the element class of an array or an enumeration.
+ * Returns: the element class of an array or an enumeration.
  */
 MonoClass*
 mono_class_get_element_class (MonoClass *klass)
@@ -3137,7 +3140,7 @@ mono_class_get_element_class (MonoClass *klass)
  * mono_class_is_valuetype:
  * @klass: the MonoClass to act on
  *
- * Returns true if the MonoClass represents a ValueType.
+ * Returns: true if the MonoClass represents a ValueType.
  */
 gboolean
 mono_class_is_valuetype (MonoClass *klass)
@@ -3149,7 +3152,7 @@ mono_class_is_valuetype (MonoClass *klass)
  * mono_class_is_enum:
  * @klass: the MonoClass to act on
  *
- * Returns true if the MonoClass represents an enumeration.
+ * Returns: true if the MonoClass represents an enumeration.
  */
 gboolean
 mono_class_is_enum (MonoClass *klass)
@@ -3161,7 +3164,7 @@ mono_class_is_enum (MonoClass *klass)
  * mono_class_enum_basetype:
  * @klass: the MonoClass to act on
  *
- * Returns the underlying type representation for an enumeration.
+ * Returns: the underlying type representation for an enumeration.
  */
 MonoType*
 mono_class_enum_basetype (MonoClass *klass)
@@ -3173,7 +3176,7 @@ mono_class_enum_basetype (MonoClass *klass)
  * mono_class_get_parent
  * @klass: the MonoClass to act on
  *
- * Returns the parent class for this class.
+ * Returns: the parent class for this class.
  */
 MonoClass*
 mono_class_get_parent (MonoClass *klass)
@@ -3185,7 +3188,7 @@ mono_class_get_parent (MonoClass *klass)
  * mono_class_get_nesting_type;
  * @klass: the MonoClass to act on
  *
- * Returns the container type where this type is nested or NULL if this type is not a nested type.
+ * Returns: the container type where this type is nested or NULL if this type is not a nested type.
  */
 MonoClass*
 mono_class_get_nesting_type (MonoClass *klass)
@@ -3197,7 +3200,7 @@ mono_class_get_nesting_type (MonoClass *klass)
  * mono_class_get_rank:
  * @klass: the MonoClass to act on
  *
- * Returns the rank for the array (the number of dimensions).
+ * Returns: the rank for the array (the number of dimensions).
  */
 int
 mono_class_get_rank (MonoClass *klass)
@@ -3213,7 +3216,7 @@ mono_class_get_rank (MonoClass *klass)
  * see the TYPE_ATTRIBUTE_* definitions on tabledefs.h for the
  * different values.
  *
- * Returns the flags from the TypeDef table.
+ * Returns: the flags from the TypeDef table.
  */
 guint32
 mono_class_get_flags (MonoClass *klass)
@@ -3225,7 +3228,7 @@ mono_class_get_flags (MonoClass *klass)
  * mono_class_get_name
  * @klass: the MonoClass to act on
  *
- * Returns the name of the class.
+ * Returns: the name of the class.
  */
 const char*
 mono_class_get_name (MonoClass *klass)
@@ -3237,7 +3240,7 @@ mono_class_get_name (MonoClass *klass)
  * mono_class_get_namespace:
  * @klass: the MonoClass to act on
  *
- * Returns the namespace of the class.
+ * Returns: the namespace of the class.
  */
 const char*
 mono_class_get_namespace (MonoClass *klass)
@@ -3251,7 +3254,7 @@ mono_class_get_namespace (MonoClass *klass)
  *
  * This method returns the internal Type representation for the class.
  *
- * Returns the MonoType from the class.
+ * Returns: the MonoType from the class.
  */
 MonoType*
 mono_class_get_type (MonoClass *klass)
@@ -3275,7 +3278,7 @@ mono_class_get_byref_type (MonoClass *klass)
  * mono_class_num_fields:
  * @klass: the MonoClass to act on
  *
- * Returns the number of static and instance fields in the class.
+ * Returns: the number of static and instance fields in the class.
  */
 int
 mono_class_num_fields (MonoClass *klass)
@@ -3287,7 +3290,7 @@ mono_class_num_fields (MonoClass *klass)
  * mono_class_num_methods:
  * @klass: the MonoClass to act on
  *
- * Returns the number of methods in the class.
+ * Returns: the number of methods in the class.
  */
 int
 mono_class_num_methods (MonoClass *klass)
@@ -3299,7 +3302,7 @@ mono_class_num_methods (MonoClass *klass)
  * mono_class_num_properties
  * @klass: the MonoClass to act on
  *
- * Returns the number of properties in the class.
+ * Returns: the number of properties in the class.
  */
 int
 mono_class_num_properties (MonoClass *klass)
@@ -3311,7 +3314,7 @@ mono_class_num_properties (MonoClass *klass)
  * mono_class_num_events:
  * @klass: the MonoClass to act on
  *
- * Returns the number of events in the class.
+ * Returns: the number of events in the class.
  */
 int
 mono_class_num_events (MonoClass *klass)
@@ -3366,7 +3369,7 @@ mono_class_get_fields (MonoClass* klass, gpointer *iter)
  * iterate over all of the elements.  When no more values are
  * available, the return value is NULL.
  *
- * Returns a MonoMethod on each iteration or NULL when no more methods are available.
+ * Returns: a MonoMethod on each iteration or NULL when no more methods are available.
  */
 MonoMethod*
 mono_class_get_methods (MonoClass* klass, gpointer *iter)
@@ -3551,7 +3554,7 @@ mono_class_get_nested_types (MonoClass* klass, gpointer *iter)
  * mono_field_get_name:
  * @field: the MonoClassField to act on
  *
- * Returns the name of the field.
+ * Returns: the name of the field.
  */
 const char*
 mono_field_get_name (MonoClassField *field)
@@ -3563,7 +3566,7 @@ mono_field_get_name (MonoClassField *field)
  * mono_field_get_type:
  * @field: the MonoClassField to act on
  *
- * Returns MonoType of the field.
+ * Returns: MonoType of the field.
  */
 MonoType*
 mono_field_get_type (MonoClassField *field)
@@ -3575,7 +3578,7 @@ mono_field_get_type (MonoClassField *field)
  * mono_field_get_type:
  * @field: the MonoClassField to act on
  *
- * Returns MonoClass where the field was defined.
+ * Returns: MonoClass where the field was defined.
  */
 MonoClass*
 mono_field_get_parent (MonoClassField *field)
@@ -3590,7 +3593,7 @@ mono_field_get_parent (MonoClassField *field)
  * The metadata flags for a field are encoded using the
  * FIELD_ATTRIBUTE_* constants.  See the tabledefs.h file for details.
  *
- * Returns the flags for the field.
+ * Returns: the flags for the field.
  */
 guint32
 mono_field_get_flags (MonoClassField *field)
@@ -3602,7 +3605,7 @@ mono_field_get_flags (MonoClassField *field)
  * mono_property_get_name: 
  * @prop: the MonoProperty to act on
  *
- * Returns the name of the property
+ * Returns: the name of the property
  */
 const char*
 mono_property_get_name (MonoProperty *prop)
@@ -3614,7 +3617,7 @@ mono_property_get_name (MonoProperty *prop)
  * mono_property_get_set_method
  * @prop: the MonoProperty to act on.
  *
- * Returns the setter method of the property (A MonoMethod)
+ * Returns: the setter method of the property (A MonoMethod)
  */
 MonoMethod*
 mono_property_get_set_method (MonoProperty *prop)
@@ -3626,7 +3629,7 @@ mono_property_get_set_method (MonoProperty *prop)
  * mono_property_get_get_method
  * @prop: the MonoProperty to act on.
  *
- * Returns the setter method of the property (A MonoMethod)
+ * Returns: the setter method of the property (A MonoMethod)
  */
 MonoMethod*
 mono_property_get_get_method (MonoProperty *prop)
@@ -3638,7 +3641,7 @@ mono_property_get_get_method (MonoProperty *prop)
  * mono_property_get_parent:
  * @prop: the MonoProperty to act on.
  *
- * Returns the MonoClass where the property was defined.
+ * Returns: the MonoClass where the property was defined.
  */
 MonoClass*
 mono_property_get_parent (MonoProperty *prop)
@@ -3653,7 +3656,7 @@ mono_property_get_parent (MonoProperty *prop)
  * The metadata flags for a property are encoded using the
  * PROPERTY_ATTRIBUTE_* constants.  See the tabledefs.h file for details.
  *
- * Returns the flags for the property.
+ * Returns: the flags for the property.
  */
 guint32
 mono_property_get_flags (MonoProperty *prop)
@@ -3665,7 +3668,7 @@ mono_property_get_flags (MonoProperty *prop)
  * mono_event_get_name:
  * @event: the MonoEvent to act on
  *
- * Returns the name of the event.
+ * Returns: the name of the event.
  */
 const char*
 mono_event_get_name (MonoEvent *event)
@@ -3713,7 +3716,7 @@ mono_event_get_raise_method (MonoEvent *event)
  * mono_event_get_parent:
  * @event: the MonoEvent to act on.
  *
- * Returns the MonoClass where the event is defined.
+ * Returns: the MonoClass where the event is defined.
  */
 MonoClass*
 mono_event_get_parent (MonoEvent *event)
@@ -3728,7 +3731,7 @@ mono_event_get_parent (MonoEvent *event)
  * The metadata flags for an event are encoded using the
  * EVENT_* constants.  See the tabledefs.h file for details.
  *
- * Returns the flags for the event.
+ * Returns: the flags for the event.
  */
 guint32
 mono_event_get_flags (MonoEvent *event)

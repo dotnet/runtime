@@ -373,7 +373,7 @@ const static struct {
  * mono_meta_table_name:
  * @table: table index
  *
- * Returns the name for the @table index
+ * Returns: the name for the @table index
  */
 const char *
 mono_meta_table_name (int table)
@@ -747,7 +747,7 @@ mono_metadata_compute_table_bases (MonoImage *meta)
  * @table: table code.
  * @idx: index of element to retrieve from @table.
  *
- * Returns a pointer to the @idx element in the metadata table
+ * Returns: a pointer to the @idx element in the metadata table
  * whose code is @table.
  */
 const char *
@@ -764,7 +764,7 @@ mono_metadata_locate (MonoImage *meta, int table, int idx)
  * @meta: metadata context
  * @token: metadata token
  *
- * Returns a pointer to the data in the metadata represented by the
+ * Returns: a pointer to the data in the metadata represented by the
  * token #token.
  */
 const char *
@@ -777,7 +777,7 @@ mono_metadata_locate_token (MonoImage *meta, guint32 token)
  * mono_metadata_get_table:
  * @table: table to retrieve
  *
- * Returns the MonoMetaTable structure for table @table
+ * Returns: the MonoMetaTable structure for table @table
  */
 const MonoMetaTable *
 mono_metadata_get_table (MonoMetaTableEnum table)
@@ -2188,14 +2188,13 @@ declsec_locator (const void *a, const void *b)
 		return 1;
 }
 
-/*
+/**
  * mono_metadata_typedef_from_field:
  * @meta: metadata context
  * @index: FieldDef token
  *
- * Returns the 1-based index into the TypeDef table of the type that
- * declared the field described by @index.
- * Returns 0 if not found.
+ * Returns: the 1-based index into the TypeDef table of the type that
+ * declared the field described by @index, or 0 if not found.
  */
 guint32
 mono_metadata_typedef_from_field (MonoImage *meta, guint32 index)
@@ -2222,9 +2221,8 @@ mono_metadata_typedef_from_field (MonoImage *meta, guint32 index)
  * @meta: metadata context
  * @index: MethodDef token
  *
- * Returns the 1-based index into the TypeDef table of the type that
- * declared the method described by @index.
- * Returns 0 if not found.
+ * Returns: the 1-based index into the TypeDef table of the type that
+ * declared the method described by @index.  0 if not found.
  */
 guint32
 mono_metadata_typedef_from_method (MonoImage *meta, guint32 index)
@@ -2251,7 +2249,7 @@ mono_metadata_typedef_from_method (MonoImage *meta, guint32 index)
  * @meta: metadata context
  * @index: typedef token
  * 
- * Returns and array of interfaces that the @index typedef token implements.
+ * Returns: and array of interfaces that the @index typedef token implements.
  * The number of elemnts in the array is returned in @count.
  */
 MonoClass**
@@ -2342,8 +2340,7 @@ mono_metadata_nested_in_typedef (MonoImage *meta, guint32 index)
  * 
  * Returns: the 1-based index into the TypeDef table of the first type
  * that is nested inside the type described by @index. The search starts at
- * @start_index.
- * Returns 0 if no such type is found.
+ * @start_index.  returns 0 if no such type is found.
  */
 guint32
 mono_metadata_nesting_typedef (MonoImage *meta, guint32 index, guint32 start_index)
@@ -2375,7 +2372,7 @@ mono_metadata_nesting_typedef (MonoImage *meta, guint32 index, guint32 start_ind
  * @meta: metadata context
  * @index: token representing a type
  * 
- * Returns the info stored in the ClassLAyout table for the given typedef token
+ * Returns: the info stored in the ClassLAyout table for the given typedef token
  * into the @packing and @size pointers.
  * Returns 0 if the info is not found.
  */

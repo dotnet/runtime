@@ -4989,7 +4989,7 @@ ves_icall_System_Environment_GetEnvironmentVariableNames (void)
 }
 
 /*
- * Returns the number of milliseconds elapsed since the system started.
+ * Returns: the number of milliseconds elapsed since the system started.
  */
 static gint32
 ves_icall_System_Environment_get_TickCount (void)

@@ -647,7 +647,7 @@ mono_get_root_domain (void)
 /**
  * mono_domain_get:
  *
- * Returns the current domain.
+ * Returns: the current domain.
  */
 inline MonoDomain *
 mono_domain_get ()
@@ -818,7 +818,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 /**
  * mono_domain_get_id:
  *
- * Returns the a domain for a specific domain id.
+ * Returns: the a domain for a specific domain id.
  */
 MonoDomain * 
 mono_domain_get_by_id (gint32 domainid) 
