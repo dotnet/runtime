@@ -980,18 +980,32 @@ if test "x$try_shared_handles" != "xyes"; then
 	AC_SUBST(DISABLE_SHARED_HANDLES)
 fi
 
+#
+# ICU 
+#
 ICU_CFLAGS=""
 ICU_LIBS=""
 enable_icu=no
-AC_PATH_PROG(ICU_CONFIG, icu-config, no)
-if test "x$ICU_CONFIG" = "xno" -o ! -x "$ICU_CONFIG"; then
-	AC_MSG_WARN([Only invariant locale available; install ICU for I18N support])
-	enable_icu="no, if you want full i18n support download it from: http://oss.software.ibm.com/icu/index.html"
-else
-	enable_icu="yes. Version: `$ICU_CONFIG --version`"
-	AC_DEFINE(HAVE_ICU)
-	ICU_CFLAGS=`$ICU_CONFIG --cppflags`
-	ICU_LIBS=`$ICU_CONFIG --ldflags`
+
+probe_icu=true
+AC_ARG_WITH(icu, [  --with-icu=yes/no],
+	if test x$with_icu = xno; then
+	   probe_icu=false;
+	   AC_MSG_RESULT(Will not probe for ICU)
+	fi
+)
+
+if $probe_icu; then
+	AC_PATH_PROG(ICU_CONFIG, icu-config, no)
+	if test "x$ICU_CONFIG" = "xno" -o ! -x "$ICU_CONFIG"; then
+		AC_MSG_WARN([Only invariant locale available; install ICU for I18N support])
+		enable_icu="no, if you want full i18n support download it from: http://oss.software.ibm.com/icu/index.html"
+	else
+		enable_icu="yes. Version: `$ICU_CONFIG --version`"
+		AC_DEFINE(HAVE_ICU)
+		ICU_CFLAGS=`$ICU_CONFIG --cppflags`
+		ICU_LIBS=`$ICU_CONFIG --ldflags`
+	fi
 fi
 AC_SUBST(ICU_CFLAGS)
 AC_SUBST(ICU_LIBS)
@@ -1123,6 +1137,15 @@ if test ${ACCESS_UNALIGNED} = no; then
 	CPPFLAGS="$CPPFLAGS -DNO_UNALIGNED_ACCESS"
 fi
 
+PREVIEW=no
+AC_ARG_WITH(preview, [ --with-preview=yes,no     If you want to install the 2.0 FX preview],[
+	if test x$with_preview = xyes; then
+	      PREVIEW=yes
+	fi
+])
+
+AM_CONDITIONAL(INSTALL_2_0, test x$PREVIEW = xyes)
+
 AM_CONDITIONAL(MIPS_GCC, test ${TARGET}${ac_cv_prog_gcc} = MIPSyes)
 AM_CONDITIONAL(MIPS_SGI, test ${TARGET}${ac_cv_prog_gcc} = MIPSno)
 AM_CONDITIONAL(SPARC, test x$TARGET = xSPARC)
@@ -1198,5 +1221,6 @@ echo "
 	NPTL:        $with_nptl
 	SIGALTSTACK: $with_sigaltstack
 	Engine:      $jit_status
+	2.0 Alpha:   $PREVIEW
 	
 "
