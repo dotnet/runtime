@@ -48,7 +48,7 @@ static MonoGHashTable *tls_gc_hash = NULL;
 static void thread_close_private (gpointer handle);
 static void thread_own (gpointer handle);
 
-struct _WapiHandleOps _wapi_thread_ops = {
+const struct _WapiHandleOps _wapi_thread_ops = {
 	NULL,				/* close_shared */
 	thread_close_private,		/* close_private */
 	NULL,				/* signal */
@@ -587,7 +587,7 @@ guint32 SuspendThread(gpointer handle)
 			_wapi_timed_thread_suspend (thread_private_handle->thread);
 		else {
 			pthread_kill (thread_private_handle->thread->id, SIGPWR);
-			sem_wait (&thread_private_handle->thread->suspended_sem);
+			MONO_SEM_WAIT (&thread_private_handle->thread->suspended_sem);
 		}
 	}
 
@@ -885,7 +885,7 @@ static void GC_suspend_handler (int sig)
 	}
 
 	thread_private_handle->thread->stack_ptr = &ok;
-	sem_post (&thread_private_handle->thread->suspended_sem);
+	MONO_SEM_POST (&thread_private_handle->thread->suspended_sem);
 
 	_wapi_timed_thread_suspend (thread_private_handle->thread);
 

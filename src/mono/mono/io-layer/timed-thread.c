@@ -132,8 +132,8 @@ int _wapi_timed_thread_create(TimedThread **threadp,
 	mono_mutex_init(&thread->join_mutex, NULL);
 	pthread_cond_init(&thread->exit_cond, NULL);
 	thread->create_flags = create_flags;
-	sem_init (&thread->suspend_sem, 0, 0);
-	sem_init (&thread->suspended_sem, 0, 0);
+	MONO_SEM_INIT (&thread->suspend_sem, 0);
+	MONO_SEM_INIT (&thread->suspended_sem, 0);
 	thread->start_routine = start_routine;
 	thread->exit_routine = exit_routine;
 	thread->arg = arg;
@@ -218,8 +218,8 @@ void _wapi_timed_thread_destroy (TimedThread *thread)
 {
 	mono_mutex_destroy (&thread->join_mutex);
 	pthread_cond_destroy (&thread->exit_cond);
-	sem_destroy (&thread->suspend_sem);
-	sem_destroy (&thread->suspended_sem);
+	MONO_SEM_DESTROY (&thread->suspend_sem);
+	MONO_SEM_DESTROY (&thread->suspended_sem);
 	
 	g_free(thread);
 }
@@ -252,10 +252,10 @@ void _wapi_timed_thread_suspend (TimedThread *thread)
 		exit (-1);
 	}
 
-	sem_wait (&thread->suspend_sem);
+	MONO_SEM_WAIT (&thread->suspend_sem);
 }
 
 void _wapi_timed_thread_resume (TimedThread *thread)
 {
-	sem_post (&thread->suspend_sem);
+	MONO_SEM_POST (&thread->suspend_sem);
 }
