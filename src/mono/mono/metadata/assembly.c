@@ -53,7 +53,7 @@ static CRITICAL_SECTION assemblies_mutex;
 /* A hastable of thread->assembly list mappings */
 static GHashTable *assemblies_loading;
 
-static gboolean allow_user_gac = FALSE;
+static char **extra_gac_paths = NULL;
 
 static gchar*
 encode_public_tok (const guchar *token, gint32 len)
@@ -72,7 +72,7 @@ encode_public_tok (const guchar *token, gint32 len)
 }
 
 static void
-check_env (void) {
+check_path_env (void) {
 	const char *path;
 	char **splitted;
 	
@@ -90,6 +90,30 @@ check_env (void) {
 	while (*splitted) {
 		if (**splitted && !g_file_test (*splitted, G_FILE_TEST_IS_DIR))
 			g_warning ("'%s' in MONO_PATH doesn't exist or has wrong permissions.", *splitted);
+
+		splitted++;
+	}
+}
+
+static void
+check_extra_gac_path_env (void) {
+	const char *path;
+	char **splitted;
+	
+	path = getenv ("MONO_GAC_PATH");
+	if (!path)
+		return;
+
+	splitted = g_strsplit (path, G_SEARCHPATH_SEPARATOR_S, 1000);
+	if (extra_gac_paths)
+		g_strfreev (extra_gac_paths);
+	extra_gac_paths = splitted;
+	if (g_getenv ("MONO_DEBUG") == NULL)
+		return;
+
+	while (*splitted) {
+		if (**splitted && !g_file_test (*splitted, G_FILE_TEST_IS_DIR))
+			g_warning ("'%s' in MONO_GAC_PATH doesn't exist or has wrong permissions.", *splitted);
 
 		splitted++;
 	}
@@ -214,7 +238,8 @@ mono_assemblies_init (void)
 	mono_set_rootdir ();
 #endif
 
-	check_env ();
+	check_path_env ();
+	check_extra_gac_path_env ();
 
 	InitializeCriticalSection (&assemblies_mutex);
 
@@ -739,12 +764,6 @@ mono_assembly_load_from (MonoImage *image, const char*fname,
 	return ass;
 }
 
-static gchar*
-get_user_gac_path (void)
-{
-	return g_build_path (G_DIR_SEPARATOR_S, g_get_home_dir (), ".mono", "gac", NULL);
-}
-
 static MonoAssembly*
 probe_for_partial_name (const char *basepath, const char *fullname, MonoImageOpenStatus *status)
 {
@@ -774,7 +793,8 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 {
 	MonoAssembly *res;
 	MonoAssemblyName aname;
-	gchar *fullname, *gacpath, *usergacpath;
+	gchar *fullname, *gacpath;
+	gchar **paths;
 
 	memset (&aname, 0, sizeof (MonoAssemblyName));
 	aname.name = name;
@@ -786,17 +806,29 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 
 	fullname = g_strdup_printf ("%s.dll", name);
 
+	if (extra_gac_paths) {
+		paths = extra_gac_paths;
+		while (!res && *paths) {
+			gacpath = g_build_path (G_DIR_SEPARATOR_S, *paths, "gac", name, NULL);
+			res = probe_for_partial_name (gacpath, fullname, status);
+			g_free (gacpath);
+			paths++;
+		}
+	}
+
+	if (res) {
+		res->in_gac = TRUE;
+		g_free (fullname);
+		return res;
+		
+	}
+
 	gacpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (), "mono", "gac", name, NULL);
 	res = probe_for_partial_name (gacpath, fullname, status);
 	g_free (gacpath);
 
-	if (!res && allow_user_gac) {
-		usergacpath = get_user_gac_path ();
-		gacpath = g_build_path (G_DIR_SEPARATOR_S, usergacpath, name, NULL);
-		res = probe_for_partial_name (gacpath, fullname, status);
-		g_free (usergacpath);
-                g_free (gacpath);
-	}
+	if (res)
+		res->in_gac = TRUE;
 
 	g_free (fullname);
 
@@ -812,8 +844,9 @@ static MonoAssembly*
 mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImageOpenStatus *status)
 {
 	MonoAssembly *result = NULL;
-	gchar *name, *version, *fullpath, *usergacpath;
+	gchar *name, *version, *fullpath, *subpath;
 	gint32 len;
+	gchar **paths;
 
 	if (!aname->public_tok_value) {
 		return NULL;
@@ -832,26 +865,35 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 			aname->culture == NULL ? "" : aname->culture,
 			aname->public_tok_value);
 	
-	fullpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (), "mono", "gac",
-			name, version, filename, NULL);
-	result = mono_assembly_open (fullpath, status);
+	subpath = g_build_path (G_DIR_SEPARATOR_S, name, version, filename, NULL);
+	g_free (name);
+	g_free (version);
 
-	g_free (fullpath);
-
-	if (!result && allow_user_gac) {
-		usergacpath = get_user_gac_path ();
-		fullpath = g_build_path (G_DIR_SEPARATOR_S, usergacpath,
-				name, version, filename, NULL);
-		result = mono_assembly_open (fullpath, status);
-		g_free (fullpath);
-		g_free (usergacpath);
+	if (extra_gac_paths) {
+		paths = extra_gac_paths;
+		while (!result && *paths) {
+			fullpath = g_build_path (G_DIR_SEPARATOR_S, *paths, "gac", subpath, NULL);
+			result = mono_assembly_open (fullpath, status);
+			g_free (fullpath);
+			paths++;
+		}
 	}
+
+	if (result) {
+		result->in_gac = TRUE;
+		g_free (subpath);
+		return result;
+	}
+
+	fullpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (),
+			"mono", "gac", subpath, NULL);
+	result = mono_assembly_open (fullpath, status);
+	g_free (fullpath);
 
 	if (result)
 		result->in_gac = TRUE;
 	
-	g_free (name);
-	g_free (version);
+	g_free (subpath);
 
 	return result;
 }
@@ -1012,9 +1054,4 @@ mono_assembly_get_main (void)
 	return(main_assembly);
 }
 
-void
-mono_assembly_allow_user_gac (gboolean allow)
-{
-	allow_user_gac = allow;
-}
 
