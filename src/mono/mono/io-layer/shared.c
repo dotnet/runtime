@@ -167,7 +167,8 @@ static int _wapi_shm_file_open (const guchar *filename, _wapi_shm_t type,
 	if(type==WAPI_SHM_DATA) {
 		wanted_size=sizeof(struct _WapiHandleShared_list);
 	} else if (type==WAPI_SHM_SCRATCH) {
-		wanted_size=sizeof(struct _WapiHandleScratch);
+		wanted_size=sizeof(struct _WapiHandleScratch) + 
+				(_WAPI_SHM_SCRATCH_SIZE - MONO_ZERO_ARRAY_LENGTH);
 	} else {
 		g_assert_not_reached ();
 	}
@@ -337,7 +338,11 @@ map_again:
 		}
 		return(FALSE);
 	}
-	
+
+	if(scratch_created)
+		(*scratch)->data_len = scratch_size - 
+				(sizeof(struct _WapiHandleScratch) - MONO_ZERO_ARRAY_LENGTH);
+
 	if(data_created==FALSE && (*data)->daemon_running==DAEMON_CLOSING) {
 		/* Daemon is closing down, give it a few ms and try
 		 * again.

@@ -258,8 +258,11 @@ again:
 				shared->type=type;
 				shared->signalled=FALSE;
 #if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
-				mono_mutex_init (&shared.signal_mutex, &mutex_shared_attr);
-				pthread_cond_init (&shared.signal_cond, &cond_shared_attr);
+				mono_mutex_init (&shared->signal_mutex, &mutex_shared_attr);
+				pthread_cond_init (&shared->signal_cond, &cond_shared_attr);
+#else
+				pthread_cond_init(&shared->signal_cond, NULL);
+				mono_mutex_init(&shared->signal_mutex, NULL);
 #endif
 				
 				return(_wapi_handle_index (i, j));
@@ -641,19 +644,17 @@ void _wapi_handle_unref (gpointer handle)
 			memset (&_wapi_handle_get_shared_segment (segment)->handles[idx].u, '\0', sizeof(_wapi_handle_get_shared_segment (segment)->handles[idx].u));
 		
 		}
-#if !defined(_POSIX_THREAD_PROCESS_SHARED) || _POSIX_THREAD_PROCESS_SHARED == -1
 		else {
 			mono_mutex_destroy (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex);
 			pthread_cond_destroy (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_cond);
 		}
-#endif
 
 		_wapi_handle_ops_close_private (handle);
 		_wapi_handle_get_shared_segment (segment)->handles[idx].type=WAPI_HANDLE_UNUSED;
 	}
 }
 
-#define HDRSIZE sizeof(struct _WapiScratchHeader)
+#define HDRSIZE (sizeof(struct _WapiScratchHeader) - MONO_ZERO_ARRAY_LENGTH)
 
 static pthread_mutex_t _wapi_scratch_mutex=PTHREAD_MUTEX_INITIALIZER;
 
