@@ -1,3 +1,15 @@
+//
+// Idealy, we would fold the operations from a...h into one long xor chain,
+// we could then commute the xor operation.
+//
+// More realisticly, we should assign each of a...h to one reg, rather than making
+// the two swap between two registers:
+// 	 (stind.i4 regvar[%edi] (xor (ldind.i4 regoffset[-0x18(%ebp)]) iconst[1]))
+//	 (stind.i4 regvar[%esi] (xor (ldind.i4 regvar[%edi]) iconst[2]))
+//	 (stind.i4 regvar[%edi] (xor (ldind.i4 regvar[%esi]) iconst[3]))
+//	 (stind.i4 regvar[%esi] (xor (ldind.i4 regvar[%edi]) iconst[4]))
+//
+
 class T {
 	static void Main ()
 	{
