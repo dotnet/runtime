@@ -27,8 +27,12 @@ typedef struct {
 	regmask_t ffree_mask;
 
 	/* symbolic -> hard register assignment */
-	char *iassign;
-	char *fassign;
+	/* 
+	 * If the register is spilled, then this contains -spill - 1, where 'spill'
+	 * is the index of the spill variable.
+	 */
+	int *iassign;
+	int *fassign;
 
 	/* hard -> symbolic */
 	int isymbolic [MONO_MAX_IREGS];
