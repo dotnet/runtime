@@ -246,6 +246,7 @@ mono_arch_is_int_overflow (void *sigctx)
 
 static gboolean
 is_regsize_var (MonoType *t) {
+ again:
 	if (t->byref)
 		return TRUE;
 	switch (t->type) {
@@ -265,6 +266,9 @@ is_regsize_var (MonoType *t) {
 		if (t->data.klass->enumtype)
 			return is_regsize_var (t->data.klass->enum_basetype);
 		return FALSE;
+	case MONO_TYPE_GENERICINST:
+		t = t->data.generic_inst->generic_type;
+		goto again;
 	}
 	return FALSE;
 }
@@ -3486,7 +3490,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 		/* save the current IP */
 		mono_add_patch_info (cfg, code + 1 - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
-		x86_push_imm_template (code, 0);
+		x86_push_imm_template (code);
 
 		/* save all caller saved regs */
 		x86_push_reg (code, X86_EBP);
