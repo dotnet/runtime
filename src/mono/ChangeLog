@@ -1,4 +1,9 @@
 
+Fri Feb 1 15:32:36 CET 2002 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: allow PKG_CONFIG_PATH for the build-platform
+	pkg-config invocation.
+
 Fri Feb 1 15:13:25 CET 2002 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in: add some support/fixes for cross-compilation.

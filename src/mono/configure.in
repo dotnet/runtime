@@ -33,6 +33,18 @@ AC_CHECK_SIZEOF(void *, 4)
 
 CFLAGS='-g -Wall -Wunused -Wmissing-prototypes -Wmissing-declarations'
 
+AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+if test "x$PKG_CONFIG" = "xno"; then
+	AC_MSG_ERROR([You need to install pkg-config])
+fi
+
+dnl for use on the build system
+dnl pkg-config is stupid
+BUILD_GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0`
+BUILD_GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0`
+AC_SUBST(BUILD_GLIB_CFLAGS)
+AC_SUBST(BUILD_GLIB_LIBS)
+
 PKG_PATH=
 AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir],
 	if test x$with_crosspkgdir = "x"; then
@@ -60,16 +72,6 @@ AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_LIBS)
 AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
-
-dnl for use on the build system
-dnl we disable support for PKG_CONFIG_PATH
-dnl pkg-config is stupid
-PKG_CONFIG_PATH=
-export PKG_CONFIG_PATH
-BUILD_GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0`
-BUILD_GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0`
-AC_SUBST(BUILD_GLIB_CFLAGS)
-AC_SUBST(BUILD_GLIB_LIBS)
 
 dnl ****************************************
 dnl *** Check if we're building on win32 ***
