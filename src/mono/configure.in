@@ -900,23 +900,23 @@ if test x$platform_win32 = xno; then
 
 				sa.sa_sigaction = sigsegv_signal_handler;
 				sigemptyset (&sa.sa_mask);
-				sa.sa_flags = SA_SIGINFO | SA_STACK;
+				sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
 				if (sigaction (SIGSEGV, &sa, NULL) == -1) {
-					perror ("lala");
+					perror ("sigaction");
 					return;
 				}
 
 				sas.ss_sp = malloc (SIGSTKSZ);
 				sas.ss_size = SIGSTKSZ;
-				sas.ss_flags = SS_ONSTACK;
+				sas.ss_flags = 0;
 				if (sigaltstack (&sas, NULL) == -1) {
-					perror ("lala");
+					perror ("sigaltstack");
 					return;
 				}
 
 				pthread_attr_init (&attr);
 				if (pthread_create(&id, &attr, loop, &attr) != 0) {
-					printf ("failed\n");
+					printf ("pthread_create\n");
 					return;
 				}
 
