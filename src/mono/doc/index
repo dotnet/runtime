@@ -142,6 +142,16 @@
   </tr>
 </table>
 
+@item Sep 30th: Mono Kick Start book available
+
+	The Mono Kick Start book is now <a
+	href="http://www.amazon.com/exec/obidos/tg/detail/-/0672325799/qid=1064937318/sr=8-1/ref=sr_8_1/103-9624440-8714218?v=glance&s=books&n=507846">available</a>
+	in English.  Originally available only in <a
+	href="http://www.amazon.de/exec/obidos/ASIN/3827264928/qid=1050051051/sr=2-1/ref=sr_2_3_1/028-2755135-1623712">German</a>.
+	The book technical review was done by <a
+	href="http://www.maurer-it.com/">Dietmar Maurer</a> JIT architect at
+	the Mono team.
+
 @item Sep 26th, 2003: DiaCanvas# 0.1 released, Gtk# 0.11 released.
 
 	Mike Kestner has <a
