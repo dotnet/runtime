@@ -3849,7 +3849,7 @@ ves_icall_System_DateTime_GetNow (void)
 	SYSTEMTIME st;
 	FILETIME ft;
 	
-	GetLocalTime (&st);
+	GetSystemTime (&st);
 	SystemTimeToFileTime (&st, &ft);
 	return (gint64) FILETIME_ADJUST + ((((gint64)ft.dwHighDateTime)<<32) | ft.dwLowDateTime);
 #else
