@@ -12,18 +12,40 @@
 #define MONO_EMIT_NEW_MOVE(cfg,dest,offset,src,imm,size) do { 			\
                 MonoInst *inst; 						\
 		int tmpr = 0;							\
+		int sReg, dReg;							\
 										\
 		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		if (size > 256) {						\
 			tmpr = mono_regstate_next_int (cfg->rs);		\
 			MONO_EMIT_NEW_ICONST(cfg,tmpr,size);			\
+			inst->dreg	  = dest;				\
+			inst->inst_offset = offset;				\
+			inst->sreg1	  = src;				\
+			inst->inst_imm	  = imm;				\
+			inst->sreg2	  = tmpr;				\
+		} else {							\
+			if (s390_is_uimm12(offset)) {				\
+				inst->dreg	  = dest;			\
+				inst->inst_offset = offset;			\
+			} else {						\
+				dReg = mono_regstate_next_int (cfg->rs);	\
+				MONO_EMIT_NEW_BIALU_IMM(cfg, OP_ADD_IMM,	\
+					dReg, dest, offset);			\
+				inst->dreg	  = dReg;			\
+				inst->inst_offset = 0;				\
+			}							\
+			if (s390_is_uimm12(imm)) {  				\
+				inst->sreg1	  = src; 			\
+				inst->inst_imm    = imm;   			\
+			} else {						\
+				sReg = mono_regstate_next_int (cfg->rs);	\
+				MONO_EMIT_NEW_BIALU_IMM(cfg, OP_ADD_IMM,	\
+					sReg, src, imm);   			\
+				inst->sreg1	  = sReg;			\
+				inst->inst_imm    = 0;				\
+			}							\
 		}								\
                 inst->opcode 	  = OP_S390_MOVE; 				\
-                inst->dreg   	  = dest; 					\
-                inst->inst_offset = offset; 					\
-                inst->inst_imm	  = imm;					\
-		inst->sreg1	  = src;					\
-		inst->sreg2	  = tmpr;					\
 		inst->unused	  = size;					\
 	        mono_bblock_add_inst (cfg->cbb, inst); 				\
 	} while (0)

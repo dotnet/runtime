@@ -616,8 +616,6 @@ enum_parmtype:
 /*		                               			    */
 /*------------------------------------------------------------------*/
 
-static int methodCount = 0;
-
 static void
 enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 {
@@ -633,18 +631,13 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	size_data sz;
 	void *curParm;
 
-methodCount++;
-if (methodCount > 150000) {
-methodCount = 0;
-rewind(stdout);
-}
 	fname = mono_method_full_name (method, TRUE);
 	indent (1);
 	printf ("ENTER: %s(", fname);
 	g_free (fname);
 
 	ip  = (*(guint32 *) (sp+S390_RET_ADDR_OFFSET)) & 0x7fffffff;
-	printf (") ip: %p sp: %p\n", ip, sp); 
+	printf (") ip: %p sp: %p - ", ip, sp); 
 
 	if (rParm == NULL)
 		return;
@@ -4428,16 +4421,16 @@ guint8 cond;
 						s390_word (code, ins->inst_offset);
 						s390_a    (code, s390_r0, 0, s390_r13, 4);
 					}
-					s390_lr   (code, s390_r1, ins->sreg2);
+					s390_lr   (code, s390_r12, ins->sreg1);
 					if (s390_is_imm16 (ins->inst_imm)) {
-						s390_ahi  (code, s390_r1, ins->inst_imm);
+						s390_ahi  (code, s390_r12, ins->inst_imm);
 					} else {
 						s390_basr (code, s390_r13, 0);
 						s390_j    (code, 4);
 							s390_word (code, ins->inst_imm);
-						s390_a    (code, s390_r1, 0, s390_r13, 4);
+						s390_a    (code, s390_r12, 0, s390_r13, 4);
 					}
-					s390_lr   (code, s390_r12, ins->sreg1);
+					s390_lr   (code, s390_r1, ins->sreg1);
 					s390_lr   (code, s390_r13, s390_r1);
 					s390_mvcle(code, s390_r0, s390_r12, 0, 0);
 					s390_jo   (code, -2);
