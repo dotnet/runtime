@@ -1016,8 +1016,33 @@ static void
 mono_profiler_install_simple (const char *desc)
 {
 	MonoProfiler *prof;
+	gchar **args, **ptr;
+	MonoProfileFlags flags = MONO_PROFILE_ENTER_LEAVE|MONO_PROFILE_JIT_COMPILATION|MONO_PROFILE_ALLOCATIONS;
 
 	MONO_TIMER_STARTUP;
+
+	if (desc) {
+		/* Parse options */
+		if (strstr (desc, ":"))
+			desc = strstr (desc, ":") + 1;
+		else
+			desc = NULL;
+		args = g_strsplit (desc ? desc : "", ",", -1);
+
+		for (ptr = args; ptr && *ptr; ptr++) {
+			const char *arg = *ptr;
+
+			if (!strcmp (arg, "-time"))
+				flags &= ~MONO_PROFILE_ENTER_LEAVE;
+			else
+			   if (!strcmp (arg, "-alloc"))
+				   flags &= ~MONO_PROFILE_ALLOCATIONS;
+			   else {
+				   fprintf (stderr, "profiler : Unknown argument '%s'.\n", arg);
+				   return;
+			   }
+		}
+	}
 
 	prof = create_profiler ();
 	prof->tls_id = TlsAlloc ();
@@ -1028,7 +1053,7 @@ mono_profiler_install_simple (const char *desc)
 	mono_profiler_install_enter_leave (simple_method_enter, simple_method_leave);
 	mono_profiler_install_jit_compile (simple_method_jit, simple_method_end_jit);
 	mono_profiler_install_allocation (simple_allocation);
-	mono_profiler_set_events (MONO_PROFILE_ENTER_LEAVE|MONO_PROFILE_JIT_COMPILATION|MONO_PROFILE_ALLOCATIONS);
+	mono_profiler_set_events (flags);
 }
 
 typedef void (*ProfilerInitializer) (const char*);
