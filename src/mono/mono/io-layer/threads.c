@@ -80,6 +80,7 @@ static void thread_close(WapiHandle *handle)
 		  thread_handle->thread->id);
 #endif
 
+	mono_mutex_destroy (&thread_handle->thread->join_mutex);
 	g_free(thread_handle->thread);
 }
 
@@ -506,6 +507,8 @@ guint32 TlsAlloc(void)
 	return(TLS_OUT_OF_INDEXES);
 }
 
+#define MAKE_GC_ID(idx) (GUINT_TO_POINTER((idx)|(GetCurrentThreadId()<<8)))
+
 /**
  * TlsFree:
  * @idx: The TLS index to free
@@ -528,7 +531,7 @@ gboolean TlsFree(guint32 idx)
 	pthread_key_delete(TLS_keys[idx]);
 	
 #if HAVE_BOEHM_GC
-	mono_g_hash_table_remove (tls_gc_hash, GUINT_TO_POINTER (idx));
+	mono_g_hash_table_remove (tls_gc_hash, MAKE_GC_ID (idx));
 #endif
 	mono_mutex_unlock(&TLS_mutex);
 	
@@ -592,8 +595,7 @@ gboolean TlsSetValue(guint32 idx, gpointer value)
 #if HAVE_BOEHM_GC
 	if (!tls_gc_hash)
 		tls_gc_hash = mono_g_hash_table_new(g_direct_hash, g_direct_equal);
-	/* FIXME: index needs to encode the thread id, too */
-	mono_g_hash_table_insert (tls_gc_hash, GUINT_TO_POINTER (idx), value);
+	mono_g_hash_table_insert (tls_gc_hash, MAKE_GC_ID (idx), value);
 #endif
 	mono_mutex_unlock(&TLS_mutex);
 	
