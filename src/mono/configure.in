@@ -368,8 +368,20 @@ if test x$platform_win32 = xno; then
 		AC_MSG_RESULT(yes)
 		AC_DEFINE(HAVE_STRUCT_IP_MREQN)
 	], [
-		# We'll just have to use struct ip_mreq
+		# We'll just have to try and use struct ip_mreq
 		AC_MSG_RESULT(no)
+		AC_MSG_CHECKING(for struct ip_mreq)
+		AC_TRY_COMPILE([#include <netinet/in.h>], [
+			struct ip_mreq mreq;
+			mreq.imr_interface.s_addr = 0;
+		], [
+			# Yes, we have it...
+			AC_MSG_RESULT(yes)
+			AC_DEFINE(HAVE_STRUCT_IP_MREQ)
+		], [
+			# No multicast support
+			AC_MSG_RESULT(no)
+		])
 	])
 
 	dnl *****************************

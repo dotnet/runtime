@@ -15,7 +15,6 @@
 #include "mono/io-layer/wapi.h"
 
 #ifndef WAPI_ATOMIC_ASM
-#warning "Atomic functions are not atomic!"
 
 static pthread_mutex_t spin;
 static mono_once_t spin_once=MONO_ONCE_INIT;

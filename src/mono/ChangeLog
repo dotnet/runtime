@@ -1,3 +1,9 @@
+2003-06-10  Dick Porter  <dick@ximian.com>
+
+	* acconfig.h:
+	* configure.in: Check for struct ip_mreq if struct ip_mreqn isn't
+	available.
+
 2003-06-10  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Define HAVE_GC_GCJ_MALLOC for included libgc.

@@ -1296,6 +1296,7 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 			break;
 		case SocketOptionName_AddMembership:
 		case SocketOptionName_DropMembership:
+#if defined(HAVE_STRUCT_IP_MREQN) || defined(HAVE_STRUCT_IP_MREQ)
 		{
 			MonoObject *address = NULL;
 
@@ -1332,6 +1333,7 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 					  &mreq, sizeof (mreq));
 			break;
 		}
+#endif /* HAVE_STRUCT_IP_MREQN || HAVE_STRUCT_IP_MREQ */
 		default:
 			/* Throw an exception */
 			mono_raise_exception(get_socket_exception(WSAEINVAL));
