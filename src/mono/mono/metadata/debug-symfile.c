@@ -146,6 +146,13 @@ get_sections_elf32 (MonoDebugSymbolFile *symfile, gboolean emit_warnings)
 			sfs->type = MONO_DEBUG_SYMBOL_SECTION_MONO_LINE_NUMBERS;
 			sfs->file_offset = section->sh_offset;
 			sfs->size = section->sh_size;
+		} else if (!strcmp (name, ".mono_symbol_table")) {
+			MonoDebugSymbolFileSection *sfs;
+
+			sfs = &symfile->section_offsets [MONO_DEBUG_SYMBOL_SECTION_MONO_SYMBOL_TABLE];
+			sfs->type = MONO_DEBUG_SYMBOL_SECTION_MONO_SYMBOL_TABLE;
+			sfs->file_offset = section->sh_offset;
+			sfs->size = section->sh_size;
 		}
 	}
 
@@ -220,14 +227,89 @@ read_line_numbers (MonoDebugSymbolFile *symfile)
 }
 
 static MonoClass *
+find_class_by_name (MonoDebugSymbolFile *symfile, const char *nspace, const char *name)
+{
+	MonoAssembly **assembly;
+	MonoClass *klass;
+
+	klass = mono_class_from_name (symfile->image, nspace, name);
+
+	if (klass)
+		return klass;
+
+	for (assembly = symfile->image->references; assembly && *assembly; assembly++) {
+		klass = mono_class_from_name ((*assembly)->image, nspace, name);
+
+		if (klass)
+			return klass;
+	}
+
+	g_message (G_STRLOC ": Can't find class %s.%s", nspace, name);
+
+	return NULL;
+}
+
+static void
+read_symbol_table (MonoDebugSymbolFile *symfile)
+{
+	const char *ptr, *start, *end;
+	int version, i;
+	long section_size;
+
+	if (!symfile->section_offsets [MONO_DEBUG_SYMBOL_SECTION_MONO_SYMBOL_TABLE].file_offset)
+		return;
+
+	ptr = start = symfile->raw_contents +
+		symfile->section_offsets [MONO_DEBUG_SYMBOL_SECTION_MONO_SYMBOL_TABLE].file_offset;
+
+	version = *((guint16 *) ptr)++;
+	if (version != MONO_DEBUG_SYMBOL_FILE_VERSION) {
+		g_warning ("Symbol file %s has incorrect line number table version "
+			   "(expected %d, got %d)", symfile->file_name,
+			   MONO_DEBUG_SYMBOL_FILE_VERSION, version);
+		return;
+	}
+
+	section_size = *((guint32 *) ptr)++;
+	end = ptr + section_size;
+
+	g_free (symfile->type_table);
+
+	symfile->num_types = * ((guint32 *) ptr)++;
+	symfile->type_table = g_new0 (MonoClass *, symfile->num_types);
+
+	for (i = 0; i < symfile->num_types; i++) {
+		const char *name, *namespace;
+		MonoClass *klass;
+
+		namespace = ptr;
+		ptr += strlen (namespace) + 1;
+
+		name = ptr;
+		ptr += strlen (name) + 1;
+
+		klass = find_class_by_name (symfile, namespace, name);
+
+		if (klass)
+			symfile->type_table [i] = klass;
+	}
+}
+
+static MonoClass *
 mono_debug_class_get (MonoDebugSymbolFile *symfile, guint32 type_token)
 {
 	MonoClass *klass;
 
-	if ((klass = g_hash_table_lookup (symfile->image->class_cache, GUINT_TO_POINTER (type_token))))
-		return klass;
+	if (!type_token)
+		return mono_defaults.object_class;
 
-	return NULL;
+	if (type_token <= symfile->num_types)
+		return symfile->type_table [type_token - 1];
+
+	if ((klass = g_hash_table_lookup (symfile->image->class_cache, GUINT_TO_POINTER (type_token))))
+                return klass;
+
+        return NULL;
 }
 
 MonoDebugSymbolFile *
@@ -272,6 +354,8 @@ mono_debug_open_symbol_file (MonoImage *image, const char *filename, gboolean em
 		mono_debug_close_symbol_file (symfile);
 		return NULL;
 	}
+
+	read_symbol_table (symfile);
 
 	read_line_numbers (symfile);
 
@@ -386,6 +470,8 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 	const char *reloc_ptr, *reloc_start, *reloc_end;
 	int version, already_relocated = 0;
 	long reloc_size;
+
+	read_symbol_table (symfile);
 
 	if (!symfile->section_offsets [MONO_DEBUG_SYMBOL_SECTION_MONO_RELOC_TABLE].file_offset)
 		return;
@@ -571,12 +657,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 		}
 		case MRT_type_sizeof: {
 			guint32 token = *((guint32 *) tmp_ptr)++;
-			MonoClass *klass;
-
-			if (!token)
-				klass = mono_defaults.object_class;
-			else
-				klass = mono_debug_class_get (symfile, token);
+			MonoClass *klass = mono_debug_class_get (symfile, token);
 
 			if (!klass)
 				continue;
@@ -885,7 +966,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				   token, klass, off);
 #endif
 
-			* (void **) base_ptr = vtable->data + off;
+			* (void **) base_ptr = (char *) vtable->data + off;
 
 			break;
 		}

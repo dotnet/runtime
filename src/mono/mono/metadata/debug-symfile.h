@@ -82,6 +82,8 @@ struct MonoDebugSymbolFile {
 	/* Array of MONO_DEBUG_SYMBOL_SECTION_MAX elements. */
 	MonoDebugSymbolFileSection *section_offsets;
 	GHashTable *line_number_table;
+	guint32 num_types;
+	MonoClass **type_table;
 	gpointer user_data;
 };
 
@@ -91,7 +93,7 @@ struct MonoDebugSymbolFileSection {
 	gulong size;
 };
 
-#define MONO_DEBUG_SYMBOL_FILE_VERSION			14
+#define MONO_DEBUG_SYMBOL_FILE_VERSION			15
 
 /* Keep in sync with Mono.CSharp.Debugger.MonoDwarfFileWriter.Section */
 #define MONO_DEBUG_SYMBOL_SECTION_DEBUG_INFO		0x01
@@ -99,8 +101,9 @@ struct MonoDebugSymbolFileSection {
 #define MONO_DEBUG_SYMBOL_SECTION_DEBUG_LINE		0x03
 #define MONO_DEBUG_SYMBOL_SECTION_MONO_RELOC_TABLE	0x04
 #define MONO_DEBUG_SYMBOL_SECTION_MONO_LINE_NUMBERS	0x05
+#define MONO_DEBUG_SYMBOL_SECTION_MONO_SYMBOL_TABLE	0x06
 
-#define MONO_DEBUG_SYMBOL_SECTION_MAX			0x06
+#define MONO_DEBUG_SYMBOL_SECTION_MAX			0x07
 
 /* Tries to load `filename' as a debugging information file, if `emit_warnings" is set,
  * use g_warning() to signal error messages on failure, otherwise silently return NULL. */
