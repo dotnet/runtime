@@ -30,6 +30,12 @@ enum {
 };
 #undef OPDEF
 
+#define OPDEF(a,b,c,d,e,f,g,h,i,j) b,
+char *opcode_names [] = {
+#include "mono/cil/opcode.def"	
+};
+#undef OPDEF
+
 static gpointer mono_compile_method (MonoMethod *method);
 
 static MonoRegSet *
@@ -628,13 +634,13 @@ mono_compile_method (MonoMethod *method)
 				break;
 			}
 			default:
-				g_error ("Unimplemented opcode IL_%04x: "
+				g_error ("Unimplemented opcode at IL_%04x"
 					 "0xFE %02x", ip - header->code, *ip);
 			}
 			break;
 		default:
-			g_warning ("unknown instruction IL_%04X: %02x", 
-				   ip - header->code, *ip);
+			g_warning ("unknown instruction `%s' at IL_%04X", 
+				   opcode_names [*ip], ip - header->code);
 			print_forest (forest);
 			g_assert_not_reached ();
 		}
