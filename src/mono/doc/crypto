@@ -155,10 +155,11 @@
 		* A RNGCryptoServiceProvider built on top of CryptoAPI.
 
 		* Wrapper classes for unmanaged versions of hash algorithms:
-		  MD2, MD4, MD5 and SHA1 are supported.
-
-		* Not (yet) commited in CVS - i'm still playing with the base
-		  classes so I can easily add other CryptoAPI-based algorithms.
+		  MD2, MD4, MD5 and SHA1 are supported. <b>note<b>: some 
+		  algorithms shouldn't be used in new design (MD4 is broken and
+		  MD2 isn't considered safe). They are included to preserve
+		  interoperability with older applications (e.g. some old, but 
+		  still valid, X.509 certificates use MD2).
 	</ul>
 
 **** TODO
@@ -286,4 +287,4 @@
 	informations about the status of the cryptographic classes.
 
 <hr>
-Last reviewed: February 4, 2003 (post mono 0.19)
+Last reviewed: February 5, 2003 (post mono 0.19)
