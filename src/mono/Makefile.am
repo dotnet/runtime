@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = mono doc docs runtime scripts man 
+SUBDIRS = mono doc docs runtime scripts man data
 
 EXTRA_DIST= mono.pc.in mono.spec.in
 
