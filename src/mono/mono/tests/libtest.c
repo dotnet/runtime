@@ -149,3 +149,13 @@ mono_test_marshal_stringbuilder (char *s, int n)
 	return 0;
 }
 
+typedef struct {
+} EmptyStruct;
+
+int 
+mono_test_empty_struct (int a, EmptyStruct es, int b)
+{
+	if (a == 1 && b == 2)
+		return 0;
+	return 1;
+}

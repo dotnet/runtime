@@ -470,6 +470,8 @@ mono_mb_emit_native_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, gpoin
 void
 mono_mb_emit_exception (MonoMethodBuilder *mb)
 {
+	/* fixme: we need a better way to throw exception,
+	 * supporting several exception types and messages */
 	mono_mb_emit_byte (mb, CEE_LDNULL);
 	mono_mb_emit_byte (mb, CEE_THROW);
 	

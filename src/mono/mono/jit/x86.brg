@@ -2008,7 +2008,8 @@ reg: ISINST (reg) {
 stmt: INITOBJ (reg) {
 	int i, j;
 
-	i = tree->data.i;
+	if (!(i = tree->data.i))
+		return;
 
 	if (i == 1 || i == 2 || i == 4) {
 		x86_mov_membase_imm (s->code, tree->left->reg1, 0, 0, i);
@@ -4659,10 +4660,8 @@ stmt: ARG_OBJ (reg) {
 	int pad = tree->data.arg_info.pad;
 	int sa;
 	
-	if (!size) {
-		g_warning ("pushing zero sized object");
+	if (!size) 
 		return;
-	}
 
 	sa = size + pad;
 
