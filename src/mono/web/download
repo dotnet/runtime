@@ -11,7 +11,9 @@
 	Some useful links: the <a
 	href="http://www.go-mono.org/faq.html">FAQ</a>.
 
-
+        Packages can find RPM Spec files and other resources in the <a
+	href="http://www.go-mono.com/packagers/">packagers page</a>.
+        
 	<table>
 	  <tbody>
  	  <tr bgcolor="#DDDDDD">
