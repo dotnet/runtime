@@ -3,6 +3,8 @@ INCLUDES = 				\
 	$(GMODULE_CFLAGS)		\
 	$(GLIB_CFLAGS)
 
+libmono_la_LDFLAGS=-Wl,-version-script=ldscript
+
 if X86
 if PLATFORM_WIN32
 export HOST_CC
@@ -20,7 +22,7 @@ libmono_la_LIBADD = 	\
 
 endif
 
-libmono_la_SOURCES =		\
+jitsources =		\
 	win32-exception.c	\
 	win32-exception.h	\
 	codegen.h		\
@@ -38,17 +40,23 @@ libmono_la_SOURCES =		\
 	helpers.h		\
 	helpers.c
 
+libmono_la_SOURCES = $(jitsources)
+
 libmonoincludedir = $(includedir)/mono/jit
 libmonoinclude_HEADERS = \
 	jit.h			\
 	debug.h			\
 	regset.h
 
-mono_SOURCES = mono.c
+mono_SOURCES = mono.c $(jitsources)
 
 #mono_LDFLAGS=-static
 mono_LDADD =				\
-	libmono.la			\
+	../metadata/libmonoruntime.la	\
+	../metadata/libmetadata.la	\
+	../io-layer/libwapi.la		\
+	../utils/libmonoutils.la	\
+	../os/libmonoos.la		\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm
