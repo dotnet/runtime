@@ -93,6 +93,8 @@ typedef struct {
 	MonoObject object;
 	gint32 length;
 	MonoString *str;
+	MonoString *cached_str;
+	gint32 max_capacity;
 } MonoStringBuilder;
 
 typedef struct {
