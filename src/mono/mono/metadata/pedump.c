@@ -13,6 +13,7 @@
 #include <glib.h>
 #include "cil-coff.h"
 #include "private.h"
+#include "endian.h"
 
 gboolean dump_data = TRUE;
 gboolean dump_tables = FALSE;
@@ -254,7 +255,7 @@ dump_methoddef (MonoMetadata *metadata, guint32 token)
 
 	loc = mono_metadata_locate_token (metadata, token);
 
-	printf ("RVA for Entry Point: 0x%08x\n", (*(guint32 *)loc));
+	printf ("RVA for Entry Point: 0x%08x\n", read32 (loc));
 }
 
 static void

@@ -335,8 +335,12 @@ mono_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_STRING:
 		res = mono_defaults.string_class;
 		break;
+	case MONO_TYPE_ARRAY:
+		res = mono_defaults.array_class;
+		break;
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_PTR:
+		/* Not really sure about these. */
 		res = mono_class_from_mono_type (type->data.type);
 		break;
 	case MONO_TYPE_CLASS:

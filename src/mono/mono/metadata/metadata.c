@@ -1433,11 +1433,11 @@ mono_metadata_parse_mh (MonoMetadata *m, const char *ptr)
 		fat_flags = read16 (ptr);
 		ptr += 2;
 		hsize = (fat_flags >> 12) & 0xf;
-		max_stack = *(guint16 *) ptr;
+		max_stack = read16 (ptr);
 		ptr += 2;
-		code_size = *(guint32 *) ptr;
+		code_size = read32 (ptr);
 		ptr += 4;
-		local_var_sig_tok = *(guint32 *) ptr;
+		local_var_sig_tok = read32 (ptr);
 		ptr += 4;
 
 		if (fat_flags & METHOD_HEADER_INIT_LOCALS)
