@@ -1,1 +1,1 @@
-SUBDIRS = metadata cil dis 
+SUBDIRS = metadata cil dis interpreter
