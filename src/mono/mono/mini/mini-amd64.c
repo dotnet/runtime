@@ -226,8 +226,11 @@ static ArgumentClass
 merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 {
 	ArgumentClass class2;
+	MonoType *ptype;
 
-	switch (type->type) {
+	ptype = type;
+ handle_enum:
+	switch (ptype->type) {
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I1:
@@ -258,10 +261,10 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 		g_assert_not_reached ();
 
 	case MONO_TYPE_VALUETYPE:
-		if (type->data.klass->enumtype)
+		if (ptype->data.klass->enumtype)
 			class2 = ARG_CLASS_INTEGER;
 		else {
-			MonoMarshalType *info = mono_marshal_load_type_info (type->data.klass);
+			MonoMarshalType *info = mono_marshal_load_type_info (ptype->data.klass);
 			int i;
 
 			for (i = 0; i < info->num_fields; ++i) {
@@ -270,6 +273,14 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 			}
 		}
 		break;
+
+	case MONO_TYPE_GENERICINST:
+		ptype = ptype->data.generic_inst->generic_type;
+		goto handle_enum;
+		break;
+
+	default:
+		g_assert_not_reached ();
 	}
 
 	/* Merge */
