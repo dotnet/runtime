@@ -88,7 +88,7 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	if (!code)
 		return addr;
 
-	vtable_slot = mono_arch_get_vcall_slot_addr (code, regs);
+	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
 
 	if (vtable_slot) {
 		if (m->klass->valuetype)
@@ -177,7 +177,7 @@ amd64_aot_trampoline (long *regs, guint8 *code, guint8 *token_info,
 	addr = mono_compile_method (method);
 	g_assert (addr);
 
-	vtable_slot = mono_amd64_get_vcall_slot_addr (code, regs);
+	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
 	g_assert (vtable_slot);
 
 	if (method->klass->valuetype)
