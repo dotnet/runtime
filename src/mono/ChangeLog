@@ -1,5 +1,10 @@
 2002-02-18  Radek Doulik  <rodo@ximian.com>
 
+	* mono/tests/pinvoke.cs (Test): added pinvoked method with 10 int
+	arguments
+
+2002-02-18  Radek Doulik  <rodo@ximian.com>
+
 	* mono/tests/Makefile.am: display # of passing tests too
 
 2002-02-17  Radek Doulik  <rodo@ximian.com>
