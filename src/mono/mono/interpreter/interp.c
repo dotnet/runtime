@@ -243,6 +243,7 @@ stackval_from_data (MonoType *type, stackval *result, const char *data)
 		return;
 	case MONO_TYPE_U:
 	case MONO_TYPE_I:
+	case MONO_TYPE_PTR:
 		result->type = VAL_TP;
 		result->data.p = *(gpointer*)data;
 		return;
@@ -268,7 +269,6 @@ stackval_from_data (MonoType *type, stackval *result, const char *data)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_PTR:
 		result->type = VAL_OBJ;
 		result->data.p = *(gpointer*)data;
 		result->data.vt.klass = mono_class_from_mono_type (type);
@@ -3285,13 +3285,15 @@ array_constructed:
 			case CEE_UNUSED: ves_abort(); break;
 			case CEE_SIZEOF: {
 				guint32 token;
-				MonoClass *c;
+				MonoType *type;
+				int align;
 				++ip;
 				token = read32 (ip);
 				ip += 4;
-				c = mono_class_get (image, token);
+				type = mono_type_create_from_typespec (image, token);
 				sp->type = VAL_I32;
-				sp->data.i = mono_class_value_size (c, NULL);
+				sp->data.i = mono_type_size (type, &align);
+				mono_metadata_free_type (type);
 				++sp;
 				break;
 			}

@@ -2032,8 +2032,13 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				ADD_TREE (t1, cli_addr); 
 				t1 = ctree_create_dup (mp, this);	
-				PUSH_TREE (t1, t1->svt);
 
+				if (cm->klass->valuetype) {
+					t2 = ctree_create_load (cfg, &cm->klass->byval_arg, t1, &svt, FALSE);
+					PUSH_TREE (t2, svt);
+				} else {
+					PUSH_TREE (t1, t1->svt);
+				}
 			}
 			break;
 		}
@@ -2993,6 +2998,20 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1->data.i = ARG_POS (n);
 				t1 = ctree_create_load (cfg, ARG_TYPE (n), t1, &svt, TRUE);
 				PUSH_TREE (t1, svt);
+				break;
+			}
+			case CEE_SIZEOF: {
+				guint32 token;
+				MonoType *type;
+				int align;
+				++ip;
+				token = read32 (ip);
+				ip += 4;
+				type = mono_type_create_from_typespec (image, token);
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+				t1->data.i = mono_type_size (type, &align);
+				mono_metadata_free_type (type);
+				PUSH_TREE (t1, VAL_I32);
 				break;
 			}
 			case CEE_UNALIGNED_: {

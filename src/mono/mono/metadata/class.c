@@ -890,6 +890,7 @@ mono_class_from_mono_type (MonoType *type)
 		return mono_defaults.array_class;
 	case MONO_TYPE_PTR:
 		/* FIXME: this is wrong. Need to handle PTR types */
+		g_assert_not_reached ();
 		return mono_class_from_mono_type (type->data.type);
 	case MONO_TYPE_SZARRAY:
 		return mono_array_class_get (mono_class_from_mono_type (type->data.type), 1);
@@ -907,25 +908,14 @@ mono_class_from_mono_type (MonoType *type)
 /**
  * @image: context where the image is created
  * @type_spec:  typespec token
- * @at: an optional pointer to return the array type
  */
 static MonoClass *
 mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 {
-	guint32 idx = mono_metadata_token_index (type_spec);
-	MonoTableInfo *t;
-	guint32 cols [MONO_TYPESPEC_SIZE];       
-	const char *ptr;
-	guint32 len;
 	MonoType *type;
 	MonoClass *class, *eclass;
 
-	t = &image->tables [MONO_TABLE_TYPESPEC];
-	
-	mono_metadata_decode_row (t, idx-1, cols, MONO_TYPESPEC_SIZE);
-	ptr = mono_metadata_blob_heap (image, cols [MONO_TYPESPEC_SIGNATURE]);
-	len = mono_metadata_decode_value (ptr, &ptr);
-	type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	type = mono_type_create_from_typespec (image, type_spec);
 
 	switch (type->type) {
 	case MONO_TYPE_ARRAY:
@@ -935,6 +925,9 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 	case MONO_TYPE_SZARRAY:
 		eclass = mono_class_from_mono_type (type->data.type);
 		class = mono_array_class_get (eclass, 1);
+		break;
+	case MONO_TYPE_PTR:
+		class = mono_class_from_mono_type (type->data.type);
 		break;
 	default:
 		g_warning ("implement me: %08x", type->type);

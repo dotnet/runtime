@@ -2192,3 +2192,27 @@ mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *en
 	return start;
 }
 
+/**
+ * @image: context where the image is created
+ * @type_spec:  typespec token
+ */
+MonoType *
+mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
+{
+	guint32 idx = mono_metadata_token_index (type_spec);
+	MonoTableInfo *t;
+	guint32 cols [MONO_TYPESPEC_SIZE];       
+	const char *ptr;
+	guint32 len;
+	MonoType *type;
+
+	t = &image->tables [MONO_TABLE_TYPESPEC];
+	
+	mono_metadata_decode_row (t, idx-1, cols, MONO_TYPESPEC_SIZE);
+	ptr = mono_metadata_blob_heap (image, cols [MONO_TYPESPEC_SIGNATURE]);
+	len = mono_metadata_decode_value (ptr, &ptr);
+	type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
+
+	return type;
+}
+

@@ -16,6 +16,8 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/appdomain.h>
 
+#include <sys/time.h> 
+
 #ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>    /* defines FIONBIO and FIONREAD */
 #endif
@@ -233,9 +235,11 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 		case SocketOptionName_Debug:
 			*system_name=SO_DEBUG;
 			break;
+#ifdef SO_ACCEPTCONN
 		case SocketOptionName_AcceptConnection:
 			*system_name=SO_ACCEPTCONN;
 			break;
+#endif
 		case SocketOptionName_ReuseAddress:
 			*system_name=SO_REUSEADDR;
 			break;

@@ -2,7 +2,7 @@
 TEST_PROG=../interpreter/mint
 JITTEST_PROG=../jit/mono
 
-CSC=csc
+CSC=csc /unsafe
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
@@ -69,7 +69,8 @@ TESTSRC=			\
 	jit-ulong.cs		\
 	jit-float.cs		\
 	pop.cs			\
-	time.cs
+	time.cs			\
+	pointer.cs
 
 
 TESTSI=$(TESTSRC:.cs=.exe)

@@ -29,6 +29,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
+#include <sys/time.h>
 
 #include "mono-mutex.h"
 
