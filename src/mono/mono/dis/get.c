@@ -17,6 +17,8 @@
 #include "get.h"
 #include <mono/metadata/class.h>
 
+extern gboolean substitute_with_mscorlib_p;
+
 char *
 get_typedef (MonoImage *m, int idx)
 {
@@ -507,7 +509,7 @@ dis_stringify_object (MonoImage *m, MonoType *type)
 		return g_strdup ("Unknown");
 	if (m != c->image) {
 		/* we cheat */
-		if (!strcmp ("corlib", c->image->assembly_name))
+		if (substitute_with_mscorlib_p && !strcmp ("corlib", c->image->assembly_name))
 			assemblyref = g_strdup_printf ("[%s]", "mscorlib");
 		else
 			assemblyref = g_strdup_printf ("[%s]", c->image->assembly_name);

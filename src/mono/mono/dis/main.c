@@ -30,6 +30,8 @@ FILE *output;
 /* True if you want to get a dump of the header data */
 gboolean dump_header_data_p = FALSE;
 
+gboolean substitute_with_mscorlib_p = FALSE;
+
 int dump_table = -1;
 
 static void
@@ -854,7 +856,7 @@ disassemble_file (const char *file)
 static void
 usage (void)
 {
-	GString *args = g_string_new ("[--help] ");
+	GString *args = g_string_new ("[--help] [--mscorlib] ");
 	int i;
 	
 	for (i = 0; table_list [i].name != NULL; i++){
@@ -882,6 +884,10 @@ main (int argc, char *argv [])
 				usage ();
 			else if (argv [i][1] == 'd')
 				dump_header_data_p = TRUE;
+			else if (strcmp (argv [i], "--mscorlib") == 0) {
+				substitute_with_mscorlib_p = TRUE;
+				i++;
+			}
 			else if (strcmp (argv [i], "--help") == 0)
 				usage ();
 			for (j = 0; table_list [j].name != NULL; j++) {

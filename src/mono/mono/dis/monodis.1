@@ -11,6 +11,7 @@ monodis \- CIL image content dumper and disassembler.
 .PP
 .B monodis
 [\-hd] [\-\-help] 
+[\-\-mscorlib]
 [\-\-assembly]
 [\-\-assemblyref]
 [\-\-classlayout]
@@ -38,6 +39,9 @@ The following Generic options are supported:
 .I "--help", "-h"
 Displays usage instructions.
 .TP
+.I "--mscorlib"
+For non-corlib assemblies, use "mscorlib" as the assembly name. This
+is useful for round-tripping the IL with ilasm.
 .I "--assembly"
 Dumps the contents of the assembly table
 .I "--assemblyref"
