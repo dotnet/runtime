@@ -19,17 +19,11 @@ Other Ideas:
 	- mono_metadata_row_col
 	- mono_g_hash_table_lookup
 	- mono_domain_get
-* load_class_names can be speeded up by caching the per-namespace hash tables
-  in a new hash table indexed by the index of the namespace in the blob heap.
 * the managed/unmanaged boundary is quite slow:
 	- it calls mono_get_lmf_addr, which calls TlsGetValue, which calls
       pthread_getspecific (). This means that 3 function calls are needed for
       each native function call.
-* mono_find_jit_opcode_emulation is called a lot of times during compilation,
-  and it involves a hash table lookup. 
-* mcs should create AssemblyBuilders with the Save flag instead of RunAndSave,
-  so the runtime could avoid fully constructing the types in the dynamic
-  assembly.
+
 * if a function which involves locking is called from another function which
   acquires the same lock, it might be useful to create a separate _inner 
   version of the function which does not re-acquire the lock. This is a perf
@@ -40,6 +34,11 @@ Other Ideas:
   callee saved registers are saved, even when the icall is marked with
   MONO_ARCH_SAVE_REGS. This forces the runtime to generate wrapper functions
   for all icalls, slowing things down greatly.
+
+* we can avoid calls to class init trampolines if the are multiple calls to the
+  same trampoline in the same basic block. See:
+
+  http://bugzilla.ximian.com/show_bug.cgi?id=51096
 
 Usability
 ---------
