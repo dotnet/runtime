@@ -4278,6 +4278,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly->save = assemblyb->access != 1;
 
 	image = create_dynamic_mono_image (assembly, mono_string_to_utf8 (assemblyb->name), g_strdup ("RefEmit_YouForgotToDefineAModule"));
+	image->initial_image = TRUE;
 	assembly->assembly.aname.name = image->image.name;
 	assembly->assembly.image = &image->image;
 

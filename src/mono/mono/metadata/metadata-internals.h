@@ -210,6 +210,7 @@ struct _MonoDynamicImage {
 	MonoGHashTable *method_aux_hash;
 	gboolean run;
 	gboolean save;
+	gboolean initial_image;
 	guint32 pe_kind, machine;
 	char *strong_name;
 	guint32 strong_name_size;
