@@ -55,15 +55,14 @@ guint32
 mono_typedef_from_name (MonoImage *image, const char *name, 
 			const char *nspace, guint32 *mlist)
 {
-	MonoMetadata *m = &image->metadata;
-	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
+	MonoTableInfo *t = &image->tables [MONO_TABLE_TYPEDEF];
 	guint32 i;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 
 	for (i=0; i < t->rows; ++i) {
 		mono_metadata_decode_row (t, i, cols, MONO_TYPEDEF_SIZE);
-		if (strcmp (name, mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME])) == 0 
-				&& strcmp (nspace, mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE])) == 0) {
+		if (strcmp (name, mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME])) == 0 
+				&& strcmp (nspace, mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE])) == 0) {
 			if (mlist)
 				*mlist = cols [MONO_TYPEDEF_METHOD_LIST];
 			return MONO_TOKEN_TYPE_DEF | (i + 1);
@@ -137,8 +136,7 @@ static MonoMethod *
 method_from_memberref (MonoImage *image, guint32 index)
 {
 	MonoImage *mimage;
-	MonoMetadata *m = &image->metadata;
-	MonoTableInfo *tables = m->tables;
+	MonoTableInfo *tables = image->tables;
 	guint32 cols[6];
 	guint32 nindex, class, i;
 	const char *mname, *name, *nspace;
@@ -151,11 +149,11 @@ method_from_memberref (MonoImage *image, guint32 index)
 	/*g_print ("methodref: 0x%x 0x%x %s\n", class, nindex,
 		mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]));*/
 
-	mname = mono_metadata_string_heap (m, cols [MONO_MEMBERREF_NAME]);
+	mname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
 	
-	ptr = mono_metadata_blob_heap (m, cols [MONO_MEMBERREF_SIGNATURE]);
+	ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
 	mono_metadata_decode_blob_size (ptr, &ptr);
-	sig = mono_metadata_parse_method_signature (m, 0, ptr, NULL);
+	sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
 
 	switch (class) {
 	case MEMBERREF_PARENT_TYPEREF: {
@@ -174,30 +172,28 @@ method_from_memberref (MonoImage *image, guint32 index)
 			 * *) name and namespace of the class from the TYPEREF table
 			 * *) name and signature of the method from the MEMBERREF table
 			 */
-			nspace = mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAMESPACE]);
-			name = mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAME]);
+			nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
+			name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
 
 			/* this will triggered by references to mscorlib */
 			g_assert (image->references [scopeindex-1] != NULL);
 
 			mimage = image->references [scopeindex-1]->image;
 
-			m = &mimage->metadata;
-			tables = &m->tables [MONO_TABLE_METHOD];
+			tables = &mimage->tables [MONO_TABLE_METHOD];
 			mono_typedef_from_name (mimage, name, nspace, &i);
 			/* mostly dumb search for now */
 			for (i--; i < tables->rows; ++i) {
 
 				mono_metadata_decode_row (tables, i, cols, MONO_METHOD_SIZE);
 
-				if (!strcmp (mname, mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]))) {
+				if (!strcmp (mname, mono_metadata_string_heap (mimage, cols [MONO_METHOD_NAME]))) {
 					
-					ptr = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
+					ptr = mono_metadata_blob_heap (mimage, cols [MONO_METHOD_SIGNATURE]);
 					mono_metadata_decode_blob_size (ptr, &ptr);
-					msig = mono_metadata_parse_method_signature (m, 1, ptr, NULL);
+					msig = mono_metadata_parse_method_signature (mimage, 1, ptr, NULL);
 
-					if (mono_metadata_signature_equal (&image->metadata, sig, 
-									   &mimage->metadata, msig)) {
+					if (mono_metadata_signature_equal (image, sig, mimage, msig)) {
 						mono_metadata_free_method_signature (sig);
 						mono_metadata_free_method_signature (msig);
 						return mono_get_method (mimage, MONO_TOKEN_METHOD_DEF | (i + 1));
@@ -220,9 +216,9 @@ method_from_memberref (MonoImage *image, guint32 index)
 
 		mono_metadata_decode_row (&tables [MONO_TABLE_TYPESPEC], nindex - 1, 
 					  bcols, MONO_TYPESPEC_SIZE);
-		ptr = mono_metadata_blob_heap (m, bcols [MONO_TYPESPEC_SIGNATURE]);
+		ptr = mono_metadata_blob_heap (image, bcols [MONO_TYPESPEC_SIGNATURE]);
 		len = mono_metadata_decode_value (ptr, &ptr);	
-		type = mono_metadata_parse_type (m, ptr, &ptr);
+		type = mono_metadata_parse_type (image, ptr, &ptr);
 
 		if (type->type != MONO_TYPE_ARRAY)
 			g_assert_not_reached ();		
@@ -320,7 +316,7 @@ static void
 fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 {
 	MonoMethod *mh = &piinfo->method;
-	MonoTableInfo *tables = image->metadata.tables;
+	MonoTableInfo *tables = image->tables;
 	MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
 	MonoTableInfo *mr = &tables [MONO_TABLE_MODULEREF];
 	guint32 im_cols [4];
@@ -338,14 +334,12 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 
 		if ((im_cols[1] >> 1) == index + 1) {
 
-			import = mono_metadata_string_heap (&image->metadata, 
-							    im_cols [2]);
+			import = mono_metadata_string_heap (image, im_cols [2]);
 
 			mono_metadata_decode_row (mr, im_cols [3] - 1, mr_cols,
 						  1);
 			
-			scope = mono_metadata_string_heap (&image->metadata, 
-							   mr_cols [0]);
+			scope = mono_metadata_string_heap (image, mr_cols [0]);
 		}
 	}
 
@@ -385,10 +379,9 @@ MonoMethod *
 mono_get_method (MonoImage *image, guint32 token)
 {
 	MonoMethod *result;
-	MonoMetadata *m = &image->metadata;
 	int table = mono_metadata_token_table (token);
 	int index = mono_metadata_token_index (token);
-	MonoTableInfo *tables = m->tables;
+	MonoTableInfo *tables = image->tables;
 	const char *loc, *sig = NULL;
 	char *name;
 	int size;
@@ -405,18 +398,18 @@ mono_get_method (MonoImage *image, guint32 token)
 	mono_metadata_decode_row (&tables [table], index - 1, cols, 6);
 
 	if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
-		MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
+		MonoTableInfo *t = &image->tables [MONO_TABLE_TYPEDEF];
 		MonoAssembly *corlib;
 		guint32 tdef;
 		guint32 tdcols [MONO_TYPEDEF_SIZE];
 
-		tdef = mono_metadata_typedef_from_method (m, index - 1) - 1;
+		tdef = mono_metadata_typedef_from_method (image, index - 1) - 1;
 
 		mono_metadata_decode_row (t, tdef, tdcols, MONO_TYPEDEF_SIZE);
 
-		name = g_strconcat (mono_metadata_string_heap (m, tdcols [MONO_TYPEDEF_NAMESPACE]), ".",
-				    mono_metadata_string_heap (m, tdcols [MONO_TYPEDEF_NAME]), "::", 
-				    mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]), NULL);
+		name = g_strconcat (mono_metadata_string_heap (image, tdcols [MONO_TYPEDEF_NAMESPACE]), ".",
+				    mono_metadata_string_heap (image, tdcols [MONO_TYPEDEF_NAME]), "::", 
+				    mono_metadata_string_heap (image, cols [MONO_METHOD_NAME]), NULL);
 
 		corlib = mono_assembly_open (CORLIB_NAME, NULL, NULL);
 
@@ -442,12 +435,12 @@ mono_get_method (MonoImage *image, guint32 token)
 	result->image = image;
 	result->flags = cols [2];
 	result->iflags = cols [1];
-	result->name = mono_metadata_string_heap (m, cols [3]);
+	result->name = mono_metadata_string_heap (image, cols [3]);
 
 	if (!sig) /* already taken from the methodref */
-		sig = mono_metadata_blob_heap (m, cols [4]);
+		sig = mono_metadata_blob_heap (image, cols [4]);
 	size = mono_metadata_decode_blob_size (sig, &sig);
-	result->signature = mono_metadata_parse_method_signature (m, 0, sig, NULL);
+	result->signature = mono_metadata_parse_method_signature (image, 0, sig, NULL);
 
 	if (result->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, 
@@ -457,7 +450,7 @@ mono_get_method (MonoImage *image, guint32 token)
 		loc = mono_cli_rva_map ((MonoCLIImageInfo *)image->image_info, cols [0]);
 		g_assert (loc);
 		((MonoMethodNormal *)result)->header = 
-			mono_metadata_parse_mh (m, loc);
+			mono_metadata_parse_mh (image, loc);
 	}
 
 	g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);

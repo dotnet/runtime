@@ -30,26 +30,24 @@ static void
 typedef_from_typeref (MonoImage *image, guint32 type_token, MonoImage **rimage, guint32 *index)
 {
 	guint32 cols[MONO_TYPEDEF_SIZE];
-	MonoMetadata *m = &image->metadata;
-	MonoTableInfo  *t = &m->tables[MONO_TABLE_TYPEREF];
+	MonoTableInfo  *t = &image->tables[MONO_TABLE_TYPEREF];
 	guint32 idx, i;
 	const char *name, *nspace;
 	
 	mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, 3);
 	g_assert ((cols [0] & 0x3) == 2);
 	idx = cols [0] >> 2;
-	name = mono_metadata_string_heap (m, cols [1]);
-	nspace = mono_metadata_string_heap (m, cols [2]);
+	name = mono_metadata_string_heap (image, cols [1]);
+	nspace = mono_metadata_string_heap (image, cols [2]);
 	/* load referenced assembly */
 	image = image->references [idx-1]->image;
-	m = &image->metadata;
-	t = &m->tables [MONO_TABLE_TYPEDEF];
+	t = &image->tables [MONO_TABLE_TYPEDEF];
 	/* dumb search for now */
 	for (i=0; i < t->rows; ++i) {
 		mono_metadata_decode_row (t, i, cols, MONO_TYPEDEF_SIZE);
 
-		if (!strcmp (name, mono_metadata_string_heap (m, cols [1])) &&
-		    !strcmp (nspace, mono_metadata_string_heap (m, cols [2]))) {
+		if (!strcmp (name, mono_metadata_string_heap (image, cols [1])) &&
+		    !strcmp (nspace, mono_metadata_string_heap (image, cols [2]))) {
 			*rimage = image;
 			*index =  MONO_TOKEN_TYPE_DEF | (i + 1);
 			return;
@@ -153,8 +151,7 @@ class_compute_field_layout (MonoMetadata *m, MonoClass *class)
 static MonoClass *
 mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 {
-	MonoMetadata *m = &image->metadata;
-	MonoTableInfo *tt = &m->tables [MONO_TABLE_TYPEDEF];
+	MonoTableInfo *tt = &image->tables [MONO_TABLE_TYPEDEF];
 	MonoClass stack_class;
 	MonoClass *class = &stack_class;
 	guint32 cols [MONO_TYPEDEF_SIZE], parent_token;
@@ -166,8 +163,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	memset (class, 0, sizeof (MonoClass));
 
 	mono_metadata_decode_row (tt, tidx-1, cols, CSIZE (cols));
-	name = mono_metadata_string_heap (m, cols[1]);
-	nspace = mono_metadata_string_heap (m, cols[2]);
+	name = mono_metadata_string_heap (image, cols[1]);
+	nspace = mono_metadata_string_heap (image, cols[2]);
 	/*g_print ("Init class %s\n", name);*/
  
 	/* if root of the hierarchy */
@@ -202,17 +199,17 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		class->field.last  = cols_next [MONO_TYPEDEF_FIELD_LIST] - 1;
 		class->method.last = cols_next [MONO_TYPEDEF_METHOD_LIST] - 1;
 	} else {
-		class->field.last  = m->tables [MONO_TABLE_FIELD].rows;
-		class->method.last = m->tables [MONO_TABLE_METHOD].rows;
+		class->field.last  = image->tables [MONO_TABLE_FIELD].rows;
+		class->method.last = image->tables [MONO_TABLE_METHOD].rows;
 	}
 
 	if (cols [MONO_TYPEDEF_FIELD_LIST] && 
-	    cols [MONO_TYPEDEF_FIELD_LIST] <= m->tables [MONO_TABLE_FIELD].rows)
+	    cols [MONO_TYPEDEF_FIELD_LIST] <= image->tables [MONO_TABLE_FIELD].rows)
 		class->field.count = class->field.last - class->field.first;
 	else
 		class->field.count = 0;
 
-	if (cols [MONO_TYPEDEF_METHOD_LIST] <= m->tables [MONO_TABLE_METHOD].rows)
+	if (cols [MONO_TYPEDEF_METHOD_LIST] <= image->tables [MONO_TABLE_METHOD].rows)
 		class->method.count = class->method.last - class->method.first;
 	else
 		class->method.count = 0;
@@ -222,7 +219,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	 */
 	if (class->field.count > 0){
 		class->fields = g_new (MonoClassField, class->field.count);
-		class_compute_field_layout (m, class);
+		class_compute_field_layout (image, class);
 	}
 
 	/* reserve space to store vector pointer in arrays */
@@ -308,7 +305,6 @@ mono_type_to_tydedef (MonoImage *image, MonoType *type, MonoImage **rimage)
 static MonoClass *
 mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 {
-	MonoMetadata *m = &image->metadata;
 	guint32 idx = mono_metadata_token_index (type_spec);
 	MonoTableInfo *t;
 	guint32 cols [MONO_TYPESPEC_SIZE];       
@@ -318,12 +314,12 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 	MonoClass *class;
 	MonoImage *rimage;
 
-	t = &m->tables [MONO_TABLE_TYPESPEC];
+	t = &image->tables [MONO_TABLE_TYPESPEC];
 	
 	mono_metadata_decode_row (t, idx-1, cols, MONO_TYPESPEC_SIZE);
-	ptr = mono_metadata_blob_heap (m, cols [MONO_TYPESPEC_SIGNATURE]);
+	ptr = mono_metadata_blob_heap (image, cols [MONO_TYPESPEC_SIGNATURE]);
 	len = mono_metadata_decode_value (ptr, &ptr);
-	type = mono_metadata_parse_type (m, ptr, &ptr);
+	type = mono_metadata_parse_type (image, ptr, &ptr);
 
 	switch (type->type) {
 	case MONO_TYPE_ARRAY:

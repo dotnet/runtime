@@ -2,14 +2,37 @@
 #define _MONONET_METADATA_IMAGE_H_
 
 #include <stdio.h>
-#include <mono/metadata/metadata.h>
+#include <glib.h>
 
 typedef struct _MonoImage MonoImage;
+typedef struct _MonoImage MonoMetadata;
 
 typedef struct {
 	MonoImage *image;
 	/* Load files here */
 } MonoAssembly;
+
+typedef struct {
+	guint32  offset;
+	guint32  size;
+} MonoStreamHeader;
+
+typedef struct {
+	guint32   rows, row_size;
+	char     *base;
+
+	/*
+	 * Tables contain up to 9 rows and the possible sizes of the
+	 * fields in the documentation are 1, 2 and 4 bytes.  So we
+	 * can encode in 2 bits the size.
+	 *
+	 * A 32 bit value can encode the resulting size
+	 *
+	 * The top eight bits encode the number of columns in the table.
+	 * we only need 4, but 8 is aligned no shift required. 
+	 */
+	guint32   size_bitfield;
+} MonoTableInfo;
 
 struct _MonoImage {
 	int   ref_count;
@@ -17,7 +40,19 @@ struct _MonoImage {
 	char *name;
 	void *image_info;
 
-	MonoMetadata metadata;
+	char                *raw_metadata;
+			    
+	gboolean             idx_string_wide, idx_guid_wide, idx_blob_wide;
+			    
+	MonoStreamHeader     heap_strings;
+	MonoStreamHeader     heap_us;
+	MonoStreamHeader     heap_blob;
+	MonoStreamHeader     heap_guid;
+	MonoStreamHeader     heap_tables;
+			    
+	char                *tables_base;
+
+	MonoTableInfo        tables [64];
 
 	/*
 	 * references is initialized only by using the mono_assembly_open

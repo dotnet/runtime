@@ -265,9 +265,9 @@ dump_dotnet_iinfo (MonoImage *image)
 	dump_dotnet_header (&iinfo->cli_header);
 	dump_sections (iinfo);
 	dump_cli_header (&iinfo->cli_cli_header);
-	dump_metadata (&image->metadata);
+	dump_metadata (image);
 
-	dump_methoddef (&image->metadata, iinfo->cli_cli_header.ch_entry_point);
+	dump_methoddef (image, iinfo->cli_cli_header.ch_entry_point);
 }
 
 static void

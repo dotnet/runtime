@@ -6,6 +6,7 @@
 
 #include <mono/metadata/blob.h>
 #include <mono/metadata/row-indexes.h>
+#include <mono/metadata/image.h>
 
 #ifdef __GNUC__
 #define MONO_ZERO_LEN_ARRAY 0
@@ -76,28 +77,6 @@ typedef enum {
 	MONO_CALL_VARARG
 } MonoCallConvention;
 
-typedef struct {
-	guint32  offset;
-	guint32  size;
-} MonoStreamHeader;
-
-typedef struct {
-	guint32   rows, row_size;
-	char     *base;
-
-	/*
-	 * Tables contain up to 9 rows and the possible sizes of the
-	 * fields in the documentation are 1, 2 and 4 bytes.  So we
-	 * can encode in 2 bits the size.
-	 *
-	 * A 32 bit value can encode the resulting size
-	 *
-	 * The top eight bits encode the number of columns in the table.
-	 * we only need 4, but 8 is aligned no shift required. 
-	 */
-	guint32   size_bitfield;
-} MonoTableInfo;
-
 void         mono_metadata_decode_row (MonoTableInfo         *t,
 				       int                    idx,
 				       guint32               *res,
@@ -113,22 +92,6 @@ guint32      mono_metadata_decode_row_col (MonoTableInfo *t,
  */
 #define mono_metadata_table_size(bitfield,table) ((((bitfield) >> ((table)*2)) & 0x3) + 1)
 #define mono_metadata_table_count(bitfield) ((bitfield) >> 24)
-
-typedef struct {
-	char                *raw_metadata;
-			    
-	gboolean             idx_string_wide, idx_guid_wide, idx_blob_wide;
-			    
-	MonoStreamHeader     heap_strings;
-	MonoStreamHeader     heap_us;
-	MonoStreamHeader     heap_blob;
-	MonoStreamHeader     heap_guid;
-	MonoStreamHeader     heap_tables;
-			    
-	char                *tables_base;
-
-	MonoTableInfo        tables [64];
-} MonoMetadata;
 
 /*
  *

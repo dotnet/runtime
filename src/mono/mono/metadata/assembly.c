@@ -79,7 +79,6 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	MonoAssembly *ass;
 	MonoImage *image;
 	MonoTableInfo *t;
-	MonoMetadata *m;
 	int i;
 	const char *basename = strrchr (filename, '/');
 	static MonoAssembly *corlib;
@@ -114,8 +113,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	if (resolver == NULL)
 		resolver = default_assembly_name_resolver;
 
-	m = &image->metadata;
-	t = &m->tables [MONO_TABLE_ASSEMBLYREF];
+	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 
 	image->references = g_new0 (MonoAssembly *, t->rows + 1);
 
@@ -131,7 +129,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 		guint32 cols [MONO_ASSEMBLYREF_SIZE];
 
 		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
-		name = mono_metadata_string_heap (m, cols [MONO_ASSEMBLYREF_NAME]);
+		name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME]);
 
 		/*
 		 * Special case until we have a passable corlib:

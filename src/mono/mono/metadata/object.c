@@ -179,3 +179,17 @@ mono_value_box (MonoClass *class, gpointer val)
 
 	return res;
 }
+
+gboolean
+mono_object_isinst (MonoObject *obj, MonoClass *klass)
+{
+	MonoClass *oklass = obj->klass;
+
+	while (oklass) {
+		if (oklass == klass)
+			return TRUE;
+		oklass = oklass->parent;
+	}
+	return FALSE;
+}
+

@@ -45,5 +45,8 @@ mono_value_box        (MonoClass *class, gpointer val);
 MonoObject *
 mono_object_clone     (MonoObject *obj);
 
+gboolean
+mono_object_isinst    (MonoObject *obj, MonoClass *klass);
+
 #endif
 

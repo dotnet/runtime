@@ -201,7 +201,6 @@ load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo)
 static gboolean
 load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 {
-	MonoMetadata *metadata = &image->metadata;
 	guint32 offset, size;
 	guint16 streams;
 	int i;
@@ -210,11 +209,11 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 	offset = mono_cli_rva_image_map (iinfo, iinfo->cli_cli_header.ch_metadata.rva);
 	size = iinfo->cli_cli_header.ch_metadata.size;
 	
-	metadata->raw_metadata = mono_raw_buffer_load (fileno (image->f), FALSE, offset, size);
-	if (metadata->raw_metadata == NULL)
+	image->raw_metadata = mono_raw_buffer_load (fileno (image->f), FALSE, offset, size);
+	if (image->raw_metadata == NULL)
 		return FALSE;
 
-	ptr = metadata->raw_metadata;
+	ptr = image->raw_metadata;
 
 	if (strncmp (ptr, "BSJB", 4) == 0){
 		guint32 version_string_len;
@@ -236,24 +235,24 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 
 	for (i = 0; i < streams; i++){
 		if (strncmp (ptr + 8, "#~", 3) == 0){
-			metadata->heap_tables.offset = read32 (ptr);
-			metadata->heap_tables.size = read32 (ptr + 4);
+			image->heap_tables.offset = read32 (ptr);
+			image->heap_tables.size = read32 (ptr + 4);
 			ptr += 8 + 3;
 		} else if (strncmp (ptr + 8, "#Strings", 9) == 0){
-			metadata->heap_strings.offset = read32 (ptr);
-			metadata->heap_strings.size = read32 (ptr + 4);
+			image->heap_strings.offset = read32 (ptr);
+			image->heap_strings.size = read32 (ptr + 4);
 			ptr += 8 + 9;
 		} else if (strncmp (ptr + 8, "#US", 4) == 0){
-			metadata->heap_us.offset = read32 (ptr);
-			metadata->heap_us.size = read32 (ptr + 4);
+			image->heap_us.offset = read32 (ptr);
+			image->heap_us.size = read32 (ptr + 4);
 			ptr += 8 + 4;
 		} else if (strncmp (ptr + 8, "#Blob", 6) == 0){
-			metadata->heap_blob.offset = read32 (ptr);
-			metadata->heap_blob.size = read32 (ptr + 4);
+			image->heap_blob.offset = read32 (ptr);
+			image->heap_blob.size = read32 (ptr + 4);
 			ptr += 8 + 6;
 		} else if (strncmp (ptr + 8, "#GUID", 6) == 0){
-			metadata->heap_guid.offset = read32 (ptr);
-			metadata->heap_guid.size = read32 (ptr + 4);
+			image->heap_guid.offset = read32 (ptr);
+			image->heap_guid.size = read32 (ptr + 4);
 			ptr += 8 + 6;
 		} else
 			g_message ("Unknown heap type: %s\n", ptr + 8);
@@ -268,41 +267,41 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
  * Load representation of logical metadata tables, from the "#~" stream
  */
 static gboolean
-load_tables (MonoImage *image, MonoMetadata *meta)
+load_tables (MonoImage *image)
 {
-	char *heap_tables = meta->raw_metadata + meta->heap_tables.offset;
+	char *heap_tables = image->raw_metadata + image->heap_tables.offset;
 	guint32 *rows;
 	guint64 valid_mask;
 	int valid = 0, table;
 	int heap_sizes;
 	
 	heap_sizes = heap_tables [6];
-	meta->idx_string_wide = ((heap_sizes & 0x01) == 1);
-	meta->idx_guid_wide   = ((heap_sizes & 0x02) == 2);
-	meta->idx_blob_wide   = ((heap_sizes & 0x04) == 4);
+	image->idx_string_wide = ((heap_sizes & 0x01) == 1);
+	image->idx_guid_wide   = ((heap_sizes & 0x02) == 2);
+	image->idx_blob_wide   = ((heap_sizes & 0x04) == 4);
 	
 	valid_mask = read64 (heap_tables + 8);
 	rows = (guint32 *) (heap_tables + 24);
 	
 	for (table = 0; table < 64; table++){
 		if ((valid_mask & ((guint64) 1 << table)) == 0){
-			meta->tables [table].rows = 0;
+			image->tables [table].rows = 0;
 			continue;
 		}
 		if (table > 0x2b) {
 			g_warning("bits in valid must be zero above 0x2b (II - 23.1.6)");
 		}
-		meta->tables [table].rows = read32 (rows);
+		image->tables [table].rows = read32 (rows);
 		rows++;
 		valid++;
 	}
 
-	meta->tables_base = (heap_tables + 24) + (4 * valid);
+	image->tables_base = (heap_tables + 24) + (4 * valid);
 
 	/* They must be the same */
-	g_assert ((void *) meta->tables_base == (void *) rows);
+	g_assert ((void *) image->tables_base == (void *) rows);
 
-	mono_metadata_compute_table_bases (meta);
+	mono_metadata_compute_table_bases (image);
 	return TRUE;
 }
 
@@ -312,7 +311,7 @@ load_metadata (MonoImage *image, MonoCLIImageInfo *iinfo)
 	if (!load_metadata_ptrs (image, iinfo))
 		return FALSE;
 
-	return load_tables (image, &image->metadata);
+	return load_tables (image);
 }
 
 static MonoImage *
@@ -450,8 +449,8 @@ mono_image_close (MonoImage *image)
 
 	g_free (image->name);
 	
-	if (image->metadata.raw_metadata != NULL)
-		mono_raw_buffer_free (image->metadata.raw_metadata);
+	if (image->raw_metadata != NULL)
+		mono_raw_buffer_free (image->raw_metadata);
 	
 	if (image->image_info){
 		MonoCLIImageInfo *ii = image->image_info;

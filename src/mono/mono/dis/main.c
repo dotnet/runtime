@@ -352,9 +352,10 @@ dis_locals (MonoMetadata *m, MonoMethodHeader *mh)
 }
 
 static void
-dis_code (MonoMetadata *m, MonoCLIImageInfo *ii, guint32 rva)
+dis_code (MonoMetadata *m, guint32 rva)
 {
 	MonoMethodHeader *mh;
+	MonoCLIImageInfo *ii = m->image_info;
 	const char *ptr = mono_cli_rva_map (ii, rva);
 	char *loc;
 
@@ -428,7 +429,7 @@ pinvoke_info (MonoMetadata *m, guint32 mindex)
  * This routine displays the methods in the Method Table from @start to @end
  */
 static void
-dis_method_list (MonoMetadata *m, MonoCLIImageInfo *ii, guint32 start, guint32 end)
+dis_method_list (MonoMetadata *m, guint32 start, guint32 end)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_METHOD];
 	guint32 cols [MONO_METHOD_SIZE];
@@ -468,7 +469,7 @@ dis_method_list (MonoMetadata *m, MonoCLIImageInfo *ii, guint32 start, guint32 e
 		
 		fprintf (output, "    {\n");
 		fprintf (output, "        // Method begins at RVA 0x%x\n", cols [MONO_METHOD_RVA]);
-		dis_code (m, ii, cols [MONO_METHOD_RVA]);
+		dis_code (m, cols [MONO_METHOD_RVA]);
 		fprintf (output, "    }\n\n");
 		mono_metadata_free_method_signature (ms);
 		g_free (sig_str);
@@ -629,7 +630,7 @@ dis_property_list (MonoMetadata *m, guint32 typedef_row)
  * Disassembles the type whose index in the TypeDef table is @n.
  */
 static void
-dis_type (MonoMetadata *m, MonoCLIImageInfo *ii, int n)
+dis_type (MonoMetadata *m, int n)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
 	guint32 cols [MONO_TYPEDEF_SIZE];
@@ -678,7 +679,7 @@ dis_type (MonoMetadata *m, MonoCLIImageInfo *ii, int n)
 		last = m->tables [MONO_TABLE_METHOD].rows;
 	
 	if (cols [MONO_TYPEDEF_METHOD_LIST] < m->tables [MONO_TABLE_METHOD].rows)
-		dis_method_list (m, ii, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last);
+		dis_method_list (m, cols [MONO_TYPEDEF_METHOD_LIST] - 1, last);
 
 	dis_property_list (m, n);
 	
@@ -692,13 +693,13 @@ dis_type (MonoMetadata *m, MonoCLIImageInfo *ii, int n)
  * disassembles all types in the @m context
  */
 static void
-dis_types (MonoMetadata *m, MonoCLIImageInfo *ii)
+dis_types (MonoMetadata *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
 	int i;
 
 	for (i = 1; i < t->rows; i++)
-		dis_type (m, ii, i);
+		dis_type (m, i);
 }
 
 struct {
@@ -736,8 +737,6 @@ disassemble_file (const char *file)
 {
 	enum MonoImageOpenStatus status;
 	MonoImage *img;
-	MonoCLIImageInfo *ii;
-	MonoMetadata *m;
 
 	fprintf (output, "// Disassembling %s\n", file);
 
@@ -747,17 +746,14 @@ disassemble_file (const char *file)
 		return;
 	}
 
-	ii = img->image_info;
-	m = &img->metadata;
-	
 	if (dump_table != -1){
-		(*table_list [dump_table].dumper) (m);
+		(*table_list [dump_table].dumper) (img);
 	} else {
 		dump_header_data (img);
 		
-		dis_directive_assemblyref (m);
-		dis_directive_assembly (m);
-		dis_types (m, ii);
+		dis_directive_assemblyref (img);
+		dis_directive_assembly (img);
+		dis_types (img);
 	}
 	
 	mono_image_close (img);

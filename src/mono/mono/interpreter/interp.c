@@ -98,7 +98,7 @@ init_class (MonoClass *klass)
 	if (klass->parent)
 		init_class (klass->parent);
 	
-	m = &klass->image->metadata;
+	m = klass->image;
 	t = &m->tables [MONO_TABLE_METHOD];
 
 	for (i = klass->method.first; i < klass->method.last; ++i) {
@@ -127,14 +127,13 @@ init_class (MonoClass *klass)
 static MonoObject *
 newobj (MonoImage *image, guint32 token)
 {
-	MonoMetadata *m = &image->metadata;
 	MonoObject *result = NULL;
 	
 	switch (mono_metadata_token_code (token)){
 	case MONO_TOKEN_METHOD_DEF: {
 		guint32 idx;
 
-		idx = mono_metadata_typedef_from_method (m, token);
+		idx = mono_metadata_typedef_from_method (image, token);
 		result = mono_object_new (image, MONO_TOKEN_TYPE_DEF | idx);
 		break;
 	}
@@ -143,14 +142,14 @@ newobj (MonoImage *image, guint32 token)
 		guint32 mpr_token, table, idx;
 		
 		mono_metadata_decode_row (
-			&m->tables [MONO_TABLE_MEMBERREF],
+			&image->tables [MONO_TABLE_MEMBERREF],
 			mono_metadata_token_index (token) - 1,
 			member_cols, CSIZE (member_cols));
 		mpr_token = member_cols [MONO_MEMBERREF_CLASS];
 		table = mpr_token & 7;
 		idx = mpr_token >> 3;
 		
-		if (strcmp (mono_metadata_string_heap (m, member_cols[1]), ".ctor"))
+		if (strcmp (mono_metadata_string_heap (image, member_cols[1]), ".ctor"))
 			g_error ("Unhandled: call to non constructor");
 
 		switch (table){
@@ -270,18 +269,6 @@ get_exception_divide_by_zero ()
 		return ex;
 	ex = get_named_exception ("DivideByZeroException");
 	return ex;
-}
-
-static int
-mono_isinst (MonoObject *obj, MonoClass *klass)
-{
-	MonoClass *oklass = obj->klass;
-	while (oklass) {
-		if (oklass == klass)
-			return 1;
-		oklass = oklass->parent;
-	}
-	return 0;
 }
 
 static stackval
@@ -1426,7 +1413,6 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_CPOBJ) ves_abort(); BREAK;
 		CASE (CEE_LDOBJ) ves_abort(); BREAK;
 		CASE (CEE_LDSTR) {
-			MonoMetadata *m = &image->metadata;
 			MonoObject *o;
 			const char *name;
 			int len;
@@ -1436,7 +1422,7 @@ ves_exec_method (MonoInvocation *frame)
 			index = mono_metadata_token_index (read32 (ip));
 			ip += 4;
 
-			name = mono_metadata_user_string (m, index);
+			name = mono_metadata_user_string (image, index);
 			len = mono_metadata_decode_blob_size (name, &name);
 
 			o = mono_new_utf16_string (name, len);
@@ -1594,7 +1580,7 @@ ves_exec_method (MonoInvocation *frame)
 			
 			/* need to handle fieldrefs */
 			klass = mono_class_get (image, 
-				MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (&image->metadata, token & 0xffffff));
+				MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
 			field = mono_class_get_field (klass, token);
 			g_assert (field);
 			*sp = stackval_from_data (field->type->type, (char*)klass + field->offset);
@@ -1614,7 +1600,7 @@ ves_exec_method (MonoInvocation *frame)
 
 			/* need to handle fieldrefs */
 			klass = mono_class_get (image, 
-				MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (&image->metadata, token & 0xffffff));
+				MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
 			field = mono_class_get_field (klass, token);
 			g_assert (field);
 			stackval_to_data (field->type->type, sp, (char*)klass + field->offset);
@@ -2013,7 +1999,7 @@ ves_exec_method (MonoInvocation *frame)
 			for (i = 0; i < hd->num_clauses; ++i) {
 				clause = &hd->clauses [i];
 				if (clause->flags <= 1 && OFFSET_IN_CLAUSE (clause, ip_offset)) {
-					if (!clause->flags && mono_isinst (frame->ex, mono_class_get (inv->method->image, clause->token_or_filter))) {
+					if (!clause->flags && mono_object_isinst (frame->ex, mono_class_get (inv->method->image, clause->token_or_filter))) {
 							/* 
 							 * OK, we found an handler, now we need to execute the finally
 							 * and fault blocks before branching to the handler code.
