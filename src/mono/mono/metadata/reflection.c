@@ -6997,7 +6997,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 }
 
 static MonoMethod *
-inflate_mono_method (MonoReflectionGenericInst *type, MonoMethod *method)
+inflate_mono_method (MonoReflectionGenericInst *type, MonoMethod *method, MonoObject *obj)
 {
 	MonoGenericMethod *gmethod;
 	MonoGenericInst *ginst;
@@ -7006,6 +7006,7 @@ inflate_mono_method (MonoReflectionGenericInst *type, MonoMethod *method)
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
 	gmethod->generic_method = method;
+	gmethod->reflection_info = obj;
 	gmethod->generic_inst = ginst;
 
 	return mono_class_inflate_generic_method (method, gmethod, ginst->klass);
@@ -7029,7 +7030,7 @@ inflate_method (MonoReflectionGenericInst *type, MonoObject *obj)
 	else
 		g_assert_not_reached ();
 
-	return inflate_mono_method (type, method);
+	return inflate_mono_method (type, method, obj);
 }
 
 void
@@ -7117,9 +7118,9 @@ mono_reflection_generic_inst_initialize (MonoReflectionGenericInst *type,
 			*property = *((MonoReflectionProperty *) obj)->property;
 
 			if (property->get)
-				property->get = inflate_mono_method (type, property->get);
+				property->get = inflate_mono_method (type, property->get, NULL);
 			if (property->set)
-				property->set = inflate_mono_method (type, property->set);
+				property->set = inflate_mono_method (type, property->set, NULL);
 		} else
 			g_assert_not_reached ();
 	}

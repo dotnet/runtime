@@ -2016,6 +2016,30 @@ ves_icall_MonoType_get_DeclaringMethod (MonoReflectionType *type)
 	return mono_method_get_object (mono_object_domain (type), method, klass);
 }
 
+static MonoReflectionMethod *
+ves_icall_MethodBase_GetGenericMethodDefinition (MonoReflectionMethod *method)
+{
+	MonoGenericMethod *gmethod;
+
+	MONO_ARCH_SAVE_REGS;
+
+	gmethod = method->method->signature->gen_method;
+	if (!gmethod)
+		return NULL;
+
+	if (gmethod->reflection_info)
+		return gmethod->reflection_info;
+	else
+		return mono_method_get_object (mono_object_domain (method), gmethod->generic_method, NULL);
+}
+
+static gboolean
+ves_icall_MethodBase_get_HasGenericParameters (MonoReflectionMethod *method)
+{
+	MONO_ARCH_SAVE_REGS;
+	return method->method->signature->gen_method != NULL;
+}
+
 static gboolean
 ves_icall_MethodInfo_get_IsGenericMethodDefinition (MonoReflectionMethod *method)
 {
@@ -5039,7 +5063,9 @@ static const IcallEntry assembly_icalls [] = {
 };
 
 static const IcallEntry methodbase_icalls [] = {
-	{"GetCurrentMethod", ves_icall_GetCurrentMethod}
+	{"GetCurrentMethod", ves_icall_GetCurrentMethod},
+  	{"GetGenericMethodDefinition_impl", ves_icall_MethodBase_GetGenericMethodDefinition},
+	{"get_HasGenericParameters", ves_icall_MethodBase_get_HasGenericParameters}
 };
 
 static const IcallEntry methodinfo_icalls [] = {
