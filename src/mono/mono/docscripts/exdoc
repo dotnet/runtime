@@ -10,7 +10,7 @@ if ($ARGV[0] eq "-h"){
 if ($html){
     opendir (D, "$dir/sources/") || die "Can not open $dir";
     while ($n = readdir (D)){
-	if ($n =~ /mono-api-.*\.html/){
+	if ($n =~ /mono-api-.*\.html$/){
 	    open (IN, "$dir/sources/$n") || die "Can not open $n";
 	    $files[$filecount] = $n;
 	    while (<IN>){
@@ -42,7 +42,28 @@ if ($html){
 
 	    ($api) = $line =~  /<h4><a name=\"api:(\w+)\">(\w+)<\/a><\/h4>/;
 	    if ($api ne ""){
-		    print OUT "<h4><a name=\"api:$api\">Function: $api<\/a><\/h4>\n";
+print OUT<<EOF;
+<blockquote>
+    <a name="api:$api">
+                <table class="HeaderTable" width="100%" cellpadding="5">
+                        <tr bgcolor="#b0c4de"><td>
+			<h3 class="api">$api</h3>
+			</td></tr></table>
+    </a>
+
+    <blockquote>
+                        <table class="SignatureTable" bgcolor="#c0c0c0" cellspacing="0" width="100%">
+                        <tr><td>
+                                <table class="InnerSignatureTalbe" cellpadding="10" cellspacing="0" width="100%">
+                                <tr bgcolor="#f2f2f2"><td>
+    <h4>Prototype: $api</h4>
+                                </td></tr>
+                                </table>
+                        </td></tr>
+                        </table>
+    </blockquote>
+<p>
+EOF
 		    if ($arguments{$api} ne ""){
                         print OUT "<h4>Parameters</h4>";
 			print OUT "<blockquote><dl>";
@@ -50,6 +71,12 @@ if ($html){
 		        print OUT "$arguments{$api}\n";
 			print OUT "</blockquote>";
 		    }
+		    if ($returns{$api} ne ""){
+		        print OUT "<h4>Returns</h4>";
+			print OUT "<blockquote>";
+		        print OUT "$returns{$api}\n";
+			print OUT "</blockquote>";
+                    }
 		    if ($bodies{$api} ne ""){
 			print OUT "<h4>Remarks</h4>";
 			print OUT "<blockquote>";
@@ -58,6 +85,7 @@ if ($html){
 		    }
 		    print OUT "</td></tr></table>";
 		    print OUT "\n";
+                    print OUT "</blockquote>";
 	    } else {
 		print OUT "$line\n";
 	    }
@@ -75,16 +103,20 @@ sub process_doc {
 	print "Function: $func\n" if (!$html);
 	$args = "";
 	$inbody = 0;
-
+	$returns = "";
+	$body = "";
 	$functions[$fn++] = $func;
 
 	# Process arguments
 	while (<>){
 		if (/^ \*\*?\//){
-		    # print "$body</p>\n\n";
-		    $body =~ s/@(\w+)/<i>\1<\/i>/g;
+		    $body =~ s/[@#](\w+)/<i>\1<\/i>/g;
+		    $returns =~ s/[@#](\w+)/<i>\1<\/i>/g;
+
+		    $args =~ s/@(\w+)/<i>\1<\/i>/g;
 		    $bodies{$func} = $body;
 		    $arguments{$func} = $args;
+		    $returns{$func} = $returns;
 		    return;
 		}
 		chop;
@@ -94,12 +126,20 @@ sub process_doc {
 			$args .= "<dt><i>$1:</i></dt><dd>$2</dd>";
 		    } else {
 			
-			$body = "\t<p>$_\n";
+			$body = "\t$_\n";
 			$inbody = 1;
 		    }
+		} elsif ($inbody == 1) {
+		    if (/Returns:/){
+			s/Returns://;
+			$returns = "\t$_\n";
+			$inbody = 2;
+		    } else {
+			$body .= "\n\t$_";
+		    }
 		} else {
-		    $body .= "\n\t$_";
-		} 
+		    $returns .= "\n\t$_";
+		}
 		   
 	}
 }
