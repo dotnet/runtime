@@ -85,7 +85,6 @@ endif
 
 mono_LDADD = \
 	$(MONO_LIB)			\
-	$(PLATFORM_LIB)		\
 	$(GLIB_LIBS)		\
 	$(GMODULE_LIBS) -lm	\
 	$(ICU_LIBS)
@@ -247,7 +246,7 @@ nodist_libmono_la_SOURCES = inssel.c inssel.h
 libmono_static_la_SOURCES = $(libmono_la_SOURCES)
 nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)
 libmono_static_la_LDFLAGS = -static
-libmono_static_la_LIBADD = $(static_libs)
+libmono_static_la_LIBADD = $(static_libs) $(PLATFORM_LIB)
 
 BURGSRC= $(common_BURGSRC) $(arch_BURGSRC)
 
