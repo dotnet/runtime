@@ -605,7 +605,8 @@ mono_debug_add_type (MonoClass *klass)
 		ptr = oldptr = buffer;
 
 	token = get_token (klass);
-	g_assert (token);
+	if (!token)
+		return;
 
 	if (klass->valuetype)
 		base_offset = - (int)(sizeof (MonoObject));
