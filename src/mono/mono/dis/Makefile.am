@@ -19,8 +19,8 @@ monodis_SOURCES =	\
 	meta.h
 
 monodis_LDADD = 			\
-	../metadata/libmetadata.a 	\
 	libmonodis.a			\
+	../metadata/libmetadata.a 	\
 	$(GMODULE_LIBS) 		\
 	$(GLIB_LIBS) 
 

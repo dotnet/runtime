@@ -14,44 +14,7 @@
 #include "get.h"
 #include "dump.h"
 #include "dis-cil.h"
-
-enum {
-	InlineBrTarget,
-	InlineField,
-	InlineI,
-	InlineI8,
-	InlineMethod,
-	InlineNone,
-	InlineR,
-	InlineSig,
-	InlineString,
-	InlineSwitch,
-	InlineTok,
-	InlineType,
-	InlineVar,
-	ShortInlineBrTarget,
-	ShortInlineI,
-	ShortInlineR,
-	ShortInlineVar
-};
-
-#define OPDEF(a,b,c,d,e,f,g,h,i,j) \
-	{ b, e, g, h, i },
-
-typedef struct {
-	char *name;
-	int   argument;
-
-	/*
-	 * we are not really using any of the following:
-	 */
-	int   bytes;
-	unsigned char  o1, o2;
-} opcode_t;
-
-static opcode_t opcodes [300] = {
-#include "mono/cil/opcode.def"
-};
+#include "mono/metadata/opcodes.h"
 
 /*
  * Strings on the US heap are encoded using UTF-16.  Poor man's
@@ -93,7 +56,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 	int size = mh->code_size;
 	const unsigned char *end = start + size;
 	const unsigned char *ptr = start;
-	opcode_t *entry;
+	const MonoOpcode *entry;
 	char indent[1024];
 	int i, indent_level = 0;
 	char *clause_names[] = {"catch", "filter", "finally", "fault"};
@@ -114,23 +77,24 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 			}
 		}
 		fprintf (output, "\t%sIL_%04x: ", indent, (int) (ptr - start));
+		i = *ptr;
 		if (*ptr == 0xfe){
 			ptr++;
-			entry = &opcodes [*ptr + 256];
-		} else 
-			entry = &opcodes [*ptr];
+			i = *ptr + 256;
+		} 
+		entry = &mono_opcodes [i];
 
-		fprintf (output, "%s ", entry->name);
+		fprintf (output, "%s ", mono_opcode_names [i]);
 		ptr++;
 		switch (entry->argument){
-		case InlineBrTarget: {
+		case MonoInlineBrTarget: {
 			gint target = read32 (ptr);
 			fprintf (output, "IL_%04x\n", ((int) (ptr - start)) + 4 + target);
 			ptr += 4;
 			break;
 		}
 			
-		case InlineField: {
+		case MonoInlineField: {
 			guint32 token = read32 (ptr);
 			char *s;
 			
@@ -141,7 +105,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 			break;
 		}
 		
-		case InlineI: {
+		case MonoInlineI: {
 			int value = read32 (ptr);
 
 			fprintf (output, "%d", value);
@@ -149,7 +113,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 			break;
 		}
 		
-		case InlineI8: {
+		case MonoInlineI8: {
 			gint64 top = read64 (ptr);
 
 			fprintf (output, "0x%llx", (long long) top);
@@ -157,7 +121,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 			break;
 		}
 		
-		case InlineMethod: {
+		case MonoInlineMethod: {
 			guint32 token = read32 (ptr);
 			char *s;
 
@@ -168,24 +132,24 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 			break;
 		}
 		
-		case InlineNone:
+		case MonoInlineNone:
 			break;
 			
-		case InlineR: {
+		case MonoInlineR: {
 			double r = *(double *) ptr;
 			fprintf (output, "%g", r);
 			ptr += 8;
 			break;
 		}
 		
-		case InlineSig: {
+		case MonoInlineSig: {
 			guint32 token = read32 (ptr);
 			fprintf (output, "signature-0x%08x", token);
 			ptr += 4;
 			break;
 		}
 		
-		case InlineString: {
+		case MonoInlineString: {
 			guint32 token = read32 (ptr);
 			
 			char *s = get_encoded_user_string (
@@ -200,7 +164,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 			break;
 		}
 
-		case InlineSwitch: {
+		case MonoInlineSwitch: {
 			guint32 count = read32 (ptr);
 			const unsigned char *endswitch;
 			guint32 i;
@@ -219,7 +183,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 			break;
 		}
 
-		case InlineTok: {
+		case MonoInlineTok: {
 			guint32 token = read32 (ptr);
 			char *s;
 			
@@ -231,7 +195,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 			break;
 		}
 		
-		case InlineType: {
+		case MonoInlineType: {
 			guint32 token = read32 (ptr);
 			char *s = get_token_type (m, token);
 			fprintf (output, "%s", s);
@@ -240,7 +204,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 			break;
 		}
 
-		case InlineVar: {
+		case MonoInlineVar: {
 			gint16 var_idx = read16 (ptr);
 
 			fprintf (output, "variable-%d\n", var_idx);
@@ -248,7 +212,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 			break;
 		}
 
-		case ShortInlineBrTarget: {
+		case MonoShortInlineBrTarget: {
 			signed char x = *ptr;
 			
 			fprintf (output, "IL_%04x\n", ptr - start + 1 + x);
@@ -256,7 +220,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 			break;
 		}
 
-		case ShortInlineI: {
+		case MonoShortInlineI: {
 			char x = *ptr;
 
 			fprintf (output, "0x%02x", x);
@@ -264,7 +228,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 			break;
 		}
 
-		case ShortInlineR: {
+		case MonoShortInlineR: {
 			float f = *(float *) ptr;
 
 			fprintf (output, "%g", (double) f);
@@ -272,7 +236,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 			break;
 		}
 
-		case ShortInlineVar: {
+		case MonoShortInlineVar: {
 			signed char x = *ptr;
 
 			fprintf (output, "%d", (int) x);
