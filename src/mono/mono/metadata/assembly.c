@@ -736,14 +736,42 @@ mono_assembly_load_from (MonoImage *image, const char*fname,
 	return ass;
 }
 
+static gchar*
+get_user_gac_path (void)
+{
+	return g_build_path (G_DIR_SEPARATOR_S, g_get_home_dir (), ".mono", "gac", NULL);
+}
+
+static MonoAssembly*
+probe_for_partial_name (const char *basepath, const char *fullname, MonoImageOpenStatus *status)
+{
+	MonoAssembly *res = NULL;
+	gchar *fullpath;
+	GDir *dirhandle;
+	const char* direntry;
+
+	dirhandle = g_dir_open (basepath, 0, NULL);
+	if (!dirhandle)
+		return NULL;
+
+	while ((direntry = g_dir_read_name (dirhandle))) {
+		fullpath = g_build_path (G_DIR_SEPARATOR_S, basepath, direntry, fullname, NULL);
+		res = mono_assembly_open (fullpath, status);
+		g_free (fullpath);
+		if (res)
+			break;
+	}
+	g_dir_close (dirhandle);
+
+	return res;
+}
+
 MonoAssembly*
 mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *status)
 {
 	MonoAssembly *res;
 	MonoAssemblyName aname;
-	gchar *libpath, *fullpath, *fullname;
-	const char* direntry;
-	GDir *dirhandle;
+	gchar *fullname, *gacpath, *usergacpath;
 
 	memset (&aname, 0, sizeof (MonoAssemblyName));
 	aname.name = name;
@@ -753,21 +781,19 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 	if (res)
 		return res;
 
-	libpath = g_build_path (G_DIR_SEPARATOR_S, MONO_ASSEMBLIES, "mono", "gac", name, NULL);
-
-	dirhandle = g_dir_open (libpath, 0, NULL);
-	if (!dirhandle)
-		return NULL;
-
 	fullname = g_strdup_printf ("%s.dll", name);
-	while ((direntry = g_dir_read_name (dirhandle))) {
-		fullpath = g_build_path (G_DIR_SEPARATOR_S, libpath, direntry, fullname, NULL);
-		res = mono_assembly_open (fullpath, status);
-		g_free (fullpath);
-		if (res)
-			break;
+
+	gacpath = g_build_path (G_DIR_SEPARATOR_S, MONO_ASSEMBLIES, "mono", "gac", name, NULL);
+	res = probe_for_partial_name (gacpath, fullname, status);
+	g_free (gacpath);
+
+	if (!res && allow_user_gac) {
+		usergacpath = get_user_gac_path ();
+		gacpath = g_build_path (G_DIR_SEPARATOR_S, usergacpath, name, NULL);
+		res = probe_for_partial_name (gacpath, fullname, status);
+		g_free (usergacpath);
+                g_free (gacpath);
 	}
-	g_dir_close (dirhandle);
 
 	g_free (fullname);
 
@@ -783,7 +809,7 @@ static MonoAssembly*
 mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImageOpenStatus *status)
 {
 	MonoAssembly *result = NULL;
-	gchar *name, *version, *fullpath;
+	gchar *name, *version, *fullpath, *usergacpath;
 	gint32 len;
 
 	if (!aname->public_tok_value) {
@@ -810,10 +836,12 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 	g_free (fullpath);
 
 	if (!result && allow_user_gac) {
-		fullpath = g_build_path (G_DIR_SEPARATOR_S, g_get_home_dir (), ".mono", "gac",
+		usergacpath = get_user_gac_path ();
+		fullpath = g_build_path (G_DIR_SEPARATOR_S, usergacpath,
 				name, version, filename, NULL);
 		result = mono_assembly_open (fullpath, status);
 		g_free (fullpath);
+		g_free (usergacpath);
 	}
 
 	if (result)
