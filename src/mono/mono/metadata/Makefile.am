@@ -1,5 +1,8 @@
 if PLATFORM_WIN32
 export HOST_CC
+assembliesdir = `echo $(libdir) | tr '/' '\\\\'`
+else
+assembliesdir = $(libdir)
 # The mingw math.h has "extern inline" functions that dont appear in libs, so
 # optimisation is required to actually inline them
 AM_CFLAGS = -O
@@ -9,10 +12,6 @@ bin_PROGRAMS = monosn pedump
 
 noinst_LTLIBRARIES = libmetadata.la libmonoruntime.la
 
-#
-# Keep in sync with mono/runtime/Makefile.am
-#
-assembliesdir = $(libdir)
 
 INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)	-I$(top_srcdir)/mono \
 	-DMONO_ASSEMBLIES=\""$(assembliesdir)"\" -DMONO_CFG_DIR=\""$(sysconfdir)"\"
