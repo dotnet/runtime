@@ -21,7 +21,7 @@ typedef struct
 
 /* function prototypes */
 gint32 mono_decimalIncr(/*[In, Out]*/decimal_repr* pA, /*[In]*/decimal_repr* pB);
-gint32 mono_double2decimal(/*[Out]*/decimal_repr* pA, double val, gint32 digits, gint32 sign);
+gint32 mono_double2decimal(/*[Out]*/decimal_repr* pA, double val, gint32 digits);
 gint32 mono_string2decimal(/*[Out]*/decimal_repr* pA, MonoString* str, gint32 decrDecimal, gint32 sign);
 void mono_decimal2string(/*[In]*/decimal_repr* pA, int digits, int decimals,
 								 MonoArray* buf, gint32 bufSize, gint32* pDecPos, gint32* pSign);

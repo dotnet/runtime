@@ -46,12 +46,12 @@ class CGen {
 		
 
 		fbuilder = tbuilder.DefineField ("int_field", typeof(int), FieldAttributes.Private);
-		/*pbuilder = tbuilder.DefineProperty ("FieldI", PropertyAttributes.None, typeof(int), null);
+		pbuilder = tbuilder.DefineProperty ("FieldI", PropertyAttributes.None, typeof(int), null);
 		get_method = tbuilder.DefineMethod("get_FieldI", MethodAttributes.Public, result, null);
 		ilg = get_method.GetILGenerator (128);
 		ilg.Emit (OpCodes.Ldloc_0);
 		ilg.Emit (OpCodes.Ret);
-		pbuilder.SetGetMethod (get_method);*/
+		pbuilder.SetGetMethod (get_method);
 
 		Type t = tbuilder.CreateType ();
 		abuilder.SetEntryPoint (entryp);

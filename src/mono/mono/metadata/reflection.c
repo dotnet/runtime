@@ -194,6 +194,7 @@ method_encode_signature (MonoDynamicAssembly *assembly, MonoReflectionMethodBuil
 	char *b = blob_size;
 	
 	p = buf = g_malloc (size);
+	*p = 0;
 	if (!(mb->attrs & METHOD_ATTRIBUTE_STATIC))
 		*p |= 0x20; /* hasthis */
 	/* 
@@ -376,10 +377,34 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicAssembly *
 static guint32
 property_encode_signature (MonoDynamicAssembly *assembly, MonoReflectionPropertyBuilder *fb)
 {
-	/* 
-	 * FIXME: fill me in 
-	 */
-	return 0;
+	char *buf, *p;
+	char blob_size [6];
+	char *b = blob_size;
+	guint32 nparams = 0;
+	MonoReflectionMethodBuilder *mb = fb->get_method;
+	guint32 idx, i;
+
+	if (mb && mb->parameters)
+		nparams = mono_array_length (mb->parameters);
+	buf = p = g_malloc (24 + nparams * 10);
+	*p = 0x08;
+	p++;
+	mono_metadata_encode_value (nparams, p, &p);
+	if (mb) {
+		encode_type (mb->rtype->type, p, &p);
+		for (i = 0; i < nparams; ++i) {
+			MonoReflectionType *pt = mono_array_get (mb->parameters, MonoReflectionType*, i);
+			encode_type (pt->type, p, &p);
+		}
+	} else {
+		*p++ = 1; /* void: a property should probably not be allowed without a getter */
+	}
+	/* store length */
+	mono_metadata_encode_value (p-buf, b, &b);
+	idx = mono_image_add_stream_data (&assembly->blob, blob_size, b-blob_size);
+	mono_image_add_stream_data (&assembly->blob, buf, p-buf);
+	g_free (buf);
+	return idx;
 }
 
 static void
@@ -395,7 +420,7 @@ mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicAsse
 	 * we need to set things in the following tables:
 	 * PROPERTYMAP (info already filled in _get_type_info ())
 	 * PROPERTY    (rows already preallocated in _get_type_info ())
-	 * METHOD
+	 * METHOD      (method info already done with the generic method code)
 	 * METHODSEMANTICS
 	 */
 	table = &assembly->tables [MONO_TABLE_PROPERTY];
@@ -407,29 +432,24 @@ mono_image_get_property_info (MonoReflectionPropertyBuilder *pb, MonoDynamicAsse
 	values [MONO_PROPERTY_FLAGS] = pb->attrs;
 	values [MONO_PROPERTY_TYPE] = property_encode_signature (assembly, pb);
 
-	/* alloc room for the methods (we still don't handle 'other' methods) */
+	/* FIXME: we still don't handle 'other' methods */
 	if (pb->get_method) num_methods ++;
 	if (pb->set_method) num_methods ++;
-	table = &assembly->tables [MONO_TABLE_METHOD];
-	table->rows += num_methods;
-	alloc_table (table, table->rows);
 
 	table = &assembly->tables [MONO_TABLE_METHODSEMANTICS];
 	table->rows += num_methods;
 	alloc_table (table, table->rows);
 
 	if (pb->get_method) {
-		mono_image_get_method_info (pb->get_method, assembly);
 		semaidx = table->next_idx ++;
-		values = table->values + semaidx * 	MONO_METHOD_SEMA_SIZE;
+		values = table->values + semaidx * MONO_METHOD_SEMA_SIZE;
 		values [MONO_METHOD_SEMA_SEMANTICS] = METHOD_SEMANTIC_GETTER;
 		values [MONO_METHOD_SEMA_METHOD] = pb->get_method->table_idx;
 		values [MONO_METHOD_SEMA_ASSOCIATION] = (pb->table_idx << 1) | 1;
 	}
 	if (pb->set_method) {
-		mono_image_get_method_info (pb->set_method, assembly);
 		semaidx = table->next_idx ++;
-		values = table->values + semaidx * 	MONO_METHOD_SEMA_SIZE;
+		values = table->values + semaidx * MONO_METHOD_SEMA_SIZE;
 		values [MONO_METHOD_SEMA_SEMANTICS] = METHOD_SEMANTIC_SETTER;
 		values [MONO_METHOD_SEMA_METHOD] = pb->set_method->table_idx;
 		values [MONO_METHOD_SEMA_ASSOCIATION] = (pb->table_idx << 1) | 0;
@@ -515,12 +535,12 @@ mono_image_get_type_info (MonoReflectionTypeBuilder *tb, MonoDynamicAssembly *as
 		table = &assembly->tables [MONO_TABLE_PROPERTYMAP];
 		table->rows ++;
 		alloc_table (table, table->rows);
-		values = table->values + (table->rows - 1) * MONO_PROPERTY_MAP_SIZE;
+		values = table->values + table->rows * MONO_PROPERTY_MAP_SIZE;
 		values [MONO_PROPERTY_MAP_PARENT] = tb->table_idx;
-		values [MONO_PROPERTY_MAP_PROPERTY_LIST] = assembly->tables [MONO_TABLE_PROPERTY].next_idx ++;
+		values [MONO_PROPERTY_MAP_PROPERTY_LIST] = assembly->tables [MONO_TABLE_PROPERTY].next_idx;
 		for (i = 0; i < mono_array_length (tb->properties); ++i)
 			mono_image_get_property_info (
-				mono_array_get (tb->fields, MonoReflectionPropertyBuilder*, i), assembly);
+				mono_array_get (tb->properties, MonoReflectionPropertyBuilder*, i), assembly);
 	}
 }
 
@@ -548,6 +568,13 @@ mono_image_fill_module_table (MonoReflectionModuleBuilder *mb, MonoDynamicAssemb
 		mono_image_get_type_info (mono_array_get (mb->types, MonoReflectionTypeBuilder*, i), assembly);
 }
 
+#define align_pointer(base,p)\
+	do {\
+		guint32 __diff = (unsigned char*)(p)-(unsigned char*)(base);\
+		if (__diff & 3)\
+			(p) += 4 - (__diff & 3);\
+	} while (0)
+
 static void
 build_compressed_metadata (MonoDynamicAssembly *assembly)
 {
@@ -562,7 +589,6 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	guint16 *int16val;
 	MonoImage *meta;
 	unsigned char *p;
-	int idx;
 	char *version = "mono" VERSION;
 	
 	/* Compute table sizes */
@@ -596,73 +622,73 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	meta->raw_metadata = g_malloc0 (meta_size);
 	p = meta->raw_metadata;
 	/* the metadata signature */
-	idx = 0;
-	p [idx++] = 'B'; p [idx++] = 'S'; p [idx++] = 'J'; p [idx++] = 'B';
-
+	*p++ = 'B'; *p++ = 'S'; *p++ = 'J'; *p++ = 'B';
 	/* version numbers and 4 bytes reserved */
-	int16val = (guint16*) (&p [idx]);
+	int16val = (guint16*)p;
 	*int16val++ = 1;
 	*int16val = 1;
-	idx += 8;
+	p += 8;
 	/* version string */
-	int32val = (guint32*)(&p [idx]);
+	int32val = (guint32*)p;
 	*int32val = strlen (version);
-	idx += 4;
-	memcpy (&p [i], version, *int32val);
-	idx += *int32val;
-	idx += 3; idx = idx & ~3; /* align */
-	int16val = (guint16*)(&p [idx]);
+	p += 4;
+	memcpy (p, version, *int32val);
+	p += *int32val;
+	align_pointer (meta->raw_metadata, p);
+	int16val = (guint16*)p;
 	*int16val++ = 0; /* flags must be 0 */
 	*int16val = 5; /* number of streams */
-	idx += 4;
+	p += 4;
 
 	/*
 	 * write the stream info.
 	 */
 	table_offset = (p - (unsigned char*)meta->raw_metadata) + 5 * 8 + 40; /* room needed for stream headers */
 	
-	int32val = (guint32*)(&p [idx]);
+	int32val = (guint32*)p;
 	*int32val++ = assembly->tstream.offset = table_offset;
 	*int32val = heapt_size;
 	table_offset += *int32val;
-	idx += 8;
-	strcpy (&p [idx], "#~");
-	/* 
-	 * FIXME: alignment not 64 bit safe: same problem in metadata/image.c 
-	 */
-	idx += 3 + 3; idx = idx & ~3;
+	p += 8;
+	strcpy (p, "#~");
+	p += 3;
+	align_pointer (meta->raw_metadata, p);
 
-	int32val = (guint32*)(&p [idx]);
+	int32val = (guint32*)p;
 	*int32val++ = assembly->sheap.offset = table_offset;
 	*int32val = assembly->sheap.index;
 	table_offset += *int32val;
-	idx += 8;
-	strcpy (&p [idx], "#Strings");
-	idx += 9 + 3; idx = idx & ~3;
+	p += 8;
+	strcpy (p, "#Strings");
+	p += 9;
+	align_pointer (meta->raw_metadata, p);
 
-	int32val = (guint32*)(&p [idx]);
+	int32val = (guint32*)p;
 	*int32val++ = assembly->us.offset = table_offset;
 	*int32val = assembly->us.index;
 	table_offset += *int32val;
-	idx += 8;
-	strcpy (&p [idx], "#US");
-	idx += 4 + 3; idx = idx & ~3;
+	p += 8;
+	strcpy (p, "#US");
+	p += 4;
+	align_pointer (meta->raw_metadata, p);
 
-	int32val = (guint32*)(&p [idx]);
+	int32val = (guint32*)p;
 	*int32val++ = assembly->blob.offset = table_offset;
 	*int32val = assembly->blob.index;
 	table_offset += *int32val;
-	idx += 8;
-	strcpy (&p [idx], "#Blob");
-	idx += 6 + 3; idx = idx & ~3;
+	p += 8;
+	strcpy (p, "#Blob");
+	p += 6;
+	align_pointer (meta->raw_metadata, p);
 
-	int32val = (guint32*)(&p [idx]);
+	int32val = (guint32*)p;
 	*int32val++ = assembly->guid.offset = table_offset;
 	*int32val = assembly->guid.index;
 	table_offset += *int32val;
-	idx += 8;
-	strcpy (&p [idx], "#GUID");
-	idx += 6 + 3; idx = idx & ~3;
+	p += 8;
+	strcpy (p, "#GUID");
+	p += 6;
+	align_pointer (meta->raw_metadata, p);
 
 	/* 
 	 * now copy the data, the table stream header and contents goes first.

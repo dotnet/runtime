@@ -834,13 +834,14 @@ static int incMultConstant128(guint64* palo, guint64* pahi, int index, int facto
     return DECIMAL_SUCCESS;
 }
 
-gint32 mono_double2decimal(/*[Out]*/decimal_repr* pA, double val, gint32 digits, gint32 sign)
+gint32 mono_double2decimal(/*[Out]*/decimal_repr* pA, double val, gint32 digits)
 {
     int i, dec, decrDecimal, dummySign, roundPos, roundFlag, rc;
     char ecvtcopy[40]; /* we should need maximal room for 16 digits */
     char buf[40]; /* we should need maximal room for 29 digits */
     char* p;
     char* ps;
+    gint32 sign = val < 0 ? 1 : 0;
     decimal_repr roundAdd;
     MonoString *mstring;
 

@@ -163,11 +163,12 @@ ves_icall_get_data_chunk (MonoReflectionAssemblyBuilder *assb, gint32 type, Mono
 			return count;
 	} else {
 		MonoDynamicAssembly *ass = assb->dynamic_assembly;
+		char *p = mono_array_addr (buf, char, 0);
 		count = ass->code.index + ass->meta_size;
 		if (count > buf->bounds->length)
 			return 0;
-		memcpy (buf->vector, ass->code.data, ass->code.index);
-		memcpy (buf->vector + ass->code.index, ass->assembly.image->raw_metadata, ass->meta_size);
+		memcpy (p, ass->code.data, ass->code.index);
+		memcpy (p + ass->code.index, ass->assembly.image->raw_metadata, ass->meta_size);
 		return count;
 	}
 	
