@@ -196,6 +196,7 @@ typedef struct {
 	MonoObject     object;
 	MonoRealProxy *rp;	
 	MonoClass     *klass; 
+	MonoBoolean    custom_type_info;
 } MonoTransparentProxy;
 
 /* This is a copy of System.Runtime.Remoting.Messaging.CallType */
@@ -449,6 +450,12 @@ mono_object_clone           (MonoObject *obj);
 
 MonoObject *
 mono_object_isinst          (MonoObject *obj, MonoClass *klass);
+
+MonoObject *
+mono_object_isinst_mbyref   (MonoObject *obj, MonoClass *klass);
+
+MonoObject *
+mono_object_castclass_mbyref (MonoObject *obj, MonoClass *klass);
 
 typedef void (*MonoExceptionFunc) (MonoException *ex);
 

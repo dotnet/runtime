@@ -111,6 +111,7 @@ typedef struct {
 	MonoClass *argumenthandle_class;
 	MonoClass *marshalbyrefobject_class;
 	MonoClass *monitor_class;
+	MonoClass *iremotingtypeinfo_class;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults;

@@ -3715,21 +3715,25 @@ ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObject *this)
 	MonoDomain *domain = mono_object_domain (this); 
 	MonoObject *res;
 	MonoRealProxy *rp = ((MonoRealProxy *)this);
+	MonoTransparentProxy *tp;
 	MonoType *type;
 	MonoClass *klass;
 
 	MONO_ARCH_SAVE_REGS;
 
 	res = mono_object_new (domain, mono_defaults.transparent_proxy_class);
+	tp = (MonoTransparentProxy*) res;
 	
-	((MonoTransparentProxy *)res)->rp = rp;
+	tp->rp = rp;
 	type = ((MonoReflectionType *)rp->class_to_proxy)->type;
 	klass = mono_class_from_mono_type (type);
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE)
-		((MonoTransparentProxy *)res)->klass = mono_defaults.marshalbyrefobject_class;
+		tp->klass = mono_defaults.marshalbyrefobject_class;
 	else
-		((MonoTransparentProxy *)res)->klass = klass;
+		tp->klass = klass;
+	
+	tp->custom_type_info = (mono_object_isinst (this, mono_defaults.iremotingtypeinfo_class) != NULL);
 
 	res->vtable = mono_class_proxy_vtable (domain, klass);
 

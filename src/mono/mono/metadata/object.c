@@ -1909,6 +1909,9 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 	MonoVTable *vt;
 	MonoClass *oklass;
 
+	if (klass->marshalbyref) 
+		return mono_object_isinst_mbyref (obj, klass);
+
 	if (!obj)
 		return NULL;
 
@@ -1926,13 +1929,79 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 			return NULL;
 	}
 
+	return mono_class_is_assignable_from (klass, oklass) ? obj : NULL;
+}
+
+MonoObject *
+mono_object_isinst_mbyref (MonoObject *obj, MonoClass *klass)
+{
+	MonoVTable *vt;
+	MonoClass *oklass;
+
+	if (!obj)
+		return NULL;
+
+	vt = obj->vtable;
+	oklass = vt->klass;
+
 	if (oklass != klass && oklass == mono_defaults.transparent_proxy_class) {
-		/* fixme: add check for IRemotingTypeInfo */
-		if (klass->marshalbyref)
-			oklass = ((MonoTransparentProxy *)obj)->klass;
+		oklass = ((MonoTransparentProxy *)obj)->klass;
+		if ((oklass->idepth >= klass->idepth) && (oklass->supertypes [klass->idepth - 1] == klass))
+			return obj;
+
+		/* Check for IRemotingTypeInfo */
+		if (((MonoTransparentProxy *)obj)->custom_type_info) {
+		
+			MonoObject *res;
+			MonoObject *rp = (MonoObject *)((MonoTransparentProxy *)obj)->rp;
+			MonoClass *rpklass = rp->vtable->klass;
+			MonoMethod *im = NULL;
+			gpointer pa [2];
+			int i;
+		
+			for (i = 0; i < rpklass->method.count; ++i) {
+				if (!strcmp ("CanCastTo", rpklass->methods [i]->name) &&
+					rpklass->methods [i]->signature->param_count == 2) {
+					im = rpklass->methods [i];
+					break;
+				}
+			}
+		
+			g_assert (im);
+		
+			pa [0] = mono_type_get_object (mono_domain_get (), &klass->byval_arg);
+			pa [1] = obj;
+
+			res = mono_runtime_invoke (im, rp, pa, NULL);
+			if (*(MonoBoolean *) mono_object_unbox(res))
+				return obj;
+		}
+
+		return NULL;
 	}
 
-	return mono_class_is_assignable_from (klass, oklass) ? obj : NULL;
+	if ((oklass->idepth >= klass->idepth) && (oklass->supertypes [klass->idepth - 1] == klass))
+		return obj;
+	else 
+		return NULL;
+}
+
+/**
+ * mono_object_castclass_mbyref:
+ * @obj: an object
+ * @klass: a pointer to a class 
+ *
+ * Returns: @obj if @obj is derived from @klass, throws an exception otherwise
+ */
+MonoObject *
+mono_object_castclass_mbyref (MonoObject *obj, MonoClass *klass)
+{
+	if (!obj) return NULL;
+	if (mono_object_isinst_mbyref (obj, klass)) return obj;
+		
+	mono_raise_exception (mono_exception_from_name (mono_defaults.corlib,
+							"System",
+							"InvalidCastException"));
 }
 
 typedef struct {
