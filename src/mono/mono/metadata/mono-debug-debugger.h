@@ -7,6 +7,7 @@
 #include <mono/io-layer/io-layer.h>
 
 typedef struct _MonoDebuggerBreakpointInfo	MonoDebuggerBreakpointInfo;
+typedef struct _MonoDebuggerBuiltinTypes	MonoDebuggerBuiltinTypes;
 typedef struct _MonoDebuggerSymbolTable		MonoDebuggerSymbolTable;
 typedef struct _MonoDebuggerSymbolFile		MonoDebuggerSymbolFile;
 typedef struct _MonoDebuggerSymbolFilePriv	MonoDebuggerSymbolFilePriv;
@@ -20,15 +21,57 @@ typedef enum {
 	MONO_DEBUGGER_EVENT_BREAKPOINT
 } MonoDebuggerEvent;
 
+typedef enum {
+	MONO_DEBUGGER_TYPE_KIND_FUNDAMENTAL = 1,
+	MONO_DEBUGGER_TYPE_KIND_STRING,
+	MONO_DEBUGGER_TYPE_KIND_SZARRAY,
+	MONO_DEBUGGER_TYPE_KIND_ARRAY,
+	MONO_DEBUGGER_TYPE_KIND_POINTER,
+	MONO_DEBUGGER_TYPE_KIND_ENUM,
+	MONO_DEBUGGER_TYPE_KIND_OBJECT,
+	MONO_DEBUGGER_TYPE_KIND_STRUCT,
+	MONO_DEBUGGER_TYPE_KIND_CLASS
+} MonoDebuggerTypeKind;
+
 struct _MonoDebuggerBreakpointInfo {
 	guint32 index;
 	MonoMethodDesc *desc;
+};
+
+struct _MonoDebuggerBuiltinTypes {
+	guint32 total_size;
+	MonoDebuggerClassInfo *object_class;
+	MonoDebuggerClassInfo *byte_class;
+	MonoDebuggerClassInfo *void_class;
+	MonoDebuggerClassInfo *boolean_class;
+	MonoDebuggerClassInfo *sbyte_class;
+	MonoDebuggerClassInfo *int16_class;
+	MonoDebuggerClassInfo *uint16_class;
+	MonoDebuggerClassInfo *int32_class;
+	MonoDebuggerClassInfo *uint32_class;
+	MonoDebuggerClassInfo *int_class;
+	MonoDebuggerClassInfo *uint_class;
+	MonoDebuggerClassInfo *int64_class;
+	MonoDebuggerClassInfo *uint64_class;
+	MonoDebuggerClassInfo *single_class;
+	MonoDebuggerClassInfo *double_class;
+	MonoDebuggerClassInfo *char_class;
+	MonoDebuggerClassInfo *string_class;
+	MonoDebuggerClassInfo *enum_class;
+	MonoDebuggerClassInfo *array_class;
 };
 
 struct _MonoDebuggerSymbolTable {
 	guint64 magic;
 	guint32 version;
 	guint32 total_size;
+
+	/*
+	 * Corlib and builtin types.
+	 */
+	MonoDomain *domain;
+	MonoDebuggerSymbolFile *corlib;
+	MonoDebuggerBuiltinTypes *builtin_types;
 
 	/*
 	 * The symbol files.
@@ -75,6 +118,7 @@ struct _MonoDebuggerSymbolFile {
 	MonoSymbolFile *symfile;
 	MonoImage *image;
 	const char *image_file;
+	guint32 class_entry_size;
 	/* Pointer to the malloced range table. */
 	guint32 locked;
 	guint32 generation;
@@ -83,7 +127,6 @@ struct _MonoDebuggerSymbolFile {
 	guint32 num_range_entries;
 	/* Pointer to the malloced class table. */
 	MonoDebuggerClassInfo *class_table;
-	guint32 class_entry_size;
 	guint32 num_class_entries;
 	/* Private. */
 	MonoDebuggerSymbolFilePriv *_priv;
@@ -147,24 +190,26 @@ extern MonoDebuggerIOLayer mono_debugger_io_layer;
 
 extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, guint32 arg);
 
-void            mono_debugger_initialize              (void);
-void            mono_debugger_cleanup                 (void);
+void            mono_debugger_initialize                  (MonoDomain *domain);
+void            mono_debugger_cleanup                     (void);
 
-void            mono_debugger_lock                    (void);
-void            mono_debugger_unlock                  (void);
-void            mono_debugger_event                   (MonoDebuggerEvent event, gpointer data, guint32 arg);
+void            mono_debugger_lock                        (void);
+void            mono_debugger_unlock                      (void);
+void            mono_debugger_event                       (MonoDebuggerEvent event, gpointer data, guint32 arg);
 
-MonoDebuggerSymbolFile *mono_debugger_add_symbol_file (MonoDebugHandle *handle);
-void            mono_debugger_add_type                (MonoDebuggerSymbolFile *symfile, MonoClass *klass);
-void            mono_debugger_add_method              (MonoDebuggerSymbolFile *symfile,
-						       MonoDebugMethodInfo *minfo,
-						       MonoDebugMethodJitInfo *jit);
+MonoDebuggerSymbolFile   *mono_debugger_add_symbol_file   (MonoDebugHandle *handle);
+void                      mono_debugger_add_type          (MonoDebuggerSymbolFile *symfile, MonoClass *klass);
+MonoDebuggerBuiltinTypes *mono_debugger_add_builtin_types (MonoDebuggerSymbolFile *symfile);
 
-int             mono_debugger_insert_breakpoint_full  (MonoMethodDesc *desc);
-int             mono_debugger_remove_breakpoint       (int breakpoint_id);
-int             mono_debugger_insert_breakpoint       (const gchar *method_name, gboolean include_namespace);
-int             mono_debugger_method_has_breakpoint   (MonoMethod *method);
-void            mono_debugger_breakpoint_callback     (MonoMethod *method, guint32 idx);
+void            mono_debugger_add_method                  (MonoDebuggerSymbolFile *symfile,
+						           MonoDebugMethodInfo *minfo,
+						           MonoDebugMethodJitInfo *jit);
+
+int             mono_debugger_insert_breakpoint_full      (MonoMethodDesc *desc);
+int             mono_debugger_remove_breakpoint           (int breakpoint_id);
+int             mono_debugger_insert_breakpoint           (const gchar *method_name, gboolean include_namespace);
+int             mono_debugger_method_has_breakpoint       (MonoMethod *method);
+void            mono_debugger_breakpoint_callback         (MonoMethod *method, guint32 idx);
 
 gpointer        mono_debugger_create_notification_function (gpointer *notification_address);
 

@@ -641,7 +641,7 @@ mono_main (int argc, char* argv[]) {
 	}
 
 	if (enable_debugging)
-		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
+		mono_debug_init (domain, MONO_DEBUG_FORMAT_MONO);
 
 	assembly = mono_assembly_open (aname, NULL);
 	if (!assembly) {

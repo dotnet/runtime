@@ -4461,7 +4461,7 @@ static void main_thread_handler (gpointer user_data)
 	char *error;
 
 	if (main_args->enable_debugging)
-		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
+		mono_debug_init (main_args->domain, MONO_DEBUG_FORMAT_MONO);
 
 	assembly = mono_domain_assembly_open (main_args->domain,
 					      main_args->file);
