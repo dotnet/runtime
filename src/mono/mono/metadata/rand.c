@@ -105,18 +105,13 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetNonZe
 
 /* This needs to change when I do the Win32 support... */
 #else
-#ifndef _MSC_VER
-#warning "No Entropy Source Found"
-#endif
 void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes(MonoObject *self, MonoArray *arry)
 {
-    g_warning("0K problem. We have no entropy. Badness will occur.");
     mono_raise_exception(mono_get_exception_not_implemented());
 }
 
 void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetNonZeroBytes(MonoObject *self, MonoArray *arry)
 {
-    g_warning("0K problem. We have no entropy. Badness will occur.");
     mono_raise_exception(mono_get_exception_not_implemented());
 }
 
