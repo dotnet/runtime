@@ -1228,7 +1228,8 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							/*printf ("stack for catch: %p\n", MONO_CONTEXT_GET_BP (ctx));*/
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
-							*((gpointer *)((char *)MONO_CONTEXT_GET_BP (ctx) + ji->exvar_offset)) = obj;
+							/* need to use the frame pointer (ppc_r31), not r1 (regs start from register r13): methods with clauses always have r31 */
+							*((gpointer *)((char *)(ctx->regs [ppc_r31-13]) + ji->exvar_offset)) = obj;
 							jit_tls->lmf = lmf;
 							g_free (trace);
 							return 0;
