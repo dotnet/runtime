@@ -35,7 +35,6 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/utils/mono-logger.h>
-#include <mono/os/gc_wrapper.h>
 
 #include "mini.h"
 
@@ -70,7 +69,7 @@ typedef struct MonoAotModule {
 	/* Optimization flags used to compile the module */
 	guint32 opts;
 	/* Maps MonoMethods to MonoAotMethodInfos */
-	MonoGHashTable *methods;
+	GHashTable *methods;
 	/* Pointer to the Global Offset Table */
 	gpointer *got;
 	guint32 got_size;
@@ -100,7 +99,7 @@ typedef struct MonoAotOptions {
 	char *outfile;
 } MonoAotOptions;
 
-static MonoGHashTable *aot_modules;
+static GHashTable *aot_modules;
 
 static CRITICAL_SECTION aot_mutex;
 
@@ -409,17 +408,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	g_assert (got_size_ptr);
 #endif
 
-	/*
-	 * It seems that MonoGHashTables are in the GC heap, so structures
-	 * containing them must be in the GC heap as well :(
-	 */
-#ifdef HAVE_BOEHM_GC
-	info = GC_MALLOC (sizeof (MonoAotModule));
-#else
 	info = g_new0 (MonoAotModule, 1);
-#endif
 	info->aot_name = aot_name;
-	info->methods = mono_g_hash_table_new (NULL, NULL);
+	info->methods = g_hash_table_new (NULL, NULL);
 #ifdef MONO_ARCH_HAVE_PIC_AOT
 	info->got = got;
 	info->got_size = *got_size_ptr;
@@ -493,7 +484,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	g_module_symbol (assembly->aot_module, "method_infos", (gpointer*)&info->method_infos);
 
 	EnterCriticalSection (&aot_mutex);
-	mono_g_hash_table_insert (aot_modules, assembly, info);
+	g_hash_table_insert (aot_modules, assembly, info);
 	LeaveCriticalSection (&aot_mutex);
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT loaded AOT Module for %s.\n", assembly->image->name);
@@ -503,9 +494,7 @@ void
 mono_aot_init (void)
 {
 	InitializeCriticalSection (&aot_mutex);
-
-	MONO_GC_REGISTER_ROOT (aot_modules);
-	aot_modules = mono_g_hash_table_new (NULL, NULL);
+	aot_modules = g_hash_table_new (NULL, NULL);
 
 	mono_install_assembly_load_hook (load_aot_module, NULL);
 
@@ -547,7 +536,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 	
 	header = mono_method_get_header (method);
 	
-	aot_module = (MonoAotModule*)mono_g_hash_table_lookup (aot_modules, ass);
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, ass);
 
 	g_assert (klass->inited);
 
@@ -555,7 +544,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		/* Non shared AOT code can't be used in other appdomains */
 		return NULL;
 
-	minfo = mono_g_hash_table_lookup (aot_module->methods, method);
+	minfo = g_hash_table_lookup (aot_module->methods, method);
 	/* Can't use code from non-root domains since they can be unloaded */
 	if (minfo && (minfo->domain == mono_get_root_domain ())) {
 		/* This method was already loaded in another appdomain */
@@ -966,7 +955,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 #endif
 
 		minfo->info = jinfo;
-		mono_g_hash_table_insert (aot_module->methods, method, minfo);
+		g_hash_table_insert (aot_module->methods, method, minfo);
 
 		return jinfo;
 	}
@@ -1015,7 +1004,7 @@ mono_aot_is_got_entry (guint8 *code, guint8 *addr)
 
 	if (!aot_modules)
 		return FALSE;
-	aot_module = (MonoAotModule*)mono_g_hash_table_lookup (aot_modules, ass);
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, ass);
 	if (!aot_module || !aot_module->got)
 		return FALSE;
 
