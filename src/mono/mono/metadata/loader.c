@@ -213,6 +213,78 @@ mono_lookup_internal_call (const char *name)
 	return res;
 }
 
+MonoClassField*
+mono_field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass)
+{
+	MonoImage *mimage;
+	MonoClass *klass;
+	MonoTableInfo *tables = image->tables;
+	guint32 cols[6];
+	guint32 nindex, class, i;
+	const char *fname, *name, *nspace;
+	const char *ptr;
+	guint32 index = mono_metadata_token_index (token);
+
+	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], index-1, cols, MONO_MEMBERREF_SIZE);
+	nindex = cols [MONO_MEMBERREF_CLASS] >> MEMBERREF_PARENT_BITS;
+	class = cols [MONO_MEMBERREF_CLASS] & MEMBERREF_PARENT_MASK;
+
+	fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
+	
+	ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
+	mono_metadata_decode_blob_size (ptr, &ptr);
+	/* we may want to check the signature here... */
+
+	switch (class) {
+	case MEMBERREF_PARENT_TYPEREF: {
+		guint32 scopeindex, scopetable;
+
+		mono_metadata_decode_row (&tables [MONO_TABLE_TYPEREF], nindex-1, cols, MONO_TYPEREF_SIZE);
+		scopeindex = cols [MONO_TYPEREF_SCOPE] >> RESOLTION_SCOPE_BITS;
+		scopetable = cols [MONO_TYPEREF_SCOPE] & RESOLTION_SCOPE_MASK;
+		/*g_print ("typeref: 0x%x 0x%x %s.%s\n", scopetable, scopeindex,
+			mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAMESPACE]),
+			mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAME]));*/
+		switch (scopetable) {
+		case RESOLTION_SCOPE_ASSEMBLYREF:
+			/*
+			 * To find the field we have the following info:
+			 * *) name and namespace of the class from the TYPEREF table
+			 * *) name and signature of the field from the MEMBERREF table
+			 */
+			nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
+			name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
+
+			/* this will triggered by references to mscorlib */
+			if (image->references [scopeindex-1] == NULL)
+				g_error ("Reference to mscorlib? Probably need to implement %s.%s::%s in corlib", nspace, name, fname);
+
+			mimage = image->references [scopeindex-1]->image;
+
+			klass = mono_class_from_name (mimage, nspace, name);
+			mono_class_metadata_init (klass);
+
+			/* mostly dumb search for now */
+			for (i = 0; i < klass->field.count; ++i) {
+				MonoClassField *f = &klass->fields [i];
+				if (!strcmp (fname, f->name)) {
+					if (retklass)
+						*retklass = klass;
+					return f;
+				}
+			}
+			g_warning ("Missing field %s.%s::%s", nspace, name, fname);
+			return NULL;
+		default:
+			return NULL;
+		}
+		break;
+	}
+	default:
+		return NULL;
+	}
+}
+
 static MonoMethod *
 method_from_memberref (MonoImage *image, guint32 index)
 {

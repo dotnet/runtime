@@ -13,7 +13,7 @@ public class Test {
 		Thread thr=new Thread(new ThreadStart(test.Thread_func));
 		thr.Start();
 		Console.WriteLine("In the main line!");
-		
+		thr.Join ();
 		return 0;
 	}
 }

@@ -45,23 +45,23 @@ mono_object_new_from_token  (MonoImage *image, guint32 token);
 MonoObject *
 mono_array_new              (MonoClass *eclass, guint32 n);
 
-MonoObject *
+MonoString*
 mono_string_new_utf16       (const guint16 *text, gint32 len);
 
-MonoObject*
+MonoString*
 mono_ldstr                  (MonoImage *image, guint32 index);
 
-MonoObject*
-mono_string_is_interned     (MonoObject *o);
+MonoString*
+mono_string_is_interned     (MonoString *str);
 
-MonoObject*
-mono_string_intern          (MonoObject *o);
+MonoString*
+mono_string_intern          (MonoString *str);
 
-MonoObject *
+MonoString*
 mono_string_new             (const char *text);
 
 char *
-mono_string_to_utf8         (MonoObject *string_obj);
+mono_string_to_utf8         (MonoString *string_obj);
 
 void       
 mono_object_free            (MonoObject *o);

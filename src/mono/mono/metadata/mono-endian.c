@@ -2,17 +2,17 @@
 
 #if NO_UNALIGNED_ACCESS
 
-typedef struct {
+typedef union {
 	char c [2];
 	guint16 i;
 } mono_rint16;
 
-typedef struct {
+typedef union {
 	char c [4];
 	guint32 i;
 } mono_rint32;
 
-typedef struct {
+typedef union {
 	char c [8];
 	guint64 i;
 } mono_rint64;

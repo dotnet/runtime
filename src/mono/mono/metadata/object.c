@@ -144,20 +144,20 @@ mono_array_new (MonoClass *eclass, guint32 n)
  *
  * Returns: A newly created string object which contains @text.
  */
-MonoObject *
+MonoString *
 mono_string_new_utf16 (const guint16 *text, gint32 len)
 {
-	MonoObject *s;
+	MonoString *s;
 	MonoArray *ca;
 
-	s = mono_object_new (mono_defaults.string_class);
+	s = (MonoString*)mono_object_new (mono_defaults.string_class);
 	g_assert (s != NULL);
 
 	ca = (MonoArray *)mono_array_new (mono_defaults.string_class, len);
 	g_assert (ca != NULL);
 	
-	((MonoString *)s)->c_str = ca;
-	((MonoString *)s)->length = len;
+	s->c_str = ca;
+	s->length = len;
 
 	memcpy (ca->vector, text, len * 2);
 
@@ -170,10 +170,10 @@ mono_string_new_utf16 (const guint16 *text, gint32 len)
  *
  * Returns: A newly created string object which contains @text.
  */
-MonoObject *
+MonoString*
 mono_string_new (const char *text)
 {
-	MonoObject *o;
+	MonoString *o;
 	guint16 *ut;
 	int i, l;
 
@@ -267,19 +267,19 @@ ldstr_equal (const char *str1, const char *str2) {
 }
 
 typedef struct {
-	MonoObject *obj;
-	MonoObject *found;
+	MonoString *obj;
+	MonoString *found;
 } InternCheck;
 
 static void
-check_interned (gpointer key, MonoObject *value, InternCheck *check)
+check_interned (gpointer key, MonoString *value, InternCheck *check)
 {
 	if (value == check->obj)
 		check->found = value;
 }
 
-MonoObject*
-mono_string_is_interned (MonoObject *o)
+MonoString*
+mono_string_is_interned (MonoString *o)
 {
 	InternCheck check;
 	check.obj = o;
@@ -292,11 +292,10 @@ mono_string_is_interned (MonoObject *o)
 	return check.found;
 }
 
-MonoObject*
-mono_string_intern (MonoObject *o)
+MonoString*
+mono_string_intern (MonoString *str)
 {
-	MonoObject *res;
-	MonoString *str = (MonoString*) o;
+	MonoString *res;
 	char *ins = g_malloc (4 + str->length * 2);
 	char *p;
 	
@@ -310,14 +309,14 @@ mono_string_intern (MonoObject *o)
 		return res;
 	}
 	g_hash_table_insert (ldstr_table, ins, str);
-	return (MonoObject*)str;
+	return str;
 }
 
-MonoObject*
+MonoString*
 mono_ldstr (MonoImage *image, guint32 index)
 {
 	const char *str, *sig;
-	MonoObject *o;
+	MonoString *o;
 	guint len;
 	
 	if (!ldstr_table)
@@ -336,15 +335,14 @@ mono_ldstr (MonoImage *image, guint32 index)
 }
 
 char *
-mono_string_to_utf8 (MonoObject *o)
+mono_string_to_utf8 (MonoString *s)
 {
-	MonoString *s = (MonoString *)o;
 	char *as, *vector;
 	int i;
 
-	g_assert (o != NULL);
+	g_assert (s != NULL);
 
-	if (!s->length)
+	if (!s->length || !s->c_str)
 		return g_strdup ("");
 
 	vector = s->c_str->vector;

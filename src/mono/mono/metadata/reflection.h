@@ -4,6 +4,7 @@
 #include <mono/metadata/image.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/class.h>
+#include <mono/metadata/object.h>
 
 typedef struct {
 	char *name;
@@ -12,37 +13,6 @@ typedef struct {
 	guint32 index;
 	guint32 offset; /* from start of metadata */
 } MonoDynamicStream;
-
-typedef struct {
-	char *name;
-	char *fname;
-	GList *types;
-	guint32 table_idx;
-} MonoModuleBuilder;
-
-typedef struct {
-	char *name;
-	char *nspace;
-	int attrs;
-	int has_default_ctor;
-	guint32 table_idx;
-	MonoType *base;
-	GList *methods;
-	GList *fields;
-	GList *properties;
-} MonoTypeBuilder;
-
-typedef struct {
-	char *name;
-	guint32 attrs;
-	guint32 callconv;
-	guint32 nparams;
-	guint32 table_idx;
-	MonoType *ret;
-	MonoType **params;
-	char *code;
-	guint32 code_size;
-} MonoMethodBuilder;
 
 typedef struct {
 	guint32 rows;
@@ -61,14 +31,49 @@ typedef struct {
 	guint32 offset; /* from start of metadata */
 } MonoStringHeap;
 
+/*
+ * The followinbg structure must match the C# implementation in our corlib.
+ */
+
+typedef struct {
+	MonoObject object;
+	MonoType  *type;
+} MonoReflectionType;
+
+typedef struct {
+	MonoObject object;
+	MonoArray *code;
+	MonoObject *mbuilder;
+	gint32 code_len;
+	gint32 max_stack;
+	gint32 cur_stack;
+	MonoArray *locals;
+} MonoReflectionILGen;
+
+typedef struct {
+	MonoObject object;
+	MonoReflectionType *type;
+	MonoString *name;
+} MonoReflectionLocalBuilder;
+
+typedef struct {
+	MonoObject object;
+	MonoMethod *impl;
+	MonoReflectionType *rtype;
+	MonoArray *parameters;
+	guint32 attrs;
+	MonoString *name;
+	guint32 table_idx;
+	MonoArray *code;
+	MonoReflectionILGen *ilgen;
+	MonoObject *type;
+} MonoReflectionMethodBuilder;
+
 typedef struct {
 	MonoAssembly assembly;
-	char *name;
-	GList *modules;
 	guint32 meta_size;
 	guint32 text_rva;
 	guint32 metadata_rva;
-	MonoMethodBuilder *entry_point;
 	GHashTable *typeref;
 	MonoStringHeap sheap;
 	MonoDynamicStream code; /* used to store method headers and bytecode */
@@ -79,7 +84,70 @@ typedef struct {
 	MonoDynamicTable tables [64];
 } MonoDynamicAssembly;
 
-int           mono_image_get_header (MonoDynamicAssembly *assembly, char *buffer, int maxsize);
+typedef struct {
+	MonoObject object;
+	MonoAssembly *assembly;
+} MonoReflectionAssembly;
+
+typedef struct {
+	MonoReflectionAssembly assembly;
+	MonoDynamicAssembly *dynamic_assembly;
+	MonoReflectionMethodBuilder *entry_point;
+	MonoArray *modules;
+	MonoString *name;
+} MonoReflectionAssemblyBuilder;
+
+typedef struct {
+	MonoObject object;
+	guint32 attrs;
+	MonoReflectionType *type;
+	MonoString *name;
+	MonoObject *def_value;
+	gint32 offset;
+	gint32 table_idx;
+} MonoReflectionFieldBuilder;
+
+typedef struct {
+	MonoObject object;
+	guint32 attrs;
+	MonoString *name;
+	MonoReflectionType *type;
+	MonoArray *parameters;
+	MonoObject *def_value;
+	MonoReflectionMethodBuilder *set_method;
+	MonoReflectionMethodBuilder *get_method;
+	gint32 table_idx;
+} MonoReflectionPropertyBuilder;
+
+typedef struct {
+	MonoReflectionType type;
+	MonoString *name;
+	MonoString *nspace;
+	MonoReflectionType *parent;
+	MonoArray *interfaces;
+	MonoArray *methods;
+	MonoArray *properties;
+	MonoArray *fields;
+	guint32 attrs;
+	guint32 table_idx;
+} MonoReflectionTypeBuilder;
+
+typedef struct {
+	MonoObject	obj;
+	MonoImage  *image;
+	MonoObject *assembly;
+	MonoString *fqname;
+	MonoString *name;
+	MonoString *scopename;
+} MonoReflectionModule;
+
+typedef struct {
+	MonoReflectionModule module;
+	MonoArray *types;
+	guint32    table_idx;
+} MonoReflectionModuleBuilder;
+
+int           mono_image_get_header (MonoReflectionAssemblyBuilder *assembly, char *buffer, int maxsize);
 
 #endif /* __METADATA_REFLECTION_H__ */
 

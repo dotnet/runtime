@@ -34,6 +34,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/reflection.h>
 #include <mono/arch/x86/x86-codegen.h>
 /*#include <mono/cli/types.h>*/
 #include "interp.h"
@@ -613,6 +614,17 @@ dump_stack (stackval *stack, stackval *sp)
 		case VAL_I64: printf ("[%lld] ", s->data.l); break;
 		case VAL_DOUBLE: printf ("[%0.5f] ", s->data.f); break;
 		case VAL_VALUET: printf ("[vt: %p] ", s->data.vt.vt); break;
+#if 0
+		case VAL_OBJ: {
+			MonoObject *obj =  s->data.p;
+			if (obj && obj->klass == mono_defaults.string_class) {
+				char *str = mono_string_to_utf8 ((MonoString*)obj);
+				printf ("\"%s\" ", str);
+				g_free (str);
+				break;
+			}
+		}
+#endif
 		default: printf ("[%p] ", s->data.p); break;
 		}
 		++s;
@@ -1122,7 +1134,10 @@ ves_exec_method (MonoInvocation *frame)
 			if (csignature->hasthis) {
 				g_assert (sp >= frame->stack);
 				--sp;
-				g_assert (sp->type == VAL_OBJ || sp->type == VAL_VALUETA);
+				/*
+				 * It may also be a TP from LD(S)FLDA
+				 * g_assert (sp->type == VAL_OBJ || sp->type == VAL_VALUETA);
+				 */
 				if (sp->type == VAL_OBJ && child_frame.method->klass->valuetype) /* unbox it */
 					child_frame.obj = (char*)sp->data.p + sizeof (MonoObject);
 				else
@@ -1981,7 +1996,7 @@ ves_exec_method (MonoInvocation *frame)
 			index = mono_metadata_token_index (read32 (ip));
 			ip += 4;
 
-			o = mono_ldstr (image, index);
+			o = (MonoObject*)mono_ldstr (image, index);
 			sp->type = VAL_OBJ;
 			sp->data.p = o;
 			sp->data.vt.klass = NULL;
@@ -2207,11 +2222,17 @@ ves_exec_method (MonoInvocation *frame)
 			ip += 4;
 			
 			/* need to handle fieldrefs */
-			klass = mono_class_get (image, 
-				MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
-			if (!klass->inited)
-				init_class (klass);
-			field = mono_class_get_field (klass, token);
+			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
+				field = mono_field_from_memberref (image, token, &klass);
+				if (!klass->inited)
+					init_class (klass);
+			} else {
+				klass = mono_class_get (image, 
+					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
+				if (!klass->inited)
+					init_class (klass);
+				field = mono_class_get_field (klass, token);
+			}
 			g_assert (field);
 			if (load_addr) {
 				sp->type = VAL_TP;
@@ -2430,7 +2451,8 @@ ves_exec_method (MonoInvocation *frame)
 			g_assert (sp [-1].type == VAL_OBJ);
 
 			o = sp [-1].data.p;
-			g_assert (o != NULL);
+			if (!o)
+				THROW_EX (get_exception_null_reference (), ip - 1);
 			
 			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
 
@@ -3270,6 +3292,113 @@ test_load_class (MonoImage* image)
 }
 #endif
 
+typedef struct {
+	char *name;
+	gulong offset;
+} FieldDesc;
+
+typedef struct {
+	char *name;
+	FieldDesc *fields;
+} ClassDesc;
+
+static FieldDesc 
+typebuilder_fields[] = {
+	{"name", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, name)},
+	{"nspace", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, nspace)},
+	{"parent", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, parent)},
+	{"interfaces", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, interfaces)},
+	{"methods", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, methods)},
+	{"properties", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, properties)},
+	{"fields", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, fields)},
+	{"attrs", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, attrs)},
+	{"table_idx", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, table_idx)},
+	{NULL, 0}
+};
+
+static FieldDesc 
+modulebuilder_fields[] = {
+	{"types", G_STRUCT_OFFSET (MonoReflectionModuleBuilder, types)},
+	{"table_idx", G_STRUCT_OFFSET (MonoReflectionModuleBuilder, table_idx)},
+	{NULL, 0}
+};
+
+static FieldDesc 
+assemblybuilder_fields[] = {
+	{"entry_point", G_STRUCT_OFFSET (MonoReflectionAssemblyBuilder, entry_point)},
+	{"modules", G_STRUCT_OFFSET (MonoReflectionAssemblyBuilder, modules)},
+	{"name", G_STRUCT_OFFSET (MonoReflectionAssemblyBuilder, name)},
+	{NULL, 0}
+};
+
+static FieldDesc 
+methodbuilder_fields[] = {
+	{"rtype", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, rtype)},
+	{"parameters", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, parameters)},
+	{"attrs", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, attrs)},
+	{"name", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, name)},
+	{"table_idx", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, table_idx)},
+	{"code", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, code)},
+	{NULL, 0}
+};
+
+static FieldDesc 
+fieldbuilder_fields[] = {
+	{"attrs", G_STRUCT_OFFSET (MonoReflectionFieldBuilder, attrs)},
+	{"type", G_STRUCT_OFFSET (MonoReflectionFieldBuilder, type)},
+	{"name", G_STRUCT_OFFSET (MonoReflectionFieldBuilder, name)},
+	{"def_value", G_STRUCT_OFFSET (MonoReflectionFieldBuilder, def_value)},
+	{"offset", G_STRUCT_OFFSET (MonoReflectionFieldBuilder, offset)},
+	{"table_idx", G_STRUCT_OFFSET (MonoReflectionFieldBuilder, table_idx)},
+	{NULL, 0}
+};
+
+static FieldDesc 
+propertybuilder_fields[] = {
+	{"attrs", G_STRUCT_OFFSET (MonoReflectionPropertyBuilder, attrs)},
+	{"name", G_STRUCT_OFFSET (MonoReflectionPropertyBuilder, name)},
+	{"type", G_STRUCT_OFFSET (MonoReflectionPropertyBuilder, type)},
+	{"parameters", G_STRUCT_OFFSET (MonoReflectionPropertyBuilder, parameters)},
+	{"def_value", G_STRUCT_OFFSET (MonoReflectionPropertyBuilder, def_value)},
+	{"set_method", G_STRUCT_OFFSET (MonoReflectionPropertyBuilder, set_method)},
+	{"get_method", G_STRUCT_OFFSET (MonoReflectionPropertyBuilder, get_method)},
+	{"table_idx", G_STRUCT_OFFSET (MonoReflectionPropertyBuilder, table_idx)},
+	{NULL, 0}
+};
+
+static ClassDesc
+classes_to_check [] = {
+	{"TypeBuilder", typebuilder_fields},
+	{"ModuleBuilder", modulebuilder_fields},
+	{"AssemblyBuilder", assemblybuilder_fields},
+	{"MethodBuilder", methodbuilder_fields},
+	{"FieldBuilder", fieldbuilder_fields},
+	{"PropertyBuilder", propertybuilder_fields},
+	{NULL, NULL}
+};
+
+static void
+check_corlib (MonoImage *corlib)
+{
+	MonoClass *klass;
+	MonoClassField *field;
+	FieldDesc *fdesc;
+	ClassDesc *cdesc;
+	const char *refl = "System.Reflection.Emit";
+
+	for (cdesc = classes_to_check; cdesc->name; ++cdesc) {
+		klass = mono_class_from_name (corlib, refl, cdesc->name);
+		if (!klass)
+			g_error ("Cannot find class %s", cdesc->name);
+		mono_class_metadata_init (klass);
+		for (fdesc = cdesc->fields; fdesc->name; ++fdesc) {
+			field = mono_class_get_field_from_name (klass, fdesc->name);
+			if (!field || (field->offset != fdesc->offset))
+				g_error ("filed %s mismatch in class %s (%d != %d)", fdesc->name, cdesc->name, fdesc->offset, field?field->offset:-1);
+		}
+	}
+}
+
 int 
 main (int argc, char *argv [])
 {
@@ -3315,6 +3444,7 @@ main (int argc, char *argv [])
 #ifdef RUN_TEST
 	test_load_class (assembly->image);
 #else
+	check_corlib (mono_defaults.corlib);
 	/*
 	 * skip the program name from the args.
 	 */

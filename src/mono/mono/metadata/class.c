@@ -88,11 +88,13 @@ class_compute_field_layout (MonoClass *class)
 	 */
 	for (i = 0; i < top; i++){
 		const char *sig;
-		guint32 cols [3];
+		guint32 cols [MONO_FIELD_SIZE];
 		int idx = class->field.first + i;
 		
 		mono_metadata_decode_row (t, idx, cols, CSIZE (cols));
-		sig = mono_metadata_blob_heap (m, cols [2]);
+		/* The name is needed for fieldrefs */
+		class->fields [i].name = mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]);
+		sig = mono_metadata_blob_heap (m, cols [MONO_FIELD_SIGNATURE]);
 		mono_metadata_decode_value (sig, &sig);
 		/* FIELD signature == 0x06 */
 		g_assert (*sig == 0x06);
@@ -502,6 +504,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		} else if (!strcmp (name, "Enum")) {
 			class->valuetype = 1;
 			class->enumtype = 1;
+		} else if (!strcmp (name, "Object")) {
+			class->this_arg.type = class->byval_arg.type = MONO_TYPE_OBJECT;
+		} else if (!strcmp (name, "String")) {
+			class->this_arg.type = class->byval_arg.type = MONO_TYPE_STRING;
 		}
 	}
 	
@@ -537,16 +543,9 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 					t = MONO_TYPE_I;
 				}
 				break;
-			case 'O':
-				if (!strcmp (name, "Object")) {
-					t = MONO_TYPE_OBJECT;
-				}
-				break;
 			case 'S':
 				if (!strcmp (name, "Single")) {
 					t = MONO_TYPE_R4;
-				} else if (!strcmp(name, "String")) {
-					t = MONO_TYPE_STRING;
 				} else if (!strcmp(name, "SByte")) {
 					t = MONO_TYPE_I1;
 				}
@@ -761,6 +760,15 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 
 	class->rank = rank;
 	class->element_class = eclass;
+	if (rank > 1) {
+		class->byval_arg.type = MONO_TYPE_ARRAY;
+		/* FIXME: complete.... */
+	} else {
+		class->byval_arg.type = MONO_TYPE_SZARRAY;
+		class->byval_arg.data.type = &eclass->byval_arg;
+	}
+	class->this_arg = class->byval_arg;
+	class->this_arg.byref = 1;
 	
 	g_hash_table_insert (image->array_cache, GUINT_TO_POINTER (key), class);
 	return class;
@@ -977,10 +985,22 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 		/* We return a MonoType* as handle */
 		return &class->byval_arg;
 	}
+	case MONO_TOKEN_TYPE_SPEC: {
+		MonoClass *class;
+		if (handle_class)
+			*handle_class = mono_defaults.typehandle_class;
+		if ((class = g_hash_table_lookup (image->class_cache, 
+						  GUINT_TO_POINTER (token))))
+			return &class->byval_arg;
+		class = mono_class_create_from_typespec (image, token);
+		return &class->byval_arg;
+		break;
+	}
 	case MONO_TOKEN_METHOD_DEF:
 	case MONO_TOKEN_FIELD_DEF:
 	case MONO_TOKEN_MEMBER_REF:
 	default:
+		g_warning ("Unknown token 0x%08x in ldtoken", token);
 		break;
 	}
 	return NULL;
