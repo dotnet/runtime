@@ -1,6 +1,6 @@
-
 opcode.def: make-opcodes-def.pl cil-opcodes.xml
-	perl make-opcodes-def.pl < $(srcdir)/cil-opcodes.xml > opcode.def
+	perl $(srcdir)/make-opcodes-def.pl $(srcdir)/cil-opcodes.xml $@.tmp
+	mv $@.tmp $@
 
 defdir = $(includedir)/mono/cil
 def_DATA = opcode.def

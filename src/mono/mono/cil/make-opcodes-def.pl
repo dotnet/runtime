@@ -19,10 +19,10 @@ my %valid_flow;
 # the XML file also includes "throw"
 @valid_flow{qw(next call return branch meta cond-branch)} = ();
 
-open OUTPUT, ">opcode.def" || die "Can not create opcode.def file: $!";
+open OUTPUT, ">$ARGV[1]" || die "Can not create $ARGV[1] file: $!";
 
 my $parser = new XML::Parser (Handlers => {Start => \&handle_opcode});
-$parser->parsefile("cil-opcodes.xml");
+$parser->parsefile($ARGV[0]);
 print_trailer();
 close(OUTPUT) || die "Can not close file: $!";
 
