@@ -5644,7 +5644,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			case CEE_REFANYTYPE:
 				CHECK_STACK (1);
-				MONO_INST_NEW (cfg, ins, ip [1]);
+				MONO_INST_NEW (cfg, ins, OP_REFANYTYPE);
 				--sp;
 				ins->type = STACK_MP;
 				ins->inst_left = *sp;
