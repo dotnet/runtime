@@ -1,0 +1,9 @@
+#include <mono/metadata/assembly.h>
+#include <mono/metadata/cil-coff.h>
+#include <mono/metadata/endian.h>
+#include <mono/metadata/typeattr.h>
+#include <mono/metadata/fieldattr.h>
+#include <mono/metadata/methodattr.h>
+#include <mono/metadata/eltype.h>
+#include <mono/metadata/blobsig.h>
+#include <mono/metadata/paramattr.h>

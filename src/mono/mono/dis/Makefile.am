@@ -3,7 +3,13 @@ INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
 bin_PROGRAMS = monodis
 
 monodis_SOURCES =	\
+	get.c		\
+	get.h		\
+	dis.h		\
+	dump.c		\
+	dump.h		\
 	main.c		\
+	meta.h		\
 	util.c		\
 	util.h
 

@@ -79,3 +79,4 @@ hex_dump (const char *buffer, int base, int count)
 	}
 	fflush (stdout);
 }
+
