@@ -24,7 +24,7 @@
 
 #include "interp.h"
 /* trim excessive headers */
-#include <mono/metadata/assembly.h>
+#include <mono/metadata/image.h>
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/endian.h>
 #include <mono/metadata/typeattr.h>
@@ -33,6 +33,8 @@
 #include <mono/metadata/eltype.h>
 #include <mono/metadata/blobsig.h>
 #include <mono/metadata/paramattr.h>
+
+#include <mono/cli/cli.h>
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
@@ -108,13 +110,24 @@ static int count = 0;
 #define SUB_SWITCH case 0xFE:
 #endif
 
-void
-ves_abort (cli_image_info_t *iinfo, MonoMethod *mh, unsigned char *ip, stackval *stack)
+static void
+ves_real_abort (int line, cli_image_info_t *iinfo, MonoMethod *mh,
+		const unsigned char *ip, stackval *stack, stackval *sp)
 {
-	printf ("In method: %s\n", 
-	printf ("Aborted execution");
-	abort (1);
+	metadata_t *m = &iinfo->cli_metadata;
+	const char *name = mono_metadata_string_heap (m, mh->name_idx);
+		
+	fprintf (stderr, "Execution aborted in method: %s\n", name);
+	fprintf (stderr, "Line=%d IP=0x%04x, Aborted execution", line,
+		 ip-(unsigned char *)mh->header->code);
+	g_print ("0x%04x %02x\n",
+		 ip-(unsigned char*)mh->header->code, *ip);
+	if (sp > stack)
+		printf ("\t[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type, sp[-1].data.i, sp[-1].data.f);
+	exit (1);
 }
+
+#define ves_abort() ves_real_abort(__LINE__, iinfo, mh, ip, stack, sp)
 
 /*
  * Need to optimize ALU ops when natural int == int32 
@@ -130,7 +143,7 @@ ves_abort (cli_image_info_t *iinfo, MonoMethod *mh, unsigned char *ip, stackval 
  * 
  * -fomit-frame-pointer gives about 2% speedup. 
  */
-void 
+static void 
 ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 {
 	/*
@@ -166,9 +179,14 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 #ifdef GOTO_LABEL
 		START:
 #endif
+
+#if DEBUG_INTERP
 		g_print ("0x%04x %02x\n", ip-(unsigned char*)mh->header->code, *ip);
-		if (sp > stack)
-				printf ("\t[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type, sp[-1].data.i, sp[-1].data.f);
+		if (sp > stack){
+			printf ("\t[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type,
+				sp[-1].data.i, sp[-1].data.f);
+		}
+#endif
 		
 		SWITCH (*ip) {
 		CASE (CEE_NOP) 
@@ -215,14 +233,14 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			++sp;
 			++ip;
 			BREAK;
-		CASE (CEE_STARG_S) g_assert_not_reached(); BREAK;
+		CASE (CEE_STARG_S) ves_abort(); BREAK;
 		CASE (CEE_LDLOC_S)
 			++ip;
 			*sp = locals [*ip];
 			++sp;
 			++ip;
 			BREAK;
-		CASE (CEE_LDLOCA_S) g_assert_not_reached(); BREAK;
+		CASE (CEE_LDLOCA_S) ves_abort(); BREAK;
 		CASE (CEE_STLOC_S)
 			++ip;
 			--sp;
@@ -292,7 +310,7 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			ip += sizeof (double);
 			++sp;
 			BREAK;
-		CASE (CEE_UNUSED99) g_assert_not_reached (); BREAK;
+		CASE (CEE_UNUSED99) ves_abort (); BREAK;
 		CASE (CEE_DUP) 
 			*sp = sp [-1]; 
 			++sp; 
@@ -302,7 +320,7 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			++ip;
 			--sp;
 			BREAK;
-		CASE (CEE_JMP) g_assert_not_reached(); BREAK;
+		CASE (CEE_JMP) ves_abort(); BREAK;
 		CASE (CEE_CALL) {
 			MonoMethod *cmh;
 			guint32 token;
@@ -327,7 +345,7 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 				sp++;
 			BREAK;
 		}
-		CASE (CEE_CALLI) g_assert_not_reached(); BREAK;
+		CASE (CEE_CALLI) ves_abort(); BREAK;
 		CASE (CEE_RET)
 			--sp;
 			*args = *sp;
@@ -465,43 +483,43 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			++ip;
 			BREAK;
 		}
-		CASE (CEE_BNE_UN_S) g_assert_not_reached(); BREAK;
-		CASE (CEE_BGE_UN_S) g_assert_not_reached(); BREAK;
-		CASE (CEE_BGT_UN_S) g_assert_not_reached(); BREAK;
-		CASE (CEE_BLE_UN_S) g_assert_not_reached(); BREAK;
-		CASE (CEE_BLT_UN_S) g_assert_not_reached(); BREAK;
-		CASE (CEE_BR) g_assert_not_reached(); BREAK;
-		CASE (CEE_BRFALSE) g_assert_not_reached(); BREAK;
-		CASE (CEE_BRTRUE) g_assert_not_reached(); BREAK;
-		CASE (CEE_BEQ) g_assert_not_reached(); BREAK;
-		CASE (CEE_BGE) g_assert_not_reached(); BREAK;
-		CASE (CEE_BGT) g_assert_not_reached(); BREAK;
-		CASE (CEE_BLE) g_assert_not_reached(); BREAK;
-		CASE (CEE_BLT) g_assert_not_reached(); BREAK;
-		CASE (CEE_BNE_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_BGE_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_BGT_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_BLE_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_BLT_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_SWITCH) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDIND_I1) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDIND_U1) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDIND_I2) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDIND_U2) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDIND_I4) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDIND_U4) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDIND_I8) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDIND_I) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDIND_R4) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDIND_R8) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDIND_REF) g_assert_not_reached(); BREAK;
-		CASE (CEE_STIND_REF) g_assert_not_reached(); BREAK;
-		CASE (CEE_STIND_I1) g_assert_not_reached(); BREAK;
-		CASE (CEE_STIND_I2) g_assert_not_reached(); BREAK;
-		CASE (CEE_STIND_I4) g_assert_not_reached(); BREAK;
-		CASE (CEE_STIND_I8) g_assert_not_reached(); BREAK;
-		CASE (CEE_STIND_R4) g_assert_not_reached(); BREAK;
-		CASE (CEE_STIND_R8) g_assert_not_reached(); BREAK;
+		CASE (CEE_BNE_UN_S) ves_abort(); BREAK;
+		CASE (CEE_BGE_UN_S) ves_abort(); BREAK;
+		CASE (CEE_BGT_UN_S) ves_abort(); BREAK;
+		CASE (CEE_BLE_UN_S) ves_abort(); BREAK;
+		CASE (CEE_BLT_UN_S) ves_abort(); BREAK;
+		CASE (CEE_BR) ves_abort(); BREAK;
+		CASE (CEE_BRFALSE) ves_abort(); BREAK;
+		CASE (CEE_BRTRUE) ves_abort(); BREAK;
+		CASE (CEE_BEQ) ves_abort(); BREAK;
+		CASE (CEE_BGE) ves_abort(); BREAK;
+		CASE (CEE_BGT) ves_abort(); BREAK;
+		CASE (CEE_BLE) ves_abort(); BREAK;
+		CASE (CEE_BLT) ves_abort(); BREAK;
+		CASE (CEE_BNE_UN) ves_abort(); BREAK;
+		CASE (CEE_BGE_UN) ves_abort(); BREAK;
+		CASE (CEE_BGT_UN) ves_abort(); BREAK;
+		CASE (CEE_BLE_UN) ves_abort(); BREAK;
+		CASE (CEE_BLT_UN) ves_abort(); BREAK;
+		CASE (CEE_SWITCH) ves_abort(); BREAK;
+		CASE (CEE_LDIND_I1) ves_abort(); BREAK;
+		CASE (CEE_LDIND_U1) ves_abort(); BREAK;
+		CASE (CEE_LDIND_I2) ves_abort(); BREAK;
+		CASE (CEE_LDIND_U2) ves_abort(); BREAK;
+		CASE (CEE_LDIND_I4) ves_abort(); BREAK;
+		CASE (CEE_LDIND_U4) ves_abort(); BREAK;
+		CASE (CEE_LDIND_I8) ves_abort(); BREAK;
+		CASE (CEE_LDIND_I) ves_abort(); BREAK;
+		CASE (CEE_LDIND_R4) ves_abort(); BREAK;
+		CASE (CEE_LDIND_R8) ves_abort(); BREAK;
+		CASE (CEE_LDIND_REF) ves_abort(); BREAK;
+		CASE (CEE_STIND_REF) ves_abort(); BREAK;
+		CASE (CEE_STIND_I1) ves_abort(); BREAK;
+		CASE (CEE_STIND_I2) ves_abort(); BREAK;
+		CASE (CEE_STIND_I4) ves_abort(); BREAK;
+		CASE (CEE_STIND_I8) ves_abort(); BREAK;
+		CASE (CEE_STIND_R4) ves_abort(); BREAK;
+		CASE (CEE_STIND_R8) ves_abort(); BREAK;
 		CASE (CEE_ADD)
 			++ip;
 			--sp;
@@ -571,7 +589,7 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			else
 				GET_NATI (sp [-1]) %= GET_NATI (sp [0]);
 			BREAK;
-		CASE (CEE_REM_UN) g_assert_not_reached(); BREAK;
+		CASE (CEE_REM_UN) ves_abort(); BREAK;
 		CASE (CEE_AND)
 			++ip;
 			--sp;
@@ -622,7 +640,7 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			else
 				GET_NATI (sp [-1]) >>= GET_NATI (sp [0]);
 			BREAK;
-		CASE (CEE_SHR_UN) g_assert_not_reached(); BREAK;
+		CASE (CEE_SHR_UN) ves_abort(); BREAK;
 		CASE (CEE_NEG)
 			++ip;
 			if (sp->type == VAL_I32)
@@ -643,8 +661,8 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			else if (sp->type == VAL_NATI)
 				sp->data.p = (gpointer)(~ (nati_t)sp->data.p);
 			BREAK;
-		CASE (CEE_CONV_I1) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_I2) g_assert_not_reached(); BREAK;
+		CASE (CEE_CONV_I1) ves_abort(); BREAK;
+		CASE (CEE_CONV_I2) ves_abort(); BREAK;
 		CASE (CEE_CONV_I4)
 			++ip;
 			/* FIXME: handle other cases. what about sign? */
@@ -652,11 +670,11 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 				sp [-1].data.i = (gint32)sp [-1].data.f;
 				sp [-1].type = VAL_I32;
 			} else {
-				g_assert_not_reached();
+				ves_abort();
 			}
 			BREAK;
-		CASE (CEE_CONV_I8) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_R4) g_assert_not_reached(); BREAK;
+		CASE (CEE_CONV_I8) ves_abort(); BREAK;
+		CASE (CEE_CONV_R4) ves_abort(); BREAK;
 		CASE (CEE_CONV_R8)
 			++ip;
 			/* FIXME: handle other cases. what about sign? */
@@ -664,7 +682,7 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 				sp [-1].data.f = (double)sp [-1].data.i;
 				sp [-1].type = VAL_DOUBLE;
 			} else {
-				g_assert_not_reached();
+				ves_abort();
 			}
 			BREAK;
 		CASE (CEE_CONV_U4)
@@ -674,25 +692,25 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 				sp [-1].data.i = (guint32)sp [-1].data.f;
 				sp [-1].type = VAL_I32;
 			} else {
-				g_assert_not_reached();
+				ves_abort();
 			}
 			BREAK;
-		CASE (CEE_CONV_U8) g_assert_not_reached(); BREAK;
-		CASE (CEE_CALLVIRT) g_assert_not_reached(); BREAK;
-		CASE (CEE_CPOBJ) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDOBJ) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDSTR) g_assert_not_reached(); BREAK;
-		CASE (CEE_NEWOBJ) g_assert_not_reached(); BREAK;
-		CASE (CEE_CASTCLASS) g_assert_not_reached(); BREAK;
-		CASE (CEE_ISINST) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_R_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_UNUSED58) g_assert_not_reached(); BREAK;
-		CASE (CEE_UNUSED1) g_assert_not_reached(); BREAK;
-		CASE (CEE_UNBOX) g_assert_not_reached(); BREAK;
-		CASE (CEE_THROW) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDFLD) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDFLDA) g_assert_not_reached(); BREAK;
-		CASE (CEE_STFLD) g_assert_not_reached(); BREAK;
+		CASE (CEE_CONV_U8) ves_abort(); BREAK;
+		CASE (CEE_CALLVIRT) ves_abort(); BREAK;
+		CASE (CEE_CPOBJ) ves_abort(); BREAK;
+		CASE (CEE_LDOBJ) ves_abort(); BREAK;
+		CASE (CEE_LDSTR) ves_abort(); BREAK;
+		CASE (CEE_NEWOBJ) ves_abort(); BREAK;
+		CASE (CEE_CASTCLASS) ves_abort(); BREAK;
+		CASE (CEE_ISINST) ves_abort(); BREAK;
+		CASE (CEE_CONV_R_UN) ves_abort(); BREAK;
+		CASE (CEE_UNUSED58) ves_abort(); BREAK;
+		CASE (CEE_UNUSED1) ves_abort(); BREAK;
+		CASE (CEE_UNBOX) ves_abort(); BREAK;
+		CASE (CEE_THROW) ves_abort(); BREAK;
+		CASE (CEE_LDFLD) ves_abort(); BREAK;
+		CASE (CEE_LDFLDA) ves_abort(); BREAK;
+		CASE (CEE_STFLD) ves_abort(); BREAK;
 		CASE (CEE_LDSFLD)
 			/* FIXME: get the real field here */
 			ip += 5;
@@ -700,47 +718,47 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 			sp->data.i = fake_field;
 			++sp;
 			BREAK;
-		CASE (CEE_LDSFLDA) g_assert_not_reached(); BREAK;
+		CASE (CEE_LDSFLDA) ves_abort(); BREAK;
 		CASE (CEE_STSFLD)
 			/* FIXME: get the real field here */
 			ip += 5;
 			--sp;
 			fake_field = sp->data.i;
 			BREAK;
-		CASE (CEE_STOBJ) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_I1_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_I2_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_I4_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_I8_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_U1_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_U2_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_U4_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_U8_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_I_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_U_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_BOX) g_assert_not_reached(); BREAK;
-		CASE (CEE_NEWARR) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDLEN) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDELEMA) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDELEM_I1) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDELEM_U1) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDELEM_I2) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDELEM_U2) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDELEM_I4) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDELEM_U4) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDELEM_I8) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDELEM_I) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDELEM_R4) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDELEM_R8) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDELEM_REF) g_assert_not_reached(); BREAK;
-		CASE (CEE_STELEM_I) g_assert_not_reached(); BREAK;
-		CASE (CEE_STELEM_I1) g_assert_not_reached(); BREAK;
-		CASE (CEE_STELEM_I2) g_assert_not_reached(); BREAK;
-		CASE (CEE_STELEM_I4) g_assert_not_reached(); BREAK;
-		CASE (CEE_STELEM_I8) g_assert_not_reached(); BREAK;
-		CASE (CEE_STELEM_R4) g_assert_not_reached(); BREAK;
-		CASE (CEE_STELEM_R8) g_assert_not_reached(); BREAK;
-		CASE (CEE_STELEM_REF) g_assert_not_reached(); BREAK;
+		CASE (CEE_STOBJ) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_I1_UN) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_I2_UN) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_I4_UN) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_I8_UN) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_U1_UN) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_U2_UN) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_U4_UN) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_U8_UN) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_I_UN) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_U_UN) ves_abort(); BREAK;
+		CASE (CEE_BOX) ves_abort(); BREAK;
+		CASE (CEE_NEWARR) ves_abort(); BREAK;
+		CASE (CEE_LDLEN) ves_abort(); BREAK;
+		CASE (CEE_LDELEMA) ves_abort(); BREAK;
+		CASE (CEE_LDELEM_I1) ves_abort(); BREAK;
+		CASE (CEE_LDELEM_U1) ves_abort(); BREAK;
+		CASE (CEE_LDELEM_I2) ves_abort(); BREAK;
+		CASE (CEE_LDELEM_U2) ves_abort(); BREAK;
+		CASE (CEE_LDELEM_I4) ves_abort(); BREAK;
+		CASE (CEE_LDELEM_U4) ves_abort(); BREAK;
+		CASE (CEE_LDELEM_I8) ves_abort(); BREAK;
+		CASE (CEE_LDELEM_I) ves_abort(); BREAK;
+		CASE (CEE_LDELEM_R4) ves_abort(); BREAK;
+		CASE (CEE_LDELEM_R8) ves_abort(); BREAK;
+		CASE (CEE_LDELEM_REF) ves_abort(); BREAK;
+		CASE (CEE_STELEM_I) ves_abort(); BREAK;
+		CASE (CEE_STELEM_I1) ves_abort(); BREAK;
+		CASE (CEE_STELEM_I2) ves_abort(); BREAK;
+		CASE (CEE_STELEM_I4) ves_abort(); BREAK;
+		CASE (CEE_STELEM_I8) ves_abort(); BREAK;
+		CASE (CEE_STELEM_R4) ves_abort(); BREAK;
+		CASE (CEE_STELEM_R8) ves_abort(); BREAK;
+		CASE (CEE_STELEM_REF) ves_abort(); BREAK;
 		CASE (CEE_UNUSED2) 
 		CASE (CEE_UNUSED3) 
 		CASE (CEE_UNUSED4) 
@@ -756,27 +774,27 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 		CASE (CEE_UNUSED14) 
 		CASE (CEE_UNUSED15) 
 		CASE (CEE_UNUSED16) 
-		CASE (CEE_UNUSED17) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_I1) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_U1) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_I2) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_U2) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_I4) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_U4) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_I8) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_U8) g_assert_not_reached(); BREAK;
+		CASE (CEE_UNUSED17) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_I1) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_U1) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_I2) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_U2) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_I4) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_U4) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_I8) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_U8) ves_abort(); BREAK;
 		CASE (CEE_UNUSED50) 
 		CASE (CEE_UNUSED18) 
 		CASE (CEE_UNUSED19) 
 		CASE (CEE_UNUSED20) 
 		CASE (CEE_UNUSED21) 
 		CASE (CEE_UNUSED22) 
-		CASE (CEE_UNUSED23) g_assert_not_reached(); BREAK;
-		CASE (CEE_REFANYVAL) g_assert_not_reached(); BREAK;
-		CASE (CEE_CKFINITE) g_assert_not_reached(); BREAK;
-		CASE (CEE_UNUSED24) g_assert_not_reached(); BREAK;
-		CASE (CEE_UNUSED25) g_assert_not_reached(); BREAK;
-		CASE (CEE_MKREFANY) g_assert_not_reached(); BREAK;
+		CASE (CEE_UNUSED23) ves_abort(); BREAK;
+		CASE (CEE_REFANYVAL) ves_abort(); BREAK;
+		CASE (CEE_CKFINITE) ves_abort(); BREAK;
+		CASE (CEE_UNUSED24) ves_abort(); BREAK;
+		CASE (CEE_UNUSED25) ves_abort(); BREAK;
+		CASE (CEE_MKREFANY) ves_abort(); BREAK;
 		CASE (CEE_UNUSED59) 
 		CASE (CEE_UNUSED60) 
 		CASE (CEE_UNUSED61) 
@@ -785,24 +803,24 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 		CASE (CEE_UNUSED64) 
 		CASE (CEE_UNUSED65) 
 		CASE (CEE_UNUSED66) 
-		CASE (CEE_UNUSED67) g_assert_not_reached(); BREAK;
-		CASE (CEE_LDTOKEN) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_U2) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_U1) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_I) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_I) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_OVF_U) g_assert_not_reached(); BREAK;
-		CASE (CEE_ADD_OVF) g_assert_not_reached(); BREAK;
-		CASE (CEE_ADD_OVF_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_MUL_OVF) g_assert_not_reached(); BREAK;
-		CASE (CEE_MUL_OVF_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_SUB_OVF) g_assert_not_reached(); BREAK;
-		CASE (CEE_SUB_OVF_UN) g_assert_not_reached(); BREAK;
-		CASE (CEE_ENDFINALLY) g_assert_not_reached(); BREAK;
-		CASE (CEE_LEAVE) g_assert_not_reached(); BREAK;
-		CASE (CEE_LEAVE_S) g_assert_not_reached(); BREAK;
-		CASE (CEE_STIND_I) g_assert_not_reached(); BREAK;
-		CASE (CEE_CONV_U) g_assert_not_reached(); BREAK;
+		CASE (CEE_UNUSED67) ves_abort(); BREAK;
+		CASE (CEE_LDTOKEN) ves_abort(); BREAK;
+		CASE (CEE_CONV_U2) ves_abort(); BREAK;
+		CASE (CEE_CONV_U1) ves_abort(); BREAK;
+		CASE (CEE_CONV_I) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_I) ves_abort(); BREAK;
+		CASE (CEE_CONV_OVF_U) ves_abort(); BREAK;
+		CASE (CEE_ADD_OVF) ves_abort(); BREAK;
+		CASE (CEE_ADD_OVF_UN) ves_abort(); BREAK;
+		CASE (CEE_MUL_OVF) ves_abort(); BREAK;
+		CASE (CEE_MUL_OVF_UN) ves_abort(); BREAK;
+		CASE (CEE_SUB_OVF) ves_abort(); BREAK;
+		CASE (CEE_SUB_OVF_UN) ves_abort(); BREAK;
+		CASE (CEE_ENDFINALLY) ves_abort(); BREAK;
+		CASE (CEE_LEAVE) ves_abort(); BREAK;
+		CASE (CEE_LEAVE_S) ves_abort(); BREAK;
+		CASE (CEE_STIND_I) ves_abort(); BREAK;
+		CASE (CEE_CONV_U) ves_abort(); BREAK;
 		CASE (CEE_UNUSED26) 
 		CASE (CEE_UNUSED27) 
 		CASE (CEE_UNUSED28) 
@@ -825,47 +843,47 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 		CASE (CEE_UNUSED45) 
 		CASE (CEE_UNUSED46) 
 		CASE (CEE_UNUSED47) 
-		CASE (CEE_UNUSED48) g_assert_not_reached(); BREAK;
-		CASE (CEE_PREFIX7) g_assert_not_reached(); BREAK;
-		CASE (CEE_PREFIX6) g_assert_not_reached(); BREAK;
-		CASE (CEE_PREFIX5) g_assert_not_reached(); BREAK;
-		CASE (CEE_PREFIX4) g_assert_not_reached(); BREAK;
-		CASE (CEE_PREFIX3) g_assert_not_reached(); BREAK;
-		CASE (CEE_PREFIX2) g_assert_not_reached(); BREAK;
-		CASE (CEE_PREFIXREF) g_assert_not_reached(); BREAK;
+		CASE (CEE_UNUSED48) ves_abort(); BREAK;
+		CASE (CEE_PREFIX7) ves_abort(); BREAK;
+		CASE (CEE_PREFIX6) ves_abort(); BREAK;
+		CASE (CEE_PREFIX5) ves_abort(); BREAK;
+		CASE (CEE_PREFIX4) ves_abort(); BREAK;
+		CASE (CEE_PREFIX3) ves_abort(); BREAK;
+		CASE (CEE_PREFIX2) ves_abort(); BREAK;
+		CASE (CEE_PREFIXREF) ves_abort(); BREAK;
 		SUB_SWITCH
 			++ip;
 			switch (*ip) {
-			case CEE_ARGLIST: g_assert_not_reached(); break;
-			case CEE_CEQ: g_assert_not_reached(); break;
-			case CEE_CGT: g_assert_not_reached(); break;
-			case CEE_CGT_UN: g_assert_not_reached(); break;
-			case CEE_CLT: g_assert_not_reached(); break;
-			case CEE_CLT_UN: g_assert_not_reached(); break;
-			case CEE_LDFTN: g_assert_not_reached(); break;
-			case CEE_LDVIRTFTN: g_assert_not_reached(); break;
-			case CEE_UNUSED56: g_assert_not_reached(); break;
-			case CEE_LDARG: g_assert_not_reached(); break;
-			case CEE_LDARGA: g_assert_not_reached(); break;
-			case CEE_STARG: g_assert_not_reached(); break;
-			case CEE_LDLOC: g_assert_not_reached(); break;
-			case CEE_LDLOCA: g_assert_not_reached(); break;
-			case CEE_STLOC: g_assert_not_reached(); break;
-			case CEE_LOCALLOC: g_assert_not_reached(); break;
-			case CEE_UNUSED57: g_assert_not_reached(); break;
-			case CEE_ENDFILTER: g_assert_not_reached(); break;
-			case CEE_UNALIGNED_: g_assert_not_reached(); break;
-			case CEE_VOLATILE_: g_assert_not_reached(); break;
-			case CEE_TAIL_: g_assert_not_reached(); break;
-			case CEE_INITOBJ: g_assert_not_reached(); break;
-			case CEE_UNUSED68: g_assert_not_reached(); break;
-			case CEE_CPBLK: g_assert_not_reached(); break;
-			case CEE_INITBLK: g_assert_not_reached(); break;
-			case CEE_UNUSED69: g_assert_not_reached(); break;
-			case CEE_RETHROW: g_assert_not_reached(); break;
-			case CEE_UNUSED: g_assert_not_reached(); break;
-			case CEE_SIZEOF: g_assert_not_reached(); break;
-			case CEE_REFANYTYPE: g_assert_not_reached(); break;
+			case CEE_ARGLIST: ves_abort(); break;
+			case CEE_CEQ: ves_abort(); break;
+			case CEE_CGT: ves_abort(); break;
+			case CEE_CGT_UN: ves_abort(); break;
+			case CEE_CLT: ves_abort(); break;
+			case CEE_CLT_UN: ves_abort(); break;
+			case CEE_LDFTN: ves_abort(); break;
+			case CEE_LDVIRTFTN: ves_abort(); break;
+			case CEE_UNUSED56: ves_abort(); break;
+			case CEE_LDARG: ves_abort(); break;
+			case CEE_LDARGA: ves_abort(); break;
+			case CEE_STARG: ves_abort(); break;
+			case CEE_LDLOC: ves_abort(); break;
+			case CEE_LDLOCA: ves_abort(); break;
+			case CEE_STLOC: ves_abort(); break;
+			case CEE_LOCALLOC: ves_abort(); break;
+			case CEE_UNUSED57: ves_abort(); break;
+			case CEE_ENDFILTER: ves_abort(); break;
+			case CEE_UNALIGNED_: ves_abort(); break;
+			case CEE_VOLATILE_: ves_abort(); break;
+			case CEE_TAIL_: ves_abort(); break;
+			case CEE_INITOBJ: ves_abort(); break;
+			case CEE_UNUSED68: ves_abort(); break;
+			case CEE_CPBLK: ves_abort(); break;
+			case CEE_INITBLK: ves_abort(); break;
+			case CEE_UNUSED69: ves_abort(); break;
+			case CEE_RETHROW: ves_abort(); break;
+			case CEE_UNUSED: ves_abort(); break;
+			case CEE_SIZEOF: ves_abort(); break;
+			case CEE_REFANYTYPE: ves_abort(); break;
 			case CEE_UNUSED52: 
 			case CEE_UNUSED53: 
 			case CEE_UNUSED54: 
@@ -886,7 +904,7 @@ ves_exec_method (cli_image_info_t *iinfo, MonoMethod *mh, stackval *args)
 		}
 	}
 
-	g_assert_not_reached();
+	g_assert_not_reached ();
 }
 
 static int 
@@ -910,18 +928,18 @@ int
 main (int argc, char *argv [])
 {
 	cli_image_info_t *iinfo;
-	MonoAssembly *assembly;
+	MonoImage *image;
 	int retval = 0;
 	char *file = argv [1];
 
-	assembly = mono_assembly_open (file, NULL);
-	if (!assembly){
-		fprintf (stderr, "Can not open assembly %s\n", file);
+	image = mono_image_open (file, NULL);
+	if (!image){
+		fprintf (stderr, "Can not open image %s\n", file);
 		exit (1);
 	}
-	iinfo = assembly->image_info;
+	iinfo = image->image_info;
 	retval = ves_exec (iinfo);
-	mono_assembly_close (assembly);
+	mono_image_close (image);
 	printf("count: %d\n", count);
 
 	return retval;
