@@ -6,7 +6,16 @@
 
 	There are a number of mailing lists for Mono in English:
 
-	<table>
+	<table border=1>
+	  <tr>
+	    <td>
+		<b><a
+	href="http://lists.ximian.com/mailman/listinfo/mono-announce-list">mono-announce-list</a></b>
+	    </td>
+	    <td>
+	Announcements of Mono developments.
+	    </td>	
+	  </tr>
 	  <tr>
 	    <td>
 		<b><a
@@ -56,15 +65,6 @@
 	  <tr>
 	    <td>
 		<b><a
-	href="http://lists.ximian.com/mailman/listinfo/mono-announce-list">mono-announce-list</a></b>
-	    </td>
-	    <td>
-	Announcements of Mono developments.
-	    </td>	
-	  </tr>
-	  <tr>
-	    <td>
-		<b><a
 	href="http://lists.ximian.com/mailman/listinfo/mono-gc-list">mono-gc-list</a></b>
 	    </td>
 	    <td>
@@ -77,7 +77,7 @@
 	href="http://lists.ximian.com/mailman/listinfo/mono-patches">mono-patches</a></b>
 	    </td>
 	    <td>
-	Track the CVS activity of Mono on this mailing list (patches are sent to recipients).  
+	Track the CVS activity of Mono on this mailing list (patches are sent to recipients).  <p>
 	You can get <a href="http://www.go-mono.com/snapshots">daily snapshots</a> as well.
 	    </td>
 	  </tr>
@@ -126,7 +126,6 @@
 	Used to discuss the Gtk bindings for Mono (<a href="http://gtk-sharp.sf.net">Gtk#</a>).
 	    </td>
 	  </tr>
-http://lists.ximian.com/mailman/listinfo/gtk-sharp-list
 	</table>
 
 	Other mailing lists of interest:
