@@ -1607,23 +1607,24 @@ mono_compile_get_interface_var (MonoCompile *cfg, int slot, MonoInst *ins)
  */
 static int
 handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int count) {
-	int i;
+	int i, bindex;
 	MonoBasicBlock *outb;
 	MonoInst *inst, **locals;
+	gboolean found;
 
 	if (!count)
 		return 0;
 	if (cfg->verbose_level > 3)
 		g_print ("%d item(s) on exit from B%d\n", count, bb->block_num);
 	if (!bb->out_scount) {
-		int found = 0;
 		bb->out_scount = count;
 		//g_print ("bblock %d has out:", bb->block_num);
+		found = FALSE;
 		for (i = 0; i < bb->out_count; ++i) {
 			outb = bb->out_bb [i];
 			//g_print (" %d", outb->block_num);
 			if (outb->in_stack) {
-				found = 1;
+				found = TRUE;
 				bb->out_stack = outb->in_stack;
 				break;
 			}
@@ -1635,16 +1636,40 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 /* see bug#58863, but removing this code causes regressions in gtk-sharp build 
  * (SEGV running Method::Initialize() in gapi_codegen.exe) 
  */
-#if 1
-				/* try to reuse temps already allocated for this purpouse, if they occupy the same 
-				 * stack slot and if they are of the same type. */
-				bb->out_stack [i] = mono_compile_get_interface_var (cfg, i, sp [i]);
-#else
-				bb->out_stack [i] = mono_compile_create_var (cfg, type_from_stack_type (sp [i]), OP_LOCAL);
-#endif
+				gboolean bug = FALSE;
+
+				if (strstr (cfg->method->klass->name, "Method") && strstr (cfg->method->name, "Initialize")) {
+					bug = TRUE;
+				}
+
+				/* 
+				 * try to reuse temps already allocated for this purpouse, if they occupy the same
+				 * stack slot and if they are of the same type.
+				 * This won't cause conflicts since if 'local' is used to 
+				 * store one of the values in the in_stack of a bblock, then
+				 * the same variable will be used for the same outgoing stack 
+				 * slot as well. 
+				 * This doesn't work when inlining methods, since the bblocks
+				 * in the inlined methods do not inherit their in_stack from
+				 * the bblock they are inlined to. See bug #58863 for an
+				 * example.
+				 */
+				if (cfg->inlined_method)
+					bb->out_stack [i] = mono_compile_create_var (cfg, type_from_stack_type (sp [i]), OP_LOCAL);
+				else
+					bb->out_stack [i] = mono_compile_get_interface_var (cfg, i, sp [i]);
 			}
 		}
 	}
+
+	for (i = 0; i < bb->out_count; ++i) {
+		outb = bb->out_bb [i];
+		if (outb->in_scount)
+			continue; /* check they are the same locals */
+		outb->in_scount = count;
+		outb->in_stack = bb->out_stack;
+	}
+
 	locals = bb->out_stack;
 	for (i = 0; i < count; ++i) {
 		/* add store ops at the end of the bb, before the branch */
@@ -1659,14 +1684,37 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 		if (cfg->verbose_level > 3)
 			g_print ("storing %d to temp %d\n", i, locals [i]->inst_c0);
 	}
-	
-	for (i = 0; i < bb->out_count; ++i) {
-		outb = bb->out_bb [i];
-		if (outb->in_scount)
-			continue; /* check they are the same locals */
-		outb->in_scount = count;
-		outb->in_stack = locals;
+
+	/*
+	 * It is possible that the out bblocks already have in_stack assigned, and
+	 * the in_stacks differ. In this case, we will store to all the different 
+	 * in_stacks.
+	 */
+
+	found = TRUE;
+	bindex = 0;
+	while (found) {
+		/* Find a bblock which has a different in_stack */
+		found = FALSE;
+		while (bindex < bb->out_count) {
+			outb = bb->out_bb [bindex];
+			if (outb->in_stack != locals) {
+				printf ("FOO: %s\n", mono_method_full_name (cfg->method, TRUE));
+				/* 
+				 * Instead of storing sp [i] to locals [i], we need to store
+				 * locals [i] to <new locals>[i], since the sp [i] tree can't
+				 * be shared between trees.
+				 */
+				for (i = 0; i < count; ++i)
+					mono_add_varcopy_to_end (cfg, bb, locals [i]->inst_c0, outb->in_stack [i]->inst_c0);
+				locals = outb->in_stack;
+				found = TRUE;
+				break;
+			}
+			bindex ++;
+		}
 	}
+	
 	return 0;
 }
 
