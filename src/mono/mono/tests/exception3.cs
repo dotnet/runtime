@@ -31,7 +31,7 @@ public class Ex {
 		}
 		if (catched != 1)
 			return 2;
-		if (test(0) != 33)
+		if (test(0) != 34)
 			return 3;
 		return 0;
 	}

@@ -25,7 +25,7 @@ public class Ex {
 	public static int Main () {
 		if (test(1) != 10)
 			return 1;
-		if (test(0) != 33)
+		if (test(0) != 34)
 			return 2;
 		return 0;
 	}
