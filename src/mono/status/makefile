@@ -1,6 +1,6 @@
 NETDIR=c:\\winnt\\microsoft.net\\framework\\v1.0.2914
 MCSCLASSDIR=..\\..\\mcs\\class
-CSC=//c/winnt/microsoft.net/framework/v1.0.2914/csc.exe /nologo
+CSC=csc.exe /nologo
 
 all: ByMaintainer ByNamespace webfiles
 
