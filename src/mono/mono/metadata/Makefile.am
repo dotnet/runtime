@@ -26,20 +26,6 @@ noinst_LTLIBRARIES = libmetadata.la libmonoruntime.la libmetadata-static.la libm
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $(GMODULE_CFLAGS) $(ICU_CFLAGS) \
 	-DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
 
-if WITH_BUNDLE
-bundle_srcs = mono-bundle.s mono-bundle.h
-bundle_obj = mono-bundle.o
-#BUILT_SOURCES = $(bundle_srcs)
-
-$(bundle_obj): $(bundle_srcs)
-$(bundle_srcs): mono-bundle.stamp
-	@if test -f $@; then :; else rm -f mono-bundle.stamp; $(MAKE) mono-bundle.stamp; fi
-mono-bundle.stamp: $(BUNDLE_FILE) $(srcdir)/make-bundle.pl
-	echo stamp > $@t
-	perl $(srcdir)/make-bundle.pl $(BUNDLE_FILE) mono-bundle.h mono-bundle.s
-	mv $@t $@
-
-endif
 
 CLEANFILES = mono-bundle.stamp
 
