@@ -1,5 +1,6 @@
 2004-04-28  Jackson Harper  <jackson@ximian.com>
 
+	* configure.in: Add new Makefile.amS
 	* runtime/Makefile.am: libs are now in profile dependant
 	directories.
 	* runtime/net_1_1/Makefile.am: Install and Uninstall the .net 1.1
