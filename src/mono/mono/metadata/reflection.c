@@ -2952,6 +2952,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly->token_fixups = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->method_to_table_idx = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->field_to_table_idx = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
+	assembly->param_marshalling = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->handleref = g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->tokens = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
@@ -5304,6 +5305,43 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 	}
 }
 
+static MonoMarshalSpec*
+mono_marshal_spec_from_builder (MonoAssembly *assembly,
+								MonoReflectionMarshal *minfo)
+{
+	MonoMarshalSpec *res;
+
+	res = g_new0 (MonoMarshalSpec, 1);
+	res->native = minfo->type;
+
+	switch (minfo->type) {
+	case MONO_NATIVE_LPARRAY:
+		res->data.array_data.elem_type = minfo->eltype;
+		res->data.array_data.param_num = 0; /* Not yet */
+		res->data.array_data.num_elem = minfo->count;
+		break;
+
+	case MONO_NATIVE_BYVALTSTR:
+	case MONO_NATIVE_BYVALARRAY:
+		res->data.array_data.num_elem = minfo->count;
+		break;
+
+	case MONO_NATIVE_CUSTOM:
+		if (minfo->marshaltyperef)
+			res->data.custom_data.custom_name =
+				type_get_qualified_name (minfo->marshaltyperef->type, 
+										 assembly);
+		if (minfo->mcookie)
+			res->data.custom_data.cookie = mono_string_to_utf8 (minfo->mcookie);
+		break;
+
+	default:
+		break;
+	}
+
+	return res;
+}
+
 static MonoMethod*
 reflection_methodbuilder_to_mono_method (MonoClass *klass,
 										 ReflectionMethodBuilder *rmb,
@@ -5311,6 +5349,8 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 {
 	MonoMethod *m;
 	MonoMethodNormal *pm;
+	MonoMarshalSpec **specs;
+	int i;
 
 	if ((rmb->attrs & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 	    (rmb->iattrs & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
@@ -5396,6 +5436,25 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 
 		pm->header = header;
 	}
+
+	/* Parameter marshalling */
+	specs = NULL;
+	if (rmb->pinfo)		
+		for (i = 0; i < mono_array_length (rmb->pinfo); ++i) {
+			MonoReflectionParamBuilder *pb;
+			if ((pb = mono_array_get (rmb->pinfo, MonoReflectionParamBuilder*, i))) {
+				if (pb->marshal_info) {
+					if (specs == NULL)
+						specs = g_new0 (MonoMarshalSpec*, sig->param_count + 1);
+					specs [pb->position] = 
+						mono_marshal_spec_from_builder (klass->image->assembly, pb->marshal_info);
+				}
+			}
+		}
+	if (specs != NULL)
+		mono_g_hash_table_insert (
+			((MonoDynamicAssembly*)klass->image->assembly->dynamic)->param_marshalling,
+			m, specs);
 
 	return m;
 }	

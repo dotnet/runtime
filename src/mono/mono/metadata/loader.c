@@ -761,6 +761,20 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 	for (i = 0; i < method->signature->param_count + 1; ++i)
 		mspecs [i] = NULL;
 
+	if (method->klass->image->assembly->dynamic) {
+		MonoMarshalSpec **dyn_specs = mono_g_hash_table_lookup (
+			((MonoDynamicAssembly*)method->klass->image->assembly->dynamic)->param_marshalling,
+			method);
+		if (dyn_specs) {
+			for (i = 0; i < method->signature->param_count + 1; ++i)
+				if (dyn_specs [i]) {
+					mspecs [i] = g_new0 (MonoMarshalSpec, 1);
+					memcpy (mspecs [i], dyn_specs [i], sizeof (MonoMarshalSpec));
+				}
+		}
+		return;
+	}
+
 	mono_class_init (klass);
 
 	methodt = &klass->image->tables [MONO_TABLE_METHOD];

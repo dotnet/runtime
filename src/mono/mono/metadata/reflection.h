@@ -270,6 +270,7 @@ typedef struct {
 	MonoGHashTable *token_fixups;
 	MonoGHashTable *method_to_table_idx;
 	MonoGHashTable *field_to_table_idx;
+	MonoGHashTable *param_marshalling;
 	gboolean run;
 	gboolean save;
 	char *strong_name;
