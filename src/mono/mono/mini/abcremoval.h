@@ -1,4 +1,7 @@
 
+#ifndef __MONO_ABCREMOVAL_H__
+#define __MONO_ABCREMOVAL_H__
+
 #include "mini.h"
 
 
@@ -79,5 +82,5 @@ typedef struct MonoRelationsEvaluationContext {
 	gssize variable;
 } MonoRelationsEvaluationContext;
 
-extern void
-mono_perform_abc_removal (MonoCompile *cfg);
+#endif /* __MONO_ABCREMOVAL_H__ */
+
