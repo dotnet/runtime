@@ -75,9 +75,9 @@ hex_dump (const char *buffer, int base, int count)
 	for (i = 0; i < count; i++){
 		if (show_header)
 			if ((i % 16) == 0)
-				printf ("\n0x%08x: ", (unsigned char) base + i);
+				printf ("\n0x%08X: ", (unsigned char) base + i);
 
-		printf ("%02x ", (unsigned char) (buffer [i]));
+		printf ("%02X ", (unsigned char) (buffer [i]));
 	}
 	fflush (stdout);
 }
