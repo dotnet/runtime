@@ -17,7 +17,7 @@
 #include "mono/io-layer/wapi.h"
 #include "wapi-private.h"
 
-#define DEBUG
+#undef DEBUG
 
 struct _WapiHandle_socket
 {
