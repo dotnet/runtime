@@ -50,6 +50,52 @@ int mono_return_int_ss (struct ss a) {
 	return a.i;
 }
 
+struct ss mono_return_ss (struct ss a) {
+	printf ("Got value %d\n", a.i);
+	a.i++;
+	return a;
+}
+
+struct sc1
+{
+	char c[1];
+};
+
+struct sc1 mono_return_sc1 (struct sc1 a) {
+	printf ("Got value %d\n", a.c[0]);
+	a.c[0]++;
+	return a;
+}
+
+
+struct sc3
+{
+	char c[3];
+};
+
+struct sc3 mono_return_sc3 (struct sc3 a) {
+	printf ("Got values %d %d %d\n", a.c[0], a.c[1], a.c[2]);
+	a.c[0]++;
+	a.c[1] += 2;
+	a.c[2] += 3;
+	return a;
+}
+
+struct sc5
+{
+	char c[5];
+};
+
+struct sc5 mono_return_sc5 (struct sc5 a) {
+	printf ("Got values %d %d %d\n", a.c[0], a.c[1], a.c[2], a.c[3], a.c[4]);
+	a.c[0]++;
+	a.c[1] += 2;
+	a.c[2] += 3;
+	a.c[3] += 4;
+	a.c[4] += 5;
+	return a;
+}
+
 union su
 {
 	int i1;
@@ -259,6 +305,19 @@ typedef struct {
 int
 mono_test_marshal_struct2 (simplestruct2 ss)
 {
+	if (ss.a == 0 && ss.b == 1 && ss.c == 0 &&
+	    !strcmp (ss.d, "TEST") && 
+	    ss.e == 99 && ss.f == 1.5 && ss.g == 42 && ss.h == (guint64)123)
+		return 0;
+
+	return 1;
+}
+
+int
+mono_test_marshal_struct2_2 (int i, int j, int k, simplestruct2 ss)
+{
+	if (i != 10 || j != 11 || k != 12)
+		return 1;
 	if (ss.a == 0 && ss.b == 1 && ss.c == 0 &&
 	    !strcmp (ss.d, "TEST") && 
 	    ss.e == 99 && ss.f == 1.5 && ss.g == 42 && ss.h == (guint64)123)
@@ -572,3 +631,35 @@ GetVersionEx (OSVERSIONINFO *osvi)
 
 	return osvi->a + osvi->b;
 }
+
+typedef struct {
+	double x;
+	double y;
+} point;
+
+int
+mono_test_marshal_point (point pt)
+{
+	printf("point %g %g\n", pt.x, pt.y);
+	if (pt.x == 1.25 && pt.y == 3.5)
+		return 0;
+
+	return 1;
+}
+
+typedef struct {
+	int x;
+	double y;
+} mixed_point;
+
+int
+mono_test_marshal_mixed_point (mixed_point pt)
+{
+	printf("mixed point %d %g\n", pt.x, pt.y);
+	if (pt.x == 5 && pt.y == 6.75)
+		return 0;
+
+	return 1;
+}
+
+

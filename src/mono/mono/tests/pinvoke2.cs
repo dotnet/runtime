@@ -33,6 +33,19 @@ public class Test {
 		public long h;
 	}
 
+	/* sparcv9 has complex conventions when passing structs with doubles in them 
+	   by value, some simple tests for them */
+	[StructLayout (LayoutKind.Sequential)]
+	public struct Point {
+		public double x;
+		public double y;
+	}
+
+	[StructLayout (LayoutKind.Sequential)]
+	public struct MixedPoint {
+		public int x;
+		public double y;
+	}
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_char")]
 	public static extern int mono_test_marshal_char (char a1);
@@ -45,6 +58,15 @@ public class Test {
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct2")]
 	public static extern int mono_test_marshal_struct2 (SimpleStruct2 ss);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct2_2")]
+	public static extern int mono_test_marshal_struct2_2 (int i, int j, int k, SimpleStruct2 ss);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_point")]
+	public static extern int mono_test_marshal_point (Point p);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_mixed_point")]
+	public static extern int mono_test_marshal_mixed_point (MixedPoint p);
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct_array")]
 	public static extern int mono_test_marshal_struct_array (SimpleStruct2[] ss);
@@ -89,10 +111,25 @@ public class Test {
 		if (mono_test_marshal_struct_array (ss_arr) != 0)
 			return 5;
 		
+		if (mono_test_marshal_struct2_2 (10, 11, 12, ss2) != 0)
+			return 6;
+		
 		SimpleDelegate d = new SimpleDelegate (delegate_test);
 
 		if (mono_test_marshal_delegate (d) != 0)
-			return 6;
+			return 7;
+
+		Point pt = new Point();
+		pt.x = 1.25;
+		pt.y = 3.5;
+		if (mono_test_marshal_point(pt) != 0)
+			return 8;
+
+		MixedPoint mpt = new MixedPoint();
+		mpt.x = 5;
+		mpt.y = 6.75;
+		if (mono_test_marshal_mixed_point(mpt) != 0)
+			return 9;
 
 		return 0;
 	}

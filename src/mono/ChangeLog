@@ -1,3 +1,10 @@
+2003-10-06  Bernie Solomon  <bernard@ugsolutions.com>
+
+	* mono/tests/pinvoke2.cs mono/tests/pinvoke11.cs 
+	mono/tests/libtest.c: Add more pass by value struct
+	tests for platforms with more complex calling conventions 
+	(Sparc V9, HPPA 64 bit).
+
 2003-10-06  Zoltan Varga  <vargaz@freemail.hu>
 
 	* mono/tests/pinvoke2.cs mono/tests/libtest.c: Add array of structs
