@@ -625,14 +625,11 @@ ves_icall_System_Threading_Thread_GetCachedCurrentCulture (MonoThread *this)
 {
 	MonoObject *res;
 
-	mono_monitor_enter (this->synch_lock);
-	if (this->culture_info && (this->culture_info->vtable->domain == mono_domain_get ()))
-		res = this->culture_info;
+	res = this->culture_info;
+	if (res && res->vtable->domain == mono_domain_get ())
+		return res;
 	else
-		res = NULL;
-	mono_monitor_exit (this->synch_lock);
-
-	return res;
+		return NULL;
 }
 
 MonoArray*
