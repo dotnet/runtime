@@ -218,10 +218,19 @@ mono_get_exception_type_load (MonoString *type_name)
 }
 
 MonoException *
-mono_get_exception_not_implemented ()
+mono_get_exception_not_implemented (const guchar *msg)
 {
-	return mono_exception_from_name (mono_defaults.corlib, "System",
-					 "NotImplementedException");
+	MonoException *ex;
+	MonoDomain *domain;
+	
+	ex = mono_exception_from_name (mono_defaults.corlib, "System",
+				       "NotImplementedException");
+	domain = ((MonoObject *)ex)->vtable->domain;
+
+	if (msg)
+		ex->message = mono_string_new (domain, msg);
+
+	return ex;
 }
 
 MonoException *

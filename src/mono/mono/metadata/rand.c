@@ -107,7 +107,7 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes
 
 void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes(MonoObject *self, MonoArray *arry)
 {
-    mono_raise_exception(mono_get_exception_not_implemented());
+    mono_raise_exception(mono_get_exception_not_implemented(NULL));
 }
 
 #endif /* OS definition */

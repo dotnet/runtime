@@ -70,7 +70,7 @@ MonoException *
 mono_get_exception_missing_method      (void);
 
 MonoException *
-mono_get_exception_not_implemented     (void);
+mono_get_exception_not_implemented     (const guchar *msg);
 
 MonoException*
 mono_get_exception_argument_null       (const guchar *arg);

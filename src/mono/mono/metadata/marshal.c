@@ -866,9 +866,13 @@ emit_str_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		mono_mb_patch_addr_s (mb, pos, mb->pos - pos - 1);
 		break;
 	}
-	default:
-		g_warning ("marshalling conversion %d not implemented", conv);
-		g_assert_not_reached ();
+	default: {
+		char *msg = g_strdup_printf ("marshalling conversion %d not implemented", conv);
+		MonoException *exc = mono_get_exception_not_implemented (msg);
+		g_warning (msg);
+		g_free (msg);
+		mono_raise_exception (exc);
+	}
 	}
 }
 
@@ -2806,7 +2810,10 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	return res;
 }
 
-/*
+/**
+ * mono_marshal_get_native_wrapper:
+ * @method: The MonoMethod to wrap.
+ *
  * generates IL code for the pinvoke wrapper (the generated method
  * calls the unmanaged code in method->addr)
  */
@@ -3043,9 +3050,13 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				case MONO_NATIVE_LPSTR:
 					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPSTR);
 					break;
-				default:
-					g_warning ("marshalling conversion %d not implemented", spec->native);
-					g_assert_not_reached ();
+				default: {
+					char *msg = g_strdup_printf ("string marshalling conversion %d not implemented", spec);
+					MonoException *exc = mono_get_exception_not_implemented (msg);
+					g_warning (msg);
+					g_free (msg);
+					mono_raise_exception (exc);
+				}
 				}
 			} else {
 				switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
@@ -3750,7 +3761,10 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	return res;
 }
 
-/*
+/**
+ * mono_marshal_get_struct_to_ptr:
+ * @klass:
+ *
  * generates IL code for StructureToPtr (object structure, IntPtr ptr, bool fDeleteOld)
  */
 MonoMethod *
@@ -3810,7 +3824,10 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 	return res;
 }
 
-/*
+/**
+ * mono_marshal_get_ptr_to_struct:
+ * @klass:
+ *
  * generates IL code for PtrToStructure (IntPtr src, object structure)
  */
 MonoMethod *
@@ -4057,6 +4074,12 @@ mono_marshal_string_array (MonoArray *array)
 	return result;
 }
 
+/**
+ * mono_marshal_set_last_error:
+ *
+ * This function is invoked to set the last error value from a P/Invoke call
+ * which has SetLastError set.
+ */
 void
 mono_marshal_set_last_error (void)
 {
