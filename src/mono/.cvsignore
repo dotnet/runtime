@@ -17,3 +17,6 @@ stamp-h
 stamp-h.in
 mono.pc
 mono.spec
+autom4te.cache
+mint.pc
+stamp-h1
