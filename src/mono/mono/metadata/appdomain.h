@@ -36,6 +36,7 @@ typedef struct {
 	MonoString *shadow_copy_directories;
 	MonoString *shadow_copy_files;
 	MonoBoolean publisher_policy;
+	MonoBoolean path_changed;
 } MonoAppDomainSetup;
 
 typedef GArray MonoJitInfoTable;
