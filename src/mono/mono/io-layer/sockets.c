@@ -302,6 +302,7 @@ int _wapi_connect(guint32 handle, const struct sockaddr *serv_addr,
 	struct _WapiHandlePrivate_socket *socket_private_handle;
 	gboolean ok;
 	int ret;
+	gint errnum;
 	
 	if(startup_count==0) {
 		WSASetLastError(WSANOTINITIALISED);
@@ -318,11 +319,28 @@ int _wapi_connect(guint32 handle, const struct sockaddr *serv_addr,
 	}
 	
 	ret=connect(socket_private_handle->fd, serv_addr, addrlen);
+	if(ret==-1 && errno==EACCES) {
+		/* Try setting SO_BROADCAST and connecting again, but
+		 * keep the original errno
+		 */
+		int true=1;
+		
+		errnum = errno;
+
+		ret=setsockopt (socket_private_handle->fd, SOL_SOCKET,
+				SO_BROADCAST, &true, sizeof(true));
+		if(ret==0) {
+			ret=connect (socket_private_handle->fd, serv_addr,
+				     addrlen);
+		}
+	} else if (ret==-1) {
+		errnum = errno;
+	}
+	
 	if(ret==-1) {
-		gint errnum = errno;
 #ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": bind error: %s",
-			  strerror(errno));
+		g_message(G_GNUC_PRETTY_FUNCTION ": connect error: %s",
+			  strerror(errnum));
 #endif
 		errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
 		WSASetLastError (errnum);
