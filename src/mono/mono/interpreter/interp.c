@@ -2493,7 +2493,13 @@ array_constructed:
 
 			if (sp [-1].type == VAL_OBJ) {
 				obj = sp [-1].data.p;
-				field = mono_class_get_field (obj->vtable->klass, token);
+				/* if we access a field from our parent and the parent was 
+				 * defined in another assembly, we get a memberref.
+				 */
+				if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
+					field = mono_field_from_memberref (image, token, NULL);
+				else
+					field = mono_class_get_field (obj->vtable->klass, token);
 				offset = field->offset;
 			} else { /* valuetype */
 				/*g_assert (sp [-1].type == VAL_VALUETA); */
@@ -2525,7 +2531,13 @@ array_constructed:
 			
 			if (sp [0].type == VAL_OBJ) {
 				obj = sp [0].data.p;
-				field = mono_class_get_field (obj->vtable->klass, token);
+				/* if we access a field from our parent and the parent was 
+				 * defined in another assembly, we get a memberref.
+				 */
+				if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
+					field = mono_field_from_memberref (image, token, NULL);
+				else
+					field = mono_class_get_field (obj->vtable->klass, token);
 				offset = field->offset;
 			} else { /* valuetype */
 				/*g_assert (sp->type == VAL_VALUETA); */
