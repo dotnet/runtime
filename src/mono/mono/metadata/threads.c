@@ -1126,11 +1126,15 @@ gfloat ves_icall_System_Threading_Interlocked_CompareExchange_Single (gfloat *lo
 int  
 mono_thread_get_abort_signal (void)
 {
+#ifdef __MINGW32__
+	return -1;
+#else
 #ifndef	SIGRTMIN
 	return SIGUSR1;
 #else
 	return SIGRTMIN;
 #endif
+#endif /* __MINGW32__ */
 }
 
 void
@@ -1141,13 +1145,16 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 	thread->abort_state = state;
 	thread->abort_exc = mono_get_exception_thread_abort ();
 
-
+#ifdef __MINGW32__
+	g_assert_not_reached ();
+#else
 	/* fixme: store the state somewhere */
 #ifdef PTHREAD_POINTER_ID
 	pthread_kill (GUINT_TO_POINTER(thread->tid), mono_thread_get_abort_signal ());
 #else
 	pthread_kill (thread->tid, mono_thread_get_abort_signal ());
 #endif
+#endif /* __MINGW32__ */
 }
 
 void
