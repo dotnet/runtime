@@ -5903,9 +5903,7 @@ static const IcallEntry buffer_icalls [] = {
 };
 
 static const IcallEntry char_icalls [] = {
-	{"GetDataTablePointers", ves_icall_System_Char_GetDataTablePointers},
-	{"InternalToLower(char,System.Globalization.CultureInfo)", ves_icall_System_Char_InternalToLower_Comp},
-	{"InternalToUpper(char,System.Globalization.CultureInfo)", ves_icall_System_Char_InternalToUpper_Comp}
+	{"GetDataTablePointers", ves_icall_System_Char_GetDataTablePointers}
 };
 
 static const IcallEntry defaultconf_icalls [] = {
@@ -6496,8 +6494,6 @@ static const IcallEntry string_icalls [] = {
 	{"InternalStrcpy(string,int,char[],int,int)", ves_icall_System_String_InternalStrcpy_CharsN},
 	{"InternalStrcpy(string,int,string)", ves_icall_System_String_InternalStrcpy_Str},
 	{"InternalStrcpy(string,int,string,int,int)", ves_icall_System_String_InternalStrcpy_StrN},
-	{"InternalToLower(System.Globalization.CultureInfo)", ves_icall_System_String_InternalToLower_Comp},
-	{"InternalToUpper(System.Globalization.CultureInfo)", ves_icall_System_String_InternalToUpper_Comp},
 	{"InternalTrim", ves_icall_System_String_InternalTrim},
 	{"get_Chars", ves_icall_System_String_get_Chars}
 };
