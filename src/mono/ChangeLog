@@ -1,3 +1,7 @@
+2003-12-10  Todd Berman <tberman@gentoo.org>
+
+	* configure.in: adding libicu url to the ICU: no message.
+
 2003-12-05  John Luke  <jluke@cfl.rr.com>
 
 	* data/config.in: new dll mapping entry for libgstreamer

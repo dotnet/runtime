@@ -749,6 +749,7 @@ enable_icu=no
 AC_PATH_PROG(ICU_CONFIG, icu-config, no)
 if test "x$ICU_CONFIG" = "xno" -o ! -x "$ICU_CONFIG"; then
 	AC_MSG_WARN([Only invariant locale available; install ICU for I18N support])
+	enable_icu="no, if you want full i18n support download it from: http://oss.software.ibm.com/icu/index.html"
 else
 	enable_icu="yes. Version: `$ICU_CONFIG --version`"
 	AC_DEFINE(HAVE_ICU)
