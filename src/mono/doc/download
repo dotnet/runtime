@@ -287,9 +287,9 @@
 
 		* Precompiled GLIB 2.0 and pkg-config packages (and
 		  their dependencies) by the <a href="http://www.gimp.org/~tml/gimp/win32//index.html">GIMP for Windows</a> project from
-		  <a href="http://www.go-mono.com/archive/pkgconfig-0.80-tml-20020101.zip">http://www.go-mono.com/archive/pkgconfig-0.80-tml-20020101.zip</a><br>
-		  <a href="http://www.go-mono.com/archive/glib-1.3.12-20020101.zip">http://www.go-mono.com/archive/glib-1.3.12-20020101.zip</a> <br>
-		  <a href="http://www.go-mono.com/archive/glib-dev-1.3.12-20020101.zip">http://www.go-mono.com/archive/glib-dev-1.3.12-20020101.zip</a> <br>
+		  <a href="http://www.go-mono.com/archive/pkgconfig-0.11-20020310.zip">http://www.go-mono.com/archive/pkgconfig-0.11-20020310.zip</a><br>
+		  <a href="http://www.go-mono.com/archive/glib-2.0.4-20020703.zip">http://www.go-mono.com/archive/glib-2.0.4-20020703.zip</a> <br>
+		  <a href="http://www.go-mono.com/archive/glib-dev-2.0.4-20020703.zip">http://www.go-mono.com/archive/glib-dev-2.0.4-20020703.zip</a> <br>
 		  <a href="http://www.go-mono.com/archive/libiconv-1.7.zip">http://www.go-mono.com/archive/libiconv-1.7.zip</a> <br>
 		  <a href="http://www.go-mono.com/archive/libiconv-dev-1.7.zip">http://www.go-mono.com/archive/libiconv-dev-1.7-20020101.zip</a> <br>
 		  <a href="http://www.go-mono.com/archive/libintl-0.10.40-20020101.zip">http://www.go-mono.com/archive/libintl-0.10.40-20020101.zip</a><br>
