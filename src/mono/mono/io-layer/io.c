@@ -1934,7 +1934,9 @@ gboolean DeleteFile(const gunichar2 *name)
  * @dest_name: a pointer to a NULL-terminated unicode string, that is the
  * new name for the file.
  *
- * Renames file @name to @dest_name
+ * Renames file @name to @dest_name.
+ * MoveFile sets ERROR_ALREADY_EXISTS if the destination exists, except
+ * when it is the same file as the source.  In that case it silently succeeds.
  *
  * Return value: %TRUE on success, %FALSE otherwise.
  */
@@ -1942,6 +1944,7 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 {
 	gchar *utf8_name, *utf8_dest_name;
 	int result;
+	struct stat stat_src, stat_dest;
 	
 	if(name==NULL) {
 #ifdef DEBUG
@@ -1981,6 +1984,18 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 		g_free (utf8_name);
 		SetLastError (ERROR_INVALID_NAME);
 		return FALSE;
+	}
+
+	/*
+	 * In C# land we check for the existence of src, but not for dest.
+	 * We check it here and return the failure if dest exists and is not
+	 * the same file as src.
+	 */
+	if (!stat (utf8_dest_name, &stat_dest) && !stat (utf8_name, &stat_src)) {
+		if (stat_dest.st_dev != stat_src.st_dev || stat_dest.st_ino != stat_src.st_ino) {
+			SetLastError (ERROR_ALREADY_EXISTS);
+			return FALSE;
+		}	
 	}
 
 	result = rename (utf8_name, utf8_dest_name);
