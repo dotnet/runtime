@@ -94,6 +94,23 @@ dump_table_typedef (MonoImage *m)
 }
 
 void
+dump_table_typespec (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPESPEC];
+	int i;
+
+	fprintf (output, "Typespec Table\n");
+	
+	for (i = 1; i <= t->rows; i++){		
+		char *typespec = get_typespec (m, i);
+
+		fprintf (output, "%d: %s\n", i, typespec);
+		g_free (typespec);
+	}
+	fprintf (output, "\n");
+}
+
+void
 dump_table_assemblyref (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_ASSEMBLYREF];

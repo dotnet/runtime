@@ -1139,6 +1139,7 @@ struct {
 	{ "--propertymap", MONO_TABLE_PROPERTYMAP, 	dump_table_property_map },
 	{ "--typedef",     MONO_TABLE_TYPEDEF,     	dump_table_typedef },
 	{ "--typeref",     MONO_TABLE_TYPEREF,     	dump_table_typeref },
+	{ "--typespec",    MONO_TABLE_TYPESPEC,     	dump_table_typespec },
 	{ "--implmap",     MONO_TABLE_IMPLMAP,     	dump_table_implmap },
 	{ NULL, -1 }
 };

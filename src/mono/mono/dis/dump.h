@@ -21,6 +21,7 @@ void dump_table_memberref    (MonoImage *m);
 void dump_table_param        (MonoImage *m);
 void dump_table_typedef      (MonoImage *m);
 void dump_table_typeref      (MonoImage *m);
+void dump_table_typespec     (MonoImage *m);
 void dump_table_exported     (MonoImage *m);
 void dump_table_nestedclass  (MonoImage *m);
 void dump_table_interfaceimpl (MonoImage *m);
