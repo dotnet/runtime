@@ -21,7 +21,6 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/socket-io.h>
-#include <mono/metadata/cil-coff.h>
 
 HANDLE mono_delegate_semaphore = NULL;
 CRITICAL_SECTION mono_delegate_section;
@@ -376,7 +375,6 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 	MonoDomain *cdom = mono_domain_get ();
 	MonoAssembly *assembly;
 	MonoImage *image;
-	MonoCLIImageInfo *iinfo;
 	MonoMethod *method;
 	MonoObject *margs;
 	char *filename;
@@ -394,8 +392,7 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 	}
 
 	image = assembly->image;
-	iinfo = image->image_info;
-	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
+	method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
 
 	if (!method)
 		g_error ("No entry point method found in %s", image->name);

@@ -808,3 +808,11 @@ mono_image_lookup_resource (MonoImage *image, guint32 res_id, guint32 lang_id, g
 
 	return(NULL);
 }
+
+guint32
+mono_image_get_entry_point (MonoImage *image)
+{
+	return ((MonoCLIImageInfo*)image->image_info)->cli_cli_header.ch_entry_point;
+}
+
+

@@ -19,7 +19,7 @@ typedef struct {
 	int   ref_count;
 	char *basedir;
 	MonoAssemblyName aname;
-	
+
 	MonoImage *image;
 	MonoImage **modules;
 	/* Load files here */
@@ -139,6 +139,9 @@ int           mono_image_ensure_section     (MonoImage *image,
 					     const char *section);
 int           mono_image_ensure_section_idx (MonoImage *image,
 					     int section);
+
+guint32       mono_image_get_entry_point    (MonoImage *image);
+
 /* This actually returns a MonoPEResourceDataEntry *, but declaring it
  * causes an include file loop.
  */
