@@ -235,7 +235,7 @@ mono_jit_info_table_add (MonoJitInfoTable *table, MonoJitInfo *ji)
 	gpointer start = ji->code_start;
 	int pos = mono_jit_info_table_index (table, start);
 
-	printf ("TESTADD %d %p\n", pos, ji->code_start);
+	//printf ("TESTADD %d %p\n", pos, ji->code_start);
 	g_array_insert_val (table, pos, ji);
 }
 
@@ -919,6 +919,9 @@ get_named_exception (const char *name)
 	o = mono_object_new (klass);
 	g_assert (o != NULL);
 
+	if (!klass->inited)
+		mono_jit_init_class (klass);
+	
 	for (i = 0; i < klass->method.count; ++i) {
 		if (!strcmp (".ctor", klass->methods [i]->name) &&
 		    klass->methods [i]->signature->param_count == 0) {
@@ -942,6 +945,16 @@ get_exception_divide_by_zero ()
 	if (ex)
 		return ex;
 	ex = get_named_exception ("DivideByZeroException");
+	return ex;
+}
+
+static MonoObject*
+get_exception_execution_engine ()
+{
+	static MonoObject *ex = NULL;
+	if (ex)
+		return ex;
+	ex = get_named_exception ("ExecutionEngineException");
 	return ex;
 }
 
@@ -2035,8 +2048,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			ci =  mono_mempool_alloc0 (mp, sizeof (MethodCallInfo));
 			ci->m = cm;
 
-			if (cm->flags &  METHOD_ATTRIBUTE_PINVOKE_IMPL)
-			    pinvoke = TRUE;
+			if ((cm->flags &  METHOD_ATTRIBUTE_PINVOKE_IMPL) &&
+			    !(cm->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+				pinvoke = TRUE;
 
 			if ((cm->flags & METHOD_ATTRIBUTE_FINAL) ||
 			    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
@@ -2052,13 +2066,14 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			nargs = csig->param_count;
 			arg_sp = sp -= nargs;
 			
-			if ((cm->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
-			    (cm->klass->parent == mono_defaults.array_class)) {
-				if (!strcmp (cm->name, "Set")) { 
-					array_set = TRUE;
-					nargs--;
-				} else if (!strcmp (cm->name, "Get")) 
-					array_get = TRUE;
+			if (cm->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+				if (cm->klass->parent == mono_defaults.array_class) {
+					if (!strcmp (cm->name, "Set")) { 
+						array_set = TRUE;
+						nargs--;
+					} else if (!strcmp (cm->name, "Get")) 
+						array_get = TRUE;
+				}
 			}
 
 			for (i = nargs - 1; i >= 0; i--) {
@@ -3024,7 +3039,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 
 				if (ei->try_start <= ip && ip < (ei->try_end) &&
 				    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
-					call_finally (ctx, ei->handler_start);
+					call_finally (ctx, (unsigned long)ei->handler_start);
 				}
 			}
 		}
@@ -3049,8 +3064,8 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 		next_bp = *((int *)ctx->ebp);
 		next_ip = *((int *)ctx->ebp + 1);
 
-		printf ("EI %08lx %08x %p %08lx %08x\n", ctx->ebp, next_bp, 
-			mono_end_of_stack, ctx->eip, next_ip);
+		//printf ("EI %08lx %08x %p %08lx %08x\n", ctx->ebp, next_bp, 
+		//mono_end_of_stack, ctx->eip, next_ip);
 		
 		if (next_bp < (unsigned)mono_end_of_stack) {
 
@@ -3059,18 +3074,24 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 			arch_handle_exception (ctx, obj);
 
 		} else {
-			char *message;
+			char *message = "";
 			MonoString *str = ((MonoException *)obj)->message;
 			
-			g_assert (str);
-			message = mono_string_to_utf8 (str);
+			if (str)
+				message = mono_string_to_utf8 (str);
 
 			g_warning ("unhandled exception \"%s\" - no more frames to unwind", message);
 			g_assert_not_reached ();
 		}
 
 	} else {
-		g_warning ("exception inside unmanaged code - not implemented %08lx", ctx->eip);
+		char *message = "";
+		MonoString *str = ((MonoException *)obj)->message;
+			
+		if (str)
+			message = mono_string_to_utf8 (str);
+		
+		g_warning ("exception \"%s\" inside unmanaged code - not implemented %08lx", message, ctx->eip);
 		g_assert_not_reached ();
 	}
 
@@ -3078,13 +3099,27 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 }
 
 static void
-fp_signal_handler (int _dummy)
+sigfpe_signal_handler (int _dummy)
 {
 	MonoObject *exc;
 	void **_p = (void **)&_dummy;
 	struct sigcontext *ctx = (struct sigcontext *)++_p;
 
 	exc = get_exception_divide_by_zero ();
+	
+	arch_handle_exception (ctx, exc);
+
+	g_error ("we should never reach this code");
+}
+
+static void
+sigsegv_signal_handler (int _dummy)
+{
+	MonoObject *exc;
+	void **_p = (void **)&_dummy;
+	struct sigcontext *ctx = (struct sigcontext *)++_p;
+
+	exc = get_exception_execution_engine ();
 	
 	arch_handle_exception (ctx, exc);
 
@@ -3131,10 +3166,16 @@ main (int argc, char *argv [])
 
 
 	/* catch SIGFPE */
-	sa.sa_handler = fp_signal_handler;
+	sa.sa_handler = sigfpe_signal_handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 	g_assert (syscall (SYS_sigaction, SIGFPE, &sa, NULL) != -1);
+
+	/* catch SIGSEGV */
+	sa.sa_handler = sigsegv_signal_handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = 0;
+	g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
 
 	mono_init ();
 	mono_init_icall ();

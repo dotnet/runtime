@@ -135,11 +135,28 @@ leave_method (MonoMethod *method, int edx, int eax, double test)
 			method->klass->name, method->name, eax);
 		break;
 	case MONO_TYPE_STRING:
-		printf ("[STRING:%s], ", mono_string_to_utf8 ((MonoString *)(eax)));
+		printf ("LEAVE: %s.%s::%s [STRING:%s], ", method->klass->name_space,
+			method->klass->name, method->name, 
+			mono_string_to_utf8 ((MonoString *)(eax)));
 		break;
-	case MONO_TYPE_PTR:
+	case MONO_TYPE_OBJECT: {
+		MonoObject *o = (MonoClass *)eax;
+		
+		printf ("LEAVE: %s.%s::%s ", method->klass->name_space,
+			method->klass->name, method->name);
+
+		if (o->klass == mono_defaults.boolean_class) {
+			printf ("[BOOLEAN:%p:%d]\n", o, *((guint8 *)o + sizeof (MonoObject)));		
+		} else {
+			if (o)
+				printf ("[%s.%s:%p]\n", o->klass->name_space, o->klass->name, o);
+			else
+				printf ("EAX=%p\n", (gpointer)eax);
+		}
+		break;
+	}
 	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_SZARRAY:

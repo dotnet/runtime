@@ -368,56 +368,6 @@ stmt: STIND_I2 (addr, reg) {
 	}
 }
 
-reg: LDIND_I1 (addr) {
-	switch (tree->left->data.ainfo.amode) {
-
-	case AMImmediate:
-		x86_mov_reg_mem (s->code, tree->reg1, tree->left->data.ainfo.offset, 1);
-		break;
-
-	case AMBase:
-		x86_mov_reg_membase (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
-				     tree->left->data.ainfo.offset, 1);
-		break;		
-	case AMIndex:
-		x86_mov_reg_memindex (s->code, tree->reg1, X86_NOBASEREG, tree->left->data.ainfo.offset,
-				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift, 1);
-		break;		
-	case AMBaseIndex:
-		x86_mov_reg_memindex (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
-				      tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
-				      tree->left->data.ainfo.shift, 1);
-		break;		
-	}
-
-	PRINT_REG ("LDIND_I1", tree->reg1);
-}
-
-reg: LDIND_I2 (addr) {
-	switch (tree->left->data.ainfo.amode) {
-
-	case AMImmediate:
-		x86_mov_reg_mem (s->code, tree->reg1, tree->left->data.ainfo.offset, 2);
-		break;
-
-	case AMBase:
-		x86_mov_reg_membase (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
-				     tree->left->data.ainfo.offset, 2);
-		break;		
-	case AMIndex:
-		x86_mov_reg_memindex (s->code, tree->reg1, X86_NOBASEREG, tree->left->data.ainfo.offset,
-				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift, 2);
-		break;		
-	case AMBaseIndex:
-		x86_mov_reg_memindex (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
-				      tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
-				      tree->left->data.ainfo.shift, 2);
-		break;		
-	}
-
-	PRINT_REG ("LDIND_I2", tree->reg1);
-}
-
 reg: LDIND_I4 (addr) {
 
 	switch (tree->left->data.ainfo.amode) {
@@ -445,6 +395,31 @@ reg: LDIND_I4 (addr) {
 	PRINT_REG ("LDIND_I4", tree->reg1);
 }
 
+reg: LDIND_I1 (addr) {
+	switch (tree->left->data.ainfo.amode) {
+
+	case AMImmediate:
+		x86_widen_mem (s->code, tree->reg1, tree->left->data.ainfo.offset, TRUE, FALSE);
+		break;
+
+	case AMBase:
+		x86_widen_membase (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
+				   tree->left->data.ainfo.offset, TRUE, FALSE);
+		break;		
+	case AMIndex:
+		x86_widen_memindex (s->code, tree->reg1, X86_NOBASEREG, tree->left->data.ainfo.offset,
+				    tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift, TRUE, FALSE);
+		break;		
+	case AMBaseIndex:
+		x86_widen_memindex (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
+				    tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
+				    tree->left->data.ainfo.shift, TRUE, FALSE);
+		break;		
+	}
+
+	PRINT_REG ("LDIND_I1", tree->reg1);
+}
+
 reg: LDIND_U1 (addr) {
 	switch (tree->left->data.ainfo.amode) {
 
@@ -468,6 +443,31 @@ reg: LDIND_U1 (addr) {
 	}
 
 	PRINT_REG ("LDIND_U1", tree->reg1);
+}
+
+reg: LDIND_I2 (addr) {
+	switch (tree->left->data.ainfo.amode) {
+
+	case AMImmediate:
+		x86_widen_mem (s->code, tree->reg1, tree->left->data.ainfo.offset, TRUE, TRUE);
+		break;
+
+	case AMBase:
+		x86_widen_membase (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
+				   tree->left->data.ainfo.offset, TRUE, TRUE);
+		break;		
+	case AMIndex:
+		x86_widen_memindex (s->code, tree->reg1, X86_NOBASEREG, tree->left->data.ainfo.offset,
+				    tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift, TRUE, TRUE);
+		break;		
+	case AMBaseIndex:
+		x86_widen_memindex (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
+				    tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
+				    tree->left->data.ainfo.shift, TRUE, TRUE);
+		break;		
+	}
+
+	PRINT_REG ("LDIND_U2", tree->reg1);
 }
 
 reg: LDIND_U2 (addr) {
@@ -520,7 +520,6 @@ reg: LDIND_U4 (addr) {
 	PRINT_REG ("LDIND_U4", tree->reg1);
 }
 
-
 locaddr: ADDR_L 10 {
 	tree->data.i = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;
 }
@@ -529,6 +528,7 @@ reg: ADDR_L 5 {
 	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->data.i).offset;  
 	x86_lea_membase (s->code, tree->reg1, X86_EBP, offset);
 }
+
 
 reg: ADDR_G 5 {
 	x86_mov_reg_imm (s->code, tree->reg1, tree->data.p);
