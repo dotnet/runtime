@@ -500,14 +500,11 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 }
 
 static char *
-dis_stringify_object (MonoImage *m, MonoType *type)
+dis_stringify_object_with_class (MonoImage *m, MonoClass *c)
 {
 	/* FIXME: handle MONO_TYPE_OBJECT ... */
-	const char *otype = type->type == MONO_TYPE_CLASS? "class" : "valuetype";
+	const char *otype = c->byval_arg.type == MONO_TYPE_CLASS? "class" : "valuetype";
 	char *assemblyref = NULL, *result;
-	MonoClass *c = mono_class_from_mono_type (type);
-	if (!c)
-		return g_strdup ("Unknown");
 	if (m != c->image) {
 		if (c->image->assembly_name) {
 			/* we cheat */
@@ -523,6 +520,13 @@ dis_stringify_object (MonoImage *m, MonoType *type)
 				*c->name_space?".":"", c->name);
 	g_free (assemblyref);
 	return result;
+}
+
+static char *
+dis_stringify_object (MonoImage *m, MonoType *type)
+{
+	MonoClass *c = mono_class_from_mono_type (type);
+	return dis_stringify_object_with_class (m, c);
 }
 
 char*
@@ -998,7 +1002,7 @@ get_method (MonoImage *m, guint32 token)
 
 	mh = mono_get_method (m, token, NULL);
 	if (mh) {
-		sig = dis_stringify_object (m, &mh->klass->byval_arg);
+		sig = dis_stringify_object_with_class (m, mh->klass);
 		name = g_strdup_printf ("%s::%s", sig, mh->name);
 		g_free (sig);
 	} else
