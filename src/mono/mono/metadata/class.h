@@ -218,6 +218,7 @@ struct _MonoGenericInst {
 	MonoMethod *generic_method;
 	int type_argc;
 	MonoType **type_argv;
+	guint32 is_open;
 };
 
 struct _MonoGenericParam {
@@ -283,6 +284,9 @@ mono_class_from_name_case  (MonoImage *image, const char* name_space, const char
 
 MonoClass * 
 mono_class_from_typeref    (MonoImage *image, guint32 type_token);
+
+gboolean
+mono_class_is_open_constructed_type (MonoType *t);
 
 MonoClass *
 mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gboolean is_mvar);

@@ -6174,7 +6174,11 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *ty
 
 		for (i = 0; i < ginst->type_argc; ++i) {
 			MonoReflectionType *garg = mono_array_get (types, gpointer, i);
+
 			ginst->type_argv [i] = garg->type;
+
+			if (!ginst->is_open)
+				ginst->is_open = mono_class_is_open_constructed_type (garg->type);
 		}
 
 		ginst->generic_type = &klass->byval_arg;
@@ -6193,6 +6197,9 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *ty
 
 				t = garg->type;
 			}
+
+			if (!ginst->is_open)
+				ginst->is_open = mono_class_is_open_constructed_type (t);
 
 			ginst->type_argv [i] = t;
 		}
@@ -6288,10 +6295,14 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_typ
 	ginst->generic_type = reflected_type->type.type;
 	ginst->type_argc = type_ginst->type_argc;
 	ginst->type_argv = type_ginst->type_argv;
+	ginst->is_open = type_ginst->is_open;
 
 	ginst->klass = mono_class_from_generic (ginst->generic_type, FALSE);
 
-	inflated = mono_class_inflate_generic_method (method, ginst);
+	if (type_ginst->is_open)
+		inflated = method;
+	else
+		inflated = mono_class_inflate_generic_method (method, ginst);
 
 	res = inflated_method_get_object (
 		mono_object_domain (reflected_type), inflated, (MonoReflectionMethod *) obj, ginst);

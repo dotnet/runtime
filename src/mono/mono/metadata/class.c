@@ -180,6 +180,27 @@ mono_type_get_name (MonoType *type)
 	return g_string_free (result, FALSE);
 }
 
+gboolean
+mono_class_is_open_constructed_type (MonoType *t)
+{
+	switch (t->type) {
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		return TRUE;
+	case MONO_TYPE_SZARRAY:
+		return mono_class_is_open_constructed_type (&t->data.klass->byval_arg);
+	case MONO_TYPE_ARRAY:
+		return mono_class_is_open_constructed_type (&t->data.array->eklass->byval_arg);
+	case MONO_TYPE_PTR:
+		return mono_class_is_open_constructed_type (t->data.type);
+	case MONO_TYPE_GENERICINST:
+		// FIXME
+		g_assert_not_reached ();
+	default:
+		return FALSE;
+	}
+}
+
 MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst)
 {
@@ -189,8 +210,14 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst)
 			return dup_type (ginst->type_argv [type->data.generic_param->num]);
 		else
 			return type;
-	case MONO_TYPE_VAR:
-		return dup_type (ginst->type_argv [type->data.generic_param->num]);
+	case MONO_TYPE_VAR: {
+		MonoType *t = ginst->type_argv [type->data.generic_param->num];
+
+		if ((t->type == MONO_TYPE_VAR) || (t->type == MONO_TYPE_MVAR))
+			return type;
+		else
+			return dup_type (t);
+	}
 	case MONO_TYPE_SZARRAY: {
 		MonoClass *eclass = type->data.klass;
 		MonoClass *nclass;
