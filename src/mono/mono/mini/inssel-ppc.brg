@@ -129,6 +129,26 @@ stmt: OP_SETRET (OP_ICONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+stmt: CEE_STIND_I (OP_REGVAR, CEE_SUB (CEE_LDIND_I (OP_REGVAR), OP_ICONST)),
+stmt: CEE_STIND_I4 (OP_REGVAR, CEE_SUB (CEE_LDIND_I4 (OP_REGVAR), OP_ICONST)),
+stmt: CEE_STIND_I (OP_REGVAR, CEE_ADD (CEE_LDIND_I (OP_REGVAR), OP_ICONST)),
+stmt: CEE_STIND_I4 (OP_REGVAR, CEE_ADD (CEE_LDIND_I4 (OP_REGVAR), OP_ICONST)) {
+	int con = state->right->right->tree->inst_c0;
+	int dreg = state->left->tree->dreg;
+	int sreg = state->right->left->left->tree->dreg;
+
+	if (state->right->op == CEE_ADD)
+		tree->opcode = OP_ADD_IMM;
+	else if (state->right->op == CEE_SUB)
+		tree->opcode = OP_SUB_IMM;
+	else
+		g_assert_not_reached ();
+	tree->inst_imm = con;
+	tree->sreg1 = sreg;
+	tree->dreg = dreg;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 stmt: OP_OUTARG (reg) {
 	if (tree->inst_imm) {
 		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, ppc_r1, tree->inst_imm, state->left->reg1);
