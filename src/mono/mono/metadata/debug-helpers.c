@@ -141,10 +141,17 @@ mono_signature_get_desc (MonoMethodSignature *sig, gboolean include_namespace)
 	return result;
 }
 
-/*
- * The allowed format of a method description string is:
+/**
+ * mono_method_desc_new:
+ *
+ * Creates a method description for `name', which conforms to the following
+ * specification:
+ *
  * [namespace.]classname:methodname[(args...)]
- * TODO: describe instance methods.
+ *
+ * in all the loaded assemblies.
+ *
+ * Returns a parsed representation of the method description.
  */
 MonoMethodDesc*
 mono_method_desc_new (const char *name, gboolean include_namespace)
@@ -215,6 +222,11 @@ mono_method_desc_from_method (MonoMethod *method)
 	return result;
 }
 
+/**
+ * mono_method_desc_free:
+ *
+ * Releases the MonoMethodDesc object `desc'.
+ */
 void
 mono_method_desc_free (MonoMethodDesc *desc)
 {

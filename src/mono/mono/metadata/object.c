@@ -908,8 +908,10 @@ void mono_upgrade_remote_class (MonoDomain *domain, MonoRemoteClass *remote_clas
 	mono_domain_unlock (domain);
 }
 
-/*
- * Retrieve the MonoMethod that would to be called on obj if obj is passed as
+/**
+ * mono_object_get_virtual_method:
+ *
+ * Retrieve the MonoMethod that would be called on obj if obj is passed as
  * the instance of a callvirt of method.
  */
 MonoMethod*
@@ -960,6 +962,36 @@ dummy_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObj
 
 static MonoInvokeFunc default_mono_runtime_invoke = dummy_mono_runtime_invoke;
 
+/**
+ * mono_runtime_invoke:
+ *
+ * Invokes the method represented by `method' on the object `obj'.
+ *
+ * obj is the 'this' pointer, it should be NULL for static
+ * methods, a MonoObject* for object instances and a pointer to
+ * the value type for value types.
+ *
+ * The params array contains the arguments to the method with the
+ * same convention: MonoObject* pointers for object instances and
+ * pointers to the value type otherwise. 
+ * 
+ * From unmanaged code you'll usually use the
+ * mono_runtime_invoke() variant.
+ *
+ * Note that this function doesn't handle virtual methods for
+ * you, it will exec the exact method you pass: we still need to
+ * expose a function to lookup the derived class implementation
+ * of a virtual method (there are examples of this in the code,
+ * though).
+ * 
+ * You can pass NULL as the exc argument if you don't want to
+ * catch exceptions, otherwise, *exc will be set to the exception
+ * thrown, if any.  if an exception is thrown, you can't use the
+ * MonoObject* result from the function.
+ * 
+ * If the method returns a value type, it is boxed in an object
+ * reference.
+ */
 MonoObject*
 mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {
@@ -1490,6 +1522,39 @@ mono_install_runtime_invoke (MonoInvokeFunc func)
 	default_mono_runtime_invoke = func ? func: dummy_mono_runtime_invoke;
 }
 
+/**
+ * mono_runtime_invoke:
+ *
+ * Invokes the method represented by `method' on the object `obj'.
+ *
+ * obj is the 'this' pointer, it should be NULL for static
+ * methods, a MonoObject* for object instances and a pointer to
+ * the value type for value types.
+ *
+ * The params array contains the arguments to the method with the
+ * same convention: MonoObject* pointers for object instances and
+ * pointers to the value type otherwise. The _invoke_array
+ * variant takes a C# object[] as the params argument (MonoArray
+ * *params): in this case the value types are boxed inside the
+ * respective reference representation.
+ * 
+ * From unmanaged code you'll usually use the
+ * mono_runtime_invoke() variant.
+ *
+ * Note that this function doesn't handle virtual methods for
+ * you, it will exec the exact method you pass: we still need to
+ * expose a function to lookup the derived class implementation
+ * of a virtual method (there are examples of this in the code,
+ * though).
+ * 
+ * You can pass NULL as the exc argument if you don't want to
+ * catch exceptions, otherwise, *exc will be set to the exception
+ * thrown, if any.  if an exception is thrown, you can't use the
+ * MonoObject* result from the function.
+ * 
+ * If the method returns a value type, it is boxed in an object
+ * reference.
+ */
 MonoObject*
 mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			   MonoObject **exc)
@@ -1620,8 +1685,10 @@ mono_object_allocate_spec (size_t size, void *gcdescr)
  * mono_object_new:
  * @klass: the class of the object that we want to create
  *
- * Returns: A newly created object whose definition is
- * looked up using @klass
+ * Returns a newly created object whose definition is
+ * looked up using @klass.   This will not invoke any constructors, 
+ * so the consumer of this routine has to invoke any constructors on
+ * its own to initialize the object.
  */
 MonoObject *
 mono_object_new (MonoDomain *domain, MonoClass *klass)
