@@ -5851,7 +5851,8 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 }
 
 static MonoReflectionInflatedMethod*
-inflated_method_get_object (MonoDomain *domain, MonoMethod *method, MonoReflectionMethod *declaring)
+inflated_method_get_object (MonoDomain *domain, MonoMethod *method, MonoReflectionType *decl_type,
+			    MonoReflectionMethod *declaring)
 {
 	const char *cname;
 	MonoClass *klass, *refclass;
@@ -5872,6 +5873,7 @@ inflated_method_get_object (MonoDomain *domain, MonoMethod *method, MonoReflecti
 	ret->rmethod.name = mono_string_new (domain, method->name);
 	ret->rmethod.reftype = mono_type_get_object (domain, &refclass->byval_arg);
 	ret->declaring = declaring;
+	ret->declaring_type = decl_type;
 	CACHE_OBJECT (method, ret, refclass);
 	return ret;
 }
@@ -5900,7 +5902,7 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *ty
 	if (klass->wastypebuilder && klass->reflection_info) {
 		tb = klass->reflection_info;
 
-		if (klass->parent)
+		if (tb->parent)
 			parent = mono_reflection_bind_generic_parameters (tb->parent, types);
 	}
 
@@ -5966,7 +5968,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 
 	inflated = mono_class_inflate_generic_method (method, ginst);
 
-	return inflated_method_get_object (mono_object_domain (rmethod), inflated, rmethod);
+	return inflated_method_get_object (mono_object_domain (rmethod), inflated, NULL, rmethod);
 }
 
 MonoReflectionInflatedMethod*
@@ -5999,7 +6001,9 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *type, MonoObj
 
 	inflated = mono_class_inflate_generic_method (method, ginst);
 
-	return inflated_method_get_object (mono_object_domain (type), inflated, (MonoReflectionMethod *) obj);
+	return inflated_method_get_object (
+		mono_object_domain (type), inflated, (MonoReflectionType *) type,
+		(MonoReflectionMethod *) obj);
 }
 
 MonoReflectionInflatedField*
