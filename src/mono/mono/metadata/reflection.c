@@ -2014,6 +2014,11 @@ resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image)
 	values [MONO_ASSEMBLYREF_CULTURE] = 0;
 	values [MONO_ASSEMBLYREF_HASH_VALUE] = 0;
 
+	if (strcmp ("", image->assembly->aname.culture)) {
+		values [MONO_ASSEMBLYREF_CULTURE] = string_heap_insert (&assembly->sheap,
+				image->assembly->aname.culture);
+	}
+
 	if ((pubkey = mono_image_get_public_key (image, &publen))) {
 		guchar pubtoken [9];
 		pubtoken [0] = 8;
