@@ -152,7 +152,7 @@ dissasemble_cil (MonoMetadata *m, MonoMethodHeader *mh)
 		case InlineI8: {
 			gint64 top = read64 (ptr);
 
-			fprintf (output, "%lld", (long long) top);
+			fprintf (output, "0x%llx", (long long) top);
 			ptr += 8;
 			break;
 		}

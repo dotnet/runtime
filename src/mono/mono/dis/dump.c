@@ -683,3 +683,26 @@ dump_table_customattr (MonoMetadata *m)
 		g_free (params);
 	}
 }
+
+void
+dump_table_nestedclass (MonoMetadata *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_NESTEDCLASS];
+	guint32 cols [MONO_NESTED_CLASS_SIZE];
+	int i;
+	char *nested, *nesting;
+	fprintf (output, "NestedClass Table (1..%d)\n", t->rows);
+
+	for (i = 1; i <= t->rows; i++){
+		mono_metadata_decode_row (t, i - 1, cols, MONO_NESTED_CLASS_SIZE);
+		nested = get_typedef (m, cols [MONO_NESTED_CLASS_NESTED]);
+		nesting = get_typedef (m, cols [MONO_NESTED_CLASS_ENCLOSING]);
+		fprintf (output, "%d: %d %d: %s in %s\n", i,
+				cols [MONO_NESTED_CLASS_NESTED], 
+				cols [MONO_NESTED_CLASS_ENCLOSING], nested, nesting);
+		g_free (nested);
+		g_free (nesting);
+	}
+	
+}
+

@@ -17,4 +17,5 @@ void dump_table_memberref    (MonoMetadata *m);
 void dump_table_param        (MonoMetadata *m);
 void dump_table_typedef      (MonoMetadata *m);
 void dump_table_typeref      (MonoMetadata *m);
+void dump_table_nestedclass  (MonoMetadata *m);
 void dump_table_interfaceimpl (MonoMetadata *m);
