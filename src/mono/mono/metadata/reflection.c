@@ -1181,6 +1181,8 @@ resolution_scope_from_image (MonoDynamicAssembly *assembly, MonoImage *image)
 	guint32 token;
 	guint32 *values;
 	guint32 cols [MONO_ASSEMBLY_SIZE];
+	const char *pubkey;
+	guint32 publen;
 
 	if ((token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, image))))
 		return token;
@@ -1201,10 +1203,17 @@ resolution_scope_from_image (MonoDynamicAssembly *assembly, MonoImage *image)
 	values [MONO_ASSEMBLYREF_BUILD_NUMBER] = cols [MONO_ASSEMBLY_BUILD_NUMBER];
 	values [MONO_ASSEMBLYREF_REV_NUMBER] = cols [MONO_ASSEMBLY_REV_NUMBER];
 	values [MONO_ASSEMBLYREF_FLAGS] = 0;
-	values [MONO_ASSEMBLYREF_PUBLIC_KEY] = 0;
 	values [MONO_ASSEMBLYREF_CULTURE] = 0;
 	values [MONO_ASSEMBLYREF_HASH_VALUE] = 0;
 
+	if ((pubkey = mono_image_get_public_key (image, &publen))) {
+		guchar pubtoken [9];
+		pubtoken [0] = 8;
+		mono_digest_get_public_token (pubtoken + 1, pubkey, publen);
+		values [MONO_ASSEMBLYREF_PUBLIC_KEY] = mono_image_add_stream_data (&assembly->blob, 9, pubtoken);
+	} else {
+		values [MONO_ASSEMBLYREF_PUBLIC_KEY] = 0;
+	}
 	token <<= RESOLTION_SCOPE_BITS;
 	token |= RESOLTION_SCOPE_ASSEMBLYREF;
 	g_hash_table_insert (assembly->handleref, image, GUINT_TO_POINTER (token));
