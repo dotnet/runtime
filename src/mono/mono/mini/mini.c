@@ -2692,11 +2692,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if (cfg->verbose_level > 2)
 		g_print ("method to IR %s\n", mono_method_full_name (method, TRUE));
 
-	if (cfg->prof_options & MONO_PROFILE_INS_COVERAGE)
-		cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, header->code_size);
-
 	dont_inline = g_list_prepend (dont_inline, method);
 	if (cfg->method == method) {
+
+		if (cfg->prof_options & MONO_PROFILE_INS_COVERAGE)
+			cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, header->code_size);
 
 		/* ENTRY BLOCK */
 		cfg->bb_entry = start_bblock = NEW_BBLOCK (cfg);
@@ -2877,7 +2877,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 		bblock->real_offset = real_offset;
 
-		if (cfg->coverage_info) {
+		if ((cfg->method == method) && cfg->coverage_info) {
 			MonoInst *store, *one;
 			guint32 cil_offset = ip - header->code;
 			cfg->coverage_info->data [cil_offset].cil_code = ip;
