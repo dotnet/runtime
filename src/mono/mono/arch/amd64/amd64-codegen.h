@@ -74,6 +74,9 @@ typedef enum
 #define AMD64_CALLEE_SAVED_REGS ((1<<AMD64_RBX) | (1<<AMD64_R12) | (1<<AMD64_R13) | (1<<AMD64_R14) | (1<<AMD64_R15))
 #define AMD64_IS_CALLEE_SAVED_REG(reg) (AMD64_CALLEE_SAVED_REGS & (1 << (reg)))
 
+#define AMD64_BYTE_REGS ((1 << AMD64_RAX) | (1 << AMD64_RBX) | (1 << AMD64_RCX) | (1 << AMD64_RDX))
+#define AMD64_IS_BYTE_REG(reg) (AMD64_BYTE_REGS & (1 << (reg)))
+
 #define AMD64_REX(bits) ((unsigned char)(0x40 | (bits)))
 #define amd64_emit_rex(inst, width, reg_modrm, reg_index, reg_rm_base_opcode) do \
 	{ \
