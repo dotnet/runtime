@@ -192,7 +192,10 @@ pkgconfigdir = $(libdir)/pkgconfig
 
 documents=mini-doc.txt mini-porting.txt
 
+if JIT_SUPPORTED
 BUILT_SOURCES= inssel.c inssel.h cpu-pentium.h cpu-g4.h cpu-sparc.h
+endif
+
 CLEANFILES= $(BUILT_SOURCES)
 EXTRA_DIST = $(common_BURGSRC) $(documents) inssel-x86.brg inssel-ppc.brg \
 	$(x86_sources) $(ppc_sources) $(sparc_sources)	\
