@@ -198,6 +198,7 @@ main (int argc, char *argv [])
 	int verbose = FALSE;
 	GList *precompile_classes = NULL;
 	int break_on_main = FALSE;
+	MonoDebugHandle *debug = NULL;
 
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
@@ -267,8 +268,6 @@ main (int argc, char *argv [])
 				mono_debug_format = MONO_DEBUG_FORMAT_STABS;
 			else if (strcmp (format, "dwarf") == 0)
 				mono_debug_format = MONO_DEBUG_FORMAT_DWARF2;
-			else if (strcmp (format, "dwarf-plus") == 0)
-				mono_debug_format = MONO_DEBUG_FORMAT_DWARF2_PLUS;
 			else if (strcmp (format, "mono") == 0)
 				mono_debug_format = MONO_DEBUG_FORMAT_MONO;
 			else
@@ -298,6 +297,15 @@ main (int argc, char *argv [])
 
 	mono_config_parse (config_file);
 	mono_set_rootdir ();
+
+	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
+		gchar **args;
+
+		args = g_strsplit (debug_args ? debug_args : "", ",", -1);
+		debug = mono_debug_open (file, mono_debug_format, (const char **) args);
+		g_strfreev (args);
+	}
+
 	domain = mono_jit_init (file);
 
 	error = mono_verify_corlib ();
@@ -312,15 +320,8 @@ main (int argc, char *argv [])
 		exit (1);
 	}
 
-	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
-		MonoDebugHandle *debug;
-		gchar **args;
-
-		args = g_strsplit (debug_args ? debug_args : "", ",", -1);
-		debug = mono_debug_open (assembly, mono_debug_format, (const char **) args);
+	if (debug)
 		mono_debug_add_image (debug, assembly->image);
-		g_strfreev (args);
-	}
 
 	if (testjit) {
 		mono_jit_compile_image (assembly->image, TRUE);

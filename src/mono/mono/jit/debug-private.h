@@ -1,13 +1,12 @@
 #ifndef __MONO_JIT_DEBUG_PRIVATE_H__
 #define __MONO_JIT_DEBUG_PRIVATE_H__
 
-#include <mono/metadata/debug-symfile.h>
 #include <mono/metadata/debug-mono-symfile.h>
 
 #include "debug.h"
 
 typedef struct {
-	gpointer address;
+	const guint8 *address;
 	guint32 line;
 	int is_basic_block;
 	int source_file;
@@ -36,7 +35,6 @@ typedef enum {
 } MonoDebugFlags;
 
 typedef struct {
-	MonoDebugMethodInfo method_info;
 	AssemblyDebugInfo *info;
 	gchar *name;
 	int source_file;
@@ -50,8 +48,7 @@ typedef struct {
 struct _AssemblyDebugInfo {
 	MonoDebugFormat format;
 	MonoDebugHandle *handle;
-	MonoDebugSymbolFile *symfile;
-	MonoSymbolFile *mono_symfile;
+	MonoSymbolFile *symfile;
 	char *name;
 	char *ilfile;
 	char *filename;
@@ -85,12 +82,6 @@ struct _MonoDebugHandle {
 };
 
 guint32        mono_debug_get_type                   (MonoDebugHandle* debug, MonoClass *klass);
-
-void           mono_debug_open_assembly_dwarf2_plus  (AssemblyDebugInfo *info);
-
-void           mono_debug_write_assembly_dwarf2_plus (AssemblyDebugInfo *info);
-
-void           mono_debug_close_assembly_dwarf2_plus (AssemblyDebugInfo *info);
 
 void           mono_debug_write_stabs                (MonoDebugHandle *debug);
 

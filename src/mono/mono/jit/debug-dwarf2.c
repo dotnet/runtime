@@ -174,7 +174,7 @@ dwarf2_write_long (FILE *f, unsigned long value)
 }
 
 static void
-dwarf2_write_address (FILE *f, void *address)
+dwarf2_write_address (FILE *f, const void *address)
 {
 	fprintf (f, "\t.long 0x%lx\n", address);
 }
@@ -289,7 +289,7 @@ dwarf2_write_dw_lne_end_sequence (FILE *f)
 }
 
 static void
-dwarf2_write_dw_lne_set_address (FILE *f, void *address)
+dwarf2_write_dw_lne_set_address (FILE *f, const void *address)
 {
 	dwarf2_write_byte (f, 0);
 	dwarf2_write_byte (f, sizeof (address) + 1);
@@ -843,7 +843,7 @@ dwarf2_write_variable_location (MonoDebugHandle *debug, MonoDebugVarInfo *var)
 }
 
 static void
-dwarf2_write_parameter (MonoDebugHandle *debug, DebugMethodInfo *minfo, const gchar *name,
+dwarf2_write_parameter (MonoDebugHandle *debug, MonoDebugMethodInfo *minfo, const gchar *name,
 			MonoDebugVarInfo *var, MonoClass *klass)
 {
 	static long label_index = 0;
@@ -864,11 +864,11 @@ dwarf2_write_parameter (MonoDebugHandle *debug, DebugMethodInfo *minfo, const gc
 	dwarf2_write_label (debug->f, start);
 	dwarf2_write_variable_location (debug, var);
 	dwarf2_write_label (debug->f, end);
-	dwarf2_write_long (debug->f, minfo->method_info.prologue_end);
+	dwarf2_write_long (debug->f, minfo->jit->prologue_end);
 }
 
 static void
-dwarf2_write_variable (MonoDebugHandle *debug, DebugMethodInfo *minfo, const gchar *name,
+dwarf2_write_variable (MonoDebugHandle *debug, MonoDebugMethodInfo *minfo, const gchar *name,
 		       MonoDebugVarInfo *var, MonoClass *klass)
 {
 	static long label_index = 0;
@@ -889,32 +889,33 @@ dwarf2_write_variable (MonoDebugHandle *debug, DebugMethodInfo *minfo, const gch
 	dwarf2_write_label (debug->f, start);
 	dwarf2_write_variable_location (debug, var);
 	dwarf2_write_label (debug->f, end);
-	dwarf2_write_address (debug->f, minfo->method_info.code_start + var->begin_scope);
-	dwarf2_write_address (debug->f, minfo->method_info.code_start + var->end_scope);
+	dwarf2_write_address (debug->f, minfo->jit->code_start + var->begin_scope);
+	dwarf2_write_address (debug->f, minfo->jit->code_start + var->end_scope);
 }
 
 static void 
-write_method_lines_dwarf2 (MonoDebugHandle *debug, DebugMethodInfo *minfo)
+write_method_lines_dwarf2 (MonoDebugHandle *debug, MonoDebugMethodInfo *minfo)
 {
 	guint32 st_line = 0;
-	gpointer st_address = 0;
+	gconstpointer st_address = 0;
+	DebugMethodInfo *priv = minfo->user_data;
 	int i;
 
-	if (!minfo->line_numbers)
+	if (!priv->line_numbers)
 		return;
 
 	// Start of statement program
-	dwarf2_write_dw_lns_set_file (debug->f, minfo->source_file);
-	dwarf2_write_dw_lns_advance_line (debug->f, minfo->start_line - 1);
-	dwarf2_write_dw_lne_set_address (debug->f, minfo->method_info.code_start);
+	dwarf2_write_dw_lns_set_file (debug->f, priv->source_file);
+	dwarf2_write_dw_lns_advance_line (debug->f, priv->start_line - 1);
+	dwarf2_write_dw_lne_set_address (debug->f, minfo->jit->code_start);
 	dwarf2_write_dw_lns_negate_stmt (debug->f);
 	dwarf2_write_dw_lns_copy (debug->f);
 
-	st_line = minfo->start_line;
-	st_address = minfo->method_info.code_start;
+	st_line = priv->start_line;
+	st_address = minfo->jit->code_start;
 
-	for (i = 1; i < minfo->line_numbers->len; i++) {
-		DebugLineNumberInfo *lni = g_ptr_array_index (minfo->line_numbers, i);
+	for (i = 1; i < priv->line_numbers->len; i++) {
+		DebugLineNumberInfo *lni = g_ptr_array_index (priv->line_numbers, i);
 		gint32 line_inc, addr_inc, opcode;
 		int used_standard_opcode = 0;
 
@@ -953,9 +954,9 @@ write_method_lines_dwarf2 (MonoDebugHandle *debug, DebugMethodInfo *minfo)
 	}
 
 	dwarf2_write_dw_lne_set_address (debug->f,
-					 (char *)minfo->method_info.code_start +
-					 minfo->method_info.epilogue_begin);
-	dwarf2_write_dw_lns_advance_line (debug->f, minfo->last_line - st_line);
+					 (char *)minfo->jit->code_start +
+					 minfo->jit->epilogue_begin);
+	dwarf2_write_dw_lns_advance_line (debug->f, priv->last_line - st_line);
 	dwarf2_write_dw_lns_copy (debug->f);
 
 	dwarf2_write_dw_lns_copy (debug->f);
@@ -1076,24 +1077,28 @@ write_class (gpointer key, gpointer value, gpointer user_data)
 }
 
 static void
-write_method_dwarf2 (MonoDebugHandle *debug, DebugMethodInfo *minfo)
+write_method_dwarf2 (MonoDebugHandle *debug, MonoDebugMethodInfo *minfo)
 {
 	int is_external = 0, i;
 	MonoType *ret_type = NULL;
+	DebugMethodInfo *priv = minfo->user_data;
 	gchar **names;
 
-	if (minfo->method_info.method->signature->ret->type != MONO_TYPE_VOID)
-		ret_type = minfo->method_info.method->signature->ret;
+	if (!minfo->jit)
+		return;
+
+	if (minfo->method->signature->ret->type != MONO_TYPE_VOID)
+		ret_type = minfo->method->signature->ret;
 
 	// DW_TAG_subprogram
 	if (ret_type)
 		dwarf2_write_byte (debug->f, ABBREV_SUBPROGRAM_RETVAL);
 	else
 		dwarf2_write_byte (debug->f, ABBREV_SUBPROGRAM);
-	dwarf2_write_string (debug->f, minfo->name);
+	dwarf2_write_string (debug->f, priv->name);
 	dwarf2_write_byte (debug->f, is_external);
-	dwarf2_write_address (debug->f, minfo->method_info.code_start);
-	dwarf2_write_address (debug->f, (char *)minfo->method_info.code_start + minfo->method_info.code_size);
+	dwarf2_write_address (debug->f, minfo->jit->code_start);
+	dwarf2_write_address (debug->f, (char *)minfo->jit->code_start + minfo->jit->code_size);
 	dwarf2_write_byte (debug->f, DW_CC_nocall);
 	if (ret_type) {
 		MonoClass *klass = mono_class_from_mono_type (ret_type);
@@ -1101,29 +1106,29 @@ write_method_dwarf2 (MonoDebugHandle *debug, DebugMethodInfo *minfo)
 		dwarf2_write_type_ref (debug->f, type_index);
 	}
 
-	if (minfo->method_info.method->signature->hasthis)
-		dwarf2_write_parameter (debug, minfo, "this", minfo->method_info.this_var,
-					minfo->method_info.method->klass);
+	if (minfo->method->signature->hasthis)
+		dwarf2_write_parameter (debug, minfo, "this", minfo->jit->this_var,
+					minfo->method->klass);
 
-	names = g_new (char *, minfo->method_info.method->signature->param_count);
-	mono_method_get_param_names (minfo->method_info.method, (const char **) names);
+	names = g_new (char *, minfo->method->signature->param_count);
+	mono_method_get_param_names (minfo->method, (const char **) names);
 
-	for (i = 0; i < minfo->method_info.num_params; i++) {
-		MonoType *type = minfo->method_info.method->signature->params [i];
+	for (i = 0; i < minfo->jit->num_params; i++) {
+		MonoType *type = minfo->method->signature->params [i];
 		MonoClass *klass = mono_class_from_mono_type (type);
 
-		dwarf2_write_parameter (debug, minfo, names [i], &minfo->method_info.params [i], klass);
+		dwarf2_write_parameter (debug, minfo, names [i], &minfo->jit->params [i], klass);
 	}
 
 	g_free (names);
 
-	for (i = 0; i < minfo->method_info.num_locals; i++) {
-		MonoMethodHeader *header = ((MonoMethodNormal*) minfo->method_info.method)->header;
+	for (i = 0; i < minfo->jit->num_locals; i++) {
+		MonoMethodHeader *header = ((MonoMethodNormal*) minfo->method)->header;
 		MonoClass *klass = mono_class_from_mono_type (header->locals [i]);
 		char name [BUFSIZ];
 
 		sprintf (name, "V_%d", i);
-		dwarf2_write_variable (debug, minfo, name, &minfo->method_info.locals [i], klass);
+		dwarf2_write_variable (debug, minfo, name, &minfo->jit->locals [i], klass);
 	}
 
 	dwarf2_write_byte (debug->f, 0);

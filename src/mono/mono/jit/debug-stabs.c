@@ -54,61 +54,67 @@ base_types[] = {
 };
 
 static void
-write_method_stabs (MonoDebugHandle *debug, DebugMethodInfo *minfo)
+write_method_stabs (MonoDebugHandle *debug, MonoDebugMethodInfo *minfo)
 {
 	int i;
-	MonoMethod *method = minfo->method_info.method;
+	DebugMethodInfo *priv = minfo->user_data;
+	MonoMethod *method = minfo->method;
 	MonoClass *klass = method->klass;
 	MonoMethodSignature *sig = method->signature;
 	char **names = g_new (char*, sig->param_count);
 	gchar *source_file;
 
-	source_file = g_ptr_array_index (debug->source_files, minfo->source_file);
+	if (!minfo->jit)
+		return;
+
+	source_file = g_ptr_array_index (debug->source_files, priv->source_file);
 
 	fprintf (debug->f, ".stabs \"%s\",100,0,0,0\n", source_file);
 
-	fprintf (debug->f, ".stabs \"%s:F(0,%d)\",36,0,%d,%p\n", minfo->name, sig->ret->type,
-		 minfo->start_line, minfo->method_info.code_start);
+	fprintf (debug->f, ".stabs \"%s:F(0,%d)\",36,0,%d,%p\n", priv->name, sig->ret->type,
+		 priv->start_line, minfo->jit->code_start);
 
 	/* params */
 	mono_method_get_param_names (method, (const char **)names);
 	if (sig->hasthis)
 		fprintf (debug->f, ".stabs \"this:p(0,%d)=(0,%d)\",160,0,%d,%d\n",
-			 debug->next_idx++, klass->byval_arg.type, minfo->start_line,
-			 minfo->method_info.this_var->offset);
-	for (i = 0; i < minfo->method_info.num_params; i++) {
-		int stack_offset = minfo->method_info.params [i].offset;
+			 debug->next_idx++, klass->byval_arg.type, priv->start_line,
+			 minfo->jit->this_var->offset);
+	for (i = 0; i < minfo->jit->num_params; i++) {
+		int stack_offset = minfo->jit->params [i].offset;
 
 		fprintf (debug->f, ".stabs \"%s:p(0,%d)=(0,%d)\",160,0,%d,%d\n",
 			 names [i], debug->next_idx++, sig->params [i]->type,
-			 minfo->start_line, stack_offset);
+			 priv->start_line, stack_offset);
 	}
 
 	/* local vars */
-	for (i = 0; i < minfo->method_info.num_locals; ++i) {
+	for (i = 0; i < minfo->jit->num_locals; ++i) {
 		MonoMethodHeader *header = ((MonoMethodNormal*)method)->header;
-		int stack_offset = minfo->method_info.locals [i].offset;
+		int stack_offset = minfo->jit->locals [i].offset;
 
 		fprintf (debug->f, ".stabs \"local_%d:(0,%d)=(0,%d)\",128,0,%d,%d\n",
-			 i, debug->next_idx++, header->locals [i]->type, minfo->start_line, stack_offset);
+			 i, debug->next_idx++, header->locals [i]->type, priv->start_line, stack_offset);
 	}
 
-	if (minfo->line_numbers) {
-		fprintf (debug->f, ".stabn 68,0,%d,%d\n", minfo->start_line, 0);
-		fprintf (debug->f, ".stabn 68,0,%d,%d\n", minfo->first_line, minfo->method_info.prologue_end);
+	if (priv->line_numbers) {
+		fprintf (debug->f, ".stabn 68,0,%d,%d\n", priv->start_line, 0);
+		fprintf (debug->f, ".stabn 68,0,%d,%d\n", priv->first_line,
+			 minfo->jit->prologue_end);
 
-		for (i = 1; i < minfo->line_numbers->len; i++) {
-			DebugLineNumberInfo *lni = g_ptr_array_index (minfo->line_numbers, i);
+		for (i = 1; i < priv->line_numbers->len; i++) {
+			DebugLineNumberInfo *lni = g_ptr_array_index (priv->line_numbers, i);
 
 			fprintf (debug->f, ".stabn 68,0,%d,%d\n", lni->line,
-				 (char *)lni->address - minfo->method_info.code_start);
+				 lni->address - minfo->jit->code_start);
 		}
 
-		fprintf (debug->f, ".stabn 68,0,%d,%d\n", minfo->last_line, minfo->method_info.epilogue_begin);
+		fprintf (debug->f, ".stabn 68,0,%d,%d\n", priv->last_line,
+			 minfo->jit->epilogue_begin);
 	}
 
 	/* end of function */
-	fprintf (debug->f, ".stabs \"\",36,0,0,%d\n", minfo->method_info.code_size);
+	fprintf (debug->f, ".stabs \"\",36,0,0,%d\n", minfo->jit->code_size);
 
 	g_free (names);
 	fflush (debug->f);

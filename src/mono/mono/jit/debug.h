@@ -13,7 +13,6 @@ typedef enum {
 	MONO_DEBUG_FORMAT_NONE,
 	MONO_DEBUG_FORMAT_STABS,
 	MONO_DEBUG_FORMAT_DWARF2,
-	MONO_DEBUG_FORMAT_DWARF2_PLUS,
 	MONO_DEBUG_FORMAT_MONO
 } MonoDebugFormat;
 
@@ -56,8 +55,7 @@ extern int mono_debug_insert_breakpoint;
 
 extern gchar *mono_debug_last_breakpoint_address;
 
-MonoDebugHandle* mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format,
-				  const char **args);
+MonoDebugHandle* mono_debug_open (const char *name, MonoDebugFormat format, const char **args);
 
 void           mono_debug_cleanup (void);
 

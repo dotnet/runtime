@@ -447,6 +447,9 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj, gboolean test_only)
 
 				address = (char *)ctx->SC_EIP - (char *)ji->code_start;
 
+				if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
+					mono_debug_make_symbols ();
+
 				source_location = mono_debug_source_location_from_address (m, address, NULL);
 				iloffset = mono_debug_il_offset_from_address (m, address);
 
