@@ -222,6 +222,12 @@ mono_create_trampoline (MonoMethod *method)
 		x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
 	} else {
 		switch (sig->ret->type) {
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+			x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
+			x86_mov_regp_reg (p, X86_ECX, X86_EAX, 1);
+			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
