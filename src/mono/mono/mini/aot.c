@@ -1229,7 +1229,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 {
 	MonoMethod *method;
 	FILE *tmpfp;
-	int i, j, pindex;
+	int i, j, pindex, byte_index;
 	guint8 *code, *mname, *mname_p;
 	int func_alignment = 16;
 	GPtrArray *patches;
@@ -1264,6 +1264,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 
 #ifdef MONO_ARCH_HAVE_PIC_AOT
 	acfg->method_got_offsets [mono_metadata_token_index (method->token)] = acfg->got_offset;
+	byte_index = 0;
 	for (i = 0; i < cfg->code_len; i++) {
 		patch_info = NULL;
 		for (pindex = 0; pindex < patches->len; ++pindex) {
@@ -1281,9 +1282,10 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 				break;
 			case MONO_PATCH_INFO_GOT_OFFSET: {
 				guint32 offset = mono_arch_get_patch_offset (code + i);
+				fprintf (tmpfp, "\n.byte ");
 				for (j = 0; j < offset; ++j)
-					fprintf (tmpfp, ".byte 0x%x\n", (unsigned int) code [i + j]);
-				fprintf (tmpfp, ".int got - . + %d\n", offset);
+					fprintf (tmpfp, "%s0x%x", (j == 0) ? "" : ",", (unsigned int) code [i + j]);
+				fprintf (tmpfp, "\n.int got - . + %d", offset);
 
 				i += offset + 4 - 1;
 				skip = TRUE;
@@ -1293,12 +1295,13 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 				if (!is_got_patch (patch_info->type))
 					break;
 
+				fprintf (tmpfp, "\n.byte ");
 				for (j = 0; j < mono_arch_get_patch_offset (code + i); ++j)
-					fprintf (tmpfp, ".byte 0x%x\n", (unsigned int) code [i + j]);
+					fprintf (tmpfp, "%s0x%x", (j == 0) ? "" : ",", (unsigned int) code [i + j]);
 #ifdef __x86_64__
-				fprintf (tmpfp, ".int got - . + %d\n", (unsigned int) ((acfg->got_offset * sizeof (gpointer)) - 4));
+				fprintf (tmpfp, "\n.int got - . + %d", (unsigned int) ((acfg->got_offset * sizeof (gpointer)) - 4));
 #elif defined(__i386__)
-				fprintf (tmpfp, ".int %d\n", (unsigned int) ((acfg->got_offset * sizeof (gpointer))));
+				fprintf (tmpfp, "\n.int %d\n", (unsigned int) ((acfg->got_offset * sizeof (gpointer))));
 #endif
 				acfg->got_offset ++;
 
@@ -1307,14 +1310,21 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 			}
 		}
 
-		if (!skip)
-			fprintf (tmpfp, ".byte 0x%x\n", (unsigned int) code [i]);
+		if (!skip) {
+			if (byte_index == 0)
+				fprintf (tmpfp, "\n.byte ");
+			fprintf (tmpfp, "%s0x%x", (byte_index == 0) ? "" : ",", (unsigned int) code [i]);
+			byte_index = (byte_index + 1) % 32;
+		}
+		else
+			byte_index = 0;
 	}
 #else
 	for (i = 0; i < cfg->code_len; i++) {
 		fprintf (tmpfp, ".byte 0x%x\n", (unsigned int) code [i]);
 	}
 #endif
+	fprintf (tmpfp, "\n");
 }
 
 static void
@@ -1340,8 +1350,6 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	method = cfg->method;
 	code = cfg->native_code;
 	header = mono_method_get_header (method);
-
-	emit_section_change (tmpfp, ".text", 0);
 
 	/* Make the labels local */
 	mname = g_strdup_printf (".Lm_%x", mono_metadata_token_index (method->token));
@@ -1596,8 +1604,12 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	emit_label (tmpfp, mname_p);
 
 	g_assert (p - buf < buf_size);
-	for (i = 0; i < p - buf; ++i)
-		fprintf (tmpfp, ".byte %d\n", (unsigned int) buf [i]);	
+	for (i = 0; i < p - buf; ++i) {
+		if ((i % 32) == 0)
+			fprintf (tmpfp, "\n.byte ");
+		fprintf (tmpfp, "%s%d", ((i % 32) == 0) ? "" : ",", (unsigned int) buf [i]);
+	}
+	fprintf (tmpfp, "\n");
 	g_free (buf);
 
 	g_free (mname);
@@ -1909,13 +1921,21 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_label(tmpfp, symbol);
 
 	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
-		if (cfgs [i]) {
-			symbol = g_strdup_printf (".Lm_%x", i + 1);
-			fprintf (tmpfp, ".long %s - methods\n", symbol);
+		const char *sep;
+		if ((i % 32) == 0) {
+			fprintf (tmpfp, "\n.long ");
+			sep = "";
 		}
 		else
-			fprintf (tmpfp, ".long 0xffffffff\n");
+			sep = ",";
+		if (cfgs [i]) {
+			symbol = g_strdup_printf (".Lm_%x", i + 1);
+			fprintf (tmpfp, "%s%s-methods", sep, symbol);
+		}
+		else
+			fprintf (tmpfp, "%s0xffffffff", sep);
 	}
+	fprintf (tmpfp, "\n");
 
 	symbol = g_strdup_printf ("method_info_offsets");
 	emit_section_change (tmpfp, ".text", 1);
@@ -1924,13 +1944,21 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_label(tmpfp, symbol);
 
 	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
-		if (cfgs [i]) {
-			symbol = g_strdup_printf (".Lm_%x_p", i + 1);
-			fprintf (tmpfp, ".long %s - method_infos\n", symbol);
+		const char *sep;
+		if ((i % 32) == 0) {
+			fprintf (tmpfp, "\n.long ");
+			sep = "";
 		}
 		else
-			fprintf (tmpfp, ".long 0\n");
+			sep = ",";
+		if (cfgs [i]) {
+			symbol = g_strdup_printf (".Lm_%x_p", i + 1);
+			fprintf (tmpfp, "%s%s - method_infos", sep, symbol);
+		}
+		else
+			fprintf (tmpfp, "%s0", sep);
 	}
+	fprintf (tmpfp, "\n");
 
 	fclose (tmpfp);
 
