@@ -545,7 +545,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 		gboolean need_trace = FALSE;
 		guint32 free_stack;
 
-		if (test_only && (frame_count < 1000)) {
+		if (test_only && (frame_count < 1000) && !initial_stack_trace && mono_ex) {
 			need_trace = TRUE;
 			if (!trace_str)
 				trace_str = g_string_new ("");
