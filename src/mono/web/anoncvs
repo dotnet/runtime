@@ -52,3 +52,18 @@
 	I need to be able to rsync to your machine from the main CVS
 	server.  The preferred method to rsync is to setup ssh in your
 	machine.
+
+	The requirements are:
+	<ul>
+		* An account where we can ssh into.
+
+		* rsync.
+
+		* AnonCVS setup with the same paths as the rest of the
+		  servers.
+
+		* Currently, about 40 megabytes of disk space, but this 
+		  will likely grow as the project evolves.
+
+		* A sysadmin contact e-mail address.
+	</ul>

@@ -69,6 +69,30 @@
   </tr>
 </table>
 
+** Feb 18, 2002
+
+	Application Domains now support the two LoaderOptimization
+	modes: share code or do not share code, and you can control
+	this with the --share-code command line option.
+
+	Paolo has now 100+ test cases run on Linux now with our class
+	libraries.
+
+	PowerPC and SPARC ports are moving along (Radek and Jeff)
+
+** Feb 13, 2002
+
+	Excellent news since the 11th, here is a quick rundown:
+
+	AppDomains have been deployed (Dietmar).  Socket work is done
+	(Dick).  Corlib compiled with no refs to mscorlib (Dan).  New
+	comprehensive tests for colib bits (David).  Nick is driving the
+	regression test suite efforts and class library completeness.
+	New System.Data work (Chris). Bug fixes (Paolo, Duncan, Ravi, Miguel)
+
+	Miguel is off to the <a
+	href="http://www.fosdem.org">FOSDEM</a> conference in Brussels.
+
 ** Feb 11, 2002
 
 	<b>Mono 0.8 has been released!</b>
