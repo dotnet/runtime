@@ -18,6 +18,7 @@ typedef union {
 guint16 mono_read16 (const unsigned char *x);
 guint32 mono_read32 (const unsigned char *x);
 guint64 mono_read64 (const unsigned char *x);
+guint64 mono_read64_swap_words (const unsigned char *x);
 
 #define read16(x) (mono_read16 ((x)))
 #define read32(x) (mono_read32 ((x)))
@@ -38,11 +39,23 @@ guint64 mono_read64 (const unsigned char *x);
 		*(dest) = mf.fval;	\
 	} while (0)
 
+#ifdef __arm__
+
+#define readr8(x,dest)	\
+	do {	\
+		mono_rdouble mf;	\
+		mf.ival = mono_read64_swap_words ((x));	\
+		*(dest) = mf.fval;	\
+	} while (0)
+#else
+
 #define readr8(x,dest)	\
 	do {	\
 		mono_rdouble mf;	\
 		mf.ival = read64 ((x));	\
 		*(dest) = mf.fval;	\
 	} while (0)
+
+#endif /* __arm__ */
 
 #endif /* _MONO_METADATA_ENDIAN_H_ */
