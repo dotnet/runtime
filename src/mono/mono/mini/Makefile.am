@@ -130,4 +130,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA= mini.pc
 DISTCLEANFILES= mini.pc
 
+BUILT_SOURCES= inssel.c inssel.h cpu-pentium.h
+CLEANFILES= $(BUILT_SOURCES)
 EXTRA_DIST = mini.pc.in
+
