@@ -611,6 +611,11 @@ emit_ptr_to_str_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv con
 		mono_mb_emit_byte (mb, CEE_STLOC_1);
 		break;
 	}
+	case MONO_MARSHAL_CONV_DEL_FTN: {
+		// fixme: we never convert functions back to delegates, dont 
+		// know if thats the correct behaviour
+		break;
+	}
 	case MONO_MARSHAL_CONV_STR_LPWSTR:
 	case MONO_MARSHAL_CONV_STR_BSTR:
 	case MONO_MARSHAL_CONV_STR_ANSIBSTR:
