@@ -1,7 +1,9 @@
 * CVS Access
 
 	If you are an active Mono developer, you can get a CVS account
-	that hosts the Mono source code.  
+	that hosts the Mono source code.  This web page contains
+	details about how to use the CVS server as well as the
+	policies to use it.
 
 	If you are not a developer, but want to track the development, please
 	see the <a href="anoncvs.html">AnonCVS</a> instructions.
@@ -9,6 +11,49 @@
 	Send an e-mail to miguel with your public OpenSSH key for this
 	purpose.  Please specify if the key was generated with SSH version 1
 	or version 2.
+
+* Policies
+
+	Here are some policies about the use of the Mono CVS server.
+
+** Code License
+
+	If you are about to commit code to a module, the code that is
+	being commited should be released under the same license as
+	the code that the module has.
+
+	Check the license if you are unsure, but it is basically:
+	class libraries X11; compiler and tools: GPL; runtime: LGPL.
+
+	If in doubt, check with the maintainers of the module, or send
+	mail to mono-hackers-list@ximian.com.
+
+** Commiting code.
+
+	If you are the maintainer for a piece of code, feel free to
+	commit code, and delegate the work to others. 
+
+	Use ChangeLog entries so we can keep textual descriptions of
+	your work, and use the contents of your ChangeLog file as the
+	CVS commit message (ie, paste the contents of this into the
+	editor buffer).
+
+	If you are making changes to someone else's code, please make
+	sure you get in touch with the maintainer of that code before
+	applying patches.  You want to avoid commiting conflicting
+	work to someone else's code.
+
+	Please do not commit code that would break the compile to the
+	CVS, because that normally wastes everybody's time.  Two things 
+	are important in this step: trying to build your sources and making 
+	sure that you add all the new files before you do a commit.
+
+
+* Using CVS.
+
+	This is a small tutorial for using CVS.
+
+** Generating an SSH key
 
 	If you are using SSH version 2, please generate your key using:
 
@@ -124,7 +169,7 @@
 	cvs commit file-1.cs file-2.cs
 </pre>
 
-** The Mailing List
+* The Mailing Lists
 
 	To keep track of the various development and changes to the
 	CVS tree, you can subscribe to the mono-cvs-list@ximian.com.
@@ -135,24 +180,15 @@
 	This will send you an email message every time a change is
 	made to the CVS repository, together with the information that
 	the author of the changes submitted.
-	
-** Recommendations
 
-	Please do not commit code that would break the compile to the
-	CVS, because that normally wastes everybody's time.  Two things 
-	are important in this step: trying to build your sources and making 
-	sure that you add all the new files before you do a commit.
+	You might also want to track the live changes, subscribe to
+	the <a
+	href="mailto:mono-patches-list-request@ximian.com">mono-patches-list@ximian.com</a>
+	to receive the patches as they are checked into CVS. 
+
+** Recommendations
 
 	To build the sources, most of the type trying the `make' command
 	is enough.  In some cases (the class libraries) we use nant, so
 	you need to run nant manually.
 
-	Use ChangeLog entries so we can keep textual descriptions of
-	your work, and use the contents of your ChangeLog file as the
-	CVS commit message (ie, paste the contents of this into the
-	editor buffer).
-
-	If you are making changes to someone else's code, please make
-	sure you get in touch with the maintainer of that code before
-	applying patches.  You want to avoid commiting conflicting
-	work to someone else's code.
