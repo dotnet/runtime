@@ -16,15 +16,19 @@ public class Test {
 			return num;
 		
 		num++;
-		if (sizeof (void*) != 4)
+		if (sizeof (void*) != sizeof(IntPtr))
 			return num;
 
 		num++;
-		if (sizeof (byte*) != 4)
+		if (sizeof (byte*) != sizeof (void *))
 			return num;
 
 		num++;
-		if (sizeof (int*) != 4)
+		if (sizeof (int*) != sizeof (int *))
+			return num;
+
+		num++;
+		if (sizeof (IntPtr) != 4 && sizeof (IntPtr) != 8)
 			return num;
 
                 return 0;

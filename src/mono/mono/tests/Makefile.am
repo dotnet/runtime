@@ -258,6 +258,8 @@ check:
 
 noinst_LTLIBRARIES = libtest.la
 
+INCLUDES = $(GLIB_CFLAGS)
+
 libtest_la_LDFLAGS = -rpath `pwd`
 libtest_la_SOURCES = libtest.c
 

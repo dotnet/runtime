@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <glib.h>
 
 unsigned short*
 test_lpwstr_marshal (unsigned short* chars, long length)
@@ -36,6 +38,28 @@ int mono_return_int (int a) {
 	printf ("Got value %d\n", a);
 	return a;
 }
+
+struct ss
+{
+	int i;
+};
+
+int mono_return_int_ss (struct ss a) {
+	printf ("Got value %d\n", a.i);
+	return a.i;
+}
+
+union su
+{
+	int i1;
+	int i2;
+};
+
+int mono_return_int_su (union su a) {
+	printf ("Got value %d\n", a.i1);
+	return a.i1;
+}
+
 int mono_test_many_int_arguments (int a, int b, int c, int d, int e,
 				  int f, int g, int h, int i, int j);
 short mono_test_many_short_arguments (short a, short b, short c, short d, short e,
@@ -57,6 +81,18 @@ mono_test_many_short_arguments (short a, short b, short c, short d, short e, sho
 
 char
 mono_test_many_byte_arguments (char a, char b, char c, char d, char e, char f, char g, char h, char i, char j)
+{
+	return a + b + c + d + e + f + g + h + i + j;
+}
+
+float
+mono_test_many_float_arguments (float a, float b, float c, float d, float e, float f, float g, float h, float i, float j)
+{
+	return a + b + c + d + e + f + g + h + i + j;
+}
+
+double
+mono_test_many_double_arguments (double a, double b, double c, double d, double e, double f, double g, double h, double i, double j)
 {
 	return a + b + c + d + e + f + g + h + i + j;
 }
@@ -208,6 +244,28 @@ mono_test_marshal_struct (simplestruct ss)
 	return 1;
 }
 
+typedef struct {
+	int a;
+	int b;
+	int c;
+	char *d;
+	unsigned char e;
+	double f;
+	unsigned char g;
+	guint64 h;
+} simplestruct2;
+
+int
+mono_test_marshal_struct2 (simplestruct2 ss)
+{
+	if (ss.a == 0 && ss.b == 1 && ss.c == 0 &&
+	    !strcmp (ss.d, "TEST") && 
+	    ss.e == 99 && ss.f == 1.5 && ss.g == 42 && ss.h == (guint64)123)
+		return 0;
+
+	return 1;
+}
+
 
 typedef int (*SimpleDelegate) (int a);
 
@@ -245,8 +303,10 @@ mono_test_marshal_stringbuilder (char *s, int n)
 	return 0;
 }
 
+#ifdef __GNUC__
 typedef struct {
 } EmptyStruct;
+#endif
 
 int
 mono_test_marshal_string_array (char **array)
@@ -255,6 +315,7 @@ mono_test_marshal_string_array (char **array)
 	return 0;
 }
 
+#ifdef __GNUC__
 /* this does not work on Redhat gcc 2.96 */
 int 
 mono_test_empty_struct (int a, EmptyStruct es, int b)
@@ -265,6 +326,7 @@ mono_test_empty_struct (int a, EmptyStruct es, int b)
 		return 0;
 	return 1;
 }
+#endif
 
 typedef struct {
        char a[100];
@@ -276,7 +338,7 @@ mono_test_byvalstr_gen (void)
 	ByValStrStruct *ret;
 	int i;
        
-	ret = g_malloc(sizeof(ByValStrStruct));
+	ret = malloc(sizeof(ByValStrStruct));
 	memset(ret, 'a', sizeof(ByValStrStruct)-1);
 	ret->a[sizeof(ByValStrStruct)-1] = 0;
 

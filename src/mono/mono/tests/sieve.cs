@@ -1,5 +1,5 @@
 /* -*- mode: c -*-
- * $Id: sieve.cs,v 1.1 2001/11/19 06:52:53 lupus Exp $
+ * $Id: sieve.cs,v 1.2 2003/07/18 13:06:43 lupus Exp $
  * http://www.bagley.org/~doug/shootout/
  */
 
@@ -26,7 +26,7 @@ static public int Main() {
 	    }
 	}
     }
-    //printf("Count: %d\n", count);
+    System.Console.WriteLine("Count: {0}\n", count);
     return(0);
 }
 }

@@ -73,6 +73,9 @@ class R1 : MarshalByRefObject {
 		if (o.test_field != 1)
 			return 1;
 
+		if (test_field != 1)
+			return 1;
+
 		return 0;
 	}
 }

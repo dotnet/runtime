@@ -24,7 +24,7 @@ public class Test {
 		int size = Marshal.SizeOf (typeof (DelegateStruct));
 		
 		Console.WriteLine ("DelegateStruct:" + size);
-		if (size != 8)
+		if (size != 2 * sizeof(void *)) // not right for 64 bit pointers which can be 4 byte aligned
 			return 1;
 		
 		ss.a = 123;

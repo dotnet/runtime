@@ -30,10 +30,10 @@ public class Test
 	[DllImport ("libtest.so")]
 	public static extern int mono_return_int (int a);
 
-	[DllImport ("libtest.so", EntryPoint="mono_return_int")]
+	[DllImport ("libtest.so", EntryPoint="mono_return_int_ss")]
 	public static extern int mono_return_int_ss (ss a);
 
-	[DllImport ("libtest.so", EntryPoint="mono_return_int")]
+	[DllImport ("libtest.so", EntryPoint="mono_return_int_su")]
 	public static extern int mono_return_int_su (su a);
 
         static int Main()

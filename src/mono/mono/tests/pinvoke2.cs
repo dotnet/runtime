@@ -21,6 +21,19 @@ public class Test {
 		public string d;
 	}
 
+	[StructLayout (LayoutKind.Sequential)]
+	public struct SimpleStruct2 {
+		public bool a;
+		public bool b;
+		public bool c;
+		public string d;
+		public byte e;
+		public double f;
+		public byte g;
+		public long h;
+	}
+
+
 	[DllImport ("libtest.so", EntryPoint="mono_test_marshal_char")]
 	public static extern int mono_test_marshal_char (char a1);
 
@@ -29,6 +42,9 @@ public class Test {
 	
 	[DllImport ("libtest.so", EntryPoint="mono_test_marshal_struct")]
 	public static extern int mono_test_marshal_struct (SimpleStruct ss);
+
+	[DllImport ("libtest.so", EntryPoint="mono_test_marshal_struct2")]
+	public static extern int mono_test_marshal_struct2 (SimpleStruct2 ss);
 
 	[DllImport ("libtest.so", EntryPoint="mono_test_marshal_delegate")]
 	public static extern int mono_test_marshal_delegate (SimpleDelegate d);
@@ -49,13 +65,24 @@ public class Test {
 		SimpleStruct ss = new  SimpleStruct ();
 		ss.b = true;
 		ss.d = "TEST";
-		mono_test_marshal_struct (ss);
+		if (mono_test_marshal_struct (ss) != 0)
+			return 3;
+
+		SimpleStruct2 ss2 = new  SimpleStruct2 ();
+		ss2.b = true;
+		ss2.d = "TEST";
+		ss2.e = 99;
+		ss2.f = 1.5;
+		ss2.g = 42;
+		ss2.h = 123L;
+		if (mono_test_marshal_struct2 (ss2) != 0)
+			return 4;
 		
 		SimpleDelegate d = new SimpleDelegate (delegate_test);
 
 		if (mono_test_marshal_delegate (d) != 0)
-			return 1;
-		
+			return 5;
+
 		return 0;
 	}
 }

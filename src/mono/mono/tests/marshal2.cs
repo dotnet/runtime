@@ -64,74 +64,74 @@ public class Test {
 		if (Marshal.ReadInt32 (p, (int)Marshal.OffsetOf (t, "a")) != 1)
 			return 1;
 		if (Marshal.ReadInt32 (p, (int)Marshal.OffsetOf (t, "bool1")) != 1)
-			return 1;
+			return 2;
 		if (Marshal.ReadInt32 (p, (int)Marshal.OffsetOf (t, "bool2")) != 0)
-			return 1;
+			return 3;
 		if (Marshal.ReadInt32 (p, (int)Marshal.OffsetOf (t, "b")) != 2)
-			return 1;
+			return 4;
 		if (Marshal.ReadInt16 (p, 16) != 6)
-			return 1;
+			return 5;
 		if (Marshal.ReadInt16 (p, 18) != 5)
-			return 1;
+			return 6;
 		if (Marshal.ReadByte (p, 20) != 97)
-			return 1;
+			return 7;
 		if (Marshal.ReadByte (p, 21) != 98)
-			return 1;
+			return 8;
 		if (Marshal.ReadByte (p, 22) != 99)
-			return 1;
+			return 9;
 		if (Marshal.ReadByte (p, 23) != 0)
-			return 1;
+			return 10;
 		if (Marshal.ReadInt32 (p, 24) != 3)
-			return 1;
+			return 11;
 		if (Marshal.ReadInt32 (p, 28) != 4)
-			return 1;
+			return 12;
 		if (Marshal.ReadInt32 (p, 32) != 10)
-			return 1;
+			return 13;
 		if (Marshal.ReadInt32 (p, 36) != 11)
-			return 1;
+			return 14;
 		if (Marshal.ReadInt32 (p, (int)Marshal.OffsetOf (t, "s2")) == 0)
-			return 1;
+			return 15;
 
 		SimpleStruct cp = (SimpleStruct)Marshal.PtrToStructure (p, ss.GetType ());
 
 		if (cp.a != 1)
-			return 2;
+			return 16;
 
 		if (cp.bool1 != true)
-			return 2;
+			return 17;
 
 		if (cp.bool2 != false)
-			return 2;
+			return 18;
 
 		if (cp.b != 2)
-			return 2;
+			return 19;
 
 		if (cp.a1 [0] != 6)
-			return 2;
+			return 20;
 		
 		if (cp.a1 [1] != 5)
-			return 2;
+			return 21;
 
 		if (cp.s1 != "abc")
-			return 3;
+			return 22;
 		
 		if (cp.emb1.a != 3)
-			return 2;
+			return 23;
 
 		if (cp.emb1.b != 4)
-			return 2;
+			return 24;
 
 		if (cp.emb2.a != 10)
-			return 2;
+			return 25;
 
 		if (cp.emb2.b != 11)
-			return 2;
+			return 26;
 
 		if (cp.s2 != "just a test")
-			return 2;
+			return 27;
 
 		if (cp.x != 1.5)
-			return 2;
+			return 28;
 		
 		return 0;
 	}

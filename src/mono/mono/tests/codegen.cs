@@ -39,6 +39,11 @@ class CGen {
 		Type t = tbuilder.CreateType ();
 		abuilder.SetEntryPoint (method);
 		abuilder.Save (name);
+		Console.WriteLine ("abuilder == module.assembly: {0}", abuilder == mbuilder.Assembly);
+		Console.WriteLine ("abuilder == type.assembly: {0}", abuilder == t.Assembly);
+		Console.WriteLine ("abuilder == tbuilder.assembly: {0}", abuilder == tbuilder.Assembly);
+		Console.WriteLine ("mbuilder == type.Module: {0}", mbuilder == t.Module);
+		Console.WriteLine ("mbuilder == tbuilder.Module: {0}", mbuilder == tbuilder.Module);
 		return 0;
 	}
 }
