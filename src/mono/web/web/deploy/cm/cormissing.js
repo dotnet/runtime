@@ -212,7 +212,7 @@ function clickHandler (evt)
 		if (evt.ctrlKey)
 		{
 			var strRoot = 'http://cvs.hispalinux.es/cgi-bin/cvsweb/mcs/class/';
-			var strExtra = '?cvsroot=Mono';
+			var strExtra = '?cvsroot=mono';
 
 			if (strAssembly)
 			{
