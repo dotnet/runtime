@@ -569,7 +569,9 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
 	for (i = 0; i < container->type_argc; i++) {
 		MonoGenericParam *param = &container->type_params [i];
 		MonoClass **constr;
+		int first = 1;
 		guint16 flags;
+		char *esname;
 
 		if (i > 0)
 			g_string_append (result, ",");
@@ -585,12 +587,22 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
 		for (constr = param->constraints; constr && *constr; constr++) {
 			char *sig;
 
+			if (first) {
+				g_string_append_c (result, '(');
+				first = 0;
+			} else
+				g_string_append (result, ", ");
 			sig = dis_stringify_object_with_class (m, *constr, FALSE);
-			g_string_append_printf (result, "(%s) ", sig);
+			g_string_append (result, sig);
 			g_free (sig);
                 }
 
-		g_string_append (result, param->name);
+		if (!first)
+			g_string_append (result, ") ");
+
+		esname = get_escaped_name (param->name);
+		g_string_append (result, esname);
+		g_free (esname);
 	}
 
 	g_string_append_c (result, '>');
@@ -2445,6 +2457,7 @@ init_key_table (void)
 	g_hash_table_insert (key_table, (char *) "tls", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "to", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "true", GINT_TO_POINTER (TRUE));
+	g_hash_table_insert (key_table, (char *) "type", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "typedref", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "unicode", GINT_TO_POINTER (TRUE));
 	g_hash_table_insert (key_table, (char *) "unmanagedexp", GINT_TO_POINTER (TRUE));
