@@ -23,22 +23,22 @@
 
 	<b>Step 2:</b> OleDBClient:
 	<ul>
-		* On Unix systems: OleDBClient will use LibGDA as its
+		* On Unix systems: System.Data.OleDb will use LibGDA as its
 		  engine. 
 
-		  LibGDA is the "engine" that is used by
+		  LibGDA is the data access engine that is used by
 		  Gnome-Db (only libgda, not libgnomedb at all).
 
-		* On Windows systems: OleDBClient We will use OleDB as
+		* On Windows systems: System.Data.OleDb will use OLE-DB as
 		  its engine.
 	</ul>
 
-	<b>Step 3:</b> SqlClient Providers:
+	<b>Step 3:</b> System.Data.SqlClient Providers:
 
 	<ul>
 		* System.Data.SqlClient will then become a generic
 		  proxy for binding to other SQL implementations other
-		  than Postgress (MySQL on Unix/Windows; MS SQL on
-		  Window; Interbase on Unix/Windows). 
+		  than PostgreSQL (MySQL on Unix/Windows; MS SQL on
+		  Window; Interbase on Unix/Windows). Others are welcomed.
 	</ul>
 
