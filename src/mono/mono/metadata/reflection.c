@@ -5480,13 +5480,17 @@ MonoReflectionMethodBody*
 mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 {
 	static MonoClass *System_Reflection_MethodBody = NULL;
+	static MonoClass *System_Reflection_LocalVariableInfo = NULL;
 	MonoClass *klass;
 	MonoReflectionMethodBody *ret;
 	MonoMethodNormal *mn;
 	MonoMethodHeader *header;
+	int i;
 
 	if (!System_Reflection_MethodBody)
 		System_Reflection_MethodBody = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MethodBody");
+	if (!System_Reflection_LocalVariableInfo)
+		System_Reflection_LocalVariableInfo = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "LocalVariableInfo");
 
 	CHECK_OBJECT (MonoReflectionMethodBody *, method, NULL);
 
@@ -5499,8 +5503,17 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	ret = (MonoReflectionMethodBody*)mono_object_new (domain, System_Reflection_MethodBody);
 	/* FIXME: Other fields */
 	ret->init_locals = header->init_locals;
+	ret->max_stack = header->max_stack;
 	ret->il = mono_array_new (domain, mono_defaults.byte_class, header->code_size);
 	memcpy (mono_array_addr (ret->il, guint8*, 0), header->code, header->code_size);
+	ret->locals = mono_array_new (domain, System_Reflection_LocalVariableInfo, header->num_locals);
+	for (i = 0; i < header->num_locals; ++i) {
+		MonoReflectionLocalVariableInfo *info = (MonoReflectionLocalVariableInfo*)mono_object_new (domain, System_Reflection_LocalVariableInfo);
+		info->local_type = mono_type_get_object (domain, header->locals [i]);
+		info->is_pinned = header->locals [i]->pinned;
+		info->local_index = 0;
+	}
+		
 	CACHE_OBJECT (method, ret, NULL);
 	return ret;
 }
