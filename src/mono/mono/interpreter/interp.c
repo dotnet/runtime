@@ -10,11 +10,15 @@
  *
  * (C) 2001 Ximian, Inc.
  */
+#define _ISOC99_SOURCE
+
 #include <config.h>
 #include <stdio.h>
 #include <string.h>
 #include <glib.h>
 #include <ffi.h>
+#include <math.h>
+
 
 #ifdef HAVE_ALLOCA_H
 #   include <alloca.h>
@@ -312,8 +316,6 @@ ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 		
 	if (mh->signature->ret->type)
 		*sp = stackval_from_data (mh->signature->ret->type, res, 0);
-			
-	g_assert (0); /* fixme: just for test purposes */
 }
 
 #define DEBUG_INTERP 0
@@ -757,7 +759,8 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			else if (sp->type == VAL_I64)
 				result = (guint64)sp [0].data.l != (guint64)sp [1].data.l;
 			else if (sp->type == VAL_DOUBLE)
-				result = sp [0].data.f != sp [1].data.f; /* uhm: unordered compare here */
+				result = isunordered (sp [0].data.f, sp [1].data.f) ||
+					(sp [0].data.f != sp [1].data.f);
 			else
 				result = GET_NATI (sp [0]) != GET_NATI (sp [1]);
 			if (result)
@@ -765,10 +768,75 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			++ip;
 			BREAK;
 		}
-		CASE (CEE_BGE_UN_S) ves_abort(); BREAK;
-		CASE (CEE_BGT_UN_S) ves_abort(); BREAK;
-		CASE (CEE_BLE_UN_S) ves_abort(); BREAK;
-		CASE (CEE_BLT_UN_S) ves_abort(); BREAK;
+		CASE (CEE_BGE_UN_S) {
+			int result;
+			++ip;
+			sp -= 2;
+			if (sp->type == VAL_I32)
+				result = (guint32)sp [0].data.i >= (guint32)GET_NATI (sp [1]);
+			else if (sp->type == VAL_I64)
+				result = (guint64)sp [0].data.l >= (guint64)sp [1].data.l;
+			else if (sp->type == VAL_DOUBLE)
+				result = !isless (sp [0].data.f,sp [1].data.f);
+			else
+				result = GET_NATI (sp [0]) >= GET_NATI (sp [1]);
+			if (result)
+				ip += (signed char)*ip;
+			++ip;
+			BREAK;
+		}
+		CASE (CEE_BGT_UN_S) {
+			int result;
+			++ip;
+			sp -= 2;
+			if (sp->type == VAL_I32)
+				result = (guint32)sp [0].data.i > (guint32)GET_NATI (sp [1]);
+			else if (sp->type == VAL_I64)
+				result = (guint64)sp [0].data.l > (guint64)sp [1].data.l;
+			else if (sp->type == VAL_DOUBLE)
+				result = isgreater (sp [0].data.f, sp [1].data.f);
+			else
+				result = GET_NATI (sp [0]) > GET_NATI (sp [1]);
+			if (result)
+				ip += (signed char)*ip;
+			++ip;
+			BREAK;
+		}
+		CASE (CEE_BLE_UN_S) {
+			int result;
+			++ip;
+			sp -= 2;
+			if (sp->type == VAL_I32)
+				result = (guint32)sp [0].data.i <= (guint32)GET_NATI (sp [1]);
+			else if (sp->type == VAL_I64)
+				result = (guint64)sp [0].data.l <= (guint64)sp [1].data.l;
+			else if (sp->type == VAL_DOUBLE)
+				result = islessequal (sp [0].data.f, sp [1].data.f);
+			else
+				result = GET_NATI (sp [0]) <= GET_NATI (sp [1]);
+			if (result)
+				ip += (signed char)*ip;
+			++ip;
+			BREAK;
+		}
+		CASE (CEE_BLT_UN_S) {
+			int result;
+			++ip;
+			sp -= 2;
+			if (sp->type == VAL_I32)
+				result = (guint32)sp[0].data.i < (guint32)GET_NATI(sp[1]);
+			else if (sp->type == VAL_I64)
+				result = (guint64)sp[0].data.l < (guint64)sp[1].data.l;
+			else if (sp->type == VAL_DOUBLE)
+				isunordered (sp [0].data.f, sp [1].data.f) ||
+					(sp [0].data.f < sp [1].data.f);
+			else
+				result = GET_NATI(sp[0]) < GET_NATI(sp[1]);
+			if (result)
+				ip += (signed char)*ip;
+			++ip;
+			BREAK;
+		}
 		CASE (CEE_BR) ves_abort(); BREAK;
 		CASE (CEE_BRFALSE) ves_abort(); BREAK;
 		CASE (CEE_BRTRUE) ves_abort(); BREAK;

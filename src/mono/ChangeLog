@@ -1,3 +1,7 @@
+2001-08-02  Dietmar Maurer  <dietmar@ximian.com>
+
+	* mono/tests/pinvoke.cs: impl.
+
 Wed Aug 1 22:34:52 CEST 2001 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in, mono/tests: added some tests for the interpreter.

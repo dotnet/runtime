@@ -11,7 +11,8 @@ TESTSRC=	\
 	outparm.cs	\
 	nested-loops.cs	\
 	exception.cs	\
-	struct.cs
+	struct.cs	\
+	pinvoke.cs
 
 TESTS=	\
 	test-ops.exe	\
@@ -22,7 +23,8 @@ TESTS=	\
 	outparm.exe	\
 	nested-loops.exe	\
 	exception.exe	\
-	struct.exe
+	struct.exe	\
+	pinvoke.exe
 
 EXTRA_DIST=test-driver $(TESTSRC)
 

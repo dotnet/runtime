@@ -12,5 +12,5 @@ mono_int_LDADD =	\
 	../cli/libmonocli.a		\
 	$(GMODULE_LIBS)			\
 	$(GLIB_LIBS)			\
-	-lffi
+	-lffi -lm
 

@@ -29,6 +29,27 @@
 #include "cli.h"
 
 
+static char *dll_map[] = {
+	"libc", "libc.so.6",
+	"libm", "libm.so.6",
+	"cygwin1.dll", "libc.so.6", 
+	NULL, NULL
+};
+
+static const char *
+mono_map_dll (const char *name)
+{
+	int i = 0;
+
+	while (dll_map [i]) {
+		if (!strcmp (dll_map [i], name))
+			return  dll_map [i + 1];
+		i += 2;
+	}
+
+	return name;
+}
+
 /**
  * mono_get_string_class_info:
  * @ttoken: pointer to location to store type definition token
@@ -260,6 +281,7 @@ ves_map_ffi_type (MonoType *type)
 	return rettype;
 }
 
+extern cos();
 static void
 fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 {
@@ -295,10 +317,7 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 
 	g_assert (import && scope);
 
-
-	if (!strcmp (scope, "cygwin1.dll"))
-		scope = "libc.so.6";
-
+	scope = mono_map_dll (scope);
 	full_name = g_module_build_path (NULL, scope);
 	gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
 	g_free (full_name);
@@ -307,9 +326,9 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 
 	piinfo->cif = g_new (ffi_cif , 1);
 	piinfo->piflags = im_cols [0];
-	
+
 	g_module_symbol (gmodule, import, &piinfo->addr); 
-			
+
 	g_assert (piinfo->addr);
 
 	acount = mh->signature->param_count;
@@ -349,7 +368,6 @@ mono_get_method (MonoImage *image, guint32 token)
 		return mono_get_method (image, MONO_TOKEN_METHOD_DEF | token);
 	}
 
-	
 	mono_metadata_decode_row (&tables [table], index - 1, cols, 6);
 
 	if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL)
@@ -369,7 +387,8 @@ mono_get_method (MonoImage *image, guint32 token)
 
 
 	if (result->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, index);
+		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, 
+				   index - 1);
 	} else {
 		/* if this is a methodref from another module/assembly, this fails */
 		loc = mono_cli_rva_map ((MonoCLIImageInfo *)image->image_info, cols [0]);
