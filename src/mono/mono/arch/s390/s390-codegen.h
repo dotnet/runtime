@@ -160,93 +160,472 @@ typedef enum {
 #define S390_CC_NC			12
 #define S390_CC_UN			15
 
-#define s390_word(addr, value)		do {*((guint32 *) addr) = (guint32) (value); \
-					    ((guint32 *) addr)++;} while (0)
-#define s390_float(addr, value)		do {*((guint32 *) addr) = (guint32) (value); \
-					    ((guint32 *) addr)++;} while (0)
-#define s390_llong(addr, value)		do {*((guint64 *) addr) = (guint64) (value); \
-					    ((guint64 *) addr)++;} while (0)
-#define s390_double(addr, value)	do {*((guint64 *) addr) = (guint64) (value); \
-					    ((guint64 *) addr)++;} while (0)
-#define s390_emit16(c, x)		do {*((guint16 *) c) = x; ((guint16 *) c)++;} while(0)
-#define s390_emit32(c, x)		do {*((guint32 *) c) = x; ((guint32 *) c)++;} while(0)
-#define s390_basr(code, r1, r2)		s390_emit16 (code, (13 << 8 | (r1) << 4 | (r2)))
-#define s390_bras(code, r, o)		s390_emit32 (code, (167 << 24 | (r) << 20 | 5 << 16 | (o)))
-#define s390_brasl(code, r, o)		do {s390_emit16 (code, (192 << 8 | (r) << 4 | 5)); \
-					    s390_emit32 (code, (o));} while(0)
-#define s390_ahi(code, r, v)		s390_emit32 (code, (167 << 24 | (r) << 20 | 10 << 16 | ((v) & 0xffff)))
-#define s390_alcr(code, r1, r2)		s390_emit32 (code, (185 << 24 | 152 << 16 | (r1) << 4 | (r2)))
-#define s390_ar(code, r1, r2)		s390_emit16 (code, (26 << 8 | (r1) << 4 | (r2)))
-#define s390_alr(code, r1, r2)		s390_emit16 (code, (30 << 8 | (r1) << 4 | (r2)))
-#define s390_a(code, r, x, b, d)	s390_emit32 (code, (90 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_al(code, r, x, b, d)	s390_emit32 (code, (94 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_slbr(code, r1, r2)		s390_emit32 (code, (185 << 24 | 153 << 16 | (r1) << 4 | (r2)))
-#define s390_sr(code, r1, r2)		s390_emit16 (code, (27 << 8 | (r1) << 4 | (r2)))
-#define s390_slr(code, r1, r2)		s390_emit16 (code, (31 << 8 | (r1) << 4 | (r2)))
-#define s390_s(code, r, x, b, d)	s390_emit32 (code, (91 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_sl(code, r, x, b, d)	s390_emit32 (code, (95 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_mr(code, r1, r2)		s390_emit16 (code, (28 << 8 | (r1) << 4 | (r2)))
-#define s390_m(code, r, x, b, d)	s390_emit32 (code, (92 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_msr(code, r1, r2)		s390_emit32 (code, (178 << 24 | 82 << 16 | (r1) << 4| (r2)))
-#define s390_ms(code, r, x, b, d)	s390_emit32 (code, (113 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_mlr(code, r1, r2)		s390_emit32 (code, (185 << 24 | 150 << 16 | (r1) << 4| (r2)))
-#define s390_dr(code, r1, r2)		s390_emit16 (code, (29 << 8 | (r1) << 4 | (r2)))
-#define s390_d(code, r, x, b, d)	s390_emit32 (code, (93 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_dlr(code, r1, r2)		s390_emit32 (code, (185 << 24 | 151 << 16 | (r1) << 4| (r2)))
-#define s390_br(code, r)		s390_emit16 (code, (7 << 8 | 15 << 4 | (r)))
-#define s390_nr(code, r1, r2)		s390_emit16 (code, (20 << 8 | (r1) << 4 | (r2)))
-#define s390_n(code, r, x, b, d)	s390_emit32 (code, (84 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_or(code, r1, r2)		s390_emit16 (code, (22 << 8 | (r1) << 4 | (r2)))
-#define s390_o(code, r, x, b, d)	s390_emit32 (code, (86 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_xr(code, r1, r2)		s390_emit16 (code, (23 << 8 | (r1) << 4 | (r2)))
-#define s390_x(code, r, x, b, d)	s390_emit32 (code, (87 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_lr(code, r1, r2)		s390_emit16 (code, (24 << 8 | (r1) << 4 | (r2)))
-#define s390_ltr(code, r1, r2)		s390_emit16 (code, (18 << 8 | (r1) << 4 | (r2)))
-#define s390_l(code, r, x, b, d)	s390_emit32 (code, (88 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_lcr(code, r1, r2)		s390_emit16 (code, (19 << 8 | (r1) << 4 | (r2)))
-#define s390_lnr(code, r1, r2)		s390_emit16 (code, (17 << 8 | (r1) << 4 | (r2)))
-#define s390_lpr(code, r1, r2)		s390_emit16 (code, (16 << 8 | (r1) << 4 | (r2)))
-#define s390_lm(code, r1, r2, b, d)	s390_emit32 (code, (152 << 24 | (r1) << 20 | (r2) << 16 \
-						    | (b) << 12 | ((d) & 0xfff)))
-#define s390_lh(code, r, x, b, d)	s390_emit32 (code, (72 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_lhi(code, r, v)		s390_emit32 (code, (167 << 24 | (r) << 20 | 8 << 16 | ((v) & 0xffff)))
-#define s390_ic(code, r, x, b, d)	s390_emit32 (code, (67 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_icm(code, r, m, b, d)	s390_emit32 (code, (191 << 24 | (r) << 20 | (m) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_st(code, r, x, b, d)	s390_emit32 (code, (80 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_stm(code, r1, r2, b, d)	s390_emit32 (code, (144 << 24 | (r1) << 20 | (r2) << 16 \
-						    | (b) << 12 | ((d) & 0xfff)))
-#define s390_stam(c, r1, r2, b, d)	s390_emit32 (code, (155 << 24 | (r1) << 20 | (r2) << 16 \
-						    | (b) << 12 | ((d) & 0xfff)))
-#define s390_lam(c, r1, r2, b, d)	s390_emit32 (code, (154 << 24 | (r1) << 20 | (r2) << 16 \
-						    | (b) << 12 | ((d) & 0xfff)))
-#define s390_sth(code, r, x, b, d)	s390_emit32 (code, (64 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_stc(code, r, x, b, d)	s390_emit32 (code, (66 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_stcm(code, r, m, b, d)	s390_emit32 (code, (190 << 24 | (r) << 20 | (m) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_la(code, r, x, b, d)	s390_emit32 (code, (65 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_larl(code, r, o)		do {						\
-					    s390_emit16 (code, (192 << 8 | (r) << 4));	\
-					    s390_emit32 (code, (o));			\
-					} while (0)
-#define s390_ld(code, f, x, b, d)	s390_emit32 (code, (104 << 24 | (f) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_le(code, f, x, b, d)	s390_emit32 (code, (120 << 24 | (f) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_std(code, f, x, b, d)	s390_emit32 (code, (96 << 24 | (f) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_ste(code, f, x, b, d)	s390_emit32 (code, (112 << 24 | (f) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_mvc(c, l, b1, d1, b2, d2)	do {s390_emit32 (c, (210 << 24 | ((((l)-1)  << 16) & 0x00ff0000) | \
-							(b1) << 12 | ((d1) & 0xfff))); 		  \
-					    s390_emit16 (c, ((b2) << 12 | ((d2) & 0xfff)));} while (0)
-#define s390_mvcl(c, r1, r2)		s390_emit16 (c, (14 << 8 | (r1) << 4 | (r2)))
-#define s390_mvcle(c, r1, r3, d2, b2)	s390_emit32 (c, (168 << 24 | (r1) << 20 |	\
-						     (r3) << 16 | (b2) << 12 | 		\
-						     ((d2) & 0xfff)))
-#define s390_break(c)			s390_emit16 (c, 0)
-#define s390_nill(c, r1, v)		s390_emit32 (c, (165 << 24 | (r1) << 20 | 7 << 16 | ((v) & 0xffff)))
-#define s390_nilh(c, r1, v)		s390_emit32 (c, (165 << 24 | (r1) << 20 | 6 << 16 | ((v) & 0xffff)))
-#define s390_brc(c, m, d)		s390_emit32 (c, (167 << 24 | ((m) & 0xff) << 20 | 4 << 16 | ((d) & 0xffff)))
-#define s390_cr(c, r1, r2)		s390_emit16 (c, (25 << 8 | (r1) << 4 | (r2)))
-#define s390_clr(c, r1, r2)		s390_emit16 (c, (21 << 8 | (r1) << 4 | (r2)))
-#define s390_c(c, r, x, b, d)		s390_emit32 (c, (89 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_cl(c, r, x, b, d)		s390_emit32 (c, (85 << 24 | (r) << 20 | (x) << 16 | (b) << 12 | ((d) & 0xfff)))
-#define s390_chi(c, r, i)		s390_emit32 (c, (167 << 24 | (r) << 20 | 15 << 16 | ((i) & 0xffff)))
+#define s390_word(addr, value) do	 	\
+{						\
+	* (guint32 *) addr = (guint32) value;	\
+	addr += sizeof(guint32);		\
+} while (0)
+
+#define s390_float(addr, value)	do 		\
+{						\
+	* (gfloat *) addr = (gfloat) value;	\
+	addr += sizeof(gfloat);			\
+} while (0)
+
+#define s390_llong(addr, value)	do 		\
+{						\
+	* (guint64 *) addr = (guint64) value;	\
+	addr += sizeof(guint64);		\
+} while (0)
+
+#define s390_double(addr, value) do 		\
+{						\
+	* (gdouble *) addr = (gdouble) value;	\
+	addr += sizeof(gdouble);		\
+} while (0)
+
+typedef struct {
+	short 	op;
+} E_Format;
+
+typedef struct {
+	char	op;
+	int	im;
+} I_Format;
+
+typedef struct {
+	char 	op;
+	char	r1 : 4;
+	char 	r2 : 4;
+} RR_Format;
+
+typedef struct {
+	short	op;
+	char	xx;
+	char	r1 : 4;
+	char	r2 : 4;
+} RRE_Format;
+
+typedef struct {
+	short	op;
+	char	r1 : 4;
+	char	xx : 4;
+	char	r3 : 4;
+	char	r2 : 4;
+} RRF_Format_1;
+
+typedef struct {
+	short	op;
+	char	m3 : 4;
+	char	xx : 4;
+	char	r1 : 4;
+	char	r2 : 4;
+} RRF_Format_2;
+
+typedef struct {
+	short	op;
+	char	r3 : 4;
+	char	m4 : 4;
+	char	r1 : 4;
+	char	r2 : 4;
+} RRF_Format_3;
+
+typedef struct {
+	char	op;
+	char	r1 : 4;
+	char	x2 : 4;
+	char	b2 : 4;
+	short	d2 : 12;
+} RX_Format;
+
+typedef struct {
+	char 	op1;
+	char	r1 : 4;
+	char	x2 : 4;
+	char	b2 : 4;
+	int	d2 : 12;
+	char	xx;
+	char	op2;
+} RXE_Format;
+
+typedef struct {
+	char 	op1;
+	char	r3 : 4;
+	char	x2 : 4;
+	char	b2 : 4;
+	int	d2 : 12;
+	char	r1 : 4;
+	char	xx : 4;
+	char	op2;
+} RXF_Format;
+
+typedef struct {
+	char 	op1;
+	char	r1 : 4;
+	char	x2 : 4;
+	char	b2 : 4;
+	int	d2 : 20;
+	char	op2;
+} RXY_Format __attribute__ ((packed));
+
+typedef struct {
+	char 	op;
+	char	r1 : 4;
+	char	r3 : 4;
+	char	b2 : 4;
+	int	d2 : 12;
+} RS_Format_1;
+
+typedef struct {
+	char 	op;
+	char	r1 : 4;
+	char	m3 : 4;
+	char	b2 : 4;
+	int	d2 : 12;
+} RS_Format_2;
+
+typedef struct {
+	char 	op;
+	char	r1 : 4;
+	char	xx : 4;
+	char	b2 : 4;
+	int	d2 : 12;
+} RS_Format_3;
+
+typedef struct {
+	char 	op1;
+	char	r1 : 4;
+	char	r3 : 4;
+	char	b2 : 4;
+	int	d2 : 20;
+	char 	op2;
+} RSY_Format_1 __attribute__ ((packed));
+
+typedef struct {
+	char 	op1;
+	char	r1 : 4;
+	char	m3 : 4;
+	char	b2 : 4;
+	int	d2 : 20;
+	char 	op2;
+} RSY_Format_2 __attribute__ ((packed));
+
+typedef struct {
+	char 	op1;
+	char	l1 : 4;
+	char	xx : 4;
+	char	b1 : 4;
+	int 	d1 : 12;
+	char	yy;
+	char 	op2;
+} RSL_Format;
+
+typedef struct {
+	char 	op;
+	char	r1 : 4;
+	char	r3 : 4;
+	short	i2;
+} RSI_Format;
+
+typedef struct {
+	char 	op1;
+	char	r1 : 4;
+	char	op2 : 4;
+	short	i2;
+} RI_Format;
+
+typedef struct {
+	char 	op1;
+	char	r1 : 4;
+	char	r3 : 4;
+	short	i2;
+	char	xx;
+	char	op2;
+} RIE_Format;
+
+typedef struct {
+	char 	op1;
+	char	r1 : 4;
+	char	op2 : 4;
+	int	i2;
+} RIL_Format_1 __attribute__ ((packed));
+
+typedef struct {
+	char 	op1;
+	char	m1 : 4;
+	char	op2 : 4;
+	int	i2;
+} RIL_Format_2 __attribute__ ((packed));
+
+typedef struct {
+	char	op;
+	char	i2;
+	char	b1 : 4;
+	short	d1 : 12;
+} SI_Format;
+
+typedef struct {
+	char	op1;
+	char	i2;
+	char	b1 : 4;
+	int	d1 : 20;
+	char	op2;
+} SIY_Format __attribute__ ((packed));
+
+typedef struct {
+	short	op;
+	char	b2 : 4;
+	short	d2 : 12;
+} S_Format;
+
+typedef struct {
+	char	op;
+	char	ll;
+	char	b1 : 4;
+	short	d1 : 12;
+	char	b2 : 4;
+	short	d2 : 12;
+} SS_Format_1;
+
+typedef struct {
+	char	op;
+	char	l1 : 4;
+	char	l2 : 4;
+	char	b1 : 4;	
+	short	d1 : 12;
+	char	b2 : 4;
+	short	d2 : 12;
+} SS_Format_2;
+
+typedef struct {
+	char	op;
+	char	r1 : 4;
+	char	r3 : 4;
+	char	b1 : 4;	
+	short	d1 : 12;
+	char	b2 : 4;
+	short	d2 : 12;
+} SS_Format_3;	
+
+typedef struct {
+	char	op;
+	char	r1 : 4;
+	char	r3 : 4;
+	char	b2 : 4;	
+	short	d2 : 12;
+	char	b4 : 4;
+	short	d4 : 12;
+} SS_Format_4;	
+
+typedef struct {
+	short	op;
+	char	b1 : 4;
+	short	d1 : 12;
+	char	b2 : 4;
+	short	d2 : 12;
+} SSE_Format __attribute__ ((packed));
+
+#define s390_emit16(c, x) do 			\
+{						\
+	*((guint16 *) c) = x; 			\
+	c += sizeof(guint16);			\
+} while(0)
+
+#define s390_emit32(c, x) do 			\
+{						\
+	*((guint32 *) c) = x; 			\
+	c += sizeof(guint32);			\
+} while(0)
+
+#define S390_E(c,opc) 			s390_emit16(c,opc)
+
+#define S390_I(c,opc,imm) 		s390_emit16(c, (opc << 8 | imm))
+
+#define S390_RR(c,opc,g1,g2)		s390_emit16(c, (opc << 8 | (g1) << 4 | g2))
+
+#define S390_RRE(c,opc,g1,g2)		s390_emit32(c, (opc << 16 | (g1) << 4 | g2)) 
+
+#define S390_RRF_1(c,opc,g1,g2,g3)	s390_emit32(c, (opc << 16 | (g1) << 12 | (g3) << 4 | g2))
+
+#define S390_RRF_2(c,opc,g1,k3,g2)	s390_emit32(c, (opc << 16 | (k3) << 12 | (g1) << 4 | g2))
+
+#define S390_RRF_3(c,opc,g1,g2,k4,g3)	s390_emit32(c, (opc << 16 | (g3) << 12 | (k4) << 8 | (g1) << 4 | g2))
+
+#define S390_RX(c,opc,g1,n2,s2,p2)	s390_emit32(c, (opc << 24 | (g1) << 20 | (n2) << 16 | (s2) << 12 | ((p2) & 0xfff)))
+
+#define S390_RXE(c,opc,g1,n2,s2,p2) do  			\
+{								\
+	s390_emit16(c, ((opc & 0xff00) | (g1) << 4 | n2));	\
+	s390_emit32(c, ((s2) << 28 | (((p2) & 0xfff) << 16) | 	\
+			(opc & 0xff)));				\
+} while (0)
+
+#define S390_RXY(c,opc,g1,n2,s2,p2) do				\
+{								\
+	s390_emit16(c, ((opc & 0xff00) | (g1) << 4 | n2));	\
+	s390_emit32(c, ((s2) << 28 | (((p2) & 0xfffff) << 8) | 	\
+			(opc & 0xff)));				\
+} while (0)
+
+#define S390_RS_1(c,opc,g1,g3,s2,p2) 	s390_emit32(c, (opc << 24 | (g1) << 20 | (g3) << 16 | (s2) << 12 | ((p2) & 0xfff))) 
+
+#define S390_RS_2(c,opc,g1,k3,s2,p2)	s390_emit32(c, (opc << 24 | (g1) << 20 | (k3) << 16 | (s2) << 12 | ((p2) & 0xfff)))
+
+#define S390_RS_3(c,opc,g1,s2,p2)	s390_emit32(c, (opc << 24 | (g1) << 20 | (s2) << 12 | ((p2) & 0xfff)))
+
+#define S390_RSY_1(c,opc,g1,g3,s2,p2) do			\
+{								\
+	s390_emit16(c, ((opc & 0xff00) | (g1) << 4 | g3));	\
+	s390_emit32(c, ((s2) << 28 | (((p2) & 0xfffff) << 8) | 	\
+			(opc & 0xff)));				\
+} while (0)
+
+#define S390_RSY_2(c,opc,g1,k3,s2,p2) do			\
+{								\
+	s390_emit16(c, ((opc & 0xff00) | (g1) << 4 | k3));	\
+	s390_emit32(c, ((s2) << 28 | (((p2) & 0xfffff) << 8) | 	\
+			(opc & 0xff)));				\
+} while (0)
+
+#define S390_RSL(c,opc,ln,s1,p1) do 				\
+{								\
+	s390_emit16(c, ((opc & 0xff00) | (ln) << 4));		\
+	s390_emit32(c, ((s1) << 28 | ((s1 & 0xfff) << 16) | 	\
+			(opc & 0xff)));				\
+} while (0)
+
+#define S390_RSI(c,opc,g1,g3,m2) 	s390_emit32(c, (opc << 24 | (g1) << 20 | (g3) << 16 | (m2 & 0xffff)))
+
+#define S390_RI(c,opc,g1,m2)		s390_emit32(c, ((opc >> 4) << 24 | (g1) << 20 | (opc & 0x0f) << 16 | (m2 & 0xffff)))
+
+#define S390_RIE(c,opc,g1,g3,m2) do				\
+{								\
+	s390_emit16(c, ((opc & 0xff00) | (g1) << 4 | g3));	\
+	s390_emit32(c, ((m2) << 16 | (opc & 0xff)));		\
+} while (0)
+
+#define S390_RIL_1(c,opc,g1,m2) do					\
+{									\
+	s390_emit16(c, ((opc >> 4) << 8 | (g1) << 4 | (opc & 0xf)));	\
+	s390_emit32(c, m2);						\
+} while (0)
+
+#define S390_RIL_2(c,opc,k1,m2) do					\
+{									\
+	s390_emit16(c, ((opc >> 4) << 8 | (k1) << 4 | (opc & 0xf)));	\
+	s390_emit32(c, m2);						\
+} while (0)
+
+#define S390_SI(c,opc,s1,p1,m2)		s390_emit32(c, (opc << 24 | (m2) << 16 | (s1) << 12 | ((p1) & 0xfff)));
+
+#define S390_SIY(c,opc,s1,p1,m2) do				\
+{								\
+	s390_emit16(c, ((opc & 0xff00) | m2));			\
+	s390_emit32(c, ((s1) << 24 | (((p2) & 0xfffff) << 8) | 	\
+			(opc & 0xff)));				\
+} while (0)
+
+#define S390_S(c,opc,s2,p2)	s390_emit32(c, (opc << 16 | (s2) << 12 | ((p2) & 0xfff)))
+
+#define S390_SS_1(c,opc,ln,s1,p1,s2,p2) do			\
+{								\
+	s390_emit32(c, (opc << 24 | ((ln-1) & 0xff) << 16 |	\
+			(s1) << 12 | ((p1) & 0xfff)));		\
+	s390_emit16(c, ((s2) << 12 | ((p2) & 0xfff)));		\
+} while (0)
+
+#define S390_SS_2(c,opc,n1,n2,s1,p1,s2,p2) do			\
+{								\
+	s390_emit32(c, (opc << 24 | (n1) << 16 | (n2) << 12 |	\
+			(s1) << 12 | ((p1) & 0xfff)));		\
+	s390_emit16(c, ((s2) << 12 | ((p2) & 0xfff)));		\
+} while (0)
+
+#define S390_SS_3(c,opc,g1,g3,s1,p1,s2,p2) do			\
+{								\
+	s390_emit32(c, (opc << 24 | (g1) << 16 | (g3) << 12 |	\
+			(s1) << 12 | ((p1) & 0xfff)));		\
+	s390_emit16(c, ((s2) << 12 | ((p2) & 0xfff)));		\
+} while (0)
+
+#define S390_SS_4(c,opc,g1,g3,s2,p2,s4,p4) do			\
+{								\
+	s390_emit32(c, (opc << 24 | (g1) << 16 | (g3) << 12 |	\
+			(s2) << 12 | ((p2) & 0xfff)));		\
+	s390_emit16(c, ((s4) << 12 | ((p4) & 0xfff)));		\
+} while (0)
+
+#define S390_SSE(c,opc,s1,p1,s2,p2) do			\
+{							\
+	s390_emit16(c, opc);				\
+	s390_emit16(c, ((s1) << 12 | ((p1) & 0xfff)));	\
+	s390_emit16(c, ((s2) << 12 | ((p2) & 0xfff)));	\
+} while (0)
+
+#define s390_basr(c, r1, r2)		S390_RR(c, 0x0d, r1, r2)
+#define s390_bras(c, r, o)		S390_RI(c, 0xa75, r, o)
+#define s390_brasl(c, r, o)		S390_RIL_1(c, 0xc05, r, o)
+#define s390_ahi(c, r, v)		S390_RI(c, 0xa7a, r, v)
+#define s390_alcr(c, r1, r2)		S390_RRE(c, 0xb998, r1, r2)
+#define s390_ar(c, r1, r2)		S390_RR(c, 0x1a, r1, r2)
+#define s390_alr(c, r1, r2)		S390_RR(c, 0x1e, r1, r2)
+#define s390_a(c, r, x, b, d)		S390_RX(c, 0x5a, r, x, b, d)
+#define s390_al(c, r, x, b, d)		S390_RX(c, 0x5e, r, x, b, d)
+#define s390_slbr(c, r1, r2)		S390_RRE(c, 0xb999, r1, r2)
+#define s390_sr(c, r1, r2)		S390_RR(c, 0x1b, r1, r2)
+#define s390_slr(c, r1, r2)		S390_RR(c, 0x1f, r1, r2)
+#define s390_s(c, r, x, b, d)		S390_RX(c, 0x5b, r, x, b, d)
+#define s390_sl(c, r, x, b, d)		S390_RX(c, 0x5f, r, x, b, d)
+#define s390_mr(c, r1, r2)		S390_RR(c, 0x1c, r1, r2)
+#define s390_m(c, r, x, b, d)		S390_RX(c, 0x5c, r, x, b, d)
+#define s390_msr(c, r1, r2)		S390_RRE(c, 0xb252, r1, r2)
+#define s390_ms(c, r, x, b, d)		S390_RX(c, 0x71, r, x, b, d)
+#define s390_mlr(c, r1, r2)		S390_RRE(c, 0xb996, r1, r2)
+#define s390_dr(c, r1, r2)		S390_RR(c, 0x1d, r1, r2)
+#define s390_dlr(c, r1, r2)		S390_RRE(c, 0xb997, r1, r2)
+#define s390_br(c, r)			S390_RR(c, 0x07, 0xf, r)
+#define s390_nr(c, r1, r2)		S390_RR(c, 0x14, r1, r2)
+#define s390_n(c, r, x, b, d)		S390_RX(c, 0x54, r, x, b, d)
+#define s390_or(c, r1, r2)		S390_RR(c, 0x16, r1, r2)
+#define s390_o(c, r, x, b, d)		S390_RX(c, 0x56, r, x, b, d)
+#define s390_xr(c, r1, r2)		S390_RR(c, 0x17, r1, r2)
+#define s390_x(c, r, x, b, d)		S390_RX(c, 0x57, r, x, b, d)
+#define s390_lr(c, r1, r2)		S390_RR(c, 0x18, r1, r2)
+#define s390_ltr(c, r1, r2)		S390_RR(c, 0x12, r1, r2)
+#define s390_l(c, r, x, b, d)		S390_RX(c, 0x58, r, x, b, d)
+#define s390_lcr(c, r1, r2)		S390_RR(c, 0x13, r1, r2)
+#define s390_lnr(c, r1, r2)		S390_RR(c, 0x11, r1, r2)
+#define s390_lpr(c, r1, r2)		S390_RR(c, 0x10, r1, r2)
+#define s390_lm(c, r1, r2, b, d)	S390_RS_1(c, 0x98, r1, r2, b, d)
+#define s390_lh(c, r, x, b, d)		S390_RX(c, 0x48, r, x, b, d)
+#define s390_lhi(c, r, v)		S390_RI(c, 0xa78, r, v)
+#define s390_ic(c, r, x, b, d)		S390_RX(c, 0x43, r, x, b, d)
+#define s390_icm(c, r, m, b, d)		S390_RX(c, 0xbf, r, m, b, d)
+#define s390_st(c, r, x, b, d)		S390_RX(c, 0x50, r, x, b, d)
+#define s390_stm(c, r1, r2, b, d)	S390_RS_1(c, 0x90, r1, r2, b, d)
+#define s390_stam(c, r1, r2, b, d)	S390_RS_1(c, 0x9b, r1, r2, b, d)
+#define s390_lam(c, r1, r2, b, d)	S390_RS_1(c, 0x9a, r1, r2, b, d)
+#define s390_sth(c, r, x, b, d)		S390_RX(c, 0x40, r, x, b, d)
+#define s390_stc(c, r, x, b, d)		S390_RX(c, 0x42, r, x, b, d)
+#define s390_stcm(c, r, m, b, d)	S390_RX(c, 0xbe, r, m, b, d)
+#define s390_la(c, r, x, b, d)		S390_RX(c, 0x41, r, x, b, d)
+#define s390_larl(c, r, o)		S390_RIL_1(c, 0xc00, r, o)
+#define s390_ld(c, f, x, b, d)		S390_RX(c, 0x68, f, x, b, d)
+#define s390_le(c, f, x, b, d)		S390_RX(c, 0x78, f, x, b, d)
+#define s390_std(c, f, x, b, d)		S390_RX(c, 0x60, f, x, b, d)
+#define s390_ste(c, f, x, b, d)		S390_RX(c, 0x70, f, x, b, d)
+#define s390_mvc(c, l, b1, d1, b2, d2)	S390_SS_1(c, 0xd2, l, b1, d1, b2, d2)
+#define s390_mvcl(c, r1, r2)		S390_RR(c, 0x0e, r1, r2)
+#define s390_mvcle(c, r1, r3, d2, b2)	S390_RS_1(c, 0xa8, r1, r3, d2, b2)
+#define s390_break(c)			S390_RR(c, 0, 0, 0)
+#define s390_nill(c, r, v)		S390_RI(c, 0xa57, r, v)
+#define s390_nilh(c, r, v)		S390_RI(c, 0xa56, r, v)
+#define s390_cr(c, r1, r2)		S390_RR(c, 0x19, r1, r2)
+#define s390_clr(c, r1, r2)		S390_RR(c, 0x15, r1, r2)
+#define s390_c(c, r, x, b, d)		S390_RX(c, 0x59, r, x, b, d)
+#define s390_cl(c, r, x, b, d)		S390_RX(c, 0x55, r, x, b, d)
+#define s390_chi(c, r, i)		S390_RI(c, 0xa7e, r, i)
+#define s390_brc(c, m, d)		S390_RI(c, 0xa74, m, d)
 #define s390_j(c,d)			s390_brc(c, S390_CC_UN, d)
 #define s390_je(c, d)			s390_brc(c, S390_CC_EQ, d)
 #define s390_jeo(c, d)			s390_brc(c, S390_CC_ZR|S390_CC_OV, d)
@@ -259,70 +638,47 @@ typedef enum {
 #define s390_jl(c, d)			s390_brc(c, S390_CC_LT, d)
 #define s390_jnh(c, d)			s390_brc(c, S390_CC_LE, d)
 #define s390_jo(c, d)			s390_brc(c, S390_CC_OV, d)
-#define s390_jnl(c, d)			s390_brc(c, S390_CC_GE, d)			
+#define s390_jnl(c, d)			s390_brc(c, S390_CC_GE, d)
 #define s390_jlo(c, d)			s390_brc(c, S390_CC_LT|S390_CC_OV, d)
-#define s390_jho(c, d)			s390_brc(c, S390_CC_GT|S390_CC_OV, d)		
+#define s390_jho(c, d)			s390_brc(c, S390_CC_GT|S390_CC_OV, d)
 #define s390_jc(c, m, d)		s390_brc(c, m, d)
-#define s390_jcl(c, m, d)		do {s390_emit16 (c, (192 << 8 | (m) << 4 | 4)); \
-					    s390_emit32 (c, (d));} while(0)
-#define s390_slda(c, r, b, d)		s390_emit32 (c, (143 << 24 | (r) << 20 | (b) << 12 | ((d) & 0xfff)))
-#define s390_sldl(c, r, b, d)		s390_emit32 (c, (141 << 24 | (r) << 20 | (b) << 12 | ((d) & 0xfff)))
-#define s390_srda(c, r, b, d)		s390_emit32 (c, (142 << 24 | (r) << 20 | (b) << 12 | ((d) & 0xfff)))
-#define s390_srdl(c, r, b, d)		s390_emit32 (c, (140 << 24 | (r) << 20 | (b) << 12 | ((d) & 0xfff)))
-#define s390_sla(c, r, b, d)		s390_emit32 (c, (139 << 24 | (r) << 20 | (b) << 12 | ((d) & 0xfff)))
-#define s390_sll(c, r, b, d)		s390_emit32 (c, (137 << 24 | (r) << 20 | (b) << 12 | ((d) & 0xfff)))
-#define s390_sra(c, r, b, d)		s390_emit32 (c, (138 << 24 | (r) << 20 | (b) << 12 | ((d) & 0xfff)))
-#define s390_srl(c, r, b, d)		s390_emit32 (c, (136 << 24 | (r) << 20 | (b) << 12 | ((d) & 0xfff)))
-#define s390_sqdbr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 21 << 16 | ((r1) << 4) | (r2)))
-#define s390_sqebr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 20 << 16 | ((r1) << 4) | (r2)))
-#define s390_adbr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 26 << 16 | ((r1) << 4) | (r2)))
-#define s390_aebr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 10 << 16 | ((r1) << 4) | (r2)))
-#define s390_adb(c, r, x, b, d)		do {s390_emit32 (c, (237 << 24 | (r) << 20 | 	\
-					     (x) << 16 | (b) << 12 | ((d) & 0xfff))); 	\
-					    s390_emit16 (c, (26)); 			\
-					} while (0)
-#define s390_sdbr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 27 << 16 | ((r1) << 4) | (r2)))
-#define s390_sdb(c, r, x, b, d)		do {s390_emit32 (c, (237 << 24 | (r) << 20 | 	\
-					     (x) << 16 | (b) << 12 | ((d) & 0xfff))); 	\
-					    s390_emit16 (c, (27)); 			\
-					} while (0)
-#define s390_sebr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 11 << 16 | ((r1) << 4) | (r2)))
-#define s390_mdbr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 28 << 16 | ((r1) << 4) | (r2)))
-#define s390_meebr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 23 << 16 | ((r1) << 4) | (r2)))
-#define s390_ldr(c, r1, r2)		s390_emit16 (c, (40 << 8 | (r1) << 4 | (r2)))
-#define s390_ler(c, r1, r2)		s390_emit16 (c, (56 << 8 | (r1) << 4 | (r2)))
-#define s390_lzdr(c, r1)		s390_emit32 (c, (179 << 24 | 117 << 16 | (r1) << 4))
-#define s390_lzer(c, r1)		s390_emit32 (c, (179 << 24 | 116 << 16 | (r1) << 4))
-#define s390_ddbr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 29 << 16 | ((r1) << 4) | (r2)))
-#define s390_debr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 13 << 16 | ((r1) << 4) | (r2)))
-#define s390_didbr(c, r1, r2, m, r3)	s390_emit32 (c, (179 << 24 | 91 << 16 | ((r3) << 12) | ((m) << 8) | ((r1) << 4) | (r2)))
-#define s390_lcdbr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 19 << 16 | ((r1) << 4) | (r2)))
-#define s390_lndbr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 17 << 16 | ((r1) << 4) | (r2)))
-#define s390_ldebr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 4 << 16 | ((r1) << 4) | (r2)))
-#define s390_lnebr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 1 << 16 | ((r1) << 4) | (r2)))
-#define s390_ledbr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 68 << 16 | ((r1) << 4) | (r2)))
-#define s390_ldeb(c, r, x, b, d)	do {s390_emit32 (c, (237 << 24 | (r) << 20 | 	\
-					     (x) << 16 | (b) << 12 | ((d) & 0xfff))); 	\
-					    s390_emit16 (c, (4)); 			\
-					} while (0)
-#define s390_cfdbr(c, r1, m, f2)	s390_emit32 (c, (179 << 24 | 153 << 16 | (m) << 12 | (r1) << 4 | (f2)))
-#define s390_cdfbr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 149 << 16 | (r1) << 4 | (r2)))
-#define s390_cefbr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 148 << 16 | (r1) << 4 | (r2)))
-#define s390_cdbr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 25 << 16 | (r1) << 4 | (r2)))
-#define s390_cebr(c, r1, r2)		s390_emit32 (c, (179 << 24 | 9 << 16 | (r1) << 4 | (r2)))
-#define s390_cdb(c, r, x, b, d)		do {s390_emit32 (c, (237 << 24 | (r) << 20 | 	\
-					     (x) << 16 | (b) << 12 | ((d) & 0xfff))); 	\
-					    s390_emit16 (c, (25)); 			\
-					} while (0)
-#define s390_tcdb(c, r, x, b, d)	do {s390_emit32 (c, (237 << 24 | (r) << 20 | 	\
-					     (x) << 16 | (b) << 12 | ((d) & 0xfff))); 	\
-					    s390_emit16 (c, (17)); 			\
-					} while (0)
-#define s390_tedb(c, r, x, b, d)	do {s390_emit32 (c, (237 << 24 | (r) << 20 | 	\
-					     (x) << 16 | (b) << 12 | ((d) & 0xfff))); 	\
-					    s390_emit16 (c, (16)); 			\
-					} while (0)
-#define s390_stfpc(c, b, d)		s390_emit32 (c, (178 << 24 | 156 << 16 | \
-						    (b) << 12 | ((d) & 0xfff)))
-
+#define s390_jcl(c, m, d)		S390_RIL_2(c, 0xc04, m, d)
+#define s390_slda(c, r, b, d)		S390_RS_3(c, 0x8f, r, b, d) 
+#define s390_sldl(c, r, b, d)		S390_RS_3(c, 0x8d, r, b, d) 
+#define s390_srda(c, r, b, d)		S390_RS_3(c, 0x8e, r, b, d) 
+#define s390_srdl(c, r, b, d)		S390_RS_3(c, 0x8c, r, b, d) 
+#define s390_sla(c, r, b, d)		S390_RS_3(c, 0x8b, r, b, d) 
+#define s390_sll(c, r, b, d)		S390_RS_3(c, 0x89, r, b, d) 
+#define s390_sra(c, r, b, d)		S390_RS_3(c, 0x8a, r, b, d) 
+#define s390_srl(c, r, b, d)		S390_RS_3(c, 0x88, r, b, d) 
+#define s390_sqdbr(c, r1, r2)		S390_RRE(c, 0xb315, r1, r2)
+#define s390_sqebr(c, r1, r2)		S390_RRE(c, 0xb314, r1, r2)
+#define s390_adbr(c, r1, r2)		S390_RRE(c, 0xb31a, r1, r2)
+#define s390_aebr(c, r1, r2)		S390_RRE(c, 0xb30a, r1, r2)
+#define s390_adb(c, r, x, b, d)		S390_RXE(c, 0xed1a, r, x, b, d)
+#define s390_sdbr(c, r1, r2)		S390_RRE(c, 0xb31b, r1, r2)
+#define s390_sebr(c, r1, r2)		S390_RRE(c, 0xb30b, r1, r2)
+#define s390_sdb(c, r, x, b, d)		S390_RXE(c, 0xed1b, r, x, b, d)
+#define s390_mdbr(c, r1, r2)		S390_RRE(c, 0xb31c, r1, r2)
+#define s390_meebr(c, r1, r2)		S390_RRE(c, 0xb317, r1, r2)
+#define s390_ldr(c, r1, r2)		S390_RR(c, 0x28, r1, r2)
+#define s390_ler(c, r1, r2)		S390_RR(c, 0x38, r1, r2)
+#define s390_lzdr(c, r)    		S390_RRE(c, 0xb375, r, 0)
+#define s390_lzer(c, r)    		S390_RRE(c, 0xb374, r, 0)
+#define s390_ddbr(c, r1, r2)		S390_RRE(c, 0xb31d, r1, r2)
+#define s390_debr(c, r1, r2)		S390_RRE(c, 0xb30d, r1, r2)
+#define s390_didbr(c, r1, r2, m, r3)    S390_RRF_3(c, 0xb35b, r1, r2, m, r3)
+#define s390_lcdbr(c, r1, r2)		S390_RRE(c, 0xb313, r1, r2)
+#define s390_lndbr(c, r1, r2)		S390_RRE(c, 0xb311, r1, r2)
+#define s390_ldebr(c, r1, r2)		S390_RRE(c, 0xb304, r1, r2)
+#define s390_ledbr(c, r1, r2)		S390_RRE(c, 0xb344, r1, r2)
+#define s390_ldeb(c, r, x, b, d)	S390_RXE(c, 0xed04, r, x, b, d)
+#define s390_cfdbr(c, r1, m, r2)	S390_RRF_2(c, 0xb399, r1, m, r2)
+#define s390_cdfbr(c, r1, r2)		S390_RRE(c, 0xb395, r1, r2)
+#define s390_cdbr(c, r1, r2)		S390_RRE(c, 0xb319, r1, r2)
+#define s390_cebr(c, r1, r2)		S390_RRE(c, 0xb309, r1, r2)
+#define s390_cdb(c, r, x, b, d)		S390_RXE(c, 0xed19, r, x, b, d)
+#define s390_tcdb(c, r, x, b, d)	S390_RXE(c, 0xed11, r, x, b, d)
+#define s390_tceb(c, r, x, b, d)	S390_RXE(c, 0xed10, r, x, b, d)
+#define s390_stfpc(c, b, d)		S390_S(c, 0xb29c, b, d)
 #endif

@@ -2965,8 +2965,8 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 	} else {
 		s390_basr   (code, s390_r13, 0);
 		s390_j	    (code, 10);
-		s390_double (code, 0x41e0000000000000);
-		s390_double (code, 0x41f0000000000000);
+		s390_llong  (code, 0x41e0000000000000);
+		s390_llong  (code, 0x41f0000000000000);
 		s390_ldr    (code, s390_f15, sreg);
 		s390_cdb    (code, s390_f15, 0, s390_r13, 0);
 		s390_jl     (code, 10);
