@@ -41,17 +41,17 @@ class Test {
 		}
 
 		ar1.AsyncWaitHandle.WaitOne ();
-		Console.WriteLine ("completed1: " + ar1.IsCompleted);
 		if (ar1.IsCompleted) fin++;
+		Console.WriteLine ("completed1: " + ar1.IsCompleted);
 		ar2.AsyncWaitHandle.WaitOne ();
-		Console.WriteLine ("completed2: " + ar2.IsCompleted);
 		if (ar2.IsCompleted) fin++;
+		Console.WriteLine ("completed2: " + ar2.IsCompleted);
 		ar3.AsyncWaitHandle.WaitOne ();
-		Console.WriteLine ("completed3: " + ar3.IsCompleted);
 		if (ar3.IsCompleted) fin++;
+		Console.WriteLine ("completed3: " + ar3.IsCompleted);
 		ar4.AsyncWaitHandle.WaitOne ();		
-		Console.WriteLine ("completed4: " + ar4.IsCompleted);
 		if (ar4.IsCompleted) fin++;
+		Console.WriteLine ("completed4: " + ar4.IsCompleted);
 
 		if (fin != 4)
 			return 1;
