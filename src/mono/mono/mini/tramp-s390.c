@@ -117,7 +117,7 @@ get_unbox_trampoline (MonoMethod *method, gpointer addr)
 	    (MONO_TYPE_ISSTRUCT (method->signature->ret)))
 		this_pos = s390_r3;
     
-	start = code = g_malloc (28);
+	start = code = mono_global_codeman_reserve (28);
 
 	s390_basr (code, s390_r13, 0);
 	s390_j	  (code, 4);
@@ -286,7 +286,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		/* Now we'll create in 'buf' the S/390 trampoline code. This
 		 is the trampoline code common to all methods  */
 		
-		code = buf = g_malloc(512);
+		code = buf = mono_global_codeman_reserve(512);
 		
 		/*-----------------------------------------------------------
 		STEP 0: First create a non-standard function prologue with a
@@ -560,7 +560,7 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	use r13 to keep that value, for instance. However, the generic part of
 	the trampoline relies on r11 having the same value it had before coming
 	here, so we must save it before. */
-	code = buf = g_malloc(METHOD_TRAMPOLINE_SIZE);
+	code = buf = mono_global_codeman_reserve(METHOD_TRAMPOLINE_SIZE);
 
 	s390_basr (buf, s390_r13, 0);
 	s390_j	  (buf, 4);
@@ -603,12 +603,15 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 
 	tramp = create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
 
-	/* This is the method-specific part of the trampoline. Its purpose is
-	to provide the generic part with the MonoMethod *method pointer. We'll
-	use r11 to keep that value, for instance. However, the generic part of
-	the trampoline relies on r11 having the same value it had before coming
-	here, so we must save it before. */
-	code = buf = g_malloc(METHOD_TRAMPOLINE_SIZE);
+	/*-----------------------------------------------------------*/
+	/* This is the method-specific part of the trampoline. Its   */
+	/* purpose is to provide the generic part with the MonoMethod*/
+	/* *method pointer. We'll use r11 to keep that value, for    */
+	/* instance. However, the generic part of the trampoline     */
+	/* relies on r11 having the same value it had before coming  */
+	/* here, so we must save it before. 			     */
+	/*-----------------------------------------------------------*/
+	code = buf = mono_global_codeman_reserve(METHOD_TRAMPOLINE_SIZE);
 
 	s390_st   (buf, s390_r14, 0, STK_BASE, S390_RET_ADDR_OFFSET);
 	s390_ahi  (buf, STK_BASE, -S390_MINIMAL_STACK_SIZE);
@@ -655,7 +658,7 @@ mono_debugger_create_notification_function (gpointer *notification_address)
 {
 	guint8 *ptr, *buf;
 
-	ptr = buf = g_malloc0 (16);
+	ptr = buf = mono_global_codeman_reserve (16);
 	s390_break (buf);
 	if (notification_address)
 		*notification_address = buf;

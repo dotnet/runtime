@@ -33,6 +33,8 @@
 #define S390_THROWSTACK_ACCREGS		S390_THROWSTACK_FLTREGS+(16*sizeof(gdouble))
 #define S390_THROWSTACK_SIZE		(S390_THROWSTACK_ACCREGS+(16*sizeof(gulong)))
 
+#define SZ_THROW	384
+
 /*========================= End of Defines =========================*/
 
 /*------------------------------------------------------------------*/
@@ -105,7 +107,7 @@ mono_arch_has_unwind_info (gconstpointer addr)
 gpointer
 mono_arch_get_call_filter (void)
 {
-	static guint8 start [512];
+	static guint8 *start;
 	static int inited = 0;
 	guint8 *code;
 	int alloc_size, pos, i;
@@ -115,7 +117,7 @@ mono_arch_get_call_filter (void)
 
 	inited = 1;
 	/* call_filter (MonoContext *ctx, unsigned long eip, gpointer exc) */
-	code = start;
+	code = start = mono_global_codeman_reserve (512);
 
 	s390_stm (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
 	s390_lr  (code, s390_r14, STK_BASE);
@@ -195,7 +197,7 @@ mono_arch_get_call_filter (void)
 	s390_lm   (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
 	s390_br   (code, s390_r14);
 
-	g_assert ((code - start) < sizeof(start));
+	g_assert ((code - start) < SZ_THROW); 
 	return start;
 }
 
@@ -348,12 +350,13 @@ get_throw_exception_generic (guint8 *start, int size,
 gpointer 
 mono_arch_get_throw_exception (void)
 {
-	static guint8 start [384];
+	static guint8 *start;
 	static int inited = 0;
 
 	if (inited)
 		return start;
-	get_throw_exception_generic (start, sizeof (start), FALSE, FALSE);
+	start = mono_global_codeman_reserve (SZ_THROW);
+	get_throw_exception_generic (start, SZ_THROW, FALSE, FALSE);
 	inited = 1;
 	return start;
 }
@@ -374,12 +377,13 @@ mono_arch_get_throw_exception (void)
 gpointer 
 mono_arch_get_rethrow_exception (void)
 {
-	static guint8 start [384];
+	static guint8 *start;
 	static int inited = 0;
 
 	if (inited)
 		return start;
-	get_throw_exception_generic (start, sizeof (start), FALSE, TRUE);
+	start = mono_global_codeman_reserve (SZ_THROW);
+	get_throw_exception_generic (start, SZ_THROW, FALSE, TRUE);
 	inited = 1;
 	return start;
 }
@@ -400,12 +404,13 @@ mono_arch_get_rethrow_exception (void)
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
 {
-	static guint8 start [384];
+	static guint8 *start;
 	static int inited = 0;
 
 	if (inited)
 		return start;
-	get_throw_exception_generic (start, sizeof (start), TRUE, FALSE);
+	start = mono_global_codeman_reserve (SZ_THROW);
+	get_throw_exception_generic (start, SZ_THROW, TRUE, FALSE);
 	inited = 1;
 	return start;
 }	
