@@ -1,7 +1,8 @@
 * Cryptography
 
 	In the .NET framework cryptography can be found under a number of
-	namespaces in several assemblies.
+	namespaces in several assemblies. Mono also has it's own assemblies
+	to provide missing security functionalities from the .NET framework.
 
 ** Assembly: corlib
 
@@ -112,6 +113,9 @@
 		  corlib (which depends on Mono's runtime).
 
 		* Unit test coverage isn't (yet) complete.
+
+		* Most classes have minimal documentation available in
+		  <b>monodoc</b>.
 	</ul>
 
 <hr>
@@ -135,9 +139,7 @@
 
 **** Status
 	<ul>
-		* A RNGCryptoServiceProvider built on top of CryptoAPI. This
-		  allows Windows users to get around the limitation of the 
-		  runtime RNG (which requires <code>/dev/[u]random/</code>).
+		* A RNGCryptoServiceProvider built on top of CryptoAPI.
 
 		* Wrapper classes for unmanaged versions of hash algorithms:
 		  MD2, MD4, MD5 and SHA1 are supported. <b>note</b>: some 
@@ -146,6 +148,9 @@
 		  included to preserve interoperability with older applications
 		  (e.g. some old, but still valid, X.509 certificates use MD2,
 		  MD4 is required for NTLM authentication ...).
+
+		* Classes have minimal documentation available in
+		  <b>monodoc</b>.
 	</ul>
 
 **** TODO
@@ -323,8 +328,8 @@
 		  (using the unit tests) carefully - it's so fast to break an
 		  algorithm ;-).
 
-		* Write some documentation on the cryptographic classes for 
-		  <b>monodoc</b>.
+		* Write some documentation or add some sample code for the 
+		  cryptographic classes in <b>monodoc</b>.
 	</ul>
 <hr>
-Last reviewed: June 15, 2004 (mono beta 3)
+Last reviewed: June 26, 2004 (mono release candidate 1)
