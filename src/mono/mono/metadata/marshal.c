@@ -868,7 +868,6 @@ mono_mb_emit_exception (MonoMethodBuilder *mb, const char *exc_name, const char 
 	MonoMethod *ctor = NULL;
 
 	MonoClass *mme = mono_class_from_name (mono_defaults.corlib, "System", exc_name);
-	int i;
 	mono_class_init (mme);
 	ctor = mono_class_get_method_from_name (mme, ".ctor", 0);
 	g_assert (ctor);
@@ -1439,7 +1438,6 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 	MonoMethod *im;
 	MonoClass *klass;
 	MonoMethod *method = NULL, *method2 = NULL;
-	int i;
 
 	g_assert (delegate);
 
@@ -1841,7 +1839,6 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 	MonoObject *res, *exc;
 	MonoArray *out_args;
 	MonoClass *klass;
-	int i;
 
 	g_assert (delegate);
 
