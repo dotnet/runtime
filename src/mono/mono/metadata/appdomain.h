@@ -226,6 +226,9 @@ ves_icall_System_AppDomain_LoadAssembly            (MonoAppDomain *ad,
 						    MonoReflectionAssemblyName *assRef,
 						    MonoObject    *evidence);
 
+gboolean
+ves_icall_System_AppDomain_InternalIsFinalizingForUnload (gint32 domain_id);
+
 void
 ves_icall_System_AppDomain_InternalUnload          (gint32 domain_id);
 

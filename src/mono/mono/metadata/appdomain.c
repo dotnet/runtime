@@ -870,6 +870,17 @@ ves_icall_System_AppDomain_InternalUnload (gint32 domain_id)
 	mono_domain_unload (domain);
 }
 
+gboolean
+ves_icall_System_AppDomain_InternalIsFinalizingForUnload (gint32 domain_id)
+{
+	MonoDomain *domain = mono_domain_get_by_id (domain_id);
+
+	if (!domain)
+		return TRUE;
+
+	return mono_domain_is_unloading (domain);
+}
+
 gint32
 ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file, 
 					    MonoObject *evidence, MonoArray *args)
@@ -965,6 +976,9 @@ ves_icall_System_AppDomain_InternalInvokeInDomainByID (gint32 domain_id, MonoRef
 {
 	MonoDomain *domain = mono_domain_get_by_id (domain_id);
 
+	if (!domain)
+		mono_raise_exception (mono_get_exception_appdomain_unloaded ());
+
 	return ves_icall_System_AppDomain_InternalInvokeInDomain (domain->domain, method, obj, args);
 }
 
@@ -1019,6 +1033,18 @@ mono_domain_is_unloading (MonoDomain *domain)
 		return FALSE;
 }
 
+static void
+clear_cached_vtable (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoClass *klass = (MonoClass*)key;
+	MonoDomain *domain = (MonoDomain*)user_data;
+	MonoVTable *vt;
+
+	vt = klass->cached_vtable;
+	if (vt && vt->domain == domain)
+		klass->cached_vtable = NULL;
+}
+
 static guint32
 unload_thread_main (void *arg)
 {
@@ -1044,9 +1070,21 @@ unload_thread_main (void *arg)
 		return 1;
 	}
 
+	/* Clear references to our vtables in class->cached_vtable */
+	mono_domain_lock (domain);
+	mono_g_hash_table_foreach (domain->class_vtable_hash, clear_cached_vtable,
+							   domain);
+	mono_g_hash_table_foreach (domain->proxy_vtable_hash, clear_cached_vtable,
+							   domain);
+	mono_domain_unlock (domain);
+
 	domain->state = MONO_APPDOMAIN_UNLOADED;
 
 	mono_domain_free (domain, FALSE);
+
+#ifdef HAVE_BOEHM_GC
+	GC_gcollect ();
+#endif
 
 	return 0;
 }
@@ -1067,6 +1105,8 @@ mono_domain_unload (MonoDomain *domain)
 	guint32 tid;
 	gboolean ret;
 	MonoAppDomainState prev_state;
+	MonoMethod *method;
+	MonoObject *exc;
 
 	//printf ("UNLOAD STARTING FOR %s.\n", domain->friendly_name);
 
@@ -1082,6 +1122,18 @@ mono_domain_unload (MonoDomain *domain)
 				mono_raise_exception (mono_get_exception_cannot_unload_appdomain ("Appdomain is already unloaded."));
 		else
 			g_assert_not_reached ();
+	}
+
+	/* Notify OnDomainUnload listeners */
+	method = look_for_method_by_name (domain->domain->mbr.obj.vtable->klass, "DoDomainUnload");	
+	g_assert (method);
+
+	exc = NULL;
+	mono_runtime_invoke (method, domain->domain, NULL, &exc);
+	if (exc) {
+		/* Roll back the state change */
+		domain->state = MONO_APPDOMAIN_CREATED;
+		mono_raise_exception ((MonoException*)exc);
 	}
 
 	/* 

@@ -4051,6 +4051,7 @@ static gconstpointer icall_map [] = {
 	"System.AppDomain::getFriendlyName", ves_icall_System_AppDomain_getFriendlyName,
 	"System.AppDomain::GetAssemblies", ves_icall_System_AppDomain_GetAssemblies,
 	"System.AppDomain::LoadAssembly", ves_icall_System_AppDomain_LoadAssembly,
+	"System.AppDomain::InternalIsFinalizingForUnload", ves_icall_System_AppDomain_InternalIsFinalizingForUnload,
 	"System.AppDomain::InternalUnload", ves_icall_System_AppDomain_InternalUnload,
 	"System.AppDomain::ExecuteAssembly", ves_icall_System_AppDomain_ExecuteAssembly,
 	"System.AppDomain::InternalSetDomain", ves_icall_System_AppDomain_InternalSetDomain,
