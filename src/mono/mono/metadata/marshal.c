@@ -3724,10 +3724,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				emit_struct_conv (mb, sig->ret->data.klass, TRUE);
 				break;
 			case MONO_TYPE_STRING:
-#ifdef GTK_SHARP_FIXED
 				mono_mb_emit_byte (mb, CEE_STLOC_0);
 				mono_mb_emit_byte (mb, CEE_LDLOC_0);
-#endif
 				
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 				mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
@@ -3745,12 +3743,10 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				}
 				mono_mb_emit_byte (mb, CEE_STLOC_3);
 
-#ifdef GTK_SHARP_FIXED
 				/* free the string */
 				mono_mb_emit_byte (mb, CEE_LDLOC_0);
 				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 				mono_mb_emit_byte (mb, CEE_MONO_FREE);
-#endif
 				break;
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_OBJECT:
