@@ -1237,7 +1237,6 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal(SOCKET soc
 static struct in_addr ipaddress_to_struct_in_addr(MonoObject *ipaddr)
 {
 	struct in_addr inaddr;
-	guint64 addr;
 	MonoClassField *field;
 	
 	field=mono_class_get_field_from_name(ipaddr->vtable->klass, "address");
@@ -1301,9 +1300,9 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 			MonoObject *address = NULL;
 
 #ifdef HAVE_STRUCT_IP_MREQN
-			struct ip_mreqn mreq = {0};
+			struct ip_mreqn mreq = {{0}};
 #else
-			struct ip_mreq mreq = {0};
+			struct ip_mreq mreq = {{0}};
 #endif /* HAVE_STRUCT_IP_MREQN */
 			
 			/* pain! MulticastOption holds two IPAddress
