@@ -170,6 +170,26 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 		MonoMethod *m = ji->method;
 		int offset;
 
+		if (mono_object_isinst (obj, mono_defaults.exception_class)) {
+			char  *strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
+			char  *tmp, *tmpsig;
+
+			if (!strcmp (strace, "TODO: implement stack traces")){
+				g_free (strace);
+				strace = g_strdup ("");
+			}
+
+			tmpsig = mono_signature_get_desc(m->signature, TRUE);
+			tmp = g_strdup_printf ("%sin 0x%05x %s.%s:%s (%s)\n", strace, 
+					       (char *)ip - (char *)ji->code_start,
+					       m->klass->name_space, m->klass->name, m->name, tmpsig);
+			g_free (tmpsig);
+			g_free (strace);
+
+			((MonoException*)obj)->stack_trace = mono_string_new (domain, tmp);
+			g_free (tmp);
+		}
+
 		if (ji->num_clauses) {
 			int i;
 
@@ -200,26 +220,6 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 					call_finally (ctx, (unsigned long)ei->handler_start);
 				}
 			}
-		}
-
-		if (mono_object_isinst (obj, mono_defaults.exception_class)) {
-			char  *strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
-			char  *tmp, *tmpsig;
-
-			if (!strcmp (strace, "TODO: implement stack traces")){
-				g_free (strace);
-				strace = g_strdup ("");
-			}
-
-			tmpsig = mono_signature_get_desc(m->signature, TRUE);
-			tmp = g_strdup_printf ("%sin 0x%05x %s.%s:%s (%s)\n", strace, 
-					       (char *)ip - (char *)ji->code_start,
-					       m->klass->name_space, m->klass->name, m->name, tmpsig);
-			g_free (tmpsig);
-			g_free (strace);
-
-			((MonoException*)obj)->stack_trace = mono_string_new (domain, tmp);
-			g_free (tmp);
 		}
 
 		/* continue unwinding */

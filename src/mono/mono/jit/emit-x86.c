@@ -83,10 +83,12 @@ enter_method (MonoMethod *method, char *ebp)
 	int i, j;
 	MonoClass *class;
 	MonoObject *o;
+	char *tmpsig;
 
-	printf ("ENTER: %s.%s::%s\n(", method->klass->name_space,
-		method->klass->name, method->name);
-
+	tmpsig = mono_signature_get_desc(method->signature, TRUE);
+	printf ("ENTER: %s.%s::%s (%s)\n(", method->klass->name_space,
+		method->klass->name, method->name, tmpsig);
+	g_free (tmpsig);
 	
 	if (((int)ebp & 3) != 0) {
 		g_error ("unaligned stack detected (%p)", ebp);
