@@ -252,6 +252,31 @@ guint32 _wapi_accept(guint32 fd, struct sockaddr *addr, socklen_t *addrlen)
 	}
 	while (new_fd==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 
+
+#ifdef __APPLE__
+	{
+		/* It appears that sockets accepted on linux default
+		 * to blocking where as on Darwin they inherit the
+		 * flags of the listener.  Mono expects sockets to be
+		 * blocking by default so we check the flags to see if
+		 * its blocking on Darwin and reset it if so.
+		 */
+		int args = fcntl (new_fd, F_GETFL, NULL);
+		if (args & O_NONBLOCK) {
+			args &= ~O_NONBLOCK;
+			ret = fcntl (new_fd, F_SETFL, args);
+			if(ret==-1) {
+				gint errnum = errno;
+				
+				errnum = errno_to_WSA (errnum, G_GNUC_PRETTY_FUNCTION);
+				WSASetLastError (errnum);
+		
+				return(INVALID_SOCKET);
+			}
+		}
+	}
+#endif
+
 	if(new_fd==-1) {
 		gint errnum = errno;
 #ifdef DEBUG
