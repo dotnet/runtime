@@ -33,6 +33,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/verify.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
 
@@ -725,8 +726,16 @@ mono_main (int argc, char* argv[])
 		mono_debug_init_2 (assembly);
 
 	if (mono_compile_aot || action == DO_EXEC) {
+		guint32 error;
+
 		mono_config_parse (config_file);
 		//mono_set_rootdir ();
+
+		error = mono_verify_corlib ();
+		if (error) {
+			fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
+			exit (1);
+		}
 
 		main_args.domain = domain;
 		main_args.file = aname;		
