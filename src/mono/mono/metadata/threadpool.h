@@ -6,6 +6,9 @@
 
 extern int mono_max_worker_threads;
 
+/* No managed code here */
+void mono_thread_pool_init (void);
+
 MonoAsyncResult *
 mono_thread_pool_add     (MonoObject *target, MonoMethodMessage *msg, 
 			  MonoDelegate *async_callback, MonoObject *state);

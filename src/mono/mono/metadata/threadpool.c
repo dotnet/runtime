@@ -15,6 +15,9 @@
 #ifdef PLATFORM_WIN32
 #define WINVER 0x0500
 #define _WIN32_WINNT 0x0500
+#define THREADS_PER_CPU	25
+#else
+#define THREADS_PER_CPU	50
 #endif
 
 #include <mono/metadata/domain-internals.h>
@@ -31,7 +34,7 @@
 #include "threadpool.h"
 
 /* maximum number of worker threads */
-int mono_max_worker_threads = 25; /* per available CPU? */
+int mono_max_worker_threads = THREADS_PER_CPU;
 static int mono_min_worker_threads = 0;
 
 /* current number of worker threads */
@@ -39,6 +42,9 @@ static int mono_worker_threads = 0;
 
 /* current number of busy threads */
 static int busy_worker_threads = 0;
+
+/* mono_thread_pool_init called */
+static int tp_inited;
 
 /* we use this to store a reference to the AsyncResult to avoid GC */
 static MonoGHashTable *ares_htable = NULL;
@@ -97,6 +103,28 @@ mono_async_invoke (MonoAsyncResult *ares)
 	LeaveCriticalSection (&ares_lock);
 }
 
+void
+mono_thread_pool_init ()
+{
+	SYSTEM_INFO info;
+	int threads_per_cpu = THREADS_PER_CPU;
+
+	if ((int) InterlockedCompareExchange (&tp_inited, 1, 0) == 1)
+		return;
+
+	MONO_GC_REGISTER_ROOT (ares_htable);
+	InitializeCriticalSection (&ares_lock);
+	ares_htable = mono_g_hash_table_new (NULL, NULL);
+	job_added = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
+	GetSystemInfo (&info);
+	if (getenv ("MONO_THREADS_PER_CPU") != NULL) {
+		threads_per_cpu = atoi (getenv ("MONO_THREADS_PER_CPU"));
+		if (threads_per_cpu <= 0)
+			threads_per_cpu = THREADS_PER_CPU;
+	}
+
+	mono_max_worker_threads = threads_per_cpu * info.dwNumberOfProcessors;
+}
 
 MonoAsyncResult *
 mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *async_callback,
@@ -124,13 +152,6 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 
 	ares = mono_async_result_new (domain, NULL, ac->state, ac);
 	ares->async_delegate = target;
-
-	if (!ares_htable) {
-		MONO_GC_REGISTER_ROOT (ares_htable);
-		InitializeCriticalSection (&ares_lock);
-		ares_htable = mono_g_hash_table_new (NULL, NULL);
-		job_added = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
-	}
 
 	EnterCriticalSection (&ares_lock);
 	mono_g_hash_table_insert (ares_htable, ares, ares);

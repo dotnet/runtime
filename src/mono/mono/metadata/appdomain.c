@@ -79,6 +79,7 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	MonoString *arg;
 	
 	MONO_GC_PRE_INIT ();
+	mono_thread_pool_init ();
 	mono_marshal_init ();
 
 	mono_install_assembly_preload_hook (mono_domain_assembly_preload, NULL);
