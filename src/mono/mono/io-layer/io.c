@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <glob.h>
+#include <stdio.h>
 #include <utime.h>
 
 #include "mono/io-layer/wapi.h"
@@ -141,6 +142,66 @@ static guint32 _wapi_stat_to_file_attributes (struct stat *buf)
 		attrs |= FILE_ATTRIBUTE_READONLY;
 	
 	return attrs;
+}
+
+static void _wapi_set_last_error_from_errno ()
+{
+	/* mapping ideas borrowed from wine. they may need some work */
+
+	switch (errno) {
+	case EACCES: case EPERM: case EROFS:
+		SetLastError (ERROR_ACCESS_DENIED);
+		break;
+	
+	case EAGAIN:
+		SetLastError (ERROR_SHARING_VIOLATION);
+		break;
+	
+	case EBUSY:
+		SetLastError (ERROR_LOCK_VIOLATION);
+		break;
+	
+	case EEXIST:
+		SetLastError (ERROR_FILE_EXISTS);
+		break;
+	
+	case EINVAL: case ESPIPE:
+		SetLastError (ERROR_SEEK);
+		break;
+	
+	case EISDIR:
+		SetLastError (ERROR_CANNOT_MAKE);
+		break;
+	
+	case ENFILE: case EMFILE:
+		SetLastError (ERROR_NO_MORE_FILES);
+		break;
+
+	case ENOENT: case ENOTDIR:
+		SetLastError (ERROR_FILE_NOT_FOUND);
+		break;
+	
+	case ENOSPC:
+		SetLastError (ERROR_HANDLE_DISK_FULL);
+		break;
+	
+	case ENOTEMPTY:
+		SetLastError (ERROR_DIR_NOT_EMPTY);
+		break;
+
+	case ENOEXEC:
+		SetLastError (ERROR_BAD_FORMAT);
+		break;
+
+	case ENAMETOOLONG:
+		SetLastError (ERROR_FILENAME_EXCED_RANGE);
+		break;
+	
+	default:
+		g_message ("Unknown errno: %s\n", strerror (errno));
+		SetLastError (ERROR_GEN_FAILURE);
+		break;
+	}
 }
 
 /* Handle ops.
@@ -903,6 +964,137 @@ gboolean DeleteFile(const guchar *name)
 }
 
 /**
+ * MoveFile:
+ * @name: a pointer to a NULL-terminated unicode string, that names
+ * the file to be moved.
+ * @dest_name: a pointer to a NULL-terminated unicode string, that is the
+ * new name for the file.
+ *
+ * Renames file @name to @dest_name
+ *
+ * Return value: %TRUE on success, %FALSE otherwise.
+ */
+gboolean MoveFile (const guchar *name, const guchar *dest_name)
+{
+	guchar *utf8_name, *utf8_dest_name;
+	int result;
+
+	utf8_name = _wapi_unicode_to_utf8 (name);
+	if (utf8_name == NULL) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
+#endif
+		
+		return FALSE;
+	}
+
+	utf8_dest_name = _wapi_unicode_to_utf8 (dest_name);
+	if (utf8_dest_name == NULL) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
+#endif
+
+		g_free (utf8_name);
+		return FALSE;
+	}
+
+	result = rename (utf8_name, utf8_dest_name);
+	g_free (utf8_name);
+	g_free (utf8_dest_name);
+
+	if (result == 0)
+		return TRUE;
+	
+	switch (errno) {
+	case EEXIST:
+		SetLastError (ERROR_ALREADY_EXISTS);
+		break;
+	
+	default:
+		_wapi_set_last_error_from_errno ();
+		break;
+	}
+
+	return FALSE;
+}
+
+/**
+ * CopyFile:
+ * @name: a pointer to a NULL-terminated unicode string, that names
+ * the file to be copied.
+ * @dest_name: a pointer to a NULL-terminated unicode string, that is the
+ * new name for the file.
+ * @fail_if_exists: if TRUE and dest_name exists, the copy will fail.
+ *
+ * Copies file @name to @dest_name
+ *
+ * Return value: %TRUE on success, %FALSE otherwise.
+ */
+gboolean CopyFile (const guchar *name, const guchar *dest_name, gboolean fail_if_exists)
+{
+	WapiHandle *src, *dest;
+	guint32 attrs;
+	char buffer [2048];
+	int remain, n;
+
+	attrs = GetFileAttributes (name);
+	if (attrs == -1) {
+		SetLastError (ERROR_FILE_NOT_FOUND);
+		return  FALSE;
+	}
+	
+	src = CreateFile (name, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+			  NULL, OPEN_EXISTING, 0, NULL);
+	if (src == INVALID_HANDLE_VALUE) {
+		_wapi_set_last_error_from_errno ();
+		return FALSE;
+	}
+	
+	dest = CreateFile (dest_name, GENERIC_WRITE, 0, NULL,
+			   fail_if_exists ? CREATE_NEW : CREATE_ALWAYS, attrs, NULL);
+	if (dest == INVALID_HANDLE_VALUE) {
+		_wapi_set_last_error_from_errno ();
+		CloseHandle (src);
+		return FALSE;
+	}
+
+	for (;;) {
+		if (ReadFile (src, buffer,sizeof (buffer), &remain, NULL) == 0) {
+			_wapi_set_last_error_from_errno ();
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": read failed.");
+#endif
+			
+			CloseHandle (dest);
+			CloseHandle (src);
+			return FALSE;
+		}
+
+		if (remain == 0)
+			break;
+
+		while (remain > 0) {
+			if (WriteFile (dest, buffer, remain, &n, NULL) == 0) {
+				_wapi_set_last_error_from_errno ();
+#ifdef DEBUG
+				g_message (G_GNUC_PRETTY_FUNCTION ": write failed.");
+#endif
+				
+				CloseHandle (dest);
+				CloseHandle (src);
+				return FALSE;
+			}
+
+			remain -= n;
+		}
+	}
+
+	CloseHandle (dest);
+	CloseHandle (src);
+	return TRUE;
+}
+
+/**
  * GetStdHandle:
  * @stdhandle: specifies the file descriptor
  *
@@ -911,6 +1103,7 @@ gboolean DeleteFile(const guchar *name)
  *
  * Return value: the handle, or %INVALID_HANDLE_VALUE on error
  */
+
 WapiHandle *GetStdHandle(WapiStdHandle stdhandle)
 {
 	struct _WapiHandle_file *file_handle;
@@ -1524,6 +1717,14 @@ gboolean FindNextFile (WapiHandle *wapi_handle, WapiFindData *find_data)
 	return TRUE;
 }
 
+/**
+ * FindClose:
+ * @wapi_handle: the find handle to close.
+ *
+ * Closes find handle @wapi_handle
+ *
+ * Return value: %TRUE on success, %FALSE otherwise.
+ */
 gboolean FindClose (WapiHandle *wapi_handle)
 {
 	struct _WapiHandle_find *handle;
@@ -1540,3 +1741,185 @@ gboolean FindClose (WapiHandle *wapi_handle)
 	return TRUE;
 }
 
+/**
+ * CreateDirectory:
+ * @name: a pointer to a NULL-terminated unicode string, that names
+ * the directory to be created.
+ * @security: ignored for now
+ *
+ * Creates directory @name
+ *
+ * Return value: %TRUE on success, %FALSE otherwise.
+ */
+gboolean CreateDirectory (const guchar *name, WapiSecurityAttributes *security)
+{
+	guchar *utf8_name;
+	int result;
+	
+	utf8_name = _wapi_unicode_to_utf8 (name);
+	if (utf8_name == NULL) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
+#endif
+	
+		return FALSE;
+	}
+
+	result = mkdir (utf8_name, 0777);
+	g_free (utf8_name);
+
+	if (result == 0)
+		return TRUE;
+
+	switch (errno) {
+	case EEXIST:
+		SetLastError (ERROR_ALREADY_EXISTS);
+		break;
+	
+	default:
+		_wapi_set_last_error_from_errno ();
+		break;
+	}
+	
+	return FALSE;
+}
+
+/**
+ * RemoveDirectory:
+ * @name: a pointer to a NULL-terminated unicode string, that names
+ * the directory to be removed.
+ *
+ * Removes directory @name
+ *
+ * Return value: %TRUE on success, %FALSE otherwise.
+ */
+gboolean RemoveDirectory (const guchar *name)
+{
+	guchar *utf8_name;
+	int result;
+
+	utf8_name = _wapi_unicode_to_utf8 (name);
+	if (utf8_name == NULL) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
+#endif
+		
+		return FALSE;
+	}
+
+	result = rmdir (utf8_name);
+	g_free (utf8_name);
+
+	if (result == 0)
+		return TRUE;
+	
+	_wapi_set_last_error_from_errno ();
+	return FALSE;
+}
+
+/**
+ * GetFileAttributes:
+ * @name: a pointer to a NULL-terminated unicode filename.
+ *
+ * Gets the attributes for @name;
+ *
+ * Return value: -1 on failure
+ */
+guint32 GetFileAttributes (const guchar *name)
+{
+	guchar *utf8_name;
+	struct stat buf;
+	int result;
+	
+	utf8_name = _wapi_unicode_to_utf8 (name);
+	if (utf8_name == NULL) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
+#endif
+
+		SetLastError (ERROR_INVALID_PARAMETER);
+		return -1;
+	}
+
+	result = stat (utf8_name, &buf);
+	g_free (utf8_name);
+
+	if (result != 0) {
+		SetLastError (ERROR_FILE_NOT_FOUND);
+		return -1;
+	}
+	
+	return _wapi_stat_to_file_attributes (&buf);
+}
+
+/**
+ * GetFileAttributesEx:
+ * @name: a pointer to a NULL-terminated unicode filename.
+ * @level: must be GetFileExInfoStandard
+ * @info: pointer to a WapiFileAttributesData structure
+ *
+ * Gets attributes, size and filetimes for @name;
+ *
+ * Return value: %TRUE on success, %FALSE on failure
+ */
+gboolean GetFileAttributesEx (const guchar *name, WapiGetFileExInfoLevels level, gpointer info)
+{
+	guchar *utf8_name;
+	WapiFileAttributesData *data;
+
+	struct stat buf;
+	time_t ctime;
+	int result;
+	
+	if (level != GetFileExInfoStandard) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": info level %d not supported.", level);
+#endif
+
+		return FALSE;
+	}
+
+	utf8_name = _wapi_unicode_to_utf8 (name);
+	if (utf8_name == NULL) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
+#endif
+
+		SetLastError (ERROR_INVALID_PARAMETER);
+		return FALSE;
+	}
+
+	result = stat (utf8_name, &buf);
+	g_free (utf8_name);
+
+	if (result != 0) {
+		SetLastError (ERROR_FILE_NOT_FOUND);
+		return FALSE;
+	}
+
+	/* fill data block */
+
+	data = (WapiFileAttributesData *)info;
+
+	if (buf.st_mtime < buf.st_ctime)
+		ctime = buf.st_mtime;
+	else
+		ctime = buf.st_ctime;
+	
+	data->dwFileAttributes = _wapi_stat_to_file_attributes (&buf);
+
+	_wapi_time_t_to_filetime (ctime, &data->ftCreationTime);
+	_wapi_time_t_to_filetime (buf.st_atime, &data->ftLastAccessTime);
+	_wapi_time_t_to_filetime (buf.st_mtime, &data->ftLastWriteTime);
+
+	if (data->dwFileAttributes && FILE_ATTRIBUTE_DIRECTORY) {
+		data->nFileSizeHigh = 0;
+		data->nFileSizeLow = 0;
+	}
+	else {
+		data->nFileSizeHigh = buf.st_size >> 32;
+		data->nFileSizeLow = buf.st_size & 0xFFFFFFFF;
+	}
+
+	return TRUE;
+}

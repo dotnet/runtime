@@ -87,6 +87,11 @@ typedef enum {
 	FILE_TYPE_REMOTE=0x8000,
 } WapiFileType;
 
+typedef enum {
+	GetFileExInfoStandard=0x0000,
+	GetFileExMaxInfoLevel=0x0001
+} WapiGetFileExInfoLevels;
+
 typedef struct 
 {
 	guint32 dwLowDateTime;
@@ -119,6 +124,16 @@ typedef struct
 	guchar cAlternateFileName [14];
 } WapiFindData;
 
+typedef struct
+{
+	guint32 dwFileAttributes;
+	WapiFileTime ftCreationTime;
+	WapiFileTime ftLastAccessTime;
+	WapiFileTime ftLastWriteTime;
+	guint32 nFileSizeHigh;
+	guint32 nFileSizeLow;
+} WapiFileAttributesData;
+
 #define INVALID_SET_FILE_POINTER ((guint32)-1)
 #define INVALID_FILE_SIZE ((guint32)0xFFFFFFFF)
 
@@ -146,5 +161,11 @@ extern gboolean FileTimeToSystemTime(const WapiFileTime *file_time, WapiSystemTi
 extern WapiHandle *FindFirstFile (const guchar *pattern, WapiFindData *find_data);
 extern gboolean FindNextFile (WapiHandle *handle, WapiFindData *find_data);
 extern gboolean FindClose (WapiHandle *handle);
+extern gboolean CreateDirectory (const guchar *name, WapiSecurityAttributes *security);
+extern gboolean RemoveDirectory (const guchar *name);
+extern gboolean MoveFile (const guchar *name, const guchar *dest_name);
+extern gboolean CopyFile (const guchar *name, const guchar *dest_name, gboolean fail_if_exists);
+extern guint32 GetFileAttributes (const guchar *name);
+extern gboolean GetFileAttributesEx (const guchar *name, WapiGetFileExInfoLevels level, gpointer info);
 
 #endif /* _WAPI_IO_H_ */

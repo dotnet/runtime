@@ -32,6 +32,8 @@ typedef WapiSystemTime *LPSYSTEMTIME;
 typedef WapiWSAData WSADATA;
 typedef WapiWSAData *LDWSADATA;
 typedef WapiFindData WIN32_FIND_DATA, *LPWIN32_FIND_DATA;
+typedef WapiFileAttributesData WIN32_FILE_ATTRIBUTE_DATA;
+typedef WapiGetFileExInfoLevels GET_FILEEX_INFO_LEVELS;
 
 #define CONST const
 #define VOID void
