@@ -1398,6 +1398,8 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 	MonoString *o;
 	size_t len2;
 
+	MONO_ARCH_SAVE_REGS;
+
 	if (image->assembly->dynamic)
 		return mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx);
 	else
