@@ -22,7 +22,7 @@ mcs-tree-safe-build:
 	(cd ../mcs/jay; $(MAKE))
 	(cd ../mcs/mcs; $(MAKE) MCS=mcs)
 	(cd ../mcs/class/corlib; $(MAKE) MCS=mcs)
-	cp ../mcs/class/lib/corlib.dll runtime
+	cp ../mcs/class/lib/mscorlib.dll runtime
 	cp ../mcs/mcs/mcs.exe runtime
 
 xinstall-runtime:
