@@ -3,7 +3,6 @@ CSC=mcs
 RUN_MONO=mono
 else
 CSC=csc /nologo
-RUN_MONO=mono
 endif
 
 CORCOMPARE=../../../mcs/tools/corcompare
