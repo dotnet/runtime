@@ -5630,15 +5630,17 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
 
 	if (info.assembly.name) {
 		assembly = mono_assembly_loaded (&info.assembly);
-		/* do we need to load if it's not already loaded? */
 		if (!assembly) {
-			g_free (tmp);
-			g_list_free (info.modifiers);
-			g_list_free (info.nested);
-			return NULL;
+			/* then we must load the assembly ourselve - see #60439 */
+			assembly = mono_assembly_load (&info.assembly, NULL, NULL);
+			if (!assembly) {
+				g_free (tmp);
+				g_list_free (info.modifiers);
+				g_list_free (info.nested);
+				return NULL;
+			}
 		}
-		else
-			image = assembly->image;
+		image = assembly->image;
 	} else if (image == NULL) {
 		image = mono_defaults.corlib;
 	}
