@@ -1693,7 +1693,7 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 {
 	gpointer src, dest;
 	guint32 attrs;
-	char *buffer;
+	char buffer [32*1024];
 	int remain, n;
 	int fd_in, fd_out;
 	struct stat st;
@@ -1721,15 +1721,12 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 		return FALSE;
 	}
 
-	buffer = g_new (gchar, 2048);
-
 	for (;;) {
-		if (ReadFile (src, buffer,sizeof (buffer), &remain, NULL) == 0) {
+		if (ReadFile (src, &buffer,sizeof (buffer), &remain, NULL) == 0) {
 			_wapi_set_last_error_from_errno ();
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION ": read failed.");
 #endif
-			g_free (buffer);	
 			CloseHandle (dest);
 			CloseHandle (src);
 			return FALSE;
@@ -1739,12 +1736,11 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 			break;
 
 		while (remain > 0) {
-			if (WriteFile (dest, buffer, remain, &n, NULL) == 0) {
+			if (WriteFile (dest, &buffer, remain, &n, NULL) == 0) {
 				_wapi_set_last_error_from_errno ();
 #ifdef DEBUG
 				g_message (G_GNUC_PRETTY_FUNCTION ": write failed.");
 #endif
-				g_free (buffer);	
 				CloseHandle (dest);
 				CloseHandle (src);
 				return FALSE;
@@ -1754,8 +1750,6 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 		}
 	}
 
-	g_free (buffer);
-	
 	ok=_wapi_lookup_handle (src, WAPI_HANDLE_FILE,
 				NULL, (gpointer *)&file_private_handle);
 	if(ok==FALSE) {
