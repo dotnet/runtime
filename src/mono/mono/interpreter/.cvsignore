@@ -6,3 +6,4 @@ mint
 .deps
 interp.lo
 libmint.la
+*.lo
