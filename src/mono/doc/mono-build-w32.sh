@@ -60,8 +60,7 @@ fi
 
 # Need to install pkgconfig and set ACLOCAL_FLAGS if there is not a
 # pkgconfig installed already.  Otherwise set PKG_CONFIG_PATH to the
-# glib we're about to install in $here/install.  This script could
-# attempt to be clever and see if glib 2 is already installed, too.
+# glib we're about to install in $here/install.
 
 
 # --print-ac-dir was added in 1.2h according to the ChangeLog.  This
@@ -72,15 +71,17 @@ fi
 # it finds two copies of the m4 macros).  The GIMP for Windows
 # pkgconfig sets its prefix based on the location of its binary, so we
 # dont need PKG_CONFIG_PATH (the internal pkgconfig config file
-# $prefix is handled similarly).
+# $prefix is handled similarly). For the cygwin pkgconfig we do need to
+# set it, and we need to edit the mingw pc files too.
 
 function aclocal_scan () {
     # Quietly ignore the rogue '-I' and other aclocal flags that
     # aren't actually directories...
     #
     # cd into mono/ so that the aclocal wrapper can work out which version
-    # of aclocal to run
-    for i in `(cd mono && aclocal --print-ac-dir)` $ACLOCAL_FLAGS
+    # of aclocal to run, and add /usr/share/aclocal too cos aclocal looks there
+    # too.
+    for i in `(cd mono && aclocal --print-ac-dir)` /usr/share/aclocal $ACLOCAL_FLAGS
     do
 	if [ -f $i/$1 ]; then
 	    return 0
@@ -107,9 +108,16 @@ function install_package() {
     fi
 }
 
-if ! aclocal_scan pkg.m4 ; then
-    ACLOCAL_FLAGS="-I $here/install/share/aclocal $ACLOCAL_FLAGS"
+# pkgconfig is only used during the build, so we can use the cygwin version
+# if it exists
+if aclocal_scan pkg.m4 ; then
+    install_pkgconfig=no
+else
+    install_pkgconfig=yes
 fi
+
+# But we still need to use the mingw libs for glib & co
+ACLOCAL_FLAGS="-I $here/install/share/aclocal $ACLOCAL_FLAGS"
 
 export PATH
 export ACLOCAL_FLAGS
@@ -121,12 +129,26 @@ fi
 
 # Fetch and install pkg-config, glib, iconv, intl
 
-install_package pkgconfig-0.11-20020310.zip bin/pkg-config.exe pkgconfig
+if [ $install_pkgconfig = "yes" ]; then
+    install_package pkgconfig-0.11-20020310.zip bin/pkg-config.exe pkgconfig
+else
+    echo "Not installing pkgconfig, you already seem to have it installed"
+fi
 install_package glib-2.0.4-20020703.zip lib/libglib-2.0-0.dll glib
 install_package glib-dev-2.0.4-20020703.zip lib/glib-2.0.lib glib-dev
 install_package libiconv-1.7.zip lib/iconv.dll iconv
 install_package libintl-0.10.40-20020101.zip lib/libintl-1.dll intl
 install_package libgc-dev.zip lib/gc.dll gc-dev
+
+if [ $install_pkgconfig = "no" ]; then
+    echo "Fixing up the pkgconfig paths"
+    for i in $here/install/lib/pkgconfig/*.pc
+    do
+	mv $i $i.orig
+	sed -e "s@^prefix=/target\$@prefix=$here/install@" < $i.orig > $i
+    done
+    export PKG_CONFIG_PATH=$here/install/lib/pkgconfig
+fi
 
 # Needed to find the libgc bits
 CPPFLAGS="$CPPFLAGS -I$here/install/include"
