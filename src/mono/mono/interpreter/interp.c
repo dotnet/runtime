@@ -57,11 +57,12 @@ static void
 ves_real_abort (int line, MonoMethod *mh,
 		const unsigned char *ip, stackval *stack, stackval *sp)
 {
+	MonoMethodManaged *mm = (MonoMethodManaged *)mh;
 	fprintf (stderr, "Execution aborted in method: %s\n", mh->name);
 	fprintf (stderr, "Line=%d IP=0x%04x, Aborted execution\n", line,
-		 ip-(unsigned char *)mh->data.header->code);
+		 ip-(unsigned char *)mm->header->code);
 	g_print ("0x%04x %02x\n",
-		 ip-(unsigned char*)mh->data.header->code, *ip);
+		 ip-(unsigned char*)mm->header->code, *ip);
 	if (sp > stack)
 		printf ("\t[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type, sp[-1].data.i, sp[-1].data.f);
 	exit (1);
@@ -254,6 +255,7 @@ stackval_to_data (MonoType *type, stackval *val, char *data, guint offset)
 static void 
 ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 {
+	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)mh;
 	static void *values[256];
 	static float tmp_float[256];
 	int i, acount;
@@ -300,7 +302,7 @@ ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 
 	}
 
-	ffi_call (mh->data.piinfo->cif, mh->data.piinfo->addr, res, values);
+	ffi_call (piinfo->cif, piinfo->addr, res, values);
 		
 	if (mh->signature->ret->type)
 		*sp = stackval_from_data (mh->signature->ret->type, res, 0);
@@ -330,7 +332,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 #if DEBUG_INTERP
 	static int level = 0;
 #endif
-	MonoMetaMethodHeader *header;
+	MonoMethodManaged *mm = (MonoMethodManaged *)mh;
 	stackval *stack;
 	register const unsigned char *ip;
 	register stackval *sp;
@@ -342,8 +344,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		return;
 	}
 
-	header = mh->data.header;
-	ip = header->code;
+	ip = mm->header->code;
 
 #if DEBUG_INTERP
 	level++;
@@ -358,12 +359,12 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	 * use a different argument passing mechanism.
  	 */
 
-	stack = alloca (sizeof (stackval) * (header->max_stack + 1));
+	stack = alloca (sizeof (stackval) * (mm->header->max_stack + 1));
 	sp = stack + 1;
 	++stack;
 
-	if (header->num_locals)
-		locals = alloca (sizeof (stackval) * header->num_locals);
+	if (mm->header->num_locals)
+		locals = alloca (sizeof (stackval) * mm->header->num_locals);
 
 	/*
 	 * using while (ip < end) may result in a 15% performance drop, 
@@ -377,7 +378,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			for (h=0; h < level; ++h)
 				g_print ("\t");
 		}
-		g_print ("0x%04x %02x\n", ip-(unsigned char*)mh->data.header->code, *ip);
+		g_print ("0x%04x %02x\n", ip-(unsigned char*)mm->header->code, *ip);
 		if (sp != stack){
 			printf ("[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type,
 				sp[-1].data.i, sp[-1].data.f);
@@ -1219,7 +1220,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			case CEE_UNUSED55: 
 			case CEE_UNUSED70: 
 			default:
-				g_error ("Unimplemented opcode: 0xFE %02x at 0x%x\n", *ip, ip-(unsigned char*)header->code);
+				g_error ("Unimplemented opcode: 0xFE %02x at 0x%x\n", *ip, ip-(unsigned char*)mm->header->code);
 			}
 			continue;
 		DEFAULT;

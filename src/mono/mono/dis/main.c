@@ -218,10 +218,10 @@ static map_t method_flags_map [] = {
 	{ METHOD_ATTRIBUTE_ABSTRACT,            "abstract " },
 	{ METHOD_ATTRIBUTE_SPECIAL_NAME,        "specialname " },
 	{ METHOD_ATTRIBUTE_RT_SPECIAL_NAME,     "rtspecialname " },
-	{ METHOD_ATTRIBUTE_PINVOKE_IMPL,        "pinvokeimpl " }, 
 	{ METHOD_ATTRIBUTE_UNMANAGED_EXPORT,    "export " },
 	{ METHOD_ATTRIBUTE_HAS_SECURITY,        "hassecurity" },
 	{ METHOD_ATTRIBUTE_REQUIRE_SEC_OBJECT,  "requiresecobj" },
+	{ METHOD_ATTRIBUTE_PINVOKE_IMPL,        "pinvokeimpl " }, 
 	{ 0, NULL }
 };
 
@@ -239,6 +239,52 @@ method_flags (guint32 f)
 	
 	g_string_append (str, map (access, method_access_map));
 	g_string_append (str, flags (f, method_flags_map));
+
+	s = str->str;
+	g_string_free (str, FALSE);
+
+	return s;
+}
+
+static map_t pinvoke_flags_map [] = {
+	{ PINVOKE_ATTRIBUTE_NO_MANGLE ,            "nomangle " },
+	{ PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR,   "lasterr " },
+	{ 0, NULL }
+};
+
+static map_t pinvoke_call_conv_map [] = {
+	{ PINVOKE_ATTRIBUTE_CALL_CONV_WINAPI,      "winapi " },
+	{ PINVOKE_ATTRIBUTE_CALL_CONV_CDECL,       "cdecl " },
+	{ PINVOKE_ATTRIBUTE_CALL_CONV_STDCALL,     "stdcall " },
+	{ PINVOKE_ATTRIBUTE_CALL_CONV_THISCALL,    "thiscall " },
+	{ PINVOKE_ATTRIBUTE_CALL_CONV_FASTCALL,    "fastcall " },
+	{ 0, NULL }
+};
+
+static map_t pinvoke_char_set_map [] = {
+	{ PINVOKE_ATTRIBUTE_CHAR_SET_NOT_SPEC,     "" },
+	{ PINVOKE_ATTRIBUTE_CHAR_SET_ANSI,         "ansi " },
+	{ PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE ,     "unicode " },
+	{ PINVOKE_ATTRIBUTE_CHAR_SET_AUTO,         "autochar " },
+	{ 0, NULL }
+};
+
+/**
+ * pinvoke_flags:
+ *
+ * Returns a stringified version of the Method's pinvoke flags
+ */
+static char *
+pinvoke_flags (guint32 f)
+{
+	GString *str = g_string_new ("");
+	int cset = f & PINVOKE_ATTRIBUTE_CHAR_SET_MASK;
+	int cconv = f & PINVOKE_ATTRIBUTE_CALL_CONV_MASK;
+	char *s;
+	
+	g_string_append (str, map (cset, pinvoke_char_set_map));
+	g_string_append (str, map (cconv, pinvoke_call_conv_map));
+	g_string_append (str, flags (f, pinvoke_flags_map));
 
 	s = str->str;
 	g_string_free (str, FALSE);
@@ -420,12 +466,14 @@ pinvoke_info (metadata_t *m, guint32 mindex)
 	metadata_tableinfo_t *mr = &m->tables [META_TABLE_MODULEREF];
 	guint32 im_cols [4];
 	guint32 mr_cols [1];
-	const char *import, *scope;
+	const char *import, *scope, *flags;
 	int i;
 
 	for (i = 0; i < im->rows; i++) {
 
 		mono_metadata_decode_row (im, i, im_cols, CSIZE (im_cols));
+
+		flags = pinvoke_flags (im_cols [0]);
 
 		if ((im_cols[1] >> 1) == mindex + 1) {
 
@@ -436,8 +484,11 @@ pinvoke_info (metadata_t *m, guint32 mindex)
 
 			scope = mono_metadata_string_heap (m, mr_cols [0]);
 				
-			return g_strdup_printf ("(%s:%s)", scope, import);
+			return g_strdup_printf ("(%s as %s %s)", scope, import,
+						flags);
 		}
+
+		g_free (flags);
 	}
 
 	return NULL;

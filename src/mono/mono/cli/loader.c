@@ -162,9 +162,10 @@ ves_map_ffi_type (MonoType *type)
 }
 
 static void
-fill_pinvoke_info (MonoImage *image, MonoMethod *mh, int index, guint16 iflags)
+fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index, 
+		   guint16 iflags)
 {
-	MonoMethodPInvokeInfo *piinfo;
+	MonoMethod *mh = &piinfo->method;
 	metadata_tableinfo_t *tables = image->metadata.tables;
 	metadata_tableinfo_t *im = &tables [META_TABLE_IMPLMAP];
 	metadata_tableinfo_t *mr = &tables [META_TABLE_MODULEREF];
@@ -195,14 +196,13 @@ fill_pinvoke_info (MonoImage *image, MonoMethod *mh, int index, guint16 iflags)
 
 	g_assert (import && scope);
 
-	/* fixme: just a test */
-	scope = "libc.so.6"; import = "open";
+	if (!strcmp (scope, "cygwin1.dll"))
+		scope = "libc.so.6";
 
 	gmodule = g_module_open (scope, G_MODULE_BIND_LAZY);
 
 	g_assert (gmodule);
 
-	piinfo = mh->data.piinfo = g_new0 (MonoMethodPInvokeInfo, 1);
 	piinfo->cif = g_new (ffi_cif , 1);
 	piinfo->iflags = iflags;
 	
@@ -247,10 +247,16 @@ mono_get_method (MonoImage *image, guint32 token)
 		return mono_get_method (image, TOKEN_TYPE_METHOD_DEF | token);
 	}
 
-	result = g_new0 (MonoMethod, 1);
-	result->image = image;
 	
 	mono_metadata_decode_row (&tables [table], index - 1, cols, 6);
+
+	if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+		result = (MonoMethod *)g_new0 (MonoMethodPInvoke, 1);
+	else
+		result = (MonoMethod *)g_new0 (MonoMethodManaged, 1);
+
+	result->image = image;
+	result->flags = cols [2];
 	result->name = mono_metadata_string_heap (&image->metadata, cols [3]);
 
 	if (!sig) /* already taken from the methodref */
@@ -258,15 +264,16 @@ mono_get_method (MonoImage *image, guint32 token)
 	size = mono_metadata_decode_blob_size (sig, &sig);
 	result->signature = mono_metadata_parse_method_signature (&image->metadata, 0, sig, NULL);
 
-	result->flags = cols [2];
 
-	if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-		fill_pinvoke_info (image, result, index, cols [1]);
+	if (result->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+		fill_pinvoke_info (image, (MonoMethodPInvoke *)result, 
+				   index, cols [1]);
 	} else {
 		/* if this is a methodref from another module/assembly, this fails */
 		loc = cli_rva_map ((cli_image_info_t *)image->image_info, cols [0]);
 		g_assert (loc);
-		result->data.header = mono_metadata_parse_mh (&image->metadata, loc);
+		((MonoMethodManaged *)result)->header = 
+			mono_metadata_parse_mh (&image->metadata, loc);
 	}
 
 	g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);
@@ -279,11 +286,11 @@ mono_free_method  (MonoMethod *method)
 {
 	mono_metadata_free_method_signature (method->signature);
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-		g_free (method->data.piinfo->cif->arg_types);
-		g_free (method->data.piinfo->cif);
-		g_free (method->data.piinfo);
+		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)method;
+		g_free (piinfo->cif->arg_types);
+		g_free (piinfo->cif);
 	} else {
-		mono_metadata_free_mh (method->data.header);
+		mono_metadata_free_mh (((MonoMethodManaged *)method)->header);
 	}
 
 	g_free (method);
