@@ -39,6 +39,15 @@
 #include "interp.h"
 #include "hacks.h"
 
+
+/* If true, then we output the opcodes as we interpret them */
+static int tracing = 0;
+
+static int debug_indent_level = 0;
+
+/*
+ * Pull the list of opcodes
+ */
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
 
@@ -48,7 +57,14 @@ enum {
 };
 #undef OPDEF
 
- static int debug_indent_level = 0;
+/*
+ * Pull the opcode names
+ */
+#define OPDEF(a,b,c,d,e,f,g,h,i,j)  b,
+static char *opcode_names[] = {
+#include "mono/cil/opcode.def"
+	NULL
+};
 
 #define GET_NATI(sp) ((guint32)(sp).data.i)
 #define CSIZE(x) (sizeof (x) / 4)
@@ -576,13 +592,6 @@ dump_stack (stackval *stack, stackval *sp)
 }
 
 #define DEBUG_INTERP 1
-#if DEBUG_INTERP
-#define OPDEF(a,b,c,d,e,f,g,h,i,j)  b,
-static char *opcode_names[] = {
-#include "mono/cil/opcode.def"
-	NULL
-};
-#undef OPDEF
 
 static void
 output_indent (void)
@@ -594,19 +603,19 @@ output_indent (void)
 }
 
 #define DEBUG_ENTER()	\
-	do {	\
+	if (tracing) {	\
 		MonoClass *klass = frame->method->klass;	\
 		debug_indent_level++;	\
 		output_indent ();	\
 		g_print ("Entering %s.%s::%s\n", klass->name_space, klass->name, frame->method->name);	\
-	} while (0)
+	} 
 #define DEBUG_LEAVE()	\
-	do {	\
+	if (tracing) {	\
 		MonoClass *klass = frame->method->klass;	\
 		output_indent ();	\
 		g_print ("Leaving %s.%s::%s\n", klass->name_space, klass->name, frame->method->name);	\
 		debug_indent_level--;	\
-	} while (0)
+	} 
 
 #else
 
@@ -776,13 +785,15 @@ ves_exec_method (MonoInvocation *frame)
 	main_loop:
 		/*g_assert (sp >= stack);*/
 #if DEBUG_INTERP
-		output_indent ();
-		g_print ("stack: ");
-		dump_stack (frame->stack, sp);
-		g_print ("\n");
-		output_indent ();
-		g_print ("0x%04x: %s\n", ip-header->code,
-			 *ip == 0xfe ? opcode_names [256 + ip [1]] : opcode_names [*ip]);
+		if (tracing){
+			output_indent ();
+			g_print ("stack: ");
+			dump_stack (frame->stack, sp);
+			g_print ("\n");
+			output_indent ();
+			g_print ("0x%04x: %s\n", ip-header->code,
+				 *ip == 0xfe ? opcode_names [256 + ip [1]] : opcode_names [*ip]);
+		}
 #endif
 		
 		SWITCH (*ip) {
@@ -2702,7 +2713,10 @@ usage (void)
 {
 	fprintf (stderr,
 		 "mint %s, the Mono ECMA CLI interpreter, (C) 2001 Ximian, Inc.\n\n"
-		 "Usage is: mint executable args...\n", "0.6");
+		 "Usage is: mint [options] executable args...\n", VERSION);
+	fprintf (stderr,
+		 "Valid Options are:\n"
+		 "--trace\n");
 	exit (1);
 }
 
@@ -2725,13 +2739,18 @@ int
 main (int argc, char *argv [])
 {
 	MonoAssembly *assembly;
-	int retval = 0;
+	int retval = 0, i;
 	char *file;
 
 	if (argc < 2)
 		usage ();
 
-	file = argv [1];
+	for (i = 1; argv [i][0] == '-'; i++){
+		if (strcmp (argv [i], "--trace") == 0)
+			tracing = 1;
+	}
+	
+	file = argv [i];
 
 	mono_init ();
 	mono_init_icall ();
