@@ -187,7 +187,6 @@ static MonoMethod *
 find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignature *sig)
 {
 	int i;
-	MonoClass *sclass = klass;
 	char *qname, *fqname;
 
 	if (ic) {
@@ -767,6 +766,12 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		}
 
 #ifdef PLATFORM_WIN32
+		if (piinfo->addr) {
+			/* Set call conv to cdecl, since stdcall would need a mangled name */
+			if (method->signature->call_convention == MONO_CALL_DEFAULT)
+				method->signature->call_convention = MONO_CALL_C;
+		}
+
 		/* Try the stdcall mangled name */
 		if (!piinfo->addr) {
 			/* FIX: Compute this correctly */
