@@ -12,7 +12,8 @@ TESTSRC=			\
 	inline2.cs		\
 	inline3.cs		\
 	muldiv.cs		\
-	loops.cs
+	loops.cs		\
+	initlocals.cs	
 
 TESTSI=$(TESTSRC:.cs=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)
