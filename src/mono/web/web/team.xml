@@ -1,544 +1,1118 @@
-﻿<?xml version="1.0" encoding="iso-8859-1" ?>
+<?xml version="1.0" encoding="iso-8859-1" ?>
+
+
 
 <!--
+
      Please, keep this file at 2-space indents.
+
 -->
 
+
+
 <contributors xmlns="http://go-mono.org/team.xsd">
+
   <contributor>
+
     <name>
+
       <first-name>Duncan</first-name>
+
       <last-name>Mak</last-name>
+
     </name>
+
     <e-mail>duncan@ximian.com</e-mail>
+
     <image>duncan.png</image>
+
     <location>Boston / Hong Kong</location>
+
     <organization>Ximian.</organization>
+
     <description>Ximian intern</description>
+
     <tasks>
+
       <task>XML Schema</task>
+
       <task>Documentation</task>
+
       <task>Other useful stuff</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Miguel</first-name>
+
       <last-name>de Icaza</last-name>
+
     </name>
+
     <e-mail>miguel@ximian.com</e-mail>
+
     <image>none.png</image>
+
     <location>Boston / Mexico City</location>
+
     <organization>Ximian/Gnome.</organization>
+
     <description>Ximian CTO</description>
+
     <tasks>
+
       <task>Mono Project Manager</task>
+
       <task>MCS compiler</task>
+
       <task>Core class libraries</task>
+
       <task>MonoDoc, Gtk#</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Gaurav</first-name>
+
       <last-name>Vaish</last-name>
+
     </name>
+
     <e-mail>gvaish_mono.nospam@nospam.lycos.com</e-mail>
+
     <image>gvaish.png</image>
+
     <location>Noida, India</location>
+
     <organization>Adobe Systems Inc.</organization>
+
     <description>MTS</description>
+
     <tasks>
+
       <task>WebControls</task>
+
       <task>MobileControls</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Paolo</first-name>
+
       <last-name>Molaro</last-name>
+
     </name>
+
     <e-mail>lupus@ximian.com</e-mail>
+
     <image>none.png</image>
+
     <location>Italy</location>
+
     <organization>Ximian/Debian/Gnome.</organization>
+
     <description>Mono hacker</description>
+
     <tasks>
+
       <task>Runtime implementation</task>
+
       <task>Core class libraries</task>
+
       <task>JIT compiler</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Dietmar</first-name>
+
       <last-name>Maurer</last-name>
+
     </name>
+
     <e-mail>dietmar@ximian.com</e-mail>
+
     <image>none.png</image>
+
     <location>Austria</location>
+
     <organization>Dietmar IT/Ximian</organization>
+
     <description>Mono hacker</description>
+
     <tasks>
+
       <task>Runtime implementation</task>
+
       <task>Core class libraries</task>
+
       <task>JIT compiler</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Patrik</first-name>
+
       <last-name>Torstensson</last-name>
+
     </name>
+
     <e-mail>Patrik.Torstensson AT intel.com</e-mail>
+
     <image>none.png</image>
+
     <location>Sweden</location>
+
     <organization></organization>
+
     <description>Mono hacker</description>
+
     <tasks>
+
       <task>System.Web core classes (ASP.NET)</task>
+
       <task>Runtime implementation</task>
+
       <task>Core class libraries (Threading, Remoting)</task>
+
       <task>Random fixes (JIT)</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Juli</first-name>
+
       <last-name>Mallett</last-name>
+
     </name>
+
     <e-mail>jmallett@FreeBSD.org</e-mail>
+
     <location>Kansas City</location>
+
     <tasks>
+
       <task>(Runtime) Portability</task>
+
       <task>FreeBSD packaging</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Pedro</first-name>
+
       <last-name>Martinez</last-name>
+
     </name>
+
     <e-mail>yoros@wanadoo.es</e-mail>
+
     <image>pedro.png</image>
+
     <location>Murcia, Spain</location>
+
     <organization>None</organization>
+
     <description>External Contributor</description>
+
     <tasks>
+
       <task>Testing core class libraries</task>
+
       <task>Fixing little bugs</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Alp</first-name>
+
       <last-name>Toker</last-name>
+
     </name>
+
     <e-mail>alp@atoker.com</e-mail>
+
     <location>London, UK</location>
+
     <tasks>
+
       <task>Debian packaging</task>
+
       <task>Gtk# hacks</task>
+
       <task>Random fixes</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Marco</first-name>
+
       <last-name>Ridoni</last-name>
+
     </name>
+
     <e-mail>marco.ridoni@virgilio.it</e-mail>
+
     <location>Rome, Italy</location>
+
     <tasks>
+
       <task>MonoBasic</task>
+
       <task>MonoBasic runtime</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Tim</first-name>
+
       <last-name>Coleman</last-name>
+
     </name>
+
     <e-mail>tim@timcoleman.com</e-mail>
+
     <location>Kitchener-Waterloo, Ontario, Canada</location>
+
     <tasks>
+
       <task>ADO.NET</task>
+
       <task>Web Services</task>
+
       <task>Class library hacking</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Martin Willemoes</first-name>
+
       <last-name>Hansen</last-name>
+
     </name>
+
     <e-mail>mwh -AT- sysrq.dkNOSPAM</e-mail>
+
     <image>mwh.png</image>
+
     <location>Aarhus, Denmark</location>
+
     <description>Wannabe mono hacker</description>
+
     <tasks>
+
       <task>NUnit1 -&gt; NUnit2 conversion</task>
+
       <task>Stubbing</task>
+
       <task>Mono Handbook work</task>
+
       <task>Various fixes</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Piers</first-name>
+
       <last-name>Haken</last-name>
+
     </name>
+
     <e-mail>piersh@friskit.com</e-mail>
+
     <image>none.png</image>
+
     <location>San Francisco, CA</location>
+
     <organization>Friskit Inc.</organization>
+
     <tasks>
+
       <task>XPath</task>
+
       <task>corcompare / class-status</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Johannes</first-name>
+
       <last-name>Roith</last-name>
+
     </name>
+
     <e-mail>johannes@jroith.de</e-mail>
+
     <image>johannes.png</image>
+
     <location>Germany</location>
+
     <organization>None</organization>
+
     <description>External Contributor</description>
+
     <tasks>
+
       <task>Mono Handbook</task>
+
       <task>Windows packaging</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Per</first-name>
+
       <last-name>Arneng</last-name>
+
     </name>
+
     <e-mail>pt99par@student.bth.se</e-mail>
+
     <image>per.png</image>
+
     <location>Ronneby, Sweden</location>
+
     <organization>None</organization>
+
     <description>Job seeking student</description>
+
     <tasks>
+
       <task>Class libraries</task>
+
       <task>Class Documentation</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Sebastien</first-name>
+
       <last-name>Pouliot</last-name>
+
     </name>
+
     <e-mail>spouliot@motus.com</e-mail>
+
     <image>none.png</image>
+
     <location>Quebec City, Canada</location>
+
     <organization>Motus Technologies</organization>
+
     <description>Cryptoman</description>
+
     <tasks>
+
       <task>Cryptography</task>
+
       <task>Security</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Cesar</first-name>
+
       <last-name>Lopez Nataren</last-name>
+
     </name>
+
     <e-mail>cesar@ciencias.unam.mx</e-mail>
+
     <image>none.png</image>
+
     <location>Mexico City/Tuxtla Gutierrez, Chiapas.</location>
+
     <description>Contributor</description>
+
     <tasks>
+
       <task>Random little patches</task>
+
       <task>JScript compiler</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Hector</first-name>
+
       <last-name>Gomez Morales</last-name>
+
     </name>
+
     <e-mail>hgomez_36@flashmail.com</e-mail>
+
     <image>none.png</image>
+
     <location>Mexico City/Tijuana, BC.</location>
+
     <description>Contributor</description>
+
     <tasks>
+
       <task>Random little patches</task>
+
       <task>Documentation</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Jackson </first-name>
+
       <last-name>Harper</last-name>
+
     </name>
+
     <e-mail>jackson@latitudegeo.com</e-mail>
+
     <image>jackson.png</image>
+
     <location>Victoria, Canada</location>
+
     <description>Hacker</description>
+
     <tasks>
+
       <task>Misc Bug fixes</task>
+
       <task>Cscompmgd</task>
+
       <task>IL Assembler</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Nick</first-name>
+
       <last-name>Drochak</last-name>
+
     </name>
+
     <e-mail>ndrochak@gol.com</e-mail>
+
     <image>none.png</image>
+
     <location>Tokyo, Japan</location>
+
     <organization>The Ingenium Group</organization>
+
     <description>Programmer-type dude</description>
+
     <tasks>
+
       <task>Unit Tests</task>
+
       <task>Quality Assurance</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Alan, Siu Lung</first-name>
+
       <last-name>Tam</last-name>
+
     </name>
+
     <e-mail>Tam@SiuLung.com</e-mail>
+
     <image>none.png</image>
+
     <location>Hong Kong SAR, People's Republic of China</location>
+
     <description>Programmer-type dude</description>
+
     <tasks>
+
       <task>ADO.NET</task>
+
       <task>Chinese encodings</task>
+
       <task>Misc bug fixes</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Lluis</first-name>
+
       <last-name>Sanchez</last-name>
+
     </name>
+
     <e-mail>lluis@ideary.com</e-mail>
+
     <image>none.png</image>
+
     <location>Barcelona, Spain</location>
+
     <organization>Unemployed</organization>
+
     <description>Mono Hacker</description>
+
     <tasks>
+
       <task>Remoting</task>
+
       <task>Binary serialization</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Martin</first-name>
+
       <last-name>Baulig</last-name>
+
     </name>
+
     <e-mail>martin@ximian.com</e-mail>
+
     <image>none.png</image>
+
     <location>Germany</location>
+
     <organization>Ximian.</organization>
+
     <description>Ximian intern</description>
+
     <tasks>
+
       <task>Debugger/Debugging support</task>
+
       <task>C# compiler</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Mike</first-name>
+
       <last-name>Kestner</last-name>
+
     </name>
+
     <e-mail>mkestner@ximian.com</e-mail>
+
     <image>none.png</image>
+
     <location>USA</location>
+
     <organization>Ximian.</organization>
+
     <description>Evolution developer</description>
+
     <tasks>
+
       <task>Gtk# language binding</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Rachel</first-name>
+
       <last-name>Hestilow</last-name>
+
     </name>
+
     <e-mail>rachel@nullenvoid.com</e-mail>
+
     <image>none.png</image>
+
     <location>USA</location>
+
     <organization></organization>
+
     <description></description>
+
     <tasks>
+
       <task>Gtk# language binding</task>
+
       <task>MonoLOGO</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Jonathan</first-name>
+
       <last-name>Pryor</last-name>
+
     </name>
+
     <e-mail>jonpryor@vt.edu</e-mail>
+
     <image>none.png</image>
+
     <location>Blacksburg, Virginia</location>
+
     <organization>Virginia Tech</organization>
+
     <description>Graduate Student</description>
+
     <tasks>
+
       <task>Type Reflector</task>
+
       <task>System.Diagnostics Trace/Debug/Listeners, Config File Support</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Ben</first-name>
+
       <last-name>Maurer</last-name>
+
     </name>
+
     <e-mail>bmaurer@users.sf.net</e-mail>
+
     <image>none.png</image>
+
     <location>USA</location>
+
     <organization>N/A</organization>
+
     <description>Mono hacker</description>
+
     <tasks>
+
       <task>Mono.Math.BigInteger</task>
+
       <task>Other random stuff.</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Daniel</first-name>
+
       <last-name>Morgan</last-name>
+
     </name>
+
     <e-mail>danmorg@sc.rr.com</e-mail>
+
     <image>none.png</image>
+
     <location>Columbia, South Carolina, USA</location>
+
     <organization>Unemployed</organization>
+
     <description>Mono hacker</description>
+
     <tasks>
+
       <task>ADO.NET</task>
+
       <task>SQL# Query Tool</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Gonzalo</first-name>
+
       <last-name>Paniagua Javier</last-name>
+
     </name>
+
     <e-mail>gonzalo@ximian.com</e-mail>
+
     <image>none.png</image>
+
     <location>Spain</location>
+
     <organization>Ximian.</organization>
+
     <description>Mono hacker</description>
+
     <tasks>
+
       <task>System.Web core classes (ASP.NET)</task>
+
       <task>Core class libraries</task>
+
       <task>Gtk#</task>
+
       <task>nunit-gtk (NUnit2 Gtk# frontend)</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Rafael</first-name>
+
       <last-name>Teixeira</last-name>
+
     </name>
+
     <e-mail>rafaelteixeirabr@hotmail.com</e-mail>
+
     <image>none.png</image>
+
     <location>São Paulo</location>
+
     <organization>WEBforAll.</organization>
+
     <description>Mono/MonoQLE hacker</description>
+
     <tasks>
+
       <task>MonoBASIC (mbas)</task>
+
       <task>Mono.GetOptions</task>
+
       <task>System.Messaging</task>
+
       <task>System.ServiceProcess</task>
+
       <task>System.Configuration.Install</task>
+
       <task>System.DirectoryServices</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Atsushi</first-name>
+
       <last-name>Enomoto</last-name>
+
     </name>
+
     <e-mail>ginga@kit.hi-ho.ne.jp</e-mail>
+
     <image>none.png</image>
+
     <location>Tokyo, Japan</location>
+
     <description>MIDI Programmer</description>
+
     <tasks>
+
       <task>XML</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Ravi</first-name>
+
       <last-name>Pratap M</last-name>
+
     </name>
+
     <e-mail>ravi@ximian.com</e-mail>
+
     <image>rpratap.png</image>
+
     <location>St. Louis</location>
+
     <organization>Ximian (formerly)</organization>
+
     <description>Ximian hacker</description>
+
     <tasks>
+
       <task>MCS Compiler</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Mark</first-name>
+
       <last-name>Crichton</last-name>
+
     </name>
+
     <e-mail>reverse_gro.pmig@nothcirc</e-mail>
+
     <image>none.png</image>
+
     <location>Amherst, MA</location>
+
     <organization>Univ. of Mass., Amherst</organization>
+
     <description>Research Asst.</description>
+
     <tasks>
+
       <task>Vorbis#</task>
+
       <task>GtkMozEmbed#</task>
+
       <task>SPARC Work</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Dick</first-name>
+
       <last-name>Porter</last-name>
+
     </name>
+
     <e-mail>dick@ximian.com</e-mail>
+
     <image>none.png</image>
+
     <location>Swansea</location>
+
     <organization>Ximian</organization>
+
     <description>Hacker</description>
+
     <tasks>
+
       <task>Runtime implementation</task>
+
       <task>Core class libraries</task>
+
       <task>Host system integration</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Alexandre</first-name>
+
       <last-name>Pigolkine</last-name>
+
     </name>
+
     <e-mail>pigolkine@gmx.de</e-mail>
+
     <image>none.png</image>
+
     <location>Germany</location>
+
     <description>External Contributor</description>
+
     <tasks>
+
       <task>System.Windows.Forms</task>
+
     </tasks>
+
   </contributor>
+
   <contributor>
+
     <name>
+
       <first-name>Lee</first-name>
+
       <last-name>Mallabone</last-name>
+
     </name>
+
     <e-mail>mono-docs@fonicmonkey.net</e-mail>
+
     <image>none.png</image>
+
     <location>Cambridge, UK</location>
+
     <description>External Contributor</description>
+
     <tasks>
+
       <task>Gtk#</task>
+
       <task>Technical documentation</task>
+
     </tasks>
+
   </contributor>
+
+  <contributor>
+
+    <name>
+
+      <first-name>Reggie</first-name>
+
+      <last-name>Burnett</last-name>
+
+    </name>
+
+    <e-mail>reggie@bytefx.com</e-mail>
+
+    <image>reggie.png</image>
+
+    <location>Tennessee, USA</location>
+
+    <organization>ByteFX, Inc.</organization>
+
+    <description>Consultant</description>
+
+    <tasks>
+
+      <task>MySQL ADO.Net Provider</task>
+
+      <task>SWF libraries</task>
+
+    </tasks>
+
+  </contributor>
+  
 </contributors>
+
