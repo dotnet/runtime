@@ -259,6 +259,8 @@ mono_test_marshal_string_array (char **array)
 int 
 mono_test_empty_struct (int a, EmptyStruct es, int b)
 {
+	printf ("mono_test_empty_struct %d %d\n", a, b);
+
 	if (a == 1 && b == 2)
 		return 0;
 	return 1;

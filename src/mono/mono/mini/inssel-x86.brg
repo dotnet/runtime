@@ -281,6 +281,10 @@ stmt: OP_OUTARG_R8 (freg) {
 stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 	MonoInst *vt = state->left->left->tree;
 	//g_print ("vt size: %d at R%d + %d\n", tree->inst_imm, vt->inst_basereg, vt->inst_offset);
+
+	if (!tree->inst_imm)
+		return;
+
 	if (tree->inst_imm <= 4) {
 		tree->opcode = OP_X86_PUSH_MEMBASE;
 		tree->inst_basereg = vt->inst_basereg;
