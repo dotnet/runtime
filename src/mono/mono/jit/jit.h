@@ -27,6 +27,7 @@
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/opcodes.h>
+#include <mono/utils/monobitset.h>
 
 #include "regset.h"
 
@@ -89,8 +90,6 @@ typedef struct {
 	unsigned is_block_start:1;
 } MonoBytecodeInfo;
 
-typedef guint32 * MonoBitSet;
-
 typedef struct {
 	unsigned reached:1;
 	unsigned finished:1;
@@ -105,10 +104,10 @@ typedef struct {
 	gint32        addr;
 	guint16       num;
 
-	MonoBitSet    gen_set;
-	MonoBitSet    kill_set;
-	MonoBitSet    live_in_set;
-	MonoBitSet    live_out_set;
+	MonoBitSet   *gen_set;
+	MonoBitSet   *kill_set;
+	MonoBitSet   *live_in_set;
+	MonoBitSet   *live_out_set;
 	
 	GList        *succ;
 } MonoBBlock;

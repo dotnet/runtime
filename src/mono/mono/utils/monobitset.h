@@ -44,11 +44,13 @@ int         mono_bitset_find_last    (MonoBitSet *set, gint pos);
 
 MonoBitSet* mono_bitset_clone        (MonoBitSet *set, guint32 new_size);
 
-void        mono_bitset_copyto       (MonoBitSet *set, MonoBitSet *dest);
+void        mono_bitset_copyto       (MonoBitSet *src, MonoBitSet *dest);
 
 void        mono_bitset_union        (MonoBitSet *dest, MonoBitSet *src);
 
 void        mono_bitset_intersection (MonoBitSet *dest, MonoBitSet *src);
+
+void        mono_bitset_sub          (MonoBitSet *dest, MonoBitSet *src);
 
 gboolean    mono_bitset_equal        (MonoBitSet *src, MonoBitSet *src1);
 

@@ -22,91 +22,25 @@
 #define DEBUG_LSCAN
 #endif
 
-inline static MonoBitSet
-mono_bitset_alloc (MonoFlowGraph *cfg, int n, gboolean use_mempool)
+static MonoBitSet* 
+mono_bitset_mp_new (MonoMemPool *mp,  guint32 max_size)
 {
-	if (use_mempool)
-		return (MonoBitSet)mono_mempool_alloc0 (cfg->mp, ((n + 31) >> 5) << 2);
-	else
-		return (MonoBitSet)g_malloc0 (((n + 31) >> 5) << 2);	
+	int size = mono_bitset_alloc_size (max_size, 0);
+	gpointer mem;
+
+	mem = mono_mempool_alloc0 (mp, size);
+	return mono_bitset_mem_new (mem, max_size, MONO_BITSET_DONT_FREE);
 }
 
 static void
-mono_bitset_set (MonoBitSet set, int n)
-{
-	int ind = n >> 5;
-	int pos = n & 0x1f;
-	set [ind] |= 1<<pos;
-}
-
-static gboolean
-mono_bitset_inset (MonoBitSet set, int n)
-{
-	int ind = n >> 5;
-	int pos = n & 0x1f;
-
-	if (set [ind] & (1<<pos))
-		return TRUE;
-
-	return FALSE;
-}
-
-static void
-mono_bitset_unset (MonoBitSet set, int n)
-{
-	int ind = n >> 5;
-	int pos = n & 0x1f;
-
-	set [ind] &= ~(1<<pos);
-}
-
-static void
-mono_bitset_add (MonoBitSet set1, MonoBitSet set2, int len)
-{
-	int i, ind = (len + 31) >> 5;
-	
-	for (i = 0; i < ind; i++)
-		set1 [i] |= set2 [i];
-}
-
-static void
-mono_bitset_sub (MonoBitSet set1, MonoBitSet set2, int len)
-{
-	int i, ind = (len + 31) >> 5;
-	
-	for (i = 0; i < ind; i++)
-		set1 [i] &= ~(set2 [i]);
-}
-
-static void
-mono_bitset_copy (MonoBitSet set1, MonoBitSet set2, int len)
-{
-	memcpy (set1, set2, (len + 7) >> 3);
-}
-
-static int
-mono_bitset_cmp (MonoBitSet set1, MonoBitSet set2, int len)
-{
-	return memcmp (set1, set2, (len + 7) >> 3);
-}
-
-static void
-mono_bitset_clear (MonoBitSet set, int len)
-{
-	memset (set, 0, (len + 7) >> 3);
-}
-
-static void
-mono_bitset_print (MonoBitSet set, int len)
+mono_bitset_print (MonoBitSet *set)
 {
 	int i;
 
 	printf ("{");
-	for (i = 0; i < len; i++) {
-		int ind = i >> 5;
-		int pos = i & 0x1f;
+	for (i = 0; i < mono_bitset_size (set); i++) {
 
-		if (set [ind] & (1<<pos))
+		if (mono_bitset_test (set, i))
 			printf ("%d, ", i);
 
 	}
@@ -134,12 +68,12 @@ mono_update_live_info (MonoFlowGraph *cfg)
 	for (i = 0; i < cfg->block_count; i++) {
 		MonoBBlock *bb = &cfg->bblocks [i];
 
-		for (j = cfg->varinfo->len; j > 0; j--) {
+		for (j = cfg->varinfo->len - 1; j > 0; j--) {
 			
-			if (mono_bitset_inset (bb->live_in_set, j))
+			if (mono_bitset_test (bb->live_in_set, j))
 				update_live_range (cfg, j, bb->num, 0);
 
-			if (mono_bitset_inset (bb->live_out_set, j))
+			if (mono_bitset_test (bb->live_out_set, j))
 				update_live_range (cfg, j, bb->num, bb->forest->len);
 		} 
 	} 
@@ -158,7 +92,7 @@ update_tree_live_info (MonoFlowGraph *cfg, MonoBBlock *bb, MBTree *tree)
 } 
 
 static void
-update_gen_set (MBTree *tree, MonoBitSet set)
+update_gen_set (MBTree *tree, MonoBitSet *set)
 {
 	if (tree->left) {
 		switch (tree->op) {
@@ -197,7 +131,7 @@ update_gen_set (MBTree *tree, MonoBitSet set)
 static void
 mono_analyze_liveness (MonoFlowGraph *cfg)
 {
-	MonoBitSet old_live_in_set, old_live_out_set;
+	MonoBitSet *old_live_in_set, *old_live_out_set;
 	gboolean changes;
 	GList *l;
 	int i, j , max_vars = cfg->varinfo->len;
@@ -209,26 +143,26 @@ mono_analyze_liveness (MonoFlowGraph *cfg)
 			cfg->method->klass->name, cfg->method->name);
 #endif
 
-	old_live_in_set = mono_bitset_alloc (cfg, max_vars, FALSE);
-	old_live_out_set = mono_bitset_alloc (cfg, max_vars, FALSE);
+	old_live_in_set = mono_bitset_new (max_vars, 0);
+	old_live_out_set = mono_bitset_new (max_vars, 0);
 
 	for (i = 0; i < cfg->block_count; i++) {
 		MonoBBlock *bb = &cfg->bblocks [i];
 
-		bb->gen_set = mono_bitset_alloc (cfg, max_vars, TRUE);
-		bb->kill_set = mono_bitset_alloc (cfg, max_vars, TRUE);
-		bb->live_in_set = mono_bitset_alloc (cfg, max_vars, TRUE);
-		bb->live_out_set = mono_bitset_alloc (cfg, max_vars, TRUE);
+		bb->gen_set = mono_bitset_mp_new (cfg->mp, max_vars);
+		bb->kill_set = mono_bitset_mp_new (cfg->mp, max_vars);
+		bb->live_in_set = mono_bitset_mp_new (cfg->mp, max_vars);
+		bb->live_out_set = mono_bitset_mp_new (cfg->mp, max_vars);
 
 		for (j = 0; j < bb->forest->len; j++) {
 			MBTree *t1 = (MBTree *) g_ptr_array_index (bb->forest, j);
 
 			update_tree_live_info (cfg, bb, t1);
 
-			mono_bitset_clear (old_live_in_set, max_vars);
+			mono_bitset_clear_all (old_live_in_set);
 			update_gen_set (t1, old_live_in_set);
-			mono_bitset_sub (old_live_in_set, bb->kill_set, max_vars);
-			mono_bitset_add (bb->gen_set, old_live_in_set, max_vars);
+			mono_bitset_sub (old_live_in_set, bb->kill_set);
+			mono_bitset_union (bb->gen_set, old_live_in_set);
 
 			switch (t1->op) {
 			case MB_TERM_REMOTE_STIND_I1:
@@ -261,8 +195,8 @@ mono_analyze_liveness (MonoFlowGraph *cfg)
 				printf ("%d, ", t->num);
 			}
 			printf (")\n");
-			printf ("GEN  %d: ", i); mono_bitset_print (bb->gen_set, max_vars); printf ("\n");
-			printf ("KILL %d: ", i); mono_bitset_print (bb->kill_set, max_vars); printf ("\n");
+			printf ("GEN  %d: ", i); mono_bitset_print (bb->gen_set); printf ("\n");
+			printf ("KILL %d: ", i); mono_bitset_print (bb->kill_set); printf ("\n");
 		}
 #endif
 	}
@@ -272,30 +206,29 @@ mono_analyze_liveness (MonoFlowGraph *cfg)
 		for (i = 0; i < cfg->block_count; i++) {
 			MonoBBlock *bb = &cfg->bblocks [i];
 
-			mono_bitset_copy (old_live_in_set, bb->live_in_set, max_vars);
-			mono_bitset_copy (old_live_out_set, bb->live_out_set, max_vars);
+			mono_bitset_copyto (bb->live_in_set, old_live_in_set);
+			mono_bitset_copyto (bb->live_out_set, old_live_out_set);
 
-			mono_bitset_copy (bb->live_in_set, bb->live_out_set, max_vars);
-			mono_bitset_sub (bb->live_in_set, bb->kill_set, max_vars);
-			mono_bitset_add (bb->live_in_set, bb->gen_set, max_vars);
+			mono_bitset_copyto (bb->live_out_set, bb->live_in_set);
+			mono_bitset_sub (bb->live_in_set, bb->kill_set);
+			mono_bitset_union (bb->live_in_set, bb->gen_set);
 
-			mono_bitset_clear (bb->live_out_set, max_vars);
+			mono_bitset_clear_all (bb->live_out_set);
 			
 			for (l = bb->succ; l; l = l->next) {
 				MonoBBlock *t = (MonoBBlock *)l->data;
-				mono_bitset_add (bb->live_out_set, t->live_in_set, max_vars);
+				mono_bitset_union (bb->live_out_set, t->live_in_set);
 			}
 
-			if (mono_bitset_cmp (old_live_in_set, bb->live_in_set, max_vars) ||
-			    mono_bitset_cmp (old_live_out_set, bb->live_out_set, max_vars))
+			if (!(mono_bitset_equal (old_live_in_set, bb->live_in_set) &&
+			      mono_bitset_equal (old_live_out_set, bb->live_out_set)))
 				changes = TRUE;
-			    
 		}
 
 	} while (changes);
 
-	g_free (old_live_in_set);
-	g_free (old_live_out_set);
+	mono_bitset_free (old_live_in_set);
+	mono_bitset_free (old_live_out_set);
 
 
 #ifdef DEGUG_LIVENESS
@@ -304,10 +237,10 @@ mono_analyze_liveness (MonoFlowGraph *cfg)
 			MonoBBlock *bb = &cfg->bblocks [i];
 		
 			printf ("LIVE IN  %d: ", i); 
-			mono_bitset_print (bb->live_in_set, max_vars); 
+			mono_bitset_print (bb->live_in_set); 
 			printf ("\n");
 			printf ("LIVE OUT %d: ", i); 
-			mono_bitset_print (bb->live_out_set, max_vars); 
+			mono_bitset_print (bb->live_out_set); 
 			printf ("\n");
 		}
 	}

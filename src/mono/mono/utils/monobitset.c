@@ -210,11 +210,11 @@ mono_bitset_clone (MonoBitSet *set, guint32 new_size) {
 }
 
 void
-mono_bitset_copyto (MonoBitSet *set, MonoBitSet *dest) {
+mono_bitset_copyto (MonoBitSet *src, MonoBitSet *dest) {
 
-	g_return_if_fail (dest->size <= set->size);
+	g_return_if_fail (dest->size <= src->size);
 
-	memcpy (dest->data, set->data, set->size / 8);
+	memcpy (dest->data, src->data, src->size / 8);
 }
 
 void
@@ -237,13 +237,24 @@ mono_bitset_intersection (MonoBitSet *dest, MonoBitSet *src) {
 		dest->data [i] = dest->data [i] & src->data [i];
 }
 
+void
+mono_bitset_sub (MonoBitSet *dest, MonoBitSet *src) {
+	int i;
+
+	g_return_if_fail (src->size <= dest->size);
+
+	for (i = 0; i < dest->size / BITS_PER_CHUNK; ++i)
+		dest->data [i] &= ~src->data [i];
+}
+
 gboolean
 mono_bitset_equal (MonoBitSet *src, MonoBitSet *src1) {
+	int i;
 
 	if (src->size != src1->size)
 		return FALSE;
-
-	return memcpy (src->data, src1->data, src->size / 8) == 0;
+ 
+	return memcmp (src->data, src1->data, src->size / 8) == 0;
 }
 
 #ifdef TEST_BITSET

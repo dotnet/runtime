@@ -194,7 +194,7 @@ gboolean mono_jit_profile = FALSE;
 gboolean mono_jit_share_code = FALSE;
 
 /* use linear scan register allocation */
-gboolean mono_use_linear_scan = FALSE;
+gboolean mono_use_linear_scan = TRUE;
 
 /* inline code */
 gboolean mono_jit_inline_code = TRUE;
