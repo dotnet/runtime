@@ -71,6 +71,15 @@
 	       in <a href="http://bugzilla.ximian.com">Bugzilla.ximian.com</a>
 	    </td>
 	  </tr>
+	  <tr>
+	    <td>
+		<b><a
+	href="http://lists.ximian.com/mailman/listinfo/mono-winforms-list">mono-winforms-list</a></b>
+	    </td>
+	    <td>
+	Used to discuss the Windows.Forms implementatation for Mono using Wine.
+	    </td>
+	  </tr>
 	</table>
 
 	Other mailing lists of interest:

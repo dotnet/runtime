@@ -94,6 +94,44 @@
 	ONE 2002:</a></b> Come see Paolo, Mike and Miguel from the Mono team at the .NET ONE conference in Frankfurt.</ul>
 </ul>
 
+@item Oct 21th, 2002: Crypto, Winforms list, Database, GConf, Debugger.
+
+	Sebastien Poliot has made a lot of progress, he reports that
+	DES and TripleDES have been fixed;  Rijndael and CFB modes
+	still have problems in some configurations and some areas that
+	are not supported by the .NET framework.
+
+	Last week we created a new <a
+	href="http://lists.ximian.com/mailman/listinfo/mono-winforms-list">mailing
+	list</a> to discuss the Mono Winforms implementation.
+
+	Tim has started a full C# implementation of the TDS protocol
+	and the providers, and Brian continues his work on his ODBC
+	binding.  
+
+	Rachel Hestilow has also checked in a binding for GConf.  This
+	binding <a
+	href="http://toxic.magnesium.net/~hestilow/gconfsharp/intro.html">is
+	unique</a> in that it uses some features in the CLI to support
+	complex data types, and allows the user to keep only one
+	representation of the types instead of two (the master types
+	is defined in CLI-land).  Also Property Editors (<a
+	href="http://primates.ximian.com/~miguel/shots/gconf-shot.png">shot</a>)
+	simplify the creation of user interfaces that bind their
+	configuration to backend keys, following the <a
+	href="http://developer.gnome.org/projects/gup/hig/1.0/">GNOME
+	Human Interface Guidelines.</a>
+
+	Martin is now on vacation, but before leaving he produced a
+	number of documents detailing the state of the debugger.  The
+	major missing feature is full support for debugging unmanaged
+	applications (it requires dwarf-2 handlers for types).  We
+	will do some polishing of the user interface (<a
+	href="http://primates.ximian.com/~miguel/shots/debugger-4.png">new
+	shot</a>) to expose the existing and rich functionality to the
+	users and try to release a preview of the debugger at the same
+	time as Mono 0.17.
+
 @item Oct 14th, 2002: Crypto, Database work, Debugger, Documentation.
 
 	Brian, Daniel and Rodrigo have been busy working on the ODBC

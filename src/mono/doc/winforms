@@ -23,10 +23,15 @@
 
 * Contributing
 
-	The Winforms effort is being coordinated by <a
-	href="mailto:DENNISH@Raytek.com">Dennis Hayes</a>.  If you are
-	interested in helping out with this effort, get in touch with
-	him.
+	The Winforms effort is being coordinated in the <a
+	href="mailto:mono-winforms-list@ximian.com:.com">mono-winforms-list@ximian.com</a>.
+	If you are interested in helping out with this effort,
+	subscribe to it by sending an email message to <a
+	href="mailto:mono-winforms-list-request@ximian.com:.com">mono-winforms-list-request@ximian.com</a>.
+
+	Please read the README document in the
+	System.Windows.Forms/WINElib directory for details about how
+	to build the Windows.Forms support for Mono.
 
 * System.Drawing
 
