@@ -35,7 +35,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "7"
+#define MONO_AOT_FILE_VERSION "8"
 
 #if 1
 #define mono_bitset_test_fast(set,n) (((guint32*)set)[2+(n)/32] & (1 << ((n) % 32)))
@@ -418,7 +418,11 @@ struct MonoJumpInfo {
 	MonoJumpInfoType type;
 	union {
 		gconstpointer   target;
+#if SIZEOF_VOID_P == 8
+		gint64          offset;
+#else
 		int             offset;
+#endif
 		MonoBasicBlock *bb;
 		MonoBasicBlock **table;
 		MonoInst       *inst;
@@ -594,13 +598,21 @@ enum {
 };
 #undef MINI_OP
 
-/* make this depend on 32bit platform (use OP_LADD otherwise) */
+#if SIZEOF_VOID_P == 8
+#define OP_PADD OP_LADD
+#define OP_PNEG OP_LNEG
+#define OP_PCONV_TO_U2 OP_LCONV_TO_U2
+#define OP_PCONV_TO_OVF_I1_UN OP_LCONV_TO_OVF_I1_UN
+#define OP_PCONV_TO_OVF_I1 OP_LCONV_TO_OVF_I1
+#define OP_PCEQ CEE_CEQ
+#else
 #define OP_PADD CEE_ADD
 #define OP_PNEG CEE_NEG
 #define OP_PCONV_TO_U2 CEE_CONV_U2
 #define OP_PCONV_TO_OVF_I1_UN CEE_CONV_OVF_I1_UN
 #define OP_PCONV_TO_OVF_I1 CEE_CONV_OVF_I1
 #define OP_PCEQ CEE_CEQ
+#endif
 
 typedef enum {
 	STACK_INV,
