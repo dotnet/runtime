@@ -1183,10 +1183,6 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 		if (corlib)
 			return corlib;
 	}
-	corlib = load_in_path ("mscorlib.dll", default_path, status, FALSE);
-
-	if (corlib)
-		return corlib;
 
 	/* Load corlib from mono/<version> */
 	
