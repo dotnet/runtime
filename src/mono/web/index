@@ -23,6 +23,19 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Oct 15, 2001
+
+	JIT engine supports many of the object constructs now (object
+	creation, vtable setup, interface table setup).  
+
+	The C# compiler now has almost full property support (only
+	missing bit are pre-post increment/decrement operations),
+	delegates are now created (still missing delegate invocation).
+	try/catch/finally is also supported in the compiler now.
+
+	System.Decimal implementation is in, as well as many crypto
+	classes.
+
 ** Oct 5, 2001
 
 	Sergey has released his first version of the <b>ilasm</b>
