@@ -70,9 +70,20 @@ mono_double_ToStringImpl (double value)
 static double
 mono_double_ParseImpl (char *ptr)
 {
+	gchar *endptr = NULL;
+	gdouble result;
+
 	MONO_ARCH_SAVE_REGS;
 
-	return bsd_strtod (ptr, NULL);
+	if (*ptr)
+		result = bsd_strtod (ptr, &endptr);
+
+	if (!*ptr || (endptr && *endptr))
+		mono_raise_exception (mono_exception_from_name (mono_defaults.corlib,
+								"System",
+								"FormatException"));
+	
+	return result;
 }
 
 static MonoString *
