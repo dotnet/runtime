@@ -623,7 +623,10 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 	int num_fields = 0, num_static_fields = 0, num_properties = 0, num_static_properties = 0;
 	int num_methods = 0, num_static_methods = 0, num_params = 0, num_static_params = 0, base_offset = 0;
 	int num_ctors = 0, num_ctor_params = 0;
-	guint32 size, data_size, offset;
+	int field_info_size = 0, static_field_info_size = 0, property_info_size = 0;
+	int static_property_info_size = 0, method_info_size = 0, static_method_info_size = 0;
+	int ctor_info_size = 0, iface_info_size = 0;
+	guint32 size, data_size, offset, data_offset;
 	GHashTable *method_slots = NULL;
 	int i;
 
@@ -699,10 +702,19 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 
 	g_hash_table_destroy (method_slots);
 
-	size = 66 + sizeof (gpointer) + num_fields * 8 + num_static_fields * 8 + num_properties * (4 + 2 * sizeof (gpointer)) +
-		num_static_properties * (4 + 2 * sizeof (gpointer)) + num_methods * (8 + sizeof (gpointer)) + num_params * 4 +
-		num_static_methods * (8 + sizeof (gpointer)) + num_static_params * 4 + num_ctors * (8 + sizeof (gpointer)) +
-		num_ctor_params * 4;
+	field_info_size = num_fields * 8;
+	static_field_info_size = num_static_fields * 8;
+	property_info_size = num_properties * (4 + 2 * sizeof (gpointer));
+	static_property_info_size = num_static_properties * (4 + 2 * sizeof (gpointer));
+	method_info_size = num_methods * (4 + 2 * sizeof (gpointer)) + num_params * 4;
+	static_method_info_size = num_static_methods * (4 + 2 * sizeof (gpointer)) +
+		num_static_params * 4;
+	ctor_info_size = num_ctors * (4 + 2 * sizeof (gpointer)) + num_ctor_params * 4;
+	iface_info_size = klass->interface_count * 4;
+
+	size = 74 + sizeof (gpointer) + field_info_size + static_field_info_size +
+		property_info_size + static_property_info_size + method_info_size +
+		static_method_info_size + ctor_info_size + iface_info_size;
 
 	data_size = size;
 
@@ -719,20 +731,32 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 	WRITE_UINT32 (ptr, klass->instance_size + base_offset);
 	*ptr++ = klass->valuetype;
 	WRITE_POINTER (ptr, klass);
+	data_offset = 0;
 	WRITE_UINT32 (ptr, num_fields);
-	WRITE_UINT32 (ptr, num_fields * 8);
-	WRITE_UINT32 (ptr, num_static_fields);
-	WRITE_UINT32 (ptr, num_static_fields * 8);
+	WRITE_UINT32 (ptr, data_offset);
+	data_offset += field_info_size;
 	WRITE_UINT32 (ptr, num_properties);
-	WRITE_UINT32 (ptr, num_properties * (4 + 2 * sizeof (gpointer)));
-	WRITE_UINT32 (ptr, num_static_properties);
-	WRITE_UINT32 (ptr, num_static_properties * (4 + 2 * sizeof (gpointer)));
+	WRITE_UINT32 (ptr, data_offset);
+	data_offset += property_info_size;
 	WRITE_UINT32 (ptr, num_methods);
-	WRITE_UINT32 (ptr, num_methods * (4 + 2 * sizeof (gpointer)) + num_params * sizeof (gpointer));
+	WRITE_UINT32 (ptr, data_offset);
+	data_offset += method_info_size;
+	WRITE_UINT32 (ptr, num_static_fields);
+	WRITE_UINT32 (ptr, data_offset);
+	data_offset += static_field_info_size;
+	WRITE_UINT32 (ptr, num_static_properties);
+	WRITE_UINT32 (ptr, data_offset);
+	data_offset += static_property_info_size;
 	WRITE_UINT32 (ptr, num_static_methods);
-	WRITE_UINT32 (ptr, num_static_methods * (4 + 2 * sizeof (gpointer)) + num_static_params * sizeof (gpointer));
+	WRITE_UINT32 (ptr, data_offset);
+	data_offset += static_method_info_size;
 	WRITE_UINT32 (ptr, num_ctors);
-	WRITE_UINT32 (ptr, num_ctors * (4 + 2 * sizeof (gpointer)) + num_ctor_params * sizeof (gpointer));
+	WRITE_UINT32 (ptr, data_offset);
+	data_offset += ctor_info_size;
+	WRITE_UINT32 (ptr, klass->interface_count);
+	WRITE_UINT32 (ptr, data_offset);
+	data_offset += iface_info_size;
+
 	if (klass->parent && (klass->parent != mono_defaults.object_class))
 		WRITE_UINT32 (ptr, write_class (table, klass->parent));
 	else
@@ -822,6 +846,9 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 	}
 
 	g_ptr_array_free (ctors, FALSE);
+
+	for (i = 0; i < klass->interface_count; i++)
+		WRITE_UINT32 (ptr, write_class (table, klass->interfaces [i]));
 
 	if (ptr - old_ptr != data_size) {
 		g_warning (G_STRLOC ": %d,%d,%d", ptr - old_ptr, data_size, sizeof (gpointer));
