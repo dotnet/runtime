@@ -68,9 +68,20 @@
 	not interfere with code in other domains.  This is useful if
 	you want to host different applications in your program.  
 
-	Then you can load an assembly containing code into the domain:
+	Now, it is necessary to transfer control to Mono, and setup
+	the threading infrastructure, you do this like this:
 
 	<pre>
+		void *user_data = NULL;
+
+		mono_runtime_exec_managed_code (domain, main_thread_handler, user_data);
+	</pre>
+
+	Where your main_thread_handler can load your assembly and execute it:
+
+	<pre>
+	static void main_thread_handler (gpointer user_data)
+	{	
 		MonoAssembly *assembly;
 
 		assembly = mono_domain_assembly_open (domain, "file.dll");
