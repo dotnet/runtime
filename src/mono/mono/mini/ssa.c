@@ -517,7 +517,7 @@ mono_ssa_remove (MonoCompile *cfg)
 				if (amv->range.last_use.abs_pos >= vmv->range.first_use.abs_pos)
 					break;
 
-				active = g_list_remove_link (active, active);
+				active = g_list_delete_link (active, active);
 				regs = g_list_prepend (regs, (gpointer)amv->reg);
 			}
 
@@ -525,7 +525,7 @@ mono_ssa_remove (MonoCompile *cfg)
 				regs = g_list_prepend (regs, (gpointer)vmv->idx);
 
 			vmv->reg = (int)regs->data;
-			regs = g_list_remove_link (regs, regs);
+			regs = g_list_delete_link (regs, regs);
 			active = mono_varlist_insert_sorted (cfg, active, vmv, TRUE);		
 		}
 
@@ -1075,7 +1075,7 @@ mono_ssa_cprop (MonoCompile *cfg)
 
 		bb = (MonoBasicBlock *)bblock_list->data;
 
-		bblock_list = g_list_remove_link (bblock_list, bblock_list);
+		bblock_list = g_list_delete_link (bblock_list, bblock_list);
 
 		g_assert (bb->flags &  BB_REACHABLE);
 
@@ -1092,7 +1092,7 @@ mono_ssa_cprop (MonoCompile *cfg)
 
 		while (cvars) {
 			MonoMethodVar *info = (MonoMethodVar *)cvars->data;			
-			cvars = g_list_remove_link (cvars, cvars);
+			cvars = g_list_delete_link (cvars, cvars);
 
 			for (tmp = info->uses; tmp; tmp = tmp->next) {
 				MonoVarUsageInfo *ui = (MonoVarUsageInfo *)tmp->data;
@@ -1125,7 +1125,7 @@ add_to_dce_worklist (MonoCompile *cfg, MonoMethodVar *var, MonoMethodVar *use, G
 	for (tmp = use->uses; tmp; tmp = tmp->next) {
 		MonoVarUsageInfo *ui = (MonoVarUsageInfo *)tmp->data;
 		if (ui->inst == var->def) {
-			use->uses = g_list_remove_link (use->uses, tmp);
+			use->uses = g_list_delete_link (use->uses, tmp);
 			break;
 		}
 	}	
@@ -1162,7 +1162,7 @@ mono_ssa_deadce (MonoCompile *cfg)
 
 	while (work_list) {
 		MonoMethodVar *info = (MonoMethodVar *)work_list->data;
-		work_list = g_list_remove_link (work_list, work_list);
+		work_list = g_list_delete_link (work_list, work_list);
 
 		if (!info->uses && info->def && (!(cfg->varinfo [info->idx]->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))) {
 			MonoInst *i1;

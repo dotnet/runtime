@@ -129,7 +129,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 			    (!cost_driven && amv->range.last_use.abs_pos > vmv->range.last_use.abs_pos)) {
 				vmv->reg = amv->reg;
 				amv->reg = -1;
-				active = g_list_remove_link (active, a);
+				active = g_list_delete_link (active, a);
 
 				if (cost_driven)
 					active = mono_varlist_insert_sorted (cfg, active, vmv, 2);	
@@ -158,7 +158,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 
 			used_regs |= 1LL << vmv->reg;
 
-			regs = g_list_remove_link (regs, regs);
+			regs = g_list_delete_link (regs, regs);
 
 #ifdef DEBUG_LSCAN
 			printf ("ADD    %2d %08x %08x C%d R%d\n",  vmv->idx, 
