@@ -58,6 +58,9 @@ typedef struct MonoCompileArch {
 /* set the next to 0 once inssel-ppc.brg is updated */
 #define PPC_PASS_STRUCTS_BY_VALUE 1
 #define PPC_SMALL_RET_STRUCT_IN_REG 1
+
+#define MONO_ARCH_USE_SIGACTION 1
+
 #endif
 
 #define PPC_NUM_REG_ARGS (PPC_LAST_ARG_REG-PPC_FIRST_ARG_REG+1)

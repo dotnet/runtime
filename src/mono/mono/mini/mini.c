@@ -7214,15 +7214,15 @@ emit_state (MonoCompile *cfg, MBState *state, int goal)
 static void 
 mini_select_instructions (MonoCompile *cfg)
 {
-	static int reverse_map [] = {
+	static const int reverse_map [] = {
 		CEE_BNE_UN, CEE_BLT, CEE_BLE, CEE_BGT, CEE_BGE,
 		CEE_BEQ, CEE_BLT_UN, CEE_BLE_UN, CEE_BGT_UN, CEE_BGE_UN
 	};
-	static int reverse_fmap [] = {
+	static const int reverse_fmap [] = {
 		OP_FBNE_UN, OP_FBLT, OP_FBLE, OP_FBGT, OP_FBGE,
 		OP_FBEQ, OP_FBLT_UN, OP_FBLE_UN, OP_FBGT_UN, OP_FBGE_UN
 	};
-	static int reverse_lmap [] = {
+	static const int reverse_lmap [] = {
 		OP_LBNE_UN, OP_LBLT, OP_LBLE, OP_LBGT, OP_LBGE,
 		OP_LBEQ, OP_LBLT_UN, OP_LBLE_UN, OP_LBGT_UN, OP_LBGE_UN
 	};
@@ -8087,6 +8087,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	struct sigcontext *ctx = (struct sigcontext*)_dummy;
 #else
 #ifdef __sparc
+#define GET_CONTEXT \
+    void *ctx = context;
+#elif defined(__ppc__) || defined (__powerpc__)
 #define GET_CONTEXT \
     void *ctx = context;
 #else
