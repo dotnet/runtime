@@ -567,7 +567,7 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		bitmap = compute_class_bitmap (class, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set);
 #ifdef HAVE_BOEHM_GC
 		/* It seems there are issues when the bitmap doesn't fit: play it safe */
-		if (max_set > 30) {
+		if (max_set >= 30) {
 			/*g_print ("disabling typed alloc (%d) for %s.%s\n", max_set, class->name_space, class->name);*/
 			if (bitmap != default_bitmap)
 				g_free (bitmap);
