@@ -299,7 +299,6 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 	mono_debug_add_type (mono_defaults.serializationinfo_class);
 	mono_debug_add_type (mono_defaults.streamingcontext_class);
 
-	g_message (G_STRLOC);
 	mono_debugger_unlock ();
 
 	return debug;
