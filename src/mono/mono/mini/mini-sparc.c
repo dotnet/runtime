@@ -4547,6 +4547,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	MonoJumpInfo *patch_info;
 	MonoMethod *method = cfg->method;
 	guint32 *code;
+	int can_fold = 0;
 
 	code = (guint32*)(cfg->native_code + cfg->code_len);
 
@@ -4568,8 +4569,13 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	else
 		sparc_ret (code);
 
+	/* Only fold last instruction into the restore if the exit block has an in count of 1
+	   and the previous block hasn't been optimized away since it may have an in count > 1 */
+	if (cfg->bb_exit->in_count == 1 && cfg->bb_exit->in_bb[0]->native_offset != cfg->bb_exit->native_offset)
+		can_fold = 1;
+
 	/* Try folding last instruction into the restore */
-	if ((cfg->bb_exit->in_count == 1) && (sparc_inst_op (code [-2]) == 0x2) && (sparc_inst_op3 (code [-2]) == 0x2) && sparc_inst_imm (code [-2]) && (sparc_inst_rd (code [-2]) == sparc_i0)) {
+	if (can_fold && (sparc_inst_op (code [-2]) == 0x2) && (sparc_inst_op3 (code [-2]) == 0x2) && sparc_inst_imm (code [-2]) && (sparc_inst_rd (code [-2]) == sparc_i0)) {
 		/* or reg, imm, %i0 */
 		int reg = sparc_inst_rs1 (code [-2]);
 		int imm = sparc_inst_imm13 (code [-2]);
@@ -4578,7 +4584,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		sparc_restore_imm (code, reg, imm, sparc_o0);
 	}
 	else
-	if ((cfg->bb_exit->in_count == 1) && (sparc_inst_op (code [-2]) == 0x2) && (sparc_inst_op3 (code [-2]) == 0x2) && (!sparc_inst_imm (code [-2])) && (sparc_inst_rd (code [-2]) == sparc_i0)) {
+	if (can_fold && (sparc_inst_op (code [-2]) == 0x2) && (sparc_inst_op3 (code [-2]) == 0x2) && (!sparc_inst_imm (code [-2])) && (sparc_inst_rd (code [-2]) == sparc_i0)) {
 		/* or reg, reg, %i0 */
 		int reg1 = sparc_inst_rs1 (code [-2]);
 		int reg2 = sparc_inst_rs2 (code [-2]);
