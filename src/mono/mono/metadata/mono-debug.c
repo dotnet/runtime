@@ -318,7 +318,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 }
 
 static gint32
-il_offset_from_address (MonoDebugMethodJitInfo *jit, guint32 address)
+il_offset_from_address (MonoDebugMethodJitInfo *jit, guint32 native_offset)
 {
 	int i;
 
@@ -329,8 +329,8 @@ il_offset_from_address (MonoDebugMethodJitInfo *jit, guint32 address)
 		MonoDebugLineNumberEntry lne = g_array_index (
 			jit->line_numbers, MonoDebugLineNumberEntry, i);
 
-		if (lne.address <= address)
-			return lne.offset;
+		if (lne.native_offset <= native_offset)
+			return lne.il_offset;
 	}
 
 	return -1;

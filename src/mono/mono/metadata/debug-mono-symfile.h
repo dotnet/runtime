@@ -111,8 +111,8 @@ struct MonoDebugLexicalBlockEntry {
 };
 
 struct MonoDebugLineNumberEntry {
-	guint32 offset;
-	guint32 address;
+	guint32 il_offset;
+	guint32 native_offset;
 };
 
 struct _MonoSymbolFile {

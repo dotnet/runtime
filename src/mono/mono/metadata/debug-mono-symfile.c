@@ -234,8 +234,8 @@ _mono_debug_address_from_il_offset (MonoDebugMethodJitInfo *jit, guint32 il_offs
 		MonoDebugLineNumberEntry lne = g_array_index (
 			jit->line_numbers, MonoDebugLineNumberEntry, i);
 
-		if (lne.offset <= il_offset)
-			return lne.address;
+		if (lne.il_offset <= il_offset)
+			return lne.native_offset;
 	}
 
 	return -1;

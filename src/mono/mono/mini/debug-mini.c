@@ -26,8 +26,8 @@ record_line_number (MonoDebugMethodJitInfo *jit, guint32 address, guint32 offset
 {
 	MonoDebugLineNumberEntry lne;
 
-	lne.address = address;
-	lne.offset = offset;
+	lne.native_offset = address;
+	lne.il_offset = offset;
 
 	g_array_append_val (jit->line_numbers, lne);
 }
@@ -388,10 +388,10 @@ mono_debug_serialize_debug_info (MonoCompile *cfg,
 		MonoDebugLineNumberEntry *lne = &g_array_index (jit->line_numbers, 
 														MonoDebugLineNumberEntry,
 														i);
-		encode_value (lne->offset - prev_offset, p, &p);
-		encode_value (lne->address - prev_native_offset, p, &p);
-		prev_offset = lne->offset;
-		prev_native_offset = lne->address;
+		encode_value (lne->il_offset - prev_offset, p, &p);
+		encode_value (lne->native_offset - prev_native_offset, p, &p);
+		prev_offset = lne->il_offset;
+		prev_native_offset = lne->native_offset;
 	}
 
 	g_assert (p - buf < size);
