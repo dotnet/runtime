@@ -1558,6 +1558,20 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 }
 
 static void
+assign_type_idx (MonoReflectionTypeBuilder *type, MonoDynamicTable *table)
+{
+	int j;
+	
+	type->table_idx = table->next_idx ++;
+	if (!type->subtypes)
+		return;
+	for (j = 0; j < mono_array_length (type->subtypes); ++j) {
+		MonoReflectionTypeBuilder *subtype = mono_array_get (type->subtypes, MonoReflectionTypeBuilder*, j);
+		assign_type_idx (subtype, table);
+	}
+}
+
+static void
 mono_image_fill_module_table (MonoDomain *domain, MonoReflectionModuleBuilder *mb, MonoDynamicAssembly *assembly)
 {
 	MonoDynamicTable *table;
@@ -1588,15 +1602,8 @@ mono_image_fill_module_table (MonoDomain *domain, MonoReflectionModuleBuilder *m
 	 * has not yet been stored in the tables is referenced by another type.
 	 */
 	for (i = 0; i < mono_array_length (mb->types); ++i) {
-		int j;
 		MonoReflectionTypeBuilder *type = mono_array_get (mb->types, MonoReflectionTypeBuilder*, i);
-		type->table_idx = table->next_idx ++;
-		if (!type->subtypes)
-			continue;
-		for (j = 0; j < mono_array_length (type->subtypes); ++j) {
-			MonoReflectionTypeBuilder *subtype = mono_array_get (type->subtypes, MonoReflectionTypeBuilder*, j);
-			subtype->table_idx = table->next_idx ++;
-		}
+		assign_type_idx (type, table);
 	}
 	for (i = 0; i < mono_array_length (mb->types); ++i)
 		mono_image_get_type_info (domain, mono_array_get (mb->types, MonoReflectionTypeBuilder*, i), assembly);
