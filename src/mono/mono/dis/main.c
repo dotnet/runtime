@@ -983,7 +983,7 @@ disassemble_file (const char *file)
 static void
 usage (void)
 {
-	GString *args = g_string_new ("[--output=filename] [--help] [--mscorlib] ");
+	GString *args = g_string_new ("[--output=filename] [--help] [--mscorlib]\n");
 	int i;
 	
 	for (i = 0; table_list [i].name != NULL; i++){
