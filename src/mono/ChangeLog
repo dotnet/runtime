@@ -1,3 +1,16 @@
+2003-04-04  Duncan Mak  <duncan@ximian.com>
+
+	* doc/web/commands: 
+	* doc/web/makefile: Add team page information.
+
+	* doc/web/team.xml: 
+	* doc/web/render-team-page.cs: Code for rendering a team page.
+
+2003-04-02  Duncan Mak  <duncan@ximian.com>
+
+	* doc/web/makefile: Add a new make target for generating a team
+	page on go-mono.com.
+
 2003-04-04  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Added check for GC_gcj_malloc.
@@ -7,6 +20,7 @@
 	* man/sqlsharp.1: changed pass= to password= for the 
 	  PostgreSql provider.
 
+>>>>>>> 1.166
 2003-03-31  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* data/machine.config: added SessionStateModule to httpModules section.

@@ -74,7 +74,7 @@ OBJECTS=									\
 	deploy/class-status-Cscompmgd.html					\
 	deploy/class-library.html						\
 	deploy/classlib-doc.html
-	
+
 #2,Configuration.Install,class-status-System.Configuration.Install.html,class-status-System.Configuration.Install.src,cm/cormissing.css,cm/cormissing.js
 #2,Runtime.Remoting,class-status-System.Runtime.Remoting.html,class-status-System.Runtime.Remoting.src,cm/cormissing.css,cm/cormissing.js
 
@@ -85,8 +85,7 @@ NON_HTML_SOURCES=		\
 	../mono-build.sh	\
 	../mono-build-w32.sh
 
-
-all: $(OBJECTS) deploy/index.rss 
+all: $(OBJECTS) deploy/index.rss ../team
 	perl process.pl commands template.html.in deploy
 
 tutorial: mono-beginning.html.stamp mono-beginning.pdf 
@@ -108,6 +107,12 @@ deploy/index.rss: mono-rss.exe ../index
 mono-rss.exe: mono-rss.cs rss.cs 
 	$(CSC) mono-rss.cs rss.cs
 
+../team: render-team-page.exe team.xml
+	./render-team-page.exe team.xml "deploy\team\team.html"
+
+render-team-page.exe: render-team-page.cs
+	$(CSC) render-team-page.cs
+
 clean:
 	rm -f $(OBJECTS) $(patsubst deploy/%.html,src/%.src, $(OBJECTS)) src/*.xml src/*.html.in ../class-status-* ../class-status
 
@@ -128,8 +133,6 @@ $(OBJECTS): $(patsubst deploy/%.html,src/%.src, $(OBJECTS))
 .PRECIOUS: src/%.src
 src/%.src: ../% commands makefile template.html.in
 	perl htmlify $< > $@
-
-
 
 .PRECIOUS: ../class-status-%
 ../class-status-%: src/%.html.in ../class-status.in

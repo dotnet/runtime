@@ -1,0 +1,67 @@
+<!-- Mono team members -->
+
+<?xml version="1.0" encoding="iso-8859-1"?>
+<contributors>
+
+  <contributor>
+    <name>
+      <first-name>Duncan</first-name>
+      <last-name>Mak</last-name>
+    </name>
+    <e-mail>duncan@ximian.com</e-mail>
+    <image>duncan.png</image>
+    <location>Boston / Hong Kong</location>
+    <organization>Ximian Inc.</organization>
+    <description>Ximian intern</description>
+    <tasks>
+      <task>XML Schema</task>
+      <task>Documentation</task>
+      <task>Other useful stuff</task>
+    </tasks>
+  </contributor>
+
+  <contributor>
+    <name>
+      <first-name>Miguel</first-name>
+      <last-name>de Icaza</last-name>
+    </name>
+    <e-mail>miguel@ximian.com</e-mail>
+    <image>miguel.png</image>
+    <location>Boston / Mexico City</location>
+    <organization>Ximian Inc.</organization>
+    <description>Ximian CTO</description>
+    <tasks>
+      <task>MCS compiler</task>
+      <task>Cheerleading</task>
+    </tasks>
+  </contributor>
+
+  <contributor>
+    <name>
+      <first-name>Paolo</first-name>
+      <last-name>Molaro</last-name>
+    </name>
+    <e-mail>miguel@ximian.com</e-mail>
+    <image>duncan.png</image>
+    <location>Italy</location>
+    <organization>Ximian Inc.</organization>
+    <description>JIT hacker</description>
+    <tasks>
+    </tasks>
+  </contributor>
+
+  <contributor>
+    <name>
+      <first-name>Dietmar</first-name>
+      <last-name>Maurer</last-name>
+    </name>
+    <e-mail>dietmar@ximian.com</e-mail>
+    <image>duncan.png</image>
+    <location>Austria</location>
+    <organization>Ximian</organization>
+    <description>JIT hacker</description>
+    <tasks>
+    </tasks>
+  </contributor>
+
+</contributors>
