@@ -1,5 +1,10 @@
 2003-06-10  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Fall back to boehm if we don't have a libgc
+	subdirectory.
+
+2003-06-10  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Make the libgc stuff actually work; we now create
 	a shared libmonogc.so when using the included libgc.
 

@@ -168,15 +168,23 @@ dnl
 dnl libgc checks
 dnl
 
-dnl AC_CONFIG_SUBDIRS(libgc)
+AC_CONFIG_SUBDIRS(libgc)
 
 gc_headers=no
 gc=included
 use_included_gc=no
-AC_ARG_WITH(gc, [  --with-gc=boehm,included,none],[gc=$with_gc],[gc=included])
+
+if test -d $srcdir/libgc ; then
+  gc_default=included
+else
+  gc_default=boehm
+fi
+
+AC_ARG_WITH(gc, [  --with-gc=boehm,included,none],[gc=$with_gc],[gc=$gc_default])
 
 LIBGC_CFLAGS=
 LIBGC_LIBS=
+libgc_dir=
 case "x$gc" in
 	xboehm|xbohem|xyes)
 		AC_CHECK_HEADERS(gc.h gc/gc.h, gc_headers=yes)
@@ -200,6 +208,7 @@ case "x$gc" in
 		found_boehm=yes
 		gc_headers=yes
 		use_included_gc=yes
+		libgc_dir=libgc
 
 		LIBGC_CFLAGS='-I$(top_srcdir)/libgc/include'
 		LIBGC_LIBS='$(top_builddir)/libgc/libmonogc.la'
@@ -226,6 +235,7 @@ export libgc_threads
 AM_CONDITIONAL(INCLUDED_LIBGC, test x$use_included_gc = xyes)
 AC_SUBST(LIBGC_CFLAGS)
 AC_SUBST(LIBGC_LIBS)
+AC_SUBST(libgc_dir)
 
 dnl
 dnl End of libgc checks
