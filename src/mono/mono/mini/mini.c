@@ -284,77 +284,39 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 #define OP_PCONST OP_ICONST
 #endif
 
-#define NEW_CLASSCONST(cfg,dest,val) do {	\
+#define NEW_AOTCONST(cfg,dest,patch_type,cons) do {    \
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_PCONST;	\
-		(dest)->inst_p0 = (val);	\
-		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_CLASS; \
+		(dest)->inst_p0 = (cons);	\
+		(dest)->inst_i1 = (gpointer)(patch_type); \
 		(dest)->type = STACK_PTR;	\
-	} while (0)
+    } while (0)
 
-#define NEW_IMAGECONST(cfg,dest,val) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_PCONST;	\
-		(dest)->inst_p0 = (val);	\
-		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_IMAGE; \
-		(dest)->type = STACK_PTR;	\
-	} while (0)
-
-#define NEW_FIELDCONST(cfg,dest,field) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_PCONST;	\
-		(dest)->inst_p0 = (field);	\
-		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_FIELD; \
-		(dest)->type = STACK_PTR;	\
-	} while (0)
-
-#define NEW_METHODCONST(cfg,dest,val) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_PCONST;	\
-		(dest)->inst_p0 = (val);	\
-		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_METHODCONST; \
-		(dest)->type = STACK_PTR;	\
-	} while (0)
-
-#define NEW_VTABLECONST(cfg,dest,vtable) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_PCONST;	\
-		(dest)->inst_p0 = mono_compile_aot ? (gpointer)((vtable)->klass) : (vtable);	\
-		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_VTABLE; \
-		(dest)->type = STACK_PTR;	\
-	} while (0)
-
-#define NEW_SFLDACONST(cfg,dest,field) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_PCONST;	\
-		(dest)->inst_p0 = (field);	\
-		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_SFLDA; \
-		(dest)->type = STACK_PTR;	\
-	} while (0)
-
-#define NEW_LDSTRCONST(cfg,dest,image,token) do {	\
+#define NEW_AOTCONST_TOKEN(cfg,dest,patch_type,image,token,stack_type) do {    \
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = OP_AOTCONST;	\
 		(dest)->inst_p0 = mono_jump_info_token_new ((cfg)->mempool, (image), (token));	\
-		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_LDSTR; \
-		(dest)->type = STACK_OBJ;	\
-	} while (0)
+		(dest)->inst_i1 = (gpointer)(patch_type); \
+		(dest)->type = (stack_type);	\
+    } while (0)
 
-#define NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,image,token) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = OP_AOTCONST;	\
-		(dest)->inst_p0 = mono_jump_info_token_new ((cfg)->mempool, (image), (token));	\
-		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_TYPE_FROM_HANDLE; \
-		(dest)->type = STACK_OBJ;	\
-	} while (0)
+#define NEW_CLASSCONST(cfg,dest,val) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_CLASS, (val))
 
-#define NEW_LDTOKENCONST(cfg,dest,image,token) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = OP_AOTCONST;	\
-		(dest)->inst_p0 = mono_jump_info_token_new ((cfg)->mempool, (image), (token));	\
-		(dest)->inst_i1 = (gpointer)MONO_PATCH_INFO_LDTOKEN; \
-		(dest)->type = STACK_PTR;	\
-	} while (0)
+#define NEW_IMAGECONST(cfg,dest,val) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_IMAGE, (val))
+
+#define NEW_FIELDCONST(cfg,dest,val) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_FIELD, (val))
+
+#define NEW_METHODCONST(cfg,dest,val) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_METHODCONST, (val))
+
+#define NEW_VTABLECONST(cfg,dest,vtable) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_VTABLE, mono_compile_aot ? (gpointer)((vtable)->klass) : (vtable))
+
+#define NEW_SFLDACONST(cfg,dest,val) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_SFLDA, (val))
+
+#define NEW_LDSTRCONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDSTR, (image), (token), STACK_OBJ)
+
+#define NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_TYPE_FROM_HANDLE, (image), (token), STACK_OBJ)
+
+#define NEW_LDTOKENCONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDTOKEN, (image), (token), STACK_PTR)
 
 #define NEW_DOMAINCONST(cfg,dest) do { \
                if (cfg->opt & MONO_OPT_SHARED) { \
