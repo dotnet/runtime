@@ -13,7 +13,7 @@
 #include <signal.h>
 #include <string.h>
 
-#include <mono/archh/sparc/sparc-codegen.h>
+#include <mono/arch/sparc/sparc-codegen.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
@@ -24,7 +24,7 @@
 #include "mini.h"
 #include "mini-sparc.h"
 
-#warning I'm NOT SPARC READY!  MEEP!  MEEP!
+#warning NotReady
 
 gboolean  mono_arch_handle_exception (struct sigcontext *ctx, gpointer obj, gboolean test_only);
 
@@ -35,6 +35,9 @@ typedef struct sigcontext MonoContext;
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->SC_EIP))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->SC_EBP))
+
+/* disbale this for now */
+#undef MONO_USE_EXC_TABLES
 
 #ifdef MONO_USE_EXC_TABLES
 
@@ -113,6 +116,7 @@ struct stack_frame
   void *next;
   void *return_address;
 };
+#endif
 
 gpointer 
 mono_arch_get_throw_exception (void)

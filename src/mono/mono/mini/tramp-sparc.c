@@ -20,7 +20,7 @@
 #include "mini.h"
 #include "mini-sparc.h"
 
-#warning Not Sparc ready!  MEEP!
+#warning NotReady
 
 /* adapt to mini later... */
 #define mono_jit_share_code (1)
