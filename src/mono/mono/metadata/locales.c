@@ -1558,6 +1558,69 @@ MonoString *ves_icall_System_String_InternalToUpper_Comp (MonoString *this, Mono
 	return(ret);
 }
 
+gunichar2 ves_icall_System_Char_InternalToUpper_Comp (gunichar2 c, MonoCultureInfo *cult)
+{
+	UChar udest;
+	UErrorCode ec;
+	char *icu_loc;
+	int32_t len;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	if(cult->lcid==0x007F) {
+		/* Invariant shortcut */
+		return g_unichar_toupper (c);
+	}
+
+	icu_loc=mono_string_to_icu_locale (cult->icu_name);
+	if(icu_loc==NULL) {
+		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_defaults.corlib, "System", "SystemException"));
+		return(0);
+	}
+	
+	ec=U_ZERO_ERROR;
+	len=u_strToUpper (&udest, 1, &c, 1, icu_loc, &ec);
+
+	if(U_SUCCESS (ec) && len==1) {
+		return udest;
+	} else {
+		/* return something */
+		return c;
+	}
+}
+
+
+gunichar2 ves_icall_System_Char_InternalToLower_Comp (gunichar2 c, MonoCultureInfo *cult)
+{
+	UChar udest;
+	UErrorCode ec;
+	char *icu_loc;
+	int32_t len;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	if(cult->lcid==0x007F) {
+		/* Invariant shortcut */
+		return g_unichar_tolower (c);
+	}
+
+	icu_loc=mono_string_to_icu_locale (cult->icu_name);
+	if(icu_loc==NULL) {
+		mono_raise_exception ((MonoException *)mono_exception_from_name (mono_defaults.corlib, "System", "SystemException"));
+		return(0);
+	}
+	
+	ec=U_ZERO_ERROR;
+	len=u_strToLower (&udest, 1, &c, 1, icu_loc, &ec);
+
+	if(U_SUCCESS (ec) && len==1) {
+		return udest;
+	} else {
+		/* return something */
+		return c;
+	}
+}
+
 #else /* HAVE_ICU */
 void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoCultureInfo *this, MonoString *locale)
 {
@@ -1653,6 +1716,21 @@ MonoString *ves_icall_System_String_InternalToUpper_Comp (MonoString *this, Mono
 	MONO_ARCH_SAVE_REGS;
 	
 	return(string_invariant_toupper (this));
+}
+
+gunichar2 ves_icall_System_Char_InternalToUpper_Comp (gunichar2 c, MonoCultureInfo *cult)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return g_unichar_toupper (c);
+}
+
+
+gunichar2 ves_icall_System_Char_InternalToLower_Comp (gunichar2 c, MonoCultureInfo *cult)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return g_unichar_tolower (c);
 }
 
 #endif /* HAVE_ICU */

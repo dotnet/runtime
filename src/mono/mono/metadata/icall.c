@@ -4862,6 +4862,8 @@ static const IcallEntry buffer_icalls [] = {
 
 static const IcallEntry char_icalls [] = {
 	{"GetDataTablePointers", ves_icall_System_Char_GetDataTablePointers},
+	{"ToLower(char,System.Globalization.CultureInfo)", ves_icall_System_Char_InternalToLower_Comp},
+	{"ToUpper(char,System.Globalization.CultureInfo)", ves_icall_System_Char_InternalToUpper_Comp},
 };
 
 static const IcallEntry defaultconf_icalls [] = {
