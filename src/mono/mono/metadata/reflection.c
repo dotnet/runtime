@@ -123,6 +123,7 @@ static guint32 mono_image_get_methodref_token (MonoDynamicAssembly *assembly, Mo
 static guint32 mono_image_get_sighelper_token (MonoDynamicAssembly *assembly, MonoReflectionSigHelper *helper);
 static guint32 encode_marshal_blob (MonoDynamicAssembly *assembly, MonoReflectionMarshal *minfo);
 static char*   type_get_qualified_name (MonoType *type, MonoAssembly *ass);
+static void    ensure_runtime_vtable (MonoClass *klass);
 
 static void
 alloc_table (MonoDynamicTable *table, guint nrows)

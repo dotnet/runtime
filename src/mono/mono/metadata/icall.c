@@ -1493,7 +1493,6 @@ ves_icall_Type_IsGenericTypeDefinition (MonoReflectionType *type)
 static gint32
 ves_icall_Type_GetGenericParameterPosition (MonoReflectionType *type)
 {
-	MonoClass *klass;
 	MONO_ARCH_SAVE_REGS;
 
 	if (type->type->byref)
@@ -2571,7 +2570,7 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflection
 		return NULL;
 	}
 
-	return mono_image_get_resource (assembly->assembly->image, cols [MONO_MANIFEST_OFFSET], size);
+	return (void*)mono_image_get_resource (assembly->assembly->image, cols [MONO_MANIFEST_OFFSET], size);
 }
 
 static gboolean
