@@ -172,10 +172,5 @@ win32getdeps:
 	unzip -n -d / nsis4cygwin.zip
 
 win32setup:
-	cp /usr/lib/libglib-2.0-0.dll @prefix@/lib
-	cp /usr/lib/iconv.dll @prefix@/lib
-	cp /usr/lib/libgmodule-2.0-0.dll @prefix@/lib
-	cp /usr/lib/libgobject-2.0-0.dll @prefix@/lib
-	cp /usr/lib/libgthread-2.0-0.dll @prefix@/lib
-	cp /usr/lib/libintl-1.dll @prefix@/lib
-	makensis /DMILESTONE=@VERSION@ /DSOURCE_INSTALL_DIR=`cygpath -a -w @prefix@`\\* monowiz.win32.nsi
+	makensis /DMILESTONE=$(VERSION) /DSOURCE_INSTALL_DIR=$(SOURCE_INSTALL_DIR) /DBUILDNUM=$(BUILDNUM) monowiz.win32.nsi
+	#makensis /DMILESTONE=$(VERSION) /DSOURCE_INSTALL_DIR=`cygpath -a -w c:/cygwin/home/propietario/go-mono/windowswizard/wins`\\* monowiz.win32.nsi

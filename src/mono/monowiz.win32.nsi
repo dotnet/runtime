@@ -12,6 +12,7 @@
 ;       Johannes Roith <johannes@jroith.de>
 ;       Daniel Morgan <danielmorgan@verizon.net>
 ;	Urs C Muff <umuff@quark.com>
+;	Gonzalo Paniagua Javier <gonzalo@ximian.com>
 ;
 ; This .nsi includes code from the NSIS Archives:
 ; function StrReplace and VersionCheck 
@@ -22,14 +23,21 @@
 ;
 ; This script can build a binary setup wizard of mono.
 ; It is released under the GNU GPL.
+
+!include "MUI.nsh"
+!include "Sections.nsh"
+
 ;
 ; =====================================================
 ; SET MILESTONE & SOURCE DIR
 ; =====================================================
 ; set by makefile!!
 
-;!define MILESTONE 0.91
+;!define MILESTONE 0.91.99
+;!define BUILDNUM 2
 ;!define SOURCE_INSTALL_DIR ..\install\*.* 
+
+; Used to install mcs.exe
 !define PROFILE_VERSION 1.0
 
 ; =====================================================
@@ -60,7 +68,7 @@
 ;
 ; 3. Type "make win32setup"
 ;
-; 4. The output file is mono-[MILESTONE]-win32-1.exe
+; 4. The output file is mono-[MILESTONE]-win32-[BUILDNUM].exe
 ;
 ;
 ; =====================================================
@@ -100,13 +108,10 @@
 
 !define NAME "Mono" 
 !define TARGET_INSTALL_DIR "$PROGRAMFILES\Mono-${MILESTONE}" 
-!define OUTFILE mono-${MILESTONE}-win32-1.exe
+!define OUTFILE mono-${MILESTONE}-win32-${BUILDNUM}.exe
 
 Name ${NAME}
-Caption "Mono ${MILESTONE} Setup"
-
-!include "MUI.nsh"
-!include "Sections.nsh"
+Caption "Mono ${MILESTONE} Build ${BUILDNUM} Setup"
 
 SetCompressor bzip2
 SilentInstall normal
@@ -159,7 +164,7 @@ Section "Uninstall"
 
   MessageBox MB_YESNO "Are you sure you want to uninstall Mono from your system?" IDNO NoUnInstall
 
-  Delete $INSTDIR\Uninst.exe ; delete Uninstaller
+  Delete "$INSTDIR\Uninst.exe" ; delete Uninstaller
   DeleteRegKey HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Mono-${MILESTONE} ; Remove Entry in Software List
 
   MessageBox MB_YESNO "Mono was installed into $INSTDIR. Should this directory be removed completly?" IDNO GoNext1
@@ -170,31 +175,14 @@ Section "Uninstall"
 
   ; If the Default-Key is the current Milestone, we just remove the wrappers
 
-  ReadRegStr $0 HKEY_LOCAL_MACHINE SOFTWARE\Mono\ DefaultCLR
+  ReadRegStr $0 HKEY_LOCAL_MACHINE SOFTWARE\Mono DefaultCLR
   StrCmp $0 ${MILESTONE} DeleteWrappers
 
-  MessageBox MB_YESNO "Mono ${MILESTONE} has been removed, but the default installation of Mono differs form this version. Should the wrappers and the Mono registry key be still be removed? This could disable other Mono installations." IDNO GoNext2
+  MessageBox MB_YESNO "Mono ${MILESTONE} Build ${BUILDNUM} has been removed, but the default installation of Mono differs form this version. Should the wrappers and the Mono registry key be still be removed? This could disable other Mono installations." IDNO GoNext2
 
   DeleteWrappers:
 
   ; Complete Uninstall
-
-  DeleteRegKey HKLM SOFTWARE\Mono
-  Delete $WINDIR\monobasepath.bat
-  Delete $WINDIR\mcs.bat
-  Delete $WINDIR\mbas.bat
-  Delete $WINDIR\mint.bat
-  Delete $WINDIR\mono.bat
-  Delete $WINDIR\monodis.bat
-  Delete $WINDIR\monoilasm.bat
-  Delete $WINDIR\sqlsharp.bat
-  Delete $WINDIR\secutil.bat
-  Delete $WINDIR\cert2spc.bat
-  Delete $WINDIR\monoresgen.bat
-  Delete $WINDIR\monosn.bat
-  Delete $WINDIR\cilc.bat
-  Delete $WINDIR\monop.bat
-  Delete $WINDIR\xsp.bat
 
   GoNext2:
   NoUnInstall:
@@ -206,7 +194,7 @@ SectionEnd
 
  ; Warn people if a newer Mono is already installed
 
- ReadRegStr $0 HKEY_LOCAL_MACHINE SOFTWARE\Mono\ DefaultCLR
+ ReadRegStr $0 HKEY_LOCAL_MACHINE SOFTWARE\Mono DefaultCLR
  Push $0
  Push ${MILESTONE} 
  Call VersionCheck
@@ -257,41 +245,25 @@ Call windowsBatCore
 Push "mono"
 Call windowsBatCore
 
+Push "monodis"
+Call windowsBatCore
+
+Push "monograph"
+Call windowsBatCore
+
+Push "pedump"
+Call windowsBatCore
+
 Push "mcs"
 Call windowsBatProfile
 
 Push "mbas"
-Call windowsBat
+Call windowsBatProfile
 
-Push "monodis"
-Call windowsBat
-
-Push "monoilasm"
-Call windowsBat
-
-Push "sqlsharp"
-Call windowsBat
-
-Push "secutil"
-Call windowsBat
-
-Push "cert2spec"
-Call windowsBat
-
-Push "monoresgen"
-Call windowsBat
-
-Push "monosn"
-Call windowsBat
-
-Push "cilc"
-Call windowsBat
-
-Push "monop"
-Call windowsBat
-
-Push "xsp"
-Call windowsBat
+Push $0
+Call PushBatFiles
+Call createWindowsBatFiles
+Pop $0
 
 ; ============= glib-2.0.pc ===============
 FileOpen $0 "$INSTDIR\lib\pkgconfig\glib-2.0.pc" "w"
@@ -372,31 +344,131 @@ FileWrite $0 "Libs: -L$${libdir} -lintl$\r$\n"
 FileWrite $0 "Cflags: -I$${includedir}$\r$\n"
 FileClose $0
 
+Call CreateSetMonoPath
+Call RunGacutil
+
+MessageBox MB_ICONINFORMATION "Don't forget to prepend $INSTDIR\bin to your PATH when using Mono ${MILESTONE} Build ${BUILDNUM}.$\r$\nYou can use $INSTDIR\bin\setmonopath.bat to do it."
 NoInstall:
+
 SectionEnd
+
+Function PushBatFiles
+	Push ""
+	Push "al"
+	Push "cert2spc"
+	Push "certmgr"
+	Push "chktrust"
+	Push "cilc"
+	Push "disco"
+	Push "gacutil"
+	Push "genxs"
+	Push "ilasm"
+	Push "ilasm"
+	Push "monop"
+	Push "monoresgen"
+	Push "secutil"
+	Push "sqlsharp"
+	Push "makecert"
+	Push "setreg"
+	Push "signcode"
+	Push "sn"
+	Push "soapsuds"
+	Push "wsdl"
+	Push "xsd"
+FunctionEnd
+
+Function createWindowsBatFiles
+createloop:
+	Pop $0
+	StrCmp "$0" "" endcreateloop
+	Push $0
+	Call windowsBat
+	Goto createloop
+endcreateloop:
+FunctionEnd
+
+Function CreateCreategac
+	Push $1
+	FileOpen $1 "$INSTDIR\creategac.bat" "w"
+	FileWrite $1 "@echo off$\r$\n"
+	FileWrite $1 "echo Mono version ${MILESTONE} Build ${BUILDNUM}$\r$\n"
+	FileWrite $1 "echo Running gacutil to install system assemblies into the GAC$\r$\n"
+	FileWrite $1 "SETLOCAL$\r$\n"
+	FileWrite $1 "PATH=$INSTDIR\bin;%PATH%$\r$\n"
+	FileWrite $1 '"$INSTDIR\bin\gacutil.bat" -il "$INSTDIR\lib\mono\${PROFILE_VERSION}\full-path-assemblies.lst"$\r$\n'
+	FileWrite $1 "ENDLOCAL$\r$\n"
+	FileClose $1
+	Pop $1
+FunctionEnd
+
+Function CreateSetMonoPath
+	Push $1
+	FileOpen $1 "$INSTDIR\bin\setmonopath.bat" "w"
+	FileWrite $1 "@echo off$\r$\n"
+	FileWrite $1 "echo Mono version ${MILESTONE} Build ${BUILDNUM}$\r$\n"
+	FileWrite $1 "echo Prepending '$INSTDIR\bin' to PATH$\r$\n"
+	FileWrite $1 "PATH=$INSTDIR\bin;%PATH%$\r$\n"
+	FileClose $1
+	Pop $1
+FunctionEnd
+
+Function RunGacutil
+	Push $1
+	Push $2
+	Push $3
+	FileOpen $1 "$INSTDIR\lib\mono\${PROFILE_VERSION}\assemblies.lst" "r"
+	FileOpen $2 "$INSTDIR\lib\mono\${PROFILE_VERSION}\full-path-assemblies.lst" "w"
+nextline:	
+	FileRead $1 $3
+	StrCmp "$3" "" giveup
+	FileWrite $2 "$INSTDIR\lib\mono\${PROFILE_VERSION}\$3"
+	goto nextline 
+giveup:
+	FileClose $1
+	FileClose $2
+	ExecWait '"$INSTDIR\bin\gacutil.bat" -il "$INSTDIR\lib\mono\${PROFILE_VERSION}\full-path-assemblies.lst"'
+	IfErrors errrun noerr
+errrun:
+	MessageBox MB_ICONEXCLAMATION 'Error running gacutil!$\r$\nRun "$INSTDIR\creategac.bat" after finishing setup program.'
+	Call CreateCreategac
+	;Delete "$INSTDIR\lib\mono\${PROFILE_VERSION}\assemblies.lst"
+	;Delete "$INSTDIR\lib\mono\${PROFILE_VERSION}\full-path-assemblies.lst"
+noerr:
+	Pop $3
+	Pop $2
+	Pop $1
+FunctionEnd
 
 Function windowsBatCore
 	Exch $1 ;core exe name
 
-	FileOpen $0 "$WINDIR\$1.bat" "w"
+	FileOpen $0 "$INSTDIR\bin\$1.bat" "w"
 	FileWrite $0 "@ECHO OFF$\r$\n"
 	FileWrite $0 "SET MONOARGS=$\r$\n"
 	FileWrite $0 ":loop$\r$\n"
 	FileWrite $0 "IF x%1 == x goto :done$\r$\n"
-	FileWrite $0 "SET MONOARGS=%MONOARGS% %1$\r$\n"
+	FileWrite $0 'SET MONOARGS=%MONOARGS% %1$\r$\n'
 	FileWrite $0 "SHIFT$\r$\n"
 	FileWrite $0 "GOTO loop$\r$\n"
 	FileWrite $0 ":done$\r$\n"
 	FileWrite $0 "SETLOCAL$\r$\n"
-	FileWrite $0 'SET PATH="$INSTDIR\bin;$INSTDIR\lib;%PATH%"$\r$\n'
-	FileWrite $0 '"$INSTDIR\bin\$1.exe" %MONOARGS%$\r$\n'
-	FileWrite $0 "EXIT /B %ERRORLEVEL%$\r$\n"
+	FileWrite $0 'SET PATH=$INSTDIR\bin;%PATH%$\r$\n'
+	FileWrite $0 'SET MONO_PATH=$INSTDIR\lib$\r$\n'
+	FileWrite $0 'SET MONO_CFG_DIR=$INSTDIR\etc$\r$\n'
+	FileWrite $0 '"$INSTDIR\lib\$1.exe" %MONOARGS%$\r$\n'
 	FileWrite $0 "ENDLOCAL$\r$\n"
 	FileClose $0
 
 	FileOpen $0 "$INSTDIR\bin\$1" "w"
-	FileWrite $0 "#!/bin/sh$\r$\n"
-	FileWrite $0 'exec $6/bin/$1.exe "$$@"$\r$\n'
+	FileWrite $0 "#!/bin/sh$\n"
+	FileWrite $0 'IDIRUNIX="`cygpath -u '
+	FileWrite $0 "'$INSTDIR'`"
+	FileWrite $0 '"$\n'
+	FileWrite $0 'PATH="$${IDIRUNIX}/bin:$$PATH"$\n'
+	FileWrite $0 "MONO_PATH='$INSTDIR\lib'$\n"
+	FileWrite $0 "MONO_CFG_DIR='$INSTDIR\etc'$\n"
+	FileWrite $0 "export PATH MONO_PATH MONO_CFG_DIR$\n"
+	FileWrite $0 'exec "$6/lib/$1.exe" "$$@"$\n'
 	FileClose $0
 
 	Pop $1
@@ -405,25 +477,33 @@ FunctionEnd
 Function windowsBat
 	Exch $1 ;tool name
 
-	FileOpen $0 "$WINDIR\$1.bat" "w"
+	FileOpen $0 "$INSTDIR\bin\$1.bat" "w"
 	FileWrite $0 "@ECHO OFF$\r$\n"
 	FileWrite $0 "SET MONOARGS=$\r$\n"
 	FileWrite $0 ":loop$\r$\n"
 	FileWrite $0 "IF x%1 == x GOTO :done$\r$\n"
-	FileWrite $0 "SET MONOARGS=%MONOARGS% %1$\r$\n"
+	FileWrite $0 'SET MONOARGS=%MONOARGS% %1$\r$\n'
 	FileWrite $0 "SHIFT$\r$\n"
 	FileWrite $0 "GOTO loop$\r$\n"
 	FileWrite $0 ":done$\r$\n"
 	FileWrite $0 "SETLOCAL$\r$\n"
-	FileWrite $0 'SET PATH="$INSTDIR\bin;$INSTDIR\lib;%PATH%"$\r$\n'
-	FileWrite $0 '"$INSTDIR\bin\mono.exe" "$INSTDIR\lib\$1.exe" %MONOARGS%$\r$\n'
-	FileWrite $0 "EXIT /B %ERRORLEVEL%$\r$\n"
+	FileWrite $0 'SET PATH=$INSTDIR\bin;%PATH%$\r$\n'
+	FileWrite $0 'SET MONO_PATH=$INSTDIR\lib$\r$\n'
+	FileWrite $0 'SET MONO_CFG_DIR=$INSTDIR\etc$\r$\n'
+	FileWrite $0 '"$INSTDIR\lib\mono.exe" "$INSTDIR\lib\$1.exe" %MONOARGS%$\r$\n'
 	FileWrite $0 "ENDLOCAL$\r$\n"
 	FileClose $0
 
 	FileOpen $0 "$INSTDIR\bin\$1" "w"
-	FileWrite $0 "#!/bin/sh$\r$\n"
-	FileWrite $0 'exec $6/bin/mono.exe $6/lib/$1.exe "$$@"$\r$\n'
+	FileWrite $0 "#!/bin/sh$\n"
+	FileWrite $0 'IDIRUNIX="`cygpath -u '
+	FileWrite $0 "'$INSTDIR'`"
+	FileWrite $0 '"$\n'
+	FileWrite $0 'PATH="$${IDIRUNIX}/bin:$$PATH"$\n'
+	FileWrite $0 "MONO_PATH='$INSTDIR\lib'$\n"
+	FileWrite $0 "MONO_CFG_DIR='$INSTDIR\etc'$\n"
+	FileWrite $0 "export PATH MONO_PATH MONO_CFG_DIR$\n"
+	FileWrite $0 'exec "$6/lib/mono.exe" "$6/lib/$1.exe" "$$@"$\n'
 	FileClose $0
 
 	Pop $1
@@ -432,25 +512,33 @@ FunctionEnd
 Function windowsBatProfile
 	Exch $1 ;tool name
 
-	FileOpen $0 "$WINDIR\$1.bat" "w"
+	FileOpen $0 "$INSTDIR\bin\$1.bat" "w"
 	FileWrite $0 "@ECHO OFF$\r$\n"
 	FileWrite $0 "SET MONOARGS=$\r$\n"
 	FileWrite $0 ":loop$\r$\n"
 	FileWrite $0 "IF x%1 == x GOTO :done$\r$\n"
-	FileWrite $0 "SET MONOARGS=%MONOARGS% %1$\r$\n"
+	FileWrite $0 'SET MONOARGS=%MONOARGS% %1$\r$\n'
 	FileWrite $0 "SHIFT$\r$\n"
 	FileWrite $0 "GOTO loop$\r$\n"
 	FileWrite $0 ":done$\r$\n"
 	FileWrite $0 "SETLOCAL$\r$\n"
-	FileWrite $0 'SET PATH="$INSTDIR\bin;$INSTDIR\lib;%PATH%"$\r$\n'
-	FileWrite $0 '"$INSTDIR\bin\mono.exe" "$INSTDIR\lib\mono\${PROFILE_VERSION}\$1.exe" %MONOARGS%$\r$\n'
-	FileWrite $0 "EXIT /B %ERRORLEVEL%$\r$\n"
+	FileWrite $0 'SET PATH=$INSTDIR\bin;%PATH%$\r$\n'
+	FileWrite $0 'SET MONO_PATH=$INSTDIR\lib$\r$\n'
+	FileWrite $0 'SET MONO_CFG_DIR=$INSTDIR\etc$\r$\n'
+	FileWrite $0 '"$INSTDIR\lib\mono.exe" "$INSTDIR\lib\mono\${PROFILE_VERSION}\$1.exe" %MONOARGS%$\r$\n'
 	FileWrite $0 "ENDLOCAL$\r$\n"
 	FileClose $0
 
 	FileOpen $0 "$INSTDIR\bin\$1" "w"
-	FileWrite $0 "#!/bin/sh$\r$\n"
-	FileWrite $0 'exec $6/bin/mono.exe $6/lib/mono/${PROFILE_VERSION}/$1.exe "$$@"$\r$\n'
+	FileWrite $0 "#!/bin/sh$\n"
+	FileWrite $0 'IDIRUNIX="`cygpath -u '
+	FileWrite $0 "'$INSTDIR'`"
+	FileWrite $0 '"$\n'
+	FileWrite $0 'PATH="$$IDIRUNIX/bin:$$PATH"$\n'
+	FileWrite $0 "MONO_PATH='$INSTDIR\lib'$\n"
+	FileWrite $0 "MONO_CFG_DIR='$INSTDIR\etc'$\n"
+	FileWrite $0 "export PATH MONO_PATH MONO_CFG_DIR$\n"
+	FileWrite $0 'exec "$6/lib/mono.exe" "$6/lib/mono/${PROFILE_VERSION}/$1.exe" "$$@"$\n'
 	FileClose $0
 
 	Pop $1

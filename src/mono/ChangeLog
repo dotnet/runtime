@@ -1,3 +1,8 @@
+2004-05-21  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* Makefile.am:
+	* monowiz.win32.nsi: improved windows installer script.
+
 2004-05-21  Raja R Harinath  <rharinath@novell.com>
 
 	* README: Update to include instructions for the various new
