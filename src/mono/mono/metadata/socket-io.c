@@ -791,13 +791,14 @@ gint32 ves_icall_System_Net_Sockets_Socket_RecvFrom_internal(SOCKET sock, MonoAr
 	buf=mono_array_addr(buffer, guchar, offset);
 	
 	ret=recvfrom(sock, buf, count, recvflags, sa, &sa_size);
-	g_free(sa);
 	
 	if(ret==SOCKET_ERROR) {
+		g_free(sa);
 		mono_raise_exception(get_socket_exception(WSAGetLastError()));
 	}
 
 	*sockaddr=create_object_from_sockaddr(sa, sa_size);
+	g_free(sa);
 	
 	return(ret);
 }
