@@ -30,6 +30,8 @@ CRITICAL_SECTION mono_delegate_section;
 static gunichar2 process_guid [36];
 static gboolean process_guid_set = FALSE;
 
+static MonoException *out_of_memory_ex;
+
 static MonoAssembly *
 mono_domain_assembly_preload (MonoAssemblyName *aname,
 			      gchar **assemblies_path,
@@ -89,9 +91,20 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	/* GC init has to happen after thread init */
 	mono_gc_init ();
 
+	/*
+	 * Create an instance early since we can't do it when there is no memory.
+	 */
+	out_of_memory_ex = mono_exception_from_name (mono_defaults.corlib, "System", "OutOfMemoryException");
+
 	mono_network_init ();
 
 	return;
+}
+
+MonoException*
+mono_runtime_get_out_of_memory_ex (void)
+{
+	return out_of_memory_ex;
 }
 
 void

@@ -151,6 +151,9 @@ mono_runtime_install_cleanup (MonoDomainFunc func);
 void
 mono_runtime_quit (void);
 
+MonoException*
+mono_runtime_get_out_of_memory_ex (void);
+
 MonoDomain *
 mono_domain_create         (void);
 

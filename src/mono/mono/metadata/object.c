@@ -1209,8 +1209,7 @@ out_of_memory (size_t size)
 	 * back to the system at this point if we're really low on memory (ie, size is
 	 * lower than the memory we set apart)
 	 */
-	MonoException * ex = mono_exception_from_name (mono_defaults.corlib, "System", "OutOfMemoryException");
-	mono_raise_exception (ex);
+	mono_raise_exception (mono_runtime_get_out_of_memory_ex ());
 }
 
 /**
