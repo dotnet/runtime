@@ -722,8 +722,12 @@ int _wapi_recvfrom(guint32 handle, void *buf, size_t len, int recv_flags,
 		case EINVAL:
 			WSASetLastError(WSAEINVAL);
 			break;
+		case ECONNRESET:
+			WSASetLastError(WSAECONNRESET);
+			break;
 		default:
-			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate [%s] into winsock error", strerror(errno));
+			g_warning(G_GNUC_PRETTY_FUNCTION ": Need to translate %d [%s] into winsock error",
+				  errno, strerror (errno));
 			break;
 		}
 		
