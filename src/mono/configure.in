@@ -54,7 +54,7 @@ case "$host" in
 		libmono_ldflags="-pthread"
 		AC_DEFINE(NEED_LINK_UNLINK)
 		libdl=
-		libgc_threads=pthreads
+		libgc_threads=no
 		;;
 	*-*-*freebsd*|*-*-*openbsd*)
 		platform_win32=no
