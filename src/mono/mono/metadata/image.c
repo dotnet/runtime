@@ -349,10 +349,11 @@ load_metadata (MonoImage *image, MonoCLIImageInfo *iinfo)
 }
 
 static void
-load_class_names (MonoImage *image) {
+load_class_names (MonoImage *image)
+{
 	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEDEF];
 	guint32 cols [MONO_TYPEDEF_SIZE];
-	const char* name;
+	const char *name;
 	const char *nspace;
 	GHashTable *nspace_table;
 	GHashTable *name_cache = image->name_cache;
@@ -368,9 +369,9 @@ load_class_names (MonoImage *image) {
 		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 		if (!(nspace_table = g_hash_table_lookup (name_cache, nspace))) {
 			nspace_table = g_hash_table_new (g_str_hash, g_str_equal);
-			g_hash_table_insert (name_cache, nspace, nspace_table);
+			g_hash_table_insert (name_cache, (char *) nspace, nspace_table);
 		}
-		g_hash_table_insert (nspace_table, name, GUINT_TO_POINTER (i));
+		g_hash_table_insert (nspace_table, (char *) name, GUINT_TO_POINTER (i));
 	}
 }
 
@@ -565,8 +566,8 @@ mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
 	if (!loaded_images_hash)
 		loaded_images_hash = g_hash_table_new (g_str_hash, g_str_equal);
 	g_hash_table_insert (loaded_images_hash, image->name, image);
-	g_hash_table_insert (loaded_images_hash, image->assembly_name, image);
-
+	g_hash_table_insert (loaded_images_hash, (char *) image->assembly_name, image);
+	
 	return image;
 }
 
