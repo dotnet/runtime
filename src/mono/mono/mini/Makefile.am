@@ -199,7 +199,7 @@ documents=mini-doc.txt mini-porting.txt
 BUILT_SOURCES= inssel.c inssel.h cpu-pentium.h cpu-g4.h cpu-sparc.h
 CLEANFILES= $(BUILT_SOURCES)
 EXTRA_DIST = $(common_BURGSRC) $(documents) inssel-x86.brg inssel-ppc.brg \
-	jit-icalls.c cprop.c \
+	jit-icalls.c cprop.c inssel-sparc.brg \
 	cpu-pentium.md cpu-g4.md ldscript cpu-sparc.md
 
 
