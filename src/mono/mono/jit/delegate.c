@@ -166,16 +166,16 @@ arch_end_invoke (MonoMethod *method, gpointer first_arg, ...)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoAsyncResult *ares;
+	MonoMethodSignature *sig = method->signature;
 	MonoMethodMessage *msg;
 	ASyncCall *ac;
 	GList *l;
-	int i;
 
 	g_assert (method);
 
 	msg = arch_method_call_message_new (method, &first_arg, NULL, NULL, NULL);
 
-	ares = mono_array_get (msg->args, gpointer, method->signature->param_count - 1);
+	ares = mono_array_get (msg->args, gpointer, sig->param_count - 1);
 	g_assert (ares);
 
 	ac = (ASyncCall *)ares->data;
@@ -210,11 +210,9 @@ arch_end_invoke (MonoMethod *method, gpointer first_arg, ...)
 		mono_raise_exception ((MonoException*)ac->msg->exc);
 	}
 
-	/* fixme: we also need to restore out args */
-
 	/* restore return value */
 	g_assert (ac->res);
-	arch_return_value (method->signature->ret, ac->res, NULL);
+	arch_method_return_message_restore (method, &first_arg, ac->res, ac->out_args);
 }
 
 gpointer
