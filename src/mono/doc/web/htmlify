@@ -15,6 +15,11 @@ while (<>){
 		print "<p>\n";
 	} elsif (/^\t\t\* (.*)$/) {
 		print "<li>$1\n";
+	} elsif (/^\@item (.*)$/){
+	        $name = $link = $1;
+		$link =~ s/ //g;
+	        print "<a name=\"$link\">\n";
+	        print "<h2>$name</h2>\n";
 	} elsif (/^Q: (.*)$/){
 		print "<p><a name=\"q$q\"></a><b>Question $q:</b> $1\n";
 		$q++;
