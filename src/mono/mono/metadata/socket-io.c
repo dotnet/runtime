@@ -1160,7 +1160,15 @@ gint32 ves_icall_System_Net_Sockets_Socket_RecvFrom_internal(SOCKET sock, MonoAr
 		return(0);
 	}
 
-	*sockaddr=create_object_from_sockaddr(sa, sa_size, error);
+	/* If we didn't get a socket size, then we're probably a
+	 * connected connection-oriented socket and the stack hasn't
+	 * returned the remote address. All we can do is return null.
+	 */
+	if ( sa_size != 0 )
+		*sockaddr=create_object_from_sockaddr(sa, sa_size, error);
+	else
+		*sockaddr=NULL;
+
 	g_free(sa);
 	
 	return(ret);
