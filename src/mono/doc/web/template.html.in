@@ -9,17 +9,22 @@
    body, td, table { font-family: "trebuchet ms", lucida, verdana, helvetica; 
                      font-size: 14px; }
 
-	.navi { font-size: 14px; background: #444444; }
-	.subnavi { font-size: 14px; }
-        .footnote { font-size: 12px; color: #aaaaaa; }
+	.navi0 { font-size: 14px; font-weight: bold; background: #444444; }
+	.navi1 { font-size: 14px; font-weight: bold; left-margin: 10pt}
+	.navi2 { font-size: 10px; font-weight: bold; left-margin: 20pt}
+	.footnote { font-size: 12px; color: #aaaaaa; }
 
-	a.navi { color: #ffffff; text-decoration: none; font-weight: bold; }
-	a.navi:visited { color: #cccccc; }
-	a.navi:hover { color: #ee9900; text-decoration: underline; }
+	a.navi0 { color: #ffffff; text-decoration: none}
+	a.navi0:visited { color: #cccccc; }
+	a.navi0:hover { color: #ee9900; text-decoration: underline; }
 
-	a.subnavi { color: #ffffff; text-decoration: none; font-weight: bold; }
-	a.subnavi:visited { color: #cccccc; }
-	a.subnavi:hover { color: #ee9900; text-decoration: underline; }
+	a.navi1 { color: #ffffff; text-decoration: none; margin-left: 7px;}
+	a.navi1:visited { color: #cccccc; }
+	a.navi1:hover { color: #ee9900; text-decoration: underline; }
+
+	a.navi2 { color: #ffffff; text-decoration: none; margin-left: 20px;}
+	a.navi2:visited { color: #cccccc; }
+	a.navi2:hover { color: #ee9900; text-decoration: underline; }
 
 // -->
 </style>

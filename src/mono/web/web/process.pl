@@ -23,12 +23,10 @@ while (<COMMANDS>) {
   my @command = split /,/;
   if ($command[0] != -1) {
       $menu .= "\t\t";
-      if ($command[0] == 0){
-	  $menu .= "<tr><td valign=\"top\" class=\"navi\"><a class=\"navi\"";
-      } else {
-	  $menu .= "<tr><td valign=\"top\" class=\"subnavi\">&nbsp;&nbsp;&nbsp<a class=\"subnavi\"";
-      }
-      $menu .= "HREF=\"$command[2]\">$command[1]</A></td></tr>\n\n";
+	  $menu .= "<tr><td valign=\"top\" class=\"navi" . $command[0];
+	  $menu .= "\"><a class=\"navi" . $command[0];
+	  $menu .= "\"";
+	  $menu .= "HREF=\"$command[2]\">$command[1]</A></td></tr>\n\n";
   } 
 }
 close COMMANDS;
