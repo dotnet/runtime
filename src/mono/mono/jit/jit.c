@@ -340,7 +340,6 @@ ctree_create_load (MonoFlowGraph *cfg, MonoType *type, MBTree *addr, MonoValueTy
 /**
  * ctree_create_store:
  * @mp: pointer to a memory pool
- * @addr_type: address type (MB_TERM_ADDR_L or MB_TERM_ADDR_G)
  * @s: the value (tree) to store
  * @type: the type of the value
  * @addr: the address of the value
@@ -840,7 +839,7 @@ ves_array_element_address (MonoArray *this, ...)
 
 	esize = mono_array_element_size (class);
 	ea = (gpointer*)((char*)this->vector + (ind * esize));
-	//printf ("AADDRESS %p %p %d\n", this, ea, ind);
+	//printf ("AADDRESS %p %p %d %d %08X\n", this, ea, ind, esize, *(gpointer *)ea);
 
 	va_end(ap);
 
@@ -2207,8 +2206,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			}
 
 			if (array_get) {
-				int vnum, size, align;
-				
+
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 				t2->data.p = ves_array_element_address;
 
@@ -2216,21 +2214,16 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1->data.call_info.vtype_num = vtype_num;
 				t1->data.call_info.frame_size = frame_size;
 				t1->data.call_info.pad = arg_info [0].pad;
+				t1->svt = VAL_POINTER;
 
-				t1 = mono_ctree_new (mp, mono_map_ldind_type (csig->ret, &svt), t1, NULL);
-				t1->svt = svt;		
-
-				mono_get_val_sizes (t1->svt, &size, &align);
-				vnum = arch_allocate_var (cfg, size, align, MONO_TEMPVAR, svt);
-
-				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
-				t2->data.i = vnum;
-				t1 = mono_ctree_new (mp, mono_map_store_svt_type (svt), t2, t1);
-				t1->svt = svt;
-
+				t1 = mono_store_tree (cfg, -1, t1, &t2);
+				g_assert (t1);
 				ADD_TREE (t1, cli_addr);
-				t1 = ctree_create_dup (mp, t1);
+
+				t1 = mono_ctree_new (mp, mono_map_ldind_type (csig->ret, &svt), t2, NULL);
+				t1->svt = svt;		
 				PUSH_TREE (t1, t1->svt);
+
 			} else if (array_set) {
 
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
@@ -2240,9 +2233,15 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1->data.call_info.vtype_num = vtype_num;
 				t1->data.call_info.frame_size = frame_size;
 				t1->data.call_info.pad = arg_info [0].pad;
+				t1->svt = VAL_POINTER;
 
-				t1 = ctree_create_store (cfg, csig->params [nargs], t1, arg_sp [nargs], FALSE);
+				t1 = mono_store_tree (cfg, -1, t1, &t2);
+				g_assert (t1);
+				ADD_TREE (t1, cli_addr);
+
+				t1 = ctree_create_store (cfg, csig->params [nargs], t2, arg_sp [nargs], FALSE);
 				ADD_TREE (t1, cli_addr);			
+
 			} else {
 
 				if (calli) {
