@@ -903,7 +903,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 }
 
 static void
-add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, MonoInst *arg, ArgStorage storage, int reg)
+add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, MonoInst *arg, ArgStorage storage, int reg, MonoInst *tree)
 {
 	switch (storage) {
 	case ArgInIReg:
@@ -916,6 +916,7 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, MonoInst *arg, ArgStorage 
 		 */
 		arg->opcode = OP_OUTARG_REG;
 		arg->inst_left = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		arg->inst_right = tree;
 		//arg->ssa_op = MONO_SSA_STORE;
 		arg->unused = reg;
 		call->used_iregs |= 1 << reg;
@@ -924,10 +925,12 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, MonoInst *arg, ArgStorage 
 	case ArgInFloatSSEReg:
 		/* FIXME: These are volatile as well */
 		arg->opcode = OP_AMD64_OUTARG_XMMREG_R4;
+		arg->inst_left = tree;
 		arg->unused = reg;
 		break;
 	case ArgInDoubleSSEReg:
 		arg->opcode = OP_AMD64_OUTARG_XMMREG_R8;
+		arg->inst_left = tree;
 		arg->unused = reg;
 		break;
 	default:
@@ -1049,11 +1052,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						MONO_INST_NEW (cfg, load, arg_storage_to_ldind (ainfo->pair_storage [0]));
 						load->inst_left = in;
 
-						add_outarg_reg (cfg, call, arg, ainfo->pair_storage [0], ainfo->pair_regs [0]);
-						if (arg->opcode == OP_OUTARG_REG)
-							arg->inst_right = load;
-						else
-							arg->inst_left = load;
+						add_outarg_reg (cfg, call, arg, ainfo->pair_storage [0], ainfo->pair_regs [0], load);
 					}
 					else {
 						/* Trees can't be shared so make a copy */
@@ -1073,11 +1072,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						MONO_INST_NEW (cfg, load, arg_storage_to_ldind (ainfo->pair_storage [0]));
 						load->inst_left = load2;
 
-						add_outarg_reg (cfg, call, arg, ainfo->pair_storage [0], ainfo->pair_regs [0]);
-						if (arg->opcode == OP_OUTARG_REG)
-							arg->inst_right = load;
-						else
-							arg->inst_left = load;
+						add_outarg_reg (cfg, call, arg, ainfo->pair_storage [0], ainfo->pair_regs [0], load);
 
 						/* Reg2 */
 						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
@@ -1099,11 +1094,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						arg->next = call->out_args;
 						call->out_args = arg;
 
-						add_outarg_reg (cfg, call, arg, ainfo->pair_storage [1], ainfo->pair_regs [1]);
-						if (arg->opcode == OP_OUTARG_REG)
-							arg->inst_right = load;
-						else
-							arg->inst_left = load;
+						add_outarg_reg (cfg, call, arg, ainfo->pair_storage [1], ainfo->pair_regs [1], load);
 
 						/* Prepend a copy inst */
 						MONO_INST_NEW (cfg, arg, CEE_STIND_I);
@@ -1127,12 +1118,11 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			else {
 				switch (ainfo->storage) {
 				case ArgInIReg:
-					arg->inst_right = in;
-					add_outarg_reg (cfg, call, arg, ainfo->storage, ainfo->reg);
+					add_outarg_reg (cfg, call, arg, ainfo->storage, ainfo->reg, in);
 					break;
 				case ArgInFloatSSEReg:
 				case ArgInDoubleSSEReg:
-					add_outarg_reg (cfg, call, arg, ainfo->storage, ainfo->reg);
+					add_outarg_reg (cfg, call, arg, ainfo->storage, ainfo->reg, in);
 					break;
 				case ArgOnStack:
 					arg->opcode = OP_OUTARG;
