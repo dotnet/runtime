@@ -123,6 +123,7 @@ guint32     mono_metadata_methods_from_event      (MonoImage *meta, guint32 tabl
 guint32     mono_metadata_properties_from_typedef (MonoImage *meta, guint32 table_index, guint *end);
 guint32     mono_metadata_methods_from_property   (MonoImage *meta, guint32 table_index, guint *end);
 guint32     mono_metadata_packing_from_typedef    (MonoImage *meta, guint32 table_index, guint32 *packing, guint32 *size);
+const char* mono_metadata_get_marshal_info        (MonoImage *meta, guint32 idx, gboolean is_field);
 
 guint32     mono_metadata_implmap_from_method     (MonoImage *meta, guint32 method_idx);
 

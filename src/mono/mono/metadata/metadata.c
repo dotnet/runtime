@@ -1,10 +1,11 @@
 /*
  * metadata.c: Routines for accessing the metadata
  *
- * Author:
+ * Authors:
  *   Miguel de Icaza (miguel@ximian.com)
+ *   Paolo Molaro (lupus@ximian.com)
  *
- * (C) 2001 Ximian, Inc.
+ * (C) 2001-2002 Ximian, Inc.
  */
 
 #include <config.h>
@@ -2632,5 +2633,24 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 	type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
 
 	return type;
+}
+
+const char*
+mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
+{
+	locator_t loc;
+	MonoTableInfo *tdef  = &meta->tables [MONO_TABLE_FIELDMARSHAL];
+
+	if (!tdef->base)
+		return NULL;
+
+	loc.t = tdef;
+	loc.col_idx = MONO_FIELD_MARSHAL_PARENT;
+	loc.idx = ((idx + 1) << HAS_FIELD_MARSHAL_BITS) | (is_field? HAS_FIELD_MARSHAL_FIELDSREF: HAS_FIELD_MARSHAL_PARAMDEF);
+
+	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
+		return NULL;
+
+	return mono_metadata_blob_heap (meta, mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_MARSHAL_NATIVE_TYPE));
 }
 
