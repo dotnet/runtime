@@ -176,6 +176,9 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
+/* Pointer field name in 'union sigval' */
+#undef SIGVAL_PTR
+
 /* The size of a `void *', as computed by sizeof. */
 #undef SIZEOF_VOID_P
 

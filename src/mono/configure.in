@@ -854,6 +854,19 @@ if test x$platform_win32 = xno; then
 	dnl *********************
 	AC_CHECK_HEADERS(aio.h sys/aio.h)
 	AC_CHECK_LIB(rt, aio_read, [ LIBS="$LIBS -lrt" ],)
+	SIGVAL_PTR="undefined"
+	if test "$ac_cv_header_aio_h" = "yes" -o "$ac_cv_header_sys_aio_h" = "yes" ; then
+		AC_CHECK_MEMBER(union sigval.sigval_ptr,SIGVAL_PTR="sigval_ptr",, [
+				#include <sys/signal.h>
+				])
+		AC_CHECK_MEMBER(union sigval.sival_ptr,SIGVAL_PTR="sival_ptr",, [
+				#include <sys/signal.h>
+				])
+		if test "$SIGVAL_PTR" = "undefined" ; then
+			AC_MSG_ERROR([Unable to detect field name in 'union sigval'])
+		fi
+	fi
+	AC_DEFINE_UNQUOTED(SIGVAL_PTR,$SIGVAL_PTR,[Pointer field name in 'union sigval'])
 else
 	AC_CHECK_LIB(ws2_32, main, LIBS="$LIBS -lws2_32", AC_ERROR(bad mingw install?))
 	AC_CHECK_LIB(psapi, main, LIBS="$LIBS -lpsapi", AC_ERROR(bad mingw install?))

@@ -1059,10 +1059,12 @@ typedef struct {
 	SocketAsyncCB callback;
 } notifier_data_t;
 
+#define SIGPTR(a) a.SIGVAL_PTR
+
 static void
 async_notifier (union sigval sig)
 {
-	notifier_data_t *ndata = sig.sival_ptr;
+	notifier_data_t *ndata = SIGPTR (sig);
 	guint32 error;
 	guint32 numbytes;
 
@@ -1117,7 +1119,7 @@ do_aio_call (gboolean is_read, gpointer handle, gpointer buffer,
 	aio->aio_buf = buffer;
 	aio->aio_sigevent.sigev_notify = SIGEV_THREAD;
 	aio->aio_sigevent.sigev_notify_function = async_notifier;
-	aio->aio_sigevent.sigev_value.sival_ptr = ndata;
+	SIGPTR (aio->aio_sigevent.sigev_value) = ndata;
 
 	if (is_read) {
 		result = aio_read (aio);

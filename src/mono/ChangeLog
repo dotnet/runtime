@@ -1,3 +1,9 @@
+2004-04-28  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* config.h.in:
+	* configure.in: added check for sys/aio.h. Also check the field name
+	in 'union sigval'.
+
 2004-04-28  Jackson Harper  <jackson@ximian.com>
 
 	* scripts/Makefile.am:
@@ -15,8 +21,9 @@
 
 2004-04-22  Urs C Muff <umuff@quark.com>
 
-	move .net assemblies from $prefix/bin/*.exe to $prefix/lib/*.exe on windows/cygwin
-	refactor .nsi to simply maintenance on script/batch generation
+	move .net assemblies from $prefix/bin/*.exe to $prefix/lib/*.exe on
+	windows/cygwin refactor .nsi to simply maintenance on script/batch
+	generation
 	* runtime/Makefile.am
 	* script/Makefile.am
 	* monowiz.win32.nsi
