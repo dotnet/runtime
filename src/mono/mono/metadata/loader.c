@@ -606,7 +606,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	guint32 scope_token;
 	const char *import = NULL;
 	const char *scope = NULL;
-	const char *orig_scope;
+	char *orig_scope;
 	char *new_scope;
 	char *full_name;
 	GModule *gmodule;
@@ -632,9 +632,15 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 
 	new_scope = g_strdup (orig_scope);
 	
+	/*
+	 * FIXME
+	 * This makes mono_dllmap_lookup search in the config file for "xxx" instead of "xxx.dll",
+	 * thus it doesn't find anything 
+	 * 
 	if (strstr (new_scope, ".dll") == (new_scope + strlen (new_scope) - 4)) {
 		new_scope [strlen (new_scope) - 4] = '\0';
 	}
+	*/
 
 	mono_dllmap_lookup (new_scope, import, &scope, &import);
 
@@ -652,6 +658,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		if (!(gmodule=g_module_open (scope, G_MODULE_BIND_LAZY))) {
 			if (exc_class) {
 				*exc_class = "DllNotFoundException";
+				/* FIXME: who frees orig_scope? */
 				*exc_arg = orig_scope;
 			}
 			g_free (error);
@@ -661,8 +668,10 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		}
 		g_free (error);
 	}
+
 	g_free (full_name);
 	g_free (new_scope);
+	g_free (orig_scope);
 
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_NO_MANGLE) {
 		g_module_symbol (gmodule, import, &method->addr); 
