@@ -263,97 +263,6 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	return(handle);
 }
 
-static gpointer
-AttachThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 stacksize G_GNUC_UNUSED,
-		      WapiThreadStart start, gpointer param, guint32 create,
-		      guint32 *tid)
-{
-	struct _WapiHandle_thread *thread_handle;
-	struct _WapiHandlePrivate_thread *thread_private_handle;
-	gpointer handle;
-	gboolean ok;
-	int ret;
-
-	mono_once(&thread_hash_once, thread_hash_init);
-	mono_once (&thread_ops_once, thread_ops_init);
-
-	if(start==NULL) {
-		return(NULL);
-	}
-
-	handle=_wapi_handle_new (WAPI_HANDLE_THREAD);
-	if(handle==_WAPI_HANDLE_INVALID) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error creating thread handle");
-		return(NULL);
-	}
-
-	_wapi_handle_lock_handle (handle);
-
-	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
-				(gpointer *)&thread_handle,
-				(gpointer *)&thread_private_handle);
-	if(ok==FALSE) {
-		g_warning (G_GNUC_PRETTY_FUNCTION
-			   ": error looking up thread handle %p", handle);
-		_wapi_handle_unlock_handle (handle);
-		return(NULL);
-	}
-
-	/* Hold a reference while the thread is active, because we use
-	 * the handle to store thread exit information
-	 */
-	_wapi_handle_ref (handle);
-
-	thread_handle->state=THREAD_STATE_START;
-
-	/* Lock around the thread create, so that the new thread cant
-	 * race us to look up the thread handle in GetCurrentThread()
-	 */
-	mono_mutex_lock(&thread_hash_mutex);
-
-	ret=_wapi_timed_thread_attach(&thread_private_handle->thread,
-				      create, start, thread_exit, param,
-				      handle);
-	if(ret!=0) {
-#ifdef DEBUG
-		g_message(G_GNUC_PRETTY_FUNCTION ": Thread attach error: %s",
-			  strerror(ret));
-#endif
-		mono_mutex_unlock(&thread_hash_mutex);
-		_wapi_handle_unlock_handle (handle);
-		_wapi_handle_unref (handle);
-
-		/* And again, because of the reference we took above */
-		_wapi_handle_unref (handle);
-		return(NULL);
-	}
-
-	g_hash_table_insert(thread_hash, &thread_private_handle->thread->id,
-			    handle);
-	mono_mutex_unlock(&thread_hash_mutex);
-
-#ifdef DEBUG
-	g_message(G_GNUC_PRETTY_FUNCTION
-		  ": Started thread handle %p thread %p ID %ld", handle,
-		  thread_private_handle->thread,
-		  thread_private_handle->thread->id);
-#endif
-
-	if(tid!=NULL) {
-#ifdef PTHREAD_POINTER_ID
-		*tid=GPOINTER_TO_UINT(thread_private_handle->thread->id);
-#else
-		*tid=thread_private_handle->thread->id;
-#endif
-	}
-
-	_wapi_handle_unlock_handle (handle);
-
-	return(handle);
-}
-
-
 gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, guint32 tid)
 {
 	gpointer ret=NULL;
@@ -469,6 +378,88 @@ guint32 GetCurrentThreadId(void)
 #endif
 }
 
+static gpointer thread_attach(guint32 *tid)
+{
+	struct _WapiHandle_thread *thread_handle;
+	struct _WapiHandlePrivate_thread *thread_private_handle;
+	gpointer handle;
+	gboolean ok;
+	int ret;
+
+	mono_once(&thread_hash_once, thread_hash_init);
+	mono_once (&thread_ops_once, thread_ops_init);
+
+	handle=_wapi_handle_new (WAPI_HANDLE_THREAD);
+	if(handle==_WAPI_HANDLE_INVALID) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error creating thread handle");
+		return(NULL);
+	}
+
+	_wapi_handle_lock_handle (handle);
+
+	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
+				(gpointer *)&thread_handle,
+				(gpointer *)&thread_private_handle);
+	if(ok==FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up thread handle %p", handle);
+		_wapi_handle_unlock_handle (handle);
+		return(NULL);
+	}
+
+	/* Hold a reference while the thread is active, because we use
+	 * the handle to store thread exit information
+	 */
+	_wapi_handle_ref (handle);
+
+	thread_handle->state=THREAD_STATE_START;
+
+	/* Lock around the thread create, so that the new thread cant
+	 * race us to look up the thread handle in GetCurrentThread()
+	 */
+	mono_mutex_lock(&thread_hash_mutex);
+
+	ret=_wapi_timed_thread_attach(&thread_private_handle->thread,
+				      thread_exit, handle);
+	if(ret!=0) {
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": Thread attach error: %s",
+			  strerror(ret));
+#endif
+		mono_mutex_unlock(&thread_hash_mutex);
+		_wapi_handle_unlock_handle (handle);
+		_wapi_handle_unref (handle);
+
+		/* And again, because of the reference we took above */
+		_wapi_handle_unref (handle);
+		return(NULL);
+	}
+
+	g_hash_table_insert(thread_hash, &thread_private_handle->thread->id,
+			    handle);
+	mono_mutex_unlock(&thread_hash_mutex);
+
+#ifdef DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION
+		  ": Attached thread handle %p thread %p ID %ld", handle,
+		  thread_private_handle->thread,
+		  thread_private_handle->thread->id);
+#endif
+
+	if(tid!=NULL) {
+#ifdef PTHREAD_POINTER_ID
+		*tid=GPOINTER_TO_UINT(thread_private_handle->thread->id);
+#else
+		*tid=thread_private_handle->thread->id;
+#endif
+	}
+
+	_wapi_handle_unlock_handle (handle);
+
+	return(handle);
+}
+
 /**
  * GetCurrentThread:
  *
@@ -492,8 +483,9 @@ gpointer GetCurrentThread(void)
 	ret=g_hash_table_lookup(thread_hash, &tid);
 	mono_mutex_unlock(&thread_hash_mutex);
 	
-	if (!ret)
-	  ret = AttachThread (NULL, 0, NULL, NULL, 0, NULL);
+	if (!ret) {
+		ret = thread_attach (NULL);
+	}
 
 	return(ret);
 }

@@ -42,10 +42,8 @@ extern int _wapi_timed_thread_create(TimedThread **threadp,
 				     void (*exit_routine)(guint32, gpointer),
 				     gpointer arg, gpointer exit_userdata);
 extern int _wapi_timed_thread_attach(TimedThread **threadp,
-			      guint32 create_flags,
-			      guint32 (*start_routine)(gpointer),
-			      void (*exit_routine)(guint32, gpointer),
-			      gpointer arg, gpointer exit_userdata);
+				     void (*exit_routine)(guint32, gpointer),
+				     gpointer exit_userdata);
 extern int _wapi_timed_thread_join(TimedThread *thread,
 				   struct timespec *timeout,
 				   guint32 *exitstatus);

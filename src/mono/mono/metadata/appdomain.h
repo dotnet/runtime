@@ -102,7 +102,8 @@ MonoDomain*
 mono_init                  (const char *filename);
 
 void
-mono_runtime_init          (MonoDomain *domain, MonoThreadStartCB start_cb);
+mono_runtime_init          (MonoDomain *domain, MonoThreadStartCB start_cb,
+			    MonoThreadStartCB attach_cb);
 
 void
 mono_runtime_cleanup       (MonoDomain *domain);

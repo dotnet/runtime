@@ -132,10 +132,8 @@ int _wapi_timed_thread_create(TimedThread **threadp,
 }
 
 int _wapi_timed_thread_attach(TimedThread **threadp,
-			      guint32 create_flags,
-			      guint32 (*start_routine)(gpointer),
 			      void (*exit_routine)(guint32, gpointer),
-			      gpointer arg, gpointer exit_userdata)
+			      gpointer exit_userdata)
 {
 	TimedThread *thread;
 
@@ -143,18 +141,15 @@ int _wapi_timed_thread_attach(TimedThread **threadp,
 
 	mono_mutex_init(&thread->join_mutex, NULL);
 	pthread_cond_init(&thread->exit_cond, NULL);
-	thread->create_flags = create_flags;
 	sem_init (&thread->suspend_sem, 0, 0);
-	thread->start_routine = start_routine;
 	thread->exit_routine = exit_routine;
-	thread->arg = arg;
 	thread->exit_userdata = exit_userdata;
 	thread->exitstatus = 0;
 	thread->exiting = FALSE;
+	thread->id = pthread_self();
 
 	*threadp = thread;
 
-	thread->id = pthread_self();
 	return(0);
 }
 

@@ -4484,7 +4484,7 @@ main (int argc, char *argv [])
 
 	InitializeCriticalSection (&metadata_lock);
 	domain = mono_init (file);
-	mono_runtime_init (domain, NULL);
+	mono_runtime_init (domain, NULL, NULL);
 
 	assembly = mono_domain_assembly_open (domain, file);
 

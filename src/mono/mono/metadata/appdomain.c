@@ -42,7 +42,8 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data);
  *
  */
 void
-mono_runtime_init_with_attach (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadStartCB attach_cb)
+mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
+		   MonoThreadStartCB attach_cb)
 {
 	MonoAppDomainSetup *setup;
 	MonoAppDomain *ad;
@@ -62,18 +63,13 @@ mono_runtime_init_with_attach (MonoDomain *domain, MonoThreadStartCB start_cb, M
 	mono_delegate_semaphore = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 	g_assert (mono_delegate_semaphore != INVALID_HANDLE_VALUE);
 	InitializeCriticalSection (&mono_delegate_section);
+
+	mono_thread_init (domain, start_cb, attach_cb);
 	
-	mono_thread_init_with_attach (domain, start_cb, attach_cb);
 
 	mono_network_init ();
 
 	return;
-}
-
-void
-mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb)
-{
-  mono_runtime_init_with_attach (domain, start_cb, NULL);
 }
 
 void

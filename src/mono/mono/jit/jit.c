@@ -4152,7 +4152,8 @@ mono_jit_init (const char *file) {
 	mono_install_stack_walk (mono_jit_walk_stack);
 
 	domain = mono_init (file);
-	mono_runtime_init_with_attach (domain, mono_thread_start_cb, mono_thread_attach_cb);
+	mono_runtime_init (domain, mono_thread_start_cb,
+			   mono_thread_attach_cb);
 
 	return domain;
 }

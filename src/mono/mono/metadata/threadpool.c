@@ -97,7 +97,8 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	if (workers == 0) {
 		MonoThread *thread;
 		workers++;
-		thread = mono_thread_create (domain, async_invoke_thread);
+		thread = mono_thread_create (domain, async_invoke_thread,
+					     NULL);
 		g_assert (thread != NULL);
 	}
 	LeaveCriticalSection (&mono_delegate_section);
@@ -185,7 +186,7 @@ async_invoke_thread ()
 		mono_domain_set (domain);
 
 		if (new_worker)
-			mono_thread_create (domain, async_invoke_thread);
+			mono_thread_create (domain, async_invoke_thread, NULL);
 
 		mono_async_invoke (ar);
 	}
