@@ -247,6 +247,44 @@ class Tests {
 		}
 		return 0;
 	}
-
+	
+	static uint dum_de_dum = 1;
+	static int test_0_long_arg_opt ()
+	{
+		return Foo (0x1234567887654321, dum_de_dum);
+	}
+	
+	static int Foo (ulong x, ulong y)
+	{
+		if (x != 0x1234567887654321)
+			return 1;
+		
+		if (y != 1)
+			return 2;
+		
+		return 0;
+	}
+	
+	static int test_0_long_ret_opt ()
+	{
+		ulong x = X ();
+		if (x != 0x1234567887654321)
+			return 1;
+		ulong y = Y ();
+		if (y != 1)
+			return 2;
+		
+		return 0;
+	}
+	
+	static ulong X ()
+	{
+		return 0x1234567887654321;
+	}
+	
+	static ulong Y ()
+	{
+		return dum_de_dum;
+	}
 }
 

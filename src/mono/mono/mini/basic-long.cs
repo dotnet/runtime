@@ -748,6 +748,72 @@ class Tests {
 		u --;
 		return (u == 4257145736) ? 0 : 1;
 	}
+	
+	static long x;
+	static int test_0_addsub_mem ()
+	{
+		x = 0;
+		x += 5;
+		
+		if (x != 5)
+			return 1;
+		
+		x -= 10;
+		
+		if (x != -5)
+			return 2;
+		
+		return 0;
+	}
+	
+	static ulong y;
+	static int test_0_sh32_mem ()
+	{
+		y = 0x0102130405060708;
+		y >>= 32;
+		
+		if (y != 0x01021304)
+			return 1;
+		
+		y = 0x0102130405060708;
+		y <<= 32;
+		
+		if (y != 0x0506070800000000)
+			return 2;
+		
+		x = 0x0102130405060708;
+		x <<= 32;
+		
+		if (x != 0x0506070800000000)
+			return 2;
+		
+		return 0;
+	}
+	
+	static int test_0_assemble_long ()
+	{
+		uint a = 5;
+		ulong x = 0x12345678;
+		ulong y = 1;
+		
+		
+		ulong z = ((x - y) << 32) | a;
+		
+		if (z != 0x1234567700000005)
+			return 1;
+		
+		return 0;
+	}
+	
+	static int test_0_hash ()
+	{
+		ulong x = 0x1234567887654321;
+		int h = (int)(x & 0xffffffff) ^ (int)(x >> 32);
+		if (h != unchecked ((int)(0x87654321 ^ 0x12345678)))
+			return h;
+		return 0;
+				
+	}
 
 	static int test_0_shift_regress () {
 		long a = 0; 
