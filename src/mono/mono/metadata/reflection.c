@@ -1945,14 +1945,14 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 					*p++ = values [col];
 					break;
 				case 2:
-					int16val = (guint16*)p;
-					*int16val = GUINT16_TO_LE (values [col]);
-					p += 2;
+					*p++ = values [col] & 0xff;
+					*p++ = (values [col] >> 8) & 0xff;
 					break;
 				case 4:
-					int32val = (guint32*)p;
-					*int32val = GUINT32_TO_LE (values [col]);
-					p += 4;
+					*p++ = values [col] & 0xff;
+					*p++ = (values [col] >> 8) & 0xff;
+					*p++ = (values [col] >> 16) & 0xff;
+					*p++ = (values [col] >> 24) & 0xff;
 					break;
 				default:
 					g_assert_not_reached ();
