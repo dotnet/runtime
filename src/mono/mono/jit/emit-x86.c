@@ -603,29 +603,34 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 		x86_pop_reg (cfg->code, X86_EAX);
 	}
 
-	if (cfg->method->save_lmf) {
-		pos = -sizeof (MonoLMF) - 4;
-	} else
-		pos = -4;
-
+	pos = 0;
+	
+	if (cfg->method->save_lmf)
+		pos = -sizeof (MonoLMF);
+	
 	if (mono_regset_reg_used (cfg->rs, X86_EBX)) {
-		x86_mov_reg_membase (cfg->code, X86_EBX, X86_EBP, pos, 4);
 		pos -= 4;
 	}
 	if (mono_regset_reg_used (cfg->rs, X86_EDI)) {
-		x86_mov_reg_membase (cfg->code, X86_EDI, X86_EBP, pos, 4);
 		pos -= 4;
 	}
 	if (mono_regset_reg_used (cfg->rs, X86_ESI)) {
-		x86_mov_reg_membase (cfg->code, X86_ESI, X86_EBP, pos, 4);
 		pos -= 4;
 	}
 
+	x86_lea_membase (cfg->code, X86_ESP, X86_EBP, pos);
+
+	if (mono_regset_reg_used (cfg->rs, X86_ESI)) {
+		x86_pop_reg (cfg->code, X86_ESI);
+	}
+	if (mono_regset_reg_used (cfg->rs, X86_EDI)) {
+		x86_pop_reg (cfg->code, X86_EDI);
+	}
+	if (mono_regset_reg_used (cfg->rs, X86_EBX)) {
+		x86_pop_reg (cfg->code, X86_EBX);
+	}
+
 	if (cfg->method->save_lmf) {
-		pos = -sizeof (MonoLMF);
-
-		x86_lea_membase (cfg->code, X86_ESP, X86_EBP, pos);
-
 		/* ebx = previous_lmf */
 		x86_pop_reg (cfg->code, X86_EBX);
 		/* edi = lmf */
