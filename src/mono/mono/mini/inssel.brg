@@ -561,7 +561,7 @@ stmt: OP_MEMCPY (reg, reg) {
 	int cur_reg;
 	int cur_offset = 0;
 	/* FIXME: consider alignment for archs that need it. */
-	while (size > 0) {
+	while (size >= 4) {
 		cur_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, cur_reg,
 			state->right->reg1, cur_offset);
@@ -569,7 +569,7 @@ stmt: OP_MEMCPY (reg, reg) {
 		cur_offset += 4;
 		size -= 4;
 	}
-	while (size > 0) {
+	while (size >= 2) {
 		cur_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI2_MEMBASE, cur_reg,
 			state->right->reg1, cur_offset);
