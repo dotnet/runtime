@@ -707,6 +707,13 @@ debug_update_il_offsets (AssemblyDebugInfo *info, MonoDebugMethodInfo *minfo, Mo
 			g_message (G_STRLOC ": %x,%x,%d", lne.address, lne.offset, lne.line);
 		}
 	}
+
+	if (minfo->jit->line_numbers->len) {
+		MonoDebugLineNumberEntry lne = g_array_index (
+			minfo->jit->line_numbers, MonoDebugLineNumberEntry, 0);
+
+		minfo->jit->prologue_end = lne.address;
+	}
 }
 
 static AssemblyDebugInfo *
