@@ -7,7 +7,7 @@ INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
 libmetadata_a_SOURCES = \
 	assembly.c	\
 	metadata.c	\
-	rawbuffer.c	\
+	rawbuffer.c
 
 libmetadataincludedir = $(includedir)/mono/metadata
 

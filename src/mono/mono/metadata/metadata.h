@@ -173,6 +173,20 @@ char          *mono_metadata_locate_token (metadata_t *meta, guint32 token);
 const char    *mono_metadata_string_heap  (metadata_t *meta, guint32 index);
 const char    *mono_metadata_blob_heap    (metadata_t *meta, guint32 index);
 
+typedef enum {
+	MONO_META_EXCEPTION_CLAUSE_NONE,
+	MONO_META_EXCEPTION_CLAUSE_FILTER,
+	MONO_META_EXCEPTION_CLAUSE_FINALLY,
+	MONO_META_EXCEPTION_CLAUSE_FAULT
+} MonoMetaExceptionEnum;
+
+
+typedef struct {
+	MonoMetaExceptionEnum kind;
+	int n_clauses;
+	void **clauses;
+} MonoMetaExceptionHandler;
+
 typedef struct {
 	guint32     code_size;
 	const char *code;
@@ -182,6 +196,7 @@ typedef struct {
 	/* if local_var_sig_tok != 0, then the following apply: */
 	unsigned int init_locals : 1;
 
+	GList      *exception_handler_list;
 } MonoMetaMethodHeader;
 
 MonoMetaMethodHeader *mono_metadata_parse_mh (const char *ptr);

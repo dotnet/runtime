@@ -8,6 +8,7 @@
  */
 
 #include <config.h>
+#include <stdio.h> 
 #include <glib.h>
 #include "metadata.h"
 #include "methodheader.h"
@@ -543,8 +544,8 @@ compute_size (metadata_t *meta, MonoMetaTable *table, int rowcount, guint32 *res
 			n = MAX (n, meta->tables [META_TABLE_ASSEMBLYREF].rows);
 			n = MAX (n, meta->tables [META_TABLE_TYPEREF].rows);
 
-			/* 3 bits used to encode tag */
-			field_size = rtsize (n, 16 - 3);
+			/* 2 bits used to encode tag (ECMA spec claims 3) */
+			field_size = rtsize (n, 16 - 2);
 			break;
 		}
 
@@ -660,7 +661,81 @@ dword_align (const char *ptr)
 {
 	return (const char *) (((guint32) (ptr + 3)) & ~3);
 }
-      
+
+static MonoMetaExceptionHandler *
+parse_exception_handler (const char *ptr, gboolean is_fat)
+{
+	MonoMetaExceptionHandler *eh = g_new0 (MonoMetaExceptionHandler, 1);
+	int size;
+	
+	eh->kind = (MonoMetaExceptionEnum) *ptr;
+	ptr++;
+	if (is_fat)
+		size = (ptr [0] << 16) | (ptr [1] << 8) | ptr [2];
+	else
+		size = (unsigned char) ptr [0];
+
+	/*
+	 * It must be aligned
+	 */
+	ptr += 4;
+	g_assert ((((guint32) ptr) & 3) == 0);
+
+	if (is_fat){
+		printf ("Records: %d (%d)\n", size / 12, size);
+		
+	} else {
+		printf ("Records: %d (%d)\n", size / 12, size);
+	
+	}
+
+	return eh;
+}
+
+static void
+parse_section_data (MonoMetaMethodHeader *mh, const char *ptr)
+{
+#if 0
+	*************
+        adsf
+	asdf
+	asdf
+	sadf
+	asfd
+	sdf
+	adsf
+	asf
+	
+	while ((*ptr) &  METHOD_HEADER_SECTION_MORE_SECTS){
+	/* align on 32-bit boundary */
+	/* FIXME: not 64-bit clean code */
+	ptr = dword_align (ptr); 
+	
+	sect_data_flags = *ptr;
+	ptr++;
+	
+	if (sect_data_flags & METHOD_HEADER_SECTION_MORE_SECTS){
+		g_error ("Can not deal with more sections");
+	}
+	
+	if (sect_data_flags & METHOD_HEADER_SECTION_FAT_FORMAT){
+		sect_data_len = 
+	} else {
+		sect_data_len = ptr [0];
+		ptr++;
+	}
+	
+	if (!(sect_data_flags & METHOD_HEADER_SECTION_EHTABLE))
+		return mh;
+	
+	ptr = dword_align (ptr);
+	
+	/*
+	 * Now ptr points to the EH table header
+	 */
+#endif
+}
+
 MonoMetaMethodHeader *
 mono_metadata_parse_mh (const char *ptr)
 {
@@ -668,8 +743,7 @@ mono_metadata_parse_mh (const char *ptr)
 	unsigned char flags = *(unsigned char *) ptr;
 	unsigned char format = flags & METHOD_HEADER_FORMAT_MASK;
 	guint16 fat_flags;
-	unsigned char sect_data_flags;
-	int hsize, sect_data_len;
+	int hsize;
 	
 	g_return_val_if_fail (ptr != NULL, NULL);
 	g_return_val_if_fail (mh != NULL, NULL);
@@ -717,31 +791,8 @@ mono_metadata_parse_mh (const char *ptr)
 		 * There are more sections
 		 */
 		ptr = mh->code + mh->code_size;
-
-		/* align on 32-bit boundary */
-		/* FIXME: not 64-bit clean code */
-		ptr = dword_align (ptr); 
 		
-		sect_data_flags = *ptr;
-		ptr++;
-		
-		if (sect_data_flags & METHOD_HEADER_SECTION_MORE_SECTS){
-			g_error ("Can not deal with more sections");
-		}
-		
-		if (sect_data_flags & METHOD_HEADER_SECTION_FAT_FORMAT){
-			sect_data_len = (ptr [0] << 16) | (ptr [1] << 8) | ptr [2];
-			ptr += 3;
-		} else {
-			sect_data_len = ptr [0];
-			ptr++;
-		}
-		
-		if (!(sect_data_flags & METHOD_HEADER_SECTION_EHTABLE))
-			return mh;
-
-		ptr = dword_align (ptr);
-		
+		parse_section_data (mh, ptr);
 		break;
 		
 	default:
