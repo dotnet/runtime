@@ -2255,6 +2255,9 @@ mono_type_stack_size (MonoType *t, gint *align)
 			*align = *align + __alignof__(gpointer) - 1;
 			*align &= ~(__alignof__(gpointer) - 1);
 
+			size += sizeof (gpointer) - 1;
+			size &= ~(sizeof (gpointer) - 1);
+
 			return size;
 		}
 	}
@@ -2325,6 +2328,9 @@ mono_type_native_stack_size (MonoType *t, gint *align)
 			*align = *align + 3;
 			*align &= ~3;
 			
+			size +=  3;
+			size &= ~3;
+
 			return size;
 		}
 	}

@@ -589,9 +589,8 @@ mono_arch_allocate_vars (MonoCompile *m)
 		inst->inst_offset = -offset;
 		//g_print ("allocating local %d to %d\n", i, -offset);
 	}
-	offset += 3;
-	offset &= ~3;
-
+	offset += (MONO_ARCH_FRAME_ALIGNMENT - 1);
+	offset &= ~(MONO_ARCH_FRAME_ALIGNMENT - 1);
 
 	/* change sign? */
 	m->stack_offset = -offset;
@@ -686,6 +685,7 @@ handle_enum:
 							size = mono_type_native_stack_size (&in->klass->byval_arg, NULL);
 						else 
 							size = mono_type_stack_size (&in->klass->byval_arg, NULL);
+
 						stack_size += size;
 						arg->opcode = OP_OUTARG_VT;
 						arg->klass = in->klass;
