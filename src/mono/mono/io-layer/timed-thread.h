@@ -5,10 +5,12 @@
 #include <glib.h>
 #include <pthread.h>
 
+#include "mono-mutex.h"
+
 typedef struct
 {
 	pthread_t id;
-	pthread_mutex_t join_mutex;
+	mono_mutex_t join_mutex;
 	pthread_cond_t exit_cond;
 	guint32 (*start_routine)(gpointer arg);
 	void (*exit_routine)(guint32 exitstatus, gpointer userdata);

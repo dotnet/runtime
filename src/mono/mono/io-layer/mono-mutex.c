@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 
 #include "mono-mutex.h"
 
@@ -269,7 +270,7 @@ mono_mutex_unlock (mono_mutex_t *mutex)
 		if (pthread_mutex_lock (&mutex->mutex) != 0)
 			return EINVAL;
 		
-		g_assert (mutex->owner == pthread_self ());
+		assert (mutex->owner == pthread_self ());
 		
 		mutex->depth--;
 		if (mutex->depth == 0) {
@@ -312,7 +313,7 @@ mono_cond_wait (pthread_cond_t *cond, mono_mutex_t *mutex)
 int
 mono_cond_timedwait (pthread_cond_t *cond, mono_mutex_t *mutex, const struct timespec *timeout)
 {
-	return pthread_cond_wait (cond, &mutex->mutex, timeout);
+	return pthread_cond_timedwait (cond, &mutex->mutex, timeout);
 }
 
 #endif /* USE_MONO_MUTEX */

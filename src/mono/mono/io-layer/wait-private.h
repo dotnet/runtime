@@ -3,12 +3,16 @@
 
 /* This is an internal, private header file */
 
+#include <config.h>
+
 #include <glib.h>
 #include <pthread.h>
 #include <semaphore.h>
 
 #include "wapi-private.h"
 #include "timed-thread.h"
+
+#include "mono-mutex.h"
 
 typedef enum {
 	WQ_NEW,
@@ -18,7 +22,7 @@ typedef enum {
 
 typedef struct _WaitQueueItem 
 {
-	pthread_mutex_t mutex;
+	mono_mutex_t mutex;
 	sem_t wait_sem;
 	WaitQueueState state;
 	guint32 update, ack;

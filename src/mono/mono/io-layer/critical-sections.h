@@ -1,15 +1,19 @@
 #ifndef _WAPI_CRITICAL_SECTIONS_H_
 #define _WAPI_CRITICAL_SECTIONS_H_
 
+#include <config.h>
+
 #include <glib.h>
 #include <pthread.h>
+
+#include "mono-mutex.h"
 
 typedef struct _WapiCriticalSection WapiCriticalSection;
 
 struct _WapiCriticalSection
 {
 	guint32 depth;
-	pthread_mutex_t mutex;
+	mono_mutex_t mutex;
 };
 
 extern void InitializeCriticalSection(WapiCriticalSection *section);
