@@ -858,7 +858,6 @@ process_process_kill (GIOChannel *channel,
 
 	resp.type = WapiHandleResponseType_ProcessKill;
 
-#define DEBUG
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": kill (%d, %d)",
 		   process_kill.pid, process_kill.signo);
@@ -869,7 +868,6 @@ process_process_kill (GIOChannel *channel,
 	g_message (G_GNUC_PRETTY_FUNCTION ": kill (%d, %d) failed: %d",
 		   process_kill.pid, process_kill.signo, resp.u.process_kill.err);
 #endif
-#undef DEBUG
 	}
 
 	send_reply (channel, &resp);
