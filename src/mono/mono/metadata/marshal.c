@@ -3478,14 +3478,25 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
-				mono_mb_emit_byte (mb, CEE_STLOC_3);
+			case MONO_TYPE_VALUETYPE:
+				if (type == MONO_TYPE_VALUETYPE) {
+					/* load pointer to returned value type */
+					mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+					mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
+					mono_mb_emit_byte (mb, CEE_STLOC_0);
+				}
+				else
+					mono_mb_emit_byte (mb, CEE_STLOC_3);
 
 				mono_mb_emit_ldstr (mb, spec->data.custom_data.cookie);
 
 				mono_mb_emit_byte (mb, CEE_CALL);
 				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, get_instance));
-				
-				mono_mb_emit_byte (mb, CEE_LDLOC_3);
+
+				if (type == MONO_TYPE_VALUETYPE)
+					mono_mb_emit_byte (mb, CEE_LDLOC_0);
+				else
+					mono_mb_emit_byte (mb, CEE_LDLOC_3);
 				
 				mono_mb_emit_byte (mb, CEE_CALLVIRT);
 				mono_mb_emit_i4 (mb, mono_mb_add_data (mb, marshal_native_to_managed));
