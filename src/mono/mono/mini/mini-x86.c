@@ -3482,6 +3482,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			case MONO_PATCH_INFO_LABEL:
 			case MONO_PATCH_INFO_GOT_OFFSET:
 				break;
+			case MONO_PATCH_INFO_METHOD_REL:
 			case MONO_PATCH_INFO_SWITCH:
 			case MONO_PATCH_INFO_IID:
 			case MONO_PATCH_INFO_METHODCONST:
