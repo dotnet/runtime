@@ -11,6 +11,24 @@
 #include <mono/metadata/metadata.h>
 #include <mono/os/util.h>
 
+#ifdef UNDER_CE
+#undef GetModuleFileName
+#define GetModuleFileName ceGetModuleFileNameA
+
+DWORD ceGetModuleFileNameA(HMODULE hModule, char* lpFilename, DWORD nSize)
+{
+	DWORD res = 0;
+	wchar_t* wbuff = (wchar_t*)LocalAlloc(LPTR, nSize*2);
+	res = GetModuleFileNameW(hModule, wbuff, nSize);
+	if (res) {
+		int len = wcslen(wbuff);
+		WideCharToMultiByte(CP_ACP, 0, wbuff, len, lpFilename, len, NULL, NULL);
+	}
+	LocalFree(wbuff);
+	return res;
+}
+#endif
+
 /*
  * mono_set_rootdir:
  *
