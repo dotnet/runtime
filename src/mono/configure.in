@@ -4,6 +4,20 @@ AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(mono,0.25)
 AM_MAINTAINER_MODE
 
+dnl
+dnl libgc checks
+dnl
+
+gc_headers=no
+gc=included
+use_included_gc=no
+
+if test -d $srcdir/libgc ; then
+  gc_default=included
+else
+  gc_default=boehm
+fi
+
 #
 # These are the flags that need to be stored in the mono.pc file for 
 # compiling code that will embed Mono
@@ -25,6 +39,7 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -DGC_WIN32_THREADS -DWIN32_THREADS"
 		libdl=
 		libgc_threads=win32
+		gc_default=boehm 
 		;;
 	*-*-*netbsd*)
 		platform_win32=no
@@ -72,6 +87,7 @@ case "$host" in
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		libdl=
 		libgc_threads=no
+		gc_default=none 
 		;;
 	*)
 		AC_MSG_WARN([*** Please add $host to configure.in checks!])
@@ -164,22 +180,6 @@ AC_SUBST(GLIB_LIBS)
 AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 
-dnl
-dnl libgc checks
-dnl
-
-AC_CONFIG_SUBDIRS(libgc)
-
-gc_headers=no
-gc=included
-use_included_gc=no
-
-if test -d $srcdir/libgc ; then
-  gc_default=included
-else
-  gc_default=boehm
-fi
-
 AC_ARG_WITH(gc, [  --with-gc=boehm,included,none],[gc=$with_gc],[gc=$gc_default])
 
 LIBGC_CFLAGS=
@@ -191,7 +191,7 @@ case "x$gc" in
 		AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes",,$libdl)
 
 		if test "x$found_boehm" != "xyes"; then
-			AC_MSG_ERROR("GC requested but libgc not found!")
+			AC_MSG_ERROR("GC requested but libgc not found! Install libgc or run configure with --with-gc=none.")
 		fi
 		if test "x$gc_headers" != "xyes"; then
 			AC_MSG_ERROR("GC requested but header files not found! You may need to install them by hand.")
@@ -205,6 +205,8 @@ case "x$gc" in
 		;;
 
 	xincluded)
+		AC_CONFIG_SUBDIRS(libgc)
+
 		found_boehm=yes
 		gc_headers=yes
 		use_included_gc=yes
