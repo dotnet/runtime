@@ -983,7 +983,7 @@ static MonoObject *
 ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
 {
 	MonoDomain *domain = mono_domain_get (); 
-	MonoClass *enumc;
+	MonoClass *enumc, *objc;
 	gint32 s1, s2;
 	MonoObject *res;
 	
@@ -991,14 +991,14 @@ ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
 	MONO_CHECK_ARG_NULL (obj);
 
 	enumc = mono_class_from_mono_type (type->type);
+	objc = obj->vtable->klass;
 
 	MONO_CHECK_ARG (obj, enumc->enumtype == TRUE);
-	MONO_CHECK_ARG (obj, obj->vtable->klass->byval_arg.type >= MONO_TYPE_I1 &&  
-			obj->vtable->klass->byval_arg.type <= MONO_TYPE_U8);
-
+	MONO_CHECK_ARG (obj, (objc->enumtype) || (objc->byval_arg.type >= MONO_TYPE_I1 &&
+						  objc->byval_arg.type <= MONO_TYPE_U8));
 	
 	s1 = mono_class_value_size (enumc, NULL);
-	s2 = mono_class_value_size (obj->vtable->klass, NULL);
+	s2 = mono_class_value_size (objc, NULL);
 
 	res = mono_object_new (domain, enumc);
 
