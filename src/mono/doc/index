@@ -91,6 +91,21 @@
   </tr>
 </table>
 
+@item Dec 9th, 2002: VB.NET, Oracle Provider.
+
+	Marco has got the Mono Basic compiler up to speed (support for
+	classes, modules, expressions, object creation, method
+	invocation, local variables, and some statements).  The
+	compiler is based on the work from Rafael Teixeira on MCS.
+
+	Screenshots: <a
+	href="http://modgb.sourceforge.net/monobasic_snap.png">in
+	Windows doing Windows.Forms</a> and in Linux doing <a
+	ref="images/gtk-vb.png">VB with Gtk#</a> (courtesy of Alp).
+
+	Daniel Morgan has checked in his Oracle provider to the CVS
+	repository as well.
+
 @item Nov 27th, 2002: Press release, tutorials, Windows Forms, ADO.NET, Magazine.
 
 	<a
@@ -121,9 +136,9 @@
 	mailing list</a>
 
 	Brian Ritchie has been working on an ADO.NET <a
-	href="http://brian.www1.dotnetplayground.com/ideas/adocodegen.aspx">data
+	href="http://brianritchie.webhop.net/ideas/adocodegen.aspx">data
 	layer</a> and an <a
-	href="http://brian.www1.dotnetplayground.com/ideas/appserver.aspx">application
+	href="http://brianritchie.webhop.net/ideas/appserver.aspx">application
 	server</a> for Mono.
 
 	Dan Morgan has checked in his Oracle provider, and Tim Coleman
