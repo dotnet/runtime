@@ -220,13 +220,13 @@ libmono_la_LIBADD = \
 	$(libs)
 
 %.exe: %.cs TestDriver.dll
-	$(MCS) /unsafe $< /r:TestDriver.dll
+	$(MCS) /out:$*.exe /unsafe $< /r:TestDriver.dll
 
 %.exe: %.il
 	ilasm /output=$*.exe $<
 
-TestDriver.dll: TestDriver.cs
-	$(MCS) /out:TestDriver.dll /target:library TestDriver.cs
+TestDriver.dll: $(srcdir)/TestDriver.cs
+	$(MCS) /out:TestDriver.dll /target:library $(srcdir)/TestDriver.cs
 
 cpu-pentium.h: cpu-pentium.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-pentium.md cpu-pentium.h pentium_desc
