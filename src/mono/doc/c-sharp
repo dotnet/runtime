@@ -8,7 +8,7 @@
 	and the body of constructors and methods is being generated
 	for a subset of the language.  Although MCS can parse itself,
 	it cant not yet compile itself.  Most statements are generated
-	correctly and about 60% of the C# expressions are supported.
+	correctly and about 80% of the C# expressions are supported.
 
 	Work is progressing quickly on various fronts in the C#
 	compiler.
@@ -62,9 +62,9 @@
 	<ul>
 		* PInvoke declarations are not supported.
 
-		* Pre-processing is not supported.
+		* Extern declarations are missing.
 
-		* Compiler does not pass around line/col information from tokenizer for error reporting.
+		* Pre-processing is not supported.
 
 		* Jay does not work correctly with `error'
 		  productions, making parser errors hard to point.  It
@@ -74,6 +74,16 @@
 		  Nick Drochak has started a project on SourceForge for this.
 		  You can find the project at: <a href="http://sourceforge.net/projects/jb2csharp/">
 		  http://sourceforge.net/projects/jb2csharp/</a>
+	</ul>
+
+	Larger tasks:
+
+	<ul>
+		* Implement constant expression evaluator.
+
+		* Implement constant declarations.
+
+		* Implement enumerations.
 	</ul>
 
 	Interesting and Fun hacks to the compiler:

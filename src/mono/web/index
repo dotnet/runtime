@@ -23,6 +23,21 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Oct 18, 2001
+
+	Reworking expressions to support cleanly indexers and
+	properties.  <a href="http://www.nat.org/evolution.php3">11
+	days</a> until Evolution 1.0 ships.  
+
+	Ximian users around the world <a
+	href="http://www.bez.it/IMAGES/nora.jpg">rejoice</a> with
+	recent C# compiler progress.
+
+** Oct 17, 2001
+
+	Delegate support has been checked into the compiler
+	(definition and invocation); break/continue implemented.
+
 ** Oct 15, 2001
 
 	JIT engine supports many of the object constructs now (object
