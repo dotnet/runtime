@@ -3677,7 +3677,7 @@ static gconstpointer icall_map [] = {
 	 */
 	"System.ArgIterator::Setup",                            mono_ArgIterator_Setup,
 	"System.ArgIterator::IntGetNextArg()",                  mono_ArgIterator_IntGetNextArg,
-	"System.ArgIterator::IntGetNextArg(System.RuntimeTypeHandle)", mono_ArgIterator_IntGetNextArgT,
+	"System.ArgIterator::IntGetNextArg(intptr)", mono_ArgIterator_IntGetNextArgT,
 	"System.ArgIterator::IntGetNextArgType",                mono_ArgIterator_IntGetNextArgType,
 
 	/*
