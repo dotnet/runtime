@@ -2087,7 +2087,7 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 				ppc_mtctr (code, ppc_r0);
 				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 				mono_arch_flush_icache ((guchar*)thunks, 16);
-				
+
 				ppc_patch (pdata->code, (guchar*)thunks);
 				mono_arch_flush_icache (pdata->code, 4);
 				pdata->found = 1;
@@ -2134,8 +2134,47 @@ ppc_patch (guchar *code, guchar *target)
 	guint32 prim = ins >> 26;
 	guint32 ovf;
 
-//	g_print ("patching 0x%08x (0x%08x) to point to 0x%08x\n", code, ins, target);
+	//g_print ("patching 0x%08x (0x%08x) to point to 0x%08x\n", code, ins, target);
 	if (prim == 18) {
+		if (target >= 0){
+			if (target < 33554431){
+				ins = (18 << 26) | ((guint32) target) | (ins & 1) | 2;
+				*(guint32*)code = ins;
+				return;
+			} 
+		} else {
+			if (target > -33554432){
+				ins = (18 << 26) | (((guint32)target) & 0xfc000000) | (ins & 1) | 2;
+				*(guint32*)code = ins;
+				return;
+			}
+		}
+		
+		gint diff = target - code;
+		if (diff >= 0){
+			if (diff < 33554431){
+				ins = (18 << 26) | (diff) | (ins & 1);
+				*(guint32*)code = ins;
+				return;
+			} else {
+				handle_thunk (TRUE, code, target);
+				return;
+			}
+		} else {
+			/* diff between 0 and -33554432 */
+			if (diff > -33554432){
+				ins = (18 << 26) | (diff & ~0xfc000000) | (ins & 1);
+				*(guint32*)code = ins;
+				return;
+			} else {
+				handle_thunk (TRUE, code, target);
+				return;
+			}
+		}
+		g_assert_not_reached ();
+	}
+	
+#if OLD_REFERENCE_CODE
 		// absolute address
 		if (ins & 2) {
 			gint diff = (gint)target;
@@ -2171,7 +2210,10 @@ ppc_patch (guchar *code, guchar *target)
 			ins |= diff;
 		}
 		*(guint32*)code = ins;
-	} else if (prim == 16) {
+	} 
+#endif
+	
+	if (prim == 16) {
 		// absolute address
 		if (ins & 2) {
 			guint32 li = (guint32)target;
