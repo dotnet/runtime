@@ -472,6 +472,11 @@ float_cgt: dest:i src1:f src2:f len:35
 float_cgt_un: dest:i src1:f src2:f len:48
 float_clt: dest:i src1:f src2:f len:35
 float_clt_un: dest:i src1:f src2:f len:42
+float_ceq_membase: dest:i src1:f src2:b len:35
+float_cgt_membase: dest:i src1:f src2:b len:35
+float_cgt_un_membase: dest:i src1:f src2:b len:48
+float_clt_membase: dest:i src1:f src2:b len:35
+float_clt_un_membase: dest:i src1:f src2:b len:42
 float_conv_to_u: dest:i src1:f len:46
 fmove: dest:f src1:f len:8
 call_handler: len:14

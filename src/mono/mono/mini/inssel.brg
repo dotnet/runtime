@@ -78,6 +78,15 @@
 	        mono_bblock_add_inst (cfg->cbb, inst); \
 	} while (0)
 
+#define MONO_EMIT_BIALU_MEMBASE(cfg,tree,op,dr,sr,basereg,offset) do { \
+				tree->opcode = op; \
+				tree->dreg = dr; \
+				tree->sreg1 = sr; \
+				tree->sreg2 = basereg; \
+				tree->inst_offset = offset; \
+				mono_bblock_add_inst (s->cbb, tree); \
+	} while (0)
+
 #define MONO_EMIT_LOAD_MEMBASE(cfg,inst,dr,base,offset) do { \
                 (inst)->opcode = OP_LOAD_MEMBASE; \
                 (inst)->dreg = dr; \

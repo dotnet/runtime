@@ -613,29 +613,70 @@ stmt: CEE_STIND_I (OP_REGVAR, OP_I8CONST) {
 # either improve the local register allocator or
 # emit coarse opcodes which saves EAX for us.
 
-reg: OP_CEQ (OP_COMPARE (freg, freg)) {	
-	MONO_EMIT_BIALU (s, tree, OP_FCEQ, state->reg1, state->left->left->reg1,
+
+reg: OP_CEQ (OP_COMPARE (freg, freg)),
+reg: OP_CLT (OP_COMPARE (freg, freg)),
+reg: OP_CGT (OP_COMPARE (freg, freg)),
+reg: OP_CLT_UN (OP_COMPARE (freg, freg)),
+reg: OP_CGT_UN (OP_COMPARE (freg, freg)) {
+	int opcode;
+
+	switch (tree->opcode) {
+	case OP_CEQ:
+		opcode = OP_FCEQ;
+		break;
+	case OP_CLT:
+		opcode = OP_FCLT;
+		break;
+	case OP_CGT:
+		opcode = OP_FCGT;
+		break;
+	case OP_CLT_UN:
+		opcode = OP_FCLT_UN;
+		break;
+	case OP_CGT_UN:
+		opcode = OP_FCGT_UN;
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+
+	MONO_EMIT_BIALU (s, tree, opcode, state->reg1, state->left->left->reg1,
 			 state->left->right->reg1);
 }
 
-reg: OP_CLT (OP_COMPARE (freg, freg)) {	
-	MONO_EMIT_BIALU (s, tree, OP_FCLT, state->reg1, state->left->left->reg1,
-			 state->left->right->reg1);
-}
+reg: OP_CEQ (OP_COMPARE (freg, CEE_LDIND_R8 (base))),
+reg: OP_CLT (OP_COMPARE (freg, CEE_LDIND_R8 (base))),
+reg: OP_CGT (OP_COMPARE (freg, CEE_LDIND_R8 (base))),
+reg: OP_CGT_UN (OP_COMPARE (freg, CEE_LDIND_R8 (base))),
+reg: OP_CLT_UN (OP_COMPARE (freg, CEE_LDIND_R8 (base))) {
+	MonoInst *base = state->left->right->left->tree;
+	int opcode;
 
-reg: OP_CLT_UN (OP_COMPARE (freg, freg)) {	
-	MONO_EMIT_BIALU (s, tree, OP_FCLT_UN, state->reg1, state->left->left->reg1,
-			 state->left->right->reg1);
-}
+	switch (tree->opcode) {
+	case OP_CEQ:
+		opcode = OP_FCEQ_MEMBASE;
+		break;
+	case OP_CLT:
+		opcode = OP_FCLT_MEMBASE;
+		break;
+	case OP_CGT:
+		opcode = OP_FCGT_MEMBASE;
+		break;
+	case OP_CLT_UN:
+		opcode = OP_FCLT_UN_MEMBASE;
+		break;
+	case OP_CGT_UN:
+		opcode = OP_FCGT_UN_MEMBASE;
+		break;
+	default:
+		break;
+	}
 
-reg: OP_CGT (OP_COMPARE (freg, freg)) {	
-	MONO_EMIT_BIALU (s, tree, OP_FCGT, state->reg1, state->left->left->reg1,
-			 state->left->right->reg1);
-}
-
-reg: OP_CGT_UN (OP_COMPARE (freg, freg)) {	
-	MONO_EMIT_BIALU (s, tree, OP_FCGT_UN, state->reg1, state->left->left->reg1,
-			 state->left->right->reg1);
+	MONO_EMIT_BIALU_MEMBASE (s, tree, opcode, state->reg1, state->left->left->reg1, base->inst_basereg, base->inst_offset);
+} cost {
+	MBCOND (mono_amd64_is_sse2 ());
+	return 0;
 }
 
 # fpcflags overwrites EAX, but this does not matter for statements
@@ -715,34 +756,19 @@ freg: OP_FCONV_TO_R4 (freg) "0" {
 reg: CEE_ADD(reg, CEE_LDIND_I4 (base)) {
 	MonoInst *base = state->right->left->tree;
 
-	tree->dreg = state->reg1;
-	tree->sreg1 = state->left->reg1;
-	tree->sreg2 = base->inst_basereg; 
-	tree->inst_offset = base->inst_offset; 
-	tree->opcode = OP_X86_ADD_MEMBASE; 
-	mono_bblock_add_inst (s->cbb, tree);
+	MONO_EMIT_BIALU_MEMBASE (cfg, tree, OP_X86_ADD_MEMBASE, state->reg1, state->left->reg1, base->inst_basereg, base->inst_offset);
 } 
 
 reg: CEE_SUB(reg, CEE_LDIND_I4 (base)) {
 	MonoInst *base = state->right->left->tree;
 
-	tree->dreg = state->reg1;
-	tree->sreg1 = state->left->reg1;
-	tree->sreg2 = base->inst_basereg; 
-	tree->inst_offset = base->inst_offset; 
-	tree->opcode = OP_X86_SUB_MEMBASE; 
-	mono_bblock_add_inst (s->cbb, tree);
+	MONO_EMIT_BIALU_MEMBASE (cfg, tree, OP_X86_SUB_MEMBASE, state->reg1, state->left->reg1, base->inst_basereg, base->inst_offset);
 } 
 
 reg: CEE_MUL(reg, CEE_LDIND_I4 (base)) {
 	MonoInst *base = state->right->left->tree;
 
-	tree->dreg = state->reg1;
-	tree->sreg1 = state->left->reg1;
-	tree->sreg2 = base->inst_basereg; 
-	tree->inst_offset = base->inst_offset; 
-	tree->opcode = OP_X86_MUL_MEMBASE; 
-	mono_bblock_add_inst (s->cbb, tree);
+	MONO_EMIT_BIALU_MEMBASE (cfg, tree, OP_X86_MUL_MEMBASE, state->reg1, state->left->reg1, base->inst_basereg, base->inst_offset);
 } 
 
 reg: OP_LSHL (reg, reg) "0" {

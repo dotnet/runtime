@@ -338,6 +338,12 @@ MINI_OP(OP_FCGT_UN,"float_cgt_un")
 MINI_OP(OP_FCLT,   "float_clt")
 MINI_OP(OP_FCLT_UN,"float_clt_un")
 
+MINI_OP(OP_FCEQ_MEMBASE,   "float_ceq_membase")
+MINI_OP(OP_FCGT_MEMBASE,   "float_cgt_membase")
+MINI_OP(OP_FCGT_UN_MEMBASE,"float_cgt_un_membase")
+MINI_OP(OP_FCLT_MEMBASE,   "float_clt_membase")
+MINI_OP(OP_FCLT_UN_MEMBASE,"float_clt_un_membase")
+
 MINI_OP(OP_FCONV_TO_U,	"float_conv_to_u")
 
 MINI_OP(OP_GROUP, "group")

@@ -229,6 +229,9 @@ mono_amd64_exceptions_init (void);
 void
 mono_amd64_tramp_init (void);
 
+gboolean
+mono_amd64_is_sse2 (void);
+
 /* FIXME: */
 //#define MONO_ARCH_BIGMUL_INTRINS 1
 

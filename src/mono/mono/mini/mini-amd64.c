@@ -30,7 +30,7 @@ static gint appdomain_tls_offset = -1;
 static gint thread_tls_offset = -1;
 
 /* Use SSE2 instructions for fp arithmetic */
-static gboolean use_sse2 = FALSE;
+static gboolean use_sse2 = TRUE;
 
 /* xmm15 is reserved for use by some opcodes */
 #define AMD64_CALLEE_FREGS 0xef
@@ -67,6 +67,16 @@ static gboolean use_sse2 = FALSE;
  * - implement emulated opcodes
  * - (all archs) do not store trampoline addresses in method->info since they
  *   are domain specific.   
+ */
+
+/*
+ * Floating point comparison results:
+ *                  ZF PF CF
+ * A > B            0  0  0
+ * A < B            0  0  1
+ * A = B            1  0  0
+ * A > B            0  0  0
+ * UNORDERED        1  1  1
  */
 
 #define NOT_IMPLEMENTED g_assert_not_reached ()
@@ -686,6 +696,12 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 			*exclude_mask |= MONO_OPT_CMOV;
 	}
 	return opts;
+}
+
+gboolean
+mono_amd64_is_sse2 (void)
+{
+	return use_sse2;
 }
 
 static gboolean
@@ -2923,7 +2939,7 @@ static unsigned char*
 emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size, gboolean is_signed)
 {
 	if (use_sse2) {
-		amd64_sse_cvtsd2si_reg_reg (code, dreg, sreg);
+		amd64_sse_cvttsd2si_reg_reg (code, dreg, sreg);
 	}
 	else {
 		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 8);
@@ -4398,7 +4414,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_FCOMPARE:
 			if (use_sse2) {
-				amd64_sse_comisd_reg_reg (code, ins->sreg1, ins->sreg2);
+				/* 
+				 * The two arguments are swapped because the fbranch instructions
+				 * depend on this for the non-sse case to work.
+				 */
+				amd64_sse_comisd_reg_reg (code, ins->sreg2, ins->sreg1);
 				break;
 			}
 			if (cfg->opt & MONO_OPT_FCMOV) {
@@ -4450,7 +4470,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				 */
 				amd64_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
 				if (use_sse2)
-					amd64_sse_comisd_reg_reg (code, ins->sreg1, ins->sreg2);
+					amd64_sse_comisd_reg_reg (code, ins->sreg2, ins->sreg1);
 				else {
 					amd64_fcomip (code, 1);
 					amd64_fstp (code, 0);
@@ -4501,7 +4521,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				guchar *unordered_check;
 				amd64_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
 				if (use_sse2)
-					amd64_sse_comisd_reg_reg (code, ins->sreg1, ins->sreg2);
+					amd64_sse_comisd_reg_reg (code, ins->sreg2, ins->sreg1);
 				else {
 					amd64_fcomip (code, 1);
 					amd64_fstp (code, 0);
@@ -4539,6 +4559,57 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->dreg != AMD64_RAX) 
 				amd64_pop_reg (code, AMD64_RAX);
 			break;
+		case OP_FCLT_MEMBASE:
+		case OP_FCGT_MEMBASE:
+		case OP_FCLT_UN_MEMBASE:
+		case OP_FCGT_UN_MEMBASE:
+		case OP_FCEQ_MEMBASE: {
+			guchar *unordered_check, *jump_to_end;
+			int x86_cond;
+			g_assert (use_sse2);
+
+			amd64_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
+			amd64_sse_comisd_reg_membase (code, ins->sreg1, ins->sreg2, ins->inst_offset);
+
+			switch (ins->opcode) {
+			case OP_FCEQ_MEMBASE:
+				x86_cond = X86_CC_EQ;
+				break;
+			case OP_FCLT_MEMBASE:
+			case OP_FCLT_UN_MEMBASE:
+				x86_cond = X86_CC_LT;
+				break;
+			case OP_FCGT_MEMBASE:
+			case OP_FCGT_UN_MEMBASE:
+				x86_cond = X86_CC_GT;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+
+			unordered_check = code;
+			x86_branch8 (code, X86_CC_P, 0, FALSE);
+			amd64_set_reg (code, x86_cond, ins->dreg, FALSE);
+
+			switch (ins->opcode) {
+			case OP_FCEQ_MEMBASE:
+			case OP_FCLT_MEMBASE:
+			case OP_FCGT_MEMBASE:
+				amd64_patch (unordered_check, code);
+				break;
+			case OP_FCLT_UN_MEMBASE:
+			case OP_FCGT_UN_MEMBASE:
+				jump_to_end = code;
+				x86_jump8 (code, 0);
+				amd64_patch (unordered_check, code);
+				amd64_inc_reg (code, ins->dreg);
+				amd64_patch (jump_to_end, code);
+				break;
+			default:
+				break;
+			}
+			break;
+		}
 		case OP_FBEQ:
 			if (use_sse2 || (cfg->opt & MONO_OPT_FCMOV)) {
 				guchar *jump = code;
