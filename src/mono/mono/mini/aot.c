@@ -13,6 +13,8 @@
 #include <fcntl.h>
 #ifndef PLATFORM_WIN32
 #include <sys/mman.h>
+#else
+#include <windows.h>
 #endif
 
 #include <limits.h>    /* for PAGESIZE */
@@ -32,6 +34,12 @@
 #define ENCODE_TYPE_POS(t,l) (((t) << 24) | (l))
 #define DECODE_TYPE(v) ((v) >> 24)
 #define DECODE_POS(v) ((v) & 0xffffff)
+
+#ifdef PLATFORM_WIN32
+#define SHARED_EXT ".dll"
+#else
+#define SHARED_EXT ".so"
+#endif
 
 static MonoClass * 
 decode_class_info (gpointer *data)
@@ -175,6 +183,11 @@ mono_aot_get_method (MonoMethod *method)
 		pages = (code + code_len - page_start + PAGESIZE - 1) / PAGESIZE;
 		err = mprotect (page_start, pages * PAGESIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
 		g_assert (err == 0);
+#else
+		{
+			DWORD oldp;
+			g_assert (VirtualProtect (code, code_len, PAGE_EXECUTE_READWRITE, &oldp) != 0);
+		}
 #endif
 
 		mono_arch_patch_code (method, mono_root_domain, code, patch_info);
@@ -367,8 +380,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 
 	printf ("Mono AOT compiler - compiling assembly %s\n", image->name);
 
-	tmpfname = g_strdup_printf ("%s/mono_aot_%05d",  g_get_tmp_dir (), getpid ());
-	tmpfp = fopen (tmpfname, "w+");
+	i = g_file_open_tmp ("mono_aot_XXXXXX", &tmpfname, NULL);
+	tmpfp = fdopen (i, "w+");
 	g_assert (tmpfp);
 
 	ref_hash = g_hash_table_new (NULL, NULL);
@@ -457,6 +470,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 		mname = g_strdup_printf ("method_%08X", token);
 		fprintf (tmpfp, "\t.align %d\n", func_alignment);
 		fprintf (tmpfp, ".globl %s\n", mname);
+		fprintf (tmpfp, "\t.type %s,@function\n", mname);
 		fprintf (tmpfp, "%s:\n", mname);
 
 		for (j = 0; j < cfg->code_len; j++) 
@@ -583,19 +597,29 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 
 	fclose (tmpfp);
 
-	com = g_strdup_printf ("as %s -o %s.o;ld -shared -o %s.so %s.o;rm %s.o;strip --strip-unneeded --discard-all %s.so", 
-			       tmpfname, tmpfname, image->name, tmpfname, tmpfname, image->name);
+	com = g_strdup_printf ("as %s -o %s.o", tmpfname, tmpfname);
+	printf ("Executing the native assembler: %s\n", com);
+	system (com);
+	g_free (com);
+	com = g_strdup_printf ("ld -shared -o %s%s %s.o", image->name, SHARED_EXT, tmpfname);
+	printf ("Executing the native linker: %s\n", com);
+	system (com);
+	g_free (com);
+	com = g_strdup_printf ("%s.o", tmpfname);
+	unlink (com);
+	g_free (com);
+	/*com = g_strdup_printf ("strip --strip-unneeded %s%s", image->name, SHARED_EXT);
+	printf ("Stripping the binary: %s\n", com);
+	system (com);
+	g_free (com);*/
 
-	printf ("Executing the native assembler now:\n%s\n", com);
-	system (com); 
-
-	printf ("Compile %d out of %d methods (%d%%)\n", ccount, mcount, (ccount*100)/mcount);
-	printf ("%d methods contains exception tables (%d%%)\n", ecount, (ecount*100)/mcount);
-	printf ("%d methods contains absolute addresses (%d%%)\n", abscount, (abscount*100)/mcount);
-	printf ("%d methods contains wrapper references (%d%%)\n", wrappercount, (wrappercount*100)/mcount);
-	printf ("%d methods contains lmf pointers (%d%%)\n", lmfcount, (lmfcount*100)/mcount);
-	printf ("%d methods has other problems (%d%%)\n", ocount, (ocount*100)/mcount);
-	//unlink (tmpfname);
+	printf ("Compiled %d out of %d methods (%d%%)\n", ccount, mcount, (ccount*100)/mcount);
+	printf ("%d methods contain exception tables (%d%%)\n", ecount, (ecount*100)/mcount);
+	printf ("%d methods contain absolute addresses (%d%%)\n", abscount, (abscount*100)/mcount);
+	printf ("%d methods contain wrapper references (%d%%)\n", wrappercount, (wrappercount*100)/mcount);
+	printf ("%d methods contain lmf pointers (%d%%)\n", lmfcount, (lmfcount*100)/mcount);
+	printf ("%d methods have other problems (%d%%)\n", ocount, (ocount*100)/mcount);
+	unlink (tmpfname);
 
 	return 0;
 }
