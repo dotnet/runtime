@@ -12,6 +12,7 @@
 typedef enum {
 	ppc_r0 = 0,
 	ppc_r1,
+	ppc_sp = ppc_r1,
 	ppc_r2,
 	ppc_r3,
 	ppc_r4,
@@ -81,10 +82,49 @@ typedef enum {
 
 typedef enum {
 	ppc_lr = 256,
+	ppc_ctr = 256 + 32,
+	ppc_xer = 32
 } PPCSpecialRegister;
 
-#define ppc_emit32(c,x) *((guint32 *) c) = x; ((guint32 *)c)++
+enum {
+	/* B0 operand for branches */
+	PPC_BR_LIKELY = 1, /* can be or'ed with the conditional variants */
+	PPC_BR_FALSE  = 4,
+	PPC_BR_TRUE   = 12,
+	PPC_BR_ALWAYS = 20,
+	/* B1 operand for branches */
+	PPC_BR_LT     = 0,
+	PPC_BR_GT     = 1,
+	PPC_BR_EQ     = 2,
+	PPC_BR_SO     = 3
+};
 
+enum {
+	PPC_TRAP_LT = 1,
+	PPC_TRAP_GT = 2,
+	PPC_TRAP_EQ = 4,
+	PPC_TRAP_LT_UN = 8,
+	PPC_TRAP_GT_UN = 16,
+	PPC_TRAP_LE = 1 + PPC_TRAP_EQ,
+	PPC_TRAP_GE = 2 + PPC_TRAP_EQ,
+	PPC_TRAP_LE_UN = 8 + PPC_TRAP_EQ,
+	PPC_TRAP_GE_UN = 16 + PPC_TRAP_EQ
+};
+
+#define ppc_emit32(c,x) do { *((guint32 *) c) = x; ((guint32 *)c)++;} while (0)
+
+#define ppc_is_imm16(val) ((gint)val >= -(1<<16) && (gint)val <= ((1<<16)-1))
+
+#define ppc_load(c,D,v) do {	\
+		if (ppc_is_imm16 ((v)))	{	\
+			ppc_li ((c), (D), (v));	\
+		} else {	\
+			ppc_lis ((c), (D), (guint32)(v) >> 16);	\
+			ppc_ori ((c), (D), (D), (guint32)(v) & 0xffff);	\
+		}	\
+	} while (0)
+
+#define ppc_break(c) ppc_tw((c),31,0,0)
 #define  ppc_addi(c,D,A,d) ppc_emit32 (c, (14 << 26) | ((D) << 21) | ((A) << 16) | (guint16)(d))
 #define ppc_addis(c,D,A,d) ppc_emit32 (c, (15 << 26) | ((D) << 21) | ((A) << 16) | (guint16)(d))
 #define    ppc_li(c,D,v)   ppc_addi   (c, D, 0, v);
@@ -103,8 +143,13 @@ typedef enum {
 #define  ppc_mflr(c,D)     ppc_mfspr  (c, D, ppc_lr)
 #define ppc_mtspr(c,spr,S) ppc_emit32 (c, (31 << 26) | ((S) << 21) | ((spr) << 11) | (467 << 1))
 #define  ppc_mtlr(c,S)     ppc_mtspr  (c, ppc_lr, S)
+#define  ppc_mtctr(c,S)     ppc_mtspr  (c, ppc_ctr, S)
+#define  ppc_mtxer(c,S)     ppc_mtspr  (c, ppc_xer, S)
 
 #define  ppc_b(c,li)       ppc_emit32 (c, (18 << 26) | ((li) << 2))
+#define  ppc_bl(c,li)       ppc_emit32 (c, (18 << 26) | ((li) << 2) | 1)
+#define  ppc_ba(c,li)       ppc_emit32 (c, (18 << 26) | ((li) << 2) | 2)
+#define  ppc_bla(c,li)       ppc_emit32 (c, (18 << 26) | ((li) << 2) | 3)
 #define  ppc_blrl(c)       ppc_emit32 (c, 0x4e800021)
 #define   ppc_blr(c)       ppc_emit32 (c, 0x4e800020)
 
@@ -176,8 +221,8 @@ my and Ximian's copyright to this code. ;)
 #define ppc_andc(c,S,A,B) ppc_andcx(c,S,A,B,0)
 #define ppc_andcd(c,S,A,B) ppc_andcx(c,S,A,B,1)
 
-#define ppc_andid(c,S,A,d) ppc_emit32(c, (28 << 26) | ((S) << 21 ) | ((A) << 16) | (0x0000 || (guint16)(d)))
-#define ppc_andisd(c,S,A,d) ppc_emit32(c, (29 << 26) | ((S) << 21 ) | ((A) << 16) | ((guint16)(d) || 0x0000))
+#define ppc_andid(c,S,A,d) ppc_emit32(c, (28 << 26) | ((S) << 21 ) | ((A) << 16) | ((guint16)(d)))
+#define ppc_andisd(c,S,A,d) ppc_emit32(c, (29 << 26) | ((S) << 21 ) | ((A) << 16) | ((guint16)(d)))
 
 #define ppc_bcx(c,BO,BI,BD,AA,LK) ppc_emit32(c, (16 << 26) | (BO << 21 )| (BI << 16) | (BD << 2) | ((AA) << 1) | LK)
 #define ppc_bc(c,BO,BI,BD) ppc_bcx(c,BO,BI,BD,0,0) 
@@ -471,6 +516,8 @@ my and Ximian's copyright to this code. ;)
 #define ppc_nor(c,A,S,B) ppc_norx(c,A,S,B,0)
 #define ppc_nord(c,A,S,B) ppc_norx(c,A,S,B,1)
 
+#define ppc_not(c,A,S) ppc_norx(c,A,S,S,0)
+
 #define ppc_orx(c,A,S,B,Rc) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (B << 11) | (444 << 1) | Rc)
 #define ppc_ord(c,A,S,B) ppc_orx(c,A,S,B,1)
 
@@ -542,6 +589,8 @@ my and Ximian's copyright to this code. ;)
 #define ppc_subfd(c,D,A,B) ppc_subfx(c,D,A,B,0,1)
 #define ppc_subfo(c,D,A,B) ppc_subfx(c,D,A,B,1,0)
 #define ppc_subfod(c,D,A,B) ppc_subfx(c,D,A,B,1,1)
+
+#define ppc_sub(c,D,A,B) ppc_subf(c,D,B.A)
 
 #define ppc_subfcx(c,D,A,B,OE,Rc) ppc_emit32(c, (31 << 26) | (D << 21) | (A << 16) | (B << 11) | (OE << 10) | (8 << 1) | Rc)
 #define ppc_subfc(c,D,A,B) ppc_subfcx(c,D,A,B,0,0)
