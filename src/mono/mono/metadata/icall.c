@@ -2000,7 +2000,7 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 	MonoClass *enumc = mono_class_from_mono_type (type->type);
 	guint i, j, nvalues, crow;
 	MonoClassField *field;
-	
+
 	MONO_ARCH_SAVE_REGS;
 
 	info->utype = mono_type_get_object (domain, enumc->enum_basetype);
@@ -2010,35 +2010,42 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 	
 	crow = -1;
 	for (i = 0, j = 0; i < enumc->field.count; ++i) {
+		const char *p;
+		int len;
+
 		field = &enumc->fields [i];
 		if (strcmp ("value__", field->name) == 0)
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;
 		mono_array_set (info->names, gpointer, j, mono_string_new (domain, field->name));
-		if (!field->data) {
+		if (!field->def_value) {
+			field->def_value = g_new0 (MonoConstant, 1);
 			crow = mono_metadata_get_constant_index (enumc->image, MONO_TOKEN_FIELD_DEF | (i+enumc->field.first+1), crow + 1);
+			field->def_value->type = mono_metadata_decode_row_col (&enumc->image->tables [MONO_TABLE_CONSTANT], crow-1, MONO_CONSTANT_TYPE);
 			crow = mono_metadata_decode_row_col (&enumc->image->tables [MONO_TABLE_CONSTANT], crow-1, MONO_CONSTANT_VALUE);
-			/* 1 is the length of the blob */
-			field->data = 1 + mono_metadata_blob_heap (enumc->image, crow);
+			field->def_value->value = (gpointer)mono_metadata_blob_heap (enumc->image, crow);
 		}
+
+		p = field->def_value->value;
+		len = mono_metadata_decode_blob_size (p, &p);
 		switch (enumc->enum_basetype->type) {
 		case MONO_TYPE_U1:
 		case MONO_TYPE_I1:
-			mono_array_set (info->values, gchar, j, *field->data);
+			mono_array_set (info->values, gchar, j, *p);
 			break;
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_U2:
 		case MONO_TYPE_I2:
-			mono_array_set (info->values, gint16, j, read16 (field->data));
+			mono_array_set (info->values, gint16, j, read16 (p));
 			break;
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I4:
-			mono_array_set (info->values, gint32, j, read32 (field->data));
+			mono_array_set (info->values, gint32, j, read32 (p));
 			break;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
-			mono_array_set (info->values, gint64, j, read64 (field->data));
+			mono_array_set (info->values, gint64, j, read64 (p));
 			break;
 		default:
 			g_error ("Implement type 0x%02x in get_enum_info", enumc->enum_basetype->type);

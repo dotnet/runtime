@@ -3816,7 +3816,7 @@ assembly_add_win32_resources (MonoDynamicImage *assembly, MonoReflectionAssembly
 	/* Currently, we only support one resource */
 	g_assert (mono_array_length (assemblyb->win32_resources) == 1);
 
-	win32_res = mono_array_addr (assemblyb->win32_resources, MonoReflectionWin32Resource, 0);
+	win32_res = (MonoReflectionWin32Resource*)mono_array_addr (assemblyb->win32_resources, MonoReflectionWin32Resource, 0);
 
 	/*
 	 * For the format of the resource directory, see the article
@@ -5698,6 +5698,9 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 	} else if (strcmp ("AssemblyBuilder", klass->name) == 0) {
 		MonoReflectionAssemblyBuilder *assemblyb = (MonoReflectionAssemblyBuilder*)obj;
 		cinfo = mono_custom_attrs_from_builders (assemblyb->assembly.assembly->image, assemblyb->cattrs);
+	} else if (strcmp ("TypeBuilder", klass->name) == 0) {
+		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)obj;
+		cinfo = mono_custom_attrs_from_builders (&tb->module->dynamic_image->image, tb->cattrs);
 	} else { /* handle other types here... */
 		g_error ("get custom attrs not yet supported for %s", klass->name);
 	}
@@ -7047,7 +7050,6 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	 * nested_classes
 	 */
 	klass->flags = tb->attrs;
-	klass->element_class = klass;
 
 	if (!((MonoDynamicImage*)(MonoDynamicImage*)klass->image)->run)
 		/* No need to fully construct the type */
