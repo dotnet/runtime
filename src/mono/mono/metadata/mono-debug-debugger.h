@@ -152,9 +152,11 @@ void            mono_debugger_lock                    (void);
 void            mono_debugger_unlock                  (void);
 void            mono_debugger_event                   (MonoDebuggerEvent event, gpointer data, guint32 arg);
 
-MonoDebuggerSymbolFile *mono_debugger_add_symbol_file (MonoSymbolFile *symfile);
+MonoDebuggerSymbolFile *mono_debugger_add_symbol_file (MonoDebugHandle *handle);
 void            mono_debugger_add_type                (MonoDebuggerSymbolFile *symfile, MonoClass *klass);
-void            mono_debugger_add_method              (MonoDebuggerSymbolFile *symfile, MonoMethod *method);
+void            mono_debugger_add_method              (MonoDebuggerSymbolFile *symfile,
+						       MonoDebugMethodInfo *minfo,
+						       MonoDebugMethodJitInfo *jit);
 
 int             mono_debugger_insert_breakpoint_full  (MonoMethodDesc *desc);
 int             mono_debugger_remove_breakpoint       (int breakpoint_id);

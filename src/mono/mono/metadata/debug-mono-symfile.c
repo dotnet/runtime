@@ -9,6 +9,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/mono-debug.h>
 #include <mono/metadata/debug-mono-symfile.h>
 
 #include <fcntl.h>
@@ -22,7 +23,6 @@
 static void
 free_method_info (MonoDebugMethodInfo *minfo)
 {
-	g_free (minfo->jit);
 	g_free (minfo);
 }
 
@@ -41,7 +41,7 @@ get_class_name (MonoClass *klass)
 }
 
 static int
-load_symfile (MonoSymbolFile *symfile)
+load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile)
 {
 	MonoSymbolFileMethodEntry *me;
 	MonoSymbolFileMethodIndexEntry *ie;
@@ -56,14 +56,14 @@ load_symfile (MonoSymbolFile *symfile)
 
 	magic = *((guint64 *) ptr)++;
 	if (magic != MONO_SYMBOL_FILE_MAGIC) {
-		g_warning ("Symbol file %s has is not a mono symbol file", symfile->image_file);
+		g_warning ("Symbol file %s has is not a mono symbol file", handle->image_file);
 		return FALSE;
 	}
 
 	version = *((guint32 *) ptr)++;
 	if (version != MONO_SYMBOL_FILE_VERSION) {
 		g_warning ("Symbol file %s has incorrect version "
-			   "(expected %d, got %ld)", symfile->image_file,
+			   "(expected %d, got %ld)", handle->image_file,
 			   MONO_SYMBOL_FILE_VERSION, version);
 		return FALSE;
 	}
@@ -76,7 +76,7 @@ load_symfile (MonoSymbolFile *symfile)
 	 */
 
 	symfile->method_hash = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL,
-						      (GDestroyNotify) free_method_info);
+							     (GDestroyNotify) free_method_info);
 
 	ie = (MonoSymbolFileMethodIndexEntry *)
 		(symfile->raw_contents + symfile->offset_table->method_table_offset);
@@ -87,7 +87,7 @@ load_symfile (MonoSymbolFile *symfile)
 
 		me = (MonoSymbolFileMethodEntry *) (symfile->raw_contents + ie->file_offset);
 
-		method = mono_get_method (symfile->image, me->token, NULL);
+		method = mono_get_method (handle->image, me->token, NULL);
 
 		if (!method)
 			continue;
@@ -95,7 +95,7 @@ load_symfile (MonoSymbolFile *symfile)
 		minfo = g_new0 (MonoDebugMethodInfo, 1);
 		minfo->index = i + 1;
 		minfo->method = method;
-		minfo->symfile = symfile;
+		minfo->handle = handle;
 		minfo->num_il_offsets = me->num_line_numbers;
 		minfo->il_offsets = (MonoSymbolFileLineNumberEntry *)
 			(symfile->raw_contents + me->line_number_table_offset);
@@ -129,20 +129,15 @@ open_symfile (MonoImage *image, guint32 *size)
 }
 
 MonoSymbolFile *
-mono_debug_open_mono_symbol_file (MonoImage *image, gboolean create_symfile)
+mono_debug_open_mono_symbol_file (MonoDebugHandle *handle, gboolean create_symfile)
 {
 	MonoSymbolFile *symfile;
 
 	symfile = g_new0 (MonoSymbolFile, 1);
-	symfile->dynamic_magic = MONO_SYMBOL_FILE_DYNAMIC_MAGIC;
-	symfile->dynamic_version = MONO_SYMBOL_FILE_DYNAMIC_VERSION;
-	symfile->image_file = image->name;
 
-	symfile->image = image;
+	symfile->raw_contents = open_symfile (handle->image, &symfile->raw_contents_size);
 
-	symfile->raw_contents = open_symfile (image, &symfile->raw_contents_size);
-
-	if (load_symfile (symfile))
+	if (load_symfile (handle, symfile))
 		return symfile;
 	else if (!create_symfile) {
 		mono_debug_close_mono_symbol_file (symfile);
@@ -223,16 +218,16 @@ mono_debug_find_source_location (MonoSymbolFile *symfile, MonoMethod *method, gu
 }
 
 gint32
-_mono_debug_address_from_il_offset (MonoDebugMethodInfo *minfo, guint32 il_offset)
+_mono_debug_address_from_il_offset (MonoDebugMethodJitInfo *jit, guint32 il_offset)
 {
 	int i;
 
-	if (!minfo->jit || !minfo->jit->line_numbers)
+	if (!jit || !jit->line_numbers)
 		return -1;
 
-	for (i = minfo->jit->line_numbers->len - 1; i >= 0; i--) {
+	for (i = jit->line_numbers->len - 1; i >= 0; i--) {
 		MonoDebugLineNumberEntry lne = g_array_index (
-			minfo->jit->line_numbers, MonoDebugLineNumberEntry, i);
+			jit->line_numbers, MonoDebugLineNumberEntry, i);
 
 		if (lne.offset <= il_offset)
 			return lne.address;

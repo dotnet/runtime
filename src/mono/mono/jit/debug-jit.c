@@ -194,5 +194,5 @@ mono_debug_jit_add_method (MonoFlowGraph *cfg)
 		jit->locals = locals;
 	}
 
-	mono_debug_add_method (method, jit);
+	mono_debug_add_method (method, jit, cfg->domain);
 }

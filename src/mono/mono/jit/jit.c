@@ -3817,6 +3817,11 @@ mono_jit_compile_method (MonoMethod *method)
 	guint8 *addr;
 	GHashTable *jit_code_hash;
 
+	if (mono_jit_share_code)
+		target_domain = mono_root_domain;
+	else 
+		target_domain = domain;
+
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 
@@ -3834,7 +3839,7 @@ mono_jit_compile_method (MonoMethod *method)
 				method->info = mono_compile_method (nm);
 
 				if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) 
-					mono_debug_add_wrapper (method, nm);
+					mono_debug_add_wrapper (method, nm, target_domain);
 #ifdef MONO_USE_EXC_TABLES
 			}
 #endif
@@ -3842,11 +3847,6 @@ mono_jit_compile_method (MonoMethod *method)
 
 		return method->info;
 	}
-
-	if (mono_jit_share_code)
-		target_domain = mono_root_domain;
-	else 
-		target_domain = domain;
 
 	jit_code_hash = target_domain->jit_code_hash;
 

@@ -141,7 +141,7 @@ mono_debug_close_method (MonoCompile *cfg)
 	for (i = 0; i < jit->num_params; i++)
 		write_variable (cfg->varinfo [i + method->signature->hasthis], &jit->params [i]);
 
-	mono_debug_add_method (method, jit);
+	mono_debug_add_method (method, jit, cfg->domain);
 
 	if (info->breakpoint_id)
 		mono_debugger_breakpoint_callback (method, info->breakpoint_id);

@@ -84,8 +84,8 @@ mono_debugger_initialize (void)
 	mono_debugger_lock ();
 
 	symbol_table = g_new0 (MonoDebuggerSymbolTable, 1);
-	symbol_table->magic = MONO_SYMBOL_FILE_DYNAMIC_MAGIC;
-	symbol_table->version = MONO_SYMBOL_FILE_DYNAMIC_VERSION;
+	symbol_table->magic = MONO_DEBUGGER_MAGIC;
+	symbol_table->version = MONO_DEBUGGER_VERSION;
 	symbol_table->total_size = sizeof (MonoDebuggerSymbolTable);
 
 	mono_debugger_symbol_table = symbol_table;
@@ -95,15 +95,14 @@ mono_debugger_initialize (void)
 }
 
 MonoDebuggerSymbolFile *
-mono_debugger_add_symbol_file (MonoSymbolFile *symfile)
+mono_debugger_add_symbol_file (MonoDebugHandle *handle)
 {
 	MonoDebuggerSymbolFile *info;
 
 	g_assert (mono_debugger_initialized);
 
 	info = allocate_symbol_file_entry (mono_debugger_symbol_table);
-	info->symfile = symfile;
-	info->image_file = symfile->image_file;
+	info->symfile = handle->symfile;
 
 	mono_debugger_add_type (info, mono_defaults.object_class);
 
@@ -142,11 +141,11 @@ mono_debugger_add_type (MonoDebuggerSymbolFile *symfile, MonoClass *klass)
 }
 
 void
-mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoMethod *method)
+mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoDebugMethodInfo *minfo,
+			  MonoDebugMethodJitInfo *jit)
 {
 	MonoSymbolFileMethodAddress *address;
 	MonoSymbolFileLexicalBlockEntry *block;
-	MonoDebugMethodInfo *minfo;
 	MonoDebugVarInfo *var_table;
 	MonoDebuggerRangeInfo *range;
 	MonoMethodHeader *header;
@@ -162,18 +161,14 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoMethod *method)
 	if (!symfile->symfile->method_hash)
 		return;
 
-	header = ((MonoMethodNormal *) method)->header;
-
-	minfo = g_hash_table_lookup (symfile->symfile->method_hash, method);
-	if (!minfo || !minfo->jit)
-		return;
+	header = ((MonoMethodNormal *) minfo->method)->header;
 
 	symfile->generation++;
 
 	size = sizeof (MonoSymbolFileMethodAddress);
 
 	num_variables = minfo->entry->num_parameters + minfo->entry->num_locals;
-	has_this = minfo->jit->this_var != NULL;
+	has_this = jit->this_var != NULL;
 
 	variable_size = (num_variables + has_this) * sizeof (MonoDebugVarInfo);
 	variable_offset = size;
@@ -183,9 +178,9 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoMethod *method)
 	type_offset = size;
 	size += type_size;
 
-	if (minfo->jit->line_numbers) {
+	if (jit->line_numbers) {
 		line_offset = size;
-		line_size = minfo->jit->line_numbers->len * sizeof (MonoDebugLineNumberEntry);
+		line_size = jit->line_numbers->len * sizeof (MonoDebugLineNumberEntry);
 		size += line_size;
 	}
 
@@ -201,27 +196,27 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoMethod *method)
 	block_table = (MonoDebugLexicalBlockEntry *) (ptr + block_offset);
 
 	for (i = 0; i < minfo->entry->num_lexical_blocks; i++, block++) {
-		block_table [i].start_address = _mono_debug_address_from_il_offset (minfo, block->start_offset);
-		block_table [i].end_address = _mono_debug_address_from_il_offset (minfo, block->end_offset);
+		block_table [i].start_address = _mono_debug_address_from_il_offset (jit, block->start_offset);
+		block_table [i].end_address = _mono_debug_address_from_il_offset (jit, block->end_offset);
 	}
 
 	address->size = size;
 	address->has_this = has_this;
-	address->start_address = minfo->jit->code_start;
-	address->end_address = minfo->jit->code_start + minfo->jit->code_size;
-	address->method_start_address = address->start_address + minfo->jit->prologue_end;
-	address->method_end_address = address->start_address + minfo->jit->epilogue_begin;
-	address->wrapper_address = minfo->jit->wrapper_addr;
+	address->start_address = jit->code_start;
+	address->end_address = jit->code_start + jit->code_size;
+	address->method_start_address = address->start_address + jit->prologue_end;
+	address->method_end_address = address->start_address + jit->epilogue_begin;
+	address->wrapper_address = jit->wrapper_addr;
 	address->variable_table_offset = variable_offset;
 	address->type_table_offset = type_offset;
 	address->lexical_block_table_offset = block_offset;
 
-	if (minfo->jit->line_numbers) {
-		address->num_line_numbers = minfo->jit->line_numbers->len;
+	if (jit->line_numbers) {
+		address->num_line_numbers = jit->line_numbers->len;
 		address->line_number_offset = line_offset;
 
 		line_table = (MonoDebugLineNumberEntry *) (ptr + line_offset);
-		memcpy (line_table, minfo->jit->line_numbers->data, line_size);
+		memcpy (line_table, jit->line_numbers->data, line_size);
 	}
 
 	range = allocate_range_entry (symfile);
@@ -231,9 +226,9 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoMethod *method)
 	range->dynamic_data = address;
 	range->dynamic_size = size;
 
-	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
-	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+	if ((minfo->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+	    (minfo->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
+	    (minfo->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		return;
 
 	var_table = (MonoDebugVarInfo *) (ptr + variable_offset);
@@ -242,31 +237,31 @@ mono_debugger_add_method (MonoDebuggerSymbolFile *symfile, MonoMethod *method)
 	type_index_table = (guint32 *)
 		(symfile->symfile->raw_contents + minfo->entry->type_index_table_offset);
 
-	if (minfo->jit->this_var)
-		*var_table++ = *minfo->jit->this_var;
-	*type_table++ = write_type (mono_debugger_symbol_table, &method->klass->this_arg);
+	if (jit->this_var)
+		*var_table++ = *jit->this_var;
+	*type_table++ = write_type (mono_debugger_symbol_table, &minfo->method->klass->this_arg);
 
-	if (minfo->jit->num_params != minfo->entry->num_parameters) {
+	if (jit->num_params != minfo->entry->num_parameters) {
 		g_warning (G_STRLOC ": Method %s.%s has %d parameters, but symbol file claims it has %d.",
-			   minfo->method->klass->name, minfo->method->name, minfo->jit->num_params,
+			   minfo->method->klass->name, minfo->method->name, jit->num_params,
 			   minfo->entry->num_parameters);
 		var_table += minfo->entry->num_parameters;
 	} else {
-		for (i = 0; i < minfo->jit->num_params; i++) {
-			*var_table++ = minfo->jit->params [i];
-			*type_table++ = write_type (mono_debugger_symbol_table, method->signature->params [i]);
+		for (i = 0; i < jit->num_params; i++) {
+			*var_table++ = jit->params [i];
+			*type_table++ = write_type (mono_debugger_symbol_table, minfo->method->signature->params [i]);
 		}
 	}
 
-	if (minfo->jit->num_locals < minfo->entry->num_locals) {
+	if (jit->num_locals < minfo->entry->num_locals) {
 		g_warning (G_STRLOC ": Method %s.%s has %d locals, but symbol file claims it has %d.",
-			   minfo->method->klass->name, minfo->method->name, minfo->jit->num_locals,
+			   minfo->method->klass->name, minfo->method->name, jit->num_locals,
 			   minfo->entry->num_locals);
 		var_table += minfo->entry->num_locals;
 	} else {
 		g_assert ((header != NULL) || (minfo->entry->num_locals == 0));
 		for (i = 0; i < minfo->entry->num_locals; i++) {
-			*var_table++ = minfo->jit->locals [i];
+			*var_table++ = jit->locals [i];
 			*type_table++ = write_type (mono_debugger_symbol_table, header->locals [i]);
 		}
 	}
