@@ -890,6 +890,7 @@ struct {
 	{ "--moduleref",   MONO_TABLE_MODULEREF,   dump_table_moduleref },
 	{ "--module",      MONO_TABLE_MODULE,      dump_table_module },
 	{ "--method",      MONO_TABLE_METHOD,      dump_table_method },
+	{ "--methodimpl",  MONO_TABLE_METHODIMPL,  dump_table_methodimpl },
 	{ "--methodsem",   MONO_TABLE_METHODSEMANTICS,      dump_table_methodsem },
 	{ "--manifest",    MONO_TABLE_MANIFESTRESOURCE,     dump_table_manifest },
 	{ NULL, -1 }

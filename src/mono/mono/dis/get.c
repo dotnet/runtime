@@ -282,7 +282,7 @@ get_typedef_or_ref (MonoImage *m, guint32 dor_token)
 		break;
 
 	default:
-		g_error ("Unhandled encoding for typedef-or-ref coded index");
+		g_error ("Unhandled encoding for typedef-or-ref coded index 0x%08x", dor_token);
 
 	}
 	
@@ -1203,7 +1203,7 @@ get_token_type (MonoImage *m, guint32 token)
 		break;
 
 	default:
-		g_error ("Unhandled encoding for typedef-or-ref coded index");
+		g_error ("Unhandled encoding for token 0x%08x", token);
 
 	}
 	

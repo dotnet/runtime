@@ -549,6 +549,42 @@ dump_table_method (MonoImage *m)
 	
 }
 
+static guint32
+method_dor_to_token (guint32 idx) {
+	switch (idx & METHODDEFORREF_MASK) {
+	case METHODDEFORREF_METHODDEF:
+		return MONO_TOKEN_METHOD_DEF | (idx >> METHODDEFORREF_BITS);
+	case METHODDEFORREF_METHODREF:
+		return MONO_TOKEN_MEMBER_REF | (idx >> METHODDEFORREF_BITS);
+	}
+	return -1;
+}
+
+void
+dump_table_methodimpl (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_METHODIMPL];
+	MonoTableInfo *td = &m->tables [MONO_TABLE_TYPEDEF];
+	int i;
+
+	fprintf (output, "MethodImpl Table (1..%d)\n", t->rows);
+
+	for (i = 1; i <= t->rows; i++){
+		guint32 cols [MONO_METHODIMPL_SIZE];
+		char *class, *impl, *decl;
+
+		mono_metadata_decode_row (t, i - 1, cols, MONO_METHODIMPL_SIZE);
+		class = get_typedef (m, cols [MONO_METHODIMPL_CLASS]);
+		impl = get_method (m, method_dor_to_token (cols [MONO_METHODIMPL_BODY]));
+		decl = get_method (m, method_dor_to_token (cols [MONO_METHODIMPL_DECLARATION]));
+		fprintf (output, "%d: %s\n\tdecl: %s\n\timpl: %s\n", i, class, decl, impl);
+		g_free (class);
+		g_free (impl);
+		g_free (decl);
+	}
+	
+}
+
 static map_t semantics_map [] = {
 		{1, "setter"},
 		{2, "getter"},
