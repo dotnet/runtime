@@ -9,6 +9,7 @@ BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 TESTSRC=			\
 	array-init.cs		\
 	arraylist.cs		\
+	char-isnumber.cs	\
 	field-layout.cs		\
 	hash-table.cs		\
 	test-ops.cs		\
