@@ -114,8 +114,26 @@ typedef struct {
 	MonoJitExceptionInfo *clauses;
 } MonoJitInfo;
 
+typedef struct {
+	gulong methods_compiled;
+	gulong methods_lookups;
+	gulong method_trampolines;
+	gulong allocate_var;
+	gulong analyze_stack_repeat;
+	gulong cil_code_size;
+	gulong native_code_size;
+	gulong code_reallocs;
+	gulong max_code_size_ratio;
+	gulong biggest_method_size;
+	gulong allocated_code_size;
+	MonoMethod *max_ratio_method;
+	MonoMethod *biggest_method;
+	gboolean enabled;
+} MonoJitStats;
+
 typedef GArray MonoJitInfoTable;
 
+extern MonoJitStats mono_jit_stats;
 extern gboolean mono_jit_dump_asm;
 extern gboolean mono_jit_dump_forest;
 extern gboolean mono_jit_trace_calls;

@@ -359,7 +359,7 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	 * 0xff m=2,o=2 imm32
 	 */
 	code -= 6;
-	if ((code [3] == 0xff) && ((code [4] & 0x18) == 0x10) && ((code [4] >> 6) == 1)) {
+	if ((code [1] != 0xe8) && (code [3] == 0xff) && ((code [4] & 0x18) == 0x10) && ((code [4] >> 6) == 1)) {
 		reg = code [4] & 0x07;
 		disp = (signed char)code [5];
 	} else {
@@ -441,8 +441,10 @@ arch_create_jit_trampoline (MonoMethod *method)
 	else
 		jit_code_hash = domain->jit_code_hash;
 
-	if ((code = g_hash_table_lookup (jit_code_hash, method)))
+	if ((code = g_hash_table_lookup (jit_code_hash, method))) {
+		mono_jit_stats.methods_lookups++;
 		return code;
+	}
 
 	if (!vc) {
 		vc = buf = g_malloc (24);
@@ -474,6 +476,8 @@ arch_create_jit_trampoline (MonoMethod *method)
 
 	/* store trampoline address */
 	method->info = code;
+
+	mono_jit_stats.method_trampolines++;
 
 	return code;
 }
@@ -686,6 +690,8 @@ tree_emit (int goal, MonoFlowGraph *cfg, MBTree *tree)
 		int add = MIN ((cfg->code_size * 2), 1024);
 
 		cfg->code_size += add;
+		mono_jit_stats.allocated_code_size += add;
+		mono_jit_stats.code_reallocs++;
 		cfg->start = g_realloc (cfg->start, cfg->code_size);
 		g_assert (cfg->start);
 		cfg->code = cfg->start + offset;
@@ -795,7 +801,7 @@ arch_compile_method (MonoMethod *method)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoFlowGraph *cfg;
-	MonoMemPool *mp = mono_mempool_new ();
+	MonoMemPool *mp;
 	guint8 *addr;
 	GHashTable *jit_code_hash;
 
@@ -807,8 +813,14 @@ arch_compile_method (MonoMethod *method)
 	else
 		jit_code_hash = domain->jit_code_hash;
 
-	if ((addr = g_hash_table_lookup (jit_code_hash, method)))
+	if ((addr = g_hash_table_lookup (jit_code_hash, method))) {
+		mono_jit_stats.methods_lookups++;
 		return addr;
+	}
+
+	mono_jit_stats.methods_compiled++;
+	
+	mp = mono_mempool_new ();
 
 	if (mono_jit_trace_calls || mono_jit_dump_asm || mono_jit_dump_forest) {
 		printf ("Start JIT compilation of %s.%s:%s\n", method->klass->name_space,
@@ -933,6 +945,7 @@ arch_compile_method (MonoMethod *method)
 	} else {
 		MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
 		MonoJitInfo *ji = g_new0 (MonoJitInfo, 1);
+		gulong code_size_ratio;
 		
 		cfg = mono_cfg_new (method, mp);
 
@@ -950,6 +963,7 @@ arch_compile_method (MonoMethod *method)
 
 		cfg->code_size = 256000;
 		cfg->start = cfg->code = g_malloc (cfg->code_size);
+		mono_jit_stats.allocated_code_size += cfg->code_size;
 
 		if (match_debug_method (method))
 			x86_breakpoint (cfg->code);
@@ -980,6 +994,17 @@ arch_compile_method (MonoMethod *method)
 
 		addr = cfg->start;
 
+		code_size_ratio = cfg->code - cfg->start;
+		if (code_size_ratio > mono_jit_stats.biggest_method_size) {
+			mono_jit_stats.biggest_method_size = code_size_ratio;
+			mono_jit_stats.biggest_method = method;
+		}
+		code_size_ratio = (code_size_ratio * 100) / header->code_size;
+		if (code_size_ratio > mono_jit_stats.max_code_size_ratio) {
+			mono_jit_stats.max_code_size_ratio = code_size_ratio;
+			mono_jit_stats.max_ratio_method = method;
+		}
+
 		mono_compute_branches (cfg);
 		
 		if (mono_jit_dump_asm) {
@@ -996,6 +1021,8 @@ arch_compile_method (MonoMethod *method)
 		ji->method = method;
 		ji->code_start = addr;
 		mono_jit_info_table_add (mono_jit_info_table, ji);
+
+		mono_jit_stats.native_code_size += ji->code_size;
 
 		if (header->num_clauses) {
 			int i, start_block, end_block;

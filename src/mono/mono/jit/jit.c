@@ -204,6 +204,8 @@ MonoJitInfoTable *mono_jit_info_table = NULL;
 /* last managed frame (used by pinvoke) */ 
 guint32 lmf_thread_id = 0;
 
+MonoJitStats mono_jit_stats;
+
 /* 
  * We sometimes need static data, for example the forest generator need it to
  * store constants or class data.
@@ -745,6 +747,8 @@ arch_allocate_var (MonoFlowGraph *cfg, int size, int align, MonoValueKind kind, 
 {
 	MonoVarInfo vi;
 
+	mono_jit_stats.allocate_var++;
+
 	switch (kind) {
 	case MONO_TEMPVAR:
 	case MONO_LOCALVAR: {
@@ -1162,6 +1166,8 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 
 	ip = header->code;
 	end = ip + header->code_size;
+
+	mono_jit_stats.cil_code_size += header->code_size;
 
 	/* fixme: add block boundaries for exceptions */
 	for (i = 0; i < header->num_clauses; ++i) {
@@ -3077,6 +3083,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 		repeat_count++;
 		//printf ("REPEAT %d\n", repeat);
+		mono_jit_stats.analyze_stack_repeat++;
 
 
 	} while (repeat);
@@ -3192,6 +3199,7 @@ usage (char *name)
 		 "--share-code     force jit to produce shared code\n"
 		 "--print-vtable   print the VTable of all used classes\n"
 		 "--stabs          write stabs debug information\n"
+		 "--stats          print statistics about the jit operations\n"
 		 "--compile cname  compile methods in given class (namespace.name[:methodname])\n"
 		 "--ncompile num   compile methods num times (default: 1000)\n"
 		 "--debug name     insert a breakpoint at the start of method name\n"
@@ -3317,6 +3325,9 @@ main (int argc, char *argv [])
 			compile_class = argv [++i];
 		} else if (strcmp (argv [i], "--ncompile") == 0) {
 			compile_times = atoi (argv [++i]);
+		} else if (strcmp (argv [i], "--stats") == 0) {
+			memset (&mono_jit_stats, 0, sizeof (MonoJitStats));
+			mono_jit_stats.enabled = TRUE;
 		} else if (strcmp (argv [i], "--stabs") == 0) {
 			mono_debug_handle = mono_debug_open_file ("");
 		} else if (strcmp (argv [i], "--verbose") == 0) {
@@ -3438,6 +3449,23 @@ main (int argc, char *argv [])
 	mono_thread_cleanup();
 
 	mono_domain_unload (domain, TRUE);
+
+	if (mono_jit_stats.enabled) {
+		g_print ("Mono Jit statistics\n");
+		g_print ("Compiled methods:       %ld\n", mono_jit_stats.methods_compiled);
+		g_print ("Methods cache lookup:   %ld\n", mono_jit_stats.methods_lookups);
+		g_print ("Method trampolines:     %ld\n", mono_jit_stats.method_trampolines);
+		g_print ("Allocated vars:         %ld\n", mono_jit_stats.allocate_var);
+		g_print ("Analyze stack repeat:   %ld\n", mono_jit_stats.analyze_stack_repeat);
+		g_print ("Compiled CIL code size: %ld\n", mono_jit_stats.cil_code_size);
+		g_print ("Native code size:       %ld\n", mono_jit_stats.native_code_size);
+		g_print ("Max code size ratio:    %.2f (%s::%s)\n", mono_jit_stats.max_code_size_ratio/100.0,
+				mono_jit_stats.max_ratio_method->klass->name, mono_jit_stats.max_ratio_method->name);
+		g_print ("Biggest method:         %ld (%s::%s)\n", mono_jit_stats.biggest_method_size,
+				mono_jit_stats.biggest_method->klass->name, mono_jit_stats.biggest_method->name);
+		g_print ("Code reallocs:          %ld\n", mono_jit_stats.code_reallocs);
+		g_print ("Allocated code size:    %ld\n", mono_jit_stats.allocated_code_size);
+	}
 
 	return retval;
 }
