@@ -1,8 +1,3 @@
-2004-11-19  Neale Ferguson <Neale.Ferguson@SoftwareAG-usa.com>
-
-	* mini-s390.c, tramp-s390.c, mini-s390.h: Add LMF processing for trampolines.
-	Check if a trampoline for a synchronized method is required. 
-
 2004-11-19  Raja R Harinath  <rharinath@novell.com>
 
 	Integrate bootstrap build into 'make all'.  Most of the bootstrap
