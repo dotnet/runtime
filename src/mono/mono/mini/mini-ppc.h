@@ -21,8 +21,10 @@ struct MonoLMF {
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
 	MonoMethod *method;
-	guint32     ebp;
-	guint32     eip;
+	gulong     ebp;
+	gulong     eip;
+	gulong     iregs [19]; /* 13..31 */
+	gdouble    fregs [20]; /* 14..31 */
 };
 
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1

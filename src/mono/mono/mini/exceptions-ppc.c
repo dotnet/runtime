@@ -107,6 +107,12 @@ typedef struct mcontext  * mcontext_t;
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_ir))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->sc_sp))
 
+typedef struct {
+	unsigned long sp;
+	unsigned long unused1;
+	unsigned long lr;
+} MonoPPCStackFrame;
+
 #else /* sigcontext is different on linux/ppc. See /usr/include/asm/ptrace.h. */
 
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->regs->nip = (unsigned long)ip; } while (0); 
@@ -114,6 +120,11 @@ typedef struct mcontext  * mcontext_t;
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->regs->nip))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs->gpr[1]))
+
+typedef struct {
+	unsigned long sp;
+	unsigned long lr;
+} MonoPPCStackFrame;
 
 #endif
 
@@ -652,6 +663,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 {
 	MonoJitInfo *ji;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
+	unsigned long *ptr;
+	char *p;
+	MonoPPCStackFrame *sframe;
 
 	ji = mono_jit_info_table_find (domain, ip);
 
@@ -725,6 +739,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		new_ctx->SC_EIP = *((int *)ctx->SC_EBP + 1) - 1;
 		new_ctx->SC_EBP = *((int *)ctx->SC_EBP);
 #endif
+		sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_BP (ctx);
+		MONO_CONTEXT_SET_BP (new_ctx, sframe->sp);
+		MONO_CONTEXT_SET_IP (new_ctx, sframe->lr);
 		*res = *ji;
 		return res;
 #ifdef MONO_USE_EXC_TABLES
@@ -759,6 +776,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		 * expression points to a stack location which can be used as ESP */
 		new_ctx->SC_ESP = (unsigned long)&((*lmf)->eip);
 #endif
+		sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_BP (ctx);
+		MONO_CONTEXT_SET_BP (new_ctx, sframe->sp);
+		MONO_CONTEXT_SET_IP (new_ctx, sframe->lr);
 		*lmf = (*lmf)->previous_lmf;
 
 		return res;
@@ -818,11 +838,13 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 	MonoJitInfo *ji, rji;
 	gint native_offset, il_offset;
 	gboolean managed;
+	MonoPPCStackFrame *sframe;
 
 	MonoContext ctx, new_ctx;
 
-	MONO_CONTEXT_SET_IP (&ctx, __builtin_return_address (0));
-	MONO_CONTEXT_SET_BP (&ctx, __builtin_frame_address (1));
+	__asm__ volatile("lwz   %0,0(r1)" : "=r" (sframe));
+	MONO_CONTEXT_SET_IP (&ctx, sframe->lr);
+	MONO_CONTEXT_SET_BP (&ctx, sframe->sp);
 
 	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
 		

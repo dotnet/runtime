@@ -857,7 +857,8 @@ mono_arch_allocate_vars (MonoCompile *m)
 	offset &= ~(16 - 1);
 
 	/* FIXME: check how to handle this stuff... reserve space to save LMF and caller saved registers */
-	offset += sizeof (MonoLMF);
+	if (m->method->save_lmf)
+		offset += sizeof (MonoLMF);
 
 #if 0
 	/* this stuff should not be needed on ppc and the new jit,
@@ -2862,6 +2863,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* FIXME: emit exception if needed */
 			break;
 		}
+		case OP_SQRT:
+			ppc_fsqrtd (code, ins->dreg, ins->sreg1);
+			break;
 		case OP_FADD:
 			ppc_fadd (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
@@ -3016,9 +3020,10 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			target = patch_info->data.inst->inst_c0 + code;
 			break;
 		case MONO_PATCH_INFO_IP:
-			*((gpointer *)(ip)) = ip;
+			patch_lis_ori (ip, ip);
 			continue;
 		case MONO_PATCH_INFO_METHOD_REL:
+			g_assert_not_reached ();
 			*((gpointer *)(ip)) = code + patch_info->data.offset;
 			continue;
 		case MONO_PATCH_INFO_INTERNAL_METHOD: {
@@ -3194,45 +3199,20 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (tracing)
 		pos += 8;
 
-	if (method->save_lmf) {
-#if 0
-		pos += sizeof (MonoLMF);
-		
-		/* save the current IP */
-		mono_add_patch_info (cfg, code + 1 - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
-		x86_push_imm (code, 0);
-
-		/* save all caller saved regs */
-		x86_push_reg (code, X86_EBX);
-		x86_push_reg (code, X86_EDI);
-		x86_push_reg (code, X86_ESI);
-		x86_push_reg (code, X86_EBP);
-
-		/* save method info */
-		x86_push_imm (code, method);
-	
-		/* get the address of lmf for the current thread */
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-				     (gpointer)"get_lmf_addr");
-		x86_call_code (code, 0);
-
-		/* push lmf */
-		x86_push_reg (code, X86_EAX); 
-		/* push *lfm (previous_lmf) */
-		x86_push_membase (code, X86_EAX, 0);
-		/* *(lmf) = ESP */
-		x86_mov_membase_reg (code, X86_EAX, 0, X86_ESP, 4);
-#endif
-	} else {
-
+	if (!method->save_lmf) {
 		for (i = 13; i < 32; ++i) {
 			if (cfg->used_int_regs & (1 << i)) {
-				pos += 4;
+				pos += sizeof (gulong);
 				ppc_stw (code, i, -pos, ppc_sp);
 			}
 		}
+		/*for (i = 14; i < 32; ++i) {
+			if (cfg->used_float_regs & (1 << i)) {
+				pos += sizeof (gdouble);
+				ppc_stfd (code, i, -pos, ppc_sp);
+			}
+		}*/
 	}
-
 	alloc_size += pos;
 	// align to PPC_STACK_ALIGNMENT bytes
 	if (alloc_size & (PPC_STACK_ALIGNMENT - 1))
@@ -3357,6 +3337,33 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		pos++;
 	}
 
+	if (method->save_lmf) {
+
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+				     (gpointer)"mono_get_lmf_addr");
+		ppc_bl (code, 0);
+		/* we build the MonoLMF structure on the stack - see mini-ppc.h */
+		ppc_addi (code, ppc_r11, ppc_sp, PPC_MINIMAL_STACK_SIZE + cfg->param_area);
+		ppc_stw (code, ppc_r3, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
+		/* new_lmf->previous_lmf = *lmf_addr */
+		ppc_lwz (code, ppc_r0, 0, ppc_r3);
+		ppc_stw (code, ppc_r0, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r11);
+		/* *(lmf_addr) = r11 */
+		ppc_stw (code, ppc_r11, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r3);
+		/* save method info */
+		ppc_load (code, ppc_r0, method);
+		ppc_stw (code, ppc_r0, G_STRUCT_OFFSET(MonoLMF, method), ppc_r11);
+		ppc_stw (code, ppc_sp, G_STRUCT_OFFSET(MonoLMF, ebp), ppc_r11);
+		/* save the current IP */
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
+		ppc_load (code, ppc_r0, 0x01010101);
+		ppc_stw (code, ppc_r0, G_STRUCT_OFFSET(MonoLMF, eip), ppc_r11);
+		ppc_stmw (code, ppc_r13, ppc_r11, G_STRUCT_OFFSET(MonoLMF, iregs));
+		for (i = 14; i < 32; i++) {
+			ppc_stfd (code, i, G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble)), ppc_r11);
+		}
+	}
+
 	if (tracing)
 		code = mono_arch_instrument_prolog (cfg, enter_method, code, TRUE);
 
@@ -3384,27 +3391,19 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 	
 	if (method->save_lmf) {
-		pos = -sizeof (MonoLMF);
-	}
-
-	if (method->save_lmf) {
-#if 0
-		/* ebx = previous_lmf */
-		x86_pop_reg (code, X86_EBX);
-		/* edi = lmf */
-		x86_pop_reg (code, X86_EDI);
-		/* *(lmf) = previous_lmf */
-		x86_mov_membase_reg (code, X86_EDI, 0, X86_EBX, 4);
-
-		/* discard method info */
-		x86_pop_reg (code, X86_ESI);
-
-		/* restore caller saved regs */
-		x86_pop_reg (code, X86_EBP);
-		x86_pop_reg (code, X86_ESI);
-		x86_pop_reg (code, X86_EDI);
-		x86_pop_reg (code, X86_EBX);
-#endif
+		ppc_addi (code, ppc_r11, cfg->frame_reg, PPC_MINIMAL_STACK_SIZE + cfg->param_area);
+		/* r5 = previous_lmf */
+		ppc_lwz (code, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r11);
+		/* r6 = lmf_addr */
+		ppc_lwz (code, ppc_r6, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
+		/* *(lmf_addr) = previous_lmf */
+		ppc_stw (code, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r6);
+		/* restore iregs */
+		ppc_lmw (code, ppc_f13, ppc_r11, G_STRUCT_OFFSET(MonoLMF, iregs));
+		/* restore fregs */
+		for (i = 14; i < 32; i++) {
+			ppc_lfd (code, i, G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble)), ppc_r11);
+		}
 	}
 
 	if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
@@ -3412,10 +3411,12 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		ppc_mtlr (code, ppc_r0);
 	}
 	ppc_addic (code, ppc_sp, cfg->frame_reg, cfg->stack_usage);
-	for (i = 13; i < 32; ++i) {
-		if (cfg->used_int_regs & (1 << i)) {
-			pos += 4;
-			ppc_lwz (code, i, -pos, cfg->frame_reg);
+	if (!method->save_lmf) {
+		for (i = 13; i < 32; ++i) {
+			if (cfg->used_int_regs & (1 << i)) {
+				pos += 4;
+				ppc_lwz (code, i, -pos, cfg->frame_reg);
+			}
 		}
 	}
 	ppc_blr (code);
@@ -3480,6 +3481,11 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 gint
 mono_arch_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
+	/* optional instruction, need to detect it
+	if (cmethod->klass == mono_defaults.math_class) {
+		if (strcmp (cmethod->name, "Sqrt") == 0)
+			return OP_SQRT;
+	}*/
 	return -1;
 }
 

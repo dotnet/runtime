@@ -535,6 +535,7 @@ x86_xchg: src1:i src2:i clob:x len:1
 x86_fpop: src1:f len:2
 x86_fp_load_i8: dest:f src1:b len:7
 x86_fp_load_i4: dest:f src1:b len:7
+sqrt: dest:f src1:f len:4
 adc: dest:i src1:i src2:i len:4
 addcc: dest:i src1:i src2:i len:4
 subcc: dest:i src1:i src2:i len:4
