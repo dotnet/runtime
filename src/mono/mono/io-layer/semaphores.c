@@ -113,6 +113,8 @@ gpointer CreateSemaphore(WapiSecurityAttributes *security G_GNUC_UNUSED, gint32 
 	struct _WapiHandle_sem *sem_handle;
 	gpointer handle;
 	gboolean ok;
+	int thr_ret;
+	gpointer ret = NULL;
 	
 	mono_once (&sem_ops_once, sem_ops_init);
 	
@@ -139,17 +141,20 @@ gpointer CreateSemaphore(WapiSecurityAttributes *security G_GNUC_UNUSED, gint32 
 		return(NULL);
 	}
 
-	_wapi_handle_lock_handle (handle);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_SEM,
 				(gpointer *)&sem_handle, NULL);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error lookup up semaphore handle %p", handle);
-		_wapi_handle_unlock_handle (handle);
-		return(NULL);
+		goto cleanup;
 	}
-
+	ret = handle;
+	
 	sem_handle->val=initial;
 	sem_handle->max=max;
 
@@ -163,9 +168,12 @@ gpointer CreateSemaphore(WapiSecurityAttributes *security G_GNUC_UNUSED, gint32 
 		  initial, max);
 #endif
 
-	_wapi_handle_unlock_handle (handle);
+cleanup:
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 	
-	return(handle);
+	return(ret);
 }
 
 /**
@@ -185,6 +193,7 @@ gboolean ReleaseSemaphore(gpointer handle, gint32 count, gint32 *prevcount)
 	struct _WapiHandle_sem *sem_handle;
 	gboolean ok;
 	gboolean ret=FALSE;
+	int thr_ret;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_SEM,
 				(gpointer *)&sem_handle, NULL);
@@ -194,7 +203,10 @@ gboolean ReleaseSemaphore(gpointer handle, gint32 count, gint32 *prevcount)
 		return(FALSE);
 	}
 
-	_wapi_handle_lock_handle (handle);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
 
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": sem %p val %d count %d",
@@ -229,7 +241,9 @@ gboolean ReleaseSemaphore(gpointer handle, gint32 count, gint32 *prevcount)
 #endif
 	
 end:
-	_wapi_handle_unlock_handle (handle);
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 
 	return(ret);
 }

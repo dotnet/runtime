@@ -33,13 +33,17 @@ static mono_once_t timed_thread_once = MONO_ONCE_INIT;
 
 static void timed_thread_init(void)
 {
-	pthread_key_create(&timed_thread_key, NULL);
+	int thr_ret;
+	
+	thr_ret = pthread_key_create(&timed_thread_key, NULL);
+	g_assert (thr_ret == 0);
 }
 
 void _wapi_timed_thread_exit(guint32 exitstatus)
 {
 	TimedThread *thread;
 	void *specific;
+	int thr_ret;
 	
 	if((specific = pthread_getspecific(timed_thread_key)) == NULL) {
 		/* Handle cases which won't happen with correct usage.
@@ -49,7 +53,10 @@ void _wapi_timed_thread_exit(guint32 exitstatus)
 	
 	thread=(TimedThread *)specific;
 	
-	mono_mutex_lock(&thread->join_mutex);
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&thread->join_mutex);
+	thr_ret = mono_mutex_lock(&thread->join_mutex);
+	g_assert (thr_ret == 0);
 	
 	/* Tell a joiner that we're exiting.
 	 */
@@ -66,8 +73,12 @@ void _wapi_timed_thread_exit(guint32 exitstatus)
 		thread->exit_routine(exitstatus, thread->exit_userdata);
 	}
 	
-	pthread_cond_signal(&thread->exit_cond);
-	mono_mutex_unlock(&thread->join_mutex);
+	thr_ret = pthread_cond_signal(&thread->exit_cond);
+	g_assert (thr_ret == 0);
+	
+	thr_ret = mono_mutex_unlock(&thread->join_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 	
 	/* Call pthread_exit() to call destructors and really exit the
 	 * thread.
@@ -82,9 +93,11 @@ static void *timed_thread_start_routine(gpointer args) G_GNUC_NORETURN;
 static void *timed_thread_start_routine(gpointer args)
 {
 	TimedThread *thread = (TimedThread *)args;
+	int thr_ret;
 	
 	mono_once(&timed_thread_once, timed_thread_init);
-	pthread_setspecific(timed_thread_key, (void *)thread);
+	thr_ret = pthread_setspecific(timed_thread_key, (void *)thread);
+	g_assert (thr_ret == 0);
 
 	/* This used to be pthread_detach(thread->id);
 	 *
@@ -105,7 +118,8 @@ static void *timed_thread_start_routine(gpointer args)
 	 * This was 100% reproducible on Debian Woody with gcc 2.95.4,
 	 * and on Red Hat 9 with gcc 3.2.2.
 	 */
-	pthread_detach(pthread_self ());
+	thr_ret = pthread_detach(pthread_self ());
+	g_assert (thr_ret == 0);
 
 	if(thread->create_flags & CREATE_SUSPENDED) {
 		thread->suspend_count = 1;
@@ -126,11 +140,16 @@ int _wapi_timed_thread_create(TimedThread **threadp,
 {
 	TimedThread *thread;
 	int result;
+	int thr_ret;
 	
 	thread=(TimedThread *)g_new0(TimedThread, 1);
 	
-	mono_mutex_init(&thread->join_mutex, NULL);
-	pthread_cond_init(&thread->exit_cond, NULL);
+	thr_ret = mono_mutex_init(&thread->join_mutex, NULL);
+	g_assert (thr_ret == 0);
+	
+	thr_ret = pthread_cond_init(&thread->exit_cond, NULL);
+	g_assert (thr_ret == 0);
+	
 	thread->create_flags = create_flags;
 	MONO_SEM_INIT (&thread->suspend_sem, 0);
 	MONO_SEM_INIT (&thread->suspended_sem, 0);
@@ -158,13 +177,22 @@ int _wapi_timed_thread_attach(TimedThread **threadp,
 			      gpointer exit_userdata)
 {
 	TimedThread *thread;
-
+	int thr_ret;
+	
 	thread=(TimedThread *)g_new0(TimedThread, 1);
 
-	mono_mutex_init(&thread->join_mutex, NULL);
-	pthread_cond_init(&thread->exit_cond, NULL);
-	sem_init (&thread->suspend_sem, 0, 0);
-	sem_init (&thread->suspended_sem, 0, 0);
+	thr_ret = mono_mutex_init(&thread->join_mutex, NULL);
+	g_assert (thr_ret == 0);
+	
+	thr_ret = pthread_cond_init(&thread->exit_cond, NULL);
+	g_assert (thr_ret == 0);
+	
+	thr_ret = sem_init (&thread->suspend_sem, 0, 0);
+	g_assert (thr_ret != -1);
+	
+	thr_ret = sem_init (&thread->suspended_sem, 0, 0);
+	g_assert (thr_ret != -1);
+	
 	thread->exit_routine = exit_routine;
 	thread->exit_userdata = exit_userdata;
 	thread->exitstatus = 0;
@@ -176,7 +204,8 @@ int _wapi_timed_thread_attach(TimedThread **threadp,
 	 * called)
 	 */
 	mono_once(&timed_thread_once, timed_thread_init);
-	pthread_setspecific(timed_thread_key, (void *)thread);
+	thr_ret = pthread_setspecific(timed_thread_key, (void *)thread);
+	g_assert (thr_ret == 0);
 
 	*threadp = thread;
 
@@ -187,8 +216,13 @@ int _wapi_timed_thread_join(TimedThread *thread, struct timespec *timeout,
 			    guint32 *exitstatus)
 {
 	int result;
+	int thr_ret;
 	
-	mono_mutex_lock(&thread->join_mutex);
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&thread->join_mutex);
+	thr_ret = mono_mutex_lock(&thread->join_mutex);
+	g_assert (thr_ret == 0);
+	
 	result=0;
 	
 	/* Wait until the thread announces that it's exiting, or until
@@ -205,7 +239,10 @@ int _wapi_timed_thread_join(TimedThread *thread, struct timespec *timeout,
 		}
 	}
 	
-	mono_mutex_unlock(&thread->join_mutex);
+	thr_ret = mono_mutex_unlock(&thread->join_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+	
 	if(result == 0 && thread->exiting) {
 		if(exitstatus!=NULL) {
 			*exitstatus = thread->exitstatus;

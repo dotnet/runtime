@@ -174,15 +174,21 @@ gpointer CreateMutex(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean ow
 	gpointer handle;
 	gboolean ok;
 	gchar *utf8_name;
+	int thr_ret;
+	gpointer ret = NULL;
 	
 	mono_once (&mutex_ops_once, mutex_ops_init);
 
+	/* w32 seems to guarantee that opening named mutexes can't
+	 * race each other
+	 */
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&named_mutex_mutex);
+	thr_ret = mono_mutex_lock (&named_mutex_mutex);
+	g_assert (thr_ret == 0);
+
 	if(name!=NULL) {
 		utf8_name=g_utf16_to_utf8 (name, -1, NULL, NULL, NULL);
-		/* w32 seems to guarantee that opening named mutexes can't
-		 * race each other
-		 */
-		mono_mutex_lock (&named_mutex_mutex);
 	} else {
 		utf8_name=NULL;
 	}
@@ -201,14 +207,13 @@ gpointer CreateMutex(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean ow
 			 * object.
 			 */
 			g_free (utf8_name);
-			mono_mutex_unlock (&named_mutex_mutex);
 			SetLastError (ERROR_INVALID_HANDLE);
-			return(NULL);
+			goto cleanup;
 		} else if (handle!=NULL) {
 			g_free (utf8_name);
-			mono_mutex_unlock (&named_mutex_mutex);
 			_wapi_handle_ref (handle);
-			return(handle);
+			ret = handle;
+			goto cleanup;
 		}
 		/* Otherwise fall through to create the mutex. */
 	}
@@ -220,14 +225,13 @@ gpointer CreateMutex(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean ow
 		if(utf8_name!=NULL) {
 			g_free (utf8_name);
 		}
-		if(name!=NULL) {
-			mono_mutex_unlock (&named_mutex_mutex);
-		}
-		
-		return(NULL);
+		goto cleanup;
 	}
 
-	_wapi_handle_lock_handle (handle);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_MUTEX,
 				(gpointer *)&mutex_handle, NULL);
@@ -238,14 +242,10 @@ gpointer CreateMutex(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean ow
 			g_free (utf8_name);
 		}
 		
-		if(name!=NULL) {
-			mono_mutex_unlock (&named_mutex_mutex);
-		}
-		
-		_wapi_handle_unlock_handle (handle);
-		return(NULL);
+		goto handle_cleanup;
 	}
-
+	ret = handle;
+	
 	if(utf8_name!=NULL) {
 		mutex_handle->sharedns.name=_wapi_handle_scratch_store (
 			utf8_name, strlen (utf8_name));
@@ -262,17 +262,21 @@ gpointer CreateMutex(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean ow
 		   handle);
 #endif
 
-	_wapi_handle_unlock_handle (handle);
-
 	if(utf8_name!=NULL) {
 		g_free (utf8_name);
 	}
+
+handle_cleanup:
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 	
-	if(name!=NULL) {
-		mono_mutex_unlock (&named_mutex_mutex);
-	}
-		
-	return(handle);
+cleanup:
+	thr_ret = mono_mutex_unlock (&named_mutex_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+	
+	return(ret);
 }
 
 /**
@@ -290,6 +294,8 @@ gboolean ReleaseMutex(gpointer handle)
 	gboolean ok;
 	pthread_t tid=pthread_self();
 	pid_t pid=getpid ();
+	int thr_ret;
+	gboolean ret = FALSE;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_MUTEX,
 				(gpointer *)&mutex_handle, NULL);
@@ -299,7 +305,10 @@ gboolean ReleaseMutex(gpointer handle)
 		return(FALSE);
 	}
 
-	_wapi_handle_lock_handle (handle);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Releasing mutex handle %p",
@@ -311,10 +320,10 @@ gboolean ReleaseMutex(gpointer handle)
 		g_message(G_GNUC_PRETTY_FUNCTION ": We don't own mutex handle %p (owned by %d:%ld, me %d:%ld)", handle, mutex_handle->pid, mutex_handle->tid, pid, tid);
 #endif
 
-		_wapi_handle_unlock_handle (handle);
-		return(FALSE);
+		goto cleanup;
 	}
-
+	ret = TRUE;
+	
 	/* OK, we own this mutex */
 	mutex_handle->recursion--;
 	
@@ -329,7 +338,10 @@ gboolean ReleaseMutex(gpointer handle)
 		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 	}
 
-	_wapi_handle_unlock_handle (handle);
+cleanup:
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 	
-	return(TRUE);
+	return(ret);
 }

@@ -20,7 +20,10 @@ static mono_once_t error_key_once=MONO_ONCE_INIT;
 
 static void error_init(void)
 {
-	pthread_key_create(&error_key, NULL);
+	int ret;
+	
+	ret = pthread_key_create(&error_key, NULL);
+	g_assert (ret == 0);
 }
 
 /**
@@ -51,9 +54,12 @@ guint32 GetLastError(void)
  */
 void SetLastError(guint32 code)
 {
+	int ret;
+	
 	/* Set the thread-local error code */
 	mono_once(&error_key_once, error_init);
-	pthread_setspecific(error_key, GUINT_TO_POINTER(code));
+	ret = pthread_setspecific(error_key, GUINT_TO_POINTER(code));
+	g_assert (ret == 0);
 }
 
 guint32

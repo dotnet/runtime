@@ -68,13 +68,22 @@ pthread_mutex_timedlock (pthread_mutex_t *mutex, const struct timespec *timeout)
 int
 mono_once (mono_once_t *once, void (*once_init) (void))
 {
+	int thr_ret;
+	
 	if (!once->complete) {
-		pthread_mutex_lock (&once->mutex);
+		pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+				      (void *)&once->mutex);
+		thr_ret = pthread_mutex_lock (&once->mutex);
+		g_assert (thr_ret == 0);
+		
 		if (!once->complete) {
 			once_init ();
 			once->complete = TRUE;
 		}
-		pthread_mutex_unlock (&once->mutex);
+		thr_ret = pthread_mutex_unlock (&once->mutex);
+		g_assert (thr_ret == 0);
+		
+		pthread_cleanup_pop (0);
 	}
 	
 	return 0;
@@ -156,20 +165,24 @@ mono_mutexattr_destroy (mono_mutexattr_t *attr)
 int
 mono_mutex_init (mono_mutex_t *mutex, const mono_mutexattr_t *attr)
 {
+	int ret;
+	int thr_ret;
+	
 	mutex->waiters = 0;
 	mutex->depth = 0;
 	mutex->owner = MONO_THREAD_NONE;
 	
 	if (!attr || attr->type == MONO_MUTEX_NORMAL) {
 		mutex->type = MONO_MUTEX_NORMAL;
-		pthread_mutex_init (&mutex->mutex, NULL);
+		ret = pthread_mutex_init (&mutex->mutex, NULL);
 	} else {
 		mutex->type = MONO_MUTEX_RECURSIVE;
-		pthread_mutex_init (&mutex->mutex, NULL);
-		pthread_cond_init (&mutex->cond, NULL);
+		ret = pthread_mutex_init (&mutex->mutex, NULL);
+		thr_ret = pthread_cond_init (&mutex->cond, NULL);
+		g_assert (thr_ret == 0);
 	}
 	
-	return 0;
+	return(ret);
 }
 
 int
@@ -195,7 +208,7 @@ mono_mutex_lock (mono_mutex_t *mutex)
 				break;
 			} else {
 				mutex->waiters++;
-				if (pthread_cond_wait (&mutex->cond, &mutex->mutex) == -1)
+				if (pthread_cond_wait (&mutex->cond, &mutex->mutex) != 0)
 					return EINVAL;
 				mutex->waiters--;
 			}
@@ -282,6 +295,8 @@ mono_mutex_timedlock (mono_mutex_t *mutex, const struct timespec *timeout)
 int
 mono_mutex_unlock (mono_mutex_t *mutex)
 {
+	int thr_ret;
+	
 	switch (mutex->type) {
 	case MONO_MUTEX_NORMAL:
 		return pthread_mutex_unlock (&mutex->mutex);
@@ -294,8 +309,10 @@ mono_mutex_unlock (mono_mutex_t *mutex)
 		mutex->depth--;
 		if (mutex->depth == 0) {
 			mutex->owner = MONO_THREAD_NONE;
-			if (mutex->waiters > 0)
-				pthread_cond_signal (&mutex->cond);
+			if (mutex->waiters > 0) {
+				thr_ret = pthread_cond_signal (&mutex->cond);
+				g_assert (thr_ret == 0);
+			}
 		}
 		
 		return pthread_mutex_unlock (&mutex->mutex);
@@ -308,6 +325,7 @@ int
 mono_mutex_destroy (mono_mutex_t *mutex)
 {
 	int ret = 0;
+	int thr_ret;
 	
 	switch (mutex->type) {
 	case MONO_MUTEX_NORMAL:
@@ -315,7 +333,8 @@ mono_mutex_destroy (mono_mutex_t *mutex)
 		break;
 	case MONO_MUTEX_RECURSIVE:
 		if ((ret = pthread_mutex_destroy (&mutex->mutex)) == 0) {
-			pthread_cond_destroy (&mutex->cond);
+			thr_ret = pthread_cond_destroy (&mutex->cond);
+			g_assert (thr_ret == 0);
 		}
 	}
 	

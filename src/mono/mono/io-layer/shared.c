@@ -70,7 +70,7 @@
 guchar *_wapi_shm_file (_wapi_shm_t type, guint32 segment)
 {
 	static guchar file[_POSIX_PATH_MAX];
-	guchar *name, *filename, *dir, *wapi_dir;
+	guchar *name = NULL, *filename, *dir, *wapi_dir;
 	gchar machine_name[256];
 
 	if (gethostname(machine_name, sizeof(machine_name)) != 0)
@@ -162,7 +162,7 @@ static int _wapi_shm_file_open (const guchar *filename, _wapi_shm_t type,
 {
 	int fd;
 	struct stat statbuf;
-	guint32 wanted_size;
+	guint32 wanted_size = 0;
 	
 	if(created) {
 		*created=FALSE;

@@ -162,13 +162,19 @@ int WSACleanup(void)
 
 static void error_init(void)
 {
-	pthread_key_create(&error_key, NULL);
+	int ret;
+	
+	ret = pthread_key_create(&error_key, NULL);
+	g_assert (ret == 0);
 }
 
 void WSASetLastError(int error)
 {
+	int ret;
+	
 	mono_once(&error_key_once, error_init);
-	pthread_setspecific(error_key, GINT_TO_POINTER(error));
+	ret = pthread_setspecific(error_key, GINT_TO_POINTER(error));
+	g_assert (ret == 0);
 }
 
 int WSAGetLastError(void)
@@ -197,6 +203,8 @@ guint32 _wapi_accept(guint32 handle, struct sockaddr *addr,
 	gpointer new_handle;
 	gboolean ok;
 	int fd;
+	int thr_ret;
+	guint32 ret = INVALID_SOCKET;
 	
 	if(startup_count==0) {
 		WSASetLastError(WSANOTINITIALISED);
@@ -233,16 +241,19 @@ guint32 _wapi_accept(guint32 handle, struct sockaddr *addr,
 		return(INVALID_SOCKET);
 	}
 
-	_wapi_handle_lock_handle (new_handle);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      new_handle);
+	thr_ret = _wapi_handle_lock_handle (new_handle);
+	g_assert (thr_ret == 0);
 	
 	ok=_wapi_lookup_handle (new_handle, WAPI_HANDLE_SOCKET, NULL,
 				(gpointer *)&new_socket_private_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up socket handle 0x%x", handle);
-		_wapi_handle_unlock_handle (new_handle);
-		return(INVALID_SOCKET);
+		goto cleanup;
 	}
+	ret = GPOINTER_TO_UINT (new_handle);
 	
 	new_socket_private_handle->fd=fd;
 	
@@ -252,9 +263,12 @@ guint32 _wapi_accept(guint32 handle, struct sockaddr *addr,
 		  new_handle, new_socket_private_handle->fd);
 #endif
 
-	_wapi_handle_unlock_handle (new_handle);
-
-	return(GPOINTER_TO_UINT (new_handle));
+cleanup:
+	thr_ret = _wapi_handle_unlock_handle (new_handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+	
+	return(ret);
 }
 
 int _wapi_bind(guint32 handle, struct sockaddr *my_addr, socklen_t addrlen)
@@ -725,6 +739,8 @@ guint32 _wapi_socket(int domain, int type, int protocol)
 	gpointer handle;
 	gboolean ok;
 	int fd;
+	int thr_ret;
+	guint32 ret = INVALID_SOCKET;
 	
 	fd=socket(domain, type, protocol);
 	if (fd==-1 && domain == AF_INET && type == SOCK_RAW && protocol == 0) {
@@ -752,16 +768,19 @@ guint32 _wapi_socket(int domain, int type, int protocol)
 		return(INVALID_SOCKET);
 	}
 
-	_wapi_handle_lock_handle (handle);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET, NULL,
 				(gpointer *)&socket_private_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up socket handle %p", handle);
-		_wapi_handle_unlock_handle (handle);
-		return(INVALID_SOCKET);
+		goto cleanup;
 	}
+	ret = GPOINTER_TO_UINT (handle);
 	
 	socket_private_handle->fd=fd;
 	
@@ -771,9 +790,12 @@ guint32 _wapi_socket(int domain, int type, int protocol)
 		  socket_private_handle->fd);
 #endif
 
-	_wapi_handle_unlock_handle (handle);
-
-	return(GPOINTER_TO_UINT (handle));
+cleanup:
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+	
+	return(ret);
 }
 
 struct hostent *_wapi_gethostbyname(const char *hostname)

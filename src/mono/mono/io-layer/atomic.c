@@ -20,12 +20,11 @@ volatile unsigned char _wapi_sparc_lock;
 #endif
 #else
 
-static pthread_mutex_t spin;
+static pthread_mutex_t spin = PTHREAD_MUTEX_INITIALIZER;
 static mono_once_t spin_once=MONO_ONCE_INIT;
 
 static void spin_init(void)
 {
-	pthread_mutex_init(&spin, 0);
 	g_warning("Using non-atomic functions!");
 }
 
@@ -33,16 +32,24 @@ gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 exch,
 				  gint32 comp)
 {
 	gint32 old;
+	int ret;
 	
 	mono_once(&spin_once, spin_init);
-	pthread_mutex_lock(&spin);
+	
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&spin);
+	ret = pthread_mutex_lock(&spin);
+	g_assert (ret == 0);
 	
 	old= *dest;
 	if(old==comp) {
 		*dest=exch;
 	}
 	
-	pthread_mutex_unlock(&spin);
+	ret = pthread_mutex_unlock(&spin);
+	g_assert (ret == 0);
+	
+	pthread_cleanup_pop (0);
 
 	return(old);
 }
@@ -51,16 +58,24 @@ gpointer InterlockedCompareExchangePointer(volatile gpointer *dest,
 					   gpointer exch, gpointer comp)
 {
 	gpointer old;
+	int ret;
 	
 	mono_once(&spin_once, spin_init);
-	pthread_mutex_lock(&spin);
+	
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&spin);
+	ret = pthread_mutex_lock(&spin);
+	g_assert (ret == 0);
 	
 	old= *dest;
 	if(old==comp) {
 		*dest=exch;
 	}
 	
-	pthread_mutex_unlock(&spin);
+	ret = pthread_mutex_unlock(&spin);
+	g_assert (ret == 0);
+	
+	pthread_cleanup_pop (0);
 
 	return(old);
 }
@@ -68,14 +83,22 @@ gpointer InterlockedCompareExchangePointer(volatile gpointer *dest,
 gint32 InterlockedIncrement(volatile gint32 *dest)
 {
 	gint32 ret;
+	int thr_ret;
 	
 	mono_once(&spin_once, spin_init);
-	pthread_mutex_lock(&spin);
+	
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&spin);
+	thr_ret = pthread_mutex_lock(&spin);
+	g_assert (thr_ret == 0);
 	
 	*dest++;
 	ret= *dest;
 	
-	pthread_mutex_unlock(&spin);
+	thr_ret = pthread_mutex_unlock(&spin);
+	g_assert (thr_ret == 0);
+	
+	pthread_cleanup_pop (0);
 	
 	return(ret);
 }
@@ -83,14 +106,22 @@ gint32 InterlockedIncrement(volatile gint32 *dest)
 gint32 InterlockedDecrement(volatile gint32 *dest)
 {
 	gint32 ret;
+	int thr_ret;
 	
 	mono_once(&spin_once, spin_init);
-	pthread_mutex_lock(&spin);
+	
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&spin);
+	thr_ret = pthread_mutex_lock(&spin);
+	g_assert (thr_ret == 0);
 	
 	*dest--;
 	ret= *dest;
 	
-	pthread_mutex_unlock(&spin);
+	thr_ret = pthread_mutex_unlock(&spin);
+	g_assert (thr_ret == 0);
+	
+	pthread_cleanup_pop (0);
 	
 	return(ret);
 }
@@ -98,14 +129,22 @@ gint32 InterlockedDecrement(volatile gint32 *dest)
 gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
 {
 	gint32 ret;
+	int thr_ret;
 	
 	mono_once(&spin_once, spin_init);
-	pthread_mutex_lock(&spin);
+	
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&req_mutex);
+	thr_ret = pthread_mutex_lock(&spin);
+	g_assert (thr_ret == 0);
 
 	ret=*dest;
 	*dest=exch;
 	
-	pthread_mutex_unlock(&spin);
+	thr_ret = pthread_mutex_unlock(&spin);
+	g_assert (thr_ret == 0);
+	
+	pthread_cleanup_pop (0);
 	
 	return(ret);
 }
@@ -113,14 +152,22 @@ gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
 gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch)
 {
 	gpointer ret;
+	int thr_ret;
 	
 	mono_once(&spin_once, spin_init);
-	pthread_mutex_lock(&spin);
+	
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&spin);
+	thr_ret = pthread_mutex_lock(&spin);
+	g_assert (thr_ret == 0);
 	
 	ret=*dest;
 	*dest=exch;
 	
-	pthread_mutex_unlock(&spin);
+	thr_ret = pthread_mutex_unlock(&spin);
+	g_assert (thr_ret == 0);
+	
+	pthread_cleanup_pop (0);
 	
 	return(ret);
 }
@@ -128,15 +175,23 @@ gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch)
 gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 {
 	gint32 ret;
+	int thr_ret;
 	
 	mono_once(&spin_once, spin_init);
-	pthread_mutex_lock(&spin);
+	
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&spin);
+	thr_ret = pthread_mutex_lock(&spin);
+	g_assert (thr_ret == 0);
 
 	ret= *dest;
 	*dest+=add;
 	
-	pthread_mutex_unlock(&spin);
-	
+	thr_ret = pthread_mutex_unlock(&spin);
+	g_assert (thr_ret == 0);
+
+	pthread_cleanup_pop (0);
+
 	return(ret);
 }
 

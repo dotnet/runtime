@@ -44,6 +44,7 @@ guint32 WaitForSingleObject(gpointer handle, guint32 timeout)
 {
 	guint32 ret, waited;
 	struct timespec abstime;
+	int thr_ret;
 	
 	if(_wapi_handle_test_capabilities (handle,
 					   WAPI_HANDLE_CAP_WAIT)==FALSE) {
@@ -59,7 +60,10 @@ guint32 WaitForSingleObject(gpointer handle, guint32 timeout)
 	g_message (G_GNUC_PRETTY_FUNCTION ": locking handle %p", handle);
 #endif
 
-	_wapi_handle_lock_handle (handle);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
 
 	if(_wapi_handle_test_capabilities (handle,
 					   WAPI_HANDLE_CAP_OWN)==TRUE) {
@@ -132,7 +136,10 @@ done:
 	g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handle %p", handle);
 #endif
 	
-	_wapi_handle_unlock_handle (handle);
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+	
 	return(ret);
 }
 
@@ -176,6 +183,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 {
 	guint32 ret, waited;
 	struct timespec abstime;
+	int thr_ret;
 	
 	if(_wapi_handle_test_capabilities (signal_handle,
 					   WAPI_HANDLE_CAP_SIGNAL)==FALSE) {
@@ -191,7 +199,10 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 	g_message (G_GNUC_PRETTY_FUNCTION ": locking handle %p", wait);
 #endif
 
-	_wapi_handle_lock_handle (wait);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      wait);
+	thr_ret = _wapi_handle_lock_handle (wait);
+	g_assert (thr_ret == 0);
 
 	_wapi_handle_ops_signal (signal_handle);
 
@@ -265,7 +276,9 @@ done:
 	g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handle %p", wait);
 #endif
 
-	_wapi_handle_unlock_handle (wait);
+	thr_ret = _wapi_handle_unlock_handle (wait);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 
 	if(alertable==TRUE) {
 		/* Deal with queued APC or IO completion routines */
@@ -273,6 +286,54 @@ done:
 	
 	return(ret);
 }
+
+struct handle_cleanup_data
+{
+	guint32 numobjects;
+	gpointer *handles;
+};
+
+static void handle_cleanup (void *data)
+{
+	struct handle_cleanup_data *handles = (struct handle_cleanup_data *)data;
+
+	_wapi_handle_unlock_handles (handles->numobjects, handles->handles);
+}
+
+static gboolean test_and_own (guint32 numobjects, gpointer *handles,
+			      gboolean waitall, guint32 *count,
+			      guint32 *lowest)
+{
+	struct handle_cleanup_data cleanup_data;
+	gboolean done;
+	int i;
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": locking handles");
+#endif
+	cleanup_data.numobjects = numobjects;
+	cleanup_data.handles = handles;
+	
+	pthread_cleanup_push (handle_cleanup, (void *)&cleanup_data);
+	done = _wapi_handle_count_signalled_handles (numobjects, handles,
+						     waitall, count, lowest);
+	if (done == TRUE) {
+		for (i = 0; i < numobjects; i++) {
+			_wapi_handle_ops_own (handles[i]);
+		}
+	}
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handles");
+#endif
+
+	/* calls the unlock function */
+	pthread_cleanup_pop (1);
+
+	return(done);
+}
+
+
 
 /**
  * WaitForMultipleObjects:
@@ -311,6 +372,7 @@ guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 	struct timespec abstime;
 	guint i;
 	guint32 ret;
+	int thr_ret;
 	
 	if(numobjects>MAXIMUM_WAIT_OBJECTS) {
 #ifdef DEBUG
@@ -371,33 +433,13 @@ guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 		return(WAIT_FAILED);
 	}
 
-#ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": locking handles");
-#endif
-
-	done=_wapi_handle_count_signalled_handles (numobjects, handles,
-						   waitall, &count, &lowest);
+	done=test_and_own (numobjects, handles, waitall, &count, &lowest);
 	if(done==TRUE) {
-		for(i=0; i<numobjects; i++) {
-			_wapi_handle_ops_own (handles[i]);
-		}
-		
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handles");
-#endif
-
-		_wapi_handle_unlock_handles (numobjects, handles);
 		return(WAIT_OBJECT_0+lowest);
 	}
 	
 	/* Have to wait for some or all handles to become signalled
 	 */
-
-#ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handles");
-#endif
-
-	_wapi_handle_unlock_handles (numobjects, handles);
 
 	if(timeout!=INFINITE) {
 		_wapi_calc_timeout (&abstime, timeout);
@@ -408,8 +450,10 @@ guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 		g_message (G_GNUC_PRETTY_FUNCTION ": locking signal mutex");
 #endif
 
-		_wapi_handle_lock_signal_mutex ();
-
+		pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_signal_mutex, NULL);
+		thr_ret = _wapi_handle_lock_signal_mutex ();
+		g_assert (thr_ret == 0);
+		
 		if(timeout==INFINITE) {
 			ret=_wapi_handle_wait_signal ();
 		} else {
@@ -420,35 +464,17 @@ guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 		g_message (G_GNUC_PRETTY_FUNCTION ": unlocking signal mutex");
 #endif
 
-		_wapi_handle_unlock_signal_mutex ();
+		thr_ret = _wapi_handle_unlock_signal_mutex (NULL);
+		g_assert (thr_ret == 0);
+		pthread_cleanup_pop (0);
 		
 		if(ret==0) {
 			/* Something was signalled ... */
-			done=_wapi_handle_count_signalled_handles (numobjects,
-								   handles,
-								   waitall,
-								   &count,
-								   &lowest);
+			done = test_and_own (numobjects, handles, waitall,
+					     &count, &lowest);
 			if(done==TRUE) {
-				for(i=0; i<numobjects; i++) {
-					_wapi_handle_ops_own (handles[i]);
-				}
-
-#ifdef DEBUG
-				g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handles");
-#endif
-
-				_wapi_handle_unlock_handles (numobjects,
-							     handles);
-
 				return(WAIT_OBJECT_0+lowest);
 			}
-
-#ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handles");
-#endif
-
-			_wapi_handle_unlock_handles (numobjects, handles);
 		} else {
 			/* Timeout or other error */
 #ifdef DEBUG

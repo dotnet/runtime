@@ -31,8 +31,13 @@ static mono_mutexattr_t attr;
 
 static void attr_init(void)
 {
-	mono_mutexattr_init(&attr);
-	mono_mutexattr_settype(&attr, MONO_MUTEX_RECURSIVE);
+	int ret;
+	
+	ret = mono_mutexattr_init(&attr);
+	g_assert (ret == 0);
+	
+	ret = mono_mutexattr_settype(&attr, MONO_MUTEX_RECURSIVE);
+	g_assert (ret == 0);
 }
 
 /**
@@ -43,8 +48,11 @@ static void attr_init(void)
  */
 void InitializeCriticalSection(WapiCriticalSection *section)
 {
+	int ret;
+	
 	mono_once(&attr_key_once, attr_init);
-	mono_mutex_init(&section->mutex, &attr);
+	ret = mono_mutex_init(&section->mutex, &attr);
+	g_assert (ret == 0);
 }
 
 /**
@@ -75,7 +83,10 @@ gboolean InitializeCriticalSectionAndSpinCount(WapiCriticalSection *section,
  */
 void DeleteCriticalSection(WapiCriticalSection *section)
 {
-	mono_mutex_destroy(&section->mutex);
+	int ret;
+	
+	ret = mono_mutex_destroy(&section->mutex);
+	g_assert (ret == 0);
 }
 
 /**
@@ -155,6 +166,9 @@ void EnterCriticalSection(WapiCriticalSection *section)
  */
 void LeaveCriticalSection(WapiCriticalSection *section)
 {
-	mono_mutex_unlock(&section->mutex);
+	int ret;
+	
+	ret = mono_mutex_unlock(&section->mutex);
+	g_assert (ret == 0);
 }
 

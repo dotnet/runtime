@@ -31,7 +31,6 @@
 
 #undef DEBUG
 #undef TLS_DEBUG
-#undef TLS_PTHREAD_MUTEX
 
 
 /* Hash threads with tids. I thought of using TLS for this, but that
@@ -48,7 +47,7 @@ static MonoGHashTable *tls_gc_hash = NULL;
 static void thread_close_private (gpointer handle);
 static void thread_own (gpointer handle);
 
-const struct _WapiHandleOps _wapi_thread_ops = {
+struct _WapiHandleOps _wapi_thread_ops = {
 	NULL,				/* close_shared */
 	thread_close_private,		/* close_private */
 	NULL,				/* signal */
@@ -124,6 +123,7 @@ static void thread_exit(guint32 exitstatus, gpointer handle)
 	struct _WapiHandle_thread *thread_handle;
 	struct _WapiHandlePrivate_thread *thread_private_handle;
 	gboolean ok;
+	int thr_ret;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
 				(gpointer *)&thread_handle,
@@ -134,7 +134,10 @@ static void thread_exit(guint32 exitstatus, gpointer handle)
 		return;
 	}
 
-	_wapi_handle_lock_handle (handle);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
 
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION
@@ -145,7 +148,9 @@ static void thread_exit(guint32 exitstatus, gpointer handle)
 	thread_handle->state=THREAD_STATE_EXITED;
 	_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 
-	_wapi_handle_unlock_handle (handle);
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
@@ -154,9 +159,16 @@ static void thread_exit(guint32 exitstatus, gpointer handle)
 #endif
 
 	/* Remove this thread from the hash */
-	mono_mutex_lock(&thread_hash_mutex);
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&thread_hash_mutex);
+	thr_ret = mono_mutex_lock(&thread_hash_mutex);
+	g_assert (thr_ret == 0);
+	
 	g_hash_table_remove(thread_hash, &thread_private_handle->thread->id);
-	mono_mutex_unlock(&thread_hash_mutex);
+
+	thr_ret = mono_mutex_unlock(&thread_hash_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 
 	/* The thread is no longer active, so unref it */
 	_wapi_handle_unref (handle);
@@ -193,6 +205,9 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	gpointer handle;
 	gboolean ok;
 	int ret;
+	int thr_ret;
+	int i, unrefs = 0;
+	gpointer ct_ret = NULL;
 	
 	mono_once(&thread_hash_once, thread_hash_init);
 	mono_once (&thread_ops_once, thread_ops_init);
@@ -208,7 +223,10 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 		return(NULL);
 	}
 
-	_wapi_handle_lock_handle (handle);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
 				(gpointer *)&thread_handle,
@@ -216,8 +234,7 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up thread handle %p", handle);
-		_wapi_handle_unlock_handle (handle);
-		return(NULL);
+		goto cleanup;
 	}
 
 	/* Hold a reference while the thread is active, because we use
@@ -230,20 +247,26 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	/* Lock around the thread create, so that the new thread cant
 	 * race us to look up the thread handle in GetCurrentThread()
 	 */
-	mono_mutex_lock(&thread_hash_mutex);
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&thread_hash_mutex);
+	thr_ret = mono_mutex_lock(&thread_hash_mutex);
+	g_assert (thr_ret == 0);
 	
 	/* Set a 2M stack size.  This is the default on Linux, but BSD
 	 * needs it.  (The original bug report from Martin Dvorak <md@9ll.cz>
 	 * set the size to 2M-4k.  I don't know why it's short by 4k, so
 	 * I'm leaving it as 2M until I'm told differently.)
 	 */
-	pthread_attr_init(&attr);
+	thr_ret = pthread_attr_init(&attr);
+	g_assert (thr_ret == 0);
+	
 	/* defaults of 2Mb for 32bits and 4Mb for 64bits */
 	if (stacksize == 0)
 		stacksize = (SIZEOF_VOID_P / 2) * 1024 *1024;
 
 #ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
-	pthread_attr_setstacksize(&attr, stacksize);
+	thr_ret = pthread_attr_setstacksize(&attr, stacksize);
+	g_assert (thr_ret == 0);
 #endif
 
 	ret=_wapi_timed_thread_create(&thread_private_handle->thread, &attr,
@@ -254,18 +277,14 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 		g_message(G_GNUC_PRETTY_FUNCTION ": Thread create error: %s",
 			  strerror(ret));
 #endif
-		mono_mutex_unlock(&thread_hash_mutex);
-		_wapi_handle_unlock_handle (handle);
-		_wapi_handle_unref (handle);
-		
-		/* And again, because of the reference we took above */
-		_wapi_handle_unref (handle);
-		return(NULL);
+		/* Two, because of the reference we took above */
+		unrefs = 2;
+		goto thread_hash_cleanup;
 	}
-
+	ct_ret = handle;
+	
 	g_hash_table_insert(thread_hash, &thread_private_handle->thread->id,
 			    handle);
-	mono_mutex_unlock(&thread_hash_mutex);
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
@@ -282,14 +301,30 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 #endif
 	}
 
-	_wapi_handle_unlock_handle (handle);
+thread_hash_cleanup:
+	thr_ret = mono_mutex_unlock (&thread_hash_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 	
-	return(handle);
+cleanup:
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+	
+	/* Must not call _wapi_handle_unref() with the handle already
+	 * locked
+	 */
+	for (i = 0; i < unrefs; i++) {
+		_wapi_handle_unref (handle);
+	}
+
+	return(ct_ret);
 }
 
 gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, guint32 tid)
 {
 	gpointer ret=NULL;
+	int thr_ret;
 	
 	mono_once(&thread_hash_once, thread_hash_init);
 	mono_once (&thread_ops_once, thread_ops_init);
@@ -298,10 +333,16 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
 	g_message (G_GNUC_PRETTY_FUNCTION ": looking up thread %d", tid);
 #endif
 
-	mono_mutex_lock(&thread_hash_mutex);
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&thread_hash_mutex);
+	thr_ret = mono_mutex_lock(&thread_hash_mutex);
+	g_assert (thr_ret == 0);
 	
 	ret=g_hash_table_lookup(thread_hash, &tid);
-	mono_mutex_unlock(&thread_hash_mutex);
+
+	thr_ret = mono_mutex_unlock(&thread_hash_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 	
 	if(ret!=NULL) {
 		_wapi_handle_ref (ret);
@@ -408,7 +449,10 @@ static gpointer thread_attach(guint32 *tid)
 	gpointer handle;
 	gboolean ok;
 	int ret;
-
+	int thr_ret;
+	int i, unrefs = 0;
+	gpointer ta_ret = NULL;
+	
 	mono_once(&thread_hash_once, thread_hash_init);
 	mono_once (&thread_ops_once, thread_ops_init);
 
@@ -419,7 +463,10 @@ static gpointer thread_attach(guint32 *tid)
 		return(NULL);
 	}
 
-	_wapi_handle_lock_handle (handle);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
 
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
 				(gpointer *)&thread_handle,
@@ -427,8 +474,7 @@ static gpointer thread_attach(guint32 *tid)
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up thread handle %p", handle);
-		_wapi_handle_unlock_handle (handle);
-		return(NULL);
+		goto cleanup;
 	}
 
 	/* Hold a reference while the thread is active, because we use
@@ -441,7 +487,10 @@ static gpointer thread_attach(guint32 *tid)
 	/* Lock around the thread create, so that the new thread cant
 	 * race us to look up the thread handle in GetCurrentThread()
 	 */
-	mono_mutex_lock(&thread_hash_mutex);
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&thread_hash_mutex);
+	thr_ret = mono_mutex_lock(&thread_hash_mutex);
+	g_assert (thr_ret == 0);
 
 	ret=_wapi_timed_thread_attach(&thread_private_handle->thread,
 				      thread_exit, handle);
@@ -450,18 +499,15 @@ static gpointer thread_attach(guint32 *tid)
 		g_message(G_GNUC_PRETTY_FUNCTION ": Thread attach error: %s",
 			  strerror(ret));
 #endif
-		mono_mutex_unlock(&thread_hash_mutex);
-		_wapi_handle_unlock_handle (handle);
-		_wapi_handle_unref (handle);
+		/* Two, because of the reference we took above */
+		unrefs = 2;
 
-		/* And again, because of the reference we took above */
-		_wapi_handle_unref (handle);
-		return(NULL);
+		goto thread_hash_cleanup;
 	}
-
+	ta_ret = handle;
+	
 	g_hash_table_insert(thread_hash, &thread_private_handle->thread->id,
 			    handle);
-	mono_mutex_unlock(&thread_hash_mutex);
 
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
@@ -478,9 +524,24 @@ static gpointer thread_attach(guint32 *tid)
 #endif
 	}
 
-	_wapi_handle_unlock_handle (handle);
+thread_hash_cleanup:
+	thr_ret = mono_mutex_unlock (&thread_hash_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+	
+cleanup:
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 
-	return(handle);
+	/* Must not call _wapi_handle_unref() with the handle already
+	 * locked
+	 */
+	for (i = 0; i < unrefs; i++) {
+		_wapi_handle_unref (handle);
+	}
+	
+	return(ta_ret);
 }
 
 /**
@@ -498,16 +559,23 @@ gpointer GetCurrentThread(void)
 {
 	gpointer ret=NULL;
 	guint32 tid;
+	int thr_ret;
 	
 	mono_once(&thread_hash_once, thread_hash_init);
 	mono_once (&thread_ops_once, thread_ops_init);
 	
 	tid=GetCurrentThreadId();
 	
-	mono_mutex_lock(&thread_hash_mutex);
+	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
+			      (void *)&thread_hash_mutex);
+	thr_ret = mono_mutex_lock(&thread_hash_mutex);
+	g_assert (thr_ret == 0);
 
 	ret=g_hash_table_lookup(thread_hash, &tid);
-	mono_mutex_unlock(&thread_hash_mutex);
+
+	thr_ret = mono_mutex_unlock(&thread_hash_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 	
 	if (!ret) {
 		ret = thread_attach (NULL);
@@ -609,11 +677,7 @@ guint32 SuspendThread(gpointer handle)
 
 static pthread_key_t TLS_keys[TLS_MINIMUM_AVAILABLE];
 static gboolean TLS_used[TLS_MINIMUM_AVAILABLE]={FALSE};
-#ifdef TLS_PTHREAD_MUTEX
-static mono_mutex_t TLS_mutex=MONO_MUTEX_INITIALIZER;
-#else
 static guint32 TLS_spinlock=0;
-#endif
 
 /**
  * TlsAlloc:
@@ -628,23 +692,17 @@ static guint32 TLS_spinlock=0;
 guint32 TlsAlloc(void)
 {
 	guint32 i;
+	int thr_ret;
 	
-#ifdef TLS_PTHREAD_MUTEX
-	mono_mutex_lock(&TLS_mutex);
-#else
 	MONO_SPIN_LOCK (TLS_spinlock);
-#endif
 	
 	for(i=0; i<TLS_MINIMUM_AVAILABLE; i++) {
 		if(TLS_used[i]==FALSE) {
 			TLS_used[i]=TRUE;
-			pthread_key_create(&TLS_keys[i], NULL);
+			thr_ret = pthread_key_create(&TLS_keys[i], NULL);
+			g_assert (thr_ret == 0);
 
-#ifdef TLS_PTHREAD_MUTEX
-			mono_mutex_unlock(&TLS_mutex);
-#else
 			MONO_SPIN_UNLOCK (TLS_spinlock);
-#endif
 	
 #ifdef TLS_DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION ": returning key %d",
@@ -655,11 +713,7 @@ guint32 TlsAlloc(void)
 		}
 	}
 
-#ifdef TLS_PTHREAD_MUTEX
-	mono_mutex_unlock(&TLS_mutex);
-#else
 	MONO_SPIN_UNLOCK (TLS_spinlock);
-#endif
 	
 #ifdef TLS_DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": out of indices");
@@ -682,37 +736,29 @@ guint32 TlsAlloc(void)
  */
 gboolean TlsFree(guint32 idx)
 {
+	int thr_ret;
+	
 #ifdef TLS_DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": freeing key %d", idx);
 #endif
 
-#ifdef TLS_PTHREAD_MUTEX
-	mono_mutex_lock(&TLS_mutex);
-#else
 	MONO_SPIN_LOCK (TLS_spinlock);
-#endif
 	
 	if(TLS_used[idx]==FALSE) {
-#ifdef TLS_PTHREAD_MUTEX
-		mono_mutex_unlock(&TLS_mutex);
-#else
 		MONO_SPIN_UNLOCK (TLS_spinlock);
-#endif
+
 		return(FALSE);
 	}
 	
 	TLS_used[idx]=FALSE;
-	pthread_key_delete(TLS_keys[idx]);
+	thr_ret = pthread_key_delete(TLS_keys[idx]);
+	g_assert (thr_ret == 0);
 	
 #if HAVE_BOEHM_GC
 	mono_g_hash_table_remove (tls_gc_hash, MAKE_GC_ID (idx));
 #endif
 
-#ifdef TLS_PTHREAD_MUTEX
-	mono_mutex_unlock(&TLS_mutex);
-#else
 	MONO_SPIN_UNLOCK (TLS_spinlock);
-#endif
 	
 	return(TRUE);
 }
@@ -762,22 +808,15 @@ gboolean TlsSetValue(guint32 idx, gpointer value)
 		   value);
 #endif
 	
-#ifdef TLS_PTHREAD_MUTEX
-	mono_mutex_lock(&TLS_mutex);
-#else
 	MONO_SPIN_LOCK (TLS_spinlock);
-#endif
 	
 	if(TLS_used[idx]==FALSE) {
 #ifdef TLS_DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": key %d unused", idx);
 #endif
 
-#ifdef TLS_PTHREAD_MUTEX
-		mono_mutex_unlock(&TLS_mutex);
-#else
 		MONO_SPIN_UNLOCK (TLS_spinlock);
-#endif
+
 		return(FALSE);
 	}
 	
@@ -788,11 +827,8 @@ gboolean TlsSetValue(guint32 idx, gpointer value)
 			   ": pthread_setspecific error: %s", strerror (ret));
 #endif
 
-#ifdef TLS_PTHREAD_MUTEX
-		mono_mutex_unlock(&TLS_mutex);
-#else
 		MONO_SPIN_UNLOCK (TLS_spinlock);
-#endif
+
 		return(FALSE);
 	}
 	
@@ -802,11 +838,7 @@ gboolean TlsSetValue(guint32 idx, gpointer value)
 	mono_g_hash_table_insert (tls_gc_hash, MAKE_GC_ID (idx), value);
 #endif
 
-#ifdef TLS_PTHREAD_MUTEX
-	mono_mutex_unlock(&TLS_mutex);
-#else
 	MONO_SPIN_UNLOCK (TLS_spinlock);
-#endif
 	
 	return(TRUE);
 }

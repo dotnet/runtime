@@ -50,7 +50,10 @@ static void _wapi_daemon_request_response_internal (int fd,
 	 * rely on request turnaround time being minimal anyway, so
 	 * performance shouldnt suffer from the mutex.
 	 */
-	pthread_mutex_lock (&req_mutex);
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&req_mutex);
+	ret = pthread_mutex_lock (&req_mutex);
+	g_assert (ret == 0);
 	
 #ifdef HAVE_MSG_NOSIGNAL
 	ret=sendmsg (fd, msg, MSG_NOSIGNAL);
@@ -86,7 +89,10 @@ static void _wapi_daemon_request_response_internal (int fd,
 		}
 	}
 
-	pthread_mutex_unlock (&req_mutex);
+	ret = pthread_mutex_unlock (&req_mutex);
+	g_assert (ret == 0);
+	
+	pthread_cleanup_pop (0);
 }
 
 /* Send request on fd with filedescriptors, wait for response (called

@@ -1523,7 +1523,9 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	mode_t perms=convert_perms(sharemode);
 	gchar *filename;
 	int ret;
-
+	int thr_ret;
+	gpointer cf_ret = INVALID_HANDLE_VALUE;
+	
 	mono_once (&io_ops_once, io_ops_init);
 	
 	if(name==NULL) {
@@ -1580,7 +1582,10 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		return(INVALID_HANDLE_VALUE);
 	}
 
-	_wapi_handle_lock_handle (handle);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
 				(gpointer *)&file_handle,
@@ -1588,11 +1593,9 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up file handle %p", handle);
-		_wapi_handle_unlock_handle (handle);
-		g_free (filename);
-
-		return(INVALID_HANDLE_VALUE);
+		goto cleanup;
 	}
+	cf_ret = handle;
 
 	file_private_handle->fd=ret;
 	file_private_handle->assigned=TRUE;
@@ -1614,10 +1617,14 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		  file_private_handle->fd);
 #endif
 
-	_wapi_handle_unlock_handle (handle);
+cleanup:
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+	
 	g_free (filename);
 	
-	return(handle);
+	return(cf_ret);
 }
 
 /**
@@ -1849,8 +1856,9 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 	struct _WapiHandle_file *file_handle;
 	struct _WapiHandlePrivate_file *file_private_handle;
 	gboolean ok;
-	gpointer handle;
+	gpointer handle, ret = NULL;
 	int flags;
+	int thr_ret;
 	
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": creating standard handle type %s",
@@ -1878,7 +1886,10 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 		return(NULL);
 	}
 
-	_wapi_handle_lock_handle (handle);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
 				(gpointer *)&file_handle,
@@ -1886,9 +1897,9 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up console handle %p", handle);
-		_wapi_handle_unlock_handle (handle);
-		return(NULL);
+		goto cleanup;
 	}
+	ret = handle;
 	
 	file_private_handle->fd=fd;
 	file_private_handle->assigned=TRUE;
@@ -1904,9 +1915,12 @@ static gpointer stdhandle_create (int fd, const guchar *name)
 		  handle, file_private_handle->fd);
 #endif
 
-	_wapi_handle_unlock_handle (handle);
+cleanup:
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 
-	return(handle);
+	return(ret);
 }
 
 static void stdhandle_init (void)
@@ -2415,7 +2429,10 @@ static pthread_key_t file_key;
 
 static void file_once_init (void)
 {
-	pthread_key_create (&file_key, NULL);
+	int ret;
+	
+	ret = pthread_key_create (&file_key, NULL);
+	g_assert (ret == 0);
 }
 
 static int file_select (const struct dirent *dir)
@@ -2433,10 +2450,12 @@ static int file_select (const struct dirent *dir)
 gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 {
 	struct _WapiHandlePrivate_find *find_handle;
-	gpointer handle;
+	gpointer handle, find_ret = INVALID_HANDLE_VALUE;
 	gboolean ok;
 	gchar *utf8_pattern = NULL, *dir_part, *entry_part;
 	int result;
+	int thr_ret;
+	gboolean unref = FALSE;
 	
 	mono_once (&file_key_once, file_once_init);
 	
@@ -2482,17 +2501,18 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 		return(INVALID_HANDLE_VALUE);
 	}
 
-	_wapi_handle_lock_handle (handle);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND, NULL,
 				(gpointer *)&find_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up find handle %p", handle);
-		_wapi_handle_unlock_handle (handle);
 		g_free (utf8_pattern);
-		
-		return(INVALID_HANDLE_VALUE);
+		goto cleanup;
 	}
 
 	/* The pattern can specify a directory or a set of files.
@@ -2538,9 +2558,10 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 		}
 		
 		g_free (dir_part);
-		_wapi_handle_unlock_handle (handle);
-		_wapi_handle_unref (handle);
-		return(INVALID_HANDLE_VALUE);
+
+		unref = TRUE;
+		
+		goto cleanup;
 	}
 	
 #ifdef DEBUG
@@ -2551,16 +2572,30 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 	find_handle->num = result;
 	find_handle->count = 0;
 
-	if (!FindNextFile (handle, find_data)) {
-		_wapi_handle_unlock_handle (handle);
+	find_ret = handle;
+
+cleanup:
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+
+	/* FindNextFile has to be called after unlocking the handle,
+	 * because it wants to lock the handle itself
+	 */
+	if (find_ret != INVALID_HANDLE_VALUE &&
+	    !FindNextFile (handle, find_data)) {
 		FindClose (handle);
 		SetLastError (ERROR_NO_MORE_FILES);
-		return(INVALID_HANDLE_VALUE);
 	}
 
-	_wapi_handle_unlock_handle (handle);
-
-	return (handle);
+	/* Must not call _wapi_handle_unref() with the handle already
+	 * locked
+	 */
+	if (unref) {
+		_wapi_handle_unref (handle);
+	}
+	
+	return (find_ret);
 }
 
 gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
@@ -2573,6 +2608,8 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 	gunichar2 *utf16_basename;
 	time_t create_time;
 	glong bytes;
+	int thr_ret;
+	gboolean ret = FALSE;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND, NULL,
 				(gpointer *)&find_handle);
@@ -2583,10 +2620,15 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 		return(FALSE);
 	}
 
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
+	
 retry:
 	if (find_handle->count >= find_handle->num) {
 		SetLastError (ERROR_NO_MORE_FILES);
-		return FALSE;
+		goto cleanup;
 	}
 
 	/* stat next match */
@@ -2598,8 +2640,7 @@ retry:
 #endif
 
 		g_free (filename);
-		SetLastError (ERROR_NO_MORE_FILES);
-		return FALSE;
+		goto retry;
 	}
 
 	/* Check for dangling symlinks, and ignore them (principle of
@@ -2662,7 +2703,8 @@ retry:
 		g_free (utf8_filename);
 		goto retry;
 	}
-
+	ret = TRUE;
+	
 	/* utf16 is 2 * utf8 */
 	bytes *= 2;
 
@@ -2680,7 +2722,12 @@ retry:
 	g_free (utf8_filename);
 	g_free (utf16_basename);
 
-	return TRUE;
+cleanup:
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+	
+	return(ret);
 }
 
 /**
@@ -2696,6 +2743,7 @@ gboolean FindClose (gpointer handle)
 	struct _WapiHandlePrivate_find *find_handle;
 	gboolean ok;
 	int i;
+	int thr_ret;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND, NULL,
 				(gpointer *)&find_handle);
@@ -2705,16 +2753,25 @@ gboolean FindClose (gpointer handle)
 		SetLastError (ERROR_INVALID_HANDLE);
 		return(FALSE);
 	}
+
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
 	
 	for(i = 0; i < find_handle->num; i++) {
 		free (find_handle->namelist[i]);
 	}
 	free (find_handle->namelist);
 	g_free (find_handle->dir_part);
+
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 	
 	_wapi_handle_unref (handle);
-
-	return TRUE;
+	
+	return(TRUE);
 }
 
 /**
@@ -3088,6 +3145,9 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 	gboolean ok;
 	int filedes[2];
 	int ret;
+	int thr_ret;
+	gboolean unref_read = FALSE, unref_write = FALSE;
+	gboolean cp_ret = FALSE;
 	
 	mono_once (&io_ops_once, io_ops_init);
 	
@@ -3117,45 +3177,50 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 		return(FALSE);
 	}
 	
-	_wapi_handle_lock_handle (read_handle);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      read_handle);
+	thr_ret = _wapi_handle_lock_handle (read_handle);
+	g_assert (thr_ret == 0);
 
 	ok=_wapi_lookup_handle (read_handle, WAPI_HANDLE_PIPE,
 				(gpointer *)&pipe_read_handle,
 				(gpointer *)&pipe_read_private_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION ": error looking up pipe handle %p", read_handle);
-		_wapi_handle_unlock_handle (read_handle);
 		close (filedes[0]);
 		close (filedes[1]);
-		return(FALSE);
+		goto cleanup;
 	}
 	
 	write_handle=_wapi_handle_new (WAPI_HANDLE_PIPE);
 	if(write_handle==_WAPI_HANDLE_INVALID) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error creating pipe write handle");
-		_wapi_handle_unlock_handle (read_handle);
-		_wapi_handle_unref (read_handle);
+		unref_read = TRUE;
 		
 		close (filedes[0]);
 		close (filedes[1]);
-		return(FALSE);
+		goto cleanup;
 	}
 	
-	_wapi_handle_lock_handle (write_handle);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      write_handle);
+	thr_ret = _wapi_handle_lock_handle (write_handle);
+	g_assert (thr_ret == 0);
 
 	ok=_wapi_lookup_handle (write_handle, WAPI_HANDLE_PIPE,
 				(gpointer *)&pipe_write_handle,
 				(gpointer *)&pipe_write_private_handle);
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION ": error looking up pipe handle %p", read_handle);
-		_wapi_handle_unlock_handle (read_handle);
-		_wapi_handle_unref (read_handle);
-		_wapi_handle_unlock_handle (write_handle);
+		unref_read = TRUE;
+		unref_write = TRUE;
+		
 		close (filedes[0]);
 		close (filedes[1]);
-		return(FALSE);
+		goto write_cleanup;
 	}
+	cp_ret = TRUE;
 	
 	pipe_read_private_handle->fd=filedes[0];
 	pipe_read_private_handle->assigned=TRUE;
@@ -3169,16 +3234,33 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 	
 	*writepipe=write_handle;
 
-	_wapi_handle_unlock_handle (read_handle);
-	_wapi_handle_unlock_handle (write_handle);
-
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION
 		   ": Returning pipe: read handle %p, write handle %p",
 		   read_handle, write_handle);
 #endif
 
-	return(TRUE);
+write_cleanup:
+	thr_ret =_wapi_handle_unlock_handle (write_handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+
+cleanup:
+	thr_ret =_wapi_handle_unlock_handle (read_handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+
+	/* Must not call _wapi_handle_unref() with the handle already
+	 * locked
+	 */
+	if (unref_read) {
+		_wapi_handle_unref (read_handle);
+	}
+	if (unref_write) {
+		_wapi_handle_unref (write_handle);
+	}
+	
+	return(cp_ret);
 }
 
 guint32 GetTempPath (guint32 len, gunichar2 *buf)
@@ -3234,6 +3316,8 @@ _wapi_io_add_callback (gpointer handle,
 	struct _WapiHandle_file *file_handle;
 	struct _WapiHandlePrivate_file *file_private_handle;
 	gboolean ok;
+	int thr_ret;
+	gboolean ret = FALSE;
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
 				  (gpointer *) &file_handle,
@@ -3251,15 +3335,24 @@ _wapi_io_add_callback (gpointer handle,
 		return FALSE;
 	}
 
-	_wapi_handle_lock_handle (handle);
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
+	
 	if (file_private_handle->callback != NULL) {
 		SetLastError (ERROR_INVALID_PARAMETER);
-		return FALSE;
+		goto cleanup;
 	}
-
+	ret = TRUE;
+	
 	file_private_handle->callback = callback;
-	_wapi_handle_unlock_handle (handle);
 
-	return TRUE;
+cleanup:
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
+
+	return(ret);
 }
 

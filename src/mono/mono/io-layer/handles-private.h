@@ -83,17 +83,24 @@ extern gboolean _wapi_handle_process_fork (guint32 cmd, guint32 env,
 					   gpointer *thread_handle,
 					   guint32 *pid, guint32 *tid);
 
-extern gboolean _wapi_handle_process_kill (gpointer process_handle,
-					   guint32 signo,
+extern gboolean _wapi_handle_process_kill (pid_t pid, guint32 signo,
 					   gint *err);
 
 static inline struct _WapiHandleShared_list *_wapi_handle_get_shared_segment (guint32 segment)
 {
 	struct _WapiHandleShared_list *shared;
+	int thr_ret;
 	
-	pthread_mutex_lock (&_wapi_shared_mutex);
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&_wapi_shared_mutex);
+	thr_ret = pthread_mutex_lock (&_wapi_shared_mutex);
+	g_assert (thr_ret == 0);
+	
 	shared=_wapi_shared_data[segment];
-	pthread_mutex_unlock (&_wapi_shared_mutex);
+
+	thr_ret = pthread_mutex_unlock (&_wapi_shared_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 
 	return(shared);
 }
@@ -101,16 +108,26 @@ static inline struct _WapiHandleShared_list *_wapi_handle_get_shared_segment (gu
 static inline struct _WapiHandlePrivate_list *_wapi_handle_get_private_segment (guint32 segment)
 {
 	struct _WapiHandlePrivate_list *priv;
+	int thr_ret;
 	
-	pthread_mutex_lock (&_wapi_shared_mutex);
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&_wapi_shared_mutex);
+	thr_ret = pthread_mutex_lock (&_wapi_shared_mutex);
+	g_assert (thr_ret == 0);
+	
 	priv=_wapi_private_data[segment];
-	pthread_mutex_unlock (&_wapi_shared_mutex);
+	
+	thr_ret = pthread_mutex_unlock (&_wapi_shared_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 	
 	return(priv);
 }
 
 static inline void _wapi_handle_ensure_mapped (guint32 segment)
 {
+	int thr_ret;
+	
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": checking segment %d is mapped",
 		   segment);
@@ -127,7 +144,10 @@ static inline void _wapi_handle_ensure_mapped (guint32 segment)
 		return;
 	}
 	
-	pthread_mutex_lock (&_wapi_shared_mutex);
+	pthread_cleanup_push ((void(*)(void *))pthread_mutex_unlock,
+			      (void *)&_wapi_shared_mutex);
+	thr_ret = pthread_mutex_lock (&_wapi_shared_mutex);
+	g_assert (thr_ret == 0);
 	
 	if(segment>=_wapi_shm_mapped_segments) {
 		/* Need to extend the arrays.  We can't use g_renew
@@ -172,7 +192,9 @@ static inline void _wapi_handle_ensure_mapped (guint32 segment)
 		}
 	}
 
-	pthread_mutex_unlock (&_wapi_shared_mutex);
+	thr_ret = pthread_mutex_unlock (&_wapi_shared_mutex);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 }
 
 static inline void _wapi_handle_segment (gpointer handle, guint32 *segment,
@@ -211,6 +233,7 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 	guint32 idx;
 	guint32 segment;
 	struct _WapiHandleShared *shared_handle;
+	int thr_ret;
 	
 	_wapi_handle_segment (handle, &segment, &idx);
 	shared_handle=&_wapi_handle_get_shared_segment (segment)->handles[idx];
@@ -228,9 +251,11 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 		shared_handle->signalled=state;
 		
 		if(broadcast==TRUE) {
-			pthread_cond_broadcast (&shared_handle->signal_cond);
+			thr_ret = pthread_cond_broadcast (&shared_handle->signal_cond);
+			g_assert (thr_ret == 0);
 		} else {
-			pthread_cond_signal (&shared_handle->signal_cond);
+			thr_ret = pthread_cond_signal (&shared_handle->signal_cond);
+			g_assert (thr_ret == 0);
 		}
 
 		/* Tell everyone blocking on multiple handles that something
@@ -239,9 +264,17 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 #if defined(_POSIX_THREAD_PROCESS_SHARED) && _POSIX_THREAD_PROCESS_SHARED != -1
 		{
 			struct _WapiHandleShared_list *segment0=_wapi_handle_get_shared_segment (0);
-			mono_mutex_lock (&segment0->signal_mutex);
-			pthread_cond_broadcast (&segment0->signal_cond);
-			mono_mutex_unlock (&segment0->signal_mutex);
+			
+			pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup, (void *)&segment0->signal_mutex);
+			thr_ret = mono_mutex_lock (&segment0->signal_mutex);
+			g_assert (thr_ret == 0);
+			
+			thr_ret = pthread_cond_broadcast (&segment0->signal_cond);
+			g_assert (thr_ret == 0);
+			
+			thr_ret = mono_mutex_unlock (&segment0->signal_mutex);
+			g_assert (thr_ret == 0);
+			pthread_cleanup_pop (0);
 		}
 #else
 		{
@@ -251,14 +284,20 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 			g_message (G_GNUC_PRETTY_FUNCTION ": lock global signal mutex");
 #endif
 
-			mono_mutex_lock (&segment0->signal_mutex);
-			pthread_cond_broadcast (&segment0->signal_cond);
+			pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup, (void *)&segment0->signal_mutex);
+			thr_ret = mono_mutex_lock (&segment0->signal_mutex);
+			g_assert (thr_ret == 0);
+			
+			thr_ret = pthread_cond_broadcast (&segment0->signal_cond);
+			g_assert (thr_ret == 0);
 
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION ": unlock global signal mutex");
 #endif
 
-			mono_mutex_unlock (&segment0->signal_mutex);
+			thr_ret = mono_mutex_unlock (&segment0->signal_mutex);
+			g_assert (thr_ret == 0);
+			pthread_cleanup_pop (0);
 		}
 #endif /* _POSIX_THREAD_PROCESS_SHARED */
 	} else {
@@ -288,7 +327,8 @@ static inline int _wapi_handle_lock_signal_mutex (void)
 #endif /* _POSIX_THREAD_PROCESS_SHARED */
 }
 
-static inline int _wapi_handle_unlock_signal_mutex (void)
+/* the parameter makes it easier to call from a pthread cleanup handler */
+static inline int _wapi_handle_unlock_signal_mutex (void *unused)
 {
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": unlock global signal mutex");
@@ -309,6 +349,8 @@ static inline int _wapi_handle_lock_handle (gpointer handle)
 	g_message (G_GNUC_PRETTY_FUNCTION ": locking handle %p", handle);
 #endif
 
+	_wapi_handle_ref (handle);
+	
 	_wapi_handle_segment (handle, &segment, &idx);
 	
 	return(mono_mutex_lock (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex));
@@ -318,6 +360,7 @@ static inline int _wapi_handle_unlock_handle (gpointer handle)
 {
 	guint32 idx;
 	guint32 segment;
+	int ret;
 	
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": unlocking handle %p", handle);
@@ -325,7 +368,11 @@ static inline int _wapi_handle_unlock_handle (gpointer handle)
 
 	_wapi_handle_segment (handle, &segment, &idx);
 	
-	return(mono_mutex_unlock (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex));
+	ret = mono_mutex_unlock (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex);
+
+	_wapi_handle_unref (handle);
+	
+	return(ret);
 }
 
 #endif /* _WAPI_HANDLES_PRIVATE_H_ */
