@@ -13,7 +13,6 @@
 #include "image.h"
 #include <glib.h>
 #include "cil-coff.h"
-#include "private.h"
 #include "mono-endian.h"
 #include "verify.h"
 #include <mono/metadata/class.h>

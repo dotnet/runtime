@@ -236,6 +236,9 @@ struct _MonoDynamicImage {
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
 guint mono_aligned_addr_hash (gconstpointer ptr);
 
+const char *   mono_meta_table_name              (int table);
+void           mono_metadata_compute_table_bases (MonoImage *meta);
+
 MonoClass**
 mono_metadata_interfaces_from_typedef_full  (MonoImage             *image,
 					     guint32                table_index,

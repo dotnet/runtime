@@ -30,7 +30,6 @@
 #include "cil-coff.h"
 #include "rawbuffer.h"
 #include "mono-endian.h"
-#include "private.h"
 #include <mono/os/gc_wrapper.h>
 
 #define TEXT_OFFSET 512

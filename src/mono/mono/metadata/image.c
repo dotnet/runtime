@@ -19,7 +19,6 @@
 #include "cil-coff.h"
 #include "rawbuffer.h"
 #include "mono-endian.h"
-#include "private.h"
 #include "tabledefs.h"
 #include "tokentype.h"
 #include "metadata-internals.h"

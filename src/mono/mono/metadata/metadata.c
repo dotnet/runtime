@@ -20,7 +20,6 @@
 #include "tokentype.h"
 #include "metadata-internals.h"
 #include "class-internals.h"
-#include "private.h"
 #include "class.h"
 
 static void do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContext *generic_context,
@@ -30,6 +29,67 @@ static gboolean do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolea
 static gboolean mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only);
 static gboolean _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGenericClass *g2,
 						    gboolean signature_only);
+
+/*
+ * This enumeration is used to describe the data types in the metadata
+ * tables
+ */
+enum {
+	MONO_MT_END,
+
+	/* Sized elements */
+	MONO_MT_UINT32,
+	MONO_MT_UINT16,
+	MONO_MT_UINT8,
+
+	/* Index into Blob heap */
+	MONO_MT_BLOB_IDX,
+
+	/* Index into String heap */
+	MONO_MT_STRING_IDX,
+
+	/* GUID index */
+	MONO_MT_GUID_IDX,
+
+	/* Pointer into a table */
+	MONO_MT_TABLE_IDX,
+
+	/* HasConstant:Parent pointer (Param, Field or Property) */
+	MONO_MT_CONST_IDX,
+
+	/* HasCustomAttribute index.  Indexes any table except CustomAttribute */
+	MONO_MT_HASCAT_IDX,
+	
+	/* CustomAttributeType encoded index */
+	MONO_MT_CAT_IDX,
+
+	/* HasDeclSecurity index: TypeDef Method or Assembly */
+	MONO_MT_HASDEC_IDX,
+
+	/* Implementation coded index: File, Export AssemblyRef */
+	MONO_MT_IMPL_IDX,
+
+	/* HasFieldMarshal coded index: Field or Param table */
+	MONO_MT_HFM_IDX,
+
+	/* MemberForwardedIndex: Field or Method */
+	MONO_MT_MF_IDX,
+
+	/* TypeDefOrRef coded index: typedef, typeref, typespec */
+	MONO_MT_TDOR_IDX,
+
+	/* MemberRefParent coded index: typeref, moduleref, method, memberref, typesepc, typedef */
+	MONO_MT_MRP_IDX,
+
+	/* MethodDefOrRef coded index: Method or Member Ref table */
+	MONO_MT_MDOR_IDX,
+
+	/* HasSemantic coded index: Event or Property */
+	MONO_MT_HS_IDX,
+
+	/* ResolutionScope coded index: Module, ModuleRef, AssemblytRef, TypeRef */
+	MONO_MT_RS_IDX
+};
 
 const static unsigned char AssemblySchema [] = {
 	MONO_MT_UINT32,     /* "HashId" }, */
@@ -509,9 +569,6 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			default:
 				g_assert_not_reached ();
 			}
-			if (tableindex != MONO_TABLE_EXPORTEDTYPE && field_size != idx_size (tableindex))
-				g_warning ("size changed (%d to %d)", idx_size (tableindex), field_size);
-			
 			break;
 
 			/*
