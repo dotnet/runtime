@@ -1071,25 +1071,12 @@ lreg: OP_LCALL_REG (reg) {
 }
 
 stmt: OP_VCALL (reg) {
-	MonoInst *vtarg;
-	/* FIXME: this is actually arch-specific... */
-	MONO_INST_NEW (s, vtarg, OP_OUTARG);
-	vtarg->inst_left = state->left->tree;
-	vtarg->type = STACK_MP;
-	vtarg->sreg1 = state->left->reg1;
-	mono_bblock_add_inst (s->cbb, vtarg);
-
+	mono_arch_emit_this_vret_args (s, (MonoCallInst*)tree, -1, -1, state->left->reg1);
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: OP_VCALL_REG (reg, reg) {
-	MonoInst *vtarg;
-	/* FIXME: this is actually arch-specific... */
-	MONO_INST_NEW (s, vtarg, OP_OUTARG);
-	vtarg->inst_left = state->right->tree;
-	vtarg->type = STACK_MP;
-	vtarg->sreg1 = state->right->reg1;
-	mono_bblock_add_inst (s->cbb, vtarg);
+	mono_arch_emit_this_vret_args (s, (MonoCallInst*)tree, -1, -1, state->right->reg1);
 	
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -1738,32 +1725,12 @@ mini_emit_load_intf_reg_class (MonoCompile *s, int intf_reg, int klass_reg, Mono
 void 
 mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop, int virtop)
 {
-	MonoInst *this, *vtarg;
 	MonoMethod *method = ((MonoCallInst*)tree)->method;
-	int vtable_reg, slot_reg;
+	int vtable_reg, slot_reg, this_reg;
 	MBState *state = st;
 
-	/* add the this argument */
-	MONO_INST_NEW (cfg, this, OP_OUTARG);
-	this->inst_left = state->left->tree;
-	this->type = this->inst_left->type;
-	this->sreg1 = state->left->reg1;
-	mono_bblock_add_inst (cfg->cbb, this);
-
-	/* arch-specific: setup a mono_arch_call for it */
-#if defined(__ppc__) || defined(__powerpc__)
-	this->opcode = OP_SETREG;
-	this->dreg = ppc_r3;
-#endif
-
-	if (novirtop == OP_VCALL) {
-		/* FIXME: this is actually arch-specific... */
-		MONO_INST_NEW (cfg, vtarg, OP_OUTARG);
-		vtarg->inst_left = state->right->tree;
-		vtarg->type = STACK_MP;
-		vtarg->sreg1 = state->right->reg1;
-		mono_bblock_add_inst (cfg->cbb, vtarg);
-	}
+	this_reg = state->left->reg1;
+	mono_arch_emit_this_vret_args (cfg, (MonoCallInst*)tree, this_reg, state->left->tree->type, novirtop == OP_VCALL? state->right->reg1: -1);
 
 	if (!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) || 
 	    ((method->flags & METHOD_ATTRIBUTE_FINAL) && 
@@ -1777,7 +1744,7 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 		}
 
 		if (!method->string_ctor)
-			MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_THIS, -1, this->sreg1);
+			MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_THIS, -1, this_reg);
 
 		tree->dreg = state->reg1;
 		tree->opcode = novirtop;
@@ -1786,7 +1753,7 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 	}
 
 	vtable_reg = mono_regstate_next_int (cfg->rs);
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, this->sreg1, G_STRUCT_OFFSET (MonoObject, vtable));
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, this_reg, G_STRUCT_OFFSET (MonoObject, vtable));
 	if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		slot_reg = mono_regstate_next_int (cfg->rs);
 		mini_emit_load_intf_reg_vtable (cfg, slot_reg, vtable_reg, method->klass);

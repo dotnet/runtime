@@ -3213,3 +3213,32 @@ void
 mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 {
 }
+
+void
+mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg)
+{
+	int this_dreg = ppc_r3;
+	
+	if (vt_reg != -1)
+		this_dreg = ppc_r4;
+
+	/* add the this argument */
+	if (this_reg != -1) {
+		MonoInst *this;
+		MONO_INST_NEW (cfg, this, OP_SETREG);
+		this->type = this_type;
+		this->sreg1 = this_reg;
+		this->dreg = this_dreg;
+		mono_bblock_add_inst (bb, this);
+	}
+
+	if (vt_reg != -1) {
+		MonoInst *vtarg;
+		MONO_INST_NEW (cfg, vtarg, OP_SETREG);
+		vtarg->type = STACK_MP;
+		vtarg->sreg1 = vt_reg;
+		this->dreg = ppc_r3;
+		mono_bblock_add_inst (bb, vtarg);
+	}
+}
+

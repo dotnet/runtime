@@ -700,6 +700,7 @@ void      mono_arch_local_regalloc              (MonoCompile *cfg, MonoBasicBloc
 void      mono_arch_output_basic_block          (MonoCompile *cfg, MonoBasicBlock *bb);
 gboolean  mono_arch_has_unwind_info             (gconstpointer addr);
 void      mono_arch_setup_jit_tls_data          (MonoJitTlsData *tls);
+void      mono_arch_emit_this_vret_args         (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg);
 void      mono_arch_allocate_vars               (MonoCompile *m);
 void      mono_jit_walk_stack                   (MonoStackWalk func, gpointer user_data);
 MonoArray *ves_icall_get_trace                  (MonoException *exc, gint32 skip, MonoBoolean need_file_info);

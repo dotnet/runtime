@@ -3442,3 +3442,26 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 	mono_lmf_addr = &tls->lmf;
 #endif
 }
+
+void
+mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg)
+{
+
+	/* add the this argument */
+	if (this_reg != -1) {
+		MonoInst *this;
+		MONO_INST_NEW (cfg, this, OP_OUTARG);
+		this->type = this_type;
+		this->sreg1 = this_reg;
+		mono_bblock_add_inst (cfg->cbb, this);
+	}
+
+	if (vt_reg != -1) {
+		MonoInst *vtarg;
+		MONO_INST_NEW (cfg, vtarg, OP_OUTARG);
+		vtarg->type = STACK_MP;
+		vtarg->sreg1 = vt_reg;
+		mono_bblock_add_inst (cfg->cbb, vtarg);
+	}
+}
+
