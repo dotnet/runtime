@@ -5,6 +5,10 @@
  *   Miguel de Icaza (miguel@ximian.com)
  *
  * (C) 2001 Ximian, Inc.
+ *
+ * TODO:
+ *   Investigate how interface inheritance works and how it should be dumped.
+ *
  */
 #include <config.h>
 #include <stdio.h>
@@ -22,6 +26,8 @@ FILE *output;
 
 /* True if you want to get a dump of the header data */
 gboolean dump_header_data_p = FALSE;
+
+int dump_table = -1;
 
 static void
 dump_header_data (MonoAssembly *ass)
@@ -117,7 +123,7 @@ dis_directive_assemblyref (metadata_t *m)
 }
 
 static map_t visibility_map [] = {
-	{ TYPE_ATTRIBUTE_NOT_PUBLIC,           "not-public " },
+	{ TYPE_ATTRIBUTE_NOT_PUBLIC,           "private " },
 	{ TYPE_ATTRIBUTE_PUBLIC,               "public " },
 	{ TYPE_ATTRIBUTE_NESTED_PUBLIC,        "nested-public " },
 	{ TYPE_ATTRIBUTE_NESTED_PRIVATE,       "nested-private " },
@@ -195,24 +201,24 @@ static map_t field_flags_map [] = {
 
 static map_t element_type_map [] = {
 	{ ELEMENT_TYPE_END        , "end" },
-	{ ELEMENT_TYPE_VOID       , "System.Void" },
-	{ ELEMENT_TYPE_BOOLEAN    , "System.Bool" },
-	{ ELEMENT_TYPE_CHAR       , "System.Char" }, 
-	{ ELEMENT_TYPE_I1         , "System.SByte" },
-	{ ELEMENT_TYPE_U1         , "System.Byte" }, 
-	{ ELEMENT_TYPE_I2         , "System.Int16" },
-	{ ELEMENT_TYPE_U2         , "System.UInt16" },
-	{ ELEMENT_TYPE_I4         , "System.Int32" },
-	{ ELEMENT_TYPE_U4         , "System.UInt32" },
-	{ ELEMENT_TYPE_I8         , "System.Int64" },
-	{ ELEMENT_TYPE_U8         , "System.UInt64" },
-	{ ELEMENT_TYPE_R4         , "System.Single" },
-	{ ELEMENT_TYPE_R8         , "System.Double" },
-	{ ELEMENT_TYPE_STRING     , "System.String" },
+	{ ELEMENT_TYPE_VOID       , "void" },
+	{ ELEMENT_TYPE_BOOLEAN    , "bool" },
+	{ ELEMENT_TYPE_CHAR       , "char" }, 
+	{ ELEMENT_TYPE_I1         , "sbyte" },
+	{ ELEMENT_TYPE_U1         , "byte" }, 
+	{ ELEMENT_TYPE_I2         , "int16" },
+	{ ELEMENT_TYPE_U2         , "uint16" },
+	{ ELEMENT_TYPE_I4         , "int32" },
+	{ ELEMENT_TYPE_U4         , "uint32" },
+	{ ELEMENT_TYPE_I8         , "int64" },
+	{ ELEMENT_TYPE_U8         , "uint64" },
+	{ ELEMENT_TYPE_R4         , "float32" },
+	{ ELEMENT_TYPE_R8         , "float64" },
+	{ ELEMENT_TYPE_STRING     , "string" },
 	{ ELEMENT_TYPE_TYPEDBYREF , "TypedByRef" },
-	{ ELEMENT_TYPE_I          , "System.Int32" },
+	{ ELEMENT_TYPE_I          , "int" },
 	{ ELEMENT_TYPE_U          , "System.UPtr" },
-	{ ELEMENT_TYPE_OBJECT     , "System.Object" },
+	{ ELEMENT_TYPE_OBJECT     , "object" },
 	{ 0, NULL }
 };
 
@@ -300,12 +306,24 @@ get_typedef (metadata_t *m, int idx)
 static char *
 get_module (metadata_t *m, int idx)
 {
-	guint32 cols [9];
-
-/*	g_assert (idx <= m->tables [META_TABLE_MODULE].rows); */
+	guint32 cols [5];
+	
+	/*
+	 * There MUST BE only one module in the Module table
+	 */
+	g_assert (idx == 1);
 	    
-/*	return g_strdup_printf ("IDX=0x%x", idx); */
-	expand (&m->tables [META_TABLE_ASSEMBLYREF], 0, cols, CSIZE (cols));
+	expand (&m->tables [META_TABLE_MODULEREF], idx - 1, cols, CSIZE (cols));
+
+	return g_strdup (mono_metadata_string_heap (m, cols [6]));
+}
+
+static char *
+get_assemblyref (metadata_t *m, int idx)
+{
+	guint32 cols [9];
+	
+	expand (&m->tables [META_TABLE_ASSEMBLYREF], idx - 1, cols, CSIZE (cols));
 
 	return g_strdup (mono_metadata_string_heap (m, cols [6]));
 }
@@ -322,45 +340,57 @@ get_typeref (metadata_t *m, int idx)
 
 	t = mono_metadata_string_heap (m, cols [1]);
 	s = mono_metadata_string_heap (m, cols [2]);
-	rs_idx = cols [0] >> 3;
-	table = cols [0] & 7;
 
-#if 0
-	rs_idx = cols [0];
-	table = 0;
-#endif
-	printf ("------------ %d %d %d --------\n", idx, rs_idx, table);
-		
+	rs_idx = cols [0] >> 2;
+	/*
+	 * Two bits in Beta2.
+	 * ECMA spec claims 3 bits
+	 */
+	table = cols [0] & 3;
+	
 	switch (table){
 	case 0: /* Module */
 		x = get_module (m, rs_idx);
-		ret = g_strdup_printf ("[%08x:%s] %s.%s", cols [0], x, s, t);
+		ret = g_strdup_printf ("TODO:TypeRef-Module [%s] %s.%s", x, s, t);
 		g_free (x);
 		break;
 
 	case 1: /* ModuleRef */
-		ret = g_strdup_printf ("TypeRef: ModuleRef (%s.%s)", s, t);
-		
-	case 3: /* AssemblyRef */
-		ret = g_strdup_printf ("TypeRef: AssemblyRef (%s.%s)", s, t);
+		ret = g_strdup_printf ("TODO:TypeRef-ModuleRef (%s.%s)", s, t);
+		break;
+			      
+	case 2: /*
+		 * AssemblyRef (ECMA docs claim it is 3, but it looks to
+		 * me like it is 2 (tokens are prefixed with 0x23)
+		 */
+		x = get_assemblyref (m, rs_idx);
+		ret = g_strdup_printf ("[%s] %s.%s", x, s, t);
+		g_free (x);
+		break;
 		
 	case 4: /* TypeRef */
-		ret =  g_strdup_printf ("TypeRef: TYPEREF! (%s.%s)", s, t);
-
+		ret =  g_strdup_printf ("TODO:TypeRef-TypeRef: TYPEREF! (%s.%s)", s, t);
+		break;
+		
 	default:
-		ret = g_strdup_printf (">>>>>>>>>>> %d", cols [0] & 7);
+		ret = g_strdup_printf ("Unknown table in TypeRef %d", table);
 	}
 
 	return ret;
 }
 
 static char *
-typedef_or_ref (metadata_t *m, guint32 dor_token)
+get_typedef_or_ref (metadata_t *m, guint32 dor_token)
 {
-	int table = dor_token & 0x03;
-	int idx = dor_token >> 2;
-	char *s, *temp = NULL;
-		
+	char *temp = NULL, *s;
+	int table, idx;
+
+	/*
+	 * low 2 bits contain encoding
+	 */
+	table = dor_token & 0x03;
+	idx = dor_token >> 2;
+	
 	switch (table){
 	case 0: /* TypeDef */
 		temp = get_typedef (m, idx);
@@ -369,15 +399,18 @@ typedef_or_ref (metadata_t *m, guint32 dor_token)
 		
 	case 1: /* TypeRef */
 		temp = get_typeref (m, idx);
-		s = g_strdup_printf ("/* 0x%08x */ %s", dor_token, temp);
+		s = g_strdup_printf ("%s", temp);
 		break;
 		
 	case 2: /* TypeSpec */
-		s = g_strdup_printf ("TypeSpec: 0x%08x", dor_token);
+		s = g_strdup_printf ("TODO-TypeSpec: 0x%08x", idx);
 		break;
-		
-	}
 
+	default:
+		g_error ("Unhandled encoding for typedef-or-ref coded index");
+
+	}
+	
 	if (temp)
 		g_free (temp);
 
@@ -401,7 +434,7 @@ get_encoded_typedef_or_ref (metadata_t *m, const char *ptr, char **result)
 	
 	ptr = get_encoded_value (ptr, &token);
 
-	*result = typedef_or_ref (m, token);
+	*result = get_typedef_or_ref (m, token);
 
 	return ptr;
 }
@@ -471,12 +504,18 @@ get_type (metadata_t *m, const char *ptr, char **result)
 		ptr = methoddefref_signature (m, ptr, result);
 		break;
 		
-	case ELEMENT_TYPE_ARRAY:
-		*result = g_strdup ("ARRAY:TODO");
-		break;
+	case ELEMENT_TYPE_SZARRAY: {
+		char *child_type;
 		
-	case ELEMENT_TYPE_SZARRAY:
-		*result = g_strdup ("SZARRAY:TODO");
+		ptr = get_type (m, ptr, &child_type);
+		*result = g_strdup_printf ("%s[]", child_type);
+		g_free (child_type);
+		break;
+	}
+		
+	case ELEMENT_TYPE_ARRAY:
+ 
+		*result = g_strdup ("ARRAY:TODO");
 	}
 	
 	return ptr;
@@ -492,28 +531,30 @@ field_signature (metadata_t *m, guint32 blob_signature)
 	char *allocated_modifier_string, *allocated_type_string;
 	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
 	const char *base;
+	char *res;
 	int len;
-	static char buffer [8192];
 	
 	ptr = get_encoded_value (ptr, &len);
 	base = ptr;
 	/* FIELD is 0x06 */
 	g_assert (*ptr == 0x06);
-	hex_dump (ptr, 0, len);
+/*	hex_dump (ptr, 0, len); */
 	ptr++; len--;
 	
 	ptr = get_custom_mod (ptr, &allocated_modifier_string);
 	ptr = get_type (m, ptr, &allocated_type_string);
-	
-	sprintf (buffer, "LEN=%d::::   ", len);
-	strcat (buffer, allocated_type_string);
+
+	res = g_strdup_printf (
+		"%s %s",
+		allocated_modifier_string ? allocated_modifier_string : "",
+		allocated_type_string);
 	
 	if (allocated_modifier_string)
 		g_free (allocated_modifier_string);
 	if (allocated_type_string)
 		g_free (allocated_modifier_string);
 	
-	return g_strdup (buffer);
+	return res;
 }
 
 /**
@@ -600,20 +641,20 @@ dis_type (metadata_t *m, int n)
 	guint32 cols [6];
 	guint32 cols_next [6];
 	const char *name;
-	char *tn;
 	
 	expand (t, n, cols, CSIZE (cols));
 	expand (t, n + 1, cols_next, CSIZE (cols_next));
 
 	name = mono_metadata_string_heap (m, cols [1]);
 
-	if ((cols [0] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS)
-		tn = "class";
-	else
-		tn = "interface";
+	if ((cols [0] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS){
+		char *base = get_typedef_or_ref (m, cols [3]);
+		fprintf (output, "  .class %s%s\n", typedef_flags (cols [0]), name);
+		fprintf (output, "  \textends %s\n", base);
+		g_free (base);
+	} else
+		fprintf (output, "  .class interface %s%s\n", typedef_flags (cols [0]), name);
 	
-	fprintf (output, "  .%s %s%s\n", tn, typedef_flags (cols [0]), name);
-	fprintf (output, "  \textends %s\n", typedef_or_ref (m, cols [3]));
 	fprintf (output, "  {\n");
 
 	/*
@@ -626,6 +667,59 @@ dis_type (metadata_t *m, int n)
 		dis_method_list (m, cols [5], cols_next [5]);
 
 	fprintf (output, "  }\n");
+}
+
+static void
+dump_table_typeref (metadata_t *m)
+{
+	metadata_tableinfo_t *t = &m->tables [META_TABLE_TYPEREF];
+	int i;
+
+	fprintf (output, "Typeref Table\n");
+	
+	for (i = 1; i <= t->rows; i++){
+		char *s = get_typeref (m, i);
+		
+		fprintf (output, "%d: %s\n", i, s);
+		g_free (s);
+	}
+	fprintf (output, "\n");
+}
+
+static void
+dump_table_typedef (metadata_t *m)
+{
+	metadata_tableinfo_t *t = &m->tables [META_TABLE_TYPEDEF];
+	int i;
+
+	fprintf (output, "Typedef Table\n");
+	
+	for (i = 1; i <= t->rows; i++){
+		char *s = get_typedef (m, i);
+		
+		fprintf (output, "%d: %s\n", i, s);
+		g_free (s);
+	}
+	fprintf (output, "\n");
+}
+
+static void
+dump_table_assemblyref (metadata_t *m)
+{
+	metadata_tableinfo_t *t = &m->tables [META_TABLE_ASSEMBLYREF];
+	int i;
+
+	fprintf (output, "AssemblyRef Table\n");
+	
+	for (i = 0; i < t->rows; i++){
+		guint32 cols [9];
+
+		expand (t, i, cols, CSIZE (cols));
+		fprintf (output, "%d: %d.%d.%d.%d %s\n", i,
+			 cols [0], cols [1], cols [2], cols [3],
+			 mono_metadata_string_heap (m, cols [6]));
+	}
+	fprintf (output, "\n");
 }
 
 /**
@@ -665,13 +759,30 @@ disassemble_file (const char *file)
 		
 	}
 
-	dump_header_data (ass);
-
 	ii = ass->image_info;
 	m = &ii->cli_metadata;
-	dis_directive_assemblyref (m);
-	dis_directive_assembly (m);
-	dis_types (m);
+	
+	if (dump_table != -1){
+		switch (dump_table){
+		case META_TABLE_TYPEDEF:
+			dump_table_typedef (m);
+			break;
+		case META_TABLE_TYPEREF:
+			dump_table_typeref (m);
+			break;
+		case META_TABLE_ASSEMBLYREF:
+			dump_table_assemblyref (m);
+			break;
+		default:
+			g_error ("Internal error");
+		}
+	} else {
+		dump_header_data (ass);
+		
+		dis_directive_assemblyref (m);
+		dis_directive_assembly (m);
+		dis_types (m);
+	}
 	
 	mono_assembly_close (ass);
 }
@@ -696,6 +807,12 @@ main (int argc, char *argv [])
 				usage ();
 			else if (argv [i][1] == 'd')
 				dump_header_data_p = TRUE;
+			else if (strcmp (argv [i], "--typeref") == 0)
+				dump_table = META_TABLE_TYPEREF;
+			else if (strcmp (argv [i], "--typedef") == 0)
+				dump_table = META_TABLE_TYPEDEF;
+			else if (strcmp (argv [i], "--assemblyref") == 0)
+				dump_table = META_TABLE_ASSEMBLYREF;
 		} else
 			input_files = g_list_append (input_files, argv [i]);
 	}
