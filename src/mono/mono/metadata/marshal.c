@@ -2408,6 +2408,19 @@ handle_enum:
 	return res;	
 }
 
+static void
+raise_auto_layout_exception (MonoClass *klass)
+{
+	char *msg = g_strdup_printf ("The type `%s.%s' layout needs to be Sequential or Explicit",
+				     klass->name_space, klass->name, NULL);
+				
+	MonoException *e = mono_exception_from_name_msg (
+		mono_get_corlib (), "System.Runtime.InteropServices",
+		"MarshalDirectiveException", msg);
+	g_free (msg);
+	mono_raise_exception (e);
+}
+			     
 /*
  * generates IL code to call managed methods from unmanaged code 
  */
@@ -2561,8 +2574,9 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 				break;
 			}
 
-			/* FIXME: Raise a MarshalDirectiveException here */
-			g_assert ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT);
+			/* The class can not have an automatic layout */
+			if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
+				raise_auto_layout_exception (klass);
 
 			if (t->attrs & PARAM_ATTRIBUTE_OUT) {
 				mono_mb_emit_byte (mb, CEE_LDNULL);
@@ -2874,8 +2888,9 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 				break;
 			}
 
-			/* FIXME: Raise a MarshalDirectiveException here */
-			g_assert ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT);
+			/* The class can not have an automatic layout */
+			if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_AUTO_LAYOUT)
+				raise_auto_layout_exception (klass);
 
 			mono_mb_emit_byte (mb, CEE_STLOC_0);
 			/* Check for null */
