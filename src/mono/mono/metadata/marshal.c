@@ -1149,8 +1149,14 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
 			mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
+			break;	
+		case MONO_TYPE_CLASS:  
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_OBJECT:
+			/* fixme: conversions ? */
+			mono_mb_emit_ldarg (mb, i);
 			break;
-			
 		default:
 			g_warning ("type 0x%02x unknown", t->type);	
 			g_assert_not_reached ();
