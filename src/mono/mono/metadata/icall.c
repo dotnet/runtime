@@ -52,6 +52,15 @@ mono_double_ToStringImpl (double value)
 	return mono_string_new (mono_domain_get (), retVal);
 }
 
+static MonoString *
+mono_float_ToStringImpl (float value)
+{
+	/* FIXME: Handle formats, etc. */
+	const gchar *retVal;
+	retVal = g_strdup_printf ("%f", value);
+	return mono_string_new (mono_domain_get (), retVal);
+}
+
 static MonoObject *
 ves_icall_System_Array_GetValueImpl (MonoObject *this, guint32 pos)
 {
@@ -2212,6 +2221,11 @@ static gconstpointer icall_map [] = {
 	 * System.Double
 	 */
 	"System.Double::ToStringImpl", mono_double_ToStringImpl,
+
+	/*
+	 * System.Single
+	 */
+	"System.Single::ToStringImpl", mono_float_ToStringImpl,
 
 	/*
 	 * System.Decimal
