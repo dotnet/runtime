@@ -128,6 +128,19 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
 #endif /* PLATFORM_WIN32 */
 
 /*
+ * Can't allocate the helper methods in static arrays as on other platforms.
+ */
+static MonoCodeManager *code_manager = NULL;
+static CRITICAL_SECTION code_manager_mutex;
+
+void
+mono_amd64_exceptions_init ()
+{
+	InitializeCriticalSection (&code_manager_mutex);
+	code_manager = mono_code_manager_new ();
+}
+
+/*
  * mono_arch_get_restore_context:
  *
  * Returns a pointer to a method which restores a previously saved sigcontext.
@@ -136,14 +149,17 @@ gpointer
 mono_arch_get_restore_context (void)
 {
 	static guint8 *start = NULL;
+	static gboolean inited = FALSE;
 	guint8 *code;
 
-	if (start)
+	if (inited)
 		return start;
 
 	/* restore_contect (MonoContext *ctx) */
 
-	start = code = g_malloc (1024);
+	EnterCriticalSection (&code_manager_mutex);
+	start = code = mono_code_manager_reserve (code_manager, 1024);
+	LeaveCriticalSection (&code_manager_mutex);
 
 	/* get return address */
 	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RDI,  G_STRUCT_OFFSET (MonoContext, rip), 8);
@@ -161,6 +177,8 @@ mono_arch_get_restore_context (void)
 	/* jump to the saved IP */
 	amd64_jump_reg (code, AMD64_RAX);
 
+	inited = TRUE;
+
 	return start;
 }
 
@@ -174,8 +192,8 @@ mono_arch_get_restore_context (void)
 gpointer
 mono_arch_get_call_filter (void)
 {
-	static guint8 start [64];
-	static int inited = 0;
+	static guint8 *start;
+	static gboolean inited = FALSE;
 	int i;
 	guint8 *code;
 	guint32 pos;
@@ -183,7 +201,10 @@ mono_arch_get_call_filter (void)
 	if (inited)
 		return start;
 
-	inited = 1;
+	EnterCriticalSection (&code_manager_mutex);
+	start = code = mono_code_manager_reserve (code_manager, 64);
+	LeaveCriticalSection (&code_manager_mutex);
+
 	/* call_filter (MonoContext *ctx, unsigned long eip) */
 	code = start;
 
@@ -234,6 +255,9 @@ mono_arch_get_call_filter (void)
 	amd64_ret (code);
 
 	g_assert ((code - start) < 64);
+
+	inited = TRUE;
+
 	return start;
 }
 
@@ -277,14 +301,17 @@ throw_exception (MonoObject *exc, guint64 rip, guint64 rsp,
 gpointer 
 mono_arch_get_throw_exception (void)
 {
-	static guint8 start [64];
-	static int inited = 0;
+	static guint8* start;
+	static gboolean inited = FALSE;
 	guint8 *code;
 
 	if (inited)
 		return start;
 
-	inited = 1;
+	EnterCriticalSection (&code_manager_mutex);
+	start = code = mono_code_manager_reserve (code_manager, 64);
+	LeaveCriticalSection (&code_manager_mutex);
+
 	code = start;
 
 	/* Exception */
@@ -307,6 +334,9 @@ mono_arch_get_throw_exception (void)
 	amd64_breakpoint (code);
 
 	g_assert ((code - start) < 64);
+
+	inited = TRUE;
+
 	return start;
 }
 
@@ -320,15 +350,18 @@ mono_arch_get_throw_exception (void)
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
 {
-	static guint8 start [64];
-	static int inited = 0;
+	static guint8* start;
+	static gboolean inited = FALSE;
 	guint8 *code;
 	guint64 throw_ex;
 
 	if (inited)
 		return start;
 
-	inited = 1;
+	EnterCriticalSection (&code_manager_mutex);
+	start = code = mono_code_manager_reserve (code_manager, 64);
+	LeaveCriticalSection (&code_manager_mutex);
+
 	code = start;
 
 	/* Push return address */
@@ -356,6 +389,8 @@ mono_arch_get_throw_exception_by_name (void)
 	amd64_jump_reg (code, AMD64_R11);
 
 	g_assert ((code - start) < 64);
+
+	inited = TRUE;
 
 	return start;
 }
