@@ -16,6 +16,10 @@ case "$host" in
 		HOST_CC="gcc"
 		libdl=
 		;;
+	*-*-*bsd*)
+		platform_win32=no
+		libdl=
+		;;
 	*)
 		platform_win32=no
 		libdl="-ldl"
