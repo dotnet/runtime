@@ -158,6 +158,15 @@ typedef enum {
 } SparcFCond;
 
 typedef enum {
+	sparc_icc = 4,
+    sparc_xcc = 6,
+    sparc_fcc0 = 0,
+	sparc_fcc1 = 1,
+	sparc_fcc2 = 2,
+	sparc_fcc3 = 3
+} SparcCC;
+
+typedef enum {
 	/* fop1 format */
 	sparc_fitos_val = 196,
 	sparc_fitod_val = 200,
@@ -221,6 +230,18 @@ typedef struct {
 } sparc_format2b;
 
 typedef struct {
+	unsigned int op   : 2; /* always 0 */
+	unsigned int a    : 1;
+	unsigned int res  : 1;
+	unsigned int rcond: 3;
+	unsigned int op2  : 3;
+	unsigned int d16hi: 2;
+	unsigned int p    : 1;
+	unsigned int rs1  : 5;
+	unsigned int d16lo: 14;
+} sparc_format2c;
+
+typedef struct {
 	unsigned int op   : 2; /* 2 or 3 */
 	unsigned int rd   : 5;
 	unsigned int op3  : 6;
@@ -269,11 +290,56 @@ typedef struct {
 	unsigned int rs2  : 5;
 } sparc_format3c;
 
+typedef struct {
+	unsigned int op   : 2;
+	unsigned int rd   : 5;
+	unsigned int op3  : 6;
+	unsigned int rs1  : 5;
+	unsigned int i    : 1;
+	unsigned int cc01 : 2;
+	unsigned int res  : 6;
+	unsigned int rs2  : 5;
+} sparc_format4a;
+
+typedef struct {
+	unsigned int op   : 2;
+	unsigned int rd   : 5;
+	unsigned int op3  : 6;
+	unsigned int rs1  : 5;
+	unsigned int i    : 1;
+	unsigned int cc01 : 2;
+	unsigned int simm : 11;
+} sparc_format4b;
+
+typedef struct {
+	unsigned int op   : 2;
+	unsigned int rd   : 5;
+	unsigned int op3  : 6;
+	unsigned int cc2  : 1;
+	unsigned int cond : 4;
+	unsigned int i    : 1;
+	unsigned int cc01 : 2;
+	unsigned int res  : 6;
+	unsigned int rs2  : 5;
+} sparc_format4c;
+
+typedef struct {
+	unsigned int op   : 2;
+	unsigned int rd   : 5;
+	unsigned int op3  : 6;
+	unsigned int cc2  : 1;
+	unsigned int cond : 4;
+	unsigned int i    : 1;
+	unsigned int cc01 : 2;
+	unsigned int simm : 11;
+} sparc_format4d;
+
 /* for use in logical ops, use 0 to not set flags */
 #define sparc_cc 16
 
 #define sparc_is_imm13(val) ((gint)val >= (gint)-(1<<12) && (gint)val <= (gint)((1<<12)-1))
 #define sparc_is_imm22(val) ((gint)val >= (gint)-(1<<21) && (gint)val <= (gint)((1<<21)-1))
+#define sparc_is_imm16(val) ((gint)val >= (gint)-(1<<15) && (gint)val <= (gint)((1<<15)-1))
 
 /* disassembly */
 #define sparc_inst_op(inst) ((inst) >> 30)
@@ -310,6 +376,21 @@ typedef struct {
 		__f->cond = (bcond);	\
 		__f->op2 = (oper);	\
 		__f->disp = (disp22);	\
+		(ins) = (unsigned int*)__f + 1;	\
+	} while (0)
+
+#define sparc_encode_format2c(ins,aval,bcond,oper,predict,r1,disp16) \
+	do {	\
+		sparc_format2c *__f = (sparc_format2c*)(ins);	\
+		__f->op = 0;	\
+		__f->a = (aval);	\
+        __f->res = 0;       \
+		__f->rcond = (bcond);	\
+		__f->op2 = (oper);	\
+        __f->d16hi = ((disp16) >> 14); \
+        __f->p = (predict); \
+        __f->rs1 = (r1);    \
+		__f->d16lo = ((disp16) & 0x3fff);	\
 		(ins) = (unsigned int*)__f + 1;	\
 	} while (0)
 
@@ -374,6 +455,62 @@ typedef struct {
 		__f->rs1 = (r1);	\
 		__f->rs2 = (r2);	\
 		__f->op3 = (oper);	\
+		(ins) = (unsigned int*)__f + 1;	\
+	} while (0)
+
+#define sparc_encode_format4a(ins,opval,oper,cc,r1,r2,dest) \
+	do {	\
+		sparc_format4a *__f = (sparc_format4a*)(ins);	\
+		__f->op = (opval);	\
+		__f->rd = (dest);	\
+		__f->op3 = (oper);	\
+		__f->rs1 = (r1);	\
+        __f->i   = 0;       \
+        __f->cc01= (cc) & 0x3; \
+        __f->res = 0;       \
+		__f->rs2 = (r2);	\
+		(ins) = (unsigned int*)__f + 1;	\
+	} while (0)
+
+#define sparc_encode_format4b(ins,opval,oper,cc,r1,imm,dest) \
+	do {	\
+		sparc_format4b *__f = (sparc_format4b*)(ins);	\
+		__f->op = (opval);	\
+		__f->rd = (dest);	\
+		__f->op3 = (oper);	\
+		__f->rs1 = (r1);	\
+        __f->i   = 1;       \
+        __f->cc01= (cc) & 0x3; \
+		__f->simm = (imm);	\
+		(ins) = (unsigned int*)__f + 1;	\
+	} while (0)
+
+#define sparc_encode_format4c(ins,opval,oper,cc,bcond,r2,dest) \
+	do {	\
+		sparc_format4c *__f = (sparc_format4c*)(ins);	\
+		__f->op = (opval);	\
+		__f->rd = (dest);	\
+		__f->op3 = (oper);	\
+        __f->cc2 = ((xcc) >> 2) & 0x1; \
+        __f->cond = bcond;  \
+        __f->i   = 0;       \
+        __f->cc01= (xcc) & 0x3; \
+        __f->res = 0;       \
+		__f->rs2 = (r2);	\
+		(ins) = (unsigned int*)__f + 1;	\
+	} while (0)
+
+#define sparc_encode_format4d(ins,opval,oper,xcc,bcond,imm,dest) \
+	do {	\
+		sparc_format4d *__f = (sparc_format4d*)(ins);	\
+		__f->op = (opval);	\
+		__f->rd = (dest);	\
+		__f->op3 = (oper);	\
+        __f->cc2 = ((xcc) >> 2) & 0x1; \
+        __f->cond = bcond;  \
+        __f->i   = 1;       \
+        __f->cc01= (xcc) & 0x3; \
+		__f->simm = (imm);	\
 		(ins) = (unsigned int*)__f + 1;	\
 	} while (0)
 
@@ -615,6 +752,18 @@ typedef struct {
 #define sparc_branch(ins,aval,condval,displ) sparc_encode_format2b((ins),(aval),(condval),2,(displ))
 /* FIXME: float condition codes are different: unify. */
 #define sparc_fbranch(ins,aval,condval,displ) sparc_encode_format2b((ins),(aval),(condval),6,(displ))
+
+#define sparc_brz(ins,aval,predict,rs1,disp) sparc_encode_format2c((ins), (aval),0x1,0x3,(predict),(rs1),(disp))
+#define sparc_brlez(ins,aval,predict,rs1,disp) sparc_encode_format2c((ins), (aval),0x2,0x3,(predict),(rs1),(disp))
+#define sparc_brlz(ins,aval,predict,rs1,disp) sparc_encode_format2c((ins), (aval),0x3,0x3,(predict),(rs1),(disp))
+#define sparc_brnz(ins,aval,predict,rs1,disp) sparc_encode_format2c((ins), (aval),0x5,0x3,(predict),(rs1),(disp))
+#define sparc_brgz(ins,aval,predict,rs1,disp) sparc_encode_format2c((ins), (aval),0x6,0x3,(predict),(rs1),(disp))
+#define sparc_brgez(ins,aval,predict,rs1,disp) sparc_encode_format2c((ins), (aval),0x7,0x3,(predict),(rs1),(disp))
+
+/* conditional moves */
+#define sparc_movcc(ins,cc,condval,r1,dest) sparc_encode_format4c((ins), 0x2, 0x2c, cc, condval, r1, dest)
+
+#define sparc_movcc_imm(ins,cc,condval,imm,dest) sparc_encode_format4d((ins), 0x2, 0x2c, cc, condval, imm, dest)
 
 /* synthetic instructions */
 #define sparc_cmp(ins,r1,r2) sparc_sub((ins),sparc_cc,(r1),(r2),sparc_g0)
