@@ -140,7 +140,8 @@ A: We will devote most of our resources to work on the pieces which are
    improve it further.
 
 
-<a name="gnome"></a> ** Mono and GNOME
+<a name="gnome"></a> 
+** Mono and GNOME
 
 Q: How is Mono related to GNOME?
 
@@ -218,7 +219,7 @@ Q: Is the Mono Project is related to the Microsoft Hailstorm effort?  Is
    Ximian endorsing Hailstorm?  
 
 A: No.  The Mono Project is focused on providing a compatible set of
-   tools for the Microsoft.NET development platform.  It does not
+   tools for the Microsoft .NET development platform.  It does not
    address, require, or otherwise endorse the MS Passport-based
    Hailstorm single sign-on system that is part of Windows XP and
    other services.

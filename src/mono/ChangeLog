@@ -1,3 +1,8 @@
+2001-12-21  Aaron Weber  <aaron@ximian.com>
+
+	* doc/faq (A): added a linebreak that was missing and was causing
+	a heading to appear badly.
+
 2001-12-20  Aaron Weber  <aaron@ximian.com>
 
 	* doc/faq: added <a name=""> nav links, and moved all MSFT-related
