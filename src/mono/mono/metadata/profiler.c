@@ -1,4 +1,5 @@
 
+#include "config.h"
 #include "mono/metadata/profiler-private.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/mono-debug.h"
@@ -419,6 +420,7 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 	}
 }
 
+#ifndef DISABLE_PROFILER
 /*
  * Small profiler extracted from mint: we should move it in a loadable module
  * and improve it to do graphs and more accurate timestamping with rdtsc.
@@ -1093,15 +1095,25 @@ mono_profiler_install_simple (const char *desc)
 	mono_profiler_set_events (flags);
 }
 
+#endif /* DISABLE_PROFILER */
+
 typedef void (*ProfilerInitializer) (const char*);
 #define INITIALIZER_NAME "mono_profiler_startup"
 
 void 
 mono_profiler_load (const char *desc)
 {
+#ifndef DISABLE_PROFILER
 	if (!desc || (strcmp ("default", desc) == 0) || (strncmp (desc, "default:", 8) == 0)) {
 		mono_profiler_install_simple (desc);
-	} else {
+		return;
+	}
+#else
+	if (!desc) {
+		desc = "default";
+	}
+#endif
+	{
 		GModule *pmodule;
 		const char* col = strchr (desc, ':');
 		char* libname;
