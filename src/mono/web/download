@@ -71,15 +71,15 @@
                     <p><a href="http://www.go-mono.com/archive/yum-repository/fedora-1-i386">YUM Repository</a>
 		  </td>
 	        </tr>
-<!-- 		<tr bgcolor="#bbbbbb"> -->
-<!-- 		  <td bgcolor="#999999"> -->
-<!--                     <img src="images/redhat-36.gif"><b>Fedora Core 2/x86</b><br> -->
-<!-- 		  </td> -->
-<!--   		  <td> -->
-<!-- 		    <a href="archive/beta2/fedora-2-i386">Packages</a> -->
-<!--                     <p><a href="http://www.go-mono.com/archive/yum-repository/fedora-2-i386">YUM Repository</a> -->
-<!-- 		  </td> -->
-<!-- 	        </tr> -->
+		<tr bgcolor="#bbbbbb">
+		  <td bgcolor="#999999">
+                    <img src="images/redhat-36.gif"><b>Fedora Core 2/x86</b><br>
+		  </td>
+  		  <td>
+		    <a href="archive/beta3/fedora-2-i386">Packages</a>
+                    <p><a href="http://www.go-mono.com/archive/yum-repository/fedora-2-i386">YUM Repository</a>
+		  </td>
+	        </tr>
                 <tr bgcolor="#bbbbbb">
                     <td bgcolor="#999999">
                       <img src="images/suse-36.gif"><b>SLES 8/x86</b><br>
