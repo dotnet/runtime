@@ -3486,7 +3486,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 		/* save the current IP */
 		mono_add_patch_info (cfg, code + 1 - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
-		x86_push_imm (code, 0);
+		x86_push_imm_template (code, 0);
 
 		/* save all caller saved regs */
 		x86_push_reg (code, X86_EBP);
