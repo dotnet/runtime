@@ -907,6 +907,12 @@ free_hash_table (gpointer key, gpointer val, gpointer user_data)
 	g_hash_table_destroy ((GHashTable*)val);
 }
 
+static void
+free_gs_list (gpointer key, gpointer val, gpointer user_data)
+{
+	g_slist_free ((GSList*)val);
+}
+
 /**
  * mono_image_close:
  * @image: The image file we wish to add a reference to
@@ -970,6 +976,7 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->delegate_end_invoke_cache);
 	g_hash_table_destroy (image->delegate_invoke_cache);
 	g_hash_table_destroy (image->remoting_invoke_cache);
+	g_hash_table_foreach (image->runtime_invoke_cache, free_gs_list, NULL);
 	g_hash_table_destroy (image->runtime_invoke_cache);
 	g_hash_table_destroy (image->typespec_cache);
 	g_hash_table_destroy (image->generic_inst_cache);
