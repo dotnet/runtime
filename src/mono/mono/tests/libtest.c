@@ -1266,6 +1266,14 @@ mono_test_marshal_pass_return_custom_in_delegate (PassReturnPtrDelegate del)
 	return res;
 }
 
+typedef int (STDCALL *ReturnEnumDelegate) (int e);
+
+int
+mono_test_marshal_return_enum_delegate (ReturnEnumDelegate func)
+{
+	return func (1);
+}
+
 STDCALL int
 mono_test_stdcall_name_mangling (int a, int b, int c)
 {

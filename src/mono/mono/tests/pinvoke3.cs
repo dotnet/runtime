@@ -312,4 +312,30 @@ public class Tests {
 
 		return (s == "12345") ? 0 : 1;
 	}
+
+	/* Passing and returning enums */
+
+	public enum FooEnum {
+		Foo1,
+		Foo2,
+		Foo3
+	};
+
+	public delegate FooEnum ReturnEnumDelegate (FooEnum e);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_return_enum_delegate")]
+	public static extern int mono_test_marshal_return_enum_delegate (ReturnEnumDelegate d);
+
+	public static FooEnum managed_return_enum (FooEnum e) {
+		return (FooEnum)((int)e + 1);
+	}
+
+	static int test_0_marshal_return_enum_delegate () {
+		ReturnEnumDelegate d = new ReturnEnumDelegate (managed_return_enum);
+		FooEnum e = (FooEnum)mono_test_marshal_return_enum_delegate (d);
+
+		return e == FooEnum.Foo3 ? 0 : 1;
+	}
+
+
 }
