@@ -26,6 +26,8 @@
 static void do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *generic_container,
 					 const char *ptr, const char **rptr);
 
+static gboolean do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only);
+
 /*
  * Encoding of the "description" argument:
  *
@@ -2616,10 +2618,10 @@ _mono_metadata_generic_inst_equal (MonoGenericInst *g1, MonoGenericInst *g2, gbo
 
 	if (g1->type_argc != g2->type_argc)
 		return FALSE;
-	if (!_mono_metadata_type_equal (g1->generic_type, g2->generic_type, signature_only))
+	if (!do_mono_metadata_type_equal (g1->generic_type, g2->generic_type, signature_only))
 		return FALSE;
 	for (i = 0; i < g1->type_argc; ++i) {
-		if (!_mono_metadata_type_equal (g1->type_argv [i], g2->type_argv [i], signature_only))
+		if (!do_mono_metadata_type_equal (g1->type_argv [i], g2->type_argv [i], signature_only))
 			return FALSE;
 	}
 	return TRUE;
@@ -2700,8 +2702,10 @@ mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only
 		return TRUE;
 	if (c1->generic_inst && c2->generic_inst)
 		return _mono_metadata_generic_inst_equal (c1->generic_inst, c2->generic_inst, signature_only);
-	if (((c1->byval_arg.type == MONO_TYPE_VAR) && (c2->byval_arg.type == MONO_TYPE_VAR)) ||
-	    ((c1->byval_arg.type == MONO_TYPE_MVAR) && (c2->byval_arg.type == MONO_TYPE_MVAR)))
+	if ((c1->byval_arg.type == MONO_TYPE_VAR) && (c2->byval_arg.type == MONO_TYPE_VAR))
+		return mono_metadata_generic_param_equal (
+			c1->byval_arg.data.generic_param, c2->byval_arg.data.generic_param, FALSE);
+	if ((c1->byval_arg.type == MONO_TYPE_MVAR) && (c2->byval_arg.type == MONO_TYPE_MVAR))
 		return mono_metadata_generic_param_equal (
 			c1->byval_arg.data.generic_param, c2->byval_arg.data.generic_param, signature_only);
 	return FALSE;
@@ -2715,8 +2719,8 @@ mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only
  * Determine if @t1 and @t2 represent the same type.
  * Returns: #TRUE if @t1 and @t2 are equal.
  */
-gboolean
-_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only)
+static gboolean
+do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only)
 {
 	if (t1->type != t2->type ||
 	    t1->byref != t2->byref)
@@ -2747,7 +2751,7 @@ _mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only)
 	case MONO_TYPE_SZARRAY:
 		return mono_metadata_class_equal (t1->data.klass, t2->data.klass, signature_only);
 	case MONO_TYPE_PTR:
-		return _mono_metadata_type_equal (t1->data.type, t2->data.type, signature_only);
+		return do_mono_metadata_type_equal (t1->data.type, t2->data.type, signature_only);
 	case MONO_TYPE_ARRAY:
 		if (t1->data.array->rank != t2->data.array->rank)
 			return FALSE;
@@ -2756,6 +2760,8 @@ _mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only)
 		return _mono_metadata_generic_inst_equal (
 			t1->data.generic_inst, t2->data.generic_inst, signature_only);
 	case MONO_TYPE_VAR:
+		return mono_metadata_generic_param_equal (
+			t1->data.generic_param, t2->data.generic_param, FALSE);
 	case MONO_TYPE_MVAR:
 		return mono_metadata_generic_param_equal (
 			t1->data.generic_param, t2->data.generic_param, signature_only);
@@ -2770,7 +2776,7 @@ _mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only)
 gboolean
 mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 {
-	return _mono_metadata_type_equal (t1, t2, FALSE);
+	return do_mono_metadata_type_equal (t1, t2, FALSE);
 }
 
 /*
@@ -2797,7 +2803,7 @@ mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 	 * If we have two generic methods `void Foo<U> (U u)' and `void Bar<V> (V v)',
 	 * U and V are equal here.
 	 *
-	 * That's what the `signature_only' argument of _mono_metadata_type_equal() is for.
+	 * That's what the `signature_only' argument of do_mono_metadata_type_equal() is for.
 	 */
 
 	for (i = 0; i < sig1->param_count; i++) { 
@@ -2807,11 +2813,11 @@ mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 		/* if (p1->attrs != p2->attrs)
 			return FALSE;
 		*/
-		if (!_mono_metadata_type_equal (p1, p2, TRUE))
+		if (!do_mono_metadata_type_equal (p1, p2, TRUE))
 			return FALSE;
 	}
 
-	if (!_mono_metadata_type_equal (sig1->ret, sig2->ret, TRUE))
+	if (!do_mono_metadata_type_equal (sig1->ret, sig2->ret, TRUE))
 		return FALSE;
 	return TRUE;
 }

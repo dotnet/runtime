@@ -502,8 +502,6 @@ mono_method_get_wrapper_data (MonoMethod *method, guint32 id);
 void
 mono_install_stack_walk (MonoStackWalkImpl func);
 
-gboolean _mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only);
-
 MonoGenericContainer *mono_metadata_load_generic_params (MonoImage *image, guint32 token);
 
 MonoMethodSignature*
