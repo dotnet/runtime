@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/tabledefs.h>
@@ -35,13 +36,16 @@ static void initialize_debugger_support (void);
 
 static MonoDebugHandle *mono_debug_handle = NULL;
 static gconstpointer debugger_notification_address = NULL;
-static GCond *debugger_thread_cond = NULL;
-static GStaticRecMutex debugger_lock_mutex = G_STATIC_REC_MUTEX_INIT;
-static GMutex *debugger_thread_mutex = NULL;
-static GCond *debugger_finished_cond = NULL;
-static GMutex *debugger_finished_mutex = NULL;
-static GCond *debugger_start_cond = NULL;
-static GMutex *debugger_start_mutex = NULL;
+
+static mono_once_t debugger_lock_once = MONO_ONCE_INIT;
+static CRITICAL_SECTION debugger_lock_mutex;
+
+static gpointer debugger_thread_cond;
+static gpointer debugger_start_cond;
+
+static gpointer debugger_finished_cond;
+static CRITICAL_SECTION debugger_finished_mutex;
+
 static gboolean debugger_signalled = FALSE;
 static gboolean must_send_finished = FALSE;
 
@@ -79,27 +83,31 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 static void
 debugger_init_threads (void)
 {
-	g_thread_init (NULL);
+	debugger_thread_cond = CreateSemaphore (NULL, 0, 1, NULL);
+	debugger_start_cond = CreateSemaphore (NULL, 0, 1, NULL);
 
-	debugger_thread_cond = g_cond_new ();
-	debugger_finished_cond = g_cond_new ();
-	debugger_start_cond = g_cond_new ();
+	InitializeCriticalSection (&debugger_finished_mutex);
+	debugger_finished_cond = CreateSemaphore (NULL, 0, 1, NULL);
+}
 
-	debugger_thread_mutex = g_mutex_new ();
-	debugger_finished_mutex = g_mutex_new ();
-	debugger_start_mutex = g_mutex_new ();
+static void
+debugger_lock_init (void)
+{
+	InitializeCriticalSection (&debugger_lock_mutex);
 }
 
 static void
 mono_debugger_lock (void)
 {
-	g_static_rec_mutex_lock (&debugger_lock_mutex);
+	mono_once (&debugger_lock_once, debugger_lock_init);
+	EnterCriticalSection (&debugger_lock_mutex);
 }
 
 static void
 mono_debugger_unlock (void)
 {
-	g_static_rec_mutex_unlock (&debugger_lock_mutex);
+	mono_once (&debugger_lock_once, debugger_lock_init);
+	LeaveCriticalSection (&debugger_lock_mutex);
 }
 
 static void
@@ -107,16 +115,20 @@ mono_debugger_signal (gboolean modified)
 {
 	if (modified)
 		debugger_symbol_file_table_modified = TRUE;
+	mono_debugger_lock ();
 	if (!debugger_signalled) {
 		debugger_signalled = TRUE;
-		g_cond_signal (debugger_thread_cond);
+		ReleaseSemaphore (debugger_thread_cond, 1, NULL);
 	}
+	mono_debugger_unlock ();
 }
 
 static void
 mono_debugger_wait (void)
 {
-	g_cond_wait (debugger_finished_cond, debugger_finished_mutex);
+	LeaveCriticalSection (&debugger_finished_mutex);
+	g_assert (WaitForSingleObject (debugger_finished_cond, INFINITE) == WAIT_OBJECT_0);
+	EnterCriticalSection (&debugger_finished_mutex);
 }
 
 static void
@@ -1331,34 +1343,41 @@ debugger_update_symbol_file_table (void)
 
 static gboolean has_mono_debugger_support = FALSE;
 
+static pid_t debugger_background_thread;
+extern void mono_debugger_init_thread_debug (pid_t);
+
 /*
  * NOTE: We must not call any functions here which we ever may want to debug !
  */
-static gpointer
+static guint32
 debugger_thread_func (gpointer ptr)
 {
 	void (*notification_code) (void) = ptr;
 	int last_generation = 0;
+
+	mono_new_thread_init (NULL, &last_generation);
+	debugger_background_thread = getpid ();
+
+	/*
+	 * Ok, we're now running in the debugger - signal the parent thread that
+	 * we're ready and enter the event loop.
+	 */
+	g_assert (WaitForSingleObject (debugger_start_cond, INFINITE) == WAIT_OBJECT_0);
 
 	/*
 	 * Lock the mutex and raise a SIGSTOP to give the debugger a chance to
 	 * attach to us.  This is important since the `notification_code' contains a
 	 * breakpoint instruction which would otherwise be deadly for us.
 	 */
-	g_mutex_lock (debugger_thread_mutex);
-	raise (SIGSTOP);
+	mono_debugger_lock ();
 
-	/*
-	 * Ok, we're now running in the debugger - signal the parent thread that
-	 * we're ready and enter the event loop.
-	 */
-	g_mutex_lock (debugger_start_mutex);
-	g_cond_signal (debugger_start_cond);
-	g_mutex_unlock (debugger_start_mutex);
+	raise (SIGSTOP);
 
 	while (TRUE) {
 		/* Wait for an event. */
-		g_cond_wait (debugger_thread_cond, debugger_thread_mutex);
+		mono_debugger_unlock ();
+		g_assert (WaitForSingleObject (debugger_thread_cond, INFINITE) == WAIT_OBJECT_0);
+		mono_debugger_lock ();
 
 		/* Reload the symbol file table if necessary. */
 		if (debugger_symbol_file_table_generation > last_generation) {
@@ -1379,21 +1398,21 @@ debugger_thread_func (gpointer ptr)
 		debugger_signalled = FALSE;
 
 		if (must_send_finished) {
-			g_mutex_lock (debugger_finished_mutex);
-			g_cond_signal (debugger_finished_cond);
+			EnterCriticalSection (&debugger_finished_mutex);
+			ReleaseSemaphore (debugger_finished_cond, 1, NULL);
 			must_send_finished = FALSE;
-			g_mutex_unlock (debugger_finished_mutex);
+			LeaveCriticalSection (&debugger_finished_mutex);
 		}
 	}
 
-	return NULL;
+	return 0;
 }
 
 static void
 initialize_debugger_support ()
 {
 	guint8 *buf, *ptr;
-	GThread *thread;
+	HANDLE thread;
 
 	if (has_mono_debugger_support)
 		return;
@@ -1405,27 +1424,25 @@ initialize_debugger_support ()
 	debugger_notification_address = buf;
 	x86_ret (buf);
 
-	g_mutex_lock (debugger_start_mutex);
-
 	/*
-	 * This mutex is only unlocked by the g_cond_wait() in
-	 * mono_debugger_wait().
+	 * This mutex is only unlocked in mono_debugger_wait().
 	 */
-	g_mutex_lock (debugger_finished_mutex);
+	EnterCriticalSection (&debugger_finished_mutex);
 
-	thread = g_thread_create (debugger_thread_func, ptr, FALSE, NULL);
+	thread = CreateThread (NULL, 0, debugger_thread_func, ptr, FALSE, NULL);
 	g_assert (thread);
 
 	/*
-	 * Wait until the debugger thread has actually been started and the
-	 * debugger attached to it.
+	 * Wait until the debugger thread has actually been started and we
+	 * have its pid, then actually start the background thread.
 	 */
-	g_cond_wait (debugger_start_cond, debugger_start_mutex);
+	mono_debugger_init_thread_debug (debugger_background_thread);
+	ReleaseSemaphore (debugger_start_cond, 1, NULL);
 
 	/*
 	 * We keep this mutex until mono_debugger_jit_exec().
 	 */
-	g_static_rec_mutex_lock (&debugger_lock_mutex);
+	mono_debugger_lock ();
 }
 
 static GPtrArray *breakpoints = NULL;
