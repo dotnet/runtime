@@ -164,6 +164,12 @@ static guint32 start_wrapper(void *data)
 	mono_thread_new_init (tid, &tid, start_func);
 	thread->stack_ptr = &tid;
 
+#ifdef LIBGC_DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": (%d,%d) Setting thread stack to %p",
+		   GetCurrentThreadId (), getpid (), thread->stack_ptr);
+#endif
+
 #ifdef THREAD_DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION
 		   ": (%d) Setting current_object_key to %p",
@@ -1035,7 +1041,9 @@ static void gc_stop_world (gpointer key, gpointer value, gpointer user)
 	MonoThread *thread=(MonoThread *)value;
 	guint32 self=GPOINTER_TO_UINT (user);
 
+#ifdef LIBGC_DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": %d - %d", self, thread->tid);
+#endif
 	
 	if(thread->tid==self)
 		return;
@@ -1109,6 +1117,8 @@ static void gc_push_all_stacks (gpointer key, gpointer value, gpointer user)
 
 #ifdef PLATFORM_WIN32
 	GC_win32_push_thread_stack (thread->handle, thread->stack_ptr);
+#else
+	mono_wapi_push_thread_stack (thread->handle, thread->stack_ptr);
 #endif
 }
 
