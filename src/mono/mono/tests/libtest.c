@@ -865,6 +865,19 @@ mono_test_marshal_mixed_point (mixed_point pt)
 	return 1;
 }
 
+int
+time_t_sizeof (void)
+{
+	return sizeof (time_t);
+}
+
+time_t
+mono_test_marshal_time_t (time_t *t)
+{
+	/* Skip forward an hour */
+	return *t + 3600;
+}
+
 int 
 marshal_test_ref_bool(int i, char *b1, short *b2, int *b3)
 {
