@@ -113,7 +113,7 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (M
 	   http://blogs.msdn.com/dangriff/archive/2003/11/19/51709.aspx */
 
 	/* We first try to use the Intel PIII RNG if drivers are present */
-	if (!CryptAcquireContext (&provider, NULL, NULL, INTEL_DEF_PROV, CRYPT_VERIFY_CONTEXT)) {
+	if (!CryptAcquireContext (&provider, NULL, NULL, PROV_INTEL_SEC, CRYPT_VERIFY_CONTEXT)) {
 		/* not a PIII or no drivers available, use default RSA CSP */
 		if (!CryptAcquireContext (&provider, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFY_CONTEXT)) {
 			provider = 0;
