@@ -9,6 +9,346 @@
         </maintainers>
     </class>
 
+    <class name="System.ApplicationException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.ArgumentException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.ArgumentNullException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.ArgumentOutOfRangeException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.ArithmeticException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Array">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>90</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.ArrayTypeMismatchException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.DivideByZeroException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.DuplicateWaitObjectException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Exception">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.ExecutionEngineException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.FormatException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.ICloneable">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IComparible">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IConvertible">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.ICustomFormatter">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IDisposable">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IFormatProvider">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IFormattable">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IndexOutOfRangeException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Int16">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Int32">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Int64">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IndividualCastException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.InvalidOperationException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.InvalidProgramException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.MulticastNotSupportedException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.NotFiniteNumberException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.NotSupportedException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.NullReferenceException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.OutOfMemoryException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.OverflowExceptionException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.RankException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.StackOverflowException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
     <class name="System.String">
         <last-activity>Jul-15-2001</last-activity>
         <implementation>yes</implementation>
@@ -16,6 +356,186 @@
         <completion>50</completion>
         <maintainers>
             <maintainer>fejj@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.SystemException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.TypeCode">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.TypeInitializationException">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.UInt16">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.UInt32">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.UInt64">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.ValueType">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Version">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Void">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Collections.ArrayList">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>vladimir@pobox.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Collections.ICollection">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>vladimir@pobox.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Collections.IComparer">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>vladimir@pobox.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Collections.IDictionary">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>vladimir@pobox.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Collections.IDictionaryEnumerator">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>vladimir@pobox.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Collections.IEnumerable">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>vladimir@pobox.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Collections.IEnumerator">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>vladimir@pobox.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Collections.HashCodeProvider">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>vladimir@pobox.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Collections.IList">
+        <last-activity>Jul-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>vladimir@pobox.com</maintainer>
         </maintainers>
     </class>
 
@@ -31,7 +551,7 @@
 
     <class name="System.Collections.Queue">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -39,23 +559,123 @@
         </maintainers>
     </class>
 
-    <class name="System.Math">
+    <class name="System.Globalization.Calendar">
         <last-activity>Jun-15-2001</last-activity>
         <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>10</completion>
         <maintainers>
-            <maintainer>bob@thestuff.net</maintainer>
+            <maintainer>nick@ximian.com</maintainer>
         </maintainers>
     </class>
 
-    <class name="System.Array">
+    <class name="System.Globalization.UnicodeCateogy">
         <last-activity>Jun-15-2001</last-activity>
         <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>100</completion>
         <maintainers>
             <maintainer>joe@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Net.AuthenticationManager">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>75</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Net.Authorization">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>75</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Net.EndPoint">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>75</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Net.IAuthenticationModule">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>75</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Net.ICredentialLookup">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>75</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Net.IPAdress">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>75</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Net.IPEndPoint">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>75</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Net.SocketAddress">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>75</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Text.ASCIIEncoding">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>macisaac@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Text.Encoding">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>macisaac@ximian.com</maintainer>
         </maintainers>
     </class>
 
@@ -63,15 +683,55 @@
         <last-activity>Jun-15-2001</last-activity>
         <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>100</completion>
         <maintainers>
             <maintainer>marcins@zipworld.com.au</maintainer>
         </maintainers>
     </class>
 
-    <class name="System.IO.TextReader">
+    <class name="System.Text.UnicodeEncoding">
         <last-activity>Jun-15-2001</last-activity>
         <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>macisaac@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Text.UTF7Encoding">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>macisaac@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Text.UTF8Encoding">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>macisaac@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Math">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>bob@thestuff.net</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.IO.TextReader">
+        <last-activity>Jun-15-2001</last-activity>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -81,7 +741,7 @@
 
     <class name="System.IO.StringReader">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -91,7 +751,7 @@
 
     <class name="System.IO.TextWriter">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -101,7 +761,7 @@
 
     <class name="System.IO.StringWriter">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -111,7 +771,7 @@
 
     <class name="System.IO.MemoryStream">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -121,7 +781,7 @@
 
     <class name="System.Collections.Stack">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -131,7 +791,7 @@
 
     <class name="System.Diagnostics.Switch">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -141,7 +801,7 @@
 
     <class name="System.Diagnostics.BooleanSwitch">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -151,7 +811,7 @@
 
     <class name="System.Diagnostics.TraceSwitch">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -161,7 +821,7 @@
 
     <class name="System.Diagnostics.ConditionalAttribute">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -171,7 +831,7 @@
 
     <class name="System.Diagnostics.Debug">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -181,7 +841,7 @@
 
     <class name="System.Diagnostics.DiagnosticsConfigurationHandler">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -191,7 +851,7 @@
 
     <class name="System.Diagnostics.StackFrame">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -201,7 +861,7 @@
 
     <class name="System.Diagnostics.StackTrace">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -211,7 +871,7 @@
 
     <class name="System.Diagnostics.Trace">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -221,7 +881,7 @@
 
     <class name="System.Diagnostics.TraceListener">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -231,7 +891,7 @@
 
     <class name="System.IO.BinaryReader">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -241,7 +901,7 @@
 
     <class name="System.IO.BinaryWriter">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -251,7 +911,7 @@
 
     <class name="System.IO.FileStream">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -261,7 +921,7 @@
 
     <class name="System.IO.Stream">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
@@ -271,7 +931,7 @@
 
     <class name="System.Xml.XmlReader">
         <last-activity>Jun-15-2001</last-activity>
-        <implementation>yes</implementation>
+        <implementation>no</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
