@@ -2,9 +2,14 @@ noinst_PROGRAMS = pedump
 
 lib_LIBRARIES = libmetadata.a
 
-INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
+#assembliesdir = $(libdir)/$(VERSION)/assemblies
+assembliesdir = $(libdir)
+
+INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)	\
+	-DMONO_ASSEMBLIES=\""$(assembliesdir)"\"
 
 libmetadata_a_SOURCES = \
+	assembly.c	\
 	image.c		\
 	metadata.c	\
 	rawbuffer.c
@@ -12,6 +17,7 @@ libmetadata_a_SOURCES = \
 libmetadataincludedir = $(includedir)/mono/metadata
 
 libmetadatainclude_HEADERS = \
+	assembly.h	\
 	blobsig.h	\
 	cil-coff.h	\
 	eltype.h	\

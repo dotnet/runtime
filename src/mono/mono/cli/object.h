@@ -8,4 +8,5 @@ typedef struct {
 	MonoClass *klass;
 } MonoObject;
 
+void mono_object_new (metadata_t *m, int type
 #endif

@@ -22,6 +22,11 @@
 
 #define INVALID_ADDRESS 0xffffffff
 
+/*
+ * Keeps track of the various assemblies loaded
+ */
+static GHashTable *loaded_images_hash;
+
 guint32
 cli_rva_image_map (cli_image_info_t *iinfo, guint32 addr)
 {
@@ -301,16 +306,8 @@ load_metadata (MonoImage *image, cli_image_info_t *iinfo)
 	return load_tables (image, &iinfo->cli_metadata);
 }
 
-/**
- * mono_image_open:
- * @fname: filename that points to the module we want to open
- * @status: An error condition is returned in this field
- *
- * Retuns: An open image of type %MonoImage or NULL on error.
- * if NULL, then check the value of @status for details on the error
- */
-MonoImage *
-mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
+static MonoImage *
+do_mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
 {
 	cli_image_info_t *iinfo;
 	dotnet_header_t *header;
@@ -370,6 +367,40 @@ invalid_image:
 }
 
 /**
+ * mono_image_open:
+ * @fname: filename that points to the module we want to open
+ * @status: An error condition is returned in this field
+ *
+ * Retuns: An open image of type %MonoImage or NULL on error.
+ * if NULL, then check the value of @status for details on the error
+ */
+MonoImage *
+mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
+{
+	MonoImage *image;
+	
+	g_return_val_if_fail (fname != NULL, NULL);
+
+	if (loaded_images_hash){
+		image = g_hash_table_lookup (loaded_images_hash, fname);
+		if (image){
+			image->ref_count++;
+			return image;
+		}
+	}
+
+	image = do_mono_image_open (fname, status);
+	if (image == NULL)
+		return NULL;
+
+	if (!loaded_images_hash)
+		loaded_images_hash = g_hash_table_new (g_str_hash, g_str_equal);
+	g_hash_table_insert (loaded_images_hash, image->name, image);
+
+	return image;
+}
+
+/**
  * mono_image_close:
  * @image: The image file we wish to close
  *
@@ -381,6 +412,11 @@ mono_image_close (MonoImage *image)
 {
 	g_return_if_fail (image != NULL);
 
+	if (--image->ref_count)
+		return;
+
+	g_hash_table_remove (loaded_images_hash, image->name);
+	
 	if (image->f)
 		fclose (image->f);
 
@@ -424,6 +460,8 @@ mono_image_strerror (enum MonoImageOpenStatus status)
 		return strerror (errno);
 	case MONO_IMAGE_IMAGE_INVALID:
 		return "File does not contain a valid CIL image";
+	case MONO_IMAGE_MISSING_ASSEMBLYREF:
+		return "An assembly was referenced, but could not be found";
 	}
 	return "Internal error";
 }

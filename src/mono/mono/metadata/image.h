@@ -1,21 +1,33 @@
 #ifndef _MONONET_METADATA_IMAGE_H_ 
 #define _MONONET_METADATA_IMAGE_H_
 
-typedef struct {
+typedef struct _MonoImage MonoImage;
+
+struct _MonoImage {
+	int   ref_count;
 	FILE *f;
 	char *name;
 	void *image_info;
+
+	/*
+	 * references is initialized only by using the mono_assembly_open
+	 * function, and not by using the lowlevel mono_image_open.
+	 *
+	 * It is NULL terminated.
+	 */
+	MonoImage **references;
 
 	/*
 	 * user_info is a public field and is not touched by the
 	 * metadata engine
 	 */
 	void *user_info;
-} MonoImage;
+};
 
 enum MonoImageOpenStatus {
 	MONO_IMAGE_OK,
 	MONO_IMAGE_ERROR_ERRNO,
+	MONO_IMAGE_MISSING_ASSEMBLYREF,
 	MONO_IMAGE_IMAGE_INVALID
 };
 

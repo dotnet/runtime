@@ -1291,3 +1291,4 @@ mono_metadata_free_mh (MonoMetaMethodHeader *mh)
 	g_free (mh->locals);
 	g_free (mh);
 }
+
