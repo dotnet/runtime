@@ -102,8 +102,6 @@ common_sources = \
 	cfold.c		\
 	regalloc.c	\
 	regalloc.h	\
-	inssel.c	\
-	inssel.h	\
 	helpers.c	\
 	liveness.c	\
 	ssa.c		\
@@ -162,6 +160,8 @@ libmono_la_SOURCES = \
 arch_BURGSRC= $(srcdir)/inssel-s390.brg
 arch_built=cpu-s390.h
 endif
+
+nodist_libmono_la_SOURCES = inssel.c inssel.h
 
 BURGSRC= $(common_BURGSRC) $(arch_BURGSRC)
 
