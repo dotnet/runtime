@@ -1,16 +1,11 @@
 * 64bit integer mult with overflow checks + test bench
-* correctly align value types on the stack and in arrays
-* impl. marshalling attributes for pinvoke
 * raise exceptions everywhere
-* exceptions: save/restore floating point state
+* exceptions: save/restore floating point state?
 * implement all floating point instruction in x86.brg, we also need to check
   the floating branch instruction - some of them seems to be wrong, we need to
   write better tests for that.
 * document the functions and variables in the JIT 
 * implement a register set for FP registers (just count register usage on x86)
-
-* inline all calls in System.Math::*, we should use coprocessor instructions
-  directly whenever possible. 
 
 * Calling conventions:
 
@@ -20,8 +15,7 @@
 
 	Implement CONV_OVF_XXX (constant) variants that emit either
 	loads or exceptions (as we can always tell)
-	
-	
+		
 * use short jump opcodes where possible (for backward jumps), will give better
   performance. 
 
