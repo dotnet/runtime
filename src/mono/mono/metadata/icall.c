@@ -1029,6 +1029,96 @@ ves_icall_System_DateTime_GetNow ()
 	return 0;
 }
 
+/*
+ * This is heavily based on zdump.c from glibc 2.2.
+ *
+ *  * data[0]:  start of daylight saving time (in DateTime ticks).
+ *  * data[1]:  end of daylight saving time (in DateTime ticks).
+ *  * data[2]:  utcoffset (in TimeSpan ticks).
+ *  * data[3]:  additional offset when daylight saving (in TimeSpan ticks).
+ *  * name[0]:  name of this timezone when not daylight saving.
+ *  * name[1]:  name of this timezone when daylight saving.
+ *
+ *  FIXME: This only works with "standard" Unix dates (years between 1900 and 2100) while
+ *         the class library allows years between 1 and 9999.
+ *
+ *  Returns true on success and zero on failure.
+ */
+static guint32
+ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data, MonoArray **names)
+{
+#ifndef PLATFORM_WIN32
+	MonoDomain *domain = mono_domain_get ();
+	struct tm start, tt;
+	time_t t;
+
+	long int gmtoff;
+	int is_daylight = 0, day;
+
+	memset (&start, 0, sizeof (start));
+
+	start.tm_mday = 1;
+	start.tm_year = year-1900;
+
+	t = mktime (&start);
+	gmtoff = start.tm_gmtoff;
+
+	MONO_CHECK_ARG_NULL (domain, data);
+	MONO_CHECK_ARG_NULL (domain, names);
+
+	(*data) = mono_array_new (domain, mono_defaults.int64_class, 4);
+	(*names) = mono_array_new (domain, mono_defaults.string_class, 2);
+
+	/* For each day of the year, calculate the tm_gmtoff. */
+	for (day = 0; day < 365; day++) {
+
+		t += 3600*24;
+		tt = *localtime (&t);
+
+		/* Daylight saving starts or ends here. */
+		if (tt.tm_gmtoff != gmtoff) {
+			struct tm tt1;
+			time_t t1;
+
+			/* Try to find the exact hour when daylight saving starts/ends. */
+			t1 = t;
+			do {
+				t1 -= 3600;
+				tt1 = *localtime (&t1);
+			} while (tt1.tm_gmtoff != gmtoff);
+
+			/* Try to find the exact minute when daylight saving starts/ends. */
+			do {
+				t1 += 60;
+				tt1 = *localtime (&t1);
+			} while (tt1.tm_gmtoff == gmtoff);
+
+			/* Write data, if we're already in daylight saving, we're done. */
+			if (is_daylight) {
+				mono_array_set ((*names), gpointer, 0, mono_string_new (domain, tt.tm_zone));
+				mono_array_set ((*data), gint64, 1, ((gint64)t1 + EPOCH_ADJUST) * 10000000L);
+				return 1;
+			} else {
+				mono_array_set ((*names), gpointer, 1, mono_string_new (domain, tt.tm_zone));
+				mono_array_set ((*data), gint64, 0, ((gint64)t1 + EPOCH_ADJUST) * 10000000L);
+				is_daylight = 1;
+			}
+
+			/* This is only set once when we enter daylight saving. */
+			mono_array_set ((*data), gint64, 2, (gint64)gmtoff * 10000000L);
+			mono_array_set ((*data), gint64, 3, (gint64)(tt.tm_gmtoff - gmtoff) * 10000000L);
+
+			gmtoff = tt.tm_gmtoff;
+		}
+
+		gmtoff = tt.tm_gmtoff;
+	}
+
+	return 0;
+#endif
+}
+
+
 static gpointer icall_map [] = {
 	/*
 	 * System.Array
@@ -1261,6 +1351,7 @@ static gpointer icall_map [] = {
 	"System.Text.Encoding::IConvGetChars", ves_icall_iconv_get_chars,
 
 	"System.DateTime::GetNow", ves_icall_System_DateTime_GetNow,
+	"System.CurrentTimeZone::GetTimeZoneData", ves_icall_System_CurrentTimeZone_GetTimeZoneData,
 
 	/*
 	 * System.Security.Cryptography calls
