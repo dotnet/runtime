@@ -1271,7 +1271,7 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 	int ninterf, i;
 	MonoClass *class = mono_class_from_mono_type (type->type);
 	MonoClass *parent;
-	MonoBitSet *slots = mono_bitset_new (class->max_interface_id, 0);
+	MonoBitSet *slots = mono_bitset_new (class->max_interface_id + 1, 0);
 
 	MONO_ARCH_SAVE_REGS;
 
