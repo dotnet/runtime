@@ -37,6 +37,10 @@
 #define MRT_mono_string_fieldsize	0x11
 #define MRT_mono_array_fieldsize	0x12
 #define MRT_type_field_fieldsize	0x13
+#define MRT_mono_string_string_length	0x14
+#define MRT_mono_string_byte_size	0x15
+#define MRT_mono_string_data_location	0x16
+#define MRT_static_type_field_offset	0x17
 
 #define MRI_string_offset_length	0x00
 #define MRI_string_offset_chars		0x01
@@ -53,6 +57,7 @@
 #define MRS_debug_line			0x03
 #define MRS_mono_reloc_table		0x04
 
+#define DW_OP_const4u			0x0c
 #define DW_OP_const4s			0x0d
 #define DW_OP_plus			0x22
 #define DW_OP_reg0			0x50
@@ -808,6 +813,74 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			break;
 		}
 
+		case MRT_mono_string_string_length: {
+			MonoString string;
+			guint32 offset = (guchar *) &string.length - (guchar *) &string;
+
+			* ((guint8 *) base_ptr)++ = DW_OP_const4u;
+			* ((gint32 *) base_ptr)++ = offset;
+			* ((guint8 *) base_ptr)++ = DW_OP_nop;
+			* ((guint8 *) base_ptr)++ = DW_OP_nop;
+			* ((guint8 *) base_ptr)++ = DW_OP_nop;
+
+			break;
+		}
+
+		case MRT_mono_string_byte_size: {
+			MonoString string;
+
+			* (guint32 *) base_ptr = sizeof (string.length);
+
+			break;
+		}
+
+		case MRT_mono_string_data_location: {
+			MonoString string;
+			guint32 offset = (guchar *) &string.chars - (guchar *) &string;
+
+			* ((guint8 *) base_ptr)++ = DW_OP_const4u;
+			* ((gint32 *) base_ptr)++ = offset;
+			* ((guint8 *) base_ptr)++ = DW_OP_nop;
+			* ((guint8 *) base_ptr)++ = DW_OP_nop;
+			* ((guint8 *) base_ptr)++ = DW_OP_nop;
+
+			break;
+		}
+
+		case MRT_static_type_field_offset: {
+			guint32 token = *((guint32 *) tmp_ptr)++;
+			guint32 original = *((guint32 *) tmp_ptr)++;
+			MonoClass *klass = mono_debug_class_get (symfile, token);
+			MonoVTable *vtable;
+			guint32 off;
+
+			if (!klass)
+				continue;
+
+			mono_class_init (klass);
+
+			if (original > klass->field.count) {
+				g_warning ("Symbol file %s contains invalid field offset entry.",
+					   symfile->file_name);
+				continue;
+			}
+
+			if (!klass->fields)
+				continue;
+
+			vtable = mono_class_vtable (mono_domain_get (), klass);
+
+			off = klass->fields [original].offset;
+
+#if 0
+			g_message ("Setting field %d of type %u (%p) to offset %d", original,
+				   token, klass, off);
+#endif
+
+			* (void **) base_ptr = vtable->data + off;
+
+			break;
+		}
 
 		default:
 			g_warning ("Symbol file %s contains unknown relocation entry %d",
