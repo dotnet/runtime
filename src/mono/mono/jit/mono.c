@@ -167,9 +167,6 @@ main (int argc, char *argv [])
 	if (!file)
 		usage (argv [0]);
 
-	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
-		mono_debug_handle = mono_debug_open_file (file, mono_debug_format);
-
 	mono_set_rootdir (argv [0]);
 	domain = mono_jit_init (file);
 
@@ -183,6 +180,11 @@ main (int argc, char *argv [])
 	if (!assembly){
 		fprintf (stderr, "Can not open image %s\n", file);
 		exit (1);
+	}
+
+	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
+		MonoDebugHandle *handle = mono_debug_open_file (file, mono_debug_format);
+		mono_debug_add_image (handle, assembly->image);
 	}
 
 	if (testjit) {

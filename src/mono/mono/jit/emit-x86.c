@@ -512,7 +512,7 @@ mono_label_cfg (MonoFlowGraph *cfg)
 
 			if (!mbstate) {
 				cfg->invalid = 1;
-				if (mono_debug_handle)
+				if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
 					return;
 				g_warning ("tree does not match");
 				mono_print_ctree (cfg, t1); printf ("\n\n");
@@ -1088,7 +1088,7 @@ arch_compile_method (MonoMethod *method)
 			addr = arch_create_native_wrapper (method);
 		} else {
 			mono_profiler_method_end_jit (method, MONO_PROFILE_FAILED);
-			if (mono_debug_handle) 
+			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) 
 				return NULL;
 
 			g_error ("Don't know how to exec runtime method %s.%s::%s", 
@@ -1137,7 +1137,7 @@ arch_compile_method (MonoMethod *method)
 
 		if (match_debug_method (method) || mono_debug_insert_breakpoint)
 			x86_breakpoint (cfg->code);
-		else if (mono_debug_handle)
+		else if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
 			x86_nop (cfg->code);
 
 		if (mono_debug_insert_breakpoint > 0)
@@ -1200,8 +1200,8 @@ arch_compile_method (MonoMethod *method)
 			mono_disassemble_code (cfg->start, cfg->code - cfg->start, id);
 			g_free (id);
 		}
-		if (mono_debug_handle)
-			mono_debug_add_method (mono_debug_handle, cfg);
+		if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
+			mono_debug_add_method (cfg);
 
 		ji->code_size = cfg->code - cfg->start;
 		ji->used_regs = cfg->rs->used_mask;

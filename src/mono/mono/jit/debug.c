@@ -10,6 +10,9 @@
 
 #include "debug-private.h"
 
+static MonoDebugHandle *mono_debug_handles = NULL;
+static MonoDebugHandle *mono_default_debug_handle = NULL;
+
 static void
 free_method_info (DebugMethodInfo *minfo)
 {
@@ -49,6 +52,11 @@ mono_debug_open_file (const char *filename, MonoDebugFormat format)
 		g_assert_not_reached ();
 	}
 
+	debug->next = mono_debug_handles;
+	mono_debug_handles = debug;
+
+	if (!mono_default_debug_handle)
+		mono_default_debug_handle = debug;
 
 	return debug;
 }
@@ -241,20 +249,34 @@ debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, Mo
 	g_ptr_array_free (il_offsets, TRUE);
 }
 
-static AssemblyDebugInfo*
-mono_debug_open_assembly (MonoDebugHandle* debug, MonoImage *image)
+static AssemblyDebugInfo *
+mono_debug_get_image (MonoDebugHandle* debug, MonoImage *image)
 {
 	GList *tmp;
-	AssemblyDebugInfo* info;
+	AssemblyDebugInfo *info;
 
 	if (debug->format == MONO_DEBUG_FORMAT_NONE)
 		return NULL;
 
 	for (tmp = debug->info; tmp; tmp = tmp->next) {
 		info = (AssemblyDebugInfo*)tmp->data;
-		if (strcmp (info->name, image->assembly_name) == 0)
+
+		if (info->image == image)
 			return info;
 	}
+
+	return NULL;
+}
+
+static AssemblyDebugInfo *
+mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
+{
+	AssemblyDebugInfo *info;
+
+	info = mono_debug_get_image (debug, image);
+	if (info != NULL)
+		return info;
+
 	info = g_new0 (AssemblyDebugInfo, 1);
 	info->image = image;
 	info->image->ref_count++;
@@ -275,21 +297,36 @@ mono_debug_open_assembly (MonoDebugHandle* debug, MonoImage *image)
 }
 
 void
-mono_debug_make_symbols (void)
+mono_debug_add_image (MonoDebugHandle* debug, MonoImage *image)
 {
-	if (!mono_debug_handle)
+	mono_debug_open_image (debug, image);
+}
+
+void
+mono_debug_write_symbols (MonoDebugHandle *debug)
+{
+	if (!debug)
 		return;
 
-	switch (mono_debug_handle->format) {
+	switch (debug->format) {
 	case MONO_DEBUG_FORMAT_STABS:
-		mono_debug_write_stabs (mono_debug_handle);
+		mono_debug_write_stabs (debug);
 		break;
 	case MONO_DEBUG_FORMAT_DWARF2:
-		mono_debug_write_dwarf2 (mono_debug_handle);
+		mono_debug_write_dwarf2 (debug);
 		break;
 	default:
 		g_assert_not_reached ();
 	}
+}
+
+void
+mono_debug_make_symbols (void)
+{
+	MonoDebugHandle *debug;
+
+	for (debug = mono_debug_handles; debug; debug = debug->next)
+		mono_debug_write_symbols (debug);
 }
 
 static void
@@ -304,25 +341,33 @@ mono_debug_close_assembly (AssemblyDebugInfo* info)
 }
 
 void
-mono_debug_close (MonoDebugHandle* debug)
+mono_debug_cleanup (void)
 {
-	GList *tmp;
-	AssemblyDebugInfo* info;
+	MonoDebugHandle *debug, *temp;
 
 	mono_debug_make_symbols ();
 
-	for (tmp = debug->info; tmp; tmp = tmp->next) {
-		info = (AssemblyDebugInfo*)tmp->data;
+	for (debug = mono_debug_handles; debug; debug = temp) {
+		GList *tmp;
 
-		mono_debug_close_assembly (info);
+		for (tmp = debug->info; tmp; tmp = tmp->next) {
+			AssemblyDebugInfo* info = (AssemblyDebugInfo*)tmp->data;
+
+			mono_debug_close_assembly (info);
+		}
+
+		g_ptr_array_free (debug->source_files, TRUE);
+		g_hash_table_destroy (debug->methods);
+		g_hash_table_destroy (debug->type_hash);
+		g_free (debug->producer_name);
+		g_free (debug->name);
+
+		temp = debug->next;
+		g_free (debug);
 	}
 
-	g_ptr_array_free (debug->source_files, TRUE);
-	g_hash_table_destroy (debug->methods);
-	g_hash_table_destroy (debug->type_hash);
-	g_free (debug->producer_name);
-	g_free (debug->name);
-	g_free (debug);
+	mono_debug_handles = NULL;
+	mono_default_debug_handle = NULL;
 }
 
 guint32
@@ -384,23 +429,60 @@ mono_debug_get_type (MonoDebugHandle *debug, MonoClass *klass)
 	return index;
 }
 
-void
-mono_debug_add_type (MonoDebugHandle* debug, MonoClass *klass)
+MonoDebugHandle *
+mono_debug_handle_from_class (MonoClass *klass)
 {
+	MonoDebugHandle *debug;
+
+	mono_class_init (klass);
+
+	for (debug = mono_debug_handles; debug; debug = debug->next) {
+		GList *tmp;
+
+		for (tmp = debug->info; tmp; tmp = tmp->next) {
+			AssemblyDebugInfo *info = (AssemblyDebugInfo*)tmp->data;
+
+			if (info->image == klass->image)
+				return debug;
+		}
+	}
+
+	return NULL;
+}
+
+void
+mono_debug_add_type (MonoClass *klass)
+{
+	MonoDebugHandle *debug = mono_debug_handle_from_class (klass);
+
+	g_assert (debug != NULL);
+
 	mono_debug_get_type (debug, klass);
 }
 
 void
-mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
+mono_debug_add_method (MonoFlowGraph *cfg)
 {
 	MonoMethod *method = cfg->method;
 	MonoClass *klass = method->klass;
-	AssemblyDebugInfo* info = mono_debug_open_assembly (debug, klass->image);
 	int method_number = 0, line = 0, start_line = 0, end_line = 0, i;
+	MonoDebugHandle* debug;
+	AssemblyDebugInfo* info;
 	DebugMethodInfo *minfo;
 	char *name;
 
 	mono_class_init (klass);
+
+	debug = mono_debug_handle_from_class (klass);
+	if (!debug) {
+		if (mono_default_debug_handle)
+			debug = mono_default_debug_handle;
+		else
+			return;
+	}
+
+	info = mono_debug_open_image (debug, klass->image);
+
 	/*
 	 * Find the method index in the image.
 	 */

@@ -16,7 +16,6 @@ typedef enum {
 } MonoDebugFormat;
 
 extern MonoDebugFormat mono_debug_format;
-extern MonoDebugHandle *mono_debug_handle;
 extern GList *mono_debug_methods;
 
 /*
@@ -57,11 +56,15 @@ extern gchar *mono_debug_last_breakpoint_address;
 
 MonoDebugHandle* mono_debug_open_file (const char *filename, MonoDebugFormat format);
 
-void           mono_debug_close (MonoDebugHandle* debug);
+void           mono_debug_cleanup (void);
 
-void           mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg);
+void           mono_debug_add_image (MonoDebugHandle* debug, MonoImage *image);
 
-void           mono_debug_add_type (MonoDebugHandle* debug, MonoClass *klass);
+MonoDebugHandle* mono_debug_handle_from_class (MonoClass *klass);
+
+void           mono_debug_add_method (MonoFlowGraph *cfg);
+
+void           mono_debug_add_type (MonoClass *klass);
 
 /* DEBUGGER PUBLIC FUNCTION:
  *
@@ -71,5 +74,7 @@ void           mono_debug_add_type (MonoDebugHandle* debug, MonoClass *klass);
  * you must tell your debugger to reload its symbol file.
  */
 void           mono_debug_make_symbols (void);
+
+void           mono_debug_write_symbols (MonoDebugHandle* debug);
 
 #endif /* __MONO_JIT_DEBUG_H__ */

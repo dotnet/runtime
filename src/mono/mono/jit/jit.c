@@ -221,7 +221,6 @@ int mono_worker_threads = 1;
 guint32  mono_jit_tls_id;
 
 MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
-MonoDebugHandle *mono_debug_handle = NULL;
 GList *mono_debug_methods = NULL;
 
 /* If non-zero, insert a breakpoint when compiling the next method.
@@ -3597,7 +3596,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		default:
 			g_warning ("unknown instruction `%s' at IL_%04X", 
 				   mono_opcode_names [*ip], ip - header->code);
-			if (mono_debug_handle) {
+			if (mono_debug_format == MONO_DEBUG_FORMAT_NONE) {
 				cfg->invalid = 1;
 				return;
 			}
@@ -3827,8 +3826,7 @@ mono_jit_init (char *file) {
 void
 mono_jit_cleanup (MonoDomain *domain)
 {
-	if (mono_debug_handle)
-		mono_debug_close (mono_debug_handle);
+	mono_debug_cleanup ();
 
 #ifdef PLATFORM_WIN32
 	win32_seh_cleanup();

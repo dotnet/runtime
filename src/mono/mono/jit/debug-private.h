@@ -39,6 +39,7 @@ struct _AssemblyDebugInfo {
 };
 
 struct _MonoDebugHandle {
+	MonoDebugHandle *next;
 	char *name;
 	char *filename;
 	char *objfile;
