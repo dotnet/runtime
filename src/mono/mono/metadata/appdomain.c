@@ -57,7 +57,6 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	MonoAppDomainSetup *setup;
 	MonoAppDomain *ad;
 	MonoClass *class;
-	MonoAppContext *context;
 	
 	mono_install_assembly_preload_hook (mono_domain_assembly_preload, NULL);
 	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);

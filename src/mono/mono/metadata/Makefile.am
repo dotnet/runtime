@@ -1,11 +1,13 @@
 if PLATFORM_WIN32
 export HOST_CC
-assembliesdir = `echo $(libdir) | tr '/' '\\\\'`
+assembliesdir = `cygpath -m "${libdir}"`
+confdir = `cygpath -m "${sysconfdir}"`
 # The mingw math.h has "extern inline" functions that dont appear in libs, so
 # optimisation is required to actually inline them
 AM_CFLAGS = -O
 else
 assembliesdir = $(libdir)
+confdir = $(sysconfdir)
 endif
 
 bin_PROGRAMS = monosn pedump
@@ -14,7 +16,7 @@ noinst_LTLIBRARIES = libmetadata.la libmonoruntime.la
 
 
 INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)	-I$(top_srcdir)/mono \
-	-DMONO_ASSEMBLIES=\""$(assembliesdir)"\" -DMONO_CFG_DIR=\""$(sysconfdir)"\"
+	-DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
 
 libmonoruntime_la_SOURCES = \
 	reflection.c	\

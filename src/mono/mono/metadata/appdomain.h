@@ -200,6 +200,9 @@ ves_icall_System_AppDomain_ExecuteAssembly         (MonoAppDomain *ad,
 						    MonoObject    *evidence,
 						    MonoArray     *args);
 
+void
+mono_context_init 				   (MonoDomain *domain);
+
 inline void 
 mono_context_set				   (MonoAppContext *new_context);
 

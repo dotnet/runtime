@@ -220,7 +220,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 			} else {
 				/* it's a pointer type: add check */
 				g_assert (fklass->byval_arg.type == MONO_TYPE_PTR);
-				*t = *(gpointer*)field->data;
+				*t = *(char *)field->data;
 			}
 			continue;
 		}

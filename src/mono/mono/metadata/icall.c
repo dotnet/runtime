@@ -3055,11 +3055,24 @@ char const * mono_cfg_dir = "";
 
 void    
 mono_install_get_config_dir (void)
-{       
+{
+#ifdef PLATFORM_WIN32
+  int i;
+#endif
+
   mono_cfg_dir = getenv ("MONO_CFG_DIR");
 
-  if (!mono_cfg_dir)
-    mono_cfg_dir = MONO_CFG_DIR; 
+  if (!mono_cfg_dir) {
+#ifndef PLATFORM_WIN32
+    mono_cfg_dir = MONO_CFG_DIR;
+#else
+    mono_cfg_dir = g_strdup (MONO_CFG_DIR);
+    for (i = strlen (mono_cfg_dir) - 1; i >= 0; i--) {
+        if (mono_cfg_dir [i] == '/')
+            mono_cfg_dir [i] = '\\';
+    }
+#endif
+  }
 }
 
 

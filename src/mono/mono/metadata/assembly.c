@@ -30,6 +30,25 @@ default_path [] = {
 static char **assemblies_path = NULL;
 static int env_checked = 0;
 
+#ifdef PLATFORM_WIN32
+static void
+init_default_path (void)
+{
+	static gboolean path_inited = FALSE;
+	int i;
+
+	if (path_inited)
+		return;
+	
+	path_inited = TRUE;
+	default_path [0] = g_strdup (MONO_ASSEMBLIES);
+	for (i = strlen (MONO_ASSEMBLIES) - 1; i >= 0; i--) {
+		if (default_path [0][i] == '/')
+			default_path [0][i] = '\\';
+	}
+}
+#endif
+
 static void
 check_env (void) {
 	const char *path;
@@ -420,6 +439,9 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 	MonoAssembly *result;
 	char *fullpath, *filename;
 
+#ifdef PLATFORM_WIN32
+	init_default_path ();
+#endif
 	check_env ();
 
 	result = invoke_assembly_preload_hook (aname, assemblies_path);

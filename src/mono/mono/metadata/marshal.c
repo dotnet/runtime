@@ -2368,7 +2368,7 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + sig->hasthis);
 
-	mono_mb_emit_native_call (mb, sig, func);
+	mono_mb_emit_native_call (mb, sig, (gpointer) func);
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
