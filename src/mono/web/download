@@ -24,11 +24,13 @@
 	mono-cvs-list</a> mailing list.
 
 <a name="feb-22">
+	<b>Mono 0.9</b>
+
 	New packaged versions of the Mono C# compiler and Mono runtime
 	are now available.  The latest version is 0.9.
 
 	<ul>
-		* a <href="archive/mono-0.9">Mono 0.9 release notes</a>
+		* <a href="archive/mono-0.9">Mono 0.9 release notes</a>
 
 		* <a href="archive/mcs-0.9.tar.gz">mcs-0.9.tar.gz</a>
 		Mono C# compiler

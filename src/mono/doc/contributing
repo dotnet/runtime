@@ -23,7 +23,12 @@
 	To start developing classes or to contribute to the compiler,
 	you only need Windows and the .NET Framework 1.0 SDK.  Please notice
 	that you do not need Visual Studio (although you can use it if
-	you want).  
+	you want).  The .NET Framework SDK requires some version of
+	Windows XP or Windows NT.  If you are running Windows 98, 95
+	or Me, you could use instead the <a
+	href="http://msdn.microsoft.com/downloads/default.asp?url=/downloads/sample.asp?url=/msdn-files/027/001/829/msdncompositedoc.xml">.NET Redist package</a>, but it
+	lacks the documentation browser and the ildasm program (C#, VB, JScript and IL 
+	assembler are included).
 
 	You can get it <a href="http://msdn.microsoft.com/downloads/default.asp?url=/downloads/sample.asp?url=/msdn-files/027/000/976/msdncompositedoc.xml&frame=true">here</a>
 

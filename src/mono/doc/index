@@ -69,6 +69,24 @@
   </tr>
 </table>
 
+** Feb 26, 2002
+
+	Paolo posted a list of <a
+	href=http://lists.ximian.com/archives/public/mono-list/2002-February/003266.html">ways
+	you can help</a> if you do not have Windows right now.  Sergey followed up with <
+	a href="http://lists.ximian.com/archives/public/mono-list/2002-February/003268.html">his</a>
+	suggestions.
+
+** Feb 25, 2002
+
+	StrongARM port from Sergey Chaban has been checked into CVS.  
+
+** Feb 24, 2002
+
+	SPARC: 44 out of 74 tests pass now (Jeff)
+
+	Power PC: delegates are working now (Radek)
+
 ** Feb 22, 2002
 
 	<b>Mono 0.9 has been released!</b>
