@@ -16,6 +16,7 @@ test -z "$here" && here=`pwd`
 echo "Building Mono and dependencies in $here, installing to $here/install"
 
 PATH=$here/install/bin:$here/install/lib:$PATH
+export C_INCLUDE_PATH=$here/install/include
 
 # Make sure cygwin's libiconv is installed, or libtool blows its tiny mind
 if [ ! -f /usr/lib/libiconv.la ]; then
