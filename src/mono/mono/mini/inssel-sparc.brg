@@ -415,12 +415,36 @@ stmt: CEE_STIND_I4 (OP_REGVAR, CEE_ADD (reg, OP_ICONST)) {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_ADD_IMM, state->left->tree->dreg, state->right->left->reg1, state->right->right->tree->inst_c0);
 }
 
+stmt: CEE_STIND_REF (OP_REGVAR, CEE_ADD (reg, OP_ICONST)) {
+	MONO_EMIT_BIALU_IMM (s, tree, OP_ADD_IMM, state->left->tree->dreg, state->right->left->reg1, state->right->right->tree->inst_c0);
+}
+
 stmt: CEE_STIND_I4 (OP_REGVAR, CEE_SUB (reg, OP_ICONST)) {
+	MONO_EMIT_BIALU_IMM (s, tree, OP_SUB_IMM, state->left->tree->dreg, state->right->left->reg1, state->right->right->tree->inst_c0);
+}
+
+stmt: CEE_STIND_REF (OP_REGVAR, CEE_SUB (reg, OP_ICONST)) {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_SUB_IMM, state->left->tree->dreg, state->right->left->reg1, state->right->right->tree->inst_c0);
 }
 
 stmt: CEE_STIND_I4 (OP_REGVAR, CEE_ADD (reg, reg)) {
 	MONO_EMIT_BIALU (s, tree, CEE_ADD, state->left->tree->dreg, state->right->left->reg1, state->right->right->reg1);
+}
+
+stmt: CEE_STIND_REF (OP_REGVAR, CEE_ADD (reg, reg)) {
+	MONO_EMIT_BIALU (s, tree, CEE_ADD, state->left->tree->dreg, state->right->left->reg1, state->right->right->reg1);
+}
+
+stmt: CEE_STIND_I4 (OP_REGVAR, CEE_LDIND_I4(base)) {
+	MONO_EMIT_LOAD_MEMBASE (s, tree, state->left->tree->dreg, state->right->left->tree->inst_basereg, 
+				state->right->left->tree->inst_offset);	
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_STIND_REF (OP_REGVAR, CEE_LDIND_REF(base)) {
+	MONO_EMIT_LOAD_MEMBASE (s, tree, state->left->tree->dreg, state->right->left->tree->inst_basereg, 
+				state->right->left->tree->inst_offset);	
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: OP_SETRET (CEE_LDIND_REF(base)) {
@@ -469,6 +493,18 @@ stmt: OP_OUTARG (CEE_LDIND_I4 (OP_REGVAR)) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+stmt: OP_OUTARG (CEE_LDIND_REF(base)) {
+	MONO_EMIT_LOAD_MEMBASE (s, tree, tree->unused, state->left->left->tree->inst_basereg, 
+				state->left->left->tree->inst_offset);	
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_OUTARG (CEE_LDIND_I4(base)) {
+	MONO_EMIT_LOAD_MEMBASE (s, tree, tree->unused, state->left->left->tree->inst_basereg, 
+				state->left->left->tree->inst_offset);	
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 reg: OP_LDADDR (OP_REGOFFSET) "1" {
 	if (state->left->tree->inst_offset) {
 		MONO_EMIT_BIALU_IMM (s, tree, OP_ADD_IMM, state->reg1, state->left->tree->inst_basereg, state->left->tree->inst_offset);
@@ -483,6 +519,11 @@ reg: OP_LDADDR (OP_REGOFFSET) "1" {
 # FIXME: This rule was commented out in inssel.brg, why ?
 reg: CEE_REM (reg, OP_ICONST) {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_REM_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
+}
+
+# This one too
+reg: CEE_DIV (reg, OP_ICONST) {
+	MONO_EMIT_BIALU_IMM (s, tree, OP_DIV_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
 }
 
 reg: OP_LOCALLOC (OP_ICONST) {

@@ -79,6 +79,7 @@
  * - allocate large constants to registers
  * - use %o registers for local allocation
  * - implement unwinding through native frames
+ * - add more mul/div/rem optimizations
  */
 
 #if SPARCV9
@@ -991,7 +992,7 @@ if (ins->flags & MONO_INST_BRLABEL) { \
         } \
 }
 
-#define EMIT_COND_BRANCH_GENERAL(ins,bop,cond, annul, filldelay) \
+#define EMIT_COND_BRANCH_GENERAL(ins,bop,cond,annul,filldelay) \
     do { \
         gint32 disp; \
         COMPUTE_DISP(ins); \
@@ -1030,7 +1031,12 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 #define EMIT_COND_SYSTEM_EXCEPTION(ins,cond,sexc_name) do {     \
 		mono_add_patch_info (cfg, (guint8*)(code) - (cfg)->native_code,   \
 				    MONO_PATCH_INFO_EXC, sexc_name);  \
-        sparc_branch (code, 1, cond, 0);     \
+        if (sparcv9) { \
+           sparc_branchp (code, 0, (cond), sparc_icc_short, 0, 0); \
+        } \
+        else { \
+			sparc_branch (code, 1, cond, 0);     \
+        } \
         sparc_nop (code);     \
 	} while (0); 
 
@@ -2661,12 +2667,38 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_wry (code, sparc_g0, sparc_g0);
 			sparc_udiv (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
-		case OP_DIV_IMM:
-			/* Sign extend sreg1 into %y */
-			sparc_sra_imm (code, ins->sreg1, 31, sparc_o7);
-			sparc_wry (code, sparc_o7, sparc_g0);
-			EMIT_ALU_IMM (ins, sdiv, FALSE);
+		case OP_DIV_IMM: {
+			int i, imm;
+
+			/* Transform division into a shift */
+			for (i = 1; i < 30; ++i) {
+				imm = (1 << i);
+				if (ins->inst_imm == imm)
+					break;
+			}
+			if (i < 30) {
+				if (i == 1) {
+					/* gcc 2.95.3 */
+					sparc_srl_imm (code, ins->sreg1, 31, sparc_o7);
+					sparc_add (code, FALSE, ins->sreg1, sparc_o7, ins->dreg);
+					sparc_sra_imm (code, ins->dreg, 1, ins->dreg);
+				}
+				else {
+					/* http://compilers.iecc.com/comparch/article/93-04-079 */
+					sparc_sra_imm (code, ins->sreg1, 31, sparc_o7);
+					sparc_srl_imm (code, sparc_o7, 32 - i, sparc_o7);
+					sparc_add (code, FALSE, ins->sreg1, sparc_o7, ins->dreg);
+					sparc_sra_imm (code, ins->dreg, i, ins->dreg);
+				}
+			}
+			else {
+				/* Sign extend sreg1 into %y */
+				sparc_sra_imm (code, ins->sreg1, 31, sparc_o7);
+				sparc_wry (code, sparc_o7, sparc_g0);
+				EMIT_ALU_IMM (ins, sdiv, FALSE);
+			}
 			break;
+		}
 		case CEE_REM:
 			/* Sign extend sreg1 into %y */
 			sparc_sra_imm (code, ins->sreg1, 31, sparc_o7);
@@ -2752,9 +2784,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_MUL:
 			sparc_smul (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
-		case OP_MUL_IMM:
-			EMIT_ALU_IMM (ins, smul, FALSE);
+		case OP_MUL_IMM: {
+			int i, imm;
+
+			/* Transform multiplication into a shift */
+			for (i = 1; i < 30; ++i) {
+				imm = (1 << i);
+				if (ins->inst_imm == imm)
+					break;
+			}
+			if (i < 30)
+				sparc_sll_imm (code, ins->sreg1, i, ins->dreg);
+			else
+				EMIT_ALU_IMM (ins, smul, FALSE);
 			break;
+		}
 		case CEE_MUL_OVF:
 			sparc_smul (code, TRUE, ins->sreg1, ins->sreg2, ins->dreg);
 			sparc_rdy (code, sparc_g1);
