@@ -19,7 +19,7 @@ namespace Test {
 			string name = "System.Object";
 			if (args.Length > 0)
 				name = args [0];
-			Type t = Type.GetType (name);
+			Type t = Type.GetType (name, true);
 			MethodInfo[] ms = t.GetMethods();
 
 			Array.Sort (ms, new CM());

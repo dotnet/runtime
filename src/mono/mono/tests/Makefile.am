@@ -33,6 +33,21 @@ TESTSRC=			\
 	enum.cs			\
 	enum2.cs		\
 	property.cs		\
+	enumcast.cs		\
+	vtype.cs		\
+	isvaluetype.cs		\
+	iface6.cs		\
+	ipaddress.cs		\
+	array-vt.cs		\
+	interface1.cs		\
+	reflection-enum.cs	\
+	reflection-prop.cs	\
+	reflection4.cs		\
+	reflection5.cs		\
+	many-locals.cs		\
+	string-compare.cs	\
+	test-prime.cs		\
+	params.cs		\
 	reflection.cs		\
 	interface.cs		\
 	iface.cs		\
