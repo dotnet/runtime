@@ -773,6 +773,18 @@ GetVersionEx (OSVERSIONINFO *osvi)
 	return osvi->a + osvi->b;
 }
 
+int 
+BugGetVersionEx (int a, int b, int c, int d, int e, int f, int g, int h, OSVERSIONINFO *osvi)
+{
+
+	printf ("GOT %d %d\n", osvi->a, osvi->b);
+
+	osvi->a += 1;
+	osvi->b += 1;
+
+	return osvi->a + osvi->b;
+}
+
 typedef struct {
 	double x;
 	double y;
