@@ -1,4 +1,4 @@
-CSCRIPT = $(SYSTEMROOT)/system32/cscript.exe
+CSCRIPT = C:/WINNT/system32/cscript.exe
 CSC=csc
 
 CORCOMPARE=../../../mcs/tools/corcompare

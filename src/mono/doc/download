@@ -110,6 +110,14 @@
 	            </ul>
  	          </td>
  		</tr>
+ 		<tr>
+ 		  <td bgcolor="#999999">
+		    <b>Windows Setup Wizard (NT/2000/XP)</b>
+		    <ul>
+	              <li><a href="archive/mono-0.21-win32-1.exe">Mono-Setup</a>
+	            </ul>
+ 	          </td>
+ 		</tr>
 	      </table>
 	    </td>
 	  </tr>
