@@ -21,6 +21,7 @@
 #include "rawbuffer.h"
 #include "mono-endian.h"
 #include "private.h"
+#include "tabledefs.h"
 
 #define INVALID_ADDRESS 0xffffffff
 
@@ -355,10 +356,14 @@ load_class_names (MonoImage *image) {
 	const char *nspace;
 	GHashTable *nspace_table;
 	GHashTable *name_cache = image->name_cache;
-	guint32 i;
+	guint32 i, visib;
 
 	for (i = 1; i <= t->rows; ++i) {
 		mono_metadata_decode_row (t, i - 1, cols, MONO_TYPEDEF_SIZE);
+		/* nested types are accessed from the nesting name */
+		visib = cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+		if (visib > TYPE_ATTRIBUTE_PUBLIC && visib < TYPE_ATTRIBUTE_NESTED_ASSEMBLY)
+			continue;
 		name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
 		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 		if (!(nspace_table = g_hash_table_lookup (name_cache, nspace))) {

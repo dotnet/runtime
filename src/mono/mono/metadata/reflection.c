@@ -1264,7 +1264,7 @@ mono_param_get_objects (MonoMethod *method)
 		res [i] = (MonoReflectionParameter *)mono_object_new (oklass);
 		res [i]->ClassImpl = mono_type_get_object (method->signature->params [i]);
 		res [i]->DefaultValueImpl = NULL; /* FIXME */
-		res [i]->MemberImpl = member;
+		res [i]->MemberImpl = (MonoObject*)member;
 		res [i]->NameImpl = mono_string_new (names [i]);
 		res [i]->PositionImpl = i + 1;
 		res [i]->AttrsImpl = method->signature->params [i]->attrs;

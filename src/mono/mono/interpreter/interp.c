@@ -1050,7 +1050,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDC_I8)
 			++ip;
 			sp->type = VAL_I64;
-			sp->data.i = read64 (ip);
+			sp->data.l = read64 (ip);
 			ip += 8;
 			++sp;
 			BREAK;

@@ -146,6 +146,7 @@ typedef struct {
 	MonoReflectionILGen *ilgen;
 	MonoObject *type;
 	MonoArray *pinfo;
+	MonoReflectionMethod *override_method;
 	MonoString *dll;
 	MonoString *dllentry;
 	guint32 charset;

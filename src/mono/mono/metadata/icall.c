@@ -131,11 +131,15 @@ ves_icall_System_Array_GetLowerBound (MonoObject *this, gint32 dimension)
 static void
 ves_icall_InitializeArray (MonoArray *array, MonoClassField *field_handle)
 {
-		guint32 size = mono_array_element_size (((MonoObject*) array)->klass) * mono_array_length (array);
-		/*
-		 * FIXME: ENOENDIAN: we need to byteswap as needed.
-		 */
-		memcpy (mono_array_addr (array, char, 0), field_handle->data, size);
+	MonoClass *klass = array->obj.klass;
+	guint32 size = mono_array_element_size (klass);
+	int i;
+	for (i = 0; i < klass->rank; ++i)
+		size *= array->bounds [i].length;
+	/*
+	 * FIXME: ENOENDIAN: we need to byteswap as needed.
+	 */
+	memcpy (mono_array_addr (array, char, 0), field_handle->data, size);
 }
 
 static MonoObject *
@@ -279,6 +283,10 @@ ves_icall_get_property_info (MonoReflectionProperty *property, MonoPropertyInfo 
 	info->attrs = property->property->attrs;
 	info->get = property->property->get ? mono_method_get_object (property->property->get): NULL;
 	info->set = property->property->set ? mono_method_get_object (property->property->set): NULL;
+	/* 
+	 * There may be other methods defined for properties, though, it seems they are not exposed 
+	 * in the reflection API 
+	 */
 }
 
 static void
@@ -445,8 +453,6 @@ ves_icall_get_property (MonoReflectionType *type, MonoString *name, MonoArray *a
 	return NULL;
 }
 
-typedef int (*MemberFilter) (MonoObject *member, MonoObject *criteria);
-
 enum {
 	BFLAGS_IgnoreCase = 1,
 	BFLAGS_DeclaredOnly = 2,
@@ -465,19 +471,24 @@ enum {
 	BFLAGS_OptionalParamBinding = 0x40000
 };
 
+
+/*
+ * Note: the filter is applied from within corlib.
+ */
 static MonoArray*
-ves_icall_type_find_members (MonoReflectionType *type, guint32 membertypes, guint32 bflags, MemberFilter filter, MonoObject *criteria)
+ves_icall_type_find_members (MonoReflectionType *type, guint32 membertypes, guint32 bflags, gpointer filter, MonoObject *criteria)
 {
 	GSList *l = NULL, *tmp;
-	MonoClass *klass;
+	MonoClass *startklass, *klass;
 	MonoArray *res;
 	MonoMethod *method;
+	MonoObject *member;
 	int i, is_ctor, len, match;
 
-	klass = mono_class_from_mono_type (type->type);
+	klass = startklass = mono_class_from_mono_type (type->type);
 
 	/* FIXME: check the bindingflags */
-	
+handle_parent:	
 	if (membertypes & (1|8)) { /* constructors and methods */
 		for (i = 0; i < klass->method.count; ++i) {
 			match = 0;
@@ -499,14 +510,17 @@ ves_icall_type_find_members (MonoReflectionType *type, guint32 membertypes, guin
 
 			if (!match)
 				continue;
+			member = (MonoObject*)mono_method_get_object (method);
+			
 			is_ctor = strcmp (method->name, ".ctor") == 0 ||
 					strcmp (method->name, ".cctor") == 0;
 			if (is_ctor && (membertypes & 1)) {
-				l = g_slist_prepend (l, mono_method_get_object (method));
+				l = g_slist_prepend (l, member);
 				continue;
 			}
-			if (!is_ctor && (membertypes & 8))
-				l = g_slist_prepend (l, mono_method_get_object (method));
+			if (!is_ctor && (membertypes & 8)) {
+				l = g_slist_prepend (l, member);
+			}
 		}
 	}
 	if (membertypes & 4) { /* fields */
@@ -531,7 +545,8 @@ ves_icall_type_find_members (MonoReflectionType *type, guint32 membertypes, guin
 
 			if (!match)
 				continue;
-			l = g_slist_prepend (l, mono_field_get_object (klass, field));
+			member = (MonoObject*)mono_field_get_object (klass, field);
+			l = g_slist_prepend (l, member);
 		}
 	}
 	if (membertypes & 16) { /* properties */
@@ -543,6 +558,8 @@ ves_icall_type_find_members (MonoReflectionType *type, guint32 membertypes, guin
 			l = g_slist_prepend (l, mono_property_get_object (klass, prop));
 		}
 	}
+	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
+		goto handle_parent;
 	len = g_slist_length (l);
 	klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MemberInfo");
 	res = mono_array_new (klass, len);
