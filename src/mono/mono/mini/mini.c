@@ -4975,6 +4975,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_SUB_OVF_UN:
 			CHECK_STACK (2);
 			ADD_BINOP (*ip);
+			if (mono_find_jit_opcode_emulation (ins->opcode)) {
+				MonoInst *store, *temp, *load;
+				--sp;
+				temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
+				NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
+				store->cil_code = ins->cil_code;
+				MONO_ADD_INS (bblock, store);
+				NEW_TEMPLOAD (cfg, load, temp->inst_c0);
+				load->cil_code = ins->cil_code;
+				*sp++ = load;
+				/*g_print ("found emulation for %d\n", ins->opcode);*/
+			}
 			ip++;
 			break;
 		case CEE_ENDFINALLY:
@@ -8242,7 +8254,7 @@ mono_runtime_install_handlers (void)
 	 * but it seems to work well with our current exception
 	 * handlers. If not we must call syscall directly instead 
 	 * of sigaction */
-	
+
 	if (getenv ("MONO_DEBUG")) {
 		add_signal_handler (SIGINT, sigint_signal_handler);
 	}
@@ -8257,7 +8269,7 @@ mono_runtime_install_handlers (void)
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	sa.sa_sigaction = sigsegv_signal_handler;
 	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = SA_SIGINFO | SA_STACK;
+	sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
 	g_assert (sigaction (SIGSEGV, &sa, NULL) != -1);
 #else
 	add_signal_handler (SIGSEGV, sigsegv_signal_handler);
