@@ -2550,6 +2550,19 @@ get_generic_field_inst (MonoClassField *field, MonoClass *klass, MonoClass **ret
 	return NULL;
 }
 
+static MonoClassField *
+inflate_generic_field (MonoClassField *field, MonoClass *klass, MonoClass **retclass)
+{
+	MonoGenericInst *ginst;
+	MonoClassField *res;
+
+	res = g_new0 (MonoClassField, 1);
+	*res = *field;
+	ginst = klass->generic_inst->data.generic_inst;
+	res->type = mono_class_inflate_generic_type (field->type, ginst);
+	return res;
+}
+
 /*
  * mono_method_to_ir: translates IL into basic blocks containing trees
  */
@@ -3964,6 +3977,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			field = mono_field_from_token (image, token, &klass);
 			if (field->parent->gen_params)
 				field = get_generic_field_inst (field, method->klass, &klass);
+			else if (field->parent->generic_inst && method->klass->generic_inst)
+				field = inflate_generic_field (field, method->klass, &klass);
 			mono_class_init (klass);
 
 			foffset = klass->valuetype? field->offset - sizeof (MonoObject): field->offset;
@@ -4106,6 +4121,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 
 			field = mono_field_from_token (image, token, &klass);
+			if (field->parent->gen_params)
+				field = get_generic_field_inst (field, method->klass, &klass);
+			else if (field->parent->generic_inst && method->klass->generic_inst)
+				field = inflate_generic_field (field, method->klass, &klass);
 			mono_class_init (klass);
 
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
