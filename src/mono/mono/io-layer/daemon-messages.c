@@ -12,6 +12,8 @@
 #include <pthread.h>
 #include <errno.h>
 #include <string.h>
+/* Freebsd needs this included explicitly, but it doesn't hurt on Linux */
+#include <sys/uio.h>
 
 #ifndef HAVE_MSG_NOSIGNAL
 #include <signal.h>
@@ -161,7 +163,7 @@ void _wapi_daemon_request (int fd, WapiHandleRequest *req, int *fds,
 #ifdef HAVE_MSG_NOSIGNAL
 	ret=recvmsg (fd, &msg, MSG_NOSIGNAL);
 #else
-	ret=recvmsg (fd, &msg, MSG_NOSIGNAL);
+	ret=recvmsg (fd, &msg, 0);
 #endif
 	if(ret==-1 || ret!= sizeof(WapiHandleRequest)) {
 		/* Make sure we dont do anything with this response */
