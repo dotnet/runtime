@@ -1,3 +1,9 @@
+2005-02-04  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/Makefile.am (verify_profiles): Remove.
+	(mcs-compileall): Use $(build_profiles) directly.  It now works on
+	the net_2_0 profile too.
+
 2005-02-01  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am (test-support-files): New target.
