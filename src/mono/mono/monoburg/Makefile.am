@@ -11,7 +11,7 @@ parser.c:  $(srcdir)/monoburg.y
 	bison $(srcdir)/monoburg.y -o parser.c
 
 monoburg$(BUILD_EXEEXT): $(srcdir)/monoburg.c $(srcdir)/monoburg.h parser.c
-	$(CC_FOR_BUILD) -o $@ $(srcdir)/monoburg.c parser.c $(INCLUDES) $(BUILD_GLIB_LIBS)
+	$(CC_FOR_BUILD) -o $@ $(srcdir)/monoburg.c parser.c $(INCLUDES) $(LDFLAGS) $(BUILD_GLIB_LIBS)
 
 sample.c: monoburg$(BUILD_EXEEXT) $(srcdir)/sample.brg
 	./monoburg$(BUILD_EXEEXT) $(srcdir)/sample.brg > sample.c
