@@ -72,6 +72,35 @@
   </tr>
 </table>
 
+** Apr 20, 2002
+
+	A number of optimizations in the runtime made the compiler
+	twice as fast this week:
+
+	Early this week Patrik started the string
+	rewrite in the runtime.  Today Dietmar finished the
+	constructors and deployed the new layout. 
+
+	Paolo got the JIT engine to generate profiles, which were in
+	turn used to find hot spots in Reflection, which he improved.
+
+	Dan (of Regex fame) noticed the performance issues with our
+	current array layout, and contributed a new array
+	representation.
+
+	At the same time Dietmar started the the JIT inline code and
+	implemented constant propagation.  These two optimizations
+	together are very powerful.
+
+** Apr 18, 2002
+
+	Dietmar's inlining for the JIT engine just landed into
+	CVS. This is only a first cut and more improvements will come later.
+
+	Patrik, Paolo, Dietmar and Gonzalo have been busy optimizing
+	our class libraries and runtime engine to become faster. Many changes
+	on CVS as well.
+
 ** Apr 11, 2002
 
 	Gtk# 0.1 "ButtonHook" has been <a
@@ -101,6 +130,21 @@
         to Martin's work.  The resulting dwarf file can be used to
         single step C# code in GDB.  A document will be shortly published with
         the details.
+
+** Mar 27, 2002
+
+	<b>Mono 0.10 is out!</b> The self hosting release of Mono has
+	been released.
+
+	A new version of the runtime, compiler and class libraries has
+	been packaged for your download pleasure.  Binaries are
+	included.  The <a href="archive/mono-0.10">Release Notes</a>
+	are available.
+
+	You can get it <a
+	href="download.html#mar-27">Here</a> (quick links: <a
+	href="archive/mono-0.10.tar.gz">runtime</a> and <a
+	href="archive/mcs-0.10.tar.gz">compiler/classes</a>).
 
 ** Mar 27, 2002
 
