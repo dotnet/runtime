@@ -1,3 +1,7 @@
+2002-10-22  Miguel de Icaza  <miguel@ximian.com>
+
+	* configure.in: Also allow the miss-spelled bohem.
+
 2002-10-18  Daniel Morgan <danmorg@sc.rr.com>
 
 	* doc/ado-net

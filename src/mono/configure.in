@@ -130,7 +130,7 @@ gc=auto
 AC_ARG_WITH(gc, [  --with-gc=boehm,none],[gc=$with_gc])
 
 case "x$gc" in
-	xboehm|xyes)
+	xboehm|xbohem|xyes)
 		if test "x$found_boehm" != "xyes"; then
 			AC_MSG_ERROR("GC requested but libgc not found!")
 		fi
