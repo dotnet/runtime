@@ -104,8 +104,10 @@ attach_again:
 		shared=_wapi_shm_attach (&_wapi_shared_data[0],
 					 &_wapi_shared_scratch);
 		if(shared==FALSE) {
-			g_warning ("Failed to attach shared memory! "
-				   "Falling back to non-shared handles");
+			g_warning (
+				"Failed to attach shared memory! "
+				"Falling back to non-shared handles\n"
+				"See: http://www.go-mono.com/issues.html#wapi for details");
 		}
 #endif /* DISABLE_SHARED_HANDLES */
 	}
