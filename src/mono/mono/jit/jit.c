@@ -39,6 +39,9 @@
 #include "codegen.h"
 #include "debug.h"
 
+/* enable inlining */
+#define INLINE_CALLS
+
 /*
  * Pull the list of opcodes
  */
@@ -178,6 +181,13 @@ case CEE_##name: {                                                            \
 	ADD_TREE (t1, cli_addr);                                              \
 	break;                                                                \
 }
+
+typedef struct {
+	MonoMethod *method;
+	MBTree **arg_map;
+	const unsigned char *end, *saved_ip;
+	MonoImage *saved_image;
+} MonoInlineInfo;
 	
 /* Whether to dump the assembly code after genreating it */
 gboolean mono_jit_dump_asm = FALSE;
@@ -1194,6 +1204,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 			ip++;
 			CREATE_BLOCK (cli_addr + 2 + i);
 			block_end = 1;
+		       
 			break;
 		case MonoInlineBrTarget:
 			ip++;
@@ -1323,68 +1334,153 @@ mono_array_new_va (MonoMethod *cm, ...)
 	return mono_array_new_full (domain, cm->klass, lengths, lower_bounds);
 }
 
-#define INLINE_CALLS 1
+#define ADD_TREE(t,a)   do { t->cli_addr = a; g_ptr_array_add (forest, (t)); } while (0)
+#define PUSH_TREE(t,k)  do { int tt = k; *sp = t; t->svt = tt; sp++; } while (0)
 
-#ifdef INLINE_CALLS
-static MonoMethod *
-check_inlining (MonoFlowGraph *cfg, MonoMethod *method, gboolean *virtual, MBTree **stack, int n)
+#define LOCAL_POS(n)    (1 + n)
+#define LOCAL_TYPE(n)   ((header)->locals [(n)])
+
+#define ARG_POS(n)      (firstarg + n)
+#define ARG_TYPE(n)     ((n) ? (signature)->params [(n) - (signature)->hasthis] : \
+			(signature)->hasthis ? &method->klass->this_arg: (signature)->params [(0)])
+
+static int
+check_inlining (MonoMethod *method)
 {
-	MonoImage *image = method->klass->image; 
 	MonoMethodHeader *header;
-	MonoMethodSignature *csig, *sig = method->signature;
-	MonoMemPool *mp = cfg->mp;
-	MonoMethod *cm;
+	MonoMethodSignature *signature = method->signature;
 	register const unsigned char *ip, *end;
-	static int c = 0;
-	guint32 token;
-	gboolean stop, v = FALSE;
-	MBTree **stack_copy, *t1;
-	int i, anum, arg_used [256];
-
-	for (i = 0; i < 4; i++)
-		arg_used [i] = 0;
+	gboolean stop;
+	int i, arg_used [256];
 
 	g_assert (method);
+
+	if (method->inline_count != -1)
+		return method->inline_count;
+	
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-	    (method->klass->marshalbyref))
-		return NULL;
-	      
-	header = ((MonoMethodNormal *)method)->header;
-
-	if (!header) 
-		return NULL;
+	    (method->klass->marshalbyref) ||
+	    ISSTRUCT (signature->ret))
+		goto fail;;
+       
+	if (!(header = ((MonoMethodNormal *)method)->header) ||
+	    header->num_clauses)
+		goto fail;;
 
 	if (header->num_clauses)
-		return NULL;
-
+		goto fail;
+	
 	ip = header->code;
 	end = ip + header->code_size;
 
-	stop = FALSE;
-        
+	for (i = 0; i < 256; i++)
+		arg_used [i] = 0;
+
+	stop = FALSE;        
 	while (!stop && ip < end) {
 
 		switch (*ip) {
-		case CEE_LDARG_0:
-		case CEE_LDARG_1:
-		case CEE_LDARG_2:
-		case CEE_LDARG_3: {
-			int an = (*ip) - CEE_LDARG_0;
-			if (arg_used [an])
-				return NULL;
-			arg_used [an] = TRUE;
-			++ip;
-			break;
-		}	
-		case CEE_LDARG_S:
-			++ip;
-			if (arg_used [*ip])
-				return NULL;
-			arg_used [*ip] = TRUE;
-			++ip;
-			break;
+		case CEE_NOP:
+		case CEE_BREAK:
+		case CEE_DUP:
+		case CEE_POP:
+		case CEE_LDIND_I1:
+		case CEE_LDIND_U1:
+		case CEE_LDIND_I2:
+		case CEE_LDIND_U2:
+		case CEE_LDIND_I4:
+		case CEE_LDIND_U4:
+		case CEE_LDIND_I8:
+		case CEE_LDIND_I:
+		case CEE_LDIND_R4:
+		case CEE_LDIND_R8:
+		case CEE_LDIND_REF:
+		case CEE_STIND_REF:
+		case CEE_STIND_I1:
+		case CEE_STIND_I2:
+		case CEE_STIND_I4:
+		case CEE_STIND_I8:
+		case CEE_STIND_R4:
+		case CEE_STIND_R8:
+		case CEE_ADD:
+		case CEE_SUB:
+		case CEE_MUL:
+		case CEE_DIV:
+		case CEE_DIV_UN:
+		case CEE_REM:
+		case CEE_REM_UN:
+		case CEE_AND:
+		case CEE_OR:
+		case CEE_XOR:
+		case CEE_SHL:
+		case CEE_SHR:
+		case CEE_SHR_UN:
+		case CEE_NEG:
+		case CEE_NOT:
+		case CEE_CONV_I1:
+		case CEE_CONV_I2:
+		case CEE_CONV_I4:
+		case CEE_CONV_I8:
+		case CEE_CONV_R4:
+		case CEE_CONV_R8:
+		case CEE_CONV_U4:
+		case CEE_CONV_U8:
+		case CEE_CONV_R_UN:
+		case CEE_THROW:
+		case CEE_CONV_OVF_I1_UN:
+		case CEE_CONV_OVF_I2_UN:
+		case CEE_CONV_OVF_I4_UN:
+		case CEE_CONV_OVF_I8_UN:
+		case CEE_CONV_OVF_U1_UN:
+		case CEE_CONV_OVF_U2_UN:
+		case CEE_CONV_OVF_U4_UN:
+		case CEE_CONV_OVF_U8_UN:
+		case CEE_CONV_OVF_I_UN:
+		case CEE_CONV_OVF_U_UN:
+		case CEE_LDLEN:
+		case CEE_LDELEM_I1:
+		case CEE_LDELEM_U1:
+		case CEE_LDELEM_I2:
+		case CEE_LDELEM_U2:
+		case CEE_LDELEM_I4:
+		case CEE_LDELEM_U4:
+		case CEE_LDELEM_I8:
+		case CEE_LDELEM_I:
+		case CEE_LDELEM_R4:
+		case CEE_LDELEM_R8:
+		case CEE_LDELEM_REF:
+		case CEE_STELEM_I:
+		case CEE_STELEM_I1:
+		case CEE_STELEM_I2:
+		case CEE_STELEM_I4:
+		case CEE_STELEM_I8:
+		case CEE_STELEM_R4:
+		case CEE_STELEM_R8:
+		case CEE_STELEM_REF:
+		case CEE_CONV_OVF_I1:
+		case CEE_CONV_OVF_U1:
+		case CEE_CONV_OVF_I2:
+		case CEE_CONV_OVF_U2:
+		case CEE_CONV_OVF_I4:
+		case CEE_CONV_OVF_U4:
+		case CEE_CONV_OVF_I8:
+		case CEE_CONV_OVF_U8:
+		case CEE_CKFINITE:
+		case CEE_CONV_U2:
+		case CEE_CONV_U1:
+		case CEE_CONV_I:
+		case CEE_CONV_OVF_I:
+		case CEE_CONV_OVF_U:
+		case CEE_ADD_OVF:
+		case CEE_ADD_OVF_UN:
+		case CEE_MUL_OVF:
+		case CEE_MUL_OVF_UN:
+		case CEE_SUB_OVF:
+		case CEE_SUB_OVF_UN:
+		case CEE_STIND_I:
+		case CEE_CONV_U:
 		case CEE_LDNULL:
 		case CEE_LDC_I4_M1:
 		case CEE_LDC_I4_0:
@@ -1403,6 +1499,24 @@ check_inlining (MonoFlowGraph *cfg, MonoMethod *method, gboolean *virtual, MBTre
 			break;
 		case CEE_LDC_I4:
 		case CEE_LDC_R4:
+		case CEE_CPOBJ:
+		case CEE_LDOBJ:
+		case CEE_LDSTR:
+		case CEE_NEWOBJ:
+		case CEE_CASTCLASS:
+		case CEE_ISINST:
+		case CEE_UNBOX:
+		case CEE_LDFLD:
+		case CEE_LDFLDA:
+		case CEE_STFLD:
+		case CEE_LDSFLD:
+		case CEE_LDSFLDA:
+		case CEE_STSFLD:
+		case CEE_STOBJ:
+		case CEE_BOX:
+		case CEE_NEWARR:
+		case CEE_LDELEMA:
+		case CEE_LDTOKEN:
 			ip += 5;
 			break;
 		case CEE_LDC_I8:
@@ -1410,185 +1524,95 @@ check_inlining (MonoFlowGraph *cfg, MonoMethod *method, gboolean *virtual, MBTre
 			ip += 9;
 			break;
 		case CEE_CALL:
-			stop = TRUE;
+		case CEE_CALLVIRT: {
+			MonoMethod *cm;
+			guint32 token;
+			++ip;
+			token = read32 (ip);
+			ip += 4;
+
+			cm = mono_get_method (method->klass->image, token, NULL);
+			g_assert (cm);
+
+			if (cm == method)
+				goto fail;
+
 			break;
-		case CEE_CALLVIRT:
-			v = TRUE;
-			stop = TRUE;
+		}
+		case CEE_LDARG_0:
+		case CEE_LDARG_1:
+		case CEE_LDARG_2:
+		case CEE_LDARG_3: {
+			int an = (*ip) - CEE_LDARG_0;
+			if (arg_used [an])
+				goto fail;
+			arg_used [an] = TRUE;
+			++ip;
 			break;
+		}	
+		case CEE_LDARG_S:
+			++ip;
+			if (arg_used [*ip])
+				goto fail;
+			arg_used [*ip] = TRUE;
+			++ip;
+			break;
+	
+		case CEE_PREFIX1: {
+			++ip;			
+			switch (*ip) {
+			case CEE_LDARG: {
+				int an;
+				ip++;
+				an = read32 (ip);
+				ip += 4;
+				if (an > 255 || arg_used [an])
+					goto fail;
+				arg_used [an] = TRUE;
+				break;
+			}	
+
+			case CEE_CEQ:
+			case CEE_CGT:
+			case CEE_CGT_UN:
+			case CEE_CLT:
+			case CEE_CLT_UN:
+			case CEE_CPBLK:
+			case CEE_INITBLK:
+				ip++;
+				break;
+			case CEE_LDFTN:
+			case CEE_LDVIRTFTN:
+			case CEE_INITOBJ:
+			case CEE_SIZEOF:
+				ip += 5;
+				break;
+			default:
+				stop = TRUE;
+				break;
+			}
+		}
 		default:
-			return NULL;
+			stop = TRUE;
+			break;			
 		}
 	}
 
-	if (ip >= end || *ip != CEE_CALL)
-		return NULL;
-
-	++ip;
-	token = read32 (ip);
-	ip += 4;
-
-	if (ip >= end)
-		return NULL;
-
-	if (!(ip [0] == CEE_RET ||
+	if (ip >= end ||
+	    !(ip [0] == CEE_RET ||
 	      ((ip + 4) < end &&
 	       ip [0] == CEE_STLOC_0 &&
 	       ip [1] == CEE_BR_S &&
 	       ip [2] == 0 &&
 	       ip [3] == CEE_LDLOC_0 &&
 	       ip [4] == CEE_RET)))
-		return NULL;
+		goto fail;
 
-	cm = mono_get_method (image, token, NULL);
-	g_assert (cm);
+	return method->inline_count = ip - header->code;
 
-	csig = cm->signature;
-
-	if (cm == method || sig->hasthis != csig->hasthis ||
-	    !mono_metadata_type_equal (sig->ret, csig->ret))
-		return NULL;
-
-	if (csig->param_count > n)
-		return NULL;
-
-	if ((cm->flags & METHOD_ATTRIBUTE_FINAL) ||
-	    !(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
-		v = 0;
-
-	*virtual = v;
-
-	stack_copy = alloca (sizeof (MBTree *) * n);
-	memcpy (stack_copy, stack, sizeof (MBTree *) * n);
-
-	ip = header->code;
-	end = ip + header->code_size;
-
-	//printf ("C %s.%s:%s %d\n", method->klass->name_space, method->klass->name, 
-	//method->name, sig->param_count);	
-
-	//for (i = 0; i < (sig->param_count + sig->hasthis); i++)
-	//printf ("STACK0 %d %p\n", i, stack [i]);
-
-	stop = FALSE;
-	anum = 0;
-	while (!stop && ip < end) {
-
-		switch (*ip) {
-		case CEE_LDARG_0:
-		case CEE_LDARG_1:
-		case CEE_LDARG_2:
-		case CEE_LDARG_3:
-			stack [anum] = stack_copy [(*ip) - CEE_LDARG_0];
-			//printf ("ARG %d %p\n", anum, stack [anum]);
-			++ip;
-			break;
-		case CEE_LDARG_S:
-			++ip;
-			stack [anum] = stack_copy [*ip];
-			//printf ("ARGS %d %p\n", anum, stack [anum]);
-			++ip;
-			break;
-		case CEE_LDNULL:
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-			t1->data.i = 0;
-			//printf ("CONST %d %p\n", anum, t1);
-			stack [anum] = t1;
-			++ip;
-			break;
-		case CEE_LDC_I4_M1:
-		case CEE_LDC_I4_0:
-		case CEE_LDC_I4_1:
-		case CEE_LDC_I4_2:
-		case CEE_LDC_I4_3:
-		case CEE_LDC_I4_4:
-		case CEE_LDC_I4_5:
-		case CEE_LDC_I4_6:
-		case CEE_LDC_I4_7:
-		case CEE_LDC_I4_8:
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-			t1->data.i = (*ip) - CEE_LDC_I4_0;
-			//printf ("CONST %d %p\n", anum, t1);
-			stack [anum] = t1;
-			++ip;
-			break;
-		case CEE_LDC_I4_S:
-			++ip;
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-			t1->data.i = *(const gint8 *)ip;
-			stack [anum] = t1;
-			++ip;
-			break;
-		case CEE_LDC_I4: 
-			++ip;
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-			t1->data.i = read32 (ip);
-			stack [anum] = t1;
-			ip += 4;
-			break;
-		case CEE_LDC_I8:
-			++ip;
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I8);
-			t1->data.l = read64 (ip);
-			stack [anum] = t1;
-			ip += 8;
-			break;
-		case CEE_LDC_R4: {
-			float *f = mono_alloc_static (sizeof (float));
-			++ip;
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_R4);
-			readr4 (ip, f);
-			t1->data.p = f;
-			stack [anum] = t1;
-			ip += 4;
-			break;
-		}
-		case CEE_LDC_R8: {
-			float *d = mono_alloc_static (sizeof (double));
-			++ip;
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_R8);
-			readr8 (ip, d);
-			t1->data.p = d;
-			stack [anum] = t1;
-			ip += 8;
-			break;
-		}
-		case CEE_CALL:
-			stop = TRUE;
-			break;
-		case CEE_CALLVIRT:
-			v = TRUE;
-			stop = TRUE;
-			break;
-		default:
-			g_assert_not_reached ();
-		}
-		anum++;
-	}
-
-	/*
-	for (i = 0; i < (csig->param_count + csig->hasthis); i++)
-		printf ("STACK1 %d %p\n", i, stack [i]);
-
-
-	printf ("C1 %s.%s:%s %d\n", method->klass->name_space, method->klass->name, 
-		method->name, c++);	
-	*/
-
-	return cm;
-
+ fail:
+	return method->inline_count = -2;
 }
-#endif
-
-#define ADD_TREE(t,a)   do { t->cli_addr = a; g_ptr_array_add (forest, (t)); } while (0)
-#define PUSH_TREE(t,k)  do { int tt = k; *sp = t; t->svt = tt; sp++; } while (0)
-
-#define LOCAL_POS(n)    (1 + n)
-#define LOCAL_TYPE(n)   ((header)->locals [(n)])
-
-#define ARG_POS(n)      (firstarg + n)
-#define ARG_TYPE(n)     ((n) ? (signature)->params [(n) - (signature)->hasthis] : \
-			(signature)->hasthis ? &method->klass->this_arg: (signature)->params [(0)])
 
 static void
 create_outstack (MonoFlowGraph *cfg, MonoBBlock *bb, MBTree **stack, int depth)
@@ -1671,7 +1695,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 	MonoMethodSignature *signature;
 	MonoImage *image;
 	MonoValueType svt;
-	MBTree **sp, **stack, **arg_sp, *t1, *t2, *t3;
+	MBTree **sp, **stack, **arg_sp, **arg_map = NULL, *t1, *t2, *t3;
 	register const unsigned char *ip, *end;
 	GPtrArray *forest;
 	int i, j, depth, repeat_count;
@@ -1679,6 +1703,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 	gboolean repeat, superblock_end;
 	MonoBBlock *bb, *tbb;
 	int maxstack;
+	GList *inline_list = NULL;
 
 	header = ((MonoMethodNormal *)method)->header;
 	signature = method->signature;
@@ -1787,8 +1812,26 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 					superblock_end = FALSE;
 
 
-        while (ip < end) {
-		guint32 cli_addr = ip - header->code;
+        while (inline_list || ip < end) {
+		guint32 cli_addr;
+
+		if (inline_list) {
+			MonoInlineInfo *ii = (MonoInlineInfo *)inline_list->data;
+			if (ip >= ii->end) {
+				inline_list = g_list_remove_link (inline_list, inline_list);
+				ip = ii->saved_ip;
+				image = ii->saved_image;
+				if (inline_list)
+					arg_map = ((MonoInlineInfo *)inline_list->data)->arg_map;
+				else 
+					arg_map = NULL;
+				continue;
+			}
+		} else 
+			cli_addr = ip - header->code;
+
+		
+		//if (inline_list) printf ("INLINE IL%04x OPCODE %s\n", cli_addr, mono_opcode_names [*ip]);
 
 		//printf ("%d IL%04x OPCODE %s %d %d %d\n", i, cli_addr, mono_opcode_names [*ip], 
 		//forest->len, superblock_end, sp - stack);
@@ -2296,7 +2339,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		case CEE_CALL: 
 		case CEE_CALLVIRT: {
 			MonoMethodSignature *csig;
-			MonoMethod *cm, *im;
+			MonoMethod *cm;
 			MBTree *this = NULL;
 			guint32 token;
 			int k, align, size, args_size = 0;
@@ -2321,23 +2364,30 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				virtual = 0;
 
 #ifdef INLINE_CALLS
-			if (!virtual) {
-				MBTree **sp1 = sp;
+			if (!virtual && cm->inline_count != -2 &&
+			    (cm->inline_count >= 0 || check_inlining (cm) >= 0)) {
+				MonoInlineInfo *ii = alloca (sizeof (MonoInlineInfo));
+				int args;
 
 				if (cm->signature->hasthis)
-					sp1--;
+					sp--;
 
-				while (!virtual && 
-				       (im = check_inlining (cfg, cm, &virtual, sp1, maxstack - (sp1 - stack)))) {
-					cm = im;
-					/*
-					printf ("INLINING %s.%s:%s %s.%s:%s\n", method->klass->name_space, 
-						method->klass->name, method->name, cm->klass->name_space,
-						cm->klass->name, cm->name);	
-					*/
-				}
+				args = cm->signature->param_count + cm->signature->hasthis;
+
+				ii->method = cm;
+				ii->saved_ip = ip;
+				ii->saved_image = image;
+				ii->arg_map = alloca (args * sizeof (MBTree *));
+				memcpy (ii->arg_map, sp, args * sizeof (MBTree *));
+				inline_list = g_list_prepend (inline_list, ii);
+				ip = ((MonoMethodNormal *)ii->method)->header->code;
+				ii->end = ip + ii->method->inline_count;
+				arg_map = ii->arg_map;
+				image = cm->klass->image;
+				continue;
 			}
 #endif
+			
 			csig = cm->signature;
 			nargs = csig->param_count;
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
@@ -2345,29 +2395,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			/* fixme: we need to unbox the this pointer for value types ?*/
 			g_assert (!virtual || !cm->klass->valuetype);
-
-#ifdef INLINE_CALLS
-			if (!virtual && csig->ret->type == MONO_TYPE_VOID &&
-			    !(cm->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) &&
-			    !(cm->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
-			    !(cm->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) &&
-			    !cm->klass->marshalbyref) {
-				MonoMethodHeader *mh = ((MonoMethodNormal *)cm)->header;
-				
-				if (mh && 
-				    ((mh->code_size == 1 && mh->code [0] == CEE_RET) ||
-				     (mh->code_size == 2 && mh->code [0] == CEE_NOP && 
-				      mh->code [1] == CEE_RET))) {
-					//static int c = 0;
-
-					if (csig->hasthis)
-						sp--;
-
-					//printf ("C %s.%s:%s %d\n", cm->klass->name_space, cm->klass->name, cm->name, c++);
-					break;
-				}
-			}
-#endif
 
 			if (cm->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 				if (cm->klass->parent == mono_defaults.array_class) {
@@ -2931,22 +2958,33 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			int n = (*ip) - CEE_LDARG_0;
 			++ip;
 
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
-			t1->data.i = ARG_POS (n);
-			if (!ISSTRUCT (ARG_TYPE (n))) 
-				t1 = ctree_create_load (cfg, ARG_TYPE (n), t1, &svt, TRUE);
+			if (arg_map) {
+				*sp = arg_map [n];
+				sp++;
+			} else {
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
+				t1->data.i = ARG_POS (n);
+				if (!ISSTRUCT (ARG_TYPE (n))) 
+					t1 = ctree_create_load (cfg, ARG_TYPE (n), t1, &svt, TRUE);
 			
-			PUSH_TREE (t1, svt);
+				PUSH_TREE (t1, svt);
+			}
+
 			break;
 		}
 		case CEE_LDARG_S: {
 			++ip;
 
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
-			t1->data.i = ARG_POS (*ip);
-			if (!ISSTRUCT (ARG_TYPE (*ip))) 
-				t1 = ctree_create_load (cfg, ARG_TYPE (*ip), t1, &svt, TRUE);
-			PUSH_TREE (t1, svt);
+			if (arg_map) {
+				*sp = arg_map [*ip];
+				sp++;
+			} else {
+				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
+				t1->data.i = ARG_POS (*ip);
+				if (!ISSTRUCT (ARG_TYPE (*ip))) 
+					t1 = ctree_create_load (cfg, ARG_TYPE (*ip), t1, &svt, TRUE);
+				PUSH_TREE (t1, svt);
+			}
 			++ip;
 			break;
 		}
@@ -3164,7 +3202,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			PUSH_TREE (t1, VAL_I64);
 			break;
 		}
-		case 0xFE: {
+		case CEE_PREFIX1: {
 			++ip;			
 			switch (*ip) {
 				

@@ -15,6 +15,7 @@ typedef struct {
 	gint slot;
 	/* name is useful mostly for debugging */
 	const char *name; 
+	int inline_count;
 } MonoMethod;
 
 typedef struct {

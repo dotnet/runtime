@@ -1,7 +1,7 @@
 INCLUDES = 				\
 	-I$(top_srcdir)			\
 	$(GMODULE_CFLAGS)		\
-	$(GLIB_CFLAGS)			
+	$(GLIB_CFLAGS)
 
 if X86
 bin_PROGRAMS = mono
