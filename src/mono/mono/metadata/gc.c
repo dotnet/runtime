@@ -88,6 +88,7 @@ run_finalize (void *obj, void *data)
 
 	/* make sure the finalizer is not called again if the object is resurrected */
 	object_register_finalizer (obj, NULL);
+
 	/* speedup later... and use a timeout */
 	/* g_print ("Finalize run on %p %s.%s\n", o, mono_object_class (o)->name_space, mono_object_class (o)->name); */
 
@@ -657,6 +658,18 @@ void mono_gc_cleanup (void)
 #endif
 }
 
+void
+mono_gc_disable (void)
+{
+	GC_disable ();
+}
+
+void
+mono_gc_enable (void)
+{
+	GC_enable ();
+}
+
 #else
 
 /* no Boehm GC support. */
@@ -666,6 +679,16 @@ void mono_gc_init (void)
 }
 
 void mono_gc_cleanup (void)
+{
+}
+
+void
+mono_gc_disable (void)
+{
+}
+
+void
+mono_gc_enable (void)
 {
 }
 

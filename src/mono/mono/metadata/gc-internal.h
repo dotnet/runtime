@@ -27,6 +27,8 @@ gpointer    ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle);
 
 extern void mono_gc_init (void);
 extern void mono_gc_cleanup (void);
+extern void mono_gc_enable (void);
+extern void mono_gc_disable (void);
 extern gboolean mono_gc_is_finalizer_thread (MonoThread *thread);
 
 #endif /* __MONO_METADATA_GC_H__ */
