@@ -46,6 +46,7 @@ OBJECTS=									\
 	deploy/mbas.html							\
 	deploy/mono-beginning.html						\
 	deploy/mono-contribution-howto.html					\
+	deploy/mono-todo.html					\
 	deploy/monodoc-xml.html							\
 	deploy/other.html							\
 	deploy/papers.html							\

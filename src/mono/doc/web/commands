@@ -22,6 +22,7 @@
 1,Documentation,documentation.html,documentation.src
 1,Class Docs,classlib-doc.html,classlib-doc.src
 1,Test Suite,testing.html,testing.src
+1,Mono TODO,mono-todo.html,mono-todo.src
 1,Tools,tools.html,tools.src
 1,Porting,porting.html,porting.src
 2,PowerPC,ppc.html,ppc.src
