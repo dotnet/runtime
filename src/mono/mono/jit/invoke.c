@@ -99,7 +99,7 @@ arch_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoObject *retval;
 	MonoMethodSignature *sig; 
-	int i, tmp, type, sp = 0;
+	int i, tmp, type, sp = 0, string_ctor = 0;
 	void *ret;
 	int frame_size = 0;
 	gpointer *frame;
@@ -125,8 +125,13 @@ arch_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 
 	/* allocate ret object. */
 	if (sig->ret->type == MONO_TYPE_VOID) {
-		retval = NULL;
-		ret = NULL;
+		string_ctor = method->klass == mono_defaults.string_class && !strcmp (method->name, ".ctor");
+		if (string_ctor) {
+			ret = &retval;
+		} else {
+			retval = NULL;
+			ret = NULL;
+		}
 	} else {
 		MonoClass *klass = mono_class_from_mono_type (sig->ret);
 		if (klass->valuetype) {
@@ -224,7 +229,10 @@ handle_enum:
 handle_enum_2:
 	switch (type) {
 	case MONO_TYPE_VOID:
-		invoke_int64 (code, frame, frame_size);		
+		if (string_ctor)
+			*((guint32 *)ret) = invoke_int64 (code, frame, frame_size);
+		else
+			invoke_int64 (code, frame, frame_size);		
 		break;
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I1:

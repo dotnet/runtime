@@ -112,6 +112,7 @@ mono_jit_compile_class (MonoAssembly *assembly, char *compile_class,
 	char *code;
 	int i, j;
 	MonoClass *class;
+	MonoDomain *domain = mono_domain_get ();
 
 	if (compile_class [0] == '@') {
 		MonoImage *image = mono_image_loaded (compile_class + 1);
@@ -133,6 +134,7 @@ mono_jit_compile_class (MonoAssembly *assembly, char *compile_class,
 		for (j = 0; j < compile_times; ++j) {
 			code = mono_compile_method (m);
 			// g_free (code);
+			g_hash_table_remove (domain->jit_code_hash, m);
 		}
 	} else {
 		cname = strrchr (compile_class, '.');
@@ -156,6 +158,7 @@ mono_jit_compile_class (MonoAssembly *assembly, char *compile_class,
 					g_print ("Compiling: %s.%s:%s\n",
 						 compile_class, cname, class->methods [i]->name);
 				code = mono_compile_method (class->methods [i]);
+				g_hash_table_remove (domain->jit_code_hash, class->methods [i]);
 				// g_free (code);
 			}
 		}
