@@ -52,11 +52,14 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	int this_pos = 4;
+	MonoDomain *domain = mono_domain_get ();
 
 	if (!m->signature->ret->byref && MONO_TYPE_ISSTRUCT (m->signature->ret))
 		this_pos = 8;
 	    
-	start = code = g_malloc (16);
+	mono_domain_lock (domain);
+	start = code = mono_code_manager_reserve (domain->code_mp, 16);
+	mono_domain_unlock (domain);
 
 	x86_alu_membase_imm (code, X86_ADD, X86_ESP, this_pos, sizeof (MonoObject));
 	x86_jump_code (code, addr);
@@ -270,7 +273,8 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		break;
 	}
 
-	code = buf = g_malloc (256);
+	code = buf = mono_global_codeman_reserve (256);
+
 	/* save caller save regs because we need to do a call */ 
 	x86_push_reg (buf, X86_EDX);
 	x86_push_reg (buf, X86_EAX);
@@ -369,21 +373,23 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 
 #define TRAMPOLINE_SIZE 10
 
-MonoJitInfo*
-mono_arch_create_jump_trampoline (MonoMethod *method)
+static MonoJitInfo*
+create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain)
 {
 	guint8 *code, *buf, *tramp;
 	MonoJitInfo *ji;
 	
-	tramp = create_trampoline_code (MONO_TRAMPOLINE_JUMP);
+	tramp = create_trampoline_code (tramp_type);
 
-	code = buf = g_malloc (TRAMPOLINE_SIZE);
-	x86_push_imm (buf, method);
+	mono_domain_lock (domain);
+	code = buf = mono_code_manager_reserve (domain->code_mp, TRAMPOLINE_SIZE);
+	mono_domain_unlock (domain);
+
+	x86_push_imm (buf, arg1);
 	x86_jump_code (buf, tramp);
 	g_assert ((buf - code) <= TRAMPOLINE_SIZE);
 
 	ji = g_new0 (MonoJitInfo, 1);
-	ji->method = method;
 	ji->code_start = code;
 	ji->code_size = buf - code;
 
@@ -392,7 +398,15 @@ mono_arch_create_jump_trampoline (MonoMethod *method)
 	mono_jit_stats.method_trampolines++;
 
 	return ji;
+}
 
+MonoJitInfo*
+mono_arch_create_jump_trampoline (MonoMethod *method)
+{
+	MonoJitInfo *ji = create_specific_trampoline (method, MONO_TRAMPOLINE_JUMP, mono_domain_get ());
+
+	ji->method = method;
+	return ji;
 }
 
 /**
@@ -409,16 +423,14 @@ mono_arch_create_jump_trampoline (MonoMethod *method)
 gpointer
 mono_arch_create_jit_trampoline (MonoMethod *method)
 {
-	guint8 *code, *buf, *tramp;
+	MonoJitInfo *ji;
+	gpointer code_start;
 
-	tramp = create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
+	ji = create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, mono_domain_get ());
+	code_start = ji->code_start;
+	g_free (ji);
 
-	code = buf = g_malloc (TRAMPOLINE_SIZE);
-	x86_push_imm (buf, method);
-	x86_jump_code (buf, tramp);
-	g_assert ((buf - code) <= TRAMPOLINE_SIZE);
-
-	return code;
+	return code_start;
 }
 
 /**
@@ -435,16 +447,12 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 gpointer
 mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 {
-	guint8 *code, *buf, *tramp;
+	MonoJitInfo *ji;
+	gpointer code;
 
-	tramp = create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
-
-	code = buf = g_malloc (TRAMPOLINE_SIZE);
-	x86_push_imm (buf, vtable);
-	x86_jump_code (buf, tramp);
-	g_assert ((buf - code) <= TRAMPOLINE_SIZE);
-
-	mono_jit_stats.method_trampolines++;
+	ji = create_specific_trampoline (vtable, MONO_TRAMPOLINE_CLASS_INIT, vtable->domain);
+	code = ji->code_start;
+	g_free (ji);
 
 	return code;
 }
@@ -467,7 +475,8 @@ mono_debugger_create_notification_function (gpointer *notification_address)
 {
 	guint8 *ptr, *buf;
 
-	ptr = buf = g_malloc0 (16);
+	ptr = buf = mono_global_codeman_reserve (16);
+
 	x86_breakpoint (buf);
 	if (notification_address)
 		*notification_address = buf;
@@ -476,3 +485,10 @@ mono_debugger_create_notification_function (gpointer *notification_address)
 	return ptr;
 }
 
+void
+mono_x86_tramp_init (void)
+{
+	create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
+	create_trampoline_code (MONO_TRAMPOLINE_JUMP);
+	create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
+}

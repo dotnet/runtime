@@ -142,7 +142,7 @@ mono_arch_get_restore_context (void)
 	/* restore_contect (struct sigcontext *ctx) */
 	/* we do not restore X86_EAX, X86_EDX */
 
-	start = code = g_malloc (1024);
+	start = code = mono_global_codeman_reserve (128);
 	
 	/* load ctx */
 	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
@@ -176,7 +176,7 @@ mono_arch_get_restore_context (void)
 gpointer
 mono_arch_get_call_filter (void)
 {
-	static guint8 start [64];
+	static guint8* start;
 	static int inited = 0;
 	guint8 *code;
 
@@ -185,7 +185,7 @@ mono_arch_get_call_filter (void)
 
 	inited = 1;
 	/* call_filter (struct sigcontext *ctx, unsigned long eip) */
-	code = start;
+	start = code = mono_global_codeman_reserve (64);
 
 	x86_push_reg (code, X86_EBP);
 	x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
@@ -277,7 +277,7 @@ get_throw_exception (gboolean rethrow)
 {
 	guint8 *start, *code;
 
-	start = code = g_malloc (64);
+	start = code = mono_global_codeman_reserve (64);
 
 	x86_push_reg (code, X86_ESP);
 	x86_push_membase (code, X86_ESP, 4); /* IP */
@@ -358,7 +358,7 @@ mono_arch_get_rethrow_exception (void)
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
 {
-	static guint8 start [32];
+	static guint8* start;
 	static int inited = 0;
 	guint8 *code;
 
@@ -366,7 +366,7 @@ mono_arch_get_throw_exception_by_name (void)
 		return start;
 
 	inited = 1;
-	code = start;
+	code = start = mono_global_codeman_reserve (32);
 
 	x86_push_membase (code, X86_ESP, 4); /* exception name */
 	x86_push_imm (code, "System");
@@ -395,7 +395,7 @@ mono_arch_get_throw_exception_by_name (void)
 gpointer 
 mono_arch_get_throw_corlib_exception (void)
 {
-	static guint8 start [64];
+	static guint8* start;
 	static int inited = 0;
 	guint8 *code;
 
@@ -403,7 +403,7 @@ mono_arch_get_throw_corlib_exception (void)
 		return start;
 
 	inited = 1;
-	code = start;
+	code = start = mono_global_codeman_reserve (64);
 
 	x86_push_membase (code, X86_ESP, 4); /* token */
 	x86_push_imm (code, mono_defaults.exception_class->image);

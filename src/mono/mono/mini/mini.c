@@ -144,6 +144,8 @@ static CRITICAL_SECTION jit_mutex;
 
 static GHashTable *class_init_hash_addr = NULL;
 
+static MonoCodeManager *global_codeman = NULL;
+
 gboolean
 mono_running_on_valgrind (void)
 {
@@ -239,6 +241,28 @@ gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
 	}
 
 	return TRUE;
+}
+
+/*
+ * mono_global_codeman_reserve:
+ *
+ *  Allocate code memory from the global code manager.
+ */
+void *mono_global_codeman_reserve (int size)
+{
+	void *ptr;
+
+	if (!global_codeman) {
+		/* This can happen during startup */
+		global_codeman = mono_code_manager_new ();
+		return mono_code_manager_reserve (global_codeman, size);
+	}
+	else {
+		EnterCriticalSection (&jit_mutex);
+		ptr = mono_code_manager_reserve (global_codeman, size);
+		LeaveCriticalSection (&jit_mutex);
+		return ptr;
+	}
 }
 
 MonoJumpInfoToken *
@@ -785,7 +809,7 @@ mono_create_spvar_for_region (MonoCompile *cfg, int region)
 	g_hash_table_insert (cfg->spvars, GINT_TO_POINTER (region), var);
 }
 
-MonoInst *
+static MonoInst *
 mono_find_exvar_for_offset (MonoCompile *cfg, int offset)
 {
 	return g_hash_table_lookup (cfg->exvars, GINT_TO_POINTER (offset));
@@ -9148,6 +9172,9 @@ mini_init (const char *filename)
 {
 	MonoDomain *domain;
 
+	InitializeCriticalSection (&jit_mutex);
+	global_codeman = mono_code_manager_new ();
+
 	mono_arch_cpu_init ();
 
 	if (!g_thread_supported ())
@@ -9157,8 +9184,6 @@ mini_init (const char *filename)
 
 	mono_jit_tls_id = TlsAlloc ();
 	setup_jit_tls_data ((gpointer)-1, mono_thread_abort);
-
-	InitializeCriticalSection (&jit_mutex);
 
 	mono_burg_init ();
 

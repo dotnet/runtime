@@ -470,8 +470,16 @@ cpuid (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx)
 	);
 
 	if (have_cpuid) {
-		CpuidFunc func = (CpuidFunc)cpuid_impl;
+		/* Have to use the code manager to get around WinXP DEP */
+		MonoCodeManager *codeman = mono_code_manager_new_dynamic ();
+		void *ptr = mono_code_manager_reserve (codeman, sizeof (cpuid_impl));
+		memcpy (ptr, cpuid_impl, sizeof (cpuid_impl));
+
+		CpuidFunc func = (CpuidFunc)ptr;
 		func (id, p_eax, p_ebx, p_ecx, p_edx);
+
+		mono_code_manager_destroy (codeman);
+
 		/*
 		 * We use this approach because of issues with gcc and pic code, see:
 		 * http://gcc.gnu.org/cgi-bin/gnatsweb.pl?cmd=view%20audit-trail&database=gcc&pr=7329
@@ -499,6 +507,7 @@ mono_arch_cpu_init (void)
 	__asm__  __volatile__ ("fldcw %0\n": : "m" (fpcw));
 	__asm__  __volatile__ ("fnstcw %0\n": "=m" (fpcw));
 
+	mono_x86_tramp_init ();
 }
 
 /*

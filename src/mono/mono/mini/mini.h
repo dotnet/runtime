@@ -768,6 +768,7 @@ gpointer          mono_create_class_init_trampoline (MonoVTable *vtable);
 gpointer          mono_create_jit_trampoline (MonoMethod *method);
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr);
 gboolean          mono_running_on_valgrind (void);
+void*             mono_global_codeman_reserve (int size);
 
 /* methods that must be provided by the arch-specific port */
 void      mono_arch_cpu_init                    (void);

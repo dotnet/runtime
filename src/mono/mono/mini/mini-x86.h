@@ -159,6 +159,8 @@ typedef struct sigcontext MonoContext;
 
 #endif
 
+void mono_x86_tramp_init (void);
+
 #define MONO_ARCH_BIGMUL_INTRINS 1
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW 1
