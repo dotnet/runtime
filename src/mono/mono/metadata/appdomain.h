@@ -127,6 +127,12 @@ mono_runtime_init          (MonoDomain *domain, MonoThreadStartCB start_cb,
 void
 mono_runtime_cleanup       (MonoDomain *domain);
 
+void
+mono_runtime_install_cleanup (MonoDomainFunc func);
+
+void
+mono_runtime_quit (void);
+
 MonoDomain *
 mono_domain_create         (void);
 

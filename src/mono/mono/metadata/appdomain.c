@@ -116,6 +116,21 @@ mono_runtime_cleanup (MonoDomain *domain)
 	mono_network_cleanup ();
 }
 
+static MonoDomainFunc quit_function = NULL;
+
+void
+mono_runtime_install_cleanup (MonoDomainFunc func)
+{
+	quit_function = func;
+}
+
+void
+mono_runtime_quit ()
+{
+	if (quit_function != NULL)
+		quit_function (mono_root_domain, NULL);
+}
+
 gboolean
 mono_domain_has_type_resolve (MonoDomain *domain)
 {

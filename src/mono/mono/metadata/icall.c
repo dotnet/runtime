@@ -3256,7 +3256,7 @@ ves_icall_System_Environment_Exit (int result)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	mono_profiler_shutdown ();
+	mono_runtime_quit ();
 
 	/* we may need to do some cleanup here... */
 	exit (result);
