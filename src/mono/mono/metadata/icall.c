@@ -216,7 +216,6 @@ mono_type_type_from_obj (MonoReflectionType *mtype, MonoObject *obj)
 static gint32
 ves_icall_AssemblyBuilder_getToken (MonoReflectionAssemblyBuilder *assb, MonoObject *obj)
 {
-	mono_image_basic_init (assb);
 	return mono_image_create_token (assb->dynamic_assembly, obj);
 }
 
@@ -331,16 +330,6 @@ ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c, M
 
 	if (!c) /* FIXME: dont know what do do here */
 		return 0;
-	
-	while (!type->type) { /* FIXME: hack for TypeBuilder */
-		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)type;
-		type = tb->parent;
-	}
-
-	while (!c->type) { /* FIXME: hack for TypeBuilder */
-		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)c;
-		c = tb->parent;
-	}
 
 	klass = mono_class_from_mono_type (type->type);
 	klassc = mono_class_from_mono_type (c->type);
@@ -994,6 +983,17 @@ ves_icall_System_MonoType_assQualifiedName (MonoReflectionType *object)
 	return res;
 }
 
+static MonoReflectionType*
+ves_icall_ModuleBuilder_create_modified_type (MonoReflectionType *tb, gint32 arrayrank, MonoBoolean isbyref)
+{
+	MonoClass *klass;
+
+	klass = mono_class_from_mono_type (tb->type);
+	if (arrayrank)
+		klass = mono_array_class_get (klass, arrayrank);
+	return mono_type_get_object (mono_domain_get (), isbyref? &klass->this_arg: &klass->byval_arg);
+}
+
 static MonoString *
 ves_icall_System_PAL_GetCurrentDirectory (MonoObject *object)
 {
@@ -1184,6 +1184,7 @@ static gpointer icall_map [] = {
 	/*
 	 * ModuleBuilder
 	 */
+	"System.Reflection.Emit.ModuleBuilder::create_modified_type", ves_icall_ModuleBuilder_create_modified_type,
 	
 	/*
 	 * AssemblyBuilder
@@ -1191,6 +1192,7 @@ static gpointer icall_map [] = {
 	"System.Reflection.Emit.AssemblyBuilder::getDataChunk", ves_icall_get_data_chunk,
 	"System.Reflection.Emit.AssemblyBuilder::getUSIndex", mono_image_insert_string,
 	"System.Reflection.Emit.AssemblyBuilder::getToken", ves_icall_AssemblyBuilder_getToken,
+	"System.Reflection.Emit.AssemblyBuilder::basic_init", mono_image_basic_init,
 
 	/*
 	 * Reflection stuff.
@@ -1213,6 +1215,7 @@ static gpointer icall_map [] = {
 	/*
 	 * TypeBuilder
 	 */
+	"System.Reflection.Emit.TypeBuilder::setup_internal_class", mono_reflection_setup_internal_class,
 	
 	/*
 	 * MethodBuilder

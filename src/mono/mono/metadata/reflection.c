@@ -237,14 +237,8 @@ encode_reflection_type (MonoDynamicAssembly *assembly, MonoReflectionType *type,
 		return;
 	}
 
-	tb = (MonoReflectionTypeBuilder*) type;
-	token = TYPEDEFORREF_TYPEDEF | (tb->table_idx << TYPEDEFORREF_BITS); /* typedef */
+	g_assert_not_reached ();
 
-	/* FIXME: handle other base types (need to have also some hacks to compile corlib) ... */
-	/* FIXME: handle byref ... */
-	mono_metadata_encode_value (MONO_TYPE_CLASS, p, &p);
-	mono_metadata_encode_value (token, p, endbuf);
-	/*g_print ("encoding type %s to 0x%08x\n", mono_string_to_utf8 (tb->name), token);*/
 }
 
 static guint32
@@ -971,11 +965,14 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, type));
 	if (token)
 		return token;
-	klass = type->data.klass;
+	klass = mono_class_from_mono_type (type);
 	/*
 	 * If it's in the same module:
-	 * return TYPEDEFORREF_TYPEDEF | ((klass->token & 0xffffff) << TYPEDEFORREF_BITS)
 	 */
+	if (klass->image == assembly->assembly.image) {
+		MonoReflectionTypeBuilder *tb = klass->reflection_info;
+		return TYPEDEFORREF_TYPEDEF | (tb->table_idx << TYPEDEFORREF_BITS);
+	}
 
 	table = &assembly->tables [MONO_TABLE_TYPEREF];
 	alloc_table (table, table->rows + 1);
@@ -1069,12 +1066,7 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 	values = table->values + tb->table_idx * MONO_TYPEDEF_SIZE;
 	values [MONO_TYPEDEF_FLAGS] = tb->attrs;
 	if (tb->parent) { /* interfaces don't have a parent */
-		if (tb->parent->type)
-			values [MONO_TYPEDEF_EXTENDS] = mono_image_typedef_or_ref (assembly, tb->parent->type);
-		else {
-			MonoReflectionTypeBuilder *ptb = (MonoReflectionTypeBuilder *)tb->parent;
-			values [MONO_TYPEDEF_EXTENDS] = TYPEDEFORREF_TYPEDEF | (ptb->table_idx << TYPEDEFORREF_BITS);
-		}
+		values [MONO_TYPEDEF_EXTENDS] = mono_image_typedef_or_ref (assembly, tb->parent->type);
 	} else
 		values [MONO_TYPEDEF_EXTENDS] = 0;
 	n = mono_string_to_utf8 (tb->name);
@@ -1566,6 +1558,7 @@ void
 mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 {
 	MonoDynamicAssembly *assembly;
+	MonoImage *image;
 	int i;
 	
 	if (assemblyb->dynamic_assembly)
@@ -1581,6 +1574,19 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 		assembly->tables [i].next_idx = 1;
 		assembly->tables [i].columns = table_sizes [i];
 	}
+
+	image = g_new0 (MonoImage, 1);
+	
+	/* keep in sync with image.c */
+	image->name = mono_string_to_utf8 (assemblyb->name);
+	image->assembly_name = image->name; /* they may be different */
+
+	image->method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->class_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
+	image->array_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+
+	assembly->assembly.image = image;
 	
 }
 
@@ -2430,5 +2436,36 @@ handle_enum:
 	memcpy (p, buffer, buflen);
 	g_free (buffer);
 	return result;
+}
+
+void
+mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
+{
+	MonoClass *klass, *parent;
+
+	klass = g_new0 (MonoClass, 1);
+
+	klass->image = tb->module->assemblyb->dynamic_assembly->assembly.image;
+
+	if (tb->parent)
+		parent = mono_class_from_mono_type (tb->parent->type);
+	
+	klass->inited = 1; /* we lie to the runtime */
+	klass->name = mono_string_to_utf8 (tb->name);
+	klass->name_space = mono_string_to_utf8 (tb->nspace);
+	klass->type_token = MONO_TOKEN_TYPE_DEF | tb->table_idx;
+	klass->flags = tb->attrs;
+
+	klass->element_class = klass;
+	klass->reflection_info = tb; /* need to pin. */
+
+	mono_class_setup_parent (klass, parent);
+	mono_class_setup_mono_type (klass);
+
+	/*
+	 * FIXME: handle interfaces.
+	 */
+
+	tb->type.type = &klass->byval_arg;
 }
 

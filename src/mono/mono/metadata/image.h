@@ -81,6 +81,8 @@ struct _MonoImage {
 	 */
 	GHashTable *array_cache;
 
+	void *reflection_info;
+
 	/*
 	 * user_info is a public field and is not touched by the
 	 * metadata engine

@@ -253,6 +253,7 @@ typedef struct {
 	MonoArray *types;
 	MonoArray *cattrs;
 	guint32    table_idx;
+	MonoReflectionAssemblyBuilder *assemblyb;
 } MonoReflectionModuleBuilder;
 
 typedef struct {
@@ -322,6 +323,8 @@ void        mono_install_runtime_invoke (MonoInvokeFunc func);
 MonoObject* mono_runtime_invoke         (MonoMethod *method, void *obj, void **params);
 MonoArray*  mono_reflection_get_custom_attrs (MonoObject *obj);
 MonoArray*  mono_reflection_get_custom_attrs_blob (MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *porpValues, MonoArray *fields, MonoArray* fieldValues);
+
+void        mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb);
 
 #endif /* __METADATA_REFLECTION_H__ */
 

@@ -3748,6 +3748,25 @@ ilgenerator_fields[] = {
 	{NULL, 0}
 };
 
+static FieldDesc 
+ilexinfo_fields[] = {
+	{"handlers", G_STRUCT_OFFSET (MonoILExceptionInfo, handlers)},
+	{"start", G_STRUCT_OFFSET (MonoILExceptionInfo, start)},
+	{"len", G_STRUCT_OFFSET (MonoILExceptionInfo, len)},
+	{"end", G_STRUCT_OFFSET (MonoILExceptionInfo, label)},
+	{NULL, 0}
+};
+
+static FieldDesc 
+ilexblock_fields[] = {
+	{"extype", G_STRUCT_OFFSET (MonoILExceptionBlock, extype)},
+	{"type", G_STRUCT_OFFSET (MonoILExceptionBlock, type)},
+	{"start", G_STRUCT_OFFSET (MonoILExceptionBlock, start)},
+	{"len", G_STRUCT_OFFSET (MonoILExceptionBlock, len)},
+	{"filter_offset", G_STRUCT_OFFSET (MonoILExceptionBlock, filter_offset)},
+	{NULL, 0}
+};
+
 static ClassDesc
 emit_classes_to_check [] = {
 	{"TypeBuilder", typebuilder_fields},
@@ -3758,6 +3777,8 @@ emit_classes_to_check [] = {
 	{"FieldBuilder", fieldbuilder_fields},
 	{"PropertyBuilder", propertybuilder_fields},
 	{"ILGenerator", ilgenerator_fields},
+	{"ILExceptionBlock", ilexblock_fields},
+	{"ILExceptionInfo", ilexinfo_fields},
 	{NULL, NULL}
 };
 
@@ -3796,6 +3817,7 @@ check_corlib (MonoImage *corlib)
 	FieldDesc *fdesc;
 	ClassDesc *cdesc;
 	NameSpaceDesc *ndesc;
+	gint struct_offset;
 
 	for (ndesc = namespaces_to_check; ndesc->name; ++ndesc) {
 		for (cdesc = ndesc->types; cdesc->name; ++cdesc) {
@@ -3803,9 +3825,17 @@ check_corlib (MonoImage *corlib)
 			if (!klass)
 				g_error ("Cannot find class %s", cdesc->name);
 			mono_class_init (klass);
+			/*
+			 * FIXME: we should also check the size of valuetypes, or
+			 * we're going to have trouble when we access them in arrays.
+			 */
+			if (klass->valuetype)
+				struct_offset = 8;
+			else
+				struct_offset = 0;
 			for (fdesc = cdesc->fields; fdesc->name; ++fdesc) {
 				field = mono_class_get_field_from_name (klass, fdesc->name);
-				if (!field || (field->offset != fdesc->offset))
+				if (!field || (field->offset != (fdesc->offset + struct_offset)))
 					g_error ("field `%s' mismatch in class %s (%ld != %ld)", fdesc->name, cdesc->name, (long) fdesc->offset, (long) (field?field->offset:-1));
 			}
 		}
