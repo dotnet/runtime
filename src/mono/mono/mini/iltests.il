@@ -91,4 +91,13 @@
 		ret
 	}
 
+	.method public void inline_do_nothing () il managed {
+		ret
+	}
+	.method static public int32 test_1_checkthis_inlining () il managed {
+		ldnull
+		call instance void class Tests::inline_do_nothing ()
+		ldc.i4 1
+		ret
+	}
 }
