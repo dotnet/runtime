@@ -719,7 +719,7 @@ void mono_gc_init (void)
 		printf ("You are running under valgrind. Currently, valgrind does "
 		           "not support the GC. This program will run with the GC "
 			   "turned off. Your program may take up a fair amount of "
-			   "memory. Also, finalizers will not be run.");
+			   "memory. Also, finalizers will not be run.\n");
 		
 		gc_disabled = TRUE;
 		return;
