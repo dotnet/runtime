@@ -64,6 +64,7 @@
 
 /* If true, then we output the opcodes as we interpret them */
 static int global_tracing = 0;
+static int global_no_pointers = 0;
 
 static int debug_indent_level = 0;
 
@@ -139,7 +140,10 @@ db_match_method (gpointer data, gpointer user_data)
 		debug_indent_level++;	\
 		output_indent ();	\
 		g_print ("(%d) Entering %s.%s::%s (", GetCurrentThreadId(), klass->name_space, klass->name, frame->method->name);	\
-		if (signature->hasthis) g_print ("%p ", frame->obj);	\
+		if (signature->hasthis) if (global_no_pointers) { \
+			g_print ("this "); \
+		} else { \
+			g_print ("%p ", frame->obj); }	\
 		g_print ("%s)\n", args);	\
 		g_free (args);	\
 	}	\
@@ -612,7 +616,12 @@ dump_stack (stackval *stack, stackval *sp)
 		case VAL_I32: g_string_sprintfa (str, "[%d] ", s->data.i); break;
 		case VAL_I64: g_string_sprintfa (str, "[%lld] ", s->data.l); break;
 		case VAL_DOUBLE: g_string_sprintfa (str, "[%0.5f] ", s->data.f); break;
-		case VAL_VALUET: g_string_sprintfa (str, "[vt: %p] ", s->data.vt.vt); break;
+		case VAL_VALUET:
+			if (!global_no_pointers)
+				g_string_sprintfa (str, "[vt: %p] ", s->data.vt.vt);
+			else
+				g_string_sprintfa (str, "[vt] ");
+			break;
 #if 0
 		case VAL_OBJ: {
 			MonoObject *obj =  s->data.p;
@@ -624,7 +633,12 @@ dump_stack (stackval *stack, stackval *sp)
 			}
 		}
 #endif
-		default: g_string_sprintfa (str, "[%p] ", s->data.p); break;
+		default:
+			if (!global_no_pointers)
+				g_string_sprintfa (str, "[%p] ", s->data.p);
+			else
+				g_string_sprintfa (str, "[ptr] ");
+			break;
 		}
 		++s;
 	}
@@ -3903,6 +3917,8 @@ main (int argc, char *argv [])
 	for (i = 1; i < argc && argv [i][0] == '-'; i++){
 		if (strcmp (argv [i], "--trace") == 0)
 			global_tracing = 1;
+		if (strcmp (argv [i], "--noptr") == 0)
+			global_no_pointers = 1;
 		if (strcmp (argv [i], "--traceops") == 0)
 			global_tracing = 2;
 		if (strcmp (argv [i], "--dieonex") == 0)
