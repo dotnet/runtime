@@ -166,6 +166,9 @@ attach_again:
 				      PTHREAD_PROCESS_SHARED);
 	pthread_condattr_setpshared (&cond_shared_attr,
 				     PTHREAD_PROCESS_SHARED);
+#else
+	pthread_cond_init(&_wapi_private_data[0]->signal_cond, NULL);
+	mono_mutex_init(&_wapi_private_data[0]->signal_mutex, NULL);
 #endif
 }
 

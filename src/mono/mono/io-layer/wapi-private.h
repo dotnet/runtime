@@ -17,9 +17,6 @@
 #include <mono/io-layer/io.h>
 #include <mono/io-layer/daemon-private.h>
 
-/* Shared threads don't seem to work yet */
-#undef _POSIX_THREAD_PROCESS_SHARED
-
 /* Catch this here rather than corrupt the shared data at runtime */
 #if MONO_SIZEOF_SUNPATH==0
 #error configure failed to discover size of unix socket path
@@ -78,6 +75,9 @@ struct _WapiHandleOps
 #include <mono/io-layer/socket-private.h>
 #include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/process-private.h>
+
+/* Shared threads don't seem to work yet */
+#undef _POSIX_THREAD_PROCESS_SHARED
 
 struct _WapiHandleShared
 {
