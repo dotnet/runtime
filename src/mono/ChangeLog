@@ -1,5 +1,9 @@
 2003-10-13  Zoltan Varga  <vargaz@freemail.hu>
 
+	* mono/tests/ChangeLog: New file.
+	
+2003-10-13  Zoltan Varga  <vargaz@freemail.hu>
+
 	* mono/tests/Makefile.am: Link the tests with the test driver program
 	used for the mini tests.
 
