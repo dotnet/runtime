@@ -516,6 +516,48 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 	mono_runtime_invoke (method, domain->domain, params, NULL);
 }
 
+static gchar *
+reduce_path (const gchar *dirname)
+{
+	gchar **parts;
+	gchar *part;
+	GList *list, *tmp;
+	GString *result;
+	gchar *res;
+	gint i;
+
+	parts = g_strsplit (dirname, G_DIR_SEPARATOR_S, 0);
+	list = NULL;
+	for (i = 0; (part = parts [i]) != NULL; i++) {
+		if (!strcmp (part, "."))
+			continue;
+
+		if (!strcmp (part, "..")) {
+			if (list && list->next) /* Don't remove root */
+				list = g_list_delete_link (list, list);
+		} else {
+			list = g_list_prepend (list, part);
+		}
+	}
+
+	result = g_string_new ("");
+	list = g_list_reverse (list);
+
+	for (tmp = list; tmp; tmp = tmp->next) {
+		gchar *data = (gchar *) tmp->data;
+
+		if (data && *data)
+			g_string_append_printf (result, "%c%s", G_DIR_SEPARATOR,
+								(char *) tmp->data);
+	}
+	
+	res = result->str;
+	g_string_free (result, FALSE);
+	g_list_free (list);
+	g_strfreev (parts);
+	return res;
+}
+
 static void
 set_domain_search_path (MonoDomain *domain)
 {
@@ -526,14 +568,16 @@ set_domain_search_path (MonoDomain *domain)
 	gint npaths = 0;
 	gchar **pvt_split = NULL;
 	GError *error = NULL;
+	gint appbaselen = -1;
 
 	if ((domain->search_path != NULL) && !domain->setup->path_changed)
 		return;
 
 	setup = domain->setup;
-	if (setup->application_base)
-		npaths++;
+	if (!setup->application_base)
+		return; /* Must set application base to get private path working */
 
+	npaths++;
 	if (setup->private_bin_path) {
 		utf8 = mono_string_to_utf8 (setup->private_bin_path);
 		pvt_split = g_strsplit (utf8, G_SEARCHPATH_SEPARATOR_S, 1000);
@@ -559,49 +603,59 @@ set_domain_search_path (MonoDomain *domain)
 
 	domain->search_path = tmp = g_malloc ((npaths + 1) * sizeof (gchar *));
 	tmp [npaths] = NULL;
-	if (setup->application_base) {
-		*tmp = mono_string_to_utf8 (setup->application_base);
 
-		/* FIXME: is this needed? */
-		if (strncmp (*tmp, "file://", 7) == 0) {
-			gchar *file = *tmp;
-			gchar *uri = *tmp;
-			gchar *tmpuri;
+	*tmp = mono_string_to_utf8 (setup->application_base);
 
-			if (uri [7] != '/')
-				uri = g_strdup_printf ("file:///%s", uri + 7);
+	/* FIXME: is this needed? */
+	if (strncmp (*tmp, "file://", 7) == 0) {
+		gchar *file = *tmp;
+		gchar *uri = *tmp;
+		gchar *tmpuri;
 
-			tmpuri = uri;
-			uri = mono_escape_uri_string (tmpuri);
-			*tmp = g_filename_from_uri (uri, NULL, &error);
-			g_free (uri);
+		if (uri [7] != '/')
+			uri = g_strdup_printf ("file:///%s", uri + 7);
 
-			if (tmpuri != file)
-				g_free (tmpuri);
+		tmpuri = uri;
+		uri = mono_escape_uri_string (tmpuri);
+		*tmp = g_filename_from_uri (uri, NULL, &error);
+		g_free (uri);
 
-			if (error != NULL) {
-				g_warning ("%s\n", error->message);
-				g_error_free (error);
-				*tmp = file;
-			} else {
-				g_free (file);
-			}
+		if (tmpuri != file)
+			g_free (tmpuri);
+
+		if (error != NULL) {
+			g_warning ("%s\n", error->message);
+			g_error_free (error);
+			*tmp = file;
+		} else {
+			g_free (file);
 		}
-		
-	} else {
-		*tmp = g_strdup ("");
 	}
 
 	for (i = 1; pvt_split && i < npaths; i++) {
-		if (*tmp [0] == '\0' || g_path_is_absolute (pvt_split [i - 1])) {
-			tmp [i] = g_strdup (pvt_split [i - 1]);
-			continue;
-		}
-
 		tmp [i] = g_build_filename (tmp [0], pvt_split [i - 1], NULL);
+		if (strchr (tmp [i], '.')) {
+			gchar *reduced;
+			gchar *freeme;
+
+			reduced = reduce_path (tmp [i]);
+			if (appbaselen == -1)
+				appbaselen = strlen (tmp [0]);
+
+			if (strncmp (tmp [0], reduced, appbaselen)) {
+				g_free (reduced);
+				g_free (tmp [i]);
+				tmp [i] = g_strdup ("");
+				continue;
+			}
+
+			freeme = tmp [i];
+			tmp [i] = reduced;
+			g_free (freeme);
+		}
 	}
 	
-	if (setup->private_bin_path_probe != NULL && setup->application_base) {
+	if (setup->private_bin_path_probe != NULL) {
 		g_free (tmp [0]);
 		tmp [0] = g_strdup ("");
 	}
@@ -695,7 +749,7 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 	if (result == NULL && assemblies_path && assemblies_path [0] != NULL) {
 		result = real_load (assemblies_path, aname->culture, aname->name);
 	}
-	
+
 	return NULL;
 }
 
