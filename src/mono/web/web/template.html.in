@@ -30,7 +30,7 @@
     <tr>
         <td><img src="images/pixel.gif"></td><!-- left border -->
         <td colspan="4">
-           <a href="/mono/"><img src="images/mono.gif" border="0"></a></td>
+           <a href="/"><img src="images/mono.gif" border="0"></a></td>
         <td><img src="images/pixel.gif"></td><!-- right border -->
     </tr>
     <tr>
