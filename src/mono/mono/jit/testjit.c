@@ -733,7 +733,7 @@ mono_compile_method (MonoMethod *method)
 		case CEE_DUP: 
 			++ip; 
 
-			if (sp [-1]->op == MB_TERM_LDARG) {
+			if (sp [-1]->op == MB_TERM_LDLOC) {
 				t1 = ctree_new (0, 0, NULL, NULL);
 				*t1 = *sp [-1];
 				PUSH_TREE (t1);		
