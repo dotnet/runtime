@@ -705,7 +705,7 @@ main (int argc, char *argv[]) {
 	if (!cname && (graphtype == GRAPH_TYPES))
 		cname = "System.Object";
 
-	assembly = mono_assembly_open (aname, NULL, NULL);
+	assembly = mono_assembly_open (aname, NULL);
 	if (!assembly) {
 		g_print ("cannot open assembly %s\n", aname);
 		exit (1);
