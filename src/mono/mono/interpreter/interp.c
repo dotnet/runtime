@@ -624,17 +624,16 @@ dump_stack (stackval *stack, stackval *sp)
 			else
 				g_string_sprintfa (str, "[vt%s] ", s->data.vt.vt ? "" : "=null");
 			break;
-#if 0
 		case VAL_OBJ: {
 			MonoObject *obj =  s->data.p;
-			if (obj && obj->klass == mono_defaults.string_class) {
-				char *str = mono_string_to_utf8 ((MonoString*)obj);
-				printf ("\"%s\" ", str);
-				g_free (str);
+			if (global_no_pointers && obj && mono_object_class (obj) == mono_defaults.string_class) {
+				char *utf8 = mono_string_to_utf8 ((MonoString*) obj);
+				g_string_sprintfa (str, "[str:%s] ", utf8);
+				g_free (utf8);
 				break;
 			}
+			/* fall thru */
 		}
-#endif
 		default:
 			if (!global_no_pointers)
 				g_string_sprintfa (str, "[%p] ", s->data.p);
