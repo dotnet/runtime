@@ -102,6 +102,23 @@
   </tr>
 </table>
 
+@item Feb 25th, 2003: Mono 0.20 for Windows released;   New Apache module released.
+
+	Packages of Mono for Windows have been <a
+	href="archive/mono-0.20-stable-win32-2.exe">released</a>.
+	Thanks to Daniel, Johannes and Paolo for setting this up.
+
+	Daniel has released a new version of his Mono Apache module that
+	handles ASP.NET.  The code is available at <a
+	href="http://apacheworld.org/modmono/">here</a>
+
+	Nick has posted an update on the progress on our <a
+	href="http://lists.ximian.com/archives/public/mono-list/2003-February/012467.html">regression
+	tests</a>.  We are looking for more tests, and more volunteers to write them.
+
+	Also, remember to contribute to the Gtk# documentation effort,
+	momentum is picking up!  See the entry for Feb 18th for more details.
+
 @item Feb, 23rd, 2003: Mono 0.20 released; Gtk# 0.8 released.
 
 	Mono 0.20 has been released.  Check out the <a

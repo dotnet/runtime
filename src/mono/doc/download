@@ -118,6 +118,10 @@
 	        </tr>
  		<tr>
  		  <td bgcolor="#999999">
+		    <b>Windows Setup Wizard (NT/2000/XP)</b>
+		    <ul>
+	              <li><a href="archive/mono-0.20-stable-win32-2.exe">Mono-Setup</a>
+	            </ul>
  	          </td>
  		  <td bgcolor="#999999">
  		    <b>Debian packages</b>
