@@ -1,3 +1,7 @@
+2005-03-02  Zoltan Varga  <vargaz@freemail.hu>
+
+	* docs/aot-compiler.txt: Add some more documentation.
+
 2005-02-25  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/Makefile.am (centum_nunit_tests): Remove.  The
