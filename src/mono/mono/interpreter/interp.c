@@ -565,11 +565,7 @@ ves_runtime_method (MonoInvocation *frame)
 			mono_object_isinst (obj, mono_defaults.multicastdelegate_class)) {
 		delegate->delegate.target = frame->stack_args[0].data.p;
 		delegate->delegate.method_ptr = frame->stack_args[1].data.p;
-		if (!delegate->delegate.target) {
-			MonoDomain *domain = mono_domain_get ();
-			MonoMethod *m = mono_method_pointer_get (delegate->delegate.method_ptr);
-			delegate->delegate.method_info = mono_method_get_object (domain, m);
-		}
+		delegate->delegate.method_info = mono_method_get_object (mono_object_domain(delegate), mono_method_pointer_get (delegate->delegate.method_ptr));
 		return;
 	}
 	if (*name == 'I' && (strcmp (name, "Invoke") == 0) && obj &&
@@ -577,23 +573,24 @@ ves_runtime_method (MonoInvocation *frame)
 		guchar *code;
 		MonoMethod *method;
 		
-		// FIXME: support multicast delegates 
-		g_assert (!delegate->prev);
+		while (delegate) {
 
-		code = (guchar*)delegate->delegate.method_ptr;
-		method = mono_method_pointer_get (code);
+			code = (guchar*)delegate->delegate.method_ptr;
+			method = mono_method_pointer_get (code);
 #if 1
-		/* FIXME: check for NULL method */
-		INIT_FRAME(&call,frame,delegate->delegate.target,frame->stack_args,frame->retval,method);
-		ves_exec_method (&call);
+			/* FIXME: check for NULL method */
+			INIT_FRAME(&call,frame,delegate->delegate.target,frame->stack_args,frame->retval,method);
+			ves_exec_method (&call);
 #else
-		if (!method->addr)
-			method->addr = mono_create_trampoline (method, 1);
-		func = method->addr;
-		/* FIXME: need to handle exceptions across managed/unmanaged boundaries */
-		func ((MonoFunc)delegate->method_ptr, &frame->retval->data.p, delegate->target, frame->stack_args);
+			if (!method->addr)
+				method->addr = mono_create_trampoline (method, 1);
+			func = method->addr;
+			/* FIXME: need to handle exceptions across managed/unmanaged boundaries */
+			func ((MonoFunc)delegate->method_ptr, &frame->retval->data.p, delegate->target, frame->stack_args);
 #endif
-		stackval_from_data (frame->method->signature->ret, frame->retval, (char*)&frame->retval->data.p);
+			stackval_from_data (frame->method->signature->ret, frame->retval, (char*)&frame->retval->data.p);
+			delegate = delegate->prev;
+		}
 		return;
 	}
 	g_error ("Don't know how to exec runtime method %s.%s::%s", 
@@ -687,8 +684,10 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 	MonoMethod *m;
 	MonoClass *class;
 	MonoDomain *domain = mono_domain_get ();
-	guint32 *offsets = g_new0 (guint32, 2 + header->num_locals + signature->param_count + signature->hasthis);
+	guint32 *offsets;
 
+	mono_profiler_method_jit (method); /* sort of... */
+	offsets = g_new0 (guint32, 2 + header->num_locals + signature->param_count + signature->hasthis);
 	for (i = 0; i < header->num_locals; ++i) {
 		size = mono_type_size (header->locals [i], &align);
 		offset += align - 1;
@@ -808,6 +807,7 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 			method->addr = GUINT_TO_POINTER (INLINE_TYPE_ELEMENT_TYPE);
 	}
 	LeaveCriticalSection (&metadata_lock);
+	mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
 }
 
 #define LOCAL_POS(n)            (frame->locals + offsets [2 + (n)])
@@ -2384,7 +2384,6 @@ ves_exec_method (MonoInvocation *frame)
 					o = mono_object_new (domain, newobj_class);
 					child_frame.obj = o;
 				} else {
-					vt_alloc (&mono_defaults.string_class->this_arg, &retval);
 					child_frame.retval = &retval;
 				}
 			}
@@ -3069,7 +3068,33 @@ array_constructed:
 		CASE (CEE_UNUSED16) 
 		CASE (CEE_UNUSED17) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_I1)
-		CASE (CEE_CONV_OVF_U1) ves_abort(); BREAK;
+			if (sp [-1].type == VAL_I32) {
+				if (sp [-1].data.i < 128 || sp [-1].data.i > 127)
+					THROW_EX (mono_get_exception_overflow (), ip);
+				sp [-1].data.i = (gint8)sp [-1].data.i;
+			} else if (sp [-1].type == VAL_I64) {
+				if (sp [-1].data.l < 128 || sp [-1].data.l > 127)
+					THROW_EX (mono_get_exception_overflow (), ip);
+				sp [-1].data.i = (gint8)sp [-1].data.l;
+			} else {
+				ves_abort();
+			}
+			++ip;
+			BREAK;
+		CASE (CEE_CONV_OVF_U1)
+			if (sp [-1].type == VAL_I32) {
+				if (sp [-1].data.i < 0 || sp [-1].data.i > 255)
+					THROW_EX (mono_get_exception_overflow (), ip);
+				sp [-1].data.i = (gint8)sp [-1].data.i;
+			} else if (sp [-1].type == VAL_I64) {
+				if (sp [-1].data.l < 0 || sp [-1].data.l > 255)
+					THROW_EX (mono_get_exception_overflow (), ip);
+				sp [-1].data.i = (gint8)sp [-1].data.l;
+			} else {
+				ves_abort();
+			}
+			++ip;
+			BREAK;
 		CASE (CEE_CONV_OVF_I2)
 		CASE (CEE_CONV_OVF_U2)
 			++ip;
