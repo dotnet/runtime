@@ -61,6 +61,8 @@ mono_LDADD =				\
 	$(GMODULE_LIBS) 		\
 	-lm
 
+mono_CFLAGS = $(AM_CFLAGS)
+
 codegen-x86.c codegen.h: x86.brg
 	../monoburg/monoburg $(srcdir)/x86.brg -d codegen.h -s codegen-x86.c
 
