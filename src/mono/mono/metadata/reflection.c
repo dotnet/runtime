@@ -108,7 +108,7 @@ const unsigned char table_sizes [64] = {
 #define REALLOC_ATOMIC(ptr, size) GC_REALLOC ((ptr), (size))
 #else
 #define ALLOC_ATOMIC(size) g_malloc (size)
-#define FREE_ATOMIC(ptr) g_free (size)
+#define FREE_ATOMIC(ptr) g_free (ptr)
 #define REALLOC_ATOMIC(ptr, size) g_realloc ((ptr), (size))
 #endif
 
