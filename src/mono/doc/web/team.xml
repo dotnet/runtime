@@ -256,12 +256,13 @@
       <last-name>Arneng</last-name>
     </name>
     <e-mail>pt99par@student.bth.se</e-mail>
-    <image>none.png</image>
+    <image>per.png</image>
     <location>Sweden</location>
     <organization>None</organization>
-    <description>External Contributor</description>
+    <description>Student</description>
     <tasks>
       <task>Class libraries</task>
+      <task>Documentation</task>
     </tasks>
   </contributor>
 
