@@ -93,7 +93,7 @@ struct _MBTree {
 		X86AddressInfo ainfo;
 		MonoJitFieldInfo fi;
 		MonoJitBranchInfo bi;
-		union {
+		struct {
 			gint32 size;
 			gint32 align;
 		} size_info;
