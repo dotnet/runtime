@@ -507,7 +507,8 @@ tree_preallocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 		tree->reg1 = mono_regset_alloc_reg (rs, X86_EAX, tree->exclude_mask);
 		tree->reg2 = mono_regset_alloc_reg (rs, X86_EDX, tree->exclude_mask);
 		tree->reg3 = mono_regset_alloc_reg (rs, X86_ECX, tree->exclude_mask);
-		break;
+		return;
+	default: break;
 	}
 
 	switch (goal) {

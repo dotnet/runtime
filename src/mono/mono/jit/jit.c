@@ -1466,7 +1466,7 @@ mono_array_new_va (MonoMethod *cm, ...)
 }
 
 #define ADD_TREE(t,a)   do { t->cli_addr = a; g_ptr_array_add (forest, (t)); } while (0)
-#define PUSH_TREE(t,k)  do { *sp = t; sp++; t->svt = k; } while (0)
+#define PUSH_TREE(t,k)  do { int tt = k; *sp = t; t->svt = tt; sp++; } while (0)
 
 #define LOCAL_POS(n)    (1 + n)
 #define LOCAL_TYPE(n)   ((header)->locals [(n)])
@@ -1677,7 +1677,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
         while (ip < end) {
 		guint32 cli_addr = ip - header->code;
-					
+
 		//printf ("%d IL%04x OPCODE %s %d %d %d\n", i, cli_addr, opcode_names [*ip], 
 		//forest->len, superblock_end, sp - stack);
 

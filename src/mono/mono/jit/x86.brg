@@ -533,7 +533,6 @@ reg: ADDR_L 5 {
 	x86_lea_membase (s->code, tree->reg1, X86_EBP, offset);
 
 	PRINT_REG ("ADDR_L",  tree->reg1);
-
 }
 
 
@@ -2225,10 +2224,6 @@ freg: LDIND_R8 (reg) {
 	x86_fld_membase (s->code, tree->left->reg1, 0, TRUE);
 }
 
-freg: LDIND_R8 (reg) {
-	x86_fld_membase (s->code, tree->left->reg1, 0, TRUE);
-}
-
 freg: ADD (freg, freg) {
 	x86_fp_op_reg (s->code, X86_FADD, 1, TRUE);
 }
@@ -2257,8 +2252,18 @@ freg: NEG (freg) {
 
 stmt: POP (freg)
 
+stmt: STIND_R4 (ADDR_L, freg) {
+	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->left->data.i).offset;  
+	x86_fst_membase (s->code, X86_EBP, offset, FALSE, TRUE);
+}
+
 stmt: STIND_R4 (reg, freg) {
 	x86_fst_membase (s->code, tree->left->reg1, 0, FALSE, TRUE);
+}
+
+stmt: STIND_R8 (ADDR_L, freg) {
+	int offset = g_array_index (s->varinfo, MonoVarInfo, tree->left->data.i).offset;  
+	x86_fst_membase (s->code, X86_EBP, offset, TRUE, TRUE);
 }
 
 stmt: STIND_R8 (reg, freg) {
