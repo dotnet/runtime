@@ -5041,7 +5041,7 @@ static const IcallEntry process_icalls [] = {
 	{"Process_free_internal(intptr)", ves_icall_System_Diagnostics_Process_Process_free_internal},
 	{"SetWorkingSet_internal(intptr,int,int,bool)", ves_icall_System_Diagnostics_Process_SetWorkingSet_internal},
 	{"StartTime_internal(intptr)", ves_icall_System_Diagnostics_Process_StartTime_internal},
-	{"Start_internal(string,string,intptr,intptr,intptr,System.Diagnostics.Process/ProcInfo&)", ves_icall_System_Diagnostics_Process_Start_internal},
+	{"Start_internal(string,string,string,intptr,intptr,intptr,System.Diagnostics.Process/ProcInfo&)", ves_icall_System_Diagnostics_Process_Start_internal},
 	{"WaitForExit_internal(intptr,int)", ves_icall_System_Diagnostics_Process_WaitForExit_internal}
 };
 

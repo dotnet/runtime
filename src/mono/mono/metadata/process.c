@@ -722,7 +722,35 @@ void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoO
 	mono_image_close (image);
 }
 
-MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd, MonoString *dirname, HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoProcInfo *process_info)
+static gboolean
+complete_path (const gunichar2 *appname, gunichar **completed)
+{
+#ifdef PLATFORM_WIN32
+	gchar *utf8app;
+	gchar *found;
+
+	utf8app = g_utf16_to_utf8 (appname, -1, NULL, NULL, NULL);
+	if (g_path_is_absolute (utf8app)) {
+		g_free (utf8app);
+		return FALSE;
+	}
+
+	found = g_find_program_in_path (utf8app);
+	if (found == NULL) {
+		g_free (utf8app);
+		return FALSE;
+	}
+
+	*completed = g_utf8_to_utf16 (found, -1, NULL, NULL, NULL);
+	g_free (found);
+	g_free (utf8app);
+	return TRUE;
+#else
+	return FALSE;
+#endif
+}
+
+MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *appname, MonoString *cmd, MonoString *dirname, HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoProcInfo *process_info)
 {
 	gboolean ret;
 	gunichar2 *dir;
@@ -730,6 +758,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd
 	PROCESS_INFORMATION procinfo;
 	gunichar2 *shell_path = NULL;
 	gchar *env_vars = NULL;
+	gboolean free_shell_path = TRUE;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -773,6 +802,9 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd
 			cmd = mono_string_new (mono_domain_get (), newcmd);
 			g_free (newcmd);
 		}
+	} else {
+		shell_path = mono_string_chars (appname);
+		free_shell_path = complete_path (shell_path, &shell_path);
 	}
 
 	if (process_info->env_keys != NULL) {
@@ -828,6 +860,8 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd
 	ret=CreateProcess (shell_path, mono_string_chars (cmd), NULL, NULL, TRUE, CREATE_UNICODE_ENVIRONMENT, env_vars, dir, &startinfo, &procinfo);
 
 	g_free (env_vars);
+	if (free_shell_path)
+		g_free (shell_path);
 
 	if(ret) {
 		process_info->process_handle=procinfo.hProcess;
