@@ -104,7 +104,8 @@ ldstr_hash (const char* str)
 	const char *end;
 	len = mono_metadata_decode_blob_size (str, &str) - 1;
 	end = str + len;
-	h = *str;
+	/* if len == 0 *str will point to the mark byte */
+	h = len? *str: 0;
 	/*
 	 * FIXME: The distribution may not be so nice with lots of
 	 * null chars in the string.
