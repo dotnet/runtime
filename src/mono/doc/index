@@ -111,6 +111,15 @@
   </tr>
 </table>
 
+@item May 10th, 2003: Eclipse runs on Mono
+
+	Today Zoltan Varga announced that he got the <a
+	href="http://www.eclipse.org">Eclipse IDE</a> running on top
+	of Mono+<a href="http://www.ikvm.net">IKVM</a>.  
+
+	A screenshot of Eclipse running with Mono can be found <a
+	href="images/ikvm-screenshot.png">here</a>
+
 @item May 6th, 2003: Mono 0.24 ships
 
 	We have released Mono 0.24 which includes our new code

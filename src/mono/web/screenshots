@@ -51,6 +51,14 @@
 	  </tr>
 	</table>
 
+** Eclipse running with Mono
+
+	Zoltan Varga made the Java VM for .NET <a
+	href="http://www.ikvm.net">IKVM</a> run <a
+	href="http://www.eclipse.org">Eclipse</a>, the IBM Open Source IDE.
+
+	<a href="images/ikvm-screenshot.png"><img src="images/ikvm-screenshot-thumb.png"></a>	
+
 ** Mono Basic
 
 	The Mono Basic compiler ships with the Mono distribution.

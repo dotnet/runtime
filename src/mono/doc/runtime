@@ -17,7 +17,7 @@
 		  easy-to-port runtime engine.
 	</ul>
 
-	We are using the Bohem conservative garbage collector.
+	We are using the Boehm conservative garbage collector.
 
 	The Mono runtime can be used as a stand-alone process, or it
 	can be <a href="embedded-api">embedded into applications</a> (see
