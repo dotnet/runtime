@@ -31,6 +31,8 @@
 #define LOCAL_REGS 8
 
 #define NOT_IMPL(x) g_error("FIXME: %s", x);
+/*#define DEBUG(a) a*/
+#define DEBUG(a)
 
 /* Some assembly... */
 #define flushi(addr)    __asm__ __volatile__ ("flush %0"::"r"(addr):"memory")
@@ -149,7 +151,7 @@ calculate_sizes (MonoMethodSignature *sig, guint *stack_size, guint *code_size,
 			}
 			size = mono_class_native_size (sig->params[i]->data.klass, NULL);
 			if (size != 4) {
-				fprintf(stderr, "copy %d byte struct on stack\n", size);
+				DEBUG(fprintf(stderr, "copy %d byte struct on stack\n", size));
 				*use_memcpy = TRUE;
 				*code_size += 8*4;
 				*stack_size += (size + 3) & (~3);
@@ -319,7 +321,7 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 		if (!klass->enumtype) {
 			gint size = mono_class_native_size (klass, NULL);
 
-			fprintf(stderr, "retval value type size: %d\n", size);
+			DEBUG(fprintf(stderr, "retval value type size: %d\n", size));
 			if (size > 8) {
 				sparc_ld_imm (p, sparc_sp, stack_size - 12,
 					      sparc_o0);
@@ -331,7 +333,7 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 		}
 	}
 
-	fprintf(stderr, "%s\n", sig_to_name(sig, FALSE));
+	DEBUG(fprintf(stderr, "%s\n", sig_to_name(sig, FALSE)));
 
 	for (i = 0; i < sig->param_count; i++) {
 		if (sig->params[i]->byref) {
@@ -558,8 +560,8 @@ mono_create_method_pointer (MonoMethod *method)
 
 	p = code_buffer = g_malloc (code_size);
 
-	fprintf(stderr, "Delegate [start emiting] %s\n", method->name);
-	fprintf(stderr, "%s\n", sig_to_name(sig, FALSE));
+	DEBUG(fprintf(stderr, "Delegate [start emiting] %s\n", method->name));
+	DEBUG(fprintf(stderr, "%s\n", sig_to_name(sig, FALSE)));
 
 	p = emit_prolog (p, sig, stack_size);
 
@@ -752,7 +754,7 @@ mono_create_method_pointer (MonoMethod *method)
 
 	sparc_disassemble_code (code_buffer, p, method->name);
 
-	fprintf(stderr, "Delegate [end emiting] %s\n", method->name);
+	DEBUG(fprintf(stderr, "Delegate [end emiting] %s\n", method->name));
 
 	return ji->code_start;
 }
