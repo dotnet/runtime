@@ -976,14 +976,13 @@ verify_method (MonoMethod *m)
 	(guint64)(MYGUINT64_MAX) - (guint64)(b) < (guint64)(a) ? -1 : 0
 
 static MonoObject*
-interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params,
-			    MonoObject **exc)
+interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {
 	MonoInvocation frame;
 	MonoObject *retval = NULL;
 	MonoMethodSignature *sig = method->signature;
 	MonoClass *klass = mono_class_from_mono_type (sig->ret);
-	int i, type, isobject = 0;
+	int i, type, isobject = 0, string_ctor = 0;
 	void *ret;
 	stackval result;
 	stackval *args = alloca (sizeof (stackval) * sig->param_count);
@@ -992,6 +991,7 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params,
 
 	switch (sig->ret->type) {
 	case MONO_TYPE_VOID:
+		string_ctor = method->klass == mono_defaults.string_class && !strcmp (method->name, ".ctor");
 		break;
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
@@ -1079,9 +1079,9 @@ handle_enum:
 
 	INIT_FRAME(&frame,NULL,obj,args,&result,method);
 	ves_exec_method (&frame);
-	if (sig->ret->type == MONO_TYPE_VOID)
+	if (sig->ret->type == MONO_TYPE_VOID && !string_ctor)
 		return NULL;
-	if (isobject)
+	if (isobject || string_ctor)
 		return result.data.p;
 	stackval_to_data (sig->ret, &result, ret);
 	return retval;
@@ -2364,7 +2364,7 @@ ves_exec_method (MonoInvocation *frame)
 			case VAL_VALUET:
 				ves_abort();
 			case VAL_I32:
-				sp [-1].data.l = (guint64) sp [-1].data.i;
+				sp [-1].data.l = sp [-1].data.i & 0xffffffff;
 				break;
 			default:
 				sp [-1].data.l = (guint64) sp [-1].data.nati;
@@ -2611,6 +2611,8 @@ array_constructed:
 		CASE (CEE_THROW)
 			--sp;
 			frame->ex_handler = NULL;
+			if (!sp->data.p)
+				sp->data.p = mono_get_exception_null_reference ();
 			THROW_EX (sp->data.p, ip);
 			BREAK;
 		CASE (CEE_LDFLDA) /* Fall through */
@@ -3045,7 +3047,7 @@ array_constructed:
 				sp [0].type = VAL_I32;
 				break;
 			case CEE_LDELEM_I8:
-				sp [0].data.l = mono_array_get (o, gint64, aindex);
+				sp [0].data.l = mono_array_get (o, guint64, aindex);
 				sp [0].type = VAL_I64;
 				break;
 			case CEE_LDELEM_R4:
@@ -3212,7 +3214,7 @@ array_constructed:
 		CASE (CEE_CONV_OVF_I8)
 			/* FIXME: handle other cases */
 			if (sp [-1].type == VAL_I32) {
-				sp [-1].data.l = (guint64)sp [-1].data.l;
+				sp [-1].data.l = (guint64)sp [-1].data.i;
 				sp [-1].type = VAL_I64;
 			} else if(sp [-1].type == VAL_I64) {
 				/* defined as NOP */
@@ -3298,11 +3300,11 @@ array_constructed:
 			if (sp->type == VAL_I32) {
 				if (CHECK_ADD_OVERFLOW (sp [-1].data.i, GET_NATI (sp [0])))
 					THROW_EX (mono_get_exception_overflow (), ip);
-				sp [-1].data.i = (guint32)sp [-1].data.i + (guint32)GET_NATI (sp [0]);
+				sp [-1].data.i = (gint32)sp [-1].data.i + (gint32)GET_NATI (sp [0]);
 			} else if (sp->type == VAL_I64) {
 				if (CHECK_ADD_OVERFLOW64 (sp [-1].data.l, sp [0].data.l))
 					THROW_EX (mono_get_exception_overflow (), ip);
-				sp [-1].data.l = (guint64)sp [-1].data.l + (guint64)sp [0].data.l;
+				sp [-1].data.l = (gint64)sp [-1].data.l + (gint64)sp [0].data.l;
 			} else if (sp->type == VAL_DOUBLE)
 				sp [-1].data.f += sp [0].data.f;
 			else {
