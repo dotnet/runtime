@@ -669,7 +669,7 @@ ves_array_element_address (MonoInvocation *frame)
 }
 
 static void
-interp_walk_stack (MonoStackWalk func, gpointer user_data)
+interp_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data)
 {
 	ThreadContext *context = TlsGetValue (thread_context_id);
 	MonoInvocation *frame;
