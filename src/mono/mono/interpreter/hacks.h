@@ -1,5 +1,7 @@
 /* we need some special math function */
+#ifndef _ISOC99_SOURCE
 #define _ISOC99_SOURCE
+#endif
 #include <math.h>
 
 /* which are not defined on FreeBSD */

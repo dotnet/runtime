@@ -55,7 +55,7 @@ typedef struct {
 		MonoMethod *method;
 	} u;
 	gulong count;
-	gulong total;
+	double total;
 } MethodProfile;
 
 /* If true, then we output the opcodes as we interpret them */
@@ -595,7 +595,10 @@ dump_frame (MonoInvocation *inv)
 			opname = "";
 		} else {
 			MonoMethodHeader *hd = ((MonoMethodNormal *)inv->method)->header;
-			codep = *inv->ip == 0xfe? inv->ip [1] + 256: *inv->ip;
+			if (inv->ip)
+				codep = *(inv->ip) == 0xfe? inv->ip [1] + 256: *(inv->ip);
+			else
+				codep = 0;
 			opname = mono_opcode_names [codep];
 			codep = inv->ip - hd->code;
 		}
@@ -705,8 +708,10 @@ calc_offsets (MonoMethodHeader *header, MonoMethodSignature *signature)
 		g_print ("Leaving %s.%s::%s\n", klass->name_space, klass->name, frame->method->name);	\
 		debug_indent_level--;	\
 	}	\
-	if (profiling)	\
-		g_timer_stop (profile_info->u.timer)
+	if (profiling) {	\
+		g_timer_stop (profile_info->u.timer);	\
+		profile_info->total += g_timer_elapsed (profile_info->u.timer, NULL);	\
+	}
 
 #else
 
@@ -3633,13 +3638,12 @@ check_corlib (MonoImage *corlib)
 static gint
 compare_profile (MethodProfile *profa, MethodProfile *profb)
 {
-	return profb->total - profa->total;
+	return (gint)((profb->total - profa->total)*1000);
 }
 
 static void
 build_profile (MonoMethod *m, MethodProfile *prof, GList **funcs)
 {
-	g_timer_elapsed (prof->u.timer, &prof->total);
 	g_timer_destroy (prof->u.timer);
 	prof->u.method = m;
 	*funcs = g_list_insert_sorted (*funcs, prof, (GCompareFunc)compare_profile);
@@ -3656,11 +3660,11 @@ output_profile (GList *funcs)
 		g_print ("Method name\t\t\t\t\tTotal (ms) Calls Per call (ms)\n");
 	for (tmp = funcs; tmp; tmp = tmp->next) {
 		p = tmp->data;
-		g_snprintf (buf, sizeof (buf), "%s.%s::%s",
+		g_snprintf (buf, sizeof (buf), "%s.%s::%s(%d)",
 			p->u.method->klass->name_space, p->u.method->klass->name,
-			p->u.method->name);
-		printf ("%-52s %7ld %7ld %7ld\n", buf,
-			p->total/1000, p->count, p->total/p->count/1000);
+			p->u.method->name, p->u.method->signature->param_count);
+		printf ("%-52s %7d %7ld %7d\n", buf,
+			(gint)(p->total*1000), p->count, (gint)((p->total*1000)/p->count));
 	}
 }
 
@@ -3748,7 +3752,7 @@ main (int argc, char *argv [])
 	retval = ves_exec (assembly, argc - i, argv + i);
 #endif
 	if (profiling)
-		g_hash_table_foreach (profiling, build_profile, &profile);
+		g_hash_table_foreach (profiling, (GHFunc)build_profile, &profile);
 	output_profile (profile);
 	
 	mono_network_cleanup();

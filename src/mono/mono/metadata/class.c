@@ -774,9 +774,9 @@ mono_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_CHAR:
 		return mono_defaults.char_class;
 	case MONO_TYPE_I1:
-		return mono_defaults.byte_class;
-	case MONO_TYPE_U1:
 		return mono_defaults.sbyte_class;
+	case MONO_TYPE_U1:
+		return mono_defaults.byte_class;
 	case MONO_TYPE_I2:
 		return mono_defaults.int16_class;
 	case MONO_TYPE_U2:
