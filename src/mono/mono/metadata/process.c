@@ -223,7 +223,11 @@ static gpointer process_read_var_block (MonoObject *filever, gpointer data_ptr,
 	return(data_ptr);
 }
 
-/* Returns a pointer to the byte following the String block */
+/* Returns a pointer to the byte following the String block, or NULL
+ * if the data read hits padding.  We can't recover from this because
+ * the data length does not include padding bytes, so it's not
+ * possible to just return the start position + length.
+ */
 static gpointer process_read_string_block (MonoObject *filever,
 					   gpointer data_ptr,
 					   guint16 data_len,
@@ -301,6 +305,17 @@ static gpointer process_read_string_block (MonoObject *filever,
 		data_ptr=(gpointer)(((unsigned)data_ptr+3) & (~3));
 
 		data_ptr=process_get_versioninfo_block (data_ptr, &block);
+		if(block.data_len==0) {
+			/* We must have hit padding, so give up
+			 * processing now
+			 */
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION
+				   ": Hit 0-length block, giving up");
+#endif
+			return(NULL);
+		}
+		
 		string_len=string_len+block.data_len;
 		value=(gunichar2 *)data_ptr;
 		/* Skip over the value */
@@ -354,7 +369,11 @@ static gpointer process_read_string_block (MonoObject *filever,
 	return(data_ptr);
 }
 
-/* returns a pointer to the byte following the Stringtable block */
+/* returns a pointer to the byte following the Stringtable block, or
+ * NULL if the data read hits padding.  We can't recover from this
+ * because the data length does not include padding bytes, so it's not
+ * possible to just return the start position + length
+ */
 static gpointer process_read_stringtable_block (MonoObject *filever,
 						gpointer data_ptr,
 						guint16 data_len)
@@ -382,6 +401,16 @@ static gpointer process_read_stringtable_block (MonoObject *filever,
 		data_ptr=(gpointer)(((unsigned)data_ptr+3) & (~3));
 
 		data_ptr=process_get_versioninfo_block (data_ptr, &block);
+		if(block.data_len==0) {
+			/* We must have hit padding, so give up
+			 * processing now
+			 */
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION
+				   ": Hit 0-length block, giving up");
+#endif
+			return(NULL);
+		}
 		string_len=string_len+block.data_len;
 	
 		if(!memcmp (block.key, &uni_key, unicode_bytes (block.key)) ||
@@ -400,6 +429,14 @@ static gpointer process_read_stringtable_block (MonoObject *filever,
 			data_ptr=process_read_string_block (filever, data_ptr,
 							    block.data_len,
 							    FALSE);
+		}
+
+		if(data_ptr==NULL) {
+			/* Child block hit padding */
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": Child block hit 0-length block, giving up");
+#endif
+			return(NULL);
 		}
 	}
 		
@@ -531,6 +568,17 @@ static void process_get_fileversion (MonoObject *filever, MonoImage *image)
 		data_ptr=(gpointer)(((unsigned)data_ptr+3) & (~3));
 
 		data_ptr=process_get_versioninfo_block (data_ptr, &block);
+		if(block.data_len==0) {
+			/* We must have hit padding, so give up
+			 * processing now
+			 */
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION
+				   ": Hit 0-length block, giving up");
+#endif
+			return;
+		}
+		
 		data_len=data_len-block.data_len;
 
 		if(!memcmp (block.key, &var_key, unicode_bytes (block.key))) {
@@ -546,6 +594,14 @@ static void process_get_fileversion (MonoObject *filever, MonoImage *image)
 				   ": Not a valid VERSIONINFO child block");
 			return;
 #endif
+		}
+
+		if(data_ptr==NULL) {
+			/* Child block hit padding */
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": Child block hit 0-length block, giving up");
+#endif
+			return;
 		}
 	}
 }
