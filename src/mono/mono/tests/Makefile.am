@@ -22,6 +22,7 @@ TESTSRC=			\
 	exception2.cs		\
 	exception3.cs		\
 	exception4.cs		\
+	exception5.cs		\
 	struct.cs		\
 	static-constructor.cs	\
 	pinvoke.cs		\
