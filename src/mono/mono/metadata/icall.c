@@ -31,6 +31,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/unicode.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/gc.h>
 #include <mono/metadata/rand.h>
 #include <mono/metadata/sysmath.h>
 #include <mono/metadata/debug-symfile.h>
@@ -1601,6 +1602,7 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 		g_list_free (info.modifiers);
 		if (throwOnError) /* uhm: this is a parse error, though... */
 			mono_raise_exception (mono_get_exception_type_load ());
+		/*g_print ("failed parse\n");*/
 		return NULL;
 	}
 
@@ -1610,9 +1612,10 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 	if (!type) {
 		if (throwOnError)
 			mono_raise_exception (mono_get_exception_type_load ());
+		/* g_print ("failed find\n"); */
 		return NULL;
 	}
-	/*g_print ("got it\n");*/
+	/* g_print ("got it\n"); */
 	return mono_type_get_object (domain, type);
 
 }
@@ -1700,6 +1703,7 @@ ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, Mon
 			}
 			isbyref = 1;
 			p++;
+			g_free (str);
 			return mono_type_get_object (mono_domain_get (), &klass->this_arg);
 			break;
 		case '*':
@@ -2089,6 +2093,7 @@ ves_icall_IsTransparentProxy (MonoObject *proxy)
 	return 0;
 }
 
+
 /* icall map */
 
 static gconstpointer icall_map [] = {
@@ -2373,6 +2378,16 @@ static gconstpointer icall_map [] = {
 
 	"System.DateTime::GetNow", ves_icall_System_DateTime_GetNow,
 	"System.CurrentTimeZone::GetTimeZoneData", ves_icall_System_CurrentTimeZone_GetTimeZoneData,
+
+	/*
+	 * System.GC
+	 */
+	"System.GC::InternalCollect", ves_icall_System_GC_InternalCollect,
+	"System.GC::GetTotalMemory", ves_icall_System_GC_GetTotalMemory,
+	"System.GC::KeepAlive", ves_icall_System_GC_KeepAlive,
+	"System.GC::ReRegisterForFinalize", ves_icall_System_GC_ReRegisterForFinalize,
+	"System.GC::SuppressFinalize", ves_icall_System_GC_SuppressFinalize,
+	"System.GC::WaitForPendingFinalizers", ves_icall_System_GC_WaitForPendingFinalizers,
 
 	/*
 	 * System.Security.Cryptography calls

@@ -55,6 +55,7 @@ struct _MonoClass {
 	guint valuetype       : 1; /* derives from System.ValueType */
 	guint enumtype        : 1; /* derives from System.Enum */
 	guint ghcimpl         : 1; /* class has its own GetHashCode impl */ 
+	guint has_finalize    : 1; /* class has its own Finalize impl */ 
 	guint marshalbyref    : 1; /* class is a MarshalByRefObject */
 	guint contextbound    : 1; /* class is a ContextBoundObject */
 	guint delegate        : 1; /* class is a Delegate */

@@ -354,6 +354,8 @@ mono_class_init (MonoClass *class)
 	MonoMethod **vtable;
 	int i, max_vtsize = 0, max_iid, cur_slot = 0;
 	static MonoMethod *default_ghc = NULL;
+	static MonoMethod *default_finalize = NULL;
+	static int finalize_slot = -1;
 	static int ghc_slot = -1;
 
 	g_assert (class);
@@ -717,7 +719,31 @@ mono_class_init (MonoClass *class)
 		if (vtable [ghc_slot] == default_ghc) {
 			class->ghcimpl = 0;
 		}
+	}
 
+	if (!default_finalize) {
+		if (class == mono_defaults.object_class) { 
+		       
+			for (i = 0; i < class->vtable_size; ++i) {
+				MonoMethod *cm = vtable [i];
+	       
+				if (!strcmp (cm->name, "Finalize")) {
+					finalize_slot = i;
+					break;
+				}
+			}
+
+			g_assert (finalize_slot > 0);
+
+			default_finalize = vtable [finalize_slot];
+		}
+	}
+
+	/* Object::Finalize should have empty implemenatation */
+	class->has_finalize = 0;
+	if (class != mono_defaults.object_class) { 
+		if (vtable [finalize_slot] != default_finalize)
+			class->has_finalize = 1;
 	}
 }
 
@@ -1099,7 +1125,7 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec)
 		class = mono_class_from_mono_type (type->data.type);
 		break;
 	default:
-		g_warning ("implement me: %08x", type->type);
+		g_warning ("implement me: %08x (from typespec: %08x)", type->type, type_spec);
 		g_assert_not_reached ();		
 	}
 
@@ -1122,27 +1148,27 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	MonoClass *eclass;
 	MonoImage *image;
 	MonoClass *class;
-	static MonoClass *parent = NULL;
-	guint32 key;
+	MonoClass *parent = NULL;
+	GSList *list;
 	int rnum = 0;
 
 	eclass = mono_class_from_mono_type (element_type);
 	g_assert (rank <= 255);
 
-	if (!parent)
-		parent = mono_defaults.array_class;
+	parent = mono_defaults.array_class;
 
 	if (!parent->inited)
 		mono_class_init (parent);
 
 	image = eclass->image;
 
-	g_assert (!eclass->type_token ||
-		  mono_metadata_token_table (eclass->type_token) == MONO_TABLE_TYPEDEF);
-
-	key = ((rank & 0xff) << 24) | (eclass->type_token & 0xffffff);
-	if ((class = g_hash_table_lookup (image->array_cache, GUINT_TO_POINTER (key))))
-		return class;
+	if ((list = g_hash_table_lookup (image->array_cache, element_type))) {
+		for (; list; list = list->next) {
+			class = list->data;
+			if (class->rank == rank)
+				return class;
+		}
+	}
 	
 	class = g_malloc0 (sizeof (MonoClass) + parent->vtable_size * sizeof (gpointer));
 
@@ -1174,8 +1200,9 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	}
 	class->this_arg = class->byval_arg;
 	class->this_arg.byref = 1;
-	
-	g_hash_table_insert (image->array_cache, GUINT_TO_POINTER (key), class);
+
+	list = g_slist_append (list, class);
+	g_hash_table_insert (image->array_cache, &class->element_class->byval_arg, list);
 	return class;
 }
 

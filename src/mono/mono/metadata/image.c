@@ -393,7 +393,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 	image->method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->class_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->name_cache = g_hash_table_new (g_str_hash, g_str_equal);
-	image->array_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
+	image->array_cache = g_hash_table_new (mono_metadata_type_hash, mono_metadata_type_equal);
 
 	header = &iinfo->cli_header;
 		
