@@ -7,6 +7,8 @@ CSC=csc
 BENCHSRC=fib.cs random.cs nested-loops.cs 
 
 TESTSRC=			\
+	array-init.cs		\
+	field-layout.cs		\
 	test-ops.cs		\
 	obj.cs			\
 	switch.cs		\
