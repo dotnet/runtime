@@ -3,7 +3,7 @@ using System;
 public class Tests {
 
 	public static int test (int n) {
-		if ((n % 2) == 0)
+		if ((n & 1) == 0)
 			return 2;
 		else
 			return 1;
@@ -19,10 +19,12 @@ public class Tests {
 		Console.WriteLine ("Repeat = " + repeat);
 
 		for (int i = 0; i < repeat; i++)
-			for (int j = 0; j < 500000000; j++)
-				sum += test (1234);
+			for (int j = 0; j < 50000000; j++)
+				sum += test (j);
 
-		if (sum != 1000000000)
+		
+		Console.WriteLine (sum);
+		if (sum != (75000000 * repeat))
 			return 1;
 		
 		return 0;
