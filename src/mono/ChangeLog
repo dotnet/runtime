@@ -1,3 +1,12 @@
+2004-02-19  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Add proper support for --with-nptl for people who
+	have linking problems when it is enabled.
+
+2004-02-18  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Add test for __thread keyword and shared libs.
+
 2004-02-16  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Enable --with-nptl by default.
