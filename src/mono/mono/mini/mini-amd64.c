@@ -1295,7 +1295,7 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 }
 
 /* FIXME: Add more instructions */
-#define INST_IGNORES_CFLAGS(ins) (((ins)->opcode == CEE_BR) || ((ins)->opcode == OP_STORE_MEMBASE_IMM) || ((ins)->opcode == OP_STOREI8_MEMBASE_REG))
+#define INST_IGNORES_CFLAGS(ins) (((ins)->opcode == CEE_BR) || ((ins)->opcode == OP_STORE_MEMBASE_IMM) || ((ins)->opcode == OP_STOREI8_MEMBASE_REG) || ((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_SETREG) || ((ins)->opcode == OP_ICONST) || ((ins)->opcode == OP_I8CONST) || ((ins)->opcode == OP_LOAD_MEMBASE))
 
 static void
 peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
@@ -1310,7 +1310,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_I8CONST:
 			/* reg = 0 -> XOR (reg, reg) */
 			/* XOR sets cflags on x86, so we cant do it always */
-			if (ins->inst_c0 == 0 && ins->next && INST_IGNORES_CFLAGS (ins->next)) {
+			if (ins->inst_c0 == 0 && (ins->next && INST_IGNORES_CFLAGS (ins->next))) {
 				ins->opcode = CEE_XOR;
 				ins->sreg1 = ins->dreg;
 				ins->sreg2 = ins->dreg;
