@@ -2384,7 +2384,11 @@ ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly,
 		aname->name = mono_string_new (mono_object_domain (assembly), "mscorlib");
 	else
 		aname->name = mono_string_new (mono_object_domain (assembly), name->name);
+
 	aname->major = name->major;
+	aname->minor = name->minor;
+	aname->build = name->build;
+	aname->revision = name->revision;
 }
 
 static MonoArray*
