@@ -207,6 +207,9 @@ typedef struct {
 gpointer*
 mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs);
 
+void
+mono_amd64_exceptions_init (void);
+
 /* FIXME: */
 //#define MONO_ARCH_BIGMUL_INTRINS 1
 
