@@ -1,5 +1,6 @@
 2004-05-28  Duncan Mak  <duncan@ximian.com>
 
+	* runtime/Makefile.am: 
 	* scripts/Makefile.am: Include mono-find-provides and
 	mono-find-requires.
 	
