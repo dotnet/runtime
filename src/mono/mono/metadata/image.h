@@ -13,7 +13,7 @@ typedef struct {
 	const char *hash_value;
 	guint32 hash_len;
 	guint32 flags;
-	gint16 major, minor, build, revision;
+	guint16 major, minor, build, revision;
 } MonoAssemblyName;
 
 typedef struct {
