@@ -1,5 +1,9 @@
 * Java
 
+	<b>This is an outline on how to support Java, actual
+	implementations of ideas like this can be found <a href="http://radio.weblogs.com/0109845/">here</a></b>
+
+
 	It would be interesting to support the Java language as part
 	of the Mono project.  
 

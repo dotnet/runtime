@@ -14,7 +14,7 @@
 
 	<ul>
 		* <a href="#JavaScript">Java Script</a>
-		* <a href="java.html">Java</a>
+		* <a href="#java.html">Java</a>
 		* <a href="#c">C</a>
 	</ul>
 
@@ -23,6 +23,13 @@
 	<ul>
 		* <a href="#Tachy">Tachy</a> (scheme-like)
 	</ul>
+
+<a name="Java">
+** Java
+
+	There is a very interesting project to make a JavaVM for .NET
+	<a href="http://radio.weblogs.com/0109845/">here</a>
+
 
 <a name="MonoLogo">
 ** MonoLogo

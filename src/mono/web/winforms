@@ -1,9 +1,20 @@
 * System.Windows.Forms
 
-	System.Windows.Forms eventually will support multiple
-	toolkits.  Ximian will be delivering a product that will allow
-	for System.Windows.Forms applications to integrate with GNOME
-	through Gtk and MacOS X using Cocoa.
+	System.Windows.Forms is currently being implemented using the
+	Win32 API, we will be using <a
+	href="http://www.winehq.com">WineLib</a> on Unix systems to
+	emulate the Win32 API.
+	
+	Although the original plans were to use Gtk on X and Cocoa on
+	MacOS X, it would be very hard to emulate the event model in
+	which some Winforms applications depend, and it would be very
+	hard to implement the Wndproc method.  
+
+	In terms of integrating visually with the desktop, we are
+	hoping to contribute to the Wine project an mechanism to make
+	it use the Gtk+ themes on X11 and Cocoa on MacOS to render the
+	widgets, and get the native look and feel on each of these
+	platforms. 
 
 	There are no current plans to support embedded devices, but
 	Gtk/FrameBuffer is an option.  If you have suggestions or
@@ -12,19 +23,15 @@
 
 * Contributing
 
-	Currently Ximian developers are busy making our JIT engine
-	feature complete, and dealing with the low-level details of
-	the Mono runtime.
-
-	If you are interested in contributing, you can start stubbing
-	out classes and providing enumerations.  That will help us
-	significantly when we start working on the actual bindings.  
-
-	Christian Meyer is currently organizing this effort.
+	The Winforms effort is being coordinated by <a
+	href="DENNISH@Raytek.com">Dennis Hayes</a>.  If you are
+	interested in helping out with this effort, get in touch with
+	him.
 
 * System.Drawing
 
-	Using existing libraries to implement some of the functionality required
+	Using existing libraries to implement some of the
+	functionality required:
 
 	<ul>
 		* gdk-pixbuf is a generic image loader that loads an image
@@ -75,12 +82,13 @@
                 MacOS
                         System.Drawing.Blah
                                 MacOS ports of "System.Drawing.Blah"
-                Win32
+                WineLIB
                         System.Drawing.Blah
                                 Win32 ports of "System.Drawing.Blah"
 
-	Then we use nant targets to include/exclude the right set of
-	files to create the assembly.
+	Notice that there is a proof of concept Gtk-backend for
+	Windows.Forms, but nobody is working on it, and for the
+	reasons stated before it is not a long term strategy.
 
 * Open questions:
 
