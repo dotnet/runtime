@@ -31,298 +31,285 @@ static gboolean mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolea
 static gboolean _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGenericClass *g2,
 						    gboolean signature_only);
 
-/*
- * Encoding of the "description" argument:
- *
- * identifier [CODE ARG]
- *
- * If CODE is ':', then a lookup on table ARG is performed
- * If CODE is '=', then a lookup in the aliased-table ARG is performed
- * If CODE is '#', then this encodes a flag, ARG is the flag name. 
- *
- * Aliased table for example is `CustomAttributeType' which depending on the
- * information might refer to different tables.
- */
-
-const static MonoMetaTable AssemblySchema [] = {
-	{ MONO_MT_UINT32,     "HashId" },
-	{ MONO_MT_UINT16,     "Major" },  
-	{ MONO_MT_UINT16,     "Minor" },
-	{ MONO_MT_UINT16,     "BuildNumber" },
-	{ MONO_MT_UINT16,     "RevisionNumber" },
-	{ MONO_MT_UINT32,     "Flags" },
-	{ MONO_MT_BLOB_IDX,   "PublicKey" },
-	{ MONO_MT_STRING_IDX, "Name" },
-	{ MONO_MT_STRING_IDX, "Culture" },
-	{ MONO_MT_END, NULL }
+const static unsigned char AssemblySchema [] = {
+	MONO_MT_UINT32,     /* "HashId" }, */
+	MONO_MT_UINT16,     /* "Major" },  */
+	MONO_MT_UINT16,     /* "Minor" }, */
+	MONO_MT_UINT16,     /* "BuildNumber" }, */
+	MONO_MT_UINT16,     /* "RevisionNumber" }, */
+	MONO_MT_UINT32,     /* "Flags" }, */
+	MONO_MT_BLOB_IDX,   /* "PublicKey" }, */
+	MONO_MT_STRING_IDX, /* "Name" }, */
+	MONO_MT_STRING_IDX, /* "Culture" }, */
+	MONO_MT_END
 };
 	
-const static MonoMetaTable AssemblyOSSchema [] = {
-	{ MONO_MT_UINT32,     "OSPlatformID" },
-	{ MONO_MT_UINT32,     "OSMajor" },
-	{ MONO_MT_UINT32,     "OSMinor" },
-	{ MONO_MT_END, NULL }
+const static unsigned char AssemblyOSSchema [] = {
+	MONO_MT_UINT32,     /* "OSPlatformID" }, */
+	MONO_MT_UINT32,     /* "OSMajor" }, */
+	MONO_MT_UINT32,     /* "OSMinor" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable AssemblyProcessorSchema [] = {
-	{ MONO_MT_UINT32,     "Processor" },
-	{ MONO_MT_END, NULL }
+const static unsigned char AssemblyProcessorSchema [] = {
+	MONO_MT_UINT32,     /* "Processor" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable AssemblyRefSchema [] = {
-	{ MONO_MT_UINT16,     "Major" },
-	{ MONO_MT_UINT16,     "Minor" },
-	{ MONO_MT_UINT16,     "Build" },
-	{ MONO_MT_UINT16,     "Revision" },
-	{ MONO_MT_UINT32,     "Flags" },
-	{ MONO_MT_BLOB_IDX,   "PublicKeyOrToken" },
-	{ MONO_MT_STRING_IDX, "Name" },
-	{ MONO_MT_STRING_IDX, "Culture" },
-	{ MONO_MT_BLOB_IDX,   "HashValue" },
-	{ MONO_MT_END, NULL }
+const static unsigned char AssemblyRefSchema [] = {
+	MONO_MT_UINT16,     /* "Major" }, */
+	MONO_MT_UINT16,     /* "Minor" }, */
+	MONO_MT_UINT16,     /* "Build" }, */
+	MONO_MT_UINT16,     /* "Revision" }, */
+	MONO_MT_UINT32,     /* "Flags" }, */
+	MONO_MT_BLOB_IDX,   /* "PublicKeyOrToken" }, */
+	MONO_MT_STRING_IDX, /* "Name" }, */
+	MONO_MT_STRING_IDX, /* "Culture" }, */
+	MONO_MT_BLOB_IDX,   /* "HashValue" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable AssemblyRefOSSchema [] = {
-	{ MONO_MT_UINT32,     "OSPlatformID" },
-	{ MONO_MT_UINT32,     "OSMajorVersion" },
-	{ MONO_MT_UINT32,     "OSMinorVersion" },
-	{ MONO_MT_TABLE_IDX,  "AssemblyRef:AssemblyRef" },
-	{ MONO_MT_END, NULL }
+const static unsigned char AssemblyRefOSSchema [] = {
+	MONO_MT_UINT32,     /* "OSPlatformID" }, */
+	MONO_MT_UINT32,     /* "OSMajorVersion" }, */
+	MONO_MT_UINT32,     /* "OSMinorVersion" }, */
+	MONO_MT_TABLE_IDX,  /* "AssemblyRef:AssemblyRef" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable AssemblyRefProcessorSchema [] = {
-	{ MONO_MT_UINT32,     "Processor" },
-	{ MONO_MT_TABLE_IDX,  "AssemblyRef:AssemblyRef" },
-	{ MONO_MT_END, NULL }	
+const static unsigned char AssemblyRefProcessorSchema [] = {
+	MONO_MT_UINT32,     /* "Processor" }, */
+	MONO_MT_TABLE_IDX,  /* "AssemblyRef:AssemblyRef" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable ClassLayoutSchema [] = {
-	{ MONO_MT_UINT16,     "PackingSize" },
-	{ MONO_MT_UINT32,     "ClassSize" },
-	{ MONO_MT_TABLE_IDX,  "Parent:TypeDef" },
-	{ MONO_MT_END, NULL }
+const static unsigned char ClassLayoutSchema [] = {
+	MONO_MT_UINT16,     /* "PackingSize" }, */
+	MONO_MT_UINT32,     /* "ClassSize" }, */
+	MONO_MT_TABLE_IDX,  /* "Parent:TypeDef" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable ConstantSchema [] = {
-	{ MONO_MT_UINT8,      "Type" },
-	{ MONO_MT_UINT8,      "PaddingZero" },
-	{ MONO_MT_CONST_IDX,  "Parent" },
-	{ MONO_MT_BLOB_IDX,   "Value" },
-	{ MONO_MT_END, NULL }
+const static unsigned char ConstantSchema [] = {
+	MONO_MT_UINT8,      /* "Type" }, */
+	MONO_MT_UINT8,      /* "PaddingZero" }, */
+	MONO_MT_CONST_IDX,  /* "Parent" }, */
+	MONO_MT_BLOB_IDX,   /* "Value" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable CustomAttributeSchema [] = {
-	{ MONO_MT_HASCAT_IDX, "Parent" },
-	{ MONO_MT_CAT_IDX,    "Type" },
-	{ MONO_MT_BLOB_IDX,   "Value" },
-	{ MONO_MT_END, NULL }
+const static unsigned char CustomAttributeSchema [] = {
+	MONO_MT_HASCAT_IDX, /* "Parent" }, */
+	MONO_MT_CAT_IDX,    /* "Type" }, */
+	MONO_MT_BLOB_IDX,   /* "Value" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable DeclSecuritySchema [] = {
-	{ MONO_MT_UINT16,     "Action" },
-	{ MONO_MT_HASDEC_IDX, "Parent" },
-	{ MONO_MT_BLOB_IDX,   "PermissionSet" },
-	{ MONO_MT_END, NULL }	
+const static unsigned char DeclSecuritySchema [] = {
+	MONO_MT_UINT16,     /* "Action" }, */
+	MONO_MT_HASDEC_IDX, /* "Parent" }, */
+	MONO_MT_BLOB_IDX,   /* "PermissionSet" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable EventMapSchema [] = {
-	{ MONO_MT_TABLE_IDX,  "Parent:TypeDef" },
-	{ MONO_MT_TABLE_IDX,  "EventList:Event" },
-	{ MONO_MT_END, NULL }	
+const static unsigned char EventMapSchema [] = {
+	MONO_MT_TABLE_IDX,  /* "Parent:TypeDef" }, */
+	MONO_MT_TABLE_IDX,  /* "EventList:Event" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable EventSchema [] = {
-	{ MONO_MT_UINT16,     "EventFlags#EventAttribute" },
-	{ MONO_MT_STRING_IDX, "Name" },
-	{ MONO_MT_TABLE_IDX,  "EventType" }, /* TypeDef or TypeRef */
-	{ MONO_MT_END, NULL }	
+const static unsigned char EventSchema [] = {
+	MONO_MT_UINT16,     /* "EventFlags#EventAttribute" }, */
+	MONO_MT_STRING_IDX, /* "Name" }, */
+	MONO_MT_TABLE_IDX,  /* "EventType" }, TypeDef or TypeRef  */
+	MONO_MT_END
 };
 
-const static MonoMetaTable ExportedTypeSchema [] = {
-	{ MONO_MT_UINT32,     "Flags" },
-	{ MONO_MT_TABLE_IDX,  "TypeDefId" },
-	{ MONO_MT_STRING_IDX, "TypeName" },
-	{ MONO_MT_STRING_IDX, "TypeNameSpace" },
-	{ MONO_MT_IMPL_IDX,   "Implementation" },
-	{ MONO_MT_END, NULL }	
+const static unsigned char ExportedTypeSchema [] = {
+	MONO_MT_UINT32,     /* "Flags" }, */
+	MONO_MT_TABLE_IDX,  /* "TypeDefId" }, */
+	MONO_MT_STRING_IDX, /* "TypeName" }, */
+	MONO_MT_STRING_IDX, /* "TypeNameSpace" }, */
+	MONO_MT_IMPL_IDX,   /* "Implementation" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable FieldSchema [] = {
-	{ MONO_MT_UINT16,     "Flags" },
-	{ MONO_MT_STRING_IDX, "Name" },
-	{ MONO_MT_BLOB_IDX,   "Signature" },
-	{ MONO_MT_END, NULL }	
+const static unsigned char FieldSchema [] = {
+	MONO_MT_UINT16,     /* "Flags" }, */
+	MONO_MT_STRING_IDX, /* "Name" }, */
+	MONO_MT_BLOB_IDX,   /* "Signature" }, */
+	MONO_MT_END
 };
-const static MonoMetaTable FieldLayoutSchema [] = {
-	{ MONO_MT_UINT32,     "Offset" },
-	{ MONO_MT_TABLE_IDX,  "Field:Field" },
-	{ MONO_MT_END, NULL }	
-};
-
-const static MonoMetaTable FieldMarshalSchema [] = {
-	{ MONO_MT_HFM_IDX,    "Parent" },
-	{ MONO_MT_BLOB_IDX,   "NativeType" },
-	{ MONO_MT_END, NULL }	
-};
-const static MonoMetaTable FieldRVASchema [] = {
-	{ MONO_MT_UINT32,     "RVA" },
-	{ MONO_MT_TABLE_IDX,  "Field:Field" },
-	{ MONO_MT_END, NULL }	
+const static unsigned char FieldLayoutSchema [] = {
+	MONO_MT_UINT32,     /* "Offset" }, */
+	MONO_MT_TABLE_IDX,  /* "Field:Field" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable FileSchema [] = {
-	{ MONO_MT_UINT32,     "Flags" },
-	{ MONO_MT_STRING_IDX, "Name" },
-	{ MONO_MT_BLOB_IDX,   "Value" }, 
-	{ MONO_MT_END, NULL }
+const static unsigned char FieldMarshalSchema [] = {
+	MONO_MT_HFM_IDX,    /* "Parent" }, */
+	MONO_MT_BLOB_IDX,   /* "NativeType" }, */
+	MONO_MT_END
+};
+const static unsigned char FieldRVASchema [] = {
+	MONO_MT_UINT32,     /* "RVA" }, */
+	MONO_MT_TABLE_IDX,  /* "Field:Field" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable ImplMapSchema [] = {
-	{ MONO_MT_UINT16,     "MappingFlag" },
-	{ MONO_MT_MF_IDX,     "MemberForwarded" },
-	{ MONO_MT_STRING_IDX, "ImportName" },
-	{ MONO_MT_TABLE_IDX,  "ImportScope:ModuleRef" },
-	{ MONO_MT_END, NULL }
+const static unsigned char FileSchema [] = {
+	MONO_MT_UINT32,     /* "Flags" }, */
+	MONO_MT_STRING_IDX, /* "Name" }, */
+	MONO_MT_BLOB_IDX,   /* "Value" },  */
+	MONO_MT_END
 };
 
-const static MonoMetaTable InterfaceImplSchema [] = {
-	{ MONO_MT_TABLE_IDX,  "Class:TypeDef" }, 
-	{ MONO_MT_TDOR_IDX,  "Interface=TypeDefOrRef" },
-	{ MONO_MT_END, NULL }
+const static unsigned char ImplMapSchema [] = {
+	MONO_MT_UINT16,     /* "MappingFlag" }, */
+	MONO_MT_MF_IDX,     /* "MemberForwarded" }, */
+	MONO_MT_STRING_IDX, /* "ImportName" }, */
+	MONO_MT_TABLE_IDX,  /* "ImportScope:ModuleRef" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable ManifestResourceSchema [] = {
-	{ MONO_MT_UINT32,     "Offset" },
-	{ MONO_MT_UINT32,     "Flags" },
-	{ MONO_MT_STRING_IDX, "Name" },
-	{ MONO_MT_IMPL_IDX,   "Implementation" },
-	{ MONO_MT_END, NULL }
+const static unsigned char InterfaceImplSchema [] = {
+	MONO_MT_TABLE_IDX,  /* "Class:TypeDef" },  */
+	MONO_MT_TDOR_IDX,  /* "Interface=TypeDefOrRef" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable MemberRefSchema [] = {
-	{ MONO_MT_MRP_IDX,    "Class" },
-	{ MONO_MT_STRING_IDX, "Name" },
-	{ MONO_MT_BLOB_IDX,   "Signature" },
-	{ MONO_MT_END, NULL }
+const static unsigned char ManifestResourceSchema [] = {
+	MONO_MT_UINT32,     /* "Offset" }, */
+	MONO_MT_UINT32,     /* "Flags" }, */
+	MONO_MT_STRING_IDX, /* "Name" }, */
+	MONO_MT_IMPL_IDX,   /* "Implementation" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable MethodSchema [] = {
-	{ MONO_MT_UINT32,     "RVA" },
-	{ MONO_MT_UINT16,     "ImplFlags#MethodImplAttributes" },
-	{ MONO_MT_UINT16,     "Flags#MethodAttribute" },
-	{ MONO_MT_STRING_IDX, "Name" },
-	{ MONO_MT_BLOB_IDX,   "Signature" },
-	{ MONO_MT_TABLE_IDX,  "ParamList:Param" },
-	{ MONO_MT_END, NULL }
+const static unsigned char MemberRefSchema [] = {
+	MONO_MT_MRP_IDX,    /* "Class" }, */
+	MONO_MT_STRING_IDX, /* "Name" }, */
+	MONO_MT_BLOB_IDX,   /* "Signature" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable MethodImplSchema [] = {
-	{ MONO_MT_TABLE_IDX,  "Class:TypeDef" },
-	{ MONO_MT_MDOR_IDX,   "MethodBody" },
-	{ MONO_MT_MDOR_IDX,   "MethodDeclaration" },
-	{ MONO_MT_END, NULL }
+const static unsigned char MethodSchema [] = {
+	MONO_MT_UINT32,     /* "RVA" }, */
+	MONO_MT_UINT16,     /* "ImplFlags#MethodImplAttributes" }, */
+	MONO_MT_UINT16,     /* "Flags#MethodAttribute" }, */
+	MONO_MT_STRING_IDX, /* "Name" }, */
+	MONO_MT_BLOB_IDX,   /* "Signature" }, */
+	MONO_MT_TABLE_IDX,  /* "ParamList:Param" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable MethodSemanticsSchema [] = {
-	{ MONO_MT_UINT16,     "MethodSemantic" },
-	{ MONO_MT_TABLE_IDX,  "Method:Method" },
-	{ MONO_MT_HS_IDX,     "Association" },
-	{ MONO_MT_END, NULL }
+const static unsigned char MethodImplSchema [] = {
+	MONO_MT_TABLE_IDX,  /* "Class:TypeDef" }, */
+	MONO_MT_MDOR_IDX,   /* "MethodBody" }, */
+	MONO_MT_MDOR_IDX,   /* "MethodDeclaration" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable ModuleSchema [] = {
-	{ MONO_MT_UINT16,     "Generation" },
-	{ MONO_MT_STRING_IDX, "Name" },
-	{ MONO_MT_GUID_IDX,   "MVID" },
-	{ MONO_MT_GUID_IDX,   "EncID" },
-	{ MONO_MT_GUID_IDX,   "EncBaseID" },
-	{ MONO_MT_END, NULL }
+const static unsigned char MethodSemanticsSchema [] = {
+	MONO_MT_UINT16,     /* "MethodSemantic" }, */
+	MONO_MT_TABLE_IDX,  /* "Method:Method" }, */
+	MONO_MT_HS_IDX,     /* "Association" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable ModuleRefSchema [] = {
-	{ MONO_MT_STRING_IDX, "Name" },
-	{ MONO_MT_END, NULL }
+const static unsigned char ModuleSchema [] = {
+	MONO_MT_UINT16,     /* "Generation" }, */
+	MONO_MT_STRING_IDX, /* "Name" }, */
+	MONO_MT_GUID_IDX,   /* "MVID" }, */
+	MONO_MT_GUID_IDX,   /* "EncID" }, */
+	MONO_MT_GUID_IDX,   /* "EncBaseID" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable NestedClassSchema [] = {
-	{ MONO_MT_TABLE_IDX,  "NestedClass:TypeDef" },
-	{ MONO_MT_TABLE_IDX,  "EnclosingClass:TypeDef" },
-	{ MONO_MT_END, NULL }
+const static unsigned char ModuleRefSchema [] = {
+	MONO_MT_STRING_IDX, /* "Name" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable ParamSchema [] = {
-	{ MONO_MT_UINT16,     "Flags" },
-	{ MONO_MT_UINT16,     "Sequence" },
-	{ MONO_MT_STRING_IDX, "Name" },
-	{ MONO_MT_END, NULL }	
+const static unsigned char NestedClassSchema [] = {
+	MONO_MT_TABLE_IDX,  /* "NestedClass:TypeDef" }, */
+	MONO_MT_TABLE_IDX,  /* "EnclosingClass:TypeDef" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable PropertySchema [] = {
-	{ MONO_MT_UINT16,     "Flags" },
-	{ MONO_MT_STRING_IDX, "Name" },
-	{ MONO_MT_BLOB_IDX,   "Type" },
-	{ MONO_MT_END, NULL }	
+const static unsigned char ParamSchema [] = {
+	MONO_MT_UINT16,     /* "Flags" }, */
+	MONO_MT_UINT16,     /* "Sequence" }, */
+	MONO_MT_STRING_IDX, /* "Name" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable PropertyMapSchema [] = {
-	{ MONO_MT_TABLE_IDX,  "Parent:TypeDef" },
-	{ MONO_MT_TABLE_IDX,  "PropertyList:Property" },
-	{ MONO_MT_END, NULL }
+const static unsigned char PropertySchema [] = {
+	MONO_MT_UINT16,     /* "Flags" }, */
+	MONO_MT_STRING_IDX, /* "Name" }, */
+	MONO_MT_BLOB_IDX,   /* "Type" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable StandaloneSigSchema [] = {
-	{ MONO_MT_BLOB_IDX,   "Signature" },
-	{ MONO_MT_END, NULL }
+const static unsigned char PropertyMapSchema [] = {
+	MONO_MT_TABLE_IDX,  /* "Parent:TypeDef" }, */
+	MONO_MT_TABLE_IDX,  /* "PropertyList:Property" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable TypeDefSchema [] = {
-	{ MONO_MT_UINT32,     "Flags" },
-	{ MONO_MT_STRING_IDX, "Name" },
-	{ MONO_MT_STRING_IDX, "Namespace" },
-	{ MONO_MT_TDOR_IDX,   "Extends" },
-	{ MONO_MT_TABLE_IDX,  "FieldList:Field" },
-	{ MONO_MT_TABLE_IDX,  "MethodList:Method" },
-	{ MONO_MT_END, NULL }
+const static unsigned char StandaloneSigSchema [] = {
+	MONO_MT_BLOB_IDX,   /* "Signature" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable TypeRefSchema [] = {
-	{ MONO_MT_RS_IDX,     "ResolutionScope=ResolutionScope" },
-	{ MONO_MT_STRING_IDX, "Name" },
-	{ MONO_MT_STRING_IDX, "Namespace" },
-	{ MONO_MT_END, NULL }
+const static unsigned char TypeDefSchema [] = {
+	MONO_MT_UINT32,     /* "Flags" }, */
+	MONO_MT_STRING_IDX, /* "Name" }, */
+	MONO_MT_STRING_IDX, /* "Namespace" }, */
+	MONO_MT_TDOR_IDX,   /* "Extends" }, */
+	MONO_MT_TABLE_IDX,  /* "FieldList:Field" }, */
+	MONO_MT_TABLE_IDX,  /* "MethodList:Method" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable TypeSpecSchema [] = {
-	{ MONO_MT_BLOB_IDX,   "Signature" },
-	{ MONO_MT_END, NULL }
+const static unsigned char TypeRefSchema [] = {
+	MONO_MT_RS_IDX,     /* "ResolutionScope=ResolutionScope" }, */
+	MONO_MT_STRING_IDX, /* "Name" }, */
+	MONO_MT_STRING_IDX, /* "Namespace" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable GenericParamSchema [] = {
-	{ MONO_MT_UINT16,     "Number" },
-	{ MONO_MT_UINT16,     "Flags" },
-	{ MONO_MT_TABLE_IDX,  "Owner" }, /* TypeDef or MethodDef */
-	{ MONO_MT_STRING_IDX, "Name" },
+const static unsigned char TypeSpecSchema [] = {
+	MONO_MT_BLOB_IDX,   /* "Signature" }, */
+	MONO_MT_END
+};
+
+const static unsigned char GenericParamSchema [] = {
+	MONO_MT_UINT16,     /* "Number" }, */
+	MONO_MT_UINT16,     /* "Flags" }, */
+	MONO_MT_TABLE_IDX,  /* "Owner" },  TypeDef or MethodDef */
+	MONO_MT_STRING_IDX, /* "Name" }, */
 
 	/* soon to be removed */
-	{ MONO_MT_TABLE_IDX,  "Kind" }, 
+	MONO_MT_TABLE_IDX,  /* "Kind" },  */
 	
-	{ MONO_MT_END, NULL }
+	MONO_MT_END
 };
 
-const static MonoMetaTable MethodSpecSchema [] = {
-	{ MONO_MT_MDOR_IDX,   "Method" },
-	{ MONO_MT_BLOB_IDX,   "Signature" },
-	{ MONO_MT_END, NULL }
+const static unsigned char MethodSpecSchema [] = {
+	MONO_MT_MDOR_IDX,   /* "Method" }, */
+	MONO_MT_BLOB_IDX,   /* "Signature" }, */
+	MONO_MT_END
 };
 
-const static MonoMetaTable GenericParamConstraintSchema [] = {
-	{ MONO_MT_TABLE_IDX,  "GenericParam" },
-	{ MONO_MT_TDOR_IDX,   "Constraint" },
-	{ MONO_MT_END, NULL }
+const static unsigned char GenericParamConstraintSchema [] = {
+	MONO_MT_TABLE_IDX,  /* "GenericParam" }, */
+	MONO_MT_TDOR_IDX,   /* "Constraint" }, */
+	MONO_MT_END
 };
 
 const static struct {
-	const MonoMetaTable *table;
+	const unsigned char *description;
 	const char    *name;
 } tables [] = {
 	/*  0 */ { ModuleSchema,               "Module" },
@@ -420,9 +407,9 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 	int size = 0, field_size = 0;
 	int i, n, code;
 	int shift = 0;
-	const MonoMetaTable *table = tables [tableindex].table;
+	const unsigned char *description = tables [tableindex].description;
 
-	for (i = 0; (code = table [i].code) != MONO_MT_END; i++){
+	for (i = 0; (code = description [i]) != MONO_MT_END; i++){
 		switch (code){
 		case MONO_MT_UINT32:
 			field_size = 4; break;
@@ -783,22 +770,6 @@ const char *
 mono_metadata_locate_token (MonoImage *meta, guint32 token)
 {
 	return mono_metadata_locate (meta, token >> 24, token & 0xffffff);
-}
-
-/**
- * mono_metadata_get_table:
- * @table: table to retrieve
- *
- * Returns: the MonoMetaTable structure for table @table
- */
-const MonoMetaTable *
-mono_metadata_get_table (MonoMetaTableEnum table)
-{
-	int x = (int) table;
-
-	g_return_val_if_fail ((x > 0) && (x <= MONO_TABLE_LAST), NULL);
-
-	return tables [table].table;
 }
 
 /**

@@ -62,17 +62,10 @@ enum {
 	MONO_MT_RS_IDX
 };
 
-typedef struct {
-	int   code;
-	const char *def;
-} MonoMetaTable;
-
 const char *mono_meta_table_name (int table);
 
 /* Internal functions */
 void           mono_metadata_compute_table_bases (MonoImage *meta);
-
-const MonoMetaTable *mono_metadata_get_table    (MonoMetaTableEnum table);
 
 #endif /* __MONO_METADATA_PRIVATE_H__ */
 
