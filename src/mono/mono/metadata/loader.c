@@ -382,11 +382,14 @@ mono_lookup_pinvoke_call (MonoMethod *method)
 	gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
 
 	if (!gmodule) {
+		gchar *error = g_strdup (g_module_error ());
 		if (!(gmodule=g_module_open (scope, G_MODULE_BIND_LAZY))) {
-			g_warning ("Failed to load library %s (%s)", full_name, scope);
+			g_warning ("Failed to load library %s (%s): %s", full_name, scope, error);
+			g_free (error);
 			g_free (full_name);
 			return NULL;
 		}
+		g_free (error);
 	}
 	g_free (full_name);
 
