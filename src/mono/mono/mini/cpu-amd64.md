@@ -111,11 +111,11 @@ not: dest:i src1:i len:3 clob:1
 conv.i1: dest:i src1:i len:4
 conv.i2: dest:i src1:i len:4
 conv.i4: dest:i src1:i len:3
-conv.i8:
-conv.r4: dest:f src1:i len:8
-conv.r8: dest:f src1:i len:8
+conv.i8: dest:i src1:i len:3
+conv.r4: dest:f src1:i len:9
+conv.r8: dest:f src1:i len:9
 conv.u4: dest:i src1:i
-conv.u8:
+conv.u8: dest:i src1:i len:3
 callvirt:
 cpobj:
 ldobj:
@@ -355,8 +355,8 @@ long_conv_to_i1:
 long_conv_to_i2:
 long_conv_to_i4:
 long_conv_to_i8:
-long_conv_to_r4:
-long_conv_to_r8:
+long_conv_to_r4: dest:f src1:i len:8
+long_conv_to_r8: dest:f src1:i len:8
 long_conv_to_u4:
 long_conv_to_u8:
 long_conv_to_u2:
@@ -425,8 +425,8 @@ float_sub: dest:f src1:f src2:f len:3
 float_mul: dest:f src1:f src2:f len:3
 float_div: dest:f src1:f src2:f len:3
 float_div_un: dest:f src1:f src2:f len:3
-float_rem: dest:f src1:f src2:f len:18
-float_rem_un: dest:f src1:f src2:f len:18
+float_rem: dest:f src1:f src2:f len:19
+float_rem_un: dest:f src1:f src2:f len:19
 float_neg: dest:f src1:f len:3
 float_not: dest:f src1:f len:3
 float_conv_to_i1: dest:i src1:f len:49
@@ -501,6 +501,7 @@ x86_mul_membase: dest:i src1:i src2:b clob:1 len:14
 amd64_icompare_membase_reg: src1:b src2:i len:7
 amd64_icompare_membase_imm: src1:b len:12
 amd64_icompare_reg_membase: src1:i src2:b len:7
+amd64_set_xmmreg: src1:f len:9
 adc: dest:i src1:i src2:i len:3 clob:1
 addcc: dest:i src1:i src2:i len:3 clob:1
 subcc: dest:i src1:i src2:i len:3 clob:1

@@ -167,7 +167,8 @@ typedef struct sigcontext MonoContext;
 
 #endif
 
-#define MONO_ARCH_BIGMUL_INTRINS 1
+/* FIXME: */
+//#define MONO_ARCH_BIGMUL_INTRINS 1
 
 #endif /* __MONO_MINI_AMD64_H__ */  
 

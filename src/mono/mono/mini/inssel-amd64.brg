@@ -70,40 +70,22 @@ stmt: OP_ENDFILTER (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_STIND_I8 (OP_REGVAR, lreg) {
+stmt: CEE_STIND_I8 (OP_REGVAR, reg) {
 	/* this should only happen for methods returning a long */
 	MONO_EMIT_NEW_UNALU (s, OP_MOVE, X86_EAX, state->right->reg1);
 	MONO_EMIT_NEW_UNALU (s, OP_MOVE, X86_EDX, state->right->reg2);
 }
 
-lreg: OP_LNEG (lreg) "3" {
-	int tmpr = mono_regstate_next_int (s->rs);
-	MONO_EMIT_NEW_UNALU (s, CEE_NEG, state->reg1, state->left->reg1);
-	MONO_EMIT_BIALU_IMM (s, tree, OP_ADC_IMM, tmpr, state->left->reg2, 0);
-	MONO_EMIT_NEW_UNALU (s, CEE_NEG, state->reg2, tmpr);
+freg: OP_LCONV_TO_R8 (reg) {
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
-freg: OP_LCONV_TO_R8 (lreg) {
-	MONO_EMIT_NEW_UNALU (s, OP_X86_PUSH, -1, state->left->reg2);
-	MONO_EMIT_NEW_UNALU (s, OP_X86_PUSH, -1, state->left->reg1);
-	tree->opcode = OP_X86_FP_LOAD_I8;
-	tree->inst_basereg = X86_ESP;
-	tree->inst_offset = 0;
+freg: OP_LCONV_TO_R4 (reg) {
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, X86_ESP, X86_ESP, 8);
-}
-
-freg: OP_LCONV_TO_R4 (lreg) {
-	MONO_EMIT_NEW_UNALU (s, OP_X86_PUSH, -1, state->left->reg2);
-	MONO_EMIT_NEW_UNALU (s, OP_X86_PUSH, -1, state->left->reg1);
-	tree->opcode = OP_X86_FP_LOAD_I8;
-	tree->inst_basereg = X86_ESP;
-	tree->inst_offset = 0;
-	mono_bblock_add_inst (s->cbb, tree);
-	/* change precision */
-	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER4_MEMBASE_REG, X86_ESP, 0, state->reg1);
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADR4_MEMBASE, state->reg1, X86_ESP, 0);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, X86_ESP, X86_ESP, 8);
 }
 
 freg: CEE_CONV_R_UN (reg) {
@@ -171,7 +153,7 @@ stmt: OP_SETRET (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: OP_SETRET (lreg) {
+stmt: OP_SETRET (reg) {
 	MONO_EMIT_NEW_UNALU (s, OP_MOVE, X86_EDX, state->left->reg2);
 	tree->opcode = OP_MOVE;
 	tree->sreg1 = state->left->reg1;
@@ -187,6 +169,10 @@ stmt: OP_SETRET (CEE_LDIND_REF (OP_REGVAR)) {
 }
 
 stmt: OP_SETRET (freg) {
+	tree->opcode = OP_AMD64_SET_XMMREG;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = 0; /* %xmm0 */
+	mono_bblock_add_inst (s->cbb, tree);	
 	/* nothing to do */
 }
 
@@ -235,7 +221,7 @@ stmt: OP_OUTARG (CEE_LDIND_I (OP_REGVAR)) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: OP_OUTARG (lreg) {
+stmt: OP_OUTARG (reg) {
 	MONO_EMIT_NEW_UNALU (s, OP_X86_PUSH, -1, state->left->reg2);
 	tree->opcode = OP_X86_PUSH;
 	tree->sreg1 = state->left->reg1;
@@ -672,27 +658,27 @@ reg: CEE_MUL(reg, CEE_LDIND_I4 (base)) {
 	mono_bblock_add_inst (s->cbb, tree);
 } 
 
-lreg: OP_LSHL (lreg, reg) "0" {
+reg: OP_LSHL (reg, reg) "0" {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
 
-lreg: OP_LSHL (lreg, OP_ICONST) "0" {
+reg: OP_LSHL (reg, OP_ICONST) "0" {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_LSHL_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
 }
 
-lreg: OP_LSHR (lreg, reg) "0" {
+reg: OP_LSHR (reg, reg) "0" {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
 
-lreg: OP_LSHR (lreg, OP_ICONST) "0" {
+reg: OP_LSHR (reg, OP_ICONST) "0" {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_LSHR_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
 }
 
-lreg: OP_LSHR_UN (lreg, reg) "0" {
+reg: OP_LSHR_UN (reg, reg) "0" {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
 
-lreg: OP_LSHR_UN (lreg, OP_ICONST) "0" {
+reg: OP_LSHR_UN (reg, OP_ICONST) "0" {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_LSHR_UN_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
 }
 %%

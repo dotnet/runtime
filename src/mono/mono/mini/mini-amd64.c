@@ -1,5 +1,7 @@
 /*
- * mini-x86.c: x86 backend for the Mono code generator
+ * mini-amd64.c: AMD64 backend for the Mono code generator
+ *
+ * Based on mini-x86.c.
  *
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)
@@ -633,7 +635,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 			switch (ainfo->storage) {
 			case ArgInIReg:
-			case ArgInIRegPair:
+			case ArgInSSEReg:
 				inst->opcode = OP_REGVAR;
 				inst->dreg = ainfo->reg;
 				break;
@@ -2265,26 +2267,17 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 static unsigned char*
 emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int size, gboolean is_signed)
 {
-	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 4);
+	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 8);
 	x86_fnstcw_membase(code, AMD64_RSP, 0);
 	amd64_mov_reg_membase (code, dreg, AMD64_RSP, 0, 2);
 	amd64_alu_reg_imm (code, X86_OR, dreg, 0xc00);
 	amd64_mov_membase_reg (code, AMD64_RSP, 2, dreg, 2);
 	amd64_fldcw_membase (code, AMD64_RSP, 2);
-	if (size == 8) {
-		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 8);
-		amd64_fist_pop_membase (code, AMD64_RSP, 0, TRUE);
-		amd64_pop_reg (code, dreg);
-		/* FIXME: need the high register 
-		 * amd64_pop_reg (code, dreg_high);
-		 */
-	} else {
-		amd64_push_reg (code, AMD64_RAX); // SP = SP - 4
-		amd64_fist_pop_membase (code, AMD64_RSP, 0, FALSE);
-		amd64_pop_reg (code, dreg);
-	}
+	amd64_push_reg (code, AMD64_RAX); // SP = SP - 8
+	amd64_fist_pop_membase (code, AMD64_RSP, 0, size == 8);
+	amd64_pop_reg (code, dreg);
 	amd64_fldcw_membase (code, AMD64_RSP, 0);
-	amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 4);
+	amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 8);
 
 	if (size == 1)
 		amd64_widen_reg (code, dreg, dreg, is_signed, FALSE);
@@ -2369,6 +2362,27 @@ mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 		if (tree->dreg != AMD64_RAX && sreg != AMD64_RAX)
 			amd64_pop_reg (code, AMD64_RAX);
 	}
+	return code;
+}
+
+static guint32*
+emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint32 *code)
+{
+	guint32 offset;
+
+	/* Move return value to the target register */
+	/* FIXME: do this in the local reg allocator */
+	switch (ins->opcode) {
+	case OP_FCALL:
+	case OP_FCALL_REG:
+	case OP_FCALL_MEMBASE:
+		/* FIXME: optimize this */
+		offset = mono_spillvar_offset_float (cfg, 0);
+		amd64_movsd_membase_reg (code, AMD64_RBP, offset, AMD64_XMM0);
+		amd64_fld_membase (code, AMD64_RBP, offset, TRUE);
+		break;
+	}
+
 	return code;
 }
 
@@ -2546,6 +2560,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_U2:
 			amd64_widen_reg (code, ins->dreg, ins->sreg1, FALSE, TRUE);
 			break;
+		case CEE_CONV_U8:
+			/* Clean out the upper word */
+			amd64_mov_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
+			break;
+		case CEE_CONV_I8:
+			amd64_movsxd_reg_reg (code, ins->dreg, ins->sreg1);
+			break;			
 		case OP_COMPARE:
 		case OP_LCOMPARE:
 			amd64_alu_reg_reg (code, X86_CMP, ins->sreg1, ins->sreg2);
@@ -2698,21 +2719,33 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_shift_reg (code, X86_SAR, ins->dreg);
 			break;
 		case OP_SHR_IMM:
+			g_assert (amd64_is_imm32 (ins->inst_imm));
+			amd64_shift_reg_imm_size (code, X86_SAR, ins->dreg, ins->inst_imm, 4);
+			break;
 		case OP_LSHR_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_shift_reg_imm (code, X86_SAR, ins->dreg, ins->inst_imm);
 			break;
 		case OP_SHR_UN_IMM:
+			g_assert (amd64_is_imm32 (ins->inst_imm));
+			amd64_shift_reg_imm_size (code, X86_SHR, ins->dreg, ins->inst_imm, 4);
+			break;
 		case OP_LSHR_UN_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_shift_reg_imm (code, X86_SHR, ins->dreg, ins->inst_imm);
 			break;
 		case CEE_SHR_UN:
+			g_assert (ins->sreg2 == AMD64_RCX);
+			amd64_shift_reg_size (code, X86_SHR, ins->dreg, 4);
+			break;
 		case OP_LSHR_UN:
 			g_assert (ins->sreg2 == AMD64_RCX);
 			amd64_shift_reg (code, X86_SHR, ins->dreg);
 			break;
 		case OP_SHL_IMM:
+			g_assert (amd64_is_imm32 (ins->inst_imm));
+			amd64_shift_reg_imm_size (code, X86_SHL, ins->dreg, ins->inst_imm, 4);
+			break;
 		case OP_LSHL_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_shift_reg_imm (code, X86_SHL, ins->dreg, ins->inst_imm);
@@ -2911,9 +2944,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SETREG:
 			amd64_mov_reg_reg (code, ins->dreg, ins->sreg1, sizeof (gpointer));
 			break;
-		case OP_AMD64_SET_XMMREG:
-			g_assert_not_reached ();
+		case OP_AMD64_SET_XMMREG: {
+			/* FIXME: optimize this */
+			guint32 offset = mono_spillvar_offset_float (cfg, 0);
+			amd64_fst_membase (code, AMD64_RBP, offset, TRUE, TRUE);
+			/* ins->dreg is set to -1 by the reg allocator */
+			amd64_movsd_reg_membase (code, ins->unused, AMD64_RBP, offset);
 			break;
+		}
 		case CEE_CONV_U4:
 			g_assert_not_reached ();
 		case CEE_JMP: {
@@ -2980,6 +3018,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_CALL ();
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, call->stack_usage);
+			code = emit_move_return_value (cfg, ins, code);
 			break;
 		case OP_FCALL_REG:
 		case OP_LCALL_REG:
@@ -2990,6 +3029,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_call_reg (code, ins->sreg1);
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, call->stack_usage);
+			code = emit_move_return_value (cfg, ins, code);
 			break;
 		case OP_FCALL_MEMBASE:
 		case OP_LCALL_MEMBASE:
@@ -3000,6 +3040,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_call_membase (code, ins->sreg1, ins->inst_offset);
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, call->stack_usage);
+			code = emit_move_return_value (cfg, ins, code);
 			break;
 		case OP_OUTARG:
 		case OP_X86_PUSH:
@@ -3202,6 +3243,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_fild_membase (code, AMD64_RSP, 0, FALSE);
 			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 4);
 			break;
+		case OP_LCONV_TO_R4: /* FIXME: change precision */
+		case OP_LCONV_TO_R8:
+			amd64_push_reg (code, ins->sreg1);
+			amd64_fild_membase (code, AMD64_RSP, 0, TRUE);
+			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 4);
+			break;
 		case OP_X86_FP_LOAD_I8:
 			amd64_fild_membase (code, ins->inst_basereg, ins->inst_offset, TRUE);
 			break;
@@ -3225,18 +3272,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_float_to_int (cfg, code, ins->dreg, 4, TRUE);
 			break;
 		case OP_FCONV_TO_I8:
-			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 4);
-			x86_fnstcw_membase(code, AMD64_RSP, 0);
-			amd64_mov_reg_membase (code, ins->dreg, AMD64_RSP, 0, 2);
-			amd64_alu_reg_imm (code, X86_OR, ins->dreg, 0xc00);
-			amd64_mov_membase_reg (code, AMD64_RSP, 2, ins->dreg, 2);
-			amd64_fldcw_membase (code, AMD64_RSP, 2);
-			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 8);
-			amd64_fist_pop_membase (code, AMD64_RSP, 0, TRUE);
-			amd64_pop_reg (code, ins->dreg);
-			amd64_pop_reg (code, ins->unused);
-			amd64_fldcw_membase (code, AMD64_RSP, 0);
-			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 4);
+			code = emit_float_to_int (cfg, code, ins->dreg, 8, TRUE);
 			break;
 		case OP_LCONV_TO_R_UN: { 
 			static guint8 mn[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x3f, 0x40 };
@@ -3919,6 +3955,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		if ((ainfo->storage == ArgInIReg) && (inst->opcode != OP_REGVAR)) {
 			/* Argument in register, but need to be saved to stack */
 			amd64_mov_membase_reg (code, inst->inst_basereg, inst->inst_offset, ainfo->reg, sizeof (gpointer));
+		}
+		if ((ainfo->storage == ArgInSSEReg) && (inst->opcode != OP_REGVAR)) {
+			/* Argument in register, but need to be saved to stack */
+			amd64_movsd_membase_reg (code, inst->inst_basereg, inst->inst_offset, ainfo->reg);
 		}
 
 		if (inst->opcode == OP_REGVAR) {
