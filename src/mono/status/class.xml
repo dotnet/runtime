@@ -1421,20 +1421,20 @@
     </class>
     <class name="System.Collections.ReadOnlyCollectionBase">
         <last-activity>Aug-03-2001</last-activity>
-        <implementation>no</implementation>
-        <test-suite>no</test-suite>
-        <completion>?</completion>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>100</completion>
         <maintainers>
-            <maintainer>nick@jobdragon.com</maintainer>
+            <maintainer>ndrochak@gol.com</maintainer>
         </maintainers>
     </class>
     <class name="System.Collections.CollectionBase">
         <last-activity>Aug-03-2001</last-activity>
-        <implementation>no</implementation>
-        <test-suite>no</test-suite>
-        <completion>?</completion>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>100</completion>
         <maintainers>
-            <maintainer>nick@jobdragon.com</maintainer>
+            <maintainer>ndrochak@gol.com</maintainer>
         </maintainers>
     </class>
 
