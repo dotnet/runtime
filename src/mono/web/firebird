@@ -1,0 +1,37 @@
+* Firebird and Interbase Data Provider
+
+<ul>
+	<li>Does not exist in Mono, but is a separate project
+	
+	<li><a href="http://sourceforge.net/projects/firebase-net/">Firebird and Interbase
+	Data Provider</a> for Microsoft .NET and Mono
+	
+	<li><a href="http://firebird.sourceforge.net/index.php">Firebird Relational Database</a> is 
+	an independent project which uses source code based on the Interbase source code released
+	by Borland under the Interbase Public License.
+</ul>
+
+* Current Status
+
+<ul>
+	<li>Currently, it is able to connect to Firebird and Interbase databases 
+	   and execute commands
+	   
+	<li>The new data
+ provider/driver is written in C# and provides a high-performance native
+ implementation of the GDS32/API functions. This means that .Net developers
+ will be able to access Firebird databases without the need of Firebird
+ client install. In support of the new module, a new mailing list
+ "firebird-net-provider" has been created. Please use this list for any 
+ questions that you may have about the provider. This provider has been made
+ available by Carlos Guzmán Álvarez (aka "Carlos G.A."), who has also made a
+ number of contributions to the OdbcJdbc code.
+</ul>   
+   
+* Action Plan
+
+<ul>
+	<li>Get it to work on Mono too
+	
+	<li>TODO
+</ul>	

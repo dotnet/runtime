@@ -1,0 +1,48 @@
+* Sybase Data Provider
+
+<ul>
+	<li>ADO.NET Provider for Sybase SQL Server databases
+
+	<li>Exists in namespace Mono.Data.SybaseClient and assembly Mono.Data.SybaseClient
+	
+	<li>Created by Tim Coleman
+	
+	<li>Used the <a href="http://www.freetds.org/">FreeTDS</a> and 
+	<a href="http://jtds.sourceforge.net/">jTDS</a> projects as resources.
+	
+	<li>Implemented in 100% C#
+	
+	<li>Is similar to the Mono.Data.TdsClient and System.Data.SqlClient providers.
+	
+	<li>Uses TDS Protocol Version 5.0
+	
+	<li><a href="http://www.go-mono.com/tds-providers.html">Design of the Microsoft SQL Server, Sybase, and TDS Providers in Mono</a>
+</ul>
+
+* Current Status
+	
+<ul>	
+	<li>Able to connect to Sybase databases
+	
+	<li>SQL commands can be executed
+	via ExecuteNonQuery() of a SybaseCommand.
+	
+	<li>SQL aggregates can be executed and a single row and single column
+	result can be retrieved via ExecuteScalar() of a SybaseCommand
+	
+	<li>SQL queries can be executed via ExecuteReader() and results 
+	can be retrieved via SybaseDataReader.
+	
+	<li>a DataTable with schema info about a result can be gotten via GetSchemaTable()
+	in a SybaseDataReader
+	
+	<li>Data can be filled in a DataTable in a DataSet via a SybaseDataAdapter
+</ul>
+
+* Action plan
+
+<ul>
+	<li>Connection timeouts is being developed now.
+
+	<li>TODO
+</ul>

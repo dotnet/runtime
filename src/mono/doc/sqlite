@@ -1,0 +1,28 @@
+* SQL Lite Data Provider
+
+<ul>
+	<li>Exists in namespace and assembly Mono.Data.SqliteClient
+	
+	<li>Created by Vladimir Vukicevic
+	
+	<li><a href"http://www.hwaci.com/sw/sqlite/download.html">SQL Lite</a>
+	binaries exist for Linux and Windows.  sqlite.dll on Windows 
+	and sqlite.so on Linux.
+</ul>
+
+* Current Status
+
+<ul>
+	<li>Able to connect, execute commands, and retrieve data...
+	
+	<li>Works in mPhoto
+</ul>
+
+* Action Plan
+
+<ul>
+	<li>Create a DataAdapter for SQL Lite named SqliteDataAdapter that can be used to 
+	Fill a DataTable in a DataSet
+	
+	<li>TODO
+</ul>

@@ -11,234 +11,86 @@
 
 * Action plan
 
-	The current plan to implement ADO.NET is as follows:
+	<p>The current plan to implement ADO.NET is as follows:
 
-	<b>Step 1:</b><a href="http://msdn.microsoft.com/library/en-us/cpref/html/frlrfSystemDataOleDb.asp?frame=true">System.Data.OleDb</a> Provider:
+	<ul>
+		<li>Either create ADO.NET providers or modify pre-exiting ADO.NET providers to
+		work with Mono
 		
+		<ul>
+			<li>Create ADO.NET Providers
+			
+			<ul>
+					<li><a href="http://www.go-mono.com/mysql.html">MySQL</a>
+					<li><a href="http://www.go-mono.com/odbc.html">ODBC</a>
+					<li><a href="http://www.go-mono.com/oledb.html">OLE DB</a>
+					<li><a href="http://www.go-mono.com/postgresql.html">PostgreSQL</a>
+					<li><a href="http://www.go-mono.com/sqlclient.html">Microsoft SQL Server</a>
+					<li><a href="http://www.go-mono.com/sqlite.html">SQL Lite</a>
+					<li><a href="http://www.go-mono.com/sybase.html">Sybase</a>
+					<li><a href="http://www.go-mono.com/tdsclient.html">TDS Generic</a>
+					<li>Providers which we do not have, but we would like to have.  Currently,
+					some of these databases are supported via the ODBC or OLEDB providers.
+					<ul>
+						<li><a href="http://www-3.ibm.com/software/data/db2/">IBM DB2 Universal Database</a>
+						<li>miniSQL
+						<li><a href="http://www.oracle.com/">Oracle</a> - could be done by creating C# bindings to OCI (Oracle C Call Level Interface)
+						<li>BerkeleyDB (Sleepycat)
+						<li><a href="http://www.sapdb.org/">SapDB</a>
+						<li>Microsoft Access - could be done by creating C# bindings to <a href="http://mdbtools.sourceforge.net">MDB Tools</a>
+						<li>dbase or xbase type database files
+						<li>Others, of course, are welcomed...
+		  
+					</ul>
+				</ul>
+				<br>
+			<li>Modify Pre-existing ADO.NET Providers to work with Mono.  This may
+			require fixing or implementing areas of Mono too.
+				<ul>
+					<li><a href="http://www.go-mono.com/firebird.html">Firebird Interbase</a>
+					<li><a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a> a PostgreSQL provider
+					written in 100% C#
+					<li><a href="http://sourceforge.net/projects/mysqldrivercs/">MySQLDriverCS</a> is a MySQL provider written in C#
+					<li><a href="http://sourceforge.net/projects/mysqlnet/">MySQLNet</a> is a MySQL Manager provider written in C#
+				</ul>
+		</ul>
+	<br>
+	<li>Create Tools for Configuration, Testing, and Entering SQL Queries  
 	<ul>
-		* <p>On Unix systems: System.Data.OleDb uses the
-		<a href="http://www.gnome-db.org/">LibGDA</a>
-		 engine.   This provider was started by Rodrigo Moya and Tim Coleman.
-
-		  <p>LibGDA is a data access engine like ADO/OLE-DB, but for Unix.  The 
-		  GDA in libGDA stands for GNU/GNOME Data Access, but it does not require GNOME.
-		  It only requires glib2 and libxml2.  LibGDA is used by 
-		  libgnomedb, GNOME-DB, and gaSQL.  glib2 and libxml2 both work on Linux
-		  and Windows.
-		  
-		  <p>There is work under way to get libgda working under 
-		  Windows using Cygwin by the GNOME-DB developers, but we have not
-		  been successful yet.
-		  
-		  <p>LibGDA has providers for 
-		  <a href="http://www.mysql.com/">MySQL</a>, 
-		  <a href="http://www.postgresql.org/">PostgreSQL</a>, 
-		  XML, 
-		  ODBC (via <a href="http://www.unixodbc.org/">unixODBC</a>),
-		  <a href="http://www.oracle.com/">Oracle</a>, 
-		  <a href="http://www.borland.com/products/downloads/download_interbase.html">Interbase</a>, 
-		  <a href="http://www.sybase.com/downloads">Sybase</a> and 
-		  <a href="http://www.microsoft.com/sql/default.asp">Microsoft SQL Server</a> (
-		  via <a href="http://www.freetds.org/">FreeTDS</a>), 
-		  <a href="http://www-3.ibm.com/software/data/db2/">IBM DB2 Universal Database</a>,
-		  <a href="http://www.hwaci.com/sw/sqlite/download.html">SQL Lite</a>,
-		  and <a href="http://www.microsoft.com/office/access/default.asp">MS Access</a> 
-		  (via <a href="http://mdbtools.sourceforge.net/">MDB Tools</a>).
-		  
-	</ul>
-
-	<b>Step 2:</b> <a href="http://msdn.microsoft.com/library/en-us/cpref/html/frlrfsystemdatasqlclient.asp?frame=true">System.Data.SqlClient</a> Provider:
-
-	<ul>
-		* <p>System.Data.SqlClient will become a
-		  provider for Microsoft SQL Server, both on Windows and
-		  Linux, to be compatible with applications written
-		  for the Microsoft .NET Development Framework.
-
-		* <p>The <a href="http://wwww.go-mono.com/tds-providers.html">SqlClient and SybaseClient Design</a>
-		  states that System.Data.SqlClient will be written completely in
-		  C#.  FreeTDS and jTDS projects will be used as references on how to
-		  implement the TDS protocol.  SqlClient will use common internal code with SybaseClient
-		  and TdsClient.
-	  
-		* <p><a href="http://www.freetds.org/">FreeTDS</a> 
-		  is a collection of free native C libraries: tds, dblib, 
-		  and ctlib for accessing TDS protocol databases like
-		  Microsoft SQL Server and Sybase.
-		  
-		* <p><a href="http://jtds.sf.net/">jTDS</a> 
-		  is a 100% Java JDBC Provider implementing the TDS protocol
-		  which allows data access to Microsoft SQL Server and
-		  Sybase databases.	  
-		  
-	</ul>
-
-	<b>Step 3:</b> <a href="http://msdn.microsoft.com/downloads/sample.asp?url=/MSDN-FILES/027/001/668/msdncompositedoc.xml&frame=true">System.Data.Odbc</a> Provider:
-	
-	<ul>
-		* An ADO.NET Provider for ODBC has been created in
-		  System.Data.Odbc by Brian Ritchie for those using ODBC.
-		  
-		* <p>On Unix, the provider uses <a href="http://www.unixodbc.org/">unixODBC</a> 
-		  for its ODBC connectivity.  The ODBC provider uses the libodbc.dll that
-		  comes with unixODBC.  
-		  
-		  <p>There is an alternative to unixODBC, <a href="http://www.iodbc.org/">iODBC</a>, 
-		  but it has not been tested with the ODBC provider.
-		
-		* On Windows, the provider uses the native ODBC libraries (odbc32.dll) that comes 
-		  with Windows since unixODBC is supposed to be compatible with that.
-		  If you do not have odbc32.dll on Windows, get the latest MDAC 
-		  from Microsoft.  
-		  
-		* <p>The mapping between these native shared libraries is handled 
-		  in etc/mono/config
-		  
-		  <p>In mono cvs, the file is mono/data/config.in	  		  
-		  
-		  <p>unixODBC has providers for:
-		  Oracle, Microsoft SQL Server and Sybase (via FreeTDS), 
-		  MySQL, PostgreSQL, Informix, IBM DB2 Universal Database, 
-		  Interbase, miniSQL (mSQL), AdabasD, Empress, Ingres, Sap DB, and others.
-		  
-	</ul>
-
-	<b>Step 4:</b> Other ADO.NET providers:
-
-	<p>The idea in Microsoft .NET System.Data is to have
-		  a managed provider for each supported DBMS.
-		  
-		  <ul>
-		  
-		  <li><p>System.Data.SqlClient for Microsoft SQL Server.  See the
-		  Mono.Data.TdsClient provider.
-		  
-		  <li><p>Mono.Data.TdsClient for older Microsoft SQL Server
-		  and Sybase databases.  This has been started by Tim Coleman
-		  and will provide the functionality for System.Data.SqlClient
-		  and Mono.Data.SybaseClient.
-		  
-		  <li><p>Mono.Data.SybaseClient for Sybase SQL Server.  See the
-		  Mono.Data.TdsClient provider.
-		  	  
-		  <li><p>Mono.Data.PostgreSqlClient for PostgreSQL.  Started by
-		  Rodrigo Moya, Daniel Morgan, and Tim Coleman.  This provider 
-		  uses the PostgreSQL C API (libpq.so on Linux and pq.dll on
-		  Windows).
-          
-          <li><p>Mono.Data.MySql for MySQL client/server database.  Started by
-          Daniel Morgan using C# Bindings to MySQL from Brad Meril.  
-          This provider uses the MySQL C API (libmysqlclient.so on
-          Linux and libmySQL.dll on Windows).
-          
-          <li><p>Mono.Data.SqliteClient for the SQL Lite database.  Started by
-          Vladimir Vukicevic.  This provider uses 
-          <a href"http://www.hwaci.com/sw/sqlite/download.html">SQL Lite</a> database engine.
-          It is used in mPhoto.
-          
-          </ul>
-          
-          <p>See Current Status for more information on these providers.
-          
-		  <p>Some providers we would like to have are
-		  Mono.Data.DB2, Mono.Data.miniSQL,  
-		  System.Data.OracleClient, Mono.Data.Interbase,
-		  Mono.Data.Berkeley, and SapDB.
-		  Others, of course, are welcomed.
-		  		  
-	</ul>
-
-	<b>Step 5:</b> Create tools for ADO.NET
-
-	<ul>
-		* <p><b>SQL# CLI - a command-line tool</b> to execute SQL commands,
+		<li><b>SQL# CLI - a command-line tool</b> to execute SQL commands,
 		  test connection strings, and connect to various ADO.NET
-		  providers in Mono.  The SQL# CLI has been started on and can be found in 
+		  providers in Mono.  The SQL# CLI can be found in
 		  mcs/tools/SqlSharp/SqlSharpCli.cs
 		  It is written in C# and runs on Mono and .NET
 
-		* <p><b>SQL# GUI - a GUI tool</b> to execute SQL commands.  This
-		  has not been started.  The idea is to use the GnomeDbSqlEditor,
-		  GnomeDbBrowser, and GnomeDbGrid gtk+ widgets that exists 
-		  in libgnomedb# that is part of gtk#.  However, we could base it
-		  on System.Windows.Forms, but System.Windows.Forms in Mono 
-		  is not as complete as gtk#.  
-		
-          <p>libgnomedb uses libgda for its data model and data access capabilities and
-          can be found <a href="http://www.gnome-db.org/">here</a>.  libgnomedb#
-          and gda# are part of <a href="http://gtk-sharp.sourceforge.net/">gtk#</a>
-          libgnomedb# is the C# bindings to libgnomedb which is a gtk+ GUI 
-          widget library for data access.       
-          gda# is the C# bindings to libgda which is a generic data access
-          library that has providers for many databases.
+		<li><p><b>SQL# GUI - a GUI tool</b> to execute SQL commands. 
+		  Currently, there is SQL# For GTK# which
+		  can be found at 
+		  mcs/tools/SqlSharp/gui/gtk-sharp.  It has a SQL editor with 
+		  syntax hi lighting of SQL keywords
           
-		* <p><b>Configuration Command-Line and GUI Tools for ADO.NET</b>.  
-		  These tools have
-		  not been started.  They could become a part of SQL# though.  The
-		  configuration tool can be used to set up DSNs for the ODBC and OLE-DB
-		  providers and configurations for 
-		  their underlying libraries (unixODBC and libgda). The configuration
-		  tool could set database client library configurations too, such as,
-		  freetds.conf for Microsoft SQL Server and Sybase, 
-		  The tools would be written in C# and run on Mono.
+		<li><b>Configuration Command-Line and GUI Tools for ADO.NET</b>.  
+		  These tools have not been started.  The tools would be written in
+		  C# and run on Mono. The
+		  configuration tool can be used to do the following:
+		  <ul> 
+			<li>setup DSNs for the ODBC and OLE-DB
+				providers and configurations for 
+				their underlying libraries (unixODBC and libgda)
+		    <li>setup configurations for the Mono.Data.ProviderFactory
+				that Brian Ritchie created
+		    <li>setup native database client library configurations too, such as,
+				freetds.conf for Microsoft SQL Server and Sybase
+		  </ul>
 		
 	</ul>
+</ul>
 	
 * Current Status
-	
-	<p>The <b>PostgreSQL</b> provider in Mono.Data.PostgreSqlClient can connect, 
-	execute commands, retrieve data via a Data Reader, read data in a DataTable 
-	in a DataSet via a Data Adapter, get a DataTable holding schema data,
-	and use input parameters in its SQL, and SQL errors and exceptions for PostgreSQL
-	are working.
-		
-	<p><b>System.Data.OleDb</b> is working with libgda (an OLE-DB/ADO data access for Unix).  
-	The C-Sharp bindings to libgda currently work - meaning they can compile, run, and you can connect to a
-	PostgreSQL database via libgda via the C-Sharp bindings to libgda.  Basic
-	functionality (execution of commands, data retrieval, transactions, etc) are
-	now working. Current focus is on filling up the missing pieces (Data adapters
-	mainly) and schema support.  We need help building libgda on Windows though.  libgda
-	builds find on linux though.  An inital implementation of GetSchemaTable() for
-	the OleDbDataReader has been checked into cvs.  GetSchemaTable() isn't correct for OleDb,
-	but the foundation is there.
-	
-	<p>Tim Coleman has just started on the <b>TDS</b> protocol support neccessary for the
-	<b>SqlClient, SybaseClient, and TdsClient</b> providers. The provider will be 
-	implemented in pure managed C#.  We are using FreeTDS and jTDS as references.  
-	The TDS provider will exist	in Mono.Data.TdsClient.  
-	The System.Data.SqlClient and Mono.Data.SybaseClient will
-	be based off of Mono.Data.TdsClient provider.  Currently, we are providing
-	the foundation for the TdsClient provider.  Next step is to implement the TDS
-	protocol in C#.
-	
-	<p><b>ODBC</b> support has been started by Brian Ritchie.
-	It uses unixODBC on Linux and uses native ODBC support on Windows.
-	There is basic implementations of 
-    OdbcConnection, OdbcCommand, OdbcDataReader, OdbcParameter, and 
-    OdbcParameterCollection.  The provider can execute queries and display result sets 
-    (and ExecuteNonQuery too).  Currently, developers are working on the Parameter & 
-    Transaction support.  It was tested on Debian against a DB2 7.2 UDB.  It was
-    also tested on Windows XP against a Microsoft SQL Server 2000 database.
-	
-	<p><b>Mono.Data.MySql</b> is an ADO.NET provider for 
-	the <b>MySQL</b> client/server database management system
-	that uses the MySQL C Client Library.   Currently, we can connect, 
-	execute simple commands, and
-	retrieve results using a data reader.  A schema DataTable has been partially 
-	implemented which is returned from GetSchemaTable() in MySqlDataReader.
-	The shared client libraries 
-	between windows version and linux are different: windows has libmySQL.dll 
-	while linux has libmysqlclient.so.  This is handled by the 
-	file etc/mono/config which is mapped by the mono runtime in knowing
-	which native shared library to load.  In cvs, this file is mono/config.in and
-	can be modified with a text editor.  
-	The C# Bindings to MySQL are thanks to Brad Meril.
 
-	<p><b>Mono.Data.SqliteClient</b> is an ADO.NET provider for
-	the <a href"http://www.hwaci.com/sw/sqlite/download.html">SQL Lite</a>
-	database.  There is SQL Lite binaries for Linux and Windows.  sqlite.dll on Windows 
-	and sqlite.so on Linux.	The SQL Lite proivder
-	was contributed by Vladimir Vukicevic.
+	<p>Variouls ADO.NET Providers have been created: PostgreSQL, MySQL, Sybase, SQL Lite,
+	Microsoft SQL Server, OLE DB, ODBC, and TDS Generic.  See their respective web page for
+	more information.
 		
 	<p><b>DataSet, DataAdaptor, DataTable, DataRelation, DataRow, DataColumn,
 	DataColumnCollection, DataRowCollection, and others</b> need more work.  There are
@@ -285,24 +137,31 @@
 	GnomeDbSqlEditor, GnomeDbList, GnomeDbLogin, GnomeDbReportEditor, GnomeDbTableEditor, 
 	GnomeDbCombo, and GnomeDbForm.  Rodrigo Moya is the best person to contact.
 		
-	<p><b>XML support in System.Data</b> needs to be started.  This involves working on
+	<p><b>XML support in System.Data</b> needs work.  This involves working on
 	the classes: DataSet, XmlDataDocument, and the method ExecuteXmlReader() that
 	exists in a provider's class that implements IDbCommand, and others.
+	Stuart Caborn has started the XML support in a DataSet.  Tim Coleman started
+	XML support in the ExecuteXmlReader() in a SqlCommand.
 	
-	<p><b>ADO.NET Multiplexor Provider</b> needs to be created.  This is not
+	<p><b>ADO.NET Provider Factory</b> has been started by Brian Ritchie.  The 
+	Provider Factory is used to dynamically create data provider
+	connections and data adapters based on configuration information.  This
+	provider factory can also provide utility functions needed by a lot of 
+	providers but are not exposed via the provider.
+	
+	<p><b>ADO.NET Multiplexor Provider</b> needs to be created.  It can use the
+	ADO.NET Provider Factory to create its connections and adapters, but the
+	Multiplexor Provider is a Generic Provider that internally uses an existing
+	provider based on configuration options.  This is not
 	part of Microsoft .NET, but it needs to be able to run on Microsoft .NET
 	and Mono.  This provider can be a generic provider, much like the ODBC.NET and
 	OLEDB.NET providers are, but be written in 100% C# and be configurable via
 	a configuration file.  This provider will multiplex to other providers
 	that exist.  If one does not exist for a given DBMS, 
-	default to the ODBC or OLEDB .NET provider.  Or it could be a class
-	that its sole duty is to dynamically create a provider's Connection class
-	based on a configuration file.  It can provide some utility functions as
-	well that can be used in all or most of the providers, such as, what
-	parameter marker character should be used: a colon, at, question mark,
-	or square brackets.
+	default to the ODBC or OLEDB .NET provider.  
 	
-	<p>According to Gonzalo, this is how it could be implemented:
+	<p>According to Gonzalo, this is how the configuration could be implemented for
+	the Provider Factory and Multiplexor Provider.
 
 	<p>After some work done in System.Configuration, you can now do something
     like:   

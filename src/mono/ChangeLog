@@ -1,3 +1,23 @@
+2002-11-12  Daniel Morgan <danmorg@sc.rr.com>
+
+	* doc/oledb
+	* doc/odbc
+	* doc/mysql
+	* doc/sqlite
+	* doc/sqlclient
+	* doc/tdsclient
+	* doc/sybase
+	* doc/firebird: added web pages
+	for each specific data provider
+	
+	* doc/ado-net
+	* doc/postgresql: updated web page
+	with current status
+	
+	* doc/web/commands
+	* doc/web/makefile: updated to include
+	new web pages
+
 2002-11-06  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* autogen.sh: make it work when MONO_PATH is set and it has more than
@@ -712,4 +732,5 @@ Wed Jul 11 00:36:36 CEST 2001 Paolo Molaro <lupus@ximian.com>
 2001-05-30  Miguel de Icaza  <miguel@ximian.com>
 
 	* NEWS: 
+
 

@@ -1,0 +1,66 @@
+* MySQL Data Provider
+
+<ul>
+	<li>MySQL Data Provider for 
+	<a href="http://www.mysql.com/">MySQL</a> databases.  It is written in C# and uses
+	the MySQL C Client Library
+
+	<li>Exists in namespace Mono.Data.MySql and assembly Mono.Data.MySql
+	
+	<li>Works on Windows and Linux via the MySQL client shared library
+	    (libmySQL.dll on Windows and libmysqlclient.so on Linux).
+	    
+    <li>Started by Daniel Morgan using C# Bindings to MySQL from Brad Meril.  
+    
+    <li><a href="http://www.mysql.com/articles/dotnet/">Exploring MySQL in the Microsoft .NET Environment</a> is an article
+    by Mr. Venu who is a MySQL AB developer.
+    
+    <li>Other projects which have created a .NET Data provider for MySQL in C#
+		<ul>
+			<li><a href="http://sourceforge.net/projects/mysqldrivercs/">MySQLDriverCS</a> is a MySQL provider written in C#
+			<li><a href="http://sourceforge.net/projects/mysqlnet/">MySQLNet</a> is a MySQL Manager provider written in C#
+
+		</ul>
+</ul>
+    
+* Current Status
+
+<ul>
+	<li>can connect
+	
+	<li>can execute non-queries via ExecuteNonQuery()
+	
+	<li>can execute aggregates via ExecuteScalar() and retrieve the
+	single row/single column result
+	
+	<li>can execute queries and retrieve results using a data reader.
+	
+	<li>a schema DataTable has been partially 
+	implemented which is returned from GetSchemaTable() in MySqlDataReader.
+	
+	<li>a DataTable in a DataSet can be filled via a MySqlDataAdapter 
+		
+	<li>The shared client libraries 
+	between windows version and linux are different: windows has libmySQL.dll 
+	while linux has libmysqlclient.so.  This is handled by the 
+	file etc/mono/config which is mapped by the mono runtime in knowing
+	which native shared library to load.  In cvs, this file is mono/config.in and
+	can be modified with a text editor.  
+</ul>
+
+* Action plan
+
+The current plan to work on the MySQL data provider:
+	
+	<ul>
+		<li>Parameters support via MySqlParameter and MySqlParameterCollection
+		
+		<li>Support LOBs (Large Object)
+		
+		<li>Change the MySQL provider to not be dependent on a client library and
+		    be written in 100% C#
+		    
+		<li>Connection pooling
+		
+		<li>Get the provider to work like other data providers
+	</ul>

@@ -1,0 +1,49 @@
+* ODBC Data Provider
+<ul>
+	<li>Exists in namespace System.Data.Odbc and assembly System.Data
+	
+	<li>Works on Windows and Linux
+	
+	<li>Works on Windows via the native Windows odbc32.dll
+	
+	<li>Works on Linux via <a href="http://www.unixodbc.org/">unixODBC</a>
+	
+	<li>List of unixODBC <a href="http://www.unixodbc.org/drivers.html">drivers</a> and
+	an alternative list
+	
+	<li>An alternative to unixODBC, but not tested with this 
+	provider is <a href="http://www.iodbc.org">iODBC</a>
+	
+	<li>List of <a href="http://ourworld.compuserve.com/homepages/Ken_North/odbcvend.htm">ODBC Vendors</a>
+		
+	<li>ODBC Provider created by Brian Ritchie.
+</ul>
+	
+* Current Status
+
+<ul>
+	<li>Connect on Windows via native Windows odbc32.dll
+	
+	<li>Connect on Linux via unixODBC's libodbc.so
+	
+	<li>Various databases have been tested using their
+	   ODBC drivers: MySQL, Oracle, IBM DB2, and Microsoft SQL Server
+	   
+	<li>Can execute non-query commands via ExecuteNonQuery of a OdbcCommand
+	
+	<li>Can execute aggreates and retrieve a single row single column result via
+	ExecuteScalar of a OdbcCommand
+	
+	<li>Can execute queries via ExecuteReader of a OdbcCommand and 
+	retrieve results using an OdbcDataReader.
+	
+	<li>Can get a DataTable containing schema info via GetSchemaTable() in a OdbcDataReader
+</ul>
+	
+* Action Plan
+
+<ul>
+	<li>Create a Data Adapter to Fill data into a DataTable in a DataSet
+	
+	<li>TODO
+</ul>

@@ -5,8 +5,15 @@ CORCOMPARE=../../../mcs/tools/corcompare
 
 OBJECTS=	\
 	deploy/ado-net.html					\
+		deploy/firebird.html			\
+		deploy/mysql.html				\
+		deploy/odbc.html				\
+		deploy/oledb.html				\
 		deploy/postgresql.html			\
-		deploy/tds-providers.html		\
+		deploy/sqlclient.html			\
+		deploy/sqlite.html				\
+		deploy/sybase.html				\
+		deploy/tdsclient.html			\
 	deploy/anoncvs.html					\
 	deploy/asp-net.html					\
 	deploy/books.html					\

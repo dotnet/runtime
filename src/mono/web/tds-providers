@@ -1,10 +1,10 @@
-* Design of the Microsoft SQL Server, Sybase, and TDS Providers in Mono
+* Design of the Microsoft SQL Server, Sybase, and TDS Data Providers in Mono
 
 	<ul>
 		* After much discussion among the Mono ADO.NET developers,
-		  we have come up with the design of implementing a Sybase and Microsoft 
-		  SQL Server ADO.NET provider.  We have already begun implementing 
-		  this design in Mono.
+		  we have come up with the design of implementing a Sybase, Microsoft 
+		  SQL Server, and TDS Generic ADO.NET providers.  These providers have
+		  been created and are actively developed by Tim Coleman.
 
 		* Since Sybase and Microsoft SQL Server databases both 
 		  use the TDS protocol for data access, and other implementations 
@@ -23,23 +23,20 @@
 		<ol>
 		  <li><p>Mono.Data.SybaseClient namepace and assembly will 
 		  hold the ADO.NET provider for Sybase SQL Server database.  
-		  This provider will default to using TDS version 5.0 which 
-		  can only be used with  Sybase.
+		  This provider uses TDS version 5.0 which 
+		  can only be used with Sybase databases.
 
 		  <li><p>System.Data.SqlClient namespace and System.Data assembly 
 		  will hold the ADO.NET provider
-          for Microsoft SQL Server 7.0/2000 databases.  This is to be 
-          compatible with Microsoft .NET
-          This provider will default to using TDS version 7.0 
-          which only supports Microsoft SQL Server 7.0/2000 just like 
-          SqlClient in Microsoft .NET does.  There is TDS version of 8.0 
+          for Microsoft SQL Server 7.0/2000 databases.  This provider is to be 
+          compatible with SqlClient in Microsoft .NET and uses TDS version 7.0 
+          which only supports Microsoft SQL Server 7.0/2000.  
+          There is TDS version 8.0 
           which we will need to support as well, but it is used for 
           Microsoft SQL Server 2000 databases.
 
-		  <li><p>Mono.Data.TdsClient namespace and assembly is not 
-		  meant to be an ADO.NET provider in Mono, but a means to 
-		  provide generic unit tests for the TDS functionality shared by the SqlClient 
-		  and SybaseClient providers.  This provider will default to 
+		  <li><p>Mono.Data.TdsClient namespace and assembly is a generic 
+		  provider for older TDS databases.  This provider will default to 
 		  using TDS version 4.2 which can be used by older Sybase and 
 		  Microsoft SQL Server databases.
 		 </ol>
