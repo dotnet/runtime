@@ -1,3 +1,7 @@
+2003-08-21  Johannes Roith  <johannes@jroith.de>
+
+	* mono/Makefile.am: small update. make sure, glib makes it in the build, add optional target for dependencies
+
 2003-08-18  Johannes Roith  <johannes@jroith.de>
 
 	* mono/Makefile.am: add windows build option
