@@ -15,6 +15,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/assembly.h>
 #include "decimal.h"
 
 static MonoObject *
@@ -141,16 +142,13 @@ ves_icall_app_get_cur_domain ()
 	return mono_object_new (klass);
 }
 
-static MonoObject *
+static MonoReflectionType *
 my_mono_new_object (MonoClass *klass, gpointer data)
 {
-	MonoClassField *field;
-	MonoObject *res = mono_object_new (klass);
-	gpointer *slot;
+	MonoReflectionType *res = (MonoReflectionType *)mono_object_new (klass);
 
-	field = mono_class_get_field_from_name (klass, "_impl");
-	slot = (gpointer*)((char*)res + field->offset);
-	*slot = data;
+	res->type = (MonoType *)data;
+
 	return res;
 }
 
@@ -182,10 +180,106 @@ ves_icall_type_from_name (MonoObject *name)
 	return NULL;
 }
 
-static MonoObject*
+static MonoReflectionType*
 ves_icall_type_from_handle (gpointer handle)
 {
-	return my_mono_new_object (mono_defaults.type_class, handle);
+	return my_mono_new_object (mono_defaults.monotype_class, handle);
+}
+
+static gpointer
+ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr (gpointer ptr)
+{
+	return (gpointer)(*(int *)ptr);
+}
+
+static MonoString*
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAuto (gpointer ptr)
+{
+	return mono_string_new ((char *)ptr);
+}
+
+static MonoReflectionAssembly*
+ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *assName, MonoObject *evidence)
+{
+	/* FIXME : examine evidence? */
+	char *name = mono_string_to_utf8 (assName);
+	enum MonoImageOpenStatus status = MONO_IMAGE_OK;
+	MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Assembly");
+	MonoAssembly *ass = mono_assembly_open (name, NULL, &status);
+	MonoReflectionAssembly *res;
+
+	g_assert (ass != NULL);
+	g_assert (status == MONO_IMAGE_OK);
+
+	res = (MonoReflectionAssembly *)mono_object_new (klass);
+	res->assembly = ass;
+
+	g_free (name);
+
+	return res;
+}
+
+static MonoReflectionType*
+ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, MonoString *type) /* , char throwOnError, char ignoreCase) */
+{
+	/* FIXME : use throwOnError and ignoreCase */
+	gchar *name, *namespace, **parts;
+	MonoClass *klass;
+	int j = 0;
+
+	name = mono_string_to_utf8 (type);
+
+	parts = g_strsplit (name, ".", 0);
+	g_free (name);
+
+	while (parts[j])
+		j++;
+
+	name = parts[j-1];
+	parts[j-1] = NULL;
+	namespace = g_strjoinv (".", parts);
+	g_strfreev (parts);
+
+	klass = mono_class_from_name (assembly->assembly->image, namespace, name);
+	if (!klass->metadata_inited)
+		mono_class_metadata_init (klass);
+
+	g_free (name);
+	g_free (namespace);
+
+	return my_mono_new_object (mono_defaults.monotype_class, &klass->byval_arg);
+}
+
+static MonoString *
+ves_icall_System_MonoType_assQualifiedName (MonoReflectionType *object)
+{
+	/* FIXME : real rules are more complicated (internal classes,
+	  reference types, array types, etc. */
+
+
+	MonoString *res;
+	gchar *fullname;
+	MonoClass *klass;
+
+	klass = object->type->data.klass;
+
+	fullname = g_strconcat (klass->name_space, ".",
+	                           klass->name, ",",
+	                           klass->image->assembly_name);
+  res = mono_string_new (fullname);
+	g_free (fullname);
+
+	return res;
+}
+
+static MonoString *
+ves_icall_System_PAL_GetCurrentDirectory (MonoObject *object)
+{
+	MonoString *res;
+	gchar *path = g_get_current_dir ();
+	res = mono_string_new (path);
+	g_free (path);
+	return res;
 }
 
 static gpointer icall_map [] = {
@@ -284,6 +378,15 @@ static gpointer icall_map [] = {
 	"System.Threading.Monitor::Monitor_try_enter", ves_icall_System_Threading_Monitor_Monitor_try_enter,
 	"System.Threading.Monitor::Monitor_wait", ves_icall_System_Threading_Monitor_Monitor_wait,
 
+	"System.Runtime.InteropServices.Marshal::ReadIntPtr", ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr,
+	"System.Runtime.InteropServices.Marshal::PtrToStringAuto", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAuto,
+
+	"System.Reflection.Assembly::LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom,
+	"System.Reflection.Assembly::GetType", ves_icall_System_Reflection_Assembly_GetType,
+
+	"System.MonoType::assQualifiedName", ves_icall_System_MonoType_assQualifiedName,
+
+	"System.PAL.OpSys::GetCurrentDirectory", ves_icall_System_PAL_GetCurrentDirectory,
 	/*
 	 * add other internal calls here
 	 */
