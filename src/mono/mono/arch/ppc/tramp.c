@@ -58,7 +58,7 @@ flush_icache (guint8 *code, guint size)
 #define PROLOG_INS 8
 #define CALL_INS   2
 #define EPILOG_INS 6
-#define MINIMAL_STACK_SIZE 4
+#define MINIMAL_STACK_SIZE 5
 #define FLOAT_REGS 8
 #define GENERAL_REGS 8
 
@@ -171,6 +171,9 @@ enum_retvalue:
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
@@ -228,8 +231,8 @@ emit_prolog (guint8 *p, MonoMethod *method, guint stack_size, guint strings)
 
 	/* handle our parameters */
 	if (strings) {
-		ppc_stw  (p, ppc_r30, 16, ppc_r1);
-		ppc_stw  (p, ppc_r29, 20, ppc_r1);
+		ppc_stw  (p, ppc_r30, stack_size - 16, ppc_r1);
+		ppc_stw  (p, ppc_r29, stack_size - 12, ppc_r1);
 		if (method->signature->hasthis) {
 			ppc_stw  (p, ppc_r28, 24, ppc_r1);
 		}
@@ -255,9 +258,23 @@ emit_prolog (guint8 *p, MonoMethod *method, guint stack_size, guint strings)
 			} else { \
 				NOT_IMPLEMENTED("save on stack"); \
 			}
+#define SAVE_2_IN_GENERIC_REGISTER \
+			if (gr < GENERAL_REGS) { \
+				ppc_lhz  (p, ppc_r3 + gr, i*16, ARG_BASE); \
+				gr ++; \
+			} else { \
+				NOT_IMPLEMENTED("save on stack"); \
+			}
+#define SAVE_1_IN_GENERIC_REGISTER \
+			if (gr < GENERAL_REGS) { \
+				ppc_lbz  (p, ppc_r3 + gr, i*16, ARG_BASE); \
+				gr ++; \
+			} else { \
+				NOT_IMPLEMENTED("save on stack"); \
+			}
 
 inline static guint8*
-emit_save_parameters (guint8 *p, MonoMethod *method, guint strings, gint runtime)
+emit_save_parameters (guint8 *p, MonoMethod *method, guint stack_size, guint strings, gint runtime)
 {
 	MonoMethodSignature *sig;
 	guint i, fr, gr, act_strs;
@@ -269,13 +286,14 @@ emit_save_parameters (guint8 *p, MonoMethod *method, guint strings, gint runtime
 
 	if (strings) {
 		for (i = 0; i < sig->param_count; ++i) {
-			if (!sig->params [i]->byref && sig->params [i]->type == MONO_TYPE_STRING) {
+			if (!sig->params [i]->byref && sig->params [i]->type == MONO_TYPE_STRING
+			    && !((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime)) {
 				ppc_lis  (p, ppc_r0,     (guint32) mono_string_to_utf8 >> 16);
 				ppc_lwz  (p, ppc_r3, i*16, ppc_r30);
 				ppc_ori  (p, ppc_r0, ppc_r0, (guint32) mono_string_to_utf8 & 0xffff);
 				ppc_mtlr (p, ppc_r0);
 				ppc_blrl (p);
-				ppc_stw  (p, ppc_r3, 24 + act_strs, ppc_r31);
+				ppc_stw  (p, ppc_r3, stack_size - 20 - act_strs, ppc_r31);
 				act_strs += 4;
 			}
 		}
@@ -296,11 +314,15 @@ emit_save_parameters (guint8 *p, MonoMethod *method, guint strings, gint runtime
 	enum_calc_size:
 		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
+			SAVE_1_IN_GENERIC_REGISTER;
+			break;
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
+		case MONO_TYPE_CHAR:
+			SAVE_2_IN_GENERIC_REGISTER;
+			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
@@ -332,9 +354,9 @@ emit_save_parameters (guint8 *p, MonoMethod *method, guint strings, gint runtime
 				SAVE_4_IN_GENERIC_REGISTER;
 			} else {
 				if (gr < 8) {
-					ppc_lwz (p, ppc_r3 + gr, 24 + act_strs * 4, ppc_r31);
+					ppc_lwz (p, ppc_r3 + gr, stack_size - 20 - act_strs, ppc_r31);
 					gr ++;
-					act_strs ++;
+					act_strs += 4;
 				} else
 					NOT_IMPLEMENTED ("string on stack");
 			}
@@ -416,6 +438,12 @@ enum_retvalue:
 			ppc_lwz  (p, ppc_r9, 8, ppc_r31);        /* load "retval" address */
 			ppc_stb  (p, ppc_r3, 0, ppc_r9);         /* save return value (r3) to "retval" */
 			break;
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_CHAR:
+			ppc_lwz  (p, ppc_r9, 8, ppc_r31);        /* load "retval" address */
+			ppc_sth  (p, ppc_r3, 0, ppc_r9);         /* save return value (r3) to "retval" */
+			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
@@ -460,7 +488,7 @@ enum_retvalue:
 }
 
 static inline guint8 *
-emit_epilog (guint8 *p, MonoMethod *method, guint strings)
+emit_epilog (guint8 *p, MonoMethod *method, guint stack_size, guint strings, gboolean runtime)
 {
 	if (strings) {
 		MonoMethodSignature *sig = method->signature;
@@ -469,9 +497,10 @@ emit_epilog (guint8 *p, MonoMethod *method, guint strings)
 		/* free allocated memory */
 		act_strs = 0;
 		for (i = 0; i < sig->param_count; ++i) {
-			if (!sig->params [i]->byref && sig->params [i]->type == MONO_TYPE_STRING) {
+			if (!sig->params [i]->byref && sig->params [i]->type == MONO_TYPE_STRING
+			    && !((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime)) {
 				ppc_lis  (p, ppc_r0,     (guint32) g_free >> 16);
-				ppc_lwz  (p, ppc_r3, 24 + act_strs, ppc_r31);
+				ppc_lwz  (p, ppc_r3, stack_size - 20 - act_strs, ppc_r31);
 				ppc_ori  (p, ppc_r0, ppc_r0, (guint32) g_free & 0xffff);
 				ppc_mtlr (p, ppc_r0);
 				ppc_blrl (p);
@@ -480,8 +509,8 @@ emit_epilog (guint8 *p, MonoMethod *method, guint strings)
 		}
 
 		/* restore volatile registers */
-		ppc_lwz  (p, ppc_r30, 16, ppc_r1);
-		ppc_lwz  (p, ppc_r29, 20, ppc_r1);
+		ppc_lwz  (p, ppc_r30, stack_size - 16, ppc_r1);
+		ppc_lwz  (p, ppc_r29, stack_size - 12, ppc_r1);
 		if (method->signature->hasthis) {
 			ppc_lwz  (p, ppc_r28, 24, ppc_r1);
 		}
@@ -509,9 +538,9 @@ mono_create_trampoline (MonoMethod *method, int runtime)
 
 	p = code_buffer = alloc_code_memory (code_size);
 	p = emit_prolog (p, method, stack_size, strings);
-	p = emit_save_parameters (p, method, strings, runtime);
+	p = emit_save_parameters (p, method, stack_size, strings, runtime);
 	p = emit_call_and_store_retval (p, method, strings);
-	p = emit_epilog (p, method, strings);
+	p = emit_epilog (p, method, stack_size, strings, runtime);
 
 	/* {
 		guchar *cp;

@@ -88,7 +88,10 @@ typedef enum {
 #define    ppc_li(c,D,v)   ppc_addi   (c, D, 0, v);
 #define   ppc_lis(c,D,v)   ppc_addis  (c, D, 0, v);
 #define   ppc_lwz(c,D,d,a) ppc_emit32 (c, (32 << 26) | ((D) << 21) | ((a) << 16) | (guint16)(d))
+#define   ppc_lhz(c,D,d,a) ppc_emit32 (c, (40 << 26) | ((D) << 21) | ((a) << 16) | (guint16)(d))
+#define   ppc_lbz(c,D,d,a) ppc_emit32 (c, (34 << 26) | ((D) << 21) | ((a) << 16) | (guint16)(d))
 #define   ppc_stw(c,S,d,a) ppc_emit32 (c, (36 << 26) | ((S) << 21) | ((a) << 16) | (guint16)(d))
+#define   ppc_sth(c,S,d,a) ppc_emit32 (c, (44 << 26) | ((S) << 21) | ((a) << 16) | (guint16)(d))
 #define   ppc_stb(c,S,d,a) ppc_emit32 (c, (38 << 26) | ((S) << 21) | ((a) << 16) | (guint16)(d))
 #define  ppc_stwu(c,s,d,a) ppc_emit32 (c, (37 << 26) | ((s) << 21) | ((a) << 16) | (guint16)(d))
 #define    ppc_or(c,a,s,b) ppc_emit32 (c, (31 << 26) | ((s) << 21) | ((a) << 16) | ((b) << 11) | 888)
