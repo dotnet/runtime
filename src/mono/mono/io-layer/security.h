@@ -12,10 +12,6 @@
 
 #include <glib.h>
 
-/* from lmcons.h */
-#define	UNLEN	256
-
-extern gboolean GetUserName (gchar *buffer, gint32 *size);
 extern gboolean ImpersonateLoggedOnUser (gpointer handle);
 extern gboolean RevertToSelf (void);
 

@@ -16,53 +16,43 @@
 #include <unistd.h>
 
 
-gboolean
-GetUserName (gchar *buffer, gint32 *size) 
+/* Disclaimers */
+
+#ifndef HAVE_GETRESUID
+	#warning getresuid not supported. WindowsImpersonationContext wont work
+#endif
+#ifndef HAVE_SETRESUID
+	#warning setresuid not supported. WindowsImpersonationContext wont work
+#endif
+
+
+gboolean 
+ImpersonateLoggedOnUser (gpointer handle)
 {
-#ifdef HAVE_GETPWUID_R
-	struct passwd *pbuf;
-	size_t fbufsize;
-	gchar *fbuf;
-#endif
-	struct passwd *p;
-	uid_t uid;
-
-	if (!size) {
-		SetLastError (ERROR_INVALID_PARAMETER);
+	uid_t token = (uid_t) handle;
+#ifdef HAVE_SETRESUID
+	if (setresuid (-1, token, getuid ()) < 0)
 		return FALSE;
-	}
+#endif
+	return (geteuid () == token);
+}
 
-	uid = getuid ();
-#ifdef HAVE_GETPWUID_R
-#ifdef _SC_GETPW_R_SIZE_MAX
-	fbufsize = (size_t) sysconf (_SC_GETPW_R_SIZE_MAX);
-#else
-	fbufsize = (size_t) 1024;
-#endif
-	
-	fbuf = g_malloc0 (fbufsize);
-	pbuf = g_new0 (struct passwd, 1);
-	getpwuid_r (uid, pbuf, fbuf, fbufsize, &p);
-#else
-	p = getpwuid (uid);
-#endif
-	if (p) {
-		gint32 sz = strlen (p->pw_name);
-		if (buffer) {
-			if (sz > *size)
-				sz = *size;
-			strncpy (buffer, p->pw_name, sz);
-		}
-		*size = sz;
-		return TRUE;
-	}
 
-#ifdef HAVE_GETPWUID_R
-	g_free (pbuf);
-	g_free (fbuf);
+gboolean RevertToSelf (void)
+{
+#ifdef HAVE_GETRESUID
+	uid_t ruid, euid;
 #endif
-	*size = 0;
-	SetLastError (ERROR_INVALID_HANDLE);
-	return FALSE;
+	uid_t suid = -1;
+
+#ifdef HAVE_GETRESUID
+	if (getresuid (&ruid, &euid, &suid) < 0)
+		return FALSE;
+#endif
+#ifdef HAVE_SETRESUID
+	if (setresuid (-1, suid, -1) < 0)
+		return FALSE;
+#endif
+	return (geteuid () == suid);
 }
 
