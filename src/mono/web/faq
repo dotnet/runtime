@@ -767,7 +767,9 @@ A: Most of Mono is being written using C#, with only
           Portable.NET's compiler.
 
      <li> Mono's C# compiler has strong error handling and has closer
-          adherence to the specification.
+          adherence to the specification with support for definite
+	  assignment (required to generate verifiable IL code) and 
+	  CLS conformance checking.
 
      <li> Mono's C# compiler is written in C# which is easier for new
           developers to come in and improve, fix and tune.  The Mono
