@@ -711,30 +711,23 @@ dwarf2_write_string_type (AssemblyDebugInfo *info, MonoClass *klass, int idx)
 	dwarf2_write_long (info->f, 4);
 
 	dwarf2_write_byte (info->f, ABBREV_STRUCT_MEMBER);
-	dwarf2_write_string (info->f, "c_str");
-	dwarf2_write_relative_ref (info->f, "CSTRING_PTR", idx);
+	dwarf2_write_string (info->f, "chars");
+	dwarf2_write_relative_ref (info->f, "CHARS", idx);
 	dwarf2_write_byte (info->f, DW_ACCESS_public);
 	dwarf2_write_long (info->f, 2);
 	dwarf2_write_byte (info->f, DW_OP_const1u);
-	//fixme: don't know how to handle this
-	//dwarf2_write_byte (info->f, (guchar *) &string.c_str - (guchar *) &string);
-	g_assert_not_reached ();
+	dwarf2_write_byte (info->f, (guchar *) &string.chars - (guchar *) &string);
 	dwarf2_write_long (info->f, 4);
 
 	dwarf2_write_byte (info->f, 0);
 	// DW_TAG_structure_type ends here
 
-	sprintf (buffer, "CSTRING_PTR_%u", idx);
+	sprintf (buffer, "CHARS_%u", idx);
 	dwarf2_write_label (info->f, buffer);
 
-	// DW_TAG_pointer_type
-	dwarf2_write_byte (info->f, ABBREV_POINTER_TYPE);
-	dwarf2_write_relative_ref (info->f, "CSTRING", idx);
-
-	sprintf (buffer, "CSTRING_%u", idx);
-	dwarf2_write_label (info->f, buffer);
-
-	dwarf2_write_array (info, "Char[]", mono_defaults.char_class, 1, idx);
+	dwarf2_write_byte (info->f, ABBREV_SIMPLE_ARRAY);
+	dwarf2_write_string (info->f, "Char[]");
+	dwarf2_write_type_ref (info->f, mono_debug_get_type (info, mono_defaults.char_class));
 }
 
 static void
