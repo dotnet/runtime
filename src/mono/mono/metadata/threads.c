@@ -1074,7 +1074,6 @@ void
 ves_icall_System_Threading_Thread_Resume (MonoThread *thread)
 {
 	MONO_ARCH_SAVE_REGS;
-	gpointer resume_event;
 
 	mono_monitor_enter (thread->synch_lock);
 
