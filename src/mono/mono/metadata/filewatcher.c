@@ -89,6 +89,9 @@ static int (*FAMNextEvent) (gpointer, gpointer);
 gint
 ves_icall_System_IO_FSW_SupportsFSW (void)
 {
+#if HAVE_KQUEUE
+	return 3;
+#else
 	GModule *fam_module;
 
 	MONO_ARCH_SAVE_REGS;
@@ -104,6 +107,7 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 		return 0;
 
 	return 2;
+#endif
 }
 
 gpointer

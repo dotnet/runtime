@@ -1,3 +1,7 @@
+2004-08-06  Geoff Norton  <gnorton@customerdna.com>
+
+	* configure.in: Add a kqueue check
+
 2004-08-03  Neale Ferguson <Neale.Ferguson@SoftwareAG-usa.com>
 
 	* configure.in: Enable S/390 64-bit JIT.

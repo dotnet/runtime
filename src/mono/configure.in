@@ -463,6 +463,7 @@ if test x$platform_win32 = xno; then
 	AC_CHECK_FUNCS(getpwuid_r)
 	AC_CHECK_FUNCS(getresuid)
 	AC_CHECK_FUNCS(setresuid)
+	AC_CHECK_FUNCS(kqueue)
 
 	dnl ******************************************************************
 	dnl *** Check for large file support                               ***
