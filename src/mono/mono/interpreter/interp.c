@@ -275,7 +275,7 @@ invoke_remoting_trampoline (MonoInvocation *frame) {
 	if (exc)
 		mono_raise_exception ((MonoException *)exc);
 
-	//arch_method_return_message_restore (method, &first_arg, res, out_args);
+	/*arch_method_return_message_restore (method, &first_arg, res, out_args);*/
 }
 
 static MonoMethod*
@@ -721,7 +721,7 @@ ves_runtime_method (MonoInvocation *frame)
 		/* restore return value */
 		if (sig->ret->type != MONO_TYPE_VOID) {
 			g_assert (res);
-			//arch_method_return_message_restore (method, &first_arg, res, out_args);
+			/*arch_method_return_message_restore (method, &first_arg, res, out_args);*/
 		}
 		return;
 	}
@@ -1655,7 +1655,7 @@ ves_exec_method (MonoInvocation *frame)
 				case INLINE_STRING_LENGTH:
 					retval.type = VAL_I32;
 					retval.data.i = ((MonoString*)sp->data.p)->length;
-					//g_print ("length of '%s' is %d\n", mono_string_to_utf8 (sp->data.p), retval.data.i);
+					/*g_print ("length of '%s' is %d\n", mono_string_to_utf8 (sp->data.p), retval.data.i);*/
 					break;
 				case INLINE_ARRAY_LENGTH:
 					retval.type = VAL_I32;

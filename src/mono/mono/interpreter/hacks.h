@@ -5,6 +5,8 @@
 #include <math.h>
 
 /* which are not defined on FreeBSD */
+#ifdef __GNUC__
+
 #ifndef isunordered
 #   define isunordered(u, v)                              \
     (__extension__                                        \
@@ -38,6 +40,30 @@
     (__extension__                                        \
      ({ __typeof__(x) __x = (x); __typeof__(y) __y = (y); \
         !isunordered(__x, __y) && __x > __y; }))
+#endif
+
+#else
+
+#ifndef isunordered
+#   define isunordered(u, v) (isnan(u) || isnan(v))
+#endif
+
+#ifndef islessgreater
+#   define islessgreater(x, u) (!isunordered (x, y) && (x < y) || (y < x))
+#endif
+
+#ifndef islessequal
+#   define islessequal(x, y) (!isunordered(x, y) && x <= y)
+#endif
+
+#ifndef isless
+#   define isless(x, y) (!isunordered(x, y) && x < y) 
+#endif
+
+#ifndef isgreater
+#   define isgreater(x, y) (!isunordered(x, y) && x > y)
+#endif
+
 #endif
 
 /*
