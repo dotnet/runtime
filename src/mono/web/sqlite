@@ -25,7 +25,7 @@
 	<li>Created by Vladimir Vukicevic so he could have a database of
 	thumbnail images for mPhoto.  mPhoto is GUI application 
 	for cataloging images.  mPhoto runs on Mono 
-	and uses <a href="http:www.go-mono.com/gtk-sharp.html">GTK#</a> for its GUI.</li>
+	and uses <a href="http://www.go-mono.com/gtk-sharp.html">GTK#</a> for its GUI.</li>
 
 	<li>Bugs with Mono or the data provider should be reported 
 	in Mono's Bugzilla <a href="http://bugzilla.ximian.com/">here</a>.  If you

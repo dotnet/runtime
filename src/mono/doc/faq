@@ -23,8 +23,8 @@
 <a href="#problems">Mono Common Problems</a><br>
 
 A <a
-href="http://www.es.gnome.org/documentacion/articulos/mono-puf/mono-puf/">Spanish
-translation</a> is also available
+href="http://www.monohispano.org/tutoriales/mono-puf//">Spanish
+translation</a> is also available (it is outdated though)
 
 <a name="basics"></a>
 ** Basics
@@ -353,7 +353,7 @@ A: As long as your applications are 100% .NET and do not make use
 
 Q: Where can I learn more about Gtk#?
 
-A: The following <a href="http://gtk-sharp.sourceforge.net>link</a> sends you to the page of the project.
+A: The following <a href="http://gtk-sharp.sourceforge.net">link</a> sends you to the page of the project.
 
 Q: What can I do with Gtk#?. 
 
@@ -760,7 +760,7 @@ Q: What about Soup?  Can I use Soup without Mono?
 A: Soup is a library for GNOME applications to create SOAP servers and
    SOAP clients, and can be used without Mono.  You can browse the
    source code for soup using <a
-   href="http://cvs.gnome.org/bonsai">GNOME's Bonsai</a>.
+   href="http://cvs.gnome.org/bonsai/">GNOME's Bonsai</a>.
 
 Q: Can I use CORBA?
 
@@ -1053,12 +1053,13 @@ Q: Why don't you use Java?  After all, there are many languages that
 A: You can get very good tools for doing Java development on free
    systems right now.  <a href="http://www.redhat.com">Red Hat</a> has
    contributed a <a href="http://gcc.gnu.org">GCC</a> <a
-   href="http://gcc.gnu.org/java">front-end for Java</a> that can take
+   href="http://gcc.gnu.org/java/">front-end for Java</a> that can take
    Java sources or Java byte codes and generate native executables; <a
-   href="http://www.transvirtual.com">Transvirtual</a> has implemented
+   href="http://www.google.com/search?q=transvirtual">Transvirtual</a>
+   implemented
    <a href="http://www.kaffe.org">Kaffe</a> a JIT engine for Java;
    Intel also has a Java VM called <a
-   href="http://www.intel.com/research/mrl/orp">ORP</a>.
+   href="http://www.intel.com/research/mrl/orp/">ORP</a>.
 
    The JVM is not designed to be a general purpose virtual machine.
    The Common Intermediate Language (CIL), on the other hand, is

@@ -78,9 +78,6 @@
 	Examples:
 	<a href="http://www.oberon.ethz.ch/oberon.net/examples/">http://www.oberon.ethz.ch/oberon.net/examples/</a>
 
-
-	<a href="http://www.superin.formativ.net/mono/oberon/oberon.zip">http://www.superin.formativ.net/mono/oberon/oberon.zip</a>
-
 <a name="ComponentPascal">
 ** Component Pascal
 
@@ -93,8 +90,7 @@
 <a name="Forth">
 ** Delta Forth
 
-   	 The Delta Forth.NET project: <a 
-	 href="http://www.dataman.ro/dforth">Home
+   	 The Delta Forth.NET project: <a href="http://www.dataman.ro/dforth">Home
 	 Page</a> and <a href="http://www.dataman.ro/dforth/index.html">more
 	 details here</a>.
 	 
@@ -112,8 +108,6 @@
 	working on linking the Python runtime with the .NET runtime.
 	More information on the PS.NET project can be found <a
 	href="http://www.zope.org/Members/Brian/PythonNet">here</a>.
-	An FAQ document is available <a
-	href="http://www.zope.org/Members/Brian/PythonNet/FAQ.html">here</a>.
 
 <a name="dotlisp">
 ** dotLisp

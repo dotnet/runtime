@@ -154,7 +154,7 @@
 	bug in their runtime or something is misleading or wrong in their
 	documentation. In this case, please put a detailed description of the
 	problem to mcs/class/doc/API-notes and do also report it to the 
-	<a href="mailing-lists">mailing list</a> - we'll forward this to the
+	<a href="mailing-lists.html">mailing list</a> - we'll forward this to the
 	Microsoft people from time to time to help them fix their documentation
 	and runtime.
 

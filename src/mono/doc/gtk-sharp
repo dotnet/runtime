@@ -21,7 +21,7 @@
 ** Where to learn more.
 
 	Visit the official site for the <a href="http://gtk-sharp.sourceforge.net">Gtk# Project</a>.
-	The <a href="http://www.go-mono.org/faq">Mono FAQ</a> has some useful
+	The <a href="http://www.go-mono.org/faq.html">Mono FAQ</a> has some useful
 	information too.
 	
 ** GTK# On Linux
@@ -75,11 +75,6 @@ following:
  <li>Microsoft .NET Framework at
   <a href="http://msdn.microsoft.com/downloads/default.asp?url=/downloads/sample.asp?url=/msdn-files/027/000/976/msdncompositedoc.xml&frame=true">here</a> </li>
 
-<p>If you are running Windows 95/98/ME, then you will need Unicode support.
-Look in
-mono-list archives for information about how to get
-Mono to work on Windows 9x.
-<a href="http://lists.ximian.com/archives/public/mono-list/2002-December/004158.html">here</a>
 
 <p>Environment Variables to set:
 <ul>
