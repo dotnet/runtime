@@ -8686,6 +8686,14 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	klass->has_cctor = 1;
 	klass->has_finalize = 1;
 
+	if (!((MonoDynamicImage*)klass->image)->run) {
+		if (klass->generic_container) {
+			/* FIXME: The code below can't handle generic classes */
+			klass->wastypebuilder = TRUE;
+			return mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
+		}
+	}
+
 	/* enums are done right away */
 	if (!klass->enumtype)
 		ensure_runtime_vtable (klass);
