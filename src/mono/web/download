@@ -6,70 +6,95 @@
 	href="runtime.html">Runtime</a> description for more details
 	on this part of the project.
 
-	The code for the C# compiler as well as the language error
-	test suite and the class library are in the `mcs' package, we
-	will move this later into `mono' itself. 
+	Some useful links: <a
+	href="http://www.go-mono.org/mono-beginning.html">Resources/Beginning
+	section</a>, the <a
+	href="http://www.go-mono.org/faq.html">FAQ</a> and the <a
+	href="http://geneura.ugr.es/~jaime/deploy/mono-common-problems.html">
+	Mono Common Problems</a>. 
 
-	<b>Note: (Beginners read!)</b> There are a couple of documents you
-	should read before going ahead. You can reach them in the 
-	<a href="http://www.go-mono.org/mono-beginning.html">Resources/Beginning 	section</a>. And the <a href="http://www.go-mono.org/faq.html">FAQ</a> 
-	and the <a href="http://geneura.ugr.es/~jaime/deploy/mono-common-problems.html">
-	Mono Common Problems</a>. Might be useful too. Take the Mono Beginners
-	HOWTO for your system and proceed as it's described there.
+	<table>
+	  <tbody>
+ 	  <tr bgcolor="#DDDDDD">
+	    <td>
+	      <b>Release 0.15</b><br>
+	      <a href="archive/mono-0.15">Release notes</a><br>
+	      Aug 23rd, 2002.
+	    </td>
+	    <td>
+	      <table cellspacing="0" cellpadding="3">
+		<tr bgcolor="#BBBBBB">
+		  <td>
+		    <b>Source Code</b>
+	          </td>
+		  <td>
+	 	    <ul>
+	 	      <li><a href="archive/mcs-0.15.tar.gz">Mono Class Libraries and C# Compiler.</a>
+	              <li><a href="archive/mono-0.15.tar.gz">Mono Runtime</a>
+		      <li><a href="archive/gc6.1alpha5.tar.gz">Boehm GC 6.1alpha5</a>
+	            </ul>
+		  </td>
+	        </tr>
+		<tr>
+		 <td></td>
+	 	</tr>
+		<tr bgcolor="#999999">
+		  <td>
+		    <b>Red Hat 7.3</b>
+	          </td>
+		  <td>
+		    Source RPMS:
+		    <ul>
+			<li><a href="archive/libgc-6.1alpha5-1.src.rpm">libgc-6.1alpha5-1.src.rpm</a>
+			<li><a href="archive/mono-0.15-1.src.rpm">mono-0.15-1.src.rpm</a>
+		    </ul>
+		    X86 RPMS:
+	 	    <ul>
+			<li><a href="archive/libgc-6.1alpha5-1.i386.rpm">libgc-6.1alpha5-1.i386.rpm</a>
+			<li><a href="archive/libgc-devel-6.1alpha5-1.i386.rpm">libgc-devel-6.1alpha5-1.i386.rpm</a>
+			<li><a href="archive/mono-0.15-1.i386.rpm">mono-0.15-1.i386.rpm</a>
+			<li><a href="archive/mono-devel-0.15-1.i386.rpm">mono-devel-0.15-1.i386.rpm</a>
+	            </ul>
+		  </td>
+	        </tr>
+	      </table>
+	    </td>
+	  </tr>
+	  <tr>
+	    <tr bgcolor="#CCCCC">
+	    <td>
+	      <b>Regression Tests</b><br>
+	    </td>
+	    <td>
+		You can get binaries for the Mono Regression Test
+		Suite <a href="archive/mono-tests.tar.gz">here</a>
+	    </td>
+	  </tr>
+	  </tbody>
+	</table>
 
-
-<a name="sources">
-*** Sources
-
-	Stay up to date on the Mono team's development using the 
-	<a href="http://lists.ximian.com/mailman/listinfo/mono-cvs-list">
-	mono-cvs-list</a> mailing list.  The CVS source code can also
-	be browsed <a href="http://cvs.hispalinux.es/cgi-bin/cvsweb/?cvsroot=Mono#dirlist">here</a>
-
-<a name="jun-7">
-	<b>Mono 0.13</b>
-
-	New packaged versions of the Mono C# compiler and Mono runtime
-	are now available.  The latest version is 0.13.
-
-	<ul>
-		* <a href="archive/mono-0.13">Mono 0.13 release notes</a>
-
-		* <a href="archive/mcs-0.13.tar.gz">mcs-0.13.tar.gz</a>
-		Mono C# compiler with class library source code.
-
-		* <a href="archive/mono-0.13.tar.gz">mono-0.13.tar.gz</a>
-		Mono runtime.
-	</ul>
-
-* Snapshots	
+** Binaries for other platforms.
 
 	Already daily volunteer's made binaries:
 
 	<ul>
-		* <a href="http://www.atoker.com/mono">Debian Linux</a>
-      	 	
-		* <a href="http://noa.tm/mono/">Red Hat (and RPM based systems)</a>
+		* <a href="http://www.debianplanet.org/mono/">DebianPlanet</a>
 		* <a href="http://www.superin.formativ.net/mono/mono.htm">Windows</a> (works without cygwin!)
 	</ul>
 
-	<b>Note1:</b> Don't look for the Mono BaseLabs RPMs; they are not providing it
-	anymore.<br> 
-	<b>Note2:</b> You will find that you can get binaries for the gtk-sharp 
-	package too. 
+* Snapshots
 
 <a name="snapshots">
-	For up to date sources, it is recommended that you use the Mono 
-	source code from either the 
-	<a href="http://www.go-mono.com/snapshots">nightly snapshots</a> or 
-	the <a href="anoncvs.html">Anonymous CVS</a>.  The nightly
-	snapshots are done every night at 10pm EST (Boston Time).
-	The anoncvs mirrors provided by Hispalinux are updated every six
-	hours.
 
-	The nightly snapshots are not guaranteed to build, but most of the 
-	time they should.  They should give you a window to see what we are 
-	up to.
+	<a href="http://www.go-mono.com/snapshots">Nightly snapshots</a> of 
+	the CVS repository are made every day at 10pm EST (Boston
+	Time).  These are not guaranteed to build, they are just a
+	snapshot of the tree.
+
+	The <a href="anoncvs.html">anoncvs</a> mirrors provided by
+	Hispalinux are updated every six hours.
+
+* Compiling with scripts
 
 	There are scripts to help build mono for both Unix and Windows.  Get
 	<a href="mono-build.sh">mono-build.sh</a> for Unix, or <a
@@ -100,51 +125,53 @@
 	set your CVSROOT environment variable before running the script to
 	select a particular cvs server.
 
-** Mono Regression Test Suite
-
-	You can get binaries for the Mono Regression Test Suite <a
-	href="archive/mono-tests.tar.gz">here</a>
-	
 <a name="install">
 ** Building the software manually
+
+	You will need to obtain the Mono dependencies first: <a
+	href="http://www.gtk.org">glib 2.x</a> and 
+	<a href="http://www.freedesktop.org/software/pkgconfig">pkg-config</a>.
 
 *** Building on Linux
 
 	<ul>
+		Unpack the Mono runtime distribution:
+		<pre>
+		tar xzvf mono-X.XX.tar.gz
+		cd mono-X.XX
+		
+		</pre>
+		<p>
 
-		You can build mono and mcs in Linux but to do that be
-		sure to obtain the corlib.dll and install it before
-		trying to compile. 
-
-		In linux be sure you get <a href="http://www.gtk.org">glib2.0</a> 
-		(>= 2.0.4, 2.0.6 
-		recomended) and <a href="http://www.freedesktop.org/software/pkgconfig">pkg-config</a> 0.80. 
-		Also the corresponding development packages for those as
-		well as the GNU Build Tools (make, autoconf...).
-		Then download the mono packages and compile them.
-		You must start compiling mcs and then mono.
-		Be sure you set all the environment variables before
-		compiling. You can use pkg-config --list-all to see
-		if you forgot to set some of them.
-
-		Normally you should enter:
-		export ACLOCAL_FLAGS="-I /usr/local/share/aclocal"
-		if your install prefix is /usr/local.
-
-		If you downloaded the Mono nightly snapshots, untar the 
-		snapshot. 
-
-		Change directories to "<strong>mcs</strong>". 
-
-		Configure, compile and install: 
+		Then configure, compile and install:
 
 		<pre>
-		<strong>./configure
+		
+		./configure --prefix=/usr/local
 		make
-		make install</strong></pre>
+		make install</pre>
 
-		Do the same in the "<strong>mono</strong>" directory.	
+		This will give you a runtime, C# compiler and runtime
+		libraries.  
 
+		If you want to recompile the runtime and the compiler,
+		follow these steps, first unpack the MCS package:
+
+		<pre>
+		tar xzvf mcs-X.XX.tar.gz
+		
+		cd mcs-X.XX
+		</pre>
+
+		Then use the following command to compile and install:
+
+		<pre>
+		
+		make -f makefile.gnu install prefix=/usr/local
+		</pre>
+
+		You can change /usr/local to something else if you want.
+	</ul>
 	
 *** On Windows, to install and work on the compiler and the class libraries:
 
@@ -157,7 +184,7 @@
 		* Install <a href="http://msdn.microsoft.com/downloads">
 		  Microsoft .NET Framework SDK</a>.
 
-		* Change to the <strong>/usr/local</strong> directory
+		* Change to the /usr/local directory
 		  of your Cygwin installation.<br>
 		  Unzip the precompiled packages listed above.
 
@@ -168,13 +195,14 @@
 		<a href="http://www.go-mono.com/snapshots">nightly snapshot
 		</a>, untar the snapshot.
 
-		* Change directories to <strong>"mcs"</strong>.
+		* Change directories to "mcs".
 
 		* Compile:
 		
 		<pre>
-		<strong>make windows</strong>
+		make
 		</pre>
+ 	</ul>
 
 *** On Windows, to compile the mono runtime:
 
@@ -184,18 +212,18 @@
 		  <a href="http://www.go-mono.com/snapshots">nightly snapshot
 		  </a>, untar the snapshot.
 
-		* Change directories to <strong>"mono"</strong>.
+		* Change directories to "mono".
 
 		* Configure, compile and install:
-		<pre><strong>
+		<pre>
 		./configure --prefix=c:/mono
 		make
 		make install
-		</strong></pre>
+		</pre>
 
 	</ul>
 
-* Software resources, notes and old releases:
+* Software resources and notes
 
 		The required and additional software can be downloaded here:
 
@@ -210,12 +238,13 @@
 
 		* Precompiled GLIB 2.0 and pkg-config packages (and
 		  their dependencies) by the <a href="http://www.gimp.org/~tml/gimp/win32//index.html">GIMP for Windows</a> project from
-		  <a href="http://www.go-mono.com/archive/pkgconfig-0.80-tml-20020101.zip">http://www.go-mono.com/archive/pkgconfig-0.80-tml-20020101.zip</a>
-		  <a href="http://www.go-mono.com/archive/glib-1.3.12-20020101.zip">http://www.go-mono.com/archive/glib-1.3.12-20020101.zip</a>
-		  <a href="http://www.go-mono.com/archive/glib-dev-1.3.12-20020101.zip">http://www.go-mono.com/archive/glib-dev-1.3.12-20020101.zip</a>
-		  <a href="http://www.go-mono.com/archive/libiconv-1.7.zip">http://www.go-mono.com/archive/libiconv-1.7.zip</a>
-		  <a href="http://www.go-mono.com/archive/libiconv-dev-1.7.zip">http://www.go-mono.com/archive/libiconv-dev-1.7-20020101.zip</a>
-		  <a href="http://www.go-mono.com/archive/libintl-0.10.40-20020101.zip">http://www.go-mono.com/archive/libintl-0.10.40-20020101.zip</a>
+		  <a href="http://www.go-mono.com/archive/pkgconfig-0.80-tml-20020101.zip">http://www.go-mono.com/archive/pkgconfig-0.80-tml-20020101.zip</a><br>
+		  <a href="http://www.go-mono.com/archive/glib-1.3.12-20020101.zip">http://www.go-mono.com/archive/glib-1.3.12-20020101.zip</a> <br>
+		  <a href="http://www.go-mono.com/archive/glib-dev-1.3.12-20020101.zip">http://www.go-mono.com/archive/glib-dev-1.3.12-20020101.zip</a> <br>
+		  <a href="http://www.go-mono.com/archive/libiconv-1.7.zip">http://www.go-mono.com/archive/libiconv-1.7.zip</a> <br>
+		  <a href="http://www.go-mono.com/archive/libiconv-dev-1.7.zip">http://www.go-mono.com/archive/libiconv-dev-1.7-20020101.zip</a> <br>
+		  <a href="http://www.go-mono.com/archive/libintl-0.10.40-20020101.zip">http://www.go-mono.com/archive/libintl-0.10.40-20020101.zip</a><br>
+
 
 		* Download the Mono source code from the
 		  <a href="#feb-11">packaged versions</a> or
@@ -244,12 +273,12 @@
 		  <nobr><tt>extern char *strsignal (int sig);</tt></nobr> to
 		  <nobr><tt>extern const char *strsignal (int sig);</tt></nobr>.
 
-<pre><strong>
+<pre>
 tar xzvf pkg-config-0.8.0.tar.gz
 cd pkg-config-0.8.0
 ./configure --prefix=/usr
 make
-make install</strong>
+make install
 </pre>
 
 		* Download, compile and install <a href="ftp://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.7.tar.gz">libiconv</a> from source.<br>
@@ -263,125 +292,5 @@ make install</strong>
 		  <a href="ftp://ftp.gtk.org/pub/gtk/v2.0/glib-2.0.6.tar.gz">
 		  glib 2.0</a> from source.
 
-	</ul>
-
-
-<a name="oldreleases">
-
-*** Old releases.
-
-	<ul>
-
-	<ul>
-	<a name="apr-24">
-	<b>Mono 0.11; April 24, 2002</b>
-		* <a href="archive/mono-0.11">Mono 0.11 release notes</a>
-
-		* <a href="archive/mcs-0.11.tar.gz">mcs-0.11.tar.gz</a>
-		Mono C# compiler
-		* <a href="archive/mono-0.11.tar.gz">mono-0.11.tar.gz</a>
-		Mono runtime
-	</ul>
-
-	<ul>	
-	<a name="mar-27">
-	<b>Mono 0.10; March 27, 2002</b>
-		* <a href="archive/mono-0.10">Mono 0.10 release notes</a>
-		* <a href="archive/mcs-0.10.tar.gz">mcs-0.10.tar.gz</a>
-		Mono C# compiler
-		* <a href="archive/mono-0.10.tar.gz">mono-0.10.tar.gz</a>
-		Mono runtime
-	</ul>
-	
-	<ul>
-	<a name="feb-22">
-	<b>Mono 0.9; February 22, 2002</b>
-		* <a href="archive/mono-0.9">Mono 0.9 release notes</a>
-
-		* <a href="archive/mcs-0.9.tar.gz">mcs-0.9.tar.gz</a>
-		Mono C# compiler
-		* <a href="archive/mono-0.9.tar.gz">mono-0.9.tar.gz</a>
-		Mono runtime
-	</ul>
-	
-		<a name="feb-11">
-		<b>February 11, 2002</b>
-		* <a href="archive/mcs-0.8.tar.gz">mcs-0.8.tar.gz</a>
-		Mono C# compiler
-		* <a href="archive/mono-0.8.tar.gz">mono-0.8.tar.gz</a>
-		Mono runtime
-		</ul>
-
-		<a name="sep-18">
-		<b>September 18, 2001</b>
-		<ul>
-		* <a href="archive/mono-0.7.tar.gz">mono-0.7.tar.gz</a>: Mono Runtime 0.7 release.
-		* <a href="archive/mcs-0.7.tar.gz">mcs-0.7.tar.gz</a>: Mono Compiler and Classes 0.7 release.
-		* <a href="archive/mono-0.7">Release Notes.</a>
-		</ul>
-
-		<a name="august-22">
-		<b>August 22, 2001</b>
-		<ul>
-		* <a href="archive/mono-0.6.tar.gz">mono-0.6.tar.gz</a>: Mono Runtime 0.6 release.
-		* <a href="archive/mono-compiler-classes-0.6.tar.gz">mono-compiler-classes-0.6.tar.gz</a>: Mono Compiler and Classes 0.6 release.
-		* <a href="archive/mono-0.6">Release Notes.</a>
-		</ul>
-
-	
-	 	<a name="july-29">
-		<b>July 29, 2001</b>
-		<ul>
-		* <a href="archive/mono-0.5.tar.gz">mono-0.5.tar.gz</a>: Mono Runtime 0.5 release.
-		* <a href="archive/mono-0.5">Release Notes.</a>
-		</ul>
-
-	
-		<a name="july-22">
-		<b>July 22, 2001</b>
-		<ul>
-		* <a href="archive/mcs-22-Jul-2001.tar.gz">mcs-22-Jul-2001.tar.gz</a>: CVS snapshot.
-		* <a href="archive/mcs-Jul-22-Jul-19-2001.tar.gz">Differences since 19</a>: CVS snapshot.
-		* <a href="archive/mcs-22">Release Notes.</a>
-		</ul>
-
-		<a name="july-19">
-		<b>July 19th, 2001</b>
-		<ul>
-		* <a href="archive/mcs-19-Jul-2001.tar.gz">mcs-19-Jul-2001.tar.gz</a>: CVS snapshot.
-		* <a href="archive/mcs-Jul-17-Jul-19-2001.tar.gz">Differences since 17</a>: CVS snapshot.
-		* <a href="archive/mcs-19">Release Notes.</a>
-		</ul>
-
-		<a name="july-17">
-		<b>July 17th, 2001</b>
-		<ul>
-		* <a href="archive/mcs-17-Jul-2001.tar.gz">mcs-17-Jul-2001.tar.gz</a>: CVS snapshot.
-		* <a href="archive/mcs-Jul-15-Jul-17-2001.tar.gz">Differences since 15</a>: CVS snapshot.
-		* <a href="archive/mcs-17">Release Notes.</a>
-		</ul>
-
-		<a name="july-15">
-		<b>July 15th, 2001</b>
-		<ul>
-		* <a href="archive/mcs-15-Jul-2001.tar.gz">mcs-15-Jul-2001.tar.gz</a>: CVS snapshot.
-		* <a href="archive/mono-0.4.tar.gz">mono-0.4.tar.gz</a>: Packaged Source Code.
-		* <a href="archive/mono-0.4">Release Notes.</a>
-		</ul>
-
-		<a name="july-14">
-		<b>July 14th, 2001</b>
-		<ul>
-		* <a href="archive/mcs-12-Jul-2001.tar.gz">mcs-12-Jul-2001.tar.gz</a>: CVS snapshot.
-		* <a href="archive/mono-0.3.tar.gz">mono-0.3.tar.gz</a>: Packaged Source Code.
-		</ul>
-
-		<a name="july-8">
-		<b>July 8th, 2001</b>
-
-		<ul>
-		* <a href="archive/mcs-08-Jul-2001.tar.gz">mcs-08-Jul-2001.tar.gz</a>: CVS Snapshot
-		* <a href="archive/mono-08-Jul-2001.tar.gz">mono-08-Jul-2001.tar.gz</a>: CVS Snapshot
-		</ul>
 	</ul>
 

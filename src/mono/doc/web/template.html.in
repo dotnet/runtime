@@ -2,10 +2,11 @@
 <html>
 <head>
 <title>#TITLE#</title>
+<!-- background-image: url("images/bgsquares.gif");  -->
 <style type="text/css">
 <!--
    body { font-family: "trebuchet ms", lucida, verdana, helvetica; 
-          background-image: url("images/bgsquares.gif"); 
+          
           background-attachment: fixed; }
    body, td, table { font-family: "trebuchet ms", lucida, verdana, helvetica; 
                      font-size: 14px; }
@@ -27,7 +28,7 @@
 	a.navi2:visited { color: #cccccc; }
 	a.navi2:hover { color: #ee9900; text-decoration: underline; }
 
-// -->
+// --> 
 </style>
 #CSS#
 #SCRIPT#
