@@ -13,6 +13,7 @@
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/verify.h"
 #include "mono/metadata/profiler.h"
+#include <mono/os/util.h>
 
 /**
  * mono_jit_assembly:
@@ -81,19 +82,6 @@ usage (char *name)
 		);
 	exit (1);
 }
-
-#ifdef PLATFORM_WIN32
-set_rootdir (const char *base)
-{
-	char *dir = g_dirname (base);
-	char *root = g_strconcat (dir, "/lib");
-
-	mono_assembly_setrootdir (root);
-	g_free (root);
-	g_free (dir);
-}
-#else
-#endif
 
 int 
 main (int argc, char *argv [])
@@ -180,7 +168,7 @@ main (int argc, char *argv [])
 	if (!file)
 		usage (argv [0]);
 
-	set_rootdir (argv [0]);
+	mono_set_rootdir (argv [0]);
 	domain = mono_jit_init (file);
 
 	error = mono_verify_corlib ();

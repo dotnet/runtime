@@ -508,6 +508,9 @@ mono/metadata/Makefile
 mono/dis/Makefile
 mono/cil/Makefile
 mono/arch/Makefile
+mono/os/Makefile
+mono/os/win32/Makefile
+mono/os/unix/Makefile
 mono/arch/x86/Makefile
 mono/arch/ppc/Makefile
 mono/arch/sparc/Makefile

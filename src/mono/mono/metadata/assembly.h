@@ -11,6 +11,6 @@ MonoAssembly* mono_assembly_load       (MonoAssemblyName *aname,
                                        	const char       *basedir, 
 				     	MonoImageOpenStatus *status);
 void          mono_assembly_close      (MonoAssembly *assembly);
-void          mono_assembly_setrootdir (const char *root_dir)
+void          mono_assembly_setrootdir (const char *root_dir);
 
 #endif

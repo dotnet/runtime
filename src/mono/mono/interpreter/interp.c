@@ -53,6 +53,8 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/socket-io.h>
+#include <mono/os/util.h>
+
 /*#include <mono/cli/types.h>*/
 #include "interp.h"
 #include "hacks.h"
@@ -3943,6 +3945,8 @@ main (int argc, char *argv [])
 	if (!file)
 		usage ();
 
+	mono_set_rootdir (argv [0]);
+	
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
