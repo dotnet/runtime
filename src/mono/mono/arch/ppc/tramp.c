@@ -197,7 +197,7 @@ emit_prolog (guint8 *p, guint stack_size)
 	mr   (p, r31, r1);                        /* r31     <--- sp */
 
 	/* handle our parameters */
-	mr   (p, r14, r6);                        /* keep "arguments" in register */
+	mr   (p, r12, r6);                        /* keep "arguments" in register */
 	mr   (p, r0, r3);                         /* keep "callme" in register */
 	stw  (p, r4, 8, r31);                     /* preserve "retval", sp[8] */
 
@@ -206,7 +206,7 @@ emit_prolog (guint8 *p, guint stack_size)
 
 #define SAVE_4_IN_GENERIC_REGISTER \
 			if (gr < GENERAL_REGS) { \
-				lwz  (p, r3 + gr, i*16, r14); \
+				lwz  (p, r3 + gr, i*16, r12); \
 				gr ++; \
 			} else { \
 				NOT_IMPLEMENTED; \
@@ -267,9 +267,9 @@ emit_save_parameters (guint8 *p, MonoMethod *method)
 		case MONO_TYPE_I8:
 			if (gr < 7) {
 				g_warning ("check endianess");
-				lwz  (p, r3 + gr, i*16, r14);
+				lwz  (p, r3 + gr, i*16, r12);
 				gr ++;
-				lwz  (p, r3 + gr, i*17, r14);
+				lwz  (p, r3 + gr, i*17, r12);
 				gr ++;
 			} else {
 				NOT_IMPLEMENTED;
