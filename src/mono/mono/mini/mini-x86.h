@@ -36,6 +36,9 @@ struct MonoLMF {
 	guint32     eip;
 };
 
+typedef struct MonoCompileArch {
+} MonoCompileArch;
+
 #ifndef PLATFORM_WIN32
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK
 #endif

@@ -522,6 +522,7 @@ typedef struct {
 	gpointer         debug_info;
 	guint16          *intvars;
 	MonoProfileCoverageInfo *coverage_info;
+	MonoCompileArch  arch;
 #ifdef __ia64
 	guint8           ins, locals, outs; /* reg stack region sizes */
 #endif /* __ia64 */
