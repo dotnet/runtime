@@ -3171,11 +3171,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						ebblock->next_bb = bblock;
 						link_bblock (cfg, ebblock, bblock);
 
-						if (sp != stack_start) {
+						/*if (sp != stack_start) {
 							handle_stack_args (cfg, ebblock, stack_start, sp - stack_start);
 							sp = stack_start;
 						}
-						start_new_bblock = 1;
+						start_new_bblock = 1;*/
 
 						inline_costs += costs;
 						/*g_print ("inlined newobj for %s\n", cmethod->klass->name);*/
