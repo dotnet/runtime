@@ -67,16 +67,6 @@ mono_async_invoke (MonoAsyncResult *ares)
 	}
 }
 
-#ifdef HAVE_BOEHM_GC
-static void
-async_call_finalizer (void *o, void *data)
-{
-	ASyncCall *ac = o;
-
-	CloseHandle (ac->wait_semaphore);
-}
-#endif
-
 MonoAsyncResult *
 mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *async_callback,
 		      MonoObject *state)
@@ -87,7 +77,6 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 
 #ifdef HAVE_BOEHM_GC
 	ac = GC_MALLOC (sizeof (ASyncCall));
-	GC_REGISTER_FINALIZER_NO_ORDER (ac, async_call_finalizer, NULL, NULL, NULL);
 #else
 	/* We'll leak the semaphore... */
 	ac = g_new0 (ASyncCall, 1);
