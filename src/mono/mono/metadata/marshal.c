@@ -780,6 +780,11 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 
 	info = mono_marshal_load_type_info (klass);
 
+	if ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
+		/* we should simply emit a BLKCOPY in this case */
+		g_assert_not_reached ();
+	}
+
 	for (i = 0; i < info->num_fields; i++) {
 		MonoMarshalNative ntype;
 		MonoMarshalConv conv;
