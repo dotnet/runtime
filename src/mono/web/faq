@@ -121,17 +121,18 @@ Q: When will you ship it?
 A: Different parts of Mono will achieve usability at different stages,
    once we are comfortable with the compiler, we will release "Mono Core",
    which contains everything needed to develop applications with the base
-   class libraries.  This should be available at some point during 2002.
+   class libraries, this will happen soon and in the meantime you can 
+   download daily snapshots of our work. Also the full ASP.NET support is 
+   close to completion. 
 
-   Other higher level class libraries (ASP.NET, ADO.NET) will
+   Other higher level class libraries (ASP.NET, ADO.NET, WinForms) will
    be released when they become stable. 
 
 Q: What major components will you include in Mono?
 
 A: Hopefully everything that Microsoft ships on their Framework
-   (ADO.NET, ASP.NET), and
-   we encourage third party developers to create reusable components that
-   work on both Mono and Windows.
+   (ADO.NET, ASP.NET, WinForms), and we encourage third party developers to 
+   create reusable components that work on both Mono and Windows.
 
 Q: How can I contribute?
 
