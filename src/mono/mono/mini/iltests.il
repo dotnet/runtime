@@ -231,7 +231,7 @@
 	}
 
 	.method static public int32 test_0_localloc () cil managed {
-		.locals init (native int, native int, native int)
+		.locals init (native int, native int, native int, native int, int32)
 
 		ldc.i4 6
 		localloc
@@ -248,17 +248,52 @@
 		conv.i
 		stloc.2
 
-		// br OK1
+		// Variable length
+		ldc.i4 128
+		stloc.s 4
+		ldloc.s 4
+		localloc
+		conv.i
+		stloc.3
+
+		// Check zero initialized
+		ldloc.0
+		ldind.i4
+		ldc.i4.0
+		beq OK1
+		ldc.i4.1
+		br FAIL
+
+OK1:
+		ldloc.3
+		ldind.i4
+		ldc.i4.0
+		beq OK2
+		ldc.i4.2
+		br FAIL
+
+OK2:
+		ldloc.3
+		ldc.i4.s 124
+		add
+		ldind.i4
+		ldc.i4.0
+		beq OK3
+		ldc.i4.3
+		br FAIL
+
+OK3:
 		ldloc.1
 		ldc.i4 999999
 		stind.i4
 		ldloc.1
 		ldind.i4
 		ldc.i4 999999
-		beq OK1
+		beq OK4
+		ldc.i4.4
 		br FAIL
 
-OK1:
+OK4:
 		ldloc.0
 		ldc.i4 999999
 		stind.i4
@@ -266,8 +301,10 @@ OK1:
 		ldind.i4
 		ldc.i4 999999
 		beq PASS
+		ldc.i4.5
+		br FAIL
 
-FAIL:	ldc.i4.1
+FAIL:
 		ret
 
 PASS:	ldc.i4.0
@@ -498,7 +535,6 @@ COND:   ldloc.0
 
 	.method public static int32 test_0_get_type_from_handle_on_bblock_boundary () cil managed 
 	{
-		.entrypoint
 		.maxstack 16
 	
 		ldc.i4.1
@@ -510,9 +546,9 @@ COND:   ldloc.0
 		ldtoken [mscorlib]System.Object
 	AFTER:
 		call class [mscorlib]'System.Type' class [mscorlib]'System.Type'::'GetTypeFromHandle'(valuetype [mscorlib]'System.RuntimeTypeHandle')
-		callvirt string class [mscorlib]System.Type::get_FullName ()
+		callvirt instance string class [mscorlib]System.Type::get_FullName ()
 		ldstr "System.String"
-		callvirt bool class [mscorlib]System.Object::Equals(object)
+		callvirt instance bool class [mscorlib]System.Object::Equals(object)
 		ldc.i4.0
 		ceq
 		ret 

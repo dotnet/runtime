@@ -3530,17 +3530,56 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_OUTARG:
 			g_assert_not_reached ();
 			break;
-		case OP_LOCALLOC:
+		case OP_LOCALLOC: {
+			guint32 size_reg;
+
 			/* Keep alignment */
 			sparc_add_imm (code, FALSE, ins->sreg1, MONO_ARCH_FRAME_ALIGNMENT - 1, ins->dreg);
 			sparc_set (code, ~(MONO_ARCH_FRAME_ALIGNMENT - 1), sparc_o7);
 			sparc_and (code, FALSE, ins->dreg, sparc_o7, ins->dreg);
+
+			if ((ins->flags & MONO_INST_INIT) && (ins->sreg1 == ins->dreg)) {
+#ifdef SPARCV9
+				size_reg = sparc_g4;
+#else
+				size_reg = sparc_g1;
+#endif
+				sparc_mov_reg_reg (code, ins->dreg, size_reg);
+			}
+			else
+				size_reg = ins->sreg1;
+
 			sparc_sub (code, FALSE, sparc_sp, ins->dreg, ins->dreg);
 			/* Keep %sp valid at all times */
 			sparc_mov_reg_reg (code, ins->dreg, sparc_sp);
-			g_assert (sparc_is_imm13 (cfg->arch.localloc_offset));
+			g_assert (sparc_is_imm13 (MONO_SPARC_STACK_BIAS + cfg->arch.localloc_offset));
 			sparc_add_imm (code, FALSE, ins->dreg, MONO_SPARC_STACK_BIAS + cfg->arch.localloc_offset, ins->dreg);
+
+			if (ins->flags & MONO_INST_INIT) {
+				guint32 *br [3];
+				/* Initialize memory region */
+				sparc_cmp_imm (code, size_reg, 0);
+				br [0] = code;
+				sparc_branch (code, 0, sparc_be, 0);
+				/* delay slot */
+				sparc_set (code, 0, sparc_o7);
+				sparc_sub_imm (code, 0, size_reg, sparcv9 ? 8 : 4, size_reg);
+				/* start of loop */
+				br [1] = code;
+				if (sparcv9)
+					sparc_stx (code, sparc_g0, ins->dreg, sparc_o7);
+				else
+					sparc_st (code, sparc_g0, ins->dreg, sparc_o7);
+				sparc_cmp (code, sparc_o7, size_reg);
+				br [2] = code;
+				sparc_branch (code, 0, sparc_bl, 0);
+				sparc_patch (br [2], br [1]);
+				/* delay slot */
+				sparc_add_imm (code, 0, sparc_o7, sparcv9 ? 8 : 4, sparc_o7);
+				sparc_patch (br [0], code);
+			}
 			break;
+		}
 		case OP_SPARC_LOCALLOC_IMM: {
 			gint32 offset = ins->inst_c0;
 			offset = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
@@ -3550,9 +3589,41 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				sparc_set (code, offset, sparc_o7);
 				sparc_sub (code, FALSE, sparc_sp, sparc_o7, sparc_sp);
 			}
-			sparc_mov_reg_reg (code, sparc_sp, ins->dreg);
-			g_assert (sparc_is_imm13 (cfg->arch.localloc_offset));
-			sparc_add_imm (code, FALSE, ins->dreg, MONO_SPARC_STACK_BIAS + cfg->arch.localloc_offset, ins->dreg);
+			g_assert (sparc_is_imm13 (MONO_SPARC_STACK_BIAS + cfg->arch.localloc_offset));
+			sparc_add_imm (code, FALSE, sparc_sp, MONO_SPARC_STACK_BIAS + cfg->arch.localloc_offset, ins->dreg);
+			if ((ins->flags & MONO_INST_INIT) && (offset > 0)) {
+				guint32 *br [2];
+				int i;
+
+				if (offset <= 16) {
+					for (i = 0; i < offset; ++i) {
+						if (sparcv9) {
+							sparc_stx_imm (code, sparc_g0, ins->dreg, i);
+							i += 8;
+						}
+						else {
+							sparc_st_imm (code, sparc_g0, ins->dreg, i);
+							i += 4;
+						}
+					}
+				}
+				else {
+					sparc_set (code, offset, sparc_o7);
+					sparc_sub_imm (code, 0, sparc_o7, sparcv9 ? 8 : 4, sparc_o7);
+					/* beginning of loop */
+					br [0] = code;
+					if (sparcv9)
+						sparc_stx (code, sparc_g0, ins->dreg, sparc_o7);
+					else
+						sparc_st (code, sparc_g0, ins->dreg, sparc_o7);
+					sparc_cmp_imm (code, sparc_o7, 0);
+					br [1] = code;
+					sparc_branch (code, 0, sparc_bne, 0);
+					/* delay slot */
+					sparc_sub_imm (code, 0, sparc_o7, sparcv9 ? 8 : 4, sparc_o7);
+					sparc_patch (br [1], br [0]);
+				}
+			}
 			break;
 		}
 		case CEE_RET:
