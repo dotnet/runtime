@@ -229,6 +229,12 @@ reg: OP_OUTARG_VT (OP_ICONST) {
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, sparc_sp, tree->inst_c1);
 }
 
+reg: OP_OUTARG_VT (OP_AOTCONST) {
+	MONO_EMIT_NEW_AOTCONST (s, state->reg1, state->left->tree->inst_p0, state->left->tree->inst_c1);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, sparc_sp, tree->inst_c1, state->reg1);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, sparc_sp, tree->inst_c1);
+}
+
 # FIXME: Unify this with the previous rule
 reg: OP_OUTARG_VT (OP_REFANYTYPE (reg)) {
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->reg1, state->left->left->reg1, G_STRUCT_OFFSET (MonoTypedRef, type));

@@ -41,9 +41,17 @@
 #define SHARED_EXT ".so"
 #endif
 
+#if defined(sparc)
+#define AS_STRING_DIRECTIVE ".asciz"
+#else
+/* GNU as */
+#define AS_STRING_DIRECTIVE ".string"
+#endif
+
 typedef struct MonoAotMethod {
 	MonoJitInfo *info;
 	MonoJumpInfo *patch_info;
+	MonoDomain *domain;
 } MonoAotMethod;
 
 typedef struct MonoAotModule {
@@ -69,7 +77,7 @@ static MonoGHashTable *aot_modules;
 
 static CRITICAL_SECTION aot_mutex;
 
-static guint32 mono_aot_verbose = 0;
+static guint32 mono_aot_verbose = 1;
 
 /*
  * Disabling this will make a copy of the loaded code and use the copy instead 
@@ -264,7 +272,10 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 	g_assert (klass->inited);
 
 	minfo = mono_g_hash_table_lookup (aot_module->methods, method);
-	if (minfo) {
+	/* Can't use code from non-root domains since they can be unloaded */
+	if (minfo && (minfo->domain == mono_root_domain)) {
+		/* This method was already loaded in another appdomain */
+
 		/* Duplicate jinfo */
 		jinfo = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo));
 		memcpy (jinfo, minfo->info, sizeof (MonoJitInfo));
@@ -274,7 +285,6 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 			memcpy (jinfo->clauses, minfo->info->clauses, sizeof (MonoJitExceptionInfo) * header->num_clauses);
 		}
 
-		/* This method was already loaded in another appdomain */
 		if (aot_module->opts & MONO_OPT_SHARED)
 			/* Use the same method in the new appdomain */
 			;
@@ -351,6 +361,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 	minfo = g_new0 (MonoAotMethod, 1);
 #endif
 
+	minfo->domain = domain;
 	jinfo = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo));
 
 	code_len = GPOINTER_TO_UINT (*((gpointer **)info));
@@ -435,6 +446,13 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 			b2 = *((guint8*)info + 1);
 
 			info = (gpointer*)((guint8*)info + 2);
+
+#if defined(sparc)
+			{
+				guint32 ptr = (guint32)info;
+				info = (gpointer)((ptr + 3) & ~3);
+			}
+#endif
 
 			ji->type = b1 >> 2;
 
@@ -616,15 +634,28 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 		return NULL;
 }
 
+static void
+emit_section_change (FILE *fp, const char *section_name, int subsection_index)
+{
+#if defined(sparc)
+	/* For solaris as, GNU as should accept the same */
+	fprintf (fp, ".section \"%s\"\n", section_name);
+#else
+	fprintf (fp, "%s %s\n", section_name, subsection_index);
+#endif
+}
+
 #if 0
 static void
 write_data_symbol (FILE *fp, const char *name, guint8 *buf, int size, int align)
 {
 	int i;
 
+	emit_section_change (fp, ".text", 1);
+
 	fprintf (fp, ".globl %s\n", name);
-	fprintf (fp, ".text 1 \n\t.align %d\n", align);
-	fprintf (fp, "\t.type %s,@object\n", name);
+	fprintf (fp, "\t.align %d\n", align);
+	fprintf (fp, "\t.type %s,#object\n", name);
 	fprintf (fp, "\t.size %s,%d\n", name, size);
 	fprintf (fp, "%s:\n", name);
 	for (i = 0; i < size; i++) { 
@@ -637,10 +668,10 @@ write_data_symbol (FILE *fp, const char *name, guint8 *buf, int size, int align)
 static void
 write_string_symbol (FILE *fp, const char *name, const char *value)
 {
+	emit_section_change (fp, ".text", 1);
 	fprintf (fp, ".globl %s\n", name);
-	fprintf (fp, ".text 1\n");
 	fprintf (fp, "%s:\n", name);
-	fprintf (fp, "\t.string \"%s\"\n", value);
+	fprintf (fp, "\t%s \"%s\"\n", AS_STRING_DIRECTIVE, value);
 }
 
 static guint32
@@ -772,17 +803,17 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 	code = cfg->native_code;
 	header = ((MonoMethodNormal*)method)->header;
 
-	fprintf (tmpfp, ".text 0\n");
+	emit_section_change (tmpfp, ".text", 0);
 	mname = g_strdup_printf ("m_%x", mono_metadata_token_index (method->token));
 	fprintf (tmpfp, "\t.align %d\n", func_alignment);
 	fprintf (tmpfp, ".globl %s\n", mname);
-	fprintf (tmpfp, "\t.type %s,@function\n", mname);
+	fprintf (tmpfp, "\t.type %s,#function\n", mname);
 	fprintf (tmpfp, "%s:\n", mname);
 
 	for (i = 0; i < cfg->code_len; i++) 
 		fprintf (tmpfp, ".byte %d\n", (unsigned int) code [i]);
 
-	fprintf (tmpfp, ".text 1\n");
+	emit_section_change (tmpfp, ".text", 1);
 
 	/* Sort relocations */
 	patches = g_ptr_array_new ();
@@ -993,10 +1024,16 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 			if (offset < 1024 - 1) {
 				fprintf (tmpfp, "\t.byte %d\n", (patch_info->type << 2) + (offset >> 8));
 				fprintf (tmpfp, "\t.byte %d\n", offset & ((1 << 8) - 1));
+#if defined(sparc)
+				fprintf (tmpfp, "\t.align 4\n");
+#endif
 			}
 			else {
 				fprintf (tmpfp, "\t.byte %d\n", (patch_info->type << 2) + 3);
 				fprintf (tmpfp, "\t.byte %d\n", 255);
+#if defined(sparc)
+				fprintf (tmpfp, "\t.align 4\n");
+#endif
 				fprintf (tmpfp, "\t.long %d\n", offset);
 			}
 
@@ -1199,24 +1236,24 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	/* Emit icall table */
 
 	symbol = g_strdup_printf ("mono_icall_table");
+	emit_section_change (tmpfp, ".text", 1);
 	fprintf (tmpfp, ".globl %s\n", symbol);
-	fprintf (tmpfp, ".text 1 \n");
 	fprintf (tmpfp, "\t.align 8\n");
 	fprintf (tmpfp, "%s:\n", symbol);
 	fprintf (tmpfp, ".long %d\n", acfg->icall_table->len);
 	for (i = 0; i < acfg->icall_table->len; i++)
-		fprintf (tmpfp, ".string \"%s\"\n", (char*)g_ptr_array_index (acfg->icall_table, i));
+		fprintf (tmpfp, "%s \"%s\"\n", AS_STRING_DIRECTIVE, (char*)g_ptr_array_index (acfg->icall_table, i));
 
 	/* Emit image table */
 
 	symbol = g_strdup_printf ("mono_image_table");
+	emit_section_change (tmpfp, ".text", 1);
 	fprintf (tmpfp, ".globl %s\n", symbol);
-	fprintf (tmpfp, ".text 1 \n");
 	fprintf (tmpfp, "\t.align 8\n");
 	fprintf (tmpfp, "%s:\n", symbol);
 	fprintf (tmpfp, ".long %d\n", acfg->image_table->len);
 	for (i = 0; i < acfg->image_table->len; i++)
-		fprintf (tmpfp, ".string \"%s\"\n", ((MonoImage*)g_ptr_array_index (acfg->image_table, i))->guid);
+		fprintf (tmpfp, "%s \"%s\"\n", AS_STRING_DIRECTIVE, ((MonoImage*)g_ptr_array_index (acfg->image_table, i))->guid);
 
 	/*
 	 * g_module_symbol takes a lot of time for failed lookups, so we emit
@@ -1225,8 +1262,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	 */
 
 	symbol = g_strdup_printf ("mono_methods_present_table");
+	emit_section_change (tmpfp, ".text", 1);
 	fprintf (tmpfp, ".globl %s\n", symbol);
-	fprintf (tmpfp, ".text 1 \n");
 	fprintf (tmpfp, "\t.align 8\n");
 	fprintf (tmpfp, "%s:\n", symbol);
 	{
@@ -1251,7 +1288,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	printf ("Executing the native assembler: %s\n", com);
 	system (com);
 	g_free (com);
+#if defined(sparc)
+	com = g_strdup_printf ("ld -shared -G -o %s%s %s.o", image->name, SHARED_EXT, tmpfname);
+#else
 	com = g_strdup_printf ("ld -shared -o %s%s %s.o", image->name, SHARED_EXT, tmpfname);
+#endif
 	printf ("Executing the native linker: %s\n", com);
 	system (com);
 	g_free (com);
@@ -1268,7 +1309,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 	printf ("%d methods contain wrapper references (%d%%)\n", wrappercount, mcount ? (wrappercount*100)/mcount : 100);
 	printf ("%d methods contain lmf pointers (%d%%)\n", lmfcount, mcount ? (lmfcount*100)/mcount : 100);
 	printf ("%d methods have other problems (%d%%)\n", ocount, mcount ? (ocount*100)/mcount : 100);
-	unlink (tmpfname);
+	printf ("Retained input file.\n");
+	//unlink (tmpfname);
 
 	return 0;
 }

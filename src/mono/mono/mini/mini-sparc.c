@@ -55,7 +55,6 @@
 /*
  * The following things are not implemented or do not work:
  *  - some fp arithmetic corner cases
- *  - AOT
  *  - Thread Abort
  * The following tests in mono/mini are expected to fail:
  *  - test_0_simple_double_casts
@@ -79,6 +78,7 @@
  * - delay slot scheduling
  * - allocate large constants to registers
  * - use %o registers for local allocation
+ * - implement unwinding through native frames
  */
 
 #if SPARCV9
@@ -2105,12 +2105,13 @@ sparc_patch (guint8 *code, const guint8 *target)
 		if (!sparc_is_imm19 (disp))
 			NOT_IMPLEMENTED;
 		/* BPcc */
-		*(guint32*)code |= (disp & 0x7ffff);
+		*(guint32*)code = ((ins >> 19) << 19) | (disp & 0x7ffff);
 	}
 	else if ((op == 0) && (op2 == 3)) {
 		if (!sparc_is_imm16 (disp))
 			NOT_IMPLEMENTED;
 		/* BPr */
+		*(guint32*)code &= ~(0x180000 | 0x3fff);
 		*(guint32*)code |= ((disp << 21) & (0x180000)) | (disp & 0x3fff);
 	}
 	else if ((op == 0) && (op2 == 6)) {
@@ -2129,24 +2130,41 @@ sparc_patch (guint8 *code, const guint8 *target)
 			while (p <= (code + 4))
 				sparc_nop (p);
 		}
+		else if (ins2 == 0x01000000) {
+			/* sethi followed by nop */
+			guint32 *p = (guint32*)code;
+			sparc_set (p, target, rd);
+			while (p <= (code + 4))
+				sparc_nop (p);
+		}
 		else if ((sparc_inst_op (ins2) == 3) && (sparc_inst_imm (ins2))) {
 			/* sethi followed by load/store */
 			guint32 t = (guint32)target;
-			*(guint32*)code = ins | (t >> 10);
-			*(guint32*)(code + 4) = ins2 | (t & 0x3ff);
+			*(guint32*)code &= ~(0x3fffff);
+			*(guint32*)code |= (t >> 10);
+			*(guint32*)(code + 4) &= ~(0x3ff);
+			*(guint32*)(code + 4) |= (t & 0x3ff);
 		}
 		else if ((sparc_inst_op (ins2) == 2) && (sparc_inst_op3 (ins2) == 0x38) && 
 				 (sparc_inst_imm (ins2))) {
 			/* sethi followed by jmpl */
 			guint32 t = (guint32)target;
-			*(guint32*)code = ins | (t >> 10);
-			*(guint32*)(code + 4) = ins2 | (t & 0x3ff);
+			*(guint32*)code &= ~(0x3fffff);
+			*(guint32*)code |= (t >> 10);
+			*(guint32*)(code + 4) &= ~(0x3ff);
+			*(guint32*)(code + 4) |= (t & 0x3ff);
 		}
 		else
 			NOT_IMPLEMENTED;
 	}
 	else if (op == 01) {
 		sparc_call_simple (code, target - code);
+	}
+	else if ((op == 2) && (sparc_inst_op3 (ins) == 0x2) && sparc_inst_imm (ins)) {
+		/* mov imm, reg */
+		g_assert (sparc_is_imm13 (target));
+		*(guint32*)code &= ~(0x1fff);
+		*(guint32*)code |= (guint32)target;
 	}
 	else
 		NOT_IMPLEMENTED;
@@ -2283,7 +2301,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint32 *code)
 	MonoMethodSignature *sig;
 	MonoInst *inst;
 	CallInfo *cinfo;
-	guint32 i, offset, ireg;
+	guint32 i, ireg;
 
 	/* FIXME: Generate intermediate code instead */
 
@@ -2753,6 +2771,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ICONST:
 		case OP_SETREGIMM:
 			sparc_set (code, ins->inst_c0, ins->dreg);
+			break;
+		case OP_AOTCONST:
+			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
+			sparc_set (code, 0xffffff, ins->dreg);
 			break;
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
@@ -3326,25 +3348,11 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
 
 		switch (patch_info->type) {
-		case MONO_PATCH_INFO_METHODCONST:
-		case MONO_PATCH_INFO_CLASS:
-		case MONO_PATCH_INFO_IMAGE:
-		case MONO_PATCH_INFO_FIELD:
-			NOT_IMPLEMENTED;
-			continue;
-		case MONO_PATCH_INFO_IID:
-			NOT_IMPLEMENTED;
-			continue;			
-		case MONO_PATCH_INFO_VTABLE:
-			NOT_IMPLEMENTED;
-			continue;
 		case MONO_PATCH_INFO_CLASS_INIT: {
-			/* FIXME: Might already been changed to a nop */
+			unsigned char *ip2 = ip;
+			/* Might already been changed to a nop */
+			sparc_call_simple (ip2, 0);
 			break;
-		}
-		case MONO_PATCH_INFO_SFLDA: {
-			NOT_IMPLEMENTED;
-			continue;
 		}
 		case MONO_PATCH_INFO_R4: {
 			float *f = g_new0 (float, 1);
@@ -3357,17 +3365,6 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			*d = *(double*)patch_info->data.target;
 			target = d;			
 			break;
-		}
-		case MONO_PATCH_INFO_LDSTR:
-			NOT_IMPLEMENTED;
-			continue;
-		case MONO_PATCH_INFO_TYPE_FROM_HANDLE: {
-			NOT_IMPLEMENTED;
-			continue;
-		}
-		case MONO_PATCH_INFO_LDTOKEN: {
-			NOT_IMPLEMENTED;
-			continue;
 		}
 		default:
 			break;
