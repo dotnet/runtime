@@ -892,8 +892,6 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 	}
 	offsets [1] = offset;
 
-	/* FIXME: This might cause a deadlock with domain->lock */
-	EnterCriticalSection (metadata_section);
 	/* intern the strings in the method. */
 	ip = header->code;
 	end = ip + header->code_size;
@@ -991,7 +989,6 @@ calc_offsets (MonoImage *image, MonoMethod *method)
 		if (strcmp (method->name, "GetElementType") == 0)
 			method->addr = GUINT_TO_POINTER (INLINE_TYPE_ELEMENT_TYPE);
 	}
-	LeaveCriticalSection (metadata_section);
 	mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
 }
 
@@ -4635,8 +4632,6 @@ main (int argc, char *argv [])
 	mono_install_stack_walk (interp_walk_stack);
 	mono_runtime_install_cleanup (quit_function);
 
-	metadata_section = &ms;
-	InitializeCriticalSection (metadata_section);
 	domain = mono_init (file);
 	mono_runtime_init (domain, NULL, NULL);
 
