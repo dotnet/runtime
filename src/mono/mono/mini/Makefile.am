@@ -128,13 +128,13 @@ test_sources = 		\
 
 regtests=basic.exe arrays.exe basic-float.exe basic-math.exe basic-long.exe objects.exe basic-calls.exe iltests.exe exceptions.exe bench.exe
 
-common_BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-long32.brg $(srcdir)/inssel-float.brg
+common_BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-float.brg
 
 if X86
 libmono_la_SOURCES = \
 	$(common_sources) $(x86_sources)
 
-arch_BURGSRC= $(srcdir)/inssel-x86.brg
+arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-x86.brg
 arch_built=cpu-pentium.h
 endif
 
@@ -142,7 +142,7 @@ if POWERPC
 libmono_la_SOURCES = \
 	$(common_sources) $(ppc_sources)
 
-arch_BURGSRC= $(srcdir)/inssel-ppc.brg
+arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-ppc.brg
 arch_built=cpu-g4.h
 endif
 
@@ -150,7 +150,15 @@ if SPARC
 libmono_la_SOURCES = \
 	$(common_sources) $(sparc_sources)
 
-arch_BURGSRC= $(srcdir)/inssel-sparc.brg
+arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-sparc.brg
+arch_built=cpu-sparc.h
+endif
+
+if SPARC64
+libmono_la_SOURCES = \
+	$(common_sources) $(sparc_sources)
+
+arch_BURGSRC= $(srcdir)/inssel-long.brg $(srcdir)/inssel-sparc.brg
 arch_built=cpu-sparc.h
 endif
 
@@ -158,7 +166,7 @@ if S390
 libmono_la_SOURCES = \
 	$(common_sources) $(s390_sources)
 
-arch_BURGSRC= $(srcdir)/inssel-s390.brg
+arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-s390.brg
 arch_built=cpu-s390.h
 endif
 
