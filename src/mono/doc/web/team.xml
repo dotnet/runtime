@@ -127,5 +127,20 @@
       <task>Class library hacking</task>
     </tasks>
   </contributor>
+
+  <contributor>
+    <name>
+      <first-name>Martin Willemoes</first-name>
+      <last-name>Hansen</last-name>
+    </name>
+    <e-mail>mwh -AT- sysrq.dkNOSPAM</e-mail>
+    <location>Aarhus, Denmark</location>
+    <tasks>		
+      <task>NUnit1 -> NUnit2 conversion</task>
+	<task>Stubbing</task>
+      <task>Mono Handbook work</task>
+      <task>Various fixes</task>
+    </tasks>		
+  </contributor>
  
 </contributors>
