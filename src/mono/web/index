@@ -151,6 +151,19 @@
   </tr>
 </table>
 
+@item Aug 5th, 2003: New Apache Module architecture: 1.3 and 2.x supported
+
+	Gonzalo rearchitected our Apache module for hosting Mono and
+	ASP.NET.  The previous incarnation hosted a Mono runtime on
+	each Apache process, which lead to a slow setup for webforms.
+	The new setup uses a shared mono process for all the incoming
+	requests.  Daniel later improved up the new architecture and
+	added dual support, so now in addition to Apache 2.x, we
+	support Apache 1.3 with the same codebase.
+
+	The new code is available on CVS, on module `mod_mono', and
+	now requires an XSP installation to be available. 
+
 @item Aug 4th, 2003: Ximian acquired by Novell.
 
 	Today <a href="http://www.novell.com">Novell</a> acquired <a
