@@ -70,6 +70,19 @@
   </tr>
 </table>
 
+** May 4th, 2002
+
+	Rodrigo Moya announced <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-May/005366.html">new
+	LibGDA</a>: LibGDA is an ADO-like library for Unix systems.
+	This one removes all the CORBA and GConf dependencies, which
+	should make it easier to use and compile. 
+
+	This is another milestone for our <a
+	href="ado-net.html">ADO.NET implementation plans</a>
+
+	We have a little surprise for everyone tracking the news on tuesday ;-)
+
 ** May 2nd, 2002
 
 	Mark Crichton csvorbis port (C# port of Vorbis player) and
@@ -78,7 +91,9 @@
 
 	Dick implemented inter-process sharing of handles as well as
 	simplifying the implementation of WaitForMultipleObjects, now
-	we have a `handles' subsystem in Mono.
+	we have a `handles' subsystem in Mono.  This is needed to fully
+	emulate the handle behavior that Win32 exposes, and that the .NET API
+	expose to applications.
 
 	News from the <a
 	href="http://gtk-sharp.sourceforge.net">Gtk#</a> front: <a

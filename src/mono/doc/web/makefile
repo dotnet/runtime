@@ -10,7 +10,9 @@ OBJECTS=	\
 	deploy/contributing.html		\
 	deploy/class-status.html		\
 	deploy/class-status-corlib.html		\
+	deploy/class-status-System.html		\
 	deploy/class-status-System.Xml.html	\
+	deploy/class-status-System.Drawing.html	\
 	deploy/class-status-System.Data.html	\
 	deploy/class-status-System.Web.html	\
 	deploy/class-library.html		\
