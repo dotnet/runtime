@@ -1,3 +1,8 @@
+2003-08-21  Zoltan Varga  <vargaz@freemail.hu>
+
+	* mono/tests/threadpool.cs mono/tests/threadpool1.cs: Make increments 
+	of static variables atomic. Fixes bug #47683.
+
 2003-08-21  Johannes Roith  <johannes@jroith.de>
 
 	* mono/Makefile.am: small update. make sure, glib makes it in the build, add optional target for dependencies

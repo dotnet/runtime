@@ -8,7 +8,7 @@ public class Test {
 	public static void test_callback (object state) {
 		Console.WriteLine("test_casllback:" + state);
 		Thread.Sleep (200);
-		csum++;
+		Interlocked.Increment (ref csum);
 	}
 	
 	public static int Main () {

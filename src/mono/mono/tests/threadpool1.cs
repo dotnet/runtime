@@ -12,7 +12,7 @@ public class Test {
 		Console.WriteLine("test_casllback:" + state + "ATH: " + workerThreads);
 		Thread.Sleep (10);
 
-		csum += 1;
+		Interlocked.Increment (ref csum);
 	}
 	
 	public static int Main () {
