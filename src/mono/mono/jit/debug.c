@@ -1592,6 +1592,7 @@ mono_debugger_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, ch
 	MonoImage *image = assembly->image;
 	MonoMethod *method;
 	gpointer addr;
+	int retval;
 
 	method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
 
@@ -1610,5 +1611,12 @@ mono_debugger_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, ch
 	 */
 	mono_debugger_wait ();
 
-	return mono_runtime_run_main (method, argc, argv, NULL);
+	retval = mono_runtime_run_main (method, argc, argv, NULL);
+
+	/*
+	 * Kill the background thread.
+	 */
+	kill (debugger_background_thread, SIGKILL);
+
+	return retval;
 }
