@@ -479,27 +479,14 @@ ves_icall_get_property_info (MonoReflectionProperty *property, MonoPropertyInfo 
 	 */
 }
 
-static void
-ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
+static MonoArray*
+ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 {
 	MonoDomain *domain = mono_domain_get (); 
-	MonoClass *class = mono_class_from_mono_type (type);
-	MonoClass *parent;
 	MonoArray *intf;
 	int ninterf, i;
-	
-	info->parent = class->parent ? mono_type_get_object (domain, &class->parent->byval_arg): NULL;
-	info->name = mono_string_new (domain, class->name);
-	info->name_space = mono_string_new (domain, class->name_space);
-	info->attrs = class->flags;
-	info->rank = class->rank;
-	info->assembly = NULL; /* FIXME */
-	if (class->enumtype)
-		info->etype = mono_type_get_object (domain, class->enum_basetype);
-	else if (class->element_class)
-		info->etype = mono_type_get_object (domain, &class->element_class->byval_arg);
-	else
-		info->etype = NULL;
+	MonoClass *class = mono_class_from_mono_type (type->type);
+	MonoClass *parent;
 
 	ninterf = 0;
 	for (parent = class; parent; parent = parent->parent) {
@@ -513,7 +500,31 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 			++ninterf;
 		}
 	}
-	info->interfaces = intf;
+	return intf;
+}
+
+static void
+ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
+{
+	MonoDomain *domain = mono_domain_get (); 
+	MonoClass *class = mono_class_from_mono_type (type);
+
+	info->parent = class->parent ? mono_type_get_object (domain, &class->parent->byval_arg): NULL;
+	info->name = mono_string_new (domain, class->name);
+	info->name_space = mono_string_new (domain, class->name_space);
+	info->attrs = class->flags;
+	info->rank = class->rank;
+	info->assembly = NULL; /* FIXME */
+	if (class->enumtype)
+		info->etype = mono_type_get_object (domain, class->enum_basetype);
+	else if (class->element_class)
+		info->etype = mono_type_get_object (domain, &class->element_class->byval_arg);
+	else
+		info->etype = NULL;
+
+	info->isbyref = type->byref;
+	info->ispointer = type->type == MONO_TYPE_PTR;
+	info->isprimitive = (type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8);
 }
 
 static MonoObject*
@@ -1415,6 +1426,7 @@ static gpointer icall_map [] = {
 	"System.MonoType::GetMethods", ves_icall_Type_GetMethods,
 	"System.MonoType::GetConstructors", ves_icall_Type_GetConstructors,
 	"System.MonoType::GetProperties", ves_icall_Type_GetProperties,
+	"System.MonoType::GetInterfaces", ves_icall_Type_GetInterfaces,
 
 	"System.PAL.OpSys::GetCurrentDirectory", ves_icall_System_PAL_GetCurrentDirectory,
 

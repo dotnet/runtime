@@ -101,10 +101,10 @@ typedef struct {
 	MonoString *name_space;
 	MonoReflectionType *parent;
 	MonoReflectionType *etype;
-	MonoArray *interfaces;
 	MonoAssembly *assembly;
 	guint32 attrs;
 	guint32 rank;
+	MonoBoolean isbyref, ispointer, isprimitive;
 } MonoTypeInfo;
 
 typedef struct {
