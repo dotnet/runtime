@@ -332,6 +332,8 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 
 		GC_init_gcj_malloc (5, NULL);
 
+		mono_register_jit_icall (mono_object_new_fast, "mono_object_new_fast", mono_create_icall_signature ("object ptr"), FALSE);
+
 #ifdef GC_REDIRECT_TO_LOCAL
 		mono_register_jit_icall (GC_local_gcj_malloc, "GC_local_gcj_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
 		mono_register_jit_icall (GC_local_gcj_fast_malloc, "GC_local_gcj_fast_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
@@ -1755,11 +1757,15 @@ mono_object_new_alloc_specific (MonoVTable *vtable)
 	return o;
 }
 
+#if CREATION_SPEEDUP
+
 MonoObject*
 mono_object_new_fast (MonoVTable *vtable)
 {
 	return GC_GCJ_MALLOC (vtable->klass->instance_size, vtable);
 }
+
+#endif
 
 /*
  * Return the allocation function appropriate for the given class.
