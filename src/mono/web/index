@@ -23,6 +23,16 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Jan 23, 2002
+
+	New mailing list: <a href="mailto:mono-patches-request@ximian.com">mono-patches@ximian.com</a>.
+	This mailing list will receive automatically the patches that are submitted
+	to the Mono CVS to any of its modules.
+
+	This allows anyone who wants to participate in the peer-review of the
+	code submitted to CVS to receive patches on e-mail.  It should also
+	expose to everyone the changes that are being done by the team every day.
+
 ** Jan 21, 2002
 
 	Dick has got a simple web server running with Mono (`MIS: Mono
