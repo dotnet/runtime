@@ -2120,6 +2120,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 					virtual = 0;
 			}
 
+			g_assert (sp >= stack);
+
 			if (!calli && mono_jit_inline_code && !virtual && cm->inline_count != -1 &&
 			    cm != method && (cm->inline_info || check_inlining (cm) >= 0)) {
 				MonoInlineInfo *ii = alloca (sizeof (MonoInlineInfo));
@@ -2190,6 +2192,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			frame_size = arch_get_argument_info (csig, nargs, arg_info);
 
 			for (k = nargs - 1; k >= 0; k--) {
+				g_assert (arg_sp [k]);
 				t1 = mono_ctree_new (mp, mono_map_arg_type (csig->params [k]), arg_sp [k], NULL);
 				t1->data.arg_info = arg_info [k + 1];
 				ADD_TREE (t1, arg_sp [k]->cli_addr);
