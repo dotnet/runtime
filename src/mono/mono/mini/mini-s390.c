@@ -2705,15 +2705,19 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (val < -1) {
 					/* the register gets spilled after this inst */
 					spill = -val -1;
-printf("val: %d spill: %d ins->sreg1: %d\n",val,spill,ins->sreg1);
 				}
 				val = mono_regstate_alloc_int (rs, src1_mask);
 				if (val < 0)
-					val = get_register_spilling (cfg, tmp, ins, src1_mask, ins->sreg1);
+					val = get_register_spilling (cfg, tmp, ins, 
+								     src1_mask, 
+								     ins->sreg1);
 				rs->iassign [ins->sreg1] = val;
-				DEBUG (g_print ("\tassigned sreg1 %s to R%d\n", mono_arch_regname (val), ins->sreg1));
+				DEBUG (g_print ("\tassigned sreg1 %s to R%d\n", 
+						mono_arch_regname (val), ins->sreg1));
 				if (spill) {
-					MonoInst *store = create_spilled_store (cfg, spill, val, prev_sreg1, NULL);
+					MonoInst *store; 
+					store = create_spilled_store (cfg, spill, val, 
+								      prev_sreg1, NULL);
 					insert_before_ins (ins, tmp, store);
 				}
 			}
@@ -2728,7 +2732,8 @@ printf("val: %d spill: %d ins->sreg1: %d\n",val,spill,ins->sreg1);
 		if ((spec [MONO_INST_CLOB] == '1' || 
 		     spec [MONO_INST_CLOB] == 's') && 
                     ins->dreg != ins->sreg1) {
-			MonoInst *copy = create_copy_ins (cfg, ins->dreg, ins->sreg1, NULL);
+			MonoInst *copy; 
+			copy = create_copy_ins (cfg, ins->dreg, ins->sreg1, NULL);
 			DEBUG (g_print ("\tneed to copy sreg1 %s to dreg %s\n", 
 					mono_arch_regname (ins->sreg1), 
 					mono_arch_regname (ins->dreg)));
@@ -3643,38 +3648,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->inst_c0 = code - cfg->native_code;
 			break;
 		case CEE_BR:
-//			EMIT_UNCOND_BRANCH(ins);
-if (ins->flags & MONO_INST_BRLABEL) { 							
-        if (ins->inst_i0->inst_c0) { 							
-		int displace;							
-		displace = ((cfg->native_code + ins->inst_i0->inst_c0) - code) / 2;	
-		if (s390_is_uimm16(displace)) {						
-			s390_brc (code, S390_CC_UN, displace);				
-		} else { 								
-			s390_jcl (code, S390_CC_UN, displace); 				
-		}									
-        } else { 									
-	        mono_add_patch_info (cfg, code - cfg->native_code, 			
-				     MONO_PATCH_INFO_LABEL, ins->inst_i0); 		
-		s390_jcl (code, S390_CC_UN, 0);						
-        } 										
-} else { 										
-        if (ins->inst_target_bb->native_offset) { 					
-		int displace;								
-		displace = ((cfg->native_code + 					
-			    ins->inst_target_bb->native_offset) - code) / 2;		
-		if (s390_is_uimm16(displace)) {						
-			s390_brc (code, S390_CC_UN, displace);				
-		} else { 								
-			s390_jcl (code, S390_CC_UN, displace); 				
-		}									
-        } else { 									
-		mono_add_patch_info (cfg, code - cfg->native_code, 			
-				     MONO_PATCH_INFO_BB, ins->inst_target_bb); 		
-printf("UNCOND: %08x\n",ins->inst_target_bb);
-		s390_jcl (code, S390_CC_UN, 0);						
-        } 										
-}
+			EMIT_UNCOND_BRANCH(ins);
 			break;
 		case OP_BR_REG:
 			s390_br	 (code, ins->sreg1);
