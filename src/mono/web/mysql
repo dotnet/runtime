@@ -14,20 +14,10 @@
 		</ul>
 	</li>
 
-	<li>Mono.Data.MySql (deprecated)
+	<li>Mono.Data.MySql (DEPRECATED)
 		<ul>
-			<li>Deprecated in favor of ByteFX.Data.MySQLClient
-		
-			<li>Written in C# and uses
-				the MySQL C Client Library</li>
-
-			<li>Exists in namespace Mono.Data.MySql and assembly Mono.Data.MySql</li>
-	
-			<li>Works on Windows and Linux via the MySQL client shared library
-				(libmySQL.dll on Windows and libmysqlclient.so on Linux).</li>
-	    
-			<li>Started by Daniel Morgan using 
-				<a href="http://www.cybercom.net/~zbrad/DotNet/MySql/">C# Bindings to MySQL</a> from <a href="mailto:zbrad@cybercom.net">Brad Merill</a></li>
+			<li>Deprecated in favor of ByteFX.Data.MySQLClient.  Mono.Data.MySql is no longer included in
+			Mono releases.</li>
 		</ul>
 	</li>
 	
@@ -40,10 +30,7 @@
 </ul>
 
  <p><a href="http://www.mysql.com/articles/dotnet/">Exploring MySQL 
- in the Microsoft .NET Environment</a> is an article
- by Mr. Venu who is a MySQL AB developer.</li>
-
- <p>Testing for Mono's Mono.Data.MySql and ByteFX's ByteFX.Data.MySqlClient is below.
+ in the Microsoft .NET Environment</a> is a nice article to read.</li>
     
 ** Current Status
 
@@ -73,33 +60,7 @@
 		</ul>
 	</li>
 	
-	<li>Mono.Data.MySql (deprecated)
-		<ul>
-			<li>Currently, only works with version 3.23.x of MySQL</li>
-		
-			<li>can connect</li>
-	
-			<li>can execute non-queries via ExecuteNonQuery()</li>
-	
-			<li>can execute aggregates via ExecuteScalar() and retrieve the
-				single row/single column result</li>
-	
-			<li>can execute queries and retrieve results using a data reader.</li>
-	
-			<li>a schema DataTable has been partially 
-				implemented which is returned from GetSchemaTable() in MySqlDataReader.</li>
-	
-			<li>a DataTable in a DataSet can be filled via a MySqlDataAdapter</li>
-		
-			<li>The shared client libraries 
-				between windows version and linux are different: windows has libmySQL.dll 
-				while linux has libmysqlclient.so.  This is handled by the 
-				file etc/mono/config which is mapped by the mono runtime in knowing
-				which native shared library to load.  In cvs, this file is mono/config.in and
-				can be modified with a text editor.</li>
-	
-			<li>Works in the SQL# command-line and GTK# GUI version</li>
-		</ul>
+	<li>Mono.Data.MySql (DEPRECATED)
 	</li>
 	
 </ul>
@@ -123,13 +84,7 @@
 			features all of MySQLClient to work on Mono</li>
 		</ul>
 	</li>
-	<li>Mono.Data.MySql (deprecated)
-		<ul>
-			<li>Testing and bug fixes</li>
-			<li>Mono.Data.MySql is deprecated and therefore maybe removed
-			at a later date.  It will stay in Mono for now because other
-			programs maybe using it now.</li>
-		</ul>
+	<li>Mono.Data.MySql (DEPRECATED)
 	</li>
 </ul>
 
@@ -209,20 +164,11 @@
 	<li>Building C# Example:
 	<ul>
 		<li>Save the example to a file, such as, TestExample.cs</li>
-		<li>Build on Linux:
 <pre>
 	mcs TestExample.cs -r System.Data.dll \
 	    -r ByteFX.Data.dll
 </pre>
 		</li>
-		<li>Build on Windows via Cygwin:
-<pre>
-	mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
-	     TestExample.cs \
-	     -lib:C:/cygwin/home/MyHome/mono/install/lib \
-	     -r System.Data.dll -r ByteFX.Data.dll
-</pre>
-		</li>
 	</ul>
 	</li>
 	<li>Running the Example:
@@ -233,97 +179,3 @@ mono TestExample.exe
 
 </ul>
 
-** Testing for Mono's MySQL provider (Mono.Data.MySql)
-
-<ul>
-	<li>Have access to a MySQL database or download it from
-		<ul>
-			<li><a href="http://www.mysql.com/downloads/index.html">MySQL AB</a></li>
-		</ul>
-	</li>
-	
-	<li>Take a look at MySqlTest.cs in mcs/class/Mono.Data.MySql/Test</li>
-	<li>On Linux, you may need to make a symbolic link from libmySQL.dll to libmysqlclient.dll</li>
-	
-	<li>Has a ConnectionString format: 
-<pre>
- "Server=hostname;Database=database;User ID=username;Password=password"
-         (or)
- "Host=hostname;Dbname=database;User=username;Passwd=password"
-</pre>
-
-	<li>C# Example:
-<pre>
- using System;
- using System.Data;
- using Mono.Data.MySql;
- 
- public class Test 
- {
-    public static void Main(string[] args)
-    {
-       string connectionString = 
-          "Server=localhost;" +
-          "Database=test;" +
-          "User ID=myuserid;" +
-          "Password=mypassword;";
-       IDbConnection dbcon;
-       dbcon = new MySqlConnection(connectionString);
-       dbcon.Open();
-       IDbCommand dbcmd = dbcon.CreateCommand();
-       // requires a table to be created named employee
-       // with columns firstname and lastname
-       // such as,
-       //        CREATE TABLE employee (
-       //           firstname varchar(32),
-       //           lastname varchar(32));
-       string sql = 
-            "SELECT firstname, lastname " + 
-            "FROM employee";
-       dbcmd.CommandText = sql;
-       IDataReader reader = dbcmd.ExecuteReader();
-       while(reader.Read()) {
-            string FirstName = (string) reader["firstname"];
-            string LastName = (string) reader["lastname"];
-            Console.WriteLine("Name: " + 
-                 FirstName + " " + LastName);
-       }
-       // clean up
-       reader.Close();
-       reader = null;
-       dbcmd.Dispose();
-       dbcmd = null;
-       dbcon.Close();
-       dbcon = null;
-    }
- }
-</pre>
-	</li>
-	<li>Building C# Example:
-	<ul>
-		<li>Save the example to a file, such as, TestExample.cs</li>
-		<li>Build on Linux:
-<pre>
-	mcs TestExample.cs \
-	    -r System.Data.dll \
-	    -r Mono.Data.MySql.dll
-</pre>
-		</li>
-		<li>Build on Windows via Cygwin:
-<pre>
-	mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
-	     TestExample.cs \
-	     -lib:C:/cygwin/home/MyHome/mono/install/lib \
-	     -r System.Data.dll \
-	     -r Mono.Data.MySql.dll
-</pre>
-		</li>
-	</ul>
-	</li>
-	<li>Running the Example:
-<pre>
-mono TestExample.exe
-</pre>
-	</li>
-
-</ul>

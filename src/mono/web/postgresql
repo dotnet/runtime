@@ -1,16 +1,7 @@
 * PostgreSQL and Mono
 
   When it comes to Mono and PostgreSQL, there are many ways
-  you can handle your data.   You have many Mono Data Providers which can be used
-  to access data from a application written for Mono.  
-  Then there is the future goal of having the ability to host Mono within PostgreSQL to
-  have the applications run on the server which makes things much faster.
-  
-* Hosting Mono in PostgreSQL
-
-  There is a project to <a href="http://gborg.postgresql.org/project/plmono/projdisplay.php">host Mono within PostgreSQL</a>.
-
-  plMono is a PostgreSQL language using the embedded Mono runtime. It provides support for writing functions in C#, or any other language that supports .NET.
+  you can access your data.
 
 * Data Providers
 
@@ -41,19 +32,11 @@
 		</ul>
 	</li>
 	
-	<li>Mono.Data.PostgreSQL (deprecated)
+	<li>Mono.Data.PostgreSqlClient (DEPRECATED)
 		<ul>
-			<li>included with Mono</li>
-		
-			<li>Deprecated in favor of Npgsql</li>
+	
+			<li>Deprecated in favor of Npgsql.  No longer included in a release of Mono.</li>
 			
-			<li>Exists in namespace Mono.Data.PostgreSql and assembly Mono.Data.PostgreSql</li>
-	
-			<li>Is a Mono Data Provider for the <a href="http://www.postgresql.org/">PostgreSQL</a>
-				client/server database management system.</li>
-	
-			<li>Written in C# and has C# bindings to the PostgreSQL C Client library pq.dll on Windows
-				and libpq.so on Linux.</li>
 		</ul>
 	</li>
 	
@@ -71,8 +54,6 @@
 
 
 </ul>
-
- Below, see separate Testing sections for Npgsql and Mono.Data.PostgreSqlClient.
 
 ** Current Status
 
@@ -102,71 +83,6 @@
 
 		</ul>
 	</li>
-	<li>Mono.Data.PostgreSQL status
-	<ul>
-	
-	<li>Deprecated in favor of Npgsql</li>
-	
-	<li>We are able to do simple CREATE TABLE, DROP TABLE, UPDATE, INSERT, and
-	DELETE SQL commands using the ExecuteNonQuery method in PgSqlCommand.</li>
-	
-	<li>We can execute multiple queries and do a NextResult() in PgSqlDataReader()
-	to get the next result set.</li>
-	
-	<li>We are also able to do simple aggregate functions, 
-	ie, count(), sum(), min(), and max() 
-	in a simple SELECT SQL query using the ExecuteScalar() now.</li>
-	
-	<li>We are also able to retrieve data with a simple SELECT SQL query 
-	using ExecuteReader() which returns a PgSqlDataReader.  We are able to
-	use GetSchemaTable() to get the meta data about the table columns.  
-	We are able	to Read() to get each row from the result set.</li>
-	
-	<li>We are able to get 
-	String data (char, character, text, varchar), Int16 (smallint),
-	Int32 (integer), Int64 (bigint), DateTime (time, date, timestamp),
-	Boolean (boolean), Single (float), and Double (double).
-	More data types will come later.  Note, the types that do work still 
-	need thorough testing.</li>
-	
-	<li>Rows that are returned which contain columns that are NULL are handled now. 
-	The PgSqlDataReader method IsDBNull() needs to be called to determine 
-	if a field IS NULL before trying to read data from that field.</li>
-	
-	<li>Calling PostgreSQL stored procedures works.  It does not work perfectly.  
-	It may not
-	even work to specification - yet.  If you want to test it yourself, look at
-	TestSqlDataReader.cs or PostgresTest.cs in
-	mcs/class/System.Data/Test.</li>
-	
-	<li>Below, I have some sample code you can
-	use to call a PostgreSQL stored procedure named "version".  This stored
-	procedure returns a string containing the PostgreSQL server version.  Notice
-	the CommandType is StoredProcedure and the method ExecuteScalar() is called.</li>
-	
-	<li>ExecuteScalar() is a lightweight method in class PgSqlCommand that only returns
-	one row and one column as one object - even if there is more than row or column.</li>
-			
-	<li>We have the beginnings of Parameters support PostgreSQL.  Only
-	Input Parameters are currently supported.  Output, Input/Output,
-	and Return parameters still need to be done.</li>
-	
-	<li>A lot of Exceptions need to be thrown for various exceptions.  However,
-	PgSqlException, PgSqlErrorCollection, and PgSqlError have been partially
-	implemented.</li>
-	
-	<li>Tim Coleman and Rodrigo Moya got the beginnings of the
-	PgSqlDataAdapter/DataSet/DataTable/DataRow to work.  Currently, 
-	the PgSqlDataAdapter can Fill() relational data into a DataTable in a DataSet.
-	See the test mcs/class/System.Data/Test/TestSqlDataAdapter.cs to see it in action.</li>
-	
-	<li>Works in the SQL# command-line version
-			and the GTK# version on Linux.  It only works in SQL# command-line version
-			on Windows.</li>
-			
-	</ul>
-	</li>
-			
 </ul>
 
 ** Action Plan
@@ -187,54 +103,94 @@
 		in gborg.postgresql.org's cvs will be used to update the Npgsql source in
 		Mono's cvs. 
 		</li>
-		
-		<li>Mono.Data.PostgreSqlClient even though deprecated can still 
-		accept bug fixes. This is because other areas, such as, ASP.NET examples
-		may still use this provider.</li>
-		
+	
 		<li>Add any missing functionality to Npgsql. If this funtionality works on
 		.NET but not on Mono, implement the missing features or fix the bugs in Mono</li>
 
-		<li>Npgsql has replaced Mono.Data.PostgreSqlClient as the provider of
-		choice to use.  However, Mono.Data.PostgreSqlClient will remain in a
-		deprecated state until nobody uses it anymore - then it can be removed</li>
+		<li>Npgsql has been replaced Mono.Data.PostgreSqlClient as the provider of
+		choice to use.  Mono.Data.PostgreSqlClient is deprecated and is no longer included in
+		Mono releases.  Please use Npgsql for PostgreSQL data access.</li>
 		
-		<li>Implement more of PostgreSQL 7.3 features in Npgsql</li>
+		<li>Implement new features of PostgreSQL.</li>
 	</ul>
 
-** Testing Mono.Data.PostgreSqlClient
-
-	<ul>
-		* <p>In order to test Mono.Data.PostgreSqlClient, you will need to have
-	access to a remote PostgreSQL DBMS, or you will have to install 
-	one locally.  PostgreSQL was the first ADO.NET provider created in Mono.
-		
-	<p>Why use PostgreSQL?  Because it is free software, has a client 
-	library that is easy to use, PostgreSQL is easy to install on
-	Unix and Windows (using the Cygwin install program), not difficult to setup after
-	installation, and it runs under: Linux, 
-	Windows (via cygwin and ipc-daemon), Unix, and
-	others.  This allowed us to create the
-	System.Data functionality in Mono much quicker.
-		
-	<p>If you plan on using a remote PostgreSQL DBMS Server,
-	than you will need to have the PostgreSQL client software on your
-	local computer that includes libpq.so (pq.dll on Windows).
-	
-	<p>The System.Data tests use this connection string to connect
-	to the PostgreSQL database named "test" at host "localhost" as
-	user "postgres".
-
-<pre>
-"Server=localhost;Database=test;User ID=postgres;Password=fun2db"
-      (or)
-"host=localhost;dbname=test;user=postgres;password=fun2db"
-</pre>
 </ul>
-		
-	<p>Installation instructions for PostgreSQL DBMS:
 
-	<b>On Unix</b>
+** Testing Npgsql
+
+<ul>
+	<li>Have a working mono and mcs</li>
+		
+	<li>Get <a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a>
+	and make sure the binary assembly Npgsql.dll is installed in the same place that the
+	mono class libraries are located.
+	
+	<li>C# Example for Npgsql:
+<pre>
+ using System;
+ using System.Data;
+ using Npgsql;
+ 
+ public class Test 
+ {
+    public static void Main(string[] args)
+    {
+       string connectionString = 
+          "Server=localhost;" +
+          "Database=test;" +
+          "User ID=postgres;" +
+          "Password=fun2db;";
+       IDbConnection dbcon;
+       dbcon = new NpgsqlConnection(connectionString);
+       dbcon.Open();
+       IDbCommand dbcmd = dbcon.CreateCommand();
+       // requires a table to be created named employee
+       // with columns firstname and lastname
+       // such as,
+       //        CREATE TABLE employee (
+       //           firstname varchar(32),
+       //           lastname varchar(32));
+       string sql = 
+           "SELECT firstname, lastname " +
+           "FROM employee";
+       dbcmd.CommandText = sql;
+       IDataReader reader = dbcmd.ExecuteReader();
+       while(reader.Read()) {
+            string FirstName = (string) reader["firstname"];
+            string LastName = (string) reader["lastname"];
+            Console.WriteLine("Name: " + 
+                 FirstName + " " + LastName);
+       }
+       // clean up
+       reader.Close();
+       reader = null;
+       dbcmd.Dispose();
+       dbcmd = null;
+       dbcon.Close();
+       dbcon = null;
+    }
+ }
+</pre>
+	</li>
+	<li>Building C# Example:
+	<ul>
+		<li>Save the example to a file, such as, TestExample.cs</li>
+<pre>
+	mcs TestExample.cs -r System.Data.dll \
+	    -r Npgsql.dll
+</pre>
+	</ul>
+	</li>
+	<li>Running the Example:
+<pre>
+mono TestExample.exe
+</pre>
+</li>
+</ul>
+
+		
+** Installation instructions for PostgreSQL DBMS:
+	<p><b>On Unix</b>
 
 	<ul>
 		* Read the PostgreSQL Installation Instructions 
@@ -406,199 +362,4 @@ create user postgres with password 'fun2db';
 			without having to change the database, userid, etc.
 	</ul>
 	
-	<p>In the path mcs/class/System.Data/Test
-	there is a test for Mono.Data.PostgreSqlClient named
-	PostgreTest.cs.  Thanks goes to Gonzalo for creating the original
-	PostgreSQL test.
 
-	<p>
-    To compile the PostgresTest.cs program, do:
-    
-    <p>
-<pre>
- mcs PostgresTest.cs \
-    -r System.Data.dll \
-    -r Mono.Data.PostgreSqlClient.dll
-</pre>
-
-	<p>If there are compile errors, such as, can not convert IDbConnection
-	to PgSqlConnection, then you need to run mcs like:
-
-<pre>
- mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
-    PostgresTest.cs \
-    -r System.Data.dll \
-    -r Mono.Data.PostgreSqlClient.dll
-</pre>
-    
-    <p>
-    To run using mint, do:
-    
-    <p>
-<pre>
-mint PostgresTest.exe
-</pre>
-    
-    <p>
-    To run using mono, do:
-<pre>
-mono PostgresTest.exe
-</pre>  
-
-	<p>C# Example for Mono.Data.PostgreSqlClient:
-<pre>
- using System;
- using System.Data;
- using Mono.Data.PostgreSqlClient;
- 
- public class Test 
- {
-    public static void Main(string[] args)
-    {
-       string connectionString = 
-          "Server=localhost;" +
-          "Database=test;" +
-          "User ID=postgres;" +
-          "Password=fun2db;";
-       IDbConnection dbcon;
-       dbcon = new PgConnection(connectionString);
-       dbcon.Open();
-       IDbCommand dbcmd = dbcon.CreateCommand();
-       // requires a table to be created named employee
-       // with columns firstname and lastname
-       // such as,
-       //        CREATE TABLE employee (
-       //           firstname varchar(32),
-       //           lastname varchar(32));
-       string sql = 
-           "SELECT firstname, lastname" + 
-           "FROM employee";
-       dbcmd.CommandText = sql;
-       IDataReader reader = dbcmd.ExecuteReader();
-       while(reader.Read()) {
-            string FirstName = (string) reader["firstname"];
-            string LastName = (string) reader["lastname"];
-            Console.WriteLine("Name: " + 
-                FirstName + " " + LastName);
-       }
-       // clean up
-       reader.Close();
-       reader = null;
-       dbcmd.Dispose();
-       dbcmd = null;
-       dbcon.Close();
-       dbcon = null;
-    }
- }
-</pre>
-	</li>
-	<li>Building C# Example:
-	<ul>
-		<li>Save the example to a file, such as, TestExample.cs</li>
-		<li>Build on Linux:
-<pre>
-	mcs TestExample.cs -r System.Data.dll \
-	    -r Mono.Data.PostgreSqlClient.dll
-</pre>
-		</li>
-		<li>Build on Windows via Cygwin:
-<pre>
-	mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
-	     TestExample.cs \
-	     -lib:C:/cygwin/home/MyHome/mono/install/lib \
-	     -r System.Data.dll -r Mono.Data.PostgreSqlClient.dll
-</pre>
-		</li>
-	</ul>
-	</li>
-	<li>Running the Example:
-<pre>
-mono TestExample.exe
-</pre>
-</li>
-</ul>
-
-** Testing Npgsql
-
-<ul>
-	<li>Have a working mono and mcs</li>
-		
-	<li>Get <a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a>
-	and make sure the binary assembly Npgsql.dll is installed in the same place that the
-	mono class libraries are located.
-	
-	<li>Read the Testing notes for Mono.Data.PostgreSqlClient too
-	
-	<li>C# Example for Npgsql:
-<pre>
- using System;
- using System.Data;
- using Npgsql;
- 
- public class Test 
- {
-    public static void Main(string[] args)
-    {
-       string connectionString = 
-          "Server=localhost;" +
-          "Database=test;" +
-          "User ID=postgres;" +
-          "Password=fun2db;";
-       IDbConnection dbcon;
-       dbcon = new NpgsqlConnection(connectionString);
-       dbcon.Open();
-       IDbCommand dbcmd = dbcon.CreateCommand();
-       // requires a table to be created named employee
-       // with columns firstname and lastname
-       // such as,
-       //        CREATE TABLE employee (
-       //           firstname varchar(32),
-       //           lastname varchar(32));
-       string sql = 
-           "SELECT firstname, lastname " +
-           "FROM employee";
-       dbcmd.CommandText = sql;
-       IDataReader reader = dbcmd.ExecuteReader();
-       while(reader.Read()) {
-            string FirstName = (string) reader["firstname"];
-            string LastName = (string) reader["lastname"];
-            Console.WriteLine("Name: " + 
-                 FirstName + " " + LastName);
-       }
-       // clean up
-       reader.Close();
-       reader = null;
-       dbcmd.Dispose();
-       dbcmd = null;
-       dbcon.Close();
-       dbcon = null;
-    }
- }
-</pre>
-	</li>
-	<li>Building C# Example:
-	<ul>
-		<li>Save the example to a file, such as, TestExample.cs</li>
-		<li>Build on Linux:
-<pre>
-	mcs TestExample.cs -r System.Data.dll \
-	    -r Npgsql.dll
-</pre>
-		</li>
-		<li>Build on Windows via Cygwin:
-<pre>
-	mono C:/cygwin/home/MyHome/mono/install/bin/mcs.exe \
-	     TestExample.cs \
-	     -lib:C:/cygwin/home/MyHome/mono/install/lib \
-	     -r System.Data.dll -r Npgsql.dll
-</pre>
-		</li>
-	</ul>
-	</li>
-	<li>Running the Example:
-<pre>
-mono TestExample.exe
-</pre>
-</li>
-</ul>
-	

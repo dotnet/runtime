@@ -65,7 +65,6 @@ OBJECTS=									\
 	deploy/status.html							\
 	deploy/sybase.html							\
 	deploy/tdsclient.html							\
-	deploy/tds-providers.html						\
 	deploy/team.html							\
 	deploy/testing.html							\
 	deploy/tools.html							\

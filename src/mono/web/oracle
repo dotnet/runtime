@@ -68,12 +68,14 @@
 	<li>transactions (WORKING)</li>
 	<li>Stored Procedures, Functions, and Packages support</li>
 	<li>Be able to fill a DataTable in a DataSet via a data adapter (IN PROGRESS)</li>
-	<li>Support for Oracle 8i and 9i (WORKING)</li>
-	<li>Support LOBs</li>
+	<li>Support for Oracle 8i on Linux and Windows (WORKING)</li>
+	<li>Support for Oracle 9i on Linux and Windows (WORKING)</li>
+	<li>Support for Oracle 10g on Linux and Windows [TODO].  Please let us 
+	know on mono-list if Mono OracleClient works with Oracle 10g or not.  If not, what errors do you get</li>
+	<li>Support Large OBjects</li>
 	<li>Support all the data types</li>
 	<li>Implement Connection pooling</li>
 	<li>Security</li>
-	<li>Once Oracle 10g is released, make sure Mono works with Oracle 10g.</li>
 	
 </ul>
 
