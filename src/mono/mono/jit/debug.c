@@ -1378,15 +1378,13 @@ debugger_thread_func (gpointer ptr)
 	debugger_background_thread = getpid ();
 
 	/*
-	 * Ok, we're now running in the debugger - signal the parent thread that
-	 * we're ready and enter the event loop.  Note that the condition is not
-	 * signalled before the debugger attached to us, so we don't need to raise
-	 * a SIGSTOP here anymore.
+	 * The parent thread waits on this condition because it needs our pid.
 	 */
-	g_assert (WaitForSingleObject (debugger_start_cond, INFINITE) == WAIT_OBJECT_0);
+	ReleaseSemaphore (debugger_start_cond, 1, NULL);
 
 	/*
-	 * Lock the mutex and enter the main event loop.
+	 * This mutex is locked by the parent thread until the debugger actually
+	 * attached to us, so we don't need a SIGSTOP here anymore.
 	 */
 	mono_debug_lock ();
 
@@ -1455,11 +1453,15 @@ initialize_debugger_support ()
 	g_assert (thread);
 
 	/*
+	 * Wait until the background thread set its pid.
+	 */
+	g_assert (WaitForSingleObject (debugger_start_cond, INFINITE) == WAIT_OBJECT_0);
+
+	/*
 	 * Wait until the debugger thread has actually been started and we
 	 * have its pid, then actually start the background thread.
 	 */
 	mono_debugger_init_thread_debug (debugger_background_thread);
-	ReleaseSemaphore (debugger_start_cond, 1, NULL);
 }
 
 static GPtrArray *breakpoints = NULL;
