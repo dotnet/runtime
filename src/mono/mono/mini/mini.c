@@ -2696,11 +2696,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
  					if (!MONO_TYPE_IS_VOID (fsig->ret))
  						sp++;
 
-					if (sp != stack_start) {
-						handle_stack_args (cfg, ebblock, stack_start, sp - stack_start);
-					       	sp = stack_start;
-					}
-				       	start_new_bblock = 1;
+					/* indicates start of a new block, and triggers a load of all 
+					   stack arguments at bb boundarie */
+					bblock = ebblock;
 
 					inline_costs += costs;
 					break;
@@ -3209,8 +3207,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_TEMPLOAD (cfg, *sp, temp);
 				}
 
-				/* FIXME: currently disabled because of bug #42175 */
-				if (0 && (cfg->opt & MONO_OPT_INLINE) && cmethod &&
+				if ((cfg->opt & MONO_OPT_INLINE) && cmethod &&
 				    mono_method_check_inlining (cmethod) &&
 				    !mono_class_is_subclass_of (cmethod->klass, mono_defaults.exception_class, FALSE) &&
 				    !g_list_find (dont_inline, cmethod)) {
@@ -3218,18 +3215,25 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoBasicBlock *ebblock;
 					if ((costs = inline_method (cfg, cmethod, cmethod->signature, bblock, sp, ip, real_offset, dont_inline, &ebblock))) {
 
-						GET_BBLOCK (cfg, bbhash, bblock, ip + 5);
+						ip += 5;
+						real_offset += 5;
+						
+						GET_BBLOCK (cfg, bbhash, bblock, ip);
 						ebblock->next_bb = bblock;
 						link_bblock (cfg, ebblock, bblock);
 
-						/*if (sp != stack_start) {
-							handle_stack_args (cfg, ebblock, stack_start, sp - stack_start);
-							sp = stack_start;
-						}
-						start_new_bblock = 1;*/
+						NEW_TEMPLOAD (cfg, *sp, temp);
+						sp++;
+
+						/* indicates start of a new block, and triggers a load 
+						   of all stack arguments at bb boundarie */
+						bblock = ebblock;
 
 						inline_costs += costs;
-						/*g_print ("inlined newobj for %s\n", cmethod->klass->name);*/
+						break;
+						
+					} else {
+						mono_emit_method_call_spilled (cfg, bblock, cmethod, sp, ip, sp[0]);
 					}
 				} else {
 					/* now call the actual ctor */
@@ -3360,11 +3364,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						ebblock->next_bb = bblock;
 						link_bblock (cfg, ebblock, bblock);
 
-						if (sp != stack_start) {
-							handle_stack_args (cfg, ebblock, stack_start, sp - stack_start);
-							sp = stack_start;
-						}
-						start_new_bblock = 1;
+						/* indicates start of a new block, and triggers a load 
+						   of all stack arguments at bb boundarie */
+						bblock = ebblock;
 
 						inline_costs += costs;
 						break;
@@ -3426,11 +3428,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						}
 						sp++;
 
-						if (sp != stack_start) {
-							handle_stack_args (cfg, ebblock, stack_start, sp - stack_start);
-							sp = stack_start;
-						}
-						start_new_bblock = 1;
+						/* indicates start of a new block, and triggers a load of
+						   all stack arguments at bb boundarie */
+						bblock = ebblock;
 						
 						inline_costs += costs;
 						break;
