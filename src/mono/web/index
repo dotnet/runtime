@@ -2,52 +2,6 @@
 
 
 	<table align="right" border=1 padding=0 width=25%>
-	  <tr>
-	    <td colspan="2" bgcolor=lightgrey>
-	      <b><center>In the news</center></b>
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>
-	      <img src="images/2003osdirwinnerbadge.gif">
-	    </td>
-	    <td>
-	      <a href="http://osdir.com/Article198.phtml">Dec 19th, 2003</a>: Editor's Choice Award.
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>
-	      <img src="images/netmagazine.png">
-	    </td>
-	    <td>
-		
-	      <a href="http://www.ftponline.com/wss/2003_TE/magazine/columns/trends">May 31st, 2003</a>: CLI integration.
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>
-	      <img src="images/infoworld.png">
-	    </td>
-	    <td>
-	      <a href="http://www.infoworld.com/article/03/05/22/HNmono_1.html">May 22nd, 2003</a>: Mono 1.0 plans.
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>
-	      <img src="images/infoworld.png">
-	    </td>
-	    <td>
-	      <a href="http://www.infoworld.com/article/03/03/14/11stratdev_1.html">Mar 14th, 2003</a>: Whither Mono?
-	    </td>
-	  </tr>
-	  <tr>
-	    <td>
-	      <img src="images/b2.png">
-	    </td>
-	    <td>
-	      <a href="http://www.infoworld.com/article/03/05/22/HNmono_1.html">Dec, 2002</a>: The Penguin takes flight.
-	    </td>
-		</tr>
 	 <tr>
 	    <td colspan="2" bgcolor=lightgrey>
 	      <b><center>Mono Status</center></b>
@@ -98,7 +52,52 @@
 	      <a href="index.rss"><img src="images/xml.gif"></a>
 	    </td>
 	  </tr>
-
+	  <tr>
+	    <td colspan="2" bgcolor=lightgrey>
+	      <b><center>In the news</center></b>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <img src="images/2003osdirwinnerbadge.gif">
+	    </td>
+	    <td>
+	      <a href="http://osdir.com/Article198.phtml">Dec 19th, 2003</a>: Editor's Choice Award.
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <img src="images/netmagazine.png">
+	    </td>
+	    <td>
+		
+	      <a href="http://www.ftponline.com/wss/2003_TE/magazine/columns/trends">May 31st, 2003</a>: CLI integration.
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <img src="images/infoworld.png">
+	    </td>
+	    <td>
+	      <a href="http://www.infoworld.com/article/03/05/22/HNmono_1.html">May 22nd, 2003</a>: Mono 1.0 plans.
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <img src="images/infoworld.png">
+	    </td>
+	    <td>
+	      <a href="http://www.infoworld.com/article/03/03/14/11stratdev_1.html">Mar 14th, 2003</a>: Whither Mono?
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <img src="images/b2.png">
+	    </td>
+	    <td>
+	      <a href="http://www.infoworld.com/article/03/05/22/HNmono_1.html">Dec, 2002</a>: The Penguin takes flight.
+	    </td>
+	  </tr>
  	</table>
 
 
