@@ -350,7 +350,12 @@ if test x$platform_win32 = xno; then
 			if test -d $with_jdk_dir/include/solaris; then
 				jdk_platform=solaris
 			else
+			if test -f $with_jdk_dir/include/jni_md.h; then
+				# GNU Classpath sources
+				jdk_platform=
+			else
 				jdk_headers_found=no
+			fi
 			fi
 			fi
 		else
