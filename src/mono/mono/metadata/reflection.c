@@ -8197,7 +8197,7 @@ ensure_runtime_vtable (MonoClass *klass)
 		}
 	}
 
-	overrides = (MonoMethod**)g_new0 (MonoMethod, onum * 2);
+	overrides = g_new0 (MonoMethod*, onum * 2);
 
 	if (tb->methods) {
 		onum = 0;
@@ -8219,6 +8219,7 @@ ensure_runtime_vtable (MonoClass *klass)
 	}
 
 	mono_class_setup_vtable (klass, overrides, onum);
+	g_free (overrides);
 }
 
 static void
