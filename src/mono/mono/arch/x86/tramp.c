@@ -201,6 +201,8 @@ enum_marshal:
 					x86_mov_reg_imm (p, X86_EAX, memcpy);
 					x86_call_reg (p, X86_EAX);
 					x86_alu_reg_imm (p, X86_ADD, X86_ESP, 12);
+					/* memcpy might clobber EDX so restore it */
+					x86_mov_reg_membase (p, X86_EDX, X86_EBP, ARGP_POS, 4);
 				}
 			} else {
 				/* it's an enum value */
