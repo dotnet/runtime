@@ -5,7 +5,7 @@ Release: 1
 License: LGPL
 Group: System Environment/Base
 # the original file is in .gz format but I want to save a few bytes
-Source0: http://go-mono.com/archive/mono-0.14.tar.gz
+Source0: http://go-mono.com/archive/mono-@VERSION@.tar.gz
 URL: http://go-mono.com/
 BuildRoot: %{_tmppath}/%{name}-root
 Requires: /sbin/ldconfig, libxml2, libxslt
