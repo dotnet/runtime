@@ -20,8 +20,10 @@ void GetSystemInfo(WapiSystemInfo *info)
 	info->dwPageSize=getpagesize();
 
 	/* Fill in the rest of this junk. Maybe with libgtop */
-#ifdef _SC_NPROCESSORS_CONF
-	info->dwNumberOfProcessors = sysconf (_SC_NPROCESSORS_CONF);
+#ifdef _SC_NPROCESSORS_ONLN
+	info->dwNumberOfProcessors = sysconf (_SC_NPROCESSORS_ONLN);
+	if (info->dwNumberOfProcessors <= 0)
+		info->dwNumberOfProcessors = 1;
 #else
 	info->dwNumberOfProcessors = 1;
 #endif
