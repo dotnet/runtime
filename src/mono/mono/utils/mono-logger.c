@@ -10,7 +10,7 @@ typedef struct {
 	MonoTraceMask	mask;
 } MonoLogLevelEntry;
 
-static GLogLevelFlags current_level		= G_LOG_LEVEL_INFO;
+static GLogLevelFlags current_level		= G_LOG_LEVEL_ERROR;
 static MonoTraceMask current_mask		= MONO_TRACE_ALL;
 
 static const char	*mono_log_domain	= "Mono";
@@ -85,6 +85,9 @@ mono_trace(GLogLevelFlags level, MonoTraceMask mask, const char *format, ...)
 void 
 mono_tracev (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args)
 {
+	if (level_stack == NULL)
+		mono_trace_init ();
+
 	if(level <= current_level && mask & current_mask)
 		g_logv (mono_log_domain, level, format, args);
 }
@@ -144,7 +147,7 @@ mono_trace_push (GLogLevelFlags level, MonoTraceMask mask)
 		entry->level	= current_level;
 		entry->mask		= current_mask;
 
-        g_queue_push_head (level_stack, (gpointer)entry);
+		g_queue_push_head (level_stack, (gpointer)entry);
 
 		/* Set the new level and mask
 		 */
