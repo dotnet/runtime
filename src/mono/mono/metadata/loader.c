@@ -209,13 +209,16 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 {
 	int table = mono_metadata_token_table (token);
 	int idx = mono_metadata_token_index (token);
-	guint32 nindex, class;
 	guint32 cols [MONO_MEMBERREF_SIZE];
 	MonoMethodSignature *sig;
 	const char *ptr;
 
 	/* !table is for wrappers: we should really assign their own token to them */
 	if (!table || table == MONO_TABLE_METHOD)
+		return method->signature;
+
+	if (image->assembly->dynamic)
+		/* FIXME: This might be incorrect for vararg methods */
 		return method->signature;
 
 	mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
