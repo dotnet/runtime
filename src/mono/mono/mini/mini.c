@@ -6208,6 +6208,7 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 	if (!callinfo->wrapper) {
 		callinfo->wrapper = code;
 		g_hash_table_insert (jit_icall_hash_addr, (gpointer)callinfo->wrapper, callinfo);
+		mono_debug_add_icall_wrapper (wrapper, callinfo);
 	}
 	LeaveCriticalSection (&trampoline_hash_mutex);
 
