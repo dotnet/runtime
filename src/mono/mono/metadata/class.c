@@ -1142,16 +1142,17 @@ mono_class_init (MonoClass *class)
 			class->methods [1] = ctor;
 		}
 	} else {
-		class->methods = g_new (MonoMethod*, class->method.count);
-		for (i = 0; i < class->method.count; ++i) {
-			class->methods [i] = mono_get_method (class->image,
-				MONO_TOKEN_METHOD_DEF | (i + class->method.first + 1), class);
-		}
 		if (class->generic_inst) {
 			for (i = 0; i < class->method.count; ++i) {
 				class->methods [i] = inflate_generic_method (class->methods [i], class->generic_inst->data.generic_inst, NULL);
 				class->methods [i]->klass = class;
 				/*g_print ("inflated method %s in %s\n", class->methods [i]->name, class->name);*/
+			}
+		} else {
+			class->methods = g_new (MonoMethod*, class->method.count);
+			for (i = 0; i < class->method.count; ++i) {
+				class->methods [i] = mono_get_method (class->image,
+								      MONO_TOKEN_METHOD_DEF | (i + class->method.first + 1), class);
 			}
 		}
 	}
@@ -1613,6 +1614,7 @@ mono_class_from_generic (MonoType *gtype)
 
 	class->field = gklass->field;
 	class->method = gklass->method;
+	class->methods = gklass->methods;
 
 	/*g_print ("instantiating class from %s.%s to %s\n", gklass->name_space, gklass->name, class->name);
 	g_print ("methods: %d, fields: %d\n", class->method.count, class->field.count);*/
