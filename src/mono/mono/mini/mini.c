@@ -98,6 +98,7 @@ static MonoMethodSignature *helper_sig_uint_double = NULL;
 static MonoMethodSignature *helper_sig_int_double = NULL;
 static MonoMethodSignature *helper_sig_stelem_ref = NULL;
 static MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
+static MonoMethodSignature *helper_sig_obj_obj_cls = NULL;
 
 static guint32 default_opt = MONO_OPT_PEEPHOLE;
 
@@ -3840,16 +3841,28 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 		case CEE_ISINST:
 			CHECK_STACK (1);
-			MONO_INST_NEW (cfg, ins, *ip);
 			--sp;
 			klass = mono_class_get (image, read32 (ip + 1));
 			mono_class_init (klass);
-			ins->type = STACK_OBJ;
-			ins->inst_left = *sp;
-			ins->inst_newa_class = klass;
-			ins->cil_code = ip;
+		
+			if (klass->marshalbyref) {
+				MonoInst *iargs [2];
+				int temp;			
+				iargs [0] = *sp;
+				NEW_CLASSCONST (cfg, iargs [1], klass);
+				temp = mono_emit_native_call (cfg, bblock, mono_object_isinst_mbyref, helper_sig_obj_obj_cls, iargs, ip, FALSE);
+				NEW_TEMPLOAD (cfg, *sp, temp);
+				sp++;
+			}
+			else {
+				MONO_INST_NEW (cfg, ins, *ip);
+				ins->type = STACK_OBJ;
+				ins->inst_left = *sp;
+				ins->inst_newa_class = klass;
+				ins->cil_code = ip;
+				*sp++ = ins;
+			}
 			ip += 5;
-			*sp++ = ins;
 			break;
 		case CEE_UNBOX_ANY: {
 			MonoInst *add, *vtoffset;
@@ -3871,13 +3884,24 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
 				/* CASTCLASS */
-				MONO_INST_NEW (cfg, ins, CEE_CASTCLASS);
-				ins->type = STACK_OBJ;
-				ins->inst_left = *sp;
-				ins->klass = klass;
-				ins->inst_newa_class = klass;
-				ins->cil_code = ip;
-				*sp++ = ins;
+				if (klass->marshalbyref) {
+					MonoInst *iargs [2];
+					int temp;
+					iargs [0] = *sp;
+					NEW_CLASSCONST (cfg, iargs [1], klass);
+					temp = mono_emit_jit_icall (cfg, bblock, mono_object_castclass_mbyref, iargs, ip);
+					NEW_TEMPLOAD (cfg, *sp, temp);
+					sp++;
+				}
+				else {
+					MONO_INST_NEW (cfg, ins, CEE_CASTCLASS);
+					ins->type = STACK_OBJ;
+					ins->inst_left = *sp;
+					ins->klass = klass;
+					ins->inst_newa_class = klass;
+					ins->cil_code = ip;
+					*sp++ = ins;
+				}
 				ip += 5;
 				break;
 			}
@@ -3956,7 +3980,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 		case CEE_CASTCLASS:
 			CHECK_STACK (1);
-			MONO_INST_NEW (cfg, ins, *ip);
 			--sp;
 			klass = mono_class_get (image, read32 (ip + 1));
 			mono_class_init (klass);
@@ -3964,13 +3987,26 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
 			else if (klass->byval_arg.type == MONO_TYPE_MVAR)
 				klass = MTYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
-			ins->type = STACK_OBJ;
-			ins->inst_left = *sp;
-			ins->klass = klass;
-			ins->inst_newa_class = klass;
-			ins->cil_code = ip;
+		
+			if (klass->marshalbyref) {
+				MonoInst *iargs [2];
+				int temp;
+				iargs [0] = *sp;
+				NEW_CLASSCONST (cfg, iargs [1], klass);
+				temp = mono_emit_jit_icall (cfg, bblock, mono_object_castclass_mbyref, iargs, ip);
+				NEW_TEMPLOAD (cfg, *sp, temp);
+				sp++;
+			}
+			else {
+				MONO_INST_NEW (cfg, ins, *ip);
+				ins->type = STACK_OBJ;
+				ins->inst_left = *sp;
+				ins->klass = klass;
+				ins->inst_newa_class = klass;
+				ins->cil_code = ip;
+				*sp++ = ins;
+			}
 			ip += 5;
-			*sp++ = ins;
 			break;
 		case CEE_THROW:
 			CHECK_STACK (1);
@@ -5797,6 +5833,13 @@ create_helper_signature (void)
 	helper_sig_class_init_trampoline = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
 	helper_sig_class_init_trampoline->ret = &mono_defaults.void_class->byval_arg;
 	helper_sig_class_init_trampoline->pinvoke = 1;	
+	
+	/* MonoObject * amethod (MonoObject *obj, MonoClass *klass) */
+	helper_sig_obj_obj_cls = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+	helper_sig_obj_obj_cls->params [0] = &mono_defaults.object_class->byval_arg;
+	helper_sig_obj_obj_cls->params [1] = &mono_defaults.int_class->byval_arg;
+	helper_sig_obj_obj_cls->ret = &mono_defaults.object_class->byval_arg;
+	helper_sig_obj_obj_cls->pinvoke = 1;
 }
 
 static GHashTable *jit_icall_hash_name = NULL;
@@ -7808,6 +7851,7 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_runtime_class_init, "mono_runtime_class_init", helper_sig_void_ptr, FALSE);
 	mono_register_jit_icall (mono_ldftn, "mono_ldftn", helper_sig_compile, FALSE);
 	mono_register_jit_icall (mono_ldvirtfn, "mono_ldvirtfn", helper_sig_compile_virt, FALSE);
+	mono_register_jit_icall (mono_object_castclass_mbyref, "mono_object_castclass", helper_sig_obj_obj_cls, FALSE);
 #endif
 
 #define JIT_RUNTIME_WORKS

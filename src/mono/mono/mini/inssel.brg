@@ -1294,24 +1294,6 @@ reg: CEE_ISINST (reg) {
 				mini_emit_isninst_cast (s, eclass_reg, klass->cast_class, false_label, object_is_null);
 			}
 		} else {
-
-			if (klass->marshalbyref) {
-				MonoInst *no_proxy;
-
-				MONO_NEW_LABEL (s, no_proxy);
-
-				if (mono_compile_aot) {
-					int tproxy_reg = mono_regstate_next_int (s->rs);
-					MONO_EMIT_NEW_CLASSCONST (s, tproxy_reg, mono_defaults.transparent_proxy_class);
-					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, klass_reg, tproxy_reg);
-				} else {
-					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, klass_reg, mono_defaults.transparent_proxy_class);
-				}
-				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, no_proxy);
-				MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, klass));
-				mono_bblock_add_inst (s->cbb, no_proxy);
-			}
-		     
 			/* the object_is_null target simply copies the input register to the output */
 			mini_emit_isninst_cast (s, klass_reg, klass, false_label, object_is_null);
 		}
@@ -1436,24 +1418,6 @@ reg: CEE_CASTCLASS (reg) {
 				mini_emit_castclass (s, eclass_reg, klass->cast_class);
 			}
 		} else {
-
-			if (klass->marshalbyref) {
-				MonoInst *no_proxy;
-
-				MONO_NEW_LABEL (s, no_proxy);
-
-				if (mono_compile_aot) {
-					int tproxy_reg = mono_regstate_next_int (s->rs);
-					MONO_EMIT_NEW_CLASSCONST (s, tproxy_reg, mono_defaults.transparent_proxy_class);
-					MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, klass_reg, tproxy_reg);
-				} else {
-					MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, klass_reg, mono_defaults.transparent_proxy_class);
-				}
-				MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, no_proxy);
-				MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, klass));
-				mono_bblock_add_inst (s->cbb, no_proxy);
-			}
-		     
 			mini_emit_castclass (s, klass_reg, klass);
 		}
 	}
