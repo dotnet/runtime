@@ -294,19 +294,20 @@
 <opcode name="endmac" input="Pop0" output="Push0" args="InlineNone" o1="0x00" o2="0x00" flow="meta"/>
 
 <opcode name="mono_func1" input="Pop1" output="PushI" args="ShortInlineI" o1="0xF0" o2="0x00" flow="next"/>
-<opcode name="mono_proc2" input="PopI+PopI" output="Push0" args="ShortInlineI" o1="0xF0" o2="0x01" flow="next"/>
-<opcode name="mono_proc3" input="PopI+PopI+PopI" output="Push0" args="ShortInlineI" o1="0xF0" o2="0x02" flow="next"/>
-<opcode name="mono_free" input="Pop1" output="Push0" args="InlineNone" o1="0xF0" o2="0x03" flow="next"/>
-<opcode name="mono_objaddr" input="Pop1" output="PushI" args="InlineNone" o1="0xF0" o2="0x04" flow="next"/>
-<opcode name="mono_ldptr" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x05" flow="next"/>
+<opcode name="mono_func2" input="PopI+PopI" output="PushI" args="ShortInlineI" o1="0xF0" o2="0x01" flow="next"/>
+<opcode name="mono_proc2" input="PopI+PopI" output="Push0" args="ShortInlineI" o1="0xF0" o2="0x02" flow="next"/>
+<opcode name="mono_proc3" input="PopI+PopI+PopI" output="Push0" args="ShortInlineI" o1="0xF0" o2="0x03" flow="next"/>
+<opcode name="mono_free" input="Pop1" output="Push0" args="InlineNone" o1="0xF0" o2="0x04" flow="next"/>
+<opcode name="mono_objaddr" input="Pop1" output="PushI" args="InlineNone" o1="0xF0" o2="0x05" flow="next"/>
+<opcode name="mono_ldptr" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x06" flow="next"/>
 
-<opcode name="mono_vtaddr" input="Pop1" output="PushI" args="InlineNone" o1="0xF0" o2="0x06" flow="next"/>
-<opcode name="mono_newobj" input="Pop0" output="PushRef" args="InlineType" o1="0xF0" o2="0x07" flow="next"/>
-<opcode name="mono_retobj" input="PopI" output="Push0" args="InlineType" o1="0xF0" o2="0x08" flow="return"/>
-<opcode name="mono_ldnativeobj" input="PopI" output="Push1" args="InlineType" o1="0xF0" o2="0x09" flow="return"/>
-<opcode name="mono_cisinst" input="PopRef" output="Push1" args="InlineType" o1="0xF0" o2="0x0A" flow="next"/>
-<opcode name="mono_ccastclass" input="PopRef" output="Push1" args="InlineType" o1="0xF0" o2="0x0B" flow="next"/>
-<opcode name="mono_save_lmf" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x0C" flow="next" />
-<opcode name="mono_restore_lmf" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x0D" flow="next" />
+<opcode name="mono_vtaddr" input="Pop1" output="PushI" args="InlineNone" o1="0xF0" o2="0x07" flow="next"/>
+<opcode name="mono_newobj" input="Pop0" output="PushRef" args="InlineType" o1="0xF0" o2="0x08" flow="next"/>
+<opcode name="mono_retobj" input="PopI" output="Push0" args="InlineType" o1="0xF0" o2="0x09" flow="return"/>
+<opcode name="mono_ldnativeobj" input="PopI" output="Push1" args="InlineType" o1="0xF0" o2="0x0A" flow="return"/>
+<opcode name="mono_cisinst" input="PopRef" output="Push1" args="InlineType" o1="0xF0" o2="0x0B" flow="next"/>
+<opcode name="mono_ccastclass" input="PopRef" output="Push1" args="InlineType" o1="0xF0" o2="0x0C" flow="next"/>
+<opcode name="mono_save_lmf" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x0D" flow="next" />
+<opcode name="mono_restore_lmf" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x0E" flow="next" />
 
 </opdesc>
