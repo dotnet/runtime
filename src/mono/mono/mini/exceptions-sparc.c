@@ -623,9 +623,7 @@ mono_sparc_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 						    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
 							if (mono_jit_trace_calls != NULL && mono_trace_eval (ji->method))
 								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
-							printf ("BEFORE FILTER.\n");
 							call_filter (ctx, ei->handler_start);
-							printf ("AFTER FILTER.\n");
 						}
 						
 					}
