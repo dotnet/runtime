@@ -2718,6 +2718,8 @@ ves_exec (MonoAssembly *assembly, int argc, char *argv[])
 	method = mono_get_method (image, iinfo->cli_cli_header.ch_entry_point, NULL);
 
 	if (method->signature->param_count) {
+		g_warning ("Main () with arguments not yet supported");
+		exit (1);
 		/*
 		int i;
 		stackval argv_array;
