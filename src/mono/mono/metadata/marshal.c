@@ -1288,6 +1288,7 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 
 	mb = mono_mb_new (method->klass, method->name);
 	mb->method->wrapper_type = MONO_WRAPPER_REMOTING_INVOKE;
+	mb->method->save_lmf = 1;
 
 	params_var = mono_mb_emit_save_args (mb, sig, TRUE);
 

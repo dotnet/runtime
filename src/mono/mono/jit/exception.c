@@ -385,8 +385,6 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj, gboolean test_only)
 
 	g_assert (mono_object_isinst (obj, mono_defaults.exception_class));
 
-	((MonoException *)obj)->stack_trace = NULL;
-
 	if (!restore_context)
 		restore_context = arch_get_restore_context ();
 	
@@ -421,7 +419,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj, gboolean test_only)
 		/* we are inside managed code if ji != NULL */
 		if (ji != NULL) {
 			int offset;
-			m = ji->method;
+			m = ji->method;			
 
 			if (m == mono_start_method) {
 				if (!test_only) {
