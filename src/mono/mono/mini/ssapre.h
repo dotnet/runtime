@@ -15,6 +15,16 @@
 #include <mono/metadata/mempool.h>
 
 /*
+ * Hack to apply SSAPRE only to a given method (invaluable in debugging)
+ */
+#define MONO_APPLY_SSAPRE_TO_SINGLE_METHOD 1
+
+/*
+ * Hack to apply SSAPRE only to a given expression (invaluable in debugging)
+ */
+#define MONO_APPLY_SSAPRE_TO_SINGLE_EXPRESSION 0
+
+/*
  * All the different kind of arguments we can handle.
  * "ANY" means the argument is unknown or cannot be handled, and "NOT_PRESENT"
  * that the expression does not have this argument (has not "enough" arity).
@@ -184,11 +194,25 @@ typedef struct MonoSsapreBBInfo {
 
 
 /*
+ * The father of an occurrence in the tree of MonoInst.
+ * (needed just because a MonoInst cannot point to its father)
+ */
+typedef struct MonoSsapreFatherExpression {
+	/* The father occurrence */
+	MonoInst *father_occurrence;
+	/* The MonoSsapreFatherExpression node of the "grand father" */
+	struct MonoSsapreFatherExpression *grand_father;
+} MonoSsapreFatherExpression;
+
+/*
  * A "real" occurrence.
  */
 typedef struct MonoSsapreExpressionOccurrence {
 	/* The occurrence in the CFG */
 	MonoInst *occurrence;
+	/* The "father" of this occurrence in the inst tree (if the occurrence is */
+	/* part of a compound expression, otherwise it is NULL) */
+	MonoSsapreFatherExpression *father_in_tree;
 	/* The tree just before the occurrence in the CFG (if the occurrence must */
 	/* saved into a temporary, the definition will be placed just after that tree) */
 	MonoInst *previous_tree;
@@ -198,7 +222,7 @@ typedef struct MonoSsapreExpressionOccurrence {
 	MonoSsapreExpressionDescription description;
 	/* Next occurrence of this expression */
 	struct MonoSsapreExpressionOccurrence *next;
-	/* Previois occurrence of this expression */
+	/* Previous occurrence of this expression */
 	struct MonoSsapreExpressionOccurrence *previous;
 	/* True if this occurrence is the first in its BB */
 	gboolean is_first_in_bb;
@@ -241,6 +265,9 @@ typedef struct MonoSsapreExpression {
 	struct MonoSsapreExpression *previous;
 	struct MonoSsapreExpression *next;
 	gssize tree_size;
+	
+	/* Next expression to be processed in the worklist */
+	struct MonoSsapreExpression *next_in_queue;	
 } MonoSsapreExpression;
 
 /*
@@ -340,8 +367,15 @@ typedef struct MonoSsapreWorkArea {
 	/* The expression worklist */
 	MonoSsapreExpression *worklist;
 	
+	/* The expression queue head */
+	MonoSsapreExpression *first_in_queue;
+	/* The expression queue tail */
+	MonoSsapreExpression *last_in_queue;
+	
 	/* The expression being processed */
 	MonoSsapreExpression *current_expression;
+	/* The expression being allocated */
+	MonoSsapreExpressionOccurrence *current_occurrence;
 	
 	/* The BB on top of the renaming stack (if "top_of_renaming_stack" is NULL */
 	/* but this is not, then the top of the stack is the PHI in this BB) */
@@ -361,6 +395,10 @@ typedef struct MonoSsapreWorkArea {
 	int inserted_occurrences;
 	int unaltered_occurrences;
 	int added_phis;
+	
+#if (MONO_APPLY_SSAPRE_TO_SINGLE_EXPRESSION)
+	gboolean expression_is_handled_father;
+#endif
 } MonoSsapreWorkArea;
 
 

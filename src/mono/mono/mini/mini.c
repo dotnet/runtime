@@ -7372,6 +7372,90 @@ replace_in_block (MonoBasicBlock *bb, MonoBasicBlock *orig, MonoBasicBlock *repl
 }
 
 static void 
+replace_or_add_in_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *orig, MonoBasicBlock *repl)
+{
+	gboolean found = FALSE;
+	int i;
+
+	for (i = 0; i < bb->in_count; i++) {
+		MonoBasicBlock *ib = bb->in_bb [i];
+		if (ib == orig) {
+			if (!repl) {
+				if (bb->in_count > 1) {
+					bb->in_bb [i] = bb->in_bb [bb->in_count - 1];
+				}
+				bb->in_count--;
+			} else {
+				bb->in_bb [i] = repl;
+			}
+			found = TRUE;
+		}
+	}
+	
+	if (! found) {
+		MonoBasicBlock **new_in_bb = mono_mempool_alloc (cfg->mempool, sizeof (MonoBasicBlock*) * (bb->in_count + 1));
+		for (i = 0; i < bb->in_count; i++) {
+			new_in_bb [i] = bb->in_bb [i];
+		}
+		new_in_bb [i] = repl;
+		bb->in_count++;
+		bb->in_bb = new_in_bb;
+	}
+}
+
+
+static void
+replace_out_block_in_code (MonoBasicBlock *bb, MonoBasicBlock *orig, MonoBasicBlock *repl) {
+	MonoInst *inst;
+	
+	for (inst = bb->code; inst != NULL; inst = inst->next) {
+		if (inst->opcode == OP_CALL_HANDLER) {
+			if (inst->inst_target_bb == orig) {
+				inst->inst_target_bb = repl;
+			}
+		}
+	}
+	if (bb->last_ins != NULL) {
+		switch (bb->last_ins->opcode) {
+		case CEE_BR:
+			if (bb->last_ins->inst_target_bb == orig) {
+				bb->last_ins->inst_target_bb = repl;
+			}
+			break;
+		case CEE_SWITCH: {
+			int i;
+			int n = GPOINTER_TO_INT (bb->last_ins->klass);
+			for (i = 0; i < n; i++ ) {
+				if (bb->last_ins->inst_many_bb [i] == orig) {
+					bb->last_ins->inst_many_bb [i] = repl;
+				}
+			}
+			break;
+		}
+		case CEE_BNE_UN:
+		case CEE_BEQ:
+		case CEE_BLT:
+		case CEE_BLT_UN:
+		case CEE_BGT:
+		case CEE_BGT_UN:
+		case CEE_BGE:
+		case CEE_BGE_UN:
+		case CEE_BLE:
+		case CEE_BLE_UN:
+			if (bb->last_ins->inst_true_bb == orig) {
+				bb->last_ins->inst_true_bb = repl;
+			}
+			if (bb->last_ins->inst_false_bb == orig) {
+				bb->last_ins->inst_false_bb = repl;
+			}
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+static void 
 replace_basic_block (MonoBasicBlock *bb, MonoBasicBlock *orig,  MonoBasicBlock *repl)
 {
 	int i, j;
@@ -7387,6 +7471,96 @@ replace_basic_block (MonoBasicBlock *bb, MonoBasicBlock *orig,  MonoBasicBlock *
 
 }
 
+/**
+  * Check if a bb is useless (is just made of NOPs and ends with an
+  * unconditional branch, or nothing).
+  * If it is so, unlink it from the CFG and nullify it, and return TRUE.
+  * Otherwise, return FALSE;
+  */
+static gboolean
+remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *previous_bb) {
+	MonoBasicBlock *target_bb = NULL;
+	MonoInst *inst;
+	
+	/* Do not touch handlers */
+	if (bb->region != -1) return FALSE;
+	
+	for (inst = bb->code; inst != NULL; inst = inst->next) {
+		switch (inst->opcode) {
+		case CEE_NOP:
+			break;
+		case CEE_BR:
+			target_bb = inst->inst_target_bb;
+			break;
+		default:
+			return FALSE;
+		}
+	}
+	
+	if (target_bb == NULL) {
+		if ((bb->out_count == 1) && (bb->out_bb [0] == bb->next_bb)) {
+			target_bb = bb->next_bb;
+		} else {
+			/* Do not touch empty BBs that do not "fall through" to their next BB (like the exit BB) */
+			return FALSE;
+		}
+	}
+	
+	/* Do not touch BBs following a switch (they are the "default" branch) */
+	if ((previous_bb->last_ins != NULL) && (previous_bb->last_ins->opcode == CEE_SWITCH)) {
+		return FALSE;
+	}
+	
+	/* Do not touch BBs following the entry BB and jumping to something that is not */
+	/* thiry "next" bb (the entry BB cannot contain the branch) */
+	if ((previous_bb == cfg->bb_entry) && (bb->next_bb != target_bb)) {
+		return FALSE;
+	}
+	
+	if (target_bb != NULL) {
+		int i;
+		
+		if (cfg->verbose_level > 0) {
+			printf ("remove_block_if_useless %s, removed BB%d\n", mono_method_full_name (cfg->method, TRUE), bb->block_num);
+		}
+		
+		for (i = 0; i < bb->in_count; i++) {
+			MonoBasicBlock *in_bb = bb->in_bb [i];
+			replace_out_block (in_bb, bb, target_bb);
+			replace_out_block_in_code (in_bb, bb, target_bb);
+			if (bb->in_count == 1) {
+				replace_in_block (target_bb, bb, in_bb);
+			} else {
+				replace_or_add_in_block (cfg, target_bb, bb, in_bb);
+			}
+		}
+		
+		if ((previous_bb != cfg->bb_entry) &&
+				(previous_bb->region == bb->region) &&
+				((previous_bb->last_ins == NULL) ||
+				((previous_bb->last_ins->opcode != CEE_BR) &&
+				(! (MONO_IS_COND_BRANCH_OP (previous_bb->last_ins))) &&
+				(previous_bb->last_ins->opcode != CEE_SWITCH)))) {
+			for (i = 0; i < previous_bb->out_count; i++) {
+				if (previous_bb->out_bb [i] == target_bb) {
+					MonoInst *jump;
+					MONO_INST_NEW (cfg, jump, CEE_BR);
+					MONO_ADD_INS (previous_bb, jump);
+					jump->cil_code = previous_bb->cil_code;
+					jump->inst_target_bb = target_bb;
+					break;
+				}
+			}
+		}
+		
+		previous_bb->next_bb = bb->next_bb;
+		nullify_basic_block (bb);
+		
+		return TRUE;
+	} else {
+		return FALSE;
+	}
+}
 
 static void
 merge_basic_blocks (MonoBasicBlock *bb, MonoBasicBlock *bbn) 
@@ -7446,15 +7620,21 @@ optimize_branches (MonoCompile *cfg)
 	 */
 	niterations = 1000;
 	do {
+		MonoBasicBlock *previous_bb;
 		changed = FALSE;
 		niterations --;
 
 		/* we skip the entry block (exit is handled specially instead ) */
-		for (bb = cfg->bb_entry->next_bb; bb; bb = bb->next_bb) {
+		for (previous_bb = cfg->bb_entry, bb = cfg->bb_entry->next_bb; bb; previous_bb = bb, bb = bb->next_bb) {
 
 			/* dont touch code inside exception clauses */
 			if (bb->region != -1)
 				continue;
+
+			if (remove_block_if_useless (cfg, bb, previous_bb)) {
+				changed = TRUE;
+				continue;
+			}
 
 			if ((bbn = bb->next_bb) && bbn->in_count == 0 && bb->region == bbn->region) {
 				if (cfg->verbose_level > 2)
@@ -8213,6 +8393,7 @@ mono_local_cprop (MonoCompile *cfg)
 static void
 remove_critical_edges (MonoCompile *cfg) {
 	MonoBasicBlock *bb;
+	MonoBasicBlock *previous_bb;
 	
 	if (cfg->verbose_level > 3) {
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
@@ -8234,84 +8415,82 @@ remove_critical_edges (MonoCompile *cfg) {
 		}
 	}
 	
-	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		if (bb->out_count > 1) {
-			int out_bb_index;
-			for (out_bb_index = 0; out_bb_index < bb->out_count; out_bb_index++) {
-				MonoBasicBlock *out_bb = bb->out_bb [out_bb_index];
-				if (out_bb->in_count > 1) {
-					MonoInst *inst;
+	for (previous_bb = cfg->bb_entry, bb = previous_bb->next_bb; bb != NULL; previous_bb = previous_bb->next_bb, bb = bb->next_bb) {
+		if (bb->in_count > 1) {
+			int in_bb_index;
+			for (in_bb_index = 0; in_bb_index < bb->in_count; in_bb_index++) {
+				MonoBasicBlock *in_bb = bb->in_bb [in_bb_index];
+				if (in_bb->out_count > 1) {
 					MonoBasicBlock *new_bb = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
 					new_bb->block_num = cfg->num_bblocks++;
-					new_bb->next_bb = bb->next_bb;
-					bb->next_bb = new_bb;
-					new_bb->in_bb = mono_mempool_alloc ((cfg)->mempool, sizeof (MonoBasicBlock*));
-					new_bb->in_bb [0] = bb;
-					new_bb->in_count = 1;
-					new_bb->out_bb = mono_mempool_alloc ((cfg)->mempool, sizeof (MonoBasicBlock*));
-					new_bb->out_bb [0] = out_bb;
-					new_bb->out_count = 1;
-					replace_out_block (bb, out_bb, new_bb);
-					replace_in_block (out_bb, bb, new_bb);
-					for (inst = bb->code; inst != NULL; inst = inst->next) {
-						if (inst->opcode == OP_CALL_HANDLER) {
-							if (inst->inst_target_bb == out_bb) {
-								inst->inst_target_bb = new_bb;
-							}
-						}
-					}
-					if (bb->last_ins != NULL) {
-						switch (bb->last_ins->opcode) {
-						case CEE_BR:
-							if (bb->last_ins->inst_target_bb == out_bb) {
-								bb->last_ins->inst_target_bb = new_bb;
-							}
-							break;
-						case CEE_SWITCH: {
-							int i;
-							int n = GPOINTER_TO_INT (bb->last_ins->klass);
-							for (i = 0; i < n; i++ ) {
-								if (bb->last_ins->inst_many_bb [i] == out_bb) {
-									bb->last_ins->inst_many_bb [i] = new_bb;
-									break;
-								}
-							}
-							break;
-						}
-						case CEE_BNE_UN:
-						case CEE_BEQ:
-						case CEE_BLT:
-						case CEE_BLT_UN:
-						case CEE_BGT:
-						case CEE_BGT_UN:
-						case CEE_BGE:
-						case CEE_BGE_UN:
-						case CEE_BLE:
-						case CEE_BLE_UN:
-							if (bb->last_ins->inst_true_bb == out_bb) {
-								bb->last_ins->inst_true_bb = new_bb;
-							}
-							if (bb->last_ins->inst_false_bb == out_bb) {
-								bb->last_ins->inst_false_bb = new_bb;
-							}
-							break;
-						default:
-							break;
-						}
-					}
 //					new_bb->real_offset = bb->real_offset;
 					new_bb->region = bb->region;
 					
-					if (new_bb->next_bb != out_bb) {
-						MonoInst *jump;
-						MONO_INST_NEW (cfg, jump, CEE_BR);
-						MONO_ADD_INS (new_bb, jump);
-						jump->cil_code = bb->cil_code;
-						jump->inst_target_bb = out_bb;
+					/* Do not alter the CFG while altering the BB list */
+					if (previous_bb->region == bb->region) {
+						if (previous_bb != cfg->bb_entry) {
+							/* If previous_bb "followed through" to bb, */
+							/* keep it linked with a CEE_BR */
+							if ((previous_bb->last_ins == NULL) ||
+									((previous_bb->last_ins->opcode != CEE_BR) &&
+									(! (MONO_IS_COND_BRANCH_OP (previous_bb->last_ins))) &&
+									(previous_bb->last_ins->opcode != CEE_SWITCH))) {
+								int i;
+								/* Make sure previous_bb really falls through bb */
+								for (i = 0; i < previous_bb->out_count; i++) {
+									if (previous_bb->out_bb [i] == bb) {
+										MonoInst *jump;
+										MONO_INST_NEW (cfg, jump, CEE_BR);
+										MONO_ADD_INS (previous_bb, jump);
+										jump->cil_code = previous_bb->cil_code;
+										jump->inst_target_bb = bb;
+										break;
+									}
+								}
+							}
+						} else {
+							/* We cannot add any inst to the entry BB, so we must */
+							/* put a new BB in the middle to hold the CEE_BR */
+							MonoInst *jump;
+							MonoBasicBlock *new_bb_after_entry = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
+							new_bb_after_entry->block_num = cfg->num_bblocks++;
+//							new_bb_after_entry->real_offset = bb->real_offset;
+							new_bb_after_entry->region = bb->region;
+							
+							MONO_INST_NEW (cfg, jump, CEE_BR);
+							MONO_ADD_INS (new_bb_after_entry, jump);
+							jump->cil_code = bb->cil_code;
+							jump->inst_target_bb = bb;
+							
+							previous_bb->next_bb = new_bb_after_entry;
+							previous_bb = new_bb_after_entry;
+							
+							if (cfg->verbose_level > 2) {
+								printf ("remove_critical_edges %s, added helper BB%d jumping to BB%d\n", mono_method_full_name (cfg->method, TRUE), new_bb_after_entry->block_num, bb->block_num);
+							}
+						}
 					}
 					
+					/* Insert new_bb in the BB list */
+					previous_bb->next_bb = new_bb;
+					new_bb->next_bb = bb;
+					previous_bb = new_bb;
+					
+					/* Setup in_bb and out_bb */
+					new_bb->in_bb = mono_mempool_alloc ((cfg)->mempool, sizeof (MonoBasicBlock*));
+					new_bb->in_bb [0] = in_bb;
+					new_bb->in_count = 1;
+					new_bb->out_bb = mono_mempool_alloc ((cfg)->mempool, sizeof (MonoBasicBlock*));
+					new_bb->out_bb [0] = bb;
+					new_bb->out_count = 1;
+					
+					/* Relink in_bb and bb to (from) new_bb */
+					replace_out_block (in_bb, bb, new_bb);
+					replace_out_block_in_code (in_bb, bb, new_bb);
+					replace_in_block (bb, in_bb, new_bb);
+					
 					if (cfg->verbose_level > 2) {
-						printf ("remove_critical_edges %s, removed critical edge from BB%d to BB%d (added BB%d)\n", mono_method_full_name (cfg->method, TRUE), bb->block_num, out_bb->block_num, new_bb->block_num);
+						printf ("remove_critical_edges %s, removed critical edge from BB%d to BB%d (added BB%d)\n", mono_method_full_name (cfg->method, TRUE), in_bb->block_num, bb->block_num, new_bb->block_num);
 					}
 				}
 			}
@@ -8338,7 +8517,6 @@ remove_critical_edges (MonoCompile *cfg) {
 		}
 	}
 }
-
 
 MonoCompile*
 mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, gboolean compile_aot, int parts)
