@@ -67,6 +67,7 @@ OTHER_SRC = \
 	mutex-private.h		\
 	mono-mutex.c		\
 	mono-mutex.h		\
+	mono-spinlock.h		\
 	processes.c		\
 	processes.h		\
 	process-private.h	\

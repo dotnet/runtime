@@ -26,9 +26,11 @@
 #include <mono/io-layer/misc-private.h>
 #include <mono/io-layer/mono-mutex.h>
 #include <mono/io-layer/thread-private.h>
+#include <mono/io-layer/mono-spinlock.h>
 
 #undef DEBUG
 #undef TLS_DEBUG
+#undef TLS_PTHREAD_MUTEX
 
 /* Hash threads with tids. I thought of using TLS for this, but that
  * would have to set the data in the new thread, which is more hassle
@@ -433,7 +435,11 @@ guint32 SuspendThread(gpointer handle G_GNUC_UNUSED)
 
 static pthread_key_t TLS_keys[TLS_MINIMUM_AVAILABLE];
 static gboolean TLS_used[TLS_MINIMUM_AVAILABLE]={FALSE};
+#ifdef TLS_PTHREAD_MUTEX
 static mono_mutex_t TLS_mutex=MONO_MUTEX_INITIALIZER;
+#else
+static guint32 TLS_spinlock=0;
+#endif
 
 /**
  * TlsAlloc:
@@ -449,14 +455,22 @@ guint32 TlsAlloc(void)
 {
 	guint32 i;
 	
+#ifdef TLS_PTHREAD_MUTEX
 	mono_mutex_lock(&TLS_mutex);
+#else
+	MONO_SPIN_LOCK (TLS_spinlock);
+#endif
 	
 	for(i=0; i<TLS_MINIMUM_AVAILABLE; i++) {
 		if(TLS_used[i]==FALSE) {
 			TLS_used[i]=TRUE;
 			pthread_key_create(&TLS_keys[i], NULL);
 
+#ifdef TLS_PTHREAD_MUTEX
 			mono_mutex_unlock(&TLS_mutex);
+#else
+			MONO_SPIN_UNLOCK (TLS_spinlock);
+#endif
 	
 #ifdef TLS_DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION ": returning key %d",
@@ -467,7 +481,11 @@ guint32 TlsAlloc(void)
 		}
 	}
 
+#ifdef TLS_PTHREAD_MUTEX
 	mono_mutex_unlock(&TLS_mutex);
+#else
+	MONO_SPIN_UNLOCK (TLS_spinlock);
+#endif
 	
 #ifdef TLS_DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": out of indices");
@@ -494,10 +512,18 @@ gboolean TlsFree(guint32 idx)
 	g_message (G_GNUC_PRETTY_FUNCTION ": freeing key %d", idx);
 #endif
 
+#ifdef TLS_PTHREAD_MUTEX
 	mono_mutex_lock(&TLS_mutex);
+#else
+	MONO_SPIN_LOCK (TLS_spinlock);
+#endif
 	
 	if(TLS_used[idx]==FALSE) {
+#ifdef TLS_PTHREAD_MUTEX
 		mono_mutex_unlock(&TLS_mutex);
+#else
+		MONO_SPIN_UNLOCK (TLS_spinlock);
+#endif
 		return(FALSE);
 	}
 	
@@ -507,7 +533,12 @@ gboolean TlsFree(guint32 idx)
 #if HAVE_BOEHM_GC
 	mono_g_hash_table_remove (tls_gc_hash, MAKE_GC_ID (idx));
 #endif
+
+#ifdef TLS_PTHREAD_MUTEX
 	mono_mutex_unlock(&TLS_mutex);
+#else
+	MONO_SPIN_UNLOCK (TLS_spinlock);
+#endif
 	
 	return(TRUE);
 }
@@ -530,14 +561,22 @@ gpointer TlsGetValue(guint32 idx)
 	g_message (G_GNUC_PRETTY_FUNCTION ": looking up key %d", idx);
 #endif
 
+#ifdef TLS_PTHREAD_MUTEX
 	mono_mutex_lock(&TLS_mutex);
+#else
+	MONO_SPIN_LOCK (TLS_spinlock);
+#endif
 	
 	if(TLS_used[idx]==FALSE) {
 #ifdef TLS_DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": key %d unused", idx);
 #endif
 
+#ifdef TLS_PTHREAD_MUTEX
 		mono_mutex_unlock(&TLS_mutex);
+#else
+		MONO_SPIN_UNLOCK (TLS_spinlock);
+#endif
 		return(NULL);
 	}
 	
@@ -547,7 +586,11 @@ gpointer TlsGetValue(guint32 idx)
 	g_message (G_GNUC_PRETTY_FUNCTION ": returning %p", ret);
 #endif
 	
+#ifdef TLS_PTHREAD_MUTEX
 	mono_mutex_unlock(&TLS_mutex);
+#else
+	MONO_SPIN_UNLOCK (TLS_spinlock);
+#endif
 	
 	return(ret);
 }
@@ -570,14 +613,22 @@ gboolean TlsSetValue(guint32 idx, gpointer value)
 		   value);
 #endif
 	
+#ifdef TLS_PTHREAD_MUTEX
 	mono_mutex_lock(&TLS_mutex);
+#else
+	MONO_SPIN_LOCK (TLS_spinlock);
+#endif
 	
 	if(TLS_used[idx]==FALSE) {
 #ifdef TLS_DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": key %d unused", idx);
 #endif
 
+#ifdef TLS_PTHREAD_MUTEX
 		mono_mutex_unlock(&TLS_mutex);
+#else
+		MONO_SPIN_UNLOCK (TLS_spinlock);
+#endif
 		return(FALSE);
 	}
 	
@@ -588,7 +639,11 @@ gboolean TlsSetValue(guint32 idx, gpointer value)
 			   ": pthread_setspecific error: %s", strerror (ret));
 #endif
 
+#ifdef TLS_PTHREAD_MUTEX
 		mono_mutex_unlock(&TLS_mutex);
+#else
+		MONO_SPIN_UNLOCK (TLS_spinlock);
+#endif
 		return(FALSE);
 	}
 	
@@ -597,7 +652,12 @@ gboolean TlsSetValue(guint32 idx, gpointer value)
 		tls_gc_hash = mono_g_hash_table_new(g_direct_hash, g_direct_equal);
 	mono_g_hash_table_insert (tls_gc_hash, MAKE_GC_ID (idx), value);
 #endif
+
+#ifdef TLS_PTHREAD_MUTEX
 	mono_mutex_unlock(&TLS_mutex);
+#else
+	MONO_SPIN_UNLOCK (TLS_spinlock);
+#endif
 	
 	return(TRUE);
 }
