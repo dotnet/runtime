@@ -21,23 +21,24 @@
 #include <valgrind/valgrind.h>
 #endif
 
+typedef struct
+{
+	MonoDebugMethodJitInfo *jit;
+	GArray *line_numbers;
+	guint32 has_line_numbers;
+	guint32 breakpoint_id;
+} MiniDebugMethodInfo;
+
 static inline void
-record_line_number (MonoDebugMethodJitInfo *jit, guint32 address, guint32 offset)
+record_line_number (MiniDebugMethodInfo *info, guint32 address, guint32 offset)
 {
 	MonoDebugLineNumberEntry lne;
 
 	lne.native_offset = address;
 	lne.il_offset = offset;
 
-	g_array_append_val (jit->line_numbers, lne);
+	g_array_append_val (info->line_numbers, lne);
 }
-
-typedef struct
-{
-	MonoDebugMethodJitInfo *jit;
-	guint32 has_line_numbers;
-	guint32 breakpoint_id;
-} MiniDebugMethodInfo;
 
 void
 mono_debug_init_method (MonoCompile *cfg, MonoBasicBlock *start_block, guint32 breakpoint_id)
@@ -80,7 +81,7 @@ mono_debug_open_method (MonoCompile *cfg)
 	g_assert (header);
 	
 	info->jit = jit = g_new0 (MonoDebugMethodJitInfo, 1);
-	jit->line_numbers = g_array_new (FALSE, TRUE, sizeof (MonoDebugLineNumberEntry));
+	info->line_numbers = g_array_new (FALSE, TRUE, sizeof (MonoDebugLineNumberEntry));
 	jit->num_locals = header->num_locals;
 	jit->locals = g_new0 (MonoDebugVarInfo, jit->num_locals);
 }
@@ -139,8 +140,8 @@ mono_debug_add_vg_method (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 	}
 
 	/* Create address->offset mapping */
-	for (i = 0; i < jit->line_numbers->len; ++i) {
-		MonoDebugLineNumberEntry *lne = &g_array_index (jit->line_numbers, MonoDebugLineNumberEntry, i);
+	for (i = 0; i < jit->num_line_numbers; ++i) {
+		MonoDebugLineNumberEntry *lne = jit->line_numbers [i];
 
 		g_assert (lne->offset <= header->code_size);
 
@@ -188,6 +189,16 @@ mono_debug_add_vg_method (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 #endif /* VALGRIND_ADD_LINE_INFO */
 }
 
+static void
+free_jit_debug_info (MonoDebugMethodJitInfo *jit)
+{
+	g_free (jit->line_numbers);
+	g_free (jit->this_var);
+	g_free (jit->params);
+	g_free (jit->locals);
+	g_free (jit);
+}
+
 void
 mono_debug_close_method (MonoCompile *cfg)
 {
@@ -214,7 +225,7 @@ mono_debug_close_method (MonoCompile *cfg)
 	jit->epilogue_begin = cfg->epilog_begin;
 	jit->code_size = cfg->code_len;
 
-	record_line_number (jit, jit->epilogue_begin, header->code_size);
+	record_line_number (info, jit->epilogue_begin, header->code_size);
 
 	jit->num_params = sig->param_count;
 	jit->params = g_new0 (MonoDebugVarInfo, jit->num_params);
@@ -230,6 +241,12 @@ mono_debug_close_method (MonoCompile *cfg)
 	for (i = 0; i < jit->num_params; i++)
 		write_variable (cfg->varinfo [i + sig->hasthis], &jit->params [i]);
 
+	jit->num_line_numbers = info->line_numbers->len;
+	jit->line_numbers = g_new0 (MonoDebugLineNumberEntry, jit->num_line_numbers);
+
+	for (i = 0; i < jit->num_line_numbers; i++)
+		jit->line_numbers [i] = g_array_index (info->line_numbers, MonoDebugLineNumberEntry, i);
+
 	mono_debug_add_method (method, jit, cfg->domain);
 
 	mono_debug_add_vg_method (method, jit);
@@ -237,6 +254,7 @@ mono_debug_close_method (MonoCompile *cfg)
 	if (info->breakpoint_id)
 		mono_debugger_breakpoint_callback (method, info->breakpoint_id);
 
+	free_jit_debug_info (jit);
 	g_free (info);
 }
 
@@ -264,7 +282,7 @@ mono_debug_record_line_number (MonoCompile *cfg, MonoInst *ins, guint32 address)
 		info->has_line_numbers = TRUE;
 	}
 
-	record_line_number (info->jit, address, offset);
+	record_line_number (info, address, offset);
 }
 
 static inline void
@@ -354,8 +372,7 @@ serialize_variable (MonoDebugVarInfo *var, char *p, char **endbuf)
 }
 
 void
-mono_debug_serialize_debug_info (MonoCompile *cfg, 
-								 guint8 **out_buf, guint32 *buf_len)
+mono_debug_serialize_debug_info (MonoCompile *cfg, guint8 **out_buf, guint32 *buf_len)
 {
 	MiniDebugMethodInfo *info;
 	MonoDebugMethodJitInfo *jit;
@@ -371,10 +388,10 @@ mono_debug_serialize_debug_info (MonoCompile *cfg,
 	}
 	jit = info->jit;
 
-	size = ((jit->num_params + jit->num_locals + 1) * 10) + (jit->line_numbers->len * 10) + 64;
+	size = ((jit->num_params + jit->num_locals + 1) * 10) + (jit->num_line_numbers * 10) + 64;
 	p = buf = g_malloc (size);
 	encode_value (jit->epilogue_begin, p, &p);
-    encode_value (jit->prologue_end, p, &p);
+	encode_value (jit->prologue_end, p, &p);
 	encode_value (jit->code_size, p, &p);
 
 	for (i = 0; i < jit->num_params; ++i)
@@ -386,15 +403,13 @@ mono_debug_serialize_debug_info (MonoCompile *cfg,
 	for (i = 0; i < jit->num_locals; i++)
 		serialize_variable (&jit->locals [i], p, &p);
 
-	encode_value (jit->line_numbers->len, p, &p);
+	encode_value (jit->num_line_numbers, p, &p);
 
 	prev_offset = 0;
 	prev_native_offset = 0;
-	for (i = 0; i < jit->line_numbers->len; ++i) {
+	for (i = 0; i < jit->num_line_numbers; ++i) {
 		/* Sometimes, the offset values are not in increasing order */
-		MonoDebugLineNumberEntry *lne = &g_array_index (jit->line_numbers, 
-														MonoDebugLineNumberEntry,
-														i);
+		MonoDebugLineNumberEntry *lne = &jit->line_numbers [i];
 		encode_value (lne->il_offset - prev_offset, p, &p);
 		encode_value (lne->native_offset - prev_native_offset, p, &p);
 		prev_offset = lne->il_offset;
@@ -429,13 +444,11 @@ deserialize_variable (MonoDebugVarInfo *var, char *p, char **endbuf)
 }
 
 static MonoDebugMethodJitInfo *
-deserialize_debug_info (MonoMethod *method,
-						guint8 *code_start, 
-						guint8 *buf, guint32 buf_len)
+deserialize_debug_info (MonoMethod *method, guint8 *code_start, guint8 *buf, guint32 buf_len)
 {
 	MonoMethodHeader *header;
+	gint32 offset, native_offset, prev_offset, prev_native_offset;
 	MonoDebugMethodJitInfo *jit;
-	gint32 offset, native_offset, prev_offset, prev_native_offset, len;
 	char *p;
 	int i;
 
@@ -444,7 +457,6 @@ deserialize_debug_info (MonoMethod *method,
 
 	jit = g_new0 (MonoDebugMethodJitInfo, 1);
 	jit->code_start = code_start;
-	jit->line_numbers = g_array_new (FALSE, TRUE, sizeof (MonoDebugLineNumberEntry));
 	jit->num_locals = header->num_locals;
 	jit->locals = g_new0 (MonoDebugVarInfo, jit->num_locals);
 	jit->num_params = mono_method_signature (method)->param_count;
@@ -466,14 +478,20 @@ deserialize_debug_info (MonoMethod *method,
 	for (i = 0; i < jit->num_locals; i++)
 		deserialize_variable (&jit->locals [i], p, &p);
 
-	len = decode_value (p, &p);
+	jit->num_line_numbers = decode_value (p, &p);
+	jit->line_numbers = g_new0 (MonoDebugLineNumberEntry, jit->num_line_numbers);
 
 	prev_offset = 0;
 	prev_native_offset = 0;
-	for (i = 0; i < len; ++i) {
+	for (i = 0; i < jit->num_line_numbers; ++i) {
+		MonoDebugLineNumberEntry *lne = &jit->line_numbers [i];
+
 		offset = prev_offset + decode_value (p, &p);
 		native_offset = prev_native_offset + decode_value (p, &p);
-		record_line_number (jit, native_offset, offset);
+
+		lne->native_offset = native_offset;
+		lne->il_offset = offset;
+
 		prev_offset = offset;
 		prev_native_offset = native_offset;
 	}
@@ -482,9 +500,8 @@ deserialize_debug_info (MonoMethod *method,
 }
 
 void
-mono_debug_add_aot_method (MonoDomain *domain,
-						   MonoMethod *method, guint8 *code_start, 
-						   guint8 *debug_info, guint32 debug_info_len)
+mono_debug_add_aot_method (MonoDomain *domain, MonoMethod *method, guint8 *code_start, 
+			   guint8 *debug_info, guint32 debug_info_len)
 {
 	MonoDebugMethodJitInfo *jit;
 
@@ -501,13 +518,19 @@ mono_debug_add_aot_method (MonoDomain *domain,
 	if (debug_info_len == 0)
 		return;
 
-	jit = deserialize_debug_info (method, code_start,
-								  debug_info,
-								  debug_info_len);
+	jit = deserialize_debug_info (method, code_start, debug_info, debug_info_len);
+
+#if 0
+	jit = mono_debug_read_method ((MonoDebugMethodAddress *) debug_info);
+	jit->code_start = code_start;
+	jit->wrapper_addr = NULL;
+#endif
 
 	mono_debug_add_method (method, jit, domain);
 
 	mono_debug_add_vg_method (method, jit);
+
+	free_jit_debug_info (jit);
 }
 
 MonoDomain *
@@ -544,5 +567,5 @@ mono_debug_add_icall_wrapper (MonoMethod *method, MonoJitICallInfo* callinfo)
 	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
 		return;
 
-	mono_debug_add_wrapper (method, callinfo->func, mono_get_root_domain ());
+	// mono_debug_add_wrapper (method, callinfo->func, mono_get_root_domain ());
 }

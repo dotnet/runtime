@@ -22,7 +22,6 @@ typedef struct MonoSymbolFileLexicalBlockEntry	MonoSymbolFileLexicalBlockEntry;
 
 typedef struct MonoDebugMethodInfo		MonoDebugMethodInfo;
 typedef struct MonoDebugLexicalBlockEntry	MonoDebugLexicalBlockEntry;
-typedef struct MonoDebugLineNumberEntry		MonoDebugLineNumberEntry;
 
 /* Keep in sync with OffsetTable in mcs/class/Mono.CSharp.Debugger/MonoSymbolTable.cs */
 struct MonoSymbolFileOffsetTable {
@@ -110,7 +109,7 @@ struct MonoDebugLexicalBlockEntry {
 	guint32 end_address;
 };
 
-struct MonoDebugLineNumberEntry {
+struct _MonoDebugLineNumberEntry {
 	guint32 il_offset;
 	guint32 native_offset;
 };

@@ -5672,6 +5672,20 @@ ves_icall_MonoDebugger_check_runtime_version (MonoString *fname)
 		return NULL;
 }
 
+static gint32
+ves_icall_MonoDebugger_GetMethodIndex (MonoReflectionMethod *rmethod)
+{
+	guint32 index;
+
+	MONO_ARCH_SAVE_REGS;
+
+	index = mono_method_get_index (rmethod->method);
+	if (!index)
+		return -1;
+
+	return index - rmethod->method->klass->method.first;
+}
+
 static MonoBoolean
 custom_attrs_defined_internal (MonoObject *obj, MonoReflectionType *attr_type)
 {
@@ -6050,6 +6064,7 @@ static const IcallEntry assembly_icalls [] = {
 	{"MonoDebugger_CheckRuntimeVersion", ves_icall_MonoDebugger_check_runtime_version},
 	{"MonoDebugger_GetLocalTypeFromSignature", ves_icall_MonoDebugger_GetLocalTypeFromSignature},
 	{"MonoDebugger_GetMethod", ves_icall_MonoDebugger_GetMethod},
+	{"MonoDebugger_GetMethodIndex", ves_icall_MonoDebugger_GetMethodIndex},
 	{"MonoDebugger_GetMethodToken", ves_icall_MonoDebugger_GetMethodToken},
 	{"MonoDebugger_GetType", ves_icall_MonoDebugger_GetType},
 
