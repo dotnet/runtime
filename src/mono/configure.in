@@ -2,7 +2,7 @@
 AC_INIT(README)
 AC_CANONICAL_SYSTEM
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(mono, 0.9)
+AM_INIT_AUTOMAKE(mono, 0.10)
 AM_MAINTAINER_MODE
 
 AC_CONFIG_SUBDIRS(libgc)
@@ -81,6 +81,13 @@ gc=none
 build_own_boehm=false
 AC_ARG_WITH(gc, [  --with-gc=boehm,none],[gc=$with_gc])
 
+#
+# Remove the following 3 lines when we can ship the bundled version
+#
+if test "x$found_boehm" != "xyes"; then
+	gc=none
+fi
+
 case "x$gc" in
 	xboehm|xyes)
 		if test "x$found_boehm" != "xyes"; then
@@ -88,7 +95,7 @@ case "x$gc" in
 		fi
 		AC_DEFINE(HAVE_BOEHM_GC)
 		AC_SUBST(HAVE_BOEHM_GC)
-		if $build_own; then
+		if $build_own_boehm; then
 	    		AC_MSG_RESULT("   using included copy")
 			CFLAGS="$CFLAGS -I\$(top_builddir)/libgc"
 			(mkdir libgc >& /dev/null; mkdir libgc/gc >& /dev/null; 
@@ -104,7 +111,7 @@ case "x$gc" in
 		;;
 esac
 
-AM_CONDITIONAL(USE_INCLUDED_BOEHM, $build_own)
+AM_CONDITIONAL(USE_INCLUDED_BOEHM, $build_own_boehm)
 
 dnl ****************************************
 dnl *** Check if we're building on win32 ***
