@@ -808,16 +808,17 @@ A: You could do: mcs /target:module file1.cs, mcs /target:module file2.cs,
 Q: Is there any plans for implementing remoting in the near future?, When will 
    work in System.Runtime.Remoting.dll start?
 
-A: The remoting infrastructure is in place. Some of the channels and 
-   formatters are not.
+A: The remoting infrastructure is in place.  We have implementations
+   of the TcpChannel, HttpChannel and the Soap and Binary Formatters.
+   They are compatible with .NET.
 
-Q: I'm wondering if there are any plans to start using nant to build the
-   class lib + test lib. i think that every project need/should use an
-   automated build process and nant + a couple of tools enables this. is
-   the problem that the compiler can't run nant yet?
+   However, some classes from the library may have a different binary
+   representation, because they may have a different internal data
+   structure, so for example you won't be able to exchange a Hastable
+   object between Mono and MS.NET. It should not be a problem if you
+   are using primitive types, arrays or your own classes. In any case,
+   could you post a test case?
 
-A: Maybe well be doing some sort of automated build process + testing when
-   the summer finish.
 
 Q: My C code uses the __stdcall which is not availble on Linux, how can I
    make the code portable Windows/Unix across platforms?
