@@ -2,6 +2,7 @@
 #define __MONO_METADATA_CLASS_INTERBALS_H__
 
 #include <mono/metadata/class.h>
+#include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
 
 #define MONO_CLASS_IS_ARRAY(c) ((c)->rank)
@@ -179,6 +180,14 @@ struct _MonoEvent {
 	guint32 attrs;
 };
 
+/* type of exception being "on hold" for later processing (see exception_type) */
+enum {
+	MONO_EXCEPTION_NONE = 0,
+	MONO_EXCEPTION_SECURITY_LINKDEMAND = 1,
+	MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND = 2
+	/* add other exception type */
+};
+
 struct _MonoClass {
 	MonoImage *image;
 
@@ -225,7 +234,9 @@ struct _MonoClass {
 	guint has_references  : 1; /* it has GC-tracked references in the instance */
 	guint has_static_refs : 1; /* it has static fields that are GC-tracked */
 
-	guint32 declsec_flags;     /* declarative security attributes flags */
+	guint32    declsec_flags;	/* declarative security attributes flags */
+	guint32    exception_type;	/* MONO_EXCEPTION_* */
+	void*      exception_data;	/* Additional information about the exception */
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
@@ -596,6 +607,12 @@ mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig
 
 MonoGenericClass *
 mono_get_shared_generic_class (MonoGenericContainer *container, gboolean is_dynamic);
+
+gboolean
+mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data);
+
+MonoException*
+mono_class_get_exception_for_failure (MonoClass *klass);
 
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
 

@@ -33,6 +33,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/mono-debug-debugger.h>
+#include <mono/metadata/security-manager.h>
 #include <mono/os/gc_wrapper.h>
 
 MonoStats mono_stats;
@@ -1145,6 +1146,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	int i, max_vtsize = 0, max_iid, cur_slot = 0;
 	GPtrArray *ifaces;
 	GHashTable *override_map = NULL;
+	gboolean security_enabled = mono_is_security_manager_active ();
 
 	if (class->vtable)
 		return;
@@ -1225,6 +1227,12 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 							continue;
 						if (!strcmp(cm->name, im->name) && 
 						    mono_metadata_signature_equal (mono_method_signature (cm), mono_method_signature (im))) {
+
+							/* CAS - SecurityAction.InheritanceDemand on interface */
+							if (security_enabled && (im->flags & METHOD_ATTRIBUTE_HAS_SECURITY)) {
+								mono_secman_inheritancedemand_method (cm, im);
+							}
+
 							g_assert (io + l <= max_vtsize);
 							vtable [io + l] = cm;
 						}
@@ -1255,6 +1263,12 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 						
 						if (!strcmp(cm->name, im->name) && 
 						    mono_metadata_signature_equal (mono_method_signature (cm), mono_method_signature (im))) {
+
+							/* CAS - SecurityAction.InheritanceDemand on interface */
+							if (security_enabled && (im->flags & METHOD_ATTRIBUTE_HAS_SECURITY)) {
+								mono_secman_inheritancedemand_method (cm, im);
+							}
+
 							g_assert (io + l <= max_vtsize);
 							vtable [io + l] = cm;
 							break;
@@ -1299,6 +1313,12 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 					
 						if (((fqname && !strcmp (cm->name, fqname)) || !strcmp (cm->name, qname)) &&
 						    mono_metadata_signature_equal (mono_method_signature (cm), mono_method_signature (im))) {
+
+							/* CAS - SecurityAction.InheritanceDemand on interface */
+							if (security_enabled && (im->flags & METHOD_ATTRIBUTE_HAS_SECURITY)) {
+								mono_secman_inheritancedemand_method (cm, im);
+							}
+
 							g_assert (io + l <= max_vtsize);
 							vtable [io + l] = cm;
 							break;
@@ -1396,6 +1416,12 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 						continue;
 					if (!strcmp(cm->name, m1->name) && 
 					    mono_metadata_signature_equal (mono_method_signature (cm), mono_method_signature (m1))) {
+
+						/* CAS - SecurityAction.InheritanceDemand */
+						if (security_enabled && (m1->flags & METHOD_ATTRIBUTE_HAS_SECURITY)) {
+							mono_secman_inheritancedemand_method (cm, m1);
+						}
+
 						slot = k->methods [j]->slot;
 						g_assert (cm->slot < max_vtsize);
 						if (!override_map)
@@ -1543,6 +1569,11 @@ mono_class_init (MonoClass *class)
 	}
 
 	class->init_pending = 1;
+
+	/* CAS - SecurityAction.InheritanceDemand */
+	if (mono_is_security_manager_active () && class->parent && (class->parent->flags & TYPE_ATTRIBUTE_HAS_SECURITY)) {
+		mono_secman_inheritancedemand_class (class, class->parent);
+	}
 
 	if (mono_debugger_start_class_init_func)
 		mono_debugger_start_class_init_func (class);
@@ -4167,4 +4198,57 @@ mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int p
 	}
 
 	return res;
+}
+
+/**
+ * mono_class_set_failure:
+ * @klass: class in which the failure was detected
+ * @ex_type: the kind of exception/error to be thrown (later)
+ * @ex_data: exception data (specific to each type of exception/error)
+ *
+ * Keep a detected failure informations in the class for later processing.
+ * Note that only the first failure is kept.
+ */
+gboolean
+mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data)
+{
+	if (klass->exception_type)
+		return FALSE;
+	klass->exception_type = ex_type;
+	klass->exception_data = ex_data;
+	return TRUE;
+}
+
+/**
+ * mono_class_get_exception_for_failure:
+ * @klass: class in which the failure was detected
+ *
+ * Return a constructed MonoException than the caller can then throw
+ * using mono_raise_exception - or NULL if no failure is present (or
+ * doesn't result in an exception).
+ */
+MonoException*
+mono_class_get_exception_for_failure (MonoClass *klass)
+{
+	switch (klass->exception_type) {
+	case MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND: {
+		MonoDomain *domain = mono_domain_get ();
+		MonoSecurityManager* secman = mono_security_manager_get_methods ();
+		MonoMethod *method = klass->exception_data;
+		guint32 error = (method) ? MONO_METADATA_INHERITANCEDEMAND_CLASS : MONO_METADATA_INHERITANCEDEMAND_METHOD;
+		MonoObject *exc = NULL;
+		gpointer args [4];
+
+		args [0] = &error;
+		args [1] = mono_assembly_get_object (domain, mono_image_get_assembly (klass->image));
+		args [2] = mono_type_get_object (domain, &klass->byval_arg);
+		args [3] = (method) ? mono_method_get_object (domain, method, NULL) : NULL;
+
+		mono_runtime_invoke (secman->inheritsecurityexception, NULL, args, &exc);
+		return (MonoException*) exc;
+	}
+	/* TODO - handle other class related failures */
+	default:
+		return NULL;
+	}
 }

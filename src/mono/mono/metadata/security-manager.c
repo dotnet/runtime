@@ -39,8 +39,12 @@ mono_security_manager_get_methods (void)
 	g_assert (secman.demand);
 
 	secman.inheritancedemand = mono_class_get_method_from_name (secman.securitymanager,
-		"InheritanceDemand", 3);	
+		"InheritanceDemand", 2);	
 	g_assert (secman.inheritancedemand);
+
+	secman.inheritsecurityexception = mono_class_get_method_from_name (secman.securitymanager,
+		"InheritanceDemandSecurityException", 4);	
+	g_assert (secman.inheritsecurityexception);
 
 	secman.linkdemand = mono_class_get_method_from_name (secman.securitymanager,
 		"LinkDemand", 3);
@@ -64,6 +68,64 @@ mono_security_manager_get_methods (void)
 
 	return &secman;
 }
+
+static gboolean
+mono_secman_inheritance_check (MonoClass *klass, MonoDeclSecurityActions *demands)
+{
+	MonoSecurityManager* secman = mono_security_manager_get_methods ();
+	MonoDomain *domain = mono_domain_get ();
+	MonoAssembly *assembly = mono_image_get_assembly (klass->image);
+	MonoReflectionAssembly *refass = mono_assembly_get_object (domain, assembly);
+	MonoObject *res;
+	gpointer args [2];
+
+	args [0] = refass;
+	args [1] = demands;
+
+	res = mono_runtime_invoke (secman->inheritancedemand, NULL, args, NULL);
+	return (*(MonoBoolean *) mono_object_unbox (res));
+}
+
+void
+mono_secman_inheritancedemand_class (MonoClass *klass, MonoClass *parent)
+{
+	MonoDeclSecurityActions demands;
+
+	/* don't hide previous results -and- don't calc everything for nothing */
+	if (klass->exception_type != 0)
+		return;
+
+	/* Check if there are an InheritanceDemand on the parent class */
+	if (mono_declsec_get_inheritdemands_class (parent, &demands)) {
+		/* If so check the demands on the klass (inheritor) */
+		if (!mono_secman_inheritance_check (klass, &demands)) {
+			/* Keep flags in MonoClass to be able to throw a SecurityException later (if required) */
+			klass->exception_type = MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND;
+			klass->exception_data = NULL;
+		}
+	}
+}
+
+void
+mono_secman_inheritancedemand_method (MonoMethod *override, MonoMethod *base)
+{
+	MonoDeclSecurityActions demands;
+
+	/* don't hide previous results -and- don't calc everything for nothing */
+	if (override->klass->exception_type != 0)
+		return;
+
+	/* Check if there are an InheritanceDemand on the base (virtual) method */
+	if (mono_declsec_get_inheritdemands_method (base, &demands)) {
+		/* If so check the demands on the overriding method */
+		if (!mono_secman_inheritance_check (override->klass, &demands)) {
+			/* Keep flags in MonoClass to be able to throw a SecurityException later (if required) */
+			override->klass->exception_type = MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND;
+			override->klass->exception_data = base;
+		}
+	}
+}
+
 
 /*
  * Note: The security manager is activate once when executing the Mono. This 

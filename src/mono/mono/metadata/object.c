@@ -31,6 +31,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/environment.h>
 #include "mono/metadata/profiler-private.h"
+#include "mono/metadata/security-manager.h"
 #include <mono/os/gc_wrapper.h>
 #include <mono/utils/strenc.h>
 
@@ -759,6 +760,13 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	}
 
 	mono_domain_unlock (domain);
+
+	/* Initialization is now complete, we can throw if the InheritanceDemand aren't satisfied */
+	if (mono_is_security_manager_active () && (class->exception_type == MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND)) {
+		MonoException *exc = mono_class_get_exception_for_failure (class);
+		g_assert (exc);
+		mono_raise_exception (exc);
+	}
 
 	/* make sure the the parent is initialized */
 	if (class->parent)

@@ -18,11 +18,18 @@
 #include "threads.h"
 #include "marshal.h"
 #include "image.h"
+#include "reflection.h"
 
 
 /* Definitions */
 
 #define MONO_ECMA_KEY_LENGTH			16
+
+enum {
+	MONO_METADATA_SECURITY_OK		= 0x00,
+	MONO_METADATA_INHERITANCEDEMAND_CLASS	= 0x01,
+	MONO_METADATA_INHERITANCEDEMAND_METHOD	= 0x02
+};
 
 
 /* Structures */
@@ -35,6 +42,7 @@ typedef struct {
 	MonoMethod *deny;			/* SecurityManager.InternalDeny */
 	MonoMethod *permitonly;			/* SecurityManager.InternalPermitOnly */
 	MonoMethod *inheritancedemand;		/* SecurityManager.InheritanceDemand */
+	MonoMethod *inheritsecurityexception;	/* SecurityManager.InheritanceDemandSecurityException */
 	MonoMethod *linkdemand;			/* SecurityManager.LinkDemand */
 	MonoMethod *linkdemandfulltrust;	/* SecurityManager.LinkDemandFullTrust */
 	MonoMethod *linkdemandunmanaged;	/* SecurityManager.LinkDemandUnmanaged */
@@ -48,6 +56,9 @@ void mono_activate_security_manager (void);
 gboolean mono_is_security_manager_active (void);
 MonoSecurityManager* mono_security_manager_get_methods (void);
 gboolean mono_is_ecma_key (const char *publickey, int size);
+
+void mono_secman_inheritancedemand_class (MonoClass *klass, MonoClass *parent);
+void mono_secman_inheritancedemand_method (MonoMethod *override, MonoMethod *base);
 
 
 /* internal calls */
