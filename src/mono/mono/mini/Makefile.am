@@ -103,6 +103,7 @@ common_sources = \
 	regalloc.c	\
 	regalloc.h	\
 	inssel.c	\
+	inssel.h	\
 	helpers.c	\
 	liveness.c	\
 	ssa.c		\
