@@ -3402,3 +3402,104 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num
 	return params;
 }
 
+gboolean
+mono_type_is_byref (MonoType *type)
+{
+	return type->byref;
+}
+
+int
+mono_type_get_type (MonoType *type)
+{
+	return type->type;
+}
+
+/* For MONO_TYPE_FNPTR */
+MonoMethodSignature*
+mono_type_get_signature (MonoType *type)
+{
+	return type->data.method;
+}
+
+/* For MONO_TYPE_CLASS, VALUETYPE */
+MonoClass*
+mono_type_get_class (MonoType *type)
+{
+	return type->data.klass;
+}
+
+/* For MONO_TYPE_ARRAY */
+MonoArrayType*
+mono_type_get_array_type (MonoType *type)
+{
+	return type->data.array;
+}
+
+MonoClass*
+mono_type_get_modifiers (MonoType *type, gboolean *is_required, gpointer *iter)
+{
+	/* FIXME: implement */
+	return NULL;
+}
+
+MonoType*
+mono_signature_get_return_type (MonoMethodSignature *sig)
+{
+	return sig->ret;
+}
+
+MonoType*
+mono_signature_get_params (MonoMethodSignature *sig, gpointer *iter)
+{
+	MonoType** type;
+	if (!iter)
+		return NULL;
+	if (!*iter) {
+		/* start from the first */
+		if (sig->param_count) {
+			*iter = &sig->params [0];
+			return sig->params [0];
+		} else {
+			/* no method */
+			return NULL;
+		}
+	}
+	type = *iter;
+	type++;
+	if (type < &sig->params [sig->param_count]) {
+		*iter = type;
+		return *type;
+	}
+	return NULL;
+}
+
+guint32
+mono_signature_get_param_count (MonoMethodSignature *sig)
+{
+	return sig->param_count;
+}
+
+guint32
+mono_signature_get_call_conv (MonoMethodSignature *sig)
+{
+	return sig->call_convention;
+}
+
+int
+mono_signature_vararg_start (MonoMethodSignature *sig)
+{
+	return sig->sentinelpos;
+}
+
+gboolean
+mono_signature_is_instance (MonoMethodSignature *sig)
+{
+	return sig->hasthis;
+}
+
+gboolean
+mono_signature_explicit_this (MonoMethodSignature *sig)
+{
+	return sig->explicit_this;
+}
+

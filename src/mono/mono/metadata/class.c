@@ -2942,6 +2942,30 @@ mono_class_get_byref_type (MonoClass *klass)
 	return &klass->this_arg;
 }
 
+int
+mono_class_num_fields (MonoClass *klass)
+{
+	return klass->field.count;
+}
+
+int
+mono_class_num_methods (MonoClass *klass)
+{
+	return klass->method.count;
+}
+
+int
+mono_class_num_properties (MonoClass *klass)
+{
+	return klass->property.count;
+}
+
+int
+mono_class_num_events (MonoClass *klass)
+{
+	return klass->event.count;
+}
+
 MonoClassField*
 mono_class_get_fields (MonoClass* klass, gpointer *iter)
 {

@@ -280,9 +280,9 @@ typedef struct {
 
 struct _MonoArrayType {
 	MonoClass *eklass;
-	int rank;
-	int numsizes;
-	int numlobounds;
+	guint8 rank;
+	guint8 numsizes;
+	guint8 numlobounds;
 	int *sizes;
 	int *lobounds;
 };
@@ -340,6 +340,47 @@ typedef enum {
 	MONO_PARSE_RET,
 	MONO_PARSE_FIELD
 } MonoParseTypeMode;
+
+gboolean
+mono_type_is_byref       (MonoType *type);
+
+int
+mono_type_get_type       (MonoType *type);
+
+/* For MONO_TYPE_FNPTR */
+MonoMethodSignature*
+mono_type_get_signature  (MonoType *type);
+
+/* For MONO_TYPE_CLASS, VALUETYPE */
+MonoClass*
+mono_type_get_class      (MonoType *type);
+
+MonoArrayType*
+mono_type_get_array_type (MonoType *type);
+
+MonoClass*
+mono_type_get_modifiers  (MonoType *type, gboolean *is_required, gpointer *iter);
+
+MonoType*
+mono_signature_get_return_type (MonoMethodSignature *sig);
+
+MonoType*
+mono_signature_get_params      (MonoMethodSignature *sig, gpointer *iter);
+
+guint32
+mono_signature_get_param_count (MonoMethodSignature *sig);
+
+guint32
+mono_signature_get_call_conv   (MonoMethodSignature *sig);
+
+int
+mono_signature_vararg_start    (MonoMethodSignature *sig);
+
+gboolean
+mono_signature_is_instance     (MonoMethodSignature *sig);
+
+gboolean
+mono_signature_explicit_this   (MonoMethodSignature *sig);
 
 guint32     mono_metadata_parse_typedef_or_ref (MonoImage      *m,
                                                 const char      *ptr,

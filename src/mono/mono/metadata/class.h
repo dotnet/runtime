@@ -147,6 +147,18 @@ mono_class_get_type          (MonoClass *klass);
 MonoType*
 mono_class_get_byref_type    (MonoClass *klass);
 
+int
+mono_class_num_fields        (MonoClass *klass);
+
+int
+mono_class_num_methods       (MonoClass *klass);
+
+int
+mono_class_num_properties    (MonoClass *klass);
+
+int
+mono_class_num_events        (MonoClass *klass);
+
 MonoClassField*
 mono_class_get_fields        (MonoClass* klass, gpointer *iter);
 
