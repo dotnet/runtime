@@ -858,7 +858,7 @@ dis_data (MonoImage *m)
 		for (b = 0; b < size; ++b) {
 			if (!(b % 16))
 				fprintf (output, "\n\t");
-			fprintf (output, " %02x", rva [b]);
+			fprintf (output, " %02x", rva [b] & 0xff);
 		}
 		fprintf (output, ") // size: %d\n", size);
 	}
