@@ -1723,6 +1723,9 @@ handle_enum:
 			return calli? OP_VCALL_REG: virt? OP_VCALLVIRT: OP_VCALL;
 	case MONO_TYPE_TYPEDBYREF:
 		return calli? OP_VCALL_REG: virt? OP_VCALLVIRT: OP_VCALL;
+	case MONO_TYPE_GENERICINST:
+		t = type->data.generic_inst->generic_type->type;
+		goto handle_enum;
 	default:
 		g_error ("unknown type 0x%02x in ret_type_to_call_opcode", type->type);
 	}
@@ -2593,6 +2596,22 @@ inflate_generic_field (MonoClassField *field, MonoClass *klass, MonoClass **retc
 	return res;
 }
 
+static MonoMethod *
+mini_get_method (MonoImage *image, guint32 token, MonoMethod *calling_method)
+{
+	MonoMethod *method = mono_get_method (image, token, NULL);
+	MonoGenericMethod *gmethod;
+
+	if (!calling_method->signature->gen_method || !method->signature->gen_method)
+		return method;
+
+	gmethod = g_new0 (MonoGenericMethod, 1);
+	*gmethod = *calling_method->signature->gen_method;
+	gmethod->generic_method = method;
+
+	return mono_class_inflate_generic_method (method, gmethod, NULL);
+}
+
 /*
  * mono_method_to_ir: translates IL into basic blocks containing trees
  */
@@ -3101,7 +3120,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_INST_NEW (cfg, ins, CEE_JMP);
 			token = read32 (ip + 1);
 			/* FIXME: check the signature matches */
-			cmethod = mono_get_method (image, token, NULL);
+			cmethod = mini_get_method (image, token, method);
 			ins->inst_p0 = cmethod;
 			MONO_ADD_INS (bblock, ins);
 			ip += 5;
@@ -3133,7 +3152,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (method->wrapper_type != MONO_WRAPPER_NONE) {
 					cmethod =  (MonoMethod *)mono_method_get_wrapper_data (method, token);
 				} else {
-					cmethod = mono_get_method (image, token, NULL);
+					cmethod = mini_get_method (image, token, method);
 				}
 
 				if (!cmethod->klass->inited)
@@ -3839,7 +3858,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (method->wrapper_type != MONO_WRAPPER_NONE) {
 				cmethod = mono_method_get_wrapper_data (method, token);
 			} else
-				cmethod = mono_get_method (image, token, NULL);
+				cmethod = mini_get_method (image, token, method);
 			fsig = mono_method_get_signature (cmethod, image, token);
 
 			mono_class_init (cmethod->klass);
@@ -4847,7 +4866,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_ADD_INS (bblock, store);
 				NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
 			} else {
-				if ((ip [5] == CEE_CALL) && (cmethod = mono_get_method (image, read32 (ip + 6), NULL)) &&
+				if ((ip [5] == CEE_CALL) && (cmethod = mini_get_method (image, read32 (ip + 6), method)) &&
 						(cmethod->klass == mono_defaults.monotype_class->parent) &&
 						(strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
 					MonoClass *tclass = mono_class_from_mono_type (handle);
@@ -5257,7 +5276,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (method->wrapper_type != MONO_WRAPPER_NONE)
 					cmethod = mono_method_get_wrapper_data (method, n);
 				else {
-					cmethod = mono_get_method (image, n, NULL);
+					cmethod = mini_get_method (image, n, method);
 				}
 
 				mono_class_init (cmethod->klass);
@@ -5285,7 +5304,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (method->wrapper_type != MONO_WRAPPER_NONE)
 					cmethod = mono_method_get_wrapper_data (method, n);
 				else
-					cmethod = mono_get_method (image, n, NULL);
+					cmethod = mini_get_method (image, n, method);
 
 				mono_class_init (cmethod->klass);
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
