@@ -285,6 +285,7 @@ case "x$gc" in
 
 		# The included libgc contains GCJ support
 		AC_DEFINE(HAVE_GC_GCJ_MALLOC)
+		AC_DEFINE(HAVE_GC_ENABLE)
 		;;
 
 	xnone)
