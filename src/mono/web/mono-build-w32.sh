@@ -59,11 +59,13 @@ else
 	echo "Automake version new enough."
 fi
 
-# Select the stable version anyway...
-if [ ! -z "${AUTO_STABLE}" -o -e /usr/autotool/stable ]; then
-    export AUTO_STABLE=${AUTO_STABLE:-/usr/autotool/stable}
-    export AUTO_DEVEL=${AUTO_STABLE}
-fi
+# This causes libgc-not-found problem
+#
+## Select the stable version anyway...
+#if [ ! -z "${AUTO_STABLE}" -o -e /usr/autotool/stable ]; then
+#    export AUTO_STABLE=${AUTO_STABLE:-/usr/autotool/stable}
+#    export AUTO_DEVEL=${AUTO_STABLE}
+#fi
 
 # Need to install pkgconfig and set ACLOCAL_FLAGS if there is not a
 # pkgconfig installed already.  Otherwise set PKG_CONFIG_PATH to the
@@ -123,11 +125,13 @@ else
     install_pkgconfig=yes
 fi
 
-# But we still need to use the mingw libs for glib & co
-ACLOCAL_FLAGS="-I $here/install/share/aclocal $ACLOCAL_FLAGS"
+# This causes libgc-not-found problem
+#
+## But we still need to use the mingw libs for glib & co
+#ACLOCAL_FLAGS="-I $here/install/share/aclocal $ACLOCAL_FLAGS"
 
-export PATH
-export ACLOCAL_FLAGS
+#export PATH
+#export ACLOCAL_FLAGS
 
 # Grab pkg-config, glib etc
 if [ ! -d $here/install ]; then
@@ -158,10 +162,8 @@ if [ $install_pkgconfig = "no" ]; then
 fi
 
 # Needed to find the libgc bits
-CPPFLAGS="$CPPFLAGS -I$here/install/include"
-LDFLAGS="$LDFLAGS -L$here/install/lib"
-export CPPFLAGS
-export LDFLAGS
+export CFLAGS="-I $here/install/include"
+export LDFLAGS="-L$here/install/lib"
 
 # Make sure we build native w32, not cygwin
 #CC="gcc -mno-cygwin"
