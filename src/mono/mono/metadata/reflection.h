@@ -386,6 +386,8 @@ typedef struct {
 	MonoObject  *flags;
 	MonoObject  *hashalg;
 	MonoObject  *keypair;
+	MonoArray   *publicKey;
+	MonoArray   *keyToken;
 	MonoObject  *versioncompat;
 } MonoReflectionAssemblyName;
 
