@@ -272,6 +272,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		g_assert (class->instance_size == sizeof (MonoArrayObject));
 	}
 
+	class->interfaces = mono_metadata_interfaces_from_typedef (image, type_token);
 	return class;
 }
 

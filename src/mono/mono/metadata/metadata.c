@@ -910,18 +910,10 @@ guint32
 mono_metadata_parse_typedef_or_ref (MonoMetadata *m, const char *ptr, const char **rptr)
 {
 	guint32 token;
-	guint table;
 	token = mono_metadata_decode_value (ptr, &ptr);
-
-	switch (token & 0x03) {
-	case 0: table = MONO_TABLE_TYPEDEF; break;
-	case 1: table = MONO_TABLE_TYPEREF; break;
-	case 2: table = MONO_TABLE_TYPESPEC; break;
-	default: g_error ("Unhandled encoding for typedef-or-ref coded index");
-	}
 	if (rptr)
 		*rptr = ptr;
-	return (token >> 2) | table << 24;
+	return mono_metadata_token_from_dor (token);
 }
 
 int
@@ -1543,7 +1535,7 @@ mono_metadata_parse_param (MonoMetadata *m, const char *ptr, const char **rptr)
 guint32
 mono_metadata_token_from_dor (guint32 dor_index)
 {
-	int table, idx;
+	guint32 table, idx;
 
 	table = dor_index & 0x03;
 	idx = dor_index >> 2;
@@ -1603,6 +1595,7 @@ typedef struct {
  * TYPEDEF		METHODDEF   MONO_TYPEDEF_METHOD_LIST
  * TYPEDEF		FIELD		MONO_TYPEDEF_FIELD_LIST
  * PROPERTYMAP	PROPERTY	MONO_PROPERTY_MAP_PROPERTY_LIST
+ * INTERFIMPL	TYPEDEF   	MONO_INTERFACEIMPL_CLASS
  * METHODSEM	PROPERTY	ASSOCIATION (encoded index)
  *
  * Note that we still don't support encoded indexes.
@@ -1638,6 +1631,26 @@ typedef_locator (const void *a, const void *b)
 	return 0;
 }
 
+static int
+table_locator (const void *a, const void *b)
+{
+	locator_t *loc = (locator_t *) a;
+	char *bb = (char *) b;
+	guint32 table_index = (bb - loc->t->base) / loc->t->row_size;
+	guint32 col;
+	
+	col = mono_metadata_decode_row_col (loc->t, table_index, loc->col_idx);
+
+	if (loc->idx == col) {
+		loc->result = table_index;
+		return 0;
+	}
+	if (loc->idx < col)
+		return -1;
+	else 
+		return 1;
+}
+
 guint32
 mono_metadata_typedef_from_field (MonoMetadata *meta, guint32 index)
 {
@@ -1670,6 +1683,47 @@ mono_metadata_typedef_from_method (MonoMetadata *meta, guint32 index)
 
 	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
 	return loc.result + 1;
+}
+
+MonoClass**
+mono_metadata_interfaces_from_typedef (MonoMetadata *meta, guint32 index)
+{
+	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_INTERFACEIMPL];
+	locator_t loc;
+	guint32 start, i;
+	guint32 cols [MONO_INTERFACEIMPL_SIZE];
+	MonoClass **result;
+	
+	loc.idx = mono_metadata_token_index (index);
+	loc.col_idx = MONO_INTERFACEIMPL_CLASS;
+	loc.t = tdef;
+
+	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
+		return NULL;
+
+	start = loc.result;
+	/*
+	 * We may end up in the middle of the rows... 
+	 */
+	while (start > 0) {
+		if (loc.idx == mono_metadata_decode_row_col (tdef, start - 1, MONO_INTERFACEIMPL_CLASS))
+			start--;
+		else
+			break;
+	}
+	result = NULL;
+	i = 0;
+	while (start < tdef->rows) {
+		mono_metadata_decode_row (tdef, start, cols, MONO_INTERFACEIMPL_SIZE);
+		if (cols [MONO_INTERFACEIMPL_CLASS] != loc.idx)
+			break;
+		result = g_renew (MonoClass*, result, i + 2);
+		result [i] = mono_class_get (meta, mono_metadata_token_from_dor (cols [MONO_INTERFACEIMPL_INTERFACE]));
+		++i;
+		++start;
+	}
+	result [i] = NULL;
+	return result;
 }
 
 #ifndef __GNUC__

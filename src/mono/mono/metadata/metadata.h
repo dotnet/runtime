@@ -108,6 +108,8 @@ const char    *mono_metadata_user_string   (MonoMetadata *meta, guint32 index);
 guint32 mono_metadata_typedef_from_field  (MonoMetadata *meta, guint32 index);
 guint32 mono_metadata_typedef_from_method (MonoMetadata *meta, guint32 index);
 
+MonoClass** mono_metadata_interfaces_from_typedef (MonoMetadata *meta, guint32 index);
+
 /*
  * Functions to extract information from the Blobs
  */

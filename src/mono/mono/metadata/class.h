@@ -25,6 +25,7 @@ struct _MonoClass {
 	guint enumtype        : 1; /* derives from System.Enum */
 
 	MonoClass *parent;
+	MonoClass **interfaces;
 
 	const char *name;
 	const char *name_space;
