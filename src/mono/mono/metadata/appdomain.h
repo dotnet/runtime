@@ -89,6 +89,9 @@ mono_init                  (const char *filename);
 void
 mono_runtime_init          (MonoDomain *domain);
 
+MonoDomain *
+mono_domain_create         (void);
+
 inline MonoDomain *
 mono_domain_get            (void);
 

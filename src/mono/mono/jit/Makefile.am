@@ -34,6 +34,7 @@ mono_SOURCES = mono.c
 
 mono_LDADD =				\
 	libmono.a			\
+	../metadata/libmonoruntime.a	\
 	../metadata/libmetadata.a	\
 	../io-layer/libwapi.a		\
 	../utils/libmonoutils.a 	\

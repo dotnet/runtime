@@ -1,6 +1,6 @@
 noinst_PROGRAMS = pedump
 
-lib_LIBRARIES = libmetadata.a
+lib_LIBRARIES = libmetadata.a libmonoruntime.a
 
 #
 # Keep in sync with mono/runtime/Makefile.am
@@ -10,18 +10,8 @@ assembliesdir = $(libdir)
 INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS) -I$(top_srcdir)	-I$(top_srcdir)/mono \
 	-DMONO_ASSEMBLIES=\""$(assembliesdir)"\"		
 
-libmetadata_a_SOURCES = \
-	assembly.c	\
-	opcodes.c	\
-	image.c		\
-	metadata.c	\
-	verify.c	\
-	mono-endian.c	\
-	private.h	\
-	rawbuffer.c	\
+libmonoruntime_a_SOURCES = \
 	reflection.c	\
-	loader.c	\
-	class.c		\
 	object.c	\
 	icall.c		\
 	decimal.c	\
@@ -39,8 +29,6 @@ libmetadata_a_SOURCES = \
 	exception.h	\
 	unicode.c	\
 	unicode.h	\
-	mempool.h	\
-	mempool.c	\
 	appdomain.h	\
 	appdomain.c	\
 	debug-helpers.h	\
@@ -56,7 +44,25 @@ libmetadata_a_SOURCES = \
 	sysmath.h	\
 	sysmath.c
 
+libmetadata_a_SOURCES = \
+	assembly.c	\
+	domain.c	\
+	opcodes.c	\
+	image.c		\
+	metadata.c	\
+	verify.c	\
+	mono-endian.c	\
+	private.h	\
+	rawbuffer.c	\
+	loader.c	\
+	class.c		\
+	mempool.h	\
+	mempool.c	\
+	debug-helpers.h	\
+	debug-helpers.c
+
 libmetadataincludedir = $(includedir)/mono/metadata
+libmonoruntimeincludedir = $(includedir)/mono/metadata
 
 libmetadatainclude_HEADERS = \
 	assembly.h	\

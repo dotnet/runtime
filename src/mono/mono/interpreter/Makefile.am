@@ -12,6 +12,7 @@ mint_SOURCES =		\
 
 mint_LDADD =				\
 	../arch/libmonoarch.la	\
+	../metadata/libmonoruntime.a	\
 	../metadata/libmetadata.a	\
 	../io-layer/libwapi.a	\
 	../utils/libmonoutils.a 	\

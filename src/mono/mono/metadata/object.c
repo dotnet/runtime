@@ -11,7 +11,9 @@
 #include <stdio.h>
 #include <signal.h>
 #include <string.h>
+#include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
@@ -61,6 +63,234 @@ mono_runtime_class_init (MonoClass *klass)
 		}
 	}
 	/* No class constructor found */
+}
+
+static gpointer
+default_trampoline (MonoMethod *method)
+{
+	return method;
+}
+
+static gpointer
+default_remoting_trampoline (MonoMethod *method)
+{
+	g_error ("remoting not installed");
+	return NULL;
+}
+
+static MonoTrampoline arch_create_jit_trampoline = default_trampoline;
+static MonoTrampoline arch_create_remoting_trampoline = default_remoting_trampoline;
+
+void
+mono_install_trampoline (MonoTrampoline func) 
+{
+	arch_create_jit_trampoline = func? func: default_trampoline;
+}
+
+void
+mono_install_remoting_trampoline (MonoTrampoline func) 
+{
+	arch_create_remoting_trampoline = func? func: default_remoting_trampoline;
+}
+
+#if 0 && HAVE_BOEHM_GC
+static void
+vtable_finalizer (void *obj, void *data) {
+	g_print ("%s finalized (%p)\n", (char*)data, obj);
+}
+#endif
+
+/**
+ * mono_class_vtable:
+ * @domain: the application domain
+ * @class: the class to initialize
+ *
+ * VTables are domain specific because we create domain specific code, and 
+ * they contain the domain specific static class data.
+ */
+MonoVTable *
+mono_class_vtable (MonoDomain *domain, MonoClass *class)
+{
+	MonoClass *k;
+	MonoVTable *vt;
+	MonoClassField *field;
+	guint32 cindex;
+	guint32 cols [MONO_CONSTANT_SIZE];
+	const char *p;
+	char *t;
+	int i, len;
+
+	g_assert (class);
+
+	/* can interfaces have static fields? */
+	if (class->flags & TYPE_ATTRIBUTE_INTERFACE)
+		g_assert_not_reached ();
+
+	mono_domain_lock (domain);
+	if ((vt = mono_g_hash_table_lookup (domain->class_vtable_hash, class))) {
+		mono_domain_unlock (domain);
+		return vt;
+	}
+	
+	if (!class->inited)
+		mono_class_init (class);
+
+//	mono_stats.used_class_count++;
+//	mono_stats.class_vtable_size += sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+
+	vt = mono_mempool_alloc0 (domain->mp,  sizeof (MonoVTable) + 
+				  class->vtable_size * sizeof (gpointer));
+	vt->klass = class;
+	vt->domain = domain;
+
+	if (class->class_size) {
+#if HAVE_BOEHM_GC
+		vt->data = GC_malloc (class->class_size + 8);
+		/*vt->data = GC_debug_malloc (class->class_size + 8, class->name, 2);*/
+		/*GC_register_finalizer (vt->data, vtable_finalizer, class->name, NULL, NULL);*/
+		mono_g_hash_table_insert (domain->static_data_hash, class, vt->data);
+#else
+		vt->data = mono_mempool_alloc0 (domain->mp, class->class_size + 8);
+		
+#endif
+//		mono_stats.class_static_data_size += class->class_size + 8;
+	}
+
+	for (i = class->field.first; i < class->field.last; ++i) {
+		field = &class->fields [i - class->field.first];
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+			continue;
+		if (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT))
+			continue;
+		cindex = mono_metadata_get_constant_index (class->image, MONO_TOKEN_FIELD_DEF | (i + 1));
+		if (!cindex) {
+			g_warning ("constant for field %s not found", field->name);
+			continue;
+		}
+		mono_metadata_decode_row (&class->image->tables [MONO_TABLE_CONSTANT], cindex - 1, cols, MONO_CONSTANT_SIZE);
+		p = mono_metadata_blob_heap (class->image, cols [MONO_CONSTANT_VALUE]);
+		len = mono_metadata_decode_blob_size (p, &p);
+		t = (char*)vt->data + field->offset;
+		/* should we check that the type matches? */
+		switch (cols [MONO_CONSTANT_TYPE]) {
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I1:
+			*t = *p;
+			break;
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I2: {
+			guint16 *val = (guint16*)t;
+			*val = read16 (p);
+			break;
+		}
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I4: {
+			guint32 *val = (guint32*)t;
+			*val = read32 (p);
+			break;
+		}
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I8: {
+			guint64 *val = (guint64*)t;
+			*val = read64 (p);
+			break;
+		}
+		case MONO_TYPE_R4: {
+			float *val = (float*)t;
+			readr4 (p, val);
+			break;
+		}
+		case MONO_TYPE_R8: {
+			double *val = (double*)t;
+			readr8 (p, val);
+			break;
+		}
+		case MONO_TYPE_STRING: {
+			gpointer *val = (gpointer*)t;
+			//*val = mono_string_new_utf16 (domain, (const guint16*)p, len/2);
+			break;
+		}
+		case MONO_TYPE_CLASS:
+			/* nothing to do, we malloc0 the data and the value can be 0 only */
+			break;
+		default:
+			g_warning ("type 0x%02x should not be in constant table", cols [MONO_CONSTANT_TYPE]);
+		}
+	}
+
+	vt->max_interface_id = class->max_interface_id;
+	
+	vt->interface_offsets = mono_mempool_alloc0 (domain->mp, 
+	        sizeof (gpointer) * (class->max_interface_id + 1));
+
+	/* initialize interface offsets */
+	for (k = class; k ; k = k->parent) {
+		for (i = 0; i < k->interface_count; i++) {
+			int slot;
+			MonoClass *ic = k->interfaces [i];
+			slot = class->interface_offsets [ic->interface_id];
+			vt->interface_offsets [ic->interface_id] = &vt->vtable [slot];
+		}
+	}
+
+	/* initialize vtable */
+	for (i = 0; i < class->vtable_size; ++i) {
+		MonoMethod *cm;
+	       
+		if ((cm = class->vtable [i]))
+			vt->vtable [i] = arch_create_jit_trampoline (cm);
+	}
+
+	mono_g_hash_table_insert (domain->class_vtable_hash, class, vt);
+	mono_domain_unlock (domain);
+
+	mono_runtime_class_init (class);
+
+	return vt;
+}
+
+/**
+ * mono_class_proxy_vtable:
+ * @domain: the application domain
+ * @class: the class to proxy
+ *
+ * Creates a vtable for transparent proxies. It is basically
+ * a copy of the real vtable of @class, but all function pointers invoke
+ * the remoting functions, and vtable->klass points to the 
+ * transparent proxy class, and not to @class.
+ */
+MonoVTable *
+mono_class_proxy_vtable (MonoDomain *domain, MonoClass *class)
+{
+	MonoVTable *vt, *pvt;
+	int i, vtsize;
+
+	if ((pvt = mono_g_hash_table_lookup (domain->proxy_vtable_hash, class)))
+		return pvt;
+
+	vt = mono_class_vtable (domain, class);
+	vtsize = sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
+
+//	mono_stats.class_vtable_size += vtsize;
+
+	pvt = mono_mempool_alloc (domain->mp, vtsize);
+	memcpy (pvt, vt, vtsize);
+
+	pvt->klass = mono_defaults.transparent_proxy_class;
+
+	/* initialize vtable */
+	for (i = 0; i < class->vtable_size; ++i) {
+		MonoMethod *cm;
+	       
+		if ((cm = class->vtable [i]))
+			pvt->vtable [i] = arch_create_remoting_trampoline (cm);
+	}
+
+	mono_g_hash_table_insert (domain->proxy_vtable_hash, class, pvt);
+
+	return pvt;
 }
 
 static MonoInvokeFunc default_mono_runtime_invoke = NULL;
