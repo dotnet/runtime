@@ -8371,7 +8371,9 @@ mini_init (const char *filename)
 #if SIZEOF_VOID_P == 4
 	mono_register_opcode_emulation (OP_FCONV_TO_U, "__emul_fconv_to_u", helper_sig_uint_double, mono_fconv_u4, TRUE);
 #else
+#ifdef __GNUC__
 #warning "fixme: add opcode emulation"
+#endif
 #endif
 
 	/* other jit icalls */
