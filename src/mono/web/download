@@ -18,7 +18,7 @@
  	  <tr bgcolor="#DDDDDD">
 	    <td>
 	      <b>Release 0.18</b><br>
-	      <a href="archive/mono-0.17">Release notes</a><br>
+	      <a href="archive/mono-0.18">Release notes</a><br>
 	      Jan 12th, 2003
 	    </td>
 	    <td>
@@ -111,20 +111,20 @@
 		    </ul>
 	          </td>
 	        </tr>
-<!-- 		<tr> -->
-<!-- 		  <td bgcolor="#999999"> -->
+ 		<tr>
+ 		  <td bgcolor="#999999">
 <!-- 		    <b>Windows Setup Wizard (NT/2000/XP)</b> -->
 <!-- 		    <ul> -->
 <!-- 	              <li><a href="archive/mono-0.17-stable.exe">Mono-Setup</a> -->
 <!-- 	            </ul> -->
 <!-- 	          </td> -->
-<!-- 		  <td bgcolor="#999999"> -->
-<!-- 		    <b>Debian packages</b> -->
-<!-- 		    <ul> -->
-<!-- 	              <li><a href="http://www.atoker.com/mono/">Alp's web site</a> -->
-<!-- 	            </ul> -->
-<!-- 	          </td> -->
-<!-- 		</tr> -->
+ 		  <td bgcolor="#999999">
+ 		    <b>Debian packages</b>
+		    <ul>
+	              <li><a href="http://www.atoker.com/mono/">Alp's web site</a>
+	            </ul>
+ 	          </td>
+ 		</tr>
 	      </table>
 	    </td>
 	  </tr>
