@@ -149,6 +149,9 @@
 	missing, and Boehm GC seems to fail on MacOS X), this shows
 	the excellent progress Paolo has been making.
 
+	Zoltan has added support for modules to MCS (generation and
+	consumption).
+
 @item Dec 10th: Mono Debugger 0.5 released
 
 	Martin Baulig has <a
