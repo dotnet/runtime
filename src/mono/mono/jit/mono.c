@@ -182,7 +182,7 @@ main (int argc, char *argv [])
 				*cname++ = 0;
 			else {
 				cname = compile_class;
-				compile_class = (char *)"";
+				compile_class = "";
 			}
 			class = mono_class_from_name (assembly->image, compile_class, cname);
 			if (!class)
