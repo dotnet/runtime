@@ -23,7 +23,8 @@ TESTSRC=			\
 	ctor-bench.cs		\
 	readonly.cs		\
 	bulkcpy.il		\
-	math.cs
+	math.cs			\
+	boxtest.cs
 
 TESTSI_TMP=$(TESTSRC:.cs=.exe)
 TESTSI=$(TESTSI_TMP:.il=.exe)
