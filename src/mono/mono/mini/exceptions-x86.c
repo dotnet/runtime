@@ -790,7 +790,10 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 		if (!ji || ji == (gpointer)-1 || MONO_CONTEXT_GET_BP (&ctx) >= jit_tls->end_of_stack)
 			return FALSE;
 
-		if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)
+		/* skip all wrappers ??*/
+		if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE ||
+		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK ||
+		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE)
 			continue;
 
 		skip--;
