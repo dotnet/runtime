@@ -900,10 +900,13 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 MonoBoolean ves_icall_System_Diagnostics_Process_GetWorkingSet_internal (HANDLE process, guint32 *min, guint32 *max)
 {
 	gboolean ret;
+	size_t ws_min, ws_max;
 	
 	MONO_ARCH_SAVE_REGS;
 
-	ret=GetProcessWorkingSetSize (process, min, max);
+	ret=GetProcessWorkingSetSize (process, &ws_min, &ws_max);
+	*min=(guint32)ws_min;
+	*max=(guint32)ws_max;
 	
 	return(ret);
 }
@@ -911,8 +914,8 @@ MonoBoolean ves_icall_System_Diagnostics_Process_GetWorkingSet_internal (HANDLE 
 MonoBoolean ves_icall_System_Diagnostics_Process_SetWorkingSet_internal (HANDLE process, guint32 min, guint32 max, MonoBoolean use_min)
 {
 	gboolean ret;
-	guint32 ws_min;
-	guint32 ws_max;
+	size_t ws_min;
+	size_t ws_max;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -922,12 +925,12 @@ MonoBoolean ves_icall_System_Diagnostics_Process_SetWorkingSet_internal (HANDLE 
 	}
 	
 	if(use_min==TRUE) {
-		max=ws_max;
+		ws_min=min;
 	} else {
-		min=ws_min;
+		ws_max=max;
 	}
 	
-	ret=SetProcessWorkingSetSize (process, min, max);
+	ret=SetProcessWorkingSetSize (process, ws_min, ws_max);
 
 	return(ret);
 }
