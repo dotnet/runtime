@@ -20,7 +20,7 @@ bin_PROGRAMS = pedump monodiet
 # libtool is not capable of creating static/shared versions of the same
 # convenience lib, so we have to do it ourselves
 #
-noinst_LTLIBRARIES = libmetadata.la libmonoruntime.la libmetadata-static.la libmonoruntime-static.la
+noinst_LTLIBRARIES = libmonoruntime.la libmonoruntime-static.la
 
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $(GMODULE_CFLAGS) $(ICU_CFLAGS) \
@@ -29,10 +29,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS) $
 
 CLEANFILES = mono-bundle.stamp
 
-libmetadata_la_LIBADD = $(bundle_obj) $(PLATFORM_LIB)
-
-libmonoruntime_static_la_LIBADD = $(libmonoruntime_la_LIBADD)
-libmetadata_static_la_LIBADD = $(libmetadata_la_LIBADD)
+libmonoruntime_static_la_LIBADD = $(bundle_obj) $(PLATFORM_LIB) $(libmonoruntime_la_LIBADD)
 
 libmonoruntime_la_SOURCES = \
 	reflection.c	\
@@ -92,9 +89,7 @@ libmonoruntime_la_SOURCES = \
 	security-manager.c	\
 	security-manager.h	\
 	console-io.c		\
-	console-io.h
-
-libmetadata_la_SOURCES = \
+	console-io.h	\
 	assembly.c	\
 	domain.c	\
 	domain-internals.h	\
@@ -118,13 +113,10 @@ libmetadata_la_SOURCES = \
 	mempool.c	\
 	debug-helpers.c
 
-libmetadata_static_la_SOURCES = $(libmetadata_la_SOURCES)
 libmonoruntime_static_la_SOURCES = $(libmonoruntime_la_SOURCES)
 
-libmetadata_static_la_LDFLAGS = -static
 libmonoruntime_static_la_LDFLAGS = -static
 
-libmetadataincludedir = $(includedir)/mono/metadata
 libmonoruntimeincludedir = $(includedir)/mono/metadata
 
 libmonoruntimeinclude_HEADERS = \
@@ -134,9 +126,7 @@ libmonoruntimeinclude_HEADERS = \
 	mono-debug-debugger.h	\
 	debug-mono-symfile.h	\
 	threads.h	\
-	environment.h
-
-libmetadatainclude_HEADERS = \
+	environment.h	\
 	assembly.h	\
 	opcodes.h	\
 	blob.h		\
@@ -158,14 +148,13 @@ libmetadatainclude_HEADERS = \
 pedump_SOURCES =		\
 	pedump.c
 
-pedump_LDADD = libmetadata.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
+pedump_LDADD = libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
 	$(LIBGC_LIBS) $(GLIB_LIBS) $(GMODULE_LIBS) -lm
 
 monodiet_SOURCES = monodiet.c
 
 monodiet_LDADD = \
 	libmonoruntime.la	\
-	libmetadata.la	\
 	../io-layer/libwapi.la		\
 	../utils/libmonoutils.la	\
 	$(LIBGC_LIBS)			\

@@ -47,7 +47,6 @@ endif
 libmint_la_LIBADD =				\
 	../arch/libmonoarch.la		\
 	../metadata/libmonoruntime.la	\
-	../metadata/libmetadata.la	\
 	../io-layer/libwapi.la		\
 	../utils/libmonoutils.la	\
 	../os/libmonoos.la		\

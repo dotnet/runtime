@@ -13,7 +13,6 @@ endif
 
 libs=	\
 	$(monodir)/mono/metadata/libmonoruntime.la	\
-	$(monodir)/mono/metadata/libmetadata.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GMODULE_LIBS)	\
@@ -23,7 +22,6 @@ libs=	\
 
 static_libs=	\
 	$(monodir)/mono/metadata/libmonoruntime-static.la	\
-	$(monodir)/mono/metadata/libmetadata-static.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GMODULE_LIBS)	\
@@ -98,7 +96,7 @@ genmdesc_SOURCES = \
 	genmdesc.c	\
 	helpers.c
 
-# Don't link this against libmetadata to speed up rebuilds
+# Don't link this against libmonoruntime to speed up rebuilds
 genmdesc_LDADD = \
 	$(monodir)/mono/utils/libmonoutils.la $(monodir)/mono/metadata/opcodes.lo -lm	\
 	$(GLIB_LIBS)		\
