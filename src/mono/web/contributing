@@ -16,7 +16,8 @@
 	the source code for Mono, you can start tracking down the
 	problem.  Depending on how much time you have to devote to the
 	problem you could: <a href="http://bugzilla.ximian.com">File a
-	bug report</a>;  track down the problem and provide a better
+	bug report</a> (read <a href="#goodbugreport">this</a>); track
+	down the problem and provide a better
 	<a href="http://bugzilla.ximian.com">bug report</a>;  fix the
 	bug and provide a patch (you can <a
 	href="mailto:mono-list@ximian.com">post it</a> to the <a
@@ -126,6 +127,50 @@
 	your favorite component (Mono, Runtime, C# compiler).
 
 	You can review the list of current bugs by going <a href="http://bugzilla.ximian.com/buglist.cgi?product=Mono%2FClass+Libraries&product=Mono%2FMCS&product=Mono%2FRuntime&bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&email1=&emailtype1=substring&emailassigned_to1=1&email2=&emailtype2=substring&emailreporter2=1&changedin=&chfieldfrom=&chfieldto=Now&chfieldvalue=&short_desc=&short_desc_type=substring&long_desc=&long_desc_type=substring&bug_file_loc=&bug_file_loc_type=substring&keywords=&keywords_type=anywords&op_sys_details=&op_sys_details_type=substring&version_details=&version_details_type=substring&cmdtype=doit&order=%27Importance%27&form_name=query">here</a>
+
+	<a name="goodbugreport"/>
+** How to make good bug reports
+
+	A mail from Paolo to mono-devel-list contained this check list:
+	<ol>
+		* Submit a test case, the smaller it is, the better
+
+		* Use <a href="http://bugzilla.ximian.com">
+		http://bugzilla.ximian.com</a> to report the bug.
+		
+		<p>In <b>addition</b> to bugzilla, posting to the list is
+		fine if the bug merits larger exposure or design
+		discussions to solve; posting to the list twice or more
+		is just a way to annoy people and make them waste time,
+		specially when you start a new thread about it.
+
+		* If the test involves libraries or assemblies that are
+		not part of mono, add info about where to download all
+		the dependencies, and how to compile/install them.
+
+		* If compiling the test case requires more than:
+		<pre> mcs test.cs </pre>
+		provide the <b>full command line</b> you used to compile
+		the test.
+
+		* If running the test requires more than:
+		<pre> mono test.exe </pre>
+		provide the <b>full command line</b> needed to replicate
+		the bug.
+
+		* Provide info about the version of the software you're
+		using (both mono and the operating system or relevant
+		libraries).
+
+		* Provide the output you expect the test case to produce.
+		
+		* Provide the actual output <b>you</b> get from the test case.
+	</ol>
+
+	A good bug report complies with at least 6 items from the list.
+	If your bug report complies with 3 or less items, it is very
+	poor and it means it will take much more time to fix (when it's
+	not ignored).
 
 ** Small tasks
 
