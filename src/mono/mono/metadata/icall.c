@@ -2012,6 +2012,17 @@ ves_icall_System_String_InternalIndexOfAny (MonoString *str, MonoArray *chars, g
 	return -1;
 }
 
+static gint32
+ves_icall_System_String_GetHashCode (MonoString *str)
+{
+	int i, h = 0;
+	gunichar2 *data = mono_string_chars (str);
+
+	for (i = 0; i < mono_string_length (str); ++i)
+		h = (h << 5) - h + data [i];
+	return h;
+}
+
 /* icall map */
 
 static gconstpointer icall_map [] = {
@@ -2049,6 +2060,7 @@ static gconstpointer icall_map [] = {
 	"System.String::_IsInterned", mono_string_is_interned,
 	"System.String::_Intern", mono_string_intern,
 	"System.String::InternalIndexOfAny", ves_icall_System_String_InternalIndexOfAny,
+	"System.String::GetHashCode", ves_icall_System_String_GetHashCode,
 
 	/*
 	 * System.AppDomain
