@@ -38,4 +38,8 @@ typedef struct MonoCompileArch {
 
 gboolean mono_sparc_is_virtual_call (guint32 *code);
 
+gpointer* mono_sparc_get_vcall_slot_addr (guint32 *code, guint32 *fp);
+
+void mono_sparc_flushw (void);
+
 #endif /* __MONO_MINI_SPARC_H__ */  

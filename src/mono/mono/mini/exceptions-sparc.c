@@ -391,7 +391,37 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 }
 
 void
-mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
+mono_jit_walk_stack (MonoStackWalk func, gpointer user_data)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoLMF *lmf = jit_tls->lmf;
+	MonoJitInfo *ji, rji;
+	gint native_offset, il_offset;
+	gboolean managed;
+
+	MonoContext ctx, new_ctx;
+
+	mono_sparc_flushw ();
+
+	MONO_CONTEXT_SET_IP (&ctx, __builtin_return_address (0));
+	MONO_CONTEXT_SET_BP (&ctx, __builtin_frame_address (1));
+
+	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
+		
+		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
+		g_assert (ji);
+
+		if (ji == (gpointer)-1)
+			return;
+
+		il_offset = mono_debug_il_offset_from_address (ji->method, native_offset, domain);
+
+		if (func (ji->method, native_offset, il_offset, managed, user_data))
+			return;
+		
+		ctx = new_ctx;
+	}
 }
 
 MonoBoolean

@@ -72,6 +72,7 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
  * sparc_magic_trampoline:
  * @m: the method to translate
  * @code: the address of the call instruction
+ * @fp: address of the stack frame for the caller
  *
  * This method is called by the trampoline functions for methods. It calls the
  * JIT compiler to compile the method, then patches the calling instruction so
@@ -79,9 +80,10 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
  * address of the vtable slot and updates it.
  */
 static gpointer
-sparc_magic_trampoline (MonoMethod *m, guint32 *code)
+sparc_magic_trampoline (MonoMethod *m, guint32 *code, guint32 *fp)
 {
 	gpointer addr;
+	gpointer *vtable_slot;
 
 	addr = mono_compile_method (m);
 	g_assert (addr);
@@ -95,6 +97,15 @@ sparc_magic_trampoline (MonoMethod *m, guint32 *code)
 	if (mono_sparc_is_virtual_call (code)) {
 		if (m->klass->valuetype)
 			addr = get_unbox_trampoline (m, addr);
+
+		/* Compute address of vtable slot */
+		vtable_slot = mono_sparc_get_vcall_slot_addr (code, fp);
+		*vtable_slot = addr;
+	}
+	else {
+		/* Patch calling code */
+		if (sparc_inst_op (*code) == 0x1)
+			sparc_call_simple (code, (guint8*)addr - (guint8*)code);
 	}
 
 	return addr;
@@ -143,6 +154,8 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		tramp_addr = &sparc_class_init_trampoline;
 	else
 		tramp_addr = &sparc_magic_trampoline;
+	/* pass parent frame address as third argument */
+	sparc_mov_reg_reg (code, sparc_fp, sparc_o2);
 	sparc_call_simple (code, tramp_addr - code);
 	/* set %o1 to caller address in delay slot */
 	sparc_mov_reg_reg (code, sparc_i7, sparc_o1);
@@ -208,7 +221,7 @@ create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type)
 MonoJitInfo*
 mono_arch_create_jump_trampoline (MonoMethod *method)
 {
-	MonoJitInfo *ji = create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC);
+	MonoJitInfo *ji = create_specific_trampoline (method, MONO_TRAMPOLINE_JUMP);
 
 	ji->method = method;
 	return ji;
