@@ -672,9 +672,19 @@ link_bblock (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to)
 	}
 }
 
-/*
- * We mark each basic block with a region ID. We use that to avoid BB
- * optimizations when blocks are in different regions. 
+/**
+ * mono_find_block_region:
+ *
+ *   We mark each basic block with a region ID. We use that to avoid BB
+ *   optimizations when blocks are in different regions.
+ *
+ * Returns:
+ *   A region token that encodes where this region is, and information
+ *   about the clause owner for this block.
+ *
+ *   The region encodes the try/catch/filter clause that owns this block
+ *   as well as the type.  -1 is a special value that represents a block
+ *   that is in none of try/catch/filter.
  */
 static int
 mono_find_block_region (MonoCompile *cfg, int offset, int *filter_lengths)
@@ -1177,11 +1187,11 @@ type_from_op (MonoInst *ins) {
 		/* FIXME: handle some specifics with ins->next->type */
 		ins->type = bin_comp_table [ins->inst_i0->type] [ins->inst_i1->type] ? STACK_I4: STACK_INV;
 		return;
-	case 256+CEE_CEQ:
-	case 256+CEE_CGT:
-	case 256+CEE_CGT_UN:
-	case 256+CEE_CLT:
-	case 256+CEE_CLT_UN:
+	case OP_CEQ:
+	case OP_CGT:
+	case OP_CGT_UN:
+	case OP_CLT:
+	case OP_CLT_UN:
 		ins->type = bin_comp_table [ins->inst_i0->type] [ins->inst_i1->type] ? STACK_I4: STACK_INV;
 		ins->opcode += ceqops_op_map [ins->inst_i0->type];
 		return;
@@ -5196,7 +5206,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			case CEE_CLT_UN: {
 				MonoInst *cmp;
 				CHECK_STACK (2);
+				/*
+				 * The following transforms:
+				 *    CEE_CEQ    into OP_CEQ
+				 *    CEE_CGT    into OP_CGT
+				 *    CEE_CGT_UN into OP_CGT_UN
+				 *    CEE_CLT    into OP_CLT
+				 *    CEE_CLT_UN into OP_CLT_UN
+				 */
 				MONO_INST_NEW (cfg, cmp, 256 + ip [1]);
+				
 				MONO_INST_NEW (cfg, ins, cmp->opcode);
 				sp -= 2;
 				cmp->inst_i0 = sp [0];
@@ -5348,7 +5367,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				--sp;
 				if (sp != stack_start) 
 					goto unverified;
-				MONO_INST_NEW (cfg, ins, 256 + ip [1]);
+				MONO_INST_NEW (cfg, ins, OP_LOCALLOC);
 				ins->inst_left = *sp;
 				ins->cil_code = ip;
 
@@ -5600,8 +5619,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 
-	/* we compute regions here, because the length of filter clauses is not known in advance.
-	* It is computed in the CEE_ENDFILTER case in the above switch statement*/
+	/*
+	 * we compute regions here, because the length of filter clauses is not known in advance.
+	 * It is computed in the CEE_ENDFILTER case in the above switch statement
+	 */
 	if (cfg->method == method) {
 		MonoBasicBlock *bb;
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
@@ -6564,8 +6585,13 @@ merge_basic_blocks (MonoBasicBlock *bb, MonoBasicBlock *bbn)
 	nullify_basic_block (bbn);
 }
 
+/*
+ * Optimizes the branches on the Control Flow Graph
+ *
+ */
 static void
-optimize_branches (MonoCompile *cfg) {
+optimize_branches (MonoCompile *cfg)
+{
 	int i, changed = FALSE;
 	MonoBasicBlock *bb, *bbn;
 	guint32 niterations;
