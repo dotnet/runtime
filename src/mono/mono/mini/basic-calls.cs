@@ -146,11 +146,12 @@ class Tests {
 		return pass_floats_doubles (100.0f, 101.0, 102.0, 103.0, 104.0, 105.0f, 106.0);
 	}
 
-	static int pass_byref_ints_longs (ref int a, ref long b, ref byte c, ref short d, ref long e, ref int f, ref long g) {
+	// The first argument must be passed on a dword aligned stack location
+	static int pass_byref_ints_longs (ref long a, ref int b, ref byte c, ref short d, ref long e, ref int f, ref long g) {
 		return (int)(a + b + c + d + e + f + g);
 	}
 
-	static int pass_takeaddr_ints_longs (int a, long b, byte c, short d, long e, int f, long g) {
+	static int pass_takeaddr_ints_longs (long a, int b, byte c, short d, long e, int f, long g) {
 		return pass_byref_ints_longs (ref a, ref b, ref c, ref d, ref e, ref f, ref g);
 	}
 
