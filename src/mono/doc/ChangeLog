@@ -1,0 +1,6 @@
+﻿2004-01-11  Atsushi Enomoto <atsushi@ximian.com>
+
+	* xml-classes : added v2 info. schema status updates.
+
+	Added ChangeLog. (There are reason not to keep ChangeLog for 
+	documents, at least for not a little changes ;-)

@@ -21,13 +21,12 @@
   DOM feature has already implemented. There is still missing feature.
 
 	<ul>
-	* ID constraint support is problematic because W3C DOM does not specify
-	  handling of ID attributes into non-adapted element. (MS.NET also 
-	  looks incomplete in this area).
-
-	* I think, event feature is not fully tested. There are no concrete
-	  desctiption on which events are risen, so we have to do some
-	  experiment on MS.NET.
+		* ID constraint support is problematic because W3C DOM does not 
+		  specify handling of ID attributes into non-adapted element. 
+		  (MS.NET also looks incomplete in this area).
+		* I think, event feature is not fully tested. There are no
+		  concrete desctiption on which events are risen, so we have to
+		  do some experiment on MS.NET.
 	</ul>
 
 *** Xml Writer
@@ -77,12 +76,13 @@
 
   XmlTextReader, XmlNodeReader and XmlValidatingReader are almost finished.
 
-	- Most of the OASIS conformance test passes as Microsoft does, but
-	  about W3C tests, it is not perfect.
-
-	- I won't add any XDR support on XmlValidatingReader. (I haven't
-	  ever seen XDR used other than Microsoft's BizTalk Server 2000,
-	  and Now they have 2003 with XML Schema support)
+	<ul>
+		* Most of the OASIS conformance test passes as Microsoft 
+		  does, but about W3C tests, it is not perfect.
+		* I won't add any XDR support on XmlValidatingReader. (I haven't
+		  ever seen XDR used other than Microsoft's BizTalk Server 2000,
+		  and Now they have 2003 with XML Schema support)
+	</ul>
 
   XmlTextReader and XmlValidatingReader should be faster than now. Currently
   XmlTextReader looks nearly twice as slow as MS.NET, and XmlValidatingReader
@@ -119,12 +119,18 @@
 
   Basically it is implemented. Some features still needs to fix:
 
-	- Complete facet support. Currently some of them is missing. Recently
-	  David Sheldon is doing several fixes on them.
-
-	- Complete derivation by restriction (DBR) support. Especially
-	  substitution group won't work with it (However, I won't recommend
-	  both substitution group and DBR, regardless of this incompleteness.)
+	<ul>
+		* Complete facet support. Currently some of them is missing.
+		  Recently David Sheldon is doing several fixes on them.
+		* Complete derivation by restriction (DBR) support. Especially
+		  substitution group won't work with it (However, I won't
+		  recommend both substitution group and DBR, regardless of 
+		  this incompleteness.)
+		* And moreover, as for DBR, currently XmlSchema compilation
+		  fails for correct schemas mainly incorrect Particle Valid 
+		  (xml schema structures 3.9.6) check. To fix this problem, 
+		  we have to create another particle comparison code.
+	</ul>
 
   Some bugs are remaining, but as far as I tried W3C XML Schema test suite 
   with bugfixes (of test suite), only 69 out of 7581 has failed. With my test
@@ -158,8 +164,10 @@
 
   Putting aside bug fixes, we have to support:
 
- 	- embedded script (such as VB, C#, JScript). So some packages like 
-	  latest NAnt (for MS.NET) won't be compiled.
+	<ul>
+		* embedded script (such as VB, C#, JScript). So some 
+		packages like latest NAnt (for MS.NET) won't be compiled.
+	</ul>
 
   It would be nice if we can support <a href="http://www.exslt.org/">EXSLT</a>.
   <a href="http://msdn.microsoft.com/WebServices/default.aspx?pull=/library/en-us/dnexxml/html/xml05192003.asp">Microsoft has already done it</a>, but it
@@ -174,6 +182,79 @@
   that class, not XSLT itself). These number are only for specific cases,
   and there might be more critical point on XSLT engine (mainly
   XPathNodeIterator).
+
+
+** System.Xml and ADO.NET v2.0
+
+  Microsoft introduced the first beta version of .NET Framework 1.2 runtime
+  and sdk (and Visual Studio Whidbey). They are now available on MSDN
+  _subscriber_ download (i.e. it is not publicly downloadable yet). It
+  contains several new classes.
+
+  There are two assemblies related to System.Xml v2.0; System.Xml.dll and
+  System.Data.SqlXml.dll (here I treat sqlxml.dll as part of System.Xml v2.0,
+  but it is also one of the ADO.NET 2.0 feature). There are several 
+  namespaces such as MS.Internal.Xml and System.Xml. Note that .NET Framework
+  is pre-release version and MS.Internal.Xml namespace apparently shows that
+  it is not in stable status as yet.
+
+  System.Xml 2.0 contains several features such as:
+
+  <ul>
+		* XPathNavigator2 and XPathDocument2
+		* XML Query
+		* XmlAdapter
+		* XSLT IL generator (similar to Apache XSLTC) - it is 
+		  internal use
+  </ul>
+
+  Tim Coleman started ADO.NET 2.0 related works. Currently I have no plan to
+  implement System.Xml v2.0 classes and won't touch with them immediately, 
+  but will start in next some months. If any of you wants to try these 
+  frontier, we welcome your effort.
+
+*** XPathNavigator2
+
+  System.Xml v2.0 implementation will be started from XPathDocument2 and
+  XPathNavigator2 implementations. Firstly, its document structure and
+  basic navigation feature will be implemented. And next, XPath2 engine
+  became ready to be implemented (XPathNavigator2 looks very different from
+  XPathNavigator). Another requirement is schema based validation feature.
+  It needs some schema improvements.
+
+*** XML Query
+
+  XML Query is a new face XML data manipulation language (well, at least new
+  to .NET world). It is similar to SQL, but intended to manipulate and to
+  support XML. It is similar to XSLT, but extended to support new features
+  such as XML Schema based datatypes.
+
+  XML Query implementation can be found mainly in System.Xml.Query and 
+  MS.Internal.Xml.Query namespaces. Note that they are in System.Data.SqlXml.dll.
+
+  MSDN documentation says that there are two kind of API for XML Query: High
+  Level API and Low Level API. At the time of this beta version, the Low Level
+  API is described not released yet (though it may be MS.Internal.Xml.*
+  classes). However, to implement the High Level API, the Low Level API will 
+  be used. They looks to have interesting class structures in MS.Internal.Xml 
+  related stuff, so it would be nice (and I will) start to learn about them.
+
+  They looks to have IL generator classes, but it would be difficult to
+  start from them.
+
+*** System.Data.Mapping
+
+  System.Data.Mapping and System.Data.Mapping.RelationalSchema are the
+  namespaces for mapping support between database and xml. This is at
+  stubbing phase (incomplete as yet).
+
+*** XmlAdapter
+
+  XmlAdapter is used to support XML based query and update using 
+  XPathDocument2 and XPathNavigator2. This class is designed to synthesize
+  ADO.NET and System.Xml. It connects to databases, and querys data however
+  in XML shape into XPathDocument2, using Mapping schema above. This must be
+  done after several classes such as XPathDocument2 and MappingSchema.
 
 
 ** Miscellaneous Class Libraries
@@ -195,11 +276,13 @@
 
   xsd.exe is used to:
 
-	1) generate classes source code from schema
-	2) generate DataSet classes source code from schema
-	3) generate schema documents from assembly (classes)
-	4) infer schema documents from XML instance
-	5) convert XDR into XSD
+	<ol>
+		* generate classes source code from schema
+		* generate DataSet classes source code from schema
+		* generate schema documents from assembly (classes)
+		* infer schema documents from XML instance
+		* convert XDR into XSD
+	</ol>
 
   As descrived above, I won't work on 5) XDR stuff.
 
