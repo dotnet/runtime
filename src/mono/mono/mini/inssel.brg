@@ -1890,6 +1890,8 @@ ldind_to_load_membase (int opcode)
 		return OP_LOAD_MEMBASE;
 	case CEE_LDIND_REF:
 		return OP_LOAD_MEMBASE;
+	case CEE_LDIND_I8:
+		return OP_LOADI8_MEMBASE;
 	default:
 		g_assert_not_reached ();
 	}

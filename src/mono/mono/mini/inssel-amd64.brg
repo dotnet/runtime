@@ -210,6 +210,28 @@ stmt: OP_OUTARG_REG (reg) {
 	call->out_ireg_args = g_slist_append (call->out_ireg_args, (gpointer)(regpair));
 }
 
+stmt: OP_OUTARG_REG (CEE_LDIND_I (base)),
+stmt: OP_OUTARG_REG (CEE_LDIND_REF (base)),
+stmt: OP_OUTARG_REG (CEE_LDIND_I1 (base)),
+stmt: OP_OUTARG_REG (CEE_LDIND_U1 (base)),
+stmt: OP_OUTARG_REG (CEE_LDIND_I2 (base)),
+stmt: OP_OUTARG_REG (CEE_LDIND_U2 (base)),
+stmt: OP_OUTARG_REG (CEE_LDIND_I4 (base)),
+stmt: OP_OUTARG_REG (CEE_LDIND_U4 (base)),
+stmt: OP_OUTARG_REG (CEE_LDIND_I8 (base)) {
+	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+	guint64 regpair;
+	guint32 dreg;
+	MonoInst *base = state->left->left->tree;
+
+	dreg = mono_regstate_next_int (s->rs);
+	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, ldind_to_load_membase (state->left->tree->opcode),
+				  	dreg, state->left->left->tree->inst_basereg, state->left->left->tree->inst_offset);
+
+	regpair = (((guint64)tree->unused) << 32) + dreg;
+	call->out_ireg_args = g_slist_append (call->out_ireg_args, (gpointer)(regpair));
+}
+
 stmt: OP_OUTARG_REG (OP_I8CONST),
 stmt: OP_OUTARG_REG (OP_ICONST) {	
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
