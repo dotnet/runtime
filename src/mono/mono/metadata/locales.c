@@ -1320,11 +1320,17 @@ static MonoString *string_invariant_replace (MonoString *me,
 	srclen = mono_string_length(me);
 
 	if (oldstrlen != newstrlen) {
-		for (i = 0; i <= srclen - oldstrlen; i++)
-			if (0 == memcmp(src + i, oldstr, oldstrlen * sizeof(gunichar2)))
+		i = 0;
+		while (i <= srclen - oldstrlen) {
+			if (0 == memcmp(src + i, oldstr, oldstrlen * sizeof(gunichar2))) {
 				occurr++;
-                if (occurr == 0)
-                        return me;
+				i += oldstrlen;
+			}
+			else
+				i ++;
+		}
+		if (occurr == 0)
+			return me;
 		newsize = srclen + ((newstrlen - oldstrlen) * occurr);
  	} else
 		newsize = srclen;
