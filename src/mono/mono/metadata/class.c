@@ -355,7 +355,7 @@ mono_class_inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig
 	gboolean is_open;
 	int i;
 
-	if (!context || !sig->has_type_parameters)
+	if (!context)
 		return sig;
 
 	res = mono_metadata_signature_alloc (image, sig->param_count);
