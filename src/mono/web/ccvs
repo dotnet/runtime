@@ -84,22 +84,24 @@
 	trusts you and tells you you're free to commit without getting his
 	review first.
 
-	Here is a (partial) list of namespaces/directories with their owners:
 
-        Debugger module and debug code in mono: martin
-        mcs compiler: miguel, martin, ravi
-        Reflection/Reflection.Emit: lupus, zoltan
-        IO-layer: dick
-        mini: lupus, dietmar
-        test suite: nickd (though anyone should feel free to add test cases)
-        System.IO: dick, ville
-        security stuff: spouliot
-        ilasm: jackson
-        System.Web and related: gonzalo
-        System.Xml: eno, piers
-        Remoting: dietmar, lluis
-        interop/marshal: dietmar
-        threads: dick
+	Here is a (partial) list of namespaces/directories with their owners:
+	<ul>
+        <li>Debugger module and debug code in mono: martin
+        <li>mcs compiler: miguel, martin, ravi
+        <li>Reflection/Reflection.Emit: lupus, zoltan
+        <li>IO-layer: dick
+        <li>mini: lupus, dietmar
+        <li>test suite: nickd (though anyone should feel free to add test cases)
+        <li>System.IO: dick, ville
+        <li>security stuff: spouliot
+        <li>ilasm: jackson
+        <li>System.Web and related: gonzalo
+        <li>System.Xml: eno, piers
+        <li>Remoting: dietmar, lluis
+        <li>interop/marshal: dietmar
+        <li>threads: dick
+	</ul>
 
 	If you are the owner of a piece of code, feel free to commit code, and 
 	delegate the work to others. 
@@ -113,33 +115,35 @@
 
 	Once you know you can commit a patch (because of the rules above) there
 	are a few other small rules to follow:
-	*) Always add a changelog entry with a meaningful explanation
-	*) If you fix a bug, add a regression test for it in the regression
+	<ul>
+	<li>Always add a changelog entry with a meaningful explanation
+	<li>If you fix a bug, add a regression test for it in the regression
 	suite
-	*) Don't commit unrelated changes together with a fix: do fine-grained
+	<li>Don't commit unrelated changes together with a fix: do fine-grained
 	commits
-	*) Always check what you're committing: make sure you're only committing
+	<li>Always check what you're committing: make sure you're only committing
 	what you need and make sure you don't change line endings and 
 	whitespace. Do a 'cvs diff -u' of the files you're going to commit and 
 	check the changes.
-	*) Don't do reformatting commits, unless you're the original author of
+	<li>Don't do reformatting commits, unless you're the original author of
 	the code
-	*) When fixing bugs, don't follow the documentation blindly, it may 
+	<li>When fixing bugs, don't follow the documentation blindly, it may 
 	well be wrong. Test the behavior on the MS runtime or ask on the list 
 	for discussion if unsure. Don't be afraid of having your changes
 	reviewed.
-	*) Never remove copyright notices from the code
-	*) Never remove licensing info from code
-	*) Never commit code you didn't write yourself or code that doesn't
+	<li>Never remove copyright notices from the code
+	<li>Never remove licensing info from code
+	<li>Never commit code you didn't write yourself or code that doesn't
 	have a suitable license
-	*) Follow the style conventions
-	*) Keep an eye on performance considerations, especially for code in
+	<li>Follow the style conventions
+	<li>Keep an eye on performance considerations, especially for code in
 	core classes, ask on the list for guidance
-	*) Do a regression test run and a bootstrapping build if making changes
+	<li>Do a regression test run and a bootstrapping build if making changes
 	to core functionality before committing. Do not commit code that would 
 	break the compile, because that wastes everybody's time.  Two things 
 	are important in this step: trying to build your sources and making 
 	sure that you add all the new files before you do a commit.
+	</ul>
 
 	Also, remember to pat yourself on the back after the commit, smile and
 	think we're a step closer to a better free software world.
