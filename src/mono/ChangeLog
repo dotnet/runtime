@@ -1,3 +1,8 @@
+2004-05-01  Duncan Mak  <duncan@ximian.com>
+
+	* runtime/net_1_1/Makefile.am (gac_assemblies_list): Add
+	System.Web.Services. Someone accidentally took the line out.
+
 2004-04-30  Jackson Harper  <jackson@ximian.com>
 
 	* runtime/net_1_1/Makefile.am:
