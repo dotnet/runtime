@@ -2347,7 +2347,9 @@ ves_exec (MonoAssembly *assembly)
 static void
 usage (void)
 {
-	fprintf (stderr, "Usage is: mint executable args...\n");
+	fprintf (stderr,
+		 "mint %s, the Mono ECMA CLI interpreter, (C) 2001 Ximian, Inc.\n\n"
+		 "Usage is: mint executable args...\n", VERSION);
 	exit (1);
 }
 
