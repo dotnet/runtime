@@ -1899,10 +1899,6 @@ mono_method_check_inlining (MonoMethod *method)
 	MonoMethodSignature *signature = method->signature;
 	int i;
 
-	/* fixme: we should inline wrappers */
-	if (method->wrapper_type != MONO_WRAPPER_NONE)
-		return FALSE;
-
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) ||
