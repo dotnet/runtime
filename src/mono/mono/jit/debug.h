@@ -87,4 +87,12 @@ void           mono_debug_make_symbols (void);
 
 void           mono_debug_write_symbols (MonoDebugHandle* debug);
 
+/*
+ * Do not use this function unless you know exactly what you're doing.
+ *
+ * Returns a pointer to a region of memory within the JIT's address space.  The Mono
+ * Debugger uses this data to get information about the symbol files.
+ */
+gconstpointer  mono_debugger_internal_get_symbol_files (void);
+
 #endif /* __MONO_JIT_DEBUG_H__ */

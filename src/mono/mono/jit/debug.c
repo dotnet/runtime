@@ -28,7 +28,6 @@ static MonoDebugMethodInfo *
 method_info_func (MonoSymbolFile *symfile, MonoMethod *method, gpointer user_data)
 {
 	AssemblyDebugInfo *info = user_data;
-	DebugMethodInfo *minfo;
 
 	return (MonoDebugMethodInfo *) g_hash_table_lookup (info->handle->methods, method);
 }
@@ -894,4 +893,41 @@ mono_debug_address_from_il_offset (MonoMethod *method, gint32 il_offset)
 		return -1;
 
 	return address_from_il_offset (minfo, il_offset);
+}
+
+gconstpointer
+mono_debugger_internal_get_symbol_files (void)
+{
+	MonoDebugHandle *debug;
+	GPtrArray *symfiles = g_ptr_array_new ();
+
+	mono_debug_make_symbols ();
+
+	g_ptr_array_add (symfiles, GUINT_TO_POINTER (MONO_SYMBOL_FILE_VERSION));
+
+	for (debug = mono_debug_handles; debug; debug = debug->next) {
+		GList *tmp;
+
+		if (debug->format != MONO_DEBUG_FORMAT_MONO)
+			continue;
+
+		for (tmp = debug->info; tmp; tmp = tmp->next) {
+			AssemblyDebugInfo *info = (AssemblyDebugInfo*)tmp->data;
+			MonoSymbolFile *symfile = info->mono_symfile;
+
+			if (!symfile || !symfile->raw_contents)
+				continue;
+
+
+			g_ptr_array_add (symfiles, symfile->raw_contents);
+			g_ptr_array_add (symfiles, symfile->offset_table);
+			g_ptr_array_add (symfiles, GUINT_TO_POINTER (symfile->offset_table->total_file_size));
+		}
+	}
+
+	g_ptr_array_add (symfiles, NULL);
+	g_ptr_array_add (symfiles, NULL);
+	g_ptr_array_add (symfiles, NULL);
+
+	return symfiles->pdata;
 }
