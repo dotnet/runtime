@@ -60,9 +60,19 @@
                       <li><a href="archive/redhat-90-i386/mono-devel-0.25-1.ximian.6.1.i386.rpm">mono-devel-0.25-1.ximian.6.1.i386.rpm</a>
                       <li><a href="archive/redhat-90-i386/mono-debuginfo-0.25-1.ximian.6.1.i386.rpm">mono-debuginfo-0.25-1.i386.rpm</a>
 	 	      <br>
+                      <li><a href="archive/redhat-90-i386/libpixregion-0.1.0-1.ximian.6.1.i386.rpm">libpixregion-0.1.0-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/libpixregion-debuginfo-0.1.0-1.ximian.6.1.i386.rpm">libpixregion-debuginfo-0.1.0-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/libic-0.1.0-1.ximian.6.1.i386.rpm">libic-0.1.0-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/libic-debuginfo-0.1.0-1.ximian.6.1.i386.rpm">libic-debuginfo-0.1.0-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/xc-0.1.0-1.ximian.6.1.i386.rpm">xc-0.1.0-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/xc-debuginfo-0.1.0-1.ximian.6.1.i386.rpm">xc-debuginfo-0.1.0-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/xr-0.1.0-1.ximian.6.1.i386.rpm">xr-0.1.0-1.ximian.6.1.i386.rpm</a>
+                      <li><a href="archive/redhat-90-i386/xr-debuginfo-0.1.0-1.ximian.6.1.i386.rpm">xr-debuginfo-0.1.0-1.ximian.6.1.i386.rpm</a>
+                      <br>
                       <li><a href="archive/redhat-90-i386/gtk-sharp-0.10-1.ximian.6.1.i386.rpm">gtk-sharp-0.10-1.ximian.6.1.i386.rpm</a>
 		      <li><a href="archive/redhat-90-i386/gtk-sharp-gapi-0.10-1.ximian.6.1.i386.rpm">gtk-sharp-gapi-0.10-1.ximian.6.1.i386.rpm</a>
 		      <li><a href="archive/redhat-90-i386/gtk-sharp-debuginfo-0.10-1.ximian.6.1.i386.rpm">gtk-sharp-debuginfo-0.10-1.ximian.6.1.i386.rpm</a>
+                      <br>
 		      <li><a href="archive/redhat-90-i386/monodoc-0.5-1.ximian.6.1.i386.rpm">monodoc-0.5-1.ximian.6.1.i386.rpm</a>
                       <li><a href="archive/redhat-90-i386/monodoc-debuginfo-0.5-1.ximian.6.1.i386.rpm">monodoc-debuginfo-0.5-1.ximian.6.1.i386.rpm</a>
                     </ul>
