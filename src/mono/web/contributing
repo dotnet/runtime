@@ -36,7 +36,10 @@
 * Special note
 
 	If you have looked at Microsoft's implementation of .NET or
-	their shared source code, you will not be able to contribute
-	to Mono.
+	their shared source code, you may not be able to contribute
+	to Mono.  Details will follow when we know more about this.
 
-	Please, follow care when reading proprietary code.
+	In general be careful when you are implementing free software
+	and you have access to proprietary code.  We need to make sure
+	that we are not using someone else's copyrighted code
+	accidentally. 

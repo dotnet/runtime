@@ -1,7 +1,7 @@
 ** Basics
 
 Q: Is Mono the same as Microsoft's .NET initiative?
-   
+
 A: It is not. 
 
    .NET is a company-wide initiative at Microsoft that
@@ -15,7 +15,7 @@ A: It is not.
    Microsoft that have now been submitted to the ECMA Standards Body.   
 
 Q: What technologies are included in Mono?
-   
+
 A: Mono contains a number of components useful for building new
    software:
 
@@ -54,19 +54,19 @@ A: Mono contains a number of components useful for building new
    garbage collection system can be shared across all these languages.
    
 Q: Where can I find the specification for these technologies?
-   
+
 A: You can find the work-in-progress documentation from the T3G ECMA
    group here:
  
    <a href="http://www.dotnetexperts.com">http://www.dotnetexperts.com</a>
 
 Q: Will you implement the .NET Framework SDK class libraries?
-   
+
 A: Yes, we will be implementing the APIs of the .NET Framework SDK
    class libraries. 
 
 Q: What does Mono stand for?
-   
+
 A: Mono is the word for `Monkey' in Spanish. We like monkeys.
 
 Q: When will you ship it?
@@ -100,7 +100,7 @@ A:
 ** Ximian
 
 Q: Why is Ximian working on .NET?
-   
+
 A: We are interested in providing the best tools for programmers to
    develop applications for Free Operating Systems.  
 
@@ -122,10 +122,14 @@ A: We will focus on building a development and execution
    The idea is to get Mono to a state of that would allow
    third parties to actually be able to use it real-world development.
 
+Q: Why does Ximian even care?
+
+A: 
+
 ** Mono and .NET
 
 Q: If applications use Mono, does that mean that I have to pay a service fee?
-   
+
 A: No.  Mono is not related to Microsoft's initiative of
    software-as-a-service. 
 
@@ -137,7 +141,7 @@ A: No.  The .NET Framework is a runtime infrastructure and collection
    chooses Passport as the authentication mechanism.
 
 Q: Is .NET just a bunch of marketing slogans?
-   
+
 A: Although the `.NET initiative' is still quite nebulous, The .NET Framework
    has been available for some time.  Mono is not an implementation of the .NET
    initiative, just the development framework.
@@ -152,7 +156,7 @@ A: A `100% .NET application' is one that only uses the APIs defined
 ** Passport
 
 Q: Is this a free implementation of Passport?
-   
+
 A: No.  Passport is part of Microsoft's Hailstorm initiative.  Mono
    is just a runtime, a compiler and a set of class libraries. 
 
@@ -175,7 +179,7 @@ A: No.  That just means that applications might use that API to
 ** GNOME
 
 Q: How is this related to GNOME?
-   
+
 A: In a number of ways:
 
 	* Mono will use existing
@@ -208,7 +212,7 @@ A: Mono will not be ready even within the next six months, and a
    classes. 
 
 Q: Will Mono include compatibility with Bonobo components?
-   
+
 A: Yes, we will provide a set of classes for implementing and using
    Bonobo components from within Mono. 
 
@@ -221,7 +225,7 @@ A: No.
 ** Web Services
 
 Q: Is Mono just a new way of writing Web Services?
-   
+
 A: No.
 
 Q: If this implements the SDK classes, will I be able to write and
@@ -276,7 +280,7 @@ A: Hopefully Free Software enthusiasts will contribute tools to
    
 Q: What about using Java?  After all there are many languages that
    target the Java VM.
-   
+
 A: You can get very good tools for doing Java development on free
    systems right now.  <a href="http://www.redhat.com">Red Hat</a> has
    contributed a <a href="http://gcc.gnu.org">GCC</a> <a
@@ -342,12 +346,12 @@ A: Our main intention at Ximian is to be able to develop GNOME
 ** Reusing existing Code
 
 Q: What projects will you reuse or build upon?
-   
+
 A: We want to get Mono in the hands of programmers soon.  We are
    interested in reusing existing open source software.
 
 Q: What about Intel's research JIT framework, ORP?
-   
+
 A: At this time, we are investigating whether we can use elements of
    ORP for Mono. 
 
@@ -360,7 +364,7 @@ A: We are also researching <a
 ** Ximian and Microsoft
 
 Q: Didn't Miguel de Icaza say that `Unix Sucks'?
-   
+
 A: Yes, he did, as a catch phrase in his opening remark on the Ottawa
    Linux Symposium.  His talk focused on various ways to improve Unix.
 

@@ -49,6 +49,29 @@
 	might need to install the CygWin32 development tools to get a
 	Unix-like compilation environment.
 
+** Useful links
+
+	Paolo Molaro found a few interesting links:
+
+	<ul>
+
+		* On compilation of stack-based languages:
+		<a href="http://www.complang.tuwien.ac.at/projects/rafts.html">
+		http://www.complang.tuwien.ac.at/projects/rafts.html</a>
+
+		* A paper on fast JIT compilation of a stack-based language:
+		  <a href="http://www.research.microsoft.com/~cwfraser/pldi99codegen.pdf">
+		  http://www.research.microsoft.com/~cwfraser/pldi99codegen.pdf</a>
+
+		* Vmgen generates much of the code for efficient virtual machine (VM)
+		  interpreters from simple descriptions of the VM instructions:
+		  <a href="http://www.complang.tuwien.ac.at/anton/vmgen/">
+		  http://www.complang.tuwien.ac.at/anton/vmgen</a>
+
+		* Garbage collection list and FAQ:
+		  <a href="http://www.iecc.com/gclist/">http://www.iecc.com/gclist/</a>
+	</ul>
+
 ** Garbage Collection
 
 	We have decided to implement a generational tracing garbage
