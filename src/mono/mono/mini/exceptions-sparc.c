@@ -291,8 +291,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	if (ji != NULL) {
 		*new_ctx = *ctx;
 
-		address = (char *)ip - (char *)ji->code_start;
-
 		if (managed)
 			if (!ji->method->wrapper_type)
 				*managed = TRUE;
