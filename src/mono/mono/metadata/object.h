@@ -195,6 +195,9 @@ MonoString*
 mono_string_new_utf16       (MonoDomain *domain, const guint16 *text, gint32 len);
 
 MonoString*
+mono_string_new_size		(MonoDomain *domain, gint32 len);
+
+MonoString*
 mono_ldstr                  (MonoDomain *domain, MonoImage *image, guint32 str_index);
 
 MonoString*

@@ -372,6 +372,27 @@ mono_string_new_utf16 (MonoDomain *domain, const guint16 *text, gint32 len)
 {
 	MonoString *s;
 	MonoArray *ca;
+	
+	s = mono_string_new_utf16_len(domain, len);
+	g_assert (s != NULL);
+
+	memcpy (s->c_str->vector, text, len * 2);
+
+	return s;
+}
+
+/**
+ * mono_string_new_size:
+ * @text: a pointer to an utf16 string
+ * @len: the length of the string
+ *
+ * Returns: A newly created string object of @len
+ */
+MonoString *
+mono_string_new_size (MonoDomain *domain, gint32 len)
+{
+	MonoString *s;
+	MonoArray *ca;
 
 	s = (MonoString*)mono_object_new (domain, mono_defaults.string_class);
 	g_assert (s != NULL);
@@ -381,8 +402,6 @@ mono_string_new_utf16 (MonoDomain *domain, const guint16 *text, gint32 len)
 	
 	s->c_str = ca;
 	s->length = len;
-
-	memcpy (ca->vector, text, len * 2);
 
 	return s;
 }

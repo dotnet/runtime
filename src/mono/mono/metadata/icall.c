@@ -34,7 +34,9 @@
 #include <mono/metadata/rand.h>
 #include <mono/metadata/sysmath.h>
 #include <mono/metadata/debug-symfile.h>
+#include <mono/metadata/string-icalls.h>
 #include <mono/io-layer/io-layer.h>
+
 #include "decimal.h"
 
 static MonoString *
@@ -2066,10 +2068,32 @@ static gconstpointer icall_map [] = {
 	/*
 	 * System.String
 	 */
-	"System.String::_IsInterned", mono_string_is_interned,
-	"System.String::_Intern", mono_string_intern,
-	"System.String::InternalIndexOfAny", ves_icall_System_String_InternalIndexOfAny,
-	"System.String::GetHashCode", ves_icall_System_String_GetHashCode,
+	
+	"System.String::InternalJoin", mono_string_InternalJoin,
+	"System.String::InternalInsert", mono_string_InternalInsert,
+	"System.String::InternalReplace(char,char)", mono_string_InternalReplaceChar,
+	"System.String::InternalReplace(string,string)", mono_string_InternalReplaceStr,
+	"System.String::InternalRemove", mono_string_InternalRemove,
+	"System.String::InternalCopyTo", mono_string_InternalCopyTo,
+	"System.String::InternalSplit", mono_string_InternalSplit,
+	"System.String::InternalTrim", mono_string_InternalTrim,
+	"System.String::InternalIndexOf(char,uint,uint)", mono_string_InternalIndexOfChar,
+	"System.String::InternalIndexOf(string,uint,uint)", mono_string_InternalIndexOfStr,
+	"System.String::InternalIndexOfAny", mono_string_InternalIndexOfAny,
+	"System.String::InternalLastIndexOf(char,uint,uint)", mono_string_InternalLastIndexOfChar,
+	"System.String::InternalLastIndexOf(string,uint,uint)", mono_string_InternalLastIndexOfStr,
+	"System.String::InternalLastIndexOfAny", mono_string_InternalLastIndexOfAny,
+	"System.String::InternalPad", mono_string_InternalPad,
+	"System.String::InternalToLower", mono_string_InternalToLower,
+	"System.String::InternalToUpper", mono_string_InternalToUpper,
+	"System.String::InternalAllocateStr", mono_string_InternalAllocateStr,
+	"System.String::InternalStrcpy(string,uint,string)", mono_string_InternalStrcpyStr,
+	"System.String::InternalStrcpy(string,uint,string,uint,uint)", mono_string_InternalStrcpyStrN,
+	"System.String::InternalIntern", mono_string_InternalIntern,
+	"System.String::InternalIsInterned", mono_string_InternalIsInterned,
+	"System.String::InternalCompare(string,uint,string,uint,uint,bool)", mono_string_InternalCompareStrN,
+	"System.String::GetHashCode", mono_string_GetHashCode,
+	"System.String::get_Chars", mono_string_get_Chars,
 
 	/*
 	 * System.AppDomain
