@@ -277,6 +277,7 @@ typedef struct {
 	int b;
 	int c;
 	const char *d;
+	gunichar2 *d2;
 } simplestruct;
 
 simplestruct
@@ -508,6 +509,19 @@ mono_test_marshal_return_delegate (SimpleDelegate delegate)
 
 typedef simplestruct (STDCALL *SimpleDelegate2) (simplestruct ss);
 
+gboolean
+is_utf16_equals (gunichar2 *s1, const char *s2)
+{
+	char *s;
+	int res;
+
+	s = g_utf16_to_utf8 (s1, -1, NULL, NULL, NULL);
+	res = strcmp (s, s2);
+	g_free (s);
+
+	return res == 0;
+}
+
 int
 mono_test_marshal_delegate2 (SimpleDelegate2 delegate)
 {
@@ -517,9 +531,10 @@ mono_test_marshal_delegate2 (SimpleDelegate2 delegate)
 	ss.b = 1;
 	ss.c = 0;
 	ss.d = "TEST";
+	ss.d2 = g_utf8_to_utf16 ("TEST2", -1, NULL, NULL, NULL); 
 
 	res = delegate (ss);
-	if (! (res.a && !res.b && res.c && !strcmp (res.d, "TEST-RES")))
+	if (! (res.a && !res.b && res.c && !strcmp (res.d, "TEST-RES") && is_utf16_equals (res.d2, "TEST2-RES")))
 		return 1;
 
 	return 0;

@@ -18,6 +18,8 @@ public class Tests {
 		public bool b;
 		public bool c;
 		public string d;
+		[MarshalAs(UnmanagedType.LPWStr)]
+		public string d2;
 	}
 
 	[StructLayout (LayoutKind.Sequential)]

@@ -15,6 +15,8 @@ public class Tests {
 		public bool b;
 		public bool c;
 		public string d;
+		[MarshalAs(UnmanagedType.LPWStr)]
+		public string d2;
 	}
 
 	[StructLayout (LayoutKind.Sequential)]
@@ -33,6 +35,7 @@ public class Tests {
 		res.b = !ss.b;
 		res.c = !ss.c;
 		res.d = ss.d + "-RES";
+		res.d2 = ss.d2 + "-RES";
 
 		return res;
 	}
@@ -56,6 +59,7 @@ public class Tests {
 		ss.b = true;
 		ss.c = true;
 		ss.d = "TEST3";
+		ss.d2 = "TEST4";
 
 		return 0;
 	}
