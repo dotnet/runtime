@@ -18,6 +18,8 @@
 		<li><a
 		href="http://www.go-mono.com/class-status-Microsoft.VisualBasic.html">Microsoft.VisualBasic</a>:
 		Support runtime for Visual Basic applications
+		<li><a href="http://www.go-mono.com/class-status-System.EnterpriseServices.html">System.EnterpriseServices</a>.
+		<li><a href="http://www.go-mono.com/class-status-System.Runtime.Remoting.html">System.Runtime.Remoting</a>.
 		<li><a
 		href="http://www.go-mono.com/class-status-System.Windows.Forms.html">Windows.Forms</a>:
 		there is also a <a
