@@ -205,15 +205,23 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 	guint32 cols [MONO_ASSEMBLYREF_SIZE];
 	const char *hash;
 	int i;
+	MonoAssembly **references = NULL;
 
 	*status = MONO_IMAGE_OK;
-
-	if (image->references)
+	
+	/*
+	 * image->references is shared between threads, so we need to access
+	 * it inside a critical section.
+	 */
+	EnterCriticalSection (&assemblies_mutex);
+	references = image->references;
+	LeaveCriticalSection (&assemblies_mutex);
+	if (references)
 		return;
 
 	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 
-	image->references = g_new0 (MonoAssembly *, t->rows + 1);
+	references = g_new0 (MonoAssembly *, t->rows + 1);
 
 	/*
 	 * Load any assemblies this image references
@@ -234,14 +242,14 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 		aname.build = cols [MONO_ASSEMBLYREF_BUILD_NUMBER];
 		aname.revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
 
-		image->references [i] = mono_assembly_load (&aname, image->assembly->basedir, status);
+		references [i] = mono_assembly_load (&aname, image->assembly->basedir, status);
 
-		if (image->references [i] == NULL){
+		if (references [i] == NULL){
 			int j;
 			
 			for (j = 0; j < i; j++)
-				mono_assembly_close (image->references [j]);
-			g_free (image->references);
+				mono_assembly_close (references [j]);
+			g_free (references);
 
 			g_warning ("Could not find assembly %s", aname.name);
 			*status = MONO_IMAGE_MISSING_ASSEMBLYREF;
@@ -257,7 +265,7 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 			g_error ("Error: Assembly %s references itself", image->name);
 		*/
 	}
-	image->references [i] = NULL;
+	references [i] = NULL;
 
 	/* resolve assembly references for modules */
 	t = &image->tables [MONO_TABLE_MODULEREF];
@@ -266,6 +274,18 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 			image->modules [i]->assembly = image->assembly;
 			mono_assembly_load_references (image->modules [i], status);
 		}
+	}
+
+	EnterCriticalSection (&assemblies_mutex);
+	if (!image->references)
+		image->references = references;
+	LeaveCriticalSection (&assemblies_mutex);
+
+	if (image->references != references) {
+		/* Somebody loaded it before us */
+		for (i = 0; i < t->rows; i++)
+			mono_assembly_close (references [i]);
+		g_free (references);
 	}
 }
 
@@ -541,6 +561,14 @@ mono_assembly_load_from (MonoImage *image, const char*fname,
 #else
 	base_dir = absolute_dir (fname);
 #endif
+
+	/*
+	 * To avoid deadlocks and scalability problems, we load assemblies outside
+	 * the assembly lock. This means that multiple threads might try to load
+	 * the same assembly at the same time. The first one to load it completely
+	 * "wins", the other threads free their copy and use the one loaded by
+	 * the winning thread.
+	 */
 
 	/*
 	 * Create assembly struct, and enter it into the assembly cache
