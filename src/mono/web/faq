@@ -1347,16 +1347,30 @@ A: This has been done.
 <a name="gcc"></a>
 ** Mono and GCC
 
-Q: Are you working on a GCC front-end to C#? A GCC back-end that will
-   generate CIL images? 
+Q: Are you working on a GCC front-end to C#? 
 
-A: We would love to see a GCC modification that would generate CIL
-   images, but there is nothing at this point.
+A: We are not working on a GCC front-end for C#
 
-   The open64 compiler effort from SGI already has modified GCC to
-   generate a new intermediate language instead of RTL.  This could be
+Q: Will you support C/C++ on the Mono VM?
+
+A:The open64 compiler effort from SGI helps a lot in this direction.
+
+   The Open64 compiler is a modified version of GCC that
+   generates a new intermediate language instead of RTL.  This could be
    the foundation to generate CIL code, and to implement the upcoming
    Managed extensions to C++ from ECMA.
+
+   Open64 (and other derivative forks of GCC) split the gcc front-ends
+   from the backends by using the WHIRL intermediate representation.  
+   Kris has begun the implementation of a translator from WHIRL to CIL.
+
+   So it will be possible to use the GCC compilers to target the CIL.
+
+Q: What about Managed C++?
+
+A: Once a full translator for WHIRL exists, we are interested in
+   looking at expanding the GCC frontends to include extensions for
+   Managed C++.
 
 Q: What about making a front-end to GCC that takes CIL images and
    generates native code?
@@ -1364,11 +1378,6 @@ Q: What about making a front-end to GCC that takes CIL images and
 A: There is no active work on this area, but Mono already provides
    pre-compilation services (Ahead-of-Time compilation).
 
-Q: But would this work around the GPL in the GCC compiler and allow
-   people to work on non-free front-ends?
-
-A: People can already do this by targeting the JVM byte codes (there
-   are about 130 compilers for various languages that target the JVM).
 
 <a name="performance"></a>
 ** Performance
