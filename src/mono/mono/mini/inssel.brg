@@ -1336,7 +1336,15 @@ reg: OP_UNBOXCAST (reg) {
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, element_class));
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, eclass_reg, klass->element_class);
+
+	if (mono_compile_aot) {
+		int const_reg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_CLASSCONST (s, const_reg, klass->element_class);
+		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, eclass_reg, const_reg);
+	}
+	else {
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, eclass_reg, klass->element_class);
+	}
 	
 	MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, obj_reg);
