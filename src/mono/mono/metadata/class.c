@@ -1249,6 +1249,7 @@ mono_ptr_class_get (MonoType *type)
 	result->name_space = "MonoPtrFakeClass";
 	result->image = el_class->image;
 	result->inited = TRUE;
+	result->flags = TYPE_ATTRIBUTE_CLASS | (el_class->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK);
 	/* Can pointers get boxed? */
 	result->instance_size = sizeof (gpointer);
 	/*
@@ -1405,7 +1406,7 @@ mono_array_class_get (MonoType *element_type, guint32 rank)
 	name [nsize + rank + 1] = 0;
 	class->name = name;
 	class->type_token = 0;
-	class->flags = TYPE_ATTRIBUTE_CLASS;
+	class->flags = TYPE_ATTRIBUTE_CLASS | (eclass->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK);
 	class->parent = parent;
 	class->instance_size = mono_class_instance_size (class->parent);
 	class->class_size = 0;
