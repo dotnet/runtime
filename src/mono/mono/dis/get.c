@@ -1621,12 +1621,12 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 	case MONO_TYPE_R4: {
 		float r;
 		readr4 (ptr, &r);
-		return g_strdup_printf ("%g", (double) r);
+		return g_strdup_printf ("float32(%g)", (double) r);
 	}
 	case MONO_TYPE_R8: {
 		double r;
 		readr8 (ptr, &r);
-		return g_strdup_printf ("%g", r);
+		return g_strdup_printf ("float64(%g)", r);
 	}
 	case MONO_TYPE_STRING: {
 		int i, j, e;
