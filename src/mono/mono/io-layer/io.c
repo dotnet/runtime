@@ -513,6 +513,10 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 					  current_pos, numbytes);
 
 		if (ret == -1 && errno != EINTR) {
+			if (errno == EINTR) {
+				ret = 0;
+			} else {
+				_wapi_set_last_error_from_errno ();
 #ifdef DEBUG
 			g_message(G_GNUC_PRETTY_FUNCTION
 				  ": write of handle %p fd %d error: %s", handle,
@@ -520,10 +524,8 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 				  strerror(errno));
 #endif
 
-			_wapi_set_last_error_from_errno ();
-			return(FALSE);
-		} else {
-			ret = 0;
+				return(FALSE);
+			}
 		}
 		if(byteswritten!=NULL) {
 			*byteswritten=ret;
@@ -1345,7 +1347,11 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 	}
 	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 
-	if (ret == -1 && errno != EINTR) {
+	if (ret == -1) {
+		if (errno == EINTR) {
+			ret = 0;
+		} else {
+			_wapi_set_last_error_from_errno ();
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": write of handle %p fd %d error: %s", handle,
@@ -1353,10 +1359,8 @@ static gboolean console_write(gpointer handle, gconstpointer buffer,
 			  strerror(errno));
 #endif
 
-		_wapi_set_last_error_from_errno ();
-		return(FALSE);
-	} else {
-		ret = 0;
+			return(FALSE);
+		}
 	}
 	if(byteswritten!=NULL) {
 		*byteswritten=ret;
@@ -1475,17 +1479,19 @@ static gboolean pipe_read (gpointer handle, gpointer buffer,
 	}
 	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 		
-	if (ret == -1 && errno != EINTR) {
+	if (ret == -1) {
+		if (errno == EINTR) {
+			ret = 0;
+		} else {
+			_wapi_set_last_error_from_errno ();
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": read of handle %p fd %d error: %s", handle,
 			  pipe_private_handle->fd_mapped.fd, strerror(errno));
 #endif
 
-		_wapi_set_last_error_from_errno ();
-		return(FALSE);
-	} else {
-		ret = 0;
+			return(FALSE);
+		}
 	}
 	
 #ifdef DEBUG
@@ -1548,17 +1554,19 @@ static gboolean pipe_write(gpointer handle, gconstpointer buffer,
 	}
 	while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
 
-	if (ret == -1 && errno != EINTR) {
+	if (ret == -1) {
+		if (errno == EINTR) {
+			ret = 0;
+		} else {
+			_wapi_set_last_error_from_errno ();
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
 			  ": write of handle %p fd %d error: %s", handle,
 			  pipe_private_handle->fd_mapped.fd, strerror(errno));
 #endif
 
-		_wapi_set_last_error_from_errno ();
-		return(FALSE);
-	} else {
-		ret = 0;
+			return FALSE;
+		}
 	}
 	if(byteswritten!=NULL) {
 		*byteswritten=ret;
