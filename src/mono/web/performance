@@ -111,10 +111,75 @@ Total memory allocated: 448 KB
 	object for pointers, looking for unreferenced objects. If you allocate
 	extra objects, the GC then must take the effort to free the objects.
 	
-	Mono's uses the Boehm GC, which is a conservative collector,
+	Mono uses the Boehm GC, which is a conservative collector,
 	and this might lead to some memory fragmentation and unlike
 	generational GC systems, it has to scan the entire allocated
-	memory pool. 
+	memory pool.
+	
+*** Boxing
+	The .NET framework provides a rich hierchy of object types.
+	Each object not only has value information, but also type
+	information associated with it. This type information makes
+	many types of programs easier to write. It also has a cost
+	associated with it. The type information takes up space.
+	
+	In order to reduce the cost of type information, almost every
+	Object Oriented language has the concept of `primitatives'.
+	They usually map to types such as integers and bools. These
+	types do not have any type information associated with them.
+	
+	However, the language also must be able to treat primitatives
+	as first class datums -- in the class with objects. Languages
+	handle this issue in different ways. Some choose to make a
+	special class for each primative, and force the user to do an
+	operation such as:
+<pre>
+// This is Java
+list.add (new Integer (1));
+System.out.println (list.get (1).intValue ());
+</pre>
+
+	The C# design team was not satisfied with this type 
+	of construct. They added a notion of `boxing' to the language.
+	
+	Boxing preforms the same thing as Java's <code>new Integer (1)</code>.
+	The user is not forced to write the extra code. However,
+	behind the scenes the <em>same thing</em> is being done
+	by the runtime. Each time a primative is casted to an object,
+	a new object is allocated.
+	
+	You must be careful when casting a primative to an object.
+	Note that because it is an implicit conversion, you will
+	not see it in your code. For example, boxing is happening here:
+
+<pre>
+ArrayList foo = new ArrayList ();
+foo.Add (1);
+</pre>
+	
+	In high performance code, this operation can be very costly.
+
+*** Using structs instead of classes for small objects
+
+	For small objects, you might want to consider using value
+	types (structs)	instead of object (classes).
+	
+	However, you must be careful that you do not use the struct
+	as an object, in that case it will actually be more costly.
+	
+	As a rule of thumb, only use structs if you have a small
+	number of fields (totaling less than 32 bytes), and
+	need to pass the item `by value'. You should not box the object.
+
+*** Assisting the Garbage Collector
+
+	Although the Garbage Collector will do the right thing in
+	terms of releasing and finalizing objects on time, you can
+	assist the garbage collector by clearing the fields that
+	points to objects.  This means that some objects might be
+	elegible for collection earlier than they would, this can help
+	reduce the memory consumption and reduce the work that the GC
+	has to do.
 
 ** foreach
 
@@ -137,18 +202,3 @@ Total memory allocated: 448 KB
 	when to use a manual loop.  The best thing to do is to always
 	use foreach, and only when profile shows a problem, replace
 	foreach with for loops.
-
-*** Using structs instead of classes for small objects
-
-	For small objects, you might want to consider using value
-	types (structs)	instead of object (classes).
-
-** Assisting the Garbage Collector
-
-	Although the Garbage Collector will do the right thing in
-	terms of releasing and finalizing objects on time, you can
-	assist the garbage collector by clearing the fields that
-	points to objects.  This means that some objects might be
-	elegible for collection earlier than they would, this can help
-	reduce the memory consumption and reduce the work that the GC
-	has to do.
