@@ -1,3 +1,7 @@
+2004-09-21    <vargaz@freemail.hu>
+
+	* configure.in: Link with ole32 on windows.
+
 2004-09-20  Jackson Harper  <jackson@ximian.com>
 
 	* support/map.c/h: Add poll events map functions. Use values
