@@ -36,7 +36,7 @@ mono_SOURCES = \
 mono_LDADD = \
 	libmono.la		\
 	$(GLIB_LIBS)		\
-	$(GMODULE_LIBS)
+	$(GMODULE_LIBS) -lm
 
 mono_LDFLAGS = \
 	-export-dynamic
