@@ -1154,7 +1154,9 @@ mono_loader_wine_init ()
 	int (*shared_wine_init)();
 
 	if (module == NULL){
-		fprintf (stderr, "Could not load winelib.exe.so");
+		if (g_getenv("MONO_DEBUG") != NULL) {
+			fprintf (stderr, "Could not load winelib.exe.so");
+		}
 		return;
 	}
 
