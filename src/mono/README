@@ -38,16 +38,6 @@ A directory roadmap:
 
 	You can try the interpreter like this:
 
-		mono-int program.exe
-
-
-
-
-
-
-
-
-
-
+		mint program.exe
 
 
