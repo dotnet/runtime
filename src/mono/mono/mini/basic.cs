@@ -924,4 +924,16 @@ class Tests {
 		
 		return 0;
 	}
+	static int test_0_cmp_regvar_zero ()
+	{
+		int n = 10;
+		
+		if (!(n > 0 && n >= 0 && n != 0))
+			return 1;
+		if (n < 0 || n <= 0 || n == 0)
+			return 1;
+		
+		return 0;
+	}
+
 }

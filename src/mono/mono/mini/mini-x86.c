@@ -772,11 +772,8 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * --> 
 			 * OP_X86_TEST_NULL (reg) 
 			 */
-			if (ins->inst_imm == 0 && ins->next &&
-			    (ins->next->opcode == CEE_BEQ || ins->next->opcode == CEE_BNE_UN ||
-			     ins->next->opcode == OP_CEQ)) {
+			if (!ins->inst_imm)
 				ins->opcode = OP_X86_TEST_NULL;
-			}     
 			break;
 		case OP_X86_COMPARE_MEMBASE_IMM:
 			/* 
@@ -795,11 +792,8 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->sreg1 = last_ins->sreg1;
 
 					/* check if we can remove cmp reg,0 with test null */
-					if (ins->inst_imm == 0 && ins->next &&
-						(ins->next->opcode == CEE_BEQ || ins->next->opcode == CEE_BNE_UN ||
-						ins->next->opcode == OP_CEQ)) {
+					if (!ins->inst_imm)
 						ins->opcode = OP_X86_TEST_NULL;
-					}     
 				}
 
 			break;
