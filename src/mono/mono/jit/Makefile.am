@@ -29,10 +29,6 @@ jitsources =		\
 	codegen-x86.c		\
 	emit-x86.c		\
 	regset.c		\
-	debug-private.h		\
-	debug.c			\
-	debug-stabs.c		\
-	debug-dwarf2.c		\
 	debug-jit.h		\
 	debug-jit.c		\
 	jit.c			\
@@ -47,7 +43,6 @@ libmono_la_SOURCES = $(jitsources)
 libmonoincludedir = $(includedir)/mono/jit
 libmonoinclude_HEADERS = \
 	jit.h			\
-	debug.h			\
 	regset.h
 
 mono_SOURCES = mono.c $(jitsources)

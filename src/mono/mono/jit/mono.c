@@ -17,6 +17,8 @@
 #include "mono/metadata/mono-config.h"
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/mono-debug.h>
+#include <mono/metadata/mono-debug-debugger.h>
 #include <mono/os/util.h>
 #include <locale.h>
 
@@ -158,12 +160,7 @@ usage (char *name)
 		 "    --noboundcheck     Disables bound checks\n"
 		 "\n"
 		 "Development:\n"
-		 "    --debug[=FORMAT]   write a debugging file.  FORMAT is one of:\n"
-		 "                         stabs        to write stabs information\n"
-		 "                         dwarf        to write dwarf2 information\n"
-		 "                         dwarf-plus   to write extended dwarf2 information\n"
-		 "    --debug-args ARGS  comma-separated list of additional arguments for the\n"
-		 "                       symbol writer.  See the manpage for details.\n"
+		 "    --debug            enable debugging support.\n"
 		 "    --profile          record and dump profile info\n"
 		 "    --breakonex        set a breakpoint for unhandled exception\n"
 		 "    --break NAME       insert a breakpoint at the start of method NAME\n"
@@ -192,7 +189,7 @@ typedef struct
 	MonoDomain *domain;
 	char *file;
 	gboolean testjit;
-	char *debug_args;
+	gboolean enable_debugging;
 	char *compile_class;
 	int compile_times;
 	GList *precompile_classes;
@@ -206,16 +203,10 @@ static void main_thread_handler (gpointer user_data)
 {
 	MainThreadArgs *main_args=(MainThreadArgs *)user_data;
 	MonoAssembly *assembly;
-	MonoDebugHandle *debug = NULL;
 
-	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) {
-		gchar **args = g_strsplit (main_args->debug_args ?
-					   main_args->debug_args : "", ",", -1);
-		mono_debug_init (mono_debug_format, FALSE,
-				 main_args->file, (const char **) args);
-		g_strfreev (args);
-	}
-	
+	if (main_args->enable_debugging)
+		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
+
 	assembly = mono_domain_assembly_open (main_args->domain,
 					      main_args->file);
 	if (!assembly){
@@ -223,7 +214,7 @@ static void main_thread_handler (gpointer user_data)
 		exit (1);
 	}
 
-	if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
+	if (main_args->enable_debugging)
 		mono_debug_init_2 (assembly);
 
 	if (main_args->testjit) {
@@ -244,7 +235,7 @@ static void main_thread_handler (gpointer user_data)
 
 			method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
 			desc = mono_method_desc_from_method (method);
-			mono_insert_breakpoint_full (desc, FALSE);
+			mono_debugger_insert_breakpoint_full (desc, FALSE);
 		}
 
 		mono_jit_exec (main_args->domain, assembly, main_args->argc,
@@ -259,7 +250,7 @@ main (int argc, char *argv [])
 	int retval = 0, i;
 	int compile_times = 1000;
 	char *compile_class = NULL;
-	char *debug_args = NULL;
+	gboolean enable_debugging = FALSE;
 	char *file, *error, *config_file = NULL;
 	gboolean testjit = FALSE;
 	int verbose = FALSE;
@@ -306,7 +297,7 @@ main (int argc, char *argv [])
 				break_on_main = TRUE;
 				i++;
 			} else {
-				if (!mono_insert_breakpoint (argv [++i], FALSE))
+				if (!mono_debugger_insert_breakpoint (argv [++i], FALSE))
 					g_error ("Invalid method name '%s'", argv [i]);
 			}
 		} else if (strcmp (argv [i], "--count") == 0) {
@@ -327,27 +318,8 @@ main (int argc, char *argv [])
 		} else if (strcmp (argv [i], "--stats") == 0) {
 			memset (&mono_jit_stats, 0, sizeof (MonoJitStats));
 			mono_jit_stats.enabled = TRUE;
-		} else if (strncmp (argv [i], "--debug=", 8) == 0) {
-			const char *format = &argv [i][8];
-				
-			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
-				g_error ("You can only use one debugging format.");
-			if (strcmp (format, "stabs") == 0)
-				mono_debug_format = MONO_DEBUG_FORMAT_STABS;
-			else if (strcmp (format, "dwarf") == 0)
-				mono_debug_format = MONO_DEBUG_FORMAT_DWARF2;
-			else if (strcmp (format, "mono") == 0)
-				mono_debug_format = MONO_DEBUG_FORMAT_MONO;
-			else
-				g_error ("Unknown debugging format: %s", argv [i] + 8);
 		} else if (strcmp (argv [i], "--debug") == 0) {
-			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
-				g_error ("You can only use one debugging format.");
-			mono_debug_format = MONO_DEBUG_FORMAT_MONO;
-		} else if (strcmp (argv [i], "--debug-args") == 0) {
-			if (debug_args)
-				g_error ("You can use --debug-args only once.");
-			debug_args = argv [++i];
+			enable_debugging = TRUE;
 		} else if (strcmp (argv [i], "--precompile") == 0) {
 			precompile_classes = g_list_append (precompile_classes, argv [++i]);
 		} else if (strcmp (argv [i], "--verbose") == 0) {
@@ -378,7 +350,7 @@ main (int argc, char *argv [])
 	main_args.domain=domain;
 	main_args.file=file;
 	main_args.testjit=testjit;
-	main_args.debug_args=debug_args;
+	main_args.enable_debugging=enable_debugging;
 	main_args.compile_class=compile_class;
 	main_args.compile_times=compile_times;
 	main_args.precompile_classes=precompile_classes;
