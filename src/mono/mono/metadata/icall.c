@@ -5515,6 +5515,8 @@ static const IcallEntry string_icalls [] = {
 	{"InternalReplace(char,char)", ves_icall_System_String_InternalReplace_Char},
 	{"InternalReplace(string,string,System.Globalization.CompareInfo)", ves_icall_System_String_InternalReplace_Str_Comp},
 	{"InternalSplit", ves_icall_System_String_InternalSplit},
+	{"InternalStrcpy(string,int,char[])", ves_icall_System_String_InternalStrcpy_Chars},
+	{"InternalStrcpy(string,int,char[],int,int)", ves_icall_System_String_InternalStrcpy_CharsN},
 	{"InternalStrcpy(string,int,string)", ves_icall_System_String_InternalStrcpy_Str},
 	{"InternalStrcpy(string,int,string,int,int)", ves_icall_System_String_InternalStrcpy_StrN},
 	{"InternalToLower(System.Globalization.CultureInfo)", ves_icall_System_String_InternalToLower_Comp},

@@ -82,6 +82,12 @@ ves_icall_System_String_InternalStrcpy_Str (MonoString *dest, gint32 destPos, Mo
 void 
 ves_icall_System_String_InternalStrcpy_StrN (MonoString *dest, gint32 destPos, MonoString *src, gint32 startPos, gint32 count);
 
+void 
+ves_icall_System_String_InternalStrcpy_Chars (MonoString *dest, gint32 destPos, MonoArray *src);
+
+void 
+ves_icall_System_String_InternalStrcpy_CharsN (MonoString *dest, gint32 destPos, MonoArray *src, gint32 startPos, gint32 count);
+
 MonoString  *
 ves_icall_System_String_InternalIntern (MonoString *str);
 
