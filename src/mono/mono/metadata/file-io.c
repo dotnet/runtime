@@ -399,7 +399,15 @@ ves_icall_System_IO_MonoIO_GetFileAttributes (MonoString *path, gint32 *error)
 	*error=ERROR_SUCCESS;
 	
 	ret=GetFileAttributes (mono_string_chars (path));
-	if(ret==INVALID_FILE_ATTRIBUTES) {
+
+	/* 
+	 * The definition of INVALID_FILE_ATTRIBUTES in the cygwin win32
+	 * headers is wrong, hence this temporary workaround.
+	 * See
+	 * http://cygwin.com/ml/cygwin/2003-09/msg01771.html
+	 */
+	if (ret==-1) {
+//	if(ret==INVALID_FILE_ATTRIBUTES) {
 		*error=GetLastError ();
 	}
 	
