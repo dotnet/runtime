@@ -1451,6 +1451,8 @@ type_get_qualified_name (MonoType *type, MonoAssembly *ass) {
 	MonoAssembly *ta;
 
 	klass = my_mono_class_from_mono_type (type);
+	if (!klass) 
+		return mono_type_get_name (type);
 	ta = klass->image->assembly;
 	if (ta == ass || klass->image == mono_defaults.corlib)
 		return mono_type_get_name (type);
@@ -6945,7 +6947,7 @@ handle_type:
 		} else {
 			g_error ("unhandled type in custom attr");
 		}
-		str = type_get_qualified_name (klass->enum_basetype, NULL);
+		str = type_get_qualified_name (mono_class_get_type(klass), NULL);
 		slen = strlen (str);
 		if ((p-buffer) + 10 + slen >= *buflen) {
 			char *newbuf;
