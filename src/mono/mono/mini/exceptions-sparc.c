@@ -176,14 +176,11 @@ throw_exception (MonoObject *exc, gpointer sp, gpointer ip, gboolean rethrow)
 	g_assert_not_reached ();
 }
 
-gpointer 
+static gpointer 
 get_throw_exception (gboolean rethrow)
 {
 	guint32 *start;
 	guint32 *code;
-
-	if (inited)
-		return start;
 
 	code = start = g_new0 (16 * sizeof (guint32));
 
