@@ -87,7 +87,6 @@ extern gboolean mono_jit_trace_calls;
 extern gboolean mono_break_on_exc;
 extern int mono_exc_esp_offset;
 extern gboolean mono_compile_aot;
-extern gboolean mono_no_aot;
 
 struct MonoEdge {
 	MonoEdge *next;
@@ -386,7 +385,7 @@ struct MonoJumpInfo {
 	int table_size; /* use by switch */
 };
 
-/* optimization flags: keep up to date with the name array in mini.c */
+/* optimization flags: keep up to date with the name array in driver.c */
 enum {
 	MONO_OPT_PEEPHOLE = 1 << 0,
 	MONO_OPT_BRANCH   = 1 << 1,
@@ -403,7 +402,8 @@ enum {
 	MONO_OPT_TAILC    = 1 << 12,
 	MONO_OPT_LOOP     = 1 << 13,
 	MONO_OPT_FCMOV    = 1 << 14,
-	MONO_OPT_LEAF     = 1 << 15
+	MONO_OPT_LEAF     = 1 << 15,
+	MONO_OPT_AOT      = 1 << 16 
 };
 
 #define MONO_REGION_FINALLY  16

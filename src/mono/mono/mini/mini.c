@@ -7033,7 +7033,7 @@ mono_jit_compile_method (MonoMethod *method)
 	}
 
 #ifdef MONO_USE_AOT_COMPILER
-	if (!mono_compile_aot && !mono_no_aot) {
+	if (!mono_compile_aot && (default_opt & MONO_OPT_AOT)) {
 		MonoJitInfo *info;
 
 		mono_class_init (method->klass);
@@ -7322,7 +7322,8 @@ mini_init (const char *filename)
 
 	mono_burg_init ();
 
-	mono_aot_init ();
+	if (default_opt & MONO_OPT_AOT)
+		mono_aot_init ();
 
 	mono_runtime_install_handlers ();
 	mono_threads_install_cleanup (mini_thread_cleanup);

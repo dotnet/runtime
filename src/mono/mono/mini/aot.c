@@ -70,6 +70,9 @@ static CRITICAL_SECTION aot_mutex;
 
 static guint32 mono_aot_verbose = 0;
 
+/* For debugging */
+static gint32 mono_last_aot_method = -1;
+
 static MonoClass * 
 decode_class_info (MonoAotModule *module, gpointer *data)
 {
@@ -98,9 +101,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	char *saved_guid = NULL;
 	char *aot_version = NULL;
 	char *opt_flags = NULL;
-
-	if (mono_no_aot)
-		return;
 
 	aot_name = g_strdup_printf ("%s.so", assembly->image->name);
 
@@ -209,6 +209,9 @@ mono_aot_init (void)
 	aot_modules = mono_g_hash_table_new (NULL, NULL);
 
 	mono_install_assembly_load_hook (load_aot_module, NULL);
+
+	if (getenv ("MONO_LASTAOT"))
+		mono_last_aot_method = atoi (getenv ("MONO_LASTAOT"));
 }
  
 static MonoJitInfo *
@@ -323,12 +326,11 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 
 		count ++;
 
-		if (getenv ("MONO_LASTAOT")) {
-			if (count > atoi(getenv ("MONO_LASTAOT"))) {
+		if (mono_last_aot_method != -1) {
+			if (count > mono_last_aot_method)
 				return NULL;
-			}
 			else
-				if (count == atoi(getenv ("MONO_LASTAOT")))
+				if (count == mono_last_aot_method)
 					printf ("LAST AOT METHOD: %s.%s.%s.\n", klass->name_space, klass->name, method->name);
 		}
 	}
@@ -345,6 +347,19 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 	info++;
 	used_int_regs = GPOINTER_TO_UINT (*((gpointer **)info));
 	info++;
+
+	/* 
+	 * Enabling this will place the caller and the callee close to each other
+	 * in memory, possibly improving cache behavior.
+	 */
+/*
+	{
+		guint8 *code2;
+		code2 = mono_mempool_alloc (domain->code_mp, code_len);
+		memcpy (code2, code, code_len);
+		code = code2;
+	}
+*/
 
 	if (mono_aot_verbose > 1)
 		printf ("FOUND AOT compiled code for %s %p - %p %p\n", mono_method_full_name (method, TRUE), code, code + code_len, info);

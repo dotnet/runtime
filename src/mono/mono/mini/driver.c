@@ -73,7 +73,8 @@ opt_names [] = {
 	{"tailc",    "Tail recursion and tail calls"},
 	{"loop",     "Loop related optimizations"},
 	{"fcmov",    "Fast x86 FP compares"},
-	{"leaf",     "Leaf procedures optimizations"}
+	{"leaf",     "Leaf procedures optimizations"},
+	{"aot",      "Usage of Ahead Of Time compiled code"}
 };
 
 #define DEFAULT_OPTIMIZATIONS (	\
@@ -81,7 +82,8 @@ opt_names [] = {
 	MONO_OPT_CFOLD |	\
 	MONO_OPT_BRANCH |	\
 	MONO_OPT_LINEARS |	\
-	MONO_OPT_INTRINS)
+	MONO_OPT_INTRINS |  \
+    MONO_OPT_AOT)
 
 static guint32
 parse_optimizations (const char* p)
@@ -482,7 +484,6 @@ mini_usage (void)
 		"    --break METHOD         Inserts a breakpoint at METHOD entry\n"
 		"    --debug                Enable debugging support\n"
 	    "    --stats                Print statistics about the JIT operations\n"
-	    "    --no-aot               Disable loading of AOT code\n"
 		"\n"
 		"Development:\n"
 		"    --statfile FILE        Sets the stat file to FILE\n"
@@ -564,8 +565,6 @@ mono_main (int argc, char* argv[]) {
 			mono_print_vtable = TRUE;
 		} else if (strcmp (argv [i], "--stats") == 0) {
 			mono_jit_stats.enabled = TRUE;
-		} else if (strcmp (argv [i], "--no-aot") == 0) {
-			mono_no_aot = TRUE;
 		} else if (strcmp (argv [i], "--aot") == 0) {
 			mono_compile_aot = TRUE;
 		} else if (strcmp (argv [i], "--compile-all") == 0) {
