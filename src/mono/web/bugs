@@ -35,7 +35,13 @@
 ** How to make good bug reports
 
 	<ol>
-		* Submit a test case, the smaller it is, the better
+		* Submit a test case, the smaller it is, the better.
+		
+		<p>You can do this by clicking on the "Create a new
+		attachment" link. When attaching a file, please set the
+		correct MIME type from the list. For source code, "Plain
+		text" is ok. For tar.gz or .gz files, you can enter
+		"application/x-gzip" in the "Other" text box.
 
 		* Use <a href="http://bugzilla.ximian.com">
 		http://bugzilla.ximian.com</a> to report the bug.
