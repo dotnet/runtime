@@ -1,5 +1,7 @@
 2004-02-29  Zoltan Varga  <vargaz@freemail.hu>
 
+	* configure.in: Add check for GC_enable.
+	
 	* configure.in: Remove amd64/Makefile from AC_OUTPUT to fix build.
 
 2004-02-19  Zoltan Varga  <vargaz@freemail.hu>

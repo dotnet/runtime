@@ -260,6 +260,10 @@ case "x$gc" in
 		if test "x$found_gcj_malloc" = "xyes"; then
 			AC_DEFINE(HAVE_GC_GCJ_MALLOC)
 		fi
+		AC_CHECK_LIB(gc, GC_enable, found_gc_enable="yes",,$libdl)
+		if test "x$found_gc_enable" = "xyes"; then
+			AC_DEFINE(HAVE_GC_ENABLE)
+		fi
 		;;
 
 	xincluded)
