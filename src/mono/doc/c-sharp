@@ -82,7 +82,7 @@
 		  parents are.
 	</ul>
 
-	Interesting tasks:
+	Interesting and Fun hacks to the compiler:
 
 	<ul>
 		* Finishing the JB port from Java to C#.  If you are
@@ -95,6 +95,17 @@
 		  JB will allow us to move from the Berkeley Yacc
 		  based Jay to a Bison-based compiler (better error
 		  reporting and recovery).
+
+		* Semantic Analysis: Return path coverage and
+		  initialization before use coverage are two great
+		  features of C# that help reduce the number of bugs
+		  in applications.  It is one interesting hack.
+
+		* TypeRefManager.  This exists currently in its infancy only. 
+
+		* Enum resolutions: it is another fun hack, as enums can be defined 
+		  in terms of themselves (<tt>enum X { a = b + 1, b = 5 }</tt>). 
+
 	</ul>
 
 ** Questions and Answers

@@ -127,3 +127,7 @@
 	calls, these in turn are required for reusing some of the
 	GNOME libraries that will reduce the work we have to do to
 	deliver a complete class library.
+
+	To implement PInvoke we are looking into using the <a
+	href="http://sources.redhat.com/libffi">Foreign Function
+	Interface</a> Library from Cygnus.
