@@ -75,7 +75,7 @@ typedef struct MonoAotModule {
 	char **image_guids;
 	MonoImage **image_table;
 	guint32* methods_present_table;
-	gboolean cleanup;
+	gboolean out_of_date;
 } MonoAotModule;
 
 typedef struct MonoAotCompile {
@@ -129,18 +129,18 @@ load_image (MonoAotModule *module, int index)
 
 	if (module->image_table [index])
 		return module->image_table [index];
-	if (module->cleanup)
+	if (module->out_of_date)
 		return NULL;
 
 	assembly = mono_assembly_load (&module->image_names [index], NULL, &status);
 	if (!assembly) {
-		module->cleanup = TRUE;
+		module->out_of_date = TRUE;
 		return NULL;
 	}
 
 	if (strcmp (assembly->image->guid, module->image_guids [index])) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is out of date (Older than dependency %s).\n", module->aot_name, module->image_names [index].name);
-		module->cleanup = TRUE;
+		module->out_of_date = TRUE;
 		return NULL;
 	}
 
@@ -547,7 +547,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		}
 	}
 
-	if (aot_module->cleanup)
+	if (aot_module->out_of_date)
 		return NULL;
 
 	sprintf (method_label, "m_%x", mono_metadata_token_index (method->token));
