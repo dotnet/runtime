@@ -1,0 +1,44 @@
+/* -- <Op> -- */
+
+/* rd = rn <Op> (imm8 ROR rot) ; rot is power of 2 */
+#define ARM_<Op>_REG_IMM_COND(p, rd, rn, imm8, rot, cond) \
+	ARM_DPIOP_REG_IMM8ROT_COND(p, ARMOP_<Op>, rd, rn, imm8, rot, cond)
+#define ARM_<Op>_REG_IMM(p, rd, rn, imm8, rot) \
+	ARM_<Op>_REG_IMM_COND(p, rd, rn, imm8, rot, ARMCOND_AL)
+#define ARM_<Op>S_REG_IMM_COND(p, rd, rn, imm8, rot, cond) \
+	ARM_DPIOP_S_REG_IMM8ROT_COND(p, ARMOP_<Op>, rd, rn, imm8, rot, cond)
+#define ARM_<Op>S_REG_IMM(p, rd, rn, imm8, rot) \
+	ARM_<Op>S_REG_IMM_COND(p, rd, rn, imm8, rot, ARMCOND_AL)
+
+/* rd = rn <Op> imm8 */
+#define ARM_<Op>_REG_IMM8_COND(p, rd, rn, imm8, cond) \
+	ARM_<Op>_REG_IMM_COND(p, rd, rn, imm8, 0, cond)
+#define ARM_<Op>_REG_IMM8(p, rd, rn, imm8) \
+	ARM_<Op>_REG_IMM8_COND(p, rd, rn, imm8, ARMCOND_AL)
+#define ARM_<Op>S_REG_IMM8_COND(p, rd, rn, imm8, cond) \
+	ARM_<Op>S_REG_IMM_COND(p, rd, rn, imm8, 0, cond)
+#define ARM_<Op>S_REG_IMM8(p, rd, rn, imm8) \
+	ARM_<Op>S_REG_IMM8_COND(p, rd, rn, imm8, ARMCOND_AL)
+
+
+/* rd = rn <Op> rm */
+#define ARM_<Op>_REG_REG_COND(p, rd, rn, rm, cond) \
+	ARM_DPIOP_REG_REG_COND(p, ARMOP_<Op>, rd, rn, rm, cond)
+#define ARM_<Op>_REG_REG(p, rd, rn, rm) \
+	ARM_<Op>_REG_REG_COND(p, rd, rn, rm, ARMCOND_AL)
+#define ARM_<Op>S_REG_REG_COND(p, rd, rn, rm, cond) \
+	ARM_DPIOP_S_REG_REG_COND(p, ARMOP_<Op>, rd, rn, rm, cond)
+#define ARM_<Op>S_REG_REG(p, rd, rn, rm) \
+	ARM_<Op>S_REG_REG_COND(p, rd, rn, rm, ARMCOND_AL)
+
+/*  rd = rn <Op> (rm <shift_type> imm_shift) */
+#define ARM_<Op>_REG_IMMSHIFT_COND(p, rd, rn, rm, shift_type, imm_shift, cond) \
+	ARM_DPIOP_REG_IMMSHIFT_COND(p, ARMOP_<Op>, rd, rn, rm, shift_type, imm_shift, cond)
+#define ARM_<Op>_REG_IMMSHIFT(p, rd, rn, rm, shift_type, imm_shift) \
+	ARM_<Op>_REG_IMMSHIFT_COND(p, rd, rn, rm, shift_type, imm_shift, ARMCOND_AL)
+#define ARM_<Op>S_REG_IMMSHIFT_COND(p, rd, rn, rm, shift_type, imm_shift, cond) \
+	ARM_DPIOP_S_REG_IMMSHIFT_COND(p, ARMOP_<Op>, rd, rn, rm, shift_type, imm_shift, cond)
+#define ARM_<Op>S_REG_IMMSHIFT(p, rd, rn, rm, shift_type, imm_shift) \
+	ARM_<Op>S_REG_IMMSHIFT_COND(p, rd, rn, rm, shift_type, imm_shift, ARMCOND_AL)
+
+

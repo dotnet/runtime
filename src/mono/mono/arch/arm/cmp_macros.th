@@ -1,0 +1,11 @@
+/* PSR = <Op> rd, (imm8 ROR 2*rot) */
+#define ARM_<Op>_REG_IMM_COND(p, rd, imm8, rot, cond) \
+	ARM_DPIOP_REG_IMM8ROT_COND(p, ARMOP_<Op>, rd, 0, imm8, rot, cond)
+#define ARM_<Op>_REG_IMM(p, rd, imm8, rot) \
+	ARM_<Op>_REG_IMM_COND(p, rd, imm8, rot, ARMCOND_AL)
+/* PSR = <Op> rd, imm8 */
+#define ARM_<Op>_REG_IMM8_COND(p, rd, imm8, cond) \
+	ARM_<Op>_REG_IMM_COND(p, rd, imm8, 0, cond)
+#define ARM_<Op>_REG_IMM8(p, rd, imm8) \
+	ARM_<Op>_REG_IMM8_COND(p, rd, imm8, ARMCOND_AL)
+

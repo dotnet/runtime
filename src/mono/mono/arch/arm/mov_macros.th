@@ -1,0 +1,39 @@
+/* rd = imm8 ROR rot */
+#define ARM_<Op>_REG_IMM_COND(p, reg, imm8, rot, cond) \
+	ARM_DPIOP_REG_IMM8ROT_COND(p, ARMOP_<Op>, reg, 0, imm8, rot, cond)
+#define ARM_<Op>_REG_IMM(p, reg, imm8, rot) \
+	ARM_<Op>_REG_IMM_COND(p, reg, imm8, rot, ARMCOND_AL)
+#define ARM_<Op>_REG_IMM8(p, reg, imm8) \
+	ARM_<Op>_REG_IMM(p, reg, imm8, 0)
+/* S */
+#define ARM_<Op>S_REG_IMM_COND(p, reg, imm8, rot, cond) \
+	ARM_DPIOP_S_REG_IMM8ROT_COND(p, ARMOP_<Op>, reg, 0, imm8, rot, cond)
+#define ARM_<Op>S_REG_IMM(p, reg, imm8, rot) \
+	ARM_<Op>S_REG_IMM_COND(p, reg, imm8, rot, ARMCOND_AL)
+
+
+/* rd = rm */
+#define ARM_<Op>_REG_REG_COND(p, rd, rm, cond) \
+	ARM_DPIOP_REG_REG_COND(p, ARMOP_<Op>, rd, 0, rm, cond)
+#define ARM_<Op>_REG_REG(p, rd, rm) \
+	ARM_<Op>_REG_REG_COND(p, rd, rm, ARMCOND_AL)
+/* S */
+#define ARM_<Op>S_REG_REG_COND(p, rd, rm, cond) \
+	ARM_DPIOP_S_REG_REG_COND(p, ARMOP_<Op>, rd, 0, rm, cond)
+#define ARM_<Op>S_REG_REG(p, rd, rm) \
+	ARM_<Op>S_REG_REG_COND(p, rd, rm, ARMCOND_AL)
+
+
+
+/*  rd = rm <shift_type> imm_shift */
+#define ARM_<Op>_REG_IMMSHIFT_COND(p, rd, rm, shift_type, imm_shift, cond) \
+	ARM_DPIOP_REG_IMMSHIFT_COND(p, ARMOP_<Op>, rd, 0, rm, shift_type, imm_shift, cond)
+#define ARM_<Op>_REG_IMMSHIFT(p, rd, rm, shift_type, imm_shift) \
+	ARM_<Op>_REG_IMMSHIFT_COND(p, rd, rm, shift_type, imm_shift, ARMCOND_AL)
+/* S */
+#define ARM_<Op>S_REG_IMMSHIFT_COND(p, rd, rm, shift_type, imm_shift, cond) \
+	ARM_DPIOP_S_REG_IMMSHIFT_COND(p, ARMOP_<Op>, rd, 0, rm, shift_type, imm_shift, cond)
+#define ARM_<Op>S_REG_IMMSHIFT(p, rd, rm, shift_type, imm_shift) \
+	ARM_<Op>S_REG_IMMSHIFT_COND(p, rd, rm, shift_type, imm_shift, ARMCOND_AL)
+
+
