@@ -35,7 +35,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 0)
-				return 1;
+				return 3;
 
 			try {
 				long a = Int64.MaxValue;
@@ -44,7 +44,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 1)
-				return 1;
+				return 4;
 
 			ocount = 0;
 			try {
@@ -54,7 +54,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 0)
-				return 2;
+				return 5;
 
 			try {
 				ulong a = UInt64.MaxValue;
@@ -63,7 +63,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 1)
-				return 1;
+				return 6;
 
 			ocount = 0;
 			try {
@@ -73,7 +73,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 0)
-				return 1;
+				return 7;
 
 			ocount = 0;
 			try {
@@ -83,7 +83,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 1)
-				return 1;
+				return 8;
 
 			ocount = 0;
 			try {
@@ -93,7 +93,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 0)
-				return 1;
+				return 9;
 
 			ocount = 0;
 			try {
@@ -103,7 +103,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 1)
-				return 1;
+				return 10;
 
 			ocount = 0;
 			try {
@@ -113,7 +113,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 0)
-				return 1;
+				return 11;
 
 			ocount = 0;
 			try {
@@ -123,7 +123,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 1)
-				return 1;
+				return 12;
 
 			ocount = 0;
 			try {
@@ -133,7 +133,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 0)
-				return 1;
+				return 13;
 
 			ocount = 0;
 			try {
@@ -143,7 +143,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 1)
-				return 1;
+				return 14;
 
 			ocount = 0;
 			try {
@@ -153,7 +153,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 0)
-				return 1;
+				return 15;
 
 			ocount = 0;
 			try {
@@ -163,7 +163,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 1)
-				return 1;
+				return 16;
 
 			ocount = 0;
 			try {
@@ -171,7 +171,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 0)
-				return 1;
+				return 17;
 
 			ocount = 0;
 			try {
@@ -181,7 +181,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 0)
-				return 1;
+				return 18;
 
 			ocount = 0;
 			try {
@@ -191,7 +191,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 1)
-				return 1;
+				return 19;
 
 			/*
 			ocount = 0;
@@ -202,7 +202,7 @@ public class Ex {
 				ocount++;
 			}
 			if (ocount != 1)
-				return 1;
+				return 20;
 			*/
 		}
 		
