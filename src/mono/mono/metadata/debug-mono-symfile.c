@@ -79,6 +79,9 @@ load_symfile (MonoSymbolFile *symfile)
 	priv->offset_table = (MonoSymbolFileOffsetTable *) ptr;
 	symfile->address_table_size = priv->offset_table->address_table_size;
 
+	symfile->type_table_size = symfile->_priv->offset_table->type_count * sizeof (guint8 *);
+	symfile->type_table = g_malloc0 (symfile->type_table_size);
+
 	/*
 	 * Read method table.
 	 *
@@ -705,6 +708,9 @@ create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings)
 		return FALSE;
 
 	symfile->raw_contents = ptr;
+
+	symfile->type_table_size = symfile->_priv->offset_table->type_count * sizeof (guint8 *);
+	symfile->type_table = g_malloc0 (symfile->type_table_size);
 
 	//
 	// Load line number table.
