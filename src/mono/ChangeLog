@@ -1,3 +1,8 @@
+2004-06-18  Raja R Harinath  <rharinath@novell.com>
+
+	* scripts/Makefile.am (REWRITE): New.  Common rewriting 'sed' command.
+	(bin_SCRIPTS): Unify all the script generating rules into one.
+
 2004-06-16  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am (bootstrap) [PLATFORM_WIN32]: Open code.  Don't
