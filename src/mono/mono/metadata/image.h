@@ -1,6 +1,7 @@
 #ifndef _MONONET_METADATA_IMAGE_H_ 
 #define _MONONET_METADATA_IMAGE_H_
 
+#include <stdio.h>
 #include <mono/metadata/metadata.h>
 
 typedef struct _MonoImage MonoImage;
