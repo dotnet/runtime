@@ -151,6 +151,7 @@ TEST_CS_SRC=			\
 	thread.cs		\
 	thread5.cs		\
 	thread6.cs		\
+	thread-static.cs		\
 	float-pop.cs		\
 	interfacecast.cs	\
 	array3.cs		\
@@ -215,7 +216,7 @@ testb: $(TEST_PROG) $(TESTBS)
 		./test-driver $(TEST_PROG) $$ii $(RUNTIME_ARGS);	\
 	done
 
-testjit: $(JITTEST_PROG) $(TESTSI_CS) $(TESTSI_IL) $(TESTBS)
+testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS)
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
@@ -248,3 +249,4 @@ libtest_la_LDFLAGS = -rpath `pwd`
 libtest_la_SOURCES = libtest.c
 
 CLEANFILES = $(TESTSI_CS) $(TESTSI_IL)
+
