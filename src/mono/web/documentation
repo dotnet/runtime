@@ -32,4 +32,31 @@
 ** Class Library documentation
 
 	We are moving to a new setup for documenting the class libraries, 
-	you can read about it <a href="classlib-doc.html">here</a>
+	and you can read about it <a href="classlib-doc.html">here</a>.
+
+        A few words of warning and advice for class documentors:
+
+        A well-documented API can ease hours of frustration; as Mono
+        matures, robust and complete class library documentation will
+        become increasingly important.  As you write API documentation,
+        whether it is embedded in source files or in external Monodoc XML,
+        please keep the following in mind:
+
+        Plagarism, even if it's unintentional, is a Bad Thing(TM).
+        Microsoft's .NET Framework Class Library documentation is an
+        excellent resource for understanding the behavior and properties of
+        a type, and a lot of hard work went in to creating this (copyrighted)
+        resource.  Please don't copy from Microsoft's reference when
+        documenting a type.
+
+        To avoid this, I (<a href="mailto:jbarn@httcb.net">jbarn@httcb.net</a>)
+        suggest that you read the complete Microsoft documentation for a type,
+        ponder it for a while, and write the Mono documentation in your own
+        words.  While it's certainly okay to refer to the Microsoft
+        documentation to clarify your understanding of behavior or properties,
+        please don't open the Microsoft docs and refer to them for each member
+        you document.
+
+        There's a lot of domain expertise among the class library contributors;
+        let's put the same personal stamp on the class library documentation
+        that we have on the class libraries themselves.
