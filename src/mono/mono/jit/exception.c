@@ -325,7 +325,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 
 			filename = mono_debug_source_location_from_address (ji->method, sf->native_offset, &sf->line);
 
-			sf->filename = mono_string_new (domain, filename);
+			sf->filename = mono_string_new (domain, filename ? filename : "<unknown>");
 			sf->column = 0;
 
 			g_free (filename);
@@ -389,7 +389,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 		filename = mono_debug_source_location_from_address (m, addr, line);
 
-		*file = mono_string_new (domain, filename);
+		*file = mono_string_new (domain, filename ? filename : "<unknown>");
 		*column = 0;
 
 		g_free (filename);
