@@ -93,7 +93,7 @@ mono DBConnTest.exe database userid password
             "   testid varchar(2), " +
             "   testdesc varchar(16) " +
             ")";
-       dbcmd.ConnectionString = sql;
+       dbcmd.CommandText = sql;
        dbcmd.ExecuteNonQuery();
        dbcmd.Dispose();
        dbcmd = null;

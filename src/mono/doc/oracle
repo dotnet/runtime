@@ -32,6 +32,9 @@
 	the makefile.gnu for System.Data.OracleClient or csc/.net via the
 	System.Data.OracleClient.build nant build file.   There is also a Visual Studio.NET 
 	solution it too.
+	
+	<li>Can NOT retrieve data yet.  ExecuteReader() and ExecuteScalar() in OracleCommand
+	and OracleDataReader need to be implemented.</li>
 	   
 </ul>
 	
@@ -107,7 +110,7 @@
               "'Cook'," +
               "23021," +
               "20)";
-       dbcmd.ConnectionString = sql;
+       dbcmd.CommandText = sql;
        dbcmd.ExecuteNonQuery();
        dbcmd.Dispose();
        dbcmd = null;

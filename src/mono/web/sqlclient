@@ -55,6 +55,8 @@
 	<li>Uses TDS Protocol Version 7.0</li>
 	
 	<li><a href="http://www.go-mono.com/tds-providers.html">Design of the Microsoft SQL Server, Sybase, and TDS Providers in Mono</a></li>
+	
+	<li>Works in the SQL# command-line and GTK# GUI version</li>
 </ul>
 
 ** Action plan
@@ -77,7 +79,9 @@
 			<li><a href="http://www.microsoft.com/sql/default.asp">Microsoft SQL Server</a></li>
 		</ul>
 	</li>
-	
+	<li>If using Microsoft SQL Server 2000, make sure
+	you are using at least Service Pack 3 for Microsoft SQL Server 2000</li>
+
 	<li>Located at mcs/class/System.Data/Test is a test for System.Data.SqlClient
 	named SqlTest.cs and you could use this as a basis for your test.</li>
 	
@@ -94,15 +98,15 @@
        string connectionString = 
           "Server=localhost;" +
           "Database=pubs;" +
-          "User ID=sa;" +
-          "Password=;";
+          "User ID=myuserid;" +
+          "Password=mypassword;";
        IDbConnection dbcon;
        dbcon = new SqlConnection(connectionString);
        IDbCommand dbcmd = dbcon.CreateCommand();
        string sql = 
            "SELECT fname, lname " +
            "FROM employee";
-       dbcmd.ConnectionString = sql;
+       dbcmd.CommandText = sql;
        IDataReader reader = dbcmd.ExecuteReader();
        while(reader.Read()) {
             string FirstName = reader["fname"];

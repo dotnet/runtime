@@ -2,20 +2,25 @@
 
 	<p>Mono's ADO.NET Developers:
 	<ul>
-	<li>rodrigo -AT- ximian.comNOSPAM - <b>Rodrigo Moya</b> - coordinator 
-	for the ADO.NET implementation and works on the OLE DB provider</li>
-	<li>danmorg -AT- sc.rr.comNOSPAM - <b>Daniel Morgan</b> - works on
-	the MySQL, PostgreSQL, and Oracle providers</li>
-	<li>tim -AT- timcoleman.comNOSPAM - <b>Tim Coleman</b> - works on
-	the Microsoft SQL Server, Sybase, and TDS providers</li>
-	<li>brianlritchie -AT- hotmail.comNOSPAM - <b>Brian Ritchie</b> - works on
+	<li><b>Rodrigo Moya</b> - rodrigo -AT- ximian.comNOSPAM - coordinator 
+	for the ADO.NET implementation and works on the OLE DB provider
+	and tests</li>
+	<li><b>Daniel Morgan</b> - danmorg -AT- sc.rr.comNOSPAM - works on
+	the MySQL, PostgreSQL, Oracle providers, and tests</li>
+	<li><b>Tim Coleman</b> - tim -AT- timcoleman.comNOSPAM - works on
+	the Microsoft SQL Server, Sybase, TDS providers, and tests</li>
+	<li><b>Brian Ritchie</b> - brianlritchie -AT- hotmail.comNOSPAM - works on
 	the ODBC provider and the ProviderFactory</li>
-	<li>vladimir -AT- pobox.comNOSPAM - <b>Vladimir Vukicevic</b> - works on
+	<li><b>Vladimir Vukicevic</b> - vladimir -AT- pobox.comNOSPAM - works on
 	the SQL Lite provider</li>
-	<li>cleared -AT- rogers.comNOSPAM - <b>Christopher Bockner</b> - works on
-	the IBM DB2 provider</li>
-	<li>vi64pa -AT- koti.soon.fiNOSPAM - <b>Ville Palo</b> - works on XML stuff in System.Data
+	<li><b>Christopher Bockner</b> - cleared -AT- rogers.comNOSPAM - works on
+	the IBM DB2 Universal Database provider</li>
+	<li><b>Ville Palo</b> - vi64pa -AT- koti.soon.fiNOSPAM - works on XML stuff in System.Data
 	including DataSet, XmlDataDocument, and has done lots of testing</li>
+	<li><b>Gonzalo Paniagua Javier</b> - gonzalo -AT- ximian.comNOSPAM - integration
+	between System.Web and System.Data</li>
+	<li><b>Gaurav Vaish</b> - gvaish -AT- iitk.ac.in - works on data binding of
+	web controls</li>
 	</ul>
 	
 * Action plan
@@ -58,13 +63,15 @@
 			<li>Modify Pre-existing ADO.NET Providers to work with Mono.  This may
 			require fixing or implementing areas of Mono too.
 				<ul>
-					<li><a href="http://www.go-mono.com/firebird.html">Firebird Interbase</a></li>
+					<li><a href="http://www.go-mono.com/firebird.html">Firebird Interbase</a></li> is a
+					   Firebird SQL Managed data provider. It can be used with Interbase databases too.  It
+					   is written in 100%C# and does not require a client library. Works on .NET and Mono.</a>
 					<li><a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a> is a 
 					   PostgreSQL Managed data provider written 
-					   in 100% C#, does not require a client library, and works on Mono</li>
+					   in 100% C#, does not require a client library, and works on .NET and Mono</li>
 					<li><a href="http://sourceforge.net/projects/mysqlnet/">MySQLNet</a> is a 
-					   MySQL Manager data provider written in 100% C#, does not
-					   require a client library, and works on Mono</li>
+					   MySQL Managed data provider written in 100% C#, does not
+					   require a client library, and works on .NET and Mono</li>
 				</ul>
 			</li>
 		</ul>
@@ -74,7 +81,9 @@
 		<li><b>SQL# CLI - a command-line tool</b> written in C# to 
 		  execute SQL commands,
 		  test connection strings, and connect to various ADO.NET
-		  providers in Mono.  The SQL# CLI can be found in
+		  providers in Mono.  Not all the ADO.NET providers work in SQL#, so various
+		  data providers need work to be able to retrieve data in SQL#.
+		  The SQL# CLI can be found in
 		  mcs/tools/SqlSharp/SqlSharpCli.cs</li>
 		  
 		<li><p><b>SQL# GUI - a GUI tool</b> written in C# to 
@@ -84,7 +93,7 @@
 		  mcs/tools/SqlSharp/gui/gtk-sharp  
 		  It has a SQL editor with 
 		  syntax hi lighting of SQL keywords.  This will be
-		  moving to its own cvs modeul sqlsharpgtk.</li>
+		  moving to its own cvs module sqlsharpgtk.</li>
 		  
 		<li><b>Configuration Command-Line and GUI Tools for ADO.NET</b>.  
 		  These tools have not been started.  The tools would be written in
@@ -105,8 +114,12 @@
 	
 * Current Status
 
-	<p>Variouls ADO.NET Providers have been created: PostgreSQL, MySQL, Sybase, SQL Lite,
-	Microsoft SQL Server, OLE DB, ODBC, and TDS Generic.  See their respective web page for
+	<p>Variouls ADO.NET Providers have been created at various stages of 
+	development including: 
+	Firebird, IBM DB2 Universal Database, MySQL, ODBC, OLE DB, Oracle,
+	PostgreSQL, Sybase, SQL Lite,
+	Microsoft SQL Server, and TDS Generic.  
+	See their respective web page for
 	more information.
 	
 	<p>Constraints need lots of work
@@ -135,8 +148,9 @@
 	test.exe application named test.exe.config.  The .config file is automatically
 	read when you use the Mono.Data.ProviderFactory or Mono.Data.DataTools.
 		
-	<p><b>Integration with ASP.NET</b> has not been started, such as, data binding
-	to a System.Web.UI.WebControls.DataGrid.  This may involve implementing many classes
+	<p><b>Integration with ASP.NET</b> has been started, such as, data binding of
+	a DataTable in a DataSet to a System.Web.UI.WebControls.DataGrid.  This may 
+	involve implementing or fixing many classes
 	in System.Web and System.Data. If you want to help, 
 	contact Gonzalo Paniagua Javier. Here is information about using ADO.NET in ASP.NET:
 	<ul>

@@ -63,7 +63,7 @@
        string sql = 
           "SELECT firstname, lastname " + 
           "FROM employee";
-       dbcmd.ConnectionString = sql;
+       dbcmd.CommandText = sql;
        IDataReader reader = dbcmd.ExecuteReader();
        while(reader.Read()) {
             string FirstName = reader[0];

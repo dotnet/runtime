@@ -13,7 +13,8 @@
 		<ul>
 			<li><a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a>
 			is a Managed PostgreSQL provider written in 100% C#, does not require a client library,
-			and works on Microsoft .NET and Mono.
+			and works on Microsoft .NET and Mono.  Npgsql providers works in the SQL# command-line version
+			and the GTK# version.
 			</li>
 		</ul>
 	</li>
@@ -25,60 +26,63 @@
 
 <ul>
 	<li>We are able to do simple CREATE TABLE, DROP TABLE, UPDATE, INSERT, and
-	DELETE SQL commands using the ExecuteNonQuery method in PgSqlCommand.  
+	DELETE SQL commands using the ExecuteNonQuery method in PgSqlCommand.</li>
 	
 	<li>We can execute multiple queries and do a NextResult() in PgSqlDataReader()
-	to get the next result set.  
+	to get the next result set.</li>
 	
 	<li>We are also able to do simple aggregate functions, 
 	ie, count(), sum(), min(), and max() 
-	in a simple SELECT SQL query using the ExecuteScalar() now.  
+	in a simple SELECT SQL query using the ExecuteScalar() now.</li>
 	
 	<li>We are also able to retrieve data with a simple SELECT SQL query 
 	using ExecuteReader() which returns a PgSqlDataReader.  We are able to
 	use GetSchemaTable() to get the meta data about the table columns.  
-	We are able	to Read() to get each row from the result set.  
+	We are able	to Read() to get each row from the result set.</li>
 	
 	<li>We are able to get 
 	String data (char, character, text, varchar), Int16 (smallint),
 	Int32 (integer), Int64 (bigint), DateTime (time, date, timestamp),
 	Boolean (boolean), Single (float), and Double (double).
 	More data types will come later.  Note, the types that do work still 
-	need thorough testing.
+	need thorough testing.</li>
 	
 	<li>Rows that are returned which contain columns that are NULL are handled now. 
 	The PgSqlDataReader method IsDBNull() needs to be called to determine 
-	if a field IS NULL before trying to read data from that field.
+	if a field IS NULL before trying to read data from that field.</li>
 	
 	<li>Calling PostgreSQL stored procedures works.  It does not work perfectly.  
 	It may not
 	even work to specification - yet.  If you want to test it yourself, look at
 	TestSqlDataReader.cs or PostgresTest.cs in
-	mcs/class/System.Data/Test.  
+	mcs/class/System.Data/Test.</li>
 	
 	<li>Below, I have some sample code you can
 	use to call a PostgreSQL stored procedure named "version".  This stored
 	procedure returns a string containing the PostgreSQL server version.  Notice
-	the CommandType is StoredProcedure and the method ExecuteScalar() is called.
+	the CommandType is StoredProcedure and the method ExecuteScalar() is called.</li>
 	
 	<li>ExecuteScalar() is a lightweight method in class PgSqlCommand that only returns
-	one row and one column as one object - even if there is more than row or column.
+	one row and one column as one object - even if there is more than row or column.</li>
 			
 	<li>We have the beginnings of Parameters support PostgreSQL.  Only
 	Input Parameters are currently supported.  Output, Input/Output,
-	and Return parameters still need to be done.
+	and Return parameters still need to be done.</li>
 	
 	<li>A lot of functionality in System.Data is missing, but the 
-	infrastructure is starting to come together.
+	infrastructure is starting to come together.</li>
 	
 	<li>A lot of Exceptions need to be thrown for various exceptions.  However,
 	PgSqlException, PgSqlErrorCollection, and PgSqlError have been partially
-	implemented.
+	implemented.</li>
 	
 	<li>Tim Coleman and Rodrigo Moya got the beginnings of the
 	PgSqlDataAdapter/DataSet/DataTable/DataRow to work.  Currently, 
 	the PgSqlDataAdapter can Fill() relational data into a DataTable in a DataSet.
-	See the test mcs/class/System.Data/Test/TestSqlDataAdapter.cs to see it in action.
+	See the test mcs/class/System.Data/Test/TestSqlDataAdapter.cs to see it in action.</li>
+	
+	<li>Works in the SQL# command-line version
+			and the GTK# version.</li>
 </ul>
 
 ** Action Plan
@@ -362,7 +366,7 @@ mono PostgresTest.exe
        string sql = 
            "SELECT firstname, lastname" + 
            "FROM employee";
-       dbcmd.ConnectionString = sql;
+       dbcmd.CommandText = sql;
        IDataReader reader = dbcmd.ExecuteReader();
        while(reader.Read()) {
             string FirstName = reader["firstname"];
@@ -445,7 +449,7 @@ mono TestExample.exe
        string sql = 
            "SELECT firstname, lastname " +
            "FROM employee";
-       dbcmd.ConnectionString = sql;
+       dbcmd.CommandText = sql;
        IDataReader reader = dbcmd.ExecuteReader();
        while(reader.Read()) {
             string FirstName = reader["firstname"];

@@ -21,7 +21,8 @@
 			<li><a href="http://sourceforge.net/projects/mysqlnet/">MySQLNet</a> from ByteFX 
 			is a MySQL Managed provider written in 100% C#,
 			does not require a client library, and works on Microsoft .NET and Mono.  You 
-			need at least Mono 0.18 and MySQLNet 0.65 for it to work on Mono.</li>
+			need at least Mono 0.18 and MySQLNet 0.65 for it to work on Mono.  MySQLNet
+			works in the SQL# command-line and GTK# GUI version</li>
 
 		</ul>
 		</li>
@@ -51,6 +52,8 @@
 	file etc/mono/config which is mapped by the mono runtime in knowing
 	which native shared library to load.  In cvs, this file is mono/config.in and
 	can be modified with a text editor.  
+	
+	<li>Works in the SQL# command-line and GTK# GUI version</li>
 </ul>
 
 ** Action plan
@@ -107,8 +110,8 @@ The current plan to work on the MySQL data provider:
        string connectionString = 
           "Server=localhost;" +
           "Database=test;" +
-          "User ID=mysql;" +
-          "Password=;";
+          "User ID=myuserid;" +
+          "Password=mypassword;";
        IDbConnection dbcon;
        dbcon = new MySqlConnection(connectionString);
        IDbCommand dbcmd = dbcon.CreateCommand();
@@ -121,7 +124,7 @@ The current plan to work on the MySQL data provider:
        string sql = 
             "SELECT firstname, lastname " + 
             "FROM employee";
-       dbcmd.ConnectionString = sql;
+       dbcmd.CommandText = sql;
        IDataReader reader = dbcmd.ExecuteReader();
        while(reader.Read()) {
             string FirstName = reader["firstname"];
@@ -208,8 +211,8 @@ mono TestExample.exe
        string connectionString = 
           "Server=localhost;" +
           "Database=test;" +
-          "User ID=mysql;" +
-          "Password=;";
+          "User ID=myuserid;" +
+          "Password=mypassword;";
        IDbConnection dbcon;
        dbcon = new MySQLConnection(connectionString);
        IDbCommand dbcmd = dbcon.CreateCommand();
@@ -222,7 +225,7 @@ mono TestExample.exe
        string sql = 
            "SELECT firstname, lastname " +
            "FROM employee";
-       dbcmd.ConnectionString = sql;
+       dbcmd.CommandText = sql;
        IDataReader reader = dbcmd.ExecuteReader();
        while(reader.Read()) {
             string FirstName = reader["firstname"];

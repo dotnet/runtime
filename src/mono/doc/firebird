@@ -128,7 +128,7 @@
        IDbConnection dbcon = new FbConnection(connectionString);
        IDbCommand dbcmd = dbcon.CreateCommand();
        string sql = "SELECT * FROM employee";
-       dbcmd.ConnectionString = sql;
+       dbcmd.CommandText = sql;
        IDataReader reader = dbcmd.ExecuteReader();
        while(reader.Read()) {
             object dataValue = myReader.GetValue(0);

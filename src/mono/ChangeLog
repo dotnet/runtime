@@ -1,3 +1,19 @@
+2003-01-26  Daniel Morgan <danmorg@sc.rr.com>
+
+	* doc/index
+	* doc/ado-net
+	* doc/firebird
+	* doc/ibmdb2
+	* doc/mysql
+	* doc/odbc
+	* doc/oledb
+	* doc/oracle
+	* doc/postgresql
+	* doc/sqlclient
+	* doc/sqlite
+	* doc/sybase
+	* doc/tdsclient: corrections
+
 2003-01-26  Duncan Mak  <duncan@ximian.com>
 
 	* doc/jit-debug: Update the links. Thanks for Andy Oliver for the report.

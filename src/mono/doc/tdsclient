@@ -65,6 +65,8 @@
 			<li><a href="http://www.sybase.com/downloads">Sybase</a></li>
 		</ul>
 	</li>
+	<li>If using Microsoft SQL Server 2000, make sure
+	you are using at least Service Pack 3 for Microsoft SQL Server 2000</li>
 	
 	<li>Located at mcs/class/System.Data/Test is a test for System.Data.SqlClient
 	named SqlTest.cs and you could use this as a basis for your test.</li>
@@ -82,15 +84,15 @@
        string connectionString = 
           "Server=localhost;" +
           "Database=pubs;" +
-          "User ID=sa;" +
-          "Password=;";
+          "User ID=myuserid;" +
+          "Password=mypassword;";
        IDbConnection dbcon;
        dbcon = new TdsConnection(connectionString);
        IDbCommand dbcmd = dbcon.CreateCommand();
        string sql = 
            "SELECT fname, lname " +
            "FROM employee";
-       dbcmd.ConnectionString = sql;
+       dbcmd.CommandText = sql;
        IDataReader reader = dbcmd.ExecuteReader();
        while(reader.Read()) {
             string FirstName = reader["fname"];

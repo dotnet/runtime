@@ -39,6 +39,7 @@
 	<li>ODBC Provider created by Brian Ritchie.</li>
 	
 	<li>Does not support trusted connections</li>
+	
 </ul>
 	
 ** Current Status
@@ -70,6 +71,8 @@
 	<li>Can get a DataTable containing schema info via GetSchemaTable() in a OdbcDataReader</li>
 	
 	<li>Can Fill a DataTable in a DataSet via an OdbcDataAdapter</li>
+	
+	<li>Works in SQL#, but Column names don't show up correctly.</li>
 </ul>
 	
 ** Action Plan
@@ -90,13 +93,21 @@
 
 	<li>Here is a ConnectionString format if you have a DSN setup: 
 <pre>
-"DSN=dataSetName;UID=username;PWD=password"
+"DSN=dataSetName;" +
+"UID=myuserid;" +
+"PWD=mypassword"
 </pre>
 	</li>
-	<li>Here is a ConnectionString format if you do not have DSN (have not
-	gotten this to work):
+	<li>Here is a ConnectionString format if you do not have a DSN (have not
+	gotten this to work though):
 <pre>
-"DRIVER={SQL Server};SERVER=(local);UID=sa;PWD=;DATABASE=pubs"
+"DRIVER={MySQL ODBC 3.51 Driver};" +
+"SERVER=localhost;" +
+"DATABASE=test;" +
+"UID=myuserid;" +
+"PASSWORD=mypassword;" +
+"OPTION=3";
+
 </pre>
 	</li>
 	<li>C# Example:
@@ -115,8 +126,8 @@
 		// hostname of localhost and database test
        string connectionString = 
           "DSN=MYSQLDSN;" +
-          "UID=mysql;" +
-          "PWD=;";
+          "UID=myuserid;" +
+          "PWD=mypassword";
        IDbConnection dbcon;
        dbcon = new OdbcConnection(connectionString);
        IDbCommand dbcmd = dbcon.CreateCommand();
@@ -129,7 +140,7 @@
        string sql = 
            "SELECT firstname, lastname " +
            "FROM employee";
-       dbcmd.ConnectionString = sql;
+       dbcmd.CommandText = sql;
        IDataReader reader = dbcmd.ExecuteReader();
        while(reader.Read()) {
             string FirstName = reader["firstname"];

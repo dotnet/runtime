@@ -82,7 +82,9 @@
        string connectionString = 
           "Provider=PostgreSQL;" +
           "Addr=127.0.0.1;" +
-          "Database=rodrigo";
+          "Database=test;" +
+          "User ID=postgres;" +
+          "Password=fun2db";
        IDbConnection dbcon;
        dbcon = new OleDbConnection(connectionString);
        IDbCommand dbcmd = dbcon.CreateCommand();
@@ -95,7 +97,7 @@
        string sql = 
             "SELECT firstname, lastname " + 
             "FROM employee";
-       dbcmd.ConnectionString = sql;
+       dbcmd.CommandText = sql;
        IDataReader reader = dbcmd.ExecuteReader();
        while(reader.Read()) {
             string FirstName = reader["firstname"];
