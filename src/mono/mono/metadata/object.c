@@ -2023,6 +2023,9 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			else
 				o = obj;
 		}
+		else if (method->klass->valuetype)
+			obj = mono_value_box (mono_domain_get (), method->klass, obj);
+
 		mono_runtime_invoke (method, o, pa, exc);
 		return obj;
 	} else {
