@@ -1164,10 +1164,6 @@ handle_enum:
 		}
 	}
 
-	if (method->klass->valuetype && obj)
-		/* Unbox the instance, since valuetype methods expect an interior pointer. */
-		obj = mono_object_unbox (obj);
-
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) 
 		method = mono_marshal_get_native_wrapper (method);
 	INIT_FRAME(&frame,context->current_frame,obj,args,&result,method);
@@ -1466,6 +1462,14 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			sp [0] = sp[-1];
 			++sp;
 			++ip; 
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_DUP_VT)
+			i32 = READ32 (ip + 1);
+			sp->data.p = vt_sp;
+			memcpy(sp->data.p, sp [-1].data.p, i32);
+			vt_sp += (i32 + 7) & ~7;
+			++sp;
+			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_POP)
 			++ip;

@@ -907,9 +907,14 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 		case CEE_DUP: {
 			int type = td.sp [-1].type;
 			MonoClass *klass = td.sp [-1].klass;
-			if (td.sp [-1].type == STACK_TYPE_VT)
-				g_warning ("dup of value type not implemented");
-			SIMPLE_OP(td, MINT_DUP);
+			if (td.sp [-1].type == STACK_TYPE_VT) {
+				gint32 size = mono_class_value_size (klass, NULL);
+				PUSH_VT(&td, size);
+				ADD_CODE(&td, MINT_DUP_VT);
+				WRITE32(&td, &size);
+				td.ip ++;
+			} else 
+				SIMPLE_OP(td, MINT_DUP);
 			PUSH_TYPE(&td, type, klass);
 			break;
 		}
