@@ -954,7 +954,13 @@ simple_allocation (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 
 	GET_THREAD_PROF (prof);
 	if (prof->callers) {
-		if (!(profile_info = g_hash_table_lookup (prof->methods, prof->callers->method)))
+		MonoMethod *caller = prof->callers->method;
+
+		/* Otherwise all allocations are attributed to icall_wrapper_mono_object_new */
+		if (caller->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+			caller = prof->callers->next->method;
+
+		if (!(profile_info = g_hash_table_lookup (prof->methods, caller)))
 			g_assert_not_reached ();
 	} else {
 		return; /* fine for now */
