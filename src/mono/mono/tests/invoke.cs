@@ -6,6 +6,11 @@ class Test {
 	public struct SimpleStruct {
 		public bool a;
 		public bool b;
+
+		public SimpleStruct (bool arg) {
+			a = arg;
+			b = false;
+		}
 	}
 	
 	static void Test2 () {
@@ -60,6 +65,11 @@ class Test {
 
 		if ((((int)(args [0])) != 20) || (((int)(args [1])) != 30))
 			return 2;
+
+		// Test the return value from  ConstructorInfo.Invoke when a precreated
+		// valuetype is used.
+		ConstructorInfo ci = typeof (SimpleStruct).GetConstructor (new Type [] { typeof (bool) });
+		SimpleStruct res2 = (SimpleStruct)ci.Invoke (ss, new object [] { false });
 	
 		return 0;
 	}
