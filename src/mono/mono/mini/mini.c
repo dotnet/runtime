@@ -99,6 +99,7 @@ static MonoMethodSignature *helper_sig_compile_virt = NULL;
 static MonoMethodSignature *helper_sig_obj_ptr = NULL;
 static MonoMethodSignature *helper_sig_obj_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_obj_obj_ptr_ptr = NULL;
+static MonoMethodSignature *helper_sig_obj_obj_obj_ptr = NULL;
 static MonoMethodSignature *helper_sig_obj_void = NULL;
 static MonoMethodSignature *helper_sig_ptr_void = NULL;
 static MonoMethodSignature *helper_sig_void_void = NULL;
@@ -6745,6 +6746,8 @@ create_helper_signature (void)
 	helper_sig_int_double = make_icall_sig ("int32 double");
 
 	helper_sig_class_init_trampoline = make_icall_sig ("void");
+
+	helper_sig_obj_obj_obj_ptr = make_icall_sig ("object object object ptr");
 }
 
 gconstpointer
@@ -9220,8 +9223,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain)
 
 		if (method->klass->parent == mono_defaults.multicastdelegate_class) {
 			if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
-				/* FIXME: uhm, we need a wrapper to handle exceptions? */
-				return (gpointer)mono_delegate_ctor;
+				MonoJitICallInfo *mi = mono_find_jit_icall_by_name ("mono_delegate_ctor");
+				g_assert (mi);
+				return (gpointer)mono_icall_get_wrapper (mi);
 			} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
 			        nm = mono_marshal_get_delegate_invoke (method);
 				return mono_jit_compile_method (nm);
@@ -9333,29 +9337,13 @@ static void
 mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 {
 	MonoJitDynamicMethodInfo *ji;
+	gboolean destroy = TRUE;
 
 	g_assert (method->dynamic);
 
 	mono_domain_lock (domain);
 	ji = mono_dynamic_code_hash_lookup (domain, method);
 	mono_domain_unlock (domain);
-#ifdef MONO_ARCH_HAVE_INVALIDATE_METHOD
-	/* FIXME: only enable this with a env var */
-	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
-		/*
-		 * Instead of freeing the code, change it to call an error routine
-		 * so people can fix their code.
-		 */
-		if (ji){
-		        char *type = mono_type_full_name (&method->klass->byval_arg);
-			char *type_and_method = g_strdup_printf ("%s.%s", type, method->name);
-
-			g_free (type);
-			mono_arch_invalidate_method (ji->ji, invalidated_delegate_trampoline, type_and_method);
-		}
-		return;
-	}
-#endif
 
 	if (!ji)
 		return;
@@ -9364,7 +9352,24 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	g_hash_table_remove (domain->jit_code_hash, method);
 	mono_domain_unlock (domain);
 
-	mono_code_manager_destroy (ji->code_mp);
+#ifdef MONO_ARCH_HAVE_INVALIDATE_METHOD
+	/* FIXME: only enable this with a env var */
+	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		/*
+		 * Instead of freeing the code, change it to call an error routine
+		 * so people can fix their code.
+		 */
+		char *type = mono_type_full_name (&method->klass->byval_arg);
+		char *type_and_method = g_strdup_printf ("%s.%s", type, method->name);
+
+		g_free (type);
+		mono_arch_invalidate_method (ji->ji, invalidated_delegate_trampoline, type_and_method);
+		destroy = FALSE;
+	}
+#endif
+
+	if (destroy)
+		mono_code_manager_destroy (ji->code_mp);
 	mono_jit_info_table_remove (domain, ji->ji);
 	g_free (ji->ji);
 	g_free (ji);
@@ -9872,6 +9877,7 @@ mini_init (const char *filename)
 #endif
 
 	/* other jit icalls */
+	mono_register_jit_icall (mono_delegate_ctor, "mono_delegate_ctor", helper_sig_obj_obj_obj_ptr, FALSE);
 	mono_register_jit_icall (mono_class_static_field_address , "mono_class_static_field_address", 
 				 helper_sig_ptr_ptr_ptr, FALSE);
 	mono_register_jit_icall (mono_ldtoken_wrapper, "mono_ldtoken_wrapper", helper_sig_ptr_ptr_ptr_ptr, FALSE);

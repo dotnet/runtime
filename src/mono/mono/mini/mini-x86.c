@@ -31,9 +31,9 @@ static gint thread_tls_offset = -1;
 
 #ifdef PLATFORM_WIN32
 /* Under windows, the default pinvoke calling convention is stdcall */
-#define CALLCONV_IS_STDCALL(call_conv) (((call_conv) == MONO_CALL_STDCALL) || ((call_conv) == MONO_CALL_DEFAULT))
+#define CALLCONV_IS_STDCALL(sig) ((((sig)->call_convention) == MONO_CALL_STDCALL) || ((sig)->pinvoke && ((sig)->call_convention) == MONO_CALL_DEFAULT))
 #else
-#define CALLCONV_IS_STDCALL(call_conv) ((call_conv) == MONO_CALL_STDCALL)
+#define CALLCONV_IS_STDCALL(sig) (((sig)->call_convention) == MONO_CALL_STDCALL)
 #endif
 
 #define SIGNAL_STACK_SIZE (64 * 1024)
@@ -3234,7 +3234,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method);
 			else
 				code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, call->fptr);
-			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention)) {
+			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature)) {
 				/* a pop is one byte, while an add reg, imm is 3. So if there are 4 or 8
 				 * bytes to pop, we want to use pops. GCC does this (note it won't happen
 				 * for P4 or i686 because gcc will avoid using pop push at all. But we aren't
@@ -3265,7 +3265,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CALL_REG:
 			call = (MonoCallInst*)ins;
 			x86_call_reg (code, ins->sreg1);
-			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention)) {
+			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature)) {
 				if (call->stack_usage == 4)
 					x86_pop_reg (code, X86_ECX);
 				else
@@ -3280,7 +3280,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CALL_MEMBASE:
 			call = (MonoCallInst*)ins;
 			x86_call_membase (code, ins->sreg1, ins->inst_offset);
-			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention)) {
+			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature)) {
 				if (call->stack_usage == 4)
 					x86_pop_reg (code, X86_ECX);
 				else
@@ -4416,7 +4416,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	x86_leave (code);
 
-	if (CALLCONV_IS_STDCALL (sig->call_convention)) {
+	if (CALLCONV_IS_STDCALL (sig)) {
 		MonoJitArgumentInfo *arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
 
 		stack_to_pop = mono_arch_get_argument_info (sig, sig->param_count, arg_info);
