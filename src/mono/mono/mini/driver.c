@@ -797,6 +797,10 @@ mono_main (int argc, char* argv[]) {
 			fprintf (mini_stats_fd, ");\n");
 		} else {
 			for (i = 0; i < count; ++i) {
+				if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+					(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+					method = mono_marshal_get_native_wrapper (method);
+
 				cfg = mini_method_compile (method, opt, mono_root_domain, 0);
 				mono_destroy_compile (cfg);
 			}

@@ -4326,7 +4326,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_LDELEMA:
 			CHECK_STACK (2);
 			sp -= 2;
-			klass = mono_class_get (image, read32 (ip + 1));
+
+			if (method->wrapper_type != MONO_WRAPPER_NONE)
+				klass = (MonoClass*)mono_method_get_wrapper_data (method, read32 (ip + 1));
+			else
+				klass = mono_class_get (image, read32 (ip + 1));
 			mono_class_init (klass);
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
 				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
