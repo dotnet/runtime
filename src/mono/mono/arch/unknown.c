@@ -2,7 +2,7 @@
 #include "mono/interpreter/interp.h"
 
 MonoPIFunc
-mono_create_trampoline (MonoMethod *method)
+mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
 	g_error ("Unsupported arch");
 	return NULL;
