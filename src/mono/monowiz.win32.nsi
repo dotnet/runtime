@@ -28,8 +28,9 @@
 ; =====================================================
 ; set by makefile!!
 
-!define MILESTONE 0.31.99
-!define SOURCE_INSTALL_DIR ..\install\*.* 
+;!define MILESTONE 0.91
+;!define SOURCE_INSTALL_DIR ..\install\*.* 
+!define PROFILE_VERSION 1.0
 
 ; =====================================================
 ; SET LOGO
@@ -250,12 +251,6 @@ SectionEnd
 ; Write the path file
 ;========================
 
-FileOpen $0 "$WINDIR\MonoBasePath.bat" "w"
-FileWrite $0 'SET MONO_BASEPATH="$INSTDIR"$\r$\n'
-FileWrite $0 'SET MONO_PATH=$INSTDIR\lib$\r$\n'
-FileWrite $0 'SET MONO_CFG_DIR=$INSTDIR\etc'
-FileClose $0
-
 Push "mint"
 Call windowsBatCore
 
@@ -263,7 +258,7 @@ Push "mono"
 Call windowsBatCore
 
 Push "mcs"
-Call windowsBat
+Call windowsBatProfile
 
 Push "mbas"
 Call windowsBat
@@ -385,7 +380,6 @@ Function windowsBatCore
 
 	FileOpen $0 "$WINDIR\$1.bat" "w"
 	FileWrite $0 "@ECHO OFF$\r$\n"
-	FileWrite $0 "CALL MonoBasePath.bat$\r$\n"
 	FileWrite $0 "SET MONOARGS=$\r$\n"
 	FileWrite $0 ":loop$\r$\n"
 	FileWrite $0 "IF x%1 == x goto :done$\r$\n"
@@ -394,7 +388,7 @@ Function windowsBatCore
 	FileWrite $0 "GOTO loop$\r$\n"
 	FileWrite $0 ":done$\r$\n"
 	FileWrite $0 "SETLOCAL$\r$\n"
-	FileWrite $0 'SET PATH="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%PATH%"$\r$\n'
+	FileWrite $0 'SET PATH="$INSTDIR\bin;$INSTDIR\lib;%PATH%"$\r$\n'
 	FileWrite $0 '"$INSTDIR\bin\$1.exe" %MONOARGS%$\r$\n'
 	FileWrite $0 "EXIT /B %ERRORLEVEL%$\r$\n"
 	FileWrite $0 "ENDLOCAL$\r$\n"
@@ -402,9 +396,7 @@ Function windowsBatCore
 
 	FileOpen $0 "$INSTDIR\bin\$1" "w"
 	FileWrite $0 "#!/bin/sh$\r$\n"
-	FileWrite $0 "export MONO_PATH=$6/lib$\r$\n"
-	FileWrite $0 "export MONO_CFG_DIR=$6/etc/mono$\r$\n"
-	FileWrite $0 '$6/bin/$1.exe "$$@"'
+	FileWrite $0 'exec $6/bin/$1.exe "$$@"$\r$\n'
 	FileClose $0
 
 	Pop $1
@@ -415,7 +407,6 @@ Function windowsBat
 
 	FileOpen $0 "$WINDIR\$1.bat" "w"
 	FileWrite $0 "@ECHO OFF$\r$\n"
-	FileWrite $0 "CALL monobasepath.bat$\r$\n"
 	FileWrite $0 "SET MONOARGS=$\r$\n"
 	FileWrite $0 ":loop$\r$\n"
 	FileWrite $0 "IF x%1 == x GOTO :done$\r$\n"
@@ -424,7 +415,7 @@ Function windowsBat
 	FileWrite $0 "GOTO loop$\r$\n"
 	FileWrite $0 ":done$\r$\n"
 	FileWrite $0 "SETLOCAL$\r$\n"
-	FileWrite $0 'SET PATH="$INSTDIR\bin\;$INSTDIR\lib\;$INSTDIR\icu\bin;%PATH%"$\r$\n'
+	FileWrite $0 'SET PATH="$INSTDIR\bin;$INSTDIR\lib;%PATH%"$\r$\n'
 	FileWrite $0 '"$INSTDIR\bin\mono.exe" "$INSTDIR\lib\$1.exe" %MONOARGS%$\r$\n'
 	FileWrite $0 "EXIT /B %ERRORLEVEL%$\r$\n"
 	FileWrite $0 "ENDLOCAL$\r$\n"
@@ -432,9 +423,34 @@ Function windowsBat
 
 	FileOpen $0 "$INSTDIR\bin\$1" "w"
 	FileWrite $0 "#!/bin/sh$\r$\n"
-	FileWrite $0 "export MONO_PATH=$6/lib$\r$\n"
-	FileWrite $0 "export MONO_CFG_DIR=$6/etc/mono$\r$\n"
-	FileWrite $0 '$6/bin/mono.exe $6/lib/$1.exe "$$@"'
+	FileWrite $0 'exec $6/bin/mono.exe $6/lib/$1.exe "$$@"$\r$\n'
+	FileClose $0
+
+	Pop $1
+FunctionEnd
+
+Function windowsBatProfile
+	Exch $1 ;tool name
+
+	FileOpen $0 "$WINDIR\$1.bat" "w"
+	FileWrite $0 "@ECHO OFF$\r$\n"
+	FileWrite $0 "SET MONOARGS=$\r$\n"
+	FileWrite $0 ":loop$\r$\n"
+	FileWrite $0 "IF x%1 == x GOTO :done$\r$\n"
+	FileWrite $0 "SET MONOARGS=%MONOARGS% %1$\r$\n"
+	FileWrite $0 "SHIFT$\r$\n"
+	FileWrite $0 "GOTO loop$\r$\n"
+	FileWrite $0 ":done$\r$\n"
+	FileWrite $0 "SETLOCAL$\r$\n"
+	FileWrite $0 'SET PATH="$INSTDIR\bin;$INSTDIR\lib;%PATH%"$\r$\n'
+	FileWrite $0 '"$INSTDIR\bin\mono.exe" "$INSTDIR\lib\mono\${PROFILE_VERSION}\$1.exe" %MONOARGS%$\r$\n'
+	FileWrite $0 "EXIT /B %ERRORLEVEL%$\r$\n"
+	FileWrite $0 "ENDLOCAL$\r$\n"
+	FileClose $0
+
+	FileOpen $0 "$INSTDIR\bin\$1" "w"
+	FileWrite $0 "#!/bin/sh$\r$\n"
+	FileWrite $0 'exec $6/bin/mono.exe $6/lib/mono/${PROFILE_VERSION}/$1.exe "$$@"$\r$\n'
 	FileClose $0
 
 	Pop $1
