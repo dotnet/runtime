@@ -829,6 +829,25 @@ A: Replace the __stdcall attribute with the STDCALL macro, and include this
 	#define STDCALL __attribute__((stdcall))
 	#endif
 
+Q: I want to be able to execute Mono binaries, without having to use the "mono"
+   command.  How can I do this?
+
+A: From Carlos Perelló:
+
+   <i>I think that the best solution is the binfmt feature with the
+   wrapper that exists with Debian packages at:
+
+   <a href="http://www.debianplanet.org/mono/dists/unstable/main/source/admin/">http://www.debianplanet.org/mono/dists/unstable/main/source/admin/</a>
+
+   If you want use it with Big endian machines, you should apply a patch
+   (<a href="http://carlos.pemas.net/debian/mono/binfmt-detector-cli.c.diff">http://carlos.pemas.net/debian/mono/binfmt-detector-cli.c.diff</a>)
+
+   It works really good and lets you use wine also, it reads the .exe file
+   headers and check if it's a .net executable.
+
+   This way you just execute: ./my-cool-mono-application.exe and it works
+   without the need of any wrapper.</i>
+
 <a name="asp">
 ** Mono and ASP.NET
 
