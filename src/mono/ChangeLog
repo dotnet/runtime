@@ -1,3 +1,8 @@
+2005-01-04  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/Makefile.am (TEST_SUPPORT_FILES): Add	$(tmpinst)/bin/mono.
+	($(tmpinst)/bin/mono): New.
+
 2005-01-03  Ben Maurer  <bmaurer@ximian.com>
 
 	* configure.in: Add mono-nunit to output
