@@ -31,6 +31,7 @@
 	 	      <li><a href="archive/mcs-0.26.tar.gz">Mono Class Libraries and C# Compiler.</a>
 	              <li><a href="archive/mono-0.26.tar.gz">Mono Runtime</a>
  		      <li><a href="archive/xsp-0.5.tar.gz">XSP web server (0.5)</a>
+ 		      <li><a href="archive/mod_mono-0.4.tar.gz">Apache Mono module (mod_mono)</a>                        
 		      <li><a href="archive/monodoc-0.6.tar.gz">MonoDoc 0.6</a>
 	            </ul>
 		  </td>
