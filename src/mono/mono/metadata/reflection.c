@@ -5612,10 +5612,17 @@ create_custom_attr (MonoImage *image, MonoMethod *method,
 	MonoObject *attr;
 	void **params;
 
+	mono_class_init (method->klass);
+
+	if (len == 0) {
+		attr = mono_object_new (mono_domain_get (), method->klass);
+		mono_runtime_invoke (method, attr, NULL, NULL);
+		return attr;
+	}
+
 	if (len < 2 || read16 (p) != 0x0001) /* Prolog */
 		return NULL;
 
-	mono_class_init (method->klass);
 	/*g_print ("got attr %s\n", method->klass->name);*/
 	
 	params = g_new (void*, method->signature->param_count);
