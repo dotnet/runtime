@@ -102,6 +102,12 @@
   </tr>
 </table>
 
+@item Mar 7th: Mono 0.23
+
+	A new freshly baked release of Mono is available.  Release
+	notes are <a href="archive/mono-0.23">here</a>.   This is mostly a
+	bug fix release.  No new features.
+
 @item Mar 5th, 2003: Mono 0.22;  MonoDoc 0.2; Debugger 0.2.1: Release-o-Rama.
 
 	Mono 0.22 has been released.  See the <a
