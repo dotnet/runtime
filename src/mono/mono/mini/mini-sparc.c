@@ -1054,6 +1054,9 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoInst *ins, *last_ins = NULL;
 	ins = bb->code;
 
+	/* short circuit this for now */
+	return;
+
 	while (ins) {
 
 		switch (ins->opcode) {
@@ -1442,8 +1445,6 @@ alloc_int_reg (MonoCompile *cfg, InstList *curinst, MonoInst *ins, int sym_reg, 
 	return val;
 }
 
-/* use sparc_l0-l7 as temp registers */
-
 /*
  * Local register allocation.
  * We first scan the list of instructions and we save the liveness info of
@@ -1756,6 +1757,7 @@ sparc_patch (guchar *code, guchar *target)
 /*
  * Some conventions used in the following code.
  * 1) We're assuming a V9 CPU.  We will check for that later.
+ * In reality, we're mostly sticking with V8 instructions...
  * 2) The only scratch registers we have are o7 and g1.  We try to
  * stick to o7 when we can, and use g1 when necessary.
  */
@@ -2064,10 +2066,25 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case CEE_JMP:
 			g_assert_not_reached ();
+			/*
+			 * Copied roughly from x86.  Probably doesn't work
+			 */
+
+			if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
+				code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
+			/* reset offset to make max_len work */
+			offset = code - cfg->native_code;
+
+			g_assert (!cfg->method->save_lmf);
+
+			offset = code - cfg->native_code;
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
+			sparc_jmp_imm (code, sparc_g0, 0);
+
 			break;
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
-			g_assert_not_reached ();
+			sparc_cmp_imm (code, ins->sreg1, 0);
 			break;
 		case OP_FCALL:
 		case OP_LCALL:
@@ -2086,25 +2103,34 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL_REG:
 		case OP_VOIDCALL_REG:
 		case OP_CALL_REG:
-			//ppc_mtlr (code, ins->sreg1);
-			//ppc_blrl (code);
+			call = (MonoCallInst*)ins;
+			sparc_call (code, ins->sreg1, sparc_g0);
+			/* FIXME: yea, a store in g0 is a GOOD IDEA */
+			if (call->stack_usage && (call->signature->call_convention != MONO_CALL_STDCALL))
+				sparc_add_imm (code, FALSE, sparc_sp, call->stack_usage, sparc_g0);
 			break;
 		case OP_FCALL_MEMBASE:
 		case OP_LCALL_MEMBASE:
 		case OP_VCALL_MEMBASE:
 		case OP_VOIDCALL_MEMBASE:
 		case OP_CALL_MEMBASE:
-			//ppc_lwz (code, sparc_l0, ins->inst_offset, ins->sreg1);
-			//ppc_mtlr (code, sparc_l0);
-			//ppc_blrl (code);
+			call = (MonoCallInst*)ins;
+			sparc_call_imm (code, ins->sreg1, ins->inst_offset);
+			/* FIXME: yea, a store in g0 is a GOOD IDEA */
+			if (call->stack_usage && (call->signature->call_convention != MONO_CALL_STDCALL))
+				sparc_add_imm (code, FALSE, sparc_sp, call->stack_usage, sparc_g0);
+                        break;
+
 			break;
 		case OP_OUTARG:
-			g_assert_not_reached ();
+			/* FIXME: This can be SO far wrong! */
+			sparc_st (code, ins->sreg1, sparc_g0, sparc_sp);
+			sparc_sub_imm (code, FALSE, sparc_sp, 4, sparc_sp);
 			break;
 		case OP_LOCALLOC:
 			/* keep alignment */
 #define MONO_FRAME_ALIGNMENT 32
-			sparc_add_imm (code, 0, ins->sreg1, MONO_FRAME_ALIGNMENT-1, sparc_l0);
+			sparc_add_imm (code, 0, ins->sreg1, MONO_FRAME_ALIGNMENT-1, sparc_o7);
 			//ppc_rlwinm (code, sparc_l0, sparc_l0, 0, 0, 27);
 			//ppc_lwz (code, sparc_l0, 0, ppc_sp);
 			// Fix semantics to negate to another reg? FIXME
@@ -2114,26 +2140,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			break;
 		case CEE_RET:
-			//ppc_blr (code);
+			sparc_ret (code);
 			break;
 		case CEE_THROW: {
-			//ppc_mr (code, sparc_sp, ins->sreg1);
+			sparc_mov_reg_reg (code, ins->sreg1, sparc_sp);
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"throw_exception");
-			//ppc_bl (code, 0);
+			sparc_call_simple (code, 0);
 			break;
 		}
 		case OP_ENDFILTER:
 			if (ins->sreg1 != sparc_sp)
-				//ppc_mr (code, sparc_sp, ins->sreg1);
-			//ppc_blr (code);
+				sparc_mov_reg_reg (code, ins->sreg1, sparc_sp);
+			sparc_ret (code);
 			break;
 		case CEE_ENDFINALLY:
-			//ppc_blr (code);
+			sparc_ret (code);
 			break;
 		case OP_CALL_HANDLER: 
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
-			//ppc_bl (code, 0);
+			sparc_call_simple (code, 0);
 			break;
 		case OP_LABEL:
 			ins->inst_c0 = code - cfg->native_code;
@@ -2143,26 +2169,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			//if ((ins->inst_target_bb == bb->next_bb) && ins == bb->last_ins)
 			//break;
 			if (ins->flags & MONO_INST_BRLABEL) {
-				/*if (ins->inst_i0->inst_c0) {
-					ppc_b (code, 0);
-					//x86_jump_code (code, cfg->native_code + ins->inst_i0->inst_c0);
-				} else*/ {
+				if (ins->inst_i0->inst_c0) {
+					sparc_call_simple (code, 0);
+				} else {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-					//ppc_b (code, 0);
+					sparc_call_simple (code, 0);
 				}
 			} else {
-				/*if (ins->inst_target_bb->native_offset) {
-					ppc_b (code, 0);
-					//x86_jump_code (code, cfg->native_code + ins->inst_target_bb->native_offset); 
-				} else*/ {
+				if (ins->inst_target_bb->native_offset) {
+					sparc_call_simple (code, 0);
+				} else {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
-					//ppc_b (code, 0);
+					sparc_call_simple (code, 0);
 				} 
 			}
 			break;
 		case OP_BR_REG:
-			//ppc_mtctr (code, ins->sreg1);
-			//ppc_bcctr (code, 20, 0);
+			sparc_jmp (code, ins->sreg1, sparc_g0);
 			break;
 		case OP_CEQ:
 			//ppc_li (code, ins->dreg, 0);
