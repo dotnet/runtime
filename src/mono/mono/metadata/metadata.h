@@ -5,6 +5,7 @@
 #include <glib.h>
 
 #include <mono/metadata/blob.h>
+#include <mono/metadata/row_indexes.h>
 
 #ifdef __GNUC__
 #define MONO_ZERO_LEN_ARRAY 0
