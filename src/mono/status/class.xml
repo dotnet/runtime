@@ -1147,7 +1147,7 @@
 
     <class name="System.TimeSpan">
         <last-activity>Jun-17-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
         <completion>?</completion>
         <maintainers>
