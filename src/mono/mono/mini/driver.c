@@ -37,6 +37,7 @@
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
+#include <mono/metadata/security-manager.h>
 #include <mono/os/gc_wrapper.h>
 
 #include "mini.h"
@@ -736,6 +737,7 @@ mono_main (int argc, char* argv[])
 			enable_debugging = TRUE;
 		} else if (strcmp (argv [i], "--security") == 0) {
 			mono_use_security_manager = TRUE;
+			mono_activate_security_manager ();
 		} else {
 			fprintf (stderr, "Unknown command line option: '%s'\n", argv [i]);
 			return 1;
@@ -765,11 +767,6 @@ mono_main (int argc, char* argv[])
 		mono_jit_trace_calls = mono_trace_parse_options (trace_options);
 		if (mono_jit_trace_calls == NULL)
 			exit (1);
-	}
-
-	if (mono_compile_aot && mono_use_security_manager) {
-		mono_use_security_manager = FALSE;
-		g_warning ("Current security manager implementation isn't compatible with AOT - disabling security manager.");
 	}
 
 	mono_set_defaults (mini_verbose, opt);

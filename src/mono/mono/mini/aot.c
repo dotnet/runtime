@@ -867,6 +867,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 					goto cleanup;
 				ji->data.token = mono_jump_info_token_new (mp, image, MONO_TOKEN_STRING + decode_value (p, &p));
 				break;
+			case MONO_PATCH_INFO_DECLSEC:
 			case MONO_PATCH_INFO_LDTOKEN:
 			case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
 				image = load_image (aot_module, decode_value (p, &p));
@@ -1522,6 +1523,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			encode_value (patch_info->data.token->token - MONO_TOKEN_STRING, p, &p);
 			break;
 		}
+		case MONO_PATCH_INFO_DECLSEC:
 		case MONO_PATCH_INFO_LDTOKEN:
 		case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
 			encode_value (get_image_index (acfg, patch_info->data.token->image), p, &p);

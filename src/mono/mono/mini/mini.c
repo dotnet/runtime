@@ -402,6 +402,14 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_LDTOKENCONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDTOKEN, (image), (token), STACK_PTR)
 
+#define NEW_DECLSECCONST(cfg,dest,image,entry) do { \
+		if (cfg->compile_aot) { \
+			NEW_AOTCONST_TOKEN (cfg, dest, MONO_PATCH_INFO_DECLSEC, image, (entry).index, STACK_OBJ); \
+		} else { \
+			NEW_PCONST (cfg, args [0], (entry).blob); \
+		} \
+	} while (0)
+
 #define NEW_DOMAINCONST(cfg,dest) do { \
                if (cfg->opt & MONO_OPT_SHARED) { \
                        NEW_TEMPLOAD (cfg, dest, mono_get_domainvar (cfg)->inst_c0); \
@@ -3198,7 +3206,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 		if (actions.demand.blob) {
 			/* Add code for SecurityAction.Demand */
-			NEW_PCONST (cfg, args [0], actions.demand.blob);
+			NEW_DECLSECCONST (cfg, args[0], image, actions.demand);
 			NEW_ICONST (cfg, args [1], actions.demand.size);
 			/* Calls static void SecurityManager.InternalDemand (byte* permissions, int size); */
 			mono_emit_method_call_spilled (cfg, init_localsbb, secman->demand, secman->demand->signature, args, ip, NULL);
@@ -3206,14 +3214,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		if (actions.noncasdemand.blob) {
 			/* CLR 1.x uses a .noncasdemand (but 2.x doesn't) */
 			/* For Mono we re-route non-CAS Demand to Demand (as the managed code must deal with it anyway) */
-			NEW_PCONST (cfg, args [0], actions.noncasdemand.blob);
+			NEW_DECLSECCONST (cfg, args[0], image, actions.noncasdemand);
 			NEW_ICONST (cfg, args [1], actions.noncasdemand.size);
 			/* Calls static void SecurityManager.InternalDemand (byte* permissions, int size); */
 			mono_emit_method_call_spilled (cfg, init_localsbb, secman->demand, secman->demand->signature, args, ip, NULL);
 		}
 		if (actions.demandchoice.blob) {
 			/* New in 2.0, Demand must succeed for one of the permissions (i.e. not all) */
-			NEW_PCONST (cfg, args [0], actions.demandchoice.blob);
+			NEW_DECLSECCONST (cfg, args[0], image, actions.demandchoice);
 			NEW_ICONST (cfg, args [1], actions.demandchoice.size);
 			/* Calls static void SecurityManager.InternalDemandChoice (byte* permissions, int size); */
 			mono_emit_method_call_spilled (cfg, init_localsbb, secman->demandchoice, secman->demandchoice->signature, args, ip, NULL);
@@ -7233,6 +7241,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = handle;
 		break;
 	}
+	case MONO_PATCH_INFO_DECLSEC:
+		target = (mono_metadata_blob_heap (patch_info->data.token->image, patch_info->data.token->token) + 2);
+		break;
 	case MONO_PATCH_INFO_BB_OVF:
 	case MONO_PATCH_INFO_EXC_OVF:
 	case MONO_PATCH_INFO_GOT_OFFSET:
