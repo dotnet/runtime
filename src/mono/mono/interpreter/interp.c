@@ -321,10 +321,12 @@ stackval_from_data (MonoType *type, stackval *result, const char *data)
 		result->type = VAL_I32;
 		result->data.i = *(guint16*)data;
 		return;
+	case MONO_TYPE_I: /* FIXME: not 64 bit clean */
 	case MONO_TYPE_I4:
 		result->type = VAL_I32;
 		result->data.i = *(gint32*)data;
 		return;
+	case MONO_TYPE_U: /* FIXME: not 64 bit clean */
 	case MONO_TYPE_U4:
 		result->type = VAL_I32;
 		result->data.i = *(guint32*)data;
@@ -347,12 +349,17 @@ stackval_from_data (MonoType *type, stackval *result, const char *data)
 		result->data.p = *(gpointer*)data;
 		return;
 	case MONO_TYPE_VALUETYPE:
-		result->type = VAL_VALUET;
-		result->data.vt.klass = type->data.klass;
-		memcpy (result->data.vt.vt, data, mono_class_value_size (type->data.klass, NULL));
+		if (type->data.klass->enumtype) {
+			result->type = VAL_I32;
+			result->data.i = *(guint32*)data;
+		} else {
+			result->type = VAL_VALUET;
+			result->data.vt.klass = type->data.klass;
+			memcpy (result->data.vt.vt, data, mono_class_value_size (type->data.klass, NULL));
+		}
 		return;
 	default:
-		g_warning ("got type %x", type->type);
+		g_warning ("got type 0x%02x", type->type);
 		g_assert_not_reached ();
 	}
 }
@@ -376,6 +383,8 @@ stackval_to_data (MonoType *type, stackval *val, char *data)
 	case MONO_TYPE_U2:
 		*(guint16*)data = val->data.i;
 		break;
+	case MONO_TYPE_I: /* FIXME: not 64 bit clean */
+	case MONO_TYPE_U: /* FIXME: not 64 bit clean */
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		*(gint32*)data = val->data.i;
@@ -395,7 +404,11 @@ stackval_to_data (MonoType *type, stackval *val, char *data)
 		*(gpointer*)data = val->data.p;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		memcpy (data, val->data.vt.vt, mono_class_value_size (type->data.klass, NULL));
+		if (type->data.klass->enumtype) {
+			*(gint32*)data = val->data.i;
+		} else {
+			memcpy (data, val->data.vt.vt, mono_class_value_size (type->data.klass, NULL));
+		}
 		break;
 	default:
 		g_warning ("got type %x", type->type);
@@ -603,7 +616,7 @@ struct _vtallocation {
  * we don't use vtallocation->next, yet
  */
 #define vt_alloc(vtype,sp)	\
-	if ((vtype)->type == MONO_TYPE_VALUETYPE) {	\
+	if ((vtype)->type == MONO_TYPE_VALUETYPE && !(vtype)->data.klass->enumtype) {	\
 		if (!(vtype)->byref) {	\
 			int align;	\
 			guint32 size = mono_class_value_size ((vtype)->data.klass, &align);	\
@@ -802,6 +815,7 @@ ves_exec_method (MonoInvocation *frame)
 			} else {
 				sp->type = VAL_TP;
 				sp->data.p = ARG_POS (*ip);
+				sp->data.vt.klass = t->data.klass;
 			}
 			++sp;
 			++ip;
@@ -1769,7 +1783,7 @@ ves_exec_method (MonoInvocation *frame)
 				field = mono_class_get_field (obj->klass, token);
 				offset = field->offset;
 			} else { /* valuetype */
-				g_assert (sp [-1].type == VAL_VALUETA);
+				//g_assert (sp [-1].type == VAL_VALUETA);
 				obj = sp [-1].data.vt.vt;
 				field = mono_class_get_field (sp [-1].data.vt.klass, token);
 				offset = field->offset - sizeof (MonoObject);
@@ -1799,7 +1813,7 @@ ves_exec_method (MonoInvocation *frame)
 				field = mono_class_get_field (obj->klass, token);
 				offset = field->offset;
 			} else { /* valuetype */
-				g_assert (sp->type == VAL_VALUETA);
+				//g_assert (sp->type == VAL_VALUETA);
 				obj = sp [0].data.vt.vt;
 				field = mono_class_get_field (sp [0].data.vt.klass, token);
 				offset = field->offset - sizeof (MonoObject);
@@ -1829,6 +1843,7 @@ ves_exec_method (MonoInvocation *frame)
 			if (load_addr) {
 				sp->type = VAL_TP;
 				sp->data.p = (char*)klass + field->offset;
+				sp->data.vt.klass = klass;
 			} else {
 				vt_alloc (field->type, sp);
 				stackval_from_data (field->type, sp, MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
