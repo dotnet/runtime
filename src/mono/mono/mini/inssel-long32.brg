@@ -76,20 +76,20 @@ stmt: CEE_STIND_I8 (base, i8con) {
 
 
 lreg: OP_LADD (lreg, lreg) {
-	MONO_EMIT_NEW_BIALU (s, CEE_ADD, state->reg1, state->left->reg1, state->right->reg1);
+	MONO_EMIT_NEW_BIALU (s, OP_ADDCC, state->reg1, state->left->reg1, state->right->reg1);
 	MONO_EMIT_BIALU (s, tree, OP_ADC, state->reg2, state->left->reg2, state->right->reg2);
 }
 
 lreg: OP_LADD_OVF (lreg, lreg) {
 	/* ADC sets the condition code */
-	MONO_EMIT_NEW_BIALU (s, CEE_ADD, state->reg1, state->left->reg1, state->right->reg1);
+	MONO_EMIT_NEW_BIALU (s, OP_ADDCC, state->reg1, state->left->reg1, state->right->reg1);
 	MONO_EMIT_NEW_BIALU (s, OP_ADC, state->reg2, state->left->reg2, state->right->reg2);
 	MONO_EMIT_NEW_COND_EXC (s, OV, "OverflowException");
 }
 
 lreg: OP_LADD_OVF_UN (lreg, lreg) {
 	/* ADC sets the condition code */
-	MONO_EMIT_NEW_BIALU (s, CEE_ADD, state->reg1, state->left->reg1, state->right->reg1);
+	MONO_EMIT_NEW_BIALU (s, OP_ADDCC, state->reg1, state->left->reg1, state->right->reg1);
 	MONO_EMIT_NEW_BIALU (s, OP_ADC, state->reg2, state->left->reg2, state->right->reg2);
 	MONO_EMIT_NEW_COND_EXC (s, C, "OverflowException");
 }
@@ -100,7 +100,7 @@ lreg: OP_LADD (lreg, i8con) {
 }
 
 lreg: OP_LSUB (lreg, lreg) {
-	MONO_EMIT_NEW_BIALU (s, CEE_SUB, state->reg1, state->left->reg1, state->right->reg1);
+	MONO_EMIT_NEW_BIALU (s, OP_SUBCC, state->reg1, state->left->reg1, state->right->reg1);
 	MONO_EMIT_BIALU (s, tree, OP_SBB, state->reg2, state->left->reg2, state->right->reg2);
 }
 
@@ -111,7 +111,7 @@ lreg: OP_LSUB (lreg, i8con) {
 
 lreg: OP_LSUB_OVF (lreg, lreg) {
 	/* SBB sets the condition code */
-	MONO_EMIT_NEW_BIALU (s, CEE_SUB, state->reg1, state->left->reg1, state->right->reg1);
+	MONO_EMIT_NEW_BIALU (s, OP_SUBCC, state->reg1, state->left->reg1, state->right->reg1);
 	MONO_EMIT_NEW_BIALU (s, OP_SBB, state->reg2, state->left->reg2, state->right->reg2);
 	MONO_EMIT_NEW_COND_EXC (s, OV, "OverflowException");
 }
