@@ -138,6 +138,40 @@ mono_declsec_linkdemand_standard (MonoDomain *domain, MonoMethod *caller, MonoMe
  * Ensure that the restrictions for partially trusted code are satisfied.
  *
  * @domain	The current application domain
+ * @assembly	The assembly to query
+ * return value: TRUE if the assembly is runnning at FullTrust, FALSE otherwise.
+ */
+static gboolean
+mono_declsec_is_assembly_fulltrust (MonoDomain *domain, MonoAssembly *assembly)
+{
+	if (!MONO_SECMAN_FLAG_INIT (assembly->fulltrust)) {
+		MonoReflectionAssembly *refass = (MonoReflectionAssembly*) mono_assembly_get_object (domain, assembly);
+		MonoSecurityManager *secman = mono_security_manager_get_methods ();
+
+		if (secman && refass) {
+			MonoObject *res;
+			gpointer args [1];
+			args [0] = refass;
+
+			res = mono_runtime_invoke (secman->linkdemandfulltrust, NULL, args, NULL);
+			if (*(MonoBoolean *) mono_object_unbox(res)) {
+				/* keep this value cached as it will be used very often */
+				MONO_SECMAN_FLAG_SET_VALUE (assembly->fulltrust, TRUE);
+				return TRUE;
+			}
+		}
+
+		MONO_SECMAN_FLAG_SET_VALUE (assembly->fulltrust, FALSE);
+		return FALSE;
+	}
+
+	return MONO_SECMAN_FLAG_GET_VALUE (assembly->fulltrust);
+}
+
+/*
+ * Ensure that the restrictions for partially trusted code are satisfied.
+ *
+ * @domain	The current application domain
  * @caller	The method calling
  * @callee	The called method
  * return value: TRUE if a security violation is detection, FALSE otherwise.
@@ -186,75 +220,11 @@ mono_declsec_linkdemand_aptc (MonoDomain *domain, MonoMethod *caller, MonoMethod
 		return FALSE;
 
 	/* E - the caller's assembly must have full trust permissions */
-	if (!MONO_SECMAN_FLAG_INIT (assembly->fulltrust)) {
-		MonoReflectionAssembly *refass = (MonoReflectionAssembly*) mono_assembly_get_object (domain, assembly);
-		if (!secman)
-			secman = mono_security_manager_get_methods ();
-
-		if (secman && refass) {
-			MonoObject *res;
-			gpointer args [1];
-			args [0] = refass;
-
-			res = mono_runtime_invoke (secman->linkdemandfulltrust, NULL, args, NULL);
-			if (*(MonoBoolean *) mono_object_unbox(res)) {
-				/* keep this value cached as it will be used very often */
-				MONO_SECMAN_FLAG_SET_VALUE (assembly->fulltrust, TRUE);
-				return FALSE;
-			}
-		}
-
-		MONO_SECMAN_FLAG_SET_VALUE (assembly->fulltrust, FALSE);
-	}
-
-	if (MONO_SECMAN_FLAG_GET_VALUE (assembly->fulltrust))
+	if (mono_declsec_is_assembly_fulltrust (domain, assembly))
 		return FALSE;
 
 	/* g_warning ("FAILURE *** JIT LinkDemand APTC check *** %s.%s calls into %s.%s",
 		caller->klass->name, caller->name, callee->klass->name, callee->name); */
-
-	return TRUE;	/* i.e. throw new SecurityException(); */
-}
-
-/*
- * Ensure that the restrictions for calling internal calls are satisfied.
- *
- * @caller	The method calling
- * @icall	The internal call method
- * return value: TRUE if a security violation is detection, FALSE otherwise.
- *
- * Executing internal calls (icalls) is a restricted operation. Only 
- * assemblies with an ECMA public key are allowed to call them (unless they
- * are publicly available).
- *
- * This LinkDemand case is special because it can be done without calling 
- * managed code.
- */
-static gboolean
-mono_declsec_linkdemand_ecma (MonoMethod *caller, MonoMethod *icall)
-{
-	MonoAssembly *assembly;
-
-	mono_jit_stats.cas_linkdemand_icall++;
-
-	/* some icall are public (i.e. they CAN be called by any code) */
-	if (((icall->klass->flags & TYPE_ATTRIBUTE_PUBLIC) == TYPE_ATTRIBUTE_PUBLIC) &&
-		((icall->flags & FIELD_ATTRIBUTE_PUBLIC) == FIELD_ATTRIBUTE_PUBLIC)) {
-		return FALSE;
-	}
-
-	assembly = mono_image_get_assembly (icall->klass->image);
-	if (!MONO_SECMAN_FLAG_INIT (assembly->ecma)) {
-		guint32 size = 0;
-		const char *pk = mono_image_get_public_key (caller->klass->image, &size);
-		MONO_SECMAN_FLAG_SET_VALUE (assembly->ecma, mono_is_ecma_key (pk, size));
-	}
-
-	if (MONO_SECMAN_FLAG_GET_VALUE (assembly->ecma))
-		return FALSE;
-
-	/* g_warning ("FAILURE *** JIT LinkDemand for ECMA check *** %s.%s calls into %s.%s", 
-		caller->klass->name, caller->name, icall->klass->name, icall->name); */
 
 	return TRUE;	/* i.e. throw new SecurityException(); */
 }
@@ -324,6 +294,46 @@ mono_declsec_linkdemand_pinvoke (MonoDomain *domain, MonoMethod *caller, MonoMet
 	return TRUE;	/* i.e. throw new SecurityException(); */
 }
 
+/*
+ * Ensure that the restrictions for calling internal calls are satisfied.
+ *
+ * @domain	The current application domain
+ * @caller	The method calling
+ * @icall	The internal call method
+ * return value: TRUE if a security violation is detection, FALSE otherwise.
+ *
+ * We can't trust the icall flags/iflags as it comes from the assembly
+ * that we may want to restrict and we do not have the public/restricted
+ * information about icalls in the runtime. Actually it is not so bad 
+ * as the CLR 2.0 doesn't enforce that restriction anymore.
+ * 
+ * So we'll limit the icalls to originate from ECMA signed assemblies 
+ * (as this is required for partial trust scenarios) - or - assemblies that 
+ * have FullTrust.
+ */
+static gboolean
+mono_declsec_linkdemand_icall (MonoDomain *domain, MonoMethod *caller, MonoMethod *icall)
+{
+	MonoAssembly *assembly;
+
+	mono_jit_stats.cas_linkdemand_icall++;
+
+	/* check if the _icall_ is defined inside an ECMA signed assembly */
+	assembly = mono_image_get_assembly (icall->klass->image);
+	if (!MONO_SECMAN_FLAG_INIT (assembly->ecma)) {
+		guint32 size = 0;
+		const char *pk = mono_image_get_public_key (icall->klass->image, &size);
+		MONO_SECMAN_FLAG_SET_VALUE (assembly->ecma, mono_is_ecma_key (pk, size));
+	}
+
+	if (MONO_SECMAN_FLAG_GET_VALUE (assembly->ecma))
+		return FALSE;
+
+	/* else check if the _calling_ assembly is running at FullTrust */
+	assembly = mono_image_get_assembly (caller->klass->image);
+	return !mono_declsec_is_assembly_fulltrust (domain, assembly);
+}
+
 
 /*
  * Before the JIT can link (call) into a method the following security checks
@@ -349,8 +359,8 @@ mono_declsec_linkdemand (MonoDomain *domain, MonoMethod *caller, MonoMethod *cal
 	/* first, the special (implied) linkdemand */
 
 	if (callee->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
-		/* restrict calls into the runtime to ECMA signed assemblies */
-		if (mono_declsec_linkdemand_ecma (caller, callee))
+		/* restrict internal calls into the runtime */
+		if (mono_declsec_linkdemand_icall (domain, caller, callee))
 			violation = MONO_JIT_LINKDEMAND_ECMA;
 	} else if (callee->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		/* CAS can restrict p/invoke calls with the assembly granted permissions */
