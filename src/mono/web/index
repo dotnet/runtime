@@ -80,10 +80,19 @@
   </tr>
 </table>
 
-	<b>Mono at the O'Reilly Open Source Conference (<a
-	href="http://conferences.oreillynet.com/cs/os2002/view/e_sess/2994">here</a>
-	and <a
-	href="http://conferences.oreillynet.com/cs/os2002/view/e_sess/2996">here</a>)</b>
+@item Jul 26th, 2002
+
+	<b>Mono 0.13 has been released!</b> (details <a
+	href="archive/mono-0.13">here</a>).  Get
+	your sources for the <a
+	href="archive/mono-0.13.tar.gz">runtime</a> and
+	<a href="archive/mcs-0.13.tar.gz">compiler and class libraries</a>.
+	<p>
+	Alp made Debian packages and they are <a
+	href="http://www.atoker.com/mono/">here</a>.  Cristophe made
+	packages for Red Hat and they are <a
+	href="http://mono.baselabs.org/software">here</a>.
+	And Windows packages have been <a href="http://www.superin.formativ.net/mono/mono.htm">contributed</a>
 
 @item Jul 23rd, 2002
 
@@ -355,10 +364,63 @@
 	A big thanks goes to Dennis Hayes for getting the
 	Windows.Forms work together, and commiting so many stubs for Windows.Forms. 
 
+@item Jun 25, 2002
+
+	I am updating the Mono site from the Unesco offices in
+	Uruguay, the <a href="http://www.gnome.org/resources/calendar/roadshow/GNOMEenelSur.html">South-America trip</a>
+	to promote free software is going very well.
+
+	Many news in Mono-land this week so far:
+
+	Mike Kestner got bindings for GtkHTML last night for Gtk#,
+	this is using GtkHTML 2.0.  
+
+	On Monday Piers Haken <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-June/000380.html">contributed</a>
+	the core to support XPath in Mono: most of the w3c spec is
+	implemented (modulo a few pending bits).
+
+	Dick checked in his implementation of the Process classes:
+	process forking and waiting support committed, with some functions to
+	query status.  This was complex as we had to emulate the Win32
+	environment, but this is another step to be fully compatible.
+	This means for example that any process can check on the
+	status of any other process (without the parent/child relationship)
+
+	Of course, those interested
+	in only the Unix semantics can always P/Invoke the Unix calls.
+
 @item Jun 24, 2002
 
+
         Duncan has written a few sample <a
-	href="http://primates.ximian.com/~duncan/Mono">gtk# demo apps</a>..
+	href="http://primates.ximian.com/~duncan/Mono">Gtk# demo
+	applications</a> (<a
+	href="http://primates.ximian.com/~duncan/Mono/img/ImageViewer.png">screen
+	shot</a>, <a
+	href="http://primates.ximian.com/~duncan/Mono/img/ImageBrowser.png">another</a>)
+
+	Rachel also got the beginning of Gnome bindings (<a
+	href="http://primates.ximian.com/~tvgm/gnome-hello.png">screenshot</a>).
+	She also got some <a
+	href="http://primates.ximian.com/~tvgm/gtk-sharp-docs/">documentation</a>
+	up now.
+
+@item Jun 22, 2002
+
+	Mono's ASP.NET has rendered its first page on Linxu for the
+	first time (Gonzalo and Paolo).  
+
+	Also, we are getting close to
+	self hosting.  Paolo posted a <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-June/000345.html">list
+	of pending issues</a> which are now very small.
+
+	Steam is picking up in <a
+	href="http://gtk-sharp.sf.net">Gtk#</a> as the bindings become more
+	complete and small applications are starting to emerge.  Gtk#
+	now compiles completely on Linux.  This uses a lot of the XML
+	libraries, which is nice to see.
 
 @item Jun 20, 2002
 
