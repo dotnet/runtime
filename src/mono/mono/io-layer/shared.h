@@ -20,7 +20,7 @@ struct _WapiScratchHeader
 };
 
 enum {
-	WAPI_SHM_SCRATCH_FREE=0x1,
+	WAPI_SHM_SCRATCH_FREE=0x1
 };
 
 typedef enum {

@@ -20,7 +20,7 @@ typedef enum {
 	WapiHandleRequestType_Scratch,
 	WapiHandleRequestType_ScratchFree,
 	WapiHandleRequestType_ProcessFork,
-	WapiHandleRequestType_ProcessKill,
+	WapiHandleRequestType_ProcessKill
 } WapiHandleRequestType;
 
 typedef struct 
@@ -88,7 +88,7 @@ typedef enum {
 	WapiHandleResponseType_Scratch,
 	WapiHandleResponseType_ScratchFree,
 	WapiHandleResponseType_ProcessFork,
-	WapiHandleResponseType_ProcessKill,
+	WapiHandleResponseType_ProcessKill
 } WapiHandleResponseType;
 
 typedef struct 

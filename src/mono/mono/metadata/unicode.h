@@ -45,7 +45,7 @@ typedef enum {
 	CurrencySymbol          = 26,
 	ModifierSymbol          = 27,
 	OtherSymbol             = 28,
-	OtherNotAssigned        = 29,
+	OtherNotAssigned        = 29
 } MonoUnicodeCategory;
 
 #endif

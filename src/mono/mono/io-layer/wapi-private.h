@@ -49,7 +49,7 @@ typedef enum {
 	WAPI_HANDLE_FIND,
 	WAPI_HANDLE_PROCESS,
 	WAPI_HANDLE_PIPE,
-	WAPI_HANDLE_COUNT,
+	WAPI_HANDLE_COUNT
 } WapiHandleType;
 
 #define _WAPI_SHARED_NAMESPACE(type) (type==WAPI_HANDLE_MUTEX)
@@ -62,7 +62,7 @@ typedef struct
 typedef enum {
 	WAPI_HANDLE_CAP_WAIT=0x01,
 	WAPI_HANDLE_CAP_SIGNAL=0x02,
-	WAPI_HANDLE_CAP_OWN=0x04,
+	WAPI_HANDLE_CAP_OWN=0x04
 } WapiHandleCapability;
 
 struct _WapiHandleOps 

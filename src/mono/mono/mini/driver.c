@@ -387,7 +387,7 @@ enum {
 	DO_REGRESSION,
 	DO_COMPILE,
 	DO_EXEC,
-	DO_DRAW,
+	DO_DRAW
 };
 
 typedef struct CompileAllThreadArgs {

@@ -25,7 +25,7 @@ typedef enum {
 	ThreadState_WaitSleepJoin = 0x00000020,
 	ThreadState_Suspended = 0x00000040,
 	ThreadState_AbortRequested = 0x00000080,
-	ThreadState_Aborted = 0x00000100,
+	ThreadState_Aborted = 0x00000100
 } MonoThreadState;
 
 #define SPECIAL_STATIC_NONE 0

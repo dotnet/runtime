@@ -13,7 +13,7 @@ enum {
 	VAL_NATI    = 0 + VAL_POINTER,
 	VAL_MP      = 1 + VAL_POINTER,
 	VAL_TP      = 2 + VAL_POINTER,
-	VAL_OBJ     = 3 + VAL_POINTER,
+	VAL_OBJ     = 3 + VAL_POINTER
 };
 
 #if SIZEOF_VOID_P == 4

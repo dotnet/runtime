@@ -85,13 +85,13 @@ typedef void (*WapiOverlappedCB) (guint32 error, guint32 numbytes,
 typedef enum {
 	STD_INPUT_HANDLE=-10,
 	STD_OUTPUT_HANDLE=-11,
-	STD_ERROR_HANDLE=-12,
+	STD_ERROR_HANDLE=-12
 } WapiStdHandle;
 
 typedef enum {
 	FILE_BEGIN=0,
 	FILE_CURRENT=1,
-	FILE_END=2,
+	FILE_END=2
 } WapiSeekMethod;
 
 typedef enum {
@@ -99,7 +99,7 @@ typedef enum {
 	FILE_TYPE_DISK=0x0001,
 	FILE_TYPE_CHAR=0x0002,
 	FILE_TYPE_PIPE=0x0003,
-	FILE_TYPE_REMOTE=0x8000,
+	FILE_TYPE_REMOTE=0x8000
 } WapiFileType;
 
 typedef enum {

@@ -21,7 +21,7 @@
 typedef enum {
 	FileAccess_Read=0x01,
 	FileAccess_Write=0x02,
-	FileAccess_ReadWrite=FileAccess_Read|FileAccess_Write,
+	FileAccess_ReadWrite=FileAccess_Read|FileAccess_Write
 } MonoFileAccess;
 
 /* This is a copy of System.IO.FileMode */
@@ -31,7 +31,7 @@ typedef enum {
 	FileMode_Open=3,
 	FileMode_OpenOrCreate=4,
 	FileMode_Truncate=5,
-	FileMode_Append=6,
+	FileMode_Append=6
 } MonoFileMode;
 
 /* This is a copy of System.IO.FileShare */
@@ -39,14 +39,14 @@ typedef enum {
 	FileShare_None=0x0,
 	FileShare_Read=0x01,
 	FileShare_Write=0x02,
-	FileShare_ReadWrite=FileShare_Read|FileShare_Write,
+	FileShare_ReadWrite=FileShare_Read|FileShare_Write
 } MonoFileShare;
 
 /* This is a copy of System.IO.SeekOrigin */
 typedef enum {
 	SeekOrigin_Begin=0,
 	SeekOrigin_Current=1,
-	SeekOrigin_End=2,
+	SeekOrigin_End=2
 } MonoSeekOrigin;
 
 /* This is a copy of System.IO.MonoIOStat */
@@ -75,7 +75,7 @@ typedef enum {
 	FileAttributes_Offline=0x01000,
 	FileAttributes_NotContentIndexed=0x02000,
 	FileAttributes_Encrypted=0x04000,
-	FileAttributes_MonoExecutable=0x80000000,
+	FileAttributes_MonoExecutable= (int) 0x80000000
 } MonoFileAttributes;
 
 typedef struct _MonoFSAsyncResult {

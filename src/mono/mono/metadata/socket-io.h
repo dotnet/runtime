@@ -23,7 +23,7 @@ typedef enum {
 	SocketType_Raw=3,
 	SocketType_Rdm=4,
 	SocketType_Seqpacket=5,
-	SocketType_Unknown=-1,
+	SocketType_Unknown=-1
 } MonoSocketType;
 
 /* This is a copy of System.Net.Sockets.AddressFamily */
@@ -57,7 +57,7 @@ typedef enum {
 	AddressFamily_Cluster=24,
 	AddressFamily_Ieee12844=25,
 	AddressFamily_Irda=26,
-	AddressFamily_NetworkDesigners=28,
+	AddressFamily_NetworkDesigners=28
 } MonoAddressFamily;
 
 /* This is a copy of System.Net.Sockets.ProtocolType */
@@ -77,7 +77,7 @@ typedef enum {
 	ProtocolType_Ipx=1000,
 	ProtocolType_Spx=1256,
 	ProtocolType_SpxII=1257,
-	ProtocolType_Unknown=-1,
+	ProtocolType_Unknown=-1
 } MonoProtocolType;
 
 /* This is a copy of System.Net.Sockets.SocketOptionLevel */
@@ -86,7 +86,7 @@ typedef enum {
 	SocketOptionLevel_IP=0,
 	SocketOptionLevel_IPv6=41,
 	SocketOptionLevel_Tcp=6,
-	SocketOptionLevel_Udp=17,
+	SocketOptionLevel_Udp=17
 } MonoSocketOptionLevel;
 
 /* This is a copy of System.Net.Sockets.SocketOptionName */
@@ -130,7 +130,7 @@ typedef enum {
 	SocketOptionName_BsdUrgent=2,
 	SocketOptionName_Expedited=2,
 	SocketOptionName_NoChecksum=1,
-	SocketOptionName_ChecksumCoverage=20,
+	SocketOptionName_ChecksumCoverage=20
 } MonoSocketOptionName;
 
 extern gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, gint32 family, gint32 type, gint32 proto, gint32 *error);

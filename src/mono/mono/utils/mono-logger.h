@@ -12,7 +12,7 @@ typedef enum {
 	MONO_TRACE_ALL			=   MONO_TRACE_ASSEMBLY |
 								MONO_TRACE_TYPE |
 								MONO_TRACE_DLLIMPORT |
-								MONO_TRACE_GC,
+								MONO_TRACE_GC
 } MonoTraceMask;
 
 void 

@@ -19,7 +19,7 @@ extern struct _WapiHandleOps _wapi_thread_ops;
 
 typedef enum {
 	THREAD_STATE_START,
-	THREAD_STATE_EXITED,
+	THREAD_STATE_EXITED
 } WapiThreadState;
 
 struct _WapiHandle_thread
