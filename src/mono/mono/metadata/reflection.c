@@ -3339,6 +3339,11 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 
 	assembly->assembly.dynamic = TRUE;
 	assemblyb->assembly.assembly = (MonoAssembly*)assembly;
+	assembly->assembly.basedir = mono_string_to_utf8 (assemblyb->dir);
+	if (assemblyb->culture)
+		assembly->assembly.aname.culture = mono_string_to_utf8 (assemblyb->culture);
+	else
+		assembly->assembly.aname.culture = g_strdup ("");
 
 	assembly->run = assemblyb->access != 2;
 	assembly->save = assemblyb->access != 1;
