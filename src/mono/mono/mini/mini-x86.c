@@ -1443,8 +1443,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	rs->next_vireg = bb->max_ireg;
 	rs->next_vfreg = bb->max_freg;
 	mono_regstate_assign (rs);
-	reginfo = mono_mempool_alloc0 (cfg->mempool, sizeof (RegTrack) * rs->next_vireg);
-	reginfof = mono_mempool_alloc0 (cfg->mempool, sizeof (RegTrack) * rs->next_vfreg);
+	reginfo = g_malloc0 (sizeof (RegTrack) * rs->next_vireg);
+	reginfof = g_malloc0 (sizeof (RegTrack) * rs->next_vfreg);
 	rs->ifree_mask = X86_CALLEE_REGS;
 
 	ins = bb->code;
@@ -1845,6 +1845,9 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			bb->code = tmp->data;
 		tmp = tmp->next;
 	}
+
+	g_free (reginfo);
+	g_free (reginfof);
 }
 
 static unsigned char*

@@ -201,33 +201,42 @@ x86_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi,
 
 	code -= 5;
 	if (code [0] == 0xe8) {
-		guint32 ops;
-		/*
-		 * Thread safe code patching using the algorithm from the paper
-		 * 'Practicing JUDO: Java Under Dynamic Optimizations'
-		 */
-		/* 
-		 * First atomically change the the first 2 bytes of the call to a
-		 * spinning jump.
-		 */
-		ops = 0xfeeb;
-		InterlockedExchange ((gint32*)code, ops);
-
-		/* Then change the other bytes to a nop */
-		code [2] = 0x90;
-		code [3] = 0x90;
-		code [4] = 0x90;
-
-		/* Then atomically change the first 4 bytes to a nop as well */
-		ops = 0x90909090;
-		InterlockedExchange ((guint32*)code, ops);
+		gboolean do_patch = TRUE;
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
-		/* FIXME: the calltree skin trips on the self modifying code above */
-
-		/* Tell valgrind to recompile the patched code */
-		VALGRIND_DISCARD_TRANSLATIONS (code, code + 8);
+		if (RUNNING_ON_VALGRIND)
+			do_patch = FALSE;
 #endif
+
+		if (do_patch) {
+			guint32 ops;
+			/*
+			 * Thread safe code patching using the algorithm from the paper
+			 * 'Practicing JUDO: Java Under Dynamic Optimizations'
+			 */
+			/* 
+			 * First atomically change the the first 2 bytes of the call to a
+			 * spinning jump.
+			 */
+			ops = 0xfeeb;
+			InterlockedExchange ((gint32*)code, ops);
+
+			/* Then change the other bytes to a nop */
+			code [2] = 0x90;
+			code [3] = 0x90;
+			code [4] = 0x90;
+
+			/* Then atomically change the first 4 bytes to a nop as well */
+			ops = 0x90909090;
+			InterlockedExchange ((guint32*)code, ops);
+
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+			/* FIXME: the calltree skin trips on the self modifying code above */
+
+			/* Tell valgrind to recompile the patched code */
+			//VALGRIND_DISCARD_TRANSLATIONS (code, code + 8);
+#endif
+		}
 	}
 	else
 		if (code [0] == 0x90 || code [0] == 0xeb)

@@ -42,6 +42,7 @@ mono_regstate_assign (MonoRegState *rs) {
 	for (; i < rs->next_vireg; ++i)
 		rs->iassign [i] = -1;
 
+	g_free (rs->fassign);
 	rs->fassign = g_malloc (MAX (MONO_MAX_FREGS, rs->next_vfreg) * sizeof (int));
 	for (i = 0; i < MONO_MAX_FREGS; ++i) {
 		rs->fassign [i] = i;
