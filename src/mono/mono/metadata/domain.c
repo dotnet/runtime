@@ -481,7 +481,7 @@ typedef struct {
 } DomainInfo;
 
 static void
-foreach_domain (gconstpointer key, gconstpointer data, gpointer user_data)
+foreach_domain (gpointer key, gpointer data, gpointer user_data)
 {
 	DomainInfo *dom_info = user_data;
 
