@@ -22,13 +22,13 @@
 #include <unistd.h>
 
 #include <mono/io-layer/wapi.h>
-#include <mono/io-layer/unicode.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/misc-private.h>
 #include <mono/io-layer/mono-mutex.h>
 #include <mono/io-layer/process-private.h>
 #include <mono/io-layer/threads.h>
+#include <mono/utils/strenc.h>
 
 /* The process' environment strings */
 extern char **environ;
@@ -125,7 +125,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 	 * so crap, with an API like this :-(
 	 */
 	if(appname!=NULL) {
-		cmd=_wapi_unicode_to_utf8 (appname);
+		cmd=mono_unicode_to_external (appname);
 		if(cmd==NULL) {
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION
@@ -145,7 +145,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 	}
 	
 	if(cmdline!=NULL) {
-		args=_wapi_unicode_to_utf8 (cmdline);
+		args=mono_unicode_to_external (cmdline);
 		if(args==NULL) {
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION
@@ -158,7 +158,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 	}
 
 	if(cwd!=NULL) {
-		dir=_wapi_unicode_to_utf8 (cwd);
+		dir=mono_unicode_to_external (cwd);
 		if(dir==NULL) {
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION
@@ -191,7 +191,7 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 	 */
 	if(new_environ!=NULL) {
 		gchar **strings;
-		guint32 count;
+		guint32 count=0;
 		gunichar2 *new_environp;
 
 		/* Count the number of strings */
@@ -205,13 +205,13 @@ gboolean CreateProcess (const gunichar2 *appname, gunichar2 *cmdline,
 		strings=g_new0 (gchar *, count);
 		
 		/* Copy each environ string into 'strings' turning it
-		 * into utf8 at the same time
+		 * into utf8 (or the requested encoding) at the same
+		 * time
 		 */
 		count=0;
 		for(new_environp=(gunichar2 *)new_environ; *new_environp;
 		    new_environp++) {
-			strings[count]=g_utf16_to_utf8 (new_environp, -1, NULL,
-							NULL, NULL);
+			strings[count]=mono_unicode_to_external (new_environp);
 			count++;
 			while(*new_environp) {
 				new_environp++;
@@ -455,22 +455,25 @@ cleanup:
 		
 static void process_set_name (struct _WapiHandle_process *process_handle)
 {
-	gchar *progname, *slash;
+	gchar *progname, *utf8_progname, *slash;
 	
 	progname=g_get_prgname ();
+	utf8_progname=mono_utf8_from_external (progname);
 
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": using [%s] as prog name",
 		   progname);
 #endif
 
-	if(progname!=NULL) {
-		slash=strrchr (progname, '/');
+	if(utf8_progname!=NULL) {
+		slash=strrchr (utf8_progname, '/');
 		if(slash!=NULL) {
 			process_handle->proc_name=_wapi_handle_scratch_store (slash+1, strlen (slash+1));
 		} else {
-			process_handle->proc_name=_wapi_handle_scratch_store (progname, strlen (progname));
+			process_handle->proc_name=_wapi_handle_scratch_store (utf8_progname, strlen (utf8_progname));
 		}
+
+		g_free (utf8_progname);
 	}
 }
 

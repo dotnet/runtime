@@ -28,6 +28,7 @@
 #include <mono/metadata/environment.h>
 #include "mono/metadata/profiler-private.h"
 #include <mono/os/gc_wrapper.h>
+#include <mono/utils/strenc.h>
 
 /*
  * Enable experimental typed allocation using the GC_gcj_malloc function.
@@ -914,7 +915,8 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	int i;
 	MonoArray *args = NULL;
 	MonoDomain *domain = mono_domain_get ();
-
+	gchar *utf8_fullpath;
+	
 	main_args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
 
 	if (!g_path_is_absolute (argv [0])) {
@@ -922,16 +924,46 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 		gchar *fullpath = g_build_filename (method->klass->image->assembly->basedir,
 						    basename,
 						    NULL);
-		
-		mono_array_set (main_args, gpointer, 0, mono_string_new (domain, fullpath));
+
+		utf8_fullpath = mono_utf8_from_external (fullpath);
+		if(utf8_fullpath == NULL) {
+			/* Printing the arg text will cause glib to
+			 * whinge about "Invalid UTF-8", but at least
+			 * its relevant, and shows the problem text
+			 * string.
+			 */
+			g_print ("\nCannot determine the text encoding for the assembly location: %s\n", fullpath);
+			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
+			exit (-1);
+		}
+
 		g_free (fullpath);
 		g_free (basename);
 	} else {
-		mono_array_set (main_args, gpointer, 0, mono_string_new (domain, argv [0]));
+		utf8_fullpath = mono_utf8_from_external (argv[0]);
+		if(utf8_fullpath == NULL) {
+			g_print ("\nCannot determine the text encoding for the assembly location: %s\n", argv[0]);
+			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
+			exit (-1);
+		}
 	}
+		
+	mono_array_set (main_args, gpointer, 0, mono_string_new (domain, utf8_fullpath));
+	g_free (utf8_fullpath);
 
 	for (i = 1; i < argc; ++i) {
-		MonoString *arg = mono_string_new (domain, argv [i]);
+		gchar *utf8_arg;
+		MonoString *arg;
+
+		utf8_arg=mono_utf8_from_external (argv[i]);
+		if(utf8_arg==NULL) {
+			/* Ditto the comment about Invalid UTF-8 here */
+			g_print ("\nCannot determine the text encoding for argument %d (%s).\n", i, argv[i]);
+			g_print ("Please add the correct encoding to MONO_EXTERNAL_ENCODINGS and try again.\n");
+			exit (-1);
+		}
+		
+		arg = mono_string_new (domain, utf8_arg);
 		mono_array_set (main_args, gpointer, i, arg);
 	}
 	argc--;
@@ -939,7 +971,11 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	if (method->signature->param_count) {
 		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, argc);
 		for (i = 0; i < argc; ++i) {
-			MonoString *arg = mono_string_new (domain, argv [i]);
+			/* The encodings should all work, given that
+			 * we've checked all these args for the
+			 * main_args array.
+			 */
+			MonoString *arg = mono_string_new (domain, mono_utf8_from_external (argv [i]));
 			mono_array_set (args, gpointer, i, arg);
 		}
 	} else {

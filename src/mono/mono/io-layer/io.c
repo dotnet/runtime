@@ -20,11 +20,11 @@
 #include <utime.h>
 
 #include <mono/io-layer/wapi.h>
-#include <mono/io-layer/unicode.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/io-private.h>
 #include <mono/io-layer/timefuncs-private.h>
+#include <mono/utils/strenc.h>
 
 #undef DEBUG
 
@@ -1362,7 +1362,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		return(INVALID_HANDLE_VALUE);
 	}
 
-	filename=_wapi_unicode_to_utf8(name);
+	filename=mono_unicode_to_external (name);
 	if(filename==NULL) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
@@ -1469,7 +1469,7 @@ gboolean DeleteFile(const gunichar2 *name)
 		return(FALSE);
 	}
 
-	filename=_wapi_unicode_to_utf8(name);
+	filename=mono_unicode_to_external(name);
 	if(filename==NULL) {
 #ifdef DEBUG
 		g_message(G_GNUC_PRETTY_FUNCTION
@@ -1507,7 +1507,7 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	gchar *utf8_name, *utf8_dest_name;
 	int result;
 
-	utf8_name = _wapi_unicode_to_utf8 (name);
+	utf8_name = mono_unicode_to_external (name);
 	if (utf8_name == NULL) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
@@ -1516,7 +1516,7 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 		return FALSE;
 	}
 
-	utf8_dest_name = _wapi_unicode_to_utf8 (dest_name);
+	utf8_dest_name = mono_unicode_to_external (dest_name);
 	if (utf8_dest_name == NULL) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
@@ -2240,7 +2240,7 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 		return INVALID_HANDLE_VALUE;
 	}
 
-	utf8_pattern = _wapi_unicode_to_utf8 (pattern);
+	utf8_pattern = mono_unicode_to_external (pattern);
 	if (utf8_pattern == NULL) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
@@ -2357,12 +2357,9 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 	gboolean ok;
 	struct stat buf;
 	const gchar *filename;
-	gchar *utf8_filename;
-	
-	gchar *base_filename;
-	gunichar2 *utf16_basename;
+	gchar *utf8_filename, *utf8_basename, *utf16_basename;
 	time_t create_time;
-	int i;
+	gsize bytes;
 	
 	ok=_wapi_lookup_handle (handle, WAPI_HANDLE_FIND,
 				(gpointer *)&find_handle, NULL);
@@ -2402,24 +2399,15 @@ retry:
 		}
 	}
 	
-	/* Work around glib brain-damage, where it expects all filenames
-	 * to be validly utf8-encoded
-	 */
-	if(g_utf8_validate(filename, -1, NULL)) {
-		utf8_filename=g_strdup(filename);
-	} else {
-		utf8_filename=g_locale_to_utf8(filename, -1, NULL, NULL, NULL);
-	}
-
-	/* Final check... */
-	if(g_utf8_validate(utf8_filename, -1, NULL)==FALSE) {
-		/* glib can't cope with this filename, so just ignore it
-		 * instead of crashing.
+	utf8_filename=mono_utf8_from_external (filename);
+	if(utf8_filename==NULL) {
+		/* We couldn't turn this filename into utf8 (eg the
+		 * encoding of the name wasn't convertible), so just
+		 * ignore it.
 		 */
-		g_free(utf8_filename);
 		goto retry;
 	}
-
+	
 	/* fill data block */
 
 	if (buf.st_mtime < buf.st_ctime)
@@ -2445,19 +2433,24 @@ retry:
 	find_data->dwReserved0 = 0;
 	find_data->dwReserved1 = 0;
 
-	base_filename = g_path_get_basename (utf8_filename);
-	utf16_basename = g_utf8_to_utf16 (base_filename, MAX_PATH, NULL, NULL, NULL);
-
-	i = 0;
-	while (utf16_basename [i] != 0) {	/* copy basename */
-		find_data->cFileName [i] = utf16_basename [i];
-		++ i;
+	utf8_basename = g_path_get_basename (utf8_filename);
+	utf16_basename = g_convert (utf8_basename, -1, "UTF16LE", "UTF8",
+				    NULL, &bytes, NULL);
+	if(utf16_basename==NULL) {
+		goto retry;
 	}
 
-	find_data->cFileName[i] = 0;		/* null terminate */
+	memset (find_data->cFileName, '\0', (MAX_PATH*2));
+
+	/* Truncating a utf16 string like this might leave the last
+	 * char incomplete
+	 */
+	memcpy (find_data->cFileName, utf16_basename,
+		bytes<(MAX_PATH*2)-2?bytes:(MAX_PATH*2)-2);
+
 	find_data->cAlternateFileName [0] = 0;	/* not used */
 
-	g_free (base_filename);
+	g_free (utf8_basename);
 	g_free (utf8_filename);
 	g_free (utf16_basename);
 	return TRUE;
@@ -2506,7 +2499,7 @@ gboolean CreateDirectory (const gunichar2 *name, WapiSecurityAttributes *securit
 	gchar *utf8_name;
 	int result;
 	
-	utf8_name = _wapi_unicode_to_utf8 (name);
+	utf8_name = mono_unicode_to_external (name);
 	if (utf8_name == NULL) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
@@ -2546,7 +2539,7 @@ gboolean RemoveDirectory (const gunichar2 *name)
 	gchar *utf8_name;
 	int result;
 
-	utf8_name = _wapi_unicode_to_utf8 (name);
+	utf8_name = mono_unicode_to_external (name);
 	if (utf8_name == NULL) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
@@ -2579,7 +2572,7 @@ guint32 GetFileAttributes (const gunichar2 *name)
 	struct stat buf;
 	int result;
 	
-	utf8_name = _wapi_unicode_to_utf8 (name);
+	utf8_name = mono_unicode_to_external (name);
 	if (utf8_name == NULL) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
@@ -2627,7 +2620,7 @@ gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels lev
 		return FALSE;
 	}
 
-	utf8_name = _wapi_unicode_to_utf8 (name);
+	utf8_name = mono_unicode_to_external (name);
 	if (utf8_name == NULL) {
 #ifdef DEBUG
 		g_message (G_GNUC_PRETTY_FUNCTION ": unicode conversion returned NULL");
@@ -2693,7 +2686,7 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
 	 * not standard: 0x80000000, which means `set executable bit'
 	 */
 
-	utf8_name = _wapi_unicode_to_utf8 (name);
+	utf8_name = mono_unicode_to_external (name);
 	result = stat (utf8_name, &buf);
 	if (result != 0) {
 		g_free (utf8_name);
@@ -2741,49 +2734,33 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
  */
 extern guint32 GetCurrentDirectory (guint32 length, gunichar2 *buffer)
 {
-	gchar *path, *utf8_path;
-	gunichar2 *utf16_path, *ptr;
-	glong count = 0;
+	gchar *path;
+	gunichar2 *utf16_path;
+	glong count;
+	gsize bytes;
 	
 	path = g_get_current_dir ();
 	if (path == NULL)
 		return 0;
 
-	/* No, g_get_current_dir () does not return utf8 strings */
-	if(g_utf8_validate(path, -1, NULL)) {
-		utf8_path=g_strdup(path);
-	} else {
-		utf8_path=g_locale_to_utf8(path, -1, NULL, NULL, NULL);
-	}
-
-	if(g_utf8_validate(utf8_path, -1, NULL)==FALSE) {
-		g_free(utf8_path);
-		return(0);
-	}
+	utf16_path=mono_unicode_from_external (path, &bytes);
 	
 	/* if buffer too small, return number of characters required.
 	 * this is plain dumb.
 	 */
 	
-	count = strlen (utf8_path) + 1;
+	count = (bytes/2)+1;
 	if (count > length) {
-		g_free(utf8_path);
+		g_free(path);
+		g_free (utf16_path);
+		
 		return (count);
 	}
-	
-	utf16_path = g_utf8_to_utf16 (utf8_path, -1, NULL, NULL, NULL);
-	if (utf16_path == NULL) {
-		g_free(utf8_path);
-		return (0);
-	}
 
-	ptr = utf16_path;
-	while (*ptr)
-		*buffer ++ = *ptr ++;
+	/* Add the terminator */
+	memset (buffer, '\0', bytes+2);
+	memcpy (buffer, utf16_path, bytes);
 	
-	*buffer = 0;
-	
-	g_free (utf8_path);
 	g_free (utf16_path);
 	g_free (path);
 
@@ -2803,7 +2780,7 @@ extern gboolean SetCurrentDirectory (const gunichar2 *path)
 	gchar *utf8_path;
 	gboolean result;
 
-	utf8_path = _wapi_unicode_to_utf8 (path);
+	utf8_path = mono_unicode_to_external (path);
 	if (chdir (utf8_path) != 0) {
 		_wapi_set_last_error_from_errno ();
 		result = FALSE;
@@ -2958,9 +2935,9 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 guint32 GetTempPath (guint32 len, gunichar2 *buf)
 {
 	gchar *tmpdir=g_strdup (g_get_tmp_dir ());
-	gchar *utf8_tmpdir;
 	gunichar2 *tmpdir16=NULL;
-	glong dirlen, bytes;
+	glong dirlen;
+	gsize bytes;
 	guint32 ret;
 	
 	if(tmpdir[strlen (tmpdir)]!='/') {
@@ -2968,33 +2945,13 @@ guint32 GetTempPath (guint32 len, gunichar2 *buf)
 		tmpdir=g_strdup_printf ("%s/", g_get_tmp_dir ());
 	}
 	
-	/* g_get_tmp_dir () doesn't return utf8 either */
-	if(g_utf8_validate(tmpdir, -1, NULL)) {
-		utf8_tmpdir=g_strdup(tmpdir);
-	} else {
-		utf8_tmpdir=g_locale_to_utf8(tmpdir, -1, NULL, NULL, NULL);
-	}
-
-	if(g_utf8_validate(utf8_tmpdir, -1, NULL)==FALSE) {
-		/* FIXME - set error code */
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": UTF8 error");
-#endif
-
-		g_free(tmpdir);
-		g_free(utf8_tmpdir);
-		return(0);
-	}
-
-	tmpdir16=g_utf8_to_utf16 (utf8_tmpdir, -1, NULL, &dirlen, NULL);
+	tmpdir16=mono_unicode_from_external (tmpdir, &bytes);
 	if(tmpdir16==NULL) {
-		/* FIXME - set error code */
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": Error");
-#endif
-
-		ret=0;
+		g_free (tmpdir);
+		return(0);
 	} else {
+		dirlen=(bytes/2);
+		
 		if(dirlen+1>len) {
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION
@@ -3004,8 +2961,8 @@ guint32 GetTempPath (guint32 len, gunichar2 *buf)
 		
 			ret=dirlen+1;
 		} else {
-			/* Add the terminator and convert to bytes */
-			bytes=(dirlen+1)*2;
+			/* Add the terminator */
+			memset (buf, '\0', bytes+2);
 			memcpy (buf, tmpdir16, bytes);
 		
 			ret=dirlen;
@@ -3015,7 +2972,6 @@ guint32 GetTempPath (guint32 len, gunichar2 *buf)
 	if(tmpdir16!=NULL) {
 		g_free (tmpdir16);
 	}
-	g_free (utf8_tmpdir);
 	g_free (tmpdir);
 	
 	return(ret);

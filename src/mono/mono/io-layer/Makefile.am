@@ -93,8 +93,6 @@ OTHER_SRC = \
 	timed-thread.h		\
 	types.h			\
 	uglify.h		\
-	unicode.c		\
-	unicode.h		\
 	versioninfo.h		\
 	wait.c			\
 	wait.h			\

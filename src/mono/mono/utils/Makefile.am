@@ -9,7 +9,9 @@ libmonoutils_la_SOURCES = \
 	mono-logger.c	\
 	monobitset.c	\
 	strtod.h	\
-	strtod.c
+	strtod.c	\
+	strenc.h	\
+	strenc.c
 
 libmonoutilsincludedir = $(includedir)/mono/utils
 
