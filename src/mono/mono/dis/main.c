@@ -649,6 +649,7 @@ dis_type (MonoImage *m, int n)
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	guint32 cols_next [MONO_TYPEDEF_SIZE];
 	const char *name, *nspace;
+	guint32 packing_size, class_size;
 	gboolean next_is_valid, last;
 	
 	mono_metadata_decode_row (t, n, cols, MONO_TYPEDEF_SIZE);
@@ -675,6 +676,10 @@ dis_type (MonoImage *m, int n)
 	dis_interfaces (m, n + 1);
 	fprintf (output, "  {\n");
 
+	if (mono_metadata_packing_from_typedef (m, n + 1, &packing_size, &class_size)) {
+		fprintf (output, "    .pack %d\n", packing_size);
+		fprintf (output, "    .size %d\n", class_size);
+	}
 	/*
 	 * The value in the table is always valid, we know we have fields
 	 * if the value stored is different than the next record.
