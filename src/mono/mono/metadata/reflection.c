@@ -663,6 +663,51 @@ find_index_in_table (MonoDynamicAssembly *assembly, int table_idx, int col, guin
 	return 0;
 }
 
+typedef struct {
+	MonoMethod *ctor;
+	guint32     data_size;
+	guchar*     data;
+} CustomAttrEntry;
+
+typedef struct {
+	int num_attrs;
+	MonoImage *image;
+	CustomAttrEntry attrs [MONO_ZERO_LEN_ARRAY];
+} CustomAttrInfo;
+
+static GHashTable *dynamic_custom_attrs = NULL;
+
+static void
+mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
+{
+	int i, count;
+	CustomAttrInfo *ainfo;
+	MonoReflectionCustomAttr *cattr;
+
+	if (!cattrs)
+		return;
+	/* FIXME: check in assembly the Run flag is set */
+
+	count = mono_array_length (cattrs);
+
+	ainfo = g_malloc0 (sizeof (CustomAttrInfo) + sizeof (CustomAttrEntry) * (count - MONO_ZERO_LEN_ARRAY));
+
+	ainfo->image = image;
+	ainfo->num_attrs = count;
+	for (i = 0; i < count; ++i) {
+		cattr = (MonoReflectionCustomAttr*)mono_array_get (cattrs, gpointer, i);
+		ainfo->attrs [i].ctor = cattr->ctor->method;
+		/* FIXME: might want to memdup the data here */
+		ainfo->attrs [i].data = mono_array_addr (cattr->data, char, 0);
+		ainfo->attrs [i].data_size = mono_array_length (cattr->data);
+	}
+
+	if (!dynamic_custom_attrs)
+		dynamic_custom_attrs = g_hash_table_new (NULL, NULL);
+
+	g_hash_table_insert (dynamic_custom_attrs, obj, ainfo);
+}
+
 /*
  * idx is the table index of the object
  * type is one of CUSTOM_ATTR_*
@@ -4204,6 +4249,23 @@ create_custom_attr (MonoImage *image, MonoMethod *method,
 	return attr;
 }
 
+static MonoArray*
+attr_array_from_attr_info (CustomAttrInfo *cinfo)
+{
+	MonoArray *result;
+	MonoClass *klass;
+	MonoObject *attr;
+	int i;
+
+	klass = mono_class_from_name (mono_defaults.corlib, "System", "Attribute");
+	result = mono_array_new (mono_domain_get (), klass, cinfo->num_attrs);
+	for (i = 0; i < cinfo->num_attrs; ++i) {
+		attr = create_custom_attr (cinfo->image, cinfo->attrs [i].ctor, cinfo->attrs [i].data, cinfo->attrs [i].data_size);
+		mono_array_set (result, gpointer, i, attr);
+	}
+	return result;
+}
+
 /*
  * mono_reflection_get_custom_attrs:
  * @obj: a reflection object handle
@@ -4224,14 +4286,17 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 	MonoArray *result;
 	GList *list = NULL;
 	MonoArray *dynamic_attrs = NULL;
+	CustomAttrInfo *cinfo;
 	
 	MONO_ARCH_SAVE_REGS;
-	
+
 	klass = obj->vtable->klass;
 	/* FIXME: need to handle: Module */
 	if (klass == mono_defaults.monotype_class) {
 		MonoReflectionType *rtype = (MonoReflectionType*)obj;
 		klass = mono_class_from_mono_type (rtype->type);
+		if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, klass)))
+			return attr_array_from_attr_info (cinfo);
 		idx = mono_metadata_token_index (klass->type_token);
 		idx <<= CUSTOM_ATTR_BITS;
 		idx |= CUSTOM_ATTR_TYPEDEF;
@@ -4244,24 +4309,32 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 		image = rassembly->assembly->image;
 	} else if (strcmp ("MonoProperty", klass->name) == 0) {
 		MonoReflectionProperty *rprop = (MonoReflectionProperty*)obj;
+		if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, rprop->property)))
+			return attr_array_from_attr_info (cinfo);
 		idx = find_property_index (rprop->klass, rprop->property);
 		idx <<= CUSTOM_ATTR_BITS;
 		idx |= CUSTOM_ATTR_PROPERTY;
 		image = rprop->klass->image;
 	} else if (strcmp ("MonoEvent", klass->name) == 0) {
 		MonoReflectionEvent *revent = (MonoReflectionEvent*)obj;
+		if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, revent->event)))
+			return attr_array_from_attr_info (cinfo);
 		idx = find_event_index (revent->klass, revent->event);
 		idx <<= CUSTOM_ATTR_BITS;
 		idx |= CUSTOM_ATTR_EVENT;
 		image = revent->klass->image;
 	} else if (strcmp ("MonoField", klass->name) == 0) {
 		MonoReflectionField *rfield = (MonoReflectionField*)obj;
+		if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, rfield->field)))
+			return attr_array_from_attr_info (cinfo);
 		idx = find_field_index (rfield->klass, rfield->field);
 		idx <<= CUSTOM_ATTR_BITS;
 		idx |= CUSTOM_ATTR_FIELDDEF;
 		image = rfield->klass->image;
 	} else if ((strcmp ("MonoMethod", klass->name) == 0) || (strcmp ("MonoCMethod", klass->name) == 0)) {
 		MonoReflectionMethod *rmethod = (MonoReflectionMethod*)obj;
+		if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, rmethod->method)))
+			return attr_array_from_attr_info (cinfo);
 		idx = find_method_index (rmethod->method);
 		idx <<= CUSTOM_ATTR_BITS;
 		idx |= CUSTOM_ATTR_METHODDEF;
@@ -4272,6 +4345,7 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 		guint32 method_index = find_method_index (rmethod->method);
 		guint32 param_list, param_last, param_pos, found;
 
+		/* FIXME: handle dynamic custom attrs for parameters */
 		image = rmethod->method->klass->image;
 		ca = &image->tables [MONO_TABLE_METHOD];
 
@@ -4312,8 +4386,7 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 			attr = create_custom_attr (image, cattr->ctor->method, mono_array_addr (cattr->data, int, 0), mono_array_length (cattr->data));
 			list = g_list_prepend (list, attr);
 		}		
-	}
-	else {
+	} else {
 		/* at this point image and index are set correctly for searching the custom attr */
 		ca = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
 		/* the table is not sorted */
@@ -4936,6 +5009,7 @@ ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb)
 	rmb.code = NULL;
 
 	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig);
+	mono_save_custom_attrs (klass->image, mb->mhandle, mb->cattrs);
 	return mb->mhandle;
 }
 
@@ -4960,6 +5034,7 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb)
 	rmb.code = mb->code;
 
 	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig);
+	mono_save_custom_attrs (klass->image, mb->mhandle, mb->cattrs);
 	return mb->mhandle;
 }
 
@@ -5064,6 +5139,7 @@ typebuilder_setup_fields (MonoClass *klass)
 			field->offset = fb->offset;
 		field->parent = klass;
 		fb->handle = field;
+		mono_save_custom_attrs (klass->image, field, fb->cattrs);
 	}
 	mono_class_layout_fields (klass);
 }
@@ -5077,6 +5153,8 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	MONO_ARCH_SAVE_REGS;
 
 	klass = my_mono_class_from_mono_type (tb->type.type);
+
+	mono_save_custom_attrs (klass->image, klass, tb->cattrs);
 
 	/*
 	 * Fields to set in klass:
