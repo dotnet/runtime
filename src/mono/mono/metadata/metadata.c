@@ -1195,7 +1195,7 @@ mono_metadata_init (void)
 		g_hash_table_insert (type_cache, &builtin_types [i], &builtin_types [i]);
 }
 
-/*
+/**
  * mono_metadata_parse_type:
  * @m: metadata context
  * @mode: king of type that may be found at @ptr
@@ -2884,7 +2884,7 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 	return do_mono_metadata_type_equal (t1, t2, FALSE);
 }
 
-/*
+/**
  * mono_metadata_signature_equal:
  * @sig1: a signature
  * @sig2: another signature

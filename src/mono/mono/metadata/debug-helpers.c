@@ -152,15 +152,17 @@ mono_signature_get_desc (MonoMethodSignature *sig, gboolean include_namespace)
 
 /**
  * mono_method_desc_new:
+ * @name: the method name.
+ * @include_namespace: whether the name includes a namespace or not.
  *
- * Creates a method description for `name', which conforms to the following
+ * Creates a method description for @name, which conforms to the following
  * specification:
  *
  * [namespace.]classname:methodname[(args...)]
  *
  * in all the loaded assemblies.
  *
- * Returns a parsed representation of the method description.
+ * Returns: a parsed representation of the method description.
  */
 MonoMethodDesc*
 mono_method_desc_new (const char *name, gboolean include_namespace)
@@ -233,8 +235,9 @@ mono_method_desc_from_method (MonoMethod *method)
 
 /**
  * mono_method_desc_free:
+ * @desc: method description to be released
  *
- * Releases the MonoMethodDesc object `desc'.
+ * Releases the MonoMethodDesc object @desc.
  */
 void
 mono_method_desc_free (MonoMethodDesc *desc)

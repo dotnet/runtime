@@ -2694,10 +2694,10 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
  * is located in the given MonoImage.   The namespace and name
  * lookups are case insensitive.
  *
- * You can also pass `NULL' to the image, and that will lookup for
+ * You can also pass @NULL to the image, and that will lookup for
  * a type with the given namespace and name in all of the loaded
  * assemblies: notice that since there might be a name clash in this
- * case, passing NULL is not encouraged if you need a precise type.
+ * case, passing @NULL is not encouraged if you need a precise type.
  *
  */
 MonoClass *
@@ -3329,7 +3329,7 @@ mono_class_num_events (MonoClass *klass)
  * iterate over all of the elements.  When no more values are
  * available, the return value is NULL.
  *
- * Returns a `MonoClassField *' on each iteration, or NULL when no more fields are available.
+ * Returns: a @MonoClassField* on each iteration, or NULL when no more fields are available.
  */
 MonoClassField*
 mono_class_get_fields (MonoClass* klass, gpointer *iter)
@@ -3405,7 +3405,7 @@ mono_class_get_methods (MonoClass* klass, gpointer *iter)
  * iterate over all of the elements.  When no more values are
  * available, the return value is NULL.
  *
- * Returns a `MonoProperty *' on each invocation, or NULL when no more are available.
+ * Returns: a @MonoProperty* on each invocation, or NULL when no more are available.
  */
 MonoProperty*
 mono_class_get_properties (MonoClass* klass, gpointer *iter)
@@ -3442,7 +3442,7 @@ mono_class_get_properties (MonoClass* klass, gpointer *iter)
  * iterate over all of the elements.  When no more values are
  * available, the return value is NULL.
  *
- * Returns a `MonoEvent *' on each invocation, or NULL when no more are available.
+ * Returns: a @MonoEvent* on each invocation, or NULL when no more are available.
  */
 MonoEvent*
 mono_class_get_events (MonoClass* klass, gpointer *iter)
@@ -3479,7 +3479,7 @@ mono_class_get_events (MonoClass* klass, gpointer *iter)
  * iterate over all of the elements.  When no more values are
  * available, the return value is NULL.
  *
- * Returns a `Monoclass *' on each invocation, or NULL when no more are available.
+ * Returns: a @Monoclass* on each invocation, or NULL when no more are available.
  */
 MonoClass*
 mono_class_get_interfaces (MonoClass* klass, gpointer *iter)
@@ -3518,7 +3518,7 @@ mono_class_get_interfaces (MonoClass* klass, gpointer *iter)
  * iterate over all of the elements.  When no more values are
  * available, the return value is NULL.
  *
- * Returns a `Monoclass *' on each invocation, or NULL when no more are available.
+ * Returns: a @Monoclass* on each invocation, or NULL when no more are available.
  */
 MonoClass*
 mono_class_get_nested_types (MonoClass* klass, gpointer *iter)
@@ -3677,7 +3677,7 @@ mono_event_get_name (MonoEvent *event)
  * mono_event_get_add_method:
  * @event: The MonoEvent to act on.
  *
- * Returns the `add' method for the event (a MonoMethod).
+ * Returns: the @add' method for the event (a MonoMethod).
  */
 MonoMethod*
 mono_event_get_add_method (MonoEvent *event)
@@ -3689,7 +3689,7 @@ mono_event_get_add_method (MonoEvent *event)
  * mono_event_get_remove_method:
  * @event: The MonoEvent to act on.
  *
- * Returns the `remove' method for the event (a MonoMethod).
+ * Returns: the @remove method for the event (a MonoMethod).
  */
 MonoMethod*
 mono_event_get_remove_method (MonoEvent *event)
@@ -3701,7 +3701,7 @@ mono_event_get_remove_method (MonoEvent *event)
  * mono_event_get_raise_method:
  * @event: The MonoEvent to act on.
  *
- * Returns the `raise' method for the event (a MonoMethod).
+ * Returns: the @raise method for the event (a MonoMethod).
  */
 MonoMethod*
 mono_event_get_raise_method (MonoEvent *event)

@@ -1039,7 +1039,7 @@ static MonoInvokeFunc default_mono_runtime_invoke = dummy_mono_runtime_invoke;
  * @params: arguments to the method
  * @exc: exception information.
  *
- * Invokes the method represented by `method' on the object `obj'.
+ * Invokes the method represented by @method on the object @obj.
  *
  * obj is the 'this' pointer, it should be NULL for static
  * methods, a MonoObject* for object instances and a pointer to
@@ -1160,8 +1160,8 @@ handle_enum:
  * @field: MonoClassField describing the field to set
  * @value: The value to be set
  *
- * Sets the value of the field described by `field' in the object instance `obj'
- * to the value passed in `value'.
+ * Sets the value of the field described by @field in the object instance @obj
+ * to the value passed in @value.
  *
  * The value must be on the native format of the field type. 
  */
@@ -1181,8 +1181,8 @@ mono_field_set_value (MonoObject *obj, MonoClassField *field, void *value)
  * @field: MonoClassField describing the field to set
  * @value: The value to be set
  *
- * Sets the value of the static field described by `field' 
- * to the value passed in `value'.
+ * Sets the value of the static field described by @field
+ * to the value passed in @value.
  *
  * The value must be on the native format of the field type. 
  */
@@ -1205,7 +1205,7 @@ mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value)
  * @field: MonoClassField describing the field to fetch information from
  * @value: pointer to the location where the value will be stored
  *
- * Use this routine to get the value of the field `field' in the object
+ * Use this routine to get the value of the field @field in the object
  * passed.
  *
  * The pointer provided by value must be of the field type, for reference
@@ -1365,7 +1365,7 @@ get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value)
  * @field: MonoClassField describing the field to fetch information from
  * @value: where the value is returned
  *
- * Use this routine to get the value of the static field `field' value.
+ * Use this routine to get the value of the static field @field value.
  *
  * The pointer provided by value must be of the field type, for reference
  * types this is a MonoObject*, for value types its the actual pointer to
@@ -1468,7 +1468,7 @@ mono_get_delegate_invoke (MonoClass *klass)
  * @params: parameters for the delegate.
  * @exc: Pointer to the exception result.
  *
- * Invokes the delegate method `delegate' with the parameters provided.
+ * Invokes the delegate method @delegate with the parameters provided.
  *
  * You can pass NULL as the exc argument if you don't want to
  * catch exceptions, otherwise, *exc will be set to the exception
@@ -1805,7 +1805,7 @@ mono_install_runtime_invoke (MonoInvokeFunc func)
  * @params: arguments to the method
  * @exc: exception information.
  *
- * Invokes the method represented by `method' on the object `obj'.
+ * Invokes the method represented by @method on the object @obj.
  *
  * obj is the 'this' pointer, it should be NULL for static
  * methods, a MonoObject* for object instances and a pointer to
