@@ -501,10 +501,10 @@ mono_metadata_compute_size (MonoMetadata *meta, int tableindex, guint32 *result_
 			n = MAX (n, meta->tables [MONO_TABLE_INTERFACEIMPL].rows);
 			n = MAX (n, meta->tables [MONO_TABLE_MEMBERREF].rows);
 			n = MAX (n, meta->tables [MONO_TABLE_MODULE].rows);
-			/* Permission seems to be a blob heap pointer */
+			n = MAX (n, meta->tables [MONO_TABLE_DECLSECURITY].rows);
 			n = MAX (n, meta->tables [MONO_TABLE_PROPERTY].rows);
 			n = MAX (n, meta->tables [MONO_TABLE_EVENT].rows);
-			/* Signature seems to be a blob heap pointer */
+			n = MAX (n, meta->tables [MONO_TABLE_STANDALONESIG].rows);
 			n = MAX (n, meta->tables [MONO_TABLE_MODULEREF].rows);
 			n = MAX (n, meta->tables [MONO_TABLE_TYPESPEC].rows);
 			n = MAX (n, meta->tables [MONO_TABLE_ASSEMBLY].rows);
