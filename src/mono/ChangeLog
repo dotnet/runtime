@@ -1,3 +1,8 @@
+Wed Jul 11 00:36:36 CEST 2001 Paolo Molaro <lupus@ximian.com>
+
+	* status/*: scripts and data to create statistics about the
+	class library status.
+
 2001-07-09  Alex Graveley  <alex@ximian.com>
 
 	* doc/makefile (clean): Add clean target.

@@ -1,0 +1,289 @@
+#!/usr/bin/perl -w
+
+use strict;
+use XML::Parser;
+#use Data::Dumper;
+
+# command line arguments: shell globs for the files containing the info
+# for the ms assemblyes and mono's
+my $msglob = shift || 'ms*.xml';
+my $monoglob = shift || 'mono*.xml';
+# maintainers file
+my $mfile = 'maintainers.xml';
+my $curfile;
+
+# positions in array refs
+use constant MNAME => 0;
+use constant MASSEMBLY => 1;
+use constant MCLASS => 2;
+
+use constant MAINTAINER => 0;
+use constant PERCENT => 1;
+use constant HASH => 2;
+# we store all the data in some global hash tables
+# $email => [$name, \%assembly, \%class]
+my %maintainer;
+
+# $name => [$maintainer, $percent, \%classes];
+my %assembly;
+
+# $name => [$maintainer, $percent, \%methods]
+my %class;
+
+# my parsing state machine
+my @status;
+# current maintainer, class and assembly pointers
+my ($curm, $curc, $cura);
+my $mono = 0;
+my $namespace = '';
+my %status_action = (
+	MAINTAINERS => sub {
+		my ($elem, %attrs) = @_;
+		malformed ($mfile, $elem, 'maintainers', \@status);
+		push @status, 'DUDE';
+	},
+	DUDE => sub {
+		my ($elem, %attrs) = @_;
+		malformed ($mfile, $elem, 'dude', \@status);
+		foreach(qw(email name)) {die "$_ not included in dude\n" unless defined $attrs{$_}}
+		$curm = $maintainer{$attrs{email}} = [$attrs{name}, {}, {}];
+		push @status, 'DUDE_CONTENT';
+	},
+	DUDE_CONTENT => sub {
+		my ($elem, %attrs) = @_;
+		malformed ($mfile, $elem, 'class|assembly', \@status);
+		if ($elem eq 'class') {
+			$curm->[MCLASS]->{$attrs{name}} = '';
+		} elsif ($elem eq 'assembly') {
+			$curm->[MASSEMBLY]->{$attrs{name}} = '';
+		}
+		push @status, 'DUDE_CONTENT';
+	},
+	ASSEMBLY => sub {
+		my ($elem, %attrs) = @_;
+		malformed ($curfile, $elem, 'assembly', \@status);
+		$namespace = '';
+		$cura = $assembly{$attrs{name}} = ['', 0, {}];
+		push @status, 'NAMESPACE';
+	},
+	NAMESPACE => sub {
+		my ($elem, %attrs) = @_;
+		malformed ($curfile, $elem, 'namespace', \@status);
+		$namespace = $attrs{name};
+		push @status, 'CLASS';
+	},
+	CLASS => sub {
+		my ($elem, %attrs) = @_;
+		malformed ($curfile, $elem, 'class|valueType|interface', \@status);
+		if ($elem eq 'class') {
+			my $name = $namespace ? $namespace.".".$attrs{name} : $attrs{name};
+			if ($mono) {
+				warn "mono implements non exisistent class $name\n" 
+					if (!exists $class{$name});
+				$curc = $class{$name};
+			} else {
+				$curc = $class{$name} = ['', 0, {}];
+			}
+			$cura->[HASH]->{$name} = $mono;
+			push @status, 'METHOD';
+		} else {
+			push @status, 'METHOD';
+		}
+	},
+	METHOD => sub {
+		my ($elem, %attrs) = @_;
+		malformed ($curfile, $elem, 'method|field|valueType', \@status);
+		if ($elem eq 'method') {
+			my $name = $attrs{signature};
+			if ($mono) {
+				warn "mono implements non exisistent method $name\n" 
+					if (!exists $curc->[HASH]->{$name});
+			}
+			$curc->[HASH]->{$name} = $mono;
+			push @status, 'METHOD';
+		} else {
+			push @status, 'METHOD';
+		}
+	},
+);
+
+
+my $parser = new XML::Parser (Handlers => {Start => \&handle_tag, End => \&end_tag});
+
+# parse the maintainers info
+if ($mfile) {
+	@status = 'MAINTAINERS';
+	$parser->parsefile($mfile);
+	#print Dumper(\%maintainer);
+}
+
+foreach (glob($msglob)) {
+	$curfile = $_;
+	@status = 'ASSEMBLY';
+	$mono = 0;
+	$parser->parsefile($_);
+}
+
+foreach (glob($monoglob)) {
+	$curfile = $_;
+	@status = 'ASSEMBLY';
+	$mono = 1;
+	$parser->parsefile($_);
+}
+
+create_stats();
+create_html();
+#print Dumper(\%assembly);
+#print Dumper(\%class);
+exit(0);
+
+sub malformed {
+	my ($file, $elem, $match, $data) = @_;
+	unless ($elem =~ /^$match$/) {
+		$data = Dumper($data) if defined $data;
+		die "file $file malformed ($elem instead of $match) $data\n"
+	}
+}
+
+sub handle_tag {
+	my $parser = shift @_;
+	my $status = $status[-1];
+	die "status $status unknown" unless exists $status_action{$status};
+	$status_action{$status}->(@_);
+}
+
+sub end_tag {
+	my $last = pop @status;
+	# print STDERR "done with $last\n";
+}
+
+sub assign_maintainer {
+	my ($m, $from, $to, $type) = @_;
+	foreach (keys %$from) {
+		if (!exists $to->{$_}) {
+			warn "$m maintains unknown $type $_\n";
+			# fixup to avoid warnings
+			$to->{$_}->[MAINTAINER] = $m;
+			$to->{$_}->[PERCENT] = 0;
+			$to->{$_}->[HASH] = {};
+		} else {
+			warn "$to->{$_}->[MAINTAINER] already maintains $_ (now $m)\n" if $to->{$_}->[MAINTAINER];
+			$to->{$_}->[MAINTAINER] = $m;
+		}
+	}
+}
+
+sub completeness {
+	my $hash = shift @_;
+	my $total = keys %$hash;
+	my $done = 0;
+	map {$done += $_} values %$hash;
+	return 0 unless $total;
+	return int($done*100/$total);
+}
+
+sub create_stats {
+	# set maintainer field in assembly and class hashes
+	foreach my $m (sort keys %maintainer) {
+		assign_maintainer ($m, $maintainer{$m}->[MASSEMBLY], \%assembly, 'assembly');
+		assign_maintainer ($m, $maintainer{$m}->[MCLASS], \%class, 'class');
+	}
+	# assign completeness percent
+	foreach my $ass (values %assembly) {
+		$ass->[PERCENT] = completeness ($ass->[HASH]);
+	}
+	foreach my $class (values %class) {
+		$class->[PERCENT] = completeness ($class->[HASH]);
+	}
+}
+
+sub html_header {
+	my ($title) = @_;
+return <<"EOF";
+<html><head><title>$title</title></head><body bgcolor="#ffffff">
+<h1 ALIGN=center>$title</H1>
+EOF
+
+}
+
+sub unimplemented ($) {
+	my ($c) = @_;
+	my $id = $c;
+	$id =~ tr/./-/;
+	return "<A HREF='per-unimplemented.html#$id'>$c</A>";
+}
+
+sub create_html {
+
+	open(F, ">per-assembly.html") || die "Cannot open file: $!";
+	print F html_header("Mono - per-assembly stats");
+	print F "<TABLE BORDER=1><TR><TH>Assembly<TH>Maintainer<TH>Completion\n";
+	foreach my $ass (sort keys %assembly) {
+		print F "\t<TR><TD>", join('<TD>', $ass, $assembly{$ass}->[MAINTAINER], $assembly{$ass}->[PERCENT]), "\n";
+	}
+	print F "</TABLE>\n";
+	print F "</body></html>\n";
+	close(F);
+
+	# per maintainer info
+	open(F, ">per-maintainer.html") || die "Cannot open file: $!";
+	print F html_header("Mono - per-maintainer stats");
+	print F "<TABLE BORDER=1><TR><TH>Maintainer<TH>Class<TH>Completion\n";
+	foreach my $m (sort keys %maintainer) {
+		my @classes = sort keys %{$maintainer{$m}->[MCLASS]};
+		my $count = @classes;
+		foreach my $c (@classes) {
+			my $start = $count?"\t<TR><TD ROWSPAN=$count>$m<TD>":"\t<TR><TD>";
+			$count = 0;
+			print F $start, join('<TD>', $c, $class{$c}->[PERCENT]), "\n";
+		}
+	}
+	my @unmantained = sort grep {!$class{$_}->[MAINTAINER]} keys %class;
+	my $count = @unmantained;
+	foreach my $c (@unmantained) {
+		my $start = $count?"\t<TR><TD ROWSPAN=$count>Unmantained<TD>":"\t<TR><TD>";
+		$count = 0;
+		print F $start, join('<TD>', $c, $class{$c}->[PERCENT]), "\n";
+	}
+	print F "</TABLE>\n";
+	print F "</body></html>\n";
+	close(F);
+
+	# per-completion info
+	open(F, ">per-completion.html") || die "Cannot open file: $!";
+	print F html_header("Mono - per-completion stats");
+	print F "<TABLE BORDER=1><TR><TH>Completion<TH>Class<TH>Maintainer\n";
+	foreach my $c (sort {$class{$b}->[PERCENT] <=> $class{$a}->[PERCENT]} keys %class) {
+		print F "\t<TR><TD>", join('<TD>', $class{$c}->[PERCENT], unimplemented($c), $class{$c}->[MAINTAINER]), "\n";
+	}
+	print F "</TABLE>\n";
+	print F "</body></html>\n";
+	close(F);
+
+	# unimplemented methods
+	# FIXME: this can create a very big file, split on assembly name
+	# and fix also the unimplemented() sub
+	open(F, ">per-unimplemented.html") || die "Cannot open file: $!";
+	print F html_header("Mono - unimplemented methods stats");
+	print F "<TABLE BORDER=1><TR><TH>Class<TH>Method\n";
+	foreach my $c (sort grep {$class{$_}->[PERCENT] != 100} keys %class) {
+		my @methods = sort grep {!$class{$c}->[HASH]->{$_}} keys %{$class{$c}->[HASH]};
+		my $count = @methods;
+		my $aname = '';
+		if ($count) {
+			my $id = $c;
+			$id =~ tr/./-/;
+			$aname = "<A NAME='$id'></A>";
+		}
+		foreach my $m (@methods) {
+			my $start = $count?"\t<TR><TD ROWSPAN=$count>$aname$c<TD>":"\t<TR><TD>";
+			$count = 0;
+			print F $start, join('<TD>', $m), "\n";
+		}
+	}
+	print F "</TABLE>\n";
+	print F "</body></html>\n";
+	close(F);
+
+}
+
