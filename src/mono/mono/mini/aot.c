@@ -7,10 +7,13 @@
  * (C) 2002 Ximian, Inc.
  */
 
+#include "config.h"
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
+#ifndef PLATFORM_WIN32
 #include <sys/mman.h>
+#endif
 
 #include <limits.h>    /* for PAGESIZE */
 #ifndef PAGESIZE
@@ -149,11 +152,13 @@ mono_aot_get_method (MonoMethod *method)
 			patch_info = ji;
 		}
 
+#ifndef PLATFORM_WIN32
 		/* disable write protection */
 		page_start = (char *) (((int) (code)) & ~ (PAGESIZE - 1));
 		pages = (code + code_len - page_start + PAGESIZE - 1) / PAGESIZE;
 		err = mprotect (page_start, pages * PAGESIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
 		g_assert (err == 0);
+#endif
 
 		mono_arch_patch_code (method, mono_root_domain, code, patch_info);
 		mono_mempool_destroy (mp);
@@ -337,7 +342,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 
 	printf ("Mono AOT compiler - compiling assembly %s\n", image->name);
 
-	tmpfname = g_strdup_printf ("%s/mono_aot_%05d",  P_tmpdir, getpid ());
+	tmpfname = g_strdup_printf ("%s/mono_aot_%05d",  g_get_tmp_dir (), getpid ());
 	tmpfp = fopen (tmpfname, "w+");
 	g_assert (tmpfp);
 

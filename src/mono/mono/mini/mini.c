@@ -45,6 +45,7 @@
 
 #define MONO_CHECK_THIS(ins) (cfg->method->signature->hasthis && (ins)->ssa_op == MONO_SSA_LOAD && (ins)->inst_left->inst_c0 == 0)
 
+gboolean  mono_arch_handle_exception (struct sigcontext *ctx, gpointer obj, gboolean test_only);
 static gpointer mono_jit_compile_method (MonoMethod *method);
 
 static void handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *dest, MonoInst *src, 

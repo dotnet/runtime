@@ -10,6 +10,8 @@
 #include "mini.h"
 #include "mini-x86.h"
 #include <mono/metadata/mono-debug.h>
+/* mono-debug-debugger.h nneds config.h to work... */
+#include "config.h"
 #include <mono/metadata/mono-debug-debugger.h>
 
 /*

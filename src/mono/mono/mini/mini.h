@@ -630,7 +630,6 @@ gpointer  mono_arch_get_throw_exception_by_name (void);
 gpointer  mono_arch_create_jit_trampoline       (MonoMethod *method);
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg);
 GList    *mono_arch_get_global_int_regs         (MonoCompile *cfg);
-gboolean  mono_arch_handle_exception            (struct sigcontext *ctx, gpointer obj, gboolean test_only);
 void      mono_arch_patch_code                  (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji);
 void      mono_arch_flush_icache                (guint8 *code, gint size);
 int       mono_arch_max_epilog_size             (MonoCompile *cfg);
