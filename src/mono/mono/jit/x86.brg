@@ -25,7 +25,7 @@
 #include "jit.h"
 
 
-void print_lmf ();
+void print_lmf (void);
 
 #define MBTREE_TYPE  MBTree
 #define MBCGEN_TYPE  MonoFlowGraph
@@ -1790,7 +1790,7 @@ reg: CONV_I4 (lreg) {
 
 reg: CONV_OVF_I4 (lreg){
 	guint8 *start = s->code;
-	gpointer o1, o2, o3, o4, o5;
+	guchar* o1, *o2, *o3, *o4, *o5;
 	int i;
 
 	/* 
@@ -2520,7 +2520,7 @@ reg: CEQ (lreg, lreg) {
 
 reg: CLT (lreg, lreg) {
 	guint8 *start = s->code;
-	gpointer o1, o2, o3, o4, o5;
+	guchar *o1, *o2, *o3, *o4, *o5;
 	int i;
 
 	for (i = 0; i < 2; i ++) {
@@ -2546,7 +2546,7 @@ reg: CLT (lreg, lreg) {
 
 reg: CLT_UN (lreg, lreg) {
 	guint8 *start = s->code;
-	gpointer o1, o2, o3, o4, o5;
+	guchar *o1, *o2, *o3, *o4, *o5;
 	int i;
 
 	for (i = 0; i < 2; i ++) {
@@ -2572,7 +2572,7 @@ reg: CLT_UN (lreg, lreg) {
 
 reg: CGT (lreg, lreg) {
 	guint8 *start = s->code;
-	gpointer o1, o2, o3, o4, o5;
+	guchar *o1, *o2, *o3, *o4, *o5;
 	int i;
 
 	for (i = 0; i < 2; i ++) {
@@ -2598,7 +2598,7 @@ reg: CGT (lreg, lreg) {
 
 reg: CGT_UN (lreg, lreg) {
 	guint8 *start = s->code;
-	gpointer o1, o2, o3, o4, o5;
+	guchar *o1, *o2, *o3, *o4, *o5;
 	int i;
 
 	for (i = 0; i < 2; i ++) {
@@ -2625,7 +2625,7 @@ reg: CGT_UN (lreg, lreg) {
 stmt: BEQ (lreg, lreg) {
 	guint8 *start = s->code;
 	int i;
-	gpointer o1, o2;
+	guchar *o1, *o2;
 
 	for (i = 0; i < 2; i ++) {
 		s->code = start;
@@ -2650,7 +2650,7 @@ stmt: BNE_UN (lreg, lreg) {
 
 stmt: BGE (lreg, lreg) {
 	guint8 *start = s->code;
-	gpointer o2, oe;
+	guchar *o2, *oe;
 	int i;
 
 	for (i = 0; i < 2; i ++) {
@@ -2670,7 +2670,7 @@ stmt: BGE (lreg, lreg) {
 
 stmt: BGE_UN (lreg, lreg) {
 	guint8 *start = s->code;
-	gpointer o2, oe;
+	guchar *o2, *oe;
 	int i;
 
 	for (i = 0; i < 2; i ++) {
@@ -2690,7 +2690,7 @@ stmt: BGE_UN (lreg, lreg) {
 
 stmt: BGT (lreg, lreg) {
 	guint8 *start = s->code;
-	gpointer o2, oe;
+	guchar *o2, *oe;
 	int i;
 
 	for (i = 0; i < 2; i ++) {
@@ -2710,7 +2710,7 @@ stmt: BGT (lreg, lreg) {
 
 stmt: BGT_UN (lreg, lreg) {
 	guint8 *start = s->code;
-	gpointer o2, oe;
+	guchar *o2, *oe;
 	int i;
 
 	for (i = 0; i < 2; i ++) {
@@ -2730,7 +2730,7 @@ stmt: BGT_UN (lreg, lreg) {
 
 stmt: BLT (lreg, lreg) {
 	guint8 *start = s->code;
-	gpointer o2, oe;
+	guchar *o2, *oe;
 	int i;
 
 	for (i = 0; i < 2; i ++) {
@@ -2750,7 +2750,7 @@ stmt: BLT (lreg, lreg) {
 
 stmt: BLT_UN (lreg, lreg) {
 	guint8 *start = s->code;
-	gpointer o2, oe;
+	guchar *o2, *oe;
 	int i;
 
 	for (i = 0; i < 2; i ++) {
@@ -2770,7 +2770,7 @@ stmt: BLT_UN (lreg, lreg) {
 
 stmt: BLE (lreg, lreg) {
 	guint8 *start = s->code;
-	gpointer o2, oe;
+	guchar *o2, *oe;
 	int i;
 
 	for (i = 0; i < 2; i ++) {
@@ -2790,7 +2790,7 @@ stmt: BLE (lreg, lreg) {
 
 stmt: BLE_UN (lreg, lreg) {
 	guint8 *start = s->code;
-	gpointer o2, oe;
+	guchar *o2, *oe;
 	int i;
 
 	for (i = 0; i < 2; i ++) {
