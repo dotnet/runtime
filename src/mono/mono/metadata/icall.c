@@ -51,6 +51,7 @@
 #include <mono/metadata/char-conversions.h>
 #include <mono/metadata/security.h>
 #include <mono/metadata/mono-config.h>
+#include <mono/metadata/cil-coff.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
 #include <mono/utils/monobitset.h>
@@ -3903,6 +3904,19 @@ ves_icall_System_Reflection_Module_GetGuidInternal (MonoReflectionModule *module
 	return mono_string_new (domain, module->image->guid);
 }
 
+static void
+ves_icall_System_Reflection_Module_GetPEKind (MonoImage *image, gint32 *pe_kind, gint32 *machine)
+{
+	if (image->dynamic) {
+		*pe_kind = 0x1; /* ILOnly */
+		*machine = 0x14c; /* I386 */
+	}
+	else {
+		*pe_kind = ((MonoCLIImageInfo*)(image->image_info))->cli_cli_header.ch_flags & 0x3;
+		*machine = ((MonoCLIImageInfo*)(image->image_info))->cli_header.coff.coff_machine;
+	}
+}
+
 static MonoArray*
 ves_icall_System_Reflection_Module_InternalGetTypes (MonoReflectionModule *module)
 {
@@ -3912,6 +3926,88 @@ ves_icall_System_Reflection_Module_InternalGetTypes (MonoReflectionModule *modul
 		return mono_array_new (mono_object_domain (module), mono_defaults.monotype_class, 0);
 	else
 		return mono_module_get_types (mono_object_domain (module), module->image, FALSE);
+}
+
+static gboolean
+mono_metadata_memberref_is_method (MonoImage *image, guint32 token)
+{
+	guint32 cols [MONO_MEMBERREF_SIZE];
+	const char *sig;
+	mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], mono_metadata_token_index (token) - 1, cols, MONO_MEMBERREF_SIZE);
+	sig = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
+	mono_metadata_decode_blob_size (sig, &sig);
+	return (*sig == 0x6);
+}
+
+static MonoType*
+ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 token)
+{
+	MonoClass *klass;
+	int table = mono_metadata_token_table (token);
+	int index = mono_metadata_token_index (token);
+
+	/* Validate token */
+	if ((table != MONO_TABLE_TYPEDEF) && (table != MONO_TABLE_TYPEREF) && 
+		(table != MONO_TABLE_TYPESPEC))
+		return NULL;
+
+	if (image->dynamic)
+		return mono_lookup_dynamic_token (image, token);
+
+	if ((index <= 0) || (index > image->tables [table].rows))
+		return NULL;
+
+	klass = mono_class_get (image, token);
+	if (klass)
+		return &klass->byval_arg;
+	else
+		return NULL;
+}
+
+static MonoMethod*
+ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32 token)
+{
+	int table = mono_metadata_token_table (token);
+	int index = mono_metadata_token_index (token);
+
+	/* Validate token */
+	if ((table != MONO_TABLE_METHOD) && (table != MONO_TABLE_METHODSPEC) && 
+		(table != MONO_TABLE_MEMBERREF))
+		return NULL;
+
+	if (image->dynamic)
+		/* FIXME: validate memberref token type */
+		return mono_lookup_dynamic_token (image, token);
+
+	if ((index <= 0) || (index > image->tables [table].rows))
+		return NULL;
+	if ((table == MONO_TABLE_MEMBERREF) && (!mono_metadata_memberref_is_method (image, token)))
+			return NULL;
+
+	return mono_get_method (image, token, NULL);
+}
+
+static MonoClassField*
+ves_icall_System_Reflection_Module_ResolveFieldToken (MonoImage *image, guint32 token)
+{
+	MonoClass *klass;
+	int table = mono_metadata_token_table (token);
+	int index = mono_metadata_token_index (token);
+
+	/* Validate token */
+	if ((table != MONO_TABLE_FIELD) && (table != MONO_TABLE_MEMBERREF))
+		return NULL;
+
+	if (image->dynamic)
+		/* FIXME: validate memberref token type */
+		return mono_lookup_dynamic_token (image, token);
+
+	if ((index <= 0) || (index > image->tables [table].rows))
+		return NULL;
+	if ((table == MONO_TABLE_MEMBERREF) && (mono_metadata_memberref_is_method (image, token)))
+			return NULL;
+
+	return mono_field_from_token (image, token, &klass, NULL);
 }
 
 static MonoReflectionType*
@@ -5432,6 +5528,10 @@ static const IcallEntry fieldinfo_icalls [] = {
 	{"internal_from_handle", ves_icall_System_Reflection_FieldInfo_internal_from_handle}
 };
 
+static const IcallEntry memberinfo_icalls [] = {
+	{"get_MetadataToken", mono_reflection_get_token}
+};
+
 static const IcallEntry monotype_icalls [] = {
 	{"GetArrayRank", ves_icall_MonoType_GetArrayRank},
 	{"GetConstructors", ves_icall_Type_GetConstructors_internal},
@@ -5506,7 +5606,11 @@ static const IcallEntry module_icalls [] = {
 	{"Close", ves_icall_System_Reflection_Module_Close},
 	{"GetGlobalType", ves_icall_System_Reflection_Module_GetGlobalType},
 	{"GetGuidInternal", ves_icall_System_Reflection_Module_GetGuidInternal},
-	{"InternalGetTypes", ves_icall_System_Reflection_Module_InternalGetTypes}
+	{"GetPEKind", ves_icall_System_Reflection_Module_GetPEKind},
+	{"InternalGetTypes", ves_icall_System_Reflection_Module_InternalGetTypes},
+	{"ResolveFieldToken", ves_icall_System_Reflection_Module_ResolveFieldToken},
+	{"ResolveMethodToken", ves_icall_System_Reflection_Module_ResolveMethodToken},
+	{"ResolveTypeToken", ves_icall_System_Reflection_Module_ResolveTypeToken}
 };
 
 static const IcallEntry monocmethod_icalls [] = {
@@ -5559,6 +5663,10 @@ static const IcallEntry monomethodinfo_icalls [] = {
 
 static const IcallEntry monopropertyinfo_icalls [] = {
 	{"get_property_info", ves_icall_get_property_info}
+};
+
+static const IcallEntry parameterinfo_icalls [] = {
+	{"get_MetadataToken", mono_reflection_get_token}
 };
 
 static const IcallEntry dns_icalls [] = {
@@ -5979,6 +6087,7 @@ static const IcallMap icall_entries [] = {
 	{"System.Reflection.Emit.SignatureHelper", signaturehelper_icalls, G_N_ELEMENTS (signaturehelper_icalls)},
 	{"System.Reflection.Emit.TypeBuilder", typebuilder_icalls, G_N_ELEMENTS (typebuilder_icalls)},
 	{"System.Reflection.FieldInfo", fieldinfo_icalls, G_N_ELEMENTS (fieldinfo_icalls)},
+	{"System.Reflection.MemberInfo", memberinfo_icalls, G_N_ELEMENTS (memberinfo_icalls)},
 	{"System.Reflection.MethodBase", methodbase_icalls, G_N_ELEMENTS (methodbase_icalls)},
 	{"System.Reflection.Module", module_icalls, G_N_ELEMENTS (module_icalls)},
 	{"System.Reflection.MonoCMethod", monocmethod_icalls, G_N_ELEMENTS (monocmethod_icalls)},
@@ -5988,6 +6097,7 @@ static const IcallMap icall_entries [] = {
 	{"System.Reflection.MonoMethod", monomethod_icalls, G_N_ELEMENTS (monomethod_icalls)},
 	{"System.Reflection.MonoMethodInfo", monomethodinfo_icalls, G_N_ELEMENTS (monomethodinfo_icalls)},
 	{"System.Reflection.MonoPropertyInfo", monopropertyinfo_icalls, G_N_ELEMENTS (monopropertyinfo_icalls)},
+	{"System.Reflection.ParameterInfo", parameterinfo_icalls, G_N_ELEMENTS (parameterinfo_icalls)},
 	{"System.Runtime.CompilerServices.RuntimeHelpers", runtimehelpers_icalls, G_N_ELEMENTS (runtimehelpers_icalls)},
 	{"System.Runtime.InteropServices.GCHandle", gchandle_icalls, G_N_ELEMENTS (gchandle_icalls)},
 	{"System.Runtime.InteropServices.Marshal", marshal_icalls, G_N_ELEMENTS (marshal_icalls)},

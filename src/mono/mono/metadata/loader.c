@@ -995,6 +995,35 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 	}
 }
 
+guint32
+mono_method_get_param_token (MonoMethod *method, int index)
+{
+	int i;
+	MonoClass *klass = method->klass;
+	MonoTableInfo *methodt;
+
+	if (klass->generic_inst)
+		g_assert_not_reached ();
+
+	mono_class_init (klass);
+
+	if (klass->image->dynamic) {
+		g_assert_not_reached ();
+	}
+
+	methodt = &klass->image->tables [MONO_TABLE_METHOD];
+	for (i = 0; i < klass->method.count; ++i) {
+		if (method == klass->methods [i]) {
+			guint32 idx = klass->method.first + i;
+			guint param_index = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
+
+			return mono_metadata_make_token (MONO_TABLE_PARAM, param_index + index);
+		}
+	}
+
+	return 0;
+}
+
 void
 mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 {

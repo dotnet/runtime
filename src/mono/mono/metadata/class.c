@@ -2443,6 +2443,42 @@ mono_class_get_field_from_name (MonoClass *klass, const char *name)
 	return NULL;
 }
 
+guint32
+mono_class_get_field_token (MonoClassField *field)
+{
+	MonoClass *klass = field->parent;
+	int i;
+
+	while (klass) {
+		for (i = 0; i < klass->field.count; ++i) {
+			if (&klass->fields [i] == field)
+				return mono_metadata_make_token (MONO_TABLE_FIELD, klass->field.first + i + 1);
+		}
+		klass = klass->parent;
+	}
+
+	g_assert_not_reached ();
+	return 0;
+}
+
+guint32
+mono_class_get_event_token (MonoEvent *event)
+{
+	MonoClass *klass = event->parent;
+	int i;
+
+	while (klass) {
+		for (i = 0; i < klass->event.count; ++i) {
+			if (&klass->events [i] == event)
+				return mono_metadata_make_token (MONO_TABLE_EVENT, klass->event.first + i + 1);
+		}
+		klass = klass->parent;
+	}
+
+	g_assert_not_reached ();
+	return 0;
+}
+
 void *
 mono_vtable_get_static_field_data (MonoVTable *vt)
 {
@@ -2462,6 +2498,24 @@ mono_class_get_property_from_name (MonoClass *klass, const char *name)
 		klass = klass->parent;
 	}
 	return NULL;
+}
+
+guint32
+mono_class_get_property_token (MonoProperty *prop)
+{
+	MonoClass *klass = prop->parent;
+	int i;
+
+	while (klass) {
+		for (i = 0; i < klass->property.count; ++i) {
+			if (&klass->properties [i] == prop)
+				return mono_metadata_make_token (MONO_TABLE_PROPERTY, klass->property.first + i + 1);
+		}
+		klass = klass->parent;
+	}
+
+	g_assert_not_reached ();
+	return 0;
 }
 
 /**

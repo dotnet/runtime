@@ -56,6 +56,9 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 void
 mono_method_get_param_names (MonoMethod *method, const char **names);
 
+guint32
+mono_method_get_param_token (MonoMethod *method, int index);
+
 void
 mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs);
 

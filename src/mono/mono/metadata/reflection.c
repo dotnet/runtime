@@ -5926,6 +5926,90 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
 	return type;
 }
 
+/*
+ * mono_reflection_get_token:
+ *
+ *   Return the metadata token of OBJ which should be an object
+ * representing a metadata element.
+ */
+guint32
+mono_reflection_get_token (MonoObject *obj)
+{
+	MonoClass *klass;
+	guint32 token = 0;
+
+	klass = obj->vtable->klass;
+
+	if (strcmp (klass->name, "MethodBuilder") == 0) {
+		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)obj;
+
+		token = mb->table_idx | MONO_TOKEN_METHOD_DEF;
+	}
+	else if (strcmp (klass->name, "ConstructorBuilder") == 0) {
+		MonoReflectionCtorBuilder *mb = (MonoReflectionCtorBuilder *)obj;
+
+		token = mb->table_idx | MONO_TOKEN_METHOD_DEF;
+	}
+	else if (strcmp (klass->name, "FieldBuilder") == 0) {
+		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)obj;
+		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)fb->typeb;
+		if (tb->generic_params) {
+			g_assert_not_reached ();
+		} else {
+			token = fb->table_idx | MONO_TOKEN_FIELD_DEF;
+		}
+	}
+	else if (strcmp (klass->name, "TypeBuilder") == 0) {
+		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)obj;
+		token = tb->table_idx | MONO_TOKEN_TYPE_DEF;
+	}
+	else if (strcmp (klass->name, "MonoType") == 0) {
+		MonoReflectionType *tb = (MonoReflectionType *)obj;
+		token = mono_class_from_mono_type (tb->type)->type_token;
+	}
+	else if (strcmp (klass->name, "MonoCMethod") == 0 ||
+			strcmp (klass->name, "MonoMethod") == 0) {
+		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
+		if (m->method->signature->is_inflated) {
+			g_assert_not_reached ();
+		} else if (m->method->signature->generic_param_count) {
+			g_assert_not_reached ();
+		} else if (m->method->klass->generic_inst) {
+			g_assert_not_reached ();
+		} else {
+			token = m->method->token;
+		}
+	}
+	else if (strcmp (klass->name, "MonoField") == 0) {
+		MonoReflectionField *f = (MonoReflectionField*)obj;
+
+		token = mono_class_get_field_token (f->field);
+	}
+	else if (strcmp (klass->name, "MonoProperty") == 0) {
+		MonoReflectionProperty *p = (MonoReflectionProperty*)obj;
+
+		token = mono_class_get_property_token (p->property);
+	}
+	else if (strcmp (klass->name, "MonoEvent") == 0) {
+		MonoReflectionEvent *p = (MonoReflectionEvent*)obj;
+
+		token = mono_class_get_event_token (p->event);
+	}
+	else if (strcmp (klass->name, "ParameterInfo") == 0) {
+		MonoReflectionParameter *p = (MonoReflectionParameter*)obj;
+
+		token = mono_method_get_param_token (((MonoReflectionMethod*)p->MemberImpl)->method, p->PositionImpl);
+	}
+	else {
+		gchar *msg = g_strdup_printf ("MetadataToken is not supported for type '%s.%s'", klass->name_space, klass->name);
+		MonoException *ex = mono_get_exception_not_implemented (msg);
+		g_free (msg);
+		mono_raise_exception (ex);
+	}
+
+	return token;
+}
+
 static void*
 load_cattr_value (MonoImage *image, MonoType *t, const char *p, const char **end)
 {
