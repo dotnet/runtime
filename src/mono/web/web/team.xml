@@ -1017,17 +1017,23 @@
 
     </name>
 
-    <e-mail>ginga@kit.hi-ho.ne.jp</e-mail>
+    <e-mail>atsushi@ximian.com</e-mail>
 
     <image>none.png</image>
 
     <location>Tokyo, Japan</location>
 
-    <description>MIDI Programmer</description>
+    <organization>Ximian</organization>
+
+    <description>Mono Hacker</description>
 
     <tasks>
 
-      <task>XML</task>
+      <task>System.Xml</task>
+
+      <task>RELAX NG</task>
+
+      <task>Japanese Website Translation</task>
 
     </tasks>
 
