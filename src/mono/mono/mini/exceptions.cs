@@ -1858,19 +1858,22 @@ class Tests {
 		return i;
 	}
 
-	static void rethrow1 () {
-		throw new Exception ();
-	}
+	/* MarshalByRefObject prevents the methods from being inlined */
+	class ThrowClass : MarshalByRefObject {
+		public static void rethrow1 () {
+			throw new Exception ();
+		}
 
-	static void rethrow2 () {
-		rethrow1 ();
+		public static void rethrow2 () {
+			rethrow1 ();
+		}
 	}
 
 	static int test_0_rethrow_stacktrace () {
 		// Check that rethrowing an exception preserves the original stack trace
 		try {
 			try {
-				rethrow2 ();
+				ThrowClass.rethrow2 ();
 			}
 			catch (Exception ex) {
 				throw;
