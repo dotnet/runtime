@@ -287,7 +287,7 @@ static
 gboolean release_type_locks (gpointer key, gpointer value, gpointer user)
 {
 	TypeInitializationLock *lock = (TypeInitializationLock*) value;
-	if (lock->initializing_tid == GPOINTER_TO_UINT (user)) {
+	if (lock->initializing_tid == GPOINTER_TO_UINT (user) && !lock->done) {
 		lock->done = TRUE;
 		LeaveCriticalSection (&lock->initialization_section);
 		--lock->waiting_count;
