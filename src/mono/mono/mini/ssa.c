@@ -32,6 +32,16 @@ extern guint8 mono_burg_arity [];
 	} while (0)
 
 
+static GList*
+g_list_prepend_mempool (GList* l, MonoMemPool* mp, gpointer datum)
+{
+	GList* n = mono_mempool_alloc (mp, sizeof (GList));
+	n->next = l;
+	n->prev = NULL;
+	n->data = datum;
+	return n;
+}
+
 static void 
 unlink_target (MonoBasicBlock *bb, MonoBasicBlock *target)
 {
@@ -604,7 +614,7 @@ analyze_dev_use (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *root, MonoInst 
 				//printf ("FOUND %d\n", idx);
 				ui->bb = bb;
 				ui->inst = root;
-				info->uses = g_list_prepend (info->uses, ui);
+				info->uses = g_list_prepend_mempool (info->uses, cfg->mempool, ui);
 			}
 		}
 	}
@@ -617,7 +627,7 @@ analyze_dev_use (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *root, MonoInst 
 		//printf ("FOUND %d\n", idx);
 		ui->bb = bb;
 		ui->inst = root;
-		info->uses = g_list_prepend (info->uses, ui);
+		info->uses = g_list_prepend_mempool (info->uses, cfg->mempool, ui);
 	} else {
 		if (arity) {
 			//if (inst->ssa_op != MONO_SSA_STORE)
@@ -675,7 +685,6 @@ mono_ssa_avoid_copies (MonoCompile *cfg)
 					inst->inst_i0 = next->inst_i0;
 					i2->def = inst;
 					i1->def = NULL;
-					g_list_free (i1->uses);
 					i1->uses = NULL;
 					next->opcode = CEE_NOP;
 					next->ssa_op = MONO_SSA_NOP;
@@ -1125,7 +1134,8 @@ add_to_dce_worklist (MonoCompile *cfg, MonoMethodVar *var, MonoMethodVar *use, G
 	for (tmp = use->uses; tmp; tmp = tmp->next) {
 		MonoVarUsageInfo *ui = (MonoVarUsageInfo *)tmp->data;
 		if (ui->inst == var->def) {
-			use->uses = g_list_delete_link (use->uses, tmp);
+			/* from the mempool */
+			use->uses = g_list_remove_link (use->uses, tmp);
 			break;
 		}
 	}	
