@@ -2377,12 +2377,73 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflection
 		/* check hash if needed */
 		g_free (n);
 		return result;
+
 	case IMPLEMENTATION_ASSEMBLYREF:
+		break;
+
 	case IMPLEMENTATION_EXP_TYPE:
-		/* FIXME */
+		g_assert_not_reached ();
 		break;
 	}
 	return NULL;
+}
+
+static gboolean
+ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflectionAssembly *assembly, MonoString *name, MonoManifestResourceInfo *info)
+{
+	MonoTableInfo *table = &assembly->assembly->image->tables [MONO_TABLE_MANIFESTRESOURCE];
+	int i;
+	guint32 cols [MONO_MANIFEST_SIZE];
+	guint32 file_cols [MONO_FILE_SIZE];
+	const char *val;
+	char *n;
+
+	MONO_ARCH_SAVE_REGS;
+
+	n = mono_string_to_utf8 (name);
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, cols, MONO_MANIFEST_SIZE);
+		val = mono_metadata_string_heap (assembly->assembly->image, cols [MONO_MANIFEST_NAME]);
+		if (strcmp (val, n) == 0)
+			break;
+	}
+	g_free (n);
+	if (i == table->rows)
+		return FALSE;
+
+	if (!cols [MONO_MANIFEST_IMPLEMENTATION]) {
+		info->location = RESOURCE_LOCATION_EMBEDDED | RESOURCE_LOCATION_IN_MANIFEST;
+	}
+	else {
+		switch (cols [MONO_MANIFEST_IMPLEMENTATION] & IMPLEMENTATION_MASK) {
+		case IMPLEMENTATION_FILE:
+			i = cols [MONO_MANIFEST_IMPLEMENTATION] >> IMPLEMENTATION_BITS;
+			table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
+			mono_metadata_decode_row (table, i - 1, file_cols, MONO_FILE_SIZE);
+			val = mono_metadata_string_heap (assembly->assembly->image, file_cols [MONO_FILE_NAME]);
+			info->filename = mono_string_new (mono_object_domain (assembly), val);
+			if (file_cols [MONO_FILE_FLAGS] && FILE_CONTAINS_NO_METADATA)
+				info->location = 0;
+			else
+				info->location = RESOURCE_LOCATION_EMBEDDED;
+			break;
+
+		case IMPLEMENTATION_ASSEMBLYREF:
+			i = cols [MONO_MANIFEST_IMPLEMENTATION] >> IMPLEMENTATION_BITS;
+			info->assembly = mono_assembly_get_object (mono_domain_get (), assembly->assembly->image->references [i - 1]);
+
+			// Obtain info recursively
+			ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (info->assembly, name, info);
+			info->location |= RESOURCE_LOCATION_ANOTHER_ASSEMBLY;
+			break;
+
+		case IMPLEMENTATION_EXP_TYPE:
+			g_assert_not_reached ();
+			break;
+		}
+	}
+
+	return TRUE;
 }
 
 static MonoObject*
@@ -2422,6 +2483,40 @@ ves_icall_System_Reflection_Assembly_GetFilesInternal (MonoReflectionAssembly *a
 		g_free (n);
 	}
 	return (MonoObject*)result;
+}
+
+static MonoArray*
+ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly *assembly)
+{
+	MonoDomain *domain = mono_domain_get();
+	MonoArray *res;
+	MonoClass *klass;
+	int i, module_count = 0, file_count = 0;
+	MonoImage **modules = assembly->assembly->image->modules;
+	MonoTableInfo *table;
+
+	if (modules) {
+		while (modules[module_count])
+			++module_count;
+	}
+
+	table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
+	file_count = table->rows;
+
+	g_assert( assembly->assembly->image != NULL);
+	++module_count;
+
+	klass = mono_class_from_name ( mono_defaults.corlib, "System.Reflection", "Module");
+	res = mono_array_new (domain, klass, module_count + file_count);
+
+	mono_array_set (res, gpointer, 0, mono_module_get_object (domain, assembly->assembly->image));
+	for ( i = 1; i < module_count; ++i )
+		mono_array_set (res, gpointer, i, mono_module_get_object (domain, modules[i]));
+
+	for (i = 0; i < table->rows; ++i)
+		mono_array_set (res, gpointer, module_count + i, mono_module_file_get_object (domain, assembly->assembly->image, i));
+
+	return res;
 }
 
 static MonoReflectionMethod*
@@ -3607,9 +3702,11 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Assembly::get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint,
 	"System.Reflection.Assembly::GetManifestResourceNames", ves_icall_System_Reflection_Assembly_GetManifestResourceNames,
 	"System.Reflection.Assembly::GetManifestResourceInternal", ves_icall_System_Reflection_Assembly_GetManifestResourceInternal,
+	"System.Reflection.Assembly::GetManifestResourceInfoInternal", ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal,
 	"System.Reflection.Assembly::GetFilesInternal", ves_icall_System_Reflection_Assembly_GetFilesInternal,
 	"System.Reflection.Assembly::GetReferencedAssemblies", ves_icall_System_Reflection_Assembly_GetReferencedAssemblies,
 	"System.Reflection.Assembly::GetNamespaces", ves_icall_System_Reflection_Assembly_GetNamespaces,
+	"System.Reflection.Assembly::GetModulesInternal", ves_icall_System_Reflection_Assembly_GetModulesInternal,
 
 	/*
 	 * System.MonoType.

@@ -3304,6 +3304,7 @@ mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 }
 
 
+
 MonoReflectionModule*   
 mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 {
@@ -3327,6 +3328,46 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 	return res;
 }
 
+MonoReflectionModule*   
+mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_index)
+{
+	static MonoClass *System_Reflection_Module;
+	MonoReflectionModule *res;
+	MonoTableInfo *table;
+	guint32 cols [MONO_FILE_SIZE];
+	const char *name;
+	guint32 i, name_idx;
+	const char *val;
+	
+	if (!System_Reflection_Module)
+		System_Reflection_Module = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "Module");
+	res = (MonoReflectionModule *)mono_object_new (domain, System_Reflection_Module);
+
+	table = &image->tables [MONO_TABLE_FILE];
+	g_assert (table_index < table->rows);
+	mono_metadata_decode_row (table, table_index, cols, MONO_FILE_SIZE);
+
+	res->image = 0;
+	res->assembly = (MonoReflectionAssembly *) mono_assembly_get_object(domain, image->assembly);
+	name = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
+
+	// Check whenever the row has a corresponding row in the moduleref table
+	table = &image->tables [MONO_TABLE_MODULEREF];
+	for (i = 0; i < table->rows; ++i) {
+		name_idx = mono_metadata_decode_row_col (table, i, MONO_MODULEREF_NAME);
+		val = mono_metadata_string_heap (image, name_idx);
+		if (strcmp (val, name) == 0)
+			res->image = image->modules [i];
+	}
+
+	res->fqname    = mono_string_new (domain, name);
+	res->name      = mono_string_new (domain, name);
+	res->scopename = mono_string_new (domain, name);
+	res->is_resource = cols [MONO_FILE_FLAGS] && FILE_CONTAINS_NO_METADATA;
+
+	return res;
+}
 
 static gboolean
 mymono_metadata_type_equal (MonoType *t1, MonoType *t2)

@@ -346,6 +346,7 @@ typedef struct {
 	MonoString *fqname;
 	MonoString *name;
 	MonoString *scopename;
+	gboolean is_resource;
 } MonoReflectionModule;
 
 typedef struct {
@@ -452,6 +453,18 @@ typedef struct {
 	MonoCustomAttrEntry attrs [MONO_ZERO_LEN_ARRAY];
 } MonoCustomAttrInfo;
 
+enum {
+	RESOURCE_LOCATION_EMBEDDED = 1,
+	RESOURCE_LOCATION_ANOTHER_ASSEMBLY = 2,
+	RESOURCE_LOCATION_IN_MANIFEST = 4
+};
+
+typedef struct {
+	MonoObject object;
+	MonoReflectionAssembly *assembly;
+	MonoString *filename;
+	guint32 location;
+} MonoManifestResourceInfo;
 
 char*         mono_type_get_name         (MonoType *type);
 int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);
@@ -466,6 +479,7 @@ void          mono_image_module_basic_init (MonoReflectionModuleBuilder *module)
 
 MonoReflectionAssembly* mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly);
 MonoReflectionModule*   mono_module_get_object   (MonoDomain *domain, MonoImage *image);
+MonoReflectionModule*   mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_index);
 MonoReflectionType*     mono_type_get_object     (MonoDomain *domain, MonoType *type);
 MonoReflectionMethod*   mono_method_get_object   (MonoDomain *domain, MonoMethod *method, MonoClass *refclass);
 MonoReflectionField*    mono_field_get_object    (MonoDomain *domain, MonoClass *klass, MonoClassField *field);
