@@ -25,7 +25,7 @@ char *dis_stringify_token     (MonoMetadata *m, guint32 token);
 char *dis_stringify_array     (MonoMetadata *m, MonoArray *array);
 char *dis_stringify_modifiers (MonoMetadata *m, int n, MonoCustomMod *mod);
 char *dis_stringify_param     (MonoMetadata *m, MonoParam *param);
-char *dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method, const char *name);
+char *dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method, int methoddef_row);
 
 /*
  * These functions are used during the decoding of streams in the

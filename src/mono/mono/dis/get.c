@@ -433,6 +433,7 @@ dis_stringify_param (MonoMetadata *m, MonoParam *param)
 	char *mods = NULL;
 	char *t;
 	char *result;
+	char *out = param->param_attrs & 2 ? "[out] ": "";
 	if (param->num_modifiers)
 		mods = dis_stringify_modifiers (m, param->num_modifiers, param->modifiers);
 	if (param->typedbyref)
@@ -441,33 +442,51 @@ dis_stringify_param (MonoMetadata *m, MonoParam *param)
 		t = g_strdup ("void");
 	else
 		t = dis_stringify_type (m, param->type);
-	result = g_strjoin (mods ? mods : "", t, NULL);
+	result = g_strconcat (mods ? mods : "", out, t, NULL);
 	g_free (t);
 	g_free (mods);
 	return result;
 }
 
 char*
-dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method, const char *name)
+dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method, int methoddef_row)
 {
+	guint32 cols [MONO_METHOD_SIZE];
+	guint32 pcols [MONO_PARAM_SIZE];
+	guint32 param_index = 0;
+	const char *name = "";
 	char *retval = dis_stringify_param (m, method->ret);
-	GString *result = g_string_new (retval);
+	GString *result = g_string_new ("");
 	int i;
 
+	if (methoddef_row) {
+		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], methoddef_row -1, cols, MONO_METHOD_SIZE);
+		name = mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]);
+		param_index = cols [MONO_METHOD_PARAMLIST];
+	}
+	
+	if (method->hasthis)
+		g_string_append (result, "instance ");
+	g_string_append (result, map (method->call_convention, call_conv_type_map));
+	g_string_sprintfa (result, " %s %s (", retval, name);
 	g_free (retval);
-	g_string_sprintfa (result, " %s (", name ? name : "");
 	for (i = 0; i < method->param_count; ++i) {
+		if (param_index) {
+			mono_metadata_decode_row (&m->tables [MONO_TABLE_PARAM], param_index - 1, pcols, MONO_PARAM_SIZE);
+			name = mono_metadata_string_heap (m, pcols [MONO_PARAM_NAME]);
+			method->params [i]->param_attrs = pcols [MONO_PARAM_FLAGS];
+			param_index++;
+		} else {
+			name = "";
+		}
 		if (i)
 			g_string_append (result, ", ");
 		retval = dis_stringify_param (m, method->params [i]);
-		g_string_append (result, retval);
+		g_string_sprintfa (result, "%s %s", retval, name);
 		g_free (retval);
 	}
 	g_string_append (result, ") ");
 
-	if (method->hasthis)
-		g_string_append (result, "instance ");
-	g_string_append (result, map (method->call_convention, call_conv_type_map));
 	retval = result->str;
 	g_string_free (result, FALSE);
 	return retval;
@@ -483,7 +502,7 @@ dis_stringify_type (MonoMetadata *m, MonoType *type)
 	if (!type)
 		return g_strdup ("void");
 
-	byref = type->byref ? "ref " : "";
+	byref = type->byref ? "&" : "";
 
 	switch (type->type){
 	case MONO_TYPE_BOOLEAN:
@@ -512,7 +531,7 @@ dis_stringify_type (MonoMetadata *m, MonoType *type)
 		break;
 		
 	case MONO_TYPE_FNPTR:
-		bare = dis_stringify_method_signature (m, type->data.method, NULL);
+		bare = dis_stringify_method_signature (m, type->data.method, 0);
 		break;
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY: {
@@ -538,7 +557,7 @@ dis_stringify_type (MonoMetadata *m, MonoType *type)
 		g_error ("Do not know how to stringify type 0x%x", type->type);
 	}
 
-	result = g_strjoin (byref, bare, NULL);
+	result = g_strconcat (bare, byref, NULL);
 	g_free (bare);
 	return result;
 }

@@ -383,60 +383,6 @@ dis_code (MonoMetadata *m, MonoCLIImageInfo *ii, guint32 rva)
 	mono_metadata_free_mh (mh);
 }
 
-typedef struct {
-	char  flags;
-	char *ret_type;
-	int   param_count;
-	char **param;
-} MethodSignature;
-
-/**
- * parse_method_signature:
- * @m: metadata context 
- * @blob_signature: pointer to the signature in the Blob heap
- *
- * 22.2.1: MethodDefSig.  
- *
- * Returns the parsed information in the MethodSignature structure
- * needs to be deallocated with free_method_signature().
- */
-static MethodSignature *
-parse_method_signature (MonoMetadata *m, guint32 blob_signature)
-{
-	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
-	MethodSignature *ms = g_new0 (MethodSignature, 1);
-	int i, len;
-
-	len = mono_metadata_decode_value (ptr, &ptr);
-	fprintf (output, "     // SIG: ");
-	hex_dump (ptr, 0, -len);
-	fprintf (output, "\n");
-	
-	ms->flags = *ptr++;
-
-	ms->param_count = mono_metadata_decode_value (ptr, &ptr);
-	ptr = get_ret_type (m, ptr, &ms->ret_type);
-	ms->param = g_new (char *, ms->param_count);
-	
-	for (i = 0; i < ms->param_count; i++)
-		ptr = get_param (m, ptr, &(ms->param [i]));
-
-	return ms;
-}
-
-static void
-free_method_signature (MethodSignature *ms)
-{
-	int i;
-	
-	for (i = 0; i < ms->param_count; i++)
-		g_free (ms->param [i]);
-	g_free (ms->param);
-	g_free (ms->ret_type);
-	g_free (ms);
-}
-
-
 static char *
 pinvoke_info (MonoMetadata *m, guint32 mindex)
 {
@@ -485,9 +431,7 @@ static void
 dis_method_list (MonoMetadata *m, MonoCLIImageInfo *ii, guint32 start, guint32 end)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_METHOD];
-	MonoTableInfo *p = &m->tables [MONO_TABLE_PARAM];
 	guint32 cols [MONO_METHOD_SIZE];
-	guint32 param_cols [MONO_PARAM_SIZE];
 	int i;
 
 	if (end > t->rows){
@@ -497,43 +441,27 @@ dis_method_list (MonoMetadata *m, MonoCLIImageInfo *ii, guint32 start, guint32 e
 	}
 
 	for (i = start; i < end; i++){
-		MethodSignature *ms;
+		MonoMethodSignature *ms;
 		char *flags, *impl_flags;
+		const char *sig;
+		char *sig_str;
 		
 		mono_metadata_decode_row (t, i, cols, MONO_METHOD_SIZE);
 
 		flags = method_flags (cols [MONO_METHOD_FLAGS]);
 		impl_flags = method_impl_flags (cols [MONO_METHOD_IMPLFALGS]);
 
-		ms = parse_method_signature (m, cols [MONO_METHOD_SIGNATURE]);
+		sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
+		mono_metadata_decode_blob_size (sig, &sig);
+		ms = mono_metadata_parse_method_signature (m, 1, sig, &sig);
+		sig_str = dis_stringify_method_signature (m, ms, i + 1);
 			
 		fprintf (output, "    .method %s", flags);
 
 		if (cols [MONO_METHOD_FLAGS] & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 			fprintf (output, "%s", pinvoke_info (m, i));
 
-		fprintf (output,
-			 "\n           %s %s",
-			 ms->ret_type,
-			 mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]));
-		if (ms->param_count > 0){
-			int i;
-
-			fprintf (output, "(\n");
-			for (i = 0; i < ms->param_count; i++){
-				char *pf;
-				
-				mono_metadata_decode_row (p, i, param_cols, MONO_PARAM_SIZE);
-				pf = param_flags (param_cols [MONO_PARAM_FLAGS]);
-				fprintf (
-					output, "\t\t%s %s %s%s", pf, ms->param [i],
-					mono_metadata_string_heap (m, param_cols [MONO_PARAM_NAME]),
-					(i+1 == ms->param_count) ? ")" : ",\n");
-
-				g_free (pf);
-			}
-				
-		}
+		fprintf (output, "\n           %s", sig_str);
 		fprintf (output, " %s\n", impl_flags);
 		g_free (flags);
 		g_free (impl_flags);
@@ -542,7 +470,8 @@ dis_method_list (MonoMetadata *m, MonoCLIImageInfo *ii, guint32 start, guint32 e
 		fprintf (output, "        // Method begins at RVA 0x%x\n", cols [MONO_METHOD_RVA]);
 		dis_code (m, ii, cols [MONO_METHOD_RVA]);
 		fprintf (output, "    }\n\n");
-		free_method_signature (ms);
+		mono_metadata_free_method_signature (ms);
+		g_free (sig_str);
 	}
 }
 

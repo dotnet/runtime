@@ -390,7 +390,6 @@ dump_table_method (MonoMetadata *m)
 	last_m = first_m = 1;
 	for (i = 1; i <= t->rows; i++){
 		guint32 cols [MONO_METHOD_SIZE];
-		const char *name;
 		char *sig;
 		const char *sigblob;
 		MonoMethodSignature *method;
@@ -411,8 +410,7 @@ dump_table_method (MonoMetadata *m)
 		sigblob = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 		mono_metadata_decode_blob_size (sigblob, &sigblob);
 		method = mono_metadata_parse_method_signature (m, 1, sigblob, &sigblob);
-		name = mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]);
-		sig = dis_stringify_method_signature (m, method, name);
+		sig = dis_stringify_method_signature (m, method, i);
 		fprintf (output, "%d: %s\n", i, sig);
 		g_free (sig);
 		mono_metadata_free_method_signature (method);
