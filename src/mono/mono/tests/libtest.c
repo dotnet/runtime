@@ -661,4 +661,48 @@ mono_test_marshal_mixed_point (mixed_point pt)
 	return 1;
 }
 
+int 
+marshal_test_ref_bool(int i, char *b1, short *b2, int *b3)
+{
+    int res = 1;
+    if (*b1 != 0 && *b1 != 1)
+        return 1;
+    if (*b2 != 0 && *b2 != -1) /* variant_bool */
+        return 1;
+    if (*b3 != 0 && *b3 != 1)
+        return 1;
+    if (i == ((*b1 << 2) | (-*b2 << 1) | *b3))
+        res = 0;
+    *b1 = !*b1;
+    *b2 = ~*b2;
+    *b3 = !*b3;
+    return res;
+}
+
+struct BoolStruct
+{
+    int i;
+    char b1;
+    short b2; /* variant_bool */
+    int b3;
+};
+
+int 
+marshal_test_bool_struct(struct BoolStruct *s)
+{
+    int res = 1;
+    if (s->b1 != 0 && s->b1 != 1)
+        return 1;
+    if (s->b2 != 0 && s->b2 != -1)
+        return 1;
+    if (s->b3 != 0 && s->b3 != 1)
+        return 1;
+    if (s->i == ((s->b1 << 2) | (-s->b2 << 1) | s->b3))
+        res = 0;
+    s->b1 = !s->b1;
+    s->b2 = ~s->b2;
+    s->b3 = !s->b3;
+    return res;
+}
+
 

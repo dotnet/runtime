@@ -1,5 +1,10 @@
 2003-10-07  Bernie Solomon  <bernard@ugsolutions.com>
 
+	* mono/tests/Makefile.am mono/tests/libtest.c
+	mono/tests/pinvoke18.cs: new test for bool marshalling.
+
+2003-10-07  Bernie Solomon  <bernard@ugsolutions.com>
+
 	* mono/scripts/Makefile.am mono/scripts/*.in: fix
 	managed .exe paths so they are found under cygwin.
 
