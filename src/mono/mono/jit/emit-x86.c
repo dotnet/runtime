@@ -23,15 +23,77 @@
 #include "codegen.h"
 
 static void
-enter_method (MonoMethod *method)
+enter_method (MonoMethod *method, gpointer ebp)
 {
-	printf ("ENTER: %s.%s::%s\n", method->klass->name_space,
+	int i;
+	MonoClass *class;
+	MonoObject *o;
+
+	printf ("ENTER: %s.%s::%s (", method->klass->name_space,
 		method->klass->name, method->name);
+
+	ebp += 8;
+	
+	if (method->signature->hasthis) {
+		o = *((MonoObject **)ebp);
+		class = o->klass;
+		printf ("%p[%s.%s], ", o, class->name_space, class->name);
+		ebp += sizeof (gpointer);
+	}
+
+	for (i = 0; i < method->signature->param_count; ++i) {
+		MonoType *type = method->signature->params [i];
+		int size, align;
+
+		switch (type->type) {
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+			printf ("%d, ", *((int *)(ebp)));
+			break;
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_FNPTR:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+			printf ("%p, ", *((gpointer *)(ebp)));
+			break;
+		case MONO_TYPE_I8:
+			printf ("%lld, ", *((gint64 *)(ebp)));
+			break;
+		case MONO_TYPE_R8:
+			printf ("%f, ", *((double *)(ebp)));
+			break;
+
+		default:
+			printf ("XX, ");
+		}
+
+		size = mono_type_size (type, &align);
+		if (size < 4) 
+			size = 4;
+
+		ebp += size;
+
+	}
+
+	printf (")\n");
 }
 
 static void
 leave_method (MonoMethod *method, int edx, int eax, double test)
 {
+	gint64 l;
+
 	switch (method->signature->ret->type) {
 	case MONO_TYPE_VOID:
 		printf ("LEAVE: %s.%s::%s\n", method->klass->name_space,
@@ -61,8 +123,10 @@ leave_method (MonoMethod *method, int edx, int eax, double test)
 			method->klass->name, method->name, (gpointer)eax);
 		break;
 	case MONO_TYPE_I8:
-		printf ("LEAVE: %s.%s::%s EAX=%d EDX=%d\n", method->klass->name_space,
-			method->klass->name, method->name, eax, edx);
+		*((gint32 *)&l) = eax;
+		*((gint32 *)&l + 1) = edx;
+		printf ("LEAVE: %s.%s::%s EAX/EDX=%lld\n", method->klass->name_space,
+			method->klass->name, method->name, l);
 		break;
 	case MONO_TYPE_R8:
 		printf ("LEAVE: %s.%s::%s FP=%f\n", method->klass->name_space,
@@ -76,7 +140,7 @@ leave_method (MonoMethod *method, int edx, int eax, double test)
 
 /**
  * arch_emit_prologue:
- * @s: pointer to status information
+ * @cfg: pointer to status information
  *
  * Emits the function prolog.
  */
@@ -99,15 +163,16 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 		x86_push_reg (cfg->code, X86_ESI);
 
 	if (mono_jit_trace_calls) {
+		x86_push_reg (cfg->code, X86_EBP);
 		x86_push_imm (cfg->code, cfg->method);
 		x86_call_code (cfg->code, enter_method);
-		x86_alu_reg_imm (cfg->code, X86_ADD, X86_ESP, 4);
+		x86_alu_reg_imm (cfg->code, X86_ADD, X86_ESP, 8);
 	}
 }
 
 /**
- * arch_emit_prologue:
- * @s: pointer to status information
+ * arch_emit_epilogue:
+ * @cfg: pointer to status information
  *
  * Emits the function epilog.
  */
@@ -142,19 +207,141 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 }
 
 /**
+ * x86_magic_trampoline:
+ * @eax: saved x86 register 
+ * @ecx: saved x86 register 
+ * @edx: saved x86 register 
+ * @esi: saved x86 register 
+ * @edi: saved x86 register 
+ * @ebx: saved x86 register
+ * @code: pointer into caller code
+ * @method: the method to translate
+ *
+ * This method is called by the trampoline functions for virtual
+ * methods. It inspects the caller code to find the address of the
+ * vtable slot, then calls the JIT compiler and writes the address
+ * of the compiled method back to the vtable. All virtual methods 
+ * are called with: x86_call_membase (inst, basereg, disp). We always
+ * use 32 bit displacement to ensure that the length of the call 
+ * instruction is 6 bytes. We need to get the value of the basereg 
+ * and the constant displacement.
+ */
+static gpointer
+x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi, 
+		      int ebx, guint8 *code, MonoMethod *m)
+{
+	guint8 ab, reg;
+	gint32 disp;
+	gpointer o;
+
+	/* go to the start of the call instruction */
+	code -= 6;
+	g_assert (*code == 0xff);
+
+	code++;
+	ab = *code;
+	g_assert ((ab >> 6) == 2);
+	
+	/* extract the register number containing the address */
+	reg = ab & 0x07;
+	code++;
+
+	/* extract the displacement */
+	disp = *((gint32*)code);
+
+	switch (reg) {
+	case X86_EAX:
+		o = (gpointer)eax;
+		break;
+	case X86_EDX:
+		o = (gpointer)edx;
+		break;
+	case X86_ECX:
+		o = (gpointer)ecx;
+		break;
+	case X86_ESI:
+		o = (gpointer)esi;
+		break;
+	case X86_EDI:
+		o = (gpointer)edi;
+		break;
+	case X86_EBX:
+		o = (gpointer)ebx;
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+
+	o += disp;
+
+	return *((gpointer *)o) = arch_compile_method (m);
+}
+
+/**
  * arch_create_jit_trampoline:
+ * @method: pointer to the method info
+ *
+ * Creates a trampoline function for virtual methods. If the created
+ * code is called it first starts JIT compilation of method,
+ * and then calls the newly created method. I also replaces the
+ * corresponding vtable entry (see x86_magic_trampoline).
+ * 
+ * Returns: a pointer to the newly created code 
+ */
+gpointer
+arch_create_jit_trampoline (MonoMethod *method)
+{
+	guint8 *code, *buf;
+	static guint8 *vc = NULL;
+
+	if (method->addr)
+		return method->addr;
+
+	if (!vc) {
+		vc = buf = g_malloc (24);
+
+		/* push the return address onto the stack */
+		x86_push_membase (buf, X86_ESP, 4);
+
+		/* save all register values */
+		x86_push_reg (buf, X86_EBX);
+		x86_push_reg (buf, X86_EDI);
+		x86_push_reg (buf, X86_ESI);
+		x86_push_reg (buf, X86_EDX);
+		x86_push_reg (buf, X86_ECX);
+		x86_push_reg (buf, X86_EAX);
+
+		x86_call_code (buf, x86_magic_trampoline);
+		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 8*4);
+
+		/* call the compiled method */
+		x86_jump_reg (buf, X86_EAX);
+
+		g_assert ((buf - vc) <= 24);
+	}
+
+	code = buf = g_malloc (16);
+	x86_push_imm (buf, method);
+	x86_jump_code (buf, vc);
+	g_assert ((buf - code) <= 16);
+
+	return code;
+}
+
+/**
+ * arch_create_simple_jit_trampoline:
  * @method: pointer to the method info
  *
  * Creates a trampoline function for method. If the created
  * code is called it first starts JIT compilation of method,
  * and then calls the newly created method. I also replaces the
  * address in method->addr with the result of the JIT 
- * compilation step.
+ * compilation step (in arch_compile_method).
  * 
  * Returns: a pointer to the newly created code 
  */
 gpointer
-arch_create_jit_trampoline (MonoMethod *method)
+arch_create_simple_jit_trampoline (MonoMethod *method)
 {
 	guint8 *code, *buf;
 

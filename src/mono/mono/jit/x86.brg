@@ -92,6 +92,16 @@ guint64 mono_llrem_un  (guint64 a, guint64 b);
 #define MB_USE_OPT2(c) c
 #endif
 
+/* The call instruction for virtual functions must have a known
+ * size (used by x86_magic_trampoline)
+ */
+#define x86_call_virtual(inst,basereg,disp)	               \
+	do {	                                               \
+		*(inst)++ = (unsigned char)0xff;               \
+		x86_address_byte ((inst), 2, 2, (basereg));    \
+		x86_imm_emit32 ((inst), (disp));	       \
+	} while (0)
+
 %%
 
 #
@@ -837,7 +847,7 @@ reg: CALL_I4 (INTF_ADDR (reg)) {
 	x86_mov_reg_membase (s->code, reg1, reg1, 
 	        G_STRUCT_OFFSET (MonoClass, interface_offsets), 4);
 	x86_mov_reg_membase (s->code, reg1, reg1, tree->left->data.m->klass->interface_id << 2, 4);
-	x86_call_membase (s->code, reg1, tree->left->data.m->slot << 2);
+	x86_call_virtual (s->code, reg1, tree->left->data.m->slot << 2);
 
 	if (tree->data.i)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
@@ -849,7 +859,7 @@ reg: CALL_I4 (VFUNC_ADDR (reg)) {
 	int reg1 = tree->left->left->reg1;
 
 	x86_mov_reg_membase (s->code, reg1, reg1, 0, 4);
-	x86_call_membase (s->code, reg1, 
+	x86_call_virtual (s->code, reg1, 
 	        G_STRUCT_OFFSET (MonoClass, vtable) + (tree->left->data.m->slot << 2));
 
 	if (tree->data.i)
@@ -872,7 +882,7 @@ stmt: CALL_I4 (INTF_ADDR (reg)) {
 	x86_mov_reg_membase (s->code, reg1, reg1, 
                 G_STRUCT_OFFSET (MonoClass, interface_offsets), 4);
 	x86_mov_reg_membase (s->code, reg1, reg1, tree->left->data.m->klass->interface_id << 2, 4);
-	x86_call_membase (s->code, reg1, tree->left->data.m->slot << 2);
+	x86_call_virtual (s->code, reg1, tree->left->data.m->slot << 2);
 
 	if (tree->data.i)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
@@ -882,7 +892,7 @@ stmt: CALL_I4 (VFUNC_ADDR (reg)) {
 	int reg1 = tree->left->left->reg1;
 
 	x86_mov_reg_membase (s->code, reg1, reg1, 0, 4);
-	x86_call_membase (s->code, reg1, 
+	x86_call_virtual (s->code, reg1, 
                 G_STRUCT_OFFSET (MonoClass, vtable) + (tree->left->data.m->slot << 2));
 
 	if (tree->data.i)
@@ -1556,7 +1566,7 @@ freg: CALL_R8 (INTF_ADDR (reg)) {
 	x86_mov_reg_membase (s->code, reg1, reg1, 
 	        G_STRUCT_OFFSET (MonoClass, interface_offsets), 4);
 	x86_mov_reg_membase (s->code, reg1, reg1, tree->left->data.m->klass->interface_id << 2, 4);
-	x86_call_membase (s->code, reg1, tree->left->data.m->slot << 2);
+	x86_call_virtual (s->code, reg1, tree->left->data.m->slot << 2);
 
 	if (tree->data.i)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, tree->data.i);
@@ -1566,7 +1576,7 @@ freg: CALL_R8 (VFUNC_ADDR (reg)) {
 	int reg1 = tree->left->left->reg1;
 
 	x86_mov_reg_membase (s->code, reg1, reg1, 0, 4);
-	x86_call_membase (s->code, reg1, 
+	x86_call_virtual (s->code, reg1, 
 	        G_STRUCT_OFFSET (MonoClass, vtable) + (tree->left->data.m->slot << 2));
 
 	if (tree->data.i)

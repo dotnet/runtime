@@ -93,6 +93,9 @@ arch_compile_method        (MonoMethod *method);
 gpointer
 arch_create_jit_trampoline (MonoMethod *method);
 
+gpointer
+arch_create_simple_jit_trampoline (MonoMethod *method);
+
 /* some handy debugging functions */
 
 void

@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.13 2001/10/10 10:11:17 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.14 2001/11/07 06:33:48 dietmar Exp $
 */
 
 #ifndef X86_H
@@ -1114,7 +1114,7 @@ typedef union {
  */
 #define x86_jump_code(inst,target)	\
 	do {	\
-		int t = (target) - (inst) - 2;	\
+		int t = (unsigned char*)(target) - (inst) - 2;	\
 		if (x86_is_imm8(t)) {	\
 			x86_jump8 ((inst), t);	\
 		} else {	\

@@ -1136,11 +1136,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		superblock_end = TRUE;
 		sp = stack;
 
-		printf ("START\n");
+		//printf ("START\n");
 		for (i = 0; i < cfg->block_count; i++) {
 			bb = &cfg->bblocks [i];
 
-			printf ("BBS %d %d %d %d\n", i, bb->reached, bb->finished, superblock_end);
+			//printf ("BBS %d %d %d %d\n", i, bb->reached, bb->finished, superblock_end);
 			
 			if (!bb->reached && !superblock_end) {
 
@@ -1181,8 +1181,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
         while (ip < end) {
 		guint32 cli_addr = ip - header->code;
 					
-		printf ("%d IL%04x OPCODE %s %d %d %d\n", i, cli_addr, opcode_names [*ip], 
-			forest->len, superblock_end, sp - stack);
+		//printf ("%d IL%04x OPCODE %s %d %d %d\n", i, cli_addr, opcode_names [*ip], 
+		//forest->len, superblock_end, sp - stack);
 
 		switch (*ip) {
 			case CEE_THROW: {
@@ -1554,8 +1554,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				sp = sp - nargs;
 			}
 
-			printf ("MINFO %s.%s::%s %d %d\n", cm->klass->name_space, 
-				cm->klass->name, cm->name, cm->flags & METHOD_ATTRIBUTE_VIRTUAL, virtual);
+			//printf ("MINFO %s.%s::%s %d %d\n", cm->klass->name_space, 
+			//cm->klass->name, cm->name, cm->flags & METHOD_ATTRIBUTE_VIRTUAL, virtual);
  
 			if (virtual) {
 				t2 = ctree_create_dup (mp, this);
@@ -1571,7 +1571,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t2->data.m = cm;
 			} else {
 				if (!cm->addr)
-					cm->addr = arch_create_jit_trampoline (cm);
+					cm->addr = arch_create_simple_jit_trampoline (cm);
 
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
 				t2->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
@@ -2082,16 +2082,16 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				repeat = TRUE;
 				g_assert (repeat_count < 10);
 			}
-	printf ("BBE %d %d %d %d\n", i, bb->reached, bb->finished, superblock_end);
+				//printf ("BBE %d %d %d %d\n", i, bb->reached, bb->finished, superblock_end);
 		}
 
 		repeat_count++;
-		printf ("REPEAT %d\n", repeat);
+		//printf ("REPEAT %d\n", repeat);
 
 
 	} while (repeat);
 
-	printf ("FINISHED\n");
+		//printf ("FINISHED\n");
 }
 	
 /**

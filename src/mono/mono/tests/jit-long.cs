@@ -67,8 +67,6 @@ public class TestJit {
 	public static int Main() {
 		int num = 1;
 
-		return test_alu();
-		
 		if (test_call (3, 5) != 8)
 			return num;
 		num++;
