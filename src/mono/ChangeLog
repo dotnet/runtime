@@ -1,3 +1,11 @@
+2004-05-28  Duncan Mak  <duncan@ximian.com>
+
+	* scripts/Makefile.am: Include mono-find-provides and
+	mono-find-requires.
+	
+	* scripts/mono-find-provides.in:
+	* scripts/mono-find-requires.in: New wrapper scripts.
+
 2004-05-27  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Pass CC to libgc configure.
