@@ -1,48 +1,52 @@
 * System.Windows.Forms
 
-	Currently Windows.Forms support is under development. Check Mono's <a 
+	<p>Currently Windows.Forms support is under development. Check Mono's <a 
 	href = "http://www.go-mono.com/mono-roadmap.html">Roadmap</a> for more 
 	details on when it is going to be available.
 
-	System.Windows.Forms in Mono is implemented using System.Drawing and 
+	<p>System.Windows.Forms in Mono is implemented using System.Drawing and 
 	Wine. This allows applications that use P/Invoke to call Win32 functions 
 	or rely on event delivery through the Wndproc method to work as 
 	expected. This is the path of best compatibility.
 	
-	In terms of integrating visually with the desktop, we are hoping to 
+	<p>In terms of integrating visually with the desktop, we are hoping to 
 	contribute to the Wine project a mechanism to make it use the Gtk+ 
 	themes on X11 and Cocoa on MacOS to render the widgets, and get the 
 	native look and feel on each of these platforms. 
 	
 * Installation
 
-	To get the Windows.Forms support working, you need:
+	<p>To get the Windows.Forms support working, you need:
 	
-	- The latest <a href = "http://www.go-mono.com/download.html">Mono</a>package.
-	- The latest <a href = "http://www.go-mono.com/download.html">libgdiplus</a> library.
-	- The latest <a href = "http://www.cairographics.org/download">Cairo</a> vector graphics library.
-	- A recent copy of <a href="http://www.winehq.com/">Wine</a>.
-	- A recent copy of WineLib (do a cvs co winelib from Mono's CVS).
+	<ul>
+	
+	<li> The latest <a href = "http://www.go-mono.com/download.html">Mono</a> package.
+	<li> The latest <a href = "http://www.go-mono.com/download.html">libgdiplus</a> library.
+	<li> The latest <a href = "http://www.cairographics.org/download">Cairo</a> vector graphics library.
+	<li> A recent copy of <a href="http://www.winehq.com/">Wine</a>.
+	<li> A recent copy of WineLib (do a cvs co winelib from Mono's CVS).
+	
+	</ul>
 
 * Contributing
 
-	The Winforms effort is being coordinated in the <a
+	<p>The Winforms effort is being coordinated in the <a
 	href="mailto:mono-winforms-list@ximian.com">mono-winforms-list@ximian.com</a>.
 	If you are interested in helping out with this effort,
 	subscribe to it by sending an email message to <a
 	href="mailto:mono-winforms-list-request@ximian.com">mono-winforms-list-request@ximian.com</a>.
 		
-	If you want to help, you can pick a control and start implementing it's 
+	<p>If you want to help, you can pick a control and start implementing it's 
 	methods. You can do this either on Windows or on Linux. Try using 
 	System.Drawing calls instead of P/Invoked Win32 calls. 
 
-	If you choose a particular control to work on, send a note to the 
+	<p>If you choose a particular control to work on, send a note to the 
 	winforms list to avoid duplication of effort. 
 	
 
 * System.Drawing
 
-	For details, see the <a
+	<p>For details, see the <a
 	href="drawing.html">System.Drawing implementation notes</a>
 	section of the web site.
 
