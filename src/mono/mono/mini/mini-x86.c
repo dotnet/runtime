@@ -2681,8 +2681,30 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
 			}
 			x86_call_code (code, 0);
-			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
-				x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
+			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention)) {
+				/* a pop is one byte, while an add reg, imm is 3. So if there are 4 or 8
+				 * bytes to pop, we want to use pops. GCC does this (note it won't happen
+				 * for P4 or i686 because gcc will avoid using pop push at all. But we aren't
+				 * smart enough to do that optimization yet
+				 *
+				 * It turns out that on my P4, doing two pops for 8 bytes on the stack makes
+				 * mcs botstrap slow down. However, doing 1 pop for 4 bytes creates a small,
+				 * (most likely from locality benefits). People with other processors should
+				 * check on theirs to see what happens.
+				 */
+				if (call->stack_usage == 4) {
+					/* we want to use registers that won't get used soon, so use
+					 * edx and ecx, as registers get allocated in the order eax, ecx, edx.
+					 * However, for a long call, part of the return is in edx, so only use ecx
+					 */
+					if (ins->opcode != OP_LCALL)
+						x86_pop_reg (code, X86_EDX);
+					else
+						x86_pop_reg (code, X86_ECX);
+				} else {
+					x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
+				}
+			}
 			break;
 		case OP_FCALL_REG:
 		case OP_LCALL_REG:
@@ -2691,8 +2713,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CALL_REG:
 			call = (MonoCallInst*)ins;
 			x86_call_reg (code, ins->sreg1);
-			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
-				x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
+			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention)) {
+				if (call->stack_usage == 4) {
+					if (ins->opcode != OP_LCALL_REG)
+						x86_pop_reg (code, X86_EDX);
+					else
+						x86_pop_reg (code, X86_ECX);
+				} else {
+					x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
+				}
+			}
 			break;
 		case OP_FCALL_MEMBASE:
 		case OP_LCALL_MEMBASE:
@@ -2701,8 +2731,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CALL_MEMBASE:
 			call = (MonoCallInst*)ins;
 			x86_call_membase (code, ins->sreg1, ins->inst_offset);
-			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
-				x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
+			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention)) {
+				if (call->stack_usage == 4) {
+					if (ins->opcode != OP_LCALL_MEMBASE)
+						x86_pop_reg (code, X86_EDX);
+					else
+						x86_pop_reg (code, X86_ECX);
+				} else {
+					x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
+				}
+			}
 			break;
 		case OP_OUTARG:
 		case OP_X86_PUSH:
