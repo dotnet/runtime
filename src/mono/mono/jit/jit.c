@@ -4060,27 +4060,31 @@ mono_runtime_install_handlers (void)
 #else /* !PLATFORM_WIN32 */
 
 	/* libpthreads has its own implementation of sigaction(),
-	 * but we want be able to handle everything. So we directly
-	 * use syscall instead of sigaction */
+	 * but it seems to work well with our current exception
+	 * handlers. If not we must call syscall directly instead 
+	 * of sigaction */
 	
 	/* catch SIGFPE */
 	sa.sa_handler = sigfpe_signal_handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
-	g_assert (syscall (SYS_sigaction, SIGFPE, &sa, NULL) != -1);
+	//g_assert (syscall (SYS_sigaction, SIGFPE, &sa, NULL) != -1);
+	g_assert (sigaction (SIGFPE, &sa, NULL) != -1);
 
 	/* catch SIGILL */
 	sa.sa_handler = sigill_signal_handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
-	g_assert (syscall (SYS_sigaction, SIGILL, &sa, NULL) != -1);
+	//g_assert (syscall (SYS_sigaction, SIGILL, &sa, NULL) != -1);
+	g_assert (sigaction (SIGILL, &sa, NULL) != -1);
 
 #if 1
 	/* catch SIGSEGV */
 	sa.sa_handler = sigsegv_signal_handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
-	g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
+	//g_assert (syscall (SYS_sigaction, SIGSEGV, &sa, NULL) != -1);
+	g_assert (sigaction (SIGSEGV, &sa, NULL) != -1);
 #endif
 #endif /* PLATFORM_WIN32 */
 }
