@@ -34,9 +34,12 @@ static void release_symbol_file_table (void);
 static void initialize_debugger_support (void);
 
 static MonoDebugHandle *mono_debug_handle = NULL;
-static void (*debugger_notification_code) (void) = NULL;
+static gconstpointer debugger_notification_address = NULL;
 static pthread_cond_t debugger_thread_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t debugger_thread_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+static pthread_cond_t debugger_start_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t debugger_start_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
@@ -56,8 +59,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&mono_generic_trampoline_code,
 	&mono_breakpoint_trampoline_code,
 	&debugger_symbol_file_table_generation,
-	&debugger_symbol_file_table_modified,
-	&debugger_notification_code,
+	&debugger_notification_address,
 	&debugger_symbol_file_table,
 	&debugger_update_symbol_file_table,
 	&mono_compile_method,
@@ -76,6 +78,17 @@ static void
 mono_debugger_unlock (void)
 {
 	pthread_mutex_unlock (&debugger_thread_mutex);
+}
+
+static void
+mono_debugger_signal (void)
+{
+	mono_debugger_lock ();
+	if (!debugger_symbol_file_table_modified) {
+		debugger_symbol_file_table_modified = TRUE;
+		pthread_cond_signal (&debugger_thread_cond);
+	}
+	mono_debugger_unlock ();
 }
 
 static void
@@ -130,9 +143,6 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 	const char **ptr;
 
 	g_assert (!mono_debug_handle);
-
-	mono_debugger_lock ();
-	release_symbol_file_table ();
 
 	debug = g_new0 (MonoDebugHandle, 1);
 	debug->name = g_strdup (assembly->image->name);
@@ -223,6 +233,9 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 		g_assert_not_reached ();
 	}
 
+	mono_debugger_lock ();
+	release_symbol_file_table ();
+
 	mono_debug_handle = debug;
 	mono_install_assembly_load_hook (mono_debug_add_assembly, NULL);
 
@@ -273,6 +286,7 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 	mono_debug_add_type (mono_defaults.serializationinfo_class);
 	mono_debug_add_type (mono_defaults.streamingcontext_class);
 
+	g_message (G_STRLOC);
 	mono_debugger_unlock ();
 
 	return debug;
@@ -951,8 +965,7 @@ mono_debug_add_type (MonoClass *klass)
 	if (info->symfile) {
 		mono_debugger_lock ();
 		mono_debug_symfile_add_type (info->symfile, klass);
-		debugger_symbol_file_table_modified++;
-		pthread_cond_signal (&debugger_thread_cond);
+		mono_debugger_signal ();
 		mono_debugger_unlock ();
 	}
 }
@@ -1122,8 +1135,7 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 
 	if (info->symfile) {
 		mono_debug_symfile_add_method (info->symfile, method);
-		debugger_symbol_file_table_modified++;
-		pthread_cond_signal (&debugger_thread_cond);
+		mono_debugger_signal ();
 	}
 
 	mono_debugger_unlock ();
@@ -1272,19 +1284,43 @@ static gboolean has_mono_debugger_support = FALSE;
  * NOTE: We must not call any functions here which we ever may want to debug !
  */
 static gpointer
-debugger_thread_func (gpointer unused)
+debugger_thread_func (gpointer ptr)
 {
+	void (*notification_code) (void) = ptr;
+
+	/*
+	 * Lock the mutex and raise a SIGSTOP to give the debugger a chance to
+	 * attach to us.  This is important since the `notification_code' contains a
+	 * breakpoint instruction which would otherwise be deadly for us.
+	 */
+	pthread_mutex_lock (&debugger_thread_mutex);
 	raise (SIGSTOP);
 
-	g_message (G_STRLOC);
-	pthread_mutex_lock (&debugger_thread_mutex);
+	/*
+	 * Ok, we're now running in the debugger - signal the parent thread that
+	 * we're ready and enter the event loop.
+	 */
+	pthread_mutex_lock (&debugger_start_mutex);
+	pthread_cond_signal (&debugger_start_cond);
+	pthread_mutex_unlock (&debugger_start_mutex);
 
 	while (TRUE) {
-		/* Send notification. */
-		debugger_notification_code ();
-
 		/* Wait for an event. */
 		pthread_cond_wait (&debugger_thread_cond, &debugger_thread_mutex);
+
+		if (!debugger_symbol_file_table_modified)
+			continue;
+
+		/*
+		 * Send notification - we'll stop on a breakpoint instruction at a special
+		 * address.  The debugger will reload the symbol tables while we're stopped -
+		 * and owning the `debugger_thread_mutex' so that no other thread can touch
+		 * them in the meantime.
+		 */
+		notification_code ();
+
+		/* Clear modified flag. */
+		debugger_symbol_file_table_modified = FALSE;
 	}
 
 	return NULL;
@@ -1293,7 +1329,7 @@ debugger_thread_func (gpointer unused)
 static void
 initialize_debugger_support ()
 {
-	guint8 *buf;
+	guint8 *buf, *ptr;
 	pthread_t thread;
 	int ret;
 
@@ -1303,13 +1339,21 @@ initialize_debugger_support ()
 
 	mono_debugger_class_init_func = mono_debug_add_type;
 
-	debugger_notification_code = g_malloc0 (16);
-	buf = (guint8 *) debugger_notification_code;
+	ptr = buf = g_malloc0 (16);
 	x86_breakpoint (buf);
+	debugger_notification_address = buf;
 	x86_ret (buf);
 
-	ret = pthread_create (&thread, NULL, debugger_thread_func, NULL);
+	pthread_mutex_lock (&debugger_start_mutex);
+
+	ret = pthread_create (&thread, NULL, debugger_thread_func, ptr);
 	g_assert (ret == 0);
+
+	/*
+	 * Wait until the debugger thread has actually been started and the
+	 * debugger attached to it.
+	 */
+	pthread_cond_wait (&debugger_start_cond, &debugger_start_mutex);
 }
 
 static GPtrArray *breakpoints = NULL;
