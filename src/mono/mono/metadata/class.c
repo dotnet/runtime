@@ -184,18 +184,18 @@ inflate_generic_type (MonoType *type, MonoGenericInst *tgen, MonoGenericInst *mg
 {
 	switch (type->type) {
 	case MONO_TYPE_MVAR:
-		return dup_type (mgen->type_argv [type->data.type_param]);
+		return dup_type (mgen->type_argv [type->data.generic_param->num]);
 	case MONO_TYPE_VAR:
 		/*g_print ("inflating var %d to %s\n", type->data.type_param, mono_type_get_name (tgen->type_argv [type->data.type_param]));*/
-		return dup_type (tgen->type_argv [type->data.type_param]);
+		return dup_type (tgen->type_argv [type->data.generic_param->num]);
 	case MONO_TYPE_SZARRAY: {
 		MonoClass *eclass = type->data.klass;
 		MonoClass *nclass;
 		MonoType *nt;
 		if (eclass->byval_arg.type == MONO_TYPE_MVAR) {
-			nclass = mono_class_from_mono_type (mgen->type_argv [eclass->byval_arg.data.type_param]);
+			nclass = mono_class_from_mono_type (mgen->type_argv [eclass->byval_arg.data.generic_param->num]);
 		} else if (eclass->byval_arg.type == MONO_TYPE_VAR) {
-			nclass = mono_class_from_mono_type (tgen->type_argv [eclass->byval_arg.data.type_param]);
+			nclass = mono_class_from_mono_type (tgen->type_argv [eclass->byval_arg.data.generic_param->num]);
 		} else {
 			return type;
 		}
@@ -1627,11 +1627,21 @@ mono_class_from_generic (MonoType *gtype)
 }
 
 MonoClass *
-mono_class_from_gen_param (MonoImage *image, gboolean mvar, int type_num, MonoGenericParam *param)
+mono_class_from_gen_param (MonoGenericParam *param, gboolean mvar)
 {
 	MonoClass *result;
 	int key;
 	static GHashTable *cache = NULL;
+
+	if (param->klass)
+		return param->klass;
+
+	/*
+	 * At this point, we're a type parameter which is loaded from reflection.
+	 * We create a very minimalistic MonoClass here which just contains that
+	 * type parameter's number since we cannot get more information from the
+	 * metadata (and also don't need them).
+	 */
 
 	mono_loader_lock ();
 
@@ -1639,16 +1649,16 @@ mono_class_from_gen_param (MonoImage *image, gboolean mvar, int type_num, MonoGe
 		cache = g_hash_table_new (NULL, NULL);
 
 	key = mvar? 1: 0;
-	key |= type_num << 1;
+	key |= param->num << 1;
 
 	if ((result = g_hash_table_lookup (cache, GINT_TO_POINTER (key)))) {
 		mono_loader_unlock ();
 		return result;
 	}
-	result = g_new0 (MonoClass, 1);
+	result = param->klass = g_new0 (MonoClass, 1);
 
 	result->parent = NULL;
-	result->name = g_strdup_printf ("%s%d", mvar? "!!": "!", type_num);
+	result->name = g_strdup_printf ("%s%d", mvar? "!!": "!", param->num);
 	result->name_space = "";
 	result->image = mono_defaults.corlib; 
 	result->inited = TRUE;
@@ -1656,7 +1666,7 @@ mono_class_from_gen_param (MonoImage *image, gboolean mvar, int type_num, MonoGe
 	result->enum_basetype = &result->element_class->byval_arg;
 
 	result->this_arg.type = result->byval_arg.type = mvar? MONO_TYPE_MVAR: MONO_TYPE_VAR;
-	result->this_arg.data.type_param = result->byval_arg.data.type_param = type_num;
+	result->this_arg.data.generic_param = result->byval_arg.data.generic_param = param;
 	result->this_arg.byref = TRUE;
 
 	g_hash_table_insert (cache, GINT_TO_POINTER (key), result);
@@ -1802,9 +1812,12 @@ mono_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_GENERICINST:
 		return mono_class_from_generic (type);
 	case MONO_TYPE_VAR:
-		return mono_class_from_gen_param (NULL, FALSE, type->data.type_param, NULL);
 	case MONO_TYPE_MVAR:
-		return mono_class_from_gen_param (NULL, TRUE, type->data.type_param, NULL);
+		/* NOTE: Unless this is a dynamic type, only the `num' field is valid in
+		 *       `type->data.generic_param'.  For dynamic types, its `klass' field
+		 *       points to the already created class.
+		 */
+		return mono_class_from_gen_param (type->data.generic_param, type->type == MONO_TYPE_MVAR);
 	default:
 		g_warning ("implement me 0x%02x\n", type->type);
 		g_assert_not_reached ();

@@ -265,7 +265,7 @@ MonoClass *
 mono_class_from_typeref    (MonoImage *image, guint32 type_token);
 
 MonoClass * 
-mono_class_from_gen_param  (MonoImage *image, gboolean mvar, int type_num, MonoGenericParam *param);
+mono_class_from_gen_param  (MonoGenericParam *param, gboolean mvar);
 
 MonoClass*
 mono_class_from_generic    (MonoType *gtype);

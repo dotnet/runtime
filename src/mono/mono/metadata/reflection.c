@@ -302,6 +302,10 @@ my_mono_class_from_mono_type (MonoType *type) {
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY:
 		return mono_class_from_mono_type (type);
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		g_assert (type->data.generic_param->klass);
+		return type->data.generic_param->klass;
 	default:
 		/* should be always valid when we reach this case... */
 		return type->data.klass;
@@ -382,7 +386,7 @@ encode_type (MonoDynamicAssembly *assembly, MonoType *type, char *p, char **endb
 	}
 	case MONO_TYPE_VAR:
 		mono_metadata_encode_value (type->type, p, &p);
-		mono_metadata_encode_value (type->data.type_param, p, &p);
+		mono_metadata_encode_value (type->data.generic_param->num, p, &p);
 		break;
 
 	default:
@@ -1697,9 +1701,10 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 		klass = mono_class_from_mono_type (type);
 
 	/*
-	 * If it's in the same module:
+	 * If it's in the same module and not a generic type parameter:
 	 */
-	if (klass->image == assembly->assembly.image) {
+	if ((klass->image == assembly->assembly.image) &&
+	    (type->type != MONO_TYPE_VAR) && (type->type != MONO_TYPE_MVAR)) {
 		MonoReflectionTypeBuilder *tb = klass->reflection_info;
 		token = TYPEDEFORREF_TYPEDEF | (tb->table_idx << TYPEDEFORREF_BITS);
 		mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), klass->reflection_info);
@@ -3613,7 +3618,7 @@ mymono_metadata_type_equal (MonoType *t1, MonoType *t2)
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		return t1->data.type_param == t2->data.type_param;
+		return t1->data.generic_param == t2->data.generic_param;
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
 		return FALSE;
@@ -5835,7 +5840,23 @@ mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoRef
 		param->constraints [i] = mono_class_from_mono_type (constraint->type);
 	}
 
-	klass = mono_class_from_gen_param (image, FALSE, param->num, param);
+	/*
+	 * We're a dynamic type; create the class with full information about the generic parameter.
+	 */
+
+	klass = param->klass = g_new0 (MonoClass, 1);
+
+	klass->parent = mono_defaults.object_class;
+	klass->name = g_strdup_printf ("!%d", param->num);
+	klass->name_space = "";
+	klass->image = image;
+	klass->inited = TRUE;
+	klass->cast_class = klass->element_class = klass;
+	klass->enum_basetype = &klass->element_class->byval_arg;
+
+	klass->this_arg.type = klass->byval_arg.type = MONO_TYPE_VAR;
+	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
+	klass->this_arg.byref = TRUE;
 
 	gparam->type = mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 

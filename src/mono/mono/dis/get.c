@@ -604,10 +604,10 @@ dis_stringify_type (MonoImage *m, MonoType *type)
 		bare = g_strdup ("void");
 		break;
 	case MONO_TYPE_MVAR:
-		bare = g_strdup_printf ("!!%d", type->data.type_param);
+		bare = g_strdup_printf ("!!%d", type->data.generic_param->num);
 		break;
 	case MONO_TYPE_VAR:
-		bare = g_strdup_printf ("!%d", type->data.type_param);
+		bare = g_strdup_printf ("!%d", type->data.generic_param->num);
 		break;
 	case MONO_TYPE_GENERICINST: {
 		GString *str = g_string_new ("");

@@ -1429,6 +1429,19 @@ mono_metadata_parse_generic_inst (MonoImage *m, const char *ptr, const char **rp
 	return generic_inst;
 }
 
+static MonoGenericParam *
+mono_metadata_parse_generic_param (MonoImage *m, const char *ptr, const char **rptr)
+{
+	MonoGenericParam *generic_param = g_new0 (MonoGenericParam, 1);
+	
+	generic_param->num = mono_metadata_decode_value (ptr, &ptr);
+
+	if (rptr)
+		*rptr = ptr;
+
+	return generic_param;
+}
+
 /* 
  * do_mono_metadata_parse_type:
  * @type: MonoType to be filled in with the return value
@@ -1492,7 +1505,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, const char *ptr, cons
 
 	case MONO_TYPE_MVAR:
 	case MONO_TYPE_VAR:
-		type->data.type_param = mono_metadata_decode_value (ptr, &ptr);
+		type->data.generic_param = mono_metadata_parse_generic_param (m, ptr, &ptr);
 		break;
 
 	case MONO_TYPE_GENERICINST:
@@ -2444,7 +2457,7 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		return t1->data.type_param == t2->data.type_param;
+		return t1->data.generic_param == t2->data.generic_param;
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
 		return FALSE;

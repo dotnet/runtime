@@ -1411,7 +1411,7 @@ ves_icall_Type_GetGenericParameters (MonoReflectionType *type)
 	} else if (klass->gen_params) {
 		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, klass->num_gen_params);
 		for (i = 0; i < klass->num_gen_params; ++i) {
-			pklass = mono_class_from_gen_param (klass->image, FALSE, i, &klass->gen_params [i]);
+			pklass = mono_class_from_gen_param (&klass->gen_params [i], FALSE);
 			mono_array_set (res, gpointer, i, mono_type_get_object (mono_object_domain (type), &pklass->byval_arg));
 		}
 	} else if (klass->generic_inst) {
@@ -1498,7 +1498,7 @@ ves_icall_Type_GetGenericParameterPosition (MonoReflectionType *type)
 	if (type->type->byref)
 		return -1;
 	if (type->type->type == MONO_TYPE_VAR || type->type->type == MONO_TYPE_MVAR)
-		return type->type->data.type_param;
+		return type->type->data.generic_param->num;
 	return -1;
 }
 

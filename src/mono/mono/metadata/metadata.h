@@ -257,6 +257,7 @@ typedef struct {
 
 typedef struct _MonoType MonoType;
 typedef struct _MonoGenericInst MonoGenericInst;
+typedef struct _MonoGenericParam MonoGenericParam;
 typedef struct _MonoArrayType MonoArrayType;
 typedef struct _MonoMethodSignature MonoMethodSignature;
 
@@ -289,8 +290,8 @@ struct _MonoType {
 		MonoType *type;   /* for PTR */
 		MonoArrayType *array; /* for ARRAY */
 		MonoMethodSignature *method;
-		int type_param;
-		MonoGenericInst *generic_inst;
+		MonoGenericParam *generic_param; /* for VAR and MVAR */
+		MonoGenericInst *generic_inst; /* for GENERICINST */
 	} data;
 	unsigned int attrs    : 16; /* param attributes or field flags */
 	unsigned int type     : 8;  /* ElementTypeEnum */
@@ -333,12 +334,13 @@ typedef enum {
 	MONO_PARSE_FIELD
 } MonoParseTypeMode;
 
-typedef struct {
+struct _MonoGenericParam {
+	MonoClass *klass;
 	const char *name;
 	guint16 flags;
 	guint16 num;
 	MonoClass** constraints; /* NULL means end of list */
-} MonoGenericParam;
+};
 
 guint32     mono_metadata_parse_typedef_or_ref (MonoImage      *m,
                                                 const char      *ptr,
