@@ -23,6 +23,14 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Sep 21, 2001
+
+	A couple of news-worthy items: Dick got the initial thread
+	support into mint; Paolo implemented many new opcodes; Dietmar
+	got long operations and mul/div working on the JITer; Ravi rewrote
+	the Method selector for expressions to be conformant; Miguel
+	got i++ working.   All in tonight's snapshot
+
 ** Sep 19, 2001
 
 	Paolo has written a section on <a href="porting.html">Porting
