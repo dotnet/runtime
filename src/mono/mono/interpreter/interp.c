@@ -469,7 +469,7 @@ ves_pinvoke_method (MonoInvocation *frame)
 
 	values = alloca (sizeof (gpointer) * acount);
 
-	/* fixme: only works on little endian mashines */
+	/* fixme: only works on little endian machines */
 
 	for (i = 0; i < acount; i++) {
 
@@ -2055,7 +2055,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_UNUSED65) 
 		CASE (CEE_UNUSED66) 
 		CASE (CEE_UNUSED67) ves_abort(); BREAK;
-		CASE (CEE_LDTOKEN) ves_abort(); BREAK;
+		CASE (CEE_LDTOKEN)
 		CASE (CEE_CONV_U2) ves_abort(); BREAK;
 		CASE (CEE_CONV_U1) ves_abort(); BREAK;
 		CASE (CEE_CONV_I) ves_abort(); BREAK;
@@ -2347,7 +2347,7 @@ ves_exec (MonoAssembly *assembly)
 static void
 usage (void)
 {
-	fprintf (stderr, "Usage is: mono-int executable args...");
+	fprintf (stderr, "Usage is: mint executable args...\n");
 	exit (1);
 }
 
