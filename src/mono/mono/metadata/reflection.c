@@ -15,6 +15,7 @@
 #include "mono/metadata/tokentype.h"
 #include "mono/metadata/appdomain.h"
 #include "mono/metadata/opcodes.h"
+#include "mono/metadata/assembly.h"
 #include <mono/metadata/exception.h>
 #include <stdio.h>
 #include <glib.h>
@@ -1601,7 +1602,8 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 		is_system++;
 	values [MONO_TYPEDEF_NAMESPACE] = string_heap_insert (&assembly->sheap, n);
 	g_free (n);
-	if (tb->parent && !(is_system && is_object)) { /* interfaces don't have a parent */
+	if (tb->parent && !(is_system && is_object) && 
+		!(tb->attrs & TYPE_ATTRIBUTE_INTERFACE)) { /* interfaces don't have a parent */
 		values [MONO_TYPEDEF_EXTENDS] = mono_image_typedef_or_ref (assembly, tb->parent->type);
 	} else
 		values [MONO_TYPEDEF_EXTENDS] = 0;
@@ -2569,7 +2571,10 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	/* keep in sync with image.c */
 	assembly->assembly.aname.name = image->name = mono_string_to_utf8 (assemblyb->name);
 	image->assembly_name = image->name; /* they may be different */
+	image->module_name = g_strdup ("RefEmit_YouForgotToDefineAModule");
 	image->assembly = (MonoAssembly*)assembly;
+	image->references = g_new0 (MonoAssembly*, 1);
+	image->references [0] = NULL;
 
 	image->method_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->class_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
@@ -2591,6 +2596,8 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	image->native_wrapper_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->remoting_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	assembly->assembly.image = image;
+
+	mono_assembly_invoke_load_hook ((MonoAssembly*)assembly);
 }
 
 static int
@@ -4518,6 +4525,14 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 
 	klass->element_class = klass;
 	klass->reflection_info = tb; /* need to pin. */
+
+	/* Put into cache so mono_class_get () will find it */
+	mono_image_add_to_name_cache (klass->image, klass->name_space, klass->name,
+								  tb->table_idx);
+
+	mono_g_hash_table_insert (tb->module->assemblyb->dynamic_assembly->tokens,
+							  GUINT_TO_POINTER (MONO_TOKEN_TYPE_DEF | tb->table_idx),
+							  tb);
 
 	if (parent != NULL)
 		mono_class_setup_parent (klass, parent);

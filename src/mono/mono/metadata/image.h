@@ -156,5 +156,8 @@ gpointer      mono_image_lookup_resource (MonoImage *image, guint32 res_id,
 const char*   mono_image_get_public_key  (MonoImage *image, guint32 *size);
 const char*   mono_image_get_strong_name (MonoImage *image, guint32 *size);
 guint32       mono_image_strong_name_position (MonoImage *image, guint32 *size);
+void          mono_image_add_to_name_cache (MonoImage *image, 
+											const char *nspace, 
+											const char *name, guint32 index);
 
 #endif
