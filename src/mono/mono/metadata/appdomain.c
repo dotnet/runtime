@@ -946,6 +946,13 @@ ves_icall_System_AppDomain_InternalUnload (gint32 domain_id)
 		return;
 	}
 
+	/* 
+	 * Unloading seems to cause problems when running NUnit/NAnt, hence
+	 * this workaround.
+	 */
+	if (getenv ("MONO_NO_UNLOAD"))
+		return;
+
 	mono_domain_unload (domain);
 }
 
