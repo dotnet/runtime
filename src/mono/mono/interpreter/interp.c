@@ -201,10 +201,80 @@ ves_real_abort (int line, MonoMethod *mh,
 }
 #define ves_abort() do {ves_real_abort(__LINE__, frame->method, ip, frame->stack, sp); THROW_EX (mono_get_exception_execution_engine (NULL), ip);} while (0);
 
+static MonoMethodMessage *
+arch_method_call_message_new (MonoMethod *method, void *obj, stackval *args, MonoMethod *invoke, 
+			      MonoDelegate **cb, MonoObject **state)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoMethodSignature *sig = method->signature;
+	MonoMethodMessage *msg;
+	int i, count, type, size, align;
+	/*char *cpos = stack;*/
+
+	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class); 
+	
+	if (invoke) {
+		mono_message_init (domain, msg, mono_method_get_object (domain, invoke), NULL);
+		count =  sig->param_count - 2;
+	} else {
+		mono_message_init (domain, msg, mono_method_get_object (domain, method), NULL);
+		count =  sig->param_count;
+	}
+
+	for (i = 0; i < count; i++) {
+		gpointer vpos;
+		MonoClass *class;
+		MonoObject *arg;
+
+		size = mono_type_stack_size (sig->params [i], &align);
+
+		/* FIXME: endian issues */
+		if (sig->params [i]->byref)
+			vpos = *((gpointer *)args [i].data.p);
+		else 
+			vpos = &args [i].data;
+
+		type = sig->params [i]->type;
+		class = mono_class_from_mono_type (sig->params [i]);
+
+		if (class->valuetype)
+			arg = mono_value_box (domain, class, vpos);
+		else 
+			arg = args [i].data.p;
+		      
+		mono_array_set (msg->args, gpointer, i, arg);
+	}
+
+	if (invoke) {
+		/* the last two arguments of begininvoke */
+		*cb = args [count].data.p;
+		*state = args [count + 1].data.p;
+	}
+	return msg;
+}
+
 static gpointer
 interp_create_remoting_trampoline (MonoMethod *method)
 {
 	return method;
+}
+
+static void
+invoke_remoting_trampoline (MonoInvocation *frame) {
+	MonoMethodMessage *msg;
+	MonoTransparentProxy *this;
+	MonoObject *res, *exc;
+	MonoArray *out_args;
+
+	this = frame->obj;
+	msg = arch_method_call_message_new (frame->method, frame->obj, frame->stack_args, NULL, NULL, NULL);
+
+	res = mono_remoting_invoke ((MonoObject *)this->rp, msg, &exc, &out_args);
+
+	if (exc)
+		mono_raise_exception ((MonoException *)exc);
+
+	//arch_method_return_message_restore (method, &first_arg, res, out_args);
 }
 
 static MonoMethod*
@@ -568,7 +638,7 @@ ves_runtime_method (MonoInvocation *frame)
 	MonoMulticastDelegate *delegate = (MonoMulticastDelegate*)frame->obj;
 	MonoInvocation call;
 
-	mono_class_init (mono_defaults.multicastdelegate_class);
+	mono_class_init (frame->method->klass);
 	
 	if (*name == '.' && (strcmp (name, ".ctor") == 0) && obj &&
 			mono_object_isinst (obj, mono_defaults.multicastdelegate_class)) {
@@ -604,6 +674,53 @@ ves_runtime_method (MonoInvocation *frame)
 			}
 
 			delegate = delegate->prev;
+		}
+		return;
+	}
+	if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0) && obj &&
+			mono_object_isinst (obj, mono_defaults.multicastdelegate_class)) {
+		MonoMethodMessage *msg;
+		MonoDelegate *async_callback;
+		MonoObject *state;
+		MonoMethod *im;
+		MonoAsyncResult *ares;
+	
+		im = mono_get_delegate_invoke (frame->method->klass);
+		msg = arch_method_call_message_new (frame->method, frame->obj, frame->stack_args, im, &async_callback, &state);
+
+		ares = mono_thread_pool_add (delegate, msg, async_callback, state);
+		frame->retval->data.p = ares;
+		return;
+	}
+	if (*name == 'E' && (strcmp (name, "EndInvoke") == 0) && obj &&
+			mono_object_isinst (obj, mono_defaults.multicastdelegate_class)) {
+		MonoAsyncResult *ares;
+		MonoMethodSignature *sig = frame->method->signature;
+		MonoMethodMessage *msg;
+		MonoObject *res, *exc;
+		MonoArray *out_args;
+
+		msg = arch_method_call_message_new (frame->method, frame->obj, frame->stack_args, NULL, NULL, NULL);
+
+		ares = mono_array_get (msg->args, gpointer, sig->param_count - 1);
+		g_assert (ares);
+
+		res = mono_thread_pool_finish (ares, &out_args, &exc);
+
+		if (exc) {
+			char *strace = mono_string_to_utf8 (((MonoException*)exc)->stack_trace);
+			char  *tmp;
+			tmp = g_strdup_printf ("%s\nException Rethrown at:\n", strace);
+			g_free (strace);	
+			((MonoException*)exc)->stack_trace = mono_string_new (mono_object_domain (exc), tmp);
+			g_free (tmp);
+			mono_raise_exception ((MonoException*)exc);
+		}
+
+		/* restore return value */
+		if (sig->ret->type != MONO_TYPE_VOID) {
+			g_assert (res);
+			//arch_method_return_message_restore (method, &first_arg, res, out_args);
 		}
 		return;
 	}
@@ -1527,10 +1644,9 @@ ves_exec_method (MonoInvocation *frame)
 			child_frame.ex_handler = NULL;
 
 			if (csignature->hasthis && sp->type == VAL_OBJ &&
-			    ((MonoObject *)sp->data.p)->vtable->klass ==
-			    mono_defaults.transparent_proxy_class) {
+					((MonoObject *)sp->data.p)->vtable->klass == mono_defaults.transparent_proxy_class) {
 				/* implement remoting */
-				g_assert_not_reached ();
+				invoke_remoting_trampoline (&child_frame);
 			} else {
 				switch (GPOINTER_TO_UINT (child_frame.method->addr)) {
 				case INLINE_STRING_LENGTH:
