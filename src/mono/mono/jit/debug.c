@@ -3,6 +3,7 @@
 #include <mono/metadata/class.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
+#include <mono/jit/codegen.h>
 
 typedef struct {
 	FILE *f;
@@ -45,18 +46,22 @@ base_types[] = {
 	{"UInt64", ";0000000000000;01777777777777777777777;"},
 	{"Single", "r(0,8);4;0;"},
 	{"Double", "r(0,8);8;0;"},
-	{"String", "(0,40)=(0,41)=*(0,42)=xsMonoString:"}, /*string*/
+	{"String", "(0,41)=*(0,42)=xsMonoString:"}, /*string*/
 	{"", }, /*ptr*/
 	{"", }, /*byref*/
 	{"", }, /*valuetype*/
-	{"Class", "(0,43)=(0,44)=*(0,45)=xsMonoObject:"}, /*class*/
+	{"Class", "(0,44)=*(0,45)=xsMonoObject:"}, /*class*/
+	{"", }, /*unused*/
 	{"Array", }, /*array*/
 	{"", }, /*typedbyref*/
+	{"", }, /*unused*/
+	{"", }, /*unused*/
 	{"IntPtr", ";0020000000000;0017777777777;"},
 	{"UIntPtr", ";0000000000000;0037777777777;"},
-	{"", NULL}, /*fnptr*/
-	{"Object", "(0,46)=(0,47)=*(0,48)=xsMonoObject:"}, /*object*/
-	{"SzArray", "(0,49)=(0,50)=*(0,51))=xsMonoArray:"}, /*szarray*/
+	{"", }, /*unused*/
+	{"FnPtr", "*(0,1)"}, /*fnptr*/
+	{"Object", "(0,47)=*(0,48)=xsMonoObject:"}, /*object*/
+	{"SzArray", "(0,50)=*(0,51))=xsMonoArray:"}, /*szarray*/
 	{NULL, NULL}
 };
 
@@ -102,11 +107,20 @@ debug_load_method_lines (AssemblyDebugInfo* info)
 		return;
 	}
 	g_free (name);
-	i = 1;
+	i = 0;
 	while (fgets (buf, sizeof (buf), f)) {
-		if (sscanf (buf, " // method line %d", &mnum) && mnum <= info->nmethods)
-			info->mlines [mnum] = i;
 		i++;
+		if (sscanf (buf, " // method line %d", &mnum) && mnum < info->nmethods) {
+			while (fgets (buf, sizeof (buf), f)) {
+				++i;
+				if (strstr (buf, "}"))
+					break; /* internalcall or runtime method */
+				if (strstr (buf, "IL_0000:"))
+					break;
+			}
+			/* g_print ("method %d found at %d\n", mnum, i); */
+			info->mlines [mnum] = i;
+		}
 	}
 	fclose (f);
 }
@@ -237,7 +251,11 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 	}
 	/* start lines of basic blocks */
 	for (i = 0; i < cfg->block_count; ++i) {
-		fprintf (info->f, ".stabn 68,0,%d,%d\n", line + cfg->bblocks [i].cli_addr, cfg->bblocks [i].addr);
+		int j;
+		for (j = 0; j < cfg->bblocks [i].forest->len; ++j) {
+			MBTree *t = (MBTree *) g_ptr_array_index (cfg->bblocks [i].forest, j);
+			fprintf (info->f, ".stabn 68,0,%d,%d\n", line + t->cli_addr, t->addr);
+		}
 	}
 
 	/* end of function */
