@@ -135,10 +135,10 @@ stind.r8: src1:b src2:f
 add: dest:i src1:i src2:i len:4
 sub: dest:i src1:i src2:i len:4
 mul: dest:i src1:i src2:i len:4
-div: dest:i src1:i src2:i len:12
-div.un: dest:i src1:i src2:i len:12
-rem: dest:i src1:i src2:i len:20
-rem.un: dest:i src1:i src2:i len:20
+div: dest:i src1:i src2:i len:16
+div.un: dest:i src1:i src2:i len:16
+rem: dest:i src1:i src2:i len:24
+rem.un: dest:i src1:i src2:i len:24
 and: dest:i src1:i src2:i len:4
 or: dest:i src1:i src2:i len:4
 xor: dest:i src1:i src2:i len:4
