@@ -20,6 +20,14 @@
 #include <mono/metadata/unicode.h>
 #include <mono/metadata/exception.h>
 
+/* Internal helper methods */
+
+static gboolean
+string_icall_is_in_array (MonoArray *chars, gint32 arraylength, gunichar2 chr);
+
+static gint32
+string_icall_cmp_char (gunichar2 c1, gunichar2 c2, gint16 mode);
+
 MonoString *
 ves_icall_System_String_ctor_charp (gpointer dummy, gunichar2 *value)
 {
@@ -419,7 +427,7 @@ ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gin
 	return retarr;
 }
 
-gboolean
+static gboolean
 string_icall_is_in_array (MonoArray *chars, gint32 arraylength, gunichar2 chr)
 {
 	gunichar2 cmpchar;
@@ -780,7 +788,7 @@ ves_icall_System_String_get_Chars (MonoString *me, gint32 idx)
 			1 = StringCompareModeCaseInsensitive
 			2 = StringCompareModeOrdinal
 */
-gint32 
+static gint32 
 string_icall_cmp_char (gunichar2 c1, gunichar2 c2, gint16 mode)
 {
 	gint32 result;

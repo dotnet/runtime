@@ -118,12 +118,4 @@ ves_icall_System_String_GetHashCode (MonoString *me);
 gunichar2 
 ves_icall_System_String_get_Chars (MonoString *me, gint32 idx);
 
-/* Internal helper methods */
-
-gboolean
-string_icall_is_in_array (MonoArray *chars, gint32 arraylength, gunichar2 chr);
-
-gint32 
-string_icall_cmp_char (gunichar2 c1, gunichar2 c2, gint16 mode);
-
 #endif /* _MONO_CLI_STRING_ICALLS_H_ */
