@@ -3931,6 +3931,18 @@ mono_thread_abort (MonoObject *obj)
 
 	ExitThread (-1);
 }
+
+static MonoMethod *
+mono_method_get_last_managed (void)
+{
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	MonoLMF *lmf = jit_tls->lmf;		
+
+	if (lmf)
+		return lmf->method;
+
+	return NULL;
+}
 		
 static void
 mono_thread_start_cb (gpointer stack_start)
