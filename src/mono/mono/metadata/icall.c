@@ -2837,7 +2837,9 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflection
 	MonoTableInfo *table = &assembly->assembly->image->tables [MONO_TABLE_MANIFESTRESOURCE];
 	guint32 i;
 	guint32 cols [MONO_MANIFEST_SIZE];
+	guint32 impl, file_idx;
 	const char *val;
+	MonoImage *module;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -2851,16 +2853,23 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflection
 	if (i == table->rows)
 		return NULL;
 	/* FIXME */
-	if (cols [MONO_MANIFEST_IMPLEMENTATION]) {
+	impl = cols [MONO_MANIFEST_IMPLEMENTATION];
+	if (impl) {
 		/*
 		 * this code should only be called after obtaining the 
 		 * ResourceInfo and handling the other cases.
 		 */
-		g_assert_not_reached ();
-		return NULL;
-	}
+		g_assert ((impl & IMPLEMENTATION_MASK) == IMPLEMENTATION_FILE);
+		file_idx = impl >> IMPLEMENTATION_BITS;
 
-	return (void*)mono_image_get_resource (assembly->assembly->image, cols [MONO_MANIFEST_OFFSET], size);
+		module = mono_image_load_file_for_image (assembly->assembly->image, file_idx);
+		if (!module)
+			return NULL;
+	}
+	else
+		module = assembly->assembly->image;
+
+	return (void*)mono_image_get_resource (module, cols [MONO_MANIFEST_OFFSET], size);
 }
 
 static gboolean
@@ -3957,6 +3966,18 @@ ves_icall_System_Text_Encoding_InternalCodePage (void)
 	return mono_string_new (mono_domain_get (), cset);
 }
 
+static MonoBoolean
+ves_icall_System_Environment_get_HasShutdownStarted (void)
+{
+	if (mono_runtime_is_shutting_down ())
+		return TRUE;
+
+	if (mono_domain_is_unloading (mono_domain_get ()))
+		return TRUE;
+
+	return FALSE;
+}
+
 static void
 ves_icall_MonoMethodMessage_InitMessage (MonoMethodMessage *this, 
 					 MonoReflectionMethod *method,
@@ -4887,6 +4908,7 @@ static gconstpointer icall_map [] = {
 	"System.Environment::get_TickCount", ves_icall_System_Environment_get_TickCount,
 	"System.Environment::Exit", ves_icall_System_Environment_Exit,
 	"System.Environment::get_Platform", ves_icall_System_Environment_get_Platform,
+	"System.Environment::get_HasShutdownStarted", ves_icall_System_Environment_get_HasShutdownStarted,
 	"System.Environment::get_ExitCode", mono_environment_exitcode_get,
 	"System.Environment::set_ExitCode", mono_environment_exitcode_set,
 	"System.Environment::GetMachineConfigPath",	ves_icall_System_Configuration_DefaultConfig_get_machine_config_path,
