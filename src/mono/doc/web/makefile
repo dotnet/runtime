@@ -30,7 +30,9 @@ OBJECTS=	\
 	deploy/status.html			\
 	deploy/testing.html			\
 	deploy/porting.html			\
-	deploy/tools.html
+	deploy/tools.html			\
+	deploy/books.html			\
+	deploy/papers.html
 
 NON_HTML_SOURCES=	\
 	../mono-build.sh	\

@@ -1,0 +1,32 @@
+* C# Books
+
+   A Programmer's Introduction to C# - Second Edition: Eric Gunnerson
+
+* Compiler Implementation
+
+   Compilers - Principles, Techniques, and Tools: Alfred V. Aho, Ravi Sethi,
+   Jeffrey D. Ullman 
+
+   Advanced Compiler Design Implementation: Steven S. Muchnick
+
+   Modern Compiler Implementation in C: Andrew W. Appel
+
+   A Retargetable C Compiler - Design and Implementation: C. Fraser, David
+   Hanson
+
+* Reference Manuals
+
+   <a
+   href="http://developer.intel.com/design/pentium/manuals/24319101.pdf">Intel
+   Architecture Software Developer's Manual, Volume 2 - Instruction Set Reference Manual</a>
+
+   <a
+   href="http://www.caldera.com/developers/devspecs/abi386-4.pdf">System V ABI
+   - i386 Architecture Processor Supplement</a> 
+
+   <a
+   href="http://www.caldera.com/developers/devspecs/mipsabi.pdf">System V ABI -
+   MIPS Processor supplement</a>
+
+   <a href="http://www.sparc.org/standards/V8.pdf">The SPARC Architecture
+   Manual Version 8</a> 
