@@ -27,6 +27,15 @@
 
 	You can get it <a href="http://msdn.microsoft.com/downloads/default.asp?url=/downloads/sample.asp?url=/msdn-files/027/000/976/msdncompositedoc.xml&frame=true">here</a>
 
+	If you are new to .NET, writing regression tests is a good way
+	of starting to contribute: it will help you get used to C# as
+	well as getting comfortable with the .NET APIs.  
+
+	This helps because at this point you might be the best
+	qualified person to fix a problem found by the regression
+	test, or you might have a new class to implement in the .NET
+	world that only has a test suite.
+
 ** Bug reporting
 
 	If you find bugs in Mono, please make sure you enter a bug

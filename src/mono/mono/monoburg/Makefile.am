@@ -4,7 +4,6 @@ CC=$(CC_FOR_BUILD)
 #noinst_PROGRAMS = sample
 
 #sample_SOURCES = sample.c
-bdir=$(top_builddir)/$(subdir)
 
 parser.c:  $(srcdir)/monoburg.y
 	bison $(srcdir)/monoburg.y -o parser.c

@@ -16,6 +16,7 @@
 
 <pre>
 	export CVSROOT=:pserver:anonymous@reypastor.hispalinux.es:/mono
+	cvs login
 	cvs -z3 co mcs mono gtk-sharp
 </pre>
 
