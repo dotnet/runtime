@@ -1224,7 +1224,7 @@ void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoO
 	mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "ArgumentException"));
 }
 
-void ves_icall_System_Globalization_CultureInfo_construct_compareinfo (MonoObject *comp, MonoString *locale)
+void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoObject *comp, MonoString *locale)
 {
 	/* Nothing to do here */
 }
