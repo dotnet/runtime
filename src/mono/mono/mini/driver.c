@@ -413,8 +413,16 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 {
 	MonoImage *image = assembly->image;
 	MonoMethod *method;
+	guint32 entry = mono_image_get_entry_point (image);
 
-	method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
+	if (!entry) {
+		g_print ("Assembly '%s' doesn't have an entry point.\n", image->name);
+		/* FIXME: remove this silly requirement. */
+		mono_environment_exitcode_set (1);
+		return 1;
+	}
+
+	method = mono_get_method (image, entry, NULL);
 
 	return mono_runtime_run_main (method, argc, argv, NULL);
 }
