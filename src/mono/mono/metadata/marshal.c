@@ -1589,6 +1589,7 @@ handle_enum:
 		if (!method->string_ctor)
 			mono_mb_emit_byte (mb, CEE_LDNULL);
 		break;
+	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I2:
