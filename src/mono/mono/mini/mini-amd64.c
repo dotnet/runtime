@@ -5310,31 +5310,37 @@ mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs)
 	 * 0xff m=1,o=2 imm8
 	 * 0xff m=2,o=2 imm32
 	 */
-	code -= 6;
+	code -= 7;
 
-	if (IS_REX (code [3]) && (code [4] == 0xff) && (amd64_modrm_reg (code [5]) == 0x2) && (amd64_modrm_mod (code [5]) == 0x3)) {
+	if (IS_REX (code [4]) && (code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x3)) {
 		/* call *%reg */
 		return NULL;
 	}
-	else if ((code [0] == 0xff) && (amd64_modrm_reg (code [1]) == 0x2) && (amd64_modrm_mod (code [1]) == 0x2)) {
+	else if ((code [1] == 0xff) && (amd64_modrm_reg (code [2]) == 0x2) && (amd64_modrm_mod (code [2]) == 0x2)) {
 		/* call *[reg+disp32] */
-		reg = amd64_modrm_rm (code [1]);
-		disp = *(guint32*)(code + 2);
+		if (IS_REX (code [0]))
+			rex = code [0];
+		reg = amd64_modrm_rm (code [2]);
+		disp = *(guint32*)(code + 3);
 		//printf ("B: [%%r%d+0x%x]\n", reg, disp);
 	}
-	else if ((code [3] == 0xff) && (amd64_modrm_reg (code [4]) == 0x2) && (amd64_modrm_mod (code [4]) == 0x1)) {
+	else if ((code [4] == 0xff) && (amd64_modrm_reg (code [5]) == 0x2) && (amd64_modrm_mod (code [5]) == 0x1)) {
 		/* call *[reg+disp8] */
-		reg = amd64_modrm_rm (code [4]);
-		disp = *(guint8*)(code + 5);
+		if (IS_REX (code [3]))
+			rex = code [3];
+		reg = amd64_modrm_rm (code [5]);
+		disp = *(guint8*)(code + 6);
 		//printf ("B: [%%r%d+0x%x]\n", reg, disp);
 	}
-	else if ((code [4] == 0xff) && (amd64_modrm_reg (code [5]) == 0x2) && (amd64_modrm_mod (code [5]) == 0x0)) {
+	else if ((code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x0)) {
 			/*
 			 * This is a interface call: should check the above code can't catch it earlier 
 			 * 8b 40 30   mov    0x30(%eax),%eax
 			 * ff 10      call   *(%eax)
 			 */
-		reg = amd64_modrm_rm (code [5]);
+		if (IS_REX (code [4]))
+			rex = code [4];
+		reg = amd64_modrm_rm (code [6]);
 		disp = 0;
 	}
 	else
@@ -5342,7 +5348,6 @@ mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs)
 
 	reg += amd64_rex_b (rex);
 
-	/* FIXME: */
 	return (gpointer)((regs [reg]) + disp);
 }
 
