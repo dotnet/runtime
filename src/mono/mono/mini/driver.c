@@ -553,6 +553,7 @@ mini_trace_usage (void)
 		 "    program              Entry point assembly\n"
 		 "    assembly             Specifies an assembly\n"
 		 "    M:Type:Method        Specifies a method\n"
+		 "    N:Namespace          Specifies a namespace\n"
 		 "    T:Type               Specifies a type\n"
 		 "    +EXPR                Includes expression\n"
 		 "    -EXPR                Excludes expression\n");

@@ -46,10 +46,15 @@ mono_trace_eval (MonoMethod *method)
 		case MONO_TRACEOP_ASSEMBLY:
 			if (strcmp (method->klass->image->assembly_name, op->data) == 0)
 				inc = 1; break;
+		case MONO_TRACEOP_NAMESPACE:
+			if (strcmp (method->klass->name_space, op->data) == 0)
+				inc = 1;
 		}
-		if (op->exclude)
-			inc = !inc;
-		include |= inc;
+		if (op->exclude){
+			if (inc)
+				include = 0;
+		} else if (inc)
+			include = 1;
 	}
 	return include;
 }
@@ -86,6 +91,7 @@ enum Token {
 	TOKEN_CLASS,
 	TOKEN_ALL,
 	TOKEN_PROGRAM,
+	TOKEN_NAMESPACE,
 	TOKEN_STRING,
 	TOKEN_EXCLUDE,
 	TOKEN_SEPARATOR,
@@ -101,6 +107,11 @@ get_token (void)
 			input += 2;
 			get_string ();
 			return TOKEN_METHOD;
+		}
+		if (input [0] == 'N' && input [1] == ':'){
+			input += 2;
+			get_string ();
+			return TOKEN_NAMESPACE;
 		}
 		if (input [0] == 'T' && input [1] == ':'){
 			input += 2;
@@ -166,7 +177,10 @@ get_spec (int *last)
 		trace_spec.ops [*last].op = MONO_TRACEOP_ALL;
 	else if (token == TOKEN_PROGRAM)
 		trace_spec.ops [*last].op = MONO_TRACEOP_PROGRAM;
-	else if (token == TOKEN_CLASS){
+	else if (token == TOKEN_NAMESPACE){
+		trace_spec.ops [*last].op = MONO_TRACEOP_NAMESPACE;
+		trace_spec.ops [*last].data = g_strdup (value);
+	} else if (token == TOKEN_CLASS){
 		char *p = strrchr (value, '.');
 		*p++ = 0;
 		trace_spec.ops [*last].op = MONO_TRACEOP_CLASS;
