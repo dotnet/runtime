@@ -5851,8 +5851,7 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 }
 
 static MonoReflectionInflatedMethod*
-inflated_method_get_object (MonoDomain *domain, MonoMethod *method, MonoReflectionType *decl_type,
-			    MonoReflectionMethod *declaring)
+inflated_method_get_object (MonoDomain *domain, MonoMethod *method, MonoReflectionMethod *declaring)
 {
 	const char *cname;
 	MonoClass *klass, *refclass;
@@ -5873,7 +5872,6 @@ inflated_method_get_object (MonoDomain *domain, MonoMethod *method, MonoReflecti
 	ret->rmethod.name = mono_string_new (domain, method->name);
 	ret->rmethod.reftype = mono_type_get_object (domain, &refclass->byval_arg);
 	ret->declaring = declaring;
-	ret->declaring_type = decl_type;
 	CACHE_OBJECT (method, ret, refclass);
 	return ret;
 }
@@ -5968,20 +5966,23 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 
 	inflated = mono_class_inflate_generic_method (method, ginst);
 
-	return inflated_method_get_object (mono_object_domain (rmethod), inflated, NULL, rmethod);
+	return inflated_method_get_object (mono_object_domain (rmethod), inflated, rmethod);
 }
 
 MonoReflectionInflatedMethod*
-mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *type, MonoObject *obj)
+mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_type,
+					MonoReflectionGenericInst *reflected_type,
+					MonoObject *obj)
 {
 	MonoGenericInst *ginst, *type_ginst;
 	MonoMethod *method, *inflated;
+	MonoReflectionInflatedMethod *res;
 	MonoClass *klass;
 
 	MONO_ARCH_SAVE_REGS;
 
-	klass = mono_class_from_mono_type (type->type.type);
-	type_ginst = type->type.type->data.generic_inst;
+	klass = mono_class_from_mono_type (reflected_type->type.type);
+	type_ginst = reflected_type->type.type->data.generic_inst;
 
 	if (!strcmp (obj->vtable->klass->name, "MethodBuilder"))
 		method = methodbuilder_to_mono_method (klass, (MonoReflectionMethodBuilder *) obj);
@@ -5995,19 +5996,25 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *type, MonoObj
 
 	ginst = g_new0 (MonoGenericInst, 1);
 	ginst->generic_method = method;
-	ginst->generic_type = type->type.type;
+	ginst->generic_type = reflected_type->type.type;
 	ginst->type_argc = type_ginst->type_argc;
 	ginst->type_argv = type_ginst->type_argv;
 
 	inflated = mono_class_inflate_generic_method (method, ginst);
 
-	return inflated_method_get_object (
-		mono_object_domain (type), inflated, (MonoReflectionType *) type,
-		(MonoReflectionMethod *) obj);
+	res = inflated_method_get_object (
+		mono_object_domain (reflected_type), inflated, (MonoReflectionMethod *) obj);
+
+	res->declaring_type = declaring_type;
+	res->reflected_type = reflected_type;
+
+	return res;
 }
 
 MonoReflectionInflatedField*
-mono_reflection_inflate_field (MonoReflectionGenericInst *type, MonoObject *obj)
+mono_reflection_inflate_field (MonoReflectionGenericInst *declaring_type,
+			       MonoReflectionGenericInst *reflected_type,
+			       MonoObject *obj)
 {
 	static MonoClass *System_Reflection_MonoInflatedField;
 	MonoGenericInst *ginst, *type_ginst;
@@ -6024,8 +6031,8 @@ mono_reflection_inflate_field (MonoReflectionGenericInst *type, MonoObject *obj)
 		g_assert (System_Reflection_MonoInflatedField);
 	}
 
-	klass = mono_class_from_mono_type (type->type.type);
-	type_ginst = type->type.type->data.generic_inst;
+	klass = mono_class_from_mono_type (reflected_type->type.type);
+	type_ginst = reflected_type->type.type->data.generic_inst;
 
 	if (!strcmp (obj->vtable->klass->name, "FieldBuilder")) {
 		field = fieldbuilder_to_mono_class_field (klass, (MonoReflectionFieldBuilder *) obj);
@@ -6035,7 +6042,7 @@ mono_reflection_inflate_field (MonoReflectionGenericInst *type, MonoObject *obj)
 		g_assert_not_reached ();
 
 	ginst = g_new0 (MonoGenericInst, 1);
-	ginst->generic_type = type->type.type;
+	ginst->generic_type = reflected_type->type.type;
 	ginst->type_argc = type_ginst->type_argc;
 	ginst->type_argv = type_ginst->type_argv;
 
@@ -6047,6 +6054,8 @@ mono_reflection_inflate_field (MonoReflectionGenericInst *type, MonoObject *obj)
 
 	res = (MonoReflectionInflatedField *)mono_object_new (domain, System_Reflection_MonoInflatedField);
 	res->declaring = field;
+	res->declaring_type = declaring_type;
+	res->reflected_type = reflected_type;
 	res->rfield.klass = klass;
 	res->rfield.field = inflated;
 	res->rfield.name = mono_string_new (domain, inflated->name);
