@@ -1,4 +1,9 @@
 
+	You can read the aggregates news from the Mono developers in
+	<a href="http://www.go-mono.com/monologue">Monologue</a>.  You
+	can also download our aggregator from the <a
+	href="anoncvs.html">AnonCVS</a> server.
+
 	Various Mono contributors maintain blogs, some are listed here:
 
 	<a href="http://codeblogs.ximian.com/blogs/benm/index.rdf"><img align="center" src="images/xml.gif"></a>
@@ -15,4 +20,10 @@
 	<br>
 	<a href="http://primates.ximian.com/~miguel/miguel2.rss"><img align="center" src="images/xml.gif"></a>
 	<a href="http://primates.ximian.com/~miguel/activity-log.php">Miguel de Icaza</a>
+	<a href="http://primates.ximian.com/~mkestner/blog/index.rdf"><img align="center" src="images/xml.gif"></a>
+	<a href="http://primates.ximian.com/~mkestner/blog/">Mike Kestner</a>
+	<br>
+	<a href="http://pages.infinit.net/ctech/poupou.rss"><img align="center" src="images/xml.gif"></a>
+	<a href="http://pages.infinit.net/ctech/poupou.html">Sebastien Pouliot</a>
+
 

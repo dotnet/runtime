@@ -142,6 +142,20 @@
   </tr>
 </table>
 
+@item Oct 6th: Linux s390 Mono packages available.
+
+	Neale Ferguson has contributed Mono packages for the
+	Linux/s390.  You can get them from the <a
+	href="download.html">download</a> page.
+
+@item Oct 5th: Monologue aggregates Mono Blogs
+
+	You can now read an aggregated view of the <a
+	href="blogs.html">blogs</a> maintained by Mono developers in
+	<a href="http://www.go-mono.com/monologue">Monologue</a>.
+	Monologue is available as an HTML page or as an <a
+	href="monologue/index.rss">RSS feed</a>.
+
 @item Oct 2nd: Windows packages, MonoDoc 0.7
 
 	Windows packages for Mono 0.28 are now available from our <a
