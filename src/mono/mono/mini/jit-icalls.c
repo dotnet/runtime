@@ -169,6 +169,16 @@ mono_llmult_ovf (gint64 a, gint64 b)
 	*/
 	sign = ah ^ bh;
 	if (ah < 0) {
+		if (((guint32)ah == 0x80000000) && (al == 0)) {
+			/* This has no two's complement */
+			if (b == 0)
+				return 0;
+			else if (b == 1)
+				return a;
+			else
+				goto raise_exception;
+		}
+
 		/* flip the bits and add 1 */
 		ah ^= ~0;
 		if (al ==  0)
@@ -180,6 +190,16 @@ mono_llmult_ovf (gint64 a, gint64 b)
 	}
 
 	if (bh < 0) {
+		if (((guint32)bh == 0x80000000) && (bl == 0)) {
+			/* This has no two's complement */
+			if (a == 0)
+				return 0;
+			else if (a == 1)
+				return b;
+			else
+				goto raise_exception;
+		}
+
 		/* flip the bits and add 1 */
 		bh ^= ~0;
 		if (bl ==  0)

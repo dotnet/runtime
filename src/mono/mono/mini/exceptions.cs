@@ -1866,6 +1866,28 @@ class Tests {
 			}
 			if (ocount != 1)
 				return 21;
+
+			ocount = 0;
+			try {
+				long a = Int64.MinValue;
+				long b = 10;
+				long v = a * b;
+			} catch {
+				ocount ++;
+			}
+			if (ocount != 1)
+				return 22;
+
+			ocount = 0;
+			try {
+				long a = 10;
+				long b = Int64.MinValue;
+				long v = a * b;
+			} catch {
+				ocount ++;
+			}
+			if (ocount != 1)
+				return 23;
 		}
 		
 		return 0;
