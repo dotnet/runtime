@@ -2191,7 +2191,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			mono_mb_emit_stloc (mb, tmp_locals [i]);
 			break;
 		case MONO_TYPE_CLASS:
-		case MONO_TYPE_OBJECT:
 			if (t->byref)
 				continue;
 
@@ -2218,6 +2217,21 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				mono_mb_emit_stloc (mb, tmp_locals [i]);
 			}
 
+			break;
+		case MONO_TYPE_OBJECT:
+			if (t->byref)
+				continue;
+			csig->params [argnum] = &mono_defaults.int_class->byval_arg;
+			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+			/* 
+			 * FIXME: this may need special handling to inspect the type
+			 * at runtime.
+			 */
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
+			/* fixme: convert to what ? */
+			mono_mb_emit_stloc (mb, tmp_locals [i]);
 			break;
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
