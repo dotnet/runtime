@@ -456,19 +456,24 @@ ves_icall_System_PAL_GetCurrentDirectory (MonoObject *object)
 	return res;
 }
 
+/*
+ * Magic number to convert a time which is relative to
+ * Jan 1, 1970 into a value which is relative to Jan 1, 0001.
+ */
+#define	EPOCH_ADJUST	((gint64)62135596800L)
+
 static gint64
 ves_icall_System_DateTime_GetNow ()
 {
 	struct timeval tv;
 	gint64 res;
 
-	// fixme: it seems that .Net has another base time than Unix??
 	if (gettimeofday (&tv, NULL) == 0) {
-		res = ((gint64)tv.tv_sec * 1000000 + tv.tv_usec)*10;
+		res = (((gint64)tv.tv_sec + EPOCH_ADJUST)* 1000000 + tv.tv_usec)*10;
 		return res;
 	}
 
-	
+	/* fixme: raise exception */
 	return 0;
 }
 

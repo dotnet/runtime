@@ -46,7 +46,8 @@ TESTSRC=			\
 	jit-long.cs		\
 	jit-ulong.cs		\
 	jit-float.cs		\
-	pop.cs
+	pop.cs			\
+	time.cs
 
 
 TESTS=$(TESTSRC:.cs=.exe)

@@ -1,3 +1,7 @@
+2001-12-17  Dietmar Maurer  <dietmar@ximian.com>
+
+	* mono/tests/time.cs: new test
+
 2001-11-30  Radek Doulik  <rodo@ximian.com>
 
 	* configure.in: remove ACCESS_UNALIGNED="no" from ppc
