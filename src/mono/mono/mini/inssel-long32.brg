@@ -575,15 +575,30 @@ reg: OP_LCONV_TO_OVF_I1_UN (lreg) {
 }
 
 reg: OP_LCONV_TO_OVF_I1 (lreg) {
+	MonoInst *is_negative, *end_label;
+
+	MONO_NEW_LABEL (s, is_negative);
+	MONO_NEW_LABEL (s, end_label);
+
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg2, 0);
 	MONO_EMIT_NEW_COND_EXC (s, GT, "OverflowException");
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg2, -1);
 	MONO_EMIT_NEW_COND_EXC (s, LT, "OverflowException");
 
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg2, 0);
+	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BLT, is_negative);
+
+	/* Positive */
 	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 127);
-	MONO_EMIT_NEW_COND_EXC (s, GT, "OverflowException");
+	MONO_EMIT_NEW_COND_EXC (s, GT_UN, "OverflowException");
+	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BR, end_label);
+
+	/* Negative */
+	mono_bblock_add_inst (s->cbb, is_negative);
 	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, -128);
-	MONO_EMIT_NEW_COND_EXC (s, LT, "OverflowException");
+	MONO_EMIT_NEW_COND_EXC (s, LT_UN, "OverflowException");
+	mono_bblock_add_inst (s->cbb, end_label);
+
 	MONO_EMIT_UNALU (s, tree, CEE_CONV_I1, state->reg1, state->left->reg1);
 }
 
