@@ -12,6 +12,10 @@
 #include <signal.h>
 #include <unistd.h>
 
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+#include <valgrind/memcheck.h>
+#endif
+
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/cil-coff.h>
@@ -6728,9 +6732,9 @@ mono_codegen (MonoCompile *cfg)
 	}
        
 	if (cfg->verbose_level > 0)
-		g_print ("Method %s emmitted at %p to %p\n", 
+		g_print ("Method %s emitted at %p to %p [%s]\n", 
 				 mono_method_full_name (cfg->method, TRUE), 
-				 cfg->native_code, cfg->native_code + cfg->code_len);
+				 cfg->native_code, cfg->native_code + cfg->code_len, cfg->domain->friendly_name);
 
 	mono_arch_patch_code (cfg->method, cfg->domain, cfg->native_code, cfg->patch_info);
 
@@ -7177,8 +7181,19 @@ mono_jit_compile_method_inner (MonoMethod *method)
 	MonoCompile *cfg;
 	GHashTable *jit_code_hash;
 	gpointer code;
+	guint32 opt;
 
-	if (default_opt & MONO_OPT_SHARED)
+	opt = default_opt;
+
+	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+		/*
+		 * native wrappers have only one instance which is stored in
+		 * method->info. We put their code into the root domain so it
+		 * won't get freed on a domain unload.
+		 */
+		opt |= MONO_OPT_SHARED;
+
+	if (opt & MONO_OPT_SHARED)
 		target_domain = mono_root_domain;
 	else 
 		target_domain = domain;
@@ -7186,7 +7201,7 @@ mono_jit_compile_method_inner (MonoMethod *method)
 	jit_code_hash = target_domain->jit_code_hash;
 
 #ifdef MONO_USE_AOT_COMPILER
-	if (!mono_compile_aot && (default_opt & MONO_OPT_AOT)) {
+	if (!mono_compile_aot && (opt & MONO_OPT_AOT)) {
 		MonoJitInfo *info;
 
 		mono_domain_lock (domain);
@@ -7252,7 +7267,7 @@ mono_jit_compile_method_inner (MonoMethod *method)
 		return NULL;
 	}
 
-	cfg = mini_method_compile (method, default_opt, target_domain, 0);
+	cfg = mini_method_compile (method, opt, target_domain, 0);
 	code = cfg->native_code;
 
 	g_hash_table_insert (jit_code_hash, method, cfg->jit_info);
@@ -7414,6 +7429,7 @@ sigint_signal_handler (int _dummy)
 static void
 mono_runtime_install_handlers (void)
 {
+	gboolean skip_sigabort = FALSE;
 #ifndef PLATFORM_WIN32
 	struct sigaction sa;
 #endif
@@ -7466,8 +7482,14 @@ mono_runtime_install_handlers (void)
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 	//g_assert (syscall (SYS_sigaction, SIGILL, &sa, NULL) != -1);
-	if (!getenv ("MONO_VALGRIND"))
+
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+	if (RUNNING_ON_VALGRIND)
 		/* valgrind 20030725 and earlier aborts on this call so we skip it */
+		skip_sigabort = TRUE;
+#endif
+
+	if (!skip_sigabort)
 		g_assert (sigaction (mono_thread_get_abort_signal (), &sa, NULL) != -1);
 
 #if 1
@@ -7679,7 +7701,7 @@ mini_cleanup (MonoDomain *domain)
 	 * fully working (mono_domain_finalize may invoke managed finalizers
 	 * and mono_runtime_cleanup will wait for other threads to finish).
 	 */
-	mono_domain_finalize (domain);
+	mono_domain_finalize (domain, -1);
 
 	mono_runtime_cleanup (domain);
 
@@ -7691,7 +7713,7 @@ mini_cleanup (MonoDomain *domain)
 	win32_seh_cleanup();
 #endif
 
-	mono_domain_unload (domain, TRUE);
+	mono_domain_free (domain, TRUE);
 
 	print_jit_stats ();
 }
