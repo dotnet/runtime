@@ -1473,21 +1473,16 @@ ves_icall_Type_BindGenericParameters (MonoReflectionType *type, MonoArray *types
 	return mono_type_get_object (mono_object_domain (type), klass->generic_inst);
 }
 
-static MonoReflectionType*
-ves_icall_Type_IsGenericTypeDefinition (MonoReflectionType *type)
+static gboolean
+ves_icall_Type_get_IsGenericInstance (MonoReflectionType *type)
 {
 	MonoClass *klass;
 	MONO_ARCH_SAVE_REGS;
 
 	if (type->type->byref)
-		return NULL;
+		return FALSE;
 	klass = mono_class_from_mono_type (type->type);
-	if (klass->gen_params) {
-		return type; /* check this one */
-	}
-	if (klass->generic_inst)
-		return mono_type_get_object (mono_object_domain (type), klass->generic_inst->data.generic_inst->generic_type);
-	return NULL;
+	return klass->generic_inst != NULL;
 }
 
 static gint32
@@ -4031,7 +4026,7 @@ static gconstpointer icall_map [] = {
 	"System.Type::GetGenericParameterPosition", ves_icall_Type_GetGenericParameterPosition,
 	"System.Type::GetGenericTypeDefinition", ves_icall_Type_GetGenericTypeDefinition,
 	"System.Type::BindGenericParameters", ves_icall_Type_BindGenericParameters,
-	"System.Type::IsGenericTypeDefinition", ves_icall_Type_IsGenericTypeDefinition,
+	"System.Type::get_IsGenericInstance", ves_icall_Type_get_IsGenericInstance,
 	
 	"System.MonoType::get_HasGenericParameters", ves_icall_MonoType_get_HasGenericParameteres,
 	"System.MonoType::get_HasUnboundGenericParameters", ves_icall_MonoType_get_HasUnboundGenericParameters,
