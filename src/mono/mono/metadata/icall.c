@@ -2054,6 +2054,7 @@ enum {
 	BFLAGS_Static = 8,
 	BFLAGS_Public = 0x10,
 	BFLAGS_NonPublic = 0x20,
+	BFLAGS_FlattenHierarchy = 0x40,
 	BFLAGS_InvokeMethod = 0x100,
 	BFLAGS_CreateInstance = 0x200,
 	BFLAGS_GetField = 0x400,
@@ -2099,7 +2100,8 @@ handle_parent:
 		match = 0;
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 			if (bflags & BFLAGS_Static)
-				match++;
+				if ((bflags & BFLAGS_FlattenHierarchy) || (klass == startklass))
+					match++;
 		} else {
 			if (bflags & BFLAGS_Instance)
 				match++;
@@ -2158,7 +2160,8 @@ handle_parent:
 		match = 0;
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 			if (bflags & BFLAGS_Static)
-				match++;
+				if ((bflags & BFLAGS_FlattenHierarchy) || (klass == startklass))
+					match++;
 		} else {
 			if (bflags & BFLAGS_Instance)
 				match++;
@@ -2217,7 +2220,8 @@ handle_parent:
 		match = 0;
 		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
 			if (bflags & BFLAGS_Static)
-				match++;
+				if ((bflags & BFLAGS_FlattenHierarchy) || (klass == startklass))
+					match++;
 		} else {
 			if (bflags & BFLAGS_Instance)
 				match++;
@@ -2282,7 +2286,8 @@ ves_icall_Type_GetConstructors (MonoReflectionType *type, guint32 bflags)
 		match = 0;
 		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
 			if (bflags & BFLAGS_Static)
-				match++;
+				if ((bflags & BFLAGS_FlattenHierarchy) || (klass == startklass))
+					match++;
 		} else {
 			if (bflags & BFLAGS_Instance)
 				match++;
@@ -2345,7 +2350,8 @@ handle_parent:
 		match = 0;
 		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
 			if (bflags & BFLAGS_Static)
-				match++;
+				if ((bflags & BFLAGS_FlattenHierarchy) || (klass == startklass))
+					match++;
 		} else {
 			if (bflags & BFLAGS_Instance)
 				match++;
@@ -2460,7 +2466,8 @@ handle_parent:
 		match = 0;
 		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
 			if (bflags & BFLAGS_Static)
-				match++;
+				if ((bflags & BFLAGS_FlattenHierarchy) || (klass == startklass))
+					match++;
 		} else {
 			if (bflags & BFLAGS_Instance)
 				match++;
