@@ -42,6 +42,7 @@ struct _MonoDomain {
 	MonoString *friendly_name;
 	GHashTable *ldstr_table;
 	GHashTable *class_vtable_hash;
+	GHashTable *jit_code_hash;
 };
 
 /* This is a copy of System.AppDomain */

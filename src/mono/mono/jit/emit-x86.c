@@ -366,7 +366,13 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 		if ((code [0] == 0xff) && ((code [1] & 0x18) == 0x10) && ((code [1] >> 6) == 2)) {
 			reg = code [1] & 0x07;
 			disp = *((gint32*)(code + 2));
+		} else if ((code [1] == 0xe8)) {
+			gpointer addr = arch_compile_method (m);
+			g_assert (addr);
+			*((guint32*)(code + 2)) = (guint)addr - ((guint)code + 1) - 5; 
+			return addr;
 		} else {
+			printf ("%x %x %x %x\n", code [0], code [1], code [2], code [3]);
 			g_assert_not_reached ();
 		}
 	}
@@ -449,38 +455,6 @@ arch_create_jit_trampoline (MonoMethod *method)
 	x86_push_imm (buf, method);
 	x86_jump_code (buf, vc);
 	g_assert ((buf - code) <= 16);
-
-	return code;
-}
-
-/**
- * arch_create_simple_jit_trampoline:
- * @method: pointer to the method info
- *
- * Creates a trampoline function for method. If the created
- * code is called it first starts JIT compilation of method,
- * and then calls the newly created method. I also replaces the
- * address in method->addr with the result of the JIT 
- * compilation step (in arch_compile_method).
- * 
- * Returns: a pointer to the newly created code 
- */
-gpointer
-arch_create_simple_jit_trampoline (MonoMethod *method)
-{
-	guint8 *code, *buf;
-
-	if (method->addr)
-		return method->addr;
-
-	/* we never free the allocated code buffer */
-	code = buf = g_malloc (16);
-	x86_push_imm (buf, method);
-	x86_call_code (buf, arch_compile_method);
-	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);
-	/* jump to the compiled method */
-	x86_jump_reg (buf, X86_EAX);
-	g_assert ((buf - code) < 16);
 
 	return code;
 }
@@ -793,19 +767,23 @@ match_debug_method (MonoMethod* method)
  * arch_compile_method:
  * @method: pointer to the method info
  *
- * JIT compilation of a single method. This method also writes the result 
- * back to method->addr, an thus overwrites the trampoline function.
+ * JIT compilation of a single method. 
  *
  * Returns: a pointer to the newly created code.
  */
 gpointer
 arch_compile_method (MonoMethod *method)
 {
+	MonoDomain *domain = mono_domain_get ();
 	MonoFlowGraph *cfg;
 	MonoMemPool *mp = mono_mempool_new ();
+	guint8 *addr;
 
 	g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
 	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
+
+	if ((addr = g_hash_table_lookup (domain->jit_code_hash, method)))
+		return addr;
 
 	if (mono_jit_trace_calls || mono_jit_dump_asm || mono_jit_dump_forest) {
 		printf ("Start JIT compilation of %s.%s:%s\n", method->klass->name_space,
@@ -834,7 +812,7 @@ arch_compile_method (MonoMethod *method)
 		}
 		
 		if (delegate && *name == '.' && (strcmp (name, ".ctor") == 0)) {
-			method->addr = code = g_malloc (32);
+			addr = code = g_malloc (32);
 			x86_push_reg (code, X86_EBP);
 			x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
 			
@@ -852,7 +830,7 @@ arch_compile_method (MonoMethod *method)
 			x86_leave (code);
 			x86_ret (code);
 
-			g_assert ((code - (guint8*)method->addr) < 32);
+			g_assert ((code - (guint8*)addr) < 32);
 
 		} else if (delegate && *name == 'I' && (strcmp (name, "Invoke") == 0)) {
 			MonoMethodSignature *csig = method->signature;
@@ -874,12 +852,12 @@ arch_compile_method (MonoMethod *method)
 				}
 			}
 
-			method->addr = g_malloc (64 + arg_size);
+			addr = g_malloc (64 + arg_size);
 
 			for (i = 0; i < 2; i ++) {
 				int j;
 
-				code = method->addr;
+				code = addr;
 				/* load the this pointer */
 				x86_mov_reg_membase (code, X86_EAX, X86_ESP, this_pos, 4);
 				/* load mtarget */
@@ -918,7 +896,7 @@ arch_compile_method (MonoMethod *method)
 
 			}
 
-			g_assert ((code - (guint8*)method->addr) < (64 + arg_size));
+			g_assert ((code - (guint8*)addr) < (64 + arg_size));
 
 		} else {
 			if (mono_debug_handle)
@@ -945,7 +923,7 @@ arch_compile_method (MonoMethod *method)
 		mono_regset_reserve_reg (cfg->rs, X86_ESP);
 		mono_regset_reserve_reg (cfg->rs, X86_EBP);
 
-		cfg->code_size = 256;
+		cfg->code_size = 256000;
 		cfg->start = cfg->code = g_malloc (cfg->code_size);
 
 		if (match_debug_method (method))
@@ -975,7 +953,7 @@ arch_compile_method (MonoMethod *method)
 		mono_emit_cfg (cfg);
 		arch_emit_epilogue (cfg);		
 
-		method->addr = cfg->start;
+		addr = cfg->start;
 
 		mono_compute_branches (cfg);
 		
@@ -991,7 +969,7 @@ arch_compile_method (MonoMethod *method)
 		ji->code_size = cfg->code - cfg->start;
 		ji->used_regs = cfg->rs->used_mask;
 		ji->method = method;
-		ji->code_start = method->addr;
+		ji->code_start = addr;
 		mono_jit_info_table_add (mono_jit_info_table, ji);
 
 		if (header->num_clauses) {
@@ -1033,11 +1011,12 @@ arch_compile_method (MonoMethod *method)
 
 	if (mono_jit_trace_calls || mono_jit_dump_asm || mono_jit_dump_forest) {
 		printf ("END JIT compilation of %s.%s:%s %p %p\n", method->klass->name_space,
-			method->klass->name, method->name, method, method->addr);
+			method->klass->name, method->name, method, addr);
 	}
 
+	g_hash_table_insert (domain->jit_code_hash, method, addr);
 
-	return method->addr;
+	return addr;
 }
 
 /*

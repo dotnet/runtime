@@ -84,7 +84,7 @@ gpointer
 mono_mempool_alloc (MonoMemPool *pool, guint size)
 {
 	gpointer rval;
-
+	
 	g_assert (pool != NULL);
 
 	if (size >= 4096) {

@@ -192,6 +192,9 @@ gboolean mono_jit_dump_forest = FALSE;
 /* Whether to print function call traces */
 gboolean mono_jit_trace_calls = FALSE;
 
+/* Force jit to share code between application domains */
+gboolean mono_jit_share_code = FALSE;
+
 MonoDebugHandle *mono_debug_handle = NULL;
 GList *mono_debug_methods = NULL;
 
@@ -303,6 +306,7 @@ runtime_class_init (MonoClass *klass)
 			cctor = arch_compile_method (method);
 			if (!cctor && mono_debug_handle)
 				return;
+			g_assert (cctor != NULL);
 			cctor ();
 			return;
 		}
@@ -1052,6 +1056,9 @@ mono_cfg_new (MonoMethod *method, MonoMemPool *mp)
 	cfg->domain = mono_domain_get ();
 	cfg->method = method;
 	cfg->mp = mp;
+
+	/* fixme: we should also consider loader optimisation attributes */
+	cfg->share_code = mono_jit_share_code;
 
 	cfg->varinfo = g_array_new (FALSE, TRUE, sizeof (MonoVarInfo));
 	
@@ -2022,11 +2029,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			} else {
 				
 				if (!cm->addr)
-					cm->addr = arch_create_simple_jit_trampoline (cm);
+					cm->addr = arch_create_jit_trampoline (cm);
 
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
-				t2->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
-				t2 = mono_ctree_new (mp, MB_TERM_LDIND_REF, t2, NULL);
+				t2->data.p = (char *)cm->addr;
 
 				t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), this, t2);
 				t1->data.p = ci;
@@ -2176,11 +2182,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				} else {
 				
 					if (!cm->addr)
-						cm->addr = arch_create_simple_jit_trampoline (cm);
+						cm->addr = arch_create_jit_trampoline (cm);
 				
 					t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
-					t2->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
-					t2 = mono_ctree_new (mp, MB_TERM_LDIND_REF, t2, NULL);
+					t2->data.p = (char *)cm->addr;
 				}
 
 				t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), this, t2);
@@ -2941,12 +2946,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				cm = mono_get_method (image, token, NULL);
 				g_assert (cm);
 				
-				if (!cm->addr)
-					cm->addr = arch_create_simple_jit_trampoline (cm);
-
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
-				t1->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
-				t1 = mono_ctree_new (mp, MB_TERM_LDIND_REF, t1, NULL);
+				if (!cm->addr)
+					t1->data.p = arch_compile_method (cm);
+				else 
+					t1->data.p = (char *)cm->addr;
 				PUSH_TREE (t1, VAL_POINTER);
 				break;
 			}
@@ -3178,6 +3182,7 @@ usage (char *name)
 		 "--dump-asm       dumps the assembly code generated\n"
 		 "--dump-forest    dumps the reconstructed forest\n"
 		 "--trace-calls    printf function call trace\n"
+		 "--scode          force jit to produce shared code\n"
 		 "--stabs          write stabs debug information\n"
 		 "--compile cname  compile methods in given class (namespace.name[:methodname])\n"
 		 "--ncompile num   compile methods num times (default: 1000)\n"
@@ -3278,6 +3283,8 @@ main (int argc, char *argv [])
 			mono_jit_dump_forest = TRUE;
 		else if (strcmp (argv [i], "--trace-calls") == 0)
 			mono_jit_trace_calls = TRUE;
+		else if (strcmp (argv [i], "--scode") == 0)
+			mono_jit_share_code = TRUE;
 		else if (strcmp (argv [i], "--debug") == 0) {
 			mono_debug_methods = g_list_append (mono_debug_methods, argv [++i]);
 		} else if (strcmp (argv [i], "--count") == 0) {

@@ -58,6 +58,7 @@ mono_create_domain ()
 	domain->env = g_hash_table_new (g_str_hash, g_str_equal);
 	domain->assemblies = g_hash_table_new (g_str_hash, g_str_equal);
 	domain->class_vtable_hash = g_hash_table_new (NULL, NULL);
+	domain->jit_code_hash = g_hash_table_new (NULL, NULL);
 	domain->ldstr_table = g_hash_table_new ((GHashFunc)ldstr_hash, (GCompareFunc)ldstr_equal);
 
 	return domain;

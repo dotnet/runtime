@@ -1673,10 +1673,12 @@ reg: CALL_I4 (this, reg) {
 	g_assert (tree->reg1 == X86_EAX);
 }
 
-reg: CALL_I4 (this, LDIND_REF (ADDR_G)) {
+reg: CALL_I4 (this, ADDR_G) {
 	MethodCallInfo *ci = tree->data.ci;
 	int lreg = tree->left->reg1;
 	int treg = X86_EAX;
+
+	tree->is_jump = 1;
 
 	if (lreg == treg) 
 		treg = X86_EDX;
@@ -1692,7 +1694,7 @@ reg: CALL_I4 (this, LDIND_REF (ADDR_G)) {
 		x86_push_reg (s->code, treg);
 	}
 
-	x86_call_mem (s->code, tree->right->left->data.p);
+	x86_call_code (s->code, tree->right->data.p);
 
 	if (ci->args_size)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, ci->args_size);
@@ -1784,10 +1786,12 @@ reg: CALL_I4 (this, VFUNC_ADDR) {
 	g_assert (tree->reg1 == X86_EAX);
 }
 
-stmt: CALL_VOID (this, LDIND_REF (ADDR_G)) {
+stmt: CALL_VOID (this, ADDR_G) {
 	MethodCallInfo *ci = tree->data.ci;
 	int lreg = tree->left->reg1;
 	int treg = X86_EAX;
+
+	tree->is_jump = 1;
 
 	if (lreg == treg) 
 		treg = X86_EDX;
@@ -1803,7 +1807,7 @@ stmt: CALL_VOID (this, LDIND_REF (ADDR_G)) {
 		x86_push_reg (s->code, treg);
 	}
 
-	x86_call_mem (s->code, tree->right->left->data.p);
+	x86_call_code (s->code, tree->right->data.p);
 
 	if (ci->args_size)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, ci->args_size);
@@ -2395,10 +2399,12 @@ lreg: REM_UN (lreg, lreg) {
 		  tree->reg2 == X86_EDX);
 }
 
-lreg: CALL_I8 (this, LDIND_REF (ADDR_G)) {
+lreg: CALL_I8 (this, ADDR_G) {
 	MethodCallInfo *ci = tree->data.ci;
 	int lreg = tree->left->reg1;
 	int treg = X86_EAX;
+
+	tree->is_jump = 1;
 
 	if (lreg == treg) 
 		treg = X86_EDX;
@@ -2414,7 +2420,7 @@ lreg: CALL_I8 (this, LDIND_REF (ADDR_G)) {
 		x86_push_reg (s->code, treg);
 	}
 
-	x86_call_mem (s->code, tree->right->left->data.p);
+	x86_call_code (s->code, tree->right->data.p);
 
 	if (ci->args_size)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, ci->args_size);
@@ -2877,6 +2883,8 @@ stmt: ARG_R8 (freg) {
 	x86_fst_membase (s->code, X86_ESP, 0, TRUE, TRUE);
 }
 
+# fixme: we need to implement unordered and ordered compares
+
 stmt: BEQ (freg, freg) {
 	gint32 offset;
 
@@ -2923,6 +2931,17 @@ stmt: BLT_UN (freg, freg) {
 	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, FALSE);
 }
 
+stmt: BGE (freg, freg) {
+	gint32 offset;
+
+	tree->is_jump = TRUE;
+	x86_fcompp (s->code);
+	x86_fnstsw (s->code);
+	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
+	offset = 6 + s->code - s->start;
+	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
+}
+
 stmt: BGE_UN (freg, freg) {
 	gint32 offset;
 
@@ -2932,6 +2951,18 @@ stmt: BGE_UN (freg, freg) {
 	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
 	offset = 6 + s->code - s->start;
 	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
+}
+
+stmt: BGT (freg, freg) {
+	gint32 offset;
+
+	tree->is_jump = TRUE;
+	x86_fcompp (s->code);
+	x86_fnstsw (s->code);
+	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
+	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x0100);
+	offset = 6 + s->code - s->start;
+	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, FALSE);
 }
 
 stmt: BGT_UN (freg, freg) {
@@ -2946,6 +2977,18 @@ stmt: BGT_UN (freg, freg) {
 	x86_branch32 (s->code, X86_CC_EQ, tree->data.bb->addr - offset, FALSE);
 }
 
+stmt: BLE (freg, freg) {
+	gint32 offset;
+
+	tree->is_jump = TRUE;
+	x86_fcompp (s->code);
+	x86_fnstsw (s->code);
+	x86_alu_reg_imm (s->code, X86_AND, X86_EAX, 0x4500);
+	x86_alu_reg_imm (s->code, X86_CMP, X86_EAX, 0x0100);
+	offset = 6 + s->code - s->start;
+	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
+}
+
 stmt: BLE_UN (freg, freg) {
 	gint32 offset;
 
@@ -2958,10 +3001,12 @@ stmt: BLE_UN (freg, freg) {
 	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
 }
 
-freg: CALL_R8 (this, LDIND_REF (ADDR_G)) {
+freg: CALL_R8 (this, ADDR_G) {
 	MethodCallInfo *ci = tree->data.ci;
 	int lreg = tree->left->reg1;
 	int treg = X86_EAX;
+
+	tree->is_jump = 1;
 
 	if (lreg == treg) 
 		treg = X86_EDX;
@@ -2977,7 +3022,7 @@ freg: CALL_R8 (this, LDIND_REF (ADDR_G)) {
 		x86_push_reg (s->code, treg);
 	}
 
-	x86_call_mem (s->code, tree->right->left->data.p);
+	x86_call_code (s->code, tree->right->data.p);
 
 	if (ci->args_size)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, ci->args_size);
