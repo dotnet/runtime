@@ -238,4 +238,9 @@ ves_icall_System_IO_MonoIO_BeginRead (HANDLE handle, MonoFSAsyncResult *ares);
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_BeginWrite (HANDLE handle, MonoFSAsyncResult *ares);
 
+extern void ves_icall_System_IO_MonoIO_Lock (HANDLE handle, gint64 position,
+					     gint64 length, gint32 *error);
+extern void ves_icall_System_IO_MonoIO_Unlock (HANDLE handle, gint64 position,
+					       gint64 length, gint32 *error);
+
 #endif /* _MONO_METADATA_FILEIO_H_ */

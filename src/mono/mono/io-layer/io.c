@@ -42,6 +42,9 @@
 
 #undef DEBUG
 
+static gboolean _wapi_lock_file_region (int fd, off_t offset, off_t length);
+static gboolean _wapi_unlock_file_region (int fd, off_t offset, off_t length);
+
 static void file_close_shared (gpointer handle);
 static void file_close_private (gpointer handle);
 static WapiFileType file_getfiletype(void);
@@ -455,10 +458,35 @@ static gboolean file_write(gpointer handle, gconstpointer buffer,
 	}
 	
 	if (file_private_handle->async == FALSE) {
+		off_t current_pos;
+		
+		/* Need to lock the region we're about to write to,
+		 * because we only do advisory locking on POSIX
+		 * systems
+		 */
+		current_pos = lseek (file_private_handle->fd, (off_t)0,
+				     SEEK_CUR);
+		if (current_pos == -1) {
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": handle %p fd %d lseek failed: %s", handle, file_private_handle->fd, strerror (errno));
+#endif
+			_wapi_set_last_error_from_errno ();
+			return(FALSE);
+		}
+		
+		if (_wapi_lock_file_region (file_private_handle->fd,
+					    current_pos, numbytes) == FALSE) {
+			/* The error has already been set */
+			return(FALSE);
+		}
+		
 		do {
 			ret=write(file_private_handle->fd, buffer, numbytes);
 		}
 		while (ret==-1 && errno==EINTR && !_wapi_thread_cur_apc_pending());
+
+		_wapi_unlock_file_region (file_private_handle->fd, current_pos,
+					  numbytes);
 
 		if(ret==-1) {
 #ifdef DEBUG
@@ -3674,3 +3702,160 @@ GetLogicalDriveStrings (guint32 len, gunichar2 *buf)
 #endif
 }
 
+static gboolean _wapi_lock_file_region (int fd, off_t offset, off_t length)
+{
+	struct flock lock_data;
+	int ret;
+
+	lock_data.l_type = F_WRLCK;
+	lock_data.l_whence = SEEK_SET;
+	lock_data.l_start = offset;
+	lock_data.l_len = length;
+	
+	do {
+		ret = fcntl (fd, F_SETLK, &lock_data);
+	}
+	while(ret == -1 && errno == EINTR && !_wapi_thread_cur_apc_pending ());
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": fcntl returns %d", ret);
+#endif
+
+	if (ret == -1) {
+		SetLastError (ERROR_LOCK_VIOLATION);
+		return(FALSE);
+	}
+
+	return(TRUE);
+}
+
+static gboolean _wapi_unlock_file_region (int fd, off_t offset, off_t length)
+{
+	struct flock lock_data;
+	int ret;
+
+	lock_data.l_type = F_UNLCK;
+	lock_data.l_whence = SEEK_SET;
+	lock_data.l_start = offset;
+	lock_data.l_len = length;
+	
+	do {
+		ret = fcntl (fd, F_SETLK, &lock_data);
+	}
+	while(ret == -1 && errno == EINTR && !_wapi_thread_cur_apc_pending ());
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": fcntl returns %d", ret);
+#endif
+	
+	if (ret == -1) {
+		SetLastError (ERROR_LOCK_VIOLATION);
+		return(FALSE);
+	}
+
+	return(TRUE);
+}
+
+gboolean LockFile (gpointer handle, guint32 offset_low, guint32 offset_high,
+		   guint32 length_low, guint32 length_high)
+{
+	struct _WapiHandle_file *file_handle;
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
+	off_t offset, length;
+	
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+				  (gpointer *)&file_handle,
+				  (gpointer *)&file_private_handle);
+	if (ok == FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up file handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+
+	if (!(file_handle->fileaccess & GENERIC_READ) &&
+	    !(file_handle->fileaccess & GENERIC_WRITE) &&
+	    !(file_handle->fileaccess & GENERIC_ALL)) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ or GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
+#endif
+		SetLastError (ERROR_ACCESS_DENIED);
+		return(FALSE);
+	}
+
+#ifdef HAVE_LARGE_FILE_SUPPORT
+	offset = ((gint64)offset_high << 32) | offset_low;
+	length = ((gint64)length_high << 32) | length_low;
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": Locking handle %p fd %d, offset %lld, length %lld",
+		   handle, file_private_handle->fd, offset, length);
+#endif
+#else
+	offset = offset_low;
+	length = length_low;
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": Locking handle %p fd %d, offset %ld, length %ld",
+		   handle, file_private_handle->fd, offset, length);
+#endif
+#endif
+
+	return(_wapi_lock_file_region (file_private_handle->fd, offset,
+				       length));
+}
+
+gboolean UnlockFile (gpointer handle, guint32 offset_low, guint32 offset_high,
+		     guint32 length_low, guint32 length_high)
+{
+	struct _WapiHandle_file *file_handle;
+	struct _WapiHandlePrivate_file *file_private_handle;
+	gboolean ok;
+	off_t offset, length;
+	
+	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_FILE,
+				  (gpointer *)&file_handle,
+				  (gpointer *)&file_private_handle);
+	if (ok == FALSE) {
+		g_warning (G_GNUC_PRETTY_FUNCTION
+			   ": error looking up file handle %p", handle);
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(FALSE);
+	}
+
+	if (!(file_handle->fileaccess & GENERIC_READ) &&
+	    !(file_handle->fileaccess & GENERIC_WRITE) &&
+	    !(file_handle->fileaccess & GENERIC_ALL)) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": handle %p fd %d doesn't have GENERIC_READ or GENERIC_WRITE access: %u", handle, file_private_handle->fd, file_handle->fileaccess);
+#endif
+		SetLastError (ERROR_ACCESS_DENIED);
+		return(FALSE);
+	}
+
+#ifdef HAVE_LARGE_FILE_SUPPORT
+	offset = ((gint64)offset_high << 32) | offset_low;
+	length = ((gint64)length_high << 32) | length_low;
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": Unlocking handle %p fd %d, offset %lld, length %lld",
+		   handle, file_private_handle->fd, offset, length);
+#endif
+#else
+	offset = offset_low;
+	length = length_low;
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": Unlocking handle %p fd %d, offset %ld, length %ld",
+		   handle, file_private_handle->fd, offset, length);
+#endif
+#endif
+
+	return(_wapi_unlock_file_region (file_private_handle->fd, offset,
+					 length));
+}

@@ -287,7 +287,7 @@ ves_icall_System_IO_MonoIO_FindNextFile (HANDLE find, MonoIOStat *stat,
 	*error=ERROR_SUCCESS;
 	
 	result = FindNextFile (find, &data);
-	while (result != INVALID_HANDLE_VALUE) {
+	while (result != FALSE) {
 		if ((data.cFileName [0] == '.' && data.cFileName [1] == 0) ||
 		    (data.cFileName [0] == '.' && data.cFileName [1] == '.' && data.cFileName [2] == 0)) {
 			result = FindNextFile (find, &data);
@@ -298,7 +298,7 @@ ves_icall_System_IO_MonoIO_FindNextFile (HANDLE find, MonoIOStat *stat,
 		} 
 	}
 	
-	if (result == INVALID_HANDLE_VALUE) {
+	if (result == FALSE) {
 		*error=GetLastError ();
 	}
 
@@ -972,5 +972,33 @@ ves_icall_System_IO_MonoIO_BeginWrite (HANDLE handle, MonoFSAsyncResult *ares)
 	ovl = get_overlapped_from_fsa (ares);
 	ovl->handle1 = ares;
 	return WriteFile (handle, mono_array_addr (ares->buffer, gchar, ares->offset), ares->count, &byteswritten, ovl);
+}
+
+void ves_icall_System_IO_MonoIO_Lock (HANDLE handle, gint64 position,
+				      gint64 length, gint32 *error)
+{
+	gboolean ret;
+	
+	*error=ERROR_SUCCESS;
+	
+	ret=LockFile (handle, position & 0xFFFFFFFF, position >> 32,
+		      length & 0xFFFFFFFF, length >> 32);
+	if (ret == FALSE) {
+		*error = GetLastError ();
+	}
+}
+
+void ves_icall_System_IO_MonoIO_Unlock (HANDLE handle, gint64 position,
+					gint64 length, gint32 *error)
+{
+	gboolean ret;
+	
+	*error=ERROR_SUCCESS;
+	
+	ret=UnlockFile (handle, position & 0xFFFFFFFF, position >> 32,
+			length & 0xFFFFFFFF, length >> 32);
+	if (ret == FALSE) {
+		*error = GetLastError ();
+	}
 }
 

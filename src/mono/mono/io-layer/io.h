@@ -194,5 +194,11 @@ extern gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 			    WapiSecurityAttributes *security, guint32 size);
 extern guint32 GetTempPath (guint32 len, gunichar2 *buf);
 extern gint32 GetLogicalDriveStrings (guint32 len, gunichar2 *buf);
+extern gboolean LockFile (gpointer handle, guint32 offset_low,
+			  guint32 offset_high, guint32 length_low,
+			  guint32 length_high);
+extern gboolean UnlockFile (gpointer handle, guint32 offset_low,
+			    guint32 offset_high, guint32 length_low,
+			    guint32 length_high);
 
 #endif /* _WAPI_IO_H_ */
