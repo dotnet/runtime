@@ -82,9 +82,6 @@ mono_debug_init_2 (MonoAssembly *assembly)
 	handle = _mono_debug_get_image (mono_defaults.corlib);
 	g_assert (handle);
 
-	if (handle->_priv->debugger_info)
-		mono_debugger_add_builtin_types (handle->_priv->debugger_info);
-
 	mono_debugger_unlock ();
 }
 
@@ -125,8 +122,11 @@ mono_debug_open_image (MonoImage *image)
 		return handle;
 
 	handle->symfile = mono_debug_open_mono_symbol_file (handle, in_the_mono_debugger);
-	if (in_the_mono_debugger)
+	if (in_the_mono_debugger) {
 		handle->_priv->debugger_info = mono_debugger_add_symbol_file (handle);
+		if (image == mono_defaults.corlib)
+			mono_debugger_add_builtin_types (handle->_priv->debugger_info);
+	}
 
 	return handle;
 }
