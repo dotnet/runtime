@@ -169,11 +169,15 @@ TEST_CS_SRC=			\
 	bug-48015.cs		\
 	bug-42136.cs
 
+if X86
+PLATFORM_DISABLED_TESTS=thread6.exe
+endif
+
 DISABLED_TESTS=			\
 	remoting2.exe		\
 	remoting3.exe		\
 	appdomain-unload.exe	\
-	thread6.exe
+	$(PLATFORM_DISABLED_TESTS)
 
 # These only compile with MS CSC
 TEST_CSC_SRC=			\
