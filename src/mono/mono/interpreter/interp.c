@@ -4516,7 +4516,7 @@ main (int argc, char *argv [])
 		if (strcmp (argv [i], "--print-vtable") == 0)
 			mono_print_vtable = TRUE;
 		if (strcmp (argv [i], "--profile") == 0)
-			mono_profiler_install_simple ();
+			mono_profiler_load (NULL);
 		if (strcmp (argv [i], "--opcode-count") == 0)
 			ocount = 1;
 		if (strcmp (argv [i], "--config") == 0)

@@ -75,7 +75,7 @@ void mono_profiler_install_thread      (MonoProfileThreadFunc start, MonoProfile
 void mono_profiler_install_transition  (MonoProfileMethodResult callback);
 void mono_profiler_install_allocation  (MonoProfileAllocFunc callback);
 
-void mono_profiler_install_simple (void);
+void mono_profiler_load             (const char *desc);
 
 #endif /* __MONO_PROFILER_H__ */
 

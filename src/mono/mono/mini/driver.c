@@ -488,7 +488,7 @@ mini_usage (void)
 		"    --statfile FILE        Sets the stat file to FILE\n"
 		"    --aot                  Compiles the assembly to native code\n"
 		"    --coverage             Performs coverage analysis\n"
-		"    --profile              Runs in profiling mode\n"
+		"    --profile[=profiler]   Runs in profiling mode with the specified profiler module\n"
 		"    --graph[=TYPE] METHOD  Draws a graph of the specified method:\n");
 	
 	for (i = 0; i < G_N_ELEMENTS (graph_names); ++i) {
@@ -571,7 +571,10 @@ mono_main (int argc, char* argv[]) {
 			action = DO_COMPILE;
 		} else if (strcmp (argv [i], "--profile") == 0) {
 			mono_jit_profile = TRUE;
-			mono_profiler_install_simple ();
+			mono_profiler_load (NULL);
+		} else if (strncmp (argv [i], "--profile=", 10) == 0) {
+			mono_jit_profile = TRUE;
+			mono_profiler_load (argv [i] + 10);
 		} else if (strcmp (argv [i], "--compile") == 0) {
 			mname = argv [++i];
 			action = DO_BENCH;

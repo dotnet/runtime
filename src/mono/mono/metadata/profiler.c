@@ -2,6 +2,7 @@
 #include "mono/metadata/profiler-private.h"
 #include "mono/metadata/debug-helpers.h"
 #include <string.h>
+#include <gmodule.h>
 
 static MonoProfiler * current_profiler = NULL;
 
@@ -327,7 +328,7 @@ mono_profiler_shutdown (void)
  * and improve it to do graphs and more accurate timestamping with rdtsc.
  */
 
-#define USE_X86TSC 0
+#define USE_X86TSC 1
 #define USE_WIN32COUNTER 0
 #if USE_X86TSC
 
@@ -448,22 +449,30 @@ timeval_elapsed (MonoGLibTimer *t)
 
 typedef struct _AllocInfo AllocInfo;
 typedef struct _CallerInfo CallerInfo;
+typedef struct _LastCallerInfo LastCallerInfo;
 
 struct _MonoProfiler {
 	GHashTable *methods;
+	MonoMemPool *mempool;
+	/* info about JIT time */
 	MONO_TIMER_TYPE jit_timer;
 	double      jit_time;
+	double      max_jit_time;
+	MonoMethod *max_jit_method;
 	int         methods_jitted;
-	GSList     *callers;
-	/* allocations unassigned to an IL method */
-	AllocInfo  *alloc_info;
+	
+	/* tls_id is the id for the TLS slot where MonoProfiler is stored */
+	int         tls_id;
+	GSList     *per_thread;
+	
+	/* chain of callers for the current thread */
+	LastCallerInfo *callers;
+	/* LastCallerInfo nodes for faster allocation */
+	LastCallerInfo *cstorage;
 };
 
 typedef struct {
-	union {
-		MONO_TIMER_TYPE timer;
-		MonoMethod *method;
-	} u;
+	MonoMethod *method;
 	guint64 count;
 	double total;
 	AllocInfo *alloc_info;
@@ -491,6 +500,37 @@ struct _CallerInfo {
 	guint count;
 };
 
+struct _LastCallerInfo {
+	LastCallerInfo *next;
+	MonoMethod *method;
+	MONO_TIMER_TYPE timer;
+};
+
+static MonoProfiler*
+create_profiler (void)
+{
+	MonoProfiler *prof = g_new0 (MonoProfiler, 1);
+
+	prof->methods = g_hash_table_new (g_direct_hash, g_direct_equal);
+	MONO_TIMER_INIT (prof->jit_timer);
+	prof->mempool = mono_mempool_new ();
+	return prof;
+}
+#if 1
+#define GET_THREAD_PROF(prof) do {\
+		MonoProfiler *_tprofiler = TlsGetValue ((prof)->tls_id);	\
+		if (!_tprofiler) {	\
+			_tprofiler = create_profiler ();	\
+			prof->per_thread = g_slist_prepend (prof->per_thread, _tprofiler);	\
+			TlsSetValue ((prof)->tls_id, _tprofiler);	\
+		}	\
+		prof = _tprofiler;	\
+	} while (0)
+#else
+/* thread unsafe but faster variant */
+#define GET_THREAD_PROF(prof)
+#endif
+
 static gint
 compare_profile (MethodProfile *profa, MethodProfile *profb)
 {
@@ -500,8 +540,7 @@ compare_profile (MethodProfile *profa, MethodProfile *profb)
 static void
 build_profile (MonoMethod *m, MethodProfile *prof, GList **funcs)
 {
-	MONO_TIMER_DESTROY (prof->u.timer);
-	prof->u.method = m;
+	prof->method = m;
 	*funcs = g_list_insert_sorted (*funcs, prof, (GCompareFunc)compare_profile);
 }
 
@@ -534,7 +573,7 @@ output_profile (GList *funcs)
 		total_calls += p->count;
 		if (!(gint)(p->total*1000))
 			continue;
-		m = method_get_name (p->u.method);
+		m = method_get_name (p->method);
 		printf ("########################\n% 8.3f %7llu % 8.3f  %s\n",
 			(double)(p->total*1000), p->count, (double)(p->total*1000)/(double)p->count, m);
 		g_free (m);
@@ -652,7 +691,7 @@ output_newobj_profile (GList *proflist)
 		if (p->count < 50000)
 			continue;
 		mp = p->mp;
-		m = method_get_name (mp->u.method);
+		m = method_get_name (mp->method);
 		g_print ("########################\n%8d KB %s\n", p->count / 1024, m);
 		g_free (m);
 		sorted = sort_alloc_list (mp->alloc_info);
@@ -678,44 +717,134 @@ output_newobj_profile (GList *proflist)
 }
 
 static void
+merge_methods (MonoMethod *method, MethodProfile *profile, MonoProfiler *prof)
+{
+	MethodProfile *mprof;
+	AllocInfo *talloc_info, *alloc_info;
+	CallerInfo *tcaller_info, *caller_info;
+	
+	mprof = g_hash_table_lookup (prof->methods, method);
+	if (!mprof) {
+		/* the master thread didn't see this method, just transfer the info as is */
+		g_hash_table_insert (prof->methods, method, profile);
+		return;
+	}
+	/* merge the info from profile into mprof */
+	mprof->count += profile->count;
+	mprof->total += profile->total;
+	/* merge alloc info */
+	for (talloc_info = profile->alloc_info; talloc_info; talloc_info = talloc_info->next) {
+		for (alloc_info = mprof->alloc_info; alloc_info; alloc_info = alloc_info->next) {
+			if (alloc_info->klass == talloc_info->klass) {
+				/* mprof already has a record for the klass, merge */
+				alloc_info->count += talloc_info->count;
+				alloc_info->mem += talloc_info->mem;
+				break;
+			}
+		}
+		if (!alloc_info) {
+			/* mprof didn't have the info, just copy it over */
+			alloc_info = mono_mempool_alloc0 (prof->mempool, sizeof (AllocInfo));
+			*alloc_info = *talloc_info;
+			alloc_info->next = mprof->alloc_info;
+			mprof->alloc_info = alloc_info->next;
+		}
+	}
+	/* merge callers info */
+	for (tcaller_info = profile->caller_info; tcaller_info; tcaller_info = tcaller_info->next) {
+		for (caller_info = mprof->caller_info; caller_info; caller_info = caller_info->next) {
+			if (caller_info->caller == tcaller_info->caller) {
+				/* mprof already has a record for the caller method, merge */
+				caller_info->count += tcaller_info->count;
+				break;
+			}
+		}
+		if (!caller_info) {
+			/* mprof didn't have the info, just copy it over */
+			caller_info = mono_mempool_alloc0 (prof->mempool, sizeof (CallerInfo));
+			*caller_info = *tcaller_info;
+			caller_info->next = mprof->caller_info;
+			mprof->caller_info = caller_info->next;
+		}
+	}
+}
+
+static void
+merge_thread_data (MonoProfiler *master, MonoProfiler *tprof)
+{
+	master->jit_time += tprof->jit_time;
+	master->methods_jitted += tprof->methods_jitted;
+	if (master->max_jit_time < tprof->max_jit_time) {
+		master->max_jit_time = tprof->max_jit_time;
+		master->max_jit_method = tprof->max_jit_method;
+	}
+
+	g_hash_table_foreach (tprof->methods, (GHFunc)merge_methods, master);
+}
+
+static void
 simple_method_enter (MonoProfiler *prof, MonoMethod *method)
 {
 	MethodProfile *profile_info;
+	LastCallerInfo *callinfo;
+	GET_THREAD_PROF (prof);
+	/*g_print ("enter %p %s::%s in %d (%p)\n", method, method->klass->name, method->name, GetCurrentThreadId (), prof);*/
 	if (!(profile_info = g_hash_table_lookup (prof->methods, method))) {
-		profile_info = g_new0 (MethodProfile, 1);
+		profile_info = mono_mempool_alloc0 (prof->mempool, sizeof (MethodProfile));
 		MONO_TIMER_INIT (profile_info->u.timer);
 		g_hash_table_insert (prof->methods, method, profile_info);
 	}
 	profile_info->count++;
-	MONO_TIMER_START (profile_info->u.timer);
 	if (prof->callers) {
 		CallerInfo *cinfo;
-		MonoMethod *caller = prof->callers->data;
+		MonoMethod *caller = prof->callers->method;
 		for (cinfo = profile_info->caller_info; cinfo; cinfo = cinfo->next) {
 			if (cinfo->caller == caller)
 				break;
 		}
 		if (!cinfo) {
-			cinfo = g_new0 (CallerInfo, 1);
+			cinfo = mono_mempool_alloc0 (prof->mempool, sizeof (CallerInfo));
 			cinfo->caller = caller;
 			cinfo->next = profile_info->caller_info;
 			profile_info->caller_info = cinfo;
 		}
 		cinfo->count++;
 	}
-	prof->callers = g_slist_prepend (prof->callers, method);
+	if (!(callinfo = prof->cstorage)) {
+		callinfo = mono_mempool_alloc (prof->mempool, sizeof (LastCallerInfo));
+		MONO_TIMER_INIT (callinfo->timer);
+	} else {
+		prof->cstorage = prof->cstorage->next;
+	}
+	callinfo->method = method;
+	callinfo->next = prof->callers;
+	prof->callers = callinfo;
+	MONO_TIMER_START (callinfo->timer);
 }
 
 static void
 simple_method_leave (MonoProfiler *prof, MonoMethod *method)
 {
 	MethodProfile *profile_info;
-	if (!(profile_info = g_hash_table_lookup (prof->methods, method)))
-		g_assert_not_reached ();
-
-	MONO_TIMER_STOP (profile_info->u.timer);
-	profile_info->total += MONO_TIMER_ELAPSED (profile_info->u.timer);
-	prof->callers = g_slist_remove (prof->callers, method);
+	LastCallerInfo *callinfo, *newcallinfo = NULL;
+	
+	GET_THREAD_PROF (prof);
+	/*g_print ("leave %p %s::%s in %d (%p)\n", method, method->klass->name, method->name, GetCurrentThreadId (), prof);*/
+	callinfo = prof->callers;
+	/* should really not happen, but we don't catch exceptions events, yet ... */
+	while (callinfo) {
+		MONO_TIMER_STOP (callinfo->timer);
+		profile_info = g_hash_table_lookup (prof->methods, callinfo->method);
+		if (profile_info)
+			profile_info->total += MONO_TIMER_ELAPSED (callinfo->timer);
+		newcallinfo = callinfo->next;
+		callinfo->next = prof->cstorage;
+		prof->cstorage = callinfo;
+		if (callinfo->method == method)
+			break;
+		callinfo = newcallinfo;
+	}
+	prof->callers = newcallinfo;
 }
 
 static void
@@ -724,8 +853,9 @@ simple_allocation (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 	MethodProfile *profile_info;
 	AllocInfo *tmp;
 
+	GET_THREAD_PROF (prof);
 	if (prof->callers) {
-		if (!(profile_info = g_hash_table_lookup (prof->methods, prof->callers->data)))
+		if (!(profile_info = g_hash_table_lookup (prof->methods, prof->callers->method)))
 			g_assert_not_reached ();
 	} else {
 		return; /* fine for now */
@@ -736,7 +866,7 @@ simple_allocation (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 			break;
 	}
 	if (!tmp) {
-		tmp = g_new0 (AllocInfo, 1);
+		tmp = mono_mempool_alloc0 (prof->mempool, sizeof (AllocInfo));
 		tmp->klass = klass;
 		tmp->next = profile_info->alloc_info;
 		profile_info->alloc_info = tmp;
@@ -754,6 +884,7 @@ simple_allocation (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 static void
 simple_method_jit (MonoProfiler *prof, MonoMethod *method)
 {
+	GET_THREAD_PROF (prof);
 	prof->methods_jitted++;
 	MONO_TIMER_START (prof->jit_timer);
 }
@@ -761,16 +892,36 @@ simple_method_jit (MonoProfiler *prof, MonoMethod *method)
 static void
 simple_method_end_jit (MonoProfiler *prof, MonoMethod *method, int result)
 {
+	double jtime;
+	GET_THREAD_PROF (prof);
 	MONO_TIMER_STOP (prof->jit_timer);
-	prof->jit_time += MONO_TIMER_ELAPSED (prof->jit_timer);
+	jtime = MONO_TIMER_ELAPSED (prof->jit_timer);
+	prof->jit_time += jtime;
+	if (jtime > prof->max_jit_time) {
+		prof->max_jit_time = jtime;
+		prof->max_jit_method = method;
+	}
 }
 
 static void
 simple_shutdown (MonoProfiler *prof)
 {
 	GList *profile = NULL;
+	MonoProfiler *tprof;
+	GSList *tmp;
+	char *str;
+
+	for (tmp = prof->per_thread; tmp; tmp = tmp->next) {
+		tprof = tmp->data;
+		merge_thread_data (prof, tprof);
+	}
 
 	printf("Total time spent compiling %d methods (sec): %.4g\n", prof->methods_jitted, prof->jit_time);
+	if (prof->max_jit_method) {
+		str = method_get_name (prof->max_jit_method);
+		printf("Slowest method to compile (sec): %.4g: %s\n", prof->max_jit_time, str);
+		g_free (str);
+	}
 	g_hash_table_foreach (prof->methods, (GHFunc)build_profile, &profile);
 	output_profile (profile);
 	g_list_free (profile);
@@ -781,15 +932,16 @@ simple_shutdown (MonoProfiler *prof)
 	g_list_free (profile);
 }
 
-void
-mono_profiler_install_simple (void)
+static void
+mono_profiler_install_simple (const char *desc)
 {
-	MonoProfiler *prof = g_new0 (MonoProfiler, 1);
+	MonoProfiler *prof;
 
 	MONO_TIMER_STARTUP;
 
-	prof->methods = g_hash_table_new (g_direct_hash, g_direct_equal);
-	MONO_TIMER_INIT (prof->jit_timer);
+	prof = create_profiler ();
+	prof->tls_id = TlsAlloc ();
+	TlsSetValue (prof->tls_id, prof);
 
 	mono_profiler_install (prof, simple_shutdown);
 	/* later do also object creation */
@@ -797,5 +949,42 @@ mono_profiler_install_simple (void)
 	mono_profiler_install_jit_compile (simple_method_jit, simple_method_end_jit);
 	mono_profiler_install_allocation (simple_allocation);
 	mono_profiler_set_events (MONO_PROFILE_ENTER_LEAVE|MONO_PROFILE_JIT_COMPILATION|MONO_PROFILE_ALLOCATIONS);
+}
+
+typedef void (*ProfilerInitializer) (const char*);
+#define INITIALIZER_NAME "mono_profiler_startup"
+
+void 
+mono_profiler_load (const char *desc)
+{
+	if (!desc || (strcmp ("default", desc) == 0) || (strncmp (desc, "default:", 8) == 0)) {
+		mono_profiler_install_simple (desc);
+	} else {
+		GModule *pmodule;
+		const char* col = strchr (desc, ':');
+		char* libname;
+		char *mname;
+		if (col != NULL) {
+			mname = g_memdup (desc, col - desc);
+			mname [col - desc] = 0;
+		} else {
+			mname = g_strdup (desc);
+		}
+		libname = g_strdup_printf ("mono-profiler-%s", mname);
+		pmodule = g_module_open (libname, G_MODULE_BIND_LAZY);
+		if (pmodule) {
+			ProfilerInitializer func;
+			if (!g_module_symbol (pmodule, INITIALIZER_NAME, (gpointer *)&func)) {
+				g_warning ("Cannot find initializer function %s in profiler module: %s", INITIALIZER_NAME, libname);
+			} else {
+				func (desc);
+			}
+		} else {
+			g_warning ("Error loading profiler module: %s", libname);
+		}
+
+		g_free (libname);
+		g_free (mname);
+	}
 }
 
