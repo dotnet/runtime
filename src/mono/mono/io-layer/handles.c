@@ -457,6 +457,106 @@ gpointer _wapi_search_handle (WapiHandleType type,
 	return(GUINT_TO_POINTER (i));
 }
 
+gpointer _wapi_search_handle_namespace (WapiHandleType type,
+					gchar *utf8_name, gpointer *shared,
+					gpointer *private)
+{
+	struct _WapiHandleShared *shared_handle_data;
+	struct _WapiHandlePrivate *private_handle_data;
+	guint32 i, segment, idx;
+
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION
+		   ": Lookup for handle named [%s] type %d", utf8_name, type);
+#endif
+
+	for(i=1; i<_wapi_handle_get_shared_segment (0)->num_segments * _WAPI_HANDLES_PER_SEGMENT; i++) {
+		struct _WapiHandleShared *shared;
+		
+		_wapi_handle_segment (GUINT_TO_POINTER (i), &segment, &idx);
+		_wapi_handle_ensure_mapped (segment);
+		
+		shared=&_wapi_handle_get_shared_segment (segment)->handles[idx];
+		
+		/* Check mutex, event, semaphore, timer, job and file-mapping
+		 * object names.  So far only mutex is implemented.
+		 */
+		if(_WAPI_SHARED_NAMESPACE (shared->type)) {
+			gchar *lookup_name;
+			WapiSharedNamespace *sharedns;
+			
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": found a shared namespace handle at 0x%x (type %d)", i, shared->type);
+#endif
+
+			shared_handle_data=&_wapi_handle_get_shared_segment (segment)->handles[idx];
+			sharedns=(WapiSharedNamespace *)&shared_handle_data->u;
+			
+			
+			if(sharedns->name) {
+				lookup_name=_wapi_handle_scratch_lookup (
+					sharedns->name);
+			} else {
+#ifdef DEBUG
+				g_message (G_GNUC_PRETTY_FUNCTION
+					   ": handle 0x%x is unnamed", i);
+#endif
+				continue;
+			}
+
+			if(lookup_name==NULL) {
+#ifdef DEBUG
+				g_message (G_GNUC_PRETTY_FUNCTION
+					   ": couldn't find handle 0x%x name",
+					   i);
+#endif
+				continue;
+			}
+
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION ": name is [%s]",
+				   lookup_name);
+#endif
+
+			if(strcmp (lookup_name, utf8_name)==0) {
+				if(shared->type!=type) {
+					/* Its the wrong type, so fail now */
+#ifdef DEBUG
+					g_message (G_GNUC_PRETTY_FUNCTION ": handle 0x%x matches name but is wrong type: %d", i, shared->type);
+#endif
+					return(_WAPI_HANDLE_INVALID);
+				} else {
+					/* fall through so we can fill
+					 * in the data
+					 */
+#ifdef DEBUG
+					g_message (G_GNUC_PRETTY_FUNCTION ": handle 0x%x matches name and type", i);
+#endif
+					break;
+				}
+			}
+		}
+	}
+
+	if(i==_wapi_handle_get_shared_segment (0)->num_segments * _WAPI_HANDLES_PER_SEGMENT) {
+		return(GUINT_TO_POINTER (0));
+	}
+	
+	if(shared!=NULL) {
+		shared_handle_data=&_wapi_handle_get_shared_segment (segment)->handles[idx];
+
+		*shared=&shared_handle_data->u;
+	}
+	
+	if(private!=NULL) {
+		private_handle_data=&_wapi_handle_get_private_segment (segment)->handles[idx];
+
+		*private=&private_handle_data->u;
+	}
+	
+	return(GUINT_TO_POINTER (i));
+}
+
 void _wapi_handle_ref (gpointer handle)
 {
 	if(shared==TRUE) {

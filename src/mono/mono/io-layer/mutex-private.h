@@ -19,7 +19,7 @@ extern struct _WapiHandleOps _wapi_mutex_ops;
 
 struct _WapiHandle_mutex
 {
-	guint32 name;
+	WapiSharedNamespace sharedns;
 	pid_t pid;
 	pthread_t tid;
 	guint32 recursion;

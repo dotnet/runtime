@@ -110,7 +110,7 @@ static void event_own (gpointer handle)
  * Return value: A new handle, or %NULL on error.
  */
 gpointer CreateEvent(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean manual,
-		     gboolean initial, const guchar *name G_GNUC_UNUSED)
+		     gboolean initial, const gunichar2 *name G_GNUC_UNUSED)
 {
 	struct _WapiHandle_event *event_handle;
 	gpointer handle;

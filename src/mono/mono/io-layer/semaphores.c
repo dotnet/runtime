@@ -108,7 +108,7 @@ static void sema_own (gpointer handle)
  *
  * Return value: a new handle, or NULL
  */
-gpointer CreateSemaphore(WapiSecurityAttributes *security G_GNUC_UNUSED, gint32 initial, gint32 max, const guchar *name G_GNUC_UNUSED)
+gpointer CreateSemaphore(WapiSecurityAttributes *security G_GNUC_UNUSED, gint32 initial, gint32 max, const gunichar2 *name G_GNUC_UNUSED)
 {
 	struct _WapiHandle_sem *sem_handle;
 	gpointer handle;

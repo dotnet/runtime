@@ -42,6 +42,13 @@ typedef enum {
 	WAPI_HANDLE_COUNT,
 } WapiHandleType;
 
+#define _WAPI_SHARED_NAMESPACE(type) (type==WAPI_HANDLE_MUTEX)
+
+typedef struct 
+{
+	guint32 name;
+} WapiSharedNamespace;
+
 typedef enum {
 	WAPI_HANDLE_CAP_WAIT=0x01,
 	WAPI_HANDLE_CAP_SIGNAL=0x02,

@@ -22,6 +22,11 @@
 
 #undef DEBUG
 
+/* This is used to serialise mutex creation when names are given
+ * (FIXME: make it process-shared)
+ */
+static mono_mutex_t named_mutex_mutex = MONO_MUTEX_INITIALIZER;
+
 static void mutex_close_shared (gpointer handle);
 static void mutex_signal(gpointer handle);
 static void mutex_own (gpointer handle);
@@ -62,9 +67,9 @@ static void mutex_close_shared (gpointer handle)
 	g_message(G_GNUC_PRETTY_FUNCTION ": closing mutex handle %p", handle);
 #endif
 
-	if(mutex_handle->name!=0) {
-		_wapi_handle_scratch_delete (mutex_handle->name);
-		mutex_handle->name=0;
+	if(mutex_handle->sharedns.name!=0) {
+		_wapi_handle_scratch_delete (mutex_handle->sharedns.name);
+		mutex_handle->sharedns.name=0;
 	}
 }
 
@@ -163,18 +168,62 @@ static gboolean mutex_is_owned (gpointer handle)
  * Return value: A new handle, or %NULL on error.
  */
 gpointer CreateMutex(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean owned,
-			const guchar *name)
+			const gunichar2 *name)
 {
 	struct _WapiHandle_mutex *mutex_handle;
 	gpointer handle;
 	gboolean ok;
+	gchar *utf8_name;
 	
 	mono_once (&mutex_ops_once, mutex_ops_init);
+
+	if(name!=NULL) {
+		utf8_name=g_utf16_to_utf8 (name, -1, NULL, NULL, NULL);
+		/* w32 seems to guarantee that opening named mutexes can't
+		 * race each other
+		 */
+		mono_mutex_lock (&named_mutex_mutex);
+	} else {
+		utf8_name=NULL;
+	}
+	
+#ifdef DEBUG
+	g_message (G_GNUC_PRETTY_FUNCTION ": Creating mutex (name [%s])",
+		   utf8_name==NULL?"<unnamed>":utf8_name);
+#endif
+	
+	if(name!=NULL) {
+		handle=_wapi_search_handle_namespace (
+			WAPI_HANDLE_MUTEX, utf8_name,
+			(gpointer *)&mutex_handle, NULL);
+		if(handle==_WAPI_HANDLE_INVALID) {
+			/* The name has already been used for a different
+			 * object.
+			 */
+			g_free (utf8_name);
+			mono_mutex_unlock (&named_mutex_mutex);
+			SetLastError (ERROR_INVALID_HANDLE);
+			return(NULL);
+		} else if (handle!=NULL) {
+			g_free (utf8_name);
+			mono_mutex_unlock (&named_mutex_mutex);
+			_wapi_handle_ref (handle);
+			return(handle);
+		}
+		/* Otherwise fall through to create the mutex. */
+	}
 	
 	handle=_wapi_handle_new (WAPI_HANDLE_MUTEX);
 	if(handle==_WAPI_HANDLE_INVALID) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error creating mutex handle");
+		if(utf8_name!=NULL) {
+			g_free (utf8_name);
+		}
+		if(name!=NULL) {
+			mono_mutex_unlock (&named_mutex_mutex);
+		}
+		
 		return(NULL);
 	}
 
@@ -185,13 +234,21 @@ gpointer CreateMutex(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean ow
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up mutex handle %p", handle);
+		if(utf8_name!=NULL) {
+			g_free (utf8_name);
+		}
+		
+		if(name!=NULL) {
+			mono_mutex_unlock (&named_mutex_mutex);
+		}
+		
 		_wapi_handle_unlock_handle (handle);
 		return(NULL);
 	}
 
-	if(name!=NULL) {
-		mutex_handle->name=_wapi_handle_scratch_store (name,
-							       strlen (name));
+	if(utf8_name!=NULL) {
+		mutex_handle->sharedns.name=_wapi_handle_scratch_store (
+			utf8_name, strlen (utf8_name));
 	}
 	
 	if(owned==TRUE) {
@@ -207,6 +264,14 @@ gpointer CreateMutex(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean ow
 
 	_wapi_handle_unlock_handle (handle);
 
+	if(utf8_name!=NULL) {
+		g_free (utf8_name);
+	}
+	
+	if(name!=NULL) {
+		mono_mutex_unlock (&named_mutex_mutex);
+	}
+		
 	return(handle);
 }
 

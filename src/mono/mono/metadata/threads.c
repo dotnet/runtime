@@ -744,10 +744,12 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 	return(TRUE);
 }
 
-HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned,char *name) { 
+HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned, MonoString *name)
+{ 
 	MONO_ARCH_SAVE_REGS;
    
-	return(CreateMutex(NULL,owned,name));	                 
+	return(CreateMutex (NULL, owned,
+			    name==NULL?NULL:mono_string_chars (name)));
 }                                                                   
 
 void ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handle ) { 
@@ -756,10 +758,11 @@ void ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handle ) {
 	ReleaseMutex(handle);
 }
 
-HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, MonoBoolean initial, char *name) {
+HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, MonoBoolean initial, MonoString *name) {
 	MONO_ARCH_SAVE_REGS;
 
-	return (CreateEvent(NULL,manual,initial,name));
+	return(CreateEvent (NULL, manual, initial,
+			    name==NULL?NULL:mono_string_chars (name)));
 }
 
 gboolean ves_icall_System_Threading_Events_SetEvent_internal (HANDLE handle) {

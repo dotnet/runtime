@@ -84,10 +84,10 @@ extern gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this
 extern gint32 ves_icall_System_Threading_Thread_GetDomainID (void);
 extern void ves_icall_System_Threading_Thread_SlotHash_store(MonoObject *data);
 extern MonoObject *ves_icall_System_Threading_Thread_SlotHash_lookup(void);
-extern HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal(MonoBoolean owned,char *name);
+extern HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal(MonoBoolean owned, MonoString *name);
 extern void ves_icall_System_Threading_Mutex_ReleaseMutex_internal(HANDLE handle);
 extern void ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handle );
-extern HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual,MonoBoolean initial,char *name);
+extern HANDLE ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, MonoBoolean initial, MonoString *name);
 extern gboolean ves_icall_System_Threading_Events_SetEvent_internal (HANDLE handle);
 extern gboolean ves_icall_System_Threading_Events_ResetEvent_internal (HANDLE handle);
 extern void ves_icall_System_Threading_Events_CloseEvent_internal (HANDLE handle);

@@ -13,7 +13,7 @@
 #include <glib.h>
 
 extern gpointer CreateMutex(WapiSecurityAttributes *security, gboolean owned,
-			    const guchar *name);
+			    const gunichar2 *name);
 extern gboolean ReleaseMutex(gpointer handle);
 
 #endif /* _WAPI_MUTEXES_H_ */

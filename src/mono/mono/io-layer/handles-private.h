@@ -36,6 +36,10 @@ extern gpointer _wapi_search_handle (WapiHandleType type,
 				     gboolean (*check)(gpointer, gpointer),
 				     gpointer user_data,
 				     gpointer *shared, gpointer *private);
+extern gpointer _wapi_search_handle_namespace (WapiHandleType type,
+					       gchar *utf8_name,
+					       gpointer *shared,
+					       gpointer *private);
 extern void _wapi_handle_ref (gpointer handle);
 extern void _wapi_handle_unref (gpointer handle);
 extern guint32 _wapi_handle_scratch_store_internal (guint32 bytes,

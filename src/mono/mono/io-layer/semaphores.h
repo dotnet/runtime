@@ -14,7 +14,7 @@
 
 extern gpointer CreateSemaphore(WapiSecurityAttributes *security,
 				gint32 initial, gint32 max,
-				const guchar *name);
+				const gunichar2 *name);
 extern gboolean ReleaseSemaphore(gpointer handle, gint32 count,
 				 gint32 *prevcount);
 

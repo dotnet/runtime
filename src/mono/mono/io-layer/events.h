@@ -13,7 +13,7 @@
 #include <glib.h>
 
 extern gpointer CreateEvent(WapiSecurityAttributes *security, gboolean manual,
-			    gboolean initial, const guchar *name);
+			    gboolean initial, const gunichar2 *name);
 extern gboolean PulseEvent(gpointer handle);
 extern gboolean ResetEvent(gpointer handle);
 extern gboolean SetEvent(gpointer handle);

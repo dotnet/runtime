@@ -156,7 +156,7 @@ static const guchar *mutex_details (struct _WapiHandleShared *handle)
 	guchar *name;
 	struct _WapiHandle_mutex *mut=&handle->u.mutex;
 	
-	name=_wapi_handle_scratch_lookup (mut->name);
+	name=_wapi_handle_scratch_lookup (mut->sharedns.name);
 	
 	g_snprintf (buf, sizeof(buf), "[%20s] own: %5d:%5ld, count: %5u",
 		    name==NULL?(guchar *)"":name, mut->pid, mut->tid,
