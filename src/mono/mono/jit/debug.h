@@ -17,6 +17,42 @@ typedef enum {
 extern MonoDebugHandle *mono_debug_handle;
 extern GList *mono_debug_methods;
 
+/*
+ * This variable is intended to be set in a debugger.
+ *
+ * If it's non-zero, arch_compile_method() will insert a breakpoint next time
+ * it compiles a method.
+ *
+ * If it's positive, it acts as a counter which is decremented each time it's
+ * used. Set it to a negative value to make arch_compile_method() insert a
+ * breakpoint for each method.
+ *
+ * To use this, you should create a GDB macro like this:
+ *
+ *    define enter
+ *      set mono_debug_insert_breakpoint = 1
+ *      continue
+ *      set *mono_debug_last_breakpoint_address = 0x90
+ *      reload-symbol-files
+ *      frame
+ *    end
+ *
+ *    define reload-symbol-files
+ *      call mono_debug_make_symbols ()
+ *      add-symbol-file Test-debug.o
+ *      add-symbol-file /tmp/corlib.o
+ *    end
+ *
+ */
+extern int mono_debug_insert_breakpoint;
+
+/*
+ * This is set the the core address of the last inserted breakpoint. You can
+ * use this in GDB to unset the breakpoint.
+ */
+
+extern gchar *mono_debug_last_breakpoint_address;
+
 MonoDebugHandle* mono_debug_open_file (const char *filename, MonoDebugFormat format);
 
 void           mono_debug_close (MonoDebugHandle* debug);

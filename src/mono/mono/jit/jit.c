@@ -198,6 +198,14 @@ int mono_worker_threads = 1;
 MonoDebugHandle *mono_debug_handle = NULL;
 GList *mono_debug_methods = NULL;
 
+/* If non-zero, insert a breakpoint when compiling the next method.
+ * If positive, interpret this variable as a counter and decrement
+ * it after setting the breakpoint. */
+int mono_debug_insert_breakpoint = 0;
+
+/* This is the address of the last breakpoint which was inserted. */
+gchar *mono_debug_last_breakpoint_address = NULL;
+
 gpointer mono_end_of_stack = NULL;
 
 /* last managed frame (used by pinvoke) */ 

@@ -745,10 +745,15 @@ arch_compile_method (MonoMethod *method)
 		cfg->code_size = MAX (header->code_size * 5, 256);
 		cfg->start = cfg->code = g_malloc (cfg->code_size);
 
-		if (match_debug_method (method))
+		mono_debug_last_breakpoint_address = cfg->code;
+
+		if (match_debug_method (method) || mono_debug_insert_breakpoint)
 			x86_breakpoint (cfg->code);
 		else if (mono_debug_handle)
 			x86_nop (cfg->code);
+
+		if (mono_debug_insert_breakpoint > 0)
+			mono_debug_insert_breakpoint--;
 
 		if (mono_jit_dump_forest) {
 			int i;
