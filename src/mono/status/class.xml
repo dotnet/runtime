@@ -2928,7 +2928,7 @@
         <last-activity>Sep-14-2001</last-activity>
         <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>0</completion>
+        <completion>100</completion>
         <maintainers>
             <maintainer>dick@ximian.com</maintainer>
         </maintainers>
