@@ -2144,7 +2144,6 @@ mono_type_stack_size (MonoType *t, gint *align)
 		return sizeof (gint64);		
 	case MONO_TYPE_R8:
 		*align = __alignof__(double);
-		*align = 8;
 		return sizeof (double);
 	case MONO_TYPE_VALUETYPE: {
 		guint32 size;
