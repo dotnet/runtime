@@ -98,6 +98,7 @@ enum {
 		(frame)->ex_handler = NULL;	\
 		(frame)->ex = NULL;	\
 		(frame)->child = NULL;	\
+		(frame)->invoke_trap = 0;	\
 	} while (0)
 
 void ves_exec_method (MonoInvocation *frame);
@@ -720,6 +721,9 @@ ves_runtime_method (MonoInvocation *frame)
 					method = ji->method;
 					INIT_FRAME(&call,frame,delegate->delegate.target,frame->stack_args,frame->retval,method);
 					ves_exec_method (&call);
+					frame->ex = call.ex;
+					if (frame->ex)
+						return;
 				} else {
 					g_assert_not_reached ();
 				}
@@ -731,13 +735,15 @@ ves_runtime_method (MonoInvocation *frame)
 		if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 			nm = mono_marshal_get_delegate_begin_invoke (frame->method);
 			INIT_FRAME(&call,frame,obj,frame->stack_args,frame->retval,nm);
-			ves_exec_method (&call);	
+			ves_exec_method (&call);
+			frame->ex = call.ex;
 			return;
 		}
 		if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
 			nm = mono_marshal_get_delegate_end_invoke (frame->method);
 			INIT_FRAME(&call,frame,obj,frame->stack_args,frame->retval,nm);
-			ves_exec_method (&call);	
+			ves_exec_method (&call);
+			frame->ex = call.ex;
 			return;
 		}
 	}
@@ -1137,7 +1143,7 @@ verify_method (MonoMethod *m)
 static MonoObject*
 interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {
-	MonoInvocation frame;
+	MonoInvocation frame, *parent;
 	MonoObject *retval = NULL;
 	MonoMethodSignature *sig = method->signature;
 	MonoClass *klass = mono_class_from_mono_type (sig->ret);
@@ -1237,8 +1243,16 @@ handle_enum:
 		}
 	}
 
-	INIT_FRAME(&frame,NULL,obj,args,&result,method);
+	/* chain with managed parent if any */
+	parent = TlsGetValue (frame_thread_id);
+	INIT_FRAME(&frame,parent,obj,args,&result,method);
+	if (exc)
+		frame.invoke_trap = 1;
 	ves_exec_method (&frame);
+	if (exc && frame.ex) {
+		*exc = frame.ex;
+		return NULL;
+	}
 	if (sig->ret->type == MONO_TYPE_VOID && !method->string_ctor)
 		return NULL;
 	if (isobject || method->string_ctor)
@@ -4221,6 +4235,10 @@ array_constructed:
 		/*
 		 * If we get here, no handler was found: print a stack trace.
 		 */
+		for (inv = frame; inv; inv = inv->parent) {
+			if (inv->invoke_trap)
+				goto handle_finally;
+		}
 die_on_ex:
 		ex_obj = (MonoObject*)frame->ex;
 		mono_unhandled_exception (ex_obj);
@@ -4232,7 +4250,12 @@ die_on_ex:
 		guint32 ip_offset;
 		MonoExceptionClause *clause;
 		
-		if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+#if DEBUG_INTERP
+		if (tracing)
+			g_print ("* Handle finally\n");
+#endif
+		if ((frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) 
+				|| (frame->method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME))) {
 			DEBUG_LEAVE ();
 			return;
 		}
@@ -4274,6 +4297,10 @@ die_on_ex:
 		guint32 ip_offset;
 		MonoExceptionClause *clause;
 		
+#if DEBUG_INTERP
+		if (tracing)
+			g_print ("* Handle fault\n");
+#endif
 		ip_offset = frame->ip - header->code;
 		for (i = 0; i < header->num_clauses; ++i) {
 			clause = &header->clauses [i];
@@ -4294,6 +4321,10 @@ die_on_ex:
 		 * is corrently not assigned in the ECMA specs: LAMESPEC.
 		 */
 		if (frame->ex_handler) {
+#if DEBUG_INTERP
+			if (tracing)
+				g_print ("* Executing handler at IL_%04x\n", frame->ex_handler->handler_offset);
+#endif
 			ip = header->code + frame->ex_handler->handler_offset;
 			sp = frame->stack;
 			sp->type = VAL_OBJ;

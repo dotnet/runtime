@@ -58,6 +58,7 @@ struct _MonoInvocation {
 	stackval       *stack_args; /* parent */
 	stackval       *stack;
 	/* exception info */
+	int             invoke_trap;
 	const unsigned char  *ip;
 	MonoException     *ex;
 	MonoExceptionClause *ex_handler;
