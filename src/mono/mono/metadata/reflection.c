@@ -4376,7 +4376,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 	assembly->name = p;
 	assembly->culture = "";
 	
-	while (*p && (isalnum (*p) || *p == '.' || *p == '-'))
+	while (*p && (isalnum (*p) || *p == '.' || *p == '-' || *p == '_' || *p == '$' || *p == '@'))
 		p++;
 	found_sep = 0;
 	while (*p == ' ' || *p == ',') {
