@@ -1,3 +1,19 @@
+2004-11-19  Raja R Harinath  <rharinath@novell.com>
+
+	Integrate bootstrap build into 'make all'.  Most of the bootstrap
+	targets are gone.
+	* Makefile.am (SUBDIRS): Build current directory before 'runtime'.
+	(tmpinst): Change location.
+	(all-local): New.  Just invokes the build in mcs.
+	(check-local): New.  Invokes 'run-test-profiles' in mcs.
+	(get-monolite-latest): Update.  Move the unpacking code here,
+	since 'monolite-bootstrap' is no more.
+	(mcs-do-full-build): Don't set PATH.
+	(tmpinst-dir-contents): Remove mcs.
+	($(tmpinst)/bin/mcs): Now used only during 'make check'.
+	($(tmpinst)/bin/mono): Don't set MONO_PATH.
+	* README: Update to changes.
+
 2004-11-18  Zoltan Varga  <vargaz@freemail.hu>
 
 	* configure.in: Disable static linking of mono if --disable-static is

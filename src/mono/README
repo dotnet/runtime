@@ -63,7 +63,7 @@ This is Mono.
 		mv mcs-XXX mcs
 		cd mono
 		./autogen.sh --prefix=/usr/local
-		make bootstrap 
+		make
 
     c. Building the software from CVS
     ---------------------------------
@@ -103,7 +103,7 @@ This is Mono.
 
 	You are ready to start your CVS upgrade.  Compile with
 
-		make bootstrap
+		make
 
 	This will automatically go into the mcs/ tree and build the
 	binaries there, and copy them into the appropriate
@@ -128,19 +128,19 @@ This is Mono.
 		make get-monolite-latest
 
 	This should place a monolite-latest.tar.gz in the parent
-	directory of the 'mono' source tree.  You can then run:
+	directory of the 'mono' source tree.  This will automatically
+	gunzip and untar the tarball, place the files appropriately,
 
-		make monolite-bootstrap
+	You can then run:
 
-	This will automatically gunzip and untar the tarball, place the
-	files appropriately, and then complete the bootstrap.
+		make
 
 	iii. Testing and Installation
 	     ------------------------
 
 	You can run the mono and mcs testsuites with the command:
 
-		make -k bootstrap-check
+		make -k check
 
 	Expect to find several testsuite failures, especially in the
 	mcs/ tree.  As a sanity check, you can compare the failures you
@@ -153,30 +153,6 @@ This is Mono.
 		make install
 
 	Failure to follow these steps will result in a broken installation. 
-
-	iv.  Other useful "bootstrap"-like facilities
-	     ----------------------------------------
-
-	If you have a CVS snapshot that you keep updating periodically,
-	and/or do your development in, you may try using a couple of
-	specialty make targets that may be slightly faster than a
-	"make bootstrap".
-
-	You can try a two-stage bootstrap with:
-
-		make faststrap
-
-	This assumes that you have already run a "make bootstrap" on the
-	tree before.
-
-	If you want to avoid waiting even for that, you can try the
-	riskier one-stage build:
-
-		make fasterstrap
-
-	This should be attempted only if you're sure that the sources of
-	the mcs compiler itself and the sources of the libraries used by
-	it have not been changed.
 
 2. Using Mono
 =============
