@@ -546,4 +546,93 @@ public class Tests {
 
 		return 0;
 	}
+
+	/*
+	 * AMD64 small structs-by-value tests.
+	 */
+
+	/* TEST 1: 16 byte long INTEGER struct */
+
+	[StructLayout(LayoutKind.Sequential)]
+	public struct Amd64Struct1 {
+		public int i;
+		public int j;
+		public int k;
+		public int l;
+	}
+	
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_amd64_pass_return_struct1")]
+	public static extern Amd64Struct1 mono_test_marshal_amd64_pass_return_struct1 (Amd64Struct1 s);
+
+	public static int test_0_amd64_struct1 () {
+		Amd64Struct1 s = new Amd64Struct1 ();
+		s.i = 5;
+		s.j = -5;
+		s.k = 0xffffff;
+		s.l = 0xfffffff;
+
+		Amd64Struct1 s2 = mono_test_marshal_amd64_pass_return_struct1 (s);
+
+		return ((s2.i == 6) && (s2.j == -4) && (s2.k == 0x1000000) && (s2.l == 0x10000000)) ? 0 : 1;
+	}
+
+	/* TEST 2: 8 byte long INTEGER struct */
+
+	[StructLayout(LayoutKind.Sequential)]
+	public struct Amd64Struct2 {
+		public int i;
+		public int j;
+	}
+	
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_amd64_pass_return_struct2")]
+	public static extern Amd64Struct2 mono_test_marshal_amd64_pass_return_struct2 (Amd64Struct2 s);
+
+	public static int test_0_amd64_struct2 () {
+		Amd64Struct2 s = new Amd64Struct2 ();
+		s.i = 5;
+		s.j = -5;
+
+		Amd64Struct2 s2 = mono_test_marshal_amd64_pass_return_struct2 (s);
+
+		return ((s2.i == 6) && (s2.j == -4)) ? 0 : 1;
+	}
+
+	/* TEST 3: 4 byte long INTEGER struct */
+
+	[StructLayout(LayoutKind.Sequential)]
+	public struct Amd64Struct3 {
+		public int i;
+	}
+	
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_amd64_pass_return_struct3")]
+	public static extern Amd64Struct3 mono_test_marshal_amd64_pass_return_struct3 (Amd64Struct3 s);
+
+	public static int test_0_amd64_struct3 () {
+		Amd64Struct3 s = new Amd64Struct3 ();
+		s.i = -5;
+
+		Amd64Struct3 s2 = mono_test_marshal_amd64_pass_return_struct3 (s);
+
+		return (s2.i == -4) ? 0 : 1;
+	}
+
+	/* Test 4: 16 byte long FLOAT struct */
+
+	[StructLayout(LayoutKind.Sequential)]
+	public struct Amd64Struct4 {
+		public double d1, d2;
+	}
+	
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_amd64_pass_return_struct4")]
+	public static extern Amd64Struct4 mono_test_marshal_amd64_pass_return_struct4 (Amd64Struct4 s);
+
+	public static int test_0_amd64_struct4 () {
+		Amd64Struct4 s = new Amd64Struct4 ();
+		s.d1 = 5.0;
+		s.d2 = -5.0;
+
+		Amd64Struct4 s2 = mono_test_marshal_amd64_pass_return_struct4 (s);
+
+		return (s2.d1 == 6.0 && s2.d2 == -4.0) ? 0 : 1;
+	}
 }

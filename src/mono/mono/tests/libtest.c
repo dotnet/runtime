@@ -1124,5 +1124,63 @@ mono_test_asany (void *ptr, int what)
 	return 1;
 }
 
+/*
+ * AMD64 marshalling tests.
+ */
 
+typedef struct amd64_struct1 {
+	int i;
+	int j;
+	int k;
+	int l;
+} amd64_struct1;
 
+amd64_struct1
+mono_test_marshal_amd64_pass_return_struct1 (amd64_struct1 s)
+{
+	s.i ++;
+	s.j ++;
+	s.k ++;
+	s.l ++;
+
+	return s;
+}
+
+typedef struct amd64_struct2 {
+	int i;
+	int j;
+} amd64_struct2;
+
+amd64_struct2
+mono_test_marshal_amd64_pass_return_struct2 (amd64_struct2 s)
+{
+	s.i ++;
+	s.j ++;
+
+	return s;
+}
+
+typedef struct amd64_struct3 {
+	int i;
+} amd64_struct3;
+
+amd64_struct3
+mono_test_marshal_amd64_pass_return_struct3 (amd64_struct3 s)
+{
+	s.i ++;
+
+	return s;
+}
+
+typedef struct amd64_struct4 {
+	double d1, d2;
+} amd64_struct4;
+
+amd64_struct4
+mono_test_marshal_amd64_pass_return_struct4 (amd64_struct4 s)
+{
+	s.d1 ++;
+	s.d2 ++;
+
+	return s;
+}
