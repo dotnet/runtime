@@ -281,12 +281,13 @@ mono_disassemble_code (guint8 *code, int size)
 	if (!(ofd = fopen ("/tmp/test.s", "w")))
 		g_assert_not_reached ();
 
-	for (i = 0; i < size; ++i)
+	for (i = 0; i < size; ++i) 
 		fprintf (ofd, ".byte %d\n", (unsigned int) code [i]);
 
 	fclose (ofd);
 
 	system ("as /tmp/test.s -o /tmp/test.o;objdump -d /tmp/test.o");
+
 }
 
 static void
@@ -393,11 +394,11 @@ mono_compile_method (MonoMethod *method)
 		locals_offsets = alloca (sizeof (gint) * header->num_locals);
 
 		for (i = 0; i < header->num_locals; ++i) {
-			locals_offsets [i] = local_offset;
 			size = mono_type_size (header->locals [i], &align);
 			local_offset += align - 1;
 			local_offset &= ~(align - 1);
 			local_offset += size;
+			locals_offsets [i] = - local_offset;
 		}
 	}
 	
@@ -473,10 +474,10 @@ mono_compile_method (MonoMethod *method)
 				t1->data.p = cm;
 				t2 = ctree_new (MB_TERM_STLOC, csig->ret->type, t1, NULL);
 				size = mono_type_size (csig->ret, &align);
-				t2->data.i = local_offset;
 				local_offset += align - 1;
 				local_offset &= ~(align - 1);
 				local_offset += size;
+				t2->data.i = - local_offset;
 				t2->cli_addr = fa;
 				ADD_TREE (t2);
 				t1 = ctree_new_leaf (MB_TERM_LDLOC, t2->type);
@@ -528,7 +529,7 @@ mono_compile_method (MonoMethod *method)
 		case CEE_LDC_R8: 
 			++ip;
 			t1 = ctree_new_leaf (MB_TERM_CONST_R8, MONO_TYPE_R8);
-			t1->data.p = ip;
+			(const void *) t1->data.p = ip;
 			t1->cli_addr = cli_addr;
 			ip += 8;
 			PUSH_TREE (t1);		
