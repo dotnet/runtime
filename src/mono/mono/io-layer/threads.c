@@ -290,6 +290,10 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
  */
 void ExitThread(guint32 exitcode)
 {
+	/* No thread created yet.  */
+	if (thread_hash == NULL)
+		exit(exitcode);
+
 	_wapi_timed_thread_exit(exitcode);
 }
 
