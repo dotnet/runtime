@@ -742,6 +742,8 @@ mono_class_layout_fields (MonoClass *class)
 				real_size = field->offset + size;
 				if (MONO_TYPE_IS_REFERENCE (field->type) || IS_GC_REFERENCE (field->type))
 					class->has_references = TRUE;
+				else if (field->type->type == MONO_TYPE_VALUETYPE && field->type->data.klass->has_references)
+					class->has_references = TRUE;
 			}
 
 			class->instance_size = MAX (real_size, class->instance_size);
@@ -769,6 +771,8 @@ mono_class_layout_fields (MonoClass *class)
 				continue;
 
 			if (MONO_TYPE_IS_REFERENCE (field->type) || IS_GC_REFERENCE (field->type))
+				class->has_references = TRUE;
+			else if (field->type->type == MONO_TYPE_VALUETYPE && field->type->data.klass->has_references)
 				class->has_references = TRUE;
 			size = mono_type_size (field->type, &align);
 			
@@ -804,6 +808,8 @@ mono_class_layout_fields (MonoClass *class)
 			continue;
 
 		if (MONO_TYPE_IS_REFERENCE (field->type) || IS_GC_REFERENCE (field->type))
+			class->has_static_refs = TRUE;
+		else if (field->type->type == MONO_TYPE_VALUETYPE && field->type->data.klass->has_references)
 			class->has_static_refs = TRUE;
 		size = mono_type_size (field->type, &align);
 		field->offset = class->class_size;

@@ -401,6 +401,9 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 void
 mono_delegate_ctor	    (MonoObject *this_obj, MonoObject *target, gpointer addr);
 
+void*
+mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *pass_size_in_words);
+
 void
 mono_runtime_free_method    (MonoDomain *domain, MonoMethod *method);
 
