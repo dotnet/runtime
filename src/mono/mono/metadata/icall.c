@@ -6100,6 +6100,7 @@ static const IcallEntry marshal_icalls [] = {
 	{"DestroyStructure", ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure},
 	{"FreeCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem},
 	{"FreeHGlobal", ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal},
+	{"GetFunctionPointerForDelegateInternal", mono_delegate_to_ftnptr},
 	{"GetLastWin32Error", ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error},
 	{"OffsetOf", ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf},
 	{"Prelink", ves_icall_System_Runtime_InteropServices_Marshal_Prelink},
