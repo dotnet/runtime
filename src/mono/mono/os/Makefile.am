@@ -14,6 +14,7 @@ SUBDIRS = $(DIR)
 
 libmonoos_la_SOURCES = \
 	util.h
+	gc_wrapper.h
 
 libmonoos_la_LIBADD = $(DIR)/libmonoos.la
 

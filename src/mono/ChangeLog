@@ -1,5 +1,7 @@
 2002-10-01  Duncan Mak  <duncan@ximian.com>
 
+	* mono/os/Makefile.am: Add gc_wrapper.h.
+
 	* runtime/Makefile.am: Fix the path for monoresgen.exe.
 
 2002-09-27  Dick Porter  <dick@ximian.com>
