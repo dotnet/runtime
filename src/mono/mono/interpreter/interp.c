@@ -258,7 +258,7 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 			result->type = VAL_OBJ;
 			break;
 		default:
-			result->type = VAL_VALUETA;
+			result->type = VAL_MP;
 			break;
 		}
 		result->data.p = *(gpointer*)data;
@@ -559,7 +559,7 @@ ves_array_element_address (MonoInvocation *frame)
 	esize = mono_array_element_size (ac);
 	ea = mono_array_addr_with_size (ao, esize, pos);
 
-	frame->retval->type = VAL_TP;
+	frame->retval->type = VAL_MP;
 	frame->retval->data.p = ea;
 }
 
@@ -1116,15 +1116,6 @@ verify_method (MonoMethod *m)
 	((guint32)(a) == 0) || ((guint32)(b) == 0) ? 0 : \
 	(guint32)(b) > ((MYGUINT32_MAX) / (guint32)(a))
 
-#define CHECK_MUL_OVERFLOW(a,b) \
-	((gint32)(a) == 0) || ((gint32)(b) == 0) ? 0 : \
-	(((gint32)(a) > 0) && ((gint32)(b) == -1)) ? FALSE : \
-	(((gint32)(a) < 0) && ((gint32)(b) == -1)) ? (a == - MYGINT32_MAX) : \
-	(((gint32)(a) > 0) && ((gint32)(b) > 0)) ? (gint32)(a) > ((MYGINT32_MAX) / (gint32)(b)) : \
-	(((gint32)(a) > 0) && ((gint32)(b) < 0)) ? (gint32)(a) > ((MYGINT32_MIN) / (gint32)(b)) : \
-	(((gint32)(a) < 0) && ((gint32)(b) > 0)) ? (gint32)(a) < ((MYGINT32_MIN) / (gint32)(b)) : \
-	(gint32)(a) < ((MYGINT32_MAX) / (gint32)(b))
-
 #define CHECK_MUL_OVERFLOW64(a,b) \
 	((gint64)(a) == 0) || ((gint64)(b) == 0) ? 0 : \
 	(((gint64)(a) > 0) && ((gint64)(b) == -1)) ? FALSE : \
@@ -1491,10 +1482,7 @@ ves_exec_method (MonoInvocation *frame)
 			sp->data.vt.klass = c;
 			sp->data.vt.vt = ARG_POS (*ip);
 
-			if (c->valuetype)
-				sp->type = VAL_VALUETA;
-			else
-				sp->type = VAL_TP;
+			sp->type = VAL_MP;
 
 			++sp;
 			++ip;
@@ -1524,10 +1512,7 @@ ves_exec_method (MonoInvocation *frame)
 			sp->data.vt.klass = c;
 			sp->data.p = LOCAL_POS (*ip);
 
-			if (c->valuetype)
-				sp->type = VAL_VALUETA;
-			else 
-				sp->type = VAL_TP;
+			sp->type = VAL_MP;
 
 			++sp;
 			++ip;
@@ -1708,7 +1693,7 @@ ves_exec_method (MonoInvocation *frame)
 				--sp;
 				/*
 				 * It may also be a TP from LD(S)FLDA
-				 * g_assert (sp->type == VAL_OBJ || sp->type == VAL_VALUETA);
+				 * g_assert (sp->type == VAL_OBJ || sp->type == VAL_MP);
 				 */
 				if (sp->type == VAL_OBJ && child_frame.method &&
 				    child_frame.method->klass->valuetype) /* unbox it */
@@ -2876,7 +2861,7 @@ array_constructed:
 			}
 
 			if (load_addr) {
-				sp [-1].type = VAL_TP;
+				sp [-1].type = VAL_MP;
 				sp [-1].data.p = addr;
 				sp [-1].data.vt.klass = mono_class_from_mono_type (field->type);
 			} else {
@@ -2960,7 +2945,7 @@ array_constructed:
 				addr = mono_threads_get_static_data (GPOINTER_TO_UINT (addr));
 
 			if (load_addr) {
-				sp->type = VAL_TP;
+				sp->type = VAL_MP;
 				sp->data.p = addr;
 				sp->data.vt.klass = mono_class_from_mono_type (field->type);
 			} else {
@@ -3797,7 +3782,7 @@ array_constructed:
 			case CEE_MONO_VTADDR: {
 				++ip;
 
-				sp->type = VAL_VALUETA;
+				sp->type = VAL_MP;
 				/* do nothing? */
 				break;
 			}
@@ -4068,10 +4053,7 @@ array_constructed:
 				sp->data.vt.klass = c;
 				sp->data.vt.vt = ARG_POS (anum);
 
-				if (c->valuetype)
-					sp->type = VAL_VALUETA;
-				else
-					sp->type = VAL_TP;
+				sp->type = VAL_MP;
 
 				++sp;
 				break;
@@ -4109,10 +4091,7 @@ array_constructed:
 				sp->data.vt.vt = LOCAL_POS (loc_pos);
 				sp->data.vt.klass = c;
 
-				if (c->valuetype) 
-					sp->type = VAL_VALUETA;
-				else
-					sp->type = VAL_TP;
+				sp->type = VAL_MP;
 
 				++sp;
 				break;
@@ -4133,7 +4112,7 @@ array_constructed:
 					THROW_EX (mono_get_exception_execution_engine (NULL), ip - 1);
 				++ip;
 				sp->data.p = alloca (sp->data.i);
-				sp->type = VAL_TP;
+				sp->type = VAL_MP;
 				sp++;
 				break;
 			case CEE_UNUSED57: ves_abort(); break;
@@ -4152,16 +4131,17 @@ array_constructed:
 				break;
 			case CEE_INITOBJ: {
 				guint32 token;
+				MonoClass *class;
+
 				++ip;
 				token = read32 (ip);
 				ip += 4;
-				/*
-				 * we ignore the value of token (I think we can as unspecified
-				 * behavior described in Partition II, 3.5).
-				 */
+
+				class = mono_class_get (image, token);
+
 				--sp;
-				g_assert (sp->type == VAL_VALUETA || sp->type == VAL_TP);
-				memset (sp->data.vt.vt, 0, mono_class_value_size (sp->data.vt.klass, NULL));
+				g_assert (sp->type == VAL_TP || sp->type == VAL_MP);
+				memset (sp->data.vt.vt, 0, mono_class_value_size (class, NULL));
 				break;
 			}
 			case CEE_CONSTRAINED_: {

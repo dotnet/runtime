@@ -14,7 +14,6 @@ enum {
 	VAL_MP      = 1 + VAL_POINTER,
 	VAL_TP      = 2 + VAL_POINTER,
 	VAL_OBJ     = 3 + VAL_POINTER,
-	VAL_VALUETA = 8
 };
 
 #if SIZEOF_VOID_P == 4
@@ -58,6 +57,7 @@ struct _MonoInvocation {
 	char           *args;
 	stackval       *stack_args; /* parent */
 	stackval       *stack;
+	stackval       *sp; /* For GC stack marking */
 	/* exception info */
 	int             invoke_trap;
 	const unsigned char  *ip;
