@@ -14,7 +14,6 @@ libmetadata_a_SOURCES = \
 	assembly.c	\
 	image.c		\
 	metadata.c	\
-	mono-endian.c	\
 	private.h	\
 	rawbuffer.c	\
 	reflection.c	\

@@ -12,6 +12,13 @@
 #include <string.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+#include <sys/mman.h>
+#include <limits.h>    /* for PAGESIZE */
+#ifndef PAGESIZE
+#define PAGESIZE 4096
+#endif
+#endif
 
 /**
  * mono_object_allocate:
@@ -342,7 +349,7 @@ mono_ldstr (MonoImage *image, guint32 index)
 {
 	const char *str, *sig;
 	MonoString *o;
-	guint len;
+	size_t len2;
 	
 	if (!ldstr_table)
 		ldstr_table = g_hash_table_new ((GHashFunc)ldstr_hash, (GCompareFunc)ldstr_equal);
@@ -352,8 +359,27 @@ mono_ldstr (MonoImage *image, guint32 index)
 	if ((o = g_hash_table_lookup (ldstr_table, str)))
 		return o;
 	
-	len = mono_metadata_decode_blob_size (str, &str);
-	o = mono_string_new_utf16 ((guint16*)str, len >> 1);
+	len2 = mono_metadata_decode_blob_size (str, &str);
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+#define SWAP16(x) (x) = GUINT16_FROM_LE ((x))
+	{
+		gint i;
+		guint16 *s;
+
+		/* FIXME: it will be better to just add WRITE and after get it to previous state */
+		mprotect ((void *) ((int) str & ~(PAGESIZE - 1)), len2 + ((int) str & (PAGESIZE - 1)),
+				    PROT_READ | PROT_WRITE | PROT_EXEC);
+		len2 >>= 1;
+		for (i = 0, s = (guint16 *) str; i < len2; i++, s++) {
+			*s = ((*s & 0xff) << 8) | (*s >> 8);
+		}
+	}
+#undef SWAP16
+#else
+		len2 >>= 1;
+#endif
+
+	o = mono_string_new_utf16 ((guint16*)str, len2);
 	g_hash_table_insert (ldstr_table, (gpointer)sig, o);
 
 	return o;
