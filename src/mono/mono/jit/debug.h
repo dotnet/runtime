@@ -6,7 +6,6 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/debug-mono-symfile.h>
 #include <mono/metadata/loader.h>
-#include <mono/jit/jit.h>
 
 typedef struct _MonoDebugHandle			MonoDebugHandle;
 typedef struct _MonoDebuggerSymbolFileTable	MonoDebuggerSymbolFileTable;
@@ -68,8 +67,6 @@ extern MonoDebugFormat mono_debug_format;
 MonoDebugHandle* mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **args);
 
 void           mono_debug_cleanup (void);
-
-void           mono_debug_add_method (MonoFlowGraph *cfg);
 
 void           mono_debug_add_wrapper (MonoMethod *method, MonoMethod *wrapper_method);
 

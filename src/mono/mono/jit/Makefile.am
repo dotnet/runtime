@@ -33,6 +33,8 @@ jitsources =		\
 	debug.c			\
 	debug-stabs.c		\
 	debug-dwarf2.c		\
+	debug-jit.h		\
+	debug-jit.c		\
 	jit.c			\
 	trampoline.c		\
 	exception.c		\

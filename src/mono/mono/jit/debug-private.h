@@ -77,10 +77,26 @@ struct _MonoDebugHandle {
 	FILE *f;
 };
 
-guint32        mono_debug_get_type                   (MonoDebugHandle* debug, MonoClass *klass);
+guint32               mono_debug_get_type                   (MonoDebugHandle* debug, MonoClass *klass);
 
-void           mono_debug_write_stabs                (MonoDebugHandle *debug);
+void                  mono_debug_write_stabs                (MonoDebugHandle *debug);
 
-void           mono_debug_write_dwarf2               (MonoDebugHandle *debug);
+void                  mono_debug_write_dwarf2               (MonoDebugHandle *debug);
+
+void                  mono_debug_codegen_breakpoint         (guint8 **buf);
+
+void                  mono_debug_codegen_ret                (guint8 **buf);
+
+MonoDebugMethodInfo *_mono_debug_lookup_method              (MonoMethod *method);
+
+gint32               _mono_debug_address_from_il_offset     (MonoDebugMethodInfo *minfo, guint32 il_offset);
+
+AssemblyDebugInfo   *_mono_debug_get_image                  (MonoDebugHandle* debug, MonoImage *image);
+
+void                 _mono_debug_generate_line_number       (MonoDebugMethodInfo *minfo, guint32 address,
+							     guint32 offset, int debug);
+
+extern MonoDebugHandle *mono_debug_handle;
+extern gboolean mono_debug_initialized;
 
 #endif /* __MONO_JIT_DEBUG_PRIVATE_H__ */
