@@ -2646,6 +2646,7 @@ mono_image_get_array_token (MonoDynamicImage *assembly, MonoReflectionArrayMetho
 	nparams = mono_array_length (m->parameters);
 	sig = g_malloc0 (sizeof (MonoMethodSignature) + sizeof (MonoType*) * nparams);
 	sig->hasthis = 1;
+	sig->sentinelpos = -1;
 	sig->call_convention = reflection_cc_to_file (m->call_conv);
 	sig->param_count = nparams;
 	sig->ret = m->ret? m->ret->type: &mono_defaults.void_class->byval_arg;

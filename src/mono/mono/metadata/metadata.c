@@ -1324,6 +1324,7 @@ mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
 	/* later we want to allocate signatures with mempools */
 	sig = g_malloc0 (sizeof (MonoMethodSignature) + ((gint32)nparams - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
 	sig->param_count = nparams;
+	sig->sentinelpos = -1;
 
 	return sig;
 }
