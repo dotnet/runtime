@@ -2508,9 +2508,11 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 		if (strcmp (cmethod->name, "get_Rank") == 0) {
  			MONO_INST_NEW (cfg, ins, OP_ARRAY_RANK);
 			ins->inst_i0 = args [0];
+			return ins;
 		} else if (strcmp (cmethod->name, "get_Length") == 0) {
  			MONO_INST_NEW (cfg, ins, CEE_LDLEN);
 			ins->inst_i0 = args [0];
+			return ins;
 		} else
 			return NULL;
 	} else if (cmethod->klass == runtime_helpers_class) {
