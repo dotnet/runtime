@@ -1,3 +1,7 @@
+2004-06-30  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in: Fix trunc check + add SPARC64 defines.
+
 2004-06-29  Jackson Harper  <jackson@ximian.com>
 
 	* man/gacutil.1: Update man with new command line options.
