@@ -2990,7 +2990,8 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "ConstructorBuilder")) {
 				ctor = (MonoReflectionCtorBuilder *)iltoken->member;
 				idx = ctor->table_idx;
-			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoMethod")) {
+			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoMethod") || 
+					   !strcmp (iltoken->member->vtable->klass->name, "MonoCMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
 				idx = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->method_to_table_idx, m));
 			} else {
