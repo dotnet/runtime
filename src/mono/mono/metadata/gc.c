@@ -191,6 +191,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 
 	res = WaitForSingleObject (done_event, timeout);
 
+	CloseHandle (done_event);
 	//printf ("WAIT RES: %d.\n", res);
 	if (res == WAIT_TIMEOUT)
 		return FALSE;

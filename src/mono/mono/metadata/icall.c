@@ -4927,7 +4927,7 @@ static const IcallEntry socket_icalls [] = {
 };
 
 static const IcallEntry socketex_icalls [] = {
-	{"SocketException::WSAGetLastError_internal", ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal}
+	{"WSAGetLastError_internal", ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal}
 };
 
 static const IcallEntry object_icalls [] = {
