@@ -734,5 +734,12 @@ public class Tests {
 
 		return 0;
 	}
+
+	[DllImport ("libtest", EntryPoint="mono_test_stdcall_name_mangling", CallingConvention=CallingConvention.StdCall)]
+	public static extern int mono_test_stdcall_name_mangling (int a, int b, int c);
+
+	static int test_0_stdcall_name_mangling () {
+		return mono_test_stdcall_name_mangling (0, 1, 2) == 3 ? 0 : 1;
+	}
 }
 
