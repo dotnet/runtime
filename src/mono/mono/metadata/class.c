@@ -430,10 +430,12 @@ mono_class_init (MonoClass *class)
 			for (l = 0; l < ic->method.count; l++) {
 				MonoMethod *im = tmp_vtable [io + l];
 
-				if (im && !(im->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
+				if (im) {
 					im->slot = io + l;
+					if (!(im->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
 					//printf ("  ASLOT%d %s.%s:%s\n", io + l, ic->name_space, ic->name, im->name);
-					vtable [io + l] = arch_create_jit_trampoline (im);
+						vtable [io + l] = arch_create_jit_trampoline (im);
+					}
 				}
 			}
 		}
@@ -488,7 +490,7 @@ mono_class_init (MonoClass *class)
 	}
 	*/
 
-	//printf ("METAEND %s.%s\n", class->name_space, class->name);
+	/* printf ("METAEND %s.%s\n", class->name_space, class->name); */
 }
 
 /*
