@@ -7,9 +7,7 @@ if PLATFORM_WIN32
 export HOST_CC
 # The mingw math.h has "extern inline" functions that dont appear in libs, so
 # optimisation is required to actually inline them
-mint_CFLAGS = $(CFLAGS) -O
-else
-mint_CFLAGS = $(CFLAGS)
+AM_CFLAGS = -O
 endif
 
 bin_PROGRAMS = mint

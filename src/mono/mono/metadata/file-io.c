@@ -179,63 +179,96 @@ static void convert_win32_file_attribute_data (const WIN32_FILE_ATTRIBUTE_DATA *
 
 /* System.IO.MonoIO internal calls */
 
-gint32 
-ves_icall_System_IO_MonoIO_GetLastError ()
+MonoBoolean
+ves_icall_System_IO_MonoIO_CreateDirectory (MonoString *path, gint32 *error)
 {
-	return GetLastError ();
+	gboolean ret;
+	
+	*error=ERROR_SUCCESS;
+	
+	ret=CreateDirectory (mono_string_chars (path), NULL);
+	if(ret==FALSE) {
+		*error=GetLastError ();
+	}
+	
+	return(ret);
 }
 
-gboolean 
-ves_icall_System_IO_MonoIO_CreateDirectory (MonoString *path)
+MonoBoolean
+ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path, gint32 *error)
 {
-	return CreateDirectory (mono_string_chars (path), NULL);
-}
-
-gboolean 
-ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path)
-{
-	return RemoveDirectory (mono_string_chars (path));
+	gboolean ret;
+	
+	*error=ERROR_SUCCESS;
+	
+	ret=RemoveDirectory (mono_string_chars (path));
+	if(ret==FALSE) {
+		*error=GetLastError ();
+	}
+	
+	return(ret);
 }
 
 HANDLE 
-ves_icall_System_IO_MonoIO_FindFirstFile (MonoString *path, MonoIOStat *stat)
+ves_icall_System_IO_MonoIO_FindFirstFile (MonoString *path, MonoIOStat *stat,
+					  gint32 *error)
 {
 	WIN32_FIND_DATA data;
 	HANDLE result;
 
+	*error=ERROR_SUCCESS;
+	
 	result = FindFirstFile (mono_string_chars (path), &data);
 
 	/* note: WIN32_FIND_DATA is an extension of WIN32_FILE_ATTRIBUTE_DATA */
 
-	if (result != INVALID_HANDLE_VALUE)
+	if (result != INVALID_HANDLE_VALUE) {
 		convert_win32_file_attribute_data ((const WIN32_FILE_ATTRIBUTE_DATA *)&data,
 						   &data.cFileName [0], stat);
+	} else {
+		*error=GetLastError ();
+	}
 
 	return result;
 }
 
-gboolean 
-ves_icall_System_IO_MonoIO_FindNextFile (HANDLE find, MonoIOStat *stat)
+MonoBoolean
+ves_icall_System_IO_MonoIO_FindNextFile (HANDLE find, MonoIOStat *stat,
+					 gint32 *error)
 {
 	WIN32_FIND_DATA data;
 	gboolean result;
 
+	*error=ERROR_SUCCESS;
+	
 	result = FindNextFile (find, &data);
-	if (result)
+	if (result) {
 		convert_win32_file_attribute_data ((const WIN32_FILE_ATTRIBUTE_DATA *)&data,
 						   &data.cFileName [0], stat);
+	} else {
+		*error=GetLastError ();
+	}
 
 	return result;
 }
 
-gboolean 
-ves_icall_System_IO_MonoIO_FindClose (HANDLE find)
+MonoBoolean
+ves_icall_System_IO_MonoIO_FindClose (HANDLE find, gint32 *error)
 {
-	return FindClose (find);
+	gboolean ret;
+	
+	*error=ERROR_SUCCESS;
+	
+	ret=FindClose (find);
+	if(ret==FALSE) {
+		*error=GetLastError ();
+	}
+	
+	return(ret);
 }
 
 MonoString *
-ves_icall_System_IO_MonoIO_GetCurrentDirectory ()
+ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *error)
 {
 	MonoString *result;
 	gunichar2 *buf;
@@ -244,187 +277,352 @@ ves_icall_System_IO_MonoIO_GetCurrentDirectory ()
 	len = MAX_PATH + 1;
 	buf = g_new (gunichar2, len);
 	
+	*error=ERROR_SUCCESS;
 	result = NULL;
+
 	if (GetCurrentDirectory (len, buf) > 0) {
 		len = 0;
 		while (buf [len])
 			++ len;
 
 		result = mono_string_new_utf16 (mono_domain_get (), buf, len);
+	} else {
+		*error=GetLastError ();
 	}
 
 	g_free (buf);
 	return result;
 }
 
-gboolean 
-ves_icall_System_IO_MonoIO_SetCurrentDirectory (MonoString *path)
+MonoBoolean
+ves_icall_System_IO_MonoIO_SetCurrentDirectory (MonoString *path,
+						gint32 *error)
 {
-	return SetCurrentDirectory (mono_string_chars (path));
+	gboolean ret;
+	
+	*error=ERROR_SUCCESS;
+	
+	ret=SetCurrentDirectory (mono_string_chars (path));
+	if(ret==FALSE) {
+		*error=GetLastError ();
+	}
+	
+	return(ret);
 }
 
-gboolean 
-ves_icall_System_IO_MonoIO_MoveFile (MonoString *path, MonoString *dest)
+MonoBoolean
+ves_icall_System_IO_MonoIO_MoveFile (MonoString *path, MonoString *dest,
+				     gint32 *error)
 {
-	return MoveFile (mono_string_chars (path), mono_string_chars (dest));
+	gboolean ret;
+	
+	*error=ERROR_SUCCESS;
+	
+	ret=MoveFile (mono_string_chars (path), mono_string_chars (dest));
+	if(ret==FALSE) {
+		*error=GetLastError ();
+	}
+	
+	return(ret);
 }
 
-gboolean 
-ves_icall_System_IO_MonoIO_CopyFile (MonoString *path, MonoString *dest, gboolean overwrite)
+MonoBoolean
+ves_icall_System_IO_MonoIO_CopyFile (MonoString *path, MonoString *dest,
+				     MonoBoolean overwrite, gint32 *error)
 {
-	return CopyFile (mono_string_chars (path), mono_string_chars (dest), !overwrite);
+	gboolean ret;
+	
+	*error=ERROR_SUCCESS;
+	
+	ret=CopyFile (mono_string_chars (path), mono_string_chars (dest), !overwrite);
+	if(ret==FALSE) {
+		*error=GetLastError ();
+	}
+	
+	return(ret);
 }
 
-gboolean 
-ves_icall_System_IO_MonoIO_DeleteFile (MonoString *path)
+MonoBoolean
+ves_icall_System_IO_MonoIO_DeleteFile (MonoString *path, gint32 *error)
 {
-	return DeleteFile (mono_string_chars (path));
+	gboolean ret;
+	
+	*error=ERROR_SUCCESS;
+	
+	ret=DeleteFile (mono_string_chars (path));
+	if(ret==FALSE) {
+		*error=GetLastError ();
+	}
+	
+	return(ret);
 }
 
 gint32 
-ves_icall_System_IO_MonoIO_GetFileAttributes (MonoString *path)
+ves_icall_System_IO_MonoIO_GetFileAttributes (MonoString *path, gint32 *error)
 {
-	return GetFileAttributes (mono_string_chars (path));
+	gint32 ret;
+	
+	*error=ERROR_SUCCESS;
+	
+	ret=GetFileAttributes (mono_string_chars (path));
+	if(ret==INVALID_FILE_ATTRIBUTES) {
+		*error=GetLastError ();
+	}
+	
+	return(ret);
 }
 
-gboolean
-ves_icall_System_IO_MonoIO_SetFileAttributes (MonoString *path, gint32 attrs)
+MonoBoolean
+ves_icall_System_IO_MonoIO_SetFileAttributes (MonoString *path, gint32 attrs,
+					      gint32 *error)
 {
-	return SetFileAttributes (mono_string_chars (path), attrs);
+	gboolean ret;
+	
+	*error=ERROR_SUCCESS;
+	
+	ret=SetFileAttributes (mono_string_chars (path), attrs);
+	if(ret==FALSE) {
+		*error=GetLastError ();
+	}
+	
+	return(ret);
 }
 
 gint32
-ves_icall_System_IO_MonoIO_GetFileType (HANDLE handle)
+ves_icall_System_IO_MonoIO_GetFileType (HANDLE handle, gint32 *error)
 {
-	return(GetFileType (handle));
+	gboolean ret;
+	
+	*error=ERROR_SUCCESS;
+	
+	ret=GetFileType (handle);
+	if(ret==FILE_TYPE_UNKNOWN) {
+		/* Not necessarily an error, but the caller will have
+		 * to decide based on the error value.
+		 */
+		*error=GetLastError ();
+	}
+	
+	return(ret);
 }
 
-gboolean 
-ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat)
+MonoBoolean
+ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat,
+					gint32 *error)
 {
 	gboolean result;
 	WIN32_FILE_ATTRIBUTE_DATA data;
 
+	*error=ERROR_SUCCESS;
+	
 	result = GetFileAttributesEx (mono_string_chars (path), GetFileExInfoStandard, &data);
 
-	if (result)
-		convert_win32_file_attribute_data (&data, mono_string_chars (path), stat);
+	if (result) {
+		convert_win32_file_attribute_data (&data,
+						   mono_string_chars (path),
+						   stat);
+	} else {
+		*error=GetLastError ();
+	}
 
 	return result;
 }
 
 HANDLE 
-ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode, gint32 access_mode, gint32 share)
+ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
+				 gint32 access_mode, gint32 share,
+				 gint32 *error)
 {
-	return CreateFile (mono_string_chars (filename), convert_access (access_mode), convert_share (share),
-			     NULL, convert_mode (mode), FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE ret;
+	
+	*error=ERROR_SUCCESS;
+	
+	ret=CreateFile (mono_string_chars (filename),
+			convert_access (access_mode), convert_share (share),
+			NULL, convert_mode (mode), FILE_ATTRIBUTE_NORMAL,
+			NULL);
+	if(ret==INVALID_HANDLE_VALUE) {
+		*error=GetLastError ();
+	}
+	
+	return(ret);
 }
 
-gboolean 
-ves_icall_System_IO_MonoIO_Close (HANDLE handle)
+MonoBoolean
+ves_icall_System_IO_MonoIO_Close (HANDLE handle, gint32 *error)
 {
-	return CloseHandle (handle);
+	gboolean ret;
+	
+	*error=ERROR_SUCCESS;
+	
+	ret=CloseHandle (handle);
+	if(ret==FALSE) {
+		*error=GetLastError ();
+	}
+	
+	return(ret);
 }
 
 gint32 
-ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArray *dest, gint32 dest_offset, gint32 count)
+ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArray *dest,
+				 gint32 dest_offset, gint32 count,
+				 gint32 *error)
 {
 	guchar *buffer;
 	gboolean result;
 	guint32 n;
 
+	*error=ERROR_SUCCESS;
+	
 	if (dest_offset + count > mono_array_length (dest))
 		return 0;
 
 	buffer = mono_array_addr (dest, guchar, dest_offset);
 	result = ReadFile (handle, buffer, count, &n, NULL);
 
-	if (!result)
+	if (!result) {
+		*error=GetLastError ();
 		return -1;
+	}
 
 	return (gint32)n;
 }
 
 gint32 
-ves_icall_System_IO_MonoIO_Write (HANDLE handle, MonoArray *src, gint32 src_offset, gint32 count)
+ves_icall_System_IO_MonoIO_Write (HANDLE handle, MonoArray *src,
+				  gint32 src_offset, gint32 count,
+				  gint32 *error)
 {
 	guchar *buffer;
 	gboolean result;
 	guint32 n;
 
+	*error=ERROR_SUCCESS;
+	
 	if (src_offset + count > mono_array_length (src))
 		return 0;
 	
 	buffer = mono_array_addr (src, guchar, src_offset);
 	result = WriteFile (handle, buffer, count, &n, NULL);
 
-	if (!result)
+	if (!result) {
+		*error=GetLastError ();
 		return -1;
+	}
 
 	return (gint32)n;
 }
 
 gint64 
-ves_icall_System_IO_MonoIO_Seek (HANDLE handle, gint64 offset, gint32 origin)
+ves_icall_System_IO_MonoIO_Seek (HANDLE handle, gint64 offset, gint32 origin,
+				 gint32 *error)
 {
 	guint32 offset_hi;
 
+	*error=ERROR_SUCCESS;
+	
 	offset_hi = offset >> 32;
 	offset = SetFilePointer (handle, offset & 0xFFFFFFFF, &offset_hi,
 				 convert_seekorigin (origin));
 
+	if(offset==INVALID_SET_FILE_POINTER) {
+		*error=GetLastError ();
+	}
+	
 	return offset | ((gint64)offset_hi << 32);
 }
 
-gboolean 
-ves_icall_System_IO_MonoIO_Flush (HANDLE handle)
+MonoBoolean
+ves_icall_System_IO_MonoIO_Flush (HANDLE handle, gint32 *error)
 {
-	return FlushFileBuffers (handle);
+	gboolean ret;
+	
+	*error=ERROR_SUCCESS;
+	
+	ret=FlushFileBuffers (handle);
+	if(ret==FALSE) {
+		*error=GetLastError ();
+	}
+	
+	return(ret);
 }
 
 gint64 
-ves_icall_System_IO_MonoIO_GetLength (HANDLE handle)
+ves_icall_System_IO_MonoIO_GetLength (HANDLE handle, gint32 *error)
 {
 	gint64 length;
 	guint32 length_hi;
 
+	*error=ERROR_SUCCESS;
+	
 	length = GetFileSize (handle, &length_hi);
+	if(length==INVALID_FILE_SIZE) {
+		*error=GetLastError ();
+	}
+	
 	return length | ((gint64)length_hi << 32);
 }
 
-gboolean 
-ves_icall_System_IO_MonoIO_SetLength (HANDLE handle, gint64 length)
+MonoBoolean
+ves_icall_System_IO_MonoIO_SetLength (HANDLE handle, gint64 length,
+				      gint32 *error)
 {
-	gint64 offset;
+	gint64 offset, offset_set;
 	gint32 offset_hi;
 	gint32 length_hi;
 	gboolean result;
 
+	*error=ERROR_SUCCESS;
+	
 	/* save file pointer */
 
 	offset_hi = 0;
 	offset = SetFilePointer (handle, 0, &offset_hi, FILE_CURRENT);
+	if(offset==INVALID_SET_FILE_POINTER) {
+		*error=GetLastError ();
+		return(FALSE);
+	}
 
 	/* extend or truncate */
 
 	length_hi = length >> 32;
-	SetFilePointer (handle, length & 0xFFFFFFFF, &length_hi, FILE_BEGIN);
+	offset_set=SetFilePointer (handle, length & 0xFFFFFFFF, &length_hi,
+				   FILE_BEGIN);
+	if(offset_set==INVALID_SET_FILE_POINTER) {
+		*error=GetLastError ();
+		return(FALSE);
+	}
+
 	result = SetEndOfFile (handle);
+	if(result==FALSE) {
+		*error=GetLastError ();
+		return(FALSE);
+	}
 
 	/* restore file pointer */
 
-	SetFilePointer (handle, offset & 0xFFFFFFFF, &offset_hi, FILE_BEGIN);
+	offset_set=SetFilePointer (handle, offset & 0xFFFFFFFF, &offset_hi,
+				   FILE_BEGIN);
+	if(offset_set==INVALID_SET_FILE_POINTER) {
+		*error=GetLastError ();
+		return(FALSE);
+	}
 
 	return result;
 }
 
-gboolean
-ves_icall_System_IO_MonoIO_SetFileTime (HANDLE handle, gint64 creation_time, gint64 last_access_time, gint64 last_write_time)
+MonoBoolean
+ves_icall_System_IO_MonoIO_SetFileTime (HANDLE handle, gint64 creation_time,
+					gint64 last_access_time,
+					gint64 last_write_time, gint32 *error)
 {
+	gboolean ret;
 	const FILETIME *creation_filetime;
 	const FILETIME *last_access_filetime;
 	const FILETIME *last_write_filetime;
 
+	*error=ERROR_SUCCESS;
+	
 	if (creation_time < 0)
 		creation_filetime = NULL;
 	else
@@ -440,7 +638,12 @@ ves_icall_System_IO_MonoIO_SetFileTime (HANDLE handle, gint64 creation_time, gin
 	else
 		last_write_filetime = (FILETIME *)&last_write_time;
 
-	return SetFileTime (handle, creation_filetime, last_access_filetime, last_write_filetime);
+	ret=SetFileTime (handle, creation_filetime, last_access_filetime, last_write_filetime);
+	if(ret==FALSE) {
+		*error=GetLastError ();
+	}
+	
+	return(ret);
 }
 
 HANDLE 

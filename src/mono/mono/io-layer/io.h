@@ -140,6 +140,7 @@ typedef struct
 
 #define INVALID_SET_FILE_POINTER ((guint32)-1)
 #define INVALID_FILE_SIZE ((guint32)0xFFFFFFFF)
+#define INVALID_FILE_ATTRIBUTES ((guint32)-1)
 
 extern gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 			   guint32 sharemode,

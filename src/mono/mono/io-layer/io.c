@@ -1553,7 +1553,7 @@ gboolean CopyFile (const gunichar2 *name, const gunichar2 *dest_name,
 	int remain, n;
 
 	attrs = GetFileAttributes (name);
-	if (attrs == -1) {
+	if (attrs == INVALID_FILE_ATTRIBUTES) {
 		SetLastError (ERROR_FILE_NOT_FOUND);
 		return  FALSE;
 	}
@@ -2496,7 +2496,7 @@ gboolean RemoveDirectory (const gunichar2 *name)
  *
  * Gets the attributes for @name;
  *
- * Return value: -1 on failure
+ * Return value: %INVALID_FILE_ATTRIBUTES on failure
  */
 guint32 GetFileAttributes (const gunichar2 *name)
 {
@@ -2511,7 +2511,7 @@ guint32 GetFileAttributes (const gunichar2 *name)
 #endif
 
 		SetLastError (ERROR_INVALID_PARAMETER);
-		return -1;
+		return (INVALID_FILE_ATTRIBUTES);
 	}
 
 	result = stat (utf8_name, &buf);
@@ -2519,7 +2519,7 @@ guint32 GetFileAttributes (const gunichar2 *name)
 
 	if (result != 0) {
 		SetLastError (ERROR_FILE_NOT_FOUND);
-		return -1;
+		return (INVALID_FILE_ATTRIBUTES);
 	}
 	
 	return _wapi_stat_to_file_attributes (&buf);
