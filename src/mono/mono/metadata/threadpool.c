@@ -43,6 +43,8 @@ static int busy_worker_threads = 0;
 /* we use this to store a reference to the AsyncResult to avoid GC */
 static MonoGHashTable *ares_htable = NULL;
 
+static CRITICAL_SECTION ares_lock;
+
 /* we append a job */
 static HANDLE job_added;
 
@@ -91,8 +93,11 @@ mono_async_invoke (MonoAsyncResult *ares)
 	}
 	mono_monitor_exit ((MonoObject *) ares);
 
+	EnterCriticalSection (&ares_lock);
 	mono_g_hash_table_remove (ares_htable, ares);
+	LeaveCriticalSection (&ares_lock);
 }
+
 
 MonoAsyncResult *
 mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *async_callback,
@@ -122,11 +127,14 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	ares->async_delegate = target;
 
 	if (!ares_htable) {
+		InitializeCriticalSection (&ares_lock);
 		ares_htable = mono_g_hash_table_new (NULL, NULL);
 		job_added = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 	}
 
+	EnterCriticalSection (&ares_lock);
 	mono_g_hash_table_insert (ares_htable, ares, ares);
+	LeaveCriticalSection (&ares_lock);
 
 	busy = (int) InterlockedCompareExchange (&busy_worker_threads, 0, -1);
 	worker = (int) InterlockedCompareExchange (&mono_worker_threads, 0, -1); 
