@@ -1,3 +1,8 @@
+2003-11-07  Bernie Solomon  <bernard@ugsolutions.com>
+
+	* autogen.sh: tweak glibtool check so it works
+	if which doesn't set return code properly
+
 2003-11-07  Zoltan Varga  <vargaz@freemail.hu>
 
 	* autogen.sh: Applied patch from Peter Teichman (peter@ximian.com). 

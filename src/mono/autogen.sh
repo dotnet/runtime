@@ -31,7 +31,10 @@ fi
 }
 
 if [ -z "$LIBTOOL" ]; then
-  LIBTOOL=`which glibtool` || LIBTOOL=`which libtool`
+  LIBTOOL=`which glibtool` 
+  if [ ! -x $LIBTOOL ]; then
+    LIBTOOL=`which libtool`
+  fi
 fi
 
 (grep "^AM_PROG_LIBTOOL" $srcdir/configure.in >/dev/null) && {
