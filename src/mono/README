@@ -71,7 +71,8 @@ This is Mono.
 	If you are building the software from CVS, make sure that you
 	have up-to-date mcs and mono sources:
 
-		cvs co mono mcs
+		svn co svn+ssh://USER@mono-cvs.ximian.com/source/trunk/mono
+		svn co svn+ssh://USER@mono-cvs.ximian.com/source/trunk/mcs
 
 	Then, go into the mono directory, and configure:
 
