@@ -29,7 +29,7 @@ void
 ves_icall_System_Threading_ThreadPool_GetMinThreads (gint *workerThreads, 
 								gint *completionPortThreads);
 
-void
+MonoBoolean
 ves_icall_System_Threading_ThreadPool_SetMinThreads (gint workerThreads, 
 								gint completionPortThreads);
 

@@ -326,12 +326,16 @@ ves_icall_System_Threading_ThreadPool_GetMinThreads (gint *workerThreads, gint *
 	*completionPortThreads = 0;
 }
 
-void
+MonoBoolean
 ves_icall_System_Threading_ThreadPool_SetMinThreads (gint workerThreads, gint completionPortThreads)
 {
 	MONO_ARCH_SAVE_REGS;
 
+	if (workerThreads < 0 || workerThreads > mono_max_worker_threads)
+		return FALSE;
 	InterlockedExchange (&mono_min_worker_threads, workerThreads);
+	/* FIXME: should actually start the idle threads if needed */
+	return TRUE;
 }
 
 static void
