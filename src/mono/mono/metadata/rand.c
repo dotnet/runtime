@@ -149,11 +149,11 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpo
 	guchar *buf = mono_array_addr (arry, guchar, 0);
 
 	if (!CryptGenRandom (provider, len, buf)) {
-		CryptReleaseContext (provider);
+		CryptReleaseContext (provider, 0);
 		/* we may have lost our context with CryptoAPI, but all hope isn't lost yet! */
 		provider = ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (NULL);
 		if (!CryptGenRandom (provider, len, buf)) {
-			CryptReleaseContext (provider);
+			CryptReleaseContext (provider, 0);
 			provider = 0;
 			/* exception will be thrown in managed code */
 		}
@@ -163,7 +163,7 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpo
 void
 ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose (gpointer handle) 
 {
-	CryptReleaseContext ((HCRYPTPROV) handle);
+	CryptReleaseContext ((HCRYPTPROV) handle, 0);
 }
 
 #else
