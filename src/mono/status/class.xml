@@ -3378,5 +3378,186 @@
             <maintainer>martin.weindel@t-online.de</maintainer>
         </maintainers>
     </class>
+
+    <class name="System.ContextBoundObject">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.ContextBoundObject">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Remoting.Activation.ActivatorLevel">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Remoting.Activation.IActivator">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Remoting.Activation.IConstructionCallMessage">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Remoting.Activation.IConstructionReturnMessage">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Remoting.Contexts.Context">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Remoting.Contexts.ContextAttribute">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Remoting.Contexts.IContextAttribute">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Remoting.Contexts.IContextProperty">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Remoting.Contexts.IDynamicMessageSink">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Remoting.Contexts.IDynamicProperty">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Remoting.Contexts.SynchronizationAttribute">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Remoting.Messaging.IMessage">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Remoting.Messaging.IMethodMessage">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Remoting.Messaging.IMethodReturnMessage">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Remoting.Messaging.IMethodMessage">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>50</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Globalization.CultureInfo">
+        <last-activity>Oct-27-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+  
 </classes>
 
