@@ -12,9 +12,6 @@
 2,System.Drawing,class-status-System.Drawing.html,class-status-System.Drawing.src,cm/cormissing.css,cm/cormissing.js
 2,System.Web,class-status-System.Web.html,class-status-System.Web.src,cm/cormissing.css,cm/cormissing.js
 1,C# Compiler,c-sharp.html,c-sharp.src
-1,Debugging,jit-debug.html,jit-debug.src
-2,Example 1,jit-debug-sample.html,jit-debug-sample.src
-2,Example 2,jit-debug-sample2.html,jit-debug-sample2.src
 1,Status,status.html,status.src
 0,Download,download.html,download.src
 1,CVS access,ccvs.html,ccvs.src
@@ -39,4 +36,7 @@
 1,Books,books.html,books.src
 1,Papers,papers.html,papers.src
 1,Languages,languages.html,languages.src
+1,Debugging,jit-debug.html,jit-debug.src
+2,Example 1,jit-debug-sample.html,jit-debug-sample.src
+2,Example 2,jit-debug-sample2.html,jit-debug-sample2.src
 0,Contact,contact.html,contact.src
