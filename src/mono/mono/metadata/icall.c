@@ -51,21 +51,6 @@
 static MonoReflectionAssembly* ves_icall_System_Reflection_Assembly_GetCallingAssembly (void);
 
 
-static MonoString *
-mono_double_ToStringImpl (double value)
-{
-	/* FIXME: Handle formats, etc. */
-	MonoString *s;
-	gchar *retVal;
-
-	MONO_ARCH_SAVE_REGS;
-
-	retVal = g_strdup_printf ("%.15g", value);
-	s = mono_string_new (mono_domain_get (), retVal);
-	g_free (retVal);
-	return s;
-}
-
 /*
  * We expect a pointer to a char, not a string
  */
@@ -86,14 +71,6 @@ mono_double_ParseImpl (char *ptr)
 								"FormatException"));
 	
 	return result;
-}
-
-static MonoString *
-mono_float_ToStringImpl (float value)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	return mono_double_ToStringImpl (value);
 }
 
 static MonoObject *
@@ -3297,13 +3274,7 @@ static gconstpointer icall_map [] = {
 	/*
 	 * System.Double
 	 */
-	"System.Double::ToStringImpl", mono_double_ToStringImpl,
 	"System.Double::ParseImpl",    mono_double_ParseImpl,
-
-	/*
-	 * System.Single
-	 */
-	"System.Single::ToStringImpl", mono_float_ToStringImpl,
 
 	/*
 	 * System.Decimal
