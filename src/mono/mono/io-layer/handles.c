@@ -1727,9 +1727,22 @@ static void _wapi_shared_details (gpointer handle_info)
 
 void _wapi_handle_update_refs (void)
 {
-	guint32 i;
+	guint32 i, lock_now;
+	int thr_ret;
 	
 	_WAPI_HANDLE_COLLECTION_UNSAFE;
+
+	/* Prevent file share entries racing with us */
+	do {
+		lock_now = (guint32)(time(NULL) & 0xFFFFFFFF);
+
+		thr_ret = _wapi_timestamp_exclusion (&_wapi_fileshare_layout->share_check, lock_now);
+
+		if (thr_ret == EBUSY) {
+			_wapi_handle_spin (100);
+		}
+	} while (thr_ret == EBUSY);
+	g_assert(thr_ret == 0);
 
 	for (i = 0; i < _wapi_private_handle_count; i++) {
 		struct _WapiHandleUnshared *handle = &_wapi_private_handles[i];
@@ -1772,5 +1785,6 @@ void _wapi_handle_update_refs (void)
 		}
 	}
 	
+	thr_ret = _wapi_timestamp_release (&_wapi_fileshare_layout->share_check, lock_now);
 	_WAPI_HANDLE_COLLECTION_SAFE;
 }
