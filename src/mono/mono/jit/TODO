@@ -1,12 +1,10 @@
+* correctly align value types on the stack and in arrays
 * impl. marshalling attributes for pinvoke
 * raise exceptions everywhere
-* implement all those CONV and CONV_OVF opcodes
-* exceptions: handle exceptions inside unmanaged code
 * exceptions: save/restore floating point state
 * implement all floating point instruction in x86.brg, we also need to check
   the floating branch instruction - some of them seems to be wrong, we need to
   write better tests for that.
-* correctly align value types on the stack and in arrays
 * document the functions and variables in the JIT 
 * implement a register set for FP registers (just count register usage on x86)
 

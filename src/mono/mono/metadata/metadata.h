@@ -244,6 +244,9 @@ MonoType      *mono_metadata_parse_field_type  (MonoMetadata      *m,
 void           mono_metadata_free_type         (MonoType        *type);
 int            mono_type_size                  (MonoType        *type, 
 						int             *alignment);
+int            mono_type_stack_size            (MonoType        *type, 
+						int             *alignment);
+
 gboolean       mono_metadata_type_equal        (MonoType *t1, MonoType *t2);
 
 MonoMethodSignature  *mono_metadata_parse_method_signature (MonoMetadata            *m,

@@ -48,7 +48,7 @@ static char *opcode_names [] = {
 };
 #undef OPDEF
 
-#define SET_VARINFO(vi,t,k,o,s)  do { vi.type=t; vi.kind=k; vi.offset=o; vi.size=s; } while (0)
+#define SET_VARINFO(vi,t,k,o,s) do { vi.type=t; vi.kind=k; vi.offset=o; vi.size=s; } while (0)
 
 #define MAKE_CJUMP(name)                                                      \
 case CEE_##name:                                                              \
@@ -83,11 +83,11 @@ case CEE_##name: {                                                            \
 	break;                                                                \
 }
 
-#define MAKE_CMP(name)                                                        \
-case CEE_##name: {                                                            \
+#define MAKE_CMP(cname)                                                       \
+case CEE_##cname: {                                                           \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
-	t1 = mono_ctree_new (mp, MB_TERM_##name, sp [0], sp [1]);             \
+	t1 = mono_ctree_new (mp, MB_TERM_##cname, sp [0], sp [1]);            \
         g_assert (sp [0]->svt == sp [1]->svt);                                \
 	PUSH_TREE (t1, VAL_I32);                                              \
 	break;                                                                \
@@ -102,7 +102,7 @@ case CEE_##name: {                                                            \
         t1->svt = sp [0]->svt;                                                \
         t1 = mono_store_tree (cfg, -1, t1, &t2);                              \
         g_assert (t1);                                                        \
-        ADD_TREE (t1, cli_addr);                                                        \
+        ADD_TREE (t1, cli_addr);                                              \
 	PUSH_TREE (t2, t2->svt);                                              \
 	break;                                                                \
 }
@@ -289,8 +289,9 @@ map_store_svt_type (int svt)
 {
 	switch (svt) {
 	case VAL_I32:
-	case VAL_POINTER:
 		return MB_TERM_STIND_I4;
+	case VAL_POINTER:
+		return MB_TERM_STIND_REF;
 	case VAL_I64:
 		return MB_TERM_STIND_I8;
 	case VAL_DOUBLE:
@@ -313,7 +314,7 @@ static int
 map_stind_type (MonoType *type)
 {
 	if (type->byref) 
-		return MB_TERM_STIND_I4;
+		return MB_TERM_STIND_REF;
 
 	switch (type->type) {
 	case MONO_TYPE_I1:
@@ -327,13 +328,14 @@ map_stind_type (MonoType *type)
 	case MONO_TYPE_I:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
+		return MB_TERM_STIND_I4;	
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:    
-		return MB_TERM_STIND_I4;
+		return MB_TERM_STIND_REF;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		return MB_TERM_STIND_I8;
@@ -359,7 +361,7 @@ static int
 map_starg_type (MonoType *type)
 {
 	if (type->byref) 
-		return MB_TERM_STIND_I4;
+		return MB_TERM_STIND_REF;
 
 	switch (type->type) {
 	case MONO_TYPE_I1:
@@ -371,13 +373,14 @@ map_starg_type (MonoType *type)
 	case MONO_TYPE_I:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
+		return MB_TERM_STIND_I4;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:    
-		return MB_TERM_STIND_I4;
+		return MB_TERM_STIND_REF;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		return MB_TERM_STIND_I8;
@@ -458,7 +461,7 @@ map_ldind_type (MonoType *type, MonoValueType *svt)
 {
 	if (type->byref) {
 		*svt = VAL_POINTER;
-		return MB_TERM_LDIND_I4;
+		return MB_TERM_LDIND_REF;
 	}
 
 	switch (type->type) {
@@ -490,7 +493,7 @@ map_ldind_type (MonoType *type, MonoValueType *svt)
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY:    
 		*svt = VAL_POINTER;
-		return MB_TERM_LDIND_U4;
+		return MB_TERM_LDIND_REF;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		*svt = VAL_I64;
@@ -522,7 +525,7 @@ map_ldarg_type (MonoType *type, MonoValueType *svt)
 {
 	if (type->byref) {
 		*svt = VAL_POINTER;
-		return MB_TERM_LDIND_I4;
+		return MB_TERM_LDIND_REF;
 	}
 
 	switch (type->type) {
@@ -726,11 +729,18 @@ arch_allocate_var (MonoFlowGraph *cfg, int size, int align, MonoValueKind kind, 
 	case MONO_ARGVAR: {
 		int arg_start = 8 + cfg->has_vtarg*4;
 
+		/* fixme: we need to align stack values somehow
+		int opos, cpos, padding;
+		opos = cpos = arg_start + cfg->args_size;
+		cpos += align - 1;
+		cpos &= ~(align - 1);
+		padding = cpos - opos;
+		cfg->args_size += padding;
+		*/
+
 		SET_VARINFO (vi, type, kind, cfg->args_size + arg_start, size);
 		g_array_append_val (cfg->varinfo, vi);
-
-		cfg->args_size += align - 1;
-		cfg->args_size &= ~(align - 1);
+		
 		cfg->args_size += size;
 		break;
 	}
@@ -903,6 +913,12 @@ ctree_create_dup (MonoMemPool *mp, MBTree *s)
 		t = mono_ctree_new (mp, MB_TERM_LDIND_I2, t, NULL);
 		t->svt = VAL_I32;
 		break;
+	case MB_TERM_STIND_REF:
+	case MB_TERM_LDIND_REF:
+		t = ctree_dup_address (mp, s->left);
+		t = mono_ctree_new (mp, MB_TERM_LDIND_REF, t, NULL);
+		t->svt = VAL_POINTER;
+		break;
 	case MB_TERM_STIND_I4:
 	case MB_TERM_LDIND_I4:
 		t = ctree_dup_address (mp, s->left);
@@ -954,6 +970,8 @@ mono_store_tree (MonoFlowGraph *cfg, int slot, MBTree *s, MBTree **dup)
 	case MB_TERM_LDIND_I2:
 	case MB_TERM_STIND_I4:
 	case MB_TERM_LDIND_I4:
+	case MB_TERM_STIND_REF:
+	case MB_TERM_LDIND_REF:
 	case MB_TERM_STIND_I8:
 	case MB_TERM_LDIND_I8:
 	case MB_TERM_STIND_R4:
@@ -1631,11 +1649,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		int align, size;
 
 		for (i = 0; i < signature->param_count; ++i) {
-			size = mono_type_size (signature->params [i], &align);
-			if (size < 4) {
-				size = 4; 
-				align = 4;
-			}
+			size = mono_type_stack_size (signature->params [i], &align);
 			arch_allocate_var (cfg, size, align, MONO_ARGVAR, VAL_UNKNOWN);
 		}
 	}
@@ -2122,17 +2136,19 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				g_assert (t1);
 				ADD_TREE (t1, cli_addr);
 			}
+			
+			args_size += sizeof (gpointer); /* this argument */		
 
 			for (i = csig->param_count - 1; i >= 0; i--) {
 				MonoType *type = cm->signature->params [i];
+
+				size = mono_type_stack_size (type, &align);
 				t1 = mono_ctree_new (mp, map_arg_type (type, FALSE), arg_sp [i], NULL);	
-				size = mono_type_size (type, &align);
 				t1->data.i = size;
 				ADD_TREE (t1, cli_addr);
-				args_size += (size + 3) & ~3;
+				args_size += size;
 			}
 
-			args_size += sizeof (gpointer); /* this argument */		
 			ci->args_size = args_size;
 
 			if (newarr) {
@@ -2156,7 +2172,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
 				t2->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
-				t2 = mono_ctree_new (mp, MB_TERM_LDIND_I4, t2, NULL);
+				t2 = mono_ctree_new (mp, MB_TERM_LDIND_REF, t2, NULL);
 
 				t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), this, t2);
 				t1->data.p = ci;
@@ -2229,11 +2245,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			for (i = nargs - 1; i >= 0; i--) {
 				MonoType *type = cm->signature->params [i];
 				t1 = mono_ctree_new (mp, map_arg_type (type, pinvoke), arg_sp [i], NULL);
-				size = mono_type_size (type, &align);
+				size = mono_type_stack_size (type, &align);
 				t1->data.i = size;
 				ADD_TREE (t1, cli_addr);
-				args_size += (size + 3) & ~3;
-
+				args_size += size;
 				// fixme: align value type arguments  to 8 byte boundary on the stack
 			}
 
@@ -2306,7 +2321,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				
 					t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
 					t2->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
-					t2 = mono_ctree_new (mp, MB_TERM_LDIND_I4, t2, NULL);
+					t2 = mono_ctree_new (mp, MB_TERM_LDIND_REF, t2, NULL);
 				}
 
 				t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), this, t2);
@@ -2350,7 +2365,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			t1 = mono_ctree_new (mp, MB_TERM_ISINST, *sp, NULL);
 			t1->data.klass = c;
 			
-			PUSH_TREE (t1, VAL_I32);
+			PUSH_TREE (t1, VAL_POINTER);
 
 			ip += 4;
 			break;
@@ -2367,7 +2382,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			t1 = mono_ctree_new (mp, MB_TERM_CASTCLASS, *sp, NULL);
 			t1->data.klass = c;
 			
-			PUSH_TREE (t1, VAL_I32);
+			PUSH_TREE (t1, VAL_POINTER);
 
 			ip += 4;
 			break;
@@ -2409,7 +2424,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			++ip;
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
 			t1->data.i = 0;
-			PUSH_TREE (t1, VAL_I32);
+			PUSH_TREE (t1, VAL_POINTER);
 			break;
 		}
 		case CEE_LDC_I8: {
@@ -2528,7 +2543,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		MAKE_LDIND (LDIND_U2,  MB_TERM_LDIND_U2, VAL_I32)
 		MAKE_LDIND (LDIND_I,   MB_TERM_LDIND_I4, VAL_I32)
 		MAKE_LDIND (LDIND_I4,  MB_TERM_LDIND_I4, VAL_I32)
-		MAKE_LDIND (LDIND_REF, MB_TERM_LDIND_U4, VAL_I32)
+		MAKE_LDIND (LDIND_REF, MB_TERM_LDIND_REF, VAL_POINTER)
 		MAKE_LDIND (LDIND_U4,  MB_TERM_LDIND_U4, VAL_I32)
 		MAKE_LDIND (LDIND_I8,  MB_TERM_LDIND_I8, VAL_I64)
 		MAKE_LDIND (LDIND_R4,  MB_TERM_LDIND_R4, VAL_DOUBLE)
@@ -2541,7 +2556,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		MAKE_STIND (STIND_I8,  MB_TERM_STIND_I8)
 		MAKE_STIND (STIND_R4,  MB_TERM_STIND_R4)
 		MAKE_STIND (STIND_R8,  MB_TERM_STIND_R8)
-		MAKE_STIND (STIND_REF, MB_TERM_STIND_I4)
+		MAKE_STIND (STIND_REF, MB_TERM_STIND_REF)
 
 		MAKE_LDELEM (LDELEM_I1,  MB_TERM_LDIND_I1, VAL_I32, 1)
 		MAKE_LDELEM (LDELEM_U1,  MB_TERM_LDIND_U1, VAL_I32, 1)
@@ -2549,7 +2564,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		MAKE_LDELEM (LDELEM_U2,  MB_TERM_LDIND_U2, VAL_I32, 2)
 		MAKE_LDELEM (LDELEM_I,   MB_TERM_LDIND_I4, VAL_I32, 4)
 		MAKE_LDELEM (LDELEM_I4,  MB_TERM_LDIND_I4, VAL_I32, 4)
-		MAKE_LDELEM (LDELEM_REF, MB_TERM_LDIND_U4, VAL_I32, 4)
+		MAKE_LDELEM (LDELEM_REF, MB_TERM_LDIND_REF, VAL_POINTER, sizeof (gpointer))
 		MAKE_LDELEM (LDELEM_U4,  MB_TERM_LDIND_U4, VAL_I32, 4)
 		MAKE_LDELEM (LDELEM_I8,  MB_TERM_LDIND_I8, VAL_I64, 8)
 		MAKE_LDELEM (LDELEM_R4,  MB_TERM_LDIND_R4, VAL_DOUBLE, 4)
@@ -2559,7 +2574,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		MAKE_STELEM (STELEM_I2,  MB_TERM_STIND_I2, 2)
 		MAKE_STELEM (STELEM_I4,  MB_TERM_STIND_I4, 4)
 		MAKE_STELEM (STELEM_I,   MB_TERM_STIND_I4, 4)
-		MAKE_STELEM (STELEM_REF, MB_TERM_STIND_I4, 4)
+		MAKE_STELEM (STELEM_REF, MB_TERM_STIND_REF, sizeof (gpointer))
 		MAKE_STELEM (STELEM_I8,  MB_TERM_STIND_I8, 8)
 		MAKE_STELEM (STELEM_R4,  MB_TERM_STIND_R4, 4)
 		MAKE_STELEM (STELEM_R8,  MB_TERM_STIND_R8, 8)
@@ -3041,7 +3056,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
 				t1->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
-				t1 = mono_ctree_new (mp, MB_TERM_LDIND_I4, t1, NULL);
+				t1 = mono_ctree_new (mp, MB_TERM_LDIND_REF, t1, NULL);
 				PUSH_TREE (t1, VAL_POINTER);
 				break;
 			}

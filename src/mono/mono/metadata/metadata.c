@@ -1843,6 +1843,72 @@ mono_type_size (MonoType *t, gint *align)
 	return 0;
 }
 
+/*
+ * mono_type_stack_size:
+ * @t: the type to return the size it uses on the stack
+ *
+ * Returns: the number of bytes required to hold an instance of this
+ * type on the runtime stack
+ */
+int
+mono_type_stack_size (MonoType *t, gint *align)
+{
+	g_assert (t != NULL);
+
+	if (t->byref) {
+		*align = __alignof__(gpointer);
+		return sizeof (gpointer);
+	}
+
+	switch (t->type){
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		*align = __alignof__(gint32);
+		return 4;
+	case MONO_TYPE_R4:
+		*align = __alignof__(float);
+		return 4;
+		
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		*align = __alignof__(gint64);
+	case MONO_TYPE_R8:
+		*align = __alignof__(double);
+		return 8;
+		
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		*align = __alignof__(gpointer);
+		return sizeof (gpointer);
+		
+	case MONO_TYPE_VALUETYPE: {
+		guint32 size;
+
+		size = mono_class_value_size (t->data.klass, align);
+		return size;
+	}
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_TYPEDBYREF: /* we may want to use a struct {MonoType* type, void *data } instead ...*/
+		*align = __alignof__(gpointer);
+		return sizeof (gpointer);
+	default:
+		g_error ("type 0x%02x unknown", t->type);
+	}
+	return 0;
+}
+
 gboolean
 mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 {

@@ -100,6 +100,7 @@ enter_method (MonoMethod *method, gpointer ebp)
 			o = *((MonoObject **)ebp);
 			if (o) {
 				class = o->klass;
+		    
 				if (class == mono_defaults.string_class) {
 					printf ("[STRING:%p:%s], ", o, mono_string_to_utf8 ((MonoString *)o));
 				} else if (class == mono_defaults.int32_class) {

@@ -247,6 +247,11 @@ ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c)
 	MonoClass *klass;
 	MonoClass *klassc;
 
+	g_assert (type != NULL);
+	
+	if (!c) /* FIXME: dont know what do do here */
+		return 0;
+
 	while (!type->type) { /* FIXME: hack for TypeBuilder */
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)type;
 		type = tb->parent;

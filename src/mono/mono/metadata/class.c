@@ -978,8 +978,15 @@ mono_class_get_field (MonoClass *class, guint32 field_token)
 {
 	int idx = mono_metadata_token_index (field_token);
 
-	if (mono_metadata_token_code (field_token) == MONO_TOKEN_MEMBER_REF)
-		g_error ("Unsupported Field Token is a MemberRef, implement me");
+	if (mono_metadata_token_code (field_token) == MONO_TOKEN_MEMBER_REF) {
+		MonoClass *refclass;
+		MonoClassField *field;
+
+		field = mono_field_from_memberref (class->image, field_token, &refclass);
+		g_assert (field != NULL);
+
+		return field;
+	}
 
 	g_assert (mono_metadata_token_code (field_token) == MONO_TOKEN_FIELD_DEF);
 

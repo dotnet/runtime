@@ -160,9 +160,9 @@ void *MEMCOPY (void *dest, const void *src, size_t n);
 
 # constatnts
 %term CONST_I4 CONST_I8 CONST_R4 CONST_R8
-%term LDIND_I1 LDIND_U1 LDIND_I2 LDIND_U2 LDIND_I4 LDIND_I8 LDIND_R4 LDIND_R8
+%term LDIND_I1 LDIND_U1 LDIND_I2 LDIND_U2 LDIND_I4 LDIND_REF LDIND_I8 LDIND_R4 LDIND_R8
 %term LDIND_U4 LDIND_OBJ
-%term STIND_I1 STIND_I2 STIND_I4 STIND_I8 STIND_R4 STIND_R8 STIND_OBJ
+%term STIND_I1 STIND_I2 STIND_I4 STIND_REF STIND_I8 STIND_R4 STIND_R8 STIND_OBJ
 %term ADDR_L ADDR_G ARG_I4 ARG_I8 ARG_R4 ARG_R8 ARG_OBJ ARG_STRING CALL_I4 CALL_I8 CALL_R8 CALL_VOID
 %term BREAK SWITCH BR RET_VOID RET RET_OBJ ENDFINALLY
 %term ADD ADD_OVF ADD_OVF_UN SUB SUB_OVF SUB_OVF_UN MUL MUL_OVF MUL_OVF_UN 
@@ -385,6 +385,32 @@ stmt: STIND_I4 (addr, reg) {
 	}
 }
 
+stmt: STIND_REF (addr, reg) {
+	PRINT_REG ("STIND_REF", tree->right->reg1);
+
+	switch (tree->left->data.ainfo.amode) {
+
+	case AMImmediate:
+		x86_mov_mem_reg (s->code, tree->left->data.ainfo.offset, tree->right->reg1, 4);
+		break;
+		
+	case AMBase:
+		x86_mov_membase_reg (s->code, tree->left->data.ainfo.basereg, 
+				     tree->left->data.ainfo.offset, tree->right->reg1, 4);
+		break;		
+	case AMIndex:
+		x86_mov_memindex_reg (s->code, X86_NOBASEREG, tree->left->data.ainfo.offset,
+				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
+				      tree->right->reg1, 4);
+		break;		
+	case AMBaseIndex:
+		x86_mov_memindex_reg (s->code, tree->left->data.ainfo.basereg, tree->left->data.ainfo.offset,
+				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
+				      tree->right->reg1, 4);
+		break;		
+	}
+}
+
 stmt: STIND_I1 (addr, reg) {
 	PRINT_REG ("STIND_I1", tree->right->reg1);
 
@@ -462,6 +488,33 @@ reg: LDIND_I4 (addr) {
 
 
 	PRINT_REG ("LDIND_I4", tree->reg1);
+}
+
+reg: LDIND_REF (addr) {
+
+	switch (tree->left->data.ainfo.amode) {
+
+	case AMImmediate:
+		x86_mov_reg_mem (s->code, tree->reg1, tree->left->data.ainfo.offset, 4);
+		break;
+
+	case AMBase:
+		x86_mov_reg_membase (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
+				     tree->left->data.ainfo.offset, 4);
+		break;		
+	case AMIndex:
+		x86_mov_reg_memindex (s->code, tree->reg1, X86_NOBASEREG, tree->left->data.ainfo.offset,
+				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift, 4);
+		break;		
+	case AMBaseIndex:
+		x86_mov_reg_memindex (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
+				      tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
+				      tree->left->data.ainfo.shift, 4);
+		break;		
+	}
+
+
+	PRINT_REG ("LDIND_REF", tree->reg1);
 }
 
 reg: LDIND_I1 (addr) {
@@ -1536,7 +1589,7 @@ reg: CALL_I4 (this, reg) {
 	g_assert (tree->reg1 == X86_EAX);
 }
 
-reg: CALL_I4 (this, LDIND_I4 (ADDR_G)) {
+reg: CALL_I4 (this, LDIND_REF (ADDR_G)) {
 	MethodCallInfo *ci = tree->data.ci;
 	int lreg = tree->left->reg1;
 	int treg = X86_EAX;
@@ -1632,7 +1685,7 @@ reg: CALL_I4 (this, VFUNC_ADDR) {
 	g_assert (tree->reg1 == X86_EAX);
 }
 
-stmt: CALL_VOID (this, LDIND_I4 (ADDR_G)) {
+stmt: CALL_VOID (this, LDIND_REF (ADDR_G)) {
 	MethodCallInfo *ci = tree->data.ci;
 	int lreg = tree->left->reg1;
 	int treg = X86_EAX;
@@ -2150,7 +2203,7 @@ lreg: REM_UN (lreg, lreg) {
 		  tree->reg2 == X86_EDX);
 }
 
-lreg: CALL_I8 (this, LDIND_I4 (ADDR_G)) {
+lreg: CALL_I8 (this, LDIND_REF (ADDR_G)) {
 	MethodCallInfo *ci = tree->data.ci;
 	int lreg = tree->left->reg1;
 	int treg = X86_EAX;
@@ -2657,7 +2710,7 @@ stmt: BLE_UN (freg, freg) {
 	x86_branch32 (s->code, X86_CC_NE, tree->data.bb->addr - offset, FALSE);
 }
 
-freg: CALL_R8 (this, LDIND_I4 (ADDR_G)) {
+freg: CALL_R8 (this, LDIND_REF (ADDR_G)) {
 	MethodCallInfo *ci = tree->data.ci;
 	int lreg = tree->left->reg1;
 	int treg = X86_EAX;
