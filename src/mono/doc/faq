@@ -135,11 +135,22 @@ A: We like the features that the CLI and its related technologies
 
 ** Licensing
 
+Q: Will I be able to write proprietary applications that run with
+   Mono?
+
+A: Yes.  We will make sure that the licensing will allow developers to
+   create proprietary applications.  
+   
 Q: What license is Mono on?
 
 A: The C# Compiler is released under the terms of the GPL.  The
    class libraries are under the LGPL.  The runtime libraries are
    under the LGPL. 
+
+   We are considering using the GPL with a special permission, to even
+   allow Mono to be used for embedded system work (I want to see mono
+   in my Tivo or the next generation toy for example).  This will be a
+   license that is even laxer than the LGPL. 
 
 Q: Will you accept code under the XXX License?
 

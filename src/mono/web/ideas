@@ -18,6 +18,10 @@
 		<a href="http://cvs.gnome.org/bonsai/rview.cgi?dir=evolution%2Fcamel">
 		Camel implementation</a>.
 
+		* Interfacing to Multimedia systems.  You might want
+		  to look into the Quicktime API.  I know <a
+		  href="mailto:vladimir@ximian.com">Vladimir</a> has
+		  researched the problem before 
 	</ul>
 
 <a name="projects">

@@ -1,5 +1,10 @@
 * Microsoft Hailstorm and Passport
 
+	Microsoft Passport is a centralized database hosted by
+	Microsoft that enhances the consumer experience with the Web
+	by providing a single logon system that they can use across a
+	number of participant web sites.
+
 	As you might know by now from our extensive <a
 	href="faq.html">FAQ</a>, the Mono project has nothing to do
 	with Microsoft Hailstorm or <a
@@ -7,7 +12,12 @@
 
 	Still a lot of people have asked us our opinion on them.
 
+** Passport
+
+	There is nothing in Passport really advanced technologically
+	speaking. 
+
 ** Alternatives to Microsoft Passport
 
-	Microsoft Passport is a centralized database hosted by
-	Microsoft that
+
+

@@ -1,6 +1,7 @@
 SOURCES=	\
 	../contributing  	\
 	../class-library	\
+	../contact		\
 	../c-sharp		\
 	../documentation	\
 	../download		\
