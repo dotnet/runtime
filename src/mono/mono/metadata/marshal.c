@@ -1487,25 +1487,23 @@ handle_enum:
 	pos = mb->pos;
 	mono_mb_emit_i4 (mb, 0);
 
-	/* fixme: use a filter clause and only catch exceptions
-	 * when exc != null. With RETHROW we get wrong stack 
-	 * traces. */
 	clause = g_new0 (MonoExceptionClause, 1);
-	clause->flags = MONO_EXCEPTION_CLAUSE_NONE;
-	clause->try_offset = 0;
+	clause->flags = MONO_EXCEPTION_CLAUSE_FILTER;
 	clause->try_len = mb->pos;
+
+	/* filter code */
+	clause->token_or_filter = mb->pos;
+	
+	mono_mb_emit_byte (mb, CEE_POP);
+	mono_mb_emit_byte (mb, CEE_LDARG_2);
+	mono_mb_emit_byte (mb, CEE_PREFIX1);
+	mono_mb_emit_byte (mb, CEE_ENDFILTER);
+
 	clause->handler_offset = mb->pos;
 
 	/* handler code */
-
 	/* store exception */
 	mono_mb_emit_stloc (mb, 1);
-	
-	mono_mb_emit_byte (mb, CEE_LDARG_2);
-	mono_mb_emit_byte (mb, CEE_BRTRUE_S);
-	mono_mb_emit_byte (mb, 2);
-	mono_mb_emit_byte (mb, CEE_PREFIX1);
-	mono_mb_emit_byte (mb, CEE_RETHROW);
 	
 	mono_mb_emit_byte (mb, CEE_LDARG_2);
 	mono_mb_emit_ldloc (mb, 1);

@@ -227,7 +227,6 @@ extern gboolean mono_use_linear_scan;
 extern gboolean mono_use_fast_iconv;
 extern gboolean mono_break_on_exc;
 extern gboolean mono_inline_memcpy;
-
 extern guint32  mono_jit_tls_id;
 
 extern CRITICAL_SECTION *metadata_section;
@@ -275,8 +274,8 @@ MonoArray *
 ves_icall_get_trace        (MonoException *exc, gint32 skip, 
 			    MonoBoolean need_file_info);
 
-void
-arch_handle_exception      (struct sigcontext *ctx, gpointer obj);
+gboolean
+arch_handle_exception      (struct sigcontext *ctx, gpointer obj, gboolean test_only);
 
 gpointer 
 arch_get_throw_exception   (void);

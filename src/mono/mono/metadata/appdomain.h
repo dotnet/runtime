@@ -44,7 +44,10 @@ typedef struct {
 	gpointer try_start;
 	gpointer try_end;
 	gpointer handler_start;
-	guint32  token_or_filter;
+	union {
+		guint32 token;
+		gpointer filter;
+	} data;
 } MonoJitExceptionInfo;
 
 typedef struct {

@@ -579,11 +579,14 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 
 	mono_jit_stats.cil_code_size += header->code_size;
 
-	/* fixme: add block boundaries for exceptions */
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
+
 		CREATE_BLOCK (clause->try_offset);
 		CREATE_BLOCK (clause->handler_offset);
+
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER)
+			CREATE_BLOCK (clause->token_or_filter);
 	}
 
 	while (ip < end) {
@@ -1397,13 +1400,24 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 	for (i = 0; i < header->num_clauses; ++i) {
 		MonoExceptionClause *clause = &header->clauses [i];		
 		tbb = &cfg->bblocks [bcinfo [clause->handler_offset].block_id];
-		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) {
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE ||
+		    clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 			tbb->instack = mono_mempool_alloc (mp, sizeof (MBTree *));
 			tbb->indepth = 1;
 			tbb->instack [0] = t1 = mono_ctree_new_leaf (mp, MB_TERM_EXCEPTION);
 			t1->data.i = mono_allocate_excvar (cfg);
 			t1->svt = VAL_POINTER;
 			tbb->reached = 1;
+			if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+				tbb = &cfg->bblocks [bcinfo [clause->token_or_filter].block_id];
+				g_assert (tbb);
+				tbb->instack = mono_mempool_alloc (mp, sizeof (MBTree *));
+				tbb->indepth = 1;
+				tbb->instack [0] = t1 = mono_ctree_new_leaf (mp, MB_TERM_EXCEPTION);
+				t1->data.i = mono_allocate_excvar (cfg);
+				t1->svt = VAL_POINTER;
+				tbb->reached = 1;
+			}
 		} else if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 			mark_reached (cfg, tbb, NULL, 0);
 		} else {
@@ -3208,6 +3222,19 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			++ip;			
 			switch (*ip) {
 				
+			case CEE_ENDFILTER: {
+				ip++;
+				
+				sp--;
+				t1 = mono_ctree_new (mp, MB_TERM_ENDFILTER, *sp, NULL);
+				ADD_TREE (t1, cli_addr);
+				t1->last_instr = FALSE;
+				
+				g_assert (sp == stack);
+				superblock_end = TRUE;
+				break;
+			}
+
 			case CEE_LDLOC: {
 				int n;
 				++ip;
@@ -3691,7 +3718,7 @@ mono_jit_compile_method (MonoMethod *method)
 		mono_jit_stats.native_code_size += ji->code_size;
 
 		if (header->num_clauses) {
-			int i, start_block, end_block;
+			int i, start_block, end_block, filter_block;
 
 			ji->num_clauses = header->num_clauses;
 			ji->clauses = mono_mempool_alloc0 (target_domain->mp, 
@@ -3702,7 +3729,14 @@ mono_jit_compile_method (MonoMethod *method)
 				MonoJitExceptionInfo *ei = &ji->clauses [i];
 			
 				ei->flags = ec->flags;
-				ei->token_or_filter = ec->token_or_filter;
+
+				if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+					g_assert (cfg->bcinfo [ec->token_or_filter].is_block_start);
+					filter_block = cfg->bcinfo [ec->token_or_filter].block_id;
+					ei->data.filter = cfg->start + cfg->bblocks [filter_block].addr;
+				} else {
+					ei->data.token = ec->token_or_filter;
+				}
 
 				g_assert (cfg->bcinfo [ec->try_offset].is_block_start);
 				start_block = cfg->bcinfo [ec->try_offset].block_id;
@@ -3819,7 +3853,7 @@ sigfpe_signal_handler (int _dummy)
 
 	exc = mono_get_exception_divide_by_zero ();
 	
-	arch_handle_exception (ctx, exc);
+	arch_handle_exception (ctx, exc, FALSE);
 
 	g_error ("we should never reach this code");
 }
@@ -3832,7 +3866,7 @@ sigill_signal_handler (int _dummy)
 
 	exc = mono_get_exception_execution_engine ("SIGILL");
 	
-	arch_handle_exception (ctx, exc);
+	arch_handle_exception (ctx, exc, FALSE);
 
 	g_error ("we should never reach this code");
 }
@@ -3845,7 +3879,7 @@ sigsegv_signal_handler (int _dummy)
 
 	exc = mono_get_exception_null_reference ();
 	
-	arch_handle_exception (ctx, exc);
+	arch_handle_exception (ctx, exc, FALSE);
 
 	g_error ("we should never reach this code");
 }
@@ -3873,8 +3907,6 @@ mono_thread_abort (MonoObject *obj)
 {
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	
-	g_assert (obj);
-
 	g_free (jit_tls);
 
 	ExitThread (-1);
