@@ -4801,26 +4801,98 @@ mono_llmult_ovf_un (gpointer *exc, guint32 al, guint32 ah, guint32 bl, guint32 b
 	return 0;
 }
 
+
 guint64  
-mono_llmult_ovf (gpointer *exc, guint32 al, gint32 ah, guint32 bl, gint32 bh)
-{
+mono_llmult_ovf (gpointer *exc, guint32 al, gint32 ah, guint32 bl, gint32 bh) {
+	/*
+	Use Karatsuba algorithm where:
+		a*b is: AhBh(R^2+R)+(Ah-Al)(Bl-Bh)R+AlBl(R+1)
+		where Ah is the "high half" (most significant 32 bits) of a and
+		where Al is the "low half" (least significant 32 bits) of a and
+		where  Bh is the "high half" of b and Bl is the "low half" and
+		where R is the Radix or "size of the half" (in our case 32 bits)
+
+	Note, for the product of two 64 bit numbers to fit into a 64
+	result, ah and/or bh must be 0.  This will save us from doing
+	the AhBh term at all.
+	*/
+
 	gint64 res, t1;
+	gint32 sign;
 
-	// fixme: check for overflow
+	/* need to work with absoulte values, so find out what the
+	   resulting sign will be and convert any negative numbers
+	   from two's complement
+	*/
+	sign = ah ^ bh;
+	if (ah < 0) {
+		/* flip the bits and add 1 */
+		ah ^= 1;
+		if (al ==  0)
+			ah += 1;
+		else {
+			al ^= ~0;
+			al +=1;
+		}
+	}
 
-	res = (gint64)al * (gint64)bl;
+	if (bh < 0) {
+		/* flip the bits and add 1 */
+		bh ^= 1;
+		if (bl ==  0)
+			bh += 1;
+		else {
+			bl ^= ~0;
+			bl +=1;
+		}
+	}
+		
+	/* we overflow for sure if both upper halves are greater 
+	   than zero because we would need to shift their 
+	   product 64 bits to the left and that will not fit
+	   in a 64 bit result */
+	if (ah && bh)
+		goto raise_exception;
 
-	t1 = (gint64)ah * bl + al * (gint64)bh;
+	/* do the AlBl(R+1) term first */
+	t1 = (gint64)al * (gint64)bl;
 
-	res += ((gint64)t1) << 32; 
+	res = t1;
+	t1 <<= 32;
+
+	/* see if we have enough room to accumulate, and make sure
+	   we leave enough room for the sign bit. */
+	if (t1 > (0x7FFFFFFFFFFFFFFF - res))
+		goto raise_exception;
+	res += t1;
+
+	/* now do the (Ah-Al)(Bl-Bh)R term */
+	t1 = (gint64)(ah - al) * (gint64)(bl - bh);
+
+	if (t1 < 0) {
+		/* need to use absolute value and substract instead of
+		   adding a negative value because we need to bit
+		   shift here */
+		t1 = -t1;
+		res -= t1 << 32;
+	} 
+	else {
+		t1 <<= 32;
+		/* check for overflow */
+		if (t1 > (0x7FFFFFFFFFFFFFFF - res))
+			goto raise_exception;
+		res += t1;
+	}
 
 	*exc = NULL;
-	return res;
-/*
+	if (sign < 0)
+		return -res;
+	else
+		return res;
+
  raise_exception:
 	*exc = mono_get_exception_overflow ();
 	return 0;
-*/
 }
 
 gint64 
