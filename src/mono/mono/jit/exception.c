@@ -234,7 +234,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		ji = mono_jit_info_table_find (domain, ip);
 		g_assert (ji != NULL);
 
-		sf->method = mono_method_get_object (domain, ji->method);
+		sf->method = mono_method_get_object (domain, ji->method, NULL);
 		sf->native_offset = (char *)ip - (char *)ji->code_start;
 		sf->il_offset = mono_debug_il_offset_from_address (ji->method, sf->native_offset);
 
@@ -336,7 +336,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	g_assert (m);
 
-	*method = mono_method_get_object (domain, m);
+	*method = mono_method_get_object (domain, m, NULL);
 	*iloffset = mono_debug_il_offset_from_address (m, addr);
 	*native_offset = addr;
 
