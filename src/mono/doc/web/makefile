@@ -70,6 +70,7 @@ OBJECTS=									\
 	deploy/winforms.html							\
 	deploy/class-library.html						\
 	deploy/classlib-doc.html 						\
+	deploy/class-status.html	 					\
 	deploy/class-status-corlib.html 					\
 	deploy/class-status-System.html 					\
 	deploy/class-status-System.Xml.html 					\
@@ -128,7 +129,7 @@ render-team-page.exe: render-team-page.cs
 	$(CSC) render-team-page.cs
 
 clean:
-	rm -f $(OBJECTS) $(patsubst deploy/%.html,src/%.src, $(OBJECTS)) src/*.xml src/*.html.in ../class-status-* ../class-status infos/*
+	rm -f $(OBJECTS) $(patsubst deploy/%.html,src/%.src, $(OBJECTS)) src/*.xml src/*.html.in ../class-status-* ../class-status infos/*.xml
 
 push:
 	cp -f $(NON_HTML_SOURCES) deploy
