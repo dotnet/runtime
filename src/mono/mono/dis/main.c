@@ -324,7 +324,12 @@ get_typeref (metadata_t *m, int idx)
 	s = mono_metadata_string_heap (m, cols [2]);
 	rs_idx = cols [0] >> 3;
 	table = cols [0] & 7;
-	printf ("------------ %d %d --------\n", rs_idx, table);
+
+#if 0
+	rs_idx = cols [0];
+	table = 0;
+#endif
+	printf ("------------ %d %d %d --------\n", idx, rs_idx, table);
 		
 	switch (table){
 	case 0: /* Module */
@@ -343,7 +348,7 @@ get_typeref (metadata_t *m, int idx)
 		ret =  g_strdup_printf ("TypeRef: TYPEREF! (%s.%s)", s, t);
 
 	default:
-		ret = g_strdup ("ERROR");
+		ret = g_strdup_printf (">>>>>>>>>>> %d", cols [0] & 7);
 	}
 
 	return ret;
