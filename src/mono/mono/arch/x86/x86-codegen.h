@@ -423,6 +423,36 @@ typedef union {
 		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
 	} while (0)
 
+#define x86_xadd_reg_reg(inst,dreg,reg,size)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x0F;     \
+		if ((size) == 1)	\
+			*(inst)++ = (unsigned char)0xC0;	\
+		else	\
+			*(inst)++ = (unsigned char)0xC1;	\
+		x86_reg_emit ((inst), (reg), (dreg));	\
+	} while (0)
+
+#define x86_xadd_mem_reg(inst,mem,reg,size)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x0F;     \
+		if ((size) == 1)	\
+			*(inst)++ = (unsigned char)0xC0;	\
+		else	\
+			*(inst)++ = (unsigned char)0xC1;	\
+		x86_mem_emit ((inst), (reg), (mem));	\
+	} while (0)
+
+#define x86_xadd_membase_reg(inst,basereg,disp,reg,size)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x0F;     \
+		if ((size) == 1)	\
+			*(inst)++ = (unsigned char)0xC0;	\
+		else	\
+			*(inst)++ = (unsigned char)0xC1;	\
+		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
+	} while (0)
+
 #define x86_inc_mem(inst,mem)	\
 	do {	\
 		*(inst)++ = (unsigned char)0xff;	\
