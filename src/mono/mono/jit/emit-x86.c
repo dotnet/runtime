@@ -326,9 +326,16 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 	if (header->num_locals) {
 
 		if (header->init_locals) {
-			int offset = g_array_index (cfg->varinfo, MonoVarInfo, 
-						    cfg->locals_start_index + header->num_locals - 1).offset;  
+			MonoVarInfo *vi = &VARINFO (cfg, cfg->locals_start_index + header->num_locals - 1);
+			int offset = vi->offset;  
 			int size = - offset;
+
+			for (i = 0; i < header->num_locals; ++i) {
+				MonoVarInfo *rv = &VARINFO (cfg, cfg->locals_start_index + header->num_locals - 1);
+
+				if (rv->reg >= 0)
+					x86_alu_reg_imm (cfg->code, X86_XOR, rv->reg, rv->reg);
+			}
 
 			if (size == 1 || size == 2 || size == 4) {
 				x86_mov_membase_imm (cfg->code, X86_EBP, offset, 0, size);
@@ -364,7 +371,7 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 
 			for (i = 0; i < header->num_locals; ++i) {
 				MonoType *t = header->locals [i];
-				int offset = g_array_index (cfg->varinfo, MonoVarInfo, cfg->locals_start_index + i).offset;  
+				int offset = VARINFO (cfg, cfg->locals_start_index + i).offset;  
 
 				if (t->byref) {
 					x86_mov_membase_imm (cfg->code, X86_EBP, offset, 0, 4);
@@ -395,6 +402,7 @@ arch_emit_prologue (MonoFlowGraph *cfg)
 static void
 arch_emit_epilogue (MonoFlowGraph *cfg)
 {
+	int pos = 4;
 	/*
 	 * note: with trace and profiling the value on the FP stack may get clobbered.
 	 */
@@ -423,14 +431,18 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 		x86_pop_reg (cfg->code, X86_EAX);
 	}
 
-	if (mono_regset_reg_used (cfg->rs, X86_ESI))
-		x86_pop_reg (cfg->code, X86_ESI);
-
-	if (mono_regset_reg_used (cfg->rs, X86_EDI))
-		x86_pop_reg (cfg->code, X86_EDI);
-
-	if (mono_regset_reg_used (cfg->rs, X86_EBX))
-		x86_pop_reg (cfg->code, X86_EBX);
+	if (mono_regset_reg_used (cfg->rs, X86_EBX)) {
+		x86_mov_reg_membase (cfg->code, X86_EBX, X86_EBP, - (cfg->locals_size + pos), 4);
+		pos += 4;
+	}
+	if (mono_regset_reg_used (cfg->rs, X86_EDI)) {
+		x86_mov_reg_membase (cfg->code, X86_EDI, X86_EBP, - (cfg->locals_size + pos), 4);
+		pos += 4;
+	}
+	if (mono_regset_reg_used (cfg->rs, X86_ESI)) {
+		x86_mov_reg_membase (cfg->code, X86_ESI, X86_EBP, - (cfg->locals_size + pos), 4);
+		pos += 4;
+	}
 
 	x86_leave (cfg->code);
 	x86_ret (cfg->code);
@@ -461,9 +473,9 @@ mono_label_cfg (MonoFlowGraph *cfg)
 				if (mono_debug_handle)
 					return;
 				g_warning ("tree does not match");
-				mono_print_ctree (t1); printf ("\n\n");
+				mono_print_ctree (cfg, t1); printf ("\n\n");
 
-				mono_print_forest (forest);
+				mono_print_forest (cfg, forest);
 				g_assert_not_reached ();
 			}
 		}
@@ -471,7 +483,8 @@ mono_label_cfg (MonoFlowGraph *cfg)
 }
 
 static gboolean
-tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs, guint8 exclude_mask, int *spillcount) 
+tree_allocate_regs (MonoFlowGraph *cfg, MBTree *tree, int goal, MonoRegSet *rs, 
+		    guint8 exclude_mask, int *spillcount) 
 {
 	MBTree *kids[10];
 	int ern = mono_burg_rule (tree->state, goal);
@@ -511,7 +524,7 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs, guint8 exclude_mask,
 
 	if (nts [0] && kids [0] == tree) {
 		/* chain rule */
-		if (!tree_allocate_regs (kids [0], nts [0], rs, exclude_mask, spillcount))
+		if (!tree_allocate_regs (cfg, kids [0], nts [0], rs, exclude_mask, spillcount))
 			return FALSE;
 		/* special case reg: coni4 */
 		if (goal == MB_NTERM_reg) {
@@ -541,15 +554,15 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs, guint8 exclude_mask,
 	if (nts [0]) {
 		if (nts [1]) { /* two kids */
 			MonoRegSet saved_rs;
-			if (nts [2]) /* we cant handle tree kids */
+			if (nts [2]) /* we cant handle three kids */
 				g_assert_not_reached ();
 
-			if (!tree_allocate_regs (kids [0], nts [0], rs, left_exclude_mask, spillcount))
+			if (!tree_allocate_regs (cfg, kids [0], nts [0], rs, left_exclude_mask, spillcount))
 				return FALSE;
 
 			saved_rs = *rs;
 
-			if (!tree_allocate_regs (kids [1], nts [1], rs, right_exclude_mask, spillcount)) {
+			if (!tree_allocate_regs (cfg, kids [1], nts [1], rs, right_exclude_mask, spillcount)) {
 
 #ifdef DEBUG_REGALLOC
 				printf ("tree_allocate_regs try 1 failed %d %d %d %d\n", 
@@ -577,7 +590,7 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs, guint8 exclude_mask,
 
 				kids [0]->spilled = 1;
 
-				if (!tree_allocate_regs (kids [1], nts [1], rs, right_exclude_mask, spillcount)) {
+				if (!tree_allocate_regs (cfg, kids [1], nts [1], rs, right_exclude_mask, spillcount)) {
 #ifdef DEBUG_REGALLOC
 					printf ("tree_allocate_regs try 2 failed\n");
 #endif
@@ -589,7 +602,7 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs, guint8 exclude_mask,
 			}
 
 		} else { /* one kid */
-			if (!tree_allocate_regs (kids [0], nts [0], rs, left_exclude_mask, spillcount))
+			if (!tree_allocate_regs (cfg, kids [0], nts [0], rs, left_exclude_mask, spillcount))
 				return FALSE;			
 		}
 	}
@@ -716,8 +729,8 @@ arch_allocate_regs (MonoFlowGraph *cfg)
 #ifdef DEBUG_REGALLOC
 			printf ("arch_allocate_regs start %d:%d %08x\n", i, j, cfg->rs->free_mask);
 #endif
-			if (!tree_allocate_regs (t1, 1, cfg->rs, 0, &spillcount)) {
-				mono_print_ctree (t1);
+			if (!tree_allocate_regs (cfg, t1, 1, cfg->rs, 0, &spillcount)) {
+				mono_print_ctree (cfg, t1);
 				g_error ("register allocation failed");
 			}
 
@@ -739,7 +752,7 @@ arch_allocate_regs (MonoFlowGraph *cfg)
 		int spillvar;
 		spillvar = arch_allocate_var (cfg, sizeof (gpointer), sizeof (gpointer),
 					      MONO_TEMPVAR, VAL_I32);
-		cfg->spillvars [i] = VAROFFSET (cfg, spillvar);
+		cfg->spillvars [i] = VARINFO (cfg, spillvar).offset;
 	}
 }
 
@@ -770,7 +783,7 @@ tree_emit (int goal, MonoFlowGraph *cfg, MBTree *tree, int *spillcount)
 					cfg->method->klass->name_space,
 					cfg->method->klass->name, cfg->method->name);
 
-				mono_print_ctree (kids [0]);printf ("\n\n");
+				mono_print_ctree (cfg, kids [0]);printf ("\n\n");
 #endif
 				spilloffset1 = 0;
 				spilloffset2 = 0;
@@ -823,7 +836,7 @@ tree_emit (int goal, MonoFlowGraph *cfg, MBTree *tree, int *spillcount)
 
 	tree->addr = offset = cfg->code - cfg->start;
 
-	// we assume an instruction uses a maximum of 128 bytes
+	/* we assume an instruction uses a maximum of 128 bytes */
 	if ((cfg->code_size - offset) <= 128) {
 		int add = MIN (cfg->code_size, 128);
 		cfg->code_size += add;
@@ -1046,6 +1059,7 @@ arch_compile_method (MonoMethod *method)
 		MonoFlowGraph *cfg;
 		MonoMemPool *mp;
 		gulong code_size_ratio;
+		guint32 ls_used_mask = 0;
 	
 		mono_profiler_method_jit (method);
 	
@@ -1088,17 +1102,23 @@ arch_compile_method (MonoMethod *method)
 		if (mono_debug_insert_breakpoint > 0)
 			mono_debug_insert_breakpoint--;
 
+		if (mono_use_linear_scan) {
+			mono_linear_scan (cfg, &ls_used_mask);
+			cfg->rs->used_mask |= ls_used_mask;
+		}
+
 		if (mono_jit_dump_forest) {
 			int i;
 			printf ("FOREST %s.%s:%s\n", method->klass->name_space,
 				method->klass->name, method->name);
 			for (i = 0; i < cfg->block_count; i++) {
 				printf ("BLOCK %d:\n", i);
-				mono_print_forest (cfg->bblocks [i].forest);
+				mono_print_forest (cfg, cfg->bblocks [i].forest);
 			}
 		}
-	
+			
 		mono_label_cfg (cfg);
+
 		if (cfg->invalid) {
 			mono_profiler_method_end_jit (method, MONO_PROFILE_FAILED);
 			return NULL;

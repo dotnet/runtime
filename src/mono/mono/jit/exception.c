@@ -204,8 +204,8 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 				strace = g_strdup ("");
 			}
 
-			tmp = g_strdup_printf ("%sin %s.%s:%s ()\n", strace, m->klass->name_space,  
-					       m->klass->name, m->name);
+			tmp = g_strdup_printf ("%sin %03x %s.%s:%s ()\n", strace, ip - ji->code_start,
+					       m->klass->name_space, m->klass->name, m->name);
 
 			g_free (strace);
 

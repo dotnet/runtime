@@ -32,7 +32,7 @@
 
 #define ISSTRUCT(t) (!t->byref && t->type == MONO_TYPE_VALUETYPE && !t->data.klass->enumtype)
 
-#define VAROFFSET(cfg,num) (g_array_index (cfg->varinfo, MonoVarInfo, num).offset)
+#define VARINFO(cfg,num) (g_array_index (cfg->varinfo, MonoVarInfo, num))
 
 typedef struct _MBTree MBTree;
 
@@ -61,17 +61,35 @@ typedef struct {
 	guint32     eip;
 } MonoLMF;
 
+typedef union {
+	struct {
+		guint16 tid; /* tree number */
+		guint16 bid; /* block number */
+	} pos ;
+	guint32 abs_pos; 
+} MonoPosition;
+
+typedef struct {
+	MonoPosition first_use, last_use;
+} MonoLiveRange;
+
 typedef struct {
 	MonoValueType type;
 	MonoValueKind kind;
 	int offset;
 	int size;
+	MonoLiveRange range;
+	unsigned isvolatile:1;
+	int reg;
+	int varnum; /* only for debugging */
 } MonoVarInfo;
 
 typedef struct {
 	unsigned block_id:15;
 	unsigned is_block_start:1;
 } MonoBytecodeInfo;
+
+typedef guint32 * MonoBitSet;
 
 typedef struct {
 	unsigned reached:1;
@@ -85,6 +103,14 @@ typedef struct {
 	MBTree      **outstack;
 	gint32        outdepth;
 	gint32        addr;
+	guint16       num;
+
+	MonoBitSet    gen_set;
+	MonoBitSet    kill_set;
+	MonoBitSet    live_in_set;
+	MonoBitSet    live_out_set;
+	
+	GList        *succ;
 } MonoBBlock;
 
 typedef enum {
@@ -177,6 +203,8 @@ extern gboolean mono_jit_trace_calls;
 extern gboolean mono_jit_profile;
 extern gboolean mono_jit_share_code;
 extern gboolean mono_jit_inline_code;
+extern gboolean mono_use_linear_scan;
+
 extern gpointer mono_end_of_stack;
 extern int      mono_worker_threads;
 extern guint32  lmf_thread_id;
@@ -238,6 +266,9 @@ int
 arch_allocate_var          (MonoFlowGraph *cfg, int size, int align, 
 			    MonoValueKind kind, MonoValueType type);
 
+void
+mono_linear_scan           (MonoFlowGraph *cfg, guint32 *used_mask);
+
 /* delegate support functions */
 
 void
@@ -292,9 +323,9 @@ arch_method_return_message_restore (MonoMethod *method, gpointer stack,
 /* some handy debugging functions */
 
 void
-mono_print_ctree           (MBTree *tree);
+mono_print_ctree           (MonoFlowGraph *cfg, MBTree *tree);
 
 void
-mono_print_forest          (GPtrArray *forest);
+mono_print_forest          (MonoFlowGraph *cfg, GPtrArray *forest);
 
 #endif

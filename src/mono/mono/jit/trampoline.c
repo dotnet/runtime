@@ -218,7 +218,6 @@ arch_create_jit_trampoline (MonoMethod *method)
 
 	if (!vc) {
 		vc = buf = g_malloc (256);
-
 		/* save caller save regs because we need to do a call */ 
 		x86_push_reg (buf, X86_EDX);
 		x86_push_reg (buf, X86_EAX);

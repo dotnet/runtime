@@ -147,7 +147,7 @@ x86_call_reg (s->code, X86_EAX); \
 x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 3*4); \
 x86_pop_reg (s->code, X86_ECX); \
 x86_pop_reg (s->code, X86_EDX); \
-x86_pop_reg (s->code, X86_EAX); 
+x86_pop_reg (s->code, X86_EAX);
 
 #ifdef DEBUG
 #define MEMCOPY debug_memcpy
@@ -329,9 +329,12 @@ base: ADD (reg, coni4) {
 }
 
 base: ADDR_L {
-	tree->data.ainfo.offset = VAROFFSET (s, tree->data.i);
+	tree->data.ainfo.offset = VARINFO (s, tree->data.i).offset;
 	tree->data.ainfo.basereg = X86_EBP;
 	tree->data.ainfo.amode = AMBase;
+} cost {
+	MBCOND (VARINFO (data, tree->data.i).reg < 0);
+	return 0;
 }
 
 index: reg {
@@ -386,7 +389,7 @@ addr: ADD (index, base) {
 
 # we pass exception in ECX to catch handler
 reg: EXCEPTION {
-	int offset = VAROFFSET (s, tree->data.i);
+	int offset = VARINFO (s, tree->data.i).offset;
 
 	if (tree->reg1 != X86_ECX)
 		x86_mov_reg_reg (s->code, tree->reg1, X86_ECX, 4);
@@ -405,7 +408,7 @@ stmt: THROW (reg) {
 }
 
 stmt: RETHROW {
-	int off = VAROFFSET (s, tree->data.i);
+	int off = VARINFO (s, tree->data.i).offset;
 	gpointer target;
 
 	x86_push_membase (s->code, X86_EBP, off);
@@ -711,6 +714,82 @@ stmt: REMOTE_STIND_I2 (reg, reg) {
 	x86_patch (br [1], s->code);
 }
 
+stmt: STIND_I4 (ADDR_L, reg) {
+	int treg = VARINFO (s, tree->left->data.i).reg;
+
+	if (treg != tree->right->reg1)
+		x86_mov_reg_reg (s->code, treg, tree->right->reg1, 4);
+
+} cost {
+	MBCOND ((VARINFO (data, tree->left->data.i).reg >= 0));
+	return 0;
+}
+
+stmt: STIND_I4 (ADDR_L, coni4) {
+	int treg = VARINFO (s, tree->left->data.i).reg;
+
+	x86_mov_reg_imm (s->code, treg, tree->right->data.i);
+
+} cost {
+	MBCOND ((VARINFO (data, tree->left->data.i).reg >= 0));
+	return 0;
+}
+
+reg: LDIND_I4 (ADDR_L) {
+	int treg = VARINFO (s, tree->left->data.i).reg;
+
+	if (treg != tree->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, treg, 4);
+
+} cost {
+	MBCOND ((VARINFO (data, tree->left->data.i).reg >= 0));
+	return 0;
+}
+
+reg: LDIND_U4 (ADDR_L) {
+	int treg = VARINFO (s, tree->left->data.i).reg;
+
+	if (treg != tree->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, treg, 4);
+
+} cost {
+	MBCOND ((VARINFO (data, tree->left->data.i).reg >= 0));
+	return 0;
+}
+
+stmt: STIND_REF (ADDR_L, reg) {
+	int treg = VARINFO (s, tree->left->data.i).reg;
+
+	if (treg != tree->right->reg1)
+		x86_mov_reg_reg (s->code, treg, tree->right->reg1, 4);
+
+} cost {
+	MBCOND ((VARINFO (data, tree->left->data.i).reg >= 0));
+	return 0;
+}
+
+stmt: STIND_REF (ADDR_L, coni4) {
+	int treg = VARINFO (s, tree->left->data.i).reg;
+
+	if (treg != tree->right->reg1)
+		x86_mov_reg_imm (s->code, treg, tree->right->data.i);
+
+} cost {
+	MBCOND ((VARINFO (data, tree->left->data.i).reg >= 0));
+	return 0;
+}
+
+reg: LDIND_REF (ADDR_L) {
+	int treg = VARINFO (s, tree->left->data.i).reg;
+
+	if (treg != tree->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, treg, 4);
+
+} cost {
+	MBCOND ((VARINFO (data, tree->left->data.i).reg >= 0));
+	return 0;
+}
+
 reg: LDIND_I4 (addr) {
 
 	switch (tree->left->data.ainfo.amode) {
@@ -946,12 +1025,15 @@ reg: REMOTE_LDFLDA (reg) {
 		x86_pop_reg (s->code, treg);
 }
 
-reg: ADDR_L 5 {
-	int offset = VAROFFSET (s, tree->data.i);  
+reg: ADDR_L {
+	int offset = VARINFO (s, tree->data.i).offset;  
 
 	x86_lea_membase (s->code, tree->reg1, X86_EBP, offset);
 	
 	PRINT_REG ("ADDR_L",  tree->reg1);
+} cost {
+	MBCOND (VARINFO (data, tree->data.i).reg < 0);
+	return 5;
 }
 
 
@@ -1909,51 +1991,6 @@ cflags: COMPARE (reg, coni4) {
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 }
 
-cflags: COMPARE (LDIND_I4 (ADDR_L), coni4) "MB_USE_OPT1(0)" {
-	int offset = VAROFFSET (s, tree->left->left->data.i);  
-	x86_alu_membase_imm (s->code, X86_CMP, X86_EBP, offset, tree->right->data.i);
-}
-
-cflags: COMPARE (LDIND_U4 (ADDR_L), coni4) "MB_USE_OPT1(0)" {
-	int offset = VAROFFSET (s, tree->left->left->data.i);  
-	x86_alu_membase_imm (s->code, X86_CMP, X86_EBP, offset, tree->right->data.i);
-}
-
-cflags: COMPARE (LDIND_REF (ADDR_L), coni4) "MB_USE_OPT1(0)" {
-	int offset = VAROFFSET (s, tree->left->left->data.i);  
-	x86_alu_membase_imm (s->code, X86_CMP, X86_EBP, offset, tree->right->data.i);
-}
-
-cflags: COMPARE (reg, LDIND_I4 (ADDR_L)) "MB_USE_OPT1(0)" {
-	int offset = VAROFFSET (s, tree->right->left->data.i);  
-	x86_alu_reg_membase (s->code, X86_CMP, tree->left->reg1, X86_EBP, offset);
-}
-
-cflags: COMPARE (reg, LDIND_U4 (ADDR_L)) "MB_USE_OPT1(0)" {
-	int offset = VAROFFSET (s, tree->right->left->data.i);  
-	x86_alu_reg_membase (s->code, X86_CMP, tree->left->reg1, X86_EBP, offset);
-}
-
-cflags: COMPARE (reg, LDIND_REF (ADDR_L)) "MB_USE_OPT1(0)" {
-	int offset = VAROFFSET (s, tree->right->left->data.i);  
-	x86_alu_reg_membase (s->code, X86_CMP, tree->left->reg1, X86_EBP, offset);
-}
-
-cflags: COMPARE (LDIND_I4 (ADDR_L), reg) "MB_USE_OPT1(0)" {
-	int offset = VAROFFSET (s, tree->left->left->data.i);  
-	x86_alu_membase_reg (s->code, X86_CMP, X86_EBP, offset, tree->right->reg1);
-}
-
-cflags: COMPARE (LDIND_U4 (ADDR_L), reg) "MB_USE_OPT1(0)" {
-	int offset = VAROFFSET (s, tree->left->left->data.i);  
-	x86_alu_membase_reg (s->code, X86_CMP, X86_EBP, offset, tree->right->reg1);
-}
-
-cflags: COMPARE (LDIND_REF (ADDR_L), reg) "MB_USE_OPT1(0)" {
-	int offset = VAROFFSET (s, tree->left->left->data.i);  
-	x86_alu_membase_reg (s->code, X86_CMP, X86_EBP, offset, tree->right->reg1);
-}
-
 cflags: COMPARE (reg, reg) {
 	x86_alu_reg_reg (s->code, X86_CMP, tree->left->reg1, tree->right->reg1);
 }
@@ -2148,7 +2185,7 @@ reg: CALL_I4 (this, reg) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
+		int offset = VARINFO (s, tree->data.ci.vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -2177,7 +2214,7 @@ reg: CALL_I4 (this, ADDR_G) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
+		int offset = VARINFO (s, tree->data.ci.vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -2216,7 +2253,7 @@ reg: CALL_I4 (this, INTF_ADDR) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
+		int offset = VARINFO (s, tree->data.ci.vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -2277,7 +2314,7 @@ reg: CALL_I4 (this, VFUNC_ADDR) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
+		int offset = VARINFO (s, tree->data.ci.vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -2308,7 +2345,7 @@ stmt: CALL_VOID (this, ADDR_G) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
+		int offset = VARINFO (s, tree->data.ci.vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -2333,7 +2370,7 @@ stmt: CALL_VOID (this, INTF_ADDR) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
+		int offset = VARINFO (s, tree->data.ci.vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -2361,7 +2398,7 @@ stmt: CALL_VOID (this, VFUNC_ADDR) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
+		int offset = VARINFO (s, tree->data.ci.vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -2618,7 +2655,6 @@ stmt: STIND_I8 (addr, lreg) {
 				      tree->right->reg2, 4);
 		break;		
 	}
-
 }
 
 stmt: REMOTE_STIND_I8 (reg, lreg) {
@@ -3043,7 +3079,7 @@ lreg: CALL_I8 (this, ADDR_G) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
+		int offset = VARINFO (s, tree->data.ci.vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -3071,7 +3107,7 @@ lreg: CALL_I8 (this, VFUNC_ADDR) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
+		int offset = VARINFO (s, tree->data.ci.vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -3103,7 +3139,7 @@ lreg: CALL_I8 (this, INTF_ADDR) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
+		int offset = VARINFO (s, tree->data.ci.vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -3641,7 +3677,7 @@ freg: NEG (freg) {
 stmt: POP (freg)
 
 stmt: STIND_R4 (ADDR_L, freg) {
-	int offset = VAROFFSET (s, tree->left->data.i);  
+	int offset = VARINFO (s, tree->left->data.i).offset;  
 	x86_fst_membase (s->code, X86_EBP, offset, FALSE, TRUE);
 }
 
@@ -3687,7 +3723,7 @@ stmt: REMOTE_STIND_R4 (reg, freg) {
 }
 
 stmt: STIND_R8 (ADDR_L, freg) {
-	int offset = VAROFFSET (s, tree->left->data.i);  
+	int offset = VARINFO (s, tree->left->data.i).offset;  
 	x86_fst_membase (s->code, X86_EBP, offset, TRUE, TRUE);
 }
 
@@ -3816,7 +3852,7 @@ freg: CALL_R8 (this, ADDR_G) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
+		int offset = VARINFO (s, tree->data.ci.vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -3841,7 +3877,7 @@ freg: CALL_R8 (this, INTF_ADDR) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
+		int offset = VARINFO (s, tree->data.ci.vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -3869,7 +3905,7 @@ freg: CALL_R8 (this, VFUNC_ADDR) {
 	}
 
 	if (tree->data.ci.vtype_num) {
-		int offset = VAROFFSET (s, tree->data.ci.vtype_num);
+		int offset = VARINFO (s, tree->data.ci.vtype_num).offset;
 		x86_lea_membase (s->code, treg, X86_EBP, offset);
 		x86_push_reg (s->code, treg);
 	}
@@ -3898,6 +3934,7 @@ reg: LDIND_OBJ (reg) {
 
 stmt: STIND_OBJ (reg, reg) {
 	mono_assert (tree->data.i > 0);
+
 	x86_push_imm (s->code, tree->data.i);
 	x86_push_reg (s->code, tree->right->reg1);
 	x86_push_reg (s->code, tree->left->reg1);

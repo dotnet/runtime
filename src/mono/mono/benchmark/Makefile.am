@@ -11,7 +11,8 @@ TESTSRC=			\
 	inline1.cs		\
 	inline2.cs		\
 	inline3.cs		\
-	muldiv.cs
+	muldiv.cs		\
+	loops.cs
 
 TESTSI=$(TESTSRC:.cs=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)

@@ -193,6 +193,9 @@ gboolean mono_jit_profile = FALSE;
 /* Force jit to share code between application domains */
 gboolean mono_jit_share_code = FALSE;
 
+/* use linear scan register allocation */
+gboolean mono_use_linear_scan = FALSE;
+
 /* inline code */
 gboolean mono_jit_inline_code = TRUE;
 
@@ -649,7 +652,7 @@ map_call_type (MonoType *type, MonoValueType *svt)
  * prints the tree to stdout
  */
 void
-mono_print_ctree (MBTree *tree)
+mono_print_ctree (MonoFlowGraph *cfg, MBTree *tree)
 {
 	int arity;
 
@@ -665,15 +668,20 @@ mono_print_ctree (MBTree *tree)
 
 	switch (tree->op) {
 	case MB_TERM_CONST_I4:
-	case MB_TERM_ADDR_L:
 		printf ("[%d]", tree->data.i);
+		break;
+	case MB_TERM_ADDR_L:
+		if (VARINFO (cfg, tree->data.i).reg >= 0)
+			printf ("[R%d]", tree->data.i);
+		else
+			printf ("[%d]", tree->data.i);
 		break;
 	}
 
 	g_assert (!(tree->right && !tree->left));
 
-	mono_print_ctree (tree->left);
-	mono_print_ctree (tree->right);
+	mono_print_ctree (cfg, tree->left);
+	mono_print_ctree (cfg, tree->right);
 
 	if (arity)
 		printf (")");
@@ -683,7 +691,7 @@ mono_print_ctree (MBTree *tree)
  * prints the whole forest to stdout
  */
 void
-mono_print_forest (GPtrArray *forest)
+mono_print_forest (MonoFlowGraph *cfg, GPtrArray *forest)
 {
 	const int top = forest->len;
 	int i;
@@ -691,7 +699,7 @@ mono_print_forest (GPtrArray *forest)
 	for (i = 0; i < top; i++) {
 		MBTree *t = (MBTree *) g_ptr_array_index (forest, i);
 		printf ("       ");
-		mono_print_ctree (t);
+		mono_print_ctree (cfg, t);
 		printf ("\n");
 	}
 
@@ -730,6 +738,16 @@ arch_allocate_var (MonoFlowGraph *cfg, int size, int align, MonoValueKind kind, 
 
 	mono_jit_stats.allocate_var++;
 
+	vi.range.last_use.abs_pos = 0;
+	vi.range.first_use.pos.bid = 0xffff;
+	vi.range.first_use.pos.tid = 0;	
+	vi.isvolatile = 0;
+	vi.reg = -1;
+	vi.varnum = cfg->varinfo->len;
+
+	if (size != sizeof (gpointer))
+		vi.isvolatile = 1;
+	
 	switch (kind) {
 	case MONO_TEMPVAR:
 	case MONO_LOCALVAR: {
@@ -1064,6 +1082,7 @@ mono_cfg_free (MonoFlowGraph *cfg)
 		if (!cfg->bblocks [i].reached)
 			continue;
 		g_ptr_array_free (cfg->bblocks [i].forest, TRUE);
+		g_list_free (cfg->bblocks [i].succ);
 	}
 
 	if (cfg->bcinfo)
@@ -1099,6 +1118,27 @@ mono_find_final_block (MonoFlowGraph *cfg, guint32 ip, int type)
 	}
 	return NULL;
 }
+
+static void
+mono_cfg_add_successor (MonoFlowGraph *cfg, MonoBBlock *bb, gint32 target)
+{
+	MonoBBlock *tbb;
+	GList *l;
+
+	g_assert (cfg->bcinfo [target].is_block_start);
+
+	tbb = &cfg->bblocks [cfg->bcinfo [target].block_id];
+	g_assert (tbb);
+
+	for (l = bb->succ; l; l = l->next) {
+		MonoBBlock *t = (MonoBBlock *)l->data;
+		if (t == tbb)
+			return;
+	}
+
+	bb->succ = g_list_prepend (bb->succ, tbb);
+}
+
 
 #define CREATE_BLOCK(t) {if (!bcinfo [t].is_block_start) {block_count++;bcinfo [t].is_block_start = 1; }}
 
@@ -1244,6 +1284,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 	for (i = 0; i < header->code_size; i++) {
 		if (bcinfo [i].is_block_start) {
 			bb->cli_addr = i;
+			bb->num = block_count;
 			if (block_count)
 				bb [-1].length = i - bb [-1].cli_addr; 
 			bcinfo [i].block_id = block_count;
@@ -1256,6 +1297,91 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 	cfg->bcinfo = bcinfo;
 	cfg->bblocks = bblocks;
 	cfg->block_count = block_count;
+       
+	ip = header->code;
+	end = ip + header->code_size;
+	bb = NULL;
+
+	while (ip < end) {
+		guint32 cli_addr = ip - header->code;
+
+		if (bcinfo [cli_addr].is_block_start) {
+			MonoBBlock *tbb = &cfg->bblocks [bcinfo [cli_addr].block_id];		
+			if (bb && !bb->succ)
+				bb->succ = g_list_prepend (bb->succ, tbb);
+			bb = tbb;
+		}
+		g_assert (bb);
+
+		if (*ip == 0xfe) {
+			++ip;
+			i = *ip + 256;
+		} else {
+			i = *ip;
+		}
+
+		opcode = &mono_opcodes [i];
+
+		switch (opcode->argument) {
+		case MonoInlineNone:
+			++ip;
+			break;
+		case MonoInlineString:
+		case MonoInlineType:
+		case MonoInlineField:
+		case MonoInlineMethod:
+		case MonoInlineTok:
+		case MonoInlineSig:
+		case MonoShortInlineR:
+		case MonoInlineI:
+			ip += 5;
+			break;
+		case MonoInlineVar:
+			ip += 3;
+			break;
+		case MonoShortInlineVar:
+		case MonoShortInlineI:
+			ip += 2;
+			break;
+		case MonoShortInlineBrTarget:
+			ip++;
+			i = (signed char)*ip;
+			ip++;
+			mono_cfg_add_successor (cfg, bb, cli_addr + 2 + i);
+			if (opcode->flow_type == MONO_FLOW_COND_BRANCH)
+				mono_cfg_add_successor (cfg, bb, cli_addr + 2);
+			break;
+		case MonoInlineBrTarget:
+			ip++;
+			i = read32 (ip);
+			ip += 4;
+			mono_cfg_add_successor (cfg, bb, cli_addr + 5 + i);
+			if (opcode->flow_type == MONO_FLOW_COND_BRANCH)
+				mono_cfg_add_successor (cfg, bb, cli_addr + 5);
+			break;
+		case MonoInlineSwitch: {
+			gint32 st, target, n;
+			++ip;
+			n = read32 (ip);
+			ip += 4;
+			st = cli_addr + 5 + 4 * n;
+			mono_cfg_add_successor (cfg, bb, st);
+
+			for (i = 0; i < n; i++) {
+				target = read32 (ip) + st;
+				ip += 4;
+				mono_cfg_add_successor (cfg, bb, target);
+			}
+			break;
+		}
+		case MonoInlineR:
+		case MonoInlineI8:
+			ip += 9;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+	}
 }
 
 /**
@@ -1717,8 +1843,10 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		int size, align;
 		
 		for (i = 0; i < header->num_locals; ++i) {
+			MonoValueType svt;
 			size = mono_type_size (header->locals [i], &align);
-			varnum = arch_allocate_var (cfg, size, align, MONO_LOCALVAR, VAL_UNKNOWN);
+			map_ldind_type (header->locals [i], &svt);
+			varnum = arch_allocate_var (cfg, size, align, MONO_LOCALVAR, svt);
 			if (i == 0)
 				cfg->locals_start_index = varnum;
 		}
@@ -1740,15 +1868,19 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 	cfg->args_start_index = firstarg = varnum + 1;
  
 	if (signature->hasthis) {
-		arch_allocate_var (cfg, sizeof (gpointer), sizeof (gpointer), MONO_ARGVAR, VAL_POINTER);
+		int thisvar;
+		thisvar = arch_allocate_var (cfg, sizeof (gpointer), sizeof (gpointer), MONO_ARGVAR, VAL_POINTER);
+		VARINFO (cfg, thisvar).isvolatile = 1;
 	}
 
 	if (signature->param_count) {
 		int align, size;
 
 		for (i = 0; i < signature->param_count; ++i) {
+			int argvar;
 			size = mono_type_stack_size (signature->params [i], &align);
-			arch_allocate_var (cfg, size, align, MONO_ARGVAR, VAL_UNKNOWN);
+			argvar = arch_allocate_var (cfg, size, align, MONO_ARGVAR, VAL_UNKNOWN);
+			VARINFO (cfg, argvar).isvolatile = 1;
 		}
 	}
 
@@ -2453,7 +2585,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			}
 
 			if (csig->hasthis) {
-				this = *(--sp);				
+				this = *(--sp);		
 				args_size += sizeof (gpointer);
 			} else
 				this = mono_ctree_new_leaf (mp, MB_TERM_NOP);
@@ -2686,6 +2818,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 			t1->data.i = LOCAL_POS (*ip);
+			VARINFO (cfg, t1->data.i).isvolatile = 1;
 			++ip;
 			PUSH_TREE (t1, VAL_POINTER);			
 			break;
@@ -2971,7 +3104,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 			if (sp > stack) {
 				g_warning ("more values on stack at IL_%04x: %d",  ip - header->code, sp - stack);
-				mono_print_ctree (sp [-1]);
+				mono_print_ctree (cfg, sp [-1]);
 				printf ("\n");
 			}
 			superblock_end = TRUE;
@@ -3263,6 +3396,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_L);
 				t1->data.i = LOCAL_POS (read16 (ip));
+				VARINFO (cfg, t1->data.i).isvolatile = 1;
 				ip += 2;
 				PUSH_TREE (t1, VAL_POINTER);			
 				break;
@@ -3398,14 +3532,14 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				cfg->invalid = 1;
 				return;
 			}
-			mono_print_forest (forest);
+			mono_print_forest (cfg, forest);
 			g_assert_not_reached ();
 		}
 	}		
 
         if ((depth = sp - stack)) {
 		//printf ("DEPTH %d %d\n",  depth, sp [0]->op);
-		//mono_print_forest (forest);
+		//mono_print_forest (cfg, forest);
 		create_outstack (cfg, bb, stack, sp - stack);
 	}
 
@@ -3417,7 +3551,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				//printf ("unreached block %d\n", i);
 				repeat = TRUE;
 				if (repeat_count >= 10) {
-					/*mono_print_forest (forest);
+					/*mono_print_forest (cfg, forest);
 					g_warning ("repeat count exceeded at ip: 0x%04x in %s\n", bb->cli_addr, cfg->method->name);*/
 					repeat = FALSE;
 				}
