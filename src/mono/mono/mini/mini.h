@@ -742,6 +742,7 @@ gpointer          mono_create_jump_trampoline (MonoDomain *domain,
 											   MonoMethod *method, 
 											   gboolean add_sync_wrapper);
 gpointer          mono_create_class_init_trampoline (MonoVTable *vtable);
+gpointer          mono_create_jit_trampoline (MonoMethod *method);
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr);
 gboolean          mono_running_on_valgrind (void);
 

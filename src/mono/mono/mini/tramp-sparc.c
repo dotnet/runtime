@@ -336,19 +336,13 @@ gpointer
 mono_arch_create_jit_trampoline (MonoMethod *method)
 {
 	MonoJitInfo *ji;
+	gpointer code_start;
 
-	/* previously created trampoline code */
-	if (method->info)
-		return method->info;
-
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		return mono_arch_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
-
-	ji = create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, mono_domain_get ());
-	method->info = ji->code_start;
+	ji = create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, domain);
+	code_start = ji->code_start;
 	g_free (ji);
 
-	return method->info;
+	return code_start;
 }
 
 /**

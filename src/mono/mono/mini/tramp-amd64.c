@@ -413,21 +413,13 @@ gpointer
 mono_arch_create_jit_trampoline (MonoMethod *method)
 {
 	MonoJitInfo *ji;
-	MonoDomain *domain = mono_domain_get ();
-
-	/* Trampoline are domain specific, so cache only the one used in the root domain */
-	if ((domain == mono_get_root_domain ()) && method->info)
-		return method->info;
-
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		return mono_arch_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
+	gpointer code_start;
 
 	ji = create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, domain);
-	if (domain == mono_get_root_domain ())
-		method->info = ji->code_start;
+	code_start = ji->code_start;
 	g_free (ji);
 
-	return ji->code_start;
+	return code_start;
 }
 
 /**

@@ -471,13 +471,6 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	static guint8 *vc = NULL;
 	gint32 displace;
 
-	/* previously created trampoline code */
-	if (method->info)
-		return method->info;
-
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		return mono_arch_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
-
 	vc = create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
 
 	/* This is the method-specific part of the trampoline. Its purpose is
@@ -500,9 +493,6 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	/* Sanity check */
 	g_assert ((buf - code) <= METHOD_TRAMPOLINE_SIZE);
 	
-	/* Store trampoline address */
-	method->info = code;
-
 	mono_jit_stats.method_trampolines++;
 
 	return code;

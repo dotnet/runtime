@@ -489,20 +489,15 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	guint8 *tramp;
 	MonoJitInfo *ji;
 	MonoDomain* domain = mono_domain_get ();
-
-	/* previously created trampoline code */
-	if (method->info)
-		return method->info;
-
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		return mono_arch_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
+	gpointer code_start;
 
 	tramp = create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
-	/* FIXME: should pass the domain down tot his function */
+	/* FIXME: should pass the domain down to this function */
 	ji = create_specific_tramp (method, tramp, domain);
-	/* Store trampoline address */
-	method->info = ji->code_start;
-	return ji->code_start;
+	code_start = ji->code_start;
+	g_free (ji);
+
+	return code_start;
 }
 
 /**

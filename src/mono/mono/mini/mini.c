@@ -6201,6 +6201,27 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 	return ji->code_start;
 }
 
+gpointer
+mono_create_jit_trampoline (MonoMethod *method)
+{
+	MonoJitInfo *ji;
+	MonoDomain *domain = mono_domain_get ();
+	gpointer tramp;
+
+	/* Trampoline are domain specific, so cache only the one used in the root domain */
+	if ((domain == mono_get_root_domain ()) && method->info)
+		return method->info;
+
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		return mono_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
+
+	tramp = mono_arch_create_jit_trampoline (method);
+	if (domain == mono_get_root_domain ())
+		method->info = tramp;
+
+	return tramp;
+}	
+
 MonoVTable*
 mono_find_class_init_trampoline_by_addr (gconstpointer addr)
 {
@@ -6611,7 +6632,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			target = code;
 		} else
 			/* get the trampoline to the method from the domain */
-			target = mono_arch_create_jit_trampoline (patch_info->data.method);
+			target = mono_create_jit_trampoline (patch_info->data.method);
 		break;
 	case MONO_PATCH_INFO_SWITCH: {
 		gpointer *jump_table;
@@ -8377,7 +8398,7 @@ mini_init (const char *filename)
 #ifdef JIT_TRAMPOLINES_WORK
 	mono_install_compile_method (mono_jit_compile_method);
 	mono_install_free_method (mono_jit_free_method);
-	mono_install_trampoline (mono_arch_create_jit_trampoline);
+	mono_install_trampoline (mono_create_jit_trampoline);
 	mono_install_remoting_trampoline (mono_jit_create_remoting_trampoline);
 #endif
 #define JIT_INVOKE_WORKS
