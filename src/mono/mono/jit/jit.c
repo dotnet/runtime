@@ -2198,7 +2198,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				this = mono_ctree_new_leaf (mp, MB_TERM_NOP);
 			
 
-			if (MONO_TYPE_ISSTRUCT (csig->ret)) {
+			if (MONO_TYPE_ISSTRUCT (csig->ret) && !array_rank) {
 				int size, align;
 				if (csig->pinvoke)
 					size = mono_class_native_size (csig->ret->data.klass, &align);
