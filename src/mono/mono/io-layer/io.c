@@ -2387,6 +2387,47 @@ static int file_select (const struct dirent *dir)
 	return(!fnmatch (fullname, dir->d_name, FNM_PATHNAME));
 }
 
+#ifndef HAVE_SCANDIR
+
+typedef int (*qsort_compar_fct)(const void *, const void *);
+
+static int scandir(const char *dir, struct dirent ***namelist,
+				   int (*select)(const struct dirent *),
+				   int (*compar)(const struct dirent **, const struct dirent **))
+{
+  DIR *d;
+  struct dirent *entry;
+  register int i=0;
+  size_t entrysize;
+
+  if ((d=opendir(dir)) == NULL)
+     return(-1);
+
+  *namelist=NULL;
+  while ((entry=readdir(d)) != NULL)
+  {
+    if (select == NULL || (select != NULL && (*select)(entry)))
+    {
+      *namelist=(struct dirent **)realloc((void *)(*namelist),
+                 (size_t)((i+1)*sizeof(struct dirent *)));
+        if (*namelist == NULL) return(-1);
+        entrysize=sizeof(struct 
+dirent)-sizeof(entry->d_name)+strlen(entry->d_name)+1;
+        (*namelist)[i]=(struct dirent *)malloc(entrysize);
+        if ((*namelist)[i] == NULL) return(-1);
+        memcpy((*namelist)[i], entry, entrysize);
+        i++;
+    }
+  }
+  if (closedir(d)) return(-1);
+  if (i == 0) return(-1);
+  if (compar != NULL)
+    qsort((void *)(*namelist), (size_t)i, sizeof(struct dirent *), (qsort_compar_fct)compar);
+
+  return(i);
+}
+#endif
+
 gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 {
 	struct _WapiHandlePrivate_find *find_handle;
