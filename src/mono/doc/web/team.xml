@@ -273,4 +273,19 @@
     </tasks>
   </contributor>
 
+  <contributor>
+    <name>
+      <first-name>Nick</first-name>
+      <last-name>Drochak</last-name>
+    </name>
+    <e-mail>ndrochak@gol.com</e-mail>
+    <image>none.png</image>
+    <location>Tokyo, Japan</location>
+    <description>Programmer-type dude</description>
+    <tasks>
+      <task>Unit Tests</task>
+      <task>Quality Assurance</task>
+    </tasks>
+  </contributor>
+
 </contributors>
