@@ -83,6 +83,12 @@ sparc_sources = \
 	exceptions-sparc.c	\
 	tramp-sparc.c
 
+s390_sources = \
+	mini-s390.c		\
+	mini-s390.h		\
+	exceptions-s390.c	\
+	tramp-s390.c
+
 common_sources = \
 	mini.c		\
 	mini.h		\
@@ -141,6 +147,13 @@ libmono_la_SOURCES = \
 arch_BURGSRC= $(srcdir)/inssel-sparc.brg
 endif
 
+if S390
+libmono_la_SOURCES = \
+	$(common_sources) $(s390_sources)
+
+arch_BURGSRC= $(srcdir)/inssel-s390.brg
+endif
+
 BURGSRC= $(common_BURGSRC) $(arch_BURGSRC)
 
 libmonoincludedir = $(includedir)/mono/jit
@@ -167,6 +180,9 @@ cpu-g4.h: cpu-g4.md genmdesc$(EXEEXT)
 
 cpu-sparc.h: cpu-sparc.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-sparc.md cpu-sparc.h sparc_desc
+
+cpu-s390.h: cpu-s390.md genmdesc$(EXEEXT)
+	./genmdesc $(srcdir)/cpu-s390.md cpu-s390.h s390
 
 inssel.c inssel.h: $(BURGSRC)
 	$(monodir)/mono/monoburg/monoburg -c 1 -p -e $(BURGSRC) -d inssel.h -s inssel.c
@@ -204,19 +220,24 @@ stat3: mono bench.exe
 	./mono --statfile stats.pl --ncompile 1000 --compile Tests:test_0_many_nested_loops bench.exe 
 	perl viewstat.pl stats.pl
 
+docu: mini.sgm
+	docbook2txt mini.sgm
+
 clean:
 	rm -f mono a.out gmon.out *.o test.exe
 
 pkgconfigdir = $(libdir)/pkgconfig
 
+documents=mini-doc.txt mini-porting.txt
+
 if JIT_SUPPORTED
-BUILT_SOURCES= inssel.c inssel.h cpu-pentium.h cpu-g4.h cpu-sparc.h
+BUILT_SOURCES= inssel.c inssel.h cpu-pentium.h cpu-g4.h cpu-sparc.h cpu-s390.h
 endif
 
 CLEANFILES= $(BUILT_SOURCES)
-EXTRA_DIST = $(common_BURGSRC) inssel-x86.brg inssel-ppc.brg \
+EXTRA_DIST = $(common_BURGSRC) $(documents) inssel-x86.brg inssel-ppc.brg inssel-s390.brg \
 	$(x86_sources) $(ppc_sources) $(sparc_sources) $(test_sources) \
 	jit-icalls.c cprop.c inssel-sparc.brg \
-	cpu-pentium.md cpu-g4.md ldscript cpu-sparc.md TestDriver.cs
+	cpu-pentium.md cpu-g4.md ldscript cpu-sparc.md cpu-s390.md TestDriver.cs
 
 
