@@ -305,7 +305,7 @@ ves_icall_System_GCHandle_FreeHandle (guint32 handle)
 {
 	int idx = handle >> 2;
 
-#ifdef HAVE_BOHEM_GC
+#ifdef HAVE_BOEHM_GC
 	if ((handle & 0x3) > 1)
 		GC_unregister_disappearing_link (&(gc_handles [idx]));
 #else
