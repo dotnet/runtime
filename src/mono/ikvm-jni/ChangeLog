@@ -1,3 +1,8 @@
+2004-11-07  Zoltan Varga  <vargaz@freemail.hu>
+
+	* mono-jni.c (GET_SET_ARRAY_ELEMENTS): Fix compilation errors on
+	gcc 3.3.5.
+
 2004-06-24  David Waite  <mass@akuma.org>
 
 	* mono-jni.c: change to C90-style comments from C99/C++-style

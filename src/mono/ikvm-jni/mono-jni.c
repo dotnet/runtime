@@ -841,13 +841,13 @@ static void JNICALL Get##Type##ArrayRegion (JNIEnv *env, type##Array array, jsiz
 {\
     MonoArray *obj; \
 	obj = jniFuncs.UnwrapRef (env, (void*)array); \
-    memcpy (buf, mono_array_addr (obj, sizeof (type), start), (sizeof (type) * l)); \
+    memcpy (buf, mono_array_addr (obj, type, start), (sizeof (type) * l)); \
 } \
 static void JNICALL Set##Type##ArrayRegion (JNIEnv *env, type##Array array, jsize start, jsize l, type *buf) \
 { \
     MonoArray *obj; \
 	obj = jniFuncs.UnwrapRef (env, (void*)array); \
-    memcpy (mono_array_addr (obj, sizeof (type), start), buf, (sizeof (type) * l)); \
+    memcpy (mono_array_addr (obj, type, start), buf, (sizeof (type) * l)); \
 }
 
 GET_SET_ARRAY_ELEMENTS(Boolean,jboolean,gboolean)
