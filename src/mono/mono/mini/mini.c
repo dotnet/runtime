@@ -7900,7 +7900,7 @@ move_basic_block_to_end (MonoCompile *cfg, MonoBasicBlock *bb)
 	bb->next_bb = NULL;
 
 	/* Add a branch */
-	if (next && (!bb->last_ins || (bb->last_ins == OP_NOT_REACHED))) {
+	if (next && (!bb->last_ins || (bb->last_ins->opcode != OP_NOT_REACHED))) {
 		MonoInst *ins;
 
 		MONO_INST_NEW (cfg, ins, CEE_BR);
