@@ -1,3 +1,11 @@
+2004-12-14  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/mono-wrapper.in (MONO_SHARED_DIR): Set.  Ensures that
+	state isn't shared between an installed runtime and the in-tree
+	runtime, and also ensure that both 'make check' and 'make
+	distcheck' can run in parallel.
+	* runtime/Makefile.am (clean-local): Remove the .wapi directory.
+
 2004-12-09  Raja R Harinath  <rharinath@novell.com>
 
 	* README: Update with details about the new build setup.
