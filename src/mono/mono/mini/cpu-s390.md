@@ -271,10 +271,6 @@ sizeof:
 refanytype:
 illegal:
 endmac:
-mono_func1:
-mono_proc2:
-mono_proc3:
-mono_free:
 mono_objaddr:
 mono_ldptr:
 mono_vtaddr:
