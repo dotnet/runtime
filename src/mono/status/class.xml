@@ -949,15 +949,6 @@
             <maintainer>michaellambert@bellsouth.net</maintainer>
         </maintainers>
     </class>
-    <class name="System.Threading.WaitHandle">
-        <last-activity>Jul-21-2001</last-activity>
-        <implementation>no</implementation>
-        <test-suite>no</test-suite>
-        <completion>?</completion>
-        <maintainers>
-            <maintainer>michaellambert@bellsouth.net</maintainer>
-        </maintainers>
-    </class>
     <class name="System.IntPtr">
         <last-activity>Jul-21-2001</last-activity>
         <implementation>yes</implementation>
@@ -2764,6 +2755,267 @@
         <completion>100</completion> 
         <maintainers>
             <maintainer>bob@thestuff.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.AutoResetEvent">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.Interlocked">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.ManualResetEvent">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.Monitor">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.Mutex">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.Overlapped">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.ReaderWriterLock">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.RegisteredWaitHandle">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.SynchronizationLockException">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.Thread">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.ThreadAbortException">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.ThreadExceptionEventArgs">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.ThreadInterruptedException">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.ThreadPool">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.ThreadStateException">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.Timeout">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.Timer">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.WaitHandle">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.LockCookie">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>0</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.NativeOverlapped">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.IOCompletionCallback">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.ThreadExceptionEventHandler">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.ThreadStart">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.TimerCallback">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.WaitCallback">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.WaitOrTimerCallback">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.ApartmentState">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>dick@ximian.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.ThreadPriority">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>michaellambert@bellsouth.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Threading.ThreadState">
+        <last-activity>Sep-14-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>michaellambert@bellsouth.net</maintainer>
         </maintainers>
     </class>
 </classes>

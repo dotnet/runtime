@@ -1,3 +1,9 @@
+2001-09-14  Dick Porter  <dick@ximian.com>
+
+	* class.xml: Added System.Threading classes
+
+	* maintainers.xml: Added myself
+
 2001-07-17  Sean MacIsaac  <macisaac@ximian.com>
 
 	* ByNamespace.xsl: removed bug for improper handling of namespace.
