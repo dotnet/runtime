@@ -83,6 +83,8 @@
 
 #define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))
 
+#define SIGNAL_STACK_SIZE (64 * 1024)
+
 /* Whenever the CPU supports v9 instructions */
 gboolean sparcv9 = FALSE;
 
@@ -809,9 +811,11 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				gint align;
 				guint32 offset, pad;
 				guint32 size;
-
-				if (sig->params [i - sig->hasthis]->type == MONO_TYPE_TYPEDBYREF)
+				
+				if (sig->params [i - sig->hasthis]->type == MONO_TYPE_TYPEDBYREF) {
 					size = sizeof (MonoTypedRef);
+					align = 4;
+				}
 				else
 				if (sig->pinvoke)
 					size = mono_type_native_stack_size (&in->klass->byval_arg, &align);
@@ -3826,6 +3830,19 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 void
 mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 {
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+	struct sigaltstack sa;
+
+	printf ("SIGALT!\n");
+	/* Setup an alternate signal stack */
+	tls->signal_stack = g_malloc (SIGNAL_STACK_SIZE * 100);
+	tls->signal_stack_size = SIGNAL_STACK_SIZE;
+
+	sa.ss_sp = tls->signal_stack;
+	sa.ss_size = SIGNAL_STACK_SIZE * 100;
+	sa.ss_flags = 0;
+	g_assert (sigaltstack (&sa, NULL) == 0);
+#endif
 }
 
 void
