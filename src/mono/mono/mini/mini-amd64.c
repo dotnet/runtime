@@ -1239,7 +1239,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 			if (ins->inst_imm == 0 && ins->next &&
 			    (ins->next->opcode == CEE_BEQ || ins->next->opcode == CEE_BNE_UN ||
-			     ins->next->opcode == OP_CEQ)) {
+			     ins->next->opcode == OP_CEQ || ins->next->opcode == OP_COND_EXC_EQ)) {
 				ins->opcode = OP_X86_TEST_NULL;
 			}     
 			break;
@@ -4516,17 +4516,21 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	/* add code to raise exceptions */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
-		case MONO_PATCH_INFO_EXC:
+		case MONO_PATCH_INFO_EXC: {
+			guint64 offset;
+
 			amd64_patch (patch_info->ip.i + cfg->native_code, code);
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);
 			amd64_set_reg_template (code, AMD64_RDI);
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_REL, (gpointer)(gssize)patch_info->ip.i);
-			amd64_set_reg_template (code, AMD64_RSI);
+			/* 7 is the length of the lea */
+			offset = (((guint64)code + 7) - (guint64)cfg->native_code) - (guint64)patch_info->ip.i;
+			amd64_lea_membase (code, AMD64_RSI, AMD64_RIP, - offset);
 			patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
 			patch_info->data.name = "mono_arch_throw_exception_by_name";
 			patch_info->ip.i = code - cfg->native_code;
 			EMIT_CALL ();
 			break;
+		}
 		default:
 			/* do nothing */
 			break;
