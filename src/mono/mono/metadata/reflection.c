@@ -6624,13 +6624,12 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 /*
  * mono_reflection_get_custom_attrs:
  * @obj: a reflection object handle
- * @pseudo_attrs: whenever to return pseudo attributes
  *
  * Return an array with all the custom attributes defined of the
  * reflection handle @obj. The objects are fully build.
  */
 MonoArray*
-mono_reflection_get_custom_attrs (MonoObject *obj, gboolean pseudo_attrs)
+mono_reflection_get_custom_attrs (MonoObject *obj)
 {
 	MonoClass *klass;
 	MonoArray *result;

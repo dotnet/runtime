@@ -60,7 +60,7 @@ MonoReflectionEvent*    mono_event_get_object    (MonoDomain *domain, MonoClass 
 MonoArray* mono_param_get_objects  (MonoDomain *domain, MonoMethod *method);
 MonoObject* mono_get_dbnull_object (MonoDomain *domain);
 
-MonoArray*  mono_reflection_get_custom_attrs (MonoObject *obj, gboolean pseudo_attrs);
+MonoArray*  mono_reflection_get_custom_attrs (MonoObject *obj);
 MonoArray*  mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *porpValues, MonoArray *fields, MonoArray* fieldValues);
 
 MonoArray*  mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo);
