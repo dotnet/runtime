@@ -10,12 +10,6 @@ OBJECTS=	\
 	deploy/books.html			\
 	deploy/contributing.html		\
 	deploy/class-status.html		\
-	deploy/class-status-corlib.html		\
-	deploy/class-status-System.html		\
-	deploy/class-status-System.Xml.html	\
-	deploy/class-status-System.Drawing.html	\
-	deploy/class-status-System.Data.html	\
-	deploy/class-status-System.Web.html	\
 	deploy/class-library.html		\
 	deploy/classlib-doc.html		\
 	deploy/contact.html			\
@@ -33,6 +27,8 @@ OBJECTS=	\
 	deploy/jit-debug-sample2.html		\
 	deploy/languages.html			\
 	deploy/mailing-lists.html		\
+	deploy/mono-beginning.html		\
+	deploy/mono-beginning-xml.html		\
 	deploy/mono-contribution-howto.html	\
 	deploy/monodoc-xml.html			\
 	deploy/papers.html			\
