@@ -37,7 +37,7 @@
 #define MRT_type_field_fieldsize	0x13
 
 #define MRI_string_offset_length	0x00
-#define MRI_string_offset_vector	0x01
+#define MRI_string_offset_chars		0x01
 
 #define MRI_array_offset_bounds		0x00
 #define MRI_array_offset_max_length	0x01
@@ -560,10 +560,8 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				off = (guchar *) &string.length - (guchar *) &string;
 				break;
 
-			case MRI_string_offset_vector:
-				// fixme: don know how to fix this
-				g_assert_not_reached ();
-				//off = (guchar *) &string.c_str - (guchar *) &string;
+			case MRI_string_offset_chars:
+				off = (guchar *) &string.chars - (guchar *) &string;
 				break;
 
 			default:
@@ -702,12 +700,6 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			switch (idx) {
 			case MRI_string_offset_length:
 				fieldsize = sizeof (string.length);
-				break;
-
-			case MRI_string_offset_vector:
-				// fixme:
-				//fieldsize = sizeof (string.c_str);
-				g_assert_not_reached ();
 				break;
 
 			default:
