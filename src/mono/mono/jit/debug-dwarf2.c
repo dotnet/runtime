@@ -971,6 +971,8 @@ write_method_lines_func (gpointer key, gpointer value, gpointer user_data)
 static void
 write_line_numbers (MonoDebugHandle *debug)
 {
+	GList *tmp;
+
 	/* State machine registers. */
 	int i;
 	
@@ -1009,7 +1011,11 @@ write_line_numbers (MonoDebugHandle *debug)
 	dwarf2_write_byte (debug->f, 0);
 	dwarf2_write_label (debug->f, "DL3");
 
-	g_hash_table_foreach (debug->methods, write_method_lines_func, debug);
+	for (tmp = debug->info; tmp; tmp = tmp->next) {
+		AssemblyDebugInfo *info = (AssemblyDebugInfo*)tmp->data;
+
+		g_hash_table_foreach (info->methods, write_method_lines_func, debug);
+	}
 
 	dwarf2_write_label (debug->f, "debug_line_e");
 }
@@ -1133,6 +1139,8 @@ write_method_func (gpointer key, gpointer value, gpointer user_data)
 void
 mono_debug_write_dwarf2 (MonoDebugHandle *debug)
 {
+	GList *tmp;
+
 	if (!(debug->f = fopen (debug->filename, "w"))) {
 		g_warning ("Can't create dwarf file `%s': %s", debug->filename, g_strerror (errno)); 
 		return;
@@ -1354,7 +1362,11 @@ mono_debug_write_dwarf2 (MonoDebugHandle *debug)
 	dwarf2_write_ref4 (debug->f, "debug_lines_b");
 
 	// Methods
-	g_hash_table_foreach (debug->methods, write_method_func, debug);
+	for (tmp = debug->info; tmp; tmp = tmp->next) {
+		AssemblyDebugInfo *info = (AssemblyDebugInfo*)tmp->data;
+
+		g_hash_table_foreach (info->methods, write_method_func, debug);
+	}
 
 	// Derived types
 	g_hash_table_foreach (debug->type_hash, write_class, debug);

@@ -24,14 +24,6 @@ free_method_info (DebugMethodInfo *minfo)
 	g_free (minfo);
 }
 
-static MonoDebugMethodInfo *
-method_info_func (MonoSymbolFile *symfile, MonoMethod *method, gpointer user_data)
-{
-	AssemblyDebugInfo *info = user_data;
-
-	return (MonoDebugMethodInfo *) g_hash_table_lookup (info->handle->methods, method);
-}
-
 static void
 debug_arg_warning (const char *message)
 {
@@ -52,8 +44,6 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 	debug->dirty = TRUE;
 
 	debug->type_hash = g_hash_table_new (NULL, NULL);
-	debug->methods = g_hash_table_new_full (g_direct_hash, g_direct_equal,
-						NULL, (GDestroyNotify) free_method_info);
 	debug->source_files = g_ptr_array_new ();
 
 	for (ptr = args; ptr && *ptr; ptr++) {
@@ -111,6 +101,11 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 				debug->flags |= MONO_DEBUG_FLAGS_DONT_CREATE_IL_FILES;
 				continue;
 			}
+		} else {
+			if (!strcmp (arg, "internal_mono_debugger")) {
+				debug->flags |= MONO_DEBUG_FLAGS_MONO_DEBUGGER;
+				continue;
+			}
 		}
 
 		message = g_strdup_printf ("Unknown argument `%s'.", arg);
@@ -160,7 +155,9 @@ debug_load_method_lines (AssemblyDebugInfo* info)
 	int i, mnum;
 	int offset = -1;
 
-	if (!(info->handle->flags & MONO_DEBUG_FLAGS_DONT_UPDATE_IL_FILES)) {
+	g_message (G_STRLOC ": %d - %s", info->always_create_il, info->filename);
+
+	if (info->always_create_il || !(info->handle->flags & MONO_DEBUG_FLAGS_DONT_UPDATE_IL_FILES)) {
 		char *command = g_strdup_printf ("monodis --output=%s %s",
 						 info->ilfile, info->image->name);
 		struct stat stata, statb;
@@ -263,10 +260,11 @@ record_line_number (DebugMethodInfo *minfo, gpointer address, guint32 line, int 
 }
 
 static void
-record_il_offset (GPtrArray *array, guint32 offset, guint32 address)
+record_il_offset (GPtrArray *array, guint32 line, guint32 offset, guint32 address)
 {
 	MonoDebugILOffsetInfo *info = g_new0 (MonoDebugILOffsetInfo, 1);
 
+	info->line = line;
 	info->offset = offset;
 	info->address = address;
 
@@ -289,7 +287,7 @@ debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, Mo
 	/* record_line_number takes absolute memory addresses. */
 	record_line_number (minfo, minfo->method_info.code_start, minfo->start_line, FALSE);
 	/* record_il_offsets uses offsets relative to minfo->method_info.code_start. */
-	record_il_offset (il_offsets, 0, st_address);
+	record_il_offset (il_offsets, minfo->start_line, 0, st_address);
 
 	/* This is the first actual code line of the method. */
 	record_line_number (minfo, minfo->method_info.code_start + st_address, st_line, TRUE);
@@ -313,7 +311,7 @@ debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, Mo
 			st_address += addr_inc;
 
 			if (t->cli_addr != -1)
-				record_il_offset (il_offsets, t->cli_addr, st_address);
+				record_il_offset (il_offsets, st_line, t->cli_addr, st_address);
 
 			if (!info->moffsets)
 				continue;
@@ -383,6 +381,8 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 	info->name = g_strdup (image->assembly_name);
 	info->format = debug->format;
 	info->handle = debug;
+	info->methods = g_hash_table_new_full (g_direct_hash, g_direct_equal,
+					       NULL, (GDestroyNotify) free_method_info);
 
 	info->source_file = debug->source_files->len;
 	g_ptr_array_add (debug->source_files, g_strdup_printf ("%s.il", image->assembly_name));
@@ -413,7 +413,23 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 
 	case MONO_DEBUG_FORMAT_MONO:
 		info->filename = g_strdup_printf ("%s.dbg", info->name);
-		info->mono_symfile = mono_debug_open_mono_symbol_file (info->image, info->filename, TRUE);
+		if (g_file_test (info->filename, G_FILE_TEST_EXISTS))
+			info->mono_symfile = mono_debug_open_mono_symbol_file
+				(info->image, info->filename, TRUE);
+		else if (debug->flags & MONO_DEBUG_FLAGS_MONO_DEBUGGER) {
+			g_message (G_STRLOC ": Creating symbol file: %s - %s", info->name,
+				   info->image->name);
+			info->always_create_il = TRUE;
+			if (debug->flags & MONO_DEBUG_FLAGS_INSTALL_IL_FILES) {
+				gchar *dirname = g_path_get_dirname (image->name);
+				info->ilfile = g_strdup_printf ("%s/%s.il", dirname, info->name);
+				g_free (dirname);
+			} else {
+				info->ilfile = g_strdup_printf ("%s.il", info->name);
+			}
+			debug_load_method_lines (info);
+			info->mono_symfile = mono_debug_create_mono_symbol_file (info->image, info->ilfile);
+		}
 		mono_debugger_internal_symbol_files_changed = TRUE;
 		break;
 
@@ -441,7 +457,6 @@ mono_debug_write_symbols (MonoDebugHandle *debug)
 
 	if (!debug || !debug->dirty)
 		return;
-
 	switch (debug->format) {
 	case MONO_DEBUG_FORMAT_STABS:
 		mono_debug_write_stabs (debug);
@@ -463,7 +478,7 @@ mono_debug_write_symbols (MonoDebugHandle *debug)
 			if (!info->mono_symfile)
 				continue;
 
-			mono_debug_update_mono_symbol_file (info->mono_symfile, method_info_func, info);
+			mono_debug_update_mono_symbol_file (info->mono_symfile, info->methods);
 		}
 		break;
 	default:
@@ -496,6 +511,7 @@ mono_debug_close_assembly (AssemblyDebugInfo* info)
 	default:
 		break;
 	}
+	g_hash_table_destroy (info->methods);
 	g_free (info->mlines);
 	g_free (info->moffsets);
 	g_free (info->name);
@@ -524,7 +540,6 @@ mono_debug_cleanup (void)
 		}
 
 		g_ptr_array_free (debug->source_files, TRUE);
-		g_hash_table_destroy (debug->methods);
 		g_hash_table_destroy (debug->type_hash);
 		g_free (debug->producer_name);
 		g_free (debug->name);
@@ -714,7 +729,7 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 		}
 	}
 
-	if (g_hash_table_lookup (debug->methods, method))
+	if (g_hash_table_lookup (info->methods, method))
 		return;
 
 	debug->dirty = TRUE;
@@ -803,22 +818,36 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 		minfo->method_info.locals = locals;
 	}
 
-	g_hash_table_insert (debug->methods, method, minfo);
+	g_hash_table_insert (info->methods, method, minfo);
+}
+
+static DebugMethodInfo *
+lookup_method (MonoMethod *method)
+{
+	MonoDebugHandle *debug;
+
+	for (debug = mono_debug_handles; debug; debug = debug->next) {
+		GList *tmp;
+
+		for (tmp = debug->info; tmp; tmp = tmp->next) {
+			AssemblyDebugInfo *info = (AssemblyDebugInfo*)tmp->data;
+			DebugMethodInfo *minfo;
+
+			minfo = g_hash_table_lookup (info->methods, method);
+			if (minfo)
+				return minfo;
+		}
+	}
+
+	return NULL;
 }
 
 gchar *
 mono_debug_source_location_from_address (MonoMethod *method, guint32 address, guint32 *line_number)
 {
+	DebugMethodInfo *minfo = lookup_method (method);
 	MonoDebugHandle *debug;
-	DebugMethodInfo *minfo = NULL;
 	int i;
-
-	for (debug = mono_debug_handles; debug; debug = debug->next) {
-		minfo = g_hash_table_lookup (debug->methods, method);
-
-		if (minfo)
-			break;
-	}
 
 	if (!minfo)
 		return NULL;
@@ -834,6 +863,8 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address, gu
 
 	if (!minfo->line_numbers)
 		return NULL;
+
+	debug = minfo->info->handle;
 
 	for (i = 0; i < minfo->line_numbers->len; i++) {
 		DebugLineNumberInfo *lni = g_ptr_array_index (minfo->line_numbers, i);
@@ -855,19 +886,12 @@ mono_debug_source_location_from_address (MonoMethod *method, guint32 address, gu
 gint32
 mono_debug_il_offset_from_address (MonoMethod *method, gint32 address)
 {
-	MonoDebugHandle *debug;
-	DebugMethodInfo *minfo = NULL;
+	DebugMethodInfo *minfo;
 
 	if (address < 0)
 		return -1;
 
-	for (debug = mono_debug_handles; debug; debug = debug->next) {
-		minfo = g_hash_table_lookup (debug->methods, method);
-
-		if (minfo)
-			break;
-	}
-
+	minfo = lookup_method (method);
 	if (!minfo || !minfo->method_info.il_offsets)
 		return -1;
 
@@ -877,35 +901,26 @@ mono_debug_il_offset_from_address (MonoMethod *method, gint32 address)
 gint32
 mono_debug_address_from_il_offset (MonoMethod *method, gint32 il_offset)
 {
-	MonoDebugHandle *debug;
-	DebugMethodInfo *minfo = NULL;
+	DebugMethodInfo *minfo;
 
 	if (il_offset < 0)
 		return -1;
 
-	for (debug = mono_debug_handles; debug; debug = debug->next) {
-		minfo = g_hash_table_lookup (debug->methods, method);
-
-		if (minfo)
-			break;
-	}
-
+	minfo = lookup_method (method);
 	if (!minfo || !minfo->method_info.il_offsets)
 		return -1;
 
 	return address_from_il_offset (minfo, il_offset);
 }
 
-gconstpointer
+MonoSymbolFile *
 mono_debugger_internal_get_symbol_files (void)
 {
 	MonoDebugHandle *debug;
-	GPtrArray *symfiles = g_ptr_array_new ();
+	MonoSymbolFile *symfiles, *ptr;
+	int count = 0;
 
 	mono_debug_make_symbols ();
-
-	g_ptr_array_add (symfiles, GUINT_TO_POINTER (MONO_SYMBOL_FILE_VERSION));
-	g_ptr_array_add (symfiles, symfiles);
 
 	for (debug = mono_debug_handles; debug; debug = debug->next) {
 		GList *tmp;
@@ -917,34 +932,41 @@ mono_debugger_internal_get_symbol_files (void)
 			AssemblyDebugInfo *info = (AssemblyDebugInfo*)tmp->data;
 			MonoSymbolFile *symfile = info->mono_symfile;
 
-			if (!symfile || !symfile->raw_contents)
+			if (!symfile)
 				continue;
 
-
-			g_ptr_array_add (symfiles, symfile->raw_contents);
-			g_ptr_array_add (symfiles, symfile->offset_table);
-			g_ptr_array_add (symfiles, GUINT_TO_POINTER (symfile->offset_table->total_file_size));
+			count++;
 		}
 	}
 
-	g_ptr_array_add (symfiles, NULL);
-	g_ptr_array_add (symfiles, NULL);
-	g_ptr_array_add (symfiles, NULL);
+	symfiles = ptr = g_new0 (MonoSymbolFile, count+1);
+
+	for (debug = mono_debug_handles; debug; debug = debug->next) {
+		GList *tmp;
+
+		if (debug->format != MONO_DEBUG_FORMAT_MONO)
+			continue;
+
+		for (tmp = debug->info; tmp; tmp = tmp->next) {
+			AssemblyDebugInfo *info = (AssemblyDebugInfo*)tmp->data;
+			MonoSymbolFile *symfile = info->mono_symfile;
+
+			if (!symfile)
+				continue;
+
+			*ptr++ = *symfile;
+		}
+	}
 
 	mono_debugger_internal_symbol_files_changed = FALSE;
 
-	return symfiles->pdata;
+	return symfiles;
 }
 
 void
 mono_debugger_internal_free_symbol_files (gpointer data)
 {
-	gpointer *ptr = (gpointer *) data;
-
-	if (GPOINTER_TO_UINT (*ptr++ ) != MONO_SYMBOL_FILE_VERSION)
-		g_assert_not_reached ();
-
-	g_ptr_array_free ((GPtrArray *) *ptr, FALSE);
+	g_free (data);
 }
 
 /* This is intentionally a global variable and not a method. */

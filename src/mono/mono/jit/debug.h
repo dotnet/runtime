@@ -3,7 +3,7 @@
 
 #include <glib.h>
 #include <stdio.h>
-#include <mono/metadata/debug-symfile.h>
+#include <mono/metadata/debug-mono-symfile.h>
 #include <mono/metadata/loader.h>
 #include <mono/jit/jit.h>
 
@@ -93,7 +93,7 @@ void           mono_debug_write_symbols (MonoDebugHandle* debug);
  * Returns a pointer to a region of memory within the JIT's address space.  The Mono
  * Debugger uses this data to get information about the symbol files.
  */
-gconstpointer  mono_debugger_internal_get_symbol_files (void);
+MonoSymbolFile *mono_debugger_internal_get_symbol_files (void);
 void mono_debugger_internal_free_symbol_files (gpointer data);
 extern int mono_debugger_internal_symbol_files_changed;
 

@@ -176,6 +176,7 @@ void
 mono_debug_write_stabs (MonoDebugHandle *debug)
 {
 	gchar *source_file;
+	GList *tmp;
 	int i;
 
 	if (!(debug->f = fopen (debug->filename, "w"))) {
@@ -199,7 +200,11 @@ mono_debug_write_stabs (MonoDebugHandle *debug)
 		fprintf (debug->f, ",128,0,0,0\n");
 	}
 
-	g_hash_table_foreach (debug->methods, write_method_func, debug);
+	for (tmp = debug->info; tmp; tmp = tmp->next) {
+		AssemblyDebugInfo *info = (AssemblyDebugInfo*)tmp->data;
+
+		g_hash_table_foreach (info->methods, write_method_func, debug);
+	}
 
 	g_hash_table_foreach (debug->type_hash, write_class, debug);
 
