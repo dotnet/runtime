@@ -3827,12 +3827,12 @@ mono_jit_compile_method (MonoMethod *method)
 #endif
 				nm = mono_marshal_get_native_wrapper (method);
 				method->info = mono_compile_method (nm);
+
+				if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) 
+					mono_debug_add_wrapper (method, nm);
 #ifdef MONO_USE_EXC_TABLES
 			}
 #endif
-
-			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) 
-				mono_debug_add_wrapper (method);
 		}
 
 		return method->info;

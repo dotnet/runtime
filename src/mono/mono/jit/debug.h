@@ -71,7 +71,7 @@ void           mono_debug_cleanup (void);
 
 void           mono_debug_add_method (MonoFlowGraph *cfg);
 
-void           mono_debug_add_wrapper (MonoMethod *method);
+void           mono_debug_add_wrapper (MonoMethod *method, MonoMethod *wrapper_method);
 
 void           mono_debug_add_type (MonoClass *klass);
 

@@ -136,6 +136,12 @@ free_method_info (MonoDebugMethodInfo *minfo)
 }
 
 static void
+free_wrapper_info (DebugWrapperInfo *winfo)
+{
+	g_free (winfo);
+}
+
+static void
 debug_arg_warning (const char *message)
 {
 	g_warning ("Error while processing --debug-args arguments: %s", message);
@@ -742,6 +748,8 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 	info->handle = debug;
 	info->methods = g_hash_table_new_full (g_direct_hash, g_direct_equal,
 					       NULL, (GDestroyNotify) free_method_info);
+	info->wrapper_methods = g_hash_table_new_full (g_direct_hash, g_direct_equal,
+						       NULL, (GDestroyNotify) free_wrapper_info);
 
 	info->source_file = debug->source_files->len;
 	g_ptr_array_add (debug->source_files, g_strdup_printf ("%s.il", image->assembly_name));
@@ -845,6 +853,7 @@ mono_debug_close_assembly (AssemblyDebugInfo* info)
 		break;
 	}
 	g_hash_table_destroy (info->methods);
+	g_hash_table_destroy (info->wrapper_methods);
 	g_free (info->mlines);
 	g_free (info->moffsets);
 	g_free (info->name);
@@ -1071,11 +1080,19 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 	    (method->flags & METHOD_ATTRIBUTE_ABSTRACT))
 		return;
 
-	if (method->wrapper_type != MONO_WRAPPER_NONE)
-		return;
-
 	info = mono_debug_get_image (mono_debug_handle, klass->image);
 	g_assert (info);
+
+	if (method->wrapper_type != MONO_WRAPPER_NONE) {
+		DebugWrapperInfo *winfo = g_new0 (DebugWrapperInfo, 1);
+
+		winfo->method = method;
+		winfo->code_start = cfg->start;
+		winfo->code_size = cfg->epilogue_end;
+
+		g_hash_table_insert (info->wrapper_methods, method, winfo);
+		return;
+	}
 
 	minfo = lookup_method (method);
 	if (!minfo || minfo->jit)
@@ -1168,11 +1185,12 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 }
 
 void
-mono_debug_add_wrapper (MonoMethod *method)
+mono_debug_add_wrapper (MonoMethod *method, MonoMethod *wrapper_method)
 {
 	MonoClass *klass = method->klass;
 	AssemblyDebugInfo* info;
 	MonoDebugMethodInfo *minfo;
+	DebugWrapperInfo *winfo;
 	MonoDebugMethodJitInfo *jit;
 
 	if (!mono_debug_handle)
@@ -1190,15 +1208,18 @@ mono_debug_add_wrapper (MonoMethod *method)
 	if (!minfo || minfo->jit)
 		return;
 
+	winfo = g_hash_table_lookup (info->wrapper_methods, wrapper_method);
+	g_assert (winfo);
+
 	mono_debug_lock ();
 
 	mono_debug_handle->dirty = TRUE;
 
 	minfo->jit = jit = g_new0 (MonoDebugMethodJitInfo, 1);
-	jit->code_start = method->info;
-	jit->code_size = 10;
+	jit->code_start = winfo->code_start;
+	jit->code_size = winfo->code_size;
 	jit->prologue_end = 0;
-	jit->epilogue_begin = 10;
+	jit->epilogue_begin = winfo->code_size;
 	jit->num_params = 0;
 	jit->wrapper_addr = method->addr;
 

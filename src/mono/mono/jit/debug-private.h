@@ -35,6 +35,12 @@ typedef struct {
 	guint32 last_line;
 } DebugMethodInfo;
 
+typedef struct {
+	MonoMethod *method;
+	const guint8 *code_start;
+	guint32 code_size;
+} DebugWrapperInfo;
+
 struct _AssemblyDebugInfo {
 	MonoDebugFormat format;
 	MonoDebugHandle *handle;
@@ -50,6 +56,7 @@ struct _AssemblyDebugInfo {
 	int *moffsets;
 	int nmethods;
 	GHashTable *methods;
+	GHashTable *wrapper_methods;
 	MonoImage *image;
 	gpointer _priv;
 };
