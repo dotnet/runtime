@@ -448,10 +448,33 @@ arch_create_jit_trampoline (MonoMethod *method)
 	}
 
 	if (!vc) {
-		vc = buf = g_malloc (24);
+		vc = buf = g_malloc (256);
 
+		/* save LMF begin */
+		x86_push_reg (buf, X86_EBX);
+		x86_push_reg (buf, X86_EDI);
+		x86_push_reg (buf, X86_ESI);
+		x86_push_reg (buf, X86_EBP);
+
+		/* save the IP (caller ip) */
+		x86_push_membase (buf, X86_ESP, 20);
+
+		/* save method info */
+		x86_push_membase (buf, X86_ESP, 20);
+		/* get the address of lmf for the current thread */
+		x86_call_code (buf, arch_get_lmf_addr);
+		/* push lmf */
+		x86_push_reg (buf, X86_EAX); 
+		/* push *lfm (previous_lmf) */
+		x86_push_membase (buf, X86_EAX, 0);
+		/* *(lmf) = ESP */
+		x86_mov_membase_reg (buf, X86_EAX, 0, X86_ESP, 4);
+		/* save LFM end */
+
+		/* push the method info */
+		x86_push_membase (buf, X86_ESP, 32);
 		/* push the return address onto the stack */
-		x86_push_membase (buf, X86_ESP, 4);
+		x86_push_membase (buf, X86_ESP, 40);
 
 		/* save all register values */
 		x86_push_reg (buf, X86_EBX);
@@ -464,10 +487,30 @@ arch_create_jit_trampoline (MonoMethod *method)
 		x86_call_code (buf, x86_magic_trampoline);
 		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 8*4);
 
+		/* restore LMF start */
+		/* ebx = previous_lmf */
+		x86_pop_reg (buf, X86_EBX);
+		/* edi = lmf */
+		x86_pop_reg (buf, X86_EDI);
+		/* *(lmf) = previous_lmf */
+		x86_mov_membase_reg (buf, X86_EDI, 0, X86_EBX, 4);
+		/* discard method info */
+		x86_pop_reg (buf, X86_ESI);
+		/* discard save IP */
+		x86_pop_reg (buf, X86_ESI);
+		/* restore caller saved regs */
+		x86_pop_reg (buf, X86_EBP);
+		x86_pop_reg (buf, X86_ESI);
+		x86_pop_reg (buf, X86_EDI);
+		x86_pop_reg (buf, X86_EBX);
+		/* restore LMF end */
+
+		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4);
+
 		/* call the compiled method */
 		x86_jump_reg (buf, X86_EAX);
 
-		g_assert ((buf - vc) <= 24);
+		g_assert ((buf - vc) <= 256);
 	}
 
 	code = buf = g_malloc (16);

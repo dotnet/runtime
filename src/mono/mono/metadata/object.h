@@ -4,23 +4,49 @@
 #include <mono/metadata/class.h>
 #include <mono/metadata/threads-types.h>
 
-#define MONO_CHECK_ARG(domain, arg, expr) 	G_STMT_START{		  \
+#if 1
+#define mono_assert(expr) 	           G_STMT_START{		  \
+     if (!(expr))							  \
+       {								  \
+              	MonoException *ex;                                        \
+                char *msg = g_strdup_printf ("file %s: line %d (%s): "    \
+                "assertion failed: (%s)", __FILE__, __LINE__,             \
+                __PRETTY_FUNCTION__, #expr);				  \
+		ex = mono_get_exception_execution_engine (msg);           \
+		g_free (msg);                                             \
+                mono_raise_exception (ex);                                \
+       };				}G_STMT_END
+
+#define mono_assert_not_reached() 	          G_STMT_START{		  \
+     MonoException *ex;                                                   \
+     char *msg = g_strdup_printf ("file %s: line %d (%s): "               \
+     "should not be reached", __FILE__, __LINE__, __PRETTY_FUNCTION__);	  \
+     ex = mono_get_exception_execution_engine (msg);                      \
+     g_free (msg);                                                        \
+     mono_raise_exception (ex);                                           \
+}G_STMT_END
+#else
+#define mono_assert(expr) g_assert(expr)
+#define mono_assert_not_reached() g_assert_not_reached() 
+#endif
+
+#define MONO_CHECK_ARG(arg, expr)       	G_STMT_START{		  \
      if (!(expr))							  \
        {								  \
               	MonoException *ex;                                        \
                 char *msg = g_strdup_printf ("assertion `%s' failed",     \
 		#expr);							  \
                 if (arg) {} /* check if the name exists */                \
-		ex = mono_get_exception_argument (domain, #arg, msg);     \
+		ex = mono_get_exception_argument (#arg, msg);             \
 		g_free (msg);                                             \
                 mono_raise_exception (ex);                                \
        };				}G_STMT_END
 
-#define MONO_CHECK_ARG_NULL(domain, arg) 	 G_STMT_START{		  \
+#define MONO_CHECK_ARG_NULL(arg) 	    G_STMT_START{		  \
      if (arg == NULL)							  \
        {								  \
               	MonoException *ex;                                        \
-		ex = mono_get_exception_argument_null (domain, #arg);     \
+		ex = mono_get_exception_argument_null (#arg);             \
                 mono_raise_exception (ex);                                \
        };				}G_STMT_END
 

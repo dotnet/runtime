@@ -32,7 +32,7 @@ MonoException *
 mono_get_exception_null_reference      (void);
 
 MonoException *
-mono_get_exception_execution_engine    (void);
+mono_get_exception_execution_engine    (const guchar *msg);
 
 MonoException *
 mono_get_exception_invalid_cast        (void);
@@ -53,12 +53,12 @@ MonoException *
 mono_get_exception_not_implemented     (void);
 
 MonoException*
-mono_get_exception_argument_null       (MonoDomain *domain, const guchar *arg);
+mono_get_exception_argument_null       (const guchar *arg);
 
 MonoException *
-mono_get_exception_argument            (MonoDomain *domain, const guchar *arg, const guchar *msg);
+mono_get_exception_argument            (const guchar *arg, const guchar *msg);
 
 MonoException *
-mono_get_exception_io                  (MonoDomain *domain, const guchar *msg);
+mono_get_exception_io                  (const guchar *msg);
 
 #endif /* _MONO_METADATA_EXCEPTION_H_ */

@@ -149,7 +149,7 @@ ves_real_abort (int line, MonoMethod *mh,
 	if (sp > stack)
 		printf ("\t[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type, sp[-1].data.i, sp[-1].data.f);
 }
-#define ves_abort() do {ves_real_abort(__LINE__, frame->method, ip, frame->stack, sp); THROW_EX (mono_get_exception_execution_engine (), ip);} while (0);
+#define ves_abort() do {ves_real_abort(__LINE__, frame->method, ip, frame->stack, sp); THROW_EX (mono_get_exception_execution_engine (NULL), ip);} while (0);
 
 /*
  * runtime_class_init:
@@ -3338,7 +3338,7 @@ array_constructed:
 			}
 			case CEE_LOCALLOC:
 				if (sp != frame->stack)
-					THROW_EX (mono_get_exception_execution_engine (), ip - 1);
+					THROW_EX (mono_get_exception_execution_engine (NULL), ip - 1);
 				++ip;
 				sp->data.p = alloca (sp->data.i);
 				sp->type = VAL_TP;

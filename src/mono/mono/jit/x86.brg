@@ -116,7 +116,7 @@ get_mono_object_isinst (void);
 //#define DEBUG
 
 #define REAL_PRINT_REG(text,reg) \
-g_assert (reg >= 0); \
+mono_assert (reg >= 0); \
 x86_push_reg (s->code, X86_EAX); \
 x86_push_reg (s->code, X86_EDX); \
 x86_push_reg (s->code, X86_ECX); \
@@ -748,7 +748,7 @@ reg: CONV_OVF_I2 (reg) {
 	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_LE, TRUE, "OverflowException");	
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, -32768);
 	// fixme: check branch
-	g_assert_not_reached ();
+	mono_assert_not_reached ();
 	x86_branch8 (s->code, X86_CC_LT, -17, TRUE);
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
@@ -797,11 +797,11 @@ reg: MUL_OVF (reg, reg) {
 
 reg: MUL_OVF_UN (reg, reg) {
 	//fixme: implement me
-	g_assert_not_reached ();
+	mono_assert_not_reached ();
 }
 
 reg: DIV (reg, reg) {
-	g_assert (tree->right->reg1 != X86_EAX);
+	mono_assert (tree->right->reg1 != X86_EAX);
 
 	if (tree->left->reg1 != X86_EAX)
 		x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
@@ -809,12 +809,12 @@ reg: DIV (reg, reg) {
 	x86_cdq (s->code);
 	x86_div_reg (s->code, tree->right->reg1, TRUE);
 
-	g_assert (tree->reg1 == X86_EAX &&
+	mono_assert (tree->reg1 == X86_EAX &&
 		  tree->reg2 == X86_EDX);
 }
 
 reg: DIV_UN (reg, reg) {
-	g_assert (tree->right->reg1 != X86_EAX);
+	mono_assert (tree->right->reg1 != X86_EAX);
 
 	if (tree->left->reg1 != X86_EAX)
 		x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
@@ -822,13 +822,13 @@ reg: DIV_UN (reg, reg) {
 	x86_cdq (s->code);
 	x86_div_reg (s->code, tree->right->reg1, FALSE);
 
-	g_assert (tree->reg1 == X86_EAX &&
+	mono_assert (tree->reg1 == X86_EAX &&
 		  tree->reg2 == X86_EDX);
 }
 
 reg: REM (reg, reg) {
-	g_assert (tree->right->reg1 != X86_EAX);
-	g_assert (tree->right->reg1 != X86_EDX);
+	mono_assert (tree->right->reg1 != X86_EAX);
+	mono_assert (tree->right->reg1 != X86_EDX);
 
 	if (tree->left->reg1 != X86_EAX)
 		x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
@@ -838,13 +838,15 @@ reg: REM (reg, reg) {
 	x86_div_reg (s->code, tree->right->reg1, TRUE);
 	x86_mov_reg_reg (s->code, X86_EAX, X86_EDX, 4);
 
-	g_assert (tree->reg1 == X86_EAX &&
+		mono_assert_not_reached ();
+
+	mono_assert (tree->reg1 == X86_EAX &&
 		  tree->reg2 == X86_EDX);
 }
 
 reg: REM_UN (reg, reg) {
-	g_assert (tree->right->reg1 != X86_EAX);
-	g_assert (tree->right->reg1 != X86_EDX);
+	mono_assert (tree->right->reg1 != X86_EAX);
+	mono_assert (tree->right->reg1 != X86_EDX);
 
 	if (tree->left->reg1 != X86_EAX)
 		x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
@@ -854,7 +856,7 @@ reg: REM_UN (reg, reg) {
 	x86_div_reg (s->code, tree->right->reg1, FALSE);
 	x86_mov_reg_reg (s->code, X86_EAX, X86_EDX, 4);
 
-	g_assert (tree->reg1 == X86_EAX &&
+	mono_assert (tree->reg1 == X86_EAX &&
 		  tree->reg2 == X86_EDX);
 }
 
@@ -1005,7 +1007,7 @@ reg: SHL (reg, reg) {
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 
-	g_assert (tree->reg1 != X86_ECX &&
+	mono_assert (tree->reg1 != X86_ECX &&
 		  tree->left->reg1 != X86_ECX);
 }
 
@@ -1024,7 +1026,7 @@ reg: SHR (reg, reg) {
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 
-	g_assert (tree->reg1 != X86_ECX &&
+	mono_assert (tree->reg1 != X86_ECX &&
 		  tree->left->reg1 != X86_ECX);
 }
 
@@ -1043,7 +1045,7 @@ reg: SHR_UN (reg, reg) {
 	if (tree->reg1 != tree->left->reg1)
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 
-	g_assert (tree->reg1 != X86_ECX &&
+	mono_assert (tree->reg1 != X86_ECX &&
 		  tree->left->reg1 != X86_ECX);
 }
 
@@ -1197,7 +1199,7 @@ reg: NEWSTRUCT {
      	int size = tree->data.i;	
 	int sa;
 	
-	g_assert (size > 0);
+	mono_assert (size > 0);
 
 	sa = size + 3;
 	sa &= ~3;
@@ -1603,10 +1605,10 @@ reg: CALL_I4 (this, reg) {
 	if (lreg == treg || rreg == treg) 
 		treg = X86_ECX;
 	if (lreg == treg || rreg == treg) 
-		g_assert_not_reached ();
+		mono_assert_not_reached ();
 
 	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
+		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
 	}
 
@@ -1623,7 +1625,7 @@ reg: CALL_I4 (this, reg) {
 	
 	PRINT_REG ("CALL_I4", tree->reg1);
 
-	g_assert (tree->reg1 == X86_EAX);
+	mono_assert (tree->reg1 == X86_EAX);
 }
 
 reg: CALL_I4 (this, ADDR_G) {
@@ -1635,7 +1637,7 @@ reg: CALL_I4 (this, ADDR_G) {
 		treg = X86_EDX;
 	
 	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
+		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
 	}
 
@@ -1653,7 +1655,7 @@ reg: CALL_I4 (this, ADDR_G) {
 
 	PRINT_REG ("CALL_I4", tree->reg1);
 
-	g_assert (tree->reg1 == X86_EAX);
+	mono_assert (tree->reg1 == X86_EAX);
 }
 
 reg: LDFTN (reg, INTF_ADDR) {
@@ -1675,7 +1677,7 @@ reg: CALL_I4 (this, INTF_ADDR) {
 		treg = X86_EDX;
 
 	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
+		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
 	}
 
@@ -1696,7 +1698,7 @@ reg: CALL_I4 (this, INTF_ADDR) {
 
 	PRINT_REG ("CALL_I4(INTERFACE)", tree->reg1);
 
-	g_assert (tree->reg1 == X86_EAX);
+	mono_assert (tree->reg1 == X86_EAX);
 }
 
 reg: LDFTN (reg, VFUNC_ADDR) {
@@ -1716,7 +1718,7 @@ reg: CALL_I4 (this, VFUNC_ADDR) {
 		treg = X86_EDX;
 
 	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
+		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
 	}
 
@@ -1735,7 +1737,7 @@ reg: CALL_I4 (this, VFUNC_ADDR) {
 
 	PRINT_REG ("CALL_I4(VIRTUAL)", tree->reg1);
 
-	g_assert (tree->reg1 == X86_EAX);
+	mono_assert (tree->reg1 == X86_EAX);
 }
 
 stmt: CALL_VOID (this, ADDR_G) {
@@ -1747,7 +1749,7 @@ stmt: CALL_VOID (this, ADDR_G) {
 		treg = X86_EDX;
 	
 	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
+		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
 	}
 
@@ -1773,7 +1775,7 @@ stmt: CALL_VOID (this, INTF_ADDR) {
 		treg = X86_EDX;
 
 	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
+		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
 	}
 
@@ -1802,7 +1804,7 @@ stmt: CALL_VOID (this, VFUNC_ADDR) {
 		treg = X86_EDX;
 
 	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
+		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
 	}
 
@@ -1950,7 +1952,7 @@ lreg: CONV_I8 (reg) {
 	x86_branch8 (s->code, X86_CC_GE, 5, TRUE);
 	i1 = s->code;
 	x86_mov_reg_imm (s->code, tree->reg2, -1); 
-	g_assert ((s->code - i1) == 5);
+	mono_assert ((s->code - i1) == 5);
 }
 
 lreg: CONV_U8 (CONST_I4) 1 {
@@ -2303,7 +2305,7 @@ lreg: MUL (lreg, lreg) {
 	if (mono_regset_reg_used (s->rs, X86_ECX))
 		x86_pop_reg (s->code, X86_ECX);
 
-	g_assert (tree->reg1 == X86_EAX &&
+	mono_assert (tree->reg1 == X86_EAX &&
 		  tree->reg2 == X86_EDX);
 }
 
@@ -2333,7 +2335,7 @@ lreg: MUL_OVF (lreg, lreg) {
 	if (mono_regset_reg_used (s->rs, X86_ECX))
 		x86_pop_reg (s->code, X86_ECX);
 
-	g_assert (tree->reg1 == X86_EAX &&
+	mono_assert (tree->reg1 == X86_EAX &&
 		  tree->reg2 == X86_EDX);
 }
 
@@ -2363,7 +2365,7 @@ lreg: MUL_OVF_UN (lreg, lreg) {
 	if (mono_regset_reg_used (s->rs, X86_ECX))
 		x86_pop_reg (s->code, X86_ECX);
 
-	g_assert (tree->reg1 == X86_EAX &&
+	mono_assert (tree->reg1 == X86_EAX &&
 		  tree->reg2 == X86_EDX);
 }
 
@@ -2382,7 +2384,7 @@ lreg: DIV (lreg, lreg) {
 	if (mono_regset_reg_used (s->rs, X86_ECX))
 		x86_pop_reg (s->code, X86_ECX);
 
-	g_assert (tree->reg1 == X86_EAX &&
+	mono_assert (tree->reg1 == X86_EAX &&
 		  tree->reg2 == X86_EDX);
 }
 
@@ -2401,7 +2403,7 @@ lreg: REM (lreg, lreg) {
 	if (mono_regset_reg_used (s->rs, X86_ECX))
 		x86_pop_reg (s->code, X86_ECX);
 
-	g_assert (tree->reg1 == X86_EAX &&
+	mono_assert (tree->reg1 == X86_EAX &&
 		  tree->reg2 == X86_EDX);
 }
 
@@ -2420,7 +2422,7 @@ lreg: DIV_UN (lreg, lreg) {
 	if (mono_regset_reg_used (s->rs, X86_ECX))
 		x86_pop_reg (s->code, X86_ECX);
 
-	g_assert (tree->reg1 == X86_EAX &&
+	mono_assert (tree->reg1 == X86_EAX &&
 		  tree->reg2 == X86_EDX);
 }
 
@@ -2439,7 +2441,7 @@ lreg: REM_UN (lreg, lreg) {
 	if (mono_regset_reg_used (s->rs, X86_ECX))
 		x86_pop_reg (s->code, X86_ECX);
 
-	g_assert (tree->reg1 == X86_EAX &&
+	mono_assert (tree->reg1 == X86_EAX &&
 		  tree->reg2 == X86_EDX);
 }
 
@@ -2452,7 +2454,7 @@ lreg: CALL_I8 (this, ADDR_G) {
 		treg = X86_EDX;
 	
 	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
+		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
 	}
 
@@ -2468,8 +2470,8 @@ lreg: CALL_I8 (this, ADDR_G) {
 	if (ci->args_size)
 		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, ci->args_size);
 
-	g_assert (tree->reg1 == X86_EAX);
-	g_assert (tree->reg2 == X86_EDX);
+	mono_assert (tree->reg1 == X86_EAX);
+	mono_assert (tree->reg2 == X86_EDX);
 }
 
 lreg: CALL_I8 (this, VFUNC_ADDR) {
@@ -2481,7 +2483,7 @@ lreg: CALL_I8 (this, VFUNC_ADDR) {
 		treg = X86_EDX;
 
 	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
+		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
 	}
 
@@ -2501,8 +2503,8 @@ lreg: CALL_I8 (this, VFUNC_ADDR) {
 	PRINT_REG ("CALL0_I8(VIRTUAL)", tree->reg1);
 	PRINT_REG ("CALL1_I8(VIRTUAL)", tree->reg2);
 
-	g_assert (tree->reg1 == X86_EAX);
-	g_assert (tree->reg2 == X86_EDX);
+	mono_assert (tree->reg1 == X86_EAX);
+	mono_assert (tree->reg2 == X86_EDX);
 }
 
 lreg: CALL_I8 (this, INTF_ADDR) {
@@ -2514,7 +2516,7 @@ lreg: CALL_I8 (this, INTF_ADDR) {
 		treg = X86_EDX;
 
 	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
+		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
 	}
 
@@ -2535,8 +2537,8 @@ lreg: CALL_I8 (this, INTF_ADDR) {
 
 	PRINT_REG ("CALL_I8(INTERFACE)", tree->reg1);
 
-	g_assert (tree->reg1 == X86_EAX);
-	g_assert (tree->reg2 == X86_EDX);
+	mono_assert (tree->reg1 == X86_EAX);
+	mono_assert (tree->reg2 == X86_EDX);
 }
 
 stmt: RET (lreg) {
@@ -3141,7 +3143,7 @@ freg: CALL_R8 (this, ADDR_G) {
 		treg = X86_EDX;
 	
 	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
+		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
 	}
 
@@ -3167,7 +3169,7 @@ freg: CALL_R8 (this, INTF_ADDR) {
 		treg = X86_EDX;
 
 	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
+		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
 	}
 
@@ -3196,7 +3198,7 @@ freg: CALL_R8 (this, VFUNC_ADDR) {
 		treg = X86_EDX;
 
 	if (tree->left->op != MB_TERM_NOP) {
-		g_assert (lreg >= 0);
+		mono_assert (lreg >= 0);
 		x86_push_reg (s->code, lreg);
 	}
 
@@ -3233,7 +3235,7 @@ stmt: STIND_OBJ (reg, reg) {
 	x86_push_reg (s->code, X86_EDX);
 	x86_push_reg (s->code, X86_ECX);
 
-	g_assert (tree->data.i > 0);
+	mono_assert (tree->data.i > 0);
 	x86_push_imm (s->code, tree->data.i);
 	x86_push_reg (s->code, tree->right->reg1);
 	x86_push_reg (s->code, tree->left->reg1);
@@ -3254,7 +3256,7 @@ stmt: ARG_OBJ (reg) {
 	int size = tree->data.i;
 	int sa;
 	
-	g_assert (size > 0);
+	mono_assert (size > 0);
 
 	sa = size + 3;
 	sa &= ~3;

@@ -67,10 +67,20 @@ mono_get_exception_null_reference ()
 }
 
 MonoException *
-mono_get_exception_execution_engine ()
+mono_get_exception_execution_engine (const guchar *msg)
 {
-	return mono_exception_from_name (mono_defaults.corlib, "System",
+	MonoException *ex;
+	MonoDomain *domain;
+
+	ex = mono_exception_from_name (mono_defaults.corlib, "System",
 					 "ExecutionEngineException");
+
+	domain = ((MonoObject *)ex)->vtable->domain;
+
+	if (msg)
+		ex->message = mono_string_new (domain, msg);
+
+	return ex;
 }
 
 MonoException *
@@ -116,12 +126,15 @@ mono_get_exception_missing_method ()
 }
 
 MonoException*
-mono_get_exception_argument_null (MonoDomain *domain, const guchar *arg)
+mono_get_exception_argument_null (const guchar *arg)
 {
 	MonoException *ex;
+	MonoDomain *domain;
 
 	ex = (MonoException *)mono_exception_from_name ( 
 	        mono_defaults.corlib, "System", "ArgumentNullException");
+
+	domain = ((MonoObject *)ex)->vtable->domain;
 
 	if (arg)
 		((MonoArgumentException *)ex)->param_name =
@@ -131,12 +144,15 @@ mono_get_exception_argument_null (MonoDomain *domain, const guchar *arg)
 }
 
 MonoException *
-mono_get_exception_argument (MonoDomain *domain, const guchar *arg, const guchar *msg)
+mono_get_exception_argument (const guchar *arg, const guchar *msg)
 {
 	MonoException *ex;
+	MonoDomain *domain;
 
 	ex = (MonoException *)mono_exception_from_name (
 	        mono_defaults.corlib, "System", "ArgumentException");
+
+	domain = ((MonoObject *)ex)->vtable->domain;
 
 	if (msg)
 		ex->message = mono_string_new (domain, msg);
@@ -149,12 +165,15 @@ mono_get_exception_argument (MonoDomain *domain, const guchar *arg, const guchar
 }
 
 MonoException *
-mono_get_exception_io (MonoDomain *domain, const guchar *msg)
+mono_get_exception_io (const guchar *msg)
 {
 	MonoException *ex;
+	MonoDomain *domain;
 
 	ex=(MonoException *)mono_exception_from_name ( 
 	        mono_defaults.corlib, "System.IO", "IOException");
+
+	domain = ((MonoObject *)ex)->vtable->domain;
 
 	ex->message=mono_string_new (domain, msg);
 	

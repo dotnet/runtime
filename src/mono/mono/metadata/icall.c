@@ -514,13 +514,13 @@ ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
 	gint32 s1, s2;
 	MonoObject *res;
 	
-	MONO_CHECK_ARG_NULL (domain, type);
-	MONO_CHECK_ARG_NULL (domain, obj);
+	MONO_CHECK_ARG_NULL (type);
+	MONO_CHECK_ARG_NULL (obj);
 
 	enumc = mono_class_from_mono_type (type->type);
 
-	MONO_CHECK_ARG (domain, obj, enumc->enumtype == TRUE);
-	MONO_CHECK_ARG (domain, obj, obj->vtable->klass->byval_arg.type >= MONO_TYPE_I1 &&  
+	MONO_CHECK_ARG (obj, enumc->enumtype == TRUE);
+	MONO_CHECK_ARG (obj, obj->vtable->klass->byval_arg.type >= MONO_TYPE_I1 &&  
 			obj->vtable->klass->byval_arg.type <= MONO_TYPE_U8);
 
 	
@@ -1063,8 +1063,8 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 	t = mktime (&start);
 	gmtoff = start.tm_gmtoff;
 
-	MONO_CHECK_ARG_NULL (domain, data);
-	MONO_CHECK_ARG_NULL (domain, names);
+	MONO_CHECK_ARG_NULL (data);
+	MONO_CHECK_ARG_NULL (names);
 
 	(*data) = mono_array_new (domain, mono_defaults.int64_class, 4);
 	(*names) = mono_array_new (domain, mono_defaults.string_class, 2);

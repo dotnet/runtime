@@ -1467,7 +1467,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 	image = method->klass->image; 
 
 	sp = stack = alloca (sizeof (MBTree *) * (header->max_stack + 1));
-	
+
 	if (header->num_locals) {
 		int size, align;
 
@@ -3235,7 +3235,7 @@ sigill_signal_handler (int _dummy)
 	void **_p = (void **)&_dummy;
 	struct sigcontext *ctx = (struct sigcontext *)++_p;
 
-	exc = mono_get_exception_execution_engine ();
+	exc = mono_get_exception_execution_engine ("SIGILL");
 	
 	arch_handle_exception (ctx, exc);
 

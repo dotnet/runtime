@@ -37,7 +37,6 @@ typedef struct {
 	guint32     esi;
 	guint32     edi;
 	guint32     ebx;
-
 } MonoLMF;
 
 typedef struct {
