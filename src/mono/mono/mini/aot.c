@@ -620,7 +620,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 	MonoMemPool *mp;
 	GPtrArray *patches;
 	int i, pindex, got_index;
-	gboolean non_got_patches;
+	gboolean non_got_patches, keep_patches = TRUE;
 	char *p;
 
 	minfo = g_new0 (MonoAotMethod, 1);
@@ -676,8 +676,12 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		mono_ldstr (mono_get_root_domain (), klass->image, mono_metadata_token_index (token));
 	}
 
+	if (aot_module->opts & MONO_OPT_SHARED)	
+		keep_patches = FALSE;
+
 #ifdef MONO_ARCH_HAVE_PIC_AOT
 	got_index = decode_value (p, &p);
+	keep_patches = FALSE;
 #endif
 
 	if (*p) {
@@ -686,10 +690,10 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		int i;
 		guint32 last_offset, buf_len;
 
-		if (aot_module->opts & MONO_OPT_SHARED)
-			mp = mono_mempool_new ();
-		else
+		if (keep_patches)
 			mp = domain->mp;
+		else
+			mp = mono_mempool_new ();
 
 		/* First load the type + offset table */
 		last_offset = 0;
@@ -920,15 +924,12 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		LeaveCriticalSection (&aot_mutex);
 		mono_arch_patch_code (method, domain, code, patch_info, TRUE);
 		EnterCriticalSection (&aot_mutex);
-#endif
 
+#endif
 		g_ptr_array_free (patches, TRUE);
 
-		if (aot_module->opts & MONO_OPT_SHARED)
-			/* No need to cache patches */
+		if (!keep_patches)
 			mono_mempool_destroy (mp);
-		else
-			minfo->patch_info = patch_info;
 	}
 
 	mono_jit_stats.methods_aot++;
