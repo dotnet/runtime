@@ -143,10 +143,7 @@ typedef struct {
 	MonoObject *exc;
 } MonoMethodMessage;
 
-typedef void        (*MonoRuntimeObjectInit) (MonoObject *o);
 typedef MonoObject* (*MonoInvokeFunc)        (MonoMethod *method, void *obj, void **params);
-
-extern MonoRuntimeObjectInit mono_runtime_object_init;
 
 #define mono_array_length(array) ((array)->bounds->length)
 #define mono_array_addr(array,type,index) ( ((char*)(array)->vector) + sizeof (type) * (index) )
@@ -227,7 +224,10 @@ void
 mono_raise_exception        (MonoException *ex);
 
 void
-mono_install_runtime_object_init (MonoRuntimeObjectInit func);
+mono_runtime_object_init    (MonoObject *this);
+
+void
+mono_runtime_class_init     (MonoClass *klass);
 
 void        
 mono_install_runtime_invoke (MonoInvokeFunc func);

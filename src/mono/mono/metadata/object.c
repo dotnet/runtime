@@ -19,13 +19,50 @@
 #include <gc/gc.h>
 #endif
 
-static void
-default_runtime_object_init (MonoObject *o)
+void
+mono_runtime_object_init (MonoObject *this)
 {
-	return;
+	int i;
+	MonoMethod *method = NULL;
+	MonoClass *klass = this->vtable->klass;
+
+	for (i = 0; i < klass->method.count; ++i) {
+		if (!strcmp (".ctor", klass->methods [i]->name) &&
+		    klass->methods [i]->signature->param_count == 0) {
+			method = klass->methods [i];
+			break;
+		}
+	}
+
+	g_assert (method);
+
+	mono_runtime_invoke (method, this, NULL);
 }
 
-static MonoInvokeFunc  default_mono_runtime_invoke = NULL;
+/*
+ * runtime_class_init:
+ * @klass: klass that needs to be initialized
+ *
+ * This routine calls the class constructor for @class.
+ */
+void
+mono_runtime_class_init (MonoClass *klass)
+{
+	int i;
+
+	for (i = 0; i < klass->method.count; ++i) {
+		MonoMethod *method = klass->methods [i];
+		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
+		    (strcmp (".cctor", method->name) == 0)) {
+			mono_runtime_invoke (method, NULL, NULL);
+			return;
+		}
+	}
+	/* No class constructor found */
+
+}
+
+static MonoInvokeFunc default_mono_runtime_invoke = NULL;
 
 MonoObject*
 mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
@@ -34,15 +71,7 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params)
 		g_error ("runtime invoke called on uninitialized runtime");
 		return NULL;
 	}
-	default_mono_runtime_invoke (method, obj, params);
-}
-
-MonoRuntimeObjectInit mono_runtime_object_init = default_runtime_object_init;
-
-void
-mono_install_runtime_object_init (MonoRuntimeObjectInit func)
-{
-	mono_runtime_object_init = func? func: default_runtime_object_init;
+	return default_mono_runtime_invoke (method, obj, params);
 }
 
 int

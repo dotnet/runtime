@@ -237,38 +237,6 @@ mono_alloc_static0 (int size)
 
 typedef void (*MonoCCtor) (void);
 
-/**
- * runtime_class_init:
- * @klass: the class to initialise
- *
- * Initialise the class @klass by calling the class constructor.
- */
-static void
-runtime_class_init (MonoClass *klass)
-{
-	MonoCCtor cctor;
-	MonoMethod *method;
-	int i;
-
-	if (mono_debug_handle)
-		mono_debug_add_type (mono_debug_handle, klass);
-	
-	for (i = 0; i < klass->method.count; ++i) {
-		method = klass->methods [i];
-		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
-		    (strcmp (".cctor", method->name) == 0)) {
-	
-			cctor = arch_compile_method (method);
-			if (!cctor && mono_debug_handle)
-				return;
-			g_assert (cctor != NULL);
-			cctor ();
-			return;
-		}
-	}
-	/* No class constructor found */
-}
-
 static int
 map_store_svt_type (int svt)
 {
@@ -1099,29 +1067,6 @@ mono_cfg_free (MonoFlowGraph *cfg)
 		g_free (cfg->bblocks);
 
 	g_array_free (cfg->varinfo, TRUE);
-}
-
-
-static void
-runtime_object_init (MonoObject *obj)
-{
-	MonoClass *klass = obj->vtable->klass;
-	MonoMethod *method = NULL;
-	void (*ctor) (gpointer this);
-	int i;
-
-	for (i = 0; i < klass->method.count; ++i) {
-		if (!strcmp (".ctor", klass->methods [i]->name) &&
-		    klass->methods [i]->signature->param_count == 0) {
-			method = klass->methods [i];
-			break;
-		}
-	}
-
-	g_assert (method);
-
-	ctor = arch_compile_method (method);
-	ctor (obj);
 }
 
 static MonoBBlock *
@@ -3265,8 +3210,6 @@ mono_jit_init (char *file) {
 
 	mono_install_trampoline (arch_create_jit_trampoline);
 	mono_install_remoting_trampoline (arch_create_remoting_trampoline);
-	mono_install_runtime_class_init (runtime_class_init);
-	mono_install_runtime_object_init (runtime_object_init);
 	mono_install_handler (arch_get_throw_exception ());
 	mono_install_runtime_invoke (arch_runtime_invoke);
 

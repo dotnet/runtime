@@ -72,7 +72,6 @@ typedef struct {
 
 /* If true, then we output the opcodes as we interpret them */
 static int global_tracing = 0;
-static int global_class_init_tracing = 0;
 
 static int debug_indent_level = 0;
 
@@ -177,26 +176,10 @@ db_match_method (gpointer data, gpointer user_data)
 		profile_info->total += g_timer_elapsed (profile_info->u.timer, NULL);	\
 	}
 
-#define DEBUG_CLASS_INIT(klass)	\
-	if (global_class_init_tracing) {	\
-		output_indent();	\
-		g_print("(%d) Init class %s\n", GetCurrentThreadId(),	\
-			klass->name);	\
-	}
-
-#define DEBUG_CLASS_INIT_END(klass)	\
-	if (global_class_init_tracing) {	\
-		output_indent();	\
-		g_print("(%d) End init class %s\n", GetCurrentThreadId(), \
-			klass->name);	\
-	}
-
 #else
 
 #define DEBUG_ENTER()
 #define DEBUG_LEAVE()
-#define DEBUG_CLASS_INIT(klass)
-#define DEBUG_CLASS_INIT_END(klass)
 
 #endif
 
@@ -206,31 +189,6 @@ interp_ex_handler (MonoException *ex) {
 	frame->ex = ex;
 	longjmp (*(jmp_buf*)frame->locals, 1);
 }
-
-static void
-runtime_object_init (MonoObject *obj)
-{
-	int i;
-	MonoInvocation call;
-	MonoMethod *method = NULL;
-	MonoClass *klass = obj->vtable->klass;
-
-	for (i = 0; i < klass->method.count; ++i) {
-		if (!strcmp (".ctor", klass->methods [i]->name) &&
-		    klass->methods [i]->signature->param_count == 0) {
-			method = klass->methods [i];
-			break;
-		}
-	}
-
-	call.obj = obj;
-
-	g_assert (method);
-	INIT_FRAME (&call, NULL, obj, NULL, NULL, method);
-
-	ves_exec_method (&call);
-}
-
 
 static void
 ves_real_abort (int line, MonoMethod *mh,
@@ -246,34 +204,6 @@ ves_real_abort (int line, MonoMethod *mh,
 		printf ("\t[%d] %d 0x%08x %0.5f\n", sp-stack, sp[-1].type, sp[-1].data.i, sp[-1].data.f);
 }
 #define ves_abort() do {ves_real_abort(__LINE__, frame->method, ip, frame->stack, sp); THROW_EX (mono_get_exception_execution_engine (NULL), ip);} while (0);
-
-/*
- * runtime_class_init:
- * @klass: klass that needs to be initialized
- *
- * This routine calls the class constructor for @class.
- */
-static void
-runtime_class_init (MonoClass *klass)
-{
-	MonoMethod *method;
-	MonoInvocation call;
-	int i;
-
-	DEBUG_CLASS_INIT(klass);
-	for (i = 0; i < klass->method.count; ++i) {
-		method = klass->methods [i];
-		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
-		    (strcmp (".cctor", method->name) == 0)) {
-			INIT_FRAME (&call, NULL, NULL, NULL, NULL, method);
-			ves_exec_method (&call);
-			DEBUG_CLASS_INIT_END(klass);
-			return;
-		}
-	}
-	DEBUG_CLASS_INIT_END(klass);
-	/* No class constructor found */
-}
 
 static gpointer
 interp_create_remoting_trampoline (MonoMethod *method)
@@ -3927,8 +3857,6 @@ main (int argc, char *argv [])
 			global_tracing = 1;
 		if (strcmp (argv [i], "--traceops") == 0)
 			global_tracing = 2;
-		if (strcmp (argv [i], "--traceclassinit") == 0)
-			global_class_init_tracing = 1;
 		if (strcmp (argv [i], "--dieonex") == 0)
 			die_on_exception = 1;
 		if (strcmp (argv [i], "--print-vtable") == 0)
@@ -3964,8 +3892,6 @@ main (int argc, char *argv [])
 	frame_thread_id = TlsAlloc ();
 	TlsSetValue (frame_thread_id, NULL);
 
-	mono_install_runtime_class_init (runtime_class_init);
-	mono_install_runtime_object_init (runtime_object_init);
 	mono_install_runtime_invoke (interp_mono_runtime_invoke);
 	mono_install_remoting_trampoline (interp_create_remoting_trampoline);
 

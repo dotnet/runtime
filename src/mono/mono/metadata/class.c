@@ -51,15 +51,8 @@ default_remoting_trampoline (MonoMethod *method)
 	return NULL;
 }
 
-static void
-default_runtime_class_init (MonoClass *klass)
-{
-	return;
-}
-
 static MonoTrampoline arch_create_jit_trampoline = default_trampoline;
 static MonoTrampoline arch_create_remoting_trampoline = default_remoting_trampoline;
-static MonoRuntimeClassInit mono_runtime_class_init = default_runtime_class_init;
 
 void
 mono_install_trampoline (MonoTrampoline func) 
@@ -71,12 +64,6 @@ void
 mono_install_remoting_trampoline (MonoTrampoline func) 
 {
 	arch_create_remoting_trampoline = func? func: default_remoting_trampoline;
-}
-
-void
-mono_install_runtime_class_init (MonoRuntimeClassInit func)
-{
-	mono_runtime_class_init = func? func: default_runtime_class_init;
 }
 
 static MonoClass *

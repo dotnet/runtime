@@ -133,7 +133,6 @@ typedef struct {
 
 
 typedef gpointer (*MonoTrampoline)       (MonoMethod *method);
-typedef void     (*MonoRuntimeClassInit) (MonoClass *klass);
 
 MonoClass *
 mono_class_get             (MonoImage *image, guint32 type_token);
@@ -194,8 +193,5 @@ mono_install_trampoline (MonoTrampoline func);
 
 void
 mono_install_remoting_trampoline (MonoTrampoline func);
-
-void
-mono_install_runtime_class_init (MonoRuntimeClassInit func);
 
 #endif /* _MONO_CLI_CLASS_H_ */
