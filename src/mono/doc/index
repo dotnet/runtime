@@ -151,6 +151,24 @@
   </tr>
 </table>
 
+@item Jul 30th, 2003: Remoting.CORBA, Managed XSLT.
+
+	Today Lluis announced that Mono CVS contains all the fixes to
+	run <a
+	href="http://remoting-corba.sourceforge.net/">Remoting.CORBA</a>:
+	both client and server channels work; We are interested in people
+	testing it with other ORBs.
+
+	Ben checked-in today his managed implementation of Xlst that
+	we mentioned on Jul 19th; This uncovered various limitations
+	on the XPath implementation, which Piers has swifly removed.
+	Monodoc, NUnit and our Corcompare work with it.  Since this is
+	implementation is not completed yet, we still support the
+	libxslt-based version by default.  For more details on how to
+	try the new XSLT implementation, see <a
+	href="http://lists.ximian.com/archives/public/mono-devel-list/2003-July/001681.html">Ben's
+	post</a>
+
 @item Jul 27th, 2003: Wine packages and Daily Snapshots 
 
 	MonoWine packages (used to run System.Windows.Forms) software
@@ -180,7 +198,8 @@
 
 	The daily builds are availble here: <a href="http://go-mono.com/daily">http://go-mono.com/daily</a>
 
-If you find that the builds are broken, please notify Duncan.
+	If you find that the builds are broken, please notify Duncan.
+
 @item Jul 19th, 2003: Recent developments
 
 	Since Mono has matured, we have limited the news on the site
