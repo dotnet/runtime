@@ -1,3 +1,7 @@
+2002-04-23  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: removed -Wshadow from CFLAGS.
+
 2002-04-12  Rodrigo Moya <rodrigo@ximian.com>
 
 	* status/maintainers.xml: added danmorg and myself for System.Data.*
