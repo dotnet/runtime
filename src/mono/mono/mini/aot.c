@@ -243,6 +243,24 @@ decode_field_info (MonoAotModule *module, char *buf, char **endbuf)
 	return mono_class_get_field (klass, token);
 }
 
+static inline MonoImage*
+decode_method_ref (MonoAotModule *module, guint32 *token, char *buf, char **endbuf)
+{
+	guint32 image_index, value;
+	MonoImage *image;
+
+	value = decode_value (buf, &buf);
+	*endbuf = buf;
+	image_index = value >> 24;
+	*token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
+
+	image = load_image (module, image_index);
+	if (!image)
+		return NULL;
+	else
+		return image;
+}
+
 G_GNUC_UNUSED
 static void
 make_writable (guint8* addr, guint32 len)
@@ -529,8 +547,8 @@ mono_aot_init (void)
 		use_aot_cache = TRUE;
 }
 
-static void
-decode_cached_class_info (MonoCachedClassInfo *info, char *buf, char **endbuf)
+static gboolean
+decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, char *buf, char **endbuf)
 {
 	guint32 flags;
 
@@ -539,12 +557,20 @@ decode_cached_class_info (MonoCachedClassInfo *info, char *buf, char **endbuf)
 	info->ghcimpl = (flags >> 0) & 0x1;
 	info->has_finalize = (flags >> 1) & 0x1;
 	info->has_cctor = (flags >> 2) & 0x1;
-	if (info->has_cctor)
-		info->cctor_token = MONO_TOKEN_METHOD_DEF | decode_value (buf, &buf);
-	if (info->has_finalize)
-		info->finalize_token = MONO_TOKEN_METHOD_DEF | decode_value (buf, &buf);
+	if (info->has_cctor) {
+		MonoImage *cctor_image = decode_method_ref (module, &info->cctor_token, buf, &buf);
+		if (!cctor_image)
+			return FALSE;
+	}
+	if (info->has_finalize) {
+		info->finalize_image = decode_method_ref (module, &info->finalize_token, buf, &buf);
+		if (!info->finalize_image)
+			return FALSE;
+	}
 
 	*endbuf = buf;
+
+	return TRUE;
 }	
 
 gboolean
@@ -556,6 +582,7 @@ mono_aot_init_vtable (MonoVTable *vtable)
 	guint8 *info;
 	MonoCachedClassInfo class_info;
 	char *p;
+	gboolean err;
 
 	if (MONO_CLASS_IS_INTERFACE (klass) || klass->rank || !klass->image->assembly->aot_module)
 		return FALSE;
@@ -571,7 +598,11 @@ mono_aot_init_vtable (MonoVTable *vtable)
 	info = &aot_module->class_infos [aot_module->class_info_offsets [mono_metadata_token_index (klass->type_token) - 1]];
 	p = (char*)info;
 
-	decode_cached_class_info (&class_info, p, &p);
+	err = decode_cached_class_info (aot_module, &class_info, p, &p);
+	if (!err) {
+		LeaveCriticalSection (&aot_mutex);
+		return FALSE;
+	}
 
 	//printf ("VT0: %s.%s %d\n", klass->name_space, klass->name, vtable_size);
 	for (i = 0; i < class_info.vtable_size; ++i) {
@@ -611,6 +642,7 @@ mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
 {
 	MonoAotModule *aot_module;
 	char *p;
+	gboolean err;
 
 	if (MONO_CLASS_IS_INTERFACE (klass) || klass->rank || !klass->image->assembly->aot_module)
 		return FALSE;
@@ -625,7 +657,11 @@ mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
 
 	p = &aot_module->class_infos [aot_module->class_info_offsets [mono_metadata_token_index (klass->type_token) - 1]];
 
-	decode_cached_class_info (res, p, &p);
+	err = decode_cached_class_info (aot_module, res, p, &p);
+	if (!err) {
+		LeaveCriticalSection (&aot_mutex);
+		return FALSE;
+	}
 
 	LeaveCriticalSection (&aot_mutex);
 
@@ -1290,6 +1326,18 @@ encode_field_info (MonoAotCompile *cfg, MonoClassField *field, char *buf, char *
 	*endbuf = buf;
 }
 
+static void
+encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, char *buf, char **endbuf)
+{
+	guint32 image_index = get_image_index (acfg, method->klass->image);
+	guint32 token = method->token;
+	g_assert (image_index < 256);
+	g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
+
+	encode_value ((image_index << 24) + (mono_metadata_token_index (token)), buf, &buf);
+	*endbuf = buf;
+}
+
 static gint
 compare_patches (gconstpointer a, gconstpointer b)
 {
@@ -1568,15 +1616,9 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		}
 		case MONO_PATCH_INFO_METHODCONST:
 		case MONO_PATCH_INFO_METHOD:
-		case MONO_PATCH_INFO_METHOD_JUMP: {
-			guint32 image_index = get_image_index (acfg, patch_info->data.method->klass->image);
-			guint32 token = patch_info->data.method->token;
-			g_assert (image_index < 256);
-			g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
-
-			encode_value ((image_index << 24) + (mono_metadata_token_index (token)), p, &p);
+		case MONO_PATCH_INFO_METHOD_JUMP:
+			encode_method_ref (acfg, patch_info->data.method, p, &p);
 			break;
-		}
 		case MONO_PATCH_INFO_INTERNAL_METHOD: {
 			guint32 icall_index;
 
@@ -1725,32 +1767,16 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	if (!MONO_CLASS_IS_INTERFACE (klass)) {
 		encode_value (klass->vtable_size, p, &p);
 		encode_value ((klass->has_cctor << 2) | (klass->has_finalize << 1) | klass->ghcimpl, p, &p);
-		if (klass->has_cctor) {
-			MonoMethod *cctor = mono_class_get_cctor (klass);
-			g_assert (mono_metadata_token_table (cctor->token) == MONO_TABLE_METHOD);
-				
-			encode_value (mono_metadata_token_index (cctor->token), p, &p);
-		}
-		if (klass->has_finalize) {
-			guint32 finalize_slot = mono_class_get_method_from_name (mono_defaults.object_class, "Finalize", 0)->slot;
-			mono_class_setup_vtable (klass);
-			MonoMethod *finalize = klass->vtable [finalize_slot];
-			g_assert (mono_metadata_token_table (finalize->token) == MONO_TABLE_METHOD);
-				
-			encode_value (mono_metadata_token_index (finalize->token), p, &p);
-		}
+		if (klass->has_cctor)
+			encode_method_ref (acfg, mono_class_get_cctor (klass), p, &p);
+		if (klass->has_finalize)
+			encode_method_ref (acfg, mono_class_get_finalizer (klass), p, &p);
 
 		for (i = 0; i < klass->vtable_size; ++i) {
 			MonoMethod *cm = klass->vtable [i];
 
-			if (cm) {
-				guint32 image_index = get_image_index (acfg, cm->klass->image);
-				guint32 token = cm->token;
-				g_assert (image_index < 256);
-				g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
-				
-				encode_value ((image_index << 24) + (mono_metadata_token_index (token)), p, &p);
-			}
+			if (cm)
+				encode_method_ref (acfg, cm, p, &p);
 			else
 				encode_value (0, p, &p);
 		}
