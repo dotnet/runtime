@@ -2641,17 +2641,16 @@ mini_get_method (MonoImage *image, guint32 token, MonoGenericContext *context)
 }
 
 static MonoClass *
-mini_get_class (MonoImage *image, guint32 token, MonoMethod *calling_method)
+mini_get_class (MonoImage *image, guint32 token, MonoGenericContext *context)
 {
 	MonoClass *klass = mono_class_get (image, token);
 	MonoType *inflated;
 
-	if (!calling_method->signature->is_inflated || !klass->generic_inst)
+	if (!context || !klass->generic_inst)
 		return klass;
 
 	inflated = mono_class_inflate_generic_type (
-		&klass->byval_arg, calling_method->klass->generic_inst,
-		((MonoMethodInflated *) calling_method)->context->gmethod);
+		&klass->byval_arg, context->ginst, context->gmethod);
 
 	return mono_class_from_mono_type (inflated);
 }
@@ -3756,7 +3755,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = mono_method_get_wrapper_data (method, token);
 			else
-				klass = mini_get_class (image, token, method);
+				klass = mini_get_class (image, token, generic_context);
 
 			mono_class_init (klass);
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
@@ -3810,7 +3809,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = mono_method_get_wrapper_data (method, token);
 			else
-				klass = mini_get_class (image, token, method);
+				klass = mini_get_class (image, token, generic_context);
 
 			mono_class_init (klass);
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
@@ -4001,7 +4000,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (1);
 			--sp;
 			CHECK_OPSIZE (5);
-			klass = mini_get_class (image, read32 (ip + 1), method);
+			klass = mini_get_class (image, read32 (ip + 1), generic_context);
 			mono_class_init (klass);
 		
 			if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
@@ -4056,7 +4055,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else 
-				klass = mini_get_class (image, token, method);
+				klass = mini_get_class (image, token, generic_context);
 			mono_class_init (klass);
 
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
@@ -4156,7 +4155,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else 
-				klass = mini_get_class (image, token, method);
+				klass = mini_get_class (image, token, generic_context);
 			mono_class_init (klass);
 
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
@@ -4185,7 +4184,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (1);
 			--sp;
 			CHECK_OPSIZE (5);
-			klass = mini_get_class (image, read32 (ip + 1), method);
+			klass = mini_get_class (image, read32 (ip + 1), generic_context);
 			mono_class_init (klass);
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
 				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
@@ -4573,7 +4572,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = mono_method_get_wrapper_data (method, token);
 			else
-				klass = mini_get_class (image, token, method);
+				klass = mini_get_class (image, token, generic_context);
 			mono_class_init (klass);
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
 				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
@@ -4608,7 +4607,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = mono_method_get_wrapper_data (method, token);
 			else
-				klass = mini_get_class (image, token, method);
+				klass = mini_get_class (image, token, generic_context);
 			mono_class_init (klass);
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
 				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
@@ -4674,7 +4673,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else
-				klass = mini_get_class (image, token, method);
+				klass = mini_get_class (image, token, generic_context);
 
 			mono_class_init (klass);
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
@@ -4720,7 +4719,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = (MonoClass*)mono_method_get_wrapper_data (method, read32 (ip + 1));
 			else
-				klass = mini_get_class (image, read32 (ip + 1), method);
+				klass = mini_get_class (image, read32 (ip + 1), generic_context);
 			mono_class_init (klass);
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
 				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
@@ -4737,7 +4736,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			sp -= 2;
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
-			klass = mini_get_class (image, token, method);
+			klass = mini_get_class (image, token, generic_context);
 			mono_class_init (klass);
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
 				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
@@ -4822,7 +4821,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			sp -= 3;
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
-			klass = mini_get_class (image, token, method);
+			klass = mini_get_class (image, token, generic_context);
 			mono_class_init (klass);
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
 				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
@@ -4908,7 +4907,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_INST_NEW (cfg, ins, *ip);
 			--sp;
 			CHECK_OPSIZE (5);
-			klass = mini_get_class (image, read32 (ip + 1), method);
+			klass = mini_get_class (image, read32 (ip + 1), generic_context);
 			mono_class_init (klass);
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
 				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
@@ -4929,7 +4928,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_INST_NEW (cfg, ins, *ip);
 			--sp;
 			CHECK_OPSIZE (5);
-			klass = mini_get_class (image, read32 (ip + 1), method);
+			klass = mini_get_class (image, read32 (ip + 1), generic_context);
 			mono_class_init (klass);
 			if (klass->byval_arg.type == MONO_TYPE_VAR)
 				klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
@@ -5603,7 +5602,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (method->wrapper_type != MONO_WRAPPER_NONE)
 					klass = mono_method_get_wrapper_data (method, token);
 				else
-					klass = mini_get_class (image, token, method);
+					klass = mini_get_class (image, token, generic_context);
 				if (klass->byval_arg.type == MONO_TYPE_VAR)
 					klass = TYPE_PARAM_TO_CLASS (klass->byval_arg.data.generic_param->num);
 				else if (klass->byval_arg.type == MONO_TYPE_MVAR)
@@ -5695,7 +5694,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoType *type = mono_type_create_from_typespec (image, token);
 					token = mono_type_size (type, &align);
 				} else {
-					MonoClass *szclass = mini_get_class (image, token, method);
+					MonoClass *szclass = mini_get_class (image, token, generic_context);
 					mono_class_init (szclass);
 					token = mono_class_value_size (szclass, &align);
 				}
