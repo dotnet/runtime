@@ -364,7 +364,7 @@ ves_icall_System_AppDomain_getDomainByID (gint32 domain_id)
 
 	MONO_ARCH_SAVE_REGS;
 
-	return add->domain;
+	return ((add == NULL) ? NULL : add->domain);
 }
 
 MonoAppDomain *
@@ -901,6 +901,7 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad,
 											MonoArray *raw_symbol_store, MonoObject *evidence)
 {
 	MonoAssembly *ass;
+	MonoReflectionAssembly *refass = NULL;
 	MonoDomain *domain = ad->data;
 	MonoImageOpenStatus status;
 	guint32 raw_assembly_len = mono_array_length (raw_assembly);
@@ -922,7 +923,9 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad,
 		return NULL; 
 	}
 
-	return mono_assembly_get_object (domain, ass); 
+	refass = mono_assembly_get_object (domain, ass);
+	refass->evidence = evidence;
+	return refass;
 }
 
 MonoReflectionAssembly *
@@ -935,8 +938,6 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 	MonoReflectionAssembly *refass = NULL;
 
 	MONO_ARCH_SAVE_REGS;
-
-	/* FIXME : examine evidence? */
 
 	g_assert (assRef != NULL);
 
@@ -958,10 +959,11 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 		mono_raise_exception (exc);
 	}
 
-	if (refass != NULL)
-		return refass;
+	if (refass == NULL)
+		refass = mono_assembly_get_object (domain, ass);
 
-	return mono_assembly_get_object (domain, ass);
+	refass->evidence = evidence;
+	return refass;
 }
 
 void
@@ -1011,6 +1013,7 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 	MonoMethod *method;
 	char *filename;
 	gint32 res;
+	MonoReflectionAssembly *refass;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -1032,6 +1035,9 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 
 	if (!args)
 		args = (MonoArray *) mono_array_new (ad->data, mono_defaults.string_class, 0);
+
+	refass = mono_assembly_get_object (ad->data, assembly);
+	refass->evidence = evidence;
 
 	res = mono_runtime_exec_main (method, (MonoArray *)args, NULL);
 
