@@ -200,14 +200,10 @@ get_typespec (MonoImage *m, guint32 idx)
 		break;
 		
 	case MONO_TYPE_FNPTR:
-		g_string_append (res, "FNPTR ");
-		/*
-		 * we assume MethodRefSig, as we do not know
-		 * whether it is a MethodDefSig or a MethodRefSig.
-		 */
-		printf ("\n FNPTR:\n");
-		
-		hex_dump (ptr, 0, 40);
+		s = dis_stringify_function_ptr (m, type->data.method);
+		g_string_append (res, "method ");
+		g_string_append (res, s);
+		g_free (s);
 		break;
 			
 	case MONO_TYPE_ARRAY:
@@ -666,6 +662,37 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 	return retval;
 }
 
+char*
+dis_stringify_function_ptr (MonoImage *m, MonoMethodSignature *method)
+{
+	char *retval;
+	GString *result = g_string_new ("");
+	int i;
+	
+	g_assert (method);
+
+	g_string_append (result, map (method->call_convention, call_conv_type_map));
+
+	retval = dis_stringify_param (m, method->ret);
+	g_string_sprintfa (result, " %s ", retval);
+	g_free (retval);
+
+	g_string_append (result, " *(");
+	for (i = 0; i < method->param_count; ++i) {
+		if (i)
+			g_string_append (result, ", ");
+		retval = dis_stringify_param (m, method->params [i]);
+		g_string_append (result, retval);
+		g_free (retval);
+	}
+	g_string_append (result, ") ");
+
+	retval = result->str;
+	g_string_free (result, FALSE);
+
+	return retval;
+}
+
 static char *
 dis_stringify_object_with_class (MonoImage *m, MonoClass *c)
 {
@@ -746,10 +773,13 @@ dis_stringify_type (MonoImage *m, MonoType *type)
 	case MONO_TYPE_CLASS:
 		bare = dis_stringify_object (m, type);
 		break;
-		
-	case MONO_TYPE_FNPTR:
-		bare = dis_stringify_method_signature (m, type->data.method, 0, FALSE);
+	case MONO_TYPE_FNPTR: {
+		char *child_type;
+		child_type = dis_stringify_function_ptr (m, type->data.method);
+		bare = g_strdup_printf ("method %s", child_type);
+		g_free (child_type);
 		break;
+	}
 	case MONO_TYPE_PTR: {
 		char *child_type;
 		child_type = dis_stringify_type (m, type->data.type);
