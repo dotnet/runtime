@@ -140,8 +140,14 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 			reg = code [1] & 0x07;
 			disp = *((gint32*)(code + 2));
 		} else if ((code [1] == 0xe8)) {
+			breakpoint_id = mono_method_has_breakpoint (m, TRUE);
+			if (breakpoint_id) {
+				mono_remove_breakpoint (breakpoint_id);
+				trampoline = get_breakpoint_trampoline (m, breakpoint_id, addr);
+			} else
+				trampoline = addr;
 			*((guint32*)(code + 2)) = (guint)addr - ((guint)code + 1) - 5; 
-			return addr;
+			return trampoline;
 		} else {
 			printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
 				code [4], code [5], code [6]);
@@ -174,17 +180,18 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 
 	o += disp;
 
-	breakpoint_id = mono_method_has_breakpoint (m, TRUE);
-	if (breakpoint_id) {
-		trampoline = get_breakpoint_trampoline (m, breakpoint_id, addr);
+	if (m->klass->valuetype) {
+		trampoline = *((gpointer *)o) = get_unbox_trampoline (m, addr);
 	} else {
-		trampoline = addr;
+		trampoline = *((gpointer *)o) = addr;
 	}
 
-	if (m->klass->valuetype) {
-		return *((gpointer *)o) = get_unbox_trampoline (m, trampoline);
+	breakpoint_id = mono_method_has_breakpoint (m, TRUE);
+	if (breakpoint_id) {
+		mono_remove_breakpoint (breakpoint_id);
+		return get_breakpoint_trampoline (m, breakpoint_id, trampoline);
 	} else {
-		return *((gpointer *)o) = trampoline;
+		return trampoline;
 	}
 }
 
