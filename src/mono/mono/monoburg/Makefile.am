@@ -5,6 +5,8 @@ CC=$(CC_FOR_BUILD)
 
 #sample_SOURCES = sample.c
 
+all: monoburg$(BUILD_EXEEXT)
+
 parser.c:  $(srcdir)/monoburg.y
 	bison $(srcdir)/monoburg.y -o parser.c
 

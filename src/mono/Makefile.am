@@ -1,3 +1,3 @@
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = mono doc runtime scripts man 
+SUBDIRS = mono doc docs runtime scripts man 

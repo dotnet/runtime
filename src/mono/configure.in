@@ -475,7 +475,6 @@ mono/arch/sparc/Makefile
 mono/arch/arm/Makefile
 mono/interpreter/Makefile
 mono/tests/Makefile
-mono/wrapper/Makefile
 mono/monoburg/Makefile
 mono/monograph/Makefile
 mono/jit/Makefile
@@ -484,6 +483,7 @@ runtime/Makefile
 scripts/Makefile
 man/Makefile
 doc/Makefile
+docs/Makefile
 ])
 
 echo "
