@@ -442,6 +442,7 @@ mono_fconv_u4 (double v)
 	return (guint32)v;
 }
 
+#if 0
 #ifndef HAVE_TRUNCL
 
 #ifdef HAVE_AINTL
@@ -459,6 +460,7 @@ truncl (double x)
 #endif /* HAVE_AINTL */
 
 #endif /* HAVE_TRUNCL */
+#endif
 
 static gint64
 mono_fconv_ovf_i8 (double v)
@@ -469,7 +471,7 @@ mono_fconv_ovf_i8 (double v)
 
 	res = (gint64)v;
 
-	if (isnan(v) || truncl (v) != res) {
+	if (isnan(v) || trunc (v) != res) {
 		mono_raise_exception (mono_get_exception_overflow ());
 	}
 	return res;
@@ -484,7 +486,7 @@ mono_fconv_ovf_u8 (double v)
     
 	res = (guint64)v;
 
-	if (isnan(v) || truncl (v) != res) {
+	if (isnan(v) || trunc (v) != res) {
 		mono_raise_exception (mono_get_exception_overflow ());
 	}
 	return res;
