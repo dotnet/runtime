@@ -151,6 +151,25 @@
   </tr>
 </table>
 
+@item Jun 11th, 2003: SourceGear and Ximian announce partnership
+
+	Ximian, Inc., the leading provider of desktop and server
+	solutions enabling enterprise Linux adoption, today announced
+	that SourceGear Corporation will use Mono\x{2122} Project
+	technology to offer cross-platform versions of its
+	products. In addition, the companies have entered into a
+	development partnership under which Ximian® will provide
+	custom Mono development to enable delivery of SourceGear
+	products later this year. As a result, SourceGear will offer
+	both UNIX and Linux clients for its SourceGear Vault source
+	code management tool, enabling broader use of its solutions in
+	mixed-platform development organizations.
+
+	<a href="http://www.ximian.com/about_us/press_center/press_releases/index.html?pr=sourcegear">Read more...</a>
+
+	Some technical details are available <a
+	href="http://lists.ximian.com/archives/public/mono-list/2003-June/014334.html">here</a>.
+
 @item May 20th, 2003: OpenLink releases WineLib patches.
 
 	OpenLink <a
