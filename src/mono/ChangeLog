@@ -1,3 +1,7 @@
+2003-01-14  Martin Baulig  <martin@ximian.com>
+
+	* configure.in (GTHREAD_LIBS, GTHREAD_CFLAGS): Added check for gthread.
+
 2002-12-27  Jeroen Janssen <japj@darius.demon.nl>
 	* fixed url for System.Windows.Forms in the class status
 	
