@@ -35,6 +35,35 @@ mono_arch_regname (int reg) {
 	return "unknown";
 }
 
+/* this function overwrites r0 */
+static guint32*
+emit_memcpy (guint32 *code, int size, int dreg, int doffset, int sreg, int soffset)
+{
+	/* unrolled, use the counter in big */
+	while (size >= 4) {
+		ppc_lwz (code, ppc_r0, soffset, sreg);
+		ppc_stw (code, ppc_r0, doffset, dreg);
+		size -= 4;
+		soffset += 4;
+		doffset += 4;
+	}
+	while (size >= 2) {
+		ppc_lhz (code, ppc_r0, soffset, sreg);
+		ppc_sth (code, ppc_r0, doffset, dreg);
+		size -= 2;
+		soffset += 2;
+		doffset += 2;
+	}
+	while (size >= 1) {
+		ppc_lbz (code, ppc_r0, soffset, sreg);
+		ppc_stb (code, ppc_r0, doffset, dreg);
+		size -= 1;
+		soffset += 1;
+		doffset += 1;
+	}
+	return code;
+}
+
 typedef struct {
 	guint16 size;
 	guint16 offset;
@@ -487,14 +516,17 @@ mono_arch_flush_icache (guint8 *code, gint size)
 enum {
 	RegTypeGeneral,
 	RegTypeBase,
-	RegTypeFP
+	RegTypeFP,
+	RegTypeStructByVal,
+	RegTypeStructByAddr
 };
 
 typedef struct {
-	gint16 offset;
-	gint8  reg;
-	guint8  regtype : 2; /* 0 general, 1 basereg, 2 floating point register */
-	guint8  size    : 6; /* 1, 2, 4, 8 */
+	gint32  offset;
+	guint16 vtsize; /* in param area */
+	guint8  reg;
+	guint8  regtype : 4; /* 0 general, 1 basereg, 2 floating point register, see RegType* */
+	guint8  size    : 4; /* 1, 2, 4, 8, or regs used by RegTypeStructByVal */
 } ArgInfo;
 
 typedef struct {
@@ -512,7 +544,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 {
 	if (simple) {
 		if (*gr >= 3 + GENERAL_REGS) {
-			ainfo->offset = *stack_size;
+			ainfo->offset = PPC_STACK_PARAM_OFFSET + *stack_size;
 			ainfo->reg = ppc_sp; /* in the caller */
 			ainfo->regtype = RegTypeBase;
 			*stack_size += 4;
@@ -522,7 +554,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 		}
 	} else {
 		if (*gr >= 3 + GENERAL_REGS - 1) {
-			ainfo->offset = *stack_size;
+			ainfo->offset = PPC_STACK_PARAM_OFFSET + *stack_size;
 			ainfo->reg = ppc_sp; /* in the caller */
 			ainfo->regtype = RegTypeBase;
 			*stack_size += 8;
@@ -551,13 +583,13 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 	guint32 stack_size = 0;
 	CallInfo *cinfo = g_malloc0 (sizeof (CallInfo) + sizeof (ArgInfo) * n);
 
-	fr = 1;
-	gr = 3;
+	fr = PPC_FIRST_FPARG_REG;
+	gr = PPC_FIRST_ARG_REG;
 
 	/* FIXME: handle returning a struct */
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		add_general (&gr, &stack_size, &cinfo->ret, TRUE);
-		cinfo->struct_ret = ppc_r3;
+		cinfo->struct_ret = PPC_FIRST_ARG_REG;
 	}
 
 	n = 0;
@@ -618,7 +650,29 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			size = mono_class_value_size (sig->params [i]->data.klass, NULL);
 			DEBUG(printf ("load %d bytes struct\n",
 				      mono_class_value_size (sig->params [i]->data.klass, NULL)));
+#if PPC_PASS_STRUCTS_BY_VALUE
+			{
+				int nwords = (size + sizeof (gpointer) -1 ) / sizeof (gpointer);
+				cinfo->args [n].regtype = RegTypeStructByVal;
+				if (gr <= PPC_LAST_ARG_REG) {
+					int rest = PPC_LAST_ARG_REG - gr + 1;
+					int n_in_regs = rest >= nwords? nwords: rest;
+					cinfo->args [n].size = n_in_regs;
+					cinfo->args [n].vtsize = nwords - n_in_regs;
+					cinfo->args [n].reg = gr;
+					gr += n_in_regs;
+				} else {
+					cinfo->args [n].size = 0;
+					cinfo->args [n].vtsize = nwords;
+				}
+				cinfo->args [n].offset = PPC_STACK_PARAM_OFFSET + stack_size;
+				/*g_print ("offset for arg %d at %d\n", n, PPC_STACK_PARAM_OFFSET + stack_size);*/
+				stack_size += nwords * sizeof (gpointer);
+			}
+#else
 			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
+			cinfo->args [n].regtype = RegTypeStructByAddr;
+#endif
 			n++;
 			break;
 		}
@@ -673,6 +727,8 @@ enum_retvalue:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_SZARRAY:
@@ -894,8 +950,23 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				call->used_iregs |= 1 << ainfo->reg;
 				if (arg->type == STACK_I8)
 					call->used_iregs |= 1 << (ainfo->reg + 1);
+			} else if (ainfo->regtype == RegTypeStructByAddr) {
+				/* FIXME: where si the data allocated? */
+				arg->unused = ainfo->reg;
+				call->used_iregs |= 1 << ainfo->reg;
+			} else if (ainfo->regtype == RegTypeStructByVal) {
+				int cur_reg;
+				/* mark the used regs */
+				for (cur_reg = 0; cur_reg < ainfo->size; ++cur_reg) {
+					call->used_iregs |= 1 << (ainfo->reg + cur_reg);
+				}
+				arg->opcode = OP_OUTARG_VT;
+				arg->unused = ainfo->reg | (ainfo->size << 8) | (ainfo->vtsize << 16);
+				arg->inst_imm = ainfo->offset;
 			} else if (ainfo->regtype == RegTypeBase) {
-				g_assert_not_reached ();
+				arg->opcode = OP_OUTARG_VT;
+				arg->unused = ainfo->reg | (ainfo->size << 8) | (ainfo->vtsize << 16);
+				arg->inst_imm = ainfo->offset;
 			} else if (ainfo->regtype == RegTypeFP) {
 				arg->opcode = OP_OUTARG_R8;
 				arg->unused = ainfo->reg;
@@ -1790,7 +1861,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		DEBUG (g_print ("processing:"));
 		DEBUG (print_ins (i, ins));
 		/* make the register available for allocation: FIXME add fp reg */
-		if (ins->opcode == OP_SETREG) {
+		if (ins->opcode == OP_SETREG || ins->opcode == OP_SETREGIMM) {
 			cur_iregs |= 1 << ins->dreg;
 			DEBUG (g_print ("adding %d to cur_iregs\n", ins->dreg));
 		} else if (ins->opcode == OP_SETFREG) {
@@ -2554,15 +2625,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			break;
 		case OP_LOCALLOC:
-			g_assert_not_reached ();
 			/* keep alignment */
-#define MONO_FRAME_ALIGNMENT 32
-			ppc_addi (code, ppc_r0, ins->sreg1, MONO_FRAME_ALIGNMENT-1);
+			ppc_addi (code, ppc_r0, ins->sreg1, PPC_STACK_ALIGNMENT-1);
 			ppc_rlwinm (code, ppc_r0, ppc_r0, 0, 0, 27);
 			ppc_lwz (code, ppc_r11, 0, ppc_sp);
 			ppc_neg (code, ppc_r0, ppc_r0);
-			ppc_stwux (code, ppc_sp, ppc_r0, ppc_sp);
-			ppc_mr (code, ins->dreg, ppc_sp);
+			ppc_stwux (code, ppc_r11, ppc_r0, ppc_sp);
+			ppc_addi (code, ins->dreg, ppc_sp, PPC_STACK_PARAM_OFFSET);
 			break;
 		case CEE_RET:
 			ppc_blr (code);
@@ -3122,6 +3191,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		alloc_size += PPC_STACK_ALIGNMENT - (alloc_size & (PPC_STACK_ALIGNMENT - 1));
 
 	cfg->stack_usage = alloc_size;
+	g_assert (ppc_is_imm16 (-alloc_size));
 	if (alloc_size)
 		ppc_stwu (code, ppc_sp, -alloc_size, ppc_sp);
 	if (cfg->flags & MONO_CFG_HAS_ALLOCA)
@@ -3192,6 +3262,24 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					ppc_stfs (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
 				else
 					g_assert_not_reached ();
+			} else if (ainfo->regtype == RegTypeStructByVal) {
+				int doffset = inst->inst_offset;
+				int soffset = 0;
+				int cur_reg;
+				for (cur_reg = 0; cur_reg < ainfo->size; ++cur_reg) {
+					ppc_stw (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+					soffset += sizeof (gpointer);
+					doffset += sizeof (gpointer);
+				}
+				if (ainfo->vtsize) {
+					/* load the previous stack pointer in r11 (r0 gets overwritten by the memcpy) */
+					ppc_lwz (code, ppc_r11, 0, ppc_sp);
+					/* FIXME: handle overrun! with struct sizes not multiple of 4 */
+					code = emit_memcpy (code, ainfo->vtsize * sizeof (gpointer), inst->inst_basereg, doffset, ppc_r11, ainfo->offset + soffset);
+				}
+			} else if (ainfo->regtype == RegTypeStructByAddr) {
+				/* FIXME: handle overrun! with struct sizes not multiple of 4 */
+				code = emit_memcpy (code, ainfo->vtsize * sizeof (gpointer), inst->inst_basereg, inst->inst_offset, ainfo->reg, 0);
 			} else
 				g_assert_not_reached ();
 		}

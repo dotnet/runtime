@@ -146,25 +146,25 @@ class Tests {
 
 	static int receive_simple (int a, Simple v, int b) {
 		if (v.a != 1)
-			return 0;
+			return 1;
 		if (v.b != 2)
-			return 0;
+			return 2;
 		if (v.c != 3)
-			return 0;
+			return 3;
 		if (v.d != 4)
-			return 0;
+			return 4;
 		if (a != 7)
-			return 0;
+			return 5;
 		if (b != 9)
-			return 0;
-		return 1;
+			return 6;
+		return 0;
 	}
 	
 	static int test_5_pass_struct () {
 		Simple v = get_simple (1);
-		if (receive_simple (7, v, 9) != 1)
+		if (receive_simple (7, v, 9) != 0)
 			return 0;
-		if (receive_simple (7, get_simple (1), 9) != 1)
+		if (receive_simple (7, get_simple (1), 9) != 0)
 			return 1;
 		return 5;
 	}
@@ -422,6 +422,33 @@ class Tests {
 	static int test_719162_complex_div () {
 		int adays = AbsoluteDays (1970, 1, 1);
 		return adays;
+	}
+
+	delegate int GetIntDel ();
+
+	static int return4 () {
+		return 4;
+	}
+
+	int return5 () {
+		return 5;
+	}
+
+	static int test_2_static_delegate () {
+		GetIntDel del = new GetIntDel (return4);
+		int v = del ();
+		if (v != 4)
+			return 0;
+		return 2;
+	}
+
+	static int test_2_instance_delegate () {
+		Tests t = new Tests ();
+		GetIntDel del = new GetIntDel (t.return5);
+		int v = del ();
+		if (v != 5)
+			return 0;
+		return 2;
 	}
 
 	static int test_1_store_decimal () {

@@ -186,25 +186,33 @@ stmt: OP_OUTARG_R8 (freg) {
 
 stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 	MonoInst *vt = state->left->left->tree;
-	//g_print ("vt size: %d at R%d + %d\n", tree->inst_imm, vt->inst_basereg, vt->inst_offset);
-	if (tree->inst_imm <= 4) {
-		tree->opcode = OP_X86_PUSH_MEMBASE;
-		tree->inst_basereg = vt->inst_basereg;
-		tree->inst_offset = vt->inst_offset;
-		mono_bblock_add_inst (s->cbb, tree);
-	} else {
-		tree->opcode = OP_X86_PUSH_OBJ;
-		tree->inst_basereg = vt->inst_basereg;
-		tree->inst_offset = vt->inst_offset;
-		mono_bblock_add_inst (s->cbb, tree);
+	int start_reg = tree->unused & 0xff;
+	int nregs = (tree->unused >> 8) & 0xff;
+	int ovf_size = (tree->unused >> 16) & 0xffff;
+	int i, tmpr, soffset;
+	soffset = vt->inst_offset;
+	for (i = 0; i < nregs; ++i) {
+		tmpr = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, vt->inst_basereg, soffset);
+		MONO_EMIT_NEW_UNALU (s, OP_SETREG, start_reg + i, tmpr);
+		soffset += sizeof (gpointer);
 	}
+	//g_print ("vt size: %d at R%d + %d\n", tree->inst_imm, vt->inst_basereg, vt->inst_offset);
+	g_assert (ovf_size == 0); /* not yet supported */
 }
 
 stmt: OP_OUTARG_VT (OP_ICONST) {
-	tree->opcode = OP_SETREGIMM;
-	tree->dreg = tree->unused;
-	tree->inst_imm = state->left->tree->inst_c0;
-	mono_bblock_add_inst (s->cbb, tree);
+	int start_reg = tree->unused & 0xff;
+	int nregs = (tree->unused >> 8) & 0xff;
+	int ovf_size = (tree->unused >> 16) & 0xffff;
+	if (nregs) {
+		tree->opcode = OP_SETREGIMM;
+		tree->dreg = start_reg;
+		tree->inst_c0 = state->left->tree->inst_c0;
+		mono_bblock_add_inst (s->cbb, tree);
+	} else {
+		g_assert_not_reached ();
+	}
 }
 
 stmt: CEE_STIND_R8 (OP_REGVAR, freg) {
