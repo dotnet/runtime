@@ -629,7 +629,7 @@ The assembly this type resides in.  This attribute is not required for nested ty
 
 <em>[jbarn: Please, please, don't take the human-readable portions of
 this example to be good guidelines for writing your own documentation.
-this XML is intended only to show structure.</em>
+this XML is intended only to show structure.]</em>
 
 <pre>
 &lt;?xml version="1.0" encoding="UTF-8"?&gt;
