@@ -1,3 +1,7 @@
+2003-02-11  Tim Coleman <tim@timcoleman.com>
+	* data/config.in: Add mapping for Oracle call interface
+	(OCI) native libraries.
+
 2003-02-04  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: added check for sys/un.h.
