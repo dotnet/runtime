@@ -34,7 +34,7 @@ mcs-tree-safe-build: remove-binaries
 	cd $(mcs_topdir)/jay; $(MAKE)
 	cd $(mcs_topdir)/mcs; $(MAKE) MCS=mcs BOOTSTRAP_MCS=mcs
 	cd $(mcs_topdir)/class/corlib; $(MAKE) MCS=mcs BOOTSTRAP_MCS=mcs
-	cp $(mcs_topdir)/class/lib/mscorlib.dll $(top_srcdir)/runtime
+	cp $(mcs_topdir)/class/lib/default/mscorlib.dll $(top_srcdir)/runtime
 	cp $(mcs_topdir)/mcs/mcs.exe $(top_srcdir)/runtime
 
 xinstall-runtime: mcs-tree-safe-build
@@ -46,7 +46,7 @@ mcs-rest: xinstall-runtime
 	cd $(mcs_topdir)/class; $(MAKE)
 
 remove-binaries:
-	rm -f $(mcs_topdir)/class/lib/mscorlib.dll $(mcs_topdir)/mcs/mcs.exe $(top_srcdir)/runtime/*.dll $(top_srcdir)/runtime/*.exe
+	rm -f $(mcs_topdir)/class/lib/default/mscorlib.dll $(mcs_topdir)/mcs/mcs.exe $(top_srcdir)/runtime/*.dll $(top_srcdir)/runtime/*.exe
 
 
 win32getdeps:
