@@ -30,6 +30,7 @@
 
 	<ul>
 		* <a href="#Tachy">Tachy</a> (scheme-like)
+		* <a href="#python">Python</a>
 	</ul>
 
 <a name="Java">
@@ -102,6 +103,16 @@
 
 	A subset of Scheme language called <a
 	href="http://radio.weblogs.com/0101156/stories/2002/03/19/tachy.html">Tachy</a>
+
+<a name="Python">
+** Python
+
+        <a href="mailto:brian@No.Spam.zope.com">Brian Lloyd</a> is
+	working on linking the Python runtime with the .NET runtime.
+	More information on the PS.NET project can be found <a
+	href="http://www.zope.org/Members/Brian/PythonNet/index_html">here</a>.
+	An FAQ document is available <a
+	href="http://www.zope.org/Members/Brian/PythonNet/FAQ.html">here</a>.
 
 * Missing languages
 
