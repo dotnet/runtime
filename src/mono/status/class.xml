@@ -469,6 +469,56 @@
         </maintainers>
     </class>
 
+    <class name="System.Runtime.Serialization.StreamingContext">
+        <last-activity>Aug-6-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Serialization.StreamingContextStates">
+        <last-activity>Aug-6-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Serialization.IObjectReference">
+        <last-activity>Aug-6-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>100</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Runtime.Remoting.ObjRef">
+        <last-activity>Aug-6-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>20</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.MarshalByRefObject">
+        <last-activity>Aug-6-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>20</completion>
+        <maintainers>
+            <maintainer>miguel@ximian.com</maintainer>
+        </maintainers>
+    </class>
+        
     <class name="System.Collections.IComparer">
         <last-activity>Jul-15-2001</last-activity>
         <implementation>yes</implementation>
