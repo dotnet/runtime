@@ -92,6 +92,15 @@ class Tests {
 		return 0;
 	}
 
+	/* Regression test for #30073 */
+	public static test_0_newarr_emulation () {
+		double d = 500;
+		checked {
+			double [] arr = new double [(int)d];
+		}
+		return 0;
+	}
+
 	private Int32[] m_array = new int [10];
 	
 	void setBit (int bitIndex, bool value) {
