@@ -896,6 +896,7 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 
 		jit->this_var = g_new0 (MonoDebugVarInfo, 1);
 		jit->this_var->offset = ptr->offset;
+		jit->this_var->size = ptr->size;
 	}
 
 	for (i = 0; i < jit->num_params; i++) {
@@ -903,6 +904,7 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 			method->signature->hasthis;
 
 		jit->params [i].offset = ptr [i].offset;
+		jit->params [i].size = ptr [i].size;
 	}
 
 	debug_generate_method_lines (info, minfo, cfg);
@@ -923,6 +925,8 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 				locals [i].offset = 0;
 			} else
 				locals [i].offset = ptr [i].offset;
+
+			locals [i].offset = ptr [i].size;
 
 			begin_offset = il_offset_from_position (cfg, &ptr [i].range.first_use);
 			end_offset = il_offset_from_position (cfg, &ptr [i].range.last_use);

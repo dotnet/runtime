@@ -104,6 +104,7 @@ struct MonoDebugMethodJitInfo {
 struct MonoDebugVarInfo {
 	guint32 index;
 	guint32 offset;
+	guint32 size;
 	guint32 begin_scope;
 	guint32 end_scope;
 };
@@ -135,7 +136,7 @@ struct MonoSymbolFile {
 	MonoSymbolFilePriv *_priv;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		22
+#define MONO_SYMBOL_FILE_VERSION		23
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
 MonoSymbolFile *
