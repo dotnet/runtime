@@ -832,7 +832,12 @@ int ioctlsocket(guint32 handle, gint32 command, gpointer arg)
 	if(command==FIONBIO) {
 		ret=fcntl(socket_private_handle->fd, F_GETFL, 0);
 		if(ret!=-1) {
-			ret=fcntl(socket_private_handle->fd, F_SETFL, ret|O_NONBLOCK);
+			if(*(gboolean *)arg) {
+				ret &= ~O_NONBLOCK;
+			} else {
+				ret |= O_NONBLOCK;
+			}
+			ret=fcntl(socket_private_handle->fd, F_SETFL, ret);
 		}
 	} else
 #endif /* O_NONBLOCK */
