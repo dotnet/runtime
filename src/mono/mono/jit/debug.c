@@ -50,6 +50,7 @@ extern void (*mono_debugger_class_init_func) (MonoClass *klass);
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
 static int debugger_update_symbol_file_table (void);
+static int debugger_update_symbol_file_table_internal (void);
 static gpointer debugger_compile_method (MonoMethod *method);
 
 static void mono_debug_add_assembly (MonoAssembly *assembly, gpointer user_data);
@@ -1276,7 +1277,7 @@ update_symbol_file_table_func (gpointer key, gpointer value, gpointer user_data)
 }
 
 static int
-debugger_update_symbol_file_table (void)
+debugger_update_symbol_file_table_internal (void)
 {
 	int count = 0;
 	MonoDebuggerSymbolFileTable *symfile_table;
@@ -1313,6 +1314,21 @@ debugger_update_symbol_file_table (void)
 	return TRUE;
 }
 
+static int
+debugger_update_symbol_file_table (void)
+{
+	int retval;
+
+	if (!mono_debug_handle)
+		return FALSE;
+
+	mono_debugger_lock ();
+	retval = debugger_update_symbol_file_table_internal ();
+	mono_debugger_unlock ();
+
+	return retval;
+}
+
 static gboolean has_mono_debugger_support = FALSE;
 
 /*
@@ -1346,7 +1362,7 @@ debugger_thread_func (gpointer ptr)
 
 		/* Reload the symbol file table if necessary. */
 		if (debugger_symbol_file_table_generation > last_generation) {
-			debugger_update_symbol_file_table ();
+			debugger_update_symbol_file_table_internal ();
 			last_generation = debugger_symbol_file_table_generation;
 		}
 
