@@ -15,6 +15,7 @@ TESTSRC=			\
 	loops.cs		\
 	initlocals.cs		\
 	logic.cs		\
+	switch.cs		\
 	bulkcpy.il		\
 	math.cs
 
