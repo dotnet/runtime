@@ -1,3 +1,9 @@
+
+Fri Nov 12 17:56:26 CET 2004 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in, mono/mini/Makefile.am: control static
+	linking of the mono binary with a configure option.
+
 2004-11-12  Jonathan Pryor <jonpryor@vt.edu>
 
 	* configure.in: Check for `struct dirent' members which don't exist across

@@ -357,6 +357,9 @@ fi
 # This does not work on some platforms (bug #55253)
 AC_ARG_WITH(sigaltstack, [  --with-sigaltstack=yes,no      enable/disable support for sigaltstack],[],[with_sigaltstack=no])
 
+AC_ARG_WITH(static_mono, [  --with-static_mono=yes,no      link mono statically to libmono (faster)],[],[with_static_mono=yes])
+AM_CONDITIONAL(STATIC_MONO, test x$with_static_mono != xno)
+
 # assembly bundle support, see metadata/make-bundle.pl for more info
 AC_ARG_WITH(bundle, [  --with-bundle=bundle_template],[
 	BUNDLE_FILE=$with_bundle

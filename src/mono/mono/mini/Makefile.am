@@ -74,16 +74,12 @@ endif
 mono_SOURCES = \
 	main.c
 
-if AMD64
-# Link libmono into mono statically on platforms where it is possible
+if STATIC_MONO
+# Link libmono into mono statically
 # This leads to higher performance, especially with TLS
 MONO_LIB=libmono-static.la
 else 
-if X86
-MONO_LIB=libmono-static.la
-else
 MONO_LIB=libmono.la
-endif
 endif
 
 mono_LDADD = \
