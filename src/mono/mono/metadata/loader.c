@@ -605,9 +605,9 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	guint32 im_cols [MONO_IMPLMAP_SIZE];
 	guint32 scope_token;
 	const char *import = NULL;
-	const char *scope = NULL;
-	char *orig_scope;
-	char *new_scope;
+	char *scope = NULL;
+	const char *orig_scope;
+	const char *new_scope;
 	char *full_name;
 	GModule *gmodule;
 
@@ -628,21 +628,15 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	piinfo->piflags = im_cols [MONO_IMPLMAP_FLAGS];
 	import = mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]);
 	scope_token = mono_metadata_decode_row_col (mr, im_cols [MONO_IMPLMAP_SCOPE] - 1, MONO_MODULEREF_NAME);
-	orig_scope = g_strdup (mono_metadata_string_heap (image, scope_token));
+	orig_scope = mono_metadata_string_heap (image, scope_token);
 
-	new_scope = g_strdup (orig_scope);
+	mono_dllmap_lookup (orig_scope, import, &new_scope, &import);
+
+	scope = g_strdup (new_scope);
 	
-	/*
-	 * FIXME
-	 * This makes mono_dllmap_lookup search in the config file for "xxx" instead of "xxx.dll",
-	 * thus it doesn't find anything 
-	 * 
-	if (strstr (new_scope, ".dll") == (new_scope + strlen (new_scope) - 4)) {
-		new_scope [strlen (new_scope) - 4] = '\0';
+	if (strstr (scope, ".dll") == (scope + strlen (scope) - 4)) {
+		scope [strlen (scope) - 4] = '\0';
 	}
-	*/
-
-	mono_dllmap_lookup (new_scope, import, &scope, &import);
 
 	full_name = g_module_build_path (NULL, scope);
 	gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
@@ -663,15 +657,14 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 			}
 			g_free (error);
 			g_free (full_name);
-			g_free (new_scope);
+			g_free (scope);
 			return NULL;
 		}
 		g_free (error);
 	}
 
 	g_free (full_name);
-	g_free (new_scope);
-	g_free (orig_scope);
+	g_free (scope);
 
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_NO_MANGLE) {
 		g_module_symbol (gmodule, import, &method->addr); 
