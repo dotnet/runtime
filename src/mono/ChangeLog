@@ -1,3 +1,7 @@
+2003-12-29  Miguel de Icaza  <miguel@ximian.com>
+
+	* scripts/sn.in: Add sn script.
+
 2004-01-15  Zoltan Varga  <vargaz@freemail.hu>
 
 	* scripts/Makefile.am: Add al.exe.
