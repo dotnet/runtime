@@ -2,31 +2,80 @@
 
 	There are a number of mailing lists for Mono
 
-	<ul>
-	
-		* <b><a
-	href="http://lists.ximian.com/mailman/listinfo/mono-list">mono-list:</a></b>
+	<table>
+	  <tr>
+	    <td>
+		<b><a
+	href="http://lists.ximian.com/mailman/listinfo/mono-list">mono-list</a></b>
+	    </td>
+	    <td>
 	The general Mono discussion list.
-		* <b><a
-	href="http://lists.ximian.com/mailman/listinfo/mono-announce-list">mono-announce-list:</a></b>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+		<b><a
+	href="http://lists.ximian.com/mailman/listinfo/mono-announce-list">mono-announce-list</a></b>
+	    </td>
+	    <td>
 	Announcements of Mono developments.
-		* <b><a
-	href="http://lists.ximian.com/mailman/listinfo/mono-gc-list">mono-gc-list:</a></b>
+	    </td>	
+	  </tr>
+	  <tr>
+	    <td>
+		<b><a
+	href="http://lists.ximian.com/mailman/listinfo/mono-gc-list">mono-gc-list</a></b>
+	    </td>
+	    <td>
 	Discussion on the GC system of Mono.
-		* <b><a
-	href="http://lists.ximian.com/mailman/listinfo/mono-cvs-list">mono-cvs-list:</a></b>
-	Track the CVS activity of Mono on this mailing list.  You can get <a href="http://www.go-mono.com/snapshots">daily snapshots</a> as well.
-		* <b><a
-	href="http://lists.ximian.com/mailman/listinfo/mono-docs-list">mono-docs-list:</a></b>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+		<b><a
+	href="http://lists.ximian.com/mailman/listinfo/mono-patches">mono-patches</a></b>
+	    </td>
+	    <td>
+	Track the CVS activity of Mono on this mailing list (patches are sent to recipients).  
+	You can get <a href="http://www.go-mono.com/snapshots">daily snapshots</a> as well.
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+		<b><a
+	href="http://lists.ximian.com/mailman/listinfo/mono-cvs-list">mono-cvs-list</a></b>
+	    </td>
+	    <td>
+	Track the CVS activity of Mono on this mailing list.  
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+		<b><a
+	href="http://lists.ximian.com/mailman/listinfo/mono-docs-list">mono-docs-list</a></b>
+	    </td>
+	    <td>
 	Discussion on the documentation of Mono.
-		* <b><a
-	href="http://lists.ximian.com/mailman/listinfo/mono-patches">mono-patches:</a></b>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+		<b><a
+	href="http://lists.ximian.com/mailman/listinfo/mono-patches">mono-patches</a></b>
+	    </td>
+	    <td>
 	Track the development of Mono in realtime: receive patches to the Mono repository
 	by email.
+	    </td>
+	  </tr>
+	</table>
+
+	Other mailing lists of interest:
+
+	<ul>
 		* <b><a
 	href="http://discuss.develop.com/dotnet.html">Dotnet mailing
 	list at Develop.com:</a></b> The guys at Develop Mentor run
 	this general purpose mailing list.
 	</ul>
-
-
+	</ul>

@@ -71,6 +71,18 @@
 
 ** Feb 11, 2002
 
+	<b>Mono 0.8 has been released!</b>
+
+	A new version of the runtime, compiler and class libraries has
+	been packaged for your download pleasure.  
+
+	You can get it <a
+	href="download.html#feb-11">Here</a> (quick links: <a
+	href="archive/mono-0.8.tar.gz">runtime</a> and <a
+	href="archive/mcs-0.8.tar.gz">compiler/classes</a>)
+
+** Feb 11, 2002
+
 	We would like to welcome all the new developers that have
 	joined the project in the last couple of days.  The classes
 	are rapidly moving.

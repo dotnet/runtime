@@ -16,6 +16,7 @@ SOURCES=	\
 	../gcc-frontend		\
 	../index		\
 	../ideas		\
+	../mailing-lists	\
 	../passport		\
 	../rationale		\
 	../resources		\

@@ -7,11 +7,11 @@
           background-image: url("images/bgsquares.gif"); 
           background-attachment: fixed; }
    body, td, table { font-family: "trebuchet ms", lucida, verdana, helvetica; 
-                     font-size: 12px; }
+                     font-size: 14px; }
 
 	.navi { font-size: 14px; background: #444444; }
-	.subnavi { font-size: 12px; }
-        .footnote { font-size: 10px; color: #aaaaaa; }
+	.subnavi { font-size: 14px; }
+        .footnote { font-size: 12px; color: #aaaaaa; }
 
 	a.navi { color: #ffffff; text-decoration: none; font-weight: bold; }
 	a.navi:visited { color: #cccccc; }
