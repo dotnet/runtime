@@ -6736,10 +6736,6 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 
 	MONO_ARCH_SAVE_REGS;
 
-	klass = g_new0 (MonoClass, 1);
-
-	klass->image = &tb->module->dynamic_image->image;
-
 	if (tb->parent) {
 		/* check so we can compile corlib correctly */
 		if (strcmp (mono_object_class (tb->parent)->name, "TypeBuilder") == 0) {
@@ -6750,6 +6746,21 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 	} else
 		parent = NULL;
 	
+	/* the type has already being created: it means we just have to change the parent */
+	if (tb->type.type) {
+		klass = mono_class_from_mono_type (tb->type.type);
+		klass->parent = NULL;
+		/* fool mono_class_setup_parent */
+		g_free (klass->supertypes);
+		klass->supertypes = NULL;
+		mono_class_setup_parent (klass, parent);
+		return;
+	}
+	
+	klass = g_new0 (MonoClass, 1);
+
+	klass->image = &tb->module->dynamic_image->image;
+
 	klass->inited = 1; /* we lie to the runtime */
 	klass->name = mono_string_to_utf8 (tb->name);
 	klass->name_space = mono_string_to_utf8 (tb->nspace);
