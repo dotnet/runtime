@@ -57,6 +57,7 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	MonoAppDomainSetup *setup;
 	MonoAppDomain *ad;
 	MonoClass *class;
+	MonoAppContext *context;
 	
 	mono_install_assembly_preload_hook (mono_domain_assembly_preload, NULL);
 	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);
@@ -75,6 +76,9 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	g_assert (mono_delegate_semaphore != INVALID_HANDLE_VALUE);
 	InitializeCriticalSection (&mono_delegate_section);
 
+	mono_context_init (domain);
+	mono_context_set (domain->default_context);
+
 	mono_thread_init (start_cb, attach_cb);
 	
 	/* GC init has to happen after thread init */
@@ -83,6 +87,19 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_network_init ();
 
 	return;
+}
+
+void
+mono_context_init (MonoDomain *domain)
+{
+	MonoClass *class;
+	MonoAppContext *context;
+
+	class = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
+	context = (MonoAppContext *) mono_object_new (domain, class);
+	context->domain_id = domain->domain_id;
+	context->context_id = 0;
+	domain->default_context = context;
 }
 
 /* This must not be called while there are still running threads executing
@@ -281,6 +298,8 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 	data->domain = ad;
 	data->setup = setup;
 	data->friendly_name = mono_string_to_utf8 (friendly_name);
+
+	mono_context_init (data);
 
 	/* FIXME: what to do next ? */
 
@@ -861,15 +880,21 @@ ves_icall_System_AppDomain_InternalGetContext ()
 }
 
 MonoAppContext * 
+ves_icall_System_AppDomain_InternalGetDefaultContext ()
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return mono_domain_get ()->default_context;
+}
+
+MonoAppContext * 
 ves_icall_System_AppDomain_InternalSetContext (MonoAppContext *mc)
 {
 	MonoAppContext *old_context = mono_context_get ();
-	MonoDomain *context_domain = mono_domain_get_by_id (mc->domain_id);
 
 	MONO_ARCH_SAVE_REGS;
 
 	mono_context_set (mc);
-	mono_domain_set (context_domain);
 	
 	return old_context;
 }

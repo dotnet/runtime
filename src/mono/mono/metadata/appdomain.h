@@ -61,6 +61,12 @@ typedef struct {
 	MonoJitExceptionInfo *clauses;
 } MonoJitInfo;
 
+typedef struct {
+	MonoObject obj;
+	gint32 domain_id;
+	gint32 context_id;
+} MonoAppContext;
+
 typedef struct _MonoAppDomain MonoAppDomain;
 
 struct _MonoDomain {
@@ -89,6 +95,7 @@ struct _MonoDomain {
 	/* Used by remoting proxies */
 	MonoMethod         *create_proxy_for_type_method;
 	MonoMethod         *private_invoke_method;
+	MonoAppContext     *default_context;
 };
 
 /* This is a copy of System.AppDomain */
@@ -96,12 +103,6 @@ struct _MonoAppDomain {
 	MonoMarshalByRefObject mbr;
 	MonoDomain *data;
 };
-
-typedef struct {
-	MonoObject obj;
-	gint32 domain_id;
-	gint32 context_id;
-} MonoAppContext;
 
 extern MonoDomain *mono_root_domain;
 
@@ -213,6 +214,9 @@ ves_icall_System_AppDomain_InternalSetDomainByID   (gint32 domainid);
 
 MonoAppContext * 
 ves_icall_System_AppDomain_InternalGetContext      (void);
+
+MonoAppContext * 
+ves_icall_System_AppDomain_InternalGetDefaultContext      (void);
 
 MonoAppContext * 
 ves_icall_System_AppDomain_InternalSetContext	   (MonoAppContext *mc);

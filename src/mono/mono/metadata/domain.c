@@ -456,6 +456,7 @@ inline void
 mono_domain_set (MonoDomain *domain)
 {
 	TlsSetValue (appdomain_thread_id, domain);
+	TlsSetValue (context_thread_id, domain->default_context);
 }
 
 /**

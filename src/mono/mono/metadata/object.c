@@ -395,9 +395,6 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method) {
 	gboolean is_proxy;
 	MonoMethod *res;
 
-	if ((method->flags & METHOD_ATTRIBUTE_FINAL) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL))
-			return method;
-
 	klass = mono_object_class (obj);
 	if (klass == mono_defaults.transparent_proxy_class) {
 		klass = ((MonoTransparentProxy *)obj)->klass;
@@ -405,6 +402,10 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method) {
 	} else {
 		is_proxy = FALSE;
 	}
+
+	if (!is_proxy && ((method->flags & METHOD_ATTRIBUTE_FINAL) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)))
+			return method;
+
 	vtable = klass->vtable;
 
 	/* check method->slot is a valid index: perform isinstance? */
@@ -818,8 +819,12 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	}
 
 	if (!strcmp (method->name, ".ctor") && method->klass != mono_defaults.string_class) {
-		if (!obj)
+		if (!obj) {
 			obj = mono_object_new (mono_domain_get (), method->klass);
+			if (mono_object_class(obj) == mono_defaults.transparent_proxy_class) {
+				method = mono_marshal_get_remoting_invoke (method->klass->vtable [method->slot]);
+			}
+		}
 		mono_runtime_invoke (method, obj, pa, exc);
 		return obj;
 	} else
