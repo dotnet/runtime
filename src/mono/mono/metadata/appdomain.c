@@ -44,6 +44,9 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 static void
 mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data);
 
+static void
+add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass);
+
 static MonoMethod *
 look_for_method_by_name (MonoClass *klass, const gchar *name);
 
@@ -371,10 +374,16 @@ ves_icall_System_AppDomain_getDomainByID (gint32 domain_id)
 	return ((add == NULL) ? NULL : add->domain);
 }
 
+static void
+add_assembly_to_domain (gpointer key, gpointer value, gpointer user_data)
+{
+	add_assemblies_to_domain ((MonoDomain*)user_data, (MonoAssembly*)value);
+}
+
 MonoAppDomain *
 ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomainSetup *setup)
 {
-	/*MonoDomain *domain = mono_domain_get (); */
+	MonoDomain *domain = mono_domain_get ();
 	MonoClass *adclass;
 	MonoAppDomain *ad;
 	MonoDomain *data;
@@ -395,7 +404,10 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 
 	mono_context_init (data);
 
-	/* FIXME: what to do next ? */
+	/* The new appdomain should have all assemblies loaded */
+	mono_domain_lock (domain);
+	g_hash_table_foreach (domain->assemblies, add_assembly_to_domain, data);
+	mono_domain_unlock (domain);
 
 	return ad;
 }
