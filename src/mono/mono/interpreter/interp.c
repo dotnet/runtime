@@ -4379,7 +4379,7 @@ mono_interp_init(const char *file)
 	mono_runtime_install_cleanup (quit_function);
 	abort_requested = mono_thread_interruption_request_flag ();
 
-	domain = mono_init (file);
+	domain = mono_init_from_assembly (file, file);
 #ifdef __hpux /* generates very big stack frames */
 	mono_threads_set_default_stacksize(32*1024*1024);
 #endif
