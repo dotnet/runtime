@@ -174,8 +174,6 @@ PLATFORM_DISABLED_TESTS=
 endif
 
 DISABLED_TESTS=			\
-	remoting2.exe		\
-	remoting3.exe		\
 	appdomain-unload.exe	\
 	$(PLATFORM_DISABLED_TESTS)
 
