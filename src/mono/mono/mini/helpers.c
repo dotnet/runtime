@@ -58,7 +58,8 @@ mono_disassemble_code (guint8 *code, int size, char *id)
 {
 	int i;
 	FILE *ofd;
-	const char *tmp = getenv("TMP");
+	const char *tmp = g_getenv ("TMP");
+	const char *objdump_args = g_getenv ("MONO_OBJDUMP_ARGS");
 	char *as_file;
 	char *o_file;
 	char *cmd;
@@ -95,13 +96,13 @@ mono_disassemble_code (guint8 *code, int size, char *id)
 	cmd = g_strdup_printf ("as %s -o %s", as_file, o_file);
 	system (cmd); 
 	g_free (cmd);
-	cmd = g_strdup_printf (DIS_CMD " %s", o_file);
+	if (!objdump_args)
+		objdump_args = "";
+	
+	cmd = g_strdup_printf (DIS_CMD " %s %s", objdump_args, o_file);
 	system (cmd);
 	g_free (cmd);
-
-	cmd = g_strdup_printf ("objdump -d %s", o_file);
-	system (cmd);
-	g_free (cmd);
+	
 	g_free (o_file);
 	g_free (as_file);
 }
