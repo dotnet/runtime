@@ -102,6 +102,37 @@
   </tr>
 </table>
 
+@item Mar 25th: Second Mono Survey
+
+	<table width="100%" cellpadding="0" cellspacing="1" border="0" bgcolor="blue">
+	   <tr>
+	     <td valign="top">
+	       <div style="background: #c0d0ff; margin: 0px 0px 0px 0px; padding: 1px;">
+		 What do you think about Mono?
+
+		 Is your company involved with the development and
+		 deployment of web applications?  Is Linux becoming an
+		 important part of your company's business application
+		 strategy? Are you considering Mono for your next
+		 project? Would you like to shape the future of Mono
+		 and the use of Linux in business critical
+		 applications?
+
+		 If you answered yes to any of these questions, we
+		 would like to talk with you. If interested, please
+		 email us at monoresearch@ximian.com.
+	       </div>
+	     </td>
+	   </tr>
+	</table>
+
+@item Mar 20th: Windows.Forms and Wine.
+
+	Alexandre has provided a modified version of the GC system
+	that will work with and Mono.  See the mono-winforms-list.  It
+	is now possible to run our Win32-based implementation of
+	Windows.Forms with Mono on Linux.
+
 @item Mar 7th: Mono 0.23
 
 	A new freshly baked release of Mono is available.  Release
