@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <string.h>
 
 #include <mono/io-layer/io-layer.h>
 #include <mono/io-layer/handles-private.h>
@@ -248,8 +249,11 @@ static gboolean unref_handle (guint32 *open_handles, guint32 handle,
 		
 		_wapi_handle_ops_close_shared (GUINT_TO_POINTER (handle));
 		
+#ifdef _POSIX_THREAD_PROCESS_SHARED
 		mono_mutex_destroy (&_wapi_shared_data->handles[handle].signal_mutex);
 		pthread_cond_destroy (&_wapi_shared_data->handles[handle].signal_cond);
+#endif
+
 		memset (&_wapi_shared_data->handles[handle].u, '\0', sizeof(_wapi_shared_data->handles[handle].u));
 		if(daemon_initiated) {
 			_wapi_shared_data->handles[handle].type=WAPI_HANDLE_UNUSED;
@@ -964,7 +968,8 @@ static gboolean fd_activity (GIOChannel *channel, GIOCondition condition,
 			
 			newsock=accept (main_sock, &addr, &addrlen);
 			if(newsock==-1) {
-				g_critical ("accept error: %s", strerror (errno));
+				g_critical ("accept error: %s",
+					    g_strerror (errno));
 				cleanup ();
 				exit (-1);
 			}
@@ -1015,7 +1020,7 @@ void _wapi_daemon_main(gpointer shm)
 	ret=bind(main_sock, (struct sockaddr *)&main_socket_address,
 		 sizeof(struct sockaddr_un));
 	if(ret==-1) {
-		g_critical ("bind failed: %s", strerror (errno));
+		g_critical ("bind failed: %s", g_strerror (errno));
 		_wapi_shared_data->daemon_running=DAEMON_DIED_AT_STARTUP;
 		exit(-1);
 	}
@@ -1026,7 +1031,7 @@ void _wapi_daemon_main(gpointer shm)
 
 	ret=listen(main_sock, 5);
 	if(ret==-1) {
-		g_critical ("listen failed: %s", strerror (errno));
+		g_critical ("listen failed: %s", g_strerror (errno));
 		_wapi_shared_data->daemon_running=DAEMON_DIED_AT_STARTUP;
 		exit(-1);
 	}

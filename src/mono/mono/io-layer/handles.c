@@ -109,7 +109,7 @@ attach_again:
 			if(tried_once==TRUE) {
 				g_warning (G_GNUC_PRETTY_FUNCTION
 					   "connect to daemon failed: %s",
-					   strerror (errno));
+					   g_strerror (errno));
 				/* Fall back to private handles */
 				shared=FALSE;
 			} else {
@@ -179,8 +179,10 @@ again:
 			last=i+1;
 			shared->type=type;
 			shared->signalled=FALSE;
+#ifdef _POSIX_THREAD_PROCESS_SHARED
 			mono_mutex_init (&_wapi_shared_data->handles[i].signal_mutex, &mutex_shared_attr);
 			pthread_cond_init (&_wapi_shared_data->handles[i].signal_cond, &cond_shared_attr);
+#endif
 
 			return(i);
 		}
@@ -252,6 +254,10 @@ again:
 		return(GUINT_TO_POINTER (_WAPI_HANDLE_INVALID));
 	}
 
+#ifndef _POSIX_THREAD_PROCESS_SHARED
+	mono_mutex_init (&_wapi_shared_data->handles[idx].signal_mutex, &mutex_shared_attr);
+	pthread_cond_init (&_wapi_shared_data->handles[idx].signal_cond, &cond_shared_attr);
+#endif
 	handle=GUINT_TO_POINTER (idx);
 
 #ifdef DEBUG
@@ -405,6 +411,12 @@ void _wapi_handle_unref (gpointer handle)
 			memset (&_wapi_shared_data->handles[idx].u, '\0', sizeof(_wapi_shared_data->handles[idx].u));
 		
 		}
+#ifndef _POSIX_THREAD_PROCESS_SHARED
+		else {
+			mono_mutex_destroy (&_wapi_shared_data->handles[idx].signal_mutex);
+			pthread_cond_destroy (&_wapi_shared_data->handles[idx].signal_cond);
+		}
+#endif
 
 		_wapi_handle_ops_close_private (handle);
 		_wapi_shared_data->handles[idx].type=WAPI_HANDLE_UNUSED;
@@ -573,7 +585,7 @@ guint32 _wapi_handle_scratch_store (gconstpointer data, guint32 bytes)
 
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": stored [%s] at %d (len %d)",
-		   data, idx, bytes);
+		   (char *)data, idx, bytes);
 #endif
 	
 	memcpy (&_wapi_shared_data->scratch_base[idx], data, bytes);

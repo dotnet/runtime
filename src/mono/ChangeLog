@@ -1,3 +1,8 @@
+2002-10-03  Dick Porter  <dick@ximian.com>
+
+	* acconfig.h:
+	* configure.in:  Freebsd pthread_t is a pointer
+
 2002-10-01  Duncan Mak  <duncan@ximian.com>
 
 	* mono/os/Makefile.am: Add gc_wrapper.h.

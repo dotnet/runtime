@@ -20,6 +20,7 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE"
 		LDFLAGS="$LDFLAGS -pthread"
 		AC_DEFINE(NEED_LINK_UNLINK)
+		AC_DEFINE(PTHREAD_POINTER_ID)
 		libdl=
 		;;
 	*-*-linux*)

@@ -251,7 +251,11 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 #endif
 	
 	if(tid!=NULL) {
+#ifdef PTHREAD_POINTER_ID
+		*tid=GPOINTER_TO_UINT(thread_private_handle->thread->id);
+#else
 		*tid=thread_private_handle->thread->id;
+#endif
 	}
 
 	_wapi_handle_unlock_handle (handle);
@@ -367,7 +371,11 @@ guint32 GetCurrentThreadId(void)
 {
 	pthread_t tid=pthread_self();
 	
+#ifdef PTHREAD_POINTER_ID
+	return(GPOINTER_TO_UINT(tid));
+#else
 	return(tid);
+#endif
 }
 
 /**
