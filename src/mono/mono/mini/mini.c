@@ -2182,6 +2182,79 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 /* offset from br.s -> br like opcodes */
 #define BIG_BRANCH_OFFSET 13
 
+static int
+get_basic_blocks (MonoCompile *cfg, GHashTable *bbhash, MonoMethodHeader* header, guint real_offset, unsigned char *start, unsigned char *end)
+{
+	unsigned char *ip = start;
+	unsigned char *target;
+	int i;
+	guint cli_addr;
+	MonoBasicBlock *bblock;
+	const MonoOpcode *opcode;
+
+	while (ip < end) {
+		cli_addr = ip - start;
+		i = mono_opcode_value (&ip);
+		opcode = &mono_opcodes [i];
+		switch (opcode->argument) {
+		case MonoInlineNone:
+			ip++; 
+			break;
+		case MonoInlineString:
+		case MonoInlineType:
+		case MonoInlineField:
+		case MonoInlineMethod:
+		case MonoInlineTok:
+		case MonoInlineSig:
+		case MonoShortInlineR:
+		case MonoInlineI:
+			ip += 5;
+			break;
+		case MonoInlineVar:
+			ip += 3;
+			break;
+		case MonoShortInlineVar:
+		case MonoShortInlineI:
+			ip += 2;
+			break;
+		case MonoShortInlineBrTarget:
+			target = start + cli_addr + 2 + (signed char)ip [1];
+			GET_BBLOCK (cfg, bbhash, bblock, target);
+			ip += 2;
+			break;
+		case MonoInlineBrTarget:
+			target = start + cli_addr + 5 + (gint32)read32 (ip + 1);
+			GET_BBLOCK (cfg, bbhash, bblock, target);
+			ip += 5;
+			break;
+		case MonoInlineSwitch: {
+			guint32 n = read32 (ip + 1);
+			guint32 j;
+			ip += 5;
+			cli_addr += 5 + 4 * n;
+			target = start + cli_addr;
+			GET_BBLOCK (cfg, bbhash, bblock, target);
+			
+			for (j = 0; j < n; ++j) {
+				target = start + cli_addr + (gint32)read32 (ip);
+				GET_BBLOCK (cfg, bbhash, bblock, target);
+				ip += 4;
+			}
+			break;
+		}
+		case MonoInlineR:
+		case MonoInlineI8:
+			ip += 9;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+	}
+	return 0;
+unverified:
+	return 1;
+}
+
 /*
  * mono_method_to_ir: translates IL into basic blocks containing trees
  */
@@ -2335,6 +2408,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		start_bblock->next_bb = bblock;
 		link_bblock (cfg, start_bblock, bblock);
 	}
+
+	if (get_basic_blocks (cfg, bbhash, header, real_offset, ip, end))
+		goto unverified;
 
 	mono_debug_init_method (cfg, bblock, breakpoint_id);
 
