@@ -1918,7 +1918,7 @@ mono_method_check_inlining (MonoMethod *method)
 			return FALSE;
 		}
 	}
-	
+
 	//if (!MONO_TYPE_IS_VOID (signature->ret)) return FALSE;
 
 	/* also consider num_locals? */
@@ -1942,19 +1942,12 @@ mono_save_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignature *s
 	if (sig->hasthis) {
 		if (sp [0]->opcode == OP_ICONST) {
 			*args++ = sp [0];
-			//printf ("REUSABLE CONST\n");
-		} else if (sp [0]->ssa_op == MONO_SSA_LOAD  && 
-		    (sp [0]->inst_i0->opcode == OP_LOCAL || sp [0]->inst_i0->opcode == OP_ARG)) {
-			*args++ = sp [0]->inst_i0;
-			//printf ("REUSABLE ARG\n");
 		} else {
-			//printf ("NONREUSABLE ARG0 %s\n", mono_inst_name (sp [0]->opcode));
 			temp = mono_compile_create_var (cfg, type_from_stack_type (*sp), OP_LOCAL);
 			*args++ = temp;
 			NEW_TEMPSTORE (cfg, store, temp->inst_c0, *sp);
 			store->cil_code = sp [0]->cil_code;
 			MONO_ADD_INS (bblock, store);
-			//printf ("SAVE THIS %s\n", mono_inst_name (store->opcode));
 		}
 		sp++;
 	}
@@ -1962,13 +1955,7 @@ mono_save_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignature *s
 	for (i = 0; i < sig->param_count; ++i) {
 		if (sp [0]->opcode == OP_ICONST) {
 			*args++ = sp [0];
-			//printf ("REUSABLE CONST\n");
-		} else if (sp [0]->ssa_op == MONO_SSA_LOAD  && 
-		    (sp [0]->inst_i0->opcode == OP_LOCAL || sp [0]->inst_i0->opcode == OP_ARG)) {
-			*args++ = sp [0]->inst_i0;
-			//printf ("REUSABLE ARG\n");
 		} else {
-			//printf ("NONREUSABLE ARG1 %s\n", mono_inst_name (sp [0]->opcode));
 			temp = mono_compile_create_var (cfg, type_from_stack_type (*sp), OP_LOCAL);
 			*args++ = temp;
 			NEW_TEMPSTORE (cfg, store, temp->inst_c0, *sp);
@@ -1976,10 +1963,8 @@ mono_save_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignature *s
 			if (store->opcode == CEE_STOBJ) {
 				NEW_TEMPLOADA (cfg, store, temp->inst_c0);
 				handle_stobj (cfg, bblock, store, *sp, sp [0]->cil_code, temp->klass, FALSE, FALSE);
-				//printf ("SAVE OBJARGS %s\n", mono_inst_name (store->opcode));
 			} else {
 				MONO_ADD_INS (bblock, store);
-				//printf ("SAVE ARGS %s\n", mono_inst_name (store->opcode));
 			} 
 		}
 		sp++;
