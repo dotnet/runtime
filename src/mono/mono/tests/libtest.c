@@ -699,6 +699,9 @@ mono_test_marshal_string_array (char **array)
 	if (strcmp (array [1], "DEF"))
 		return 2;
 
+	if (array [2] != NULL)
+		return 3;
+
 	return 0;
 }
 
