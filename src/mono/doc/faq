@@ -1080,7 +1080,7 @@ A: We will have to evaluate the licenses for compatibility first,
    but as a general rule, we will accept the code under the same
    terms of the "container" module. 
 
-<a name="patents></a>
+<a name="patents"></a>
 ** Patents
 
 Q: Could patents be used to completely disable Mono (either submarine
@@ -1136,46 +1136,41 @@ A: It's possible. But there is no plan about this. So the short answer is no.
 
 Q: Are there any Boehm's gc binaries?
 
-A: Yes. You can find them <a href="http://java.thn.htu.se/~toor/">here</a>
-
-Q: I have get into trouble when trying to build the site in my Linux box, what
-   can I do?.
-
-A: Try to change the line "./mono-rss.exe ../index deploy/index.rss" for
-   "mono ./mono-rss.exe ../index deploy/index.rss"
+A: Yes. You can find RPMs <a href="http://java.thn.htu.se/~toor/">here</a>, though
+   if your distribution provides the correct packages, you should use those.
+   The suggested version of the Boehm GC is 6.1.
 
 Q: How can I report a bug?
 
 A: The best thing is to track down the bug and provide a simple test to
-   reproduce the bug. You can then add the bug to bugzilla:
-   http://bugzilla.ximian.com/enter_bug.cgi or simply send it to 
-   mono-list@ximian.com.
+   reproduce the bug. You can then add the bug to 
+   <a href="http://bugzilla.ximian.com/enter_bug.cgi">bugzilla</a> or 
+   simply send it to mono-list@ximian.com. Please provide info about
+   what version of mono you're using and any relevant details to be 
+   able to repoduce the bug. Note that bugs reported on the mailing-list 
+   may be easily forgotten, so it's better to file them in bugzilla.
 
 Q: Does mcs support the same command line options as the MS C# 
    compiler?
 
-A: The Mono C# compiler on CVS now supports the same command line
+A: The Mono C# compiler now supports the same command line
    arguments as the Microsoft C# compiler does.
-
-Q: I am thinking about making a VS.NET solution and include as 
-   projects both the library and the System.Xml.dll project 
-   file: is that the best way (sure at the beginning, when the 
-   compiler was not self hosting, you made something similar...)?
-
-A: Jason and Krall did check in VS.NET files that you can use 
-   to compile our System.XML and even to run the System.XML tests 
-   (which is way cool, and way simple).
 
 Q: How about getting searchable archives on lists.ximian.com? 
 
-A: You mean like http://www.go-mono.com/mailing-lists.html?
+A: You can perform a search on the mono-related mailing lists 
+   <a href="http://www.go-mono.com/mailing-lists.html">here</a>.
 
-Q: I downloaded the lastest snapshot and did a make and make install on
-   mono which ran normal but when I tried to do the same with mcs it
-   errored out with a message saying Mono and Runtime out of sync.
+Q: When using mono from cvs or from a snapshot, I get an error messaage
+   saying that Mono and the runtime are out of sync. How do I fix that?
 
-A: You need to compile first the class libraries and install them with your
-   existing compiler and then the runtime.
+A: If you use mono from cvs, you need to be prepared for changes in the
+   runtime internals. This means that you should keep a working setup 
+   before blindling updating (a working setup may just be the last released
+   tarball or a recent binary snapshot).
+   Usually, compiling corlib with mcs before recompiling the C runtime does
+   the right thing (but occasionally you may need to do it the other 
+   way around).
 
 
 
