@@ -2155,7 +2155,7 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 	_wapi_time_t_to_filetime (buf.st_atime, &find_data->ftLastAccessTime);
 	_wapi_time_t_to_filetime (buf.st_mtime, &find_data->ftLastWriteTime);
 
-	if (find_data->dwFileAttributes && FILE_ATTRIBUTE_DIRECTORY) {
+	if (find_data->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 		find_data->nFileSizeHigh = 0;
 		find_data->nFileSizeLow = 0;
 	}
@@ -2381,7 +2381,7 @@ gboolean GetFileAttributesEx (const gunichar2 *name, WapiGetFileExInfoLevels lev
 	_wapi_time_t_to_filetime (buf.st_atime, &data->ftLastAccessTime);
 	_wapi_time_t_to_filetime (buf.st_mtime, &data->ftLastWriteTime);
 
-	if (data->dwFileAttributes && FILE_ATTRIBUTE_DIRECTORY) {
+	if (data->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 		data->nFileSizeHigh = 0;
 		data->nFileSizeLow = 0;
 	}
