@@ -566,7 +566,6 @@ generate:
 	ADD_INST(code, pc, hppa_std(code, 19, -8, 29));  // STD	  %r19,-8(%r29)
 
 	ADD_INST(code, pc, hppa_std(code, 0, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, parent), 30));
-	ADD_INST(code, pc, hppa_std(code, 0, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, child), 30));
 	ADD_INST(code, pc, hppa_std(code, 0, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, ex), 30));
 	ADD_INST(code, pc, hppa_std(code, 0, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, ex_handler), 30));
 	ADD_INST(code, pc, hppa_std(code, 0, invoke_rec_offset + G_STRUCT_OFFSET (MonoInvocation, ip), 30));

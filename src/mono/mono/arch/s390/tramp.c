@@ -819,7 +819,7 @@ mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 /*	allocate a MonoInvocation structure (inv) on the stack	    */
 /*      allocate an array of stackval on the stack with length =    */
 /*          method->signature->param_count + 1 [call it stack_args] */
-/*	set inv->ex, inv->ex_handler, inv->child, inv->parent to    */
+/*	set inv->ex, inv->ex_handler,inv->parent to                 */
 /*	    NULL						    */
 /*	set inv->method to method				    */
 /*	if method is an instance method, set inv->obj to the 	    */
@@ -894,7 +894,6 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	s390_lhi (p, s390_r0, 0);
 	s390_st  (p, s390_r0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex)));
 	s390_st  (p, s390_r0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex_handler)));
-	s390_st  (p, s390_r0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, child)));
 	s390_st  (p, s390_r0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, parent)));
 	s390_lhi (p, s390_r0, 1);
 	s390_st	 (p, s390_r0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, invoke_trap)));

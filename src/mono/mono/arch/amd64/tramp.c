@@ -885,7 +885,6 @@ enum_calc_size:
 	amd64_alu_reg_reg (p, X86_XOR, AMD64_RAX, AMD64_RAX);
 	amd64_mov_membase_reg (p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, ex)), AMD64_RAX, 8);
 	amd64_mov_membase_reg (p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, ex_handler)), AMD64_RAX, 8);
-	amd64_mov_membase_reg (p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, child)), AMD64_RAX, 8);
 	amd64_mov_membase_reg (p, AMD64_RBP, (mono_invocation_pos + G_STRUCT_OFFSET (MonoInvocation, parent)), AMD64_RAX, 8);
 	/*
 	 * Set the method pointer.

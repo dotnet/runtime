@@ -395,7 +395,6 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	x86_mov_reg_imm (p, X86_EAX, 0);
 	x86_mov_membase_reg (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex)), X86_EAX, 4);
 	x86_mov_membase_reg (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex_handler)), X86_EAX, 4);
-	x86_mov_membase_reg (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, child)), X86_EAX, 4);
 	x86_mov_membase_reg (p, X86_EBP, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, parent)), X86_EAX, 4);
 	/*
 	 * Set the method pointer.

@@ -682,7 +682,6 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	ppc_li   (p, ppc_r0, 0);
 	ppc_stw  (p, ppc_r0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex)), ppc_r31);
 	ppc_stw  (p, ppc_r0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex_handler)), ppc_r31);
-	ppc_stw  (p, ppc_r0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, child)), ppc_r31);
 	ppc_stw  (p, ppc_r0, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, parent)), ppc_r31);
 
 	/* set method pointer */

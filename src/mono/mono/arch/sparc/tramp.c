@@ -832,8 +832,6 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	sparc_st_imm_ptr (p, sparc_g0, sparc_sp,
 		  (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex_handler)));
 	sparc_st_imm_ptr (p, sparc_g0, sparc_sp,
-		  (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, child)));
-	sparc_st_imm_ptr (p, sparc_g0, sparc_sp,
 		  (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, parent)));
 
 	sparc_set_ptr (p, (void *)method, sparc_l0);

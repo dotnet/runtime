@@ -487,7 +487,6 @@ void* mono_arch_create_method_pointer (MonoMethod* method)
 	ARM_MOV_REG_IMM8(p, ARMREG_R4, 0);
 	ARM_STR_IMM(p, ARMREG_R4, ARMREG_SP, MINV_OFFS(ex));
 	ARM_STR_IMM(p, ARMREG_R4, ARMREG_SP, MINV_OFFS(ex_handler));
-	ARM_STR_IMM(p, ARMREG_R4, ARMREG_SP, MINV_OFFS(child));
 	ARM_STR_IMM(p, ARMREG_R4, ARMREG_SP, MINV_OFFS(parent));
 
 	/* Set the method pointer. */
