@@ -105,7 +105,7 @@ mono_domain_try_type_resolve (MonoDomain *domain, MonoObject *name_or_tb)
 	g_assert (domain != NULL && name_or_tb != NULL);
 
 	if (method == NULL) {
-		klass = domain->domain->object.vtable->klass;
+		klass = domain->domain->mbr.obj.vtable->klass;
 		g_assert (klass);
 
 		method = look_for_method_by_name (klass, "DoTypeResolve");
@@ -638,7 +638,7 @@ try_assembly_resolve (MonoDomain *domain, MonoString *fname)
 
 	g_assert (domain != NULL && fname != NULL);
 
-	klass = domain->domain->object.vtable->klass;
+	klass = domain->domain->mbr.obj.vtable->klass;
 	g_assert (klass);
 	
 	method = look_for_method_by_name (klass, "DoAssemblyResolve");
@@ -676,7 +676,7 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 	MonoMethod *method;
 	void *params [1];
 
-	klass = domain->domain->object.vtable->klass;
+	klass = domain->domain->mbr.obj.vtable->klass;
 	
 	method = look_for_method_by_name (klass, "DoAssemblyLoad");
 	if (method == NULL) {

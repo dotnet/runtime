@@ -90,7 +90,7 @@ struct _MonoDomain {
 
 /* This is a copy of System.AppDomain */
 struct _MonoAppDomain {
-	MonoObject  object;
+	MonoMarshalByRefObject mbr;
 	MonoDomain *data;
 };
 
