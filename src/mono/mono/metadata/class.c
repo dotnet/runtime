@@ -726,6 +726,9 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 		}
 	}
 
+	if (class->flags & TYPE_ATTRIBUTE_INTERFACE)
+		class->interface_offsets [class->interface_id] = cur_slot;
+
 	return cur_slot;
 }
 
