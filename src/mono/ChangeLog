@@ -1,5 +1,11 @@
 2004-05-20  Raja R Harinath  <rharinath@novell.com>
 
+	* Makefile.am (get-monolite-latest, monolite-bootstrap):
+	New bootstrap targets to build from monolite.
+	Based on idea from Jaroslaw Kowalski <jaak@zd.com.pl>.
+	
+2004-05-20  Raja R Harinath  <rharinath@novell.com>
+
 	* configure.in (AC_OUTPUT): Add tools/Makefile and
 	tools/locale-builder/Makefile.
 	* Makefile.am (SUBDIRS): Remove tools.
