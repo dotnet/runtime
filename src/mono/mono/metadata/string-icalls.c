@@ -850,6 +850,8 @@ ves_icall_System_String_get_Chars (MonoString *me, gint32 idx)
 {
 	MONO_ARCH_SAVE_REGS;
 
+	if ((idx < 0) || (idx >= mono_string_length (me)))
+		mono_raise_exception (mono_get_exception_index_out_of_range ());
 	return mono_string_chars(me)[idx];
 }
 

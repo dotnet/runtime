@@ -607,7 +607,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 
 				g_assert (io + l <= max_vtsize);
 
-				if (vtable [io + l])
+ 				if (vtable [io + l] && !(vtable [io + l]->flags & METHOD_ATTRIBUTE_ABSTRACT))
 					continue;
 					
 				for (k1 = class; k1; k1 = k1->parent) {
@@ -627,7 +627,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 						
 					}
 					g_assert (io + l <= max_vtsize);
-					if (vtable [io + l])
+					if (vtable [io + l] && !(vtable [io + l]->flags & METHOD_ATTRIBUTE_ABSTRACT))
 						break;
 				}
 			}
@@ -714,17 +714,8 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 	       
 		cm = class->methods [i];
 
-		
-#if 0
-		if (!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
-		    (cm->slot >= 0))
-			continue;
-#else  /* EXT_VTABLE_HACK */
-		if (cm->slot >= 0)
-			continue;
-#endif
-
 		if (!(cm->flags & METHOD_ATTRIBUTE_NEW_SLOT) && (cm->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
+			int slot = -1;
 			for (k = class->parent; k ; k = k->parent) {
 				int j;
 				for (j = 0; j < k->method.count; ++j) {
@@ -733,14 +724,16 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 						continue;
 					if (!strcmp(cm->name, m1->name) && 
 					    mono_metadata_signature_equal (cm->signature, m1->signature)) {
-						cm->slot = k->methods [j]->slot;
+						slot = k->methods [j]->slot;
 						g_assert (cm->slot < max_vtsize);
 						break;
 					}
 				}
-				if (cm->slot >= 0) 
+				if (slot >= 0) 
 					break;
 			}
+			if (slot >= 0)
+				cm->slot = slot;
 		}
 
 		if (cm->slot < 0)

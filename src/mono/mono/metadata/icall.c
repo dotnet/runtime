@@ -2563,6 +2563,9 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 
 	MONO_ARCH_SAVE_REGS;
 
+	if ((year < 1900) || (year > 2100))
+		mono_raise_exception (mono_get_exception_not_implemented ());
+
 	memset (&start, 0, sizeof (start));
 
 	start.tm_mday = 1;
@@ -2578,7 +2581,7 @@ ves_icall_System_CurrentTimeZone_GetTimeZoneData (guint32 year, MonoArray **data
 #endif
 	
 	gmtoff = gmt_offset (start);
-	
+
 	MONO_CHECK_ARG_NULL (data);
 	MONO_CHECK_ARG_NULL (names);
 
