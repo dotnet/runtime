@@ -821,7 +821,13 @@ ves_exec_method (MonoInvocation *frame)
 			++ip;
 			BREAK;
 		}
-		CASE (CEE_STARG_S) ves_abort(); BREAK;
+		CASE (CEE_STARG_S)
+			++ip;
+			--sp;
+			stackval_to_data (ARG_TYPE (signature, *ip), sp, ARG_POS (*ip));
+			vt_free (sp);
+			++ip;
+			BREAK;
 		CASE (CEE_LDLOC_S)
 			++ip;
 			vt_alloc (LOCAL_TYPE (header, *ip), sp);
@@ -919,10 +925,11 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_DUP) 
 			if (sp [-1].type == VAL_VALUET) {
 				/* kludge alert! */
+				char *addr = sp [-1].data.vt.vt;
 				MonoType t = sp [-1].data.vt.klass->this_arg;
 				t.byref = 0;
 				vt_alloc (&t, sp);
-				stackval_from_data (&t, sp, sp [-1].data.vt.vt);
+				stackval_from_data (&t, sp, addr);
 			} else {
 				*sp = sp [-1]; 
 			}
@@ -939,6 +946,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_CALL) {
 			MonoMethodSignature *csignature;
 			stackval retval;
+			stackval *endsp = sp;
 			guint32 token;
 			int virtual = *ip == CEE_CALLVIRT;
 
@@ -986,6 +994,11 @@ ves_exec_method (MonoInvocation *frame)
 
 			ves_exec_method (&child_frame);
 
+			while (endsp > sp) {
+				--endsp;
+				vt_free (endsp);
+			}
+
 			if (child_frame.ex) {
 				/*
 				 * An exception occurred, need to run finally, fault and catch handlers..
@@ -993,8 +1006,6 @@ ves_exec_method (MonoInvocation *frame)
 				frame->ex = child_frame.ex;
 				goto handle_finally;
 			}
-			/*
-			 * need to vt_free () arguments ... */
 
 			/* need to handle typedbyref ... */
 			if (csignature->ret->type != MONO_TYPE_VOID) {
@@ -1634,7 +1645,24 @@ ves_exec_method (MonoInvocation *frame)
 			BREAK;
 		CASE (CEE_CONV_U8) ves_abort(); BREAK;
 		CASE (CEE_CPOBJ) ves_abort(); BREAK;
-		CASE (CEE_LDOBJ) ves_abort(); BREAK;
+		CASE (CEE_LDOBJ) {
+			guint32 token;
+			MonoClass *c;
+			MonoType t;
+			char *addr;
+
+			++ip;
+			token = read32 (ip);
+			ip += 4;
+			c = mono_class_get (image, token);
+			addr = sp [-1].data.vt.vt;
+			/* kludge alert! */
+			t = c->this_arg;
+			t.byref = 0;
+			vt_alloc (&t, &sp [-1]);
+			stackval_from_data (&t, &sp [-1], addr);
+			BREAK;
+		}
 		CASE (CEE_LDSTR) {
 			MonoObject *o;
 			const char *name;
@@ -1659,6 +1687,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_NEWOBJ) {
 			MonoObject *o;
 			MonoMethodSignature *csig;
+			stackval *endsp = sp;
 			guint32 token;
 
 			frame->ip = ip;
@@ -1690,6 +1719,11 @@ ves_exec_method (MonoInvocation *frame)
 			child_frame.ex_handler = NULL;
 
 			ves_exec_method (&child_frame);
+
+			while (endsp > sp) {
+				--endsp;
+				vt_free (endsp);
+			}
 
 			if (child_frame.ex) {
 				/*
@@ -1739,9 +1773,25 @@ ves_exec_method (MonoInvocation *frame)
 			ip += 4;
 			BREAK;
 		}
-		CASE (CEE_ISINST) ves_abort(); BREAK;
+		CASE (CEE_ISINST) {
+			MonoClass *c;
+			guint32 token;
+
+			++ip;
+			token = read32 (ip);
+			ip += 4;
+			g_assert (sp [-1].type == VAL_OBJ);
+			if (!sp [-1].data.p)
+				BREAK;
+			c = mono_class_get (image, token);
+			/* FIXME: handle interfaces... */
+			if (!mono_object_isinst (sp [-1].data.p, c))
+				sp [-1].data.p = NULL;
+
+			BREAK;
+		}
 		CASE (CEE_CONV_R_UN) ves_abort(); BREAK;
-		CASE (CEE_UNUSED58) ves_abort(); BREAK;
+		CASE (CEE_UNUSED58)
 		CASE (CEE_UNUSED1) ves_abort(); BREAK;
 		CASE (CEE_UNBOX) {
 			MonoObject *o;
@@ -2205,14 +2255,19 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_UNUSED45) 
 		CASE (CEE_UNUSED46) 
 		CASE (CEE_UNUSED47) 
-		CASE (CEE_UNUSED48) ves_abort(); BREAK;
-		CASE (CEE_PREFIX7) ves_abort(); BREAK;
-		CASE (CEE_PREFIX6) ves_abort(); BREAK;
-		CASE (CEE_PREFIX5) ves_abort(); BREAK;
-		CASE (CEE_PREFIX4) ves_abort(); BREAK;
-		CASE (CEE_PREFIX3) ves_abort(); BREAK;
-		CASE (CEE_PREFIX2) ves_abort(); BREAK;
+		CASE (CEE_UNUSED48)
+		CASE (CEE_PREFIX7)
+		CASE (CEE_PREFIX6)
+		CASE (CEE_PREFIX5)
+		CASE (CEE_PREFIX4)
+		CASE (CEE_PREFIX3)
+		CASE (CEE_PREFIX2)
 		CASE (CEE_PREFIXREF) ves_abort(); BREAK;
+		/*
+		 * Note: Exceptions thrown when executing a prefixed opcode need
+		 * to take into account the number of prefix bytes (usually the
+		 * throw point is just (ip - n_prefix_bytes).
+		 */
 		SUB_SWITCH
 			++ip;
 			switch (*ip) {
@@ -2225,12 +2280,65 @@ ves_exec_method (MonoInvocation *frame)
 			case CEE_LDFTN: ves_abort(); break;
 			case CEE_LDVIRTFTN: ves_abort(); break;
 			case CEE_UNUSED56: ves_abort(); break;
-			case CEE_LDARG: ves_abort(); break;
+			case CEE_LDARG: {
+				guint32 arg_pos;
+				++ip;
+				arg_pos = read32 (ip);
+				ip += 4;
+				vt_alloc (ARG_TYPE (signature, arg_pos), sp);
+				stackval_from_data (ARG_TYPE (signature, arg_pos), sp, ARG_POS (arg_pos));
+				++sp;
+				break;
+			}
 			case CEE_LDARGA: ves_abort(); break;
-			case CEE_STARG: ves_abort(); break;
-			case CEE_LDLOC: ves_abort(); break;
-			case CEE_LDLOCA: ves_abort(); break;
-			case CEE_STLOC: ves_abort(); break;
+			case CEE_STARG: {
+				guint32 arg_pos;
+				++ip;
+				arg_pos = read32 (ip);
+				ip += 4;
+				--sp;
+				stackval_to_data (ARG_TYPE (signature, arg_pos), sp, ARG_POS (arg_pos));
+				vt_free (sp);
+				break;
+			}
+			case CEE_LDLOC: {
+				guint32 loc_pos;
+				++ip;
+				loc_pos = read32 (ip);
+				ip += 4;
+				vt_alloc (LOCAL_TYPE (header, loc_pos), sp);
+				stackval_from_data (LOCAL_TYPE (header, loc_pos), sp, LOCAL_POS (loc_pos));
+				++sp;
+				break;
+			}
+			case CEE_LDLOCA: {
+				MonoType *t;
+				guint32 loc_pos;
+				++ip;
+				loc_pos = read32 (ip);
+				ip += 4;
+				t = LOCAL_TYPE (header, loc_pos);
+				if (t->type == MONO_TYPE_VALUETYPE) {
+					sp->type = VAL_VALUETA;
+					sp->data.vt.vt = LOCAL_POS (loc_pos);
+					sp->data.vt.klass = t->data.klass;
+				} else {
+					sp->type = VAL_TP;
+					sp->data.p = LOCAL_POS (loc_pos);
+				}
+				++sp;
+				break;
+			}
+			case CEE_STLOC: {
+				guint32 loc_pos;
+				++ip;
+				loc_pos = read32 (ip);
+				ip += 4;
+				--sp;
+				stackval_to_data (LOCAL_TYPE (header, loc_pos), sp, LOCAL_POS (loc_pos));
+				vt_free (sp);
+				break;
+			}
 			case CEE_LOCALLOC:
 				if (sp != frame->stack)
 					THROW_EX (get_exception_execution_engine (), ip - 1);
@@ -2252,13 +2360,33 @@ ves_exec_method (MonoInvocation *frame)
 				++ip;
 				tail_recursion = 1;
 				break;
-			case CEE_INITOBJ: ves_abort(); break;
+			case CEE_INITOBJ: {
+				guint32 token;
+				++ip;
+				token = read32 (ip);
+				ip += 4;
+				/*
+				 * we ignore the value of token (I think we can as unspecified
+				 * behavior described in Partition II, 3.5).
+				 */
+				--sp;
+				g_assert (sp->type = VAL_VALUETA);
+				memset (sp->data.vt.vt, 0, mono_class_value_size (sp->data.vt.klass, NULL));
+				break;
+			}
 			case CEE_UNUSED68: ves_abort(); break;
-			case CEE_CPBLK: ves_abort(); break;
+			case CEE_CPBLK:
+				sp -= 3;
+				if (!sp [0].data.p || !sp [1].data.p)
+					THROW_EX (get_exception_null_reference(), ip - 1);
+				++ip;
+				/* FIXME: value and size may be int64... */
+				memcpy (sp [0].data.p, sp [1].data.p, sp [2].data.i);
+				break;
 			case CEE_INITBLK:
 				sp -= 3;
 				if (!sp [0].data.p)
-					THROW_EX (get_exception_null_reference(), ip);
+					THROW_EX (get_exception_null_reference(), ip - 1);
 				++ip;
 				/* FIXME: value and size may be int64... */
 				memset (sp [0].data.p, sp [1].data.i, sp [2].data.i);
@@ -2279,7 +2407,18 @@ ves_exec_method (MonoInvocation *frame)
 				THROW_EX (frame->ex, ip - 1);
 				break;
 			case CEE_UNUSED: ves_abort(); break;
-			case CEE_SIZEOF: ves_abort(); break;
+			case CEE_SIZEOF: {
+				guint32 token;
+				MonoClass *c;
+				++ip;
+				token = read32 (ip);
+				ip += 4;
+				c = mono_class_get (image, token);
+				sp->type = VAL_I32;
+				sp->data.i = mono_class_value_size (c, NULL);
+				++sp;
+				break;
+			}
 			case CEE_REFANYTYPE: ves_abort(); break;
 			case CEE_UNUSED52: 
 			case CEE_UNUSED53: 
