@@ -203,8 +203,8 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericInst *ginst)
 {
 	switch (type->type) {
 	case MONO_TYPE_MVAR:
-		if (ginst)
-			return dup_type (ginst->type_argv [type->data.generic_param->num]);
+		if (ginst && ginst->mtype_argv)
+			return dup_type (ginst->mtype_argv [type->data.generic_param->num]);
 		else
 			return type;
 	case MONO_TYPE_VAR: {

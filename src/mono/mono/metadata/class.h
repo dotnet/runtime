@@ -222,6 +222,8 @@ struct _MonoGenericInst {
 	MonoMethod *generic_method;
 	int type_argc;
 	MonoType **type_argv;
+	int mtype_argc;
+	MonoType **mtype_argv;
 	guint is_open       : 1;
 	guint initialized   : 1;
 	guint init_pending  : 1;

@@ -2140,7 +2140,7 @@ encode_generic_method_sig (MonoDynamicImage *assembly, MonoGenericInst *ginst)
 	char *buf;
 	char *p;
 	int i;
-	guint32 nparams =  ginst->type_argc;
+	guint32 nparams =  ginst->mtype_argc;
 	guint32 size = 10 + nparams * 10;
 	guint32 idx;
 	char blob_size [6];
@@ -2157,7 +2157,7 @@ encode_generic_method_sig (MonoDynamicImage *assembly, MonoGenericInst *ginst)
 	mono_metadata_encode_value (nparams, p, &p);
 
 	for (i = 0; i < nparams; i++)
-		encode_type (assembly, ginst->type_argv [i], p, &p);
+		encode_type (assembly, ginst->mtype_argv [i], p, &p);
 
 	/* store length */
 	g_assert (p - buf < size);
@@ -2168,27 +2168,23 @@ encode_generic_method_sig (MonoDynamicImage *assembly, MonoGenericInst *ginst)
 }
 
 static guint32
-method_encode_methodspec (MonoDynamicImage *assembly, MonoGenericInst *ginst)
+method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method, MonoGenericInst *ginst)
 {
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 token, mtoken = 0, sig;
+	MonoClass *k;
 
 	table = &assembly->tables [MONO_TABLE_METHODSPEC];
 
 	g_assert (ginst);
-	if (ginst->generic_method) {
-		MonoMethod *gm = ginst->generic_method;
-		MonoClass *k = ginst->klass ? ginst->klass : gm->klass;
+	k = ginst->klass ? ginst->klass : method->klass;
 
-		sig = method_encode_signature (assembly, gm->signature);
-		mtoken = mono_image_get_memberref_token (assembly, &k->byval_arg, gm->name, sig);
+	sig = method_encode_signature (assembly, method->signature);
+	mtoken = mono_image_get_memberref_token (assembly, &k->byval_arg, method->name, sig);
 
-		if (!ginst->generic_method->signature->generic_param_count)
-			return mtoken;
-	}
-	else
-		g_assert_not_reached ();
+	if (!method->signature->generic_param_count)
+		return mtoken;
 
 	switch (mono_metadata_token_table (mtoken)) {
 	case MONO_TABLE_MEMBERREF:
@@ -2217,15 +2213,28 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoGenericInst *ginst)
 }
 
 static guint32
-mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *method, MonoGenericInst *ginst)
+mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoReflectionInflatedMethod *m)
 {
 	guint32 token;
 	
-	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, method));
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, m->rmethod.method));
 	if (token)
 		return token;
-	token = method_encode_methodspec (assembly, ginst);
-	g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
+	if (m->declaring->method->signature->generic_param_count)
+		token = method_encode_methodspec (assembly, m->declaring->method, m->ginst);
+	else {
+		MonoClass *k;
+		guint32 sig;
+
+		g_assert (m->ginst);
+		k = m->ginst->klass ? m->ginst->klass : m->ginst->generic_method->klass;
+
+		sig = method_encode_signature (assembly, m->ginst->generic_method->signature);
+		token = mono_image_get_memberref_token (
+			assembly, &k->byval_arg, m->ginst->generic_method->name, sig);
+	}
+
+	g_hash_table_insert (assembly->handleref, m->rmethod.method, GUINT_TO_POINTER(token));
 	return token;
 }
 
@@ -3657,7 +3666,6 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj)
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
 		if (m->method->signature->generic_param_count) {
 			g_assert_not_reached ();
-			token = mono_image_get_methodspec_token (assembly, m->method, NULL);
 		} else if ((m->method->klass->image == &assembly->image) &&
 			 !m->method->klass->generic_inst) {
 			static guint32 method_table_idx = 0xffffff;
@@ -3675,7 +3683,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj)
 	else if (strcmp (klass->name, "MonoInflatedMethod") == 0 ||
 		 strcmp (klass->name, "MonoInflatedCtor") == 0) {
 		MonoReflectionInflatedMethod *m = (MonoReflectionInflatedMethod *)obj;
-		token = mono_image_get_methodspec_token (assembly, m->rmethod.method, m->ginst);
+		token = mono_image_get_methodspec_token (assembly, m);
 	}
 	else if (strcmp (klass->name, "MonoInflatedField") == 0) {
 		MonoReflectionInflatedField *f = (MonoReflectionInflatedField *)obj;
@@ -6507,8 +6515,8 @@ mono_marshal_spec_from_builder (MonoAssembly *assembly,
 
 static MonoMethod*
 reflection_methodbuilder_to_mono_method (MonoClass *klass,
-										 ReflectionMethodBuilder *rmb,
-										 MonoMethodSignature *sig)
+					 ReflectionMethodBuilder *rmb,
+					 MonoMethodSignature *sig)
 {
 	MonoMethod *m;
 	MonoMethodNormal *pm;
@@ -6597,8 +6605,20 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		header->num_clauses = num_clauses;
 		if (num_clauses) {
 			header->clauses = method_encode_clauses ((MonoDynamicImage*)klass->image,
-													 rmb->ilgen,
-													 num_clauses);
+								 rmb->ilgen,
+								 num_clauses);
+		}
+
+		if (rmb->generic_params) {
+			int count = mono_array_length (rmb->generic_params);
+			header->gen_params = g_new0 (MonoGenericParam, count);
+			for (i = 0; i < count; i++) {
+				MonoReflectionGenericParam *gp =
+					mono_array_get (rmb->generic_params,
+							MonoReflectionGenericParam*, i);
+
+				header->gen_params [i] = *gp->type.type->data.generic_param;
+			}
 		}
 
 		pm->header = header;
@@ -6895,6 +6915,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 {
 	MonoMethod *method, *inflated;
 	MonoReflectionMethodBuilder *mb = NULL;
+	MonoReflectionMethod *declaring;
 	MonoGenericInst *ginst;
 	int count, i;
 
@@ -6908,8 +6929,15 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 		klass = mono_class_from_mono_type (tb->type.type);
 
 		method = methodbuilder_to_mono_method (klass, mb);
-	} else
+		declaring = rmethod;
+	} else if (!strcmp (rmethod->object.vtable->klass->name, "MonoInflatedMethod") ||
+		   !strcmp (rmethod->object.vtable->klass->name, "MonoInflatedCtor")) {
+		method = ((MonoReflectionInflatedMethod *) rmethod)->rmethod.method;
+		declaring = ((MonoReflectionInflatedMethod *) rmethod)->declaring;
+	} else {
 		method = rmethod->method;
+		declaring = rmethod;
+	}
 
 	count = method->signature->generic_param_count;
 	if (count != mono_array_length (types))
@@ -6917,16 +6945,24 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 
 	ginst = g_new0 (MonoGenericInst, 1);
 	ginst->generic_method = method;
-	ginst->type_argc = count;
-	ginst->type_argv = g_new0 (MonoType *, count);
+	ginst->mtype_argc = count;
+	ginst->mtype_argv = g_new0 (MonoType *, count);
 	for (i = 0; i < count; i++) {
 		MonoReflectionType *garg = mono_array_get (types, gpointer, i);
-		ginst->type_argv [i] = garg->type;
+		ginst->mtype_argv [i] = garg->type;
+	}
+
+	if (method->klass->generic_inst) {
+		MonoGenericInst *kginst = method->klass->generic_inst->data.generic_inst;
+
+		ginst->type_argc = kginst->type_argc;
+		ginst->type_argv = kginst->type_argv;
 	}
 
 	inflated = mono_class_inflate_generic_method (method, ginst);
 
-	return inflated_method_get_object (mono_object_domain (rmethod), inflated, rmethod, ginst);
+	return inflated_method_get_object (
+		mono_object_domain (rmethod), inflated, declaring, ginst);
 }
 
 MonoReflectionInflatedMethod*
@@ -6937,6 +6973,7 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_typ
 	MonoGenericInst *ginst, *type_ginst;
 	MonoMethod *method = NULL, *inflated;
 	MonoReflectionInflatedMethod *res;
+	MonoReflectionMethod *declaring;
 	MonoClass *klass;
 
 	MONO_ARCH_SAVE_REGS;
@@ -6944,17 +6981,21 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_typ
 	klass = mono_class_from_mono_type (reflected_type->type.type);
 	type_ginst = reflected_type->type.type->data.generic_inst;
 
-	if (!strcmp (obj->vtable->klass->name, "MethodBuilder"))
+	if (!strcmp (obj->vtable->klass->name, "MethodBuilder")) {
 		method = methodbuilder_to_mono_method (klass, (MonoReflectionMethodBuilder *) obj);
-	else if (!strcmp (obj->vtable->klass->name, "ConstructorBuilder"))
+		declaring = (MonoReflectionMethod *) obj;
+	} else if (!strcmp (obj->vtable->klass->name, "ConstructorBuilder")) {
 		method = ctorbuilder_to_mono_method (klass, (MonoReflectionCtorBuilder *) obj);
-	else if (!strcmp (obj->vtable->klass->name, "MonoMethod") ||
-		 !strcmp (obj->vtable->klass->name, "MonoCMethod"))
+		declaring = (MonoReflectionMethod *) obj;
+	} else if (!strcmp (obj->vtable->klass->name, "MonoMethod") ||
+		   !strcmp (obj->vtable->klass->name, "MonoCMethod")) {
 		method = ((MonoReflectionMethod *) obj)->method;
-	else if (!strcmp (obj->vtable->klass->name, "MonoInflatedMethod") ||
-		 !strcmp (obj->vtable->klass->name, "MonoInflatedCtor"))
+		declaring = (MonoReflectionMethod *) obj;
+	} else if (!strcmp (obj->vtable->klass->name, "MonoInflatedMethod") ||
+		   !strcmp (obj->vtable->klass->name, "MonoInflatedCtor")) {
 		method = ((MonoReflectionInflatedMethod *) obj)->rmethod.method;
-	else
+		declaring = ((MonoReflectionInflatedMethod *) obj)->declaring;
+	} else
 		g_assert_not_reached ();
 
 	ginst = g_new0 (MonoGenericInst, 1);
@@ -6969,7 +7010,7 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_typ
 	inflated = mono_class_inflate_generic_method (method, ginst);
 
 	res = inflated_method_get_object (
-		mono_object_domain (reflected_type), inflated, (MonoReflectionMethod *) obj, ginst);
+		mono_object_domain (reflected_type), inflated, declaring, ginst);
 
 	res->declaring_type = declaring_type;
 	res->reflected_type = reflected_type;
