@@ -1949,18 +1949,7 @@ encode_new_constraint (MonoDynamicImage *assembly, guint32 owner)
 	g_assert (NewConstraintAttr);
 
 	if (!NewConstraintAttr_ctor) {
-		int i;
-
-		for (i = 0; i < NewConstraintAttr->method.count; i++) {
-			MonoMethod *m = NewConstraintAttr->methods [i];
-
-			if (strcmp (m->name, ".ctor"))
-				continue;
-
-			NewConstraintAttr_ctor = m;
-			break;
-		}
-
+		NewConstraintAttr_ctor = mono_class_get_method_from_name (NewConstraintAttr, ".ctor", -1);
 		g_assert (NewConstraintAttr_ctor);
 	}
 
