@@ -3,8 +3,6 @@
 cas1.cs		LinkDemand on Main (entrypoint) is ignored
 cas2.cs		LinkDemand restricted by RequestRefuse -> Unhandled
 cas3.cs		Partial execution before (handled) exception
-cas4.cs		Reflection on a method protected by LinkDemand (granted)
-cas5.cs		Reflection on a method protected by LinkDemand (denied)
 cas6.cs		LinkDemand on constructor (newobj)
 cas7.cs		Instance method used via delegate (ldftn)
 cas8.cs		Instance virtual method used via delegate (ldvirtftn)
@@ -12,6 +10,17 @@ cas9.cs		Static method used via delegate (ldftn)
 cas10.cs	Original source code JMP sample (can't be used directly)
 cas10.il	Modified source to use JMP - not assembled ATM -
 		see source file (cas10.cs) for details
+
+refcas1.cs	Reflection on a method protected by LinkDemand (granted)
+refcas2.cs	Reflection on a method protected by LinkDemand (failure).
+		GetMethod returns null because of assembly RequestRefuse.
+refcas3.cs	Reflection on a method protected by LinkDemand (failure).
+		GetMethod returns non-null because the LinkDemand doesn't go 
+		up enough the stack.
+refcas4.cs	Based on refcas3.cs. Getting the MethodInfo is allowed but
+		invoking it later is restricted.
+refcas5.cs	Based on refcas5.cs. Test that invokation requires a Demand
+		and not a LinkDemand when reflection is used.
 
 noncas1.cs	Non CAS (PrincipalPermission) on class (success)
 noncas2.cs	Non CAS (PrincipalPermission) on class (failure)
