@@ -15,8 +15,10 @@ my $res = system("$interpreter $test 2>/dev/null 1>$stdout");
 
 if ($res) {
 	printf ("failed $? (%d) signal (%d).\n", $? >> 8, $? & 127);
+	exit (1);
 } elsif (-f $output) {
 	print "failed output.\n" if (read_file ($output) ne read_file ($stdout));
+	exit (1);
 } else {
 	print "pass.\n";
 	#unlink ($result);
