@@ -63,33 +63,34 @@
 	You need to download Gtk# from the CVS repository.  The module
         name is `gtk-sharp'.  You can obtain a copy from both the CVS
         repository or the anonymous CVS repository.
-        
+
         To pull your copy type:
-        
+
+<pre>
         	cvs co gtk-sharp
-        
+</pre>
         Documentation lives in gtk-sharp/doc/en.  The "en" indicates the
         English language, the first one we are targeting.  We can later
         do translations, but for now we are focusing on a single
         language.
-        
+
         In that directory you will find the documentation organized by
         namespaces.  One directory per namespace.  In the directories
         you will find one XML file per class that needs to be
         documented.  The mission is to fill in the data with useful
         information.  Feel free to grab liberally information from the
         Gtk documentation from:
-        
+
        	<a href="http://developer.gnome.org/doc/API/">http://developer.gnome.org/doc/API/</a>
-        
+
         Of course, the API does not apply directly.  It only applies at
         a foundational level, so you can not really just copy and
         paste.  Summaries, and remarks sections can probably be lifted
         with little or no effort.
-        
+
         Gtk# uses properties to represent get/set operations in the C
         API, so you can also use some bits from there.
-        
+
         Most of the documentation contains already place holders for
         text, we use the internationally approved phrase for this
         purpose, `To be added'.  So the quest is to remove all of the
@@ -108,77 +109,108 @@
         
         As you document Gtk# you will have a number of tags that you can
         use inside the summary and remarks sections, these are:
-        
+
+<pre>        
         <para> </para>
+</pre>
         	Used to separate paragraphs.
-        
+      
+<pre>  
         <paramref name="param_name"/>
+</pre>
         	Used to reference a formal parameter to a function.
-        
+
+<pre>  
         <see cref="T:SomeTypeName"/>
+</pre>
         	Use this to reference a type, this will include an hyper
         	link to the page for type SomeTypeName.
-        
+
         	For example, to reference "System.Enum", do:
         
+<pre>
         	<see cref="T:System.Enum"/>
+</pre>
 
+<pre>
         <see cref="P:SomeTypeName.Property"/>
+</pre>
         	Use this to reference a property, this will include an hyper
         	link to the page for the property `Property' of type `SomeTypeName'.
-        
+
         	For example, to reference the BaseType property in System.Type, do:
         
+<pre>
         	<see cref="P:System.Type.BaseType"/>
+</pre>
 
+<pre>
         <see cref="M:SomeTypeName.Method(type,type)"/>
+</pre>
         	Use this to reference a method, this will include an hyper
         	link to the page for the method `Method' of type `SomeTypeName'.
         
         	For example, to reference the ToString method in System.Object, do:
         
+<pre>
         	<see cref="M:System.Object.ToString()"/>
+</pre>
         
+<pre>
         <see langword="keywrod"/>
+</pre>
         	Use this to link to a keyword in the C# language, for
         	example to link to `true', do:
-        
+
+<pre>
         		<see langword="true"/>
+</pre>
         
+<pre>
         <example> ... </example>
-        
+</pre>        
         	Use example to insert an example.  The example can 
         	contain explanatory text and code.
         
+<pre>
         <code lang="C#">.. </code>
+</pre>
         
         	Use this to provide a sample C# program, typically used
         	within the <example> tags.
-        
+
         	When providing examples, try to provide a full example,
         	we would like to be able to have a button to compile and
         	run samples embedded into the documentation, or pop up
         	an editor to let the user play with the sample.
-        
+
         	You can link to an example like this:
-        
+
+<pre>
         	<code lang="C#" source="file.cs"> </code>
-        
+</pre>
+
+<pre>
         <item>
+</pre>
         	
+<pre>
         <list type="bullet">  </list>
+</pre>
         
         	Use this to create lists.  Lists contains <item>
         	elements
         
+<pre>
         <list type="table"> </lits>
                     <listheader>
                       <term>YOUR FIRST COLUMN</term>
                       <description>YOUR DESCRIPTION</description>
                     </listheader>
-        
+</pre>
         	For two-column tables.  Inside use:
         
+<pre>
         	<item>
         		<term>First</term>
         		<description>First descritpion</description>
@@ -187,6 +219,7 @@
         		<term>Second</term>
         		<description>Second descirption</description>
         	</item>
+</pre>
 
 ** Words of warning.
 
