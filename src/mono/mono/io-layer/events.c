@@ -149,6 +149,10 @@ gpointer CreateEvent(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean ma
 	event_handle->set_count = 0;
 
 	if(initial==TRUE) {
+		if (manual == FALSE) {
+			event_handle->set_count = 1;
+		}
+		
 		_wapi_handle_set_signal_state (handle, TRUE, FALSE);
 	}
 	
