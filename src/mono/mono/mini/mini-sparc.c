@@ -479,6 +479,18 @@ mono_arch_allocate_vars (MonoCompile *m)
 	m->frame_reg = sparc_fp;
 	offset = 0;
 
+	/* 
+	 * Reserve a stack slot for holding information used during exception 
+	 * handling.
+	 */
+	if (header->num_clauses)
+		offset += 8;
+
+	if (m->method->save_lmf) {
+		offset += sizeof (MonoLMF);
+		m->arch.lmf_offset = offset;
+	}
+
 	curinst = m->locals_start;
 	for (i = curinst; i < m->num_varinfo; ++i) {
 		inst = m->varinfo [i];
@@ -653,7 +665,12 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				MonoInst *inst;
 				gint align;
 				guint32 offset, pad;
-				guint32 size = mono_type_stack_size (&in->klass->byval_arg, &align);
+				guint32 size;
+
+				if (sig->pinvoke)
+					size = mono_type_native_stack_size (&in->klass->byval_arg, &align);
+				else
+					size = mono_type_stack_size (&in->klass->byval_arg, &align);
 
 				/* 
 				 * We use OP_OUTARG_VT to copy the valuetype to a stack location, then
@@ -747,7 +764,6 @@ static inline SparcCond
 opcode_to_sparc_cond (int opcode)
 {
 	switch (opcode) {
-
 	case OP_FBGE:
 		return sparc_fbge;
 	case OP_FBLE:
@@ -765,29 +781,47 @@ opcode_to_sparc_cond (int opcode)
 		return sparc_fbg;
 	case CEE_BEQ:
 	case OP_CEQ:
+	case OP_COND_EXC_EQ:
 		return sparc_be;
 	case CEE_BNE_UN:
+	case OP_COND_EXC_NE_UN:
 		return sparc_bne;
 	case CEE_BLT:
 	case OP_CLT:
+	case OP_COND_EXC_LT:
 		return sparc_bl;
 	case CEE_BLT_UN:
 	case OP_CLT_UN:
+	case OP_COND_EXC_LT_UN:
 		return sparc_blu;
 	case CEE_BGT:
 	case OP_CGT:
+	case OP_COND_EXC_GT:
 		return sparc_bg;
 	case CEE_BGT_UN:
 	case OP_CGT_UN:
+	case OP_COND_EXC_GT_UN:
 		return sparc_bgu;
 	case CEE_BGE:
+	case OP_COND_EXC_GE:
 		return sparc_bge;
 	case CEE_BGE_UN:
+	case OP_COND_EXC_GE_UN:
 		return sparc_beu;
 	case CEE_BLE:
+	case OP_COND_EXC_LE:
 		return sparc_ble;
 	case CEE_BLE_UN:
+	case OP_COND_EXC_LE_UN:
 		return sparc_bleu;
+	case OP_COND_EXC_OV:
+		return sparc_bvs;
+	case OP_COND_EXC_C:
+		return sparc_bcs;
+
+	case OP_COND_EXC_NO:
+	case OP_COND_EXC_NC:
+		NOT_IMPLEMENTED;
 	default:
 		g_assert_not_reached ();
 		return sparc_be;
@@ -820,6 +854,17 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 #define EMIT_COND_BRANCH(ins,cond) EMIT_COND_BRANCH_GENERAL((ins),branch,(cond))
 
 #define EMIT_FLOAT_COND_BRANCH(ins,cond) EMIT_COND_BRANCH_GENERAL((ins),fbranch,(cond))
+
+/* emit an exception if condition is fail */
+/*
+ * We put the exception throwing code out-of-line, at the end of the method
+ */
+#define EMIT_COND_SYSTEM_EXCEPTION(ins,cond,sexc_name) do {     \
+		mono_add_patch_info (cfg, (guint8*)(code) - (cfg)->native_code,   \
+				    MONO_PATCH_INFO_EXC, sexc_name);  \
+        sparc_branch (code, 1, cond, 0);     \
+        sparc_nop (code);     \
+	} while (0); 
 
 #define EMIT_ALU_IMM(ins,op,setcc) do { \
 			if (sparc_is_imm13 ((ins)->inst_imm)) \
@@ -864,21 +909,6 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 				  else \
 				sparc_ ## op ## _imm (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset); \
 																						 } while (0);
-
-
-/* emit an exception if condition is fail */
-#define EMIT_COND_SYSTEM_EXCEPTION(cond,signed,exc_name)            \
-        do {                                                        \
-		mono_add_patch_info (cfg, code - cfg->native_code,   \
-				    MONO_PATCH_INFO_EXC, exc_name);  \
-	        x86_branch32 (code, cond, 0, signed);               \
-	} while (0); 
-
-#define EMIT_FPCOMPARE(code) do { \
-	x86_fcompp (code); \
-	x86_fnstsw (code); \
-	x86_alu_reg_imm (code, X86_AND, X86_EAX, 0x4500); \
-} while (0); 
 
 static void
 peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
@@ -1835,7 +1865,7 @@ mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 }
 
 static void
-sparc_patch (guint8 *code, guint8 *target)
+sparc_patch (guint8 *code, const guint8 *target)
 {
 	guint32 ins = *(guint32*)code;
 	guint32 op = ins >> 30;
@@ -1849,13 +1879,13 @@ sparc_patch (guint8 *code, guint8 *target)
 		if (!sparc_is_imm22 (disp))
 			NOT_IMPLEMENTED;
 		/* Bicc */
-		*(guint32*)code = ((ins >> 22) << 22) | disp;
+		*(guint32*)code = ((ins >> 22) << 22) | (disp & 0x3fffff);
 	}
 	else if ((op == 0) && (op2 == 6)) {
 		if (!sparc_is_imm22 (disp))
 			NOT_IMPLEMENTED;
 		/* FBicc */
-		*(guint32*)code = ((ins >> 22) << 22) | disp;
+		*(guint32*)code = ((ins >> 22) << 22) | (disp & 0x3fffff);
 	}
 	else if ((op == 0) && (op2 == 4)) {
 		guint32 ins2 = *(guint32*)(code + 4);
@@ -1864,7 +1894,7 @@ sparc_patch (guint8 *code, guint8 *target)
 			/* sethi followed by or */
 			guint32 *p = (guint32*)code;
 			sparc_set (p, target, rd);
-			while (p < (code + 4))
+			while (p <= (code + 4))
 				sparc_nop (p);
 		}
 		else if ((sparc_inst_op (ins2) == 3) && (sparc_inst_imm (ins2))) {
@@ -1890,6 +1920,24 @@ sparc_patch (guint8 *code, guint8 *target)
 		NOT_IMPLEMENTED;
 
 //	g_print ("patched with 0x%08x\n", ins);
+}
+
+static guint32*
+emit_vret_token (MonoInst *ins, guint32 *code)
+{
+	MonoCallInst *call = (MonoCallInst*)ins;
+	guint32 size;
+
+	/* 
+	 * The sparc ABI requires that calls to functions which return a structure
+	 * contain an additional unimpl instruction which is checked by the callee.
+	 */
+	if (call->signature->pinvoke && MONO_TYPE_ISSTRUCT(call->signature->ret)) {
+		size = mono_class_native_size (call->signature->ret->data.klass, NULL);
+		sparc_unimp (code, size & 0xfff);
+	}
+
+	return code;
 }
 
 static guint32*
@@ -1921,7 +1969,10 @@ emit_move_return_value (MonoInst *ins, guint32 *code)
 	case OP_FCALL_REG:
 	case OP_FCALL_MEMBASE:
 		sparc_fmovs (code, sparc_f0, ins->dreg);
-		sparc_fmovs (code, sparc_f1, ins->dreg + 1);
+		if (((MonoCallInst*)ins)->signature->ret->type == MONO_TYPE_R4)
+			sparc_fstod (code, ins->dreg, ins->dreg);
+		else
+			sparc_fmovs (code, sparc_f1, ins->dreg + 1);
 		break;
 	case OP_VCALL:
 	case OP_VCALL_REG:
@@ -1980,8 +2031,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoInst *last_ins = NULL;
 	guint last_offset = 0;
 	int max_len, cpos;
-
-	GC_malloc (240);
 
 	if (cfg->opt & MONO_OPT_PEEPHOLE)
 		peephole_pass (cfg, bb);
@@ -2107,23 +2156,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_ADD:
 			sparc_add (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
-		case OP_ADC:
-			sparc_addx (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
-			break;
 		case OP_ADD_IMM:
 			EMIT_ALU_IMM (ins, add, FALSE);
 			break;
+		case OP_ADC:
+			/* according to inssel-long32.brg, this should set cc */
+			sparc_addx (code, TRUE, ins->sreg1, ins->sreg2, ins->dreg);
+			break;
 		case OP_ADC_IMM:
-			EMIT_ALU_IMM (ins, addx, FALSE);
+			EMIT_ALU_IMM (ins, addx, TRUE);
 			break;
 		case OP_SUBCC:
 			sparc_sub (code, TRUE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case CEE_SUB:
 			sparc_sub (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
-			break;
-		case OP_SBB:
-			sparc_subx (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
 		case OP_SUB_IMM:
 			// we add the negated value
@@ -2134,8 +2181,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				sparc_add (code, FALSE, ins->sreg1, sparc_o7, ins->dreg);
 			}
 			break;
+		case OP_SBB:
+			/* according to inssel-long32.brg, this should set cc */
+			sparc_subx (code, TRUE, ins->sreg1, ins->sreg2, ins->dreg);
+			break;
 		case OP_SBB_IMM:
-			EMIT_ALU_IMM (ins, subx, FALSE);
+			EMIT_ALU_IMM (ins, subx, TRUE);
 			break;
 		case CEE_AND:
 			sparc_and (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
@@ -2248,12 +2299,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_ALU_IMM (ins, smul, FALSE);
 			break;
 		case CEE_MUL_OVF:
-			/* FIXME: */
-			sparc_smul (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
+			sparc_smul (code, TRUE, ins->sreg1, ins->sreg2, ins->dreg);
+			sparc_rdy (code, sparc_g1);
+			sparc_sra_imm (code, ins->dreg, 31, sparc_o7);
+			sparc_cmp (code, sparc_g1, sparc_o7);
+			EMIT_COND_SYSTEM_EXCEPTION (ins, sparc_bne, "OverflowException");
 			break;
 		case CEE_MUL_OVF_UN:
-			/* FIXME: */
-			sparc_umul (code, FALSE, ins->sreg1, ins->sreg2, ins->dreg);
+			sparc_umul (code, TRUE, ins->sreg1, ins->sreg2, ins->dreg);
+			sparc_rdy (code, sparc_o7);
+			sparc_cmp (code, sparc_o7, sparc_g0);
+			EMIT_COND_SYSTEM_EXCEPTION (ins, sparc_bne, "OverflowException");
 			break;
 		case OP_ICONST:
 		case OP_SETREGIMM:
@@ -2287,6 +2343,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_call_simple (code, 0);
 			sparc_nop (code);
 
+			code = emit_vret_token (ins, code);
 			code = emit_move_return_value (ins, code);
 			break;
 		case OP_FCALL_REG:
@@ -2306,6 +2363,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				sparc_nop (code);
 
+			code = emit_vret_token (ins, code);
 			code = emit_move_return_value (ins, code);
 			break;
 		case OP_FCALL_MEMBASE:
@@ -2323,7 +2381,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				sparc_nop (code);
 
+			code = emit_vret_token (ins, code);
 			code = emit_move_return_value (ins, code);
+			break;
+		case OP_SETFRET:
+			if (cfg->method->signature->ret->type == MONO_TYPE_R4)
+				sparc_fdtos (code, ins->sreg1, sparc_f0);
+			else {
+				sparc_fmovs (code, ins->sreg1, ins->dreg);
+				sparc_fmovs (code, ins->sreg1 + 1, ins->dreg + 1);
+			}
 			break;
 		case OP_OUTARG:
 			g_assert_not_reached ();
@@ -2332,10 +2399,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Keep alignment */
 			sparc_add_imm (code, FALSE, ins->sreg1, MONO_ARCH_FRAME_ALIGNMENT - 1, ins->dreg);
 			sparc_set (code, ~(MONO_ARCH_FRAME_ALIGNMENT - 1), sparc_o7);
-			sparc_or (code, FALSE, ins->dreg, sparc_o7, ins->dreg);
+			sparc_and (code, FALSE, ins->dreg, sparc_o7, ins->dreg);
 			sparc_sub (code, FALSE, sparc_sp, ins->dreg, ins->dreg);
 			/* Keep %sp valid at all times */
 			sparc_mov_reg_reg (code, ins->dreg, sparc_sp);
+			g_assert (sparc_is_imm13 (cfg->arch.localloc_offset));
+			sparc_add_imm (code, FALSE, ins->dreg, cfg->arch.localloc_offset, ins->dreg);
 			break;
 		case OP_SPARC_LOCALLOC_IMM: {
 			guint32 offset = ins->inst_c0;
@@ -2347,25 +2416,68 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				sparc_sub (code, FALSE, sparc_sp, sparc_o7, sparc_sp);
 			}
 			sparc_mov_reg_reg (code, sparc_sp, ins->dreg);
+			g_assert (sparc_is_imm13 (cfg->arch.localloc_offset));
+			sparc_add_imm (code, FALSE, ins->dreg, cfg->arch.localloc_offset, ins->dreg);
 			break;
 		}
 		case CEE_RET:
 			/* The return is done in the epilog */
 			g_assert_not_reached ();
 			break;
-		case CEE_THROW: {
-			sparc_unimp (code, 0);
-			/* FIXME: */
+		case CEE_THROW:
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_INTERNAL_METHOD, 
+					     (gpointer)"mono_arch_throw_exception");
+			sparc_call_simple (code, 0);
+			/* Delay slot */
+			sparc_mov_reg_reg (code, ins->sreg1, sparc_o0);
+			break;
+		case OP_START_HANDLER: {
+			/*
+			 * The START_HANDLER instruction marks the beginning of a handler 
+			 * block. It is called using a call instruction, so %o7 contains 
+			 * the return address. Since the handler executes in the same stack
+             * frame as the method itself, we can't use save/restore to save 
+			 * the return address. Instead, we save it into a dedicated 
+			 * variable.
+			 */
+			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			if (!sparc_is_imm13 (spvar->inst_offset)) {
+				sparc_set (code, spvar->inst_offset, sparc_g0);
+				sparc_st (code, sparc_o7, spvar->inst_basereg, sparc_g0);
+			}
+			else
+				sparc_st_imm (code, sparc_o7, spvar->inst_basereg, spvar->inst_offset);
 			break;
 		}
-		case OP_ENDFILTER:
-			/* FIXME: */
+		case OP_ENDFILTER: {
+			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			if (!sparc_is_imm13 (spvar->inst_offset)) {
+				sparc_set (code, spvar->inst_offset, sparc_g0);
+				sparc_ld (code, spvar->inst_basereg, sparc_g0, sparc_o7);
+			}
+			else
+				sparc_ld_imm (code, spvar->inst_basereg, spvar->inst_offset, sparc_o7);
+			sparc_jmpl_imm (code, sparc_o7, 8, sparc_g0);
+			/* Delay slot */
+			sparc_mov_reg_reg (code, ins->sreg1, sparc_o0);
 			break;
-		case CEE_ENDFINALLY:
-			/* FIXME: */
+		}
+		case CEE_ENDFINALLY: {
+			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			if (!sparc_is_imm13 (spvar->inst_offset)) {
+				sparc_set (code, spvar->inst_offset, sparc_g0);
+				sparc_ld (code, spvar->inst_basereg, sparc_g0, sparc_o7);
+			}
+			else
+				sparc_ld_imm (code, spvar->inst_basereg, spvar->inst_offset, sparc_o7);
+			sparc_jmpl_imm (code, sparc_o7, 8, sparc_g0);
+			sparc_nop (code);
 			break;
+		}
 		case OP_CALL_HANDLER: 
-			/* FIXME: */
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
+			sparc_call_simple (code, 0);
+			sparc_nop (code);
 			break;
 		case OP_LABEL:
 			ins->inst_c0 = (guint8*)code - cfg->native_code;
@@ -2423,9 +2535,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COND_EXC_NO:
 		case OP_COND_EXC_C:
 		case OP_COND_EXC_NC:
-			/* FIXME: */
-			//EMIT_COND_SYSTEM_EXCEPTION (branch_cc_table [ins->opcode - OP_COND_EXC_EQ], 
-			//			    (ins->opcode < OP_COND_EXC_NE_UN), ins->inst_p1);
+			EMIT_COND_SYSTEM_EXCEPTION (ins, opcode_to_sparc_cond (ins->opcode), ins->inst_p1);
 			break;
 		case CEE_BEQ:
 		case CEE_BNE_UN:
@@ -2441,17 +2551,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		/* floating point opcodes */
-		case OP_R8CONST: {
-			double d = *(double*)ins->inst_p0;
-
+		case OP_R8CONST:
 			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8, ins->inst_p0);
 			sparc_sethi (code, 0, sparc_o7);
 			sparc_lddf_imm (code, sparc_o7, 0, ins->dreg);
 			break;
-		}
-		case OP_R4CONST: {
-			float f = *(float*)ins->inst_p0;
-
+		case OP_R4CONST:
 			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4, ins->inst_p0);
 			sparc_sethi (code, 0, sparc_o7);
 			sparc_ldf_imm (code, sparc_o7, 0, ins->dreg);
@@ -2459,7 +2564,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Extend to double */
 			sparc_fstod (code, ins->dreg, ins->dreg);
 			break;
-		}
 		case OP_STORER8_MEMBASE_REG:
 			if (!sparc_is_imm13 (ins->inst_offset + 4)) {
 				sparc_set (code, ins->inst_offset, sparc_o7);
@@ -2543,6 +2647,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCONV_TO_U8:
 			NOT_IMPLEMENTED;
 			break;
+		case CEE_CONV_R_UN:
+			NOT_IMPLEMENTED;
+			break;
 		case OP_LCONV_TO_R_UN: { 
 			NOT_IMPLEMENTED;
 			break;
@@ -2566,14 +2673,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_nop (code);
 
 			label [0] = code;
-			/* FIXME: throw exception */
+
+			EMIT_COND_SYSTEM_EXCEPTION (ins, sparc_ba, "OverflowException");
 
 			/* negative */
 			sparc_patch (br [0], code);
 
 			/* ms word must 0xfffffff */
 			sparc_cmp_imm (code, ins->sreg2, -1);
-			sparc_branch (code, 1, sparc_bne, label [0]);
+			br [2] = code;
+			sparc_branch (code, 1, sparc_bne, 0);
+			sparc_patch (br [2], label [0]);
 
 			/* Ok */
 			sparc_patch (br [1], code);
@@ -2729,12 +2839,13 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			target = patch_info->data.inst->inst_c0 + code;
 			break;
 		case MONO_PATCH_INFO_IP:
-			*((gpointer *)(ip)) = ip;
-			continue;
+			target = ip;
+			break;
 		case MONO_PATCH_INFO_METHOD_REL:
-			NOT_IMPLEMENTED;
-			*((gpointer *)(ip)) = code + patch_info->data.offset;
-			continue;
+			target = code + patch_info->data.offset;
+			if (ip == 0xfdec419c)
+				printf ("X: %p %p.\n", ip, target);
+			break;
 		case MONO_PATCH_INFO_INTERNAL_METHOD: {
 			MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
 			if (!mi) {
@@ -2823,9 +2934,8 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			break;
 		}
 		case MONO_PATCH_INFO_EXC_NAME:
-			NOT_IMPLEMENTED;
-			*((gconstpointer *)(ip + 1)) = patch_info->data.name;
-			continue;
+			target = patch_info->data.name;
+			break;
 		case MONO_PATCH_INFO_LDSTR:
 			NOT_IMPLEMENTED;
 			*((gconstpointer *)(ip + 1)) = 
@@ -3032,9 +3142,8 @@ mono_arch_max_epilog_size (MonoCompile *cfg)
 
 	/* 
 	 * make sure we have enough space for exceptions
-	 * 16 is the size of two push_imm instructions and a call
 	 */
-	max_epilog_size += exc_count*16;
+	max_epilog_size += exc_count * 24;
 
 	return max_epilog_size;
 }
@@ -3068,7 +3177,16 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		offset += cfg->param_area;
 	
 	/* align the stack size to 8 bytes */
-	cfg->stack_offset = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
+	offset = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
+
+	/*
+	 * localloc'd memory is stored between the local variables (whose
+	 * size is given by cfg->stack_offset), and between the space reserved
+	 * by the ABI.
+	 */
+	cfg->arch.localloc_offset = offset - cfg->stack_offset;
+
+	cfg->stack_offset = offset;
 
 	if (!sparc_is_imm13 (- cfg->stack_offset)) {
 		/* Can't use sparc_o7 here, since we're still in the caller's frame */
@@ -3077,6 +3195,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 	else
 		sparc_save_imm (code, sparc_sp, - cfg->stack_offset, sparc_sp);
+
+	if (strstr (cfg->method->name, "test_marshal_struct")) {
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_ABS, mono_sparc_break);
+		sparc_call_simple (code, 0);
+		sparc_nop (code);
+	}
 
 	sig = method->signature;
 
@@ -3170,6 +3294,37 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	g_free (cinfo);
 
+	if (cfg->method->save_lmf) {
+		gint32 lmf_offset = - cfg->arch.lmf_offset;
+
+		/* Save ip */
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
+		sparc_set (code, 0xfffffff, sparc_o7);
+		sparc_st_imm (code, sparc_o7, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ip));
+		/* Save sp */
+		sparc_st_imm (code, sparc_sp, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, sp));
+		/* Save fp */
+		sparc_st_imm (code, sparc_fp, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebp));
+		/* Save method */
+		/* FIXME: add a relocation for this */
+		sparc_set (code, cfg->method, sparc_o7);
+		sparc_st_imm (code, sparc_o7, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method));
+		/* Get the address of lmf for the current thread */
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+							 (gpointer)"mono_get_lmf_addr");		
+		sparc_call_simple (code, 0);
+		sparc_nop (code);
+
+		/* Save lmf_addr */
+		sparc_st_imm (code, sparc_o0, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr));
+		/* Save previous_lmf */
+		sparc_ld (code, sparc_o0, sparc_g0, sparc_o7);
+		sparc_st_imm (code, sparc_o7, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf));
+		/* Set new lmf */
+		sparc_add_imm (code, FALSE, sparc_fp, lmf_offset, sparc_o7);
+		sparc_st (code, sparc_o7, sparc_o0, sparc_g0);
+	}
+
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
 
@@ -3193,69 +3348,40 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
 
+	if (cfg->method->save_lmf) {
+		gint32 lmf_offset = - cfg->arch.lmf_offset;
+
+		/* Load previous_lmf */
+		sparc_ld_imm (code, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), sparc_l0);
+		/* Load lmf_addr */
+		sparc_ld_imm (code, sparc_fp, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), sparc_l1);
+		/* *(lmf) = previous_lmf */
+		sparc_st (code, sparc_l0, sparc_l1, sparc_g0);
+	}
+
 	sparc_ret (code);
 	sparc_restore_imm (code, sparc_g0, 0, sparc_g0);
-
-#if 0
-
-	
-	pos = 0;
-	
-	if (method->save_lmf) {
-		pos = -sizeof (MonoLMF);
-	}
-
-	if (method->save_lmf) {
-#if 0
-		/* ebx = previous_lmf */
-		x86_pop_reg (code, X86_EBX);
-		/* edi = lmf */
-		x86_pop_reg (code, X86_EDI);
-		/* *(lmf) = previous_lmf */
-		x86_mov_membase_reg (code, X86_EDI, 0, X86_EBX, 4);
-
-		/* discard method info */
-		x86_pop_reg (code, X86_ESI);
-
-		/* restore caller saved regs */
-		x86_pop_reg (code, X86_EBP);
-		x86_pop_reg (code, X86_ESI);
-		x86_pop_reg (code, X86_EDI);
-		x86_pop_reg (code, X86_EBX);
-#endif
-	}
-
-	if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
-		//ppc_lwz (code, sparc_l0, cfg->stack_usage + 8, cfg->frame_reg);
-		//ppc_mtlr (code, sparc_l0);
-	}
-	//ppc_addic (code, ppc_sp, cfg->frame_reg, cfg->stack_usage);
-	for (i = 13; i < 32; ++i) {
-		if (cfg->used_int_regs & (1 << i)) {
-			pos += 4;
-			//ppc_lwz (code, i, -pos, cfg->frame_reg);
-		}
-	}
-	//ppc_blr (code);
 
 	/* add code to raise exceptions */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_EXC:
-			/*x86_patch (patch_info->ip.i + cfg->native_code, code);
-			x86_push_imm (code, patch_info->data.target);
-			x86_push_imm (code, patch_info->ip.i + cfg->native_code);
+			sparc_patch (cfg->native_code + patch_info->ip.i, code);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);
+			sparc_set (code, 0xffffff, sparc_o0);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_REL, (gpointer)patch_info->ip.i);
+			sparc_set (code, 0xffffff, sparc_o1);
 			patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
-			patch_info->data.name = "throw_exception_by_name";
+			patch_info->data.name = "mono_arch_throw_exception_by_name";
 			patch_info->ip.i = code - cfg->native_code;
-			x86_jump_code (code, 0);*/
+			sparc_call_simple (code, 0);
+			sparc_nop (code);
 			break;
 		default:
 			/* do nothing */
 			break;
 		}
 	}
-#endif
 
 	cfg->code_len = code - cfg->native_code;
 

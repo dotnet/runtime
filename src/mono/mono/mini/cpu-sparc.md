@@ -224,12 +224,13 @@ conv.ovf.i:
 conv.ovf.u:
 add.ovf:
 add.ovf.un:
-mul.ovf: dest:i src1:i src2:i len:12
-mul.ovf.un: dest:i src1:i src2:i len:12
+mul.ovf: dest:i src1:i src2:i len:24
+mul.ovf.un: dest:i src1:i src2:i len:20
 sub.ovf:
 sub.ovf.un:
-# FIXME: May need some work
-endfinally: len:4
+start_handler: len:20
+endfinally: len:20
+endfilter: len:16
 leave:
 leave.s:
 stind.i:
@@ -258,7 +259,6 @@ ldloca:
 stloc:
 localloc: dest:i src1:i len:24
 sparc_localloc_imm: dest:i len:16
-endfilter:
 unaligned.:
 volatile.:
 tail.:
@@ -290,6 +290,7 @@ fcompare: src1:f src2:f len:12
 lcompare:
 local:
 arg:
+setfret: dest:f src1:f len:8
 # FIXME: Mono-specifc opcodes (OP_)  Need to clean these up
 outarg: src1:i len:1
 outarg_imm: len:5
@@ -309,9 +310,9 @@ fcall_membase: dest:f src1:b len:20 clob:c
 lcall: dest:l len:16 clob:c
 lcall_reg: dest:l src1:i len:16 clob:c
 lcall_membase: dest:l src1:b len:20 clob:c
-vcall: len:8 clob:c
-vcall_reg: src1:i len:8 clob:c
-vcall_membase: src1:b len:16 clob:c
+vcall: len:12 clob:c
+vcall_reg: src1:i len:12 clob:c
+vcall_membase: src1:b len:20 clob:c
 call_reg: dest:i src1:i len:12 clob:c
 call_membase: dest:i src1:b len:16 clob:c
 trap:
@@ -360,20 +361,20 @@ xor_imm: dest:i src1:i len:12
 shl_imm: dest:i src1:i len:12
 shr_imm: dest:i src1:i len:12
 shr_un_imm: dest:i src1:i len:12
-cond_exc_eq: len:8
-cond_exc_ne_un: len:8
-cond_exc_lt: len:8
-cond_exc_lt_un: len:8
-cond_exc_gt: len:8
-cond_exc_gt_un: len:8
-cond_exc_ge: len:8
-cond_exc_ge_un: len:8
-cond_exc_le: len:8
-cond_exc_le_un: len:8
-cond_exc_ov: len:8
-cond_exc_no: len:8
-cond_exc_c: len:8
-cond_exc_nc: len:8
+cond_exc_eq: len:12
+cond_exc_ne_un: len:12
+cond_exc_lt: len:12
+cond_exc_lt_un: len:12
+cond_exc_gt: len:12
+cond_exc_gt_un: len:12
+cond_exc_ge: len:12
+cond_exc_ge_un: len:12
+cond_exc_le: len:12
+cond_exc_le_un: len:12
+cond_exc_ov: len:12
+cond_exc_no: len:12
+cond_exc_c: len:12
+cond_exc_nc: len:12
 long_add:
 long_sub:
 long_mul:
@@ -400,7 +401,7 @@ long_conv_to_u8:
 long_conv_to_u2:
 long_conv_to_u1:
 long_conv_to_i:
-long_conv_to_ovf_i: dest:i src1:i src2:i len:36
+long_conv_to_ovf_i: dest:i src1:i src2:i len:44
 long_conv_to_ovf_u:
 long_add_ovf:
 long_add_ovf_un:

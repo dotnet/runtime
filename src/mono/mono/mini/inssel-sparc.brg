@@ -31,6 +31,10 @@ freg: OP_LCONV_TO_R8 (lreg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+freg: OP_LCONV_TO_R8 (lreg) {
+	/* Dummy rule */
+}
+
 freg: OP_LCONV_TO_R4 (lreg) {
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = state->reg1;
@@ -98,7 +102,9 @@ stmt: OP_SETRET (lreg) {
 }
 
 stmt: OP_SETRET (freg) {
-	MONO_EMIT_UNALU (s, tree, OP_FMOVE, sparc_f0, state->left->reg1);
+	tree->opcode = OP_SETFRET;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = sparc_f0;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -249,19 +255,11 @@ stmt: CEE_STIND_R8 (OP_REGVAR, freg) {
 }
 
 reg: CEE_LDIND_I1 (OP_REGVAR) {
-	/* All regs are 32 bit */
-	tree->opcode = OP_MOVE;
-	tree->sreg1 = state->left->tree->dreg;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
+	MONO_EMIT_UNALU (s, tree, CEE_CONV_I1, state->reg1, state->left->tree->dreg);
 }
 
 reg: CEE_LDIND_I2 (OP_REGVAR) {
-	/* All regs are 32 bit */
-	tree->opcode = OP_MOVE;
-	tree->sreg1 = state->left->tree->dreg;
-	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
+	MONO_EMIT_UNALU (s, tree, CEE_CONV_I2, state->reg1, state->left->tree->dreg);
 }
 
 stmt: CEE_BNE_UN (fpcflags) {
@@ -319,12 +317,33 @@ stmt: CEE_POP (freg) "0" {
 }     
 
 stmt: OP_START_HANDLER {
+     mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: CEE_ENDFINALLY {
+	//MonoInst *spvar = mono_find_spvar_for_region (s, s->cbb->region);
+	//MONO_EMIT_NEW_LOAD_MEMBASE (s, sparc_o7, spvar->inst_basereg, spvar->inst_offset); 
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: OP_ENDFILTER (reg) {
+	//MonoInst *spvar = mono_find_spvar_for_region (s, s->cbb->region);
+	//MONO_EMIT_NEW_LOAD_MEMBASE (s, sparc_o7, spvar->inst_basereg, spvar->inst_offset); 
+	tree->sreg1 = state->left->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_START_HANDLER {
+}
+
+stmt: CEE_ENDFINALLY {
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_ENDFILTER (reg) {
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
 reg: OP_CEQ (OP_COMPARE (freg, freg)) {	

@@ -8,12 +8,8 @@
 
 #define MONO_ARCH_FRAME_ALIGNMENT 8
 
-/* Also check this. */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
-/* BASEREG = Frame pointer
- * RETREG? = Return register (but is it for caller or callee?)
- */
 #define MONO_ARCH_BASEREG sparc_fp
 #define MONO_ARCH_RETREG1 sparc_i0
 
@@ -21,13 +17,22 @@ struct MonoLMF {
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
 	MonoMethod *method;
+	guint32     ip;
+	guint32     sp;
 	guint32     ebp;
-	guint32     eip;
 };
 
-#define MONO_ARCH_EMULATE_FCONV_TO_I8 1
-#define MONO_ARCH_EMULATE_LCONV_TO_R8 1
-#define MONO_ARCH_EMULATE_LCONV_TO_R4 1
+typedef struct MonoCompileArch {
+	guint32 lmf_offset;
+	guint32 localloc_offset;
+} MonoCompileArch;
+
+#define MONO_ARCH_USE_SIGACTION 1
+
+#define MONO_ARCH_EMULATE_FCONV_TO_I8   1
+#define MONO_ARCH_EMULATE_LCONV_TO_R8   1
+#define MONO_ARCH_EMULATE_LCONV_TO_R4   1
+#define MONO_ARCH_EMULATE_CONV_R8_UN    1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
 #define MONO_ARCH_EMULATE_FREM 1
 
