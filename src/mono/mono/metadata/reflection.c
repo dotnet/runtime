@@ -45,6 +45,7 @@ typedef struct {
 	MonoArray *code;
 	MonoObject *type;
 	MonoString *name;
+	MonoBoolean init_locals;
 } ReflectionMethodBuilder;
 
 const unsigned char table_sizes [64] = {
@@ -434,6 +435,8 @@ fat_header:
 	fat_flags =  0x03;
 	if (num_exception)
 		fat_flags |= METHOD_HEADER_MORE_SECTS;
+	if (mb->init_locals)
+		fat_flags |= METHOD_HEADER_INIT_LOCALS;
 	fat_header [0] = fat_flags;
 	fat_header [1] = (header_size / 4 ) << 4;
 	shortp = (guint16*)(fat_header + 2);
@@ -641,6 +644,7 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicAssembly
 	rmb.type = mb->type;
 	rmb.name = mb->name;
 	rmb.table_idx = &mb->table_idx;
+	rmb.init_locals = mb->init_locals;
 
 	mono_image_basic_method (&rmb, assembly);
 
@@ -700,6 +704,7 @@ mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, Mon
 	rmb.type = mb->type;
 	rmb.name = NULL;
 	rmb.table_idx = &mb->table_idx;
+	rmb.init_locals = mb->init_locals;
 
 	mono_image_basic_method (&rmb, assembly);
 	mono_image_add_cattrs (assembly, mb->table_idx, CUSTOM_ATTR_METHODDEF, mb->cattrs);

@@ -182,6 +182,7 @@ typedef struct {
 	MonoObject *type;
 	MonoArray *pinfo;
 	MonoArray *cattrs;
+	MonoBoolean init_locals;
 } MonoReflectionCtorBuilder;
 
 typedef struct {
@@ -204,6 +205,7 @@ typedef struct {
 	guint32 charset;
 	guint32 native_cc;
 	guint32 call_conv;
+	MonoBoolean init_locals;
 } MonoReflectionMethodBuilder;
 
 typedef struct {
