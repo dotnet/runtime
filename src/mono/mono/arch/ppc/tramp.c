@@ -559,3 +559,14 @@ mono_create_method_pointer (MonoMethod *method)
 }
 
 
+/*
+ * mono_create_method_pointer () will insert a pointer to the MonoMethod
+ * so that the interp can easily get at the data: this function will retrieve 
+ * the method from the code stream.
+ */
+MonoMethod*
+mono_method_pointer_get (void *code)
+{
+	return NULL;
+}
+

@@ -514,8 +514,8 @@ ves_runtime_method (MonoInvocation *frame)
 		MonoMethod *method;
 		
 		code = (guchar*)delegate->method_ptr;
-		g_assert (code [2] == 'M' && code [3] == 'o');
-		method = *(gpointer*)(code + sizeof (gpointer));
+		method = mono_method_pointer_get (code);
+		/* FIXME: check for NULL method */
 		if (!method->addr)
 			method->addr = mono_create_trampoline (method, 1);
 		func = method->addr;
@@ -755,6 +755,20 @@ verify_method (MonoMethod *m)
 		G_BREAKPOINT ();
 	mono_free_verify_list (errors);
 }
+
+#define CHECK_ADD_OVERFLOW(a,b) \
+	(gint32)(b) >= 0 ? (gint32)(INT_MAX) - (gint32)(b) < (gint32)(a) ? -1 : 0	\
+	: (gint32)(INT_MIN) - (gint32)(b) > (gint32)(a) ? +1 : 0
+
+#define CHECK_ADD_OVERFLOW_UN(a,b) \
+	(guint32)(UINT_MAX) - (guint32)(b) < (guint32)(a) ? -1 : 0
+
+#define CHECK_ADD_OVERFLOW64(a,b) \
+	(gint64)(b) >= 0 ? (gint64)(LLONG_MAX) - (gint64)(b) < (gint64)(a) ? -1 : 0	\
+	: (gint64)(LLONG_MIN) - (gint64)(b) > (gint64)(a) ? +1 : 0
+
+#define CHECK_ADD_OVERFLOW64_UN(a,b) \
+	(guint64)(ULONG_MAX) - (guint64)(b) < (guint64)(a) ? -1 : 0
 
 /*
  * Need to optimize ALU ops when natural int == int32 
@@ -1128,9 +1142,8 @@ ves_exec_method (MonoInvocation *frame)
 				unsigned char *code;
 				--sp;
 				code = sp->data.p;
-				/* check the signature we put in mono_create_method_pointer () */
-				g_assert (code [2] == 'M' && code [3] == 'o');
-				child_frame.method = *(gpointer*)(code + sizeof (gpointer));
+				child_frame.method = mono_method_pointer_get (code);
+				/* check for NULL with native code */
 				csignature = child_frame.method->signature;
 			} else {
 				child_frame.method = mono_get_method (image, token, NULL);
@@ -2784,20 +2797,24 @@ array_constructed:
 		CASE (CEE_CONV_OVF_U) ves_abort(); BREAK;
 		CASE (CEE_ADD_OVF)
 		CASE (CEE_ADD_OVF_UN)
-			++ip;
 			--sp;
 			/* FIXME: check overflow, make unsigned */
-			if (sp->type == VAL_I32)
-				sp [-1].data.i += GET_NATI (sp [0]);
-			else if (sp->type == VAL_I64)
-				sp [-1].data.l += sp [0].data.l;
-			else if (sp->type == VAL_DOUBLE)
+			if (sp->type == VAL_I32) {
+				if (CHECK_ADD_OVERFLOW_UN (sp [-1].data.i, GET_NATI (sp [0])))
+					THROW_EX (get_exception_overflow (), ip);
+				sp [-1].data.i = (guint32)sp [-1].data.i + (guint32)GET_NATI (sp [0]);
+			} else if (sp->type == VAL_I64) {
+				if (CHECK_ADD_OVERFLOW64_UN (sp [-1].data.l, sp [0].data.l))
+					THROW_EX (get_exception_overflow (), ip);
+				sp [-1].data.l = (guint64)sp [-1].data.l + (guint64)sp [0].data.l;
+			} else if (sp->type == VAL_DOUBLE)
 				sp [-1].data.f += sp [0].data.f;
 			else {
 				char *p = sp [-1].data.p;
 				p += GET_NATI (sp [0]);
 				sp [-1].data.p = p;
 			}
+			++ip;
 			BREAK;
 		CASE (CEE_MUL_OVF)
 			++ip;
@@ -2833,6 +2850,7 @@ array_constructed:
 			BREAK;
 		CASE (CEE_LEAVE) /* Fall through */
 		CASE (CEE_LEAVE_S)
+			sp = frame->stack; /* empty the stack */
 			frame->ip = ip;
 			if (*ip == CEE_LEAVE_S) {
 				++ip;
@@ -2843,6 +2861,7 @@ array_constructed:
 				ip += (gint32) read32 (ip);
 				ip += 4;
 			}
+#if 0
 			/*
 			 * We may be either inside a try block or inside an handler.
 			 * In the first case there was no exception and we go on
@@ -2858,6 +2877,11 @@ array_constructed:
 				frame->ex = NULL;
 				frame->ex_handler = NULL;
 			}
+#endif
+			frame->ex = NULL;
+			frame->ex_handler = NULL;
+			endfinally_ip = ip;
+			goto handle_finally;
 			BREAK;
 		CASE (CEE_UNUSED26) 
 		CASE (CEE_UNUSED27) 
@@ -3501,6 +3525,18 @@ propertybuilder_fields[] = {
 	{NULL, 0}
 };
 
+static FieldDesc 
+ilgenerator_fields[] = {
+	{"code", G_STRUCT_OFFSET (MonoReflectionILGen, code)},
+	{"mbuilder", G_STRUCT_OFFSET (MonoReflectionILGen, mbuilder)},
+	{"code_len", G_STRUCT_OFFSET (MonoReflectionILGen, code_len)},
+	{"max_stack", G_STRUCT_OFFSET (MonoReflectionILGen, max_stack)},
+	{"cur_stack", G_STRUCT_OFFSET (MonoReflectionILGen, cur_stack)},
+	{"locals", G_STRUCT_OFFSET (MonoReflectionILGen, locals)},
+	{"ex_handlers", G_STRUCT_OFFSET (MonoReflectionILGen, ex_handlers)},
+	{NULL, 0}
+};
+
 static ClassDesc
 emit_classes_to_check [] = {
 	{"TypeBuilder", typebuilder_fields},
@@ -3510,6 +3546,7 @@ emit_classes_to_check [] = {
 	{"MethodBuilder", methodbuilder_fields},
 	{"FieldBuilder", fieldbuilder_fields},
 	{"PropertyBuilder", propertybuilder_fields},
+	{"ILGenerator", ilgenerator_fields},
 	{NULL, NULL}
 };
 

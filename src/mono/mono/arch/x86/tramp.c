@@ -484,4 +484,16 @@ mono_create_method_pointer (MonoMethod *method)
 	return g_memdup (code_buffer, p - code_buffer);
 }
 
-
+/*
+ * mono_create_method_pointer () will insert a pointer to the MonoMethod
+ * so that the interp can easily get at the data: this function will retrieve 
+ * the method from the code stream.
+ */
+MonoMethod*
+mono_method_pointer_get (void *code)
+{
+	unsigned char *c = code;
+	if (c [2] != 'M' || c [3] != 'o')
+		return NULL;
+	return *(MonoMethod**)(code + sizeof (gpointer));
+}

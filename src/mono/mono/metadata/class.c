@@ -353,6 +353,7 @@ mono_class_init (MonoClass *class)
 							continue;
 						if (!strcmp(cm->name, im->name) && 
 						    mono_metadata_signature_equal (cm->signature, im->signature)) {
+							g_assert (io + l <= class->vtable_size);
 							tmp_vtable [io + l] = cm;
 						}
 					}
@@ -367,7 +368,7 @@ mono_class_init (MonoClass *class)
 				MonoMethod *im = ic->methods [l];						
 				MonoClass *k1;
 
-				g_assert (io <= class->vtable_size);
+				g_assert (io + l <= class->vtable_size);
 
 				if (tmp_vtable [io + l] || vtable [io + l])
 					continue;
@@ -382,11 +383,13 @@ mono_class_init (MonoClass *class)
 						
 						if (!strcmp(cm->name, im->name) && 
 						    mono_metadata_signature_equal (cm->signature, im->signature)) {
+							g_assert (io + l <= class->vtable_size);
 							tmp_vtable [io + l] = cm;
 							break;
 						}
 						
 					}
+					g_assert (io + l <= class->vtable_size);
 					if (tmp_vtable [io + l])
 						break;
 				}
@@ -408,6 +411,7 @@ mono_class_init (MonoClass *class)
 					
 					if (!strcmp (cm->name, qname) &&
 					    mono_metadata_signature_equal (cm->signature, im->signature)) {
+						g_assert (io + l <= class->vtable_size);
 						tmp_vtable [io + l] = cm;
 						break;
 					}
@@ -419,6 +423,7 @@ mono_class_init (MonoClass *class)
 			if (!(class->flags & TYPE_ATTRIBUTE_ABSTRACT)) {
 				for (l = 0; l < ic->method.count; l++) {
 					MonoMethod *im = ic->methods [l];						
+					g_assert (io + l <= class->vtable_size);
 					if (!(tmp_vtable [io + l] || vtable [io + l])) {
 						printf ("no implementation for interface method %s.%s::%s in class %s.%s\n",
 							ic->name_space, ic->name, im->name, class->name_space, class->name);
@@ -437,6 +442,7 @@ mono_class_init (MonoClass *class)
 				MonoMethod *im = tmp_vtable [io + l];
 
 				if (im) {
+					g_assert (io + l <= class->vtable_size);
 					if (im->slot < 0)
 						im->slot = io + l;
 					if (!(im->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
@@ -468,6 +474,7 @@ mono_class_init (MonoClass *class)
 					if (!strcmp(cm->name, m1->name) && 
 					    mono_metadata_signature_equal (cm->signature, m1->signature)) {
 						cm->slot = k->methods [j]->slot;
+						g_assert (cm->slot < class->vtable_size);
 						break;
 					}
 				}
