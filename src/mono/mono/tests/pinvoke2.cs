@@ -112,7 +112,7 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_char")]
 	public static extern int mono_test_marshal_char (char a1);
 
-	[DllImport ("libtest", EntryPoint="mono_test_marshal_char_array")]
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_char_array", CharSet=CharSet.Unicode)]
 	public static extern int mono_test_marshal_char_array (char[] a1);
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_bool_byref")]
@@ -219,7 +219,7 @@ public class Tests {
 	}
 
 	static int test_0_marshal_char_array () {
-		// char[] is implicitly marshalled as [Out]
+		// a unicode char[] is implicitly marshalled as [Out]
 		char[] buf = new char [32];
 		mono_test_marshal_char_array (buf);
 		string s = new string (buf);
