@@ -23,6 +23,7 @@ static GList *rule_list;
 FILE *inputfd;
 FILE *outputfd;
 static FILE *deffd;
+static FILE *cfd;
 
 static void output (char *fmt, ...) 
 {
@@ -811,7 +812,7 @@ static void
 usage ()
 {
 	fprintf (stderr,
-		 "Usage is: monoburg [-d file] [file] \n");
+		 "Usage is: monoburg -d file.h -s file.c [inputfile] \n");
 	exit (1);
 }
 
@@ -827,6 +828,7 @@ warning_handler (const gchar *log_domain,
 int
 main (int argc, char *argv [])
 {
+	char *cfile = NULL;
 	char *deffile = NULL;
 	char *infile = NULL;
 	int i;
@@ -839,6 +841,8 @@ main (int argc, char *argv [])
 				usage ();
 			} else if (argv [i][1] == 'd') {
 				deffile = argv [++i];
+			} else if (argv [i][1] == 's') {
+				cfile = argv [++i];
 			} else {
 				usage ();
 			}
@@ -886,7 +890,18 @@ main (int argc, char *argv [])
 	if (deffd) {
 		output ("#endif /* _MONO_BURG_DEFS_ */\n");
 		fclose (deffd);
-		outputfd = stdout;
+
+		if (cfile == NULL)
+			outputfd = stdout;
+		else {
+			if (!(cfd = fopen (cfile, "w"))) {
+				perror ("cant open c output file");
+				(void) remove (deffile);
+				exit (-1);
+			}
+
+			outputfd = cfd;
+		}
 
 		output ("#include \"%s\"\n\n", deffile);
 	}
@@ -903,9 +918,11 @@ main (int argc, char *argv [])
 
 	yyparsetail ();
 
+	if (cfile)
+		fclose (cfd);
+
 	if (infile)
 		fclose (inputfd);
-
 
 	return 0;
 }

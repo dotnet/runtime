@@ -42,7 +42,7 @@ mono_LDADD =				\
 	-lm
 
 codegen-x86.c codegen.h: x86.brg
-	../monoburg/monoburg $(srcdir)/x86.brg -d codegen.h > codegen-x86.c
+	../monoburg/monoburg $(srcdir)/x86.brg -d codegen.h -s codegen-x86.c
 
 BUILT_SOURCES = codegen-x86.c codegen.h
 
