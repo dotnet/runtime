@@ -105,21 +105,18 @@ genmdesc_LDADD = \
 	$(GMODULE_LIBS)
 
 x86_sources = \
-    mini-exceptions.c	\
 	mini-x86.c		\
 	mini-x86.h		\
 	exceptions-x86.c	\
 	tramp-x86.c
 
 amd64_sources = \
-	mini-exceptions.c	\
 	mini-amd64.c		\
 	mini-amd64.h		\
 	exceptions-amd64.c	\
 	tramp-amd64.c
 
 ppc_sources = \
-	mini-exceptions.c	\
 	mini-ppc.c		\
 	mini-ppc.h		\
 	exceptions-ppc.c	\
@@ -128,12 +125,10 @@ ppc_sources = \
 sparc_sources = \
 	mini-sparc.c		\
 	mini-sparc.h		\
-    	mini-exceptions.c	\
 	exceptions-sparc.c	\
 	tramp-sparc.c
 
 s390_sources = \
-	mini-exceptions.c	\
 	mini-s390.c		\
 	mini-s390.h		\
 	exceptions-s390.c	\
@@ -168,6 +163,7 @@ common_sources = \
 	linear-scan.c	\
 	aot.c		\
 	graph.c		\
+	mini-exceptions.c	\
 	declsec.c	\
 	declsec.h
 
