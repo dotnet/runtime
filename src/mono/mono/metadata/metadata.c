@@ -2038,23 +2038,17 @@ mono_type_size (MonoType *t, gint *align)
 		*align = 1;
 		return 0;
 	case MONO_TYPE_BOOLEAN:
-		*align = __alignof__(char);
-		return sizeof (char);
-		
-	case MONO_TYPE_CHAR:
-		*align = __alignof__(short);
-		return sizeof (short);
-		
+		*align = __alignof__(gint8);
+		return 1;
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
-		*align = __alignof__(char);
+		*align = __alignof__(gint8);
 		return 1;
-		
+	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
 		*align = __alignof__(gint16);
-		return 2;
-		
+		return 2;		
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		*align = __alignof__(gint32);
@@ -2062,39 +2056,27 @@ mono_type_size (MonoType *t, gint *align)
 	case MONO_TYPE_R4:
 		*align = __alignof__(float);
 		return 4;
-		
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		*align = __alignof__(gint64);
 	case MONO_TYPE_R8:
 		*align = __alignof__(double);
-		return 8;
-		
+		return 8;		
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 		*align = __alignof__(gpointer);
 		return sizeof (gpointer);
-		
 	case MONO_TYPE_STRING:
 		*align = __alignof__(gpointer);
 		return sizeof (gpointer);
-		
 	case MONO_TYPE_OBJECT:
 		*align = __alignof__(gpointer);
 		return sizeof (gpointer);
-		
 	case MONO_TYPE_VALUETYPE: {
-		guint32 size;
-
-		if (!t->data.klass->size_inited)
-			mono_class_init (t->data.klass);
-
-		if (t->data.klass->enumtype) {
+		if (t->data.klass->enumtype)
 			return mono_type_size (t->data.klass->enum_basetype, align);
-		} else {
-			size = mono_class_value_size (t->data.klass, align);
-			return size;
-		}
+		else
+			return mono_class_value_size (t->data.klass, align);
 	}
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
