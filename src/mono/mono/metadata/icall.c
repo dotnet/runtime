@@ -3364,7 +3364,8 @@ ves_icall_System_Reflection_Module_GetGlobalType (MonoReflectionModule *module)
 static void
 ves_icall_System_Reflection_Module_Close (MonoReflectionModule *module)
 {
-	mono_image_close (module->image);
+	if (module->image)
+		mono_image_close (module->image);
 }
 
 static MonoString*
