@@ -20,7 +20,7 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 <a name="sources">
 ** Sources
 
-	We provide both <a href="packaged">packaged and tested</a>
+	We provide both <a href="#packaged">packaged and tested</a>
 	tarballs (those are known to compile and pass `make
 	distcheck') as well as <a href="snapshots">daily snapshots</a> done
 	at 10pm Boston Time
@@ -46,10 +46,11 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 		<a name="august-22">
 		<b>August 22, 2001</b>
 		<ul>
-		* <a href="archive/mono-0.6.tar.gz">mono-0.5.tar.gz</a>: Mono Runtime 0.6 release.
+		* <a href="archive/mono-0.6.tar.gz">mono-0.6.tar.gz</a>: Mono Runtime 0.6 release.
 		* <a href="archive/mono-compiler-classes-0.6.tar.gz">mono-compiler-classes-0.6.tar.gz</a>: Mono Compiler and Classes 0.6 release.
 		* <a href="archive/mono-0.6">Release Notes.</a>
 		</ul>
+
 	
 	 	<a name="july-29">
 		<b>July 29, 2001</b>
@@ -57,6 +58,7 @@ href="ftp://ftp.gtk.org/pub/gtk/v1.2/glib-1.2.10.tar.gz">ftp://ftp.gtk.org/pub/g
 		* <a href="archive/mono-0.5.tar.gz">mono-0.5.tar.gz</a>: Mono Runtime 0.5 release.
 		* <a href="archive/mono-0.5">Release Notes.</a>
 		</ul>
+
 	
 		<a name="july-22">
 		<b>July 22, 2001</b>
