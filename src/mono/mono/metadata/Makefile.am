@@ -46,6 +46,10 @@ libmonoruntime_la_SOURCES = \
 	appdomain.c	\
 	debug-mono-symfile.h	\
 	debug-mono-symfile.c	\
+	mono-debug.h		\
+	mono-debug.c		\
+	mono-debug-debugger.h	\
+	mono-debug-debugger.c	\
 	profiler.c	\
 	profiler-private.h	\
 	rand.h		\
@@ -81,6 +85,8 @@ libmonoruntimeincludedir = $(includedir)/mono/metadata
 
 libmonoruntimeinclude_HEADERS = \
 	appdomain.h	\
+	mono-debug.h	\
+	mono-debug-debugger.h	\
 	debug-mono-symfile.h	\
 	threadpool.h	\
 	threads-types.h	\
