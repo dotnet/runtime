@@ -23,6 +23,7 @@
 1,System.Runtime.Remoting.Contexts,System.Runtime.Remoting.Contexts.html,bn/System.Runtime.Remoting.Contexts
 1,System.Runtime.Remoting.Messaging,System.Runtime.Remoting.Messaging.html,bn/System.Runtime.Remoting.Messaging
 1,System.Runtime.Serialization,System.Runtime.Serialization.html,bn/System.Runtime.Serialization
+1,System.Runtime.Serialization.Formatters,System.Runtime.Serialization.Formatters.html,bn/System.Runtime.Serialization.Formatters
 1,System.Security,System.Security.html,bn/System.Security
 1,System.Security.Cryptography,System.Security.Cryptography.html,bn/System.Security.Cryptography
 1,System.Security.Permissions,System.Security.Permissions.html,bn/System.Security.Permissions
@@ -49,9 +50,11 @@
 1,develop@wtfo-guru.com,develop@wtfo-guru.com.html,bm/develop@wtfo-guru.com
 1,dholden@draper.com,dholden@draper.com.html,bm/dholden@draper.com
 1,dick@ximian.com,dick@ximian.com.html,bm/dick@ximian.com
+1,dietmar@ximian.com,dietmar@ximian.com.html,bm/dietmar@ximian.com
 1,dmenest@yahoo.com,dmenest@yahoo.com.html,bm/dmenest@yahoo.com
 1,dsh2120@draper.com,dsh2120@draper.com.html,bm/dsh2120@draper.com
 1,duco@lorentz.xs4all.nl,duco@lorentz.xs4all.nl.html,bm/duco@lorentz.xs4all.nl
+1,duncan@ximian.com,duncan@ximian.com.html,bm/duncan@ximian.com
 1,fejj@ximian.com,fejj@ximian.com.html,bm/fejj@ximian.com
 1,gleb@eurosoft.od.ua,gleb@eurosoft.od.ua.html,bm/gleb@eurosoft.od.ua
 1,gvaish@iitk.ac.in,gvaish@iitk.ac.in.html,bm/gvaish@iitk.ac.in
@@ -60,6 +63,8 @@
 1,jason@injektilo.org,jason@injektilo.org.html,bm/jason@injektilo.org
 1,jbarn@httcb.net,jbarn@httcb.net.html,bm/jbarn@httcb.net
 1,joe@ximian.com,joe@ximian.com.html,bm/joe@ximian.com
+1,john.giffin@xor.com,john.giffin@xor.com.html,bm/john.giffin@xor.com
+1,kbottner@istation.com,kbottner@istation.com.html,bm/kbottner@istation.com
 1,lupus@ximian.com,lupus@ximian.com.html,bm/lupus@ximian.com
 1,macisaac@ximian.com,macisaac@ximian.com.html,bm/macisaac@ximian.com
 1,marcel@narings.nl,marcel@narings.nl.html,bm/marcel@narings.nl
