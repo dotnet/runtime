@@ -3,6 +3,7 @@
 #include <string.h>
 #include <glib.h>
 #include <errno.h>
+#include <time.h>
 
 unsigned short*
 test_lpwstr_marshal (unsigned short* chars, long length)
