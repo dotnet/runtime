@@ -801,7 +801,7 @@ void     mono_arch_invalidate_method            (MonoJitInfo *ji, void *func, gp
 /* Exception handling */
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,
 						 gpointer original_ip, gboolean test_only);
-void      mono_jit_walk_stack                   (MonoStackWalk func, gpointer user_data);
+void      mono_jit_walk_stack                   (MonoStackWalk func, gboolean do_il_offset, gpointer user_data);
 MonoArray *ves_icall_get_trace                  (MonoException *exc, gint32 skip, MonoBoolean need_file_info);
 MonoBoolean ves_icall_get_frame_info            (gint32 skip, MonoBoolean need_file_info, 
 						 MonoReflectionMethod **method, 

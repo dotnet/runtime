@@ -155,7 +155,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 }
 
 void
-mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
+mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data) {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoLMF *lmf = jit_tls->lmf;
@@ -178,7 +178,7 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 		if (ji == (gpointer)-1)
 			return;
 
-		il_offset = mono_debug_il_offset_from_address (ji->method, native_offset, domain);
+		il_offset = do_il_offset ? mono_debug_il_offset_from_address (ji->method, native_offset, domain): -1;
 
 		if (func (ji->method, native_offset, il_offset, managed, user_data))
 			return;
