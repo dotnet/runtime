@@ -2657,10 +2657,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* we need to exchange ST(0) with ST(1) */
 			x86_fxch (code, 1);
 
-			/* this requires a loop, because fprem1 somtimes 
+			/* this requires a loop, because fprem somtimes 
 			 * returns a partial remainder */
 			l1 = code;
-			x86_fprem1 (code);
+			/* looks like MS is using fprem instead of the IEEE compatible fprem1 */
+			/* x86_fprem1 (code); */
+			x86_fprem (code);
 			x86_fnstsw (code);
 			x86_alu_reg_imm (code, X86_AND, X86_EAX, 0x0400);
 			l2 = code + 2;

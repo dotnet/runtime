@@ -2185,8 +2185,11 @@ mini_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 			op = OP_SQRT;
 		else if (strcmp (cmethod->name, "Abs") == 0 && fsig->params [0]->type == MONO_TYPE_R8)
 			op = OP_ABS;
+#if 0
+		/* OP_FREM is not IEEE compatible */
 		else if (strcmp (cmethod->name, "IEEERemainder") == 0)
 			op = OP_FREM;
+#endif
 		else
 			return NULL;
 	} else {
