@@ -1,0 +1,95 @@
+
+* Resources
+
+
+** ECMA Documentation.
+
+	You can get the documentation for the ECMA specs from a number of sites:
+	<ul>
+		* <a href="http://msdn.microsoft.com/net/ecma">At MSDN</a>
+		* <a href="http://www.dotnetexperts.com">Dot Net Experts</a>
+		* <a href="http://developer.intel.com/software/idap/ecma">Intel</a>
+		* <a href="http://lightning.csse.monash.edu.au/.net/CLI">Monash University</a>
+	</ul>
+
+	Those contains specifications for the assembler, the metadata,
+	byte codes supported by the CLI virtual machine, the C#
+	language and the core class libraries.
+
+	For details on the .NET class libraries, you can
+	visit the Microsoft's Developer Network:
+
+	<ul>
+		* <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/cpref_start.asp">.NET Framework Class Library</a>
+	</ul>
+
+	You can also get this information if you install the Beta2
+	release of the .NET Framework.
+
+** Mailing Lists
+
+	There are a number of mailing lists for Mono
+
+	<ul>
+	
+		* <b><a
+	href="http://mail.ximian.com/mailman/listinfo/mono-list">mono-list:</a></b>
+	The general Mono discussion list.
+		* <b><a 
+	href="http://mail.ximian.com/mailman/listinfo/mono-hackers-list">mono-hackers-list:</a></b> Mailing list intended to be used by active developers of Mono.
+		* <b><a
+	href="http://discuss.develop.com/dotnet.html">Dotnet mailing
+	list at Develop.com:</a></b> The guys at Develop Mentor run
+	this general purpose mailing list.
+	</ul>
+
+** Discussion Groups.
+
+	<ul>
+	
+		* <a href="http://www.oreillynet.com">O'Reilly
+		  Network</a> has a <a
+		  href="http://www.oreillynet.com/dotnet">section devoted to
+		  .NET</a>
+		* <a
+		  href="http://msdn.microsoft.com/newsgroups">MSDN</a> also
+		  lists various newsgroups related to .NET</ul>
+	</ul>
+
+** Related Technologies
+
+	XML specification.
+	XML Namespaces.
+	XML Schemas.
+	SOAP Specification.
+
+** Compiler Information
+		GCC
+		GCC Sample front-end tutorial
+
+** Other JIT Engines
+		ORP
+		Kaffe
+
+** Other .NET projects
+		Portable.NET
+
+** Open Source .NET projects
+		C# Develop.
+		NUnit testing framework.
+
+** GNOME Documentation
+		Gtk+
+
+** MacOS Documentation
+
+** Assembly Language Manuals online
+		Intel
+		MIPS
+		SPARC
+
+** Microsoft 
+		msdn.microsoft.com/net
+		Research.microsoft.com
+	
+	
