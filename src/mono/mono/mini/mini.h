@@ -834,7 +834,8 @@ void      mono_debug_add_icall_wrapper          (MonoMethod *method, MonoJitICal
 
 
 /* Tracing */
-MonoTraceSpec *mono_trace_parse_options         (MonoAssembly *assembly, char *options);
+MonoTraceSpec *mono_trace_parse_options         (char *options);
+void           mono_trace_set_assembly          (MonoAssembly *assembly);
 gboolean       mono_trace_eval                  (MonoMethod *method);
 
 extern void

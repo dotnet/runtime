@@ -33,7 +33,7 @@ mono_trace_eval (MonoMethod *method)
 		case MONO_TRACEOP_ALL:
 			inc = 1; break;
 		case MONO_TRACEOP_PROGRAM:
-			if (method->klass->image == mono_assembly_get_image (trace_spec.assembly))
+			if (trace_spec.assembly && (method->klass->image == mono_assembly_get_image (trace_spec.assembly)))
 				inc = 1; break;
 		case MONO_TRACEOP_METHOD:
 			if (mono_method_desc_match ((MonoMethodDesc *) op->data, method))
@@ -201,14 +201,12 @@ get_spec (int *last)
 }
 
 MonoTraceSpec *
-mono_trace_parse_options (MonoAssembly *assembly, char *options)
+mono_trace_parse_options (char *options)
 {
 	char *p = options;
 	int size = 1;
 	int last_used;
 	int token;
-	
-	trace_spec.assembly = assembly;
 	
 	if (*p == 0){
 		trace_spec.len = 1;
@@ -235,6 +233,12 @@ mono_trace_parse_options (MonoAssembly *assembly, char *options)
 	trace_spec.len = last_used;
 	cleanup ();
 	return &trace_spec;
+}
+
+void
+mono_trace_set_assembly (MonoAssembly *assembly)
+{
+	trace_spec.assembly = assembly;
 }
 
 static int indent_level = 0;

@@ -732,7 +732,7 @@ mono_main (int argc, char* argv[])
 		 * Need to call this before mini_init () so we can trace methods 
 		 * compiled there too.
 		 */
-		mono_jit_trace_calls = mono_trace_parse_options (assembly, trace_options);
+		mono_jit_trace_calls = mono_trace_parse_options (trace_options);
 		if (mono_jit_trace_calls == NULL)
 			exit (1);
 	}
@@ -799,6 +799,9 @@ mono_main (int argc, char* argv[])
 		mini_cleanup (domain);
 		return 2;
 	}
+
+	if (trace_options != NULL)
+		mono_trace_set_assembly (assembly);
 
 	if (enable_debugging)
 		mono_debug_init_2 (assembly);
