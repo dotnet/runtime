@@ -7205,7 +7205,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	MonoMethod *invoke;
 	MonoObject *(*runtime_invoke) (MonoObject *this, void **params, MonoObject **exc);
 
-	if (obj == NULL && !(method->flags & METHOD_ATTRIBUTE_STATIC)) {
+	if (obj == NULL && !(method->flags & METHOD_ATTRIBUTE_STATIC) && !method->string_ctor && (method->wrapper_type == 0)) {
 		g_warning ("Ignoring invocation of an instance method on a NULL instance.\n");
 		return NULL;
 	}
