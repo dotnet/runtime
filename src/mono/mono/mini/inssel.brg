@@ -14,6 +14,7 @@
 
 #include "mini.h"
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/debug-helpers.h>
 
 #define MBTREE_TYPE  MonoInst
 #define MBCGEN_TYPE  MonoCompile
@@ -1618,6 +1619,88 @@ reg: CEE_LDELEMA (reg, reg) "20" {
 
 %%
 
+/* 
+ * Emit code which checks whenever the interface id of @klass is smaller than
+ * than the value given by max_iid_reg.
+*/
+static void
+mini_emit_max_iid_check (MonoCompile *s, int max_iid_reg, MonoClass *klass,
+						 MonoInst *false_target)
+{
+	if (mono_compile_aot) {
+		int iid_reg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_AOTCONST (s, iid_reg, klass, MONO_PATCH_INFO_IID);
+		MONO_EMIT_NEW_BIALU (s, OP_COMPARE, -1, max_iid_reg, iid_reg);
+	}
+	else
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, max_iid_reg, klass->interface_id);
+	if (false_target)
+		MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BLT_UN, false_target);
+	else
+		MONO_EMIT_NEW_COND_EXC (s, LT_UN, "InvalidCastException");
+}
+
+/* Same as above, but obtains max_iid from a vtable */
+static void
+mini_emit_max_iid_check_vtable (MonoCompile *s, int vtable_reg, MonoClass *klass,
+								 MonoInst *false_target)
+{
+	int max_iid_reg = mono_regstate_next_int (s->rs);
+		
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, max_iid_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, max_interface_id));
+	mini_emit_max_iid_check (s, max_iid_reg, klass, false_target);
+}
+
+/* Same as above, but obtains max_iid from a klass */
+static void
+mini_emit_max_iid_check_class (MonoCompile *s, int klass_reg, MonoClass *klass,
+								 MonoInst *false_target)
+{
+	int max_iid_reg = mono_regstate_next_int (s->rs);
+
+ 	MONO_EMIT_NEW_LOAD_MEMBASE (s, max_iid_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, max_interface_id));		
+	mini_emit_max_iid_check (s, max_iid_reg, klass, false_target);
+}
+
+static void
+mini_emit_load_intf_reg (MonoCompile *s, int intf_reg, int ioffset_reg, MonoClass *klass)
+{
+	if (mono_compile_aot) {
+		int iid_reg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_AOTCONST (s, iid_reg, klass, MONO_PATCH_INFO_IID);
+		/* FIXME: Do a shift instead */
+#if SIZEOF_VOID_P == 8
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, iid_reg, iid_reg, 3);
+#else
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, iid_reg, iid_reg, 2);
+#endif
+		MONO_EMIT_NEW_BIALU (s, CEE_ADD, ioffset_reg, ioffset_reg, iid_reg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, intf_reg, ioffset_reg, 0);
+	}
+	else
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, intf_reg, ioffset_reg, klass->interface_id * SIZEOF_VOID_P);
+}
+
+/* Emit code which loads <vtable_reg>->interface_offsets [klass->interface_id] */
+static void
+mini_emit_load_intf_reg_vtable (MonoCompile *s, int intf_reg, int vtable_reg, MonoClass *klass)
+{
+	int ioffset_reg = mono_regstate_next_int (s->rs);
+
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, ioffset_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, interface_offsets));
+	mini_emit_load_intf_reg (s, intf_reg, ioffset_reg, klass);
+}
+
+/* Emit code which loads <klass_reg>->interface_offsets [klass->interface_id] */
+static void
+mini_emit_load_intf_reg_class (MonoCompile *s, int intf_reg, int klass_reg, MonoClass *klass)
+{
+	int ioffset_reg = mono_regstate_next_int (s->rs);
+
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, ioffset_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, interface_offsets));
+	mini_emit_load_intf_reg (s, intf_reg, ioffset_reg, klass);
+}
+
 void 
 mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop, int virtop)
 {
@@ -1665,12 +1748,9 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 	vtable_reg = mono_regstate_next_int (cfg->rs);
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, this->sreg1, G_STRUCT_OFFSET (MonoObject, vtable));
 	if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		int ifoffset_reg = mono_regstate_next_int (cfg->rs);
 		slot_reg = mono_regstate_next_int (cfg->rs);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, ifoffset_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, interface_offsets));
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, slot_reg, ifoffset_reg, method->klass->interface_id * SIZEOF_VOID_P);
+		mini_emit_load_intf_reg_vtable (cfg, slot_reg, vtable_reg, method->klass);
 		tree->inst_offset = method->slot * SIZEOF_VOID_P;
-		cfg->disable_aot = TRUE;
 	} else {
 		slot_reg = vtable_reg;
 		tree->inst_offset = G_STRUCT_OFFSET (MonoVTable, vtable) + (method->slot * SIZEOF_VOID_P);
@@ -1709,40 +1789,26 @@ mini_emit_isninst_cast (MonoCompile *s, int klass_reg, MonoClass *klass, MonoIns
 void 
 mini_emit_isninst_iface_cast (MonoCompile *s, int vtable_reg, MonoClass *klass, MonoInst *false_target, MonoInst *true_target)
 {
-	int max_iid_reg = mono_regstate_next_int (s->rs);
-	int ioffset_reg = mono_regstate_next_int (s->rs);
 	int intf_reg = mono_regstate_next_int (s->rs);
-		
-	s->disable_aot = TRUE;
 
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, max_iid_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, max_interface_id));
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, max_iid_reg, klass->interface_id);
-	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BLT_UN, false_target);
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, ioffset_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, interface_offsets));
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, intf_reg, ioffset_reg, klass->interface_id * SIZEOF_VOID_P);
+	mini_emit_max_iid_check_vtable (s, vtable_reg, klass, false_target);
+	mini_emit_load_intf_reg_vtable (s, intf_reg, vtable_reg, klass);
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, intf_reg, 0);
 	/* the object_is_null target simply copies the input register to the output */
 	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BNE_UN, true_target);
 }
 
 /*
- * Variant of the aboce that takes a register to the class, not the vtable.
+ * Variant of the above that takes a register to the class, not the vtable.
  * Note that inside interfaces_offsets the empty value is -1, not NULL, in this case.
  */
 void 
 mini_emit_isninst_iface_class_cast (MonoCompile *s, int klass_reg, MonoClass *klass, MonoInst *false_target, MonoInst *true_target)
 {
-	int max_iid_reg = mono_regstate_next_int (s->rs);
-	int ioffset_reg = mono_regstate_next_int (s->rs);
 	int intf_reg = mono_regstate_next_int (s->rs);
-		
-	s->disable_aot = TRUE;
 
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, max_iid_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, max_interface_id));
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, max_iid_reg, klass->interface_id);
-	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BLT_UN, false_target);
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, ioffset_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, interface_offsets));
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, intf_reg, ioffset_reg, klass->interface_id * SIZEOF_VOID_P);
+	mini_emit_max_iid_check_class (s, klass_reg, klass, false_target);
+	mini_emit_load_intf_reg_class (s, intf_reg, klass_reg, klass);
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, intf_reg, 0);
 	/* the object_is_null target simply copies the input register to the output */
 	MONO_EMIT_NEW_BRANCH_LABEL (s, CEE_BGE, true_target);
@@ -1775,17 +1841,10 @@ mini_emit_castclass (MonoCompile *s, int klass_reg, MonoClass *klass)
 void 
 mini_emit_castclass_iface (MonoCompile *s, int vtable_reg, MonoClass *klass)
 {
-	int max_iid_reg = mono_regstate_next_int (s->rs);
-	int ioffset_reg = mono_regstate_next_int (s->rs);
 	int intf_reg = mono_regstate_next_int (s->rs);
-		
-	s->disable_aot = TRUE;
 
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, max_iid_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, max_interface_id));
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, max_iid_reg, klass->interface_id);
-	MONO_EMIT_NEW_COND_EXC (s, LT_UN, "InvalidCastException");
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, ioffset_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, interface_offsets));
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, intf_reg, ioffset_reg, klass->interface_id * SIZEOF_VOID_P);
+	mini_emit_max_iid_check_vtable (s, vtable_reg, klass, NULL);
+	mini_emit_load_intf_reg_vtable (s, intf_reg, vtable_reg, klass);
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, intf_reg, 0);
 	MONO_EMIT_NEW_COND_EXC (s, EQ, "InvalidCastException");
 }
@@ -1797,17 +1856,10 @@ mini_emit_castclass_iface (MonoCompile *s, int vtable_reg, MonoClass *klass)
 void 
 mini_emit_castclass_iface_class (MonoCompile *s, int klass_reg, MonoClass *klass)
 {
-	int max_iid_reg = mono_regstate_next_int (s->rs);
-	int ioffset_reg = mono_regstate_next_int (s->rs);
 	int intf_reg = mono_regstate_next_int (s->rs);
-		
-	s->disable_aot = TRUE;
 
- 	MONO_EMIT_NEW_LOAD_MEMBASE (s, max_iid_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, max_interface_id));
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, max_iid_reg, klass->interface_id);
-	MONO_EMIT_NEW_COND_EXC (s, LT_UN, "InvalidCastException");
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, ioffset_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, interface_offsets));
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, intf_reg, ioffset_reg, klass->interface_id * SIZEOF_VOID_P);
+	mini_emit_max_iid_check_class (s, klass_reg, klass, NULL);
+	mini_emit_load_intf_reg_class (s, intf_reg, klass_reg, klass);
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, intf_reg, 0);
 	MONO_EMIT_NEW_COND_EXC (s, EQ, "InvalidCastException");
 }
