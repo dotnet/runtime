@@ -97,7 +97,7 @@ NON_HTML_SOURCES=		\
 all: $(OBJECTS) deploy/index.rss ../team
 	perl process.pl commands template.html.in deploy
 	cp $(HTML_SOURCES) deploy
-	-mkdir deploy/team
+	test -d deploy/team || mkdir deploy/team
 	cp team/*png deploy/team
 
 tutorial: mono-beginning.html.stamp mono-beginning.pdf 
@@ -126,7 +126,7 @@ render-team-page.exe: render-team-page.cs
 	$(CSC) render-team-page.cs
 
 clean:
-	rm -f $(OBJECTS) $(patsubst deploy/%.html,src/%.src, $(OBJECTS)) src/*.xml src/*.html.in ../class-status-* ../class-status
+	rm -f $(OBJECTS) $(patsubst deploy/%.html,src/%.src, $(OBJECTS)) src/*.xml src/*.html.in ../class-status-* ../class-status infos/*
 
 push:
 	cp -f $(NON_HTML_SOURCES) deploy
@@ -155,21 +155,38 @@ src/%.src: ../% commands template.html.in makefile
 
 
 .PRECIOUS: src/%.html.in
-src/%.html.in: src/%.xml transform.exe $(CORCOMPARE)/cormissing.xsl
-	cscript $(CORCOMPARE)/transform.js $< $(CORCOMPARE)/cormissing.xsl > $@
-	#$(RUN_MONO) ./transform.exe 
+src/%.html.in: src/%.xml transform.exe $(CORCOMPARE)/mono-api.xsl
+	$(RUN_MONO) ./transform.exe $< $(CORCOMPARE)/mono-api.xsl > $@ || (rm -f $@ && exit 1)
 
 
+.PRECIOUS: infos/%.xml
+infos/%.xml: ../../../mcs/class/lib/%.dll $(CORCOMPARE)/mono-api-info.exe
+	$(RUN_MONO) $(CORCOMPARE)/mono-api-info.exe $< > $@ || (rm -f $@ && exit 1)
 
 .PRECIOUS: src/%.xml
-src/%.xml: ../../../mcs/class/lib/%.dll $(CORCOMPARE)/CorCompare.exe
-	$(RUN_MONO) $(CORCOMPARE)/CorCompare.exe -x $@ $<
+src/%.xml: infos/%.xml $(CORCOMPARE)/mono-api-diff.exe 
+	$(RUN_MONO) $(CORCOMPARE)/mono-api-diff.exe masterinfos/$(notdir $<) $< > $@ || (rm -f $@ && exit 1)
 
-src/corlib.xml: ../../../mcs/class/lib/corlib_cmp.dll $(CORCOMPARE)/CorCompare.exe
-	$(RUN_MONO) $(CORCOMPARE)/CorCompare.exe -f corlib -ms mscorlib -x $@ $<
+# corlib, corlib...
+infos/mscorlib.xml: ../../../mcs/class/lib/corlib.dll $(CORCOMPARE)/mono-api-info.exe
+	$(RUN_MONO) $(CORCOMPARE)/mono-api-info.exe $(notdir $(basename $<)) > $@ || (rm -f $@ && exit 1)
 
-src/System.Security.xml: ../../../mcs/class/lib/System.Security_cmp.dll $(CORCOMPARE)/CorCompare.exe
-	$(RUN_MONO) $(CORCOMPARE)/CorCompare.exe -f System.Security -ms System.Security -x $@ $<
+src/corlib.xml: infos/mscorlib.xml $(CORCOMPARE)/mono-api-diff.exe 
+	$(RUN_MONO) $(CORCOMPARE)/mono-api-diff.exe masterinfos/mscorlib.xml $< > $@ || (rm -f $@ && exit 1)
+
+# System
+infos/System.xml: ../../../mcs/class/lib/System.dll $(CORCOMPARE)/mono-api-info.exe
+	$(RUN_MONO) $(CORCOMPARE)/mono-api-info.exe $(notdir $(basename $<)) > $@ || (rm -f $@ && exit 1)
+
+src/System.xml: infos/System.xml $(CORCOMPARE)/mono-api-diff.exe 
+	$(RUN_MONO) $(CORCOMPARE)/mono-api-diff.exe masterinfos/System.xml $< > $@ || (rm -f $@ && exit 1)
+
+# System.Xml
+infos/System.Xml.xml: ../../../mcs/class/lib/System.Xml.dll $(CORCOMPARE)/mono-api-info.exe
+	$(RUN_MONO) $(CORCOMPARE)/mono-api-info.exe $(notdir $(basename $<)) > $@ || (rm -f $@ && exit 1)
+
+src/System.Xml.xml: infos/System.Xml.xml $(CORCOMPARE)/mono-api-diff.exe 
+	$(RUN_MONO) $(CORCOMPARE)/mono-api-diff.exe masterinfos/System.Xml.xml $< > $@ || (rm -f $@ && exit 1)
 
 ../class-status: ../class-status.in
 	cp -f $< $@
