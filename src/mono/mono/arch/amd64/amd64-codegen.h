@@ -74,7 +74,7 @@ typedef enum
 #define AMD64_IS_CALLEE_SAVED_REG(reg) (AMD64_CALLEE_SAVED_REGS & (1 << (reg)))
 
 #define AMD64_REX(bits) ((unsigned char)(0x40 | (bits)))
-#define amd64_emit_rex(inst, width, reg_modrm, reg_index, reg_rm_base_opcode) \
+#define amd64_emit_rex(inst, width, reg_modrm, reg_index, reg_rm_base_opcode) do \
 	{ \
 		unsigned char _amd64_rex_bits = \
 			(((width) > 4) ? AMD64_REX_W : 0) | \
@@ -82,7 +82,7 @@ typedef enum
 			(((reg_index) > 7) ? AMD64_REX_X : 0) | \
 			(((reg_rm_base_opcode) > 7) ? AMD64_REX_B : 0); \
 		if (_amd64_rex_bits != 0) *(inst)++ = AMD64_REX(_amd64_rex_bits); \
-	}
+	} while (0)
 
 typedef union {
 	long val;
@@ -488,6 +488,64 @@ typedef union {
 	amd64_membase_emit ((inst), 0, (basereg), (disp));	\
 } while (0)
     
+/*
+ * SSE
+ */
+
+#define emit_opcode3(inst,op1,op2,op3) do { \
+   *(inst)++ = (unsigned char)(op1); \
+   *(inst)++ = (unsigned char)(op2); \
+   *(inst)++ = (unsigned char)(op3); \
+} while (0)
+
+#define emit_sse_reg_reg_size(inst,dreg,reg,op1,op2,op3,size) do { \
+	amd64_emit_rex ((inst), size, (dreg), 0, (reg)); \
+    emit_opcode3 ((inst), (op1), (op2), (op3)); \
+    x86_reg_emit ((inst), (dreg), (reg)); \
+} while (0)
+
+#define emit_sse_reg_reg(inst,dreg,reg,op1,op2,op3) emit_sse_reg_reg_size ((inst), (dreg), (reg), (op1), (op2), (op3), 0)
+
+#define emit_sse_membase_reg(inst,basereg,disp,reg,op1,op2,op3) do { \
+    amd64_emit_rex ((inst), 0, (reg), 0, (basereg)); \
+    emit_opcode3 ((inst), (op1), (op2), (op3)); \
+    amd64_membase_emit ((inst), (reg), (basereg), (disp)); \
+} while (0)
+
+#define emit_sse_reg_membase(inst,dreg,basereg,disp,op1,op2,op3) do { \
+    amd64_emit_rex ((inst), 0, (dreg), 0, (basereg) == AMD64_RIP ? 0 : (basereg)); \
+    emit_opcode3 ((inst), (op1), (op2), (op3)); \
+    amd64_membase_emit ((inst), (dreg), (basereg), (disp)); \
+} while (0)
+
+#define amd64_sse_xorpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst),(dreg),(reg), 0x66, 0x0f, 0x57)
+
+#define amd64_sse_xorpd_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase ((inst),(dreg),(basereg), (disp), 0x66, 0x0f, 0x57)
+
+#define amd64_sse_movsd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x10)
+
+#define amd64_sse_movsd_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase ((inst), (dreg), (basereg), (disp), 0xf2, 0x0f, 0x10)
+
+#define amd64_sse_movsd_membase_reg(inst,basereg,disp,reg) emit_sse_membase_reg ((inst), (basereg), (disp), (reg), 0xf2, 0x0f, 0x11)
+
+#define amd64_sse_movss_membase_reg(inst,basereg,disp,reg) emit_sse_membase_reg ((inst), (basereg), (disp), (reg), 0xf3, 0x0f, 0x11)
+
+#define amd64_sse_movss_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase ((inst), (dreg), (basereg), (disp), 0xf3, 0x0f, 0x10)
+
+#define amd64_sse_comisd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst),(dreg),(reg),0x66,0x0f,0x2f)
+
+#define amd64_sse_cvtsd2si_reg_reg(inst,dreg,reg) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2d, 0)
+
+#define amd64_sse_cvtsi2sd_reg_reg(inst,dreg,reg) emit_sse_reg_reg_size ((inst), (dreg), (reg), 0xf2, 0x0f, 0x2a, 8)
+
+#define amd64_sse_addsd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x58)
+
+#define amd64_sse_subsd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x5c)
+
+#define amd64_sse_mulsd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x59)
+
+#define amd64_sse_divsd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst), (dreg), (reg), 0xf2, 0x0f, 0x5e)
+
 /* Generated from x86-codegen.h */
 
 #define amd64_breakpoint_size(inst,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_breakpoint(inst); } while (0)
