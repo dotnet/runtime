@@ -38,7 +38,7 @@ struct _WapiHandleOps _wapi_process_ops = {
 	NULL,				/* is_owned */
 };
 
-static pthread_once_t process_ops_once=PTHREAD_ONCE_INIT;
+static mono_once_t process_ops_once=MONO_ONCE_INIT;
 
 static void process_ops_init (void)
 {
@@ -76,7 +76,7 @@ gboolean CreateProcess (const gunichar2 *appname G_GNUC_UNUSED, gunichar2 *cmdli
 			WapiStartupInfo *startup G_GNUC_UNUSED,
 			WapiProcessInformation *process_info G_GNUC_UNUSED)
 {
-	pthread_once (&process_ops_once, process_ops_init);
+	mono_once (&process_ops_once, process_ops_init);
 	
 	return(FALSE);
 }

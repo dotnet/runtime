@@ -30,7 +30,6 @@
 
 #undef DEBUG
 
-static pthread_once_t shared_data_once=PTHREAD_ONCE_INIT;
 static WapiHandleCapability handle_caps[WAPI_HANDLE_COUNT]={0};
 static gboolean shared=FALSE;
 static struct _WapiHandleOps *handle_ops[WAPI_HANDLE_COUNT]={
@@ -172,6 +171,7 @@ again:
 
 gpointer _wapi_handle_new (WapiHandleType type)
 {
+	static mono_once_t shared_init_once = MONO_ONCE_INIT;
 	static pthread_mutex_t scan_mutex=PTHREAD_MUTEX_INITIALIZER;
 	guint32 idx;
 	gpointer handle;
@@ -180,8 +180,8 @@ gpointer _wapi_handle_new (WapiHandleType type)
 #if HAVE_BOEHM_GC
 	gboolean tried_collect=FALSE;
 #endif
-
-	pthread_once (&shared_data_once, shared_init);
+	
+	mono_once (&shared_init_once, shared_init);
 	
 again:
 	if(shared==TRUE) {

@@ -33,7 +33,7 @@
 static guint32 startup_count=0;
 static GPtrArray *sockets=NULL;
 static pthread_key_t error_key;
-static pthread_once_t error_key_once=PTHREAD_ONCE_INIT;
+static mono_once_t error_key_once=MONO_ONCE_INIT;
 
 static void socket_close_private (gpointer handle);
 
@@ -45,7 +45,7 @@ struct _WapiHandleOps _wapi_socket_ops = {
 	NULL,			/* is_owned */
 };
 
-static pthread_once_t socket_ops_once=PTHREAD_ONCE_INIT;
+static mono_once_t socket_ops_once=MONO_ONCE_INIT;
 
 static void socket_ops_init (void)
 {
@@ -130,7 +130,7 @@ static void error_init(void)
 
 void WSASetLastError(int error)
 {
-	pthread_once(&error_key_once, error_init);
+	mono_once(&error_key_once, error_init);
 	pthread_setspecific(error_key, GINT_TO_POINTER(error));
 }
 
@@ -139,7 +139,7 @@ int WSAGetLastError(void)
 	int err;
 	void *errptr;
 	
-	pthread_once(&error_key_once, error_init);
+	mono_once(&error_key_once, error_init);
 	errptr=pthread_getspecific(error_key);
 	err=GPOINTER_TO_INT(errptr);
 	
@@ -965,7 +965,7 @@ guint32 _wapi_socket(int domain, int type, int protocol)
 		return(INVALID_SOCKET);
 	}
 	
-	pthread_once (&socket_ops_once, socket_ops_init);
+	mono_once (&socket_ops_once, socket_ops_init);
 	
 	handle=_wapi_handle_new (WAPI_HANDLE_SOCKET);
 	if(handle==_WAPI_HANDLE_INVALID) {

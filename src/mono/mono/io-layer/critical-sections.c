@@ -26,7 +26,7 @@
  * here but I'd need a mutex around the critical section structure
  * anyway.  So I may as well just use a pthread mutex.
  */
-static pthread_once_t attr_key_once=PTHREAD_ONCE_INIT;
+static mono_once_t attr_key_once=MONO_ONCE_INIT;
 static mono_mutexattr_t attr;
 
 static void attr_init(void)
@@ -43,7 +43,7 @@ static void attr_init(void)
  */
 void InitializeCriticalSection(WapiCriticalSection *section)
 {
-	pthread_once(&attr_key_once, attr_init);
+	mono_once(&attr_key_once, attr_init);
 	mono_mutex_init(&section->mutex, &attr);
 }
 

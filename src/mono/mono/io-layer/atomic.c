@@ -18,7 +18,7 @@
 #warning "Atomic functions are not atomic!"
 
 static pthread_mutex_t spin;
-static pthread_once_t spin_once=PTHREAD_ONCE_INIT;
+static mono_once_t spin_once=MONO_ONCE_INIT;
 
 static void spin_init(void)
 {
@@ -31,7 +31,7 @@ gint32 InterlockedCompareExchange(volatile gint32 *dest, gint32 exch,
 {
 	gint32 old;
 	
-	pthread_once(&spin_once, spin_init);
+	mono_once(&spin_once, spin_init);
 	pthread_mutex_lock(&spin);
 	
 	old= *dest;
@@ -49,7 +49,7 @@ gpointer InterlockedCompareExchangePointer(volatile gpointer *dest,
 {
 	gpointer old;
 	
-	pthread_once(&spin_once, spin_init);
+	mono_once(&spin_once, spin_init);
 	pthread_mutex_lock(&spin);
 	
 	old= *dest;
@@ -66,7 +66,7 @@ gint32 InterlockedIncrement(volatile gint32 *dest)
 {
 	gint32 ret;
 	
-	pthread_once(&spin_once, spin_init);
+	mono_once(&spin_once, spin_init);
 	pthread_mutex_lock(&spin);
 	
 	*dest++;
@@ -81,7 +81,7 @@ gint32 InterlockedDecrement(volatile gint32 *dest)
 {
 	gint32 ret;
 	
-	pthread_once(&spin_once, spin_init);
+	mono_once(&spin_once, spin_init);
 	pthread_mutex_lock(&spin);
 	
 	*dest--;
@@ -96,7 +96,7 @@ gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
 {
 	gint32 ret;
 	
-	pthread_once(&spin_once, spin_init);
+	mono_once(&spin_once, spin_init);
 	pthread_mutex_lock(&spin);
 
 	ret=*dest;
@@ -111,7 +111,7 @@ gpointer InterlockedExchangePointer(volatile gpointer *dest, gpointer exch)
 {
 	gpointer ret;
 	
-	pthread_once(&spin_once, spin_init);
+	mono_once(&spin_once, spin_init);
 	pthread_mutex_lock(&spin);
 	
 	ret=*dest;
@@ -126,7 +126,7 @@ gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 {
 	gint32 ret;
 	
-	pthread_once(&spin_once, spin_init);
+	mono_once(&spin_once, spin_init);
 	pthread_mutex_lock(&spin);
 
 	ret= *dest;

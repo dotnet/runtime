@@ -62,6 +62,21 @@ pthread_mutex_timedlock (pthread_mutex_t *mutex, const struct timespec *timeout)
 #endif /* HAVE_PTHREAD_MUTEX_TIMEDLOCK */
 
 
+int
+mono_once (mono_once_t *once, void (*once_init) (void))
+{
+	if (!once->complete) {
+		pthread_mutex_lock (&once->mutex);
+		if (!once->complete) {
+			once_init ();
+			once->complete = TRUE;
+		}
+		pthread_mutex_unlock (&once->mutex);
+	}
+	
+	return 0;
+}
+
 
 #ifdef USE_MONO_MUTEX
 

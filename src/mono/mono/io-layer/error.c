@@ -14,7 +14,7 @@
 #include "mono/io-layer/wapi.h"
 
 static pthread_key_t error_key;
-static pthread_once_t error_key_once=PTHREAD_ONCE_INIT;
+static mono_once_t error_key_once=MONO_ONCE_INIT;
 
 static void error_init(void)
 {
@@ -34,7 +34,7 @@ guint32 GetLastError(void)
 	guint32 err;
 	void *errptr;
 	
-	pthread_once(&error_key_once, error_init);
+	mono_once(&error_key_once, error_init);
 	errptr=pthread_getspecific(error_key);
 	err=GPOINTER_TO_UINT(errptr);
 	
@@ -50,6 +50,6 @@ guint32 GetLastError(void)
 void SetLastError(guint32 code)
 {
 	/* Set the thread-local error code */
-	pthread_once(&error_key_once, error_init);
+	mono_once(&error_key_once, error_init);
 	pthread_setspecific(error_key, GUINT_TO_POINTER(code));
 }

@@ -35,7 +35,7 @@ struct _WapiHandleOps _wapi_event_ops = {
 	NULL,			/* is_owned */
 };
 
-static pthread_once_t event_ops_once=PTHREAD_ONCE_INIT;
+static mono_once_t event_ops_once=MONO_ONCE_INIT;
 
 static void event_ops_init (void)
 {
@@ -116,7 +116,7 @@ gpointer CreateEvent(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean ma
 	gpointer handle;
 	gboolean ok;
 	
-	pthread_once (&event_ops_once, event_ops_init);
+	mono_once (&event_ops_once, event_ops_init);
 
 	handle=_wapi_handle_new (WAPI_HANDLE_EVENT);
 	if(handle==_WAPI_HANDLE_INVALID) {

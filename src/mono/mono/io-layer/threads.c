@@ -33,7 +33,7 @@
 /* Hash threads with tids. I thought of using TLS for this, but that
  * would have to set the data in the new thread, which is more hassle
  */
-static pthread_once_t thread_hash_once = PTHREAD_ONCE_INIT;
+static mono_once_t thread_hash_once = MONO_ONCE_INIT;
 static mono_mutex_t thread_hash_mutex = MONO_MUTEX_INITIALIZER;
 static GHashTable *thread_hash=NULL;
 
@@ -52,7 +52,7 @@ struct _WapiHandleOps _wapi_thread_ops = {
 	NULL,				/* is_owned */
 };
 
-static pthread_once_t thread_ops_once=PTHREAD_ONCE_INIT;
+static mono_once_t thread_ops_once=MONO_ONCE_INIT;
 
 static void thread_ops_init (void)
 {
@@ -176,8 +176,8 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	gboolean ok;
 	int ret;
 	
-	pthread_once(&thread_hash_once, thread_hash_init);
-	pthread_once (&thread_ops_once, thread_ops_init);
+	mono_once(&thread_hash_once, thread_hash_init);
+	mono_once (&thread_ops_once, thread_ops_init);
 	
 	if(start==NULL) {
 		return(NULL);

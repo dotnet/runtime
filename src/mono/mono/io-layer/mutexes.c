@@ -35,7 +35,7 @@ struct _WapiHandleOps _wapi_mutex_ops = {
 	mutex_is_owned,		/* is_owned */
 };
 
-static pthread_once_t mutex_ops_once=PTHREAD_ONCE_INIT;
+static mono_once_t mutex_ops_once=MONO_ONCE_INIT;
 
 static void mutex_ops_init (void)
 {
@@ -169,7 +169,7 @@ gpointer CreateMutex(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean ow
 	gpointer handle;
 	gboolean ok;
 	
-	pthread_once (&mutex_ops_once, mutex_ops_init);
+	mono_once (&mutex_ops_once, mutex_ops_init);
 	
 	handle=_wapi_handle_new (WAPI_HANDLE_MUTEX);
 	if(handle==_WAPI_HANDLE_INVALID) {

@@ -150,7 +150,7 @@ static struct {
 };
 
 
-static pthread_once_t io_ops_once=PTHREAD_ONCE_INIT;
+static mono_once_t io_ops_once=MONO_ONCE_INIT;
 
 static void io_ops_init (void)
 {
@@ -1207,7 +1207,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	gchar *filename;
 	int ret;
 
-	pthread_once (&io_ops_once, io_ops_init);
+	mono_once (&io_ops_once, io_ops_init);
 	
 	if(name==NULL) {
 #ifdef DEBUG
@@ -1499,7 +1499,7 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 	const guchar *name;
 	int flags, fd;
 
-	pthread_once (&io_ops_once, io_ops_init);
+	mono_once (&io_ops_once, io_ops_init);
 	
 	switch(stdhandle) {
 	case STD_INPUT_HANDLE:

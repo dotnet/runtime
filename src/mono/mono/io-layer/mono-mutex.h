@@ -26,8 +26,10 @@
 
 #ifdef __cplusplus
 extern "C" {
+#pragma }
 #endif /* __cplusplus */
 
+#include <glib.h>
 #include <pthread.h>
 #include <time.h>
 
@@ -35,6 +37,16 @@ extern "C" {
 extern int pthread_mutex_timedlock (pthread_mutex_t *mutex,
 				    const struct timespec *timeout);
 #endif /* HAVE_PTHREAD_MUTEX_TIMEDLOCK */
+
+
+typedef struct {
+	pthread_mutex_t mutex;
+	gboolean complete;
+} mono_once_t;
+
+#define MONO_ONCE_INIT { PTHREAD_MUTEX_INITIALIZER, FALSE }
+
+int mono_once (mono_once_t *once, void (*once_init) (void));
 
 
 #ifdef USE_MONO_MUTEX

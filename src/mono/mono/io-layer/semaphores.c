@@ -36,7 +36,7 @@ struct _WapiHandleOps _wapi_sem_ops = {
 	NULL,			/* is_owned */
 };
 
-static pthread_once_t sem_ops_once=PTHREAD_ONCE_INIT;
+static mono_once_t sem_ops_once=MONO_ONCE_INIT;
 
 static void sem_ops_init (void)
 {
@@ -112,7 +112,7 @@ gpointer CreateSemaphore(WapiSecurityAttributes *security G_GNUC_UNUSED, gint32 
 	gpointer handle;
 	gboolean ok;
 	
-	pthread_once (&sem_ops_once, sem_ops_init);
+	mono_once (&sem_ops_once, sem_ops_init);
 	
 	if(max<=0) {
 #ifdef DEBUG

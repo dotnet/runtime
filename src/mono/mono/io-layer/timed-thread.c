@@ -26,7 +26,7 @@
  */
 
 static pthread_key_t timed_thread_key;
-static pthread_once_t timed_thread_once = PTHREAD_ONCE_INIT;
+static mono_once_t timed_thread_once = MONO_ONCE_INIT;
 
 static void timed_thread_init(void)
 {
@@ -80,7 +80,7 @@ static void *timed_thread_start_routine(gpointer args)
 {
 	TimedThread *thread = (TimedThread *)args;
 	
-	pthread_once(&timed_thread_once, timed_thread_init);
+	mono_once(&timed_thread_once, timed_thread_init);
 	pthread_setspecific(timed_thread_key, (void *)thread);
 	pthread_detach(thread->id);
 	_wapi_timed_thread_exit(thread->start_routine(thread->arg));
