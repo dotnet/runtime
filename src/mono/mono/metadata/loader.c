@@ -451,7 +451,6 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 			result->string_ctor = 1;
 
 		result->addr = mono_lookup_internal_call (result);
-		result->flags |= METHOD_ATTRIBUTE_PINVOKE_IMPL;
 	} else if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		((MonoMethodPInvoke *)result)->implmap_idx = mono_metadata_implmap_from_method (image, idx - 1);
 	} else {
