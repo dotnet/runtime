@@ -348,6 +348,9 @@ if test x$platform_win32 = xno; then
 	dnl *** Checks for libsocket  ***
 	dnl *****************************
 	AC_CHECK_LIB(socket, socket, LIBS="$LIBS -lsocket")
+	AC_CHECK_TYPES(socklen_t, [AC_DEFINE(HAVE_SOCKLEN_T)], [],
+				  [#include <sys/types.h>
+#include <sys/socket.h>])
 
 	dnl *******************************
 	dnl *** Checks for MSG_NOSIGNAL ***
