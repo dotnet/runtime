@@ -37,6 +37,9 @@ typedef struct {
 	MonoString *shadow_copy_files;
 	MonoBoolean publisher_policy;
 	MonoBoolean path_changed;
+	int loader_optimization;
+	MonoBoolean disallow_binding_redirects;
+	MonoBoolean disallow_code_downloads;
 } MonoAppDomainSetup;
 
 typedef GArray MonoJitInfoTable;
