@@ -44,7 +44,6 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #endif /* PLATFORM_WIN32 */
 
 #ifdef sun    // Solaris x86
-#  undef SIGSEGV_ON_ALTSTACK
 #  define MONO_ARCH_USE_SIGACTION 1
 struct sigcontext {
         unsigned short gs, __gsh;
@@ -70,6 +69,25 @@ struct sigcontext {
       unsigned long filler[5];
 };
 #endif  // sun, Solaris x86
+
+#ifdef __linux__
+#define MONO_ARCH_USE_SIGACTION
+#endif
+
+#ifndef PLATFORM_WIN32
+
+#ifdef HAVE_WORKING_SIGALTSTACK
+
+#define MONO_ARCH_SIGSEGV_ON_ALTSTACK
+#define MONO_ARCH_USE_SIGACTION
+
+/* NetBSD doesn't define SA_STACK */
+#ifndef SA_STACK
+#define SA_STACK SA_ONSTACK
+#endif
+#endif
+
+#endif
 
 /* Enables OP_LSHL, OP_LSHL_IMM, OP_LSHR, OP_LSHR_IMM, OP_LSHR_UN, OP_LSHR_UN_IMM */
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
@@ -131,32 +149,39 @@ typedef void* MonoCompileArch;
 # define SC_ESI esi
 #endif
 
+#ifdef MONO_ARCH_USE_SIGACTION
+
+typedef struct {
+	guint32 eax;
+	guint32 ebx;
+	guint32 ecx;
+	guint32 edx;
+	guint32 ebp;
+	guint32 esp;
+    guint32 esi;
+	guint32 edi;
+	guint32 eip;
+} MonoContext;
+
+#else
+
 typedef struct sigcontext MonoContext;
 
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->SC_EIP = (long)(ip); } while (0); 
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->SC_EBP = (long)(bp); } while (0); 
-#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->SC_ESP = (long)(esp); } while (0); 
+#endif
 
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->SC_EIP))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->SC_EBP))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->SC_ESP))
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->eip = (long)(ip); } while (0); 
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->ebp = (long)(bp); } while (0); 
+#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->esp = (long)(sp); } while (0); 
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->eip))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->ebp))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->esp))
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) do {	\
 		mono_arch_flush_register_windows ();	\
 		MONO_CONTEXT_SET_IP ((ctx), (start_func));	\
 		MONO_CONTEXT_SET_BP ((ctx), __builtin_frame_address (0));	\
 	} while (0)
-
-#ifndef PLATFORM_WIN32
-#ifdef HAVE_WORKING_SIGALTSTACK
-#define MONO_ARCH_SIGSEGV_ON_ALTSTACK
-/* NetBSD doesn't define SA_STACK */
-#ifndef SA_STACK
-#define SA_STACK SA_ONSTACK
-#endif
-#endif
-
-#endif
 
 #define MONO_ARCH_BIGMUL_INTRINS 1
 #define MONO_ARCH_NEED_DIV_CHECK 1

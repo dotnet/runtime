@@ -139,7 +139,7 @@ mono_arch_get_restore_context (void)
 	if (start)
 		return start;
 
-	/* restore_contect (struct sigcontext *ctx) */
+	/* restore_contect (MonoContext *ctx) */
 	/* we do not restore X86_EAX, X86_EDX */
 
 	start = code = mono_global_codeman_reserve (128);
@@ -148,17 +148,17 @@ mono_arch_get_restore_context (void)
 	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
 
 	/* get return address, stored in EDX */
-	x86_mov_reg_membase (code, X86_EDX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EIP), 4);
+	x86_mov_reg_membase (code, X86_EDX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, eip), 4);
 	/* restore EBX */
-	x86_mov_reg_membase (code, X86_EBX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBX), 4);
+	x86_mov_reg_membase (code, X86_EBX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, ebx), 4);
 	/* restore EDI */
-	x86_mov_reg_membase (code, X86_EDI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EDI), 4);
+	x86_mov_reg_membase (code, X86_EDI, X86_EAX,  G_STRUCT_OFFSET (MonoContext, edi), 4);
 	/* restore ESI */
-	x86_mov_reg_membase (code, X86_ESI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_ESI), 4);
+	x86_mov_reg_membase (code, X86_ESI, X86_EAX,  G_STRUCT_OFFSET (MonoContext, esi), 4);
 	/* restore ESP */
-	x86_mov_reg_membase (code, X86_ESP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_ESP), 4);
+	x86_mov_reg_membase (code, X86_ESP, X86_EAX,  G_STRUCT_OFFSET (MonoContext, esp), 4);
 	/* restore EBP */
-	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBP), 4);
+	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (MonoContext, ebp), 4);
 
 	/* jump to the saved IP */
 	x86_jump_reg (code, X86_EDX);
@@ -184,7 +184,7 @@ mono_arch_get_call_filter (void)
 		return start;
 
 	inited = 1;
-	/* call_filter (struct sigcontext *ctx, unsigned long eip) */
+	/* call_filter (MonoContext *ctx, unsigned long eip) */
 	start = code = mono_global_codeman_reserve (64);
 
 	x86_push_reg (code, X86_EBP);
@@ -201,11 +201,11 @@ mono_arch_get_call_filter (void)
 	x86_push_reg (code, X86_EBP);
 
 	/* set new EBP */
-	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBP), 4);
+	x86_mov_reg_membase (code, X86_EBP, X86_EAX,  G_STRUCT_OFFSET (MonoContext, ebp), 4);
 	/* restore registers used by global register allocation (EBX & ESI) */
-	x86_mov_reg_membase (code, X86_EBX, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EBX), 4);
-	x86_mov_reg_membase (code, X86_ESI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_ESI), 4);
-	x86_mov_reg_membase (code, X86_EDI, X86_EAX,  G_STRUCT_OFFSET (struct sigcontext, SC_EDI), 4);
+	x86_mov_reg_membase (code, X86_EBX, X86_EAX,  G_STRUCT_OFFSET (MonoContext, ebx), 4);
+	x86_mov_reg_membase (code, X86_ESI, X86_EAX,  G_STRUCT_OFFSET (MonoContext, esi), 4);
+	x86_mov_reg_membase (code, X86_EDI, X86_EAX,  G_STRUCT_OFFSET (MonoContext, edi), 4);
 
 	/* call the handler */
 	x86_call_reg (code, X86_ECX);
@@ -229,22 +229,22 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 		 unsigned long esi, unsigned long edi, unsigned long ebp, MonoObject *exc,
 		 unsigned long eip,  unsigned long esp, gboolean rethrow)
 {
-	static void (*restore_context) (struct sigcontext *);
-	struct sigcontext ctx;
+	static void (*restore_context) (MonoContext *);
+	MonoContext ctx;
 
 	if (!restore_context)
 		restore_context = mono_arch_get_restore_context ();
 
 	/* Pop argument and return address */
-	ctx.SC_ESP = esp + (2 * sizeof (gpointer));
-	ctx.SC_EIP = eip;
-	ctx.SC_EBP = ebp;
-	ctx.SC_EDI = edi;
-	ctx.SC_ESI = esi;
-	ctx.SC_EBX = ebx;
-	ctx.SC_EDX = edx;
-	ctx.SC_ECX = ecx;
-	ctx.SC_EAX = eax;
+	ctx.esp = esp + (2 * sizeof (gpointer));
+	ctx.eip = eip;
+	ctx.ebp = ebp;
+	ctx.edi = edi;
+	ctx.esi = esi;
+	ctx.ebx = ebx;
+	ctx.edx = edx;
+	ctx.ecx = ecx;
+	ctx.eax = eax;
 
 	if (mono_debugger_throw_exception ((gpointer)(eip - 5), (gpointer)esp, exc)) {
 		/*
@@ -252,14 +252,14 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 		 * By the time we get here, it already inserted a breakpoint on
 		 * eip - 5 (which is the address of the call).
 		 */
-		ctx.SC_EIP = eip - 5;
-		ctx.SC_ESP = esp + sizeof (gpointer);
+		ctx.eip = eip - 5;
+		ctx.esp = esp + sizeof (gpointer);
 		restore_context (&ctx);
 		g_assert_not_reached ();
 	}
 
 	/* adjust eip so that it point into the call instruction */
-	ctx.SC_EIP -= 1;
+	ctx.eip -= 1;
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
@@ -472,24 +472,24 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			 * code, since otherwise the lmf was already popped of the stack.
 			 */
 			if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
-				new_ctx->SC_ESI = (*lmf)->esi;
-				new_ctx->SC_EDI = (*lmf)->edi;
-				new_ctx->SC_EBX = (*lmf)->ebx;
+				new_ctx->esi = (*lmf)->esi;
+				new_ctx->edi = (*lmf)->edi;
+				new_ctx->ebx = (*lmf)->ebx;
 			}
 		}
 		else {
 			offset = -1;
 			/* restore caller saved registers */
 			if (ji->used_regs & X86_EBX_MASK) {
-				new_ctx->SC_EBX = *((int *)ctx->SC_EBP + offset);
+				new_ctx->ebx = *((int *)ctx->ebp + offset);
 				offset--;
 			}
 			if (ji->used_regs & X86_EDI_MASK) {
-				new_ctx->SC_EDI = *((int *)ctx->SC_EBP + offset);
+				new_ctx->edi = *((int *)ctx->ebp + offset);
 				offset--;
 			}
 			if (ji->used_regs & X86_ESI_MASK) {
-				new_ctx->SC_ESI = *((int *)ctx->SC_EBP + offset);
+				new_ctx->esi = *((int *)ctx->ebp + offset);
 			}
 		}
 
@@ -499,17 +499,17 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		}
 
 		/* Pop EBP and the return address */
-		new_ctx->SC_ESP = ctx->SC_EBP + (2 * sizeof (gpointer));
+		new_ctx->esp = ctx->SC_EBP + (2 * sizeof (gpointer));
 		/* we substract 1, so that the IP points into the call instruction */
-		new_ctx->SC_EIP = *((int *)ctx->SC_EBP + 1) - 1;
-		new_ctx->SC_EBP = *((int *)ctx->SC_EBP);
+		new_ctx->eip = *((int *)ctx->ebp + 1) - 1;
+		new_ctx->ebp = *((int *)ctx->ebp);
 
 		/* Pop arguments off the stack */
 		{
 			MonoJitArgumentInfo *arg_info = g_newa (MonoJitArgumentInfo, mono_method_signature (ji->method)->param_count + 1);
 
 			guint32 stack_to_pop = mono_arch_get_argument_info (mono_method_signature (ji->method), mono_method_signature (ji->method)->param_count, arg_info);
-			new_ctx->SC_ESP += stack_to_pop;
+			new_ctx->esp += stack_to_pop;
 		}
 
 		return ji;
@@ -526,14 +526,14 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			res->method = (*lmf)->method;
 		}
 
-		new_ctx->SC_ESI = (*lmf)->esi;
-		new_ctx->SC_EDI = (*lmf)->edi;
-		new_ctx->SC_EBX = (*lmf)->ebx;
-		new_ctx->SC_EBP = (*lmf)->ebp;
-		new_ctx->SC_EIP = (*lmf)->eip;
+		new_ctx->esi = (*lmf)->esi;
+		new_ctx->edi = (*lmf)->edi;
+		new_ctx->ebx = (*lmf)->ebx;
+		new_ctx->ebp = (*lmf)->ebp;
+		new_ctx->eip = (*lmf)->eip;
 		/* the lmf is always stored on the stack, so the following
 		 * expression points to a stack location which can be used as ESP */
-		new_ctx->SC_ESP = (unsigned long)&((*lmf)->eip);
+		new_ctx->esp = (unsigned long)&((*lmf)->eip);
 
 		*lmf = (*lmf)->previous_lmf;
 
@@ -543,22 +543,68 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	return NULL;
 }
 
-/**
- * mono_arch_handle_exception:
- *
- * @ctx: saved processor state
- * @obj: the exception object
- */
-gboolean
-mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
+void
+mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
-	return mono_handle_exception (sigctx, obj, mono_arch_ip_from_context (sigctx), test_only);
+	ucontext_t *ctx = (ucontext_t*)sigctx;
+	
+#ifdef MONO_ARCH_USE_SIGACTION
+	mctx->eax = ctx->uc_mcontext.gregs [REG_EAX];
+	mctx->ebx = ctx->uc_mcontext.gregs [REG_EBX];
+	mctx->ecx = ctx->uc_mcontext.gregs [REG_ECX];
+	mctx->edx = ctx->uc_mcontext.gregs [REG_EDX];
+	mctx->ebp = ctx->uc_mcontext.gregs [REG_EBP];
+	mctx->esp = ctx->uc_mcontext.gregs [REG_ESP];
+	mctx->esi = ctx->uc_mcontext.gregs [REG_ESI];
+	mctx->edi = ctx->uc_mcontext.gregs [REG_EDI];
+	mctx->eip = ctx->uc_mcontext.gregs [REG_EIP];
+#else
+	memcpy (mctx, sigctx, sizeof (MonoContext));
+#endif
 }
+
+void
+mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
+{
+	ucontext_t *ctx = (ucontext_t*)sigctx;
+
+#ifdef MONO_ARCH_USE_SIGACTION
+	ctx->uc_mcontext.gregs [REG_EAX] = mctx->eax;
+	ctx->uc_mcontext.gregs [REG_EBX] = mctx->ebx;
+	ctx->uc_mcontext.gregs [REG_ECX] = mctx->ecx;
+	ctx->uc_mcontext.gregs [REG_EDX] = mctx->edx;
+	ctx->uc_mcontext.gregs [REG_EBP] = mctx->ebp;
+	ctx->uc_mcontext.gregs [REG_ESP] = mctx->esp;
+	ctx->uc_mcontext.gregs [REG_ESI] = mctx->esi;
+	ctx->uc_mcontext.gregs [REG_EDI] = mctx->edi;
+	ctx->uc_mcontext.gregs [REG_EIP] = mctx->eip;
+#else
+	memcpy (ctx, mctx, sizeof (MonoContext));
+#endif
+}	
 
 gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
+#ifdef MONO_ARCH_USE_SIGACTION
+	ucontext_t *ctx = (ucontext_t*)sigctx;
+	return (gpointer)ctx->uc_mcontext.gregs [REG_EIP];
+#else
 	struct sigcontext *ctx = sigctx;
 	return (gpointer)ctx->SC_EIP;
+#endif	
 }
 
+gboolean
+mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
+{
+	MonoContext mctx;
+
+	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
+
+	mono_handle_exception (&mctx, obj, (gpointer)mctx.eip, test_only);
+
+	mono_arch_monoctx_to_sigctx (&mctx, sigctx);
+
+	return TRUE;
+}

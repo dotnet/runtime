@@ -9588,8 +9588,12 @@ SIG_HANDLER_SIGNATURE (sigill_signal_handler)
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 
+#ifndef MONO_ARCH_USE_SIGACTION
+#error "Can't use sigaltstack without sigaction"
+#endif
+
 static void
-sigsegv_signal_handler (int _dummy, siginfo_t *info, void *context)
+SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 {
 	MonoException *exc;
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
