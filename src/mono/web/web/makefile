@@ -68,6 +68,7 @@ OBJECTS=									\
 	deploy/testing.html							\
 	deploy/tools.html							\
 	deploy/winforms.html							\
+	deploy/xml-classes.html							\
 	deploy/class-library.html						\
 	deploy/classlib-doc.html 						\
 	deploy/class-status.html	 					\
