@@ -762,8 +762,18 @@ dis_interfaces (MonoImage *m, guint32 typedef_row)
 	}
 }
 
+/**
+ * dis_generic_param_and_constraints:
+ * @m: metadata context
+ * @table_type: Type of table (0 for typedef, 1 for methoddef)
+ * @row: Row in table
+ *
+ * Dissasembles the generic parameters for this type or method, also
+ * returns an allocated GString containing the generic constraints NULL
+ * if their are no generic constraints.
+ */
 static GString*
-dis_genericparam (MonoImage *m, guint32 typedef_row)
+dis_generic_param_and_constraints (MonoImage *m, int table_type, guint32 typedef_row)
 {
         MonoTableInfo *t = &m->tables [MONO_TABLE_GENERICPARAM];
         MonoTableInfo *ct = &m->tables [MONO_TABLE_GENERICPARAMCONSTRAINT];
@@ -780,7 +790,7 @@ dis_genericparam (MonoImage *m, guint32 typedef_row)
                 table = own_tok & 0x01;
                 idx = own_tok >> 1;
                 
-                if (table != 0 || idx != typedef_row)
+                if (table != table_type || idx != typedef_row)
                         continue;
 
                 if (found_count == 0)
@@ -845,7 +855,7 @@ dis_type (MonoImage *m, int n)
 
 	if ((cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS){
 		fprintf (output, "  .class %s%s", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), name);
-                cnst_block = dis_genericparam (m, n+1);
+                cnst_block = dis_generic_param_and_constraints (m, 0, n+1);
                 fprintf (output, "\n");
 		if (cols [MONO_TYPEDEF_EXTENDS]) {
 			char *base = get_typedef_or_ref (m, cols [MONO_TYPEDEF_EXTENDS]);

@@ -471,6 +471,51 @@ dis_stringify_param (MonoImage *m, MonoType *param)
 	return result;
 }
 
+/**
+ * get_generic_param
+ * @m: metadata context 
+ * @table_type: The type of table we are getting generics for (0 for typedef, 1 for method)
+ * @row: The row in the table
+ *
+ * Returns: Allocated stringified generic parameters
+ */
+char*
+get_generic_param (MonoImage *m, int table_type, guint32 row)
+{
+        MonoTableInfo *t = &m->tables [MONO_TABLE_GENERICPARAM];
+        GString *result = g_string_new ("");
+        char *retval;
+	guint32 cols [MONO_GENERICPARAM_SIZE];
+	int i, own_tok, table, idx, found_count;
+
+        g_assert (table_type != 0 || table_type != 1);
+        
+        found_count = 0;
+	for (i = 1; i <= t->rows; i++) {
+		mono_metadata_decode_row (t, i-1, cols, MONO_GENERICPARAM_SIZE);
+                own_tok = cols [MONO_GENERICPARAM_OWNER];
+                table = own_tok & 0x01;
+                idx = own_tok >> 1;
+                
+                if (table != table_type || idx != row)
+                        continue;
+
+                if (found_count == 0)
+                        g_string_append_printf (result, "<%s",
+                                        mono_metadata_string_heap (m, cols [MONO_GENERICPARAM_NAME]));
+                else
+                        g_string_append_printf (result, ", %s",
+                                        mono_metadata_string_heap (m, cols [MONO_GENERICPARAM_NAME]));
+                found_count++;
+	}
+
+        if (found_count)
+                g_string_append_c (result, '>');
+        retval = result->str;
+        g_string_free (result, FALSE);
+        return retval;
+}
+
 char*
 dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int methoddef_row, gboolean fully_qualified)
 {
@@ -481,9 +526,10 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 	int free_method = 0;
 	char *retval;
 	char *type = NULL;
+        char *gen_param;
 	GString *result = g_string_new ("");
 	int i;
-
+        
 	g_assert (method || methoddef_row);
 
 	if (methoddef_row) {
@@ -497,7 +543,8 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 			mono_metadata_decode_blob_size (sig, &sig);
 			method = mono_metadata_parse_method_signature (m, methoddef_row, sig, &sig);
 			free_method = 1;
-		}
+		}      
+                gen_param = get_generic_param (m, 1, methoddef_row);
 	}
 	
 	retval = dis_stringify_param (m, method->ret);
@@ -507,7 +554,12 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 	g_string_sprintfa (result, " %s ", retval);
 	if (type)
 		g_string_sprintfa (result, "%s::", type);
-	g_string_sprintfa (result, "%s(", name);
+        g_string_append (result, name);
+        if (gen_param) {
+                g_string_append (result, gen_param);
+                g_free (gen_param);
+        }
+	g_string_append (result, " (");
 	g_free (retval);
 	for (i = 0; i < method->param_count; ++i) {
 		if (param_index && param_index <= m->tables [MONO_TABLE_PARAM].rows) {

@@ -23,6 +23,7 @@ char *get_methoddef           (MonoImage *m, guint32 idx);
 char *get_method              (MonoImage *m, guint32 token);
 char *get_guid                (MonoImage *m, guint32 guid_index);
 char *get_marshal_info        (MonoImage *m, const char *blob);
+char* get_generic_param       (MonoImage *m, int table_type, guint32 row);
 
 GList *dis_get_custom_attrs   (MonoImage *m, guint32 token);
 
