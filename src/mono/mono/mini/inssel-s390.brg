@@ -216,7 +216,6 @@ stmt: OP_OUTARG_VT (OP_ICONST) {
 	int size      = tree->unused;
 	int nregs     = size / 4;
 	int i;
-printf("OP_OUTARG_VT (OP_ICONST)\n");
 	if (start_reg != STK_BASE) {
 		if (nregs) {
 			tree->opcode  = OP_SETREGIMM;
@@ -236,7 +235,6 @@ stmt: OP_OUTARG_VT (reg) {
 	int nregs     = size / 4;
 	int soffset   = tree->inst_imm;
 	int i;
-printf("OP_OUTARG_VT (reg)\n");
 	if (start_reg != STK_BASE) {
 		for (i = 0; i < nregs; ++i) {
 			MONO_EMIT_NEW_LOAD_MEMBASE(s, start_reg, s->frame_reg, 

@@ -1,10 +1,49 @@
-/*
- * tramp-s390.c: JIT trampoline code for S/390
- *
- * Authors:
- *   Neale Ferguson (Neale.Ferguson@SoftwareAG-usa.com)
- *
- */
+/*------------------------------------------------------------------*/
+/* 								    */
+/* Name        - tramp-s390.c      			  	    */
+/* 								    */
+/* Function    - JIT trampoline code for S/390.                     */
+/* 								    */
+/* Name	       - Neale Ferguson (Neale.Ferguson@SoftwareAG-usa.com) */
+/* 								    */
+/* Date        - January, 2004					    */
+/* 								    */
+/* Derivation  - From exceptions-x86 & exceptions-ppc		    */
+/* 	         Paolo Molaro (lupus@ximian.com) 		    */
+/* 		 Dietmar Maurer (dietmar@ximian.com)		    */
+/* 								    */
+/* Copyright   - 2001 Ximian, Inc.				    */
+/* 								    */
+/*------------------------------------------------------------------*/
+
+/*------------------------------------------------------------------*/
+/*                 D e f i n e s                                    */
+/*------------------------------------------------------------------*/
+
+#define GR_SAVE_SIZE		4*sizeof(long)
+#define FP_SAVE_SIZE		16*sizeof(double)
+#define CREATE_STACK_SIZE	(S390_MINIMAL_STACK_SIZE+GR_SAVE_SIZE+FP_SAVE_SIZE+2*sizeof(long))
+#define CREATE_GR_OFFSET	S390_MINIMAL_STACK_SIZE
+#define CREATE_FP_OFFSET	CREATE_GR_OFFSET+GR_SAVE_SIZE
+#define CREATE_LMF_OFFSET	CREATE_FP_OFFSET+FP_SAVE_SIZE
+#define METHOD_SAVE_OFFSET	S390_RET_ADDR_OFFSET-4
+
+/*------------------------------------------------------------------*/
+/* adapt to mini later...					    */
+/*------------------------------------------------------------------*/
+#define mono_jit_share_code 	(1)
+
+/*------------------------------------------------------------------*/
+/* Method-specific trampoline code fragment sizes		    */
+/*------------------------------------------------------------------*/
+#define METHOD_TRAMPOLINE_SIZE	64
+#define JUMP_TRAMPOLINE_SIZE	64
+
+/*========================= End of Defines =========================*/
+
+/*------------------------------------------------------------------*/
+/*                 I n c l u d e s                                  */
+/*------------------------------------------------------------------*/
 
 #include <config.h>
 #include <glib.h>
@@ -19,38 +58,54 @@
 #include "mini.h"
 #include "mini-s390.h"
 
+/*========================= End of Includes ========================*/
+
+/*------------------------------------------------------------------*/
+/*                 T y p e d e f s                                  */
+/*------------------------------------------------------------------*/
+
 typedef enum {
 	MONO_TRAMPOLINE_GENERIC,
 	MONO_TRAMPOLINE_JUMP,
 	MONO_TRAMPOLINE_CLASS_INIT
 } MonoTrampolineType;
 
-#define GR_SAVE_SIZE		4*sizeof(long)
-#define FP_SAVE_SIZE		16*sizeof(double)
-#define CREATE_STACK_SIZE	(S390_MINIMAL_STACK_SIZE+GR_SAVE_SIZE+FP_SAVE_SIZE+2*sizeof(long))
-#define CREATE_GR_OFFSET	S390_MINIMAL_STACK_SIZE
-#define CREATE_FP_OFFSET	CREATE_GR_OFFSET+GR_SAVE_SIZE
-#define CREATE_LMF_OFFSET	CREATE_FP_OFFSET+FP_SAVE_SIZE
-#define METHOD_SAVE_OFFSET	S390_RET_ADDR_OFFSET-4
+/*========================= End of Typedefs ========================*/
 
-/* adapt to mini later... */
-#define mono_jit_share_code (1)
+/*------------------------------------------------------------------*/
+/*                   P r o t o t y p e s                            */
+/*------------------------------------------------------------------*/
 
-/*
- * Address of the generic trampoline code.  This is used by the debugger to check
- * whether a method is a trampoline.
- */
+/*------------------------------------------------------------------*/
+/* Address of the generic trampoline code.  This is used by the     */
+/* debugger to check whether a method is a trampoline.		    */
+/*------------------------------------------------------------------*/
 guint8 *mono_generic_trampoline_code = NULL;
 
-/*
- * get_unbox_trampoline:
- * @m: method pointer
- * @addr: pointer to native code for @m
- *
- * when value type methods are called through the vtable we need to unbox the
- * this argument. This method returns a pointer to a trampoline which does
- * unboxing before calling the method
- */
+/*========================= End of Prototypes ======================*/
+
+/*------------------------------------------------------------------*/
+/*                 G l o b a l   V a r i a b l e s                  */
+/*------------------------------------------------------------------*/
+
+
+/*====================== End of Global Variables ===================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- get_unbox_trampoline                              */
+/*                                                                  */
+/* Function	- Return a pointer to a trampoline which does the   */
+/*		  unboxing before calling the method.		    */
+/*                                                                  */
+/*                When value type methods are called through the    */
+/*		  vtable we need to unbox the 'this' argument.	    */
+/*		                               		 	    */
+/* Parameters   - method - Methd pointer			    */
+/*		  addr   - Pointer to native code for method	    */
+/*		                               		 	    */
+/*------------------------------------------------------------------*/
+
 static gpointer
 get_unbox_trampoline (MonoMethod *method, gpointer addr)
 {
@@ -80,28 +135,32 @@ get_unbox_trampoline (MonoMethod *method, gpointer addr)
 	return start;
 }
 
-/* Method-specific trampoline code framgment size */
-#define METHOD_TRAMPOLINE_SIZE 64
+/*========================= End of Function ========================*/
 
-/**
- * s390_magic_trampoline:
- * @code: pointer into caller code
- * @method: the method to translate
- * @sp: stack pointer
- *
- * This method is called by the function 'arch_create_jit_trampoline', which in
- * turn is called by the trampoline functions for virtual methods.
- * After having called the JIT compiler to compile the method, it inspects the
- * caller code to find the address of the method-specific part of the
- * trampoline vtable slot for this method, updates it with a fragment that calls
- * the newly compiled code and returns this address of the compiled code to
- * 'arch_create_jit_trampoline' 
- * The calls generated by mono for s/390 will look like either:
- * 1. l    %r1,xxx(%rx)
- *    bras %r14,%r1
- * or
- * 2. brasl %r14,xxxxxx
- */
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- s390_magic_trampoline                             */
+/*                                                                  */
+/* Function	- This method is called by the function             */
+/*                "arch_create_jit_trampoline", which in turn is    */
+/*                called by the trampoline functions for virtual    */
+/*                methods. After having called the JIT compiler to  */
+/*                compile the method, it inspects the caller code   */
+/*                to find the address of the method-specific part   */
+/*                of the trampoline vtable slot for this method,    */
+/*                updates it with a fragment that calls the newly   */
+/*                compiled code and returns this address. The calls */
+/*                generated by mono for S/390 will look like either:*/
+/*                1. l     %r1,xxx(%rx)                             */
+/*                   bras  %r14,%r1                                 */
+/*                2. brasl %r14,xxxxxx                              */
+/*                                                                  */
+/* Parameters   - code   - Pointer into caller code                 */
+/*                method - The method to compile                    */
+/*                sp     - Stack pointer                            */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
 static gpointer
 s390_magic_trampoline (MonoMethod *method, guchar *code, char *sp)
 {
@@ -114,42 +173,57 @@ s390_magic_trampoline (MonoMethod *method, guchar *code, char *sp)
 	addr = mono_compile_method(method);
 	g_assert(addr);
 
-	/* The top bit needs to be ignored on S/390 */
-	(guint32) code &= 0x7fffffff;
 
-	fname = mono_method_full_name (method, TRUE);
+	if (code) {
 
-	opcode = *((unsigned short *) (code - 6));
-	switch (opcode) {
-		case 0x5810 :
-			/* This is a bras r14,r1 instruction */
-			code    -= 4;
-			reg      = *code >> 4;
-			displace = *((short *)code) & 0x0fff;
-			if (reg > 5) 
-				base = *((int *) (sp + S390_REG_SAVE_OFFSET+
-						       sizeof(int)*(reg-6)));
-			else
- 				base = *((int *) (sp + CREATE_GR_OFFSET+
-						       sizeof(int)*(reg-2)));
-			addr = get_unbox_trampoline(method, addr);
-			code = base + displace;
-			s390_patch(code, addr);
-			break;
-		case 0xc0e5 :
-			/* This is the 'brasl' instruction */
-			code    -= 4;
-			displace = ((gint32) addr - (gint32) (code - 2)) / 2;
-			s390_patch (code, displace);
-			mono_arch_flush_icache (code, 4);
-			break;
-		default :
-			g_error("Unable to patch instruction prior to %p",code);
+		/* The top bit needs to be ignored on S/390 */
+		(guint32) code &= 0x7fffffff;
+
+		fname = mono_method_full_name (method, TRUE);
+
+		opcode = *((unsigned short *) (code - 6));
+		switch (opcode) {
+			case 0x5810 :
+				/* This is a bras r14,r1 instruction */
+				code    -= 4;
+				reg      = *code >> 4;
+				displace = *((short *)code) & 0x0fff;
+				if (reg > 5) 
+					base = *((int *) (sp + S390_REG_SAVE_OFFSET+
+							       sizeof(int)*(reg-6)));
+				else
+ 					base = *((int *) (sp + CREATE_GR_OFFSET+
+							       sizeof(int)*(reg-2)));
+				addr = get_unbox_trampoline(method, addr);
+				code = base + displace;
+				s390_patch(code, addr);
+				break;
+			case 0xc0e5 :
+				/* This is the 'brasl' instruction */
+				code    -= 4;
+				displace = ((gint32) addr - (gint32) (code - 2)) / 2;
+				s390_patch (code, displace);
+				mono_arch_flush_icache (code, 4);
+				break;
+			default :
+				g_error("Unable to patch instruction prior to %p",code);
+		}
 	}
 
 
 	return addr;
 }
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- s390_class_init_trampoline                        */
+/*                                                                  */
+/* Function	- Initialize a class and then no-op the call to     */
+/*                the trampoline.                                   */
+/*                                                                  */
+/*------------------------------------------------------------------*/
 
 static void
 s390_class_init_trampoline (void *vtable, guchar *code, char *sp)
@@ -162,6 +236,17 @@ s390_class_init_trampoline (void *vtable, guchar *code, char *sp)
 
 	memcpy(code, patch, sizeof(patch));
 }
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- create_trampoline_code                            */
+/*                                                                  */
+/* Function	- Create the designated type of trampoline according*/
+/*                to the 'tramp_type' parameter.                    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
 
 static guchar*
 create_trampoline_code (MonoTrampolineType tramp_type)
@@ -236,11 +321,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		/* Arg 1: MonoMethod *method. It was put in r11 by the
 		method-specific trampoline code, and then saved before the call
 		to mono_get_lmf_addr()'. Restore r13, by the way :-) */
-		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
-			s390_lhi (buf, s390_r2, 0);
-		} else {
-			s390_l  (buf, s390_r2, 0, s390_r11, METHOD_SAVE_OFFSET);
-		}
+		s390_l  (buf, s390_r2, 0, s390_r11, METHOD_SAVE_OFFSET);
 		
 		/* Arg 2: code (next address to the instruction that called us) */
 		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
@@ -318,25 +399,82 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 	return code;
 }
 
-/**
- * arch_create_jit_trampoline:
- * @method: pointer to the method info
- *
- * Creates a trampoline function for virtual methods. If the created
- * code is called it first starts JIT compilation of method,
- * and then calls the newly created method. It also replaces the
- * corresponding vtable entry (see s390_magic_trampoline).
- *
- * A trampoline consists of two parts: a main fragment, shared by all method
- * trampolines, and some code specific to each method, which hard-codes a
- * reference to that method and then calls the main fragment.
- *
- * The main fragment contains a call to 's390_magic_trampoline', which performs
- * call to the JIT compiler and substitutes the method-specific fragment with
- * some code that directly calls the JIT-compiled method.
- * 
- * Returns: a pointer to the newly created code 
- */
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_create_jump_trampoline                  */
+/*                                                                  */
+/* Function	- Create the designated type of trampoline according*/
+/*                to the 'tramp_type' parameter.                    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+MonoJitInfo *
+mono_arch_create_jump_trampoline (MonoMethod *method)
+{
+	guint8 *code, *buf, *tramp = NULL;
+	MonoJitInfo *ji;
+	MonoDomain *domain = mono_domain_get();
+	gint32 displace;
+
+	tramp = create_trampoline_code (MONO_TRAMPOLINE_JUMP);
+
+	mono_domain_lock (domain);
+	code = buf = mono_code_manager_reserve (domain->code_mp, METHOD_TRAMPOLINE_SIZE);
+	mono_domain_unlock (domain);
+
+	s390_basr (buf, s390_r13, 0);
+	s390_j	  (buf, 4);
+	s390_word (buf, method);
+	s390_l    (buf, s390_r13, 0, s390_r13, 4);
+	displace = (tramp - buf) / 2;
+	s390_jcl  (buf, S390_CC_UN, displace);
+
+	mono_arch_flush_icache (code, buf-code);
+
+	g_assert ((buf - code) <= JUMP_TRAMPOLINE_SIZE);
+	
+	ji 		= g_new0 (MonoJitInfo, 1);
+	ji->method 	= method;
+	ji->code_start 	= code;
+	ji->code_size  	= buf - code;
+	
+	mono_jit_stats.method_trampolines++;
+
+	return ji;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_create_jit_trampoline                   */
+/*                                                                  */
+/* Function	- Creates a trampoline function for virtual methods.*/
+/*                If the created code is called it first starts JIT */
+/*                compilation and then calls the newly created      */
+/*                method. It also replaces the corresponding vtable */
+/*                entry (see s390_magic_trampoline).                */
+/*                                                                  */
+/*                A trampoline consists of two parts: a main        */
+/*                fragment, shared by all method trampolines, and   */
+/*                and some code specific to each method, which      */
+/*                hard-codes a reference to that method and then    */
+/*                calls the main fragment.                          */
+/*                                                                  */
+/*                The main fragment contains a call to              */
+/*                's390_magic_trampoline', which performs a call    */
+/*                to the JIT compiler and substitutes the method-   */
+/*                specific fragment with some code that directly    */
+/*                calls the JIT-compiled method.                    */
+/*                                                                  */
+/* Parameter    - method - Pointer to the method information        */
+/*                                                                  */
+/* Returns      - A pointer to the newly created code               */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
 gpointer
 mono_arch_create_jit_trampoline (MonoMethod *method)
 {
@@ -381,18 +519,24 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	return code;
 }
 
+/*========================= End of Function ========================*/
 
-/**
- * mono_arch_create_class_init_trampoline:
- *  @vtable: the type to initialize
- *
- * Creates a trampoline function to run a type initializer. 
- * If the trampoline is called, it calls mono_runtime_class_init with the
- * given vtable, then patches the caller code so it does not get called any
- * more.
- * 
- * Returns: a pointer to the newly created code 
- */
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_create_class_init_trampoline            */
+/*                                                                  */
+/* Function	- Creates a trampoline function to run a type init- */
+/*                ializer. If the trampoline is called, it calls    */
+/*                mono_runtime_class_init with the given vtable,    */
+/*                then patches the caller code so it does not get   */
+/*                called any more.                                  */
+/*                                                                  */
+/* Parameter    - vtable - The type to initialize                   */
+/*                                                                  */
+/* Returns      - A pointer to the newly created code               */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
 gpointer
 mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 {
@@ -435,9 +579,18 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 	return code;
 }
 
-/*
- * This method is only called when running in the Mono Debugger.
- */
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_debuger_create_notification_function	    */
+/*                                                                  */
+/* Function	- This method is only called when running in the    */
+/*                Mono debugger. It returns a pointer to the        */
+/*                arch specific notification function.              */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
 gpointer
 mono_debugger_create_notification_function (gpointer *notification_address)
 {

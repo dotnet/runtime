@@ -363,3 +363,7 @@ MINI_OP(OP_SPARC_BRLZ,             "sparc_brlz")
 MINI_OP(OP_SPARC_BRNZ,             "sparc_brnz")
 MINI_OP(OP_SPARC_BRGZ,             "sparc_brgz")
 MINI_OP(OP_SPARC_BRGEZ,            "sparc_brgez")
+
+MINI_OP(OP_S390_LOADARG,	   "s390_loadarg")
+MINI_OP(OP_S390_ARGPTR, 	   "s390_argptr")
+MINI_OP(OP_S390_STKARG, 	   "s390_stkarg")

@@ -743,6 +743,7 @@ void      mono_arch_free_jit_tls_data           (MonoJitTlsData *tls);
 void      mono_arch_emit_this_vret_args         (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg);
 void      mono_arch_allocate_vars               (MonoCompile *m);
 int       mono_arch_get_argument_info           (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info);
+gboolean  mono_arch_print_tree			(MonoInst *tree, int arity);
 void      mono_jit_walk_stack                   (MonoStackWalk func, gpointer user_data);
 MonoArray *ves_icall_get_trace                  (MonoException *exc, gint32 skip, MonoBoolean need_file_info);
 MonoBoolean ves_icall_get_frame_info            (gint32 skip, MonoBoolean need_file_info, 

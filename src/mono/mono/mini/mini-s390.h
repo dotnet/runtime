@@ -22,6 +22,9 @@ struct MonoLMF {
 	gdouble     fregs [16]; /* 0..15 */
 };
 
+typedef struct MonoCompileArch {
+} MonoCompileArch;
+
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R4 1

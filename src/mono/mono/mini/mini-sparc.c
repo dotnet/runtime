@@ -3897,3 +3897,9 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	/* FIXME: */
 	return 0;
 }
+
+gboolean
+mono_arch_print_tree (MonoInst *tree, int arity)
+{
+	return 0;
+}

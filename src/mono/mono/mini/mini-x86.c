@@ -3523,3 +3523,8 @@ mono_arch_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 }
 
 
+gboolean
+mono_arch_print_tree (MonoInst *tree, int arity)
+{
+	return 0;
+}

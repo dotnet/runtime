@@ -139,16 +139,6 @@ typedef struct {
 } size_data;	
 
 /*------------------------------------------------------------------*/
-/* Structure used to keep track of argument data                    */
-/*------------------------------------------------------------------*/
-
-typedef struct {
-	guint16 size;
-	guint16 offset;
-	guint8  pad;
-} MonoJitArgumentInfo;
-
-/*------------------------------------------------------------------*/
 /* Used by the instrument_emit_epilog 		                    */
 /*------------------------------------------------------------------*/
 
@@ -212,7 +202,6 @@ typedef struct {
 /*------------------------------------------------------------------*/
 
 static guint32 *emit_memcpy (guint8 *, int, int, int, int, int);
-static int arch_get_argument_info (MonoMethodSignature *, int, MonoJitArgumentInfo *);
 static void indent (int);
 static void decodeParm (MonoType *, void *, int);
 static void enter_method (MonoMethod *, RegParm *, char *);
@@ -282,6 +271,7 @@ mono_arch_regname (int reg) {
 /*                                                                  */
 /* Function	- Emit code to move from memory-to-memory based on  */
 /*		  the size of the variable. r0 is overwritten.      */
+/*                                                                  */
 /*------------------------------------------------------------------*/
 
 static guint32*
@@ -341,8 +331,10 @@ emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffse
 /*		                               			    */
 /*------------------------------------------------------------------*/
 
-static int
-arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
+int
+mono_arch_get_argument_info (MonoMethodSignature *csig, 
+			     int param_count, 
+			     MonoJitArgumentInfo *arg_info)
 {
 	int k, frame_size = 0;
 	int size, align, pad;
@@ -887,7 +879,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 		MonoMethodVar *vmv = MONO_VARINFO (cfg, i);
 
 		/* unused vars */
-		if (vmv->range.first_use.abs_pos >= vmv->range.last_use.abs_pos)
+		if (vmv->range.first_use.abs_pos > vmv->range.last_use.abs_pos)
 			continue;
 
 		if (ins->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || (ins->opcode != OP_LOCAL && ins->opcode != OP_ARG))
@@ -3103,13 +3095,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COMPARE_IMM:
 			if (s390_is_imm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r0, ins->inst_imm);
-				s390_cr   (code, ins->sreg1, s390_r0);
+				if ((ins->next) && 
+			    	    ((ins->next->opcode >= CEE_BNE_UN) &&
+			            (ins->next->opcode <= CEE_BLT_UN)))
+					s390_clr  (code, ins->sreg1, s390_r0);
+				else
+					s390_cr   (code, ins->sreg1, s390_r0);
 			}
 			else {
 				s390_basr (code, s390_r13, 0);
 				s390_j    (code, 4);
 				s390_word (code, ins->inst_imm);
-				s390_c	  (code, ins->sreg1, 0, s390_r13, 4);
+				if ((ins->next) && 
+			    	    ((ins->next->opcode >= CEE_BNE_UN) &&
+			            (ins->next->opcode <= CEE_BLT_UN)))
+					s390_cl   (code, ins->sreg1, 0, s390_r13, 4);
+				else
+					s390_c 	  (code, ins->sreg1, 0, s390_r13, 4);
 			}
 			break;
 		case OP_X86_TEST_NULL:
@@ -4034,12 +4036,10 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			break;
 		case MONO_PATCH_INFO_IP:
 			target = ip;
-printf("4. %p @ %p\n",target,ip); 
 			continue;
 		case MONO_PATCH_INFO_METHOD_REL:
 			g_assert_not_reached ();
 			*((gpointer *)(ip)) = code + patch_info->data.offset;
-printf("5. %p @ %p\n",(code+patch_info->data.offset),ip); 
 			continue;
 		case MONO_PATCH_INFO_INTERNAL_METHOD: {
 			MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
@@ -4047,7 +4047,7 @@ printf("5. %p @ %p\n",(code+patch_info->data.offset),ip);
 				g_warning ("unknown MONO_PATCH_INFO_INTERNAL_METHOD %s", patch_info->data.name);
 				g_assert_not_reached ();
 			}
-			target = S390_RELATIVE(mi->wrapper, ip);
+			target = S390_RELATIVE(mono_icall_get_wrapper (mi), ip);
 			ip    += 2;	/* Skip over op-code */
 			break;
 		}
@@ -4077,7 +4077,6 @@ printf("5. %p @ %p\n",(code+patch_info->data.offset),ip);
 			for (i = 0; i < patch_info->table_size; i++) {
 				table [i] = (int)patch_info->data.table [i] + code;
 			}
-printf("8. %p @ %p\n",table,ip); 
 			continue;
 		}
 		case MONO_PATCH_INFO_METHODCONST:
@@ -4085,23 +4084,19 @@ printf("8. %p @ %p\n",table,ip);
 		case MONO_PATCH_INFO_IMAGE:
 		case MONO_PATCH_INFO_FIELD:
 			target = S390_RELATIVE(patch_info->data.target, ip);
-printf("9. %p @ %p\n",target,ip); 
 			continue;
 		case MONO_PATCH_INFO_R4:
 		case MONO_PATCH_INFO_R8:
 			g_assert_not_reached ();
 			*((gconstpointer *)(ip + 2)) = patch_info->data.target;
-printf("10. %p @ %p\n",patch_info->data.target,ip); 
 			continue;
 		case MONO_PATCH_INFO_IID:
 			mono_class_init (patch_info->data.klass);
 			target = S390_RELATIVE(patch_info->data.klass->interface_id, ip);
-printf("11. %p @ %p\n",target,ip); 
 			continue;			
 		case MONO_PATCH_INFO_VTABLE:
 			target = S390_RELATIVE(mono_class_vtable (domain, patch_info->data.klass),ip);
 			ip += 2;
-printf("12. %p @ %p\n",target,ip); 
 			continue;
 		case MONO_PATCH_INFO_CLASS_INIT:
 			target = S390_RELATIVE(mono_create_class_init_trampoline (mono_class_vtable (domain, patch_info->data.klass)), ip);
@@ -4118,7 +4113,6 @@ printf("12. %p @ %p\n",target,ip);
 			}
 			target = S390_RELATIVE((char*)vtable->data + patch_info->data.field->offset, ip);
 			ip += 2;
-printf("14. %p @ %p\n",target,ip); 
 			continue;
 		}
 		case MONO_PATCH_INFO_EXC_NAME:
@@ -4127,7 +4121,6 @@ printf("14. %p @ %p\n",target,ip);
 		case MONO_PATCH_INFO_LDSTR:
 			target = mono_ldstr (domain, patch_info->data.token->image, 
 				 	     mono_metadata_token_index (patch_info->data.token->token));
-printf("16. %p @ %p\n",target,ip); 
 			continue;
 		case MONO_PATCH_INFO_TYPE_FROM_HANDLE: {
 			gpointer handle;
@@ -4135,12 +4128,11 @@ printf("16. %p @ %p\n",target,ip);
 
 			handle = mono_ldtoken (patch_info->data.token->image, 
 	  				       patch_info->data.token->token, 
-					       &handle_class);
+					       &handle_class, NULL);
 			mono_class_init (handle_class);
 			mono_class_init (mono_class_from_mono_type (handle));
 
 			target = handle;
-printf("17. %p @ %p\n",target,ip); 
 			continue;
 		}
 		case MONO_PATCH_INFO_LDTOKEN: {
@@ -4148,11 +4140,11 @@ printf("17. %p @ %p\n",target,ip);
 			MonoClass *handle_class;
 
 			handle = mono_ldtoken (patch_info->data.token->image,
-					       patch_info->data.token->token, &handle_class);
+					       patch_info->data.token->token, 
+					       &handle_class, NULL);
 			mono_class_init (handle_class);
 
 			target = handle;
-printf("18. %p @ %p\n",target,ip); 
 			continue;
 		}
 		case MONO_PATCH_INFO_EXC:
@@ -4218,7 +4210,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
-	int alloc_size, pos, max_offset, i;
+	int alloc_size, pos, max_offset, i, lmfOffset;
 	guint8 *code;
 	CallInfo *cinfo;
 	size_data sz;
@@ -4245,10 +4237,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		pos += 8;
 
 	alloc_size += pos;
-	// align to S390_STACK_ALIGNMENT bytes
-	if (alloc_size & (S390_STACK_ALIGNMENT - 1))
-		alloc_size += S390_STACK_ALIGNMENT - (alloc_size & 
-			      (S390_STACK_ALIGNMENT - 1));
+
+	if (method->save_lmf) 
+		alloc_size += sizeof(MonoLMF);
+
+	alloc_size = S390_ALIGN(alloc_size, S390_STACK_ALIGNMENT);
 
 	cfg->stack_usage = alloc_size;
 	g_assert (s390_is_imm16 (-alloc_size));
@@ -4396,16 +4389,21 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				     MONO_PATCH_INFO_INTERNAL_METHOD, 
 				     (gpointer)"mono_get_lmf_addr");
 		/*---------------------------------------------------------------*/
-		/* On return from this call r2 have the address of the lmf 	 */
+		/* On return from this call r2 have the address of the &lmf	 */
 		/*---------------------------------------------------------------*/
 		s390_brasl (code, s390_r14, 0);
 
 		/*---------------------------------------------------------------*/
 		/* we build the MonoLMF structure on the stack - see mini-s390.h */
 		/*---------------------------------------------------------------*/
+		lmfOffset = S390_MINIMAL_STACK_SIZE + cfg->param_area;
+		if (tracing)
+			lmfOffset += S390_TRACE_STACK_SIZE;
+
 		s390_lr    (code, s390_r13, cfg->frame_reg);
-		s390_ahi   (code, s390_r13, S390_MINIMAL_STACK_SIZE + cfg->param_area);
+		s390_ahi   (code, s390_r13, lmfOffset);
 		s390_st    (code, s390_r2, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, lmf_addr));
+		s390_st	   (code, s390_r13, 0, s390_r2, 0);
 
 		/*---------------------------------------------------------------*/
 		/* new_lmf->previous_lmf = *lmf_addr 				 */
@@ -4416,6 +4414,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/*---------------------------------------------------------------*/
 		/* *(lmf_addr) = r13						 */
 		/*---------------------------------------------------------------*/
+		s390_l	   (code, s390_r2,  0, s390_r2, 0);
 		s390_st    (code, s390_r13, 0, s390_r2, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
 
 		/*---------------------------------------------------------------*/
@@ -4484,12 +4483,25 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (method->save_lmf) {
 		s390_lr  (code, s390_r13, cfg->frame_reg);
 		s390_ahi (code, s390_r13, S390_MINIMAL_STACK_SIZE + cfg->param_area);
-		/* r11 = lmf_addr */
+		/*-------------------------------------------------*/
+		/* r6 = lmf_addr 				   */
+		/*-------------------------------------------------*/
 		s390_l   (code, s390_r6, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, lmf_addr));
-		/* r0 = previous_lmf */
+
+		/*-------------------------------------------------*/
+		/* r0 = previous_lmf 				   */
+		/*-------------------------------------------------*/
 		s390_l   (code, s390_r0, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
-		/* *(lmf_addr) = previous_lmf */
-		s390_st  (code, s390_r0, 0, s390_r6, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
+		/*-------------------------------------------------*/
+		/* lmf_adr = previous_lmf			   */
+		/*-------------------------------------------------*/
+		s390_l   (code, s390_r13, 0, s390_r6, 0);
+		s390_st  (code, s390_r0, 0, s390_r6, 0);
+
+		/*-------------------------------------------------*/
+		/* *(lmf_addr) = previous_lmf 			   */
+		/*-------------------------------------------------*/
+		s390_st  (code, s390_r0, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
 		/* restore iregs */
 		// s390_lm  (code, s390_r13, s390_r11, s390_r11, G_STRUCT_OFFSET(MonoLMF, iregs));
 		/* restore fregs */
@@ -4498,18 +4510,9 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		//}
 	}
 
-	// s390_l   (code, s390_r1, 0, cfg->frame_reg, cfg->stack_usage + S390_RET_ADDR_OFFSET);
 	if (cfg->frame_reg != STK_BASE)
 		s390_lr  (code, STK_BASE, cfg->frame_reg);
-	//if (!method->save_lmf) {
-	//	for (i = 6; i < 12; ++i) {
-	//		if (cfg->used_int_regs & (1 << i)) {
-	//			pos += 4;
-	//			s390_lhi (code, s390_r13, -pos);
-	//			s390_l (code, (i-6), s390_r13, cfg->frame_reg, 0);
-	//		}
-	//	}
-	//}
+
 	s390_ahi (code, STK_BASE, cfg->stack_usage);
 	s390_lm  (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
 	s390_br  (code, s390_r14);
@@ -4578,6 +4581,21 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
+/* Name		- mono_arch_free_jit_tls_data                       */
+/*                                                                  */
+/* Function	- Free tls data.                                    */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+void
+mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
+{
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
 /* Name		- mono_arch_emit_this_vret_args                     */
 /*                                                                  */
 /* Function	-                                                   */
@@ -4631,6 +4649,60 @@ mono_arch_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 			return OP_SQRT;
 	}
 	return -1;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_print_tree                              */
+/*                                                                  */
+/* Function	- Print platform-specific opcode details.           */
+/*		                               			    */
+/* Returns	- 1 - opcode details have been printed		    */
+/*		  0 - opcode details have not been printed	    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+gboolean
+mono_arch_print_tree (MonoInst *tree, int arity)
+{
+	gboolean done;
+
+	switch (tree->opcode) {
+		case OP_S390_LOADARG:
+		case OP_S390_ARGPTR:
+		case OP_S390_STKARG:
+			printf ("[0x%x(%s)]", tree->inst_offset, 
+				mono_arch_regname (tree->inst_basereg));
+			done = 1;
+			break;
+		default:
+			done = 0;
+	}
+	return (done);
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_regalloc_cost                           */
+/*                                                                  */
+/* Function	- Determine the cost, in the number of memory       */
+/*		  references, of the action of allocating the var-  */
+/*		  iable VMV into a register during global register  */
+/*		  allocation.					    */
+/*		                               			    */
+/* Returns	- Cost						    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+guint32
+mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
+{
+	/* FIXME: */
+	return 3;
 }
 
 /*========================= End of Function ========================*/

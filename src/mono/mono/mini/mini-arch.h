@@ -7,6 +7,8 @@
 #include "mini-ppc.h"
 #elif defined(__sparc__) || defined(sparc)
 #include "mini-sparc.h"
+#elif defined(__s390__) || defined(s390)
+#include "mini-s390.h"
 #else
 #error add arch specific include file in mini-arch.h
 #endif
