@@ -319,7 +319,7 @@ emit_state ()
 
 	if (dag_mode) {
 		output ("\tMBTREE_TYPE\t *tree;\n");
-		output ("\tgint16 reg1, reg2;\n");
+		output ("\tgint32 reg1, reg2;\n");
 	}
 	
 	output ("\tMBState\t\t*left, *right;\n");

@@ -179,7 +179,7 @@ struct MonoBasicBlock {
         guint region;
 
 	/* The current symbolic register number, used in local register allocation. */
-	guint16 max_ireg, max_freg;
+	guint32 max_ireg, max_freg;
 };
 
 /* BBlock flags */
@@ -211,7 +211,7 @@ struct MonoInst {
 	guint8  flags  : 5;
 	
 	/* used by the register allocator */
-	gint16 dreg, sreg1, sreg2, unused;
+	gint32 dreg, sreg1, sreg2, unused;
 	
 	MonoInst *next;
 	MonoClass *klass;
