@@ -21,7 +21,9 @@ typedef struct {
 	guint32 method_number;
 	guint32 start_line;
 	guint32 first_line;
-	guint32 frame_start_offset;
+	guint32 last_line;
+	guint32 prologue_end_offset;
+	guint32 epilogue_begin_offset;
 	GPtrArray *line_numbers;
 } DebugMethodInfo;
 

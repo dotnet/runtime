@@ -805,7 +805,7 @@ dwarf2_write_parameter (AssemblyDebugInfo *info, DebugMethodInfo *minfo, const g
 	dwarf2_write_byte (info->f, DW_OP_fbreg);
 	dwarf2_write_sleb128 (info->f, stack_offset);
 	dwarf2_write_label (info->f, end);
-	dwarf2_write_long (info->f, minfo->frame_start_offset);
+	dwarf2_write_long (info->f, minfo->prologue_end_offset);
 }
 
 static void
@@ -831,7 +831,7 @@ dwarf2_write_variable (AssemblyDebugInfo *info, DebugMethodInfo *minfo, const gc
 	dwarf2_write_byte (info->f, DW_OP_fbreg);
 	dwarf2_write_sleb128 (info->f, stack_offset);
 	dwarf2_write_label (info->f, end);
-	dwarf2_write_long (info->f, minfo->frame_start_offset);
+	dwarf2_write_long (info->f, minfo->prologue_end_offset);
 }
 
 static void 
@@ -894,7 +894,10 @@ write_method_lines_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 
 	dwarf2_write_dw_lne_set_address (info->f,
 					 minfo->method_info.code_start +
-					 minfo->method_info.code_size);
+					 minfo->epilogue_begin_offset);
+	dwarf2_write_dw_lns_advance_line (info->f, minfo->last_line - st_line);
+	dwarf2_write_dw_lns_copy (info->f);
+
 	dwarf2_write_dw_lns_copy (info->f);
 	dwarf2_write_dw_lne_end_sequence (info->f);
 }

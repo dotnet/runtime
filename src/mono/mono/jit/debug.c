@@ -118,25 +118,25 @@ debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, Mo
 	GPtrArray *il_offsets;
 	int i;
 
-	if (!info->moffsets)
-		return;
-
 	il_offsets = g_ptr_array_new ();
 	minfo->line_numbers = g_ptr_array_new ();
 
-	st_line = minfo->start_line;
-	st_address = 0;
+	st_line = minfo->first_line;
+	st_address = minfo->prologue_end_offset;
 
 	/* record_line_number takes absolute memory addresses. */
-	record_line_number (minfo, minfo->method_info.code_start + st_address, st_line, FALSE);
+	record_line_number (minfo, minfo->method_info.code_start, minfo->start_line, FALSE);
 	/* record_il_offsets uses offsets relative to minfo->method_info.code_start. */
 	record_il_offset (il_offsets, 0, 0);
+
+	/* This is the first actual code line of the method. */
+	record_line_number (minfo, minfo->method_info.code_start + st_address, st_line, TRUE);
 
 	/* start lines of basic blocks */
 	for (i = 0; i < cfg->block_count; ++i) {
 		int j;
 
-		for (j = 0; j < cfg->bblocks [i].forest->len; ++j) {
+		for (j = 0; cfg->bblocks [i].forest && (j < cfg->bblocks [i].forest->len); ++j) {
 			MBTree *t = (MBTree *) g_ptr_array_index (cfg->bblocks [i].forest, j);
 			gint32 line_inc = 0, addr_inc;
 
@@ -144,10 +144,18 @@ debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, Mo
 				st_line = minfo->first_line;
 				st_address = t->addr - 1;
 
-				minfo->frame_start_offset = st_address;
-
 				record_line_number (minfo, cfg->start + st_address, st_line, TRUE);
 			}
+
+			if (t->cli_addr != -1)
+				record_il_offset (il_offsets, t->cli_addr, st_address);
+
+			addr_inc = t->addr - st_address - 1;
+			st_address += addr_inc;
+
+			if (!info->moffsets)
+				continue;
+
 
 			if (t->cli_addr != -1) {
 				int *lines = info->moffsets + st_line;
@@ -158,14 +166,8 @@ debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, Mo
 
 				line_inc = k - lines;
 			}
-			addr_inc = t->addr - st_address - 1;
-
-
-			if (t->cli_addr != -1)
-				record_il_offset (il_offsets, t->cli_addr, st_address);
 
 			st_line += line_inc;
-			st_address += addr_inc;
 
 			record_line_number (minfo, minfo->method_info.code_start + st_address,
 					    st_line, j == 0);
@@ -412,7 +414,7 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 	MonoMethod *method = cfg->method;
 	MonoClass *klass = method->klass;
 	AssemblyDebugInfo* info = mono_debug_open_assembly (debug, klass->image);
-	int method_number = 0, line = 0, start_line, i;
+	int method_number = 0, line = 0, start_line = 0, end_line = 0, i;
 	DebugMethodInfo *minfo;
 	char *name;
 
@@ -431,10 +433,16 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 	if (g_hash_table_lookup (info->methods, method))
 		return;
 
-	/* info->moffsets contains -1 "outside" of functions. */
-	for (i = line; (i > 0) && (info->moffsets [i] == 0); i--)
-		;
-	start_line = i + 1;
+	if (info->moffsets) {
+		/* info->moffsets contains -1 "outside" of functions. */
+		for (i = line; (i > 0) && (info->moffsets [i] == 0); i--)
+			;
+		start_line = i + 1;
+
+		for (i = start_line; info->moffsets [i] != -1; i++)
+			;
+		end_line = i;
+	}
 
 	name = g_strdup_printf ("%s%s%s.%s", klass->name_space, klass->name_space [0]? ".": "",
 				klass->name, method->name);
@@ -443,8 +451,11 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 	minfo->name = name;
 	minfo->start_line = start_line;
 	minfo->first_line = line;
+	minfo->last_line = end_line;
 	minfo->method_info.code_start = cfg->start + 1;
 	minfo->method_info.code_size = cfg->code_size;
+	minfo->prologue_end_offset = cfg->prologue_end - 1;
+	minfo->epilogue_begin_offset = cfg->epilogue_begin - 1;
 	minfo->method_number = method_number;
 	minfo->method_info.method = method;
 	minfo->method_info.num_params = method->signature->param_count;

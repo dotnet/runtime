@@ -71,10 +71,6 @@ write_method_stabs (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 	MonoMethodSignature *sig = method->signature;
 	char **names = g_new (char*, sig->param_count);
 
-	/*
-	 * We need to output all the basic info, if we change filename...
-	 * fprintf (info->f, ".stabs \"%s.il\",100,0,0,0\n", klass->image->assembly_name);
-	 */
 	fprintf (info->f, ".stabs \"%s:F(0,%d)\",36,0,%d,%p\n", minfo->name, sig->ret->type,
 		 minfo->start_line, minfo->method_info.code_start);
 
@@ -103,6 +99,7 @@ write_method_stabs (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 
 	if (minfo->line_numbers) {
 		fprintf (info->f, ".stabn 68,0,%d,%d\n", minfo->start_line, 0);
+		fprintf (info->f, ".stabn 68,0,%d,%d\n", minfo->first_line, minfo->prologue_end_offset);
 
 		for (i = 1; i < minfo->line_numbers->len; i++) {
 			DebugLineNumberInfo *lni = g_ptr_array_index (minfo->line_numbers, i);
@@ -110,6 +107,8 @@ write_method_stabs (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 			fprintf (info->f, ".stabn 68,0,%d,%d\n", lni->line,
 				 lni->address - minfo->method_info.code_start);
 		}
+
+		fprintf (info->f, ".stabn 68,0,%d,%d\n", minfo->last_line, minfo->epilogue_begin_offset);
 	}
 
 	/* end of function */
@@ -185,6 +184,8 @@ mono_debug_write_assembly_stabs (AssemblyDebugInfo* info)
 
 	if (!(info->f = fopen (info->filename, "w")))
 		return;
+
+	fprintf (info->f, ".stabs \"%s.il\",100,0,0,0\n", info->name);
 
 	for (i = 0; base_types [i].name; ++i) {
 		if (! base_types [i].spec)

@@ -771,7 +771,9 @@ arch_compile_method (MonoMethod *method)
 		cfg->locals_size &= ~7;
 
 		arch_emit_prologue (cfg);
+		cfg->prologue_end = cfg->code - cfg->start;
 		mono_emit_cfg (cfg);
+		cfg->epilogue_begin = cfg->code - cfg->start;
 		arch_emit_epilogue (cfg);		
 
 		addr = cfg->start;
