@@ -774,7 +774,7 @@ ves_icall_System_String_InternalStrcpy_Str (MonoString *dest, gint32 destPos, Mo
 	srcptr = mono_string_chars (src);
 	destptr = mono_string_chars (dest);
 
-	memcpy(destptr + destPos, srcptr, mono_string_length(src) * sizeof(gunichar2));
+	g_memmove (destptr + destPos, srcptr, mono_string_length(src) * sizeof(gunichar2));
 }
 
 void 
@@ -787,7 +787,7 @@ ves_icall_System_String_InternalStrcpy_StrN (MonoString *dest, gint32 destPos, M
 
 	srcptr = mono_string_chars (src);
 	destptr = mono_string_chars (dest);
-	memcpy(destptr + destPos, srcptr + startPos, count * sizeof(gunichar2));
+	g_memmove (destptr + destPos, srcptr + startPos, count * sizeof(gunichar2));
 }
 
 MonoString  *
