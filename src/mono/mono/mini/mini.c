@@ -6206,6 +6206,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 
 		cfg->num_bblocks = dfn + 1;
 
+#if 0
 		/* we always remove unreachable code, because the code in them may be 
 		 * inconsistent  (access to dead variables for example) */
 		for (bb = cfg->bb_entry; bb;) {
@@ -6220,6 +6221,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 				bb = bb->next_bb;
 			}
 		}
+#endif
 	}
 
 	if (cfg->opt & MONO_OPT_LOOP) {
