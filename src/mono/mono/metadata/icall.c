@@ -2496,6 +2496,10 @@ static gconstpointer icall_map [] = {
 	"System.GC::ReRegisterForFinalize", ves_icall_System_GC_ReRegisterForFinalize,
 	"System.GC::SuppressFinalize", ves_icall_System_GC_SuppressFinalize,
 	"System.GC::WaitForPendingFinalizers", ves_icall_System_GC_WaitForPendingFinalizers,
+	"System.Runtime.InteropServices.GCHandle::GetTarget", ves_icall_System_GCHandle_GetTarget,
+	"System.Runtime.InteropServices.GCHandle::GetTargetHandle", ves_icall_System_GCHandle_GetTargetHandle,
+	"System.Runtime.InteropServices.GCHandle::FreeHandle", ves_icall_System_GCHandle_FreeHandle,
+	"System.Runtime.InteropServices.GCHandle::GetAddrOfPinnedObject", ves_icall_System_GCHandle_GetAddrOfPinnedObject,
 
 	/*
 	 * System.Security.Cryptography calls

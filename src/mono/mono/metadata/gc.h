@@ -20,5 +20,11 @@ void   ves_icall_System_GC_ReRegisterForFinalize    (MonoObject  *obj);
 void   ves_icall_System_GC_SuppressFinalize         (MonoObject  *obj);
 void   ves_icall_System_GC_WaitForPendingFinalizers (void);
 
+MonoObject *ves_icall_System_GCHandle_GetTarget (guint32 handle);
+guint32     ves_icall_System_GCHandle_GetTargetHandle (MonoObject *obj, guint32 handle, gint32 type);
+void        ves_icall_System_GCHandle_FreeHandle (guint32 handle);
+gpointer    ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle);
+
+
 #endif /* __MONO_METADATA_GC_H__ */
 
