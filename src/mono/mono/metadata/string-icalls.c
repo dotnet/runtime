@@ -22,24 +22,36 @@
 MonoString *
 mono_string_Internal_ctor_charp (gpointer dummy, gunichar2 *value)
 {
-	MONO_CHECK_ARG_NULL (value);
+	gint32 i, length;
+	MonoDomain *domain;
+	MonoString *res;
 
-	g_assert_not_reached ();
-	return NULL;
+	domain = mono_domain_get ();
+
+	if (value == NULL)
+		length = 0;
+	else {
+		for (i = 0; *(value + i) != '\0'; i++);
+		length = i;
+	}
+
+	return mono_string_new_utf16 (domain, value, length);
 }
 
 MonoString *
 mono_string_Internal_ctor_char_int (gpointer dummy, gunichar2 value, gint32 count)
 {
-	MonoDomain *domain = mono_domain_get ();
-	MonoString *res = mono_string_new_size (domain, count);
-	gushort *chars;
-	int i;
+	MonoDomain *domain;
+	MonoString *res;
+	gunichar2 *chars;
+	gint32 i;
 
-	chars =  mono_string_chars (res);
+	domain = mono_domain_get ();
+	res = mono_string_new_size (domain, count);
+
+	chars = (gunichar2 *) mono_string_chars (res);
 	for (i = 0; i < count; i++)
 		chars [i] = value;
-		
 	
 	return res;
 }
@@ -47,28 +59,55 @@ mono_string_Internal_ctor_char_int (gpointer dummy, gunichar2 value, gint32 coun
 MonoString *
 mono_string_Internal_ctor_charp_int_int (gpointer dummy, gunichar2 *value, gint32 sindex, gint32 length)
 {
-	MONO_CHECK_ARG_NULL (value);
+	gunichar2 *begin;
+	MonoDomain * domain;
+	
+	domain = mono_domain_get ();
 
-	g_assert_not_reached ();
-	return NULL;
+	if ((value == NULL) && (sindex != 0) && (length != 0))
+		mono_raise_exception (mono_get_exception_argument_null ("Argument null"));
+
+	if ((sindex < 0) || (length < 0))
+		mono_raise_exception (mono_get_exception_argument_out_of_range ("Out of range"));
+	
+	begin = (gunichar2 *) (value + sindex);
+
+	return mono_string_new_utf16 (domain, begin, length);
 }
 
 MonoString *
 mono_string_Internal_ctor_sbytep (gpointer dummy, gint8 *value)
 {
-	MONO_CHECK_ARG_NULL (value);
+	int i, length;
+	MonoDomain *domain;
+	
+	domain = mono_domain_get ();
 
-	g_assert_not_reached ();
-	return NULL;
+	if (value == NULL)
+		length = 0;
+	else {
+		for (i = 0; *(value + i) != '\0'; i++);
+		length = i;
+	}
+
+	return mono_string_new_utf16 (domain, (gunichar2 *) value, length);
 }
 
 MonoString *
 mono_string_Internal_ctor_sbytep_int_int (gpointer dummy, gint8 *value, gint32 sindex, gint32 length)
 {
-	MONO_CHECK_ARG_NULL (value);
+	gunichar2 *begin;
+	MonoDomain *domain = mono_domain_get ();
 
-	g_assert_not_reached ();
-	return NULL;
+	if ((value == NULL) && (sindex != 0) && (length != 0))
+		mono_raise_exception (mono_get_exception_argument_null ("Argument null"));
+
+	if ((sindex > 0) || (length < 0))
+		mono_raise_exception (mono_get_exception_argument_out_of_range ("Out of range"));
+
+	begin = (gunichar2 *) (value + sindex);
+
+	return mono_string_new_utf16 (domain, begin, length);
 }
 
 MonoString *
@@ -91,7 +130,7 @@ mono_string_Internal_ctor_chara_int_int (gpointer dummy, MonoArray *value,
 
 	MONO_CHECK_ARG_NULL (value);
 
-	domain = ((MonoObject *)value)->vtable->domain;
+	domain = ((MonoObject *) value)->vtable->domain;
 	
 	return mono_string_new_utf16 (domain, mono_array_addr(value, gunichar2, sindex), length);
 }
@@ -322,7 +361,7 @@ mono_string_InternalTrim (MonoString *me, MonoArray *chars, gint32 typ)
 	}
 
 	if (0 == typ || 2 == typ) {
-		for (i = srclen - lenfirst; i != 0; i--) {
+		for (i = srclen - 1; i > lenfirst - 1; i--) {
 			if (mono_string_isinarray(chars, arrlen, src[i]))
 				lenlast++;
 			else 
@@ -456,7 +495,7 @@ mono_string_InternalLastIndexOfAny (MonoString *me, MonoArray *anyOf, gint32 sin
 }
 
 MonoString *
-mono_string_InternalPad (MonoString *me, gint32 width, gint16 chr, MonoBoolean right)
+mono_string_InternalPad (MonoString *me, gint32 width, gunichar2 chr, MonoBoolean right)
 {
 	MonoString * ret;
 	gunichar2 *src;

@@ -80,7 +80,7 @@ gint32
 mono_string_InternalLastIndexOfAny (MonoString *me, MonoArray *anyOf, gint32 sindex, gint32 count);
 
 MonoString *
-mono_string_InternalPad (MonoString *me, gint32 width, gint16 chr, MonoBoolean right);
+mono_string_InternalPad (MonoString *me, gint32 width, gunichar2 chr, MonoBoolean right);
 
 MonoString *
 mono_string_InternalToLower (MonoString *me);
