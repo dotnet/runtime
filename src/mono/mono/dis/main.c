@@ -567,6 +567,9 @@ struct {
 	{ "--classlayout", META_TABLE_CLASSLAYOUT, dump_table_class_layout },
 	{ "--constant",    META_TABLE_CONSTANT,    dump_table_constant },
 	{ "--property",    META_TABLE_PROPERTY,    dump_table_property },
+	{ "--event",       META_TABLE_EVENT,       dump_table_event },
+	{ "--file",        META_TABLE_FILE,        dump_table_file },
+	{ "--moduleref",   META_TABLE_MODULEREF,   dump_table_moduleref },
 	{ NULL, -1 }
 };
 

@@ -731,8 +731,41 @@ get_constant (metadata_t *m, ElementTypeEnum t, guint32 blob_index)
 	case ELEMENT_TYPE_R8:
 		return g_strdup_printf ("%g", * (double *) ptr);
 		
-	case ELEMENT_TYPE_STRING:
-		return "FIXME: Decode string constants!";
+	case ELEMENT_TYPE_STRING: {
+		int len, i, j, e;
+		char *res;
+		e = len = 0;
+		for (i=0; !ptr[i+1]; i+=2) {
+			len++;
+			switch(ptr[i]) {
+			case '"': case '\\': case '\n': /* add more */
+				e++;
+			}
+		}
+		res = g_malloc (len + e + 3);
+		j = 1;
+		res[0] = '"';
+		for (i=0; i < len; i+=2) {
+			switch(ptr[i]) {
+			case '"': 
+				res[j++] = '\\';
+				res[j++] = '"';
+			case '\\': 
+				res[j++] = '\\';
+				res[j++] = '\\';
+			case '\n':
+				res[j++] = '\\';
+				res[j++] = 'n';
+				break;
+			default:
+				res[j++] = isprint(ptr[i])?ptr[i]:'.';
+				break;
+			}
+		}
+		res[j++] = '"';
+		res[j] = 0;
+		return res;
+	}
 		
 	case ELEMENT_TYPE_CLASS:
 		return g_strdup ("CLASS CONSTANT.  MUST BE ZERO");

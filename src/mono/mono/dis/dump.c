@@ -211,7 +211,7 @@ dump_table_class_layout (metadata_t *m)
 		
 		expand (t, i, cols, CSIZE (cols));
 
-		fprintf (stderr, "%d: PackingSize=%d  ClassSize=%d  Parent=%s\n",
+		fprintf (output, "%d: PackingSize=%d  ClassSize=%d  Parent=%s\n",
 			 i, cols [0], cols [1], get_typedef (m, cols [2]));
 	}
 }
@@ -228,7 +228,7 @@ dump_table_constant (metadata_t *m)
 		
 		expand (t, i, cols, CSIZE (cols));
 
-		fprintf (stderr, "%d: Parent=0x%08x %s\n",
+		fprintf (output, "%d: Parent=0x%08x %s\n",
 			 i, cols [2], get_constant (m, (ElementTypeEnum) cols [0], cols [3]));
 	}
 	
@@ -238,12 +238,14 @@ void
 dump_table_property (metadata_t *m)
 {
 	metadata_tableinfo_t *t = &m->tables [META_TABLE_PROPERTY];
-	int i;
+	int i, j, pcount;
+	const char *ptr;
 	char flags[128];
 	fprintf (output, "Property Table (0..%d)\n", t->rows);
 
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [3];
+		char *type;
 		
 		expand (t, i, cols, CSIZE (cols));
 		flags[0] = 0;
@@ -254,7 +256,80 @@ dump_table_property (metadata_t *m)
 		if (cols[0] & 0x1000)
 			strcat(flags, "hasdefault ");
 
-		fprintf (output, "%d: %s %s\n", i, mono_metadata_string_heap (m, cols [1]), flags);
+		ptr = mono_metadata_blob_heap (m, cols[2]);
+		/* The data in the blob doesn't follow the specs:
+		 * there are 3 nibbles first (we skip also the 0x8 signature). */
+		ptr+=2;
+		ptr = get_encoded_value (ptr, &pcount);
+		ptr = get_type (m, ptr, &type);
+		fprintf (output, "%d: %s %s (", i, type, mono_metadata_string_heap (m, cols [1]));
+		g_free(type);
+		for (j=0; j < pcount; ++j) {
+				ptr = get_param (m, ptr, &type);
+				fprintf(output, "%s%s", j>0?", ":"",type);
+				g_free(type);
+		}
+		fprintf (output, ") %s\n", flags);
+	}
+}
+
+void
+dump_table_event (metadata_t *m)
+{
+	metadata_tableinfo_t *t = &m->tables [META_TABLE_EVENT];
+	int i;
+	fprintf (output, "Event Table (0..%d)\n", t->rows);
+
+	for (i = 0; i < t->rows; i++){
+		guint32 cols [3];
+		const char *name;
+		char *type;
+		
+		expand (t, i, cols, CSIZE (cols));
+
+		name = mono_metadata_string_heap (m, cols[1]);
+		type = get_typedef_or_ref (m, cols[2]);
+		fprintf (output, "%d: %s %s %s\n", i, type, name, cols[0]&0x200?"specialname ":"");
+		g_free (type);
 	}
 	
 }
+
+void
+dump_table_file (metadata_t *m)
+{
+	metadata_tableinfo_t *t = &m->tables [META_TABLE_FILE];
+	int i;
+	fprintf (output, "File Table (0..%d)\n", t->rows);
+
+	for (i = 0; i < t->rows; i++){
+		guint32 cols [3];
+		const char *name;
+		
+		expand (t, i, cols, CSIZE (cols));
+
+		name = mono_metadata_string_heap (m, cols[1]);
+		fprintf (output, "%d: %s %s\n", i, name, cols[2]&0x1?"nometadata":"containsmetadata");
+	}
+	
+}
+
+void
+dump_table_moduleref (metadata_t *m)
+{
+	metadata_tableinfo_t *t = &m->tables [META_TABLE_MODULEREF];
+	int i;
+	fprintf (output, "ModuleRef Table (0..%d)\n", t->rows);
+
+	for (i = 0; i < t->rows; i++){
+		guint32 cols [1];
+		const char *name;
+		
+		expand (t, i, cols, CSIZE (cols));
+
+		name = mono_metadata_string_heap (m, cols[0]);
+		fprintf (output, "%d: %s\n", i, name);
+	}
+	
+}
+
