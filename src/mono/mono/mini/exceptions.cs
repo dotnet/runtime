@@ -563,20 +563,6 @@ class Tests {
 		if (b != 127)
 			return -20;
 
-		try {
-			l = 0x00000000ffffffff;
-			failed = true;
-			checked {
-				b = (sbyte)l;
-			}
-		} catch (OverflowException) {
-			failed = false;
-		}
-		if (failed)
-			return 21;
-		if (b != 127)
-			return -21;
-
 		return 0;
 	}
 
@@ -944,6 +930,18 @@ class Tests {
 		}
 		if (failed)
 			return 16;
+
+		try {
+			l = 0x00000000ffffffff;
+			failed = true;
+			checked {
+				b = (short)l;
+			}
+		} catch (OverflowException) {
+			failed = false;
+		}
+		if (failed)
+			return 17;
 
 		return 0;
 	}
