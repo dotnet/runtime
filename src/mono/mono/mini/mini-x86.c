@@ -3340,8 +3340,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		
 		case OP_X86_TLS_GET: {
 			x86_prefix (code, X86_GS_PREFIX);
-			x86_mov_reg_mem (code, ins->dreg, 0, 4);
-			x86_mov_reg_membase (code, ins->dreg, ins->dreg, ins->inst_offset, 4);			
+			x86_mov_reg_mem (code, ins->dreg, ins->inst_offset, 4);			
 			break;
 		}
 		default:
@@ -3500,8 +3499,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		if (lmf_tls_offset != -1) {
 			/* Load lmf quicky using the GS register */
 			x86_prefix (code, X86_GS_PREFIX);
-			x86_mov_reg_mem (code, X86_EAX, 0, 4);
-			x86_mov_reg_membase (code, X86_EAX, X86_EAX, lmf_tls_offset, 4);
+			x86_mov_reg_mem (code, X86_EAX, lmf_tls_offset, 4);
 		}
 		else {
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
