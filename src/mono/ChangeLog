@@ -1,3 +1,8 @@
+2003-05-10  Martin Willemoes Hansen <mwh@sysrq.dk>
+
+	* scripts/Makefile.am: Added monoresgen secutil sqlsharp
+	  shell wrapper scripts.
+
 2003-05-08  Zoltan Varga  <vargaz@freemail.hu>
 
 	* mono/tests/Makefile.am: 
