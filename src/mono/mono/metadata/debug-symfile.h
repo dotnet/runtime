@@ -19,6 +19,7 @@ struct MonoDebugMethodInfo {
 	gpointer code_start;
 	guint32 code_size;
 	guint32 num_params;
+	guint32 this_offset;
 	guint32 *param_offsets;
 	guint32 num_locals;
 	guint32 *local_offsets;

@@ -395,6 +395,15 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				continue;
 			}
 
+			if (minfo->method->signature->hasthis) {
+				if (original == 0) {
+					* (gint32 *) base_ptr = minfo->this_offset;
+					continue;
+				}
+
+				original--;
+			}
+
 			if (original > minfo->num_params) {
 				g_warning ("Symbol file %s contains relocation entry for non-existing "
 					   "parameter %d, but method %s only has %d parameters.",
@@ -421,7 +430,9 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			if (!klass || !klass->inited)
 				continue;
 
+#if 0
 			g_message ("Setting size of type %u to %d", token, klass->instance_size);
+#endif
 
 			* (gint8 *) base_ptr = klass->instance_size;
 
@@ -446,8 +457,10 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			if (klass->byval_arg.type == MONO_TYPE_VALUETYPE)
 				offset -= sizeof (MonoObject);
 
+#if 0
 			g_message ("Setting field %d of type %u to offset %d", original,
 				   token, offset);
+#endif
 
 			* (guint32 *) base_ptr = offset;
 
