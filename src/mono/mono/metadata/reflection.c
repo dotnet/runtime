@@ -5680,6 +5680,20 @@ mono_custom_attrs_from_assembly (MonoAssembly *assembly)
 }
 
 MonoCustomAttrInfo*
+mono_custom_attrs_from_module (MonoImage *image)
+{
+	MonoCustomAttrInfo *cinfo;
+	guint32 idx;
+	
+	if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, image)))
+		return cinfo;
+	idx = 1; /* there is only one module */
+	idx <<= CUSTOM_ATTR_BITS;
+	idx |= CUSTOM_ATTR_MODULE;
+	return mono_custom_attrs_from_index (image, idx);
+}
+
+MonoCustomAttrInfo*
 mono_custom_attrs_from_property (MonoClass *klass, MonoProperty *property)
 {
 	MonoCustomAttrInfo *cinfo;
@@ -5791,6 +5805,9 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 	} else if (strcmp ("Assembly", klass->name) == 0) {
 		MonoReflectionAssembly *rassembly = (MonoReflectionAssembly*)obj;
 		cinfo = mono_custom_attrs_from_assembly (rassembly->assembly);
+	} else if (strcmp ("Module", klass->name) == 0) {
+		MonoReflectionModule *module = (MonoReflectionModule*)obj;
+		cinfo = mono_custom_attrs_from_module (module->image);
 	} else if (strcmp ("MonoProperty", klass->name) == 0) {
 		MonoReflectionProperty *rprop = (MonoReflectionProperty*)obj;
 		cinfo = mono_custom_attrs_from_property (rprop->klass, rprop->property);
