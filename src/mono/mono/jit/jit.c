@@ -2415,12 +2415,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				ii->arg_map = alloca (args * sizeof (MBTree *));
 				memcpy (ii->arg_map, sp, args * sizeof (MBTree *));
 
-				if (cm->signature->hasthis) {					
-					if (ii->arg_map [0]->op != MB_TERM_CHECKTHIS)
-						ii->arg_map [0] = mono_ctree_new (mp, MB_TERM_CHECKTHIS, 
-										  ii->arg_map [0], NULL);
-					if (!cm->uses_this)
-						ADD_TREE (ii->arg_map [0], cli_addr);
+				if (cm->signature->hasthis && !cm->uses_this && 
+				    (ii->arg_map [0]->op != MB_TERM_CHECKTHIS)) {
+					ii->arg_map [0] = mono_ctree_new (mp, MB_TERM_CHECKTHIS, 
+									  ii->arg_map [0], NULL);
+					ADD_TREE (ii->arg_map [0], cli_addr);
 				}
 
 				inline_list = g_list_prepend (inline_list, ii);

@@ -412,30 +412,30 @@ stmt: ENDFINALLY {
 	x86_ret (s->code);
 }
 
-
-stmt: STIND_I4 (addr, coni4) {
-	switch (tree->left->data.ainfo.amode) {
-
-	case AMImmediate:
-		x86_mov_mem_imm (s->code, tree->left->data.ainfo.offset, tree->right->data.i, 4);
-		break;
-		
-	case AMBase:
-		x86_mov_membase_imm (s->code, tree->left->data.ainfo.basereg, 
-				     tree->left->data.ainfo.offset, tree->right->data.i, 4);
-		break;		
-	case AMIndex:
-		x86_mov_memindex_imm (s->code, X86_NOBASEREG, tree->left->data.ainfo.offset,
-				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
-				      tree->right->data.i, 4);
-		break;		
-	case AMBaseIndex:
-		x86_mov_memindex_imm (s->code, tree->left->data.ainfo.basereg, tree->left->data.ainfo.offset,
-				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
-				      tree->right->data.i, 4);
-		break;		
-	}
-}
+# this slows down performance!
+#stmt: STIND_I4 (addr, coni4) {
+#	switch (tree->left->data.ainfo.amode) {
+#
+#	case AMImmediate:
+#		x86_mov_mem_imm (s->code, tree->left->data.ainfo.offset, tree->right->data.i, 4);
+#		break;
+#		
+#	case AMBase:
+#		x86_mov_membase_imm (s->code, tree->left->data.ainfo.basereg, 
+#				     tree->left->data.ainfo.offset, tree->right->data.i, 4);
+#		break;		
+#	case AMIndex:
+#		x86_mov_memindex_imm (s->code, X86_NOBASEREG, tree->left->data.ainfo.offset,
+#				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
+#				      tree->right->data.i, 4);
+#		break;		
+#	case AMBaseIndex:
+#		x86_mov_memindex_imm (s->code, tree->left->data.ainfo.basereg, tree->left->data.ainfo.offset,
+#				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
+#				      tree->right->data.i, 4);
+#		break;		
+#	}
+#}
 
 stmt: STIND_I4 (addr, reg) {
 	PRINT_REG ("STIND_I4", tree->right->reg1);
