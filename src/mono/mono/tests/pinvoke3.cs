@@ -39,10 +39,25 @@ public class Tests {
 
 	public static int delegate_test_struct_byref (int a, ref SimpleStruct ss, int b)
 	{
-		if (a == 1 && b == 2 && ss.a && !ss.b && ss.c && ss.d == "TEST2")
+		if (a == 1 && b == 2 && ss.a && !ss.b && ss.c && ss.d == "TEST2") {
+			ss.a = true;
+			ss.b = true;
+			ss.c = true;
+			ss.d = "TEST3";
 			return 0;
+		}
 
 		return 1;
+	}
+
+	public static int delegate_test_struct_out (int a, out SimpleStruct ss, int b)
+	{
+		ss.a = true;
+		ss.b = true;
+		ss.c = true;
+		ss.d = "TEST3";
+
+		return 0;
 	}
 
 	public static SimpleClass delegate_test_class (SimpleClass ss)
@@ -86,6 +101,15 @@ public class Tests {
 		return 0;
 	}
 
+	public static int delegate_test_primitive_byref (ref int i)
+	{
+		if (i != 1)
+			return 1;
+		
+		i = 2;
+		return 0;
+	}
+
 	public static int delegate_test_string_marshalling (string s)
 	{
 		return s == "ABC" ? 0 : 1;
@@ -93,6 +117,11 @@ public class Tests {
 
 	[DllImport ("libtest", EntryPoint="mono_test_ref_vtype")]
 	public static extern int mono_test_ref_vtype (int a, ref SimpleStruct ss, int b, TestDelegate d);
+
+	public delegate int OutStructDelegate (int a, out SimpleStruct ss, int b);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_out_struct")]
+	public static extern int mono_test_marshal_out_struct (int a, out SimpleStruct ss, int b, OutStructDelegate d);
 	
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate2")]
 	public static extern int mono_test_marshal_delegate2 (SimpleDelegate2 d);
@@ -118,6 +147,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate10")]
 	public static extern int mono_test_marshal_delegate10 (SimpleDelegate9 d);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_primitive_byref_delegate")]
+	public static extern int mono_test_marshal_primitive_byref_delegate (PrimitiveByrefDelegate d);
+
 	public delegate int TestDelegate (int a, ref SimpleStruct ss, int b);
 
 	public delegate SimpleStruct SimpleDelegate2 (SimpleStruct ss);
@@ -133,6 +165,8 @@ public class Tests {
 	public delegate int return_int_delegate (int i);
 
 	public delegate int SimpleDelegate9 (return_int_delegate del);
+
+	public delegate int PrimitiveByrefDelegate (ref int i);
 
 	public static int Main () {
 		return TestDriver.RunTests (typeof (Tests));
@@ -155,11 +189,19 @@ public class Tests {
 
 		if (mono_test_ref_vtype (1, ref ss, 2, d) != 0)
 			return 1;
-		
-		if (! (ss.a && !ss.b && ss.c && ss.d == "TEST2"))
+
+		if (! (ss.a && ss.b && ss.c && ss.d == "TEST3"))
 			return 2;
 		
 		return 0;
+	}
+
+	/* Test structures as out arguments of delegates */
+	static int test_0_marshal_out_struct_delegate () {
+		SimpleStruct ss = new SimpleStruct ();
+		OutStructDelegate d = new OutStructDelegate (delegate_test_struct_out);
+
+		return mono_test_marshal_out_struct (1, out ss, 2, d);
 	}
 
 	/* Test classes as arguments and return values of delegates */
@@ -229,5 +271,11 @@ public class Tests {
 		}
 
 		return 2;
+	}
+
+	static int test_0_marshal_primitive_byref_delegate () {
+		PrimitiveByrefDelegate d = new PrimitiveByrefDelegate (delegate_test_primitive_byref);
+
+		return mono_test_marshal_primitive_byref_delegate (d);
 	}
 }

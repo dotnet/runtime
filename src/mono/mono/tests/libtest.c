@@ -310,6 +310,24 @@ mono_test_ref_vtype (int a, simplestruct *ss, int b, RefVTypeDelegate func)
 	return 1;
 }
 
+typedef int (*OutVTypeDelegate) (int a, simplestruct *ss, int b);
+
+int
+mono_test_marshal_out_struct (int a, simplestruct *ss, int b, OutVTypeDelegate func)
+{
+	int res;
+
+	/* Check that the input pointer is ignored */
+	ss->d = (gpointer)0x12345678;
+
+	func (a, ss, b);
+
+	if (ss->a && ss->b && ss->c && !strcmp (ss->d, "TEST3"))
+		return 0;
+	else
+		return 1;
+}
+
 typedef struct {
 	int a;
 	int (*func) (int);
@@ -599,6 +617,23 @@ int
 mono_test_marshal_delegate10 (SimpleDelegate9 delegate)
 {
 	return delegate (return_self);
+}
+
+typedef int (*PrimitiveByrefDelegate) (int *i);
+
+int
+mono_test_marshal_primitive_byref_delegate (PrimitiveByrefDelegate delegate)
+{
+	int i = 1;
+
+	int res = delegate (&i);
+	if (res != 0)
+		return res;
+
+	if (i != 2)
+		return 2;
+
+	return 0;
 }
 
 int 
