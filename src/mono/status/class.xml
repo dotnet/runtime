@@ -3231,7 +3231,7 @@
 		<test-suite>no</test-suite>
 		<completion>?</completion>
 		<maintainers>
-			<maintainer>Patrik.Torstensson@framfablabs.com</maintainer>
+			<maintainer>Patrik.Torstensson@labs2.com</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Web.EndEventHandler">
