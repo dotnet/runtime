@@ -760,6 +760,8 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MONO_CONTEXT_SET_IP (&ctx, ves_icall_get_frame_info);
 	MONO_CONTEXT_SET_BP (&ctx, __builtin_frame_address (0));
 
+	skip++;
+
 	do {
 		ji = mono_arch_find_jit_info (domain, jit_tls, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
 		ctx = new_ctx;
@@ -767,7 +769,12 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 		if (!ji || MONO_CONTEXT_GET_BP (&ctx) >= jit_tls->end_of_stack)
 			return FALSE;
 
-	} while (skip-- > 0);
+		if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)
+			continue;
+		
+		skip--;
+
+	} while (skip >= 0);
 
 	*method = mono_method_get_object (domain, ji->method, NULL);
 	*iloffset = mono_debug_il_offset_from_address (ji->method, *native_offset);
