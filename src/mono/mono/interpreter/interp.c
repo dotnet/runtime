@@ -1230,7 +1230,7 @@ mono_create_method_pointer (MonoMethod *method)
 		ji->code_size = 1;
 		ji->code_start = method->addr;
 
-		mono_jit_info_table_add (mono_root_domain, ji);
+		mono_jit_info_table_add (mono_get_root_domain (), ji);
 		
 		addr = method->addr;
 	}		

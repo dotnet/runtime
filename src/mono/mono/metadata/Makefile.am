@@ -37,6 +37,7 @@ endif
 libmonoruntime_la_SOURCES = \
 	reflection.c	\
 	object.c	\
+	object-internals.h	\
 	icall.c		\
 	char-conversions.h \
 	decimal.c	\

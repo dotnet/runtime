@@ -33,7 +33,7 @@ static MonoGHashTable * appdomains_list = NULL;
 
 static CRITICAL_SECTION appdomains_mutex;
 
-MonoDomain *mono_root_domain = NULL;
+static MonoDomain *mono_root_domain = NULL;
 
 static MonoJitInfoTable *
 mono_jit_info_table_new (void)
@@ -485,6 +485,12 @@ mono_init (const char *filename)
 	domain->friendly_name = g_path_get_basename (filename);
 
 	return domain;
+}
+
+MonoDomain*
+mono_get_root_domain (void)
+{
+	return mono_root_domain;
 }
 
 /**

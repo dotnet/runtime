@@ -3516,7 +3516,7 @@ ves_icall_System_Reflection_Assembly_GetEntryAssembly (void)
 	MONO_ARCH_SAVE_REGS;
 
 	if (!domain->entry_assembly)
-		domain = mono_root_domain;
+		domain = mono_get_root_domain ();
 
 	return mono_assembly_get_object (domain, domain->entry_assembly);
 }

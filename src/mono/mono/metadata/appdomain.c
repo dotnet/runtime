@@ -186,7 +186,7 @@ void
 mono_runtime_quit ()
 {
 	if (quit_function != NULL)
-		quit_function (mono_root_domain, NULL);
+		quit_function (mono_get_root_domain (), NULL);
 }
 
 gboolean
@@ -954,7 +954,7 @@ ves_icall_System_AppDomain_InternalUnload (gint32 domain_id)
 		mono_raise_exception (exc);
 	}
 	
-	if (domain == mono_root_domain) {
+	if (domain == mono_get_root_domain ()) {
 		mono_raise_exception (mono_get_exception_cannot_unload_appdomain ("The default appdomain can not be unloaded."));
 		return;
 	}
@@ -1115,6 +1115,7 @@ ves_icall_System_AppDomain_InternalSetContext (MonoAppContext *mc)
 MonoString *
 ves_icall_System_AppDomain_InternalGetProcessGuid (MonoString* newguid)
 {
+	MonoDomain* mono_root_domain = mono_get_root_domain ();
 	mono_domain_lock (mono_root_domain);
 	if (process_guid_set) {
 		mono_domain_unlock (mono_root_domain);

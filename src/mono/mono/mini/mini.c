@@ -6272,7 +6272,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 	 * trampoline address, so we save it here.
 	 */
 
-	mono_jit_info_table_add (mono_root_domain, ji);
+	mono_jit_info_table_add (mono_get_root_domain (), ji);
 
 	if (!jump_trampoline_hash)
 		jump_trampoline_hash = g_hash_table_new (NULL, NULL);
@@ -7999,7 +7999,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 	gpointer p;
 
 	if (opt & MONO_OPT_SHARED)
-		target_domain = mono_root_domain;
+		target_domain = mono_get_root_domain ();
 	else 
 		target_domain = domain;
 
@@ -8033,7 +8033,7 @@ mono_jit_find_compiled_method (MonoDomain *domain, MonoMethod *method)
 	MonoJitInfo *info;
 
 	if (default_opt & MONO_OPT_SHARED)
-		target_domain = mono_root_domain;
+		target_domain = mono_get_root_domain ();
 	else 
 		target_domain = domain;
 

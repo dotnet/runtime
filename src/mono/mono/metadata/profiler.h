@@ -3,7 +3,6 @@
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
-#include <mono/io-layer/io-layer.h>
 
 typedef enum {
 	MONO_PROFILE_NONE = 0,

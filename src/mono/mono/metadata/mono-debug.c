@@ -244,7 +244,7 @@ mono_debug_add_wrapper (MonoMethod *method, MonoMethod *wrapper_method, MonoDoma
 	domain_data->jit [minfo->index] = jit;
 	jit->wrapper_addr = method->addr;
 
-	if (handle->_priv->debugger_info && (domain == mono_root_domain))
+	if (handle->_priv->debugger_info && (domain == mono_get_root_domain ()))
 		mono_debugger_add_method (handle->_priv->debugger_info, minfo, jit);
 
 	mono_debugger_unlock ();
@@ -296,7 +296,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 
 	domain_data->jit [minfo->index] = jit;
 
-	if (handle->_priv->debugger_info && (domain == mono_root_domain))
+	if (handle->_priv->debugger_info && (domain == mono_get_root_domain ()))
 		mono_debugger_add_method (handle->_priv->debugger_info, minfo, jit);
 
 	mono_debugger_unlock ();

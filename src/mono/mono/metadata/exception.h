@@ -1,21 +1,11 @@
 #ifndef _MONO_METADATA_EXCEPTION_H_
 #define _MONO_METADATA_EXCEPTION_H_
 
-#ifdef MONO_USE_EXC_TABLES
-#define MONO_ARCH_SAVE_REGS __builtin_unwind_init ()
-#else
+/* here for compat: should not be used anymore */
 #define MONO_ARCH_SAVE_REGS 
-#endif
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/image.h>
-
-typedef void (*MonoExceptionClassInitFunc)(MonoClass *klass);
-typedef void (*MonoExceptionObjectInitFunc)(MonoObject *obj, MonoClass *klass);
-
-extern void
-mono_exception_install_handlers (MonoExceptionClassInitFunc class_init,
-				 MonoExceptionObjectInitFunc obj_init);
 
 extern MonoException *
 mono_exception_from_name               (MonoImage *image, 

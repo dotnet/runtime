@@ -312,13 +312,13 @@ mini_regression (MonoImage *image, int verbose, int *total_run) {
 				run++;
 				start_time = g_timer_elapsed (timer, NULL);
 				comp_time -= start_time; 
-				cfg = mini_method_compile (method, opt_flags, mono_root_domain, TRUE, 0);
+				cfg = mini_method_compile (method, opt_flags, mono_get_root_domain (), TRUE, 0);
 				comp_time += g_timer_elapsed (timer, NULL);
 				if (cfg) {
 					if (verbose >= 2)
 						g_print ("Running '%s' ...\n", method->name);
 #ifdef MONO_USE_AOT_COMPILER
-					if ((jinfo = mono_aot_get_method (mono_root_domain, method)))
+					if ((jinfo = mono_aot_get_method (mono_get_root_domain (), method)))
 						func = jinfo->code_start;
 					else
 #endif
@@ -843,7 +843,7 @@ mono_main (int argc, char* argv[])
 			break;
 		}
 
-		cfg = mini_method_compile (method, opt, mono_root_domain, FALSE, part);
+		cfg = mini_method_compile (method, opt, mono_get_root_domain (), FALSE, part);
 		if ((mono_graph_options & MONO_GRAPH_CFG_SSA) && !(cfg->comp_done & MONO_COMP_SSA)) {
 			g_warning ("no SSA info available (use -O=deadce)");
 			return 1;
@@ -875,7 +875,7 @@ mono_main (int argc, char* argv[])
 				opt = opt_sets [i];
 				g_timer_start (timer);
 				for (j = 0; j < count; ++j) {
-					cfg = mini_method_compile (method, opt, mono_root_domain, FALSE, 0);
+					cfg = mini_method_compile (method, opt, mono_get_root_domain (), FALSE, 0);
 					mono_destroy_compile (cfg);
 				}
 				g_timer_stop (timer);
@@ -898,12 +898,12 @@ mono_main (int argc, char* argv[])
 					(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 					method = mono_marshal_get_native_wrapper (method);
 
-				cfg = mini_method_compile (method, opt, mono_root_domain, FALSE, 0);
+				cfg = mini_method_compile (method, opt, mono_get_root_domain (), FALSE, 0);
 				mono_destroy_compile (cfg);
 			}
 		}
 	} else {
-		cfg = mini_method_compile (method, opt, mono_root_domain, FALSE, 0);
+		cfg = mini_method_compile (method, opt, mono_get_root_domain (), FALSE, 0);
 		mono_destroy_compile (cfg);
 	}
 

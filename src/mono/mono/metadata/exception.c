@@ -11,7 +11,7 @@
  */
 
 #include <mono/metadata/exception.h>
-#include <mono/metadata/class.h>
+#include <mono/metadata/object-internals.h>
 #include <mono/metadata/appdomain.h>
 #include <string.h>
 

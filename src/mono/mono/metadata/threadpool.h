@@ -1,7 +1,7 @@
 #ifndef _MONO_THREADPOOL_H_
 #define _MONO_THREADPOOL_H_
 
-#include <mono/metadata/object.h>
+#include <mono/metadata/object-internals.h>
 #include <mono/metadata/reflection.h>
 
 extern int mono_max_worker_threads;

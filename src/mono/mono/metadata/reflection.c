@@ -16,6 +16,7 @@
 #include "mono/metadata/domain-internals.h"
 #include "mono/metadata/opcodes.h"
 #include "mono/metadata/assembly.h"
+#include "mono/metadata/object-internals.h"
 #include <mono/metadata/exception.h>
 #include <stdio.h>
 #include <glib.h>

@@ -13,7 +13,7 @@
 #define __MONO_MARSHAL_H__
 
 #include <mono/metadata/class.h>
-#include <mono/metadata/object.h>
+#include <mono/metadata/object-internals.h>
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/reflection.h>
 

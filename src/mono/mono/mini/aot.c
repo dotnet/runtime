@@ -278,7 +278,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 
 	minfo = mono_g_hash_table_lookup (aot_module->methods, method);
 	/* Can't use code from non-root domains since they can be unloaded */
-	if (minfo && (minfo->domain == mono_root_domain)) {
+	if (minfo && (minfo->domain == mono_get_root_domain ())) {
 		/* This method was already loaded in another appdomain */
 
 		/* Duplicate jinfo */
@@ -423,7 +423,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 	for (i = 0; i < used_strings; i++) {
 		guint token =  GPOINTER_TO_UINT (*((gpointer **)info));
 		info++;
-		mono_ldstr (mono_root_domain, klass->image, mono_metadata_token_index (token));
+		mono_ldstr (mono_get_root_domain (), klass->image, mono_metadata_token_index (token));
 	}
 
 	if (*info) {
@@ -1203,7 +1203,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 		//printf ("START:           %s\n", mono_method_full_name (method, TRUE));
 		//mono_compile_method (method);
 
-		cfg = mini_method_compile (method, opts, mono_root_domain, FALSE, 0);
+		cfg = mini_method_compile (method, opts, mono_get_root_domain (), FALSE, 0);
 		g_assert (cfg);
 
 		if (cfg->disable_aot) {

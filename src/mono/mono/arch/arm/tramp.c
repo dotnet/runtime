@@ -684,7 +684,7 @@ void* mono_arch_create_method_pointer (MonoMethod* method)
 	ji->code_size = ((guint8 *) p) - ((guint8 *) code_buff);
 	ji->code_start = (gpointer) code_buff;
 
-	mono_jit_info_table_add(mono_root_domain, ji);
+	mono_jit_info_table_add(mono_get_root_domain (), ji);
 
 	return code_buff;
 }

@@ -12,7 +12,7 @@
 
 #include <glib.h>
 
-#include <mono/metadata/object.h>
+#include <mono/metadata/object-internals.h>
 
 /* This is a copy of System.Globalization.CompareOptions */
 typedef enum {

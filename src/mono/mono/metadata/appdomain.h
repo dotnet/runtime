@@ -15,9 +15,6 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/mempool.h>
-#include <mono/utils/mono-hash.h>
-#include <mono/utils/mono-codeman.h>
-#include <mono/io-layer/io-layer.h>
 
 typedef void (*MonoThreadStartCB) (guint32 tid, gpointer stack_start,
 				   gpointer func);
@@ -27,12 +24,13 @@ typedef struct _MonoAppDomain MonoAppDomain;
 typedef struct _MonoAppContext MonoAppContext;
 typedef struct _MonoJitInfo MonoJitInfo;
 
-extern MonoDomain *mono_root_domain;
-
 typedef void (*MonoDomainFunc) (MonoDomain *domain, gpointer user_data);
 
 MonoDomain*
 mono_init                  (const char *filename);
+
+MonoDomain*
+mono_get_root_domain       (void);
 
 void
 mono_runtime_init          (MonoDomain *domain, MonoThreadStartCB start_cb,

@@ -10,7 +10,7 @@
 #define __MONO_METADATA_GC_H__
 
 #include <glib.h>
-#include <mono/metadata/object.h>
+#include <mono/metadata/object-internals.h>
 
 void   mono_object_register_finalizer               (MonoObject  *obj);
 void   ves_icall_System_GC_InternalCollect          (int          generation);

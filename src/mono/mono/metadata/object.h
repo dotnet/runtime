@@ -3,91 +3,26 @@
 
 #include <mono/metadata/class.h>
 
-#if 1
-#ifdef __GNUC__
-#define mono_assert(expr)		   G_STMT_START{		  \
-     if (!(expr))							  \
-       {								  \
-		MonoException *ex;					  \
-		char *msg = g_strdup_printf ("file %s: line %d (%s): "	  \
-		"assertion failed: (%s)", __FILE__, __LINE__,		  \
-		__PRETTY_FUNCTION__, #expr);				  \
-		ex = mono_get_exception_execution_engine (msg);		  \
-		g_free (msg);						  \
-		mono_raise_exception (ex);				  \
-       };				}G_STMT_END
-
-#define mono_assert_not_reached()		  G_STMT_START{		  \
-     MonoException *ex;							  \
-     char *msg = g_strdup_printf ("file %s: line %d (%s): "		  \
-     "should not be reached", __FILE__, __LINE__, __PRETTY_FUNCTION__);	  \
-     ex = mono_get_exception_execution_engine (msg);			  \
-     g_free (msg);							  \
-     mono_raise_exception (ex);						  \
-}G_STMT_END
-#else /* not GNUC */
-#define mono_assert(expr)		   G_STMT_START{		  \
-     if (!(expr))							  \
-       {								  \
-		MonoException *ex;					  \
-		char *msg = g_strdup_printf ("file %s: line %d: "	  \
-		"assertion failed: (%s)", __FILE__, __LINE__,		  \
-		#expr);							  \
-		ex = mono_get_exception_execution_engine (msg);		  \
-		g_free (msg);						  \
-		mono_raise_exception (ex);				  \
-       };				}G_STMT_END
-
-#define mono_assert_not_reached()		  G_STMT_START{		  \
-     MonoException *ex;							  \
-     char *msg = g_strdup_printf ("file %s: line %d): "			  \
-     "should not be reached", __FILE__, __LINE__);			  \
-     ex = mono_get_exception_execution_engine (msg);			  \
-     g_free (msg);							  \
-     mono_raise_exception (ex);						  \
-}G_STMT_END
-#endif
-#else
-#define mono_assert(expr) g_assert(expr)
-#define mono_assert_not_reached() g_assert_not_reached() 
-#endif
-
-#define MONO_CHECK_ARG(arg, expr)		G_STMT_START{		  \
-     if (!(expr))							  \
-       {								  \
-		MonoException *ex;					  \
-		char *msg = g_strdup_printf ("assertion `%s' failed",	  \
-		#expr);							  \
-		if (arg) {} /* check if the name exists */		  \
-		ex = mono_get_exception_argument (#arg, msg);		  \
-		g_free (msg);						  \
-		mono_raise_exception (ex);				  \
-       };				}G_STMT_END
-
-#define MONO_CHECK_ARG_NULL(arg)	    G_STMT_START{		  \
-     if (arg == NULL)							  \
-       {								  \
-		MonoException *ex;					  \
-		if (arg) {} /* check if the name exists */		  \
-		ex = mono_get_exception_argument_null (#arg);		  \
-		mono_raise_exception (ex);				  \
-       };				}G_STMT_END
-
 typedef guchar MonoBoolean;
 
 typedef struct _MonoReflectionMethod MonoReflectionMethod;
+typedef struct _MonoReflectionAssembly MonoReflectionAssembly;
+typedef struct _MonoReflectionModule MonoReflectionModule;
+typedef struct _MonoReflectionField MonoReflectionField;
+typedef struct _MonoReflectionProperty MonoReflectionProperty;
+typedef struct _MonoReflectionEvent MonoReflectionEvent;
+typedef struct _MonoReflectionType MonoReflectionType;
 typedef struct _MonoDelegate MonoDelegate;
+typedef struct _MonoException MonoException;
 typedef struct _MonoThreadsSync MonoThreadsSync;
+typedef struct _MonoThread MonoThread;
+typedef struct _MonoDynamicAssembly MonoDynamicAssembly;
+typedef struct _MonoDynamicImage MonoDynamicImage;
 
 typedef struct {
 	MonoVTable *vtable;
 	MonoThreadsSync *synchronisation;
 } MonoObject;
-
-typedef struct {
-	MonoObject obj;
-	MonoObject *identity;
-} MonoMarshalByRefObject;
 
 typedef struct {
 	guint32 length;
@@ -110,266 +45,6 @@ typedef struct {
 	gunichar2 chars [MONO_ZERO_LEN_ARRAY];
 } MonoString;
 
-typedef struct {
-	MonoObject object;
-	gint32 length;
-	MonoString *str;
-} MonoStringBuilder;
-
-typedef struct {
-	MonoObject object;
-	MonoType  *type;
-} MonoReflectionType;
-
-typedef struct {
-	MonoType *type;
-	gpointer  value;
-	MonoClass *klass;
-} MonoTypedRef;
-
-typedef struct {
-	gpointer args;
-} MonoArgumentHandle;
-
-typedef struct {
-	MonoMethodSignature *sig;
-	gpointer args;
-	gint32 next_arg;
-	gint32 num_args;
-} MonoArgIterator;
-
-typedef struct {
-	MonoObject object;
-	MonoArray  *trace_ips;
-	MonoObject *inner_ex;
-	MonoString *message;
-	MonoString *help_link;
-	MonoString *class_name;
-	MonoString *stack_trace;
-	MonoString *remote_stack_trace;
-	gint32	    remote_stack_index;
-	gint32	    hresult;
-	MonoString *source;
-} MonoException;
-
-typedef struct {
-	MonoException base;
-} MonoSystemException;
-
-typedef struct {
-	MonoSystemException base;
-	MonoString *param_name;
-} MonoArgumentException;
-
-typedef struct {
-	MonoSystemException base;
-	MonoString *msg;
-	MonoString *type_name;
-} MonoTypeLoadException;
-
-typedef struct {
-	MonoObject   object;
-	MonoObject  *async_state;
-	MonoObject  *handle;
-	MonoObject  *async_delegate;
-	gpointer     data;
-	MonoBoolean  sync_completed;
-	MonoBoolean  completed;
-	MonoBoolean  endinvoke_called;
-	MonoObject  *async_callback;
-} MonoAsyncResult;
-
-typedef struct {
-	MonoMarshalByRefObject object;
-	gpointer     handle;
-	MonoBoolean  disposed;
-} MonoWaitHandle;
-
-typedef struct {
-	MonoObject  object;
-	MonoReflectionType *class_to_proxy;	
-	MonoObject *context;
-	MonoObject *unwrapped_server;
-} MonoRealProxy;
-
-typedef struct {
-	MonoObject	 object;
-	MonoRealProxy	*rp;	
-	MonoRemoteClass *remote_class;
-	MonoBoolean	 custom_type_info;
-} MonoTransparentProxy;
-
-/* This is a copy of System.Runtime.Remoting.Messaging.CallType */
-typedef enum {
-	CallType_Sync = 0,
-	CallType_BeginInvoke = 1,
-	CallType_EndInvoke = 2,
-	CallType_OneWay = 3
-} MonoCallType;
-
-typedef struct {
-	MonoObject obj;
-	MonoReflectionMethod *method;
-	MonoArray  *args;		
-	MonoArray  *names;		
-	MonoArray  *arg_types;	
-	MonoObject *ctx;
-	MonoObject *rval;
-	MonoObject *exc;
-	MonoAsyncResult *async_result;
-	guint32	    call_type;
-} MonoMethodMessage;
-
-typedef struct {
-	MonoObject obj;
-	gint32 il_offset;
-	gint32 native_offset;
-	MonoReflectionMethod *method;
-	MonoString *filename;
-	gint32 line;
-	gint32 column;
-} MonoStackFrame;
-
-typedef struct {
-	MonoObject  obj;
-	HANDLE	    handle;
-	MonoObject *culture_info;
-	MonoObject *ui_culture_info;
-	MonoBoolean threadpool_thread;
-	gunichar2  *name;
-	guint32	    name_len;
-	guint32	    state;
-	MonoException *abort_exc;
-	MonoObject *abort_state;
-	guint32 tid;
-	HANDLE	    start_notify;
-	gpointer stack_ptr;
-	gpointer *static_data;
-	gpointer jit_data;
-	gpointer lock_data;
-	GSList *appdomain_refs;
-	MonoBoolean interruption_requested;
-	gpointer suspend_event;
-	gpointer resume_event;
-	MonoObject *synch_lock;
-} MonoThread;
-
-typedef struct {
-	MonoString *name;
-	MonoReflectionType *type;
-	MonoObject *value;
-} MonoSerializationEntry;
-
-typedef struct {
-	guint32 state;
-	MonoObject *additional;
-} MonoStreamingContext;
-
-typedef struct {
-	MonoObject obj;
-	MonoBoolean readOnly;
-	MonoString *AMDesignator;
-	MonoString *PMDesignator;
-	MonoString *DateSeparator;
-	MonoString *TimeSeparator;
-	MonoString *ShortDatePattern;
-	MonoString *LongDatePattern;
-	MonoString *ShortTimePattern;
-	MonoString *LongTimePattern;
-	MonoString *MonthDayPattern;
-	MonoString *YearMonthPattern;
-	MonoString *FullDateTimePattern;
-	MonoString *RFC1123Pattern;
-	MonoString *SortableDateTimePattern;
-	MonoString *UniversalSortableDateTimePattern;
-	guint32 FirstDayOfWeek;
-	MonoObject *Calendar;
-	guint32 CalendarWeekRule;
-	MonoArray *AbbreviatedDayNames;
-	MonoArray *DayNames;
-	MonoArray *MonthNames;
-	MonoArray *AbbreviatedMonthNames;
-	MonoArray *ShortDatePatterns;
-	MonoArray *LongDatePatterns;
-	MonoArray *ShortTimePatterns;
-	MonoArray *LongTimePatterns;
-} MonoDateTimeFormatInfo;
-
-typedef struct 
-{
-	MonoObject obj;
-	MonoBoolean readOnly;
-	MonoString *decimalFormats;
-	MonoString *currencyFormats;
-	MonoString *percentFormats;
-	MonoString *digitPattern;
-	MonoString *zeroPattern;
-	gint32 currencyDecimalDigits;
-	MonoString *currencyDecimalSeparator;
-	MonoString *currencyGroupSeparator;
-	MonoArray *currencyGroupSizes;
-	gint32 currencyNegativePattern;
-	gint32 currencyPositivePattern;
-	MonoString *currencySymbol;
-	MonoString *naNSymbol;
-	MonoString *negativeInfinitySymbol;
-	MonoString *negativeSign;
-	guint32 numberDecimalDigits;
-	MonoString *numberDecimalSeparator;
-	MonoString *numberGroupSeparator;
-	MonoArray *numberGroupSizes;
-	gint32 numberNegativePattern;
-	gint32 percentDecimalDigits;
-	MonoString *percentDecimalSeparator;
-	MonoString *percentGroupSeparator;
-	MonoArray *percentGroupSizes;
-	gint32 percentNegativePattern;
-	gint32 percentPositivePattern;
-	MonoString *percentSymbol;
-	MonoString *perMilleSymbol;
-	MonoString *positiveInfinitySymbol;
-	MonoString *positiveSign;
-} MonoNumberFormatInfo;
-
-typedef struct {
-	MonoObject obj;
-	gint32 lcid;
-	MonoString *icu_name;
-	gpointer ICU_collator;
-} MonoCompareInfo;
-
-typedef struct {
-	MonoObject obj;
-	MonoBoolean is_read_only;
-	gint32 lcid;
-	gint32 parent_lcid;
-	gint32 specific_lcid;
-	gint32 datetime_index;
-	gint32 number_index;
-	MonoBoolean use_user_override;
-	MonoNumberFormatInfo *number_format;
-	MonoDateTimeFormatInfo *datetime_format;
-	MonoObject *textinfo;
-	MonoString *name;
-	MonoString *displayname;
-	MonoString *englishname;
-	MonoString *nativename;
-	MonoString *iso3lang;
-	MonoString *iso2lang;
-	MonoString *icu_name;
-	MonoString *win3lang;
-	MonoCompareInfo *compareinfo;
-	const gint32 *calendar_data;
-} MonoCultureInfo;
-
-typedef struct {
-	MonoObject obj;
-	MonoString *str;
-	gint32 options;
-	MonoArray *key;
-	gint32 lcid;
-} MonoSortKey;
-
 typedef MonoObject* (*MonoInvokeFunc)	     (MonoMethod *method, void *obj, void **params, MonoObject **exc);
 typedef gpointer    (*MonoCompileFunc)	     (MonoMethod *method);
 typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
@@ -389,7 +64,6 @@ typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
 
 #define mono_string_chars(s) ((gunichar2*)(s)->chars)
 #define mono_string_length(s) ((s)->length)
-#define mono_stringbuilder_capacity(sb) ((sb)->str->length)
 
 MonoObject *
 mono_object_new		    (MonoDomain *domain, MonoClass *klass);
@@ -483,11 +157,6 @@ mono_monitor_enter           (MonoObject *obj);
 void 
 mono_monitor_exit            (MonoObject *obj);
 
-typedef void (*MonoExceptionFunc) (MonoException *ex);
-
-void
-mono_install_handler	    (MonoExceptionFunc func);
-
 void
 mono_raise_exception	    (MonoException *ex);
 
@@ -496,12 +165,6 @@ mono_runtime_object_init    (MonoObject *this_obj);
 
 void
 mono_runtime_class_init	    (MonoVTable *vtable);
-
-void	    
-mono_install_runtime_invoke (MonoInvokeFunc func);
-
-void	    
-mono_install_compile_method (MonoCompileFunc func);
 
 MonoMethod*
 mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method);
@@ -537,29 +200,6 @@ int
 mono_runtime_exec_main	    (MonoMethod *method, MonoArray *args,
 			     MonoObject **exc);
 
-MonoAsyncResult *
-mono_async_result_new	    (MonoDomain *domain, HANDLE handle, 
-			     MonoObject *state, gpointer data);
-
-MonoWaitHandle *
-mono_wait_handle_new	    (MonoDomain *domain, HANDLE handle);
-
-void
-mono_message_init	    (MonoDomain *domain, MonoMethodMessage *this_obj, 
-			     MonoReflectionMethod *method, MonoArray *out_args);
-
-MonoObject *
-mono_remoting_invoke	    (MonoObject *real_proxy, MonoMethodMessage *msg, 
-			     MonoObject **exc, MonoArray **out_args);
-
-MonoObject *
-mono_message_invoke	    (MonoObject *target, MonoMethodMessage *msg, 
-			     MonoObject **exc, MonoArray **out_args);
-
-MonoMethodMessage *
-mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *invoke, 
-			      MonoDelegate **cb, MonoObject **state);
-
 gpointer
 mono_load_remote_field (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, gpointer *res);
 
@@ -573,16 +213,10 @@ void
 mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, MonoObject *arg);
 
 void
-mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args);
-
-void
 mono_unhandled_exception    (MonoObject *exc);
 
 void
 mono_print_unhandled_exception (MonoObject *exc);
-
-void
-mono_delegate_ctor	    (MonoObject *this_obj, MonoObject *target, gpointer addr);
 
 gpointer 
 mono_compile_method	   (MonoMethod *method);
@@ -614,9 +248,6 @@ mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObjec
 
 MonoObject*
 mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc);
-
-void
-mono_type_initialization_init (void);
 
 #endif
 

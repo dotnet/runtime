@@ -1,5 +1,5 @@
 
-#include <mono/metadata/object.h>
+#include <mono/metadata/object-internals.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/tabledefs.h>

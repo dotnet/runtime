@@ -1142,7 +1142,7 @@ DEBUG(printf("Returns: %d\n",sig->ret->type));
 	ji->code_size = p - code_buffer;
 	ji->code_start = code_buffer;
 
-	mono_jit_info_table_add (mono_root_domain, ji);
+	mono_jit_info_table_add (mono_get_root_domain (), ji);
 
 	return ji->code_start;
 }

@@ -13,7 +13,7 @@
 #include <config.h>
 #include <glib.h>
 
-#include <mono/metadata/object.h>
+#include <mono/metadata/object-internals.h>
 #include <mono/io-layer/io-layer.h>
 
 /* This is a copy of System.Net.Sockets.SocketType */

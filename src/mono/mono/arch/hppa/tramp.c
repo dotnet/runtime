@@ -772,7 +772,7 @@ generate:
 	ji->code_size = 4; // does this matter?
 	ji->code_start = descriptor;
 
-	mono_jit_info_table_add (mono_root_domain, ji);
+	mono_jit_info_table_add (mono_get_root_domain (), ji);
 
 	return ji->code_start;
 }

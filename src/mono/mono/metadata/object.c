@@ -508,7 +508,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 
 #if CREATION_SPEEDUP
 	mono_class_compute_gc_descriptor (class);
-	if (domain != mono_root_domain)
+	if (domain != mono_get_root_domain ())
 		/*
 		 * We can't use typed allocation in the non-root domains, since the
 		 * collector needs the GC descriptor stored in the vtable even after
@@ -1221,7 +1221,7 @@ fire_process_exit_event (void)
 	field = mono_class_get_field_from_name (mono_defaults.appdomain_class, "ProcessExit");
 	g_assert (field);
 
-	if (domain != mono_root_domain)
+	if (domain != mono_get_root_domain ())
 		return;
 
 	delegate = *(MonoObject **)(((char *)domain->domain) + field->offset); 
@@ -1382,7 +1382,7 @@ mono_unhandled_exception (MonoObject *exc)
 		/* set exitcode only in the main thread */
 		if (mono_thread_current () == main_thread)
 			mono_environment_exitcode_set (1);
-		if (domain != mono_root_domain || !delegate) {
+		if (domain != mono_get_root_domain () || !delegate) {
 			mono_print_unhandled_exception (exc);
 		} else {
 			MonoObject *e = NULL;

@@ -5,6 +5,8 @@
 #define __MONO_METADATA_DOMAIN_INTERNALS_H__
 
 #include <mono/metadata/appdomain.h>
+#include <mono/utils/mono-codeman.h>
+#include <mono/utils/mono-hash.h>
 
 extern CRITICAL_SECTION mono_delegate_section;
 
@@ -106,12 +108,6 @@ struct _MonoDomain {
 	 * if the hashtable contains a GC visible reference to them.
 	 */
 	GHashTable         *finalizable_objects_hash;
-};
-
-/* This is a copy of System.AppDomain */
-struct _MonoAppDomain {
-	MonoMarshalByRefObject mbr;
-	MonoDomain *data;
 };
 
 #define mono_domain_lock(domain)   EnterCriticalSection(&(domain)->lock)
