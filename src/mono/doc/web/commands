@@ -25,6 +25,9 @@
 1,Test Suite,testing.html,testing.src
 1,Tools,tools.html,tools.src
 1,Porting,porting.html,porting.src
+0,Plans,plans.html,plans.src
+1,ADO.NET,ado-net.html,ado-net.src
+1,Windows.Forms,winforms.html,winforms.src
 0,Resources,resources.html,resources.src
 1,Mailing Lists,mailing-lists.html,mailing-lists.src
 1,Ideas,ideas.html,ideas.src
