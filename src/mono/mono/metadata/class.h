@@ -240,7 +240,7 @@ struct _MonoGenericParam {
 	MonoClass** constraints; /* NULL means end of list */
 };
 
-#define mono_class_has_parent(klass,parent) ((klass)->idepth >= (parent)->idepth) && ((klass)->supertypes [(parent)->idepth - 1] == (parent))
+#define mono_class_has_parent(klass,parent) (((klass)->idepth >= (parent)->idepth) && ((klass)->supertypes [(parent)->idepth - 1] == (parent)))
 
 typedef struct {
 	gulong new_object_count;
