@@ -23,6 +23,21 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Sep 17, 2001
+
+	Mike Kestner's Gtk# (Gtk-sharp) was checked into the CVS
+	repository.  Gtk# can run a simple hello world application.
+	The binding is nice, as it maps Gtk+ signals to delegates in
+	C#.  You can see the Gtk# Hello World program <a href="src/HelloWorld.cs">here</a>
+
+	Gtk-sharp should be available on the next snapshot set.
+
+** Sep 10, 2001
+
+	Dietmar checked in his CIL tree/forest regeneration and most
+	importantly, the x86 instruction selector burg grammar.
+
+
 ** Sep 5, 2001
 
 	The MCS compiler <b>can compile the sample Hello World</b>
