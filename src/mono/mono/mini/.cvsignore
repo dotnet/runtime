@@ -1,5 +1,13 @@
-mini
-mono-debugger-mini-wrapper
-.libs
+Makefile
+Makefile.in
 *.o
-test.exe
+*.exe
+*.lo
+*.la
+.libs
+.deps
+mini
+genmdesc
+inssel.c inssel.h
+mini.pc
+cpu-pentium.h

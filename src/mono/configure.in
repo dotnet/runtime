@@ -142,11 +142,15 @@ GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0`
 GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0`
 GMODULE_CFLAGS=`$PKG_CONFIG --cflags gmodule-2.0`
 GMODULE_LIBS=`$PKG_CONFIG --libs gmodule-2.0`
+MINI_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gmodule-2.0 gthread-2.0`
+MINI_LIBS=`$PKG_CONFIG --libs glib-2.0 gmodule-2.0 gthread-2.0`
 
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_LIBS)
 AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
+AC_SUBST(MINI_CFLAGS)
+AC_SUBST(MINI_LIBS)
 
 gc_headers=no
 AC_CHECK_HEADERS(gc.h gc/gc.h, gc_headers=yes)
@@ -563,6 +567,8 @@ mono/monograph/Makefile
 mono/jit/Makefile
 mono/io-layer/Makefile
 mono/handles/Makefile
+mono/mini/Makefile
+mono/mini/mini.pc
 runtime/Makefile
 scripts/Makefile
 man/Makefile

@@ -4,6 +4,5 @@ SUBDIRS = utils io-layer monoburg os metadata cil dis \
 	arch monograph interpreter jit tests benchmark
 else
 SUBDIRS = utils io-layer monoburg os metadata cil dis \
-	arch monograph interpreter jit tests benchmark handles
+	arch monograph interpreter jit mini tests benchmark handles
 endif
-

@@ -1,34 +1,71 @@
 count=100000
 mtest=for_loop
-monodir=../../
+monodir=$(top_builddir)
 libs=	\
 	$(monodir)/mono/metadata/libmonoruntime.la	\
 	$(monodir)/mono/metadata/libmetadata.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la
-debugger_libs=	\
-	../debugger/wrapper/libmonodebuggerwrapper.a
 
 MCS=mcs
 RUNTIME=mono
-CC=gcc
 WARN=-Wall -Wunused -Wmissing-prototypes -Wmissing-declarations \
 	-Wstrict-prototypes  -Wmissing-prototypes -Wnested-externs \
 	-Wpointer-arith -Wno-cast-qual -Wcast-align -Wwrite-strings
-CFLAGS=-g $(WARN) -fexceptions -DMONO_USE_EXC_TABLES
-CPPFLAGS=-g $(WARN) -I$(monodir) `pkg-config --cflags glib-2.0 gmodule-2.0 gthread-2.0`
-LDFLAGS=-g $(libs) -lgc -lm `pkg-config --libs glib-2.0 gmodule-2.0 gthread-2.0`
-debugger_LDFLAGS=-g $(libs) $(debugger_libs) -lgc -lm `pkg-config --libs glib-2.0 gmodule-2.0 gthread-2.0`
 
-arch_objects=mini-x86.o exceptions-x86.o tramp-x86.o
-lib_objects=mini.o dominators.o cfold.o regalloc.o inssel.o regset.o helpers.o liveness.o ssa.o driver.o \
-	debug.o debug-stabs.o debug-dwarf2.o debug-mini.o linear-scan.o aot.o graph.o $(arch_objects)
-objects=main.o $(lib_objects)
-debugger_objects=debugger-main.o $(lib_objects)
+INCLUDES = \
+	$(WARN) -fexceptions -DMONO_USE_EXC_TABLES	\
+	-I$(top_srcdir) $(MINI_CFLAGS)
+
 regtests=basic.exe arrays.exe basic-float.exe basic-long.exe objects.exe iltests.exe exceptions.exe bench.exe
 
-%.o: %.c mini.h makefile regset.h mini-x86.h inssel.h cpu-pentium.h mini-ops.h
-	$(CC) -c $< $(CFLAGS) $(CPPFLAGS)
+bin_PROGRAMS = mini genmdesc
+
+lib_LTLIBRARIES = libmini.la
+
+mini_SOURCES = \
+	main.c
+
+mini_LDADD = \
+	libmini.la
+
+genmdesc_SOURCES = \
+	mini.h		\
+	genmdesc.c	\
+	helpers.c
+
+genmdesc_LDADD = \
+	$(libs) -lgc -lm	\
+	$(MINI_LIBS)
+
+arch_sources = \
+	mini-x86.c		\
+	exceptions-x86.c	\
+	tramp-x86.c
+
+libmini_la_SOURCES = \
+	mini.c		\
+	dominators.c	\
+	cfold.c		\
+	regalloc.c	\
+	inssel.c	\
+	regset.c	\
+	helpers.c	\
+	liveness.c	\
+	ssa.c		\
+	driver.c	\
+	debug.c		\
+	debug-stabs.c	\
+	debug-dwarf2.c	\
+	debug-mini.c	\
+	linear-scan.c	\
+	aot.c		\
+	graph.c		\
+	$(arch_sources)
+
+libmini_la_LIBADD = \
+	$(libs) -lgc -lm	\
+	$(MINI_LIBS)
 
 %.exe: %.cs TestDriver.dll
 	$(MCS) /unsafe $< /r:TestDriver.dll
@@ -36,19 +73,8 @@ regtests=basic.exe arrays.exe basic-float.exe basic-long.exe objects.exe iltests
 %.exe: %.il
 	ilasm /OUTPUT=$*.exe $<
 
-all: mini genmdesc
-
 TestDriver.dll: TestDriver.cs
 	$(MCS) /out:TestDriver.dll /target:library TestDriver.cs
-
-mini: mini.h $(objects) $(libs) makefile cpu-pentium.h jit-icalls.c
-	libtool --mode=link gcc -o mini $(objects) $(LDFLAGS)
-
-mono-debugger-mini-wrapper: mini.h $(debugger_objects) $(libs) makefile cpu-pentium.h jit-icalls.c
-	libtool --mode=link gcc -o mono-debugger-mini-wrapper $(debugger_objects) $(debugger_LDFLAGS)
-
-genmdesc: mini.h genmdesc.o helpers.o
-	libtool --mode=link gcc -o genmdesc genmdesc.o helpers.o $(LDFLAGS)
 
 cpu-pentium.h: cpu-pentium.md genmdesc
 	./genmdesc cpu-pentium.md cpu-pentium.h pentium
@@ -97,3 +123,8 @@ docu: mini.sgm
 clean:
 	rm -f mini a.out gmon.out *.o test.exe
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA= mini.pc
+DISTCLEANFILES= mini.pc
+
+EXTRA_DIST = mini.pc.in

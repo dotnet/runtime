@@ -1,3 +1,8 @@
+2003-04-07  Martin Baulig  <martin@ximian.com>
+
+	* mono/mini/: Added this directory to the build; install `mini'
+	and `libmini.la'.
+
 2003-04-07  Duncan Mak  <duncan@ximian.com>
 
 	* doc/web/render-team-page.cs: Fix ContributorComparer.
