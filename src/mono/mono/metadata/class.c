@@ -1773,8 +1773,6 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 		klass->parent = mono_defaults.object_class;
 
 	if (count - pos > 0) {
-		int j;
-
 		klass->interface_count = count - pos;
 		klass->interfaces = g_new0 (MonoClass *, count - pos);
 		for (i = pos; i < count; i++)
