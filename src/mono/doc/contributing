@@ -44,13 +44,15 @@
 
 	A few smaller tasks are here, dropped in no particular order:
 	<ul>
-		* <b>MCS compilation process:</b> Currently MCS does
-		  not build with a single `make' command.  This should
-		  be fixed (this being part of the `Joel Test' that
-		  software has to pass).
-
 		* <b>Mono/doc and web site:</b> They need to be
 		  packaged up in the official `distribution'
+
+		* Adding serialization support to all the classes.
+
+		  We have many classes, but we have not implemented in
+		  many cases the serialization and re-incarnation support in 
+		  them (this is pretty straight forward code, and simple,
+	  	  but there is a lot to be done here).
 	</ul>
 
 <a name="compile-service">

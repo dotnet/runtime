@@ -23,6 +23,17 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
+** Nov 28, 2001
+
+	JIT land: Paolo got GDB support into the JIT engine while
+	Dietmar added exceptions support to it.
+
+	The C# compiler supports all array initializations now, and the
+	switch statement as well as fixing many existing bugs.  Many
+	new more tests.
+	
+	Nick keeps working on improving our class library test suite.
+
 ** Nov 16, 2001
 
 <blockquote>
