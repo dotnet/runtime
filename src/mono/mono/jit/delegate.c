@@ -24,7 +24,7 @@
  * - worker threads should be domain specific
  */
 
-#define NUM_WORKERS 1
+#define NUM_WORKERS 2
 
 typedef struct {
 	MonoMethod *begin_method;
@@ -111,8 +111,8 @@ arch_get_async_invoke ()
 	x86_fst_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, res_freg), TRUE, FALSE);
 
 	/* call async callback */
-	/* push pointer to ASyncCall */
-	x86_push_reg (code, X86_EBX);
+	/* push pointer to AsyncResult */
+	x86_push_reg (code, X86_ESI);
 	x86_push_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, cb_target));
 	x86_call_membase (code, X86_EBX, G_STRUCT_OFFSET (ASyncCall, cb_code));
 	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
@@ -434,14 +434,16 @@ arch_get_delegate_invoke (MonoMethod *method, int *size)
 }
 
 static guint32
-async_invoke_thread (MonoDomain *domain)
+async_invoke_thread ()
 {
+	MonoDomain *domain;
 	void (*async_invoke) (MonoAsyncResult *ar) = arch_get_async_invoke ();
-	
-	mono_domain_set (domain);
+	volatile static int workers = 1;
 
 	for (;;) {
 		MonoAsyncResult *ar;
+		gboolean new_worker = FALSE;
+		guint32 tid;
 
 		WaitForSingleObject (delegate_semaphore, INFINITE);
 		
@@ -449,8 +451,14 @@ async_invoke_thread (MonoDomain *domain)
 		EnterCriticalSection (&delegate_section);
 		
 		if (async_call_queue) {
+			if ((g_list_length (async_call_queue) > 1) && (workers <NUM_WORKERS)) {
+				new_worker = TRUE;
+				workers++;
+			}
+
 			ar = (MonoAsyncResult *)async_call_queue->data;
 			async_call_queue = g_list_remove_link (async_call_queue, async_call_queue); 
+
 		}
 
 		LeaveCriticalSection (&delegate_section);
@@ -460,6 +468,14 @@ async_invoke_thread (MonoDomain *domain)
 
 		if (!ar)
 			continue;
+		
+		if (new_worker) 
+			CreateThread (NULL, 0, async_invoke_thread, NULL, 0, &tid);
+
+		/* worker threads invokes methods in different domains,
+		 * so we need to set the right domain here */
+		domain = ((MonoObject *)ar)->vtable->domain;
+		mono_domain_set (domain);
 
 		async_invoke (ar);
 	}
@@ -473,16 +489,12 @@ mono_delegate_init ()
 	MonoDomain *domain = mono_domain_get ();
 	HANDLE thread;
 	guint32 tid;
-	int i;
 
 	delegate_semaphore = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 	g_assert (delegate_semaphore != INVALID_HANDLE_VALUE);
 	InitializeCriticalSection (&delegate_section);
-
-	for (i = 0; i < NUM_WORKERS; i++) {
-		thread = CreateThread (NULL, 0, async_invoke_thread, domain, 0, &tid);
-		g_assert (thread != NULL);
-	}
+	thread = CreateThread (NULL, 0, async_invoke_thread, NULL, 0, &tid);
+	g_assert (thread != NULL);
 }
 
 void
