@@ -32,20 +32,15 @@ gunichar2 *mono_unicode_from_external (const gchar *in, gsize *bytes)
 	gchar **encodings;
 	const gchar *encoding_list;
 	int i;
+	glong lbytes;
 	
 	if(in==NULL) {
 		return(NULL);
 	}
 	
-	if(g_utf8_validate (in, -1, NULL)) {
-		gunichar2 *unires=g_utf8_to_utf16 (in, -1, NULL, (glong *)bytes, NULL);
-		*bytes *= 2;
-		return(unires);
-	}
-
 	encoding_list=g_getenv ("MONO_EXTERNAL_ENCODINGS");
 	if(encoding_list==NULL) {
-		return(NULL);
+		encoding_list = "";
 	}
 	
 	encodings=g_strsplit (encoding_list, ":", 0);
@@ -54,30 +49,33 @@ gunichar2 *mono_unicode_from_external (const gchar *in, gsize *bytes)
 		g_message (G_GNUC_PRETTY_FUNCTION ": Trying encoding [%s]",
 			   encodings[i]);
 #endif
-		
 		/* "default_locale" is a special case encoding */
 		if(!strcmp (encodings[i], "default_locale")) {
-			gchar *utf8=g_locale_to_utf8 (in, -1, NULL, NULL,
-						      NULL);
-			if(utf8!=NULL && g_utf8_validate (utf8, -1, NULL)) {
-				res=g_convert (utf8, -1, "UTF16",
-					       encodings[i], NULL, bytes,
-					       NULL);
+			gchar *utf8=g_locale_to_utf8 (in, -1, NULL, NULL, NULL);
+			if(utf8!=NULL) {
+				res=(gchar *) g_utf8_to_utf16 (utf8, -1, NULL, &lbytes, NULL);
+				*bytes = (gsize) lbytes;
 			}
 			g_free (utf8);
 		} else {
-			res=g_convert (in, -1, "UTF16", encodings[i], NULL,
-				       bytes, NULL);
+			res=g_convert (in, -1, "UTF16", encodings[i], NULL, bytes, NULL);
 		}
 
 		if(res!=NULL) {
 			g_strfreev (encodings);
+			*bytes *= 2;
 			return((gunichar2 *)res);
 		}
 	}
 	
 	g_strfreev (encodings);
 	
+	if(g_utf8_validate (in, -1, NULL)) {
+		gunichar2 *unires=g_utf8_to_utf16 (in, -1, NULL, (glong *)bytes, NULL);
+		*bytes *= 2;
+		return(unires);
+	}
+
 	return(NULL);
 }
 
@@ -106,13 +104,9 @@ gchar *mono_utf8_from_external (const gchar *in)
 		return(NULL);
 	}
 	
-	if(g_utf8_validate (in, -1, NULL)) {
-		return(g_strdup (in));
-	}
-
 	encoding_list=g_getenv ("MONO_EXTERNAL_ENCODINGS");
 	if(encoding_list==NULL) {
-		return(NULL);
+		encoding_list = "";
 	}
 	
 	encodings=g_strsplit (encoding_list, ":", 0);
@@ -142,6 +136,10 @@ gchar *mono_utf8_from_external (const gchar *in)
 	
 	g_strfreev (encodings);
 	
+	if(g_utf8_validate (in, -1, NULL)) {
+		return(g_strdup (in));
+	}
+
 	return(NULL);
 }
 

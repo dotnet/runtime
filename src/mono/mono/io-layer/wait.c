@@ -321,6 +321,10 @@ guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 		return(WAIT_FAILED);
 	}
 	
+	if (numobjects == 1) {
+		return WaitForSingleObject (handles [0], timeout);
+	}
+
 	/* Check for duplicates */
 	dups=g_hash_table_new(g_direct_hash, g_direct_equal);
 	for(i=0; i<numobjects; i++) {

@@ -2351,6 +2351,7 @@ gpointer FindFirstFile (const gunichar2 *pattern, WapiFindData *find_data)
 
 	find_handle->count = 0;
 	if (!FindNextFile (handle, find_data)) {
+		_wapi_handle_unlock_handle (handle);
 		FindClose (handle);
 		SetLastError (ERROR_NO_MORE_FILES);
 		return INVALID_HANDLE_VALUE;
@@ -2448,6 +2449,8 @@ retry:
 	utf16_basename = g_utf8_to_utf16 (utf8_basename, -1, NULL, &bytes,
 					  NULL);
 	if(utf16_basename==NULL) {
+		g_free (utf8_basename);
+		g_free (utf8_filename);
 		goto retry;
 	}
 
