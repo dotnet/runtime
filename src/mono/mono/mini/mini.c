@@ -7867,7 +7867,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	
 	jinfo = mono_mempool_alloc0 (cfg->domain->mp, sizeof (MonoJitInfo));
 
-	jinfo = g_new0 (MonoJitInfo, 1);
 	jinfo->method = method;
 	jinfo->code_start = cfg->native_code;
 	jinfo->code_size = cfg->code_len;
