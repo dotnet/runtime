@@ -173,16 +173,17 @@
   <a href="http://msdn.microsoft.com/WebServices/default.aspx?pull=/library/en-us/dnexxml/html/xml05192003.asp">Microsoft has tried to do some of them</a>, 
   but it is not successful because of System.Xml.Xsl design problem:
 
-  <ul>
-  	* In general, .NET's "extension objects" (including msxsl:script) is 
-	  not useful to return node-sets (MS XSLT implementation rejects just
-	  overriden XPathNodeIterator, but accepts only their hidden classes.
-	  And are the same in Mono though classes are different)
+	<ul>
+		* In general, .NET's "extension objects" (including 
+		  msxsl:script) is not useful to return node-sets (MS XSLT
+		  implementation rejects just overriden XPathNodeIterator, 
+		  but accepts only their hidden classes. And are the same 
+		  in Mono though classes are different)
 
-	* In .NET's extension object design, extension function name is a
-	  valid method name that cannot contain some characters such as '-'.
-	  That is, implementing EXSLT in C# is impossible.
-  </ul>
+		* In .NET's extension object design, extension function name 
+		  is a valid method name that cannot contain some characters
+		  such as '-'. That is, implementing EXSLT in C# is impossible.
+	</ul>
 
   So if we support EXSLT, it has to be done inside our System.XML.dll.
   Microsoft developers are also aware of this problem and some of them wish
@@ -202,14 +203,14 @@
 
   Currently we have
 
-  <ul>
-	* Custom datatype support. Right now, you can use XML schema
-	  datatypes ( http://www.w3.org/2001/XMLSchema-datatypes ) as well
-	  as RELAX NG default datatypes (as used in relaxng.rng).
+	<ul>
+		* Custom datatype support. Right now, you can use XML schema
+		  datatypes ( http://www.w3.org/2001/XMLSchema-datatypes ) 
+		  as well as RELAX NG default datatypes (as used in relaxng.rng).
 
-	* RELAX NG Compact Syntax support, though not yet stable.
-	  See Commons.Xml.Relaxng.Rnc.RncParser class.
-  </ul>
+		* RELAX NG Compact Syntax support, though not yet stable.
+		  See Commons.Xml.Relaxng.Rnc.RncParser class.
+</ul>
 
 
 ** Plans
@@ -231,16 +232,16 @@
 
   System.Xml 2.0 contains several features such as:
 
-  <ul>
-	* new XPathNavigator and XPathDocument
-	* Factory method based and strongly-typed XmlReader
-	* XML Schema design changes
-	* XSD Inference
-	* XQuery implementation
-	* Well-documented and improved XmlSerializer.
-	* XSLT IL generator (similar to Apache XSLTC) - it is 
-	  internal use
-  </ul>
+	<ul>
+		* new XPathNavigator and XPathDocument
+		* Factory method based and strongly-typed XmlReader
+		* XML Schema design changes
+		* XSD Inference
+		* XQuery implementation
+		* Well-documented and improved XmlSerializer.
+		* XSLT IL generator (similar to Apache XSLTC) - it is 
+		  internal use
+	</ul>
 
 **** XmlReader.Create() and ReadValueAsXxx()
 
@@ -293,20 +294,20 @@
 
   XQuery implementation will be done in these steps:
 
-  <ul>
-	* XQuery syntax parser that parses xquery string to AST (abstract
-	  syntax tree).
+	<ul>
+		* XQuery syntax parser that parses xquery string to AST 
+		  (abstract syntax tree).
 
-	* XQuery AST compiler into runnable query command (not done yet)
+		* XQuery AST compiler into runnable query command (not done yet)
 
-	* XQuery (dynamic context) runtime = XQuery expression evaluator
-	  + sequence iterator.
+		* XQuery (dynamic context) runtime = XQuery expression evaluator
+		  + sequence iterator.
 
-	* Applied expression classes for XQuery/XPath 2.0 functions and
-	  operators.
+		* Applied expression classes for XQuery/XPath 2.0 functions and
+		  operators.
 
-	* XQuery data model and (mainly) conversion support.
-  </ul>
+		* XQuery data model and (mainly) conversion support.
+	</ul>
 
 **** Relax NG and DSDL in Mono 1.2
 
@@ -325,15 +326,16 @@
 
   In Mono 1.2, there might be improvements on Commons.Xml.Relaxng.
 
-  <ul>
-	* Currently RelaxngPattern.Compile() provides cheap compilation
-	  error information. At least it can provide error location. Also,
-	  the type of error should be kind of RelaxngGrammarException.
+	<ul>
+		* Currently RelaxngPattern.Compile() provides cheap compilation
+		  error information. At least it can provide error location.
+		  Also, the type of error should be kind of 
+		  RelaxngGrammarException.
 
-	* Right now there is no ambiguity detection implementation that
-	  would be useful for RelaxngPattern based xml serialization (if
-	  there is need).
-  </ul>
+		* Right now there is no ambiguity detection implementation that
+		  would be useful for RelaxngPattern based xml serialization (if
+		  there is need).
+	</ul>
 
 
 ** Tools
