@@ -1430,6 +1430,7 @@ typedef union {
 
 #define x86_set_reg(inst,cond,reg,is_signed)	\
 	do {	\
+                g_assert (reg < 4); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		if ((is_signed))	\
 			*(inst)++ = x86_cc_signed_map [(cond)] + 0x20;	\

@@ -476,11 +476,14 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 		if (vmv->range.first_use.abs_pos > vmv->range.last_use.abs_pos)
 			continue;
 
-		if ((ins->flags & (MONO_INST_IS_DEAD|MONO_INST_VOLATILE|MONO_INST_INDIRECT)) || (ins->opcode != OP_LOCAL && ins->opcode != OP_ARG))
+		if ((ins->flags & (MONO_INST_IS_DEAD|MONO_INST_VOLATILE|MONO_INST_INDIRECT)) || 
+		    (ins->opcode != OP_LOCAL && ins->opcode != OP_ARG))
 			continue;
 
-		/* we can only allocate 32 bit values */
-		if (is_regsize_var (ins->inst_vtype)) {
+		if (is_regsize_var (ins->inst_vtype) ||
+		    (ins->inst_vtype->type == MONO_TYPE_BOOLEAN) || (ins->inst_vtype->type == MONO_TYPE_U1) || 
+		    (ins->inst_vtype->type == MONO_TYPE_U2) || (ins->inst_vtype->type == MONO_TYPE_I1) ||
+		    (ins->inst_vtype->type == MONO_TYPE_I2) || (ins->inst_vtype->type == MONO_TYPE_CHAR)) {
 			g_assert (MONO_VARINFO (cfg, i)->reg == -1);
 			g_assert (i == vmv->idx);
 			vars = mono_varlist_insert_sorted (cfg, vars, vmv, FALSE);
@@ -1932,6 +1935,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		mono_debug_record_line_number (cfg, ins, offset);
 
 		switch (ins->opcode) {
+		case OP_X86_SETEQ_MEMBASE:
+			x86_set_membase (code, X86_CC_EQ, ins->inst_basereg, ins->inst_offset, TRUE);
+			break;
 		case OP_STOREI1_MEMBASE_IMM:
 			x86_mov_membase_imm (code, ins->inst_destbasereg, ins->inst_offset, ins->inst_imm, 1);
 			break;
@@ -2125,6 +2131,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case CEE_NEG:
 			x86_neg_reg (code, ins->sreg1);
+			break;
+		case OP_SEXT_I1:
+			x86_widen_reg (code, ins->dreg, ins->sreg1, TRUE, FALSE);
+			break;
+		case OP_SEXT_I2:
+			x86_widen_reg (code, ins->dreg, ins->sreg1, TRUE, TRUE);
 			break;
 		case CEE_MUL:
 			x86_imul_reg_reg (code, ins->sreg1, ins->sreg2);

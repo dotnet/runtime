@@ -284,6 +284,8 @@ MINI_OP(OP_SBB_IMM, "sbb_imm")
 MINI_OP(OP_ADDCC,   "addcc")
 MINI_OP(OP_SUBCC,   "subcc")
 MINI_OP(OP_BR_REG,  "br_reg")
+MINI_OP(OP_SEXT_I1,  "sext_i1")
+MINI_OP(OP_SEXT_I2,  "sext_i2")
 
 /* FP functions usually done by the CPU */
 MINI_OP(OP_SIN,     "sin")
@@ -320,6 +322,7 @@ MINI_OP(OP_X86_XCHG,               "x86_xchg")
 MINI_OP(OP_X86_FPOP,               "x86_fpop")
 MINI_OP(OP_X86_FP_LOAD_I8,         "x86_fp_load_i8")
 MINI_OP(OP_X86_FP_LOAD_I4,         "x86_fp_load_i4")
+MINI_OP(OP_X86_SETEQ_MEMBASE,      "x86_seteq_membase")
 
 
 

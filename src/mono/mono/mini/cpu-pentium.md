@@ -604,6 +604,7 @@ x86_xchg: src1:i src2:i clob:x len:1
 x86_fpop: src1:f len:2
 x86_fp_load_i8: dest:f src1:b len:7
 x86_fp_load_i4: dest:f src1:b len:7
+x86_seteq_membase: src1:b len:7
 adc: dest:i src1:i src2:i len:2 clob:1
 addcc: dest:i src1:i src2:i len:2 clob:1
 subcc: dest:i src1:i src2:i len:2 clob:1
@@ -617,3 +618,5 @@ abs: dest:f src1:f len:2
 tan: dest:f src1:f len:2
 atan: dest:f src1:f len:2
 sqrt: dest:f src1:f len:2
+sext_i1: dest:i src1:i len:3
+sext_i2: dest:i src1:i len:3
