@@ -25,11 +25,22 @@
 
 ** Jan 28, 2002
 
-	The Mono Class Libraries have been relicensed under the terms of the
+	The Mono contributors have relicensed the Class Libraries under
+	the terms of the
 	<a href="http://www.opensource.org/licenses/mit-license.html">MIT X11</a> license.
 
 	This license is an Open Source license, and is used by other projects
-	(most notably, the XFree86 project). 
+	(most notably, the XFree86 project).   
+
+	Our <a
+	href="http://www.ximian.com/about_us/press_center/press_releases/mono_partners.html">Press
+	Release</a>
+
+	Press coverage: <a
+	href="http://news.com.com/2100-1001-823734.html">CNet</a>, <a
+	href="http://www.wired.com/news/technology/0,1282,50037-2,00.html">Wired</a>, 
+	<a href="http://www.infoworld.com/articles/hn/xml/02/01/28/020128hnopennet.xml">InfoWorld</a>, 
+	<a href="http://www.newsforge.com/article.pl?sid=02/01/27/2232231">NewsForge</a>.
 
 ** Jan 23, 2002
 
