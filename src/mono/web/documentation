@@ -250,6 +250,11 @@
         please don't open the Microsoft docs and refer to them for each member
         you document.
 
+	The best way of documenting is to read our source code
+	implementation and explain in your own words what our implementation
+	does, and what the user can do with it.
+
         There's a lot of domain expertise among the class library contributors;
         let's put the same personal stamp on the class library documentation
         that we have on the class libraries themselves.
+
