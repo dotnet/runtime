@@ -6139,6 +6139,21 @@ mono_jit_compile_method (MonoMethod *method)
 
 	g_hash_table_insert (jit_code_hash, method, code);
 
+	if (target_domain->jump_target_hash) {
+		MonoJumpInfo patch_info;
+		GSList *list, *tmp;
+		list = g_hash_table_lookup (target_domain->jump_target_hash, method);
+		if (list) {
+			patch_info.next = NULL;
+			patch_info.ip.i = 0;
+			patch_info.type = MONO_PATCH_INFO_METHOD_JUMP;
+			patch_info.data.method = method;
+			g_hash_table_remove (target_domain->jump_target_hash, method);
+		}
+		for (tmp = list; tmp; tmp = tmp->next)
+			mono_arch_patch_code (NULL, target_domain, tmp->data, &patch_info);
+		g_slist_free (list);
+	}
 	/* make sure runtime_init is called */
 	mono_class_vtable (target_domain, method->klass);
 
