@@ -21,7 +21,6 @@ static MonoTraceSpec trace_spec;
 gboolean
 mono_trace_eval (MonoMethod *method)
 {
-	MonoTraceSpec *s = mono_jit_trace_calls;
 	int include = 0;
 	int i;
 
@@ -198,25 +197,12 @@ get_spec (int *last)
 	return TOKEN_SEPARATOR;
 }
 
-static const char *xmap (int idx)
-{
-	switch (idx){
-	case MONO_TRACEOP_ALL: return "all";
-	case MONO_TRACEOP_PROGRAM: return "program";
-	case MONO_TRACEOP_METHOD: return "method"; 
-	case MONO_TRACEOP_ASSEMBLY: return "assembly";
-	case MONO_TRACEOP_CLASS: return "class";
-	}
-	return "UNKNOWN";
-}
-
 MonoTraceSpec *
 mono_trace_parse_options (MonoAssembly *assembly, char *options)
 {
 	char *p = options;
 	int size = 1;
 	int last_used;
-	int exclude = 0;
 	int token;
 	
 	trace_spec.assembly = assembly;
