@@ -15,6 +15,7 @@
 #include "mono/metadata/class-internals.h"
 #include "mono/metadata/object-internals.h"
 #include <mono/metadata/profiler-private.h>
+#include <mono/utils/mono-compiler.h>
 
 #include "mini-arch.h"
 #include "regalloc.h"

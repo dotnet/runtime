@@ -16,6 +16,7 @@
 #ifndef PLATFORM_WIN32
 #include <sys/mman.h>
 #else
+#include <winsock2.h>
 #include <windows.h>
 #endif
 
@@ -36,6 +37,7 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/utils/mono-logger.h>
+#include "mono/utils/mono-compiler.h"
 
 #include "mini.h"
 

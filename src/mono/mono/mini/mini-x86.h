@@ -107,8 +107,7 @@ struct MonoLMF {
 	guint32     eip;
 };
 
-typedef struct MonoCompileArch {
-} MonoCompileArch;
+typedef void* MonoCompileArch;
 
 #if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 # define SC_EAX sc_eax

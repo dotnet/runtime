@@ -279,11 +279,20 @@ mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_da
 
 	MonoContext ctx, new_ctx;
 
+#ifdef _MSC_VER
+	unsigned int stackptr, retaddr;
+	__asm mov stackptr, ebp;
+	__asm mov eax, DWORD PTR [ebp + 4];
+	__asm mov retaddr, eax;
+	MONO_CONTEXT_SET_IP (&ctx, retaddr);
+	/* FIXME: NOT WORKING -- THIS IS __builtin_frame_address (0) NOT (1) */
+	MONO_CONTEXT_SET_BP (&ctx, stackptr);
+#else
 	mono_arch_flush_register_windows ();
 
 	MONO_CONTEXT_SET_IP (&ctx, __builtin_return_address (0));
 	MONO_CONTEXT_SET_BP (&ctx, __builtin_frame_address (1));
-
+#endif
 	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
 		
 		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
@@ -312,11 +321,18 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MonoLMF *lmf = jit_tls->lmf;
 	MonoJitInfo *ji, rji;
 	MonoContext ctx, new_ctx;
+	unsigned int stackptr;
 
 	mono_arch_flush_register_windows ();
 
+#ifdef _MSC_VER
+	__asm mov stackptr, ebp;
+#else
+	stackptr = (unsigned int) __builtin_frame_address (0);
+#endif
+
 	MONO_CONTEXT_SET_IP (&ctx, ves_icall_get_frame_info);
-	MONO_CONTEXT_SET_BP (&ctx, __builtin_frame_address (0));
+	MONO_CONTEXT_SET_BP (&ctx, stackptr);
 
 	skip++;
 
@@ -406,7 +422,16 @@ ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip)
 	MonoFrameSecurityInfo si;
 	MonoContext ctx;
 
+#ifdef _MSC_VER
+	/* seems that MSC doesn't like having __asm in macros */
+	unsigned int stackptr;
+	mono_arch_flush_register_windows ();
+	__asm mov stackptr, ebp;
+	MONO_CONTEXT_SET_IP (&ctx, ves_icall_System_Security_SecurityFrame_GetSecurityFrame);
+	MONO_CONTEXT_SET_BP (&ctx, stackptr);
+#else
 	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_System_Security_SecurityFrame_GetSecurityFrame);
+#endif
 
 	si.skips = skip;
 	si.frame = NULL;
@@ -483,7 +508,16 @@ ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
 	MonoContext ctx;
 	MonoArray *stack;
 
+#ifdef _MSC_VER
+	/* seems that MSC doesn't like having __asm in macros */
+	unsigned int stackptr;
+	mono_arch_flush_register_windows ();
+	__asm mov stackptr, ebp;
+	MONO_CONTEXT_SET_IP (&ctx, ves_icall_System_Security_SecurityFrame_GetSecurityStack);
+	MONO_CONTEXT_SET_BP (&ctx, stackptr);
+#else
 	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_System_Security_SecurityFrame_GetSecurityStack);
+#endif
 
 	ss.skips = skip;
 	ss.stack = NULL;
