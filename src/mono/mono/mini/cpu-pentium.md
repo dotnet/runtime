@@ -134,8 +134,8 @@ stind.i1: src1:b src2:i
 stind.i2: src1:b src2:i
 stind.i4: src1:b src2:i
 stind.i8:
-stind.r4: src1:b src2:f
-stind.r8: src1:b src2:f
+stind.r4: dest:f src1:b
+stind.r8: dest:f src1:b
 add: dest:i src1:i src2:i len:2 clob:1
 sub: dest:i src1:i src2:i len:2 clob:1
 mul: dest:i src1:i src2:i len:3 clob:1
@@ -345,6 +345,7 @@ loadu4_membase: dest:i src1:b len:6
 loadi8_membase: dest:i src1:b
 loadr4_membase: dest:f src1:b len:6
 loadr8_membase: dest:f src1:b len:6
+loadr8_spill_membase: src1:b len:8
 loadu4_mem: dest:i len:9
 move: dest:i src1:i len:2
 add_imm: dest:i src1:i len:6 clob:1
@@ -461,13 +462,13 @@ float_bge: len:12
 float_bge_un: len:12
 float_ble: len:12
 float_ble_un: len:12
-float_add: len:2
-float_sub: len:2
-float_mul: len:2
-float_div: len:2
-float_div_un: len:2
-float_rem: len:17
-float_rem_un: len:17
+float_add: src1:f src2:f len:2
+float_sub: src1:f src2:f len:2
+float_mul: src1:f src2:f len:2
+float_div: src1:f src2:f len:2
+float_div_un: src1:f src2:f len:2
+float_rem: src1:f src2:f len:17
+float_rem_un: src1:f src2:f len:17
 float_neg: dest:f src1:f len:2
 float_not: dest:f src1:f len:2
 float_conv_to_i1: dest:i src1:f len:39
@@ -485,7 +486,7 @@ float_conv_to_ovf_i: dest:a src1:f len:30
 float_conv_to_ovd_u: dest:a src1:f len:30
 float_add_ovf:
 float_add_ovf_un:
-float_mul_ovf:
+float_mul_ovf: 
 float_mul_ovf_un:
 float_sub_ovf:
 float_sub_ovf_un:

@@ -29,8 +29,7 @@ mono_arch_regname (int reg) {
 	case X86_EBX: return "%ebx";
 	case X86_ECX: return "%ecx";
 	case X86_EDX: return "%edx";
-	case X86_ESP: return "%esp";
-	case X86_EBP: return "%ebp";
+	case X86_ESP: return "%esp";	case X86_EBP: return "%ebp";
 	case X86_EDI: return "%edi";
 	case X86_ESI: return "%esi";
 	}
@@ -1145,6 +1144,9 @@ branch_cc_table [] = {
 	X86_CC_O, X86_CC_NO, X86_CC_C, X86_CC_NC
 };
 
+#define DEBUG(a) if (cfg->verbose_level > 1) a
+//#define DEBUG(a)
+
 /*
  * returns the offset used by spillvar. It allocates a new
  * spill variable if necessary. 
@@ -1177,8 +1179,71 @@ mono_spillvar_offset (MonoCompile *cfg, int spillvar)
 	return 0;
 }
 
-#define DEBUG(a) if (cfg->verbose_level > 1) a
-//#define DEBUG(a)
+/*
+ * returns the offset used by spillvar. It allocates a new
+ * spill float variable if necessary. 
+ * (same as mono_spillvar_offset but for float)
+ */
+static int
+mono_spillvar_offset_float (MonoCompile *cfg, int spillvar)
+{
+	MonoSpillInfo **si, *info;
+	int i = 0;
+
+	si = &cfg->spill_info_float; 
+	
+	while (i <= spillvar) {
+
+		if (!*si) {
+			*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
+			info->next = NULL;
+			cfg->stack_offset -= sizeof (double);
+			info->offset = cfg->stack_offset;
+		}
+
+		if (i == spillvar)
+			return (*si)->offset;
+
+		i++;
+		si = &(*si)->next;
+	}
+
+	g_assert_not_reached ();
+	return 0;
+}
+
+/*
+ * Creates a store for spilled floating point items
+ */
+static MonoInst*
+create_spilled_store_float (MonoCompile *cfg, int spill, int reg, MonoInst *ins)
+{
+	MonoInst *store;
+	MONO_INST_NEW (cfg, store, OP_STORER8_MEMBASE_REG);
+	store->sreg1 = reg;
+	store->inst_destbasereg = X86_EBP;
+	store->inst_offset = mono_spillvar_offset_float (cfg, spill);
+
+	DEBUG (g_print ("SPILLED FLOAT STORE (%d at 0x%08x(%%sp)) (from %d)\n", spill, store->inst_offset, reg));
+	return store;
+}
+
+/*
+ * Creates a load for spilled floating point items 
+ */
+static MonoInst*
+create_spilled_load_float (MonoCompile *cfg, int spill, int reg, MonoInst *ins)
+{
+	MonoInst *load;
+	MONO_INST_NEW (cfg, load, OP_LOADR8_SPILL_MEMBASE);
+	load->dreg = reg;
+	load->inst_basereg = X86_EBP;
+	load->inst_offset = mono_spillvar_offset_float (cfg, spill);
+
+	DEBUG (g_print ("SPILLED FLOAT LOAD (%d at 0x%08x(%%sp)) (from %d)\n", spill, load->inst_offset, reg));
+	return load;
+}
+
 #define reg_is_freeable(r) ((r) >= 0 && (r) <= 7 && X86_IS_CALLEE ((r)))
 
 typedef struct {
@@ -1186,6 +1251,7 @@ typedef struct {
 	int killed_in;
 	int last_use;
 	int prev_use;
+	int fpflags;	/* used to track if we spill/load */
 } RegTrack;
 
 static const char*const * ins_spec = pentium_desc;
@@ -1403,6 +1469,7 @@ insert_before_ins (MonoInst *ins, InstList *item, MonoInst* to_insert)
 	item->data = to_insert; 
 }
 
+
 #if  0
 static int
 alloc_int_reg (MonoCompile *cfg, InstList *curinst, MonoInst *ins, int sym_reg, guint32 allow_mask)
@@ -1427,6 +1494,11 @@ alloc_int_reg (MonoCompile *cfg, InstList *curinst, MonoInst *ins, int sym_reg, 
 }
 #endif
 
+/* flags used in reginfo->fpflags */
+#define MONO_X86_FP_NEEDS_LOAD_SPILL	32
+#define MONO_X86_FP_NEEDS_SPILL	64
+#define MONO_X86_FP_NEEDS_LOAD		128
+
 /*#include "cprop.c"*/
 
 /*
@@ -1447,6 +1519,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	InstList *tmp, *reversed = NULL;
 	const char *spec;
 	guint32 src1_mask, src2_mask, dest_mask;
+	GList *fspill_list = NULL;
+	int fspill = 0;
 
 	if (!bb->code)
 		return;
@@ -1461,17 +1535,27 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	/*if (cfg->opt & MONO_OPT_COPYPROP)
 		local_copy_prop (cfg, ins);*/
-	
+
 	i = 1;
-	fpcount = 0; /* FIXME: track fp stack utilization */
+	fpcount = 0;
 	DEBUG (g_print ("LOCAL regalloc: basic block: %d\n", bb->block_num));
 	/* forward pass on the instructions to collect register liveness info */
 	while (ins) {
 		spec = ins_spec [ins->opcode];
 		DEBUG (print_ins (i, ins));
+
 		if (spec [MONO_INST_SRC1]) {
-			if (spec [MONO_INST_SRC1] == 'f')
+			if (spec [MONO_INST_SRC1] == 'f') {
+				GList *spill;
 				reginfo1 = reginfof;
+
+				spill = g_list_first (fspill_list);
+				if (spill && fpcount < MONO_MAX_FREGS) {
+					reginfo1 [ins->sreg1].fpflags |= MONO_X86_FP_NEEDS_LOAD;
+					fspill_list = g_list_remove (fspill_list, spill->data);
+				} else
+					fpcount--;
+			}
 			else
 				reginfo1 = reginfo;
 			reginfo1 [ins->sreg1].prev_use = reginfo1 [ins->sreg1].last_use;
@@ -1480,8 +1564,21 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->sreg1 = -1;
 		}
 		if (spec [MONO_INST_SRC2]) {
-			if (spec [MONO_INST_SRC2] == 'f')
+			if (spec [MONO_INST_SRC2] == 'f') {
+				GList *spill;
 				reginfo2 = reginfof;
+				spill = g_list_first (fspill_list);
+				if (spill) {
+					reginfo2 [ins->sreg2].fpflags |= MONO_X86_FP_NEEDS_LOAD;
+					fspill_list = g_list_remove (fspill_list, spill->data);
+					if (fpcount >= MONO_MAX_FREGS) {
+						fspill++;
+						fspill_list = g_list_prepend (fspill_list, GINT_TO_POINTER(fspill));
+						reginfo2 [ins->sreg2].fpflags |= MONO_X86_FP_NEEDS_LOAD_SPILL;
+					}
+				} else
+					fpcount--;
+			}
 			else
 				reginfo2 = reginfo;
 			reginfo2 [ins->sreg2].prev_use = reginfo2 [ins->sreg2].last_use;
@@ -1490,8 +1587,16 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->sreg2 = -1;
 		}
 		if (spec [MONO_INST_DEST]) {
-			if (spec [MONO_INST_DEST] == 'f')
+			if (spec [MONO_INST_DEST] == 'f') {
 				reginfod = reginfof;
+				if (fpcount >= MONO_MAX_FREGS) {
+					reginfod [ins->dreg].fpflags |= MONO_X86_FP_NEEDS_SPILL;
+					fspill++;
+					fspill_list = g_list_prepend (fspill_list, GINT_TO_POINTER(fspill));
+					fpcount--;
+				}
+				fpcount++;
+			}
 			else
 				reginfod = reginfo;
 			if (spec [MONO_INST_DEST] != 'b') /* it's not just a base register */
@@ -1506,7 +1611,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				reginfod [ins->dreg + 1].last_use = i;
 				if (reginfod [ins->dreg + 1].born_in == 0 || reginfod [ins->dreg + 1].born_in > i)
 					reginfod [ins->dreg + 1].born_in = i;
-			}
+			} 
 		} else {
 			ins->dreg = -1;
 		}
@@ -1514,6 +1619,9 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		++i;
 		ins = ins->next;
 	}
+
+	// todo: check if we have anything left on fp stack, in verify mode?
+	fspill = 0;
 
 	DEBUG (print_regtrack (reginfo, rs->next_vireg));
 	DEBUG (print_regtrack (reginfof, rs->next_vfreg));
@@ -1661,8 +1769,21 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 		}
 
-		/* update for use with FP regs... */
-		if (spec [MONO_INST_DEST] != 'f' && ins->dreg >= MONO_MAX_IREGS) {
+		/* Track dreg */
+		if (spec [MONO_INST_DEST] == 'f') {
+			if (reginfof [ins->dreg].fpflags & MONO_X86_FP_NEEDS_SPILL) {
+				GList *spill_node;
+				MonoInst *store;
+				spill_node = g_list_first (fspill_list);
+				g_assert (spill_node);
+
+				store = create_spilled_store_float (cfg, GPOINTER_TO_INT (spill_node->data), ins->dreg, ins);
+				insert_before_ins (ins, tmp, store);
+				fspill_list = g_list_remove (fspill_list, spill_node->data);
+				fspill--;
+			}
+		} 
+		else if (ins->dreg >= MONO_MAX_IREGS) {
 			val = rs->iassign [ins->dreg];
 			prev_dreg = ins->dreg;
 			if (val < 0) {
@@ -1749,7 +1870,31 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->sreg1 = X86_EAX;
 			rs->ifree_mask &= ~ (1 << X86_EAX);
 		}
-		if (spec [MONO_INST_SRC1] != 'f' && ins->sreg1 >= MONO_MAX_IREGS) {
+
+		/* Track sreg1 */
+		if (spec [MONO_INST_SRC1] == 'f') {
+			if (reginfof [ins->sreg1].fpflags & MONO_X86_FP_NEEDS_LOAD) {
+				MonoInst *load;
+				MonoInst *store = NULL;
+
+				if (reginfof [ins->sreg1].fpflags & MONO_X86_FP_NEEDS_LOAD_SPILL) {
+					GList *spill_node;
+					spill_node = g_list_first (fspill_list);
+					g_assert (spill_node);
+
+					store = create_spilled_store_float (cfg, GPOINTER_TO_INT (spill_node->data), ins->sreg1, ins);		
+					fspill_list = g_list_remove (fspill_list, spill_node->data);
+				}
+
+				fspill++;
+				fspill_list = g_list_prepend (fspill_list, GINT_TO_POINTER(fspill));
+				load = create_spilled_load_float (cfg, fspill, ins->sreg1, ins);
+				insert_before_ins (ins, tmp, load);
+				if (store) 
+					insert_before_ins (load, tmp, store);
+			}
+		} 
+		else if (ins->sreg1 >= MONO_MAX_IREGS) {
 			val = rs->iassign [ins->sreg1];
 			prev_sreg1 = ins->sreg1;
 			if (val < 0) {
@@ -1804,7 +1949,33 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->next = copy;
 			}
 		}
-		if (spec [MONO_INST_SRC2] != 'f' && ins->sreg2 >= MONO_MAX_IREGS) {
+		/* track sreg2 */
+		if (spec [MONO_INST_SRC2] == 'f') {
+			if (reginfof [ins->sreg2].fpflags & MONO_X86_FP_NEEDS_LOAD) {
+				MonoInst *load;
+				MonoInst *store = NULL;
+
+				if (reginfof [ins->sreg2].fpflags & MONO_X86_FP_NEEDS_LOAD_SPILL) {
+					GList *spill_node;
+
+					spill_node = g_list_first (fspill_list);
+					g_assert (spill_node);
+					if (spec [MONO_INST_SRC1] == 'f' && (reginfof [ins->sreg1].fpflags & MONO_X86_FP_NEEDS_LOAD_SPILL))
+						spill_node = g_list_next (spill_node);
+	
+					store = create_spilled_store_float (cfg, GPOINTER_TO_INT (spill_node->data), ins->sreg2, ins);
+					fspill_list = g_list_remove (fspill_list, spill_node->data);
+				} 
+				
+				fspill++;
+				fspill_list = g_list_prepend (fspill_list, GINT_TO_POINTER(fspill));
+				load = create_spilled_load_float (cfg, fspill, ins->sreg2, ins);
+				insert_before_ins (ins, tmp, load);
+				if (store) 
+					insert_before_ins (load, tmp, store);
+			}
+		} 
+		else if (ins->sreg2 >= MONO_MAX_IREGS) {
 			val = rs->iassign [ins->sreg2];
 			prev_sreg2 = ins->sreg2;
 			if (val < 0) {
@@ -1848,7 +2019,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			DEBUG (g_print ("freeable %s\n", mono_arch_regname (ins->sreg2)));
 			mono_regstate_free_int (rs, ins->sreg2);
 		}*/
-		
+	
 		//DEBUG (print_ins (i, ins));
 		/* this may result from a insert_before call */
 		if (!tmp->next)
@@ -1858,6 +2029,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	g_free (reginfo);
 	g_free (reginfof);
+	g_list_free (fspill_list);
 }
 
 static unsigned char*
@@ -2576,6 +2748,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_STORER8_MEMBASE_REG:
 			x86_fst_membase (code, ins->inst_destbasereg, ins->inst_offset, TRUE, TRUE);
+			break;
+		case OP_LOADR8_SPILL_MEMBASE:
+			x86_fld_membase (code, ins->inst_basereg, ins->inst_offset, TRUE);
+			x86_fxch (code, 1);
 			break;
 		case OP_LOADR8_MEMBASE:
 			x86_fld_membase (code, ins->inst_basereg, ins->inst_offset, TRUE);
