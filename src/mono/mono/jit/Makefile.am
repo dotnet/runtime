@@ -1,7 +1,7 @@
 INCLUDES = 				\
 	-I$(top_srcdir)			\
 	$(GMODULE_CFLAGS)		\
-	$(GLIB_CFLAGS)
+	$(GTHREAD_CFLAGS)
 
 libmono_la_LDFLAGS=-Wl,-version-script=$(srcdir)/ldscript
 
@@ -57,7 +57,7 @@ mono_LDADD =				\
 	../io-layer/libwapi.la		\
 	../utils/libmonoutils.la	\
 	../os/libmonoos.la		\
-	$(GLIB_LIBS)			\
+	$(GTHREAD_LIBS)			\
 	$(GMODULE_LIBS) 		\
 	-lm
 
