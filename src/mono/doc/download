@@ -108,6 +108,9 @@
                     <ul>
 		      <li><a href="archive/mandrake-91-i586/mono-0.25-1.ximian.6.1.i586.rpm">mono-0.25-1.ximian.6.1.i586.rpm</a>
 		      <li><a href="archive/mandrake-91-i586/mono-devel-0.25-1.ximian.6.1.i586.rpm">mono-devel-0.25-1.ximian.6.1.i586.rpm</a>
+                      <li><a href="archive/mandrake-91-i586/gtk-sharp-0.10-1.ximian.6.1.i586.rpm">gtk-sharp-0.10-1.ximian.6.1.i586.rpm</a>
+		      <li><a href="archive/mandrake-91-i586/gtk-sharp-gapi-0.10-1.ximian.6.1.i586.rpm">gtk-sharp-gapi-0.10-1.ximian.6.1.i586.rpm</a>
+		      <li><a href="archive/mandrake-91-i586/monodoc-0.5-1.ximian.6.1.i586.rpm">monodoc-0.5-1.ximian.6.1.i586.rpm</a>
 		    </ul>
 		  </td>
 		</tr>
