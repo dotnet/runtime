@@ -2910,7 +2910,8 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			if (method->wrapper_type == MONO_WRAPPER_NONE) {
 				class = mono_class_get_full (image, read32 (ip + 1), generic_context);
 				mono_class_init (class);
-				if (!(class->flags & TYPE_ATTRIBUTE_INTERFACE))
+				/* quick fix to not do this for the fake ptr classes - probably should not be getting the vtable at all here */
+				if (!(class->flags & TYPE_ATTRIBUTE_INTERFACE) && class->interface_offsets != NULL)
 					mono_class_vtable (domain, class);
 			}
 			ip += 5;
