@@ -123,10 +123,10 @@ static void
 help (int err) {
 	printf ("monosn: Mono Strong Name Utility\nUsage: monosn option [arguments]\n");
 	printf ("Available options:\n");
-	printf ("\t-e assembly file  Extract the public key from assembly to file.");
-	printf ("\t-E assembly file  Extract the strong name from assembly to file.");
-	printf ("\t-t[p] file        Display the public key token from file.");
-	printf ("\t-T[p] assembly    Display the public key token from assembly.");
+	printf ("\t-e assembly file  Extract the public key from assembly to file.\n");
+	printf ("\t-E assembly file  Extract the strong name from assembly to file.\n");
+	printf ("\t-t[p] file        Display the public key token from file.\n");
+	printf ("\t-T[p] assembly    Display the public key token from assembly.\n");
 	exit (err);
 }
 
