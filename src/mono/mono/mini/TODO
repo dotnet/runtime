@@ -25,12 +25,9 @@ Other Ideas:
 	- it calls mono_get_lmf_addr, which calls TlsGetValue, which calls
       pthread_getspecific (). This means that 3 function calls are needed for
       each native function call.
-* currently mono assumes that the CustomAttribute table is not sorted. So 
-  lookup in this table is slow. Furthermore, this is used by 
-  field_is_thread_static, which is called a lot of times.
 * mono_find_jit_opcode_emulation is called a lot of times during compilation,
   and it involves a hash table lookup. 
-* mcs should create AssemblyBuilders with the Run flag instead of RunAndSave,
+* mcs should create AssemblyBuilders with the Save flag instead of RunAndSave,
   so the runtime could avoid fully constructing the types in the dynamic
   assembly.
 * if a function which involves locking is called from another function which
