@@ -172,8 +172,8 @@
        dbcmd.CommandText = sql;
        IDataReader reader = dbcmd.ExecuteReader();
        while(reader.Read()) {
-            string FirstName = reader["fname"];
-            string LastName = reader["lname"];
+            string FirstName = (string) reader["fname"];
+            string LastName = (string) reader["lname"];
             Console.WriteLine("Name: " + 
                  FirstName + " " + LastName);
        }

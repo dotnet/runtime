@@ -10,7 +10,7 @@
 
 	<li>Works with Oracle 8i</li>
 
-	<li>Untested, but should work with Oracle 9i</li>
+	<li>May work with Oracle 9i</li>
 
 	<li>Uses the Oracle CLI (Call Level Interface) which is a C library (API) for the Oracle Client 
 		software</li>
@@ -18,8 +18,6 @@
 	<li>Internally, the OracleClient provider has OCI abstracted to an object-oriented programming model</li>
 
 	<li>Created by Daniel Morgan and Tim Coleman</li>
-
-	<li>Does not support trusted connections</li>
 
 	<li>Bugs with Mono or the data provider should be reported 
 	in Mono's Bugzilla <a href="http://bugzilla.ximian.com/">here</a>.  If you
@@ -64,14 +62,12 @@
 	
 	<li>Handling of various data types need to be added.</li>
 	
-	<li>Data Adapter exists, and a DataSet can be filled using it.  The
-	Data Adapter is abstract enough that it should work as expected.</li>
+	<li>Data Adapter exists, and a DataSet can be filled using it.</li>
 	
 	<li>Lots of missing functionality and bugs.</li>
 	
 	<li>Works with SQL# command-line and GTK# versions in cvs.  Only works with
-	simple character data though.  SQL# For GTK# can only show the results to
-	the TextView because the Data Adapter is not yet available</li>
+	simple character data though.</li>
 	   
 </ul>
 	
@@ -83,7 +79,8 @@
 	<li>transactions (WORKING)</li>
 	<li>Stored Procedures, Functions, and Packages support</li>
 	<li>Be able to fill a DataTable in a DataSet via a data adapter (IN PROGRESS)</li>
-	<li>Support for Oracle 8i and 9i (UNKNOWN)</li>
+	<li>Support for Oracle 8i (WORKING</li>
+	<li>Support for Oracle 9i (UNKNOWN)</li>
 	<li>Support LOBs</li>
 	<li>Support all the data types</li>
 	<li>Implement Connection pooling</li>
@@ -96,7 +93,7 @@
 <ul>
 	<li>Have a working mono and mcs</li>
 	
-	<li>Have access to an Oracle 8i database or download it from
+	<li>Have access to an Oracle 8i or 9i database or download it from
 	<a href="http://www.oracle.com/">Oracle</a>.  If you are connecting
 	remotely to an Oracle database, you need the Oracle client software.
 	Registration to the <a href="http://technet.oracle.com/">Oracle Technology Network</a> is free.  If installing on Linux, 
@@ -129,16 +126,16 @@
           "Data Source=testdb;" +
           "User ID=scott;" +
           "Password=tiger;";
-       IDbConnection dbcon;
+       OracleConnection dbcon = null;
        dbcon = new OracleConnection (connectionString);
        dbcon.Open ();
-       IDbCommand dbcmd = dbcon.CreateCommand ();
+       OracleCommand dbcmd = dbcon.CreateCommand ();
        string sql = "SELECT ename, job FROM scott.emp";
        dbcmd.CommandText = sql;
-       IDataReader reader = dbcmd.ExecuteReader ();
+       OracleDataReader reader = dbcmd.ExecuteReader ();
        while (reader.Read ()) {
-          string employeeName = reader["ename"];
-          string job = reader["job"];
+          string employeeName = (string) reader["ename"];
+          string job = (string) reader["job"];
           Console.WriteLine ("Employee Name: {0}  Job: {1}",
 		                    employeeName, job);
        }

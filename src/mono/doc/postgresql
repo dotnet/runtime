@@ -1,10 +1,10 @@
 * PostgreSQL and Mono
 
   When it comes to Mono and PostgreSQL, there are many ways
-  you can handle your data.   You have Data Providers which can be used
-  to retrieve or manipulate data from a remote application written for Mono.
-  Then you have the ability to host Mono within PostgreSQL to
-  have the applications run on the server which makes things faster.
+  you can handle your data.   You have many Mono Data Providers which can be used
+  to access data from a application written for Mono.  
+  Then there is the future goal of having the ability to host Mono within PostgreSQL to
+  have the applications run on the server which makes things much faster.
   
 * Hosting Mono in PostgreSQL
 
@@ -14,13 +14,17 @@
 
 * Data Providers
 
- There are two ADO.NET data providers for <a href="http://www.postgresql.org/">PostgreSQL</a> in Mono:
+ There are many ADO.NET data providers for <a href="http://www.postgresql.org/">PostgreSQL</a>:
+ 
+ There are two providers created specifically for PostgreSQL included with Mono:
 
 <ul>
 
 	<li><a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a>
 		<ul>
-			<li>a .NET Managed Data Provider for PostgreSQL
+			<li>included with Mono</li>
+			
+			<li>a .NET Managed Data Provider for PostgreSQL</li>
 			
 			<li>Written in 100% C#</li>
 			
@@ -39,6 +43,8 @@
 	
 	<li>Mono.Data.PostgreSQL (deprecated)
 		<ul>
+			<li>included with Mono</li>
+		
 			<li>Deprecated in favor of Npgsql</li>
 			
 			<li>Exists in namespace Mono.Data.PostgreSql and assembly Mono.Data.PostgreSql</li>
@@ -51,6 +57,12 @@
 		</ul>
 	</li>
 	
+	<li><a href="http://sourceforge.net/projects/mysqlnet/">ByteFX.Data</a> has a provider for PostgreSQL too, but I do not know how well it works with Mono.</li>
+	
+	<li>There is another .NET data provider for PostgreSQL named <a href="http://sourceforge.net/projects/pgsqlclient/">PgSqlClient</a>, but I do not know if it works with Mono.</li>
+	
+	<li>If none of the above providers meet your needs.  There is the ODBC and OLEDB providers included with Mono.</li>
+			
 	<li>Bugs with Mono or the data provider should be reported 
 	in Mono's Bugzilla <a href="http://bugzilla.ximian.com/">here</a>.  If you
 	do not have Bugzilla user account, it is free 
@@ -464,8 +476,8 @@ mono PostgresTest.exe
        dbcmd.CommandText = sql;
        IDataReader reader = dbcmd.ExecuteReader();
        while(reader.Read()) {
-            string FirstName = reader["firstname"];
-            string LastName = reader["lastname"];
+            string FirstName = (string) reader["firstname"];
+            string LastName = (string) reader["lastname"];
             Console.WriteLine("Name: " + 
                 FirstName + " " + LastName);
        }
@@ -548,8 +560,8 @@ mono TestExample.exe
        dbcmd.CommandText = sql;
        IDataReader reader = dbcmd.ExecuteReader();
        while(reader.Read()) {
-            string FirstName = reader["firstname"];
-            string LastName = reader["lastname"];
+            string FirstName = (string) reader["firstname"];
+            string LastName = (string) reader["lastname"];
             Console.WriteLine("Name: " + 
                  FirstName + " " + LastName);
        }

@@ -1,82 +1,22 @@
 * ADO.NET
 
-<p>Mono's ADO.NET Developers:
+** Data Access in Mono
 
-<table border=1>
-
-<tr>
-	<td><b>Developer</b></td>
-	<td><b>Email</b></td>
-	<td><b>Contribution</b></td>
-</tr>
-
-<tr>
-	<td>Rodrigo Moya</td>
-	<td>rodrigo -AT-<br> ximian.comNOSPAM</td>
-	<td>ADO.NET coordinator,<br> OLE DB provider,<br> and tests</td>
-</tr>
-
-<tr>
-	<td>Daniel Morgan</td>
-    <td>danielmorgan -AT-<br> verizon.netNOSPAM</td>
-    <td>System.Data, SQL# Query Tool, MySQL, PostgreSQL, <br>Oracle providers,<br> and tests</td>
-</tr>
-
-<tr>
-	<td>Tim Coleman</td>
-	<td>tim -AT- <br>timcoleman.comNOSPAM</td>
-	<td>Microsoft SQL Server, <br>Sybase, <br>TDS providers,<br> Oracle, 
-		<br>and tests.<br>
-		He has
-	    contributed <br>to other parts <br>of Mono too, <br>such as, 
-	    <br>EnterpriseServices,
-	    XML, <br>and WebServices.</td>
-</tr>
-
-<tr>
-	<td>Brian Ritchie</td>
-	<td>brianlritchie -AT-<br> hotmail.comNOSPAM</td>
-	<td>ODBC provider <br>and the ProviderFactory <br>in Mono.Data</td>
-</tr>
-
-<tr>
-	<td>Vladimir Vukicevic</td> 
-	<td>vladimir -AT-<br> pobox.comNOSPAM</td>
-	<td>SQL Lite provider. <br> He has contributed to GTK# <br>and mPhoto too.</td>
-</tr>
-
-<tr>
-	<td>Christopher Bockner</td>
-	<td>cleared -AT-<br> rogers.comNOSPAM</td>
-	<td>IBM DB2 Universal <br>Database provider</td>
-</tr>
-
-<tr>
-	<td>Ville Palo</td>
-	<td>vi64pa -AT-<br> koti.soon.fiNOSPAM</td>
-	<td>XML stuff <br>in System.Data <br>including DataSet <br>
-	   and XmlDataDocument, <br>and tests</td>
-</tr>
-
-<tr>
-	<td>Gonzalo Paniagua Javier</td>
-	<td>gonzalo -AT-<br> ximian.comNOSPAM</td>
-	<td>Integration between <br>System.Web and <br>System.Data</td>
-</tr>
-
-<tr>
-	<td>Gaurav Vaish</td>
-	<td>gvaish -AT-<br> iitk.ac.inNOSPAM</td>
-	<td>Web controls</td>
-</tr>
-
-<tr>
-	<td>Phillip Jerkins</td>
-	<td>Phillip.Jerkins -AT-<br> morgankeegan.comNOSPAM</td>
-	<td>Named Instance support <br>in System.Data.SqlClient</td>
-</tr>
-
-</table>
+<ul>
+	<li>Today, our goal is to be compatible with .NET 1.0 and .NET 1.1.  We also would like
+   to extend data access beyond what is included with .NET 1.0 and .NET 1.1,
+   such as, including access to more databases, such as, PostgreSQL and MySQL,
+   but also provide classes that help in creating data source-agnostic code, such as, Mono.Data.ProviderFactory.</li>
+   <li>In the future, we would like to be compatible with .NET 1.2. This
+   would include features like:
+	<ul> 
+		<li><a href="http://longhorn.msdn.microsoft.com/lhsdk/ndp/daconworkingwithobjectspacesarchitecture.aspx">ObjectSpaces</a></li>
+		<li>provide support for hosting Mono languages (C-Sharp, MonoBASIC, etc...)
+            within a DBMS engine, such as, MySQL or PostgreSQL.</li>
+		<li>implement .net 1.2 classes, such as, those found in System.Data.ProviderBase</li>
+		<li>other stuff which can be brought up on the mono-list</li>
+	</ul></li>
+</ul>
 
 ** Bugs and Feature Requests
 
@@ -88,14 +28,14 @@
 	    and easy to create 
 	    one <a href="http://bugzilla.ximian.com/createaccount.cgi">here</a>.</li>
 	
-	<li>Any RFE (Request For Enhancement) for features missing or new functionality
-	    should be entered as a bug in Bugzilla too</li>
+	<li>Any requests for new features or missing functionality
+	    can entered as a bug in Bugzilla too</li>
 
 </ul>
 	
 ** ADO.NET Data Providers
 	
-<p>List of ADO.NET Data Providers working in Mono:
+<p>Mono has many ADO.NET Data Providers to get you connected:
 			
 <ul>
 	<li><a href="http://www.go-mono.com/ibmdb2.html">IBM DB2 Universal Database</a></li>
@@ -147,39 +87,38 @@
 <p>Some tools that can be used for ADO.NET and other technologies (ASP.NET, XML, etc).
 
 <ul>	
-		<li><b>SQL# CLI</b> - a SQL query tool with a command-line interface.
-		    It can be used to enter and execute SQL statements or 
-		    execute a batch of SQL commands from a file.   It can
+		<li><p><b>SQL# command line query tool</b> is a command-line tool to
+		    enter and execute SQL statements or 
+		    execute a batch of SQL commands from a file.
+		  <p>It can
 		  be used to test connection strings, connect to various ADO.NET
-		  providers, save output to text, html, or xml.  It is a work-in-progress.
-		  The SQL# CLI is distributed with the
+		  providers, save output to text, html, or xml.
+		  <p>The SQL# CLI is distributed with the
 		  Mono runtime and class libraries as an executable assembly sqlsharp.exe.
-		  The source to SQL# CLI can be found in the mcs source at
+		  <p>The source to SQL# CLI can be found in the mcs source at
 		  mcs/tools/SqlSharp/SqlSharpCli.cs
 		  </li>
 		  
-		<li><p><b>SQL# GUI - a graphical SQL query tool</b> allows a user
-		  to enter SQL commands in a top panel which is a text editor.  It
-		  has a toolbar and menu for various tasks, such as, executing
+		<li><p><b>SQL# For GTK#</b> - is a graphical SQL database query tool</b> allows a user
+		  to enter SQL commands in a top panel which is a text editor.
+		  <p>It has a toolbar and menu for various tasks, such as, executing
 		  SQL commands one-at-a-time or in a batch.  The results would appear
 		  in a bottom panel in a grid or could be saved to a file (xml, html, csv).
-		  Also, the bottom panel would allow logging of SQL command executed.
-		  Currently, there is a <a href="http://go-mono.com/images/sqlsharp.png">SQL# For GTK#</a> which
-		  provides a GUI interface using the <a href="http://gtk-sharp.sourceforge.net">Gtk#</a> toolkit.  SQL# For GTK#
-		  is a work-in-progress and can be found in the mcs source at 
-		  mcs/tools/SqlSharp/gui/gtk-sharp</li>  
+		  <p>Also, the bottom panel would allow logging of SQL command executed.
+		  Here is a screenshot of <a href="http://go-mono.com/images/sqlsharp.png">SQL# For GTK#</a> which
+		  provides a GUI interface using the <a href="http://gtk-sharp.sourceforge.net">Gtk#</a> toolkit.
+		  <p>SQL# For GTK# can be found in mono cvs as sqlsharpgtk.</li>  
 </ul>
 
 <p>Tools we would like to have, but they have not been created yet:
 
 <ul>
-		<li><b>XML Schema Definition tool</b> <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cptools/html/cpconxmlschemadefinitiontoolxsdexe.asp">xsd.exe</a> needs 
-			to be created.  Maybe this TODO item should be at the System.XML web page instead.
-			
+		<li>Mono has an <b>XML Schema Definition tool</b> (xsd.exe).</b>
+					
 			<ul>
 				<li>This tool
-					would work like the xsd.exe tool included with 
-					the .NET Framework.  The Xsd.exe tools has the
+					would works like the xsd.exe tool included with 
+					the .NET Framework.  The Xsd.exe tool has the
 					following uses:
 					<ul>
 					<li><b>XDR to XSD</b> - used to generate an XML schema from an XDR (XML Data Reduced schema) file. 
@@ -330,7 +269,7 @@
 	Mike Kestner or Rachel Hestilov would be the best people to ask for help on GTK#.
 	
 	<p><b>Integration with QT#</b> has not been started.  Any information on 
-	how this can be done is appreciated.  Adam Treat would be the best 
+	how this can be done is appreciated.  Marcus would be the best 
 	person to ask about QT#.
 	
 	<p><b>Building System.Data</b>

@@ -283,8 +283,8 @@ mono TestExample.exe
        dbcmd.CommandText = sql;
        IDataReader reader = dbcmd.ExecuteReader();
        while(reader.Read()) {
-            string FirstName = reader["firstname"];
-            string LastName = reader["lastname"];
+            string FirstName = (string) reader["firstname"];
+            string LastName = (string) reader["lastname"];
             Console.WriteLine("Name: " + 
                  FirstName + " " + LastName);
        }
