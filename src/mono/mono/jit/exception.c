@@ -498,8 +498,12 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj, gboolean test_only)
 							ctx->SC_EIP = (unsigned long)ei->handler_start;
 							ctx->SC_ECX = (unsigned long)obj;
 							jit_tls->lmf = lmf;
+#if 1
+							return 0;
+#else
 							restore_context (ctx);
 							g_assert_not_reached ();
+#endif
 						}
 					}
 				}
@@ -615,7 +619,11 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 		 unsigned long esi, unsigned long edi, unsigned long ebp, MonoObject *exc,
 		 unsigned long eip,  unsigned long esp)
 {
+	static void (*restore_context) (struct sigcontext *);
 	struct sigcontext ctx;
+
+	if (!restore_context)
+		restore_context = arch_get_restore_context ();
 
 	/* adjust eip so that it point to the call instruction */
 	eip -= 5;
@@ -631,6 +639,7 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 	ctx.SC_EAX = eax;
 	
 	arch_handle_exception (&ctx, exc, FALSE);
+	restore_context (&ctx);
 
 	g_assert_not_reached ();
 }

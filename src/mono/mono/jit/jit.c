@@ -3972,8 +3972,6 @@ sigfpe_signal_handler (int _dummy)
 	exc = mono_get_exception_divide_by_zero ();
 	
 	arch_handle_exception (ctx, exc, FALSE);
-
-	g_error ("we should never reach this code");
 }
 
 static void
@@ -3985,8 +3983,6 @@ sigill_signal_handler (int _dummy)
 	exc = mono_get_exception_execution_engine ("SIGILL");
 	
 	arch_handle_exception (ctx, exc, FALSE);
-
-	g_error ("we should never reach this code");
 }
 
 static void
@@ -3998,8 +3994,6 @@ sigsegv_signal_handler (int _dummy)
 	exc = mono_get_exception_null_reference ();
 	
 	arch_handle_exception (ctx, exc, FALSE);
-
-	g_error ("we should never reach this code");
 }
 
 gpointer 
