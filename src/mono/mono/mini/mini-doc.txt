@@ -8,7 +8,7 @@
 
 	Mini is a new compilation engine for the Mono runtime.  The
 	new engine is designed to bring new code generation
-	optimizations, portability and precompilation. 
+	optimizations, portability and pre-compilation. 
 
 	In this document we describe the design decisions and the
 	architecture of the new compilation engine. 
@@ -119,7 +119,7 @@
         inferred. 
 
 	At this point the JIT would pass the constructed forest of
-	trees to the architecture-dependant JIT compiler.  
+	trees to the architecture-dependent JIT compiler.  
 
 	The architecture dependent code then performed register
 	allocation (optionally using linear scan allocation for
@@ -496,7 +496,7 @@
 	The difference is on the set of optimizations that are turned
 	on for each mode: Just-in-Time compilation should be as fast
 	as possible, while Ahead-of-Time compilation can take as long
-	as required, because this is not done at a time criticial
+	as required, because this is not done at a time critical
 	time. 
 
 	With AOT compilation, we can afford to turn all of the
@@ -509,7 +509,7 @@
 	assembler, which generates a loadable module.
 
 	At execution time, when an assembly is loaded from the disk,
-	the runtime engine will probe for the existance of a
+	the runtime engine will probe for the existence of a
 	pre-compiled image.  If the pre-compiled image exists, then it
 	is loaded, and the method invocations are resolved to the code
 	contained in the loaded module.
@@ -584,7 +584,7 @@
 
         2) liveness information for the variables
 
-        3) (optionally) loop info to favour variables that are used in
+        3) (optionally) loop info to favor variables that are used in
         inner loops.
 
 	During instruction selection phase, symbolic registers are
@@ -596,19 +596,6 @@
 	A CPU description file describes the input registers, output
 	registers, fixed registers and clobbered registers by each
 	operation.
-
-
-----------
-* Bootstrap 
-
-	The Mini bootstrap parses the arguments passed on the command
-	line, and initializes the JIT runtime. Each time the
-	mini_init() routine is invoked, a new Application Domain will
-	be returned.
-
-* Signal handlers
-
-	mono_runtime_install_handlers
 
 * BURG Code Generator Generator
 
