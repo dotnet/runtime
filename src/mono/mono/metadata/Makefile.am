@@ -23,7 +23,7 @@ libmonoruntime_la_SOURCES = \
 	decimal.c	\
 	decimal.h	\
 	gc.c		\
-	gc.h		\
+	gc-internal.h	\
 	marshal.c	\
 	marshal.h	\
 	threads.c	\
