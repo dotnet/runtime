@@ -1,4 +1,14 @@
+2004-06-10  Raja R Harinath  <rharinath@novell.com>
 
+	Support the new assembly signing setup in mcs/.
+	* Makefile.am (mcs-do-basic-build): Pass 'USE_BOOT_COMPILE' to sub-makes.
+	($(tmpinst)/etc/mono/machine.config): New target.
+	(tmpinst-dir.stamp): Remove and rewrite into ...
+	($(tmpinst)/bin/mcs): ... this and ...
+	($(tmpinst)/bin/mono): ... this.  Update to use the in-tree machine.config.
+	(tmpinst-dir): Rewrite to invoke above $(tmpinst)/... targets directly.
+	* configure.in (AC_PROG_LN_S): New check to define $(LN_S).
+	
 Thu Jun 3 14:39:17 CEST 2004 Paolo Molaro <lupus@ximian.com>
 
 	* configure.in: libc setting for NetBSD (patch from recht@netbsd.org).

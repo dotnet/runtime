@@ -48,6 +48,8 @@ MCS_FILES = $(MCS_BASIC_FILES) \
 	$(mcs_topdir)/class/lib/default/System.Xml.dll \
 	$(mcs_topdir)/class/lib/default/Mono.CSharp.Debugger.dll
 
+tmpinst = _tmpinst
+
 bootstrap: tmpinst-mcs-basic-build mono-do-runtime-only
 	$(MAKE) tmpinst-mcs-short-build
 	$(MAKE) fasterstrap
@@ -76,41 +78,42 @@ monolite-bootstrap: tmpinst-monolite mono-do-runtime-only
 # internal targets
 
 tmpinst-mcs-basic-build: mcs-do-basic-build tmpinst-dir
-	mv -f $(MCS_BASIC_FILES) _tmpinst/lib
+	mv -f $(MCS_BASIC_FILES) $(tmpinst)/lib
 
 tmpinst-mcs-short-build: mcs-do-short-build
-	mv -f $(MCS_FILES) _tmpinst/lib
+	mv -f $(MCS_FILES) $(tmpinst)/lib
 
 tmpinst-mcs-full-build: mcs-do-full-build
-	cp -f $(MCS_FILES) _tmpinst/lib
+	cp -f $(MCS_FILES) $(tmpinst)/lib
 
 tmpinst-monolite: tmpinst-dir
-	-rm -f _tmpinst/lib/mcs.exe _tmpinst/lib/*.dll
-	-rm -fr _tmpinst/monolite-*
-	srcdir=`cd $(srcdir) && pwd` && cd _tmpinst && ( gzip -d -c $$srcdir/../monolite-latest.tar.gz | tar xf - )
-	mv -f _tmpinst/monolite-*/mcs.exe _tmpinst/monolite-*/*.dll _tmpinst/lib
-	rm -fr _tmpinst/monolite-*
+	-rm -f $(tmpinst)/lib/mcs.exe $(tmpinst)/lib/*.dll
+	-rm -fr $(tmpinst)/monolite-*
+	srcdir=`cd $(srcdir) && pwd` && cd $(tmpinst) && ( gzip -d -c $$srcdir/../monolite-latest.tar.gz | tar xf - )
+	mv -f $(tmpinst)/monolite-*/mcs.exe $(tmpinst)/monolite-*/*.dll $(tmpinst)/lib
+	rm -fr $(tmpinst)/monolite-*
 
 # Build enough of 'mono' to run the stage1 mcs.exe
 mono-do-runtime-only: $(CONFIG_HEADER)
-	if test -z "$(libgc_dir)"; then :; else cd libgc && $(MAKE) ; fi
-	cd mono && $(MAKE)
+	for dir in $(libgc_dir) mono data; do \
+	  (cd $$dir && $(MAKE)) || exit 1 ; \
+	done
 
 mcs-do-basic-build:
 	rm -f $(MCS_FILES)
 	for dir in $(MCS_BASIC_DIRS); do \
-	  (cd $(mcs_topdir)/$$dir && $(MAKE) PROFILE=default BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB") || exit 1 ; \
+	  (cd $(mcs_topdir)/$$dir && $(MAKE) PROFILE=default USE_BOOT_COMPILE=yes BOOTSTRAP_MCS="mcs -d:BOOTSTRAP_WITH_OLDLIB") || exit 1 ; \
 	done
 
 mcs-do-short-build:
-	tmpinst=`cd _tmpinst && pwd` ; \
+	tmpinst=`cd $(tmpinst) && pwd` ; \
 	PATH=$$tmpinst/bin:$$PATH; export PATH ; \
 	for dir in $(MCS_DIRS); do \
 	  (cd $(mcs_topdir)/$$dir && $(MAKE) PROFILE=default) || exit 1 ; \
 	done
 
 mcs-do-full-build:
-	tmpinst=`cd _tmpinst && pwd` ; \
+	tmpinst=`cd $(tmpinst) && pwd` ; \
 	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
 	cd $(mcs_topdir) && $(MAKE) all-profiles
 
@@ -118,26 +121,30 @@ mcs-do-clean-profiles:
 	cd $(mcs_topdir) && $(MAKE) clean-profiles
 
 mcs-do-run-test: tmpinst-dir
-	tmpinst=`cd _tmpinst && pwd` ; \
+	tmpinst=`cd $(tmpinst) && pwd` ; \
 	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
 	cd $(mcs_topdir) && $(MAKE) PROFILE=default run-test
 
-tmpinst-dir.stamp: Makefile.am
-	set -e ; \
-	rootme=`pwd`; tmpinst=$$rootme/_tmpinst ; \
-	mkdir -p $$tmpinst $$tmpinst/bin $$tmpinst/lib ; \
-	echo '#! /bin/sh' > $$tmpinst/bin/mono ; \
-	echo 'if test -z "$$MONO_PATH" ; then MONO_PATH="'"$$tmpinst/lib"'"' >> $$tmpinst/bin/mono ; \
-	echo 'else MONO_PATH=$${MONO_PATH}:"'"$$tmpinst/lib"'" ; fi' >> $$tmpinst/bin/mono ; \
-	echo 'export MONO_PATH' >> $$tmpinst/bin/mono ; \
-	echo 'exec "'"$$rootme/libtool"'" --mode=execute "'"$$rootme/$(mono_runtime)"'" "$$@"' >> $$tmpinst/bin/mono ; \
-	echo '#! /bin/sh' > $$tmpinst/bin/mcs ; \
-	echo 'exec "'"$$tmpinst/bin/mono"'" "'"$$tmpinst/lib/mcs.exe"'" "$$@"' >> $$tmpinst/bin/mcs ; \
-	chmod +x $$tmpinst/bin/mono $$tmpinst/bin/mcs
-	echo "stamp" > $@
+tmpinst-dir: 
+	mkdir -p $(tmpinst) $(tmpinst)/bin $(tmpinst)/lib $(tmpinst)/etc/mono
+	$(MAKE) $(tmpinst)/bin/mono $(tmpinst)/bin/mcs $(tmpinst)/etc/mono/machine.config
 
-tmpinst-dir: tmpinst-dir.stamp
-	@if test -d _tmpinst; then :; else rm -f tmpinst-dir.stamp; $(MAKE) tmpinst-dir.stamp; fi
+$(tmpinst)/bin/mono: $(srcdir)/Makefile.am
+	echo '#! /bin/sh' > $@
+	echo 'builddir="'`pwd`'"; tmpinst=$$builddir/$(tmpinst)' >> $@
+	echo 'if test -z "$$MONO_PATH" ; then MONO_PATH=$$tmpinst/lib; else MONO_PATH=$${MONO_PATH}:$$tmpinst/lib ; fi' >> $@
+	echo 'MONO_CFG_DIR=$$tmpinst/etc' >> $@
+	echo 'export MONO_PATH MONO_CFG_DIR' >> $@
+	echo 'exec "$$builddir/libtool" --mode=execute "$$builddir/$(mono_runtime)" --config "$$builddir/data/config" "$$@"' >> $@
+	chmod +x $@
+
+$(tmpinst)/bin/mcs: $(srcdir)/Makefile.am
+	(t=`cd $(tmpinst) && pwd`; echo '#! /bin/sh'; echo 'exec "'"$$t/bin/mono"'" "'"$$t/lib/mcs.exe"'" "$$@"') > $@
+	chmod +x $@
+
+$(tmpinst)/etc/mono/machine.config: $(srcdir)/data/machine.config
+	rm -f $@
+	srcdir=`cd $(srcdir) && pwd`; cd $(tmpinst)/etc/mono && $(LN_S) $$srcdir/data/machine.config machine.config
 
 # Obsolete target -- don't use.
 .PHONY: fullbuild

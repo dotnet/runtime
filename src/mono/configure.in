@@ -4,6 +4,8 @@ AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(mono,0.95)
 AM_MAINTAINER_MODE
 
+AC_PROG_LN_S
+
 dnl
 dnl libgc checks
 dnl
