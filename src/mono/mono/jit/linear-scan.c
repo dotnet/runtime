@@ -191,7 +191,8 @@ mono_analyze_liveness (MonoFlowGraph *cfg)
 	
 	do {
 		changes = FALSE;
-		for (i = 0; i < cfg->block_count; i++) {
+
+		for (i =  cfg->block_count - 1; i >= 0; i--) {
 			MonoBBlock *bb = &cfg->bblocks [i];
 
 			mono_bitset_copyto (bb->live_in_set, old_live_in_set);
