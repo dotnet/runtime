@@ -48,19 +48,39 @@
 	
 	</ul>
 
+<a name="tasks">
 ** Current pending tasks
 
-	Array declarations are currently being ignored, 
+	Simple tasks:
 
-	PInvoke is not supported.
+	<ul>
+		* Array declarations are currently being ignored, 
 
-	Pre-processing is not supported.
+		* PInvoke declarations are not supported.
 
-	Attribute declarations and passing currently ignored.
+		* Pre-processing is not supported.
 
-	Compiler does not pass around line/col information from tokenizer for error reporting.
+		* Attribute declarations and passing currently ignored.
 
-	Jay does not work correctly with `error' productions, making parser errors hard to point.
+		* Compiler does not pass around line/col information from tokenizer for error reporting.
+
+		* Jay does not work correctly with `error'
+		  productions, making parser errors hard to point.  It
+		  would be best to port the Bison-To-Java compiler to
+		  become Bison-to-C# compiler (bjepson@oreilly.com
+		  might have more information)
+	</ul>
+
+	Critical tasks:
+
+	<ul>
+		* Resolve "base" classes and "base" interfaces for
+		  classes, structs and interfaces.
+
+		  Once this is done, we can actually do the semantic
+		  analysis, because otherwise we do not know who our
+		  parents are.
+	</ul>
 
 ** Questions and Answers
 

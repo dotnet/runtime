@@ -4,6 +4,12 @@
 	Mono-based solution.  Some of these tools can be developed on
 	Windows before Mono is fully finished.
 
+** Debugger
+
+	We will need a debugging API to debug CLI applications and
+	then a debugger component that can be used in an IDE
+	environment.
+
 ** Integrated Development Environment
 
 	There is already a project to create a C# development
