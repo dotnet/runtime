@@ -29,11 +29,13 @@ namespace Test {
 				array_val = value;
 			}
 		}
+
+		public char[] Prop2;
 	}
 			
 	[My("testclass")]
 	[My2("testclass", 22)]
-	[My3(Prop = new char [] { 'A', 'B', 'C' })]
+	[My3(Prop = new char [] { 'A', 'B', 'C', 'D' }, Prop2 = new char [] { 'A', 'D' })]
 	public class Test {
 		static public int Main() {
 			System.Reflection.MemberInfo info = typeof (Test);
@@ -49,8 +51,14 @@ namespace Test {
 						return 2;
 				}
 				if (attributes [i] is My3Attribute) {
-					if (new String (((My3Attribute)attributes [i]).Prop) != "ABC")
+					if (new String (((My3Attribute)attributes [i]).Prop) != "ABCD") {
+						Console.WriteLine (new String (((My3Attribute)attributes [i]).Prop));
 						return 3;
+					}
+					if (new String (((My3Attribute)attributes [i]).Prop2) != "AD") {
+						Console.WriteLine (new String (((My3Attribute)attributes [i]).Prop2));
+						return 4;
+					}
 				}
 			}
 			return 0;
