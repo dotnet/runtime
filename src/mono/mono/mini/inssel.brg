@@ -1610,7 +1610,6 @@ mini_emit_load_intf_reg (MonoCompile *s, int intf_reg, int ioffset_reg, MonoClas
 	if (s->compile_aot) {
 		int iid_reg = mono_regstate_next_int (s->rs);
 		MONO_EMIT_NEW_AOTCONST (s, iid_reg, klass, MONO_PATCH_INFO_IID);
-		/* FIXME: Do a shift instead */
 #if SIZEOF_VOID_P == 8
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, iid_reg, iid_reg, 3);
 #else
@@ -1639,8 +1638,17 @@ mini_emit_load_intf_reg_class (MonoCompile *s, int intf_reg, int klass_reg, Mono
 {
 	int ioffset_reg = mono_regstate_next_int (s->rs);
 
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, ioffset_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, interface_offsets));
-	mini_emit_load_intf_reg (s, intf_reg, ioffset_reg, klass);
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, ioffset_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, interface_offsets));
+
+	if (s->compile_aot) {
+		int iid_reg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_AOTCONST (s, iid_reg, klass, MONO_PATCH_INFO_IID);
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, iid_reg, iid_reg, 2);
+		MONO_EMIT_NEW_BIALU (s, CEE_ADD, ioffset_reg, ioffset_reg, iid_reg);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, intf_reg, ioffset_reg, 0);
+	}
+	else
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, intf_reg, ioffset_reg, klass->interface_id * sizeof (int));
 }
 
 void 
