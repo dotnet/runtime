@@ -957,6 +957,7 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 	/* g_print ("loading %s\n", aname->name); */
 	/* special case corlib */
 	if (strcmp (aname->name, "mscorlib") == 0) {
+		char *corlib_file;
 		if (corlib) {
 			/* g_print ("corlib already loaded\n"); */
 			return corlib;
@@ -968,6 +969,23 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 				return corlib;
 		}
 		corlib = load_in_path ("mscorlib.dll", default_path, status);
+
+		if (corlib)
+			return corlib;
+	
+		/* Load corlib from mono/<version> */
+		
+		corlib_file = g_build_filename ("mono", mono_get_framework_version (), "mscorlib.dll", NULL);
+		if (assemblies_path) {
+			corlib = load_in_path (corlib_file, (const char**)assemblies_path, status);
+			if (corlib) {
+				g_free (corlib_file);
+				return corlib;
+			}
+		}
+		corlib = load_in_path (corlib_file, default_path, status);
+		g_free (corlib_file);
+	
 		return corlib;
 	}
 
@@ -1093,4 +1111,3 @@ mono_assembly_get_image (MonoAssembly *assembly)
 {
 	return assembly->image;
 }
-

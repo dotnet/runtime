@@ -12,6 +12,7 @@
 #include <config.h>
 #include <glib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include <mono/os/gc_wrapper.h>
 
@@ -22,6 +23,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/rawbuffer.h>
+#include <mono/metadata/metadata-internals.h>
 
 /* #define DEBUG_DOMAIN_UNLOAD */
 
@@ -35,6 +37,39 @@ static MonoGHashTable * appdomains_list = NULL;
 static CRITICAL_SECTION appdomains_mutex;
 
 static MonoDomain *mono_root_domain = NULL;
+
+/* RuntimeInfo: Contains information about versions supported by this runtime */
+typedef struct  {
+	const char* runtime_version;
+	const char* framework_version;
+} RuntimeInfo;
+
+/* AppConfigInfo: Information about runtime versions supported by an 
+ * aplication.
+ */
+typedef struct {
+	GSList *supported_runtimes;
+	char *required_runtime;
+	int configuration_count;
+	int startup_count;
+} AppConfigInfo;
+
+static RuntimeInfo *current_runtime = NULL;
+
+/* This is the list of runtime versions supported by this JIT.
+ */
+static RuntimeInfo supported_runtimes[] = {
+	{"v1.0.3705", "1.0"}, {"v1.1.4322", "1.0"}, {"v2.0.40607","2.0"} 
+};
+
+/* The stable runtime version */
+#define DEFAULT_RUNTIME_VERSION "v1.1.4322"
+
+static RuntimeInfo*	
+get_runtime_from_exe (const char *exe_file);
+
+static RuntimeInfo*
+get_runtime_by_version (const char *version);
 
 static MonoJitInfoTable *
 mono_jit_info_table_new (void)
@@ -221,16 +256,20 @@ mono_domain_create (void)
 }
 
 /**
- * mono_init:
+ * mono_init_internal:
  * 
  * Creates the initial application domain and initializes the mono_defaults
  * structure.
  * This function is guaranteed to not run any IL code.
+ * If exe_filename is not NULL, the method will determine the required runtime
+ * from the exe configuration file or the version PE field.
+ * If runtime_version is not NULL, that runtime version will be used.
+ * Either exe_filename or runtime_version must be provided.
  *
  * Returns: the initial domain.
  */
-MonoDomain *
-mono_init (const char *filename)
+static MonoDomain *
+mono_init_internal (const char *filename, const char *exe_filename, const char *runtime_version)
 {
 	static MonoDomain *domain = NULL;
 	MonoAssembly *ass;
@@ -259,17 +298,31 @@ mono_init (const char *filename)
 	mono_root_domain = domain;
 
 	TlsSetValue (appdomain_thread_id, domain);
+	
+	if (exe_filename != NULL) {
+		current_runtime = get_runtime_from_exe (exe_filename);
+	} else if (runtime_version != NULL) {
+		current_runtime = get_runtime_by_version (runtime_version);
+	}
+
+	if (current_runtime == NULL) {
+		g_print ("WARNING: The runtime version supported by this application is unavailable.\n");
+		current_runtime = get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
+		g_print ("Using default runtime: %s\n", current_runtime->runtime_version);
+	}
 
 	/* find the corlib */
 	corlib_aname.name = "mscorlib";
 	ass = mono_assembly_load (&corlib_aname, NULL, &status);
 	if ((status != MONO_IMAGE_OK) || (ass == NULL)) {
 		switch (status){
-		case MONO_IMAGE_ERROR_ERRNO:
+		case MONO_IMAGE_ERROR_ERRNO: {
+			char *corlib_file = g_build_filename (mono_assembly_getrootdir (), "mono", mono_get_framework_version (), "mscorlib.dll", NULL);
 			g_print ("The assembly mscorlib.dll was not found or could not be loaded.\n");
-			g_print ("It should have been installed in the `%s' directory.\n",
-				 mono_assembly_getrootdir ());
+			g_print ("It should have been installed in the `%s' directory.\n", corlib_file);
+			g_free (corlib_file);
 			break;
+		}
 		case MONO_IMAGE_IMAGE_INVALID:
 			g_print ("The file %s/mscorlib.dll is an invalid CIL image\n",
 				 mono_assembly_getrootdir ());
@@ -487,6 +540,56 @@ mono_init (const char *filename)
 	domain->friendly_name = g_path_get_basename (filename);
 
 	return domain;
+}
+
+/**
+ * mono_init:
+ * 
+ * Creates the initial application domain and initializes the mono_defaults
+ * structure.
+ * This function is guaranteed to not run any IL code.
+ * The runtime is initialized using the default runtime version.
+ *
+ * Returns: the initial domain.
+ */
+MonoDomain *
+mono_init (const char *domain_name)
+{
+	return mono_init_internal (domain_name, NULL, DEFAULT_RUNTIME_VERSION);
+}
+
+/**
+ * mono_init_from_assembly:
+ * 
+ * Creates the initial application domain and initializes the mono_defaults
+ * structure.
+ * This function is guaranteed to not run any IL code.
+ * The runtime is initialized using the runtime version required by the
+ * provided executable. The version is determined by looking at the exe 
+ * configuration file and the version PE field)
+ *
+ * Returns: the initial domain.
+ */
+MonoDomain *
+mono_init_from_assembly (const char *domain_name, const char *filename)
+{
+	return mono_init_internal (domain_name, filename, NULL);
+}
+
+/**
+ * mono_init_version:
+ * 
+ * Creates the initial application domain and initializes the mono_defaults
+ * structure.
+ * This function is guaranteed to not run any IL code.
+ * The runtime is initialized using the provided rutime version.
+ *
+ * Returns: the initial domain.
+ */
+MonoDomain *
+mono_init_version (const char *domain_name, const char *version)
+{
+	return mono_init_internal (domain_name, NULL, version);
 }
 
 MonoDomain*
@@ -819,3 +922,186 @@ mono_get_exception_class (void)
 	return mono_defaults.exception_class;
 }
 
+
+static char* get_attribute_value (const gchar **attribute_names, 
+					const gchar **attribute_values, 
+					const char *att_name)
+{
+	int n;
+	for (n=0; attribute_names[n] != NULL; n++) {
+		if (strcmp (attribute_names[n], att_name) == 0)
+			return g_strdup (attribute_values[n]);
+	}
+	return NULL;
+}
+
+static void start_element (GMarkupParseContext *context, 
+                           const gchar         *element_name,
+			   const gchar        **attribute_names,
+			   const gchar        **attribute_values,
+			   gpointer             user_data,
+			   GError             **error)
+{
+	AppConfigInfo* app_config = (AppConfigInfo*) user_data;
+	
+	if (strcmp (element_name, "configuration") == 0) {
+		app_config->configuration_count++;
+		return;
+	}
+	if (strcmp (element_name, "startup") == 0) {
+		app_config->startup_count++;
+		return;
+	}
+	
+	if (app_config->configuration_count != 1 || app_config->startup_count != 1)
+		return;
+	
+	if (strcmp (element_name, "requiredRuntime") == 0) {
+		app_config->required_runtime = get_attribute_value (attribute_names, attribute_values, "version");
+	} else if (strcmp (element_name, "supportedRuntime") == 0) {
+		char *version = get_attribute_value (attribute_names, attribute_values, "version");
+		app_config->supported_runtimes = g_slist_append (app_config->supported_runtimes, version);
+	}
+}
+
+static void end_element   (GMarkupParseContext *context,
+                           const gchar         *element_name,
+			   gpointer             user_data,
+			   GError             **error)
+{
+	AppConfigInfo* app_config = (AppConfigInfo*) user_data;
+	
+	if (strcmp (element_name, "configuration") == 0) {
+		app_config->configuration_count--;
+	} else if (strcmp (element_name, "startup") == 0) {
+		app_config->startup_count--;
+	}
+}
+
+static const GMarkupParser 
+mono_parser = {
+	start_element,
+	end_element,
+	NULL,
+	NULL,
+	NULL
+};
+
+static AppConfigInfo *
+app_config_parse (const char *filename)
+{
+	AppConfigInfo *app_config;
+	GMarkupParseContext *context;
+	char *text;
+	gsize len;
+	
+	struct stat buf;
+	if (stat (filename, &buf) != 0)
+		return NULL;
+	
+	app_config = g_new0 (AppConfigInfo, 1);
+
+	if (!g_file_get_contents (filename, &text, &len, NULL))
+		return NULL;
+
+	context = g_markup_parse_context_new (&mono_parser, 0, app_config, NULL);
+	if (g_markup_parse_context_parse (context, text, len, NULL)) {
+		g_markup_parse_context_end_parse (context, NULL);
+	}
+	g_markup_parse_context_free (context);
+	g_free (text);
+	return app_config;
+}
+
+static void 
+app_config_free (AppConfigInfo* app_config)
+{
+	char *rt;
+	GSList *list = app_config->supported_runtimes;
+	while (list != NULL) {
+		rt = (char*)list->data;
+		g_free (rt);
+		list = g_slist_next (list);
+	}
+	g_slist_free (app_config->supported_runtimes);
+	g_free (app_config->required_runtime);
+	g_free (app_config);
+}
+
+
+static RuntimeInfo*
+get_runtime_by_version (const char *version)
+{
+	int n;
+	int max = G_N_ELEMENTS (supported_runtimes);
+	
+	for (n=0; n<max; n++) {
+		if (strcmp (version, supported_runtimes[n].runtime_version) == 0)
+			return &supported_runtimes[n];
+	}
+	return NULL;
+}
+
+static RuntimeInfo*	
+get_runtime_from_exe (const char *exe_file)
+{
+	AppConfigInfo* app_config;
+	char *version;
+	char *config_name;
+	RuntimeInfo* runtime = NULL;
+	MonoImage *image = NULL;
+	
+	config_name = g_strconcat (exe_file, ".config", NULL);
+	app_config = app_config_parse (config_name);
+	g_free (config_name);
+	
+	if (app_config != NULL) {
+		/* Check supportedRuntime elements, if none is supported, fail.
+		 * If there are no such elements, look for a requiredRuntime element.
+		 */
+		if (app_config->supported_runtimes != NULL) {
+			GSList *list = app_config->supported_runtimes;
+			while (list != NULL && runtime == NULL) {
+				version = (char*) list->data;
+				runtime = get_runtime_by_version (version);
+				list = g_slist_next (list);
+			}
+			app_config_free (app_config);
+			return runtime;
+		}
+		
+		/* Check the requiredRuntime element. This is for 1.0 apps only. */
+		if (app_config->required_runtime != NULL) {
+			runtime = get_runtime_by_version (app_config->required_runtime);
+			app_config_free (app_config);
+			return runtime;
+		}
+		app_config_free (app_config);
+	}
+	
+	/* Look for a runtime with the exact version */
+	image = mono_image_open (exe_file, NULL);
+	if (image == NULL) {
+		/* The image is wrong or the file was not found. In this case return
+		 * a default runtime and leave to the initialization method the work of
+		 * reporting the error.
+		 */
+		return get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
+	}
+
+	runtime = get_runtime_by_version (image->version);
+	
+	return runtime;
+}
+
+const char*
+mono_get_framework_version (void)
+{
+	return current_runtime->framework_version;
+}
+
+const char*
+mono_get_runtime_version (void)
+{
+	return current_runtime->runtime_version;
+}

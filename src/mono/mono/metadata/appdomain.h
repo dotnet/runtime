@@ -29,6 +29,12 @@ typedef void (*MonoDomainFunc) (MonoDomain *domain, gpointer user_data);
 MonoDomain*
 mono_init                  (const char *filename);
 
+MonoDomain *
+mono_init_from_assembly    (const char *domain_name, const char *filename);
+
+MonoDomain *
+mono_init_version          (const char *domain_name, const char *version);
+
 MonoDomain*
 mono_get_root_domain       (void);
 

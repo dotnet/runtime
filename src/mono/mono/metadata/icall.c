@@ -4750,7 +4750,7 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
 
 	MONO_ARCH_SAVE_REGS;
 
-	path = g_build_path (G_DIR_SEPARATOR_S, mono_get_config_dir (), "mono", "machine.config", NULL);
+	path = g_build_path (G_DIR_SEPARATOR_S, mono_get_config_dir (), "mono", mono_get_framework_version (), "machine.config", NULL);
 
 #if defined (PLATFORM_WIN32)
 	/* Avoid mixing '/' and '\\' */

@@ -198,4 +198,11 @@ ves_icall_System_AppDomain_GetIDFromDomain (MonoAppDomain * ad);
 MonoString *
 ves_icall_System_AppDomain_InternalGetProcessGuid (MonoString* newguid);
 
+const char*
+mono_get_framework_version (void);
+
+const char*
+mono_get_runtime_version (void);
+
+
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */
