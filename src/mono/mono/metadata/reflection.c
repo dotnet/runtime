@@ -1352,10 +1352,6 @@ mono_image_get_type_info (MonoDomain *domain, MonoReflectionTypeBuilder *tb, Mon
 	}
 
 	/* Do the same with properties etc.. */
-	/*
-	 * FIXME: note that the methodsemantics table needs to be sorted, so events
-	 * go before properties; not sure if this is enough...
-	 */
 	if (tb->events && mono_array_length (tb->events)) {
 		table = &assembly->tables [MONO_TABLE_EVENT];
 		table->rows += mono_array_length (tb->events);
@@ -1474,8 +1470,15 @@ compare_semantics (const void *a, const void *b)
 	if (assoc)
 		return assoc;
 	return a_values [MONO_METHOD_SEMA_SEMANTICS] - b_values [MONO_METHOD_SEMA_SEMANTICS];
+}
 
-	
+static int
+compare_custom_attrs (const void *a, const void *b)
+{
+	const guint32 *a_values = a;
+	const guint32 *b_values = b;
+
+	return a_values [MONO_CUSTOM_ATTR_PARENT] - b_values [MONO_CUSTOM_ATTR_PARENT];
 }
 
 /*
@@ -1623,6 +1626,9 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 	table = &assembly->tables [MONO_TABLE_METHODSEMANTICS];
 	if (table->rows)
 		qsort (table->values + MONO_METHOD_SEMA_SIZE, table->rows, sizeof (guint32) * MONO_METHOD_SEMA_SIZE, compare_semantics);
+	table = &assembly->tables [MONO_TABLE_CUSTOMATTRIBUTE];
+	if (table->rows)
+		qsort (table->values + MONO_CUSTOM_ATTR_SIZE, table->rows, sizeof (guint32) * MONO_CUSTOM_ATTR_SIZE, compare_custom_attrs);
 
 	/* compress the tables */
 	for (i = 0; i < 64; i++){
