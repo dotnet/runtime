@@ -108,7 +108,7 @@ dup_type (MonoType* t, const MonoType *original)
 
 static void
 mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
-			    gboolean include_arity)
+			    gboolean include_ns, gboolean include_arity)
 {
 	MonoClass *klass;
 	
@@ -117,7 +117,8 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 		int i, rank = type->data.array->rank;
 
 		mono_type_get_name_recurse (
-			&type->data.array->eklass->byval_arg, str, FALSE, include_arity);
+			&type->data.array->eklass->byval_arg, str,
+			FALSE, include_ns, include_arity);
 		g_string_append_c (str, '[');
 		for (i = 1; i < rank; i++)
 			g_string_append_c (str, ',');
@@ -126,21 +127,21 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 	}
 	case MONO_TYPE_SZARRAY:
 		mono_type_get_name_recurse (
-			&type->data.klass->byval_arg, str, FALSE, include_arity);
+			&type->data.klass->byval_arg, str, FALSE, include_ns, include_arity);
 		g_string_append (str, "[]");
 		break;
 	case MONO_TYPE_PTR:
-		mono_type_get_name_recurse (type->data.type, str, FALSE, include_arity);
+		mono_type_get_name_recurse (type->data.type, str, FALSE, include_ns, include_arity);
 		g_string_append_c (str, '*');
 		break;
 	default:
 		klass = mono_class_from_mono_type (type);
 		if (klass->nested_in) {
 			mono_type_get_name_recurse (
-				&klass->nested_in->byval_arg, str, TRUE, include_arity);
+				&klass->nested_in->byval_arg, str, TRUE, include_ns, include_arity);
 			g_string_append_c (str, '+');
 		}
-		if (*klass->name_space) {
+		if (include_ns && *klass->name_space) {
 			g_string_append (str, klass->name_space);
 			g_string_append_c (str, '.');
 		}
@@ -162,7 +163,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 				if (i)
 					g_string_append_c (str, ',');
 				mono_type_get_name_recurse (
-					ginst->type_argv [i], str, FALSE, include_arity);
+					ginst->type_argv [i], str, FALSE, include_ns, include_arity);
 			}
 			g_string_append_c (str, '>');
 		} else if (klass->generic_container) {
@@ -188,10 +189,11 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
  * The inverse of mono_reflection_parse_type ().
  */
 static char*
-_mono_type_get_name (MonoType *type, gboolean is_recursed, gboolean include_arity)
+_mono_type_get_name (MonoType *type, gboolean is_recursed, gboolean include_ns,
+		     gboolean include_arity)
 {
 	GString* result = g_string_new ("");
-	mono_type_get_name_recurse (type, result, is_recursed, include_arity);
+	mono_type_get_name_recurse (type, result, is_recursed, include_ns, include_arity);
 
 	if (type->byref)
 		g_string_append_c (result, '&');
@@ -202,13 +204,13 @@ _mono_type_get_name (MonoType *type, gboolean is_recursed, gboolean include_arit
 char*
 mono_type_get_name (MonoType *type)
 {
-	return _mono_type_get_name (type, TRUE, TRUE);
+	return _mono_type_get_name (type, TRUE, TRUE, TRUE);
 }
 
 char*
 mono_type_get_full_name (MonoType *type)
 {
-	return _mono_type_get_name (type, FALSE, TRUE);
+	return _mono_type_get_name (type, FALSE, TRUE, TRUE);
 }
 
 MonoType*
@@ -1098,7 +1100,7 @@ mono_class_setup_vtable (MonoClass *class, MonoMethod **overrides, int onum)
 
 				if (ic->generic_inst) {
 					MonoClass *the_ic = mono_class_from_mono_type (ic->generic_inst->generic_type);
-					the_cname = _mono_type_get_name (&the_ic->byval_arg, TRUE, TRUE);
+					the_cname = _mono_type_get_name (&the_ic->byval_arg, TRUE, FALSE, TRUE);
 					cname = the_cname;
 				} else {
 					the_cname = NULL;
