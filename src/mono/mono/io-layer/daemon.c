@@ -425,6 +425,14 @@ static void rem_fd(GIOChannel *channel, ChannelData *channel_data)
 	g_message (G_GNUC_PRETTY_FUNCTION ": Removing client fd %d", fd);
 #endif
 
+	if (channel_data->io_source == 0) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": channel already closed for fd %d", fd);
+#endif
+		return;
+	}
+
+
 	g_io_channel_shutdown (channel, TRUE, NULL);
 	g_source_remove (channel_data->io_source);
 	g_io_channel_unref (channel);
