@@ -14,8 +14,8 @@
 	runtime can be <a href="embedded-api.html">embedded</a> into your
 	application.
 
-	Mono has implementations of both <a href="ado-net">ADO.NET</a>
-	and <a href="asp-net">ASP.NET</a> as part of its distribution.
+	Mono has implementations of both <a href="ado-net.html">ADO.NET</a>
+	and <a href="asp-net.html">ASP.NET</a> as part of its distribution.
 
 	You can read our <a href="rationale.html">rationale</a> for
 	this project.  If you have questions about the project, please
