@@ -371,6 +371,8 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	char *t;
 	int i, len;
 	guint32 vtable_size;
+	guint32 cindex;
+	guint32 constant_cols [MONO_CONSTANT_SIZE];
 
 	g_assert (class);
 
@@ -430,6 +432,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		mono_stats.class_static_data_size += class->class_size + 8;
 	}
 
+	cindex = -1;
 	for (i = class->field.first; i < class->field.last; ++i) {
 		field = &class->fields [i - class->field.first];
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
@@ -460,6 +463,17 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		}
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT))
 			continue;
+
+		if (!field->def_value) {
+			cindex = mono_metadata_get_constant_index (class->image, MONO_TOKEN_FIELD_DEF | (i + 1), cindex + 1);
+			g_assert (cindex);
+
+			mono_metadata_decode_row (&class->image->tables [MONO_TABLE_CONSTANT], cindex - 1, constant_cols, MONO_CONSTANT_SIZE);
+			field->def_value = g_new0 (MonoConstant, 1);
+			field->def_value->type = constant_cols [MONO_CONSTANT_TYPE];
+			field->def_value->value = (gpointer)mono_metadata_blob_heap (class->image, constant_cols [MONO_CONSTANT_VALUE]);
+		}
+
 		p = field->def_value->value;
 		len = mono_metadata_decode_blob_size (p, &p);
 		t = (char*)vt->data + field->offset;
@@ -1305,7 +1319,7 @@ out_of_memory (size_t size)
  *
  * Returns: an allocated object of size @size, or NULL on failure.
  */
-static void *
+static inline void *
 mono_object_allocate (size_t size)
 {
 #if HAVE_BOEHM_GC
@@ -1322,7 +1336,7 @@ mono_object_allocate (size_t size)
 }
 
 #if CREATION_SPEEDUP
-static void *
+static inline void *
 mono_object_allocate_spec (size_t size, void *gcdescr)
 {
 	/* if this is changed to GC_debug_malloc(), we need to change also metadata/gc.c */

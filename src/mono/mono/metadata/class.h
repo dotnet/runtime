@@ -48,7 +48,7 @@ typedef struct {
 
 	/*
 	 * If the field is constant, pointer to the metadata where the
-	 * constant value can be loaded.
+	 * constant value can be loaded. Initialized lazily during vtable creation.
 	 */
 	MonoConstant    *def_value;
 } MonoClassField;

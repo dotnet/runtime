@@ -229,7 +229,7 @@ void        mono_metadata_field_info (MonoImage *meta,
 				      guint32      *rva,
 				      MonoMarshalSpec **marshal_spec);
 
-guint32     mono_metadata_get_constant_index (MonoImage *meta, guint32 token);
+guint32     mono_metadata_get_constant_index (MonoImage *meta, guint32 token, guint32 hint);
 
 /*
  * Functions to extract information from the Blobs

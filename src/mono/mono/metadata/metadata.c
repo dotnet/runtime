@@ -2634,13 +2634,14 @@ mono_metadata_field_info (MonoImage *meta, guint32 index, guint32 *offset, guint
  * mono_metadata_get_constant_index:
  * @meta: the Image the field is defined in
  * @index: the token that may have a row defined in the constants table
+ * @hint: possible position for the row
  *
  * @token must be a FieldDef, ParamDef or PropertyDef token.
  *
- * Returns: the index into the Constsnts table or 0 if not found.
+ * Returns: the index into the Constants table or 0 if not found.
  */
 guint32
-mono_metadata_get_constant_index (MonoImage *meta, guint32 token)
+mono_metadata_get_constant_index (MonoImage *meta, guint32 token, guint32 hint)
 {
 	MonoTableInfo *tdef;
 	locator_t loc;
@@ -2665,6 +2666,9 @@ mono_metadata_get_constant_index (MonoImage *meta, guint32 token)
 	loc.idx = index;
 	loc.col_idx = MONO_CONSTANT_PARENT;
 	loc.t = tdef;
+
+	if ((hint > 0) && (hint < tdef->rows) && (mono_metadata_decode_row_col (tdef, hint - 1, MONO_CONSTANT_PARENT) == index))
+		return hint;
 
 	if (tdef->base && bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator)) {
 		return loc.result + 1;

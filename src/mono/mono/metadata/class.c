@@ -33,15 +33,6 @@
 #include <mono/metadata/reflection.h>
 #include <mono/os/gc_wrapper.h>
 
-/*
- * Uncomment this to enable GC aware auto layout: in this mode, reference
- * fields are grouped together inside objects, increasing collector 
- * performance.
- * Requires that all classes whose layout is known to native code be annotated
- * with [StructLayout (LayoutKind.Sequential)]
- */
-//#define GC_AWARE_AUTO_LAYOUT
-
 #define CSIZE(x) (sizeof (x) / 4)
 
 MonoStats mono_stats;
@@ -367,10 +358,8 @@ class_compute_field_layout (MonoClass *class)
 	for (i = 0; i < top; i++){
 		const char *sig;
 		guint32 cols [MONO_FIELD_SIZE];
-		guint32 constant_cols [MONO_CONSTANT_SIZE];
-		guint32 cindex;
 		int idx = class->field.first + i;
-		
+
 		mono_metadata_decode_row (t, idx, cols, CSIZE (cols));
 		/* The name is needed for fieldrefs */
 		class->fields [i].name = mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]);
@@ -415,18 +404,7 @@ class_compute_field_layout (MonoClass *class)
 			blittable = class->element_class->blittable;
 		}
 
-		if ((class->fields [i].type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT) &&
-			(class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)) {
-			cindex = mono_metadata_get_constant_index (class->image, MONO_TOKEN_FIELD_DEF | (class->field.first + i + 1));
-			if (!cindex) {
-				g_warning ("constant for field %s:%s not found", class->name, class->fields [i].name);
-				continue;
-			}
-			mono_metadata_decode_row (&class->image->tables [MONO_TABLE_CONSTANT], cindex - 1, constant_cols, MONO_CONSTANT_SIZE);
-			class->fields [i].def_value = g_new0 (MonoConstant, 1);
-			class->fields [i].def_value->type = constant_cols [MONO_CONSTANT_TYPE];
-			class->fields [i].def_value->value = (gpointer)mono_metadata_blob_heap (class->image, constant_cols [MONO_CONSTANT_VALUE]);
-		}
+		/* The def_value of fields is compute lazily during vtable creation */
 	}
 
 	if (class == mono_defaults.string_class)
@@ -455,6 +433,20 @@ mono_class_layout_fields (MonoClass *class)
 	const int top = class->field.count;
 	guint32 layout = class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK;
 	guint32 pass, passes, real_size;
+	gboolean gc_aware_layout = FALSE;
+
+	/*
+	 * Enable GC aware auto layout: in this mode, reference
+	 * fields are grouped together inside objects, increasing collector 
+	 * performance.
+	 * Requires that all classes whose layout is known to native code be annotated
+	 * with [StructLayout (LayoutKind.Sequential)]
+	 */
+	 /* corlib is missing [StructLayout] directives in many places */
+	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
+		if (class->image != mono_defaults.corlib)
+			gc_aware_layout = TRUE;
+	}
 
 	/*
 	 * Compute field layout and total size (not considering static fields)
@@ -464,11 +456,11 @@ mono_class_layout_fields (MonoClass *class)
 	case TYPE_ATTRIBUTE_AUTO_LAYOUT:
 	case TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT:
 
-#ifdef GC_AWARE_AUTO_LAYOUT
-		passes = 2;
-#else
-		passes = 1;
-#endif
+		if (gc_aware_layout)
+			passes = 2;
+		else
+			passes = 1;
+
 		if (layout != TYPE_ATTRIBUTE_AUTO_LAYOUT)
 			passes = 1;
 
@@ -484,9 +476,7 @@ mono_class_layout_fields (MonoClass *class)
 				if (class->fields [i].type->attrs & FIELD_ATTRIBUTE_STATIC)
 					continue;
 
-#ifdef GC_AWARE_AUTO_LAYOUT
-				/* FIXME: Fix mono_marshal_load_type_info () too */
-				if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
+				if (gc_aware_layout) {
 					/* 
 					 * We process fields with reference type in the first pass,
 					 * and fields with non-reference type in the second pass.
@@ -502,7 +492,6 @@ mono_class_layout_fields (MonoClass *class)
 							continue;
 					}
 				}
-#endif
 
 				if ((top == 1) && (class->instance_size == sizeof (MonoObject)) &&
 					(strcmp (class->fields [i].name, "$PRIVATE$") == 0)) {
