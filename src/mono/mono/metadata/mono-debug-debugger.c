@@ -792,15 +792,26 @@ property_is_static (MonoProperty *prop)
 	return method->flags & METHOD_ATTRIBUTE_STATIC;
 }
 
+static gboolean
+event_is_static (MonoEvent *ev)
+{
+	MonoMethod *method;
+
+	method = ev->add;
+
+	return method->flags & METHOD_ATTRIBUTE_STATIC;
+}
+
 static guint32
 do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerClassInfo *cinfo)
 {
 	guint8 buffer [BUFSIZ], *ptr = buffer, *old_ptr;
 	GPtrArray *methods = NULL, *static_methods = NULL, *ctors = NULL;
 	int num_fields = 0, num_static_fields = 0, num_properties = 0, num_static_properties = 0;
+	int num_events = 0, num_static_events = 0;
 	int num_methods = 0, num_static_methods = 0, num_params = 0, num_static_params = 0, base_offset = 0;
 	int num_ctors = 0, num_ctor_params = 0;
-	int field_info_size = 0, static_field_info_size = 0, property_info_size = 0;
+	int field_info_size = 0, static_field_info_size = 0, property_info_size = 0, event_info_size = 0, static_event_info_size = 0;
 	int static_property_info_size = 0, method_info_size = 0, static_method_info_size = 0;
 	int ctor_info_size = 0, iface_info_size = 0;
 	guint32 size, data_size, offset, data_offset;
@@ -840,6 +851,12 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 			++num_properties;
 		else
 			++num_static_properties;
+
+	for (i = 0; i < klass->event.count; i++)
+		if (!event_is_static (&klass->events [i]))
+			++num_events;
+		else
+			++num_static_events;
 
 	method_slots = g_hash_table_new (NULL, NULL);
 	methods = g_ptr_array_new ();
@@ -887,15 +904,18 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 	static_field_info_size = num_static_fields * 8;
 	property_info_size = num_properties * (4 + 2 * sizeof (gpointer));
 	static_property_info_size = num_static_properties * (4 + 2 * sizeof (gpointer));
+	event_info_size = num_events * (4 + 2 * sizeof (gpointer));
+	static_event_info_size = num_static_events * (4 + 2 * sizeof (gpointer));
 	method_info_size = num_methods * (4 + 2 * sizeof (gpointer)) + num_params * 4;
 	static_method_info_size = num_static_methods * (4 + 2 * sizeof (gpointer)) +
 		num_static_params * 4;
 	ctor_info_size = num_ctors * (4 + 2 * sizeof (gpointer)) + num_ctor_params * 4;
 	iface_info_size = klass->interface_count * 4;
 
-	size = 74 + sizeof (gpointer) + field_info_size + static_field_info_size +
-		property_info_size + static_property_info_size + method_info_size +
-		static_method_info_size + ctor_info_size + iface_info_size;
+	size = 90 + sizeof (gpointer) + field_info_size + static_field_info_size +
+		property_info_size + static_property_info_size + event_info_size +
+		static_event_info_size + method_info_size + static_method_info_size +
+		ctor_info_size + iface_info_size;
 
 	data_size = size;
 
@@ -922,6 +942,9 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 	WRITE_UINT32 (ptr, num_properties);
 	WRITE_UINT32 (ptr, data_offset);
 	data_offset += property_info_size;
+	WRITE_UINT32 (ptr, num_events);
+	WRITE_UINT32 (ptr, data_offset);
+	data_offset += event_info_size;
 	WRITE_UINT32 (ptr, num_methods);
 	WRITE_UINT32 (ptr, data_offset);
 	data_offset += method_info_size;
@@ -931,6 +954,9 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 	WRITE_UINT32 (ptr, num_static_properties);
 	WRITE_UINT32 (ptr, data_offset);
 	data_offset += static_property_info_size;
+	WRITE_UINT32 (ptr, num_static_events);
+	WRITE_UINT32 (ptr, data_offset);
+	data_offset += static_event_info_size;
 	WRITE_UINT32 (ptr, num_static_methods);
 	WRITE_UINT32 (ptr, data_offset);
 	data_offset += static_method_info_size;
@@ -964,6 +990,22 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 			WRITE_UINT32 (ptr, 0);
 		WRITE_POINTER (ptr, klass->properties [i].get);
 		WRITE_POINTER (ptr, klass->properties [i].set);
+	}
+
+	for (i = 0; i < klass->event.count; i++) {
+		if (event_is_static (&klass->events[i]))
+			continue;
+
+		if (klass->events [i].add) {
+			WRITE_UINT32 (ptr, write_type (table, klass->events [i].add->signature->params[0]));
+		}
+		else {
+			g_warning ("event add method not defined");
+			WRITE_UINT32 (ptr, 0);
+		}
+		WRITE_POINTER (ptr, klass->events [i].add);
+		WRITE_POINTER (ptr, klass->events [i].remove);
+		/* raise?  other? */
 	}
 
 	for (i = 0; i < methods->len; i++) {
@@ -1000,6 +1042,22 @@ do_write_class (MonoDebuggerSymbolTable *table, MonoClass *klass, MonoDebuggerCl
 			WRITE_UINT32 (ptr, 0);
 		WRITE_POINTER (ptr, klass->properties [i].get);
 		WRITE_POINTER (ptr, klass->properties [i].set);
+	}
+
+	for (i = 0; i < klass->event.count; i++) {
+		if (!event_is_static (&klass->events[i]))
+			continue;
+
+		if (klass->events [i].add) {
+			WRITE_UINT32 (ptr, write_type (table, klass->events [i].add->signature->params[0]));
+		}
+		else {
+			g_warning ("event add method not defined");
+			WRITE_UINT32 (ptr, 0);
+		}
+		WRITE_POINTER (ptr, klass->events [i].add);
+		WRITE_POINTER (ptr, klass->events [i].remove);
+		/* raise?  other? */
 	}
 
 	for (i = 0; i < static_methods->len; i++) {
