@@ -1269,7 +1269,6 @@ mono_method_get_token (MonoMethod *method)
 MonoMethodHeader* 
 mono_method_get_header (MonoMethod *method)
 {
-	int table;
 	int idx;
 	guint32 rva;
 	MonoImage* img;
