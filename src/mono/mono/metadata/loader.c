@@ -745,6 +745,9 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		return NULL;
 	}
 
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+				"Searching for '%s'.", import);
+
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_NO_MANGLE) {
 		g_module_symbol (gmodule, import, &piinfo->addr); 
 	} else {
@@ -757,8 +760,8 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		/*
 		 * Search using a variety of mangled names
 		 */
-		for (mangle_stdcall = 0; mangle_stdcall <= 2; mangle_stdcall ++) {
-			for (mangle_charset = 0; mangle_charset <= 1; mangle_charset ++) {
+		for (mangle_charset = 0; mangle_charset <= 1; mangle_charset ++) {
+			for (mangle_stdcall = 0; mangle_stdcall <= 2; mangle_stdcall ++) {
 				gboolean need_param_count = FALSE;
 #ifdef PLATFORM_WIN32
 				if (mangle_stdcall > 0)
@@ -769,22 +772,26 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 					if (piinfo->addr)
 						continue;
 
-					if (mangle_charset == 0) {
-						switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
-						case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
-							mangled_name = g_strconcat (import, "W", NULL);							
-							break;
-						case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
-							mangled_name = (char*)import;
-							break;
-						case PINVOKE_ATTRIBUTE_CHAR_SET_ANSI:
-						default:
+					mangled_name = (char*)import;
+					switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
+					case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
+						/* Try the mangled name first */
+						if (mangle_charset == 0)
+							mangled_name = g_strconcat (import, "W", NULL);
+						break;
+					case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
+#ifdef PLATFORM_WIN32
+						if (mangle_charset == 0)
+							mangled_name = g_strconcat (import, "W", NULL);
+#endif
+						break;
+					case PINVOKE_ATTRIBUTE_CHAR_SET_ANSI:
+					default:
+						/* Try the mangled name last */
+						if (mangle_charset == 1)
 							mangled_name = g_strconcat (import, "A", NULL);
-							break;
-						}
+						break;
 					}
-					else
-						mangled_name = (char*)import;
 
 #ifdef PLATFORM_WIN32
 					if (mangle_param_count == 0)

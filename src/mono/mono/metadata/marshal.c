@@ -1578,7 +1578,11 @@ mono_marshal_get_string_encoding (MonoMethodPInvoke *piinfo, MonoMarshalSpec *sp
 	case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
 		return MONO_NATIVE_LPWSTR;
 	case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
+#ifdef PLATFORM_WIN32
+		return MONO_NATIVE_LPWSTR;
+#else
 		return MONO_NATIVE_LPTSTR;
+#endif
 	default:
 		return MONO_NATIVE_LPSTR;
 	}
