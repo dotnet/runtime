@@ -298,7 +298,7 @@ emit_decoders ()
 
 	for (l = nonterm_list; l; l = l->next) {
 		NonTerm *n = (NonTerm *)l->data;
-		output ("int mono_burg_decode_%s[] = {\n", n->name);
+		output ("const int mono_burg_decode_%s[] = {\n", n->name);
 		output ("\t0,\n");
 		for (rl = n->rules; rl; rl = rl->next) {
 			Rule *rule = (Rule *)rl->data;
@@ -593,7 +593,7 @@ emit_emitter_func ()
 		i++;
 	}
 
-	output ("MBEmitFunc mono_burg_func [] = {\n");
+	output ("MBEmitFunc const mono_burg_func [] = {\n");
 	output ("\tNULL,\n");
 	for (l =  rule_list, i = 0; l; l = l->next) {
 		Rule *rule = (Rule *)l->data;
@@ -681,7 +681,7 @@ emit_vardefs ()
 	int i, j, c, n, *si;
 	char **sa;
 
-	output ("guint8 mono_burg_arity [] = {\n"); 
+	output ("const guint8 mono_burg_arity [] = {\n"); 
 	for (l = term_list, i = 0; l; l = l->next) {
 		Term *t = (Term *)l->data;
 
@@ -696,7 +696,7 @@ emit_vardefs ()
 	}
 	output ("};\n\n");
 
-	output ("char *mono_burg_term_string [] = {\n");
+	output ("const char *const mono_burg_term_string [] = {\n");
 	output ("\tNULL,\n");
 	for (l = term_list, i = 0; l; l = l->next) {
 		Term *t = (Term *)l->data;
@@ -704,7 +704,7 @@ emit_vardefs ()
 	}
 	output ("};\n\n");
 
-	output ("char *mono_burg_rule_string [] = {\n");
+	output ("const char * const mono_burg_rule_string [] = {\n");
 	output ("\tNULL,\n");
 	for (l = rule_list, i = 0; l; l = l->next) {
 		Rule *rule = (Rule *)l->data;
@@ -729,13 +729,13 @@ emit_vardefs ()
 
 		si [i++] = j;
 		if (j == c) {
-			output ("static guint16 mono_burg_nts_%d [] = { %s0 };\n", c, s);
+			output ("static const guint16 mono_burg_nts_%d [] = { %s0 };\n", c, s);
 			sa [c++] = s;
 		}
 	}	
 	output ("\n");
 
-	output ("guint16 *mono_burg_nts [] = {\n");
+	output ("const guint16 *const mono_burg_nts [] = {\n");
 	output ("\t0,\n");
 	for (l = rule_list, i = 0; l; l = l->next) {
 		Rule *rule = (Rule *)l->data;
@@ -750,10 +750,10 @@ emit_prototypes ()
 {
 	output ("typedef void (*MBEmitFunc) (MBTREE_TYPE *tree, MBCGEN_TYPE *s);\n\n");
 
-	output ("extern char *mono_burg_term_string [];\n");
-	output ("extern char *mono_burg_rule_string [];\n");
-	output ("extern guint16 *mono_burg_nts [];\n");
-	output ("extern MBEmitFunc mono_burg_func [];\n");
+	output ("extern const char * const mono_burg_term_string [];\n");
+	output ("extern const char * const mono_burg_rule_string [];\n");
+	output ("extern const guint16 *const mono_burg_nts [];\n");
+	output ("extern MBEmitFunc const mono_burg_func [];\n");
 
 	output ("MBState *mono_burg_label (MBTREE_TYPE *tree, MBCOST_DATA *data);\n");
 	output ("int mono_burg_rule (MBState *state, int goal);\n");
