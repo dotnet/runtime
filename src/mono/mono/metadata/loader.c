@@ -1288,7 +1288,11 @@ mono_method_get_header (MonoMethod *method)
 	gpointer loc;
 	MonoMethodNormal* mn = (MonoMethodNormal*) method;
 	
+#ifdef G_LIKELY
 	if (G_LIKELY (mn->header))
+#else
+	if (mn->header)
+#endif
 		return mn->header;
 	
 	if (method->klass->dummy || (method->flags & METHOD_ATTRIBUTE_ABSTRACT) || (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
