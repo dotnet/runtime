@@ -13,26 +13,14 @@ TESTSRC=			\
 	exception.cs		\
 	exception2.cs		\
 	exception3.cs		\
+	exception4.cs		\
 	struct.cs		\
+	static-constructor.cs		\
 	pinvoke.cs		\
 	array.cs		\
 	stream.cs
 
-TESTS=				\
-	test-ops.exe		\
-	fib.exe			\
-	obj.exe			\
-	random.exe		\
-	switch.exe		\
-	outparm.exe		\
-	nested-loops.exe	\
-	exception.exe		\
-	exception2.exe		\
-	exception3.exe		\
-	struct.exe		\
-	pinvoke.exe		\
-	array.exe		\
-	stream.exe
+TESTS=$(TESTSRC:.cs=.exe)
 
 EXTRA_DIST=test-driver $(TESTSRC)
 

@@ -103,11 +103,6 @@ init_class (MonoClass *klass)
 		init_class (klass->parent);
 	
 	klass->inited = 1;
-	/*
-	 * No need to call the class constructor.
-	 */
-	if (!(klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT))
-		return;
 
 	for (i = 0; i < klass->method.count; ++i) {
 		method = klass->methods [i];
@@ -2349,7 +2344,7 @@ usage (void)
 {
 	fprintf (stderr,
 		 "mint %s, the Mono ECMA CLI interpreter, (C) 2001 Ximian, Inc.\n\n"
-		 "Usage is: mint executable args...\n", VERSION);
+		 "Usage is: mint executable args...\n", "0.6");
 	exit (1);
 }
 
