@@ -60,7 +60,7 @@
 	    </td>
 	    <td>
 	      Working:<br>
-	      Linux/x86, Linux/PPC<br>
+	      Linux/x86, Linux/PPC, S390<br>
 	      In progress:<br>
 	      StrongARM, SPARC.
 	    </td>
@@ -187,6 +187,9 @@
 	Brian, Daniel and Rodrigo have been busy working on the ODBC
 	provider for Mono.  Daniel posted some <a
 	href="http://lists.ximian.com/archives/public/mono-list/2002-October/002755.html">updates</a>.
+	Brian posted <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-October/002758.html">details
+	about the ODBC.NET</a> provider.
 
 	Also Sebastien Pouliot has been improving the various
 	cryptographic classes in Mono, something that we had not done
