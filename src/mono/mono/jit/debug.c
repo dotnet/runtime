@@ -20,6 +20,7 @@
  * copy of the symbol table, it must call debugger_update_symbol_file_table().
  */
 static guint32 debugger_symbol_file_table_generation = 0;
+static guint32 debugger_symbol_file_table_modified = 0;
 
 /* Caution: This variable may be accessed at any time from the debugger;
  *          it is very important not to modify the memory it is pointing to
@@ -52,6 +53,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&mono_generic_trampoline_code,
 	&mono_breakpoint_trampoline_code,
 	&debugger_symbol_file_table_generation,
+	&debugger_symbol_file_table_modified,
 	&debugger_symbol_file_table,
 	&debugger_update_symbol_file_table,
 	&mono_compile_method,
@@ -925,8 +927,10 @@ mono_debug_add_type (MonoClass *klass)
 	if (mono_debug_handle->format != MONO_DEBUG_FORMAT_MONO)
 		return;
 
-	if (info->symfile)
+	if (info->symfile) {
 		mono_debug_symfile_add_type (info->symfile, klass);
+		debugger_symbol_file_table_modified++;
+	}
 }
 
 static gint32
@@ -1090,8 +1094,10 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 		jit->locals = locals;
 	}
 
-	if (info->symfile)
+	if (info->symfile) {
 		mono_debug_symfile_add_method (info->symfile, method);
+		debugger_symbol_file_table_modified++;
+	}
 }
 
 gchar *
