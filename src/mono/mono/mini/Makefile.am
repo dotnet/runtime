@@ -106,6 +106,10 @@ libmono_la_SOURCES = \
 BURGSRC= $(common_BURGSRC) $(srcdir)/inssel-ppc.brg
 endif
 
+libmonoincludedir = $(includedir)/mono/jit
+
+libmonoinclude_HEADERS = jit.h
+
 libmono_la_LIBADD = \
 	$(libs)
 
@@ -168,9 +172,11 @@ clean:
 
 pkgconfigdir = $(libdir)/pkgconfig
 
+documents=mini-doc.txt mini-porting.txt
+
 BUILT_SOURCES= inssel.c inssel.h cpu-pentium.h cpu-g4.h
 CLEANFILES= $(BUILT_SOURCES)
-EXTRA_DIST = $(common_BURGSRC) inssel-x86.brg \
+EXTRA_DIST = $(common_BURGSRC) $(documents) inssel-x86.brg inssel-ppc.brg \
 	jit-icalls.c cprop.c \
 	cpu-pentium.md cpu-g4.md ldscript
 

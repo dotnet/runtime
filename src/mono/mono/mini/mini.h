@@ -583,9 +583,6 @@ void        mono_set_defaults              (int verbose_level, guint32 opts);
 MonoDomain* mini_init                      (const char *filename);
 void        mini_cleanup                   (MonoDomain *domain);
 
-MonoDomain* mono_jit_init                  (const char *filename);
-void        mono_jit_cleanup               (MonoDomain *domain);
-
 /* helper methods */
 int       mono_parse_default_optimizations  (const char* p);
 void      mono_bblock_add_inst              (MonoBasicBlock *bb, MonoInst *inst);
