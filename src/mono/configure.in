@@ -218,6 +218,9 @@ case "x$gc" in
 
 		AC_DEFINE(HAVE_GC_H)
 		AC_DEFINE(USE_INCLUDED_LIBGC)
+
+		# The included libgc contains GCJ support
+		AC_DEFINE(HAVE_GC_GCJ_MALLOC)
 		;;
 
 	xnone)
