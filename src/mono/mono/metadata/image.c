@@ -895,7 +895,7 @@ mono_image_open (const char *fname, MonoImageOpenStatus *status)
 		return image2;
 	}
 	g_hash_table_insert (loaded_images_hash, image->name, image);
-	if (image->assembly_name)
+	if (image->assembly_name && (g_hash_table_lookup (loaded_images_hash, image->assembly_name) == NULL))
 		g_hash_table_insert (loaded_images_hash, (char *) image->assembly_name, image);	
 	g_hash_table_insert (loaded_images_guid_hash, image->guid, image);
 	LeaveCriticalSection (&images_mutex);
@@ -950,12 +950,12 @@ mono_image_close (MonoImage *image)
 	if (image == image2) {
 		/* This is not true if we are called from mono_image_open () */
 		g_hash_table_remove (loaded_images_hash, image->name);
-		if (image->assembly_name)
-			g_hash_table_remove (loaded_images_hash, (char *) image->assembly_name);	
 		g_hash_table_remove (loaded_images_guid_hash, image->guid);
 		/* Multiple images might have the same guid */
 		build_guid_table ();
-	}	
+	}
+	if (image->assembly_name && (g_hash_table_lookup (loaded_images_hash, image->assembly_name) == image))
+		g_hash_table_remove (loaded_images_hash, (char *) image->assembly_name);	
 	LeaveCriticalSection (&images_mutex);
 
 	if (image->f)
