@@ -260,7 +260,7 @@ print_method_from_ip (void *ip)
 	} while (0)
 
 #define NEW_DOMAINCONST(cfg,dest) do { \
-               if ((cfg->opt & MONO_OPT_SAHRED) || mono_compile_aot) { \
+               if ((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot) { \
                        NEW_TEMPLOAD (cfg, dest, mono_get_domainvar (cfg)->inst_c0); \
                } else { \
                        NEW_PCONST (cfg, dest, (cfg)->domain); \
@@ -2170,7 +2170,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			arg_array [i] = cfg->varinfo [i];
 
 		if (mono_compile_aot) 
-			cfg->opt |= MONO_OPT_SAHRED;
+			cfg->opt |= MONO_OPT_SHARED;
 
 		if (header->num_clauses) {
 			int size = sizeof (int) * header->num_clauses;
@@ -2231,7 +2231,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 	
-	if ((header->init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SAHRED)))) {
+	if ((header->init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SHARED)))) {
 		/* we use a separate basic block for the initialization code */
 		cfg->bb_init = init_localsbb = NEW_BBLOCK (cfg);
 		init_localsbb->real_offset = real_offset;
@@ -3095,7 +3095,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				cfg->ldstr_list = g_list_prepend (cfg->ldstr_list, (gpointer)n);
 			}
 
-			if ((cfg->opt & MONO_OPT_SAHRED) || mono_compile_aot) {
+			if ((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot) {
 				int temp;
 				MonoInst *iargs [3];
 				NEW_TEMPLOAD (cfg, iargs [0], mono_get_domainvar (cfg)->inst_c0);
@@ -3373,7 +3373,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
 				
-			if (((cfg->opt & MONO_OPT_SAHRED) || mono_compile_aot)) {
+			if (((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot)) {
 				int temp;
 				MonoInst *iargs [2];
 				g_assert (field->parent);
@@ -3486,7 +3486,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 
 			/* allocate the domainvar - becaus this is used in decompose_foreach */
-			if ((cfg->opt & MONO_OPT_SAHRED) || mono_compile_aot)
+			if ((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot)
 				mono_get_domainvar (cfg);
 			
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
@@ -3649,7 +3649,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			handle = mono_ldtoken (image, n, &handle_class);
 			mono_class_init (handle_class);
 
-			if (((cfg->opt & MONO_OPT_SAHRED) || mono_compile_aot)) {
+			if (((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot)) {
 				int temp;
 				MonoInst *res, *store, *addr, *vtvar, *iargs [2];
 
@@ -5853,7 +5853,7 @@ mono_jit_compile_method (MonoMethod *method)
 	GHashTable *jit_code_hash;
 	gpointer code;
 
-	if (default_opt & MONO_OPT_SAHRED)
+	if (default_opt & MONO_OPT_SHARED)
 		target_domain = mono_root_domain;
 	else 
 		target_domain = domain;
@@ -6255,7 +6255,7 @@ mini_cleanup (MonoDomain *domain)
 }
 
 void
-mini_set_defaults (int verbose_level, guint32 opts)
+mono_set_defaults (int verbose_level, guint32 opts)
 {
 	mini_verbose = verbose_level;
 	default_opt = opts;

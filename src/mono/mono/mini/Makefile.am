@@ -80,6 +80,12 @@ libmono_la_SOURCES = \
 libmono_la_LIBADD = \
 	$(libs)
 
+libmonoincludedir = $(includedir)/mono/mini
+libmonoinclude_HEADERS = \
+	mini.h			\
+	regalloc.h		\
+	mini-ops.h
+
 %.exe: %.cs TestDriver.dll
 	$(MCS) /unsafe $< /r:TestDriver.dll
 

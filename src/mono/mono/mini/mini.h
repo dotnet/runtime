@@ -382,7 +382,7 @@ enum {
 	MONO_OPT_DEADCE   = 1 << 6,
 	MONO_OPT_LINEARS  = 1 << 7,
 	MONO_OPT_CMOV     = 1 << 8,
-	MONO_OPT_SAHRED   = 1 << 9,
+	MONO_OPT_SHARED   = 1 << 9,
 	MONO_OPT_SCHED    = 1 << 10,
 	MONO_OPT_INTRINS  = 1 << 11,
 	MONO_OPT_TAILC    = 1 << 12,
@@ -569,9 +569,12 @@ typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
 
 /* main function */
 int         mono_main                      (int argc, char* argv[]);
-void        mini_set_defaults              (int verbose_level, guint32 opts);
+void        mono_set_defaults              (int verbose_level, guint32 opts);
 MonoDomain* mini_init                      (const char *filename);
 void        mini_cleanup                   (MonoDomain *domain);
+
+MonoDomain* mono_jit_init                  (const char *filename);
+void        mono_jit_cleanup               (MonoDomain *domain);
 
 /* helper methods */
 int       mono_parse_default_optimizations  (const char* p);

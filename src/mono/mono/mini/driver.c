@@ -77,7 +77,7 @@ static guint32
 parse_optimizations (const char* p)
 {
 	/* the default value */
-	guint32 opt = MONO_OPT_PEEPHOLE | MONO_OPT_CFOLD /* | MONO_OPT_CONSPROP | MONO_OPT_INLINE*/ | MONO_OPT_BRANCH | /* | MONO_OPT_SAHRED |*/ MONO_OPT_LINEARS;
+	guint32 opt = MONO_OPT_PEEPHOLE | MONO_OPT_CFOLD /* | MONO_OPT_CONSPROP | MONO_OPT_INLINE*/ | MONO_OPT_BRANCH | /* | MONO_OPT_SHARED |*/ MONO_OPT_LINEARS;
 	guint32 exclude = 0;
 	const char *n;
 	int i, invert, len;
@@ -123,7 +123,7 @@ parse_optimizations (const char* p)
 				if (invert)
 					opt = 0;
 				else
-					opt = ~(MONO_OPT_SAHRED | exclude);
+					opt = ~(MONO_OPT_SHARED | exclude);
 				p += 3;
 				if (*p == ',')
 					p++;
@@ -268,7 +268,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run) {
 	for (opt = 0; opt < G_N_ELEMENTS (opt_sets); ++opt) {
 		double elapsed, comp_time, start_time;
 		opt_flags = opt_sets [opt];
-		mini_set_defaults (verbose, opt_flags);
+		mono_set_defaults (verbose, opt_flags);
 		n = opt_descr (opt_flags);
 		g_print ("Test run: image=%s, opts=%s\n", image->name, n);
 		g_free (n);
@@ -591,7 +591,7 @@ mono_main (int argc, char* argv[]) {
 		return 1;
 	}
 
-	mini_set_defaults (mini_verbose, opt);
+	mono_set_defaults (mini_verbose, opt);
 	domain = mini_init (argv [i]);
 
 	switch (action) {
