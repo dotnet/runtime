@@ -302,7 +302,7 @@ struct MonoVTable {
  * Generic instantiation data type encoding.
  */
 struct _MonoGenericInst {
-	int iid;
+	int id;
 	int type_argc  : 23;
 	int is_open    : 1;
 	MonoType **type_argv;

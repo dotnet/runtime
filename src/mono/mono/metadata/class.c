@@ -295,21 +295,7 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		ngclass = g_new0 (MonoGenericClass, 1);
 		*ngclass = *ogclass;
 
-		ngclass->inst = g_new0 (MonoGenericInst, 1);
-		*ngclass->inst = *ogclass->inst;
-
-		ngclass->inst->is_open = FALSE;
-
-		ngclass->inst->type_argv = g_new0 (MonoType *, ogclass->inst->type_argc);
-
-		for (i = 0; i < ogclass->inst->type_argc; i++) {
-			MonoType *t = ogclass->inst->type_argv [i];
-			ngclass->inst->type_argv [i] = mono_class_inflate_generic_type (t, context);
-
-			if (!ngclass->inst->is_open)
-				ngclass->inst->is_open = mono_class_is_open_constructed_type (
-					ngclass->inst->type_argv [i]);
-		};
+		ngclass->inst = mono_metadata_inflate_generic_inst (ogclass->inst, context);
 
 		ngclass->klass = NULL;
 
@@ -320,8 +306,6 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		cached = g_hash_table_lookup (ogclass->klass->image->generic_class_cache, ngclass);
 
 		if (cached) {
-			g_free (ngclass->inst->type_argv);
-			g_free (ngclass->inst);
 			g_free (ngclass);
 			mono_loader_unlock ();
 
@@ -359,7 +343,7 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 	MonoType *inflated = inflate_generic_type (type, context);
 
 	if (!inflated)
-		return type;
+		return dup_type (type, type);
 
 	mono_stats.inflated_type_count++;
 	return inflated;

@@ -7965,6 +7965,17 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 	return geninst;
 }
 
+static MonoType*
+dup_type (const MonoType *original)
+{
+	MonoType *r = g_new0 (MonoType, 1);
+	*r = *original;
+	r->attrs = original->attrs;
+	r->byref = original->byref;
+	mono_stats.generics_metadata_size += sizeof (MonoType);
+	return r;
+}
+
 MonoReflectionMethod*
 mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, MonoArray *types)
 {
@@ -7973,6 +7984,7 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	MonoGenericContainer *container;
 	MonoGenericMethod *gmethod;
 	MonoGenericContext *context;
+	MonoGenericInst *ginst;
 	int count, i;
 
 	MONO_ARCH_SAVE_REGS;
@@ -7998,20 +8010,26 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 
 	if (!container->method_hash)
 		container->method_hash = g_hash_table_new (
-			mono_metadata_generic_method_hash, mono_metadata_generic_method_equal);
+			(GHashFunc) mono_metadata_generic_method_hash,
+			(GCompareFunc) mono_metadata_generic_method_equal);
 
-	gmethod = g_new0 (MonoGenericMethod, 1);
-	gmethod->inst = g_new0 (MonoGenericInst, 1);
-	gmethod->inst->type_argc = count;
-	gmethod->inst->type_argv = g_new0 (MonoType *, count);
+	ginst = g_new0 (MonoGenericInst,1 );
+	ginst->type_argc = count;
+	ginst->type_argv = g_new0 (MonoType *, count);
 	for (i = 0; i < count; i++) {
 		MonoReflectionType *garg = mono_array_get (types, gpointer, i);
-		gmethod->inst->type_argv [i] = garg->type;
+		ginst->type_argv [i] = dup_type (garg->type);
+
+		if (!ginst->is_open)
+			ginst->is_open = mono_class_is_open_constructed_type (ginst->type_argv [i]);
 	}
+	ginst = mono_metadata_lookup_generic_inst (ginst);
+
+	gmethod = g_new0 (MonoGenericMethod, 1);
+	gmethod->inst = ginst;
 
 	inflated = g_hash_table_lookup (container->method_hash, gmethod);
 	if (inflated) {
-		g_free (gmethod->inst->type_argv);
 		g_free (gmethod);
 
 		return mono_method_get_object (mono_object_domain (rmethod), inflated, NULL);

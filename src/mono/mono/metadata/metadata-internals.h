@@ -275,5 +275,19 @@ gboolean
 mono_metadata_generic_method_equal          (MonoGenericMethod     *g1,
 					     MonoGenericMethod     *g2);
 
+MonoGenericInst *
+mono_metadata_parse_generic_inst            (MonoImage             *image,
+					     MonoGenericContainer  *generic_container,
+					     int                    count,
+					     const char            *ptr,
+					     const char           **rptr);
+
+MonoGenericInst *
+mono_metadata_lookup_generic_inst           (MonoGenericInst       *ginst);
+
+MonoGenericInst *
+mono_metadata_inflate_generic_inst          (MonoGenericInst       *ginst,
+					     MonoGenericContext    *context);
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 
