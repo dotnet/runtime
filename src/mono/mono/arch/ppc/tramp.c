@@ -603,12 +603,13 @@ void *
 mono_create_method_pointer (MonoMethod *method)
 {
 	MonoMethodSignature *sig;
+	MonoJitInfo *ji;
 	guint8 *p, *code_buffer;
 	guint i, code_size, stack_size, stackval_arg_pos, local_pos, local_start, reg_param, stack_param;
 	guint32 simpletype;
 
-	code_size = 512;
-	stack_size = 512;
+	code_size = 1024;
+	stack_size = 1024;
 	stack_param = 0;
 
 	sig = method->signature;
@@ -616,14 +617,6 @@ mono_create_method_pointer (MonoMethod *method)
 	p = code_buffer = g_malloc (code_size);
 
 	DEBUG (printf ("\nDelegate [start emiting] %s\n", method->name));
-
-	/* jump after header which consist of "Mono" + method ptr */
-	ppc_b (p, 3);
-	*p = 'M'; p ++;
-	*p = 'o'; p ++;
-	*p = 'n'; p ++;
-	*p = 'o'; p ++;
-	*(void **) p = method; p += 4;
 
 	/* prolog */
 	ppc_stwu (p, ppc_r1, -stack_size, ppc_r1);     /* sp      <--- sp - stack_size, sp[0] <---- sp save sp, alloc stack */
@@ -798,20 +791,12 @@ mono_create_method_pointer (MonoMethod *method)
 
 	DEBUG (printf ("Delegate [end emiting]\n"));
 
-	return (MonoPIFunc) code_buffer;
-}
+	ji = g_new0 (MonoJitInfo, 1);
+	ji->method = method;
+	ji->code_size = p - code_buffer;
+	ji->code_start = code_buffer;
 
+	mono_jit_info_table_add (mono_root_domain, ji);
 
-/*
- * mono_create_method_pointer () will insert a pointer to the MonoMethod
- * so that the interp can easily get at the data: this function will retrieve 
- * the method from the code stream.
- */
-MonoMethod*
-mono_method_pointer_get (void *code)
-{
-	unsigned char *c = code;
-	if (c [4] != 'M' || c [5] != 'o' || c [6] != 'n' || c [7] != 'o')
-		return NULL;
-	return *(MonoMethod**)(c + 8);
+	return ji->code_start;
 }
