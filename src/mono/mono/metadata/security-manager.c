@@ -92,7 +92,7 @@ mono_is_security_manager_active (void)
  * constants.
  */
 gboolean 
-mono_is_ecma_key (char *publickey, int size)
+mono_is_ecma_key (const char *publickey, int size)
 {
 	int i;
 	if ((publickey == NULL) || (size != MONO_ECMA_KEY_LENGTH) || (publickey [8] != 0x04))

@@ -47,7 +47,7 @@ typedef struct {
 void mono_activate_security_manager (void);
 gboolean mono_is_security_manager_active (void);
 MonoSecurityManager* mono_security_manager_get_methods (void);
-gboolean mono_is_ecma_key (char *publickey, int size);
+gboolean mono_is_ecma_key (const char *publickey, int size);
 
 
 /* internal calls */
