@@ -283,12 +283,12 @@ debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, Mo
 
 			if (!i && !j) {
 				st_line = minfo->first_line;
-				st_address = t->addr - 1;
+				st_address = t->addr;
 
 				record_line_number (minfo, cfg->start + st_address, st_line, TRUE);
 			}
 
-			addr_inc = t->addr - st_address - 1;
+			addr_inc = t->addr - st_address;
 			st_address += addr_inc;
 
 			if (t->cli_addr != -1)
@@ -694,14 +694,14 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 	minfo->last_line = end_line;
 	minfo->source_file = info->source_file;
 	minfo->info = info;
-	minfo->method_info.code_start = cfg->start + 1;
-	minfo->method_info.code_size = cfg->epilogue_end - 1;
+	minfo->method_info.code_start = cfg->start;
+	minfo->method_info.code_size = cfg->epilogue_end;
 	minfo->method_number = method_number;
 	minfo->method_info.method = method;
 	minfo->method_info.num_params = method->signature->param_count;
 	minfo->method_info.params = g_new0 (MonoDebugVarInfo, minfo->method_info.num_params);
-	minfo->method_info.prologue_end = cfg->prologue_end - 1;
-	minfo->method_info.epilogue_begin = cfg->epilog - 1;
+	minfo->method_info.prologue_end = cfg->prologue_end;
+	minfo->method_info.epilogue_begin = cfg->epilog;
 
 	if (method->signature->hasthis) {
 		MonoVarInfo *ptr = ((MonoVarInfo *) cfg->varinfo->data) + cfg->args_start_index;
