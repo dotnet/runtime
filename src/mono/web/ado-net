@@ -84,6 +84,7 @@
 * Current Status
 
 	<p>We are still working on Step 1, but we are planning the other steps.
+	If you have any ideas, let us know.
 	
 	<p>We are able to do simple CREATE TABLE, DROP TABLE, UPDATE, INSERT, and
 	DELETE SQL commands using the ExecuteNonQuery method in SqlCommand.  
@@ -102,7 +103,7 @@
 	Other More data types will follow later on.
 		
 	<p>Parameters and stored procedures have not been tested and most likely
-	do not work yet.
+	do not work.
 	
 	<p>A lot of functionality in System.Data is missing, but the 
 	infrastructure is starting to come together.
@@ -113,9 +114,10 @@
 	
 	<P>Need to add XML support in System.Data.
 	
-	<p>To compile that test program, you need:
+	<p>The System.Data.dll gets built with the rest of the class library.
+	To compile the System.Data.dll assembly separately, you need:
 
-	<b>On Linux</b>
+	<b>On GNU/Linux and Unix</b>
 
 	<ul>
 		* update your mono sources. Be sure you have latest mcs.exe
@@ -126,6 +128,22 @@
 
 			cd mcs/class/System.Data
 			mcs --target library -o System.Data.dll @list
+	</ul>
+
+	<b>On Windows</b>
+
+	<ul>
+		* update your mono sources. Be sure you have latest mcs.exe
+		  and .dll's.  You can use the same method as Linux, or you can use NAnt.
+
+		* To use NAnt:
+
+			cd mcs/class/System.Data
+			../../nant/NAnt.exe
+			
+			This will automatically copy the System.Data.dll to Test.
+			If you need to do a clean for the System.Data.dll assembly,
+			cd mcs/class/System.Data and run ../../nant/NAnt.exe clean
 	</ul>
 
 * Testing
@@ -146,15 +164,71 @@
 	<p>If you plan on using a remote PostgreSQL DBMS Server,
 	than you will need to have the PostgreSQL client software on your
 	local computer that includes libpq.so (pq.dll on Windows).
+	
+	<p>The System.Data tests use this connection string to connect
+	to the PostgreSQL database named "test" at host "localhost" as
+	user "postgres".
+
+<pre>
+"host=localhost;dbname=test;user=postgres"
+</pre>
 		
 	<p>Installation instructions for PostgreSQL DBMS:
 
-	<b>On Linux</b>
+	<b>On GNU/Linux and Unix</b>
 
 	<ul>
-		* TODO
+		* Read the PostgreSQL Installation Instructions 
+		at \usr\doc\postgresql-x.x.x\html\installation.html
+		
+		* Depending on your GNU/Linux distribution or Unix, 
+		PostgreSQL maybe already installed, a database user 'postgres' created, 
+		a linux user 'postgres' created and initdb ran.  Or maybe not.
 
-		* It easier to install PostgreSQL on Linux than Windows.  
+<pre>
+ su
+ adduser postgres
+ mkdir /usr/local/pgsql/data
+ chown postgres /usr/local/pgsql/data
+ su - postgres
+ initdb -D /usr/local/pgsql/data
+ postmaster -i -D /usr/local/pgsql/data >logfile 2>&1 &
+ createdb test
+ psql test
+</pre>
+	
+		* Make sure you have a database user named postgres.  It is best to install
+		the PostgreSQL DBMS under linux user postgres.  When you run the postmaster,
+		run it under the user postgres as well.  If this was not done, then you
+		will need to create a user named postgres for the System.Data tests.
+
+		* If you already installed PostgeSQL and you do not have a database
+		user named postgres, then you can create user postgres using psql:
+		
+<pre>		
+psql test
+create user postgres with password 'fun2db';
+</pre>
+				
+		* The postmaster must be run with -i option.
+		
+		* In the /usr/local/pgsql/data/pg_hba.conf file, you need
+		to have the AUTH_TYPE set to md5.  You can read more on this at
+		/usr/doc/postgresql-7.2.1/html/client-authentication.html or wherever your
+		PostgreSQL html docs are located.  See the 2nd line below,
+		host 127.0.0.1 has an AUTH_TYPE md5 in pg_hba.conf.
+		
+<pre>
+ # TYPE     DATABASE    IP_ADDRESS    MASK               AUTH_TYPE  AUTH_ARGUMENT
+
+ local      all                                          trust
+ host       all         127.0.0.1     255.255.255.255    md5
+</pre>
+
+	* If you can not find your PostgreSQL documentation locally or you 
+	did not install it, then you 
+	can get it <a href="http://www.postgresql.org/idocs/">here</a>.
+
 	</ul>
 
 	<b>On Windows</b>
@@ -189,7 +263,7 @@
 				the path before the Windows program directories, 
 				for example, C:\cygwin\bin 
 			  
-				My own note, in the Windows control panel, I set
+				<p><b>My own note.</b>  In the Windows control panel, I set
 				the environment variables PATH to my cygwin /usr/local/bin,
 				/usr/bin, and /bin.  I also set my LD_LIBRARY_PATH to 
 				/usr/local/lib and /usr/lib.  For example:
@@ -272,12 +346,12 @@ create user postgres with password 'fun2db';
 	connection requirements:
 
 	<p>
-<pre>	
-dbname is the database, ie, test
-host is the hostname of the PostgreSQL DBMS Server to connect to
-user is the username, ie, someuser
-password is the password, ie, mypass1234
-</pre>
+	<ul>
+		<li><b>dbname</b> database, ie., test</li>
+		<li><b>host</b> hostname of the PostgreSQL DBMS Server to connect to, ie., localhost</li>
+		<li><b>user</b> username, ie., someuser</li>
+		<li><b>password</b> password, ie., mypass1234</li>
+	</ul>
 	
 	<p>The connection string is in OLE-DB connection string format.  Internally,
 	SqlConnection converts this to the PostgreSQL connection string format.
@@ -297,7 +371,7 @@ PostgreSQL: "host=localhost dbname=test user=joe password=smoe"
     
     <p>
 <pre>
-mcs PostgresTest.cs -r System.Data
+mcs PostgresTest.cs -r System.Data.dll
 </pre>
     
     <p>
@@ -318,22 +392,40 @@ mono PostgresTest.exe
 
 <p>
 <pre>   
- Administrator@DANPC ~/mono/mcs/class/System.Data/Test
- $ mcs PostgresTest.cs -r System.Data
+ danmorg@DANPC ~/mono/mcs/class/System.Data/Test
+ $ mcs PostgresTest.cs -r System.Data.dll
 
- Administrator@DANPC ~/mono/mcs/class/System.Data/Test
- $ mint PostgresTest.exe
+ danmorg@DANPC ~/mono/mcs/class/System.Data/Test
+ $ mono PostgresTest.exe
          Postgres provider specific tests...
 
                  Drop table:
- Error (don't worry about this one)
+ Error (don't worry about this one)SqlError:PGRES_FATAL_ERROR ERROR:  table "mono
+ _postgres_test" does not exist
+  <Stack Trace>
+
                  Create table with all supported types:
  OK
                  Insert values for all known types:
  OK
+                 Update values:
+ OK
+                 Insert values for all known types:
+ OK
+ Aggregate: count(*)
+ Agg Result: 2
+ Aggregate: min(text_value)
+ Agg Result: This is a text
+ Aggregate: max(int4_value)
+ Agg Result: 1048000
+ Aggregate: sum(int4_value)
+ Agg Result: 1048003
                  Select values from the database:
                  Get Schema.
- dt.Columns.Count: 6
+ dt.Columns.Count: 12
+ * Column Name: boolean_value
+          MaxLength: 1
+          Type: System.Boolean
  * Column Name: int2_value
           MaxLength: 2
           Type: System.Int16
@@ -343,6 +435,12 @@ mono PostgresTest.exe
  * Column Name: bigint_value
           MaxLength: 8
           Type: System.Int64
+ * Column Name: float_value
+          MaxLength: 4
+          Type: System.Single
+ * Column Name: double_value
+          MaxLength: 8
+          Type: System.Double
  * Column Name: char_value
           MaxLength: -1
           Type: System.String
@@ -352,16 +450,46 @@ mono PostgresTest.exe
  * Column Name: text_value
           MaxLength: -1
           Type: System.String
+ * Column Name: time_value
+          MaxLength: 8
+          Type: System.DateTime
+ * Column Name: date_value
+          MaxLength: 4
+          Type: System.DateTime
+ * Column Name: timestamp_value
+          MaxLength: 8
+          Type: System.DateTime
  Row 0:
-     Col 0: int2_value - -22
-     Col 1: int4_value - 1048000
-     Col 2: bigint_value - 123456789012345
-     Col 3: char_value - This is a char
-     Col 4: varchar_value - This is a varchar
-     Col 5: text_value - This is a text
- Rows: 1
+     Col 0: boolean_value: False
+     Col 1: int2_value: 5
+     Col 2: int4_value: 3
+     Col 3: bigint_value: 9
+     Col 4: float_value: 3.141590
+     Col 5: double_value: 3.141593
+     Col 6: char_value: Mono.Data!
+     Col 7: varchar_value: It was not me!
+     Col 8: text_value: We got data!
+     Col 9: time_value: Monday, 01 January 1 21:13:14
+     Col 10: date_value: Tuesday, 29 February 2000 00:00:00
+     Col 11: timestamp_value: Sunday, 29 February 2004 14:00:11
+ Row 1:
+     Col 0: boolean_value: True
+     Col 1: int2_value: -22
+     Col 2: int4_value: 1048000
+     Col 3: bigint_value: 123456789012345
+     Col 4: float_value: 3.141590
+     Col 5: double_value: 3.141593
+     Col 6: char_value: This is a char
+     Col 7: varchar_value: This is a varchar
+     Col 8: text_value: This is a text
+     Col 9: time_value: Monday, 01 January 1 21:13:14
+     Col 10: date_value: Tuesday, 29 February 2000 00:00:00
+     Col 11: timestamp_value: Sunday, 29 February 2004 14:00:11
+ Rows: 2
  Clean up...
                  Drop table...
  OK
+ RESULT: 0
+
 </pre>
 

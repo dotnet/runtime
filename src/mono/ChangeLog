@@ -1,3 +1,9 @@
+2002-05-11  Daniel Morgan <danmorg@sc.rr.com>
+
+	* doc/ado-net: added instructions for installing PostgreSQL on Linux
+	and for using nant to re-compile just the System.Data.dll assembly
+	on Windows.
+
 2002-05-10  Rodrigo Moya <rodrigo@ximian.com>
 
 	* doc/ado-net: added instructions for compiling System.Data.dll
