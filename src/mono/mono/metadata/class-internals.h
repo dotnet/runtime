@@ -307,7 +307,6 @@ struct _MonoClass {
 	void *reflection_info;
 
 	void *gc_descr;
-	guint64 gc_bitmap;
 
 	MonoClassRuntimeInfo *runtime_info;
 

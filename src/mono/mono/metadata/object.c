@@ -36,22 +36,36 @@
 #include <mono/utils/strenc.h>
 
 #ifdef HAVE_BOEHM_GC
+#define NEED_TO_ZERO_PTRFREE 1
 #define ALLOC_PTRFREE(obj,vt,size) do { (obj) = GC_MALLOC_ATOMIC ((size)); (obj)->vtable = (vt); (obj)->synchronisation = NULL;} while (0)
 #define ALLOC_OBJECT(obj,vt,size) do { (obj) = GC_MALLOC ((size)); (obj)->vtable = (vt);} while (0)
 #ifdef HAVE_GC_GCJ_MALLOC
 #define CREATION_SPEEDUP 1
 #define GC_NO_DESCRIPTOR ((gpointer)(0 | GC_DS_LENGTH))
 #define ALLOC_TYPED(dest,size,type) do { (dest) = GC_GCJ_MALLOC ((size),(type)); } while (0)
+#define MAKE_STRING_DESCRIPTOR(bitmap,sz) GC_make_descriptor((GC_bitmap)(bitmap),(sz))
+#define MAKE_DESCRIPTOR(bitmap,sz,objsize) GC_make_descriptor((GC_bitmap)(bitmap),(sz))
 #else
 #define GC_NO_DESCRIPTOR (NULL)
 #define ALLOC_TYPED(dest,size,type) do { (dest) = GC_MALLOC ((size)); *(gpointer*)dest = (type);} while (0)
 #endif
 #else
+#ifdef HAVE_SGEN_GC
+#define GC_NO_DESCRIPTOR (NULL)
+#define ALLOC_PTRFREE(obj,vt,size) do { (obj) = mono_gc_alloc_obj (vt, size);} while (0)
+#define ALLOC_OBJECT(obj,vt,size) do { (obj) = mono_gc_alloc_obj (vt, size);} while (0)
+#define ALLOC_TYPED(dest,size,type) do { (dest) = mono_gc_alloc_obj (type, size);} while (0)
+#define MAKE_STRING_DESCRIPTOR(bitmap,sz) mono_gc_make_descr_for_string ()
+#define MAKE_DESCRIPTOR(bitmap,sz,objsize) mono_gc_make_descr_for_object ((bitmap), (sz), (objsize))
+#else
+#define NEED_TO_ZERO_PTRFREE 1
 #define GC_NO_DESCRIPTOR (NULL)
 #define ALLOC_PTRFREE(obj,vt,size) do { (obj) = malloc ((size)); (obj)->vtable = (vt); (obj)->synchronisation = NULL;} while (0)
 #define ALLOC_OBJECT(obj,vt,size) do { (obj) = calloc (1, (size)); (obj)->vtable = (vt);} while (0)
 #define ALLOC_TYPED(dest,size,type) do { (dest) = calloc (1, (size)); *(gpointer*)dest = (type);} while (0)
-#define GC_make_descriptor(bitmap,sz) NULL
+#define MAKE_STRING_DESCRIPTOR(bitmap,sz) NULL
+#define MAKE_DESCRIPTOR(bitmap,sz,objsize) NULL
+#endif
 #endif
 
 static MonoObject* mono_object_new_ptrfree (MonoVTable *vtable);
@@ -429,12 +443,68 @@ mono_install_init_vtable (MonoInitVTableFunc func)
 /* The sync block is no longer a GC pointer */
 #define GC_HEADER_BITMAP (0)
 
+#define BITMAP_EL_SIZE (sizeof (gsize) * 8)
+
+static gsize*
+compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int *max_set)
+{
+	MonoClassField *field;
+	MonoClass *p;
+	guint32 pos;
+	int max_size = class->instance_size / sizeof (gpointer);
+	if (max_size > size) {
+		bitmap = g_malloc0 (sizeof (gsize) * ((max_size) + 1));
+	}
+
+	for (p = class; p != NULL; p = p->parent) {
+		gpointer iter = NULL;
+		while ((field = mono_class_get_fields (p, &iter))) {
+			if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
+				continue;
+			/* FIXME: should not happen, flag as type load error */
+			if (field->type->byref)
+				break;
+
+			pos = field->offset / sizeof (gpointer);
+			pos += offset;
+
+			switch (field->type->type) {
+			/* FIXME: _I and _U and _PTR should be removed eventually */
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+			case MONO_TYPE_PTR:
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_SZARRAY:
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_ARRAY:
+				g_assert ((field->offset % sizeof(gpointer)) == 0);
+
+				bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
+				*max_set = MAX (*max_set, pos);
+				break;
+			case MONO_TYPE_VALUETYPE: {
+				MonoClass *fclass = field->type->data.klass;
+				if (fclass->has_references) {
+					/* remove the object header */
+					compute_class_bitmap (fclass, bitmap, size, pos - (sizeof (MonoObject) / sizeof (gpointer)), max_set);
+				}
+				break;
+			}
+			default:
+				break;
+			}
+		}
+	}
+	return bitmap;
+}
+
 static void
 mono_class_compute_gc_descriptor (MonoClass *class)
 {
-	MonoClassField *field;
-	guint64 bitmap;
-	guint32 bm [2];
+	int max_set = 0;
+	gsize *bitmap;
+	gsize default_bitmap [4] = {0};
 	static gboolean gcj_inited = FALSE;
 
 	if (!gcj_inited) {
@@ -468,96 +538,46 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 	class->gc_descr_inited = TRUE;
 	class->gc_descr = GC_NO_DESCRIPTOR;
 
+	bitmap = default_bitmap;
 	if (class == mono_defaults.string_class) {
-		bitmap = GC_HEADER_BITMAP;
-		class->gc_descr = (gpointer)GC_make_descriptor ((GC_bitmap)&bitmap, 2);
+		class->gc_descr = (gpointer)MAKE_STRING_DESCRIPTOR (bitmap, 2);
 	} else if (class->rank) {
 		mono_class_compute_gc_descriptor (class->element_class);
-
-		if (class->element_class->valuetype && (class->element_class->gc_descr != GC_NO_DESCRIPTOR) && (class->element_class->gc_bitmap == GC_HEADER_BITMAP)) {
-			bitmap = GC_HEADER_BITMAP;
-			class->gc_descr = (gpointer)GC_make_descriptor ((GC_bitmap)&bitmap, 3);
+#ifdef HAVE_SGEN_GC
+		/* libgc has no usable support for arrays... */
+		if (!class->element_class->valuetype) {
+			gsize abm = 1;
+			class->gc_descr = mono_gc_make_descr_for_array (TRUE, &abm, 1, sizeof (gpointer));
+			/*printf ("new array descriptor: 0x%x for %s.%s\n", class->gc_descr,
+				class->name_space, class->name);*/
+		} else {
+			/* remove the object header */
+			bitmap = compute_class_bitmap (class->element_class, default_bitmap, sizeof (default_bitmap) * 8, - (sizeof (MonoObject) / sizeof (gpointer)), &max_set);
+			class->gc_descr = mono_gc_make_descr_for_array (TRUE, bitmap, mono_array_element_size (class) / sizeof (gpointer), mono_array_element_size (class));
+			/*printf ("new vt array descriptor: 0x%x for %s.%s\n", class->gc_descr,
+				class->name_space, class->name);*/
+			if (bitmap != default_bitmap)
+				g_free (bitmap);
 		}
+#endif
 	} else {
-		static int count = 0;
-		MonoClass *p;
-		guint32 pos;
-
-		/* GC 6.1 has trouble handling 64 bit descriptors... */
-		if ((class->instance_size / sizeof (gpointer)) > 30) {
-/*			printf ("TOO LARGE: %s %d.\n", class->name, class->instance_size / sizeof (gpointer)); */
+		/*static int count = 0;
+		if (count++ > 58)
+			return;*/
+		bitmap = compute_class_bitmap (class, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set);
+#ifdef HAVE_BOEHM_GC
+		/* It seems there are issues when the bitmap doesn't fit: play it safe */
+		if (max_set > 30) {
+			/*g_print ("disabling typed alloc (%d) for %s.%s\n", max_set, class->name_space, class->name);*/
+			if (bitmap != default_bitmap)
+				g_free (bitmap);
 			return;
 		}
-
-		bitmap = GC_HEADER_BITMAP;
-
-		count ++;
-
-/*		if (count > 442) */
-/*			return;  */
-
-/*		printf("KLASS: %s.\n", class->name); */
-
-		for (p = class; p != NULL; p = p->parent) {
-		gpointer iter = NULL;
-		while ((field = mono_class_get_fields (p, &iter))) {
-			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
-				continue;
-			if (field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA)
-				return;
-
-			pos = field->offset / sizeof (gpointer);
-			
-			if (field->type->byref)
-				return;
-
-			switch (field->type->type) {
-			case MONO_TYPE_BOOLEAN:
-			case MONO_TYPE_I1:
-			case MONO_TYPE_U1:
-			case MONO_TYPE_I2:
-			case MONO_TYPE_U2:
-			case MONO_TYPE_CHAR:
-			case MONO_TYPE_I4:
-			case MONO_TYPE_U4:
-			case MONO_TYPE_I8:
-			case MONO_TYPE_U8:
-			case MONO_TYPE_R4:
-			case MONO_TYPE_R8:
-/*				printf ("F: %s %s %d %lld %llx.\n", class->name, field->name, field->offset, ((guint64)1) << pos, bitmap); */
-				break;
-			case MONO_TYPE_I:
-			case MONO_TYPE_STRING:
-			case MONO_TYPE_SZARRAY:
-			case MONO_TYPE_CLASS:
-			case MONO_TYPE_OBJECT:
-			case MONO_TYPE_ARRAY:
-			case MONO_TYPE_PTR:
-				g_assert ((field->offset % sizeof(gpointer)) == 0);
-
-				bitmap |= ((guint64)1) << pos;
-/*				printf ("F: %s %s %d %d %lld %llx.\n", class->name, field->name, field->offset, pos, ((guint64)(1)) << pos, bitmap); */
-				break;
-			case MONO_TYPE_VALUETYPE: {
-				MonoClass *fclass = field->type->data.klass;
-				if (!fclass->enumtype) {
-					mono_class_compute_gc_descriptor (fclass);
-					bitmap |= (fclass->gc_bitmap >> (sizeof (MonoObject) / sizeof (gpointer))) << pos;
-				}
-				break;
-			}
-			default:
-				return;
-			}
-		}
-		}
-
-/*		printf("CLASS: %s.%s -> %d %llx.\n", class->name_space, class->name, class->instance_size / sizeof (gpointer), bitmap); */
-		class->gc_bitmap = bitmap;
-		/* Convert to the format expected by GC_make_descriptor */
-		bm [0] = (guint32)bitmap;
-		bm [1] = (guint32)(bitmap >> 32);
-		class->gc_descr = (gpointer)GC_make_descriptor ((GC_bitmap)&bm, class->instance_size / sizeof (gpointer));
+#endif
+		class->gc_descr = (gpointer)MAKE_DESCRIPTOR (bitmap, max_set + 1, class->instance_size);
+		/*printf ("new descriptor: 0x%x for %s.%s\n", class->gc_descr, class->name_space, class->name);*/
+		if (bitmap != default_bitmap)
+			g_free (bitmap);
 	}
 }
 
@@ -2126,6 +2146,7 @@ mono_object_new_ptrfree (MonoVTable *vtable)
 {
 	MonoObject *obj;
 	ALLOC_PTRFREE (obj, vtable, vtable->klass->instance_size);
+#if NEED_TO_ZERO_PTRFREE
 	/* an inline memset is much faster for the common vcase of small objects
 	 * note we assume the allocated size is a multiple of sizeof (void*).
 	 */
@@ -2140,6 +2161,7 @@ mono_object_new_ptrfree (MonoVTable *vtable)
 	} else {
 		memset ((char*)obj + sizeof (MonoObject), 0, vtable->klass->instance_size - sizeof (MonoObject));
 	}
+#endif
 	return obj;
 }
 
@@ -2389,7 +2411,9 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 	vtable = mono_class_vtable (domain, array_class);
 	if (!array_class->has_references) {
 		o = mono_object_allocate_ptrfree (byte_len, vtable);
+#if NEED_TO_ZERO_PTRFREE
 		memset ((char*)o + sizeof (MonoObject), 0, byte_len - sizeof (MonoObject));
+#endif
 	} else if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
 		o = mono_object_allocate_spec (byte_len, vtable);
 	}else {
@@ -2464,7 +2488,9 @@ mono_array_new_specific (MonoVTable *vtable, guint32 n)
 	byte_len += sizeof (MonoArray);
 	if (!vtable->klass->has_references) {
 		o = mono_object_allocate_ptrfree (byte_len, vtable);
+#if NEED_TO_ZERO_PTRFREE
 		memset ((char*)o + sizeof (MonoObject), 0, byte_len - sizeof (MonoObject));
+#endif
 	} else if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
 		o = mono_object_allocate_spec (byte_len, vtable);
 	} else {
@@ -2523,7 +2549,9 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 	s = mono_object_allocate_ptrfree (size, vtable);
 
 	s->length = len;
+#if NEED_TO_ZERO_PTRFREE
 	s->chars [len] = 0;
+#endif
 	mono_profiler_allocation ((MonoObject*)s, mono_defaults.string_class);
 
 	return s;
