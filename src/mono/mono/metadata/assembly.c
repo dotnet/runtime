@@ -45,7 +45,7 @@ init_default_path (void)
 	default_path [0] = g_strdup (MONO_ASSEMBLIES);
 	for (i = strlen (MONO_ASSEMBLIES) - 1; i >= 0; i--) {
 		if (default_path [0][i] == '/')
-			default_path [0][i] = '\\';
+			((char*) default_path [0])[i] = '\\';
 	}
 }
 #endif

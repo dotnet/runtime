@@ -62,10 +62,10 @@ mono_profiler_get_events (void)
 }
 
 void
-mono_profiler_install_enter_leave (MonoProfileMethodFunc enter, MonoProfileMethodFunc leave)
+mono_profiler_install_enter_leave (MonoProfileMethodFunc enter, MonoProfileMethodFunc fleave)
 {
 	method_enter = enter;
-	method_leave = leave;
+	method_leave = fleave;
 }
 
 void 

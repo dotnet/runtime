@@ -1,3 +1,4 @@
+#include <config.h>
 #include "mono-endian.h"
 
 #if NO_UNALIGNED_ACCESS

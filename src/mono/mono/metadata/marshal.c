@@ -1314,7 +1314,11 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 		int i;
 		MonoMethodSignature *sig = method->signature;
 		int count = sig->param_count;
+#ifdef _MSC_VER
+		gpointer* mparams = (gpointer*) _alloca(count*sizeof(gpointer));
+#else
 		gpointer mparams[count];
+#endif
 
 		for (i=0; i<count; i++) {
 			MonoClass *class = mono_class_from_mono_type (sig->params [i]);

@@ -22,6 +22,13 @@
 #define REVEAL_POINTER(v)       (v)
 #endif
 
+#ifdef PLATFORM_WINCE /* FIXME: add accessors to gc.dll API */
+extern void (*__imp_GC_finalizer_notifier)(void);
+#define GC_finalizer_notifier __imp_GC_finalizer_notifier
+extern int __imp_GC_finalize_on_demand;
+#define GC_finalize_on_demand __imp_GC_finalize_on_demand
+#endif
+
 static int finalize_slot = -1;
 
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));

@@ -2985,7 +2985,10 @@ ves_icall_System_Environment_GetEnvironmentVariable (MonoString *name)
 /*
  * There is no standard way to get at environ.
  */
-extern char **environ;
+#ifndef _MSC_VER
+extern
+#endif
+char **environ;
 
 static MonoArray *
 ves_icall_System_Environment_GetEnvironmentVariableNames (void)
@@ -3185,7 +3188,7 @@ mono_install_get_config_dir (void)
     mono_cfg_dir = g_strdup (MONO_CFG_DIR);
     for (i = strlen (mono_cfg_dir) - 1; i >= 0; i--) {
         if (mono_cfg_dir [i] == '/')
-            mono_cfg_dir [i] = '\\';
+            ((char*) mono_cfg_dir) [i] = '\\';
     }
 #endif
   }
