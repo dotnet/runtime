@@ -1122,6 +1122,18 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 		return mono_runtime_invoke (method, obj, pa, exc);
 }
 
+G_GNUC_NORETURN static void
+out_of_memory (size_t size)
+{
+	/* 
+	 * we could allocate at program startup some memory that we could release 
+	 * back to the system at this point if we're really low on memory (ie, size is
+	 * lower than the memory we set apart)
+	 */
+	MonoException * ex = mono_exception_from_name (mono_defaults.corlib, "System", "OutOfMemoryException");
+	mono_raise_exception (ex);
+}
+
 /**
  * mono_object_allocate:
  * @size: number of bytes to allocate
@@ -1142,8 +1154,24 @@ mono_object_allocate (size_t size)
 #endif
 	mono_stats.new_object_count++;
 
+	if (!o)
+		out_of_memory (size);
 	return o;
 }
+
+#if CREATION_SPEEDUP
+static void *
+mono_object_allocate_spec (size_t size, void *gcdescr)
+{
+	/* if this is changed to GC_debug_malloc(), we need to change also metadata/gc.c */
+	void *o = GC_GCJ_MALLOC (size, gcdescr);
+	mono_stats.new_object_count++;
+
+	if (!o)
+		out_of_memory (size);
+	return o;
+}
+#endif
 
 /**
  * mono_object_free:
@@ -1231,9 +1259,8 @@ mono_object_new_alloc_specific (MonoVTable *vtable)
 
 #if CREATION_SPEEDUP
 	if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
-		o = GC_GCJ_MALLOC (vtable->klass->instance_size, vtable);
-	}
-	else {
+		o = mono_object_allocate_spec (vtable->klass->instance_size, vtable);
+	} else {
 //		printf("OBJECT: %s.%s.\n", vtable->klass->name_space, vtable->klass->name);
 		o = mono_object_allocate (vtable->klass->instance_size);
 		o->vtable = vtable;
@@ -1387,17 +1414,13 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class,
 	vtable = mono_class_vtable (domain, array_class);
 #if CREATION_SPEEDUP
 	if (vtable->gc_descr != GC_NO_DESCRIPTOR)
-		o = GC_GCJ_MALLOC (sizeof (MonoArray) + byte_len, vtable);
+		o = mono_object_allocate_spec (sizeof (MonoArray) + byte_len, vtable);
 	else {
 		o = mono_object_allocate (sizeof (MonoArray) + byte_len);
-		if (!o)
-			G_BREAKPOINT ();
 		o->vtable = vtable;
 	}
 #else
 	o = mono_object_allocate (sizeof (MonoArray) + byte_len);
-	if (!o)
-		G_BREAKPOINT ();
 	o->vtable = vtable;
 #endif
 
@@ -1452,7 +1475,7 @@ mono_array_new_specific (MonoVTable *vtable, guint32 n)
 	byte_len = n * mono_array_element_size (vtable->klass);
 #if CREATION_SPEEDUP
 	if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
-		o = GC_GCJ_MALLOC (sizeof (MonoArray) + byte_len, vtable);
+		o = mono_object_allocate_spec (sizeof (MonoArray) + byte_len, vtable);
 	} else {
 //		printf("ARRAY: %s.%s.\n", vtable->klass->name_space, vtable->klass->name);
 		o = mono_object_allocate (sizeof (MonoArray) + byte_len);
@@ -1462,8 +1485,6 @@ mono_array_new_specific (MonoVTable *vtable, guint32 n)
 	o = mono_object_allocate (sizeof (MonoArray) + byte_len);
 	o->vtable = vtable;
 #endif
-	if (!o)
-		G_BREAKPOINT ();
 
 	ao = (MonoArray *)o;
 	ao->bounds = NULL;
@@ -1509,13 +1530,11 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 	vtable = mono_class_vtable (domain, mono_defaults.string_class);
 
 #if CREATION_SPEEDUP
-	s = GC_GCJ_MALLOC (sizeof (MonoString) + ((len + 1) * 2), vtable);
+	s = mono_object_allocate_spec (sizeof (MonoString) + ((len + 1) * 2), vtable);
 #else
 	s = (MonoString*)mono_object_allocate (sizeof (MonoString) + ((len + 1) * 2));
 	s->object.vtable = vtable;
 #endif
-	if (!s)
-		G_BREAKPOINT ();
 
 	s->length = len;
 	mono_profiler_allocation ((MonoObject*)s, mono_defaults.string_class);
