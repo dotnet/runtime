@@ -1185,6 +1185,7 @@ enum_retvalue:
 			sz->stack_size   += S390_ALIGN(size, align);
 			gr++;
                         break;
+		case MONO_TYPE_TYPEDBYREF:
 		case MONO_TYPE_VOID:
 			break;
 		default:
@@ -4429,10 +4430,10 @@ guint8 cond;
 			break;
 		case CEE_CKFINITE: {
 			short *o;
-			s390_lhi  (code, s390_r13, 0xfc0);
+			s390_lhi  (code, s390_r13, 0x7f);
 			s390_tcdb (code, ins->sreg1, 0, s390_r13, 0);
 			s390_jz   (code, 0); CODEPTR(code, o);
-			mono_add_patch_info (cfg, code - cfg->native_code + 2, 
+			mono_add_patch_info (cfg, code - cfg->native_code, 
 					     MONO_PATCH_INFO_EXC, "ArithmeticException");
 			s390_brasl (code, s390_r14,0);
 			PTRSLOT(code, o);
