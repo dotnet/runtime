@@ -1636,10 +1636,10 @@
     </class>
 
     <class name="System.Random">
-        <last-activity>Jul-20-2001</last-activity>
-        <implementation>no</implementation>
-        <test-suite>no</test-suite>
-        <completion>?</completion>
+        <last-activity>Aug-6-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>yes</test-suite>
+        <completion>85</completion>
         <maintainers>
             <maintainer>bob@thestuff.net</maintainer>
         </maintainers>
