@@ -8,14 +8,13 @@
 #ifndef _MONO_JIT_JIT_H_
 #define _MONO_JIT_JIT_H_
 
-#include <config.h>
 /*
  * io-layer.h must be _BEFORE_ win32-exception.h to avoid problems when 
  * compiling with version 1.2 of mingw and w32api.
  */
 #include <mono/io-layer/io-layer.h>
 
-#ifdef PLATFORM_WIN32
+#ifdef __WIN32__
 #include "win32-exception.h"
 #else
 #include <signal.h>
@@ -232,7 +231,7 @@ extern CRITICAL_SECTION *metadata_section;
 /* architecture independent functions */
 
 MonoDomain * 
-mono_jit_init              (char *file);
+mono_jit_init              (const char *file);
 
 int
 mono_jit_exec              (MonoDomain *domain, MonoAssembly *assembly, 

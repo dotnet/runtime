@@ -66,6 +66,9 @@ int mono_x86_have_cmov = 0;
 static int 
 cpuid (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx)
 {
+#ifdef PIC
+	return 0;
+#else
 	int have_cpuid = 0;
 	__asm__  __volatile__ (
 		"pushfl\n"
@@ -91,6 +94,7 @@ cpuid (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx)
 		return 1;
 	}
 	return 0;
+#endif
 }
 
 void
@@ -648,8 +652,8 @@ mono_label_cfg (MonoFlowGraph *cfg)
 			if (!mbstate) {
 				if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
 					return FALSE;
-				g_warning ("tree does not match in %s",
-					   mono_method_full_name (cfg->method, TRUE));
+				g_warning ("tree does not match in %s: 0x%04x",
+					   mono_method_full_name (cfg->method, TRUE), t1->cli_addr);
 				mono_print_ctree (cfg, t1); printf ("\n\n");
 
 				mono_print_forest (cfg, forest);

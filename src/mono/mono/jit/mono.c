@@ -18,39 +18,6 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/os/util.h>
 
-/**
- * mono_jit_image:
- * @image: reference to an image
- * @verbose: If true, print debugging information on stdout.
- *
- * JIT compilation of all methods in the image.
- */
-void
-mono_jit_compile_image (MonoImage *image, int verbose)
-{
-	MonoMethod *method;
-	MonoTableInfo *t = &image->tables [MONO_TABLE_METHOD];
-	int i;
-
-	for (i = 0; i < t->rows; i++) {
-
-		method = mono_get_method (image, 
-					  (MONO_TABLE_METHOD << 24) | (i + 1), 
-					  NULL);
-
-		if (verbose)
-			g_print ("Compiling: %s:%s\n\n", image->assembly_name, method->name);
-
-		if (method->flags & METHOD_ATTRIBUTE_ABSTRACT) {
-			if (verbose)
-				printf ("ABSTARCT\n");
-		} else
-			mono_compile_method (method);
-
-	}
-
-}
-
 static MonoClass *
 find_class_in_assembly (MonoAssembly *assembly, const char *namespace, const char *name)
 {
