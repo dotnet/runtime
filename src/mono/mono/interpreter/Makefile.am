@@ -4,15 +4,15 @@ INCLUDES = 				\
 	$(GMODULE_CFLAGS)		\
 	$(GLIB_CFLAGS)			
 
-bin_PROGRAMS = mono-int
+bin_PROGRAMS = mint
 
-mono_int_SOURCES =	\
+mint_SOURCES =	\
 	hacks.h		\
 	interp.h	\
 	interp.c	\
 	icall.c
 
-mono_int_LDADD =			\
+mint_LDADD =				\
 	../metadata/libmetadata.a	\
 	$(GLIB_LIBS)			\
 	$(GMODULE_LIBS) 		\
