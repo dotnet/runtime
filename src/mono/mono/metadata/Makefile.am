@@ -90,7 +90,9 @@ libmonoruntime_la_SOURCES = \
 	culture-info.h  \
 	culture-info-tables.h	\
 	security-manager.c	\
-	security-manager.h
+	security-manager.h	\
+	console-io.c		\
+	console-io.h
 
 libmetadata_la_SOURCES = \
 	assembly.c	\

@@ -30,6 +30,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/file-io.h>
+#include <mono/metadata/console-io.h>
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
@@ -5746,6 +5747,14 @@ static const IcallEntry defaultconf_icalls [] = {
 	{"get_machine_config_path", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path}
 };
 
+static const IcallEntry consoledriver_icalls [] = {
+	{"InternalKeyAvailable", ves_icall_System_ConsoleDriver_InternalKeyAvailable },
+	{"Isatty", ves_icall_System_ConsoleDriver_Isatty },
+	{"SetBreak", ves_icall_System_ConsoleDriver_SetBreak },
+	{"SetEcho", ves_icall_System_ConsoleDriver_SetEcho },
+	{"TtySetup", ves_icall_System_ConsoleDriver_TtySetup },
+};
+
 static const IcallEntry timezone_icalls [] = {
 	{"GetTimeZoneData", ves_icall_System_CurrentTimeZone_GetTimeZoneData}
 };
@@ -6521,6 +6530,7 @@ static const IcallMap icall_entries [] = {
 	{"System.Buffer", buffer_icalls, G_N_ELEMENTS (buffer_icalls)},
 	{"System.Char", char_icalls, G_N_ELEMENTS (char_icalls)},
 	{"System.Configuration.DefaultConfig", defaultconf_icalls, G_N_ELEMENTS (defaultconf_icalls)},
+	{"System.ConsoleDriver", consoledriver_icalls, G_N_ELEMENTS (consoledriver_icalls)},
 	{"System.CurrentTimeZone", timezone_icalls, G_N_ELEMENTS (timezone_icalls)},
 	{"System.DateTime", datetime_icalls, G_N_ELEMENTS (datetime_icalls)},
 #ifndef DISABLE_DECIMAL
