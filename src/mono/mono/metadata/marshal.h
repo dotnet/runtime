@@ -76,12 +76,6 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);
 
 void mono_delegate_free_ftnptr (MonoDelegate *delegate);
 
-void * 
-mono_marshal_string_array (MonoArray *array);
-
-void *
-mono_marshal_string_array_to_unicode (MonoArray *array);
-
 void
 mono_marshal_set_last_error (void);
 
