@@ -12,9 +12,14 @@
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-debug.h>
-/* mono-debug-debugger.h nneds config.h to work... */
+#include <mono/metadata/appdomain.h>
+/* mono-debug-debugger.h needs config.h to work... */
 #include "config.h"
 #include <mono/metadata/mono-debug-debugger.h>
+
+#ifdef HAVE_VALGRIND_H
+#include <valgrind/valgrind.h>
+#endif
 
 static inline void
 record_line_number (MonoDebugMethodJitInfo *jit, guint32 address, guint32 offset)
@@ -90,6 +95,97 @@ write_variable (MonoInst *inst, MonoDebugVarInfo *var)
 	}
 }
 
+/*
+ * mono_debug_add_vg_method:
+ *
+ *  Register symbol information for the method with valgrind
+ */
+static void 
+mono_debug_add_vg_method (MonoMethod *method, MonoDebugMethodJitInfo *jit)
+{
+#ifdef VALGRIND_ADD_LINE_INFO
+	MonoMethodHeader *header;
+	int i;
+	char *filename = NULL;
+	guint32 address, line_number;
+	const char *full_name;
+	guint32 *addresses;
+	guint32 *lines;
+
+	if (!RUNNING_ON_VALGRIND)
+		return;
+
+	header = ((MonoMethodNormal*)method)->header;
+
+	full_name = mono_method_full_name (method, TRUE);
+
+	addresses = g_new0 (guint32, header->code_size + 1);
+	lines = g_new0 (guint32, header->code_size + 1);
+
+	/* 
+	 * Very simple code to convert the addr->offset mappings that mono has
+	 * into [addr-addr] ->line number mappings.
+	 */
+
+	/* Create offset->line number mapping */
+	for (i = 0; i < header->code_size; ++i) {
+		char *fname;
+
+		fname = mono_debug_source_location_from_il_offset (method, i, &lines [i]);
+		if (!filename)
+			filename = fname;
+	}
+
+	/* Create address->offset mapping */
+	for (i = 0; i < jit->line_numbers->len; ++i) {
+		MonoDebugLineNumberEntry *lne = &g_array_index (jit->line_numbers, MonoDebugLineNumberEntry, i);
+
+		g_assert (lne->offset <= header->code_size);
+
+		if ((addresses [lne->offset] == 0) || (lne->address < addresses [lne->offset]))
+			addresses [lne->offset] = lne->address;
+	}
+	/* Fill out missing addresses */
+	address = 0;
+	for (i = 0; i < header->code_size; ++i) {
+		if (addresses [i] == 0)
+			addresses [i] = address;
+		else
+			address = addresses [i];
+	}
+	
+	address = 0;
+	line_number = 0;
+	i = 0;
+	while (i < header->code_size) {
+		if (lines [i] == line_number)
+			i ++;
+		else {
+			if (line_number > 0) {
+				//g_assert (addresses [i] - 1 >= address);
+				
+				if (addresses [i] - 1 >= address) {
+					VALGRIND_ADD_LINE_INFO (jit->code_start + address, jit->code_start + addresses [i] - 1, filename, line_number);
+					//printf ("[%d-%d] -> %d.\n", address, addresses [i] - 1, line_number);
+				}
+			}
+			address = addresses [i];
+			line_number = lines [i];
+		}
+	}
+
+	if (line_number > 0) {
+		VALGRIND_ADD_LINE_INFO (jit->code_start + address, jit->code_start + jit->code_size - 1, filename, line_number);
+		//printf ("[%d-%d] -> %d.\n", address, jit->code_size - 1, line_number);
+	}
+
+	VALGRIND_ADD_SYMBOL (jit->code_start, jit->code_size, full_name);
+
+	g_free (addresses);
+	g_free (lines);
+#endif /* VALGRIND_ADD_LINE_INFO */
+}
+
 void
 mono_debug_close_method (MonoCompile *cfg)
 {
@@ -128,6 +224,8 @@ mono_debug_close_method (MonoCompile *cfg)
 		write_variable (cfg->varinfo [i + method->signature->hasthis], &jit->params [i]);
 
 	mono_debug_add_method (method, jit, cfg->domain);
+
+	mono_debug_add_vg_method (method, jit);
 
 	if (info->breakpoint_id)
 		mono_debugger_breakpoint_callback (method, info->breakpoint_id);
@@ -399,13 +497,15 @@ mono_debug_add_aot_method (MonoDomain *domain,
 								  debug_info_len);
 
 	mono_debug_add_method (method, jit, domain);
+
+	mono_debug_add_vg_method (method, jit);
 }
 
 MonoDomain *
 mono_init_debugger (const char *file, const char *opt_flags)
 {
 	MonoDomain *domain;
-	const char *error;
+	const guchar *error;
 	int opt;
 
 	g_set_prgname (file);
@@ -419,9 +519,10 @@ mono_init_debugger (const char *file, const char *opt_flags)
 
 	mono_config_parse (NULL);
 
-	error = mono_verify_corlib ();
+	error = mono_check_corlib_version ();
 	if (error) {
 		fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
+		fprintf (stderr, "Download a newer corlib or a newer runtime at http://www.go-mono.com/daily.\n");
 		exit (1);
 	}
 
