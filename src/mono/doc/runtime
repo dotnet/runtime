@@ -19,7 +19,7 @@
 	We are using the Boehm conservative garbage collector.
 
 	The Mono runtime can be used as a stand-alone process, or it
-	can be <a href="embedded-api">embedded into applications</a> (see
+	can be <a href="embedded-api.html">embedded into applications</a> (see
 	the documentation in mono/samples/embed for more details).
 
 	Embedding the Mono runtime allows applications to be extended
