@@ -22,10 +22,27 @@ static MonoDebugHandle *mono_debug_handles = NULL;
 static MonoDebugHandle *mono_default_debug_handle = NULL;
 
 static void
-free_method_info (DebugMethodInfo *minfo)
+free_method_info (MonoDebugMethodInfo *minfo)
 {
-	if (minfo->line_numbers)
-		g_ptr_array_free (minfo->line_numbers, TRUE);
+	DebugMethodInfo *priv = minfo->user_data;
+
+	if (priv) {
+		if (priv->line_numbers)
+			g_ptr_array_free (priv->line_numbers, TRUE);
+
+		g_free (priv->name);
+		g_free (priv);
+	}
+
+	if (minfo->jit) {
+		g_free (minfo->jit->il_addresses);
+		g_free (minfo->jit->this_var);
+		g_free (minfo->jit->params);
+		g_free (minfo->jit->locals);
+		g_free (minfo->jit);
+	}
+
+	g_free (minfo->il_offsets);
 	g_free (minfo);
 }
 
