@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
@@ -38,6 +39,7 @@
 
 
 #undef DEBUG
+
 
 static gint32 convert_family(MonoAddressFamily mono_family)
 {
@@ -208,6 +210,7 @@ static gint32 convert_proto(MonoProtocolType mono_proto)
 	
 	switch(mono_proto) {
 	case ProtocolType_IP:
+	case ProtocolType_IPv6:
 	case ProtocolType_Icmp:
 	case ProtocolType_Igmp:
 	case ProtocolType_Ggp:
@@ -387,6 +390,51 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 			return(-1);
 		}
 		break;
+
+#ifdef AF_INET6
+	case SocketOptionLevel_IPv6:
+		*system_level = SOL_IPV6;
+
+		switch(mono_name) {
+		case SocketOptionName_IpTimeToLive:
+			*system_name = IPV6_UNICAST_HOPS;
+			break;
+		case SocketOptionName_MulticastInterface:
+			*system_name = IPV6_MULTICAST_IF;
+			break;
+		case SocketOptionName_MulticastTimeToLive:
+			*system_name = IPV6_MULTICAST_HOPS;
+			break;
+		case SocketOptionName_MulticastLoopback:
+			*system_name = IPV6_MULTICAST_LOOP;
+			break;
+		case SocketOptionName_AddMembership:
+			*system_name = IPV6_JOIN_GROUP;
+			break;
+		case SocketOptionName_DropMembership:
+			*system_name = IPV6_LEAVE_GROUP;
+			break;
+		case SocketOptionName_PacketInformation:
+			*system_name = IPV6_PKTINFO;
+			break;
+		case SocketOptionName_HeaderIncluded:
+		case SocketOptionName_IPOptions:
+		case SocketOptionName_TypeOfService:
+		case SocketOptionName_DontFragment:
+		case SocketOptionName_AddSourceMembership:
+		case SocketOptionName_DropSourceMembership:
+		case SocketOptionName_BlockSource:
+		case SocketOptionName_UnblockSource:
+			/* Can't figure out how to map these, so fall
+			 * through
+			 */
+		default:
+			g_warning("System.Net.Sockets.SocketOptionName 0x%x is not supported at IPv6 level", mono_name);
+			return(-1);
+		}
+
+		break;	/// SocketOptionLevel_IPv6
+#endif
 		
 	case SocketOptionLevel_Tcp:
 #ifdef HAVE_SOL_TCP
@@ -456,6 +504,30 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 
 static MonoImage *system_assembly=NULL;
 
+
+static gint32 get_family_hint(void)
+{
+	MonoClass *socket_class;
+	MonoClassField *ipv6_field, *ipv4_field;
+	gint32 ipv6_enabled = -1, ipv4_enabled = -1;
+	MonoVTable *vtable;
+
+	socket_class = mono_class_from_name (system_assembly, "System.Net.Sockets", "Socket");
+	ipv4_field = mono_class_get_field_from_name (socket_class, "ipv4Supported");
+	ipv6_field = mono_class_get_field_from_name (socket_class, "ipv6Supported");
+	vtable = mono_class_vtable (mono_domain_get (), socket_class);
+
+	mono_field_static_get_value(vtable, ipv4_field, &ipv4_enabled);
+	mono_field_static_get_value(vtable, ipv6_field, &ipv6_enabled);
+
+	if(ipv4_enabled == 1 && ipv6_enabled == 1)
+		return PF_UNSPEC;
+	else if(ipv4_enabled == 1)
+		return PF_INET;
+	else 
+		return PF_INET6;
+}
+
 static MonoException *get_socket_exception(guint32 error_code)
 {
 	/* Don't cache this exception, because we need the object
@@ -513,7 +585,7 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
 		return(NULL);
 	}
 
-	if (sock_family == AF_INET && sock_type == SOCK_DGRAM)
+	if ( (sock_family == AF_INET || sock_family == AF_INET6) && sock_type == SOCK_DGRAM)
 		return (GUINT_TO_POINTER (sock));
 
 	/* .net seems to set this by default for SOCK_STREAM,
@@ -664,6 +736,32 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		*(MonoArray **)(((char *)sockaddr_obj) + field->offset)=data;
 
 		return(sockaddr_obj);
+#ifdef AF_INET6
+	} else if (saddr->sa_family == AF_INET6) {
+		struct sockaddr_in6 *sa_in=(struct sockaddr_in6 *)saddr;
+		int i;
+
+		guint16 port=ntohs(sa_in->sin6_port);
+
+		if(sa_size<28) {
+			mono_raise_exception((MonoException *)mono_exception_from_name(mono_defaults.corlib, "System", "SystemException"));
+		}
+
+		mono_array_set(data, guint8, 2, (port>>8) & 0xff);
+		mono_array_set(data, guint8, 3, (port) & 0xff);
+
+		for(i=0; i<16; i++)
+			mono_array_set(data, guint8, 8+i, sa_in->sin6_addr.s6_addr[i]);
+
+		mono_array_set(data, guint8, 24, sa_in->sin6_scope_id & 0xff);
+		mono_array_set(data, guint8, 25, (sa_in->sin6_scope_id >> 8) & 0xff);
+		mono_array_set(data, guint8, 26, (sa_in->sin6_scope_id >> 16) & 0xff);
+		mono_array_set(data, guint8, 27, (sa_in->sin6_scope_id >> 24) & 0xff);
+
+		*(MonoArray **)(((char *)sockaddr_obj) + field->offset)=data;
+
+		return(sockaddr_obj);
+#endif
 #ifdef HAVE_SYS_UN_H
 	} else if (saddr->sa_family == AF_UNIX) {
 		int i;
@@ -683,14 +781,14 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 
 extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SOCKET sock)
 {
-	struct sockaddr sa;
+	gchar sa[32];	/// sockaddr in not big enough for sockaddr_in6
 	int salen;
 	int ret;
 	
 	MONO_ARCH_SAVE_REGS;
 
-	salen=sizeof(struct sockaddr);
-	ret=getsockname(sock, &sa, &salen);
+	salen=sizeof(sa);
+	ret=getsockname(sock, (struct sockaddr*)sa, &salen);
 	
 	if(ret==SOCKET_ERROR) {
 		mono_raise_exception(get_socket_exception(WSAGetLastError()));
@@ -705,13 +803,13 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SO
 
 extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(SOCKET sock)
 {
-	struct sockaddr sa;
+	gchar sa[32];	/// sockaddr in not big enough for sockaddr_in6
 	int salen;
 	int ret;
 	
 	MONO_ARCH_SAVE_REGS;
 
-	salen=sizeof(struct sockaddr);
+	salen=sizeof(sa);
 	ret=getpeername(sock, &sa, &salen);
 	
 	if(ret==SOCKET_ERROR) {
@@ -722,7 +820,7 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(S
 	g_message(G_GNUC_PRETTY_FUNCTION ": connected to %s port %d", inet_ntoa(((struct sockaddr_in *)&sa)->sin_addr), ntohs(((struct sockaddr_in *)&sa)->sin_port));
 #endif
 
-	return(create_object_from_sockaddr(&sa, salen));
+	return(create_object_from_sockaddr((struct sockaddr*)sa, salen));
 }
 
 static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
@@ -767,6 +865,28 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 
 		*sa_size=sizeof(struct sockaddr_in);
 		return((struct sockaddr *)sa);
+
+#ifdef AF_INET6
+	} else if (family == AF_INET6) {
+		struct sockaddr_in6 *sa=g_new0(struct sockaddr_in6, 1);
+		int i;
+
+		guint16 port = mono_array_get(data, guint8, 3) + (mono_array_get(data, guint8, 2) << 8);
+		guint32 scopeid = mono_array_get(data, guint8, 24) + 
+			(mono_array_get(data, guint8, 25)<<8) + 
+			(mono_array_get(data, guint8, 26)<<16) + 
+			(mono_array_get(data, guint8, 27)<<24);
+
+		sa->sin6_family=family;
+		sa->sin6_port=htons(port);
+		sa->sin6_scope_id = scopeid;
+
+		for(i=0; i<16; i++)
+			sa->sin6_addr.s6_addr[i] = mono_array_get(data, guint8, 8+i);
+
+		*sa_size=sizeof(struct sockaddr_in6);
+		return((struct sockaddr *)sa);
+#endif
 #ifdef HAVE_SYS_UN_H
 	} else if (family == AF_UNIX) {
 		struct sockaddr_un *sock_un = g_new0 (struct sockaddr_un, 1);
@@ -803,6 +923,7 @@ extern void ves_icall_System_Net_Sockets_Socket_Bind_internal(SOCKET sock, MonoO
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": binding to %s port %d", inet_ntoa(((struct sockaddr_in *)sa)->sin_addr), ntohs (((struct sockaddr_in *)sa)->sin_port));
 #endif
+
 	ret=bind(sock, sa, sa_size);
 	g_free(sa);
 	
@@ -1251,6 +1372,24 @@ static struct in_addr ipaddress_to_struct_in_addr(MonoObject *ipaddr)
 	return(inaddr);
 }
 
+#ifdef AF_INET6
+static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
+{
+	struct in6_addr in6addr;
+	MonoClassField *field;
+	MonoArray *data;
+	int i;
+
+	field=mono_class_get_field_from_name(ipaddr->vtable->klass, "_numbers");
+	data=*(MonoArray **)(((char *)ipaddr) + field->offset);
+
+	for(i=0; i<8; i++)
+		in6addr.s6_addr16[i] = mono_array_get (data, guint16, i);
+
+	return(in6addr);
+}
+#endif /* AF_INET6 */
+
 void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, gint32 level, gint32 name, MonoObject *obj_val, MonoArray *byte_val, gint32 int_val)
 {
 	int system_level;
@@ -1300,37 +1439,61 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 		{
 			MonoObject *address = NULL;
 
+#ifdef AF_INET6
+			if(system_level == SOL_IPV6)
+			{
+				struct ipv6_mreq mreq6;
+
+				/*
+				 *	Get group address
+				 */
+				field = mono_class_get_field_from_name (obj_val->vtable->klass, "group");
+				address = *(gpointer *)(((char *)obj_val) + field->offset);
+				
+				if(address)
+					mreq6.ipv6mr_multiaddr = ipaddress_to_struct_in6_addr (address);
+
+				field=mono_class_get_field_from_name(obj_val->vtable->klass, "ifIndex");
+				mreq6.ipv6mr_interface =*(guint64 *)(((char *)obj_val)+field->offset);
+
+				ret = setsockopt (sock, system_level, system_name,
+					&mreq6, sizeof (mreq6));
+			}
+			else if(system_level == SOL_IP)
+#endif /* AF_INET6 */
+			{
 #ifdef HAVE_STRUCT_IP_MREQN
-			struct ip_mreqn mreq = {{0}};
+				struct ip_mreqn mreq = {{0}};
 #else
-			struct ip_mreq mreq = {{0}};
+				struct ip_mreq mreq = {{0}};
 #endif /* HAVE_STRUCT_IP_MREQN */
 			
-			/* pain! MulticastOption holds two IPAddress
-			 * members, so I have to dig the value out of
-			 * those :-(
-			 */
-			field = mono_class_get_field_from_name (obj_val->vtable->klass, "group");
-			address = *(gpointer *)(((char *)obj_val) + field->offset);
+				/* pain! MulticastOption holds two IPAddress
+				 * members, so I have to dig the value out of
+				 * those :-(
+				 */
+				field = mono_class_get_field_from_name (obj_val->vtable->klass, "group");
+				address = *(gpointer *)(((char *)obj_val) + field->offset);
 
-			/* address might not be defined and if so, set the address to ADDR_ANY.
-			 */
-			if(address)
-				mreq.imr_multiaddr = ipaddress_to_struct_in_addr (address);
+				/* address might not be defined and if so, set the address to ADDR_ANY.
+				 */
+				if(address)
+					mreq.imr_multiaddr = ipaddress_to_struct_in_addr (address);
 
-			field = mono_class_get_field_from_name (obj_val->vtable->klass, "local");
-			address = *(gpointer *)(((char *)obj_val) + field->offset);
+				field = mono_class_get_field_from_name (obj_val->vtable->klass, "local");
+				address = *(gpointer *)(((char *)obj_val) + field->offset);
 
 #ifdef HAVE_STRUCT_IP_MREQN
-			if(address)
-				mreq.imr_address = ipaddress_to_struct_in_addr (address);
+				if(address)
+					mreq.imr_address = ipaddress_to_struct_in_addr (address);
 #else
-			if(address)
-				mreq.imr_interface = ipaddress_to_struct_in_addr (address);
+				if(address)
+					mreq.imr_interface = ipaddress_to_struct_in_addr (address);
 #endif /* HAVE_STRUCT_IP_MREQN */
 			
-			ret = setsockopt (sock, system_level, system_name,
-					  &mreq, sizeof (mreq));
+				ret = setsockopt (sock, system_level, system_name,
+						&mreq, sizeof (mreq));
+			}
 			break;
 		}
 #endif /* HAVE_STRUCT_IP_MREQN || HAVE_STRUCT_IP_MREQ */
@@ -1425,22 +1588,260 @@ static gboolean hostent_to_IPHostEntry(struct hostent *he, MonoString **h_name,
 	return(TRUE);
 }
 
+#if defined(AF_INET6) && defined(HAVE_GETHOSTBYNAME2_R)
+static gboolean hostent_to_IPHostEntry2(struct hostent *he1,struct hostent *he2, MonoString **h_name,
+										MonoArray **h_aliases,
+										MonoArray **h_addr_list)
+{
+	MonoDomain *domain = mono_domain_get ();
+	int i, host_count, host_index, family_hint;
+
+	family_hint = get_family_hint ();
+
+	if(he1 == NULL && he2 == NULL)
+		return(FALSE);
+
+	/*
+	 * Check if address length and family are correct
+	 */ 
+	if ( he1 != NULL && (he1->h_length!=4 || he1->h_addrtype!=AF_INET) )
+		return(FALSE);
+
+	if ( he2 != NULL && (he2->h_length!=16 || he2->h_addrtype!=AF_INET6) )
+		return(FALSE);
+
+	/*
+	 *	Get the aliases and host name from he1 or he2 whichever is not null,
+	 *  if he1 is not null then take aliases from he1
+	 */ 
+	if ( he1 != NULL && (family_hint == PF_UNSPEC || family_hint == PF_INET) ) {
+		*h_name=mono_string_new (domain, he1->h_name);
+
+		i=0;
+		while(he1->h_aliases[i]!=NULL)
+			i++;
+
+		*h_aliases=mono_array_new (domain, mono_defaults.string_class, i);
+		i=0;
+		while(he1->h_aliases[i]!=NULL) {
+			MonoString *alias;
+
+			alias=mono_string_new (domain, he1->h_aliases[i]);
+			mono_array_set (*h_aliases, MonoString *, i, alias);
+			i++;
+		}
+
+	} else if (family_hint == PF_UNSPEC || family_hint == PF_INET6) {
+		*h_name=mono_string_new (domain, he2->h_name);
+
+		i=0;
+		while(he2->h_aliases [i] != NULL)
+			i++;
+
+		*h_aliases=mono_array_new (domain, mono_defaults.string_class, i);
+		i=0;
+		while(he2->h_aliases[i]!=NULL) {
+			MonoString *alias;
+
+			alias=mono_string_new (domain, he2->h_aliases[i]);
+			mono_array_set (*h_aliases, MonoString *, i, alias);
+			i++;
+		}
+	}
+
+	/*
+	 *	Count the number of addresses in he1 + he2
+	 */
+	host_count = 0;
+	if (he1 != NULL && (family_hint == PF_UNSPEC || family_hint == PF_INET) ) {
+		i=0;
+		while(he1->h_addr_list[i]!=NULL) {
+			i++;
+			host_count++;
+		}
+	}
+
+	if (he2 != NULL && (family_hint == PF_UNSPEC || family_hint == PF_INET6) ) {
+		i=0;
+		while(he2->h_addr_list[i]!=NULL) {
+			i++;
+			host_count++;
+		}
+	}
+
+	/*
+	 *	Fills the array
+	 */ 
+	*h_addr_list=mono_array_new (domain, mono_defaults.string_class, host_count);
+
+	host_index = 0;
+
+	if ( he2 != NULL && (family_hint == PF_UNSPEC || family_hint == PF_INET6) ) {
+		i = 0;
+		while(he2->h_addr_list[i] != NULL) {
+			MonoString *addr_string;
+			char addr[40];
+
+			inet_ntop (AF_INET6, he2->h_addr_list[i], addr, sizeof(addr));
+
+			addr_string = mono_string_new (domain, addr);
+			mono_array_set (*h_addr_list, MonoString *, host_index, addr_string);
+			i++;
+			host_index++;
+		}
+	}
+
+	if ( he1 != NULL && (family_hint == PF_UNSPEC || family_hint == PF_INET) ) {
+		i=0;
+		while(he1->h_addr_list[i] != NULL) {
+			MonoString *addr_string;
+			char addr[17];
+
+			inet_ntop (AF_INET, he1->h_addr_list[i], addr, sizeof(addr));
+
+			addr_string=mono_string_new (domain, addr);
+			mono_array_set (*h_addr_list, MonoString *, host_index, addr_string); 
+			i++;
+			host_index++;
+		}
+	}
+
+	return(TRUE);
+}
+#endif
+
+#if defined(AF_INET6)
+static gboolean 
+addrinfo_to_IPHostEntry(struct addrinfo *info, MonoString **h_name,
+						MonoArray **h_aliases,
+						MonoArray **h_addr_list)
+{
+	gint32 count, i;
+	struct addrinfo *ai = NULL;
+
+	MonoDomain *domain = mono_domain_get ();
+
+	for (count=0, ai=info; ai!=NULL; ai=ai->ai_next)
+	{
+		if ((ai->ai_family != PF_INET) && (ai->ai_family != PF_INET6))
+			continue;
+
+		count++;
+	}
+
+	*h_aliases=mono_array_new(domain, mono_defaults.string_class, 0);
+	*h_addr_list=mono_array_new(domain, mono_defaults.string_class, count);
+
+	for (ai=info, i=0; ai!=NULL; ai=ai->ai_next) {
+		MonoString *addr_string;
+		char *ret, *buffer;
+		gint32 buffer_size = 0;
+
+		if ((ai->ai_family != PF_INET) && (ai->ai_family != PF_INET6))
+			continue;
+
+		buffer_size = 256;
+		do {
+			buffer = g_malloc0(buffer_size);
+
+			if(ai->ai_family == PF_INET)
+				ret = inet_ntop(ai->ai_family, (void*)&(((struct sockaddr_in*)ai->ai_addr)->sin_addr), buffer, buffer_size);
+			else
+				ret = inet_ntop(ai->ai_family, (void*)&(((struct sockaddr_in6*)ai->ai_addr)->sin6_addr), buffer, buffer_size);
+
+			if(ret == 0) {
+				g_free(buffer);
+				buffer_size += 256;
+			}
+
+		} while(ret == 0 && errno == ENOSPC);
+
+		if(ret) {
+			addr_string=mono_string_new(domain, buffer);
+			g_free(buffer);
+		}
+		else
+			addr_string=mono_string_new(domain, "");
+
+		mono_array_set(*h_addr_list, MonoString *, i, addr_string);
+
+		if(!i)
+			*h_name=mono_string_new(domain, ai->ai_canonname);
+
+		i++;
+	}
+
+	if(info)
+		freeaddrinfo(info);
+
+	return(TRUE);
+}
+#endif
+
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
 {
 	char *hostname;
-	struct hostent *he;
 	
 	MONO_ARCH_SAVE_REGS;
 
 	hostname=mono_string_to_utf8(host);
+
+#ifdef AF_INET6
+#if !defined(HAVE_GETHOSTBYNAME2_R)
+	struct addrinfo *info = NULL, hints;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family		= get_family_hint ();
+	hints.ai_socktype	= SOCK_STREAM;
+	hints.ai_flags		= AI_CANONNAME;
+
+	if( getaddrinfo(hostname, NULL, &hints, &info) == -1 )
+		return FALSE;
+	g_free(hostname);
+
+	return(addrinfo_to_IPHostEntry(info, h_name, h_aliases, h_addr_list));
+#else
+	struct hostent he1,*hp1, he2, *hp2;
+	int buffer_size1, buffer_size2;
+	char *buffer1, *buffer2;
+	int herr;
+	gboolean return_value;
+
+	buffer_size1 = 512;
+	buffer_size2 = 512;
+	buffer1 = g_malloc0(buffer_size1);
+	buffer2 = g_malloc0(buffer_size2);
+
+	while (gethostbyname2_r(hostname, AF_INET, &he1, buffer1, buffer_size1, &hp1, &herr) == ERANGE) {
+		buffer_size1 *= 2;
+		buffer1 = g_realloc(buffer1, buffer_size1);
+	}
+
+	while (gethostbyname2_r(hostname, AF_INET6, &he2, buffer2, buffer_size2, &hp2, &herr) == ERANGE) {
+		buffer_size2 *= 2;
+		buffer2 = g_realloc(buffer2, buffer_size2);
+	}
+
+	return_value = hostent_to_IPHostEntry2(hp1, hp2, h_name, h_aliases, h_addr_list);
+
+	g_free(buffer1);
+	g_free(buffer2);
+
+	return return_value;
+#endif /* HAVE_GETHOSTBYNAME2_R */
+
+#else
+	struct hostent *he;
+
 	he=gethostbyname(hostname);
 	g_free(hostname);
-	
+
 	if(he==NULL) {
 		return(FALSE);
 	}
 
 	return(hostent_to_IPHostEntry(he, h_name, h_aliases, h_addr_list));
+#endif /* AF_INET6 */
 }
 
 #ifndef HAVE_INET_PTON
@@ -1484,23 +1885,72 @@ inet_pton (int family, const char *address, void *inaddrp)
 
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *addr, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
 {
+	char *address;
+
+#ifdef AF_INET6
+	struct sockaddr_in saddr;
+	struct sockaddr_in6 saddr6;
+	struct addrinfo *info = NULL, hints;
+	gint32 family;
+	char hostname[1024] = {0};
+#else
 	struct in_addr inaddr;
 	struct hostent *he;
-	char *address;
-	
+#endif
+
 	MONO_ARCH_SAVE_REGS;
 
 	address = mono_string_to_utf8 (addr);
+
+#ifdef AF_INET6
+	if (inet_pton (AF_INET, address, &saddr.sin_addr ) <= 0) {
+		/* Maybe an ipv6 address */
+		if (inet_pton (AF_INET6, address, &saddr6.sin6_addr) <= 0) {
+			g_free (address);
+			return FALSE;
+		}
+		else {
+			family = AF_INET6;
+			saddr6.sin6_family = AF_INET6;
+		}
+	}
+	else {
+		family = AF_INET;
+		saddr.sin_family = AF_INET;
+	}
+	g_free(address);
+
+	if(family == AF_INET) {
+		if(getnameinfo ((struct sockaddr*)&saddr, sizeof(saddr), hostname, sizeof(hostname), NULL, 0, NI_NAMEREQD) != 0)
+			return FALSE;
+	}
+	else if(family == AF_INET6) {
+		if(getnameinfo ((struct sockaddr*)&saddr6, sizeof(saddr6), hostname, sizeof(hostname), NULL, 0, NI_NAMEREQD) != 0)
+			return FALSE;
+	}
+
+	memset (&hints, 0, sizeof(hints));
+	hints.ai_family		= get_family_hint ();
+	hints.ai_socktype	= SOCK_STREAM;
+	hints.ai_flags		= AI_CANONNAME;
+
+	if( getaddrinfo (hostname, NULL, &hints, &info) == -1 )
+		return FALSE;
+
+	return(addrinfo_to_IPHostEntry (info, h_name, h_aliases, h_addr_list));
+#else
 	if (inet_pton (AF_INET, address, &inaddr) <= 0) {
 		g_free (address);
 		return FALSE;
 	}
-	
 	g_free (address);
+
 	if ((he = gethostbyaddr ((char *) &inaddr, sizeof (inaddr), AF_INET)) == NULL)
 		return FALSE;
-	
-	return(hostent_to_IPHostEntry(he, h_name, h_aliases, h_addr_list));
+
+	return(hostent_to_IPHostEntry (he, h_name, h_aliases, h_addr_list));
+
+#endif
 }
 
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostName_internal(MonoString **h_name)

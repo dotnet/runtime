@@ -70,6 +70,7 @@ typedef enum {
 	ProtocolType_Pup=12,
 	ProtocolType_Udp=17,
 	ProtocolType_Idp=22,
+	ProtocolType_IPv6=41,
 	ProtocolType_ND=77,
 	ProtocolType_Raw=255,
 	ProtocolType_Unspecified=0,
@@ -83,6 +84,7 @@ typedef enum {
 typedef enum {
 	SocketOptionLevel_Socket=65535,
 	SocketOptionLevel_IP=0,
+	SocketOptionLevel_IPv6=41,
 	SocketOptionLevel_Tcp=6,
 	SocketOptionLevel_Udp=17,
 } MonoSocketOptionLevel;
