@@ -406,9 +406,6 @@ write_class (MonoDebuggerSymbolTable *table, MonoClass *klass)
 {
 	MonoDebuggerClassEntry *centry;
 
-	if (builtin_types_initialized && !klass->init_pending)
-		mono_class_init (klass);
-
 	centry = g_hash_table_lookup (class_info_table, klass);
 	if (!centry) {
 		MonoDebuggerSymbolFile *symfile = _mono_debugger_get_symfile (klass->image);
