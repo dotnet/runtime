@@ -539,6 +539,29 @@ Q: Are you writing Mono from the ECMA specs?
 A: yes, we are writing them from the ECMA specs and the published
    materials in print about .NET
 
+Q: What happens if Microsoft `Embraces and Extends' the CLI standard
+   and keeps Mono out of the play?
+
+A: There are various explanations to this question.  The first one is
+   that the benefits that you can get from the CLI are going to be
+   there with or without `embracing and extending'.  We might not be
+   able to run every .NET Windows application on Mono.  But remember:
+   it was already easy for someone to just use PInvoke to tie their
+   application to Windows.
+
+   The bottom line is that the advantages of having a CLI runtime will
+   be with us, no matter if Microsoft forks their version to be
+   incompatible. 
+
+Q: What if Microsoft changes the interface, and all of a sudden 
+   applications break?
+
+A: If they change their released API, every application that was
+   developed against it will break.  
+
+   That being said, Microsoft have a pretty good record of keeping
+   backwards binary compatibility.
+
 ** Acronyms
 
 Q: What is the difference between CLR (Common Language Runtime) and
@@ -657,6 +680,8 @@ A: Most of Mono is being written using C#, the only pieces written in
    system).
 
    The C# compiler and the tools will become reusable C# components.
+
+   Portable.NET is building its components out of C pieces.
 
 ** Assorted questions
 
