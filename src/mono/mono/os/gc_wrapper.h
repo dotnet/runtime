@@ -41,6 +41,10 @@
 	 */
 #	define MONO_GC_PRE_INIT() GC_init ()
 
+#if defined(PLATFORM_WIN32)
+#define CreateThread GC_CreateThread
+#endif
+
 #else
 #	define MONO_GC_REGISTER_ROOT(x) /* nop */
 #	define MONO_GC_PRE_INIT()
