@@ -1341,7 +1341,7 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 	else
 		info->etype = NULL;
 
-	info->isprimitive = (type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8);
+	info->isprimitive = (!type->byref && (type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8));
 }
 
 static MonoObject *
