@@ -5,7 +5,7 @@
 #include <mono/metadata/image.h>
 #include <mono/metadata/loader.h>
 
-#define MONO_CLASS_IS_ARRAY(c) (c->type_token == 0)
+#define MONO_CLASS_IS_ARRAY(c) ((c)->rank)
 
 extern gboolean mono_print_vtable;
 

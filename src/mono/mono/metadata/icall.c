@@ -895,6 +895,10 @@ ves_icall_System_MonoType_assQualifiedName (MonoReflectionType *object)
 		klass = object->type->data.type->data.klass;
 		append = "[]";
 		break;
+	case MONO_TYPE_PTR:
+		klass = object->type->data.type->data.klass;
+		append = "*";
+		break;
 	default:
 		klass = object->type->data.klass;
 		break;

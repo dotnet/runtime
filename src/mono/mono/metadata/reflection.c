@@ -206,6 +206,7 @@ encode_type (MonoDynamicAssembly *assembly, MonoType *type, char *p, char **endb
 	case MONO_TYPE_TYPEDBYREF:
 		mono_metadata_encode_value (type->type, p, &p);
 		break;
+	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY:
 		mono_metadata_encode_value (type->type, p, &p);
 		encode_type (assembly, type->data.type, p, &p);
@@ -2071,6 +2072,7 @@ free_param_data (MonoMethodSignature *sig, void **params) {
 
 /*
  * Find the method index in the metadata methodDef table.
+ * Later put these three helper methods in metadata and export them.
  */
 static guint32
 find_method_index (MonoMethod *method) {
@@ -2078,10 +2080,8 @@ find_method_index (MonoMethod *method) {
 	int i;
 
 	for (i = 0; i < klass->method.count; ++i) {
-		if (method == klass->methods [i]) {
-			guint32 mlist = mono_metadata_decode_row_col (&klass->image->tables [MONO_TABLE_TYPEDEF], mono_metadata_token_index (klass->type_token) - 1, MONO_TYPEDEF_METHOD_LIST);
-			return mlist + i;
-		}
+		if (method == klass->methods [i])
+			return klass->method.first + 1 + i;
 	}
 	return 0;
 }
@@ -2094,10 +2094,22 @@ find_field_index (MonoClass *klass, MonoClassField *field) {
 	int i;
 
 	for (i = 0; i < klass->field.count; ++i) {
-		if (field == &klass->fields [i]) {
-			guint32 flist = mono_metadata_decode_row_col (&klass->image->tables [MONO_TABLE_TYPEDEF], mono_metadata_token_index (klass->type_token) - 1, MONO_TYPEDEF_FIELD_LIST);
-			return flist + i;
-		}
+		if (field == &klass->fields [i])
+			return klass->field.first + 1 + i;
+	}
+	return 0;
+}
+
+/*
+ * Find the property index in the metadata FieldDef table.
+ */
+static guint32
+find_property_index (MonoClass *klass, MonoProperty *property) {
+	int i;
+
+	for (i = 0; i < klass->property.count; ++i) {
+		if (property == &klass->properties [i])
+			return klass->property.first + 1 + i;
 	}
 	return 0;
 }
@@ -2131,6 +2143,12 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 		index <<= CUSTOM_ATTR_BITS;
 		index |= CUSTOM_ATTR_ASSEMBLY;
 		image = rassembly->assembly->image;
+	} else if (strcmp ("MonoProperty", klass->name) == 0) {
+		MonoReflectionProperty *rprop = (MonoReflectionProperty*)obj;
+		index = find_property_index (rprop->klass, rprop->property);
+		index <<= CUSTOM_ATTR_BITS;
+		index |= CUSTOM_ATTR_PROPERTY;
+		image = rprop->klass->image;
 	} else if (strcmp ("MonoField", klass->name) == 0) {
 		MonoReflectionField *rfield = (MonoReflectionField*)obj;
 		index = find_field_index (rfield->klass, rfield->field);

@@ -886,6 +886,42 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	return class;
 }
 
+static MonoClass *
+mono_create_ptr_class (MonoType *type)
+{
+	MonoClass *result;
+	MonoClass *el_class;
+	static GHashTable *ptr_hash = NULL;
+
+	if (!ptr_hash)
+		ptr_hash = g_hash_table_new (g_direct_hash, g_direct_equal);
+	el_class = mono_class_from_mono_type (type);
+	if ((result = g_hash_table_lookup (ptr_hash, el_class)))
+		return result;
+	result = g_new0 (MonoClass, 1);
+
+	result->parent = NULL; /* no parent for PTR types */
+	result->name = "System";
+	result->name_space = "MonoPtrFakeClass";
+	result->image = NULL;
+	result->inited = TRUE;
+	/* Can pointers get boxed? */
+	result->instance_size = sizeof (gpointer);
+	/*
+	 * baseval, diffval: need them to allow casting ?
+	 */
+	result->element_class = el_class;
+	result->enum_basetype = &result->element_class->byval_arg;
+
+	result->this_arg.type = result->byval_arg.type = MONO_TYPE_PTR;
+	result->this_arg.data.type = result->byval_arg.data.type = result->enum_basetype;
+	result->this_arg.byref = TRUE;
+
+	g_hash_table_insert (ptr_hash, el_class, result);
+
+	return result;
+}
+
 MonoClass *
 mono_class_from_mono_type (MonoType *type)
 {
@@ -925,11 +961,9 @@ mono_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_STRING:
 		return mono_defaults.string_class;
 	case MONO_TYPE_ARRAY:
-		return mono_defaults.array_class;
+		return mono_array_class_get (mono_class_from_mono_type (type->data.array->type), type->data.array->rank);
 	case MONO_TYPE_PTR:
-		/* FIXME: this is wrong. Need to handle PTR types */
-		g_assert_not_reached ();
-		return mono_class_from_mono_type (type->data.type);
+		return mono_create_ptr_class (type->data.type);
 	case MONO_TYPE_SZARRAY:
 		return mono_array_class_get (mono_class_from_mono_type (type->data.type), 1);
 	case MONO_TYPE_CLASS:

@@ -2003,6 +2003,7 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
 		return t1->data.klass == t2->data.klass;
+	case MONO_TYPE_PTR:
 	case MONO_TYPE_SZARRAY:
 		return mono_metadata_type_equal (t1->data.type, t2->data.type);
 	default:
