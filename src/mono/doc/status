@@ -11,7 +11,7 @@
 		* The Mono JIT engine (<b>mono</b>.  The JIT engine is
 	        the real
 		virtual machine that we support.  It is
-		functionaly currently, and we are improving its speed,
+		currently functional, and we are improving its speed,
 		and making it feature complete.
 
 		* A CIL bytecode interpreter (<b>mint</b>).  This
