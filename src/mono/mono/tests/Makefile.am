@@ -106,9 +106,18 @@ testb: $(TEST_PROG) $(TESTBS)
 	done
 
 testjit: $(JITTEST_PROG) $(TESTSI) $(TESTBS)
+	@failed=0; \
+	passed=0; \
+	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI) $(TESTBS); do	\
-		./test-driver $(JITTEST_PROG) $$i;	\
-	done
+		if ./test-driver $(JITTEST_PROG) $$i; \
+		then \
+			passed=`expr $${passed} + 1`; \
+		else \
+			failed=`expr $${failed} + 1`; \
+		fi \
+	done; \
+	echo "$${passed} test(s) passed. $${failed} test(s) failed."
 
 testjitspeed: $(JITTEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\
