@@ -1,3 +1,7 @@
 Makefile.in
 Makefile
 *.stdout
+.deps
+.libs
+libtest.la
+libtest.lo
