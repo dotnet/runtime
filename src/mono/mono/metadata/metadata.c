@@ -3695,6 +3695,10 @@ handle_enum:
 	}
 	case MONO_TYPE_FNPTR: return MONO_NATIVE_FUNC;
 	case MONO_TYPE_TYPEDBYREF:
+	case MONO_TYPE_GENERICINST:
+		type = &type->data.generic_class->container_class->byval_arg;
+		t = type->type;
+		goto handle_enum;
 	default:
 		g_error ("type 0x%02x not handled in marshal", t);
 	}
