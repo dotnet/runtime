@@ -100,7 +100,6 @@ typedef struct {
 	jmp_buf *current_env;
 	unsigned char search_for_handler;
 	unsigned char managed_code;
-	unsigned char abort_thread;
 } ThreadContext;
 
 void mono_init_icall (void);

@@ -82,6 +82,8 @@ enum {
 #endif
 #endif
 
+static gint *abort_requested;
+
 /* If true, then we output the opcodes as we interpret them */
 static int global_tracing = 0;
 static int global_no_pointers = 0;
@@ -728,14 +730,9 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFunc ad
 	/* domain can only be changed by native code */
 	context->domain = mono_domain_get ();
 
-	if (context->abort_thread) {
-		MonoThread *thread = mono_thread_current ();
-		context->abort_thread = 0;
-		thread->abort_exc = mono_get_exception_thread_abort ();        
-		frame->ex = thread->abort_exc;
-		return;
-	}
-
+	if (*abort_requested)
+		mono_thread_interruption_checkpoint ();
+	
 	if (string_ctor) {
 		stackval_from_data (&mono_defaults.string_class->byval_arg, 
 				    frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
@@ -1084,7 +1081,6 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		context_struct.current_env = &env;
 		context_struct.search_for_handler = 0;
 		context_struct.managed_code = 0;
-		context_struct.abort_thread = 0;
 		TlsSetValue (thread_context_id, context);
 	}
 	else
@@ -2504,13 +2500,8 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 					context->managed_code = 0;
 					o = mono_object_new (context->domain, newobj_class);
 					context->managed_code = 1;
-					if (context->abort_thread) {
-						MonoThread *thread = mono_thread_current ();
-						context->abort_thread = 0;
-						thread->abort_exc = mono_get_exception_thread_abort ();        
-						frame->ex = thread->abort_exc;
-						goto handle_finally;
-					}
+					if (*abort_requested)
+						mono_thread_interruption_checkpoint ();
 					child_frame.obj = o;
 				} else {
 					child_frame.retval = &retval;
@@ -4024,7 +4015,6 @@ ves_exec_method (MonoInvocation *frame)
 		context_struct.current_env = &env;
 		context_struct.search_for_handler = 0;
 		context_struct.managed_code = 0;
-		context_struct.abort_thread = 0;
 		TlsSetValue (thread_context_id, context);
 	}
 	frame->ip = NULL;
@@ -4172,16 +4162,13 @@ thread_abort_handler (int signum)
 {
 	ThreadContext *context = TlsGetValue (thread_context_id);
 	MonoThread *thread;
+	MonoException *exc;
 
 	if (context == NULL)
 		return;
 
-	if (context->managed_code) {
-		thread = mono_thread_current ();
-		thread->abort_exc = mono_get_exception_thread_abort ();        
-		mono_raise_exception (thread->abort_exc);
-	} else
-		context->abort_thread = 1;
+	exc = mono_thread_request_interruption (context->managed_code); 
+	if (exc) mono_raise_exception (exc);
 }
 
 static MonoBoolean
@@ -4376,6 +4363,7 @@ mono_interp_init(const char *file)
 	mono_install_handler (interp_ex_handler);
 	mono_install_stack_walk (interp_walk_stack);
 	mono_runtime_install_cleanup (quit_function);
+	abort_requested = mono_thread_interruption_request_flag ();
 
 	domain = mono_init (file);
 #ifdef __hpux /* generates very big stack frames */
