@@ -5807,7 +5807,7 @@ mono_get_lmf_addr (void)
 static void
 mono_thread_abort (MonoObject *obj)
 {
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+	/* MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id); */
 	
 	/* handle_remove should be eventually called for this thread, too
 	g_free (jit_tls);*/
@@ -6990,6 +6990,10 @@ mono_jit_compile_method (MonoMethod *method)
 		mono_class_init (method->klass);
 		if ((code = mono_aot_get_method (method))) {
 			g_hash_table_insert (jit_code_hash, method, code);
+
+			/* make sure runtime_init is called */
+			mono_runtime_class_init (mono_class_vtable (target_domain, method->klass));
+
 			return code;
 		}
 	}
