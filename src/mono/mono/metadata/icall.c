@@ -1663,16 +1663,25 @@ ves_icall_Type_GetGenericTypeDefinition_impl (MonoReflectionType *type)
 }
 
 static MonoReflectionType*
-ves_icall_Type_BindGenericParameters (MonoReflectionType *type, MonoArray *types)
+ves_icall_Type_BindGenericParameters (MonoReflectionType *type, MonoArray *type_array)
 {
-	MonoType *geninst;
+	MonoType *geninst, **types;
+	int i, count;
 
 	MONO_ARCH_SAVE_REGS;
 
 	if (type->type->byref)
 		return NULL;
 
-	geninst = mono_reflection_bind_generic_parameters (type->type, types);
+	count = mono_array_length (type_array);
+	types = g_new0 (MonoType *, count);
+
+	for (i = 0; i < count; i++) {
+		MonoReflectionType *t = mono_array_get (type_array, gpointer, i);
+		types [i] = t->type;
+	}
+
+	geninst = mono_reflection_bind_generic_parameters (type->type, count, types, NULL);
 
 	return mono_type_get_object (mono_object_domain (type), geninst);
 }
@@ -1806,6 +1815,44 @@ ves_icall_MonoGenericInst_GetInterfaces (MonoReflectionGenericInst *type)
 		MonoReflectionType *iface = mono_type_get_object (domain, ginst->ifaces [i]);
 
 		mono_array_set (res, gpointer, i, iface);
+	}
+
+	return res;
+}
+
+static MonoArray*
+ves_icall_MonoGenericInst_GetNestedTypes (MonoReflectionGenericInst *type)
+{
+	static MonoClass *System_Reflection_MonoGenericInst;
+	MonoGenericInst *ginst;
+	MonoDomain *domain;
+	MonoArray *res;
+	GList *tmpn;
+	int count, i;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (!System_Reflection_MonoGenericInst) {
+		System_Reflection_MonoGenericInst = mono_class_from_name (
+			mono_defaults.corlib, "System.Reflection", "MonoGenericInst");
+		g_assert (System_Reflection_MonoGenericInst);
+	}
+
+	domain = mono_object_domain (type);
+
+	ginst = type->type.type->data.generic_inst;
+
+	for (count = 0, tmpn = ginst->nested; tmpn; tmpn = tmpn->next)
+		count++;
+
+	res = mono_array_new (domain, System_Reflection_MonoGenericInst, count);
+	for (i = 0, tmpn = ginst->nested; tmpn; tmpn = tmpn->next) {
+		MonoClass *nc = mono_class_from_mono_type (tmpn->data);
+		MonoReflectionType *type;
+
+		mono_class_init (nc);
+		type = mono_type_get_object (domain, tmpn->data);
+		mono_array_set (res, gpointer, i, type);
 	}
 
 	return res;
@@ -4999,6 +5046,7 @@ static const IcallEntry monogenericinst_icalls [] = {
 	{"GetFields_internal", ves_icall_MonoGenericInst_GetFields},
 	{"GetInterfaces_internal", ves_icall_MonoGenericInst_GetInterfaces},
 	{"GetMethods_internal", ves_icall_MonoGenericInst_GetMethods},
+	{"GetNestedTypes_internal", ves_icall_MonoGenericInst_GetNestedTypes},
 	{"GetParentType", ves_icall_MonoGenericInst_GetParentType},
 	{"GetProperties_internal", ves_icall_MonoGenericInst_GetProperties},
 	{"initialize", mono_reflection_generic_inst_initialize}

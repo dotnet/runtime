@@ -538,7 +538,7 @@ method_encode_signature (MonoDynamicImage *assembly, MonoMethodSignature *sig)
 	char *p;
 	int i;
 	guint32 nparams =  sig->param_count;
-	guint32 size = 10 + nparams * 10;
+	guint32 size = 11 + nparams * 10;
 	guint32 idx;
 	char blob_size [6];
 	char *b = blob_size;
@@ -6802,7 +6802,8 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 }
 
 MonoType*
-mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
+mono_reflection_bind_generic_parameters (MonoType *type, int type_argc, MonoType **types,
+					 MonoType *nested_in)
 {
 	MonoClass *klass, *pklass = NULL;
 	MonoReflectionTypeBuilder *tb = NULL;
@@ -6811,7 +6812,8 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
 	int icount, i;
 
 	klass = mono_class_from_mono_type (type);
-	if (!klass->gen_params && !klass->generic_inst)
+	if (!klass->gen_params && !klass->generic_inst &&
+	    !(klass->nested_in && klass->nested_in->gen_params))
 		return NULL;
 
 	mono_loader_lock ();
@@ -6819,17 +6821,13 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
 	ginst = g_new0 (MonoGenericInst, 1);
 	ginst->is_dynamic = 1;
 
-	if (klass->gen_params) {
-		ginst->type_argc = mono_array_length (types);
-		ginst->type_argv = g_new0 (MonoType *, ginst->type_argc);
+	if (!klass->generic_inst) {
+		ginst->type_argc = type_argc;
+		ginst->type_argv = types;
 
 		for (i = 0; i < ginst->type_argc; ++i) {
-			MonoReflectionType *garg = mono_array_get (types, gpointer, i);
-
-			ginst->type_argv [i] = garg->type;
-
 			if (!ginst->is_open)
-				ginst->is_open = mono_class_is_open_constructed_type (garg->type);
+				ginst->is_open = mono_class_is_open_constructed_type (types [i]);
 		}
 
 		ginst->generic_type = &klass->byval_arg;
@@ -6842,12 +6840,8 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
 		for (i = 0; i < ginst->type_argc; i++) {
 			MonoType *t = kginst->type_argv [i];
 
-			if (t->type == MONO_TYPE_VAR) {
-				int num = t->data.generic_param->num;
-				MonoReflectionType *garg = mono_array_get (types, gpointer, num);
-
-				t = garg->type;
-			}
+			if (t->type == MONO_TYPE_VAR)
+				t = types [t->data.generic_param->num];
 
 			if (!ginst->is_open)
 				ginst->is_open = mono_class_is_open_constructed_type (t);
@@ -6860,7 +6854,6 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
 
 	geninst = g_hash_table_lookup (klass->image->generic_inst_cache, ginst);
 	if (geninst) {
-		g_free (ginst->type_argv);
 		g_free (ginst);
 		mono_loader_unlock ();
 		return geninst;
@@ -6884,7 +6877,7 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
 	geninst->data.generic_inst = ginst;
 
 	if (pklass && pklass->generic_inst)
-		parent = mono_reflection_bind_generic_parameters (parent, types);
+		parent = mono_reflection_bind_generic_parameters (parent, type_argc, types, NULL);
 
 	if (tb)
 		icount = tb->interfaces ? mono_array_length (tb->interfaces) : 0;
@@ -6899,12 +6892,43 @@ mono_reflection_bind_generic_parameters (MonoType *type, MonoArray *types)
 			itype = mono_array_get (tb->interfaces, MonoReflectionType *, i)->type;
 		else
 			itype = &klass->interfaces [i]->byval_arg;
-		ginst->ifaces [i] = mono_reflection_bind_generic_parameters (itype, types);
+		ginst->ifaces [i] = mono_reflection_bind_generic_parameters (itype, type_argc, types, NULL);
 		if (!ginst->ifaces [i])
 			ginst->ifaces [i] = itype;
 	}
 
 	ginst->parent = parent;
+	ginst->nested_in = nested_in;
+
+	if (tb) {
+		int ncount = tb->subtypes ? mono_array_length (tb->subtypes) : 0;
+		for (i = 0; i < ncount; i++) {
+			MonoType *ntype = mono_array_get (tb->subtypes, MonoReflectionType *, i)->type;
+			MonoClass *nclass = mono_class_from_mono_type (ntype);
+
+			if (nclass->num_gen_params > type_argc) {
+				int j, ntype_argc = nclass->num_gen_params;
+				MonoType **ntypes = g_new0 (MonoType *, ntype_argc);
+
+				for (j = 0; j < type_argc; j++)
+					ntypes [i] = types [i];
+
+				for (j = type_argc; j < ntype_argc; j++) {
+					MonoType *pt = g_new0 (MonoType, 1);
+
+					pt->type = MONO_TYPE_VAR;
+					pt->data.generic_param = &nclass->gen_params [j];
+
+					ntypes [j] = pt;
+				}
+
+				ntype = mono_reflection_bind_generic_parameters (ntype, ntype_argc, ntypes, geninst);
+			} else
+				ntype = mono_reflection_bind_generic_parameters (ntype, type_argc, types, geninst);
+
+			ginst->nested = g_list_prepend (ginst->nested, ntype);
+		}
+	}
 
 	mono_class_create_generic (ginst);
 

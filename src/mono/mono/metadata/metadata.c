@@ -1459,7 +1459,7 @@ do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, const char *p
 			ginst->is_open = mono_class_is_open_constructed_type (t);
 	}
 
-	ginst->klass->name = _mono_class_get_instantiation_name (ginst->klass->name, ginst);
+	ginst->klass->name = _mono_class_get_instantiation_name (ginst->klass->name, ginst, 0);
 
 	ginst->init_pending = FALSE;
 

@@ -1743,26 +1743,28 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 }
 
 char*
-_mono_class_get_instantiation_name (const char *name, MonoGenericInst *ginst)
+_mono_class_get_instantiation_name (const char *name, MonoGenericInst *ginst, int offset)
 {
 	GString *res = g_string_new (name);
 	const char *p;
-	int i;
+	int count, i;
 	MonoClass *argclass;
 	
 	p = strchr (name, '<');
+	count = ginst->type_argc - offset;
 	if (p) {
 		g_string_truncate (res, (p - name) + 1);
-	} else {
+	} else if (count) {
 		g_string_append_c (res, '<');
 	}
-	for (i = 0; i < ginst->type_argc; ++i) {
-		if (i > 0)
+	for (i = offset; i < ginst->type_argc; ++i) {
+		if (i > offset)
 			g_string_append_c (res, ',');
 		argclass = mono_class_from_mono_type (ginst->type_argv [i]);
 		g_string_append (res, argclass->name);
 	}
-	g_string_append_c (res, '>');
+	if (count)
+		g_string_append_c (res, '>');
 	return g_string_free (res, FALSE);
 }
 
@@ -1777,8 +1779,13 @@ mono_class_create_generic (MonoGenericInst *ginst)
 
 	gklass = mono_class_from_mono_type (ginst->generic_type);
 
-	if (!ginst->init_pending)
-		klass->name = _mono_class_get_instantiation_name (gklass->name, ginst);
+	if (ginst->nested_in) {
+		MonoGenericInst *nginst = ginst->nested_in->data.generic_inst;
+		int offset = nginst->type_argc;
+
+		klass->name = _mono_class_get_instantiation_name (gklass->name, ginst, nginst->type_argc);
+	} else if (!ginst->init_pending)
+		klass->name = _mono_class_get_instantiation_name (gklass->name, ginst, 0);
 	else
 		klass->name = gklass->name;
 	klass->name_space = gklass->name_space;
