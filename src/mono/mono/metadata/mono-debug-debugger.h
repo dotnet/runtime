@@ -197,6 +197,7 @@ struct _MonoDebuggerIOLayer
 	gpointer (*CreateThread) (WapiSecurityAttributes *security,
 				  guint32 stacksize, WapiThreadStart start,
 				  gpointer param, guint32 create, guint32 *tid);
+	guint32 (*GetCurrentThreadId) (void);
 };
 
 extern MonoDebuggerIOLayer mono_debugger_io_layer;
