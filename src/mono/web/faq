@@ -626,17 +626,16 @@ A: We can not predict the future, but a conservative estimate is that
 Q: You say that the CLI allows multiple languages to execute on the
    same environment.  Isn't this the purpose of CORBA?
 
-A: CORBA can be used for this purpose, but think of CORBA mostly as a
-   inter-process (local machine or remote machine) communication
-   system.  
+A: The key difference between CORBA (and COM) and the CLI is that the
+   CLI allows "data-level interoperability" because every
+   language/component uses the same data layout and memory management.
 
-   Think of the CLI to be targeted to interoperation of languages in
-   the same process, and CORBA as being a nifty addition for
-   out-of-process.  
-
-   Sure, we have used CORBA for in-proc components, but the lack of an
-   ABI for in-proc components does not translate into a good framework
-   for in-proc systems
-
-   
+   This means you can operate directly upon the datatypes that someone
+   else provides, without having to go via their interfaces.  It also
+   means you don't have to "marshall" (convert) parameters (data
+   layouts are the same, so you can just pass components directly) and
+   you don't have to worry about memory managment, because all
+   languages/components share the same garbage collector and address
+   space.  This means much less copying and no need for reference
+   counting.
 
