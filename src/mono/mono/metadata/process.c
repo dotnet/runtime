@@ -738,7 +738,7 @@ complete_path (const gunichar2 *appname, gunichar2 **completed)
 		return FALSE;
 	}
 
-	if (g_file_test (utf8app, G_FILE_TEST_IS_EXECUTABLE)) {
+	if (g_file_test (utf8app, G_FILE_TEST_IS_EXECUTABLE) && !g_file_test (utf8app, G_FILE_TEST_IS_DIR)) {
 		g_free (utf8app);
 		return FALSE;
 	}
