@@ -1,5 +1,30 @@
 * System.Windows.Forms
 
+	The System.Windows.Forms effort is taking two paths: 
+
+	<ul>
+		<li>Win32/Wine-based: This effort will use the Win32
+		API, and use a stub program to run the with Wine.
+		This allows applications that use P/Invoke to
+		function, and event delivery through the Wndproc
+		method to work for the most advanced and custom
+		applications.  This is the path of best compatibility.
+
+		Also, work on a Gtk-based rendered for Wine will be
+		done, to make the user interface integrate with your
+		desktop look.
+
+		<li>Gtk# based: This effort will build a subset of
+		Windows.Forms that uses Gtk#.  This gives a better
+		integration with the desktop, but will not be
+		completely compatible with the Windows edition.  In
+		particular code that uses P/Invoke to call into Win32
+		or overwrite the Wndproc method to achieve special
+		effects will not work.
+	</ul>
+
+* Win32/Wine edition.
+
 	<table>
 	<tr>
 	<td>
@@ -17,17 +42,21 @@
 	it use the Gtk+ themes on X11 and Cocoa on MacOS to render the
 	widgets, and get the native look and feel on each of these
 	platforms. 
-
-	There are no current plans to support embedded devices, but
-	Gtk/FrameBuffer is an option.  If you have suggestions or
-	recommendations, please let us <a
-	href="mailto:mono-hackers-list@ximian.com">let us know</a>
 	</td>
 	<td>
 	<a href="images/WINESWF.JPG"><img src="images/WINESWF-mini.JPG"></a>
 	</td>
 	
 	</table>
+
+* Gtk# based
+
+	The code is contained in CVS.  
+
+	There are no current plans to support embedded devices, but
+	Gtk/FrameBuffer is an option.  If you have suggestions or
+	recommendations, please let us <a
+	href="mailto:mono-hackers-list@ximian.com">let us know</a>
 
 * Contributing
 
