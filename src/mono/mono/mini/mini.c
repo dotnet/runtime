@@ -104,6 +104,7 @@ static MonoMethodSignature *helper_sig_void_obj_ptr_ptr_obj = NULL;
 static MonoMethodSignature *helper_sig_void_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_void_ptr_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_ptr_ptr_ptr = NULL;
+static MonoMethodSignature *helper_sig_ptr_ptr_ptr_ptr = NULL;
 static MonoMethodSignature *helper_sig_ptr_obj = NULL;
 static MonoMethodSignature *helper_sig_ptr_obj_int = NULL;
 static MonoMethodSignature *helper_sig_ptr_int = NULL;
@@ -5135,12 +5136,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (cfg->opt & MONO_OPT_SHARED) {
 				int temp;
-				MonoInst *res, *store, *addr, *vtvar, *iargs [2];
+				MonoInst *res, *store, *addr, *vtvar, *iargs [3];
 
 				vtvar = mono_compile_create_var (cfg, &handle_class->byval_arg, OP_LOCAL); 
 
 				NEW_IMAGECONST (cfg, iargs [0], image);
 				NEW_ICONST (cfg, iargs [1], n);
+				NEW_PCONST (cfg, iargs [2], generic_context);
 				temp = mono_emit_jit_icall (cfg, bblock, mono_ldtoken_wrapper, iargs, ip);
 				NEW_TEMPLOAD (cfg, res, temp);
 				NEW_TEMPLOADA (cfg, addr, vtvar->inst_c0);
@@ -6166,6 +6168,8 @@ create_helper_signature (void)
 
 	/* intptr  amethod (intptr, intptr) */
 	helper_sig_ptr_ptr_ptr = make_icall_sig ("ptr ptr ptr");
+
+	helper_sig_ptr_ptr_ptr_ptr = make_icall_sig ("ptr ptr ptr ptr");
 
 	/* IntPtr  amethod (object) */
 	helper_sig_ptr_obj = make_icall_sig ("ptr object");
@@ -8741,7 +8745,7 @@ mini_init (const char *filename)
 	/* other jit icalls */
 	mono_register_jit_icall (mono_class_static_field_address , "mono_class_static_field_address", 
 				 helper_sig_ptr_ptr_ptr, FALSE);
-	mono_register_jit_icall (mono_ldtoken_wrapper, "mono_ldtoken_wrapper", helper_sig_ptr_ptr_ptr, FALSE);
+	mono_register_jit_icall (mono_ldtoken_wrapper, "mono_ldtoken_wrapper", helper_sig_ptr_ptr_ptr_ptr, FALSE);
 	mono_register_jit_icall (mono_get_special_static_data, "mono_get_special_static_data", helper_sig_ptr_int, FALSE);
 	mono_register_jit_icall (mono_ldstr, "mono_ldstr", helper_sig_ldstr, FALSE);
 	mono_register_jit_icall (helper_memcpy, "helper_memcpy", helper_sig_memcpy, FALSE);

@@ -447,13 +447,13 @@ mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 }
 
 static gpointer
-mono_ldtoken_wrapper (MonoImage *image, int token)
+mono_ldtoken_wrapper (MonoImage *image, int token, MonoGenericContext *context)
 {
 	MonoClass *handle_class;
 	gpointer res;
 
 	MONO_ARCH_SAVE_REGS;
-	res = mono_ldtoken (image, token, &handle_class, NULL);	
+	res = mono_ldtoken (image, token, &handle_class, context);	
 	mono_class_init (handle_class);
 
 	return res;
