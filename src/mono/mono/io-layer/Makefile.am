@@ -6,7 +6,7 @@ INCLUDES = \
 	-I$(top_srcdir)		\
 	#
 
-libwapiincludedir = $(includedir)/mono/wapi
+libwapiincludedir = $(includedir)/mono/io-layer
 
 OTHER_H = \
 	error.h		\
