@@ -525,6 +525,10 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status)
 			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_ASSEMBLY],
 					0, MONO_ASSEMBLY_NAME));
 
+	image->module_name = mono_metadata_string_heap (image, 
+			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_MODULE],
+					0, MONO_MODULE_NAME));
+
 	if (status)
 		*status = MONO_IMAGE_OK;
 

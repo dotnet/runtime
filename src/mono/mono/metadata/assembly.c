@@ -131,6 +131,58 @@ mono_assembly_setrootdir (const char *root_dir)
 	default_path [0] = g_strdup (root_dir);
 }
 
+static void
+load_references (MonoImage *image, MonoImageOpenStatus *status) {
+	MonoTableInfo *t;
+	guint32 cols [MONO_ASSEMBLYREF_SIZE];
+	const char *hash;
+	int i;
+
+	if (image->references)
+		return;
+
+	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
+
+	image->references = g_new0 (MonoAssembly *, t->rows + 1);
+
+	/*
+	 * Load any assemblies this image references
+	 */
+	for (i = 0; i < t->rows; i++) {
+		MonoAssemblyName aname;
+
+		mono_metadata_decode_row (t, i, cols, MONO_ASSEMBLYREF_SIZE);
+		
+		hash = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLYREF_HASH_VALUE]);
+		aname.hash_len = mono_metadata_decode_blob_size (hash, &hash);
+		aname.hash_value = hash;
+		aname.name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME]);
+		aname.culture = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_CULTURE]);
+		aname.flags = cols [MONO_ASSEMBLYREF_FLAGS];
+		aname.major = cols [MONO_ASSEMBLYREF_MAJOR_VERSION];
+		aname.minor = cols [MONO_ASSEMBLYREF_MINOR_VERSION];
+		aname.build = cols [MONO_ASSEMBLYREF_BUILD_NUMBER];
+		aname.revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
+
+		image->references [i] = mono_assembly_load (&aname, image->assembly->basedir, status);
+
+		if (image->references [i] == NULL){
+			int j;
+			
+			for (j = 0; j < i; j++)
+				mono_assembly_close (image->references [j]);
+			g_free (image->references);
+			image->references = NULL;
+
+			g_warning ("Could not find assembly %s", aname.name);
+			*status = MONO_IMAGE_MISSING_ASSEMBLYREF;
+			return;
+		}
+	}
+	image->references [i] = NULL;
+
+}
+
 /**
  * mono_assembly_open:
  * @filename: Opens the assembly pointed out by this name
@@ -151,16 +203,19 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	guint32 cols [MONO_ASSEMBLY_SIZE];
 	int i;
 	char *base_dir;
-	const char *hash;
+	MonoImageOpenStatus def_status;
 	
 	g_return_val_if_fail (filename != NULL, NULL);
+
+	if (!status)
+		status = &def_status;
+	*status = MONO_IMAGE_OK;
 
 	/* g_print ("file loading %s\n", filename); */
 	image = mono_image_open (filename, status);
 
 	if (!image){
-		if (status)
-			*status = MONO_IMAGE_ERROR_ERRNO;
+		*status = MONO_IMAGE_ERROR_ERRNO;
 		return NULL;
 	}
 
@@ -176,73 +231,37 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	image->assembly = ass;
 
 	t = &image->tables [MONO_TABLE_ASSEMBLY];
-	mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
+	if (t->rows) {
+		mono_metadata_decode_row (t, 0, cols, MONO_ASSEMBLY_SIZE);
 		
-	ass->aname.hash_len = 0;
-	ass->aname.hash_value = NULL;
-	ass->aname.name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_NAME]);
-	ass->aname.culture = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_CULTURE]);
-	ass->aname.flags = cols [MONO_ASSEMBLY_FLAGS];
-	ass->aname.major = cols [MONO_ASSEMBLY_MAJOR_VERSION];
-	ass->aname.minor = cols [MONO_ASSEMBLY_MINOR_VERSION];
-	ass->aname.build = cols [MONO_ASSEMBLY_BUILD_NUMBER];
-	ass->aname.revision = cols [MONO_ASSEMBLY_REV_NUMBER];
+		ass->aname.hash_len = 0;
+		ass->aname.hash_value = NULL;
+		ass->aname.name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_NAME]);
+		ass->aname.culture = mono_metadata_string_heap (image, cols [MONO_ASSEMBLY_CULTURE]);
+		ass->aname.flags = cols [MONO_ASSEMBLY_FLAGS];
+		ass->aname.major = cols [MONO_ASSEMBLY_MAJOR_VERSION];
+		ass->aname.minor = cols [MONO_ASSEMBLY_MINOR_VERSION];
+		ass->aname.build = cols [MONO_ASSEMBLY_BUILD_NUMBER];
+		ass->aname.revision = cols [MONO_ASSEMBLY_REV_NUMBER];
 
-	/* avoid loading the same assembly twixe for now... */
-	if ((ass2 = search_loaded (&ass->aname))) {
-		g_free (ass);
-		if (status)
+		/* avoid loading the same assembly twixe for now... */
+		if ((ass2 = search_loaded (&ass->aname))) {
+			g_free (ass);
+			g_free (base_dir);
 			*status = MONO_IMAGE_OK;
-		return ass2;
+			return ass2;
+		}
 	}
 
 	/* register right away to prevent loops */
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
 
-	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
-
-	image->references = g_new0 (MonoAssembly *, t->rows + 1);
-
-	/*
-	 * Load any assemblies this image references
-	 */
-	for (i = 0; i < t->rows; i++){
-		MonoAssemblyName aname;
-
-		mono_metadata_decode_row (t, i, cols, MONO_ASSEMBLYREF_SIZE);
-		
-		hash = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLYREF_HASH_VALUE]);
-		aname.hash_len = mono_metadata_decode_blob_size (hash, &hash);
-		aname.hash_value = hash;
-		aname.name = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_NAME]);
-		aname.culture = mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_CULTURE]);
-		aname.flags = cols [MONO_ASSEMBLYREF_FLAGS];
-		aname.major = cols [MONO_ASSEMBLYREF_MAJOR_VERSION];
-		aname.minor = cols [MONO_ASSEMBLYREF_MINOR_VERSION];
-		aname.build = cols [MONO_ASSEMBLYREF_BUILD_NUMBER];
-		aname.revision = cols [MONO_ASSEMBLYREF_REV_NUMBER];
-
-		image->references [i] = mono_assembly_load (&aname, base_dir, status);
-
-		if (image->references [i] == NULL){
-			int j;
-			
-			for (j = 0; j < i; j++)
-				mono_assembly_close (image->references [j]);
-			g_free (image->references);
-			mono_image_close (image);
-
-			g_warning ("Could not find assembly %s", aname.name);
-			if (status)
-				*status = MONO_IMAGE_MISSING_ASSEMBLYREF;
-			g_free (ass);
-			loaded_assemblies = g_list_remove (loaded_assemblies, ass);
-			g_free (base_dir);
-			return NULL;
-		}
+	load_references (image, status);
+	if (*status != MONO_IMAGE_OK) {
+		mono_assembly_close (ass);
+		return NULL;
 	}
-	image->references [i] = NULL;
-
+	
 	t = &image->tables [MONO_TABLE_MODULEREF];
 	ass->modules = g_new0 (MonoImage *, t->rows);
 	for (i = 0; i < t->rows; i++){
@@ -254,6 +273,15 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		name = mono_metadata_string_heap (image, cols [MONO_MODULEREF_NAME]);
 		module_ref = g_concat_dir_and_file (base_dir, name);
 		ass->modules [i] = mono_image_open (module_ref, status);
+		if (ass->modules [i]) {
+			ass->modules [i]->assembly = ass;
+			load_references (ass->modules [i], status);
+		}
+		/* 
+		 * FIXME: what do we do here? it could be a native dll...
+		 * We should probably do lazy-loading of modules.
+		 */
+		*status = MONO_IMAGE_OK;
 		g_free (module_ref);
 	}
 
@@ -327,9 +355,11 @@ mono_assembly_close (MonoAssembly *assembly)
 	
 	loaded_assemblies = g_list_remove (loaded_assemblies, assembly);
 	image = assembly->image;
-	for (i = 0; image->references [i] != NULL; i++)
-		mono_image_close (image->references [i]->image);
-	g_free (image->references);
+	if (image->references) {
+		for (i = 0; image->references [i] != NULL; i++)
+			mono_image_close (image->references [i]->image);
+		g_free (image->references);
+	}
 	     
 	mono_image_close (assembly->image);
 

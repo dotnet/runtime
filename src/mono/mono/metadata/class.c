@@ -62,7 +62,7 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 		/* a typedef in disguise */
 		return mono_class_from_name (image, nspace, name);
 	case RESOLTION_SCOPE_MODULEREF:
-			g_error ("ModuleRef ResolutionScope not yet handled");
+		return mono_class_from_name (image->assembly->modules [idx - 1], nspace, name);
 	case RESOLTION_SCOPE_TYPEREF: {
 		MonoClass *enclosing = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | idx);
 		GList *tmp;

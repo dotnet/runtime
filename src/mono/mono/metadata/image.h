@@ -52,6 +52,7 @@ struct _MonoImage {
 	FILE *f;
 	char *name;
 	const char *assembly_name;
+	const char *module_name;
 	void *image_info;
 
 	char                *raw_metadata;
