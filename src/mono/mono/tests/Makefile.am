@@ -29,6 +29,7 @@ TESTSRC=			\
 	exception7.cs		\
 	exception8.cs		\
 	exception10.cs		\
+	exception11.cs		\
 	struct.cs		\
 	valuetype-gettype.cs	\
 	static-constructor.cs	\
