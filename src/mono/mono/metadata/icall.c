@@ -2662,6 +2662,19 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 }
 
 static MonoReflectionType*
+ves_icall_System_Reflection_Module_GetGlobalType (MonoReflectionModule *module)
+{
+	MonoDomain *domain = mono_object_domain (module); 
+	MonoClass *klass;
+
+	MONO_ARCH_SAVE_REGS;
+
+	g_assert (module->image);
+	klass = mono_class_get (module->image, 1 | MONO_TOKEN_TYPE_DEF);
+	return mono_type_get_object (domain, &klass->byval_arg);
+}
+
+static MonoReflectionType*
 ves_icall_ModuleBuilder_create_modified_type (MonoReflectionTypeBuilder *tb, MonoString *smodifiers)
 {
 	MonoClass *klass;
@@ -3707,6 +3720,11 @@ static gconstpointer icall_map [] = {
 	"System.Reflection.Assembly::GetReferencedAssemblies", ves_icall_System_Reflection_Assembly_GetReferencedAssemblies,
 	"System.Reflection.Assembly::GetNamespaces", ves_icall_System_Reflection_Assembly_GetNamespaces,
 	"System.Reflection.Assembly::GetModulesInternal", ves_icall_System_Reflection_Assembly_GetModulesInternal,
+
+	/*
+	 * System.Reflection.Module
+	 */
+	"System.Reflection.Module::GetGlobalType", ves_icall_System_Reflection_Module_GetGlobalType,
 
 	/*
 	 * System.MonoType.
