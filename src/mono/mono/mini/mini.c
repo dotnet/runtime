@@ -6543,6 +6543,10 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 	MonoJitTlsData *jit_tls;
 	MonoLMF *lmf;
 
+	jit_tls = TlsGetValue (mono_jit_tls_id);
+	if (jit_tls)
+		return jit_tls;
+
 	jit_tls = g_new0 (MonoJitTlsData, 1);
 
 	TlsSetValue (mono_jit_tls_id, jit_tls);
