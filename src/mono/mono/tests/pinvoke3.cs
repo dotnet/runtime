@@ -268,20 +268,6 @@ public class Tests {
 		return mono_test_marshal_delegate9 (d, new return_int_delegate (return_self));
 	}
 
-	static int test_0_marshal_delegate_delegate_unmanaged_ftn () {
-		SimpleDelegate9 d = new SimpleDelegate9 (call_int_delegate);
-
-		try {
-			mono_test_marshal_delegate10 (d);
-			return 1;
-		}
-		catch (ArgumentException) {
-			return 0;
-		}
-
-		return 2;
-	}
-
 	static int test_0_marshal_primitive_byref_delegate () {
 		PrimitiveByrefDelegate d = new PrimitiveByrefDelegate (delegate_test_primitive_byref);
 
