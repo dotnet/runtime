@@ -1030,7 +1030,6 @@ mono_arch_handle_exception (void *uc, gpointer obj, gboolean test_only)
 				tmp = g_strdup_printf ("%s%s\n", strace, trace);
 				g_free (strace);
 
-printf("%s\n",tmp);
 				mono_ex->stack_trace = mono_string_new (domain, tmp);
 
 				g_free (tmp);
@@ -1101,6 +1100,16 @@ printf("%s\n",tmp);
 }
 
 /*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_ip_from_context                         */
+/*                                                                  */
+/* Function	- Return the instruction pointer from the context.  */
+/*                                                                  */
+/* Parameters   - sigctx    - Saved processor state                 */
+/*                                                                  */
+/*------------------------------------------------------------------*/
 
 gpointer
 mono_arch_ip_from_context (void *sigctx)
