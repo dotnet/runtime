@@ -1,3 +1,9 @@
+2004-06-29  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/Makefile.am (gmcs_exe): New.  Set only if not W32.
+	(monotwo_DATA): Use it.
+	From Atsushi Enomoto.
+
 2004-06-24  Raja R Harinath  <rharinath@novell.com>
 
 	* runtime/net_2_0/Makefile.am (gac_assemblies_list): Put back
