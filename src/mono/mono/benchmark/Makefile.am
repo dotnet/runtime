@@ -26,7 +26,8 @@ TESTSRC=			\
 	math.cs			\
 	boxtest.cs		\
 	valuetype1.cs		\
-	valuetype2.cs
+	valuetype2.cs		\
+	valuetype3.cs
 
 TESTSI_TMP=$(TESTSRC:.cs=.exe)
 TESTSI=$(TESTSI_TMP:.il=.exe)
