@@ -351,6 +351,24 @@ mono_mb_emit_ldflda (MonoMethodBuilder *mb, gint32 offset)
 	}
 }
 
+static int
+mono_mb_emit_proxy_check (MonoMethodBuilder *mb, int branch_code)
+{
+	int pos;
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoObject, vtable));
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoVTable, klass));
+	mono_mb_emit_byte (mb, CEE_ADD);
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_defaults.transparent_proxy_class));
+	mono_mb_emit_byte (mb, branch_code);
+	pos = mb->pos;
+	mono_mb_emit_i4 (mb, 0);
+	return pos;
+}
+
 void
 mono_mb_emit_i4 (MonoMethodBuilder *mb, gint32 data)
 {
@@ -1312,15 +1330,11 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 		return res;
 
 	if (!csig) {
-		int sigsize = sizeof (MonoMethodSignature) + 2 * sizeof (MonoType *);
-		csig = g_malloc0 (sigsize);
-
-		/* MonoObject *remoting_wrapper (MonoMethod *method, gpointer params[]) */
-		csig->param_count = 2;
-		csig->pinvoke = 1;
-		csig->ret = &mono_defaults.object_class->byval_arg;
+		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
 		csig->params [0] = &mono_defaults.int_class->byval_arg;
 		csig->params [1] = &mono_defaults.int_class->byval_arg;
+		csig->ret = &mono_defaults.object_class->byval_arg;
+		csig->pinvoke = 1;
 	}
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_REMOTING_INVOKE);
@@ -1344,6 +1358,56 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 	g_hash_table_insert (cache, method, res);
+	return res;
+}
+
+MonoMethod *
+mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
+{
+	MonoMethodSignature *sig;
+	MonoMethodBuilder *mb;
+	MonoMethod *res, *native;
+	GHashTable *cache;
+	int i, pos;
+
+	g_assert (method);
+
+	if (method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
+		return method;
+
+	sig = method->signature;
+
+	/* we cant remote methods without this pointer */
+	g_assert (sig->hasthis);
+
+	cache = method->klass->image->remoting_invoke_cache;
+	if ((res = (MonoMethod *)g_hash_table_lookup (cache, (char *)method + 1)))
+		return res;
+
+	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK);
+
+	mono_mb_emit_ldarg (mb, 0);
+	pos = mono_mb_emit_proxy_check (mb, CEE_BNE_UN);
+
+	native = mono_marshal_get_remoting_invoke (method);
+
+	for (i = 0; i <= sig->param_count; i++)
+		mono_mb_emit_ldarg (mb, i);
+	
+	mono_mb_emit_managed_call (mb, native, native->signature);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	mono_mb_patch_addr (mb, pos, mb->pos - (pos + 4));
+
+	for (i = 0; i <= sig->param_count; i++)
+		mono_mb_emit_ldarg (mb, i);
+		
+	mono_mb_emit_managed_call (mb, method, method->signature);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
+	mono_mb_free (mb);
+	g_hash_table_insert (cache, (char *)method + 1, res);
 	return res;
 }
 
@@ -2032,19 +2096,7 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 	sig->ret = &klass->byval_arg;
 
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoObject, vtable));
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoVTable, klass));
-	mono_mb_emit_byte (mb, CEE_ADD);
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_defaults.transparent_proxy_class));
-
-	mono_mb_emit_byte (mb, CEE_BNE_UN);
-	pos0 = mb->pos;
-	mono_mb_emit_i4 (mb, 0);
+	pos0 = mono_mb_emit_proxy_check (mb, CEE_BNE_UN);
 
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldarg (mb, 1);
@@ -2200,19 +2252,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	sig->ret = &mono_defaults.void_class->byval_arg;
 
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoObject, vtable));
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoVTable, klass));
-	mono_mb_emit_byte (mb, CEE_ADD);
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_defaults.transparent_proxy_class));
-
-	mono_mb_emit_byte (mb, CEE_BNE_UN);
-	pos = mb->pos;
-	mono_mb_emit_i4 (mb, 0);
+	pos = mono_mb_emit_proxy_check (mb, CEE_BNE_UN);
 
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldarg (mb, 1);

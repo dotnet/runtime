@@ -122,6 +122,9 @@ MonoMethod *
 mono_marshal_get_remoting_invoke (MonoMethod *method);
 
 MonoMethod *
+mono_marshal_get_remoting_invoke_with_check (MonoMethod *method);
+
+MonoMethod *
 mono_marshal_get_delegate_begin_invoke (MonoMethod *method);
 
 MonoMethod *

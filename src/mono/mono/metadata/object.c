@@ -719,7 +719,6 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 {
 	MonoDomain *domain;
 	gpointer pa [1];
-	MonoObject *res;
 	int rval;
 
 	g_assert (args);

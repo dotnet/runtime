@@ -3030,7 +3030,7 @@ ves_icall_RuntimeMethod_GetFunctionPointer (MonoMethod *method)
 char * mono_cfg_dir = "";
 
 void    
-mono_install_get_config_dir()
+mono_install_get_config_dir (void)
 {       
   mono_cfg_dir = getenv ("MONO_CFG_DIR");
 
