@@ -23,7 +23,6 @@ struct _MonoClass {
 
 	guint dummy           : 1; /* temorary hack */
 	guint inited          : 1;
-	guint metadata_inited : 1;
 	guint valuetype       : 1; /* derives from System.ValueType */
 	guint enumtype        : 1; /* derives from System.Enum */
 	guint min_align       : 4;
@@ -84,11 +83,14 @@ struct _MonoClass {
 	gpointer vtable [0];
 };
 
+typedef gpointer (*MonoTrampoline)       (MonoMethod *method);
+typedef void     (*MonoRuntimeClassInit) (MonoClass *klass);
+
 MonoClass *
 mono_class_get             (MonoImage *image, guint32 type_token);
 
 void
-mono_class_metadata_init   (MonoClass *klass);
+mono_class_init            (MonoClass *klass);
 
 MonoClass *
 mono_class_from_name       (MonoImage *image, const char* name_space, const char *name);
@@ -123,9 +125,10 @@ mono_class_from_mono_type  (MonoType *type);
 gpointer
 mono_ldtoken               (MonoImage *image, guint32 token, MonoClass **retclass);
 
-typedef gpointer (*MonoTrampoline) (MonoMethod *method);
-
 void
 mono_install_trampoline (MonoTrampoline func);
+
+void
+mono_install_runtime_class_init (MonoRuntimeClassInit func);
 
 #endif /* _MONO_CLI_CLASS_H_ */

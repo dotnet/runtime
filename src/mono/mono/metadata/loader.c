@@ -265,7 +265,7 @@ mono_field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass
 			mimage = image->references [scopeindex-1]->image;
 
 			klass = mono_class_from_name (mimage, nspace, name);
-			mono_class_metadata_init (klass);
+			mono_class_init (klass);
 
 			/* mostly dumb search for now */
 			for (i = 0; i < klass->field.count; ++i) {
@@ -339,7 +339,7 @@ method_from_memberref (MonoImage *image, guint32 index)
 			mimage = image->references [scopeindex-1]->image;
 
 			klass = mono_class_from_name (mimage, nspace, name);
-			mono_class_metadata_init (klass);
+			mono_class_init (klass);
 
 			/* 
 			 * FIXME: this is a workaround for the different signatures
@@ -589,7 +589,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 	for (i = 0; i < method->signature->param_count; ++i)
 		names [i] = "";
 
-	mono_class_metadata_init (klass);
+	mono_class_init (klass);
 	if (!klass->methods)
 		return;
 

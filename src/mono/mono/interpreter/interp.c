@@ -100,12 +100,13 @@ interp_ex_handler (MonoException *ex) {
 }
 
 static void
-interp_ex_obj_init(MonoObject *obj, MonoClass *klass)
+runtime_object_init (MonoObject *obj)
 {
 	int i;
 	MonoInvocation call;
 	MonoMethod *method = NULL;
-	
+	MonoClass *klass = obj->klass;
+
 	for (i = 0; i < klass->method.count; ++i) {
 		if (!strcmp (".ctor", klass->methods [i]->name) &&
 		    klass->methods [i]->signature->param_count == 0) {
@@ -139,34 +140,23 @@ ves_real_abort (int line, MonoMethod *mh,
 #define ves_abort() do {ves_real_abort(__LINE__, frame->method, ip, frame->stack, sp); THROW_EX (get_exception_execution_engine (), ip);} while (0);
 
 /*
- * init_class:
+ * runtime_class_init:
  * @klass: klass that needs to be initialized
  *
- * This routine calls the class constructor for @class if it needs it.
+ * This routine calls the class constructor for @class.
  */
 static void
-init_class (MonoClass *klass)
+runtime_class_init (MonoClass *klass)
 {
 	MonoMethod *method;
 	MonoInvocation call;
 	int i;
 
-	if (!klass->metadata_inited)
-		mono_class_metadata_init (klass);
-
-	if (klass->inited)
-		return;
-
-	if (klass->parent && !klass->parent->inited)
-		init_class (klass->parent);
-	
-	klass->inited = 1;
-
 	for (i = 0; i < klass->method.count; ++i) {
 		method = klass->methods [i];
-		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && (strcmp (".cctor", method->name) == 0)) {
+		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
+		    (strcmp (".cctor", method->name) == 0)) {
 			INIT_FRAME (&call, NULL, NULL, NULL, NULL, method);
-	
 			ves_exec_method (&call);
 			return;
 		}
@@ -184,7 +174,7 @@ get_virtual_method (MonoMethod *m, stackval *objs)
 	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL))
 			return m;
 
-	g_assert (m->klass->metadata_inited);
+	g_assert (m->klass->inited);
 
 	obj = objs->data.p;
 	klass = obj->klass;
@@ -194,116 +184,6 @@ get_virtual_method (MonoMethod *m, stackval *objs)
 		return *(MonoMethod**)(klass->interface_offsets [m->klass->interface_id] + (m->slot<<2));
 
 	return vtable [m->slot];
-}
-
-static MonoObject*
-get_exception_divide_by_zero ()
-{
-	static MonoObject *ex = NULL;
-	if (ex)
-		return ex;
-	ex = mono_exception_from_name (mono_defaults.corlib, "System",
-				       "DivideByZeroException");
-	return ex;
-}
-
-static MonoObject*
-get_exception_security ()
-{
-	static MonoObject *ex = NULL;
-	if (ex)
-		return ex;
-	ex = mono_exception_from_name (mono_defaults.corlib, "System",
-				       "SecurityException");
-	return ex;
-}
-
-static MonoObject*
-get_exception_arithmetic ()
-{
-	static MonoObject *ex = NULL;
-	if (ex)
-		return ex;
-	ex = mono_exception_from_name (mono_defaults.corlib, "System",
-				       "ArithmeticException");
-	return ex;
-}
-
-static MonoObject*
-get_exception_overflow ()
-{
-	static MonoObject *ex = NULL;
-	if (ex)
-		return ex;
-	ex = mono_exception_from_name (mono_defaults.corlib, "System",
-				       "OverflowException");
-	return ex;
-}
-
-static MonoObject*
-get_exception_null_reference ()
-{
-	static MonoObject *ex = NULL;
-	if (ex)
-		return ex;
-	ex = mono_exception_from_name (mono_defaults.corlib, "System",
-				       "NullReferenceException");
-	return ex;
-}
-
-static MonoObject*
-get_exception_execution_engine ()
-{
-	static MonoObject *ex = NULL;
-	if (ex)
-		return ex;
-	ex = mono_exception_from_name (mono_defaults.corlib, "System",
-				       "ExecutionEngineException");
-	return ex;
-}
-
-static MonoObject*
-get_exception_invalid_cast ()
-{
-	static MonoObject *ex = NULL;
-	if (ex)
-		return ex;
-	ex = mono_exception_from_name (mono_defaults.corlib, "System",
-				       "InvalidCastException");
-	return ex;
-}
-
-static MonoObject*
-get_exception_index_out_of_range ()
-{
-	static MonoObject *ex = NULL;
-	if (ex)
-		return ex;
-	ex = mono_exception_from_name (mono_defaults.corlib, "System",
-				       "IndexOutOfRangeException");
-	return ex;
-}
-
-static MonoObject*
-get_exception_array_type_mismatch ()
-{
-	static MonoObject *ex = NULL;
-	if (ex)
-		return ex;
-	ex = mono_exception_from_name (mono_defaults.corlib, "System",
-				       "ArrayTypeMismatchException");
-	return ex;
-}
-
-static MonoObject*
-get_exception_missing_method ()
-{
-	static MonoObject *ex = NULL;
-	if (ex)
-		return ex;
-	ex = mono_exception_from_name (mono_defaults.corlib, "System",
-				       "MissingMethodException");
-	return ex;
 }
 
 void inline
@@ -603,7 +483,7 @@ ves_runtime_method (MonoInvocation *frame)
 	MonoObject *obj = (MonoObject*)frame->obj;
 	MonoDelegate *delegate = (MonoDelegate*)frame->obj;
 
-	init_class(mono_defaults.delegate_class);
+	mono_class_init (mono_defaults.delegate_class);
 	
 	if (*name == '.' && (strcmp (name, ".ctor") == 0) && obj &&
 			mono_object_isinst (obj, mono_defaults.delegate_class)) {
@@ -834,8 +714,7 @@ ves_exec_method (MonoInvocation *frame)
 	vtallocation *vtalloc = NULL;
 	GOTO_LABEL_VARS;
 
-	if (!frame->method->klass->inited)
-		init_class (frame->method->klass);
+	mono_class_init (frame->method->klass);
 
 	DEBUG_ENTER ();
 
@@ -2144,8 +2023,7 @@ array_constructed:
 			token = read32 (ip);
 			c = mono_class_get (image, token);
 
-			if (!c->inited)
-				init_class (c);
+			mono_class_init (c);
 
 			g_assert (sp [-1].type == VAL_OBJ);
 
@@ -2297,13 +2175,11 @@ array_constructed:
 			/* need to handle fieldrefs */
 			if (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF) {
 				field = mono_field_from_memberref (image, token, &klass);
-				if (!klass->inited)
-					init_class (klass);
+				mono_class_init (klass);
 			} else {
 				klass = mono_class_get (image, 
 					MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
-				if (!klass->inited)
-					init_class (klass);
+				mono_class_init (klass);
 				field = mono_class_get_field (klass, token);
 			}
 			g_assert (field);
@@ -2331,8 +2207,7 @@ array_constructed:
 			/* need to handle fieldrefs */
 			klass = mono_class_get (image, 
 				MONO_TOKEN_TYPE_DEF | mono_metadata_typedef_from_field (image, token & 0xffffff));
-			if (!klass->inited)
-				init_class (klass);
+			mono_class_init (klass);
 			field = mono_class_get_field (klass, token);
 			g_assert (field);
 			stackval_to_data (field->type, sp, (char*)MONO_CLASS_STATIC_FIELDS_BASE(klass) + field->offset);
@@ -3362,7 +3237,7 @@ test_load_class (MonoImage* image)
 
 	for (i = 1; i <= t->rows; ++i) {
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | i);
-		mono_class_metadata_init (klass);
+		mono_class_init (klass);
 	}
 }
 #endif
@@ -3516,7 +3391,7 @@ check_corlib (MonoImage *corlib)
 			klass = mono_class_from_name (corlib, ndesc->name, cdesc->name);
 			if (!klass)
 				g_error ("Cannot find class %s", cdesc->name);
-			mono_class_metadata_init (klass);
+			mono_class_init (klass);
 			for (fdesc = cdesc->fields; fdesc->name; ++fdesc) {
 				field = mono_class_get_field_from_name (klass, fdesc->name);
 				if (!field || (field->offset != fdesc->offset))
@@ -3556,8 +3431,13 @@ main (int argc, char *argv [])
 
 	mono_init ();
 	mono_init_icall ();
+
+	mono_install_runtime_class_init (runtime_class_init);
+	mono_install_runtime_object_init (runtime_object_init);
+
 	mono_install_handler (interp_ex_handler);
-	mono_exception_install_handlers(init_class, interp_ex_obj_init);
+
+	//mono_exception_install_handlers(init_class, interp_ex_obj_init);
 	
 	mono_add_internal_call ("__array_Set", ves_array_set);
 	mono_add_internal_call ("__array_Get", ves_array_get);

@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <mono/metadata/tabledefs.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
@@ -19,6 +20,20 @@
 #define PAGESIZE 4096
 #endif
 #endif
+
+static void
+default_runtime_object_init (MonoObject *o)
+{
+	return;
+}
+
+MonoRuntimeObjectInit mono_runtime_object_init = default_runtime_object_init;
+
+void
+mono_install_runtime_object_init (MonoRuntimeObjectInit func)
+{
+	mono_runtime_object_init = func? func: default_runtime_object_init;
+}
 
 /**
  * mono_object_allocate:
@@ -64,8 +79,8 @@ mono_object_new (MonoClass *klass)
 {
 	MonoObject *o;
 
-	if (!klass->metadata_inited)
-		mono_class_metadata_init (klass);
+	if (!klass->inited)
+		mono_class_init (klass);
 
 	o = mono_object_allocate (klass->instance_size);
 	o->klass = klass;
@@ -122,8 +137,8 @@ mono_array_new_full (MonoClass *array_class, guint32 *lengths, guint32 *lower_bo
 	MonoArrayBounds *bounds;
 	int i;
 
-	if (!array_class->metadata_inited)
-		mono_class_metadata_init (array_class);
+	if (!array_class->inited)
+		mono_class_init (array_class);
 	byte_len = mono_array_element_size (array_class);
 
 	bounds = g_malloc0 (sizeof (MonoArrayBounds) * array_class->rank);
@@ -255,19 +270,31 @@ mono_value_box (MonoClass *class, gpointer value)
  * @obj: an object
  * @klass: a pointer to a class 
  *
- * Returns: #TRUE if @obj is derived from @klass
+ * Returns: @obj if @obj is derived from @klass
  */
-gboolean
+MonoObject *
 mono_object_isinst (MonoObject *obj, MonoClass *klass)
 {
-	MonoClass *oklass = obj->klass;
+	MonoClass *oklass;
 
-	while (oklass) {
-		if (oklass == klass)
-			return TRUE;
-		oklass = oklass->parent;
+	if (!obj)
+		return NULL;
+
+	oklass = obj->klass;
+
+	if (!klass->inited)
+		mono_class_init (klass);
+
+	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		if ((klass->interface_id <= oklass->max_interface_id) &&
+		    oklass->interface_offsets [klass->interface_id])
+			return obj;
+	} else {
+		if ((oklass->baseval - klass->baseval) <= klass->diffval)
+			return obj;
 	}
-	return FALSE;
+
+	return NULL;
 }
 
 static GHashTable *ldstr_table = NULL;

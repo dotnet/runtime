@@ -143,9 +143,6 @@ mono_analyze_stack         (MonoFlowGraph *cfg);
 void
 mono_disassemble_code      (guint8 *code, int size);
 
-void
-mono_jit_init_class        (MonoClass *klass);
-
 gpointer 
 arch_compile_method        (MonoMethod *method);
 
@@ -162,6 +159,5 @@ mono_print_ctree           (MBTree *tree);
 
 void
 mono_print_forest          (GPtrArray *forest);
-
 
 #endif

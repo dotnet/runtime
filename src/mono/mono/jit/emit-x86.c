@@ -91,6 +91,9 @@ enter_method (MonoMethod *method, gpointer ebp)
 		case MONO_TYPE_I8:
 			printf ("%lld, ", *((gint64 *)(ebp)));
 			break;
+		case MONO_TYPE_R4:
+			printf ("%f, ", *((float *)(ebp)));
+			break;
 		case MONO_TYPE_R8:
 			printf ("%f, ", *((double *)(ebp)));
 			break;
@@ -116,12 +119,19 @@ leave_method (MonoMethod *method, int edx, int eax, double test)
 {
 	gint64 l;
 
+	printf ("LEAVE: %s.%s::%s ", method->klass->name_space,
+		method->klass->name, method->name);
+
 	switch (method->signature->ret->type) {
 	case MONO_TYPE_VOID:
-		printf ("LEAVE: %s.%s::%s\n", method->klass->name_space,
-			method->klass->name, method->name);
 		break;
 	case MONO_TYPE_BOOLEAN:
+		if (eax)
+			printf ("TRUE:%d", eax);
+		else 
+			printf ("FALSE");
+			
+		break;
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
@@ -131,27 +141,23 @@ leave_method (MonoMethod *method, int edx, int eax, double test)
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-		printf ("LEAVE: %s.%s::%s EAX=%d\n", method->klass->name_space,
-			method->klass->name, method->name, eax);
+		printf ("EAX=%d", eax);
 		break;
 	case MONO_TYPE_STRING:
-		printf ("LEAVE: %s.%s::%s [STRING:%s], ", method->klass->name_space,
-			method->klass->name, method->name, 
-			mono_string_to_utf8 ((MonoString *)(eax)));
+		printf ("[STRING:%s]", mono_string_to_utf8 ((MonoString *)(eax)));
 		break;
 	case MONO_TYPE_OBJECT: {
-		MonoObject *o = (MonoClass *)eax;
+		MonoObject *o = (MonoObject *)eax;
 		
-		printf ("LEAVE: %s.%s::%s ", method->klass->name_space,
-			method->klass->name, method->name);
-
 		if (o->klass == mono_defaults.boolean_class) {
-			printf ("[BOOLEAN:%p:%d]\n", o, *((guint8 *)o + sizeof (MonoObject)));		
+			printf ("[BOOLEAN:%p:%d]", o, *((guint8 *)o + sizeof (MonoObject)));		
+		} else if  (o->klass == mono_defaults.int32_class) {
+			printf ("[INT32:%p:%d]", o, *((gint32 *)((gpointer)o + sizeof (MonoObject))));	
 		} else {
 			if (o)
-				printf ("[%s.%s:%p]\n", o->klass->name_space, o->klass->name, o);
+				printf ("[%s.%s:%p]", o->klass->name_space, o->klass->name, o);
 			else
-				printf ("EAX=%p\n", (gpointer)eax);
+				printf ("[OBJECT:%p]", (gpointer)eax);
 		}
 		break;
 	}
@@ -160,23 +166,21 @@ leave_method (MonoMethod *method, int edx, int eax, double test)
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_SZARRAY:
-		printf ("LEAVE: %s.%s::%s EAX=%p\n", method->klass->name_space,
-			method->klass->name, method->name, (gpointer)eax);
+		printf ("EAX=%p", (gpointer)eax);
 		break;
 	case MONO_TYPE_I8:
 		*((gint32 *)&l) = eax;
 		*((gint32 *)&l + 1) = edx;
-		printf ("LEAVE: %s.%s::%s EAX/EDX=%lld\n", method->klass->name_space,
-			method->klass->name, method->name, l);
+		printf ("EAX/EDX=%lld", l);
 		break;
 	case MONO_TYPE_R8:
-		printf ("LEAVE: %s.%s::%s FP=%f\n", method->klass->name_space,
-			method->klass->name, method->name, test);
+		printf ("FP=%f\n", test);
 		break;
 	default:
-		printf ("LEAVE: %s.%s::%s (unknown return type)\n", method->klass->name_space,
-			method->klass->name, method->name);
+		printf ("(unknown return type)");
 	}
+
+	printf ("\n");
 }
 
 /**
@@ -430,14 +434,18 @@ mono_label_cfg (MonoFlowGraph *cfg)
 }
 
 static void
-tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs) 
+tree_preallocate_regs (MBTree *tree, int goal, MonoRegSet *rs) 
 {
-	MBTree *kids[10];
-	int ern = mono_burg_rule (tree->state, goal);
-	guint16 *nts = mono_burg_nts [ern];
-	int i;
-	
-	mono_burg_kids (tree, ern, kids);
+	switch (tree->op) {
+	case MB_TERM_CALL_I4:
+	case MB_TERM_CALL_I8:
+	case MB_TERM_CALL_R8:
+//	case MB_TERM_CALL_VOID :
+		tree->reg1 = mono_regset_alloc_reg (rs, X86_EAX, tree->exclude_mask);
+		tree->reg2 = mono_regset_alloc_reg (rs, X86_EDX, tree->exclude_mask);
+		tree->reg3 = mono_regset_alloc_reg (rs, X86_ECX, tree->exclude_mask);
+		break;
+	}
 
 	switch (goal) {
 	case MB_NTERM_reg:
@@ -449,19 +457,12 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 			tree->exclude_mask |= (1 << X86_ECX);
 			tree->left->exclude_mask |= (1 << X86_ECX);
 			break;
-		case MB_TERM_CALL_I4:
-			tree->reg1 = X86_EAX;
-			break;
-		case MB_TERM_CALL_I8:
-			tree->reg1 = X86_EAX;
-			tree->reg2 = X86_EDX;
-			break;
 		case MB_TERM_DIV:
 		case MB_TERM_DIV_UN:
 		case MB_TERM_REM:
 		case MB_TERM_REM_UN:
-			tree->reg1 = X86_EAX;
-			tree->reg2 = X86_EDX;
+			tree->reg1 = mono_regset_alloc_reg (rs, X86_EAX, tree->exclude_mask);
+			tree->reg2 = mono_regset_alloc_reg (rs, X86_EDX, tree->exclude_mask);
 			if (goal == MB_NTERM_reg) {
 				tree->left->exclude_mask |= (1 << X86_EDX);
 				tree->right->exclude_mask |= (1 << X86_EDX);
@@ -470,10 +471,22 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 		default:
 			break;
 		}
+		break;
 	}
 	default:
 		break;
 	}
+}
+
+static void
+tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs) 
+{
+	MBTree *kids[10];
+	int ern = mono_burg_rule (tree->state, goal);
+	guint16 *nts = mono_burg_nts [ern];
+	int i;
+	
+	mono_burg_kids (tree, ern, kids);
 
 	//printf ("RALLOC START %d %p %d\n",  tree->op, rs->free_mask, goal);
 
@@ -484,29 +497,33 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 	}
 
 	for (i = 0; nts [i]; i++)
+		tree_preallocate_regs (kids [i], nts [i], rs);
+
+	for (i = 0; nts [i]; i++)
 		tree_allocate_regs (kids [i], nts [i], rs);
 
 	for (i = 0; nts [i]; i++) {
 		mono_regset_free_reg (rs, kids [i]->reg1);
 		mono_regset_free_reg (rs, kids [i]->reg2);
+		mono_regset_free_reg (rs, kids [i]->reg3);
 	}
 
 	switch (goal) {
 	case MB_NTERM_reg:
-		if ((tree->reg1 = 
-		     mono_regset_alloc_reg (rs, tree->reg1, tree->exclude_mask)) == -1) {
-			g_warning ("register allocation failed %d 0x%08x 0x%08x\n",  tree->reg1, rs->free_mask, tree->exclude_mask);
-			g_assert_not_reached ();
+		if (tree->reg1 < 0) { 
+			tree->reg1 = mono_regset_alloc_reg (rs, -1, tree->exclude_mask);
+			g_assert (tree->reg1 != -1);
 		}
 		break;
 
 	case MB_NTERM_lreg:
-		if ((tree->reg1 = 
-		     mono_regset_alloc_reg (rs, tree->reg1, tree->exclude_mask)) == -1 ||
-		    (tree->reg2 = 
-		     mono_regset_alloc_reg (rs, tree->reg2, tree->exclude_mask)) == -1) {
-			g_warning ("register allocation failed\n");
-			g_assert_not_reached ();
+		if (tree->reg1 < 0) { 
+			tree->reg1 = mono_regset_alloc_reg (rs, -1, tree->exclude_mask);
+			g_assert (tree->reg1 != -1);
+		}
+		if (tree->reg2 < 0) { 
+			tree->reg2 = mono_regset_alloc_reg (rs, -1, tree->exclude_mask);
+			g_assert (tree->reg2 != -1);
 		}
 		break;
 
@@ -519,9 +536,6 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 			tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
 			tree->reg2 = mono_regset_alloc_reg (rs, tree->right->reg1, tree->exclude_mask);
 		}
-		//if (tree->op == MB_TERM_CALL_I4) {
-		//tree->reg1 = mono_regset_alloc_reg (rs, tree->left->reg1, tree->exclude_mask);
-		//}
 		break;
 		
 	case MB_NTERM_base:
@@ -693,7 +707,7 @@ arch_compile_method (MonoMethod *method)
 			delegate = TRUE;
 				
 		if (!target_offset) {
-			mono_jit_init_class (mono_defaults.delegate_class);
+			mono_class_init (mono_defaults.delegate_class);
 
 			field = mono_class_get_field_from_name (mono_defaults.delegate_class, "m_target");
 			target_offset = field->offset;

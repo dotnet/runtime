@@ -34,11 +34,25 @@ default_trampoline (MonoMethod *method)
 	return method;
 }
 
+static void
+default_runtime_class_init (MonoClass *klass)
+{
+	return;
+}
+
 static MonoTrampoline arch_create_jit_trampoline = default_trampoline;
+static MonoRuntimeClassInit mono_runtime_class_init = default_runtime_class_init;
 
 void
-mono_install_trampoline (MonoTrampoline func) {
+mono_install_trampoline (MonoTrampoline func) 
+{
 	arch_create_jit_trampoline = func? func: default_trampoline;
+}
+
+void
+mono_install_runtime_class_init (MonoRuntimeClassInit func)
+{
+	mono_runtime_class_init = func? func: default_runtime_class_init;
 }
 
 static MonoClass *
@@ -183,7 +197,7 @@ class_compute_field_layout (MonoClass *class)
 }
 
 void
-mono_class_metadata_init (MonoClass *class)
+mono_class_init (MonoClass *class)
 {
 	MonoClass *k, *ic;
 	MonoMethod **tmp_vtable, **vtable = (MonoMethod **)class->vtable;
@@ -191,13 +205,13 @@ mono_class_metadata_init (MonoClass *class)
 
 	g_assert (class);
 
-	if (class->metadata_inited)
+	if (class->inited)
 		return;
-	class->metadata_inited = 1;
+	class->inited = 1;
 
 	if (class->parent) {
-		if (!class->parent->metadata_inited)
-			mono_class_metadata_init (class->parent);
+		if (!class->parent->inited)
+			mono_class_init (class->parent);
 		class->instance_size += class->parent->instance_size;
 		class->class_size += class->parent->class_size;
 		class->min_align = class->parent->min_align;
@@ -235,8 +249,8 @@ mono_class_metadata_init (MonoClass *class)
 		for (i = 0; i < k->interface_count; i++) {
 			ic = k->interfaces [i];
 
-			if (!ic->metadata_inited)
-				mono_class_metadata_init (ic);
+			if (!ic->inited)
+				mono_class_init (ic);
 
 			if (max_iid < ic->interface_id)
 				max_iid = ic->interface_id;
@@ -422,6 +436,8 @@ mono_class_metadata_init (MonoClass *class)
 		if (!(cm->flags & METHOD_ATTRIBUTE_ABSTRACT))
 			vtable [cm->slot] = arch_create_jit_trampoline (cm);
 	}
+
+	mono_runtime_class_init (class);
 
 	/*
 	for (i = 0; i < class->vtable_size; ++i) {
@@ -772,8 +788,8 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 	if (!parent)
 		parent = mono_defaults.array_class;
 
-	if (!parent->metadata_inited)
-		mono_class_metadata_init (parent);
+	if (!parent->inited)
+		mono_class_init (parent);
 
 	image = eclass->image;
 
@@ -824,8 +840,8 @@ gint32
 mono_class_instance_size (MonoClass *klass)
 {
 	
-	if (!klass->metadata_inited)
-		mono_class_metadata_init (klass);
+	if (!klass->inited)
+		mono_class_init (klass);
 
 	return klass->instance_size;
 }
@@ -871,8 +887,8 @@ gint32
 mono_class_data_size (MonoClass *klass)
 {
 	
-	if (!klass->metadata_inited)
-		mono_class_metadata_init (klass);
+	if (!klass->inited)
+		mono_class_init (klass);
 
 	return klass->class_size;
 }
@@ -1040,7 +1056,7 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class)
 		MonoClass *class;
 		guint32 type = mono_metadata_typedef_from_field (image, mono_metadata_token_index (token));
 		class = mono_class_get (image, MONO_TOKEN_TYPE_DEF | type);
-		mono_class_metadata_init (class);
+		mono_class_init (class);
 		if (handle_class)
 				*handle_class = mono_class_from_name (mono_defaults.corlib, "System", "RuntimeFieldHandle");
 		return mono_class_get_field (class, token);

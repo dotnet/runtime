@@ -46,6 +46,10 @@ typedef struct {
 	gpointer    method_ptr;
 } MonoDelegate;
 
+typedef void  (*MonoRuntimeObjectInit) (MonoObject *o);
+
+extern MonoRuntimeObjectInit mono_runtime_object_init;
+
 #define mono_array_length(array) ((array)->bounds->length)
 #define mono_array_addr(array,type,index) ( ((char*)(array)->vector) + sizeof (type) * (index) )
 #define mono_array_addr_with_size(array,size,index) ( ((char*)(array)->vector) + (size) * (index) )
@@ -97,7 +101,7 @@ mono_value_box              (MonoClass *klass, gpointer val);
 MonoObject *
 mono_object_clone           (MonoObject *obj);
 
-gboolean
+MonoObject *
 mono_object_isinst          (MonoObject *obj, MonoClass *klass);
 
 typedef void (*MonoExceptionFunc) (MonoException *ex);
@@ -107,6 +111,39 @@ mono_install_handler        (MonoExceptionFunc func);
 
 void
 mono_raise_exception        (MonoException *ex);
+
+void
+mono_install_runtime_object_init (MonoRuntimeObjectInit func);
+
+MonoObject*
+get_exception_divide_by_zero      (void);
+
+MonoObject*
+get_exception_security            (void);
+
+MonoObject*
+get_exception_arithmetic          (void);
+
+MonoObject*
+get_exception_overflow            (void);
+
+MonoObject*
+get_exception_null_reference      (void);
+
+MonoObject*
+get_exception_execution_engine    (void);
+
+MonoObject*
+get_exception_invalid_cast        (void);
+
+MonoObject*
+get_exception_index_out_of_range  (void);
+
+MonoObject*
+get_exception_array_type_mismatch (void);
+
+MonoObject*
+get_exception_missing_method      (void);
 
 #endif
 

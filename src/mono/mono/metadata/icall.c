@@ -251,8 +251,8 @@ ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, 
 	g_free (namespace);
 	if (!klass)
 		return NULL;
-	if (!klass->metadata_inited)
-		mono_class_metadata_init (klass);
+	if (!klass->inited)
+		mono_class_init (klass);
 
 	return my_mono_new_mono_type (&klass->byval_arg);
 }

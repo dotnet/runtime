@@ -216,7 +216,7 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 	for (i = 0; name [i]; ++i)
 		if (name [i] == '.') name [i] = '_';
 
-	mono_class_metadata_init (klass);
+	mono_class_init (klass);
 	/*
 	 * Find the method index in the image.
 	 */
@@ -297,7 +297,7 @@ mono_debug_add_type (MonoDebugHandle* debug, MonoClass *klass)
 	char buf [64];
 	AssemblyDebugInfo* info = mono_debug_open_ass (debug, klass->image);
 
-	mono_class_metadata_init (klass);
+	mono_class_init (klass);
 
 	/* output enums ...*/
 	if (klass->enumtype) {
