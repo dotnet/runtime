@@ -2611,27 +2611,27 @@ check_corlib (MonoImage *corlib)
 	}
 	if (i < klass->field.count) {
 		cindex = mono_metadata_get_constant_index (corlib, MONO_TOKEN_FIELD_DEF | (i + 1), 0);
-		g_assert (cindex);
-
-		mono_metadata_decode_row (&corlib->tables [MONO_TABLE_CONSTANT], cindex - 1, constant_cols, MONO_CONSTANT_SIZE);
-		version = 0;
-		switch (constant_cols [MONO_CONSTANT_TYPE]) {
-		case MONO_TYPE_U1: {
-			guint8 *version_ptr = (guint8*)mono_metadata_blob_heap (corlib, constant_cols [MONO_CONSTANT_VALUE]);
-			version = *version_ptr;
-			break;
-		}
-		case MONO_TYPE_U2: {
-			guint16 *version_ptr = (guint16*)mono_metadata_blob_heap (corlib, constant_cols [MONO_CONSTANT_VALUE]);
-			version = read16 (version_ptr);
-			break;
-		}
-		default:
-			g_assert_not_reached ();
-		}
-		if (version != MONO_CORLIB_VERSION) {
-			result = g_string_new ("");
-			g_string_append_printf (result, "expected corlib version %d, found %d.\n", MONO_CORLIB_VERSION, version);
+		if (cindex) {
+			mono_metadata_decode_row (&corlib->tables [MONO_TABLE_CONSTANT], cindex - 1, constant_cols, MONO_CONSTANT_SIZE);
+			version = 0;
+			switch (constant_cols [MONO_CONSTANT_TYPE]) {
+			case MONO_TYPE_U1: {
+				guint8 *version_ptr = (guint8*)mono_metadata_blob_heap (corlib, constant_cols [MONO_CONSTANT_VALUE]);
+				version = *version_ptr;
+				break;
+			}
+			case MONO_TYPE_U2: {
+				guint16 *version_ptr = (guint16*)mono_metadata_blob_heap (corlib, constant_cols [MONO_CONSTANT_VALUE]);
+				version = read16 (version_ptr);
+				break;
+			}
+			default:
+				g_assert_not_reached ();
+			}
+			if (version != MONO_CORLIB_VERSION) {
+				result = g_string_new ("");
+				g_string_append_printf (result, "expected corlib version %d, found %d.\n", MONO_CORLIB_VERSION, version);
+			}
 		}
 	}
 	else {
