@@ -136,7 +136,7 @@ mono_debug_close_mono_symbol_file (MonoSymbolFile *symfile)
 static gchar *
 read_string (const char *ptr)
 {
-	int len = *((guint32 *) ptr);
+	int len = read32 (ptr);
 	ptr += sizeof(guint32);
 	return g_filename_from_utf8 (ptr, len, NULL, NULL, NULL);
 }
