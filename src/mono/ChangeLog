@@ -1,3 +1,8 @@
+2005-02-25  Raja R Harinath  <rharinath@novell.com>
+
+	* runtime/Makefile.am (centum_nunit_tests): Remove.  The
+	functionality has been moved to mcs/Makefile.
+	(test_select): Set ONLY_CENTUM_TESTS.
 
 Thu Feb 24 15:16:18 CET 2005 Paolo Molaro <lupus@ximian.com>
 
