@@ -2519,7 +2519,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 #define TYPE_PARAM_TO_TYPE(num) (method->klass->generic_inst->type_argv [(num)])
 #define TYPE_PARAM_TO_CLASS(num) (mono_class_from_mono_type (TYPE_PARAM_TO_TYPE ((num))))
 
-#define MTYPE_PARAM_TO_TYPE(num) (method->signature->gen_method->mtype_argv [(num)])
+#define MTYPE_PARAM_TO_TYPE(num) (((MonoMethodInflated *) method)->gmethod->mtype_argv [(num)])
 #define MTYPE_PARAM_TO_CLASS(num) (mono_class_from_mono_type (MTYPE_PARAM_TO_TYPE ((num))))
 
 
@@ -2604,11 +2604,12 @@ static MonoClassField *
 inflate_generic_field (MonoClassField *field, MonoMethod *method, MonoClass **retclass)
 {
 	MonoGenericInst *ginst;
-	MonoGenericMethod *gmethod;
+	MonoGenericMethod *gmethod = NULL;
 	MonoClassField *res;
 
 	ginst = method->klass->generic_inst;
-	gmethod = method->signature->gen_method;
+	if (method->signature->is_inflated)
+		gmethod = ((MonoMethodInflated *) method)->gmethod;
 
 	res = g_new0 (MonoClassField, 1);
 	*res = *field;
@@ -2634,12 +2635,11 @@ mini_get_method (MonoImage *image, guint32 token, MonoMethod *calling_method)
 	MonoMethod *method = mono_get_method (image, token, NULL);
 	MonoGenericMethod *gmethod;
 
-	if (!calling_method->signature->gen_method || !method->signature->gen_method)
+	if (!calling_method->signature->is_inflated || !method->signature->is_inflated)
 		return method;
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
-	*gmethod = *calling_method->signature->gen_method;
-	gmethod->generic_method = method;
+	*gmethod = *((MonoMethodInflated *) calling_method)->gmethod;
 	gmethod->generic_inst = calling_method->klass->generic_inst;
 
 	return mono_class_inflate_generic_method (method, gmethod, NULL);
@@ -2651,12 +2651,12 @@ mini_get_class (MonoImage *image, guint32 token, MonoMethod *calling_method)
 	MonoClass *klass = mono_class_get (image, token);
 	MonoType *inflated;
 
-	if (!calling_method->signature->gen_method || !klass->generic_inst)
+	if (!calling_method->signature->is_inflated || !klass->generic_inst)
 		return klass;
 
 	inflated = mono_class_inflate_generic_type (
 		&klass->byval_arg, calling_method->klass->generic_inst,
-		calling_method->signature->gen_method);
+		((MonoMethodInflated *) calling_method)->gmethod);
 
 	return mono_class_from_mono_type (inflated);
 }

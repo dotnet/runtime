@@ -249,7 +249,7 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 		g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) &&
 			  !(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 			  method->signature);
-		g_assert (method->signature->gen_method);
+		g_assert (method->signature->is_inflated);
 
 		return method->signature;
 	}
@@ -329,7 +329,6 @@ method_from_memberref (MonoImage *image, guint32 idx)
 			else if (klass->generic_inst && (klass != method->klass)) {
 				MonoGenericMethod *gmethod = g_new0 (MonoGenericMethod, 1);
 
-				gmethod->generic_method = method;
 				gmethod->generic_inst = klass->generic_inst;
 
 				method = mono_class_inflate_generic_method (method, gmethod, klass);
@@ -427,7 +426,6 @@ method_from_methodspec (MonoImage *image, guint32 idx)
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
-	gmethod->generic_method = method;
 	gmethod->mtype_argc = param_count;
 	gmethod->mtype_argv = g_new0 (MonoType *, param_count);
 	

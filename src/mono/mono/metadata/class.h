@@ -256,7 +256,6 @@ struct _MonoDynamicGenericInst {
 
 struct _MonoGenericMethod {
 	MonoGenericInst *generic_inst;
-	MonoMethod *generic_method;
 	gpointer reflection_info;
 	int mtype_argc;
 	MonoType **mtype_argv;

@@ -297,7 +297,7 @@ inflate_generic_signature (MonoImage *image, MonoMethodSignature *sig,
 	res->explicit_this = sig->explicit_this;
 	res->call_convention = sig->call_convention;
 	res->generic_param_count = sig->generic_param_count;
-	res->gen_method = gmethod;
+	res->is_inflated = 1;
 	return res;
 }
 
@@ -326,29 +326,37 @@ MonoMethod*
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericMethod *gmethod,
 				   MonoClass *klass)
 {
-	MonoMethod *result;
-	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
-		MonoMethodPInvoke *nmethod = g_new0 (MonoMethodPInvoke, 1);
-		*nmethod = *(MonoMethodPInvoke*)method;
-		result = (MonoMethod*)nmethod;
-	} else {
-		MonoMethodNormal *nmethod = g_new0 (MonoMethodNormal, 1);
-		*nmethod = *(MonoMethodNormal*)method;
-		result = (MonoMethod*)nmethod;
-		if (nmethod->header)
-			nmethod->header = inflate_generic_header (nmethod->header, gmethod);
-	}
+	MonoMethodInflated *result;
+
+	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
+	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+		return method;
+
+	result = g_new0 (MonoMethodInflated, 1);
+	result->nmethod = *(MonoMethodNormal*)method;
+
+	if (result->nmethod.header)
+		result->nmethod.header = inflate_generic_header (
+			result->nmethod.header, gmethod);
+
 	if (klass)
-		result->klass = klass;
+		result->nmethod.method.klass = klass;
 	else {
 		MonoType *declaring = mono_class_inflate_generic_type (
 			&method->klass->byval_arg, gmethod->generic_inst, gmethod);
-		result->klass = mono_class_from_mono_type (declaring);
+		result->nmethod.method.klass = mono_class_from_mono_type (declaring);
 	}
 
-	result->signature = inflate_generic_signature (
-		method->klass->image, result->signature, gmethod);
-	return result;
+	result->nmethod.method.signature = inflate_generic_signature (
+		method->klass->image, method->signature, gmethod);
+
+	result->gmethod = gmethod;
+	if (method->signature->is_inflated)
+		result->declaring = ((MonoMethodInflated *) method)->declaring;
+	else
+		result->declaring = method;
+
+	return (MonoMethod *) result;
 }
 
 /** 
@@ -1194,7 +1202,6 @@ inflate_method (MonoGenericInst *ginst, MonoMethod *method)
 {
 	MonoGenericMethod *gmethod = g_new0 (MonoGenericMethod, 1);
 
-	gmethod->generic_method = method;
 	gmethod->generic_inst = ginst;
 
 	return mono_class_inflate_generic_method (method, gmethod, ginst->klass);

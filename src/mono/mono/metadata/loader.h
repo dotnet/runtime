@@ -54,6 +54,12 @@ typedef struct {
 } MonoMethodWrapper;
 
 typedef struct {
+	MonoMethodNormal nmethod;
+	MonoGenericMethod *gmethod;
+	MonoMethod *declaring;
+} MonoMethodInflated;
+
+typedef struct {
 	MonoMethod method;
 	void  (*code) (void);
 	/* add marshal info */

@@ -2050,25 +2050,29 @@ ves_icall_MonoType_get_DeclaringMethod (MonoReflectionType *type)
 static MonoReflectionMethod *
 ves_icall_MethodBase_GetGenericMethodDefinition (MonoReflectionMethod *method)
 {
-	MonoGenericMethod *gmethod;
+	MonoMethodInflated *imethod;
 
 	MONO_ARCH_SAVE_REGS;
 
-	gmethod = method->method->signature->gen_method;
-	if (!gmethod)
+	if (!method->method->signature->is_inflated)
 		return NULL;
 
-	if (gmethod->reflection_info)
-		return gmethod->reflection_info;
+	imethod = (MonoMethodInflated *) method->method;
+	if (!imethod->gmethod)
+		return NULL;
+
+	if (imethod->gmethod->reflection_info)
+		return imethod->gmethod->reflection_info;
 	else
-		return mono_method_get_object (mono_object_domain (method), gmethod->generic_method, NULL);
+		return mono_method_get_object (
+			mono_object_domain (method), imethod->declaring, NULL);
 }
 
 static gboolean
 ves_icall_MethodBase_get_HasGenericParameters (MonoReflectionMethod *method)
 {
 	MONO_ARCH_SAVE_REGS;
-	return method->method->signature->gen_method != NULL;
+	return method->method->signature->is_inflated;
 }
 
 static gboolean

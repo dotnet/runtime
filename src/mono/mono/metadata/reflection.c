@@ -2260,20 +2260,18 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method)
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 token, mtoken = 0, sig;
-	MonoGenericMethod *gmethod;
 	MonoMethod *declaring;
 
 	table = &assembly->tables [MONO_TABLE_METHODSPEC];
 
-	g_assert ((gmethod = method->signature->gen_method) != NULL);
-	declaring = gmethod->generic_method;
-	if (declaring->signature->gen_method)
-		declaring = declaring->signature->gen_method->generic_method;
+	g_assert (method->signature->is_inflated);
+	declaring = ((MonoMethodInflated *) method)->declaring;
+
 	sig = method_encode_signature (assembly, declaring->signature);
 	mtoken = mono_image_get_memberref_token (assembly, &method->klass->byval_arg,
 						 declaring->name, sig);
 
-	if (!gmethod->generic_method->signature->generic_param_count)
+	if (!declaring->signature->generic_param_count)
 		return mtoken;
 
 	switch (mono_metadata_token_table (mtoken)) {
@@ -2287,7 +2285,7 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method)
 		g_assert_not_reached ();
 	}
 
-	sig = encode_generic_method_sig (assembly, gmethod);
+	sig = encode_generic_method_sig (assembly, ((MonoMethodInflated *) method)->gmethod);
 
 	if (assembly->save) {
 		alloc_table (table, table->rows + 1);
@@ -2305,21 +2303,23 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method)
 static guint32
 mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *m)
 {
-	MonoGenericMethod *gmethod;
+	MonoMethodInflated *imethod;
 	guint32 token;
 	
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, m));
 	if (token)
 		return token;
 
-	g_assert ((gmethod = m->signature->gen_method) != NULL);
+	g_assert (m->signature->is_inflated);
+	imethod = (MonoMethodInflated *) m;
 
-	if (gmethod->generic_method->signature->generic_param_count)
+	if (imethod->declaring->signature->generic_param_count)
 		token = method_encode_methodspec (assembly, m);
 	else {
-		guint32 sig = method_encode_signature (assembly, gmethod->generic_method->signature);
+		guint32 sig = method_encode_signature (
+			assembly, imethod->declaring->signature);
 		token = mono_image_get_memberref_token (
-			assembly, &m->klass->byval_arg, gmethod->generic_method->name, sig);
+			assembly, &m->klass->byval_arg, m->name, sig);
 	}
 
 	g_hash_table_insert (assembly->handleref, m, GUINT_TO_POINTER(token));
@@ -3759,7 +3759,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj)
 	else if (strcmp (klass->name, "MonoCMethod") == 0 ||
 			strcmp (klass->name, "MonoMethod") == 0) {
 		MonoReflectionMethod *m = (MonoReflectionMethod *)obj;
-		if (m->method->signature->gen_method) {
+		if (m->method->signature->is_inflated) {
 			token = mono_image_get_methodspec_token (assembly, m->method);
 		} else if (m->method->signature->generic_param_count) {
 			g_assert_not_reached ();
@@ -7122,7 +7122,6 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 		return NULL;
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
-	gmethod->generic_method = method;
 	gmethod->mtype_argc = count;
 	gmethod->mtype_argv = g_new0 (MonoType *, count);
 	for (i = 0; i < count; i++) {
@@ -7147,7 +7146,6 @@ inflate_mono_method (MonoReflectionGenericInst *type, MonoMethod *method, MonoOb
 	ginst = type->type.type->data.generic_inst;
 
 	gmethod = g_new0 (MonoGenericMethod, 1);
-	gmethod->generic_method = method;
 	gmethod->reflection_info = obj;
 	gmethod->generic_inst = ginst;
 
