@@ -21,8 +21,8 @@
 #endif
 #endif
 
-/* void
-fake_func (gdouble (*callme)(), stackval *retval, void *this_obj, stackval *arguments)
+/* gpointer
+fake_func (gpointer (*callme)(gpointer), stackval *retval, void *this_obj, stackval *arguments)
 {
 	guint32 i = 0xc002becd;
 
@@ -30,6 +30,8 @@ fake_func (gdouble (*callme)(), stackval *retval, void *this_obj, stackval *argu
 
 	*(gpointer*)retval = (gpointer)(*callme) (arguments [0].data.p, arguments [1].data.p, arguments [2].data.p);
 	*(gdouble*) retval = (gdouble)(*callme) (arguments [0].data.f);
+
+	return (gpointer) (*callme) (((MonoType *)arguments [0]. data.p)->data.klass);
 } */
 
 #define MIN_CACHE_LINE 8
@@ -80,6 +82,8 @@ add_general (guint *gr, guint *stack_size, guint *code_size, gboolean simple)
 		} else {
 			*code_size += 16;   /* 2x load from stack */
 		}
+		if ((*gr) && 1)
+			(*gr) ++;
 		(*gr) ++;
 	}
 	(*gr) ++;
@@ -369,6 +373,8 @@ emit_save_parameters (guint8 *p, MonoMethod *method, guint stack_size, guint str
 			break;
 		case MONO_TYPE_I8:
 			if (gr < 7) {
+				if (gr & 1)
+					gr ++;
 				g_warning ("check endianess");
 				ppc_lwz  (p, ppc_r3 + gr, i*16, ARG_BASE);
 				gr ++;
