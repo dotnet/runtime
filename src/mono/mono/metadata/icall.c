@@ -1070,6 +1070,14 @@ ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
 	info->ret = mono_type_get_object (domain, method->signature->ret);
 	info->attrs = method->flags;
 	info->implattrs = method->iflags;
+	if (method->signature->call_convention == MONO_CALL_DEFAULT)
+		info->callconv = 1;
+	else
+		if (method->signature->call_convention == MONO_CALL_VARARG)
+			info->callconv = 2;
+		else
+			info->callconv = 0;
+	info->callconv |= (method->signature->hasthis << 5) | (method->signature->explicit_this << 6); 
 }
 
 static MonoArray*
@@ -2582,7 +2590,9 @@ ves_icall_System_Reflection_Assembly_GetNamespaces (MonoReflectionAssembly *asse
 	int n;
 	MonoArray *res;
 	NameSpaceInfo info;
-	
+	MonoTableInfo  *t = &img->tables [MONO_TABLE_EXPORTEDTYPE];
+	int i;
+
 	MONO_ARCH_SAVE_REGS;
 
 	n = g_hash_table_size (img->name_cache);
@@ -2590,6 +2600,31 @@ ves_icall_System_Reflection_Assembly_GetNamespaces (MonoReflectionAssembly *asse
 	info.res = res;
 	info.idx = 0;
 	g_hash_table_foreach (img->name_cache, (GHFunc)foreach_namespace, &info);
+
+	/* Add namespaces from the EXPORTEDTYPES table as well */
+	if (t->rows) {
+		MonoArray *res2;
+		GPtrArray *nspaces = g_ptr_array_new ();
+		for (i = 0; i < t->rows; ++i) {
+			const char *nspace = mono_metadata_string_heap (img, mono_metadata_decode_row_col (t, i, MONO_EXP_TYPE_NAMESPACE));
+			if (!g_hash_table_lookup (img->name_cache, nspace)) {
+				g_ptr_array_add (nspaces, (char*)nspace);
+			}
+		}
+		if (nspaces->len > 0) {
+			res2 = mono_array_new (mono_object_domain (assembly), mono_defaults.string_class, n + nspaces->len);
+			memcpy (mono_array_addr (res2, MonoString*, 0),
+					mono_array_addr (res, MonoString*, 0),
+					n * sizeof (MonoString*));
+			for (i = 0; i < nspaces->len; ++i)
+				mono_array_set (res2, MonoString*, n + i, 
+								mono_string_new (mono_object_domain (assembly),
+												 g_ptr_array_index (nspaces, i)));
+			res = res2;
+		}
+		g_ptr_array_free (nspaces, TRUE);
+	}
+
 	return res;
 }
 
@@ -2919,8 +2954,6 @@ mono_module_get_types (MonoDomain *domain, MonoImage *image,
 	int i, count;
 	guint32 attrs, visibility;
 
-	MONO_ARCH_SAVE_REGS;
-
 	/* we start the count from 1 because we skip the special type <Module> */
 	if (exportedOnly) {
 		count = 0;
@@ -2951,7 +2984,43 @@ mono_module_get_types (MonoDomain *domain, MonoImage *image,
 static MonoArray*
 ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly, MonoBoolean exportedOnly)
 {
-	return mono_module_get_types (mono_object_domain (assembly), assembly->assembly->image, exportedOnly);
+	MonoArray *res;
+	MonoImage *image = assembly->assembly->image;
+	MonoTableInfo *table = &image->tables [MONO_TABLE_FILE];
+	MonoDomain *domain;
+	int i;
+
+	MONO_ARCH_SAVE_REGS;
+
+	domain = mono_object_domain (assembly);
+	res = mono_module_get_types (domain, image, exportedOnly);
+
+	/* Append data from all modules in the assembly */
+	for (i = 0; i < table->rows; ++i) {
+		if (!(mono_metadata_decode_row_col (table, i, MONO_FILE_FLAGS) & FILE_CONTAINS_NO_METADATA)) {
+			MonoImage *loaded_image = mono_assembly_load_module (image->assembly, i + 1);
+			if (loaded_image) {
+				MonoArray *res2 = mono_module_get_types (domain, loaded_image, exportedOnly);
+				/* Append the new types to the end of the array */
+				if (mono_array_length (res2) > 0) {
+					guint32 len1, len2;
+
+					len1 = mono_array_length (res);
+					len2 = mono_array_length (res2);
+					MonoArray *res3 = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
+					memcpy (mono_array_addr (res3, MonoReflectionType*, 0),
+							mono_array_addr (res, MonoReflectionType*, 0),
+							len1 * sizeof (MonoReflectionType*));
+					memcpy (mono_array_addr (res3, MonoReflectionType*, len1),
+							mono_array_addr (res2, MonoReflectionType*, 0),
+							len2 * sizeof (MonoReflectionType*));
+					res = res3;
+				}
+			}
+		}
+	}		
+
+	return res;
 }
 
 static MonoReflectionType*
@@ -2981,6 +3050,8 @@ ves_icall_System_Reflection_Module_GetGuidInternal (MonoReflectionModule *module
 static MonoArray*
 ves_icall_System_Reflection_Module_InternalGetTypes (MonoReflectionModule *module)
 {
+	MONO_ARCH_SAVE_REGS;
+
 	if (!module->image)
 		return mono_array_new (mono_object_domain (module), mono_defaults.monotype_class, 0);
 	else

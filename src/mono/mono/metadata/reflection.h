@@ -99,6 +99,7 @@ typedef struct {
 	MonoReflectionType *ret;
 	guint32 attrs;
 	guint32 implattrs;
+	guint32 callconv;
 } MonoMethodInfo;
 
 typedef struct {
