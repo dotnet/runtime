@@ -137,7 +137,7 @@ mono_wrapper_readdir (gpointer dir)
 
 	// fixme: ugly hack - remove this code ASAP
 	if (p)
-		mono_string_new (p);
+		return mono_string_new (p->d_name);
 	else 
 		return NULL;
 
