@@ -18,14 +18,15 @@
 	individual maintainers.  
 
 	If you want to work on a class, first check the <a
-	href="class-status.html"> to see if someone is already working
-	on it, and maybe contact them.
+	href="download.html">Classes Distribution</a> to see if it is
+	not implemented yet, if not, check the <a
+	href="class-status.html">Class Status</a> to see if someone is
+	already working on it, and maybe contact them.
 
 	If nobody is working on it, mail <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
    	with the class you want to implement and CC <a
 	href="mailto:miguel@ximian.com">miguel@ximian.com</a>
-
 
 ** Layout
 
