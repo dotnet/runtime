@@ -111,6 +111,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_unicode_string_array", CharSet=CharSet.Unicode)]
 	public static extern int mono_test_marshal_unicode_string_array (string [] a1, [MarshalAs(UnmanagedType.LPArray, ArraySubType=UnmanagedType.LPStr)]string [] a2);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder_array")]
+	public static extern int mono_test_marshal_stringbuilder_array (StringBuilder [] a1);	
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_inout_array")]
 	public static extern int mono_test_marshal_inout_array ([In, Out] int [] a1);
 
@@ -413,6 +416,7 @@ public class Tests {
 
 	static int test_0_marshal_stringbuilder () {
 		StringBuilder sb = new StringBuilder(255);
+		sb.Append ("ABCD");
 		mono_test_marshal_stringbuilder (sb, sb.Capacity);
 		String res = sb.ToString();
 
@@ -443,6 +447,20 @@ public class Tests {
 
 	static int test_0_marshal_unicode_string_array () {
 		return mono_test_marshal_unicode_string_array (new String [] { "ABC", "DEF" }, new String [] { "ABC", "DEF" });
+	}
+
+	static int test_0_marshal_stringbuilder_array () {
+		StringBuilder sb1 = new StringBuilder ("ABC");
+		StringBuilder sb2 = new StringBuilder ("DEF");
+
+		int res = mono_test_marshal_stringbuilder_array (new StringBuilder [] { sb1, sb2 });
+		if (res != 0)
+			return res;
+		if (sb1.ToString () != "DEF")
+			return 5;
+		if (sb2.ToString () != "ABC")
+			return 6;
+		return 0;
 	}
 
 	static int test_0_last_error () {
