@@ -46,6 +46,7 @@ static gboolean debugger_signalled = FALSE;
 static gboolean must_send_finished = FALSE;
 #endif
 
+extern void (*mono_debugger_class_init_func) (MonoClass *klass);
 
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
@@ -225,6 +226,8 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 				continue;
 			}
 		} else {
+			mono_debugger_class_init_func = mono_debug_add_type;
+
 			if (!strcmp (arg, "internal_mono_debugger")) {
 				debug->flags |= MONO_DEBUG_FLAGS_MONO_DEBUGGER;
 				initialize_debugger_support ();
@@ -308,6 +311,8 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 	mono_debug_add_type (mono_defaults.iserializeable_class);
 	mono_debug_add_type (mono_defaults.serializationinfo_class);
 	mono_debug_add_type (mono_defaults.streamingcontext_class);
+
+	debugger_update_symbol_file_table ();
 
 	mono_debugger_unlock ();
 
@@ -807,8 +812,6 @@ mono_debug_write_symbols (MonoDebugHandle *debug)
 void
 mono_debug_make_symbols (void)
 {
-	release_symbol_file_table ();
-
 	if (!mono_debug_handle || !mono_debug_handle->dirty)
 		return;
 	
@@ -1299,8 +1302,6 @@ debugger_update_symbol_file_table (void)
 	return TRUE;
 }
 
-extern void (*mono_debugger_class_init_func) (MonoClass *klass);
-
 static gboolean has_mono_debugger_support = FALSE;
 
 #ifndef PLATFORM_WIN32
@@ -1375,8 +1376,6 @@ initialize_debugger_support ()
 	if (has_mono_debugger_support)
 		return;
 	has_mono_debugger_support = TRUE;
-
-	mono_debugger_class_init_func = mono_debug_add_type;
 
 	ptr = buf = g_malloc0 (16);
 	x86_breakpoint (buf);
