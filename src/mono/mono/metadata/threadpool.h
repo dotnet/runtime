@@ -5,7 +5,7 @@
 #include <mono/metadata/reflection.h>
 
 extern int mono_max_worker_threads;
-extern int mono_worker_threads;
+extern int busy_worker_threads;
 
 MonoAsyncResult *
 mono_thread_pool_add     (MonoObject *target, MonoMethodMessage *msg, 

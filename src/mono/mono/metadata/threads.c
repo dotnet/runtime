@@ -334,10 +334,12 @@ mono_thread_attach (MonoDomain *domain)
 void
 ves_icall_System_Threading_ThreadPool_GetAvailableThreads (int *workerThreads, int *completionPortThreads)
 {
+	int busy;
 
 	MONO_ARCH_SAVE_REGS;
 
-	*workerThreads = mono_max_worker_threads - mono_worker_threads;
+	busy = (int) InterlockedCompareExchange (&busy_worker_threads, 0, -1);
+	*workerThreads = mono_max_worker_threads - busy;
 	*completionPortThreads = 0;
 }
 
