@@ -937,7 +937,7 @@ dump_table_exported (MonoImage *m)
 		nspace = mono_metadata_string_heap (m, cols [MONO_EXP_TYPE_NAMESPACE]);
 		impl = get_manifest_implementation (m, cols [MONO_EXP_TYPE_IMPLEMENTATION]);
 		index = cols [MONO_EXP_TYPE_TYPEDEF];
-		fprintf (output, "%d: %s-%s%s is in %s, token %x\n", i, nspace, *nspace ? "." : "", name, impl, index);
+		fprintf (output, "%d: %s%s%s is in %s, token %x\n", i, nspace, *nspace ? "." : "", name, impl, index);
 		g_free (impl);
 	}
 	
