@@ -329,6 +329,10 @@ mono_init (const char *filename)
                 mono_defaults.corlib, "System", "Array");
 	g_assert (mono_defaults.array_class != 0);
 
+	mono_defaults.delegate_class = mono_class_from_name (
+		mono_defaults.corlib, "System", "Delegate");
+	g_assert (mono_defaults.delegate_class != 0 );
+
 	mono_defaults.multicastdelegate_class = mono_class_from_name (
 		mono_defaults.corlib, "System", "MulticastDelegate");
 	g_assert (mono_defaults.multicastdelegate_class != 0 );
