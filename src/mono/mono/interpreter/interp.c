@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <glib.h>
 #include <setjmp.h>
+#include <signal.h>
 
 #ifdef HAVE_ALLOCA_H
 #   include <alloca.h>
@@ -38,17 +39,28 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/exception.h>
-#include <mono/arch/x86/x86-codegen.h>
+#include <mono/metadata/verify.h>
 #include <mono/io-layer/io-layer.h>
 /*#include <mono/cli/types.h>*/
 #include "interp.h"
 #include "hacks.h"
 
 
+typedef struct {
+	union {
+		GTimer *timer;
+		MonoMethod *method;
+	} u;
+	gulong count;
+	gulong total;
+} MethodProfile;
+
 /* If true, then we output the opcodes as we interpret them */
 static int tracing = 0;
 
 static int debug_indent_level = 0;
+
+static GHashTable *profiling = NULL;
 
 /*
  * Pull the list of opcodes
@@ -545,8 +557,14 @@ dump_frame (MonoInvocation *inv)
 	int i;
 	for (i = 0; inv; inv = inv->parent, ++i) {
 		MonoClass *k = inv->method->klass;
-		MonoMethodHeader *hd = ((MonoMethodNormal *)inv->method)->header;
-		g_print ("#%d: 0x%05x in %s.%s::%s (", i, inv->ip - hd->code, 
+		int codep;
+		if (inv->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+			codep = 0;
+		} else {
+			MonoMethodHeader *hd = ((MonoMethodNormal *)inv->method)->header;
+			codep = inv->ip - hd->code;
+		}
+		g_print ("#%d: 0x%05x in %s.%s::%s (", i, codep, 
 						k->name_space, k->name, inv->method->name);
 		dump_stack (inv->stack_args, inv->stack_args + inv->method->signature->param_count);
 		g_print (")\n");
@@ -620,15 +638,29 @@ calc_offsets (MonoMethodHeader *header, MonoMethodSignature *signature)
 		MonoClass *klass = frame->method->klass;	\
 		debug_indent_level++;	\
 		output_indent ();	\
-		g_print ("Entering %s.%s::%s\n", klass->name_space, klass->name, frame->method->name);	\
-	} 
+		g_print ("Entering %s.%s::%s (", klass->name_space, klass->name, frame->method->name);	\
+		dump_stack (frame->stack_args, frame->stack_args+frame->method->signature->param_count);	\
+		g_print (")\n");	\
+	}	\
+	if (profiling) {	\
+		if (!(profile_info = g_hash_table_lookup (profiling, frame->method))) {	\
+			profile_info = g_new0 (MethodProfile, 1);	\
+			profile_info->u.timer = g_timer_new ();	\
+			g_hash_table_insert (profiling, frame->method, profile_info);	\
+		}	\
+		profile_info->count++;	\
+		g_timer_start (profile_info->u.timer);	\
+	}
+
 #define DEBUG_LEAVE()	\
 	if (tracing) {	\
 		MonoClass *klass = frame->method->klass;	\
 		output_indent ();	\
 		g_print ("Leaving %s.%s::%s\n", klass->name_space, klass->name, frame->method->name);	\
 		debug_indent_level--;	\
-	} 
+	}	\
+	if (profiling)	\
+		g_timer_stop (profile_info->u.timer)
 
 #else
 
@@ -685,6 +717,24 @@ struct _vtallocation {
 		}	\
 	} while (0)
 
+static void
+verify_method (MonoMethod *m)
+{
+	GSList *errors, *tmp;
+	MonoVerifyInfo *info;
+
+	errors = mono_method_verify (m, MONO_VERIFY_ALL);
+	if (errors)
+		g_print ("Method %s.%s::%s has invalid IL.\n", m->klass->name_space, m->klass->name, m->name);
+	for (tmp = errors; tmp; tmp = tmp->next) {
+		info = tmp->data;
+		g_print ("%s\n", info->message);
+	}
+	if (errors)
+		G_BREAKPOINT ();
+	mono_free_verify_list (errors);
+}
+
 /*
  * Need to optimize ALU ops when natural int == int32 
  *
@@ -712,6 +762,7 @@ ves_exec_method (MonoInvocation *frame)
 	unsigned char unaligned_address = 0;
 	unsigned char volatile_address = 0;
 	vtallocation *vtalloc = NULL;
+	MethodProfile *profile_info;
 	GOTO_LABEL_VARS;
 
 	mono_class_init (frame->method->klass);
@@ -730,6 +781,8 @@ ves_exec_method (MonoInvocation *frame)
 			ICallMethod icall = (ICallMethod)frame->method->addr;
 			icall (frame);
 		}
+		if (frame->ex)
+			goto handle_exception;
 		DEBUG_LEAVE ();
 		return;
 	} 
@@ -741,15 +794,21 @@ ves_exec_method (MonoInvocation *frame)
 			return;
 		}
 		ves_pinvoke_method (frame);
+		if (frame->ex)
+			goto handle_exception;
 		DEBUG_LEAVE ();
 		return;
 	} 
 
 	if (frame->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
 		ves_runtime_method (frame);
+		if (frame->ex)
+			goto handle_exception;
 		DEBUG_LEAVE ();
 		return;
 	} 
+
+	/*verify_method (frame->method);*/
 
 	header = ((MonoMethodNormal *)frame->method)->header;
 	signature = frame->method->signature;
@@ -810,7 +869,7 @@ ves_exec_method (MonoInvocation *frame)
 		/*g_assert (sp >= stack);*/
 #if DEBUG_INTERP
 		opcode_count++;
-		if (tracing){
+		if (tracing > 1) {
 			output_indent ();
 			g_print ("stack: ");
 			dump_stack (frame->stack, sp);
@@ -3076,6 +3135,8 @@ array_constructed:
 		MonoObject *ex_obj;
 		
 		for (inv = frame; inv; inv = inv->parent) {
+			if (inv->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+				continue;
 			hd = ((MonoMethodNormal*)inv->method)->header;
 			ip_offset = inv->ip - hd->code;
 			for (i = 0; i < hd->num_clauses; ++i) {
@@ -3121,6 +3182,10 @@ array_constructed:
 		guint32 ip_offset;
 		MonoExceptionClause *clause;
 		
+		if (frame->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+			DEBUG_LEAVE ();
+			return;
+		}
 		ip_offset = frame->ip - header->code;
 
 		for (i = 0; i < header->num_clauses; ++i) {
@@ -3208,7 +3273,6 @@ ves_exec (MonoAssembly *assembly, int argc, char *argv[])
 	}
 	
 	ves_exec_method (&call);
-	mono_free_method (call.method);
 
 	return result.data.i;
 }
@@ -3222,6 +3286,7 @@ usage (void)
 	fprintf (stderr,
 		 "Valid Options are:\n"
 		 "--trace\n"
+		 "--profile\n"
 		 "--debug method_name\n"
 		 "--opcode-count\n");
 	exit (1);
@@ -3401,10 +3466,52 @@ check_corlib (MonoImage *corlib)
 	}
 }
 
+static gint
+compare_profile (MethodProfile *profa, MethodProfile *profb)
+{
+	return profb->total - profa->total;
+}
+
+static void
+build_profile (MonoMethod *m, MethodProfile *prof, GList **funcs)
+{
+	g_timer_elapsed (prof->u.timer, &prof->total);
+	g_timer_destroy (prof->u.timer);
+	prof->u.method = m;
+	*funcs = g_list_insert_sorted (*funcs, prof, (GCompareFunc)compare_profile);
+}
+
+static void
+output_profile (GList *funcs)
+{
+	GList *tmp;
+	MethodProfile *p;
+	char buf [256];
+
+	if (funcs)
+		g_print ("Method name\t\t\t\t\tTotal (ms) Calls Per call (ms)\n");
+	for (tmp = funcs; tmp; tmp = tmp->next) {
+		p = tmp->data;
+		g_snprintf (buf, sizeof (buf), "%s.%s::%s",
+			p->u.method->klass->name_space, p->u.method->klass->name,
+			p->u.method->name);
+		printf ("%-52s %7ld %7ld %7ld\n", buf,
+			p->total/1000, p->count, p->total/p->count/1000);
+	}
+}
+
+void
+segv_handler (int signum)
+{
+	signal (signum, segv_handler);
+	mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System", "NullReferenceException"));
+}
+
 int 
 main (int argc, char *argv [])
 {
 	MonoAssembly *assembly;
+	GList *profile = NULL;
 	int retval = 0, i, ocount = 0;
 	char *file;
 
@@ -3414,6 +3521,10 @@ main (int argc, char *argv [])
 	for (i = 1; i < argc && argv [i][0] == '-'; i++){
 		if (strcmp (argv [i], "--trace") == 0)
 			tracing = 1;
+		if (strcmp (argv [i], "--traceops") == 0)
+			tracing = 2;
+		if (strcmp (argv [i], "--profile") == 0)
+			profiling = g_hash_table_new (g_direct_hash, g_direct_equal);
 		if (strcmp (argv [i], "--opcode-count") == 0)
 			ocount = 1;
 		if (strcmp (argv [i], "--help") == 0)
@@ -3455,14 +3566,19 @@ main (int argc, char *argv [])
 	test_load_class (assembly->image);
 #else
 	check_corlib (mono_defaults.corlib);
+	signal (SIGSEGV, segv_handler);
 	/*
 	 * skip the program name from the args.
 	 */
 	++i;
 	retval = ves_exec (assembly, argc - i, argv + i);
 #endif
-	mono_thread_cleanup();
+	if (profiling)
+		g_hash_table_foreach (profiling, build_profile, &profile);
+	output_profile (profile);
 	
+	mono_thread_cleanup();
+
 	mono_assembly_close (assembly);
 
 #if DEBUG_INTERP

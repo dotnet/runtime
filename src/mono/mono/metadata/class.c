@@ -672,7 +672,9 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	if (class->enumtype)
 		mono_class_init (class);
-	
+
+	if ((type_token = mono_metadata_nested_in_typedef (image, type_token)))
+		class->nested_in = mono_class_create_from_typedef (image, type_token);
 	return class;
 }
 
@@ -1006,7 +1008,7 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (nspace_table, name));
 	
 	if (!token) {
-		g_warning ("token not found for %s.%s in image %s", name_space, name, image->name);
+		/*g_warning ("token not found for %s.%s in image %s", name_space, name, image->name);*/
 		return NULL;
 	}
 

@@ -107,7 +107,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	/*
 	 * Temporary hack until we have a complete corlib.dll
 	 */
-	if (strcmp (basename, CORLIB_NAME) == 0) {
+	if (strcmp (basename, CORLIB_NAME) == 0 || strcmp (basename, "mscorlib") == 0) {
 		char *fullname;
 		
 		if (corlib != NULL)

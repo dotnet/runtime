@@ -18,6 +18,8 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/tabledefs.h>
+#include <mono/metadata/exception.h>
 #include <mono/metadata/file-io.h>
 #include "decimal.h"
 
@@ -145,15 +147,6 @@ ves_icall_app_get_cur_domain ()
 	return mono_object_new (klass);
 }
 
-static MonoReflectionType *
-my_mono_new_mono_type (MonoType *type)
-{
-	MonoReflectionType *res = (MonoReflectionType *)mono_object_new (mono_defaults.monotype_class);
-
-	res->type = type;
-	return res;
-}
-
 static void
 mono_type_type_from_obj (MonoReflectionType *mtype, MonoObject *obj)
 {
@@ -192,7 +185,182 @@ ves_icall_type_from_name (MonoObject *name)
 static MonoReflectionType*
 ves_icall_type_from_handle (MonoType *handle)
 {
-	return my_mono_new_mono_type (handle);
+	return mono_type_get_object (handle);
+}
+
+static guint32
+ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c)
+{
+	MonoClass *klass = mono_class_from_mono_type (type->type);
+	MonoClass *klassc = mono_class_from_mono_type (c->type);
+
+	/* cut&paste from mono_object_isinst (): keep in sync */
+	if (klassc->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		if ((klassc->interface_id <= klass->max_interface_id) &&
+		    klass->interface_offsets [klassc->interface_id])
+			return 1;
+	} else {
+		if ((klass->baseval - klassc->baseval) <= klassc->diffval)
+			return 1;
+	}
+	return 0;
+}
+
+static guint32
+ves_icall_get_attributes (MonoReflectionType *type)
+{
+	MonoClass *klass = mono_class_from_mono_type (type->type);
+
+	return klass->flags;
+}
+
+static void
+ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
+{
+	info->parent = mono_type_get_object (&method->klass->byval_arg);
+	info->ret = mono_type_get_object (method->signature->ret);
+	info->name = mono_string_new (method->name);
+	info->attrs = method->flags;
+	info->implattrs = method->iflags;
+}
+
+static void
+ves_icall_get_field_info (MonoReflectionField *field, MonoFieldInfo *info)
+{
+	info->parent = mono_type_get_object (field->klass);
+	info->type = mono_type_get_object (field->field->type);
+	info->name = mono_string_new (field->field->name);
+	info->attrs = field->field->type->attrs;
+}
+
+static void
+ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
+{
+	MonoClass *class = mono_class_from_mono_type (type);
+	MonoClass *parent;
+	MonoArray *intf;
+	int ninterf, i;
+	
+	info->parent = class->parent ? mono_type_get_object (&class->parent->byval_arg): NULL;
+	info->name = mono_string_new (class->name);
+	info->name_space = mono_string_new (class->name_space);
+	info->attrs = class->flags;
+	info->assembly = NULL; /* FIXME */
+	if (class->enumtype)
+		info->etype = mono_type_get_object (class->enum_basetype);
+	else if (class->element_class)
+		info->etype = mono_type_get_object (&class->element_class->byval_arg);
+	else
+		info->etype = NULL;
+
+	ninterf = 0;
+	for (parent = class; parent; parent = parent->parent) {
+		ninterf += parent->interface_count;
+	}
+	intf = mono_array_new (mono_defaults.monotype_class, ninterf);
+	ninterf = 0;
+	for (parent = class; parent; parent = parent->parent) {
+		for (i = 0; i < parent->interface_count; ++i) {
+			mono_array_set (intf, gpointer, ninterf, mono_type_get_object (&parent->interfaces [i]->byval_arg));
+			++ninterf;
+		}
+	}
+	info->interfaces = intf;
+}
+
+static MonoMethod*
+search_method (MonoReflectionType *type, char *name, guint32 flags, MonoArray *args)
+{
+	MonoClass *klass;
+	MonoMethod *m;
+	MonoReflectionType *paramt;
+	int i, j;
+
+	klass = mono_class_from_mono_type (type->type);
+	for (i = 0; i < klass->method.count; ++i) {
+		m = klass->methods [i];
+		if (!((m->flags & flags) == flags))
+			continue;
+		if (strcmp(m->name, name))
+			continue;
+		if (m->signature->param_count != mono_array_length (args))
+			continue;
+		for (j = 0; j < m->signature->param_count; ++j) {
+			paramt = mono_array_get (args, MonoReflectionType*, j);
+			if (!mono_metadata_type_equal (paramt->type, m->signature->params [j]))
+				break;
+		}
+		if (j == m->signature->param_count)
+			return m;
+	}
+	g_print ("Method %s::%s (%d) not found\n", klass->name, name, mono_array_length (args));
+	return NULL;
+}
+
+static MonoReflectionMethod*
+ves_icall_get_constructor (MonoReflectionType *type, MonoArray *args)
+{
+	MonoMethod *m;
+
+	m = search_method (type, ".ctor", METHOD_ATTRIBUTE_RT_SPECIAL_NAME, args);
+	if (m)
+		return mono_method_get_object (m);
+	return NULL;
+}
+
+static MonoReflectionMethod*
+ves_icall_get_method (MonoReflectionType *type, MonoString *name, MonoArray *args)
+{
+	MonoMethod *m;
+	char *n = mono_string_to_utf8 (name);
+
+	m = search_method (type, n, 0, args);
+	g_free (n);
+	if (m)
+		return mono_method_get_object (m);
+	return NULL;
+}
+
+typedef int (*MemberFilter) (MonoObject *member, MonoObject *criteria);
+
+static MonoArray*
+ves_icall_type_find_members (MonoReflectionType *type, guint32 membertypes, guint32 bflags, MemberFilter filter, MonoObject *criteria)
+{
+	GSList *l = NULL, *tmp;
+	MonoClass *klass;
+	MonoArray *res;
+	int i, is_ctor, len;
+
+	klass = mono_class_from_mono_type (type->type);
+
+	/* FIXME: check the bindingflags */
+	
+	if (membertypes & (1|8)) { /* constructors and methods */
+		for (i = 0; i < klass->method.count; ++i) {
+			is_ctor = strcmp (klass->methods [i]->name, ".ctor") == 0 ||
+					strcmp (klass->methods [i]->name, ".cctor") == 0;
+			if (is_ctor && (membertypes & 1))
+				l = g_slist_prepend (l, mono_method_get_object (klass->methods [i]));
+			if (klass->methods [i]->flags & METHOD_ATTRIBUTE_SPECIAL_NAME)
+				continue;
+			if (!is_ctor && (membertypes & 8))
+				l = g_slist_prepend (l, mono_method_get_object (klass->methods [i]));
+		}
+	}
+	if (membertypes & 4) { /* fields */
+		for (i = 0; i < klass->field.count; ++i) {
+			l = g_slist_prepend (l, mono_field_get_object (klass, &klass->fields [i]));
+		}
+	}
+	len = g_slist_length (l);
+	klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MemberInfo");
+	res = mono_array_new (klass, len);
+	i = 0;
+	tmp = l;
+	for (; tmp; tmp = tmp->next, ++i)
+		mono_array_set (res, gpointer, i, tmp->data);
+	g_slist_free (l);
+	return res;
 }
 
 static gpointer
@@ -213,51 +381,40 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *assName, MonoObject *
 	/* FIXME : examine evidence? */
 	char *name = mono_string_to_utf8 (assName);
 	enum MonoImageOpenStatus status = MONO_IMAGE_OK;
-	MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Assembly");
 	MonoAssembly *ass = mono_assembly_open (name, NULL, &status);
-	MonoReflectionAssembly *res;
 
-	g_assert (ass != NULL);
-	g_assert (status == MONO_IMAGE_OK);
+	if (!ass)
+		mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.IO", "FileNotFoundException"));
 
-	res = (MonoReflectionAssembly *)mono_object_new (klass);
-	res->assembly = ass;
-
-	g_free (name);
-
-	return res;
+	return mono_assembly_get_object (ass);
 }
 
 static MonoReflectionType*
 ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, MonoString *type) /* , char throwOnError, char ignoreCase) */
 {
 	/* FIXME : use throwOnError and ignoreCase */
-	gchar *name, *namespace, **parts;
+	gchar *name, *namespace, *str;
 	MonoClass *klass;
 	int j = 0;
 
-	name = mono_string_to_utf8 (type);
+	str = namespace = mono_string_to_utf8 (type);
 
-	parts = g_strsplit (name, ".", 0);
-	g_free (name);
-
-	while (parts[j])
-		j++;
-
-	name = parts[j-1];
-	parts[j-1] = NULL;
-	namespace = g_strjoinv (".", parts);
-	g_strfreev (parts);
-
+	name = strrchr (str, '.');
+	if (name) {
+		*name = 0;
+		++name;
+	} else {
+		namespace = "";
+		name = str;
+	}
 	klass = mono_class_from_name (assembly->assembly->image, namespace, name);
-	g_free (name);
-	g_free (namespace);
+	g_free (str);
 	if (!klass)
 		return NULL;
 	if (!klass->inited)
 		mono_class_init (klass);
 
-	return my_mono_new_mono_type (&klass->byval_arg);
+	return mono_type_get_object (&klass->byval_arg);
 }
 
 static MonoString *
@@ -369,6 +526,13 @@ static gpointer icall_map [] = {
 	 */
 	"System.Reflection.Emit.AssemblyBuilder::getDataChunk", ves_icall_get_data_chunk,
 	"System.Reflection.Emit.AssemblyBuilder::getUSIndex", mono_image_insert_string,
+	"System.Reflection.Emit.AssemblyBuilder::getToken", mono_image_create_token,
+
+	/*
+	 * Reflection stuff.
+	 */
+	"System.Reflection.MonoMethodInfo::get_method_info", ves_icall_get_method_info,
+	"System.Reflection.MonoFieldInfo::get_field_info", ves_icall_get_field_info,
 	
 	/*
 	 * TypeBuilder
@@ -383,6 +547,11 @@ static gpointer icall_map [] = {
 	 */
 	"System.Type::internal_from_name", ves_icall_type_from_name,
 	"System.Type::internal_from_handle", ves_icall_type_from_handle,
+	"System.Type::get_constructor", ves_icall_get_constructor,
+	"System.Type::get_method", ves_icall_get_method,
+	"System.Type::get_attributes", ves_icall_get_attributes,
+	"System.Type::type_is_subtype_of", ves_icall_type_is_subtype_of,
+	"System.Type::FindMembers", ves_icall_type_find_members,
 
 	/*
 	 * System.Runtime.CompilerServices.RuntimeHelpers
@@ -425,6 +594,7 @@ static gpointer icall_map [] = {
 	 */
 	"System.MonoType::assQualifiedName", ves_icall_System_MonoType_assQualifiedName,
 	"System.MonoType::type_from_obj", mono_type_type_from_obj,
+	"System.MonoType::get_type_info", ves_icall_get_type_info,
 
 	"System.PAL.OpSys::GetCurrentDirectory", ves_icall_System_PAL_GetCurrentDirectory,
 

@@ -28,6 +28,7 @@ struct _MonoClass {
 	guint min_align       : 4;
 
 	MonoClass  *parent;
+	MonoClass  *nested_in;
 	GList      *subclasses; /* list of all subclasses */
 
 	const char *name;

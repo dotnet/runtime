@@ -42,6 +42,42 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
+	MonoMethod *method;
+} MonoReflectionMethod;
+
+typedef struct {
+	MonoObject object;
+	MonoClass *klass;
+	MonoClassField *field;
+} MonoReflectionField;
+
+typedef struct {
+	MonoReflectionType *parent;
+	MonoReflectionType *ret;
+	MonoString *name;
+	guint32 attrs;
+	guint32 implattrs;
+} MonoMethodInfo;
+
+typedef struct {
+	MonoReflectionType *parent;
+	MonoReflectionType *type;
+	MonoString *name;
+	guint32 attrs;
+} MonoFieldInfo;
+
+typedef struct {
+	MonoString *name;
+	MonoString *name_space;
+	MonoReflectionType *parent;
+	MonoReflectionType *etype;
+	MonoArray *interfaces;
+	MonoAssembly *assembly;
+	guint32 attrs;
+} MonoTypeInfo;
+
+typedef struct {
+	MonoObject object;
 	MonoArray *code;
 	MonoObject *mbuilder;
 	gint32 code_len;
@@ -170,7 +206,12 @@ typedef struct {
 int           mono_image_get_header (MonoReflectionAssemblyBuilder *assembly, char *buffer, int maxsize);
 void          mono_image_basic_init (MonoReflectionAssemblyBuilder *assembly);
 guint32       mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *str);
+guint32       mono_image_create_token  (MonoReflectionAssemblyBuilder *assembly, MonoObject *obj);
 
+MonoReflectionAssembly* mono_assembly_get_object (MonoAssembly *assembly);
+MonoReflectionType*     mono_type_get_object     (MonoType *type);
+MonoReflectionMethod*   mono_method_get_object   (MonoMethod *method);
+MonoReflectionField*    mono_field_get_object    (MonoClass *klass, MonoClassField *field);
 
 #endif /* __METADATA_REFLECTION_H__ */
 

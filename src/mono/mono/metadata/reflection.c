@@ -976,6 +976,34 @@ mono_image_insert_string (MonoReflectionAssemblyBuilder *assembly, MonoString *s
 	return index;
 }
 
+/*
+ * Get a token to insert in the IL code stream for the given MemberInfo.
+ * obj can be:
+ * 	ConstructorBuilder
+ * 	MethodBuilder
+ * 	FieldBuilder
+ * 	MonoCMethod
+ * 	MonoMethod
+ * 	MonoField
+ */
+guint32
+mono_image_create_token (MonoReflectionAssemblyBuilder *assembly, MonoObject *obj)
+{
+	MonoClass *klass = obj->klass;
+
+	g_print ("requested token for %s\n", klass->name);
+	
+	if (strcmp (klass->name, "MethodBuilder") == 0) {
+		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)obj;
+		return mb->table_idx | MONO_TOKEN_METHOD_DEF;
+	}
+	if (strcmp (klass->name, "FieldBuilder") == 0) {
+		MonoReflectionFieldBuilder *mb = (MonoReflectionFieldBuilder *)obj;
+		return mb->table_idx | MONO_TOKEN_FIELD_DEF;
+	}
+	return 0;
+}
+
 void
 mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 {
@@ -1110,5 +1138,89 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 	cli_header->ch_metadata.size = assembly->meta_size;
 	
 	return header_size;
+}
+
+/*
+ * We need to return always the same object for Type, MethodInfo, FieldInfo etc..
+ */
+static GHashTable *object_cache = NULL;
+
+#define CHECK_OBJECT(t,p)	\
+	do {	\
+		t _obj;	\
+		if (!object_cache)	\
+			object_cache = g_hash_table_new (g_direct_hash, g_direct_equal);	\
+		if ((_obj = g_hash_table_lookup (object_cache, (p))))	\
+			return _obj;	\
+	} while (0)
+
+#define CACHE_OBJECT(p,o)	\
+	do {	\
+		g_hash_table_insert (object_cache, p,o);	\
+	} while (0)
+	
+MonoReflectionAssembly*
+mono_assembly_get_object (MonoAssembly *assembly)
+{
+	MonoClass *klass;
+	MonoReflectionAssembly *res;
+	
+	CHECK_OBJECT (MonoReflectionAssembly *, assembly);
+	klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Assembly");
+	res = (MonoReflectionAssembly *)mono_object_new (klass);
+	res->assembly = assembly;
+	CACHE_OBJECT (assembly, res);
+	return res;
+}
+
+MonoReflectionType*
+mono_type_get_object (MonoType *type)
+{
+	MonoReflectionType *res;
+
+	CHECK_OBJECT (MonoReflectionType *, type);
+	res = (MonoReflectionType *)mono_object_new (mono_defaults.monotype_class);
+	res->type = type;
+	CACHE_OBJECT (type, res);
+	return res;
+}
+
+MonoReflectionMethod*
+mono_method_get_object (MonoMethod *method)
+{
+	/*
+	 * We use the same C representation for methods and constructors, but the type 
+	 * name in C# is different.
+	 */
+	char *cname;
+	MonoClass *klass;
+	MonoReflectionMethod *ret;
+
+	CHECK_OBJECT (MonoReflectionMethod *, method);
+	if (*method->name == '.' && (strcmp (method->name, ".ctor") == 0 || strcmp (method->name, ".cctor") == 0))
+		cname = "MonoCMethod";
+	else
+		cname = "MonoMethod";
+	klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", cname);
+
+	ret = (MonoReflectionMethod*)mono_object_new (klass);
+	ret->method = method;
+	CACHE_OBJECT (method, ret);
+	return ret;
+}
+
+MonoReflectionField*
+mono_field_get_object (MonoClass *klass, MonoClassField *field)
+{
+	MonoReflectionField *res;
+	MonoClass *oklass;
+
+	CHECK_OBJECT (MonoReflectionField *, field);
+	oklass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoField");
+	res = (MonoReflectionField *)mono_object_new (oklass);
+	res->klass = klass;
+	res->field = field;
+	CACHE_OBJECT (field, res);
+	return res;
 }
 

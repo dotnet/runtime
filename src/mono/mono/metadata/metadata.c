@@ -1726,6 +1726,30 @@ mono_metadata_interfaces_from_typedef (MonoMetadata *meta, guint32 index, guint 
 	return result;
 }
 
+/*
+ * Return the typedef token of the type index is defined into.
+ * Return 0 if the index represents a toplevel type.
+ */
+guint32
+mono_metadata_nested_in_typedef (MonoMetadata *meta, guint32 index)
+{
+	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_NESTEDCLASS];
+	locator_t loc;
+	
+	if (!tdef->base)
+		return 0;
+
+	loc.idx = mono_metadata_token_index (index);
+	loc.col_idx = MONO_NESTED_CLASS_NESTED;
+	loc.t = tdef;
+
+	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
+		return 0;
+
+	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
+	return mono_metadata_decode_row_col (tdef, loc.result, MONO_NESTED_CLASS_ENCLOSING) | MONO_TOKEN_TYPE_DEF;
+}
+
 #ifndef __GNUC__
 #define __alignof__(a) sizeof(a)
 #endif
