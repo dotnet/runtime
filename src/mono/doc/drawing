@@ -11,7 +11,9 @@
 	similar to the PDF 1.4 composition-based imaging model.
 
 	Our implementation is a C# wrapper around the GDI+ C API (also
-	called the "GDI+ Flat API").  
+	called the <a
+	href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/gdicpp/GDIPlus/GDIPlusReference.asp">"GDI+
+	Flat API"</a>).
 
 	<center>
 	<img src="images/system-drawing.png">
