@@ -1882,8 +1882,7 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 	if ((count > 0) && !MONO_CLASS_IS_INTERFACE (param->constraints [0])) {
 		klass->parent = param->constraints [0];
 		pos++;
-	} else
-		klass->parent = mono_defaults.object_class;
+	}
 
 	if (count - pos > 0) {
 		klass->interface_count = count - pos;
