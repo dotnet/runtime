@@ -219,6 +219,15 @@ mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 			g_error ("Error: Assembly %s references itself", image->name);
 	}
 	image->references [i] = NULL;
+
+	/* resolve assembly references for modules */
+	t = &image->tables [MONO_TABLE_MODULEREF];
+	for (i = 0; i < t->rows; i++){
+		if (image->modules [i]) {
+			image->modules [i]->assembly = image->assembly;
+			mono_assembly_load_references (image->modules [i], status);
+		}
+	}
 }
 
 typedef struct AssemblyLoadHook AssemblyLoadHook;
@@ -412,7 +421,6 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 	MonoImage *image;
 	MonoTableInfo *t;
 	guint32 cols [MONO_ASSEMBLY_SIZE];
-	int i;
 	char *base_dir;
 	MonoImageOpenStatus def_status;
 	gchar *fname;
@@ -555,20 +563,6 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
 	LeaveCriticalSection (&assemblies_mutex);
-
-	/* resolve assembly references for modules */
-	t = &image->tables [MONO_TABLE_MODULEREF];
-	for (i = 0; i < t->rows; i++){
-		if (image->modules [i]) {
-			image->modules [i]->assembly = ass;
-			mono_assembly_load_references (image->modules [i], status);
-		}
-		/* 
-		 * FIXME: what do we do here? it could be a native dll...
-		 * We should probably do lazy-loading of modules.
-		 */
-		*status = MONO_IMAGE_OK;
-	}
 
 	mono_assembly_invoke_load_hook (ass);
 

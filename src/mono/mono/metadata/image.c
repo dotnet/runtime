@@ -445,7 +445,6 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 		module_ref = g_build_filename (base_dir, name, NULL);
 		image->modules [i] = mono_image_open (module_ref, status);
 		if (image->modules [i]) {
-			image->modules [i]->assembly = image->assembly;
 			//g_print ("loaded module %s from %s (%p)\n", module_ref, image->name, image->assembly);
 		}
 		/* 
@@ -456,6 +455,7 @@ load_modules (MonoImage *image, MonoImageOpenStatus *status)
 			*status = MONO_IMAGE_OK;
 		g_free (module_ref);
 	}
+
 	g_free (base_dir);
 }
 
