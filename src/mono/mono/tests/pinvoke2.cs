@@ -126,6 +126,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder")]
 	public static extern void mono_test_marshal_stringbuilder (StringBuilder sb, int len);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder_unicode", CharSet=CharSet.Unicode)]
+	public static extern void mono_test_marshal_stringbuilder_unicode (StringBuilder sb, int len);
+
 	[DllImport ("libtest", EntryPoint="mono_test_last_error", SetLastError=true)]
 	public static extern void mono_test_last_error (int err);
 
@@ -332,6 +335,17 @@ public class Tests {
 	static int test_0_marshal_stringbuilder () {
 		StringBuilder sb = new StringBuilder(255);
 		mono_test_marshal_stringbuilder (sb, sb.Capacity);
+		String res = sb.ToString();
+
+		if (res != "This is my message.  Isn't it nice?")
+			return 1;  
+		
+		return 0;
+	}
+
+	static int test_0_marshal_stringbuilder_unicode () {
+		StringBuilder sb = new StringBuilder(255);
+		mono_test_marshal_stringbuilder_unicode (sb, sb.Capacity);
 		String res = sb.ToString();
 
 		if (res != "This is my message.  Isn't it nice?")

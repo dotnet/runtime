@@ -551,6 +551,25 @@ mono_test_marshal_stringbuilder (char *s, int n)
 	return 0;
 }
 
+int 
+mono_test_marshal_stringbuilder_unicode (gunichar2 *s, int n)
+{
+	const char m[] = "This is my message.  Isn't it nice?";
+	gunichar2* s2;
+	glong len;
+
+	s2 = g_utf8_to_utf16 (m, -1, NULL, &len, NULL);
+	
+	len = (len * 2) + 2;
+	if (len > n)
+		len = n;
+	memcpy (s, s2, len);
+
+	g_free (s2);
+
+	return 0;
+}
+
 typedef struct {
 #ifndef __GNUC__
     char a;
