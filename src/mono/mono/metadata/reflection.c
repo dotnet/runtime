@@ -1551,7 +1551,16 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo) {
 		mono_metadata_encode_value (minfo->type, p, &p);
 		mono_metadata_encode_value (minfo->count, p, &p);
 		break;
-		/* FIXME: handle ARRAY and other unmanaged types that need extra info */
+	case MONO_NATIVE_LPARRAY:
+		mono_metadata_encode_value (minfo->type, p, &p);
+		if (minfo->eltype || (minfo->count > 0)) {
+			mono_metadata_encode_value (minfo->eltype, p, &p);
+			if (minfo->count > 0) {
+				mono_metadata_encode_value (0, p, &p);
+				mono_metadata_encode_value (minfo->count, p, &p);
+			}
+		}
+		break;
 	case MONO_NATIVE_CUSTOM:
 		mono_metadata_encode_value (minfo->type, p, &p);
 		if (minfo->guid) {
