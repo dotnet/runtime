@@ -1914,19 +1914,19 @@
 		</maintainers>
 	</class>
 	<class name="System.Net.IPAdress">
-		<last-activity>Jul-15-2001</last-activity>
+		<last-activity>Apr-15-2002</last-activity>
 		<implementation>yes</implementation>
-		<test-suite>no</test-suite>
-		<completion>75</completion>
+		<test-suite>yes</test-suite>
+		<completion>100</completion>
 		<maintainers>
 			<maintainer>miguel@ximian.com</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.Net.IPEndPoint">
-		<last-activity>Jul-15-2001</last-activity>
+		<last-activity>Apr-15-2002</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>75</completion>
+		<completion>100</completion>
 		<maintainers>
 			<maintainer>miguel@ximian.com</maintainer>
 		</maintainers>
@@ -1941,10 +1941,10 @@
 		</maintainers>
 	</class>
 	<class name="System.Net.SocketAddress">
-		<last-activity>Jul-15-2001</last-activity>
+		<last-activity>Apr-15-2002</last-activity>
 		<implementation>yes</implementation>
 		<test-suite>no</test-suite>
-		<completion>75</completion>
+		<completion>100</completion>
 		<maintainers>
 			<maintainer>miguel@ximian.com</maintainer>
 		</maintainers>
@@ -1965,6 +1965,15 @@
 		<completion>100</completion>
 		<maintainers>
 			<maintainer>pp@myelin.co.nz</maintainer>
+		</maintainers>
+	</class>
+	<class name="System.Net.Sockets.UdpClient">
+		<last-activity>Apr-15-2002</last-activity>
+		<implementation>yes</implementation>
+		<test-suite>no</test-suite>
+		<completion>100</completion>
+		<maintainers>
+			<maintainer>gonzalo@ximian.com</maintainer>
 		</maintainers>
 	</class>
 	<class name="System.NotFiniteNumberException">
