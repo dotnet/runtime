@@ -2,7 +2,6 @@
 <a href="#ximian">The Ximian Role in the Mono project</a><br>
 <a href="#gnome">Mono and GNOME</a><br>
 <a href="#gui">Building GUI applications with Mono</a><br>
-<a href="#winforms">Mono and WinForms</a><br>
 <a href="#msft">Mono and Microsoft</a><br>
 <a href="#pnpproject">Mono and the Portable.NET Project</a><br>
 <a href="#webservices">Web Services</a><br>
@@ -21,7 +20,7 @@
 <a href="#problems">Mono Common Problems</a><br>
 
 A <a
-href="http://www.es.gnome.org/documentacion/articulos/mono-puf/mono-puf/">spanish
+href="http://www.es.gnome.org/documentacion/articulos/mono-puf/mono-puf/">Spanish
 translation</a> is also available
 
 <a name="basics"></a>
@@ -44,7 +43,7 @@ A: The ".NET Initiative" is a somewhat nebulous company-wide effort by
    framework.  Mono is an implementation of the development framework,
    but not an implementation of anything else related to the .NET
    Initiative, such as Passport, software-as-a-service, or
-   corporate rebranding.
+   corporate re-branding.
 
 Q: What technologies are included in Mono?
 
@@ -97,7 +96,7 @@ A: Yes, we will be implementing the APIs of the .NET Framework SDK
 
 Q: Will you offer an ECMA-compliant set of class libraries?
 
-A: Eventually we will.  Our current focus is on interoperating
+A: Eventually we will.  Our current focus is on inter-operating
    with the Microsoft SDK, but we will also offer an ECMA compliant
    set of libraries. 
 
@@ -196,7 +195,7 @@ A: Mono will ship on various stages as they mature.  Some people
    require only a subset of the technologies, those will ship first.
 
    More advanced features will take more time to develop.  A support
-   timeline will be available in June 2002.
+   time line will be available in June 2002.
 
 <a name="gnome"></a> 
 ** Mono and GNOME
@@ -225,7 +224,7 @@ A: It is still far to early for discussions of "switching over."  No
 
    We encourage GNOME developers to continue using the existing tools,
    libraries and components.  Improvements made to GNOME will have an
-   impact on Mono, as they would be the "backend" for various classes.
+   impact on Mono, as they would be the "back-end" for various classes.
 
 Q: Will Mono include compatibility with Bonobo components? What is the
    relationship between Mono and Bonobo?
@@ -273,7 +272,7 @@ A: As long as your applications are 100% .NET and do not make use
    of P/Invoke to call Win32 functions, your smart client applications
    will run on Mono platforms.
 
-Q: Where can I learn mora about Gtk#?
+Q: Where can I learn more about Gtk#?
 
 A: The following <a href="http://gtk-sharp.sourceforge.net>link</a> sends you to the page of the project.
 
@@ -329,7 +328,7 @@ Q: Do you fear that Microsoft will change the spec and render Mono
 
 A: No.  Microsoft proved with the CLI and the C# language that it was
    possible to create a powerful foundation for many languages to
-   interoperate.  We will always have that.  
+   inter-operate.  We will always have that.  
 
    Even if changes happened in the platform which were undocumented,
    the existing platform would a value on its own.
@@ -409,17 +408,17 @@ Q: Will I be able to compile a Microsoft VB.NET application and execute
 
 A: Once we have a complete VisualBasic runtime, yes.
 
-Q: Can mono run the WebMatrix ?
+Q: Can mono run the WebMatrix?
 
-A: No. That requires winforms (we don't have).
+A: No. That requires System.Windows.Forms support which is not
+   currently implemented.
 
-Q: Does mono have something like Passport ? (ie PassportIdentity class,somewhere
-   in System.Web ?) . Will mono have a server side Passport/Similar framework
-   for XSP as well as client classes ?
+Q: Does mono have something like Passport? 
+   Will mono have a server side Passport/Similar framework for XSP as well as client classes?
 
 A: Not yet, but the client side API for authentication is not the problem. 
    We will likely have a lot of other authentication APIs, like the Liberty
-   Aliance APIs. The problem is people on the web provider end that might use 
+   Alliance APIs. The problem is people on the web provider end that might use 
    this for authentication.
 
 <a name="pnpproject"></a>
@@ -438,7 +437,7 @@ A: Most of Mono is being written using C#, with only
 
      <li> A multi-platform runtime engine: both a JIT engine and an
           interpreter exist.  The JIT engine runs currently on x86
-          systems, while the interpreter works on Sparc, StrongARM and
+          systems, while the interpreter works on SPARC, StrongARM and
           PowerPC systems.  
 
      <li> Supports Linux, Windows and Solaris at this point.
@@ -446,21 +445,21 @@ A: Most of Mono is being written using C#, with only
      <li> The JIT engine is written using a portable instruction
           selector which not only generates good code (we are told
           that we are faster than Rotor, but it is hard to tell) but
-          is also the foundation to retarget the JIT engine to other
+          is also the foundation to re-target the JIT engine to other
           systems.  
 
           The system employed is described in various compiler
           books and it is very similar to what is described in the 
-          book that covers LCC, the Ansi C retargetable C compiler.
+          book that covers LCC, the ANSI C retargetable C compiler.
 
-     <li> The JIT engine supports inlining, constant folding and propagation,
+     <li> The JIT engine supports in-lining, constant folding and propagation,
 
      <li> Full support for remoting in the runtime, but the class 
           libraries are still behind.
 
      <li> The C# compiler, the JIT engine and the class libraries are
-          mature enough that the whole system is self-hosting, ie, that
-          it can be fully developed with itself at this point.
+          mature enough that the whole system is self-hosting.  This means that
+	  we develop Mono completely with itself at this point.
 
      <li> We are not yet done, and there is a lot of work left to be
           done
@@ -487,7 +486,7 @@ A: Mono is only related to Web Services in that it will implement the
 Q: Can I author Web Services with Mono?
 
 A: You will be able to write Web Services on .NET that run on Mono and
-   viceversa. 
+   vice-versa. 
 
 Q: If Mono implements the SDK classes, will I be able to write and
    execute .NET Web Services with it?
@@ -509,9 +508,9 @@ A: Yes. The CLI contains enough information about a class that
    exposing it to other RPC systems (like CORBA) is really simple, and
    does not even require support from an object.  
 
-   We will be implementing CORBA interoperation as an extension to the
+   We will be implementing CORBA inter-operation as an extension to the
    Mono classes so that we can integrate with Bonobo, just like
-   Microsoft provides COM interoperation classes and support
+   Microsoft provides COM inter-operation classes and support
    mechanisms. 
 
 Q: Can I serialize my objects to other things other than XML?
@@ -526,13 +525,13 @@ A: No. Mono will be using a new implementation of CORBA that isn't still started
 <a name="devel"></a>
 ** Development Tools and Issues
 
-Q: Will it be possible to use the CLI features without using bytecodes
+Q: Will it be possible to use the CLI features without using byte codes
    or the JIT?
 
 A: Yes. The CLI engine will be made available as a shared library.
    The garbage collection engine, the threading abstraction, the
    object system, the dynamic type code system and the JIT will be
-   available for C developers to integreate with their applications if
+   available for C developers to integrate with their applications if
    they wish to do so. 
 
 Q: Will you have new development tools?
@@ -573,7 +572,7 @@ Q: What about using something like Jabber instead of the System.Messaging
    namespace?.
 
 A: In short, MSMQ is not something like Jabber, but asynchronous messaging 
-   through queues. Usefull queues do more than serialize messages, they are 
+   through queues. Useful queues do more than serialize messages, they are 
    also platform bridges.
 
 Q: Are you supporting XMLDocument and relatives?.
@@ -584,14 +583,14 @@ A: Currently, we aren't implementing them yet. It would require updates to
 
 Q: Is there any plan to develop an aspx server for Mono?.
 
-A: The webserver turned out to be very simple compared to the rest of the 
+A: The web server turned out to be very simple compared to the rest of the 
    work. Gonzalo has got the page generator mostly done (a module called 
    xsp, who has nothing to do with the XSP term used in the Apache Project).
    Patrik has done a lot of the work to get the ProcessRequest to work.
    You can try to help in the final touches to the System.Web classes and
    writing regression tests for the widgets we have.
 
-Q: Is there any way I can develop the class libraries using linux yet?
+Q: Is there any way I can develop the class libraries using Linux yet?
 
 A: Yes. Some class libraries can be developed on Linux. Search for
    Paolo's post (he lists which classes can be compiled fine now).
@@ -599,7 +598,7 @@ A: Yes. Some class libraries can be developed on Linux. Search for
 Q: Is there any way I can install a known working copy of mono in /usr, 
    and an experimental copy somewhere else, and have both copies use 
    their own libraries? (I'm still not very good at library paths in 
-   linux)
+   Linux)
 
 A: Yes. Just use two installation prefixes.
 
@@ -609,30 +608,13 @@ A: If you do a test suite for C#, you might want to keep it
    independent of the Mono C# compiler, so that other compiler 
    implementations can later use it.  
 
-Q: Is the current stage the implementation of mono_create_trampoline
-   function?  Hence the sparc-codegen.h is reasonably complete? Is 
-   mono/arch/x86/* the best reference material for this stuff?
-
-A: sparc-codegen.h is basically complete. We may want to add some
-   convenience macros along the way, but it has all the stuff you need.
-   And yes, or, the ppc/ dir, since the ppc call convention is more similar 
-   to the sparc one than the x86 one. The current issues with the sparc 
-   code are. roughly:
-     1) it needs to handle overflowing the out registers (the additional
-     arguments need to be put on the stack)
-     2) it needs to flush the icache where the generated code is stored
-     3) it needs to implement mono_create_method_pointer to get delegates
-        working
-     4) it needs a couple of updates (mono_method_pointer_get is no longer
-     needed, for example)
-
 Q: Would it be too terrible to have another corlib signed as mscorlib? 
 
 A: We rename corlib to mscorlib also when saving the PE files, in fact, 
    the runtime can execute program created by mono just fine.  
 
 Q: Is there a relatively straightforward way to repeat the steps taken 
-   by Paolo to get Mono completely self-hosted on linux?
+   by Paolo to get Mono completely self-hosted on Linux?
 
 A: To build the compiler and class libraries in Linux, run:
    <ul><li>make -f makefile.gnu. To install them, run: </li>
@@ -656,7 +638,7 @@ A: The remoting infrastructure is in place. Some of the channels and
    formatters are not.
 
 Q: I'm wondering if there are any plans to start using nant to build the
-   class lib + test lib. i think that every project neeed/should use an
+   class lib + test lib. i think that every project need/should use an
    automated build process and nant + a couple of tools enables this. is
    the problem that the compiler can't run nant yet?
 
@@ -681,7 +663,7 @@ Q: Do I need install cygwin to work on ASP.NET in mono or Linux is enough since
 
 A: Linux is enough.
 
-Q: Any plan to make ASP.NET in mono works with Apache in linux?.
+Q: Any plan to make ASP.NET in mono works with Apache in Linux?.
 
 A: Yes, we have plans to do so, but we need to wait for Patrik's patches to
    HttpRuntime. Once that is there, writing a mod_mono should be trivial 
@@ -704,12 +686,9 @@ Q: In developing the data architecture for the application are there and
    transition (minimum code rewrite) to Mono's ADO.NET implementation?  (For
    example, strongly typed datasets versus untyped datasets, etc...)
 
-A: we are implementing all the classes in Microsoft .NET's System.Data, so
-   you can be sure that things will work the same in Mono as with the MS's
-   implementation. We'll maybe provide extra classes to fix some things
-   we've found missing while developing ADO.NET in Mono, but if you keep
-   using the MS's System.Data classes, things will work out of the box with
-   no changes (or at least that's the plan :-)
+A: We are implementing all the classes in Microsoft .NET's System.Data, so
+   you can be sure that things will work the same in Mono as with the Microsoft
+   implementation. 
 
 <a name="java">
 ** Mono and Java
@@ -720,7 +699,7 @@ Q: Why don't you use Java?  After all, there are many languages that
 A: You can get very good tools for doing Java development on free
    systems right now.  <a href="http://www.redhat.com">Red Hat</a> has
    contributed a <a href="http://gcc.gnu.org">GCC</a> <a
-   href="http://gcc.gnu.org/java">frontend for Java</a> that can take
+   href="http://gcc.gnu.org/java">front-end for Java</a> that can take
    Java sources or Java byte codes and generate native executables; <a
    href="http://www.transvirtual.com">Transvirtual</a> has implemented
    <a href="http://www.kaffe.org">Kaffe</a> a JIT engine for Java;
@@ -739,10 +718,10 @@ A: Yes, Java could target the CLI.  We have details on a <a
    href="ideas.html#guavac">project</a> that someone could take on to
    make this happen.  
 
-   Microsoft has an implemenation of the Java language called J# that
+   Microsoft has an implementation of the Java language called J# that
    can target the CIL execution engine. 
 
-Q: Is it possible to write a JVM byte code to CIL convertor?
+Q: Is it possible to write a JVM byte code to CIL converter?
 
 A: Yes, it is possible.  Here are a few starting point:
 
@@ -762,7 +741,7 @@ A: Yes, it is possible.  Here are a few starting point:
           	  be translated into the equivalent "meaning" in CLR-land.
 	</ul>
 
-Q: Could mono become a hybrid cil/java platform?
+Q: Could mono become a hybrid CIL/java platform?
 
 A: No. It is quite far from the philosophy of the project. The idea of Mono 
    is, to have only _one_ VM, on which all can run. And if there existing a 
@@ -770,15 +749,15 @@ A: No. It is quite far from the philosophy of the project. The idea of Mono
    like J-Sharp on Mono, you can write programs in Java, which than can run 
    on Mono. You do not need two bindings (like your example: GTK-Sharp _and_ 
    Java-Gnome). You need only _one_ of it (GTK-Sharp). Thats the idea of Mono.
-   An other point is, that there are no people, who use OpenSource-JVMs. They 
+   An other point is, that there are no people, who use Open Source-JVMs. They 
    all prefer Suns original. But for Unix there don't exist a .NET-Framework. 
-   So it is possible, that in the future Mono is the standard .NET for unixes.
+   So it is possible, that in the future Mono is the standard .NET for Unixes.
 
 Q: Do you plan to implement a Javascript compiler?
 
 A: Yes. Eto Demerzal has started a Rhino port to C#.
    After this is completed, we will begin developing
-   the Javascript compiler.
+   the JavaScript compiler.
 
 <a name="extending"></a>
 ** Extending Mono
@@ -809,7 +788,7 @@ A: Embracing a good technology is good.  Extending technologies in
    encourage you to make those classes operate correctly well in both
    Mono and .NET.
 
-Q: Is there any way I can develop the class libraries using linux yet?
+Q: Is there any way I can develop the class libraries using Linux yet?
 
 A: Yes. Some class libraries can be developed on Linux. Search for
    Paolo's post (he lists which classes can be compiled fine now).
@@ -817,7 +796,7 @@ A: Yes. Some class libraries can be developed on Linux. Search for
 Q: Is there any way I can install a known working copy of mono in /usr, 
    and an experimental copy somewhere else, and have both copies use 
    their own libraries? (I'm still not very good at library paths in 
-   linux)
+   Linux)
 
 A: Yes. Just use two installation prefixes.
 
@@ -835,7 +814,7 @@ Q: What about Mono on non Linux-based systems?
 
 A: Our main intention at Ximian is to be able to develop GNOME
    applications with Mono, but if you are interested in providing a
-   port of the Winform classes to other platforms (frame buffer or
+   port of the Winforms classes to other platforms (frame buffer or
    MacOS X for example), we would gladly integrate them, as long
    they are under an open source license.  
 
@@ -845,21 +824,21 @@ A: Mono currently runs on Linux, Windows, Solaris and FreeBSD.
    There is a JIT engine available for x86 processors that can
    generate code and optimizations tailored for a particular CPU.
 
-   Interpreters exist for the SPARC, PowerPC and StrongARM cpus.
+   Interpreters exist for the SPARC, PowerPC and StrongARM CPUs.
 
 Q: Does Mono run on Windows?
 
-A: Yes.   The Compiler and the runtime both run on Windows.
+A: Yes.   You can get pre-compiled
+   binaries from <a href="http://www.go-mono.com/download.html">http://www.go-mono.com/download.html</a>
 
-Q: When will mono and mcs compile on Linux?.
+Q: Does Mono run on Linux?
 
-A: That happend a long time ago. Know you can download and compile 
-   them or even install them from already made binary packages for 
-   Windows and for Linux (RPM/DEB).
+A: Yes.  You can get pre-compiled
+   binaries from <a href="http://www.go-mono.com/download.html">http://www.go-mono.com/download.html</a>
 
 Q: Will I require Cygwin to run mono?
 
-A: No.  While you'll need it to compile it, it runs without cygwin and does not even require cygwin1.dll
+A: No.  Cygwin is only required to build Mono.
 
 Q: Will Mono depend on GNOME?
 
@@ -888,7 +867,7 @@ Q: Has anyone succeeded in building a Mac version of the C# environment.
 
 A: You could try to check with the Darwin people, or the Fink people.
    Mono/C# is self hosting on Linux/PPC which is the hard part, so it
-   should be relatively simple to get it to work on macos
+   should be relatively simple to get it to work on MacOS
 
 <a name="reuse"></a>
 ** Reusing Existing Code
@@ -935,7 +914,7 @@ Q: Will built-in reporting be supported for crystal reports? This is a
    heavily used part of our system.
 
 A: Probably not. Crystal Reports are propriety. Someone may try to emulate
-   the behaviour, but no-one has yet volunteered.
+   the behavior, but no-one has yet volunteered.
 
 Q: Who about writing to the registry? As I understand it, Linux does not have
    a counterpart to the registry. Should I avoid relying on that feature?
@@ -956,7 +935,7 @@ A: if their license is compatible with mono's, yes, we'd think about porting
 <a name="gcc"></a>
 ** Mono and GCC
 
-Q: Are you working on a GCC front-end to C#? A GCC backend that will
+Q: Are you working on a GCC front-end to C#? A GCC back-end that will
    generate CIL images? What about making a front-end to GCC that
    takes CIL images and generates native code?
 
@@ -1050,7 +1029,9 @@ Q: Could patents be used to completely disable Mono (either submarine
 A: No.  First, its basic functional capabilities have pre-existed too
    long to be held up by patents.  The basic components of Mono are
    technologically equivalent to Sun's Java technology, which has been
-   around for years.  Mono will also implement multi-language and
+   around for years.  
+
+   Mono will also implement multi-language and
    multi-architecture support, but there are previous technologies
    such as UCSD p-code and ANDF that also support multiple languages
    using a common intermediate language.  The libraries are similar
@@ -1076,11 +1057,11 @@ A: The key difference between CORBA (and COM) and the CLI is that the
    CLI allows "data-level interoperability" because every
    language/component uses the same data layout and memory management.
 
-   This means you can operate directly upon the datatypes that someone
+   This means you can operate directly upon the data types that someone
    else provides, without having to go via their interfaces.  It also
-   means you don't have to "marshall" (convert) parameters (data
+   means you don't have to "marshal" (convert) parameters (data
    layouts are the same, so you can just pass components directly) and
-   you don't have to worry about memory managment, because all
+   you don't have to worry about memory management, because all
    languages/components share the same garbage collector and address
    space.  This means much less copying and no need for reference
    counting.
@@ -1094,7 +1075,7 @@ Q: Will Ximian offer certifications on Mono or related technologies?.
 
 A: It's possible. But there is no plan about this. So the short answer is no.
 
-Q: Are there any Boehm's gc binaries?
+Q: Are there any Boehm's GC binaries?
 
 A: Yes. You can find RPMs <a href="http://java.thn.htu.se/~toor/">here</a>, though
    if your distribution provides the correct packages, you should use those.
@@ -1103,12 +1084,13 @@ A: Yes. You can find RPMs <a href="http://java.thn.htu.se/~toor/">here</a>, thou
 Q: How can I report a bug?
 
 A: The best thing is to track down the bug and provide a simple test to
-   reproduce the bug. You can then add the bug to 
-   <a href="http://bugzilla.ximian.com/enter_bug.cgi">bugzilla</a> or 
-   simply send it to mono-list@ximian.com. Please provide info about
-   what version of mono you're using and any relevant details to be 
-   able to repoduce the bug. Note that bugs reported on the mailing-list 
-   may be easily forgotten, so it's better to file them in bugzilla.
+   reproduce the bug. You can then add the bug to the 
+   <a href="http://bugzilla.ximian.com/enter_bug.cgi">bugtracking system</a>.
+
+   Please provide information about what version of mono you're using
+   and any relevant details to be able to reproduce the bug. Note that
+   bugs reported on the mailing-list may be easily forgotten, so it's
+   better to file them in the <a href="http://bugzilla.ximian.com/enter_bug.cgi">bug tracking system</a>.
 
 Q: Does mcs support the same command line options as the MS C# 
    compiler?
