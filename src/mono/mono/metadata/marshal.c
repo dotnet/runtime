@@ -6143,12 +6143,12 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 				memset (&piinfo, 0, sizeof (piinfo));
 				m.piinfo = &piinfo;
 				piinfo.piflags = (attr->call_conv << 8) | (attr->charset ? (attr->charset - 1) * 2 : 1) | attr->set_last_error;
+
+				/* FIXME: modify the calling convention */
+				g_assert_not_reached ();
 			}
 			if (!cinfo->cached)
 				mono_custom_attrs_free (cinfo);
-
-			/* FIXME: modify the calling convention */
-			g_assert_not_reached ();
 		}
 	}
 
