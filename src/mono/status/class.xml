@@ -1094,5 +1094,64 @@
             <maintainer>duco@lorentz.xs4all.nl</maintainer>
         </maintainers>
     </class>
+
+    <class name="System.Web.Cache">
+        <last-activity>Jun-17-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>Patrik.Torstensson@framfablabs.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Configuration.Assemblies.AssemblyHash">
+        <last-activity>Jun-17-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>tomasr@mvps.org</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Configuration.Assemblies.AssemblyVersionCompatibility">
+        <last-activity>Jun-17-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>tomasr@mvps.org</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Configuration.Assemblies.AssemblyHashAlgorithm">
+        <last-activity>Jun-17-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>tomasr@mvps.org</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Security">
+        <last-activity>Jun-17-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>tomasr@mvps.org</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Security.Policy">
+        <last-activity>Jun-17-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>tomasr@mvps.org</maintainer>
+        </maintainers>
+    </class>
+  
 </classes>
 
