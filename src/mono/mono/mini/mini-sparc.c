@@ -3091,11 +3091,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			NOT_IMPLEMENTED;
 			break;
 		case CEE_CONV_U:
-			/* Only used on V9, same as CEE_CONV_U8 in inssel-long.brg */
+		case CEE_CONV_U8:
+			/* Only used on V9 */
 			sparc_srl_imm (code, ins->sreg1, 0, ins->dreg);
 			break;
 		case CEE_CONV_I:
-			/* Only used on V9, same as CEE_CONV_I8 in inssel-long.brg */
+		case CEE_CONV_I8:
+			/* Only used on V9 */
 			sparc_sra_imm (code, ins->sreg1, 0, ins->dreg);
 			break;
 		case OP_COMPARE:
