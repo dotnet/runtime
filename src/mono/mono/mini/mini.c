@@ -7296,6 +7296,20 @@ mono_get_lmf_addr (void)
 #endif
 }
 
+/* Called by native->managed wrappers */
+void
+mono_jit_thread_attach ()
+{
+#ifdef HAVE_KW_THREAD
+	if (!mono_lmf_addr) {
+		mono_thread_attach (mono_domain_get ());
+	}
+#else
+	if (!TlsGetValue (mono_jit_tls_id))
+		mono_thread_attach (mono_domain_get ());
+#endif
+}	
+
 /**
  * mono_thread_abort:
  * @obj: exception object
@@ -9827,6 +9841,7 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_trace_enter_method, "mono_trace_enter_method", NULL, TRUE);
 	mono_register_jit_icall (mono_trace_leave_method, "mono_trace_leave_method", NULL, TRUE);
 	mono_register_jit_icall (mono_get_lmf_addr, "mono_get_lmf_addr", helper_sig_ptr_void, TRUE);
+	mono_register_jit_icall (mono_jit_thread_attach, "mono_jit_thread_attach", helper_sig_void_void, TRUE);
 	mono_register_jit_icall (mono_domain_get, "mono_domain_get", helper_sig_domain_get, TRUE);
 
 	mono_register_jit_icall (mono_arch_get_throw_exception (), "mono_arch_throw_exception", helper_sig_void_obj, TRUE);

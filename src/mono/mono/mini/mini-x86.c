@@ -4172,6 +4172,25 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	alloc_size = - cfg->stack_offset;
 	pos = 0;
 
+	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		/* Might need to attach the thread to the JIT */
+		if (lmf_tls_offset != -1) {
+			guint8 *buf;
+
+			x86_prefix (code, X86_GS_PREFIX);
+			x86_mov_reg_mem (code, X86_EAX, lmf_tls_offset, 4);
+			x86_test_reg_reg (code, X86_EAX, X86_EAX);
+			buf = code;
+			x86_branch8 (code, X86_CC_NE, 0, 0);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
+			x86_patch (buf, code);
+		}
+		else {
+			g_assert (!cfg->compile_aot);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
+		}
+	}
+
 	if (method->save_lmf) {
 		pos += sizeof (MonoLMF);
 
