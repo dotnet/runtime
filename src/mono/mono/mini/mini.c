@@ -8441,9 +8441,7 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_domain_get, "mono_domain_get", helper_sig_domain_get, TRUE);
 
 	mono_register_jit_icall (mono_arch_get_throw_exception (), "mono_arch_throw_exception", helper_sig_void_obj, TRUE);
-#ifdef MONO_ARCH_HAVE_RETHROW
 	mono_register_jit_icall (mono_arch_get_rethrow_exception (), "mono_arch_rethrow_exception", helper_sig_void_obj, TRUE);
-#endif
 	mono_register_jit_icall (mono_arch_get_throw_exception_by_name (), "mono_arch_throw_exception_by_name", 
 				 helper_sig_void_ptr, TRUE);
 	mono_register_jit_icall (mono_thread_get_pending_exception, "mono_thread_get_pending_exception", helper_sig_obj_void, FALSE);
