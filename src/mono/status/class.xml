@@ -958,4 +958,60 @@
             <maintainer>serge@wildwestsoftware.com</maintainer>
         </maintainers>
     </class>
+
+    <class name="System.Collections.Specialized.CollectionsUtil">
+        <last-activity>Jun-16-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>jbarn@httcb.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Collections.Specialized.HybridDictionary">
+        <last-activity>Jun-16-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>jbarn@httcb.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Collections.Specialized.ListDictionary">
+        <last-activity>Jun-16-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>jbarn@httcb.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Collections.Specialized.StringCollection">
+        <last-activity>Jun-16-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>jbarn@httcb.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Collections.Specialized.StringDictionary">
+        <last-activity>Jun-16-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>jbarn@httcb.net</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Collections.Specialized.StringEnumerator">
+        <last-activity>Jun-16-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>jbarn@httcb.net</maintainer>
+        </maintainers>
+    </class>
+  
 </classes>
