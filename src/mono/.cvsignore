@@ -15,3 +15,5 @@ Makefile.in
 mono-*.tar.gz
 stamp-h
 stamp-h.in
+mono.pc
+mono.spec
