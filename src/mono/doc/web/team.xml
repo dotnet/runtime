@@ -218,12 +218,13 @@
       <last-name>Arneng</last-name>
     </name>
     <e-mail>pt99par@student.bth.se</e-mail>
-    <image>none.png</image>
-    <location>Sweden</location>
+    <image>per.png</image>
+    <location>Ronneby, Sweden</location>
     <organization>None</organization>
-    <description>External Contributor</description>
+    <description>Job seeking student</description>
     <tasks>
       <task>Class libraries</task>
+      <task>Class Documentation</task>
     </tasks>
   </contributor>
   <contributor>
