@@ -300,7 +300,7 @@ loadi4_membase: dest:i src1:b len:9
 loadu4_membase: dest:i src1:b len:9
 loadi8_membase: dest:i src1:b len:18
 loadr4_membase: dest:f src1:b len:13
-loadr8_membase: dest:f src1:b len:9
+loadr8_membase: dest:f src1:b len:13
 loadr8_spill_membase: src1:b len:9
 loadu4_mem: dest:i len:10
 move: dest:i src1:i len:4
