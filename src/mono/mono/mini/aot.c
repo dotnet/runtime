@@ -387,12 +387,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	g_module_symbol (assembly->aot_module, "mono_assembly_guid", (gpointer *) &saved_guid);
 	g_module_symbol (assembly->aot_module, "mono_aot_version", (gpointer *) &aot_version);
 	g_module_symbol (assembly->aot_module, "mono_aot_opt_flags", (gpointer *)&opt_flags);
-#ifdef MONO_ARCH_HAVE_PIC_AOT
-	g_module_symbol (assembly->aot_module, "got_addr", (gpointer *)&got_addr);
-	g_assert (got_addr);
-	got = (gpointer*)*got_addr;
-	g_assert (got);
-#endif
 
 	if (!aot_version || strcmp (aot_version, MONO_AOT_FILE_VERSION)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s has wrong file format version (expected %s got %s)\n", aot_name, MONO_AOT_FILE_VERSION, aot_version);
@@ -411,6 +405,13 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		assembly->aot_module = NULL;
 		return;
 	}
+
+#ifdef MONO_ARCH_HAVE_PIC_AOT
+	g_module_symbol (assembly->aot_module, "got_addr", (gpointer *)&got_addr);
+	g_assert (got_addr);
+	got = (gpointer*)*got_addr;
+	g_assert (got);
+#endif
 
 	/*
 	 * It seems that MonoGHashTables are in the GC heap, so structures
