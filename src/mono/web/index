@@ -153,12 +153,13 @@
 	</a> Wikis.
 </p>
 
-@item Apr 21st, 2004: XSP 0.10 and mod_mono 0.8 released.
+@item Apr 21st, 2004: XSP 0.11 and mod_mono 0.8 released.
 
-	New releases of XSP and mod_mono are out.
+	Gonzalo has made new releases of XSP and mod_mono (The ASP.NET hosting
+	service for Mono).
 
-	Check the XSP/mod_mono <a href="archive/xsp-0.10.html">
-	Release Notes</a> to see what's new and get the source packages.
+	Check the XSP/mod_mono <a href="/archive/xsp-0.11.html"> Release
+	Notes</a> to see what is new and to obtain the source packages.
 
 @item Apr 02, 2004: Mono C# Compiler gets CLS support;   Basic Runtime Contribution from Mainsoft.
 
