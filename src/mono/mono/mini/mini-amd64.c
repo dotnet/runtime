@@ -2797,6 +2797,8 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					rs->isymbolic [hreg] = reg;
 					rs->ifree_mask &= ~ (1 << hreg);
 
+					DEBUG (g_print ("\tassigned arg reg %s to R%d\n", mono_arch_regname (hreg), reg));
+
 					list = g_slist_next (list);
 				}
 				g_slist_free (call->out_ireg_args);
@@ -3812,8 +3814,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			call = (MonoCallInst*)ins;
 
 			if (AMD64_IS_ARGUMENT_REG (ins->sreg1)) {
-				amd64_mov_reg_reg (code, AMD64_R11, ins->sreg1, 8);
-				ins->sreg1 = AMD64_R11;
+				/* 
+				 * Can't use R11 because it is clobbered by the trampoline 
+				 * code, and the reg value is needed by get_vcall_slot_addr.
+				 */
+				amd64_mov_reg_reg (code, AMD64_RAX, ins->sreg1, 8);
+				ins->sreg1 = AMD64_RAX;
 			}
 
 			amd64_call_membase (code, ins->sreg1, ins->inst_offset);
@@ -5402,6 +5408,9 @@ mono_amd64_get_vcall_slot_addr (guint8* code, guint64 *regs)
 
 	reg += amd64_rex_b (rex);
 
+	/* R11 is clobbered by the trampoline code */
+	g_assert (reg != AMD64_R11);
+
 	return (gpointer)((regs [reg]) + disp);
 }
 
@@ -5531,9 +5540,9 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 void
 mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg)
 {
+	MonoCallInst *call = (MonoCallInst*)inst;
 	int out_reg = param_regs [0];
-
-	/* FIXME: RDI and RSI might get clobbered */
+	guint64 regpair;
 
 	if (vt_reg != -1) {
 		CallInfo * cinfo = get_call_info (inst->signature, FALSE);
@@ -5555,9 +5564,13 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 		else {
 			MONO_INST_NEW (cfg, vtarg, OP_SETREG);
 			vtarg->sreg1 = vt_reg;
-			vtarg->dreg = out_reg;
-			out_reg = param_regs [1];
+			vtarg->dreg = mono_regstate_next_int (cfg->rs);
 			mono_bblock_add_inst (cfg->cbb, vtarg);
+
+			regpair = (((guint64)out_reg) << 32) + vtarg->dreg;
+			call->out_ireg_args = g_slist_append (call->out_ireg_args, (gpointer)(regpair));
+
+			out_reg = param_regs [1];
 		}
 
 		g_free (cinfo);
@@ -5569,8 +5582,11 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 		MONO_INST_NEW (cfg, this, OP_SETREG);
 		this->type = this_type;
 		this->sreg1 = this_reg;
-		this->dreg = out_reg;
+		this->dreg = mono_regstate_next_int (cfg->rs);
 		mono_bblock_add_inst (cfg->cbb, this);
+
+		regpair = (((guint64)out_reg) << 32) + this->dreg;
+		call->out_ireg_args = g_slist_append (call->out_ireg_args, (gpointer)(regpair));
 	}
 }
 
