@@ -84,21 +84,21 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 	
 	g_assert (pool != NULL);
 
-	if (size >= 4096) {
-		MonoMemPool *np = g_malloc (sizeof (MonoMemPool) + size);
-		np->next = pool->next;
-		pool->next = np;
-		return (char *)np + sizeof (MonoMemPool);
-	}
-
 	size = (size + MEM_ALIGN - 1) & ~(MEM_ALIGN - 1);
 
 	if (pool->rest < size) {
-		MonoMemPool *np = g_malloc (MONO_MEMPOOL_PAGESIZE);
-		np->next = pool->next;
-		pool->next = np;
-		pool->pos = (char *)np + sizeof (MonoMemPool);
-		pool->rest = MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
+		if (size >= 4096) {
+			MonoMemPool *np = g_malloc (sizeof (MonoMemPool) + size);
+			np->next = pool->next;
+			pool->next = np;
+			return (char *)np + sizeof (MonoMemPool);
+		} else {
+			MonoMemPool *np = g_malloc (MONO_MEMPOOL_PAGESIZE);
+			np->next = pool->next;
+			pool->next = np;
+			pool->pos = (char *)np + sizeof (MonoMemPool);
+			pool->rest = MONO_MEMPOOL_PAGESIZE - sizeof (MonoMemPool);
+		}
 	}
 
 	rval = pool->pos;
