@@ -1777,17 +1777,8 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 
 		klass->interface_count = count - pos;
 		klass->interfaces = g_new0 (MonoClass *, count - pos);
-		for (i = pos; i < count; i++) {
+		for (i = pos; i < count; i++)
 			klass->interfaces [i - pos] = param->constraints [i];
-			klass->method.count += param->constraints [i]->method.count;
-		}
-
-		klass->methods = g_new0 (MonoMethod *, klass->method.count);
-		for (i = pos; i < count; i++) {
-			MonoClass *iface = klass->interfaces [i - pos];
-			for (j = 0; j < iface->method.count; j++)
-				klass->methods [klass->method.last++] = iface->methods [j];
-		}
 	}
 
 	klass->name = g_strdup_printf (is_mvar ? "!!%d" : "!%d", param->num);
