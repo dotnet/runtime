@@ -82,6 +82,12 @@ lreg: OP_BIGMUL_UN (reg, reg) {
 	MONO_EMIT_NEW_BIALU (s, OP_BIGMUL_UN, state->reg1, state->left->reg1, state->right->reg1); 
 }
 
+lreg: OP_LONG_SHRUN_32 (lreg) {
+	/* just move the upper half to the lower and zero the high word */
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, state->reg1, state->left->reg2);
+     	MONO_EMIT_NEW_ICONST (s, state->reg2, 0);
+}
+
 lreg: OP_LADD (lreg, lreg) {
 	MONO_EMIT_NEW_BIALU (s, OP_ADDCC, state->reg1, state->left->reg1, state->right->reg1);
 	MONO_EMIT_BIALU (s, tree, OP_ADC, state->reg2, state->left->reg2, state->right->reg2);

@@ -3696,6 +3696,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_SHR_UN:
 			CHECK_STACK (2);
 			ADD_BINOP (*ip);
+			/* special case that gives a nice speedup and happens to workaorund a ppc jit but (for the release)
+			 * later apply the speedup to the left shift as well
+			 * See BUG# 57957.
+			 */
+			if ((ins->opcode == OP_LSHR_UN) && (ins->type == STACK_I8) 
+					&& (ins->inst_right->opcode == OP_ICONST) && (ins->inst_right->inst_c0 == 32)) {
+				ins->opcode = OP_LONG_SHRUN_32;
+				/*g_print ("applied long shr speedup to %s\n", cfg->method->name);*/
+				ip++;
+				break;
+			}
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
 				MonoInst *store, *temp, *load;
 				--sp;

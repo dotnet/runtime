@@ -211,6 +211,8 @@ MINI_OP(OP_FBGE_UN,"float_bge_un")
 MINI_OP(OP_FBLE,   "float_ble")
 MINI_OP(OP_FBLE_UN,"float_ble_un")
 
+MINI_OP(OP_LONG_SHRUN_32, "long_shr_un_32")
+
 /* float opcodes: must be in the same order as the matching CEE_ opcodes: binops_op_map */
 MINI_OP(OP_FADD,   "float_add")
 MINI_OP(OP_FSUB,   "float_sub")
