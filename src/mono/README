@@ -131,8 +131,8 @@ This is Mono.
 
 		make monolite-bootstrap
 
-	This will automatically gunzip and untar the tarball, and place
-	the files appropriately, and then completes the bootstrap.
+	This will automatically gunzip and untar the tarball, place the
+	files appropriately, and then complete the bootstrap.
 
 	iii. Testing and Installation
 	     ------------------------
@@ -174,8 +174,8 @@ This is Mono.
 		make fasterstrap
 
 	This should be attempted only if you're sure that the sources of
-	the mcs compiler itself and the sources of the the libraries
-	used by it have not been changed.
+	the mcs compiler itself and the sources of the libraries used by
+	it have not been changed.
 
 2. Using Mono
 =============
