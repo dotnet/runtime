@@ -96,6 +96,8 @@ struct _MonoImage {
 	 */
 	GHashTable *method_cache;
 	GHashTable *class_cache;
+	/* indexed by a generic type instantiation */
+	GHashTable *generics_cache;
 	/*
 	 * Indexes namespaces to hash tables that map class name to typedef token.
 	 */

@@ -2122,6 +2122,22 @@ mono_metadata_packing_from_typedef (MonoImage *meta, guint32 index, guint32 *pac
 	return loc.result + 1;
 }
 
+#ifdef DEBUG
+static void
+mono_backtrace (int limit)
+{
+	void *array[limit];
+	char **names;
+	int i;
+	backtrace (array, limit);
+	names = backtrace_symbols (array, limit);
+	for (i =0; i < limit; ++i) {
+		g_print ("\t%s\n", names [i]);
+	}
+	g_free (names);
+}
+#endif
+
 #ifndef __GNUC__
 /*#define __alignof__(a) sizeof(a)*/
 #define __alignof__(type) G_STRUCT_OFFSET(struct { char c; type x; }, x)
@@ -2202,6 +2218,10 @@ mono_type_size (MonoType *t, gint *align)
 	case MONO_TYPE_TYPEDBYREF:
 		*align = __alignof__(gpointer);
 		return sizeof (gpointer) * 2;
+	case MONO_TYPE_GENERICINST: {
+		MonoClass *iclass = mono_class_from_mono_type (t);
+		return mono_type_size (&iclass->byval_arg, align);
+	}
 	default:
 		g_error ("mono_type_size: type 0x%02x unknown", t->type);
 	}
@@ -2280,6 +2300,10 @@ mono_type_stack_size (MonoType *t, gint *align)
 			return size;
 		}
 	}
+	case MONO_TYPE_GENERICINST: {
+		MonoClass *iclass = mono_class_from_mono_type (t);
+		return mono_type_stack_size (&iclass->byval_arg, align);
+	}
 	default:
 		g_error ("type 0x%02x unknown", t->type);
 	}
@@ -2308,6 +2332,8 @@ mono_metadata_type_hash (MonoType *t1)
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.type);
 	case MONO_TYPE_ARRAY:
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (&t1->data.array->eklass->byval_arg);
+	case MONO_TYPE_GENERICINST:
+		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.generic_inst->generic_type);
 	}
 	return hash;
 }
@@ -2357,6 +2383,21 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 		if (t1->data.array->rank != t2->data.array->rank)
 			return FALSE;
 		return t1->data.array->eklass == t2->data.array->eklass;
+	case MONO_TYPE_GENERICINST: {
+		int i;
+		if (t1->data.generic_inst->type_argc != t2->data.generic_inst->type_argc)
+			return FALSE;
+		if (!mono_metadata_type_equal (t1->data.generic_inst->generic_type, t2->data.generic_inst->generic_type))
+			return FALSE;
+		for (i = 0; i < t1->data.generic_inst->type_argc; ++i) {
+			if (!mono_metadata_type_equal (t1->data.generic_inst->type_argv [i], t2->data.generic_inst->type_argv [i]))
+				return FALSE;
+		}
+		return TRUE;
+	}
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		return t1->data.type_param == t2->data.type_param;
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
 		return FALSE;
@@ -3063,5 +3104,57 @@ mono_guid_to_string (const guint8 *guid)
 				guid[7], guid[6],
 				guid[8], guid[9],
 				guid[10], guid[11], guid[12], guid[13], guid[14], guid[15]);
+}
+
+static MonoClass**
+get_constraints (MonoImage *image, int owner)
+{
+	return NULL;
+}
+
+MonoGenericParam *
+mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num)
+{
+	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAM];
+	guint32 cols [MONO_GENERICPARAM_SIZE];
+	guint32 i, owner, last_num, n;
+	MonoGenericParam *params;
+
+	if (mono_metadata_token_table (token) == MONO_TABLE_TYPEDEF)
+		owner = MONO_TYPEORMETHOD_TYPE;
+	else if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
+		owner = MONO_TYPEORMETHOD_METHOD;
+	else {
+		g_error ("wrong token %x to load_generics_params", token);
+	}
+	owner |= mono_metadata_token_index (token) << MONO_TYPEORMETHOD_BITS;
+	if (num)
+		*num = 0;
+	if (!tdef->base)
+		return NULL;
+
+	for (i = 0; i < tdef->rows; ++i) {
+		mono_metadata_decode_row (tdef, i, cols, MONO_GENERICPARAM_SIZE);
+		if (cols [MONO_GENERICPARAM_OWNER] == owner)
+			break;
+	}
+	last_num = 0;
+	if (i >= tdef->rows)
+		return NULL;
+	params = NULL;
+	n = 1;
+	do {
+		params = g_realloc (params, sizeof (MonoGenericParam) * n);
+		params [n - 1].flags = cols [MONO_GENERICPARAM_FLAGS];
+		params [n - 1].num = cols [MONO_GENERICPARAM_NUMBER];
+		params [n - 1].name = mono_metadata_string_heap (image, cols [MONO_GENERICPARAM_NAME]);
+		params [n - 1].constraints = get_constraints (image, i + 1);
+		i++;
+		mono_metadata_decode_row (tdef, i, cols, MONO_GENERICPARAM_SIZE);
+	} while (cols [MONO_GENERICPARAM_NUMBER] == last_num + 1);
+	
+	if (num)
+		*num = n;
+	return params;
 }
 

@@ -331,6 +331,13 @@ typedef enum {
 	MONO_PARSE_FIELD
 } MonoParseTypeMode;
 
+typedef struct {
+	const char *name;
+	guint16 flags;
+	guint16 num;
+	MonoClass** constraints; /* NULL means end of list */
+} MonoGenericParam;
+
 guint32     mono_metadata_parse_typedef_or_ref (MonoImage      *m,
                                                 const char      *ptr,
                                                 const char     **rptr);
@@ -412,5 +419,7 @@ mono_type_to_unmanaged (MonoType *type, MonoMarshalSpec *mspec,
 guint32 mono_metadata_token_from_dor (guint32 dor_index);
 
 char *mono_guid_to_string (const guint8 *guid);
+
+MonoGenericParam *mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num);
 
 #endif /* __MONO_METADATA_H__ */

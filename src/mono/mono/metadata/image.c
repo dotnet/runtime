@@ -487,6 +487,7 @@ mono_image_init (MonoImage *image)
 	image->remoting_invoke_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 	image->synchronized_cache = g_hash_table_new (g_direct_hash, g_direct_equal);
 
+	image->generics_cache = g_hash_table_new (mono_metadata_type_hash, mono_metadata_type_equal);
 
 }
 

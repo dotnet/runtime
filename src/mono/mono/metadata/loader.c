@@ -150,7 +150,26 @@ mono_field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass
 		if (retklass)
 			*retklass = klass;
 		return mono_class_get_field_from_name (klass, fname);
+	case MEMBERREF_PARENT_TYPESPEC: {
+		/*guint32 bcols [MONO_TYPESPEC_SIZE];
+		guint32 len;
+		MonoType *type;
+
+		mono_metadata_decode_row (&tables [MONO_TABLE_TYPESPEC], nindex - 1, 
+					  bcols, MONO_TYPESPEC_SIZE);
+		ptr = mono_metadata_blob_heap (image, bcols [MONO_TYPESPEC_SIGNATURE]);
+		len = mono_metadata_decode_value (ptr, &ptr);	
+		type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
+
+		klass = mono_class_from_mono_type (type);
+		mono_class_init (klass);
+		g_print ("type in sig: %s\n", klass->name);*/
+		klass = mono_class_get (image, MONO_TOKEN_TYPE_SPEC | nindex);
+		mono_class_init (klass);
+		return mono_class_get_field_from_name (klass, fname);
+	}
 	default:
+		g_warning ("field load from %x", class);
 		return NULL;
 	}
 }
@@ -211,6 +230,7 @@ static MonoMethod *
 find_method (MonoClass *klass, const char* name, MonoMethodSignature *sig)
 {
 	int i;
+	MonoClass *sclass = klass;
 	
 	if (sig->call_convention == MONO_CALL_VARARG) {
 		while (klass) {
@@ -222,6 +242,8 @@ find_method (MonoClass *klass, const char* name, MonoMethodSignature *sig)
 						return m;
 				}
 			}
+			if (name [0] == '.' && (strcmp (name, ".ctor") == 0 || strcmp (name, ".cctor") == 0))
+				break;
 			klass = klass->parent;
 		}
 		return NULL;
@@ -235,7 +257,20 @@ find_method (MonoClass *klass, const char* name, MonoMethodSignature *sig)
 					return m;
 			}
 		}
+		if (name [0] == '.' && (strcmp (name, ".ctor") == 0 || strcmp (name, ".cctor") == 0))
+			break;
 		klass = klass->parent;
+	}
+	if (sclass->generic_inst) {
+		MonoClass *gclass = mono_class_from_mono_type (sclass->generic_inst->data.generic_inst->generic_type);
+		MonoMethod *res = find_method (gclass, name, sig);
+		if (!res)
+			return NULL;
+		for (i = 0; i < res->klass->method.count; ++i) {
+			if (res == res->klass->methods [i]) {
+				return sclass->methods [i];
+			}
+		}
 	}
 	return NULL;
 
@@ -255,6 +290,9 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 
 	/* !table is for wrappers: we should really assign their own token to them */
 	if (!table || table == MONO_TABLE_METHOD)
+		return method->signature;
+
+	if (method->klass->generic_inst)
 		return method->signature;
 
 	if (image->assembly->dynamic)

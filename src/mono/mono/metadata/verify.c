@@ -2083,8 +2083,9 @@ mono_method_verify (MonoMethod *method, int level)
 				ip += 5;
 				--cur_stack;
 				break;
-			case CEE_UNUSED68:
-				++ip;
+			case CEE_CONSTRAINED_:
+				token = read32 (ip + 1);
+				ip += 5;
 				break;
 			case CEE_CPBLK:
 				CHECK_STACK_UNDERFLOW (3);
@@ -2094,8 +2095,8 @@ mono_method_verify (MonoMethod *method, int level)
 				CHECK_STACK_UNDERFLOW (3);
 				ip++;
 				break;
-			case CEE_UNUSED69:
-				++ip;
+			case CEE_NO_:
+				ip += 2;
 				break;
 			case CEE_RETHROW:
 				++ip;
@@ -2115,7 +2116,6 @@ mono_method_verify (MonoMethod *method, int level)
 				CHECK_STACK_UNDERFLOW (1);
 				++ip;
 				break;
-			case CEE_UNUSED52:
 			case CEE_UNUSED53:
 			case CEE_UNUSED54:
 			case CEE_UNUSED55:
