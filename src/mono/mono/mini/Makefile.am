@@ -30,9 +30,11 @@ regtests=basic.exe arrays.exe basic-float.exe basic-long.exe objects.exe basic-c
 
 libmono_la_LDFLAGS=-Wl,-version-script=$(srcdir)/ldscript
 
+if X86
 bin_PROGRAMS = mono genmdesc
 
 lib_LTLIBRARIES = libmono.la
+endif
 
 mono_SOURCES = \
 	main.c
