@@ -43,8 +43,8 @@ static pthread_mutex_t debugger_finished_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t debugger_start_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t debugger_start_mutex = PTHREAD_MUTEX_INITIALIZER;
 static gboolean debugger_signalled = FALSE;
-static gboolean must_send_finished = FALSE;
 #endif
+static gboolean must_send_finished = FALSE;
 
 extern void (*mono_debugger_class_init_func) (MonoClass *klass);
 
