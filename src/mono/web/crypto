@@ -67,22 +67,14 @@
 		  (using the Mono.Security.ASN1 class). 
 
 		* Software Publisher Certificates (SPC) used by Authenticode
-		  (tm) to sign assemblies are supported (extraction from PE 
-		  files) but <b>not yet</b> validated.
+		  (tm) to sign assemblies are supported and <b>minimally</b>
+		  validated.
 
 		* Unit tests are generated from a set of existing certificates
 		  (about a dozen) each having different properties. Another
 		  set of certificates (more than 700) are used for a more 
 		  complete test (but isn't part of the standard test suite for 
 		  size and time consideration, i.e. a 7.5Mb C# source file).
-	</ul>
-
-**** TODO
-	<ul>
-		* Authenticode(tm) support is incomplete. We can extract the
-		  certificates from PE files but cannot validate the signature
-		  nor the certificate chain (and we're still missing some trust
-		  anchors). See Tools section for more information.
 	</ul>
 
 **** Notes
@@ -104,8 +96,8 @@
 		  continue to evolve to support the security tools.
 
 		* Microsoft implementation of <code>X509Certificate</code> is 
-		  done by using CryptoAPI (unmanaged code). From the exceptions 
-		  thrown Authenticode(tm) support is done via COM.
+		  done by using CryptoAPI (unmanaged code). Based on the 
+		  exceptions thrown, Authenticode(tm) support is done via COM.
 	</ul>
 
 <hr>
@@ -156,6 +148,10 @@
 		* Additional algorithms: MD2, ARCFOUR (required for SSL)
 		* Convertion helpers
 	</ul>
+*** Namespace: Mono.Security.Protocol.Tls
+	<ul>
+		* An 100% managed TLS implementation from Carlos Guzman Alvarez.
+	</ul>
 *** Namespace: Mono.Security.X509
 	<ul>
 		* X.509 structures (certificate, CRL...) building and decoding.
@@ -168,8 +164,6 @@
 
 **** Status
 	<ul>
-		* Some part of the work has not yet been commited (still cleaning up).
-
 		* A big part of this assembly is also included inside Mono's
 		  corlib. The classes are duplicated in this assembly so the 
 		  functionalities can be used without a dependency on Mono's 
@@ -208,7 +202,8 @@
 		  algorithms shouldn't be used in new design (MD4 is broken, 
 		  MD2 and MD5 aren't considered safe for some usage). They are 
 		  included to preserve interoperability with older applications
-		  (e.g. some old, but still valid, X.509 certificates use MD2).
+		  (e.g. some old, but still valid, X.509 certificates use MD2,
+		  MD4 is required for NTLM authentication ...).
 	</ul>
 
 **** TODO
@@ -247,26 +242,36 @@
 	<a href="http://www.oasis-open.org/committees/wss/">OASIS</a> or
 	other committees.
 
-	<b>[*] There are some licensing issues to consider before starting to 
-	implement WS-Security. All contributors must sign an agreement with 
-	Microsoft before commiting anything related to WS-Security into CVS.
-	</b>
-
-*** Namespace: Microsoft.Web.Services.Security [*]
-*** Namespace: Microsoft.Web.Services.Timestamp [*]
+*** Namespace: Microsoft.Web.Services.Security
 
 **** Status
 	<ul>
-		* Nothing (yet) commited in CVS <b>[*]</b>.
+		* Most WSE 1.0 classes are implemented.
+	</ul>
+
+**** TODO
+	<ul>
+		* Some classes from System.Security assembly need to be 
+		duplicated (and somewhat fixed) in WSE for XMLDSIG.
+
+		* There are still missing classes and <b>many</b> missing
+		unit tests.
+	</ul>
+
+
+*** Namespace: Microsoft.Web.Services.Timestamp
+
+**** Status
+	<ul>
+		* This seems complete for WSE 1.0 but some new classes were 
+		introduced in WSE 2.0.
 	</ul>
 
 *** Namespace: Microsoft.Web.Services.Security.X509
 
 **** Status
 	<ul>
-		* Nothing (yet) commited in CVS. However the classes in this 
-		  namespace are outside WS-Security scope. So development, for 
-		  those classes, could be done without signing this agreement.
+		* X509Certificate support is complete for both WSE 1.0 and 2.0.
 	</ul>
 
 **** TODO
@@ -279,7 +284,9 @@
 *** Notes
 	<ul>
 		* Microsoft has <a href="http://microsoft.com/downloads/details.aspx?FamilyId=21FB9B9A-C5F6-4C95-87B7-FC7AB49B3EDD&displaylang=en">released</a>
-		a technical preview of WSE 2.
+		a technical preview of WSE 2. <b>Note that WSDK (the technical 
+		preview of WSE) had A LOT of changes before it's initial 
+		release!</b>
 	</ul>
 
 <hr>
@@ -292,7 +299,7 @@
 
 **** Status
 
-	The following tools are complete (mostly complete):
+	The following tools are complete (or mostly complete):
 	<ul>
 		* <code>secutil</code> is a tool to extract certificates and 
 		  strongnames from assemblies in a format that can be easily 
@@ -305,6 +312,16 @@
 		* <code>makecert</code> to create X.509 test certificates that 
 		  can be used (once transformed in SPC) to sign assemblies. It's
 		  now possible to generate SSL certificates for web servers.
+
+		* <code>sn</code> is a clone of the <code>sn</code> to manage
+		  strongnames. Current version can create, convert, sign and
+		  verify strongnames signatures. Some configuration options 
+		  are still missing.
+
+		* <code>signcode</code> and <code>chktrust</code> for signing 
+		  and validating Authenticode(tm) signatures on assemblies (or 
+		  any PE file) are now working (signature and timestamps) but 
+		  some options aren't yet supported.
 	</ul>
 
 	Somewhat usable, somewhat incomplete:
@@ -313,10 +330,6 @@
 		  <code>System.Windows.Forms</code> (right now only working on 
 		  Windows), while <code>gcertview</code> is the same viewer 
 		  implemented for GTK# (working on both Windows and Linux).
-
-		* <code>sn</code> is a clone of the <code>sn</code> to manage
-		  strongnames. Current version is limited to creating new keypairs
-		  and converting values.
 
 		* <code>monosn</code> is a clone of the <code>sn</code> to manage
 		  strongnames. This tools is part of the runtime (not the class
@@ -327,11 +340,6 @@
 **** TODO
 	The following tools are still missing or largely incomplete:
 	<ul>
-
-		* <code>signcode</code> and <code>chktrust</code> (in progress)
-		  for signing and validating Authenticode(tm) signatures on 
-		  assemblies (or any PE file).
-
 		* Other tools like a, GUI-based, certificate manager...
 	</ul>
 
@@ -340,15 +348,21 @@
 	tools are of limited use until supported by the runtime.
 
 <hr>
-** Other stuff
+** References
 
 	<ul>
-		* SSL/TLS for secure communication (a prototype is under way).
-		  Some work is already visible in Mono.Security assembly (e.g. 
-		  RC4, RSAManaged ...).
+		* RSA Laboratories' <a href="http://www.rsasecurity.com/rsalabs/faq/index.html">
+		Frequently Asked Questions</a> About Today's Cryptography, Version 4.1
+
+		* Public-Key Cryptography Standards (<a href="http://www.rsasecurity.com/rsalabs/pkcs/index.html">
+		PKCS</a>)
+
+		* National Institute of Standards and Technology - Federal 
+		Information Processing Standards <a href="http://csrc.nist.gov/publications/fips/index.html">
+		NIST FIPS</a>
 	</ul>
 
-<hr>	
+<hr>
 ** How to Help
 
 	<ul>
@@ -375,4 +389,4 @@
 	informations about the status of the cryptographic classes.
 
 <hr>
-Last reviewed: August 9, 2003 (post mono 0.25)
+Last reviewed: October 26, 2003 (post mono 0.28)
