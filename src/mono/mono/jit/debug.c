@@ -122,7 +122,7 @@ debug_generate_method_lines (AssemblyDebugInfo *info, DebugMethodInfo *minfo, Mo
 	minfo->line_numbers = g_ptr_array_new ();
 
 	st_line = minfo->first_line;
-	st_address = minfo->prologue_end_offset;
+	st_address = minfo->method_info.prologue_end;
 
 	/* record_line_number takes absolute memory addresses. */
 	record_line_number (minfo, minfo->method_info.code_start, minfo->start_line, FALSE);
@@ -191,7 +191,7 @@ free_method_info (DebugMethodInfo *minfo)
 	if (minfo->line_numbers)
 		g_ptr_array_free (minfo->line_numbers, TRUE);
 	g_free (minfo->method_info.param_offsets);
-	g_free (minfo->method_info.local_offsets);
+	g_free (minfo->method_info.locals);
 	g_free (minfo);
 }
 
@@ -222,21 +222,22 @@ mono_debug_open_assembly (MonoDebugHandle* handle, MonoImage *image)
 
 		/* Fall back to dwarf if we can't find the symbol file. */
 		if (!g_file_test (info->filename, G_FILE_TEST_EXISTS)) {
-			gchar *tmp = g_strdup_printf ("%s-dwarf.s", image->assembly_name);
+			gchar *fname = g_strdup_printf ("%s-dwarf.s", image->assembly_name);
 
-			if (g_file_test (tmp, G_FILE_TEST_EXISTS)) {
+			if (g_file_test (fname, G_FILE_TEST_EXISTS)) {
 				g_warning ("Can't open symbol file `%s', falling back to DWARF 2.",
 					   info->filename);
 				g_free (info->filename);
-				info->filename = tmp;
+				info->filename = fname;
 				info->format = MONO_DEBUG_FORMAT_DWARF2;
 			} else
-				g_free (tmp);
+				g_free (fname);
 		}
 
 		break;
 	}
 	info->image = image;
+	info->image->ref_count++;
 	info->name = g_strdup (image->assembly_name);
 	info->methods = g_hash_table_new_full (g_direct_hash, g_direct_equal,
 					       NULL, (GDestroyNotify) free_method_info);
@@ -472,12 +473,12 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 	minfo->last_line = end_line;
 	minfo->method_info.code_start = cfg->start + 1;
 	minfo->method_info.code_size = cfg->code_size;
-	minfo->prologue_end_offset = cfg->prologue_end - 1;
-	minfo->epilogue_begin_offset = cfg->epilogue_begin - 1;
 	minfo->method_number = method_number;
 	minfo->method_info.method = method;
 	minfo->method_info.num_params = method->signature->param_count;
 	minfo->method_info.param_offsets = g_new0 (guint32, minfo->method_info.num_params);
+	minfo->method_info.prologue_end = cfg->prologue_end - 1;
+	minfo->method_info.epilogue_begin = cfg->epilogue_begin - 1;
 
 	if (method->signature->hasthis) {
 		MonoVarInfo *ptr = ((MonoVarInfo *) cfg->varinfo->data) + cfg->args_start_index;
@@ -497,9 +498,12 @@ mono_debug_add_method (MonoDebugHandle* debug, MonoFlowGraph *cfg)
 		MonoVarInfo *ptr = ((MonoVarInfo *) cfg->varinfo->data) + cfg->locals_start_index;
 
 		minfo->method_info.num_locals = header->num_locals;
-		minfo->method_info.local_offsets = g_new0 (guint32, header->num_locals);
-		for (i = 0; i < minfo->method_info.num_locals; i++)
-			minfo->method_info.local_offsets [i] = ptr [i].offset;
+		minfo->method_info.locals = g_new0 (MonoDebugLocalInfo, header->num_locals);
+		for (i = 0; i < minfo->method_info.num_locals; i++) {
+			minfo->method_info.locals [i].offset = ptr [i].offset;
+			minfo->method_info.locals [i].begin_scope = minfo->method_info.prologue_end;
+			minfo->method_info.locals [i].end_scope = minfo->method_info.epilogue_begin;
+		}
 	}
 
 	debug_generate_method_lines (info, minfo, cfg);

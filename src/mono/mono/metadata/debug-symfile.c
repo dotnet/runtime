@@ -30,6 +30,8 @@
 #define MRT_mono_array_offset		0x0c
 #define MRT_mono_array_bounds_sizeof	0x0d
 #define MRT_mono_array_bounds_offset	0x0e
+#define MRT_variable_start_scope	0x0f
+#define MRT_variable_end_scope		0x10
 
 #define MRI_string_offset_length	0x00
 #define MRI_string_offset_vector	0x01
@@ -363,7 +365,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 				continue;
 			}
 
-			address = minfo->local_offsets [original];
+			address = minfo->locals [original].offset;
 
 #if 0
 			g_message ("Relocating local variable %d (%s) to stack offset %d",
@@ -550,6 +552,62 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			}
 
 			* (guint32 *) base_ptr = off;
+
+			break;
+		}
+
+		case MRT_variable_start_scope:  {
+			guint32 token = *((guint32 *) tmp_ptr)++;
+			guint32 original = *((guint32 *) tmp_ptr)++;
+			MonoDebugMethodInfo *minfo;
+			gint32 address;
+
+			minfo = method_info_func (symfile, token, user_data);
+
+			if (!minfo) {
+				* (void **) base_ptr = 0;
+				continue;
+			}
+
+			if (original > minfo->num_locals) {
+				g_warning ("Symbol file %s contains relocation entry for non-existing "
+					   "local variable %d, but method %s only has %d local variables.",
+					   symfile->file_name, original, minfo->method->name,
+					   minfo->num_locals);
+				continue;
+			}
+
+			address = minfo->locals [original].begin_scope;
+
+			* (gint32 *) base_ptr = minfo->code_start + address;
+
+			break;
+		}
+
+		case MRT_variable_end_scope:  {
+			guint32 token = *((guint32 *) tmp_ptr)++;
+			guint32 original = *((guint32 *) tmp_ptr)++;
+			MonoDebugMethodInfo *minfo;
+			gint32 address;
+
+			minfo = method_info_func (symfile, token, user_data);
+
+			if (!minfo) {
+				* (void **) base_ptr = 0;
+				continue;
+			}
+
+			if (original > minfo->num_locals) {
+				g_warning ("Symbol file %s contains relocation entry for non-existing "
+					   "local variable %d, but method %s only has %d local variables.",
+					   symfile->file_name, original, minfo->method->name,
+					   minfo->num_locals);
+				continue;
+			}
+
+			address = minfo->locals [original].end_scope;
+
+			* (gint32 *) base_ptr = minfo->code_start + address;
 
 			break;
 		}

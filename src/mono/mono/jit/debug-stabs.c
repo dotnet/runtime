@@ -91,7 +91,7 @@ write_method_stabs (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 	/* local vars */
 	for (i = 0; i < minfo->method_info.num_locals; ++i) {
 		MonoMethodHeader *header = ((MonoMethodNormal*)method)->header;
-		int stack_offset = minfo->method_info.local_offsets [i];
+		int stack_offset = minfo->method_info.locals [i].offset;
 
 		fprintf (info->f, ".stabs \"local_%d:(0,%d)=(0,%d)\",128,0,%d,%d\n",
 			 i, info->next_idx++, header->locals [i]->type, minfo->start_line, stack_offset);
@@ -99,7 +99,7 @@ write_method_stabs (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 
 	if (minfo->line_numbers) {
 		fprintf (info->f, ".stabn 68,0,%d,%d\n", minfo->start_line, 0);
-		fprintf (info->f, ".stabn 68,0,%d,%d\n", minfo->first_line, minfo->prologue_end_offset);
+		fprintf (info->f, ".stabn 68,0,%d,%d\n", minfo->first_line, minfo->method_info.prologue_end);
 
 		for (i = 1; i < minfo->line_numbers->len; i++) {
 			DebugLineNumberInfo *lni = g_ptr_array_index (minfo->line_numbers, i);
@@ -108,7 +108,7 @@ write_method_stabs (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 				 (char *)lni->address - minfo->method_info.code_start);
 		}
 
-		fprintf (info->f, ".stabn 68,0,%d,%d\n", minfo->last_line, minfo->epilogue_begin_offset);
+		fprintf (info->f, ".stabn 68,0,%d,%d\n", minfo->last_line, minfo->method_info.epilogue_begin);
 	}
 
 	/* end of function */

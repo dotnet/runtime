@@ -8,6 +8,7 @@
 typedef struct MonoDebugSymbolFile		MonoDebugSymbolFile;
 typedef struct MonoDebugSymbolFileSection	MonoDebugSymbolFileSection;
 typedef struct MonoDebugMethodInfo		MonoDebugMethodInfo;
+typedef struct MonoDebugLocalInfo		MonoDebugLocalInfo;
 typedef struct MonoDebugILOffsetInfo		MonoDebugILOffsetInfo;
 
 /* Machine dependent information about a method.
@@ -22,10 +23,18 @@ struct MonoDebugMethodInfo {
 	guint32 this_offset;
 	guint32 *param_offsets;
 	guint32 num_locals;
-	guint32 *local_offsets;
+	MonoDebugLocalInfo *locals;
 	guint32 num_il_offsets;
 	MonoDebugILOffsetInfo *il_offsets;
+	guint32 prologue_end;
+	guint32 epilogue_begin;
 	gpointer _priv;
+};
+
+struct MonoDebugLocalInfo {
+	guint32 offset;
+	guint32 begin_scope;
+	guint32 end_scope;
 };
 
 struct MonoDebugILOffsetInfo {
@@ -51,7 +60,7 @@ struct MonoDebugSymbolFileSection {
 	gulong size;
 };
 
-#define MONO_DEBUG_SYMBOL_FILE_VERSION			7
+#define MONO_DEBUG_SYMBOL_FILE_VERSION			8
 
 /* Keep in sync with Mono.CSharp.Debugger.MonoDwarfFileWriter.Section */
 #define MONO_DEBUG_SYMBOL_SECTION_DEBUG_INFO		0x01

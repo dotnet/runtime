@@ -807,7 +807,7 @@ dwarf2_write_parameter (AssemblyDebugInfo *info, DebugMethodInfo *minfo, const g
 	dwarf2_write_byte (info->f, DW_OP_fbreg);
 	dwarf2_write_sleb128 (info->f, stack_offset);
 	dwarf2_write_label (info->f, end);
-	dwarf2_write_long (info->f, minfo->prologue_end_offset);
+	dwarf2_write_long (info->f, minfo->method_info.prologue_end);
 }
 
 static void
@@ -833,7 +833,7 @@ dwarf2_write_variable (AssemblyDebugInfo *info, DebugMethodInfo *minfo, const gc
 	dwarf2_write_byte (info->f, DW_OP_fbreg);
 	dwarf2_write_sleb128 (info->f, stack_offset);
 	dwarf2_write_label (info->f, end);
-	dwarf2_write_long (info->f, minfo->prologue_end_offset);
+	dwarf2_write_long (info->f, minfo->method_info.prologue_end);
 }
 
 static void 
@@ -896,7 +896,7 @@ write_method_lines_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 
 	dwarf2_write_dw_lne_set_address (info->f,
 					 (char *)minfo->method_info.code_start +
-					 minfo->epilogue_begin_offset);
+					 minfo->method_info.epilogue_begin);
 	dwarf2_write_dw_lns_advance_line (info->f, minfo->last_line - st_line);
 	dwarf2_write_dw_lns_copy (info->f);
 
@@ -1063,7 +1063,7 @@ write_method_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 		char name [BUFSIZ];
 
 		sprintf (name, "V_%d", i);
-		dwarf2_write_variable (info, minfo, name, minfo->method_info.local_offsets [i], klass);
+		dwarf2_write_variable (info, minfo, name, minfo->method_info.locals [i].offset, klass);
 	}
 
 	dwarf2_write_byte (info->f, 0);
