@@ -91,7 +91,23 @@
   </tr>
 </table>
 
-@item Dec 9th, 2002: VB.NET, Oracle Provider.
+@item Dec 9th, 2002: Mono 0.17 has been released
+
+	Mono 0.17 has been released.  Check out the <a
+	href="archive/mono-0.17">release notes</a> for a more detailed
+	list. 
+
+	Many new features as well as plenty of bug fixes.  Many new
+	System.Data providers and a more mature System.Web (ASP.NET)
+	which can now be hosted in any web server.  A simple <a
+	href="archive/xsp-0.2.tar.gz">test web server</a> to host
+	asp.net has been released as well.
+
+	This release also includes a new exception handling system
+	that uses the gcc exception information that vastly improves
+	our internalcall speed (15% faster mcs compilation times).  
+
+@item Dec 8th, 2002: VB.NET, Oracle Provider.
 
 	Marco has got the Mono Basic compiler up to speed (support for
 	classes, modules, expressions, object creation, method
