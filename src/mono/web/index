@@ -23,7 +23,16 @@
 	You can contact the team at: <a
 	href="mailto:mono-list@ximian.com">mono-list@ximian.com</a>
 
-** Jan 3, 2001
+** Jan 4, 2002
+
+	Mike Kestner posted an update on Gtk# <a
+	href="http://lists.ximian.com/archives/public/gtk-sharp-list/2002-January/000021.html"><i>New
+	year, new direction</i></a>.
+
+	Gtk# will be our foundation on which we will be implementing
+	System.Windows.Forms.  
+
+** Jan 3, 2002
 
 	Mono C# compiler becomes self-sufficient.  We can now continue
 	development of the compiler with itself.  
@@ -31,6 +40,10 @@
 	Work on the class libraries is still underway for having a full
 	self hosting system.  We hope to achieve our goal of self-hosting
 	on Linux before the end of the month.
+
+	Join the fun by downloading either tonight's <a
+	href="snapshots">snapshot</a> or getting your sources from our
+	<a href="anoncvs.html">Anonymous CVS server</a>.
 
 ** Dec 28, 2001
 

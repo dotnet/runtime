@@ -1,0 +1,17 @@
+* Status of the various pieces of the class library
+
+	You can browse the status of the class library and see who has
+	registered to work on what parts of the system.  These list
+	work-in-progress components currently.
+
+	Browse the current <a href="class-status/index.html">status</a>.
+
+	You can also download the XML <a
+	href="class-status/maintainers.xml">maintainers</a> file that
+	contains the actual maintainers list.  
+
+	You can also download the master <a
+	href="class-status/class.xml">Class Status XML</a> file.
+
+* List of not-implemented classes
+

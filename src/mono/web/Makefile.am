@@ -12,7 +12,15 @@ all-docs: $(WEB_FILES)
 	runtime documentation download faq contributing \
 	resources status > all-docs
 
-webit:
+class-status: class-status.in pending-classes Makefile.am
+	cat class-status.in pending-classes > class-status
+
+pending-classes: pending-classes.in Makefile.am
+	echo "This is a list of pending classes, and links to their documentation on MSDN.Microsoft.com\n\n" > pending-classes
+	for i in `cat pending-classes.in`; do x=`echo $$i | sed s/\\\.//g`; link=`echo http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrf@@@ClassTopic.asp | sed "s/@@@/$$x/"`; echo "	<a href=\"$$link\">$$i</a><br>" >> pending-classes; done
+
+
+webit: class-status
 	(cd web; make && make push)
 
 push-notes:
