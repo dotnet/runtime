@@ -364,10 +364,9 @@ emit_save_parameters (guint8 *p, MonoMethod *method, guint stack_size, guint str
 			if (gr < 7) {
 				if (gr & 1)
 					gr ++;
-				g_warning ("check endianess");
 				ppc_lwz  (p, ppc_r3 + gr, i*16, ARG_BASE);
 				gr ++;
-				ppc_lwz  (p, ppc_r3 + gr, i*17, ARG_BASE);
+				ppc_lwz  (p, ppc_r3 + gr, i*16 + 4, ARG_BASE);
 				gr ++;
 			} else {
 				NOT_IMPLEMENTED ("i8 on stack");
@@ -485,7 +484,6 @@ enum_retvalue:
 			ppc_stfd (p, ppc_f1, 0, ppc_r9);                       /* save return value (f1) to "retval" */
 			break;
 		case MONO_TYPE_I8:
-			g_warning ("check endianess");
 			ppc_lwz  (p, ppc_r9, stack_size - 12, ppc_r31);        /* load "retval" address */
 			ppc_stw  (p, ppc_r3, 0, ppc_r9);                       /* save return value (r3) to "retval" */
 			ppc_stw  (p, ppc_r4, 4, ppc_r9);                       /* save return value (r3) to "retval" */
