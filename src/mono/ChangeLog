@@ -1,3 +1,9 @@
+2004-08-26  Raja R Harinath  <rharinath@novell.com>
+
+	* Makefile.am (mcs-do-run-test): Depend on '$(tmpinst)/bin/mbas'.
+	($(tmpinst)/bin/mbas): Create temporary wrapper file, so that the
+	testcases pick the built 'mbas.exe'.
+
 2004-08-17  Zoltan Varga  <vargaz@freemail.hu>
 
 	* mono/os/gc_wrapper.h: Only use thread local alloc if using the included libgc, since the

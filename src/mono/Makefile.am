@@ -136,7 +136,7 @@ mcs-do-full-build:
 mcs-do-clean-profiles:
 	cd $(mcs_topdir) && $(MAKE) clean-profiles
 
-mcs-do-run-test: tmpinst-dir
+mcs-do-run-test: tmpinst-dir $(tmpinst)/bin/mbas
 	tmpinst=`cd $(tmpinst) && pwd` ; \
 	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
 	cd $(mcs_topdir) && $(MAKE) PROFILE=default run-test
@@ -188,6 +188,12 @@ endif
 
 $(tmpinst)/bin/mcs: $(srcdir)/Makefile.am
 	(t=`cd $(tmpinst) && pwd`; echo '#! /bin/sh'; echo 'exec "'"$$t/bin/mono"'" "'"$$t/lib/mcs.exe"'" "$$@"') > $@
+	chmod +x $@
+
+# Used only by 'bootstrap-check' -- so, can safely use runtime/mbas.exe.
+$(tmpinst)/bin/mbas: $(srcdir)/Makefile.am
+	t=`cd $(tmpinst) && pwd`; r=`cd $(srcdir)/runtime && pwd`; \
+	( echo '#! /bin/sh'; echo 'exec "'"$$t/bin/mono"'" "'"$$r/mbas.exe"'" "$$@"' ) > $@
 	chmod +x $@
 
 $(tmpinst)/etc/mono/1.0/machine.config: $(srcdir)/data/net_1_1/machine.config
