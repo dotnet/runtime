@@ -1,3 +1,7 @@
+2005-04-04  Joerg Rosenkranz <joergr@voelcker.com>
+
+	* monod.c: Verbose usage output.
+
 2005-04-05  Raja R Harinath  <rharinath@novell.com>
 
 	* monod.c: Refer to mono/mini/jit.h.

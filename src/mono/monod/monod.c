@@ -403,7 +403,20 @@ int main (int argc, char* argv[])
 	}
 	
 	if (bShowUsage) {
-		fprintf (stderr, "\nUsage: %s [ -d:<runtime directory> ] [ -l:<lock file> ] [ -m:<syslog name> ] [ -n:<service name> ] <service assembly>\n\n", argv [0]);
+		fprintf (stdout,
+			"Usage is: monod [options] service\n"
+			"\n"
+			"    -d:<directory>         Working directory\n"
+			"    -l:<lock file>         Lock file (default is /tmp/<service>.log)\n"
+			"    -m:<syslog name>       Name to show in syslog\n"
+			"    -n:<service name>      Name of service to start (default is first defined)\n"
+			"\n"
+			"Controlling the service:\n"
+			"\n"
+			"    kill -USR1 `cat <lock file>`    Pausing service\n"
+			"    kill -USR2 `cat <lock file>`    Continuing service\n"
+			"    kill `cat <lock file>`          Ending service\n"
+			"\n");
 		return EXIT_USAGE;
 	}
 	
