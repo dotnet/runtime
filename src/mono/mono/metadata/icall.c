@@ -171,7 +171,7 @@ ves_icall_InitializeArray (MonoArray *array, MonoClassField *field_handle)
 	case MONO_TYPE_U8:
 		SWAP (64);
 		break;
-	}ma
+	}
 		 
 #endif
 }
