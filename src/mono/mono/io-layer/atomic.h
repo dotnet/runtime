@@ -368,7 +368,7 @@ static inline gint32 InterlockedCompareExchange(volatile gint32 *dest,
 						gint32 exch, gint32 comp) {
 	gint32 tmp = 0;
 
-	__asm__ __volatile_ ("\nL_ice_loop:\n\t"
+	__asm__ __volatile__ ("\nL_ice_loop:\n\t"
 			     "lwarx   %0, 0, %1\n\t"
 			     "cmpw    %2, %3\n\t" 
 			     "bne-    L_ice_diff\n\t"
