@@ -3783,7 +3783,7 @@ get_constraints (MonoImage *image, int owner, MonoGenericContext *context)
 }
 
 MonoGenericContainer *
-mono_metadata_load_generic_params (MonoImage *image, guint32 token)
+mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericContainer *parent_container)
 {
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAM];
 	guint32 cols [MONO_GENERICPARAM_SIZE];
@@ -3808,7 +3808,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token)
 		if (cols [MONO_GENERICPARAM_OWNER] == owner)
 			break;
 	}
-	last_num = 0;
+	last_num = i;
 	if (i >= tdef->rows)
 		return NULL;
 	params = NULL;
@@ -3830,11 +3830,15 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token)
 
 	container->type_argc = n;
 	container->type_params = params;
+	container->parent = parent_container;
+
+	if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
+		container->is_method = 1;
 
 	container->context.container = container;
 
 	for (i = 0; i < n; i++)
-		params [i].constraints = get_constraints (image, i + 1, &container->context);
+		params [i].constraints = get_constraints (image, last_num + i + 1, &container->context);
 
 	return container;
 }

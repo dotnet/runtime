@@ -853,12 +853,9 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 	if (!(cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 	    (!(cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) || cols [1] & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
-		generic_container = mono_metadata_load_generic_params (image, token);
-		if (generic_container) {
-			generic_container->parent = container;
-			generic_container->is_method = 1;
+		generic_container = mono_metadata_load_generic_params (image, token, container);
+		if (generic_container)
 			container = generic_container;
-		}
 	}
 
 	if (!sig) /* already taken from the methodref */

@@ -1853,7 +1853,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 	g_hash_table_insert (image->class_cache, GUINT_TO_POINTER (type_token), class);
 
-	class->generic_container = mono_metadata_load_generic_params (image, class->type_token);
+	class->generic_container = mono_metadata_load_generic_params (image, class->type_token, NULL);
 	if (class->generic_container) {
 		class->generic_container->klass = class;
 		context = g_new0 (MonoGenericContext, 1);

@@ -520,7 +520,8 @@ mono_method_get_wrapper_data (MonoMethod *method, guint32 id);
 void
 mono_install_stack_walk (MonoStackWalkImpl func);
 
-MonoGenericContainer *mono_metadata_load_generic_params (MonoImage *image, guint32 token);
+MonoGenericContainer *mono_metadata_load_generic_params (MonoImage *image, guint32 token,
+							 MonoGenericContainer *parent_container);
 
 MonoMethodSignature*
 mono_create_icall_signature (const char *sigstr);
