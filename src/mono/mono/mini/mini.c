@@ -5666,6 +5666,47 @@ nullify_basic_block (MonoBasicBlock *bb)
 	bb->out_bb = NULL;
 	bb->next_bb = NULL;
 	bb->code = bb->last_ins = NULL;
+	bb->cil_code = NULL;
+}
+
+static void 
+replace_out_block (MonoBasicBlock *bb, MonoBasicBlock *orig,  MonoBasicBlock *repl)
+{
+	int i;
+
+	for (i = 0; i < bb->out_count; i++) {
+		MonoBasicBlock *ob = bb->out_bb [i];
+		if (ob == orig) {
+			if (!repl) {
+				if (bb->out_count > 1) {
+					bb->out_bb [i] = bb->out_bb [bb->out_count - 1];
+				}
+				bb->out_count--;
+			} else {
+				bb->out_bb [i] = repl;
+			}
+		}
+	}
+}
+
+static void 
+replace_in_block (MonoBasicBlock *bb, MonoBasicBlock *orig, MonoBasicBlock *repl)
+{
+	int i;
+
+	for (i = 0; i < bb->in_count; i++) {
+		MonoBasicBlock *ib = bb->in_bb [i];
+		if (ib == orig) {
+			if (!repl) {
+				if (bb->in_count > 1) {
+					bb->in_bb [i] = bb->in_bb [bb->in_count - 1];
+				}
+				bb->in_count--;
+			} else {
+				bb->in_bb [i] = repl;
+			}
+		}
+	}
 }
 
 static void 
@@ -5676,12 +5717,14 @@ replace_basic_block (MonoBasicBlock *bb, MonoBasicBlock *orig,  MonoBasicBlock *
 	for (i = 0; i < bb->out_count; i++) {
 		MonoBasicBlock *ob = bb->out_bb [i];
 		for (j = 0; j < ob->in_count; j++) {
-			if (ob->in_bb [j] == orig)
+			if (ob->in_bb [j] == orig) {
 				ob->in_bb [j] = repl;
+			}
 		}
 	}
 
 }
+
 
 static void
 merge_basic_blocks (MonoBasicBlock *bb, MonoBasicBlock *bbn) 
@@ -5706,7 +5749,7 @@ merge_basic_blocks (MonoBasicBlock *bb, MonoBasicBlock *bbn)
 
 static void
 optimize_branches (MonoCompile *cfg) {
-	int changed = FALSE;
+	int i, changed = FALSE;
 	MonoBasicBlock *bb, *bbn;
 
 	do {
@@ -5724,6 +5767,10 @@ optimize_branches (MonoCompile *cfg) {
 					g_print ("nullify block triggered %d\n", bbn->block_num);
 
 				bb->next_bb = bbn->next_bb;
+
+				for (i = 0; i < bbn->out_count; i++)
+					replace_in_block (bbn->out_bb [i], bbn, NULL);
+
 				nullify_basic_block (bbn);			
 				changed = TRUE;
 			}
@@ -5731,23 +5778,26 @@ optimize_branches (MonoCompile *cfg) {
 			if (bb->out_count == 1) {
 				bbn = bb->out_bb [0];
 
-				if (bb->region == bbn->region && bb->next_bb == bbn) {
-				/* the block are in sequence anyway ... */
+				/* conditional branches where true and false targets are the same can be also replaced with CEE_BR */
+				if (bb->last_ins && bb->last_ins->opcode >= CEE_BEQ && bb->last_ins->opcode <= CEE_BLT_UN) {
+					bb->last_ins->opcode = CEE_BR;
+					bb->last_ins->inst_target_bb = bb->last_ins->inst_true_bb;
+					changed = TRUE;
+					if (cfg->verbose_level > 2)
+						g_print ("cond branch removal triggered in %d %d\n", bb->block_num, bb->out_count);
+				}
 
-					/* 
-					 * miguel: I do not understand what the test below does, could we
-					 * use a macro, or a comment here?  opcode > CEE_BEQ && <= BLT_UN
-					 *
-					 * It could also test for bb->last_in only once, and the value
-					 * could be cached (last_ins->opcode)
-					 */
-					if (bb->last_ins && (bb->last_ins->opcode == CEE_BR || (
-						(bb->last_ins && bb->last_ins->opcode >= CEE_BEQ && bb->last_ins->opcode <= CEE_BLT_UN)))) {
+				if (bb->region == bbn->region && bb->next_bb == bbn) {
+					/* the block are in sequence anyway ... */
+
+					/* branches to the following block can be removed */
+					if (bb->last_ins && bb->last_ins->opcode == CEE_BR) {
 						bb->last_ins->opcode = CEE_NOP;
 						changed = TRUE;
 						if (cfg->verbose_level > 2)
 							g_print ("br removal triggered %d -> %d\n", bb->block_num, bbn->block_num);
 					}
+
 					if (bbn->in_count == 1) {
 
 						if (bbn != cfg->bb_exit) {
@@ -5759,7 +5809,7 @@ optimize_branches (MonoCompile *cfg) {
 
 						//mono_print_bb_code (bb);
 					}
-				}
+				}				
 			}
 		}
 	} while (changed);
@@ -5773,6 +5823,21 @@ optimize_branches (MonoCompile *cfg) {
 			/* dont touch code inside exception clauses */
 			if (bb->region != -1)
 				continue;
+
+			if ((bbn = bb->next_bb) && bbn->in_count == 0 && bb->region == bbn->region) {
+				if (cfg->verbose_level > 2) {
+					g_print ("nullify block triggered %d\n", bbn->block_num);
+				}
+				bb->next_bb = bbn->next_bb;
+
+				for (i = 0; i < bbn->out_count; i++)
+					replace_in_block (bbn->out_bb [i], bbn, NULL);
+
+				nullify_basic_block (bbn);			
+				changed = TRUE;
+				break;
+			}
+
 
 			if (bb->out_count == 1) {
 				bbn = bb->out_bb [0];
@@ -5793,29 +5858,45 @@ optimize_branches (MonoCompile *cfg) {
 					}
 				}
 			} else if (bb->out_count == 2) {
-				/* fixme: this does not correctly - no idea whats wrong */
-				if (0 && bb->last_ins && bb->last_ins->opcode >= CEE_BEQ && bb->last_ins->opcode <= CEE_BLT_UN) {
+				if (bb->last_ins && bb->last_ins->opcode >= CEE_BEQ && bb->last_ins->opcode <= CEE_BLT_UN) {
 					bbn = bb->last_ins->inst_true_bb;
 					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR &&
 					    bbn->code->inst_target_bb->region == bb->region) {
-						if (cfg->verbose_level > 2)
-							g_print ("cbranch to branch triggered %d -> %d (0x%02x)\n", bb->block_num, 
-								 bbn->block_num, bbn->code->opcode);
-		
-						replace_basic_block (bb, bb->out_bb [0], bbn->code->inst_target_bb);
+						if (cfg->verbose_level > 2)		
+							g_print ("cbranch1 to branch triggered %d -> (%d) %d (0x%02x)\n", 
+								 bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num, 
+								 bbn->code->opcode);
+
 						bb->last_ins->inst_true_bb = bbn->code->inst_target_bb;
+
+						replace_in_block (bbn, bb, NULL);
+						if (!bbn->in_count)
+							replace_in_block (bbn->code->inst_target_bb, bbn, bb);
+						replace_out_block (bb, bbn, bbn->code->inst_target_bb);
+
+						link_bblock (cfg, bb, bbn->code->inst_target_bb);
+
 						changed = TRUE;
+						break;
 					}
 
 					bbn = bb->last_ins->inst_false_bb;
 					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == CEE_BR &&
 					    bbn->code->inst_target_bb->region == bb->region) {
 						if (cfg->verbose_level > 2)
-							g_print ("cbranch to branch triggered %d -> %d (0x%02x)\n", bb->block_num, 
-								 bbn->block_num, bbn->code->opcode);
-		
-						replace_basic_block (bb, bb->out_bb [0], bbn->code->inst_target_bb);
+							g_print ("cbranch2 to branch triggered %d -> (%d) %d (0x%02x)\n", 
+								 bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num, 
+								 bbn->code->opcode);
+
 						bb->last_ins->inst_false_bb = bbn->code->inst_target_bb;
+
+						replace_in_block (bbn, bb, NULL);
+						if (!bbn->in_count)
+							replace_in_block (bbn->code->inst_target_bb, bbn, bb);
+						replace_out_block (bb, bbn, bbn->code->inst_target_bb);
+
+						link_bblock (cfg, bb, bbn->code->inst_target_bb);
+
 						changed = TRUE;
 						break;
 					}
@@ -5934,10 +6015,33 @@ emit_state (MonoCompile *cfg, MBState *state, int goal)
 static void 
 mini_select_instructions (MonoCompile *cfg)
 {
+	static int reverse_map [] = {
+		CEE_BNE_UN, CEE_BLT, CEE_BLE, CEE_BGT, CEE_BGE,
+		CEE_BEQ, CEE_BLT_UN, CEE_BLE_UN, CEE_BGT_UN, CEE_BGE_UN
+	};
+
 	MonoBasicBlock *bb;
 	
 	cfg->state_pool = mono_mempool_new ();
 	cfg->rs = mono_regstate_new ();
+
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		if (bb->last_ins && bb->last_ins->opcode >= CEE_BEQ && bb->last_ins->opcode <= CEE_BLT_UN &&
+		    bb->next_bb != bb->last_ins->inst_false_bb) {
+
+			if (bb->next_bb ==  bb->last_ins->inst_true_bb) {
+				MonoBasicBlock *tmp =  bb->last_ins->inst_true_bb;
+				bb->last_ins->inst_true_bb = bb->last_ins->inst_false_bb;
+				bb->last_ins->inst_false_bb = tmp;
+				bb->last_ins->opcode = reverse_map [bb->last_ins->opcode - CEE_BEQ];
+			} else {			
+				MonoInst *inst = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
+				inst->opcode = CEE_BR;
+				inst->inst_target_bb = bb->last_ins->inst_false_bb;
+				mono_bblock_add_inst (bb, inst);
+			}
+		}
+	}
 
 #ifdef DEBUG_SELECTION
 	if (cfg->verbose_level >= 4) {
