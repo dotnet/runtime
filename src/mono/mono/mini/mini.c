@@ -4935,6 +4935,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			sp = stack_start;
 			link_bblock (cfg, bblock, end_bblock);
 			start_new_bblock = 1;
+			mono_get_got_var (cfg);
 			break;
 		case CEE_LDFLD:
 		case CEE_LDFLDA:
@@ -6332,6 +6333,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				link_bblock (cfg, bblock, end_bblock);
 				start_new_bblock = 1;
 				ip += 2;
+				mono_get_got_var (cfg);
 				break;
 			}
 			case CEE_SIZEOF:
