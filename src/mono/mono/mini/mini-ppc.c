@@ -2869,6 +2869,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_stw (code, ppc_r0, -8, ppc_sp);
 			ppc_stw (code, ins->sreg1, -4, ppc_sp);
 			ppc_load (code, ppc_r11, &adjust_val);
+			ppc_lfd (code, ins->dreg, -8, ppc_sp);
 			ppc_lfd (code, ppc_f0, 0, ppc_r11);
 			ppc_fsub (code, ins->dreg, ins->dreg, ppc_f0);
 			break;
