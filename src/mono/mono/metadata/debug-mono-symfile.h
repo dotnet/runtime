@@ -50,13 +50,16 @@ struct MonoSymbolFileMethodEntry {
 	guint32 type_index_table_offset;
 	guint32 local_variable_table_offset;
 	guint32 line_number_table_offset;
+	guint32 namespace_idx;
 };
 
 struct MonoSymbolFileSourceEntry {
 	guint32 index;
 	guint32 num_methods;
+	guint32 num_namespaces;
 	guint32 name_offset;
 	guint32 method_offset;
+	guint32 nstable_offset;
 };
 
 struct MonoSymbolFileMethodAddress {
@@ -213,10 +216,10 @@ struct MonoSymbolFile {
 	MonoSymbolFilePriv *_priv;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		29
+#define MONO_SYMBOL_FILE_VERSION		30
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
-#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	22
+#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	23
 #define MONO_SYMBOL_FILE_DYNAMIC_MAGIC		0x7aff65af4253d427
 
 extern MonoGlobalSymbolFile *mono_debugger_global_symbol_file;
