@@ -154,6 +154,7 @@ mono_method_desc_new (const char *name, gboolean include_namespace)
 		while (*end) {
 			if (*end == ',')
 				result->num_args++;
+			++end;
 		}
 	}
 
