@@ -151,6 +151,24 @@
   </tr>
 </table>
 
+@item Aug 6th, 2003: Winforms samples 
+
+	Timothy Parez is coordinating the effort to create sample
+	programs that exercise the various Windows.Forms controls.  We
+	are using this as graphical regression test suite for the Mono
+	implementation.
+
+	The screenshots of the various widgets, together with the
+	source code is available on the <a
+	href="http://www.nullenvoid.com/mono/wiki/index.php/WineSamples">WineSamples</a>
+	page on the <a
+	href="http://www.nullenvoid.com/mono/wiki/">Mono Wiki</a>.
+
+	A new cvs module called `winforms' has been created that
+	contains the source code for the samples.  To run the samples,
+	you can install the WineLib packages available from our <a
+	href="download.html">download page</a>.
+
 @item Aug 5th, 2003: New Apache Module architecture: 1.3 and 2.x supported
 
 	Gonzalo rearchitected our Apache module for hosting Mono and
