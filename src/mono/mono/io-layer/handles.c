@@ -1379,10 +1379,16 @@ again:
 			struct timespec sleepytime;
 			
 #ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION ": attempt failed for %p", handle);
+			g_message (G_GNUC_PRETTY_FUNCTION ": attempt failed for %p: %s", handle, strerror (ret));
 #endif
 
 			while(i--) {
+				handle = handles[i];
+		
+				if (GPOINTER_TO_UINT (handle) < _wapi_fd_offset_table_size) {
+					handle = _wapi_handle_fd_offset_to_handle (handle);
+				}
+
 				_wapi_handle_segment (handle, &segment, &idx);
 				thr_ret = mono_mutex_unlock (&_wapi_handle_get_shared_segment (segment)->handles[idx].signal_mutex);
 				g_assert (thr_ret == 0);
