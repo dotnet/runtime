@@ -2910,7 +2910,7 @@ g_concat_dir_and_file (const char *dir, const char *file)
 }
 
 static void *
-ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflectionAssembly *assembly, MonoString *name, gint32 *size) 
+ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflectionAssembly *assembly, MonoString *name, gint32 *size, MonoReflectionModule **ref_module) 
 {
 	char *n = mono_string_to_utf8 (name);
 	MonoTableInfo *table = &assembly->assembly->image->tables [MONO_TABLE_MANIFESTRESOURCE];
@@ -2947,6 +2947,8 @@ ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflection
 	}
 	else
 		module = assembly->assembly->image;
+
+	*ref_module = mono_module_get_object (mono_domain_get (), module);
 
 	return (void*)mono_image_get_resource (module, cols [MONO_MANIFEST_OFFSET], size);
 }
@@ -3357,6 +3359,12 @@ ves_icall_System_Reflection_Module_GetGlobalType (MonoReflectionModule *module)
 	g_assert (module->image);
 	klass = mono_class_get (module->image, 1 | MONO_TOKEN_TYPE_DEF);
 	return mono_type_get_object (domain, &klass->byval_arg);
+}
+
+static void
+ves_icall_System_Reflection_Module_Close (MonoReflectionModule *module)
+{
+	mono_image_close (module->image);
 }
 
 static MonoString*
@@ -4811,6 +4819,7 @@ static gconstpointer icall_map [] = {
 	 * System.Reflection.Module
 	 */
 	"System.Reflection.Module::GetGlobalType", ves_icall_System_Reflection_Module_GetGlobalType,
+	"System.Reflection.Module::Close", ves_icall_System_Reflection_Module_Close,
 	"System.Reflection.Module::GetGuidInternal", ves_icall_System_Reflection_Module_GetGuidInternal,
 	"System.Reflection.Module::InternalGetTypes", ves_icall_System_Reflection_Module_InternalGetTypes,
 
