@@ -285,6 +285,7 @@ if test x$platform_win32 = xno; then
 	AC_MSG_CHECKING(size of sockaddr_un.sun_path)
 	AC_CACHE_VAL(cv_mono_sizeof_sunpath,
 		[AC_TRY_RUN([
+			#include <sys/types.h>
 			#include <stdio.h>
 			#include <sys/un.h>
 

@@ -1,3 +1,7 @@
+2002-09-04  Juli Mallett  <jmallett@FreeBSD.org>
+
+	* configure.in: Include <sys/types.h> when checking <sys/un.h> stuff.
+
 2002-09-02  Diego Sevilla Ruiz  <dsevilla@um.es>
 
 	* doc/ccvs: Added how to convert SSH keys (from SSH Communications
