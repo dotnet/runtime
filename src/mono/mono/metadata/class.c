@@ -50,6 +50,7 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 	const char *name, *nspace;
 	MonoClass *res;
 	MonoAssembly **references;
+	MonoImageOpenStatus status;
 
 	mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
 
@@ -81,7 +82,7 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 		break;
 	}
 
-	mono_image_load_references (image);
+	mono_image_load_references (image, &status);
 	references = image->references;
 	if (!references ||  !references [idx-1]) {
 		/* 
