@@ -3672,208 +3672,6 @@ test_load_class (MonoImage* image)
 }
 #endif
 
-typedef struct {
-	char *name;
-	guint64 offset;
-} FieldDesc;
-
-typedef struct {
-	char *name;
-	FieldDesc *fields;
-} ClassDesc;
-
-static FieldDesc 
-typebuilder_fields[] = {
-	{"tname", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, name)},
-	{"nspace", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, nspace)},
-	{"parent", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, parent)},
-	{"interfaces", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, interfaces)},
-	{"methods", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, methods)},
-	{"properties", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, properties)},
-	{"fields", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, fields)},
-	{"attrs", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, attrs)},
-	{"table_idx", G_STRUCT_OFFSET (MonoReflectionTypeBuilder, table_idx)},
-	{NULL, 0}
-};
-
-static FieldDesc 
-modulebuilder_fields[] = {
-	{"types", G_STRUCT_OFFSET (MonoReflectionModuleBuilder, types)},
-	{"table_idx", G_STRUCT_OFFSET (MonoReflectionModuleBuilder, table_idx)},
-	{NULL, 0}
-};
-
-static FieldDesc 
-assemblybuilder_fields[] = {
-	{"entry_point", G_STRUCT_OFFSET (MonoReflectionAssemblyBuilder, entry_point)},
-	{"modules", G_STRUCT_OFFSET (MonoReflectionAssemblyBuilder, modules)},
-	{"name", G_STRUCT_OFFSET (MonoReflectionAssemblyBuilder, name)},
-	{NULL, 0}
-};
-
-static FieldDesc 
-ctorbuilder_fields[] = {
-	{"ilgen", G_STRUCT_OFFSET (MonoReflectionCtorBuilder, ilgen)},
-	{"parameters", G_STRUCT_OFFSET (MonoReflectionCtorBuilder, parameters)},
-	{"attrs", G_STRUCT_OFFSET (MonoReflectionCtorBuilder, attrs)},
-	{"iattrs", G_STRUCT_OFFSET (MonoReflectionCtorBuilder, iattrs)},
-	{"table_idx", G_STRUCT_OFFSET (MonoReflectionCtorBuilder, table_idx)},
-	{"call_conv", G_STRUCT_OFFSET (MonoReflectionCtorBuilder, call_conv)},
-	{"type", G_STRUCT_OFFSET (MonoReflectionCtorBuilder, type)},
-	{NULL, 0}
-};
-
-static FieldDesc 
-methodbuilder_fields[] = {
-	{"mhandle", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, mhandle)},
-	{"rtype", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, rtype)},
-	{"parameters", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, parameters)},
-	{"attrs", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, attrs)},
-	{"iattrs", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, iattrs)},
-	{"name", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, name)},
-	{"table_idx", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, table_idx)},
-	{"code", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, code)},
-	{"ilgen", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, ilgen)},
-	{"type", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, type)},
-	{"pinfo", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, pinfo)},
-	{"pi_dll", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, dll)},
-	{"pi_entry", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, dllentry)},
-	{"ncharset", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, charset)},
-	{"native_cc", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, native_cc)},
-	{"call_conv", G_STRUCT_OFFSET (MonoReflectionMethodBuilder, call_conv)},
-	{NULL, 0}
-};
-
-static FieldDesc 
-fieldbuilder_fields[] = {
-	{"attrs", G_STRUCT_OFFSET (MonoReflectionFieldBuilder, attrs)},
-	{"type", G_STRUCT_OFFSET (MonoReflectionFieldBuilder, type)},
-	{"name", G_STRUCT_OFFSET (MonoReflectionFieldBuilder, name)},
-	{"def_value", G_STRUCT_OFFSET (MonoReflectionFieldBuilder, def_value)},
-	{"offset", G_STRUCT_OFFSET (MonoReflectionFieldBuilder, offset)},
-	{"table_idx", G_STRUCT_OFFSET (MonoReflectionFieldBuilder, table_idx)},
-	{NULL, 0}
-};
-
-static FieldDesc 
-propertybuilder_fields[] = {
-	{"attrs", G_STRUCT_OFFSET (MonoReflectionPropertyBuilder, attrs)},
-	{"name", G_STRUCT_OFFSET (MonoReflectionPropertyBuilder, name)},
-	{"type", G_STRUCT_OFFSET (MonoReflectionPropertyBuilder, type)},
-	{"parameters", G_STRUCT_OFFSET (MonoReflectionPropertyBuilder, parameters)},
-	{"def_value", G_STRUCT_OFFSET (MonoReflectionPropertyBuilder, def_value)},
-	{"set_method", G_STRUCT_OFFSET (MonoReflectionPropertyBuilder, set_method)},
-	{"get_method", G_STRUCT_OFFSET (MonoReflectionPropertyBuilder, get_method)},
-	{"table_idx", G_STRUCT_OFFSET (MonoReflectionPropertyBuilder, table_idx)},
-	{NULL, 0}
-};
-
-static FieldDesc 
-ilgenerator_fields[] = {
-	{"code", G_STRUCT_OFFSET (MonoReflectionILGen, code)},
-	{"mbuilder", G_STRUCT_OFFSET (MonoReflectionILGen, mbuilder)},
-	{"code_len", G_STRUCT_OFFSET (MonoReflectionILGen, code_len)},
-	{"max_stack", G_STRUCT_OFFSET (MonoReflectionILGen, max_stack)},
-	{"cur_stack", G_STRUCT_OFFSET (MonoReflectionILGen, cur_stack)},
-	{"locals", G_STRUCT_OFFSET (MonoReflectionILGen, locals)},
-	{"ex_handlers", G_STRUCT_OFFSET (MonoReflectionILGen, ex_handlers)},
-	{NULL, 0}
-};
-
-static FieldDesc 
-ilexinfo_fields[] = {
-	{"handlers", G_STRUCT_OFFSET (MonoILExceptionInfo, handlers)},
-	{"start", G_STRUCT_OFFSET (MonoILExceptionInfo, start)},
-	{"len", G_STRUCT_OFFSET (MonoILExceptionInfo, len)},
-	{"end", G_STRUCT_OFFSET (MonoILExceptionInfo, label)},
-	{NULL, 0}
-};
-
-static FieldDesc 
-ilexblock_fields[] = {
-	{"extype", G_STRUCT_OFFSET (MonoILExceptionBlock, extype)},
-	{"type", G_STRUCT_OFFSET (MonoILExceptionBlock, type)},
-	{"start", G_STRUCT_OFFSET (MonoILExceptionBlock, start)},
-	{"len", G_STRUCT_OFFSET (MonoILExceptionBlock, len)},
-	{"filter_offset", G_STRUCT_OFFSET (MonoILExceptionBlock, filter_offset)},
-	{NULL, 0}
-};
-
-static ClassDesc
-emit_classes_to_check [] = {
-	{"TypeBuilder", typebuilder_fields},
-	{"ModuleBuilder", modulebuilder_fields},
-	{"AssemblyBuilder", assemblybuilder_fields},
-	{"ConstructorBuilder", ctorbuilder_fields},
-	{"MethodBuilder", methodbuilder_fields},
-	{"FieldBuilder", fieldbuilder_fields},
-	{"PropertyBuilder", propertybuilder_fields},
-	{"ILGenerator", ilgenerator_fields},
-	{"ILExceptionBlock", ilexblock_fields},
-	{"ILExceptionInfo", ilexinfo_fields},
-	{NULL, NULL}
-};
-
-static FieldDesc 
-delegate_fields[] = {
-	{"target_type", G_STRUCT_OFFSET (MonoDelegate, target_type)},
-	{"m_target", G_STRUCT_OFFSET (MonoDelegate, target)},
-	{"method", G_STRUCT_OFFSET (MonoDelegate, method)},
-	{"method_ptr", G_STRUCT_OFFSET (MonoDelegate, method_ptr)},
-	{NULL, 0}
-};
-
-static ClassDesc
-system_classes_to_check [] = {
-	{"Delegate", delegate_fields},
-	{NULL, NULL}
-};
-
-typedef struct {
-	char *name;
-	ClassDesc *types;
-} NameSpaceDesc;
-
-static NameSpaceDesc
-namespaces_to_check[] = {
-	{"System.Reflection.Emit", emit_classes_to_check},
-	{"System", system_classes_to_check},
-	{NULL, NULL}
-};
-
-static void
-check_corlib (MonoImage *corlib)
-{
-	MonoClass *klass;
-	MonoClassField *field;
-	FieldDesc *fdesc;
-	ClassDesc *cdesc;
-	NameSpaceDesc *ndesc;
-	gint struct_offset;
-
-	for (ndesc = namespaces_to_check; ndesc->name; ++ndesc) {
-		for (cdesc = ndesc->types; cdesc->name; ++cdesc) {
-			klass = mono_class_from_name (corlib, ndesc->name, cdesc->name);
-			if (!klass)
-				g_error ("Cannot find class %s", cdesc->name);
-			mono_class_init (klass);
-			/*
-			 * FIXME: we should also check the size of valuetypes, or
-			 * we're going to have trouble when we access them in arrays.
-			 */
-			if (klass->valuetype)
-				struct_offset = 8;
-			else
-				struct_offset = 0;
-			for (fdesc = cdesc->fields; fdesc->name; ++fdesc) {
-				field = mono_class_get_field_from_name (klass, fdesc->name);
-				if (!field || (field->offset != (fdesc->offset + struct_offset)))
-					g_error ("field `%s' mismatch in class %s (%ld != %ld)", fdesc->name, cdesc->name, (long) fdesc->offset, (long) (field?field->offset:-1));
-			}
-		}
-	}
-}
-
 static gint
 compare_profile (MethodProfile *profa, MethodProfile *profb)
 {
@@ -3985,7 +3783,7 @@ main (int argc, char *argv [])
 	MonoAssembly *assembly;
 	GList *profile = NULL;
 	int retval = 0, i, ocount = 0;
-	char *file;
+	char *file, *error;
 
 	if (argc < 2)
 		usage ();
@@ -4066,7 +3864,11 @@ main (int argc, char *argv [])
 #ifdef RUN_TEST
 	test_load_class (assembly->image);
 #else
-	check_corlib (mono_defaults.corlib);
+	error = mono_verify_corlib ();
+	if (error) {
+		fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
+		exit (1);
+	}
 	segv_exception = mono_get_exception_null_reference ();
 	segv_exception->message = mono_string_new (domain, "Segmentation fault");
 	signal (SIGSEGV, segv_handler);
