@@ -109,5 +109,16 @@ extern void ves_icall_System_Threading_Thread_ResetAbort (void);
 extern void ves_icall_System_Threading_ThreadPool_GetAvailableThreads (int *workerThreads, int *completionPortThreads);
 extern void ves_icall_System_Threading_ThreadPool_GetMaxThreads (int *workerThreads, int *completionPortThreads);
 
+gint8 ves_icall_System_Threading_Thread_VolatileRead1 (void *ptr);
+gint16 ves_icall_System_Threading_Thread_VolatileRead2 (void *ptr);
+gint32 ves_icall_System_Threading_Thread_VolatileRead4 (void *ptr);
+gint64 ves_icall_System_Threading_Thread_VolatileRead8 (void *ptr);
+void * ves_icall_System_Threading_Thread_VolatileReadIntPtr (void *ptr);
+
+void ves_icall_System_Threading_Thread_VolatileWrite1 (void *ptr, gint8);
+void ves_icall_System_Threading_Thread_VolatileWrite2 (void *ptr, gint16);
+void ves_icall_System_Threading_Thread_VolatileWrite4 (void *ptr, gint32);
+void ves_icall_System_Threading_Thread_VolatileWrite8 (void *ptr, gint64);
+void ves_icall_System_Threading_Thread_VolatileWriteIntPtr (void *ptr, void *);
 
 #endif /* _MONO_METADATA_THREADS_H_ */

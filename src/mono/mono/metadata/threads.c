@@ -930,6 +930,66 @@ ves_icall_System_Threading_Thread_ResetAbort (void)
 	}
 }
 
+gint8
+ves_icall_System_Threading_Thread_VolatileRead1 (void *ptr)
+{
+	return *((volatile gint8 *) (ptr));
+}
+
+gint16
+ves_icall_System_Threading_Thread_VolatileRead2 (void *ptr)
+{
+	return *((volatile gint16 *) (ptr));
+}
+
+gint32
+ves_icall_System_Threading_Thread_VolatileRead4 (void *ptr)
+{
+	return *((volatile gint32 *) (ptr));
+}
+
+gint64
+ves_icall_System_Threading_Thread_VolatileRead8 (void *ptr)
+{
+	return *((volatile gint64 *) (ptr));
+}
+
+void *
+ves_icall_System_Threading_Thread_VolatileReadIntPtr (void *ptr)
+{
+	return (void *)  *((volatile void **) ptr);
+}
+
+void
+ves_icall_System_Threading_Thread_VolatileWrite1 (void *ptr, gint8 value)
+{
+	*((volatile gint8 *) ptr) = value;
+}
+
+void
+ves_icall_System_Threading_Thread_VolatileWrite2 (void *ptr, gint16 value)
+{
+	*((volatile gint16 *) ptr) = value;
+}
+
+void
+ves_icall_System_Threading_Thread_VolatileWrite4 (void *ptr, gint32 value)
+{
+	*((volatile gint32 *) ptr) = value;
+}
+
+void
+ves_icall_System_Threading_Thread_VolatileWrite8 (void *ptr, gint64 value)
+{
+	*((volatile gint64 *) ptr) = value;
+}
+
+void
+ves_icall_System_Threading_Thread_VolatileWriteIntPtr (void *ptr, void *value)
+{
+	*((volatile void **) ptr) = value;
+}
+
 void mono_thread_init (MonoThreadStartCB start_cb,
 		       MonoThreadAttachCB attach_cb)
 {
