@@ -3413,7 +3413,15 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 
 	/* Determine stack boundaries */
 	if (!mono_running_on_valgrind ()) {
+#ifdef HAVE_PTHREAD_GETATTR_NP
 		pthread_getattr_np( self, &attr );
+#else
+#ifdef HAVE_PTHREAD_ATTR_GET_NP
+		pthread_attr_get_np( self, &attr );
+#else
+#error "Not implemented"
+#endif
+#endif
 		pthread_attr_getstack( &attr, &staddr, &stsize );
 	}
 
