@@ -54,6 +54,7 @@
 #else
 /* GNU as */
 #define AS_STRING_DIRECTIVE ".string"
+#define AS_HAS_SUBSECTIONS 1
 #endif
 
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
@@ -79,6 +80,10 @@ typedef struct MonoAotModule {
 	MonoImage **image_table;
 	guint32* methods_present_table;
 	gboolean out_of_date;
+	guint8 *code;
+	guint32 *code_offsets;
+	guint8 *method_infos;
+	guint32 *method_info_offsets;
 } MonoAotModule;
 
 typedef struct MonoAotCompile {
@@ -480,7 +485,12 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	/* Read methods present table */
 	g_module_symbol (assembly->aot_module, "mono_methods_present_table", (gpointer *)&info->methods_present_table);
-	g_assert (info->methods_present_table);
+
+	/* Read method and method_info tables */
+	g_module_symbol (assembly->aot_module, "method_offsets", (gpointer*)&info->code_offsets);
+	g_module_symbol (assembly->aot_module, "methods", (gpointer*)&info->code);
+	g_module_symbol (assembly->aot_module, "method_info_offsets", (gpointer*)&info->method_info_offsets);
+	g_module_symbol (assembly->aot_module, "method_infos", (gpointer*)&info->method_infos);
 
 	EnterCriticalSection (&aot_mutex);
 	mono_g_hash_table_insert (aot_modules, assembly, info);
@@ -562,8 +572,20 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		return jinfo;
 	}
 
-	/* Do a fast check to see whenever the method exists */
-	{
+	if (aot_module->out_of_date)
+		return NULL;
+
+	if (aot_module->code) {
+		if (aot_module->code_offsets [mono_metadata_token_index (method->token) - 1] == 0xffffffff) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT NOT FOUND: %s.\n", mono_method_full_name (method, TRUE));
+			return NULL;
+		}
+
+		code = &aot_module->code [aot_module->code_offsets [mono_metadata_token_index (method->token) - 1]];
+		info = &aot_module->method_infos [aot_module->method_info_offsets [mono_metadata_token_index (method->token) - 1]];
+	} else {
+		/* Do a fast check to see whenever the method exists */
+
 		guint32 index = mono_metadata_token_index (method->token) - 1;
 		guint32 w;
 		w = aot_module->methods_present_table [index / 32];
@@ -571,20 +593,16 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT NOT FOUND: %s.\n", mono_method_full_name (method, TRUE));
 			return NULL;
 		}
+
+		sprintf (method_label, "m_%x", mono_metadata_token_index (method->token));
+		if (!g_module_symbol (module, method_label, (gpointer *)&code))
+			return NULL;
+
+		sprintf (info_label, "%s_p", method_label);
+
+		if (!g_module_symbol (module, info_label, (gpointer *)&info))
+			return NULL;
 	}
-
-	if (aot_module->out_of_date)
-		return NULL;
-
-	sprintf (method_label, "m_%x", mono_metadata_token_index (method->token));
-
-	if (!g_module_symbol (module, method_label, (gpointer *)&code))
-		return NULL;
-
-	sprintf (info_label, "%s_p", method_label);
-
-	if (!g_module_symbol (module, info_label, (gpointer *)&info))
-		return NULL;
 
 	if (mono_last_aot_method != -1) {
 		if (mono_jit_stats.methods_aot > mono_last_aot_method)
@@ -1224,10 +1242,19 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 	header = mono_method_get_header (method);
 
 	emit_section_change (tmpfp, ".text", 0);
+
+#ifdef AS_HAS_SUBSECTIONS
+	/* Make the labels local */
+	mname = g_strdup_printf (".Lm_%x", mono_metadata_token_index (method->token));
+#else
 	mname = g_strdup_printf ("m_%x", mono_metadata_token_index (method->token));
+#endif
 	mname_p = g_strdup_printf ("%s_p", mname);
+
 	emit_alignment(tmpfp, func_alignment);
+#ifndef AS_HAS_SUBSECTIONS
 	emit_global(tmpfp, mname, TRUE);
+#endif
 	emit_label(tmpfp, mname);
 
 	if (cfg->verbose_level > 0)
@@ -1295,8 +1322,12 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	emit_section_change (tmpfp, ".text", 1);
 
+#ifndef AS_HAS_SUBSECTIONS
 	emit_global (tmpfp, mname_p, FALSE);
-	emit_alignment (tmpfp, sizeof (gpointer));
+#endif
+
+	emit_alignment (tmpfp, 4);
+
 	emit_label (tmpfp, mname_p);
 
 	fprintf (tmpfp, "\t.long %d\n", cfg->code_len);
@@ -1604,6 +1635,26 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	write_string_symbol (tmpfp, "mono_aot_opt_flags", opts_str);
 	g_free (opts_str);
 
+	/*
+	 *
+	 * Emit code and method infos into two gas subsections sequentially, so we
+	 * access them without defining a separate global symbol for each one.
+	 * This only works with gas.
+	 */
+#ifdef AS_HAS_SUBSECTIONS
+	symbol = g_strdup_printf ("methods");
+	emit_section_change (tmpfp, ".text", 0);
+	emit_global (tmpfp, symbol, FALSE);
+	emit_alignment (tmpfp, 8);
+	emit_label (tmpfp, symbol);
+
+	symbol = g_strdup_printf ("method_infos");
+	emit_section_change (tmpfp, ".text", 1);
+	emit_global (tmpfp, symbol, FALSE);
+	emit_alignment (tmpfp, 8);
+	emit_label (tmpfp, symbol);
+#endif
+
 	emitted = g_new0 (gboolean, image->tables [MONO_TABLE_METHOD].rows + 32);
 
 	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
@@ -1779,33 +1830,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		fprintf (tmpfp, ".long %d\n", aname->revision);
 	}
 
-	/*
-	 * g_module_symbol takes a lot of time for failed lookups, so we emit
-	 * a table which contains one bit for each method. This bit specifies
-	 * whenever the method is emitted or not.
-	 */
-
-	symbol = g_strdup_printf ("mono_methods_present_table");
-	emit_section_change (tmpfp, ".text", 1);
-	emit_global (tmpfp, symbol, FALSE);
-	emit_alignment (tmpfp, 8);
-	emit_label (tmpfp, symbol);
-	{
-		guint32 k, nrows;
-		guint32 w;
-
-		nrows = image->tables [MONO_TABLE_METHOD].rows;
-		for (i = 0; i < nrows / 32 + 1; ++i) {
-			w = 0;
-			for (k = 0; k < 32; ++k) {
-				if (emitted [(i * 32) + k])
-					w += (1 << k);
-			}
-			//printf ("EMITTED [%d] = %d.\n", i, b);
-			fprintf (tmpfp, "\t.long %d\n", w);
-		}
-	}
-
 #ifdef MONO_ARCH_HAVE_PIC_AOT
 	/* Emit GOT */
 
@@ -1834,6 +1858,64 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_alignment (tmpfp, 8);
 	emit_label(tmpfp, symbol);
 	fprintf (tmpfp, ".long %d\n", acfg->got_offset * sizeof (gpointer));
+#endif
+
+#ifdef AS_HAS_SUBSECTIONS
+	symbol = g_strdup_printf ("method_offsets");
+	emit_section_change (tmpfp, ".text", 1);
+	emit_global (tmpfp, symbol, FALSE);
+	emit_alignment (tmpfp, 8);
+	emit_label(tmpfp, symbol);
+
+	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		if (emitted [i]) {
+			symbol = g_strdup_printf (".Lm_%x", i + 1);
+			fprintf (tmpfp, ".long %s - methods\n", symbol);
+		}
+		else
+			fprintf (tmpfp, ".long 0xffffffff\n");
+	}
+
+	symbol = g_strdup_printf ("method_info_offsets");
+	emit_section_change (tmpfp, ".text", 1);
+	emit_global (tmpfp, symbol, FALSE);
+	emit_alignment (tmpfp, 8);
+	emit_label(tmpfp, symbol);
+
+	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		if (emitted [i]) {
+			symbol = g_strdup_printf (".Lm_%x_p", i + 1);
+			fprintf (tmpfp, ".long %s - method_infos\n", symbol);
+		}
+		else
+			fprintf (tmpfp, ".long 0\n");
+	}
+#else
+	/*
+	 * g_module_symbol takes a lot of time for failed lookups, so we emit
+	 * a table which contains one bit for each method. This bit specifies
+	 * whenever the method is emitted or not.
+	 */
+	symbol = g_strdup_printf ("mono_methods_present_table");
+	emit_section_change (tmpfp, ".text", 1);
+	emit_global (tmpfp, symbol, FALSE);
+	emit_alignment (tmpfp, 8);
+	emit_label (tmpfp, symbol);
+	{
+		guint32 k, nrows;
+		guint32 w;
+
+		nrows = image->tables [MONO_TABLE_METHOD].rows;
+		for (i = 0; i < nrows / 32 + 1; ++i) {
+			w = 0;
+			for (k = 0; k < 32; ++k) {
+				if (emitted [(i * 32) + k])
+					w += (1 << k);
+			}
+			//printf ("EMITTED [%d] = %d.\n", i, b);
+			fprintf (tmpfp, "\t.long %d\n", w);
+		}
+	}
 #endif
 
 	fclose (tmpfp);
