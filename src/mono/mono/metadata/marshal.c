@@ -138,12 +138,15 @@ MonoDelegate*
 mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 {
 	MonoDelegate *d;
+	MonoJitInfo *ji;
 
 	d = (MonoDelegate*)mono_object_new (mono_domain_get (), klass);
 
-	/* FIXME: Add a managed->native wrapper */
-	g_assert_not_reached ();
+	ji = mono_jit_info_table_find (mono_domain_get (), ftn);
+	if (ji == NULL)
+		mono_raise_exception (mono_get_exception_argument ("", "Function pointer was not created by a Delegate."));
 
+	/* FIXME: discard the wrapper and call the original method */
 	mono_delegate_ctor ((MonoObject*)d, NULL, ftn);
 
 	return d;
