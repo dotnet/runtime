@@ -257,19 +257,19 @@ mono_init (const char *filename)
 	TlsSetValue (appdomain_thread_id, domain);
 
 	/* find the corlib */
-	corlib_aname.name = "corlib";
+	corlib_aname.name = "mscorlib";
 	ass = mono_assembly_load (&corlib_aname, NULL, &status);
 	if ((status != MONO_IMAGE_OK) || (ass == NULL)) {
 		switch (status){
 		case MONO_IMAGE_ERROR_ERRNO:
-			g_print ("The assembly corlib.dll was not found or could not be loaded.\n");
+			g_print ("The assembly mscorlib.dll was not found or could not be loaded.\n");
 			g_print ("It should have been installed in the `%s' directory.\n", MONO_ASSEMBLIES);
 			break;
 		case MONO_IMAGE_IMAGE_INVALID:
-			g_print ("The file %s/corlib.dll is an invalid CIL image\n", MONO_ASSEMBLIES);
+			g_print ("The file %s/mscorlib.dll is an invalid CIL image\n", MONO_ASSEMBLIES);
 			break;
 		case MONO_IMAGE_MISSING_ASSEMBLYREF:
-			g_print ("Minning assembly reference in %s/corlib.dll\n", MONO_ASSEMBLIES);
+			g_print ("Minning assembly reference in %s/mscorlib.dll\n", MONO_ASSEMBLIES);
 			break;
 		case MONO_IMAGE_OK:
 			/* to suppress compiler warning */

@@ -588,11 +588,15 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 		}
 		/* g_print ("corlib load\n"); */
 		if (assemblies_path) {
-			corlib = load_in_path (CORLIB_NAME, (const char**)assemblies_path, status);
+			corlib = load_in_path ("mscorlib.dll", (const char**)assemblies_path, status);
 			if (corlib)
 				return corlib;
+			corlib = load_in_path ("corlib.dll", (const char**)assemblies_path, status);
+			return corlib;
 		}
-		corlib = load_in_path (CORLIB_NAME, default_path, status);
+		corlib = load_in_path ("mscorlib.dll", default_path, status);
+		if (!corlib)
+			corlib = load_in_path ("corlib.dll", default_path, status);
 		return corlib;
 	}
 	result = search_loaded (aname);

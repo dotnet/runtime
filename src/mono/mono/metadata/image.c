@@ -743,9 +743,10 @@ MonoImage *
 mono_image_loaded (const char *name)
 {
 	MonoImage *res;
-	
-	if (strcmp (name, "mscorlib") == 0)
-		name = "corlib";
+        
+	if (strcmp (name, "corlib") == 0)
+		name = "mscorlib";
+
 	EnterCriticalSection (&images_mutex);
 	res = g_hash_table_lookup (loaded_images_hash, name);
 	LeaveCriticalSection (&images_mutex);
