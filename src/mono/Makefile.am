@@ -147,9 +147,7 @@ mcs-do-run-test-profiles: tmpinst-dir $(tmpinst)/bin/mbas
 	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
 	cd $(mcs_topdir) && $(MAKE) run-test-profiles
 
-mcs-do-compiler-tests: tmpinst-dir $(tmpinst)/bin/mbas
-	tmpinst=`cd $(tmpinst) && pwd` ; \
-	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
+mcs-do-compiler-tests:
 	cd $(mcs_topdir) && $(MAKE) compiler-tests
 
 populate-runtime-subdir:

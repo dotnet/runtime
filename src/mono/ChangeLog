@@ -1,3 +1,8 @@
+2004-09-17  Martin Baulig  <martin@ximian.com>
+
+	* Makefile.am (mcs-do-compiler-tests): Reverted Raja's latest
+	change in this target.
+
 2004-09-14  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am (mcs-do-full-build): Pass NO_SIGN_ASSEMBLIES=yes to
