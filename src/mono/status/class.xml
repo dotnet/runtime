@@ -1147,6 +1147,116 @@
         </maintainers>
     </class>
 
+    <class name="System.Reflection.ConstructorInfo">
+        <last-activity>Sept-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>20</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Reflection.Module">
+        <last-activity>Sept-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>20</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Reflection.MemberFilter">
+        <last-activity>Sept-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>80</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Reflection.Emit.ConstructorBuilder">
+        <last-activity>Sept-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Reflection.Emit.TypeBuilder">
+        <last-activity>Sept-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Reflection.Emit.ModuleBuilder">
+        <last-activity>Sept-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Reflection.Emit.ModuleBuilder">
+        <last-activity>Sept-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>10</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Collections.DictionaryEntry">
+        <last-activity>Sept-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>90</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.MemberAccessException">
+        <last-activity>Sept-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>90</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.MissingMemberException">
+        <last-activity>Sept-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>90</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.MissingMethodException">
+        <last-activity>Sept-24-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>90</completion>
+        <maintainers>
+            <maintainer>lupus@ximian.com</maintainer>
+        </maintainers>
+    </class>
+
     <class name="System.IO.IOException">
         <last-activity>Aug-26-2001</last-activity>
         <implementation>yes</implementation>

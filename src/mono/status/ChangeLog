@@ -1,3 +1,8 @@
+
+Tue Sep 25 19:03:52 CEST 2001 Paolo Molaro <lupus@ximian.com>
+
+	* class.xml: updates.
+
 2001-09-14  Dick Porter  <dick@ximian.com>
 
 	* class.xml: Added System.Threading classes
