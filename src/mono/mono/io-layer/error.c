@@ -76,6 +76,7 @@ errno_to_WSA (guint32 code, const gchar *function_name)
 	case ECONNREFUSED: result = WSAECONNREFUSED; break;
 	case ECONNRESET: result = WSAECONNRESET; break;
 	case EFAULT: result = WSAEFAULT; break;
+	case EHOSTUNREACH: result = WSAEHOSTUNREACH; break;
 	case EINPROGRESS: result = WSAEINPROGRESS; break;
 	case EINTR: result = WSAEINTR; break;
 	case EINVAL: result = WSAEINVAL; break;
