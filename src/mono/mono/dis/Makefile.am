@@ -10,3 +10,7 @@ monodis_SOURCES =	\
 monodis_LDADD = 			\
 	../metadata/libmetadata.a 	\
 	$(GLIB_LIBS) 
+
+man_MANS = monodis.1
+
+EXTRA_DIST = $(man_MANS)

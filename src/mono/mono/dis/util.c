@@ -62,11 +62,18 @@ flags (guint32 code, map_t *table)
 void
 hex_dump (const char *buffer, int base, int count)
 {
+	int show_header = 1;
 	int i;
+
+	if (count < 0){
+		count = -count;
+		show_header = 0;
+	}
 	
 	for (i = 0; i < count; i++){
-		if ((i % 16) == 0)
-			printf ("\n0x%08x: ", (unsigned char) base + i);
+		if (show_header)
+			if ((i % 16) == 0)
+				printf ("\n0x%08x: ", (unsigned char) base + i);
 
 		printf ("%02x ", (unsigned char) (buffer [i]));
 	}

@@ -8,6 +8,8 @@
  *
  * TODO:
  *   Investigate how interface inheritance works and how it should be dumped.
+ *   Structs are not being labeled as `valuetype' classes
+ *   Support CustomMods.
  *
  */
 #include <config.h>
@@ -19,7 +21,10 @@
 #include <mono/metadata/endian.h>
 #include <mono/metadata/typeattr.h>
 #include <mono/metadata/fieldattr.h>
+#include <mono/metadata/methodattr.h>
 #include <mono/metadata/eltype.h>
+#include <mono/metadata/blobsig.h>
+#include <mono/metadata/paramattr.h>
 #include "util.h"
 
 FILE *output;
@@ -178,7 +183,7 @@ typedef_flags (guint32 flags)
 	return buffer;
 }
 
-static map_t access_map [] = {
+static map_t field_access_map [] = {
 	{ FIELD_ATTRIBUTE_COMPILER_CONTROLLED, "compilercontrolled " },
 	{ FIELD_ATTRIBUTE_PRIVATE,             "private " },
 	{ FIELD_ATTRIBUTE_FAM_AND_ASSEM,       "famandassem " },
@@ -216,8 +221,8 @@ static map_t element_type_map [] = {
 	{ ELEMENT_TYPE_R8         , "float64" },
 	{ ELEMENT_TYPE_STRING     , "string" },
 	{ ELEMENT_TYPE_TYPEDBYREF , "TypedByRef" },
-	{ ELEMENT_TYPE_I          , "int" },
-	{ ELEMENT_TYPE_U          , "System.UPtr" },
+	{ ELEMENT_TYPE_I          , "native int" },
+	{ ELEMENT_TYPE_U          , "native unsigned int" },
 	{ ELEMENT_TYPE_OBJECT     , "object" },
 	{ 0, NULL }
 };
@@ -235,7 +240,7 @@ field_flags (guint32 f)
 	
 	buffer [0] = 0;
 
-	strcat (buffer, map (access, access_map));
+	strcat (buffer, map (access, field_access_map));
 	strcat (buffer, flags (f, field_flags_map));
 	return g_strdup (buffer);
 }
@@ -269,25 +274,6 @@ get_encoded_value (const char *_ptr, guint32 *len)
 		ptr [3];
 	
 	return ptr + 4;
-}
-
-/**
- * get_custom_mod:
- *
- * Decodes a CustomMod (22.2.7)
- *
- * Returns: updated pointer location
- */
-static const char *
-get_custom_mod (const char *ptr, char **return_value)
-{
-	if ((*ptr == ELEMENT_TYPE_CMOD_OPT) ||
-	    (*ptr == ELEMENT_TYPE_CMOD_REQD)){
-		fprintf (stderr, "FIXME: still do not support CustomMods (22.2.7)");
-		exit (1);
-	}
-	*return_value = NULL;
-	return ptr;
 }
 
 static char *
@@ -460,12 +446,38 @@ methoddefref_signature (metadata_t *m, const char *ptr, char **result)
 }
 
 /**
+ * get_custom_mod:
+ *
+ * Decodes a CustomMod (22.2.7)
+ *
+ * Returns: updated pointer location
+ */
+static const char *
+get_custom_mod (metadata_t *m, const char *ptr, char **return_value)
+{
+	char *s;
+	
+	if ((*ptr == ELEMENT_TYPE_CMOD_OPT) ||
+	    (*ptr == ELEMENT_TYPE_CMOD_REQD)){
+		ptr++;
+		ptr = get_encoded_typedef_or_ref (m, ptr, &s);
+
+		*return_value = g_strconcat ("CMOD ", s, NULL);
+		g_free (s);
+	} else
+		*return_value = NULL;
+	return ptr;
+}
+
+
+/**
  * get_type:
  * @m: metadata context 
  * @ptr: location to decode from.
  * @result: pointer to string where resulting decoded string is stored
  *
  * This routine returs in @result the stringified type pointed by @ptr.
+ * (22.2.12)
  *
  * Returns: the new ptr to continue decoding
  */
@@ -541,7 +553,7 @@ field_signature (metadata_t *m, guint32 blob_signature)
 /*	hex_dump (ptr, 0, len); */
 	ptr++; len--;
 	
-	ptr = get_custom_mod (ptr, &allocated_modifier_string);
+	ptr = get_custom_mod (m, ptr, &allocated_modifier_string);
 	ptr = get_type (m, ptr, &allocated_type_string);
 
 	res = g_strdup_printf (
@@ -614,6 +626,235 @@ dis_field_list (metadata_t *m, guint32 start, guint32 end)
 	}
 }
 
+static map_t method_access_map [] = {
+	{ METHOD_ATTRIBUTE_COMPILER_CONTROLLED, "compilercontrolled " },
+	{ METHOD_ATTRIBUTE_PRIVATE,             "private" },
+	{ METHOD_ATTRIBUTE_FAM_AND_ASSEM,       "famandassem" },
+	{ METHOD_ATTRIBUTE_ASSEM,               "assembly " },
+	{ METHOD_ATTRIBUTE_FAMILY,              "family " },
+	{ METHOD_ATTRIBUTE_FAM_OR_ASSEM,        "famorassem " },
+	{ METHOD_ATTRIBUTE_PUBLIC,              "public " },
+	{ 0, NULL }
+};
+
+static map_t method_flags_map [] = {
+	{ METHOD_ATTRIBUTE_STATIC,              "static " },
+	{ METHOD_ATTRIBUTE_FINAL,               "final " },
+	{ METHOD_ATTRIBUTE_VIRTUAL,             "virtual " },
+	{ METHOD_ATTRIBUTE_HIDE_BY_SIG,         "hidebysig " },
+	{ METHOD_ATTRIBUTE_VTABLE_LAYOUT_MASK,  "newslot " },
+	{ METHOD_ATTRIBUTE_ABSTRACT,            "abstract " },
+	{ METHOD_ATTRIBUTE_SPECIAL_NAME,        "specialname " },
+	{ METHOD_ATTRIBUTE_RT_SPECIAL_NAME,     "rtspecialname " },
+	{ METHOD_ATTRIBUTE_PINVOKE_IMPL,        "pinvokeimpl " }, 
+	{ METHOD_ATTRIBUTE_UNMANAGED_EXPORT,    "export " },
+	{ METHOD_ATTRIBUTE_HAS_SECURITY,        "hassecurity" },
+	{ METHOD_ATTRIBUTE_REQUIRE_SEC_OBJECT,  "requiresecobj" },
+	{ 0, NULL }
+};
+
+/**
+ * method_flags:
+ *
+ * Returns a stringified version of the Method's flags
+ */
+static char *
+method_flags (guint32 f)
+{
+	GString *str = g_string_new ("");
+	int access = f & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK;
+	char *s;
+	
+	g_string_append (str, map (access, method_access_map));
+	g_string_append (str, flags (f, method_flags_map));
+
+	s = str->str;
+	g_string_free (str, FALSE);
+
+	return s;
+}
+
+static map_t method_impl_map [] = {
+	{ METHOD_IMPL_ATTRIBUTE_IL,              "cil " },
+	{ METHOD_IMPL_ATTRIBUTE_NATIVE,          "native " },
+	{ METHOD_IMPL_ATTRIBUTE_OPTIL,           "optil " },
+	{ METHOD_IMPL_ATTRIBUTE_RUNTIME,         "runtime " },
+	{ 0, NULL }
+};
+
+static map_t managed_type_map [] = {
+	{ METHOD_IMPL_ATTRIBUTE_UNMANAGED,       "unmanaged " },
+	{ METHOD_IMPL_ATTRIBUTE_MANAGED,         "managed " },
+	{ 0, NULL }
+};
+
+static map_t managed_impl_flags [] = {
+	{ METHOD_IMPL_ATTRIBUTE_FORWARD_REF,     "fwdref " },
+	{ METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG,    "preservesig " },
+	{ METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL,   "internalcall " },
+	{ METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED,    "synchronized " },
+	{ METHOD_IMPL_ATTRIBUTE_NOINLINING,      "noinline " },
+	{ 0, NULL }
+};
+
+static char *
+method_impl_flags (guint32 f)
+{
+	GString *str = g_string_new ("");
+	char *s;
+	int code_type = f & METHOD_IMPL_ATTRIBUTE_CODE_TYPE_MASK;
+	int managed_type = f & METHOD_IMPL_ATTRIBUTE_MANAGED_MASK;
+
+	g_string_append (str, map (code_type, method_impl_map));
+	g_string_append (str, map (managed_type, managed_type_map));
+	g_string_append (str, flags (f, managed_impl_flags));
+	
+	s = str->str;
+	g_string_free (str, FALSE);
+	return s;
+}
+
+/**
+ * get_ret_type:
+ * @m: metadata context 
+ * @ptr: location to decode from.
+ * @result: pointer to string where resulting decoded string is stored
+ *
+ * This routine returns in @result the stringified RetType (22.2.11)
+ *
+ * Returns: the new ptr to continue decoding.
+ */
+static const char *
+get_ret_type (metadata_t *m, const char *ptr, char **ret_type)
+{
+	GString *str = g_string_new ("");
+	char *mod = NULL;
+	char *allocated_type_string;
+	
+	ptr = get_custom_mod (m, ptr, &mod);
+	if (mod){
+		g_string_append (str, mod);
+		g_string_append_c (str, ' ');
+		g_free (mod);
+	}
+
+	if (*ptr == ELEMENT_TYPE_TYPEDBYREF){
+		/* TODO: what does `typedbyref' mean? */
+		g_string_append (str, "/* FIXME: What does this mean? */ typedbyref ");
+		ptr++;
+	} else if (*ptr == ELEMENT_TYPE_VOID){
+		 g_string_append (str, "void");
+		 ptr++;
+	} else {
+		if (*ptr == ELEMENT_TYPE_BYREF){
+			g_string_append (str, "[out] ");
+			ptr++;
+		}
+
+		ptr = get_type (m, ptr, &allocated_type_string);
+		g_string_append (str, allocated_type_string);
+		g_free (allocated_type_string);
+	}
+
+	*ret_type = str->str;
+	g_string_free (str, FALSE);
+
+	return ptr;
+}
+
+static const char *
+get_param (metadata_t *m, const char *ptr, char **retval)
+{
+	GString *str = g_string_new ("");
+	char *allocated_mod_string, *allocated_type_string;
+	
+	ptr = get_custom_mod (m, ptr, &allocated_mod_string);
+	if (allocated_mod_string){
+		g_string_append (str, allocated_mod_string);
+		g_string_append_c (str, ' ');
+		g_free (allocated_mod_string);
+	}
+	
+	if (*ptr == ELEMENT_TYPE_TYPEDBYREF){
+		g_string_append (str, "/*FIXME: what does typedbyref mean? */ typedbyref ");
+		ptr++;
+	} else {
+		if (*ptr == ELEMENT_TYPE_BYREF){
+			g_string_append (str, "[out] ");
+			ptr++;
+		}
+		ptr = get_type (m, ptr, &allocated_type_string);
+		g_string_append (str, allocated_type_string);
+		g_free (allocated_type_string);
+	}
+
+	*retval = str->str;
+	g_string_free (str, FALSE);
+	return ptr;
+}
+
+typedef struct {
+	char  flags;
+	char *ret_type;
+	int   param_count;
+	char **param;
+} MethodSignature;
+
+static MethodSignature *
+parse_method_signature (metadata_t *m, guint32 blob_signature)
+{
+	GString *res = g_string_new ("");
+	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
+	MethodSignature *ms = g_new0 (MethodSignature, 1);
+	char *s;
+	int i, len;
+
+	ptr = get_encoded_value (ptr, &len);
+	fprintf (output, "     // SIG: ");
+	hex_dump (ptr, 0, -len);
+	fprintf (output, "\n");
+	
+	ms->flags = *ptr++;
+
+	ptr = get_encoded_value (ptr, &ms->param_count);
+	ptr = get_ret_type (m, ptr, &ms->ret_type);
+	ms->param = g_new (char *, ms->param_count);
+	
+	for (i = 0; i < ms->param_count; i++)
+		ptr = get_param (m, ptr, &(ms->param [i]));
+
+	s = res->str;
+	g_string_free (res, FALSE);
+	return ms;
+}
+
+static void
+free_method_signature (MethodSignature *ms)
+{
+	int i;
+	
+	for (i = 0; i < ms->param_count; i++)
+		g_free (ms->param [i]);
+	g_free (ms->param);
+	g_free (ms->ret_type);
+	g_free (ms);
+}
+
+static map_t param_map [] = {
+	{ PARAM_ATTRIBUTE_IN,                "[in] " },
+	{ PARAM_ATTRIBUTE_OUT,               "[out] " },
+	{ PARAM_ATTRIBUTE_OPTIONAL,          "optional " },
+	{ PARAM_ATTRIBUTE_HAS_DEFAULT,       "hasdefault " },
+	{ PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL, "fieldmarshal " },
+	{ 0, NULL }
+};
+
+static char *
+param_flags (guint32 f)
+{
+	return g_strdup (map (f, param_map));
+}
+
 /**
  * dis_field_list:
  * @m: metadata context
@@ -625,6 +866,65 @@ dis_field_list (metadata_t *m, guint32 start, guint32 end)
 static void
 dis_method_list (metadata_t *m, guint32 start, guint32 end)
 {
+	metadata_tableinfo_t *t = &m->tables [META_TABLE_METHOD];
+	metadata_tableinfo_t *p = &m->tables [META_TABLE_PARAM];
+	guint32 cols [6];
+	guint32 cols_next [6];
+	guint32 param_cols [3];
+	int i;
+
+	if (end > t->rows + 1){
+		fprintf (output, "ERROR index out of range in methods");
+		exit (1);
+	}
+
+	for (i = start; i < end; i++){
+		MethodSignature *ms;
+		char *flags, *impl_flags;
+		
+		expand (t, i, cols, CSIZE (cols));
+		expand (t, i + 1, cols_next, CSIZE (cols_next));
+
+		flags = method_flags (cols [2]);
+		impl_flags = method_impl_flags (cols [1]);
+
+		ms = parse_method_signature (m, cols [4]);
+			
+		fprintf (output,
+			 "    .method %s\n",
+			 flags);
+		fprintf (output,
+			 "           %s %s",
+			 ms->ret_type,
+			 mono_metadata_string_heap (m, cols [3]));
+		if (ms->param_count > 0){
+			int i;
+
+			fprintf (output, "(\n");
+			for (i = 0; i < ms->param_count; i++){
+				char *pf;
+				
+				expand (p, i, param_cols, CSIZE (param_cols));
+				pf = param_flags (param_cols [0]);
+				fprintf (
+					output, "\t\t%s %s %s%s", pf, ms->param [i],
+					mono_metadata_string_heap (m, param_cols [2]),
+					(i+1 == ms->param_count) ? ")" : ",\n");
+
+				g_free (pf);
+			}
+				
+		}
+		fprintf (output, " %s\n", impl_flags);
+		g_free (flags);
+		g_free (impl_flags);
+		
+		fprintf (output, "    {\n");
+		fprintf (output, "        // Method begins at RVA 0x%x\n", cols [0]);
+		fprintf (output, "        // Param: %d %d (%d)\n", cols [5], cols_next [5], ms->param_count);
+		fprintf (output, "    }\n\n");
+		free_method_signature (ms);
+	}
 }
 
 /**
@@ -645,6 +945,7 @@ dis_type (metadata_t *m, int n)
 	expand (t, n, cols, CSIZE (cols));
 	expand (t, n + 1, cols_next, CSIZE (cols_next));
 
+	fprintf (output, ".namespace %s\n{\n", mono_metadata_string_heap (m, cols [2]));
 	name = mono_metadata_string_heap (m, cols [1]);
 
 	if ((cols [0] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS){
@@ -663,10 +964,11 @@ dis_type (metadata_t *m, int n)
 	 */
 	if (cols [4] != cols_next [4])
 		dis_field_list (m, cols [4] - 1, cols_next [4] - 1);
+	fprintf (output, "\n");
 	if (cols [4] != cols_next [5])
-		dis_method_list (m, cols [5], cols_next [5]);
+		dis_method_list (m, cols [5] - 1, cols_next [5] - 1);
 
-	fprintf (output, "  }\n");
+	fprintf (output, "  }\n}\n\n");
 }
 
 static void
@@ -722,6 +1024,26 @@ dump_table_assemblyref (metadata_t *m)
 	fprintf (output, "\n");
 }
 
+static void
+dump_table_param (metadata_t *m)
+{
+	metadata_tableinfo_t *t = &m->tables [META_TABLE_PARAM];
+	int i;
+
+	fprintf (output, "Param Table\n");
+	
+	for (i = 0; i < t->rows; i++){
+		guint32 cols [3];
+
+		expand (t, i, cols, CSIZE (cols));
+		fprintf (output, "%d: 0x%04x %d %s\n",
+			 i,
+			 cols [0], cols [1], 
+			 mono_metadata_string_heap (m, cols [2]));
+	}
+	fprintf (output, "\n");
+}
+
 /**
  * dis_types:
  * @m: metadata context
@@ -773,6 +1095,9 @@ disassemble_file (const char *file)
 		case META_TABLE_ASSEMBLYREF:
 			dump_table_assemblyref (m);
 			break;
+		case META_TABLE_PARAM:
+			dump_table_param (m);
+			break;
 		default:
 			g_error ("Internal error");
 		}
@@ -790,7 +1115,7 @@ disassemble_file (const char *file)
 static void
 usage (void)
 {
-	fprintf (stderr, "Usage is: monodis file1 ..\n");
+	fprintf (stderr, "Usage is: monodis [--typeref][--typedef][--assemblyref] file ..\n");
 	exit (1);
 }
 
@@ -807,12 +1132,16 @@ main (int argc, char *argv [])
 				usage ();
 			else if (argv [i][1] == 'd')
 				dump_header_data_p = TRUE;
+			else if (strcmp (argv [i], "--help") == 0)
+				usage ();
 			else if (strcmp (argv [i], "--typeref") == 0)
 				dump_table = META_TABLE_TYPEREF;
 			else if (strcmp (argv [i], "--typedef") == 0)
 				dump_table = META_TABLE_TYPEDEF;
 			else if (strcmp (argv [i], "--assemblyref") == 0)
 				dump_table = META_TABLE_ASSEMBLYREF;
+			else if (strcmp (argv [i], "--param") == 0)
+				dump_table = META_TABLE_PARAM;
 		} else
 			input_files = g_list_append (input_files, argv [i]);
 	}

@@ -1,0 +1,41 @@
+.\" 
+.\" monodis manual page.
+.\" (C) Ximian, Inc. 
+.\" Author:
+.\"   Miguel de Icaza (miguel@gnu.org)
+.\"
+.TH Mono "Mono 1.0"
+.SH NAME
+monodis \- CIL image content dumper and disassembler.
+.SH SYNOPSIS
+.PP
+.B monodis
+[\-hd] [\-\-help] 
+[\-\-typeref]
+[\-\-typedefl]
+[\-\-assemblyref] 
+[FILES...]
+.SH DESCRIPTION
+The \fImonodis\fP program is used to dump the contents a CIL image
+(contained in .EXE files that contain extended PE/COFF CIL code).  
+.SH OPTIONS
+The following Generic options are supported:
+.TP
+.I "--help", "-h"
+Displays usage instructions.
+.TP
+.I "--typeref"
+Dumps the contents of the typeref table.
+.TP
+.I "--typedef"
+Dumps the contents of the typedef table.
+.TP
+.I "--assemblyref"
+Dumps the contents of the assemblyref table.
+.PP
+If no flags are specified the program dumps the content of the image
+in a format that can be used to rountrip the code. 
+.SH AUTHOR
+gnome-config was written by Miguel de Icaza
+.SH SEE ALSO
+.BR pedump(1), 

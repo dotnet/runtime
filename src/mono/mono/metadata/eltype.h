@@ -1,6 +1,9 @@
 #ifndef _MONO_METADATA_ELTYPE_H_
 #define _MONO_METADATA_ELTYPE_H_
 
+/*
+ * Encoding for type signatures used in the Metadata
+ */
 typedef enum {
 	ELEMENT_TYPE_END        = 0x00,       /* End of List */
 	ELEMENT_TYPE_VOID       = 0x01,
