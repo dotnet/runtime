@@ -22,4 +22,14 @@ MonoAssembly *mono_assembly_get_main   (void);
 typedef void  (*MonoAssemblyLoadFunc)         (MonoAssembly *assembly, gpointer user_data);
 void          mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, gpointer user_data);
 
+/* Installs a function which is called before a new assembly is loaded
+ * The hook are invoked from last hooked to first. If any of them returns
+ * a non-null value, that will be the value returned in mono_assembly_load */
+typedef MonoAssembly * (*MonoAssemblyPreLoadFunc) (MonoAssemblyName *aname,
+						   gchar **assemblies_path,
+						   gpointer user_data);
+
+void          mono_install_assembly_preload_hook (MonoAssemblyPreLoadFunc func,
+						  gpointer user_data);
+
 #endif

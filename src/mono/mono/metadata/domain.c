@@ -173,6 +173,7 @@ mono_domain_create (void)
 	domain->domain = NULL;
 	domain->setup = NULL;
 	domain->friendly_name = NULL;
+	domain->search_path = NULL;
 
 	domain->mp = mono_mempool_new ();
 	domain->code_mp = mono_mempool_new ();
@@ -452,8 +453,7 @@ mono_domain_set (MonoDomain *domain)
 MonoAssembly *
 mono_domain_assembly_open (MonoDomain *domain, const char *name)
 {
-	MonoAssembly *ass, *tmp;
-	int i;
+	MonoAssembly *ass;
 
 	if ((ass = g_hash_table_lookup (domain->assemblies, name)))
 		return ass;

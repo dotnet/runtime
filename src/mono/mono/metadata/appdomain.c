@@ -27,6 +27,12 @@ CRITICAL_SECTION mono_delegate_section;
 
 static MonoObject *
 mono_domain_transfer_object (MonoDomain *src, MonoDomain *dst, MonoObject *obj);
+
+static MonoAssembly *
+mono_domain_assembly_preload (MonoAssemblyName *aname,
+			      gchar **assemblies_path,
+			      gpointer user_data);
+
 static void
 mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data);
 
@@ -50,6 +56,7 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	MonoAppDomain *ad;
 	MonoClass *class;
 	
+	mono_install_assembly_preload_hook (mono_domain_assembly_preload, NULL);
 	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);
 
 	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
@@ -624,7 +631,7 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass)
 		return; /* This is ok while no lazy loading of assemblies */
 
 	mono_domain_lock (domain);
-	g_hash_table_insert (domain->assemblies, ass->aname.name, ass);
+	g_hash_table_insert (domain->assemblies, (gpointer) ass->aname.name, ass);
 	mono_domain_unlock (domain);
 
 	for (i = 0; ass->image->references [i] != NULL; i++)
@@ -655,6 +662,136 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 
 	*params = ref_assembly;
 	mono_runtime_invoke (method, domain->domain, params, NULL);
+}
+
+static void
+set_domain_search_path (MonoDomain *domain)
+{
+	MonoAppDomainSetup *setup;
+	gchar **tmp;
+	gchar *utf8;
+	gint i;
+	gint npaths = 0;
+	gchar **pvt_split = NULL;
+
+	if (domain->search_path != NULL)
+		return;
+
+	setup = domain->setup;
+	if (setup->application_base)
+		npaths++;
+
+	if (setup->private_bin_path) {
+		utf8 = mono_string_to_utf8 (setup->private_bin_path);
+		pvt_split = g_strsplit (utf8, G_SEARCHPATH_SEPARATOR_S, 1000);
+		g_free (utf8);
+		for (tmp = pvt_split; *tmp; tmp++, npaths++);
+	}
+
+	if (!npaths) {
+		if (pvt_split)
+			g_strfreev (pvt_split);
+		/*
+		 * Don't do this because the first time is called, the domain
+		 * setup is not finished.
+		 *
+		 * domain->search_path = g_malloc (sizeof (char *));
+		 * domain->search_path [0] = NULL;
+		*/
+		return;
+	}
+
+	domain->search_path = tmp = g_malloc ((npaths + 1) * sizeof (gchar *));
+	tmp [npaths] = NULL;
+	if (setup->application_base) {
+		*tmp = mono_string_to_utf8 (setup->application_base);
+	} else {
+		*tmp = g_strdup ("");
+	}
+
+	tmp++;
+	npaths--;
+	for (i = 0; i < npaths; i++)
+		tmp [i] = pvt_split [i];
+
+	g_strfreev (pvt_split);
+}
+
+static MonoAssembly *
+real_load (gchar **search_path, gchar *filename)
+{
+	MonoAssembly *result;
+	gchar **path;
+	gchar *fullpath;
+
+	for (path = search_path; *path; path++) {
+		if (**path == '\0')
+			continue; /* Ignore empty ApplicationBase */
+		fullpath = g_build_filename (*path, filename, NULL);
+		result = mono_assembly_open (fullpath, NULL);
+		g_free (fullpath);
+		if (result)
+			return result;
+	}
+
+	return NULL;
+}
+
+/*
+ * Try loading the assembly from ApplicationBase and PrivateBinPath 
+ * and then from assemblies_path if any.
+ */
+static MonoAssembly *
+mono_domain_assembly_preload (MonoAssemblyName *aname,
+			      gchar **assemblies_path,
+			      gpointer user_data)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoAssembly *result;
+	gchar *dll, *exe;
+
+	set_domain_search_path (domain);
+
+	dll = g_strconcat (aname->name, ".dll", NULL);
+	exe = g_strdup (dll);
+	strcpy (exe + strlen (exe) - 5, ".exe");
+
+	if (domain->search_path && domain->search_path [0] != NULL) {
+		/* TODO: should also search in name/name.dll and name/name.exe from appbase */
+		result = real_load (domain->search_path, dll);
+		if (result) {
+			g_free (dll);
+			g_free (exe);
+			return result;
+		}
+
+		result = real_load (domain->search_path, exe);
+		if (result) {
+			g_free (dll);
+			g_free (exe);
+			return result;
+		}
+	}
+
+	if (assemblies_path && assemblies_path [0] != NULL) {
+		result = real_load (assemblies_path, dll);
+		if (result) {
+			g_free (dll);
+			g_free (exe);
+			return result;
+		}
+
+		result = real_load (assemblies_path, exe);
+		if (result) {
+			g_free (dll);
+			g_free (exe);
+			return result;
+		}
+	}
+	
+	g_free (dll);
+	g_free (exe);
+	return NULL;
 }
 
 MonoReflectionAssembly *

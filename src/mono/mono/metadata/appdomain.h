@@ -82,6 +82,8 @@ struct _MonoDomain {
 	MonoGHashTable     *refobject_hash;
 	/* Needed by Thread:GetDomainID() */
 	gint32             domain_id;
+	/* Used when loading assemblies */
+	gchar **search_path;
 };
 
 /* This is a copy of System.AppDomain */

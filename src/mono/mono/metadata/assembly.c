@@ -59,6 +59,7 @@ search_loaded (MonoAssemblyName* aname)
 {
 	GList *tmp;
 	MonoAssembly *ass;
+	guint32 size;
 	
 	for (tmp = loaded_assemblies; tmp; tmp = tmp->next) {
 		ass = tmp->data;
@@ -193,7 +194,7 @@ struct AssemblyLoadHook {
 AssemblyLoadHook *assembly_load_hook = NULL;
 
 static void
-invoke_assembly_hook (MonoAssembly *ass)
+invoke_assembly_load_hook (MonoAssembly *ass)
 {
 	AssemblyLoadHook *hook;
 
@@ -214,6 +215,44 @@ mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, gpointer user_data)
 	hook->user_data = user_data;
 	hook->next = assembly_load_hook;
 	assembly_load_hook = hook;
+}
+
+typedef struct AssemblyPreLoadHook AssemblyPreLoadHook;
+struct AssemblyPreLoadHook {
+	AssemblyPreLoadHook *next;
+	MonoAssemblyPreLoadFunc func;
+	gpointer user_data;
+};
+
+AssemblyPreLoadHook *assembly_preload_hook = NULL;
+
+static MonoAssembly *
+invoke_assembly_preload_hook (MonoAssemblyName *aname, gchar **assemblies_path)
+{
+	AssemblyPreLoadHook *hook;
+	MonoAssembly *assembly;
+
+	for (hook = assembly_preload_hook; hook; hook = hook->next) {
+		assembly = hook->func (aname, assemblies_path, hook->user_data);
+		if (assembly != NULL)
+			return assembly;
+	}
+
+	return NULL;
+}
+
+void
+mono_install_assembly_preload_hook (MonoAssemblyPreLoadFunc func, gpointer user_data)
+{
+	AssemblyPreLoadHook *hook;
+	
+	g_return_if_fail (func != NULL);
+
+	hook = g_new0 (AssemblyPreLoadHook, 1);
+	hook->func = func;
+	hook->user_data = user_data;
+	hook->next = assembly_preload_hook;
+	assembly_preload_hook = hook;
 }
 
 static gchar *
@@ -337,7 +376,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 
 	if (ass->aot_module) {
 		char *saved_guid = NULL;
-		g_module_symbol (ass->aot_module, "mono_assembly_guid", &saved_guid);
+		g_module_symbol (ass->aot_module, "mono_assembly_guid", (gpointer *) &saved_guid);
 
 		if (!saved_guid || strcmp (image->guid, saved_guid)) {
 			g_module_close (ass->aot_module);
@@ -402,7 +441,7 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 		g_free (module_ref);
 	}
 
-	invoke_assembly_hook (ass);
+	invoke_assembly_load_hook (ass);
 
 	return ass;
 }
@@ -414,6 +453,10 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 	char *fullpath, *filename;
 
 	check_env ();
+
+	result = invoke_assembly_preload_hook (aname, assemblies_path);
+	if (result)
+		return result;
 
 	/* g_print ("loading %s\n", aname->name); */
 	/* special case corlib */
