@@ -85,7 +85,27 @@ static void *timed_thread_start_routine(gpointer args)
 	
 	mono_once(&timed_thread_once, timed_thread_init);
 	pthread_setspecific(timed_thread_key, (void *)thread);
-	pthread_detach(thread->id);
+
+	/* This used to be pthread_detach(thread->id);
+	 *
+	 * thread->id is set in _wapi_timed_thread_create:
+	 *
+	 * if((result = pthread_create(&thread->id, attr,
+	 *			    timed_thread_start_routine,
+	 *			    (void *)thread)) != 0) {
+	 *
+	 * Strangeness happened: if _wapi_timed_thread_create was
+	 * called directly, then thread->id was always set here.
+	 * However, if _wapi_timed_thread_create was called via
+	 * another function that did nothing but call
+	 * _wapi_timed_thread_create, thread->id was not ever set,
+	 * leading to the thread's 2M stack being wasted as it was not
+	 * detached.
+	 *
+	 * This was 100% reproducible on Debian Woody with gcc 2.95.4,
+	 * and on Red Hat 9 with gcc 3.2.2.
+	 */
+	pthread_detach(pthread_self ());
 
 	if(thread->create_flags & CREATE_SUSPENDED) {
 		thread->suspend_count = 1;
