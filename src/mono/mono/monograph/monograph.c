@@ -1042,7 +1042,7 @@ main (int argc, char *argv[]) {
 	if (argc > i + 1)
 		cname = argv [i + 1];
 	if (!aname)
-		aname = "corlib.dll";
+		aname = "mscorlib.dll";
 	if (!cname && (graphtype == GRAPH_TYPES))
 		cname = "System.Object";
 
