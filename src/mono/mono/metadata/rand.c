@@ -1,12 +1,13 @@
 /*
  * rand.c: System.Security.Cryptography.RNGCryptoServiceProvider support
  *
- * Author:
+ * Authors:
  *      Mark Crichton (crichton@gimp.org)
  *      Patrik Torstensson (p@rxc.se)
+ *	Sebastien Pouliot (sebastien@ximian.com)
  *
  * (C) 2001 Ximian, Inc.
- *
+ * (C) 2004 Novell (http://www.novell.com)
  */
 
 #include <config.h>
@@ -95,39 +96,67 @@ get_entropy_from_server (const char *path, guchar *buf, int len)
 
 #include <WinCrypt.h>
 
-static int s_providerInitialized = 0;
-static HCRYPTPROV s_provider;
-
-static HCRYPTPROV GetProvider()
+gpointer
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (MonoArray *seed)
 {
-    if (s_providerInitialized == 1)
-        return s_provider;
+	HCRYPTPROV provider = 0;
 
-    if (!CryptAcquireContext (&s_provider, NULL, NULL, PROV_RSA_FULL, 0))  
-    {
-        if (GetLastError() != NTE_BAD_KEYSET)
-            mono_raise_exception (mono_get_exception_execution_engine ("Failed to acquire crypt context"));
+	/* There is no need to create a container for just random data,
+	   so we can use CRYPT_VERIFY_CONTEXT (one call) see: 
+	   http://blogs.msdn.com/dangriff/archive/2003/11/19/51709.aspx */
 
-		// Generate a new keyset if needed
-        if (!CryptAcquireContext (&s_provider, NULL, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
-            mono_raise_exception (mono_get_exception_execution_engine ("Failed to acquire crypt context (new keyset)"));
-    }
-    
-    s_providerInitialized =  1;
+	/* We first try to use the Intel PIII RNG if drivers are present */
+	if (!CryptAcquireContext (&provider, NULL, NULL, INTEL_DEF_PROV, CRYPT_VERIFY_CONTEXT)) {
+		/* not a PIII or no drivers available, use default RSA CSP */
+		if (!CryptAcquireContext (&provider, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFY_CONTEXT)) {
+			provider = 0;
+			/* exception will be thrown in managed code */
+		}
+	}
 
-    return s_provider;
+	/* seed the CSP with the supplied buffer (if present) */
+	if ((provider != 0) && (seed)) {
+		guint32 len = mono_array_length (seed);
+		guchar *buf = mono_array_addr (seed, guchar, 0);
+		/* the call we replace the seed with random - this isn't what is
+		   expected from the class library user */
+		guchar *data = g_malloc (len);
+		if (data) {
+			memcpy (data, buf, len);
+			/* add seeding material to the RNG */
+			CryptGenRandom (provider, len, data);
+			/* zeroize and free */
+			memset (data, 0, len);
+			g_free (data);
+		}
+	}
+
+	return (gpointer) provider;	
 }
 
-void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes(MonoObject *self, MonoArray *arry)
+gpointer
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpointer handle, MonoArray *arry)
 {
-    guint32 len;
-    guchar *buf;
+	HCRYPTPROV provider = (HCRYPTPROV) handle;
+	guint32 len = mono_array_length (arry);
+	guchar *buf = mono_array_addr (arry, guchar, 0);
 
-    len = mono_array_length (arry);
-    buf = mono_array_addr (arry, guchar, 0);
+	if (!CryptGenRandom (provider, len, buf)) {
+		CryptReleaseContext (provider);
+		/* we may have lost our context with CryptoAPI, but all hope isn't lost yet! */
+		provider = ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (NULL);
+		if (!CryptGenRandom (provider, len, buf)) {
+			CryptReleaseContext (provider);
+			provider = 0;
+			/* exception will be thrown in managed code */
+		}
+	} 
+}
 
-    if (0 == CryptGenRandom (GetProvider(), len, buf))
-       mono_raise_exception (mono_get_exception_execution_engine ("Failed to generate random bytes from CryptoAPI"));
+void
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose (gpointer handle) 
+{
+	CryptReleaseContext ((HCRYPTPROV) handle);
 }
 
 #else
@@ -136,59 +165,77 @@ void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGet
 #define NAME_DEV_URANDOM "/dev/urandom"
 #endif
 
-void 
-ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes (MonoObject *self, MonoArray *arry)
-{
-    guint32 len;
-    gint file = -1;
-    gint err;
-    gint count;
-    guchar *buf;
+static gboolean egd = FALSE;
 
-    len = mono_array_length(arry);
-    buf = mono_array_addr(arry, guchar, 0);
+gpointer
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (MonoArray *seed)
+{
+	gint file = -1;
+
+	if (egd)
+		return -1;
 
 #if defined (NAME_DEV_URANDOM)
-    file = open (NAME_DEV_URANDOM, O_RDONLY);
+	file = open (NAME_DEV_URANDOM, O_RDONLY);
 #endif
 
 #if defined (NAME_DEV_RANDOM)
-    if (file < 0)
-	    file = open (NAME_DEV_RANDOM, O_RDONLY);
+	if (file < 0)
+		file = open (NAME_DEV_RANDOM, O_RDONLY);
 #endif
 
-    if (file < 0) {
-        const char *socket_path = g_getenv("MONO_EGD_SOCKET");
+	if (file < 0) {
+		const char *socket_path = g_getenv("MONO_EGD_SOCKET");
+		egd = (socket_path != NULL);
+	        return -1;
+	}
 
-        if (socket_path == NULL)
-            mono_raise_exception (mono_get_exception_execution_engine ("Failed to open /dev/urandom or /dev/random device, or find egd socket"));
+	/* if required exception will be thrown in managed code */
+	return ((file < 0) ? NULL : (gpointer) file);
+}
 
-        get_entropy_from_server (socket_path, mono_array_addr(arry, guchar, 0), mono_array_length(arry));
-        return;
-    }
+gpointer 
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpointer handle, MonoArray *arry)
+{
+	gint file = (gint) handle;
+	guint32 len = mono_array_length (arry);
+	guchar *buf = mono_array_addr (arry, guchar, 0);
 
-    /* Read until the buffer is filled. This may block if using NAME_DEV_RANDOM. */
-    count = 0;
-    do {
-	    err = read(file, buf + count, len - count);
-	    count += err;
-    } while (err >= 0 && count < len);
-    close(file);
+	if (egd) {
+		const char *socket_path = getenv ("MONO_EGD_SOCKET");
+		/* exception will be thrown in managed code */
+		if (socket_path == NULL)
+			return NULL; 
+		get_entropy_from_server (socket_path, mono_array_addr (arry, guchar, 0), mono_array_length (arry));
+		return -1;
+	}
+	else {
+		/* Read until the buffer is filled. This may block if using NAME_DEV_RANDOM. */
+		gint count = 0;
+		gint err;
 
-    if (err < 0) {
-        g_warning("Entropy error! Error in read (%s).", strerror (errno));
-        mono_raise_exception (mono_get_exception_execution_engine ("Failed to read a random byte from /dev/urandom or /dev/random device"));
-    }
+		do {
+			err = read (file, buf + count, len - count);
+			count += err;
+		} while (err >= 0 && count < len);
 
+		if (err < 0) {
+			g_warning("Entropy error! Error in read (%s).", strerror (errno));
+			/* exception will be thrown in managed code */
+			return NULL;
+		}
+	}
+
+	/* We do not support PRNG seeding right now but the class library is this */
+
+	return handle;	
+}
+
+void
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose (gpointer handle) 
+{
+	if (!egd)
+		close ((gint) handle);
 }
 
 #endif /* OS definition */
-
-void
-ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_Seed (MonoArray *seed)
-{
-	/* actually we do not support any PRNG requiring seeding right now but
-	the class library is ready for such possibility - so this empty 
-	function is needed (e.g. a new or modified runtime) */
-}
-

@@ -15,7 +15,8 @@
 
 #include <mono/metadata/object.h>
 
-void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes (MonoObject *self, MonoArray *arry);
-void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_Seed (MonoArray *seed);
+gpointer ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize (MonoArray *seed);
+gpointer ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngGetBytes (gpointer handle, MonoArray *arry);
+void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose (gpointer handle);
 
 #endif
