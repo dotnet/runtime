@@ -8240,6 +8240,7 @@ mono_runtime_install_handlers (void)
 	add_signal_handler (SIGFPE, sigfpe_signal_handler);
 	add_signal_handler (SIGQUIT, sigquit_signal_handler);
 	add_signal_handler (SIGILL, sigill_signal_handler);
+	add_signal_handler (SIGBUS, sigsegv_signal_handler);
 	add_signal_handler (mono_thread_get_abort_signal (), sigusr1_signal_handler);
 
 	/* catch SIGSEGV */
