@@ -6227,6 +6227,9 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_typ
 	else if (!strcmp (obj->vtable->klass->name, "MonoMethod") ||
 		 !strcmp (obj->vtable->klass->name, "MonoCMethod"))
 		method = ((MonoReflectionMethod *) obj)->method;
+	else if (!strcmp (obj->vtable->klass->name, "MonoInflatedMethod") ||
+		 !strcmp (obj->vtable->klass->name, "MonoInflatedCtor"))
+		method = ((MonoReflectionInflatedMethod *) obj)->rmethod.method;
 	else
 		g_assert_not_reached ();
 
