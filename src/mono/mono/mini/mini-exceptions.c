@@ -193,7 +193,16 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 
 		g_assert (ji != NULL);
 
-		sf->method = mono_method_get_object (domain, ji->method, NULL);
+		if (ji->method->wrapper_type) {
+			char *s;
+
+			sf->method = NULL;
+			s = mono_method_full_name (ji->method, TRUE);
+			sf->internal_method_name = mono_string_new (domain, s);
+			g_free (s);
+		}
+		else
+			sf->method = mono_method_get_object (domain, ji->method, NULL);
 		sf->native_offset = (char *)ip - (char *)ji->code_start;
 
 		sf->il_offset = mono_debug_il_offset_from_address (ji->method, sf->native_offset, domain);
