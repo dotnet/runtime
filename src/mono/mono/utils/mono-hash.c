@@ -156,7 +156,7 @@ mono_g_hash_table_new_full (GHashFunc       hash_func,
   hash_table->size               = HASH_TABLE_MIN_SIZE;
   hash_table->nnodes             = 0;
   hash_table->hash_func          = hash_func ? hash_func : g_direct_hash;
-  hash_table->key_equal_func     = key_equal_func;
+  hash_table->key_equal_func     = key_equal_func == g_direct_equal ? NULL : key_equal_func;
   hash_table->key_destroy_func   = key_destroy_func;
   hash_table->value_destroy_func = value_destroy_func;
 #if HAVE_BOEHM_GC
@@ -279,6 +279,50 @@ mono_g_hash_table_lookup_extended (MonoGHashTable    *hash_table,
     }
   else
     return FALSE;
+}
+
+static inline MonoGHashNode*
+g_hash_node_new (gpointer key,
+		 gpointer value)
+{
+  MonoGHashNode *hash_node = NULL;
+
+#if HAVE_BOEHM_GC
+  if (node_free_list) {
+	  G_LOCK (g_hash_global);
+
+	  if (node_free_list) {
+		  hash_node = node_free_list;
+		  node_free_list = node_free_list->next;
+	  }
+	  G_UNLOCK (g_hash_global);
+  }
+  if (!hash_node)
+      hash_node = GC_MALLOC (sizeof (MonoGHashNode));
+#else
+  G_LOCK (g_hash_global);
+  if (node_free_list)
+    {
+      hash_node = node_free_list;
+      node_free_list = node_free_list->next;
+    }
+  else
+    {
+      if (!node_mem_chunk)
+	node_mem_chunk = g_mem_chunk_new ("hash node mem chunk",
+					  sizeof (MonoGHashNode),
+					  1024, G_ALLOC_ONLY);
+      
+      hash_node = g_chunk_new (MonoGHashNode, node_mem_chunk);
+    }
+  G_UNLOCK (g_hash_global);
+#endif
+  
+  hash_node->key = key;
+  hash_node->value = value;
+  hash_node->next = NULL;
+  
+  return hash_node;
 }
 
 /**
@@ -589,6 +633,30 @@ mono_g_hash_table_size (MonoGHashTable *hash_table)
   return hash_table->nnodes;
 }
 
+/**
+ * mono_g_hash_table_remap:
+ * 
+ *  Calls the given function for each key-value pair in the hash table, 
+ * and replaces the value stored in the hash table by the value returned by 
+ * the function.
+ * 
+ **/
+void        
+mono_g_hash_table_remap (MonoGHashTable *hash_table,
+						 MonoGRemapperFunc func,
+						 gpointer user_data)
+{
+  MonoGHashNode *node;
+  gint i;
+  
+  g_return_if_fail (hash_table != NULL);
+  g_return_if_fail (func != NULL);
+  
+  for (i = 0; i < hash_table->size; i++)
+    for (node = hash_table->nodes[i]; node; node = node->next)
+      node->value = (* func) (node->key, node->value, user_data);
+}
+
 static void
 g_hash_table_resize (MonoGHashTable *hash_table)
 {
@@ -625,40 +693,6 @@ g_hash_table_resize (MonoGHashTable *hash_table)
 #endif
   hash_table->nodes = new_nodes;
   hash_table->size = new_size;
-}
-
-static MonoGHashNode*
-g_hash_node_new (gpointer key,
-		 gpointer value)
-{
-  MonoGHashNode *hash_node;
-  
-  G_LOCK (g_hash_global);
-  if (node_free_list)
-    {
-      hash_node = node_free_list;
-      node_free_list = node_free_list->next;
-    }
-  else
-    {
-#if HAVE_BOEHM_GC
-      hash_node = GC_MALLOC (sizeof (MonoGHashNode));
-#else
-      if (!node_mem_chunk)
-	node_mem_chunk = g_mem_chunk_new ("hash node mem chunk",
-					  sizeof (MonoGHashNode),
-					  1024, G_ALLOC_ONLY);
-      
-      hash_node = g_chunk_new (MonoGHashNode, node_mem_chunk);
-#endif
-    }
-  G_UNLOCK (g_hash_global);
-  
-  hash_node->key = key;
-  hash_node->value = value;
-  hash_node->next = NULL;
-  
-  return hash_node;
 }
 
 static void

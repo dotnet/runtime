@@ -39,6 +39,9 @@ G_BEGIN_DECLS
 
 typedef struct _MonoGHashTable  MonoGHashTable;
 
+typedef gpointer (*MonoGRemapperFunc) (gpointer key, gpointer value, 
+									   gpointer user_data);
+
 /* Hash tables
  */
 MonoGHashTable* mono_g_hash_table_new		   (GHashFunc	    hash_func,
@@ -74,6 +77,10 @@ guint	    mono_g_hash_table_foreach_steal	   (MonoGHashTable	   *hash_table,
 					    GHRFunc	    func,
 					    gpointer	    user_data);
 guint	    mono_g_hash_table_size		   (MonoGHashTable	   *hash_table);
+
+void        mono_g_hash_table_remap (MonoGHashTable *hash_table,
+									 MonoGRemapperFunc func,
+									 gpointer user_data);
 
 G_END_DECLS
 
