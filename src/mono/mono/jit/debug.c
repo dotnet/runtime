@@ -12,9 +12,17 @@
 
 #include "debug-private.h"
 
-/* See debug.h for documentation. */
-guint32 mono_debugger_symbol_file_table_generation = 0;
-MonoDebuggerSymbolFileTable *mono_debugger_symbol_file_table = NULL;
+/* This is incremented each time the symbol table is modified.
+ * The debugger looks at this variable and if it has a higher value than its current
+ * copy of the symbol table, it must call debugger_update_symbol_file_table().
+ */
+static guint32 debugger_symbol_file_table_generation = 0;
+
+/* Caution: This variable may be accessed at any time from the debugger;
+ *          it is very important not to modify the memory it is pointing to
+ *          without previously setting this pointer back to NULL.
+ */
+static MonoDebuggerSymbolFileTable *debugger_symbol_file_table = NULL;
 
 /* Caution: This function MUST be called before touching the symbol table! */
 static void release_symbol_file_table (void);
@@ -23,6 +31,10 @@ static void initialize_debugger_support (void);
 
 static MonoDebugHandle *mono_debug_handles = NULL;
 static MonoDebugHandle *mono_default_debug_handle = NULL;
+
+static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
+static guint64 debugger_remove_breakpoint (guint64 breakpoint);
+static int debugger_update_symbol_file_table (void);
 
 /*
  * This is a global data symbol which is read by the debugger.
@@ -33,12 +45,12 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	sizeof (MonoDebuggerInfo),
 	&mono_generic_trampoline_code,
 	&mono_breakpoint_trampoline_code,
-	&mono_debugger_symbol_file_table_generation,
-	&mono_debugger_symbol_file_table,
-	&mono_debugger_update_symbol_file_table,
+	&debugger_symbol_file_table_generation,
+	&debugger_symbol_file_table,
+	&debugger_update_symbol_file_table,
 	&mono_compile_method,
-	&mono_debugger_insert_breakpoint,
-	&mono_debugger_remove_breakpoint
+	&debugger_insert_breakpoint,
+	&debugger_remove_breakpoint
 };
 
 static void
@@ -560,7 +572,7 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 			info->symfile = mono_debug_open_mono_symbol_file (info->image, info->filename, TRUE);
 		else if (debug->flags & MONO_DEBUG_FLAGS_MONO_DEBUGGER)
 			info->symfile = mono_debug_create_mono_symbol_file (info->image);
-		mono_debugger_symbol_file_table_generation++;
+		debugger_symbol_file_table_generation++;
 		break;
 
 	default:
@@ -610,6 +622,8 @@ mono_debug_make_symbols (void)
 
 	for (debug = mono_debug_handles; debug; debug = debug->next)
 		mono_debug_write_symbols (debug);
+
+	debugger_update_symbol_file_table ();
 }
 
 static void
@@ -795,7 +809,7 @@ mono_debug_add_type (MonoClass *klass)
 	info = mono_debug_get_image (debug, klass->image);
 	if (info == NULL) {
 		release_symbol_file_table ();
-		mono_debugger_symbol_file_table_generation++;
+		debugger_symbol_file_table_generation++;
 
 		info = mono_debug_open_image (debug, klass->image);
 	}
@@ -808,7 +822,7 @@ mono_debug_add_type (MonoClass *klass)
 	info = mono_debug_get_image (debug, klass->image);
 	if (info == NULL) {
 		release_symbol_file_table ();
-		mono_debugger_symbol_file_table_generation++;
+		debugger_symbol_file_table_generation++;
 
 		info = mono_debug_open_image (debug, klass->image);
 	}
@@ -895,7 +909,7 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 	info = mono_debug_get_image (debug, klass->image);
 	if (info == NULL) {
 		release_symbol_file_table ();
-		mono_debugger_symbol_file_table_generation++;
+		debugger_symbol_file_table_generation++;
 
 		info = mono_debug_open_image (debug, klass->image);
 	}
@@ -1032,7 +1046,7 @@ release_symbol_file_table ()
 {
 	MonoDebuggerSymbolFileTable *temp;
 
-	if (!mono_debugger_symbol_file_table)
+	if (!debugger_symbol_file_table)
 		return;
 
 	/*
@@ -1041,13 +1055,13 @@ release_symbol_file_table ()
 	 *          before freeing the area.
 	 */
 
-	temp = mono_debugger_symbol_file_table;
-	mono_debugger_symbol_file_table = NULL;
-	g_free (mono_debugger_symbol_file_table);
+	temp = debugger_symbol_file_table;
+	debugger_symbol_file_table = NULL;
+	g_free (debugger_symbol_file_table);
 }
 
-int
-mono_debugger_update_symbol_file_table (void)
+static int
+debugger_update_symbol_file_table (void)
 {
 	MonoDebugHandle *debug;
 	int count = 0, index;
@@ -1079,7 +1093,7 @@ mono_debugger_update_symbol_file_table (void)
 	symfile_table->version = MONO_SYMBOL_FILE_DYNAMIC_VERSION;
 	symfile_table->total_size = size;
 	symfile_table->count = count;
-	symfile_table->generation = mono_debugger_symbol_file_table_generation;
+	symfile_table->generation = debugger_symbol_file_table_generation;
 
 	index = 0;
 	for (debug = mono_debug_handles; debug; debug = debug->next) {
@@ -1099,14 +1113,11 @@ mono_debugger_update_symbol_file_table (void)
 		}
 	}
 
-	mono_debugger_symbol_file_table = symfile_table;
+	debugger_symbol_file_table = symfile_table;
 	return TRUE;
 }
 
 extern void (*mono_debugger_class_init_func) (MonoClass *klass);
-static GPtrArray *class_table = NULL;
-gpointer *mono_debugger_class_table = NULL;
-guint32 mono_debugger_class_table_size = 0;
 
 static gboolean has_mono_debugger_support = FALSE;
 
@@ -1116,8 +1127,6 @@ initialize_debugger_support ()
 	if (has_mono_debugger_support)
 		return;
 	has_mono_debugger_support = TRUE;
-
-	class_table = g_ptr_array_new ();
 
 	mono_debugger_class_init_func = mono_debug_add_type;
 }
@@ -1143,8 +1152,8 @@ mono_insert_breakpoint_full (MonoMethodDesc *desc, gboolean use_trampoline)
 	return info->index;
 }
 
-guint64
-mono_debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument)
+static guint64
+debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument)
 {
 	MonoMethodDesc *desc;
 
@@ -1155,8 +1164,8 @@ mono_debugger_insert_breakpoint (guint64 method_argument, const gchar *string_ar
 	return mono_insert_breakpoint_full (desc, TRUE);
 }
 
-guint64
-mono_debugger_remove_breakpoint (guint64 breakpoint)
+static guint64
+debugger_remove_breakpoint (guint64 breakpoint)
 {
 	int i;
 
@@ -1181,7 +1190,7 @@ mono_debugger_remove_breakpoint (guint64 breakpoint)
 int
 mono_remove_breakpoint (int breakpoint_id)
 {
-	return mono_debugger_remove_breakpoint (breakpoint_id);
+	return debugger_remove_breakpoint (breakpoint_id);
 }
 
 int

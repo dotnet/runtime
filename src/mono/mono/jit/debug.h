@@ -21,7 +21,6 @@ typedef enum {
 } MonoDebugFormat;
 
 extern MonoDebugFormat mono_debug_format;
-extern GList *mono_debug_methods;
 
 /*
  * This variable is intended to be set in a debugger.
@@ -51,13 +50,6 @@ extern GList *mono_debug_methods;
  *
  */
 extern int mono_debug_insert_breakpoint;
-
-/*
- * This is set the the core address of the last inserted breakpoint. You can
- * use this in GDB to unset the breakpoint.
- */
-
-extern gchar *mono_debug_last_breakpoint_address;
 
 MonoDebugHandle* mono_debug_open (const char *name, MonoDebugFormat format, const char **args);
 
@@ -97,13 +89,6 @@ void           mono_debug_make_symbols (void);
 
 void           mono_debug_write_symbols (MonoDebugHandle* debug);
 
-/* Update all symbol files.  Returns TRUE if the symbol have changed and FALSE if not. */
-int            mono_debugger_update_symbol_file_table (void);
-
-guint64        mono_debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
-
-guint64        mono_debugger_remove_breakpoint (guint64 breakpoint);
-
 /*
  * Address of the x86 trampoline code.  This is used by the debugger to check
  * whether a method is a trampoline.
@@ -115,19 +100,6 @@ extern guint8 *mono_generic_trampoline_code;
  * after compiling a method.
  */
 extern guint8 *mono_breakpoint_trampoline_code;
-
-/* This is incremented each time the symbol table is modified.
- * The debugger looks at this variable and if it has a higher value than its current
- * copy of the symbol table, it must call mono_debugger_update_symbol_file_table().
- */
-
-extern guint32 mono_debugger_symbol_file_table_generation;
-
-/* Caution: This variable may be accessed at any time from the debugger;
- *          it is very important not to modify the memory it is pointing to
- *          without previously setting this pointer back to NULL.
- */
-extern MonoDebuggerSymbolFileTable *mono_debugger_symbol_file_table;
 
 /*
  * There's a global data symbol called `MONO_DEBUGGER__debugger_info' which
