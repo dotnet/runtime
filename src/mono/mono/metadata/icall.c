@@ -3751,6 +3751,7 @@ static gconstpointer icall_map [] = {
 	"System.IO.MonoIO::get_AltDirectorySeparatorChar", ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar,
 	"System.IO.MonoIO::get_PathSeparator", ves_icall_System_IO_MonoIO_get_PathSeparator,
 	"System.IO.MonoIO::get_InvalidPathChars", ves_icall_System_IO_MonoIO_get_InvalidPathChars,
+	"System.IO.MonoIO::GetTempPath(string&)", ves_icall_System_IO_MonoIO_GetTempPath,
 
 	/*
 	 * System.Math

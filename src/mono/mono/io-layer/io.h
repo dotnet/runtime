@@ -187,5 +187,6 @@ extern guint32 GetCurrentDirectory (guint32 length, gunichar2 *buffer);
 extern gboolean SetCurrentDirectory (const gunichar2 *path);
 extern gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 			    WapiSecurityAttributes *security, guint32 size);
+extern guint32 GetTempPath (guint32 len, gunichar2 *buf);
 
 #endif /* _WAPI_IO_H_ */

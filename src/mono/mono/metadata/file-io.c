@@ -815,3 +815,34 @@ ves_icall_System_IO_MonoIO_get_InvalidPathChars ()
 	
 	return chars;
 }
+
+gint32
+ves_icall_System_IO_MonoIO_GetTempPath (MonoString **mono_name)
+{
+	gunichar2 *name;
+	int ret;
+
+	name=g_new0 (gunichar2, 256);
+	
+	ret=GetTempPath (256, name);
+	if(ret>255) {
+		/* Buffer was too short. Try again... */
+		g_free (name);
+		name=g_new0 (gunichar2, ret+2);	/* include the terminator */
+		ret=GetTempPath (ret, name);
+	}
+	
+	if(ret>0) {
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION
+			   ": Temp path is [%s] (len %d)", name, ret);
+#endif
+
+		*mono_name=mono_string_new_utf16 (mono_domain_get (), name,
+						  ret);
+	}
+
+	g_free (name);
+	
+	return(ret);
+}

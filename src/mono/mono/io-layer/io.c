@@ -2904,3 +2904,49 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 
 	return(TRUE);
 }
+
+guint32 GetTempPath (guint32 len, gunichar2 *buf)
+{
+	gchar *tmpdir=g_strdup (g_get_tmp_dir ());
+	gunichar2 *tmpdir16=NULL;
+	glong dirlen, bytes;
+	guint32 ret;
+	
+	if(tmpdir[strlen (tmpdir)]!='/') {
+		g_free (tmpdir);
+		tmpdir=g_strdup_printf ("%s/", g_get_tmp_dir ());
+	}
+	
+	tmpdir16=g_utf8_to_utf16 (tmpdir, -1, NULL, &dirlen, NULL);
+	if(tmpdir16==NULL) {
+		/* FIXME - set error code */
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": Error");
+#endif
+
+		ret=0;
+	} else {
+		if(dirlen+1>len) {
+#ifdef DEBUG
+			g_message (G_GNUC_PRETTY_FUNCTION
+				   ": Size %d smaller than needed (%d)", len,
+				   dirlen+1);
+#endif
+		
+			ret=dirlen+1;
+		} else {
+			/* Add the terminator and convert to bytes */
+			bytes=(dirlen+1)*2;
+			memcpy (buf, tmpdir16, bytes);
+		
+			ret=dirlen;
+		}
+	}
+
+	if(tmpdir16!=NULL) {
+		g_free (tmpdir16);
+	}
+	g_free (tmpdir);
+	
+	return(ret);
+}
