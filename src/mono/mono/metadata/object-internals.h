@@ -415,7 +415,7 @@ guint32
 mono_thread_get_tls_key    (void);
 
 guint32
-mono_dmoain_get_tls_key    (void);
+mono_domain_get_tls_key    (void);
 
 /* Reflection and Reflection.Emit support */
 
