@@ -3397,6 +3397,8 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	mono_mb_emit_byte (mb, CEE_LDNULL);
 	mono_mb_emit_byte (mb, CEE_STIND_I);
 
+	emit_thread_force_interrupt_checkpoint (mb);
+
 	if (sig->hasthis) {
 		if (method->string_ctor) {
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
@@ -3484,7 +3486,6 @@ handle_enum:
 	}
 	
 	mono_mb_emit_ldarg (mb, 3);
-	emit_thread_force_interrupt_checkpoint (mb);
 	mono_mb_emit_calli (mb, callsig);
 
 	if (sig->ret->byref) {
