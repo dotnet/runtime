@@ -1495,6 +1495,11 @@ do_mono_metadata_parse_generic_inst (MonoType *type, MonoImage *m, const char *p
 		cached->data.generic_inst = ginst;
 
 		g_hash_table_insert (m->generic_inst_cache, ginst, cached);
+
+		mono_stats.generic_instance_count++;
+		mono_stats.generics_metadata_size += sizeof (MonoGenericInst) +
+			sizeof (MonoGenericContext) +
+			ginst->type_argc * sizeof (MonoType);
 	}
 
 	ginst->klass->name = _mono_class_get_instantiation_name (ginst->klass->name, ginst, 0);

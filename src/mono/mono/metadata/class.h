@@ -292,6 +292,10 @@ typedef struct {
 	gulong used_class_count;
 	gulong class_vtable_size;
 	gulong class_static_data_size;
+	gulong generic_instance_count;
+	gulong inflated_method_count;
+	gulong inflated_type_count;
+	gulong generics_metadata_size;
 } MonoStats;
 
 extern MonoStats mono_stats;

@@ -436,6 +436,9 @@ method_from_methodspec (MonoImage *image, guint32 idx)
 	context = g_new0 (MonoGenericContext, 1);
 	context->gmethod = gmethod;
 
+	mono_stats.generics_metadata_size += sizeof (MonoGenericMethod) +
+		sizeof (MonoGenericContext) + param_count * sizeof (MonoType);
+
 	inflated = mono_class_inflate_generic_method (method, context, NULL);
 
 	context->ginst = inflated->klass->generic_inst;

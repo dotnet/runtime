@@ -109,6 +109,7 @@ dup_type (MonoType* t, const MonoType *original)
 	MonoType *r = g_new0 (MonoType, 1);
 	*r = *t;
 	r->attrs = original->attrs;
+	mono_stats.generics_metadata_size += sizeof (MonoType);
 	return r;
 }
 
@@ -202,6 +203,8 @@ mono_class_is_open_constructed_type (MonoType *t)
 MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 {
+	mono_stats.inflated_type_count++;
+
 	switch (type->type) {
 	case MONO_TYPE_MVAR:
 		if (context->gmethod && context->gmethod->mtype_argv)
@@ -274,6 +277,11 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 
 		mono_class_create_generic (nginst);
 
+		mono_stats.generic_instance_count++;
+		mono_stats.generics_metadata_size += sizeof (MonoGenericInst) +
+			sizeof (MonoGenericContext) +
+			nginst->type_argc * sizeof (MonoType);
+
 		nt = dup_type (type, type);
 		nt->data.generic_inst = nginst;
 		g_hash_table_insert (oginst->klass->image->generic_inst_cache, nginst, nt);
@@ -333,6 +341,10 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
 		return method;
 
+	mono_stats.inflated_method_count++;
+	mono_stats.generics_metadata_size +=
+		sizeof (MonoMethodInflated) - sizeof (MonoMethodNormal);
+
 	result = g_new0 (MonoMethodInflated, 1);
 	result->nmethod = *(MonoMethodNormal*)method;
 
@@ -355,6 +367,8 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 		result->context = g_new0 (MonoGenericContext, 1);
 		result->context->gmethod = context->gmethod;
 		result->context->ginst = result->nmethod.method.klass->generic_inst;
+
+		mono_stats.generics_metadata_size += sizeof (MonoGenericContext);
 	} else
 		result->context = result->nmethod.method.klass->generic_inst->context;
 
