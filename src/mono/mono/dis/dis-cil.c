@@ -217,7 +217,7 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 			
 			ptr += 4;
 			endswitch = ptr + sizeof (guint32) * count;
-			fprintf (output, "(\n");
+			fprintf (output, count > 0 ? "(\n" : "( )");
 			CODE_INDENT;
 			for (n = 0; n < count; n++){
 				fprintf (output, "\t%sIL_%04x%s", indent, 
