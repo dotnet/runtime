@@ -199,9 +199,9 @@ dump_table_memberref (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_MEMBERREF];
 	int i, kind, idx;
-	char *ks, *x, *xx;
+	char *x, *xx;
 	char *sig;
-	const char *blob;
+	const char *blob, *ks;
 
 	fprintf (output, "MemberRef Table (1..%d)\n", t->rows);
 
@@ -291,7 +291,7 @@ dump_table_constant (MonoImage *m)
 
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [MONO_CONSTANT_SIZE];
-		char *parent = desc [cols [MONO_CONSTANT_PARENT] & HASCONSTANT_MASK];
+		const char *parent = desc [cols [MONO_CONSTANT_PARENT] & HASCONSTANT_MASK];
 		
 		mono_metadata_decode_row (t, i, cols, MONO_CONSTANT_SIZE);
 
@@ -525,7 +525,7 @@ has_cattr_get_table (MonoImage *m, guint32 val)
 {
 	guint32 t = val & CUSTOM_ATTR_MASK;
 	guint32 index = val >> CUSTOM_ATTR_BITS;
-	char *table;
+	const char *table;
 
 	switch (t) {
 	case CUSTOM_ATTR_METHODDEF:

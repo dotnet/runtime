@@ -59,7 +59,7 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 	const MonoOpcode *entry;
 	char indent[1024];
 	int i, indent_level = 0;
-	char *clause_names[] = {"catch", "filter", "finally", "fault"};
+	const char *clause_names[] = {"catch", "filter", "finally", "fault"};
 
 	indent [0] = 0;
 
@@ -144,7 +144,8 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 			break;
 			
 		case MonoInlineR: {
-			double r = *(double *) ptr;
+			double r;
+			readr8 (ptr, &r);
 			fprintf (output, "%g", r);
 			ptr += 8;
 			break;
@@ -175,16 +176,16 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 		case MonoInlineSwitch: {
 			guint32 count = read32 (ptr);
 			const unsigned char *endswitch;
-			guint32 i;
+			guint32 n;
 			
 			ptr += 4;
 			endswitch = ptr + sizeof (guint32) * count;
 			fprintf (output, "(\n");
 			CODE_INDENT;
-			for (i = 0; i < count; i++){
+			for (n = 0; n < count; n++){
 				fprintf (output, "\t%sIL_%04x%s", indent, 
 					endswitch-start+read32 (ptr), 
-					i == count - 1 ? ")" : ",\n");
+					n == count - 1 ? ")" : ",\n");
 				ptr += 4;
 			}
 			CODE_UNINDENT;
@@ -237,7 +238,8 @@ dissasemble_cil (MonoImage *m, MonoMethodHeader *mh)
 		}
 
 		case MonoShortInlineR: {
-			float f = *(float *) ptr;
+			float f;
+			readr4 (ptr, &f);
 
 			fprintf (output, "%g", (double) f);
 			ptr += 4;

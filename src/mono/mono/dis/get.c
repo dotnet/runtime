@@ -435,7 +435,7 @@ dis_stringify_param (MonoImage *m, MonoType *param)
 {
 	char *t;
 	char *result;
-	char *out = param->attrs & 2 ? "[out] ": "";
+	const char *out = param->attrs & 2 ? "[out] ": "";
 	t = dis_stringify_type (m, param);
 	result = g_strconcat (out, t, NULL);
 	g_free (t);
@@ -502,8 +502,8 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 static char *
 dis_stringify_object (MonoImage *m, MonoType *type)
 {
-	char *otype = type->type == MONO_TYPE_CLASS? "class" : "valuetype";
-	char *assemblyref = NULL;
+	const char *otype = type->type == MONO_TYPE_CLASS? "class" : "valuetype";
+	char *assemblyref = NULL, *result;
 	MonoClass *c = type->data.klass;
 	if (!c)
 		return g_strdup ("Unknown");
@@ -514,17 +514,17 @@ dis_stringify_object (MonoImage *m, MonoType *type)
 		else
 			assemblyref = g_strdup_printf ("[%s]", c->image->assembly_name);
 	}
-	otype = g_strdup_printf ("%s %s%s%s%s", otype, assemblyref?assemblyref:"", c->name_space, 
+	result = g_strdup_printf ("%s %s%s%s%s", otype, assemblyref?assemblyref:"", c->name_space, 
 				*c->name_space?".":"", c->name);
 	g_free (assemblyref);
-	return otype;
+	return result;
 }
 
 char*
 dis_stringify_type (MonoImage *m, MonoType *type)
 {
-	char *bare = NULL, *pinned = "", *byref = "";
-	char *mods = NULL;
+	const char *pinned = "", *byref = "";
+	char *bare = NULL, *mods = NULL;
 	char *result;
 
 	if (type->num_mods)
@@ -1062,22 +1062,28 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 	case MONO_TYPE_I4:
 		return g_strdup_printf ("int32(%d)", read32 (ptr));
 		
-	case MONO_TYPE_I8:
-		/*
-		 * FIXME: This is not endian portable, does only 
-		 * matter for debugging, but still.
-		 * Need also to fix unaligned access.
-		 */
-		return g_strdup_printf ("0x%08x%08x", *(guint32 *) ptr, *(guint32 *) (ptr + 4));
-		
-	case MONO_TYPE_U8:
-		return g_strdup_printf ("0x%08x%08x", *(guint32 *) ptr, *(guint32 *) (ptr + 4));		
-	case MONO_TYPE_R4:
-		return g_strdup_printf ("%g", (double) (* (float *) ptr));
-		
-	case MONO_TYPE_R8:
-		return g_strdup_printf ("%g", * (double *) ptr);
-		
+	case MONO_TYPE_I8: {
+		guint32 low, high;
+		low = read32 (ptr);
+		high = read32 (ptr + 4);
+		return g_strdup_printf ("0x%08x%08x", high, low);
+	}
+	case MONO_TYPE_U8: {
+		guint32 low, high;
+		low = read32 (ptr);
+		high = read32 (ptr + 4);
+		return g_strdup_printf ("0x%08x%08x", high, low);
+	}
+	case MONO_TYPE_R4: {
+		float r;
+		readr4 (ptr, &r);
+		return g_strdup_printf ("%g", (double) r);
+	}
+	case MONO_TYPE_R8: {
+		double r;
+		readr8 (ptr, &r);
+		return g_strdup_printf ("%g", r);
+	}
 	case MONO_TYPE_STRING: {
 		int i, j, e;
 		char *res;

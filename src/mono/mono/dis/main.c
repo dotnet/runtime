@@ -24,6 +24,7 @@
 #include "dis-cil.h"
 #include <mono/metadata/loader.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/appdomain.h>
 
 FILE *output;
 
@@ -367,7 +368,7 @@ dis_code (MonoImage *m, guint32 rva)
 	MonoMethodHeader *mh;
 	MonoCLIImageInfo *ii = m->image_info;
 	const char *ptr = mono_cli_rva_map (ii, rva);
-	char *loc;
+	const char *loc;
 
 	if (rva == 0)
 		return;
@@ -496,7 +497,7 @@ static int
 table_locator (const void *a, const void *b)
 {
 	plocator_t *loc = (plocator_t *) a;
-	char *bb = (char *) b;
+	const char *bb = (const char *) b;
 	guint32 table_index = (bb - loc->t->base) / loc->t->row_size;
 	guint32 col;
 	
@@ -519,7 +520,7 @@ dis_property_methods (MonoImage *m, guint32 prop)
 	MonoTableInfo *msemt = &m->tables [MONO_TABLE_METHODSEMANTICS];
 	guint32 cols [MONO_METHOD_SEMA_SIZE];
 	char *sig;
-	char *type[] = {NULL, ".set", ".get", NULL, ".other"};
+	const char *type[] = {NULL, ".set", ".get", NULL, ".other"};
 
 	start = mono_metadata_methods_from_property (m, prop, &end);
 	while (start < end) {
@@ -621,7 +622,7 @@ dis_event_methods (MonoImage *m, guint32 event)
 	MonoTableInfo *msemt = &m->tables [MONO_TABLE_METHODSEMANTICS];
 	guint32 cols [MONO_METHOD_SEMA_SIZE];
 	char *sig;
-	char *type;
+	const char *type;
 
 	start = mono_metadata_methods_from_event (m, event, &end);
 	while (start < end) {
@@ -793,7 +794,7 @@ dis_types (MonoImage *m)
 }
 
 struct {
-	char *name;
+	const char *name;
 	int table;
 	void (*dumper) (MonoImage *m);
 } table_list [] = {

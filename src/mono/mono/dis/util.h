@@ -1,7 +1,7 @@
 
 typedef struct {
 	int code;
-	char *str;
+	const char *str;
 } map_t;
 
 const char *map       (guint32 code, map_t *table);
