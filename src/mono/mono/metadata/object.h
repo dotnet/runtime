@@ -46,6 +46,12 @@ typedef struct {
 	gpointer    method_ptr;
 } MonoDelegate;
 
+typedef struct {
+	MonoObject object;
+	MonoObject loaded_assemblies;
+	// fixme: add all other fields
+} MonoAppDomain;
+
 typedef guchar MonoBoolean;
 
 typedef void  (*MonoRuntimeObjectInit) (MonoObject *o);

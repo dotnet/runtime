@@ -1856,8 +1856,12 @@ mono_type_size (MonoType *t, gint *align)
 	case MONO_TYPE_VALUETYPE: {
 		guint32 size;
 
-		size = mono_class_value_size (t->data.klass, align);
-		return size;
+		if (t->data.klass->enumtype) {
+			return mono_type_stack_size (t->data.klass->enum_basetype, align);
+		} else {
+			size = mono_class_value_size (t->data.klass, align);
+			return size;
+		}
 	}
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
@@ -1891,6 +1895,9 @@ mono_type_stack_size (MonoType *t, gint *align)
 	}
 
 	switch (t->type){
+	case MONO_TYPE_VOID:
+		*align = 1;
+		return 0;
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I1:
@@ -1925,10 +1932,13 @@ mono_type_stack_size (MonoType *t, gint *align)
 	case MONO_TYPE_VALUETYPE: {
 		guint32 size;
 
-		size = mono_class_value_size (t->data.klass, align);
-		*align = __alignof__(gpointer);
-
-		return size;
+		if (t->data.klass->enumtype)
+			return mono_type_stack_size (t->data.klass->enum_basetype, align);
+		else {
+			size = mono_class_value_size (t->data.klass, align);
+			*align = __alignof__(gpointer);
+			return size;
+		}
 	}
 	default:
 		g_error ("type 0x%02x unknown", t->type);

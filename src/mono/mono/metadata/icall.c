@@ -181,46 +181,13 @@ ves_icall_System_Object_MemberwiseClone (MonoObject *this)
 static MonoObject *
 ves_icall_appdomain_get_cur_domain ()
 {
-	static MonoClass *System_AppDomain;
-
-	if (!System_AppDomain)
-		System_AppDomain = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
-
-	return mono_object_new (System_AppDomain);
-}
-
-typedef struct {
-	MonoArray *res;
-	int idx;
-} add_assembly_helper_t;
-
-static void
-add_assembly (gpointer key, gpointer value, gpointer user_data)
-{
-	add_assembly_helper_t *ah = (add_assembly_helper_t *) user_data;
-
-	mono_array_set (ah->res, gpointer, ah->idx++, mono_assembly_get_object (value));
-}
-
-static MonoArray *
-ves_icall_appdomain_get_assemblies ()
-{
-	static MonoClass *System_Reflection_Assembly;
-	GHashTable *assemblies = mono_get_assemblies ();
-	MonoArray *res;
-	add_assembly_helper_t ah;
+	MonoClass *adclass;
+	MonoAppDomain *ad;
 	
-	if (!System_Reflection_Assembly)
-		System_Reflection_Assembly = mono_class_from_name (
-			mono_defaults.corlib, "System.Reflection", "Assembly");
-
-	res = mono_array_new (System_Reflection_Assembly, g_hash_table_size (assemblies));
-
-	ah.res = res;
-	ah.idx = 0;
-	g_hash_table_foreach (assemblies, add_assembly, &ah);
-	
-	return res;
+	adclass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
+	ad = mono_object_new (adclass);
+	mono_runtime_object_init (ad);
+	return ad;
 }
 
 static void
@@ -713,7 +680,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAuto (gpointer ptr)
 }
 
 static MonoReflectionAssembly*
-ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *assName, MonoObject *evidence)
+ves_icall_System_AppDomain_LoadFrom (MonoString *assName, MonoObject *evidence)
 {
 	/* FIXME : examine evidence? */
 	char *name = mono_string_to_utf8 (assName);
@@ -726,6 +693,11 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *assName, MonoObject *
 	return mono_assembly_get_object (ass);
 }
 
+static void
+ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoObject *setup)
+{
+	// fixme: implement me
+}
 static MonoReflectionType*
 ves_icall_System_Reflection_Assembly_GetType (MonoReflectionAssembly *assembly, MonoString *type) /* , char throwOnError, char ignoreCase) */
 {
@@ -883,7 +855,12 @@ static gpointer icall_map [] = {
 	 * System.AppDomain
 	 */
 	"System.AppDomain::getCurDomain", ves_icall_appdomain_get_cur_domain,
-	"System.AppDomain::getAssemblies", ves_icall_appdomain_get_assemblies, 
+	"System.AppDomain::LoadFrom", ves_icall_System_AppDomain_LoadFrom,
+
+	/*
+	 * System.AppDomainSetup
+	 */
+	"System.AppDomainSetup::InitAppDomainSetup", ves_icall_System_AppDomainSetup_InitAppDomainSetup,
 
 	/*
 	 * System.Decimal
@@ -981,10 +958,6 @@ static gpointer icall_map [] = {
 	"System.Runtime.InteropServices.Marshal::ReadIntPtr", ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr,
 	"System.Runtime.InteropServices.Marshal::PtrToStringAuto", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAuto,
 
-	/*
-	 * System.Reflection
-	 */
-	"System.Reflection.Assembly::LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom,
 	"System.Reflection.Assembly::GetType", ves_icall_System_Reflection_Assembly_GetType,
 	"System.Reflection.Assembly::get_code_base", ves_icall_System_Reflection_Assembly_get_code_base,
 

@@ -33,6 +33,11 @@ enter_method (MonoMethod *method, gpointer ebp)
 	printf ("ENTER: %s.%s::%s\n(", method->klass->name_space,
 		method->klass->name, method->name);
 
+	
+	if (((int)ebp & 3) != 0) {
+		g_error ("unaligned stack detected (%p)", ebp);
+	}
+
 	ebp += 8;
 
 	if (ISSTRUCT (method->signature->ret)) {
@@ -40,7 +45,7 @@ enter_method (MonoMethod *method, gpointer ebp)
 		
 		g_assert (!method->signature->ret->byref);
 
-		size = mono_type_size (method->signature->ret, &align);
+		size = mono_type_stack_size (method->signature->ret, &align);
 
 		printf ("VALUERET:%p, ", *((gpointer *)ebp));
 		ebp += sizeof (gpointer);
@@ -68,7 +73,7 @@ enter_method (MonoMethod *method, gpointer ebp)
 	for (i = 0; i < method->signature->param_count; ++i) {
 		MonoType *type = method->signature->params [i];
 		int size, align;
-		size = mono_type_size (type, &align);
+		size = mono_type_stack_size (type, &align);
 
 		if (type->byref) {
 			printf ("[BYREF:%p], ", *((gpointer *)ebp)); 
@@ -137,6 +142,7 @@ enter_method (MonoMethod *method, gpointer ebp)
 			printf ("XX, ");
 		}
 
+		g_assert (align == 4);
 		ebp += size + 3;
 		ebp = (gpointer)((unsigned)ebp & ~(3));
 	}
@@ -1090,7 +1096,7 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 	gpointer ip = (gpointer)ctx->eip;
 	static void (*restore_context) (struct sigcontext *);
 	static void (*call_finally) (struct sigcontext *, unsigned long);
-
+       
 	g_assert (ctx != NULL);
 	g_assert (obj != NULL);
 
@@ -1139,6 +1145,22 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 			}
 		}
 
+		if (mono_object_isinst (obj, mono_defaults.exception_class)) {
+			char  *strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
+			char  *tmp;
+
+			if (!strcmp (strace, "TODO: implement stack traces"))
+				strace = g_strdup ("");
+
+			tmp = g_strdup_printf ("%sin %s.%s:%s ()\n", strace, m->klass->name_space,  
+					       m->klass->name, m->name);
+
+			g_free (strace);
+
+			((MonoException*)obj)->stack_trace = mono_string_new (tmp);
+			g_free (tmp);
+		}
+
 		/* continue unwinding */
 
 		/* restore caller saved registers */
@@ -1185,10 +1207,21 @@ arch_handle_exception (struct sigcontext *ctx, gpointer obj)
 		ctx->eip = lmf->eip;
 		ctx->esp = lmf;
 
-		/*
-		g_warning ("Exception inside unmanaged code. %s.%s::%s %p", m->klass->name_space,
-			   m->klass->name, m->name, lmf->previous_lmf);
-		*/
+		if (mono_object_isinst (obj, mono_defaults.exception_class)) {
+			char  *strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
+			char  *tmp;
+
+			if (!strcmp (strace, "TODO: implement stack traces"))
+				strace = g_strdup ("");
+
+			tmp = g_strdup_printf ("%sin (unmanaged) %s.%s:%s ()\n", strace, m->klass->name_space,  
+					       m->klass->name, m->name);
+
+			g_free (strace);
+
+			((MonoException*)obj)->stack_trace = mono_string_new (tmp);
+			g_free (tmp);
+		}
 
 		if (ctx->eip < (unsigned)mono_end_of_stack)
 			arch_handle_exception (ctx, obj);

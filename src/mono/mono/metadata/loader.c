@@ -339,6 +339,7 @@ method_from_memberref (MonoImage *image, guint32 index)
 			mimage = image->references [scopeindex-1]->image;
 
 			klass = mono_class_from_name (mimage, nspace, name);
+			g_assert (klass != NULL);
 			mono_class_init (klass);
 
 			/* 
