@@ -240,6 +240,13 @@ class Tests {
 		return (int)res;
 	}
 
+	static int test_0_add_un_ovf () {
+		uint n = (uint)134217728 * 16;
+		uint number = checked (n + (uint)0);
+
+		return number == n ? 0 : 1;
+	}
+
 	static int test_3_or () {
 		int b = 2;
 		int a = 3;
