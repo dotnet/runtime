@@ -164,8 +164,6 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_ARRAY:
 		return TRUE;
 	case MONO_TYPE_VALUETYPE:
-		if (t->data.klass->enumtype)
-			return is_regsize_var (t->data.klass->enum_basetype);
 		return FALSE;
 	}
 	return FALSE;
@@ -397,14 +395,12 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			break;
 		case MONO_TYPE_VALUETYPE: {
 			gint size;
-			if (sig->params [i]->data.klass->enumtype) {
-				simpletype = sig->params [i]->data.klass->enum_basetype->type;
-				goto enum_calc_size;
-			}
+			MonoClass *klass;
+			klass = mono_class_from_mono_type (sig->params [i]);
 			if (is_pinvoke)
-			    size = mono_class_native_size (sig->params [i]->data.klass, NULL);
+			    size = mono_class_native_size (klass, NULL);
 			else
-			    size = mono_class_value_size (sig->params [i]->data.klass, NULL);
+			    size = mono_class_value_size (klass, NULL);
 			DEBUG(printf ("load %d bytes struct\n",
 				      mono_class_native_size (sig->params [i]->data.klass, NULL)));
 #if PPC_PASS_STRUCTS_BY_VALUE
@@ -545,10 +541,6 @@ enum_retvalue:
 			cinfo->ret.regtype = RegTypeFP;
 			break;
 		case MONO_TYPE_VALUETYPE:
-			if (sig->ret->data.klass->enumtype) {
-				simpletype = sig->ret->data.klass->enum_basetype->type;
-				goto enum_retvalue;
-			}
 			break;
 		case MONO_TYPE_TYPEDBYREF:
 		case MONO_TYPE_VOID:
@@ -677,7 +669,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 		/* inst->unused indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structure */
 		if (inst->unused && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
-			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
+			size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), &align);
 		else
 			size = mono_type_size (inst->inst_vtype, &align);
 
@@ -898,10 +890,6 @@ handle_enum:
 		save_mode = SAVE_FP;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		if (method->signature->ret->data.klass->enumtype) {
-			rtype = method->signature->ret->data.klass->enum_basetype->type;
-			goto handle_enum;
-		}
 		save_mode = SAVE_STRUCT;
 		break;
 	default:
@@ -3612,8 +3600,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				int size = 0;
 				g_assert (ppc_is_imm16 (inst->inst_offset));
 				g_assert (ppc_is_imm16 (inst->inst_offset + ainfo->size * sizeof (gpointer)));
-				if (inst->inst_vtype->data.klass)
-					size = mono_class_native_size (inst->inst_vtype->data.klass, NULL);
+				if (mono_class_from_mono_type (inst->inst_vtype))
+					size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), NULL);
 				for (cur_reg = 0; cur_reg < ainfo->size; ++cur_reg) {
 /*
 Darwin handles 1 and 2 byte structs specially by loading h/b into the arg

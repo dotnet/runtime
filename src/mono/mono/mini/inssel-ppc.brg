@@ -287,7 +287,7 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 */
 #ifdef __APPLE__
 	if (vt->inst_vtype && MONO_TYPE_ISSTRUCT (vt->inst_vtype) && vt->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
-	    size =  mono_class_native_size (vt->inst_vtype->data.klass, NULL);
+	    size =  mono_class_native_size (mono_class_from_mono_type (vt->inst_vtype), NULL);
 	if (size == 2 || size == 1) {
 		tmpr = mono_regstate_next_int (s->rs);
 		if (size == 1)
