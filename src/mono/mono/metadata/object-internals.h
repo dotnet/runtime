@@ -212,6 +212,7 @@ typedef struct {
 	MonoString *filename;
 	gint32 line;
 	gint32 column;
+	MonoString *internal_method_name;
 } MonoStackFrame;
 
 struct _MonoThread {
