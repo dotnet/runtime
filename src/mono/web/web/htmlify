@@ -17,7 +17,7 @@ while (<>){
 		print "<a name=\"q$q\"><b>Question $q:</b> $1<br>\n";
 		$q++;
 	} elsif (/^A: (.*)$/){
-		print "$1\n";
+		print "<p>$1\n";
 	} else {
 		print "$_\n";
 	}

@@ -1,9 +1,8 @@
 0,Home,index.html,index.src
-1,Rationale,rationale.html,rationale.src
 1,FAQ,faq.html,faq.src
-0,Mono,mono.html,mono.src
+0,Mono,rationale.html,rationale.src
 1,Runtime,runtime.html,runtime.src
-1,Class Library,class-library.html,class-library.src
+1,Classes,class-library.html,class-library.src
 1,C# Compiler,c-sharp.html,c-sharp.src
 1,Status,status.html,status.src
 0,Contributing,contributing.html,contributing.src

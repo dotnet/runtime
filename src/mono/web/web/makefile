@@ -24,5 +24,8 @@ all:
 
 	perl process.pl commands template.html.in .
 
-for-tuomas:
-	scp *.html primates:~/public-html/xxx
+push:
+	scp *.html www:/web/cvsmodules/mono
+
+push2: 
+	scp *.html primates:public_html/xxx

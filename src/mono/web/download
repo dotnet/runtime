@@ -18,7 +18,11 @@
 	Currently we will be providing CVS snapshots every day, until
 	we make the first tarball release.
 
-	<a href="files">Go to Sources</a>
+	<ul>
+		* <a href="archive/jay.cs.tar.gz">archive/jay.cs.tar.gz</a>
+		* <a href="archive/mcs-08-Jul-2001.tar.gz">mcs-08-Jul-2001.tar.gz</a>
+		* <a href="archive/mono-08-Jul-2001.tar.gz">mono-08-Jul-2001.tar.gz</a>
+	</ul>
 
 ** CVS
 

@@ -11,8 +11,8 @@
 	a:hover  { color: #ee9900; 
 		   // border-bottom: #ffffff dashed 1px; 
                  }
-	.subnavi { font-size: small; text-indent: 16pt; }
-
+//	.subnavi { font-size: small; text-indent: 16pt; }
+	.subnavi { text-indent: 16pt; }
 // -->
 </style>
 </head>
