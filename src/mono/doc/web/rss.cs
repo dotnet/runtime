@@ -87,7 +87,7 @@ namespace RSS {
 
 			set {
 				if (pubdate == null)
-					pubdate = MakeTextElement ("pubdate");
+					pubdate = MakeTextElement ("pubDate");
 				pubdate.Value = value;
 			}
 		}
