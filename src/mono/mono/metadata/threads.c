@@ -1480,8 +1480,10 @@ mono_get_special_static_data (guint32 offset)
 	// The high bit means either thread (0) or static (1) data.
 
 	guint32 static_type = (offset & 0x80000000);
+	int idx;
+
 	offset &= 0x7fffffff;
-	int idx = (offset >> 24) - 1;
+	idx = (offset >> 24) - 1;
 
 	if (static_type == 0)
 	{
