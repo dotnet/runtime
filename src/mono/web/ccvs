@@ -36,8 +36,7 @@
 
 	If you feel you are ready for a CVS account send an e-mail to
 	<a href="mailto:miguel@ximian.com">miguel</a> with your public OpenSSH 
-	key for this purpose.  Please specify if the key was generated with SSH
-	version 1 or version 2. Detailed instructions are below.
+	key for this purpose.  We only support SSH2 at this point.
 
 * Policies
 
