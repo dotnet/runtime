@@ -13,6 +13,7 @@ RUNTIME=mono
 
 INCLUDES = \
 	-I$(top_srcdir) 	\
+	$(LIBGC_CFLAGS)		\
 	$(GMODULE_CFLAGS)		\
 	$(GLIB_CFLAGS)
 
