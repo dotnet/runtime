@@ -58,14 +58,12 @@ mono_disassemble_code (guint8 *code, int size, char *id)
 {
 	int i;
 	FILE *ofd;
-	const char *tmp = g_getenv ("TMP");
+	const char *tmp = g_get_tmp_dir ();
 	const char *objdump_args = g_getenv ("MONO_OBJDUMP_ARGS");
 	char *as_file;
 	char *o_file;
 	char *cmd;
-
-	if (tmp == NULL)
-		tmp = "/tmp";
+	
 	as_file = g_strdup_printf ("%s/test.s", tmp);    
 
 	if (!(ofd = fopen (as_file, "w")))
