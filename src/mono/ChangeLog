@@ -1,3 +1,7 @@
+2004-09-21 Neale Ferguson <Neale.Ferguson@SoftwareAG-usa.com>
+
+	* configure.in: Cater for S/390 on Linux
+
 2004-09-21    <vargaz@freemail.hu>
 
 	* configure.in: Link with ole32 on windows.
