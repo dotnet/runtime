@@ -4182,12 +4182,13 @@ stmt: REMOTE_STIND_OBJ (reg, reg) {
 	br [1] = s->code; x86_jump8 (s->code, 0);
 
 	x86_patch (br [0], s->code);
+
 	offset = tree->data.fi.klass->valuetype ? tree->data.fi.field->offset - sizeof (MonoObject) : 
 		tree->data.fi.field->offset;
 
 	x86_push_imm (s->code, mono_class_value_size (tree->data.fi.klass, NULL));
 	x86_push_reg (s->code, tree->right->reg1);
-	x86_alu_reg_imm (s->code, X86_ADD, tree->left->reg1, sizeof (MonoObject));	
+	x86_alu_reg_imm (s->code, X86_ADD, tree->left->reg1, offset);	
 	x86_push_reg (s->code, tree->left->reg1);
 	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, MEMCOPY);
 	x86_call_code (s->code, 0);
