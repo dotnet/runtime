@@ -34,6 +34,7 @@ TESTSRC=			\
 	enum2.cs		\
 	property.cs		\
 	enumcast.cs		\
+	arraylist-clone.cs	\
 	setenv.cs		\
 	vtype.cs		\
 	isvaluetype.cs		\
