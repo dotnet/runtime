@@ -400,7 +400,24 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 
 #ifdef AF_INET6
 	case SocketOptionLevel_IPv6:
+#ifdef HAVE_SOL_IPV6
 		*system_level = SOL_IPV6;
+#else
+		if (1) {
+			static int cached = 0;
+			static int proto;
+
+			if (!cached) {
+				struct protoent *pent;
+
+				pent = getprotobyname ("IPV6");
+				proto = pent ? pent->p_proto : 41 /* 41 a good default value?? */;
+				cached = 1;
+			}
+
+			*system_level = proto;
+		}
+#endif /* HAVE_SOL_IPV6 */
 
 		switch(mono_name) {
 		case SocketOptionName_IpTimeToLive:
@@ -1433,7 +1450,10 @@ static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
 	data=*(MonoArray **)(((char *)ipaddr) + field->offset);
 
 	for(i=0; i<8; i++)
-		in6addr.s6_addr16[i] = mono_array_get (data, guint16, i);
+		/* The real member of the struct is __u6_addr.__u6_addr16, s6_addr16
+		 * is a DEFINE
+		 */
+		in6addr.__u6_addr.__u6_addr16[i] = mono_array_get (data, guint16, i);
 
 	return(in6addr);
 }
