@@ -29,9 +29,11 @@ endif
 genmdesc_CFLAGS = $(AM_CFLAGS)
 
 if NO_VERSION_SCRIPT
+monoldflags=
 else
-libmono_la_LDFLAGS=-Wl,-version-script=$(srcdir)/ldscript
+monoldflags=-Wl,-version-script=$(srcdir)/ldscript
 endif
+libmono_la_LDFLAGS=$(monoldflags)
 
 if JIT_SUPPORTED
 bin_PROGRAMS = mono
