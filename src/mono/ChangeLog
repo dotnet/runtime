@@ -1,3 +1,25 @@
+2004-11-23  Raja R Harinath  <rharinath@novell.com>
+
+	Simplify 'make all' build.
+	* configure.in (mono_build_root, mono_runtime, mono_cfg_dir):
+	New AC_SUBSTed variables.
+	(runtime/mono-wrapper): New generated file.
+	(runtime/etc/mono/1.0/machine.config, runtime/etc/mono/2.0/machine.config):
+	New symlinks.
+	(AC_OUTPUT): Don't mention runtime/net_1_1 and runtime/net_2_0.
+	* Makefile.am (SUBDIRS): Remove '.'.
+	(tmpinst): Remove.
+	(get-monolite-latest): Update.
+	(populate-runtime-subdirs): Remove.
+	(all-local, check-local): Move rules related to building in the mcs/ tree ...
+	* runtime/Makefile.am: ... here.  Completely re-write file.
+	(install-exec-local): Transfer ownership of installing .exes and
+	.dlls to the Makefiles in the mcs/ tree.
+	(_tmpinst): Use tmpinst tree only during testing.
+	(SUBDIRS): Remove.
+	* runtime/mono-wrapper.in: New.  Template for generated file.
+	* runtime/net_1_1/Makefile.am, runtime/net_2_0/Makefile.am: Remove.
+
 2004-11-22  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am (bootstrap): Add a transitional target.

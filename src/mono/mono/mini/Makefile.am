@@ -31,9 +31,10 @@ static_libs=	\
 	$(libgc_static_libs) \
 	$(ICU_LIBS)
 
-RUNTIME = $(LIBTOOL) --mode=execute ./mono
-MCS = MONO_PATH=$(top_srcdir)/runtime/net_1_1 $(RUNTIME) --config $(top_builddir)/data/config $(top_srcdir)/runtime/mcs.exe --unsafe -nowarn:0162
-ILASM = MONO_PATH=$(top_srcdir)/runtime/net_1_1 $(RUNTIME) --config ../../data/config $(top_srcdir)/runtime/ilasm.exe
+RUNTIME = $(LIBTOOL) --mode=execute ./mono --config $(top_builddir)/data/config
+
+MCS = MONO_PATH=$(mcs_topdir)/class/lib/default $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe --unsafe -nowarn:0162
+ILASM = MONO_PATH=$(mcs_topdir)/class/lib/default $(RUNTIME) $(mcs_topdir)/ilasm/ilasm.exe
 
 INCLUDES = \
 	-I$(top_srcdir) 	\

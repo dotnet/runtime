@@ -5,14 +5,10 @@ JITTEST_PROG=../mini/mono
 RUNTIME_ARGS=--config tests-config --optimize=all
 #CSC=csc /unsafe
 
-if USE_JIT
-mono_runtime = $(top_builddir)/mono/mini/mono
-else
-mono_runtime = $(top_builddir)/mono/interpreter/mint
-endif
+RUNTIME = $(top_builddir)/runtime/mono-wrapper
 
-CSC = MONO_PATH=$(top_srcdir)/runtime/net_1_1 $(LIBTOOL) --mode=execute $(mono_runtime) --config ../../data/config $(top_srcdir)/runtime/mcs.exe --unsafe -nowarn:0162
-ILASM = MONO_PATH=$(top_srcdir)/runtime/net_1_1 $(LIBTOOL) --mode=execute $(mono_runtime) --config ../../data/config $(top_srcdir)/runtime/ilasm.exe
+CSC = MONO_PATH=$(mcs_topdir)/class/lib/default $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe --unsafe -nowarn:0162
+ILASM = MONO_PATH=$(mcs_topdir)/class/lib/default $(RUNTIME) $(mcs_topdir)/ilasm/ilasm.exe
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
