@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.17 2001/11/27 10:30:39 lupus Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.18 2001/12/13 11:03:21 lupus Exp $
 */
 
 #ifndef X86_H
@@ -800,6 +800,24 @@ typedef union {
 		} else {	\
 			*(inst)++ = (unsigned char)0xc7;	\
 			x86_membase_emit ((inst), 0, (basereg), (disp));	\
+			x86_imm_emit32 ((inst), (imm));	\
+		}	\
+	} while (0)
+
+#define x86_mov_memindex_imm(inst,basereg,disp,indexreg,shift,imm,size)	\
+	do {	\
+		if ((size) == 1) {	\
+			*(inst)++ = (unsigned char)0xc6;	\
+			x86_memindex_emit ((inst), 0, (basereg), (disp), (indexreg), (shift));	\
+			x86_imm_emit8 ((inst), (imm));	\
+		} else if ((size) == 2) {	\
+			*(inst)++ = (unsigned char)0x66;	\
+			*(inst)++ = (unsigned char)0xc7;	\
+			x86_memindex_emit ((inst), 0, (basereg), (disp), (indexreg), (shift));	\
+			x86_imm_emit16 ((inst), (imm));	\
+		} else {	\
+			*(inst)++ = (unsigned char)0xc7;	\
+			x86_memindex_emit ((inst), 0, (basereg), (disp), (indexreg), (shift));	\
 			x86_imm_emit32 ((inst), (imm));	\
 		}	\
 	} while (0)

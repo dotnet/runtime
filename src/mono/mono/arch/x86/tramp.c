@@ -246,6 +246,8 @@ enum_retvalue:
 		case MONO_TYPE_U:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_STRING: /* this is going to cause large pains... */
 			x86_mov_reg_membase (p, X86_ECX, X86_EBP, RETVAL_POS, 4);
 			x86_mov_regp_reg (p, X86_ECX, X86_EAX, 4);
