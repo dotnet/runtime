@@ -1076,6 +1076,7 @@ ACCESS_UNALIGNED="yes"
 
 JIT_SUPPORTED=no
 LIBC="libc.so.6"
+INTL="libc.so.6"
 
 jit_wanted=false
 case "$host" in
@@ -1100,6 +1101,7 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		ACCESS_UNALIGNED="no"
 		LIBC="libc.so"
+		INTL="libintl.so"
 		jit_wanted=true
 		;;
        alpha*-*-linux* | alpha*-*-osf*)
@@ -1176,6 +1178,7 @@ case "$host" in
      powerpc-*-darwin*)
 	libsuffix=".dylib"
 	LIBC="libc.dylib"
+	INTL="libintl.dylib"
 	;;
      *-*-*netbsd*)
 	LIBC="libc.so.12"
@@ -1236,6 +1239,7 @@ AM_CONDITIONAL(HPPA, test x$TARGET = xHPPA)
 AM_CONDITIONAL(JIT_SUPPORTED, test x$JIT_SUPPORTED = xyes)
 
 AC_SUBST(LIBC)
+AC_SUBST(INTL)
 
 AC_SUBST(arch_target)
 AC_SUBST(CFLAGS)
