@@ -5446,6 +5446,7 @@ static const IcallEntry string_icalls [] = {
 	{".ctor(sbyte*,int,int,System.Text.Encoding)", ves_icall_System_String_ctor_encoding},
 	{"GetHashCode", ves_icall_System_String_GetHashCode},
 	{"InternalAllocateStr", ves_icall_System_String_InternalAllocateStr},
+	{"InternalCharCopy", ves_icall_System_String_InternalCharCopy},
 	{"InternalCopyTo", ves_icall_System_String_InternalCopyTo},
 	{"InternalIndexOfAny", ves_icall_System_String_InternalIndexOfAny},
 	{"InternalInsert", ves_icall_System_String_InternalInsert},

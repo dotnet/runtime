@@ -94,4 +94,7 @@ ves_icall_System_String_GetHashCode (MonoString *me);
 gunichar2 
 ves_icall_System_String_get_Chars (MonoString *me, gint32 idx);
 
+void
+ves_icall_System_String_InternalCharCopy (gunichar2 *src, gunichar2 *dest, gint32 count);
+
 #endif /* _MONO_CLI_STRING_ICALLS_H_ */
