@@ -224,6 +224,23 @@ mono_type_get_full_name (MonoType *type)
 	return _mono_type_get_name (type, FALSE, TRUE);
 }
 
+MonoType*
+mono_type_get_underlying_type (MonoType *type)
+{
+	switch (type->type) {
+	case MONO_TYPE_VALUETYPE:
+		if (type->data.klass->enumtype)
+			return type->data.klass->enum_basetype;
+		break;
+	case MONO_TYPE_GENERICINST:
+		return mono_type_get_underlying_type (type->data.generic_inst->generic_type);
+	default:
+		break;
+	}
+
+	return type;
+}
+
 gboolean
 mono_class_is_open_constructed_type (MonoType *t)
 {

@@ -110,6 +110,9 @@ mono_type_get_name         (MonoType *type);
 char*         
 mono_type_get_full_name    (MonoType *type);
 
+MonoType*
+mono_type_get_underlying_type (MonoType *type);
+
 /* MonoClass accessors */
 MonoImage*
 mono_class_get_image         (MonoClass *klass);
