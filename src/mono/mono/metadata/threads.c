@@ -566,15 +566,15 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 /* FIXME: exitContext isnt documented */
 gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext)
 {
-	WapiHandle **handles;
+	HANDLE *handles;
 	guint32 numhandles;
 	guint32 ret;
 	guint32 i;
 	
 	numhandles=mono_array_length(mono_handles);
-	handles=g_new0(WapiHandle *, numhandles);
+	handles=g_new0(HANDLE, numhandles);
 	for(i=0; i<numhandles; i++) {
-		handles[i]=mono_array_get(mono_handles, WapiHandle *, i);
+		handles[i]=mono_array_get(mono_handles, HANDLE, i);
 	}
 	
 	if(ms== -1) {
@@ -603,15 +603,15 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 /* FIXME: exitContext isnt documented */
 gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext)
 {
-	WapiHandle **handles;
+	HANDLE *handles;
 	guint32 numhandles;
 	guint32 ret;
 	guint32 i;
 	
 	numhandles=mono_array_length(mono_handles);
-	handles=g_new0(WapiHandle *, numhandles);
+	handles=g_new0(HANDLE, numhandles);
 	for(i=0; i<numhandles; i++) {
-		handles[i]=mono_array_get(mono_handles, WapiHandle *, i);
+		handles[i]=mono_array_get(mono_handles, HANDLE, i);
 	}
 	
 	if(ms== -1) {
@@ -630,7 +630,7 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 }
 
 /* FIXME: exitContext isnt documented */
-gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this, WapiHandle *handle, gint32 ms, gboolean exitContext)
+gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this, HANDLE handle, gint32 ms, gboolean exitContext)
 {
 	guint32 ret;
 	
@@ -658,11 +658,11 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this
 	return(TRUE);
 }
 
-WapiHandle *ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned,char *name) {    
+HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned,char *name) {    
    return(CreateMutex(NULL,owned,name));	                 
 }                                                                   
 
-void ves_icall_System_Threading_Mutex_ReleaseMutex_internal (WapiHandle *handle ) { 
+void ves_icall_System_Threading_Mutex_ReleaseMutex_internal (HANDLE handle ) { 
 	ReleaseMutex(handle);
 }
 

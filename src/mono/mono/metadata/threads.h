@@ -31,12 +31,12 @@ extern gboolean ves_icall_System_Threading_Monitor_Monitor_test_synchronised(Mon
 extern void ves_icall_System_Threading_Monitor_Monitor_pulse(MonoObject *obj);
 extern void ves_icall_System_Threading_Monitor_Monitor_pulse_all(MonoObject *obj);
 extern gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj, int ms);
-extern WapiHandle *ves_icall_System_Threading_Mutex_CreateMutex_internal(MonoBoolean owned,char *name);
-extern void ves_icall_System_Threading_Mutex_ReleaseMutex_internal(WapiHandle *handle);
+extern HANDLE ves_icall_System_Threading_Mutex_CreateMutex_internal(MonoBoolean owned,char *name);
+extern void ves_icall_System_Threading_Mutex_ReleaseMutex_internal(HANDLE handle);
 
 extern gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext);
 extern gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext);
-extern gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this, WapiHandle *handle, gint32 ms, gboolean exitContext);
+extern gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this, HANDLE handle, gint32 ms, gboolean exitContext);
 
 
 #endif /* _MONO_METADATA_THREADS_H_ */
