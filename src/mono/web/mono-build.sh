@@ -60,6 +60,7 @@ function install_package() {
     tarfile=$1
     dirname=$2
     name=$3
+    configure_options=$4
 
     echo "Installing $name..."
     if [ ! -f $here/$tarfile ]; then
@@ -70,7 +71,7 @@ function install_package() {
     if [ ! -d $here/$dirname ]; then
 	# Build and install package
 	tar xzf $here/$tarfile || exit -1
-	(cd $here/$dirname; ./configure --prefix=$here/install || exit -1; make || exit -1; make install || exit -1)
+	(cd $here/$dirname; ./configure --prefix=$here/install $configure_options || exit -1; make || exit -1; make install || exit -1)
 	success=$?
 	if [ $success -ne 0 ]; then
 	    echo "***** $name build failure. Run rm -rf $here/$dirname to have this script attempt to build $name again next time"
@@ -120,19 +121,19 @@ export LDFLAGS
 # Grab pkg-config-0.8, glib-1.3.12 if necessary
 
 if [ $install_pkgconfig = "yes" ]; then
-    install_package pkgconfig-0.8.0.tar.gz pkgconfig-0.8.0 pkgconfig
+    install_package pkgconfig-0.8.0.tar.gz pkgconfig-0.8.0 pkgconfig ""
 else
     echo "Not installing pkgconfig, you already seem to have it installed"
 fi
 
 if [ $install_glib = "yes" ]; then
-    install_package glib-1.3.13.tar.gz glib-1.3.13 glib
+    install_package glib-1.3.13.tar.gz glib-1.3.13 glib ""
 else
     echo "Not installing glib, you already seem to have it installed"
 fi
 
 if [ $install_libgc = "yes" ]; then
-    install_package gc6.0.tar.gz gc6.0 libgc
+    LIBS="-ldl" install_package gc6.0.tar.gz gc6.0 libgc "--enable-threads=pthreads"
     # make install didnt do the headers!
     mkdir -p $here/install/include/gc
     cp -r $here/gc6.0/include/* $here/install/include/gc
