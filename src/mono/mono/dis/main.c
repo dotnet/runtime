@@ -126,13 +126,15 @@ dis_directive_module (MonoImage *m)
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [MONO_MODULE_SIZE];
 		const char *name;
-		char *guid;
+		char *guid, *ename;
 		
 		mono_metadata_decode_row (t, i, cols, MONO_MODULE_SIZE);
 
 		name = mono_metadata_string_heap (m, cols [MONO_MODULE_NAME]);
+		ename = get_escaped_name (name);
 		guid = get_guid (m, cols [MONO_MODULE_MVID]);
-		fprintf (output, ".module %s // GUID = %s\n", name, guid);
+		fprintf (output, ".module %s // GUID = %s\n", ename, guid);
+		g_free (ename);
 	}
 }
 
