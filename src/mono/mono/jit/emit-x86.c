@@ -618,7 +618,8 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 		pos -= 4;
 	}
 
-	x86_lea_membase (cfg->code, X86_ESP, X86_EBP, pos);
+	if (pos)
+		x86_lea_membase (cfg->code, X86_ESP, X86_EBP, pos);
 
 	if (mono_regset_reg_used (cfg->rs, X86_ESI)) {
 		x86_pop_reg (cfg->code, X86_ESI);
