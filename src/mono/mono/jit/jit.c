@@ -1346,6 +1346,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 	MonoBBlock *bb, *tbb;
 	int maxstack;
 	GList *inline_list = NULL;
+	gboolean tail_recursion;
 
 	header = ((MonoMethodNormal *)method)->header;
 	signature = method->signature;
@@ -1462,6 +1463,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				
 					superblock_end = FALSE;
 
+					tail_recursion = FALSE;
 
         while (inline_list || ip < end) {
 		guint32 cli_addr;
@@ -1471,6 +1473,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			if (ip >= ii->end) {
 				inline_list = g_list_remove_link (inline_list, inline_list);
 				ip = ii->saved_ip;
+				tail_recursion = FALSE;
 				image = ii->saved_image;
 				if (inline_list)
 					arg_map = ((MonoInlineInfo *)inline_list->data)->arg_map;
@@ -2054,6 +2057,8 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			token = read32 (ip);
 			ip += 4;
 
+			tail_recursion = FALSE;
+					
 			if (calli) {
 				ftn = *(--sp);
 				
@@ -3493,14 +3498,18 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			}
 			case CEE_UNALIGNED_: {
 				++ip;
-				// fixme: implement me
+				/* fixme: implement me */
 				break;
 			}
 			case CEE_VOLATILE_: {
 				++ip;
-				// fixme: implement me				
+				/* fixme: implement me */ 	
 				break;
 			}
+			case CEE_TAIL_:
+				++ip;
+				tail_recursion = TRUE;
+				break;
 			case CEE_LOCALLOC: {
 				++ip;
 				--sp;
