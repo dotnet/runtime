@@ -3642,6 +3642,8 @@ array_constructed:
 		for (inv = frame; inv; inv = inv->parent) {
 			if (inv->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 				continue;
+			if (inv->method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME))
+				continue;
 			hd = ((MonoMethodNormal*)inv->method)->header;
 			ip_offset = inv->ip - hd->code;
 			for (i = 0; i < hd->num_clauses; ++i) {
