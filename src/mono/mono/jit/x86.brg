@@ -2319,7 +2319,7 @@ reg: LDFTN {
 	x86_push_reg (s->code, X86_EDX);
 
 	x86_push_imm (s->code, tree->data.m);
-	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, arch_compile_method);
+	mono_add_jump_info (s, s->code, MONO_JUMP_INFO_ABS, mono_compile_method);
 	x86_call_code (s->code, 0);
 	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, sizeof (gpointer));
 

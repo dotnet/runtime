@@ -15,7 +15,7 @@
 
 #include "jit.h"
 
-void
+static void
 arch_return_value (MonoType *return_type, MonoObject *result, gpointer stack)
 {
 	gpointer resp, vt_resp;
@@ -217,7 +217,7 @@ arch_method_call_message_new (MonoMethod *method, gpointer stack, MonoMethod *in
 	}
 
 	if (invoke) {
-		*cb = *((MonoObject **)cpos);
+		*cb = *((MonoDelegate **)cpos);
 		cpos += sizeof (MonoObject *);
 		*state = *((MonoObject **)cpos);
 	}

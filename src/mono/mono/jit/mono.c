@@ -14,6 +14,7 @@
 #include "mono/metadata/verify.h"
 #include "mono/metadata/profiler.h"
 #include "mono/metadata/threadpool.h"
+#include <mono/metadata/profiler-private.h>
 #include <mono/os/util.h>
 
 /**
@@ -43,7 +44,7 @@ mono_jit_compile_image (MonoImage *image, int verbose)
 			if (verbose)
 				printf ("ABSTARCT\n");
 		} else
-			arch_compile_method (method);
+			mono_compile_method (method);
 
 	}
 
@@ -130,7 +131,7 @@ mono_jit_compile_class (MonoAssembly *assembly, char *compile_class,
 		if (!m)
 			g_error ("Cannot find method '%s'", compile_class);
 		for (j = 0; j < compile_times; ++j) {
-			code = arch_compile_method (m);
+			code = mono_compile_method (m);
 			// g_free (code);
 		}
 	} else {
@@ -154,7 +155,7 @@ mono_jit_compile_class (MonoAssembly *assembly, char *compile_class,
 				if (verbose)
 					g_print ("Compiling: %s.%s:%s\n",
 						 compile_class, cname, class->methods [i]->name);
-				code = arch_compile_method (class->methods [i]);
+				code = mono_compile_method (class->methods [i]);
 				// g_free (code);
 			}
 		}
@@ -219,7 +220,7 @@ main (int argc, char *argv [])
 	char *debug_args = NULL;
 	char *file, *error;
 	gboolean testjit = FALSE;
-	int stack, verbose = FALSE;
+	int verbose = FALSE;
 	GList *precompile_classes = NULL;
 
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);

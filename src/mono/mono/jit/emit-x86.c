@@ -490,7 +490,55 @@ arch_emit_epilogue (MonoFlowGraph *cfg)
 	x86_ret (cfg->code);
 }
 
-static void
+int
+arch_allocate_var (MonoFlowGraph *cfg, int size, int align, MonoValueKind kind, MonoValueType type)
+{
+	MonoVarInfo vi;
+
+	mono_jit_stats.allocate_var++;
+
+	vi.range.last_use.abs_pos = 0;
+	vi.range.first_use.pos.bid = 0xffff;
+	vi.range.first_use.pos.tid = 0;	
+	vi.isvolatile = 0;
+	vi.reg = -1;
+	vi.varnum = cfg->varinfo->len;
+
+	if (size != sizeof (gpointer))
+		vi.isvolatile = 1;
+	
+	switch (kind) {
+	case MONO_TEMPVAR:
+	case MONO_LOCALVAR: {
+		cfg->locals_size += size;
+		cfg->locals_size += align - 1;
+		cfg->locals_size &= ~(align - 1);
+
+		SET_VARINFO (vi, type, kind, - cfg->locals_size, size);
+		g_array_append_val (cfg->varinfo, vi);
+		break;
+	}
+	case MONO_ARGVAR: {
+		int arg_start = 8 + cfg->has_vtarg*4;
+
+		g_assert ((align & 3) == 0);
+
+		SET_VARINFO (vi, type, kind, cfg->args_size + arg_start, size);
+		g_array_append_val (cfg->varinfo, vi);
+		
+		cfg->args_size += size;
+		cfg->args_size += 3;
+		cfg->args_size &= ~3;
+		break;
+	}
+	default:
+		g_assert_not_reached ();
+	}
+
+	return cfg->varinfo->len - 1;
+}
+
+static gboolean
 mono_label_cfg (MonoFlowGraph *cfg)
 {
 	int i, j;
@@ -507,13 +555,12 @@ mono_label_cfg (MonoFlowGraph *cfg)
 		for (j = 0; j < top; j++) {
 			MBTree *t1 = (MBTree *) g_ptr_array_index (forest, j);
 			MBState *mbstate;
-
+			
 			mbstate =  mono_burg_label (t1, cfg);
 
 			if (!mbstate) {
-				cfg->invalid = 1;
 				if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
-					return;
+					return FALSE;
 				g_warning ("tree does not match");
 				mono_print_ctree (cfg, t1); printf ("\n\n");
 
@@ -522,6 +569,8 @@ mono_label_cfg (MonoFlowGraph *cfg)
 			}
 		}
 	}
+
+	return TRUE;
 }
 
 static gboolean
@@ -1000,250 +1049,60 @@ mono_add_jump_info (MonoFlowGraph *cfg, gpointer ip, MonoJumpInfoType type, gpoi
 	cfg->jump_info = ji;
 }
 
-static int
-match_debug_method (MonoMethod* method)
+MonoJitInfo *
+arch_jit_compile_cfg (MonoDomain *target_domain, MonoFlowGraph *cfg)
 {
-	GList *tmp = mono_debug_methods;
-
-	for (; tmp; tmp = tmp->next) {
-		if (mono_method_desc_full_match (tmp->data, method))
-			return 1;
-	}
-	return 0;
-}
-
-/**
- * arch_compile_method:
- * @method: pointer to the method info
- *
- * JIT compilation of a single method. 
- *
- * Returns: a pointer to the newly created code.
- */
-gpointer
-arch_compile_method (MonoMethod *method)
-{
-	MonoDomain *target_domain, *domain = mono_domain_get ();
 	MonoJitInfo *ji;
-	guint8 *addr;
-	GHashTable *jit_code_hash;
+	guint32 ls_used_mask = 0;
+	MonoMethod *method = cfg->method;
 
-	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-		if (!method->info)
-			method->info = arch_create_native_wrapper (method);
-		return method->info;
+	ji = mono_mempool_alloc0 (target_domain->mp, sizeof (MonoJitInfo));
+		
+	cfg->rs = mono_regset_new (X86_NREG);
+	mono_regset_reserve_reg (cfg->rs, X86_ESP);
+	mono_regset_reserve_reg (cfg->rs, X86_EBP);
+
+	/* we can use this regs for global register allocation */
+	mono_regset_reserve_reg (cfg->rs, X86_EBX);
+	mono_regset_reserve_reg (cfg->rs, X86_ESI);
+
+	if (mono_use_linear_scan) {
+		mono_linear_scan (cfg, &ls_used_mask);
+		cfg->rs->used_mask |= ls_used_mask;
 	}
 
-	if (mono_jit_share_code)
-		target_domain = mono_root_domain;
-	else 
-		target_domain = domain;
-
-	jit_code_hash = target_domain->jit_code_hash;
-
-	if ((addr = g_hash_table_lookup (jit_code_hash, method))) {
-		mono_jit_stats.methods_lookups++;
-		return addr;
-	}
-
-	mono_jit_stats.methods_compiled++;
-	
-	if (mono_jit_trace_calls || mono_jit_dump_asm || mono_jit_dump_forest) {
-		printf ("Start JIT compilation of %s.%s:%s\n", method->klass->name_space,
+	if (mono_jit_dump_forest) {
+		int i;
+		printf ("FOREST %s.%s:%s\n", method->klass->name_space,
 			method->klass->name, method->name);
+		for (i = 0; i < cfg->block_count; i++) {
+			printf ("BLOCK %d:\n", i);
+			mono_print_forest (cfg, cfg->bblocks [i].forest);
+		}
 	}
-
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
-		const char *name = method->name;
-		guint8 *code;
-		gboolean delegate = FALSE;
-
-		if (method->klass->parent == mono_defaults.multicastdelegate_class)
-			delegate = TRUE;
-				
-		if (delegate && *name == '.' && (strcmp (name, ".ctor") == 0)) {
-			addr = (gpointer)mono_delegate_ctor;
-		} else if (delegate && *name == 'I' && (strcmp (name, "Invoke") == 0)) {
-			addr = arch_get_delegate_invoke (method);
-		} else if (delegate && *name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
-			addr = arch_get_delegate_begin_invoke (method);
-		} else if (delegate && *name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
-			/* this can raise exceptions, so we need a wrapper to save/restore LMF */
-			method->addr = (gpointer)arch_end_invoke;
-			addr = arch_create_native_wrapper (method);
-		} else {
-			mono_profiler_method_end_jit (method, MONO_PROFILE_FAILED);
-			if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) 
-				return NULL;
-
-			g_error ("Don't know how to exec runtime method %s.%s::%s", 
-				 method->klass->name_space, method->klass->name, method->name);
-		}
-	
-	} else {
-		MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
-		MonoFlowGraph *cfg;
-		MonoMemPool *mp;
-		gulong code_size_ratio;
-		guint32 ls_used_mask = 0;
-	
-		mono_profiler_method_jit (method);
-	
-		ji = mono_mempool_alloc0 (target_domain->mp, sizeof (MonoJitInfo));
-		
-		mp = mono_mempool_new ();
-
-		cfg = mono_cfg_new (method, mp);
-
-		mono_analyze_flow (cfg);
-		if (cfg->invalid) {
-			mono_profiler_method_end_jit (method, MONO_PROFILE_FAILED);
-			return NULL;
-		}
-		
-		mono_analyze_stack (cfg);
-		if (cfg->invalid) {
-			mono_profiler_method_end_jit (method, MONO_PROFILE_FAILED);
-			return NULL;
-		}
-		
-		cfg->rs = mono_regset_new (X86_NREG);
-		mono_regset_reserve_reg (cfg->rs, X86_ESP);
-		mono_regset_reserve_reg (cfg->rs, X86_EBP);
-
-		/* we can use this regs for global register allocation */
-		mono_regset_reserve_reg (cfg->rs, X86_EBX);
-		mono_regset_reserve_reg (cfg->rs, X86_ESI);
-
-		cfg->code_size = MAX (header->code_size * 5, 256);
-		cfg->start = cfg->code = g_malloc (cfg->code_size);
-
-		mono_debug_last_breakpoint_address = cfg->code;
-
-		if (match_debug_method (method) || mono_debug_insert_breakpoint)
-			x86_breakpoint (cfg->code);
-		else if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
-			x86_nop (cfg->code);
-
-		if (mono_debug_insert_breakpoint > 0)
-			mono_debug_insert_breakpoint--;
-
-		if (mono_use_linear_scan) {
-			mono_linear_scan (cfg, &ls_used_mask);
-			cfg->rs->used_mask |= ls_used_mask;
-		}
-
-		if (mono_jit_dump_forest) {
-			int i;
-			printf ("FOREST %s.%s:%s\n", method->klass->name_space,
-				method->klass->name, method->name);
-			for (i = 0; i < cfg->block_count; i++) {
-				printf ("BLOCK %d:\n", i);
-				mono_print_forest (cfg, cfg->bblocks [i].forest);
-			}
-		}
 			
-		mono_label_cfg (cfg);
-
-		if (cfg->invalid) {
-			mono_profiler_method_end_jit (method, MONO_PROFILE_FAILED);
-			return NULL;
-		}
+	if (!mono_label_cfg (cfg))
+		return NULL;
 		
-		arch_allocate_regs (cfg);
+	arch_allocate_regs (cfg);
 
-		/* align to 8 byte boundary */
-		cfg->locals_size += 7;
-		cfg->locals_size &= ~7;
+	/* align to 8 byte boundary */
+	cfg->locals_size += 7;
+	cfg->locals_size &= ~7;
 
-		arch_emit_prologue (cfg);
-		cfg->prologue_end = cfg->code - cfg->start;
-		mono_emit_cfg (cfg);
-		arch_emit_epilogue (cfg);		
-		cfg->epilogue_end = cfg->code - cfg->start;
+	arch_emit_prologue (cfg);
+	cfg->prologue_end = cfg->code - cfg->start;
+	mono_emit_cfg (cfg);
+	arch_emit_epilogue (cfg);		
+	cfg->epilogue_end = cfg->code - cfg->start;
 
-		addr = cfg->start;
+	mono_compute_branches (cfg);
 
-		mono_jit_stats.allocated_code_size += cfg->code_size;
+	ji->code_size = cfg->code - cfg->start;
+	ji->used_regs = cfg->rs->used_mask;
+	ji->method = method;
+	ji->code_start = cfg->start;
 
-		code_size_ratio = cfg->code - cfg->start;
-		if (code_size_ratio > mono_jit_stats.biggest_method_size) {
-			mono_jit_stats.biggest_method_size = code_size_ratio;
-			mono_jit_stats.biggest_method = method;
-		}
-		code_size_ratio = (code_size_ratio * 100) / header->code_size;
-		if (code_size_ratio > mono_jit_stats.max_code_size_ratio) {
-			mono_jit_stats.max_code_size_ratio = code_size_ratio;
-			mono_jit_stats.max_ratio_method = method;
-		}
-
-		mono_compute_branches (cfg);
-		
-		if (mono_jit_dump_asm) {
-			char *id = g_strdup_printf ("%s.%s_%s", method->klass->name_space,
-						    method->klass->name, method->name);
-			mono_disassemble_code (cfg->start, cfg->code - cfg->start, id);
-			g_free (id);
-		}
-		if (mono_debug_format != MONO_DEBUG_FORMAT_NONE)
-			mono_debug_add_method (cfg);
-
-		ji->code_size = cfg->code - cfg->start;
-		ji->used_regs = cfg->rs->used_mask;
-		ji->method = method;
-		ji->code_start = addr;
-
-		mono_jit_stats.native_code_size += ji->code_size;
-
-		if (header->num_clauses) {
-			int i, start_block, end_block;
-
-			ji->num_clauses = header->num_clauses;
-			ji->clauses = mono_mempool_alloc0 (target_domain->mp, 
-			        sizeof (MonoJitExceptionInfo) * header->num_clauses);
-
-			for (i = 0; i < header->num_clauses; i++) {
-				MonoExceptionClause *ec = &header->clauses [i];
-				MonoJitExceptionInfo *ei = &ji->clauses [i];
-			
-				ei->flags = ec->flags;
-				ei->token_or_filter = ec->token_or_filter;
-
-				g_assert (cfg->bcinfo [ec->try_offset].is_block_start);
-				start_block = cfg->bcinfo [ec->try_offset].block_id;
-				end_block = cfg->bcinfo [ec->try_offset + ec->try_len].block_id;
-				g_assert (cfg->bcinfo [ec->try_offset + ec->try_len].is_block_start);
-				
-				ei->try_start = cfg->start + cfg->bblocks [start_block].addr;
-				ei->try_end = cfg->start + cfg->bblocks [end_block].addr;
-				
-				g_assert (cfg->bcinfo [ec->handler_offset].is_block_start);
-				start_block = cfg->bcinfo [ec->handler_offset].block_id;
-				ei->handler_start = cfg->start + cfg->bblocks [start_block].addr;	
-				
-				//printf ("TEST %x %x %x\n", ei->try_start, ei->try_end, ei->handler_start);
-			}
-		}
-		
-		mono_jit_info_table_add (target_domain, ji);
-
-		mono_regset_free (cfg->rs);
-
-		mono_cfg_free (cfg);
-
-		mono_mempool_destroy (mp);
-
-		mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
-	}
-
-	if (mono_jit_trace_calls || mono_jit_dump_asm || mono_jit_dump_forest) {
-		printf ("END JIT compilation of %s.%s:%s %p %p\n", method->klass->name_space,
-			method->klass->name, method->name, method, addr);
-	}
-
-	g_hash_table_insert (jit_code_hash, method, addr);
-
-	return addr;
+	return ji;
 }
 

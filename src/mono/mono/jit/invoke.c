@@ -116,7 +116,7 @@ arch_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 		jit_tls->end_of_stack = &last_env;
 		jit_tls->env = &env;
 
-		if ((*exc = setjmp (env))) {
+		if ((*exc = (MonoObject *)setjmp (env))) {
 			jit_tls->end_of_stack = last_end_of_stack;
 			jit_tls->env = last_env;
 			return NULL;
@@ -215,7 +215,7 @@ handle_enum:
 		}
 	}
 
-	code = arch_compile_method (method);
+	code = mono_compile_method (method);
 
 	if (!invoke_int64)
 		invoke_int64 = (gpointer)invoke_double = get_invoke_method_with_frame ();
@@ -325,7 +325,7 @@ arch_create_delegate_trampoline (MonoDelegate *delegate)
 		}
 	}
 	g_assert (invoke);
-	invoke_code = arch_compile_method (invoke);
+	invoke_code = mono_compile_method (invoke);
 
 	/* fixme: when do we free this code ? */
 

@@ -27,6 +27,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/appdomain.h>
 #include <mono/metadata/opcodes.h>
 #include <mono/utils/monobitset.h>
 
@@ -35,6 +36,9 @@
 #define ISSTRUCT(t) (!t->byref && t->type == MONO_TYPE_VALUETYPE && !t->data.klass->enumtype)
 
 #define VARINFO(cfg,num) (g_array_index (cfg->varinfo, MonoVarInfo, num))
+
+#define SET_VARINFO(vi,t,k,o,s) do { vi.type=t; vi.kind=k; vi.offset=o; vi.size=s; } while (0)
+
 
 typedef struct _MBTree MBTree;
 
@@ -155,7 +159,6 @@ typedef struct {
 	guint32           epilog;
 	guint32           args_start_index;
 	guint32           locals_start_index;
-	gint              invalid;
 	gint             *spillvars; 
 	gint              spillcount;
 	MonoJumpInfo     *jump_info;
@@ -217,32 +220,28 @@ extern guint32  mono_jit_tls_id;
 
 extern CRITICAL_SECTION *metadata_section;
 
+/* architecture independent functions */
+
+MonoDomain * 
+mono_jit_init              (char *file);
+
+int
+mono_jit_exec              (MonoDomain *domain, MonoAssembly *assembly, 
+			    int argc, char *argv[]);
+void        
+mono_jit_cleanup           (MonoDomain *domain);
+
 void
-arch_handle_exception      (struct sigcontext *ctx, gpointer obj);
-
-gpointer 
-arch_get_throw_exception   (void);
-
-gpointer 
-arch_get_throw_exception_by_name (void);
-
-MonoFlowGraph *
-mono_cfg_new               (MonoMethod *method, MonoMemPool *mp);
+mono_jit_compile_image     (MonoImage *image, int verbose);
 
 void
-mono_cfg_free              (MonoFlowGraph *cfg);
-
+mono_jit_compile_class     (MonoAssembly *assembly, char *compile_class,
+			    int compile_times, int verbose);
 MBTree *
 mono_ctree_new             (MonoMemPool *mp, int op, MBTree *left, 
 			    MBTree *right);
 MBTree *
 mono_ctree_new_leaf        (MonoMemPool *mp, int op);
-
-void
-mono_analyze_flow          (MonoFlowGraph *cfg);
-
-void
-mono_analyze_stack         (MonoFlowGraph *cfg);
 
 void
 mono_add_jump_info         (MonoFlowGraph *cfg, gpointer ip, 
@@ -252,7 +251,24 @@ void
 mono_disassemble_code      (guint8 *code, int size, char *id);
 
 gpointer 
-arch_compile_method        (MonoMethod *method);
+mono_compile_method        (MonoMethod *method);
+
+void
+mono_cpu_detect            (void);
+
+/* architecture dependent functions */
+
+void
+arch_handle_exception      (struct sigcontext *ctx, gpointer obj);
+
+gpointer 
+arch_get_throw_exception   (void);
+
+gpointer 
+arch_get_throw_exception_by_name (void);
+
+MonoJitInfo *
+arch_jit_compile_cfg       (MonoDomain *target_domain, MonoFlowGraph *cfg);
 
 gpointer
 arch_create_jit_trampoline (MonoMethod *method);
@@ -287,38 +303,19 @@ arch_end_invoke            (MonoMethod *method, gpointer first_arg, ...);
 gpointer
 arch_get_delegate_invoke   (MonoMethod *method);
 
+/* remoting support */
+
 gpointer
 mono_load_remote_field     (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer *res);
 
 void
 mono_store_remote_field    (MonoObject *this, MonoClass *klass, MonoClassField *field, gpointer val);
 
-void
-mono_cpu_detect            (void);
-
-MonoDomain * 
-mono_jit_init              (char *file);
-
-int
-mono_jit_exec              (MonoDomain *domain, MonoAssembly *assembly, 
-			    int argc, char *argv[]);
-
-void        
-mono_jit_cleanup           (MonoDomain *domain);
-
-void
-mono_jit_compile_image     (MonoImage *image, int verbose);
-
-void
-mono_jit_compile_class     (MonoAssembly *assembly, char *compile_class,
-			    int compile_times, int verbose);
+/* stack/message transition */
 
 MonoMethodMessage *
 arch_method_call_message_new (MonoMethod *method, gpointer stack, MonoMethod *invoke, 
 			      MonoDelegate **cb, MonoObject **state);
-
-void
-arch_return_value           (MonoType *return_type, MonoObject *result, gpointer stack);
 
 void
 arch_method_return_message_restore (MonoMethod *method, gpointer stack, 

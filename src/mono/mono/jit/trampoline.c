@@ -108,7 +108,7 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	gpointer addr;
 
 	EnterCriticalSection (metadata_section);
-	addr = arch_compile_method (m);
+	addr = mono_compile_method (m);
 	LeaveCriticalSection (metadata_section);
 	g_assert (addr);
 
@@ -194,7 +194,7 @@ arch_create_jit_trampoline (MonoMethod *method)
 
 	/* we immediately compile runtime provided functions */
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
-		method->info = arch_compile_method (method);
+		method->info = mono_compile_method (method);
 		return method->info;
 	}
 
