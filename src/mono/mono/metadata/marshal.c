@@ -1330,6 +1330,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		}
 
 		switch (t->type) {
+		case MONO_TYPE_BOOLEAN:
+			mono_mb_emit_ldarg (mb, argnum);
+			break;
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
 		case MONO_TYPE_I2:
@@ -1365,7 +1368,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		case MONO_TYPE_OBJECT:
 			mono_mb_emit_ldloc (mb, tmp_locals [i]);
 			break;
-		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
