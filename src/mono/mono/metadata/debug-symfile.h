@@ -10,6 +10,7 @@ typedef struct MonoDebugSymbolFileSection	MonoDebugSymbolFileSection;
 typedef struct MonoDebugMethodInfo		MonoDebugMethodInfo;
 typedef struct MonoDebugVarInfo			MonoDebugVarInfo;
 typedef struct MonoDebugILOffsetInfo		MonoDebugILOffsetInfo;
+typedef struct MonoDebugLineNumberBlock		MonoDebugLineNumberBlock;
 
 /* Machine dependent information about a method.
  *
@@ -64,6 +65,14 @@ struct MonoDebugILOffsetInfo {
 	guint32 address;
 };
 
+struct MonoDebugLineNumberBlock {
+	guint32 token;
+	guint32 source_file_idx;
+	const char *source_file;
+	guint32 start_line;
+	guint32 file_offset;
+};
+
 struct MonoDebugSymbolFile {
 	int fd;
 	char *file_name;
@@ -73,6 +82,7 @@ struct MonoDebugSymbolFile {
 	size_t raw_contents_size;
 	/* Array of MONO_DEBUG_SYMBOL_SECTION_MAX elements. */
 	MonoDebugSymbolFileSection *section_offsets;
+	GHashTable *line_number_table;
 	gpointer user_data;
 };
 
@@ -82,15 +92,16 @@ struct MonoDebugSymbolFileSection {
 	gulong size;
 };
 
-#define MONO_DEBUG_SYMBOL_FILE_VERSION			10
+#define MONO_DEBUG_SYMBOL_FILE_VERSION			11
 
 /* Keep in sync with Mono.CSharp.Debugger.MonoDwarfFileWriter.Section */
 #define MONO_DEBUG_SYMBOL_SECTION_DEBUG_INFO		0x01
 #define MONO_DEBUG_SYMBOL_SECTION_DEBUG_ABBREV		0x02
 #define MONO_DEBUG_SYMBOL_SECTION_DEBUG_LINE		0x03
 #define MONO_DEBUG_SYMBOL_SECTION_MONO_RELOC_TABLE	0x04
+#define MONO_DEBUG_SYMBOL_SECTION_MONO_LINE_NUMBERS	0x05
 
-#define MONO_DEBUG_SYMBOL_SECTION_MAX			0x05
+#define MONO_DEBUG_SYMBOL_SECTION_MAX			0x06
 
 /* Tries to load `filename' as a debugging information file, if `emit_warnings" is set,
  * use g_warning() to signal error messages on failure, otherwise silently return NULL. */
@@ -122,6 +133,9 @@ ves_icall_Debugger_MonoSymbolWriter_method_from_token (MonoReflectionAssembly *a
 
 guint32
 ves_icall_Debugger_DwarfFileWriter_get_type_token (MonoReflectionType *type);
+
+gchar *
+mono_debug_find_source_location (MonoDebugSymbolFile *symfile, MonoMethod *method, guint32 offset);
 
 
 #endif /* __MONO_DEBUG_SYMFILE_H__ */

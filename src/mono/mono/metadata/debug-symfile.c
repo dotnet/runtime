@@ -129,6 +129,13 @@ get_sections_elf32 (MonoDebugSymbolFile *symfile, gboolean emit_warnings)
 			sfs->type = MONO_DEBUG_SYMBOL_SECTION_MONO_RELOC_TABLE;
 			sfs->file_offset = section->sh_offset;
 			sfs->size = section->sh_size;
+		} else if (!strcmp (name, ".mono_line_numbers")) {
+			MonoDebugSymbolFileSection *sfs;
+
+			sfs = &symfile->section_offsets [MONO_DEBUG_SYMBOL_SECTION_MONO_LINE_NUMBERS];
+			sfs->type = MONO_DEBUG_SYMBOL_SECTION_MONO_LINE_NUMBERS;
+			sfs->file_offset = section->sh_offset;
+			sfs->size = section->sh_size;
 		}
 	}
 
@@ -152,6 +159,56 @@ get_sections (MonoDebugSymbolFile *symfile, gboolean emit_warnings)
 		g_warning ("Symbol file %s has unknown file format", symfile->file_name);
 
 	return FALSE;
+}
+
+static void
+read_line_numbers (MonoDebugSymbolFile *symfile)
+{
+	const char *ptr, *start, *end;
+	int version;
+	long section_size;
+
+	if (!symfile->section_offsets [MONO_DEBUG_SYMBOL_SECTION_MONO_LINE_NUMBERS].file_offset)
+		return;
+
+	ptr = start = symfile->raw_contents +
+		symfile->section_offsets [MONO_DEBUG_SYMBOL_SECTION_MONO_LINE_NUMBERS].file_offset;
+
+	version = *((guint16 *) ptr)++;
+	if (version != MONO_DEBUG_SYMBOL_FILE_VERSION) {
+		g_warning ("Symbol file %s has incorrect line number table version "
+			   "(expected %d, got %d)", symfile->file_name,
+			   MONO_DEBUG_SYMBOL_FILE_VERSION, version);
+		return;
+	}
+
+	section_size = *((guint32 *) ptr)++;
+	end = ptr + section_size;
+
+	symfile->line_number_table = g_hash_table_new_full (g_direct_hash, g_direct_equal,
+							    NULL, (GDestroyNotify) g_free);
+
+	while (ptr < end) {
+		MonoDebugLineNumberBlock *lnb;
+		guint32 token, length;
+		MonoMethod *method;
+
+		token = * ((guint32 *) ptr)++;
+		method = mono_get_method (symfile->image, token, NULL);
+		if (!method)
+			continue;
+
+		lnb = g_new0 (MonoDebugLineNumberBlock, 1);
+		lnb->token = token;
+		lnb->source_file_idx = * ((guint32 *) ptr)++;
+		length = * ((guint32 *) ptr)++;
+		lnb->source_file = (const char *) ptr;
+		ptr += length;
+		lnb->start_line = * ((guint32 *) ptr)++;
+		lnb->file_offset = * ((guint32 *) ptr)++;
+
+		g_hash_table_insert (symfile->line_number_table, method, lnb);
+	}
 }
 
 static MonoClass *
@@ -208,6 +265,8 @@ mono_debug_open_symbol_file (MonoImage *image, const char *filename, gboolean em
 		return NULL;
 	}
 
+	read_line_numbers (symfile);
+
 	return symfile;
 }
 
@@ -222,6 +281,8 @@ mono_debug_close_symbol_file (MonoDebugSymbolFile *symfile)
 	if (symfile->fd)
 		close (symfile->fd);
 
+	if (symfile->line_number_table)
+		g_hash_table_destroy (symfile->line_number_table);
 	g_free (symfile->file_name);
 	g_free (symfile->section_offsets);
 	g_free (symfile);
@@ -804,4 +865,40 @@ ves_icall_Debugger_DwarfFileWriter_get_type_token (MonoReflectionType *type)
 	mono_class_init (klass);
 
 	return klass->type_token;
+}
+
+gchar *
+mono_debug_find_source_location (MonoDebugSymbolFile *symfile, MonoMethod *method, guint32 offset)
+{
+	MonoDebugLineNumberBlock *lnb;
+	const char *ptr;
+
+	if (!symfile->line_number_table)
+		return NULL;
+
+	lnb = g_hash_table_lookup (symfile->line_number_table, method);
+	if (!lnb)
+		return NULL;
+
+	ptr = symfile->raw_contents +
+		symfile->section_offsets [MONO_DEBUG_SYMBOL_SECTION_MONO_LINE_NUMBERS].file_offset;
+
+	ptr += lnb->file_offset;
+
+	do {
+		guint32 row, iloffset;
+
+		row = * ((guint32 *) ptr)++;
+		iloffset = * ((guint32 *) ptr)++;
+
+		if (!row && !offset)
+			return NULL;
+		if (!row)
+			continue;
+
+		if (iloffset >= offset)
+			return g_strdup_printf ("%s:%d", lnb->source_file, row);
+	} while (1);
+
+	return NULL;
 }
