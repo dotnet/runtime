@@ -615,7 +615,6 @@ mono/tests/Makefile
 mono/benchmark/Makefile
 mono/monoburg/Makefile
 mono/monograph/Makefile
-mono/jit/Makefile
 mono/io-layer/Makefile
 mono/handles/Makefile
 mono/mini/Makefile
