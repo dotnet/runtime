@@ -227,7 +227,7 @@ mono_mb_free (MonoMethodBuilder *mb)
 }
 
 MonoMethodBuilder *
-mono_mb_new (MonoClass *klass, const char *name)
+mono_mb_new (MonoClass *klass, const char *name, MonoWrapperType type)
 {
 	MonoMethodBuilder *mb;
 	MonoMethod *m;
@@ -243,7 +243,7 @@ mono_mb_new (MonoClass *klass, const char *name)
 	m->name = g_strdup (name);
 	m->inline_info = 1;
 	m->inline_count = -1;
-	m->wrapper_type = MONO_WRAPPER_UNKNOWN;
+	m->wrapper_type = type;
 
 	mb->code_size = 256;
 	mb->code = g_malloc (mb->code_size);
@@ -1007,10 +1007,9 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	}
 
 	name = mono_signature_to_name (sig, "begin_invoke");
-	mb = mono_mb_new (mono_defaults.multicastdelegate_class, name);
+	mb = mono_mb_new (mono_defaults.multicastdelegate_class, name, MONO_WRAPPER_DELEGATE_BEGIN_INVOKE);
 	g_free (name);
 
-	mb->method->wrapper_type = MONO_WRAPPER_DELEGATE_BEGIN_INVOKE;
 	mb->method->save_lmf = 1;
 
 	params_var = mono_mb_emit_save_args (mb, sig, FALSE);
@@ -1203,10 +1202,9 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	}
 
 	name = mono_signature_to_name (sig, "end_invoke");
-	mb = mono_mb_new (mono_defaults.multicastdelegate_class, name);
+	mb = mono_mb_new (mono_defaults.multicastdelegate_class, name, MONO_WRAPPER_DELEGATE_END_INVOKE);
 	g_free (name);
 
-	mb->method->wrapper_type = MONO_WRAPPER_DELEGATE_END_INVOKE;
 	mb->method->save_lmf = 1;
 
 	params_var = mono_mb_emit_save_args (mb, sig, FALSE);
@@ -1292,8 +1290,7 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 		csig->params [1] = &mono_defaults.int_class->byval_arg;
 	}
 
-	mb = mono_mb_new (method->klass, method->name);
-	mb->method->wrapper_type = MONO_WRAPPER_REMOTING_INVOKE;
+	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_REMOTING_INVOKE);
 	mb->method->save_lmf = 1;
 
 	params_var = mono_mb_emit_save_args (mb, sig, TRUE);
@@ -1343,10 +1340,8 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	static_sig->hasthis = 0;
 
 	name = mono_signature_to_name (sig, "invoke");
-	mb = mono_mb_new (mono_defaults.multicastdelegate_class, name);
+	mb = mono_mb_new (mono_defaults.multicastdelegate_class, name,  MONO_WRAPPER_DELEGATE_INVOKE);
 	g_free (name);
-
-	mb->method->wrapper_type = MONO_WRAPPER_DELEGATE_INVOKE;
 
 	/* allocate local 0 (object) */
 	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
@@ -1471,8 +1466,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	csig->params [1] = &mono_defaults.int_class->byval_arg;
 	csig->params [2] = &mono_defaults.int_class->byval_arg;
 
-	mb = mono_mb_new (method->klass, method->name);
-	mb->method->wrapper_type = MONO_WRAPPER_RUNTIME_INVOKE;
+	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_RUNTIME_INVOKE);
 
 	/* allocate local 0 (object) tmp */
 	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
@@ -1704,8 +1698,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 	
 	sig = method->signature;
 
-	mb = mono_mb_new (method->klass, method->name);
-	mb->method->wrapper_type = MONO_WRAPPER_NATIVE_TO_MANAGED;
+	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
 
 	/* allocate local 0 (pointer) src_ptr */
 	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
@@ -1964,8 +1957,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		pinvoke = TRUE;
 
-	mb = mono_mb_new (method->klass, method->name);
-	mb->method->wrapper_type = MONO_WRAPPER_MANAGED_TO_NATIVE;
+	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 
 	mb->method->save_lmf = 1;
 
@@ -2411,7 +2403,7 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 		stoptr = mono_find_method_by_name (mono_defaults.marshal_class, "StructureToPtr", 3);
 	g_assert (stoptr);
 
-	mb = mono_mb_new (klass, stoptr->name);
+	mb = mono_mb_new (klass, stoptr->name, MONO_WRAPPER_UNKNOWN);
 
 	if (klass->blittable) {
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
@@ -2473,7 +2465,7 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 		ptostr = mono_find_method_by_name (mono_defaults.marshal_class, "PtrToStructure", 2);
 	g_assert (ptostr);
 
-	mb = mono_mb_new (klass, ptostr->name);
+	mb = mono_mb_new (klass, ptostr->name, MONO_WRAPPER_UNKNOWN);
 
 	if (klass->blittable) {
 		mono_mb_emit_byte (mb, CEE_LDARG_1);

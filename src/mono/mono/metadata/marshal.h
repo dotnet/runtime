@@ -57,7 +57,7 @@ void
 mono_mb_free (MonoMethodBuilder *mb);
 
 MonoMethodBuilder *
-mono_mb_new (MonoClass *klass, const char *name);
+mono_mb_new (MonoClass *klass, const char *name, MonoWrapperType type);
 
 void
 mono_mb_patch_addr (MonoMethodBuilder *mb, int pos, int value);
