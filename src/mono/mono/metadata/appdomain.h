@@ -205,9 +205,6 @@ mono_jit_info_table_add    (MonoDomain *domain, MonoJitInfo *ji);
 MonoJitInfo *
 mono_jit_info_table_find   (MonoDomain *domain, char *addr);
 
-void
-ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoAppDomainSetup *setup);
-
 MonoAppDomain *
 ves_icall_System_AppDomain_getCurDomain            (void);
 

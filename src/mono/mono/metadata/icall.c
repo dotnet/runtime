@@ -4969,10 +4969,6 @@ static const IcallEntry appdomain_icalls [] = {
 	{"getSetup", ves_icall_System_AppDomain_getSetup}
 };
 
-static const IcallEntry appdomainsetup_icalls [] = {
-	{"InitAppDomainSetup", ves_icall_System_AppDomainSetup_InitAppDomainSetup}
-};
-
 static const IcallEntry argiterator_icalls [] = {
 	{"IntGetNextArg()",                  mono_ArgIterator_IntGetNextArg},
 	{"IntGetNextArg(intptr)", mono_ArgIterator_IntGetNextArgT},
@@ -5711,7 +5707,6 @@ static const IcallMap icall_entries [] = {
 	{"Mono.Security.Cryptography.KeyPairPersistence", keypair_icalls, G_N_ELEMENTS (keypair_icalls)},
 	{"System.Activator", activator_icalls, G_N_ELEMENTS (activator_icalls)},
 	{"System.AppDomain", appdomain_icalls, G_N_ELEMENTS (appdomain_icalls)},
-	{"System.AppDomainSetup", appdomainsetup_icalls, G_N_ELEMENTS (appdomainsetup_icalls)},
 	{"System.ArgIterator", argiterator_icalls, G_N_ELEMENTS (argiterator_icalls)},
 	{"System.Array", array_icalls, G_N_ELEMENTS (array_icalls)},
 	{"System.Buffer", buffer_icalls, G_N_ELEMENTS (buffer_icalls)},

@@ -261,24 +261,6 @@ mono_domain_set (MonoDomain *domain, gboolean force)
 	return TRUE;
 }
 
-void
-ves_icall_System_AppDomainSetup_InitAppDomainSetup (MonoAppDomainSetup *setup)
-{
-	MonoDomain* domain = mono_domain_get ();
-	MonoAssembly *assembly;
-	
-	MONO_ARCH_SAVE_REGS;
-
-	if (!domain->entry_assembly)
-		assembly = mono_root_domain->entry_assembly;
-	else 
-		assembly = domain->entry_assembly;
-
-	g_assert (assembly);
-
-	setup->application_base = mono_string_new (domain, assembly->basedir);
-}
-
 MonoObject *
 ves_icall_System_AppDomain_GetData (MonoAppDomain *ad, MonoString *name)
 {
