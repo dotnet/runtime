@@ -18,5 +18,8 @@
         <person email="joe@ximian.com" name="Joe Shaw">
                 <class name="System.Array"/>
         </person>
+	<person email="marcins@zipworld.com.au" name="Marcin Szczepanski">
+		<class name="System.StringBuilder"/>
+	</person>
 </maintainers>
 
