@@ -1541,11 +1541,15 @@ ves_icall_MonoType_GetElementType (MonoReflectionType *type)
 
 	MONO_ARCH_SAVE_REGS;
 
+	// GelElementType should only return a type for:
+	// Array Pointer PassedByRef
 	if (type->type->byref)
 		return mono_type_get_object (mono_object_domain (type), &class->byval_arg);
 	if (class->enumtype && class->enum_basetype) /* types that are modifierd typebuilkders may not have enum_basetype set */
 		return mono_type_get_object (mono_object_domain (type), class->enum_basetype);
-	else if (class->element_class)
+	else if (class->element_class && MONO_CLASS_IS_ARRAY (class))
+		return mono_type_get_object (mono_object_domain (type), &class->element_class->byval_arg);
+	else if (class->element_class && type->type->type == MONO_TYPE_PTR)
 		return mono_type_get_object (mono_object_domain (type), &class->element_class->byval_arg);
 	else
 		return NULL;
