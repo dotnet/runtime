@@ -22,6 +22,23 @@
 
 ** To start contributing
 
+	As a programmer, you can contribute in three different scenarios to Mono:
+
+	<ul>
+		* If you only have Linux/Unix.
+		* If you only have Windows.
+
+		* If you have both Linux and Windows.
+	</ul>
+
+	You might also want to check our <a href="#setup">common
+	setups</a> section that describes some common setups that people
+	use while working on Mono.
+
+*** Contributing to the class library, regression tests or the compiler
+
+	This only requires Windows currently.
+
 	To start developing classes or to contribute to the compiler,
 	you only need Windows and the .NET Framework 1.0 SDK.  Please notice
 	that you do not need Visual Studio (although you can use it if
@@ -45,6 +62,21 @@
 	
 	To get started writing tests see the <a href="testing.html">Test Suite</a>
 	section.
+
+*** Contributing to the runtime engine
+
+	This only requires Linux, currently some tasks are easier if you
+	have access to Windows as well.
+
+	Here are a few things you can do:
+	<ul>
+		* Port the runtime to other architectures.
+		* Port the runtime to other operating systems.
+		* Finish the IL code verifier in the runtime.
+		* Hack the JIT, improve the code generator, add new
+		  pattern rules, improve the register allocator.
+		* Implement the debugging interfaaces
+	</ul>
 
 ** Bug reporting
 
@@ -92,7 +124,52 @@
 	  http://www.oreally.com/catalog/dotnetfrmess</a>)
 	</ul>
 
-* Special note
+<a name="setup">
+* Common Setups
+
+	People running both Linux and Windows while contributing to
+	Mono use a number of tricks to increase their productivity.
+
+	Scenarios:
+
+	<ul>
+		* <b>Linux host and Windows host</b>
+
+		  The Windows file system is shared (right click on
+		  your hard drive icon, and select sharing, allow this
+		  to be shared).  
+
+		  The Windows machine has the required build tools
+		  (cygwin, and the .NET framework).  On the Windows
+		  machine, you want to setup the ssh server (run the
+		  ssh-host-config program to configure your ssh) and
+		  run it (from a cygwin terminal, type: /usr/sbin/sshd).
+
+		  From the Linux side, you want to mount the Windows
+		  file system, using something like this:
+
+<tt><pre>
+	mount -t smbfs -o uid=miguel,username="Miguel de Icaza" "//quack/c$" /mnt
+</pre></tt>
+
+		  In the above example, my Linux user name is
+		  `miguel', and this will allow this user to have
+		  read/write access to the share.  
+
+		  The host name is `quack', and the name of the share
+		  is `c$' (that is the C: partition).  
+
+		  The file system is accessible on /mnt.
+
+		  You can perform your cvs update and cvs commits from
+		  the /mnt directory, and run Emacs or your favorite
+		  Linux text editor on the Unix side in this way.
+
+		  Then from another terminal, you can ssh into your
+		  Windows box using ssh, like this: ssh "Miguel de Icaza@quack"
+	</ul>
+
+* Special Note
 
 	If you have looked at Microsoft's implementation of .NET or
 	their shared source code, you may not be able to contribute

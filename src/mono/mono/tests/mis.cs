@@ -129,12 +129,13 @@ namespace T {
 				filetype = "";
 			
 
-			Console.WriteLine("File is " + req);
-			Console.WriteLine("Mime type is " + mime_types[filetype]);
 
 			string mime_type = (string) mime_types [filetype];
 			if (mime_type == null)
 				mime_type = "text/plain";
+			
+			Console.WriteLine("File is " + req);
+			Console.WriteLine("Mime type is " + mime_type);
 			
 			try {
 				FileStream f=new FileStream(req, FileMode.Open, FileAccess.Read);
@@ -189,11 +190,11 @@ namespace T {
 			else
 				filetype = "";
 
-			Console.WriteLine("File is " + req);
-			Console.WriteLine("Mime type is " + mime_types[filetype]);
 			string mime_type = (string) mime_types [filetype];
 			if (mime_type == null)
 				mime_type = "text/plain";
+			Console.WriteLine("File is " + req);
+			Console.WriteLine("Mime type is " + mime_type);
 
 			try {
 				FileStream f=new FileStream(req, FileMode.Open, FileAccess.Read);
