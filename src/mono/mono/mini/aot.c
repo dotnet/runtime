@@ -289,7 +289,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 
 			/* Do this outside the lock to avoid deadlocks */
 			LeaveCriticalSection (&aot_mutex);
-			mono_arch_patch_code (method, domain, code, minfo->patch_info);
+			mono_arch_patch_code (method, domain, code, minfo->patch_info, TRUE);
 			EnterCriticalSection (&aot_mutex);
 
 			/* Relocate jinfo */
@@ -567,7 +567,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 
 		/* Do this outside the lock to avoid deadlocks */
 		LeaveCriticalSection (&aot_mutex);
-		mono_arch_patch_code (method, domain, code, patch_info);
+		mono_arch_patch_code (method, domain, code, patch_info, TRUE);
 		EnterCriticalSection (&aot_mutex);
 
 		if (aot_module->opts & MONO_OPT_SHARED)
@@ -1127,7 +1127,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts)
 		//printf ("START:           %s\n", mono_method_full_name (method, TRUE));
 		//mono_compile_method (method);
 
-		cfg = mini_method_compile (method, opts, mono_root_domain, 0);
+		cfg = mini_method_compile (method, opts, mono_root_domain, FALSE, 0);
 		g_assert (cfg);
 
 		if (cfg->disable_aot) {

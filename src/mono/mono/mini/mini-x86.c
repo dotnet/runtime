@@ -112,6 +112,8 @@ static void indent (int diff) {
 	indent_level += diff;
 }
 
+static gboolean enable_trace = TRUE;
+
 static void
 enter_method (MonoMethod *method, char *ebp)
 {
@@ -121,6 +123,9 @@ enter_method (MonoMethod *method, char *ebp)
 	MonoJitArgumentInfo *arg_info;
 	MonoMethodSignature *sig;
 	char *fname;
+
+	if (!enable_trace)
+		return;
 
 	fname = mono_method_full_name (method, TRUE);
 	indent (1);
@@ -249,6 +254,9 @@ leave_method (MonoMethod *method, ...)
 	MonoType *type;
 	char *fname;
 	va_list ap;
+
+	if (!enable_trace)
+		return;
 
 	va_start(ap, method);
 
@@ -3023,7 +3031,7 @@ mono_arch_register_lowlevel_calls (void)
 }
 
 void
-mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji)
+mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
 {
 	MonoJumpInfo *patch_info;
 
@@ -3113,7 +3121,8 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 				/* Done by the generated code */
 				;
 			else {
-				mono_runtime_class_init (vtable);
+				if (run_cctors)
+					mono_runtime_class_init (vtable);
 			}
 			*((gconstpointer *)(ip + 1)) = 
 				(char*)vtable->data + patch_info->data.field->offset;

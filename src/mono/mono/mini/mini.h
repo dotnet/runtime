@@ -495,6 +495,7 @@ typedef struct {
 	gint32           sig_cookie;
 	gboolean         disable_aot;
 	gboolean         disable_ssa;
+	gboolean         run_cctors;
 	gpointer         debug_info;
 	guint16          *intvars;
 	MonoProfileCoverageInfo *coverage_info;
@@ -655,7 +656,7 @@ void      mono_analyze_liveness             (MonoCompile *cfg);
 void      mono_linear_scan                  (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_mask);
 void      mono_create_jump_table            (MonoCompile *cfg, MonoInst *label, MonoBasicBlock **bbs, int num_blocks);
 int       mono_compile_assembly             (MonoAssembly *ass, guint32 opts);
-MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, MonoDomain *domain, int parts);
+MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, int parts);
 void      mono_destroy_compile              (MonoCompile *cfg);
 void      mono_aot_init                     (void);
 MonoJitInfo*  mono_aot_get_method           (MonoDomain *domain,
@@ -692,7 +693,7 @@ gpointer  mono_arch_create_jump_trampoline      (MonoMethod *method);
 gpointer  mono_arch_create_class_init_trampoline(MonoVTable *vtable);
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg);
 GList    *mono_arch_get_global_int_regs         (MonoCompile *cfg);
-void      mono_arch_patch_code                  (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji);
+void      mono_arch_patch_code                  (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors);
 void      mono_arch_flush_icache                (guint8 *code, gint size);
 int       mono_arch_max_epilog_size             (MonoCompile *cfg);
 guint8   *mono_arch_emit_prolog                 (MonoCompile *cfg);

@@ -2945,7 +2945,7 @@ mono_arch_register_lowlevel_calls (void)
 }
 
 void
-mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji)
+mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
 {
 	MonoJumpInfo *patch_info;
 
@@ -3033,7 +3033,8 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 				/* Done by the generated code */
 				;
 			else {
-				mono_runtime_class_init (vtable);
+				if (run_cctors)
+					mono_runtime_class_init (vtable);
 			}
 			g_assert_not_reached ();
 			*((gconstpointer *)(ip + 1)) = 

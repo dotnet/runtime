@@ -2205,7 +2205,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 		}
 	}
 
-	/* 
+	/*
 	 * if we can initialize the class of the method right away, we do,
 	 * otherwise we don't allow inlining if the class needs initialization,
 	 * since it would mean inserting a call to mono_runtime_class_init()
@@ -2213,8 +2213,10 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	 */
 	if (!(cfg->opt & MONO_OPT_SHARED)) {
 		vtable = mono_class_vtable (cfg->domain, method->klass);
-		if (method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)
-			mono_runtime_class_init (vtable);
+		if (method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) {
+			if (cfg->run_cctors)
+				mono_runtime_class_init (vtable);
+		}
 		else if (!vtable->initialized && mono_class_needs_cctor_run (method->klass, NULL))
 			return FALSE;
 	} else {
@@ -4248,7 +4250,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						if (cfg->verbose_level > 2)
 							g_print ("class %s.%s needs init call for %s\n", klass->name_space, klass->name, field->name);
 					} else {
-						mono_runtime_class_init (vtable);
+						if (cfg->run_cctors)
+							mono_runtime_class_init (vtable);
 					}
 					addr = (char*)vtable->data + field->offset;
 
@@ -6982,7 +6985,7 @@ mono_codegen (MonoCompile *cfg)
 				 mono_method_full_name (cfg->method, TRUE), 
 				 cfg->native_code, cfg->native_code + cfg->code_len, cfg->domain->friendly_name);
 
-	mono_arch_patch_code (cfg->method, cfg->domain, cfg->native_code, cfg->patch_info);
+	mono_arch_patch_code (cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors);
 
 	mono_arch_flush_icache (cfg->native_code, cfg->code_len);
 
@@ -7175,7 +7178,7 @@ mono_local_cprop (MonoCompile *cfg)
 }
 
 MonoCompile*
-mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int parts)
+mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, int parts)
 {
 	MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
 	guint8 *ip = (guint8 *)header->code;
@@ -7192,6 +7195,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 	cfg->mempool = mono_mempool_new ();
 	cfg->opt = opts;
 	cfg->prof_options = mono_profiler_get_events ();
+	cfg->run_cctors = run_cctors;
 	cfg->bb_hash = g_hash_table_new (NULL, NULL);
 	cfg->domain = domain;
 	cfg->verbose_level = mini_verbose;
@@ -7510,7 +7514,7 @@ mono_jit_compile_method_inner (MonoMethod *method)
 		return NULL;
 	}
 
-	cfg = mini_method_compile (method, opt, target_domain, 0);
+	cfg = mini_method_compile (method, opt, target_domain, TRUE, 0);
 	code = cfg->native_code;
 
 	g_hash_table_insert (jit_code_hash, method, cfg->jit_info);
@@ -7529,7 +7533,7 @@ mono_jit_compile_method_inner (MonoMethod *method)
 			g_hash_table_remove (target_domain->jump_target_hash, method);
 		}
 		for (tmp = list; tmp; tmp = tmp->next)
-			mono_arch_patch_code (NULL, target_domain, tmp->data, &patch_info);
+			mono_arch_patch_code (NULL, target_domain, tmp->data, &patch_info, TRUE);
 		g_slist_free (list);
 	}
 	/* make sure runtime_init is called */
