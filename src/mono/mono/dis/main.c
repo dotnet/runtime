@@ -243,8 +243,8 @@ dis_field_list (MonoImage *m, guint32 start, guint32 end)
 
 static map_t method_access_map [] = {
 	{ METHOD_ATTRIBUTE_COMPILER_CONTROLLED, "compilercontrolled " },
-	{ METHOD_ATTRIBUTE_PRIVATE,             "private" },
-	{ METHOD_ATTRIBUTE_FAM_AND_ASSEM,       "famandassem" },
+	{ METHOD_ATTRIBUTE_PRIVATE,             "private " },
+	{ METHOD_ATTRIBUTE_FAM_AND_ASSEM,       "famandassem " },
 	{ METHOD_ATTRIBUTE_ASSEM,               "assembly " },
 	{ METHOD_ATTRIBUTE_FAMILY,              "family " },
 	{ METHOD_ATTRIBUTE_FAM_OR_ASSEM,        "famorassem " },
