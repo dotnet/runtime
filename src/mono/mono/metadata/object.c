@@ -851,9 +851,48 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	return mono_runtime_exec_main (method, args, exc);
 }
 
+/* Used in mono_unhandled_exception */
+static MonoObject *
+create_unhandled_exception_eventargs (MonoObject *exc)
+{
+	MonoClass *klass;
+	gpointer args [2];
+	MonoMethod *method;
+	MonoBoolean is_terminating = TRUE;
+	MonoObject *obj;
+	gint i;
+
+	klass = mono_class_from_name (mono_defaults.corlib, "System", "UnhandledExceptionEventArgs");
+	g_assert (klass);
+
+	mono_class_init (klass);
+
+	/* UnhandledExceptionEventArgs only has 1 public ctor with 2 args */
+	for (i = 0; i < klass->method.count; ++i) {
+		method = klass->methods [i];
+		if (!strcmp (".ctor", method->name) &&
+		    method->signature->param_count == 2 &&
+		    method->flags & METHOD_ATTRIBUTE_PUBLIC)
+			break;
+		method = NULL;
+	}
+
+	g_assert (method);
+
+	args [0] = exc;
+	args [1] = &is_terminating;
+
+	obj = mono_object_new (mono_domain_get (), klass);
+	mono_runtime_invoke (method, obj, args, NULL);
+
+	return obj;
+}
+
 /*
- * We call this function when we dectect an unhandled exception. It invokes the
- * UnhandledException event in AppDomain or print a warning to the console 
+ * We call this function when we detect an unhandled exception
+ * in the default domain.
+ * It invokes the * UnhandledException event in AppDomain or prints
+ * a warning to the console 
  */
 void
 mono_unhandled_exception (MonoObject *exc)
@@ -869,19 +908,21 @@ mono_unhandled_exception (MonoObject *exc)
 	if (exc->vtable->klass != mono_defaults.threadabortexception_class) {
 		delegate = *(MonoObject **)(((char *)domain->domain) + field->offset); 
 
-		if (!delegate) {
+		if (domain != mono_root_domain || !delegate) {
 			mono_print_unhandled_exception (exc);
 		} else {
 			MonoObject *e = NULL;
 			gpointer pa [2];
 
-			/* fixme: pass useful arguments */
-			pa [0] = NULL;
-			pa [1] = NULL;
+			pa [0] = domain->domain;
+			pa [1] = create_unhandled_exception_eventargs (exc);
 			mono_runtime_delegate_invoke (delegate, pa, &e);
 			
-			if (e)
-				g_warning ("exception inside UnhandledException handler!");
+			if (e) {
+				gchar *msg = mono_string_to_utf8 (((MonoException *) e)->message);
+				g_warning ("exception inside UnhandledException handler: %s\n", msg);
+				g_free (msg);
+			}
 		}
 	}
 }
