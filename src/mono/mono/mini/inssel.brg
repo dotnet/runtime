@@ -1333,10 +1333,19 @@ reg: OP_UNBOXCAST (reg) {
 	int vtable_reg = mono_regstate_next_int (s->rs);
 	int klass_reg = mono_regstate_next_int (s->rs);
 	int eclass_reg = mono_regstate_next_int (s->rs);
+	int rank_reg = mono_regstate_next_int (s->rs);
 
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, rank_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, rank));
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, element_class));
+
+	/* FIXME: generics */
+	g_assert (klass->rank == 0);
+
+	// Check rank == 0
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, rank_reg, 0);
+	MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
 
 	if (mono_compile_aot) {
 		int const_reg = mono_regstate_next_int (s->rs);
@@ -1497,27 +1506,6 @@ lreg: OP_LSHR (lreg, reg) {
 
 lreg: OP_LSHR_UN (lreg, reg) {
 	g_assert_not_reached ();
-}
-
-reg: CEE_UNBOX (reg) {
-	int vtable_reg = mono_regstate_next_int (s->rs);
-	int class_reg = mono_regstate_next_int (s->rs);
-	int element_class_reg = mono_regstate_next_int (s->rs);
-
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, vtable_reg, state->left->reg1, G_STRUCT_OFFSET (MonoObject, vtable));
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, class_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, element_class_reg, class_reg, G_STRUCT_OFFSET (MonoClass, element_class));
-
-	if (mono_compile_aot) {
-		/* fixme: make it work with the AOT compiler */
-		g_assert_not_reached ();
-	} else {
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, element_class_reg, tree->inst_newa_class);
-	}
-
-	MONO_EMIT_NEW_COND_EXC (s, NE_UN, "InvalidCastException");
-	MONO_EMIT_BIALU_IMM (s, tree, CEE_ADD, state->reg1, state->left->reg1, sizeof (MonoObject));
-	g_warning ("untested code!!");
 }
 
 #

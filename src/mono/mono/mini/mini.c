@@ -686,6 +686,27 @@ mono_find_final_block (MonoCompile *cfg, unsigned char *ip, unsigned char *targe
 	return res;
 }
 
+MonoInst *
+mono_find_spvar_for_region (MonoCompile *cfg, int region)
+{
+	return g_hash_table_lookup (cfg->spvars, GINT_TO_POINTER (region));
+}
+
+static void
+mono_create_spvar_for_region (MonoCompile *cfg, int region)
+{
+	MonoInst *var;
+
+	var = g_hash_table_lookup (cfg->spvars, GINT_TO_POINTER (region));
+	if (var)
+		return;
+
+	var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+	/* prevent it from being register allocated */
+	var->flags |= MONO_INST_INDIRECT;
+
+	g_hash_table_insert (cfg->spvars, GINT_TO_POINTER (region), var);
+}
 
 static void
 df_visit (MonoBasicBlock *start, int *dfn, MonoBasicBlock **array)
@@ -2559,9 +2580,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			filter_lengths = alloca (size);
 			memset (filter_lengths, 0, size);
 
-			cfg->spvar = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
-			/* prevent it from being register allocated */
-			cfg->spvar->flags |= MONO_INST_INDIRECT;
+			cfg->spvars = g_hash_table_new (NULL, NULL);
 		}
 		/* handle exception clauses */
 		for (i = 0; i < header->num_clauses; ++i) {
@@ -5226,6 +5245,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		MonoBasicBlock *bb;
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 			bb->region = mono_find_block_region (cfg, bb->real_offset, filter_lengths);
+			if (cfg->spvars)
+				mono_create_spvar_for_region (cfg, bb->region);
 			if (cfg->verbose_level > 2)
 				g_print ("REGION BB%d IL_%04x ID_%08X\n", bb->block_num, bb->real_offset, bb->region);
 		}
@@ -5885,6 +5906,8 @@ mono_destroy_compile (MonoCompile *cfg)
 	g_hash_table_destroy (cfg->bb_hash);
 	if (cfg->rs)
 		mono_regstate_free (cfg->rs);
+	if (cfg->spvars)
+		g_hash_table_destroy (cfg->spvars);
 	mono_mempool_destroy (cfg->mempool);
 	g_list_free (cfg->ldstr_list);
 
@@ -6848,7 +6871,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 	cfg->mempool = mono_mempool_new ();
 	cfg->opt = opts;
 	cfg->prof_options = mono_profiler_get_events ();
-	cfg->bb_hash = g_hash_table_new (g_direct_hash, NULL);
+	cfg->bb_hash = g_hash_table_new (NULL, NULL);
 	cfg->domain = domain;
 	cfg->verbose_level = mini_verbose;
 	cfg->intvars = mono_mempool_alloc0 (cfg->mempool, sizeof (guint16) * STACK_MAX * 

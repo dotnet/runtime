@@ -11,18 +11,21 @@
 #
 
 stmt: OP_START_HANDLER {
-	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, s->spvar->inst_basereg, s->spvar->inst_offset, X86_ESP);
+	MonoInst *spvar = mono_find_spvar_for_region (s, s->cbb->region);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, spvar->inst_basereg, spvar->inst_offset, X86_ESP);
 }
 
 stmt: CEE_ENDFINALLY {
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, X86_ESP, s->spvar->inst_basereg, s->spvar->inst_offset); 
+	MonoInst *spvar = mono_find_spvar_for_region (s, s->cbb->region);
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, X86_ESP, spvar->inst_basereg, spvar->inst_offset); 
 	tree->opcode = CEE_RET;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: OP_ENDFILTER (reg) {
+	MonoInst *spvar = mono_find_spvar_for_region (s, s->cbb->region);
 	MONO_EMIT_NEW_UNALU (s, OP_MOVE, X86_EAX, state->left->reg1);
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, X86_ESP, s->spvar->inst_basereg, s->spvar->inst_offset); 
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, X86_ESP, spvar->inst_basereg, spvar->inst_offset); 
 	tree->opcode = CEE_RET;
 	mono_bblock_add_inst (s->cbb, tree);
 }

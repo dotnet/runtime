@@ -455,7 +455,9 @@ typedef struct {
 
 	MonoInst        *exvar; /* the exception object passed to catch/filter blocks */
 	MonoInst        *domainvar; /* a cache for the current domain */
-	MonoInst        *spvar; /* a place to store the stack pointer (used by handlers) */
+	/* A hashtable of region ID-> SP var mappings */
+    /* An SP var is a place to store the stack pointer (used by handlers) */
+	GHashTable      *spvars;
 
 	GList           *ldstr_list; /* used by AOT */
 	
@@ -611,6 +613,7 @@ void        mini_cleanup                   (MonoDomain *domain);
 
 /* helper methods */
 MonoJumpInfoToken * mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token);
+MonoInst* mono_find_spvar_for_region        (MonoCompile *cfg, int region);
 void      mono_precompile_assemblies        (void);
 int       mono_parse_default_optimizations  (const char* p);
 void      mono_bblock_add_inst              (MonoBasicBlock *bb, MonoInst *inst);
