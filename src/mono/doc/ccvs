@@ -262,6 +262,74 @@
 	cvs commit file-1.cs file-2.cs
 </pre>
 
+* Using SVN
+	
+	This is a small tutorial for using SVN (subversion).
+
+** Generating a key
+
+	Follow the cvs instructions above.
+
+** Checking out the sources
+
+	To checkout the sources for the first time use the command:
+
+	Note: You should be running 0.35.1 (latest) of svn before attempting
+	anything here.
+
+<pre>
+	svn co svn+ssh://mono-cvs.ximian.com/svn/monodevelop/trunk/MonoDevelop
+</pre>
+	
+	If you have a different username on mono-cvs and the local computer
+	you can do the following:
+
+<pre>
+	svn co svn+ssh://username@mono-cvs.ximian.com/svn/monodevelop/trunk/MonoDevelop
+</pre>
+
+	before checking out.
+
+** Updating your sources
+
+	You can update your repository to the latest copy of MonoDevelop by
+	running the following command:
+
+<pre>
+	svn up
+</pre>
+
+	from inside your repository.
+
+** Committing your work
+
+	Before you commit anything, you should first update to the latest
+	sources by following the updating directions. After you are up to date
+	you need to run a:
+
+<pre>
+	svn add filename
+</pre>
+
+	for every file that you have created. You can get a list of these files
+	by running:
+
+<pre>
+	svn status
+</pre>
+
+	After all the files are added, run:
+
+<pre>
+	svn commit
+</pre>
+
+	to commit your changes.
+
+** For more information
+
+	Look at the MonoDevelop website (coming soon)
+
 * Keeping track of changes.
 
 	We provide two e-mail based mechanisms to keep track of
