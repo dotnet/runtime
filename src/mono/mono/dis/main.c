@@ -764,6 +764,35 @@ dis_interfaces (MonoImage *m, guint32 typedef_row)
 	}
 }
 
+static void
+dis_genericparam (MonoImage *m, guint32 typedef_row)
+{
+        MonoTableInfo *t = &m->tables [MONO_TABLE_GENERICPARAM];
+	guint32 cols [MONO_GENERICPARAM_SIZE];
+	int i, own_tok, table, idx, found_count;
+        
+        found_count = 0;
+	for (i = 1; i <= t->rows; i++) {
+		mono_metadata_decode_row (t, i - 1, cols, MONO_GENERICPARAM_SIZE);
+                own_tok = cols [MONO_GENERICPARAM_OWNER];
+                table = own_tok & 0x03;
+                idx = own_tok >> 2;
+                
+                if (table != 0 || idx != typedef_row)
+                        continue;
+
+                if (found_count == 0)
+                        fprintf (output, "<%s", mono_metadata_string_heap (m, cols [MONO_GENERICPARAM_NAME]));
+                else
+                        fprintf (output, ", %s", mono_metadata_string_heap (m, cols [MONO_GENERICPARAM_NAME]));
+
+                found_count++;
+	}
+
+        if (found_count)
+                fprintf (output, ">");
+}
+
 /**
  * dis_type:
  * @m: metadata context
@@ -796,7 +825,9 @@ dis_type (MonoImage *m, int n)
 	name = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]);
 
 	if ((cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS){
-		fprintf (output, "  .class %s%s\n", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), name);
+		fprintf (output, "  .class %s%s", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), name);
+                dis_genericparam (m, n + 1);
+                fprintf (output, "\n");
 		if (cols [MONO_TYPEDEF_EXTENDS]) {
 			char *base = get_typedef_or_ref (m, cols [MONO_TYPEDEF_EXTENDS]);
 			fprintf (output, "  \textends %s\n", base);
