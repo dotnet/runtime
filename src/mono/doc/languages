@@ -37,7 +37,16 @@
 ** Oberon
 
 	This Oberon compiler is written in Oberon.NET (another self
-	hosting compiler):
+	hosting compiler).
+
+	The main site <a href="http://www.oberon.ethz.ch/oberon.net/">http://www.oberon.ethz.ch/oberon.net/</a>
+
+	Download:
+	<a href="http://www.oberon.ethz.ch/oberon.net/download/">http://www.oberon.ethz.ch/oberon.net/download/</a>
+
+	Examples:
+	<a href="http://www.oberon.ethz.ch/oberon.net/examples/">http://www.oberon.ethz.ch/oberon.net/examples/</a>
+
 
 	<a href="http://www.superin.formativ.net/mono/oberon/oberon.zip">http://www.superin.formativ.net/mono/oberon/oberon.zip</a>
 

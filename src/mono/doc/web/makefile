@@ -1,5 +1,6 @@
 CSCRIPT = $(SYSTEMROOT)/system32/cscript.exe
 CSC=csc
+
 CORCOMPARE=../../../mcs/tools/corcompare
 
 OBJECTS=	\
@@ -108,3 +109,6 @@ src/corlib.xml: ../../../mcs/class/lib/corlib_cmp.dll $(CORCOMPARE)/CorCompare.e
 
 ../class-status: ../class-status.in
 	cp -f $< $@
+
+make-rss:
+	$(CSC) make-rss.cs -o
