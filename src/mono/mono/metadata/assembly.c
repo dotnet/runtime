@@ -270,9 +270,10 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 	if (cols [MONO_ASSEMBLY_PUBLIC_KEY]) {
 		gchar* token = g_malloc (8);
 		gchar* encoded;
+		int len;
 
 		aname->public_key = mono_metadata_blob_heap (image, cols [MONO_ASSEMBLY_PUBLIC_KEY]);
-		int len = mono_metadata_decode_blob_size (aname->public_key, &aname->public_key);
+		len = mono_metadata_decode_blob_size (aname->public_key, &aname->public_key);
 
 		mono_digest_get_public_token (token, aname->public_key, len);
 		encoded = encode_public_tok (token, 8);
