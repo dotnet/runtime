@@ -213,7 +213,7 @@ mono_ssa_rename_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb, MonoIn
 			idx = inst->inst_i0->inst_c0;
 			g_assert (idx < max_vars);
 
-			if (!stack [idx] && bb == cfg->bb_init) {
+			if ((!stack [idx]) && (bb == cfg->bb_init) && (inst->inst_i0->opcode != OP_ARG)) {
 				new_var = cfg->varinfo [idx];
 			} else {
 				new_var = mono_compile_create_var (cfg, inst->inst_i0->inst_vtype,  inst->inst_i0->opcode);
