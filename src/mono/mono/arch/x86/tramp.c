@@ -25,34 +25,6 @@
 
 #define ARG_SIZE	sizeof (stackval)
 
-static char *
-mono_get_ansi_string (MonoObject *o)
-{
-	MonoStringObject *s = (MonoStringObject *)o;
-	char *as, *vector;
-	int i;
-
-	g_assert (o != NULL);
-
-	if (!s->length)
-		return g_strdup ("");
-
-	vector = s->c_str->vector;
-
-	g_assert (vector != NULL);
-
-	as = g_malloc (s->length + 1);
-
-	/* fixme: replace with a real unicode/ansi conversion */
-	for (i = 0; i < s->length; i++) {
-		as [i] = vector [i*2];
-	}
-
-	as [i] = '\0';
-
-	return as;
-}
-
 MonoPIFunc
 mono_create_trampoline (MonoMethod *method)
 {
@@ -200,7 +172,7 @@ mono_create_trampoline (MonoMethod *method)
 			}
 			/*if (frame->method->flags & PINVOKE_ATTRIBUTE_CHAR_SET_ANSI*/
 			x86_push_membase (p, X86_EDX, arg_pos);
-			x86_mov_reg_imm (p, X86_EDX, mono_get_ansi_string);
+			x86_mov_reg_imm (p, X86_EDX, mono_string_to_utf8);
 			x86_call_reg (p, X86_EDX);
 			x86_alu_reg_imm (p, X86_ADD, X86_ESP, 4);
 			x86_push_reg (p, X86_EAX);

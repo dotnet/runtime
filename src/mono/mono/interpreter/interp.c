@@ -156,7 +156,7 @@ newobj (MonoImage *image, guint32 token)
 
 		idx = mono_metadata_typedef_from_method (image, token);
 
-		result = mono_new_object_from_token (image, MONO_TOKEN_TYPE_DEF | idx);
+		result = mono_object_new_from_token (image, MONO_TOKEN_TYPE_DEF | idx);
 		break;
 	}
 	case MONO_TOKEN_MEMBER_REF: {
@@ -176,10 +176,10 @@ newobj (MonoImage *image, guint32 token)
 
 		switch (table){
 		case 0: /* TypeDef */
-			result = mono_new_object_from_token (image, MONO_TOKEN_TYPE_DEF | idx);
+			result = mono_object_new_from_token (image, MONO_TOKEN_TYPE_DEF | idx);
 			break;
 		case 1: /* TypeRef */
-			result = mono_new_object_from_token (image, MONO_TOKEN_TYPE_REF | idx);
+			result = mono_object_new_from_token (image, MONO_TOKEN_TYPE_REF | idx);
 			break;
 		case 2: /* ModuleRef */
 			g_error ("Unhandled: ModuleRef");
@@ -188,7 +188,7 @@ newobj (MonoImage *image, guint32 token)
 			g_error ("Unhandled: MethodDef");
 			
 		case 4: /* TypeSpec */			
-			result = mono_new_object_from_token (image, MONO_TOKEN_TYPE_SPEC | idx);
+			result = mono_object_new_from_token (image, MONO_TOKEN_TYPE_SPEC | idx);
 		}
 		break;
 	}
@@ -238,7 +238,7 @@ get_named_exception (const char *name)
 
 	klass = mono_class_from_name (mono_defaults.corlib, "System", name);
 
-	o = mono_new_object (klass);
+	o = mono_object_new (klass);
 	g_assert (o != NULL);
 
 	for (i = 0; i < klass->method.count; ++i) {
@@ -538,14 +538,14 @@ ves_array_set (MonoInvocation *frame)
 {
 	stackval *sp = frame->stack_args;
 	MonoObject *o;
-	MonoArrayObject *ao;
+	MonoArray *ao;
 	MonoArrayClass *ac;
 	gint32 i, t, pos, esize;
 	gpointer ea;
 	MonoType *mt;
 
 	o = frame->obj;
-	ao = (MonoArrayObject *)o;
+	ao = (MonoArray *)o;
 	ac = (MonoArrayClass *)o->klass;
 
 	g_assert (ac->rank >= 1);
@@ -562,7 +562,7 @@ ves_array_set (MonoInvocation *frame)
 	}
 
 	esize = mono_array_element_size (ac);
-	ea = (char*)ao->vector + (pos * esize);
+	ea = mono_array_addr_with_size (ao, esize, pos);
 
 	mt = frame->method->signature->params [ac->rank];
 	stackval_to_data (mt, &sp [ac->rank], ea);
@@ -573,14 +573,14 @@ ves_array_get (MonoInvocation *frame)
 {
 	stackval *sp = frame->stack_args;
 	MonoObject *o;
-	MonoArrayObject *ao;
+	MonoArray *ao;
 	MonoArrayClass *ac;
 	gint32 i, pos, esize;
 	gpointer ea;
 	MonoType *mt;
 
 	o = frame->obj;
-	ao = (MonoArrayObject *)o;
+	ao = (MonoArray *)o;
 	ac = (MonoArrayClass *)o->klass;
 
 	g_assert (ac->rank >= 1);
@@ -591,7 +591,7 @@ ves_array_get (MonoInvocation *frame)
 			ao->bounds [i].lower_bound;
 
 	esize = mono_array_element_size (ac);
-	ea = (char*)ao->vector + (pos * esize);
+	ea = mono_array_addr_with_size (ao, esize, pos);
 
 	mt = frame->method->signature->ret;
 	stackval_from_data (mt, frame->retval, ea);
@@ -2469,7 +2469,7 @@ ves_exec_method (MonoInvocation *frame)
 			ip++;
 			token = read32 (ip);
 			class = mono_class_get (image, token);
-			o = mono_new_szarray (class, sp [-1].data.i);
+			o = mono_array_new (class, sp [-1].data.i);
 			ip += 4;
 
 			sp [-1].type = VAL_OBJ;
@@ -2478,7 +2478,7 @@ ves_exec_method (MonoInvocation *frame)
 			BREAK;
 		}
 		CASE (CEE_LDLEN) {
-			MonoArrayObject *o;
+			MonoArray *o;
 
 			ip++;
 
@@ -2490,12 +2490,12 @@ ves_exec_method (MonoInvocation *frame)
 			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
 
 			sp [-1].type = VAL_I32;
-			sp [-1].data.i = o->bounds [0].length;
+			sp [-1].data.i = mono_array_length (o);
 
 			BREAK;
 		}
 		CASE (CEE_LDELEMA) {
-			MonoArrayObject *o;
+			MonoArray *o;
 			guint32 esize, token;
 			
 			++ip;
@@ -2508,14 +2508,14 @@ ves_exec_method (MonoInvocation *frame)
 
 			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
 			
-			g_assert (sp [1].data.i >= 0);
-			g_assert (sp [1].data.i < o->bounds [0].length);
+			if (sp [1].data.nati >= mono_array_length (o))
+				THROW_EX (get_exception_index_out_of_range (), ip - 5);
 
 			/* check the array element corresponds to token */
 			esize = mono_array_element_size ((MonoArrayClass *)o->obj.klass);
 			
 			sp->type = VAL_MP;
-			sp->data.p = (char*)((MonoArrayObject *)o)->vector + (sp [1].data.i * esize);
+			sp->data.p = mono_array_addr_with_size (o, esize, sp [1].data.i);
 			sp->data.vt.klass = ((MonoArrayClass *)o->obj.klass)->element_class;
 			++sp;
 			BREAK;
@@ -2531,7 +2531,7 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_LDELEM_R4) /* fall through */
 		CASE (CEE_LDELEM_R8) /* fall through */
 		CASE (CEE_LDELEM_REF) {
-			MonoArrayObject *o;
+			MonoArray *o;
 			mono_u aindex;
 
 			sp -= 2;
@@ -2544,7 +2544,7 @@ ves_exec_method (MonoInvocation *frame)
 			g_assert (MONO_CLASS_IS_ARRAY (o->obj.klass));
 			
 			aindex = sp [1].data.nati;
-			if (aindex >= o->bounds [0].length)
+			if (aindex >= mono_array_length (o))
 				THROW_EX (get_exception_index_out_of_range (), ip);
 			
 			/*
@@ -2552,47 +2552,47 @@ ves_exec_method (MonoInvocation *frame)
 			 */
 			switch (*ip) {
 			case CEE_LDELEM_I1:
-				sp [0].data.i = ((gint8 *)o->vector)[aindex];
+				sp [0].data.i = mono_array_get (o, gint8, aindex);
 				sp [0].type = VAL_I32;
 				break;
 			case CEE_LDELEM_U1:
-				sp [0].data.i = ((guint8 *)o->vector)[aindex];
+				sp [0].data.i = mono_array_get (o, guint8, aindex);
 				sp [0].type = VAL_I32;
 				break;
 			case CEE_LDELEM_I2:
-				sp [0].data.i = ((gint16 *)o->vector)[aindex];
+				sp [0].data.i = mono_array_get (o, gint16, aindex);
 				sp [0].type = VAL_I32;
 				break;
 			case CEE_LDELEM_U2:
-				sp [0].data.i = ((guint16 *)o->vector)[aindex];
+				sp [0].data.i = mono_array_get (o, guint16, aindex);
 				sp [0].type = VAL_I32;
 				break;
 			case CEE_LDELEM_I:
-				sp [0].data.nati = ((mono_i *)o->vector)[aindex];
+				sp [0].data.nati = mono_array_get (o, mono_i, aindex);
 				sp [0].type = VAL_NATI;
 				break;
 			case CEE_LDELEM_I4:
-				sp [0].data.i = ((gint32 *)o->vector)[aindex];
+				sp [0].data.i = mono_array_get (o, gint32, aindex);
 				sp [0].type = VAL_I32;
 				break;
 			case CEE_LDELEM_U4:
-				sp [0].data.i = ((guint32 *)o->vector)[aindex];
+				sp [0].data.i = mono_array_get (o, guint32, aindex);
 				sp [0].type = VAL_I32;
 				break;
 			case CEE_LDELEM_I8:
-				sp [0].data.l = ((gint64 *)o->vector)[aindex];
+				sp [0].data.l = mono_array_get (o, gint64, aindex);
 				sp [0].type = VAL_I64;
 				break;
 			case CEE_LDELEM_R4:
-				sp [0].data.f = ((float *)o->vector)[aindex];
+				sp [0].data.f = mono_array_get (o, float, aindex);
 				sp [0].type = VAL_DOUBLE;
 				break;
 			case CEE_LDELEM_R8:
-				sp [0].data.f = ((double *)o->vector)[aindex];
+				sp [0].data.f = mono_array_get (o, double, aindex);
 				sp [0].type = VAL_DOUBLE;
 				break;
 			case CEE_LDELEM_REF:
-				sp [0].data.p = ((gpointer *)o->vector)[aindex];
+				sp [0].data.p = mono_array_get (o, gpointer, aindex);
 				sp [0].data.vt.klass = NULL;
 				sp [0].type = VAL_OBJ;
 				break;
@@ -2612,9 +2612,8 @@ ves_exec_method (MonoInvocation *frame)
 		CASE (CEE_STELEM_R4) /* fall through */
 		CASE (CEE_STELEM_R8) /* fall through */
 		CASE (CEE_STELEM_REF) {
-			MonoArrayObject *o;
+			MonoArray *o;
 			MonoArrayClass *ac;
-			MonoObject *v;
 			mono_u aindex;
 
 			sp -= 3;
@@ -2628,7 +2627,7 @@ ves_exec_method (MonoInvocation *frame)
 			ac = (MonoArrayClass *)o->obj.klass;
 		    
 			aindex = sp [1].data.nati;
-			if (aindex >= o->bounds [0].length)
+			if (aindex >= mono_array_length (o))
 				THROW_EX (get_exception_index_out_of_range (), ip);
 
 			/*
@@ -2636,32 +2635,29 @@ ves_exec_method (MonoInvocation *frame)
 			 */
 			switch (*ip) {
 			case CEE_STELEM_I:
-				((mono_i *)o->vector)[aindex] = sp [2].data.nati;
+				mono_array_set (o, mono_i, aindex, sp [2].data.nati);
 				break;
 			case CEE_STELEM_I1:
-				((gint8 *)o->vector)[aindex] = sp [2].data.i;
+				mono_array_set (o, gint8, aindex, sp [2].data.i);
 				break;
 			case CEE_STELEM_I2:
-				((gint16 *)o->vector)[aindex] = sp [2].data.i;
+				mono_array_set (o, gint16, aindex, sp [2].data.i);
 				break;
 			case CEE_STELEM_I4:
-				((gint32 *)o->vector)[aindex] = sp [2].data.i;
+				mono_array_set (o, gint32, aindex, sp [2].data.i);
 				break;
 			case CEE_STELEM_I8:
-				((gint64 *)o->vector)[aindex] = sp [2].data.l;
+				mono_array_set (o, gint64, aindex, sp [2].data.l);
 				break;
 			case CEE_STELEM_R4:
-				((float *)o->vector)[aindex] = sp [2].data.f;
+				mono_array_set (o, float, aindex, sp [2].data.f);
 				break;
 			case CEE_STELEM_R8:
-				((double *)o->vector)[aindex] = sp [2].data.f;
+				mono_array_set (o, double, aindex, sp [2].data.f);
 				break;
 			case CEE_STELEM_REF:
 				g_assert (sp [2].type == VAL_OBJ);
-			
-				v = sp [2].data.p;
-
-				((gpointer *)o->vector)[aindex] = sp [2].data.p;
+				mono_array_set (o, gpointer, aindex, sp [2].data.p);
 				break;
 			default:
 				ves_abort();
@@ -3281,12 +3277,12 @@ ves_exec (MonoAssembly *assembly, int argc, char *argv[])
 	if (method->signature->param_count) {
 		int i;
 		stackval argv_array;
-		MonoArrayObject *arr = (MonoArrayObject*)mono_new_szarray (mono_defaults.string_class, argc);
+		MonoArray *arr = (MonoArray*)mono_array_new (mono_defaults.string_class, argc);
 		argv_array.type = VAL_OBJ;
 		argv_array.data.p = arr;
 		argv_array.data.vt.klass = NULL;
 		for (i=0; i < argc; ++i) {
-			((gpointer *)arr->vector)[i] = mono_new_string (argv [i]);
+			mono_array_set (arr, gpointer, i, mono_string_new (argv [i]));
 		}
 		INIT_FRAME (&call, NULL, NULL, &argv_array, &result, method);
 	} else {

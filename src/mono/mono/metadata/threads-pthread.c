@@ -15,6 +15,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <sched.h>
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/threads.h>
@@ -829,7 +830,7 @@ void mono_thread_init(void)
 	 * object? In theory, I guess the whole program should act as
 	 * though exit() were called :-)
 	 */
-	main_thread=mono_new_object(thread_class);
+	main_thread = mono_object_new (thread_class);
 
 	pthread_mutex_init(&threads_mutex, NULL);
 	pthread_mutex_init(&data_slots_mutex, NULL);

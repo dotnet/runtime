@@ -45,14 +45,14 @@ mono_object_free (MonoObject *o)
 }
 
 /**
- * mono_new_object:
+ * mono_object_new:
  * @klass: the class of the object that we want to create
  *
  * Returns: A newly created object whose definition is
  * looked up using @klass
  */
 MonoObject *
-mono_new_object (MonoClass *klass)
+mono_object_new (MonoClass *klass)
 {
 	MonoObject *o;
 
@@ -68,7 +68,7 @@ mono_new_object (MonoClass *klass)
 }
 
 /**
- * mono_new_object_from_token:
+ * mono_object_new_from_token:
  * @image: Context where the type_token is hosted
  * @token: a token of the type that we want to create
  *
@@ -76,13 +76,13 @@ mono_new_object (MonoClass *klass)
  * looked up using @token in the @image image
  */
 MonoObject *
-mono_new_object_from_token  (MonoImage *image, guint32 token)
+mono_object_new_from_token  (MonoImage *image, guint32 token)
 {
 	MonoClass *class;
 
 	class = mono_class_get (image, token);
 
-	return mono_new_object (class);
+	return mono_object_new (class);
 }
 
 
@@ -107,7 +107,7 @@ mono_object_clone (MonoObject *obj)
 }
 
 /*
- * mono_new_szarray:
+ * mono_array_new:
  * @image: image where the object is being referenced
  * @eclass: element class
  * @n: number of array elements
@@ -115,19 +115,19 @@ mono_object_clone (MonoObject *obj)
  * This routine creates a new szarray with @n elements of type @token
  */
 MonoObject *
-mono_new_szarray (MonoClass *eclass, guint32 n)
+mono_array_new (MonoClass *eclass, guint32 n)
 {
 	MonoClass *c;
 	MonoObject *o;
-	MonoArrayObject *ao;
+	MonoArray *ao;
 	MonoArrayClass *ac;
 
 	c = mono_array_class_get (eclass, 1);
 	g_assert (c != NULL);
 
-	o = mono_new_object (c);
+	o = mono_object_new (c);
 
-	ao = (MonoArrayObject *)o;
+	ao = (MonoArray *)o;
 	ac = (MonoArrayClass *)c;
 
 	ao->bounds = g_malloc0 (sizeof (MonoArrayBounds));
@@ -140,26 +140,26 @@ mono_new_szarray (MonoClass *eclass, guint32 n)
 }
 
 /**
- * mono_new_utf16_string:
+ * mono_string_new_utf16:
  * @text: a pointer to an utf16 string
  * @len: the length of the string
  *
  * Returns: A newly created string object which contains @text.
  */
 MonoObject *
-mono_new_utf16_string (const char *text, gint32 len)
+mono_string_new_utf16 (const guint16 *text, gint32 len)
 {
 	MonoObject *s;
-	MonoArrayObject *ca;
+	MonoArray *ca;
 
-	s = mono_new_object (mono_defaults.string_class);
+	s = mono_object_new (mono_defaults.string_class);
 	g_assert (s != NULL);
 
-	ca = (MonoArrayObject *)mono_new_szarray (mono_defaults.string_class, len);
+	ca = (MonoArray *)mono_array_new (mono_defaults.string_class, len);
 	g_assert (ca != NULL);
 	
-	((MonoStringObject *)s)->c_str = ca;
-	((MonoStringObject *)s)->length = len;
+	((MonoString *)s)->c_str = ca;
+	((MonoString *)s)->length = len;
 
 	memcpy (ca->vector, text, len * 2);
 
@@ -167,13 +167,13 @@ mono_new_utf16_string (const char *text, gint32 len)
 }
 
 /**
- * mono_new_string:
+ * mono_string_new:
  * @text: a pointer to an utf8 string
  *
  * Returns: A newly created string object which contains @text.
  */
 MonoObject *
-mono_new_string (const char *text)
+mono_string_new (const char *text)
 {
 	MonoObject *o;
 	guint16 *ut;
@@ -187,7 +187,7 @@ mono_new_string (const char *text)
 	for (i = 0; i < l; i++)
 		ut [i] = text[i];
 	
-	o = mono_new_utf16_string ((char *)ut, l);
+	o = mono_string_new_utf16 (ut, l);
 
 	g_free (ut);
 
@@ -298,7 +298,7 @@ MonoObject*
 mono_string_intern (MonoObject *o)
 {
 	MonoObject *res;
-	MonoStringObject *str = (MonoStringObject*) o;
+	MonoString *str = (MonoString*) o;
 	char *ins = g_malloc (4 + str->length * 2);
 	char *p;
 	
@@ -331,8 +331,8 @@ mono_ldstr (MonoImage *image, guint32 index)
 		return o;
 	
 	len = mono_metadata_decode_blob_size (str, &str);
-	o = mono_new_utf16_string (str, len >> 1);
-	g_hash_table_insert (ldstr_table, sig, o);
+	o = mono_string_new_utf16 (str, len >> 1);
+	g_hash_table_insert (ldstr_table, (gpointer)sig, o);
 
 	return o;
 }
@@ -340,7 +340,7 @@ mono_ldstr (MonoImage *image, guint32 index)
 char *
 mono_string_to_utf8 (MonoObject *o)
 {
-	MonoStringObject *s = (MonoStringObject *)o;
+	MonoString *s = (MonoString *)o;
 	char *as, *vector;
 	int i;
 

@@ -1,3 +1,9 @@
+
+Mon Oct 8 20:27:50 CEST 2001 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: define NO_UNALIGNED_ACCESS for platforms that
+	can't read on unaligned boundaries
+
 2001-10-04  Dick Porter  <dick@ximian.com>
 
 	* configure.in: Do some deeper checks on pthreads for some of the

@@ -134,7 +134,7 @@ typedef struct {
 } MonoExceptionClause;
 
 typedef struct _MonoType MonoType;
-typedef struct _MonoArray MonoArray;
+typedef struct _MonoArrayType MonoArrayType;
 typedef struct _MonoMethodSignature MonoMethodSignature;
 
 typedef struct {
@@ -142,7 +142,7 @@ typedef struct {
 	unsigned int token    : 31;
 } MonoCustomMod;
 
-struct _MonoArray {
+struct _MonoArrayType {
 	MonoType *type;
 	int rank;
 	int numsizes;
@@ -155,7 +155,7 @@ struct _MonoType {
 	union {
 		MonoClass *klass; /* for VALUETYPE and CLASS */
 		MonoType *type;   /* for PTR and SZARRAY */
-		MonoArray *array; /* for ARRAY */
+		MonoArrayType *array; /* for ARRAY */
 		MonoMethodSignature *method;
 	} data;
 	unsigned int attrs    : 16; /* param attributes or field flags */
@@ -207,10 +207,10 @@ int            mono_metadata_parse_custom_mod  (MonoMetadata      *m,
 						MonoCustomMod   *dest,
 						const char      *ptr,
 						const char     **rptr);
-MonoArray     *mono_metadata_parse_array       (MonoMetadata      *m,
+MonoArrayType *mono_metadata_parse_array       (MonoMetadata      *m,
 						const char      *ptr,
 						const char     **rptr);
-void           mono_metadata_free_array        (MonoArray       *array);
+void           mono_metadata_free_array        (MonoArrayType     *array);
 MonoType      *mono_metadata_parse_type        (MonoMetadata      *m,
 						MonoParseTypeMode  mode,
 						short              opt_attrs,

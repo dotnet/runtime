@@ -22,7 +22,7 @@ char *get_method              (MonoMetadata *m, guint32 token);
 
 char *dis_stringify_type      (MonoMetadata *m, MonoType *type);
 char *dis_stringify_token     (MonoMetadata *m, guint32 token);
-char *dis_stringify_array     (MonoMetadata *m, MonoArray *array);
+char *dis_stringify_array     (MonoMetadata *m, MonoArrayType *array);
 char *dis_stringify_modifiers (MonoMetadata *m, int n, MonoCustomMod *mod);
 char *dis_stringify_param     (MonoMetadata *m, MonoType *param);
 char *dis_stringify_method_signature (MonoMetadata *m, MonoMethodSignature *method, int methoddef_row);

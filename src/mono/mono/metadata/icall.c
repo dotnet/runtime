@@ -19,15 +19,15 @@
 static MonoObject *
 ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
 {
-	MonoArrayObject *ao, *io;
+	MonoArray *ao, *io;
 	MonoArrayClass *ac, *ic;
 	gint32 i, pos, *ind, esize;
 	gpointer *ea;
 
-	io = (MonoArrayObject *)idxs;
+	io = (MonoArray *)idxs;
 	ic = (MonoArrayClass *)io->obj.klass;
 	
-	ao = (MonoArrayObject *)this;
+	ao = (MonoArray *)this;
 	ac = (MonoArrayClass *)ao->obj.klass;
 
 	g_assert (ic->rank == 1);
@@ -53,18 +53,18 @@ static void
 ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 				 MonoObject *idxs)
 {
-	MonoArrayObject *ao, *io, *vo;
+	MonoArray *ao, *io, *vo;
 	MonoArrayClass *ac, *ic, *vc;
 	gint32 i, pos, *ind, esize;
 	gpointer *ea;
 
-	vo = (MonoArrayObject *)value;
+	vo = (MonoArray *)value;
 	vc = (MonoArrayClass *)vo->obj.klass;
 
-	io = (MonoArrayObject *)idxs;
+	io = (MonoArray *)idxs;
 	ic = (MonoArrayClass *)io->obj.klass;
 	
-	ao = (MonoArrayObject *)this;
+	ao = (MonoArray *)this;
 	ac = (MonoArrayClass *)ao->obj.klass;
 
 	g_assert (ic->rank == 1);
@@ -94,13 +94,13 @@ static void
 ves_icall_array_ctor (MonoObject *this, gint32 n1, ...)
 {
 	va_list ap;
-	MonoArrayObject *ao;
+	MonoArray *ao;
 	MonoArrayClass *ac;
 	gint32 i, s, len, esize;
 
 	va_start (ap, n1);
 
-	ao = (MonoArrayObject *)this;
+	ao = (MonoArray *)this;
 	ac = (MonoArrayClass *)this->klass;
 
 	g_assert (ac->rank >= 1);
@@ -123,13 +123,13 @@ static void
 ves_icall_array_bound_ctor (MonoObject *this, gint32 n1, ...)
 {
 	va_list ap;
-	MonoArrayObject *ao;
+	MonoArray *ao;
 	MonoArrayClass *ac;
 	gint32 i, s, len, esize;
 
 	va_start (ap, n1);
 
-	ao = (MonoArrayObject *)this;
+	ao = (MonoArray *)this;
 	ac = (MonoArrayClass *)this->klass;
 
 	g_assert (ac->rank >= 1);
@@ -169,13 +169,13 @@ ves_icall_System_Array_GetRank (MonoObject *this)
 static gint32
 ves_icall_System_Array_GetLength (MonoObject *this, gint32 dimension)
 {
-	return ((MonoArrayObject *)this)->bounds [dimension].length;
+	return ((MonoArray *)this)->bounds [dimension].length;
 }
 
 static gint32
 ves_icall_System_Array_GetLowerBound (MonoObject *this, gint32 dimension)
 {
-	return ((MonoArrayObject *)this)->bounds [dimension].lower_bound;
+	return ((MonoArray *)this)->bounds [dimension].lower_bound;
 }
 
 static MonoObject *
@@ -189,14 +189,14 @@ ves_icall_app_get_cur_domain ()
 {
 	MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
 
-	return mono_new_object (klass);
+	return mono_object_new (klass);
 }
 
 static MonoObject *
 my_mono_new_object (MonoClass *klass, gpointer data)
 {
 	MonoClassField *field;
-	MonoObject *res = mono_new_object (klass);
+	MonoObject *res = mono_object_new (klass);
 	gpointer *slot;
 
 	field = mono_class_get_field_from_name (klass, "_impl");
@@ -239,7 +239,7 @@ ves_icall_app_define_assembly (MonoObject *appdomain, MonoObject *assembly_name,
 }
 
 static gint32
-ves_icall_get_data_chunk (MonoObject *assb, gint32 type, MonoArrayObject *buf)
+ves_icall_get_data_chunk (MonoObject *assb, gint32 type, MonoArray *buf)
 {
 	MonoDynamicAssembly *ass = object_impl_pointer (assb);
 	MonoObject *ep;
@@ -308,7 +308,7 @@ ves_icall_define_type (MonoObject *moduleb, MonoObject *name, int attrs)
 }
 
 static MonoObject *
-ves_icall_define_method (MonoObject *typeb, MonoObject *name, int attrs, int callconv, MonoObject *rettype, MonoArrayObject *paramtypes)
+ves_icall_define_method (MonoObject *typeb, MonoObject *name, int attrs, int callconv, MonoObject *rettype, MonoArray *paramtypes)
 {
 	MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection.Emit", "MethodBuilder");
 	MonoMethodBuilder *mb = g_new0 (MonoMethodBuilder, 1);
@@ -331,7 +331,7 @@ ves_icall_define_method (MonoObject *typeb, MonoObject *name, int attrs, int cal
 }
 
 static void
-ves_icall_set_method_body (MonoObject *methodb, MonoArrayObject *code, gint32 count)
+ves_icall_set_method_body (MonoObject *methodb, MonoArray *code, gint32 count)
 {
 	MonoMethodBuilder *mb = object_impl_pointer (methodb);
 	if (code->bounds->length < count) {

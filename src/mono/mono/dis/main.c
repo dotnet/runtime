@@ -515,6 +515,9 @@ dis_property_methods (MonoMetadata *m, guint32 prop)
 	char *sig;
 	char *type[] = {NULL, ".set", ".get", NULL, ".other"};
 
+	if (!msemt->base)
+		return
+
 	loc.t = msemt;
 	loc.col_idx = MONO_METHOD_SEMA_ASSOCIATION;
 	loc.idx = (prop << 1) | 1; /* Method association coded index */
@@ -601,6 +604,9 @@ dis_property_list (MonoMetadata *m, guint32 typedef_row)
 	guint32 start, end, i;
 	MonoTableInfo *tdef  = &m->tables [MONO_TABLE_PROPERTYMAP];
 
+	if (!tdef->base)
+		return;
+
 	loc.t = tdef;
 	loc.col_idx = MONO_PROPERTY_MAP_PARENT;
 	loc.idx = typedef_row + 1;
@@ -632,7 +638,10 @@ dis_interfaces (MonoMetadata *m, guint32 typedef_row)
 	guint32 cols [MONO_INTERFACEIMPL_SIZE];
 	char *intf;
 	MonoTableInfo *table = &m->tables [MONO_TABLE_INTERFACEIMPL];
-	
+
+	if (!table->base)
+		return;
+
 	loc.t = table;
 	loc.col_idx = MONO_INTERFACEIMPL_CLASS;
 	loc.idx = typedef_row;

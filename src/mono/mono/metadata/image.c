@@ -150,7 +150,7 @@ load_section_tables (MonoImage *image, MonoCLIImageInfo *iinfo)
 		t->st_lineno_ptr = GUINT32_FROM_LE (t->st_lineno_ptr);
 		t->st_reloc_count = GUINT16_FROM_LE (t->st_reloc_count);
 		t->st_line_count = GUINT16_FROM_LE (t->st_line_count);
-		t->st_flags = GUINT16_FROM_LE (t->st_flags);
+		t->st_flags = GUINT32_FROM_LE (t->st_flags);
 #endif
 		/* consistency checks here */
 	}
@@ -418,6 +418,7 @@ do_mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 #define SWAP32(x) (x) = GUINT32_FROM_LE ((x))
 #define SWAP16(x) (x) = GUINT16_FROM_LE ((x))
+#define SWAPPDE(x) do { (x).rva = GUINT32_FROM_LE ((x).rva); (x).size = GUINT32_FROM_LE ((x).size);} while (0)
 	SWAP32 (header->coff.coff_time);
 	SWAP32 (header->coff.coff_symptr);
 	SWAP32 (header->coff.coff_symcount);
@@ -433,13 +434,51 @@ do_mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
 	SWAP32 (header->pe.pe_rva_code_base);
 	SWAP32 (header->pe.pe_rva_data_base);
 	SWAP16 (header->pe.pe_magic);
+
 	/* MonoPEHeaderNT: not used yet */
+	SWAP32	(header->nt.pe_image_base); 	/* must be 0x400000 */
+	SWAP32	(header->nt.pe_section_align);       /* must be 8192 */
+	SWAP32	(header->nt.pe_file_alignment);      /* must be 512 or 4096 */
+	SWAP16	(header->nt.pe_os_major);            /* must be 4 */
+	SWAP16	(header->nt.pe_os_minor);            /* must be 0 */
+	SWAP16	(header->nt.pe_user_major);
+	SWAP16	(header->nt.pe_user_minor);
+	SWAP16	(header->nt.pe_subsys_major);
+	SWAP16	(header->nt.pe_subsys_minor);
+	SWAP32	(header->nt.pe_reserved_1);
+	SWAP32	(header->nt.pe_image_size);
+	SWAP32	(header->nt.pe_header_size);
+	SWAP32	(header->nt.pe_checksum);
+	SWAP16	(header->nt.pe_subsys_required);
+	SWAP16	(header->nt.pe_dll_flags);
+	SWAP32	(header->nt.pe_stack_reserve);
+	SWAP32	(header->nt.pe_stack_commit);
+	SWAP32	(header->nt.pe_heap_reserve);
+	SWAP32	(header->nt.pe_heap_commit);
+	SWAP32	(header->nt.pe_loader_flags);
+	SWAP32	(header->nt.pe_data_dir_count);
+
 	/* MonoDotNetHeader: mostly unused */
-	SWAP32 (header->datadir.pe_cli_header.rva);
-	SWAP32 (header->datadir.pe_cli_header.size);
+	SWAPPDE (header->datadir.pe_export_table);
+	SWAPPDE (header->datadir.pe_import_table);
+	SWAPPDE (header->datadir.pe_resource_table);
+	SWAPPDE (header->datadir.pe_exception_table);
+	SWAPPDE (header->datadir.pe_certificate_table);
+	SWAPPDE (header->datadir.pe_reloc_table);
+	SWAPPDE (header->datadir.pe_debug);
+	SWAPPDE (header->datadir.pe_copyright);
+	SWAPPDE (header->datadir.pe_global_ptr);
+	SWAPPDE (header->datadir.pe_tls_table);
+	SWAPPDE (header->datadir.pe_load_config_table);
+	SWAPPDE (header->datadir.pe_bound_import);
+	SWAPPDE (header->datadir.pe_iat);
+	SWAPPDE (header->datadir.pe_delay_import_desc);
+ 	SWAPPDE (header->datadir.pe_cli_header);
+	SWAPPDE (header->datadir.pe_reserved);
 
 #undef SWAP32
 #undef SWAP16
+#undef SWAPPDE
 #endif
 
 	if (header->coff.coff_machine != 0x14c)

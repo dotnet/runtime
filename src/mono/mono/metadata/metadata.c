@@ -931,11 +931,11 @@ mono_metadata_parse_custom_mod (MonoMetadata *m, MonoCustomMod *dest, const char
 	return FALSE;
 }
 
-MonoArray *
+MonoArrayType *
 mono_metadata_parse_array (MonoMetadata *m, const char *ptr, const char **rptr)
 {
 	int i;
-	MonoArray *array = g_new0 (MonoArray, 1);
+	MonoArrayType *array = g_new0 (MonoArrayType, 1);
 	
 	array->type = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	array->rank = mono_metadata_decode_value (ptr, &ptr);
@@ -958,7 +958,7 @@ mono_metadata_parse_array (MonoMetadata *m, const char *ptr, const char **rptr)
 }
 
 void
-mono_metadata_free_array (MonoArray *array)
+mono_metadata_free_array (MonoArrayType *array)
 {
 	mono_metadata_free_type (array->type);
 	g_free (array->sizes);
@@ -1658,7 +1658,10 @@ mono_metadata_typedef_from_field (MonoMetadata *meta, guint32 index)
 {
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_TYPEDEF];
 	locator_t loc;
-	
+
+	if (!tdef->base)
+		return 0;
+
 	loc.idx = mono_metadata_token_index (index);
 	loc.col_idx = MONO_TYPEDEF_FIELD_LIST;
 	loc.t = tdef;
@@ -1676,6 +1679,9 @@ mono_metadata_typedef_from_method (MonoMetadata *meta, guint32 index)
 	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_TYPEDEF];
 	locator_t loc;
 	
+	if (!tdef->base)
+		return 0;
+
 	loc.idx = mono_metadata_token_index (index);
 	loc.col_idx = MONO_TYPEDEF_METHOD_LIST;
 	loc.t = tdef;
@@ -1696,6 +1702,9 @@ mono_metadata_interfaces_from_typedef (MonoMetadata *meta, guint32 index)
 	guint32 cols [MONO_INTERFACEIMPL_SIZE];
 	MonoClass **result;
 	
+	if (!tdef->base)
+		return NULL;
+
 	loc.idx = mono_metadata_token_index (index);
 	loc.col_idx = MONO_INTERFACEIMPL_CLASS;
 	loc.t = tdef;

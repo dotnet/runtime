@@ -385,7 +385,7 @@ dis_stringify_token (MonoMetadata *m, guint32 token)
 }
 
 char*
-dis_stringify_array (MonoMetadata *m, MonoArray *array) 
+dis_stringify_array (MonoMetadata *m, MonoArrayType *array) 
 {
 	char *type;
 	GString *s = g_string_new("");

@@ -18,25 +18,35 @@ typedef struct {
 	MonoObject obj;
 	gpointer vector;
 	MonoArrayBounds *bounds;
-} MonoArrayObject;
+} MonoArray;
 
 typedef struct {
 	MonoObject obj;
-	MonoArrayObject *c_str;
+	MonoArray *c_str;
 	gint32 length;
-} MonoStringObject;
+} MonoString;
+
+#define mono_array_length(array) ((array)->bounds->length)
+#define mono_array_addr(array,type,index) ( ((char*)(array)->vector) + sizeof (type) * (index) )
+#define mono_array_addr_with_size(array,size,index) ( ((char*)(array)->vector) + (size) * (index) )
+#define mono_array_get(array,type,index) ( *(type*)mono_array_addr ((array), type, (index)) ) 
+#define mono_array_set(array,type,index,value)	\
+	do {	\
+		type *__p = (type *) mono_array_addr ((array), type, (index));	\
+		*__p = (value);	\
+	} while (0)
 
 MonoObject *
-mono_new_object             (MonoClass *klass);
+mono_object_new             (MonoClass *klass);
 
 MonoObject *
-mono_new_object_from_token  (MonoImage *image, guint32 token);
+mono_object_new_from_token  (MonoImage *image, guint32 token);
 
 MonoObject *
-mono_new_szarray            (MonoClass *eclass, guint32 n);
+mono_array_new              (MonoClass *eclass, guint32 n);
 
 MonoObject *
-mono_new_utf16_string       (const char *text, gint32 len);
+mono_string_new_utf16       (const guint16 *text, gint32 len);
 
 MonoObject*
 mono_ldstr                  (MonoImage *image, guint32 index);
@@ -48,7 +58,7 @@ MonoObject*
 mono_string_intern          (MonoObject *o);
 
 MonoObject *
-mono_new_string             (const char *text);
+mono_string_new             (const char *text);
 
 char *
 mono_string_to_utf8         (MonoObject *string_obj);
