@@ -117,7 +117,7 @@ public class Tests
 
 	public static int test_0_is_finalizing () {
 		AppDomain domain = AppDomain.CreateDomain ("Test-is-finalizing");
-		object o = domain.CreateInstanceFromAndUnwrap ("unload.exe", "Foo");
+		object o = domain.CreateInstanceFromAndUnwrap (typeof (Tests).Assembly.Location, "Foo");
 
 		if (domain.IsFinalizingForUnload ())
 			return 1;
@@ -129,7 +129,7 @@ public class Tests
 
 	public static int test_0_unload_with_active_threads () {
 		AppDomain domain = AppDomain.CreateDomain ("Test3");
-		object o = domain.CreateInstanceFromAndUnwrap ("unload.exe", "AThread");
+		object o = domain.CreateInstanceFromAndUnwrap (typeof (Tests).Assembly.Location, "AThread");
 		Thread.Sleep (100);
 
 		AppDomain.Unload (domain);
@@ -139,7 +139,7 @@ public class Tests
 
 	public static int test_0_unload_with_active_threads_timeout () {
 		AppDomain domain = AppDomain.CreateDomain ("Test4");
-		object o = domain.CreateInstanceFromAndUnwrap ("unload.exe", "BThread");
+		object o = domain.CreateInstanceFromAndUnwrap (typeof (Tests).Assembly.Location, "BThread");
 		Thread.Sleep (100);
 
 		try {
@@ -157,7 +157,7 @@ public class Tests
 	/*
 	public static int test_0_unload_during_unload () {
 		AppDomain domain = AppDomain.CreateDomain ("Test3");
-		object o = domain.CreateInstanceFromAndUnwrap ("unload.exe", "SlowFinalize");
+		object o = domain.CreateInstanceFromAndUnwrap (typeof (Tests).Assembly.Location, "SlowFinalize");
 
 		UnloadThread t = new UnloadThread (domain);
 
