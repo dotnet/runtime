@@ -20,18 +20,14 @@ typedef enum {
 	MONO_PROFILE_REMOTING         = 1 << 10,
 	MONO_PROFILE_TRANSITIONS      = 1 << 11,
 	MONO_PROFILE_ENTER_LEAVE      = 1 << 12,
-	MONO_PROFILE_COVERAGE         = 1 << 13
+	MONO_PROFILE_COVERAGE         = 1 << 13,
+	MONO_PROFILE_INS_COVERAGE     = 1 << 14
 } MonoProfileFlags;
 
 typedef enum {
 	MONO_PROFILE_OK,
 	MONO_PROFILE_FAILED
 } MonoProfileResult;
-
-typedef enum {
-	MONO_COVERAGE_INSTRUCTION,
-	MONO_COVERAGE_BASIC_BLOCK
-} MonoProfileCoverageLevel;
 
 /* coverage info */
 typedef struct {
@@ -95,8 +91,6 @@ void mono_profiler_install_thread      (MonoProfileThreadFunc start, MonoProfile
 void mono_profiler_install_transition  (MonoProfileMethodResult callback);
 void mono_profiler_install_allocation  (MonoProfileAllocFunc callback);
 void mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callback);
-void mono_profiler_set_coverage_level (MonoProfileCoverageLevel level);
-
 void mono_profiler_coverage_get  (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func);
 
 void mono_profiler_load             (const char *desc);

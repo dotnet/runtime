@@ -41,8 +41,6 @@ static MonoProfileCoverageFilterFunc coverage_filter_cb;
 
 static MonoProfileFunc shutdown_callback;
 
-static MonoProfileCoverageLevel coverage_level = MONO_COVERAGE_BASIC_BLOCK;
-
 /* this is directly accessible to other mono libs. */
 MonoProfileFlags mono_profiler_events;
 
@@ -104,18 +102,6 @@ void
 mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callback)
 {
 	coverage_filter_cb = callback;
-}
-
-void
-mono_profiler_set_coverage_level (MonoProfileCoverageLevel level)
-{
-	coverage_level = level;
-}
-
-MonoProfileCoverageLevel
-mono_profiler_get_coverage_level ()
-{
-	return coverage_level;
 }
 
 void 
