@@ -8027,7 +8027,9 @@ mono_jit_compile_method (MonoMethod *method)
 static void
 invalidated_delegate_trampoline (MonoClass *klass)
 {
-	g_error ("Unmanaged code called delegate of type %s which was already garbage collected.\n See http://blogs.msdn.com/adam_nathan/archive/2003/06/01/56693.aspx for an explanation and ways to fix this.", mono_type_full_name (&klass->byval_arg));
+	g_error ("Unmanaged code called delegate of type %s which was already garbage collected.\n"
+		 "See http://www.go-mono.com/delegate.html for an explanation and ways to fix this.",
+		 mono_type_full_name (&klass->byval_arg));
 }
 
 /*
