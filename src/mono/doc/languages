@@ -3,7 +3,22 @@
 	Here are some other free compilers for other languages that
 	target .NET and should work with Mono with no problem:
 
-* MonoLogo
+	<ul>
+		* <a href="#ComponentPascal">Component Pascal</a>
+		* <a href="#MonoLogo">MonoLogo</a>
+		* <a href="#Oberon">Oberon</a>
+	</ul>
+
+	Languages we would like to have supported, with links to resources:
+
+	<ul>
+		* <a href="#JavaScript">Java Script</a>
+		* <a href="java.html">Java</a>
+		* <a href="#c">C</a>
+	</ul>
+
+<a name="MonoLogo">
+** MonoLogo
 
 	An implementation of Logo for Mono (and .NET)
 
@@ -11,18 +26,62 @@
 	hosted in the <a href="ccvs.html">Mono CVS</a> repository
 	and also available on the <a href="anoncvs.html">AnonCVS</a> mirrors.
 
-anoncvs.html"
-* Oberon
+<a name="Oberon">
+** Oberon
 
 	This Oberon compiler is written in Oberon.NET (another self
 	hosting compiler):
 
 	<a href="http://www.superin.formativ.net/mono/oberon/oberon.zip">http://www.superin.formativ.net/mono/oberon/oberon.zip</a>
 
-* Component Pascal
+<a name="ComponentPascal">
+** Component Pascal
 
 	The Component Pascal compiler: <a
 	href="http://www2.fit.qut.edu.au/CompSci/PLAS/ComponentPascal">Home
 	Page</a>, you can <a
 	href="http://www2.fit.qut.edu.au/CompSci/PLAS/ComponentPascal/gpcp1.1.4-netRTM.zip">
 	download it</a>
+
+
+* Missing languages
+
+	Here is a list of a few languages that we would like to see
+	supported.  We will try to maintain a set of links here with 
+	technical information for those interested in porting,
+	implementing or adapting a compiler for any of these
+	languages:
+
+<a name="JavaScript">
+* Java Script
+
+	The Mozilla project has an implementation of JavaScript
+	written in Java called <a
+	href="http://www.mozilla.org/rhino/">Rhino</a>.
+
+	You could port this code from Java to C#.
+
+	Note that since JavaScript allows for evaluation at runtime,
+	the compiler has to be built as a class that can be invoked at
+	runtime.
+
+<a name="c">
+* C
+
+	Ideally GCC could be modified to generate CIL, but it is a 
+	big task.  That would give us various compilers in one pass.
+
+	Rumor is that the next version of the LCC compiler will
+	include an IL backend.  We do not know how extensive the support
+	for integration with .NET will be, but it would be an interesting
+	excercise to add an extension to C to call into .NET code.
+
+	LCC is not an open source compiler, but it is free as long as you
+	do not profit from selling it. 
+
+<a name="Java">
+* Java
+
+	We have a <a href="java.html">separate page</a> for Java.
+
+	

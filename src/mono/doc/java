@@ -10,6 +10,16 @@
 	Microsoft J# compiler.   We could then allow the migration of
 	Java applications to the Mono runtime. 
 
+** Native compiler
+
+	Although a native compiler can be built, and probably should be
+	built using an existing compiler, a short term solution is to 
+	build a translator from Java class files to the ECMA CIL images.
+
+	This has the advantage that we can use an existing and tested
+	Java compiler to generate the code, and then we can use an automated
+	code compiler that compiles Java VM bytecodes to CIL bytecodes.
+
 ** The translator.
 
 	It would be interesting to write a semantic translator that
