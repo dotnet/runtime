@@ -48,6 +48,10 @@
 	href="http://lists.ximian.com/archives/public/mono-list/2002-February/002911.html">enabling
 	ASP.NET</a> on Mono.
 
+	Paolo also <a
+	href="http://lists.ximian.com/archives/public/mono-list/2002-February/002944.html">
+	posted a list of pending tasks</a> to enable the compiler to run on Linux
+
 ** Feb 10, 2002
 
 	Mike Kestner has posted an <a

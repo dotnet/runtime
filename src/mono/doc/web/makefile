@@ -40,7 +40,7 @@ clean:
 	done;
 
 push:
-	scp *.html www@www.ximian.com:/web/cvsmodules/mono
+	scp -P 2200 *.html www@www.ximian.com:/web/cvsmodules/mono
 	echo scp *.html migueldeicaza@mononet.sf.net:/home/groups/m/mo/mononet/htdocs
 
 push2: 
