@@ -19,7 +19,7 @@
 /*------------------------------------------------------------------*/
 
 #define NOT_IMPLEMENTED(x) \
-        g_error ("FIXME: %s is not yet implemented. (trampoline)", x);
+        g_error ("FIXME: %s is not yet implemented.", x);
 
 #define EMIT_COND_BRANCH(ins,cond) 							\
 {											\
@@ -3285,20 +3285,6 @@ guint8 cond;
 			s390_nr	  (code, ins->dreg, s390_r0);
 		}
 			break;
-		case CEE_CONV_U:
-		case CEE_CONV_U8: {
-			if (ins->dreg != ins->sreg1)
-				s390_lgr (code, ins->dreg, ins->sreg1);
-		}
-			break;
-		case CEE_CONV_I:
-		case CEE_CONV_I8: {
-			if (ins->dreg != ins->sreg1)
-				s390_lgr (code, ins->dreg, ins->sreg1);
-		}
-			break;
-		case OP_LCOMPARE:
-		case OP_ICOMPARE: {
 		case OP_COMPARE: {
 			if ((ins->next) && 
 			    ((ins->next->opcode >= CEE_BNE_UN) &&
@@ -3312,8 +3298,7 @@ guint8 cond;
 				s390_cr   (code, ins->sreg1, ins->sreg2);
 		}
 			break;
-		case OP_COMPARE_IMM: 
-		case OP_ICOMPARE_IMM: {
+		case OP_COMPARE_IMM: {
 			if (s390_is_imm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r0, ins->inst_imm);
 				if ((ins->next) && 
@@ -3880,16 +3865,16 @@ guint8 cond;
 		}
 			break;
 		case CEE_JMP: {
-			int float;
+			int fParm;
 			if (cfg->method->save_lmf)
 				code = restoreLMF(cfg, code);
 
 			if (cfg->flags & MONO_CFG_HAS_TAIL) {
 				s390_lm (code, s390_r2, s390_r5, STK_BASE, 
 					 S390_PARM_SAVE_OFFSET);
-				for (float = 0; float < 4; float++)
-					s390_ld (code, float, 0, STK_BASE,
-					   S390_FLOAT_SAVE_OFFSET+float*sizeof(double));
+				for (fParm = 0; fParm < 4; fParm++)
+					s390_ld (code, fParm, 0, STK_BASE,
+					   S390_FLOAT_SAVE_OFFSET+fParm*sizeof(double));
 			}
 
 			code = backUpStackPtr(cfg, code);
@@ -3903,6 +3888,14 @@ guint8 cond;
 		case OP_CHECK_THIS: {
 			/* ensure ins->sreg1 is not NULL */
 			s390_icm (code, s390_r0, 15, ins->sreg1, 0);
+		}
+			break;
+		case OP_ARGLIST: {
+			NOT_IMPLEMENTED("OP_ARGLIST");
+			s390_basr (code, s390_r13, 0);
+			s390_j    (code, 4);
+			s390_word (code, cfg->sig_cookie);
+			s390_l    (code, ins->sreg1, 0, s390_r13, 4);
 		}
 			break;
 		case OP_FCALL: {
@@ -4742,7 +4735,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	cfg->native_code = code = g_malloc (cfg->code_size);
 
 	if (cfg->flags & MONO_CFG_HAS_TAIL) {
-		s390_stmg (code, s390_r2, s390_r14, STK_BASE, S390_PARM_SAVE_OFFSET);
+		s390_stm (code, s390_r2, s390_r14, STK_BASE, S390_PARM_SAVE_OFFSET);
 		for (pos = 0; pos < 4; pos++)
 			s390_std (code, pos, 0, STK_BASE, 
 				  S390_FLOAT_SAVE_OFFSET+pos*sizeof(double));

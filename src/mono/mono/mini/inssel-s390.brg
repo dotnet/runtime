@@ -106,7 +106,18 @@ freg: CEE_CONV_R_UN (reg) {
 stmt: OP_MEMCPY (reg, reg) "0" {
 	int size = tree->unused;
 	if (size > 0) 
-		MONO_EMIT_NEW_MOVE (s, state->left->reg1, 0, state->right->reg1, 0, size);
+		MONO_EMIT_NEW_MOVE (s, state->left->reg1, 0, 
+				    state->right->reg1, 0, size);
+}
+
+stmt: OP_MEMCPY (base, base) "0" {
+	int size = tree->unused;
+	if (size > 0)  
+		MONO_EMIT_NEW_MOVE (s, state->left->tree->sreg1, 
+				    state->left->tree->inst_offset, 
+				    state->right->tree->sreg1,
+				    state->right->tree->inst_offset,
+				    size);
 }
 
 reg: OP_LOCALLOC (OP_ICONST) {
@@ -651,17 +662,17 @@ reg: CEE_LDOBJ (OP_S390_STKARG) "1" {
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, state->reg1,
 				 state->left->tree->inst_offset);
 	tree->inst_offset  = 0;
-	tree->dreg 	   = state->reg1;
+	tree->inst_basereg = state->reg1;
 }
 
 base: CEE_LDOBJ (OP_S390_ARGPTR) "0" {
 	int tmpr;
 
 	tmpr = mono_regstate_next_int (s->rs);
-	MONO_EMIT_NEW_LOAD_MEMBASE (s, tmpr, s->frame_reg, 
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, tmpr, s->frame_reg, 
 				    state->left->tree->inst_offset);
 	tree->inst_offset  = 0;
-	tree->dreg 	   = tmpr;
+	tree->inst_basereg = tmpr;
 }
 
 base: CEE_LDOBJ (OP_S390_STKARG) "0" {
