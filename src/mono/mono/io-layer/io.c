@@ -832,7 +832,13 @@ static gboolean file_setendoffile(gpointer handle)
 	}
 	
 	if(pos>size) {
-		/* extend */
+		/* Extend the file.  Use write() here, because some
+		 * manuals say that ftruncate() behaviour is undefined
+		 * when the file needs extending.  The POSIX spec says
+		 * that on XSI-conformant systems it extends, so if
+		 * every system we care about conforms, then we can
+		 * drop this write.
+		 */
 		do {
 			ret=write(file_private_handle->fd_mapped.fd, "", 1);
 		}
