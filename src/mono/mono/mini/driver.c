@@ -74,7 +74,8 @@ opt_names [] = {
 	{"loop",     "Loop related optimizations"},
 	{"fcmov",    "Fast x86 FP compares"},
 	{"leaf",     "Leaf procedures optimizations"},
-	{"aot",      "Usage of Ahead Of Time compiled code"}
+	{"aot",      "Usage of Ahead Of Time compiled code"},
+	{"precomp",  "Precompile all methods before executing Main"}
 };
 
 #define DEFAULT_OPTIMIZATIONS (	\
@@ -135,7 +136,7 @@ parse_optimizations (const char* p)
 				if (invert)
 					opt = 0;
 				else
-					opt = ~(MONO_OPT_SHARED | exclude);
+					opt = ~(MONO_OPT_SHARED | MONO_OPT_PRECOMP | exclude);
 				p += 3;
 				if (*p == ',')
 					p++;
@@ -475,7 +476,7 @@ static void main_thread_handler (gpointer user_data)
 {
 	MainThreadArgs *main_args = user_data;
 	MonoAssembly *assembly;
-	
+
 	assembly = mono_domain_assembly_open (main_args->domain, main_args->file);
 	if (!assembly){
 		fprintf (stderr, "Can not open image %s\n", main_args->file);
@@ -486,6 +487,13 @@ static void main_thread_handler (gpointer user_data)
 		int res = mono_compile_assembly (assembly, main_args->opts);
 		printf ("AOT RESULT %d\n", res);
 	} else {
+		/* 
+		 * This must be done in a thread managed by mono since it can invoke
+		 * managed code.
+		 */
+		if (main_args->opts & MONO_OPT_PRECOMP)
+			mono_precompile_assemblies ();
+
 		mono_jit_exec (main_args->domain, assembly, main_args->argc, main_args->argv);
 	}
 }

@@ -7559,3 +7559,34 @@ mono_set_defaults (int verbose_level, guint32 opts)
 	default_opt = opts;
 }
 
+static void
+mono_precompile_assembly (MonoAssembly *ass, void *user_data)
+{
+	MonoImage *image = ass->image;
+	MonoMethod *method;
+	int i, count = 0;
+
+	if (mini_verbose > 0)
+		printf ("PRECOMPILE: %s.\n", ass->image->name);
+
+	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
+		if (method->flags & METHOD_ATTRIBUTE_ABSTRACT)
+			continue;
+		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+			continue;
+
+		count++;
+		if (mini_verbose > 1) {
+			char * desc = mono_method_full_name (method, TRUE);
+			g_print ("Compiling %d %s\n", count, desc);
+			g_free (desc);
+		}
+		mono_compile_method (method);
+	}
+}
+
+void mono_precompile_assemblies ()
+{
+	mono_assembly_foreach ((GFunc)mono_precompile_assembly, NULL);
+}

@@ -405,7 +405,8 @@ enum {
 	MONO_OPT_LOOP     = 1 << 13,
 	MONO_OPT_FCMOV    = 1 << 14,
 	MONO_OPT_LEAF     = 1 << 15,
-	MONO_OPT_AOT      = 1 << 16 
+	MONO_OPT_AOT      = 1 << 16,
+	MONO_OPT_PRECOMP  = 1 << 17
 };
 
 #define MONO_REGION_FINALLY  16
@@ -599,6 +600,7 @@ MonoDomain* mini_init                      (const char *filename);
 void        mini_cleanup                   (MonoDomain *domain);
 
 /* helper methods */
+void      mono_precompile_assemblies        (void);
 int       mono_parse_default_optimizations  (const char* p);
 void      mono_bblock_add_inst              (MonoBasicBlock *bb, MonoInst *inst);
 void      mono_constant_fold                (MonoCompile *cfg);
