@@ -883,11 +883,6 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		}	
 		result->signature->call_convention = conv;
 	} else {
-		MonoMethodNormal *mn = (MonoMethodNormal *) result;
-
-		/* if this is a methodref from another module/assembly, this fails */
-		loc = mono_image_rva_map (image, cols [0]);
-
 		if (result->signature->generic_param_count) {
 			MonoMethodSignature *sig = result->signature;
 
@@ -911,14 +906,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 				}
 			}
 		}
-
-		if (!result->klass->dummy && !(result->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
-		    !(result->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
-			g_assert (loc);
-			mn->header = mono_metadata_parse_mh_full (image, container, loc);
-		}
-
-		mn->generic_container = generic_container;
+		((MonoMethodNormal *) result)->generic_container = generic_container;
 	}
 
 	return result;
@@ -991,7 +979,7 @@ mono_free_method  (MonoMethod *method)
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)method;
 		g_free (piinfo->code);
-	} else if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
+	} else if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && ((MonoMethodNormal *)method)->header) {
 		mono_metadata_free_mh (((MonoMethodNormal *)method)->header);
 	}
 
@@ -1281,7 +1269,37 @@ mono_method_get_token (MonoMethod *method)
 MonoMethodHeader* 
 mono_method_get_header (MonoMethod *method)
 {
-	return ((MonoMethodNormal *)method)->header;
+	int table;
+	int idx;
+	guint32 rva;
+	MonoImage* img;
+	gpointer loc;
+	MonoMethodNormal* mn = (MonoMethodNormal*) method;
+	
+	if (G_LIKELY (mn->header))
+		return mn->header;
+	
+	mono_loader_lock ();
+	
+	if (mn->header) {
+		mono_loader_unlock ();
+		return mn->header;
+	}
+	
+	g_assert (mono_metadata_token_table (method->token) == MONO_TABLE_METHOD);
+	idx = mono_metadata_token_index (method->token);
+	img = method->klass->image;
+	rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
+	loc = mono_image_rva_map (img, rva);
+	
+	g_return_val_if_fail (!method->klass->dummy && !(method->flags & METHOD_ATTRIBUTE_ABSTRACT)
+	                      && !(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME), NULL);
+	g_assert (loc);
+	
+	mn->header = mono_metadata_parse_mh_full (img, mn->generic_container, loc);
+	
+	mono_loader_unlock ();
+	return mn->header;
 }
 
 guint32
