@@ -8139,7 +8139,7 @@ optimize_branches (MonoCompile *cfg)
 
 #ifdef MONO_ARCH_HAVE_OUT_OF_LINE_BBLOCKS
 				if (bb->last_ins && MONO_IS_COND_BRANCH_NOFP (bb->last_ins)) {
-					if (bb->last_ins->inst_false_bb->out_of_line) {
+					if (bb->last_ins->inst_false_bb->out_of_line && (bb->region == bb->last_ins->inst_false_bb->region)) {
 						/* Reverse the branch */
 						bb->last_ins->opcode = reverse_branch_op (bb->last_ins->opcode);
 						bbn = bb->last_ins->inst_false_bb;
