@@ -66,12 +66,6 @@ static CRITICAL_SECTION appdomains_mutex;
 
 static MonoDomain *mono_root_domain = NULL;
 
-/* RuntimeInfo: Contains information about versions supported by this runtime */
-typedef struct  {
-	const char* runtime_version;
-	const char* framework_version;
-} RuntimeInfo;
-
 /* AppConfigInfo: Information about runtime versions supported by an 
  * aplication.
  */
@@ -82,21 +76,23 @@ typedef struct {
 	int startup_count;
 } AppConfigInfo;
 
-static RuntimeInfo *current_runtime = NULL;
+static MonoRuntimeInfo *current_runtime = NULL;
 
 /* This is the list of runtime versions supported by this JIT.
  */
-static RuntimeInfo supported_runtimes[] = {
-	{"v1.0.3705", "1.0"}, {"v1.1.4322", "1.0"}, {"v2.0.40607","2.0"} 
+static MonoRuntimeInfo supported_runtimes[] = {
+	{"v1.0.3705", "1.0", 1,0,5000,0},
+	{"v1.1.4322", "1.0", 1,0,5000,0},
+	{"v2.0.40607","2.0", 2,0,3600,0} 
 };
 
 /* The stable runtime version */
 #define DEFAULT_RUNTIME_VERSION "v1.1.4322"
 
-static RuntimeInfo*	
+static MonoRuntimeInfo*	
 get_runtime_from_exe (const char *exe_file);
 
-static RuntimeInfo*
+static MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
 
 guint32
@@ -337,11 +333,16 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	/* find the corlib */
 	corlib_aname.name = "mscorlib";
+	corlib_aname.major = current_runtime->assembly_major;
+	corlib_aname.minor = current_runtime->assembly_minor;
+	corlib_aname.build = current_runtime->assembly_build;
+	corlib_aname.revision = current_runtime->assembly_revision;
+	
 	ass = mono_assembly_load (&corlib_aname, NULL, &status);
 	if ((status != MONO_IMAGE_OK) || (ass == NULL)) {
 		switch (status){
 		case MONO_IMAGE_ERROR_ERRNO: {
-			char *corlib_file = g_build_filename (mono_assembly_getrootdir (), "mono", mono_get_framework_version (), "mscorlib.dll", NULL);
+			char *corlib_file = g_build_filename (mono_assembly_getrootdir (), "mono", current_runtime->framework_version, "mscorlib.dll", NULL);
 			g_print ("The assembly mscorlib.dll was not found or could not be loaded.\n");
 			g_print ("It should have been installed in the `%s' directory.\n", corlib_file);
 			g_free (corlib_file);
@@ -1111,7 +1112,7 @@ app_config_free (AppConfigInfo* app_config)
 }
 
 
-static RuntimeInfo*
+static MonoRuntimeInfo*
 get_runtime_by_version (const char *version)
 {
 	int n;
@@ -1124,13 +1125,13 @@ get_runtime_by_version (const char *version)
 	return NULL;
 }
 
-static RuntimeInfo*	
+static MonoRuntimeInfo*	
 get_runtime_from_exe (const char *exe_file)
 {
 	AppConfigInfo* app_config;
 	char *version;
 	char *config_name;
-	RuntimeInfo* runtime = NULL;
+	MonoRuntimeInfo* runtime = NULL;
 	MonoImage *image = NULL;
 	
 	config_name = g_strconcat (exe_file, ".config", NULL);
@@ -1176,22 +1177,21 @@ get_runtime_from_exe (const char *exe_file)
 	return runtime;
 }
 
-const char*
-mono_get_framework_version (void)
+/**
+ * mono_get_framework_assembly_version:
+ *
+ * Returns: the version of the current runtime instance.
+ */
+MonoRuntimeInfo*
+mono_get_runtime_info (void)
 {
-	return current_runtime->framework_version;
-}
-
-const char*
-mono_get_runtime_version (void)
-{
-	return current_runtime->runtime_version;
+	return current_runtime;
 }
 
 gchar *
 mono_debugger_check_runtime_version (const char *filename)
 {
-	RuntimeInfo *rinfo;
+	MonoRuntimeInfo *rinfo;
 
 	rinfo = get_runtime_from_exe (filename);
 	if (!rinfo)

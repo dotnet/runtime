@@ -43,6 +43,58 @@ static char **assemblies_path = NULL;
 /* Contains the list of directories that point to auxiliary GACs */
 static char **extra_gac_paths = NULL;
 
+/* The list of system assemblies what will be remapped to the running
+ * runtime version. WARNING: this list must be sorted.
+ */
+static const char *framework_assemblies [] = {
+	"Accessibility",
+	"Commons.Xml.Relaxng",
+	"I18N",
+	"I18N.CJK",
+	"I18N.MidEast",
+	"I18N.Other",
+	"I18N.Rare",
+	"I18N.West",
+	"Mono.Cairo",
+	"Mono.CompilerServices.SymbolWriter",
+	"Mono.Data",
+	"Mono.Data.SqliteClient",
+	"Mono.Data.SybaseClient",
+	"Mono.Data.Tds",
+	"Mono.Data.TdsClient",
+	"Mono.GetOptions",
+	"Mono.Http",
+	"Mono.Posix",
+	"Mono.Security",
+	"Mono.Security.Win32",
+	"Mono.Xml.Ext",
+	"Novell.Directory.Ldap",
+	"Npgsql",
+	"PEAPI",
+	"System",
+	"System.Configuration.Install",
+	"System.Data",
+	"System.Data.OracleClient",
+	"System.Data.SqlXml",
+	"System.Design",
+	"System.DirectoryServices",
+	"System.Drawing",
+	"System.Drawing.Design",
+	"System.EnterpriseServices",
+	"System.Management",
+	"System.Messaging",
+	"System.Runtime.Remoting",
+	"System.Runtime.Serialization.Formatters.Soap",
+	"System.Security",
+	"System.ServiceProcess",
+	"System.Web",
+	"System.Web.Mobile",
+	"System.Web.Services",
+	"System.Windows.Forms",
+	"System.Xml",
+	"mscorlib"
+};
+	
 /*
  * keeps track of loaded assemblies
  */
@@ -315,6 +367,58 @@ mono_assembly_addref (MonoAssembly *assembly)
 	LeaveCriticalSection (&assemblies_mutex);
 }
 
+static MonoAssemblyName *
+mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_aname)
+{
+	MonoRuntimeInfo *current_runtime;
+	int pos, first, last;
+
+	if (aname->name == NULL) return aname;
+	current_runtime = mono_get_runtime_info ();
+
+	/* remap only when the assembly is older than the expected version */
+	
+	if (aname->major > current_runtime->assembly_major) return aname;
+	if (aname->major == current_runtime->assembly_major) {
+		if (aname->minor > current_runtime->assembly_minor) return aname;
+		if (aname->minor == current_runtime->assembly_minor) {
+			if (aname->build > current_runtime->assembly_build) return aname;
+			if (aname->build == current_runtime->assembly_build) {
+				if (aname->revision >= current_runtime->assembly_revision) return aname;
+			}
+		}
+	}
+	
+	first = 0;
+	last = G_N_ELEMENTS (framework_assemblies) - 1;
+	
+	while (first <= last) {
+		pos = first + (last - first) / 2;
+		int res = strcmp (aname->name, framework_assemblies[pos]);
+		if (res == 0) {
+			if ((aname->major | aname->minor | aname->build | aname->revision) != 0)
+				mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
+					"The request to load the assembly %s v%d.%d.%d.%d was remapped to v%d.%d.%d.%d",
+							aname->name,
+							aname->major, aname->minor, aname->build, aname->revision,
+							current_runtime->assembly_major, current_runtime->assembly_minor, current_runtime->assembly_build, current_runtime->assembly_revision
+							);
+			
+			memcpy (dest_aname, aname, sizeof(MonoAssemblyName));
+			dest_aname->major = current_runtime->assembly_major;
+			dest_aname->minor = current_runtime->assembly_minor;
+			dest_aname->build = current_runtime->assembly_build;
+			dest_aname->revision = current_runtime->assembly_revision;
+			return dest_aname;
+		} else if (res == -1) {
+			last = pos - 1;
+		} else {
+			first = pos + 1;
+		}
+	}
+	return aname;
+}
+
 void
 mono_assembly_load_reference (MonoImage *image, int index)
 {
@@ -356,47 +460,29 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		g_free (token);
 	} else {
 		memset (aname.public_key_token, 0, MONO_PUBLIC_KEY_TOKEN_LENGTH);
-	} 
+	}
 
 	reference = mono_assembly_load (&aname, image->assembly->basedir, &status);
 
 	if (reference == NULL){
-		/*
-		** Temporary work around: any System.* which are 3300 build, will get
-		** remapped, this is to keep old applications running that might have
-		** been linked against our 5000 API, before we were strongnamed, and
-		** hence were labeled as 3300 builds by reflection.c
-		*/
-		if (aname.build == 3300 && strncmp (aname.name, "System", 6) == 0){
-			aname.build = 5000;
-				
-			reference = mono_assembly_load (&aname, image->assembly->basedir, &status);
-		}
-		if (reference != NULL){
-			if (g_getenv ("MONO_SILENT_WARNING") == NULL)
-				g_printerr ("Compat mode: the request from %s to load %s was remapped (http://www.go-mono.com/remap.html)\n",
-							image->name, aname.name);
-			
-		} else {
-			char *extra_msg = g_strdup ("");
+		char *extra_msg = g_strdup ("");
 
-			if (status == MONO_IMAGE_ERROR_ERRNO) {
-				extra_msg = g_strdup_printf ("System error: %s\n", strerror (errno));
-			} else if (status == MONO_IMAGE_MISSING_ASSEMBLYREF) {
-				extra_msg = g_strdup ("Cannot find an assembly referenced from this one.\n");
-			} else if (status == MONO_IMAGE_IMAGE_INVALID) {
-				extra_msg = g_strdup ("The file exists but is not a valid assembly.\n");
-			}
-			
-			g_warning ("Could not find assembly %s, references from %s (assemblyref_index=%d)\n"
-					   "     Major/Minor: %d,%d\n"
-					   "     Build:       %d,%d\n"
-					   "     Token:       %s\n%s",
-					   aname.name, image->name, index,
-					   aname.major, aname.minor, aname.build, aname.revision,
-					   aname.public_key_token, extra_msg);
-			g_free (extra_msg);
+		if (status == MONO_IMAGE_ERROR_ERRNO) {
+			extra_msg = g_strdup_printf ("System error: %s\n", strerror (errno));
+		} else if (status == MONO_IMAGE_MISSING_ASSEMBLYREF) {
+			extra_msg = g_strdup ("Cannot find an assembly referenced from this one.\n");
+		} else if (status == MONO_IMAGE_IMAGE_INVALID) {
+			extra_msg = g_strdup ("The file exists but is not a valid assembly.\n");
 		}
+		
+		g_warning ("Could not find assembly %s, references from %s (assemblyref_index=%d)\n"
+				   "     Major/Minor: %d,%d\n"
+				   "     Build:       %d,%d\n"
+				   "     Token:       %s\n%s",
+				   aname.name, image->name, index,
+				   aname.major, aname.minor, aname.build, aname.revision,
+				   aname.public_key_token, extra_msg);
+		g_free (extra_msg);
 	}
 
 	EnterCriticalSection (&assemblies_mutex);
@@ -984,6 +1070,9 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 {
 	MonoAssembly *result;
 	char *fullpath, *filename;
+	MonoAssemblyName maped_aname;
+
+	aname = mono_assembly_remap_version (aname, &maped_aname);
 
 	result = mono_assembly_loaded (aname);
 	if (result)
@@ -1016,7 +1105,7 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 	
 		/* Load corlib from mono/<version> */
 		
-		corlib_file = g_build_filename ("mono", mono_get_framework_version (), "mscorlib.dll", NULL);
+		corlib_file = g_build_filename ("mono", mono_get_runtime_info ()->framework_version, "mscorlib.dll", NULL);
 		if (assemblies_path) {
 			corlib = load_in_path (corlib_file, (const char**)assemblies_path, status);
 			if (corlib) {
@@ -1063,6 +1152,9 @@ MonoAssembly*
 mono_assembly_loaded (MonoAssemblyName *aname)
 {
 	MonoAssembly *res;
+	MonoAssemblyName maped_aname;
+
+	aname = mono_assembly_remap_version (aname, &maped_aname);
 
 	EnterCriticalSection (&assemblies_mutex);
 	res = search_loaded (aname);

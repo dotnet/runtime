@@ -4185,7 +4185,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	MonoDynamicImage *image;
 	int i;
 
-	const char *version = mono_get_runtime_version ();
+	const char *version = mono_get_runtime_info ()->runtime_version;
 
 #if HAVE_BOEHM_GC
 	image = GC_MALLOC (sizeof (MonoDynamicImage));
