@@ -142,10 +142,13 @@
   </tr>
 </table>
 
-@item Oct 2nd: Windows packages
+@item Oct 2nd: Windows packages, MonoDoc 0.7
 
 	Windows packages for Mono 0.28 are now available from our <a
 	href="download.html">download</a> page.
+
+	A new version of MonoDoc has been released.  The new version
+	is available <a href="archive/monodoc-0.7.tar.gz">here</a>
 
 @item Oct 1st: Mono 0.28 has been released.
 
