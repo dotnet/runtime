@@ -953,6 +953,10 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 			msize = info->fields [i + 1].field->offset - info->fields [i].field->offset;
 			usize = info->fields [i + 1].offset - info->fields [i].offset;
 		}
+		if ((msize < 0) || (usize < 0))
+			/* This happens with GC aware auto layout */
+			g_error ("Type %s which is passed to unmanaged code must have a StructLayout attribute", mono_type_full_name (&klass->byval_arg));
+
 		g_assert ((msize >= 0) && (usize >= 0));
 
 		switch (conv) {
