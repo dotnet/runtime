@@ -222,10 +222,17 @@ static guint32 file_seek(WapiHandle *handle, gint32 movedistance,
 #ifdef HAVE_LARGE_FILE_SUPPORT
 	if(highmovedistance==NULL) {
 		offset=movedistance;
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": setting offset to %lld (low %d)", offset,
+			  movedistance);
+#endif
 	} else {
-		offset=*highmovedistance;
-		offset<<=32;
-		offset+=movedistance;
+		offset=((gint64) *highmovedistance << 32) | movedistance;
+		
+#ifdef DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": setting offset to %lld 0x%llx (high %d 0x%x, low %d 0x%x)", offset, offset, *highmovedistance, *highmovedistance, movedistance, movedistance);
+#endif
 	}
 #else
 	offset=movedistance;
