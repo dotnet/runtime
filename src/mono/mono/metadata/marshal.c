@@ -184,12 +184,14 @@ gpointer
 mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 {
 	GError *error = NULL;
-	gchar *res;
+	glong *res;
 
 	if (!sb)
 		return NULL;
 
-	res = g_utf16_to_utf8 (mono_string_chars (sb->str), sb->length, NULL, NULL, &error);
+	res = g_malloc0 (mono_stringbuilder_capacity (sb) + 1);
+
+	g_utf16_to_utf8 (mono_string_chars (sb->str), sb->length, NULL, res, &error);
 	if (error) {
 		g_error_free (error);
 		mono_raise_exception (mono_get_exception_execution_engine ("Failed to convert StringBuilder from utf16 to utf8"));
@@ -1187,7 +1189,7 @@ mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 	res = mono_g_hash_table_lookup (wrapper_hash, wrapper);
 	LeaveCriticalSection (&marshal_mutex);
 
-	if (wrapper->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
+	if (res && wrapper->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
 		/* See mono_marshal_get_remoting_invoke_with_check */
 		return (MonoMethod*)((char*)res - 1);
 	else
