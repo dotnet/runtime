@@ -1,6 +1,8 @@
 /*
  * Create trampolines to invoke arbitrary functions.
  * Copyright (c) 2002 Sergey Chaban <serge@wildwestsoftware.com>
+ *
+ * Contributions by Malte Hildingson
  */
 
 #include "arm-codegen.h"
@@ -10,16 +12,17 @@
 #	include <windows.h>
 #endif
 
+#include <errno.h>
+
 #include "mono/metadata/class.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/interpreter/interp.h"
 #include "mono/metadata/appdomain.h"
 
 
-#if 1
+#if 0
 #	define ARM_DUMP_DISASM 1
 #endif
-
 
 /* prototypes for private functions (to avoid compiler warnings) */
 void flush_icache (void);
@@ -64,15 +67,27 @@ void flush_icache ()
 void* alloc_code_buff (int num_instr)
 {
 	void* code_buff;
+	int code_size = num_instr * sizeof(arminstr_t);
 
 #if defined(_WIN32) || defined(UNDER_CE)
 	int old_prot = 0;
-#endif
 
-	code_buff = malloc(num_instr * sizeof(arminstr_t));
+	code_buff = malloc(code_size);
+	VirtualProtect(code_buff, code_size, PAGE_EXECUTE_READWRITE, &old_prot);
+#else
+#include <unistd.h>
+#include <sys/mman.h>
+	int page_size = sysconf(_SC_PAGESIZE);
+	int new_code_size;
 
-#if defined(_WIN32) || defined(UNDER_CE)
-	VirtualProtect(code_buff, num_instr * sizeof(arminstr_t), PAGE_EXECUTE_READWRITE, &old_prot);
+	new_code_size = code_size + page_size - 1;
+	code_buff = malloc(new_code_size);
+	code_buff = (void *) (((int) code_buff + page_size - 1) & ~(page_size - 1));
+
+	if (mprotect(code_buff, code_size, PROT_READ|PROT_WRITE|PROT_EXEC) != 0) {
+		g_critical (G_GNUC_PRETTY_FUNCTION
+				": mprotect error: %s", g_strerror (errno));
+	}
 #endif
 
 	return code_buff;
@@ -82,18 +97,15 @@ void* alloc_code_buff (int num_instr)
 /*
  * Refer to ARM Procedure Call Standard (APCS) for more info.
  */
-MonoPIFunc mono_create_trampoline (MonoMethod* method, int runtime)
+MonoPIFunc mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 {
-	MonoMethodSignature* sig;
 	MonoType* param;
 	MonoPIFunc code_buff;
-	arminstr_t* p, * utf8_addr, * free_addr, * str_new_addr;
+	arminstr_t* p;
 	guint32 code_size, stack_size;
 	guint32 simple_type;
 	int i, hasthis, aregs, regc, stack_offs;
-	int utf8_offs, utf8_reg, utf8_stack_offs;
 	int this_loaded;
-	int str_args, strc;
 	guchar reg_alloc [ARM_NUM_ARG_REGS];
 
 	/* pessimistic estimation for prologue/epilogue size */
@@ -106,8 +118,6 @@ MonoPIFunc mono_create_trampoline (MonoMethod* method, int runtime)
 	code_size += 2;
 
 	stack_size = 0;
-	str_args = 0;
-	sig = method->signature;
 	hasthis = sig->hasthis ? 1 : 0;
 
 	aregs = ARM_NUM_ARG_REGS - hasthis;
@@ -157,13 +167,6 @@ enum_calc_size:
 					code_size += 2;
 					stack_size += 4;
 				}
-
-				if (simple_type == MONO_TYPE_STRING
-				    && !(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
-				    && !runtime) {
-					code_size += 6; /* rough */
-					++str_args;
-				}
 				break;
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8:
@@ -193,6 +196,7 @@ enum_calc_size:
 					simple_type = param->data.klass->enum_basetype->type;
 					goto enum_calc_size;
 				}
+
 				if (mono_class_value_size(param->data.klass, NULL) != 4) {
 					g_error("can only marshal enums, not generic structures (size: %d)", mono_class_value_size(param->data.klass, NULL));
 				}
@@ -213,14 +217,11 @@ enum_calc_size:
 		}
 	}
 
-	if (str_args) code_size += 2;
-
 	code_buff = (MonoPIFunc)alloc_code_buff(code_size);
 	p = (arminstr_t*)code_buff;
 
 	/* prologue */
-	p = arm_emit_lean_prologue((arminstr_t*)p,
-	        stack_size + str_args*sizeof(gpointer),
+	p = arm_emit_lean_prologue(p, stack_size,
 	        /* save workset (r4-r7) */
 	        (1 << ARMREG_R4) | (1 << ARMREG_R5) | (1 << ARMREG_R6) | (1 << ARMREG_R7));
 
@@ -229,7 +230,7 @@ enum_calc_size:
 	/* callme - always present */
 	ARM_MOV_REG_REG(p, ARMREG_R4, ARMREG_A1);
 	/* retval */
-	if (sig->ret->byref || (sig->ret->type != MONO_TYPE_VOID)) {
+	if (sig->ret->byref || string_ctor || (sig->ret->type != MONO_TYPE_VOID)) {
 		ARM_MOV_REG_REG(p, ARMREG_R5, ARMREG_A2);
 	}
 	/* this_obj */
@@ -247,44 +248,20 @@ enum_calc_size:
 		ARM_MOV_REG_REG(p, ARMREG_R7, ARMREG_A4);
 	}
 
-	if (str_args || sig->ret->type == MONO_TYPE_STRING) {
-		/* branch around address table */
-		ARM_B(p, str_args ? 2 : 0);
-
-		/* create branch table for string functions */
-		if (str_args) {
-			/* allocate slots for convert
-			 * and free functions only if
-			 * we have some string args,
-			 * otherwise only string_new
-			 * is needed for retval.
-			 */
-			utf8_addr = p;
-			*p++ = (arminstr_t)&mono_string_to_utf8;
-			free_addr = p;
-			*p++ = (arminstr_t)&g_free;
-		}
-		str_new_addr = p;
-		*p++ = (arminstr_t)&mono_string_new_wrapper;
-
-		strc = str_args; /* # of string args */
-	}
-
 	stack_offs = stack_size;
-	utf8_stack_offs = stack_size + str_args*sizeof(gpointer);
 
 	/* handle arguments */
 	/* in reverse order so we could use r0 (arg1) for memory transfers */
 	for (i = sig->param_count; --i >= 0;) {
 		param = sig->params [i];
 		if (param->byref) {
-				if (i < aregs) {
-					ARM_LDR_IMM(p, ARMREG_A1 + i, REG_ARGP, i*ARG_SIZE);
-				} else {
-					stack_offs -= sizeof(armword_t);
-					ARM_LDR_IMM(p, ARMREG_R4, REG_ARGP, i*ARG_SIZE);
-					ARM_STR_IMM(p, ARMREG_R4, ARMREG_SP, stack_offs);
-				}
+			if (i < aregs) {
+				ARM_LDR_IMM(p, ARMREG_A1 + i, REG_ARGP, i*ARG_SIZE);
+			} else {
+				stack_offs -= sizeof(armword_t);
+				ARM_LDR_IMM(p, ARMREG_R0, REG_ARGP, i*ARG_SIZE);
+				ARM_STR_IMM(p, ARMREG_R0, ARMREG_SP, stack_offs);
+			}
 		} else {
 			simple_type = param->type;
 enum_marshal:
@@ -304,7 +281,7 @@ enum_marshal:
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_OBJECT:
-push_a_word:
+			case MONO_TYPE_STRING:
 				if (i < aregs && reg_alloc [i] > 0) {
 					/* pass in register */
 					ARM_LDR_IMM(p, ARMREG_A1 + hasthis + (aregs - reg_alloc [i]), REG_ARGP, i*ARG_SIZE);
@@ -337,66 +314,23 @@ push_a_word:
 					ARM_STR_IMM(p, ARMREG_R0, ARMREG_SP, stack_offs + 4);
 				}
 				break;
-			case MONO_TYPE_STRING:
-				if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime) {
-					goto push_a_word;
-				} else {
-					if (sig->hasthis && this_loaded) {
-						ARM_MOV_REG_REG(p, REG_THIS, ARMREG_A1);
-						this_loaded = 0;
-					}
-
-					if (sig->hasthis && strc == str_args) {
-						ARM_PUSH(p, (1 << REG_THIS));
-						/* adjust stack pointers */
-						stack_offs += sizeof(armword_t);
-						utf8_stack_offs += sizeof(armword_t);
-					}
-
-					utf8_offs = -(p + 2 - utf8_addr) * sizeof(arminstr_t);
-					utf8_reg = sig->hasthis ? REG_FUNC_ADDR : REG_THIS;
-					/* load function address */
-					ARM_LDR_IMM(p, utf8_reg, ARMREG_PC, utf8_offs);
-					/* load MonoString ptr */
-					ARM_LDR_IMM(p, ARMREG_A1, REG_ARGP, i*ARG_SIZE);
-					/* call string_to_utf8 function */
-					ARM_MOV_REG_REG(p, ARMREG_LR, ARMREG_PC);
-					ARM_MOV_REG_REG(p, ARMREG_PC, utf8_reg);
-
-					/* count-down string args */
-					--strc;
-
-					if (sig->hasthis && strc == 0) {
-						ARM_POP(p, (1 << REG_THIS));
-						/* restore stack pointers */
-						stack_offs -= sizeof(armword_t);
-						utf8_stack_offs -= sizeof(armword_t);
-					}
-
-					/* maintain list of allocated strings */
-					utf8_stack_offs -= sizeof(gpointer);
-					ARM_STR_IMM(p, ARMREG_R0, ARMREG_SP, utf8_stack_offs);
-
-					if (i < aregs && reg_alloc [i] > 0) {
-						/* pass in register */
-						utf8_reg = ARMREG_A1 + hasthis + (aregs - reg_alloc [i]);
-						/* result returned in R0, avoid NOPs */
-						if (utf8_reg != ARMREG_R0) {
-							ARM_MOV_REG_REG(p, utf8_reg, ARMREG_R0);
-						}
-					} else {
-						stack_offs -= sizeof(armword_t);
-						ARM_STR_IMM(p, ARMREG_R0, ARMREG_SP, stack_offs);
-					}
-				}
-				break;
 			case MONO_TYPE_VALUETYPE:
 				if (param->data.klass->enumtype) {
 					/* it's an enum value, proceed based on its base type */
 					simple_type = param->data.klass->enum_basetype->type;
 					goto enum_marshal;
 				} else {
-					goto push_a_word;
+					if (i < aregs && reg_alloc[i] > 0) {
+						int vtreg = ARMREG_A1 + hasthis +
+								hasthis + (aregs - reg_alloc[i]);
+						ARM_LDR_IMM(p, vtreg, REG_ARGP, i * ARG_SIZE);
+						ARM_LDR_IMM(p, vtreg, vtreg, 0);
+					} else {
+						stack_offs -= sizeof(armword_t);
+						ARM_LDR_IMM(p, ARMREG_R0, REG_ARGP, i * ARG_SIZE);
+						ARM_LDR_IMM(p, ARMREG_R0, ARMREG_R0, 0);
+						ARM_STR_IMM(p, ARMREG_R0, ARMREG_SP, stack_offs);
+					}
 				}
 				break;
 
@@ -415,9 +349,8 @@ push_a_word:
 	ARM_MOV_REG_REG(p, ARMREG_LR, ARMREG_PC);
 	ARM_MOV_REG_REG(p, ARMREG_PC, REG_FUNC_ADDR);
 
-
 	/* handle retval */
-	if (sig->ret->byref) {
+	if (sig->ret->byref || string_ctor) {
 		ARM_STR_IMM(p, ARMREG_R0, REG_RETVAL, 0);
 	} else {
 		simple_type = sig->ret->type;
@@ -446,24 +379,9 @@ enum_retvalue:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_ARRAY:
-			ARM_STR_IMM(p, ARMREG_R0, REG_RETVAL, 0);
-			break;
+		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_STRING:
-			if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || runtime) {
-				/* return UTF8 string as-is */
-				ARM_STR_IMM(p, ARMREG_R0, REG_RETVAL, 0);
-			} else {
-				/* if result is non-null convert it back to MonoString */
-				utf8_offs = -(p + 2 - str_new_addr) * sizeof(arminstr_t);
-				ARM_TEQ_REG_IMM8(p, ARMREG_R0, 0);
-				/* load mono_string_new_wrapper address */
-				ARM_LDR_IMM_COND(p, ARMREG_R2, ARMREG_PC, utf8_offs, ARMCOND_NE);
-				/* call mono_string_new_wrapper */
-				ARM_MOV_REG_REG_COND(p, ARMREG_LR, ARMREG_PC, ARMCOND_NE);
-				ARM_MOV_REG_REG_COND(p, ARMREG_PC, ARMREG_R2, ARMCOND_NE);
-
-				ARM_STR_IMM(p, ARMREG_R0, REG_RETVAL, 0);
-			}
+			ARM_STR_IMM(p, ARMREG_R0, REG_RETVAL, 0);
 			break;
 		/*
 		 * A 64-bit integer is returned in R0 and R1.
@@ -487,26 +405,8 @@ enum_retvalue:
 			break;
 		}
 	}
-
-	/* free allocated strings */
-	if (str_args) {
-		utf8_stack_offs = stack_size + str_args*sizeof(gpointer);
-		for (strc = str_args; --strc >= 0;) {
-			utf8_stack_offs -= sizeof(gpointer);
-			/* calc PC-relative offset to function addr */
-			utf8_offs = -(p + 2 - free_addr) * sizeof(arminstr_t);
-			/* load function address */
-			ARM_LDR_IMM(p, ARMREG_R2, ARMREG_PC, utf8_offs);
-			/* load MonoString ptr */
-			ARM_LDR_IMM(p, ARMREG_A1, ARMREG_SP, utf8_stack_offs);
-			/* call free function */
-			ARM_MOV_REG_REG(p, ARMREG_LR, ARMREG_PC);
-			ARM_MOV_REG_REG(p, ARMREG_PC, ARMREG_R2);
-		}
-	}
-
-
-	p = arm_emit_std_epilogue(p, stack_size + str_args*sizeof(gpointer),
+	
+	p = arm_emit_std_epilogue(p, stack_size,
 	        /* restore R4-R7 */
 	        (1 << ARMREG_R4) | (1 << ARMREG_R5) | (1 << ARMREG_R6) | (1 << ARMREG_R7));
 
@@ -522,6 +422,7 @@ enum_retvalue:
 
 
 #define MINV_OFFS(member) G_STRUCT_OFFSET(MonoInvocation, member)
+
 
 
 /*
@@ -541,6 +442,21 @@ void* mono_create_method_pointer (MonoMethod* method)
 	void* code_buff;
 	int i, stack_size, arg_pos, arg_add, stackval_pos, offs;
 	int areg, reg_args, shift, pos;
+	MonoJitInfo *ji;
+
+	/*
+	 * If it is a static P/Invoke method just
+	 * just return the pointer to the implementation
+	 */
+	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL && method->addr) {
+		ji = g_new0(MonoJitInfo, 1);
+		ji->method = method;
+		ji->code_size = 1;
+		ji->code_start = method->addr;
+
+		mono_jit_info_table_add(mono_root_domain, ji);
+		return method->addr;
+	}
 
 	code_buff = alloc_code_buff(128);
 	p = (guchar*)code_buff;
@@ -566,7 +482,6 @@ void* mono_create_method_pointer (MonoMethod* method)
 	*(void**)p = ves_exec_method;
 	p_exec = p;
 	p += 4;
-
 
 	stack_size = sizeof(MonoInvocation) + ARG_SIZE*(sig->param_count + 1) + ARM_NUM_ARG_REGS*2*sizeof(armword_t);
 
@@ -751,6 +666,7 @@ void* mono_create_method_pointer (MonoMethod* method)
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
 			ARM_LDR_IMM(p, ARMREG_R0, ARMREG_R5, 0);
 			break;
 		case MONO_TYPE_I8:
@@ -777,6 +693,13 @@ void* mono_create_method_pointer (MonoMethod* method)
 #ifdef ARM_DUMP_DISASM
 	_armdis_decode((arminstr_t*)code_buff, ((guint8*)p) - ((guint8*)code_buff));
 #endif
+
+	ji = g_new0(MonoJitInfo, 1);
+	ji->method = method;
+	ji->code_size = ((guint8 *) p) - ((guint8 *) code_buff);
+	ji->code_start = (gpointer) code_buff;
+
+	mono_jit_info_table_add(mono_root_domain, ji);
 
 	return code_buff;
 }
