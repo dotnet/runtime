@@ -7908,10 +7908,13 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 
 	gclass->inst->type_argc = type_argc;
 	gclass->inst->type_argv = types;
+	gclass->inst->is_reference = 1;
 
 	for (i = 0; i < gclass->inst->type_argc; ++i) {
 		if (!gclass->inst->is_open)
 			gclass->inst->is_open = mono_class_is_open_constructed_type (types [i]);
+		if (gclass->inst->is_reference)
+			gclass->inst->is_reference = MONO_TYPE_IS_REFERENCE (types [i]);
 	}
 
 	gclass->container_class = klass;
@@ -7935,6 +7938,7 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 
 		gclass->inst->type_argc = kgclass->inst->type_argc;
 		gclass->inst->type_argv = g_new0 (MonoType *, gclass->inst->type_argc);
+		gclass->inst->is_reference = 1;
 
 		for (i = 0; i < gclass->inst->type_argc; i++) {
 			MonoType *t = kgclass->inst->type_argv [i];
@@ -7943,6 +7947,8 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 
 			if (!gclass->inst->is_open)
 				gclass->inst->is_open = mono_class_is_open_constructed_type (t);
+			if (gclass->inst->is_reference)
+				gclass->inst->is_reference = MONO_TYPE_IS_REFERENCE (t);
 
 			gclass->inst->type_argv [i] = t;
 		}
@@ -8084,12 +8090,15 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	ginst = g_new0 (MonoGenericInst,1 );
 	ginst->type_argc = count;
 	ginst->type_argv = g_new0 (MonoType *, count);
+	ginst->is_reference = 1;
 	for (i = 0; i < count; i++) {
 		MonoReflectionType *garg = mono_array_get (types, gpointer, i);
 		ginst->type_argv [i] = dup_type (garg->type);
 
 		if (!ginst->is_open)
 			ginst->is_open = mono_class_is_open_constructed_type (ginst->type_argv [i]);
+		if (ginst->is_reference)
+			ginst->is_reference = MONO_TYPE_IS_REFERENCE (ginst->type_argv [i]);
 	}
 	ginst = mono_metadata_lookup_generic_inst (ginst);
 
@@ -8187,11 +8196,11 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 	klass = mono_class_from_mono_type (type->type.type);
 	gclass = type->type.type->data.generic_class;
 
-	if (gclass->initialized)
-		return;
-
 	g_assert (gclass->is_dynamic);
 	dgclass = (MonoDynamicGenericClass *) gclass;
+
+	if (dgclass->initialized)
+		return;
 
 	gklass = gclass->container_class;
 	mono_class_init (gklass);
@@ -8300,7 +8309,7 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 			g_assert_not_reached ();
 	}
 
-	gclass->initialized = TRUE;
+	dgclass->initialized = TRUE;
 }
 
 static void

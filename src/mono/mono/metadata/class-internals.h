@@ -305,9 +305,10 @@ struct MonoVTable {
  * Generic instantiation data type encoding.
  */
 struct _MonoGenericInst {
-	int id;
-	int type_argc  : 23;
-	int is_open    : 1;
+	guint id;
+	guint type_argc    : 22;
+	guint is_open      :  1;
+	guint is_reference :  1;
 	MonoType **type_argv;
 };
 
@@ -318,8 +319,6 @@ struct _MonoGenericClass {
 	MonoClass *klass;
 	MonoType *parent;
 	guint count_ifaces  : 29;
-	guint initialized   :  1;
-	guint init_pending  :  1;
 	guint is_dynamic    :  1;
 	MonoType **ifaces;
 };
@@ -336,6 +335,7 @@ struct _MonoDynamicGenericClass {
 	MonoProperty *properties;
 	int count_events;
 	MonoEvent *events;
+	guint initialized;
 };
 
 struct _MonoGenericMethod {

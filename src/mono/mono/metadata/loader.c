@@ -411,7 +411,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *contex
 	}
 
 	if (gclass)
-		method = mono_class_inflate_generic_method (method, gclass->context, gclass);
+		method = mono_class_inflate_generic_method (method, gclass->context, gclass->klass);
 
 	return method;
 }
