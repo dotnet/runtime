@@ -755,7 +755,7 @@ arch_allocate_var (MonoFlowGraph *cfg, int size, int align, MonoValueKind kind, 
 	case MONO_ARGVAR: {
 		int arg_start = 8 + cfg->has_vtarg*4;
 
-		g_assert (align == 4); /* must be true on x86 */
+		g_assert ((align & 3) == 0);
 
 		SET_VARINFO (vi, type, kind, cfg->args_size + arg_start, size);
 		g_array_append_val (cfg->varinfo, vi);
