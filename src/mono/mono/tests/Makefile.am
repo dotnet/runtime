@@ -129,6 +129,7 @@ TEST_CS_SRC=			\
 	bound.cs		\
 	array-invoke.cs		\
 	decimal.cs		\
+	decimal-array.cs	\
 	marshal1.cs		\
 	marshal2.cs		\
 	marshal3.cs		\

@@ -832,6 +832,9 @@ ves_array_element_address (MonoArray *this, ...)
 			this->bounds [i].lower_bound;;
 	}
 
+	if (ind >= this->max_length)
+		mono_raise_exception (mono_get_exception_index_out_of_range ());
+
 	esize = mono_array_element_size (class);
 	ea = (gpointer*)((char*)this->vector + (ind * esize));
 	//printf ("AADDRESS %p %p %d %d %08X\n", this, ea, ind, esize, *(gpointer *)ea);
@@ -2195,7 +2198,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				this = mono_ctree_new_leaf (mp, MB_TERM_NOP);
 			
 
-			if (MONO_TYPE_ISSTRUCT (csig->ret)) {
+			if (MONO_TYPE_ISSTRUCT (csig->ret) && !array_rank) {
 				int size, align;
 				if (csig->pinvoke)
 					size = mono_class_native_size (csig->ret->data.klass, &align);
