@@ -317,14 +317,15 @@ static char *opcode_names[] = {
 #include "mono/cil/opcode.def"
 	NULL
 };
-#endif
+
+static int call_level = 0;
 
 static void
 output_indent (void)
 {
 	int h;
 
-	for (h = 0; h < level; h++)
+	for (h = 0; h < call_level; h++)
 		g_print ("  ");
 }
 
@@ -350,6 +351,8 @@ dump_stack (stackval *stack, stackval *sp)
 	}
 }
 
+#endif
+
 /*
  * Need to optimize ALU ops when natural int == int32 
  *
@@ -367,7 +370,6 @@ dump_stack (stackval *stack, stackval *sp)
 static void 
 ves_exec_method (MonoMethod *mh, stackval *args)
 {
-	static int debug_level = 0;
 	MonoMethodManaged *mm = (MonoMethodManaged *)mh;
 	stackval *stack;
 	register const unsigned char *ip;
@@ -383,7 +385,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 	ip = mm->header->code;
 
 #if DEBUG_INTERP
-	level++;
+	call_level++;
 	output_indent ();
 	g_print ("Entering %s\n", mh->name);
 #endif
@@ -413,7 +415,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 #if DEBUG_INTERP
 		dump_stack (stack, sp);
 		g_print ("\n");
-		INDENT();
+		output_indent ();
 		g_print ("0x%04x: %s\n",
 			 ip-(unsigned char*)mm->header->code,
 			 *ip == 0xfe ? opcode_names [256 + ip [1]] : opcode_names [*ip]);
@@ -600,7 +602,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 
 			/* g_free (stack); */
 #if DEBUG_INTERP
-			debug_level--;
+			call_level--;
 #endif
 			return;
 		CASE (CEE_BR_S)
