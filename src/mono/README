@@ -1,8 +1,42 @@
-This is MonoNet.
+This is Mono.
 
-Ximian's portable implementation of .NET 
+A directory roadmap:
+
+	doc/
+		Contains documentation and the web site contents.
+
+	mono/
+		The core of the executable.
+
+		metadata/
+			The library to deal with executables and libraries for
+			.NET
+
+		dis/
+			CIL executable Disassembler
+
+		cli/
+			Common code for the JIT and the interpreter.
+
+		cil/
+			Common Intermediate Representation, XML
+			definition of the CIL bytecodes.
+
+		interp/
+			Interpreter for CLI executables.
+
+* Using Mono
+
+	Once you have installed the software, you can run a few programs:
+
+		monodis program.exe
+
+	That will dump the bytecodes for program.exe.  Monodis support
+	a number of options that dumps various metadata tables
+	(chapter 23 of the Partition III).
+
+	You can try the interpreter like this:
+
+		mono-int program.exe
 
 
-----------
-
-To edit the go-mono website, see doc/README.

@@ -575,7 +575,13 @@ A: The JIT engine and runtime engine will be able to execute CIL
 
 Q: Is Mono part of the GNU project?
 
-A: Mono is a Ximian project.  It is also part of the GNU project.
+A: Mono is an open source projected lead by Ximian.  
+
+   We wanted to make Mono part of the GNU project, but it was required
+   that means we refer to Linux as `GNU/Linux' in our documentation
+   and public appearances.   
+
+   So Mono is not part of the GNU project. 
 
 ** Mono and Portability
 
