@@ -30,7 +30,7 @@ regtests=basic.exe arrays.exe basic-float.exe basic-long.exe objects.exe basic-c
 
 libmono_la_LDFLAGS=-Wl,-version-script=$(srcdir)/ldscript
 
-if X86
+if JIT_SUPPORTED
 bin_PROGRAMS = mono genmdesc
 
 lib_LTLIBRARIES = libmono.la
@@ -57,13 +57,19 @@ genmdesc_LDADD = \
 	$(GLIB_LIBS)		\
 	$(GMODULE_LIBS)
 
-arch_sources = \
+x86_sources = \
 	mini-x86.c		\
 	mini-x86.h		\
 	exceptions-x86.c	\
 	tramp-x86.c
 
-libmono_la_SOURCES = \
+ppc_sources = \
+	mini-ppc.c		\
+	mini-ppc.h		\
+	exceptions-ppc.c	\
+	tramp-ppc.c
+
+common_sources = \
 	mini.c		\
 	mini.h		\
 	mini-ops.h	\
@@ -80,8 +86,23 @@ libmono_la_SOURCES = \
 	debug-mini.c	\
 	linear-scan.c	\
 	aot.c		\
-	graph.c		\
-	$(arch_sources)
+	graph.c	
+
+common_BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-long32.brg $(srcdir)/inssel-float.brg
+
+if X86
+libmono_la_SOURCES = \
+	$(common_sources) $(x86_sources)
+
+BURGSRC= $(common_BURGSRC) $(srcdir)/inssel-x86.brg
+endif
+
+if POWERPC
+libmono_la_SOURCES = \
+	$(common_sources) $(ppc_sources)
+
+BURGSRC= $(common_BURGSRC) $(srcdir)/inssel-ppc.brg
+endif
 
 libmono_la_LIBADD = \
 	$(libs)
@@ -97,8 +118,6 @@ TestDriver.dll: TestDriver.cs
 
 cpu-pentium.h: cpu-pentium.md genmdesc$(EXEEXT)
 	./genmdesc $(srcdir)/cpu-pentium.md cpu-pentium.h pentium
-
-BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-x86.brg $(srcdir)/inssel-long32.brg $(srcdir)/inssel-float.brg
 
 inssel.c inssel.h: $(BURGSRC)
 	$(monodir)/mono/monoburg/monoburg -c 1 -p -e $(BURGSRC) -d inssel.h -s inssel.c
@@ -146,8 +165,8 @@ pkgconfigdir = $(libdir)/pkgconfig
 
 BUILT_SOURCES= inssel.c inssel.h cpu-pentium.h
 CLEANFILES= $(BUILT_SOURCES)
-EXTRA_DIST = emullong.brg inssel-float.brg inssel-long.brg  \
-	inssel-long32.brg inssel-x86.brg inssel.brg jit-icalls.c cprop.c \
+EXTRA_DIST = $(common_BURGSRC) inssel-x86.brg \
+	jit-icalls.c cprop.c \
 	cpu-pentium.md cpu-g4.md ldscript
 
 
