@@ -29,6 +29,16 @@ static guint32 write_type (MonoDebuggerSymbolTable *table, MonoType *type);
 MonoDebuggerSymbolTable *mono_debugger_symbol_table = NULL;
 void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, gpointer data2) = NULL;
 
+#ifndef PLATFORM_WIN32
+
+MonoDebuggerIOLayer mono_debugger_io_layer = {
+	InitializeCriticalSection, DeleteCriticalSection, TryEnterCriticalSection,
+	EnterCriticalSection, LeaveCriticalSection, WaitForSingleObject, SignalObjectAndWait,
+	WaitForMultipleObjects, CreateSemaphore, ReleaseSemaphore, CreateThread
+};
+
+#endif
+
 void
 mono_debugger_lock (void)
 {
@@ -68,6 +78,8 @@ mono_debugger_initialize (void)
 	MonoDebuggerSymbolTable *symbol_table;
 
 	g_assert (!mono_debugger_initialized);
+
+	InitializeCriticalSection (&debugger_lock_mutex);
 
 	mono_debugger_lock ();
 

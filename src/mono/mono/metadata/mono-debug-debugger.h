@@ -11,6 +11,7 @@ typedef struct _MonoDebuggerSymbolFile		MonoDebuggerSymbolFile;
 typedef struct _MonoDebuggerSymbolFilePriv	MonoDebuggerSymbolFilePriv;
 typedef struct _MonoDebuggerRangeInfo		MonoDebuggerRangeInfo;
 typedef struct _MonoDebuggerClassInfo		MonoDebuggerClassInfo;
+typedef struct _MonoDebuggerIOLayer		MonoDebuggerIOLayer;
 
 typedef enum {
 	MONO_DEBUGGER_EVENT_TYPE_ADDED,
@@ -28,6 +29,12 @@ struct _MonoDebuggerSymbolTable {
 	guint64 magic;
 	guint32 version;
 	guint32 total_size;
+
+	/*
+	 * The symbol files.
+	 */
+	guint32 num_symbol_files;
+	MonoDebuggerSymbolFile **symbol_files;
 
 	/*
 	 * Type table.
@@ -62,12 +69,6 @@ struct _MonoDebuggerSymbolTable {
 	 */
 	guint32 type_table_offset;
 	guint32 type_table_start;
-
-	/*
-	 * The symbol files.
-	 */
-	guint32 num_symbol_files;
-	MonoDebuggerSymbolFile **symbol_files;
 };
 
 struct _MonoDebuggerSymbolFile {
@@ -103,6 +104,50 @@ struct _MonoDebuggerClassInfo {
 };
 
 extern MonoDebuggerSymbolTable *mono_debugger_symbol_table;
+
+/*
+ * Address of the x86 trampoline code.  This is used by the debugger to check
+ * whether a method is a trampoline.
+ */
+extern guint8 *mono_generic_trampoline_code;
+
+/*
+ * Address of a special breakpoint trampoline code for the debugger.
+ */
+extern guint8 *mono_breakpoint_trampoline_code;
+
+#ifndef PLATFORM_WIN32
+
+/*
+ * Functions we export to the debugger.
+ */
+struct _MonoDebuggerIOLayer
+{
+	void (*InitializeCriticalSection) (WapiCriticalSection *section);
+	void (*DeleteCriticalSection) (WapiCriticalSection *section);
+	gboolean (*TryEnterCriticalSection) (WapiCriticalSection *section);
+	void (*EnterCriticalSection) (WapiCriticalSection *section);
+	void (*LeaveCriticalSection) (WapiCriticalSection *section);
+
+	guint32 (*WaitForSingleObject) (gpointer handle, guint32 timeout);
+	guint32 (*SignalObjectAndWait) (gpointer signal_handle, gpointer wait,
+					guint32 timeout, gboolean alertable);
+	guint32 (*WaitForMultipleObjects) (guint32 numobjects, gpointer *handles,
+					   gboolean waitall, guint32 timeout);
+
+	gpointer (*CreateSemaphore) (WapiSecurityAttributes *security,
+				     gint32 initial, gint32 max,
+				     const guchar *name);
+	gboolean (*ReleaseSemaphore) (gpointer handle, gint32 count, gint32 *prevcount);
+
+	gpointer (*CreateThread) (WapiSecurityAttributes *security,
+				  guint32 stacksize, WapiThreadStart start,
+				  gpointer param, guint32 create, guint32 *tid);
+};
+
+extern MonoDebuggerIOLayer mono_debugger_io_layer;
+
+#endif
 
 extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, gpointer data, gpointer data2);
 
