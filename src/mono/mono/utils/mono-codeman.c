@@ -93,7 +93,7 @@ mono_code_manager_invalidate (MonoCodeManager *cman)
 {
 	CodeChunk *chunk;
 
-#ifdef __i386__
+#if defined(__i386__) || defined(__x86_64__)
 	int fill_value = 0xcc; /* x86 break */
 #else
 	int fill_value = 0x2a;
