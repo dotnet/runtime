@@ -4227,6 +4227,7 @@ mono_jit_init (const char *file) {
 	mono_install_handler (arch_get_throw_exception ());
 	mono_install_runtime_invoke (mono_jit_runtime_invoke);
 	mono_install_stack_walk (mono_jit_walk_stack);
+	mono_install_get_config_dir ();
 
 	domain = mono_init (file);
 	mono_runtime_init (domain, mono_thread_start_cb,

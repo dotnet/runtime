@@ -1,3 +1,10 @@
+2002-12-09  Tim Haynes  <thaynes@openlinksw.co.uk>
+
+	* mono/jit/jit.c
+	* mono/metadata/icall.c: added mono_install_get_config_dir() to
+	utilize the MONO_CFG_DIR environment variable for specifying
+	different machine.configs.
+
 2002-12-06  Duncan Mak  <duncan@ximian.com>
 
 	* data/Makefile.am (EXTRA_DIST): Add machine.config

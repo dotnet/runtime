@@ -2999,6 +2999,18 @@ ves_icall_RuntimeMethod_GetFunctionPointer (MonoMethod *method)
 	return mono_compile_method (method);
 }
 
+char * mono_cfg_dir = "";
+
+void    
+mono_install_get_config_dir()
+{       
+  mono_cfg_dir = getenv ("MONO_CFG_DIR");
+
+  if (!mono_cfg_dir)
+    mono_cfg_dir = MONO_CFG_DIR; 
+}
+
+
 static MonoString *
 ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
 {
@@ -3010,7 +3022,7 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (void)
 	if (mcpath != NULL)
 		return mcpath;
 
-	path = g_build_path (G_DIR_SEPARATOR_S, MONO_CFG_DIR, "mono", "machine.config", NULL);
+	path = g_build_path (G_DIR_SEPARATOR_S, mono_cfg_dir, "mono", "machine.config", NULL);
 
 #if defined (PLATFORM_WIN32)
 	/* Avoid mixing '/' and '\\' */
