@@ -760,6 +760,25 @@ interp_delegate_ctor (MonoDomain *domain, MonoObject *this, MonoObject *target, 
 	}
 }
 
+MonoDelegate*
+mono_interp_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
+{
+	MonoDelegate *d;
+	MonoJitInfo *ji;
+	MonoDomain *domain = mono_domain_get ();
+
+	d = (MonoDelegate*)mono_object_new (domain, klass);
+
+	ji = mono_jit_info_table_find (domain, ftn);
+	if (ji == NULL)
+		mono_raise_exception (mono_get_exception_argument ("", "Function pointer was not created by a Delegate."));
+
+	/* FIXME: discard the wrapper and call the original method */
+	interp_delegate_ctor (domain, (MonoObject*)d, NULL, mono_interp_get_runtime_method (ji->method));
+
+	return d;
+}
+
 /*
  * From the spec:
  * runtime specifies that the implementation of the method is automatically
@@ -1209,7 +1228,7 @@ do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 		context->env_frame = old_env_frame;
 		context->current_env = old_env;
 		context->managed_code = 1;
-		return;
+		return sp;
 	}
 
 	context->env_frame = context->current_frame;

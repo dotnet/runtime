@@ -2427,6 +2427,8 @@ generate(MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 					default:
 						g_assert_not_reached ();
 					}
+					if (func == mono_ftnptr_to_delegate)
+						func = mono_interp_ftnptr_to_delegate;
 					ADD_CODE(&td, get_data_item_index (&td, func));
 					td.sp -= info->sig->param_count;
 
