@@ -612,7 +612,7 @@ MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, M
 void      mono_destroy_compile              (MonoCompile *cfg);
 gpointer  mono_aot_get_method               (MonoMethod *method);
 gboolean  mono_method_blittable             (MonoMethod *method);
-void      mono_register_opcode_emulation    (int opcode, const char* name, MonoMethodSignature *sig, gpointer func);
+void      mono_register_opcode_emulation    (int opcode, const char* name, MonoMethodSignature *sig, gpointer func, gboolean no_throw);
 void      mono_arch_register_lowlevel_calls (void);
 void      mono_draw_graph                   (MonoCompile *cfg, MonoGraphOptions draw_options);
 void      mono_add_varcopy_to_end           (MonoCompile *cfg, MonoBasicBlock *bb, int src, int dest);

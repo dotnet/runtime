@@ -5274,7 +5274,7 @@ mono_find_jit_opcode_emulation (int opcode)
 }
 
 void
-mono_register_opcode_emulation (int opcode, const char *name, MonoMethodSignature *sig, gpointer func)
+mono_register_opcode_emulation (int opcode, const char *name, MonoMethodSignature *sig, gpointer func, gboolean no_throw)
 {
 	MonoJitICallInfo *info;
 
@@ -5284,7 +5284,7 @@ mono_register_opcode_emulation (int opcode, const char *name, MonoMethodSignatur
 	g_assert (!sig->hasthis);
 	g_assert (sig->param_count < 3);
 
-	info = mono_register_jit_icall (func, name, sig, FALSE);
+	info = mono_register_jit_icall (func, name, sig, no_throw);
 
 	g_hash_table_insert (emul_opcode_hash, (gpointer)opcode, info);
 }
@@ -6923,25 +6923,25 @@ mini_init (const char *filename)
 	 * when adding emulation for some opcodes, remember to also add a dummy
 	 * rule to the burg files, because we need the arity information to be correct.
 	 */
-	mono_register_opcode_emulation (OP_LMUL, "__emul_lmul", helper_sig_long_long_long, mono_llmult);
-	mono_register_opcode_emulation (OP_LMUL_OVF_UN, "__emul_lmul_ovf_un", helper_sig_long_long_long, mono_llmult_ovf_un);
-	mono_register_opcode_emulation (OP_LMUL_OVF, "__emul_lmul_ovf", helper_sig_long_long_long, mono_llmult_ovf);
-	mono_register_opcode_emulation (OP_LDIV, "__emul_ldiv", helper_sig_long_long_long, mono_lldiv);
-	mono_register_opcode_emulation (OP_LDIV_UN, "__emul_ldiv_un", helper_sig_long_long_long, mono_lldiv_un);
-	mono_register_opcode_emulation (OP_LREM, "__emul_lrem", helper_sig_long_long_long, mono_llrem);
-	mono_register_opcode_emulation (OP_LREM_UN, "__emul_lrem_un", helper_sig_long_long_long, mono_llrem_un);
+	mono_register_opcode_emulation (OP_LMUL, "__emul_lmul", helper_sig_long_long_long, mono_llmult, TRUE);
+	mono_register_opcode_emulation (OP_LMUL_OVF_UN, "__emul_lmul_ovf_un", helper_sig_long_long_long, mono_llmult_ovf_un, FALSE);
+	mono_register_opcode_emulation (OP_LMUL_OVF, "__emul_lmul_ovf", helper_sig_long_long_long, mono_llmult_ovf, FALSE);
+	mono_register_opcode_emulation (OP_LDIV, "__emul_ldiv", helper_sig_long_long_long, mono_lldiv, FALSE);
+	mono_register_opcode_emulation (OP_LDIV_UN, "__emul_ldiv_un", helper_sig_long_long_long, mono_lldiv_un, FALSE);
+	mono_register_opcode_emulation (OP_LREM, "__emul_lrem", helper_sig_long_long_long, mono_llrem, FALSE);
+	mono_register_opcode_emulation (OP_LREM_UN, "__emul_lrem_un", helper_sig_long_long_long, mono_llrem_un, FALSE);
 
-	mono_register_opcode_emulation (OP_LSHL, "__emul_lshl", helper_sig_long_long_int, mono_lshl);
-	mono_register_opcode_emulation (OP_LSHR, "__emul_lshr", helper_sig_long_long_int, mono_lshr);
-	mono_register_opcode_emulation (OP_LSHR_UN, "__emul_lshr_un", helper_sig_long_long_int, mono_lshr_un);
+	mono_register_opcode_emulation (OP_LSHL, "__emul_lshl", helper_sig_long_long_int, mono_lshl, TRUE);
+	mono_register_opcode_emulation (OP_LSHR, "__emul_lshr", helper_sig_long_long_int, mono_lshr, TRUE);
+	mono_register_opcode_emulation (OP_LSHR_UN, "__emul_lshr_un", helper_sig_long_long_int, mono_lshr_un, TRUE);
 
-	mono_register_opcode_emulation (OP_FCONV_TO_U8, "__emul_fconv_to_u8", helper_sig_ulong_double, mono_fconv_u8);
-	mono_register_opcode_emulation (OP_FCONV_TO_U4, "__emul_fconv_to_u4", helper_sig_uint_double, mono_fconv_u4);
-	mono_register_opcode_emulation (OP_FCONV_TO_OVF_I8, "__emul_fconv_to_ovf_i8", helper_sig_long_double, mono_fconv_ovf_i8);
-	mono_register_opcode_emulation (OP_FCONV_TO_OVF_U8, "__emul_fconv_to_ovf_u8", helper_sig_ulong_double, mono_fconv_ovf_u8);
+	mono_register_opcode_emulation (OP_FCONV_TO_U8, "__emul_fconv_to_u8", helper_sig_ulong_double, mono_fconv_u8, FALSE);
+	mono_register_opcode_emulation (OP_FCONV_TO_U4, "__emul_fconv_to_u4", helper_sig_uint_double, mono_fconv_u4, FALSE);
+	mono_register_opcode_emulation (OP_FCONV_TO_OVF_I8, "__emul_fconv_to_ovf_i8", helper_sig_long_double, mono_fconv_ovf_i8, TRUE);
+	mono_register_opcode_emulation (OP_FCONV_TO_OVF_U8, "__emul_fconv_to_ovf_u8", helper_sig_ulong_double, mono_fconv_ovf_u8, TRUE);
 
 #if SIZEOF_VOID_P == 4
-	mono_register_opcode_emulation (OP_FCONV_TO_U, "__emul_fconv_to_u", helper_sig_uint_double, mono_fconv_u4);
+	mono_register_opcode_emulation (OP_FCONV_TO_U, "__emul_fconv_to_u", helper_sig_uint_double, mono_fconv_u4, TRUE);
 #else
 #warning "fixme: add opcode emulation"
 #endif

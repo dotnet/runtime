@@ -77,7 +77,7 @@ helper_stelem_ref (MonoArray *array, int index, MonoObject *val)
 static gint64 
 mono_llmult (gint64 a, gint64 b)
 {
-	MONO_ARCH_SAVE_REGS;
+	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
 	return a * b;
 }
 
@@ -232,7 +232,7 @@ mono_lshl (guint64 a, gint32 shamt)
 {
 	guint64 res;
 
-	MONO_ARCH_SAVE_REGS;
+	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
 	res = a << shamt;
 
 	/*printf ("TESTL %lld << %d = %lld\n", a, shamt, res);*/
@@ -245,7 +245,7 @@ mono_lshr_un (guint64 a, gint32 shamt)
 {
 	guint64 res;
 
-	MONO_ARCH_SAVE_REGS;
+	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
 	res = a >> shamt;
 
 	/*printf ("TESTR %lld >> %d = %lld\n", a, shamt, res);*/
@@ -258,7 +258,7 @@ mono_lshr (gint64 a, gint32 shamt)
 {
 	gint64 res;
 
-	MONO_ARCH_SAVE_REGS;
+	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
 	res = a >> shamt;
 
 	/*printf ("TESTR %lld >> %d = %lld\n", a, shamt, res);*/
@@ -389,14 +389,14 @@ mono_ldtoken_wrapper (MonoImage *image, int token)
 static guint64
 mono_fconv_u8 (double v)
 {
-	MONO_ARCH_SAVE_REGS;
+	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
 	return (guint64)v;
 }
 
 static guint32
 mono_fconv_u4 (double v)
 {
-	MONO_ARCH_SAVE_REGS;
+	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
 	return (guint32)v;
 }
 
