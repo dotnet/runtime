@@ -3231,20 +3231,20 @@ freg: CONV_R8 (LDIND_I4 (ADDR_G)) {
 freg: CONV_R4 (reg) {
 	x86_push_reg (s->code, tree->left->reg1);
 	x86_fild_membase (s->code, X86_ESP, 0, FALSE);
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
 }
 
 freg: CONV_R8 (reg) {
 	x86_push_reg (s->code, tree->left->reg1);
 	x86_fild_membase (s->code, X86_ESP, 0, FALSE);
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 4);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 4);
 }
 
 freg: CONV_R_UN (reg) {
 	x86_push_imm (s->code, 0);
 	x86_push_reg (s->code, tree->left->reg1);
 	x86_fild_membase (s->code, X86_ESP, 0, TRUE);
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 8);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
 }
 
 freg: CONV_R_UN (lreg) {
@@ -3278,7 +3278,7 @@ freg: CONV_R_UN (lreg) {
 		l2 = s->code;
 
 		x86_fld80_membase (s->code, X86_ESP, 0);
-		x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 12);
+		x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
 	}
 }
 
@@ -3286,14 +3286,14 @@ freg: CONV_R4 (lreg) {
 	x86_push_reg (s->code, tree->left->reg2);
 	x86_push_reg (s->code, tree->left->reg1);
 	x86_fild_membase (s->code, X86_ESP, 0, TRUE);
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 8);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
 }
 
 freg: CONV_R8 (lreg) {
 	x86_push_reg (s->code, tree->left->reg2);
 	x86_push_reg (s->code, tree->left->reg1);
 	x86_fild_membase (s->code, X86_ESP, 0, TRUE);
-	x86_alu_reg_imm (s->code, X86_SUB, X86_ESP, 8);
+	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 8);
 }
 
 freg: CONST_R4 {
