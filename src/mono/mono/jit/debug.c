@@ -999,8 +999,6 @@ release_symbol_file_table ()
 	if (!mono_debugger_symbol_file_table)
 		return;
 
-	g_message (G_STRLOC);
-
 	/*
 	 * Caution: The debugger may access the memory pointed to by this variable
 	 *          at any time.  It is very important to set the pointer to NULL
