@@ -822,7 +822,7 @@ static void
 dis_type (MonoImage *m, int n)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_TYPEDEF];
-        GString *cnst_block;
+        GString *cnst_block = NULL;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	guint32 cols_next [MONO_TYPEDEF_SIZE];
 	const char *name, *nspace;
