@@ -274,7 +274,8 @@ testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
 		fi \
 	done; \
 	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
-	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; for i in $${failed_tests}; do echo $${i}; done; fi; 
+	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
+	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
 
 testaot: $(TESTSI_CS) $(TESTBS) libtest.la
 	@failed=0; \
@@ -294,7 +295,8 @@ testaot: $(TESTSI_CS) $(TESTBS) libtest.la
 		fi \
 	done; \
 	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
-	if [ $$failed != 0 ]; then echo -e "\nFailed tests:\n"; for i in $${failed_tests}; do echo $${i}; done; fi; 
+	if [ $$failed != 0 ]; then echo -e "\nFailed tests:\n"; \
+	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
 
 testinterp: $(TESTSI_CS) $(TESTSI_IL) libtest.la
 	@failed=0; \
@@ -312,7 +314,8 @@ testinterp: $(TESTSI_CS) $(TESTSI_IL) libtest.la
 		fi \
 	done; \
 	echo "$${passed} test(s) passed. $${failed} test(s) failed."; \
-	if [ $$failed != 0 ]; then echo -e "\nFailed tests:\n"; for i in $${failed_tests}; do echo $${i}; done; fi ;
+	if [ $$failed != 0 ]; then echo -e "\nFailed tests:\n"; \
+	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
 
 testjitspeed: $(JITTEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\

@@ -26,13 +26,14 @@ if ($res) {
 	} else {
 		exit (1);
 	}
-} elsif (-f $output) {
-	print "failed output.\n" if (read_file ($output) ne read_file ($stdout));
-	exit (1);
-} else {
-	print "pass.\n";
-	unlink ($stderr);
 }
+if (-f $output && (read_file ($output) ne read_file ($stdout))) {
+    	print "failed output.\n";
+	exit (1);
+}
+
+print "pass.\n";
+unlink ($stderr);
 exit (0);
 
 sub read_file {
