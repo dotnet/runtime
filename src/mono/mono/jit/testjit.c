@@ -86,11 +86,33 @@ case CEE_##name: {                                                            \
 	break;                                                                \
 }
 	
+#define MAKE_LDELEM(name, op, svt, s)                                         \
+case CEE_##name: {                                                            \
+	++ip;                                                                 \
+	sp -= 2;                                                              \
+	t1 = mono_ctree_new (mp, MB_TERM_LDELEMA, sp [0], sp [1]);            \
+	t1->size = s;                                                         \
+	t1 = mono_ctree_new (mp, op, t1, NULL);                               \
+	PUSH_TREE (t1, svt);                                                  \
+	break;                                                                \
+}
+	
 #define MAKE_STIND(name, op)                                                  \
 case CEE_##name: {                                                            \
 	++ip;                                                                 \
 	sp -= 2;                                                              \
 	t1 = mono_ctree_new (mp, op, sp [0], sp [1]);                         \
+	ADD_TREE (t1);                                                        \
+	break;                                                                \
+}
+	
+#define MAKE_STELEM(name, op, s)                                              \
+case CEE_##name: {                                                            \
+	++ip;                                                                 \
+	sp -= 3;                                                              \
+	t1 = mono_ctree_new (mp, MB_TERM_LDELEMA, sp [0], sp [1]);            \
+	t1->size = s;                                                         \
+	t1 = mono_ctree_new (mp, op, t1, sp [2]);                             \
 	ADD_TREE (t1);                                                        \
 	break;                                                                \
 }
@@ -145,6 +167,7 @@ map_stind_type (MonoType *type)
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_SZARRAY:
 		return MB_TERM_STIND_I4;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
@@ -216,6 +239,7 @@ map_ldind_type (MonoType *type, MonoValueType *svt)
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_SZARRAY:
 		*svt = VAL_POINTER;
 		return MB_TERM_LDIND_U4;
 	case MONO_TYPE_I8:
@@ -584,26 +608,6 @@ mono_store_tree (MonoFlowGraph *cfg, int slot, MBTree *s, MBTree **dup)
 	return t;
 }
 
-/* fixme: this is to clumsy :-( */
-static MBTree *
-ctree_create_newobj (MonoMemPool *mp, MonoClass *klass)
-{
-	MBTree *t1, *t2;
-	static gpointer newobj_func = mono_object_new;
-
-	t1 = mono_ctree_new_leaf (mp, MB_TERM_ARG_END);
-	t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
-	t2->data.p = klass;
-	t1 = mono_ctree_new (mp, MB_TERM_ARG, t1, t2);	
-
-	t2 = mono_ctree_new_leaf (mp, MB_TERM_ADDR_G);
-	t2->data.p = &newobj_func;
-	t1 = mono_ctree_new (mp, MB_TERM_CALL_I4, t1, t2);
-	t1->size = sizeof (gpointer);
-
-	return t1;
-}
-
 /**
  * Create a duplicate of the value of a tree. This is
  * easy for trees starting with LDIND/STIND, since the
@@ -842,6 +846,26 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 		case CEE_STIND_R4:
 		case CEE_STIND_R8:
 		case CEE_STIND_REF:
+		case CEE_STELEM_I:
+		case CEE_STELEM_I1:
+		case CEE_STELEM_I2:
+		case CEE_STELEM_I4:
+		case CEE_STELEM_I8:
+		case CEE_STELEM_R4:
+		case CEE_STELEM_R8:
+		case CEE_STELEM_REF:
+		case CEE_LDLEN:
+		case CEE_LDELEM_I1:
+		case CEE_LDELEM_U1:
+		case CEE_LDELEM_I2:
+		case CEE_LDELEM_U2:
+		case CEE_LDELEM_I4:
+		case CEE_LDELEM_U4:
+		case CEE_LDELEM_I8:
+		case CEE_LDELEM_I:
+		case CEE_LDELEM_R4:
+		case CEE_LDELEM_R8:
+		case CEE_LDELEM_REF:
 			ip++;
 			break;
 		case CEE_RET:
@@ -1194,6 +1218,15 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			PUSH_TREE (t1, VAL_POINTER);
 			break;
 		}
+		case CEE_LDLEN: {
+			ip++;
+			sp--;
+			
+			t1 = mono_ctree_new (mp, MB_TERM_LDLEN, *sp, NULL);
+			PUSH_TREE (t1, VAL_I32);
+			break;
+		}
+
 		case CEE_LDOBJ: {
 			guint32 token;
 			MonoClass *c;
@@ -1448,6 +1481,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			ip += 4;
 
 			t1 = mono_ctree_new (mp, MB_TERM_NEWARR, *sp, NULL);
+			t1->data.p = class;
 			PUSH_TREE (t1, VAL_POINTER);
 
 			break;
@@ -1491,8 +1525,11 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				
 				n = arch_allocate_var (cfg, sizeof (gpointer), sizeof (gpointer), 
 						       MONO_TEMPVAR, VAL_UNKNOWN);
+				
+				nobj = mono_ctree_new_leaf (mp, MB_TERM_NEWOBJ);
+				nobj->data.p = cm->klass;
+				nobj->svt = VAL_POINTER;
 
-				nobj = ctree_create_newobj (mp, cm->klass);
 				nobj = ctree_create_store (mp, MB_TERM_ADDR_L, nobj, 
 							   &cm->klass->this_arg, (gpointer)n);
 				ADD_TREE (nobj);
@@ -1529,8 +1566,6 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t2->data.p = (char *)cm + G_STRUCT_OFFSET (MonoMethod, addr);
 			}
 
-			t1 = mono_ctree_new_leaf (mp, MB_TERM_ARG_END);
-
 			if (nargs) {
 
 #ifdef ARCH_ARGS_RIGHT_TO_LEFT
@@ -1538,8 +1573,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 #else
 				for (i = 0; i < nargs; i++) {
 #endif
-					t1 = mono_ctree_new (mp, MB_TERM_ARG, t1, sp [i]);	
-			
+					t1 = mono_ctree_new (mp, MB_TERM_ARG, sp [i], NULL);	
+					ADD_TREE (t1);
+
 					if (!i && this)
 						size = mono_type_size (&cm->klass->this_arg, &align);
 					else
@@ -1550,7 +1586,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				}
 			}
 
-			t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), t1, t2);
+			t1 = mono_ctree_new (mp, map_call_type (csig->ret, &svt), t2, NULL);
 			t1->size = args_size;
 			t1->svt = svt;
 
@@ -1747,6 +1783,27 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		MAKE_STIND (STIND_R4,  MB_TERM_STIND_R4)
 		MAKE_STIND (STIND_R8,  MB_TERM_STIND_R8)
 		MAKE_STIND (STIND_REF, MB_TERM_STIND_I4)
+
+		MAKE_LDELEM (LDELEM_I1,  MB_TERM_LDIND_I1, VAL_I32, 1)
+		MAKE_LDELEM (LDELEM_U1,  MB_TERM_LDIND_U1, VAL_I32, 1)
+		MAKE_LDELEM (LDELEM_I2,  MB_TERM_LDIND_I2, VAL_I32, 2)
+		MAKE_LDELEM (LDELEM_U2,  MB_TERM_LDIND_U2, VAL_I32, 2)
+		MAKE_LDELEM (LDELEM_I,   MB_TERM_LDIND_I4, VAL_I32, 4)
+		MAKE_LDELEM (LDELEM_I4,  MB_TERM_LDIND_I4, VAL_I32, 4)
+		MAKE_LDELEM (LDELEM_REF, MB_TERM_LDIND_U4, VAL_I32, 4)
+		MAKE_LDELEM (LDELEM_U4,  MB_TERM_LDIND_U4, VAL_I32, 4)
+		MAKE_LDELEM (LDELEM_I8,  MB_TERM_LDIND_I8, VAL_I64, 8)
+		MAKE_LDELEM (LDELEM_R4,  MB_TERM_LDIND_R4, VAL_DOUBLE, 4)
+		MAKE_LDELEM (LDELEM_R8,  MB_TERM_LDIND_R8, VAL_DOUBLE, 8)
+
+		MAKE_STELEM (STELEM_I1,  MB_TERM_STIND_I1, 1)
+		MAKE_STELEM (STELEM_I2,  MB_TERM_STIND_I2, 2)
+		MAKE_STELEM (STELEM_I4,  MB_TERM_STIND_I4, 4)
+		MAKE_STELEM (STELEM_I,   MB_TERM_STIND_I4, 4)
+		MAKE_STELEM (STELEM_REF, MB_TERM_STIND_I4, 4)
+		MAKE_STELEM (STELEM_I8,  MB_TERM_STIND_I8, 8)
+		MAKE_STELEM (STELEM_R4,  MB_TERM_STIND_R4, 4)
+		MAKE_STELEM (STELEM_R8,  MB_TERM_STIND_R8, 8)
 
 		case CEE_NEG: {
 			ip++;

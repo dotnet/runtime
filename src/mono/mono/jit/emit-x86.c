@@ -164,7 +164,7 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 			tree->reg1 = X86_EAX;
 			break;
 		case MB_TERM_CALL_I8:
-		case MB_TERM_MUL:
+		//case MB_TERM_MUL:
 			tree->reg1 = X86_EAX;
 			tree->reg2 = X86_EDX;
 			break;
@@ -201,7 +201,7 @@ tree_allocate_regs (MBTree *tree, int goal, MonoRegSet *rs)
 	case MB_NTERM_reg:
 		if ((tree->reg1 = 
 		     mono_regset_alloc_reg (rs, tree->reg1, tree->exclude_mask)) == -1) {
-			g_warning ("register allocation failed\n");
+			g_warning ("register allocation failed %d %p %p\n",  tree->reg1, rs->free_mask, tree->exclude_mask);
 			g_assert_not_reached ();
 		}
 
@@ -260,7 +260,9 @@ arch_allocate_regs (MonoFlowGraph *cfg)
 
 		for (j = 0; j < top; j++) {
 			MBTree *t1 = (MBTree *) g_ptr_array_index (forest, j);
+			//printf ("AREGSTART %d:%d %p\n", i, j, cfg->rs->free_mask);
 			tree_allocate_regs (t1, 1, cfg->rs);
+			//printf ("AREGENDT %d:%d %p\n", i, j, cfg->rs->free_mask);
 		}
 	}
 }
