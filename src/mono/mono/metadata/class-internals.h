@@ -282,7 +282,7 @@ struct MonoVTable {
 	 */
 	void *gc_descr; 	
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
-	guint       max_interface_id;
+	guint32       max_interface_id;
         gpointer   *interface_offsets;   
         gpointer    data; /* to store static class data */
         gpointer    type; /* System.Type type for klass */
