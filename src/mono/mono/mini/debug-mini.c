@@ -175,3 +175,30 @@ mono_debug_record_line_number (MonoCompile *cfg, MonoInst *ins, guint32 address)
 
 	record_line_number (info->jit, address, offset);
 }
+
+MonoDomain *
+mono_init_debugger (const char *file, const char *opt_flags)
+{
+	MonoDomain *domain;
+	const char *file, *error;
+	int opt;
+
+	g_set_prgname (file);
+
+	opt = mono_parse_default_optimizations (opt_flags);
+	opt |= MONO_OPT_SHARED;
+
+	mono_set_defaults (0, opt);
+
+	domain = mono_jit_init (file);
+
+	mono_config_parse (NULL);
+
+	error = mono_verify_corlib ();
+	if (error) {
+		fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
+		exit (1);
+	}
+
+	return domain;
+}
