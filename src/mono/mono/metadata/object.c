@@ -1541,9 +1541,9 @@ mono_string_new (MonoDomain *domain, const char *text)
 MonoString*
 mono_string_new_wrapper (const char *text)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDomain *domain = mono_domain_get ();
+
+	MONO_ARCH_SAVE_REGS;
 
 	if (text)
 		return mono_string_new (domain, text);
