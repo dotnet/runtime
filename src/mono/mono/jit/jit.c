@@ -2708,7 +2708,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				t1 = mono_ctree_new_leaf (mp, MB_TERM_RET_VOID);
 			}
 
-			t1->last_instr = (ip == end);
+			t1->last_instr = (ip == (header->code + header->code_size));
 
 			ADD_TREE (t1, cli_addr);
 

@@ -1336,19 +1336,25 @@ stmt: BREAK {
 }
 
 stmt: RET (reg) {
+	gint32 offset;
+
 	if (tree->left->reg1 != X86_EAX)
 		x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
 
 	if (!tree->last_instr) {
 		tree->is_jump = TRUE;
-		x86_jump32 (s->code, s->epilog - 5);      
+		offset = 5 + s->code - s->start;
+		x86_jump32 (s->code, s->epilog - offset);      
 	}
 }
 
 stmt: RET_VOID {
+	gint32 offset;
+
 	if (!tree->last_instr) {
 		tree->is_jump = TRUE;
-		x86_jump32 (s->code, s->epilog - 5);
+		offset = 5 + s->code - s->start;
+		x86_jump32 (s->code, s->epilog - offset);      
 	} 
 }
 
@@ -2072,6 +2078,8 @@ lreg: CALL_I8 (this, VFUNC_ADDR) {
 }
 
 stmt: RET (lreg) {
+	gint32 offset;
+
 	if (tree->left->reg1 != X86_EAX) {
 		if (tree->left->reg2 != X86_EAX) {
 			x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
@@ -2088,7 +2096,8 @@ stmt: RET (lreg) {
 
 	if (!tree->last_instr) {
 		tree->is_jump = TRUE;
-		x86_jump32 (s->code, s->epilog - 5);      
+		offset = 5 + s->code - s->start;
+		x86_jump32 (s->code, s->epilog - offset);      
 	}
 }
 
@@ -2596,10 +2605,12 @@ freg: CALL_R8 (this, VFUNC_ADDR) {
 }
 
 stmt: RET (freg) {
+	gint32 offset;
 
 	if (!tree->last_instr) {
 		tree->is_jump = TRUE;
-		x86_jump32 (s->code, s->epilog - 5);      
+		offset = 5 + s->code - s->start;
+		x86_jump32 (s->code, s->epilog - offset);      
 	}
 }
 
@@ -2663,6 +2674,7 @@ stmt: ARG_OBJ (reg) {
 }
 
 stmt: RET_OBJ (reg) {
+	gint32 offset;
 	int size = tree->data.i;
 
 	x86_push_imm (s->code, size);
@@ -2676,7 +2688,8 @@ stmt: RET_OBJ (reg) {
 
 	if (!tree->last_instr) {
 		tree->is_jump = TRUE;
-		x86_jump32 (s->code, s->epilog - 5);      
+		offset = 5 + s->code - s->start;
+		x86_jump32 (s->code, s->epilog - offset);      
 	}
 }
 
