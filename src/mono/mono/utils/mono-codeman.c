@@ -170,14 +170,14 @@ new_codechunk (int dynamic, int size)
 	flags = CODE_FLAG_MALLOC;
 #endif
 
+	if (!pagesize)
+		pagesize = query_pagesize ();
+
 	if (dynamic) {
 		chunk_size = size;
 		flags = CODE_FLAG_MALLOC;
 	}
 	else {
-		if (!pagesize)
-			pagesize = query_pagesize ();
-
 		minsize = pagesize * MIN_PAGES;
 		if (size < minsize)
 			chunk_size = minsize;
