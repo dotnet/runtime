@@ -7,6 +7,14 @@
 	If you want to send suggestions for links, address them to <a
 	mailto="web-mono@ximian.com">web-mono@ximian.com</a>.
 
+** Microsoft .NET
+
+	The <a href="http://msdn.microsoft.com/net">Microsoft.NET site.
+
+	The Microsoft .NET Framework 1.0 can be downloaded <a href="http://msdn.microsoft.com/downloads/default.asp?url=/downloads/sample.asp?url=/msdn-files/027/000/976/msdncompositedoc.xml&frame=true">here</a>
+
+	New methods that are not documented in 1.0, are documented <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dndotnet/html/framewrkaddend.asp">here</a>
+
 ** IRC
 
 	Various Mono contributors get together on channel #mono on
@@ -46,6 +54,7 @@
 		* <a href="http://www.ecma.ch/ecma1/STAND/ecma-334.htm">C# Language Specification</a>
 		* <a href="http://www.ecma.ch/ecma1/STAND/ecma-335.htm">Common Language Infrastructure</a>
 	</ul>
+
 
 	Older copies of the standard are available here:
 
