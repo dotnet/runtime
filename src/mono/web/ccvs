@@ -43,6 +43,11 @@
 	applying patches.  You want to avoid commiting conflicting
 	work to someone else's code.
 
+	Before commiting code, you might find it useful to review your
+	patch:  Sometimes text editors change the formatting of a file,
+	and it is also good practice to check before hand.  To do so, run the
+	`cvs diff -u' command.
+
 	Please do not commit code that would break the compile to the
 	CVS, because that normally wastes everybody's time.  Two things 
 	are important in this step: trying to build your sources and making 
