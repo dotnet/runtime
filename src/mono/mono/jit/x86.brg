@@ -412,30 +412,29 @@ stmt: ENDFINALLY {
 	x86_ret (s->code);
 }
 
-# this slows down performance!
-#stmt: STIND_I4 (addr, coni4) {
-#	switch (tree->left->data.ainfo.amode) {
-#
-#	case AMImmediate:
-#		x86_mov_mem_imm (s->code, tree->left->data.ainfo.offset, tree->right->data.i, 4);
-#		break;
-#		
-#	case AMBase:
-#		x86_mov_membase_imm (s->code, tree->left->data.ainfo.basereg, 
-#				     tree->left->data.ainfo.offset, tree->right->data.i, 4);
-#		break;		
-#	case AMIndex:
-#		x86_mov_memindex_imm (s->code, X86_NOBASEREG, tree->left->data.ainfo.offset,
-#				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
-#				      tree->right->data.i, 4);
-#		break;		
-#	case AMBaseIndex:
-#		x86_mov_memindex_imm (s->code, tree->left->data.ainfo.basereg, tree->left->data.ainfo.offset,
-#				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
-#				      tree->right->data.i, 4);
-#		break;		
-#	}
-#}
+stmt: STIND_I4 (addr, coni4) {
+	switch (tree->left->data.ainfo.amode) {
+
+	case AMImmediate:
+		x86_mov_mem_imm (s->code, tree->left->data.ainfo.offset, tree->right->data.i, 4);
+		break;
+		
+	case AMBase:
+		x86_mov_membase_imm (s->code, tree->left->data.ainfo.basereg, 
+				     tree->left->data.ainfo.offset, tree->right->data.i, 4);
+		break;		
+	case AMIndex:
+		x86_mov_memindex_imm (s->code, X86_NOBASEREG, tree->left->data.ainfo.offset,
+				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
+				      tree->right->data.i, 4);
+		break;		
+	case AMBaseIndex:
+		x86_mov_memindex_imm (s->code, tree->left->data.ainfo.basereg, tree->left->data.ainfo.offset,
+				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
+				      tree->right->data.i, 4);
+		break;		
+	}
+}
 
 stmt: STIND_I4 (addr, reg) {
 	PRINT_REG ("STIND_I4", tree->right->reg1);
@@ -967,6 +966,12 @@ reg: CONV_I4 (reg) {
 		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
 	PRINT_REG ("CONV_I4", tree->left->reg1);
 } 
+
+reg: CONV_OVF_I4 (reg) {
+	if (tree->reg1 != tree->left->reg1)
+		x86_mov_reg_reg (s->code, tree->reg1, tree->left->reg1, 4);
+	PRINT_REG ("CONV_OVF_I4", tree->left->reg1);
+}
 
 reg: CONV_OVF_U4 (reg) {
 	/* Keep in sync with CONV_OVF_I4_UN below, they are the same on 32-bit machines */
