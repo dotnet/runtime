@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.23 2002/02/28 09:35:28 dietmar Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.24 2002/03/11 11:24:33 lupus Exp $
 */
 
 #ifndef X86_H
@@ -814,14 +814,15 @@ typedef union {
 		x86_memindex_emit ((inst), (reg), (basereg), (disp), (indexreg), (shift));	\
 	} while (0)
 
+/*
+ * Note: x86_clear_reg () chacnges the condition code!
+ */
+#define x86_clear_reg(inst,reg) x86_alu_reg_reg((inst), X86_XOR, (reg), (reg))
+
 #define x86_mov_reg_imm(inst,reg,imm)	\
 	do {	\
-		if ((imm) == 0) {	\
-			x86_alu_reg_reg ((inst), X86_XOR, (reg), (reg));	\
-		} else {	\
-			*(inst)++ = (unsigned char)0xb8 + (reg);	\
-			x86_imm_emit32 ((inst), (imm));	\
-		}	\
+		*(inst)++ = (unsigned char)0xb8 + (reg);	\
+		x86_imm_emit32 ((inst), (imm));	\
 	} while (0)
 
 #define x86_mov_mem_imm(inst,mem,imm,size)	\
