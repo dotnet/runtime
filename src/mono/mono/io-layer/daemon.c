@@ -28,7 +28,7 @@
 #include <mono/io-layer/timefuncs-private.h>
 #include <mono/io-layer/daemon-private.h>
 
-#define DEBUG
+#undef DEBUG
 
 /* Keep track of the number of clients */
 static int nfds=0;
