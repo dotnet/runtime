@@ -83,7 +83,7 @@ ldc.r4:
 ldc.r8:
 dup:
 pop:
-jmp:
+jmp: len:92
 call: dest:a clob:c len:4
 calli:
 ret:

@@ -2521,9 +2521,30 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCONV_TO_R4:
 			ppc_frsp (code, ins->dreg, ins->sreg1);
 			break;
-		case CEE_JMP:
-			g_assert_not_reached ();
+		case CEE_JMP: {
+			int i, pos = 0;
+			
+			/*
+			 * Keep in sync with mono_arch_emit_epilog
+			 */
+			g_assert (!cfg->method->save_lmf);
+			if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
+				ppc_lwz (code, ppc_r0, cfg->stack_usage + PPC_RET_ADDR_OFFSET, cfg->frame_reg);
+				ppc_mtlr (code, ppc_r0);
+			}
+			ppc_addic (code, ppc_sp, cfg->frame_reg, cfg->stack_usage);
+			if (!cfg->method->save_lmf) {
+				for (i = 13; i < 32; ++i) {
+					if (cfg->used_int_regs & (1 << i)) {
+						pos += 4;
+						ppc_lwz (code, i, -pos, cfg->frame_reg);
+					}
+				}
+			}
+			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
+			ppc_b (code, 0);
 			break;
+		}
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
 			ppc_lwz (code, ppc_r0, 0, ins->sreg1);
@@ -2933,9 +2954,18 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			target = mono_icall_get_wrapper (mi);
 			break;
 		}
-		case MONO_PATCH_INFO_METHOD_JUMP:
-			g_assert_not_reached ();
+		case MONO_PATCH_INFO_METHOD_JUMP: {
+			GSList *list;
+
+			/* get the trampoline to the method from the domain */
+			target = mono_create_jump_trampoline (domain, patch_info->data.method, TRUE);
+			if (!domain->jump_target_hash)
+				domain->jump_target_hash = g_hash_table_new (NULL, NULL);
+			list = g_hash_table_lookup (domain->jump_target_hash, patch_info->data.method);
+			list = g_slist_prepend (list, ip);
+			g_hash_table_insert (domain->jump_target_hash, patch_info->data.method, list);
 			break;
+		}
 		case MONO_PATCH_INFO_METHOD:
 			if (patch_info->data.method == method) {
 				target = code;
@@ -3289,6 +3319,9 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	int pos, i;
 	guint8 *code;
 
+	/*
+	 * Keep in sync with CEE_JMP
+	 */
 	code = cfg->native_code + cfg->code_len;
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {

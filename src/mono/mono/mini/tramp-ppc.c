@@ -71,8 +71,11 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 /* Stack size for trampoline function */
 #define STACK (144 + 8*8)
 
-/* Method-specific trampoline code framgment size */
+/* Method-specific trampoline code fragment size */
 #define METHOD_TRAMPOLINE_SIZE 64
+
+/* Jump-specific trampoline code fragment size */
+#define JUMP_TRAMPOLINE_SIZE   64
 
 /**
  * ppc_magic_trampoline:
@@ -98,6 +101,10 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	addr = mono_compile_method(method);
 	/*g_print ("method code at %p for %s:%s\n", addr, method->klass->name, method->name);*/
 	g_assert(addr);
+
+	if (!code){
+		return addr;
+	}
 
 	/* Locate the address of the method-specific trampoline. The call using
 	the vtable slot that took the processing flow to 'arch_create_jit_trampoline' 
@@ -377,17 +384,15 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		/* Arg 1: MonoMethod *method. It was put in r11 by the
 		method-specific trampoline code, and then saved before the call
 		to mono_get_lmf_addr()'. Restore r11, by the way :-) */
-		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
-			ppc_li (buf, ppc_r3, 0);
-		} else
-			ppc_lwz  (buf, ppc_r3,  STACK - 124, ppc_r1);
+		ppc_lwz  (buf, ppc_r3,  STACK - 124, ppc_r1);
 		ppc_lwz  (buf, ppc_r11, STACK - 44,  ppc_r1);
 		
 		/* Arg 2: code (next address to the instruction that called us) */
 		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
 			ppc_li (buf, ppc_r4, 0);
-		} else
+		} else {
 			ppc_lwz  (buf, ppc_r4, STACK + PPC_RET_ADDR_OFFSET, ppc_r1);
+		}
 		
 		/* Arg 3: stack pointer */
 		ppc_mr   (buf, ppc_r5, ppc_r1);
@@ -509,9 +514,47 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 MonoJitInfo*
 mono_arch_create_jump_trampoline (MonoMethod *method)
 {
-	void *code = mono_compile_method (method);
-	/*g_print ("called jump trampoline for %s:%s\n", method->klass->name, method->name);*/
-	return mono_jit_info_table_find (mono_domain_get (), code);
+	guint8 *code, *buf, *tramp = NULL;
+	MonoJitInfo *ji;
+	MonoDomain* domain = mono_domain_get ();
+	
+	tramp = create_trampoline_code (MONO_TRAMPOLINE_JUMP);
+
+	mono_domain_lock (domain);
+	code = buf = mono_code_manager_reserve (domain->code_mp, METHOD_TRAMPOLINE_SIZE);
+	mono_domain_unlock (domain);
+
+	/* Save r11. There's nothing magic in the '44', its just an arbitrary
+	position - see above */
+	ppc_stw  (buf, ppc_r11, -44,  ppc_r1);
+	
+	/* Now save LR - we'll overwrite it now */
+	ppc_mflr (buf, ppc_r11);
+	ppc_stw  (buf, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_r1);
+	
+	/* Prepare the jump to the generic trampoline code.*/
+	ppc_lis  (buf, ppc_r11, (guint32) tramp >> 16);
+	ppc_ori  (buf, ppc_r11, ppc_r11, (guint32) tramp & 0xffff);
+	ppc_mtlr (buf, ppc_r11);
+	
+	/* And finally put 'method' in r11 and fly! */
+	ppc_lis  (buf, ppc_r11, (guint32) method >> 16);
+	ppc_ori  (buf, ppc_r11, ppc_r11, (guint32) method & 0xffff);
+	ppc_blr  (buf);
+	
+	/* Flush instruction cache, since we've generated code */
+	mono_arch_flush_icache (code, buf - code);
+
+	g_assert ((buf - code) <= JUMP_TRAMPOLINE_SIZE);
+
+	ji = g_new0 (MonoJitInfo, 1);
+	ji->method = method;
+	ji->code_start = code;
+	ji->code_size = buf - code;
+
+	mono_jit_stats.method_trampolines++;
+
+	return ji;
 }
 
 /**
