@@ -4950,7 +4950,7 @@ static gconstpointer icall_map [] = {
 	 * System.Globalization
 	 */
 	"System.Globalization.CultureInfo::construct_internal_locale(string)", ves_icall_System_Globalization_CultureInfo_construct_internal_locale,
-	"System.Globalization.CultureInfo::construct_compareinfo(object,string)", ves_icall_System_Globalization_CultureInfo_construct_compareinfo,
+	"System.Globalization.CompareInfo::construct_compareinfo(string)", ves_icall_System_Globalization_CompareInfo_construct_compareinfo,
 	"System.Globalization.CompareInfo::internal_compare(string,string,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_internal_compare,
 	"System.Globalization.CompareInfo::free_internal_collator()", ves_icall_System_Globalization_CompareInfo_free_internal_collator,
 	"System.Globalization.CompareInfo::assign_sortkey(object,string,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_assign_sortkey,
@@ -4973,6 +4973,7 @@ static gconstpointer icall_map [] = {
 	"System.String::InternalReplace(string,string)", ves_icall_System_String_InternalReplace_Str,
 	"System.String::InternalToLower()", ves_icall_System_String_InternalToLower,
 	"System.String::InternalToUpper()", ves_icall_System_String_InternalToUpper,
+	"System.Globalization.CultureInfo::construct_compareinfo(object,string)", ves_icall_System_Globalization_CompareInfo_construct_compareinfo,
 
 	NULL, NULL
 };

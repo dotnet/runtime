@@ -579,7 +579,7 @@ void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoO
 	ucnv_close (conv);
 }
 
-void ves_icall_System_Globalization_CultureInfo_construct_compareinfo (MonoObject *comp, MonoString *locale)
+void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoObject *comp, MonoString *locale)
 {
 	UCollator *coll;
 	UErrorCode ec;

@@ -27,7 +27,7 @@ typedef enum {
 } MonoCompareOptions;
 
 extern void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoObject *this, MonoString *locale);
-extern void ves_icall_System_Globalization_CultureInfo_construct_compareinfo (MonoObject *comp, MonoString *locale);
+extern void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoObject *comp, MonoString *locale);
 extern int ves_icall_System_Globalization_CompareInfo_internal_compare (MonoObject *this, MonoString *str1, MonoString *str2, gint32 options);
 extern void ves_icall_System_Globalization_CompareInfo_free_internal_collator (MonoObject *this);
 extern void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoObject *this, MonoObject *key, MonoString *source, gint32 options);
