@@ -50,7 +50,7 @@ static void
 mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data);
 
 static void
-add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass);
+add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *hash);
 
 static void
 mono_domain_unload (MonoDomain *domain);
@@ -436,7 +436,7 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 	mono_domain_lock (domain);
 	/*g_print ("copy assemblies from domain %p (%s)\n", domain, domain->friendly_name);*/
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next)
-		add_assemblies_to_domain (data, tmp->data);
+		add_assemblies_to_domain (data, tmp->data, NULL);
 	mono_domain_unlock (domain);
 
 	return ad;
@@ -506,32 +506,39 @@ try_assembly_resolve (MonoDomain *domain, MonoString *fname)
  * LOCKING: assumes domain is already locked.
  */
 static void
-add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass)
+add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 {
 	gint i;
 	GSList *tmp;
-	gboolean already_added;
+	gboolean destroy_ht = FALSE;
 
 	if (!ass->aname.name)
 		return;
 
-	/* FIXME: handle lazy loaded assemblies */
-	already_added = FALSE;
-	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		if (ass == tmp->data) {
-			already_added = TRUE;
-			break;
-		}
+	if (!ht) {
+		ht = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		destroy_ht = TRUE;
 	}
-	if (!already_added) {
+
+	/* FIXME: handle lazy loaded assemblies */
+	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+		g_hash_table_insert (ht, tmp->data, tmp->data);
+	}
+	if (!g_hash_table_lookup (ht, ass)) {
 		mono_assembly_addref (ass);
+		g_hash_table_insert (ht, ass, ass);
 		domain->domain_assemblies = g_slist_prepend (domain->domain_assemblies, ass);
 	}
 
 	if (ass->image->references) {
-		for (i = 0; ass->image->references [i] != NULL; i++)
-			add_assemblies_to_domain (domain, ass->image->references [i]);
+		for (i = 0; ass->image->references [i] != NULL; i++) {
+			if (!g_hash_table_lookup (ht, ass->image->references [i])) {
+				add_assemblies_to_domain (domain, ass->image->references [i], ht);
+			}
+		}
 	}
+	if (destroy_ht)
+		g_hash_table_destroy (ht);
 }
 
 static void
@@ -552,7 +559,7 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 	}
 
 	mono_domain_lock (domain);
-	add_assemblies_to_domain (domain, assembly);
+	add_assemblies_to_domain (domain, assembly, NULL);
 	mono_domain_unlock (domain);
 
 	ref_assembly = mono_assembly_get_object (domain, assembly);
