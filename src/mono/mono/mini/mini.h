@@ -10,6 +10,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/metadata/profiler-private.h>
 #include "regalloc.h"
 
 /* fixme: configure should set this */
@@ -449,8 +450,8 @@ typedef struct {
 	gboolean         disable_aot;
 	gboolean         disable_ssa;
 	gpointer         debug_info;
-	gpointer         coverage_info;
 	guint16          *intvars;
+	MonoProfileCoverageInfo *coverage_info;
 } MonoCompile;
 
 typedef enum {

@@ -2438,6 +2438,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		bbhash = g_hash_table_new (g_direct_hash, NULL);
 	}
 
+	if (cfg->prof_options & MONO_PROFILE_COVERAGE)
+		if (mono_profiler_get_coverage_level () == MONO_COVERAGE_INSTRUCTION)
+			cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, header->code_size);
+
 	dont_inline = g_list_prepend (dont_inline, method);
 	if (cfg->method == method) {
 
@@ -2619,6 +2623,26 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					*sp++ = ins;
 				}
 			}
+		}
+
+		if (cfg->coverage_info) {
+			MonoInst *store, *one;
+			guint32 cil_offset = ip - header->code;
+			cfg->coverage_info->data [cil_offset].cil_code = ip;
+
+			/* TODO: Use an increment here */
+			NEW_ICONST (cfg, one, 1);
+			one->cil_code = ip;
+
+			NEW_PCONST (cfg, ins, &(cfg->coverage_info->data [cil_offset].count));
+			ins->cil_code = ip;
+
+			MONO_INST_NEW (cfg, store, CEE_STIND_I);
+			store->cil_code = ip;
+			store->inst_left = ins;
+			store->inst_right = one;
+
+			MONO_ADD_INS (bblock, store);
 		}
 
 		if (cfg->verbose_level > 3)
@@ -6105,7 +6129,8 @@ mono_codegen (MonoCompile *cfg)
 	}
 
 	if (cfg->prof_options & MONO_PROFILE_COVERAGE)
-		cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, cfg->num_bblocks);
+		if (mono_profiler_get_coverage_level () == MONO_COVERAGE_BASIC_BLOCK)
+			cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, cfg->num_bblocks);
 
 	code = mono_arch_emit_prolog (cfg);
 
@@ -6520,9 +6545,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, int p
 	}
 
 	//mono_print_code (cfg);
-	
-	//print_dfn (cfg);
 
+       //print_dfn (cfg);
+	
 	/* variables are allocated after decompose, since decompose could create temps */
 	mono_arch_allocate_vars (cfg);
 
@@ -7025,6 +7050,7 @@ mini_cleanup (MonoDomain *domain)
 	mono_profiler_shutdown ();
 
 	mono_debug_cleanup ();
+
 #ifdef PLATFORM_WIN32
 	win32_seh_cleanup();
 #endif

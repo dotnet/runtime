@@ -1948,7 +1948,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	cpos = bb->max_offset;
 
-	if (cfg->prof_options & MONO_PROFILE_COVERAGE) {
+	if ((cfg->prof_options & MONO_PROFILE_COVERAGE) &&
+		(mono_profiler_get_coverage_level () == MONO_COVERAGE_BASIC_BLOCK)) {
 		MonoProfileCoverageInfo *cov = cfg->coverage_info;
 		g_assert (!mono_compile_aot);
 		cpos += 6;
@@ -3086,7 +3087,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (method->save_lmf) {
 		pos += sizeof (MonoLMF);
-		
+
 		/* save the current IP */
 		mono_add_patch_info (cfg, code + 1 - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
 		x86_push_imm (code, 0);
@@ -3141,7 +3142,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			MonoInst *ins = bb->code;
 			bb->max_offset = max_offset;
 
-			if (cfg->prof_options & MONO_PROFILE_COVERAGE)
+			if ((cfg->prof_options & MONO_PROFILE_COVERAGE) &&
+			   (mono_profiler_get_coverage_level () == MONO_COVERAGE_BASIC_BLOCK))
 				max_offset += 6; 
 
 			while (ins) {
