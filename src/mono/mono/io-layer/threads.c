@@ -99,9 +99,7 @@ static void thread_close_private (gpointer handle)
 		  thread_handle->thread->id);
 #endif
 
-	if(thread_handle->thread!=NULL) {
-		_wapi_timed_thread_destroy (thread_handle->thread);
-	}
+	thread_handle->thread=NULL;
 }
 
 static void thread_own (gpointer handle)
@@ -628,6 +626,10 @@ guint32 ResumeThread(gpointer handle)
 		return(0xFFFFFFFF);
 	}
 
+	if (thread_private_handle->thread == NULL) {
+		return(0xFFFFFFFF);
+	}
+
 #ifdef WITH_INCLUDED_LIBGC
 	if (thread_private_handle->thread->suspend_count <= 1)
 		_wapi_timed_thread_resume (thread_private_handle->thread);
@@ -667,6 +669,10 @@ guint32 SuspendThread(gpointer handle)
 	if(ok==FALSE) {
 		g_warning (G_GNUC_PRETTY_FUNCTION
 			   ": error looking up thread handle %p", handle);
+		return(0xFFFFFFFF);
+	}
+
+	if (thread_private_handle->thread == NULL) {
 		return(0xFFFFFFFF);
 	}
 
