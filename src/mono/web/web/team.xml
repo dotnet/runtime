@@ -1598,4 +1598,32 @@
 
   </contributor>
 
+  <contributor>
+
+    <name>
+
+      <first-name>Neale</first-name>
+
+      <last-name>Ferguson</last-name>
+
+    </name>
+
+    <e-mail>Neale.Ferguson@SoftwareAG-usa.com</e-mail>
+
+    <image></image>
+
+    <location>Leesburg, VA, USA</location>
+
+    <organization></organization>
+
+    <description>External Contributor</description>
+
+    <tasks>
+
+      <task>JIT for Linux on zSeries</task>
+
+    </tasks>
+
+  </contributor>
+  
 </contributors>
