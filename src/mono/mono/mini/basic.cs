@@ -314,6 +314,11 @@ class Tests {
 		return b << 3;
 	}
 	
+	static int test_524288_shift_imm_large () {
+		int b = 2;
+		return b << 18;
+	}
+	
 	static int test_12_shift_imm_inv () {
 		int b = 2;
 		return 3 << 2;

@@ -2504,7 +2504,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_slw (code, ins->sreg1, ins->dreg, ins->sreg2);
 			break;
 		case OP_SHL_IMM:
-			ppc_rlwinm (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0xf), 0, (31 - (ins->inst_imm & 0xf)));
+			ppc_rlwinm (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x1f), 0, (31 - (ins->inst_imm & 0x1f)));
 			//ppc_load (code, ppc_r11, ins->inst_imm);
 			//ppc_slw (code, ins->sreg1, ins->dreg, ppc_r11);
 			break;
