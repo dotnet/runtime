@@ -197,7 +197,7 @@ EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC)
 	ilasm -out:$@ $<
 
 %.exe: %.cs TestDriver.dll
-	$(CSC) -r TestDriver.dll -out:$@ $<
+	$(CSC) -r:TestDriver.dll -out:$@ $<
 
 test:	testjit
 

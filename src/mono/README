@@ -45,6 +45,14 @@ This is Mono.
 		make
 		make install
 
+	Mono supports a JIT engine on x86, SPARC and PowerPC systems.
+	The various commands that ship with Mono default to the JIT engine
+	on x86 and SPARC, to turn it on for PPC systems, use the --with-jit=yes 
+	command line option to configure.
+
+	MacOS X Users: you will need to download the latest Boehm GC
+	Alpha release for garbage collection to work properly.
+
 	If you obtained this as a snapshot, you will need an existing
 	Mono installation.  To upgrade your installation, unpack both
 	mono and mcs:
