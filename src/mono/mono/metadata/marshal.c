@@ -1757,7 +1757,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 		case MONO_TYPE_VALUETYPE:
 			
 			klass = sig->params [i]->data.klass;
-			if (klass->blittable || klass->enumtype)
+			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+			    klass->blittable || klass->enumtype)
 				break;
 
 			tmp_locals [i] = mono_mb_add_local (mb, &klass->byval_arg);
@@ -1898,7 +1899,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 		case MONO_TYPE_VALUETYPE: {
 			int tmp;
 			klass = sig->ret->data.klass;
-			if (klass->blittable || klass->enumtype)
+			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+			    klass->blittable || klass->enumtype)
 				break;
 			
 			/* load pointer to returned value type */
@@ -2099,7 +2101,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		switch (t->type) {
 		case MONO_TYPE_VALUETYPE:			
 			klass = t->data.klass;
-			if (klass->blittable || klass->enumtype)
+
+			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+			    klass->blittable || klass->enumtype)
 				break;
 
 			tmp_locals [i] = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
@@ -2329,7 +2333,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				continue;
 	
 			klass = t->data.klass;
-			if (klass->blittable || klass->enumtype)
+			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+			    klass->blittable || klass->enumtype)
 				break;
 
 			/* dst = argument */
@@ -2404,7 +2409,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 				goto handle_enum;
 			}
 
-			if (klass->blittable)
+			if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) ||
+			    klass->blittable)
 				break;
 
 			tmp = mono_mb_add_local (mb, sig->ret);
@@ -2492,7 +2498,7 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 
 	mb = mono_mb_new (klass, stoptr->name, MONO_WRAPPER_UNKNOWN);
 
-	if (klass->blittable) {
+	if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) || klass->blittable) {
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
 		mono_mb_emit_icon (mb, sizeof (MonoObject));
@@ -2554,7 +2560,7 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 
 	mb = mono_mb_new (klass, ptostr->name, MONO_WRAPPER_UNKNOWN);
 
-	if (klass->blittable) {
+	if (((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) || klass->blittable) {
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
 		mono_mb_emit_icon (mb, sizeof (MonoObject));
 		mono_mb_emit_byte (mb, CEE_ADD);

@@ -606,9 +606,6 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 	MonoTableInfo *methodt;
 	MonoTableInfo *paramt;
 
-	if (!method->signature->param_count)
-		return;
-
 	for (i = 0; i < method->signature->param_count + 1; ++i)
 		mspecs [i] = NULL;
 
