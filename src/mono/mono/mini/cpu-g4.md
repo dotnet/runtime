@@ -84,7 +84,7 @@ ldc.r8:
 dup:
 pop:
 jmp: len:92
-call: dest:a clob:c len:4
+call: dest:a clob:c len:16
 calli:
 ret:
 br.s:
@@ -164,8 +164,8 @@ castclass:
 isinst:
 conv.r.un: dest:f src1:i len:32
 unbox:
-throw: src1:i len:8
-op_rethrow: src1:i len:8
+throw: src1:i len:20
+op_rethrow: src1:i len:20
 ldfld:
 ldflda:
 stfld:
@@ -301,16 +301,16 @@ setreg: dest:i src1:i len:4 clob:r
 setregimm: dest:i len:8 clob:r
 setfreg: dest:f src1:f len:4 clob:r
 checkthis: src1:b len:4
-voidcall: len:8 clob:c
+voidcall: len:16 clob:c
 voidcall_reg: src1:i len:8 clob:c
 voidcall_membase: src1:b len:12 clob:c
-fcall: dest:f len:8 clob:c
+fcall: dest:f len:16 clob:c
 fcall_reg: dest:f src1:i len:8 clob:c
 fcall_membase: dest:f src1:b len:12 clob:c
-lcall: dest:l len:8 clob:c
+lcall: dest:l len:16 clob:c
 lcall_reg: dest:l src1:i len:8 clob:c
 lcall_membase: dest:l src1:b len:12 clob:c
-vcall: len:8 clob:c
+vcall: len:16 clob:c
 vcall_reg: src1:i len:8 clob:c
 vcall_membase: src1:b len:12 clob:c
 call_reg: dest:a src1:i len:8 clob:c

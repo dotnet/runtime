@@ -2323,6 +2323,25 @@ ppc_patch (guchar *code, guchar *target)
 			ins |= diff;
 		}
 		*(guint32*)code = ins;
+		return;
+	}
+
+	if (prim == 15 || ins == 0x4e800021) {
+		guint32 *seq;
+		/* the trampoline code will try to patch the blrl */
+		if (ins == 0x4e800021) {
+			code -= 12;
+		}
+		/* this is the lis/ori/mtlr/blrl sequence */
+		seq = (guint32*)code;
+		g_assert ((seq [0] >> 26) == 15);
+		g_assert ((seq [1] >> 26) == 24);
+		g_assert ((seq [2] >> 26) == 31);
+		g_assert (seq [3] == 0x4e800021);
+		/* FIXME: make this thread safe */
+		ppc_lis (code, ppc_r0, (guint32)(target) >> 16);
+		ppc_ori (code, ppc_r0, ppc_r0, (guint32)(target) & 0xffff);
+		mono_arch_flush_icache (code - 8, 8);
 	} else {
 		g_assert_not_reached ();
 	}
@@ -2927,7 +2946,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
 			else
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
-			ppc_bl (code, 0);
+			if (cfg->method->dynamic) {
+				ppc_lis (code, ppc_r0, 0);
+				ppc_ori (code, ppc_r0, ppc_r0, 0);
+				ppc_mtlr (code, ppc_r0);
+				ppc_blrl (code);
+			} else {
+				ppc_bl (code, 0);
+			}
 			break;
 		case OP_FCALL_REG:
 		case OP_LCALL_REG:
@@ -2989,7 +3015,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_mr (code, ppc_r3, ins->sreg1);
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_throw_exception");
-			ppc_bl (code, 0);
+			if (cfg->method->dynamic) {
+				ppc_lis (code, ppc_r0, 0);
+				ppc_ori (code, ppc_r0, ppc_r0, 0);
+				ppc_mtlr (code, ppc_r0);
+				ppc_blrl (code);
+			} else {
+				ppc_bl (code, 0);
+			}
 			break;
 		}
 		case OP_RETHROW: {
@@ -2997,7 +3030,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_mr (code, ppc_r3, ins->sreg1);
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_rethrow_exception");
-			ppc_bl (code, 0);
+			if (cfg->method->dynamic) {
+				ppc_lis (code, ppc_r0, 0);
+				ppc_ori (code, ppc_r0, ppc_r0, 0);
+				ppc_mtlr (code, ppc_r0);
+				ppc_blrl (code);
+			} else {
+				ppc_bl (code, 0);
+			}
 			break;
 		}
 		case OP_START_HANDLER:
@@ -3723,7 +3763,14 @@ register.  Should this case include linux/ppc?
 		} else {
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 				     (gpointer)"mono_get_lmf_addr");
-			ppc_bl (code, 0);
+			if (cfg->method->dynamic) {
+				ppc_lis (code, ppc_r0, 0);
+				ppc_ori (code, ppc_r0, ppc_r0, 0);
+				ppc_mtlr (code, ppc_r0);
+				ppc_blrl (code);
+			} else {
+				ppc_bl (code, 0);
+			}
 		}
 		/* we build the MonoLMF structure on the stack - see mini-ppc.h */
 		/* lmf_offset is the offset from the previous stack pointer,

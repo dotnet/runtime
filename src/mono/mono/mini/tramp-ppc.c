@@ -153,7 +153,13 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	
 	/* Sanity check: instruction must be 'blrl' */
 	g_assert(*code == 0x4e800021);
-	
+
+	/* the thunk-less direct call sequence: lis/ori/mtlr/blrl */
+	if ((code [-1] >> 26) == 31 && (code [-2] >> 26) == 24 && (code [-3] >> 26) == 15) {
+		ppc_patch ((char*)code, addr);
+		return addr;
+	}
+
 	/* OK, we're now at the 'blrl' instruction. Now walk backwards
 	till we get to a 'mtlr rA' */
 	for(; --code;) {
