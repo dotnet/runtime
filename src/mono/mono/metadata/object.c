@@ -1937,7 +1937,7 @@ mono_object_clone (MonoObject *obj)
 void
 mono_array_full_copy (MonoArray *src, MonoArray *dest)
 {
-	int size, i;
+	int size;
 	MonoClass *klass = src->obj.vtable->klass;
 
 	MONO_ARCH_SAVE_REGS;
