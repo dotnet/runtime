@@ -82,6 +82,50 @@ type_graph (MonoImage *image, char* cname) {
 }
 
 static void
+interface_graph (MonoImage *image, char* cname) {
+	MonoClass *class;
+	MonoClass *child;
+	char *name_space;
+	char *p;
+	guint32 cols [MONO_INTERFACEIMPL_SIZE];
+	guint32 index, i, count = 0;
+	MonoTableInfo *intf = &image->tables [MONO_TABLE_INTERFACEIMPL];
+
+	cname = g_strdup (cname);
+	p = strrchr (cname, '.');
+	if (p) {
+		name_space = cname;
+		*p++ = 0;
+		cname = p;
+	} else {
+		name_space = "";
+	}
+	class = mono_class_from_name (image, name_space, cname);
+	if (!class)
+		g_error ("interface %s.%s not found", name_space, cname);
+	/* chek if it's really an interface... */
+	fprintf (output, "digraph interface {\n");
+	fprintf (output, "%s", graph_properties);
+	/* TODO: handle inetrface defined in one image and class defined in another. */
+	index = mono_metadata_token_index (class->type_token);
+	index <<= TYPEDEFORREF_BITS;
+	index |= TYPEDEFORREF_TYPEDEF;
+	for (i = 0; i < intf->rows; ++i) {
+		mono_metadata_decode_row (intf, i, cols, MONO_INTERFACEIMPL_SIZE);
+		/*g_print ("index: %d [%d implements %d]\n", index, cols [MONO_INTERFACEIMPL_CLASS], cols [MONO_INTERFACEIMPL_INTERFACE]);*/
+		if (index == cols [MONO_INTERFACEIMPL_INTERFACE]) {
+			child = mono_class_get (image, MONO_TOKEN_TYPE_DEF | cols [MONO_INTERFACEIMPL_CLASS]);
+			output_type_edge (class, child);
+			count++;
+		}
+	}
+	fprintf (output, "}\n");
+	if (verbose && !count)
+		g_print ("No class implements %s.%s\n", class->name_space, class->name);
+
+}
+
+static void
 get_type (GString *res, MonoType *type) {
 	switch (type->type) {
 	case MONO_TYPE_VOID:
@@ -385,6 +429,12 @@ usage () {
 	exit (1);
 }
 
+enum {
+	GRAPH_TYPES,
+	GRAPH_CALL,
+	GRAPH_INTERFACE
+};
+
 /*
  * TODO:
  * * virtual method calls as explained above
@@ -405,7 +455,7 @@ main (int argc, char *argv[]) {
 	char *cname = NULL;
 	char *aname = NULL;
 	char *outputfile = NULL;
-	int callgraph = 0;
+	int graphtype = GRAPH_TYPES;
 	int callneato = 0;
 	int i;
 	
@@ -416,7 +466,9 @@ main (int argc, char *argv[]) {
 		if (argv [i] [0] != '-')
 			break;
 		if (strcmp (argv [i], "--call") == 0 || strcmp (argv [i], "-c") == 0) {
-			callgraph = 1;
+			graphtype = GRAPH_CALL;
+		} else if (strcmp (argv [i], "--interface") == 0 || strcmp (argv [i], "-i") == 0) {
+			graphtype = GRAPH_INTERFACE;
 		} else if (strcmp (argv [i], "--fullname") == 0 || strcmp (argv [i], "-f") == 0) {
 			include_namespace = 1;
 		} else if (strcmp (argv [i], "--neato") == 0 || strcmp (argv [i], "-n") == 0) {
@@ -442,7 +494,7 @@ main (int argc, char *argv[]) {
 		cname = argv [i + 1];
 	if (!aname)
 		aname = "corlib.dll";
-	if (!cname && !callgraph)
+	if (!cname && (graphtype != GRAPH_CALL))
 		cname = "System.Object";
 
 	assembly = mono_assembly_open (aname, NULL, NULL);
@@ -469,12 +521,22 @@ main (int argc, char *argv[]) {
 	}
 	/* if it looks like a method name, we want a callgraph. */
 	if (cname && strchr (cname, ':'))
-		callgraph = 1;
+		graphtype = GRAPH_CALL;
 
-	if (callgraph)
-		method_graph (assembly->image, cname);
-	else
+	switch (graphtype) {
+	case GRAPH_TYPES:
 		type_graph (assembly->image, cname);
+		break;
+	case GRAPH_CALL:
+		method_graph (assembly->image, cname);
+		break;
+	case GRAPH_INTERFACE:
+		interface_graph (assembly->image, cname);
+		break;
+	default:
+		g_error ("wrong graph type");
+	}
+	
 	if (callneato) {
 		if (verbose)
 			g_print ("waiting for neato.\n");
