@@ -4059,7 +4059,6 @@ array_constructed:
 					THROW_EX (mono_get_exception_execution_engine (NULL), ip - 1);
 				++ip;
 				sp->data.p = alloca (sp->data.i);
-				printf ("LOCALLOC %p %p\n", sp, sp->data.vt.vt);
 				sp->type = VAL_TP;
 				sp++;
 				break;
