@@ -344,10 +344,12 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 		return;
 	}
 
-	ji = mono_jit_info_table_find (mono_domain_get (), ptr);
-	g_assert (ji);
+	if (ptr) {
+		ji = mono_jit_info_table_find (mono_domain_get (), ptr);
+		g_assert (ji);
 
-	mono_runtime_free_method (mono_object_domain (delegate), ji->method);
+		mono_runtime_free_method (mono_object_domain (delegate), ji->method);
+	}
 }
 
 gpointer
