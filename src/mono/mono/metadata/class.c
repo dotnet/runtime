@@ -1532,7 +1532,7 @@ get_instantiation_name (const char *name, MonoGenericInst *ginst)
 	return g_string_free (res, FALSE);
 }
 
-static MonoClass*
+MonoClass*
 mono_class_from_generic (MonoType *gtype)
 {
 	MonoGenericInst *ginst = gtype->data.generic_inst;
@@ -1569,8 +1569,8 @@ mono_class_from_generic (MonoType *gtype)
 	return class;
 }
 
-static MonoClass *
-class_get_param_type (gboolean mvar, int type_param)
+MonoClass *
+mono_class_from_gen_param (MonoImage *image, gboolean mvar, int type_num, MonoGenericParam *param)
 {
 	MonoClass *result;
 	int key;
@@ -1580,14 +1580,14 @@ class_get_param_type (gboolean mvar, int type_param)
 		cache = g_hash_table_new (NULL, NULL);
 
 	key = mvar? 1: 0;
-	key |= type_param << 1;
+	key |= type_num << 1;
 
 	if ((result = g_hash_table_lookup (cache, GINT_TO_POINTER (key))))
 		return result;
 	result = g_new0 (MonoClass, 1);
 
 	result->parent = NULL;
-	result->name = g_strdup_printf ("%s%d", mvar? "!!": "!", type_param);
+	result->name = g_strdup_printf ("%s%d", mvar? "!!": "!", type_num);
 	result->name_space = "";
 	result->image = mono_defaults.corlib; 
 	result->inited = TRUE;
@@ -1595,7 +1595,7 @@ class_get_param_type (gboolean mvar, int type_param)
 	result->enum_basetype = &result->element_class->byval_arg;
 
 	result->this_arg.type = result->byval_arg.type = mvar? MONO_TYPE_MVAR: MONO_TYPE_VAR;
-	result->this_arg.data.type_param = result->byval_arg.data.type_param = type_param;
+	result->this_arg.data.type_param = result->byval_arg.data.type_param = type_num;
 	result->this_arg.byref = TRUE;
 
 	g_hash_table_insert (cache, GINT_TO_POINTER (key), result);
@@ -1727,9 +1727,9 @@ mono_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_GENERICINST:
 		return mono_class_from_generic (type);
 	case MONO_TYPE_VAR:
-		return class_get_param_type (FALSE, type->data.type_param);
+		return mono_class_from_gen_param (NULL, FALSE, type->data.type_param, NULL);
 	case MONO_TYPE_MVAR:
-		return class_get_param_type (TRUE, type->data.type_param);
+		return mono_class_from_gen_param (NULL, TRUE, type->data.type_param, NULL);
 	default:
 		g_warning ("implement me 0x%02x\n", type->type);
 		g_assert_not_reached ();

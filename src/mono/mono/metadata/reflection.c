@@ -364,6 +364,16 @@ encode_type (MonoDynamicAssembly *assembly, MonoType *type, char *p, char **endb
 		mono_metadata_encode_value (0, p, &p); /* FIXME: set to 0 for now */
 		mono_metadata_encode_value (0, p, &p);
 		break;
+	case MONO_TYPE_GENERICINST: {
+		int i;
+		mono_metadata_encode_value (type->type, p, &p);
+		encode_type (assembly, type->data.generic_inst->generic_type, p, &p);
+		mono_metadata_encode_value (type->data.generic_inst->type_argc, p, &p);
+		for (i = 0; i < type->data.generic_inst->type_argc; ++i) {
+			encode_type (assembly, type->data.generic_inst->type_argv [i], p, &p);
+		}
+		break;
+	}
 	default:
 		g_error ("need to encode type %x", type->type);
 	}
@@ -1582,6 +1592,14 @@ create_typespec (MonoDynamicAssembly *assembly, MonoType *type)
 	case MONO_TYPE_ARRAY:
 		encode_type (assembly, type, p, &p);
 		break;
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_VALUETYPE: {
+		MonoClass *k = mono_class_from_mono_type (type);
+		if (!k || !k->generic_inst)
+			return 0;
+		encode_type (assembly, k->generic_inst, p, &p);
+		break;
+	}
 	default:
 		return 0;
 	}
@@ -1613,12 +1631,6 @@ mono_image_typedef_or_ref (MonoDynamicAssembly *assembly, MonoType *type)
 	guint32 token, scope, enclosing;
 	MonoClass *klass;
 
-#define COMPILE_CORLIB 0
-#if COMPILE_CORLIB
-	/* nasty hack, need to find the proper solution */
-	if (type->type == MONO_TYPE_OBJECT)
-		return TYPEDEFORREF_TYPEDEF | (2 << TYPEDEFORREF_BITS);
-#endif
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, type));
 	if (token)
 		return token;
@@ -3518,6 +3530,21 @@ mymono_metadata_type_equal (MonoType *t1, MonoType *t2)
 		if (t1->data.array->rank != t2->data.array->rank)
 			return FALSE;
 		return t1->data.array->eklass == t2->data.array->eklass;
+	case MONO_TYPE_GENERICINST: {
+		int i;
+		if (t1->data.generic_inst->type_argc != t2->data.generic_inst->type_argc)
+			return FALSE;
+		if (!mono_metadata_type_equal (t1->data.generic_inst->generic_type, t2->data.generic_inst->generic_type))
+			return FALSE;
+		for (i = 0; i < t1->data.generic_inst->type_argc; ++i) {
+			if (!mono_metadata_type_equal (t1->data.generic_inst->type_argv [i], t2->data.generic_inst->type_argv [i]))
+				return FALSE;
+		}
+		return TRUE;
+	}
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		return t1->data.type_param == t2->data.type_param;
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
 		return FALSE;

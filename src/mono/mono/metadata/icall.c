@@ -1398,6 +1398,153 @@ ves_icall_get_type_info (MonoType *type, MonoTypeInfo *info)
 	info->isprimitive = (!type->byref && (type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8));
 }
 
+static MonoArray*
+ves_icall_Type_GetGenericParameters (MonoReflectionType *type)
+{
+	MonoArray *res;
+	MonoClass *klass, *pklass;
+	int i;
+	MONO_ARCH_SAVE_REGS;
+
+	klass = mono_class_from_mono_type (type->type);
+
+	if (type->type->byref) {
+		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, 0);
+	} else if (klass->gen_params) {
+		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, klass->num_gen_params);
+		for (i = 0; i < klass->num_gen_params; ++i) {
+			pklass = mono_class_from_gen_param (klass->image, FALSE, i, &klass->gen_params [i]);
+			mono_array_set (res, gpointer, i, mono_type_get_object (mono_object_domain (type), &pklass->byval_arg));
+		}
+	} else if (klass->generic_inst) {
+		MonoGenericInst *inst = klass->generic_inst->data.generic_inst;
+		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, inst->type_argc);
+		for (i = 0; i < inst->type_argc; ++i) {
+			mono_array_set (res, gpointer, i, mono_type_get_object (mono_object_domain (type), inst->type_argv [i]));
+		}
+	} else {
+		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, 0);
+	}
+	return res;
+}
+
+static MonoReflectionType*
+ves_icall_Type_GetGenericTypeDefinition (MonoReflectionType *type)
+{
+	MonoClass *klass;
+	MONO_ARCH_SAVE_REGS;
+
+	if (type->type->byref)
+		return NULL;
+	klass = mono_class_from_mono_type (type->type);
+	if (klass->gen_params) {
+		return type; /* check this one */
+	}
+	if (klass->generic_inst)
+		return mono_type_get_object (mono_object_domain (type), klass->generic_inst->data.generic_inst->generic_type);
+	return NULL;
+}
+
+static MonoReflectionType*
+ves_icall_Type_BindGenericParameters (MonoReflectionType *type, MonoArray *types)
+{
+	MonoClass *klass;
+	MonoType *geninst;
+	MonoGenericInst *ginst;
+	int i;
+	MONO_ARCH_SAVE_REGS;
+
+	if (type->type->byref)
+		return NULL;
+	klass = mono_class_from_mono_type (type->type);
+	if (klass->num_gen_params != mono_array_length (types))
+		return NULL;
+
+	geninst = g_new0 (MonoType, 1);
+	geninst->type = MONO_TYPE_GENERICINST;
+	geninst->data.generic_inst = ginst = g_new0 (MonoGenericInst, 1);
+	ginst->generic_type = &klass->byval_arg;
+	ginst->type_argc = klass->num_gen_params;
+	ginst->type_argv = g_new0 (MonoType, klass->num_gen_params);
+	for (i = 0; i < klass->num_gen_params; ++i) {
+		MonoReflectionType *garg = mono_array_get (types, gpointer, i);
+		ginst->type_argv [i] = garg->type;
+	}
+
+	klass = mono_class_from_generic (geninst);
+	return mono_type_get_object (mono_object_domain (type), &klass->byval_arg);
+}
+
+static MonoReflectionType*
+ves_icall_Type_IsGenericTypeDefinition (MonoReflectionType *type)
+{
+	MonoClass *klass;
+	MONO_ARCH_SAVE_REGS;
+
+	if (type->type->byref)
+		return NULL;
+	klass = mono_class_from_mono_type (type->type);
+	if (klass->gen_params) {
+		return type; /* check this one */
+	}
+	if (klass->generic_inst)
+		return mono_type_get_object (mono_object_domain (type), klass->generic_inst->data.generic_inst->generic_type);
+	return NULL;
+}
+
+static gint32
+ves_icall_Type_GetGenericParameterPosition (MonoReflectionType *type)
+{
+	MonoClass *klass;
+	MONO_ARCH_SAVE_REGS;
+
+	if (type->type->byref)
+		return -1;
+	if (type->type->type == MONO_TYPE_VAR || type->type->type == MONO_TYPE_MVAR)
+		return type->type->data.type_param;
+	return -1;
+}
+
+static MonoBoolean
+ves_icall_MonoType_get_HasGenericParameteres (MonoReflectionType *type)
+{
+	MonoClass *klass;
+	MONO_ARCH_SAVE_REGS;
+
+	if (type->type->byref)
+		return FALSE;
+	klass = mono_class_from_mono_type (type->type);
+	if (klass->gen_params || klass->generic_inst)
+		return TRUE;
+	return FALSE;
+}
+
+static MonoBoolean
+ves_icall_MonoType_get_IsUnboundGenericParameter (MonoReflectionType *type)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	if (type->type->byref)
+		return FALSE;
+	if (type->type->type == MONO_TYPE_VAR || type->type->type == MONO_TYPE_MVAR)
+		return TRUE;
+	return FALSE;
+}
+
+static MonoBoolean
+ves_icall_MonoType_get_HasUnboundGenericParameters (MonoReflectionType *type)
+{
+	MonoClass *klass;
+	MONO_ARCH_SAVE_REGS;
+
+	if (type->type->byref)
+		return FALSE;
+	klass = mono_class_from_mono_type (type->type);
+	if (klass->gen_params)
+		return TRUE;
+	return FALSE;
+}
+
 static MonoObject *
 ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params) 
 {
@@ -3832,6 +3979,17 @@ static gconstpointer icall_map [] = {
 	"System.Type::GetTypeCode", ves_icall_type_GetTypeCode,
 	"System.Type::GetInterfaceMapData", ves_icall_Type_GetInterfaceMapData,
 	"System.Type::IsArrayImpl", ves_icall_Type_IsArrayImpl,
+
+	/* Type generics icalls */
+	"System.Type::GetGenericParameters", ves_icall_Type_GetGenericParameters,
+	"System.Type::GetGenericParameterPosition", ves_icall_Type_GetGenericParameterPosition,
+	"System.Type::GetGenericTypeDefinition", ves_icall_Type_GetGenericTypeDefinition,
+	"System.Type::BindGenericParameters", ves_icall_Type_BindGenericParameters,
+	"System.Type::IsGenericTypeDefinition", ves_icall_Type_IsGenericTypeDefinition,
+	
+	"System.MonoType::get_HasGenericParameters", ves_icall_MonoType_get_HasGenericParameteres,
+	"System.MonoType::get_HasUnboundGenericParameters", ves_icall_MonoType_get_HasUnboundGenericParameters,
+	"System.MonoType::get_IsUnboundGenericParameter", ves_icall_MonoType_get_IsUnboundGenericParameter,
 
 	/*
 	 * System.Reflection.FieldInfo

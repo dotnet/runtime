@@ -3109,7 +3109,35 @@ mono_guid_to_string (const guint8 *guid)
 static MonoClass**
 get_constraints (MonoImage *image, int owner)
 {
-	return NULL;
+	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAMCONSTRAINT];
+	guint32 cols [MONO_GENPARCONSTRAINT_SIZE];
+	guint32 i, token, found;
+	MonoClass *klass, **res;
+	GList *cons = NULL, *tmp;
+	
+
+	found = 0;
+	for (i = 0; i < tdef->rows; ++i) {
+		mono_metadata_decode_row (tdef, i, cols, MONO_GENPARCONSTRAINT_SIZE);
+		if (cols [MONO_GENPARCONSTRAINT_GENERICPAR] == owner) {
+			token = mono_metadata_token_from_dor (cols [MONO_GENPARCONSTRAINT_CONSTRAINT]);
+			klass = mono_class_get (image, token);
+			cons = g_list_append (cons, klass);
+			++found;
+		} else {
+			/* contiguous list finished */
+			if (found)
+				break;
+		}
+	}
+	if (!found)
+		return NULL;
+	res = g_new0 (MonoClass*, found + 1);
+	for (i = 0, tmp = cons; i < found; ++i, tmp = tmp->next) {
+		res [i] = tmp->data;
+	}
+	g_list_free (cons);
+	return res;
 }
 
 MonoGenericParam *

@@ -261,6 +261,12 @@ mono_class_from_name_case  (MonoImage *image, const char* name_space, const char
 MonoClass * 
 mono_class_from_typeref    (MonoImage *image, guint32 type_token);
 
+MonoClass * 
+mono_class_from_gen_param  (MonoImage *image, gboolean mvar, int type_num, MonoGenericParam *param);
+
+MonoClass*
+mono_class_from_generic    (MonoType *gtype);
+
 MonoClassField*
 mono_field_from_memberref  (MonoImage *image, guint32 token, MonoClass **retklass);
 
