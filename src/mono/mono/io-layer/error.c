@@ -164,7 +164,7 @@ _wapi_get_win32_file_error (gint err)
 		break;
 	
 	case ENFILE: case EMFILE:
-		ret = ERROR_NO_MORE_FILES;
+		ret = ERROR_TOO_MANY_OPEN_FILES;
 		break;
 
 	case ENOENT: case ENOTDIR:
