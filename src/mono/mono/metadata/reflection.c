@@ -2041,7 +2041,7 @@ encode_constraints (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynam
 			assembly, constraint->type);
 	}
 
-	if (gparam->has_ctor_constraint)
+	if (gparam->attrs &  GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT)
 		encode_new_constraint (assembly, owner);
 }
 
@@ -2079,12 +2079,7 @@ write_generic_param_entry (MonoDynamicImage *assembly, GenericParamTableEntry *e
 	param = entry->gparam->type.type->data.generic_param;
 
 	values [MONO_GENERICPARAM_OWNER] = entry->owner;
-	if (entry->gparam->has_value_type)
-		values [MONO_GENERICPARAM_FLAGS] = 0x18;
-	else if (entry->gparam->has_reference_type)
-		values [MONO_GENERICPARAM_FLAGS] = 0x04;
-	else
-		values [MONO_GENERICPARAM_FLAGS] = 0x00;
+	values [MONO_GENERICPARAM_FLAGS] = entry->gparam->attrs;
 	values [MONO_GENERICPARAM_NUMBER] = param->num;
 	values [MONO_GENERICPARAM_NAME] = string_heap_insert (&assembly->sheap, param->name);
 	values [MONO_GENERICPARAM_KIND] = 0;
