@@ -757,25 +757,58 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (ins->dreg != ins->sreg1) {
 					ins->opcode = OP_MOVE;
 				} else {
-					last_ins->next = ins->next;				
-					ins = ins->next;				
+					last_ins->next = ins->next;
+					ins = ins->next;
 					continue;
 				}
 			}
 			break;
 		case OP_COMPARE_IMM:
-			/* OP_COMPARE_IMM (reg, 0) --> OP_X86_TEST_NULL (reg) */
+			/* OP_COMPARE_IMM (reg, 0) 
+			 * --> 
+			 * OP_X86_TEST_NULL (reg) 
+			 */
 			if (ins->inst_imm == 0 && ins->next &&
 			    (ins->next->opcode == CEE_BEQ || ins->next->opcode == CEE_BNE_UN ||
 			     ins->next->opcode == OP_CEQ)) {
 				ins->opcode = OP_X86_TEST_NULL;
 			}     
 			break;
+		case OP_X86_COMPARE_MEMBASE_IMM:
+			/* 
+			 * OP_STORE_MEMBASE_REG reg, offset(basereg)
+			 * OP_X86_COMPARE_MEMBASE_IMM offset(basereg), imm
+			 * -->
+			 * OP_STORE_MEMBASE_REG reg, offset(basereg)
+			 * OP_COMPARE_IMM reg, imm
+			 *
+			 * Note: if imm = 0 then OP_COMPARE_IMM replaced with OP_X86_TEST_NULL
+			 */
+			if (last_ins && (last_ins->opcode == OP_STOREI4_MEMBASE_REG) &&
+			    ins->inst_basereg == last_ins->inst_destbasereg &&
+			    ins->inst_offset == last_ins->inst_offset) {
+					ins->opcode = OP_COMPARE_IMM;
+					ins->sreg1 = last_ins->sreg1;
+
+					/* check if we can remove cmp reg,0 with test null */
+					if (ins->inst_imm == 0 && ins->next &&
+						(ins->next->opcode == CEE_BEQ || ins->next->opcode == CEE_BNE_UN ||
+						ins->next->opcode == OP_CEQ)) {
+						ins->opcode = OP_X86_TEST_NULL;
+					}     
+				}
+
+			break;
 		case OP_LOAD_MEMBASE:
 		case OP_LOADI4_MEMBASE:
 			/* 
-			 * OP_STORE_MEMBASE_REG reg, offset(basereg) 
-			 * OP_LOAD_MEMBASE offset(basereg), reg
+			 * Note: if reg1 = reg2 the load op is removed
+			 *
+			 * OP_STORE_MEMBASE_REG reg1, offset(basereg) 
+			 * OP_LOAD_MEMBASE offset(basereg), reg2
+			 * -->
+			 * OP_STORE_MEMBASE_REG reg1, offset(basereg)
+			 * OP_MOVE reg1, reg2
 			 */
 			if (last_ins && (last_ins->opcode == OP_STOREI4_MEMBASE_REG 
 					 || last_ins->opcode == OP_STORE_MEMBASE_REG) &&
@@ -793,6 +826,8 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* 
 			 * Note: reg1 must be different from the basereg in the second load
+			 * Note: if reg1 = reg2 is equal then second load is removed
+			 *
 			 * OP_LOAD_MEMBASE offset(basereg), reg1
 			 * OP_LOAD_MEMBASE offset(basereg), reg2
 			 * -->
@@ -837,9 +872,15 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LOADU1_MEMBASE:
 		case OP_LOADI1_MEMBASE:
-		  /*
-		   * FIXME: Missing explanation
-		   */
+			/* 
+			 * Note: if reg1 = reg2 the load op is removed
+			 *
+			 * OP_STORE_MEMBASE_REG reg1, offset(basereg) 
+			 * OP_LOAD_MEMBASE offset(basereg), reg2
+			 * -->
+			 * OP_STORE_MEMBASE_REG reg1, offset(basereg)
+			 * OP_MOVE reg1, reg2
+			 */
 			if (last_ins && (last_ins->opcode == OP_STOREI1_MEMBASE_REG) &&
 					ins->inst_basereg == last_ins->inst_destbasereg &&
 					ins->inst_offset == last_ins->inst_offset) {
@@ -856,9 +897,15 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LOADU2_MEMBASE:
 		case OP_LOADI2_MEMBASE:
-		  /*
-		   * FIXME: Missing explanation
-		   */
+			/* 
+			 * Note: if reg1 = reg2 the load op is removed
+			 *
+			 * OP_STORE_MEMBASE_REG reg1, offset(basereg) 
+			 * OP_LOAD_MEMBASE offset(basereg), reg2
+			 * -->
+			 * OP_STORE_MEMBASE_REG reg1, offset(basereg)
+			 * OP_MOVE reg1, reg2
+			 */
 			if (last_ins && (last_ins->opcode == OP_STOREI2_MEMBASE_REG) &&
 					ins->inst_basereg == last_ins->inst_destbasereg &&
 					ins->inst_offset == last_ins->inst_offset) {
@@ -876,7 +923,9 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
 		case OP_MOVE:
-			/* 
+			/*
+			 * Removes:
+			 *
 			 * OP_MOVE reg, reg 
 			 */
 			if (ins->dreg == ins->sreg1) {
@@ -886,6 +935,8 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				continue;
 			}
 			/* 
+			 * Removes:
+			 *
 			 * OP_MOVE sreg, dreg 
 			 * OP_MOVE dreg, sreg
 			 */
