@@ -243,7 +243,7 @@ MonoString*
 mono_string_new_utf16       (MonoDomain *domain, const guint16 *text, gint32 len);
 
 MonoString*
-mono_string_new_size		(MonoDomain *domain, gint32 len);
+mono_string_new_size	    (MonoDomain *domain, gint32 len);
 
 MonoString*
 mono_ldstr                  (MonoDomain *domain, MonoImage *image, guint32 str_index);
@@ -268,6 +268,9 @@ mono_string_to_utf8         (MonoString *string_obj);
 
 gunichar2 *
 mono_string_to_utf16        (MonoString *string_obj);
+
+MonoString *
+mono_string_from_utf16      (gunichar2 *data);
 
 void       
 mono_object_free            (MonoObject *o);

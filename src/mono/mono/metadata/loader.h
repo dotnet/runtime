@@ -137,6 +137,9 @@ mono_lookup_pinvoke_call (MonoMethod *method);
 void
 mono_method_get_param_names (MonoMethod *method, const char **names);
 
+void
+mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs);
+
 gpointer
 mono_method_get_wrapper_data (MonoMethod *method, guint32 id);
 

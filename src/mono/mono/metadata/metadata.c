@@ -2475,17 +2475,8 @@ mono_metadata_field_info (MonoImage *meta, guint32 index, guint32 *offset, guint
 	if (marshal_spec) {
 		const char *p;
 		
-		tdef = &meta->tables [MONO_TABLE_FIELDMARSHAL];
-
-		loc.col_idx = MONO_FIELD_MARSHAL_PARENT;
-		loc.t = tdef;
-		loc.idx = (loc.idx << HAS_FIELD_MARSHAL_BITS) | HAS_FIELD_MARSHAL_FIELDSREF;
-
-		if (tdef->base && bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator)) {
-			p = mono_metadata_blob_heap (meta, mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_MARSHAL_NATIVE_TYPE));
+		if ((p = mono_metadata_get_marshal_info (meta, index, TRUE))) {
 			*marshal_spec = mono_metadata_parse_marshal_spec (meta, p);
-		} else {
-			*marshal_spec = NULL;
 		}
 	}
 

@@ -1990,6 +1990,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 {
 	MonoMethodSignature *sig, *csig;
 	MonoMethodBuilder *mb;
+	MonoMarshalSpec **mspecs;
 	MonoMethod *res;
 	GHashTable *cache;
 	MonoClass *klass;
@@ -2061,6 +2062,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	g_assert (pinvoke);
 
+	mspecs = g_new (MonoMarshalSpec, sig->param_count + 1);
+	mono_method_get_marshal_info (method, mspecs);
+
 	/* pinvoke: we need to convert the arguments if necessary */
 
 	csig = g_memdup (sig, sigsize);
@@ -2087,6 +2091,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	tmp_locals = alloca (sizeof (int) * sig->param_count);
 	for (i = 0; i < sig->param_count; i ++) {
 		MonoType *t = sig->params [i];
+		MonoMarshalSpec *spec = mspecs [i + 1];
 
 		argnum = i + sig->hasthis;
 		tmp_locals [i] = 0;
@@ -2140,7 +2145,20 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
-			mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPSTR);
+
+			if (spec) {
+				switch (spec->native) {
+				case MONO_NATIVE_LPWSTR:
+					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPWSTR);
+					break;
+				default:
+					g_warning ("marshalling conversion not implemented");
+					g_assert_not_reached ();
+				}
+			} else {
+				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPSTR);
+			}
+
 			mono_mb_emit_stloc (mb, tmp_locals [i]);
 			break;
 		case MONO_TYPE_CLASS:
@@ -2354,6 +2372,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	if (!sig->ret->byref) {
 		type = sig->ret->type;
+		MonoMarshalSpec *spec = mspecs [0];
+
 	handle_enum:
 		switch (type) {
 		case MONO_TYPE_VOID:
@@ -2407,7 +2427,18 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 		case MONO_TYPE_STRING:
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_FUNC1);
-			mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
+			if (spec) {
+				switch (spec->native) {
+				case MONO_NATIVE_LPWSTR:
+					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPWSTR_STR);
+					break;
+				default:
+					g_warning ("marshalling conversion not implemented");
+					g_assert_not_reached ();
+				}
+			} else {
+				mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_LPSTR_STR);
+			}
 			break;
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
@@ -2432,6 +2463,10 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	mono_mb_free (mb);
 
 	g_hash_table_insert (cache, method, res);
+
+	for (i = sig->param_count; i >= 0; i--)
+		g_free (mspecs [i]);
+	g_free (mspecs);
 
 	return res;
 }

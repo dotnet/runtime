@@ -598,6 +598,51 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 	}
 }
 
+void
+mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
+{
+	int i, lastp;
+	MonoClass *klass = method->klass;
+	MonoTableInfo *methodt;
+	MonoTableInfo *paramt;
+
+	if (!method->signature->param_count)
+		return;
+
+	for (i = 0; i < method->signature->param_count + 1; ++i)
+		mspecs [i] = NULL;
+
+	mono_class_init (klass);
+
+	methodt = &klass->image->tables [MONO_TABLE_METHOD];
+	paramt = &klass->image->tables [MONO_TABLE_PARAM];
+
+	for (i = 0; i < klass->method.count; ++i) {
+		if (method == klass->methods [i]) {
+			guint32 idx = klass->method.first + i;
+			guint32 cols [MONO_PARAM_SIZE];
+			guint param_index = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
+
+			if (idx + 1 < methodt->rows)
+				lastp = mono_metadata_decode_row_col (methodt, idx + 1, MONO_METHOD_PARAMLIST);
+			else
+				lastp = paramt->rows;
+
+			for (i = param_index; i < lastp; ++i) {
+				mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
+
+				if (cols [MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL) {
+					const char *tp;
+					tp = mono_metadata_get_marshal_info (klass->image, i - 1, FALSE);
+					g_assert (tp);
+					mspecs [cols [MONO_PARAM_SEQUENCE]]= mono_metadata_parse_marshal_spec (klass->image, tp);
+				}
+			}
+			return;
+		}
+	}
+}
+
 gpointer
 mono_method_get_wrapper_data (MonoMethod *method, guint32 id)
 {

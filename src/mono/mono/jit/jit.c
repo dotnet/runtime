@@ -3156,6 +3156,9 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				case MONO_MARSHAL_CONV_STR_LPWSTR:
 					t1->data.p = mono_string_to_utf16;
 					break;
+				case MONO_MARSHAL_CONV_LPWSTR_STR:
+					t1->data.p = mono_string_from_utf16;
+					break;
 				case MONO_MARSHAL_CONV_LPSTR_STR:
 					t1->data.p = mono_string_new_wrapper;
 					break;

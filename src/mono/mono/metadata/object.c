@@ -1413,6 +1413,23 @@ mono_string_to_utf16 (MonoString *s)
 	return (gunichar2 *)(as);
 }
 
+/*
+ * Converts a NULL terminated UTF16 string (LPWSTR) to a MonoString
+ */
+MonoString *
+mono_string_from_utf16 (gunichar2 *data)
+{
+	MonoDomain *domain = mono_domain_get ();
+	int len = 0;
+
+	if (!data)
+		return NULL;
+
+	while (data [len]) len++;
+
+	return mono_string_new_utf16 (domain, data, len);
+}
+
 static void
 default_ex_handler (MonoException *ex)
 {

@@ -1,6 +1,19 @@
 #include <stdio.h>
 #include <string.h>
 
+unsigned short*
+test_lpwstr_marshal (unsigned short* chars, long length)
+{
+	int i = 0;
+	
+	printf("test_lpwstr_marshal()\n");
+	
+	while ( i < length )
+		printf("X|%u|\n", chars[i++]);
+
+	return chars;
+}
+
 int mono_test_many_int_arguments (int a, int b, int c, int d, int e,
 				  int f, int g, int h, int i, int j);
 short mono_test_many_short_arguments (short a, short b, short c, short d, short e,
