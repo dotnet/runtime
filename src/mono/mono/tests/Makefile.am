@@ -30,6 +30,7 @@ TESTSRC=			\
 	array.cs		\
 	enum.cs			\
 	property.cs		\
+	reflection.cs		\
 	interface.cs		\
 	iface.cs		\
 	iface2.cs		\
@@ -44,6 +45,7 @@ TESTSRC=			\
 	jit-int.cs		\
 	jit-uint.cs		\
 	jit-long.cs		\
+	long.cs			\
 	jit-ulong.cs		\
 	jit-float.cs		\
 	pop.cs			\
