@@ -204,6 +204,31 @@ mono_test_marshal_array (int *a1)
 	return sum;
 }
 
+int 
+mono_test_marshal_inout_array (int *a1)
+{
+	int i, sum = 0;
+
+	for (i = 0; i < 50; i++) {
+		sum += a1 [i];
+		a1 [i] = 50 - a1 [i];
+	}
+	
+	return sum;
+}
+
+int 
+mono_test_marshal_inout_nonblittable_array (gunichar2 *a1)
+{
+	int i, sum = 0;
+
+	for (i = 0; i < 10; i++) {
+		a1 [i] = 'F';
+	}
+	
+	return sum;
+}
+
 typedef struct {
 	int a;
 	int b;

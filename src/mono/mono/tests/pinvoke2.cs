@@ -74,6 +74,12 @@ public class Tests {
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_array")]
 	public static extern int mono_test_marshal_array (int [] a1);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_inout_array")]
+	public static extern int mono_test_marshal_inout_array ([In, Out] int [] a1);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_inout_nonblittable_array", CharSet = CharSet.Unicode)]
+	public static extern int mono_test_marshal_inout_nonblittable_array ([In, Out] char [] a1);
 	
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct")]
 	public static extern int mono_test_marshal_struct (SimpleStruct ss);
@@ -130,6 +136,36 @@ public class Tests {
 			a1 [i] = i;
 
 		return mono_test_marshal_array (a1);
+	}
+
+	static int test_1225_marshal_inout_array () {
+		int [] a1 = new int [50];
+		for (int i = 0; i < 50; i++)
+			a1 [i] = i;
+
+		int res = mono_test_marshal_inout_array (a1);
+
+		for (int i = 0; i < 50; i++)
+			if (a1 [i] != 50 - i) {
+				Console.WriteLine ("X: " + i + " " + a1 [i]);
+				return 2;
+			}
+
+		return res;
+	}
+
+	static int test_0_marshal_inout_nonblittable_array () {
+		char [] a1 = new char [10];
+		for (int i = 0; i < 10; i++)
+			a1 [i] = "Hello, World" [i];
+
+		int res = mono_test_marshal_inout_nonblittable_array (a1);
+
+		for (int i = 0; i < 10; i++)
+			if (a1 [i] != 'F')
+				return 2;
+
+		return res;
 	}
 
 	static int test_0_marshal_struct () {
