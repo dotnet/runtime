@@ -330,7 +330,7 @@ void mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 	/* Create suspended, so we can do some housekeeping before the thread
 	 * starts
 	 */
-#if defined(PLATFORM_WIN32) && defined(HAVE_GC_BOEHM)
+#if defined(PLATFORM_WIN32) && defined(HAVE_BOEHM_GC)
 	thread_handle = GC_CreateThread(NULL, default_stacksize, start_wrapper, start_info,
 				     CREATE_SUSPENDED, &tid);
 #else
@@ -457,8 +457,13 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 			return(NULL);
 		}
 
+#if defined(PLATFORM_WIN32) && defined(HAVE_BOEHM_GC)
+		thread=GC_CreateThread(NULL, default_stacksize, start_wrapper, start_info,
+				    CREATE_SUSPENDED, &tid);
+#else
 		thread=CreateThread(NULL, default_stacksize, start_wrapper, start_info,
 				    CREATE_SUSPENDED, &tid);
+#endif
 		if(thread==NULL) {
 			g_warning(G_GNUC_PRETTY_FUNCTION
 				  ": CreateThread error 0x%x", GetLastError());
