@@ -1,5 +1,7 @@
 2003-11-07  Zoltan Varga  <vargaz@freemail.hu>
 
+	* configure.in: Remove debugging junk accidently checked in.
+	
 	* configure.in: Add new --with-nptl option to enable NPTL only
 	features since auto-detection is not reliable.
 

@@ -241,8 +241,6 @@ case "x$gc" in
 		fi
 		if test "x$gc_headers" != "xyes"; then
 			AC_MSG_ERROR("GC requested but header files not found! You may need to install them by hand.")
-		else
-			AC_DEFINE(HAVE_GC_GC_H)
 		fi
 
 		AC_DEFINE(HAVE_BOEHM_GC)
