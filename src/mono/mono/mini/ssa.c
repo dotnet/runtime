@@ -750,13 +750,13 @@ simulate_long_compare (int opcode, gint64 a, gint64 b)
 	case CEE_BNE_UN:
 		return a != b;
 	case CEE_BGE_UN:
-		return (unsigned)a >= (unsigned)b;
+		return (guint64)a >= (guint64)b;
 	case CEE_BGT_UN:
-		return (unsigned)a > (unsigned)b;
+		return (guint64)a > (guint64)b;
 	case CEE_BLE_UN:
-		return (unsigned)a <= (unsigned)b;
+		return (guint64)a <= (guint64)b;
 	case CEE_BLT_UN:
-		return (unsigned)a < (unsigned)b;
+		return (guint64)a < (guint64)b;
 	default:
 		g_assert_not_reached ();
 	}

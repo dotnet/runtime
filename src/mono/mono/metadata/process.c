@@ -206,7 +206,8 @@ static gpointer process_get_versioninfo_block (gpointer data,
 	data=((gunichar2 *)data)+(unicode_chars (block->key)+1);
 
 	/* align on a 32-bit boundary */
-	data=(gpointer)(((unsigned)data+3) & (~3));
+	data=(gpointer)((char *)data + 3);
+	data=(gpointer)((char *)data - (GPOINTER_TO_INT(data) & 3));
 	
 	return(data);
 }
@@ -308,7 +309,9 @@ static gpointer process_read_string_block (MonoObject *filever,
 		gunichar2 *value;
 		
 		/* align on a 32-bit boundary */
-		data_ptr=(gpointer)(((unsigned)data_ptr+3) & (~3));
+		data_ptr=(gpointer)((char *)data_ptr + 3);
+		data_ptr=(gpointer)((char *)data_ptr -
+		    (GPOINTER_TO_INT(data_ptr) & 3));
 
 		data_ptr=process_get_versioninfo_block (data_ptr, &block);
 		if(block.data_len==0) {
@@ -396,7 +399,9 @@ static gpointer process_read_stringtable_block (MonoObject *filever,
 
 	while(string_len<data_len) {
 		/* align on a 32-bit boundary */
-		data_ptr=(gpointer)(((unsigned)data_ptr+3) & (~3));
+		data_ptr=(gpointer)((char *)data_ptr + 3);
+		data_ptr=(gpointer)((char *)data_ptr -
+		    (GPOINTER_TO_INT(data_ptr) & 3));
 
 		data_ptr=process_get_versioninfo_block (data_ptr, &block);
 		if(block.data_len==0) {
@@ -566,7 +571,9 @@ static void process_get_fileversion (MonoObject *filever, MonoImage *image)
 	 */
 	while(data_len > 0) {
 		/* align on a 32-bit boundary */
-		data_ptr=(gpointer)(((unsigned)data_ptr+3) & (~3));
+		data_ptr=(gpointer)((char *)data_ptr + 3);
+		data_ptr=(gpointer)((char *)data_ptr -
+		    (GPOINTER_TO_INT(data_ptr) & 3));
 
 		data_ptr=process_get_versioninfo_block (data_ptr, &block);
 		if(block.data_len==0) {
