@@ -155,10 +155,6 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	if (vt && vt->domain == domain)
 		return vt;
 
-	/* can interfaces have static fields? */
-	if (class->flags & TYPE_ATTRIBUTE_INTERFACE)
-		g_assert_not_reached ();
-
 	mono_domain_lock (domain);
 	if ((vt = mono_g_hash_table_lookup (domain->class_vtable_hash, class))) {
 		mono_domain_unlock (domain);

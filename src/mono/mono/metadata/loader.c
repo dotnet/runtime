@@ -279,8 +279,15 @@ method_from_memberref (MonoImage *image, guint32 idx)
 		len = mono_metadata_decode_value (ptr, &ptr);	
 		type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
 
-		if (type->type != MONO_TYPE_ARRAY && type->type != MONO_TYPE_SZARRAY)
-			g_assert_not_reached ();		
+		if (type->type != MONO_TYPE_ARRAY && type->type != MONO_TYPE_SZARRAY) {
+			klass = mono_class_from_mono_type (type);
+			mono_class_init (klass);
+			method = find_method (klass, mname, sig);
+			if (!method)
+				g_warning ("Missing method %s in assembly %s typeref index %d", mname, image->name, nindex);
+			mono_metadata_free_method_signature (sig);
+			return method;
+		}
 
 		result = (MonoMethod *)g_new0 (MonoMethodPInvoke, 1);
 		result->klass = mono_class_get (image, MONO_TOKEN_TYPE_SPEC | nindex);
