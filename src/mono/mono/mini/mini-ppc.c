@@ -1067,7 +1067,7 @@ handle_enum:
  */
 typedef struct {
 	MonoBasicBlock *bb;
-	void *ip;
+	guint32 ip_offset;
 	guint16 b0_cond;
 	guint16 b1_cond;
 } MonoOvfJump;
@@ -1088,7 +1088,7 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 		if (!ppc_is_imm16 (br_disp + 1024) || ! ppc_is_imm16 (ppc_is_imm16 (br_disp - 1024))) {	\
 			MonoOvfJump *ovfj = mono_mempool_alloc (cfg->mempool, sizeof (MonoOvfJump));	\
 			ovfj->bb = ins->inst_true_bb;	\
-			ovfj->ip = NULL;	\
+			ovfj->ip_offset = 0;	\
 			ovfj->b0_cond = (b0);	\
 			ovfj->b1_cond = (b1);	\
 		        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB_OVF, ovfj); \
@@ -1113,7 +1113,7 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 		if (!ppc_is_imm16 (br_disp + 1024) || ! ppc_is_imm16 (ppc_is_imm16 (br_disp - 1024))) {	\
 			MonoOvfJump *ovfj = mono_mempool_alloc (cfg->mempool, sizeof (MonoOvfJump));	\
 			ovfj->bb = NULL;	\
-			ovfj->ip = code;	\
+			ovfj->ip_offset = code - cfg->native_code;	\
 			ovfj->b0_cond = (b0);	\
 			ovfj->b1_cond = (b1);	\
 			/* FIXME: test this code */	\
@@ -3948,7 +3948,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			ppc_patch (code - 4, ip + 4); /* jump back after the initiali branch */
 			/* jump back to the true target */
 			ppc_b (code, 0);
-			ip = (char*)ovfj->ip + 4;
+			ip = cfg->native_code + ovfj->ip_offset + 4;
 			ppc_patch (code - 4, ip);
 			break;
 		}
