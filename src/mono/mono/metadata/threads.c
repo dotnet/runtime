@@ -76,6 +76,10 @@ static guint32 start_wrapper(void *data)
 		
 static void handle_store(HANDLE thread)
 {
+#ifdef THREAD_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": thread %p", thread);
+#endif
+
 	EnterCriticalSection(&threads_mutex);
 	if(threads==NULL) {
 		threads=g_ptr_array_new();
@@ -86,6 +90,10 @@ static void handle_store(HANDLE thread)
 
 static void handle_remove(HANDLE thread)
 {
+#ifdef THREAD_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": thread %p", thread);
+#endif
+
 	EnterCriticalSection(&threads_mutex);
 	g_ptr_array_remove_fast(threads, thread);
 	LeaveCriticalSection(&threads_mutex);
@@ -174,7 +182,10 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoObject *this,
 {
 	gboolean ret;
 	
-	/* FIXME: make sure .net's idea of INFINITE is the same as in C */
+	if(ms== -1) {
+		ms=INFINITE;
+	}
+	
 	ret=WaitForSingleObject(thread, ms);
 	if(ret==WAIT_OBJECT_0) {
 		/* Clean up the handle */
@@ -218,6 +229,10 @@ static MonoThreadsSync *mon_new(void)
 
 	new=(MonoThreadsSync *)g_new0(MonoThreadsSync, 1);
 	new->monitor=CreateMutex(NULL, FALSE, NULL);
+#ifdef THREAD_LOCK_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": ThreadsSync mutex created: %p",
+		  new->monitor);
+#endif
 
 	new->waiters_count=0;
 	new->was_broadcast=FALSE;
@@ -254,6 +269,10 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj,
 	LeaveCriticalSection(&monitor_mutex);
 	
 	/* Acquire the mutex */
+#ifdef THREAD_LOCK_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Acquiring monitor mutex %p",
+		  mon->monitor);
+#endif
 	ret=WaitForSingleObject(mon->monitor, ms);
 	if(ret==WAIT_OBJECT_0) {
 		mon->count++;
@@ -303,6 +322,10 @@ void ves_icall_System_Threading_Monitor_Monitor_exit(MonoObject *obj)
 		mon->tid=0;	/* FIXME: check that 0 isnt a valid id */
 	}
 	
+#ifdef THREAD_LOCK_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Releasing mutex %p", mon->monitor);
+#endif
+
 	ReleaseMutex(mon->monitor);
 }
 
@@ -480,6 +503,11 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	save_count=mon->count;
 	
 	while(mon->count>1) {
+#ifdef THREAD_LOCK_DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION ": Releasing mutex %p",
+			  mon->monitor);
+#endif
+
 		ReleaseMutex(mon->monitor);
 		mon->count--;
 	}
@@ -487,6 +515,11 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	/* We're releasing this mutex */
 	mon->count=0;
 	mon->tid=0;
+#ifdef THREAD_LOCK_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Signalling monitor mutex %p",
+		  mon->monitor);
+#endif
+
 	SignalObjectAndWait(mon->monitor, mon->sema, INFINITE, FALSE);
 	
 	EnterCriticalSection(&mon->waiters_count_lock);
@@ -495,8 +528,16 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 	LeaveCriticalSection(&mon->waiters_count_lock);
 	
 	if(last_waiter) {
+#ifdef THREAD_LOCK_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Waiting for monitor mutex %p",
+		  mon->monitor);
+#endif
 		SignalObjectAndWait(mon->waiters_done, mon->monitor, INFINITE, FALSE);
 	} else {
+#ifdef THREAD_LOCK_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": Waiting for monitor mutex %p",
+		  mon->monitor);
+#endif
 		WaitForSingleObject(mon->monitor, INFINITE);
 	}
 
@@ -506,6 +547,10 @@ gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj,
 
 	/* Lock the mutex the required number of times */
 	while(save_count>1) {
+#ifdef THREAD_LOCK_DEBUG
+		g_message(G_GNUC_PRETTY_FUNCTION
+			  ": Waiting for monitor mutex %p", mon->monitor);
+#endif
 		WaitForSingleObject(mon->monitor, INFINITE);
 		save_count--;
 	}
@@ -530,6 +575,10 @@ gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_
 	handles=g_new0(WapiHandle *, numhandles);
 	for(i=0; i<numhandles; i++) {
 		handles[i]=mono_array_get(mono_handles, WapiHandle *, i);
+	}
+	
+	if(ms== -1) {
+		ms=INFINITE;
 	}
 	
 	ret=WaitForMultipleObjects(numhandles, handles, TRUE, ms);
@@ -565,6 +614,10 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 		handles[i]=mono_array_get(mono_handles, WapiHandle *, i);
 	}
 	
+	if(ms== -1) {
+		ms=INFINITE;
+	}
+
 	ret=WaitForMultipleObjects(numhandles, handles, FALSE, ms);
 
 	g_free(handles);
@@ -580,6 +633,14 @@ gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_ha
 gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this, WapiHandle *handle, gint32 ms, gboolean exitContext)
 {
 	guint32 ret;
+	
+#ifdef THREAD_WAIT_DEBUG
+	g_message(G_GNUC_PRETTY_FUNCTION ": waiting for %p", handle);
+#endif
+	
+	if(ms== -1) {
+		ms=INFINITE;
+	}
 	
 	ret=WaitForSingleObject(handle, ms);
 	if(ret==WAIT_FAILED) {
@@ -645,10 +706,21 @@ void mono_thread_cleanup(void)
 	 * and then the main thread should poll an event and wait for
 	 * any terminated threads, until there are none left.
 	 */
-	for(i=0; i<threads->len; i++) {
+#ifdef THREAD_DEBUG
+	g_message("There are %d threads to join", threads->len);
+#endif
+
+	for(i=0; i<threads->len; i+=MAXIMUM_WAIT_OBJECTS) {
 		for(j=0; j<MAXIMUM_WAIT_OBJECTS && i+j<threads->len; j++) {
-			wait[j]=g_ptr_array_index(threads, i);
+#ifdef THREAD_DEBUG
+			g_message("Waiting for threads %d in slot %d", i+j, j);
+#endif
+			wait[j]=g_ptr_array_index(threads, i+j);
 		}
+#ifdef THREAD_DEBUG
+		g_message("%d threads to wait for in this batch", j);
+#endif
+
 		WaitForMultipleObjects(j, wait, TRUE, INFINITE);
 	}
 	
