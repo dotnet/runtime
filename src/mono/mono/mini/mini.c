@@ -2914,6 +2914,17 @@ emit_tree (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ins, const guint8
 	return load;
 }
 
+static inline MonoMethod *
+mini_get_method (MonoImage *image, guint32 token, MonoClass *klass, MonoGenericContext *context)
+{
+	MonoMethod *method = mono_get_method_full (image, token, klass, context);
+
+	if (method->is_inflated)
+		method = mono_get_inflated_method (method);
+
+	return method;
+}
+
 /*
  * mono_method_to_ir: translates IL into basic blocks containing trees
  */
@@ -3491,7 +3502,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_INST_NEW (cfg, ins, CEE_JMP);
 			token = read32 (ip + 1);
 			/* FIXME: check the signature matches */
-			cmethod = mono_get_method_full (image, token, NULL, generic_context);
+			cmethod = mini_get_method (image, token, NULL, generic_context);
 			ins->inst_p0 = cmethod;
 			MONO_ADD_INS (bblock, ins);
 			ip += 5;
@@ -3525,7 +3536,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				} else if (constrained_call) {
 					cmethod = mono_get_method_constrained (image, token, constrained_call, generic_context);
 				} else {
-					cmethod = mono_get_method_full (image, token, NULL, generic_context);
+					cmethod = mini_get_method (image, token, NULL, generic_context);
 				}
 
 				g_assert (cmethod);
@@ -3564,8 +3575,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					mono_get_got_var (cfg);
 			}
 
-			if (cmethod && cmethod->klass->generic_container)
+			if (cmethod && cmethod->klass->generic_container) {
+				G_BREAKPOINT ();
 				goto unverified;
+			}
 
 			CHECK_STACK (n);
 
@@ -3610,8 +3623,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				constrained_call = NULL;
 			}
 
-			if (*ip != CEE_CALLI && check_call_signature (cfg, fsig, sp))
+			if (*ip != CEE_CALLI && check_call_signature (cfg, fsig, sp)) {
+				G_BREAKPOINT ();
 				goto unverified;
+			}
 
 			if (cmethod && virtual && cmethod->signature->generic_param_count) {
 				MonoInst *this_temp, *store;
@@ -4369,7 +4384,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (method->wrapper_type != MONO_WRAPPER_NONE) {
 				cmethod = mono_method_get_wrapper_data (method, token);
 			} else
-				cmethod = mono_get_method_full (image, token, NULL, generic_context);
+				cmethod = mini_get_method (image, token, NULL, generic_context);
 			fsig = mono_method_get_signature (cmethod, image, token);
 
 			mono_class_init (cmethod->klass);
@@ -5393,7 +5408,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_ADD_INS (bblock, store);
 				NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
 			} else {
-				if ((ip [5] == CEE_CALL) && (cmethod = mono_get_method_full (image, read32 (ip + 6), NULL, generic_context)) &&
+				if ((ip [5] == CEE_CALL) && (cmethod = mini_get_method (image, read32 (ip + 6), NULL, generic_context)) &&
 						(cmethod->klass == mono_defaults.monotype_class->parent) &&
 						(strcmp (cmethod->name, "GetTypeFromHandle") == 0) && ip_in_bb (cfg, bblock, ip + 5)) {
 					MonoClass *tclass = mono_class_from_mono_type (handle);
@@ -5768,7 +5783,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (method->wrapper_type != MONO_WRAPPER_NONE)
 					cmethod = mono_method_get_wrapper_data (method, n);
 				else {
-					cmethod = mono_get_method_full (image, n, NULL, generic_context);
+					cmethod = mini_get_method (image, n, NULL, generic_context);
 				}
 
 				mono_class_init (cmethod->klass);
@@ -5796,7 +5811,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (method->wrapper_type != MONO_WRAPPER_NONE)
 					cmethod = mono_method_get_wrapper_data (method, n);
 				else
-					cmethod = mono_get_method_full (image, n, NULL, generic_context);
+					cmethod = mini_get_method (image, n, NULL, generic_context);
 
 				mono_class_init (cmethod->klass);
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
