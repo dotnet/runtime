@@ -932,9 +932,9 @@
 
     <class name="System.EventArgs">
         <last-activity>Jul-16-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>yes</completion>
         <maintainers>
             <maintainer>michaellambert@bellsouth.net</maintainer>
         </maintainers>
@@ -942,9 +942,9 @@
 
     <class name="System.IAsyncResult">
         <last-activity>Jul-21-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>yes</completion>
         <maintainers>
             <maintainer>michaellambert@bellsouth.net</maintainer>
         </maintainers>
@@ -960,14 +960,22 @@
     </class>
     <class name="System.IntPtr">
         <last-activity>Jul-21-2001</last-activity>
-        <implementation>no</implementation>
+        <implementation>yes</implementation>
         <test-suite>no</test-suite>
-        <completion>?</completion>
+        <completion>yes</completion>
         <maintainers>
             <maintainer>michaellambert@bellsouth.net</maintainer>
         </maintainers>
     </class>
-  
+    <class name="System.UIntPtr">
+        <last-activity>Aug-23-2001</last-activity>
+        <implementation>yes</implementation>
+        <test-suite>no</test-suite>
+        <completion>yes</completion>
+        <maintainers>
+            <maintainer>michaellambert@bellsouth.net</maintainer>
+        </maintainers>
+    </class>  
     <class name="System.IO.MemoryStream">
         <last-activity>Jul-19-2001</last-activity>
         <implementation>yes</implementation>
