@@ -765,10 +765,12 @@ dis_type (MonoImage *m, int n)
 	name = mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]);
 
 	if ((cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS){
-		char *base = get_typedef_or_ref (m, cols [MONO_TYPEDEF_EXTENDS]);
 		fprintf (output, "  .class %s%s\n", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), name);
-		fprintf (output, "  \textends %s\n", base);
-		g_free (base);
+		if (cols [MONO_TYPEDEF_EXTENDS]) {
+			char *base = get_typedef_or_ref (m, cols [MONO_TYPEDEF_EXTENDS]);
+			fprintf (output, "  \textends %s\n", base);
+			g_free (base);
+		}
 	} else
 		fprintf (output, "  .class interface %s%s\n", typedef_flags (cols [MONO_TYPEDEF_FLAGS]), name);
 	
