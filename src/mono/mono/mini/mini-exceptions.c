@@ -437,7 +437,7 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 							mono_debugger_handle_exception (ei->data.filter, MONO_CONTEXT_GET_SP (ctx), obj);
 							filtered = call_filter (ctx, ei->data.filter);
-					}
+						}
 
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
 						     mono_object_isinst (obj, mono_class_get (ji->method->klass->image, ei->data.token))) || filtered) {

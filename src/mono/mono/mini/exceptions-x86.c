@@ -234,9 +234,6 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 	if (!restore_context)
 		restore_context = mono_arch_get_restore_context ();
 
-	/* adjust eip so that it point into the call instruction */
-	eip -= 1;
-
 	/* Pop argument and return address */
 	ctx.SC_ESP = esp + (2 * sizeof (gpointer));
 	ctx.SC_EIP = eip;
@@ -247,12 +244,27 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 	ctx.SC_EDX = edx;
 	ctx.SC_ECX = ecx;
 	ctx.SC_EAX = eax;
-	
+
+	if (mono_debugger_throw_exception (eip - 5, esp, exc)) {
+		/*
+		 * The debugger wants us to stop on the `throw' instruction.
+		 * By the time we get here, it already inserted a breakpoint on
+		 * eip - 5 (which is the address of the call).
+		 */
+		ctx.SC_EIP = eip - 5;
+		ctx.SC_ESP = esp + sizeof (gpointer);
+		restore_context (&ctx);
+		g_assert_not_reached ();
+	}
+
+	/* adjust eip so that it point into the call instruction */
+	ctx.SC_EIP -= 1;
+
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
 		mono_ex->stack_trace = NULL;
 	}
-	mono_handle_exception (&ctx, exc, eip + 1, FALSE);
+	mono_handle_exception (&ctx, exc, eip, FALSE);
 	restore_context (&ctx);
 
 	g_assert_not_reached ();
