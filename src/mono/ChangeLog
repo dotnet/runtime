@@ -1,3 +1,8 @@
+2003-05-01  Duncan Mak  <duncan@ximian.com>
+
+	* scripts/Makefile.am: 
+	* runtime/Makefile.am: Install cilc and ilasm.
+
 2003-04-29  Dietmar Maurer  <dietmar@ximian.com>
 
 	* mono/tests/Makefile.am (JITTEST_PROG): use mini/mono
@@ -5,6 +10,13 @@
 2003-04-16  Charles Iliya Krempeaux  <charles@reptile.ca>
 
 	* doc/web/team.xml : Added myself to it.
+
+2003-04-10  Duncan Mak  <duncan@ximian.com>
+
+	* doc/web/render-team-page.cs: Make the names of the element be
+	lowercase instead. BenM says this makes it XHTML compliant; heck,
+	I'm generating this from an XmlDocument already, why not make it
+	XHTML compliant?
 
 2003-04-10  Duncan Mak  <duncan@ximian.com>
 

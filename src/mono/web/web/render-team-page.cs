@@ -146,10 +146,12 @@ class Contributor {
 
         public XmlElement RenderHtml ()
         {
-                XmlElement root = document.CreateElement ("TD");
-                XmlElement table = document.CreateElement ("TABLE");
-                XmlElement tr = document.CreateElement ("TR");
-                XmlElement td = document.CreateElement ("TD");
+                XmlElement root = document.CreateElement ("td");
+                XmlElement table = document.CreateElement ("table");
+                table.SetAttribute ("cellPadding", "0");
+                table.SetAttribute ("border", "0");
+                XmlElement tr = document.CreateElement ("tr");
+                XmlElement td = document.CreateElement ("td");
                 td.SetAttribute ("bgcolor", "#c3cda7");
                 td.SetAttribute ("valign", "top");
                 td.SetAttribute ("width", "1%");
@@ -157,7 +159,7 @@ class Contributor {
                 table.AppendChild (tr);
                 root.AppendChild (table);
 
-                XmlElement img = document.CreateElement ("IMG");
+                XmlElement img = document.CreateElement ("img");
                 img.SetAttribute ("align", "top");
                 img.SetAttribute ("border", "0");
                 img.SetAttribute ("height", "48");
@@ -172,46 +174,46 @@ class Contributor {
                 tr.AppendChild (td);
 
                 td.AppendChild (name.ToXml (document));
-                td.AppendChild (document.CreateElement ("BR"));
+                td.AppendChild (document.CreateElement ("br"));
                 td.AppendChild (RenderEmail ());
 
-                tr = document.CreateElement ("TR");
+                tr = document.CreateElement ("tr");
                 table.AppendChild (tr);
-                td = document.CreateElement ("TD");
+                td = document.CreateElement ("td");
                 td.SetAttribute ("bgcolor", "#f5f8e4");
                 td.SetAttribute ("valign", "top");
                 tr.AppendChild (td);
                 td.AppendChild (RenderLabel ("Location: "));
 
-                td = document.CreateElement ("TD");
+                td = document.CreateElement ("td");
                 td.SetAttribute ("bgcolor", "#f5f8e4");
                 td.SetAttribute ("valign", "top");
                 tr.AppendChild (td);
                 td.AppendChild (document.CreateTextNode (location));
 
-                tr = document.CreateElement ("TR");
+                tr = document.CreateElement ("tr");
                 table.AppendChild (tr);
-                td = document.CreateElement ("TD");
+                td = document.CreateElement ("td");
                 td.SetAttribute ("bgcolor", "#f5f8e4");
                 td.SetAttribute ("valign", "top");
                 tr.AppendChild (td);
                 td.AppendChild (RenderLabel ("Description: "));
 
-                td = document.CreateElement ("TD");
+                td = document.CreateElement ("td");
                 td.SetAttribute ("bgcolor", "#f5f8e4");
                 td.SetAttribute ("valign", "top");
                 tr.AppendChild (td);
                 td.AppendChild (document.CreateTextNode (description));
 
-                tr = document.CreateElement ("TR");
+                tr = document.CreateElement ("tr");
                 table.AppendChild (tr);
-                td = document.CreateElement ("TD");
+                td = document.CreateElement ("td");
                 td.SetAttribute ("bgcolor", "#f5f8e4");
                 td.SetAttribute ("valign", "top");
                 tr.AppendChild (td);
                 td.AppendChild (RenderLabel ("Tasks: "));
 
-                td = document.CreateElement ("TD");
+                td = document.CreateElement ("td");
                 td.SetAttribute ("bgcolor", "#f5f8e4");
                 td.SetAttribute ("valign", "top");
                 tr.AppendChild (td);
@@ -223,11 +225,11 @@ class Contributor {
         public XmlNode RenderTasks ()
         {
 
-                XmlElement element = document.CreateElement ("OL");
+                XmlElement element = document.CreateElement ("ol");
                 element.SetAttribute ("type", "I");
 
                 foreach (string task in tasks) {
-                        XmlElement li = document.CreateElement ("LI");
+                        XmlElement li = document.CreateElement ("li");
                         li.AppendChild (document.CreateTextNode (task));
                         element.AppendChild (li);
                 }
@@ -237,9 +239,9 @@ class Contributor {
 
         public XmlNode RenderEmail ()
         {
-                XmlElement a = document.CreateElement ("A");
+                XmlElement a = document.CreateElement ("a");
                 a.SetAttribute ("href", "mailto:" + email);
-                XmlElement font = document.CreateElement ("FONT");
+                XmlElement font = document.CreateElement ("font");
                 font.SetAttribute ("size", "3");
                 XmlText t = document.CreateTextNode (email);
                 a.AppendChild (font);
@@ -251,7 +253,7 @@ class Contributor {
         public XmlNode RenderLabel (string label)
         {
                 string text = String.Format ("{0}: ", label);
-                XmlElement element = document.CreateElement ("B");
+                XmlElement element = document.CreateElement ("b");
                 XmlText t = document.CreateTextNode (label );
                 element.AppendChild (t);
 
@@ -268,10 +270,10 @@ class Page {
         {
                 document = new XmlDocument ();
 
-                XmlElement table = document.CreateElement ("TABLE");
+                XmlElement table = document.CreateElement ("table");
                 document.AppendChild (table);
 
-                tbody = document.CreateElement ("TBODY");
+                tbody = document.CreateElement ("tbody");
                 table.AppendChild (tbody);
         }
 
@@ -284,12 +286,12 @@ class Page {
                 if (left == null && right == null)
                         return;
 
-                XmlElement tr = document.CreateElement ("TR");
+                XmlElement tr = document.CreateElement ("tr");
                 tbody.AppendChild (tr);
                 tr.AppendChild (left);
 
                 if (right == null)
-                        tr.AppendChild (document.CreateElement ("TD"));
+                        tr.AppendChild (document.CreateElement ("td"));
                 else {
                         tr.SetAttribute ("valign", "top");
                         tr.AppendChild (right);
@@ -338,7 +340,7 @@ class Name {
 
         public XmlNode ToXml (XmlDocument document)
         {
-                XmlElement element = document.CreateElement ("FONT");
+                XmlElement element = document.CreateElement ("font");
                 element.SetAttribute ("size", "3");
                 XmlElement b = document.CreateElement ("B");
                 XmlText t = document.CreateTextNode (ToString ());
