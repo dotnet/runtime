@@ -1361,7 +1361,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 		if (!mono_object_isinst (this, m->klass))
 			mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetException"));
 		m = mono_object_get_virtual_method (this, m);
-	} else if (!(m->flags & METHOD_ATTRIBUTE_STATIC))
+	} else if (!(m->flags & METHOD_ATTRIBUTE_STATIC) && strcmp (m->name, ".ctor"))
 		mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetException"));
 
 	pcount = params? mono_array_length (params): 0;
