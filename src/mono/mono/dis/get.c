@@ -997,9 +997,9 @@ get_methodref_signature (MonoImage *m, guint32 blob_signature, const char *fancy
 		g_string_append_c (res, ' ');
 		g_string_append (res, fancy_name);
 	}
-	
+        
 	g_string_append (res, "(");
-	
+
 	/*
 	 * param_count describes parameters *before* and *after*
 	 * the vararg sentinel
@@ -1174,14 +1174,10 @@ get_method (MonoImage *m, guint32 token)
 		return sig;
 	}
 	case MONO_TOKEN_METHOD_SPEC: {
-		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHODSPEC], idx - 1, member_cols, MONO_METHODSPEC_SIZE);
+                mono_metadata_decode_row (&m->tables [MONO_TABLE_METHODSPEC],
+                                idx - 1, member_cols, MONO_METHODSPEC_SIZE);
 		token = member_cols [MONO_METHODSPEC_METHOD];
-		if ((token & METHODDEFORREF_MASK) == METHODDEFORREF_METHODDEF)
-			token = MONO_TOKEN_METHOD_DEF | (token >> METHODDEFORREF_BITS);
-		else
-			token = MONO_TOKEN_MEMBER_REF | (token >> METHODDEFORREF_BITS);
-		return get_method (m, token);
-
+                return get_methodspec (m, idx, token, name);
 	}
 
 	default:
@@ -1220,6 +1216,116 @@ get_methoddef (MonoImage *m, guint32 idx)
         
         return sig;
 }
+
+char *
+get_method_type_param (MonoImage *m, guint32 blob_signature)
+{
+	GString *res = g_string_new ("");
+	const char *ptr = mono_metadata_blob_heap (m, blob_signature);
+	int param_count;
+	int i = 0;
+	char *s;
+	
+	mono_metadata_decode_value (ptr, &ptr);
+	ptr++;
+	param_count = mono_metadata_decode_value (ptr, &ptr);
+	
+	g_string_append_c (res, '<');
+        
+	for (i = 0; i < param_count; i++){
+		char *param = NULL;
+		
+		ptr = get_param (m, ptr, &param);
+		g_string_append (res, param);
+		if (i+1 != param_count)
+			g_string_append (res, ", ");
+		g_free (param);
+	}
+	g_string_append_c (res, '>');
+        
+	s = res->str;
+	g_string_free (res, FALSE);
+	return s;
+}
+
+/**
+ * get_methodspec
+ *
+ * Returns: An allocated stringified version of the methodspec signature.
+ */
+
+char *
+get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name)
+{
+        GString *res = g_string_new ("");
+	guint32 member_cols [MONO_MEMBERREF_SIZE], method_cols [MONO_METHOD_SIZE];
+        char *s, *type_param;
+        const char *ptr;
+	int param_count, cconv, i, gen_count = 0;
+        
+        token >>= METHODDEFORREF_BITS;
+        mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], 
+                        token-1, method_cols, MONO_METHOD_SIZE);
+        
+	ptr = mono_metadata_blob_heap (m, method_cols [MONO_METHOD_SIGNATURE]);
+	mono_metadata_decode_value (ptr, &ptr);
+
+	if (*ptr & 0x20){
+		if (*ptr & 0x40)
+			g_string_append (res, "explicit-this ");
+		else
+			g_string_append (res, "instance "); /* has-this */
+	}
+
+	if (*ptr & 0x10)
+		gen_count = 1;
+	cconv = *ptr & 0x0f;
+	ptr++;
+	if (gen_count)
+		gen_count = mono_metadata_decode_value (ptr, &ptr);
+	param_count = mono_metadata_decode_value (ptr, &ptr);
+	if (cconv != 0xa) {
+                char *allocated_ret_type;
+		ptr = get_ret_type (m, ptr, &allocated_ret_type);
+		g_string_append (res, allocated_ret_type);
+		g_free (allocated_ret_type);
+	}
+
+	if (fancy_name){
+		g_string_append_c (res, ' ');
+		g_string_append (res, fancy_name);
+	}
+
+        mono_metadata_decode_row (&m->tables [MONO_TABLE_METHODSPEC],
+                        idx - 1, member_cols, MONO_METHODSPEC_SIZE);
+        token = member_cols [MONO_METHODSPEC_SIGNATURE];
+        type_param = get_method_type_param (m, token);
+        g_string_append (res, type_param);
+	g_string_append (res, " (");
+
+	/*
+         * methodspecs can not be varargs so we don't need to worry about that here
+         */
+         
+	for (i = 0; i < param_count; i++){
+		char *param = NULL;
+		
+		ptr = get_param (m, ptr, &param);
+		g_string_append (res, param);
+		if (i+1 != param_count)
+			g_string_append (res, ", ");
+		g_free (param);
+	}
+	g_string_append (res, ")");
+	
+	/*
+	 * cleanup and return
+	 */
+	s = res->str;
+	g_string_free (res, FALSE);
+	return s;
+}
+
 
 /**
  * get_constant:
