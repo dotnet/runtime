@@ -1064,6 +1064,20 @@ class Tests {
 		if (failed)
 			return 9;
 
+		try {
+			ulong ul = (long)(System.Int32.MaxValue) + 1;
+			failed = true;
+			checked {
+				a = (int)ul;
+			}
+		}
+		catch (OverflowException) {
+			failed = false;
+		}
+		if (failed)
+			return 10;
+
+
 		{
 			int i; 
 			float f = 1.1f;

@@ -272,6 +272,12 @@ reg: OP_LCONV_TO_OVF_I4 (reg) {
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
 }
 
+reg: OP_LCONV_TO_OVF_I4_UN (reg) {
+	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 0x7fffffff);
+	MONO_EMIT_NEW_COND_EXC (s, GT, "OverflowException");
+	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
+}
+
 reg: OP_LCONV_TO_OVF_U4_UN (reg) {
 	MONO_EMIT_NEW_COMPARE_IMM (s, state->left->reg1, 0xffffffff);
 	MONO_EMIT_NEW_COND_EXC (s, GT_UN, "OverflowException");

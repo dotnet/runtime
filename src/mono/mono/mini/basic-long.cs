@@ -732,6 +732,14 @@ class Tests {
 		}
 	}
 
+	static int test_1234_checked_i4_cast () {
+		ulong ul = 1234;
+
+		checked {
+			return (int)ul;
+		}
+	}
+
 	static int test_10_int_uint_compare () {
 		uint size = 10;
 		int j = 0;
