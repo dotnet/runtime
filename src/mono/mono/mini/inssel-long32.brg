@@ -95,19 +95,28 @@ cflags: OP_COMPARE (reg, reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-cflags: OP_COMPARE (CEE_LDIND_I4 (OP_REGVAR), reg) {
+cflags: OP_COMPARE (CEE_LDIND_REF (OP_REGVAR), reg),
+cflags: OP_COMPARE (CEE_LDIND_I (OP_REGVAR), reg),
+cflags: OP_COMPARE (CEE_LDIND_I4 (OP_REGVAR), reg),
+cflags: OP_COMPARE (CEE_LDIND_U4 (OP_REGVAR), reg) {
 	tree->sreg1 = state->left->left->tree->dreg;
 	tree->sreg2 = state->right->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-cflags: OP_COMPARE (CEE_LDIND_I (OP_REGVAR), CEE_LDIND_I (OP_REGVAR)) {
+cflags: OP_COMPARE (CEE_LDIND_REF (OP_REGVAR), CEE_LDIND_REF (OP_REGVAR)),
+cflags: OP_COMPARE (CEE_LDIND_I (OP_REGVAR), CEE_LDIND_I (OP_REGVAR)),
+cflags: OP_COMPARE (CEE_LDIND_I4 (OP_REGVAR), CEE_LDIND_I4 (OP_REGVAR)),
+cflags: OP_COMPARE (CEE_LDIND_U4 (OP_REGVAR), CEE_LDIND_U4 (OP_REGVAR)) {
 	tree->sreg1 = state->left->left->tree->dreg;
 	tree->sreg2 = state->right->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-cflags: OP_COMPARE (CEE_LDIND_I4 (OP_REGVAR), OP_ICONST) {
+cflags: OP_COMPARE (CEE_LDIND_REF (OP_REGVAR), OP_ICONST),
+cflags: OP_COMPARE (CEE_LDIND_I (OP_REGVAR), OP_ICONST),
+cflags: OP_COMPARE (CEE_LDIND_I4 (OP_REGVAR), OP_ICONST),
+cflags: OP_COMPARE (CEE_LDIND_U4 (OP_REGVAR), OP_ICONST) {
 	tree->opcode = OP_COMPARE_IMM;
 	tree->sreg1 = state->left->left->tree->dreg;
 	tree->inst_imm = state->right->tree->inst_c0;

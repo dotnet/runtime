@@ -116,7 +116,10 @@ freg: CEE_CONV_R_UN (reg) {
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, X86_ESP, X86_ESP, 8);
 }
 
-cflags: OP_COMPARE (CEE_LDIND_I4 (base), reg) {
+cflags: OP_COMPARE (CEE_LDIND_REF (base), reg),
+cflags: OP_COMPARE (CEE_LDIND_I (base), reg),
+cflags: OP_COMPARE (CEE_LDIND_I4 (base), reg),
+cflags: OP_COMPARE (CEE_LDIND_U4 (base), reg) {
 	tree->opcode = OP_X86_COMPARE_MEMBASE_REG;
 	tree->inst_basereg = state->left->left->tree->inst_basereg;
 	tree->inst_offset = state->left->left->tree->inst_offset;
@@ -124,7 +127,10 @@ cflags: OP_COMPARE (CEE_LDIND_I4 (base), reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-cflags: OP_COMPARE (CEE_LDIND_I4 (base), OP_ICONST) {
+cflags: OP_COMPARE (CEE_LDIND_REF (base), OP_ICONST),
+cflags: OP_COMPARE (CEE_LDIND_I (base), OP_ICONST),
+cflags: OP_COMPARE (CEE_LDIND_I4 (base), OP_ICONST),
+cflags: OP_COMPARE (CEE_LDIND_U4 (base), OP_ICONST) {
 	tree->opcode = OP_X86_COMPARE_MEMBASE_IMM;
 	tree->inst_basereg = state->left->left->tree->inst_basereg;
 	tree->inst_offset = state->left->left->tree->inst_offset;
@@ -132,7 +138,10 @@ cflags: OP_COMPARE (CEE_LDIND_I4 (base), OP_ICONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-cflags: OP_COMPARE (reg, CEE_LDIND_I4 (base)) {
+cflags: OP_COMPARE (reg, CEE_LDIND_REF (base)),
+cflags: OP_COMPARE (reg, CEE_LDIND_I (base)),
+cflags: OP_COMPARE (reg, CEE_LDIND_I4 (base)),
+cflags: OP_COMPARE (reg, CEE_LDIND_U4 (base)) {
 	tree->opcode = OP_X86_COMPARE_REG_MEMBASE;
 	tree->sreg2 = state->right->left->tree->inst_basereg;
 	tree->inst_offset = state->right->left->tree->inst_offset;
@@ -179,7 +188,10 @@ stmt: OP_SETRET (lreg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: OP_SETRET (CEE_LDIND_REF (OP_REGVAR)) {
+stmt: OP_SETRET (CEE_LDIND_REF (OP_REGVAR)),
+stmt: OP_SETRET (CEE_LDIND_I (OP_REGVAR)),
+stmt: OP_SETRET (CEE_LDIND_I4 (OP_REGVAR)),
+stmt: OP_SETRET (CEE_LDIND_U4 (OP_REGVAR)) {
 	tree->opcode = OP_MOVE;
 	tree->sreg1 = state->left->left->tree->dreg;
 	tree->dreg = X86_EAX;
