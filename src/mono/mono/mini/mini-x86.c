@@ -2578,8 +2578,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_mov_reg_imm (code, ins->dreg, ins->inst_c0);
 			break;
 		case OP_AOTCONST:
+			g_assert_not_reached ();
 			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
 			x86_mov_reg_imm (code, ins->dreg, 0);
+			break;
+		case OP_LOAD_GOTADDR:
+			x86_call_imm (code, 0);
+			/* 
+			 * The patch needs to point to the pop, since the GOT offset needs 
+			 * to be added to that address.
+			 */
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_GOT_OFFSET, NULL);
+			x86_pop_reg (code, ins->dreg);
+			x86_alu_reg_imm (code, X86_ADD, ins->dreg, 0xf0f0f0f0);
+			break;
+		case OP_GOT_ENTRY:
+			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_right->inst_i1, ins->inst_right->inst_p0);
+			x86_mov_reg_membase (code, ins->dreg, ins->inst_basereg, 0xf0f0f0f0, 4);
+			break;
+		case OP_X86_PUSH_GOT_ENTRY:
+			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_right->inst_i1, ins->inst_right->inst_p0);
+			x86_push_membase (code, ins->inst_basereg, 0xf0f0f0f0);
 			break;
 		case CEE_CONV_I4:
 		case OP_MOVE:
@@ -3419,6 +3438,10 @@ mono_arch_register_lowlevel_calls (void)
 {
 }
 
+static gpointer *aot_got = NULL;
+static guint32 got_len = 0;
+static guint32 got_offset = 0;
+
 void
 mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
 {
@@ -3430,21 +3453,49 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 
 		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
 
+		if (mono_compile_aot) {
+			switch (patch_info->type) {
+			case MONO_PATCH_INFO_BB:
+			case MONO_PATCH_INFO_LABEL:
+			case MONO_PATCH_INFO_GOT_OFFSET:
+				break;
+			case MONO_PATCH_INFO_SWITCH:
+			case MONO_PATCH_INFO_IID:
+			case MONO_PATCH_INFO_METHODCONST:
+			case MONO_PATCH_INFO_CLASS:
+			case MONO_PATCH_INFO_IMAGE:
+			case MONO_PATCH_INFO_FIELD:
+			case MONO_PATCH_INFO_VTABLE:
+			case MONO_PATCH_INFO_SFLDA:
+			case MONO_PATCH_INFO_EXC_NAME:
+			case MONO_PATCH_INFO_LDSTR:
+			case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+			case MONO_PATCH_INFO_LDTOKEN: {
+				/* Just to make code run at aot time work */
+				if (aot_got == NULL) {
+					aot_got = g_new0 (gpointer, 1024);
+					got_len = 1024;
+					got_offset = 0;
+				} else if (got_offset >= got_len) {
+					got_len *= 2;
+					aot_got = g_realloc (aot_got, got_len * sizeof (gpointer));
+				}
+
+				aot_got [got_offset] = (gpointer)target;
+				target = (const unsigned char*)(got_offset * sizeof (gpointer));
+				got_offset ++;
+
+				break;
+			}
+			default:
+				break;
+			}
+		}
+
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_IP:
 			*((gconstpointer *)(ip)) = target;
 			continue;
-		case MONO_PATCH_INFO_METHOD_REL:
-			*((gconstpointer *)(ip)) = target;
-			continue;
-		case MONO_PATCH_INFO_SWITCH: {
-			*((gconstpointer *)(ip + 2)) = target;
-			/* we put into the table the absolute address, no need for x86_patch in this case */
-			continue;
-		}
-		case MONO_PATCH_INFO_IID:
-			*((guint32 *)(ip + 1)) = (guint32)target;
-			continue;			
 		case MONO_PATCH_INFO_CLASS_INIT: {
 			guint8 *code = ip;
 			/* Might already been changed to a nop */
@@ -3455,6 +3506,14 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_R8:
 			*((gconstpointer *)(ip + 2)) = target;
 			continue;
+		case MONO_PATCH_INFO_GOT_OFFSET: {
+			guint32 offset = mono_arch_get_patch_offset (ip);
+			*((guint32*)(ip + offset)) = (guint32)((guint8*)aot_got - (guint8*)ip);
+			continue;
+		}
+		case MONO_PATCH_INFO_METHOD_REL:
+		case MONO_PATCH_INFO_SWITCH:
+		case MONO_PATCH_INFO_IID:
 		case MONO_PATCH_INFO_METHODCONST:
 		case MONO_PATCH_INFO_CLASS:
 		case MONO_PATCH_INFO_IMAGE:
@@ -3464,8 +3523,12 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_EXC_NAME:
 		case MONO_PATCH_INFO_LDSTR:
 		case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-		case MONO_PATCH_INFO_LDTOKEN:
-			*((gconstpointer *)(ip + 1)) = target;
+		case MONO_PATCH_INFO_LDTOKEN: {
+			guint32 offset = mono_arch_get_patch_offset (ip);
+			*((gconstpointer *)(ip + offset)) = target;
+			continue;
+		}
+		case MONO_PATCH_INFO_NONE:
 			continue;
 		default:
 			break;
@@ -3500,7 +3563,14 @@ mono_arch_max_epilog_size (MonoCompile *cfg)
 	 * make sure we have enough space for exceptions
 	 * 16 is the size of two push_imm instructions and a call
 	 */
-	max_epilog_size += exc_count*16;
+	if (mono_compile_aot) {
+		if (!cfg->got_var)
+			max_epilog_size += (exc_count * (24 + 32));
+		else
+			max_epilog_size += (exc_count * (16 + 8));
+	}
+	else
+		max_epilog_size += exc_count * 16;
 
 	return max_epilog_size;
 }
@@ -3744,10 +3814,35 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_EXC:
 			x86_patch (patch_info->ip.i + cfg->native_code, code);
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);
-			x86_push_imm (code, patch_info->data.target);
-			mono_add_patch_info (cfg, code + 1 - cfg->native_code, MONO_PATCH_INFO_METHOD_REL, (gpointer)patch_info->ip.i);
-			x86_push_imm (code, patch_info->ip.i + cfg->native_code);
+			if (mono_compile_aot) {
+				guint32 dreg = X86_EAX;
+				/* 
+				 * Since the patches are generated by the back end, there is
+				 * no way to generate a got_var at this point.
+				 */
+				if (!cfg->got_var) {
+					x86_call_imm (code, 0);
+					mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_GOT_OFFSET, NULL);
+					x86_pop_reg (code, X86_EAX);
+					x86_alu_reg_imm (code, X86_ADD, X86_EAX, 0);
+				}
+				else {
+					if (cfg->got_var->opcode == OP_REGOFFSET)
+						x86_mov_reg_membase (code, X86_EAX, cfg->got_var->inst_basereg, cfg->got_var->inst_offset, 4);
+					else
+						dreg = cfg->got_var->dreg;
+				}
+				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);
+				x86_push_membase (code, dreg, 0xf0f0f0f0);
+				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_REL, (gpointer)patch_info->ip.i);
+				x86_push_membase (code, dreg, 0xf0f0f0f0);
+			}
+			else {
+				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);
+				x86_push_imm (code, patch_info->data.target);
+				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_REL, (gpointer)patch_info->ip.i);
+				x86_push_imm (code, patch_info->ip.i + cfg->native_code);
+			}
 			patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
 			patch_info->data.name = "mono_arch_throw_exception_by_name";
 			patch_info->ip.i = code - cfg->native_code;
@@ -4026,4 +4121,29 @@ MonoInst* mono_arch_get_thread_intrinsic (MonoCompile* cfg)
 	MONO_INST_NEW (cfg, ins, OP_X86_TLS_GET);
 	ins->inst_offset = thread_tls_offset;
 	return ins;
+}
+
+guint32
+mono_arch_get_patch_offset (guint8 *code)
+{
+	if ((code [0] == 0x8b) && (x86_modrm_mod (code [1]) == 0x2))
+		return 2;
+	else if ((code [0] == 0xba))
+		return 1;
+	else if ((code [0] == 0x68))
+		/* push IMM */
+		return 1;
+	else if ((code [0] == 0xff) && (x86_modrm_reg (code [1]) == 0x6))
+		/* push <OFFSET>(<REG>) */
+		return 2;
+	else if ((code [0] == 0x58) && (code [1] == 0x05))
+		/* pop %eax; add <OFFSET>, %eax */
+		return 2;
+	else if ((code [0] >= 0x58) && (code [0] <= 0x58 + X86_NREG) && (code [1] == 0x81))
+		/* pop <REG>; add <OFFSET>, <REG> */
+		return 3;
+	else {
+		g_assert_not_reached ();
+		return -1;
+	}
 }

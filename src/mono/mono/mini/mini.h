@@ -403,7 +403,9 @@ typedef enum {
 	MONO_PATCH_INFO_IID,
 	MONO_PATCH_INFO_BB_OVF,
 	MONO_PATCH_INFO_EXC_OVF,
-	MONO_PATCH_INFO_WRAPPER
+	MONO_PATCH_INFO_WRAPPER,
+	MONO_PATCH_INFO_GOT_OFFSET,
+	MONO_PATCH_INFO_NONE
 } MonoJumpInfoType;
 
 /*
@@ -415,7 +417,6 @@ typedef struct MonoJumpInfoToken {
 	MonoImage *image;
 	guint32 token;
 } MonoJumpInfoToken;
-
 
 typedef struct MonoJumpInfoBBTable {
 	MonoBasicBlock **table;
@@ -519,6 +520,7 @@ typedef struct {
 	MonoInst        *exvar;
 	
 	MonoInst        *domainvar; /* a cache for the current domain */
+	MonoInst        *got_var; /* Global Offset Table variable */
 
 	/* A hashtable of region ID-> SP var mappings */
 	/* An SP var is a place to store the stack pointer (used by handlers)*/
@@ -810,7 +812,7 @@ MonoInst* mono_arch_get_domain_intrinsic        (MonoCompile* cfg);
 MonoInst* mono_arch_get_thread_intrinsic        (MonoCompile* cfg);
 gboolean mono_arch_is_int_overflow              (void *sigctx, void *info);
 void     mono_arch_invalidate_method            (MonoJitInfo *ji, void *func, gpointer func_arg);
-guint32  mono_arch_get_aot_patch_offset         (void);
+guint32  mono_arch_get_patch_offset             (guint8 *code);
 
 /* Exception handling */
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,

@@ -277,6 +277,46 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest)->type = STACK_PTR;	\
 	} while (0)
 
+
+#ifdef MONO_ARCH_NEED_GOT_VAR
+
+#define NEW_PATCH_INFO(cfg,dest,el1,el2) do {	\
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		(dest)->opcode = OP_PATCH_INFO;	\
+		(dest)->inst_left = (gpointer)(el1);	\
+		(dest)->inst_right = (gpointer)(el2);	\
+	} while (0)
+
+#define NEW_AOTCONST(cfg,dest,patch_type,cons) do {    \
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		(dest)->opcode = mono_compile_aot ? OP_GOT_ENTRY : OP_PCONST;	\
+        if (mono_compile_aot) { \
+            MonoInst *group, *got_var; \
+            NEW_TEMPLOAD ((cfg), got_var, mono_get_got_var (cfg)->inst_c0); \
+		    NEW_PATCH_INFO ((cfg), group, cons, patch_type); \
+            (dest)->inst_p0 = got_var; \
+            (dest)->inst_p1 = group; \
+        } else { \
+		     (dest)->inst_p0 = (cons);	\
+             (dest)->inst_i1 = (gpointer)(patch_type); \
+        } \
+		(dest)->type = STACK_PTR;	\
+    } while (0)
+
+#define NEW_AOTCONST_TOKEN(cfg,dest,patch_type,image,token,stack_type) do { \
+        MonoInst *group, *got_var; \
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		(dest)->opcode = OP_GOT_ENTRY;	\
+        NEW_TEMPLOAD ((cfg), got_var, mono_get_got_var (cfg)->inst_c0); \
+		NEW_PATCH_INFO ((cfg), group, NULL, patch_type); \
+        group->inst_p0 = mono_jump_info_token_new ((cfg)->mempool, (image), (token)); \
+        (dest)->inst_p0 = got_var; \
+        (dest)->inst_p1 = group; \
+		(dest)->type = (stack_type);	\
+    } while (0)
+
+#else
+
 #define NEW_AOTCONST(cfg,dest,patch_type,cons) do {    \
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_PCONST;	\
@@ -289,9 +329,11 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = OP_AOTCONST;	\
 		(dest)->inst_p0 = mono_jump_info_token_new ((cfg)->mempool, (image), (token));	\
-		(dest)->inst_i1 = (gpointer)(patch_type); \
+		(dest)->inst_p1 = (gpointer)(patch_type); \
 		(dest)->type = (stack_type);	\
     } while (0)
+
+#endif
 
 #define NEW_CLASSCONST(cfg,dest,val) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_CLASS, (val))
 
@@ -440,6 +482,12 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest)->inst_i1 = (inst);	\
 		(dest)->klass = (dest)->inst_i0->klass;	\
 	} while (0)
+
+#define NEW_DUMMY_USE(cfg,dest,load) do { \
+		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		(dest)->opcode = OP_DUMMY_USE; \
+		(dest)->inst_left = (load); \
+    } while (0)
 
 #define ADD_BINOP(op) do {	\
 		MONO_INST_NEW (cfg, ins, (op));	\
@@ -1360,6 +1408,25 @@ mono_get_domainvar (MonoCompile *cfg)
 	return cfg->domainvar;
 }
 
+/*
+ * The got_var contains the address of the Global Offset Table when AOT 
+ * compiling.
+ */
+inline static MonoInst *
+mono_get_got_var (MonoCompile *cfg)
+{
+#ifdef MONO_ARCH_NEED_GOT_VAR
+	if (!mono_compile_aot)
+		return NULL;
+	if (!cfg->got_var) {
+		cfg->got_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+	}
+	return cfg->got_var;
+#else
+	return NULL;
+#endif
+}
+
 MonoInst*
 mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 {
@@ -1968,6 +2035,10 @@ mono_emit_call_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignatu
 	call->args = args;
 	call->signature = sig;
 	call = mono_arch_call_opcode (cfg, bblock, call, virtual);
+
+	if (virtual)
+		/* Needed by the code generated in inssel.brg */
+		mono_get_got_var (cfg);
 
 	for (arg = call->out_args; arg;) {
 		MonoInst *narg = arg->next;
@@ -2903,7 +2974,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 		}
-
 	} else {
 		arg_array = alloca (sizeof (MonoInst *) * num_args);
 		mono_save_args (cfg, start_bblock, sig, inline_args, arg_array);
@@ -3825,6 +3895,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				handle_stack_args (cfg, bblock, stack_start, sp - stack_start);
 				sp = stack_start;
 			}
+			/* Needed by the code generated in inssel.brg */
+			mono_get_got_var (cfg);
 			inline_costs += 20;
 			break;
 		case CEE_LDIND_I1:
@@ -4208,7 +4280,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			else
 				klass = mono_class_get_full (image, token, generic_context);
 			mono_class_init (klass);
-		
+
+			/* Needed by the code generated in inssel.brg */
+			mono_get_got_var (cfg);
+
 			if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 			
 				MonoMethod *mono_isinst;
@@ -4359,6 +4434,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				klass = mono_class_get_full (image, token, generic_context);
 			mono_class_init (klass);
 
+			/* Needed by the code generated in inssel.brg */
+			mono_get_got_var (cfg);
+
 			MONO_INST_NEW (cfg, ins, OP_UNBOXCAST);
 			ins->type = STACK_OBJ;
 			ins->inst_left = *sp;
@@ -4386,6 +4464,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			else
 				klass = mono_class_get_full (image, token, generic_context);
 			mono_class_init (klass);
+
+			/* Needed by the code generated in inssel.brg */
+			mono_get_got_var (cfg);
 		
 			if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 				
@@ -4826,7 +4907,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* LAME-IR: Mark it as used since otherwise it will be optimized away */
 				cfg->domainvar->flags |= MONO_INST_VOLATILE;
 			}
-			
+
+			/* Ditto */
+			mono_get_got_var (cfg);
+
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else
@@ -5821,8 +5905,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	link_bblock (cfg, bblock, end_bblock);
 
 	if (cfg->method == method && cfg->domainvar) {
-		
-		
 		MonoInst *store;
 		MonoInst *get_domain;
 		
@@ -5838,6 +5920,24 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		
 		NEW_TEMPSTORE (cfg, store, cfg->domainvar->inst_c0, get_domain);
 		MONO_ADD_INS (init_localsbb, store);
+	}
+
+	if (cfg->method == method && cfg->got_var) {
+		MonoInst *load, *store, *dummy_use;
+		MonoInst *get_got;
+		MONO_INST_NEW (cfg, get_got, OP_LOAD_GOTADDR);
+		NEW_TEMPSTORE (cfg, store, cfg->got_var->inst_c0, get_got);
+		MONO_ADD_INS (init_localsbb, store);
+
+		/* 
+		 * Add a dummy use to keep the got_var alive, since real uses might
+		 * only be generated in the decompose or instruction selection phases.
+		 * Add it to end_bblock, so the variable's lifetime covers the whole
+		 * method.
+		 */
+		NEW_TEMPLOAD (cfg, load, cfg->got_var->inst_c0);
+		NEW_DUMMY_USE (cfg, dummy_use, load);
+		MONO_ADD_INS (end_bblock, dummy_use);
 	}
 
 	if (header->init_locals) {
@@ -6793,6 +6893,8 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	}
 	case MONO_PATCH_INFO_BB_OVF:
 	case MONO_PATCH_INFO_EXC_OVF:
+	case MONO_PATCH_INFO_GOT_OFFSET:
+	case MONO_PATCH_INFO_NONE:
 		break;
 	default:
 		g_assert_not_reached ();
@@ -7495,8 +7597,10 @@ mono_codegen (MonoCompile *cfg)
 				table = mono_code_manager_reserve (cfg->domain->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 				mono_domain_unlock (cfg->domain);
 			}
-		
-			patch_info->ip.i = patch_info->ip.label->inst_c0;
+
+			if (!mono_compile_aot)
+				/* In the aot case, the patch already points to the correct location */
+				patch_info->ip.i = patch_info->ip.label->inst_c0;
 			for (i = 0; i < patch_info->data.table->table_size; i++) {
 				table [i] = (gpointer)patch_info->data.table->table [i]->native_offset;
 			}

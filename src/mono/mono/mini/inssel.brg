@@ -212,6 +212,15 @@
 	        mono_bblock_add_inst ((cfg)->cbb, inst); \
 	} while (0)
 
+
+#ifdef MONO_ARCH_NEED_GOT_VAR
+
+#define MONO_EMIT_NEW_AOTCONST(cfg,dr,cons,patch_type) do { \
+		mini_emit_aotconst ((cfg), (dr), (patch_type), (cons)); \
+    } while (0)
+
+#else
+
 #define	MONO_EMIT_NEW_AOTCONST(cfg,dr,imm,type) do { \
                 MonoInst *inst; \
 		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
@@ -221,6 +230,8 @@
                 inst->inst_c1 = type; \
 	        mono_bblock_add_inst ((cfg)->cbb, inst); \
 	} while (0)
+
+#endif
 
 #define	MONO_EMIT_NEW_CLASSCONST(cfg,dr,imm) MONO_EMIT_NEW_AOTCONST(cfg,dr,imm,MONO_PATCH_INFO_CLASS)
 
@@ -282,8 +293,8 @@ void mini_emit_castclass_iface_class (MonoCompile *s, int klass_reg, MonoClass *
 
 void mini_emit_memcpy (MonoCompile *s, int destreg, int doffset, int srcreg, int soffset, int size, int align);
 void mini_emit_memset (MonoCompile *s, int destreg, int offset, int size, int val, int align);
-
 int ldind_to_load_membase (int opcode);
+void mini_emit_aotconst (MonoCompile *cfg, int dreg, MonoJumpInfoType patch_type, gpointer cons);
 
 %%
 
@@ -347,6 +358,35 @@ reg: OP_ICONST {
 
 reg: OP_AOTCONST {
      	MONO_EMIT_NEW_AOTCONST (s, state->reg1, tree->inst_p0, tree->inst_c1);
+}
+
+reg: OP_LOAD_GOTADDR {
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: CEE_STIND_I (OP_REGVAR, OP_LOAD_GOTADDR) {
+	tree->opcode = OP_LOAD_GOTADDR;
+	tree->dreg = state->left->tree->dreg;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+reg: OP_GOT_ENTRY (reg, OP_PATCH_INFO) {
+	tree->inst_basereg = state->left->tree->dreg;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+reg: OP_GOT_ENTRY (CEE_LDIND_I (OP_REGVAR), OP_PATCH_INFO) {
+	tree->inst_basereg = state->left->left->tree->dreg;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_DUMMY_USE (CEE_LDIND_I (OP_REGVAR)) {
+}
+
+stmt: OP_DUMMY_USE (CEE_LDIND_I (OP_REGOFFSET)) {
 }
 
 #
@@ -686,7 +726,6 @@ stmt: CEE_SWITCH (reg) {
 	int n = GPOINTER_TO_INT (tree->klass);
 	
 	MONO_NEW_LABEL (s, label);
-	mono_create_jump_table (s, label, tree->inst_many_bb, n);
 
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg1, n);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BGE_UN, tree->inst_many_bb [n]);
@@ -695,17 +734,22 @@ stmt: CEE_SWITCH (reg) {
 	else
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, offset_reg, state->left->reg1, 2);
 	mono_bblock_add_inst (s->cbb, label);
-	#ifdef MONO_ARCH_HAVE_PIC_AOT
 	if (mono_compile_aot) {
 		int table_reg = mono_regstate_next_int (s->rs);
 		int sum_reg = mono_regstate_next_int (s->rs);
-		MONO_EMIT_NEW_AOTCONST (s, table_reg, NULL, MONO_PATCH_INFO_SWITCH);
+		MonoJumpInfoBBTable *table;
+
+		table = mono_mempool_alloc (s->mempool, sizeof (MonoJumpInfoBBTable));
+		table->table = tree->inst_many_bb;
+		table->table_size = n;
+
+		MONO_EMIT_NEW_AOTCONST (s, table_reg, table, MONO_PATCH_INFO_SWITCH);
 
 		MONO_EMIT_NEW_BIALU (s, CEE_ADD, sum_reg, table_reg, offset_reg);
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, target_reg, sum_reg, 0);
-	} else
-	#endif
-	{
+	} else {
+		mono_create_jump_table (s, label, tree->inst_many_bb, n);
+
 		 /* the backend must patch the address. we use 0xf0f0f0f0 to avoid the usage 
 		  * of special (short) opcodes on x86 */
 		if (sizeof (gpointer) == 8)
@@ -1754,6 +1798,42 @@ mini_emit_memset (MonoCompile *s, int destreg, int offset, int size, int val, in
 		offset += 1;
 		size -= 1;
 	}
+}
+
+/* This is similar to NEW_AOTCONST in mini.c, but generates linear IL */
+void
+mini_emit_aotconst (MonoCompile *cfg, int dreg, MonoJumpInfoType patch_type, gpointer cons)
+{
+	MonoInst *dest, *pinfo;
+	int got_var_reg;
+
+	dest = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
+	dest->opcode = OP_GOT_ENTRY;
+
+	g_assert (cfg->got_var);
+
+	pinfo = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));
+	pinfo->opcode = OP_PATCH_INFO;
+	pinfo->inst_left = cons;
+	pinfo->inst_right = (gpointer)(patch_type);
+
+	if (cfg->got_var->opcode == OP_REGOFFSET) {
+		got_var_reg = mono_regstate_next_int (cfg->rs);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, got_var_reg, cfg->got_var->inst_basereg, cfg->got_var->inst_offset);
+	}
+	else {
+		g_assert (cfg->got_var->opcode == OP_REGVAR);
+		got_var_reg = cfg->got_var->dreg;
+	}
+
+	dest = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));
+	dest->opcode = OP_GOT_ENTRY;
+	dest->inst_left = cfg->got_var; /* not used */
+	dest->inst_right = pinfo;
+
+	dest->inst_basereg = got_var_reg;
+	dest->dreg = dreg;
+	mono_bblock_add_inst (cfg->cbb, dest);
 }
 
 int

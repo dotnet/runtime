@@ -521,6 +521,8 @@ float_clt_un: dest:i src1:f src2:f len:32
 float_conv_to_u: dest:i src1:f len:36
 call_handler: len:10
 aot_const: dest:i len:5
+load_gotaddr: dest:i len:64
+got_entry: dest:i src1:b len:7
 x86_test_null: src1:i len:2
 x86_compare_membase_reg: src1:b src2:i len:6
 x86_compare_membase_imm: src1:b len:11
@@ -536,6 +538,7 @@ x86_push: src1:i len:1
 x86_push_imm: len:5
 x86_push_membase: src1:b len:6
 x86_push_obj: src1:b len:30
+x86_push_got_entry: src1:b len:7
 x86_lea: dest:i src1:i src2:i len:7
 x86_lea_membase: dest:i src1:i len:10
 x86_xchg: src1:i src2:i clob:x len:1

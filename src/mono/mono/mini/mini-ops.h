@@ -344,6 +344,8 @@ MINI_OP(OP_GROUP, "group")
 
 /* aot compiler */
 MINI_OP(OP_AOTCONST, "aot_const")
+MINI_OP(OP_PATCH_INFO, "patch_info")
+MINI_OP(OP_GOT_ENTRY, "got_entry")
 
 /* used to impl unbox */
 MINI_OP(OP_UNBOXCAST  , "unboxcast")
@@ -398,6 +400,8 @@ MINI_OP(OP_CISINST, "cisinst")
 MINI_OP(OP_CCASTCLASS, "ccastclass")
 MINI_OP(OP_SAVE_LMF, "save_lmf")
 MINI_OP(OP_RESTORE_LMF, "restore_lmf")
+MINI_OP(OP_LOAD_GOTADDR, "load_gotaddr")
+MINI_OP(OP_DUMMY_USE, "dummy_use")
 
 /* atomic specific */
 MINI_OP(OP_ATOMIC_ADD_I4, "atomic_add_i4")
@@ -425,6 +429,7 @@ MINI_OP(OP_X86_PUSH_IMM,           "x86_push_imm")
 MINI_OP(OP_X86_PUSH,               "x86_push")
 MINI_OP(OP_X86_PUSH_FP,            "x86_push_fp")
 MINI_OP(OP_X86_PUSH_OBJ,           "x86_push_obj")
+MINI_OP(OP_X86_PUSH_GOT_ENTRY,     "x86_push_got_entry")
 MINI_OP(OP_X86_LEA,                "x86_lea")
 MINI_OP(OP_X86_LEA_MEMBASE,        "x86_lea_membase")
 MINI_OP(OP_X86_XCHG,               "x86_xchg")

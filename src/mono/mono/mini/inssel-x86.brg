@@ -263,6 +263,15 @@ stmt: OP_OUTARG (CEE_LDIND_I (OP_REGVAR)) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+stmt: OP_OUTARG (OP_GOT_ENTRY (CEE_LDIND_I (OP_REGVAR), OP_PATCH_INFO)) {
+	MonoInst *ins;
+	ins = mono_mempool_alloc0 (s->mempool, sizeof (MonoInst));
+	ins->opcode = OP_X86_PUSH_GOT_ENTRY;
+	ins->inst_right = state->left->right->tree;
+	ins->inst_basereg = state->left->left->left->tree->dreg;
+	mono_bblock_add_inst (s->cbb, ins);
+}
+
 stmt: OP_OUTARG (lreg) {
 	MONO_EMIT_NEW_UNALU (s, OP_X86_PUSH, -1, state->left->reg2);
 	tree->opcode = OP_X86_PUSH;
