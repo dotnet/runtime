@@ -295,11 +295,21 @@ get_typedef_or_ref (MonoImage *m, guint32 dor_token)
 	return s;
 }
 
+/**
+ * get_type_or_methdef
+ * @m: metadata context
+ * @dor_token: type or method def encoded index
+ *
+ * Low bit contains the table to lookup from
+ * high bits contain the index into the type def or method def table
+ *
+ * Returns: a stringified version of the TypeOrMethodDef token
+ */
 char *
 get_type_or_methdef (MonoImage *m, guint32 dor_token)
 {
         if (dor_token & 0x01) /* MethodDef */
-		return get_method (m, dor_token >> 1);
+		return get_methoddef (m, dor_token >> 1);
         else  /* TypeDef */
                 return get_typedef (m, dor_token >> 1);
 }
@@ -1127,6 +1137,36 @@ get_method (MonoImage *m, guint32 token)
 	}
 	g_assert_not_reached ();
 	return NULL;
+}
+
+/**
+ * get_methoddef
+ * @m: metadata context
+ * @idx: index into the method table
+ *
+ * Returns: A stringified version of the method signature.
+ */
+char *
+get_methoddef (MonoImage *m, guint32 idx)
+{
+        guint32 cols [MONO_METHOD_SIZE];
+	char *sig;
+	const char *name;
+
+	MonoMethod *mh;
+
+	mh = mono_get_method (m, MONO_TOKEN_METHOD_DEF | idx, NULL);
+	if (mh) {
+		sig = dis_stringify_object_with_class (m, mh->klass);
+		name = g_strdup_printf ("%s::%s", sig, mh->name);
+		g_free (sig);
+	} else
+		name = NULL;
+        mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], 
+                        idx - 1, cols, MONO_METHOD_SIZE);
+        sig = get_methodref_signature (m, cols [MONO_METHOD_SIGNATURE], name);
+        
+        return sig;
 }
 
 /**
