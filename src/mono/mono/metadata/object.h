@@ -32,6 +32,9 @@ mono_new_szarray      (MonoImage *image, guint32 etype, guint32 n);
 
 void       
 mono_object_free      (MonoObject *o);
+
+MonoObject *
+mono_value_box        (MonoImage *image, guint32 etype, gpointer val);
 		      
 #endif
 

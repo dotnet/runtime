@@ -80,7 +80,6 @@ mono_new_szarray (MonoImage *image, guint32 etype, guint32 n)
 	MonoObject *o;
 	MonoArrayObject *ao;
 	MonoArrayClass *ac;
-	guint32 esize;
 
 	c = mono_array_class_get (image, etype, 1);
 	g_assert (c != NULL);
@@ -99,3 +98,21 @@ mono_new_szarray (MonoImage *image, guint32 etype, guint32 n)
 
 	return o;
 }
+
+MonoObject *
+mono_value_box (MonoImage *image, guint32 etype, gpointer val)
+{
+	MonoObject *res;
+	int size;
+
+	res = mono_object_new (image, etype);
+
+	g_assert (res->klass->valuetype);
+
+	size = res->klass->instance_size - sizeof (MonoObject);
+
+	memcpy ((char *)res + sizeof (MonoObject), val, size);
+
+	return res;
+}
+

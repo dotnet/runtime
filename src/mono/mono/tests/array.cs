@@ -6,7 +6,8 @@ public class Test {
 	[DllImport("cygwin1.dll", EntryPoint="puts", CharSet=CharSet.Ansi)]
 	public static extern int puts (string name);
 
-	public static int jagged () {
+	public static int jagged ()
+	{
 		int[][] j2 = new int [3][];
 
 		// does not work 
@@ -29,7 +30,8 @@ public class Test {
 		return 0;
 	}
 
-	public static int stest () {
+	public static int stest ()
+	{
 		string[] sa = new string[32];
 
 		sa [0] = "This";
@@ -45,7 +47,8 @@ public class Test {
 		return 0;
 	}
 	
-	public static int atest2 () {
+	public static int atest2 ()
+	{
 		int[,] ia = new int[32,32];
 
 		for (int i = 0; i <ia.GetLength (0); i++)
@@ -55,20 +58,61 @@ public class Test {
 			if (ia [i,i] != i*i)
 				return 1;
 
+		for (int i = 0; i <ia.GetLength (0); i++)
+			ia.SetValue (i*i*i, i, i);
+
+		for (int i = 0; i <ia.GetLength (0); i++)
+			if ((int)ia.GetValue (i, i) != i*i*i)
+				return 1;
+
 		return 0;
 	}
 	
-	public static int Main () {
+	public static int atest ()
+	{
 		int[] ia = new int[32];
 
 		for (int i = 0; i <ia.Length; i++)
 			ia [i] = i*i;
-
+		
 		for (int i = 0; i <ia.Length; i++)
 			if (ia [i] != i*i)
 				return 1;
 		
 		if (ia.Rank != 1)
+			return 1;
+
+		if (ia.GetValue (2) == null)
+			return 1;
+
+		for (int i = 0; i <ia.Length; i++)
+			ia.SetValue (i*i*i, i);
+
+		for (int i = 0; i <ia.Length; i++)
+			if ((int)ia.GetValue (i) != i*i*i)
+				return 1;
+		
+		return 0;
+	}
+	
+	public static int boxtest ()
+	{
+		int i = 123;
+		object o = i;
+		int j = (int) o;
+
+		if (i != j)
+			return 1;
+		
+		return 0;
+	}
+
+	public static int Main () {
+	       
+		if (boxtest () != 0)
+			return 1;
+	       
+		if (atest () != 0)
 			return 1;
 		
 		if (atest2 () != 0)
@@ -82,9 +126,6 @@ public class Test {
 		if (jagged () != 0)
 			return 1;
 		
-
-		if (ia.GetValue (2) == null)
-			return 1;
 		
 		return 0;
 	}

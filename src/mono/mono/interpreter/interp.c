@@ -227,6 +227,7 @@ stackval_from_data (MonoType *type, const char *data, guint offset)
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_CLASS:
+	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_ARRAY:
 		result.type = VAL_OBJ;
 		result.data.p = *(gpointer*)(data + offset);
@@ -266,6 +267,7 @@ stackval_to_data (MonoType *type, stackval *val, char *data, guint offset)
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_CLASS:
+	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_ARRAY:
 		*(gpointer*)(data + offset) = val->data.p;
 		break;
@@ -320,7 +322,7 @@ ves_icall_array_Set (MonoMethod *mh, stackval *sp)
 
 	g_assert (ac->rank >= 1);
 
-	pos = sp [1].data.i - ao->bounds [1].lower_bound;
+	pos = sp [1].data.i - ao->bounds [0].lower_bound;
 	for (i = 1; i < ac->rank; i++) {
 		if ((t = sp [i + 1].data.i - ao->bounds [i].lower_bound) >= ao->bounds [i].length) {
 			g_warning ("wrong array index");
@@ -350,7 +352,7 @@ ves_icall_array_Get (MonoMethod *mh, stackval *sp)
 
 	g_assert (ac->rank >= 1);
 
-	pos = sp [1].data.i - ao->bounds [1].lower_bound;
+	pos = sp [1].data.i - ao->bounds [0].lower_bound;
 	for (i = 1; i < ac->rank; i++)
 		pos = pos*ao->bounds [i].length + sp [i + 1].data.i - ao->bounds [i].lower_bound;
 
@@ -358,6 +360,87 @@ ves_icall_array_Get (MonoMethod *mh, stackval *sp)
 
 	sp [0].type = VAL_I32; /* fixme: not really true */
 	memcpy (&sp [0].data.p, ea, ac->esize);
+}
+
+static void 
+ves_icall_System_Array_GetValue (MonoMethod *mh, stackval *sp)
+{
+	MonoArrayObject *ao, *io;
+	MonoArrayClass *ac, *ic;
+	gint32 i, pos, *ind;
+	gpointer *ea;
+
+	g_assert (sp [0].type == VAL_OBJ);
+	g_assert (sp [1].type == VAL_OBJ); /* expect an array of integers */
+
+	io = sp [1].data.p;
+	ic = (MonoArrayClass *)io->obj.klass;
+	
+	ao = (MonoArrayObject *)sp [0].data.p;
+	ac = (MonoArrayClass *)ao->obj.klass;
+
+	g_assert (ic->rank == 1);
+	g_assert (io->bounds [0].length == ac->rank);
+
+	ind = (guint32 *)io->vector;
+
+	pos = ind [0] - ao->bounds [0].lower_bound;
+	for (i = 1; i < ac->rank; i++)
+		pos = pos*ao->bounds [i].length + ind [i] - 
+			ao->bounds [i].lower_bound;
+
+	ea = ao->vector + (pos * ac->esize);
+
+	sp [0].type = VAL_OBJ; 
+
+	if (ac->class.evaltype)
+		sp [0].data.p = mono_value_box (ac->class.image, 
+						ac->etype_token, ea);
+	else
+		sp [0].data.p = ea;
+}
+
+static void 
+ves_icall_System_Array_SetValue (MonoMethod *mh, stackval *sp)
+{
+	MonoArrayObject *ao, *io, *vo;
+	MonoArrayClass *ac, *ic, *vc;
+	gint32 i, pos, *ind;
+	gpointer *ea;
+
+	g_assert (sp [0].type == VAL_OBJ);
+	g_assert (sp [1].type == VAL_OBJ); /* the value object */
+	g_assert (sp [2].type == VAL_OBJ); /* expect an array of integers */
+
+	vo = sp [1].data.p;
+	vc = (MonoArrayClass *)vo->obj.klass;
+
+	io = sp [2].data.p;
+	ic = (MonoArrayClass *)io->obj.klass;
+	
+	ao = (MonoArrayObject *)sp [0].data.p;
+	ac = (MonoArrayClass *)ao->obj.klass;
+
+	g_assert (ic->rank == 1);
+	g_assert (io->bounds [0].length == ac->rank);
+
+	g_assert (ac->etype_token == vc->class.type_token);
+
+	ind = (guint32 *)io->vector;
+
+	pos = ind [0] - ao->bounds [0].lower_bound;
+	for (i = 1; i < ac->rank; i++)
+		pos = pos*ao->bounds [i].length + ind [i] - 
+			ao->bounds [i].lower_bound;
+
+	ea = ao->vector + (pos * ac->esize);
+
+	if (ac->class.evaltype) {
+		g_assert (vc->class.valuetype);
+
+		memcpy (ea, (char *)vo + sizeof (MonoObject), ac->esize);
+	} else
+		ea = (gpointer)vo;
 }
 
 static void 
@@ -398,13 +481,6 @@ ves_icall_array_bound_ctor (MonoMethod *mh, stackval *sp)
 	o = sp [0].data.p;
 	ac = (MonoArrayClass *)o->klass;
 
-	g_warning ("experimental implementation");
-	g_assert_not_reached ();
-}
-
-static void 
-ves_icall_System_Array_InternalGetValue (MonoMethod *mh, stackval *sp)
-{
 	g_warning ("experimental implementation");
 	g_assert_not_reached ();
 }
@@ -465,8 +541,10 @@ mono_lookup_internal_call (const char *name)
 				     &ves_icall_array_ctor);
 		g_hash_table_insert (icall_hash, "__array_bound_ctor", 
 				     &ves_icall_array_bound_ctor);
-		g_hash_table_insert (icall_hash, "System.Array::InternalGetValue", 
-				     &ves_icall_System_Array_InternalGetValue);
+		g_hash_table_insert (icall_hash, "System.Array::GetValue", 
+				     &ves_icall_System_Array_GetValue);
+		g_hash_table_insert (icall_hash, "System.Array::SetValue", 
+				     &ves_icall_System_Array_SetValue);
 		g_hash_table_insert (icall_hash, "System.Array::GetRank", 
 				     &ves_icall_System_Array_GetRank);
 		g_hash_table_insert (icall_hash, "System.Array::GetLength", 
@@ -564,7 +642,7 @@ ves_pinvoke_method (MonoMethod *mh, stackval *sp)
 		*sp = stackval_from_data (mh->signature->ret->type, res, 0);
 }
 
-#define DEBUG_INTERP 0
+#define DEBUG_INTERP 1
 #if DEBUG_INTERP
 #define OPDEF(a,b,c,d,e,f,g,h,i,j)  b,
 static char *opcode_names[] = {
@@ -1494,7 +1572,26 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		CASE (CEE_CONV_R_UN) ves_abort(); BREAK;
 		CASE (CEE_UNUSED58) ves_abort(); BREAK;
 		CASE (CEE_UNUSED1) ves_abort(); BREAK;
-		CASE (CEE_UNBOX) ves_abort(); BREAK;
+		CASE (CEE_UNBOX) {
+			MonoObject *o;
+			MonoClass *c;
+			guint32 token;
+
+			++ip;
+			token = read32 (ip);
+			
+			c = mono_class_get (mh->image, token);
+			
+			o = sp [-1].data.p;
+
+			g_assert (o->klass->type_token == c->type_token);
+
+			sp [-1].type = VAL_MP;
+			sp [-1].data.p = (char *)o + sizeof (MonoObject);
+
+			ip += 4;
+			BREAK;
+		}
 		CASE (CEE_THROW) ves_abort(); BREAK;
 		CASE (CEE_LDFLD) {
 			MonoObject *obj;
@@ -1522,6 +1619,7 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 			token = read32 (ip);
 			ip += 4;
 			
+			printf ("FIELD %08x\n",token);
 			sp -= 2;
 			
 			g_assert (sp [0].type == VAL_OBJ);
@@ -1579,7 +1677,20 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		CASE (CEE_CONV_OVF_U8_UN) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_I_UN) ves_abort(); BREAK;
 		CASE (CEE_CONV_OVF_U_UN) ves_abort(); BREAK;
-		CASE (CEE_BOX) ves_abort(); BREAK;
+		CASE (CEE_BOX) {
+			guint32 token;
+
+			ip++;
+			token = read32 (ip);
+
+			sp [-1].type = VAL_OBJ;
+			sp [-1].data.p = mono_value_box (mh->image, token, 
+							 &sp [-1]);
+
+			ip += 4;
+
+			BREAK;
+		}
 		CASE (CEE_NEWARR) {
 			MonoObject *o;
 			guint32 token;

@@ -19,7 +19,8 @@ struct _MonoClass {
 	guint32    type_token;
 
 	guint inited : 1;
-	guint valuetype : 1;
+	guint valuetype : 1; /* derives from System.ValueType */
+	guint evaltype : 1; /* element type derives from System.ValueType */
 
 	MonoClass *parent;
 	

@@ -383,11 +383,12 @@ mono_array_class_get (MonoImage *image, guint32 etype, guint32 rank)
 	class->parent = parent;
 	class->instance_size = class->parent->instance_size;
 	class->class_size = sizeof (MonoArrayClass);
-	
+	class->evaltype = eclass->valuetype;
+
 	aclass->rank = rank;
 	aclass->etype_token = eclass->type_token;
 	aclass->esize = esize;
-
+	
 	g_hash_table_insert (image->array_cache, GUINT_TO_POINTER (key), class);
 	return class;
 }
