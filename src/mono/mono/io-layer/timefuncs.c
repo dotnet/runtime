@@ -1,3 +1,12 @@
+/*
+ * timefuncs.c:  performance timer functions
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #include <config.h>
 #include <glib.h>
 #include <sys/time.h>

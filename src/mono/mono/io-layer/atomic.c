@@ -1,3 +1,13 @@
+/*
+ * atomic.c:  Workarounds for atomic operations for platforms that dont have
+ *	      really atomic asm functions in atomic.h
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #include <config.h>
 #include <glib.h>
 #include <pthread.h>

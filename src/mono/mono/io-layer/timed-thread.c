@@ -1,3 +1,12 @@
+/*
+ * timed-thread.c:  Implementation of timed thread joining
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #include <config.h>
 #include <glib.h>
 #if HAVE_BOEHM_GC

@@ -1,3 +1,12 @@
+/*
+ * mutex-private.h:  Private definitions for mutex handles
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_MUTEX_PRIVATE_H_
 #define _WAPI_MUTEX_PRIVATE_H_
 

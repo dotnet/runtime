@@ -1,3 +1,12 @@
+/*
+ * process-private.h: Private definitions for process handles
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_PROCESS_PRIVATE_H_
 #define _WAPI_PROCESS_PRIVATE_H_
 

@@ -1,3 +1,12 @@
+/*
+ * io-private.h:  Private definitions for file, console and find handles
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_IO_PRIVATE_H_
 #define _WAPI_IO_PRIVATE_H_
 

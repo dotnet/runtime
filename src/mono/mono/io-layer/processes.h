@@ -1,3 +1,12 @@
+/*
+ * processes.h:  Process handles
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_PROCESSES_H_
 #define _WAPI_PROCESSES_H_
 

@@ -1,3 +1,12 @@
+/*
+ * threads.c:  Thread handles
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #include <config.h>
 #if HAVE_BOEHM_GC
 #include <gc/gc.h>
@@ -194,7 +203,9 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 		return(NULL);
 	}
 
-	/* Hold a reference while the thread is active */
+	/* Hold a reference while the thread is active, because we use
+	 * the handle to store thread exit information
+	 */
 	_wapi_handle_ref (handle);
 
 	thread_handle->state=THREAD_STATE_START;

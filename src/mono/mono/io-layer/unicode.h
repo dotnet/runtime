@@ -1,3 +1,12 @@
+/*
+ * unicode.h:  unicode conversion
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_UNICODE_H_
 #define _WAPI_UNICODE_H_
 

@@ -1,3 +1,12 @@
+/*
+ * socket-private.h:  Private definitions for socket handles
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_SOCKET_PRIVATE_H_
 #define _WAPI_SOCKET_PRIVATE_H_
 

@@ -1,3 +1,12 @@
+/*
+ * macros.h:  Useful macros
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_MACROS_H_
 #define _WAPI_MACROS_H_
 

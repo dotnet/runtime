@@ -1,3 +1,12 @@
+/*
+ * daemon-messages.h:  Communications to and from the handle daemon
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_DAEMON_MESSAGES_H_
 #define _WAPI_DAEMON_MESSAGES_H_
 

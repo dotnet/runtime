@@ -1,3 +1,12 @@
+/*
+ * wapi-private.h:  internal definitions of handles and shared memory layout
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_PRIVATE_H_
 #define _WAPI_PRIVATE_H_
 

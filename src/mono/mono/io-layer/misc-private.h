@@ -1,3 +1,12 @@
+/*
+ * misc-private.h:  Miscellaneous internal support functions
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_MISC_PRIVATE_H_
 #define _WAPI_MISC_PRIVATE_H_
 

@@ -1,3 +1,12 @@
+/*
+ * processes.c:  Process handles
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #include <config.h>
 #if HAVE_BOEHM_GC
 #include <gc/gc.h>

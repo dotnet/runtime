@@ -1,3 +1,12 @@
+/*
+ * types.h:  Generic type definitions
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_TYPES_H_
 #define _WAPI_TYPES_H_
 

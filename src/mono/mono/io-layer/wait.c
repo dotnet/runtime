@@ -1,3 +1,12 @@
+/*
+ * wait.c:  wait for handles to become signalled
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #include <config.h>
 #include <glib.h>
 #include <string.h>

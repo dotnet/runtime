@@ -1,3 +1,12 @@
+/*
+ * threads.h:  Thread handles
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_THREADS_H_
 #define _WAPI_THREADS_H_
 

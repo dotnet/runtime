@@ -1,3 +1,12 @@
+/*
+ * atomic.h:  Atomic operations
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_ATOMIC_H_
 #define _WAPI_ATOMIC_H_
 

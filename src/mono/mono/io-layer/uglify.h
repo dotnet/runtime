@@ -1,3 +1,12 @@
+/*
+ * uglify.h:  Optional header to provide the nasty w32 typedefs
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_UGLIFY_H_
 #define _WAPI_UGLIFY_H_
 

@@ -1,3 +1,12 @@
+/*
+ * system.h:  System information
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_SYSTEM_H_
 #define _WAPI_SYSTEM_H_
 

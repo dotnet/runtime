@@ -1,3 +1,12 @@
+/*
+ * mutexes.h: Mutex handles
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_MUTEXES_H_
 #define _WAPI_MUTEXES_H_
 

@@ -1,3 +1,12 @@
+/*
+ * events.h:  Event handles
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_EVENTS_H_
 #define _WAPI_EVENTS_H_
 

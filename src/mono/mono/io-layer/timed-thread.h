@@ -1,3 +1,12 @@
+/*
+ * timed-thread.h:  Implementation of timed thread joining
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_TIMED_THREAD_H_
 #define _WAPI_TIMED_THREAD_H_
 

@@ -1,3 +1,12 @@
+/*
+ * status.h:  Status return codes
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_STATUS_H_
 #define _WAPI_STATUS_H_
 

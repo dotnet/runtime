@@ -1,3 +1,13 @@
+/*
+ * io-layer.h: Include the right files depending on platform.  This
+ * file is the only entry point into the io-layer library.
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _MONO_IOLAYER_IOLAYER_H_
 #define _MONO_IOLAYER_IOLAYER_H_
 

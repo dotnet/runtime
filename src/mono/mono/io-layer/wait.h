@@ -1,3 +1,12 @@
+/*
+ * wait.h:  wait for handles to become signalled
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_WAIT_H_
 #define _WAPI_WAIT_H_
 

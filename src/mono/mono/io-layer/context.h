@@ -1,3 +1,12 @@
+/*
+ * context.h:  Processor-specific register contexts
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_CONTEXT_H_
 #define _WAPI_CONTEXT_H_
 

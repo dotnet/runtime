@@ -1,3 +1,12 @@
+/*
+ * wapi.h:  Public include files
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_WAPI_H_
 #define _WAPI_WAPI_H_
 

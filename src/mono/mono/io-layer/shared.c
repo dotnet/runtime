@@ -1,4 +1,13 @@
 /*
+ * shared.c:  Shared memory handling, and daemon launching
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
+/*
  * Code to support inter-process sharing of handles.
  *
  * I thought of using an mmap()ed file for this.  If linuxthreads

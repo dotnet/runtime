@@ -1,3 +1,12 @@
+/*
+ * thread-private.h:  Private definitions for thread handles
+ *
+ * Author:
+ *	Dick Porter (dick@ximian.com)
+ *
+ * (C) 2002 Ximian, Inc.
+ */
+
 #ifndef _WAPI_THREAD_PRIVATE_H_
 #define _WAPI_THREAD_PRIVATE_H_
 
