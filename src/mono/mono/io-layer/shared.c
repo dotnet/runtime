@@ -103,6 +103,7 @@ guchar *_wapi_shm_file (_wapi_shm_t type, guint32 segment)
 	g_free (name);
 
 	g_snprintf (file, _POSIX_PATH_MAX, "%s", filename);
+	g_free (filename);
 		
 	/* No need to check if the dir already exists or check
 	 * mkdir() errors, because on any error the open() call will
