@@ -213,6 +213,7 @@ static gpointer icall_map [] = {
 	"System.Threading.Thread::Sleep_internal", ves_icall_System_Threading_Thread_Sleep_internal,
 	"System.Threading.Thread::Schedule_internal", ves_icall_System_Threading_Thread_Schedule_internal,
 	"System.Threading.Thread::CurrentThread_internal", ves_icall_System_Threading_Thread_CurrentThread_internal,
+	"System.Threading.Thread::Join_internal", ves_icall_System_Threading_Thread_Join_internal,
 
 	/*
 	 * add other internal calls here

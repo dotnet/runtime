@@ -13,26 +13,149 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <time.h>
+#include <errno.h>
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/threads.h>
 
-typedef struct 
-{
+/*
+ * Implementation of timed thread joining from the P1003.1d/D14 (July 1999)
+ * draft spec, figure B-6.
+ */
+typedef struct {
 	pthread_t id;
 	MonoObject *object;
+	pthread_mutex_t join_mutex;
+	pthread_cond_t exit_cond;
+	void *(*start_routine)(void *arg);
+	void *arg;
+	void *status;
+	gboolean exiting;
 } ThreadInfo;
+
+static pthread_key_t timed_thread_key;
+static pthread_once_t timed_thread_once = PTHREAD_ONCE_INIT;
 
 static GHashTable *threads=NULL;
 static MonoObject *main_thread;
 
+static void timed_thread_init()
+{
+	pthread_key_create(&timed_thread_key, NULL);
+}
+
+static void timed_thread_exit(void *status)
+{
+	ThreadInfo *thread;
+	void *specific;
+	
+	if((specific = pthread_getspecific(timed_thread_key)) == NULL) {
+		/* Handle cases which won't happen with correct usage.
+		 */
+		pthread_exit(NULL);
+	}
+	
+	thread=(ThreadInfo *)specific;
+	
+	pthread_mutex_lock(&thread->join_mutex);
+	
+	/* Tell a joiner that we're exiting.
+	 */
+	thread->status = status;
+	thread->exiting = TRUE;
+
+	pthread_cond_signal(&thread->exit_cond);
+	pthread_mutex_unlock(&thread->join_mutex);
+	
+	/* Call pthread_exit() to call destructors and really exit the
+	 * thread.
+	 */
+	pthread_exit(NULL);
+}
+
+/* Routine to establish thread specific data value and run the actual
+ * thread start routine which was supplied to timed_thread_create()
+ */
+static void *timed_thread_start_routine(void *args)
+{
+	ThreadInfo *thread = (ThreadInfo *)args;
+	
+	pthread_once(&timed_thread_once, timed_thread_init);
+	pthread_setspecific(timed_thread_key, (void *)thread);
+	timed_thread_exit((thread->start_routine)(thread->arg));
+
+	/* pthread_create routine has to return something to keep gcc
+	 * quiet
+	 */
+	return(NULL);
+}
+
+/* Allocate a thread which can be used with timed_thread_join().
+ */
+static int timed_thread_create(ThreadInfo **threadp,
+			       const pthread_attr_t *attr,
+			       void *(*start_routine)(void *), void *arg)
+{
+	ThreadInfo *thread;
+	int result;
+	
+	thread=(ThreadInfo *)g_new0(ThreadInfo, 1);
+	pthread_mutex_init(&thread->join_mutex, NULL);
+	pthread_cond_init(&thread->exit_cond, NULL);
+	thread->start_routine = start_routine;
+	thread->arg = arg;
+	thread->status = NULL;
+	thread->exiting = FALSE;
+	
+	if((result = pthread_create(&thread->id, attr,
+				    timed_thread_start_routine,
+				    (void *)thread)) != 0) {
+		g_free(thread);
+		return(result);
+	}
+	
+	pthread_detach(thread->id);
+	*threadp = thread;
+	return(0);
+}
+
+static int timed_thread_join(ThreadInfo *thread, struct timespec *timeout,
+			     void **status)
+{
+	int result;
+	
+	pthread_mutex_lock(&thread->join_mutex);
+	result=0;
+	
+	/* Wait until the thread announces that it's exiting, or until
+	 * timeout.
+	 */
+	while(result == 0 && !thread->exiting) {
+		if(timeout == NULL) {
+			result = pthread_cond_wait(&thread->exit_cond,
+						   &thread->join_mutex);
+		} else {
+			result = pthread_cond_timedwait(&thread->exit_cond,
+							&thread->join_mutex,
+							timeout);
+		}
+	}
+	
+	pthread_mutex_unlock(&thread->join_mutex);
+	if(result == 0 && thread->exiting) {
+		if(status!=NULL) {
+			*status = thread->status;
+		}
+	}
+	return(result);
+}
+
 pthread_t ves_icall_System_Threading_Thread_Start_internal(MonoObject *this,
 							   MonoObject *start)
 {
-	pthread_t tid;
 	MonoClassField *field;
 	void *(*start_func)(void *);
-	ThreadInfo *thread_info;
+	ThreadInfo *thread;
 	int ret;
 	
 #ifdef THREAD_DEBUG
@@ -51,14 +174,14 @@ pthread_t ves_icall_System_Threading_Thread_Start_internal(MonoObject *this,
 		 */
 		return(0);
 	} else {
-		ret=pthread_create(&tid, NULL, start_func, NULL);
+		ret=timed_thread_create(&thread, NULL, start_func, NULL);
 		if(ret!=0) {
 			g_warning("pthread_create error: %s", strerror(ret));
 			return(0);
 		}
 	
 #ifdef THREAD_DEBUG
-		g_message("Started thread ID %ld", tid);
+		g_message("Started thread ID %ld", thread->id);
 #endif
 
 		/* Store tid for cleanup later */
@@ -66,14 +189,12 @@ pthread_t ves_icall_System_Threading_Thread_Start_internal(MonoObject *this,
 			threads=g_hash_table_new(g_int_hash, g_int_equal);
 		}
 
-		thread_info=g_new0(ThreadInfo, 1);
-		thread_info->id=tid;
-		thread_info->object=this;
+		thread->object=this;
 		
 		/* FIXME: need some locking around here */
-		g_hash_table_insert(threads, &thread_info->id, thread_info);
+		g_hash_table_insert(threads, &thread->id, thread);
 		
-		return(tid);
+		return(thread->id);
 	}
 }
 
@@ -112,7 +233,13 @@ gint32 ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 
 void ves_icall_System_Threading_Thread_Schedule_internal(void)
 {
-	/* Give up the timeslice */
+	/* Give up the timeslice. pthread_yield() is the standard
+	 * function but glibc seems to insist it's a GNU
+	 * extension. However, all it does at the moment is
+	 * sched_yield() anyway, and sched_yield() is a POSIX standard
+	 * function.
+	 */
+	
 	sched_yield();
 }
 
@@ -143,6 +270,86 @@ MonoObject *ves_icall_System_Threading_Thread_CurrentThread_internal(void)
 	}
 }
 
+static void delete_thread(ThreadInfo *thread)
+{
+	g_assert(threads!=NULL);
+	g_assert(thread!=NULL);
+	
+	g_hash_table_remove(threads, &thread->id);
+	g_free(thread);
+}
+
+gboolean ves_icall_System_Threading_Thread_Join_internal(MonoObject *this,
+							 int ms, pthread_t tid)
+{
+	ThreadInfo *thread;
+	pthread_t myid;
+	int ret;
+	
+#ifdef THREAD_DEBUG
+	g_message("Joining with thread %p id %ld, waiting for %dms", this,
+		  tid, ms);
+#endif
+
+	myid=pthread_self();
+	if(myid==tid) {
+		/* .net doesnt spot this and proceeds to
+		 * deadlock. This will have to be commented out if we
+		 * want to be bug-compatible :-(
+		 */
+		g_warning("Can't join my own thread!");
+		return(FALSE);
+	}
+	
+	if(threads!=NULL) {
+		thread=g_hash_table_lookup(threads, &tid);
+	} else {
+		/* No threads running yet! */
+		thread=NULL;
+	}
+	
+	if(thread==NULL) {
+		g_warning("Can't find thread id %ld", tid);
+		return(FALSE);
+	}
+	
+	if(ms==0) {
+		/* block until thread exits */
+		ret=timed_thread_join(thread, NULL, NULL);
+		
+		if(ret==0) {
+			delete_thread(thread);
+			return(TRUE);
+		} else {
+			g_warning("Join error: %s", strerror(ret));
+			return(FALSE);
+		}
+	} else {
+		/* timeout in ms milliseconds */
+		struct timespec timeout;
+		time_t now;
+		div_t divvy;
+		
+		divvy=div(ms, 1000);
+		now=time(NULL);
+		
+		timeout.tv_sec=now+divvy.quot;
+		timeout.tv_nsec=divvy.rem*1000;
+		
+		ret=timed_thread_join(thread, &timeout, NULL);
+		if(ret==0) {
+			delete_thread(thread);
+			return(TRUE);
+		} else {
+			if(ret!=ETIMEDOUT) {
+				g_warning("Timed join error: %s",
+					  strerror(ret));
+			}
+			return(FALSE);
+		}
+	}
+}
+
 static void join_all_threads(gpointer key, gpointer value, gpointer user)
 {
 	ThreadInfo *thread_info=(ThreadInfo *)value;
@@ -150,7 +357,7 @@ static void join_all_threads(gpointer key, gpointer value, gpointer user)
 #ifdef THREAD_DEBUG
 	g_message("[%ld]", thread_info->id);
 #endif
-	pthread_join(thread_info->id, NULL);
+	timed_thread_join(thread_info, NULL, NULL);
 }
 
 static gboolean free_all_threadinfo(gpointer key, gpointer value, gpointer user)

@@ -15,9 +15,10 @@
 
 static MonoObject *main_thread;
 
-void ves_icall_System_Threading_Thread_Start_internal(MonoObject *this,
-						      MonoObject *start)
+guint32 ves_icall_System_Threading_Thread_Start_internal(MonoObject *this,
+							 MonoObject *start)
 {
+	return(0);
 }
 
 gint32 ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
@@ -32,6 +33,12 @@ void ves_icall_System_Threading_Thread_Schedule_internal(void)
 MonoObject *ves_icall_System_Threading_Thread_CurrentThread_internal(void)
 {
 	return(main_thread);
+}
+
+gboolean ves_icall_System_Threading_Thread_Join_internal(MonoObject *this,
+							 int ms, guint32 tid)
+{
+	return(TRUE);
 }
 
 void mono_thread_init(void)
