@@ -1,0 +1,731 @@
+/*
+ * interp.brg: experimental interpreter code
+ *
+ * This is another approach for an interpreter. CIL is translated into another
+ * byte code which can be interpreted more efficiently. First measurements
+ * showed a quite good performance.
+ *
+ * We do not develop this further at the moment because of a lack of time.
+ *
+ * Author:
+ *   Dietmar Maurer (dietmar@ximian.com)
+ *
+ * (C) 2001 Ximian, Inc.  */
+
+#include <glib.h>
+#include <stdio.h>
+
+#include <mono/metadata/blob.h>
+#include <mono/metadata/metadata.h>
+#include <mono/metadata/loader.h>
+#include <mono/metadata/tabledefs.h>
+#include <mono/metadata/class.h>
+
+#include "mempool.h"
+
+#define MBTREE_TYPE  MBTree
+#define MBCGEN_TYPE  MBCodeGenStatus
+#define MBCOST_DATA  MBCodeGenStatus
+#define MBALLOC_STATE mono_mempool_alloc (data->mp, sizeof (MBState))
+
+#define d(x) 
+
+typedef struct _MonoInvocation MonoInvocation;
+
+typedef void (*MIntFunc) (MonoInvocation *frame);
+
+typedef struct {
+	MonoMemPool *mp;
+	guint8      *start;
+	guint8      *code;
+	GPtrArray   *forest;
+} MBCodeGenStatus;
+
+typedef struct _MBTree MBTree;
+struct _MBTree {
+	guint16   op;
+	MBTree   *left, *right;
+	gpointer  state;
+	gpointer  emit;
+
+	guint     is_jump:1;
+	guint     last_instr:1;
+	guint     jump_target:1;
+
+	gint32    cli_addr;   /* virtual cli address */
+	gint32    addr;       /* address of emitted instruction */
+	gint32    first_addr; /* first code address of a tree */ 
+
+	gint32    size;
+
+	union {
+		gint32 i;
+		gint64 l;
+		gpointer p;
+	} data;
+};
+
+typedef struct {
+	union {
+		gint32 i;
+		gint64 l;
+		double f;
+		gpointer p;
+	} data;
+} stackval;
+
+struct _MonoInvocation {
+	MonoInvocation *parent; /* parent */
+	MonoInvocation *child;
+	MonoMethod     *method; /* parent */
+	stackval       *retval; /* parent */
+	void           *obj;    /* this - parent */
+	char           *locals;
+	char           *args;
+	stackval       *stack;
+};
+
+typedef enum {
+	IC_CONST_I4,
+	IC_ADDR_L,
+	IC_ADDR_A,
+	IC_LDIND_I4,
+	IC_LDIND_LOC_I4,
+	IC_LDIND_ARG_I4,
+	IC_STIND_I4,
+	IC_STIND_LOC_I4,
+	IC_MUL_I4,
+	IC_ADD_I4,
+	IC_ADD_LOC_LOC_I4,
+	IC_SUB_I4,
+	IC_SUB_ARG_CI4,
+	IC_BR,
+	IC_BRTRUE_I4,
+	IC_BRTRUE_LOC_I4,
+	IC_BLT_I4,
+	IC_BEQ_I4,
+	IC_BGE_I4,
+	IC_BGE_I4_C,
+	IC_RET,
+	IC_RETV_I4,
+	IC_CALL_I4,
+	IC_PUSH_I4,
+} MIntCommands;
+
+#define INIT_FRAME(frame,parent_frame,obj_this,method_args,method_retval,mono_method)	\
+	do {	\
+		(frame)->parent = (parent_frame);	\
+		(frame)->obj = (obj_this);	\
+		(frame)->args = (method_args);	\
+		(frame)->retval = (method_retval);	\
+		(frame)->method = (mono_method);	\
+	} while (0)
+
+#define COMMAND(c,name) do { *(c)++ = name; } while (0)
+
+#define MB_OPT_LEVEL 1
+
+#if MB_OPT_LEVEL == 0
+#define MB_USE_OPT1(c) 65535
+#define MB_USE_OPT2(c) 65535
+#endif
+#if MB_OPT_LEVEL == 1
+#define MB_USE_OPT1(c) c
+#define MB_USE_OPT2(c) 65535
+#endif
+#if MB_OPT_LEVEL >= 2
+#define MB_USE_OPT1(c) c
+#define MB_USE_OPT2(c) c
+#endif
+
+%%
+
+#
+# terminal definitions
+#
+
+# constatnts
+%term CONST_I4 CONST_I8 CONST_R4 CONST_R8
+%term LDIND_I1 LDIND_U1 LDIND_I2 LDIND_U2 LDIND_I4 LDIND_I8 LDIND_R4 LDIND_R8
+%term LDIND_U4
+%term STIND_I1 STIND_I2 STIND_I4 STIND_I8 STIND_R4 STIND_R8
+%term ADDR_L ADDR_A ADDR_G ARG ARG_END CALL_I4 CALL_I8 CALL_R8
+%term BREAK SWITCH BR RET RETV 
+%term ADD SUB MUL DIV DIV_UN REM REM_UN AND OR XOR SHL SHR SHR_UN NEG NOT
+%term BLT BLT_UN BEQ BNE_UN BRTRUE BRFALSE BGE BGE_UN BLE BLE_UN BGT BGT_UN 
+%term CONV_I4 CONV_I1 CONV_I2 CONV_I8 CONV_R8
+
+#
+# we start at stmt
+#
+%start stmt
+
+#
+# tree definitions
+#
+
+reg: CONST_I4 1 {
+	COMMAND (s->code, IC_CONST_I4);
+	*((gint32*)s->code)++ = tree->data.i;
+}
+
+# do nothing
+reg: CONV_I4 (reg) 
+
+reg: ADDR_L 1 {
+	COMMAND (s->code, IC_ADDR_L);
+	*((gint32*)s->code)++ = tree->data.i;
+}
+
+reg: ADDR_A 1 {
+	COMMAND (s->code, IC_ADDR_A);
+	*((gint32*)s->code)++ = tree->data.i;
+}
+
+reg: LDIND_I4 (reg) {
+	COMMAND (s->code, IC_LDIND_I4);
+}
+
+reg: LDIND_I4 (ADDR_L) "MB_USE_OPT1(0)" {
+	COMMAND (s->code, IC_LDIND_LOC_I4);
+	*((gint32*)s->code)++ = tree->left->data.i;
+}
+
+reg: LDIND_I4 (ADDR_A) "MB_USE_OPT1(0)" {
+	COMMAND (s->code, IC_LDIND_ARG_I4);
+	*((gint32*)s->code)++ = tree->left->data.i;
+}
+
+reg: MUL (reg, reg) {
+	COMMAND (s->code, IC_MUL_I4);
+}
+
+
+reg: ADD (reg, reg) {
+	COMMAND (s->code, IC_ADD_I4);
+}
+
+reg: SUB (reg, reg) {
+	COMMAND (s->code, IC_SUB_I4);
+}
+
+# just an optimisations
+reg: SUB (LDIND_I4 (ADDR_A), CONST_I4) "MB_USE_OPT1(0)" {
+	COMMAND (s->code, IC_SUB_ARG_CI4);
+	*((gint32*)s->code)++ = tree->left->left->data.i;
+	*((gint32*)s->code)++ = tree->right->data.i;
+}
+
+stmt: STIND_I4 (reg, reg) {
+	COMMAND (s->code, IC_STIND_I4);
+}
+
+stmt: STIND_I4 (ADDR_L, reg) "MB_USE_OPT1(0)" {
+	COMMAND (s->code, IC_STIND_LOC_I4);
+	*((gint32*)s->code)++ = tree->left->data.i;
+}
+
+stmt: BR {
+	tree->is_jump = 1;    
+
+	COMMAND (s->code, IC_BR);
+	*((gint32*)s->code)++ = tree->data.i - 5;
+}
+
+stmt: BLT (reg, reg) 1 {
+	tree->is_jump = 1;    
+
+	COMMAND (s->code, IC_BLT_I4);
+	*((gint32*)s->code)++ = tree->data.i - 5;
+}
+
+stmt: BEQ (reg, reg) {
+	tree->is_jump = 1;    
+
+	COMMAND (s->code, IC_BEQ_I4);
+	*((gint32*)s->code)++ = tree->data.i - 5;
+}
+
+stmt: BGE (reg, reg) 1 {
+	tree->is_jump = 1;    
+
+	COMMAND (s->code, IC_BGE_I4);
+	*((gint32*)s->code)++ = tree->data.i - 5;
+}
+
+stmt: BGE (reg, CONST_I4) "MB_USE_OPT1(0)" {
+	tree->is_jump = 1;    
+
+	COMMAND (s->code, IC_BGE_I4_C);
+	*((gint32*)s->code)++ = tree->right->data.i;
+	*((gint32*)s->code)++ = tree->data.i - 9;
+}
+
+stmt: BRTRUE (reg) 1 {
+	tree->is_jump = 1;
+
+	COMMAND (s->code, IC_BRTRUE_I4);
+	*((gint32*)s->code)++ = tree->data.i - 5;
+}
+
+stmt: BRTRUE (LDIND_I4 (ADDR_L)) "MB_USE_OPT1(0)" {
+	tree->is_jump = 1;
+
+	COMMAND (s->code, IC_BRTRUE_LOC_I4);
+	*((gint32*)s->code)++ = tree->left->left->data.i;
+	*((gint32*)s->code)++ = tree->data.i - 9;
+}
+
+stmt: RETV (reg) {
+	COMMAND (s->code, IC_RETV_I4);
+}
+
+stmt: RET {
+	COMMAND (s->code, IC_RET);
+}
+
+argl: ARG (argl, reg) {
+	COMMAND (s->code, IC_PUSH_I4);
+}
+
+argl: ARG_END
+
+reg: CALL_I4 (argl) {
+	COMMAND (s->code, IC_CALL_I4);
+	*((gint32*)s->code)++ = tree->data.i;
+}
+
+stmt: CALL_I4 (argl) {
+	COMMAND (s->code, IC_CALL_I4);
+	*((gint32*)s->code)++ = tree->data.i;
+}
+
+%% 
+
+#include "jit.h"
+
+
+MBTree *
+mono_ctree_new (MonoMemPool *mp, int op, MBTree *left, MBTree *right)
+{
+	MBTree *t = mono_mempool_alloc0 (mp, sizeof (MBTree));
+
+	t->op = op;
+	t->left = left;
+	t->right = right;
+	t->cli_addr = -1;
+	return t;
+}
+
+MBTree *
+mono_ctree_new_leaf (MonoMemPool *mp, int op)
+{
+	return mono_ctree_new (mp, op, NULL, NULL);
+}
+
+static void 
+interp_exec_method (MonoInvocation *frame)
+{
+	MonoInvocation child_frame;
+	MonoMethodHeader *header;
+	guint8 *ip, *ap, *args;
+	register stackval *sp;
+
+	d(printf ("EXEC METHOD %p\n", frame->args));
+
+	g_assert (frame->method->addr != NULL);
+
+	if (!frame->method->klass->inited)
+		mono_jit_init_class (frame->method->klass);
+
+	child_frame.parent = frame;
+
+	header = ((MonoMethodNormal *)frame->method)->header;
+
+	ip = frame->method->addr;
+
+	sp = frame->stack = alloca (sizeof (stackval) * header->max_stack);
+
+	args = ap = alloca (256); // fixme: use max args size
+
+	if (header->num_locals) {
+		frame->locals = alloca (header->locals_size);
+		memset (frame->locals, 0, header->locals_size);
+		frame->locals += header->locals_size;
+	}
+
+	while (1) {
+
+		switch (*ip++) {
+		case IC_CONST_I4: {
+			sp->data.i = *((gint32*)ip);
+			d(printf ("IC_CONST_I4 %d:\n", sp->data.i));
+			ip += 4;
+			sp++;
+			break;
+		}
+		case IC_ADDR_L: {
+			d(printf ("IC_ADDR_L: %p\n", sp));
+			sp->data.p = frame->locals + *((gint32*)ip); 
+			ip += 4;
+			sp++;
+			break;
+		}
+		case IC_ADDR_A: {
+			sp->data.p = frame->args + *((gint32*)ip); 
+			d(printf ("IC_ADDR_A: %p\n", sp->data.p));
+			ip += 4;
+			sp++;
+			break;
+		}
+		case IC_LDIND_I4: {
+			sp--;
+			sp->data.i = *(gint32*)sp->data.p;
+			d(printf ("IC_LDIND_I4: %p %d\n", sp->data.p, sp->data.i));
+			sp++;
+			break;
+		}
+		case IC_LDIND_LOC_I4: {
+			gint32 *p = (gint32 *)frame->locals + *((gint32*)ip);
+			sp->data.i = *p;
+			d(printf ("IC_LDIND_LOC_I4: %p %d\n", p, sp->data.i));
+			sp++;
+			ip += 4;
+			break;
+		}
+		case IC_LDIND_ARG_I4: {
+			gint32 *p = (gint32 *)frame->args + *((gint32*)ip);
+			sp->data.i = *p;
+			d(printf ("IC_LDIND_LOC_I4: %p %d\n", p, sp->data.i));
+			sp++;
+			ip += 4;
+			break;
+		}
+		case IC_STIND_I4: {
+			sp -= 2;
+			d(printf ("IC_STIND_I4: %p %d\n", sp->data.p, sp [1].data.i));
+			*(gint32*)sp->data.p = sp [1].data.i;
+			break;
+		}
+		case IC_STIND_LOC_I4: {
+			gint32 *p = (gint32 *)frame->locals + *((gint32*)ip);
+			sp -= 1;
+			d(printf ("IC_STIND_LOC_I4: %p %d\n", p, sp->data.i));
+			*p = sp->data.i;
+			ip += 4;
+			break;
+		}
+		case IC_MUL_I4: {
+			d(printf ("IC_MUL_I4:\n"));
+			g_assert_not_reached ();
+			break;
+		}
+		case IC_ADD_I4: {
+			sp -= 2;
+			sp->data.i = sp [0].data.i + sp [1].data.i;
+			d(printf ("IC_ADD_I4: %d\n", sp->data.i));
+			sp++;
+			break;
+		}
+		case IC_SUB_I4: {
+			sp -= 2;
+			sp->data.i = sp [0].data.i - sp [1].data.i;
+			d(printf ("IC_SUB_I4: %d\n", sp->data.i));
+			sp++;
+			break;
+		}
+		case IC_ADD_LOC_LOC_I4: {
+			gint32 *p1 = (gint32 *)frame->args + *((gint32*)ip);
+			gint32 *p2 = (gint32 *)frame->args + *((gint32*)ip+1);
+			
+			sp->data.i = *p1 + *p2;
+			d(printf ("IC_ADD_LOC_LOC_I4: %d\n", sp->data.i));
+			sp++;
+			ip += 8;
+
+			break;
+		}
+		case IC_SUB_ARG_CI4: {
+			gint32 *p = (gint32 *)frame->args + *((gint32*)ip);
+			sp->data.i = *p - *(((gint32*)ip) + 1);
+			d(printf ("IC_SUB_ARG_CI4: %d\n", sp->data.i));
+			sp++;
+			ip += 8;
+
+			break;
+		}
+		case IC_BR: {
+			d(printf ("IC_BR:\n"));
+			ip += 4 + *((gint32*)ip);
+			break;
+		}
+		case IC_BLT_I4: {
+			d(printf ("IC_BLT_I4:\n"));
+			ip += 4;
+			g_assert_not_reached ();
+			break;
+		}
+		case IC_BRTRUE_I4: {
+			sp -= 1;
+			d(printf ("IC_BRTRUE_I4: (%d) %d\n", sp [0].data.i, *((gint32*)ip)));
+			
+			if (sp [0].data.i) 
+				ip += 4 + *((gint32*)ip);
+			else
+				ip += 4;
+			break;
+		}
+		case IC_BRTRUE_LOC_I4: {
+			gint32 *p = (gint32 *)frame->locals + *((gint32*)ip);
+		       
+			d(printf ("IC_BRTRUE_LOC_I4: %d %d\n", p, *((gint32*)ip+1)));
+		       
+			if (*p) 
+				ip += 8 + *((gint32*)ip+1);
+			else
+				ip += 8;
+			break;
+		}
+		case IC_BEQ_I4: {
+			sp -= 2;
+			d(printf ("IC_BEQ_I4: (%d == %d) %d\n", sp [0].data.i, sp [1].data.i, *((gint32*)ip)));
+			
+			if (sp [0].data.i == sp [1].data.i) 
+				ip += 4 + *((gint32*)ip);
+			else
+				ip += 4;
+			break;
+		}
+		case IC_BGE_I4: {
+			sp -= 2;
+			d(printf ("IC_BGE_I4: (%d >= %d) %d\n", sp [0].data.i, sp [1].data.i, *((gint32*)ip)));
+			
+			if (sp [0].data.i >= sp [1].data.i) 
+				ip += 4 + *((gint32*)ip);
+			else
+				ip += 4;
+			break;
+		}
+		case IC_BGE_I4_C: {
+			sp--;
+			d(printf ("IC_BGE_I4: (%d >= %d) %d\n", sp [0].data.i, 
+				*((gint32*)ip), *(((gint32*)ip) + 1)));
+			if (sp [0].data.i >= *((gint32*)ip)) 
+				ip += 8 + *(((gint32*)ip) + 1);
+			else
+				ip += 8;
+			break;
+		}
+		case IC_RET: {
+			d(printf ("IC_RET:\n"));
+			g_error ("RETURN");
+			break;
+		}
+		case IC_RETV_I4: {
+			--sp;
+			d(printf ("IC_RETV_I4: %d\n", sp->data.i));
+			frame->retval->data.i = sp->data.i;
+			return;
+			break;
+		}
+		case IC_PUSH_I4: {
+			sp--;
+			*((gint32*)ap) = sp->data.i;
+			d(printf ("IC_PUSH: %d\n", sp->data.i));
+			ap += 4;
+			break;
+		}
+		case IC_CALL_I4: {
+			MonoMethod *m = (MonoMethod *)*((gint32*)ip);
+			gpointer p;
+
+			if (!m->addr)
+				arch_compile_method (m);
+
+			p = sp [-1].data.p;
+
+			INIT_FRAME (&child_frame, NULL, NULL, args, sp, m);
+			
+			interp_exec_method (&child_frame);
+			d(printf ("RESULT: %d\n", sp->data.i));
+			ap = args;
+
+			sp++;
+			ip += 4;
+			break;
+		}
+		default:
+			g_warning ("unknown interpreter opcode %d\n", *(ip -1));
+			g_assert_not_reached ();
+			break;
+		}
+		
+	}
+}
+
+static gint32
+get_address (GPtrArray *forest, gint32 cli_addr, gint base, gint len)
+{
+	gint32 ind, pos;
+	MBTree *t1;
+
+	ind = (len / 2);
+	pos = base + ind;
+
+	/* skip trees with cli_addr == -1 */
+	while ((t1 = (MBTree *) g_ptr_array_index (forest, pos)) &&
+	       t1->cli_addr == -1 && ind) {
+		ind--;
+		pos--;
+	}
+
+	if (t1->cli_addr == cli_addr) {
+		t1->jump_target = 1;
+		return t1->first_addr;
+	}
+
+	if (len <= 1)
+		return -1;
+
+	if (t1->cli_addr > cli_addr) {
+		return get_address (forest, cli_addr, base, ind);
+	} else {
+		ind = (len / 2);		
+		return get_address (forest, cli_addr, base + ind, len - ind);
+	}
+}
+
+static void
+compute_branches (MBCodeGenStatus *s)
+{
+	GPtrArray *forest = s->forest;
+	const int top = forest->len;
+	gint32 addr;
+	guint8 *end;
+	int i;
+
+	end = s->code;
+
+	for (i = 0; i < top; i++) {
+		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
+
+		if (t1->is_jump) {
+
+			if ((i + 1) < forest->len) {
+				MBTree *t2 = (MBTree *) g_ptr_array_index (forest, i + 1);
+				t2->jump_target = 1;
+			}
+
+			addr = get_address (forest, t1->data.i, 0, forest->len);
+			if (addr == -1) {
+				g_error ("address 0x%x not found at IL_%04x",
+					 t1->data.i, t1->cli_addr);
+			}
+			t1->data.i = addr - t1->addr;
+
+			/* emit the jump instruction again to update addresses */
+			s->code = s->start + t1->addr;
+			((MBEmitFunc)t1->emit) (t1, s);
+
+		}
+	}
+
+	s->code = end;
+}
+
+static void
+tree_emit (int goal, MBCodeGenStatus *s, MBTree *tree) 
+{
+	MBTree *kids[10];
+	int i, ern = mono_burg_rule (tree->state, goal);
+	guint16 *nts = mono_burg_nts [ern];
+
+	mono_burg_kids (tree, ern, kids);
+
+	for (i = 0; nts [i]; i++) 
+		tree_emit (nts [i], s, kids [i]);
+
+	tree->addr = s->code - s->start;
+
+	if ((tree->emit = mono_burg_func [ern]))
+		((MBEmitFunc)tree->emit) (tree, s);
+}
+
+static void
+forest_emit (MBCodeGenStatus *s)
+{
+	GPtrArray *forest = s->forest;
+	const int top = forest->len;
+	int i;
+		
+	for (i = 0; i < top; i++) {
+		MBTree *t1 = (MBTree *) g_ptr_array_index (forest, i);
+		t1->first_addr = s->code - s->start;
+		tree_emit (1, s, t1);
+	}
+}
+
+static void
+emit_method (MonoMethod *method, MBCodeGenStatus *s)
+{
+	method->addr = s->start = s->code = g_malloc (1024);
+
+	if (mono_jit_dump_forest)
+		mono_print_forest (s->forest);
+
+	mono_jit_label_forest (s);
+
+	forest_emit (s);
+	compute_branches (s);
+
+
+	//if (mono_jit_dump_asm)
+	//	mono_disassemble_code (s->start, s->code - s->start);
+}
+
+gpointer
+arch_compile_method (MonoMethod *method)
+{
+	MBCodeGenStatus cgstat;
+	MonoMemPool *mp = mono_mempool_new ();
+	guint locals_size;
+
+	g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL));
+	g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL));
+
+	printf ("Start JIT compilation of %s\n", method->name);
+
+	cgstat.forest = mono_create_forest (method, mp, &locals_size);
+	cgstat.code = NULL;
+	cgstat.mp = mp;
+
+	emit_method (method, &cgstat);
+
+	g_ptr_array_free (cgstat.forest, TRUE);
+
+	mono_mempool_destroy (mp);
+
+	return method->addr;
+}
+
+gpointer
+arch_create_jit_trampoline (MonoMethod *method)
+{
+
+	return NULL;
+}
+
+int
+arch_exec (MonoMethod *method)
+{
+	stackval result;
+	MonoInvocation call;
+
+	arch_compile_method (method);
+
+	INIT_FRAME (&call, NULL, NULL, NULL, &result, method);
+	
+	interp_exec_method (&call);
+
+	return result.data.i;
+}
