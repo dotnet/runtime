@@ -5686,6 +5686,27 @@ ves_icall_MonoDebugger_GetMethodIndex (MonoReflectionMethod *rmethod)
 	return index - rmethod->method->klass->method.first;
 }
 
+static MonoReflectionType*
+ves_icall_MonoDebugger_MakeArrayType (MonoReflectionType *type, int rank)
+{
+	MonoClass *klass, *aklass;
+
+	MONO_ARCH_SAVE_REGS;
+
+	klass = mono_class_from_mono_type (type->type);
+	aklass = mono_array_class_get (klass, rank);
+
+	return mono_type_get_object (mono_object_domain (type), &aklass->byval_arg);
+}
+
+static int
+ves_icall_MonoDebugger_GetTypeToken (MonoObject *obj)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return mono_reflection_get_token (obj);
+}
+
 static MonoBoolean
 custom_attrs_defined_internal (MonoObject *obj, MonoReflectionType *attr_type)
 {
@@ -6067,6 +6088,8 @@ static const IcallEntry assembly_icalls [] = {
 	{"MonoDebugger_GetMethodIndex", ves_icall_MonoDebugger_GetMethodIndex},
 	{"MonoDebugger_GetMethodToken", ves_icall_MonoDebugger_GetMethodToken},
 	{"MonoDebugger_GetType", ves_icall_MonoDebugger_GetType},
+	{"MonoDebugger_GetTypeToken", ves_icall_MonoDebugger_GetTypeToken},
+	{"MonoDebugger_MakeArrayType", ves_icall_MonoDebugger_MakeArrayType},
 
 	/* normal icalls again */
 	{"get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint},
