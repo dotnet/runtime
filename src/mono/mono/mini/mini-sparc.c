@@ -185,18 +185,22 @@ static void flushi(void *addr)
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
+#ifndef __linux__
+	/* Hopefully this is optimized based on the actual CPU */
+	sync_instruction_memory (code, size);
+#else
 	guint64 *p = (guint64*)code;
 	guint64 *end = (guint64*)(code + ((size + 8) /8));
 
 	/* 
 	 * FIXME: Flushing code in dword chunks in _slow_.
 	 */
-
 	while (p < end)
 #ifdef __GNUC__
 		__asm__ __volatile__ ("iflush %0"::"r"(p++));
 #else
 			flushi (p ++);
+#endif
 #endif
 }
 
