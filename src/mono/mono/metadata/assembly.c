@@ -411,7 +411,7 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 			dest_aname->build = current_runtime->assembly_build;
 			dest_aname->revision = current_runtime->assembly_revision;
 			return dest_aname;
-		} else if (res == -1) {
+		} else if (res < 0) {
 			last = pos - 1;
 		} else {
 			first = pos + 1;
