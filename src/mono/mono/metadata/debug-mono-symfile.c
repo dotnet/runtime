@@ -43,6 +43,7 @@ typedef struct
 } MonoSymbolFileMethodEntryPriv;
 
 static GHashTable *type_table;
+static GHashTable *class_table;
 
 static int write_string_table (MonoSymbolFile *symfile);
 static int create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings);
@@ -85,6 +86,8 @@ load_symfile (MonoSymbolFile *symfile)
 	}
 
 	priv->offset_table = (MonoSymbolFileOffsetTable *) ptr;
+
+	mono_debug_symfile_add_type (symfile, mono_defaults.object_class);
 
 	/*
 	 * Read method table.
@@ -261,20 +264,6 @@ mono_debug_close_mono_symbol_file (MonoSymbolFile *symfile)
 	g_free (symfile);
 }
 
-static int
-write_string (int fd, const char *string)
-{
-	guint32 length = strlen (string);
-
-	if (write (fd, &length, sizeof (length)) < 0)
-		return FALSE;
-
-	if (write (fd, string, strlen (string)) < 0)
-		return FALSE;
-
-	return TRUE;
-}
-
 static gchar *
 read_string (const char *ptr)
 {
@@ -341,6 +330,9 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	gpointer *type_table;
 	guint8 *ptr;
 	int i;
+
+	if (!symfile->_priv->method_table)
+		return;
 
 	mep = g_hash_table_lookup (symfile->_priv->method_table, method);
 	if (!mep)
@@ -440,8 +432,18 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 void
 mono_debug_symfile_add_type (MonoSymbolFile *symfile, MonoClass *klass)
 {
-	MonoDebugTypeInfo *info = allocate_type_entry (symfile);
+	MonoDebugTypeInfo *info;
 
+	if (!class_table)
+		class_table = g_hash_table_new (g_direct_hash, g_direct_equal);
+
+	/* We write typeof (object) into each symbol file's type table. */
+	if ((klass != mono_defaults.object_class) && g_hash_table_lookup (class_table, klass))
+		return;
+
+	symfile->generation++;
+
+	info = allocate_type_entry (symfile);
 	info->klass = klass;
 	if (klass->rank) {
 		info->token = klass->element_class->type_token;
@@ -449,153 +451,8 @@ mono_debug_symfile_add_type (MonoSymbolFile *symfile, MonoClass *klass)
 	} else
 		info->token = klass->type_token;
 	info->type_info = write_type (&klass->this_arg);
-}
 
-static void
-free_method_entry (MonoSymbolFileMethodEntryPriv *mep)
-{
-	g_free (mep->name);
-	g_free (mep->entry);
-	g_free (mep);
-}
-
-static void
-create_method (MonoSymbolFile *symfile, guint32 token, MonoMethod *method)
-{
-	MonoSymbolFileMethodEntryPriv *mep;
-	MonoDebugMethodInfo *minfo;
-
-	g_assert (method->klass->image == symfile->_priv->image);
-
-	minfo = g_hash_table_lookup (symfile->_priv->method_hash, method);
-	if (!minfo)
-		return;
-
-	g_assert (minfo->method == method);
-	minfo->symfile = symfile;
-
-	mep = g_new0 (MonoSymbolFileMethodEntryPriv, 1);
-	mep->entry = g_new0 (MonoSymbolFileMethodEntry, 1);
-	mep->entry->token = token;
-	mep->entry->source_file_offset = symfile->_priv->offset_table->source_table_offset;
-	mep->entry->num_parameters = method->signature->param_count;
-
-	mep->method_name_offset = symfile->_priv->string_table_size;
-	mep->name = g_strdup_printf ("%s.%s.%s", method->klass->name_space,
-				     method->klass->name, method->name);
-	symfile->_priv->string_table_size += strlen (mep->name) + 5;
-
-	mep->minfo = minfo;
-	mep->method = method;
-
-	symfile->_priv->offset_table->method_count++;
-
-	g_hash_table_insert (symfile->_priv->method_table, method, mep);
-}
-
-static void
-write_method (gpointer key, gpointer value, gpointer user_data)
-{
-	MonoSymbolFile *symfile = (MonoSymbolFile *) user_data;
-	MonoSymbolFileMethodEntryPriv *mep = (MonoSymbolFileMethodEntryPriv *) value;
-
-	if (symfile->_priv->error)
-		return;
-
-	mep->minfo->file_offset = lseek (symfile->_priv->fd, 0, SEEK_CUR);
-
-	mep->index = symfile->_priv->temp_idx++;
-
-	if (write (symfile->_priv->fd, mep->entry, sizeof (MonoSymbolFileMethodEntry)) < 0) {
-		symfile->_priv->error = TRUE;
-		return;
-	}
-}
-
-static void
-write_line_numbers (gpointer key, gpointer value, gpointer user_data)
-{
-	MonoSymbolFile *symfile = (MonoSymbolFile *) user_data;
-	MonoSymbolFilePriv *priv = symfile->_priv;
-	MonoSymbolFileMethodEntryPriv *mep = (MonoSymbolFileMethodEntryPriv *) value;
-	MonoSymbolFileLineNumberEntry lne;
-	const unsigned char *ip, *start, *end;
-	MonoMethodHeader *header;
-
-	if (priv->error)
-		return;
-
-	if ((mep->method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (mep->method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
-	    (mep->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-	    (mep->method->flags & METHOD_ATTRIBUTE_ABSTRACT))
-		g_assert_not_reached ();
-
-	header = ((MonoMethodNormal *) mep->method)->header;
-	g_assert (header);
-
-	mep->entry->start_row = mep->minfo->start_line;
-	mep->entry->end_row = mep->minfo->end_line;
-
-	mep->entry->line_number_table_offset = lseek (priv->fd, 0, SEEK_CUR);
-	++mep->entry->num_line_numbers;
-
-	lne.offset = 0;
-	lne.row = -1;
-
-	if (write (priv->fd, &lne, sizeof (MonoSymbolFileLineNumberEntry)) < 0) {
-		priv->error = TRUE;
-		return;
-	}
-
-	ip = start = header->code;
-	end = ip + header->code_size;
-
-	while (ip < end) {
-		gchar *line;
-
-		++mep->entry->num_line_numbers;
-		lne.offset = ip - start;
-		lne.row = -1;
-
-		if (write (priv->fd, &lne, sizeof (MonoSymbolFileLineNumberEntry)) < 0) {
-			priv->error = TRUE;
-			return;
-		}
-
-		line = mono_disasm_code_one (NULL, mep->method, ip, &ip);
-		g_free (line);
-	}
-}
-
-static void
-create_methods (MonoSymbolFile *symfile)
-{
-	MonoImage *image = symfile->_priv->image;
-	MonoTableInfo *table = &image->tables [MONO_TABLE_METHOD];
-	int idx;
-
-	for (idx = 1; idx <= table->rows; idx++) {
-		guint32 token = mono_metadata_make_token (MONO_TABLE_METHOD, idx);
-		MonoMethod *method = mono_get_method (image, token, NULL);
-
-		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-		    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
-		    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-		    (method->flags & METHOD_ATTRIBUTE_ABSTRACT))
-			continue;
-
-		if (method->wrapper_type != MONO_WRAPPER_NONE)
-			continue;
-
-		if (!((MonoMethodNormal *) method)->header) {
-			g_warning (G_STRLOC ": Internal error: method %s.%s doesn't have a header",
-				   method->klass->name, method->name);
-			continue;
-		}
-
-		create_method (symfile, token, method);
-	}
+	g_hash_table_insert (class_table, klass, info);
 }
 
 static int
@@ -630,51 +487,7 @@ create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings)
 	if (write (priv->fd, priv->offset_table, sizeof (MonoSymbolFileOffsetTable)) < 0)
 		return FALSE;
 
-	//
-	// Write source file table.
-	//
-	if (priv->source_file) {
-		priv->offset_table->source_table_offset = lseek (priv->fd, 0, SEEK_CUR);
-		if (!write_string (priv->fd, priv->source_file))
-			return FALSE;
-		priv->offset_table->source_table_size = lseek (priv->fd, 0, SEEK_CUR) -
-			priv->offset_table->source_table_offset;
-	}
-
-	//
-	// Create method table.
-	//
-
-	priv->method_table = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL,
-						    (GDestroyNotify) free_method_entry);
-
-	create_methods (symfile);
-
-	//
-	// Write line numbers.
-	//
-
-	priv->offset_table->line_number_table_offset = lseek (priv->fd, 0, SEEK_CUR);
-
-	g_hash_table_foreach (priv->method_table, write_line_numbers, symfile);
-	if (priv->error)
-		return FALSE;
-
-	priv->offset_table->line_number_table_size = lseek (priv->fd, 0, SEEK_CUR) -
-		priv->offset_table->line_number_table_offset;
-
-	//
-	// Write method table.
-	//
-
-	priv->offset_table->method_table_offset = lseek (priv->fd, 0, SEEK_CUR);
-
-	g_hash_table_foreach (priv->method_table, write_method, symfile);
-	if (priv->error)
-		return FALSE;
-
-	priv->offset_table->method_table_size = lseek (priv->fd, 0, SEEK_CUR) -
-		priv->offset_table->method_table_offset;
+	mono_debug_symfile_add_type (symfile, mono_defaults.object_class);
 
 	//
 	// Write offset table.
@@ -694,16 +507,11 @@ create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings)
 
 	symfile->raw_contents = ptr;
 
-	if (!write_string_table (symfile))
-		return FALSE;
-
-	g_message (G_STRLOC ": %s - %s", symfile->image_file, priv->file_name);
-
 	return TRUE;
 }
 
 MonoSymbolFile *
-mono_debug_create_mono_symbol_file (MonoImage *image, const gchar *ilfile, GHashTable *method_hash)
+mono_debug_create_mono_symbol_file (MonoImage *image)
 {
 	MonoSymbolFile *symfile;
 
@@ -717,8 +525,6 @@ mono_debug_create_mono_symbol_file (MonoImage *image, const gchar *ilfile, GHash
 
 	symfile->_priv = g_new0 (MonoSymbolFilePriv, 1);
 	symfile->_priv->image = image;
-	symfile->_priv->method_hash = method_hash;
-	symfile->_priv->source_file = g_strdup (ilfile);
 
 	if (!create_symfile (symfile, TRUE)) {
 		mono_debug_close_mono_symbol_file (symfile);
@@ -731,7 +537,10 @@ mono_debug_create_mono_symbol_file (MonoImage *image, const gchar *ilfile, GHash
 MonoDebugMethodInfo *
 mono_debug_find_method (MonoSymbolFile *symfile, MonoMethod *method)
 {
-	return g_hash_table_lookup (symfile->_priv->method_hash, method);
+	if (!symfile->_priv->method_hash)
+		return NULL;
+	else
+		return g_hash_table_lookup (symfile->_priv->method_hash, method);
 }
 
 static void
@@ -784,7 +593,7 @@ ves_icall_MonoDebugger_GetType (MonoReflectionAssembly *assembly, guint32 token)
 
 	klass = g_hash_table_lookup (assembly->assembly->image->class_cache, GUINT_TO_POINTER (token));
 	if (!klass) {
-		g_message (G_STRLOC ": %x", token);
+		g_warning (G_STRLOC ": %x", token);
 		return NULL;
 	}
 

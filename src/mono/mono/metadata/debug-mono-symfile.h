@@ -177,7 +177,7 @@ struct MonoSymbolFile {
 #define MONO_SYMBOL_FILE_VERSION		26
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
-#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	12
+#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	13
 #define MONO_SYMBOL_FILE_DYNAMIC_MAGIC		0x7aff65af4253d427
 
 MonoSymbolFile *
@@ -197,9 +197,7 @@ void
 mono_debug_close_mono_symbol_file  (MonoSymbolFile           *symfile);
 
 MonoSymbolFile *
-mono_debug_create_mono_symbol_file (MonoImage                *image,
-				    const gchar              *ilfile,
-				    GHashTable               *method_hash);
+mono_debug_create_mono_symbol_file (MonoImage                *image);
 
 gchar *
 mono_debug_find_source_location    (MonoSymbolFile           *symfile,
