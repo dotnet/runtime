@@ -20,6 +20,11 @@
 /* Shared threads don't seem to work yet */
 #undef _POSIX_THREAD_PROCESS_SHARED
 
+/* Catch this here rather than corrupt the shared data at runtime */
+#if MONO_SIZEOF_SUNPATH==0
+#error configure failed to discover size of unix socket path
+#endif
+
 /* Increment this whenever an incompatible change is made to the
  * shared handle structure.
  */

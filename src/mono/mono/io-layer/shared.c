@@ -113,6 +113,8 @@ gpointer _wapi_shm_attach (gboolean *success)
 	int wanted_size=sizeof(struct _WapiHandleShared_list) +
 		_WAPI_SHM_SCRATCH_SIZE;
 	
+	*success=FALSE;
+
 try_again:
 	/* No O_CREAT yet, because we need to initialise the file if
 	 * we have to create it.
@@ -134,7 +136,7 @@ try_again:
 			g_critical (G_GNUC_PRETTY_FUNCTION
 				    ": shared file [%s] open error: %s",
 				    shared_file (), g_strerror (errno));
-			exit (-1);
+			return(NULL);
 		} else {
 			/* We created the file, so we need to expand
 			 * the file and fork the handle daemon too
@@ -142,13 +144,13 @@ try_again:
 			if(lseek (fd, wanted_size, SEEK_SET)==-1) {
 				g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] lseek error: %s", shared_file (), g_strerror (errno));
 				_wapi_shm_destroy ();
-				exit (-1);
+				return(NULL);
 			}
 			
 			if(write (fd, "", 1)==-1) {
 				g_critical (G_GNUC_PRETTY_FUNCTION ": shared file [%s] write error: %s", shared_file (), g_strerror (errno));
 				_wapi_shm_destroy ();
-				exit (-1);
+				return(NULL);
 			}
 			
 			fork_daemon=TRUE;
@@ -163,7 +165,7 @@ try_again:
 		g_critical (G_GNUC_PRETTY_FUNCTION
 			    ": shared file [%s] open error: %s",
 			    shared_file (), g_strerror (errno));
-		exit (-1);
+		return(NULL);
 	} else {
 		/* We dont need to fork the handle daemon */
 	}
@@ -183,7 +185,7 @@ try_again:
 		if(fork_daemon==TRUE) {
 			_wapi_shm_destroy ();
 		}
-		exit (-1);
+		return(NULL);
 	}
 
 	if(statbuf.st_size < wanted_size) {
@@ -196,7 +198,7 @@ try_again:
 		if(fork_daemon==TRUE) {
 			_wapi_shm_destroy ();
 		}
-		exit (-1);
+		return(NULL);
 	}
 	
 	shm_seg=mmap (NULL, statbuf.st_size, PROT_READ|PROT_WRITE, MAP_SHARED,
@@ -207,7 +209,7 @@ try_again:
 		if(fork_daemon==TRUE) {
 			_wapi_shm_destroy ();
 		}
-		exit (-1);
+		return(NULL);
 	}
 	close (fd);
 		
@@ -221,7 +223,7 @@ try_again:
 			g_critical (G_GNUC_PRETTY_FUNCTION ": fork error: %s",
 				    strerror (errno));
 			_wapi_shm_destroy ();
-			exit (-1);
+			return(NULL);
 		} else if (pid==0) {
 			int i;
 			
@@ -267,7 +269,6 @@ try_again:
 		   (strncmp (data->daemon+1, "mono-handle-daemon-", 19)!=0)) {
 #endif
 			g_warning ("Shared memory sanity check failed.");
-			*success=FALSE;
 			return(NULL);
 		}
 	}
@@ -291,7 +292,6 @@ try_again:
 			_wapi_shm_destroy ();
 		}
 		g_warning ("The handle daemon didnt start up properly");
-		*success=FALSE;
 		return(NULL);
 	}
 	
@@ -301,7 +301,6 @@ try_again:
 			_wapi_shm_destroy ();
 		}
 		g_warning ("Handle daemon failed to start");
-		*success=FALSE;
 		return(NULL);
 	}
 		
