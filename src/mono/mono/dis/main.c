@@ -516,7 +516,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 		mono_metadata_decode_blob_size (sig, &sig);
 		ms = mono_metadata_parse_method_signature (m, i + 1, sig, &sig);
-		sig_str = dis_stringify_method_signature (m, ms, i + 1);
+		sig_str = dis_stringify_method_signature (m, ms, i + 1, FALSE);
 
 		fprintf (output, "    // method line %d\n", i + 1);
 		fprintf (output, "    .method %s", flags);
@@ -580,7 +580,7 @@ dis_property_methods (MonoImage *m, guint32 prop)
 	start = mono_metadata_methods_from_property (m, prop, &end);
 	while (start < end) {
 		mono_metadata_decode_row (msemt, start, cols, MONO_METHOD_SEMA_SIZE);
-		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD]);
+		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD], TRUE);
 		fprintf (output, "\t\t%s %s\n", type [cols [MONO_METHOD_SEMA_SEMANTICS]], sig);
 		g_free (sig);
 		++start;
@@ -683,7 +683,7 @@ dis_event_methods (MonoImage *m, guint32 event)
 	start = mono_metadata_methods_from_event (m, event, &end);
 	while (start < end) {
 		mono_metadata_decode_row (msemt, start, cols, MONO_METHOD_SEMA_SIZE);
-		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD]);
+		sig = dis_stringify_method_signature (m, NULL, cols [MONO_METHOD_SEMA_METHOD], FALSE);
 		switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
 		case METHOD_SEMANTIC_OTHER:
 			type = ".other"; break;

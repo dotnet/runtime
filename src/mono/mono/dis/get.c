@@ -450,7 +450,7 @@ dis_stringify_param (MonoImage *m, MonoType *param)
 }
 
 char*
-dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int methoddef_row)
+dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int methoddef_row, gboolean fully_qualified)
 {
 	guint32 cols [MONO_METHOD_SIZE];
 	guint32 pcols [MONO_PARAM_SIZE];
@@ -458,6 +458,7 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 	const char *name = "";
 	int free_method = 0;
 	char *retval;
+	char *type = NULL;
 	GString *result = g_string_new ("");
 	int i;
 
@@ -465,6 +466,8 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 
 	if (methoddef_row) {
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], methoddef_row -1, cols, MONO_METHOD_SIZE);
+		if (fully_qualified)
+			type = get_typedef (m, mono_metadata_typedef_from_method (m, methoddef_row));
 		name = mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]);
 		param_index = cols [MONO_METHOD_PARAMLIST];
 		if (!method) {
@@ -479,7 +482,10 @@ dis_stringify_method_signature (MonoImage *m, MonoMethodSignature *method, int m
 	if (method->hasthis)
 		g_string_append (result, "instance ");
 	g_string_append (result, map (method->call_convention, call_conv_type_map));
-	g_string_sprintfa (result, " %s %s(", retval, name);
+	g_string_sprintfa (result, " %s ", retval);
+	if (type)
+		g_string_sprintfa (result, "%s::", type);
+	g_string_sprintfa (result, "%s(", name);
 	g_free (retval);
 	for (i = 0; i < method->param_count; ++i) {
 		if (param_index && param_index <= m->tables [MONO_TABLE_PARAM].rows) {
@@ -573,7 +579,7 @@ dis_stringify_type (MonoImage *m, MonoType *type)
 		break;
 		
 	case MONO_TYPE_FNPTR:
-		bare = dis_stringify_method_signature (m, type->data.method, 0);
+		bare = dis_stringify_method_signature (m, type->data.method, 0, FALSE);
 		break;
 	case MONO_TYPE_PTR: {
 		char *child_type;
