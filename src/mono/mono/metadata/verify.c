@@ -4,6 +4,7 @@
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mono-endian.h>
 #include <string.h>
 #include <signal.h>
@@ -735,14 +736,14 @@ valid_shiftops [TYPE_MAX] [TYPE_MAX] = {
 		vinfo->status = MONO_VERIFY_ERROR;	\
 		vinfo->message = (msg);	\
 		(list) = g_slist_prepend ((list), vinfo);	\
-		G_BREAKPOINT ();	\
+		/*G_BREAKPOINT ();*/	\
 		goto invalid_cil;	\
 	} while (0)
 
 #define CHECK_STACK_UNDERFLOW(num)	\
 	do {	\
 		if (cur_stack < (num))	\
-			ADD_INVALID (list, g_strdup_printf ("Stack underflow at 0x%04x", ip_offset));	\
+			ADD_INVALID (list, g_strdup_printf ("Stack underflow at 0x%04x (%d items instead of %d)", ip_offset, cur_stack, (num)));	\
 	} while (0)
 
 #define CHECK_STACK_OVERFLOW()	\
@@ -863,6 +864,10 @@ mono_method_verify (MonoMethod *method, int level)
 	guint prefix = 0;
 	ILCodeDesc *code;
 
+	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
+			(method->flags & (METHOD_ATTRIBUTE_PINVOKE_IMPL | METHOD_ATTRIBUTE_ABSTRACT))) {
+		return NULL;
+	}
 	signature = method->signature;
 	header = ((MonoMethodNormal *)method)->header;
 	ip = header->code;
@@ -878,14 +883,14 @@ mono_method_verify (MonoMethod *method, int level)
 		local_state = g_new (char, header->num_locals);
 		memset (local_state, header->init_locals, header->num_locals);
 	}
-	g_print ("Method %s.%s::%s\n", method->klass->name_space, method->klass->name, method->name);
+	/*g_print ("Method %s.%s::%s\n", method->klass->name_space, method->klass->name, method->name);*/
 
 	while (ip < end) {
 		ip_offset = ip - header->code;
-		g_print ("IL_%04x: %02x %s\n", ip_offset, *ip, mono_opcode_names [*ip]);
 		if (start || !(code [ip_offset].flags & CODE_SEEN)) {
 			if (start) {
-				code [ip_offset].stack_count = 0;
+				/* g_print ("setting stack of IL_%04x to %d\n", ip_offset, 0); */
+				cur_stack = code [ip_offset].stack_count = 0;
 				start = 0;
 			} else {
 				code [ip_offset].stack_count = cur_stack;
@@ -901,6 +906,15 @@ mono_method_verify (MonoMethod *method, int level)
 				ADD_INVALID (list, g_strdup_printf ("Cannot merge stack states at 0x%04x", ip_offset));
 			need_merge = 0;
 		}
+#if 0
+		{
+			char *discode;
+			discode = mono_disasm_code_one (NULL, method, ip);
+			discode [strlen (discode) - 1] = 0; /* no \n */
+			g_print ("%-29s (%d)\n", discode, cur_stack);
+			g_free (discode);
+		}
+#endif
 
 		switch (*ip) {
 		case CEE_NOP:
@@ -1068,14 +1082,12 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 		case CEE_RET:
 			if (signature->ret->type != MONO_TYPE_VOID) {
-				if (cur_stack != 1)
-					ADD_INVALID (list, g_strdup_printf ("Stack not empty after ret at 0x%04x", ip_offset));
+				CHECK_STACK_UNDERFLOW (1);
 				--cur_stack;
-			} else {
-				if (cur_stack)
-					ADD_INVALID (list, g_strdup_printf ("Stack not empty after ret at 0x%04x", ip_offset));
-				cur_stack = 0;
 			}
+			if (cur_stack)
+				ADD_INVALID (list, g_strdup_printf ("Stack not empty (%d) after ret at 0x%04x", cur_stack, ip_offset));
+			cur_stack = 0;
 			if (in_any_block (header, ip_offset))
 				ADD_INVALID (list, g_strdup_printf ("ret cannot escape exception blocks at 0x%04x", ip_offset));
 			++ip;

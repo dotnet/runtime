@@ -17,6 +17,10 @@
 #include "mono-endian.h"
 #include "verify.h"
 #include <mono/metadata/class.h>
+#include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/tokentype.h>
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/assembly.h>
 
 gboolean dump_data = TRUE;
 gboolean verify_pe = FALSE;
@@ -274,6 +278,7 @@ static void
 dump_verify_info (MonoImage *image, int flags)
 {
 	GSList *errors, *tmp;
+	int count = 0;
 	const char* desc [] = {
 		"Ok", "Error", "Warning", NULL, "CLS"
 	};
@@ -283,14 +288,45 @@ dump_verify_info (MonoImage *image, int flags)
 	for (tmp = errors; tmp; tmp = tmp->next) {
 		MonoVerifyInfo *info = tmp->data;
 		g_print ("%s: %s\n", desc [info->status], info->message);
+		if (info->status == MONO_VERIFY_ERROR)
+			count++;
 	}
 	mono_free_verify_list (errors);
+
+	if (flags & (MONO_VERIFY_ALL + 1)) { /* verify code */
+		int i;
+		MonoTableInfo *m = &image->tables [MONO_TABLE_METHOD];
+
+		for (i = 0; i < m->rows; ++i) {
+			MonoMethod *method;
+
+			method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i+1), NULL);
+			errors = mono_method_verify (method, flags);
+			if (errors) {
+				char *sig;
+				sig = mono_signature_get_desc (method->signature, FALSE);
+				g_print ("In method: %s.%s::%s(%s)\n", method->klass->name_space, method->klass->name, method->name, sig);
+				g_free (sig);
+			}
+
+			for (tmp = errors; tmp; tmp = tmp->next) {
+				MonoVerifyInfo *info = tmp->data;
+				g_print ("%s: %s\n", desc [info->status], info->message);
+				if (info->status == MONO_VERIFY_ERROR)
+					count++;
+			}
+			mono_free_verify_list (errors);
+		}
+	}
+
+	if (count)
+		g_print ("Error count: %d\n", count);
 }
 
 static void
 usage (void)
 {
-	printf ("Usage is: pedump [--verify error,warn,cls,all] file.exe\n");
+	printf ("Usage is: pedump [--verify error,warn,cls,all,code] file.exe\n");
 	exit (1);
 }
 
@@ -300,8 +336,8 @@ main (int argc, char *argv [])
 	MonoImage *image;
 	char *file = NULL;
 	char *flags = NULL;
-	const char *flag_desc [] = {"error", "warn", "cls", "all", NULL};
-	guint flag_vals [] = {MONO_VERIFY_ERROR, MONO_VERIFY_WARNING, MONO_VERIFY_CLS, MONO_VERIFY_ALL};
+	const char *flag_desc [] = {"error", "warn", "cls", "all", "code", NULL};
+	guint flag_vals [] = {MONO_VERIFY_ERROR, MONO_VERIFY_WARNING, MONO_VERIFY_CLS, MONO_VERIFY_ALL, MONO_VERIFY_ALL + 1};
 	int i;
 	
 	for (i = 1; i < argc; i++){
@@ -336,6 +372,7 @@ main (int argc, char *argv [])
 	if (verify_pe) {
 		int f = 0;
 		char *tok = strtok (flags, ",");
+		MonoAssembly *assembly;
 		while (tok) {
 			for (i = 0; flag_desc [i]; ++i) {
 				if (strcmp (tok, flag_desc [i]) == 0) {
@@ -347,7 +384,9 @@ main (int argc, char *argv [])
 				g_print ("Unknown verify flag %s\n", tok);
 			tok = strtok (NULL, ",");
 		}
-		dump_verify_info (image, f);
+		mono_init (file);
+		assembly = mono_assembly_open (file, NULL);
+		dump_verify_info (assembly->image, f);
 	}
 	
 	mono_image_close (image);
