@@ -168,7 +168,7 @@ dnl
 dnl libgc checks
 dnl
 
-AC_CONFIG_SUBDIRS(libgc)
+dnl AC_CONFIG_SUBDIRS(libgc)
 
 gc_headers=no
 AC_CHECK_HEADERS(gc.h gc/gc.h, gc_headers=yes)
