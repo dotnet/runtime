@@ -1550,7 +1550,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	if ((type_token = mono_metadata_nested_in_typedef (image, type_token)))
 		class->nested_in = mono_class_create_from_typedef (image, type_token);
 
-	class->gen_params = mono_metadata_load_generic_params (image, class->type_token, &icount);
+	class->gen_params = mono_metadata_load_generic_params (image, class->type_token, &icount, NULL);
 	class->num_gen_params = icount;
 
 	mono_loader_unlock ();
@@ -1631,52 +1631,58 @@ mono_class_from_generic (MonoType *gtype, gboolean inflate_methods)
 }
 
 MonoClass *
-mono_class_from_gen_param (MonoGenericParam *param, gboolean mvar)
+mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gboolean is_mvar)
 {
-	MonoClass *result;
-	int key;
-	static GHashTable *cache = NULL;
+	MonoClass *klass, **ptr;
+	int count, pos, i;
 
-	if (param->klass)
-		return param->klass;
+	if (param->pklass)
+		return param->pklass;
 
-	/*
-	 * At this point, we're a type parameter which is loaded from reflection.
-	 * We create a very minimalistic MonoClass here which just contains that
-	 * type parameter's number since we cannot get more information from the
-	 * metadata (and also don't need them).
-	 */
+	klass = param->pklass = g_new0 (MonoClass, 1);
 
-	mono_loader_lock ();
+	for (count = 0, ptr = param->constraints; ptr && *ptr; ptr++, count++)
+		;
 
-	if (!cache)
-		cache = g_hash_table_new (NULL, NULL);
+	pos = 0;
+	if ((count > 0) && !(param->constraints [0]->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+		klass->parent = param->constraints [0];
+		pos++;
+	} else
+		klass->parent = mono_defaults.object_class;
 
-	key = mvar? 1: 0;
-	key |= param->num << 1;
+	if (count - pos > 0) {
+		int j;
 
-	if ((result = g_hash_table_lookup (cache, GINT_TO_POINTER (key)))) {
-		mono_loader_unlock ();
-		return result;
+		klass->interface_count = count - pos;
+		klass->interfaces = g_new0 (MonoClass *, count - pos);
+		for (i = pos; i < count; i++) {
+			klass->interfaces [i - pos] = param->constraints [i];
+			klass->method.count += param->constraints [i]->method.count;
+		}
+
+		klass->methods = g_new0 (MonoMethod *, klass->method.count);
+		for (i = pos; i < count; i++) {
+			MonoClass *iface = klass->interfaces [i - pos];
+			for (j = 0; j < iface->method.count; j++)
+				klass->methods [klass->method.last++] = iface->methods [j];
+		}
 	}
-	result = param->klass = g_new0 (MonoClass, 1);
 
-	result->parent = NULL;
-	result->name = g_strdup_printf ("%s%d", mvar? "!!": "!", param->num);
-	result->name_space = "";
-	result->image = mono_defaults.corlib; 
-	result->inited = TRUE;
-	result->cast_class = result->element_class = result;
-	result->enum_basetype = &result->element_class->byval_arg;
+	klass->name = g_strdup_printf (is_mvar ? "!!%d" : "!%d", param->num);
+	klass->name_space = "";
+	klass->image = image;
+	klass->cast_class = klass->element_class = klass;
+	klass->enum_basetype = &klass->element_class->byval_arg;
+	klass->flags = TYPE_ATTRIBUTE_INTERFACE;
 
-	result->this_arg.type = result->byval_arg.type = mvar? MONO_TYPE_MVAR: MONO_TYPE_VAR;
-	result->this_arg.data.generic_param = result->byval_arg.data.generic_param = param;
-	result->this_arg.byref = TRUE;
+	klass->this_arg.type = klass->byval_arg.type = is_mvar ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
+	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
+	klass->this_arg.byref = TRUE;
 
-	g_hash_table_insert (cache, GINT_TO_POINTER (key), result);
+	mono_class_init (klass);
 
-	mono_loader_unlock ();
-	return result;
+	return klass;
 }
 
 MonoClass *
@@ -1817,11 +1823,8 @@ mono_class_from_mono_type (MonoType *type)
 		return mono_class_from_generic (type, TRUE);
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		/* NOTE: Unless this is a dynamic type, only the `num' field is valid in
-		 *       `type->data.generic_param'.  For dynamic types, its `klass' field
-		 *       points to the already created class.
-		 */
-		return mono_class_from_gen_param (type->data.generic_param, type->type == MONO_TYPE_MVAR);
+		g_assert (type->data.generic_param->pklass);
+		return type->data.generic_param->pklass;
 	default:
 		g_warning ("implement me 0x%02x\n", type->type);
 		g_assert_not_reached ();

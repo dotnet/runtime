@@ -3202,7 +3202,7 @@ get_constraints (MonoImage *image, int owner)
 }
 
 MonoGenericParam *
-mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num)
+mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num, MonoMethod *method)
 {
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAM];
 	guint32 cols [MONO_GENERICPARAM_SIZE];
@@ -3234,6 +3234,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num
 	n = 1;
 	do {
 		params = g_realloc (params, sizeof (MonoGenericParam) * n);
+		params [n - 1].method = method;
 		params [n - 1].flags = cols [MONO_GENERICPARAM_FLAGS];
 		params [n - 1].num = cols [MONO_GENERICPARAM_NUMBER];
 		params [n - 1].name = mono_metadata_string_heap (image, cols [MONO_GENERICPARAM_NAME]);

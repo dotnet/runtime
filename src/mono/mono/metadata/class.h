@@ -209,6 +209,15 @@ struct MonoVTable {
         gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
 };
 
+struct _MonoGenericParam {
+	MonoClass *pklass;
+	MonoMethod *method;
+	const char *name;
+	guint16 flags;
+	guint16 num;
+	MonoClass** constraints; /* NULL means end of list */
+};
+
 #define mono_class_has_parent(klass,parent) ((klass)->idepth >= (parent)->idepth) && ((klass)->supertypes [(parent)->idepth - 1] == (parent))
 
 typedef struct {
@@ -264,8 +273,8 @@ mono_class_from_name_case  (MonoImage *image, const char* name_space, const char
 MonoClass * 
 mono_class_from_typeref    (MonoImage *image, guint32 type_token);
 
-MonoClass * 
-mono_class_from_gen_param  (MonoGenericParam *param, gboolean mvar);
+MonoClass *
+mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gboolean is_mvar);
 
 MonoClass*
 mono_class_from_generic    (MonoType *gtype, gboolean inflate_methods);

@@ -521,7 +521,7 @@ void        mono_reflection_setup_generic_class   (MonoReflectionTypeBuilder *tb
 
 MonoReflectionType* mono_reflection_create_runtime_class  (MonoReflectionTypeBuilder *tb);
 
-MonoReflectionType *mono_reflection_define_generic_parameter (MonoReflectionAssemblyBuilder *assemblyb, guint32 index, gboolean is_mvar, MonoReflectionGenericParam *gparam);
+MonoReflectionType *mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoReflectionMethodBuilder *mb, guint32 index, MonoReflectionGenericParam *gparam);
 
 MonoClass*
 mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *types);

@@ -712,8 +712,12 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass)
 
 		if (!result->klass->dummy && !(result->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
 					!(result->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
+			MonoMethodNormal *mn = (MonoMethodNormal *) result;
+
 			g_assert (loc);
-			((MonoMethodNormal *)result)->header = mono_metadata_parse_mh (image, loc);
+			mn->header = mono_metadata_parse_mh (image, loc);
+			if (result->signature->generic_param_count)
+				mn->header->gen_params = mono_metadata_load_generic_params (image, token, NULL, result);
 		}
 	}
 

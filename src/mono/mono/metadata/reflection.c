@@ -305,8 +305,8 @@ my_mono_class_from_mono_type (MonoType *type) {
 		return mono_class_from_mono_type (type);
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		g_assert (type->data.generic_param->klass);
-		return type->data.generic_param->klass;
+		g_assert (type->data.generic_param->pklass);
+		return type->data.generic_param->pklass;
 	default:
 		/* should be always valid when we reach this case... */
 		return type->data.klass;
@@ -5946,18 +5946,24 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 }
 
 MonoReflectionType *
-mono_reflection_define_generic_parameter (MonoReflectionAssemblyBuilder *assemblyb, guint32 index, gboolean is_mvar, MonoReflectionGenericParam *gparam)
+mono_reflection_define_generic_parameter (MonoReflectionTypeBuilder *tb, MonoReflectionMethodBuilder *mb, guint32 index, MonoReflectionGenericParam *gparam)
 {
 	MonoClass *klass;
 	MonoImage *image;
 	MonoGenericParam *param;
-	int count, pos, i;
+	MonoMethod *method = NULL;
+	int count, i;
 
-	MONO_ARCH_SAVE_REGS;
+	if (mb) {
+		tb = (MonoReflectionTypeBuilder *) mb->type;
 
-	image = assemblyb->dynamic_assembly->assembly.image;
+		method = methodbuilder_to_mono_method (mono_class_from_mono_type (tb->type.type), mb);
+	}
+
+	image = tb->module->assemblyb->dynamic_assembly->assembly.image;
 
 	param = gparam->param = g_new0 (MonoGenericParam, 1);
+	param->method = method;
 	param->name = mono_string_to_utf8 (gparam->name);
 	param->num = index;
 
@@ -5969,51 +5975,9 @@ mono_reflection_define_generic_parameter (MonoReflectionAssemblyBuilder *assembl
 		param->constraints [i] = mono_class_from_mono_type (constraint->type);
 	}
 
-	/*
-	 * We're a dynamic type; create the class with full information about the generic parameter.
-	 */
+	klass = mono_class_from_generic_parameter (param, image, mb != NULL);
 
-	klass = param->klass = g_new0 (MonoClass, 1);
-
-	pos = 0;
-	if ((count > 0) && !(param->constraints [0]->flags & TYPE_ATTRIBUTE_INTERFACE)) {
-		klass->parent = param->constraints [0];
-		pos++;
-	} else
-		klass->parent = mono_defaults.object_class;
-
-	if (count - pos > 0) {
-		int j;
-
-		klass->interface_count = count - pos;
-		klass->interfaces = g_new0 (MonoClass *, count - pos);
-		for (i = pos; i < count; i++) {
-			klass->interfaces [i - pos] = param->constraints [i];
-			klass->method.count += param->constraints [i]->method.count;
-		}
-
-		klass->methods = g_new0 (MonoMethod *, klass->method.count);
-		for (i = pos; i < count; i++) {
-			MonoClass *iface = klass->interfaces [i - pos];
-			for (j = 0; j < iface->method.count; j++)
-				klass->methods [klass->method.last++] = iface->methods [j];
-		}
-	}
-
-	klass->name = g_strdup_printf (is_mvar ? "!!%d" : "!%d", param->num);
-	klass->name_space = "";
-	klass->image = image;
-	klass->cast_class = klass->element_class = klass;
-	klass->enum_basetype = &klass->element_class->byval_arg;
-	klass->flags = TYPE_ATTRIBUTE_INTERFACE;
-
-	klass->this_arg.type = klass->byval_arg.type = is_mvar ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
-	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
-	klass->this_arg.byref = TRUE;
-
-	mono_class_init (klass);
-
-	gparam->type = mono_type_get_object (mono_object_domain (assemblyb), &klass->byval_arg);
+	gparam->type = mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 
 	return gparam->type;
 }

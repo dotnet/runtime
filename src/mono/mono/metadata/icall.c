@@ -1412,7 +1412,7 @@ ves_icall_Type_GetGenericArguments (MonoReflectionType *type)
 	} else if (klass->gen_params) {
 		res = mono_array_new (mono_object_domain (type), mono_defaults.monotype_class, klass->num_gen_params);
 		for (i = 0; i < klass->num_gen_params; ++i) {
-			pklass = mono_class_from_gen_param (&klass->gen_params [i], FALSE);
+			pklass = mono_class_from_generic_parameter (&klass->gen_params [i], klass->image, FALSE);
 			mono_array_set (res, gpointer, i, mono_type_get_object (mono_object_domain (type), &pklass->byval_arg));
 		}
 	} else if (klass->generic_inst) {
@@ -1548,21 +1548,39 @@ ves_icall_TypeBuilder_define_generic_parameter (MonoReflectionTypeBuilder *tb, M
 	MONO_ARCH_SAVE_REGS;
 
 	index = mono_array_length (tb->generic_params) - 1;
-	return mono_reflection_define_generic_parameter (tb->module->assemblyb, index, FALSE, gparam);
+	return mono_reflection_define_generic_parameter (tb, NULL, index, gparam);
 }
 
 static MonoReflectionType*
 ves_icall_MethodBuilder_define_generic_parameter (MonoReflectionMethodBuilder *mb, MonoReflectionGenericParam *gparam)
 {
-	MonoReflectionTypeBuilder *tb;
 	guint32 index;
 
 	MONO_ARCH_SAVE_REGS;
 
 	index = mono_array_length (mb->generic_params) - 1;
-	tb = (MonoReflectionTypeBuilder *) mb->type;
-	return mono_reflection_define_generic_parameter (tb->module->assemblyb, index, TRUE, gparam);
+	return mono_reflection_define_generic_parameter (NULL, mb, index, gparam);
 }
+
+static MonoReflectionMethod *
+ves_icall_MonoType_get_DeclaringMethod (MonoReflectionType *type)
+{
+	MonoMethod *method;
+	MonoClass *klass;
+
+	MONO_ARCH_SAVE_REGS;
+
+	if (type->type->byref)
+		return FALSE;
+
+	method = type->type->data.generic_param->method;
+	if (!method)
+		return NULL;
+
+	klass = mono_class_from_mono_type (type->type);
+	return mono_method_get_object (mono_object_domain (type), method, klass);
+}
+
 
 static MonoObject *
 ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params) 
@@ -4115,6 +4133,7 @@ static gconstpointer icall_map [] = {
 	
 	"System.MonoType::get_HasGenericArguments", ves_icall_MonoType_get_HasGenericArguments,
 	"System.MonoType::get_IsGenericParameter", ves_icall_MonoType_get_IsGenericParameter,
+	"System.MonoType::get_DeclaringMethod", ves_icall_MonoType_get_DeclaringMethod,
 
 
 	/*

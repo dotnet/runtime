@@ -180,4 +180,6 @@ mono_stack_walk         (MonoStackWalk func, gpointer user_data);
 void
 mono_install_stack_walk (MonoStackWalkImpl func);
 
+MonoGenericParam *mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num, MonoMethod *method);
+
 #endif

@@ -309,7 +309,7 @@ struct _MonoMethodSignature {
 	unsigned int  ref_count : 23;
 	guint16       param_count;
 	guint16       sentinelpos;
-	MonoGenericInst *geninst;
+	guint16       generic_param_count;
 	MonoType     *ret;
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
@@ -323,6 +323,7 @@ typedef struct {
 	unsigned int init_locals : 1;
 	guint16      num_locals;
 	MonoExceptionClause *clauses;
+	MonoGenericParam *gen_params;
 	MonoType    *locals [MONO_ZERO_LEN_ARRAY];
 } MonoMethodHeader;
 
@@ -334,14 +335,6 @@ typedef enum {
 	MONO_PARSE_RET,
 	MONO_PARSE_FIELD
 } MonoParseTypeMode;
-
-struct _MonoGenericParam {
-	MonoClass *klass;
-	const char *name;
-	guint16 flags;
-	guint16 num;
-	MonoClass** constraints; /* NULL means end of list */
-};
 
 guint32     mono_metadata_parse_typedef_or_ref (MonoImage      *m,
                                                 const char      *ptr,
@@ -424,7 +417,5 @@ mono_type_to_unmanaged (MonoType *type, MonoMarshalSpec *mspec,
 guint32 mono_metadata_token_from_dor (guint32 dor_index);
 
 char *mono_guid_to_string (const guint8 *guid);
-
-MonoGenericParam *mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num);
 
 #endif /* __MONO_METADATA_H__ */
