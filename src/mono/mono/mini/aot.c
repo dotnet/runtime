@@ -1368,15 +1368,11 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 		for (pindex = 0; pindex < patches->len; ++pindex) {
 			patch_info = g_ptr_array_index (patches, pindex);
 
-			if ((patch_info->type == MONO_PATCH_INFO_LABEL) ||
-				(patch_info->type == MONO_PATCH_INFO_BB) ||
-				(patch_info->type == MONO_PATCH_INFO_GOT_OFFSET))
-				/* Nothing to do */
-				continue;
-
 			switch (patch_info->type) {
 			case MONO_PATCH_INFO_LABEL:
 			case MONO_PATCH_INFO_BB:
+			case MONO_PATCH_INFO_GOT_OFFSET:
+			case MONO_PATCH_INFO_NONE:
 				break;
 			case MONO_PATCH_INFO_IMAGE:
 				fprintf (tmpfp, "\t.long 0x%08x\n", get_image_index (acfg, patch_info->data.image));
