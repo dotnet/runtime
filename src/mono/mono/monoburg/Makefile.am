@@ -1,4 +1,6 @@
-INCLUDES = $(GLIB_CFLAGS) 
+INCLUDES = $(BUILD_GLIB_CFLAGS) 
+CC=$(CC_FOR_BUILD)
+LD=ld
 
 noinst_PROGRAMS = monoburg sample
 
@@ -9,12 +11,12 @@ sample_SOURCES = sample.c
 parser.c:  monoburg.y
 	bison monoburg.y -o parser.c
 
-sample.c: monoburg$(EXEEXT) sample.brg
-	./monoburg $(srcdir)/sample.brg >sample.c
+sample.c: monoburg$(BUILD_EXEEXT) sample.brg
+	./monoburg$(BUILD_EXEEXT) $(srcdir)/sample.brg >sample.c
 
-monoburg_LDADD = $(GLIB_LIBS)
+monoburg_LDADD = $(BUILD_GLIB_LIBS)
 
-sample_LDADD = $(GLIB_LIBS)
+sample_LDADD = $(BUILD_GLIB_LIBS)
 
 BUILT_SOURCES = parser.c sample.c
 

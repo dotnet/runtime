@@ -1,38 +1,75 @@
+
 AC_INIT(README)
+AC_CANONICAL_SYSTEM
 AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(mono, 0.7)
 AM_MAINTAINER_MODE
 
-AC_CANONICAL_HOST
-
+AC_CHECK_TOOL(CC, gcc, gcc)
 AC_PROG_CC
 AM_PROG_CC_STDC
 AC_PROG_INSTALL
 
+dnl may require a specific autoconf version
+dnl AC_PROG_CC_FOR_BUILD
+dnl CC_FOR_BUILD not automatically detected
+CC_FOR_BUILD=$CC
+BUILD_EXEEXT=
+if test "x$cross_compiling" = "xyes"; then
+	CC_FOR_BUILD=cc
+	BUILD_EXEEXT=""
+fi
+AC_SUBST(CC_FOR_BUILD)
+AC_SUBST(HOST_CC)
+AC_SUBST(BUILD_EXEEXT)
+
 # Set STDC_HEADERS
 AC_HEADER_STDC
+AC_LIBTOOL_WIN32_DLL
 AM_PROG_LIBTOOL
 
-AC_CHECK_SIZEOF(void *)
+# not 64 bit clean in cross-compile
+AC_CHECK_SIZEOF(void *, 4)
 
 CFLAGS='-g -Wall -Wunused -Wmissing-prototypes -Wmissing-declarations'
+
+PKG_PATH=
+AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir],
+	if test x$with_crosspkgdir = "x"; then
+		if test -s $PKG_CONFIG_PATH; then
+			PKG_PATH=$PKG_CONFIG_PATH
+		fi
+	else
+		PKG_PATH=$with_crosspkgdir
+	fi
+)
 
 ## Versions of dependencies
 GLIB_REQUIRED_VERSION=1.3.11
 
+PKG_CONFIG_PATH=$PKG_PATH
+export PKG_CONFIG_PATH
 PKG_CHECK_MODULES(BASE_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION)
 
 GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0`
 GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0`
-
-AC_SUBST(GLIB_CFLAGS)
-AC_SUBST(GLIB_LIBS)
-
 GMODULE_CFLAGS=`$PKG_CONFIG --cflags gmodule-2.0`
 GMODULE_LIBS=`$PKG_CONFIG --libs gmodule-2.0`
 
+AC_SUBST(GLIB_CFLAGS)
+AC_SUBST(GLIB_LIBS)
 AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
+
+dnl for use on the build system
+dnl we disable support for PKG_CONFIG_PATH
+dnl pkg-config is stupid
+PKG_CONFIG_PATH=
+export PKG_CONFIG_PATH
+BUILD_GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0`
+BUILD_GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0`
+AC_SUBST(BUILD_GLIB_CFLAGS)
+AC_SUBST(BUILD_GLIB_LIBS)
 
 dnl ****************************************
 dnl *** Check if we're building on win32 ***
@@ -101,7 +138,7 @@ if test x$platform_win32 = xno; then
 			large_offt=yes
 		], [
 			AC_MSG_RESULT(no)
-		])
+		], "")
 		CPPFLAGS=$large_CPPFLAGS
 	])
 
@@ -199,6 +236,7 @@ if test x$platform_win32 = xno; then
 	])
 fi
 
+if test "x$cross_compiling" = "xno"; then
 # check for new iconv version
 AC_MSG_CHECKING(for new iconv)
 AC_CACHE_VAL(new_iconv,[
@@ -210,14 +248,14 @@ AC_CACHE_VAL(new_iconv,[
 		  exit (iconv_open ("UTF-16le", "UTF-8") == (iconv_t)-1);
 		}
 		],
-		new_iconv=yes)])
+		new_iconv=yes,new_iconv=)])
 if test -n "$new_iconv"; then
    	AC_MSG_RESULT(yes)
 	AC_DEFINE(HAVE_NEW_ICONV)
 else
 	AC_MSG_RESULT(no)
 fi
-
+fi
 
 TARGET="unknown"
 ACCESS_UNALIGNED="yes"
