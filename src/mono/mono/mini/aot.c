@@ -3,6 +3,7 @@
  *
  * Author:
  *   Dietmar Maurer (dietmar@ximian.com)
+ *   Zoltan Varga (vargaz@gmail.com)
  *
  * (C) 2002 Ximian, Inc.
  */
@@ -85,14 +86,19 @@ typedef struct MonoAotOptions {
 
 typedef struct MonoAotCompile {
 	MonoImage *image;
+	MonoCompile **cfgs;
 	FILE *fp;
 	GHashTable *icall_hash;
+	GHashTable *icall_to_got_offset_hash;
 	GPtrArray *icall_table;
 	GHashTable *image_hash;
 	GPtrArray *image_table;
 	guint32 got_offset;
 	guint32 *method_got_offsets;
 	MonoAotOptions aot_opts;
+	guint32 nmethods;
+	guint32 opts;
+	int ccount, mcount, lmfcount, abscount, wrappercount, ocount;
 } MonoAotCompile;
 
 static GHashTable *aot_modules;
@@ -608,7 +614,9 @@ mono_aot_init_vtable (MonoVTable *vtable)
 	for (i = 0; i < class_info.vtable_size; ++i) {
 		guint32 image_index, token, value;
 		MonoImage *image;
+#ifndef MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN
 		MonoMethod *m;
+#endif
 
 		vtable->vtable [i] = 0;
 
@@ -814,6 +822,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		gpointer *table;
 		int i;
 		guint32 last_offset, buf_len;
+		guint32 *got_slots;
 
 		if (keep_patches)
 			mp = domain->mp;
@@ -823,6 +832,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		/* First load the type + offset table */
 		last_offset = 0;
 		patches = g_ptr_array_new ();
+		
 		while (*p) {
 			MonoJumpInfo *ji = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfo));
 
@@ -856,6 +866,9 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 
 		/* Null terminated array */
 		p ++;
+
+		got_slots = g_malloc (sizeof (guint32) * patches->len);
+		memset (got_slots, 0xff, sizeof (guint32) * patches->len);
 
 		/* Then load the other data */
 		for (pindex = 0; pindex < patches->len; ++pindex) {
@@ -959,10 +972,18 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 				if (!ji->data.field)
 					goto cleanup;
 				break;
-			case MONO_PATCH_INFO_INTERNAL_METHOD:
-				ji->data.name = aot_module->icall_table [decode_value (p, &p)];
+			case MONO_PATCH_INFO_INTERNAL_METHOD: {
+				guint32 icall_index = decode_value (p, &p);
+
+				ji->data.name = aot_module->icall_table [icall_index];
 				g_assert (ji->data.name);
+
+#if MONO_ARCH_HAVE_PIC_AOT
+				/* GOT entries for icalls are at the start of the got */
+				got_slots [pindex] = icall_index;
+#endif
 				break;
+			}
 			case MONO_PATCH_INFO_SWITCH:
 				ji->data.table = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoBBTable));
 				ji->data.table->table_size = decode_value (p, &p);
@@ -1016,6 +1037,11 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 				g_warning ("unhandled type %d", ji->type);
 				g_assert_not_reached ();
 			}
+
+#if MONO_ARCH_HAVE_PIC_AOT
+			if (got_slots [pindex] == 0xffffffff)
+				got_slots [pindex] = got_index ++;
+#endif
 		}
 
 		buf_len = decode_value (p, &p);
@@ -1034,8 +1060,8 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 			MonoJumpInfo *ji = g_ptr_array_index (patches, pindex);
 
 			if (is_got_patch (ji->type)) {
-				aot_module->got [got_index] = mono_resolve_patch_target (method, domain, code, ji, TRUE);
-				got_index ++;
+				if (!aot_module->got [got_slots [pindex]])
+					aot_module->got [got_slots [pindex]] = mono_resolve_patch_target (method, domain, code, ji, TRUE);
 				ji->type = MONO_PATCH_INFO_NONE;
 			}
 			else
@@ -1058,6 +1084,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 
 #endif
 		g_ptr_array_free (patches, TRUE);
+		g_free (got_slots);
 
 		if (!keep_patches)
 			mono_mempool_destroy (mp);
@@ -1364,6 +1391,59 @@ compare_patches (gconstpointer a, gconstpointer b)
 		return 0;
 }
 
+static guint32
+get_got_slot (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
+{
+	guint32 res;
+
+	switch (patch_info->type) {
+	case MONO_PATCH_INFO_INTERNAL_METHOD:
+		res = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->icall_to_got_offset_hash, patch_info->data.name));
+		break;
+	default:
+		res = acfg->got_offset;
+		acfg->got_offset ++;
+		break;
+	}
+
+	return res;
+}
+
+static void
+collect_icalls (MonoAotCompile *acfg)
+{
+	int mindex, index;
+	MonoJumpInfo *patch_info;
+
+	for (mindex = 0; mindex < acfg->nmethods; ++mindex) {
+		MonoCompile *cfg;
+
+		cfg = acfg->cfgs [mindex];
+		if (!cfg)
+			continue;
+
+		for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+			switch (patch_info->type) {
+			case MONO_PATCH_INFO_INTERNAL_METHOD:
+				index = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->icall_hash, patch_info->data.name));
+				if (!index) {
+					index = g_hash_table_size (acfg->icall_hash) + 1;
+					g_hash_table_insert (acfg->icall_hash, (gpointer)patch_info->data.name,
+										 GUINT_TO_POINTER (index));
+					g_ptr_array_add (acfg->icall_table, (gpointer)patch_info->data.name);
+
+					/* Allocate a GOT slot */
+					g_hash_table_insert (acfg->icall_to_got_offset_hash, (gpointer)patch_info->data.name, GUINT_TO_POINTER (acfg->got_offset));
+					acfg->got_offset ++;
+				}
+				break;
+			default:
+				break;
+			}
+		}
+	}
+}
+
 static void
 emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 {
@@ -1377,6 +1457,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	MonoMethodHeader *header;
 #ifdef MONO_ARCH_HAVE_PIC_AOT
 	gboolean skip;
+	guint32 got_slot;
 #endif
 
 	tmpfp = acfg->fp;
@@ -1435,15 +1516,15 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 				if (!is_got_patch (patch_info->type))
 					break;
 
+				got_slot = get_got_slot (acfg, patch_info);
 				fprintf (tmpfp, "\n.byte ");
 				for (j = 0; j < mono_arch_get_patch_offset (code + i); ++j)
 					fprintf (tmpfp, "%s0x%x", (j == 0) ? "" : ",", (unsigned int) code [i + j]);
 #ifdef __x86_64__
-				fprintf (tmpfp, "\n.int got - . + %d", (unsigned int) ((acfg->got_offset * sizeof (gpointer)) - 4));
+				fprintf (tmpfp, "\n.int got - . + %d", (unsigned int) ((got_slot * sizeof (gpointer)) - 4));
 #elif defined(__i386__)
-				fprintf (tmpfp, "\n.int %d\n", (unsigned int) ((acfg->got_offset * sizeof (gpointer))));
+				fprintf (tmpfp, "\n.int %d\n", (unsigned int) ((got_slot * sizeof (gpointer))));
 #endif
-				acfg->got_offset ++;
 
 				i += mono_arch_get_patch_offset (code + i) + 4 - 1;
 				skip = TRUE;
@@ -1838,17 +1919,146 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 	}
 }
 
+static void
+compile_method (MonoAotCompile *acfg, int index)
+{
+	MonoCompile *cfg;
+	MonoMethod *method;
+	MonoJumpInfo *patch_info;
+	gboolean skip;
+	guint32 token = MONO_TOKEN_METHOD_DEF | (index + 1);
+	
+	method = mono_get_method (acfg->image, token, NULL);
+		
+	/* fixme: maybe we can also precompile wrapper methods */
+	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+		(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
+		(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
+		(method->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
+		//printf ("Skip (impossible): %s\n", mono_method_full_name (method, TRUE));
+		return;
+	}
+
+	acfg->mcount++;
+
+	/* fixme: we need to patch the IP for the LMF in that case */
+	if (method->save_lmf) {
+		//printf ("Skip (needs lmf):  %s\n", mono_method_full_name (method, TRUE));
+		acfg->lmfcount++;
+		return;
+	}
+
+	/*
+	 * Since these methods are the only ones which are compiled with
+	 * AOT support, and they are not used by runtime startup/shutdown code,
+	 * the runtime will not see AOT methods during AOT compilation,so it
+	 * does not need to support them by creating a fake GOT etc.
+	 */
+	cfg = mini_method_compile (method, acfg->opts, mono_get_root_domain (), FALSE, TRUE, 0);
+	g_assert (cfg);
+
+	if (cfg->disable_aot) {
+		//printf ("Skip (other): %s\n", mono_method_full_name (method, TRUE));
+		acfg->ocount++;
+		mono_destroy_compile (cfg);
+		return;
+	}
+
+	skip = FALSE;
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		if (patch_info->type == MONO_PATCH_INFO_ABS) {
+			/* unable to handle this */
+			//printf ("Skip (abs addr):   %s %d\n", mono_method_full_name (method, TRUE), patch_info->type);
+			skip = TRUE;	
+			break;
+		}
+	}
+
+	if (skip) {
+		acfg->abscount++;
+		mono_destroy_compile (cfg);
+		return;
+	}
+
+	/* some wrappers are very common */
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		if (patch_info->type == MONO_PATCH_INFO_METHODCONST) {
+			switch (patch_info->data.method->wrapper_type) {
+			case MONO_WRAPPER_PROXY_ISINST:
+				patch_info->type = MONO_PATCH_INFO_WRAPPER;
+			}
+		}
+
+		if (patch_info->type == MONO_PATCH_INFO_METHOD) {
+			switch (patch_info->data.method->wrapper_type) {
+			case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
+			case MONO_WRAPPER_STFLD:
+			case MONO_WRAPPER_LDFLD:
+			case MONO_WRAPPER_LDFLD_REMOTE:
+			case MONO_WRAPPER_STFLD_REMOTE:
+			case MONO_WRAPPER_STELEMREF:
+			case MONO_WRAPPER_ISINST:
+			case MONO_WRAPPER_PROXY_ISINST:
+				patch_info->type = MONO_PATCH_INFO_WRAPPER;
+				break;
+			}
+		}
+	}
+
+	skip = FALSE;
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		switch (patch_info->type) {
+		case MONO_PATCH_INFO_METHOD:
+		case MONO_PATCH_INFO_METHODCONST:
+			if (patch_info->data.method->wrapper_type) {
+				/* unable to handle this */
+				//printf ("Skip (wrapper call):   %s %d -> %s\n", mono_method_full_name (method, TRUE), patch_info->type, mono_method_full_name (patch_info->data.method, TRUE));
+				skip = TRUE;
+				break;
+			}
+			if (!patch_info->data.method->token)
+				/*
+				 * The method is part of a constructed type like Int[,].Set (). It doesn't
+				 * have a token, and we can't make one, since the parent type is part of
+				 * assembly which contains the element type, and not the assembly which
+				 * referenced this type.
+				 */
+				skip = TRUE;
+			break;
+		case MONO_PATCH_INFO_VTABLE:
+		case MONO_PATCH_INFO_CLASS_INIT:
+		case MONO_PATCH_INFO_CLASS:
+		case MONO_PATCH_INFO_IID:
+			if (!patch_info->data.klass->type_token)
+				if (!patch_info->data.klass->element_class->type_token)
+					skip = TRUE;
+			break;
+		default:
+			break;
+		}
+	}
+
+	if (skip) {
+		acfg->wrappercount++;
+		mono_destroy_compile (cfg);
+		return;
+	}
+
+	//printf ("Compile:           %s\n", mono_method_full_name (method, TRUE));
+
+	acfg->cfgs [index] = cfg;
+
+	acfg->ccount++;
+}
+
 int
 mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 {
-	MonoCompile *cfg;
 	MonoImage *image = ass->image;
-	MonoMethod *method;
 	char *com, *tmpfname, *opts_str;
 	FILE *tmpfp;
 	int i;
 	guint8 *symbol;
-	int ccount = 0, mcount = 0, lmfcount = 0, abscount = 0, wrappercount = 0, ocount = 0;
 	MonoAotCompile *acfg;
 	MonoCompile **cfgs;
 	char *outfile_name, *tmp_outfile_name;
@@ -1857,10 +2067,12 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	acfg = g_new0 (MonoAotCompile, 1);
 	acfg->icall_hash = g_hash_table_new (NULL, NULL);
+	acfg->icall_to_got_offset_hash = g_hash_table_new (NULL, NULL);
 	acfg->icall_table = g_ptr_array_new ();
 	acfg->image_hash = g_hash_table_new (NULL, NULL);
 	acfg->image_table = g_ptr_array_new ();
 	acfg->image = image;
+	acfg->opts = opts;
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
 
@@ -1877,165 +2089,42 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_string_symbol (tmpfp, "mono_aot_opt_flags", opts_str);
 	g_free (opts_str);
 
+	cfgs = g_new0 (MonoCompile*, image->tables [MONO_TABLE_METHOD].rows + 32);
+	acfg->cfgs = cfgs;
+	acfg->nmethods = image->tables [MONO_TABLE_METHOD].rows;
+	acfg->method_got_offsets = g_new0 (guint32, image->tables [MONO_TABLE_METHOD].rows + 32);
+
+	/* Compile methods */
+	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i)
+		compile_method (acfg, i);
+
+	collect_icalls (acfg);
+
+	/* Emit code */
 	symbol = g_strdup_printf ("methods");
 	emit_section_change (tmpfp, ".text", 0);
 	emit_global (tmpfp, symbol, FALSE);
 	emit_alignment (tmpfp, 8);
 	emit_label (tmpfp, symbol);
 
-	symbol = g_strdup_printf ("method_infos");
-	emit_section_change (tmpfp, ".text", 1);
-	emit_global (tmpfp, symbol, FALSE);
-	emit_alignment (tmpfp, 8);
-	emit_label (tmpfp, symbol);
-
-	cfgs = g_new0 (MonoCompile*, image->tables [MONO_TABLE_METHOD].rows + 32);
-	acfg->method_got_offsets = g_new0 (guint32, image->tables [MONO_TABLE_METHOD].rows + 32);
-
-	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
-		MonoJumpInfo *patch_info;
-		gboolean skip;
-		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
-       	        method = mono_get_method (image, token, NULL);
-		
-		/* fixme: maybe we can also precompile wrapper methods */
-		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-		    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-		    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
-		    (method->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
-			//printf ("Skip (impossible): %s\n", mono_method_full_name (method, TRUE));
-			continue;
-		}
-
-		mcount++;
-
-		/* fixme: we need to patch the IP for the LMF in that case */
-		if (method->save_lmf) {
-			//printf ("Skip (needs lmf):  %s\n", mono_method_full_name (method, TRUE));
-			lmfcount++;
-			continue;
-		}
-
-		//printf ("START:           %s\n", mono_method_full_name (method, TRUE));
-		//mono_compile_method (method);
-
-		/*
-		 * Since these methods are the only ones which are compiled with
-		 * AOT support, and they are not used by runtime startup/shutdown code,
-		 * the runtime will not see AOT methods during AOT compilation,so it
-		 * does not need to support them by creating a fake GOT etc.
-		 */
-		cfg = mini_method_compile (method, opts, mono_get_root_domain (), FALSE, TRUE, 0);
-		g_assert (cfg);
-
-		if (cfg->disable_aot) {
-			//printf ("Skip (other): %s\n", mono_method_full_name (method, TRUE));
-			ocount++;
-			continue;
-		}
-
-		skip = FALSE;
-		for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-			if (patch_info->type == MONO_PATCH_INFO_ABS) {
-				/* unable to handle this */
-				//printf ("Skip (abs addr):   %s %d\n", mono_method_full_name (method, TRUE), patch_info->type);
-				skip = TRUE;	
-				break;
-			}
-		}
-
-		if (skip) {
-			abscount++;
-			continue;
-		}
-
-		/* some wrappers are very common */
-		for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-			if (patch_info->type == MONO_PATCH_INFO_METHODCONST) {
-				switch (patch_info->data.method->wrapper_type) {
-				case MONO_WRAPPER_PROXY_ISINST:
-					patch_info->type = MONO_PATCH_INFO_WRAPPER;
-				}
-			}
-
-			if (patch_info->type == MONO_PATCH_INFO_METHOD) {
-				switch (patch_info->data.method->wrapper_type) {
-				case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
-				case MONO_WRAPPER_STFLD:
-				case MONO_WRAPPER_LDFLD:
-				case MONO_WRAPPER_LDFLD_REMOTE:
-				case MONO_WRAPPER_STFLD_REMOTE:
-				case MONO_WRAPPER_STELEMREF:
-				case MONO_WRAPPER_ISINST:
-				case MONO_WRAPPER_PROXY_ISINST:
-					patch_info->type = MONO_PATCH_INFO_WRAPPER;
-					break;
-				}
-			}
-		}
-
-		skip = FALSE;
-		for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-			switch (patch_info->type) {
-			case MONO_PATCH_INFO_METHOD:
-			case MONO_PATCH_INFO_METHODCONST:
-				if (patch_info->data.method->wrapper_type) {
-					/* unable to handle this */
-					//printf ("Skip (wrapper call):   %s %d -> %s\n", mono_method_full_name (method, TRUE), patch_info->type, mono_method_full_name (patch_info->data.method, TRUE));
-					skip = TRUE;
-					break;
-				}
-				if (!patch_info->data.method->token)
-					/*
-					 * The method is part of a constructed type like Int[,].Set (). It doesn't
-					 * have a token, and we can't make one, since the parent type is part of
-					 * assembly which contains the element type, and not the assembly which
-					 * referenced this type.
-					 */
-					skip = TRUE;
-				break;
-			case MONO_PATCH_INFO_VTABLE:
-			case MONO_PATCH_INFO_CLASS_INIT:
-			case MONO_PATCH_INFO_CLASS:
-			case MONO_PATCH_INFO_IID:
-				if (!patch_info->data.klass->type_token)
-					if (!patch_info->data.klass->element_class->type_token)
-						skip = TRUE;
-				break;
-			default:
-				break;
-			}
-		}
-
-		if (skip) {
-			wrappercount++;
-			mono_destroy_compile (cfg);
-			continue;
-		}
-
-		//printf ("Compile:           %s\n", mono_method_full_name (method, TRUE));
-
-		cfgs [i] = cfg;
-
-		ccount++;
-	}
-
-	/* Emit code */
-	emit_section_change (tmpfp, ".text", 0);
 	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
 		if (cfgs [i])
 			emit_method_code (acfg, cfgs [i]);
 	}
 
 	/* Emit method info */
+	symbol = g_strdup_printf ("method_infos");
 	emit_section_change (tmpfp, ".text", 1);
+	emit_global (tmpfp, symbol, FALSE);
+	emit_alignment (tmpfp, 8);
+	emit_label (tmpfp, symbol);
+
 	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
 		if (cfgs [i])
 			emit_method_info (acfg, cfgs [i]);
 	}
 
 	/* Emit class info */
-
 	symbol = g_strdup_printf ("class_infos");
 	emit_section_change (tmpfp, ".text", 1);
 	emit_global (tmpfp, symbol, FALSE);
@@ -2123,6 +2212,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_label(tmpfp, symbol);
 	if (acfg->got_offset > 0)
 		fprintf (tmpfp, ".skip %d\n", (int)(acfg->got_offset * sizeof (gpointer)));
+
+	printf ("GOT SIZE: %d\n", acfg->got_offset * sizeof (gpointer));
 
 	symbol = g_strdup_printf ("got_addr");
 	emit_section_change (tmpfp, ".data", 1);
@@ -2238,11 +2329,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	g_free (tmp_outfile_name);
 	g_free (outfile_name);
 
-	printf ("Compiled %d out of %d methods (%d%%)\n", ccount, mcount, mcount ? (ccount*100)/mcount : 100);
-	printf ("%d methods contain absolute addresses (%d%%)\n", abscount, mcount ? (abscount*100)/mcount : 100);
-	printf ("%d methods contain wrapper references (%d%%)\n", wrappercount, mcount ? (wrappercount*100)/mcount : 100);
-	printf ("%d methods contain lmf pointers (%d%%)\n", lmfcount, mcount ? (lmfcount*100)/mcount : 100);
-	printf ("%d methods have other problems (%d%%)\n", ocount, mcount ? (ocount*100)/mcount : 100);
+	printf ("Compiled %d out of %d methods (%d%%)\n", acfg->ccount, acfg->mcount, acfg->mcount ? (acfg->ccount*100)/acfg->mcount : 100);
+	printf ("%d methods contain absolute addresses (%d%%)\n", acfg->abscount, acfg->mcount ? (acfg->abscount*100)/acfg->mcount : 100);
+	printf ("%d methods contain wrapper references (%d%%)\n", acfg->wrappercount, acfg->mcount ? (acfg->wrappercount*100)/acfg->mcount : 100);
+	printf ("%d methods contain lmf pointers (%d%%)\n", acfg->lmfcount, acfg->mcount ? (acfg->lmfcount*100)/acfg->mcount : 100);
+	printf ("%d methods have other problems (%d%%)\n", acfg->ocount, acfg->mcount ? (acfg->ocount*100)/acfg->mcount : 100);
 	if (acfg->aot_opts.save_temps)
 		printf ("Retained input file.\n");
 	else
