@@ -2357,7 +2357,8 @@ ves_icall_Type_GetFields_internal (MonoReflectionType *type, guint32 bflags, Mon
 {
 	MonoDomain *domain; 
 	GSList *l = NULL, *tmp;
-	MonoClass *startklass, *klass, *refklass;
+	MonoClass *startklass, *klass;
+	/* MonoClass *refklass; bug 54518 */
 	MonoArray *res;
 	MonoObject *member;
 	int i, len, match;
@@ -2367,7 +2368,9 @@ ves_icall_Type_GetFields_internal (MonoReflectionType *type, guint32 bflags, Mon
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
+	/*bug 54518
 	refklass = mono_class_from_mono_type (reftype->type);
+	 */
 
 handle_parent:	
 	for (i = 0; i < klass->field.count; ++i) {
@@ -2416,7 +2419,10 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 {
 	MonoDomain *domain; 
 	GSList *l = NULL, *tmp;
-	MonoClass *startklass, *klass, *refklass;
+	MonoClass *startklass, *klass;
+	/* bug 54518
+	MonoClass *refklass;
+	*/
 	MonoArray *res;
 	MonoMethod *method;
 	MonoObject *member;
@@ -2429,7 +2435,9 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
+	/* bug 54518
 	refklass = mono_class_from_mono_type (reftype->type);
+	*/
 	len = 0;
 	if (name != NULL) {
 		mname = mono_string_to_utf8 (name);
@@ -2500,7 +2508,8 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 	MonoDomain *domain; 
 	GSList *l = NULL, *tmp;
 	static MonoClass *System_Reflection_ConstructorInfo;
-	MonoClass *startklass, *klass, *refklass;
+	MonoClass *startklass, *klass;
+	/* MonoClass *refklass; bug 54518 */
 	MonoArray *res;
 	MonoMethod *method;
 	MonoObject *member;
@@ -2510,7 +2519,9 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
+	/* bug 54581
 	refklass = mono_class_from_mono_type (reftype->type);
+	*/
 
 	for (i = 0; i < klass->method.count; ++i) {
 		match = 0;
@@ -2561,7 +2572,8 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	MonoDomain *domain; 
 	GSList *l = NULL, *tmp;
 	static MonoClass *System_Reflection_PropertyInfo;
-	MonoClass *startklass, *klass, *refklass;
+	MonoClass *startklass, *klass;
+	/* MonoClass *refklass; bug 54518 */
 	MonoArray *res;
 	MonoMethod *method;
 	MonoProperty *prop;
@@ -2575,7 +2587,9 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
+	/*
 	refklass = mono_class_from_mono_type (reftype->type);
+	*/
 	if (name != NULL) {
 		propname = mono_string_to_utf8 (name);
 		compare_func = (ignore_case) ? g_strcasecmp : strcmp;
@@ -2620,7 +2634,7 @@ handle_parent:
 			continue;
 		g_hash_table_insert (method_slots, GUINT_TO_POINTER (method->slot), prop);
 
-		l = g_slist_prepend (l, mono_property_get_object (domain, refklass, prop));
+		l = g_slist_prepend (l, mono_property_get_object (domain, klass, prop));
 		len++;
 	}
 	if ((!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent)))
@@ -2693,7 +2707,8 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, Mon
 	MonoDomain *domain; 
 	GSList *l = NULL, *tmp;
 	static MonoClass *System_Reflection_EventInfo;
-	MonoClass *startklass, *klass, *refklass;
+	MonoClass *startklass, *klass;
+	/* MonoClass *refklass; bug 54518 */
 	MonoArray *res;
 	MonoMethod *method;
 	MonoEvent *event;
@@ -2703,7 +2718,9 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, Mon
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	klass = startklass = mono_class_from_mono_type (type->type);
+	/*
 	refklass = mono_class_from_mono_type (reftype->type);
+	*/
 
 handle_parent:	
 	for (i = 0; i < klass->event.count; ++i) {
@@ -2734,7 +2751,7 @@ handle_parent:
 		if (!match)
 			continue;
 		match = 0;
-		l = g_slist_prepend (l, mono_event_get_object (domain, refklass, event));
+		l = g_slist_prepend (l, mono_event_get_object (domain, klass, event));
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;

@@ -383,7 +383,7 @@ static gpointer process_read_stringtable_block (MonoObject *filever,
 						guint16 data_len)
 {
 	version_data block;
-	const char *language;
+	gchar *language;
 	guint16 string_len=36;	/* length of the StringFileInfo block */
 
 	/* data_ptr is pointing at an array of StringTable blocks,
