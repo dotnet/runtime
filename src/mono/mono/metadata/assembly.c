@@ -655,7 +655,8 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 
 	ass = mono_assembly_load_from (image, fname, status);
 
-	mono_config_for_assembly (ass->image);
+	if (ass)
+		mono_config_for_assembly (ass->image);
 
 	g_free (fname);
 
