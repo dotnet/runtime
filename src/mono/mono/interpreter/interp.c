@@ -1204,7 +1204,7 @@ handle_enum:
 		frame.invoke_trap = 1;
 	ves_exec_method (&frame);
 	if (exc && frame.ex) {
-		*exc = frame.ex;
+		*exc = (MonoObject*) frame.ex;
 		return NULL;
 	}
 	if (sig->ret->type == MONO_TYPE_VOID && !method->string_ctor)
@@ -1655,7 +1655,7 @@ ves_exec_method (MonoInvocation *frame)
 
 			if (!child_frame.method) {
 				g_assert (code);
-				ves_pinvoke_method (&child_frame, csignature, code, FALSE);
+				ves_pinvoke_method (&child_frame, csignature, (MonoFunc) code, FALSE);
 			} else if (csignature->hasthis && sp->type == VAL_OBJ &&
 					((MonoObject *)sp->data.p)->vtable->klass == mono_defaults.transparent_proxy_class) {
 				g_assert (child_frame.method);
@@ -4161,7 +4161,7 @@ array_constructed:
 		MonoInvocation *inv;
 		MonoMethodHeader *hd;
 		MonoExceptionClause *clause;
-		char *message;
+		/*char *message;*/
 		MonoObject *ex_obj;
 
 #if DEBUG_INTERP
@@ -4244,7 +4244,7 @@ die_on_ex:
 			if (MONO_OFFSET_IN_CLAUSE (clause, ip_offset) && !(MONO_OFFSET_IN_CLAUSE (clause, endfinally_ip - header->code))) {
 				if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 					ip = header->code + clause->handler_offset;
-					finally_ips = g_slist_append (finally_ips, ip);
+					finally_ips = g_slist_append (finally_ips, (gpointer) ip);
 #if DEBUG_INTERP
 					if (tracing)
 						g_print ("* Found finally at IL_%04x with exception: %s\n", clause->handler_offset, frame->ex? "yes": "no");
