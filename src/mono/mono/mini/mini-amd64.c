@@ -5892,7 +5892,7 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 
 		lmf_tls_offset = read_tls_offset_from_method (mono_get_lmf_addr);
 		appdomain_tls_offset = read_tls_offset_from_method (mono_domain_get);
-		//thread_tls_offset = read_tls_offset_from_method (mono_thread_current);
+		thread_tls_offset = read_tls_offset_from_method (mono_thread_current);
 	}		
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
