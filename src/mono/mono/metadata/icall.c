@@ -2596,7 +2596,7 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 	MONO_ARCH_SAVE_REGS;
 
 	info->utype = mono_type_get_object (domain, enumc->enum_basetype);
-	nvalues = enumc->field.count - 1;
+	nvalues = enumc->field.count ? enumc->field.count - 1 : 0;
 	info->names = mono_array_new (domain, mono_defaults.string_class, nvalues);
 	info->values = mono_array_new (domain, enumc, nvalues);
 	
