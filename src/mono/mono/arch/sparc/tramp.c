@@ -59,6 +59,26 @@ sig_to_name (MonoMethodSignature *sig, const char *prefix)
 }
 
 static void
+sparc_disassemble_code (guint32 *code_buffer, guint32 *p, char *id)
+{
+	guchar *cp;
+	FILE *ofd;
+
+	if (!(ofd = fopen ("/tmp/test.s", "w")))
+		g_assert_not_reached();
+
+	fprintf (ofd, "%s:\n", id);
+
+	for (cp = code_buffer; cp < p; cp++)
+		fprintf (ofd, ".byte %d\n", *cp);
+
+	fclose (ofd);
+
+	system ("as /tmp/test.s -o /tmp/test.o;objdump -d /tmp/test.o");
+}
+
+
+static void
 add_general (guint *gr, guint *stack_size, guint *code_size, gboolean simple)
 {
 	if (simple) {
@@ -127,7 +147,7 @@ calculate_sizes (MonoMethodSignature *sig, guint *stack_size, guint *code_size,
 				simpletype = sig->params[i]->data.klass->enum_basetype->type;
 				goto enum_calc_size;
 			}
-			size = mono_class_value_size (sig->params[i]->data.klass, NULL);
+			size = mono_class_native_size (sig->params[i]->data.klass, NULL);
 			if (size != 4) {
 				fprintf(stderr, "copy %d byte struct on stack\n", size);
 				*use_memcpy = TRUE;
@@ -205,7 +225,7 @@ calculate_sizes (MonoMethodSignature *sig, guint *stack_size, guint *code_size,
 		}
 	}
 	
-	*stack_size = (*stack_size + 15) & (~15);
+	*stack_size = (*stack_size + 7) & (~7);
 }	
 	
 static inline guint32 *
@@ -279,16 +299,16 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 			    !sig->params[i]->data.klass->enumtype) {
 				gint size;
 				
-				size = mono_class_value_size (sig->params[i]->data.klass, NULL);
+				size = mono_class_native_size (sig->params[i]->data.klass, NULL);
 				if (size != 4) {
 					/* need to call memcpy here */
 					sparc_add_imm (p, 0, sparc_sp, stack_par_pos, sparc_o0);
 					sparc_ld_imm (p, sparc_i3, i*16, sparc_o1);
 					sparc_set (p, (guint32)size, sparc_o2);
-					sparc_set (p, (guint32)memcpy, sparc_l0);
+					sparc_set (p, (guint32)memmove, sparc_l0);
 					sparc_jmpl_imm (p, sparc_l0, 0, sparc_callsite);
 					sparc_nop (p);
-					stack_par_pos += (size*2 + 3) & (~3);
+					stack_par_pos += (size + 3) & (~3);
 				}
 			}
 		}
@@ -345,7 +365,7 @@ emit_save_parameters (guint32 *p, MonoMethodSignature *sig, guint stack_size,
 				simpletype = sig->params[i]->data.klass->enum_basetype->type;
 				goto enum_calc_size;
 			}
-			size = mono_class_value_size (sig->params[i]->data.klass, NULL);
+			size = mono_class_native_size (sig->params[i]->data.klass, NULL);
 			if (size == 4) {
 				SAVE_4_VAL_IN_GENERIC_REGISTER;
 			} else {
@@ -491,15 +511,7 @@ mono_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor)
 	p = emit_call_and_store_retval (p, sig, stack_size, string_ctor);
 	p = emit_epilog (p, sig, stack_size);
 	
-#if 0
-	{
-                guchar *cp;
-                fprintf (stderr,".text\n.align 4\n.globl main\n.type main,@function\nmain:\n");
-                for (cp = code_buffer; cp < p; cp++) {
-                        fprintf (stderr, ".byte 0x%x\n", *cp);
-                }
-	}
-#endif
+	//sparc_disassemble_code (code_buffer, p, sig_to_name(sig, NULL));
 
 	/* So here's the deal...
 	 * UltraSPARC will flush a whole cache line at a time
@@ -547,6 +559,7 @@ mono_create_method_pointer (MonoMethod *method)
 	p = code_buffer = g_malloc (code_size);
 
 	fprintf(stderr, "Delegate [start emiting] %s\n", method->name);
+	fprintf(stderr, "%s\n", sig_to_name(sig, FALSE));
 
 	p = emit_prolog (p, sig, stack_size);
 
@@ -637,7 +650,7 @@ mono_create_method_pointer (MonoMethod *method)
 			sparc_st_imm (p, sparc_o1, sparc_sp, stackval_arg_pos);
 			sparc_add_imm (p, 0, sparc_sp, stackval_arg_pos, 
 				       sparc_o1);
-			sparc_ld (p, sparc_o2, 0, sparc_o2);
+			//sparc_ld (p, sparc_o2, 0, sparc_o2);
 			vt_cur += vtbuf[i];
 		} else {
 			sparc_add_imm (p, 0, sparc_sp, stackval_arg_pos, 
@@ -737,15 +750,9 @@ mono_create_method_pointer (MonoMethod *method)
 	
 	mono_jit_info_table_add (mono_root_domain, ji);
 
-#if 0
-        {
-                guchar *cp;
-                fprintf (stderr,".text\n.align 4\n.globl main\n.type main,@function\nmain:\n");
-                for (cp = code_buffer; cp < p; cp++) {
-                        fprintf (stderr, ".byte 0x%x\n", *cp);
-                }
-        }
-#endif
+	sparc_disassemble_code (code_buffer, p, method->name);
+
+	fprintf(stderr, "Delegate [end emiting] %s\n", method->name);
 
 	return ji->code_start;
 }
