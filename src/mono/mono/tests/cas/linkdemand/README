@@ -1,0 +1,57 @@
+* LinkDemand
+
+cas1.cs		LinkDemand for SecurityPermission UnmanagedCode
+
+This is the "common" case for LinkDemand (i.e. using user supplied declarative
+security attributes).
+
+
+and now the special cases...
+
+
+* InternalCall
+
+icall1.cs	Define an (existing) icall and try to execute it.
+icall2.cs	Use reflection to execute an icall.
+
+Both files are compiled twice. 
+
+The first time the files are compiled without a public key (no strongname).
+This means that the security manager (if active) will not allow the direct
+execution of the icall by the code.
+
+The second compilation adds the ECMA public key (assembly is delay signed).
+Because the ECMA public key is present the execution of an internal call
+is not prohibited by the security manager.
+
+
+* P/Invoke
+
+pinvoke1.cs	Call getuid in libc on a class with [SUCS] attribute
+pinvoke2.cs	Call getuid in libc on a method with [SUCS] attribute
+
+A little know fact is that P/Invoke does a LinkDemand (JIT time) and not
+only a Demand (runtime). The JIT time check isn't subject to be cancelled
+by the [SuppressUnmanagedCodeSecurity] attribute.
+
+
+* [AllowPartiallyTustedCallers] a.k.a. APTC
+
+aptc1.cs	Calling a strongnamed with APTC (corlib) method [1].
+aptc2.cs	Calling a strongnamed without APTC (aptclib) method.
+aptclib.cs	The strongnamed, but without APTC, test library.
+
+The files aptc1.cs and aptc2.cs are compiled twice. 
+
+The first time the files are compiled without a public key (no strongname).
+This means that the security manager (if active) will allow the call to 
+succeed _only if_
+	(a) the calling assembly is strongnamed;
+	(b) the called assembly has a [AllowPartiallyTustedCallers] attribute
+
+The second compilation strongname the assemblies. This means that this
+will always succeed in calling other strongnamed assemblies (with or 
+without APTC).
+
+[1] For example an unsigned assembly can calls System.Console.WriteLine only
+because mscorlib.dll contains the [AllowPartiallyTustedCallers].
