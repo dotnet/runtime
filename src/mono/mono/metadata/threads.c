@@ -1163,8 +1163,16 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 
 	/* The finalizer thread is not a background thread */
 	if (thread->tid != self && thread->state & ThreadState_Background) {
+		if(thread->state & ThreadState_AbortRequested ||
+		   thread->state & ThreadState_Aborted) {
 #ifdef THREAD_DEBUG
-		g_print ("Aborting id: %d\n", thread->tid);
+			g_message (G_GNUC_PRETTY_FUNCTION ": Thread id %d already aborting", thread->tid);
+#endif
+			return(TRUE);
+		}
+		
+#ifdef THREAD_DEBUG
+		g_print (G_GNUC_PRETTY_FUNCTION ": Aborting id: %d\n", thread->tid);
 #endif
 /* Will assert on windows */
 #ifndef __MINGW32__
