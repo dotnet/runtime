@@ -209,7 +209,7 @@ async_invoke_thread (gpointer data)
 
 		if (!data) {
 			InterlockedDecrement (&mono_worker_threads);
-			ExitThread (0);
+			return;
 		}
 		InterlockedIncrement (&busy_worker_threads);
 	}
