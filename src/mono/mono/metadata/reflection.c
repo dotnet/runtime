@@ -1954,6 +1954,7 @@ mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 o
 	values [MONO_GENERICPARAM_NUMBER] = param->num;
 	values [MONO_GENERICPARAM_NAME] = string_heap_insert (&assembly->sheap, param->name);
 	values [MONO_GENERICPARAM_KIND] = 0;
+	values [MONO_GENERICPARAM_DEPRECATED_CONSTRAINT] = 0;
 
 	if (gparam->constraints)
 		encode_constraints (gparam, table_idx, assembly);
@@ -3927,7 +3928,8 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly,
 	 * the support dlls. D'oh!
 	 * const char *version = "mono-" VERSION;
 	 */
-	const char *version = "v1.0.3705";
+	// const char *version = "v1.0.3705";
+	const char *version = "v2.0.40301";
 
 #if HAVE_BOEHM_GC
 	image = GC_MALLOC (sizeof (MonoDynamicImage));
