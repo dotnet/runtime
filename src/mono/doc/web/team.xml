@@ -242,4 +242,19 @@
     </tasks>
   </contributor>
 
+  <contributor>
+    <name>
+      <first-name>Cesar</first-name>
+      <last-name>Lopez Nataren</last-name>
+    </name>
+    <e-mail>cesar@ciencias.unam.mx</e-mail>
+    <image>none.png</image>
+    <location>Mexico City/Tuxtla Gutierrez, Chiapas.</location>
+    <description>Contributor</description>
+    <tasks>
+      <task>Random little patches</task>
+      <task>JScript compiler</task>
+    </tasks>
+  </contributor>
+
 </contributors>
