@@ -27,7 +27,7 @@
 	provide an implementation of this API in the
 	<tt>libgdiplus.so</tt> shared library.  Our
 	<tt>libgdiplus.so</tt> has the same C Flat API as the
-	<tt>GDIPLUS.DLL</tt>.  Our implementation usesuses Cairo to do
+	<tt>GDIPLUS.DLL</tt>.  Our implementation uses Cairo to do
 	the heavy lifting.
 
 	The implementation of GDI+ lives in mcs/class/System.Drawing
