@@ -1375,35 +1375,6 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 	}
 }
 
-static MonoProperty*
-search_property (MonoClass *klass, char* name, MonoArray *args) {
-	int i;
-	MonoProperty *p;
-
-	/* FIXME: handle args */
-	for (i = 0; i < klass->property.count; ++i) {
-		p = &klass->properties [i];
-		if (strcmp (p->name, name) == 0)
-			return p;
-	}
-	return NULL;
-}
-
-static MonoReflectionProperty*
-ves_icall_get_property (MonoReflectionType *type, MonoString *name, MonoArray *args)
-{
-	MonoDomain *domain = mono_object_domain (type); 
-	MonoProperty *p;
-	MonoClass *class = mono_class_from_mono_type (type->type);
-	char *n = mono_string_to_utf8 (name);
-
-	p = search_property (class, n, args);
-	g_free (n);
-	if (p)
-		return mono_property_get_object (domain, class, p);
-	return NULL;
-}
-
 enum {
 	BFLAGS_IgnoreCase = 1,
 	BFLAGS_DeclaredOnly = 2,
@@ -2871,7 +2842,6 @@ static gconstpointer icall_map [] = {
 	 */
 	"System.Type::internal_from_name", ves_icall_type_from_name,
 	"System.Type::internal_from_handle", ves_icall_type_from_handle,
-	"System.Type::get_property", ves_icall_get_property,
 	"System.MonoType::get_attributes", ves_icall_get_attributes,
 	"System.Type::type_is_subtype_of", ves_icall_type_is_subtype_of,
 	"System.Type::Equals", ves_icall_type_Equals,
