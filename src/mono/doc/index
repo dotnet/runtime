@@ -142,6 +142,10 @@
   </tr>
 </table>
 
+@item Sep 19th, 2003: Gtk# 0.11 released
+
+	Mike Kestner has released an update to Gtk#
+
 @item Sep 16th, 2003: WineLib, Authenticode, Generics, Xslt updates, Wsdl compiler, WSE.
 
 	<b>WineLib:</b> Vladimir has added new libraries to the Wine

@@ -78,7 +78,7 @@ NON_HTML_SOURCES=		\
 	../mono-build.sh	\
 	../mono-build-w32.sh
 
-all: $(OBJECT) deploy/index.rss ../team
+all: $(OBJECTS) deploy/index.rss ../team
 	perl process.pl commands template.html.in deploy
 	-mkdir deploy/team
 	cp team/*png deploy/team
