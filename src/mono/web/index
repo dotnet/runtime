@@ -96,7 +96,7 @@
   </tr>
 </table>
 
-@item Jan, 22th: Mono wins award, OpenLink releases Virtuoso.
+@item Jan, 22th, 2003: Mono wins award, OpenLink releases Virtuoso.
 
 	Mono won the `Best Open Source Project' award at the Linux
 	World Expo.  A description is <a
@@ -107,7 +107,7 @@
 	release</a> about Virtuoso 3.0: the first commercial product
 	shipping that uses Mono.
 
-@item Jan, 20th: Mono 0.19 released;  Screenshots page; Gtk# 0.7
+@item Jan, 20th, 2003: Mono 0.19 released;  Screenshots page; Gtk# 0.7
 
 	Mono 0.19 has been released.  Check out the <a
 	href="archive/mono-0.19">release notes</a> for an overview of
@@ -123,7 +123,7 @@
         <a href="http://gtk-sharp.sf.net">Gtk# 0.7</a> has been <a
 	href="http://lists.ximian.com/archives/public/mono-list/2003-January/005222.html">released</a>
 
-@item Jan, 19th: Mono Debugger released.
+@item Jan, 19th, 2003: Mono Debugger released.
 
 	After six month of extensive development, Martin Baulig has
 	released the first version of the Mono debugger.  The Mono
@@ -141,7 +141,7 @@
 	applications, you need a recent GCC, or to pass the -gdwarf-2
 	flag to gcc).
 	
-@item Jan, 17th: DB2 provider, MacOS X
+@item Jan, 17th, 2003: DB2 provider, MacOS X
 
 	Christopher Bockner has contributed a DB2 System.Data client. 
 
