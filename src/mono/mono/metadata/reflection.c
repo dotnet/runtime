@@ -2260,12 +2260,14 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method)
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 token, mtoken = 0, sig;
+	MonoMethodInflated *imethod;
 	MonoMethod *declaring;
 
 	table = &assembly->tables [MONO_TABLE_METHODSPEC];
 
 	g_assert (method->signature->is_inflated);
-	declaring = ((MonoMethodInflated *) method)->declaring;
+	imethod = (MonoMethodInflated *) method;
+	declaring = imethod->declaring;
 
 	sig = method_encode_signature (assembly, declaring->signature);
 	mtoken = mono_image_get_memberref_token (assembly, &method->klass->byval_arg,
@@ -2285,7 +2287,7 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method)
 		g_assert_not_reached ();
 	}
 
-	sig = encode_generic_method_sig (assembly, ((MonoMethodInflated *) method)->gmethod);
+	sig = encode_generic_method_sig (assembly, imethod->context->gmethod);
 
 	if (assembly->save) {
 		alloc_table (table, table->rows + 1);
@@ -6959,7 +6961,7 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 		return geninst;
 	}
 
-	ginst->context = g_new0 (MonoGenericInst, 1);
+	ginst->context = g_new0 (MonoGenericContext, 1);
 	ginst->context->ginst = ginst;
 
 	geninst = g_new0 (MonoType, 1);

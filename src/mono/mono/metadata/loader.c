@@ -399,7 +399,7 @@ method_from_memberref (MonoImage *image, guint32 idx)
 static MonoMethod *
 method_from_methodspec (MonoImage *image, guint32 idx)
 {
-	MonoMethod *method;
+	MonoMethod *method, *inflated;
 	MonoTableInfo *tables = image->tables;
 	MonoGenericContext *context;
 	MonoGenericMethod *gmethod;
@@ -436,7 +436,10 @@ method_from_methodspec (MonoImage *image, guint32 idx)
 	context = g_new0 (MonoGenericContext, 1);
 	context->gmethod = gmethod;
 
-	return mono_class_inflate_generic_method (method, context, NULL);
+	inflated = mono_class_inflate_generic_method (method, context, NULL);
+
+	context->ginst = inflated->klass->generic_inst;
+	return inflated;
 }
 
 typedef struct MonoDllMap MonoDllMap;

@@ -352,7 +352,7 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 	result->nmethod.method.signature = inflate_generic_signature (
 		method->klass->image, method->signature, context);
 
-	result->gmethod = context->gmethod;
+	result->context = context;
 	if (method->signature->is_inflated)
 		result->declaring = ((MonoMethodInflated *) method)->declaring;
 	else

@@ -55,7 +55,7 @@ typedef struct {
 
 typedef struct {
 	MonoMethodNormal nmethod;
-	MonoGenericMethod *gmethod;
+	MonoGenericContext *context;
 	MonoMethod *declaring;
 } MonoMethodInflated;
 

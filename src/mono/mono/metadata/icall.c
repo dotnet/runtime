@@ -2058,11 +2058,11 @@ ves_icall_MethodBase_GetGenericMethodDefinition (MonoReflectionMethod *method)
 		return NULL;
 
 	imethod = (MonoMethodInflated *) method->method;
-	if (!imethod->gmethod)
+	if (!imethod->context->gmethod)
 		return NULL;
 
-	if (imethod->gmethod->reflection_info)
-		return imethod->gmethod->reflection_info;
+	if (imethod->context->gmethod->reflection_info)
+		return imethod->context->gmethod->reflection_info;
 	else
 		return mono_method_get_object (
 			mono_object_domain (method), imethod->declaring, NULL);
