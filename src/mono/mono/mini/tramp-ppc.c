@@ -477,22 +477,6 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	if (method->info)
 		return method->info;
 
-	/* we immediately compile runtime provided functions */
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
-		method->info = mono_compile_method (method);
-		return method->info;
-	}
-
-	/* icalls use method->addr */
-	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-		MonoMethod *nm;
-		
-		nm = mono_marshal_get_native_wrapper (method);
-		method->info = mono_compile_method (nm);
-		return method->info;
-	}
-
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		return mono_arch_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
 
@@ -655,22 +639,6 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	/* previously created trampoline code */
 	if (method->info)
 		return method->info;
-
-	/* we immediately compile runtime provided functions */
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
-		method->info = mono_compile_method (method);
-		return method->info;
-	}
-
-	/* icalls use method->addr */
-	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-		MonoMethod *nm;
-		
-		nm = mono_marshal_get_native_wrapper (method);
-		method->info = mono_compile_method (nm);
-		return method->info;
-	}
 
 	if (!mono_generic_trampoline_code) {
 		mono_generic_trampoline_code = buf = g_malloc (256);

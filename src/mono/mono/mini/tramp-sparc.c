@@ -246,10 +246,13 @@ mono_arch_create_jump_trampoline (MonoMethod *method)
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 		MonoMethod *nm;
-		
-		if (!method->addr && (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
-			mono_lookup_pinvoke_call (method);
 
+		if (!method->addr) {
+			if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+				method->addr = mono_lookup_internal_call (method);
+			if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+				mono_lookup_pinvoke_call (method);
+		}		
 #ifdef MONO_USE_EXC_TABLES
 		if (mono_method_blittable (method)) {
 			return method->addr;
@@ -295,33 +298,6 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	if (method->info)
 		return method->info;
 
-	/* we immediately compile runtime provided functions */
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
-		method->info = mono_compile_method (method);
-		return method->info;
-	}
-
-	/* icalls use method->addr */
-	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-		MonoMethod *nm;
-		
-		if (!method->addr && (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
-			mono_lookup_pinvoke_call (method);
-
-#ifdef MONO_USE_EXC_TABLES
-		if (mono_method_blittable (method)) {
-			method->info = method->addr;
-		} else {
-#endif
-			nm = mono_marshal_get_native_wrapper (method);
-			method->info = mono_compile_method (nm);
-#ifdef MONO_USE_EXC_TABLES
-		}
-#endif
-		return method->info;
-	}
-	
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		return mono_arch_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
 

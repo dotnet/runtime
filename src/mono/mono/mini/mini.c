@@ -7184,14 +7184,6 @@ mono_jit_compile_method_inner (MonoMethod *method)
 
 	opt = default_opt;
 
-	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
-		/*
-		 * native wrappers have only one instance which is stored in
-		 * method->info. We put their code into the root domain so it
-		 * won't get freed on a domain unload.
-		 */
-		opt |= MONO_OPT_SHARED;
-
 	if (opt & MONO_OPT_SHARED)
 		target_domain = mono_root_domain;
 	else 
@@ -7224,31 +7216,28 @@ mono_jit_compile_method_inner (MonoMethod *method)
 
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-		if (!method->info) {
-			MonoMethod *nm;
+		MonoMethod *nm;
 
-			if (!method->addr) {
-				if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
-					method->addr = mono_lookup_internal_call (method);
-				else
-					if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-						mono_lookup_pinvoke_call (method);
-			}
-#ifdef MONO_USE_EXC_TABLES
-			if (mono_method_blittable (method)) {
-				method->info = method->addr;
-			} else {
-#endif
-				nm = mono_marshal_get_native_wrapper (method);
-				method->info = mono_compile_method (nm);
-
-				//if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) 
-				//mono_debug_add_wrapper (method, nm);
-#ifdef MONO_USE_EXC_TABLES
-			}
-#endif
+		if (!method->addr) {
+			if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+				method->addr = mono_lookup_internal_call (method);
+			else
+				if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+					mono_lookup_pinvoke_call (method);
 		}
-		return method->info;
+#ifdef MONO_USE_EXC_TABLES
+		if (mono_method_blittable (method)) {
+			return method->addr;
+		} else {
+#endif
+			nm = mono_marshal_get_native_wrapper (method);
+			return mono_compile_method (nm);
+
+			//if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) 
+			//mono_debug_add_wrapper (method, nm);
+#ifdef MONO_USE_EXC_TABLES
+		}
+#endif
 	} else if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		const char *name = method->name;
 		MonoMethod *nm;
