@@ -4454,6 +4454,12 @@ static void main_thread_handler (gpointer user_data)
 #endif
 }
 
+static void
+mono_runtime_install_handlers (void)
+{
+	/* FIXME: anything to do here? */
+}
+
 int 
 main (int argc, char *argv [])
 {
@@ -4514,6 +4520,7 @@ main (int argc, char *argv [])
 	mono_init_icall ();
 	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", ves_icall_get_frame_info);
 	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", ves_icall_get_trace);
+	mono_add_internal_call ("Mono.Runtime::mono_runtime_install_handlers", mono_runtime_install_handlers);
 
 	frame_thread_id = TlsAlloc ();
 	TlsSetValue (frame_thread_id, NULL);
