@@ -1,538 +1,3004 @@
 
+/* This is a generated file. Do not edit. See tools/locale-builder. */
 #ifndef MONO_METADATA_CULTURE_INFO_TABLES
 #define MONO_METADATA_CULTURE_INFO_TABLES 1
 
 
-#define NUM_CULTURE_ENTRIES 154
+#define NUM_CULTURE_ENTRIES 155
 
 
 static const DateTimeFormatEntry datetime_format_entries [] = {
-	{"dd MMMM yyyy HH:mm:ss", "dd MMMM yyyy", "dd.M.yyyy '\xd0\xb3.'", "HH:mm:ss", "HH:mm", "MMMM yyyy", "dd MMMM", "AM", "PM", {"\xd0\xbd\xd0\xb5\xd0\xb4\xd0\xb5\xd0\xbb\xd1\x8f", "\xd0\xbf\xd0\xbe\xd0\xbd\xd0\xb5\xd0\xb4\xd0\xb5\xd0\xbb\xd0\xbd\xd0\xb8\xd0\xba", "\xd0\xb2\xd1\x82\xd0\xbe\xd1\x80\xd0\xbd\xd0\xb8\xd0\xba", "\xd1\x81\xd1\x80\xd1\x8f\xd0\xb4\xd0\xb0", "\xd1\x87\xd0\xb5\xd1\x82\xd0\xb2\xd1\x8a\xd1\x80\xd1\x82\xd1\x8a\xd0\xba", "\xd0\xbf\xd0\xb5\xd1\x82\xd1\x8a\xd0\xba", "\xd1\x81\xd1\x8a\xd0\xb1\xd0\xbe\xd1\x82\xd0\xb0"}, {"\xd0\xbd\xd0\xb5\xd0\xb4.", "\xd0\xbf\xd0\xbe\xd0\xbd.", "\xd0\xb2\xd1\x82.", "\xd1\x81\xd1\x80.", "\xd1\x87\xd0\xb5\xd1\x82\xd0\xb2.", "\xd0\xbf\xd0\xb5\xd1\x82.", "\xd1\x81\xd1\x8a\xd0\xb1."}, {"\xd1\x8f\xd0\xbd\xd1\x83\xd0\xb0\xd1\x80\xd0\xb8", "\xd1\x84\xd0\xb5\xd0\xb2\xd1\x80\xd1\x83\xd0\xb0\xd1\x80\xd0\xb8", "\xd0\xbc\xd0\xb0\xd1\x80\xd1\x82", "\xd0\xb0\xd0\xbf\xd1\x80\xd0\xb8\xd0\xbb", "\xd0\xbc\xd0\xb0\xd0\xb9", "\xd1\x8e\xd0\xbd\xd0\xb8", "\xd1\x8e\xd0\xbb\xd0\xb8", "\xd0\xb0\xd0\xb2\xd0\xb3\xd1\x83\xd1\x81\xd1\x82", "\xd1\x81\xd0\xb5\xd0\xbf\xd1\x82\xd0\xb5\xd0\xbc\xd0\xb2\xd1\x80\xd0\xb8", "\xd0\xbe\xd0\xba\xd1\x82\xd0\xbe\xd0\xbc\xd0\xb2\xd1\x80\xd0\xb8", "\xd0\xbd\xd0\xbe\xd0\xb5\xd0\xbc\xd0\xb2\xd1\x80\xd0\xb8", "\xd0\xb4\xd0\xb5\xd0\xba\xd0\xb5\xd0\xbc\xd0\xb2\xd1\x80\xd0\xb8"}, {"\xd1\x8f\xd0\xbd.", "\xd1\x84\xd0\xb5\xd0\xb2.", "\xd0\xbc\xd0\xb0\xd1\x80\xd1\x82", "\xd0\xb0\xd0\xbf\xd1\x80.", "\xd0\xbc\xd0\xb0\xd0\xb9", "\xd1\x8e\xd0\xbd\xd0\xb8", "\xd1\x8e\xd0\xbb\xd0\xb8", "\xd0\xb0\xd0\xb2\xd0\xb3.", "\xd1\x81\xd0\xb5\xd0\xbf.", "\xd0\xbe\xd0\xba\xd1\x82.", "\xd0\xbd\xd0\xbe\xd0\xb5\xd0\xbc.", "\xd0\xb4\xd0\xb5\xd0\xba.", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy HH:mm:ss z", "d MMMM yyyy", "dd/MM/yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "dd MMMM", "AM", "PM", {"diumenge", "dilluns", "dimarts", "dimecres", "dijous", "divendres", "dissabte"}, {"dg.", "dl.", "dt.", "dc.", "dj.", "dv.", "ds."}, {"gener", "febrer", "mar\xc3\xa7", "abril", "maig", "juny", "juliol", "agost", "setembre", "octubre", "novembre", "desembre"}, {"gen.", "feb.", "mar\xc3\xa7", "abr.", "maig", "juny", "jul.", "ag.", "set.", "oct.", "nov.", "des.", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d. MMMM yyyy H:mm:ss z", "d. MMMM yyyy", "d.M.yyyy", "H:mm:ss", "H:mm", "MMMM yyyy", "d. MMMM", "dop.", "odp.", {"ned\xc4\x9ble", "pond\xc4\x9bl\xc3\xad", "\xc3\xbater\xc3\xbd", "st\xc5\x99\x65\x64\x61", "\xc4\x8dtvrtek", "p\xc3\xa1tek", "sobota"}, {"ne", "po", "\xc3\xbat", "st", "\xc4\x8dt", "p\xc3\xa1", "so"}, {"leden", "\xc3\xbanor", "b\xc5\x99\x65zen", "duben", "kv\xc4\x9bten", "\xc4\x8d\x65rven", "\xc4\x8d\x65rvenec", "srpen", "z\xc3\xa1\xc5\x99\xc3\xad", "\xc5\x99\xc3\xadjen", "listopad", "prosinec"}, {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d. MMM yyyy HH:mm:ss z", "d. MMM yyyy", "dd-MM-yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "dd MMMM", "AM", "PM", {"s\xc3\xb8ndag", "mandag", "tirsdag", "onsdag", "torsdag", "fredag", "l\xc3\xb8rdag"}, {"s\xc3\xb8n", "man", "tir", "ons", "tor", "fre", "l\xc3\xb8r"}, {"januar", "februar", "marts", "april", "maj", "juni", "juli", "august", "september", "oktober", "november", "december"}, {"jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d. MMMM yyyy HH:mm:ss z", "d. MMMM yyyy", "dd.MM.yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "d. MMMM", "vorm.", "nachm.", {"Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"}, {"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"}, {"Januar", "Februar", "M\xc3\xa4rz", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}, {"Jan", "Feb", "Mrz", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"dd MMMM yyyy h:mm:ss t z", "dd MMMM yyyy", "d/M/yyyy", "h:mm:ss tt", "h:mm t", "MMMM yyyy", "dd MMMM", "\xce\xa0\xce\x9c", "\xce\x9c\xce\x9c", {"\xce\x9a\xcf\x85\xcf\x81\xce\xb9\xce\xb1\xce\xba\xce\xae", "\xce\x94\xce\xb5\xcf\x85\xcf\x84\xce\xad\xcf\x81\xce\xb1", "\xce\xa4\xcf\x81\xce\xaf\xcf\x84\xce\xb7", "\xce\xa4\xce\xb5\xcf\x84\xce\xac\xcf\x81\xcf\x84\xce\xb7", "\xce\xa0\xce\xad\xce\xbc\xcf\x80\xcf\x84\xce\xb7", "\xce\xa0\xce\xb1\xcf\x81\xce\xb1\xcf\x83\xce\xba\xce\xb5\xcf\x85\xce\xae", "\xce\xa3\xce\xac\xce\xb2\xce\xb2\xce\xb1\xcf\x84\xce\xbf"}, {"\xce\x9a\xcf\x85\xcf\x81", "\xce\x94\xce\xb5\xcf\x85", "\xce\xa4\xcf\x81\xce\xb9", "\xce\xa4\xce\xb5\xcf\x84", "\xce\xa0\xce\xb5\xce\xbc", "\xce\xa0\xce\xb1\xcf\x81", "\xce\xa3\xce\xb1\xce\xb2"}, {"\xce\x99\xce\xb1\xce\xbd\xce\xbf\xcf\x85\xce\xac\xcf\x81\xce\xb9\xce\xbf\xcf\x82", "\xce\xa6\xce\xb5\xce\xb2\xcf\x81\xce\xbf\xcf\x85\xce\xac\xcf\x81\xce\xb9\xce\xbf\xcf\x82", "\xce\x9c\xce\xac\xcf\x81\xcf\x84\xce\xb9\xce\xbf\xcf\x82", "\xce\x91\xcf\x80\xcf\x81\xce\xaf\xce\xbb\xce\xb9\xce\xbf\xcf\x82", "\xce\x9c\xce\xac\xce\xb9\xce\xbf\xcf\x82", "\xce\x99\xce\xbf\xcf\x8d\xce\xbd\xce\xb9\xce\xbf\xcf\x82", "\xce\x99\xce\xbf\xcf\x8d\xce\xbb\xce\xb9\xce\xbf\xcf\x82", "\xce\x91\xcf\x8d\xce\xb3\xce\xbf\xcf\x85\xcf\x83\xcf\x84\xce\xbf\xcf\x82", "\xce\xa3\xce\xb5\xcf\x80\xcf\x84\xce\xad\xce\xbc\xce\xb2\xcf\x81\xce\xb9\xce\xbf\xcf\x82", "\xce\x9f\xce\xba\xcf\x84\xcf\x8e\xce\xb2\xcf\x81\xce\xb9\xce\xbf\xcf\x82", "\xce\x9d\xce\xbf\xce\xad\xce\xbc\xce\xb2\xcf\x81\xce\xb9\xce\xbf\xcf\x82", "\xce\x94\xce\xb5\xce\xba\xce\xad\xce\xbc\xce\xb2\xcf\x81\xce\xb9\xce\xbf\xcf\x82"}, {"\xce\x99\xce\xb1\xce\xbd", "\xce\xa6\xce\xb5\xce\xb2", "\xce\x9c\xce\xb1\xcf\x81", "\xce\x91\xcf\x80\xcf\x81", "\xce\x9c\xce\xb1\xcf\x8a", "\xce\x99\xce\xbf\xcf\x85\xce\xbd", "\xce\x99\xce\xbf\xcf\x85\xce\xbb", "\xce\x91\xcf\x85\xce\xb3", "\xce\xa3\xce\xb5\xcf\x80", "\xce\x9f\xce\xba\xcf\x84", "\xce\x9d\xce\xbf\xce\xb5", "\xce\x94\xce\xb5\xce\xba", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"MMMM d, yyyy h:mm:ss t z", "dddd, MMMM dd, yyyy", "M/d/yyyy", "h:mm:ss tt", "h:mm tt", "MMMM yyyy", "MMMM d", "AM", "PM", {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}, {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}, {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"}, {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""}, 0, 0, "/", ":", {"M/d/yyyy","M/d/yy","M/d/yy","MM/dd/yy","MM/dd/yyyy","yy/MM/dd","yyyy-MM-dd","dd-MMM-yy"},{"dddd, MMMM dd, yyyy","MMMM dd, yyyy","dddd, dd MMMM, yyyy","dd, MMMM, yyyy"},{"h:mm tt","hh:mm tt","H:mm","HH:mm"},{"h:mm:ss tt","hh:mm:ss tt","H:mm:ss","HH:mm:ss"}},
-	{"d. MMMM'ta 'yyyy HH:mm:ss z", "d. MMMM'ta 'yyyy", "d.M.yyyy", "H:mm:ss", "HH:mm", "MMMM'ta 'yyyy", "d. MMMM", "AM", "PM", {"sunnuntai", "maanantai", "tiistai", "keskiviikko", "torstai", "perjantai", "lauantai"}, {"su", "ma", "ti", "ke", "to", "pe", "la"}, {"tammikuu", "helmikuu", "maaliskuu", "huhtikuu", "toukokuu", "kes\xc3\xa4kuu", "hein\xc3\xa4kuu", "elokuu", "syyskuu", "lokakuu", "marraskuu", "joulukuu"}, {"tammi", "helmi", "maalis", "huhti", "touko", "kes\xc3\xa4", "hein\xc3\xa4", "elo", "syys", "loka", "marras", "joulu", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy HH:mm:ss z", "d MMMM yyyy", "dd/MM/yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "d MMMM", "AM", "PM", {"dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"}, {"dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."}, {"janvier", "f\xc3\xa9vrier", "mars", "avril", "mai", "juin", "juillet", "ao\xc3\xbbt", "septembre", "octobre", "novembre", "d\xc3\xa9\x63\x65mbre"}, {"janv.", "f\xc3\xa9vr.", "mars", "avr.", "mai", "juin", "juil.", "ao\xc3\xbbt", "sept.", "oct.", "nov.", "d\xc3\xa9\x63.", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"HH:mm:ss z d MMMM yyyy", "d MMMM yyyy", "dd/MM/yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "d MMMM", "AM", "PM", {"\xd7\x99\xd7\x95\xd7\x9d \xd7\xa8\xd7\x90\xd7\xa9\xd7\x95\xd7\x9f", "\xd7\x99\xd7\x95\xd7\x9d \xd7\xa9\xd7\xa0\xd7\x99", "\xd7\x99\xd7\x95\xd7\x9d \xd7\xa9\xd7\x9c\xd7\x99\xd7\xa9\xd7\x99", "\xd7\x99\xd7\x95\xd7\x9d \xd7\xa8\xd7\x91\xd7\x99\xd7\xa2\xd7\x99", "\xd7\x99\xd7\x95\xd7\x9d \xd7\x97\xd7\x9e\xd7\x99\xd7\xa9\xd7\x99", "\xd7\x99\xd7\x95\xd7\x9d \xd7\xa9\xd7\x99\xd7\xa9\xd7\x99", "\xd7\xa9\xd7\x91\xd7\xaa"}, {"\xd7\x90", "\xd7\x91", "\xd7\x92", "\xd7\x93", "\xd7\x94", "\xd7\x95", "\xd7\xa9"}, {"\xd7\x99\xd7\xa0\xd7\x95\xd7\x90\xd7\xa8", "\xd7\xa4\xd7\x91\xd7\xa8\xd7\x95\xd7\x90\xd7\xa8", "\xd7\x9e\xd7\xa8\xd7\xa5", "\xd7\x90\xd7\xa4\xd7\xa8\xd7\x99\xd7\x9c", "\xd7\x9e\xd7\x90\xd7\x99", "\xd7\x99\xd7\x95\xd7\xa0\xd7\x99", "\xd7\x99\xd7\x95\xd7\x9c\xd7\x99", "\xd7\x90\xd7\x95\xd7\x92\xd7\x95\xd7\xa1\xd7\x98", "\xd7\xa1\xd7\xa4\xd7\x98\xd7\x9e\xd7\x91\xd7\xa8", "\xd7\x90\xd7\x95\xd7\xa7\xd7\x98\xd7\x95\xd7\x91\xd7\xa8", "\xd7\xa0\xd7\x95\xd7\x91\xd7\x9e\xd7\x91\xd7\xa8", "\xd7\x93\xd7\xa6\xd7\x9e\xd7\x91\xd7\xa8"}, {"\xd7\x99\xd7\xa0\xd7\x95", "\xd7\xa4\xd7\x91\xd7\xa8", "\xd7\x9e\xd7\xa8\xd7\xa5", "\xd7\x90\xd7\xa4\xd7\xa8", "\xd7\x9e\xd7\x90\xd7\x99", "\xd7\x99\xd7\x95\xd7\xa0", "\xd7\x99\xd7\x95\xd7\x9c", "\xd7\x90\xd7\x95\xd7\x92", "\xd7\xa1\xd7\xa4\xd7\x98", "\xd7\x90\xd7\x95\xd7\xa7", "\xd7\xa0\xd7\x95\xd7\x91", "\xd7\x93\xd7\xa6\xd7\x9e", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"yyyy. MMMM d. H:mm:ss z", "yyyy. MMMM d.", "yyyy. MM. dd.", "H:mm:ss", "H:mm", "yyyy. MMMM", "MMMM d", "DE", "DU", {"vas\xc3\xa1rnap", "h\xc3\xa9tf\xc5\x91", "kedd", "szerda", "cs\xc3\xbct\xc3\xb6rt\xc3\xb6k", "p\xc3\xa9ntek", "szombat"}, {"V", "H", "K", "Sze", "Cs", "P", "Szo"}, {"janu\xc3\xa1r", "febru\xc3\xa1r", "m\xc3\xa1rcius", "\xc3\xa1prilis", "m\xc3\xa1jus", "j\xc3\xbanius", "j\xc3\xbalius", "augusztus", "szeptember", "okt\xc3\xb3\x62\x65r", "november", "december"}, {"jan.", "febr.", "m\xc3\xa1rc.", "\xc3\xa1pr.", "m\xc3\xa1j.", "j\xc3\xban.", "j\xc3\xbal.", "aug.", "szept.", "okt.", "nov.", "dec.", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d. MMMM yyyy HH:mm:ss z", "d. MMMM yyyy", "d.M.yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "d. MMMM", "AM", "PM", {"sunnudagur", "m\xc3\xa1nudagur", "\xc3\xberi\xc3\xb0judagur", "mi\xc3\xb0vikudagur", "fimmtudagur", "f\xc3\xb6studagur", "laugardagur"}, {"sun", "m\xc3\xa1n", "\xc3\xberi", "mi\xc3\xb0", "fim", "f\xc3\xb6s", "lau"}, {"jan\xc3\xba\x61r", "febr\xc3\xba\x61r", "mars", "apr\xc3\xadl", "ma\xc3\xad", "j\xc3\xban\xc3\xad", "j\xc3\xbal\xc3\xad", "\xc3\xa1g\xc3\xbast", "september", "okt\xc3\xb3\x62\x65r", "n\xc3\xb3vember", "desember"}, {"jan", "feb", "mar", "apr", "ma\xc3\xad", "j\xc3\xban", "j\xc3\xbal", "\xc3\xa1g\xc3\xba", "sep", "okt", "n\xc3\xb3v", "des", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"dd MMMM yyyy H:mm:ss z", "dd MMMM yyyy", "dd/MM/yyyy", "H.mm.ss", "HH:mm", "MMMM yyyy", "d MMMM", "m.", "p.", {"domenica", "luned\xc3\xac", "marted\xc3\xac", "mercoled\xc3\xac", "gioved\xc3\xac", "venerd\xc3\xac", "sabato"}, {"dom", "lun", "mar", "mer", "gio", "ven", "sab"}, {"gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"}, {"gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"yyyy'\xe5\xb9\xb4'M'\xe6\x9c\x88'd'\xe6\x97\xa5' H:mm:ss", "yyyy'\xe5\xb9\xb4'M'\xe6\x9c\x88'd'\xe6\x97\xa5'", "yyyy/MM/dd", "H:mm:ss", "H:mm", "yyyy'\xe5\xb9\xb4'M", "M'\xe6\x9c\x88'd", "\xe5\x8d\x88\xe5\x89\x8d", "\xe5\x8d\x88\xe5\xbe\x8c", {"\xe6\x97\xa5\xe6\x9b\x9c\xe6\x97\xa5", "\xe6\x9c\x88\xe6\x9b\x9c\xe6\x97\xa5", "\xe7\x81\xab\xe6\x9b\x9c\xe6\x97\xa5", "\xe6\xb0\xb4\xe6\x9b\x9c\xe6\x97\xa5", "\xe6\x9c\xa8\xe6\x9b\x9c\xe6\x97\xa5", "\xe9\x87\x91\xe6\x9b\x9c\xe6\x97\xa5", "\xe5\x9c\x9f\xe6\x9b\x9c\xe6\x97\xa5"}, {"\xe6\x97\xa5", "\xe6\x9c\x88", "\xe7\x81\xab", "\xe6\xb0\xb4", "\xe6\x9c\xa8", "\xe9\x87\x91", "\xe5\x9c\x9f"}, {"1\xe6\x9c\x88", "2\xe6\x9c\x88", "3\xe6\x9c\x88", "4\xe6\x9c\x88", "5\xe6\x9c\x88", "6\xe6\x9c\x88", "7\xe6\x9c\x88", "8\xe6\x9c\x88", "9\xe6\x9c\x88", "10\xe6\x9c\x88", "11\xe6\x9c\x88", "12\xe6\x9c\x88"}, {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", ""}, 0, 0, "/", ":", {"yyyy/MM/dd","yy/MM/dd","yy/M/d","yyyy/M/d","yy/MM/dd' ('ddd')'","yy/M/d' ('ddd')'","yyyy/M/d' ('ddd')'"},{"yyyy'\xe5\xb9\xb4'M'\xe6\x9c\x88'd'\xe6\x97\xa5'","yyyy'\xe5\xb9\xb4'MM'\xe6\x9c\x88'dd'\xe6\x97\xa5'","yyyy'\xe5\xb9\xb4'M'\xe6\x9c\x88'd'\xe6\x97\xa5' dddd","yyyy'\xe5\xb9\xb4'MM'\xe6\x9c\x88'dd'\xe6\x97\xa5' dddd"},{"H:mm","HH:mm","tt h:mm","tt hh:mm"},{"H:mm:ss","HH:mm:ss","tt h:mm:ss","tt hh:mm:ss"}},
-	{"yyyy'\xeb\x85\x84' M'\xec\x9b\x94' d'\xec\x9d\xbc' t hh'\xec\x8b\x9c' mm'\xeb\xb6\x84' ss'\xec\xb4\x88'", "yyyy'\xeb\x85\x84' M'\xec\x9b\x94' d'\xec\x9d\xbc'", "yyyy-MM-dd tt", "h:mm:ss", "t h:mm", "yyyy'\xeb\x85\x84' M", "M'\xec\x9b\x94' d", "\xec\x98\xa4\xec\xa0\x84", "\xec\x98\xa4\xed\x9b\x84", {"\xec\x9d\xbc\xec\x9a\x94\xec\x9d\xbc", "\xec\x9b\x94\xec\x9a\x94\xec\x9d\xbc", "\xed\x99\x94\xec\x9a\x94\xec\x9d\xbc", "\xec\x88\x98\xec\x9a\x94\xec\x9d\xbc", "\xeb\xaa\xa9\xec\x9a\x94\xec\x9d\xbc", "\xea\xb8\x88\xec\x9a\x94\xec\x9d\xbc", "\xed\x86\xa0\xec\x9a\x94\xec\x9d\xbc"}, {"\xec\x9d\xbc", "\xec\x9b\x94", "\xed\x99\x94", "\xec\x88\x98", "\xeb\xaa\xa9", "\xea\xb8\x88", "\xed\x86\xa0"}, {"1\xec\x9b\x94", "2\xec\x9b\x94", "3\xec\x9b\x94", "4\xec\x9b\x94", "5\xec\x9b\x94", "6\xec\x9b\x94", "7\xec\x9b\x94", "8\xec\x9b\x94", "9\xec\x9b\x94", "10\xec\x9b\x94", "11\xec\x9b\x94", "12\xec\x9b\x94"}, {"1\xec\x9b\x94", "2\xec\x9b\x94", "3\xec\x9b\x94", "4\xec\x9b\x94", "5\xec\x9b\x94", "6\xec\x9b\x94", "7\xec\x9b\x94", "8\xec\x9b\x94", "9\xec\x9b\x94", "10\xec\x9b\x94", "11\xec\x9b\x94", "12\xec\x9b\x94", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy H:mm:ss z", "d MMMM yyyy", "d-M-yyyy", "H:mm:ss", "H:mm", "MMMM yyyy", "d MMMM", "AM", "PM", {"zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"}, {"zo", "ma", "di", "wo", "do", "vr", "za"}, {"januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"}, {"jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy HH:mm:ss z", "d MMMM yyyy", "yyyy-MM-dd", "HH:mm:ss", "HH:mm", "MMMM yyyy", "d MMMM", "AM", "PM", {"niedziela", "poniedzia?ek", "wtorek", "?roda", "czwartek", "pi?tek", "sobota"}, {"N", "Pn", "Wt", "?r", "Cz", "Pt", "So"}, {"stycze?", "luty", "marzec", "kwiecie?", "maj", "czerwiec", "lipiec", "sierpie?", "wrzesie?", "pa?dziernik", "listopad", "grudzie?"}, {"sty", "lut", "mar", "kwi", "maj", "cze", "lip", "sie", "wrz", "pa?", "lis", "gru", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d' de 'MMMM' de 'yyyy H'h'm'min's's' z", "d' de 'MMMM' de 'yyyy", "d/M/yyyy", "HH:mm:ss", "HH:mm", "MMMM' de 'yyyy", "d' de 'MMMM", "AM", "PM", {"domingo", "segunda-feira", "ter\xc3\xa7\x61-feira", "quarta-feira", "quinta-feira", "sexta-feira", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "seg", "ter", "qua", "qui", "sex", "s\xc3\xa1\x62"}, {"janeiro", "fevereiro", "mar\xc3\xa7o", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"}, {"jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy HH:mm:ss z", "d MMMM yyyy", "dd.MM.yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "d MMMM", "AM", "PM", {"duminic\xc4\x83", "luni", "mar\xc5\xa3i", "miercuri", "joi", "vineri", "s\xc3\xaemb\xc4\x83t\xc4\x83"}, {"D", "L", "Ma", "Mi", "J", "V", "S"}, {"ianuarie", "februarie", "martie", "aprilie", "mai", "iunie", "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie"}, {"Ian", "Feb", "Mar", "Apr", "Mai", "Iun", "Iul", "Aug", "Sep", "Oct", "Nov", "Dec", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy '\xd0\xb3.' H:mm:ss z", "d MMMM yyyy '\xd0\xb3.'", "dd.MM.yyyy", "H:mm:ss", "H:mm", "MMMM yyyy", "d MMMM", "AM", "PM", {"\xd0\xb2\xd0\xbe\xd1\x81\xd0\xba\xd1\x80\xd0\xb5\xd1\x81\xd0\xb5\xd0\xbd\xd1\x8c\xd0\xb5", "\xd0\xbf\xd0\xbe\xd0\xbd\xd0\xb5\xd0\xb4\xd0\xb5\xd0\xbb\xd1\x8c\xd0\xbd\xd0\xb8\xd0\xba", "\xd0\xb2\xd1\x82\xd0\xbe\xd1\x80\xd0\xbd\xd0\xb8\xd0\xba", "\xd1\x81\xd1\x80\xd0\xb5\xd0\xb4\xd0\xb0", "\xd1\x87\xd0\xb5\xd1\x82\xd0\xb2\xd0\xb5\xd1\x80\xd0\xb3", "\xd0\xbf\xd1\x8f\xd1\x82\xd0\xbd\xd0\xb8\xd1\x86\xd0\xb0", "\xd1\x81\xd1\x83\xd0\xb1\xd0\xb1\xd0\xbe\xd1\x82\xd0\xb0"}, {"\xd0\x92\xd1\x81", "\xd0\x9f\xd0\xbd", "\xd0\x92\xd1\x82", "\xd0\xa1\xd1\x80", "\xd0\xa7\xd1\x82", "\xd0\x9f\xd1\x82", "\xd0\xa1\xd0\xb1"}, {"\xd0\xaf\xd0\xbd\xd0\xb2\xd0\xb0\xd1\x80\xd1\x8c", "\xd0\xa4\xd0\xb5\xd0\xb2\xd1\x80\xd0\xb0\xd0\xbb\xd1\x8c", "\xd0\x9c\xd0\xb0\xd1\x80\xd1\x82", "\xd0\x90\xd0\xbf\xd1\x80\xd0\xb5\xd0\xbb\xd1\x8c", "\xd0\x9c\xd0\xb0\xd0\xb9", "\xd0\x98\xd1\x8e\xd0\xbd\xd1\x8c", "\xd0\x98\xd1\x8e\xd0\xbb\xd1\x8c", "\xd0\x90\xd0\xb2\xd0\xb3\xd1\x83\xd1\x81\xd1\x82", "\xd0\xa1\xd0\xb5\xd0\xbd\xd1\x82\xd1\x8f\xd0\xb1\xd1\x80\xd1\x8c", "\xd0\x9e\xd0\xba\xd1\x82\xd1\x8f\xd0\xb1\xd1\x80\xd1\x8c", "\xd0\x9d\xd0\xbe\xd1\x8f\xd0\xb1\xd1\x80\xd1\x8c", "\xd0\x94\xd0\xb5\xd0\xba\xd0\xb0\xd0\xb1\xd1\x80\xd1\x8c"}, {"\xd1\x8f\xd0\xbd\xd0\xb2", "\xd1\x84\xd0\xb5\xd0\xb2", "\xd0\xbc\xd0\xb0\xd1\x80", "\xd0\xb0\xd0\xbf\xd1\x80", "\xd0\xbc\xd0\xb0\xd0\xb9", "\xd0\xb8\xd1\x8e\xd0\xbd", "\xd0\xb8\xd1\x8e\xd0\xbb", "\xd0\xb0\xd0\xb2\xd0\xb3", "\xd1\x81\xd0\xb5\xd0\xbd", "\xd0\xbe\xd0\xba\xd1\x82", "\xd0\xbd\xd0\xbe\xd1\x8f", "\xd0\xb4\xd0\xb5\xd0\xba", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"yyyy. MMMM dd HH:mm:ss z", "yyyy. MMMM dd", "d.M.yyyy", "H:mm:ss", "HH:mm", "yyyy. MMMM", "MMMM dd", "AM", "PM", {"nedjelja", "ponedjeljak", "utorak", "srijeda", "\xc4\x8d\x65tvrtak", "petak", "subota"}, {"ned", "pon", "uto", "sri", "\xc4\x8d\x65t", "pet", "sub"}, {"sije\xc4\x8d\x61nj", "velja\xc4\x8d\x61", "o\xc5\xbeujak", "travanj", "svibanj", "lipanj", "srpanj", "kolovoz", "rujan", "listopad", "studeni", "prosinac"}, {"sij", "vel", "o\xc5\xbeu", "tra", "svi", "lip", "srp", "kol", "ruj", "lis", "stu", "pro", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d. MMMM yyyy H:mm:ss z", "d. MMMM yyyy", "d. M. yyyy", "H:mm:ss", "H:mm", "MMMM yyyy", "d. MMMM", "AM", "PM", {"Nede\xc4\xbe\x61", "Pondelok", "Utorok", "Streda", "\xc5\xa0tvrtok", "Piatok", "Sobota"}, {"Ne", "Po", "Ut", "St", "\xc5\xa0t", "Pi", "So"}, {"janu\xc3\xa1r", "febru\xc3\xa1r", "marec", "apr\xc3\xadl", "m\xc3\xa1j", "j\xc3\xban", "j\xc3\xbal", "august", "september", "okt\xc3\xb3\x62\x65r", "november", "december"}, {"jan", "feb", "mar", "apr", "m\xc3\xa1j", "j\xc3\xban", "j\xc3\xbal", "aug", "sep", "okt", "nov", "dec", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"dd MMMM yyyy h.mm.ss.t z", "dd MMMM yyyy", "yyyy-MM-dd", "h:mm:ss.tt", "h.mm.t", "MMMM yyyy", "dd MMMM", "PD", "MD", {"e diel", "e h\xc3\xabn\xc3\xab", "e mart\xc3\xab", "e m\xc3\xabrkur\xc3\xab", "e enjte", "e premte", "e shtun\xc3\xab"}, {"Die", "H\xc3\xabn", "Mar", "M\xc3\xabr", "Enj", "Pre", "Sht"}, {"janar", "shkurt", "mars", "prill", "maj", "qershor", "korrik", "gusht", "shtator", "tetor", "n\xc3\xabntor", "dhjetor"}, {"Jan", "Shk", "Mar", "Pri", "Maj", "Qer", "Kor", "Gsh", "Sht", "Tet", "N\xc3\xabn", "Dhj", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"'den 'd MMM yyyy HH.mm.ss z", "'den 'd MMM yyyy", "yyyy-MM-dd", "HH:mm:ss", "HH.mm", "MMMM yyyy", "d MMMM", "fm", "em", {"s\xc3\xb6ndag", "m\xc3\xa5ndag", "tisdag", "onsdag", "torsdag", "fredag", "l\xc3\xb6rdag"}, {"s\xc3\xb6", "m\xc3\xa5", "ti", "on", "to", "fr", "l\xc3\xb6"}, {"januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"}, {"jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy, H' \xe0\xb8\x99\xe0\xb8\xb2\xe0\xb8\xac\xe0\xb8\xb4\xe0\xb8\x81\xe0\xb8\xb2 'm' \xe0\xb8\x99\xe0\xb8\xb2\xe0\xb8\x97\xe0\xb8\xb5'", "d MMMM yyyy", "d/M/yyyy", "H:mm:ss", "H:mm", "MMMM yyyy", "d MMMM", "\xe0\xb8\x81\xe0\xb9\x88\xe0\xb8\xad\xe0\xb8\x99\xe0\xb9\x80\xe0\xb8\x97\xe0\xb8\xb5\xe0\xb9\x88\xe0\xb8\xa2\xe0\xb8\x87", "\xe0\xb8\xab\xe0\xb8\xa5\xe0\xb8\xb1\xe0\xb8\x87\xe0\xb9\x80\xe0\xb8\x97\xe0\xb8\xb5\xe0\xb9\x88\xe0\xb8\xa2\xe0\xb8\x87", {"\xe0\xb8\xa7\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\xad\xe0\xb8\xb2\xe0\xb8\x97\xe0\xb8\xb4\xe0\xb8\x95\xe0\xb8\xa2\xe0\xb9\x8c", "\xe0\xb8\xa7\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\x88\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\x97\xe0\xb8\xa3\xe0\xb9\x8c", "\xe0\xb8\xa7\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\xad\xe0\xb8\xb1\xe0\xb8\x87\xe0\xb8\x84\xe0\xb8\xb2\xe0\xb8\xa3", "\xe0\xb8\xa7\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\x9e\xe0\xb8\xb8\xe0\xb8\x98", "\xe0\xb8\xa7\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\x9e\xe0\xb8\xa4\xe0\xb8\xab\xe0\xb8\xb1\xe0\xb8\xaa\xe0\xb8\x9a\xe0\xb8\x94\xe0\xb8\xb5", "\xe0\xb8\xa7\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\xa8\xe0\xb8\xb8\xe0\xb8\x81\xe0\xb8\xa3\xe0\xb9\x8c", "\xe0\xb8\xa7\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb9\x80\xe0\xb8\xaa\xe0\xb8\xb2\xe0\xb8\xa3\xe0\xb9\x8c"}, {"\xe0\xb8\xad\xe0\xb8\xb2.", "\xe0\xb8\x88.", "\xe0\xb8\xad.", "\xe0\xb8\x9e.", "\xe0\xb8\x9e\xe0\xb8\xa4.", "\xe0\xb8\xa8.", "\xe0\xb8\xaa."}, {"\xe0\xb8\xa1\xe0\xb8\x81\xe0\xb8\xa3\xe0\xb8\xb2\xe0\xb8\x84\xe0\xb8\xa1", "\xe0\xb8\x81\xe0\xb8\xb8\xe0\xb8\xa1\xe0\xb8\xa0\xe0\xb8\xb2\xe0\xb8\x9e\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\x98\xe0\xb9\x8c", "\xe0\xb8\xa1\xe0\xb8\xb5\xe0\xb8\x99\xe0\xb8\xb2\xe0\xb8\x84\xe0\xb8\xa1", "\xe0\xb9\x80\xe0\xb8\xa1\xe0\xb8\xa9\xe0\xb8\xb2\xe0\xb8\xa2\xe0\xb8\x99", "\xe0\xb8\x9e\xe0\xb8\xa4\xe0\xb8\xa9\xe0\xb8\xa0\xe0\xb8\xb2\xe0\xb8\x84\xe0\xb8\xa1", "\xe0\xb8\xa1\xe0\xb8\xb4\xe0\xb8\x96\xe0\xb8\xb8\xe0\xb8\x99\xe0\xb8\xb2\xe0\xb8\xa2\xe0\xb8\x99", "\xe0\xb8\x81\xe0\xb8\xa3\xe0\xb8\x81\xe0\xb8\x8e\xe0\xb8\xb2\xe0\xb8\x84\xe0\xb8\xa1", "\xe0\xb8\xaa\xe0\xb8\xb4\xe0\xb8\x87\xe0\xb8\xab\xe0\xb8\xb2\xe0\xb8\x84\xe0\xb8\xa1", "\xe0\xb8\x81\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\xa2\xe0\xb8\xb2\xe0\xb8\xa2\xe0\xb8\x99", "\xe0\xb8\x95\xe0\xb8\xb8\xe0\xb8\xa5\xe0\xb8\xb2\xe0\xb8\x84\xe0\xb8\xa1", "\xe0\xb8\x9e\xe0\xb8\xa4\xe0\xb8\xa8\xe0\xb8\x88\xe0\xb8\xb4\xe0\xb8\x81\xe0\xb8\xb2\xe0\xb8\xa2\xe0\xb8\x99", "\xe0\xb8\x98\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\xa7\xe0\xb8\xb2\xe0\xb8\x84\xe0\xb8\xa1"}, {"\xe0\xb8\xa1.\xe0\xb8\x84.", "\xe0\xb8\x81.\xe0\xb8\x9e.", "\xe0\xb8\xa1\xe0\xb8\xb5.\xe0\xb8\x84.", "\xe0\xb9\x80\xe0\xb8\xa1.\xe0\xb8\xa2.", "\xe0\xb8\x9e.\xe0\xb8\x84.", "\xe0\xb8\xa1\xe0\xb8\xb4.\xe0\xb8\xa2.", "\xe0\xb8\x81.\xe0\xb8\x84.", "\xe0\xb8\xaa.\xe0\xb8\x84.", "\xe0\xb8\x81.\xe0\xb8\xa2.", "\xe0\xb8\x95.\xe0\xb8\x84.", "\xe0\xb8\x9e.\xe0\xb8\xa2.", "\xe0\xb8\x98.\xe0\xb8\x84.", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"dd MMMM yyyy EEEE HH:mm:ss z", "dd MMMM yyyy EEEE", "dd.MM.yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "dd MMMM", "AM", "PM", {"Pazar", "Pazartesi", "Sal\xc4\xb1", "\xc3\x87\x61r\xc5\x9f\x61mba", "Per\xc5\x9f\x65mbe", "Cuma", "Cumartesi"}, {"Paz", "Pzt", "Sal", "\xc3\x87\x61r", "Per", "Cum", "Cmt"}, {"Ocak", "\xc5\x9eubat", "Mart", "Nisan", "May\xc4\xb1s", "Haziran", "Temmuz", "A\xc4\x9fustos", "Eyl\xc3\xbcl", "Ekim", "Kas\xc4\xb1m", "Aral\xc4\xb1k"}, {"Oca", "\xc5\x9eub", "Mar", "Nis", "May", "Haz", "Tem", "A\xc4\x9fu", "Eyl", "Eki", "Kas", "Ara", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"dd MMMM yyyy H:mm:ss", "dd MMMM yyyy", "dd/MM/yyyy", "H:mm:ss", "H:mm", "MMMM yyyy", "dd MMMM", "AM", "PM", {"Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"}, {"Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"}, {"Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"}, {"Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy HH:mm:ss z", "d MMMM yyyy", "dd.MM.yyyy", "H:mm:ss", "HH:mm", "MMMM yyyy", "d MMMM", "AM", "PM", {"\xd0\x9d\xd0\xb5\xd0\xb4\xd1\x96\xd0\xbb\xd1\x8f", "\xd0\x9f\xd0\xbe\xd0\xbd\xd0\xb5\xd0\xb4\xd1\x96\xd0\xbb\xd0\xbe\xd0\xba", "\xd0\x92\xd1\x96\xd0\xb2\xd1\x82\xd0\xbe\xd1\x80\xd0\xbe\xd0\xba", "\xd0\xa1\xd0\xb5\xd1\x80\xd0\xb5\xd0\xb4\xd0\xb0", "\xd0\xa7\xd0\xb5\xd1\x82\xd0\xb2\xd0\xb5\xd1\x80", "\xd0\x9f'\xd1\x8f\xd1\x82\xd0\xbd\xd0\xb8\xd1\x86\xd1\x8f", "\xd0\xa1\xd1\x83\xd0\xb1\xd0\xbe\xd1\x82\xd0\xb0"}, {"\xd0\x9d\xd0\xb4", "\xd0\x9f\xd0\xbd", "\xd0\x92\xd1\x82", "\xd0\xa1\xd1\x80", "\xd0\xa7\xd1\x82", "\xd0\x9f\xd1\x82", "\xd0\xa1\xd0\xb1"}, {"\xd1\x81\xd1\x96\xd1\x87\xd0\xbd\xd1\x8f", "\xd0\xbb\xd1\x8e\xd1\x82\xd0\xbe\xd0\xb3\xd0\xbe", "\xd0\xb1\xd0\xb5\xd1\x80\xd0\xb5\xd0\xb7\xd0\xbd\xd1\x8f", "\xd0\xba\xd0\xb2\xd1\x96\xd1\x82\xd0\xbd\xd1\x8f", "\xd1\x82\xd1\x80\xd0\xb0\xd0\xb2\xd0\xbd\xd1\x8f", "\xd1\x87\xd0\xb5\xd1\x80\xd0\xb2\xd0\xbd\xd1\x8f", "\xd0\xbb\xd0\xb8\xd0\xbf\xd0\xbd\xd1\x8f", "\xd1\x81\xd0\xb5\xd1\x80\xd0\xbf\xd0\xbd\xd1\x8f", "\xd0\xb2\xd0\xb5\xd1\x80\xd0\xb5\xd1\x81\xd0\xbd\xd1\x8f", "\xd0\xb6\xd0\xbe\xd0\xb2\xd1\x82\xd0\xbd\xd1\x8f", "\xd0\xbb\xd0\xb8\xd1\x81\xd1\x82\xd0\xbe\xd0\xbf\xd0\xb0\xd0\xb4\xd0\xb0", "\xd0\xb3\xd1\x80\xd1\x83\xd0\xb4\xd0\xbd\xd1\x8f"}, {"\xd1\x81\xd1\x96\xd1\x87", "\xd0\xbb\xd1\x8e\xd1\x82", "\xd0\xb1\xd0\xb5\xd1\x80", "\xd0\xba\xd0\xb2\xd1\x96\xd1\x82", "\xd1\x82\xd1\x80\xd0\xb0\xd0\xb2", "\xd1\x87\xd0\xb5\xd1\x80\xd0\xb2", "\xd0\xbb\xd0\xb8\xd0\xbf", "\xd1\x81\xd0\xb5\xd1\x80\xd0\xbf", "\xd0\xb2\xd0\xb5\xd1\x80", "\xd0\xb6\xd0\xbe\xd0\xb2\xd1\x82", "\xd0\xbb\xd0\xb8\xd1\x81\xd1\x82", "\xd0\xb3\xd1\x80\xd1\x83\xd0\xb4", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy HH.mm.ss z", "d MMMM yyyy", "dd.MM.yyyy", "H:mm:ss", "HH.mm", "MMMM yyyy", "d MMMM", "AM", "PM", {"\xd0\xbd\xd1\x8f\xd0\xb4\xd0\xb7\xd0\xb5\xd0\xbb\xd1\x8f", "\xd0\xbf\xd0\xb0\xd0\xbd\xd1\x8f\xd0\xb4\xd0\xb7\xd0\xb5\xd0\xbb\xd0\xb0\xd0\xba", "\xd0\xb0\xd1\x9e\xd1\x82\xd0\xbe\xd1\x80\xd0\xb0\xd0\xba", "\xd1\x81\xd0\xb5\xd1\x80\xd0\xb0\xd0\xb4\xd0\xb0", "\xd1\x87\xd0\xb0\xd1\x86\xd0\xb2\xd0\xb5\xd1\x80", "\xd0\xbf\xd1\x8f\xd1\x82\xd0\xbd\xd1\x96\xd1\x86\xd0\xb0", "\xd1\x81\xd1\x83\xd0\xb1\xd0\xbe\xd1\x82\xd0\xb0"}, {"\xd0\xbd\xd0\xb4", "\xd0\xbf\xd0\xbd", "\xd0\xb0\xd1\x9e", "\xd1\x81\xd1\x80", "\xd1\x87\xd1\x86", "\xd0\xbf\xd1\x82", "\xd1\x81\xd0\xb1"}, {"\xd1\x81\xd1\x82\xd1\x83\xd0\xb4\xd0\xb7\xd0\xb5\xd0\xbd\xd1\x8c", "\xd0\xbb\xd1\x8e\xd1\x82\xd1\x8b", "\xd1\x81\xd0\xb0\xd0\xba\xd0\xb0\xd0\xb2\xd1\x96\xd0\xba", "\xd0\xba\xd1\x80\xd0\xb0\xd1\x81\xd0\xb0\xd0\xb2\xd1\x96\xd0\xba", "\xd0\xbc\xd0\xb0\xd0\xb9", "\xd1\x87\xd1\x8d\xd1\x80\xd0\xb2\xd0\xb5\xd0\xbd\xd1\x8c", "\xd0\xbb\xd1\x96\xd0\xbf\xd0\xb5\xd0\xbd\xd1\x8c", "\xd0\xb6\xd0\xbd\xd1\x96\xd0\xb2\xd0\xb5\xd0\xbd\xd1\x8c", "\xd0\xb2\xd0\xb5\xd1\x80\xd0\xb0\xd1\x81\xd0\xb5\xd0\xbd\xd1\x8c", "\xd0\xba\xd0\xb0\xd1\x81\xd1\x82\xd1\x80\xd1\x8b\xd1\x87\xd0\xbd\xd1\x96\xd0\xba", "\xd0\xbb\xd1\x96\xd1\x81\xd1\x82\xd0\xb0\xd0\xbf\xd0\xb0\xd0\xb4", "\xd1\x81\xd0\xbd\xd0\xb5\xd0\xb6\xd0\xb0\xd0\xbd\xd1\x8c"}, {"\xd1\x81\xd1\x82\xd1\x83", "\xd0\xbb\xd1\x8e\xd1\x82", "\xd1\x81\xd0\xb0\xd0\xba", "\xd0\xba\xd1\x80\xd0\xb0", "\xd0\xbc\xd0\xb0\xd0\xb9", "\xd1\x87\xd1\x8d\xd1\x80", "\xd0\xbb\xd1\x96\xd0\xbf", "\xd0\xb6\xd0\xbd\xd1\x96", "\xd0\xb2\xd0\xb5\xd1\x80", "\xd0\xba\xd0\xb0\xd1\x81", "\xd0\xbb\xd1\x96\xd1\x81", "\xd1\x81\xd0\xbd\xd0\xb5", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"dd. MMMM yyyy H:mm:ss z", "dd. MMMM yyyy", "d.M.yyyy", "H:mm:ss", "H:mm", "MMMM yyyy", "dd. MMMM", "AM", "PM", {"nedelja", "ponedeljek", "torek", "sreda", "\xc4\x8d\x65trtek", "petek", "sobota"}, {"ned", "pon", "tor", "sre", "\xc4\x8d\x65t", "pet", "sob"}, {"januar", "februar", "marec", "april", "maj", "junij", "julij", "avgust", "september", "oktober", "november", "december"}, {"jan", "feb", "mar", "apr", "maj", "jun", "jul", "avg", "sep", "okt", "nov", "dec", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy H:mm:ss z", "d MMMM yyyy", "d.MM.yyyy", "H:mm:ss", "H:mm", "MMMM yyyy", "d, MMMM", "AM", "PM", {"p\xc3\xbchap\xc3\xa4\x65v", "esmasp\xc3\xa4\x65v", "teisip\xc3\xa4\x65v", "kolmap\xc3\xa4\x65v", "neljap\xc3\xa4\x65v", "reede", "laup\xc3\xa4\x65v"}, {"P", "E", "T", "K", "N", "R", "L"}, {"jaanuar", "veebruar", "m\xc3\xa4rts", "aprill", "mai", "juuni", "juuli", "august", "september", "oktoober", "november", "detsember"}, {"jaan", "veebr", "m\xc3\xa4rts", "apr", "mai", "juuni", "juuli", "aug", "sept", "okt", "nov", "dets", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"yyyy'. gada 'd. MMMM HH:mm:ss z", "yyyy'. gada 'd. MMMM", "yyyy.MM.dd.", "H:mm:ss", "HH:mm", "yyyy'. gada 'MMMM", "d. MMMM", "AM", "PM", {"sv\xc4\x93tdiena", "pirmdiena", "otrdiena", "tre\xc5\xa1\x64iena", "ceturtdiena", "piektdiena", "sestdiena"}, {"Sv", "P", "O", "T", "C", "Pk", "S"}, {"janv\xc4\x81ris", "febru\xc4\x81ris", "marts", "apr\xc4\xablis", "maijs", "j\xc5\xabnijs", "j\xc5\xablijs", "augusts", "septembris", "oktobris", "novembris", "decembris"}, {"Jan", "Feb", "Mar", "Apr", "Mai", "J\xc5\xabn", "J\xc5\xabl", "Aug", "Sep", "Okt", "Nov", "Dec", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"yyyy 'm.' MMMM d 'd.' HH:mm:ss z", "yyyy 'm.' MMMM d 'd.'", "yyyy.MM.dd", "HH:mm:ss", "HH:mm", "yyyy 'm.' MMMM", "MMMM d", "AM", "PM", {"Sekmadienis", "Pirmadienis", "Antradienis", "Tre\xc4\x8diadienis", "Ketvirtadienis", "Penktadienis", "\xc5\xa0\x65\xc5\xa1tadienis"}, {"Sk", "Pr", "An", "Tr", "Kt", "Pn", "\xc5\xa0t"}, {"Sausio", "Vasario", "Kovo", "Baland\xc5\xbeio", "Gegu\xc5\xbe\xc4\x97s", "Bir\xc5\xbe\x65lio", "Liepos", "Rugpj\xc5\xab\xc4\x8dio", "Rugs\xc4\x97jo", "Spalio", "Lapkri\xc4\x8dio", "Gruod\xc5\xbeio"}, {"Sau", "Vas", "Kov", "Bal", "Geg", "Bir", "Lie", "Rgp", "Rgs", "Spa", "Lap", "Grd", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy HH:mm:ss (z)", "d MMMM yyyy", "M/d/yyyy", "hh:mm:ss tt", "HH:mm", "MMMM yyyy", "d MMMM", "\xd9\x82.\xd8\xb8.", "\xd8\xa8.\xd8\xb8.", {"\xdb\x8c\xda\xa9\xe2\x80\x8c\xd8\xb4\xd9\x86\xd8\xa8\xd9\x87", "\xd8\xaf\xd9\x88\xd8\xb4\xd9\x86\xd8\xa8\xd9\x87", "\xd8\xb3\xd9\x87\xe2\x80\x8c\xd8\xb4\xd9\x86\xd8\xa8\xd9\x87", "\xda\x86\xd9\x87\xd8\xa7\xd8\xb1\xd8\xb4\xd9\x86\xd8\xa8\xd9\x87", "\xd9\xbe\xd9\x86\xd8\xac\xe2\x80\x8c\xd8\xb4\xd9\x86\xd8\xa8\xd9\x87", "\xd8\xac\xd9\x85\xd8\xb9\xd9\x87", "\xd8\xb4\xd9\x86\xd8\xa8\xd9\x87"}, {"\xdb\x8c.", "\xd8\xaf.", "\xd8\xb3.", "\xda\x86.", "\xd9\xbe.", "\xd8\xac.", "\xd8\xb4."}, {"\xda\x98\xd8\xa7\xd9\x86\xd9\x88\xdb\x8c\xd9\x87", "\xd9\x81\xd9\x88\xd8\xb1\xdb\x8c\xd9\x87", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa2\xd9\x88\xd8\xb1\xdb\x8c\xd9\x84", "\xd9\x85\xd9\x87", "\xda\x98\xd9\x88\xd8\xa6\xd9\x86", "\xda\x98\xd9\x88\xd8\xa6\xdb\x8c\xd9\x87", "\xd8\xa7\xd9\x88\xd8\xaa", "\xd8\xb3\xd9\xbe\xd8\xaa\xd8\xa7\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa7\xda\xa9\xd8\xaa\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd8\xa7\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd8\xb3\xd8\xa7\xd9\x85\xd8\xa8\xd8\xb1"}, {"\xda\x98\xd8\xa7\xd9\x86", "\xd9\x81\xd9\x88\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1", "\xd8\xa2\xd9\x88\xd8\xb1", "\xd9\x85\xd9\x80\xd9\x87", "\xda\x98\xd9\x88\xd9\x86", "\xda\x98\xd9\x88\xdb\x8c", "\xd8\xa7\xd9\x88\xd8\xaa", "\xd8\xb3\xd9\xbe\xd8\xaa", "\xd8\xa7\xda\xa9\xd8\xaa", "\xd9\x86\xd9\x88\xd8\xa7", "\xd8\xaf\xd8\xb3\xd8\xa7", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"HH:mm:ss z dd MMMM yyyy", "dd MMMM yyyy", "dd/MM/yyyy", "h:mm:ss tt", "HH:mm", "MMMM yyyy", "dd MMMM", "SA", "CH", {"Ch\xe1\xbb\xa7 nh\xe1\xba\xadt", "Th\xe1\xbb\xa9 hai", "Th\xe1\xbb\xa9 ba", "Th\xe1\xbb\xa9 t\xc6\xb0", "Th\xe1\xbb\xa9 n\xc4\x83m", "Th\xe1\xbb\xa9 s\xc3\xa1u", "Th\xe1\xbb\xa9 b\xe1\xba\xa3y"}, {"CN", "Th 2", "Th 3", "Th 4", "Th 5", "Th 6", "Th 7"}, {"Th\xc3\xa1ng m\xe1\xbb\x99t", "Th\xc3\xa1ng hai", "Th\xc3\xa1ng ba", "Th\xc3\xa1ng t\xc6\xb0", "Th\xc3\xa1ng n\xc4\x83m", "Th\xc3\xa1ng s\xc3\xa1u", "Th\xc3\xa1ng b\xe1\xba\xa3y", "Th\xc3\xa1ng t\xc3\xa1m", "Th\xc3\xa1ng ch\xc3\xadn", "Th\xc3\xa1ng m\xc6\xb0\xe1\xbb\x9di", "Th\xc3\xa1ng m\xc6\xb0\xe1\xbb\x9di m\xe1\xbb\x99t", "Th\xc3\xa1ng m\xc6\xb0\xe1\xbb\x9di hai"}, {"Thg 1", "Thg 2", "Thg 3", "Thg 4", "Thg 5", "Thg 6", "Thg 7", "Thg 8", "Thg 9", "Thg 10", "Thg 11", "Thg 12", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"MMMM dd, yyyy HH:mm:ss z", "MMMM dd, yyyy", "dd.MM.yyyy", "H:mm:ss", "HH:mm", "MMMM yyyy", "MMMM d", "\xd4\xb1\xd5\xbc\xe2\x80\xa4", "\xd4\xb5\xd6\x80\xe2\x80\xa4", {"\xd4\xbf\xd5\xab\xd6\x80\xd5\xa1\xd5\xaf\xd5\xab", "\xd4\xb5\xd6\x80\xd5\xaf\xd5\xb8\xd6\x82\xd5\xb7\xd5\xa1\xd5\xa2\xd5\xa9\xd5\xab", "\xd4\xb5\xd6\x80\xd5\xa5\xd6\x84\xd5\xb7\xd5\xa1\xd5\xa2\xd5\xa9\xd5\xab", "\xd5\x89\xd5\xb8\xd6\x80\xd5\xa5\xd6\x84\xd5\xb7\xd5\xa1\xd5\xa2\xd5\xa9\xd5\xab", "\xd5\x80\xd5\xab\xd5\xb6\xd5\xa3\xd5\xb7\xd5\xa1\xd5\xa2\xd5\xa9\xd5\xab", "\xd5\x88\xd6\x82\xd6\x80\xd5\xa2\xd5\xa1\xd5\xa9", "\xd5\x87\xd5\xa1\xd5\xa2\xd5\xa1\xd5\xa9"}, {"\xd4\xbf\xd5\xab\xd6\x80", "\xd4\xb5\xd6\x80\xd5\xaf", "\xd4\xb5\xd6\x80\xd6\x84", "\xd5\x89\xd5\xb8\xd6\x80", "\xd5\x80\xd5\xb6\xd5\xa3", "\xd5\x88\xd6\x82\xd6\x80", "\xd5\x87\xd5\xa1\xd5\xa2"}, {"\xd5\x85\xd5\xb8\xd6\x82\xd5\xb6\xd5\xb8\xd6\x82\xd5\xa1\xd6\x80", "\xd5\x93\xd5\xa5\xd5\xbf\xd6\x80\xd5\xb8\xd6\x82\xd5\xa1\xd6\x80", "\xd5\x84\xd5\xa1\xd6\x80\xd5\xbf", "\xd4\xb1\xd5\xba\xd6\x80\xd5\xab\xd5\xac", "\xd5\x84\xd5\xa1\xd5\xb5\xd5\xab\xd5\xbd", "\xd5\x85\xd5\xb8\xd6\x82\xd5\xb6\xd5\xab\xd5\xbd", "\xd5\x85\xd5\xb8\xd6\x82\xd5\xac\xd5\xab\xd5\xbd", "\xd5\x95\xd5\xa3\xd5\xb8\xd5\xbd\xd5\xbf\xd5\xb8\xd5\xbd", "\xd5\x8d\xd5\xa5\xd5\xba\xd5\xbf\xd5\xa5\xd5\xb4\xd5\xa2\xd5\xa5\xd6\x80", "\xd5\x80\xd5\xb8\xd5\xaf\xd5\xbf\xd5\xa5\xd5\xb4\xd5\xa2\xd5\xa5\xd6\x80", "\xd5\x86\xd5\xb8\xd5\xb5\xd5\xa5\xd5\xb4\xd5\xa2\xd5\xa5\xd6\x80", "\xd4\xb4\xd5\xa5\xd5\xaf\xd5\xbf\xd5\xa5\xd5\xb4\xd5\xa2\xd5\xa5\xd6\x80"}, {"\xd5\x85\xd5\xb6\xd6\x80", "\xd5\x93\xd5\xbf\xd6\x80", "\xd5\x84\xd6\x80\xd5\xbf", "\xd4\xb1\xd5\xba\xd6\x80", "\xd5\x84\xd5\xb5\xd5\xbd", "\xd5\x85\xd5\xb6\xd5\xbd", "\xd5\x85\xd5\xac\xd5\xbd", "\xd5\x95\xd5\xa3\xd5\xbd", "\xd5\x8d\xd5\xa5\xd5\xba", "\xd5\x80\xd5\xb8\xd5\xaf", "\xd5\x86\xd5\xb8\xd5\xb5", "\xd4\xb4\xd5\xa5\xd5\xaf", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"MMMM dd, yyyy HH:mm:ss z", "MMMM dd, yyyy", "dd.MM.yyyy", "H:mm:ss", "HH:mm", "MMMM yyyy", "MMMM d", "\xd4\xb1\xd5\xbc\xe2\x80\xa4", "\xd4\xbf\xd5\xa5\xe2\x80\xa4", {"\xd4\xbf\xd5\xab\xd6\x80\xd5\xa1\xd5\xaf\xd5\xab", "\xd4\xb5\xd6\x80\xd5\xaf\xd5\xb8\xd6\x82\xd5\xb7\xd5\xa1\xd5\xa2\xd5\xa9\xd5\xab", "\xd4\xb5\xd6\x80\xd5\xa5\xd6\x84\xd5\xb7\xd5\xa1\xd5\xa2\xd5\xa9\xd5\xab", "\xd5\x89\xd5\xb8\xd6\x80\xd5\xa5\xd6\x84\xd5\xb7\xd5\xa1\xd5\xa2\xd5\xa9\xd5\xab", "\xd5\x80\xd5\xab\xd5\xb6\xd5\xa3\xd5\xb7\xd5\xa1\xd5\xa2\xd5\xa9\xd5\xab", "\xd5\x88\xd6\x82\xd6\x80\xd5\xa2\xd5\xa1\xd5\xa9", "\xd5\x87\xd5\xa1\xd5\xa2\xd5\xa1\xd5\xa9"}, {"\xd4\xbf\xd5\xab\xd6\x80", "\xd4\xb5\xd6\x80\xd5\xaf", "\xd4\xb5\xd6\x80\xd6\x84", "\xd5\x89\xd5\xb8\xd6\x80", "\xd5\x80\xd5\xb6\xd5\xa3", "\xd5\x88\xd6\x82\xd6\x80", "\xd5\x87\xd5\xa1\xd5\xa2"}, {"\xd5\x80\xd5\xb8\xd6\x82\xd5\xb6\xd5\xbe\xd5\xa1\xd6\x80", "\xd5\x93\xd5\xa5\xd5\xbf\xd6\x80\xd5\xbe\xd5\xa1\xd6\x80", "\xd5\x84\xd5\xa1\xd6\x80\xd5\xbf", "\xd4\xb1\xd5\xba\xd6\x80\xd5\xab\xd5\xac", "\xd5\x84\xd5\xa1\xd5\xb5\xd5\xab\xd5\xbd", "\xd5\x80\xd5\xb8\xd6\x82\xd5\xb6\xd5\xab\xd5\xbd", "\xd5\x80\xd5\xb8\xd6\x82\xd5\xac\xd5\xab\xd5\xbd", "\xd5\x95\xd5\xa3\xd5\xb8\xd5\xbd\xd5\xbf\xd5\xb8\xd5\xbd", "\xd5\x8d\xd5\xa5\xd5\xba\xd5\xbf\xd5\xa5\xd5\xb4\xd5\xa2\xd5\xa5\xd6\x80", "\xd5\x80\xd5\xb8\xd5\xaf\xd5\xbf\xd5\xa5\xd5\xb4\xd5\xa2\xd5\xa5\xd6\x80", "\xd5\x86\xd5\xb8\xd5\xb5\xd5\xa5\xd5\xb4\xd5\xa2\xd5\xa5\xd6\x80", "\xd4\xb4\xd5\xa5\xd5\xaf\xd5\xbf\xd5\xa5\xd5\xb4\xd5\xa2\xd5\xa5\xd6\x80"}, {"\xd5\x80\xd5\xb6\xd5\xbe", "\xd5\x93\xd5\xbf\xd5\xbe", "\xd5\x84\xd6\x80\xd5\xbf", "\xd4\xb1\xd5\xba\xd6\x80", "\xd5\x84\xd5\xb5\xd5\xbd", "\xd5\x80\xd5\xb6\xd5\xbd", "\xd5\x80\xd5\xac\xd5\xbd", "\xd5\x95\xd5\xa3\xd5\xbd", "\xd5\x8d\xd5\xa5\xd5\xba", "\xd5\x80\xd5\xb8\xd5\xaf", "\xd5\x86\xd5\xb8\xd5\xb5", "\xd4\xb4\xd5\xa5\xd5\xaf", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"EEE, yyyy'eko' MMM'ren' dd'a' HH:mm:ss z", "EEE, yyyy'eko' MMM'ren' dd'a'", "yyyy/MM/dd", "HH:mm:ss", "HH:mm", "yyyy'eko' MMMM", "MMMM'ren' dd", "AM", "PM", {"igandea", "astelehena", "asteartea", "asteazkena", "osteguna", "ostirala", "larunbata"}, {"ig", "al", "as", "az", "og", "or", "lr"}, {"urtarrila", "otsaila", "martxoa", "apirila", "maiatza", "ekaina", "uztaila", "abuztua", "iraila", "urria", "azaroa", "abendua"}, {"urt", "ots", "mar", "api", "mai", "eka", "uzt", "abu", "ira", "urr", "aza", "abe", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"dd MMMM yyyy HH:mm:ss z", "dd MMMM yyyy", "dd.MM.yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "dd MMMM", "AM", "PM", {"\xd0\xbd\xd0\xb5\xd0\xb4\xd0\xb5\xd0\xbb\xd0\xb0", "\xd0\xbf\xd0\xbe\xd0\xbd\xd0\xb5\xd0\xb4\xd0\xb5\xd0\xbb\xd0\xbd\xd0\xb8\xd0\xba", "\xd0\xb2\xd1\x82\xd0\xbe\xd1\x80\xd0\xbd\xd0\xb8\xd0\xba", "\xd1\x81\xd1\x80\xd0\xb5\xd0\xb4\xd0\xb0", "\xd1\x87\xd0\xb5\xd1\x82\xd0\xb2\xd1\x80\xd1\x82\xd0\xbe\xd0\xba", "\xd0\xbf\xd0\xb5\xd1\x82\xd0\xbe\xd0\xba", "\xd1\x81\xd0\xb0\xd0\xb1\xd0\xbe\xd1\x82\xd0\xb0"}, {"\xd0\xbd\xd0\xb5\xd0\xb4.", "\xd0\xbf\xd0\xbe\xd0\xbd.", "\xd0\xb2\xd1\x82.", "\xd1\x81\xd1\x80\xd0\xb5.", "\xd1\x87\xd0\xb5\xd1\x82.", "\xd0\xbf\xd0\xb5\xd1\x82.", "\xd1\x81\xd0\xb0\xd0\xb1."}, {"\xd1\x98\xd0\xb0\xd0\xbd\xd1\x83\xd0\xb0\xd1\x80\xd0\xb8", "\xd1\x84\xd0\xb5\xd0\xb2\xd1\x80\xd1\x83\xd0\xb0\xd1\x80\xd0\xb8", "\xd0\xbc\xd0\xb0\xd1\x80\xd1\x82", "\xd0\xb0\xd0\xbf\xd1\x80\xd0\xb8\xd0\xbb", "\xd0\xbc\xd0\xb0\xd1\x98", "\xd1\x98\xd1\x83\xd0\xbd\xd0\xb8", "\xd1\x98\xd1\x83\xd0\xbb\xd0\xb8", "\xd0\xb0\xd0\xb2\xd0\xb3\xd1\x83\xd1\x81\xd1\x82", "\xd1\x81\xd0\xb5\xd0\xbf\xd1\x82\xd0\xb5\xd0\xbc\xd0\xb2\xd1\x80\xd0\xb8", "\xd0\xbe\xd0\xba\xd1\x82\xd0\xbe\xd0\xbc\xd0\xb2\xd1\x80\xd0\xb8", "\xd0\xbd\xd0\xbe\xd0\xb5\xd0\xbc\xd0\xb2\xd1\x80\xd0\xb8", "\xd0\xb4\xd0\xb5\xd0\xba\xd0\xb5\xd0\xbc\xd0\xb2\xd1\x80\xd0\xb8"}, {"\xd1\x98\xd0\xb0\xd0\xbd.", "\xd1\x84\xd0\xb5\xd0\xb2.", "\xd0\xbc\xd0\xb0\xd1\x80.", "\xd0\xb0\xd0\xbf\xd1\x80.", "\xd0\xbc\xd0\xb0\xd1\x98.", "\xd1\x98\xd1\x83\xd0\xbd.", "\xd1\x98\xd1\x83\xd0\xbb.", "\xd0\xb0\xd0\xb2\xd0\xb3.", "\xd1\x81\xd0\xb5\xd0\xbf\xd1\x82.", "\xd0\xbe\xd0\xba\xd1\x82.", "\xd0\xbd\xd0\xbe\xd0\xb5\xd0\xbc.", "\xd0\xb4\xd0\xb5\xd0\xba\xd0\xb5\xd0\xbc.", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"dd MMMM yyyy h:mm:ss t", "dd MMMM yyyy", "yyyy/MM/dd", "hh:mm:ss tt", "h:mm t", "MMMM yyyy", "dd MMMM", "", "", {"Sondag", "Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrydag", "Saterdag"}, {"So", "Ma", "Di", "Wo", "Do", "Vr", "Sa"}, {"Januarie", "Februarie", "Maart", "April", "Mei", "Junie", "Julie", "Augustus", "September", "Oktober", "November", "Desember"}, {"Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Des", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d. MMM yyyy HH:mm:ss z", "d. MMM yyyy", "dd-MM-yyyy", "HH.mm.ss", "HH:mm", "MMMM yyyy", "dd MMMM", "AM", "PM", {"sunnudagur", "m\xc3\xa1nadagur", "t\xc3\xbdsdagur", "mikudagur", "h\xc3\xb3sdagur", "fr\xc3\xadggjadagur", "leygardagur"}, {"sun", "m\xc3\xa1n", "t\xc3\xbds", "mik", "h\xc3\xb3s", "fr\xc3\xad", "ley"}, {"januar", "februar", "mars", "apr\xc3\xadl", "mai", "juni", "juli", "august", "september", "oktober", "november", "desember"}, {"jan", "feb", "mar", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "des", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy h:mm:ss t z", "d MMMM yyyy", "dd-MM-yyyy", "HH:mm:ss", "h:mm t", "MMMM yyyy", "d MMMM", "\xe0\xa4\xaa\xe0\xa5\x82\xe0\xa4\xb0\xe0\xa5\x8d\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb9\xe0\xa5\x8d\xe0\xa4\xa8", "\xe0\xa4\x85\xe0\xa4\xaa\xe0\xa4\xb0\xe0\xa4\xbe\xe0\xa4\xb9\xe0\xa5\x8d\xe0\xa4\xa8", {"\xe0\xa4\xb0\xe0\xa4\xb5\xe0\xa4\xbf\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\xb8\xe0\xa5\x8b\xe0\xa4\xae\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\xae\xe0\xa4\x82\xe0\xa4\x97\xe0\xa4\xb2\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\xac\xe0\xa5\x81\xe0\xa4\xa7\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\x97\xe0\xa5\x81\xe0\xa4\xb0\xe0\xa5\x81\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\xb6\xe0\xa5\x81\xe0\xa4\x95\xe0\xa5\x8d\xe0\xa4\xb0\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\xb6\xe0\xa4\xa8\xe0\xa4\xbf\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0"}, {"\xe0\xa4\xb0\xe0\xa4\xb5\xe0\xa4\xbf", "\xe0\xa4\xb8\xe0\xa5\x8b\xe0\xa4\xae", "\xe0\xa4\xae\xe0\xa4\x82\xe0\xa4\x97\xe0\xa4\xb2", "\xe0\xa4\xac\xe0\xa5\x81\xe0\xa4\xa7", "\xe0\xa4\x97\xe0\xa5\x81\xe0\xa4\xb0\xe0\xa5\x81", "\xe0\xa4\xb6\xe0\xa5\x81\xe0\xa4\x95\xe0\xa5\x8d\xe0\xa4\xb0", "\xe0\xa4\xb6\xe0\xa4\xa8\xe0\xa4\xbf"}, {"\xe0\xa4\x9c\xe0\xa4\xa8\xe0\xa4\xb5\xe0\xa4\xb0\xe0\xa5\x80", "\xe0\xa4\xab\xe0\xa4\xb0\xe0\xa4\xb5\xe0\xa4\xb0\xe0\xa5\x80", "\xe0\xa4\xae\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x8d\xe0\xa4\x9a", "\xe0\xa4\x85\xe0\xa4\xaa\xe0\xa5\x8d\xe0\xa4\xb0\xe0\xa5\x88\xe0\xa4\xb2", "\xe0\xa4\xae\xe0\xa4\x88", "\xe0\xa4\x9c\xe0\xa5\x82\xe0\xa4\xa8", "\xe0\xa4\x9c\xe0\xa5\x81\xe0\xa4\xb2\xe0\xa4\xbe\xe0\xa4\x88", "\xe0\xa4\x85\xe0\xa4\x97\xe0\xa4\xb8\xe0\xa5\x8d\xe0\xa4\xa4", "\xe0\xa4\xb8\xe0\xa4\xbf\xe0\xa4\xa4\xe0\xa4\xae\xe0\xa5\x8d\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\x85\xe0\xa4\x95\xe0\xa5\x8d\xe0\xa4\xa4\xe0\xa5\x82\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\xa8\xe0\xa4\xb5\xe0\xa4\xae\xe0\xa5\x8d\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\xa6\xe0\xa4\xbf\xe0\xa4\xb8\xe0\xa4\xae\xe0\xa5\x8d\xe0\xa4\xac\xe0\xa4\xb0"}, {"\xe0\xa4\x9c\xe0\xa4\xa8\xe0\xa4\xb5\xe0\xa4\xb0\xe0\xa5\x80", "\xe0\xa4\xab\xe0\xa4\xb0\xe0\xa4\xb5\xe0\xa4\xb0\xe0\xa5\x80", "\xe0\xa4\xae\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x8d\xe0\xa4\x9a", "\xe0\xa4\x85\xe0\xa4\xaa\xe0\xa5\x8d\xe0\xa4\xb0\xe0\xa5\x88\xe0\xa4\xb2", "\xe0\xa4\xae\xe0\xa4\x88", "\xe0\xa4\x9c\xe0\xa5\x82\xe0\xa4\xa8", "\xe0\xa4\x9c\xe0\xa5\x81\xe0\xa4\xb2\xe0\xa4\xbe\xe0\xa4\x88", "\xe0\xa4\x85\xe0\xa4\x97\xe0\xa4\xb8\xe0\xa5\x8d\xe0\xa4\xa4", "\xe0\xa4\xb8\xe0\xa4\xbf\xe0\xa4\xa4\xe0\xa4\xae\xe0\xa5\x8d\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\x85\xe0\xa4\x95\xe0\xa5\x8d\xe0\xa4\xa4\xe0\xa5\x82\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\xa8\xe0\xa4\xb5\xe0\xa4\xae\xe0\xa5\x8d\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\xa6\xe0\xa4\xbf\xe0\xa4\xb8\xe0\xa4\xae\xe0\xa5\x8d\xe0\xa4\xac\xe0\xa4\xb0", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"yyyy MMMM d  HH:mm:ss z", "yyyy MMMM d ", "M/d/yyyy", "h.mm.ss tt", "HH:mm", "yyyy MMMM", "MMMM dd", "AM", "PM", {"Jumapili", "Jumatatu", "Jumanne", "Jumatano", "Alhamisi", "Ijumaa", "Jumamosi"}, {"Jpi", "Jtt", "Jnn", "Jtn", "Alh", "Iju", "Jmo"}, {"Januari", "Februari", "Machi", "Aprili", "Mei", "Juni", "Julai", "Agosti", "Septemba", "Oktoba", "Novemba", "Desemba"}, {"Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ago", "Sep", "Okt", "Nov", "Des", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy hh:mm:ss t z", "d MMMM yyyy", "d-MM-yy", "hh:mm:ss t z", "hh:mm t", "MMMM yyyy", "d MMMM", "\xe0\xaa\xaa\xe0\xab\x82\xe0\xaa\xb0\xe0\xab\x8d\xe0\xaa\xb5\xc2\xa0\xe0\xaa\xae\xe0\xaa\xa7\xe0\xab\x8d\xe0\xaa\xaf\xe0\xaa\xbe\xe0\xaa\xb9\xe0\xab\x8d\xe0\xaa\xa8", "\xe0\xaa\x89\xe0\xaa\xa4\xe0\xab\x8d\xe0\xaa\xa4\xe0\xaa\xb0\xc2\xa0\xe0\xaa\xae\xe0\xaa\xa7\xe0\xab\x8d\xe0\xaa\xaf\xe0\xaa\xbe\xe0\xaa\xb9\xe0\xab\x8d\xe0\xaa\xa8", {"\xe0\xaa\xb0\xe0\xaa\xb5\xe0\xaa\xbf\xe0\xaa\xb5\xe0\xaa\xbe\xe0\xaa\xb0", "\xe0\xaa\xb8\xe0\xab\x8b\xe0\xaa\xae\xe0\xaa\xb5\xe0\xaa\xbe\xe0\xaa\xb0", "\xe0\xaa\xae\xe0\xaa\x82\xe0\xaa\x97\xe0\xaa\xb3\xe0\xaa\xb5\xe0\xaa\xbe\xe0\xaa\xb0", "\xe0\xaa\xac\xe0\xab\x81\xe0\xaa\xa7\xe0\xaa\xb5\xe0\xaa\xbe\xe0\xaa\xb0", "\xe0\xaa\x97\xe0\xab\x81\xe0\xaa\xb0\xe0\xab\x81\xe0\xaa\xb5\xe0\xaa\xbe\xe0\xaa\xb0", "\xe0\xaa\xb6\xe0\xab\x81\xe0\xaa\x95\xe0\xab\x8d\xe0\xaa\xb0\xe0\xaa\xb5\xe0\xaa\xbe\xe0\xaa\xb0", "\xe0\xaa\xb6\xe0\xaa\xa8\xe0\xaa\xbf\xe0\xaa\xb5\xe0\xaa\xbe\xe0\xaa\xb0"}, {"\xe0\xaa\xb0\xe0\xaa\xb5\xe0\xaa\xbf", "\xe0\xaa\xb8\xe0\xab\x8b\xe0\xaa\xae", "\xe0\xaa\xae\xe0\xaa\x82\xe0\xaa\x97\xe0\xaa\xb3", "\xe0\xaa\xac\xe0\xab\x81\xe0\xaa\xa7", "\xe0\xaa\x97\xe0\xab\x81\xe0\xaa\xb0\xe0\xab\x81", "\xe0\xaa\xb6\xe0\xab\x81\xe0\xaa\x95\xe0\xab\x8d\xe0\xaa\xb0", "\xe0\xaa\xb6\xe0\xaa\xa8\xe0\xaa\xbf"}, {"\xe0\xaa\x9c\xe0\xaa\xbe\xe0\xaa\xa8\xe0\xab\x8d\xe0\xaa\xaf\xe0\xab\x81\xe0\xaa\x86\xe0\xaa\xb0\xe0\xab\x80", "\xe0\xaa\xab\xe0\xab\x87\xe0\xaa\xac\xe0\xab\x8d\xe0\xaa\xb0\xe0\xab\x81\xe0\xaa\x86\xe0\xaa\xb0\xe0\xab\x80", "\xe0\xaa\xae\xe0\xaa\xbe\xe0\xaa\xb0\xe0\xab\x8d\xe0\xaa\x9a", "\xe0\xaa\x8f\xe0\xaa\xaa\xe0\xab\x8d\xe0\xaa\xb0\xe0\xaa\xbf\xe0\xaa\xb2", "\xe0\xaa\xae\xe0\xab\x87", "\xe0\xaa\x9c\xe0\xab\x82\xe0\xaa\xa8", "\xe0\xaa\x9c\xe0\xab\x81\xe0\xaa\xb2\xe0\xaa\xbe\xe0\xaa\x88", "\xe0\xaa\x91\xe0\xaa\x97\xe0\xaa\xb8\xe0\xab\x8d\xe0\xaa\x9f", "\xe0\xaa\xb8\xe0\xaa\xaa\xe0\xab\x8d\xe0\xaa\x9f\xe0\xab\x87\xe0\xaa\xae\xe0\xab\x8d\xe0\xaa\xac\xe0\xaa\xb0", "\xe0\xaa\x91\xe0\xaa\x95\xe0\xab\x8d\xe0\xaa\x9f\xe0\xab\x8d\xe0\xaa\xac\xe0\xaa\xb0", "\xe0\xaa\xa8\xe0\xaa\xb5\xe0\xab\x87\xe0\xaa\xae\xe0\xab\x8d\xe0\xaa\xac\xe0\xaa\xb0", "\xe0\xaa\xa1\xe0\xaa\xbf\xe0\xaa\xb8\xe0\xab\x87\xe0\xaa\xae\xe0\xab\x8d\xe0\xaa\xac\xe0\xaa\xb0"}, {"\xe0\xaa\x9c\xe0\xaa\xbe\xe0\xaa\xa8\xe0\xab\x8d\xe0\xaa\xaf\xe0\xab\x81", "\xe0\xaa\xab\xe0\xab\x87\xe0\xaa\xac\xe0\xab\x8d\xe0\xaa\xb0\xe0\xab\x81", "\xe0\xaa\xae\xe0\xaa\xbe\xe0\xaa\xb0\xe0\xab\x8d\xe0\xaa\x9a", "\xe0\xaa\x8f\xe0\xaa\xaa\xe0\xab\x8d\xe0\xaa\xb0\xe0\xaa\xbf\xe0\xaa\xb2", "\xe0\xaa\xae\xe0\xab\x87", "\xe0\xaa\x9c\xe0\xab\x82\xe0\xaa\xa8", "\xe0\xaa\x9c\xe0\xab\x81\xe0\xaa\xb2\xe0\xaa\xbe\xe0\xaa\x88", "\xe0\xaa\x91\xe0\xaa\x97\xe0\xaa\xb8\xe0\xab\x8d\xe0\xaa\x9f", "\xe0\xaa\xb8\xe0\xaa\xaa\xe0\xab\x8d\xe0\xaa\x9f\xe0\xab\x87", "\xe0\xaa\x91\xe0\xaa\x95\xe0\xab\x8d\xe0\xaa\x9f\xe0\xab\x8b", "\xe0\xaa\xa8\xe0\xaa\xb5\xe0\xab\x87", "\xe0\xaa\xa1\xe0\xaa\xbf\xe0\xaa\xb8\xe0\xab\x87", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy h:mm:ss t z", "d MMMM yyyy", "d-M-yy", "h:mm:ss t z", "h:mm t", "MMMM yyyy", "d MMMM", "\xe0\xae\x95\xe0\xae\xbe\xe0\xae\xb2\xe0\xaf\x88", "\xe0\xae\xae\xe0\xae\xbe\xe0\xae\xb2\xe0\xaf\x88", {"\xe0\xae\x9e\xe0\xae\xbe\xe0\xae\xaf\xe0\xae\xbf\xe0\xae\xb1\xe0\xaf\x81", "\xe0\xae\xa4\xe0\xae\xbf\xe0\xae\x99\xe0\xaf\x8d\xe0\xae\x95\xe0\xae\xb3\xe0\xaf\x8d", "\xe0\xae\x9a\xe0\xaf\x86\xe0\xae\xb5\xe0\xaf\x8d\xe0\xae\xb5\xe0\xae\xbe\xe0\xae\xaf\xe0\xaf\x8d", "\xe0\xae\xaa\xe0\xaf\x81\xe0\xae\xa4\xe0\xae\xa9\xe0\xaf\x8d", "\xe0\xae\xb5\xe0\xae\xbf\xe0\xae\xaf\xe0\xae\xbe\xe0\xae\xb4\xe0\xae\xa9\xe0\xaf\x8d", "\xe0\xae\xb5\xe0\xaf\x86\xe0\xae\xb3\xe0\xaf\x8d\xe0\xae\xb3\xe0\xae\xbf", "\xe0\xae\x9a\xe0\xae\xa9\xe0\xae\xbf"}, {"\xe0\xae\x9e\xe0\xae\xbe", "\xe0\xae\xa4\xe0\xae\xbf", "\xe0\xae\x9a\xe0\xaf\x86", "\xe0\xae\xaa\xe0\xaf\x81", "\xe0\xae\xb5\xe0\xae\xbf", "\xe0\xae\xb5\xe0\xaf\x86", "\xe0\xae\x9a"}, {"\xe0\xae\x9c\xe0\xae\xa9\xe0\xae\xb5\xe0\xae\xb0\xe0\xae\xbf", "\xe0\xae\xaa\xe0\xae\xbf\xe0\xae\xaa\xe0\xaf\x8d\xe0\xae\xb0\xe0\xae\xb5\xe0\xae\xb0\xe0\xae\xbf", "\xe0\xae\xae\xe0\xae\xbe\xe0\xae\xb0\xe0\xaf\x8d\xe0\xae\x9a\xe0\xaf\x8d", "\xe0\xae\x8f\xe0\xae\xaa\xe0\xaf\x8d\xe0\xae\xb0\xe0\xae\xb2\xe0\xaf\x8d", "\xe0\xae\xae\xe0\xaf\x87", "\xe0\xae\x9c\xe0\xaf\x82\xe0\xae\xa9\xe0\xaf\x8d", "\xe0\xae\x9c\xe0\xaf\x82\xe0\xae\xb2\xe0\xaf\x88", "\xe0\xae\x86\xe0\xae\x95\xe0\xae\xb8\xe0\xaf\x8d\xe0\xae\x9f\xe0\xaf\x8d", "\xe0\xae\x9a\xe0\xaf\x86\xe0\xae\xaa\xe0\xaf\x8d\xe0\xae\x9f\xe0\xae\xae\xe0\xaf\x8d\xe0\xae\xaa\xe0\xae\xb0\xe0\xaf\x8d", "\xe0\xae\x85\xe0\xae\x95\xe0\xaf\x8d\xe0\xae\x9f\xe0\xaf\x8b\xe0\xae\xaa\xe0\xae\xb0\xe0\xaf\x8d", "\xe0\xae\xa8\xe0\xae\xb5\xe0\xae\xae\xe0\xaf\x8d\xe0\xae\xaa\xe0\xae\xb0\xe0\xaf\x8d", "\xe0\xae\x9f\xe0\xae\xbf\xe0\xae\x9a\xe0\xae\xae\xe0\xaf\x8d\xe0\xae\xaa\xe0\xae\xb0\xe0\xaf\x8d"}, {"\xe0\xae\x9c\xe0\xae\xa9.", "\xe0\xae\xaa\xe0\xae\xbf\xe0\xae\xaa\xe0\xaf\x8d.", "\xe0\xae\xae\xe0\xae\xbe\xe0\xae\xb0\xe0\xaf\x8d.", "\xe0\xae\x8f\xe0\xae\xaa\xe0\xaf\x8d.", "\xe0\xae\xae\xe0\xaf\x87", "\xe0\xae\x9c\xe0\xaf\x82\xe0\xae\xa9\xe0\xaf\x8d", "\xe0\xae\x9c\xe0\xaf\x82\xe0\xae\xb2\xe0\xaf\x88", "\xe0\xae\x86\xe0\xae\x95.", "\xe0\xae\x9a\xe0\xaf\x86\xe0\xae\xaa\xe0\xaf\x8d.", "\xe0\xae\x85\xe0\xae\x95\xe0\xaf\x8d.", "\xe0\xae\xa8\xe0\xae\xb5.", "\xe0\xae\x9f\xe0\xae\xbf\xe0\xae\x9a.", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy h:mm:ss t z", "d MMMM yyyy", "dd-MM-yy", "h:mm:ss t z", "h:mm t", "MMMM yyyy", "d MMMM", "\xe0\xb0\xaa\xe0\xb1\x82\xe0\xb0\xb0\xe0\xb1\x8d\xe0\xb0\xb5\xe0\xb0\xbe\xe0\xb0\xb9\xe0\xb1\x8d\xe0\xb0\xa8", "\xe0\xb0\x85\xe0\xb0\xaa\xe0\xb0\xb0\xe0\xb0\xbe\xe0\xb0\xb9\xe0\xb1\x8d\xe0\xb0\xa8", {"\xe0\xb0\x86\xe0\xb0\xa6\xe0\xb0\xbf\xe0\xb0\xb5\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb0\x82", "\xe0\xb0\xb8\xe0\xb1\x8b\xe0\xb0\xae\xe0\xb0\xb5\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb0\x82", "\xe0\xb0\xae\xe0\xb0\x82\xe0\xb0\x97\xe0\xb0\xb3\xe0\xb0\xb5\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb0\x82", "\xe0\xb0\xac\xe0\xb1\x81\xe0\xb0\xa7\xe0\xb0\xb5\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb0\x82", "\xe0\xb0\x97\xe0\xb1\x81\xe0\xb0\xb0\xe0\xb1\x81\xe0\xb0\xb5\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb0\x82", "\xe0\xb0\xb6\xe0\xb1\x81\xe0\xb0\x95\xe0\xb1\x8d\xe0\xb0\xb0\xe0\xb0\xb5\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb0\x82", "\xe0\xb0\xb6\xe0\xb0\xa8\xe0\xb0\xbf\xe0\xb0\xb5\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb0\x82"}, {"\xe0\xb0\x86\xe0\xb0\xa6\xe0\xb0\xbf", "\xe0\xb0\xb8\xe0\xb1\x8b\xe0\xb0\xae", "\xe0\xb0\xae\xe0\xb0\x82\xe0\xb0\x97\xe0\xb0\xb3", "\xe0\xb0\xac\xe0\xb1\x81\xe0\xb0\xa7", "\xe0\xb0\x97\xe0\xb1\x81\xe0\xb0\xb0\xe0\xb1\x81", "\xe0\xb0\xb6\xe0\xb1\x81\xe0\xb0\x95\xe0\xb1\x8d\xe0\xb0\xb0", "\xe0\xb0\xb6\xe0\xb0\xa8\xe0\xb0\xbf"}, {"\xe0\xb0\x9c\xe0\xb0\xa8\xe0\xb0\xb5\xe0\xb0\xb0\xe0\xb0\xbf", "\xe0\xb0\xab\xe0\xb0\xbf\xe0\xb0\xac\xe0\xb1\x8d\xe0\xb0\xb0\xe0\xb0\xb5\xe0\xb0\xb0\xe0\xb0\xbf", "\xe0\xb0\xae\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb1\x8d\xe0\xb0\x9a\xe0\xb0\xbf", "\xe0\xb0\x8f\xe0\xb0\xaa\xe0\xb1\x8d\xe0\xb0\xb0\xe0\xb0\xbf\xe0\xb0\xb2\xe0\xb1\x8d", "\xe0\xb0\xae\xe0\xb1\x87", "\xe0\xb0\x9c\xe0\xb1\x82\xe0\xb0\xa8\xe0\xb1\x8d", "\xe0\xb0\x9c\xe0\xb1\x82\xe0\xb0\xb2\xe0\xb1\x88", "\xe0\xb0\x86\xe0\xb0\x97\xe0\xb0\xb8\xe0\xb1\x8d\xe0\xb0\x9f\xe0\xb1\x81", "\xe0\xb0\xb8\xe0\xb1\x86\xe0\xb0\xaa\xe0\xb1\x8d\xe0\xb0\x9f\xe0\xb1\x86\xe0\xb0\x82\xe0\xb0\xac\xe0\xb0\xb0\xe0\xb1\x8d", "\xe0\xb0\x85\xe0\xb0\x95\xe0\xb1\x8d\xe0\xb0\x9f\xe0\xb1\x8b\xe0\xb0\xac\xe0\xb0\xb0\xe0\xb1\x8d", "\xe0\xb0\xa8\xe0\xb0\xb5\xe0\xb0\x82\xe0\xb0\xac\xe0\xb0\xb0\xe0\xb1\x8d", "\xe0\xb0\xa1\xe0\xb0\xbf\xe0\xb0\xb8\xe0\xb1\x86\xe0\xb0\x82\xe0\xb0\xac\xe0\xb0\xb0\xe0\xb1\x8d"}, {"\xe0\xb0\x9c\xe0\xb0\xa8\xe0\xb0\xb5\xe0\xb0\xb0\xe0\xb0\xbf", "\xe0\xb0\xab\xe0\xb0\xbf\xe0\xb0\xac\xe0\xb1\x8d\xe0\xb0\xb0\xe0\xb0\xb5\xe0\xb0\xb0\xe0\xb0\xbf", "\xe0\xb0\xae\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb1\x8d\xe0\xb0\x9a\xe0\xb0\xbf", "\xe0\xb0\x8f\xe0\xb0\xaa\xe0\xb1\x8d\xe0\xb0\xb0\xe0\xb0\xbf\xe0\xb0\xb2\xe0\xb1\x8d", "\xe0\xb0\xae\xe0\xb1\x87", "\xe0\xb0\x9c\xe0\xb1\x82\xe0\xb0\xa8\xe0\xb1\x8d", "\xe0\xb0\x9c\xe0\xb1\x82\xe0\xb0\xb2\xe0\xb1\x88", "\xe0\xb0\x86\xe0\xb0\x97\xe0\xb0\xb8\xe0\xb1\x8d\xe0\xb0\x9f\xe0\xb1\x81", "\xe0\xb0\xb8\xe0\xb1\x86\xe0\xb0\xaa\xe0\xb1\x8d\xe0\xb0\x9f\xe0\xb1\x86\xe0\xb0\x82\xe0\xb0\xac\xe0\xb0\xb0\xe0\xb1\x8d", "\xe0\xb0\x85\xe0\xb0\x95\xe0\xb1\x8d\xe0\xb0\x9f\xe0\xb1\x8b\xe0\xb0\xac\xe0\xb0\xb0\xe0\xb1\x8d", "\xe0\xb0\xa8\xe0\xb0\xb5\xe0\xb0\x82\xe0\xb0\xac\xe0\xb0\xb0\xe0\xb1\x8d", "\xe0\xb0\xa1\xe0\xb0\xbf\xe0\xb0\xb8\xe0\xb1\x86\xe0\xb0\x82\xe0\xb0\xac\xe0\xb0\xb0\xe0\xb1\x8d", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy hh:mm:ss t z", "d MMMM yyyy", "d-M-yy", "hh:mm:ss t z", "hh:mm t", "MMMM yyyy", "d MMMM", "\xe0\xb2\xaa\xe0\xb3\x82\xe0\xb2\xb0\xe0\xb3\x8d\xe0\xb2\xb5\xe0\xb2\xbe\xe0\xb2\xb9\xe0\xb3\x8d\xe0\xb2\xa8", "\xe0\xb2\x85\xe0\xb2\xaa\xe0\xb2\xb0\xe0\xb2\xbe\xe0\xb2\xb9\xe0\xb3\x8d\xe0\xb2\xa8", {"\xe0\xb2\xb0\xe0\xb2\xb5\xe0\xb2\xbf\xe0\xb2\xb5\xe0\xb2\xbe\xe0\xb2\xb0", "\xe0\xb2\xb8\xe0\xb3\x8b\xe0\xb2\xae\xe0\xb2\xb5\xe0\xb2\xbe\xe0\xb2\xb0", "\xe0\xb2\xae\xe0\xb2\x82\xe0\xb2\x97\xe0\xb2\xb3\xe0\xb2\xb5\xe0\xb2\xbe\xe0\xb2\xb0", "\xe0\xb2\xac\xe0\xb3\x81\xe0\xb2\xa7\xe0\xb2\xb5\xe0\xb2\xbe\xe0\xb2\xb0", "\xe0\xb2\x97\xe0\xb3\x81\xe0\xb2\xb0\xe0\xb3\x81\xe0\xb2\xb5\xe0\xb2\xbe\xe0\xb2\xb0", "\xe0\xb2\xb6\xe0\xb3\x81\xe0\xb2\x95\xe0\xb3\x8d\xe0\xb2\xb0\xe0\xb2\xb5\xe0\xb2\xbe\xe0\xb2\xb0", "\xe0\xb2\xb6\xe0\xb2\xa8\xe0\xb2\xbf\xe0\xb2\xb5\xe0\xb2\xbe\xe0\xb2\xb0"}, {"\xe0\xb2\xb0.", "\xe0\xb2\xb8\xe0\xb3\x8b.", "\xe0\xb2\xae\xe0\xb2\x82.", "\xe0\xb2\xac\xe0\xb3\x81.", "\xe0\xb2\x97\xe0\xb3\x81.", "\xe0\xb2\xb6\xe0\xb3\x81.", "\xe0\xb2\xb6\xe0\xb2\xa8\xe0\xb2\xbf."}, {"\xe0\xb2\x9c\xe0\xb2\xa8\xe0\xb2\xb5\xe0\xb2\xb0\xe0\xb3\x80", "\xe0\xb2\xab\xe0\xb3\x86\xe0\xb2\xac\xe0\xb3\x8d\xe0\xb2\xb0\xe0\xb2\xb5\xe0\xb2\xb0\xe0\xb3\x80", "\xe0\xb2\xae\xe0\xb2\xbe\xe0\xb2\xb0\xe0\xb3\x8d\xe0\xb2\x9a\xe0\xb3\x8d", "\xe0\xb2\x8e\xe0\xb2\xaa\xe0\xb3\x8d\xe0\xb2\xb0\xe0\xb2\xbf\xe0\xb2\xb2\xe0\xb3\x8d", "\xe0\xb2\xae\xe0\xb3\x86", "\xe0\xb2\x9c\xe0\xb3\x82\xe0\xb2\xa8\xe0\xb3\x8d", "\xe0\xb2\x9c\xe0\xb3\x81\xe0\xb2\xb2\xe0\xb3\x88", "\xe0\xb2\x86\xe0\xb2\x97\xe0\xb2\xb8\xe0\xb3\x8d\xe0\xb2\x9f\xe0\xb3\x8d", "\xe0\xb2\xb8\xe0\xb2\xaa\xe0\xb3\x8d\xe0\xb2\x9f\xe0\xb3\x86\xe0\xb2\x82\xe0\xb2\xac\xe0\xb2\xb0\xe0\xb3\x8d", "\xe0\xb2\x85\xe0\xb2\x95\xe0\xb3\x8d\xe0\xb2\x9f\xe0\xb3\x8b\xe0\xb2\xac\xe0\xb2\xb0\xe0\xb3\x8d", "\xe0\xb2\xa8\xe0\xb2\xb5\xe0\xb3\x86\xe0\xb2\x82\xe0\xb2\xac\xe0\xb2\xb0\xe0\xb3\x8d", "\xe0\xb2\xa1\xe0\xb2\xbf\xe0\xb2\xb8\xe0\xb3\x86\xe0\xb2\x82\xe0\xb2\xac\xe0\xb2\xb0\xe0\xb3\x8d"}, {"\xe0\xb2\x9c\xe0\xb2\xa8\xe0\xb2\xb5\xe0\xb2\xb0\xe0\xb3\x80", "\xe0\xb2\xab\xe0\xb3\x86\xe0\xb2\xac\xe0\xb3\x8d\xe0\xb2\xb0\xe0\xb2\xb5\xe0\xb2\xb0\xe0\xb3\x80", "\xe0\xb2\xae\xe0\xb2\xbe\xe0\xb2\xb0\xe0\xb3\x8d\xe0\xb2\x9a\xe0\xb3\x8d", "\xe0\xb2\x8e\xe0\xb2\xaa\xe0\xb3\x8d\xe0\xb2\xb0\xe0\xb2\xbf\xe0\xb2\xb2\xe0\xb3\x8d", "\xe0\xb2\xae\xe0\xb3\x86", "\xe0\xb2\x9c\xe0\xb3\x82\xe0\xb2\xa8\xe0\xb3\x8d", "\xe0\xb2\x9c\xe0\xb3\x81\xe0\xb2\xb2\xe0\xb3\x88", "\xe0\xb2\x86\xe0\xb2\x97\xe0\xb2\xb8\xe0\xb3\x8d\xe0\xb2\x9f\xe0\xb3\x8d", "\xe0\xb2\xb8\xe0\xb2\xaa\xe0\xb3\x8d\xe0\xb2\x9f\xe0\xb3\x86\xe0\xb2\x82\xe0\xb2\xac\xe0\xb2\xb0\xe0\xb3\x8d", "\xe0\xb2\x85\xe0\xb2\x95\xe0\xb3\x8d\xe0\xb2\x9f\xe0\xb3\x8b\xe0\xb2\xac\xe0\xb2\xb0\xe0\xb3\x8d", "\xe0\xb2\xa8\xe0\xb2\xb5\xe0\xb3\x86\xe0\xb2\x82\xe0\xb2\xac\xe0\xb2\xb0\xe0\xb3\x8d", "\xe0\xb2\xa1\xe0\xb2\xbf\xe0\xb2\xb8\xe0\xb3\x86\xe0\xb2\x82\xe0\xb2\xac\xe0\xb2\xb0\xe0\xb3\x8d", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy h:mm:ss t z", "d MMMM yyyy", "d-M-yy", "h:mm:ss t z", "h:mm t", "MMMM yyyy", "d MMMM", "\xe0\xa4\xae.\xe0\xa4\xaa\xe0\xa5\x82.", "\xe0\xa4\xae.\xe0\xa4\xa8\xe0\xa4\x82.", {"\xe0\xa4\xb0\xe0\xa4\xb5\xe0\xa4\xbf\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\xb8\xe0\xa5\x8b\xe0\xa4\xae\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\xae\xe0\xa4\x82\xe0\xa4\x97\xe0\xa4\xb3\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\xac\xe0\xa5\x81\xe0\xa4\xa7\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\x97\xe0\xa5\x81\xe0\xa4\xb0\xe0\xa5\x81\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\xb6\xe0\xa5\x81\xe0\xa4\x95\xe0\xa5\x8d\xe0\xa4\xb0\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\xb6\xe0\xa4\xa8\xe0\xa4\xbf\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0"}, {"\xe0\xa4\xb0\xe0\xa4\xb5\xe0\xa4\xbf", "\xe0\xa4\xb8\xe0\xa5\x8b\xe0\xa4\xae", "\xe0\xa4\xae\xe0\xa4\x82\xe0\xa4\x97\xe0\xa4\xb3", "\xe0\xa4\xac\xe0\xa5\x81\xe0\xa4\xa7", "\xe0\xa4\x97\xe0\xa5\x81\xe0\xa4\xb0\xe0\xa5\x81", "\xe0\xa4\xb6\xe0\xa5\x81\xe0\xa4\x95\xe0\xa5\x8d\xe0\xa4\xb0", "\xe0\xa4\xb6\xe0\xa4\xa8\xe0\xa4\xbf"}, {"\xe0\xa4\x9c\xe0\xa4\xbe\xe0\xa4\xa8\xe0\xa5\x87\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x80", "\xe0\xa4\xab\xe0\xa5\x87\xe0\xa4\xac\xe0\xa5\x83\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x80", "\xe0\xa4\xae\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x8d\xe0\xa4\x9a", "\xe0\xa4\x8f\xe0\xa4\xaa\xe0\xa5\x8d\xe0\xa4\xb0\xe0\xa4\xbf\xe0\xa4\xb2", "\xe0\xa4\xae\xe0\xa5\x87", "\xe0\xa4\x9c\xe0\xa5\x82\xe0\xa4\xa8", "\xe0\xa4\x9c\xe0\xa5\x81\xe0\xa4\xb2\xe0\xa5\x88", "\xe0\xa4\x93\xe0\xa4\x97\xe0\xa4\xb8\xe0\xa5\x8d\xe0\xa4\x9f", "\xe0\xa4\xb8\xe0\xa5\x87\xe0\xa4\xaa\xe0\xa5\x8d\xe0\xa4\x9f\xe0\xa5\x87\xe0\xa4\x82\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\x93\xe0\xa4\x95\xe0\xa5\x8d\xe0\xa4\x9f\xe0\xa5\x8b\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\xa8\xe0\xa5\x8b\xe0\xa4\xb5\xe0\xa5\x8d\xe0\xa4\xb9\xe0\xa5\x87\xe0\xa4\x82\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\xa1\xe0\xa4\xbf\xe0\xa4\xb8\xe0\xa5\x87\xe0\xa4\x82\xe0\xa4\xac\xe0\xa4\xb0"}, {"\xe0\xa4\x9c\xe0\xa4\xbe\xe0\xa4\xa8\xe0\xa5\x87\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x80", "\xe0\xa4\xab\xe0\xa5\x87\xe0\xa4\xac\xe0\xa5\x83\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x80", "\xe0\xa4\xae\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x8d\xe0\xa4\x9a", "\xe0\xa4\x8f\xe0\xa4\xaa\xe0\xa5\x8d\xe0\xa4\xb0\xe0\xa4\xbf\xe0\xa4\xb2", "\xe0\xa4\xae\xe0\xa5\x87", "\xe0\xa4\x9c\xe0\xa5\x82\xe0\xa4\xa8", "\xe0\xa4\x9c\xe0\xa5\x81\xe0\xa4\xb2\xe0\xa5\x88", "\xe0\xa4\x93\xe0\xa4\x97\xe0\xa4\xb8\xe0\xa5\x8d\xe0\xa4\x9f", "\xe0\xa4\xb8\xe0\xa5\x87\xe0\xa4\xaa\xe0\xa5\x8d\xe0\xa4\x9f\xe0\xa5\x87\xe0\xa4\x82\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\x93\xe0\xa4\x95\xe0\xa5\x8d\xe0\xa4\x9f\xe0\xa5\x8b\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\xa8\xe0\xa5\x8b\xe0\xa4\xb5\xe0\xa5\x8d\xe0\xa4\xb9\xe0\xa5\x87\xe0\xa4\x82\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\xa1\xe0\xa4\xbf\xe0\xa4\xb8\xe0\xa5\x87\xe0\xa4\x82\xe0\xa4\xac\xe0\xa4\xb0", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"dd MMMM yyyy HH:mm:ss z", "dd MMMM yyyy", "dd/MM/yy", "HH:mm:ss z", "HH:mm", "MMMM yyyy", "dd MMMM", "AM", "PM", {"Domingo", "Luns", "Martes", "M\xc3\xa9rcores", "Xoves", "Venres", "S\xc3\xa1\x62\x61\x64o"}, {"Dom", "Lun", "Mar", "M\xc3\xa9r", "Xov", "Ven", "S\xc3\xa1\x62"}, {"Xaneiro", "Febreiro", "Marzo", "Abril", "Maio", "Xu\xc3\xb1o", "Xullo", "Agosto", "Setembro", "Outubro", "Novembro", "Decembro"}, {"Xan", "Feb", "Mar", "Abr", "Mai", "Xu\xc3\xb1", "Xul", "Ago", "Set", "Out", "Nov", "Dec", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy h:mm:ss t z", "d MMMM yyyy", "d-M-yy", "h:mm:ss t z", "h:mm t", "MMMM yyyy", "d MMMM", "\xe0\xa4\xae.\xe0\xa4\xaa\xe0\xa5\x82.", "\xe0\xa4\xae.\xe0\xa4\xa8\xe0\xa4\x82.", {"\xe0\xa4\x86\xe0\xa4\xa6\xe0\xa4\xbf\xe0\xa4\xa4\xe0\xa5\x8d\xe0\xa4\xaf\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\xb8\xe0\xa5\x8b\xe0\xa4\xae\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\xae\xe0\xa4\x82\xe0\xa4\x97\xe0\xa4\xb3\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\xac\xe0\xa5\x81\xe0\xa4\xa7\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\x97\xe0\xa5\x81\xe0\xa4\xb0\xe0\xa5\x81\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\xb6\xe0\xa5\x81\xe0\xa4\x95\xe0\xa5\x8d\xe0\xa4\xb0\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0", "\xe0\xa4\xb6\xe0\xa4\xa8\xe0\xa4\xbf\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0"}, {"\xe0\xa4\xb0\xe0\xa4\xb5\xe0\xa4\xbf", "\xe0\xa4\xb8\xe0\xa5\x8b\xe0\xa4\xae", "\xe0\xa4\xae\xe0\xa4\x82\xe0\xa4\x97\xe0\xa4\xb3", "\xe0\xa4\xac\xe0\xa5\x81\xe0\xa4\xa7", "\xe0\xa4\x97\xe0\xa5\x81\xe0\xa4\xb0\xe0\xa5\x81", "\xe0\xa4\xb6\xe0\xa5\x81\xe0\xa4\x95\xe0\xa5\x8d\xe0\xa4\xb0", "\xe0\xa4\xb6\xe0\xa4\xa8\xe0\xa4\xbf"}, {"\xe0\xa4\x9c\xe0\xa4\xbe\xe0\xa4\xa8\xe0\xa5\x87\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x80", "\xe0\xa4\xab\xe0\xa5\x87\xe0\xa4\xac\xe0\xa5\x8d\xe0\xa4\xb0\xe0\xa5\x81\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x80", "\xe0\xa4\xae\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x8d\xe0\xa4\x9a", "\xe0\xa4\x8f\xe0\xa4\xaa\xe0\xa5\x8d\xe0\xa4\xb0\xe0\xa4\xbf\xe0\xa4\xb2", "\xe0\xa4\xae\xe0\xa5\x87", "\xe0\xa4\x9c\xe0\xa5\x82\xe0\xa4\xa8", "\xe0\xa4\x9c\xe0\xa5\x81\xe0\xa4\xb2\xe0\xa5\x88", "\xe0\xa4\x93\xe0\xa4\x97\xe0\xa4\xb8\xe0\xa5\x8d\xe0\xa4\x9f", "\xe0\xa4\xb8\xe0\xa5\x87\xe0\xa4\xaa\xe0\xa5\x8d\xe0\xa4\x9f\xe0\xa5\x87\xe0\xa4\x82\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\x93\xe0\xa4\x95\xe0\xa5\x8d\xe0\xa4\x9f\xe0\xa5\x8b\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\xa8\xe0\xa5\x8b\xe0\xa4\xb5\xe0\xa5\x8d\xe0\xa4\xb9\xe0\xa5\x87\xe0\xa4\x82\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\xa1\xe0\xa4\xbf\xe0\xa4\xb8\xe0\xa5\x87\xe0\xa4\x82\xe0\xa4\xac\xe0\xa4\xb0"}, {"\xe0\xa4\x9c\xe0\xa4\xbe\xe0\xa4\xa8\xe0\xa5\x87\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x80", "\xe0\xa4\xab\xe0\xa5\x87\xe0\xa4\xac\xe0\xa5\x83\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x80", "\xe0\xa4\xae\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x8d\xe0\xa4\x9a", "\xe0\xa4\x8f\xe0\xa4\xaa\xe0\xa5\x8d\xe0\xa4\xb0\xe0\xa4\xbf\xe0\xa4\xb2", "\xe0\xa4\xae\xe0\xa5\x87", "\xe0\xa4\x9c\xe0\xa5\x82\xe0\xa4\xa8", "\xe0\xa4\x9c\xe0\xa5\x81\xe0\xa4\xb2\xe0\xa5\x88", "\xe0\xa4\x93\xe0\xa4\x97\xe0\xa4\xb8\xe0\xa5\x8d\xe0\xa4\x9f", "\xe0\xa4\xb8\xe0\xa5\x87\xe0\xa4\xaa\xe0\xa5\x8d\xe0\xa4\x9f\xe0\xa5\x87\xe0\xa4\x82\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\x93\xe0\xa4\x95\xe0\xa5\x8d\xe0\xa4\x9f\xe0\xa5\x8b\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\xa8\xe0\xa5\x8b\xe0\xa4\xb5\xe0\xa5\x8d\xe0\xa4\xb9\xe0\xa5\x87\xe0\xa4\x82\xe0\xa4\xac\xe0\xa4\xb0", "\xe0\xa4\xa1\xe0\xa4\xbf\xe0\xa4\xb8\xe0\xa5\x87\xe0\xa4\x82\xe0\xa4\xac\xe0\xa4\xb0", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM, yyyy h:mm:ss t", "d MMMM, yyyy", "d/M/yyyy", "h:mm:ss t", "h:mm t", "MMMM, yyyy", "d MMMM", "\xd8\xb5", "\xd9\x85", {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd8\xad", "\xd9\x86", "\xd8\xab", "\xd8\xb1", "\xd8\xae", "\xd8\xac", "\xd8\xb3"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d. MMMM yyyy HH:mm:ss z", "d. MMMM yyyy", "dd.MM.yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "d. MMMM", "vorm.", "nachm.", {"Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"}, {"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"}, {"Januar", "Februar", "M\xc3\xa4rz", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}, {"Jan", "Feb", "Mrz", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy HH:mm:ss z", "d MMMM yyyy", "dd/MM/yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "d MMMM", "AM", "PM", {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}, {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}, {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"}, {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""}, 0, 0, "/", ":", {"M/d/yyyy","M/d/yy","M/d/yy","MM/dd/yy","MM/dd/yyyy","yy/MM/dd","yyyy-MM-dd","dd-MMM-yy"},{"dddd, MMMM dd, yyyy","MMMM dd, yyyy","dddd, dd MMMM, yyyy","dd, MMMM, yyyy"},{"h:mm tt","hh:mm tt","H:mm","HH:mm"},{"h:mm:ss tt","hh:mm:ss tt","H:mm:ss","HH:mm:ss"}},
-	{"d' de 'MMMM' de 'yyyy hh:mm:ss t z", "d' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "hh:mm t", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy HH:mm:ss z", "d MMMM yyyy", "d/MM/yyyy", "H:mm:ss", "HH:mm", "MMMM yyyy", "d MMMM", "AM", "PM", {"dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"}, {"dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."}, {"janvier", "f\xc3\xa9vrier", "mars", "avril", "mai", "juin", "juillet", "ao\xc3\xbbt", "septembre", "octobre", "novembre", "d\xc3\xa9\x63\x65mbre"}, {"janv.", "f\xc3\xa9vr.", "mars", "avr.", "mai", "juin", "juil.", "ao\xc3\xbbt", "sept.", "oct.", "nov.", "d\xc3\xa9\x63.", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy HH:mm:ss z", "d MMMM yyyy", "dd.MM.yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "d MMMM", "m.", "p.", {"domenica", "luned\xc3\xac", "marted\xc3\xac", "mercoled\xc3\xac", "gioved\xc3\xac", "venerd\xc3\xac", "sabato"}, {"dom", "lun", "mar", "mer", "gio", "ven", "sab"}, {"gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"}, {"gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy HH:mm:ss z", "d MMMM yyyy", "d/MM/yyyy", "H:mm:ss", "HH:mm", "MMMM yyyy", "d MMMM", "AM", "PM", {"zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"}, {"zo", "ma", "di", "wo", "do", "vr", "za"}, {"januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"}, {"jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d' de 'MMMM' de 'yyyy HH:mm:ss z", "d' de 'MMMM' de 'yyyy", "dd-MM-yyyy", "H:mm:ss", "HH:mm", "MMMM' de 'yyyy", "d' de 'MMMM", "AM", "PM", {"domingo", "segunda-feira", "ter\xc3\xa7\x61-feira", "quarta-feira", "quinta-feira", "sexta-feira", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "seg", "ter", "qua", "qui", "sex", "s\xc3\xa1\x62"}, {"janeiro", "fevereiro", "mar\xc3\xa7o", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"}, {"jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"'den 'd MMM yyyy HH.mm.ss z", "'den 'd MMM yyyy", "d.M.yyyy", "HH:mm:ss", "HH.mm", "MMMM yyyy", "d MMMM", "fm", "em", {"s\xc3\xb6ndag", "m\xc3\xa5ndag", "tisdag", "onsdag", "torsdag", "fredag", "l\xc3\xb6rdag"}, {"s\xc3\xb6", "m\xc3\xa5", "ti", "on", "to", "fr", "l\xc3\xb6"}, {"januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"}, {"jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM, yyyy h:mm:ss t", "d MMMM, yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "h:mm t", "MMMM, yyyy", "d MMMM", "\xd8\xb5", "\xd9\x85", {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd8\xad", "\xd9\x86", "\xd8\xab", "\xd8\xb1", "\xd8\xae", "\xd8\xac", "\xd8\xb3"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"dd. MMMM yyyy HH:mm:ss z", "dd. MMMM yyyy", "dd.MM.yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "dd. MMMM", "vorm.", "nachm.", {"Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"}, {"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"}, {"J\xc3\xa4nner", "Februar", "M\xc3\xa4rz", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}, {"J\xc3\xa4n", "Feb", "M\xc3\xa4r", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy h:mm:ss t", "d MMMM yyyy", "d/MM/yyyy", "h:mm:ss tt", "h:mm t", "MMMM yyyy", "d MMMM", "AM", "PM", {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}, {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}, {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"}, {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""}, 0, 0, "/", ":", {"M/d/yyyy","M/d/yy","M/d/yy","MM/dd/yy","MM/dd/yyyy","yy/MM/dd","yyyy-MM-dd","dd-MMM-yy"},{"dddd, MMMM dd, yyyy","MMMM dd, yyyy","dddd, dd MMMM, yyyy","dd, MMMM, yyyy"},{"h:mm tt","hh:mm tt","H:mm","HH:mm"},{"h:mm:ss tt","hh:mm:ss tt","H:mm:ss","HH:mm:ss"}},
-	{"d' de 'MMMM' de 'yyyy HH:mm:ss z", "d' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "H:mm:ss", "H:mm", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy HH:mm:ss z", "d MMMM yyyy", "yyyy-MM-dd", "HH:mm:ss", "HH:mm", "MMMM yyyy", "d MMMM", "AM", "PM", {"dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"}, {"dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."}, {"janvier", "f\xc3\xa9vrier", "mars", "avril", "mai", "juin", "juillet", "ao\xc3\xbbt", "septembre", "octobre", "novembre", "d\xc3\xa9\x63\x65mbre"}, {"janv.", "f\xc3\xa9vr.", "mars", "avr.", "mai", "juin", "juil.", "ao\xc3\xbbt", "sept.", "oct.", "nov.", "d\xc3\xa9\x63.", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM, yyyy h:mm:ss t", "d MMMM, yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "h:mm t", "MMMM, yyyy", "d MMMM", "\xd8\xb5", "\xd9\x85", {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd8\xad", "\xd9\x86", "\xd8\xab", "\xd8\xb1", "\xd8\xae", "\xd8\xac", "\xd8\xb3"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d. MMMM yyyy HH:mm:ss z", "d. MMMM yyyy", "dd.MM.yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "d. MMMM", "vorm.", "nachm.", {"Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"}, {"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"}, {"Januar", "Februar", "M\xc3\xa4rz", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"}, {"Jan", "Feb", "Mrz", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"MMMM d, yyyy h:mm:ss t z", "MMMM d, yyyy", "dd/MM/yyyy", "h:mm:ss tt", "h:mm t", "MMMM yyyy", "MMMM d", "AM", "PM", {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}, {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}, {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"}, {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""}, 0, 0, "/", ":", {"M/d/yyyy","M/d/yy","M/d/yy","MM/dd/yy","MM/dd/yyyy","yy/MM/dd","yyyy-MM-dd","dd-MMM-yy"},{"dddd, MMMM dd, yyyy","MMMM dd, yyyy","dddd, dd MMMM, yyyy","dd, MMMM, yyyy"},{"h:mm tt","hh:mm tt","H:mm","HH:mm"},{"h:mm:ss tt","hh:mm:ss tt","H:mm:ss","HH:mm:ss"}},
-	{"d' de 'MMMM' de 'yyyy hh:mm:ss t z", "d' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "hh:mm t", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy HH:mm:ss z", "d MMMM yyyy", "dd.MM.yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "d MMMM", "AM", "PM", {"dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"}, {"dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."}, {"janvier", "f\xc3\xa9vrier", "mars", "avril", "mai", "juin", "juillet", "ao\xc3\xbbt", "septembre", "octobre", "novembre", "d\xc3\xa9\x63\x65mbre"}, {"janv.", "f\xc3\xa9vr.", "mars", "avr.", "mai", "juin", "juil.", "ao\xc3\xbbt", "sept.", "oct.", "nov.", "d\xc3\xa9\x63.", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM, yyyy h:mm:ss t", "d MMMM, yyyy", "dd-MM-yyyy", "H:mm:ss", "h:mm t", "MMMM, yyyy", "d MMMM", "\xd8\xb5", "\xd9\x85", {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd8\xad", "\xd9\x86", "\xd8\xab", "\xd8\xb1", "\xd8\xae", "\xd8\xac", "\xd8\xb3"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy h:mm:ss t", "d MMMM yyyy", "d/MM/yyyy", "h:mm:ss tt", "h:mm t", "MMMM yyyy", "d MMMM", "a.m.", "p.m.", {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}, {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}, {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"}, {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""}, 0, 0, "/", ":", {"M/d/yyyy","M/d/yy","M/d/yy","MM/dd/yy","MM/dd/yyyy","yy/MM/dd","yyyy-MM-dd","dd-MMM-yy"},{"dddd, MMMM dd, yyyy","MMMM dd, yyyy","dddd, dd MMMM, yyyy","dd, MMMM, yyyy"},{"h:mm tt","hh:mm tt","H:mm","HH:mm"},{"h:mm:ss tt","hh:mm:ss tt","H:mm:ss","HH:mm:ss"}},
-	{"d' de 'MMMM' de 'yyyy hh:mm:ss t z", "d' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "hh:mm t", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy HH:mm:ss z", "d MMMM yyyy", "dd/MM/yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "d MMMM", "AM", "PM", {"dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"}, {"dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."}, {"janvier", "f\xc3\xa9vrier", "mars", "avril", "mai", "juin", "juillet", "ao\xc3\xbbt", "septembre", "octobre", "novembre", "d\xc3\xa9\x63\x65mbre"}, {"janv.", "f\xc3\xa9vr.", "mars", "avr.", "mai", "juin", "juil.", "ao\xc3\xbbt", "sept.", "oct.", "nov.", "d\xc3\xa9\x63.", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM, yyyy h:mm:ss t", "d MMMM, yyyy", "dd-MM-yyyy", "H:mm:ss", "h:mm t", "MMMM, yyyy", "d MMMM", "\xd8\xb5", "\xd9\x85", {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd8\xad", "\xd9\x86", "\xd8\xab", "\xd8\xb1", "\xd8\xae", "\xd8\xac", "\xd8\xb3"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM yyyy HH:mm:ss z", "d MMMM yyyy", "dd/MM/yyyy", "HH:mm:ss", "HH:mm", "MMMM yyyy", "d MMMM", "a.m.", "p.m.", {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}, {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}, {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"}, {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""}, 0, 0, "/", ":", {"M/d/yyyy","M/d/yy","M/d/yy","MM/dd/yy","MM/dd/yyyy","yy/MM/dd","yyyy-MM-dd","dd-MMM-yy"},{"dddd, MMMM dd, yyyy","MMMM dd, yyyy","dddd, dd MMMM, yyyy","dd, MMMM, yyyy"},{"h:mm tt","hh:mm tt","H:mm","HH:mm"},{"h:mm:ss tt","hh:mm:ss tt","H:mm:ss","HH:mm:ss"}},
-	{"d' de 'MMMM' de 'yyyy hh:mm:ss t z", "d' de 'MMMM' de 'yyyy", "MM/dd/yyyy", "hh:mm:ss tt", "hh:mm t", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM, yyyy h:mm:ss t", "d MMMM, yyyy", "dd-MM-yyyy", "H:mm:ss", "h:mm t", "MMMM, yyyy", "d MMMM", "\xd8\xb5", "\xd9\x85", {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"dd MMMM yyyy h:mm:ss t", "dd MMMM yyyy", "yyyy/MM/dd", "hh:mm:ss tt", "h:mm t", "MMMM yyyy", "dd MMMM", "AM", "PM", {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}, {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}, {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"}, {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""}, 0, 0, "/", ":", {"M/d/yyyy","M/d/yy","M/d/yy","MM/dd/yy","MM/dd/yyyy","yy/MM/dd","yyyy-MM-dd","dd-MMM-yy"},{"dddd, MMMM dd, yyyy","MMMM dd, yyyy","dddd, dd MMMM, yyyy","dd, MMMM, yyyy"},{"h:mm tt","hh:mm tt","H:mm","HH:mm"},{"h:mm:ss tt","hh:mm:ss tt","H:mm:ss","HH:mm:ss"}},
-	{"d' de 'MMMM' de 'yyyy hh:mm:ss t z", "d' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "hh:mm t", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM, yyyy h:mm:ss t", "d MMMM, yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "h:mm t", "MMMM, yyyy", "d MMMM", "\xd8\xb5", "\xd9\x85", {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd8\xad", "\xd9\x86", "\xd8\xab", "\xd8\xb1", "\xd8\xae", "\xd8\xac", "\xd8\xb3"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d' de 'MMMM' de 'yyyy hh:mm:ss t z", "d' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "hh:mm t", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM, yyyy h:mm:ss t", "d MMMM, yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "h:mm t", "MMMM, yyyy", "d MMMM", "\xd8\xb5", "\xd9\x85", {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d' de 'MMMM' de 'yyyy H:mm:ss z", "d' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "H:mm", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM, yyyy h:mm:ss t", "d MMMM, yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "h:mm t", "MMMM, yyyy", "d MMMM", "\xd8\xb5", "\xd9\x85", {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd9\x83\xd8\xa7\xd9\x86\xd9\x88\xd9\x86 \xd8\xa7\xd9\x84\xd8\xab\xd8\xa7\xd9\x86\xd9\x8a", "\xd8\xb4\xd8\xa8\xd8\xa7\xd8\xb7", "\xd8\xa2\xd8\xb0\xd8\xa7\xd8\xb1", "\xd9\x86\xd9\x8a\xd8\xb3\xd8\xa7\xd9\x86", "\xd9\x86\xd9\x88\xd8\xa7\xd8\xb1", "\xd8\xad\xd8\xb2\xd9\x8a\xd8\xb1\xd8\xa7\xd9\x86", "\xd8\xaa\xd9\x85\xd9\x88\xd8\xb2", "\xd8\xa2\xd8\xa8", "\xd8\xa3\xd9\x8a\xd9\x84\xd9\x88\xd9\x84", "\xd8\xaa\xd8\xb4\xd8\xb1\xd9\x8a\xd9\x86 \xd8\xa7\xd9\x84\xd8\xa3\xd9\x88\xd9\x84", "\xd8\xaa\xd8\xb4\xd8\xb1\xd9\x8a\xd9\x86 \xd8\xa7\xd9\x84\xd8\xab\xd8\xa7\xd9\x86\xd9\x8a", "\xd9\x83\xd8\xa7\xd9\x86\xd9\x88\xd9\x86 \xd8\xa7\xd9\x84\xd8\xa3\xd9\x88\xd9\x84"}, {"\xd9\x83\xd8\xa7\xd9\x86\xd9\x88\xd9\x86 \xd8\xa7\xd9\x84\xd8\xab\xd8\xa7\xd9\x86\xd9\x8a", "\xd8\xb4\xd8\xa8\xd8\xa7\xd8\xb7", "\xd8\xa2\xd8\xb0\xd8\xa7\xd8\xb1", "\xd9\x86\xd9\x8a\xd8\xb3\xd8\xa7\xd9\x86", "\xd9\x86\xd9\x88\xd8\xa7\xd8\xb1", "\xd8\xad\xd8\xb2\xd9\x8a\xd8\xb1\xd8\xa7\xd9\x86", "\xd8\xaa\xd9\x85\xd9\x88\xd8\xb2", "\xd8\xa2\xd8\xa8", "\xd8\xa3\xd9\x8a\xd9\x84\xd9\x88\xd9\x84", "\xd8\xaa\xd8\xb4\xd8\xb1\xd9\x8a\xd9\x86 \xd8\xa7\xd9\x84\xd8\xa3\xd9\x88\xd9\x84", "\xd8\xaa\xd8\xb4\xd8\xb1\xd9\x8a\xd9\x86 \xd8\xa7\xd9\x84\xd8\xab\xd8\xa7\xd9\x86\xd9\x8a", "\xd9\x83\xd8\xa7\xd9\x86\xd9\x88\xd9\x86 \xd8\xa7\xd9\x84\xd8\xa3\xd9\x88\xd9\x84", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d' de 'MMMM' de 'yyyy hh:mm:ss t z", "d' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "hh:mm t", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM, yyyy h:mm:ss t", "d MMMM, yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "h:mm t", "MMMM, yyyy", "d MMMM", "\xd8\xb5", "\xd9\x85", {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd9\x83\xd8\xa7\xd9\x86\xd9\x88\xd9\x86 \xd8\xa7\xd9\x84\xd8\xab\xd8\xa7\xd9\x86\xd9\x8a", "\xd8\xb4\xd8\xa8\xd8\xa7\xd8\xb7", "\xd8\xa2\xd8\xb0\xd8\xa7\xd8\xb1", "\xd9\x86\xd9\x8a\xd8\xb3\xd8\xa7\xd9\x86", "\xd8\xa3\xd9\x8a\xd8\xa7\xd8\xb1", "\xd8\xad\xd8\xb2\xd9\x8a\xd8\xb1\xd8\xa7\xd9\x86", "\xd8\xaa\xd9\x85\xd9\x88\xd8\xb2", "\xd8\xa2\xd8\xa8", "\xd8\xa3\xd9\x8a\xd9\x84\xd9\x88\xd9\x84", "\xd8\xaa\xd8\xb4\xd8\xb1\xd9\x8a\xd9\x86 \xd8\xa7\xd9\x84\xd8\xa3\xd9\x88\xd9\x84", "\xd8\xaa\xd8\xb4\xd8\xb1\xd9\x8a\xd9\x86 \xd8\xa7\xd9\x84\xd8\xab\xd8\xa7\xd9\x86\xd9\x8a", "\xd9\x83\xd8\xa7\xd9\x86\xd9\x88\xd9\x86 \xd8\xa7\xd9\x84\xd8\xa3\xd9\x88\xd9\x84"}, {"\xd9\x83\xd8\xa7\xd9\x86\xd9\x88\xd9\x86 \xd8\xa7\xd9\x84\xd8\xab\xd8\xa7\xd9\x86\xd9\x8a", "\xd8\xb4\xd8\xa8\xd8\xa7\xd8\xb7", "\xd8\xa2\xd8\xb0\xd8\xa7\xd8\xb1", "\xd9\x86\xd9\x8a\xd8\xb3\xd8\xa7\xd9\x86", "\xd8\xa3\xd9\x8a\xd8\xa7\xd8\xb1", "\xd8\xad\xd8\xb2\xd9\x8a\xd8\xb1\xd8\xa7\xd9\x86", "\xd8\xaa\xd9\x85\xd9\x88\xd8\xb2", "\xd8\xa2\xd8\xa8", "\xd8\xa3\xd9\x8a\xd9\x84\xd9\x88\xd9\x84", "\xd8\xaa\xd8\xb4\xd8\xb1\xd9\x8a\xd9\x86 \xd8\xa7\xd9\x84\xd8\xa3\xd9\x88\xd9\x84", "\xd8\xaa\xd8\xb4\xd8\xb1\xd9\x8a\xd9\x86 \xd8\xa7\xd9\x84\xd8\xab\xd8\xa7\xd9\x86\xd9\x8a", "\xd9\x83\xd8\xa7\xd9\x86\xd9\x88\xd9\x86 \xd8\xa7\xd9\x84\xd8\xa3\xd9\x88\xd9\x84", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d' de 'MMMM' de 'yyyy H:mm:ss z", "d' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "HH:mm", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM, yyyy h:mm:ss t", "d MMMM, yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "h:mm t", "MMMM, yyyy", "d MMMM", "\xd8\xb5", "\xd9\x85", {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd9\x83\xd8\xa7\xd9\x86\xd9\x88\xd9\x86 \xd8\xa7\xd9\x84\xd8\xab\xd8\xa7\xd9\x86\xd9\x8a", "\xd8\xb4\xd8\xa8\xd8\xa7\xd8\xb7", "\xd8\xa2\xd8\xb0\xd8\xa7\xd8\xb1", "\xd9\x86\xd9\x8a\xd8\xb3\xd8\xa7\xd9\x86", "\xd9\x86\xd9\x88\xd8\xa7\xd8\xb1", "\xd8\xad\xd8\xb2\xd9\x8a\xd8\xb1\xd8\xa7\xd9\x86", "\xd8\xaa\xd9\x85\xd9\x88\xd8\xb2", "\xd8\xa2\xd8\xa8", "\xd8\xa3\xd9\x8a\xd9\x84\xd9\x88\xd9\x84", "\xd8\xaa\xd8\xb4\xd8\xb1\xd9\x8a\xd9\x86 \xd8\xa7\xd9\x84\xd8\xa3\xd9\x88\xd9\x84", "\xd8\xaa\xd8\xb4\xd8\xb1\xd9\x8a\xd9\x86 \xd8\xa7\xd9\x84\xd8\xab\xd8\xa7\xd9\x86\xd9\x8a", "\xd9\x83\xd8\xa7\xd9\x86\xd9\x88\xd9\x86 \xd8\xa7\xd9\x84\xd8\xa3\xd9\x88\xd9\x84"}, {"\xd9\x83\xd8\xa7\xd9\x86\xd9\x88\xd9\x86 \xd8\xa7\xd9\x84\xd8\xab\xd8\xa7\xd9\x86\xd9\x8a", "\xd8\xb4\xd8\xa8\xd8\xa7\xd8\xb7", "\xd8\xa2\xd8\xb0\xd8\xa7\xd8\xb1", "\xd9\x86\xd9\x8a\xd8\xb3\xd8\xa7\xd9\x86", "\xd9\x86\xd9\x88\xd8\xa7\xd8\xb1", "\xd8\xad\xd8\xb2\xd9\x8a\xd8\xb1\xd8\xa7\xd9\x86", "\xd8\xaa\xd9\x85\xd9\x88\xd8\xb2", "\xd8\xa2\xd8\xa8", "\xd8\xa3\xd9\x8a\xd9\x84\xd9\x88\xd9\x84", "\xd8\xaa\xd8\xb4\xd8\xb1\xd9\x8a\xd9\x86 \xd8\xa7\xd9\x84\xd8\xa3\xd9\x88\xd9\x84", "\xd8\xaa\xd8\xb4\xd8\xb1\xd9\x8a\xd9\x86 \xd8\xa7\xd9\x84\xd8\xab\xd8\xa7\xd9\x86\xd9\x8a", "\xd9\x83\xd8\xa7\xd9\x86\xd9\x88\xd9\x86 \xd8\xa7\xd9\x84\xd8\xa3\xd9\x88\xd9\x84", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"dd MMMM yyyy h:mm:ss t", "dd MMMM yyyy", "M/d/yyyy", "h:mm:ss tt", "h:mm t", "MMMM yyyy", "dd MMMM", "AM", "PM", {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}, {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}, {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"}, {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""}, 0, 0, "/", ":", {"M/d/yyyy","M/d/yy","M/d/yy","MM/dd/yy","MM/dd/yyyy","yy/MM/dd","yyyy-MM-dd","dd-MMM-yy"},{"dddd, MMMM dd, yyyy","MMMM dd, yyyy","dddd, dd MMMM, yyyy","dd, MMMM, yyyy"},{"h:mm tt","hh:mm tt","H:mm","HH:mm"},{"h:mm:ss tt","hh:mm:ss tt","H:mm:ss","HH:mm:ss"}},
-	{"d' de 'MMMM' de 'yyyy H:mm:ss z", "d' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "H:mm:ss", "H:mm", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM, yyyy h:mm:ss t", "d MMMM, yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "h:mm t", "MMMM, yyyy", "d MMMM", "\xd8\xb5", "\xd9\x85", {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd8\xad", "\xd9\x86", "\xd8\xab", "\xd8\xb1", "\xd8\xae", "\xd8\xac", "\xd8\xb3"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"MMMM d, yyyy h:mm:ss t z", "MMMM d, yyyy", "M/d/yyyy", "h:mm:ss tt", "h:mm t", "MMMM yyyy", "MMMM d", "AM", "PM", {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}, {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}, {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"}, {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""}, 0, 0, "/", ":", {"M/d/yyyy","M/d/yy","M/d/yy","MM/dd/yy","MM/dd/yyyy","yy/MM/dd","yyyy-MM-dd","dd-MMM-yy"},{"dddd, MMMM dd, yyyy","MMMM dd, yyyy","dddd, dd MMMM, yyyy","dd, MMMM, yyyy"},{"h:mm tt","hh:mm tt","H:mm","HH:mm"},{"h:mm:ss tt","hh:mm:ss tt","H:mm:ss","HH:mm:ss"}},
-	{"d' de 'MMMM' de 'yyyy H:mm:ss z", "d' de 'MMMM' de 'yyyy", "dd-MM-yyyy", "H:mm:ss", "H:mm", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM, yyyy h:mm:ss t", "d MMMM, yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "h:mm t", "MMMM, yyyy", "d MMMM", "\xd8\xb5", "\xd9\x85", {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd8\xad", "\xd9\x86", "\xd8\xab", "\xd8\xb1", "\xd8\xae", "\xd8\xac", "\xd8\xb3"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d' de 'MMMM' de 'yyyy hh:mm:ss t z", "d' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "hh:mm t", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM, yyyy h:mm:ss t", "d MMMM, yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "h:mm t", "MMMM, yyyy", "d MMMM", "\xd8\xb5", "\xd9\x85", {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd8\xad", "\xd9\x86", "\xd8\xab", "\xd8\xb1", "\xd8\xae", "\xd8\xac", "\xd8\xb3"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d' de 'MMMM' de 'yyyy hh:mm:ss t z", "d' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "hh:mm t", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d MMMM, yyyy h:mm:ss t", "d MMMM, yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "h:mm t", "MMMM, yyyy", "d MMMM", "\xd8\xb5", "\xd9\x85", {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf", "\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86", "\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1", "\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3", "\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9", "\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1"}, {"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1", "\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3", "\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84", "\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88", "\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88", "\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3", "\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1", "\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1", "\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d' de 'MMMM' de 'yyyy hh:mm:ss t z", "d' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "hh:mm t", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d' de 'MMMM' de 'yyyy hh:mm:ss t z", "d' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "hh:mm t", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"dd' de 'MMMM' de 'yyyy hh:mm:ss t z", "dd' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "hh:mm t", "MMMM' de 'yyyy", "dd' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d' de 'MMMM' de 'yyyy hh:mm:ss t z", "d' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "hh:mm t", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}},
-	{"d' de 'MMMM' de 'yyyy hh:mm:ss t z", "d' de 'MMMM' de 'yyyy", "dd/MM/yyyy", "hh:mm:ss tt", "hh:mm t", "MMMM' de 'yyyy", "d' de 'MMMM", "a.m.", "p.m.", {"domingo", "lunes", "martes", "mi\xc3\xa9rcoles", "jueves", "viernes", "s\xc3\xa1\x62\x61\x64o"}, {"dom", "lun", "mar", "mi\xc3\xa9", "jue", "vie", "s\xc3\xa1\x62"}, {"enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"}, {"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", ""}, 0, 0, "/", ":", {0},{0},{0},{0}}
+	{1, 24, 37, 46, 56, 63, 74, 81, 84, {87, 98, 113, 130, 147, 160, 173}, {87, 98, 113, 130, 147, 160, 173}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{327, 349, 362, 378, 387, 393, 403, 411, 414, {417, 430, 451, 466, 477, 496, 507}, {520, 528, 536, 542, 548, 558, 566}, {574, 587, 604, 613, 624, 631, 638, 645, 658, 677, 694, 709}, {726, 732, 604, 740, 624, 631, 638, 748, 756, 764, 772, 782, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{790, 813, 825, 378, 387, 393, 403, 411, 414, {836, 845, 853, 861, 870, 877, 887}, {896, 900, 904, 908, 912, 916, 920}, {924, 930, 937, 943, 949, 954, 959, 966, 972, 981, 989, 998}, {1007, 1012, 937, 1017, 949, 954, 1022, 1027, 1031, 1036, 1041, 1046, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1051, 1074, 1087, 1096, 1104, 393, 1109, 1117, 1122, {1127, 1135, 1145, 1153, 1161, 1170, 1177}, {1184, 1187, 1190, 1194, 1197, 1201, 1205}, {1208, 1214, 1220, 1228, 1234, 1242, 1250, 1260, 1266, 1274, 1282, 1291}, {1300, 1302, 1305, 1309, 1312, 1314, 1317, 1321, 1326, 1329, 1331, 1334, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1338, 1361, 1373, 378, 387, 393, 403, 411, 414, {1384, 1392, 1399, 1407, 1414, 1422, 1429}, {1437, 1442, 1446, 1450, 1454, 1458, 1462}, {1467, 1474, 1482, 1488, 1494, 1498, 1503, 1508, 1515, 1525, 1533, 1542}, {1551, 1555, 1559, 1563, 1494, 1567, 1571, 1575, 1579, 1583, 1587, 1591, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1595, 1074, 1619, 378, 387, 393, 1109, 1630, 1636, {1643, 1651, 1658, 1667, 1676, 1687, 1695}, {1703, 1706, 1709, 1712, 1715, 1718, 1721}, {1724, 1731, 1739, 1745, 1751, 1755, 1760, 1765, 1772, 1782, 1790, 1799}, {1808, 1812, 1816, 1820, 1751, 1824, 1828, 1832, 1836, 1840, 1844, 1848, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1852, 349, 37, 1877, 56, 393, 403, 1888, 1893, {1898, 1913, 1928, 1939, 1954, 1967, 1986}, {2001, 2008, 2015, 2022, 2029, 2036, 2043}, {2050, 2071, 2094, 2109, 2126, 2137, 2152, 2167, 2186, 2209, 2228, 2247}, {2268, 2275, 2282, 2289, 2296, 2303, 2312, 2321, 2328, 2335, 2342, 2349, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{2356, 2381, 2401, 1877, 2410, 393, 2418, 411, 414, {2425, 2432, 2439, 2447, 2457, 2466, 2473}, {2482, 2486, 2490, 2494, 2498, 2502, 2506}, {2510, 2518, 2527, 1745, 2533, 2537, 2542, 1765, 1772, 2547, 1790, 2555}, {1808, 1812, 2564, 1820, 2533, 1824, 1828, 1832, 1836, 2568, 1844, 2572, 322}, 0, 0, 323, 325, {2401,2576,2576,2583,2592,2603,2612,2623},{2381,2633,2647,2667},{2410,2682,1104,387},{1877,2691,1096,378}},
+	{2703, 2731, 1087, 1096, 387, 2748, 1109, 411, 414, {2762, 2772, 2782, 2790, 2802, 2810, 2820}, {2829, 2832, 2835, 2838, 2841, 2844, 2847}, {2850, 2859, 2868, 2878, 2887, 2896, 2905, 2915, 2922, 2930, 2938, 2948}, {2957, 2963, 2969, 2976, 2982, 2988, 2994, 3001, 3005, 3010, 3015, 3022, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{790, 813, 825, 378, 387, 393, 74, 411, 414, {3028, 3037, 3043, 3049, 3058, 3064, 3073}, {3080, 3085, 3090, 3095, 3100, 3105, 3110}, {3115, 3123, 3132, 3137, 3143, 3147, 3152, 3160, 3166, 3176, 989, 3184}, {3194, 3200, 3132, 3207, 3143, 3147, 3212, 3160, 3218, 1036, 1041, 3224, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{3230, 813, 825, 378, 387, 393, 74, 411, 414, {3253, 3271, 3285, 3303, 3321, 3339, 3355}, {3362, 3365, 3368, 3371, 3374, 3377, 3380}, {3383, 3394, 3407, 3414, 3425, 3432, 3441, 3450, 3463, 3476, 3491, 3504}, {3515, 3522, 3407, 3529, 3425, 3536, 3543, 3550, 3557, 3564, 3571, 3578, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{3585, 3609, 3623, 1096, 1104, 3637, 2418, 3648, 3651, {3654, 3664, 3672, 3677, 3684, 3697, 3705}, {1312, 3713, 3715, 3717, 3721, 3724, 3726}, {3730, 3738, 3747, 3756, 3765, 3772, 3780, 3788, 3798, 3809, 1533, 1542}, {3818, 3823, 3829, 3836, 3842, 3848, 3854, 3860, 3865, 3872, 1041, 3877, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1595, 1074, 1087, 378, 387, 393, 1109, 411, 414, {3882, 3893, 3904, 3918, 3932, 3944, 3956}, {3968, 3972, 3977, 3982, 3987, 3991, 3996}, {4000, 4008, 3132, 4017, 4024, 4029, 4036, 4043, 1515, 3809, 4051, 4061}, {1551, 1555, 1559, 1563, 4024, 4070, 4075, 4080, 1579, 1583, 4086, 4091, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{4095, 349, 825, 4118, 387, 393, 74, 4126, 4129, {4132, 4141, 4149, 4158, 4169, 4178, 4187}, {4194, 4198, 1559, 4202, 4206, 4210, 4214}, {4218, 4226, 4235, 4241, 4248, 4255, 4262, 4269, 4276, 4286, 989, 4294}, {4303, 1555, 1559, 1563, 4307, 4311, 4315, 4319, 4323, 4327, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{4335, 4367, 4389, 4400, 1104, 4410, 4421, 4429, 4436, {4443, 4453, 4463, 4473, 4483, 4493, 4503}, {4513, 4517, 4521, 4525, 4529, 4533, 4537}, {4541, 4546, 4551, 4556, 4561, 4566, 4571, 4576, 4581, 4586, 4592, 4598}, {4604, 4606, 4608, 4610, 4612, 4614, 4616, 4618, 4620, 4622, 4625, 4628, 322}, 0, 0, 323, 325, {4389,2603,4631,4638,4647,4666,4683},{4367,4702,4726,4753},{1104,387,4782,4790},{1096,378,4799,4810}},
+	{4822, 4872, 4896, 4910, 4918, 4925, 4937, 4946, 4953, {4960, 4970, 4980, 4990, 5000, 5010, 5020}, {5030, 5034, 5038, 5042, 5046, 5050, 5054}, {5058, 5063, 5068, 5073, 5078, 5083, 5088, 5093, 5098, 5103, 5109, 5115}, {5058, 5063, 5068, 5073, 5078, 5083, 5088, 5093, 5098, 5103, 5109, 5115, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{5121, 813, 5143, 1096, 1104, 393, 74, 411, 414, {5152, 5159, 5167, 5175, 5184, 5194, 5202}, {5211, 2832, 5214, 5217, 5220, 5223, 5226}, {5229, 5237, 5246, 1488, 5252, 1498, 1503, 5256, 1515, 1525, 1533, 1542}, {1551, 1555, 5265, 1563, 5252, 1567, 1571, 1575, 1579, 1583, 1587, 1591, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{790, 813, 2612, 378, 387, 393, 74, 411, 414, {5269, 5279, 5293, 5300, 5307, 5316, 1177}, {5324, 5326, 5329, 5332, 5336, 5339, 1703}, {5342, 5351, 5356, 5363, 1494, 5373, 5382, 5389, 5399, 5409, 1282, 5422}, {5432, 5436, 1559, 5440, 1494, 5444, 5448, 5452, 5456, 5460, 5465, 5469, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{5473, 5512, 37, 378, 387, 5534, 5549, 411, 414, {5561, 5569, 5583, 5596, 5609, 5622, 5634}, {4194, 5642, 5646, 5650, 5654, 5658, 5662}, {5667, 5675, 5685, 943, 5692, 5697, 5703, 4269, 5709, 5718, 5726, 5735}, {1551, 5744, 1559, 5748, 3143, 1567, 1571, 4319, 4323, 5752, 1587, 5756, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{790, 813, 1619, 378, 387, 393, 74, 411, 414, {5760, 5770, 5775, 5782, 5791, 5795, 5802}, {5813, 5815, 5817, 1712, 5820, 1312, 5822}, {5824, 5833, 5843, 5850, 3143, 5858, 5864, 1508, 5870, 5881, 5891, 5901}, {5911, 1812, 2564, 1820, 1751, 5915, 5919, 1832, 1836, 2568, 1844, 2572, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{5923, 5951, 1619, 1096, 1104, 393, 74, 411, 414, {5969, 5992, 451, 6015, 6026, 6041, 6056}, {6071, 6076, 6081, 6086, 6091, 6096, 6101}, {6106, 6119, 6134, 6143, 6156, 6163, 6172, 6181, 6194, 6211, 6226, 6239}, {6254, 6261, 6268, 6275, 624, 6282, 6289, 6296, 6303, 6310, 6317, 6324, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{6331, 6356, 1087, 1096, 387, 3637, 6370, 411, 414, {6378, 6387, 6399, 6406, 6414, 6424, 6430}, {6437, 6441, 6445, 6449, 6453, 6458, 6462}, {6466, 6476, 6485, 6493, 6501, 6509, 6516, 6523, 6531, 1282, 6537, 6545}, {6554, 6558, 6562, 6567, 6571, 5448, 6575, 6579, 6583, 5465, 6587, 6591, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1051, 1074, 6595, 1096, 1104, 393, 1109, 411, 414, {6606, 6614, 6623, 6630, 6637, 6646, 6653}, {6660, 6663, 6666, 6669, 6672, 6676, 1703}, {3730, 3738, 6679, 4017, 6685, 4070, 4075, 1508, 1515, 3809, 1533, 1542}, {1551, 1555, 1559, 1563, 6685, 4070, 4075, 1575, 1579, 1583, 1587, 1591, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{6690, 349, 2612, 6715, 6726, 393, 403, 6733, 6736, {6739, 6746, 6755, 6764, 6776, 6784, 6793}, {6803, 6807, 2564, 6812, 6817, 6821, 6825}, {6829, 6835, 3132, 6842, 1494, 6848, 6856, 6863, 6869, 6877, 6883, 6891}, {1808, 6899, 2564, 6903, 6907, 6911, 6915, 6919, 6825, 6923, 6927, 6932, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{6936, 6964, 2612, 378, 6981, 393, 74, 6987, 6990, {6993, 7001, 7009, 1407, 1414, 1422, 7016}, {7024, 7028, 2835, 7032, 2841, 7035, 7038}, {5229, 5237, 3132, 1488, 1494, 1498, 1503, 7042, 1515, 1525, 1533, 1542}, {1551, 1555, 1559, 1563, 1494, 1567, 1571, 1575, 1579, 1583, 1587, 1591, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{7050, 813, 37, 1096, 1104, 393, 74, 7103, 7134, {7165, 7196, 7224, 7252, 7271, 7305, 7330}, {7355, 7363, 7368, 7373, 7378, 7386, 7391}, {7396, 7415, 7446, 7465, 7484, 7506, 7531, 7553, 7575, 7597, 7616, 7644}, {7666, 7675, 7684, 7696, 7708, 7717, 7729, 7738, 7747, 7756, 7765, 7774, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{7783, 7812, 1619, 378, 387, 393, 403, 411, 414, {7830, 7836, 7846, 7852, 7863, 7873, 7878}, {7888, 7892, 7896, 7900, 7905, 7909, 7913}, {7917, 7922, 7929, 7934, 7940, 7947, 7955, 7962, 7971, 7978, 7983, 7990}, {7998, 8002, 2564, 8007, 2533, 8011, 8015, 8019, 8024, 8028, 8032, 8036, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{8040, 349, 825, 1096, 1104, 393, 403, 411, 414, {8061, 8068, 8074, 8081, 8086, 8092, 8098}, {8104, 8108, 8112, 8116, 8120, 8124, 8128}, {8132, 8140, 8149, 1745, 8155, 1755, 1760, 8159, 1772, 1782, 1790, 8167}, {1808, 1812, 2564, 1820, 8155, 1824, 1828, 8176, 1836, 1840, 1844, 8180, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{790, 813, 1619, 1096, 387, 393, 74, 411, 414, {8184, 8197, 8216, 8233, 8246, 8259, 8275}, {8288, 6076, 6081, 6086, 6091, 6096, 6101}, {8293, 8304, 8317, 8332, 8345, 8358, 8371, 8382, 8395, 8410, 8423, 8442}, {8455, 8462, 8469, 8476, 8485, 8494, 8503, 8510, 8519, 8526, 8535, 8544, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{8553, 813, 1619, 1096, 6981, 393, 74, 411, 414, {8576, 8591, 8612, 8627, 8640, 8653, 8668}, {8681, 8686, 8691, 8696, 8701, 8706, 8711}, {8716, 8733, 8742, 8757, 624, 8774, 8789, 8802, 8817, 8834, 8855, 8872}, {8887, 8462, 8894, 8901, 624, 8908, 8915, 8922, 8519, 8929, 8936, 8943, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{8950, 8974, 1087, 1096, 1104, 393, 8988, 411, 414, {8997, 9005, 9016, 9022, 9028, 9037, 1177}, {6437, 6441, 1454, 9043, 6453, 6458, 9047}, {1467, 1474, 6679, 1488, 1494, 9051, 9057, 9063, 1515, 1525, 1533, 1542}, {1551, 1555, 1559, 1563, 1494, 1567, 1571, 9070, 1579, 1583, 1587, 1591, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{5121, 813, 9074, 1096, 1104, 393, 9084, 411, 414, {9092, 9103, 9114, 9125, 9136, 9147, 9153}, {3724, 9162, 9164, 3715, 5324, 9166, 5815}, {9168, 9176, 9185, 9192, 3143, 9199, 9205, 1508, 1515, 9211, 1533, 9220}, {9230, 9235, 9185, 1563, 3143, 9199, 9205, 1575, 9241, 1583, 1587, 9246, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{9251, 9283, 9304, 1096, 387, 9316, 1109, 411, 414, {9334, 9345, 9355, 9364, 9375, 9387, 9398}, {9408, 3724, 9411, 9164, 9413, 9415, 5822}, {9418, 9428, 1482, 9439, 9448, 9454, 9462, 9470, 9478, 9489, 9498, 9508}, {1808, 1812, 2564, 1820, 1751, 9518, 9523, 1832, 1836, 1840, 1844, 2572, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{9528, 9561, 9583, 378, 387, 9594, 2418, 411, 414, {9609, 9621, 9633, 9645, 9659, 9674, 9687}, {9701, 9704, 9707, 9710, 9713, 5326, 6672}, {9716, 9723, 9731, 9736, 9747, 9757, 9767, 9774, 9786, 9795, 9802, 9813}, {9823, 9827, 9831, 9835, 9839, 9843, 9847, 9851, 9855, 9859, 9863, 9867, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{9871, 813, 2401, 2691, 387, 393, 74, 9896, 9903, {9910, 9926, 9939, 9955, 9972, 9990, 9999}, {10008, 10012, 10016, 10020, 10024, 10028, 10032}, {10036, 10049, 208, 10060, 10071, 10076, 10085, 10096, 10103, 10118, 10129, 10142}, {10155, 10162, 10169, 10176, 10183, 10190, 10197, 10096, 10204, 10211, 10218, 10225, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{10232, 349, 825, 1877, 387, 393, 403, 10256, 10259, {10262, 10275, 10285, 10294, 10304, 10315, 10326}, {10338, 10341, 10346, 10351, 10356, 10361, 10366}, {10371, 10384, 10395, 10405, 10416, 10428, 10440, 10453, 10465, 10478, 10493, 10514}, {10533, 10539, 10545, 10551, 10557, 10563, 10569, 10575, 10581, 10587, 10594, 10601, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{10608, 2633, 1619, 1096, 387, 393, 2418, 10633, 10641, {10649, 10662, 10683, 10702, 10723, 10742, 10755}, {10766, 10773, 10780, 10787, 10794, 10801, 10808}, {10815, 10832, 10849, 10858, 10869, 10880, 10893, 10906, 10921, 10940, 10959, 10976}, {10995, 11002, 11009, 11016, 11023, 11030, 11037, 11044, 11051, 11058, 11065, 11072, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{10608, 2633, 1619, 1096, 387, 393, 2418, 10633, 11079, {10649, 10662, 10683, 10702, 10723, 10742, 10755}, {10766, 10773, 10780, 10787, 10794, 10801, 10808}, {11087, 11102, 10849, 10858, 10869, 11117, 11130, 10906, 10921, 10940, 10959, 10976}, {11143, 11150, 11009, 11016, 11023, 11157, 11164, 11044, 11051, 11058, 11065, 11072, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{11171, 11212, 4389, 378, 387, 11242, 11257, 411, 414, {11270, 11278, 11289, 11299, 11310, 11319, 11328}, {11338, 11341, 11344, 11347, 11350, 11353, 11356}, {11359, 11369, 11377, 11385, 11393, 11401, 11408, 11416, 11424, 11431, 11437, 11444}, {11452, 11456, 1559, 11460, 3143, 11464, 11468, 11472, 11476, 11480, 11484, 11488, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{11492, 349, 1619, 378, 387, 393, 403, 411, 414, {11516, 430, 451, 6015, 11529, 11546, 11557}, {520, 528, 536, 11570, 11578, 558, 11586}, {11594, 587, 604, 613, 11609, 11616, 11625, 645, 658, 677, 694, 709}, {11634, 732, 11642, 740, 11650, 11658, 11666, 748, 11674, 764, 772, 11684, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{11696, 349, 4389, 2691, 56, 393, 403, 322, 322, {11719, 11726, 11734, 11742, 11751, 11761, 11768}, {1703, 5817, 1709, 11777, 1715, 11780, 1721}, {11783, 11792, 11802, 1745, 8155, 11808, 11814, 11820, 1772, 1782, 1790, 8167}, {1808, 1812, 2564, 1820, 8155, 1824, 1828, 1832, 1836, 1840, 1844, 8180, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1338, 1361, 1373, 11829, 387, 393, 403, 411, 414, {3882, 11838, 11849, 11859, 11869, 11879, 11893}, {3968, 3972, 11905, 11910, 11914, 11919, 11924}, {1467, 1474, 3132, 4017, 3143, 1498, 1503, 1508, 1515, 1525, 1533, 4061}, {1551, 1555, 1559, 1563, 3143, 1567, 1571, 1575, 1579, 1583, 1587, 4091, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{11928, 813, 1373, 378, 56, 393, 74, 11952, 11980, {12002, 12021, 12040, 12062, 12081, 12103, 12128}, {12147, 12157, 12167, 12180, 12190, 12203, 12219}, {12229, 12245, 12261, 12277, 12296, 12303, 12313, 12329, 12345, 12367, 12389, 12408}, {12229, 12245, 12261, 12277, 12296, 12303, 12313, 12329, 12345, 12367, 12389, 12408, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{12430, 12454, 2401, 12467, 387, 12478, 6370, 411, 414, {12488, 12497, 12506, 12514, 12523, 12532, 12539}, {12548, 12552, 12556, 12560, 12564, 12568, 12572}, {8132, 8140, 12576, 12582, 8155, 1755, 12589, 12595, 12602, 12611, 12618, 12626}, {1808, 1812, 2564, 1820, 8155, 1824, 1828, 12634, 1836, 1840, 1844, 8180, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{12638, 813, 12663, 12671, 12684, 393, 74, 12692, 12734, {12776, 12795, 12814, 12836, 12855, 12877, 12902}, {12921, 12931, 12941, 12954, 12964, 12977, 12993}, {13003, 13031, 13059, 13075, 13094, 13101, 13111, 13127, 13143, 13171, 13193, 13215}, {13240, 13259, 13059, 13075, 13094, 13101, 13111, 13127, 13278, 13294, 13310, 13320, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{11928, 813, 13333, 13340, 56, 393, 74, 13352, 13365, {13378, 13397, 13419, 13444, 13460, 13482, 13501}, {13511, 13518, 13525, 13532, 13539, 13546, 13553}, {13557, 13573, 13598, 13617, 13636, 13643, 13656, 13669, 13688, 13719, 13744, 13766}, {13791, 13799, 13813, 13827, 13636, 13643, 13656, 13838, 13846, 13860, 13871, 13879, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{11928, 813, 13890, 13340, 56, 393, 74, 13899, 13927, {13949, 13971, 13993, 14018, 14040, 14065, 14093}, {14115, 14125, 14135, 14148, 14158, 14171, 14187}, {14197, 14213, 14238, 14257, 14279, 14286, 14299, 14312, 14331, 14362, 14387, 14406}, {14197, 14213, 14238, 14257, 14279, 14286, 14299, 14312, 14331, 14362, 14387, 14406, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{12638, 813, 13333, 12671, 12684, 393, 74, 14431, 14459, {14481, 14500, 14519, 14541, 14560, 14582, 14607}, {14626, 14631, 14639, 14647, 14655, 14663, 14671}, {14682, 14698, 14723, 14742, 14764, 14771, 14784, 14797, 14816, 14844, 14869, 14891}, {14682, 14698, 14723, 14742, 14764, 14771, 14784, 14797, 14816, 14844, 14869, 14891, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{11928, 813, 13333, 13340, 56, 393, 74, 14916, 14928, {12002, 12021, 14940, 12062, 12081, 12103, 12128}, {12147, 12157, 14962, 12180, 12190, 12203, 12219}, {14975, 15000, 12261, 15025, 15044, 12303, 15051, 15064, 15080, 15108, 15130, 15158}, {14975, 15000, 12261, 15025, 15044, 12303, 15051, 15064, 15080, 15108, 15130, 15158, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{11492, 349, 15180, 15189, 387, 393, 403, 411, 414, {15200, 15208, 15213, 15220, 15230, 15236, 15243}, {15251, 15255, 2564, 15259, 15264, 15268, 15272}, {15277, 15285, 15294, 15300, 15306, 15311, 15317, 15323, 15330, 15339, 15347, 15356}, {15365, 1812, 2564, 15369, 1751, 15373, 15378, 12634, 15382, 15386, 1844, 2572, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{11928, 813, 13333, 13340, 56, 393, 74, 14916, 14928, {15390, 12021, 15418, 12062, 12081, 12103, 12128}, {12147, 12157, 14962, 12180, 12190, 12203, 12219}, {14975, 15437, 12261, 15025, 15044, 12303, 15051, 15064, 15080, 15108, 15130, 15158}, {14975, 15000, 12261, 15025, 15044, 12303, 15051, 15064, 15080, 15108, 15130, 15158, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1, 24, 37, 46, 56, 63, 74, 81, 84, {87, 98, 113, 130, 147, 160, 173}, {15468, 15471, 15474, 15477, 15480, 15483, 15486}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1595, 1074, 1619, 378, 387, 393, 1109, 1630, 1636, {1643, 1651, 1658, 1667, 1676, 1687, 1695}, {1703, 1706, 1709, 1712, 1715, 1718, 1721}, {1724, 1731, 1739, 1745, 1751, 1755, 1760, 1765, 1772, 1782, 1790, 1799}, {1808, 1812, 1816, 1820, 1751, 1824, 1828, 1832, 1836, 1840, 1844, 1848, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{790, 813, 825, 378, 387, 393, 74, 411, 414, {2425, 2432, 2439, 2447, 2457, 2466, 2473}, {2482, 2486, 2490, 2494, 2498, 2502, 2506}, {2510, 2518, 2527, 1745, 2533, 2537, 2542, 1765, 1772, 2547, 1790, 2555}, {1808, 1812, 2564, 1820, 2533, 1824, 1828, 1832, 1836, 2568, 1844, 2572, 322}, 0, 0, 323, 325, {2401,2576,2576,2583,2592,2603,2612,2623},{2381,2633,2647,2667},{2410,2682,1104,387},{1877,2691,1096,378}},
+	{15489, 5512, 825, 2691, 12684, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{790, 813, 15660, 1096, 387, 393, 74, 411, 414, {3028, 3037, 3043, 3049, 3058, 3064, 3073}, {3080, 3085, 3090, 3095, 3100, 3105, 3110}, {3115, 3123, 3132, 3137, 3143, 3147, 3152, 3160, 3166, 3176, 989, 3184}, {3194, 3200, 3132, 3207, 3143, 3147, 3212, 3160, 3218, 1036, 1041, 3224, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{790, 813, 1619, 378, 387, 393, 74, 4126, 4129, {4132, 4141, 4149, 4158, 4169, 4178, 4187}, {4194, 4198, 1559, 4202, 4206, 4210, 4214}, {4218, 4226, 4235, 4241, 4248, 4255, 4262, 4269, 4276, 4286, 989, 4294}, {4303, 1555, 1559, 1563, 4307, 4311, 4315, 4319, 4323, 4327, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{790, 813, 15660, 1096, 387, 393, 74, 411, 414, {5152, 5159, 5167, 5175, 5184, 5194, 5202}, {5211, 2832, 5214, 5217, 5220, 5223, 5226}, {5229, 5237, 5246, 1488, 5252, 1498, 1503, 5256, 1515, 1525, 1533, 1542}, {1551, 1555, 5265, 1563, 5252, 1567, 1571, 1575, 1579, 1583, 1587, 1591, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{15670, 5512, 1373, 1096, 387, 5534, 5549, 411, 414, {5561, 5569, 5583, 5596, 5609, 5622, 5634}, {4194, 5642, 5646, 5650, 5654, 5658, 5662}, {5667, 5675, 5685, 943, 5692, 5697, 5703, 4269, 5709, 5718, 5726, 5735}, {1551, 5744, 1559, 5748, 3143, 1567, 1571, 4319, 4323, 5752, 1587, 5756, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{6936, 6964, 1087, 378, 6981, 393, 74, 6987, 6990, {6993, 7001, 7009, 1407, 1414, 1422, 7016}, {7024, 7028, 2835, 7032, 2841, 7035, 7038}, {5229, 5237, 3132, 1488, 1494, 1498, 1503, 7042, 1515, 1525, 1533, 1542}, {1551, 1555, 1559, 1563, 1494, 1567, 1571, 1575, 1579, 1583, 1587, 1591, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1, 24, 825, 2691, 56, 63, 74, 81, 84, {87, 98, 113, 130, 147, 160, 173}, {15468, 15471, 15474, 15477, 15480, 15483, 15486}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{15703, 8974, 1619, 378, 387, 393, 8988, 1630, 1636, {1643, 1651, 1658, 1667, 1676, 1687, 1695}, {1703, 1706, 1709, 1712, 1715, 1718, 1721}, {15728, 1731, 1739, 1745, 1751, 1755, 1760, 1765, 1772, 1782, 1790, 1799}, {15736, 1812, 15741, 1820, 1751, 1824, 1828, 1832, 1836, 1840, 1844, 1848, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{15746, 813, 15660, 1877, 56, 393, 74, 411, 414, {2425, 2432, 2439, 2447, 2457, 2466, 2473}, {2482, 2486, 2490, 2494, 2498, 2502, 2506}, {2510, 2518, 2527, 1745, 2533, 2537, 2542, 1765, 1772, 2547, 1790, 2555}, {1808, 1812, 2564, 1820, 2533, 1824, 1828, 1832, 1836, 2568, 1844, 2572, 322}, 0, 0, 323, 325, {2401,2576,2576,2583,2592,2603,2612,2623},{2381,2633,2647,2667},{2410,2682,1104,387},{1877,2691,1096,378}},
+	{15670, 5512, 825, 1096, 1104, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{790, 813, 2612, 378, 387, 393, 74, 411, 414, {3028, 3037, 3043, 3049, 3058, 3064, 3073}, {3080, 3085, 3090, 3095, 3100, 3105, 3110}, {3115, 3123, 3132, 3137, 3143, 3147, 3152, 3160, 3166, 3176, 989, 3184}, {3194, 3200, 3132, 3207, 3143, 3147, 3212, 3160, 3218, 1036, 1041, 3224, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1, 24, 825, 2691, 56, 63, 74, 81, 84, {87, 98, 113, 130, 147, 160, 173}, {15468, 15471, 15474, 15477, 15480, 15483, 15486}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1595, 1074, 1619, 378, 387, 393, 1109, 1630, 1636, {1643, 1651, 1658, 1667, 1676, 1687, 1695}, {1703, 1706, 1709, 1712, 1715, 1718, 1721}, {1724, 1731, 1739, 1745, 1751, 1755, 1760, 1765, 1772, 1782, 1790, 1799}, {1808, 1812, 1816, 1820, 1751, 1824, 1828, 1832, 1836, 1840, 1844, 1848, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{2356, 15768, 825, 1877, 56, 393, 2418, 411, 414, {2425, 2432, 2439, 2447, 2457, 2466, 2473}, {2482, 2486, 2490, 2494, 2498, 2502, 2506}, {2510, 2518, 2527, 1745, 2533, 2537, 2542, 1765, 1772, 2547, 1790, 2555}, {1808, 1812, 2564, 1820, 2533, 1824, 1828, 1832, 1836, 2568, 1844, 2572, 322}, 0, 0, 323, 325, {2401,2576,2576,2583,2592,2603,2612,2623},{2381,2633,2647,2667},{2410,2682,1104,387},{1877,2691,1096,378}},
+	{15489, 5512, 825, 2691, 12684, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{790, 813, 1619, 378, 387, 393, 74, 411, 414, {3028, 3037, 3043, 3049, 3058, 3064, 3073}, {3080, 3085, 3090, 3095, 3100, 3105, 3110}, {3115, 3123, 3132, 3137, 3143, 3147, 3152, 3160, 3166, 3176, 989, 3184}, {3194, 3200, 3132, 3207, 3143, 3147, 3212, 3160, 3218, 1036, 1041, 3224, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1, 24, 1373, 1096, 56, 63, 74, 81, 84, {87, 98, 113, 130, 147, 160, 173}, {15468, 15471, 15474, 15477, 15480, 15483, 15486}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{15746, 813, 15660, 1877, 56, 393, 74, 15524, 15529, {2425, 2432, 2439, 2447, 2457, 2466, 2473}, {2482, 2486, 2490, 2494, 2498, 2502, 2506}, {2510, 2518, 2527, 1745, 2533, 2537, 2542, 1765, 1772, 2547, 1790, 2555}, {1808, 1812, 2564, 1820, 2533, 1824, 1828, 1832, 1836, 2568, 1844, 2572, 322}, 0, 0, 323, 325, {2401,2576,2576,2583,2592,2603,2612,2623},{2381,2633,2647,2667},{2410,2682,1104,387},{1877,2691,1096,378}},
+	{15489, 5512, 825, 2691, 12684, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{790, 813, 825, 378, 387, 393, 74, 411, 414, {3028, 3037, 3043, 3049, 3058, 3064, 3073}, {3080, 3085, 3090, 3095, 3100, 3105, 3110}, {3115, 3123, 3132, 3137, 3143, 3147, 3152, 3160, 3166, 3176, 989, 3184}, {3194, 3200, 3132, 3207, 3143, 3147, 3212, 3160, 3218, 1036, 1041, 3224, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1, 24, 1373, 1096, 56, 63, 74, 81, 84, {87, 98, 113, 130, 147, 160, 173}, {15468, 15471, 15474, 15477, 15480, 15483, 15486}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{790, 813, 825, 378, 387, 393, 74, 15524, 15529, {2425, 2432, 2439, 2447, 2457, 2466, 2473}, {2482, 2486, 2490, 2494, 2498, 2502, 2506}, {2510, 2518, 2527, 1745, 2533, 2537, 2542, 1765, 1772, 2547, 1790, 2555}, {1808, 1812, 2564, 1820, 2533, 1824, 1828, 1832, 1836, 2568, 1844, 2572, 322}, 0, 0, 323, 325, {2401,2576,2576,2583,2592,2603,2612,2623},{2381,2633,2647,2667},{2410,2682,1104,387},{1877,2691,1096,378}},
+	{15489, 5512, 2592, 2691, 12684, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1, 24, 1373, 1096, 56, 63, 74, 81, 84, {87, 98, 113, 130, 147, 160, 173}, {87, 98, 113, 130, 147, 160, 173}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{11696, 349, 4389, 2691, 56, 393, 403, 411, 414, {2425, 2432, 2439, 2447, 2457, 2466, 2473}, {2482, 2486, 2490, 2494, 2498, 2502, 2506}, {2510, 2518, 2527, 1745, 2533, 2537, 2542, 1765, 1772, 2547, 1790, 2555}, {1808, 1812, 2564, 1820, 2533, 1824, 1828, 1832, 1836, 2568, 1844, 2572, 322}, 0, 0, 323, 325, {2401,2576,2576,2583,2592,2603,2612,2623},{2381,2633,2647,2667},{2410,2682,1104,387},{1877,2691,1096,378}},
+	{15489, 5512, 825, 2691, 12684, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1, 24, 825, 2691, 56, 63, 74, 81, 84, {87, 98, 113, 130, 147, 160, 173}, {15468, 15471, 15474, 15477, 15480, 15483, 15486}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{15489, 5512, 825, 2691, 12684, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1, 24, 825, 2691, 56, 63, 74, 81, 84, {87, 98, 113, 130, 147, 160, 173}, {87, 98, 113, 130, 147, 160, 173}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{15781, 5512, 825, 2691, 1104, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1, 24, 825, 2691, 56, 63, 74, 81, 84, {87, 98, 113, 130, 147, 160, 173}, {87, 98, 113, 130, 147, 160, 173}, {15813, 15837, 15846, 15855, 15866, 15875, 15888, 15897, 15902, 15913, 15935, 15959}, {15813, 15837, 15846, 15855, 15866, 15875, 15888, 15897, 15902, 15913, 15935, 15959, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{15489, 5512, 825, 2691, 12684, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1, 24, 825, 2691, 56, 63, 74, 81, 84, {87, 98, 113, 130, 147, 160, 173}, {87, 98, 113, 130, 147, 160, 173}, {15813, 15837, 15846, 15855, 15981, 15875, 15888, 15897, 15902, 15913, 15935, 15959}, {15813, 15837, 15846, 15855, 15981, 15875, 15888, 15897, 15902, 15913, 15935, 15959, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{15781, 5512, 825, 2691, 387, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1, 24, 825, 2691, 56, 63, 74, 81, 84, {87, 98, 113, 130, 147, 160, 173}, {87, 98, 113, 130, 147, 160, 173}, {15813, 15837, 15846, 15855, 15866, 15875, 15888, 15897, 15902, 15913, 15935, 15959}, {15813, 15837, 15846, 15855, 15866, 15875, 15888, 15897, 15902, 15913, 15935, 15959, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{11696, 349, 2401, 1877, 56, 393, 403, 411, 414, {2425, 2432, 2439, 2447, 2457, 2466, 2473}, {2482, 2486, 2490, 2494, 2498, 2502, 2506}, {2510, 2518, 2527, 1745, 2533, 2537, 2542, 1765, 1772, 2547, 1790, 2555}, {1808, 1812, 2564, 1820, 2533, 1824, 1828, 1832, 1836, 2568, 1844, 2572, 322}, 0, 0, 323, 325, {2401,2576,2576,2583,2592,2603,2612,2623},{2381,2633,2647,2667},{2410,2682,1104,387},{1877,2691,1096,378}},
+	{15781, 5512, 825, 1096, 1104, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1, 24, 825, 2691, 56, 63, 74, 81, 84, {87, 98, 113, 130, 147, 160, 173}, {15468, 15471, 15474, 15477, 15480, 15483, 15486}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{2356, 15768, 2401, 1877, 56, 393, 2418, 411, 414, {2425, 2432, 2439, 2447, 2457, 2466, 2473}, {2482, 2486, 2490, 2494, 2498, 2502, 2506}, {2510, 2518, 2527, 1745, 2533, 2537, 2542, 1765, 1772, 2547, 1790, 2555}, {1808, 1812, 2564, 1820, 2533, 1824, 1828, 1832, 1836, 2568, 1844, 2572, 322}, 0, 0, 323, 325, {2401,2576,2576,2583,2592,2603,2612,2623},{2381,2633,2647,2667},{2410,2682,1104,387},{1877,2691,1096,378}},
+	{15781, 5512, 1373, 1096, 1104, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1, 24, 825, 2691, 56, 63, 74, 81, 84, {87, 98, 113, 130, 147, 160, 173}, {15468, 15471, 15474, 15477, 15480, 15483, 15486}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{15489, 5512, 825, 2691, 12684, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1, 24, 825, 2691, 56, 63, 74, 81, 84, {87, 98, 113, 130, 147, 160, 173}, {15468, 15471, 15474, 15477, 15480, 15483, 15486}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{15489, 5512, 825, 2691, 12684, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{1, 24, 825, 2691, 56, 63, 74, 81, 84, {87, 98, 113, 130, 147, 160, 173}, {87, 98, 113, 130, 147, 160, 173}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309}, {184, 195, 208, 217, 228, 237, 248, 259, 270, 283, 296, 309, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{15489, 5512, 825, 2691, 12684, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{15489, 5512, 825, 2691, 12684, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{15990, 16026, 825, 2691, 12684, 5534, 16049, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{15489, 5512, 825, 2691, 12684, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}},
+	{15489, 5512, 825, 2691, 12684, 5534, 5549, 15524, 15529, {5561, 15534, 15540, 15547, 15558, 15565, 5634}, {4194, 4198, 1559, 15573, 15578, 15582, 5662}, {15586, 15592, 4235, 943, 15600, 15605, 15611, 4269, 15617, 981, 15628, 15638}, {15648, 1555, 1559, 5748, 15652, 1567, 1571, 4319, 1579, 15656, 1587, 4331, 322}, 0, 0, 323, 325, {0},{0},{0},{0}}
 };
 
 
 static const NumberFormatEntry number_format_entries [] = {
-	{",", "\xc2\xa0", ",", "\xc2\xa0", ",", "\xc2\xa0", "\xd0\xbb\xd0\xb2.", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 0, 0, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", "\xc2\xa0", ",", "\xc2\xa0", ",", "\xc2\xa0", "K\xc4\x8d", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "kr", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 12, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 1, 1, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "$", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 0, 0, 0, 0, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", "\xc2\xa0", ",", "\xc2\xa0", ",", "\xc2\xa0", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", "\xc2\xa0", ",", "\xc2\xa0", ",", "\xc2\xa0", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 0, 0, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "\xe2\x82\xaa", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", "\xc2\xa0", ",", "\xc2\xa0", ",", "\xc2\xa0", "Ft", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "kr.", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 9, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "\\", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 1, 0, 1, 1, 1, 0, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "\xef\xbf\xa6", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 0, 0, 0, 0, 1, 0, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 11, 2, 0, 0, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", "?", ",", "?", ",", "?", "z?", "%", "?", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "R$", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 0, 0, 1, 1, 1, 0, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "lei", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", "\xc2\xa0", ",", "\xc2\xa0", ",", "\xc2\xa0", "\xd1\x80.", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 5, 1, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "Kn", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 9, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", "\xc2\xa0", ",", "\xc2\xa0", ",", "\xc2\xa0", "Sk", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "Lek", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 1, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", "\xc2\xa0", ",", "\xc2\xa0", ",", "\xc2\xa0", "kr", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "\xe0\xb8\xbf", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 2, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "TL", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "Rp", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 0, 0, 1, 1, 1, 0, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", "\xc2\xa0", ",", "\xc2\xa0", ",", "\xc2\xa0", "\xd0\xb3\xd1\x80\xd0\xbd.", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", "\xc2\xa0", ",", "\xc2\xa0", ",", "\xc2\xa0", "", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 1, 0, 1, 1, 1, 0, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "SIT", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 9, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", "\xc2\xa0", ",", "\xc2\xa0", ",", "\xc2\xa0", "kr", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", "\xc2\xa0", ",", "\xc2\xa0", ",", "\xc2\xa0", "Ls", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "Lt", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {2, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{"\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xef\xb7\xbc", "\xd9\xaa", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 0, 3, 2, 2, 1, 0, 2, 2, {5, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "\xc4\x91", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "Den", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 9, 2, 1, 1, 0, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "R", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 1, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "kr", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 12, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "\xe0\xa4\xb0\xe0\xa5\x81", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 9, 2, 1, 1, 1, 2, 2, 2, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "KSh", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 1, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "\xe0\xaa\xb0\xe0\xab\x81", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 9, 2, 1, 1, 1, 2, 2, 2, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "\xe0\xae\xb0\xe0\xaf\x82", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 9, 2, 1, 1, 1, 2, 2, 2, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "\xe0\xb0\xb0\xe0\xb1\x82.", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 9, 2, 1, 1, 1, 2, 2, 2, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "\xe0\xa4\xb0\xe0\xa5\x81", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 9, 2, 1, 1, 1, 2, 2, 2, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "\xe0\xa4\xb0\xe0\xa5\x81", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 9, 2, 1, 1, 1, 2, 2, 2, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "\xe0\xa4\xb0\xe0\xa5\x81", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 9, 2, 1, 1, 1, 2, 2, 2, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}},
-	{"\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd8\xaf.\xd8\xb9.\xe2\x80\x8f", "\xd9\xaa", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 11, 2, 1, 1, 3, 3, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", "'", ".", "'", ".", "'", "SFr.", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 2, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "\xc2\xa3", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 1, 0, 1, 1, 1, 2, 2, 2, {4, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "$", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", "'", ".", "'", ".", "'", "SFr.", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 2, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", "\xc2\xa0", ",", "\xc2\xa0", ",", "\xc2\xa0", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{"\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd8\xac.\xd9\x85.\xe2\x80\x8f", "\xd9\xaa", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 11, 2, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 9, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "$", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 1, 0, 1, 1, 1, 2, 2, 2, {4, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", "\xc2\xa0", ",", "\xc2\xa0", ",", "\xc2\xa0", "$", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 0, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{"\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd8\xaf.\xd9\x84.\xe2\x80\x8f", "\xd9\xaa", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 11, 2, 1, 1, 3, 3, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "$", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "Q", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", "'", ".", "'", ".", "'", "sFr.", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 2, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{"\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd8\xaf.\xd8\xac.\xe2\x80\x8f", "\xd9\xaa", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 11, 2, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "$", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 1, 0, 1, 1, 1, 2, 2, 2, {4, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "CRC", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "\xe2\x82\xac", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{"\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd8\xaf.\xd9\x85.\xe2\x80\x8f", "\xd9\xaa", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 11, 2, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "\xe2\x82\xac", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 1, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "B/", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{"\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd8\xaf.\xd8\xaa.\xe2\x80\x8f", "\xd9\xaa", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 1, 0, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "R", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 1, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "RD$", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{"\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd8\xb1.\xd8\xb9.\xe2\x80\x8f", "\xd9\xaa", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 11, 2, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "Bs", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 12, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{"\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd8\xb1.\xd9\x8a.\xe2\x80\x8f", "\xd9\xaa", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 1, 0, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "$", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{"\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\x84.\xd8\xb3.\xe2\x80\x8f", "\xd9\xaa", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 1, 0, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "S/", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 2, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{"\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd8\xaf.\xd8\xa3.\xe2\x80\x8f", "\xd9\xaa", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 11, 2, 1, 1, 3, 3, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "$", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{"\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\x84.\xd9\x84.\xe2\x80\x8f", "\xd9\xaa", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 11, 2, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "Z$", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 1, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "S/.", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 2, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{"\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd8\xaf.\xd9\x83.\xe2\x80\x8f", "\xd9\xaa", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 11, 2, 1, 1, 3, 3, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "PHP", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "$", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 2, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{"\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd8\xaf.\xd8\xa5.\xe2\x80\x8f", "\xd9\xaa", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 11, 2, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "NU$", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 0, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{"\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd8\xaf.\xd8\xa8.\xe2\x80\x8f", "\xd9\xaa", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 11, 2, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "Gs", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 12, 2, 1, 1, 1, 0, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{"\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd9\xab", "\xd9\xac", "\xd8\xb1.\xd9\x82.\xe2\x80\x8f", "\xd9\xaa", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 1, 0, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{",", ".", ",", ".", ",", ".", "$b", "%", "\xef\xbf\xbd", "\xe2\x80\xb0", "-\xe2\x88\x9e", "\xe2\x88\x9e", "-", "+", 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "SVC", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "L.", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "C$", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
-	{".", ",", ".", ",", ".", ",", "$", "%", "NaN", "\xe2\x80\xb0", "-Infinity", "Infinity", "-", "+", 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}}
+	{16062, 16065, 16062, 16065, 16062, 16065, 16068, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 1, 0, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16104, 16102, 16104, 16102, 16104, 16107, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 0, 0, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16104, 16102, 16104, 16102, 16104, 16121, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16125, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 12, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 1, 1, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16128, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 0, 0, 0, 0, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16104, 16102, 16104, 16102, 16104, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16104, 16102, 16104, 16102, 16104, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 0, 0, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16153, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16104, 16102, 16104, 16102, 16104, 16157, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16160, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 9, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16164, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 1, 0, 1, 1, 1, 0, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16166, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 0, 0, 0, 0, 1, 0, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 11, 2, 0, 0, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16104, 16102, 16104, 16102, 16104, 16170, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16174, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 0, 0, 1, 1, 1, 0, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16177, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16104, 16102, 16104, 16102, 16104, 16181, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 5, 1, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16185, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 9, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16104, 16102, 16104, 16102, 16104, 9701, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16188, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 1, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16104, 16102, 16104, 16102, 16104, 16125, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16192, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 2, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16196, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16199, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 0, 0, 1, 1, 1, 0, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16104, 16102, 16104, 16102, 16104, 16202, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16104, 16102, 16104, 16102, 16104, 0, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 1, 0, 1, 1, 1, 0, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16210, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 9, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16104, 16102, 16104, 16102, 16104, 16125, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16104, 16102, 16104, 16102, 16104, 16214, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16217, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {2, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16062, 16065, 16062, 16065, 16062, 16065, 16220, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 0, 3, 2, 2, 1, 0, 2, 2, {5, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16224, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 0, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 0, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16227, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 9, 2, 1, 1, 0, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 9166, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 1, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16125, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 12, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16231, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 9, 2, 1, 1, 1, 2, 2, 2, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16238, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 1, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16242, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 9, 2, 1, 1, 1, 2, 2, 2, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16249, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 9, 2, 1, 1, 1, 2, 2, 2, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16256, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 9, 2, 1, 1, 1, 2, 2, 2, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16231, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 9, 2, 1, 1, 1, 2, 2, 2, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16231, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 9, 2, 1, 1, 1, 2, 2, 2, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16231, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 9, 2, 1, 1, 1, 2, 2, 2, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}, {2, 2, -1, -1, -1}},
+	{16062, 16065, 16062, 16065, 16062, 16065, 16264, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 11, 2, 1, 1, 3, 3, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16274, 16115, 16274, 16115, 16274, 16276, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 2, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16281, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 1, 0, 1, 1, 1, 2, 2, 2, {4, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16128, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16274, 16115, 16274, 16115, 16274, 16276, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 2, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16104, 16102, 16104, 16102, 16104, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16062, 16065, 16062, 16065, 16062, 16065, 16284, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 11, 2, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 9, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16128, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 1, 0, 1, 1, 1, 2, 2, 2, {4, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16104, 16102, 16104, 16102, 16104, 16128, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 0, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16062, 16065, 16062, 16065, 16062, 16065, 16294, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 11, 2, 1, 1, 3, 3, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16128, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16304, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16274, 16115, 16274, 16115, 16274, 16306, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 2, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16062, 16065, 16062, 16065, 16062, 16065, 16311, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 11, 2, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16128, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 1, 0, 1, 1, 1, 2, 2, 2, {4, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16321, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16117, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 8, 3, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16062, 16065, 16062, 16065, 16062, 16065, 16325, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 11, 2, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16117, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 1, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16335, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16062, 16065, 16062, 16065, 16062, 16065, 16338, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 1, 0, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 9166, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 1, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16348, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16062, 16065, 16062, 16065, 16062, 16065, 16352, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 11, 2, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16362, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 12, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16062, 16065, 16062, 16065, 16062, 16065, 16365, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 1, 0, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16128, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16062, 16065, 16062, 16065, 16062, 16065, 16375, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 1, 0, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16385, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 2, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16062, 16065, 16062, 16065, 16062, 16065, 16388, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 11, 2, 1, 1, 3, 3, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16128, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16062, 16065, 16062, 16065, 16062, 16065, 16398, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 11, 2, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16408, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 1, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16411, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 2, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16062, 16065, 16062, 16065, 16062, 16065, 16415, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 11, 2, 1, 1, 3, 3, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16425, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16128, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 2, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16062, 16065, 16062, 16065, 16062, 16065, 16429, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 11, 2, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16439, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 0, 2, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16062, 16065, 16062, 16065, 16062, 16065, 16443, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 11, 2, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16453, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 12, 2, 1, 1, 1, 0, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16062, 16065, 16062, 16065, 16062, 16065, 16456, 16078, 16081, 16085, 16089, 16094, 16098, 16100, 1, 0, 1, 1, 3, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16102, 16115, 16102, 16115, 16102, 16115, 16466, 16113, 16081, 16085, 16089, 16094, 16098, 16100, 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16469, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16473, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16476, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}},
+	{16115, 16102, 16115, 16102, 16115, 16102, 16128, 16113, 16130, 16085, 16134, 16144, 16098, 16100, 0, 0, 1, 1, 1, 2, 2, 2, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}, {3, -1, -1, -1, -1}}
 };
 
 
 static const CultureInfoEntry culture_entries [] = {
-	{0x0001, 0x007F, 0x0401, "ar", "Arabic", "Arabic", "Arabic", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9", "ARA", "ara", "ar", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0002, 0x007F, 0x0402, "bg", "Bulgarian", "Bulgarian", "Bulgarian", "\xd0\x91\xd1\x8a\xd0\xbb\xd0\xb3\xd0\xb0\xd1\x80\xd1\x81\xd0\xba\xd0\xb8", "BGR", "bul", "bg", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0003, 0x007F, 0x0403, "ca", "Catalan", "Catalan", "Catalan", "catal\xc3\xa0", "CAT", "cat", "ca", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0005, 0x007F, 0x0405, "cs", "Czech", "Czech", "Czech", "\xc4\x8c\x65\xc5\xa1tina", "CSY", "ces", "cs", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0006, 0x007F, 0x0406, "da", "Danish", "Danish", "Danish", "Dansk", "DAN", "dan", "da", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0007, 0x007F, 0x0407, "de", "German", "German", "German", "Deutsch", "DEU", "deu", "de", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0008, 0x007F, 0x0408, "el", "Greek", "Greek", "Greek", "\xce\x95\xce\xbb\xce\xbb\xce\xb7\xce\xbd\xce\xb9\xce\xba\xce\xac", "ELL", "ell", "el", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0009, 0x007F, 0x0409, "en", "English", "English", "English", "English", "ENU", "eng", "en", {0, 0, 0, 0, 0}, -1, -1},
-	{0x000A, 0x007F, 0x0C0A, "es", "Spanish", "Spanish", "Spanish", "espa\xc3\xb1ol", "ESP", "spa", "es", {0, 0, 0, 0, 0}, -1, -1},
-	{0x000B, 0x007F, 0x040B, "fi", "Finnish", "Finnish", "Finnish", "suomi", "FIN", "fin", "fi", {0, 0, 0, 0, 0}, -1, -1},
-	{0x000C, 0x007F, 0x040C, "fr", "French", "French", "French", "fran\xc3\xa7\x61is", "FRA", "fra", "fr", {0, 0, 0, 0, 0}, -1, -1},
-	{0x000D, 0x007F, 0x040D, "he", "Hebrew", "Hebrew", "Hebrew", "\xd7\xa2\xd7\x91\xd7\xa8\xd7\x99\xd7\xaa", "HEB", "heb", "he", {0, 0, 0, 0, 0}, -1, -1},
-	{0x000E, 0x007F, 0x040E, "hu", "Hungarian", "Hungarian", "Hungarian", "magyar", "HUN", "hun", "hu", {0, 0, 0, 0, 0}, -1, -1},
-	{0x000F, 0x007F, 0x040F, "is", "Icelandic", "Icelandic", "Icelandic", "\xc3\xadslenska", "ISL", "isl", "is", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0010, 0x007F, 0x0410, "it", "Italian", "Italian", "Italian", "italiano", "ITA", "ita", "it", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0011, 0x007F, 0x0411, "ja", "Japanese", "Japanese", "Japanese", "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e", "JPN", "jpn", "ja", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0012, 0x007F, 0x0412, "ko", "Korean", "Korean", "Korean", "\xed\x95\x9c\xea\xb5\xad\xec\x96\xb4", "KOR", "kor", "ko", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0013, 0x007F, 0x0413, "nl", "Dutch", "Dutch", "Dutch", "Nederlands", "NLD", "nld", "nl", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0015, 0x007F, 0x0415, "pl", "Polish", "Polish", "Polish", "polski", "PLK", "pol", "pl", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0016, 0x007F, 0x0416, "pt", "Portuguese", "Portuguese", "Portuguese", "portugu\xc3\xaas", "PTB", "por", "pt", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0018, 0x007F, 0x0418, "ro", "Romanian", "Romanian", "Romanian", "Rom\xc3\xa2n\xc4\x83", "ROM", "ron", "ro", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0019, 0x007F, 0x0419, "ru", "Russian", "Russian", "Russian", "\xd0\xa0\xd1\x83\xd1\x81\xd1\x81\xd0\xba\xd0\xb8\xd0\xb9", "RUS", "rus", "ru", {0, 0, 0, 0, 0}, -1, -1},
-	{0x001A, 0x007F, 0x041A, "hr", "Croatian", "Croatian", "Croatian", "hrvatski", "HRV", "hrv", "hr", {0, 0, 0, 0, 0}, -1, -1},
-	{0x001B, 0x007F, 0x041B, "sk", "Slovak", "Slovak", "Slovak", "slovensk\xc3\xbd", "SKY", "slk", "sk", {0, 0, 0, 0, 0}, -1, -1},
-	{0x001C, 0x007F, 0x041C, "sq", "Albanian", "Albanian", "Albanian", "shqipe", "SQI", "sqi", "sq", {0, 0, 0, 0, 0}, -1, -1},
-	{0x001D, 0x007F, 0x041D, "sv", "Swedish", "Swedish", "Swedish", "svenska", "SVE", "swe", "sv", {0, 0, 0, 0, 0}, -1, -1},
-	{0x001E, 0x007F, 0x041E, "th", "Thai", "Thai", "Thai", "\xe0\xb9\x84\xe0\xb8\x97\xe0\xb8\xa2", "THA", "tha", "th", {0, 0, 0, 0, 0}, -1, -1},
-	{0x001F, 0x007F, 0x041F, "tr", "Turkish", "Turkish", "Turkish", "T\xc3\xbcrk\xc3\xa7\x65", "TRK", "tur", "tr", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0021, 0x007F, 0x0421, "id", "Indonesian", "Indonesian", "Indonesian", "Bahasa Indonesia", "IND", "ind", "id", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0022, 0x007F, 0x0422, "uk", "Ukrainian", "Ukrainian", "Ukrainian", "\xd0\xa3\xd0\xba\xd1\x80\xd0\xb0\xd1\x97\xd0\xbd\xd1\x81\xd1\x8c\xd0\xba\xd0\xb0", "UKR", "ukr", "uk", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0023, 0x007F, 0x0423, "be", "Belarusian", "Belarusian", "Belarusian", "\xd0\x91\xd0\xb5\xd0\xbb\xd0\xb0\xd1\x80\xd1\x83\xd1\x81\xd0\xba\xd1\x96", "BEL", "bel", "be", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0024, 0x007F, 0x0424, "sl", "Slovenian", "Slovenian", "Slovenian", "Sloven\xc5\xa1\xc4\x8dina", "SLV", "slv", "sl", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0025, 0x007F, 0x0425, "et", "Estonian", "Estonian", "Estonian", "Eesti", "ETI", "est", "et", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0026, 0x007F, 0x0426, "lv", "Latvian", "Latvian", "Latvian", "latvie\xc5\xa1u", "LVI", "lav", "lv", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0027, 0x007F, 0x0427, "lt", "Lithuanian", "Lithuanian", "Lithuanian", "Lietuvi\xc5\xb3", "LTH", "lit", "lt", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0029, 0x007F, 0x0429, "fa", "Persian", "Persian", "Persian", "\xd9\x81\xd8\xa7\xd8\xb1\xd8\xb3\xdb\x8c", "FAR", "fas", "fa", {0, 0, 0, 0, 0}, -1, -1},
-	{0x002A, 0x007F, 0x042A, "vi", "Vietnamese", "Vietnamese", "Vietnamese", "Ti\xe1\xba\xbfng Vi\xe1\xbb\x87t", "VIT", "vie", "vi", {0, 0, 0, 0, 0}, -1, -1},
-	{0x002B, 0x007F, 0x042B, "hy", "Armenian", "Armenian", "Armenian", "\xd5\x80\xd5\xa1\xd5\xb5\xd5\xa5\xd6\x80\xd5\xa7\xd5\xb6", "HYE", "hye", "hy", {0, 0, 0, 0, 0}, -1, -1},
-	{0x002D, 0x007F, 0x042D, "eu", "Basque", "Basque", "Basque", "euskara", "EUQ", "eus", "eu", {0, 0, 0, 0, 0}, -1, -1},
-	{0x002F, 0x007F, 0x042F, "mk", "Macedonian", "Macedonian", "Macedonian", "\xd0\xbc\xd0\xb0\xd0\xba\xd0\xb5\xd0\xb4\xd0\xbe\xd0\xbd\xd1\x81\xd0\xba\xd0\xb8", "MKI", "mkd", "mk", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0036, 0x007F, 0x0436, "af", "Afrikaans", "Afrikaans", "Afrikaans", "Afrikaanse", "AFK", "afr", "af", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0038, 0x007F, 0x0438, "fo", "Faroese", "Faroese", "Faroese", "f\xc3\xb8royskt", "FOS", "fao", "fo", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0039, 0x007F, 0x0439, "hi", "Hindi", "Hindi", "Hindi", "\xe0\xa4\xb9\xe0\xa4\xbf\xe0\xa4\x82\xe0\xa4\xa6\xe0\xa5\x80", "HIN", "hin", "hi", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0041, 0x007F, 0x0441, "sw", "Swahili", "Swahili", "Swahili", "Kiswahili", "SWK", "swa", "sw", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0047, 0x007F, 0x0447, "gu", "Gujarati", "Gujarati", "Gujarati", "\xe0\xaa\x97\xe0\xab\x81\xe0\xaa\x9c\xe0\xaa\xb0\xe0\xaa\xbe\xe0\xaa\xa4\xe0\xab\x80", "GUJ", "guj", "gu", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0049, 0x007F, 0x0449, "ta", "Tamil", "Tamil", "Tamil", "\xe0\xae\xa4\xe0\xae\xae\xe0\xae\xbf\xe0\xae\xb4\xe0\xaf\x8d", "TAM", "tam", "ta", {0, 0, 0, 0, 0}, -1, -1},
-	{0x004A, 0x007F, 0x044A, "te", "Telugu", "Telugu", "Telugu", "\xe0\xb0\xa4\xe0\xb1\x86\xe0\xb0\xb2\xe0\xb1\x81\xe0\xb0\x97\xe0\xb1\x81", "TEL", "tel", "te", {0, 0, 0, 0, 0}, -1, -1},
-	{0x004B, 0x007F, 0x044B, "kn", "Kannada", "Kannada", "Kannada", "\xe0\xb2\x95\xe0\xb2\xa8\xe0\xb3\x8d\xe0\xb2\xa8\xe0\xb2\xa1", "KAN", "kan", "kn", {0, 0, 0, 0, 0}, -1, -1},
-	{0x004E, 0x007F, 0x044E, "mr", "Marathi", "Marathi", "Marathi", "\xe0\xa4\xae\xe0\xa4\xb0\xe0\xa4\xbe\xe0\xa4\xa0\xe0\xa5\x80", "MAR", "mar", "mr", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0056, 0x007F, 0x0456, "gl", "Gallegan", "Gallegan", "Gallegan", "galego", "GLC", "glg", "gl", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0057, 0x007F, 0x0457, "kok", "Konkani", "Konkani", "Konkani", "\xe0\xa4\x95\xe0\xa5\x8b\xe0\xa4\x82\xe0\xa4\x95\xe0\xa4\xa3\xe0\xa5\x80", "KNK", "kok", "hi", {0, 0, 0, 0, 0}, -1, -1},
-	{0x0402, 0x0002, 0x0402, "bg-BG", "Bulgarian (Bulgaria)", "Bulgarian (Bulgaria)", "Bulgarian (Bulgaria)", "\xd0\x91\xd1\x8a\xd0\xbb\xd0\xb3\xd0\xb0\xd1\x80\xd1\x81\xd0\xba\xd0\xb8 (\xd0\x91\xd1\x8a\xd0\xbb\xd0\xb3\xd0\xb0\xd1\x80\xd0\xb8\xd1\x8f)", "BGR", "bul", "bg", {0, 0, 0, 0, 0}, 0, 0},
-	{0x0403, 0x0003, 0x0403, "ca-ES", "Catalan (Spain)", "Catalan (Spain)", "Catalan (Spain)", "catal\xc3\xa0 (Espanya)", "CAT", "cat", "ca", {0, 0, 0, 0, 0}, 1, 1},
-	{0x0405, 0x0005, 0x0405, "cs-CZ", "Czech (Czech Republic)", "Czech (Czech Republic)", "Czech (Czech Republic)", "\xc4\x8c\x65\xc5\xa1tina (\xc4\x8c\x65sk\xc3\xa1 republika)", "CSY", "ces", "cs", {0, 0, 0, 0, 0}, 2, 2},
-	{0x0406, 0x0006, 0x0406, "da-DK", "Danish (Denmark)", "Danish (Denmark)", "Danish (Denmark)", "Dansk (Danmark)", "DAN", "dan", "da", {0, 0, 0, 0, 0}, 3, 3},
-	{0x0407, 0x0007, 0x0407, "de-DE", "German (Germany)", "German (Germany)", "German (Germany)", "Deutsch (Deutschland)", "DEU", "deu", "de", {0, 0, 0, 0, 0}, 4, 4},
-	{0x0408, 0x0008, 0x0408, "el-GR", "Greek (Greece)", "Greek (Greece)", "Greek (Greece)", "\xce\x95\xce\xbb\xce\xbb\xce\xb7\xce\xbd\xce\xb9\xce\xba\xce\xac (\xce\x95\xce\xbb\xce\xbb\xce\xac\xce\xb4\xce\xb1)", "ELL", "ell", "el", {0, 0, 0, 0, 0}, 5, 5},
-	{0x0409, 0x0009, 0x0409, "en-US", "English (United States)", "English (United States)", "English (United States)", "English (United States)", "ENU", "eng", "en", {0, 0, 0, 0, 0}, 6, 6},
-	{0x040B, 0x000B, 0x040B, "fi-FI", "Finnish (Finland)", "Finnish (Finland)", "Finnish (Finland)", "suomi (Suomi)", "FIN", "fin", "fi", {0, 0, 0, 0, 0}, 7, 7},
-	{0x040C, 0x000C, 0x040C, "fr-FR", "French (France)", "French (France)", "French (France)", "fran\xc3\xa7\x61is (France)", "FRA", "fra", "fr", {0, 0, 0, 0, 0}, 8, 8},
-	{0x040D, 0x000D, 0x040D, "he-IL", "Hebrew (Israel)", "Hebrew (Israel)", "Hebrew (Israel)", "\xd7\xa2\xd7\x91\xd7\xa8\xd7\x99\xd7\xaa (\xd7\x99\xd7\xa9\xd7\xa8\xd7\x90\xd7\x9c)", "HEB", "heb", "he", {0, 0, 0, 0, 0}, 9, 9},
-	{0x040E, 0x000E, 0x040E, "hu-HU", "Hungarian (Hungary)", "Hungarian (Hungary)", "Hungarian (Hungary)", "magyar (Magyarorsz\xc3\xa1g)", "HUN", "hun", "hu", {0, 0, 0, 0, 0}, 10, 10},
-	{0x040F, 0x000F, 0x040F, "is-IS", "Icelandic (Iceland)", "Icelandic (Iceland)", "Icelandic (Iceland)", "\xc3\xadslenska (\xc3\x8dsland)", "ISL", "isl", "is", {0, 0, 0, 0, 0}, 11, 11},
-	{0x0410, 0x0010, 0x0410, "it-IT", "Italian (Italy)", "Italian (Italy)", "Italian (Italy)", "italiano (Italia)", "ITA", "ita", "it", {0, 0, 0, 0, 0}, 12, 12},
-	{0x0411, 0x0011, 0x0411, "ja-JP", "Japanese (Japan)", "Japanese (Japan)", "Japanese (Japan)", "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e (\xe6\x97\xa5\xe6\x9c\xac)", "JPN", "jpn", "ja", {0, 0, 0, 0, 0}, 13, 13},
-	{0x0412, 0x0012, 0x0412, "ko-KR", "Korean (South Korea)", "Korean (South Korea)", "Korean (South Korea)", "\xed\x95\x9c\xea\xb5\xad\xec\x96\xb4 (\xeb\x8c\x80\xed\x95\x9c\xeb\xaf\xbc\xea\xb5\xad)", "KOR", "kor", "ko", {0, 0, 0, 0, 0}, 14, 14},
-	{0x0413, 0x0013, 0x0413, "nl-NL", "Dutch (Netherlands)", "Dutch (Netherlands)", "Dutch (Netherlands)", "Nederlands (Nederland)", "NLD", "nld", "nl", {0, 0, 0, 0, 0}, 15, 15},
-	{0x0415, 0x0015, 0x0415, "pl-PL", "Polish (Poland)", "Polish (Poland)", "Polish (Poland)", "polski (Polska)", "PLK", "pol", "pl", {0, 0, 0, 0, 0}, 16, 16},
-	{0x0416, 0x0016, 0x0416, "pt-BR", "Portuguese (Brazil)", "Portuguese (Brazil)", "Portuguese (Brazil)", "portugu\xc3\xaas (Brasil)", "PTB", "por", "pt", {0, 0, 0, 0, 0}, 17, 17},
-	{0x0418, 0x0018, 0x0418, "ro-RO", "Romanian (Romania)", "Romanian (Romania)", "Romanian (Romania)", "Rom\xc3\xa2n\xc4\x83 (Rom\xc3\xa2nia)", "ROM", "ron", "ro", {0, 0, 0, 0, 0}, 18, 18},
-	{0x0419, 0x0019, 0x0419, "ru-RU", "Russian (Russia)", "Russian (Russia)", "Russian (Russia)", "\xd0\xa0\xd1\x83\xd1\x81\xd1\x81\xd0\xba\xd0\xb8\xd0\xb9 (\xd0\xa0\xd0\xbe\xd1\x81\xd1\x81\xd0\xb8\xd1\x8f)", "RUS", "rus", "ru", {0, 0, 0, 0, 0}, 19, 19},
-	{0x041A, 0x001A, 0x041A, "hr-HR", "Croatian (Croatia)", "Croatian (Croatia)", "Croatian (Croatia)", "hrvatski (Hrvatska)", "HRV", "hrv", "hr", {0, 0, 0, 0, 0}, 20, 20},
-	{0x041B, 0x001B, 0x041B, "sk-SK", "Slovak (Slovakia)", "Slovak (Slovakia)", "Slovak (Slovakia)", "slovensk\xc3\xbd (Slovensk\xc3\xa1 republika)", "SKY", "slk", "sk", {0, 0, 0, 0, 0}, 21, 21},
-	{0x041C, 0x001C, 0x041C, "sq-AL", "Albanian (Albania)", "Albanian (Albania)", "Albanian (Albania)", "shqipe (Shqip\xc3\xabria)", "SQI", "sqi", "sq", {0, 0, 0, 0, 0}, 22, 22},
-	{0x041D, 0x001D, 0x041D, "sv-SE", "Swedish (Sweden)", "Swedish (Sweden)", "Swedish (Sweden)", "svenska (Sverige)", "SVE", "swe", "sv", {0, 0, 0, 0, 0}, 23, 23},
-	{0x041E, 0x001E, 0x041E, "th-TH", "Thai (Thailand)", "Thai (Thailand)", "Thai (Thailand)", "\xe0\xb9\x84\xe0\xb8\x97\xe0\xb8\xa2 (\xe0\xb8\x9b\xe0\xb8\xa3\xe0\xb8\xb0\xe0\xb9\x80\xe0\xb8\x97\xe0\xb8\xa8\xe0\xb9\x84\xe0\xb8\x97\xe0\xb8\xa2)", "THA", "tha", "th", {0, 0, 0, 0, 0}, 24, 24},
-	{0x041F, 0x001F, 0x041F, "tr-TR", "Turkish (Turkey)", "Turkish (Turkey)", "Turkish (Turkey)", "T\xc3\xbcrk\xc3\xa7\x65 (T\xc3\xbcrkiye)", "TRK", "tur", "tr", {0, 0, 0, 0, 0}, 25, 25},
-	{0x0421, 0x0021, 0x0421, "id-ID", "Indonesian (Indonesia)", "Indonesian (Indonesia)", "Indonesian (Indonesia)", "Bahasa Indonesia (Indonesia)", "IND", "ind", "id", {0, 0, 0, 0, 0}, 26, 26},
-	{0x0422, 0x0022, 0x0422, "uk-UA", "Ukrainian (Ukraine)", "Ukrainian (Ukraine)", "Ukrainian (Ukraine)", "\xd0\xa3\xd0\xba\xd1\x80\xd0\xb0\xd1\x97\xd0\xbd\xd1\x81\xd1\x8c\xd0\xba\xd0\xb0 (\xd0\xa3\xd0\xba\xd1\x80\xd0\xb0\xd1\x97\xd0\xbd\xd0\xb0)", "UKR", "ukr", "uk", {0, 0, 0, 0, 0}, 27, 27},
-	{0x0423, 0x0023, 0x0423, "be-BY", "Belarusian (Belarus)", "Belarusian (Belarus)", "Belarusian (Belarus)", "\xd0\x91\xd0\xb5\xd0\xbb\xd0\xb0\xd1\x80\xd1\x83\xd1\x81\xd0\xba\xd1\x96 (\xd0\x91\xd0\xb5\xd0\xbb\xd0\xb0\xd1\x80\xd1\x83\xd1\x81\xd1\x8c)", "BEL", "bel", "be", {0, 0, 0, 0, 0}, 28, 28},
-	{0x0424, 0x0024, 0x0424, "sl-SI", "Slovenian (Slovenia)", "Slovenian (Slovenia)", "Slovenian (Slovenia)", "Sloven\xc5\xa1\xc4\x8dina (Slovenija)", "SLV", "slv", "sl", {0, 0, 0, 0, 0}, 29, 29},
-	{0x0425, 0x0025, 0x0425, "et-EE", "Estonian (Estonia)", "Estonian (Estonia)", "Estonian (Estonia)", "Eesti (Eesti)", "ETI", "est", "et", {0, 0, 0, 0, 0}, 30, 30},
-	{0x0426, 0x0026, 0x0426, "lv-LV", "Latvian (Latvia)", "Latvian (Latvia)", "Latvian (Latvia)", "latvie\xc5\xa1u (Latvija)", "LVI", "lav", "lv", {0, 0, 0, 0, 0}, 31, 31},
-	{0x0427, 0x0027, 0x0427, "lt-LT", "Lithuanian (Lithuania)", "Lithuanian (Lithuania)", "Lithuanian (Lithuania)", "Lietuvi\xc5\xb3 (Lietuva)", "LTH", "lit", "lt", {0, 0, 0, 0, 0}, 32, 32},
-	{0x0429, 0x0029, 0x0429, "fa-IR", "Persian (Iran)", "Persian (Iran)", "Persian (Iran)", "\xd9\x81\xd8\xa7\xd8\xb1\xd8\xb3\xdb\x8c (\xd8\xa7\xdb\x8c\xd8\xb1\xd8\xa7\xd9\x86)", "FAR", "fas", "fa", {0, 0, 0, 0, 0}, 33, 33},
-	{0x042A, 0x002A, 0x042A, "vi-VN", "Vietnamese (Vietnam)", "Vietnamese (Vietnam)", "Vietnamese (Vietnam)", "Ti\xe1\xba\xbfng Vi\xe1\xbb\x87t (Vi\xe1\xbb\x87t Nam)", "VIT", "vie", "vi", {0, 0, 0, 0, 0}, 34, 34},
-	{0x042B, 0x002B, 0x042B, "hy-AM", "Armenian (Armenia)", "Armenian (Armenia)", "Armenian (Armenia)", "\xd5\x80\xd5\xa1\xd5\xb5\xd5\xa5\xd6\x80\xd5\xa7\xd5\xb6 (\xd5\x80\xd5\xa1\xd5\xb5\xd5\xa1\xd5\xbd\xd5\xbf\xd5\xa1\xd5\xb6\xd5\xab \xd5\x80\xd5\xa1\xd5\xb6\xd6\x80\xd5\xa1\xd5\xba\xd5\xa5\xd5\xbf\xd5\xb8\xd6\x82\xd5\xa9\xd5\xab\xd6\x82\xd5\xb6)", "HYE", "hye", "hy", {0, 0, 0, 0, 0}, 35, 35},
-	{0x042B, 0x002B, 0x042B, "hy-AM", "Armenian (Armenia)", "Armenian (Armenia)", "Armenian (Armenia)", "\xd5\x80\xd5\xa1\xd5\xb5\xd5\xa5\xd6\x80\xd5\xa7\xd5\xb6 (\xd5\x80\xd5\xa1\xd5\xb5\xd5\xa1\xd5\xbd\xd5\xbf\xd5\xa1\xd5\xb6\xd5\xab \xd5\x80\xd5\xa1\xd5\xb6\xd6\x80\xd5\xa1\xd5\xba\xd5\xa5\xd5\xbf\xd5\xb8\xd6\x82\xd5\xa9\xd5\xab\xd6\x82\xd5\xb6)", "HYE", "hye", "hy", {0, 0, 0, 0, 0}, 36, 36},
-	{0x042D, 0x002D, 0x042D, "eu-ES", "Basque (Spain)", "Basque (Spain)", "Basque (Spain)", "euskara (Espainia)", "EUQ", "eus", "eu", {0, 0, 0, 0, 0}, 37, 37},
-	{0x042F, 0x002F, 0x042F, "mk-MK", "Macedonian (Macedonia)", "Macedonian (Macedonia)", "Macedonian (Macedonia)", "\xd0\xbc\xd0\xb0\xd0\xba\xd0\xb5\xd0\xb4\xd0\xbe\xd0\xbd\xd1\x81\xd0\xba\xd0\xb8 (\xd0\x9c\xd0\xb0\xd0\xba\xd0\xb5\xd0\xb4\xd0\xbe\xd0\xbd\xd0\xb8\xd1\x98\xd0\xb0)", "MKI", "mkd", "mk", {0, 0, 0, 0, 0}, 38, 38},
-	{0x0436, 0x0036, 0x0436, "af-ZA", "Afrikaans (South Africa)", "Afrikaans (South Africa)", "Afrikaans (South Africa)", "Afrikaanse (Suid-Afrika)", "AFK", "afr", "af", {0, 0, 0, 0, 0}, 39, 39},
-	{0x0438, 0x0038, 0x0438, "fo-FO", "Faroese (Faroe Islands)", "Faroese (Faroe Islands)", "Faroese (Faroe Islands)", "f\xc3\xb8royskt (F\xc3\xb8royar)", "FOS", "fao", "fo", {0, 0, 0, 0, 0}, 40, 40},
-	{0x0439, 0x0039, 0x0439, "hi-IN", "Hindi (India)", "Hindi (India)", "Hindi (India)", "\xe0\xa4\xb9\xe0\xa4\xbf\xe0\xa4\x82\xe0\xa4\xa6\xe0\xa5\x80 (\xe0\xa4\xad\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa4\xa4)", "HIN", "hin", "hi", {0, 0, 0, 0, 0}, 41, 41},
-	{0x0441, 0x0041, 0x0441, "sw-KE", "Swahili (Kenya)", "Swahili (Kenya)", "Swahili (Kenya)", "Kiswahili (Kenya)", "SWK", "swa", "sw", {0, 0, 0, 0, 0}, 42, 42},
-	{0x0447, 0x0047, 0x0447, "gu-IN", "Gujarati (India)", "Gujarati (India)", "Gujarati (India)", "\xe0\xaa\x97\xe0\xab\x81\xe0\xaa\x9c\xe0\xaa\xb0\xe0\xaa\xbe\xe0\xaa\xa4\xe0\xab\x80 (\xe0\xaa\xad\xe0\xaa\xbe\xe0\xaa\xb0\xe0\xaa\xa4)", "GUJ", "guj", "gu", {0, 0, 0, 0, 0}, 43, 43},
-	{0x0449, 0x0049, 0x0449, "ta-IN", "Tamil (India)", "Tamil (India)", "Tamil (India)", "\xe0\xae\xa4\xe0\xae\xae\xe0\xae\xbf\xe0\xae\xb4\xe0\xaf\x8d (\xe0\xae\x87\xe0\xae\xa8\xe0\xaf\x8d\xe0\xae\xa4\xe0\xae\xbf\xe0\xae\xaf\xe0\xae\xbe)", "TAM", "tam", "ta", {0, 0, 0, 0, 0}, 44, 44},
-	{0x044A, 0x004A, 0x044A, "te-IN", "Telugu (India)", "Telugu (India)", "Telugu (India)", "\xe0\xb0\xa4\xe0\xb1\x86\xe0\xb0\xb2\xe0\xb1\x81\xe0\xb0\x97\xe0\xb1\x81 (\xe0\xb0\xad\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb0\xa4 \xe0\xb0\xa6\xe0\xb1\x87\xe0\xb0\xb3\xe0\xb1\xa6)", "TEL", "tel", "te", {0, 0, 0, 0, 0}, 45, 45},
-	{0x044B, 0x004B, 0x044B, "kn-IN", "Kannada (India)", "Kannada (India)", "Kannada (India)", "\xe0\xb2\x95\xe0\xb2\xa8\xe0\xb3\x8d\xe0\xb2\xa8\xe0\xb2\xa1 (\xe0\xb2\xad\xe0\xb2\xbe\xe0\xb2\xb0\xe0\xb2\xa4)", "KAN", "kan", "kn", {0, 0, 0, 0, 0}, 46, 46},
-	{0x044E, 0x004E, 0x044E, "mr-IN", "Marathi (India)", "Marathi (India)", "Marathi (India)", "\xe0\xa4\xae\xe0\xa4\xb0\xe0\xa4\xbe\xe0\xa4\xa0\xe0\xa5\x80 (\xe0\xa4\xad\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa4\xa4)", "MAR", "mar", "mr", {0, 0, 0, 0, 0}, 47, 47},
-	{0x0456, 0x0056, 0x0456, "gl-ES", "Gallegan (Spain)", "Gallegan (Spain)", "Gallegan (Spain)", "galego (Espa\xc3\xb1\x61)", "GLC", "glg", "gl", {0, 0, 0, 0, 0}, 48, 48},
-	{0x0457, 0x0057, 0x0457, "kok-IN", "Konkani (India)", "Konkani (India)", "Konkani (India)", "\xe0\xa4\x95\xe0\xa5\x8b\xe0\xa4\x82\xe0\xa4\x95\xe0\xa4\xa3\xe0\xa5\x80 (\xe0\xa4\xad\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa4\xa4)", "KNK", "kok", "kok", {0, 0, 0, 0, 0}, 49, 49},
-	{0x0801, 0x0001, 0x0801, "ar-IQ", "Arabic (Iraq)", "Arabic (Iraq)", "Arabic (Iraq)", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa7\xd9\x82)", "ARI", "ara", "ar", {2, 1, 0, 0, 0}, 50, 50},
-	{0x0807, 0x0007, 0x0807, "de-CH", "German (Switzerland)", "German (Switzerland)", "German (Switzerland)", "Deutsch (Schweiz)", "DES", "deu", "de", {0, 0, 0, 0, 0}, 51, 51},
-	{0x0809, 0x0009, 0x0809, "en-GB", "English (United Kingdom)", "English (United Kingdom)", "English (United Kingdom)", "English (United Kingdom)", "ENG", "eng", "en", {0, 0, 0, 0, 0}, 52, 52},
-	{0x080A, 0x000A, 0x080A, "es-MX", "Spanish (Mexico)", "Spanish (Mexico)", "Spanish (Mexico)", "espa\xc3\xb1ol (M\xc3\xa9xico)", "ESM", "spa", "es", {0, 0, 0, 0, 0}, 53, 53},
-	{0x080C, 0x000C, 0x080C, "fr-BE", "French (Belgium)", "French (Belgium)", "French (Belgium)", "fran\xc3\xa7\x61is (Belgique)", "FRB", "fra", "fr", {0, 0, 0, 0, 0}, 54, 54},
-	{0x0810, 0x0010, 0x0810, "it-CH", "Italian (Switzerland)", "Italian (Switzerland)", "Italian (Switzerland)", "italiano (Svizzera)", "ITS", "ita", "it", {0, 0, 0, 0, 0}, 55, 55},
-	{0x0813, 0x0013, 0x0813, "nl-BE", "Dutch (Belgium)", "Dutch (Belgium)", "Dutch (Belgium)", "Nederlands (Belgi\xc3\xab)", "NLB", "nld", "nl", {0, 0, 0, 0, 0}, 56, 56},
-	{0x0816, 0x0016, 0x0816, "pt-PT", "Portuguese (Portugal)", "Portuguese (Portugal)", "Portuguese (Portugal)", "portugu\xc3\xaas (Portugal)", "PTG", "por", "pt", {0, 0, 0, 0, 0}, 57, 57},
-	{0x081D, 0x001D, 0x081D, "sv-FI", "Swedish (Finland)", "Swedish (Finland)", "Swedish (Finland)", "svenska (Finland)", "SVF", "swe", "sv", {0, 0, 0, 0, 0}, 58, 58},
-	{0x0C01, 0x0001, 0x0C01, "ar-EG", "Arabic (Egypt)", "Arabic (Egypt)", "Arabic (Egypt)", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd9\x85\xd8\xb5\xd8\xb1)", "ARE", "ara", "ar", {16777216, 0, 0, 0, 0}, 59, 59},
-	{0x0C07, 0x0007, 0x0C07, "de-AT", "German (Austria)", "German (Austria)", "German (Austria)", "Deutsch (\xc3\x96sterreich)", "DEA", "deu", "de", {0, 0, 0, 0, 0}, 60, 60},
-	{0x0C09, 0x0009, 0x0C09, "en-AU", "English (Australia)", "English (Australia)", "English (Australia)", "English (Australia)", "ENA", "eng", "en", {0, 0, 0, 0, 0}, 61, 61},
-	{0x0C0A, 0x000A, 0x0C0A, "es-ES", "Spanish (Spain)", "Spanish (Spain)", "Spanish (Spain)", "espa\xc3\xb1ol (Espa\xc3\xb1\x61)", "ESN", "spa", "es", {0, 0, 0, 0, 0}, 62, 62},
-	{0x0C0C, 0x000C, 0x0C0C, "fr-CA", "French (Canada)", "French (Canada)", "French (Canada)", "fran\xc3\xa7\x61is (Canada)", "FRC", "fra", "fr", {0, 0, 0, 0, 0}, 63, 63},
-	{0x1001, 0x0001, 0x1001, "ar-LY", "Arabic (Libya)", "Arabic (Libya)", "Arabic (Libya)", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd9\x84\xd9\x8a\xd8\xa8\xd9\x8a\xd8\xa7)", "ARL", "ara", "ar", {16777216, 0, 0, 0, 0}, 64, 64},
-	{0x1007, 0x0007, 0x1007, "de-LU", "German (Luxembourg)", "German (Luxembourg)", "German (Luxembourg)", "Deutsch (Luxemburg)", "DEL", "deu", "de", {0, 0, 0, 0, 0}, 65, 65},
-	{0x1009, 0x0009, 0x1009, "en-CA", "English (Canada)", "English (Canada)", "English (Canada)", "English (Canada)", "ENC", "eng", "en", {0, 0, 0, 0, 0}, 66, 66},
-	{0x100A, 0x000A, 0x100A, "es-GT", "Spanish (Guatemala)", "Spanish (Guatemala)", "Spanish (Guatemala)", "espa\xc3\xb1ol (Guatemala)", "ESG", "spa", "es", {0, 0, 0, 0, 0}, 67, 67},
-	{0x100C, 0x000C, 0x100C, "fr-CH", "French (Switzerland)", "French (Switzerland)", "French (Switzerland)", "fran\xc3\xa7\x61is (Suisse)", "FRS", "fra", "fr", {0, 0, 0, 0, 0}, 68, 68},
-	{0x1401, 0x0001, 0x1401, "ar-DZ", "Arabic (Algeria)", "Arabic (Algeria)", "Arabic (Algeria)", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd8\xac\xd8\xb2\xd8\xa7\xd8\xa6\xd8\xb1)", "ARG", "ara", "ar", {16777216, 0, 0, 0, 0}, 69, 69},
-	{0x1409, 0x0009, 0x1409, "en-NZ", "English (New Zealand)", "English (New Zealand)", "English (New Zealand)", "English (New Zealand)", "ENZ", "eng", "en", {0, 0, 0, 0, 0}, 70, 70},
-	{0x140A, 0x000A, 0x140A, "es-CR", "Spanish (Costa Rica)", "Spanish (Costa Rica)", "Spanish (Costa Rica)", "espa\xc3\xb1ol (Costa Rica)", "ESC", "spa", "es", {0, 0, 0, 0, 0}, 71, 71},
-	{0x140C, 0x000C, 0x140C, "fr-LU", "French (Luxembourg)", "French (Luxembourg)", "French (Luxembourg)", "fran\xc3\xa7\x61is (Luxembourg)", "FRL", "fra", "fr", {0, 0, 0, 0, 0}, 72, 72},
-	{0x1801, 0x0001, 0x1801, "ar-MA", "Arabic (Morocco)", "Arabic (Morocco)", "Arabic (Morocco)", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd9\x85\xd8\xba\xd8\xb1\xd8\xa8)", "ARM", "ara", "ar", {16777216, 0, 0, 0, 0}, 73, 73},
-	{0x1809, 0x0009, 0x1809, "en-IE", "English (Ireland)", "English (Ireland)", "English (Ireland)", "English (Ireland)", "ENI", "eng", "en", {0, 0, 0, 0, 0}, 74, 74},
-	{0x180A, 0x000A, 0x180A, "es-PA", "Spanish (Panama)", "Spanish (Panama)", "Spanish (Panama)", "espa\xc3\xb1ol (Panam\xc3\xa1)", "ESA", "spa", "es", {0, 0, 0, 0, 0}, 75, 75},
-	{0x1C01, 0x0001, 0x1C01, "ar-TN", "Arabic (Tunisia)", "Arabic (Tunisia)", "Arabic (Tunisia)", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xaa\xd9\x88\xd9\x86\xd8\xb3)", "ART", "ara", "ar", {16777216, 0, 0, 0, 0}, 76, 76},
-	{0x1C09, 0x0009, 0x1C09, "en-ZA", "English (South Africa)", "English (South Africa)", "English (South Africa)", "English (South Africa)", "ENS", "eng", "en", {0, 0, 0, 0, 0}, 77, 77},
-	{0x1C0A, 0x000A, 0x1C0A, "es-DO", "Spanish (Dominican Republic)", "Spanish (Dominican Republic)", "Spanish (Dominican Republic)", "espa\xc3\xb1ol (Rep\xc3\xba\x62lica Dominicana)", "ESD", "spa", "es", {0, 0, 0, 0, 0}, 78, 78},
-	{0x2001, 0x0001, 0x2001, "ar-OM", "Arabic (Oman)", "Arabic (Oman)", "Arabic (Oman)", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xb9\xd9\x85\xd8\xa7\xd9\x86)", "ARO", "ara", "ar", {16777216, 0, 0, 0, 0}, 79, 79},
-	{0x200A, 0x000A, 0x200A, "es-VE", "Spanish (Venezuela)", "Spanish (Venezuela)", "Spanish (Venezuela)", "espa\xc3\xb1ol (Venezuela)", "ESV", "spa", "es", {0, 0, 0, 0, 0}, 80, 80},
-	{0x2401, 0x0001, 0x2401, "ar-YE", "Arabic (Yemen)", "Arabic (Yemen)", "Arabic (Yemen)", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd9\x8a\xd9\x85\xd9\x86)", "ARY", "ara", "ar", {16777216, 0, 0, 0, 0}, 81, 81},
-	{0x240A, 0x000A, 0x240A, "es-CO", "Spanish (Colombia)", "Spanish (Colombia)", "Spanish (Colombia)", "espa\xc3\xb1ol (Colombia)", "ESO", "spa", "es", {0, 0, 0, 0, 0}, 82, 82},
-	{0x2801, 0x0001, 0x2801, "ar-SY", "Arabic (Syria)", "Arabic (Syria)", "Arabic (Syria)", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xb3\xd9\x88\xd8\xb1\xd9\x8a\xd8\xa9)", "ARS", "ara", "ar", {16777216, 0, 0, 0, 0}, 83, 83},
-	{0x280A, 0x000A, 0x280A, "es-PE", "Spanish (Peru)", "Spanish (Peru)", "Spanish (Peru)", "espa\xc3\xb1ol (Per\xc3\xba)", "ESR", "spa", "es", {0, 0, 0, 0, 0}, 84, 84},
-	{0x2C01, 0x0001, 0x2C01, "ar-JO", "Arabic (Jordan)", "Arabic (Jordan)", "Arabic (Jordan)", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd8\xa7\xd8\xb1\xd8\xaf\xd9\x86)", "ARJ", "ara", "ar", {16777216, 0, 0, 0, 0}, 85, 85},
-	{0x2C0A, 0x000A, 0x2C0A, "es-AR", "Spanish (Argentina)", "Spanish (Argentina)", "Spanish (Argentina)", "espa\xc3\xb1ol (Argentina)", "ESS", "spa", "es", {0, 0, 0, 0, 0}, 86, 86},
-	{0x3001, 0x0001, 0x3001, "ar-LB", "Arabic (Lebanon)", "Arabic (Lebanon)", "Arabic (Lebanon)", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd9\x84\xd8\xa8\xd9\x86\xd8\xa7\xd9\x86)", "ARB", "ara", "ar", {16777216, 0, 0, 0, 0}, 87, 87},
-	{0x3009, 0x0009, 0x3009, "en-ZW", "English (Zimbabwe)", "English (Zimbabwe)", "English (Zimbabwe)", "English (Zimbabwe)", "ENW", "eng", "en", {0, 0, 0, 0, 0}, 88, 88},
-	{0x300A, 0x000A, 0x300A, "es-EC", "Spanish (Ecuador)", "Spanish (Ecuador)", "Spanish (Ecuador)", "espa\xc3\xb1ol (Ecuador)", "ESF", "spa", "es", {0, 0, 0, 0, 0}, 89, 89},
-	{0x3401, 0x0001, 0x3401, "ar-KW", "Arabic (Kuwait)", "Arabic (Kuwait)", "Arabic (Kuwait)", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd9\x83\xd9\x88\xd9\x8a\xd8\xaa)", "ARK", "ara", "ar", {16777216, 0, 0, 0, 0}, 90, 90},
-	{0x3409, 0x0009, 0x3409, "en-PH", "English (Philippines)", "English (Philippines)", "English (Philippines)", "English (Philippines)", "ENP", "eng", "en", {0, 0, 0, 0, 0}, 91, 91},
-	{0x340A, 0x000A, 0x340A, "es-CL", "Spanish (Chile)", "Spanish (Chile)", "Spanish (Chile)", "espa\xc3\xb1ol (Chile)", "ESL", "spa", "es", {0, 0, 0, 0, 0}, 92, 92},
-	{0x3801, 0x0001, 0x3801, "ar-AE", "Arabic (United Arab Emirates)", "Arabic (United Arab Emirates)", "Arabic (United Arab Emirates)", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd8\xa7\xd9\x85\xd8\xa7\xd8\xb1\xd8\xa7\xd8\xaa \xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 \xd8\xa7\xd9\x84\xd9\x85\xd8\xaa\xd8\xad\xd8\xaf\xd8\xa9)", "ARU", "ara", "ar", {16777216, 0, 0, 0, 0}, 93, 93},
-	{0x380A, 0x000A, 0x380A, "es-UY", "Spanish (Uruguay)", "Spanish (Uruguay)", "Spanish (Uruguay)", "espa\xc3\xb1ol (Uruguay)", "ESY", "spa", "es", {0, 0, 0, 0, 0}, 94, 94},
-	{0x3C01, 0x0001, 0x3C01, "ar-BH", "Arabic (Bahrain)", "Arabic (Bahrain)", "Arabic (Bahrain)", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd8\xa8\xd8\xad\xd8\xb1\xd9\x8a\xd9\x86)", "ARH", "ara", "ar", {16777216, 0, 0, 0, 0}, 95, 95},
-	{0x3C0A, 0x000A, 0x3C0A, "es-PY", "Spanish (Paraguay)", "Spanish (Paraguay)", "Spanish (Paraguay)", "espa\xc3\xb1ol (Paraguay)", "ESZ", "spa", "es", {0, 0, 0, 0, 0}, 96, 96},
-	{0x4001, 0x0001, 0x4001, "ar-QA", "Arabic (Qatar)", "Arabic (Qatar)", "Arabic (Qatar)", "\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd9\x82\xd8\xb7\xd8\xb1)", "ARQ", "ara", "ar", {16777216, 0, 0, 0, 0}, 97, 97},
-	{0x400A, 0x000A, 0x400A, "es-BO", "Spanish (Bolivia)", "Spanish (Bolivia)", "Spanish (Bolivia)", "espa\xc3\xb1ol (Bolivia)", "ESB", "spa", "es", {0, 0, 0, 0, 0}, 98, 98},
-	{0x440A, 0x000A, 0x440A, "es-SV", "Spanish (El Salvador)", "Spanish (El Salvador)", "Spanish (El Salvador)", "espa\xc3\xb1ol (El Salvador)", "ESE", "spa", "es", {0, 0, 0, 0, 0}, 99, 99},
-	{0x480A, 0x000A, 0x480A, "es-HN", "Spanish (Honduras)", "Spanish (Honduras)", "Spanish (Honduras)", "espa\xc3\xb1ol (Honduras)", "ESH", "spa", "es", {0, 0, 0, 0, 0}, 100, 100},
-	{0x4C0A, 0x000A, 0x4C0A, "es-NI", "Spanish (Nicaragua)", "Spanish (Nicaragua)", "Spanish (Nicaragua)", "espa\xc3\xb1ol (Nicaragua)", "ESI", "spa", "es", {0, 0, 0, 0, 0}, 101, 101},
-	{0x500A, 0x000A, 0x500A, "es-PR", "Spanish (Puerto Rico)", "Spanish (Puerto Rico)", "Spanish (Puerto Rico)", "espa\xc3\xb1ol (Puerto Rico)", "ESU", "spa", "es", {0, 0, 0, 0, 0}, 102, 102}
+	{0x0001, 0x007F, 0x0401, 16479, 16482, 16482, 16482, 16489, 16504, 16508, 16479, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0002, 0x007F, 0x0402, 16512, 16515, 16515, 16515, 16525, 16544, 16548, 16512, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0003, 0x007F, 0x0403, 16552, 16555, 16555, 16555, 16563, 16571, 16575, 16552, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0005, 0x007F, 0x0405, 16579, 16582, 16582, 16582, 16588, 16598, 16602, 16579, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0006, 0x007F, 0x0406, 16606, 16609, 16609, 16609, 16616, 16622, 16626, 16606, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0007, 0x007F, 0x0407, 16630, 16633, 16633, 16633, 16640, 16648, 16652, 16630, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0008, 0x007F, 0x0408, 16656, 16659, 16659, 16659, 16665, 16682, 16686, 16656, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0009, 0x007F, 0x0409, 16690, 16693, 16693, 16693, 16693, 16701, 16705, 16690, {0, 0, 0, 0, 0}, -1, -1},
+	{0x000A, 0x007F, 0x0C0A, 16709, 16712, 16712, 16712, 16720, 16729, 16733, 16709, {0, 0, 0, 0, 0}, -1, -1},
+	{0x000B, 0x007F, 0x040B, 16737, 16740, 16740, 16740, 16748, 16754, 16758, 16737, {0, 0, 0, 0, 0}, -1, -1},
+	{0x000C, 0x007F, 0x040C, 7035, 16762, 16762, 16762, 16769, 16779, 16783, 7035, {0, 0, 0, 0, 0}, -1, -1},
+	{0x000D, 0x007F, 0x040D, 16787, 16790, 16790, 16790, 16797, 16808, 16812, 16787, {0, 0, 0, 0, 0}, -1, -1},
+	{0x000E, 0x007F, 0x040E, 16816, 16819, 16819, 16819, 16829, 16836, 16840, 16816, {0, 0, 0, 0, 0}, -1, -1},
+	{0x000F, 0x007F, 0x040F, 16844, 16847, 16847, 16847, 16857, 16867, 16871, 16844, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0010, 0x007F, 0x0410, 16875, 16878, 16878, 16878, 16886, 16895, 16899, 16875, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0011, 0x007F, 0x0411, 16903, 16906, 16906, 16906, 16915, 16925, 16929, 16903, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0012, 0x007F, 0x0412, 16933, 16936, 16936, 16936, 16943, 16953, 16957, 16933, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0013, 0x007F, 0x0413, 16961, 16964, 16964, 16964, 16970, 16981, 16985, 16961, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0015, 0x007F, 0x0415, 16989, 16992, 16992, 16992, 16999, 17006, 17010, 16989, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0016, 0x007F, 0x0416, 17014, 17017, 17017, 17017, 17028, 17039, 17043, 17014, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0018, 0x007F, 0x0418, 17047, 17050, 17050, 17050, 17059, 17068, 17072, 17047, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0019, 0x007F, 0x0419, 17076, 17079, 17079, 17079, 17087, 17102, 17106, 17076, {0, 0, 0, 0, 0}, -1, -1},
+	{0x001A, 0x007F, 0x041A, 17110, 17113, 17113, 17113, 17122, 17131, 17135, 17110, {0, 0, 0, 0, 0}, -1, -1},
+	{0x001B, 0x007F, 0x041B, 17139, 17142, 17142, 17142, 17149, 17160, 17164, 17139, {0, 0, 0, 0, 0}, -1, -1},
+	{0x001C, 0x007F, 0x041C, 17168, 17171, 17171, 17171, 17180, 17187, 17191, 17168, {0, 0, 0, 0, 0}, -1, -1},
+	{0x001D, 0x007F, 0x041D, 17195, 17198, 17198, 17198, 17206, 17214, 17218, 17195, {0, 0, 0, 0, 0}, -1, -1},
+	{0x001E, 0x007F, 0x041E, 17222, 17225, 17225, 17225, 17230, 17240, 17244, 17222, {0, 0, 0, 0, 0}, -1, -1},
+	{0x001F, 0x007F, 0x041F, 17248, 17251, 17251, 17251, 17259, 17268, 17272, 17248, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0021, 0x007F, 0x0421, 17276, 17279, 17279, 17279, 17290, 17307, 17311, 17276, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0022, 0x007F, 0x0422, 17315, 17318, 17318, 17318, 17328, 17349, 17353, 17315, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0023, 0x007F, 0x0423, 17357, 17360, 17360, 17360, 17371, 17390, 17394, 17357, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0024, 0x007F, 0x0424, 17398, 17401, 17401, 17401, 17411, 17425, 17429, 17398, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0025, 0x007F, 0x0425, 17433, 17436, 17436, 17436, 17445, 17451, 17455, 17433, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0026, 0x007F, 0x0426, 17459, 17462, 17462, 17462, 17470, 17480, 17484, 17459, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0027, 0x007F, 0x0427, 17488, 17491, 17491, 17491, 17502, 17512, 17516, 17488, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0029, 0x007F, 0x0429, 17520, 17523, 17523, 17523, 17531, 17542, 17546, 17520, {0, 0, 0, 0, 0}, -1, -1},
+	{0x002A, 0x007F, 0x042A, 17550, 17553, 17553, 17553, 17564, 17579, 15582, 17550, {0, 0, 0, 0, 0}, -1, -1},
+	{0x002B, 0x007F, 0x042B, 17583, 17586, 17586, 17586, 17595, 17610, 17614, 17583, {0, 0, 0, 0, 0}, -1, -1},
+	{0x002D, 0x007F, 0x042D, 17618, 17621, 17621, 17621, 17628, 17636, 17640, 17618, {0, 0, 0, 0, 0}, -1, -1},
+	{0x002F, 0x007F, 0x042F, 17644, 17647, 17647, 17647, 17658, 17679, 17683, 17644, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0036, 0x007F, 0x0436, 17687, 17690, 17690, 17690, 17700, 17711, 17715, 17687, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0038, 0x007F, 0x0438, 17719, 17722, 17722, 17722, 17730, 17740, 17744, 17719, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0039, 0x007F, 0x0439, 17748, 17751, 17751, 17751, 17757, 17773, 17777, 17748, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0041, 0x007F, 0x0441, 17781, 17784, 17784, 17784, 17792, 17802, 17806, 17781, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0047, 0x007F, 0x0447, 17810, 17813, 17813, 17813, 17822, 17844, 17848, 17810, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0049, 0x007F, 0x0449, 17852, 17855, 17855, 17855, 17861, 17877, 17881, 17852, {0, 0, 0, 0, 0}, -1, -1},
+	{0x004A, 0x007F, 0x044A, 17885, 17888, 17888, 17888, 17895, 17914, 17918, 17885, {0, 0, 0, 0, 0}, -1, -1},
+	{0x004B, 0x007F, 0x044B, 17922, 17925, 17925, 17925, 17933, 17949, 17953, 17922, {0, 0, 0, 0, 0}, -1, -1},
+	{0x004E, 0x007F, 0x044E, 17957, 17960, 17960, 17960, 17968, 17984, 1559, 17957, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0056, 0x007F, 0x0456, 17988, 17991, 17991, 17991, 18000, 18007, 18011, 17988, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0057, 0x007F, 0x0457, 18015, 18019, 18019, 18019, 18027, 18046, 18015, 17748, {0, 0, 0, 0, 0}, -1, -1},
+	{0x0401, 0x0001, 0x0401, 18050, 18056, 18056, 18056, 18078, 16504, 16508, 16479, {16777216, 0, 0, 0, 0}, 0, 0},
+	{0x0402, 0x0002, 0x0402, 18127, 18133, 18133, 18133, 18154, 16544, 16548, 16512, {0, 0, 0, 0, 0}, 1, 1},
+	{0x0403, 0x0003, 0x0403, 18192, 18198, 18198, 18198, 18214, 16571, 16575, 16552, {0, 0, 0, 0, 0}, 2, 2},
+	{0x0405, 0x0005, 0x0405, 18232, 18238, 18238, 18238, 18261, 16598, 16602, 16579, {0, 0, 0, 0, 0}, 3, 3},
+	{0x0406, 0x0006, 0x0406, 18291, 18297, 18297, 18297, 18314, 16622, 16626, 16606, {0, 0, 0, 0, 0}, 4, 4},
+	{0x0407, 0x0007, 0x0407, 18330, 18336, 18336, 18336, 18353, 16648, 16652, 16630, {0, 0, 0, 0, 0}, 5, 5},
+	{0x0408, 0x0008, 0x0408, 18375, 18381, 18381, 18381, 18396, 16682, 16686, 16656, {0, 0, 0, 0, 0}, 6, 6},
+	{0x0409, 0x0009, 0x0409, 18428, 18434, 18434, 18434, 18434, 16701, 16705, 16690, {0, 0, 0, 0, 0}, 7, 7},
+	{0x040B, 0x000B, 0x040B, 18458, 18464, 18464, 18464, 18482, 16754, 16758, 16737, {0, 0, 0, 0, 0}, 8, 8},
+	{0x040C, 0x000C, 0x040C, 18496, 18502, 18502, 18502, 18518, 16779, 16783, 7035, {0, 0, 0, 0, 0}, 9, 9},
+	{0x040D, 0x000D, 0x040D, 18537, 18543, 18543, 18543, 18559, 16808, 16812, 16787, {0, 0, 0, 0, 0}, 10, 10},
+	{0x040E, 0x000E, 0x040E, 18583, 18589, 18589, 18589, 18609, 16836, 16840, 16816, {0, 0, 0, 0, 0}, 11, 11},
+	{0x040F, 0x000F, 0x040F, 18632, 18638, 18638, 18638, 18658, 16867, 16871, 16844, {0, 0, 0, 0, 0}, 12, 12},
+	{0x0410, 0x0010, 0x0410, 18678, 18684, 18684, 18684, 18700, 16895, 16899, 16875, {0, 0, 0, 0, 0}, 13, 13},
+	{0x0411, 0x0011, 0x0411, 18718, 18724, 18724, 18724, 18741, 16925, 16929, 16903, {0, 0, 0, 0, 0}, 14, 14},
+	{0x0412, 0x0012, 0x0412, 18760, 18766, 18766, 18766, 18787, 16953, 16957, 16933, {0, 0, 0, 0, 0}, 15, 15},
+	{0x0413, 0x0013, 0x0413, 18812, 18818, 18818, 18818, 18838, 16981, 16985, 16961, {0, 0, 0, 0, 0}, 16, 16},
+	{0x0415, 0x0015, 0x0415, 18861, 18867, 18867, 18867, 18883, 17006, 17010, 16989, {0, 0, 0, 0, 0}, 17, 17},
+	{0x0416, 0x0016, 0x0416, 18899, 18905, 18905, 18905, 18925, 17039, 17043, 17014, {0, 0, 0, 0, 0}, 18, 18},
+	{0x0418, 0x0018, 0x0418, 18945, 18951, 18951, 18951, 18970, 17068, 17072, 17047, {0, 0, 0, 0, 0}, 19, 19},
+	{0x0419, 0x0019, 0x0419, 18990, 18996, 18996, 18996, 19013, 17102, 17106, 17076, {0, 0, 0, 0, 0}, 20, 20},
+	{0x041A, 0x001A, 0x041A, 19043, 19049, 19049, 19049, 19068, 17131, 17135, 17110, {0, 0, 0, 0, 0}, 21, 21},
+	{0x041B, 0x001B, 0x041B, 19088, 19094, 19094, 19094, 19112, 17160, 17164, 17139, {0, 0, 0, 0, 0}, 22, 22},
+	{0x041C, 0x001C, 0x041C, 19146, 19152, 19152, 19152, 19171, 17187, 17191, 17168, {0, 0, 0, 0, 0}, 23, 23},
+	{0x041D, 0x001D, 0x041D, 19191, 19197, 19197, 19197, 19214, 17214, 17218, 17195, {0, 0, 0, 0, 0}, 24, 24},
+	{0x041E, 0x001E, 0x041E, 19232, 19238, 19238, 19238, 19254, 17240, 17244, 17222, {0, 0, 0, 0, 0}, 25, 25},
+	{0x041F, 0x001F, 0x041F, 19294, 19300, 19300, 19300, 19317, 17268, 17272, 17248, {0, 0, 0, 0, 0}, 26, 26},
+	{0x0421, 0x0021, 0x0421, 19337, 19343, 19343, 19343, 19366, 17307, 17311, 17276, {0, 0, 0, 0, 0}, 27, 27},
+	{0x0422, 0x0022, 0x0422, 19395, 19401, 19401, 19401, 19421, 17349, 17353, 17315, {0, 0, 0, 0, 0}, 28, 28},
+	{0x0423, 0x0023, 0x0423, 19459, 19465, 19465, 19465, 19486, 17390, 17394, 17357, {0, 0, 0, 0, 0}, 29, 29},
+	{0x0424, 0x0024, 0x0424, 19524, 19530, 19530, 19530, 19551, 17425, 17429, 17398, {0, 0, 0, 0, 0}, 30, 30},
+	{0x0425, 0x0025, 0x0425, 19577, 19583, 19583, 19583, 19602, 17451, 17455, 17433, {0, 0, 0, 0, 0}, 31, 31},
+	{0x0426, 0x0026, 0x0426, 19616, 19622, 19622, 19622, 19639, 17480, 17484, 17459, {0, 0, 0, 0, 0}, 32, 32},
+	{0x0427, 0x0027, 0x0427, 19659, 19665, 19665, 19665, 19688, 17512, 17516, 17488, {0, 0, 0, 0, 0}, 33, 33},
+	{0x0429, 0x0029, 0x0429, 19708, 19714, 19714, 19714, 19729, 17542, 17546, 17520, {0, 0, 0, 0, 0}, 34, 34},
+	{0x042A, 0x002A, 0x042A, 19753, 19759, 19759, 19759, 19780, 17579, 15582, 17550, {0, 0, 0, 0, 0}, 35, 35},
+	{0x042B, 0x002B, 0x042B, 19808, 19814, 19814, 19814, 19833, 17610, 17614, 17583, {0, 0, 0, 0, 0}, 36, 36},
+	{0x042B, 0x002B, 0x042B, 19808, 19814, 19814, 19814, 19833, 17610, 17614, 17583, {0, 0, 0, 0, 0}, 37, 37},
+	{0x042D, 0x002D, 0x042D, 19898, 19904, 19904, 19904, 19919, 17636, 17640, 17618, {0, 0, 0, 0, 0}, 38, 38},
+	{0x042F, 0x002F, 0x042F, 19938, 19944, 19944, 19944, 19967, 17679, 17683, 17644, {0, 0, 0, 0, 0}, 39, 39},
+	{0x0436, 0x0036, 0x0436, 20011, 20017, 20017, 20017, 20042, 17711, 17715, 17687, {0, 0, 0, 0, 0}, 40, 40},
+	{0x0438, 0x0038, 0x0438, 20067, 20073, 20073, 20073, 20097, 17740, 17744, 17719, {0, 0, 0, 0, 0}, 41, 41},
+	{0x0439, 0x0039, 0x0439, 20118, 20124, 20124, 20124, 20138, 17773, 17777, 17748, {0, 0, 0, 0, 0}, 42, 42},
+	{0x0441, 0x0041, 0x0441, 20169, 20175, 20175, 20175, 20191, 17802, 17806, 17781, {0, 0, 0, 0, 0}, 43, 43},
+	{0x0447, 0x0047, 0x0447, 20209, 20215, 20215, 20215, 20232, 17844, 17848, 17810, {0, 0, 0, 0, 0}, 44, 44},
+	{0x0449, 0x0049, 0x0449, 20269, 20275, 20275, 20275, 20289, 17877, 17881, 17852, {0, 0, 0, 0, 0}, 45, 45},
+	{0x044A, 0x004A, 0x044A, 20329, 20335, 20335, 20335, 20350, 17914, 17918, 17885, {0, 0, 0, 0, 0}, 46, 46},
+	{0x044B, 0x004B, 0x044B, 20397, 20403, 20403, 20403, 20419, 17949, 17953, 17922, {0, 0, 0, 0, 0}, 47, 47},
+	{0x044E, 0x004E, 0x044E, 20450, 20456, 20456, 20456, 20472, 17984, 1559, 17957, {0, 0, 0, 0, 0}, 48, 48},
+	{0x0456, 0x0056, 0x0456, 20503, 20509, 20509, 20509, 20526, 18007, 18011, 17988, {0, 0, 0, 0, 0}, 49, 49},
+	{0x0457, 0x0057, 0x0457, 20543, 20550, 20550, 20550, 20566, 18046, 18015, 18015, {0, 0, 0, 0, 0}, 50, 50},
+	{0x0801, 0x0001, 0x0801, 20600, 20606, 20606, 20606, 20620, 20650, 16508, 16479, {2, 1, 0, 0, 0}, 51, 51},
+	{0x0807, 0x0007, 0x0807, 20654, 20660, 20660, 20660, 20681, 20699, 16652, 16630, {0, 0, 0, 0, 0}, 52, 52},
+	{0x0809, 0x0009, 0x0809, 20703, 20709, 20709, 20709, 20709, 20734, 16705, 16690, {0, 0, 0, 0, 0}, 53, 53},
+	{0x080A, 0x000A, 0x080A, 20738, 20744, 20744, 20744, 20761, 20780, 16733, 16709, {0, 0, 0, 0, 0}, 54, 54},
+	{0x080C, 0x000C, 0x080C, 20784, 20790, 20790, 20790, 20807, 20828, 16783, 7035, {0, 0, 0, 0, 0}, 55, 55},
+	{0x0810, 0x0010, 0x0810, 20832, 20838, 20838, 20838, 20860, 20880, 16899, 16875, {0, 0, 0, 0, 0}, 56, 56},
+	{0x0813, 0x0013, 0x0813, 20884, 20890, 20890, 20890, 20906, 20927, 16985, 16961, {0, 0, 0, 0, 0}, 57, 57},
+	{0x0816, 0x0016, 0x0816, 20931, 20937, 20937, 20937, 20959, 20981, 17043, 17014, {0, 0, 0, 0, 0}, 58, 58},
+	{0x081D, 0x001D, 0x081D, 20985, 20991, 20991, 20991, 21009, 21027, 17218, 17195, {0, 0, 0, 0, 0}, 59, 59},
+	{0x0C01, 0x0001, 0x0C01, 21031, 21037, 21037, 21037, 21052, 21076, 16508, 16479, {16777216, 0, 0, 0, 0}, 60, 60},
+	{0x0C07, 0x0007, 0x0C07, 21080, 21086, 21086, 21086, 21103, 21125, 16652, 16630, {0, 0, 0, 0, 0}, 61, 61},
+	{0x0C09, 0x0009, 0x0C09, 21129, 21135, 21135, 21135, 21135, 21155, 16705, 16690, {0, 0, 0, 0, 0}, 62, 62},
+	{0x0C0A, 0x000A, 0x0C0A, 21159, 21165, 21165, 21165, 21181, 21200, 16733, 16709, {0, 0, 0, 0, 0}, 63, 63},
+	{0x0C0C, 0x000C, 0x0C0C, 21204, 21210, 21210, 21210, 21226, 21245, 16783, 7035, {0, 0, 0, 0, 0}, 64, 64},
+	{0x1001, 0x0001, 0x1001, 21249, 21255, 21255, 21255, 21270, 21298, 16508, 16479, {16777216, 0, 0, 0, 0}, 65, 65},
+	{0x1007, 0x0007, 0x1007, 21302, 21308, 21308, 21308, 21328, 21348, 16652, 16630, {0, 0, 0, 0, 0}, 66, 66},
+	{0x1009, 0x0009, 0x1009, 21352, 21358, 21358, 21358, 21358, 21375, 16705, 16690, {0, 0, 0, 0, 0}, 67, 67},
+	{0x100A, 0x000A, 0x100A, 21379, 21385, 21385, 21385, 21405, 21426, 16733, 16709, {0, 0, 0, 0, 0}, 68, 68},
+	{0x100C, 0x000C, 0x100C, 21430, 21436, 21436, 21436, 21457, 21476, 16783, 7035, {0, 0, 0, 0, 0}, 69, 69},
+	{0x1401, 0x0001, 0x1401, 21480, 21486, 21486, 21486, 21503, 21535, 16508, 16479, {16777216, 0, 0, 0, 0}, 70, 70},
+	{0x1409, 0x0009, 0x1409, 21539, 21545, 21545, 21545, 21545, 21567, 16705, 16690, {0, 0, 0, 0, 0}, 71, 71},
+	{0x140A, 0x000A, 0x140A, 21571, 21577, 21577, 21577, 21598, 21620, 16733, 16709, {0, 0, 0, 0, 0}, 72, 72},
+	{0x140C, 0x000C, 0x140C, 21624, 21630, 21630, 21630, 21650, 21673, 16783, 7035, {0, 0, 0, 0, 0}, 73, 73},
+	{0x1801, 0x0001, 0x1801, 21677, 21683, 21683, 21683, 21700, 21730, 16508, 16479, {16777216, 0, 0, 0, 0}, 74, 74},
+	{0x1809, 0x0009, 0x1809, 21734, 21740, 21740, 21740, 21740, 21758, 16705, 16690, {0, 0, 0, 0, 0}, 75, 75},
+	{0x180A, 0x000A, 0x180A, 21762, 21768, 21768, 21768, 21785, 21804, 16733, 16709, {0, 0, 0, 0, 0}, 76, 76},
+	{0x1C01, 0x0001, 0x1C01, 21808, 21814, 21814, 21814, 21831, 21857, 16508, 16479, {16777216, 0, 0, 0, 0}, 77, 77},
+	{0x1C09, 0x0009, 0x1C09, 21861, 21867, 21867, 21867, 21867, 21890, 16705, 16690, {0, 0, 0, 0, 0}, 78, 78},
+	{0x1C0A, 0x000A, 0x1C0A, 21894, 21900, 21900, 21900, 21929, 21962, 16733, 16709, {0, 0, 0, 0, 0}, 79, 79},
+	{0x2001, 0x0001, 0x2001, 21966, 21972, 21972, 21972, 21986, 22012, 16508, 16479, {16777216, 0, 0, 0, 0}, 80, 80},
+	{0x200A, 0x000A, 0x200A, 22016, 22022, 22022, 22022, 22042, 22063, 16733, 16709, {0, 0, 0, 0, 0}, 81, 81},
+	{0x2401, 0x0001, 0x2401, 22067, 22073, 22073, 22073, 22088, 22116, 16508, 16479, {16777216, 0, 0, 0, 0}, 82, 82},
+	{0x240A, 0x000A, 0x240A, 22120, 22126, 22126, 22126, 22145, 22165, 16733, 16709, {0, 0, 0, 0, 0}, 83, 83},
+	{0x2801, 0x0001, 0x2801, 22169, 22175, 22175, 22175, 22190, 22218, 16508, 16479, {16777216, 0, 0, 0, 0}, 84, 84},
+	{0x280A, 0x000A, 0x280A, 22222, 22228, 22228, 22228, 22243, 22260, 16733, 16709, {0, 0, 0, 0, 0}, 85, 85},
+	{0x2C01, 0x0001, 0x2C01, 22264, 22270, 22270, 22270, 22286, 22316, 16508, 16479, {16777216, 0, 0, 0, 0}, 86, 86},
+	{0x2C0A, 0x000A, 0x2C0A, 22320, 22326, 22326, 22326, 22346, 22367, 16733, 16709, {0, 0, 0, 0, 0}, 87, 87},
+	{0x3001, 0x0001, 0x3001, 22371, 22377, 22377, 22377, 22394, 22422, 16508, 16479, {16777216, 0, 0, 0, 0}, 88, 88},
+	{0x3009, 0x0009, 0x3009, 22426, 22432, 22432, 22432, 22432, 22451, 16705, 16690, {0, 0, 0, 0, 0}, 89, 89},
+	{0x300A, 0x000A, 0x300A, 22455, 22461, 22461, 22461, 22479, 22498, 16733, 16709, {0, 0, 0, 0, 0}, 90, 90},
+	{0x3401, 0x0001, 0x3401, 22502, 22508, 22508, 22508, 22524, 22554, 16508, 16479, {16777216, 0, 0, 0, 0}, 91, 91},
+	{0x3409, 0x0009, 0x3409, 22558, 22564, 22564, 22564, 22564, 22586, 16705, 16690, {0, 0, 0, 0, 0}, 92, 92},
+	{0x340A, 0x000A, 0x340A, 22590, 22596, 22596, 22596, 22612, 22629, 16733, 16709, {0, 0, 0, 0, 0}, 93, 93},
+	{0x3801, 0x0001, 0x3801, 22633, 22639, 22639, 22639, 22669, 22733, 16508, 16479, {16777216, 0, 0, 0, 0}, 94, 94},
+	{0x380A, 0x000A, 0x380A, 22737, 22743, 22743, 22743, 22761, 22780, 16733, 16709, {0, 0, 0, 0, 0}, 95, 95},
+	{0x3C01, 0x0001, 0x3C01, 22784, 22790, 22790, 22790, 22807, 22839, 16508, 16479, {16777216, 0, 0, 0, 0}, 96, 96},
+	{0x3C0A, 0x000A, 0x3C0A, 22843, 22849, 22849, 22849, 22868, 22888, 16733, 16709, {0, 0, 0, 0, 0}, 97, 97},
+	{0x4001, 0x0001, 0x4001, 22892, 22898, 22898, 22898, 22913, 22937, 16508, 16479, {16777216, 0, 0, 0, 0}, 98, 98},
+	{0x400A, 0x000A, 0x400A, 22941, 22947, 22947, 22947, 22965, 22984, 16733, 16709, {0, 0, 0, 0, 0}, 99, 99},
+	{0x440A, 0x000A, 0x440A, 22988, 22994, 22994, 22994, 23016, 23039, 16733, 16709, {0, 0, 0, 0, 0}, 100, 100},
+	{0x480A, 0x000A, 0x480A, 23043, 23049, 23049, 23049, 23068, 23088, 16733, 16709, {0, 0, 0, 0, 0}, 101, 101},
+	{0x4C0A, 0x000A, 0x4C0A, 23092, 23098, 23098, 23098, 23118, 23139, 16733, 16709, {0, 0, 0, 0, 0}, 102, 102},
+	{0x500A, 0x000A, 0x500A, 23143, 23149, 23149, 23149, 23171, 23194, 16733, 16709, {0, 0, 0, 0, 0}, 103, 103}
 };
 
 
 static const CultureInfoNameEntry culture_name_entries [] = {
-	{"af", 40},
-	{"af-za", 90},
-	{"ar", 0},
-	{"ar-ae", 144},
-	{"ar-bh", 146},
-	{"ar-dz", 120},
-	{"ar-eg", 110},
-	{"ar-iq", 101},
-	{"ar-jo", 136},
-	{"ar-kw", 141},
-	{"ar-lb", 138},
-	{"ar-ly", 115},
-	{"ar-ma", 124},
-	{"ar-om", 130},
-	{"ar-qa", 148},
-	{"ar-sy", 134},
-	{"ar-tn", 127},
-	{"ar-ye", 132},
-	{"be", 30},
-	{"be-by", 79},
-	{"bg", 1},
-	{"bg-bg", 51},
-	{"ca", 2},
-	{"ca-es", 52},
-	{"cs", 3},
-	{"cs-cz", 53},
-	{"da", 4},
-	{"da-dk", 54},
-	{"de", 5},
-	{"de-at", 111},
-	{"de-ch", 102},
-	{"de-de", 55},
-	{"de-lu", 116},
-	{"el", 6},
-	{"el-gr", 56},
-	{"en", 7},
-	{"en-au", 112},
-	{"en-ca", 117},
-	{"en-gb", 103},
-	{"en-ie", 125},
-	{"en-nz", 121},
-	{"en-ph", 142},
-	{"en-us", 57},
-	{"en-za", 128},
-	{"en-zw", 139},
-	{"es", 8},
-	{"es-ar", 137},
-	{"es-bo", 149},
-	{"es-cl", 143},
-	{"es-co", 133},
-	{"es-cr", 122},
-	{"es-do", 129},
-	{"es-ec", 140},
-	{"es-es", 113},
-	{"es-gt", 118},
-	{"es-hn", 151},
-	{"es-mx", 104},
-	{"es-ni", 152},
-	{"es-pa", 126},
-	{"es-pe", 135},
-	{"es-pr", 153},
-	{"es-py", 147},
-	{"es-sv", 150},
-	{"es-uy", 145},
-	{"es-ve", 131},
-	{"et", 32},
-	{"et-ee", 81},
-	{"eu", 38},
-	{"eu-es", 88},
-	{"fa", 35},
-	{"fa-ir", 84},
-	{"fi", 9},
-	{"fi-fi", 58},
-	{"fo", 41},
-	{"fo-fo", 91},
-	{"fr", 10},
-	{"fr-be", 105},
-	{"fr-ca", 114},
-	{"fr-ch", 119},
-	{"fr-fr", 59},
-	{"fr-lu", 123},
-	{"gl", 49},
-	{"gl-es", 99},
-	{"gu", 44},
-	{"gu-in", 94},
-	{"he", 11},
-	{"he-il", 60},
-	{"hi", 42},
-	{"hi-in", 92},
-	{"hr", 22},
-	{"hr-hr", 71},
-	{"hu", 12},
-	{"hu-hu", 61},
-	{"hy", 37},
-	{"hy-am", 86},
-	{"hy-am", 87},
-	{"id", 28},
-	{"id-id", 77},
-	{"is", 13},
-	{"is-is", 62},
-	{"it", 14},
-	{"it-ch", 106},
-	{"it-it", 63},
-	{"ja", 15},
-	{"ja-jp", 64},
-	{"kn", 47},
-	{"kn-in", 97},
-	{"ko", 16},
-	{"kok", 50},
-	{"kok-in", 100},
-	{"ko-kr", 65},
-	{"lt", 34},
-	{"lt-lt", 83},
-	{"lv", 33},
-	{"lv-lv", 82},
-	{"mk", 39},
-	{"mk-mk", 89},
-	{"mr", 48},
-	{"mr-in", 98},
-	{"nl", 17},
-	{"nl-be", 107},
-	{"nl-nl", 66},
-	{"pl", 18},
-	{"pl-pl", 67},
-	{"pt", 19},
-	{"pt-br", 68},
-	{"pt-pt", 108},
-	{"ro", 20},
-	{"ro-ro", 69},
-	{"ru", 21},
-	{"ru-ru", 70},
-	{"sk", 23},
-	{"sk-sk", 72},
-	{"sl", 31},
-	{"sl-si", 80},
-	{"sq", 24},
-	{"sq-al", 73},
-	{"sv", 25},
-	{"sv-fi", 109},
-	{"sv-se", 74},
-	{"sw", 43},
-	{"sw-ke", 93},
-	{"ta", 45},
-	{"ta-in", 95},
-	{"te", 46},
-	{"te-in", 96},
-	{"th", 26},
-	{"th-th", 75},
-	{"tr", 27},
-	{"tr-tr", 76},
-	{"uk", 29},
-	{"uk-ua", 78},
-	{"vi", 36},
-	{"vi-vn", 85}
+	{17687, 40},
+	{23198, 91},
+	{16479, 0},
+	{23204, 145},
+	{23210, 147},
+	{23216, 121},
+	{23222, 111},
+	{23228, 102},
+	{23234, 137},
+	{23240, 142},
+	{23246, 139},
+	{23252, 116},
+	{23258, 125},
+	{23264, 131},
+	{23270, 149},
+	{23276, 51},
+	{23282, 135},
+	{23288, 128},
+	{23294, 133},
+	{17357, 30},
+	{23300, 80},
+	{16512, 1},
+	{23306, 52},
+	{16552, 2},
+	{23312, 53},
+	{16579, 3},
+	{23318, 54},
+	{16606, 4},
+	{23324, 55},
+	{16630, 5},
+	{23330, 112},
+	{23336, 103},
+	{23342, 56},
+	{23348, 117},
+	{16656, 6},
+	{23354, 57},
+	{16690, 7},
+	{23360, 113},
+	{23366, 118},
+	{23372, 104},
+	{23378, 126},
+	{23384, 122},
+	{23390, 143},
+	{23396, 58},
+	{23402, 129},
+	{23408, 140},
+	{16709, 8},
+	{23414, 138},
+	{23420, 150},
+	{23426, 144},
+	{23432, 134},
+	{23438, 123},
+	{23444, 130},
+	{23450, 141},
+	{23456, 114},
+	{23462, 119},
+	{23468, 152},
+	{23474, 105},
+	{23480, 153},
+	{23486, 127},
+	{23492, 136},
+	{23498, 154},
+	{23504, 148},
+	{23510, 151},
+	{23516, 146},
+	{23522, 132},
+	{17433, 32},
+	{23528, 82},
+	{17618, 38},
+	{23534, 89},
+	{17520, 35},
+	{23540, 85},
+	{16737, 9},
+	{23546, 59},
+	{17719, 41},
+	{23552, 92},
+	{7035, 10},
+	{23558, 106},
+	{23564, 115},
+	{23570, 120},
+	{23576, 60},
+	{23582, 124},
+	{17988, 49},
+	{23588, 100},
+	{17810, 44},
+	{23594, 95},
+	{16787, 11},
+	{23600, 61},
+	{17748, 42},
+	{23606, 93},
+	{17110, 22},
+	{23612, 72},
+	{16816, 12},
+	{23618, 62},
+	{17583, 37},
+	{23624, 87},
+	{23624, 88},
+	{17276, 28},
+	{23630, 78},
+	{16844, 13},
+	{23636, 63},
+	{16875, 14},
+	{23642, 107},
+	{23648, 64},
+	{16903, 15},
+	{23654, 65},
+	{17922, 47},
+	{23660, 98},
+	{16933, 16},
+	{23666, 66},
+	{18015, 50},
+	{23672, 101},
+	{17488, 34},
+	{23679, 84},
+	{17459, 33},
+	{23685, 83},
+	{17644, 39},
+	{23691, 90},
+	{17957, 48},
+	{23697, 99},
+	{16961, 17},
+	{23703, 108},
+	{23709, 67},
+	{16989, 18},
+	{23715, 68},
+	{17014, 19},
+	{23721, 69},
+	{23727, 109},
+	{17047, 20},
+	{23733, 70},
+	{17076, 21},
+	{23739, 71},
+	{17139, 23},
+	{23745, 73},
+	{17398, 31},
+	{23751, 81},
+	{17168, 24},
+	{23757, 74},
+	{17195, 25},
+	{23763, 110},
+	{23769, 75},
+	{17781, 43},
+	{23775, 94},
+	{17852, 45},
+	{23781, 96},
+	{17885, 46},
+	{23787, 97},
+	{17222, 26},
+	{23793, 76},
+	{17248, 27},
+	{23799, 77},
+	{17315, 29},
+	{23805, 79},
+	{17550, 36},
+	{23811, 86}
+};
+
+
+static const char locale_strings [] = {
+"\0"
+	"d MMMM, yyyy h:mm:ss t\0"
+	"d MMMM, yyyy\0"
+	"d/M/yyyy\0"
+	"h:mm:ss t\0"
+	"h:mm t\0"
+	"MMMM, yyyy\0"
+	"d MMMM\0"
+	"\xd8\xb5\0"
+	"\xd9\x85\0"
+	"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xad\xd8\xaf\0"
+	"\xd8\xa7\xd9\x84\xd8\xa7\xd8\xab\xd9\x86\xd9\x8a\xd9\x86\0"
+	"\xd8\xa7\xd9\x84\xd8\xab\xd9\x84\xd8\xa7\xd8\xab\xd8\xa7\xd8\xa1\0"
+	"\xd8\xa7\xd9\x84\xd8\xa3\xd8\xb1\xd8\xa8\xd8\xb9\xd8\xa7\xd8\xa1\0"
+	"\xd8\xa7\xd9\x84\xd8\xae\xd9\x85\xd9\x8a\xd8\xb3\0"
+	"\xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xb9\xd8\xa9\0"
+	"\xd8\xa7\xd9\x84\xd8\xb3\xd8\xa8\xd8\xaa\0"
+	"\xd9\x8a\xd9\x86\xd8\xa7\xd9\x8a\xd8\xb1\0"
+	"\xd9\x81\xd8\xa8\xd8\xb1\xd8\xa7\xd9\x8a\xd8\xb1\0"
+	"\xd9\x85\xd8\xa7\xd8\xb1\xd8\xb3\0"
+	"\xd8\xa3\xd8\xa8\xd8\xb1\xd9\x8a\xd9\x84\0"
+	"\xd9\x85\xd8\xa7\xd9\x8a\xd9\x88\0"
+	"\xd9\x8a\xd9\x88\xd9\x86\xd9\x8a\xd9\x88\0"
+	"\xd9\x8a\xd9\x88\xd9\x84\xd9\x8a\xd9\x88\0"
+	"\xd8\xa3\xd8\xba\xd8\xb3\xd8\xb7\xd8\xb3\0"
+	"\xd8\xb3\xd8\xa8\xd8\xaa\xd9\x85\xd8\xa8\xd8\xb1\0"
+	"\xd8\xa3\xd9\x83\xd8\xaa\xd9\x88\xd8\xa8\xd8\xb1\0"
+	"\xd9\x86\xd9\x88\xd9\x81\xd9\x85\xd8\xa8\xd8\xb1\0"
+	"\xd8\xaf\xd9\x8a\xd8\xb3\xd9\x85\xd8\xa8\xd8\xb1\0"
+	"\0"
+	"/\0"
+	":\0"
+	"dd MMMM yyyy HH:mm:ss\0"
+	"dd MMMM yyyy\0"
+	"dd.M.yyyy '\xd0\xb3.'\0"
+	"HH:mm:ss\0"
+	"HH:mm\0"
+	"MMMM yyyy\0"
+	"dd MMMM\0"
+	"AM\0"
+	"PM\0"
+	"\xd0\xbd\xd0\xb5\xd0\xb4\xd0\xb5\xd0\xbb\xd1\x8f\0"
+	"\xd0\xbf\xd0\xbe\xd0\xbd\xd0\xb5\xd0\xb4\xd0\xb5\xd0\xbb\xd0\xbd\xd0\xb8\xd0\xba\0"
+	"\xd0\xb2\xd1\x82\xd0\xbe\xd1\x80\xd0\xbd\xd0\xb8\xd0\xba\0"
+	"\xd1\x81\xd1\x80\xd1\x8f\xd0\xb4\xd0\xb0\0"
+	"\xd1\x87\xd0\xb5\xd1\x82\xd0\xb2\xd1\x8a\xd1\x80\xd1\x82\xd1\x8a\xd0\xba\0"
+	"\xd0\xbf\xd0\xb5\xd1\x82\xd1\x8a\xd0\xba\0"
+	"\xd1\x81\xd1\x8a\xd0\xb1\xd0\xbe\xd1\x82\xd0\xb0\0"
+	"\xd0\xbd\xd0\xb5\xd0\xb4.\0"
+	"\xd0\xbf\xd0\xbe\xd0\xbd.\0"
+	"\xd0\xb2\xd1\x82.\0"
+	"\xd1\x81\xd1\x80.\0"
+	"\xd1\x87\xd0\xb5\xd1\x82\xd0\xb2.\0"
+	"\xd0\xbf\xd0\xb5\xd1\x82.\0"
+	"\xd1\x81\xd1\x8a\xd0\xb1.\0"
+	"\xd1\x8f\xd0\xbd\xd1\x83\xd0\xb0\xd1\x80\xd0\xb8\0"
+	"\xd1\x84\xd0\xb5\xd0\xb2\xd1\x80\xd1\x83\xd0\xb0\xd1\x80\xd0\xb8\0"
+	"\xd0\xbc\xd0\xb0\xd1\x80\xd1\x82\0"
+	"\xd0\xb0\xd0\xbf\xd1\x80\xd0\xb8\xd0\xbb\0"
+	"\xd0\xbc\xd0\xb0\xd0\xb9\0"
+	"\xd1\x8e\xd0\xbd\xd0\xb8\0"
+	"\xd1\x8e\xd0\xbb\xd0\xb8\0"
+	"\xd0\xb0\xd0\xb2\xd0\xb3\xd1\x83\xd1\x81\xd1\x82\0"
+	"\xd1\x81\xd0\xb5\xd0\xbf\xd1\x82\xd0\xb5\xd0\xbc\xd0\xb2\xd1\x80\xd0\xb8\0"
+	"\xd0\xbe\xd0\xba\xd1\x82\xd0\xbe\xd0\xbc\xd0\xb2\xd1\x80\xd0\xb8\0"
+	"\xd0\xbd\xd0\xbe\xd0\xb5\xd0\xbc\xd0\xb2\xd1\x80\xd0\xb8\0"
+	"\xd0\xb4\xd0\xb5\xd0\xba\xd0\xb5\xd0\xbc\xd0\xb2\xd1\x80\xd0\xb8\0"
+	"\xd1\x8f\xd0\xbd.\0"
+	"\xd1\x84\xd0\xb5\xd0\xb2.\0"
+	"\xd0\xb0\xd0\xbf\xd1\x80.\0"
+	"\xd0\xb0\xd0\xb2\xd0\xb3.\0"
+	"\xd1\x81\xd0\xb5\xd0\xbf.\0"
+	"\xd0\xbe\xd0\xba\xd1\x82.\0"
+	"\xd0\xbd\xd0\xbe\xd0\xb5\xd0\xbc.\0"
+	"\xd0\xb4\xd0\xb5\xd0\xba.\0"
+	"d MMMM yyyy HH:mm:ss z\0"
+	"d MMMM yyyy\0"
+	"dd/MM/yyyy\0"
+	"diumenge\0"
+	"dilluns\0"
+	"dimarts\0"
+	"dimecres\0"
+	"dijous\0"
+	"divendres\0"
+	"dissabte\0"
+	"dg.\0"
+	"dl.\0"
+	"dt.\0"
+	"dc.\0"
+	"dj.\0"
+	"dv.\0"
+	"ds.\0"
+	"gener\0"
+	"febrer\0"
+	"mar\xc3\xa7\0"
+	"abril\0"
+	"maig\0"
+	"juny\0"
+	"juliol\0"
+	"agost\0"
+	"setembre\0"
+	"octubre\0"
+	"novembre\0"
+	"desembre\0"
+	"gen.\0"
+	"feb.\0"
+	"abr.\0"
+	"jul.\0"
+	"ag.\0"
+	"set.\0"
+	"oct.\0"
+	"nov.\0"
+	"des.\0"
+	"d. MMMM yyyy H:mm:ss z\0"
+	"d. MMMM yyyy\0"
+	"d.M.yyyy\0"
+	"H:mm:ss\0"
+	"H:mm\0"
+	"d. MMMM\0"
+	"dop.\0"
+	"odp.\0"
+	"ned\xc4\x9ble\0"
+	"pond\xc4\x9bl\xc3\xad\0"
+	"\xc3\xbater\xc3\xbd\0"
+	"st\xc5\x99\x65\x64\x61\0"
+	"\xc4\x8dtvrtek\0"
+	"p\xc3\xa1tek\0"
+	"sobota\0"
+	"ne\0"
+	"po\0"
+	"\xc3\xbat\0"
+	"st\0"
+	"\xc4\x8dt\0"
+	"p\xc3\xa1\0"
+	"so\0"
+	"leden\0"
+	"\xc3\xbanor\0"
+	"b\xc5\x99\x65zen\0"
+	"duben\0"
+	"kv\xc4\x9bten\0"
+	"\xc4\x8d\x65rven\0"
+	"\xc4\x8d\x65rvenec\0"
+	"srpen\0"
+	"z\xc3\xa1\xc5\x99\xc3\xad\0"
+	"\xc5\x99\xc3\xadjen\0"
+	"listopad\0"
+	"prosinec\0"
+	"I\0"
+	"II\0"
+	"III\0"
+	"IV\0"
+	"V\0"
+	"VI\0"
+	"VII\0"
+	"VIII\0"
+	"IX\0"
+	"X\0"
+	"XI\0"
+	"XII\0"
+	"d. MMM yyyy HH:mm:ss z\0"
+	"d. MMM yyyy\0"
+	"dd-MM-yyyy\0"
+	"s\xc3\xb8ndag\0"
+	"mandag\0"
+	"tirsdag\0"
+	"onsdag\0"
+	"torsdag\0"
+	"fredag\0"
+	"l\xc3\xb8rdag\0"
+	"s\xc3\xb8n\0"
+	"man\0"
+	"tir\0"
+	"ons\0"
+	"tor\0"
+	"fre\0"
+	"l\xc3\xb8r\0"
+	"januar\0"
+	"februar\0"
+	"marts\0"
+	"april\0"
+	"maj\0"
+	"juni\0"
+	"juli\0"
+	"august\0"
+	"september\0"
+	"oktober\0"
+	"november\0"
+	"december\0"
+	"jan\0"
+	"feb\0"
+	"mar\0"
+	"apr\0"
+	"jun\0"
+	"jul\0"
+	"aug\0"
+	"sep\0"
+	"okt\0"
+	"nov\0"
+	"dec\0"
+	"d. MMMM yyyy HH:mm:ss z\0"
+	"dd.MM.yyyy\0"
+	"vorm.\0"
+	"nachm.\0"
+	"Sonntag\0"
+	"Montag\0"
+	"Dienstag\0"
+	"Mittwoch\0"
+	"Donnerstag\0"
+	"Freitag\0"
+	"Samstag\0"
+	"So\0"
+	"Mo\0"
+	"Di\0"
+	"Mi\0"
+	"Do\0"
+	"Fr\0"
+	"Sa\0"
+	"Januar\0"
+	"Februar\0"
+	"M\xc3\xa4rz\0"
+	"April\0"
+	"Mai\0"
+	"Juni\0"
+	"Juli\0"
+	"August\0"
+	"September\0"
+	"Oktober\0"
+	"November\0"
+	"Dezember\0"
+	"Jan\0"
+	"Feb\0"
+	"Mrz\0"
+	"Apr\0"
+	"Jun\0"
+	"Jul\0"
+	"Aug\0"
+	"Sep\0"
+	"Okt\0"
+	"Nov\0"
+	"Dez\0"
+	"dd MMMM yyyy h:mm:ss t z\0"
+	"h:mm:ss tt\0"
+	"\xce\xa0\xce\x9c\0"
+	"\xce\x9c\xce\x9c\0"
+	"\xce\x9a\xcf\x85\xcf\x81\xce\xb9\xce\xb1\xce\xba\xce\xae\0"
+	"\xce\x94\xce\xb5\xcf\x85\xcf\x84\xce\xad\xcf\x81\xce\xb1\0"
+	"\xce\xa4\xcf\x81\xce\xaf\xcf\x84\xce\xb7\0"
+	"\xce\xa4\xce\xb5\xcf\x84\xce\xac\xcf\x81\xcf\x84\xce\xb7\0"
+	"\xce\xa0\xce\xad\xce\xbc\xcf\x80\xcf\x84\xce\xb7\0"
+	"\xce\xa0\xce\xb1\xcf\x81\xce\xb1\xcf\x83\xce\xba\xce\xb5\xcf\x85\xce\xae\0"
+	"\xce\xa3\xce\xac\xce\xb2\xce\xb2\xce\xb1\xcf\x84\xce\xbf\0"
+	"\xce\x9a\xcf\x85\xcf\x81\0"
+	"\xce\x94\xce\xb5\xcf\x85\0"
+	"\xce\xa4\xcf\x81\xce\xb9\0"
+	"\xce\xa4\xce\xb5\xcf\x84\0"
+	"\xce\xa0\xce\xb5\xce\xbc\0"
+	"\xce\xa0\xce\xb1\xcf\x81\0"
+	"\xce\xa3\xce\xb1\xce\xb2\0"
+	"\xce\x99\xce\xb1\xce\xbd\xce\xbf\xcf\x85\xce\xac\xcf\x81\xce\xb9\xce\xbf\xcf\x82\0"
+	"\xce\xa6\xce\xb5\xce\xb2\xcf\x81\xce\xbf\xcf\x85\xce\xac\xcf\x81\xce\xb9\xce\xbf\xcf\x82\0"
+	"\xce\x9c\xce\xac\xcf\x81\xcf\x84\xce\xb9\xce\xbf\xcf\x82\0"
+	"\xce\x91\xcf\x80\xcf\x81\xce\xaf\xce\xbb\xce\xb9\xce\xbf\xcf\x82\0"
+	"\xce\x9c\xce\xac\xce\xb9\xce\xbf\xcf\x82\0"
+	"\xce\x99\xce\xbf\xcf\x8d\xce\xbd\xce\xb9\xce\xbf\xcf\x82\0"
+	"\xce\x99\xce\xbf\xcf\x8d\xce\xbb\xce\xb9\xce\xbf\xcf\x82\0"
+	"\xce\x91\xcf\x8d\xce\xb3\xce\xbf\xcf\x85\xcf\x83\xcf\x84\xce\xbf\xcf\x82\0"
+	"\xce\xa3\xce\xb5\xcf\x80\xcf\x84\xce\xad\xce\xbc\xce\xb2\xcf\x81\xce\xb9\xce\xbf\xcf\x82\0"
+	"\xce\x9f\xce\xba\xcf\x84\xcf\x8e\xce\xb2\xcf\x81\xce\xb9\xce\xbf\xcf\x82\0"
+	"\xce\x9d\xce\xbf\xce\xad\xce\xbc\xce\xb2\xcf\x81\xce\xb9\xce\xbf\xcf\x82\0"
+	"\xce\x94\xce\xb5\xce\xba\xce\xad\xce\xbc\xce\xb2\xcf\x81\xce\xb9\xce\xbf\xcf\x82\0"
+	"\xce\x99\xce\xb1\xce\xbd\0"
+	"\xce\xa6\xce\xb5\xce\xb2\0"
+	"\xce\x9c\xce\xb1\xcf\x81\0"
+	"\xce\x91\xcf\x80\xcf\x81\0"
+	"\xce\x9c\xce\xb1\xcf\x8a\0"
+	"\xce\x99\xce\xbf\xcf\x85\xce\xbd\0"
+	"\xce\x99\xce\xbf\xcf\x85\xce\xbb\0"
+	"\xce\x91\xcf\x85\xce\xb3\0"
+	"\xce\xa3\xce\xb5\xcf\x80\0"
+	"\xce\x9f\xce\xba\xcf\x84\0"
+	"\xce\x9d\xce\xbf\xce\xb5\0"
+	"\xce\x94\xce\xb5\xce\xba\0"
+	"MMMM d, yyyy h:mm:ss t z\0"
+	"dddd, MMMM dd, yyyy\0"
+	"M/d/yyyy\0"
+	"h:mm tt\0"
+	"MMMM d\0"
+	"Sunday\0"
+	"Monday\0"
+	"Tuesday\0"
+	"Wednesday\0"
+	"Thursday\0"
+	"Friday\0"
+	"Saturday\0"
+	"Sun\0"
+	"Mon\0"
+	"Tue\0"
+	"Wed\0"
+	"Thu\0"
+	"Fri\0"
+	"Sat\0"
+	"January\0"
+	"February\0"
+	"March\0"
+	"May\0"
+	"June\0"
+	"July\0"
+	"October\0"
+	"December\0"
+	"Mar\0"
+	"Oct\0"
+	"Dec\0"
+	"M/d/yy\0"
+	"MM/dd/yy\0"
+	"MM/dd/yyyy\0"
+	"yy/MM/dd\0"
+	"yyyy-MM-dd\0"
+	"dd-MMM-yy\0"
+	"MMMM dd, yyyy\0"
+	"dddd, dd MMMM, yyyy\0"
+	"dd, MMMM, yyyy\0"
+	"hh:mm tt\0"
+	"hh:mm:ss tt\0"
+	"d. MMMM'ta 'yyyy HH:mm:ss z\0"
+	"d. MMMM'ta 'yyyy\0"
+	"MMMM'ta 'yyyy\0"
+	"sunnuntai\0"
+	"maanantai\0"
+	"tiistai\0"
+	"keskiviikko\0"
+	"torstai\0"
+	"perjantai\0"
+	"lauantai\0"
+	"su\0"
+	"ma\0"
+	"ti\0"
+	"ke\0"
+	"to\0"
+	"pe\0"
+	"la\0"
+	"tammikuu\0"
+	"helmikuu\0"
+	"maaliskuu\0"
+	"huhtikuu\0"
+	"toukokuu\0"
+	"kes\xc3\xa4kuu\0"
+	"hein\xc3\xa4kuu\0"
+	"elokuu\0"
+	"syyskuu\0"
+	"lokakuu\0"
+	"marraskuu\0"
+	"joulukuu\0"
+	"tammi\0"
+	"helmi\0"
+	"maalis\0"
+	"huhti\0"
+	"touko\0"
+	"kes\xc3\xa4\0"
+	"hein\xc3\xa4\0"
+	"elo\0"
+	"syys\0"
+	"loka\0"
+	"marras\0"
+	"joulu\0"
+	"dimanche\0"
+	"lundi\0"
+	"mardi\0"
+	"mercredi\0"
+	"jeudi\0"
+	"vendredi\0"
+	"samedi\0"
+	"dim.\0"
+	"lun.\0"
+	"mar.\0"
+	"mer.\0"
+	"jeu.\0"
+	"ven.\0"
+	"sam.\0"
+	"janvier\0"
+	"f\xc3\xa9vrier\0"
+	"mars\0"
+	"avril\0"
+	"mai\0"
+	"juin\0"
+	"juillet\0"
+	"ao\xc3\xbbt\0"
+	"septembre\0"
+	"octobre\0"
+	"d\xc3\xa9\x63\x65mbre\0"
+	"janv.\0"
+	"f\xc3\xa9vr.\0"
+	"avr.\0"
+	"juil.\0"
+	"sept.\0"
+	"d\xc3\xa9\x63.\0"
+	"HH:mm:ss z d MMMM yyyy\0"
+	"\xd7\x99\xd7\x95\xd7\x9d \xd7\xa8\xd7\x90\xd7\xa9\xd7\x95\xd7\x9f\0"
+	"\xd7\x99\xd7\x95\xd7\x9d \xd7\xa9\xd7\xa0\xd7\x99\0"
+	"\xd7\x99\xd7\x95\xd7\x9d \xd7\xa9\xd7\x9c\xd7\x99\xd7\xa9\xd7\x99\0"
+	"\xd7\x99\xd7\x95\xd7\x9d \xd7\xa8\xd7\x91\xd7\x99\xd7\xa2\xd7\x99\0"
+	"\xd7\x99\xd7\x95\xd7\x9d \xd7\x97\xd7\x9e\xd7\x99\xd7\xa9\xd7\x99\0"
+	"\xd7\x99\xd7\x95\xd7\x9d \xd7\xa9\xd7\x99\xd7\xa9\xd7\x99\0"
+	"\xd7\xa9\xd7\x91\xd7\xaa\0"
+	"\xd7\x90\0"
+	"\xd7\x91\0"
+	"\xd7\x92\0"
+	"\xd7\x93\0"
+	"\xd7\x94\0"
+	"\xd7\x95\0"
+	"\xd7\xa9\0"
+	"\xd7\x99\xd7\xa0\xd7\x95\xd7\x90\xd7\xa8\0"
+	"\xd7\xa4\xd7\x91\xd7\xa8\xd7\x95\xd7\x90\xd7\xa8\0"
+	"\xd7\x9e\xd7\xa8\xd7\xa5\0"
+	"\xd7\x90\xd7\xa4\xd7\xa8\xd7\x99\xd7\x9c\0"
+	"\xd7\x9e\xd7\x90\xd7\x99\0"
+	"\xd7\x99\xd7\x95\xd7\xa0\xd7\x99\0"
+	"\xd7\x99\xd7\x95\xd7\x9c\xd7\x99\0"
+	"\xd7\x90\xd7\x95\xd7\x92\xd7\x95\xd7\xa1\xd7\x98\0"
+	"\xd7\xa1\xd7\xa4\xd7\x98\xd7\x9e\xd7\x91\xd7\xa8\0"
+	"\xd7\x90\xd7\x95\xd7\xa7\xd7\x98\xd7\x95\xd7\x91\xd7\xa8\0"
+	"\xd7\xa0\xd7\x95\xd7\x91\xd7\x9e\xd7\x91\xd7\xa8\0"
+	"\xd7\x93\xd7\xa6\xd7\x9e\xd7\x91\xd7\xa8\0"
+	"\xd7\x99\xd7\xa0\xd7\x95\0"
+	"\xd7\xa4\xd7\x91\xd7\xa8\0"
+	"\xd7\x90\xd7\xa4\xd7\xa8\0"
+	"\xd7\x99\xd7\x95\xd7\xa0\0"
+	"\xd7\x99\xd7\x95\xd7\x9c\0"
+	"\xd7\x90\xd7\x95\xd7\x92\0"
+	"\xd7\xa1\xd7\xa4\xd7\x98\0"
+	"\xd7\x90\xd7\x95\xd7\xa7\0"
+	"\xd7\xa0\xd7\x95\xd7\x91\0"
+	"\xd7\x93\xd7\xa6\xd7\x9e\0"
+	"yyyy. MMMM d. H:mm:ss z\0"
+	"yyyy. MMMM d.\0"
+	"yyyy. MM. dd.\0"
+	"yyyy. MMMM\0"
+	"DE\0"
+	"DU\0"
+	"vas\xc3\xa1rnap\0"
+	"h\xc3\xa9tf\xc5\x91\0"
+	"kedd\0"
+	"szerda\0"
+	"cs\xc3\xbct\xc3\xb6rt\xc3\xb6k\0"
+	"p\xc3\xa9ntek\0"
+	"szombat\0"
+	"H\0"
+	"K\0"
+	"Sze\0"
+	"Cs\0"
+	"P\0"
+	"Szo\0"
+	"janu\xc3\xa1r\0"
+	"febru\xc3\xa1r\0"
+	"m\xc3\xa1rcius\0"
+	"\xc3\xa1prilis\0"
+	"m\xc3\xa1jus\0"
+	"j\xc3\xbanius\0"
+	"j\xc3\xbalius\0"
+	"augusztus\0"
+	"szeptember\0"
+	"okt\xc3\xb3\x62\x65r\0"
+	"jan.\0"
+	"febr.\0"
+	"m\xc3\xa1rc.\0"
+	"\xc3\xa1pr.\0"
+	"m\xc3\xa1j.\0"
+	"j\xc3\xban.\0"
+	"j\xc3\xbal.\0"
+	"aug.\0"
+	"szept.\0"
+	"okt.\0"
+	"dec.\0"
+	"sunnudagur\0"
+	"m\xc3\xa1nudagur\0"
+	"\xc3\xberi\xc3\xb0judagur\0"
+	"mi\xc3\xb0vikudagur\0"
+	"fimmtudagur\0"
+	"f\xc3\xb6studagur\0"
+	"laugardagur\0"
+	"sun\0"
+	"m\xc3\xa1n\0"
+	"\xc3\xberi\0"
+	"mi\xc3\xb0\0"
+	"fim\0"
+	"f\xc3\xb6s\0"
+	"lau\0"
+	"jan\xc3\xba\x61r\0"
+	"febr\xc3\xba\x61r\0"
+	"apr\xc3\xadl\0"
+	"ma\xc3\xad\0"
+	"j\xc3\xban\xc3\xad\0"
+	"j\xc3\xbal\xc3\xad\0"
+	"\xc3\xa1g\xc3\xbast\0"
+	"n\xc3\xb3vember\0"
+	"desember\0"
+	"j\xc3\xban\0"
+	"j\xc3\xbal\0"
+	"\xc3\xa1g\xc3\xba\0"
+	"n\xc3\xb3v\0"
+	"des\0"
+	"dd MMMM yyyy H:mm:ss z\0"
+	"H.mm.ss\0"
+	"m.\0"
+	"p.\0"
+	"domenica\0"
+	"luned\xc3\xac\0"
+	"marted\xc3\xac\0"
+	"mercoled\xc3\xac\0"
+	"gioved\xc3\xac\0"
+	"venerd\xc3\xac\0"
+	"sabato\0"
+	"dom\0"
+	"lun\0"
+	"mer\0"
+	"gio\0"
+	"ven\0"
+	"sab\0"
+	"gennaio\0"
+	"febbraio\0"
+	"marzo\0"
+	"aprile\0"
+	"maggio\0"
+	"giugno\0"
+	"luglio\0"
+	"agosto\0"
+	"settembre\0"
+	"ottobre\0"
+	"dicembre\0"
+	"gen\0"
+	"mag\0"
+	"giu\0"
+	"lug\0"
+	"ago\0"
+	"set\0"
+	"ott\0"
+	"dic\0"
+	"yyyy'\xe5\xb9\xb4'M'\xe6\x9c\x88'd'\xe6\x97\xa5' H:mm:ss:z\0"
+	"yyyy'\xe5\xb9\xb4'M'\xe6\x9c\x88'd'\xe6\x97\xa5'\0"
+	"yyyy/MM/dd\0"
+	"H:mm:ss:z\0"
+	"yyyy'\xe5\xb9\xb4'M\0"
+	"M'\xe6\x9c\x88'd\0"
+	"\xe5\x8d\x88\xe5\x89\x8d\0"
+	"\xe5\x8d\x88\xe5\xbe\x8c\0"
+	"\xe6\x97\xa5\xe6\x9b\x9c\xe6\x97\xa5\0"
+	"\xe6\x9c\x88\xe6\x9b\x9c\xe6\x97\xa5\0"
+	"\xe7\x81\xab\xe6\x9b\x9c\xe6\x97\xa5\0"
+	"\xe6\xb0\xb4\xe6\x9b\x9c\xe6\x97\xa5\0"
+	"\xe6\x9c\xa8\xe6\x9b\x9c\xe6\x97\xa5\0"
+	"\xe9\x87\x91\xe6\x9b\x9c\xe6\x97\xa5\0"
+	"\xe5\x9c\x9f\xe6\x9b\x9c\xe6\x97\xa5\0"
+	"\xe6\x97\xa5\0"
+	"\xe6\x9c\x88\0"
+	"\xe7\x81\xab\0"
+	"\xe6\xb0\xb4\0"
+	"\xe6\x9c\xa8\0"
+	"\xe9\x87\x91\0"
+	"\xe5\x9c\x9f\0"
+	"1\xe6\x9c\x88\0"
+	"2\xe6\x9c\x88\0"
+	"3\xe6\x9c\x88\0"
+	"4\xe6\x9c\x88\0"
+	"5\xe6\x9c\x88\0"
+	"6\xe6\x9c\x88\0"
+	"7\xe6\x9c\x88\0"
+	"8\xe6\x9c\x88\0"
+	"9\xe6\x9c\x88\0"
+	"10\xe6\x9c\x88\0"
+	"11\xe6\x9c\x88\0"
+	"12\xe6\x9c\x88\0"
+	"1\0"
+	"2\0"
+	"3\0"
+	"4\0"
+	"5\0"
+	"6\0"
+	"7\0"
+	"8\0"
+	"9\0"
+	"10\0"
+	"11\0"
+	"12\0"
+	"yy/M/d\0"
+	"yyyy/M/d\0"
+	"yy/MM/dd' ('ddd')'\0"
+	"yy/M/d' ('ddd')'\0"
+	"yyyy/M/d' ('ddd')'\0"
+	"yyyy'\xe5\xb9\xb4'MM'\xe6\x9c\x88'dd'\xe6\x97\xa5'\0"
+	"yyyy'\xe5\xb9\xb4'M'\xe6\x9c\x88'd'\xe6\x97\xa5' dddd\0"
+	"yyyy'\xe5\xb9\xb4'MM'\xe6\x9c\x88'dd'\xe6\x97\xa5' dddd\0"
+	"tt h:mm\0"
+	"tt hh:mm\0"
+	"tt h:mm:ss\0"
+	"tt hh:mm:ss\0"
+	"yyyy'\xeb\x85\x84' M'\xec\x9b\x94' d'\xec\x9d\xbc' t hh'\xec\x8b\x9c' mm'\xeb\xb6\x84' ss'\xec\xb4\x88'\0"
+	"yyyy'\xeb\x85\x84' M'\xec\x9b\x94' d'\xec\x9d\xbc'\0"
+	"yyyy-MM-dd tt\0"
+	"h:mm:ss\0"
+	"t h:mm\0"
+	"yyyy'\xeb\x85\x84' M\0"
+	"M'\xec\x9b\x94' d\0"
+	"\xec\x98\xa4\xec\xa0\x84\0"
+	"\xec\x98\xa4\xed\x9b\x84\0"
+	"\xec\x9d\xbc\xec\x9a\x94\xec\x9d\xbc\0"
+	"\xec\x9b\x94\xec\x9a\x94\xec\x9d\xbc\0"
+	"\xed\x99\x94\xec\x9a\x94\xec\x9d\xbc\0"
+	"\xec\x88\x98\xec\x9a\x94\xec\x9d\xbc\0"
+	"\xeb\xaa\xa9\xec\x9a\x94\xec\x9d\xbc\0"
+	"\xea\xb8\x88\xec\x9a\x94\xec\x9d\xbc\0"
+	"\xed\x86\xa0\xec\x9a\x94\xec\x9d\xbc\0"
+	"\xec\x9d\xbc\0"
+	"\xec\x9b\x94\0"
+	"\xed\x99\x94\0"
+	"\xec\x88\x98\0"
+	"\xeb\xaa\xa9\0"
+	"\xea\xb8\x88\0"
+	"\xed\x86\xa0\0"
+	"1\xec\x9b\x94\0"
+	"2\xec\x9b\x94\0"
+	"3\xec\x9b\x94\0"
+	"4\xec\x9b\x94\0"
+	"5\xec\x9b\x94\0"
+	"6\xec\x9b\x94\0"
+	"7\xec\x9b\x94\0"
+	"8\xec\x9b\x94\0"
+	"9\xec\x9b\x94\0"
+	"10\xec\x9b\x94\0"
+	"11\xec\x9b\x94\0"
+	"12\xec\x9b\x94\0"
+	"d MMMM yyyy H:mm:ss z\0"
+	"d-M-yyyy\0"
+	"zondag\0"
+	"maandag\0"
+	"dinsdag\0"
+	"woensdag\0"
+	"donderdag\0"
+	"vrijdag\0"
+	"zaterdag\0"
+	"zo\0"
+	"di\0"
+	"wo\0"
+	"do\0"
+	"vr\0"
+	"za\0"
+	"januari\0"
+	"februari\0"
+	"maart\0"
+	"mei\0"
+	"augustus\0"
+	"mrt\0"
+	"niedziela\0"
+	"poniedzia\xc5\x82\x65k\0"
+	"wtorek\0"
+	"\xc5\x9broda\0"
+	"czwartek\0"
+	"pi\xc4\x85tek\0"
+	"N\0"
+	"Pn\0"
+	"Wt\0"
+	"\xc5\x9ar\0"
+	"Cz\0"
+	"Pt\0"
+	"stycze\xc5\x84\0"
+	"luty\0"
+	"marzec\0"
+	"kwiecie\xc5\x84\0"
+	"czerwiec\0"
+	"lipiec\0"
+	"sierpie\xc5\x84\0"
+	"wrzesie\xc5\x84\0"
+	"pa\xc5\xba\x64ziernik\0"
+	"grudzie\xc5\x84\0"
+	"sty\0"
+	"lut\0"
+	"kwi\0"
+	"cze\0"
+	"lip\0"
+	"sie\0"
+	"wrz\0"
+	"pa\xc5\xba\0"
+	"lis\0"
+	"gru\0"
+	"d' de 'MMMM' de 'yyyy H'h'm'min's's' z\0"
+	"d' de 'MMMM' de 'yyyy\0"
+	"MMMM' de 'yyyy\0"
+	"d' de 'MMMM\0"
+	"domingo\0"
+	"segunda-feira\0"
+	"ter\xc3\xa7\x61-feira\0"
+	"quarta-feira\0"
+	"quinta-feira\0"
+	"sexta-feira\0"
+	"s\xc3\xa1\x62\x61\x64o\0"
+	"seg\0"
+	"ter\0"
+	"qua\0"
+	"qui\0"
+	"sex\0"
+	"s\xc3\xa1\x62\0"
+	"janeiro\0"
+	"fevereiro\0"
+	"mar\xc3\xa7o\0"
+	"maio\0"
+	"junho\0"
+	"julho\0"
+	"setembro\0"
+	"outubro\0"
+	"novembro\0"
+	"dezembro\0"
+	"fev\0"
+	"abr\0"
+	"out\0"
+	"dez\0"
+	"duminic\xc4\x83\0"
+	"luni\0"
+	"mar\xc5\xa3i\0"
+	"miercuri\0"
+	"joi\0"
+	"vineri\0"
+	"s\xc3\xaemb\xc4\x83t\xc4\x83\0"
+	"D\0"
+	"L\0"
+	"Ma\0"
+	"J\0"
+	"S\0"
+	"ianuarie\0"
+	"februarie\0"
+	"martie\0"
+	"aprilie\0"
+	"iunie\0"
+	"iulie\0"
+	"septembrie\0"
+	"octombrie\0"
+	"noiembrie\0"
+	"decembrie\0"
+	"Ian\0"
+	"Iun\0"
+	"Iul\0"
+	"d MMMM yyyy '\xd0\xb3.' H:mm:ss z\0"
+	"d MMMM yyyy '\xd0\xb3.'\0"
+	"\xd0\xb2\xd0\xbe\xd1\x81\xd0\xba\xd1\x80\xd0\xb5\xd1\x81\xd0\xb5\xd0\xbd\xd1\x8c\xd0\xb5\0"
+	"\xd0\xbf\xd0\xbe\xd0\xbd\xd0\xb5\xd0\xb4\xd0\xb5\xd0\xbb\xd1\x8c\xd0\xbd\xd0\xb8\xd0\xba\0"
+	"\xd1\x81\xd1\x80\xd0\xb5\xd0\xb4\xd0\xb0\0"
+	"\xd1\x87\xd0\xb5\xd1\x82\xd0\xb2\xd0\xb5\xd1\x80\xd0\xb3\0"
+	"\xd0\xbf\xd1\x8f\xd1\x82\xd0\xbd\xd0\xb8\xd1\x86\xd0\xb0\0"
+	"\xd1\x81\xd1\x83\xd0\xb1\xd0\xb1\xd0\xbe\xd1\x82\xd0\xb0\0"
+	"\xd0\x92\xd1\x81\0"
+	"\xd0\x9f\xd0\xbd\0"
+	"\xd0\x92\xd1\x82\0"
+	"\xd0\xa1\xd1\x80\0"
+	"\xd0\xa7\xd1\x82\0"
+	"\xd0\x9f\xd1\x82\0"
+	"\xd0\xa1\xd0\xb1\0"
+	"\xd0\xaf\xd0\xbd\xd0\xb2\xd0\xb0\xd1\x80\xd1\x8c\0"
+	"\xd0\xa4\xd0\xb5\xd0\xb2\xd1\x80\xd0\xb0\xd0\xbb\xd1\x8c\0"
+	"\xd0\x9c\xd0\xb0\xd1\x80\xd1\x82\0"
+	"\xd0\x90\xd0\xbf\xd1\x80\xd0\xb5\xd0\xbb\xd1\x8c\0"
+	"\xd0\x9c\xd0\xb0\xd0\xb9\0"
+	"\xd0\x98\xd1\x8e\xd0\xbd\xd1\x8c\0"
+	"\xd0\x98\xd1\x8e\xd0\xbb\xd1\x8c\0"
+	"\xd0\x90\xd0\xb2\xd0\xb3\xd1\x83\xd1\x81\xd1\x82\0"
+	"\xd0\xa1\xd0\xb5\xd0\xbd\xd1\x82\xd1\x8f\xd0\xb1\xd1\x80\xd1\x8c\0"
+	"\xd0\x9e\xd0\xba\xd1\x82\xd1\x8f\xd0\xb1\xd1\x80\xd1\x8c\0"
+	"\xd0\x9d\xd0\xbe\xd1\x8f\xd0\xb1\xd1\x80\xd1\x8c\0"
+	"\xd0\x94\xd0\xb5\xd0\xba\xd0\xb0\xd0\xb1\xd1\x80\xd1\x8c\0"
+	"\xd1\x8f\xd0\xbd\xd0\xb2\0"
+	"\xd1\x84\xd0\xb5\xd0\xb2\0"
+	"\xd0\xbc\xd0\xb0\xd1\x80\0"
+	"\xd0\xb0\xd0\xbf\xd1\x80\0"
+	"\xd0\xb8\xd1\x8e\xd0\xbd\0"
+	"\xd0\xb8\xd1\x8e\xd0\xbb\0"
+	"\xd0\xb0\xd0\xb2\xd0\xb3\0"
+	"\xd1\x81\xd0\xb5\xd0\xbd\0"
+	"\xd0\xbe\xd0\xba\xd1\x82\0"
+	"\xd0\xbd\xd0\xbe\xd1\x8f\0"
+	"\xd0\xb4\xd0\xb5\xd0\xba\0"
+	"yyyy. MMMM dd HH:mm:ss z\0"
+	"yyyy. MMMM dd\0"
+	"MMMM dd\0"
+	"nedjelja\0"
+	"ponedjeljak\0"
+	"utorak\0"
+	"srijeda\0"
+	"\xc4\x8d\x65tvrtak\0"
+	"petak\0"
+	"subota\0"
+	"ned\0"
+	"pon\0"
+	"uto\0"
+	"sri\0"
+	"\xc4\x8d\x65t\0"
+	"pet\0"
+	"sub\0"
+	"sije\xc4\x8d\x61nj\0"
+	"velja\xc4\x8d\x61\0"
+	"o\xc5\xbeujak\0"
+	"travanj\0"
+	"svibanj\0"
+	"lipanj\0"
+	"srpanj\0"
+	"kolovoz\0"
+	"rujan\0"
+	"studeni\0"
+	"prosinac\0"
+	"sij\0"
+	"vel\0"
+	"o\xc5\xbeu\0"
+	"tra\0"
+	"svi\0"
+	"srp\0"
+	"kol\0"
+	"ruj\0"
+	"stu\0"
+	"pro\0"
+	"d. M. yyyy\0"
+	"Nede\xc4\xbe\x61\0"
+	"Pondelok\0"
+	"Utorok\0"
+	"Streda\0"
+	"\xc5\xa0tvrtok\0"
+	"Piatok\0"
+	"Sobota\0"
+	"Ne\0"
+	"Po\0"
+	"Ut\0"
+	"St\0"
+	"\xc5\xa0t\0"
+	"Pi\0"
+	"marec\0"
+	"m\xc3\xa1j\0"
+	"dd MMMM yyyy h.mm.ss.t z\0"
+	"h:mm:ss.tt\0"
+	"h.mm.t\0"
+	"PD\0"
+	"MD\0"
+	"e diel\0"
+	"e h\xc3\xabn\xc3\xab\0"
+	"e mart\xc3\xab\0"
+	"e m\xc3\xabrkur\xc3\xab\0"
+	"e enjte\0"
+	"e premte\0"
+	"e shtun\xc3\xab\0"
+	"Die\0"
+	"H\xc3\xabn\0"
+	"M\xc3\xabr\0"
+	"Enj\0"
+	"Pre\0"
+	"Sht\0"
+	"janar\0"
+	"shkurt\0"
+	"prill\0"
+	"qershor\0"
+	"korrik\0"
+	"gusht\0"
+	"shtator\0"
+	"tetor\0"
+	"n\xc3\xabntor\0"
+	"dhjetor\0"
+	"Shk\0"
+	"Pri\0"
+	"Maj\0"
+	"Qer\0"
+	"Kor\0"
+	"Gsh\0"
+	"Tet\0"
+	"N\xc3\xabn\0"
+	"Dhj\0"
+	"'den 'd MMM yyyy HH.mm.ss z\0"
+	"'den 'd MMM yyyy\0"
+	"HH.mm\0"
+	"fm\0"
+	"em\0"
+	"s\xc3\xb6ndag\0"
+	"m\xc3\xa5ndag\0"
+	"tisdag\0"
+	"l\xc3\xb6rdag\0"
+	"s\xc3\xb6\0"
+	"m\xc3\xa5\0"
+	"on\0"
+	"fr\0"
+	"l\xc3\xb6\0"
+	"augusti\0"
+	"d MMMM yyyy, H' \xe0\xb8\x99\xe0\xb8\xb2\xe0\xb8\xac\xe0\xb8\xb4\xe0\xb8\x81\xe0\xb8\xb2 'm' \xe0\xb8\x99\xe0\xb8\xb2\xe0\xb8\x97\xe0\xb8\xb5'\0"
+	"\xe0\xb8\x81\xe0\xb9\x88\xe0\xb8\xad\xe0\xb8\x99\xe0\xb9\x80\xe0\xb8\x97\xe0\xb8\xb5\xe0\xb9\x88\xe0\xb8\xa2\xe0\xb8\x87\0"
+	"\xe0\xb8\xab\xe0\xb8\xa5\xe0\xb8\xb1\xe0\xb8\x87\xe0\xb9\x80\xe0\xb8\x97\xe0\xb8\xb5\xe0\xb9\x88\xe0\xb8\xa2\xe0\xb8\x87\0"
+	"\xe0\xb8\xa7\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\xad\xe0\xb8\xb2\xe0\xb8\x97\xe0\xb8\xb4\xe0\xb8\x95\xe0\xb8\xa2\xe0\xb9\x8c\0"
+	"\xe0\xb8\xa7\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\x88\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\x97\xe0\xb8\xa3\xe0\xb9\x8c\0"
+	"\xe0\xb8\xa7\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\xad\xe0\xb8\xb1\xe0\xb8\x87\xe0\xb8\x84\xe0\xb8\xb2\xe0\xb8\xa3\0"
+	"\xe0\xb8\xa7\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\x9e\xe0\xb8\xb8\xe0\xb8\x98\0"
+	"\xe0\xb8\xa7\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\x9e\xe0\xb8\xa4\xe0\xb8\xab\xe0\xb8\xb1\xe0\xb8\xaa\xe0\xb8\x9a\xe0\xb8\x94\xe0\xb8\xb5\0"
+	"\xe0\xb8\xa7\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\xa8\xe0\xb8\xb8\xe0\xb8\x81\xe0\xb8\xa3\xe0\xb9\x8c\0"
+	"\xe0\xb8\xa7\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb9\x80\xe0\xb8\xaa\xe0\xb8\xb2\xe0\xb8\xa3\xe0\xb9\x8c\0"
+	"\xe0\xb8\xad\xe0\xb8\xb2.\0"
+	"\xe0\xb8\x88.\0"
+	"\xe0\xb8\xad.\0"
+	"\xe0\xb8\x9e.\0"
+	"\xe0\xb8\x9e\xe0\xb8\xa4.\0"
+	"\xe0\xb8\xa8.\0"
+	"\xe0\xb8\xaa.\0"
+	"\xe0\xb8\xa1\xe0\xb8\x81\xe0\xb8\xa3\xe0\xb8\xb2\xe0\xb8\x84\xe0\xb8\xa1\0"
+	"\xe0\xb8\x81\xe0\xb8\xb8\xe0\xb8\xa1\xe0\xb8\xa0\xe0\xb8\xb2\xe0\xb8\x9e\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\x98\xe0\xb9\x8c\0"
+	"\xe0\xb8\xa1\xe0\xb8\xb5\xe0\xb8\x99\xe0\xb8\xb2\xe0\xb8\x84\xe0\xb8\xa1\0"
+	"\xe0\xb9\x80\xe0\xb8\xa1\xe0\xb8\xa9\xe0\xb8\xb2\xe0\xb8\xa2\xe0\xb8\x99\0"
+	"\xe0\xb8\x9e\xe0\xb8\xa4\xe0\xb8\xa9\xe0\xb8\xa0\xe0\xb8\xb2\xe0\xb8\x84\xe0\xb8\xa1\0"
+	"\xe0\xb8\xa1\xe0\xb8\xb4\xe0\xb8\x96\xe0\xb8\xb8\xe0\xb8\x99\xe0\xb8\xb2\xe0\xb8\xa2\xe0\xb8\x99\0"
+	"\xe0\xb8\x81\xe0\xb8\xa3\xe0\xb8\x81\xe0\xb8\x8e\xe0\xb8\xb2\xe0\xb8\x84\xe0\xb8\xa1\0"
+	"\xe0\xb8\xaa\xe0\xb8\xb4\xe0\xb8\x87\xe0\xb8\xab\xe0\xb8\xb2\xe0\xb8\x84\xe0\xb8\xa1\0"
+	"\xe0\xb8\x81\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\xa2\xe0\xb8\xb2\xe0\xb8\xa2\xe0\xb8\x99\0"
+	"\xe0\xb8\x95\xe0\xb8\xb8\xe0\xb8\xa5\xe0\xb8\xb2\xe0\xb8\x84\xe0\xb8\xa1\0"
+	"\xe0\xb8\x9e\xe0\xb8\xa4\xe0\xb8\xa8\xe0\xb8\x88\xe0\xb8\xb4\xe0\xb8\x81\xe0\xb8\xb2\xe0\xb8\xa2\xe0\xb8\x99\0"
+	"\xe0\xb8\x98\xe0\xb8\xb1\xe0\xb8\x99\xe0\xb8\xa7\xe0\xb8\xb2\xe0\xb8\x84\xe0\xb8\xa1\0"
+	"\xe0\xb8\xa1.\xe0\xb8\x84.\0"
+	"\xe0\xb8\x81.\xe0\xb8\x9e.\0"
+	"\xe0\xb8\xa1\xe0\xb8\xb5.\xe0\xb8\x84.\0"
+	"\xe0\xb9\x80\xe0\xb8\xa1.\xe0\xb8\xa2.\0"
+	"\xe0\xb8\x9e.\xe0\xb8\x84.\0"
+	"\xe0\xb8\xa1\xe0\xb8\xb4.\xe0\xb8\xa2.\0"
+	"\xe0\xb8\x81.\xe0\xb8\x84.\0"
+	"\xe0\xb8\xaa.\xe0\xb8\x84.\0"
+	"\xe0\xb8\x81.\xe0\xb8\xa2.\0"
+	"\xe0\xb8\x95.\xe0\xb8\x84.\0"
+	"\xe0\xb8\x9e.\xe0\xb8\xa2.\0"
+	"\xe0\xb8\x98.\xe0\xb8\x84.\0"
+	"dd MMMM yyyy EEEE HH:mm:ss z\0"
+	"dd MMMM yyyy EEEE\0"
+	"Pazar\0"
+	"Pazartesi\0"
+	"Sal\xc4\xb1\0"
+	"\xc3\x87\x61r\xc5\x9f\x61mba\0"
+	"Per\xc5\x9f\x65mbe\0"
+	"Cuma\0"
+	"Cumartesi\0"
+	"Paz\0"
+	"Pzt\0"
+	"Sal\0"
+	"\xc3\x87\x61r\0"
+	"Per\0"
+	"Cum\0"
+	"Cmt\0"
+	"Ocak\0"
+	"\xc5\x9eubat\0"
+	"Mart\0"
+	"Nisan\0"
+	"May\xc4\xb1s\0"
+	"Haziran\0"
+	"Temmuz\0"
+	"A\xc4\x9fustos\0"
+	"Eyl\xc3\xbcl\0"
+	"Ekim\0"
+	"Kas\xc4\xb1m\0"
+	"Aral\xc4\xb1k\0"
+	"Oca\0"
+	"\xc5\x9eub\0"
+	"Nis\0"
+	"Haz\0"
+	"Tem\0"
+	"A\xc4\x9fu\0"
+	"Eyl\0"
+	"Eki\0"
+	"Kas\0"
+	"Ara\0"
+	"dd MMMM yyyy H:mm:ss\0"
+	"Minggu\0"
+	"Senin\0"
+	"Selasa\0"
+	"Rabu\0"
+	"Kamis\0"
+	"Jumat\0"
+	"Sabtu\0"
+	"Min\0"
+	"Sen\0"
+	"Sel\0"
+	"Rab\0"
+	"Kam\0"
+	"Jum\0"
+	"Sab\0"
+	"Januari\0"
+	"Februari\0"
+	"Maret\0"
+	"Mei\0"
+	"Agustus\0"
+	"Desember\0"
+	"Agu\0"
+	"Des\0"
+	"\xd0\x9d\xd0\xb5\xd0\xb4\xd1\x96\xd0\xbb\xd1\x8f\0"
+	"\xd0\x9f\xd0\xbe\xd0\xbd\xd0\xb5\xd0\xb4\xd1\x96\xd0\xbb\xd0\xbe\xd0\xba\0"
+	"\xd0\x92\xd1\x96\xd0\xb2\xd1\x82\xd0\xbe\xd1\x80\xd0\xbe\xd0\xba\0"
+	"\xd0\xa1\xd0\xb5\xd1\x80\xd0\xb5\xd0\xb4\xd0\xb0\0"
+	"\xd0\xa7\xd0\xb5\xd1\x82\xd0\xb2\xd0\xb5\xd1\x80\0"
+	"\xd0\x9f'\xd1\x8f\xd1\x82\xd0\xbd\xd0\xb8\xd1\x86\xd1\x8f\0"
+	"\xd0\xa1\xd1\x83\xd0\xb1\xd0\xbe\xd1\x82\xd0\xb0\0"
+	"\xd0\x9d\xd0\xb4\0"
+	"\xd1\x81\xd1\x96\xd1\x87\xd0\xbd\xd1\x8f\0"
+	"\xd0\xbb\xd1\x8e\xd1\x82\xd0\xbe\xd0\xb3\xd0\xbe\0"
+	"\xd0\xb1\xd0\xb5\xd1\x80\xd0\xb5\xd0\xb7\xd0\xbd\xd1\x8f\0"
+	"\xd0\xba\xd0\xb2\xd1\x96\xd1\x82\xd0\xbd\xd1\x8f\0"
+	"\xd1\x82\xd1\x80\xd0\xb0\xd0\xb2\xd0\xbd\xd1\x8f\0"
+	"\xd1\x87\xd0\xb5\xd1\x80\xd0\xb2\xd0\xbd\xd1\x8f\0"
+	"\xd0\xbb\xd0\xb8\xd0\xbf\xd0\xbd\xd1\x8f\0"
+	"\xd1\x81\xd0\xb5\xd1\x80\xd0\xbf\xd0\xbd\xd1\x8f\0"
+	"\xd0\xb2\xd0\xb5\xd1\x80\xd0\xb5\xd1\x81\xd0\xbd\xd1\x8f\0"
+	"\xd0\xb6\xd0\xbe\xd0\xb2\xd1\x82\xd0\xbd\xd1\x8f\0"
+	"\xd0\xbb\xd0\xb8\xd1\x81\xd1\x82\xd0\xbe\xd0\xbf\xd0\xb0\xd0\xb4\xd0\xb0\0"
+	"\xd0\xb3\xd1\x80\xd1\x83\xd0\xb4\xd0\xbd\xd1\x8f\0"
+	"\xd1\x81\xd1\x96\xd1\x87\0"
+	"\xd0\xbb\xd1\x8e\xd1\x82\0"
+	"\xd0\xb1\xd0\xb5\xd1\x80\0"
+	"\xd0\xba\xd0\xb2\xd1\x96\xd1\x82\0"
+	"\xd1\x82\xd1\x80\xd0\xb0\xd0\xb2\0"
+	"\xd1\x87\xd0\xb5\xd1\x80\xd0\xb2\0"
+	"\xd0\xbb\xd0\xb8\xd0\xbf\0"
+	"\xd1\x81\xd0\xb5\xd1\x80\xd0\xbf\0"
+	"\xd0\xb2\xd0\xb5\xd1\x80\0"
+	"\xd0\xb6\xd0\xbe\xd0\xb2\xd1\x82\0"
+	"\xd0\xbb\xd0\xb8\xd1\x81\xd1\x82\0"
+	"\xd0\xb3\xd1\x80\xd1\x83\xd0\xb4\0"
+	"d MMMM yyyy HH.mm.ss z\0"
+	"\xd0\xbd\xd1\x8f\xd0\xb4\xd0\xb7\xd0\xb5\xd0\xbb\xd1\x8f\0"
+	"\xd0\xbf\xd0\xb0\xd0\xbd\xd1\x8f\xd0\xb4\xd0\xb7\xd0\xb5\xd0\xbb\xd0\xb0\xd0\xba\0"
+	"\xd0\xb0\xd1\x9e\xd1\x82\xd0\xbe\xd1\x80\xd0\xb0\xd0\xba\0"
+	"\xd1\x81\xd0\xb5\xd1\x80\xd0\xb0\xd0\xb4\xd0\xb0\0"
+	"\xd1\x87\xd0\xb0\xd1\x86\xd0\xb2\xd0\xb5\xd1\x80\0"
+	"\xd0\xbf\xd1\x8f\xd1\x82\xd0\xbd\xd1\x96\xd1\x86\xd0\xb0\0"
+	"\xd1\x81\xd1\x83\xd0\xb1\xd0\xbe\xd1\x82\xd0\xb0\0"
+	"\xd0\xbd\xd0\xb4\0"
+	"\xd0\xbf\xd0\xbd\0"
+	"\xd0\xb0\xd1\x9e\0"
+	"\xd1\x81\xd1\x80\0"
+	"\xd1\x87\xd1\x86\0"
+	"\xd0\xbf\xd1\x82\0"
+	"\xd1\x81\xd0\xb1\0"
+	"\xd1\x81\xd1\x82\xd1\x83\xd0\xb4\xd0\xb7\xd0\xb5\xd0\xbd\xd1\x8c\0"
+	"\xd0\xbb\xd1\x8e\xd1\x82\xd1\x8b\0"
+	"\xd1\x81\xd0\xb0\xd0\xba\xd0\xb0\xd0\xb2\xd1\x96\xd0\xba\0"
+	"\xd0\xba\xd1\x80\xd0\xb0\xd1\x81\xd0\xb0\xd0\xb2\xd1\x96\xd0\xba\0"
+	"\xd1\x87\xd1\x8d\xd1\x80\xd0\xb2\xd0\xb5\xd0\xbd\xd1\x8c\0"
+	"\xd0\xbb\xd1\x96\xd0\xbf\xd0\xb5\xd0\xbd\xd1\x8c\0"
+	"\xd0\xb6\xd0\xbd\xd1\x96\xd0\xb2\xd0\xb5\xd0\xbd\xd1\x8c\0"
+	"\xd0\xb2\xd0\xb5\xd1\x80\xd0\xb0\xd1\x81\xd0\xb5\xd0\xbd\xd1\x8c\0"
+	"\xd0\xba\xd0\xb0\xd1\x81\xd1\x82\xd1\x80\xd1\x8b\xd1\x87\xd0\xbd\xd1\x96\xd0\xba\0"
+	"\xd0\xbb\xd1\x96\xd1\x81\xd1\x82\xd0\xb0\xd0\xbf\xd0\xb0\xd0\xb4\0"
+	"\xd1\x81\xd0\xbd\xd0\xb5\xd0\xb6\xd0\xb0\xd0\xbd\xd1\x8c\0"
+	"\xd1\x81\xd1\x82\xd1\x83\0"
+	"\xd1\x81\xd0\xb0\xd0\xba\0"
+	"\xd0\xba\xd1\x80\xd0\xb0\0"
+	"\xd1\x87\xd1\x8d\xd1\x80\0"
+	"\xd0\xbb\xd1\x96\xd0\xbf\0"
+	"\xd0\xb6\xd0\xbd\xd1\x96\0"
+	"\xd0\xba\xd0\xb0\xd1\x81\0"
+	"\xd0\xbb\xd1\x96\xd1\x81\0"
+	"\xd1\x81\xd0\xbd\xd0\xb5\0"
+	"dd. MMMM yyyy H:mm:ss z\0"
+	"dd. MMMM yyyy\0"
+	"dd. MMMM\0"
+	"nedelja\0"
+	"ponedeljek\0"
+	"torek\0"
+	"sreda\0"
+	"\xc4\x8d\x65trtek\0"
+	"petek\0"
+	"sre\0"
+	"sob\0"
+	"junij\0"
+	"julij\0"
+	"avgust\0"
+	"avg\0"
+	"d.MM.yyyy\0"
+	"d, MMMM\0"
+	"p\xc3\xbchap\xc3\xa4\x65v\0"
+	"esmasp\xc3\xa4\x65v\0"
+	"teisip\xc3\xa4\x65v\0"
+	"kolmap\xc3\xa4\x65v\0"
+	"neljap\xc3\xa4\x65v\0"
+	"reede\0"
+	"laup\xc3\xa4\x65v\0"
+	"E\0"
+	"T\0"
+	"R\0"
+	"jaanuar\0"
+	"veebruar\0"
+	"m\xc3\xa4rts\0"
+	"aprill\0"
+	"juuni\0"
+	"juuli\0"
+	"oktoober\0"
+	"detsember\0"
+	"jaan\0"
+	"veebr\0"
+	"sept\0"
+	"dets\0"
+	"yyyy'. gada 'd. MMMM HH:mm:ss z\0"
+	"yyyy'. gada 'd. MMMM\0"
+	"yyyy.MM.dd.\0"
+	"yyyy'. gada 'MMMM\0"
+	"sv\xc4\x93tdiena\0"
+	"pirmdiena\0"
+	"otrdiena\0"
+	"tre\xc5\xa1\x64iena\0"
+	"ceturtdiena\0"
+	"piektdiena\0"
+	"sestdiena\0"
+	"Sv\0"
+	"O\0"
+	"C\0"
+	"Pk\0"
+	"janv\xc4\x81ris\0"
+	"febru\xc4\x81ris\0"
+	"apr\xc4\xablis\0"
+	"maijs\0"
+	"j\xc5\xabnijs\0"
+	"j\xc5\xablijs\0"
+	"augusts\0"
+	"septembris\0"
+	"oktobris\0"
+	"novembris\0"
+	"decembris\0"
+	"J\xc5\xabn\0"
+	"J\xc5\xabl\0"
+	"yyyy 'm.' MMMM d 'd.' HH:mm:ss z\0"
+	"yyyy 'm.' MMMM d 'd.'\0"
+	"yyyy.MM.dd\0"
+	"yyyy 'm.' MMMM\0"
+	"Sekmadienis\0"
+	"Pirmadienis\0"
+	"Antradienis\0"
+	"Tre\xc4\x8diadienis\0"
+	"Ketvirtadienis\0"
+	"Penktadienis\0"
+	"\xc5\xa0\x65\xc5\xa1tadienis\0"
+	"Sk\0"
+	"Pr\0"
+	"An\0"
+	"Tr\0"
+	"Kt\0"
+	"Sausio\0"
+	"Vasario\0"
+	"Kovo\0"
+	"Baland\xc5\xbeio\0"
+	"Gegu\xc5\xbe\xc4\x97s\0"
+	"Bir\xc5\xbe\x65lio\0"
+	"Liepos\0"
+	"Rugpj\xc5\xab\xc4\x8dio\0"
+	"Rugs\xc4\x97jo\0"
+	"Spalio\0"
+	"Lapkri\xc4\x8dio\0"
+	"Gruod\xc5\xbeio\0"
+	"Sau\0"
+	"Vas\0"
+	"Kov\0"
+	"Bal\0"
+	"Geg\0"
+	"Bir\0"
+	"Lie\0"
+	"Rgp\0"
+	"Rgs\0"
+	"Spa\0"
+	"Lap\0"
+	"Grd\0"
+	"d MMMM yyyy HH:mm:ss (z)\0"
+	"\xd9\x82.\xd8\xb8.\0"
+	"\xd8\xa8.\xd8\xb8.\0"
+	"\xdb\x8c\xda\xa9\xe2\x80\x8c\xd8\xb4\xd9\x86\xd8\xa8\xd9\x87\0"
+	"\xd8\xaf\xd9\x88\xd8\xb4\xd9\x86\xd8\xa8\xd9\x87\0"
+	"\xd8\xb3\xd9\x87\xe2\x80\x8c\xd8\xb4\xd9\x86\xd8\xa8\xd9\x87\0"
+	"\xda\x86\xd9\x87\xd8\xa7\xd8\xb1\xd8\xb4\xd9\x86\xd8\xa8\xd9\x87\0"
+	"\xd9\xbe\xd9\x86\xd8\xac\xe2\x80\x8c\xd8\xb4\xd9\x86\xd8\xa8\xd9\x87\0"
+	"\xd8\xac\xd9\x85\xd8\xb9\xd9\x87\0"
+	"\xd8\xb4\xd9\x86\xd8\xa8\xd9\x87\0"
+	"\xdb\x8c.\0"
+	"\xd8\xaf.\0"
+	"\xd8\xb3.\0"
+	"\xda\x86.\0"
+	"\xd9\xbe.\0"
+	"\xd8\xac.\0"
+	"\xd8\xb4.\0"
+	"\xda\x98\xd8\xa7\xd9\x86\xd9\x88\xdb\x8c\xd9\x87\0"
+	"\xd9\x81\xd9\x88\xd8\xb1\xdb\x8c\xd9\x87\0"
+	"\xd8\xa2\xd9\x88\xd8\xb1\xdb\x8c\xd9\x84\0"
+	"\xd9\x85\xd9\x87\0"
+	"\xda\x98\xd9\x88\xd8\xa6\xd9\x86\0"
+	"\xda\x98\xd9\x88\xd8\xa6\xdb\x8c\xd9\x87\0"
+	"\xd8\xa7\xd9\x88\xd8\xaa\0"
+	"\xd8\xb3\xd9\xbe\xd8\xaa\xd8\xa7\xd9\x85\xd8\xa8\xd8\xb1\0"
+	"\xd8\xa7\xda\xa9\xd8\xaa\xd8\xa8\xd8\xb1\0"
+	"\xd9\x86\xd9\x88\xd8\xa7\xd9\x85\xd8\xa8\xd8\xb1\0"
+	"\xd8\xaf\xd8\xb3\xd8\xa7\xd9\x85\xd8\xa8\xd8\xb1\0"
+	"\xda\x98\xd8\xa7\xd9\x86\0"
+	"\xd9\x81\xd9\x88\xd8\xb1\0"
+	"\xd9\x85\xd8\xa7\xd8\xb1\0"
+	"\xd8\xa2\xd9\x88\xd8\xb1\0"
+	"\xd9\x85\xd9\x80\xd9\x87\0"
+	"\xda\x98\xd9\x88\xd9\x86\0"
+	"\xda\x98\xd9\x88\xdb\x8c\0"
+	"\xd8\xb3\xd9\xbe\xd8\xaa\0"
+	"\xd8\xa7\xda\xa9\xd8\xaa\0"
+	"\xd9\x86\xd9\x88\xd8\xa7\0"
+	"\xd8\xaf\xd8\xb3\xd8\xa7\0"
+	"HH:mm:ss z dd MMMM yyyy\0"
+	"SA\0"
+	"CH\0"
+	"Ch\xe1\xbb\xa7 nh\xe1\xba\xadt\0"
+	"Th\xe1\xbb\xa9 hai\0"
+	"Th\xe1\xbb\xa9 ba\0"
+	"Th\xe1\xbb\xa9 t\xc6\xb0\0"
+	"Th\xe1\xbb\xa9 n\xc4\x83m\0"
+	"Th\xe1\xbb\xa9 s\xc3\xa1u\0"
+	"Th\xe1\xbb\xa9 b\xe1\xba\xa3y\0"
+	"CN\0"
+	"Th 2\0"
+	"Th 3\0"
+	"Th 4\0"
+	"Th 5\0"
+	"Th 6\0"
+	"Th 7\0"
+	"Th\xc3\xa1ng m\xe1\xbb\x99t\0"
+	"Th\xc3\xa1ng hai\0"
+	"Th\xc3\xa1ng ba\0"
+	"Th\xc3\xa1ng t\xc6\xb0\0"
+	"Th\xc3\xa1ng n\xc4\x83m\0"
+	"Th\xc3\xa1ng s\xc3\xa1u\0"
+	"Th\xc3\xa1ng b\xe1\xba\xa3y\0"
+	"Th\xc3\xa1ng t\xc3\xa1m\0"
+	"Th\xc3\xa1ng ch\xc3\xadn\0"
+	"Th\xc3\xa1ng m\xc6\xb0\xe1\xbb\x9di\0"
+	"Th\xc3\xa1ng m\xc6\xb0\xe1\xbb\x9di m\xe1\xbb\x99t\0"
+	"Th\xc3\xa1ng m\xc6\xb0\xe1\xbb\x9di hai\0"
+	"Thg 1\0"
+	"Thg 2\0"
+	"Thg 3\0"
+	"Thg 4\0"
+	"Thg 5\0"
+	"Thg 6\0"
+	"Thg 7\0"
+	"Thg 8\0"
+	"Thg 9\0"
+	"Thg 10\0"
+	"Thg 11\0"
+	"Thg 12\0"
+	"MMMM dd, yyyy HH:mm:ss z\0"
+	"\xd4\xb1\xd5\xbc\xe2\x80\xa4\0"
+	"\xd4\xb5\xd6\x80\xe2\x80\xa4\0"
+	"\xd4\xbf\xd5\xab\xd6\x80\xd5\xa1\xd5\xaf\xd5\xab\0"
+	"\xd4\xb5\xd6\x80\xd5\xaf\xd5\xb8\xd6\x82\xd5\xb7\xd5\xa1\xd5\xa2\xd5\xa9\xd5\xab\0"
+	"\xd4\xb5\xd6\x80\xd5\xa5\xd6\x84\xd5\xb7\xd5\xa1\xd5\xa2\xd5\xa9\xd5\xab\0"
+	"\xd5\x89\xd5\xb8\xd6\x80\xd5\xa5\xd6\x84\xd5\xb7\xd5\xa1\xd5\xa2\xd5\xa9\xd5\xab\0"
+	"\xd5\x80\xd5\xab\xd5\xb6\xd5\xa3\xd5\xb7\xd5\xa1\xd5\xa2\xd5\xa9\xd5\xab\0"
+	"\xd5\x88\xd6\x82\xd6\x80\xd5\xa2\xd5\xa1\xd5\xa9\0"
+	"\xd5\x87\xd5\xa1\xd5\xa2\xd5\xa1\xd5\xa9\0"
+	"\xd4\xbf\xd5\xab\xd6\x80\0"
+	"\xd4\xb5\xd6\x80\xd5\xaf\0"
+	"\xd4\xb5\xd6\x80\xd6\x84\0"
+	"\xd5\x89\xd5\xb8\xd6\x80\0"
+	"\xd5\x80\xd5\xb6\xd5\xa3\0"
+	"\xd5\x88\xd6\x82\xd6\x80\0"
+	"\xd5\x87\xd5\xa1\xd5\xa2\0"
+	"\xd5\x85\xd5\xb8\xd6\x82\xd5\xb6\xd5\xb8\xd6\x82\xd5\xa1\xd6\x80\0"
+	"\xd5\x93\xd5\xa5\xd5\xbf\xd6\x80\xd5\xb8\xd6\x82\xd5\xa1\xd6\x80\0"
+	"\xd5\x84\xd5\xa1\xd6\x80\xd5\xbf\0"
+	"\xd4\xb1\xd5\xba\xd6\x80\xd5\xab\xd5\xac\0"
+	"\xd5\x84\xd5\xa1\xd5\xb5\xd5\xab\xd5\xbd\0"
+	"\xd5\x85\xd5\xb8\xd6\x82\xd5\xb6\xd5\xab\xd5\xbd\0"
+	"\xd5\x85\xd5\xb8\xd6\x82\xd5\xac\xd5\xab\xd5\xbd\0"
+	"\xd5\x95\xd5\xa3\xd5\xb8\xd5\xbd\xd5\xbf\xd5\xb8\xd5\xbd\0"
+	"\xd5\x8d\xd5\xa5\xd5\xba\xd5\xbf\xd5\xa5\xd5\xb4\xd5\xa2\xd5\xa5\xd6\x80\0"
+	"\xd5\x80\xd5\xb8\xd5\xaf\xd5\xbf\xd5\xa5\xd5\xb4\xd5\xa2\xd5\xa5\xd6\x80\0"
+	"\xd5\x86\xd5\xb8\xd5\xb5\xd5\xa5\xd5\xb4\xd5\xa2\xd5\xa5\xd6\x80\0"
+	"\xd4\xb4\xd5\xa5\xd5\xaf\xd5\xbf\xd5\xa5\xd5\xb4\xd5\xa2\xd5\xa5\xd6\x80\0"
+	"\xd5\x85\xd5\xb6\xd6\x80\0"
+	"\xd5\x93\xd5\xbf\xd6\x80\0"
+	"\xd5\x84\xd6\x80\xd5\xbf\0"
+	"\xd4\xb1\xd5\xba\xd6\x80\0"
+	"\xd5\x84\xd5\xb5\xd5\xbd\0"
+	"\xd5\x85\xd5\xb6\xd5\xbd\0"
+	"\xd5\x85\xd5\xac\xd5\xbd\0"
+	"\xd5\x95\xd5\xa3\xd5\xbd\0"
+	"\xd5\x8d\xd5\xa5\xd5\xba\0"
+	"\xd5\x80\xd5\xb8\xd5\xaf\0"
+	"\xd5\x86\xd5\xb8\xd5\xb5\0"
+	"\xd4\xb4\xd5\xa5\xd5\xaf\0"
+	"\xd4\xbf\xd5\xa5\xe2\x80\xa4\0"
+	"\xd5\x80\xd5\xb8\xd6\x82\xd5\xb6\xd5\xbe\xd5\xa1\xd6\x80\0"
+	"\xd5\x93\xd5\xa5\xd5\xbf\xd6\x80\xd5\xbe\xd5\xa1\xd6\x80\0"
+	"\xd5\x80\xd5\xb8\xd6\x82\xd5\xb6\xd5\xab\xd5\xbd\0"
+	"\xd5\x80\xd5\xb8\xd6\x82\xd5\xac\xd5\xab\xd5\xbd\0"
+	"\xd5\x80\xd5\xb6\xd5\xbe\0"
+	"\xd5\x93\xd5\xbf\xd5\xbe\0"
+	"\xd5\x80\xd5\xb6\xd5\xbd\0"
+	"\xd5\x80\xd5\xac\xd5\xbd\0"
+	"EEE, yyyy'eko' MMM'ren' dd'a' HH:mm:ss z\0"
+	"EEE, yyyy'eko' MMM'ren' dd'a'\0"
+	"yyyy'eko' MMMM\0"
+	"MMMM'ren' dd\0"
+	"igandea\0"
+	"astelehena\0"
+	"asteartea\0"
+	"asteazkena\0"
+	"osteguna\0"
+	"ostirala\0"
+	"larunbata\0"
+	"ig\0"
+	"al\0"
+	"as\0"
+	"az\0"
+	"og\0"
+	"or\0"
+	"lr\0"
+	"urtarrila\0"
+	"otsaila\0"
+	"martxoa\0"
+	"apirila\0"
+	"maiatza\0"
+	"ekaina\0"
+	"uztaila\0"
+	"abuztua\0"
+	"iraila\0"
+	"urria\0"
+	"azaroa\0"
+	"abendua\0"
+	"urt\0"
+	"ots\0"
+	"api\0"
+	"eka\0"
+	"uzt\0"
+	"abu\0"
+	"ira\0"
+	"urr\0"
+	"aza\0"
+	"abe\0"
+	"dd MMMM yyyy HH:mm:ss z\0"
+	"\xd0\xbd\xd0\xb5\xd0\xb4\xd0\xb5\xd0\xbb\xd0\xb0\0"
+	"\xd1\x87\xd0\xb5\xd1\x82\xd0\xb2\xd1\x80\xd1\x82\xd0\xbe\xd0\xba\0"
+	"\xd0\xbf\xd0\xb5\xd1\x82\xd0\xbe\xd0\xba\0"
+	"\xd1\x81\xd0\xb0\xd0\xb1\xd0\xbe\xd1\x82\xd0\xb0\0"
+	"\xd1\x81\xd1\x80\xd0\xb5.\0"
+	"\xd1\x87\xd0\xb5\xd1\x82.\0"
+	"\xd1\x81\xd0\xb0\xd0\xb1.\0"
+	"\xd1\x98\xd0\xb0\xd0\xbd\xd1\x83\xd0\xb0\xd1\x80\xd0\xb8\0"
+	"\xd0\xbc\xd0\xb0\xd1\x98\0"
+	"\xd1\x98\xd1\x83\xd0\xbd\xd0\xb8\0"
+	"\xd1\x98\xd1\x83\xd0\xbb\xd0\xb8\0"
+	"\xd1\x98\xd0\xb0\xd0\xbd.\0"
+	"\xd0\xbc\xd0\xb0\xd1\x80.\0"
+	"\xd0\xbc\xd0\xb0\xd1\x98.\0"
+	"\xd1\x98\xd1\x83\xd0\xbd.\0"
+	"\xd1\x98\xd1\x83\xd0\xbb.\0"
+	"\xd1\x81\xd0\xb5\xd0\xbf\xd1\x82.\0"
+	"\xd0\xb4\xd0\xb5\xd0\xba\xd0\xb5\xd0\xbc.\0"
+	"dd MMMM yyyy h:mm:ss t\0"
+	"Sondag\0"
+	"Maandag\0"
+	"Dinsdag\0"
+	"Woensdag\0"
+	"Donderdag\0"
+	"Vrydag\0"
+	"Saterdag\0"
+	"Wo\0"
+	"Vr\0"
+	"Januarie\0"
+	"Februarie\0"
+	"Maart\0"
+	"Junie\0"
+	"Julie\0"
+	"Augustus\0"
+	"HH.mm.ss\0"
+	"m\xc3\xa1nadagur\0"
+	"t\xc3\xbdsdagur\0"
+	"mikudagur\0"
+	"h\xc3\xb3sdagur\0"
+	"fr\xc3\xadggjadagur\0"
+	"leygardagur\0"
+	"t\xc3\xbds\0"
+	"mik\0"
+	"h\xc3\xb3s\0"
+	"fr\xc3\xad\0"
+	"ley\0"
+	"d MMMM yyyy h:mm:ss t z\0"
+	"\xe0\xa4\xaa\xe0\xa5\x82\xe0\xa4\xb0\xe0\xa5\x8d\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb9\xe0\xa5\x8d\xe0\xa4\xa8\0"
+	"\xe0\xa4\x85\xe0\xa4\xaa\xe0\xa4\xb0\xe0\xa4\xbe\xe0\xa4\xb9\xe0\xa5\x8d\xe0\xa4\xa8\0"
+	"\xe0\xa4\xb0\xe0\xa4\xb5\xe0\xa4\xbf\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\0"
+	"\xe0\xa4\xb8\xe0\xa5\x8b\xe0\xa4\xae\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\0"
+	"\xe0\xa4\xae\xe0\xa4\x82\xe0\xa4\x97\xe0\xa4\xb2\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\0"
+	"\xe0\xa4\xac\xe0\xa5\x81\xe0\xa4\xa7\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\0"
+	"\xe0\xa4\x97\xe0\xa5\x81\xe0\xa4\xb0\xe0\xa5\x81\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\0"
+	"\xe0\xa4\xb6\xe0\xa5\x81\xe0\xa4\x95\xe0\xa5\x8d\xe0\xa4\xb0\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\0"
+	"\xe0\xa4\xb6\xe0\xa4\xa8\xe0\xa4\xbf\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\0"
+	"\xe0\xa4\xb0\xe0\xa4\xb5\xe0\xa4\xbf\0"
+	"\xe0\xa4\xb8\xe0\xa5\x8b\xe0\xa4\xae\0"
+	"\xe0\xa4\xae\xe0\xa4\x82\xe0\xa4\x97\xe0\xa4\xb2\0"
+	"\xe0\xa4\xac\xe0\xa5\x81\xe0\xa4\xa7\0"
+	"\xe0\xa4\x97\xe0\xa5\x81\xe0\xa4\xb0\xe0\xa5\x81\0"
+	"\xe0\xa4\xb6\xe0\xa5\x81\xe0\xa4\x95\xe0\xa5\x8d\xe0\xa4\xb0\0"
+	"\xe0\xa4\xb6\xe0\xa4\xa8\xe0\xa4\xbf\0"
+	"\xe0\xa4\x9c\xe0\xa4\xa8\xe0\xa4\xb5\xe0\xa4\xb0\xe0\xa5\x80\0"
+	"\xe0\xa4\xab\xe0\xa4\xb0\xe0\xa4\xb5\xe0\xa4\xb0\xe0\xa5\x80\0"
+	"\xe0\xa4\xae\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x8d\xe0\xa4\x9a\0"
+	"\xe0\xa4\x85\xe0\xa4\xaa\xe0\xa5\x8d\xe0\xa4\xb0\xe0\xa5\x88\xe0\xa4\xb2\0"
+	"\xe0\xa4\xae\xe0\xa4\x88\0"
+	"\xe0\xa4\x9c\xe0\xa5\x82\xe0\xa4\xa8\0"
+	"\xe0\xa4\x9c\xe0\xa5\x81\xe0\xa4\xb2\xe0\xa4\xbe\xe0\xa4\x88\0"
+	"\xe0\xa4\x85\xe0\xa4\x97\xe0\xa4\xb8\xe0\xa5\x8d\xe0\xa4\xa4\0"
+	"\xe0\xa4\xb8\xe0\xa4\xbf\xe0\xa4\xa4\xe0\xa4\xae\xe0\xa5\x8d\xe0\xa4\xac\xe0\xa4\xb0\0"
+	"\xe0\xa4\x85\xe0\xa4\x95\xe0\xa5\x8d\xe0\xa4\xa4\xe0\xa5\x82\xe0\xa4\xac\xe0\xa4\xb0\0"
+	"\xe0\xa4\xa8\xe0\xa4\xb5\xe0\xa4\xae\xe0\xa5\x8d\xe0\xa4\xac\xe0\xa4\xb0\0"
+	"\xe0\xa4\xa6\xe0\xa4\xbf\xe0\xa4\xb8\xe0\xa4\xae\xe0\xa5\x8d\xe0\xa4\xac\xe0\xa4\xb0\0"
+	"yyyy MMMM d  HH:mm:ss z\0"
+	"yyyy MMMM d \0"
+	"h.mm.ss tt\0"
+	"yyyy MMMM\0"
+	"Jumapili\0"
+	"Jumatatu\0"
+	"Jumanne\0"
+	"Jumatano\0"
+	"Alhamisi\0"
+	"Ijumaa\0"
+	"Jumamosi\0"
+	"Jpi\0"
+	"Jtt\0"
+	"Jnn\0"
+	"Jtn\0"
+	"Alh\0"
+	"Iju\0"
+	"Jmo\0"
+	"Machi\0"
+	"Aprili\0"
+	"Julai\0"
+	"Agosti\0"
+	"Septemba\0"
+	"Oktoba\0"
+	"Novemba\0"
+	"Desemba\0"
+	"Ago\0"
+	"d MMMM yyyy hh:mm:ss t z\0"
+	"d-MM-yy\0"
+	"hh:mm:ss t z\0"
+	"hh:mm t\0"
+	"\xe0\xaa\xaa\xe0\xab\x82\xe0\xaa\xb0\xe0\xab\x8d\xe0\xaa\xb5\xc2\xa0\xe0\xaa\xae\xe0\xaa\xa7\xe0\xab\x8d\xe0\xaa\xaf\xe0\xaa\xbe\xe0\xaa\xb9\xe0\xab\x8d\xe0\xaa\xa8\0"
+	"\xe0\xaa\x89\xe0\xaa\xa4\xe0\xab\x8d\xe0\xaa\xa4\xe0\xaa\xb0\xc2\xa0\xe0\xaa\xae\xe0\xaa\xa7\xe0\xab\x8d\xe0\xaa\xaf\xe0\xaa\xbe\xe0\xaa\xb9\xe0\xab\x8d\xe0\xaa\xa8\0"
+	"\xe0\xaa\xb0\xe0\xaa\xb5\xe0\xaa\xbf\xe0\xaa\xb5\xe0\xaa\xbe\xe0\xaa\xb0\0"
+	"\xe0\xaa\xb8\xe0\xab\x8b\xe0\xaa\xae\xe0\xaa\xb5\xe0\xaa\xbe\xe0\xaa\xb0\0"
+	"\xe0\xaa\xae\xe0\xaa\x82\xe0\xaa\x97\xe0\xaa\xb3\xe0\xaa\xb5\xe0\xaa\xbe\xe0\xaa\xb0\0"
+	"\xe0\xaa\xac\xe0\xab\x81\xe0\xaa\xa7\xe0\xaa\xb5\xe0\xaa\xbe\xe0\xaa\xb0\0"
+	"\xe0\xaa\x97\xe0\xab\x81\xe0\xaa\xb0\xe0\xab\x81\xe0\xaa\xb5\xe0\xaa\xbe\xe0\xaa\xb0\0"
+	"\xe0\xaa\xb6\xe0\xab\x81\xe0\xaa\x95\xe0\xab\x8d\xe0\xaa\xb0\xe0\xaa\xb5\xe0\xaa\xbe\xe0\xaa\xb0\0"
+	"\xe0\xaa\xb6\xe0\xaa\xa8\xe0\xaa\xbf\xe0\xaa\xb5\xe0\xaa\xbe\xe0\xaa\xb0\0"
+	"\xe0\xaa\xb0\xe0\xaa\xb5\xe0\xaa\xbf\0"
+	"\xe0\xaa\xb8\xe0\xab\x8b\xe0\xaa\xae\0"
+	"\xe0\xaa\xae\xe0\xaa\x82\xe0\xaa\x97\xe0\xaa\xb3\0"
+	"\xe0\xaa\xac\xe0\xab\x81\xe0\xaa\xa7\0"
+	"\xe0\xaa\x97\xe0\xab\x81\xe0\xaa\xb0\xe0\xab\x81\0"
+	"\xe0\xaa\xb6\xe0\xab\x81\xe0\xaa\x95\xe0\xab\x8d\xe0\xaa\xb0\0"
+	"\xe0\xaa\xb6\xe0\xaa\xa8\xe0\xaa\xbf\0"
+	"\xe0\xaa\x9c\xe0\xaa\xbe\xe0\xaa\xa8\xe0\xab\x8d\xe0\xaa\xaf\xe0\xab\x81\xe0\xaa\x86\xe0\xaa\xb0\xe0\xab\x80\0"
+	"\xe0\xaa\xab\xe0\xab\x87\xe0\xaa\xac\xe0\xab\x8d\xe0\xaa\xb0\xe0\xab\x81\xe0\xaa\x86\xe0\xaa\xb0\xe0\xab\x80\0"
+	"\xe0\xaa\xae\xe0\xaa\xbe\xe0\xaa\xb0\xe0\xab\x8d\xe0\xaa\x9a\0"
+	"\xe0\xaa\x8f\xe0\xaa\xaa\xe0\xab\x8d\xe0\xaa\xb0\xe0\xaa\xbf\xe0\xaa\xb2\0"
+	"\xe0\xaa\xae\xe0\xab\x87\0"
+	"\xe0\xaa\x9c\xe0\xab\x82\xe0\xaa\xa8\0"
+	"\xe0\xaa\x9c\xe0\xab\x81\xe0\xaa\xb2\xe0\xaa\xbe\xe0\xaa\x88\0"
+	"\xe0\xaa\x91\xe0\xaa\x97\xe0\xaa\xb8\xe0\xab\x8d\xe0\xaa\x9f\0"
+	"\xe0\xaa\xb8\xe0\xaa\xaa\xe0\xab\x8d\xe0\xaa\x9f\xe0\xab\x87\xe0\xaa\xae\xe0\xab\x8d\xe0\xaa\xac\xe0\xaa\xb0\0"
+	"\xe0\xaa\x91\xe0\xaa\x95\xe0\xab\x8d\xe0\xaa\x9f\xe0\xab\x8d\xe0\xaa\xac\xe0\xaa\xb0\0"
+	"\xe0\xaa\xa8\xe0\xaa\xb5\xe0\xab\x87\xe0\xaa\xae\xe0\xab\x8d\xe0\xaa\xac\xe0\xaa\xb0\0"
+	"\xe0\xaa\xa1\xe0\xaa\xbf\xe0\xaa\xb8\xe0\xab\x87\xe0\xaa\xae\xe0\xab\x8d\xe0\xaa\xac\xe0\xaa\xb0\0"
+	"\xe0\xaa\x9c\xe0\xaa\xbe\xe0\xaa\xa8\xe0\xab\x8d\xe0\xaa\xaf\xe0\xab\x81\0"
+	"\xe0\xaa\xab\xe0\xab\x87\xe0\xaa\xac\xe0\xab\x8d\xe0\xaa\xb0\xe0\xab\x81\0"
+	"\xe0\xaa\xb8\xe0\xaa\xaa\xe0\xab\x8d\xe0\xaa\x9f\xe0\xab\x87\0"
+	"\xe0\xaa\x91\xe0\xaa\x95\xe0\xab\x8d\xe0\xaa\x9f\xe0\xab\x8b\0"
+	"\xe0\xaa\xa8\xe0\xaa\xb5\xe0\xab\x87\0"
+	"\xe0\xaa\xa1\xe0\xaa\xbf\xe0\xaa\xb8\xe0\xab\x87\0"
+	"d-M-yy\0"
+	"h:mm:ss t z\0"
+	"\xe0\xae\x95\xe0\xae\xbe\xe0\xae\xb2\xe0\xaf\x88\0"
+	"\xe0\xae\xae\xe0\xae\xbe\xe0\xae\xb2\xe0\xaf\x88\0"
+	"\xe0\xae\x9e\xe0\xae\xbe\xe0\xae\xaf\xe0\xae\xbf\xe0\xae\xb1\xe0\xaf\x81\0"
+	"\xe0\xae\xa4\xe0\xae\xbf\xe0\xae\x99\xe0\xaf\x8d\xe0\xae\x95\xe0\xae\xb3\xe0\xaf\x8d\0"
+	"\xe0\xae\x9a\xe0\xaf\x86\xe0\xae\xb5\xe0\xaf\x8d\xe0\xae\xb5\xe0\xae\xbe\xe0\xae\xaf\xe0\xaf\x8d\0"
+	"\xe0\xae\xaa\xe0\xaf\x81\xe0\xae\xa4\xe0\xae\xa9\xe0\xaf\x8d\0"
+	"\xe0\xae\xb5\xe0\xae\xbf\xe0\xae\xaf\xe0\xae\xbe\xe0\xae\xb4\xe0\xae\xa9\xe0\xaf\x8d\0"
+	"\xe0\xae\xb5\xe0\xaf\x86\xe0\xae\xb3\xe0\xaf\x8d\xe0\xae\xb3\xe0\xae\xbf\0"
+	"\xe0\xae\x9a\xe0\xae\xa9\xe0\xae\xbf\0"
+	"\xe0\xae\x9e\xe0\xae\xbe\0"
+	"\xe0\xae\xa4\xe0\xae\xbf\0"
+	"\xe0\xae\x9a\xe0\xaf\x86\0"
+	"\xe0\xae\xaa\xe0\xaf\x81\0"
+	"\xe0\xae\xb5\xe0\xae\xbf\0"
+	"\xe0\xae\xb5\xe0\xaf\x86\0"
+	"\xe0\xae\x9a\0"
+	"\xe0\xae\x9c\xe0\xae\xa9\xe0\xae\xb5\xe0\xae\xb0\xe0\xae\xbf\0"
+	"\xe0\xae\xaa\xe0\xae\xbf\xe0\xae\xaa\xe0\xaf\x8d\xe0\xae\xb0\xe0\xae\xb5\xe0\xae\xb0\xe0\xae\xbf\0"
+	"\xe0\xae\xae\xe0\xae\xbe\xe0\xae\xb0\xe0\xaf\x8d\xe0\xae\x9a\xe0\xaf\x8d\0"
+	"\xe0\xae\x8f\xe0\xae\xaa\xe0\xaf\x8d\xe0\xae\xb0\xe0\xae\xb2\xe0\xaf\x8d\0"
+	"\xe0\xae\xae\xe0\xaf\x87\0"
+	"\xe0\xae\x9c\xe0\xaf\x82\xe0\xae\xa9\xe0\xaf\x8d\0"
+	"\xe0\xae\x9c\xe0\xaf\x82\xe0\xae\xb2\xe0\xaf\x88\0"
+	"\xe0\xae\x86\xe0\xae\x95\xe0\xae\xb8\xe0\xaf\x8d\xe0\xae\x9f\xe0\xaf\x8d\0"
+	"\xe0\xae\x9a\xe0\xaf\x86\xe0\xae\xaa\xe0\xaf\x8d\xe0\xae\x9f\xe0\xae\xae\xe0\xaf\x8d\xe0\xae\xaa\xe0\xae\xb0\xe0\xaf\x8d\0"
+	"\xe0\xae\x85\xe0\xae\x95\xe0\xaf\x8d\xe0\xae\x9f\xe0\xaf\x8b\xe0\xae\xaa\xe0\xae\xb0\xe0\xaf\x8d\0"
+	"\xe0\xae\xa8\xe0\xae\xb5\xe0\xae\xae\xe0\xaf\x8d\xe0\xae\xaa\xe0\xae\xb0\xe0\xaf\x8d\0"
+	"\xe0\xae\x9f\xe0\xae\xbf\xe0\xae\x9a\xe0\xae\xae\xe0\xaf\x8d\xe0\xae\xaa\xe0\xae\xb0\xe0\xaf\x8d\0"
+	"\xe0\xae\x9c\xe0\xae\xa9.\0"
+	"\xe0\xae\xaa\xe0\xae\xbf\xe0\xae\xaa\xe0\xaf\x8d.\0"
+	"\xe0\xae\xae\xe0\xae\xbe\xe0\xae\xb0\xe0\xaf\x8d.\0"
+	"\xe0\xae\x8f\xe0\xae\xaa\xe0\xaf\x8d.\0"
+	"\xe0\xae\x86\xe0\xae\x95.\0"
+	"\xe0\xae\x9a\xe0\xaf\x86\xe0\xae\xaa\xe0\xaf\x8d.\0"
+	"\xe0\xae\x85\xe0\xae\x95\xe0\xaf\x8d.\0"
+	"\xe0\xae\xa8\xe0\xae\xb5.\0"
+	"\xe0\xae\x9f\xe0\xae\xbf\xe0\xae\x9a.\0"
+	"dd-MM-yy\0"
+	"\xe0\xb0\xaa\xe0\xb1\x82\xe0\xb0\xb0\xe0\xb1\x8d\xe0\xb0\xb5\xe0\xb0\xbe\xe0\xb0\xb9\xe0\xb1\x8d\xe0\xb0\xa8\0"
+	"\xe0\xb0\x85\xe0\xb0\xaa\xe0\xb0\xb0\xe0\xb0\xbe\xe0\xb0\xb9\xe0\xb1\x8d\xe0\xb0\xa8\0"
+	"\xe0\xb0\x86\xe0\xb0\xa6\xe0\xb0\xbf\xe0\xb0\xb5\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb0\x82\0"
+	"\xe0\xb0\xb8\xe0\xb1\x8b\xe0\xb0\xae\xe0\xb0\xb5\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb0\x82\0"
+	"\xe0\xb0\xae\xe0\xb0\x82\xe0\xb0\x97\xe0\xb0\xb3\xe0\xb0\xb5\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb0\x82\0"
+	"\xe0\xb0\xac\xe0\xb1\x81\xe0\xb0\xa7\xe0\xb0\xb5\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb0\x82\0"
+	"\xe0\xb0\x97\xe0\xb1\x81\xe0\xb0\xb0\xe0\xb1\x81\xe0\xb0\xb5\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb0\x82\0"
+	"\xe0\xb0\xb6\xe0\xb1\x81\xe0\xb0\x95\xe0\xb1\x8d\xe0\xb0\xb0\xe0\xb0\xb5\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb0\x82\0"
+	"\xe0\xb0\xb6\xe0\xb0\xa8\xe0\xb0\xbf\xe0\xb0\xb5\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb0\x82\0"
+	"\xe0\xb0\x86\xe0\xb0\xa6\xe0\xb0\xbf\0"
+	"\xe0\xb0\xb8\xe0\xb1\x8b\xe0\xb0\xae\0"
+	"\xe0\xb0\xae\xe0\xb0\x82\xe0\xb0\x97\xe0\xb0\xb3\0"
+	"\xe0\xb0\xac\xe0\xb1\x81\xe0\xb0\xa7\0"
+	"\xe0\xb0\x97\xe0\xb1\x81\xe0\xb0\xb0\xe0\xb1\x81\0"
+	"\xe0\xb0\xb6\xe0\xb1\x81\xe0\xb0\x95\xe0\xb1\x8d\xe0\xb0\xb0\0"
+	"\xe0\xb0\xb6\xe0\xb0\xa8\xe0\xb0\xbf\0"
+	"\xe0\xb0\x9c\xe0\xb0\xa8\xe0\xb0\xb5\xe0\xb0\xb0\xe0\xb0\xbf\0"
+	"\xe0\xb0\xab\xe0\xb0\xbf\xe0\xb0\xac\xe0\xb1\x8d\xe0\xb0\xb0\xe0\xb0\xb5\xe0\xb0\xb0\xe0\xb0\xbf\0"
+	"\xe0\xb0\xae\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb1\x8d\xe0\xb0\x9a\xe0\xb0\xbf\0"
+	"\xe0\xb0\x8f\xe0\xb0\xaa\xe0\xb1\x8d\xe0\xb0\xb0\xe0\xb0\xbf\xe0\xb0\xb2\xe0\xb1\x8d\0"
+	"\xe0\xb0\xae\xe0\xb1\x87\0"
+	"\xe0\xb0\x9c\xe0\xb1\x82\xe0\xb0\xa8\xe0\xb1\x8d\0"
+	"\xe0\xb0\x9c\xe0\xb1\x82\xe0\xb0\xb2\xe0\xb1\x88\0"
+	"\xe0\xb0\x86\xe0\xb0\x97\xe0\xb0\xb8\xe0\xb1\x8d\xe0\xb0\x9f\xe0\xb1\x81\0"
+	"\xe0\xb0\xb8\xe0\xb1\x86\xe0\xb0\xaa\xe0\xb1\x8d\xe0\xb0\x9f\xe0\xb1\x86\xe0\xb0\x82\xe0\xb0\xac\xe0\xb0\xb0\xe0\xb1\x8d\0"
+	"\xe0\xb0\x85\xe0\xb0\x95\xe0\xb1\x8d\xe0\xb0\x9f\xe0\xb1\x8b\xe0\xb0\xac\xe0\xb0\xb0\xe0\xb1\x8d\0"
+	"\xe0\xb0\xa8\xe0\xb0\xb5\xe0\xb0\x82\xe0\xb0\xac\xe0\xb0\xb0\xe0\xb1\x8d\0"
+	"\xe0\xb0\xa1\xe0\xb0\xbf\xe0\xb0\xb8\xe0\xb1\x86\xe0\xb0\x82\xe0\xb0\xac\xe0\xb0\xb0\xe0\xb1\x8d\0"
+	"\xe0\xb2\xaa\xe0\xb3\x82\xe0\xb2\xb0\xe0\xb3\x8d\xe0\xb2\xb5\xe0\xb2\xbe\xe0\xb2\xb9\xe0\xb3\x8d\xe0\xb2\xa8\0"
+	"\xe0\xb2\x85\xe0\xb2\xaa\xe0\xb2\xb0\xe0\xb2\xbe\xe0\xb2\xb9\xe0\xb3\x8d\xe0\xb2\xa8\0"
+	"\xe0\xb2\xb0\xe0\xb2\xb5\xe0\xb2\xbf\xe0\xb2\xb5\xe0\xb2\xbe\xe0\xb2\xb0\0"
+	"\xe0\xb2\xb8\xe0\xb3\x8b\xe0\xb2\xae\xe0\xb2\xb5\xe0\xb2\xbe\xe0\xb2\xb0\0"
+	"\xe0\xb2\xae\xe0\xb2\x82\xe0\xb2\x97\xe0\xb2\xb3\xe0\xb2\xb5\xe0\xb2\xbe\xe0\xb2\xb0\0"
+	"\xe0\xb2\xac\xe0\xb3\x81\xe0\xb2\xa7\xe0\xb2\xb5\xe0\xb2\xbe\xe0\xb2\xb0\0"
+	"\xe0\xb2\x97\xe0\xb3\x81\xe0\xb2\xb0\xe0\xb3\x81\xe0\xb2\xb5\xe0\xb2\xbe\xe0\xb2\xb0\0"
+	"\xe0\xb2\xb6\xe0\xb3\x81\xe0\xb2\x95\xe0\xb3\x8d\xe0\xb2\xb0\xe0\xb2\xb5\xe0\xb2\xbe\xe0\xb2\xb0\0"
+	"\xe0\xb2\xb6\xe0\xb2\xa8\xe0\xb2\xbf\xe0\xb2\xb5\xe0\xb2\xbe\xe0\xb2\xb0\0"
+	"\xe0\xb2\xb0.\0"
+	"\xe0\xb2\xb8\xe0\xb3\x8b.\0"
+	"\xe0\xb2\xae\xe0\xb2\x82.\0"
+	"\xe0\xb2\xac\xe0\xb3\x81.\0"
+	"\xe0\xb2\x97\xe0\xb3\x81.\0"
+	"\xe0\xb2\xb6\xe0\xb3\x81.\0"
+	"\xe0\xb2\xb6\xe0\xb2\xa8\xe0\xb2\xbf.\0"
+	"\xe0\xb2\x9c\xe0\xb2\xa8\xe0\xb2\xb5\xe0\xb2\xb0\xe0\xb3\x80\0"
+	"\xe0\xb2\xab\xe0\xb3\x86\xe0\xb2\xac\xe0\xb3\x8d\xe0\xb2\xb0\xe0\xb2\xb5\xe0\xb2\xb0\xe0\xb3\x80\0"
+	"\xe0\xb2\xae\xe0\xb2\xbe\xe0\xb2\xb0\xe0\xb3\x8d\xe0\xb2\x9a\xe0\xb3\x8d\0"
+	"\xe0\xb2\x8e\xe0\xb2\xaa\xe0\xb3\x8d\xe0\xb2\xb0\xe0\xb2\xbf\xe0\xb2\xb2\xe0\xb3\x8d\0"
+	"\xe0\xb2\xae\xe0\xb3\x86\0"
+	"\xe0\xb2\x9c\xe0\xb3\x82\xe0\xb2\xa8\xe0\xb3\x8d\0"
+	"\xe0\xb2\x9c\xe0\xb3\x81\xe0\xb2\xb2\xe0\xb3\x88\0"
+	"\xe0\xb2\x86\xe0\xb2\x97\xe0\xb2\xb8\xe0\xb3\x8d\xe0\xb2\x9f\xe0\xb3\x8d\0"
+	"\xe0\xb2\xb8\xe0\xb2\xaa\xe0\xb3\x8d\xe0\xb2\x9f\xe0\xb3\x86\xe0\xb2\x82\xe0\xb2\xac\xe0\xb2\xb0\xe0\xb3\x8d\0"
+	"\xe0\xb2\x85\xe0\xb2\x95\xe0\xb3\x8d\xe0\xb2\x9f\xe0\xb3\x8b\xe0\xb2\xac\xe0\xb2\xb0\xe0\xb3\x8d\0"
+	"\xe0\xb2\xa8\xe0\xb2\xb5\xe0\xb3\x86\xe0\xb2\x82\xe0\xb2\xac\xe0\xb2\xb0\xe0\xb3\x8d\0"
+	"\xe0\xb2\xa1\xe0\xb2\xbf\xe0\xb2\xb8\xe0\xb3\x86\xe0\xb2\x82\xe0\xb2\xac\xe0\xb2\xb0\xe0\xb3\x8d\0"
+	"\xe0\xa4\xae.\xe0\xa4\xaa\xe0\xa5\x82.\0"
+	"\xe0\xa4\xae.\xe0\xa4\xa8\xe0\xa4\x82.\0"
+	"\xe0\xa4\xae\xe0\xa4\x82\xe0\xa4\x97\xe0\xa4\xb3\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\0"
+	"\xe0\xa4\xae\xe0\xa4\x82\xe0\xa4\x97\xe0\xa4\xb3\0"
+	"\xe0\xa4\x9c\xe0\xa4\xbe\xe0\xa4\xa8\xe0\xa5\x87\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x80\0"
+	"\xe0\xa4\xab\xe0\xa5\x87\xe0\xa4\xac\xe0\xa5\x83\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x80\0"
+	"\xe0\xa4\x8f\xe0\xa4\xaa\xe0\xa5\x8d\xe0\xa4\xb0\xe0\xa4\xbf\xe0\xa4\xb2\0"
+	"\xe0\xa4\xae\xe0\xa5\x87\0"
+	"\xe0\xa4\x9c\xe0\xa5\x81\xe0\xa4\xb2\xe0\xa5\x88\0"
+	"\xe0\xa4\x93\xe0\xa4\x97\xe0\xa4\xb8\xe0\xa5\x8d\xe0\xa4\x9f\0"
+	"\xe0\xa4\xb8\xe0\xa5\x87\xe0\xa4\xaa\xe0\xa5\x8d\xe0\xa4\x9f\xe0\xa5\x87\xe0\xa4\x82\xe0\xa4\xac\xe0\xa4\xb0\0"
+	"\xe0\xa4\x93\xe0\xa4\x95\xe0\xa5\x8d\xe0\xa4\x9f\xe0\xa5\x8b\xe0\xa4\xac\xe0\xa4\xb0\0"
+	"\xe0\xa4\xa8\xe0\xa5\x8b\xe0\xa4\xb5\xe0\xa5\x8d\xe0\xa4\xb9\xe0\xa5\x87\xe0\xa4\x82\xe0\xa4\xac\xe0\xa4\xb0\0"
+	"\xe0\xa4\xa1\xe0\xa4\xbf\xe0\xa4\xb8\xe0\xa5\x87\xe0\xa4\x82\xe0\xa4\xac\xe0\xa4\xb0\0"
+	"dd/MM/yy\0"
+	"HH:mm:ss z\0"
+	"Domingo\0"
+	"Luns\0"
+	"Martes\0"
+	"M\xc3\xa9rcores\0"
+	"Xoves\0"
+	"Venres\0"
+	"S\xc3\xa1\x62\x61\x64o\0"
+	"Dom\0"
+	"Lun\0"
+	"M\xc3\xa9r\0"
+	"Xov\0"
+	"Ven\0"
+	"S\xc3\xa1\x62\0"
+	"Xaneiro\0"
+	"Febreiro\0"
+	"Marzo\0"
+	"Abril\0"
+	"Maio\0"
+	"Xu\xc3\xb1o\0"
+	"Xullo\0"
+	"Agosto\0"
+	"Setembro\0"
+	"Outubro\0"
+	"Novembro\0"
+	"Decembro\0"
+	"Xan\0"
+	"Abr\0"
+	"Xu\xc3\xb1\0"
+	"Xul\0"
+	"Set\0"
+	"Out\0"
+	"\xe0\xa4\x86\xe0\xa4\xa6\xe0\xa4\xbf\xe0\xa4\xa4\xe0\xa5\x8d\xe0\xa4\xaf\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\0"
+	"\xe0\xa4\xae\xe0\xa4\x82\xe0\xa4\x97\xe0\xa4\xb3\xe0\xa4\xbe\xe0\xa4\xb0\0"
+	"\xe0\xa4\xab\xe0\xa5\x87\xe0\xa4\xac\xe0\xa5\x8d\xe0\xa4\xb0\xe0\xa5\x81\xe0\xa4\xb5\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa5\x80\0"
+	"\xd8\xad\0"
+	"\xd9\x86\0"
+	"\xd8\xab\0"
+	"\xd8\xb1\0"
+	"\xd8\xae\0"
+	"\xd8\xac\0"
+	"\xd8\xb3\0"
+	"d' de 'MMMM' de 'yyyy hh:mm:ss t z\0"
+	"a.m.\0"
+	"p.m.\0"
+	"lunes\0"
+	"martes\0"
+	"mi\xc3\xa9rcoles\0"
+	"jueves\0"
+	"viernes\0"
+	"mi\xc3\xa9\0"
+	"jue\0"
+	"vie\0"
+	"enero\0"
+	"febrero\0"
+	"mayo\0"
+	"junio\0"
+	"julio\0"
+	"septiembre\0"
+	"noviembre\0"
+	"diciembre\0"
+	"ene\0"
+	"may\0"
+	"oct\0"
+	"d/MM/yyyy\0"
+	"d' de 'MMMM' de 'yyyy HH:mm:ss z\0"
+	"dd. MMMM yyyy HH:mm:ss z\0"
+	"J\xc3\xa4nner\0"
+	"J\xc3\xa4n\0"
+	"M\xc3\xa4r\0"
+	"d MMMM yyyy h:mm:ss t\0"
+	"MMMM d, yyyy\0"
+	"d' de 'MMMM' de 'yyyy H:mm:ss z\0"
+	"\xd9\x83\xd8\xa7\xd9\x86\xd9\x88\xd9\x86 \xd8\xa7\xd9\x84\xd8\xab\xd8\xa7\xd9\x86\xd9\x8a\0"
+	"\xd8\xb4\xd8\xa8\xd8\xa7\xd8\xb7\0"
+	"\xd8\xa2\xd8\xb0\xd8\xa7\xd8\xb1\0"
+	"\xd9\x86\xd9\x8a\xd8\xb3\xd8\xa7\xd9\x86\0"
+	"\xd9\x86\xd9\x88\xd8\xa7\xd8\xb1\0"
+	"\xd8\xad\xd8\xb2\xd9\x8a\xd8\xb1\xd8\xa7\xd9\x86\0"
+	"\xd8\xaa\xd9\x85\xd9\x88\xd8\xb2\0"
+	"\xd8\xa2\xd8\xa8\0"
+	"\xd8\xa3\xd9\x8a\xd9\x84\xd9\x88\xd9\x84\0"
+	"\xd8\xaa\xd8\xb4\xd8\xb1\xd9\x8a\xd9\x86 \xd8\xa7\xd9\x84\xd8\xa3\xd9\x88\xd9\x84\0"
+	"\xd8\xaa\xd8\xb4\xd8\xb1\xd9\x8a\xd9\x86 \xd8\xa7\xd9\x84\xd8\xab\xd8\xa7\xd9\x86\xd9\x8a\0"
+	"\xd9\x83\xd8\xa7\xd9\x86\xd9\x88\xd9\x86 \xd8\xa7\xd9\x84\xd8\xa3\xd9\x88\xd9\x84\0"
+	"\xd8\xa3\xd9\x8a\xd8\xa7\xd8\xb1\0"
+	"dd' de 'MMMM' de 'yyyy hh:mm:ss t z\0"
+	"dd' de 'MMMM' de 'yyyy\0"
+	"dd' de 'MMMM\0"
+	"\xd9\xab\0"
+	"\xd9\xac\0"
+	"\xd8\xb1.\xd8\xb3.\xe2\x80\x8f\0"
+	"\xd9\xaa\0"
+	"\xef\xbf\xbd\0"
+	"\xe2\x80\xb0\0"
+	"-\xe2\x88\x9e\0"
+	"\xe2\x88\x9e\0"
+	"-\0"
+	"+\0"
+	",\0"
+	"\xc2\xa0\0"
+	"\xd0\xbb\xd0\xb2.\0"
+	"%\0"
+	".\0"
+	"\xe2\x82\xac\0"
+	"K\xc4\x8d\0"
+	"kr\0"
+	"$\0"
+	"NaN\0"
+	"-Infinity\0"
+	"Infinity\0"
+	"\xe2\x82\xaa\0"
+	"Ft\0"
+	"kr.\0"
+	"\\\0"
+	"\xef\xbf\xa6\0"
+	"z\xc5\x82\0"
+	"R$\0"
+	"lei\0"
+	"\xd1\x80.\0"
+	"Kn\0"
+	"Lek\0"
+	"\xe0\xb8\xbf\0"
+	"TL\0"
+	"Rp\0"
+	"\xd0\xb3\xd1\x80\xd0\xbd.\0"
+	"SIT\0"
+	"Ls\0"
+	"Lt\0"
+	"\xef\xb7\xbc\0"
+	"\xc4\x91\0"
+	"Den\0"
+	"\xe0\xa4\xb0\xe0\xa5\x81\0"
+	"KSh\0"
+	"\xe0\xaa\xb0\xe0\xab\x81\0"
+	"\xe0\xae\xb0\xe0\xaf\x82\0"
+	"\xe0\xb0\xb0\xe0\xb1\x82.\0"
+	"\xd8\xaf.\xd8\xb9.\xe2\x80\x8f\0"
+	"'\0"
+	"SFr.\0"
+	"\xc2\xa3\0"
+	"\xd8\xac.\xd9\x85.\xe2\x80\x8f\0"
+	"\xd8\xaf.\xd9\x84.\xe2\x80\x8f\0"
+	"Q\0"
+	"sFr.\0"
+	"\xd8\xaf.\xd8\xac.\xe2\x80\x8f\0"
+	"CRC\0"
+	"\xd8\xaf.\xd9\x85.\xe2\x80\x8f\0"
+	"B/\0"
+	"\xd8\xaf.\xd8\xaa.\xe2\x80\x8f\0"
+	"RD$\0"
+	"\xd8\xb1.\xd8\xb9.\xe2\x80\x8f\0"
+	"Bs\0"
+	"\xd8\xb1.\xd9\x8a.\xe2\x80\x8f\0"
+	"\xd9\x84.\xd8\xb3.\xe2\x80\x8f\0"
+	"S/\0"
+	"\xd8\xaf.\xd8\xa3.\xe2\x80\x8f\0"
+	"\xd9\x84.\xd9\x84.\xe2\x80\x8f\0"
+	"Z$\0"
+	"S/.\0"
+	"\xd8\xaf.\xd9\x83.\xe2\x80\x8f\0"
+	"PHP\0"
+	"\xd8\xaf.\xd8\xa5.\xe2\x80\x8f\0"
+	"NU$\0"
+	"\xd8\xaf.\xd8\xa8.\xe2\x80\x8f\0"
+	"Gs\0"
+	"\xd8\xb1.\xd9\x82.\xe2\x80\x8f\0"
+	"$b\0"
+	"SVC\0"
+	"L.\0"
+	"C$\0"
+	"ar\0"
+	"Arabic\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9\0"
+	"ARA\0"
+	"ara\0"
+	"bg\0"
+	"Bulgarian\0"
+	"\xd0\x91\xd1\x8a\xd0\xbb\xd0\xb3\xd0\xb0\xd1\x80\xd1\x81\xd0\xba\xd0\xb8\0"
+	"BGR\0"
+	"bul\0"
+	"ca\0"
+	"Catalan\0"
+	"catal\xc3\xa0\0"
+	"CAT\0"
+	"cat\0"
+	"cs\0"
+	"Czech\0"
+	"\xc4\x8c\x65\xc5\xa1tina\0"
+	"CSY\0"
+	"ces\0"
+	"da\0"
+	"Danish\0"
+	"Dansk\0"
+	"DAN\0"
+	"dan\0"
+	"de\0"
+	"German\0"
+	"Deutsch\0"
+	"DEU\0"
+	"deu\0"
+	"el\0"
+	"Greek\0"
+	"\xce\x95\xce\xbb\xce\xbb\xce\xb7\xce\xbd\xce\xb9\xce\xba\xce\xac\0"
+	"ELL\0"
+	"ell\0"
+	"en\0"
+	"English\0"
+	"ENU\0"
+	"eng\0"
+	"es\0"
+	"Spanish\0"
+	"espa\xc3\xb1ol\0"
+	"ESP\0"
+	"spa\0"
+	"fi\0"
+	"Finnish\0"
+	"suomi\0"
+	"FIN\0"
+	"fin\0"
+	"French\0"
+	"fran\xc3\xa7\x61is\0"
+	"FRA\0"
+	"fra\0"
+	"he\0"
+	"Hebrew\0"
+	"\xd7\xa2\xd7\x91\xd7\xa8\xd7\x99\xd7\xaa\0"
+	"HEB\0"
+	"heb\0"
+	"hu\0"
+	"Hungarian\0"
+	"magyar\0"
+	"HUN\0"
+	"hun\0"
+	"is\0"
+	"Icelandic\0"
+	"\xc3\xadslenska\0"
+	"ISL\0"
+	"isl\0"
+	"it\0"
+	"Italian\0"
+	"italiano\0"
+	"ITA\0"
+	"ita\0"
+	"ja\0"
+	"Japanese\0"
+	"\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e\0"
+	"JPN\0"
+	"jpn\0"
+	"ko\0"
+	"Korean\0"
+	"\xed\x95\x9c\xea\xb5\xad\xec\x96\xb4\0"
+	"KOR\0"
+	"kor\0"
+	"nl\0"
+	"Dutch\0"
+	"Nederlands\0"
+	"NLD\0"
+	"nld\0"
+	"pl\0"
+	"Polish\0"
+	"polski\0"
+	"PLK\0"
+	"pol\0"
+	"pt\0"
+	"Portuguese\0"
+	"portugu\xc3\xaas\0"
+	"PTB\0"
+	"por\0"
+	"ro\0"
+	"Romanian\0"
+	"Rom\xc3\xa2n\xc4\x83\0"
+	"ROM\0"
+	"ron\0"
+	"ru\0"
+	"Russian\0"
+	"\xd0\xa0\xd1\x83\xd1\x81\xd1\x81\xd0\xba\xd0\xb8\xd0\xb9\0"
+	"RUS\0"
+	"rus\0"
+	"hr\0"
+	"Croatian\0"
+	"hrvatski\0"
+	"HRV\0"
+	"hrv\0"
+	"sk\0"
+	"Slovak\0"
+	"slovensk\xc3\xbd\0"
+	"SKY\0"
+	"slk\0"
+	"sq\0"
+	"Albanian\0"
+	"shqipe\0"
+	"SQI\0"
+	"sqi\0"
+	"sv\0"
+	"Swedish\0"
+	"svenska\0"
+	"SVE\0"
+	"swe\0"
+	"th\0"
+	"Thai\0"
+	"\xe0\xb9\x84\xe0\xb8\x97\xe0\xb8\xa2\0"
+	"THA\0"
+	"tha\0"
+	"tr\0"
+	"Turkish\0"
+	"T\xc3\xbcrk\xc3\xa7\x65\0"
+	"TRK\0"
+	"tur\0"
+	"id\0"
+	"Indonesian\0"
+	"Bahasa Indonesia\0"
+	"IND\0"
+	"ind\0"
+	"uk\0"
+	"Ukrainian\0"
+	"\xd0\xa3\xd0\xba\xd1\x80\xd0\xb0\xd1\x97\xd0\xbd\xd1\x81\xd1\x8c\xd0\xba\xd0\xb0\0"
+	"UKR\0"
+	"ukr\0"
+	"be\0"
+	"Belarusian\0"
+	"\xd0\x91\xd0\xb5\xd0\xbb\xd0\xb0\xd1\x80\xd1\x83\xd1\x81\xd0\xba\xd1\x96\0"
+	"BEL\0"
+	"bel\0"
+	"sl\0"
+	"Slovenian\0"
+	"Sloven\xc5\xa1\xc4\x8dina\0"
+	"SLV\0"
+	"slv\0"
+	"et\0"
+	"Estonian\0"
+	"Eesti\0"
+	"ETI\0"
+	"est\0"
+	"lv\0"
+	"Latvian\0"
+	"latvie\xc5\xa1u\0"
+	"LVI\0"
+	"lav\0"
+	"lt\0"
+	"Lithuanian\0"
+	"Lietuvi\xc5\xb3\0"
+	"LTH\0"
+	"lit\0"
+	"fa\0"
+	"Persian\0"
+	"\xd9\x81\xd8\xa7\xd8\xb1\xd8\xb3\xdb\x8c\0"
+	"FAR\0"
+	"fas\0"
+	"vi\0"
+	"Vietnamese\0"
+	"Ti\xe1\xba\xbfng Vi\xe1\xbb\x87t\0"
+	"VIT\0"
+	"hy\0"
+	"Armenian\0"
+	"\xd5\x80\xd5\xa1\xd5\xb5\xd5\xa5\xd6\x80\xd5\xa7\xd5\xb6\0"
+	"HYE\0"
+	"hye\0"
+	"eu\0"
+	"Basque\0"
+	"euskara\0"
+	"EUQ\0"
+	"eus\0"
+	"mk\0"
+	"Macedonian\0"
+	"\xd0\xbc\xd0\xb0\xd0\xba\xd0\xb5\xd0\xb4\xd0\xbe\xd0\xbd\xd1\x81\xd0\xba\xd0\xb8\0"
+	"MKI\0"
+	"mkd\0"
+	"af\0"
+	"Afrikaans\0"
+	"Afrikaanse\0"
+	"AFK\0"
+	"afr\0"
+	"fo\0"
+	"Faroese\0"
+	"f\xc3\xb8royskt\0"
+	"FOS\0"
+	"fao\0"
+	"hi\0"
+	"Hindi\0"
+	"\xe0\xa4\xb9\xe0\xa4\xbf\xe0\xa4\x82\xe0\xa4\xa6\xe0\xa5\x80\0"
+	"HIN\0"
+	"hin\0"
+	"sw\0"
+	"Swahili\0"
+	"Kiswahili\0"
+	"SWK\0"
+	"swa\0"
+	"gu\0"
+	"Gujarati\0"
+	"\xe0\xaa\x97\xe0\xab\x81\xe0\xaa\x9c\xe0\xaa\xb0\xe0\xaa\xbe\xe0\xaa\xa4\xe0\xab\x80\0"
+	"GUJ\0"
+	"guj\0"
+	"ta\0"
+	"Tamil\0"
+	"\xe0\xae\xa4\xe0\xae\xae\xe0\xae\xbf\xe0\xae\xb4\xe0\xaf\x8d\0"
+	"TAM\0"
+	"tam\0"
+	"te\0"
+	"Telugu\0"
+	"\xe0\xb0\xa4\xe0\xb1\x86\xe0\xb0\xb2\xe0\xb1\x81\xe0\xb0\x97\xe0\xb1\x81\0"
+	"TEL\0"
+	"tel\0"
+	"kn\0"
+	"Kannada\0"
+	"\xe0\xb2\x95\xe0\xb2\xa8\xe0\xb3\x8d\xe0\xb2\xa8\xe0\xb2\xa1\0"
+	"KAN\0"
+	"kan\0"
+	"mr\0"
+	"Marathi\0"
+	"\xe0\xa4\xae\xe0\xa4\xb0\xe0\xa4\xbe\xe0\xa4\xa0\xe0\xa5\x80\0"
+	"MAR\0"
+	"gl\0"
+	"Gallegan\0"
+	"galego\0"
+	"GLC\0"
+	"glg\0"
+	"kok\0"
+	"Konkani\0"
+	"\xe0\xa4\x95\xe0\xa5\x8b\xe0\xa4\x82\xe0\xa4\x95\xe0\xa4\xa3\xe0\xa5\x80\0"
+	"KNK\0"
+	"ar-SA\0"
+	"Arabic (Saudi Arabia)\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 \xd8\xa7\xd9\x84\xd8\xb3\xd8\xb9\xd9\x88\xd8\xaf\xd9\x8a\xd8\xa9)\0"
+	"bg-BG\0"
+	"Bulgarian (Bulgaria)\0"
+	"\xd0\x91\xd1\x8a\xd0\xbb\xd0\xb3\xd0\xb0\xd1\x80\xd1\x81\xd0\xba\xd0\xb8 (\xd0\x91\xd1\x8a\xd0\xbb\xd0\xb3\xd0\xb0\xd1\x80\xd0\xb8\xd1\x8f)\0"
+	"ca-ES\0"
+	"Catalan (Spain)\0"
+	"catal\xc3\xa0 (Espanya)\0"
+	"cs-CZ\0"
+	"Czech (Czech Republic)\0"
+	"\xc4\x8c\x65\xc5\xa1tina (\xc4\x8c\x65sk\xc3\xa1 republika)\0"
+	"da-DK\0"
+	"Danish (Denmark)\0"
+	"Dansk (Danmark)\0"
+	"de-DE\0"
+	"German (Germany)\0"
+	"Deutsch (Deutschland)\0"
+	"el-GR\0"
+	"Greek (Greece)\0"
+	"\xce\x95\xce\xbb\xce\xbb\xce\xb7\xce\xbd\xce\xb9\xce\xba\xce\xac (\xce\x95\xce\xbb\xce\xbb\xce\xac\xce\xb4\xce\xb1)\0"
+	"en-US\0"
+	"English (United States)\0"
+	"fi-FI\0"
+	"Finnish (Finland)\0"
+	"suomi (Suomi)\0"
+	"fr-FR\0"
+	"French (France)\0"
+	"fran\xc3\xa7\x61is (France)\0"
+	"he-IL\0"
+	"Hebrew (Israel)\0"
+	"\xd7\xa2\xd7\x91\xd7\xa8\xd7\x99\xd7\xaa (\xd7\x99\xd7\xa9\xd7\xa8\xd7\x90\xd7\x9c)\0"
+	"hu-HU\0"
+	"Hungarian (Hungary)\0"
+	"magyar (Magyarorsz\xc3\xa1g)\0"
+	"is-IS\0"
+	"Icelandic (Iceland)\0"
+	"\xc3\xadslenska (\xc3\x8dsland)\0"
+	"it-IT\0"
+	"Italian (Italy)\0"
+	"italiano (Italia)\0"
+	"ja-JP\0"
+	"Japanese (Japan)\0"
+	"\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e (\xe6\x97\xa5\xe6\x9c\xac)\0"
+	"ko-KR\0"
+	"Korean (South Korea)\0"
+	"\xed\x95\x9c\xea\xb5\xad\xec\x96\xb4 (\xeb\x8c\x80\xed\x95\x9c\xeb\xaf\xbc\xea\xb5\xad)\0"
+	"nl-NL\0"
+	"Dutch (Netherlands)\0"
+	"Nederlands (Nederland)\0"
+	"pl-PL\0"
+	"Polish (Poland)\0"
+	"polski (Polska)\0"
+	"pt-BR\0"
+	"Portuguese (Brazil)\0"
+	"portugu\xc3\xaas (Brasil)\0"
+	"ro-RO\0"
+	"Romanian (Romania)\0"
+	"Rom\xc3\xa2n\xc4\x83 (Rom\xc3\xa2nia)\0"
+	"ru-RU\0"
+	"Russian (Russia)\0"
+	"\xd0\xa0\xd1\x83\xd1\x81\xd1\x81\xd0\xba\xd0\xb8\xd0\xb9 (\xd0\xa0\xd0\xbe\xd1\x81\xd1\x81\xd0\xb8\xd1\x8f)\0"
+	"hr-HR\0"
+	"Croatian (Croatia)\0"
+	"hrvatski (Hrvatska)\0"
+	"sk-SK\0"
+	"Slovak (Slovakia)\0"
+	"slovensk\xc3\xbd (Slovensk\xc3\xa1 republika)\0"
+	"sq-AL\0"
+	"Albanian (Albania)\0"
+	"shqipe (Shqip\xc3\xabria)\0"
+	"sv-SE\0"
+	"Swedish (Sweden)\0"
+	"svenska (Sverige)\0"
+	"th-TH\0"
+	"Thai (Thailand)\0"
+	"\xe0\xb9\x84\xe0\xb8\x97\xe0\xb8\xa2 (\xe0\xb8\x9b\xe0\xb8\xa3\xe0\xb8\xb0\xe0\xb9\x80\xe0\xb8\x97\xe0\xb8\xa8\xe0\xb9\x84\xe0\xb8\x97\xe0\xb8\xa2)\0"
+	"tr-TR\0"
+	"Turkish (Turkey)\0"
+	"T\xc3\xbcrk\xc3\xa7\x65 (T\xc3\xbcrkiye)\0"
+	"id-ID\0"
+	"Indonesian (Indonesia)\0"
+	"Bahasa Indonesia (Indonesia)\0"
+	"uk-UA\0"
+	"Ukrainian (Ukraine)\0"
+	"\xd0\xa3\xd0\xba\xd1\x80\xd0\xb0\xd1\x97\xd0\xbd\xd1\x81\xd1\x8c\xd0\xba\xd0\xb0 (\xd0\xa3\xd0\xba\xd1\x80\xd0\xb0\xd1\x97\xd0\xbd\xd0\xb0)\0"
+	"be-BY\0"
+	"Belarusian (Belarus)\0"
+	"\xd0\x91\xd0\xb5\xd0\xbb\xd0\xb0\xd1\x80\xd1\x83\xd1\x81\xd0\xba\xd1\x96 (\xd0\x91\xd0\xb5\xd0\xbb\xd0\xb0\xd1\x80\xd1\x83\xd1\x81\xd1\x8c)\0"
+	"sl-SI\0"
+	"Slovenian (Slovenia)\0"
+	"Sloven\xc5\xa1\xc4\x8dina (Slovenija)\0"
+	"et-EE\0"
+	"Estonian (Estonia)\0"
+	"Eesti (Eesti)\0"
+	"lv-LV\0"
+	"Latvian (Latvia)\0"
+	"latvie\xc5\xa1u (Latvija)\0"
+	"lt-LT\0"
+	"Lithuanian (Lithuania)\0"
+	"Lietuvi\xc5\xb3 (Lietuva)\0"
+	"fa-IR\0"
+	"Persian (Iran)\0"
+	"\xd9\x81\xd8\xa7\xd8\xb1\xd8\xb3\xdb\x8c (\xd8\xa7\xdb\x8c\xd8\xb1\xd8\xa7\xd9\x86)\0"
+	"vi-VN\0"
+	"Vietnamese (Vietnam)\0"
+	"Ti\xe1\xba\xbfng Vi\xe1\xbb\x87t (Vi\xe1\xbb\x87t Nam)\0"
+	"hy-AM\0"
+	"Armenian (Armenia)\0"
+	"\xd5\x80\xd5\xa1\xd5\xb5\xd5\xa5\xd6\x80\xd5\xa7\xd5\xb6 (\xd5\x80\xd5\xa1\xd5\xb5\xd5\xa1\xd5\xbd\xd5\xbf\xd5\xa1\xd5\xb6\xd5\xab \xd5\x80\xd5\xa1\xd5\xb6\xd6\x80\xd5\xa1\xd5\xba\xd5\xa5\xd5\xbf\xd5\xb8\xd6\x82\xd5\xa9\xd5\xab\xd6\x82\xd5\xb6)\0"
+	"eu-ES\0"
+	"Basque (Spain)\0"
+	"euskara (Espainia)\0"
+	"mk-MK\0"
+	"Macedonian (Macedonia)\0"
+	"\xd0\xbc\xd0\xb0\xd0\xba\xd0\xb5\xd0\xb4\xd0\xbe\xd0\xbd\xd1\x81\xd0\xba\xd0\xb8 (\xd0\x9c\xd0\xb0\xd0\xba\xd0\xb5\xd0\xb4\xd0\xbe\xd0\xbd\xd0\xb8\xd1\x98\xd0\xb0)\0"
+	"af-ZA\0"
+	"Afrikaans (South Africa)\0"
+	"Afrikaanse (Suid-Afrika)\0"
+	"fo-FO\0"
+	"Faroese (Faroe Islands)\0"
+	"f\xc3\xb8royskt (F\xc3\xb8royar)\0"
+	"hi-IN\0"
+	"Hindi (India)\0"
+	"\xe0\xa4\xb9\xe0\xa4\xbf\xe0\xa4\x82\xe0\xa4\xa6\xe0\xa5\x80 (\xe0\xa4\xad\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa4\xa4)\0"
+	"sw-KE\0"
+	"Swahili (Kenya)\0"
+	"Kiswahili (Kenya)\0"
+	"gu-IN\0"
+	"Gujarati (India)\0"
+	"\xe0\xaa\x97\xe0\xab\x81\xe0\xaa\x9c\xe0\xaa\xb0\xe0\xaa\xbe\xe0\xaa\xa4\xe0\xab\x80 (\xe0\xaa\xad\xe0\xaa\xbe\xe0\xaa\xb0\xe0\xaa\xa4)\0"
+	"ta-IN\0"
+	"Tamil (India)\0"
+	"\xe0\xae\xa4\xe0\xae\xae\xe0\xae\xbf\xe0\xae\xb4\xe0\xaf\x8d (\xe0\xae\x87\xe0\xae\xa8\xe0\xaf\x8d\xe0\xae\xa4\xe0\xae\xbf\xe0\xae\xaf\xe0\xae\xbe)\0"
+	"te-IN\0"
+	"Telugu (India)\0"
+	"\xe0\xb0\xa4\xe0\xb1\x86\xe0\xb0\xb2\xe0\xb1\x81\xe0\xb0\x97\xe0\xb1\x81 (\xe0\xb0\xad\xe0\xb0\xbe\xe0\xb0\xb0\xe0\xb0\xa4 \xe0\xb0\xa6\xe0\xb1\x87\xe0\xb0\xb3\xe0\xb1\xa6)\0"
+	"kn-IN\0"
+	"Kannada (India)\0"
+	"\xe0\xb2\x95\xe0\xb2\xa8\xe0\xb3\x8d\xe0\xb2\xa8\xe0\xb2\xa1 (\xe0\xb2\xad\xe0\xb2\xbe\xe0\xb2\xb0\xe0\xb2\xa4)\0"
+	"mr-IN\0"
+	"Marathi (India)\0"
+	"\xe0\xa4\xae\xe0\xa4\xb0\xe0\xa4\xbe\xe0\xa4\xa0\xe0\xa5\x80 (\xe0\xa4\xad\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa4\xa4)\0"
+	"gl-ES\0"
+	"Gallegan (Spain)\0"
+	"galego (Espa\xc3\xb1\x61)\0"
+	"kok-IN\0"
+	"Konkani (India)\0"
+	"\xe0\xa4\x95\xe0\xa5\x8b\xe0\xa4\x82\xe0\xa4\x95\xe0\xa4\xa3\xe0\xa5\x80 (\xe0\xa4\xad\xe0\xa4\xbe\xe0\xa4\xb0\xe0\xa4\xa4)\0"
+	"ar-IQ\0"
+	"Arabic (Iraq)\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa7\xd9\x82)\0"
+	"ARI\0"
+	"de-CH\0"
+	"German (Switzerland)\0"
+	"Deutsch (Schweiz)\0"
+	"DES\0"
+	"en-GB\0"
+	"English (United Kingdom)\0"
+	"ENG\0"
+	"es-MX\0"
+	"Spanish (Mexico)\0"
+	"espa\xc3\xb1ol (M\xc3\xa9xico)\0"
+	"ESM\0"
+	"fr-BE\0"
+	"French (Belgium)\0"
+	"fran\xc3\xa7\x61is (Belgique)\0"
+	"FRB\0"
+	"it-CH\0"
+	"Italian (Switzerland)\0"
+	"italiano (Svizzera)\0"
+	"ITS\0"
+	"nl-BE\0"
+	"Dutch (Belgium)\0"
+	"Nederlands (Belgi\xc3\xab)\0"
+	"NLB\0"
+	"pt-PT\0"
+	"Portuguese (Portugal)\0"
+	"portugu\xc3\xaas (Portugal)\0"
+	"PTG\0"
+	"sv-FI\0"
+	"Swedish (Finland)\0"
+	"svenska (Finland)\0"
+	"SVF\0"
+	"ar-EG\0"
+	"Arabic (Egypt)\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd9\x85\xd8\xb5\xd8\xb1)\0"
+	"ARE\0"
+	"de-AT\0"
+	"German (Austria)\0"
+	"Deutsch (\xc3\x96sterreich)\0"
+	"DEA\0"
+	"en-AU\0"
+	"English (Australia)\0"
+	"ENA\0"
+	"es-ES\0"
+	"Spanish (Spain)\0"
+	"espa\xc3\xb1ol (Espa\xc3\xb1\x61)\0"
+	"ESN\0"
+	"fr-CA\0"
+	"French (Canada)\0"
+	"fran\xc3\xa7\x61is (Canada)\0"
+	"FRC\0"
+	"ar-LY\0"
+	"Arabic (Libya)\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd9\x84\xd9\x8a\xd8\xa8\xd9\x8a\xd8\xa7)\0"
+	"ARL\0"
+	"de-LU\0"
+	"German (Luxembourg)\0"
+	"Deutsch (Luxemburg)\0"
+	"DEL\0"
+	"en-CA\0"
+	"English (Canada)\0"
+	"ENC\0"
+	"es-GT\0"
+	"Spanish (Guatemala)\0"
+	"espa\xc3\xb1ol (Guatemala)\0"
+	"ESG\0"
+	"fr-CH\0"
+	"French (Switzerland)\0"
+	"fran\xc3\xa7\x61is (Suisse)\0"
+	"FRS\0"
+	"ar-DZ\0"
+	"Arabic (Algeria)\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd8\xac\xd8\xb2\xd8\xa7\xd8\xa6\xd8\xb1)\0"
+	"ARG\0"
+	"en-NZ\0"
+	"English (New Zealand)\0"
+	"ENZ\0"
+	"es-CR\0"
+	"Spanish (Costa Rica)\0"
+	"espa\xc3\xb1ol (Costa Rica)\0"
+	"ESC\0"
+	"fr-LU\0"
+	"French (Luxembourg)\0"
+	"fran\xc3\xa7\x61is (Luxembourg)\0"
+	"FRL\0"
+	"ar-MA\0"
+	"Arabic (Morocco)\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd9\x85\xd8\xba\xd8\xb1\xd8\xa8)\0"
+	"ARM\0"
+	"en-IE\0"
+	"English (Ireland)\0"
+	"ENI\0"
+	"es-PA\0"
+	"Spanish (Panama)\0"
+	"espa\xc3\xb1ol (Panam\xc3\xa1)\0"
+	"ESA\0"
+	"ar-TN\0"
+	"Arabic (Tunisia)\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xaa\xd9\x88\xd9\x86\xd8\xb3)\0"
+	"ART\0"
+	"en-ZA\0"
+	"English (South Africa)\0"
+	"ENS\0"
+	"es-DO\0"
+	"Spanish (Dominican Republic)\0"
+	"espa\xc3\xb1ol (Rep\xc3\xba\x62lica Dominicana)\0"
+	"ESD\0"
+	"ar-OM\0"
+	"Arabic (Oman)\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xb9\xd9\x85\xd8\xa7\xd9\x86)\0"
+	"ARO\0"
+	"es-VE\0"
+	"Spanish (Venezuela)\0"
+	"espa\xc3\xb1ol (Venezuela)\0"
+	"ESV\0"
+	"ar-YE\0"
+	"Arabic (Yemen)\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd9\x8a\xd9\x85\xd9\x86)\0"
+	"ARY\0"
+	"es-CO\0"
+	"Spanish (Colombia)\0"
+	"espa\xc3\xb1ol (Colombia)\0"
+	"ESO\0"
+	"ar-SY\0"
+	"Arabic (Syria)\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xb3\xd9\x88\xd8\xb1\xd9\x8a\xd8\xa9)\0"
+	"ARS\0"
+	"es-PE\0"
+	"Spanish (Peru)\0"
+	"espa\xc3\xb1ol (Per\xc3\xba)\0"
+	"ESR\0"
+	"ar-JO\0"
+	"Arabic (Jordan)\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd8\xa7\xd8\xb1\xd8\xaf\xd9\x86)\0"
+	"ARJ\0"
+	"es-AR\0"
+	"Spanish (Argentina)\0"
+	"espa\xc3\xb1ol (Argentina)\0"
+	"ESS\0"
+	"ar-LB\0"
+	"Arabic (Lebanon)\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd9\x84\xd8\xa8\xd9\x86\xd8\xa7\xd9\x86)\0"
+	"ARB\0"
+	"en-ZW\0"
+	"English (Zimbabwe)\0"
+	"ENW\0"
+	"es-EC\0"
+	"Spanish (Ecuador)\0"
+	"espa\xc3\xb1ol (Ecuador)\0"
+	"ESF\0"
+	"ar-KW\0"
+	"Arabic (Kuwait)\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd9\x83\xd9\x88\xd9\x8a\xd8\xaa)\0"
+	"ARK\0"
+	"en-PH\0"
+	"English (Philippines)\0"
+	"ENP\0"
+	"es-CL\0"
+	"Spanish (Chile)\0"
+	"espa\xc3\xb1ol (Chile)\0"
+	"ESL\0"
+	"ar-AE\0"
+	"Arabic (United Arab Emirates)\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd8\xa7\xd9\x85\xd8\xa7\xd8\xb1\xd8\xa7\xd8\xaa \xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 \xd8\xa7\xd9\x84\xd9\x85\xd8\xaa\xd8\xad\xd8\xaf\xd8\xa9)\0"
+	"ARU\0"
+	"es-UY\0"
+	"Spanish (Uruguay)\0"
+	"espa\xc3\xb1ol (Uruguay)\0"
+	"ESY\0"
+	"ar-BH\0"
+	"Arabic (Bahrain)\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd8\xa7\xd9\x84\xd8\xa8\xd8\xad\xd8\xb1\xd9\x8a\xd9\x86)\0"
+	"ARH\0"
+	"es-PY\0"
+	"Spanish (Paraguay)\0"
+	"espa\xc3\xb1ol (Paraguay)\0"
+	"ESZ\0"
+	"ar-QA\0"
+	"Arabic (Qatar)\0"
+	"\xd8\xa7\xd9\x84\xd8\xb9\xd8\xb1\xd8\xa8\xd9\x8a\xd8\xa9 (\xd9\x82\xd8\xb7\xd8\xb1)\0"
+	"ARQ\0"
+	"es-BO\0"
+	"Spanish (Bolivia)\0"
+	"espa\xc3\xb1ol (Bolivia)\0"
+	"ESB\0"
+	"es-SV\0"
+	"Spanish (El Salvador)\0"
+	"espa\xc3\xb1ol (El Salvador)\0"
+	"ESE\0"
+	"es-HN\0"
+	"Spanish (Honduras)\0"
+	"espa\xc3\xb1ol (Honduras)\0"
+	"ESH\0"
+	"es-NI\0"
+	"Spanish (Nicaragua)\0"
+	"espa\xc3\xb1ol (Nicaragua)\0"
+	"ESI\0"
+	"es-PR\0"
+	"Spanish (Puerto Rico)\0"
+	"espa\xc3\xb1ol (Puerto Rico)\0"
+	"ESU\0"
+	"af-za\0"
+	"ar-ae\0"
+	"ar-bh\0"
+	"ar-dz\0"
+	"ar-eg\0"
+	"ar-iq\0"
+	"ar-jo\0"
+	"ar-kw\0"
+	"ar-lb\0"
+	"ar-ly\0"
+	"ar-ma\0"
+	"ar-om\0"
+	"ar-qa\0"
+	"ar-sa\0"
+	"ar-sy\0"
+	"ar-tn\0"
+	"ar-ye\0"
+	"be-by\0"
+	"bg-bg\0"
+	"ca-es\0"
+	"cs-cz\0"
+	"da-dk\0"
+	"de-at\0"
+	"de-ch\0"
+	"de-de\0"
+	"de-lu\0"
+	"el-gr\0"
+	"en-au\0"
+	"en-ca\0"
+	"en-gb\0"
+	"en-ie\0"
+	"en-nz\0"
+	"en-ph\0"
+	"en-us\0"
+	"en-za\0"
+	"en-zw\0"
+	"es-ar\0"
+	"es-bo\0"
+	"es-cl\0"
+	"es-co\0"
+	"es-cr\0"
+	"es-do\0"
+	"es-ec\0"
+	"es-es\0"
+	"es-gt\0"
+	"es-hn\0"
+	"es-mx\0"
+	"es-ni\0"
+	"es-pa\0"
+	"es-pe\0"
+	"es-pr\0"
+	"es-py\0"
+	"es-sv\0"
+	"es-uy\0"
+	"es-ve\0"
+	"et-ee\0"
+	"eu-es\0"
+	"fa-ir\0"
+	"fi-fi\0"
+	"fo-fo\0"
+	"fr-be\0"
+	"fr-ca\0"
+	"fr-ch\0"
+	"fr-fr\0"
+	"fr-lu\0"
+	"gl-es\0"
+	"gu-in\0"
+	"he-il\0"
+	"hi-in\0"
+	"hr-hr\0"
+	"hu-hu\0"
+	"hy-am\0"
+	"id-id\0"
+	"is-is\0"
+	"it-ch\0"
+	"it-it\0"
+	"ja-jp\0"
+	"kn-in\0"
+	"ko-kr\0"
+	"kok-in\0"
+	"lt-lt\0"
+	"lv-lv\0"
+	"mk-mk\0"
+	"mr-in\0"
+	"nl-be\0"
+	"nl-nl\0"
+	"pl-pl\0"
+	"pt-br\0"
+	"pt-pt\0"
+	"ro-ro\0"
+	"ru-ru\0"
+	"sk-sk\0"
+	"sl-si\0"
+	"sq-al\0"
+	"sv-fi\0"
+	"sv-se\0"
+	"sw-ke\0"
+	"ta-in\0"
+	"te-in\0"
+	"th-th\0"
+	"tr-tr\0"
+	"uk-ua\0"
+	"vi-vn\0"
 };
 
 

@@ -57,11 +57,11 @@ culture_lcid_locator (const void *a, const void *b)
 static int
 culture_name_locator (const void *a, const void *b)
 {
-	const CultureInfoNameEntry *aa = a;
+	const char *aa = a;
 	const CultureInfoNameEntry *bb = b;
 	int ret;
 	
-	ret = strcmp (aa->name, bb->name);
+	ret = strcmp (aa, idx2string (bb->name));
 
 	return ret;
 }
@@ -88,7 +88,7 @@ create_group_sizes_array (const gint *gs, gint ml)
 }
 
 static MonoArray*
-create_names_array (const gchar *const *names, int ml)
+create_names_array_idx (const guint16 *names, int ml)
 {
 	MonoArray *ret;
 	MonoDomain *domain;
@@ -100,7 +100,7 @@ create_names_array (const gchar *const *names, int ml)
 	domain = mono_domain_get ();
 
 	for (i = 0; i < ml; i++) {
-		if (names [i] == NULL)
+		if (names [i] == 0)
 			break;
 		len++;
 	}
@@ -108,7 +108,7 @@ create_names_array (const gchar *const *names, int ml)
 	ret = mono_array_new (mono_domain_get (), mono_get_string_class (), len);
 
 	for(i = 0; i < len; i++)
-		mono_array_set (ret, MonoString *, i, mono_string_new (domain, names [i]));
+		mono_array_set (ret, MonoString *, i, mono_string_new (domain, idx2string (names [i])));
 
 	return ret;
 }
@@ -129,32 +129,32 @@ ves_icall_System_Globalization_CultureInfo_construct_datetime_format (MonoCultur
 
 	domain = mono_domain_get ();
 
-	datetime->AbbreviatedDayNames = create_names_array (dfe->abbreviated_day_names,
+	datetime->AbbreviatedDayNames = create_names_array_idx (dfe->abbreviated_day_names,
 			NUM_DAYS);
-	datetime->AbbreviatedMonthNames = create_names_array (dfe->abbreviated_month_names,
+	datetime->AbbreviatedMonthNames = create_names_array_idx (dfe->abbreviated_month_names,
 			NUM_MONTHS);
-	datetime->AMDesignator = mono_string_new (domain, dfe->am_designator);
+	datetime->AMDesignator = mono_string_new (domain, idx2string (dfe->am_designator));
 	datetime->CalendarWeekRule = dfe->calendar_week_rule;
-	datetime->DateSeparator = mono_string_new (domain, dfe->date_separator);
-	datetime->DayNames = create_names_array (dfe->day_names, NUM_DAYS);
+	datetime->DateSeparator = mono_string_new (domain, idx2string (dfe->date_separator));
+	datetime->DayNames = create_names_array_idx (dfe->day_names, NUM_DAYS);
 	datetime->FirstDayOfWeek = dfe->first_day_of_week;
-	datetime->FullDateTimePattern = mono_string_new (domain, dfe->full_date_time_pattern);
-	datetime->LongDatePattern = mono_string_new (domain, dfe->long_date_pattern);
-	datetime->LongTimePattern = mono_string_new (domain, dfe->long_time_pattern);
-	datetime->MonthDayPattern = mono_string_new (domain, dfe->month_day_pattern);
-	datetime->MonthNames = create_names_array (dfe->month_names, NUM_MONTHS);
-	datetime->PMDesignator = mono_string_new (domain, dfe->pm_designator);
-	datetime->ShortDatePattern = mono_string_new (domain, dfe->short_date_pattern);
-	datetime->ShortTimePattern = mono_string_new (domain, dfe->short_time_pattern);
-	datetime->TimeSeparator = mono_string_new (domain, dfe->time_separator);
-	datetime->YearMonthPattern = mono_string_new (domain, dfe->year_month_pattern);
-	datetime->ShortDatePatterns = create_names_array (dfe->short_date_patterns,
+	datetime->FullDateTimePattern = mono_string_new (domain, idx2string (dfe->full_date_time_pattern));
+	datetime->LongDatePattern = mono_string_new (domain, idx2string (dfe->long_date_pattern));
+	datetime->LongTimePattern = mono_string_new (domain, idx2string (dfe->long_time_pattern));
+	datetime->MonthDayPattern = mono_string_new (domain, idx2string (dfe->month_day_pattern));
+	datetime->MonthNames = create_names_array_idx (dfe->month_names, NUM_MONTHS);
+	datetime->PMDesignator = mono_string_new (domain, idx2string (dfe->pm_designator));
+	datetime->ShortDatePattern = mono_string_new (domain, idx2string (dfe->short_date_pattern));
+	datetime->ShortTimePattern = mono_string_new (domain, idx2string (dfe->short_time_pattern));
+	datetime->TimeSeparator = mono_string_new (domain, idx2string (dfe->time_separator));
+	datetime->YearMonthPattern = mono_string_new (domain, idx2string (dfe->year_month_pattern));
+	datetime->ShortDatePatterns = create_names_array_idx (dfe->short_date_patterns,
 			NUM_SHORT_DATE_PATTERNS);
-	datetime->LongDatePatterns = create_names_array (dfe->long_date_patterns,
+	datetime->LongDatePatterns = create_names_array_idx (dfe->long_date_patterns,
 			NUM_LONG_DATE_PATTERNS);
-	datetime->ShortTimePatterns = create_names_array (dfe->short_time_patterns,
+	datetime->ShortTimePatterns = create_names_array_idx (dfe->short_time_patterns,
 			NUM_SHORT_TIME_PATTERNS);
-	datetime->LongTimePatterns = create_names_array (dfe->long_time_patterns,
+	datetime->LongTimePatterns = create_names_array_idx (dfe->long_time_patterns,
 			NUM_LONG_TIME_PATTERNS);
 
 }
@@ -177,39 +177,39 @@ ves_icall_System_Globalization_CultureInfo_construct_number_format (MonoCultureI
 
 	number->currencyDecimalDigits = nfe->currency_decimal_digits;
 	number->currencyDecimalSeparator = mono_string_new (domain,
-			nfe->currency_decimal_separator);
+			idx2string (nfe->currency_decimal_separator));
 	number->currencyGroupSeparator = mono_string_new (domain,
-			nfe->currency_group_separator);
+			idx2string (nfe->currency_group_separator));
 	number->currencyGroupSizes = create_group_sizes_array (nfe->currency_group_sizes,
 			GROUP_SIZE);
 	number->currencyNegativePattern = nfe->currency_negative_pattern;
 	number->currencyPositivePattern = nfe->currency_positive_pattern;
-	number->currencySymbol = mono_string_new (domain, nfe->currency_symbol);
-	number->naNSymbol = mono_string_new (domain, nfe->nan_symbol);
+	number->currencySymbol = mono_string_new (domain, idx2string (nfe->currency_symbol));
+	number->naNSymbol = mono_string_new (domain, idx2string (nfe->nan_symbol));
 	number->negativeInfinitySymbol = mono_string_new (domain,
-			nfe->negative_infinity_symbol);
-	number->negativeSign = mono_string_new (domain, nfe->negative_sign);
+			idx2string (nfe->negative_infinity_symbol));
+	number->negativeSign = mono_string_new (domain, idx2string (nfe->negative_sign));
 	number->numberDecimalDigits = nfe->number_decimal_digits;
 	number->numberDecimalSeparator = mono_string_new (domain,
-			nfe->number_decimal_separator);
-	number->numberGroupSeparator = mono_string_new (domain, nfe->number_group_separator);
+			idx2string (nfe->number_decimal_separator));
+	number->numberGroupSeparator = mono_string_new (domain, idx2string (nfe->number_group_separator));
 	number->numberGroupSizes = create_group_sizes_array (nfe->number_group_sizes,
 			GROUP_SIZE);
 	number->numberNegativePattern = nfe->number_negative_pattern;
 	number->percentDecimalDigits = nfe->percent_decimal_digits;
 	number->percentDecimalSeparator = mono_string_new (domain,
-			nfe->percent_decimal_separator);
+			idx2string (nfe->percent_decimal_separator));
 	number->percentGroupSeparator = mono_string_new (domain,
-			nfe->percent_group_separator);
+			idx2string (nfe->percent_group_separator));
 	number->percentGroupSizes = create_group_sizes_array (nfe->percent_group_sizes,
 			GROUP_SIZE);
 	number->percentNegativePattern = nfe->percent_negative_pattern;
 	number->percentPositivePattern = nfe->percent_positive_pattern;
-	number->percentSymbol = mono_string_new (domain, nfe->percent_symbol);
-	number->perMilleSymbol = mono_string_new (domain, nfe->per_mille_symbol);
+	number->percentSymbol = mono_string_new (domain, idx2string (nfe->percent_symbol));
+	number->perMilleSymbol = mono_string_new (domain, idx2string (nfe->per_mille_symbol));
 	number->positiveInfinitySymbol = mono_string_new (domain,
-			nfe->positive_infinity_symbol);
-	number->positiveSign = mono_string_new (domain, nfe->positive_sign);
+			idx2string (nfe->positive_infinity_symbol));
+	number->positiveSign = mono_string_new (domain, idx2string (nfe->positive_sign));
 }
 
 static MonoBoolean
@@ -218,14 +218,14 @@ construct_culture (MonoCultureInfo *this, const CultureInfoEntry *ci)
 	MonoDomain *domain = mono_domain_get ();
 
 	this->lcid = ci->lcid;
-	this->name = mono_string_new (domain, ci->name);
-	this->icu_name = mono_string_new (domain, ci->icu_name);
-	this->displayname = mono_string_new (domain, ci->displayname);
-	this->englishname = mono_string_new (domain, ci->englishname);
-	this->nativename = mono_string_new (domain, ci->nativename);
-	this->win3lang = mono_string_new (domain, ci->win3lang);
-	this->iso3lang = mono_string_new (domain, ci->iso3lang);
-	this->iso2lang = mono_string_new (domain, ci->iso2lang);
+	this->name = mono_string_new (domain, idx2string (ci->name));
+	this->icu_name = mono_string_new (domain, idx2string (ci->icu_name));
+	this->displayname = mono_string_new (domain, idx2string (ci->displayname));
+	this->englishname = mono_string_new (domain, idx2string (ci->englishname));
+	this->nativename = mono_string_new (domain, idx2string (ci->nativename));
+	this->win3lang = mono_string_new (domain, idx2string (ci->win3lang));
+	this->iso3lang = mono_string_new (domain, idx2string (ci->iso3lang));
+	this->iso2lang = mono_string_new (domain, idx2string (ci->iso2lang));
 	this->parent_lcid = ci->parent_lcid;
 	this->specific_lcid = ci->specific_lcid;
 	this->datetime_index = ci->datetime_format_index;
@@ -239,13 +239,11 @@ static gboolean
 construct_culture_from_specific_name (MonoCultureInfo *ci, gchar *name)
 {
 	const CultureInfoEntry *entry;
-	CultureInfoNameEntry key;
 	const CultureInfoNameEntry *ne;
 
 	MONO_ARCH_SAVE_REGS;
 
-	key.name = name;
-	ne = bsearch (&key, culture_name_entries, NUM_CULTURE_ENTRIES,
+	ne = bsearch (name, culture_name_entries, NUM_CULTURE_ENTRIES,
 			sizeof (CultureInfoNameEntry), culture_name_locator);
 
 	if (ne == NULL)
@@ -400,21 +398,21 @@ MonoBoolean
 ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (MonoCultureInfo *this,
 		MonoString *name)
 {
-	CultureInfoNameEntry key;
 	const CultureInfoNameEntry *ne;
+	char *n;
 	
 	MONO_ARCH_SAVE_REGS;
 
-	key.name = mono_string_to_utf8 (name);
-	ne = bsearch (&key, culture_name_entries, NUM_CULTURE_ENTRIES,
+	n = mono_string_to_utf8 (name);
+	ne = bsearch (n, culture_name_entries, NUM_CULTURE_ENTRIES,
 			sizeof (CultureInfoNameEntry), culture_name_locator);
 
-        g_free ((gpointer) key.name);
-
 	if (ne == NULL) {
-                g_print ("ne (%s) is null\n", key.name);
+                g_print ("ne (%s) is null\n", n);
+        	g_free (n);
 		return FALSE;
         }
+        g_free (n);
 
 	return construct_culture (this, &culture_entries [ne->culture_entry_index]);
 }

@@ -14,52 +14,57 @@
 #define NUM_SHORT_TIME_PATTERNS 5
 #define NUM_LONG_TIME_PATTERNS 6
 
+#define idx2string(idx) (locale_strings + (idx))
+
+/* need to change this if the string data ends up to not fit in a 64KB array. */
+typedef guint16 stridx_t;
+
 typedef struct {
-	const gchar *full_date_time_pattern;
-	const gchar *long_date_pattern;
-	const gchar *short_date_pattern;
-	const gchar *long_time_pattern;
-	const gchar *short_time_pattern;
-	const gchar *year_month_pattern;
-	const gchar *month_day_pattern;
+	const stridx_t full_date_time_pattern;
+	const stridx_t long_date_pattern;
+	const stridx_t short_date_pattern;
+	const stridx_t long_time_pattern;
+	const stridx_t short_time_pattern;
+	const stridx_t year_month_pattern;
+	const stridx_t month_day_pattern;
 
-	const gchar *am_designator;
-	const gchar *pm_designator;
+	const stridx_t am_designator;
+	const stridx_t pm_designator;
 
-	const gchar *day_names [NUM_DAYS]; 
-	const gchar *abbreviated_day_names [NUM_DAYS];
-	const gchar *month_names [NUM_MONTHS];
-	const gchar *abbreviated_month_names [NUM_MONTHS];
+	const stridx_t day_names [NUM_DAYS]; 
+	const stridx_t abbreviated_day_names [NUM_DAYS];
+	const stridx_t month_names [NUM_MONTHS];
+	const stridx_t abbreviated_month_names [NUM_MONTHS];
 
 	gint calendar_week_rule;
 	gint first_day_of_week;
 
-	const gchar *date_separator;
-	const gchar *time_separator;	
+	const stridx_t date_separator;
+	const stridx_t time_separator;	
 
-	const gchar *short_date_patterns [NUM_SHORT_DATE_PATTERNS];
-	const gchar *long_date_patterns [NUM_LONG_DATE_PATTERNS];
-	const gchar *short_time_patterns [NUM_SHORT_TIME_PATTERNS];
-	const gchar *long_time_patterns [NUM_LONG_TIME_PATTERNS];
+	const stridx_t short_date_patterns [NUM_SHORT_DATE_PATTERNS];
+	const stridx_t long_date_patterns [NUM_LONG_DATE_PATTERNS];
+	const stridx_t short_time_patterns [NUM_SHORT_TIME_PATTERNS];
+	const stridx_t long_time_patterns [NUM_LONG_TIME_PATTERNS];
 } DateTimeFormatEntry;
 
 typedef struct {
-	const gchar *currency_decimal_separator;
-	const gchar *currency_group_separator;
-	const gchar *percent_decimal_separator;
-	const gchar *percent_group_separator;
-	const gchar *number_decimal_separator;
-	const gchar *number_group_separator;
+	const stridx_t currency_decimal_separator;
+	const stridx_t currency_group_separator;
+	const stridx_t percent_decimal_separator;
+	const stridx_t percent_group_separator;
+	const stridx_t number_decimal_separator;
+	const stridx_t number_group_separator;
 
-	const gchar *currency_symbol;
-	const gchar *percent_symbol;
-	const gchar *nan_symbol;
-	const gchar *per_mille_symbol;
-	const gchar *negative_infinity_symbol;
-	const gchar *positive_infinity_symbol;
+	const stridx_t currency_symbol;
+	const stridx_t percent_symbol;
+	const stridx_t nan_symbol;
+	const stridx_t per_mille_symbol;
+	const stridx_t negative_infinity_symbol;
+	const stridx_t positive_infinity_symbol;
 
-	const gchar *negative_sign;
-	const gchar *positive_sign;
+	const stridx_t negative_sign;
+	const stridx_t positive_sign;
 
 	gint currency_negative_pattern;
 	gint currency_positive_pattern;
@@ -80,24 +85,24 @@ typedef struct {
 	gint lcid;
 	gint parent_lcid;
 	gint specific_lcid;
-	const gchar *name;
-	const gchar *icu_name;
-	const gchar *englishname;
-	const gchar *displayname;
-	const gchar *nativename;
-	const gchar *win3lang;
-	const gchar *iso3lang;
-	const gchar *iso2lang;
+	const stridx_t name;
+	const stridx_t icu_name;
+	const stridx_t englishname;
+	const stridx_t displayname;
+	const stridx_t nativename;
+	const stridx_t win3lang;
+	const stridx_t iso3lang;
+	const stridx_t iso2lang;
 
 	gint calendar_data [NUM_OPT_CALS];
 
-	gint datetime_format_index;
-	gint number_format_index;
+	gint16 datetime_format_index;
+	gint16 number_format_index;
 } CultureInfoEntry;
 
 typedef struct {
-	const gchar *name;
-	gint culture_entry_index;
+	const stridx_t name;
+	gint16 culture_entry_index;
 } CultureInfoNameEntry;
 
 #endif
