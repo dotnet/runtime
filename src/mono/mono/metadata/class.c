@@ -1924,7 +1924,7 @@ mono_class_from_mono_type (MonoType *type)
 	case MONO_TYPE_TYPEDBYREF:
 		return type->data.klass? type->data.klass: mono_defaults.typed_reference_class;
 	case MONO_TYPE_ARRAY:
-		return mono_array_class_get (type->data.array->eklass, type->data.array->rank);
+		return mono_bounded_array_class_get (type->data.array->eklass, type->data.array->rank, TRUE);
 	case MONO_TYPE_PTR:
 		return mono_ptr_class_get (type->data.type);
 	case MONO_TYPE_FNPTR:
@@ -2003,6 +2003,10 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	gboolean corlib_type = FALSE;
 
 	g_assert (rank <= 255);
+
+	if (rank > 1)
+		/* bounded only matters for one-dimensional arrays */
+		bounded = FALSE;
 
 	image = eclass->image;
 
@@ -2434,6 +2438,10 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 			MonoClass *eclass, *eoclass;
 
 			if (oklass->rank != klass->rank)
+				return FALSE;
+
+			/* vectors vs. one dimensional arrays */
+			if (oklass->byval_arg.type != klass->byval_arg.type)
 				return FALSE;
 
 			eclass = klass->cast_class;
