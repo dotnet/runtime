@@ -2,6 +2,10 @@ using System;
 
 public class T {
 
+	static public void method (int nargs, string arg) {
+		int i;
+		Console.WriteLine ("Got single arg "+arg);
+	}
 	static public void method (int nargs, params string[] args) {
 		int i;
 		Console.Write ("Got "+nargs.ToString()+" args ");
@@ -12,6 +16,7 @@ public class T {
 	public static int Main() {
 		method (1, "hello");
 		method (2, "hello", "World");
+		method (3, "hello", "World", "blah");
 		return 0;
 	}
 }

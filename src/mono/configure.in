@@ -75,6 +75,32 @@ AC_SUBST(GLIB_LIBS)
 AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 
+AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes")
+
+AC_ARG_WITH(gc, [  --with-gc=bohem,none],
+	if test x$with_gc = "xyes"; then
+		with_gc="boehm"
+	fi
+	if test x$with_gc = "xboehm"; then
+		if test x$found_boehm != "xyes"; then
+			AC_MSG_ERROR(Boehm gc requested but libgc could not be found.)
+		fi
+	else
+    		AC_MSG_WARN("Compiling mono without GC.")
+	fi,
+	if test x$found_boehm != "xyes"; then
+    		AC_MSG_WARN("Compiling mono without GC.")
+	else
+		with_gc="none"
+	fi
+)
+if test x$with_gc = "xboehm"; then
+	AC_DEFINE(HAVE_BOEHM_GC)
+	AC_SUBST(HAVE_BOEHM_GC)
+	LIBS="$LIBS -lgc"
+    	AC_MSG_RESULT("Compiling mono with Boehm GC.")
+fi
+
 dnl ****************************************
 dnl *** Check if we're building on win32 ***
 dnl ****************************************

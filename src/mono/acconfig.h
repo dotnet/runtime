@@ -12,3 +12,4 @@
 #undef HAVE_NEW_ICONV
 #undef NAME_DEV_RANDOM
 #undef HAVE_CRYPT_RNG
+#undef HAVE_BOEHM_GC

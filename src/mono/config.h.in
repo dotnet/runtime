@@ -3,11 +3,45 @@
 /* Define if you have the ANSI C header files.  */
 #undef STDC_HEADERS
 
+#undef HAVE_INET_PTON
+#undef HAVE_INET_ATON
+#undef HAVE_SOL_IP
+#undef HAVE_SOL_TCP
+#undef HAVE_IP_PKTINFO
+#undef HAVE_STRUCT_IP_MREQN
+#undef HAVE_PTHREAD
+#undef HAVE_PTHREAD_MUTEX_TIMEDLOCK
+#undef USE_MONO_MUTEX
+#undef HAVE_LARGE_FILE_SUPPORT
+#undef PLATFORM_WIN32
+#undef HAVE_NEW_ICONV
+#undef NAME_DEV_RANDOM
+#undef HAVE_CRYPT_RNG
+#undef HAVE_BOEHM_GC
+
 /* The number of bytes in a void *.  */
 #undef SIZEOF_VOID_P
 
+/* Define if you have the inet_aton function.  */
+#undef HAVE_INET_ATON
+
+/* Define if you have the inet_pton function.  */
+#undef HAVE_INET_PTON
+
 /* Define if you have the <dlfcn.h> header file.  */
 #undef HAVE_DLFCN_H
+
+/* Define if you have the <netdb.h> header file.  */
+#undef HAVE_NETDB_H
+
+/* Define if you have the <sys/filio.h> header file.  */
+#undef HAVE_SYS_FILIO_H
+
+/* Define if you have the <sys/sockio.h> header file.  */
+#undef HAVE_SYS_SOCKIO_H
+
+/* Define if you have the <utime.h> header file.  */
+#undef HAVE_UTIME_H
 
 /* Name of package */
 #undef PACKAGE

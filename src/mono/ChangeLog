@@ -1,3 +1,10 @@
+
+Thu Mar 7 17:19:44 CET 2002 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: detect Boehm GC libs and add --with-gc switch.
+	Boehm GC needs to be explicitly enabled since the JIT currently fails
+	in some cases with it.
+
 2002-02-27  Dietmar Maurer  <dietmar@ximian.com>
 
 	* mono/tests/fib.cs: it is now possible to pass a repeat count as
