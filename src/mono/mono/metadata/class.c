@@ -493,6 +493,9 @@ class_compute_field_layout (MonoClass *class)
 		return;
 	}
 
+	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT)
+		blittable = FALSE;
+
 	class->fields = g_new0 (MonoClassField, top);
 
 	/*
@@ -525,7 +528,7 @@ class_compute_field_layout (MonoClass *class)
 
 		/* Only do these checks if we still think this type is blittable */
 		if (blittable && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
-			if (field->type->byref) {
+			if (field->type->byref || MONO_TYPE_IS_REFERENCE (field->type)) {
 				blittable = FALSE;
 			} else {
 				MonoClass *field_class = mono_class_from_mono_type (field->type);
