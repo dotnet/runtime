@@ -162,9 +162,9 @@
 <opcode name="stelem.r4" input="PopRef+PopI+PopR4" output="Push0" args="InlineNone" o1="0xFF" o2="0xA0" flow="next" type="Objmodel" />
 <opcode name="stelem.r8" input="PopRef+PopI+PopR8" output="Push0" args="InlineNone" o1="0xFF" o2="0xA1" flow="next" type="Objmodel" />
 <opcode name="stelem.ref" input="PopRef+PopI+PopRef" output="Push0" args="InlineNone" o1="0xFF" o2="0xA2" flow="next" type="Objmodel" />
-<opcode name="ldelem" input="PopRef+PopI" output="Push1" args="InlineType" o1="0xFF" o2="0xA3" flow="next" />
-<opcode name="stelem" input="PopRef+PopI+Pop1" output="Push0" args="InlineType" o1="0xFF" o2="0xA4" flow="next" />
-<opcode name="unbox.any" input="PopRef" output="Push1" args="InlineType" o1="0xFF" o2="0xA5" flow="next" />
+<opcode name="ldelem.any" input="PopRef+PopI" output="Push1" args="InlineType" o1="0xFF" o2="0xA3" flow="next" type="Objmodel" />
+<opcode name="stelem.any" input="PopRef+PopI+PopRef" output="Push0" args="InlineType" o1="0xFF" o2="0xA4" flow="next" type="Objmodel" />
+<opcode name="unbox.any" input="PopRef" output="Push1" args="InlineType" o1="0xFF" o2="0xA5" flow="next" type="Objmodel" />
 <opcode name="unused5" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xA6" flow="next" />
 <opcode name="unused6" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xA7" flow="next" />
 <opcode name="unused7" input="Pop0" output="Push0" args="InlineNone" o1="0xFF" o2="0xA8" flow="next" />

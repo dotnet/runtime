@@ -1826,8 +1826,8 @@ mono_method_verify (MonoMethod *method, int level)
 			cur_stack -= 3;
 			++ip;
 			break;
-		case CEE_LDELEM:
-		case CEE_STELEM:
+		case CEE_LDELEM_ANY:
+		case CEE_STELEM_ANY:
 		case CEE_UNBOX_ANY:
 		case CEE_UNUSED5:
 		case CEE_UNUSED6:

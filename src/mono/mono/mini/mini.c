@@ -4786,7 +4786,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			*sp++ = ins;
 			ip += 5;
 			break;
-		case CEE_LDELEM: {
+		case CEE_LDELEM_ANY: {
 			MonoInst *load;
 			CHECK_STACK (2);
 			sp -= 2;
@@ -4862,7 +4862,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			inline_costs += 1;
 			break;
 		}
-		case CEE_STELEM: {
+		case CEE_STELEM_ANY: {
 			MonoInst *load;
 			/*
 			 * translate to:
