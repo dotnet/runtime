@@ -29,7 +29,7 @@
 #include "mono/metadata/profiler-private.h"
 #include <mono/os/gc_wrapper.h>
 
-CRITICAL_SECTION *mono_metadata_section = NULL;
+CRITICAL_SECTION *metadata_section = NULL;
 
 /*
  * Enable experimental typed allocation using the GC_gcj_malloc function.
