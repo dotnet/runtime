@@ -942,18 +942,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
  * Allow tracing to work with this interface (with an optional argument)
  */
 
-/*
- * This may be needed on some archs or for debugging support.
- */
-void
-mono_arch_instrument_mem_needs (MonoMethod *method, int *stack, int *code)
-{
-	/* no stack room needed now (may be needed for FASTCALL-trace support) */
-	*stack = 0;
-	/* split prolog-epilog requirements? */
-	*code = 50; /* max bytes needed: check this number */
-}
-
 void*
 mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
@@ -1135,7 +1123,7 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 		} else {	\
 			mono_add_patch_info (cfg, code - cfg->native_code,   \
 				    MONO_PATCH_INFO_EXC, exc_name);  \
-			ppc_bc (code, (b0), (b1), 0);	\
+			ppc_bcl (code, (b0), (b1), 0);	\
 		}	\
 	} while (0); 
 
@@ -3442,6 +3430,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			g_assert_not_reached ();
 			*((gconstpointer *)(ip + 1)) = patch_info->data.name;
 			continue;
+		case MONO_PATCH_INFO_NONE:
 		case MONO_PATCH_INFO_BB_OVF:
 		case MONO_PATCH_INFO_EXC_OVF:
 			/* everything is dealt with at epilog output time */
@@ -3451,39 +3440,6 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		}
 		ppc_patch (ip, target);
 	}
-}
-
-int
-mono_arch_max_epilog_size (MonoCompile *cfg)
-{
-	int max_epilog_size = 16 + 20*4;
-	MonoJumpInfo *patch_info;
-	
-	if (cfg->method->save_lmf)
-		max_epilog_size += 128;
-	
-	if (mono_jit_trace_calls != NULL)
-		max_epilog_size += 50;
-
-	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
-		max_epilog_size += 50;
-
-	/* count the number of exception infos */
-     
-	/* 
-	 * make sure we have enough space for exceptions
-	 * 24 is the simulated call to throw_exception_by_name
-	 */
-	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-		if (patch_info->type == MONO_PATCH_INFO_EXC)
-			max_epilog_size += 24;
-		else if (patch_info->type == MONO_PATCH_INFO_BB_OVF)
-			max_epilog_size += 12;
-		else if (patch_info->type == MONO_PATCH_INFO_EXC_OVF)
-			max_epilog_size += 12;
-	}
-
-	return max_epilog_size;
 }
 
 /*
@@ -3810,7 +3766,23 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	MonoJumpInfo *patch_info;
 	MonoMethod *method = cfg->method;
 	int pos, i;
+	int max_epilog_size = 16 + 20*4;
 	guint8 *code;
+
+	if (cfg->method->save_lmf)
+		max_epilog_size += 128;
+	
+	if (mono_jit_trace_calls != NULL)
+		max_epilog_size += 50;
+
+	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
+		max_epilog_size += 50;
+
+	while (cfg->code_len + max_epilog_size > (cfg->code_size - 16)) {
+		cfg->code_size *= 2;
+		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+		mono_jit_stats.code_reallocs++;
+	}
 
 	/*
 	 * Keep in sync with CEE_JMP
@@ -3883,6 +3855,72 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 	ppc_blr (code);
 
+	cfg->code_len = code - cfg->native_code;
+
+	g_assert (cfg->code_len < cfg->code_size);
+
+}
+
+/* remove once throw_exception_by_name is eliminated */
+static int
+exception_id_by_name (const char *name)
+{
+	if (strcmp (name, "IndexOutOfRangeException") == 0)
+		return MONO_EXC_INDEX_OUT_OF_RANGE;
+	if (strcmp (name, "OverflowException") == 0)
+		return MONO_EXC_OVERFLOW;
+	if (strcmp (name, "ArithmeticException") == 0)
+		return MONO_EXC_ARITHMETIC;
+	if (strcmp (name, "DivideByZeroException") == 0)
+		return MONO_EXC_DIVIDE_BY_ZERO;
+	if (strcmp (name, "InvalidCastException") == 0)
+		return MONO_EXC_INVALID_CAST;
+	if (strcmp (name, "NullReferenceException") == 0)
+		return MONO_EXC_NULL_REF;
+	if (strcmp (name, "ArrayTypeMismatchException") == 0)
+		return MONO_EXC_ARRAY_TYPE_MISMATCH;
+	g_error ("Unknown intrinsic exception %s\n", name);
+}
+
+void
+mono_arch_emit_exceptions (MonoCompile *cfg)
+{
+	MonoJumpInfo *patch_info;
+	int nthrows, i;
+	guint8 *code;
+	const guint8* exc_throw_pos [MONO_EXC_INTRINS_NUM] = {NULL};
+	guint8 exc_throw_found [MONO_EXC_INTRINS_NUM] = {0};
+	guint32 code_size;
+	int exc_count = 0;
+	int max_epilog_size = 50;
+
+	/* count the number of exception infos */
+     
+	/* 
+	 * make sure we have enough space for exceptions
+	 * 24 is the simulated call to throw_exception_by_name
+	 */
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		if (patch_info->type == MONO_PATCH_INFO_EXC) {
+			i = exception_id_by_name (patch_info->data.target);
+			if (!exc_throw_found [i]) {
+				max_epilog_size += 12;
+				exc_throw_found [i] = TRUE;
+			}
+		} else if (patch_info->type == MONO_PATCH_INFO_BB_OVF)
+			max_epilog_size += 12;
+		else if (patch_info->type == MONO_PATCH_INFO_EXC_OVF)
+			max_epilog_size += 12;
+	}
+
+	while (cfg->code_len + max_epilog_size > (cfg->code_size - 16)) {
+		cfg->code_size *= 2;
+		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+		mono_jit_stats.code_reallocs++;
+	}
+
+	code = cfg->native_code + cfg->code_len;
+
 	/* add code to raise exceptions */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
@@ -3916,12 +3954,18 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		}
 		case MONO_PATCH_INFO_EXC: {
 			unsigned char *ip = patch_info->ip.i + cfg->native_code;
+			i = exception_id_by_name (patch_info->data.target);
+			if (exc_throw_pos [i]) {
+				ppc_patch (ip, exc_throw_pos [i]);
+				patch_info->type = MONO_PATCH_INFO_NONE;
+				break;
+			} else {
+				exc_throw_pos [i] = code;
+			}
 			ppc_patch (ip, code);
 			/*mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);*/
 			ppc_load (code, ppc_r3, patch_info->data.target);
-			/* simulate a call from ip */
-			ppc_load (code, ppc_r0, ip + 4);
-			ppc_mtlr (code, ppc_r0);
+			/* we got here from a conditional call, so the calling ip is set in lr already */
 			patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
 			patch_info->data.name = "mono_arch_throw_exception_by_name";
 			patch_info->ip.i = code - cfg->native_code;

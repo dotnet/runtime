@@ -709,6 +709,18 @@ enum {
 	BRANCH_UNDEF
 };
 
+/* Implicit exceptions */
+enum {
+	MONO_EXC_INDEX_OUT_OF_RANGE,
+	MONO_EXC_OVERFLOW,
+	MONO_EXC_ARITHMETIC,
+	MONO_EXC_DIVIDE_BY_ZERO,
+	MONO_EXC_INVALID_CAST,
+	MONO_EXC_NULL_REF,
+	MONO_EXC_ARRAY_TYPE_MISMATCH,
+	MONO_EXC_INTRINS_NUM
+};
+
 typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
 
 /* main function */
