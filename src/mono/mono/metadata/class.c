@@ -2773,10 +2773,10 @@ mono_class_needs_cctor_run (MonoClass *klass, MonoMethod *caller)
 gint32
 mono_class_array_element_size (MonoClass *klass)
 {
-	int t = klass->byval_arg.type;
+	MonoType *type = &klass->byval_arg;
 	
 handle_enum:
-	switch (t) {
+	switch (type->type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
@@ -2805,13 +2805,16 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return 8;
 	case MONO_TYPE_VALUETYPE:
-		if (klass->enumtype) {
-			t = klass->enum_basetype->type;
+		if (type->data.klass->enumtype) {
+			type = type->data.klass->enum_basetype;
 			goto handle_enum;
 		}
-		return mono_class_instance_size (klass) - sizeof (MonoObject);
+		return mono_class_instance_size (type->data.klass) - sizeof (MonoObject);
+	case MONO_TYPE_GENERICINST:
+		type = type->data.generic_inst->generic_type;
+		goto handle_enum;
 	default:
-		g_error ("unknown type 0x%02x in mono_class_array_element_size", t);
+		g_error ("unknown type 0x%02x in mono_class_array_element_size", type->type);
 	}
 	return -1;
 }
