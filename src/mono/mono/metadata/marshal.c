@@ -2294,6 +2294,7 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 		MonoStringBuilder *dst_sb = (MonoStringBuilder *) dst;
 	
 		dst_sb->str = mono_string_new_utf16 (mono_object_domain (dst), mono_string_chars (src_sb->str), mono_string_length (src_sb->str));
+		dst_sb->cached_str = NULL;
 		dst_sb->length = src_sb->length;
 	}
 }
