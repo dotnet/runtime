@@ -159,7 +159,7 @@ void
 mono_dllmap_insert (const char *dll, const char *func, const char *tdll, const char *tfunc);
 
 gpointer
-mono_lookup_pinvoke_call (MonoMethod *method);
+mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char **exc_arg);
 
 void
 mono_method_get_param_names (MonoMethod *method, const char **names);

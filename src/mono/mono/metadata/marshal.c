@@ -557,7 +557,7 @@ mono_mb_emit_native_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, gpoin
 }
 
 void
-mono_mb_emit_exception (MonoMethodBuilder *mb, const char *exc_name)
+mono_mb_emit_exception (MonoMethodBuilder *mb, const char *exc_name, const char *msg)
 {
 	/* fixme: we need a better way to throw exception,
 	 * supporting several exception types and messages */
@@ -575,8 +575,13 @@ mono_mb_emit_exception (MonoMethodBuilder *mb, const char *exc_name)
 	g_assert (ctor);
 	mono_mb_emit_byte (mb, CEE_NEWOBJ);
 	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, ctor));
+	if (msg != NULL) {
+		mono_mb_emit_byte (mb, CEE_DUP);
+		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoException, message));
+		mono_mb_emit_ldstr (mb, msg);
+		mono_mb_emit_byte (mb, CEE_STIND_I);
+	}
 	mono_mb_emit_byte (mb, CEE_THROW);
-	
 }
 
 void
@@ -2138,7 +2143,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 				pos2 = mb->pos;
 				mono_mb_emit_i4 (mb, 0);
 
-				mono_mb_emit_exception (mb, "ArgumentNullException");
+				mono_mb_emit_exception (mb, "ArgumentNullException", NULL);
 
 				mono_mb_patch_addr (mb, pos2, mb->pos - (pos2 + 4));
 				mono_mb_emit_ldarg (mb, i);
@@ -2834,6 +2839,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	gboolean pinvoke = FALSE;
 	int i, pos, argnum, *tmp_locals;
 	int type, sigsize;
+	const char *exc_class = "MissingMethodException";
+	const char *exc_arg = NULL;
 
 	g_assert (method != NULL);
 	g_assert (method->signature->pinvoke);
@@ -2851,7 +2858,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	if (!method->addr) {
 		if (pinvoke)
-			mono_lookup_pinvoke_call (method);
+			mono_lookup_pinvoke_call (method, &exc_class, &exc_arg);
 		else
 			method->addr = mono_lookup_internal_call (method);
 	}
@@ -2863,7 +2870,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 	piinfo = (MonoMethodPInvoke *)method;
 
 	if (!method->addr) {
-		mono_mb_emit_exception (mb, "MissingMethodException");
+		mono_mb_emit_exception (mb, exc_class, exc_arg);
 		csig = g_memdup (sig, sigsize);
 		csig->pinvoke = 0;
 		res = mono_mb_create_and_cache (cache, method,
@@ -3055,7 +3062,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 					mono_mb_emit_byte (mb, MONO_MARSHAL_CONV_STR_LPSTR);
 					break;
 				default: {
-					char *msg = g_strdup_printf ("string marshalling conversion %d not implemented", spec);
+					char *msg = g_strdup_printf ("string marshalling conversion %d not implemented", spec->native);
 					MonoException *exc = mono_get_exception_not_implemented (msg);
 					g_warning (msg);
 					g_free (msg);

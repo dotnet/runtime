@@ -110,9 +110,9 @@ mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
  *
  * Returns: the initialized exception instance.
  */
-static MonoException *
+MonoException *
 mono_exception_from_name_msg (MonoImage *image, const char *name_space,
-							  const char *name, const guchar *msg)
+				  const char *name, const guchar *msg)
 {
 	MonoException *ex;
 	MonoDomain *domain;

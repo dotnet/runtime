@@ -115,7 +115,7 @@ void
 mono_mb_emit_stloc (MonoMethodBuilder *mb, guint num);
 
 void
-mono_mb_emit_exception (MonoMethodBuilder *mb, const char *exc_name);
+mono_mb_emit_exception (MonoMethodBuilder *mb, const char *exc_name, const char *msg);
 
 void
 mono_mb_emit_icon (MonoMethodBuilder *mb, gint32 value);

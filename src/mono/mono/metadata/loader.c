@@ -535,6 +535,8 @@ int
 mono_dllmap_lookup (const char *dll, const char* func, const char **rdll, const char **rfunc) {
 	MonoDllMap *map, *tmp;
 
+	*rdll = dll;
+
 	if (!dll_map)
 		return 0;
 
@@ -593,7 +595,7 @@ mono_dllmap_insert (const char *dll, const char *func, const char *tdll, const c
 }
 
 gpointer
-mono_lookup_pinvoke_call (MonoMethod *method)
+mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char **exc_arg)
 {
 	MonoImage *image = method->klass->image;
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)method;
@@ -604,10 +606,17 @@ mono_lookup_pinvoke_call (MonoMethod *method)
 	guint32 scope_token;
 	const char *import = NULL;
 	const char *scope = NULL;
+	const char *orig_scope;
+	char *new_scope;
 	char *full_name;
 	GModule *gmodule;
 
 	g_assert (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL);
+
+	if (exc_class) {
+		*exc_class = NULL;
+		*exc_arg = NULL;
+	}
 
 	if (method->addr)
 		return method->addr;
@@ -619,9 +628,15 @@ mono_lookup_pinvoke_call (MonoMethod *method)
 	piinfo->piflags = im_cols [MONO_IMPLMAP_FLAGS];
 	import = mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]);
 	scope_token = mono_metadata_decode_row_col (mr, im_cols [MONO_IMPLMAP_SCOPE] - 1, MONO_MODULEREF_NAME);
-	scope = mono_metadata_string_heap (image, scope_token);
+	orig_scope = g_strdup (mono_metadata_string_heap (image, scope_token));
 
-	mono_dllmap_lookup (scope, import, &scope, &import);
+	new_scope = g_strdup (orig_scope);
+	
+	if (strstr (new_scope, ".dll") == (new_scope + strlen (new_scope) - 4)) {
+		new_scope [strlen (new_scope) - 4] = '\0';
+	}
+
+	mono_dllmap_lookup (new_scope, import, &scope, &import);
 
 	full_name = g_module_build_path (NULL, scope);
 	gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
@@ -635,14 +650,19 @@ mono_lookup_pinvoke_call (MonoMethod *method)
 	if (!gmodule) {
 		gchar *error = g_strdup (g_module_error ());
 		if (!(gmodule=g_module_open (scope, G_MODULE_BIND_LAZY))) {
-			g_warning ("Failed to load library %s (%s): %s", full_name, scope, error);
+			if (exc_class) {
+				*exc_class = "DllNotFoundException";
+				*exc_arg = orig_scope;
+			}
 			g_free (error);
 			g_free (full_name);
+			g_free (new_scope);
 			return NULL;
 		}
 		g_free (error);
 	}
 	g_free (full_name);
+	g_free (new_scope);
 
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_NO_MANGLE) {
 		g_module_symbol (gmodule, import, &method->addr); 
@@ -675,7 +695,10 @@ mono_lookup_pinvoke_call (MonoMethod *method)
 	}
 
 	if (!method->addr) {
-		g_warning ("Failed to load function %s from %s", import, scope);
+		if (exc_class) {
+			*exc_class = "EntryPointNotFoundException";
+			*exc_arg = import;
+		}
 		return NULL;
 	}
 	return method->addr;
