@@ -225,6 +225,8 @@ handle_type (MonoClass *klass, guint32 flags)
 	gpointer val = NULL, oldkey = NULL;
 	MonoProperty* prop;
 	MonoEvent* event;
+	MonoMethod* method;
+	MonoClassField* field;
 	gpointer iter;
 	
 	if (g_hash_table_lookup_extended (type_table, klass, &oldkey, &val)) {
@@ -242,18 +244,18 @@ handle_type (MonoClass *klass, guint32 flags)
 		add_type (klass->parent);
 	if (klass->nested_in)
 		add_type (klass->nested_in);
-	mono_class_setup_methods (klass);
-	for (i = 0; i < klass->method.count; ++i) {
-		if ((missing & TYPE_METHODS) || strcmp (klass->methods [i]->name, ".cctor") == 0)
-			add_types_from_method (klass->methods [i]);
+	iter = NULL;
+	while ((method = mono_class_get_methods (klass, &iter))) {
+		if ((missing & TYPE_METHODS) || strcmp (method->name, ".cctor") == 0)
+			add_types_from_method (method);
 	}
 	if (klass->enumtype) {
 		add_field (mono_class_get_field_from_name (klass, "value__"));
 	}
 	if (force_enums || (missing & TYPE_FIELDS)) {
-		for (i = 0; i < klass->field.count; ++i) {
-			add_field (&klass->fields [i]);
-		}
+		iter = NULL;
+		while ((field = mono_class_get_fields (klass, &iter)))
+			add_field (field);
 	}
 	iter = NULL;
 	while ((prop = mono_class_get_properties (klass, &iter))) {
