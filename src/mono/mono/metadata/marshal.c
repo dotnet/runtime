@@ -2412,7 +2412,7 @@ static void
 raise_auto_layout_exception (MonoClass *klass)
 {
 	char *msg = g_strdup_printf ("The type `%s.%s' layout needs to be Sequential or Explicit",
-				     klass->name_space, klass->name, NULL);
+				     klass->name_space, klass->name);
 				
 	MonoException *e = mono_exception_from_name_msg (
 		mono_get_corlib (), "System.Runtime.InteropServices",
@@ -4164,10 +4164,25 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_icon (mb, esize);
 			mono_mb_emit_ldloc (mb, src_var);
 			mono_mb_emit_byte (mb, CEE_LDLEN);
+
+			if (eklass == mono_defaults.string_class) {
+				/* Make the array bigger for the terminating null */
+				mono_mb_emit_byte (mb, CEE_LDC_I4_1);
+				mono_mb_emit_byte (mb, CEE_ADD);
+			}
 			mono_mb_emit_byte (mb, CEE_MUL);
 			mono_mb_emit_byte (mb, CEE_PREFIX1);
 			mono_mb_emit_byte (mb, CEE_LOCALLOC);
 			mono_mb_emit_stloc (mb, conv_arg);
+
+			if (eklass == mono_defaults.string_class) {
+				/* Null terminate */
+				mono_mb_emit_ldloc (mb, conv_arg);
+				mono_mb_emit_ldloc (mb, src_var);
+				mono_mb_emit_byte (mb, CEE_LDLEN);
+				mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+				mono_mb_emit_byte (mb, CEE_STELEM_REF);
+			}
 
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_stloc (mb, dest_ptr);
