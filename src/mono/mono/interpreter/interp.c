@@ -44,6 +44,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/exception.h>
@@ -61,22 +62,10 @@
 #define finite _finite
 #endif
 
-typedef struct {
-	union {
-		GTimer *timer;
-		MonoMethod *method;
-	} u;
-	guint64 count;
-	double total;
-} MethodProfile;
-
 /* If true, then we output the opcodes as we interpret them */
 static int global_tracing = 0;
 
 static int debug_indent_level = 0;
-
-static GHashTable *profiling = NULL;
-static GHashTable *profiling_classes = NULL;
 
 /*
  * Pull the list of opcodes
@@ -154,15 +143,8 @@ db_match_method (gpointer data, gpointer user_data)
 		g_print ("%s)\n", args);	\
 		g_free (args);	\
 	}	\
-	if (profiling) {	\
-		if (!(profile_info = g_hash_table_lookup (profiling, frame->method))) {	\
-			profile_info = g_new0 (MethodProfile, 1);	\
-			profile_info->u.timer = g_timer_new ();	\
-			g_hash_table_insert (profiling, frame->method, profile_info);	\
-		}	\
-		profile_info->count++;	\
-		g_timer_start (profile_info->u.timer);	\
-	}
+	if (mono_profiler_events & MONO_PROFILE_ENTER_LEAVE)	\
+		mono_profiler_method_enter (frame->method);
 
 #define DEBUG_LEAVE()	\
 	if (tracing) {	\
@@ -178,10 +160,8 @@ db_match_method (gpointer data, gpointer user_data)
 		g_free (args);	\
 		debug_indent_level--;	\
 	}	\
-	if (profiling) {	\
-		g_timer_stop (profile_info->u.timer);	\
-		profile_info->total += g_timer_elapsed (profile_info->u.timer, NULL);	\
-	}
+	if (mono_profiler_events & MONO_PROFILE_ENTER_LEAVE)	\
+		mono_profiler_method_leave (frame->method);
 
 #else
 
@@ -676,17 +656,26 @@ dump_frame (MonoInvocation *inv)
 	return g_string_free (str, FALSE);
 }
 
-CRITICAL_SECTION metadata_lock;
+static CRITICAL_SECTION metadata_lock;
 
-static guint32*
-calc_offsets (MonoImage *image, MonoMethodHeader *header, MonoMethodSignature *signature)
+typedef enum {
+	INLINE_STRING_LENGTH = 1,
+	INLINE_ARRAY_LENGTH,
+	INLINE_ARRAY_RANK,
+	INLINE_TYPE_ELEMENT_TYPE
+} InlineMethod;
+
+static void
+calc_offsets (MonoImage *image, MonoMethod *method)
 {
 	int i, align, size, offset = 0;
+	MonoMethodHeader *header = ((MonoMethodNormal*)method)->header;
+	MonoMethodSignature *signature = method->signature;
 	int hasthis = signature->hasthis;
 	register const unsigned char *ip, *end;
 	const MonoOpcode *opcode;
 	guint32 token;
-	MonoMethod *method;
+	MonoMethod *m;
 	MonoClass *class;
 	MonoDomain *domain = mono_domain_get ();
 	guint32 *offsets = g_new0 (guint32, 2 + header->num_locals + signature->param_count + signature->hasthis);
@@ -754,10 +743,10 @@ calc_offsets (MonoImage *image, MonoMethodHeader *header, MonoMethodSignature *s
 			ip += 5;
 			break;
 		case MonoInlineMethod:
-			method = mono_get_method (image, read32 (ip + 1), NULL);
-			mono_class_init (method->klass);
-			if (!(method->klass->flags & TYPE_ATTRIBUTE_INTERFACE))
-				mono_class_vtable (domain, method->klass);
+			m = mono_get_method (image, read32 (ip + 1), NULL);
+			mono_class_init (m->klass);
+			if (!(m->klass->flags & TYPE_ATTRIBUTE_INTERFACE))
+				mono_class_vtable (domain, m->klass);
 			ip += 5;
 			break;
 		case MonoInlineTok:
@@ -792,8 +781,24 @@ calc_offsets (MonoImage *image, MonoMethodHeader *header, MonoMethodSignature *s
 		}
 
 	}
+	method->info = offsets;
+
+	/*
+	 * We store the inline info in addr, since it's unused for IL methods.
+	 */
+	if (method->klass == mono_defaults.string_class) {
+		if (strcmp (method->name, "get_Length") == 0)
+			method->addr = GUINT_TO_POINTER (INLINE_STRING_LENGTH);
+	} else if (method->klass == mono_defaults.array_class) {
+		if (strcmp (method->name, "get_Length") == 0)
+			method->addr = GUINT_TO_POINTER (INLINE_ARRAY_LENGTH);
+		else if (strcmp (method->name, "get_Rank") == 0 || strcmp (method->name, "GetRank") == 0)
+			method->addr = GUINT_TO_POINTER (INLINE_ARRAY_RANK);
+	} else if (method->klass == mono_defaults.monotype_class) {
+		if (strcmp (method->name, "GetElementType") == 0)
+			method->addr = GUINT_TO_POINTER (INLINE_TYPE_ELEMENT_TYPE);
+	}
 	LeaveCriticalSection (&metadata_lock);
-	return offsets;
 }
 
 #define LOCAL_POS(n)            (frame->locals + offsets [2 + (n)])
@@ -1030,7 +1035,6 @@ ves_exec_method (MonoInvocation *frame)
 	unsigned char unaligned_address = 0;
 	unsigned char volatile_address = 0;
 	vtallocation *vtalloc = NULL;
-	MethodProfile *profile_info;
 	GOTO_LABEL_VARS;
 
 	signature = frame->method->signature;
@@ -1081,16 +1085,16 @@ ves_exec_method (MonoInvocation *frame)
 	header = ((MonoMethodNormal *)frame->method)->header;
 	image = frame->method->klass->image;
 
+	if (!frame->method->info)
+		calc_offsets (image, frame->method);
+	offsets = frame->method->info;
+
 	/*
 	 * with alloca we get the expected huge performance gain
 	 * stackval *stack = g_new0(stackval, header->max_stack);
 	 */
 	g_assert (header->max_stack < 10000);
 	sp = frame->stack = alloca (sizeof (stackval) * header->max_stack);
-
-	if (!frame->method->info)
-		frame->method->info = calc_offsets (image, header, signature);
-	offsets = frame->method->info;
 
 	if (header->num_locals) {
 		g_assert (offsets [0] < 10000);
@@ -1438,8 +1442,38 @@ ves_exec_method (MonoInvocation *frame)
 			    mono_defaults.transparent_proxy_class) {
 				/* implement remoting */
 				g_assert_not_reached ();
-			} else
-				ves_exec_method (&child_frame);
+			} else {
+				switch (GPOINTER_TO_UINT (child_frame.method->addr)) {
+				case INLINE_STRING_LENGTH:
+					retval.type = VAL_I32;
+					retval.data.i = ((MonoString*)sp->data.p)->length;
+					//g_print ("length of '%s' is %d\n", mono_string_to_utf8 (sp->data.p), retval.data.i);
+					break;
+				case INLINE_ARRAY_LENGTH:
+					retval.type = VAL_I32;
+					retval.data.i = mono_array_length ((MonoArray*)sp->data.p);
+					break;
+				case INLINE_ARRAY_RANK:
+					retval.type = VAL_I32;
+					retval.data.i = mono_object_class (sp->data.p)->rank;
+					break;
+				case INLINE_TYPE_ELEMENT_TYPE:
+					retval.type = VAL_OBJ;
+					{
+						MonoClass *c = mono_class_from_mono_type (((MonoReflectionType*)sp->data.p)->type);
+						retval.data.vt.klass = NULL;
+						if (c->enumtype && c->enum_basetype) /* types that are modifierd typebuilkders may not have enum_basetype set */
+							retval.data.p = mono_type_get_object (domain, c->enum_basetype);
+						else if (c->element_class)
+							retval.data.p = mono_type_get_object (domain, &c->element_class->byval_arg);
+						else
+							retval.data.p = NULL;
+					}
+					break;
+				default:
+					ves_exec_method (&child_frame);
+				}
+			}
 
 			while (endsp > sp) {
 				--endsp;
@@ -2307,11 +2341,11 @@ ves_exec_method (MonoInvocation *frame)
 
 			csig = child_frame.method->signature;
 			newobj_class = child_frame.method->klass;
-			if (profiling_classes) {
+			/*if (profiling_classes) {
 				guint count = GPOINTER_TO_UINT (g_hash_table_lookup (profiling_classes, newobj_class));
 				count++;
 				g_hash_table_insert (profiling_classes, newobj_class, GUINT_TO_POINTER (count));
-			}
+			}*/
 				
 
 			if (newobj_class->parent == mono_defaults.array_class) {
@@ -2802,11 +2836,11 @@ array_constructed:
 
 			sp [-1].type = VAL_OBJ;
 			sp [-1].data.p = o;
-			if (profiling_classes) {
+			/*if (profiling_classes) {
 				guint count = GPOINTER_TO_UINT (g_hash_table_lookup (profiling_classes, o->vtable->klass));
 				count++;
 				g_hash_table_insert (profiling_classes, o->vtable->klass, GUINT_TO_POINTER (count));
-			}
+			}*/
 
 			BREAK;
 		}
@@ -3797,87 +3831,6 @@ test_load_class (MonoImage* image)
 }
 #endif
 
-static gint
-compare_profile (MethodProfile *profa, MethodProfile *profb)
-{
-	return (gint)((profb->total - profa->total)*1000);
-}
-
-static void
-build_profile (MonoMethod *m, MethodProfile *prof, GList **funcs)
-{
-	g_timer_destroy (prof->u.timer);
-	prof->u.method = m;
-	*funcs = g_list_insert_sorted (*funcs, prof, (GCompareFunc)compare_profile);
-}
-
-static void
-output_profile (GList *funcs)
-{
-	GList *tmp;
-	MethodProfile *p;
-	char buf [256];
-
-	if (funcs)
-		g_print ("Method name\t\t\t\t\tTotal (ms) Calls Per call (ms)\n");
-	for (tmp = funcs; tmp; tmp = tmp->next) {
-		p = tmp->data;
-		if (!(gint)(p->total*1000))
-			continue;
-		g_snprintf (buf, sizeof (buf), "%s.%s::%s(%d)",
-			p->u.method->klass->name_space, p->u.method->klass->name,
-			p->u.method->name, p->u.method->signature->param_count);
-		printf ("%-52s %7d %7llu %7d\n", buf,
-			(gint)(p->total*1000), p->count, (gint)((p->total*1000)/p->count));
-	}
-}
-
-typedef struct {
-	MonoClass *klass;
-	guint count;
-} NewobjProfile;
-
-static gint
-compare_newobj_profile (NewobjProfile *profa, NewobjProfile *profb)
-{
-	return (gint)profb->count - (gint)profa->count;
-}
-
-static void
-build_newobj_profile (MonoClass *class, gpointer count, GList **funcs)
-{
-	NewobjProfile *prof = g_new (NewobjProfile, 1);
-	prof->klass = class;
-	prof->count = GPOINTER_TO_UINT (count);
-	*funcs = g_list_insert_sorted (*funcs, prof, (GCompareFunc)compare_newobj_profile);
-}
-
-static void
-output_newobj_profile (GList *proflist)
-{
-	GList *tmp;
-	NewobjProfile *p;
-	MonoClass *klass;
-	const char* isarray;
-	char buf [256];
-
-	if (proflist)
-		g_print ("\n%-52s %9s\n", "Objects created:", "count");
-	for (tmp = proflist; tmp; tmp = tmp->next) {
-		p = tmp->data;
-		klass = p->klass;
-		if (strcmp (klass->name, "Array") == 0) {
-			isarray = "[]";
-			klass = klass->element_class;
-		} else {
-			isarray = "";
-		}
-		g_snprintf (buf, sizeof (buf), "%s.%s%s",
-			klass->name_space, klass->name, isarray);
-		g_print ("%-52s %9d\n", buf, p->count);
-	}
-}
-
 static MonoException * segv_exception = NULL;
 
 static void
@@ -3892,7 +3845,6 @@ main (int argc, char *argv [])
 {
 	MonoDomain *domain;
 	MonoAssembly *assembly;
-	GList *profile = NULL;
 	int retval = 0, i, ocount = 0;
 	char *file, *error;
 
@@ -3908,10 +3860,8 @@ main (int argc, char *argv [])
 			die_on_exception = 1;
 		if (strcmp (argv [i], "--print-vtable") == 0)
 			mono_print_vtable = TRUE;
-		if (strcmp (argv [i], "--profile") == 0) {
-			profiling = g_hash_table_new (g_direct_hash, g_direct_equal);
-			profiling_classes = g_hash_table_new (g_direct_hash, g_direct_equal);
-		}
+		if (strcmp (argv [i], "--profile") == 0)
+			mono_profiler_install_simple ();
 		if (strcmp (argv [i], "--opcode-count") == 0)
 			ocount = 1;
 		if (strcmp (argv [i], "--help") == 0)
@@ -3975,16 +3925,7 @@ main (int argc, char *argv [])
 	++i;
 	retval = ves_exec (domain, assembly, argc - i, argv + i);
 #endif
-	if (profiling) {
-		g_hash_table_foreach (profiling, (GHFunc)build_profile, &profile);
-		output_profile (profile);
-		g_list_free (profile);
-		profile = NULL;
-		
-		g_hash_table_foreach (profiling_classes, (GHFunc)build_newobj_profile, &profile);
-		output_newobj_profile (profile);
-		g_list_free (profile);
-	}
+	mono_profiler_shutdown ();
 	
 	mono_network_cleanup ();
 	mono_thread_cleanup ();
