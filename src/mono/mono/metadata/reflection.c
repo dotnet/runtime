@@ -3256,28 +3256,7 @@ create_dynamic_mono_image (char *assembly_name, char *module_name)
 	image->image.references = g_new0 (MonoAssembly*, 1);
 	image->image.references [0] = NULL;
 
-	image->image.method_cache = g_hash_table_new (NULL, NULL);
-	image->image.class_cache = g_hash_table_new (NULL, NULL);
-	image->image.name_cache = g_hash_table_new (g_str_hash, g_str_equal);
-	image->image.array_cache = g_hash_table_new (NULL, NULL);
-
-	image->image.delegate_begin_invoke_cache = 
-		g_hash_table_new ((GHashFunc)mono_signature_hash, 
-				  (GCompareFunc)mono_metadata_signature_equal);
-	image->image.delegate_end_invoke_cache = 
-		g_hash_table_new ((GHashFunc)mono_signature_hash, 
-				  (GCompareFunc)mono_metadata_signature_equal);
-	image->image.delegate_invoke_cache = 
-		g_hash_table_new ((GHashFunc)mono_signature_hash, 
-				  (GCompareFunc)mono_metadata_signature_equal);
-
-	image->image.runtime_invoke_cache = g_hash_table_new (NULL, NULL);
-	image->image.managed_wrapper_cache = g_hash_table_new (NULL, NULL);
-	image->image.native_wrapper_cache = g_hash_table_new (NULL, NULL);
-	image->image.remoting_invoke_cache = g_hash_table_new (NULL, NULL);
-	image->image.synchronized_cache = g_hash_table_new (NULL, NULL);
-
-	image->image.generics_cache = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GEqualFunc)mono_metadata_type_equal);
+	mono_image_init (&image->image);
 
 	image->token_fixups = mono_g_hash_table_new (NULL, NULL);
 	image->method_to_table_idx = mono_g_hash_table_new (NULL, NULL);
