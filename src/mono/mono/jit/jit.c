@@ -39,6 +39,12 @@
 #include "codegen.h"
 #include "debug.h"
 
+/* 
+ * if OPT_BOOL is defined we use 32bit to store boolean local variables.
+ * This gives great speedup for boolean expressions 
+ */
+#define OPT_BOOL
+
 /* this is x86 specific */
 #define MB_TERM_LDIND_REF MB_TERM_LDIND_I4
 #define MB_TERM_LDIND_U4 MB_TERM_LDIND_I4
@@ -1455,7 +1461,12 @@ mono_array_new_va (MonoMethod *cm, ...)
 #define PUSH_TREE(t,k)  do { int tt = k; *sp = t; t->svt = tt; sp++; } while (0)
 
 #define LOCAL_POS(n)    (1 + n)
+
+#ifdef OPT_BOOL
+#define LOCAL_TYPE(n)   ((header)->locals [(n)]->type == MONO_TYPE_BOOLEAN && !(header)->locals [(n)]->byref ? &mono_defaults.int32_class->byval_arg : (header)->locals [(n)])
+#else
 #define LOCAL_TYPE(n)   ((header)->locals [(n)])
+#endif
 
 #define ARG_POS(n)      (firstarg + n)
 #define ARG_TYPE(n)     ((n) ? (signature)->params [(n) - (signature)->hasthis] : \
@@ -1910,7 +1921,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		
 		for (i = 0; i < header->num_locals; ++i) {
 			MonoValueType svt;
-			size = mono_type_size (header->locals [i], &align);
+			size = mono_type_size (LOCAL_TYPE (i), &align);
 			map_ldind_type (header->locals [i], &svt);
 			varnum = arch_allocate_var (cfg, size, align, MONO_LOCALVAR, svt);
 			if (i == 0)

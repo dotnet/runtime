@@ -1992,6 +1992,14 @@ cflags: COMPARE (LDIND_I4 (ADDR_L), reg) {
 	return 0;
 }
 
+cflags: COMPARE (LDIND_I4 (ADDR_L), coni4) {
+	int offset = VARINFO (s, tree->left->left->data.i).offset;
+	x86_alu_membase_imm (s->code, X86_CMP, X86_EBP, offset,  tree->right->data.i);
+} cost {
+	MBCOND ((VARINFO (data, tree->left->left->data.i).reg < 0));
+	return 0;
+}
+
 cflags: COMPARE (reg, coni4) {
 	x86_alu_reg_imm (s->code, X86_CMP, tree->left->reg1, tree->right->data.i);
 }
