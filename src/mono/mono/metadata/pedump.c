@@ -204,11 +204,11 @@ dump_cli_header (MonoCLIHeader *ch)
 }	
 
 static void
-dsh (char *label, MonoStreamHeader *sh)
+dsh (char *label, MonoImage *meta, MonoStreamHeader *sh)
 {
 	printf ("%s: 0x%08x - 0x%08x [%d == 0x%08x]\n",
 		label,
-		sh->offset, sh->offset + sh->size,
+		sh->data - meta->raw_metadata, sh->data + sh->size - meta->raw_metadata,
 		sh->size, sh->size);
 }
 
@@ -216,11 +216,11 @@ static void
 dump_metadata_ptrs (MonoImage *meta)
 {
 	printf ("\nMetadata pointers:\n");
-	dsh ("\tTables (#~)", &meta->heap_tables);
-	dsh ("\t    Strings", &meta->heap_strings);
-	dsh ("\t       Blob", &meta->heap_blob);
-	dsh ("\tUser string", &meta->heap_us);
-	dsh ("\t       GUID", &meta->heap_guid);
+	dsh ("\tTables (#~)", meta, &meta->heap_tables);
+	dsh ("\t    Strings", meta, &meta->heap_strings);
+	dsh ("\t       Blob", meta, &meta->heap_blob);
+	dsh ("\tUser string", meta, &meta->heap_us);
+	dsh ("\t       GUID", meta, &meta->heap_guid);
 }
 
 static void

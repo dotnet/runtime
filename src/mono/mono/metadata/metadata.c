@@ -733,14 +733,14 @@ const char *
 mono_metadata_string_heap (MonoImage *meta, guint32 index)
 {
 	g_return_val_if_fail (index < meta->heap_strings.size, "");
-	return meta->raw_metadata + meta->heap_strings.offset + index;
+	return meta->heap_strings.data + index;
 }
 
 const char *
 mono_metadata_user_string (MonoImage *meta, guint32 index)
 {
 	g_return_val_if_fail (index < meta->heap_us.size, "");
-	return meta->raw_metadata + meta->heap_us.offset + index;
+	return meta->heap_us.data + index;
 }
 
 /**
@@ -754,7 +754,7 @@ const char *
 mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 {
 	g_return_val_if_fail (index < meta->heap_blob.size, "");
-	return meta->raw_metadata + meta->heap_blob.offset + index;
+	return meta->heap_blob.data + index;
 }
 
 static const char *

@@ -267,23 +267,23 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 
 	for (i = 0; i < streams; i++){
 		if (strncmp (ptr + 8, "#~", 3) == 0){
-			image->heap_tables.offset = read32 (ptr);
+			image->heap_tables.data = image->raw_metadata + read32 (ptr);
 			image->heap_tables.size = read32 (ptr + 4);
 			ptr += 8 + 3;
 		} else if (strncmp (ptr + 8, "#Strings", 9) == 0){
-			image->heap_strings.offset = read32 (ptr);
+			image->heap_strings.data = image->raw_metadata + read32 (ptr);
 			image->heap_strings.size = read32 (ptr + 4);
 			ptr += 8 + 9;
 		} else if (strncmp (ptr + 8, "#US", 4) == 0){
-			image->heap_us.offset = read32 (ptr);
+			image->heap_us.data = image->raw_metadata + read32 (ptr);
 			image->heap_us.size = read32 (ptr + 4);
 			ptr += 8 + 4;
 		} else if (strncmp (ptr + 8, "#Blob", 6) == 0){
-			image->heap_blob.offset = read32 (ptr);
+			image->heap_blob.data = image->raw_metadata + read32 (ptr);
 			image->heap_blob.size = read32 (ptr + 4);
 			ptr += 8 + 6;
 		} else if (strncmp (ptr + 8, "#GUID", 6) == 0){
-			image->heap_guid.offset = read32 (ptr);
+			image->heap_guid.data = image->raw_metadata + read32 (ptr);
 			image->heap_guid.size = read32 (ptr + 4);
 			ptr += 8 + 6;
 		} else {
@@ -303,7 +303,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 static gboolean
 load_tables (MonoImage *image)
 {
-	char *heap_tables = image->raw_metadata + image->heap_tables.offset;
+	char *heap_tables = image->heap_tables.data;
 	guint32 *rows;
 	guint64 valid_mask;
 	int valid = 0, table;

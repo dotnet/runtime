@@ -648,7 +648,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		t = (char*)vt->data + field->offset;
 		/* should we check that the type matches? */
 		switch (cols [MONO_CONSTANT_TYPE]) {
-			case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_U1:
 		case MONO_TYPE_I1:
 			*t = *p;
@@ -1250,12 +1250,9 @@ MonoClassField *
 mono_class_get_field_from_name (MonoClass *klass, const char *name)
 {
 	int i;
-	guint32 token;
-	MonoTableInfo *t = &klass->image->tables [MONO_TABLE_FIELD];
 
 	for (i = 0; i < klass->field.count; ++i) {
-		token = mono_metadata_decode_row_col (t, klass->field.first + i, MONO_FIELD_NAME);
-		if (strcmp (name, mono_metadata_string_heap (klass->image, token)) == 0)
+		if (strcmp (name, klass->fields->name) == 0)
 			return &klass->fields [i];
 	}
 	return NULL;

@@ -15,7 +15,7 @@ typedef struct {
 } MonoAssembly;
 
 typedef struct {
-	guint32  offset;
+	const char* data;
 	guint32  size;
 } MonoStreamHeader;
 

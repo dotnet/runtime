@@ -111,7 +111,7 @@ mono_init (const char *filename)
 			break;
 		}
 		
-		exit (0);
+		exit (1);
 	}
 	mono_defaults.corlib = ass->image;
 
