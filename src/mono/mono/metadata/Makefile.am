@@ -1,7 +1,7 @@
 if PLATFORM_WIN32
 export HOST_CC
-assembliesdir = `cygpath -w "${libdir}"`
-confdir = `cygpath -w "${sysconfdir}"`
+assembliesdir = `cygpath -w "${libdir}" | sed -e 's@\\\\@\\\\\\\\@g'`
+confdir = `cygpath -w "${sysconfdir}" | sed -e 's@\\\\@\\\\\\\\@g'`
 # The mingw math.h has "extern inline" functions that dont appear in libs, so
 # optimisation is required to actually inline them
 AM_CFLAGS = -O
