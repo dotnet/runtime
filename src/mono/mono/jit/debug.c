@@ -1065,8 +1065,6 @@ mono_debugger_update_symbol_file_table (void)
 		}
 	}
 
-	g_message (G_STRLOC ": %p", symfile_table);
-
 	mono_debugger_symbol_file_table = symfile_table;
 	return TRUE;
 }
