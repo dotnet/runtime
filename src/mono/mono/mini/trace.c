@@ -182,10 +182,16 @@ get_spec (int *last)
 		trace_spec.ops [*last].data = g_strdup (value);
 	} else if (token == TOKEN_CLASS){
 		char *p = strrchr (value, '.');
-		*p++ = 0;
+		if (p) {
+			*p++ = 0;
+			trace_spec.ops [*last].data = g_strdup (value);
+			trace_spec.ops [*last].data2 = g_strdup (p);
+		}
+		else {
+			trace_spec.ops [*last].data = g_strdup ("");
+			trace_spec.ops [*last].data2 = g_strdup (value);
+		}
 		trace_spec.ops [*last].op = MONO_TRACEOP_CLASS;
-		trace_spec.ops [*last].data = g_strdup (value);
-		trace_spec.ops [*last].data2 = g_strdup (p);
 	} else if (token == TOKEN_STRING){
 		trace_spec.ops [*last].op = MONO_TRACEOP_ASSEMBLY;
 		trace_spec.ops [*last].data = g_strdup (value);
