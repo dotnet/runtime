@@ -815,7 +815,7 @@ dwarf2_write_parameter (AssemblyDebugInfo *info, DebugMethodInfo *minfo, const g
 
 static void
 dwarf2_write_variable (AssemblyDebugInfo *info, DebugMethodInfo *minfo, const gchar *name,
-		       MonoDebugLocalInfo *local, MonoClass *klass)
+		       MonoDebugVarInfo *local, MonoClass *klass)
 {
 	static long label_index = 0;
 	int type_index = mono_debug_get_type (info, klass);
@@ -1046,7 +1046,7 @@ write_method_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 	}
 
 	if (minfo->method_info.method->signature->hasthis)
-		dwarf2_write_parameter (info, minfo, "this", minfo->method_info.this_offset,
+		dwarf2_write_parameter (info, minfo, "this", minfo->method_info.this_var->offset,
 					minfo->method_info.method->klass);
 
 	names = g_new (char *, minfo->method_info.method->signature->param_count);
@@ -1056,7 +1056,7 @@ write_method_dwarf2 (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 		MonoType *type = minfo->method_info.method->signature->params [i];
 		MonoClass *klass = mono_class_from_mono_type (type);
 
-		dwarf2_write_parameter (info, minfo, names [i], minfo->method_info.param_offsets [i], klass);
+		dwarf2_write_parameter (info, minfo, names [i], minfo->method_info.params [i].offset, klass);
 	}
 
 	g_free (names);

@@ -79,9 +79,9 @@ write_method_stabs (AssemblyDebugInfo *info, DebugMethodInfo *minfo)
 	if (sig->hasthis)
 		fprintf (info->f, ".stabs \"this:p(0,%d)=(0,%d)\",160,0,%d,%d\n",
 			 info->next_idx++, klass->byval_arg.type, minfo->start_line,
-			 minfo->method_info.this_offset);
+			 minfo->method_info.this_var->offset);
 	for (i = 0; i < minfo->method_info.num_params; i++) {
-		int stack_offset = minfo->method_info.param_offsets [i];
+		int stack_offset = minfo->method_info.params [i].offset;
 
 		fprintf (info->f, ".stabs \"%s:p(0,%d)=(0,%d)\",160,0,%d,%d\n",
 			 names [i], info->next_idx++, sig->params [i]->type,
