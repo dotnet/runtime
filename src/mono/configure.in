@@ -1677,7 +1677,7 @@ runtime/Makefile
 
   echo "prefix=$prefix" > $srcdir/$mcsdir/build/config.make
   echo "exec_prefix=$exec_prefix" >> $srcdir/$mcsdir/build/config.make
-  echo "libdir=$prefix/lib" >> $srcdir/$mcsdir/build/config.make
+  echo "mono_libdir=$prefix/lib" >> $srcdir/$mcsdir/build/config.make
   echo 'MCS_FLAGS = $(PLATFORM_DEBUG_FLAGS)' >> $srcdir/$mcsdir/build/config.make
 )
 
