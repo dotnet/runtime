@@ -7,6 +7,12 @@
 	If you want to send suggestions for links, address them to <a
 	mailto="web-mono@ximian.com">web-mono@ximian.com</a>.
 
+** Routine Tests
+
+	Various test results that are run continously on Mono are available
+	at <a
+	href="http://www.go-mono.com/tests/index.php">www.go-mono.com/tests/index.php</a>
+
 ** Microsoft .NET
 
 	The <a href="http://msdn.microsoft.com/netframework">Microsoft.NET site.</a>
