@@ -780,12 +780,22 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return TYPECODE_DOUBLE;
 	case MONO_TYPE_VALUETYPE:
-		if (type->type->data.klass->valuetype) {
+		if (type->type->data.klass->enumtype) {
 			t = type->type->data.klass->enum_basetype->type;
 			goto handle_enum;
+		} else {
+			MonoClass *k =  type->type->data.klass;
+			if (strcmp (k->name_space, "System") == 0) {
+				if (strcmp (k->name, "Decimal") == 0)
+					return TYPECODE_DECIMAL;
+				else if (strcmp (k->name, "DateTime") == 0)
+					return TYPECODE_DATETIME;
+				else if (strcmp (k->name, "DBNull") == 0)
+					return TYPECODE_DBNULL;
+			}
 		}
 		/* handle datetime, dbnull.. */
-		return TYPECODE_EMPTY; /* FIXME */
+		return TYPECODE_OBJECT;
 	case MONO_TYPE_STRING:
 		return TYPECODE_STRING;
 	case MONO_TYPE_SZARRAY:
