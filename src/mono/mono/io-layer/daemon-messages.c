@@ -12,6 +12,8 @@
 #include <pthread.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 /* Freebsd needs this included explicitly, but it doesn't hurt on Linux */
 #include <sys/uio.h>
 
@@ -149,7 +151,7 @@ void _wapi_daemon_request (int fd, WapiHandleRequest *req, int *fds,
 	struct iovec iov;
 	struct cmsghdr *cmsg;
 	guchar cmsgdata[CMSG_SPACE (sizeof(int)*3)];
-		    
+	
 	msg.msg_name=NULL;
 	msg.msg_namelen=0;
 	msg.msg_iov=&iov;
