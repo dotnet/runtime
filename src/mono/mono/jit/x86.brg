@@ -780,8 +780,16 @@ reg: MUL_OVF (reg, reg) {
 }
 
 reg: MUL_OVF_UN (reg, reg) {
-	//fixme: implement me
-	mono_assert_not_reached ();
+	mono_assert (tree->right->reg1 != X86_EAX);
+	
+	if (tree->left->reg1 != X86_EAX)
+		x86_mov_reg_reg (s->code, X86_EAX, tree->left->reg1, 4);
+
+	x86_mul_reg (s->code, tree->right->reg1, FALSE);
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_NO, TRUE, "OverflowException");
+
+	mono_assert (tree->reg1 == X86_EAX &&
+		     tree->reg2 == X86_EDX);
 }
 
 reg: DIV (reg, reg) {
@@ -794,7 +802,7 @@ reg: DIV (reg, reg) {
 	x86_div_reg (s->code, tree->right->reg1, TRUE);
 
 	mono_assert (tree->reg1 == X86_EAX &&
-		  tree->reg2 == X86_EDX);
+		     tree->reg2 == X86_EDX);
 }
 
 reg: DIV_UN (reg, reg) {
@@ -807,7 +815,7 @@ reg: DIV_UN (reg, reg) {
 	x86_div_reg (s->code, tree->right->reg1, FALSE);
 
 	mono_assert (tree->reg1 == X86_EAX &&
-		  tree->reg2 == X86_EDX);
+		     tree->reg2 == X86_EDX);
 }
 
 reg: REM (reg, reg) {
@@ -823,7 +831,7 @@ reg: REM (reg, reg) {
 	x86_mov_reg_reg (s->code, X86_EAX, X86_EDX, 4);
 
 	mono_assert (tree->reg1 == X86_EAX &&
-		  tree->reg2 == X86_EDX);
+		     tree->reg2 == X86_EDX);
 }
 
 reg: REM_UN (reg, reg) {
@@ -839,7 +847,7 @@ reg: REM_UN (reg, reg) {
 	x86_mov_reg_reg (s->code, X86_EAX, X86_EDX, 4);
 
 	mono_assert (tree->reg1 == X86_EAX &&
-		  tree->reg2 == X86_EDX);
+		     tree->reg2 == X86_EDX);
 }
 
 reg: ADD (reg, CONST_I4) "MB_USE_OPT1(0)" {
