@@ -141,6 +141,18 @@
   </tr>
 </table>
 
+@item Nov 13th: Managed LDAP binding for Mono and .NET
+
+	Sunil Kumar at Novell has <a
+	href="http://lists.ximian.com/archives/public/mono-list/2003-November/016907.html">announced</a>
+	the availability of a fully managed implementation of LDAP for
+	Mono and the .NET Framework.
+
+	You can obtain the library from <a
+	href="http://forge.novell.com">Novell Forge's</a> <a
+	href="http://forge.novell.com/modules/xfmod/cvs/cvsbrowse.php/ldapcsharp/CsharpLDAP">CSharpLDAP</a>
+	module.
+
 @item Nov 4th: Mono Roadmap announced.
 
 	The <a href="mono-roadmap.html">Mono Roadmap</a> and <a
