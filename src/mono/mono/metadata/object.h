@@ -63,6 +63,7 @@ typedef struct {
 
 typedef struct {
 	MonoObject obj;
+	MonoObject *identity;
 } MonoMarshalByRefObject;
 
 typedef struct {
@@ -134,7 +135,6 @@ typedef struct {
 
 typedef struct {
 	MonoMarshalByRefObject object;
-	
 	gpointer     handle;
 	MonoBoolean  disposed;
 } MonoWaitHandle;
