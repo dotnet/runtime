@@ -84,7 +84,7 @@ Total memory allocated: 448 KB
 	is that if a method is shown as taking more time than the Main
 	method, it is very likely recursive, and causing this problem.
 	
-	Below the method data, allocation data is sown. This shows
+	Below the method data, allocation data is shown. This shows
 	how much memory each method allocates. The number beside
 	the method is the total amount of memory. Below that, it
 	is broken down into types. Then, the caller data is given. This
@@ -145,7 +145,7 @@ System.out.println (list.get (1).intValue ());
 	Boxing preforms the same thing as Java's <code>new Integer (1)</code>.
 	The user is not forced to write the extra code. However,
 	behind the scenes the <em>same thing</em> is being done
-	by the runtime. Each time a primative is casted to an object,
+	by the runtime. Each time a primative is cast to an object,
 	a new object is allocated.
 	
 	You must be careful when casting a primative to an object.
