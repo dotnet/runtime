@@ -86,6 +86,7 @@ typedef struct {
 typedef struct {
 	MonoObject object;
 	MonoAssembly *assembly;
+	MonoObject *resolve_event_holder;
 } MonoReflectionAssembly;
 
 typedef struct {
