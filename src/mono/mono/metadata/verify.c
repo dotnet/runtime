@@ -2543,28 +2543,38 @@ check_corlib (MonoImage *corlib)
 	const ClassDesc *cdesc;
 	const NameSpaceDesc *ndesc;
 	gint struct_offset;
-
+	GString *result = NULL;
+	
 	for (ndesc = namespaces_to_check; ndesc->name; ++ndesc) {
 		for (cdesc = ndesc->types; cdesc->name; ++cdesc) {
 			klass = mono_class_from_name (corlib, ndesc->name, cdesc->name);
-			if (!klass)
-				return g_strdup_printf ("Cannot find class %s", cdesc->name);
+			if (!klass) {
+				if (!result)
+					result = g_string_new ("");
+				g_string_append_printf (result, "Cannot find class %s\n", cdesc->name);
+				continue;
+			}
 			mono_class_init (klass);
 			/*
 			 * FIXME: we should also check the size of valuetypes, or
 			 * we're going to have trouble when we access them in arrays.
 			 */
 			if (klass->valuetype)
-				struct_offset = 8;
+				struct_offset = sizeof (MonoObject);
 			else
 				struct_offset = 0;
 			for (fdesc = cdesc->fields; fdesc->name; ++fdesc) {
 				field = mono_class_get_field_from_name (klass, fdesc->name);
-				if (!field || (field->offset != (fdesc->offset + struct_offset)))
-					return g_strdup_printf ("field `%s' mismatch in class %s (%ld != %ld)", fdesc->name, cdesc->name, (long) fdesc->offset, (long) (field?field->offset:-1));
+				if (!field || (field->offset != (fdesc->offset + struct_offset))) {
+					if (!result)
+						result = g_string_new ("");
+					g_string_append_printf (result, "field `%s' mismatch in class %s (%ld + %ld != %ld)\n", fdesc->name, cdesc->name, (long) fdesc->offset, (long)struct_offset, (long) (field?field->offset:-1));
+				}
 			}
 		}
 	}
+	if (result)
+		return g_string_free (result, FALSE);
 	return NULL;
 }
 
@@ -2572,4 +2582,5 @@ char*
 mono_verify_corlib () {
 	return check_corlib (mono_defaults.corlib);
 }
+
 

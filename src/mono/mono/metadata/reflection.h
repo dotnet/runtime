@@ -350,7 +350,7 @@ typedef struct {
 	MonoString *fqname;
 	MonoString *name;
 	MonoString *scopename;
-	gboolean is_resource;
+	MonoBoolean is_resource;
 } MonoReflectionModule;
 
 typedef struct {

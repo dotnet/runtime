@@ -147,7 +147,7 @@ typedef struct {
 	MonoString *class_name;
 	MonoString *stack_trace;
 	MonoString *remote_stack_trace;
-	gint32     *remote_stack_index;
+	gint32      remote_stack_index;
 	gint32      hresult;
 	MonoString *source;
 } MonoException;
