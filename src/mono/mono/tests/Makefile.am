@@ -66,8 +66,8 @@ testb: $(TEST_PROG) $(TESTBS)
 		./test-driver $(TEST_PROG) $$i;	\
 	done
 
-testjit: $(JITTEST_PROG) $(TESTS)
-	for i in $(TESTS); do	\
+testjit: $(JITTEST_PROG) $(TESTS) $(TESTBS)
+	for i in $(TESTS) $(TESTBS); do	\
 		./test-driver $(JITTEST_PROG) $$i;	\
 	done
 

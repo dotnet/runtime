@@ -1,12 +1,11 @@
-// $Id: ackermann.cs,v 1.1 2001/11/19 06:52:53 lupus Exp $
+// $Id: ackermann.cs,v 1.2 2001/11/19 07:11:32 lupus Exp $
 // http://www.bagley.org/~doug/shootout/
 
 public class ackermann {
 
-    public static void Main() {
+    public static int Main() {
 	int NUM = 8;
-	Ack(3, NUM);
-	return;
+	return Ack(3, NUM) != 2045? 1: 0;
 	//System.out.print("Ack(3," + NUM + "): " + Ack(3, NUM) + "\n");
     }
 

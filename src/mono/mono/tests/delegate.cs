@@ -24,10 +24,8 @@ class Test {
 		NotSimpleDelegate d2 = new NotSimpleDelegate (G);
 		NotSimpleDelegate d3 = new NotSimpleDelegate (test.H);
 		d ();
-#if NOTYETWORKING
 		Console.WriteLine (d2 (2));
 		Console.WriteLine (d3 (3));
-#endif
 		return 0;
 	}
 }
