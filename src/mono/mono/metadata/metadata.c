@@ -3260,8 +3260,9 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num
 	if (i >= tdef->rows)
 		return NULL;
 	params = NULL;
-	n = 1;
+	n = 0;
 	do {
+		n++;
 		params = g_realloc (params, sizeof (MonoGenericParam) * n);
 		params [n - 1].pklass = NULL;
 		params [n - 1].method = NULL;
@@ -3272,7 +3273,6 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, guint32 *num
 		if (++i >= tdef->rows)
 			break;
 		mono_metadata_decode_row (tdef, i, cols, MONO_GENERICPARAM_SIZE);
-		n++;
 	} while (cols [MONO_GENERICPARAM_OWNER] == owner);
 	
 	if (num)

@@ -6013,15 +6013,18 @@ MonoReflectionGenericInst*
 mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *types)
 {
 	static MonoClass *System_Reflection_MonoGenericInst;
+	MonoDomain *domain;
 	MonoType *geninst;
 	MonoGenericInst *ginst;
-	MonoClass *klass, *iklass;
-	MonoReflectionTypeBuilder *tb = NULL;
+	MonoReflectionType *ptype;
+	MonoClass *klass, *iklass, *pklass;
 	MonoReflectionGenericInst *res, *parent = NULL;
 	int i;
 
+	domain = mono_object_domain (type);
+
 	klass = mono_class_from_mono_type (type->type);
-	if (klass->num_gen_params != mono_array_length (types))
+	if (!klass->gen_params && !klass->generic_inst)
 		return NULL;
 
 	if (!System_Reflection_MonoGenericInst) {
@@ -6031,29 +6034,38 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *ty
 	}
 
 	if (klass->wastypebuilder && klass->reflection_info) {
-		tb = klass->reflection_info;
+		MonoReflectionTypeBuilder *tb = klass->reflection_info;
 
-		if (tb->parent)
-			parent = mono_reflection_bind_generic_parameters (tb->parent, types);
+		ptype = tb->parent;
+		pklass = mono_class_from_mono_type (ptype->type);
+	} else {
+		pklass = klass->parent;
+		ptype = mono_type_get_object (domain, &pklass->byval_arg);
 	}
+
+	if (pklass && pklass->generic_inst)
+		parent = mono_reflection_bind_generic_parameters (ptype, types);
+	else if (!pklass)
+		pklass = mono_defaults.object_class;
 
 	geninst = g_new0 (MonoType, 1);
 	geninst->type = MONO_TYPE_GENERICINST;
 	geninst->data.generic_inst = ginst = g_new0 (MonoGenericInst, 1);
 	ginst->generic_type = &klass->byval_arg;
-	ginst->type_argc = klass->num_gen_params;
-	ginst->type_argv = g_new0 (MonoType *, klass->num_gen_params);
-	for (i = 0; i < klass->num_gen_params; ++i) {
+
+	ginst->type_argc = mono_array_length (types);
+	ginst->type_argv = g_new0 (MonoType *, ginst->type_argc);
+	for (i = 0; i < ginst->type_argc; ++i) {
 		MonoReflectionType *garg = mono_array_get (types, gpointer, i);
 		ginst->type_argv [i] = garg->type;
 	}
 
 	iklass = mono_class_from_generic (geninst, FALSE);
 
-	mono_class_setup_parent (iklass, parent ? parent->klass : mono_defaults.object_class);
+	mono_class_setup_parent (iklass, parent ? parent->klass : pklass);
 	mono_class_setup_mono_type (iklass);
 
-	res = (MonoReflectionGenericInst *)mono_object_new (mono_object_domain (type), System_Reflection_MonoGenericInst);
+	res = (MonoReflectionGenericInst *)mono_object_new (domain, System_Reflection_MonoGenericInst);
 
 	res->type.type = iklass->generic_inst;
 	res->klass = iklass;
