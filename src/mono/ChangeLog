@@ -1,3 +1,10 @@
+2004-05-26  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* data/DefaultWsdlHelpGenerator.aspx: fixed querystring attribute
+	values. Now they are URlEncoded.
+
+	* data/browscap.ini.gz: updated.
+
 2004-05-26  Raja R Harinath  <rharinath@novell.com>
 
 	* Makefile.am (mcs-do-basic-build): No need to set MCS here.
