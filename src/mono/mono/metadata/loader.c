@@ -810,7 +810,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 
 	mono_class_init (klass);
 
-	if (klass->wastypebuilder || klass->generic_inst) /* copy the names later */
+	if (klass->generic_inst) /* copy the names later */
 		return;
 
 	if (klass->image->dynamic) {
@@ -819,8 +819,8 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
 		if (method_aux && method_aux->param_names) {
 			for (i = 0; i < method->signature->param_count; ++i)
-				if (method_aux->param_names [i])
-					names [i] = method_aux->param_names [i];
+				if (method_aux->param_names [i + 1])
+					names [i] = method_aux->param_names [i + 1];
 		}
 		return;
 	}

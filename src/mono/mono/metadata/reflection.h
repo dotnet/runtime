@@ -247,15 +247,6 @@ typedef struct {
 	guint32 call_conv;
 } MonoReflectionArrayMethod;
 
-/* 
- * Information which isn't in the MonoMethod structure is stored here for
- * dynamic methods.
- */
-typedef struct {
-	char **param_names;
-	MonoMarshalSpec **param_marshall;
-} MonoReflectionMethodAux;
-
 enum {
 	MONO_SECTION_TEXT,
 	MONO_SECTION_RSRC,
@@ -553,6 +544,16 @@ typedef struct {
 	MonoImage *image;
 	MonoCustomAttrEntry attrs [MONO_ZERO_LEN_ARRAY];
 } MonoCustomAttrInfo;
+
+/* 
+ * Information which isn't in the MonoMethod structure is stored here for
+ * dynamic methods.
+ */
+typedef struct {
+	char **param_names;
+	MonoMarshalSpec **param_marshall;
+	MonoCustomAttrInfo **param_cattr;
+} MonoReflectionMethodAux;
 
 enum {
 	RESOURCE_LOCATION_EMBEDDED = 1,

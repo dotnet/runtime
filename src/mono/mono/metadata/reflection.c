@@ -5882,10 +5882,15 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 	guint32 i, idx, method_index;
 	guint32 param_list, param_last, param_pos, found;
 	MonoImage *image;
-	
-	/* FIXME: handle dynamic custom attrs for parameters */
-	/*if (dynamic_custom_attrs && (cinfo = g_hash_table_lookup (dynamic_custom_attrs, field)))
-		return cinfo;*/
+	MonoReflectionMethodAux *aux;
+
+	if (method->klass->image->dynamic) {
+		aux = mono_g_hash_table_lookup (((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
+		if (!aux || !aux->param_cattr)
+			return NULL;
+		return aux->param_cattr [param];
+	}
+
 	image = method->klass->image;
 	method_index = find_method_index (method);
 	ca = &image->tables [MONO_TABLE_METHOD];
@@ -6691,15 +6696,20 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	method_aux = NULL;
 
 	/* Parameter names */
-	if (rmb->parameters) {
+	if (rmb->pinfo) {
 		if (!method_aux)
 			method_aux = g_new0 (MonoReflectionMethodAux, 1);
-		method_aux->param_names = g_new0 (char *, m->signature->param_count);
-		for (i = 0; i < m->signature->param_count; ++i) {
+		method_aux->param_names = g_new0 (char *, m->signature->param_count + 1);
+		for (i = 0; i <= m->signature->param_count; ++i) {
 			MonoReflectionParamBuilder *pb;
-			if ((pb = mono_array_get (rmb->parameters, MonoReflectionParamBuilder*, i))) {
+			if ((pb = mono_array_get (rmb->pinfo, MonoReflectionParamBuilder*, i))) {
 				if (pb->name)
 					method_aux->param_names [i] = mono_string_to_utf8 (pb->name);
+				if (pb->cattrs) {
+					if (!method_aux->param_cattr)
+						method_aux->param_cattr = g_new0 (MonoCustomAttrInfo*, m->signature->param_count + 1);
+					method_aux->param_cattr [i] = mono_custom_attrs_from_builders (klass->image, pb->cattrs);
+				}
 			}
 		}
 	}
@@ -6995,7 +7005,7 @@ mono_reflection_inflate_method_or_ctor (MonoReflectionGenericInst *declaring_typ
 					MonoReflectionGenericInst *reflected_type,
 					MonoObject *obj)
 {
-	MonoMethod *method, *inflated, *declaring;
+	MonoMethod *method, *inflated, *declaring = NULL;
 	MonoReflectionInflatedMethod *res;
 	MonoClass *klass, *refclass;
 	MonoGenericMethod *gmethod;
