@@ -171,3 +171,4 @@ char          *mono_metadata_locate       (metadata_t *meta, int table, int idx)
 char          *mono_metadata_locate_token (metadata_t *meta, guint32 token);
 
 const char    *mono_metadata_string_heap  (metadata_t *meta, guint32 index);
+const char    *mono_metadata_blob_heap    (metadata_t *meta, guint32 index);

@@ -8,7 +8,9 @@ libmetadata_a_SOURCES = \
 	assembly.h	\
 	assembly.c	\
 	cil-coff.h	\
+	eltype.h	\
 	endian.h	\
+	fieldattr.h	\
 	metadata.c	\
 	metadata.h	\
 	rawbuffer.c	\

@@ -604,3 +604,11 @@ mono_metadata_string_heap (metadata_t *meta, guint32 index)
 {
 	return meta->raw_metadata + meta->heap_strings.sh_offset + index;
 }
+
+
+const char *
+mono_metadata_blob_heap (metadata_t *meta, guint32 index)
+{
+	return meta->raw_metadata + meta->heap_blob.sh_offset + index;
+}
+
