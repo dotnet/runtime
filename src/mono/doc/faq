@@ -1180,5 +1180,5 @@ A: If you use mono from cvs, you need to be prepared for changes in the
 
    If you are having problems compiling or running Mono software
    or if you think that you found a bug, etc. Please visit the
-   <a href="http://geneura.ugr.es/~jaime/mono-common-problems.html">Mono Common Problems</a> document and try there. 
+   <a href="http://geneura.ugr.es/~jaime/deploy/mono-common-problems.html">Mono Common Problems</a> document and try there. 
 
