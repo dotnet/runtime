@@ -7878,7 +7878,8 @@ mono_codegen (MonoCompile *cfg)
 			cfg->epilog_begin = cfg->code_len;
 
 			if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE) {
-				code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, cfg->native_code, FALSE);
+				code = cfg->native_code + cfg->code_len;
+				code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
 				cfg->code_len = code - cfg->native_code;
 			}
 
