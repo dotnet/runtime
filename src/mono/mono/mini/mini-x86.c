@@ -2952,9 +2952,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;		
 		case OP_SIN:
 			x86_fsin (code);
+			x86_fldz (code);
+			x86_fp_op_reg (code, X86_FADD, 1, TRUE);
 			break;		
 		case OP_COS:
 			x86_fcos (code);
+			x86_fldz (code);
+			x86_fp_op_reg (code, X86_FADD, 1, TRUE);
 			break;		
 		case OP_ABS:
 			x86_fabs (code);
@@ -2989,12 +2993,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_fstp (code, 0); /* pop the 1.0 */
 			x86_patch (check_pos, code);
 			x86_patch (end_tan, code);
+			x86_fldz (code);
+			x86_fp_op_reg (code, X86_FADD, 1, TRUE);
 			x86_pop_reg (code, X86_EAX);
 			break;
 		}
 		case OP_ATAN:
 			x86_fld1 (code);
 			x86_fpatan (code);
+			x86_fldz (code);
+			x86_fp_op_reg (code, X86_FADD, 1, TRUE);
 			break;		
 		case OP_SQRT:
 			x86_fsqrt (code);

@@ -120,12 +120,13 @@ test_sources = 		\
 	objects.cs 		\
 	arrays.cs		\
 	basic-float.cs	\
+	basic-math.cs	\
 	basic.cs		\
 	exceptions.cs	\
 	iltests.il		\
 	test.cs
 
-regtests=basic.exe arrays.exe basic-float.exe basic-long.exe objects.exe basic-calls.exe iltests.exe exceptions.exe bench.exe
+regtests=basic.exe arrays.exe basic-float.exe basic-math.exe basic-long.exe objects.exe basic-calls.exe iltests.exe exceptions.exe bench.exe
 
 common_BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-long32.brg $(srcdir)/inssel-float.brg
 
