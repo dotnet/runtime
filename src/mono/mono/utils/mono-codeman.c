@@ -193,7 +193,6 @@ new_codechunk (int dynamic, int size)
 		bsize = MIN_BSIZE;
 	bsize += MIN_ALIGN -1;
 	bsize &= ~ (MIN_ALIGN - 1);
-	g_print ("aligned bsize: %d\n", bsize);
 	if (chunk_size - size < bsize) {
 		if (dynamic)
 			chunk_size = size + bsize;
