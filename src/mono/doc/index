@@ -70,7 +70,7 @@
 	      <b><a href="class-status.html">Classes</a></b>
 	    </td>
 	    <td>
-	      Corlib is self hosting.
+	      All assemblies compile.
 	    </td>
 	  </tr>
 	  <tr>
@@ -94,8 +94,28 @@
 	ONE 2002:</a></b> Come see Paolo, Mike and Miguel from the Mono team at the .NET ONE conference in Frankfurt.</ul>
 </ul>
 
-@item Oct 22th, 2002: Looking for Win32 contributors
+@item Oct 24th, 2002: S390 support, XSP/ASP.NET, Win32 contributors, TDS.
 
+	Today Neal Ferguson's support for the IBM S390 was checked
+	into CVS.
+
+	The XSP processor has been fully integrated into the
+	System.Web assembly, and Gonzalo has finished the hosting
+	interfaces in Mono.  This means that it is possible to embed
+	ASP.NET with the same APIs used in Windows, and is possible to
+	easily embed it with Apache for example.  The XSP module has
+	now become a shell for testing the System.Web classes.
+
+	We are looking for contributors that know Win32 to contribute
+	to the Windows.Forms implementation.  If you want to help
+	write some controls using the Win32 API, get in touch with our new <a
+	href="http://lists.ximian.com/mailman/listinfo/mono-winforms-list">mono-winforms-list@ximian.com
+	list</a> mailing list. 
+
+	Tim's TDS System.Data set of classes can now talk to SQL
+	servers using the TDS protocol (version 4.2).  Currently it
+	can connect, run transactions, update/insert/delete, and read
+	some types.  A data adapter is also coming soon.
 	
 @item Oct 21th, 2002: Crypto, Winforms list, Database, GConf, Debugger.
 
