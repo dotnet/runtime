@@ -29,7 +29,7 @@ AC_PROG_CC
 AM_PROG_CC_STDC
 AC_PROG_INSTALL
 
-AC_CHECK_PROG(BISON, bison, ,no)
+AC_CHECK_PROG(BISON, bison,yes,no)
 if test "x$BISON" = "xno";
 then
 	AC_MSG_ERROR([You need to install bison])
