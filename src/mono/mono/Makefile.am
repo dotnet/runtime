@@ -1,2 +1,3 @@
-SUBDIRS = io-layer monoburg metadata cil dis arch interpreter jit wrapper tests
+SUBDIRS = io-layer monoburg metadata cil dis \
+	arch monograph interpreter jit wrapper tests
 

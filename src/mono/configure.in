@@ -386,6 +386,7 @@ mono/interpreter/Makefile
 mono/tests/Makefile
 mono/wrapper/Makefile
 mono/monoburg/Makefile
+mono/monograph/Makefile
 mono/jit/Makefile
 mono/io-layer/Makefile
 runtime/Makefile
