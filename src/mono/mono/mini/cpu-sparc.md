@@ -113,6 +113,12 @@ bge.un: len:16
 bgt.un: len:16
 ble.un: len:16
 blt.un: len:16
+sparc_brz: len: 8
+sparc_brlez: len: 8
+sparc_brlz: len: 8
+sparc_brnz: len: 8
+sparc_brgz: len: 8
+sparc_brgez: len: 8
 switch:
 ldind.i1: dest:i len:4
 ldind.u1: dest:i len:4
@@ -536,9 +542,9 @@ x86_fp_load_i4: dest:f src1:b len:7
 adc: dest:i src1:i src2:i len:4
 addcc: dest:i src1:i src2:i len:4
 subcc: dest:i src1:i src2:i len:4
-adc_imm: dest:i src1:i len:8
+adc_imm: dest:i src1:i len:12
 sbb: dest:i src1:i src2:i len:4
-sbb_imm: dest:i src1:i len:8
+sbb_imm: dest:i src1:i len:12
 br_reg: src1:i len:8
 ppc_subfic: dest:i src1:i len:4
 ppc_subfze: dest:i src1:i len:4

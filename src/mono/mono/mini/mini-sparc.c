@@ -14,6 +14,7 @@
  */
 #include "mini.h"
 #include <string.h>
+#include <sys/systeminfo.h>
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
@@ -37,7 +38,8 @@
 
 /*
  * Register usage:
- * - %i0..%i7 hold the incoming arguments, these are never written by JITted code
+ * - %i0..%i<n> hold the incoming arguments, these are never written by JITted 
+ * code. Unused input registers are used for global register allocation.
  * - %l0..%l7 is used for local register allocation
  * - %o0..%o6 is used for outgoing arguments
  * - %o7 and %g1 is used as scratch registers in opcodes
@@ -50,15 +52,42 @@
  * - doubles and longs must be stored in dword aligned locations
  */
 
+/*
+ * The following things are not implemented or do not work:
+ *  - tail calls and JMP
+ *  - some fp arithmetic corner cases
+ *  - varargs
+ *  - AOT
+ *  - Thread Abort
+ * The following tests in mono/mini are expected to fail:
+ *  - test_15_float_branch_un
+ *  - test_0_simple_double_casts
+ *  - iltests.exe
+ * The following tests in mono/tests are expected to fail:
+ * appdomain-unload.exe (Thread.Abort)
+ * remoting2.exe (fails on x86)
+ * remoting3.exe (fails on x86)
+ * thread5.exe (fails on x86)
+ * jmpTest.exe (JMP)
+ * vararg.exe  (varargs)
+ * even-odd.exe (tail calls)
+ *
+ * In addition to this, the runtime requires the truncl function, or its 
+ * solaris counterpart, aintl, to do some double->int conversions. If this 
+ * function is not available, it is emulated somewhat, but the results can be
+ * strange.
+ */
+
 #if SPARCV9
 #error "Sparc V9 support not yet implemented."
 #endif
 
-int mono_exc_esp_offset = 0;
-
 #define NOT_IMPLEMENTED g_assert_not_reached ();
 
 #define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))
+
+/* Whenever the CPU supports v9 instructions */
+gboolean sparcv9 = FALSE;
 
 static int
 mono_spillvar_offset_float (MonoCompile *cfg, int spillvar);
@@ -93,107 +122,31 @@ mono_arch_cpu_init (void)
 guint32
 mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 {
+	char buf [1024];
 	guint32 opts = 0;
+
 	*exclude_mask = 0;
+
+	if (!sysinfo (SI_ISALIST, buf, 1024))
+		g_assert_not_reached ();
+
+	/* 
+	 * On some processors, the cmov instructions are even slower than the
+	 * normal ones...
+	 */
+	if (strstr (buf, "sparcv9")) {
+		opts |= MONO_OPT_CMOV | MONO_OPT_FCMOV;
+		sparcv9 = TRUE;
+	}
+	else
+		*exclude_mask |= MONO_OPT_CMOV | MONO_OPT_FCMOV;
+
 	return opts;
 }
 
 static void
 mono_sparc_break (void)
 {
-}
-
-static gboolean
-is_regsize_var (MonoType *t) {
-	if (t->byref)
-		return TRUE;
-	switch (t->type) {
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-		return TRUE;
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:
-		return TRUE;
-	case MONO_TYPE_VALUETYPE:
-		if (t->data.klass->enumtype)
-			return is_regsize_var (t->data.klass->enum_basetype);
-		return FALSE;
-	}
-	return FALSE;
-}
-
-GList *
-mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
-{
-	GList *vars = NULL;
-	int i;
-
-	/* 
-	 * FIXME: If an argument is allocated to a register, then load it from the
-	 * stack in the prolog.
-	 */
-
-	for (i = 0; i < cfg->num_varinfo; i++) {
-		MonoInst *ins = cfg->varinfo [i];
-		MonoMethodVar *vmv = MONO_VARINFO (cfg, i);
-
-		/* unused vars */
-		if (vmv->range.first_use.abs_pos > vmv->range.last_use.abs_pos)
-			continue;
-
-		/* FIXME: Make arguments on stack allocateable to registers */
-		if (ins->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || (ins->opcode == OP_REGVAR) || (ins->opcode == OP_ARG))
-			continue;
-
-		/* we can only allocate 32 bit values */
-		if (is_regsize_var (ins->inst_vtype)) {
-			g_assert (MONO_VARINFO (cfg, i)->reg == -1);
-			g_assert (i == vmv->idx);
-			vars = mono_varlist_insert_sorted (cfg, vars, vmv, FALSE);
-		}
-	}
-
-	return vars;
-}
-
-GList *
-mono_arch_get_global_int_regs (MonoCompile *cfg)
-{
-	GList *regs = NULL;
-	int i;
-
-	/* FIXME: Use unused input registers for global allocation */
-
-	/* Use %l0..%l3 as global registers */
-
-	for (i = 16; i < 20; ++i)
-		regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
-
-	return regs;
-}
-
-/*
- * mono_arch_regalloc_cost:
- *
- *  Return the cost, in number of memory references, of the action of 
- * allocating the variable VMV into a register during global register
- * allocation.
- */
-guint32
-mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
-{
-	return 0;
 }
 
 #ifdef __GNUC__
@@ -255,6 +208,11 @@ mono_sparc_flushw (void)
 	flushw ();
 }
 
+gboolean 
+mono_sparc_is_v9 (void) {
+	return sparcv9;
+}
+
 typedef enum {
 	ArgInIReg,
 	ArgInIRegPair,
@@ -276,6 +234,7 @@ typedef struct {
 typedef struct {
 	int nargs;
 	guint32 stack_usage;
+	guint32 reg_usage;
 	ArgInfo ret;
 	ArgInfo args [1];
 } CallInfo;
@@ -388,7 +347,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_ARRAY:
 			add_general (&gr, &stack_size, ainfo, FALSE);
 			break;
-		case MONO_TYPE_VALUETYPE: {
+		case MONO_TYPE_VALUETYPE:
 			if (sig->params [i]->data.klass->enumtype) {
 				simpletype = sig->params [i]->data.klass->enum_basetype->type;
 				goto enum_calc_size;
@@ -396,7 +355,9 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 
 			add_general (&gr, &stack_size, ainfo, FALSE);
 			break;
-		}
+		case MONO_TYPE_TYPEDBYREF:
+			add_general (&gr, &stack_size, ainfo, FALSE);
+			break;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
 			add_general (&gr, &stack_size, ainfo, TRUE);
@@ -437,11 +398,15 @@ enum_retvalue:
 		case MONO_TYPE_STRING:
 			cinfo->ret.storage = ArgInIReg;
 			cinfo->ret.reg = sparc_i0;
+			if (gr < 1)
+				gr = 1;
 			break;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
 			cinfo->ret.storage = ArgInIRegPair;
 			cinfo->ret.reg = sparc_i0;
+			if (gr < 2)
+				gr = 2;
 			break;
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
@@ -455,6 +420,9 @@ enum_retvalue:
 			}
 			cinfo->ret.storage = ArgOnStack;
 			break;
+		case MONO_TYPE_TYPEDBYREF:
+			cinfo->ret.storage = ArgOnStack;
+			break;
 		case MONO_TYPE_VOID:
 			break;
 		default:
@@ -463,7 +431,110 @@ enum_retvalue:
 	}
 
 	cinfo->stack_usage = stack_size;
+	cinfo->reg_usage = gr;
 	return cinfo;
+}
+
+static gboolean
+is_regsize_var (MonoType *t) {
+	if (t->byref)
+		return TRUE;
+	switch (t->type) {
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		return TRUE;
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:
+		return TRUE;
+	case MONO_TYPE_VALUETYPE:
+		if (t->data.klass->enumtype)
+			return is_regsize_var (t->data.klass->enum_basetype);
+		return FALSE;
+	}
+	return FALSE;
+}
+
+GList *
+mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
+{
+	GList *vars = NULL;
+	int i;
+
+	/* 
+	 * FIXME: If an argument is allocated to a register, then load it from the
+	 * stack in the prolog.
+	 */
+
+	for (i = 0; i < cfg->num_varinfo; i++) {
+		MonoInst *ins = cfg->varinfo [i];
+		MonoMethodVar *vmv = MONO_VARINFO (cfg, i);
+
+		/* unused vars */
+		if (vmv->range.first_use.abs_pos > vmv->range.last_use.abs_pos)
+			continue;
+
+		/* FIXME: Make arguments on stack allocateable to registers */
+		if (ins->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || (ins->opcode == OP_REGVAR) || (ins->opcode == OP_ARG))
+			continue;
+
+		/* we can only allocate 32 bit values */
+		if (is_regsize_var (ins->inst_vtype)) {
+			g_assert (MONO_VARINFO (cfg, i)->reg == -1);
+			g_assert (i == vmv->idx);
+			vars = mono_varlist_insert_sorted (cfg, vars, vmv, FALSE);
+		}
+	}
+
+	return vars;
+}
+
+GList *
+mono_arch_get_global_int_regs (MonoCompile *cfg)
+{
+	GList *regs = NULL;
+	int i;
+	MonoMethodSignature *sig;
+	CallInfo *cinfo;
+
+	sig = cfg->method->signature;
+
+	cinfo = get_call_info (sig, FALSE);
+
+	/* Use unused input registers */
+	for (i = cinfo->reg_usage; i < 6; ++i)
+		regs = g_list_prepend (regs, GUINT_TO_POINTER (sparc_i0 + i));
+
+	/* Use %l0..%l3 as global registers */
+	for (i = 16; i < 20; ++i)
+		regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
+
+	g_free (cinfo);
+
+	return regs;
+}
+
+/*
+ * mono_arch_regalloc_cost:
+ *
+ *  Return the cost, in number of memory references, of the action of 
+ * allocating the variable VMV into a register during global register
+ * allocation.
+ */
+guint32
+mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
+{
+	return 0;
 }
 
 /*
@@ -479,8 +550,6 @@ mono_arch_allocate_vars (MonoCompile *m)
 	int i, offset, size, align, curinst;
 	CallInfo *cinfo;
 
-	if (strstr (m->method->name, "pass_byref_double"))
-		printf ("FOO");
 	header = ((MonoMethodNormal *)m->method)->header;
 
 	sig = m->method->signature;
@@ -891,6 +960,30 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 
 #define EMIT_FLOAT_COND_BRANCH(ins,cond) EMIT_COND_BRANCH_GENERAL((ins),fbranch,(cond))
 
+#define EMIT_COND_BRANCH_BPR(ins,bop,predict) \
+    do { \
+	    gint32 disp; \
+		if (ins->flags & MONO_INST_BRLABEL) { \
+		   if (ins->inst_i0->inst_c0) { \
+		       disp = (ins->inst_i0->inst_c0 - ((guint8*)code - cfg->native_code)) >> 2; \
+			   g_assert (sparc_is_imm22 (disp)); \
+			} else { \
+	            mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0); \
+                disp = 0; \
+            } \
+        } else { \
+            if (ins->inst_true_bb->native_offset) { \
+               disp = (ins->inst_true_bb->native_offset - ((guint8*)code - cfg->native_code)) >> 2; \
+               g_assert (sparc_is_imm22 (disp)); \
+            } else { \
+	            mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
+                disp = 0; \
+            } \
+        } \
+		sparc_ ## bop (code, 1, (predict), ins->sreg2, disp); \
+		sparc_nop (code); \
+    } while (0)
+
 /* emit an exception if condition is fail */
 /*
  * We put the exception throwing code out-of-line, at the end of the method
@@ -951,9 +1044,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *last_ins = NULL;
 	ins = bb->code;
-
-	/* short circuit this for now */
-	return;
 
 	while (ins) {
 
@@ -1064,6 +1154,73 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->opcode = OP_MOVE;
 					ins->sreg1 = last_ins->sreg1;
 				}
+			}
+			break;
+		case OP_STOREI4_MEMBASE_IMM:
+			/* Convert pairs of 0 stores to a dword 0 store */
+			/* Used when initializing temporaries */
+			/* We know sparc_fp is dword aligned */
+			if (last_ins && (last_ins->opcode == OP_STOREI4_MEMBASE_IMM) &&
+				(ins->inst_destbasereg == last_ins->inst_destbasereg) && 
+				(ins->inst_destbasereg == sparc_fp) &&
+				(ins->inst_offset < 0) &&
+				((ins->inst_offset % 8) == 0) &&
+				((ins->inst_offset == last_ins->inst_offset - 4)) &&
+				(ins->inst_imm == 0) &&
+				(last_ins->inst_imm == 0)) {
+				if (sparcv9) {
+					last_ins->opcode = OP_STOREI8_MEMBASE_IMM;
+					last_ins->inst_offset = ins->inst_offset;
+					last_ins->next = ins->next;				
+					ins = ins->next;
+					continue;
+				}
+			}
+			break;
+		case CEE_BEQ:
+		case CEE_BNE_UN:
+		case CEE_BLT:
+		case CEE_BGT:
+		case CEE_BGE:
+		case CEE_BLE:
+			/*
+			 * Convert compare with zero+branch to BRcc
+			 */
+			/* 
+			 * This only works in 64 bit mode, since it examines all 64
+			 * bits of the register.
+			 */
+			if (0 && sparcv9 && last_ins && 
+				(last_ins->opcode == OP_COMPARE_IMM) &&
+				(last_ins->inst_imm == 0)) {
+				MonoInst *next = ins->next;
+				switch (ins->opcode) {
+				case CEE_BEQ:
+					ins->opcode = OP_SPARC_BRZ;
+					break;
+				case CEE_BNE_UN:
+					ins->opcode = OP_SPARC_BRNZ;
+					break;
+				case CEE_BLT:
+					ins->opcode = OP_SPARC_BRLZ;
+					break;
+				case CEE_BGT:
+					ins->opcode = OP_SPARC_BRGZ;
+					break;
+				case CEE_BGE:
+					ins->opcode = OP_SPARC_BRGEZ;
+					break;
+				case CEE_BLE:
+					ins->opcode = OP_SPARC_BRLEZ;
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+				ins->sreg2 = last_ins->sreg1;
+				*last_ins = *ins;
+				last_ins->next = next;
+				ins = next;
+				continue;
 			}
 			break;
 		case CEE_CONV_I4:
@@ -1533,7 +1690,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	guint32 src1_mask, src2_mask, dest_mask;
 	guint32 cur_iregs, cur_fregs;
 
-	/* FIXME: clobbering */
+	/* FIXME: Use caller saved regs and %i1-%2 for allocation */
 
 	if (!bb->code)
 		return;
@@ -1619,8 +1776,6 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Dont free register which can't be allocated */
 			if (reg_is_freeable (ins->dreg)) {
 				cur_iregs |= 1 << ins->dreg;
-				if (ins->dreg == sparc_o0)
-					printf ("OOPS.\n");
 				DEBUG (g_print ("adding %d to cur_iregs\n", ins->dreg));
 			}
 		} else if (ins->opcode == OP_SETFREG) {
@@ -1780,7 +1935,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					/* the register gets spilled after this inst */
 					spill = -val -1;
 				}
-				if (0 && ins->opcode == OP_MOVE) {
+				if (0 && (ins->opcode == OP_MOVE) && reg_is_freeable (ins->dreg)) {
 					/* 
 					 * small optimization: the dest register is already allocated
 					 * but the src one is not: we can simply assign the same register
@@ -1887,19 +2042,6 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	}
 }
 
-static guchar*
-emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int size, gboolean is_signed)
-{
-	return code;
-}
-
-static unsigned char*
-mono_emit_stack_alloc (guchar *code, MonoInst* tree)
-{
-	NOT_IMPLEMENTED;
-	return code;
-}
-
 static void
 sparc_patch (guint8 *code, const guint8 *target)
 {
@@ -1916,6 +2058,12 @@ sparc_patch (guint8 *code, const guint8 *target)
 			NOT_IMPLEMENTED;
 		/* Bicc */
 		*(guint32*)code = ((ins >> 22) << 22) | (disp & 0x3fffff);
+	}
+	else if ((op == 0) && (op2 == 3)) {
+		if (!sparc_is_imm16 (disp))
+			NOT_IMPLEMENTED;
+		/* BPr */
+		*(guint32*)code |= ((disp << 21) & (0x180000)) | (disp & 0x3fff);
 	}
 	else if ((op == 0) && (op2 == 6)) {
 		if (!sparc_is_imm22 (disp))
@@ -2158,6 +2306,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STORE_MEMBASE_IMM:
 		case OP_STOREI4_MEMBASE_IMM:
 			EMIT_STORE_MEMBASE_IMM (ins, st);
+			break;
+		case OP_STOREI8_MEMBASE_IMM:
+			/* Only generated by peephole opts */
+			g_assert ((ins->inst_offset % 8) == 0);
+			g_assert (ins->inst_imm == 0);
+			EMIT_STORE_MEMBASE_IMM (ins, stx);
 			break;
 		case OP_STOREI1_MEMBASE_REG:
 			EMIT_STORE_MEMBASE_REG (ins, stb);
@@ -2617,10 +2771,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CLT_UN:
 		case OP_CGT:
 		case OP_CGT_UN:
-			sparc_clr_reg (code, ins->dreg);
-			sparc_branch (code, 1, opcode_to_sparc_cond (ins->opcode), 2);
-			/* delay slot */
-			sparc_set (code, 1, ins->dreg);
+			if (cfg->opt & MONO_OPT_CMOV) {
+				sparc_clr_reg (code, ins->dreg);
+				sparc_movcc_imm (code, sparc_icc, opcode_to_sparc_cond (ins->opcode), 1, ins->dreg);
+			}
+			else {
+				sparc_clr_reg (code, ins->dreg);
+				sparc_branch (code, 1, opcode_to_sparc_cond (ins->opcode), 2);
+				/* delay slot */
+				sparc_set (code, 1, ins->dreg);
+			}
 			break;
 		case OP_COND_EXC_EQ:
 		case OP_COND_EXC_NE_UN:
@@ -2649,6 +2809,25 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_BLE:
 		case CEE_BLE_UN:
 			EMIT_COND_BRANCH (ins, opcode_to_sparc_cond (ins->opcode));
+			break;
+		case OP_SPARC_BRZ:
+			/* We misuse the macro arguments */
+			EMIT_COND_BRANCH_BPR (ins, brz, 1);
+			break;
+		case OP_SPARC_BRLEZ:
+			EMIT_COND_BRANCH_BPR (ins, brlez, 1);
+			break;
+		case OP_SPARC_BRLZ:
+			EMIT_COND_BRANCH_BPR (ins, brlz, 1);
+			break;
+		case OP_SPARC_BRNZ:
+			EMIT_COND_BRANCH_BPR (ins, brnz, 1);
+			break;
+		case OP_SPARC_BRGZ:
+			EMIT_COND_BRANCH_BPR (ins, brgz, 1);
+			break;
+		case OP_SPARC_BRGEZ:
+			EMIT_COND_BRANCH_BPR (ins, brgez, 1);
 			break;
 
 		/* floating point opcodes */
@@ -2988,6 +3167,8 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			NOT_IMPLEMENTED;
 			continue;
 		}
+		default:
+			break;
 		}
 		sparc_patch (ip, target);
 	}
@@ -3049,7 +3230,7 @@ void*
 mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
 	guchar *code = p;
-	int arg_size = 0, save_mode = SAVE_NONE;
+	int save_mode = SAVE_NONE;
 	MonoMethod *method = cfg->method;
 	int rtype = method->signature->ret->type;
 	
@@ -3170,13 +3351,11 @@ guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
 	MonoMethod *method = cfg->method;
-	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
-	int alloc_size, max_offset, i;
 	guint8 *code;
 	CallInfo *cinfo;
-	guint32 offset;
+	guint32 i, offset;
 
 	cfg->code_size = 256;
 	code = cfg->native_code = g_malloc (cfg->code_size);
@@ -3297,7 +3476,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		else
 			if ((ainfo->storage == ArgInIRegPair) && (inst->opcode != OP_REGVAR)) {
 				/* Argument in regpair, but need to be saved to stack */
-				g_assert (((inst->inst_offset) % 8) == 0);
 				if (!sparc_is_imm13 (inst->inst_offset + 4))
 					NOT_IMPLEMENTED;
 				sparc_st_imm (code, sparc_i0 + ainfo->reg, inst->inst_basereg, inst->inst_offset);
@@ -3358,7 +3536,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 {
 	MonoJumpInfo *patch_info;
 	MonoMethod *method = cfg->method;
-	int pos, i;
 	guint8 *code;
 
 	code = cfg->native_code + cfg->code_len;
@@ -3464,9 +3641,7 @@ mono_arch_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 int
 mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
-	int k, frame_size = 0;
-	int size, align, pad;
-	int offset = 8;
+	int k, align;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
 

@@ -42,4 +42,6 @@ gpointer* mono_sparc_get_vcall_slot_addr (guint32 *code, guint32 *fp);
 
 void mono_sparc_flushw (void);
 
+gboolean mono_sparc_is_v9 (void);
+
 #endif /* __MONO_MINI_SPARC_H__ */  

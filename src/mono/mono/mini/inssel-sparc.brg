@@ -423,6 +423,13 @@ stmt: OP_SETRET (CEE_LDIND_I4(OP_REGVAR)) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+stmt: OP_SETRET (CEE_LDIND_I(OP_REGVAR)) {
+	tree->opcode = OP_SETREG;
+	tree->dreg = sparc_i0;
+	tree->sreg1 = state->left->left->tree->dreg;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 stmt: OP_OUTARG (CEE_LDIND_I (OP_REGVAR)) {
 	tree->opcode = OP_SETREG;
 	tree->dreg = tree->unused;
@@ -460,6 +467,60 @@ reg: OP_LOCALLOC (OP_ICONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+# Optimized version for initializing valuetypes on the stack
+stmt: OP_MEMSET (OP_LDADDR(OP_REGOFFSET)) "0" {
+	int size = tree->unused;
+	int offset = state->left->left->tree->inst_offset;
+	int destreg = state->left->left->tree->inst_basereg;
+	int val_reg;
+
+	if (tree->inst_imm) {
+		val_reg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_ICONST (s, val_reg, tree->inst_imm);
+	}
+	else
+		val_reg = sparc_g0;
+
+	/* Target address must be dword aligned */
+	if ((tree->inst_imm == 0) && (size >= 8) && 
+		(destreg == sparc_fp) && ((offset % 8) == 0)) {
+		if (!mono_sparc_is_v9 ()) {
+			/* Use STD */
+			MONO_EMIT_NEW_ICONST (s, sparc_g1, 0);
+
+			while (size >= 8) {
+				MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI8_MEMBASE_REG, destreg, offset, val_reg);
+				offset += 8;
+				size -= 8;
+			}
+		}
+		else {
+			/* Use STX imm */
+			while (size >= 8) {
+				MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STOREI8_MEMBASE_IMM, destreg, offset, 0);
+				offset += 8;
+				size -= 8;
+			}
+		}
+	}
+		
+	while (size >= 4) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, destreg, offset, val_reg);
+		offset += 4;
+		size -= 4;
+	}
+	while (size >= 2) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI2_MEMBASE_REG, destreg, offset, val_reg);
+		offset += 2;
+		size -= 2;
+	}
+	while (size >= 1) {
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI1_MEMBASE_REG, destreg, offset, val_reg);
+		offset += 1;
+		size -= 1;
+	}
+}		
+
 stmt: OP_MEMSET (reg) "0" {
 	int size = tree->unused;
 	int offset = 0;
@@ -476,10 +537,8 @@ stmt: OP_MEMSET (reg) "0" {
 	/* FIXME: This assumes the destination is dword aligned */
 	/*
 	if ((tree->inst_imm == 0) && (size >= 8)) {
-		MONO_EMIT_NEW_ICONST (s, sparc_g1, 0);
-
 		while (size >= 8) {
-			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI8_MEMBASE_REG, destreg, offset, val_reg);
+			MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI8_MEMBASE_IMM, destreg, offset, sparc_g0);
 			offset += 8;
 			size -= 8;
 		}

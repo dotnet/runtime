@@ -35,7 +35,7 @@ typedef struct MonoContext {
 gboolean  mono_sparc_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only);
 
 #define MONO_CONTEXT_SET_IP(ctx,eip) do { (ctx)->ip = (long)(eip); } while (0); 
-#define MONO_CONTEXT_SET_BP(ctx,ebp) do { (ctx)->sp = (long)(ebp); } while (0); 
+#define MONO_CONTEXT_SET_BP(ctx,ebp) do { (ctx)->fp = (long)(ebp); } while (0); 
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->ip))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->fp))
@@ -405,7 +405,7 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data)
 	mono_sparc_flushw ();
 
 	MONO_CONTEXT_SET_IP (&ctx, __builtin_return_address (0));
-	MONO_CONTEXT_SET_BP (&ctx, __builtin_frame_address (1));
+	MONO_CONTEXT_SET_BP (&ctx, __builtin_frame_address (0));
 
 	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
 		
@@ -487,7 +487,7 @@ mono_sparc_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		mono_ex = NULL;
 	}
 
-	printf ("HANDLING EXCEPTION: %s\n", ((MonoObject*)obj)->vtable->klass->name);
+	//printf ("HANDLING EXCEPTION: %s\n", ((MonoObject*)obj)->vtable->klass->name);
 	
 	if (obj == domain->stack_overflow_ex)
 		stack_overflow = TRUE;
