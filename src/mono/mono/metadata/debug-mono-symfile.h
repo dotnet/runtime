@@ -118,7 +118,6 @@ struct MonoDebugLexicalBlockEntry {
 };
 
 struct MonoDebugLineNumberEntry {
-	guint32 line;
 	guint32 offset;
 	guint32 address;
 };
@@ -243,7 +242,7 @@ struct MonoSymbolFile {
 #define MONO_SYMBOL_FILE_VERSION		35
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
-#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	26
+#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	27
 #define MONO_SYMBOL_FILE_DYNAMIC_MAGIC		0x7aff65af4253d427
 
 extern MonoGlobalSymbolFile *mono_debugger_global_symbol_file;
