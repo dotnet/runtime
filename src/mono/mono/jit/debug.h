@@ -74,6 +74,9 @@ int            mono_insert_breakpoint_full (MonoMethodDesc *desc, gboolean use_t
 
 int            mono_remove_breakpoint (int breakpint_id);
 
+void           mono_debugger_trampoline_breakpoint_callback (void);
+
+
 /* DEBUGGER PUBLIC FUNCTION:
  *
  * This is a public function which is supposed to be called from within a debugger

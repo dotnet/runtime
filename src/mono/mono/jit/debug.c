@@ -37,9 +37,13 @@ static MonoDebugHandle *mono_debug_handle = NULL;
 static gconstpointer debugger_notification_address = NULL;
 static pthread_cond_t debugger_thread_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t debugger_thread_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+static pthread_cond_t debugger_finished_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t debugger_finished_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t debugger_start_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t debugger_start_mutex = PTHREAD_MUTEX_INITIALIZER;
 static gboolean debugger_signalled = FALSE;
+static gboolean must_send_finished = FALSE;
+
 
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
@@ -82,26 +86,24 @@ mono_debugger_unlock (void)
 }
 
 static void
-mono_debugger_signal (void)
+mono_debugger_signal (gboolean modified, gboolean wait_until_finished)
 {
 	mono_debugger_lock ();
 	if (!debugger_signalled) {
 		debugger_signalled = TRUE;
+		if (modified)
+			debugger_symbol_file_table_modified = TRUE;
 		pthread_cond_signal (&debugger_thread_cond);
 	}
+	if (wait_until_finished)
+		must_send_finished = TRUE;
 	mono_debugger_unlock ();
-}
 
-static void
-mono_debugger_signal_modified (void)
-{
-	mono_debugger_lock ();
-	if (!debugger_signalled) {
-		debugger_signalled = TRUE;
-		debugger_symbol_file_table_modified = TRUE;
-		pthread_cond_signal (&debugger_thread_cond);
+	if (wait_until_finished) {
+		pthread_mutex_lock (&debugger_finished_mutex);
+		pthread_cond_wait (&debugger_finished_cond, &debugger_finished_mutex);
+		pthread_mutex_unlock (&debugger_finished_mutex);
 	}
-	mono_debugger_unlock ();
 }
 
 static void
@@ -977,7 +979,7 @@ mono_debug_add_type (MonoClass *klass)
 	if (info->symfile) {
 		mono_debugger_lock ();
 		mono_debug_symfile_add_type (info->symfile, klass);
-		mono_debugger_signal_modified ();
+		mono_debugger_signal (TRUE, FALSE);
 		mono_debugger_unlock ();
 	}
 }
@@ -1147,7 +1149,7 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 
 	if (info->symfile) {
 		mono_debug_symfile_add_method (info->symfile, method);
-		mono_debugger_signal_modified ();
+		mono_debugger_signal (TRUE, FALSE);
 	}
 
 	mono_debugger_unlock ();
@@ -1339,6 +1341,13 @@ debugger_thread_func (gpointer ptr)
 		/* Clear modified and signalled flag. */
 		debugger_symbol_file_table_modified = FALSE;
 		debugger_signalled = FALSE;
+
+		if (must_send_finished) {
+			pthread_mutex_lock (&debugger_finished_mutex);
+			pthread_cond_signal (&debugger_finished_cond);
+			must_send_finished = FALSE;
+			pthread_mutex_unlock (&debugger_finished_mutex);
+		}
 	}
 
 	return NULL;
@@ -1437,7 +1446,7 @@ debugger_compile_method (MonoMethod *method)
 
 	mono_debugger_lock ();
 	retval = mono_compile_method (method);
-	mono_debugger_signal ();
+	mono_debugger_signal (FALSE, FALSE);
 	mono_debugger_unlock ();
 	return retval;
 }
@@ -1481,4 +1490,10 @@ mono_method_has_breakpoint (MonoMethod* method, gboolean use_trampoline)
 	}
 
 	return 0;
+}
+
+void
+mono_debugger_trampoline_breakpoint_callback (void)
+{
+	mono_debugger_signal (FALSE, TRUE);
 }

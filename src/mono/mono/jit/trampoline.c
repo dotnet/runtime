@@ -70,13 +70,14 @@ get_breakpoint_trampoline (MonoMethod *m, guint32 breakpoint_id, gpointer addr)
 	guint8 *code, *start, *buf;
 
 	if (!mono_breakpoint_trampoline_code) {
-		mono_breakpoint_trampoline_code = buf = g_malloc (8);
+		mono_breakpoint_trampoline_code = buf = g_malloc (13);
 
+		x86_call_code (buf, mono_debugger_trampoline_breakpoint_callback);
 		x86_breakpoint (buf);
 		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 8);
 		x86_ret (buf);
 
-		g_assert ((buf - mono_breakpoint_trampoline_code) <= 8);
+		g_assert ((buf - mono_breakpoint_trampoline_code) <= 13);
 	}
 
 	start = code = g_malloc (22);
