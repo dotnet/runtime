@@ -528,6 +528,7 @@ x86_test_null: src1:i len:2
 x86_compare_membase_reg: src1:b src2:i len:6
 x86_compare_membase_imm: src1:b len:11
 x86_compare_membase8_imm: src1:b len:8
+x86_compare_mem_imm: len:11
 x86_compare_reg_membase: src1:i src2:b len:6
 x86_inc_reg: dest:i src1:i clob:1 len:1
 x86_inc_membase: src1:b len:6

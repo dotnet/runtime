@@ -149,6 +149,17 @@ cflags: OP_COMPARE (CEE_LDIND_U4 (base), OP_ICONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+
+cflags: OP_COMPARE (CEE_LDIND_REF (OP_ICONST), OP_ICONST),
+cflags: OP_COMPARE (CEE_LDIND_I (OP_ICONST), OP_ICONST),
+cflags: OP_COMPARE (CEE_LDIND_I4 (OP_ICONST), OP_ICONST),
+cflags: OP_COMPARE (CEE_LDIND_U4 (OP_ICONST), OP_ICONST) {
+	tree->opcode = OP_X86_COMPARE_MEM_IMM;
+	tree->inst_offset = state->left->left->tree->inst_c0;
+	tree->inst_imm = state->right->tree->inst_c0;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 cflags: OP_COMPARE (reg, CEE_LDIND_REF (base)),
 cflags: OP_COMPARE (reg, CEE_LDIND_I (base)),
 cflags: OP_COMPARE (reg, CEE_LDIND_I4 (base)),

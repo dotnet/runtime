@@ -2815,6 +2815,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_X86_COMPARE_REG_MEMBASE:
 			x86_alu_reg_membase (code, X86_CMP, ins->sreg1, ins->sreg2, ins->inst_offset);
 			break;
+		case OP_X86_COMPARE_MEM_IMM:
+			x86_alu_mem_imm (code, X86_CMP, ins->inst_offset, ins->inst_imm);
+			break;
 		case OP_X86_TEST_NULL:
 			x86_test_reg_reg (code, ins->sreg1, ins->sreg1);
 			break;
