@@ -144,6 +144,22 @@ class Tests {
 		return (int)(1.0 + (a + (b + (c + (d + (e + (f + (g + (h + i)))))))));
 	}
 
+	static int test_4_float_sub_spill () {
+		// we overflow the FP stack
+		double a = 1;
+		double b = 2;
+		double c = 3;
+		double d = 4;
+		double e = 5;
+		double f = 6;
+		double g = 7;
+		double h = 8;
+		double i = 9;
+
+		return -(int)(1.0 - (a - (b - (c - (d - (e - (f - (g - (h - i)))))))));
+		////// -(int)(1.0 - (1 - (2 - (3 - (4 - (5 - (6 - (7 - (8 - 9)))))))));
+	}
+
 	static int test_362880_float_mul_spill () {
 		// we overflow the FP stack
 		double a = 1;
