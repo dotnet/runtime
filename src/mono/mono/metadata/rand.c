@@ -29,7 +29,7 @@
 #endif
 
 void 
-ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes (MonoObject *self, MonoArray *arry)
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes (MonoObject *self, MonoArray *arry)
 {
     guint32 len;
     gint file;
@@ -68,7 +68,7 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes (MonoOb
 }
 
 void 
-ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetNonZeroBytes (MonoObject *self, MonoArray *arry)
+ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetNonZeroBytes (MonoObject *self, MonoArray *arry)
 {
     guint32 len;
     gint file, i;
@@ -106,13 +106,13 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetNonZeroBytes 
 /* This needs to change when I do the Win32 support... */
 #else
 #warning "No Entropy Source Found"
-void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetBytes(MonoObject *self, MonoArray *arry)
+void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetBytes(MonoObject *self, MonoArray *arry)
 {
     g_warning("0K problem. We have no entropy. Badness will occur.");
     mono_raise_exception(mono_get_exception_not_implemented());
 }
 
-void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_GetNonZeroBytes(MonoObject *self, MonoArray *arry)
+void ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_InternalGetNonZeroBytes(MonoObject *self, MonoArray *arry)
 {
     g_warning("0K problem. We have no entropy. Badness will occur.");
     mono_raise_exception(mono_get_exception_not_implemented());
