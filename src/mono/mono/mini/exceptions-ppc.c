@@ -25,7 +25,17 @@
 #include "mini-ppc.h"
 
 #ifdef __APPLE__
-typedef struct sigcontext MonoContext;
+/* we define our own structure and we'll copy the data
+ * from sigcontext/ucontext/mach when we need it.
+ * This also makes us save stack space and time when copying
+ * so we'll likely do the same thing on Linux, too, later.
+ */
+typedef struct {
+	gulong sc_ir;          // pc 
+	gulong sc_sp;          // r1
+	gulong regs [19];
+	double fregs [20];
+} MonoContext;
 #else
 typedef struct ucontext MonoContext;
 #endif
@@ -474,8 +484,9 @@ ppc_unwind_native_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 #ifdef __APPLE__
 	/* FIXME: restore the rest of the registers */
 #define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
-		ppc_lwz (code, ip_reg, G_STRUCT_OFFSET (struct sigcontext, sc_ir), ctx_reg);	\
-		ppc_lwz (code, ppc_sp, G_STRUCT_OFFSET (struct sigcontext, sc_sp), ctx_reg);	\
+		ppc_lwz (code, ip_reg, G_STRUCT_OFFSET (MonoContext, sc_ir), ctx_reg);	\
+		ppc_lwz (code, ppc_sp, G_STRUCT_OFFSET (MonoContext, sc_sp), ctx_reg);	\
+		ppc_lmw (code, ppc_r13, ctx_reg, G_STRUCT_OFFSET (MonoContext, regs));	\
 	} while (0)
 
 /* nothing to do */
@@ -615,7 +626,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 	MONO_CONTEXT_SET_BP (&ctx, esp);
 	MONO_CONTEXT_SET_IP (&ctx, eip);
 #ifdef __APPLE__
-	/* FIXME */
+	memcpy (&ctx.regs, int_regs, sizeof (gulong) * 19);
 #else
 	memcpy (((char*)ctx.uc_mcontext.uc_regs) + regoffset (PT_R13), int_regs, sizeof (gulong) * 19);
 #endif
@@ -867,7 +878,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 				if (ji->used_regs & (1 << i)) {
 					offset += sizeof (gulong);
 #ifdef __APPLE__
-					/* FIXME */
+					new_ctx->regs [i] = *(gulong*)((char*)sframe->sp - offset);
 #else
 					*(gulong*)(((char*)new_ctx->uc_mcontext.uc_regs) + regoffset (PT_R0 + i)) = *(gulong*)((char*)sframe->sp - offset);
 #endif
@@ -919,7 +930,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		MONO_CONTEXT_SET_BP (new_ctx, (*lmf)->ebp);
 		MONO_CONTEXT_SET_IP (new_ctx, (*lmf)->eip);
 #ifdef __APPLE__
-	/* FIXME */
+		memcpy (&new_ctx->regs, (*lmf)->iregs, sizeof (gulong) * 19);
 #else
 		memcpy (((char*)new_ctx->uc_mcontext.uc_regs) + regoffset (PT_R13), (*lmf)->iregs, sizeof (gulong) * 19);
 #endif
