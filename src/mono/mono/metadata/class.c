@@ -39,6 +39,8 @@ gboolean mono_print_vtable = FALSE;
 
 static MonoClass * mono_class_create_from_typedef (MonoImage *image, guint32 type_token);
 
+void (*mono_debugger_class_init_func) (MonoClass *klass) = NULL;
+
 MonoClass *
 mono_class_from_typeref (MonoImage *image, guint32 type_token)
 {
@@ -929,6 +931,9 @@ mono_class_init (MonoClass *class)
 		if (class->vtable [finalize_slot] != default_finalize)
 			class->has_finalize = 1;
 	}
+
+	if (mono_debugger_class_init_func)
+		mono_debugger_class_init_func (class);
 }
 
 

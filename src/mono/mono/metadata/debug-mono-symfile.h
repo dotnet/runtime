@@ -17,6 +17,7 @@ typedef struct MonoDebugMethodInfo		MonoDebugMethodInfo;
 typedef struct MonoDebugMethodJitInfo		MonoDebugMethodJitInfo;
 typedef struct MonoDebugVarInfo			MonoDebugVarInfo;
 typedef struct MonoDebugRangeInfo		MonoDebugRangeInfo;
+typedef struct MonoDebugTypeInfo		MonoDebugTypeInfo;
 
 /* Keep in sync with OffsetTable in mcs/class/Mono.CSharp.Debugger/MonoSymbolTable.cs */
 struct MonoSymbolFileOffsetTable {
@@ -124,6 +125,13 @@ struct MonoDebugRangeInfo {
 	guint32 dynamic_size;
 };
 
+struct MonoDebugTypeInfo {
+	MonoClass *klass;
+	guint32 rank;
+	guint32 token;
+	gpointer type_info;
+};
+
 struct MonoSymbolFile {
 	guint64 magic;
 	guint32 version;
@@ -144,6 +152,10 @@ struct MonoSymbolFile {
 	MonoDebugRangeInfo *range_table;
 	guint32 range_entry_size;
 	guint32 num_range_entries;
+	/* Pointer to the malloced class table. */
+	MonoDebugTypeInfo *type_table;
+	guint32 type_entry_size;
+	guint32 num_type_entries;
 	/* Private. */
 	MonoSymbolFilePriv *_priv;
 };
@@ -151,7 +163,7 @@ struct MonoSymbolFile {
 #define MONO_SYMBOL_FILE_VERSION		26
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614
 
-#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	5
+#define MONO_SYMBOL_FILE_DYNAMIC_VERSION	6
 #define MONO_SYMBOL_FILE_DYNAMIC_MAGIC		0x7aff65af4253d427
 
 MonoSymbolFile *
@@ -162,6 +174,10 @@ mono_debug_open_mono_symbol_file   (MonoImage                 *image,
 void
 mono_debug_symfile_add_method      (MonoSymbolFile           *symfile,
 				    MonoMethod               *method);
+
+void
+mono_debug_symfile_add_type        (MonoSymbolFile           *symfile,
+				    MonoClass                *klass);
 
 void
 mono_debug_close_mono_symbol_file  (MonoSymbolFile           *symfile);
@@ -187,6 +203,9 @@ MonoReflectionType *
 ves_icall_MonoDebugger_GetLocalTypeFromSignature (MonoReflectionAssembly *assembly,
 						  MonoArray              *signature);
 
+MonoReflectionType *
+ves_icall_MonoDebugger_GetType     (MonoReflectionAssembly   *assembly,
+				    guint32                   token);
 
 #endif /* __MONO_SYMFILE_H__ */
 

@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #define RANGE_TABLE_CHUNK_SIZE	256
+#define TYPE_TABLE_CHUNK_SIZE	256
 
 struct MonoSymbolFilePriv
 {
@@ -46,7 +47,8 @@ static int write_string_table (MonoSymbolFile *symfile);
 static int create_symfile (MonoSymbolFile *symfile, gboolean emit_warnings);
 static void close_symfile (MonoSymbolFile *symfile);
 static MonoDebugRangeInfo *allocate_range_entry (MonoSymbolFile *symfile);
-static gpointer write_type (MonoSymbolFile *symfile, MonoType *type);
+static MonoDebugTypeInfo *allocate_type_entry (MonoSymbolFile *symfile);
+static gpointer write_type (MonoType *type);
 
 static void
 free_method_info (MonoDebugMethodInfo *minfo)
@@ -401,7 +403,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 			var_table++;
 		} else {
 			*var_table++ = *mep->minfo->jit->this_var;
-			*type_table++ = write_type (symfile, &method->klass->this_arg);
+			*type_table++ = write_type (&method->klass->this_arg);
 		}
 	}
 
@@ -413,7 +415,7 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 	} else {
 		for (i = 0; i < mep->minfo->jit->num_params; i++) {
 			*var_table++ = mep->minfo->jit->params [i];
-			*type_table++ = write_type (symfile, method->signature->params [i]);
+			*type_table++ = write_type (method->signature->params [i]);
 		}
 	}
 
@@ -455,6 +457,20 @@ mono_debug_symfile_add_method (MonoSymbolFile *symfile, MonoMethod *method)
 			}
 		}
 	}
+}
+
+void
+mono_debug_symfile_add_type (MonoSymbolFile *symfile, MonoClass *klass)
+{
+	MonoDebugTypeInfo *info = allocate_type_entry (symfile);
+
+	info->klass = klass;
+	if (klass->rank) {
+		info->token = klass->element_class->type_token;
+		info->rank = klass->rank;
+	} else
+		info->token = klass->type_token;
+	info->type_info = write_type (&klass->this_arg);
 }
 
 static void
@@ -794,6 +810,20 @@ ves_icall_MonoDebugger_GetMethod (MonoReflectionAssembly *assembly, guint32 toke
 }
 
 MonoReflectionType *
+ves_icall_MonoDebugger_GetType (MonoReflectionAssembly *assembly, guint32 token)
+{
+	MonoClass *klass;
+
+	klass = g_hash_table_lookup (assembly->assembly->image->class_cache, GUINT_TO_POINTER (token));
+	if (!klass) {
+		g_warning (G_STRLOC ": %x", token);
+		return NULL;
+	}
+
+	return mono_type_get_object (mono_domain_get (), &klass->byval_arg);
+}
+
+MonoReflectionType *
 ves_icall_MonoDebugger_GetLocalTypeFromSignature (MonoReflectionAssembly *assembly, MonoArray *signature)
 {
 	MonoDomain *domain; 
@@ -845,8 +875,35 @@ allocate_range_entry (MonoSymbolFile *symfile)
 	return retval;
 }
 
+static MonoDebugTypeInfo *
+allocate_type_entry (MonoSymbolFile *symfile)
+{
+	MonoDebugTypeInfo *retval;
+	guint32 size, chunks;
+
+	symfile->type_entry_size = sizeof (MonoDebugTypeInfo);
+
+	if (!symfile->type_table) {
+		size = sizeof (MonoDebugTypeInfo) * TYPE_TABLE_CHUNK_SIZE;
+		symfile->type_table = g_malloc0 (size);
+		symfile->num_type_entries = 1;
+		return symfile->type_table;
+	}
+
+	if (!((symfile->num_type_entries + 1) % TYPE_TABLE_CHUNK_SIZE)) {
+		chunks = (symfile->num_type_entries + 1) / TYPE_TABLE_CHUNK_SIZE;
+		size = sizeof (MonoDebugTypeInfo) * TYPE_TABLE_CHUNK_SIZE * (chunks + 1);
+
+		symfile->type_table = g_realloc (symfile->type_table, size);
+	}
+
+	retval = symfile->type_table + symfile->num_type_entries;
+	symfile->num_type_entries++;
+	return retval;
+}
+
 static gpointer
-write_simple_type (MonoSymbolFile *symfile, MonoType *type)
+write_simple_type (MonoType *type)
 {
 	guint8 buffer [BUFSIZ], *ptr = buffer, *retval;
 	guint32 size;
@@ -911,7 +968,7 @@ write_simple_type (MonoSymbolFile *symfile, MonoType *type)
 }
 
 static gpointer
-write_type (MonoSymbolFile *symfile, MonoType *type)
+write_type (MonoType *type)
 {
 	guint8 buffer [BUFSIZ], *ptr = buffer, *retval;
 	int num_fields = 0;
@@ -924,7 +981,7 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 	if (retval)
 		return retval;
 
-	retval = write_simple_type (symfile, type);
+	retval = write_simple_type (type);
 	if (retval)
 		return retval;
 
@@ -986,7 +1043,7 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 		*ptr++ = (guint8*)&array.max_length - (guint8*)&array;
 		*ptr++ = sizeof (array.max_length);
 		*ptr++ = (guint8*)&array.vector - (guint8*)&array;
-		*((gpointer *) ptr)++ = write_type (symfile, type->data.type);
+		*((gpointer *) ptr)++ = write_type (type->data.type);
 		break;
 	}
 
@@ -1007,7 +1064,7 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 		*ptr++ = sizeof (bounds.lower_bound);
 		*ptr++ = (guint8*)&bounds.length - (guint8*)&bounds;
 		*ptr++ = sizeof (bounds.length);
-		*((gpointer *) ptr)++ = write_type (symfile, type->data.array->type);
+		*((gpointer *) ptr)++ = write_type (type->data.array->type);
 		break;
 	}
 
@@ -1022,7 +1079,7 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 			*((int *) ptr)++ = -5 - sizeof (gpointer);
 			*((guint32 *) ptr)++ = sizeof (MonoObject);
 			*ptr++ = 4;
-			*((gpointer *) ptr)++ = write_type (symfile, klass->enum_basetype);
+			*((gpointer *) ptr)++ = write_type (klass->enum_basetype);
 			break;
 		}
 
@@ -1036,12 +1093,12 @@ write_type (MonoSymbolFile *symfile, MonoType *type)
 				continue;
 
 			*((guint32 *) ptr)++ = klass->fields [i].offset + base_offset;
-			*((gpointer *) ptr)++ = write_type (symfile, klass->fields [i].type);
+			*((gpointer *) ptr)++ = write_type (klass->fields [i].type);
 		}
 
 		if (type->type == MONO_TYPE_CLASS) {
 			if (klass->parent)
-				*((gpointer *) ptr)++ = write_type (symfile, &klass->parent->this_arg);
+				*((gpointer *) ptr)++ = write_type (&klass->parent->this_arg);
 			else
 				*((gpointer *) ptr)++ = NULL;
 		}
