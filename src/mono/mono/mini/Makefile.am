@@ -334,7 +334,7 @@ if JIT_SUPPORTED
 BUILT_SOURCES= inssel.c inssel.h $(arch_built)
 endif
 
-CLEANFILES= $(BUILT_SOURCES)
+CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
 EXTRA_DIST = $(common_BURGSRC) jit-icalls.c cprop.c TestDriver.cs ldscript $(test_sources) \
 	inssel-long.brg inssel-long32.brg \
 	$(x86_sources) inssel-x86.brg cpu-pentium.md \

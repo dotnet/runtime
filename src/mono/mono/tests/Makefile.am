@@ -328,4 +328,4 @@ libtest_la_LDFLAGS = -rpath `pwd`
 libtest_la_SOURCES = libtest.c
 libtest_la_LIBADD = $(GLIB_LIBS)
 
-CLEANFILES = $(TESTSI_CS) $(TESTSI_IL) TestDriver.dll *.stdout
+CLEANFILES = $(TESTSI_CS) $(TESTSI_IL) *.dll *.stdout *.exe stest.dat
