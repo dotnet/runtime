@@ -1406,6 +1406,19 @@ mono_image_fill_module_table (MonoDomain *domain, MonoReflectionModuleBuilder *m
 			(p) += 4 - (__diff & 3);\
 	} while (0)
 
+static int
+compare_semantics (const void *a, const void *b)
+{
+	const guint32 *a_values = a;
+	const guint32 *b_values = b;
+	int assoc = a_values [MONO_METHOD_SEMA_ASSOCIATION] - b_values [MONO_METHOD_SEMA_ASSOCIATION];
+	if (assoc)
+		return assoc;
+	return a_values [MONO_METHOD_SEMA_SEMANTICS] - b_values [MONO_METHOD_SEMA_SEMANTICS];
+
+	
+}
+
 /*
  * build_compressed_metadata() fills in the blob of data that represents the 
  * raw metadata as it will be saved in the PE file. The five streams are output 
@@ -1415,6 +1428,7 @@ mono_image_fill_module_table (MonoDomain *domain, MonoReflectionModuleBuilder *m
 static void
 build_compressed_metadata (MonoDynamicAssembly *assembly)
 {
+	MonoDynamicTable *table;
 	int i;
 	guint64 valid_mask = 0;
 	guint64 sorted_mask;
@@ -1544,6 +1558,12 @@ build_compressed_metadata (MonoDynamicAssembly *assembly)
 		*int32val++ = meta->tables [i].rows;
 	}
 	p = (unsigned char*)int32val;
+
+	/* sort the tables that still need sorting */
+	table = &assembly->tables [MONO_TABLE_METHODSEMANTICS];
+	if (table->rows)
+		qsort (table->values + MONO_METHOD_SEMA_SIZE, table->rows, sizeof (guint32) * MONO_METHOD_SEMA_SIZE, compare_semantics);
+
 	/* compress the tables */
 	for (i = 0; i < 64; i++){
 		int row, col;
