@@ -77,7 +77,7 @@ static gpointer
 amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 {
 	gpointer addr;
-	gpointer *vtable_slot, *method_ptr;
+	gpointer *vtable_slot;
 
 	addr = mono_compile_method (m);
 	g_assert (addr);
@@ -86,6 +86,7 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 	/* the method was jumped to */
 	if (!code)
+		/* FIXME: Optimize the case when the call is from a delegate wrapper */
 		return addr;
 
 	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
@@ -129,17 +130,6 @@ amd64_magic_trampoline (long *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			if (mono_method_same_domain (ji, target_ji)) {
 				gpointer *got_entry = (gpointer*)((guint8*)code + (*(guint32*)(code - 4)));
 				InterlockedExchangePointer (got_entry, addr);
-			}
-		}
-		else if ((method_ptr = mono_arch_get_delegate_method_ptr_addr (code, regs))) {
-			/* This is a call inside a delegate wrapper to the target method */
-			MonoJitInfo *ji = 
-				mono_jit_info_table_find (mono_domain_get (), code);
-			MonoJitInfo *target_ji = 
-				mono_jit_info_table_find (mono_domain_get (), addr);
-
-			if (ji && (ji->method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) && mono_method_same_domain (ji, target_ji)) {
-				InterlockedExchangePointer (method_ptr, addr);
 			}
 		}
 	}
@@ -249,10 +239,16 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code, *tramp;
 	int i, lmf_offset, offset, method_offset, tramp_offset, saved_regs_offset, saved_fpregs_offset, framesize;
+	gboolean has_caller;
 	static guint8 *trampoline_code [16];
 
 	if (trampoline_code [tramp_type])
 		return trampoline_code [tramp_type];
+
+	if (tramp_type == MONO_TRAMPOLINE_JUMP)
+		has_caller = FALSE;
+	else
+		has_caller = TRUE;
 
 	code = buf = mono_global_codeman_reserve (512);
 
@@ -300,10 +296,10 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 	lmf_offset = - offset;
 
 	/* Save ip */
-	if (tramp_type == MONO_TRAMPOLINE_JUMP)
-		amd64_mov_reg_imm (code, AMD64_R11, 0);
-	else
+	if (has_caller)
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, 8, 8);
+	else
+		amd64_mov_reg_imm (code, AMD64_R11, 0);
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rip), AMD64_R11, 8);
 	/* Save fp */
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebp), AMD64_RBP, 8);
@@ -338,7 +334,10 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 	amd64_lea_membase (code, AMD64_RDI, AMD64_RBP, saved_regs_offset);
 
 	/* Arg2 is the address of the calling code */
-	amd64_mov_reg_membase (code, AMD64_RSI, AMD64_RBP, 8, 8);
+	if (has_caller)
+		amd64_mov_reg_membase (code, AMD64_RSI, AMD64_RBP, 8, 8);
+	else
+		amd64_mov_reg_imm (code, AMD64_RSI, 0);
 
 	/* Arg3 is the method/vtable ptr */
 	amd64_mov_reg_membase (code, AMD64_RDX, AMD64_RBP, method_offset, 8);
