@@ -260,7 +260,7 @@ sub init {
 
 
     %tmap = ("void" => "void",
-	     "IntPtr" => "int",
+	     "IntPtr" => "gpointer",
 	     "sbyte" => "gint8",
 	     "byte" => "guint8",
 	     "short" => "gint16",

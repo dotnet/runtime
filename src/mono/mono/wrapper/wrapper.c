@@ -6,32 +6,32 @@
 #include "wrapper.h"
 
 gint64
-mono_wrapper_seek (int fd, gint64 offset, gint32 whence)
+mono_wrapper_seek (gpointer fd, gint64 offset, gint32 whence)
 {
 	if (offset > INT_MAX || offset < INT_MIN)
 		return -1;
 
-	return lseek (fd, offset, whence);
+	return lseek ((int)fd, offset, whence);
 }
 
 gint32
-mono_wrapper_read (int fd, void* buf, gint32 count)
+mono_wrapper_read (gpointer fd, void* buf, gint32 count)
 {
-	return read (fd, buf, count);
+	return read ((int)fd, buf, count);
 }
 
 gint32
-mono_wrapper_write (int fd, void* buf, gint32 count)
+mono_wrapper_write (gpointer fd, void* buf, gint32 count)
 {
-	return write (fd, buf, count);
+	return write ((int)fd, buf, count);
 }
 
 gint32
-mono_wrapper_fstat (int fd, MonoWrapperStat* buf)
+mono_wrapper_fstat (gpointer fd, MonoWrapperStat* buf)
 {
 	struct stat fs;
 
-	if (fstat (fd, &fs) != 0)
+	if (fstat ((int)fd, &fs) != 0)
 		return -1;
 
 	buf->st_dev = fs.st_dev;
@@ -48,24 +48,24 @@ mono_wrapper_fstat (int fd, MonoWrapperStat* buf)
 }
 
 gint32
-mono_wrapper_ftruncate (int fd, gint64 length) 
+mono_wrapper_ftruncate (gpointer fd, gint64 length) 
 {
 	if (length > INT_MAX || length < INT_MIN)
 		return -1;
 
-	return ftruncate (fd, length);
+	return ftruncate ((int)fd, length);
 }
 
-int
+gpointer
 mono_wrapper_open (const char * path, gint32 flags, gint32 mode)
 {
-	return open (path, flags, mode);
+	return (gpointer)open (path, flags, mode);
 }
 
 gint32
-mono_wrapper_close (int fd)
+mono_wrapper_close (gpointer fd)
 {
-	return close (fd);
+	return close ((int)fd);
 }
 
 gint32
@@ -95,33 +95,33 @@ mono_wrapper_unlink (const char * path)
 	return unlink(path);
 }
 
-int
+gpointer
 mono_wrapper_opendir (const char * path)
 {
-	return (int)opendir(path);
+	return (gpointer)opendir(path);
 }
 
 const char *
-mono_wrapper_readdir (int dir)
+mono_wrapper_readdir (gpointer dir)
 {
 	struct dirent* p = readdir((DIR*)dir);
 	return p != NULL ? p->d_name : NULL;
 }
 
 gint32
-mono_wrapper_closedir (int dir)
+mono_wrapper_closedir (gpointer dir)
 {
 	return closedir((DIR*)dir);
 }
 
-int
+gpointer
 mono_wrapper_getenv (const char * variable)
 {
-	return (int)getenv(variable);
+	return (gpointer)getenv(variable);
 }
 
-int
+gpointer
 mono_wrapper_environ ()
 {
-	return (int)environ;
+	return (gpointer)environ;
 }
