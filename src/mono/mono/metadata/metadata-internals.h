@@ -101,11 +101,6 @@ struct _MonoImage {
 	GHashTable *helper_signatures;
 
 	/*
-	 * Indexed by MonoGenericClass.
-	 */
-	GHashTable *generic_class_cache;
-
-	/*
 	 * Indexes namespaces to hash tables that map class name to typedef token.
 	 */
 	GHashTable *name_cache;
@@ -284,6 +279,9 @@ mono_metadata_parse_generic_inst            (MonoImage             *image,
 
 MonoGenericInst *
 mono_metadata_lookup_generic_inst           (MonoGenericInst       *ginst);
+
+MonoGenericClass *
+mono_metadata_lookup_generic_class          (MonoGenericClass      *gclass);
 
 MonoGenericInst *
 mono_metadata_inflate_generic_inst          (MonoGenericInst       *ginst,

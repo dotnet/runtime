@@ -7863,7 +7863,7 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 	geninst = g_new0 (MonoType, 1);
 	geninst->type = MONO_TYPE_GENERICINST;
 
-	cached = g_hash_table_lookup (klass->image->generic_class_cache, gclass);
+	cached = mono_metadata_lookup_generic_class (gclass);
 	if (cached) {
 		g_free (gclass);
 		mono_loader_unlock ();
@@ -7916,8 +7916,6 @@ do_mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_a
 
 	mono_class_create_generic (gclass);
 	mono_class_create_generic_2 (gclass);
-
-	g_hash_table_insert (klass->image->generic_class_cache, gclass, gclass);
 
 	mono_loader_unlock ();
 

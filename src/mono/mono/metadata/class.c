@@ -302,9 +302,11 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 		ngclass->context = g_new0 (MonoGenericContext, 1);
 		ngclass->context->gclass = ngclass;
 
-		mono_loader_lock ();
-		cached = g_hash_table_lookup (ogclass->klass->image->generic_class_cache, ngclass);
+		ngclass->dynamic_info = NULL;
+		ngclass->initialized = FALSE;
 
+		mono_loader_lock ();
+		cached = mono_metadata_lookup_generic_class (ngclass);
 		if (cached) {
 			g_free (ngclass);
 			mono_loader_unlock ();
@@ -313,9 +315,6 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 			nt->data.generic_class = cached;
 			return nt;
 		}
-
-		ngclass->dynamic_info = NULL;
-		ngclass->initialized = FALSE;
 
 		mono_class_create_generic (ngclass);
 		mono_class_create_generic_2 (ngclass);
@@ -327,7 +326,6 @@ inflate_generic_type (MonoType *type, MonoGenericContext *context)
 
 		nt = dup_type (type, type);
 		nt->data.generic_class = ngclass;
-		g_hash_table_insert (ogclass->klass->image->generic_class_cache, ngclass, ngclass);
 		mono_loader_unlock ();
 		return nt;
 	}
@@ -1857,6 +1855,11 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	if (cols [MONO_TYPEDEF_EXTENDS])
 		parent = mono_class_get_full (
 			image, mono_metadata_token_from_dor (cols [MONO_TYPEDEF_EXTENDS]), context);
+
+	mono_class_setup_parent (class, parent);
+
+	mono_class_setup_mono_type (class);
+
 	interfaces = mono_metadata_interfaces_from_typedef_full (image, type_token, &icount, context);
 
 	class->interfaces = interfaces;
@@ -1872,10 +1875,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	class->cast_class = class->element_class = class;
 
 	/*g_print ("Load class %s\n", name);*/
-
-	mono_class_setup_parent (class, parent);
-
-	mono_class_setup_mono_type (class);
 
 	/*
 	 * Compute the field and method lists

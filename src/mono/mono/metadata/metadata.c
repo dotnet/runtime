@@ -27,6 +27,8 @@ static void do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGener
 					 const char *ptr, const char **rptr);
 
 static gboolean do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only);
+static gboolean _mono_metadata_generic_class_equal (MonoGenericClass *g1, MonoGenericClass *g2,
+						    gboolean signature_only);
 
 /*
  * Encoding of the "description" argument:
@@ -1157,6 +1159,7 @@ builtin_types[] = {
 
 static GHashTable *type_cache = NULL;
 static GHashTable *generic_inst_cache = NULL;
+static GHashTable *generic_class_cache = NULL;
 static int next_generic_inst_id = 0;
 
 /*
@@ -1204,6 +1207,22 @@ mono_generic_inst_equal (gconstpointer ka, gconstpointer kb)
 	return TRUE;
 }
 
+static guint
+mono_generic_class_hash (gconstpointer data)
+{
+	const MonoGenericClass *gclass = (const MonoGenericClass *) data;
+	return mono_metadata_type_hash (gclass->generic_type);
+}
+
+static gboolean
+mono_generic_class_equal (gconstpointer ka, gconstpointer kb)
+{
+	const MonoGenericClass *a = (const MonoGenericClass *) ka;
+	const MonoGenericClass *b = (const MonoGenericClass *) kb;
+
+	return _mono_metadata_generic_class_equal (a, b, FALSE);
+}
+
 /**
  * mono_metadata_init:
  *
@@ -1216,6 +1235,7 @@ mono_metadata_init (void)
 
 	type_cache = g_hash_table_new (mono_type_hash, mono_type_equal);
 	generic_inst_cache = g_hash_table_new (mono_generic_inst_hash, mono_generic_inst_equal);
+	generic_class_cache = g_hash_table_new (mono_generic_class_hash, mono_generic_class_equal);
 
 	for (i = 0; i < NBUILTIN_TYPES (); ++i)
 		g_hash_table_insert (type_cache, &builtin_types [i], &builtin_types [i]);
@@ -1579,6 +1599,20 @@ mono_metadata_lookup_generic_inst (MonoGenericInst *ginst)
 	return ginst;
 }
 
+MonoGenericClass *
+mono_metadata_lookup_generic_class (MonoGenericClass *gclass)
+{
+	MonoGenericClass *cached;
+	int i;
+
+	cached = g_hash_table_lookup (generic_class_cache, gclass);
+	if (cached)
+		return cached;
+
+	g_hash_table_insert (generic_class_cache, gclass, gclass);
+	return NULL;
+}
+
 MonoGenericInst *
 mono_metadata_inflate_generic_inst (MonoGenericInst *ginst, MonoGenericContext *context)
 {
@@ -1681,7 +1715,7 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 	 * type.
 	 */
 
-	cached = g_hash_table_lookup (m->generic_class_cache, gclass);
+	cached = g_hash_table_lookup (generic_class_cache, gclass);
 	if (cached) {
 		g_free (gclass->klass);
 		g_free (gclass);
@@ -1689,7 +1723,7 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 		type->data.generic_class = cached;
 		return;
 	} else {
-		g_hash_table_insert (m->generic_class_cache, gclass, gclass);
+		g_hash_table_insert (generic_class_cache, gclass, gclass);
 
 		mono_stats.generic_instance_count++;
 		mono_stats.generics_metadata_size += sizeof (MonoGenericClass) +
@@ -2788,12 +2822,6 @@ mono_metadata_generic_class_is_valuetype (MonoGenericClass *gclass)
 	return MONO_TYPE_ISSTRUCT (gclass->generic_type);
 }
 
-guint
-mono_metadata_generic_class_hash (MonoGenericClass *gclass)
-{
-	return mono_metadata_type_hash (gclass->generic_type);
-}
-
 static gboolean
 _mono_metadata_generic_class_equal (MonoGenericClass *g1, MonoGenericClass *g2, gboolean signature_only)
 {
@@ -2808,12 +2836,6 @@ _mono_metadata_generic_class_equal (MonoGenericClass *g1, MonoGenericClass *g2, 
 			return FALSE;
 	}
 	return TRUE;
-}
-
-gboolean
-mono_metadata_generic_class_equal (MonoGenericClass *g1, MonoGenericClass *g2)
-{
-	return _mono_metadata_generic_class_equal (g1, g2, FALSE);
 }
 
 guint
@@ -2852,7 +2874,7 @@ mono_metadata_type_hash (MonoType *t1)
 	case MONO_TYPE_ARRAY:
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (&t1->data.array->eklass->byval_arg);
 	case MONO_TYPE_GENERICINST:
-		return ((hash << 5) - hash) ^ mono_metadata_generic_class_hash (t1->data.generic_class);
+		return ((hash << 5) - hash) ^ mono_generic_class_hash (t1->data.generic_class);
 	}
 	return hash;
 }
