@@ -162,6 +162,13 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		field = &class->fields [i - class->field.first];
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
+		if ((field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA)) {
+			MonoClass *fklass = mono_class_from_mono_type (field->type);
+			t = (char*)vt->data + field->offset;
+			g_assert (fklass->valuetype);
+			memcpy (t, field->data, mono_class_value_size (fklass, NULL));
+			continue;
+		}
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT))
 			continue;
 		cindex = mono_metadata_get_constant_index (class->image, MONO_TOKEN_FIELD_DEF | (i + 1));
