@@ -1435,8 +1435,6 @@ mono_unhandled_exception (MonoObject *exc)
 	MonoClassField *field;
 	MonoObject *delegate;
 
-	printf ("UNHANDLED IN %x\n", GetCurrentThreadId ());
-
 	field=mono_class_get_field_from_name(mono_defaults.appdomain_class, 
 					     "UnhandledException");
 	g_assert (field);
