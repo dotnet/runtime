@@ -20,7 +20,6 @@
 #include <errno.h>
 #include <signal.h>
 #include <sys/wait.h>
-#include <semaphore.h>
 
 #include <mono/io-layer/io-layer.h>
 #include <mono/io-layer/handles-private.h>
