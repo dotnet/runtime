@@ -32,8 +32,16 @@ mono_raw_buffer_load (int fd, int is_writable, guint32 base, size_t size)
 
 	start = base & ~(PAGESIZE - 1);
 	end = (base + size + PAGESIZE - 1) & ~(PAGESIZE - 1);
-	
+
+	/*
+	 * Apparently on cygwin the mmpa succedes, but not all the
+	 * area is mapped in and we get segfaults later.
+	 */
+#ifdef __CYGWIN__
+	mmap_ptr = (void *) -1;
+#else
 	mmap_ptr = mmap (0, end - start, prot, flags, fd, start);
+#endif
 	if (mmap_ptr == (void *) -1){
 		ptr = g_malloc (size);
 		if (ptr == NULL)
