@@ -43,7 +43,7 @@
 	 	    <ul>
 	              <li><a href="archive/rc/mono-0.97.tar.gz">Mono Runtime 0.97</a>
 	 	      <li><a href="archive/rc/mcs-0.97.tar.gz">Mono Class Libraries and C# Compiler 0.97</a>
- 		      <li><a href="archive/rc/libgdiplus-0.9.tar.gz">libgdiplus 0.9</a>
+ 		      <li><a href="archive/rc/libgdiplus-0.10.tar.gz">libgdiplus 0.10</a>
 		      <p>                  
 		      <li><a href="archive/rc/monodoc-0.18.tar.gz">MonoDoc 0.18</a>
  		      <li><a href="archive/rc/xsp-0.16.tar.gz">XSP web server 0.16</a>
