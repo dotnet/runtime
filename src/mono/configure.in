@@ -161,6 +161,41 @@ if test x$platform_win32 = xno; then
 		])
 		CPPFLAGS=$orig_CPPFLAGS
 		CFLAGS="$CFLAGS $pthread_CFLAGS"
+
+		# Need PTHREAD_MUTEX_RECURSIVE
+		pthread_CFLAGS=""
+		orig_CPPFLAGS=$CPPFLAGS
+		# This is a gcc-specific error, but we already set
+		# gcc-specific options in CFLAGS
+		CPPFLAGS="$CPPFLAGS -Werror-implicit-function-declaration"
+		AC_MSG_CHECKING(for PTHREAD_MUTEX_RECURSIVE)
+		AC_TRY_COMPILE([ #include <pthread.h>], [
+			pthread_mutexattr_t attr;
+			pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+		], [
+			# Works!
+			AC_MSG_RESULT(ok)
+		], [
+			AC_MSG_RESULT(no)
+
+			# glibc requires -D_GNU_SOURCE before it will declare
+			# this macro
+			AC_MSG_CHECKING(whether _GNU_SOURCE is needed for PTHREAD_MUTEX_RECURSIVE)
+			CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"
+			AC_TRY_COMPILE([ #include <pthread.h>], [
+				pthread_mutexattr_t attr;
+				pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+			], [
+				AC_MSG_RESULT(ok)
+				pthread_CFLAGS="-D_GNU_SOURCE"
+			], [
+				AC_MSG_RESULT(no)
+				dnl Add other variants here
+				AC_MSG_ERROR([PTHREAD_MUTEX_RECURSIVE not found])
+			])
+		])
+		CPPFLAGS=$orig_CPPFLAGS
+		CFLAGS="$CFLAGS $pthread_CFLAGS"
 	], [
 		AC_MSG_ERROR([libpthread is required on non-win32 hosts])
 	])

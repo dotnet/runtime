@@ -1,3 +1,9 @@
+2001-11-13  Dick Porter  <dick@ximian.com>
+
+	* configure.in: Some more tests for pthread features
+	(specifically, glibc 2.1 doesnt define pthread_mutex_timedlock but
+	still needs _GNU_SOURCE for PTHREAD_MUTEX_RECURSIVE)
+
 2001-11-09  Dick Porter  <dick@ximian.com>
 
 	* configure.in: Try and get large file support, but it's not fatal
