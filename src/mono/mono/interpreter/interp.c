@@ -4411,6 +4411,7 @@ mono_interp_init(const char *file)
 
 	mono_runtime_init (domain, NULL, NULL);
 
+	mono_thread_attach (domain);
 	return domain;
 }
 
