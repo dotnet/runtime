@@ -1,3 +1,4 @@
+#include <config.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -1620,7 +1621,10 @@ mono_debugger_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, ch
 	/*
 	 * Kill the background thread.
 	 */
+#ifndef PLATFORM_WIN32
+	/* Someone should look at this too */
 	kill (debugger_background_thread, SIGKILL);
+#endif
 
 	return retval;
 }
