@@ -5012,7 +5012,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					func = mono_string_to_ansibstr;
 					break;
 				case MONO_MARSHAL_CONV_SB_LPSTR:
+				case MONO_MARSHAL_CONV_SB_LPTSTR:
 					func = mono_string_builder_to_utf8;
+					break;
+				case MONO_MARSHAL_CONV_SB_LPWSTR:
+					func = mono_string_builder_to_utf16;
 					break;
 				case MONO_MARSHAL_CONV_ARRAY_SAVEARRAY:
 					func = mono_array_to_savearray;
@@ -5047,7 +5051,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_OPSIZE (3);
 				switch (ip [2]) {
 				case MONO_MARSHAL_CONV_LPSTR_SB:
+				case MONO_MARSHAL_CONV_LPTSTR_SB:
 					func = mono_string_utf8_to_builder;
+					break;
+				case MONO_MARSHAL_CONV_LPWSTR_SB:
+					func = mono_string_utf16_to_builder;
 					break;
 				case MONO_MARSHAL_FREE_ARRAY:
 					func = mono_marshal_free_array;
@@ -7997,11 +8005,13 @@ mini_init (const char *filename)
 	mono_register_jit_icall (mono_string_to_bstr, "mono_string_to_bstr", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_string_to_ansibstr, "mono_string_to_ansibstr", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_string_builder_to_utf8, "mono_string_builder_to_utf8", helper_sig_ptr_obj, FALSE);
+	mono_register_jit_icall (mono_string_builder_to_utf16, "mono_string_builder_to_utf16", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_array_to_savearray, "mono_array_to_savearray", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_array_to_lparray, "mono_array_to_lparray", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_delegate_to_ftnptr, "mono_delegate_to_ftnptr", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_marshal_string_array, "mono_marshal_string_array", helper_sig_ptr_obj, FALSE);
 	mono_register_jit_icall (mono_string_utf8_to_builder, "mono_string_utf8_to_builder", helper_sig_void_ptr_ptr, FALSE);
+	mono_register_jit_icall (mono_string_utf16_to_builder, "mono_string_utf16_to_builder", helper_sig_void_ptr_ptr, FALSE);
 	mono_register_jit_icall (mono_marshal_free_array, "mono_marshal_free_array", helper_sig_void_ptr_ptr, FALSE);
 	mono_register_jit_icall (mono_string_to_byvalstr, "mono_string_to_byvalstr", helper_sig_void_ptr_ptr_ptr, FALSE);
 	mono_register_jit_icall (mono_string_to_byvalwstr, "mono_string_to_byvalwstr", helper_sig_void_ptr_ptr_ptr, FALSE);
