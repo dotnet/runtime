@@ -9,6 +9,73 @@
 
 #define MONO_ARCH_FRAME_ALIGNMENT 8
 
+#define MONO_EMIT_NEW_MOVE(cfg,dest,offset,src,imm,size) do { 			\
+                MonoInst *inst; 						\
+		int tmpr = 0;							\
+										\
+		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		if (size > 256) {						\
+			tmpr = mono_regstate_next_int (cfg->rs);		\
+			MONO_EMIT_NEW_ICONST(cfg,tmpr,size);			\
+		}								\
+                inst->opcode 	  = OP_S390_MOVE; 				\
+                inst->dreg   	  = dest; 					\
+                inst->inst_offset = offset; 					\
+                inst->inst_imm	  = imm;					\
+		inst->sreg1	  = src;					\
+		inst->sreg2	  = tmpr;					\
+		inst->unused	  = size;					\
+	        mono_bblock_add_inst (cfg->cbb, inst); 				\
+	} while (0)
+
+#define MONO_OUTPUT_VTR(cfg, size, dr, sr, so) do {				\
+	switch (size) {								\
+		case 1:								\
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOADU1_MEMBASE,	\
+				dr, sr, so);					\
+		break;								\
+		case 2:								\
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOADU2_MEMBASE,	\
+				dr, sr, so);					\
+		break;								\
+		case 4:								\
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOAD_MEMBASE,	\
+				dr, sr, so);					\
+		break;								\
+		case 8:								\
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOAD_MEMBASE,	\
+				dr, sr, so);					\
+			dr++; so += sizeof(guint32);				\
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOAD_MEMBASE,	\
+				dr, sr, so);					\
+		break;								\
+	}									\
+} while (0)
+
+#define MONO_OUTPUT_VTS(cfg, size, dr, dx, sr, so) do {				\
+	int tmpr;								\
+	switch (size) {								\
+		case 1:								\
+			tmpr = mono_regstate_next_int (cfg->rs);		\
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOADU1_MEMBASE,	\
+				tmpr, sr, so);					\
+			MONO_EMIT_NEW_STORE_MEMBASE(cfg, OP_STORE_MEMBASE_REG,  \
+				tmpr, dr, dx);					\
+		break;								\
+		case 2:								\
+			tmpr = mono_regstate_next_int (cfg->rs);		\
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOADU2_MEMBASE,	\
+				tmpr, sr, so);					\
+			MONO_EMIT_NEW_STORE_MEMBASE(cfg, OP_STORE_MEMBASE_REG,  \
+				tmpr, dr, dx);					\
+		break;								\
+		case 4:								\
+		case 8:								\
+			MONO_EMIT_NEW_MOVE (cfg, dr, dx, sr, so, size);		\
+		break;								\
+	}									\
+} while (0)
+
 /* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32

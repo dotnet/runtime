@@ -82,14 +82,7 @@ typedef struct
 {
   void *prev;
   void *unused[5];
-  void *reg6;
-  void *reg7;
-  void *reg8;
-  void *reg9;
-  void *reg10;
-  void *reg11;
-  void *reg12;
-  void *reg13;
+  void *regs[8];
   void *return_address;
 } MonoS390StackFrame;
 
@@ -337,9 +330,6 @@ s390_unwind_native_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			}
 
 		} else {
-//			printf ("FRAME %p %p %p\n", 
-//				frame, MONO_CONTEXT_GET_IP (new_ctx), 
-//				mono_jit_info_table_find (domain, MONO_CONTEXT_GET_IP (new_ctx)));
 
 			MONO_CONTEXT_SET_IP (new_ctx, frame->return_address);
 			frame = frame->next;
@@ -380,7 +370,7 @@ s390_unwind_native_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 static gpointer
 arch_get_call_filter (void)
 {
-	static guint8 start [256];
+	static guint8 start [512];
 	static int inited = 0;
 	guint8 *code;
 	int alloc_size, pos, i;
@@ -406,41 +396,65 @@ arch_get_call_filter (void)
 	/*------------------------------------------------------*/
 	/* save floating point registers on stack		*/
 	/*------------------------------------------------------*/
-	s390_stm (code, s390_r0, s390_r13, STK_BASE, S390_CALLFILTER_INTREGS);
-	pos = S390_CALLFILTER_FLTREGS;
-	for (i = 0; i < 16; ++i) {
-		s390_std (code, i, 0, STK_BASE, pos);
-		pos += sizeof (gdouble);
-	}
+//	pos = S390_CALLFILTER_FLTREGS;
+//	for (i = 0; i < 16; ++i) {
+//		s390_std (code, i, 0, STK_BASE, pos);
+//		pos += sizeof (gdouble);
+//	}
 
 	/*------------------------------------------------------*/
 	/* save access registers on stack       		*/
 	/*------------------------------------------------------*/
-	s390_stam (code, s390_r0, s390_r15, STK_BASE, S390_CALLFILTER_ACCREGS);
+//	s390_stam (code, s390_a0, s390_a15, STK_BASE, S390_CALLFILTER_ACCREGS);
 
+	/*------------------------------------------------------*/
+	/* Get A(Context)					*/
+	/*------------------------------------------------------*/
 	s390_lr	  (code, s390_r13, s390_r2);
-	s390_lr   (code, s390_r14, s390_r3);
+
+	/*------------------------------------------------------*/
+	/* Get A(Handler Entry Point)				*/
+	/*------------------------------------------------------*/
+	s390_lr   (code, s390_r0, s390_r3);
+
+	/*------------------------------------------------------*/
+	/* Set parameter register with Exception		*/
+	/*------------------------------------------------------*/
 	s390_lr	  (code, s390_r2, s390_r4);
 
-	s390_lm	  (code, s390_r0, s390_r1, s390_r13, G_STRUCT_OFFSET(MonoContext, uc_mcontext.gregs));
-	s390_lm   (code, s390_r3, s390_r12, s390_r13, G_STRUCT_OFFSET(MonoContext, uc_mcontext.gregs[2]));
+	/*------------------------------------------------------*/
+	/* Load all registers with values from the context	*/
+	/*------------------------------------------------------*/
+	s390_lm   (code, s390_r3, s390_r12, s390_r13, G_STRUCT_OFFSET(MonoContext, uc_mcontext.gregs[3]));
 	pos = G_STRUCT_OFFSET(MonoContext, uc_mcontext.fpregs.fprs[0]);
 	for (i = 0; i < 16; ++i) {
 		s390_ld  (code, i, 0, s390_r13, pos);
 		pos += sizeof(gdouble);
 	}
+	
+	/*------------------------------------------------------*/
+	/* Point at the copied stack frame and call the filter	*/
+	/*------------------------------------------------------*/
+	s390_lr   (code, s390_r1, s390_r0);
+	s390_basr (code, s390_r14, s390_r1);
 
-	s390_basr (code, s390_r14, s390_r14);
+	/*------------------------------------------------------*/
+	/* Save return value					*/
+	/*------------------------------------------------------*/
+	s390_lr   (code, s390_r14, s390_r2);
 
-	/* restore all the regs from the stack */
+	/*------------------------------------------------------*/
+	/* Restore all the regs from the stack 			*/
+	/*------------------------------------------------------*/
 	s390_lm (code, s390_r0, s390_r13, STK_BASE, S390_CALLFILTER_INTREGS);
-	pos = S390_CALLFILTER_FLTREGS;
-	for (i = 0; i < 16; ++i) {
-		s390_ld (code, i, 0, STK_BASE, pos);
-		pos += sizeof (gdouble);
-	}
+//	pos = S390_CALLFILTER_FLTREGS;
+//	for (i = 0; i < 16; ++i) {
+//		s390_ld (code, i, 0, STK_BASE, pos);
+//		pos += sizeof (gdouble);
+//	}
 
-	s390_lam  (code, s390_r0, s390_r15, STK_BASE, S390_CALLFILTER_ACCREGS);
+	s390_lr   (code, s390_r2, s390_r14);
+//	s390_lam  (code, s390_a0, s390_a15, STK_BASE, S390_CALLFILTER_ACCREGS);
 	s390_ahi  (code, s390_r15, alloc_size);
 	s390_lm   (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
 	s390_br   (code, s390_r14);
@@ -453,10 +467,9 @@ arch_get_call_filter (void)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- arch_get_restore_context                          */
+/* Name		- throw_exception.                                  */
 /*                                                                  */
-/* Function	- Return a pointer to a method which restores a     */
-/*                previously saved context.                         */
+/* Function	- Raise an exception based on the parameters passed.*/
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
@@ -591,7 +604,7 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name)
 gpointer 
 mono_arch_get_throw_exception (void)
 {
-	static guint8 start [128];
+	static guint8 start [256];
 	static int inited = 0;
 
 	if (inited)
@@ -745,11 +758,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			g_free (tmpaddr);
 		}
 		sframe = (MonoS390StackFrame *) MONO_CONTEXT_GET_BP (ctx);
-		if (ji->used_regs) {
-		}
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->prev);
 		sframe = (MonoS390StackFrame *) sframe->prev;
 		MONO_CONTEXT_SET_IP (new_ctx, sframe->return_address);
+		memcpy (&new_ctx->uc_mcontext.gregs[6], sframe->regs, (8*sizeof(gint32)));
 		*res = *ji;
 		return res;
 #ifdef MONO_USE_EXC_TABLES
@@ -780,6 +792,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 */
 		memcpy(new_ctx->uc_mcontext.gregs, (*lmf)->gregs, sizeof((*lmf)->gregs));
 		memcpy(new_ctx->uc_mcontext.fpregs.fprs, (*lmf)->fregs, sizeof((*lmf)->fregs));
+
 		MONO_CONTEXT_SET_BP (new_ctx, (*lmf)->ebp);
 		MONO_CONTEXT_SET_IP (new_ctx, (*lmf)->eip);
 		*lmf = (*lmf)->previous_lmf;
@@ -811,7 +824,8 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 	
 	len = mono_array_length (ta);
 
-	res = mono_array_new (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0);
+	res = mono_array_new (domain, mono_defaults.stack_frame_class, 
+			      len > skip ? len - skip : 0);
 
 	for (i = skip; i < len; i++) {
 		MonoJitInfo *ji;
@@ -1079,7 +1093,10 @@ mono_arch_handle_exception (void *uc, gpointer obj, gboolean test_only)
 						    MONO_CONTEXT_GET_IP (ctx) < ei->try_end &&
 						    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
 							if (mono_jit_trace_calls != NULL)
-								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
+								g_print ("EXCEPTION: finally clause %d of %s handled at: %p using sp: %p\n", 
+								i, mono_method_full_name (ji->method, TRUE),
+								ei->handler_start,
+								MONO_CONTEXT_GET_BP(ctx));
 							call_filter (ctx, ei->handler_start, NULL);
 						}
 						
