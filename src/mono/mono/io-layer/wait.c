@@ -8,6 +8,8 @@
 #include "handles-private.h"
 #include "wapi-private.h"
 
+#include "mono-mutex.h"
+
 #undef DEBUG
 
 static pthread_once_t wait_once=PTHREAD_ONCE_INIT;
@@ -16,7 +18,7 @@ static GPtrArray *WaitQueue=NULL;
 
 static pthread_t wait_monitor_thread_id;
 static gboolean wait_monitor_thread_running=FALSE;
-static pthread_mutex_t wait_monitor_mutex=PTHREAD_MUTEX_INITIALIZER;
+static mono_mutex_t wait_monitor_mutex=MONO_MUTEX_INITIALIZER;
 static sem_t wait_monitor_sem;
 
 static void launch_tidy(guint32 exitcode G_GNUC_UNUSED, gpointer user)
@@ -28,9 +30,9 @@ static void launch_tidy(guint32 exitcode G_GNUC_UNUSED, gpointer user)
 #endif
 
 	/* Update queue item */
-	pthread_mutex_lock(&item->mutex);
+	mono_mutex_lock(&item->mutex);
 	item->update++;
-	pthread_mutex_unlock(&item->mutex);
+	mono_mutex_unlock(&item->mutex);
 	
 	/* Signal monitor */
 	sem_post(&wait_monitor_sem);
@@ -121,13 +123,13 @@ static void *wait_monitor_thread(void *unused G_GNUC_UNUSED)
 		/* We've been signalled, so scan the wait queue for
 		 * activity.
 		 */
-		pthread_mutex_lock(&wait_monitor_mutex);
+		mono_mutex_lock(&wait_monitor_mutex);
 		for(i=0; i<WaitQueue->len; i++) {
 			WaitQueueItem *item=g_ptr_array_index(WaitQueue, i);
 			
 			if(item->update > item->ack) {
 				/* Something changed */
-				pthread_mutex_lock(&item->mutex);
+				mono_mutex_lock(&item->mutex);
 				item->ack=item->update;
 				
 				switch(item->state) {
@@ -172,11 +174,11 @@ static void *wait_monitor_thread(void *unused G_GNUC_UNUSED)
 					break;
 				}
 				
-				pthread_mutex_unlock(&item->mutex);
+				mono_mutex_unlock(&item->mutex);
 			}
 		}
 
-		pthread_mutex_unlock(&wait_monitor_mutex);
+		mono_mutex_unlock(&wait_monitor_mutex);
 	}
 	
 	return(NULL);
@@ -218,7 +220,7 @@ static WaitQueueItem *wait_item_new(guint32 timeout, gboolean waitall)
 	
 	new=g_new0(WaitQueueItem, 1);
 	
-	pthread_mutex_init(&new->mutex, NULL);
+	mono_mutex_init(&new->mutex, NULL);
 	sem_init(&new->wait_sem, 0, 0);
 
 	new->update=1;		/* As soon as this item is queued it
@@ -249,15 +251,15 @@ static gboolean wait_for_item(WaitQueueItem *item, guint32 *lowest)
 	
 	/* Add the wait item to the monitor queue, and signal the
 	 * monitor thread */
-	pthread_mutex_lock(&wait_monitor_mutex);
+	mono_mutex_lock(&wait_monitor_mutex);
 	g_ptr_array_add(WaitQueue, item);
 	sem_post(&wait_monitor_sem);
-	pthread_mutex_unlock(&wait_monitor_mutex);
+	mono_mutex_unlock(&wait_monitor_mutex);
 	
 	/* Wait for the item to become ready */
 	sem_wait(&item->wait_sem);
 	
-	pthread_mutex_lock(&item->mutex);
+	mono_mutex_lock(&item->mutex);
 	
 	/* If waitall is TRUE, then the number signalled in each handle type
 	 * must be the length of the handle type array for the wait to be
@@ -283,7 +285,7 @@ static gboolean wait_for_item(WaitQueueItem *item, guint32 *lowest)
 
 	*lowest=item->lowest_signal;
 	
-	pthread_mutex_unlock(&item->mutex);
+	mono_mutex_unlock(&item->mutex);
 
 	return(ret);
 }
@@ -294,9 +296,9 @@ static gboolean wait_dequeue_item(WaitQueueItem *item)
 	
 	g_assert(WaitQueue!=NULL);
 	
-	pthread_mutex_lock(&wait_monitor_mutex);
+	mono_mutex_lock(&wait_monitor_mutex);
 	ret=g_ptr_array_remove_fast(WaitQueue, item);
-	pthread_mutex_unlock(&wait_monitor_mutex);
+	mono_mutex_unlock(&wait_monitor_mutex);
 	
 	return(ret);
 }
@@ -305,7 +307,7 @@ static void wait_item_destroy(WaitQueueItem *item)
 {
 	int i;
 	
-	pthread_mutex_destroy(&item->mutex);
+	mono_mutex_destroy(&item->mutex);
 	sem_destroy(&item->wait_sem);
 	
 	for(i=0; i<WAPI_HANDLE_COUNT; i++) {

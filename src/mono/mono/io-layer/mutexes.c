@@ -9,12 +9,14 @@
 #include "misc-private.h"
 #include "handles-private.h"
 
+#include "mono-mutex.h"
+
 #undef DEBUG
 
 struct _WapiHandle_mutex
 {
 	WapiHandle handle;
-	pthread_mutex_t mutex;
+	mono_mutex_t mutex;
 	pthread_t tid;
 	guint32 recursion;
 };
@@ -48,7 +50,7 @@ static void mutex_close(WapiHandle *handle)
 		  mutex_handle);
 #endif
 
-	pthread_mutex_destroy(&mutex_handle->mutex);
+	mono_mutex_destroy(&mutex_handle->mutex);
 }
 
 static gboolean mutex_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)
@@ -86,13 +88,13 @@ static gboolean mutex_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)
 	}
 	
 	if(ms==INFINITE) {
-		ret=pthread_mutex_lock(&mutex_handle->mutex);
+		ret=mono_mutex_lock(&mutex_handle->mutex);
 	} else {
 		struct timespec timeout;
 		
 		_wapi_calc_timeout(&timeout, ms);
 		
-		ret=pthread_mutex_timedlock(&mutex_handle->mutex, &timeout);
+		ret=mono_mutex_timedlock(&mutex_handle->mutex, &timeout);
 	}
 
 	if(ret==0) {
@@ -188,8 +190,8 @@ static guint32 mutex_wait_multiple(gpointer data G_GNUC_UNUSED)
 				  i, mutex_handle, mutex_handle->tid, tid);
 #endif
 
-			ret=pthread_mutex_timedlock(&mutex_handle->mutex,
-						    &timeout);
+			ret=mono_mutex_timedlock(&mutex_handle->mutex,
+						 &timeout);
 
 #ifdef DEBUG
 			g_message(G_GNUC_PRETTY_FUNCTION ": timedlock ret %s",
@@ -214,8 +216,7 @@ static guint32 mutex_wait_multiple(gpointer data G_GNUC_UNUSED)
 #endif
 					mutex_handle=g_ptr_array_index(needed,
 								       i);
-					pthread_mutex_unlock(
-						&mutex_handle->mutex);
+					mono_mutex_unlock(&mutex_handle->mutex);
 				}
 
 				break;
@@ -313,11 +314,11 @@ WapiHandle *CreateMutex(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean
 	handle=(WapiHandle *)mutex_handle;
 	_WAPI_HANDLE_INIT(handle, WAPI_HANDLE_MUTEX, mutex_ops);
 
-	pthread_mutex_init(&mutex_handle->mutex, NULL);
+	mono_mutex_init(&mutex_handle->mutex, NULL);
 	if(owned==TRUE) {
 		pthread_t tid=pthread_self();
 		
-		pthread_mutex_lock(&mutex_handle->mutex);
+		mono_mutex_lock(&mutex_handle->mutex);
 		
 		mutex_handle->tid=tid;
 		mutex_handle->recursion=1;
@@ -363,7 +364,7 @@ gboolean ReleaseMutex(WapiHandle *handle)
 #endif
 
 		mutex_handle->tid=0;
-		pthread_mutex_unlock(&mutex_handle->mutex);
+		mono_mutex_unlock(&mutex_handle->mutex);
 	}
 	
 	return(TRUE);

@@ -4,6 +4,8 @@
 
 #include "mono/io-layer/wapi.h"
 
+#include "mono-mutex.h"
+
 #undef DEBUG
 
 /* A critical section is really just like a lightweight mutex. It
@@ -16,12 +18,12 @@
  * anyway.  So I may as well just use a pthread mutex.
  */
 static pthread_once_t attr_key_once=PTHREAD_ONCE_INIT;
-static pthread_mutexattr_t attr;
+static mono_mutexattr_t attr;
 
 static void attr_init(void)
 {
-	pthread_mutexattr_init(&attr);
-	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+	mono_mutexattr_init(&attr);
+	mono_mutexattr_settype(&attr, MONO_MUTEX_RECURSIVE);
 }
 
 /**
@@ -33,7 +35,7 @@ static void attr_init(void)
 void InitializeCriticalSection(WapiCriticalSection *section)
 {
 	pthread_once(&attr_key_once, attr_init);
-	pthread_mutex_init(&section->mutex, &attr);
+	mono_mutex_init(&section->mutex, &attr);
 }
 
 /**
@@ -64,7 +66,7 @@ gboolean InitializeCriticalSectionAndSpinCount(WapiCriticalSection *section,
  */
 void DeleteCriticalSection(WapiCriticalSection *section)
 {
-	pthread_mutex_destroy(&section->mutex);
+	mono_mutex_destroy(&section->mutex);
 }
 
 /**
@@ -102,7 +104,7 @@ gboolean TryEnterCriticalSection(WapiCriticalSection *section)
 {
 	int ret;
 	
-	ret=pthread_mutex_trylock(&section->mutex);
+	ret=mono_mutex_trylock(&section->mutex);
 	if(ret==0) {
 		return(TRUE);
 	} else {
@@ -124,7 +126,7 @@ gboolean TryEnterCriticalSection(WapiCriticalSection *section)
  */
 void EnterCriticalSection(WapiCriticalSection *section)
 {
-	pthread_mutex_lock(&section->mutex);
+	mono_mutex_lock(&section->mutex);
 }
 
 /**
@@ -139,6 +141,6 @@ void EnterCriticalSection(WapiCriticalSection *section)
  */
 void LeaveCriticalSection(WapiCriticalSection *section)
 {
-	pthread_mutex_unlock(&section->mutex);
+	mono_mutex_unlock(&section->mutex);
 }
 

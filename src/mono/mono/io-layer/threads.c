@@ -13,7 +13,7 @@
 #include "handles-private.h"
 #include "misc-private.h"
 
-#include "pthread-compat.h"
+#include "mono-mutex.h"
 
 #undef DEBUG
 
@@ -30,14 +30,14 @@ struct _WapiHandle_thread
 	guint32 exitstatus;
 };
 
-static pthread_mutex_t thread_signal_mutex = PTHREAD_MUTEX_INITIALIZER;
+static mono_mutex_t thread_signal_mutex = MONO_MUTEX_INITIALIZER;
 static pthread_cond_t thread_signal_cond = PTHREAD_COND_INITIALIZER;
 
 /* Hash threads with tids. I thought of using TLS for this, but that
  * would have to set the data in the new thread, which is more hassle
  */
 static pthread_once_t thread_hash_once = PTHREAD_ONCE_INIT;
-static pthread_mutex_t thread_hash_mutex = PTHREAD_MUTEX_INITIALIZER;
+static mono_mutex_t thread_hash_mutex = MONO_MUTEX_INITIALIZER;
 static GHashTable *thread_hash=NULL;
 
 static void thread_close(WapiHandle *handle);
@@ -162,16 +162,16 @@ static guint32 thread_wait_multiple(gpointer data)
 	 * because it is calculated from absolute time, not an offset
 	 */
 again:
-	pthread_mutex_lock(&thread_signal_mutex);
+	mono_mutex_lock(&thread_signal_mutex);
 	if(item->timeout==INFINITE) {
-		ret=pthread_cond_wait(&thread_signal_cond,
+		ret=mono_cond_wait(&thread_signal_cond,
 				      &thread_signal_mutex);
 	} else {
-		ret=pthread_cond_timedwait(&thread_signal_cond,
+		ret=mono_cond_timedwait(&thread_signal_cond,
 					   &thread_signal_mutex,
 					   &timeout);
 	}
-	pthread_mutex_unlock(&thread_signal_mutex);
+	mono_mutex_unlock(&thread_signal_mutex);
 
 	if(ret==ETIMEDOUT) {
 		/* Check signalled state here, just in case a thread
@@ -238,14 +238,14 @@ static void thread_exit(guint32 exitstatus, gpointer userdata)
 #endif
 
 	/* Remove this thread from the hash */
-	pthread_mutex_lock(&thread_hash_mutex);
+	mono_mutex_lock(&thread_hash_mutex);
 	g_hash_table_remove(thread_hash, &thread_handle->thread->id);
-	pthread_mutex_unlock(&thread_hash_mutex);
+	mono_mutex_unlock(&thread_hash_mutex);
 	
 	/* Signal any thread waiting on thread exit */
-	pthread_mutex_lock(&thread_signal_mutex);
+	mono_mutex_lock(&thread_signal_mutex);
 	pthread_cond_broadcast(&thread_signal_cond);
-	pthread_mutex_unlock(&thread_signal_mutex);
+	mono_mutex_unlock(&thread_signal_mutex);
 }
 
 static void thread_hash_init(void)
@@ -289,7 +289,7 @@ WapiHandle *CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32
 	/* Lock around the thread create, so that the new thread cant
 	 * race us to look up the thread handle in GetCurrentThread()
 	 */
-	pthread_mutex_lock(&thread_hash_mutex);
+	mono_mutex_lock(&thread_hash_mutex);
 	
 	ret=_wapi_timed_thread_create(&thread_handle->thread, NULL, start,
 				      thread_exit, param, thread_handle);
@@ -298,14 +298,14 @@ WapiHandle *CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32
 		g_message(G_GNUC_PRETTY_FUNCTION ": Thread create error: %s",
 			  strerror(ret));
 #endif
-		pthread_mutex_unlock(&thread_hash_mutex);
+		mono_mutex_unlock(&thread_hash_mutex);
 		g_free(thread_handle);
 		return(NULL);
 	}
 
 	g_hash_table_insert(thread_hash, &thread_handle->thread->id,
 			    thread_handle);
-	pthread_mutex_unlock(&thread_hash_mutex);
+	mono_mutex_unlock(&thread_hash_mutex);
 
 	handle=(WapiHandle *)thread_handle;
 	_WAPI_HANDLE_INIT(handle, WAPI_HANDLE_THREAD, thread_ops);
@@ -413,11 +413,11 @@ WapiHandle *GetCurrentThread(void)
 	
 	tid=GetCurrentThreadId();
 	
-	pthread_mutex_lock(&thread_hash_mutex);
+	mono_mutex_lock(&thread_hash_mutex);
 
 	ret=g_hash_table_lookup(thread_hash, &tid);
 	
-	pthread_mutex_unlock(&thread_hash_mutex);
+	mono_mutex_unlock(&thread_hash_mutex);
 	
 	return(ret);
 }
@@ -462,7 +462,7 @@ guint32 SuspendThread(WapiHandle *handle G_GNUC_UNUSED)
 
 static pthread_key_t TLS_keys[TLS_MINIMUM_AVAILABLE];
 static gboolean TLS_used[TLS_MINIMUM_AVAILABLE]={FALSE};
-static pthread_mutex_t TLS_mutex=PTHREAD_MUTEX_INITIALIZER;
+static mono_mutex_t TLS_mutex=MONO_MUTEX_INITIALIZER;
 
 /**
  * TlsAlloc:
@@ -478,20 +478,20 @@ guint32 TlsAlloc(void)
 {
 	guint32 i;
 	
-	pthread_mutex_lock(&TLS_mutex);
+	mono_mutex_lock(&TLS_mutex);
 	
 	for(i=0; i<TLS_MINIMUM_AVAILABLE; i++) {
 		if(TLS_used[i]==FALSE) {
 			TLS_used[i]=TRUE;
 			pthread_key_create(&TLS_keys[i], NULL);
 
-			pthread_mutex_unlock(&TLS_mutex);
+			mono_mutex_unlock(&TLS_mutex);
 			
 			return(i);
 		}
 	}
 
-	pthread_mutex_unlock(&TLS_mutex);
+	mono_mutex_unlock(&TLS_mutex);
 	
 	return(TLS_OUT_OF_INDEXES);
 }
@@ -507,17 +507,17 @@ guint32 TlsAlloc(void)
  */
 gboolean TlsFree(guint32 idx)
 {
-	pthread_mutex_lock(&TLS_mutex);
+	mono_mutex_lock(&TLS_mutex);
 	
 	if(TLS_used[idx]==FALSE) {
-		pthread_mutex_unlock(&TLS_mutex);
+		mono_mutex_unlock(&TLS_mutex);
 		return(FALSE);
 	}
 	
 	TLS_used[idx]=FALSE;
 	pthread_key_delete(TLS_keys[idx]);
 	
-	pthread_mutex_unlock(&TLS_mutex);
+	mono_mutex_unlock(&TLS_mutex);
 	
 	return(TRUE);
 }
@@ -536,16 +536,16 @@ gpointer TlsGetValue(guint32 idx)
 {
 	gpointer ret;
 	
-	pthread_mutex_lock(&TLS_mutex);
+	mono_mutex_lock(&TLS_mutex);
 	
 	if(TLS_used[idx]==FALSE) {
-		pthread_mutex_unlock(&TLS_mutex);
+		mono_mutex_unlock(&TLS_mutex);
 		return(NULL);
 	}
 	
 	ret=pthread_getspecific(TLS_keys[idx]);
 	
-	pthread_mutex_unlock(&TLS_mutex);
+	mono_mutex_unlock(&TLS_mutex);
 	
 	return(ret);
 }
@@ -563,20 +563,20 @@ gboolean TlsSetValue(guint32 idx, gpointer value)
 {
 	int ret;
 	
-	pthread_mutex_lock(&TLS_mutex);
+	mono_mutex_lock(&TLS_mutex);
 	
 	if(TLS_used[idx]==FALSE) {
-		pthread_mutex_unlock(&TLS_mutex);
+		mono_mutex_unlock(&TLS_mutex);
 		return(FALSE);
 	}
 	
 	ret=pthread_setspecific(TLS_keys[idx], value);
 	if(ret!=0) {
-		pthread_mutex_unlock(&TLS_mutex);
+		mono_mutex_unlock(&TLS_mutex);
 		return(FALSE);
 	}
 	
-	pthread_mutex_unlock(&TLS_mutex);
+	mono_mutex_unlock(&TLS_mutex);
 	
 	return(TRUE);
 }

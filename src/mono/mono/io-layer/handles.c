@@ -6,6 +6,8 @@
 #include "wapi-private.h"
 #include "handles-private.h"
 
+#include "mono-mutex.h"
+
 #undef DEBUG
 
 guint32 _wapi_handle_count_signalled(WaitQueueItem *item, WapiHandleType type)
@@ -46,7 +48,7 @@ guint32 _wapi_handle_count_signalled(WaitQueueItem *item, WapiHandleType type)
 
 void _wapi_handle_set_lowest(WaitQueueItem *item, guint32 idx)
 {
-	pthread_mutex_lock(&item->mutex);
+	mono_mutex_lock(&item->mutex);
 
 	if(item->lowest_signal>idx) {
 #ifdef DEBUG
@@ -57,7 +59,7 @@ void _wapi_handle_set_lowest(WaitQueueItem *item, guint32 idx)
 		item->lowest_signal=idx;
 	}
 	
-	pthread_mutex_unlock(&item->mutex);
+	mono_mutex_unlock(&item->mutex);
 }
 
 /**

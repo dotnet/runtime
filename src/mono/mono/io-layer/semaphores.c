@@ -12,6 +12,8 @@
 #include "misc-private.h"
 #include "handles-private.h"
 
+#include "mono-mutex.h"
+
 #undef DEBUG
 
 /* emulate sem_t, so that we can prod the internal state more easily */
@@ -28,7 +30,7 @@ struct _WapiHandle_sem
  * This global mutex and cond is really for wait_multiple, so we dont
  * have to try and lock multiple handle mutexes and conditions.
  */
-static pthread_mutex_t sem_mutex=PTHREAD_MUTEX_INITIALIZER;
+static mono_mutex_t sem_mutex=MONO_MUTEX_INITIALIZER;
 static pthread_cond_t sem_cond=PTHREAD_COND_INITIALIZER;
 
 static void sema_close(WapiHandle *handle);
@@ -65,7 +67,7 @@ static gboolean sema_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)
 	gboolean waited;
 	int ret;
 	
-	pthread_mutex_lock(&sem_mutex);
+	mono_mutex_lock(&sem_mutex);
 	
 	/* Signal this handle after we have obtained the semaphore
 	 * global lock
@@ -95,14 +97,14 @@ static gboolean sema_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)
 	}
 	
 	if(ms==INFINITE) {
-		ret=pthread_cond_wait(&sem_cond, &sem_mutex);
+		ret=mono_cond_wait(&sem_cond, &sem_mutex);
 		waited=TRUE;
 	} else {
 		struct timespec timeout;
 
 		_wapi_calc_timeout(&timeout, ms);
 		
-		ret=pthread_cond_timedwait(&sem_cond, &sem_mutex, &timeout);
+		ret=mono_cond_timedwait(&sem_cond, &sem_mutex, &timeout);
 		if(ret==0) {
 			waited=TRUE;
 		} else {
@@ -117,7 +119,7 @@ end:
 		sem_handle->val--;
 	}
 	
-	pthread_mutex_unlock(&sem_mutex);
+	mono_mutex_unlock(&sem_mutex);
 	return(waited);
 }
 
@@ -137,7 +139,7 @@ static guint32 sema_wait_multiple(gpointer data G_GNUC_UNUSED)
 		  item->timeout);
 #endif
 
-	pthread_mutex_lock(&sem_mutex);
+	mono_mutex_lock(&sem_mutex);
 	
 	/* First, check if any of the handles are already signalled.
 	 * If waitall is specified we only return if all handles have
@@ -173,9 +175,9 @@ static guint32 sema_wait_multiple(gpointer data G_GNUC_UNUSED)
 	 */
 again:
 	if(item->timeout==INFINITE) {
-		ret=pthread_cond_wait(&sem_cond, &sem_mutex);
+		ret=mono_cond_wait(&sem_cond, &sem_mutex);
 	} else {
-		ret=pthread_cond_timedwait(&sem_cond, &sem_mutex, &timeout);
+		ret=mono_cond_timedwait(&sem_cond, &sem_mutex, &timeout);
 	}
 	
 	if(ret==ETIMEDOUT) {
@@ -246,7 +248,7 @@ success:
 		}
 	}
 
-	pthread_mutex_unlock(&sem_mutex);
+	mono_mutex_unlock(&sem_mutex);
 
 	return(count);
 }
@@ -328,7 +330,7 @@ gboolean ReleaseSemaphore(WapiHandle *handle, gint32 count, gint32 *prevcount)
 	gboolean ret=FALSE;
 	
 	
-	pthread_mutex_lock(&sem_mutex);
+	mono_mutex_lock(&sem_mutex);
 	
 	/* Do this before checking for count overflow, because overflowing max
 	 * is a listed technique for finding the current value
@@ -352,6 +354,6 @@ gboolean ReleaseSemaphore(WapiHandle *handle, gint32 count, gint32 *prevcount)
 	ret=TRUE;
 	
 end:
-	pthread_mutex_unlock(&sem_mutex);
+	mono_mutex_unlock(&sem_mutex);
 	return(ret);
 }

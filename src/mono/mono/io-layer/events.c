@@ -9,6 +9,8 @@
 #include "handles-private.h"
 #include "misc-private.h"
 
+#include "mono-mutex.h"
+
 #undef DEBUG
 
 /* event_wait() uses the event-private condition to signal that the
@@ -21,7 +23,7 @@
 struct _WapiHandle_event
 {
 	WapiHandle handle;
-	pthread_mutex_t mutex;
+	mono_mutex_t mutex;
 	pthread_cond_t cond;
 	pthread_rwlock_t rwlock;
 	gboolean manual;
@@ -30,7 +32,7 @@ struct _WapiHandle_event
 /* event_wait_multiple() uses the global condition to signal that an
  * event has been set
  */
-static pthread_mutex_t event_signal_mutex = PTHREAD_MUTEX_INITIALIZER;
+static mono_mutex_t event_signal_mutex = MONO_MUTEX_INITIALIZER;
 static pthread_cond_t event_signal_cond = PTHREAD_COND_INITIALIZER;
 
 static void event_close(WapiHandle *handle);
@@ -62,7 +64,7 @@ static void event_close(WapiHandle *handle)
 		  event_handle);
 #endif
 
-	pthread_mutex_destroy(&event_handle->mutex);
+	mono_mutex_destroy(&event_handle->mutex);
 	pthread_cond_destroy(&event_handle->cond);
 	pthread_rwlock_destroy(&event_handle->rwlock);
 }
@@ -78,7 +80,7 @@ static gboolean event_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)
 		  ": waiting on event handle %p for %d ms", handle, ms);
 #endif
 
-	pthread_mutex_lock(&event_handle->mutex);
+	mono_mutex_lock(&event_handle->mutex);
 
 	/* Signal this handle after we have obtained the event lock */
 	if(signal!=NULL) {
@@ -103,7 +105,7 @@ static gboolean event_wait(WapiHandle *handle, WapiHandle *signal, guint32 ms)
 #endif
 			handle->signalled=FALSE;
 		}
-		pthread_mutex_unlock(&event_handle->mutex);
+		mono_mutex_unlock(&event_handle->mutex);
 		
 		return(TRUE);
 	}
@@ -128,11 +130,11 @@ again:
 #endif
 
 	if(ms==INFINITE) {
-		ret=pthread_cond_wait(&event_handle->cond,
-				      &event_handle->mutex);
+		ret=mono_cond_wait(&event_handle->cond,
+				   &event_handle->mutex);
 	} else {
-		ret=pthread_cond_timedwait(&event_handle->cond,
-					   &event_handle->mutex, &timeout);
+		ret=mono_cond_timedwait(&event_handle->cond,
+					&event_handle->mutex, &timeout);
 	}
 
 	if(ret==0) {
@@ -164,7 +166,7 @@ again:
 				handle->signalled=FALSE;
 			}
 			pthread_rwlock_unlock(&event_handle->rwlock);
-			pthread_mutex_unlock(&event_handle->mutex);
+			mono_mutex_unlock(&event_handle->mutex);
 			
 			return(TRUE);
 		}
@@ -192,7 +194,7 @@ again:
 #endif
 	
 	pthread_rwlock_unlock(&event_handle->rwlock);
-	pthread_mutex_unlock(&event_handle->mutex);
+	mono_mutex_unlock(&event_handle->mutex);
 	
 	return(FALSE);
 }
@@ -211,13 +213,13 @@ again:
 		event_handle=g_ptr_array_index(
 			item->handles[WAPI_HANDLE_EVENT], i);
 		
-		ret=pthread_mutex_trylock(&event_handle->mutex);
+		ret=mono_mutex_trylock(&event_handle->mutex);
 		if(ret!=0) {
 			/* Bummer */
 			while(i--) {
 				event_handle=g_ptr_array_index(
 					item->handles[WAPI_HANDLE_EVENT], i);
-				pthread_mutex_unlock(&event_handle->mutex);
+				mono_mutex_unlock(&event_handle->mutex);
 			}
 
 			/* It's not possible for two threads calling
@@ -262,7 +264,7 @@ again:
 		event_handle=g_ptr_array_index(
 			item->handles[WAPI_HANDLE_EVENT], i);
 		
-		pthread_mutex_unlock(&event_handle->mutex);
+		mono_mutex_unlock(&event_handle->mutex);
 	}
 	
 #ifdef DEBUG
@@ -310,7 +312,7 @@ static guint32 event_wait_multiple(gpointer data)
 	
 	/* We'll have to wait then */
 	
-	pthread_mutex_lock(&event_signal_mutex);
+	mono_mutex_lock(&event_signal_mutex);
 	
 	iterations=0;
 	do {
@@ -355,7 +357,7 @@ static guint32 event_wait_multiple(gpointer data)
 			pthread_rwlock_rdlock(&event_handle->rwlock);
 		}
 		
-		ret=pthread_cond_timedwait(&event_signal_cond,
+		ret=mono_cond_timedwait(&event_signal_cond,
 					   &event_signal_mutex, &timeout);
 
 		if(ret==0) {
@@ -428,7 +430,7 @@ static guint32 event_wait_multiple(gpointer data)
 		pthread_rwlock_unlock(&event_handle->rwlock);
 	}
 
-	pthread_mutex_unlock(&event_signal_mutex);
+	mono_mutex_unlock(&event_signal_mutex);
 
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Returning wait failed");
@@ -475,7 +477,7 @@ WapiHandle *CreateEvent(WapiSecurityAttributes *security G_GNUC_UNUSED, gboolean
 	handle=(WapiHandle *)event_handle;
 	_WAPI_HANDLE_INIT(handle, WAPI_HANDLE_EVENT, event_ops);
 	
-	pthread_mutex_init(&event_handle->mutex, NULL);
+	mono_mutex_init(&event_handle->mutex, NULL);
 	pthread_cond_init(&event_handle->cond, NULL);
 	pthread_rwlock_init(&event_handle->rwlock, NULL);
 	event_handle->manual=manual;
@@ -511,7 +513,7 @@ gboolean PulseEvent(WapiHandle *handle)
 {
 	struct _WapiHandle_event *event_handle=(struct _WapiHandle_event *)handle;
 	
-	pthread_mutex_lock(&event_handle->mutex);
+	mono_mutex_lock(&event_handle->mutex);
 
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Pulsing event handle %p", handle);
@@ -525,7 +527,7 @@ gboolean PulseEvent(WapiHandle *handle)
 	} else {
 		pthread_cond_signal(&event_handle->cond);
 	}
-	pthread_mutex_unlock(&event_handle->mutex);
+	mono_mutex_unlock(&event_handle->mutex);
 
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
@@ -533,9 +535,9 @@ gboolean PulseEvent(WapiHandle *handle)
 #endif
 	
 	/* Tell everyone blocking on WaitForMultipleObjects */
-	pthread_mutex_lock(&event_signal_mutex);
+	mono_mutex_lock(&event_signal_mutex);
 	pthread_cond_broadcast(&event_signal_cond);
-	pthread_mutex_unlock(&event_signal_mutex);
+	mono_mutex_unlock(&event_signal_mutex);
 
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
@@ -584,7 +586,7 @@ gboolean ResetEvent(WapiHandle *handle)
 	 * held.  Theres no point going for the write lock if we dont
 	 * need it.
 	 */
-	pthread_mutex_lock(&event_handle->mutex);
+	mono_mutex_lock(&event_handle->mutex);
 	if(handle->signalled==FALSE) {
 
 #ifdef DEBUG
@@ -592,10 +594,10 @@ gboolean ResetEvent(WapiHandle *handle)
 			  ": No need to reset event handle %p", handle);
 #endif
 
-		pthread_mutex_unlock(&event_handle->mutex);
+		mono_mutex_unlock(&event_handle->mutex);
 		return(TRUE);
 	}
-	pthread_mutex_unlock(&event_handle->mutex);
+	mono_mutex_unlock(&event_handle->mutex);
 	
 	pthread_rwlock_wrlock(&event_handle->rwlock);
 
@@ -628,7 +630,7 @@ gboolean SetEvent(WapiHandle *handle)
 {
 	struct _WapiHandle_event *event_handle=(struct _WapiHandle_event *)handle;
 	
-	pthread_mutex_lock(&event_handle->mutex);
+	mono_mutex_lock(&event_handle->mutex);
 
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION ": Setting event handle %p", handle);
@@ -642,7 +644,7 @@ gboolean SetEvent(WapiHandle *handle)
 	} else {
 		pthread_cond_signal(&event_handle->cond);
 	}
-	pthread_mutex_unlock(&event_handle->mutex);
+	mono_mutex_unlock(&event_handle->mutex);
 
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION
@@ -650,9 +652,9 @@ gboolean SetEvent(WapiHandle *handle)
 #endif
 	
 	/* Tell everyone blocking on WaitForMultipleObjects */
-	pthread_mutex_lock(&event_signal_mutex);
+	mono_mutex_lock(&event_signal_mutex);
 	pthread_cond_broadcast(&event_signal_cond);
-	pthread_mutex_unlock(&event_signal_mutex);
+	mono_mutex_unlock(&event_signal_mutex);
 
 #ifdef DEBUG
 	g_message(G_GNUC_PRETTY_FUNCTION

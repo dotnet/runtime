@@ -4,6 +4,8 @@
 
 #include "timed-thread.h"
 
+#include "mono-mutex.h"
+
 #undef DEBUG
 
 /*
@@ -32,7 +34,7 @@ void _wapi_timed_thread_exit(guint32 exitstatus)
 	
 	thread=(TimedThread *)specific;
 	
-	pthread_mutex_lock(&thread->join_mutex);
+	mono_mutex_lock(&thread->join_mutex);
 	
 	/* Tell a joiner that we're exiting.
 	 */
@@ -50,7 +52,7 @@ void _wapi_timed_thread_exit(guint32 exitstatus)
 	}
 	
 	pthread_cond_signal(&thread->exit_cond);
-	pthread_mutex_unlock(&thread->join_mutex);
+	mono_mutex_unlock(&thread->join_mutex);
 	
 	/* Call pthread_exit() to call destructors and really exit the
 	 * thread.
@@ -84,7 +86,7 @@ int _wapi_timed_thread_create(TimedThread **threadp,
 	
 	thread=(TimedThread *)g_new0(TimedThread, 1);
 	
-	pthread_mutex_init(&thread->join_mutex, NULL);
+	mono_mutex_init(&thread->join_mutex, NULL);
 	pthread_cond_init(&thread->exit_cond, NULL);
 	thread->start_routine = start_routine;
 	thread->exit_routine = exit_routine;
@@ -111,7 +113,7 @@ int _wapi_timed_thread_join(TimedThread *thread, struct timespec *timeout,
 {
 	int result;
 	
-	pthread_mutex_lock(&thread->join_mutex);
+	mono_mutex_lock(&thread->join_mutex);
 	result=0;
 	
 	/* Wait until the thread announces that it's exiting, or until
@@ -128,7 +130,7 @@ int _wapi_timed_thread_join(TimedThread *thread, struct timespec *timeout,
 		}
 	}
 	
-	pthread_mutex_unlock(&thread->join_mutex);
+	mono_mutex_unlock(&thread->join_mutex);
 	if(result == 0 && thread->exiting) {
 		if(exitstatus!=NULL) {
 			*exitstatus = thread->exitstatus;

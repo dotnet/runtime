@@ -45,8 +45,8 @@ OTHER_SRC = \
 	misc-private.h		\
 	mutexes.c		\
 	mutexes.h		\
-	pthread-compat.c	\
-	pthread-compat.h	\
+	mono-mutex.c		\
+	mono-mutex.h		\
 	semaphores.c		\
 	semaphores.h		\
 	sockets.c		\
