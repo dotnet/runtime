@@ -167,8 +167,8 @@ fi
 
 dnl for use on the build system
 dnl pkg-config is stupid
-BUILD_GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0`
-BUILD_GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0`
+BUILD_GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
+BUILD_GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
 AC_SUBST(BUILD_GLIB_CFLAGS)
 AC_SUBST(BUILD_GLIB_LIBS)
 
@@ -190,8 +190,8 @@ GLIB_REQUIRED_VERSION=1.3.11
 
 PKG_CHECK_MODULES(BASE_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION)
 
-GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0`
-GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0`
+GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
+GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
 GMODULE_CFLAGS=`$PKG_CONFIG --cflags gmodule-2.0`
 GMODULE_LIBS=`$PKG_CONFIG --libs gmodule-2.0`
 
