@@ -3933,7 +3933,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_INST_NEW (cfg, load, CEE_LDIND_REF);
 				load->cil_code = ip;
 				load->inst_i0 = sp [1];
-				load->type = ldind_type [CEE_LDIND_REF];
+				load->type = STACK_OBJ;
 				load->flags |= ins_flag;
 				MONO_INST_NEW (cfg, store, CEE_STIND_REF);
 				store->cil_code = ip;
@@ -3981,7 +3981,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_INST_NEW (cfg, ins, CEE_LDIND_REF);
 				ins->cil_code = ip;
 				ins->inst_i0 = sp [0];
-				ins->type = ldind_type [CEE_LDIND_REF];
+				ins->type = STACK_OBJ;
 				ins->flags |= ins_flag;
 				ins_flag = 0;
 				*sp++ = ins;
