@@ -2063,7 +2063,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this, MonoMars
 		mono_mb_add_local (mb, sig->ret);
 	}
 
-	mono_mb_emit_byte (mb, CEE_LDNULL);
+	mono_mb_emit_icon (mb, 0);
 	mono_mb_emit_byte (mb, CEE_STLOC_2);
 
 	/* we copy the signature, so that we can modify it */
