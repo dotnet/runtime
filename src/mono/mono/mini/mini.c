@@ -622,7 +622,7 @@ mono_find_block_region (MonoCompile *cfg, int offset, int *filter_lengths)
 	return -1;
 }
 
-static MonoBasicBlock *
+static GList*
 mono_find_final_block (MonoCompile *cfg, unsigned char *ip, unsigned char *target, int type)
 {
 	MonoMethod *method = cfg->method;
@@ -630,19 +630,20 @@ mono_find_final_block (MonoCompile *cfg, unsigned char *ip, unsigned char *targe
 	MonoExceptionClause *clause;
 	MonoBasicBlock *handler;
 	int i;
+	GList *res = NULL;
 
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		if (MONO_OFFSET_IN_CLAUSE (clause, (ip - header->code)) && 
 		    (!MONO_OFFSET_IN_CLAUSE (clause, (target - header->code)))) {
-			if (clause->flags & type) {
+			if (clause->flags == type) {
 				handler = g_hash_table_lookup (cfg->bb_hash, header->code + clause->handler_offset);
 				g_assert (handler);
-				return handler;
+				res = g_list_append (res, handler);
 			}
 		}
 	}
-	return NULL;
+	return res;
 }
 
 
@@ -3707,7 +3708,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			start_new_bblock = 1;
 			break;
 		case CEE_LEAVE:
-		case CEE_LEAVE_S:
+		case CEE_LEAVE_S: {
+			GList *handlers;
 			if (*ip == CEE_LEAVE) {
 				target = ip + 5 + (gint32)read32(ip + 1);
 			} else {
@@ -3725,14 +3727,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			/* fixme: call fault handler ? */
 
-			if ((tblock = mono_find_final_block (cfg, ip, target, MONO_EXCEPTION_CLAUSE_FINALLY))) {
-				link_bblock (cfg, bblock, tblock);
-				MONO_INST_NEW (cfg, ins, OP_HANDLER);
-				ins->cil_code = ip;
-				ins->inst_target_bb = tblock;
-				MONO_ADD_INS (bblock, ins);
+			if ((handlers = mono_find_final_block (cfg, ip, target, MONO_EXCEPTION_CLAUSE_FINALLY))) {
+				GList *tmp;
+				for (tmp = handlers; tmp; tmp = tmp->next) {
+					tblock = tmp->data;
+					link_bblock (cfg, bblock, tblock);
+					MONO_INST_NEW (cfg, ins, OP_HANDLER);
+					ins->cil_code = ip;
+					ins->inst_target_bb = tblock;
+					MONO_ADD_INS (bblock, ins);
+				}
+				g_list_free (handlers);
 			} 
-
 
 			MONO_INST_NEW (cfg, ins, CEE_BR);
 			ins->cil_code = ip;
@@ -3748,8 +3754,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			else
 				ip += 2;
 
-
 			break;
+		}
 		case CEE_STIND_I:
 			CHECK_STACK (2);
 			MONO_INST_NEW (cfg, ins, *ip);
