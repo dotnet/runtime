@@ -14,9 +14,11 @@ case "$host" in
 		platform_win32=yes
 		AC_DEFINE(PLATFORM_WIN32)
 		CC="gcc -mno-cygwin"
+		libdl="-ldl"
 		;;
 	*)
 		platform_win32=no
+		libdl=
 		;;
 esac
 AC_MSG_RESULT($platform_win32)
@@ -98,7 +100,7 @@ AC_SUBST(GLIB_LIBS)
 AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 
-AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes",,-ldl)
+AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes",,$libdl)
 gc=auto
 AC_ARG_WITH(gc, [  --with-gc=boehm,none],[gc=$with_gc])
 
@@ -110,7 +112,7 @@ case "x$gc" in
 
 		AC_DEFINE(HAVE_BOEHM_GC)
 		AC_SUBST(HAVE_BOEHM_GC)
-		LIBS="$LIBS -lgc -ldl"
+		LIBS="$LIBS -lgc $libdl"
 		;;
 	xnone)
 		AC_MSG_WARN("Compiling mono without GC.")
@@ -123,7 +125,7 @@ dnl		# If libgc was found, use it.  Otherwise just warn.
 		else
 			AC_DEFINE(HAVE_BOEHM_GC)
 			AC_SUBST(HAVE_BOEHM_GC)
-			LIBS="$LIBS -lgc -ldl"
+			LIBS="$LIBS -lgc $libdl"
 			gc="boehm"
 		fi
 dnl		AC_MSG_WARN("Compiling mono without GC.")

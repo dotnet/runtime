@@ -1,3 +1,7 @@
+2002-08-17  Gonzalo Paniagua Javier <gonzalo@ximian.com>
+
+	* configure.in: don't link against libdl on windoze.
+
 2002-08-12  Dick Porter  <dick@ximian.com>
 
 	* mono.pc.in: Add $includedir to Cflags
