@@ -355,16 +355,10 @@ ves_icall_System_Array_SetValue (MonoObject *this, MonoObject *value,
 				 MonoObject *idxs)
 {
 	MonoArray *ao, *io, *vo;
-	MonoClass *ac, *ic, *vc;
+	MonoClass *ac, *ic;
 	gint32 i, pos, *ind;
 
 	MONO_CHECK_ARG_NULL (idxs);
-
-	vo = (MonoArray *)value;
-	if (vo)
-		vc = (MonoClass *)vo->obj.vtable->klass;
-	else
-		vc = NULL;
 
 	io = (MonoArray *)idxs;
 	ic = (MonoClass *)io->obj.vtable->klass;
