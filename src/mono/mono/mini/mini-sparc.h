@@ -45,12 +45,15 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_USE_SIGACTION 1
 
+//#define MONO_ARCH_SIGSEGV_ON_ALTSTACK
+
 #define MONO_ARCH_EMULATE_FCONV_TO_I8   1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8   1
 #define MONO_ARCH_EMULATE_LCONV_TO_R4   1
 #define MONO_ARCH_EMULATE_CONV_R8_UN    1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
 #define MONO_ARCH_EMULATE_FREM 1
+#define MONO_ARCH_NEED_DIV_CHECK 1
 
 #ifndef __GNUC__
 /* assume Sun compiler if not GCC */
