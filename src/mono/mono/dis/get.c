@@ -19,39 +19,39 @@
 char *
 get_typedef (MonoMetadata *m, int idx)
 {
-	guint32 cols [6];
+	guint32 cols [MONO_TYPEDEF_SIZE];
 
-	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPEDEF], idx - 1, cols, CSIZE (cols));
+	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPEDEF], idx - 1, cols, MONO_TYPEDEF_SIZE);
 
 	return g_strdup_printf (
 		"%s.%s",
-		mono_metadata_string_heap (m, cols [2]),
-		mono_metadata_string_heap (m, cols [1]));
+		mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAMESPACE]),
+		mono_metadata_string_heap (m, cols [MONO_TYPEDEF_NAME]));
 }
 
 char *
 get_module (MonoMetadata *m, int idx)
 {
-	guint32 cols [5];
+	guint32 cols [MONO_MODULE_SIZE];
 	
 	/*
 	 * There MUST BE only one module in the Module table
 	 */
 	g_assert (idx == 1);
 	    
-	mono_metadata_decode_row (&m->tables [MONO_TABLE_MODULEREF], idx - 1, cols, CSIZE (cols));
+	mono_metadata_decode_row (&m->tables [MONO_TABLE_MODULEREF], idx - 1, cols, MONO_MODULE_SIZE);
 
-	return g_strdup (mono_metadata_string_heap (m, cols [6]));
+	return g_strdup (mono_metadata_string_heap (m, cols [MONO_MODULE_NAME]));
 }
 
 char *
 get_assemblyref (MonoMetadata *m, int idx)
 {
-	guint32 cols [9];
+	guint32 cols [MONO_ASSEMBLYREF_SIZE];
 	
-	mono_metadata_decode_row (&m->tables [MONO_TABLE_ASSEMBLYREF], idx - 1, cols, CSIZE (cols));
+	mono_metadata_decode_row (&m->tables [MONO_TABLE_ASSEMBLYREF], idx - 1, cols, MONO_ASSEMBLYREF_SIZE);
 
-	return g_strdup (mono_metadata_string_heap (m, cols [6]));
+	return g_strdup (mono_metadata_string_heap (m, cols [MONO_ASSEMBLYREF_NAME]));
 }
 
 /*
@@ -121,14 +121,14 @@ get_array_shape (MonoMetadata *m, const char *ptr, char **result)
 char *
 get_typespec (MonoMetadata *m, guint32 idx)
 {
-	guint32 cols [1];
+	guint32 cols [MONO_TYPESPEC_SIZE];
 	const char *ptr;
 	char *s, *result;
 	GString *res = g_string_new ("");
 	int len;
 
-	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPESPEC], idx-1, cols, CSIZE (cols));
-	ptr = mono_metadata_blob_heap (m, cols [0]);
+	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPESPEC], idx-1, cols, MONO_TYPESPEC_SIZE);
+	ptr = mono_metadata_blob_heap (m, cols [MONO_TYPESPEC_SIGNATURE]);
 	len = mono_metadata_decode_value (ptr, &ptr);
 	
 	switch (*ptr++){
@@ -192,22 +192,22 @@ get_typespec (MonoMetadata *m, guint32 idx)
 char *
 get_typeref (MonoMetadata *m, int idx)
 {
-	guint32 cols [3];
+	guint32 cols [MONO_TYPEREF_SIZE];
 	const char *s, *t;
 	char *x, *ret;
 	guint32 rs_idx, table;
 	
-	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPEREF], idx - 1, cols, CSIZE (cols));
+	mono_metadata_decode_row (&m->tables [MONO_TABLE_TYPEREF], idx - 1, cols, MONO_TYPEREF_SIZE);
 
-	t = mono_metadata_string_heap (m, cols [1]);
-	s = mono_metadata_string_heap (m, cols [2]);
+	t = mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAME]);
+	s = mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAMESPACE]);
 
-	rs_idx = cols [0] >> 2;
+	rs_idx = cols [MONO_TYPEREF_SCOPE] >> 2;
 	/*
 	 * Two bits in Beta2.
 	 * ECMA spec claims 3 bits
 	 */
-	table = cols [0] & 3;
+	table = cols [MONO_TYPEREF_SCOPE] & 3;
 	
 	switch (table){
 	case 0: /* Module */
@@ -746,7 +746,7 @@ static map_t field_flags_map [] = {
 char *
 field_flags (guint32 f)
 {
-	static char buffer [1024];
+	char buffer [1024];
 	int access = f & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK;
 	
 	buffer [0] = 0;
@@ -839,7 +839,7 @@ char *
 get_field (MonoMetadata *m, guint32 token)
 {
 	int idx = mono_metadata_token_index (token);
-	guint32 cols [3];
+	guint32 cols [MONO_FIELD_SIZE];
 	char *sig, *res, *type;
 	guint32 type_idx;
 
@@ -852,8 +852,8 @@ get_field (MonoMetadata *m, guint32 token)
 	}
 	g_assert (mono_metadata_token_code (token) == MONO_TOKEN_FIELD_DEF);
 
-	mono_metadata_decode_row (&m->tables [MONO_TABLE_FIELD], idx - 1, cols, CSIZE (cols));
-	sig = get_field_signature (m, cols [2]);
+	mono_metadata_decode_row (&m->tables [MONO_TABLE_FIELD], idx - 1, cols, MONO_FIELD_SIZE);
+	sig = get_field_signature (m, cols [MONO_FIELD_SIGNATURE]);
 
 	/*
 	 * To locate the actual "container" for this field, we have to scan
@@ -864,7 +864,7 @@ get_field (MonoMetadata *m, guint32 token)
 	type = get_typedef (m, type_idx);
 	res = g_strdup_printf ("%s %s.%s",
 			       sig, type,
-			       mono_metadata_string_heap (m, cols [1]));
+			       mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]));
 	g_free (type);
 	g_free (sig);
 
@@ -913,7 +913,7 @@ char *
 get_method (MonoMetadata *m, guint32 token)
 {
 	int idx = mono_metadata_token_index (token);
-	guint32 member_cols [3], method_cols [6];
+	guint32 member_cols [MONO_MEMBERREF_SIZE], method_cols [MONO_METHOD_SIZE];
 	char *res, *class, *fancy_name, *sig;
 	const char *name;
 
@@ -921,27 +921,26 @@ get_method (MonoMetadata *m, guint32 token)
 	case MONO_TOKEN_METHOD_DEF:
 
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], 
-					  idx - 1, method_cols, 6);
+					  idx - 1, method_cols, MONO_METHOD_SIZE);
 
-		name = mono_metadata_string_heap (m, method_cols [3]);
+		name = mono_metadata_string_heap (m, method_cols [MONO_METHOD_NAME]);
 
-		sig = get_methodref_signature (m, method_cols [4], fancy_name);
+		sig = get_methodref_signature (m, method_cols [MONO_METHOD_SIGNATURE], name);
 
 		return sig;
 		
 	case MONO_TOKEN_MEMBER_REF: {
 		
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_MEMBERREF],
-					  idx - 1, member_cols,
-					  CSIZE (member_cols));
-		class = get_memberref_parent (m, member_cols [0]);
+					  idx - 1, member_cols, MONO_MEMBERREF_SIZE);
+		class = get_memberref_parent (m, member_cols [MONO_MEMBERREF_CLASS]);
 		fancy_name = g_strconcat (
 			class, "::",
-			mono_metadata_string_heap (m, member_cols [1]),
+			mono_metadata_string_heap (m, member_cols [MONO_MEMBERREF_NAME]),
 			NULL);
 		
 		sig = get_methodref_signature (
-			m, member_cols [2], fancy_name);
+			m, member_cols [MONO_MEMBERREF_SIGNATURE], fancy_name);
 		g_free (fancy_name);
 
 		res = g_strdup_printf ("%s", sig);
