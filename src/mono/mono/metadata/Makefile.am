@@ -43,7 +43,6 @@ endif
 
 CLEANFILES = mono-bundle.stamp
 
-libmonoruntime_la_LIBADD = $(PLATFORM_LIB)
 libmetadata_la_LIBADD = $(bundle_obj) $(PLATFORM_LIB)
 
 libmonoruntime_static_la_LIBADD = $(libmonoruntime_la_LIBADD)
