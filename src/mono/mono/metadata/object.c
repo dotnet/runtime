@@ -1745,7 +1745,7 @@ mono_object_isinst (MonoObject *obj, MonoClass *klass)
 	if (!klass->inited)
 		mono_class_init (klass);
 
-	if (oklass == mono_defaults.transparent_proxy_class) {
+	if (oklass != klass && oklass == mono_defaults.transparent_proxy_class) {
 		/* fixme: add check for IRemotingTypeInfo */
 		MonoRealProxy *rp = ((MonoTransparentProxy *)obj)->rp;
 		MonoType *type;
