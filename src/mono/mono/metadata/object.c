@@ -283,6 +283,14 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		}
 	}
 
+	/* 
+	 * arch_create_jit_trampoline () can recursively call this function again
+	 * because it compiles icall methods right away.
+	 */
+	mono_g_hash_table_insert (domain->class_vtable_hash, class, vt);
+	if (!class->cached_vtable)
+		class->cached_vtable = vt;
+
 	/* initialize vtable */
 	for (i = 0; i < class->vtable_size; ++i) {
 		MonoMethod *cm;
@@ -290,10 +298,6 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 		if ((cm = class->vtable [i]))
 			vt->vtable [i] = arch_create_jit_trampoline (cm);
 	}
-
-	mono_g_hash_table_insert (domain->class_vtable_hash, class, vt);
-	if (!class->cached_vtable)
-		class->cached_vtable = vt;
 
 	mono_domain_unlock (domain);
 
