@@ -718,13 +718,11 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		sf->native_offset = (char *)ip - (char *)ji->code_start;
 
 		sf->il_offset = mono_debug_il_offset_from_address (ji->method, sf->native_offset);
-		sf->il_offset = -1;
 
 		if (need_file_info) {
 			gchar *filename;
 			
 			filename = mono_debug_source_location_from_address (ji->method, sf->native_offset, &sf->line);
-			filename = NULL;
 
 			sf->filename = filename? mono_string_new (domain, filename): NULL;
 			sf->column = 0;
@@ -803,13 +801,11 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	*method = mono_method_get_object (domain, ji->method, NULL);
 	*iloffset = mono_debug_il_offset_from_address (ji->method, *native_offset);
-	*iloffset = -1;
 
 	if (need_file_info) {
 		gchar *filename;
 
 		filename = mono_debug_source_location_from_address (ji->method, *native_offset, line);
-		filename = NULL;
 
 		*file = filename? mono_string_new (domain, filename): NULL;
 		*column = 0;
