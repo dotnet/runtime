@@ -242,6 +242,14 @@ mono_thread_attach (MonoDomain *domain)
 	HANDLE thread_handle;
 	guint32 tid;
 
+	if ((thread = mono_thread_current ())) {
+		g_warning ("mono_thread_attach called for an already attached thread");
+		if (mono_thread_attach_cb) {
+			mono_thread_attach_cb (&tid);
+		}
+		return thread;
+	}
+
 	thread = (MonoThread *)mono_object_new (domain,
 						mono_defaults.thread_class);
 

@@ -212,8 +212,6 @@ typedef gpointer    (*MonoCompileFunc)       (MonoMethod *method);
 #define mono_string_chars(s) ((gunichar2*)(s)->chars)
 #define mono_string_length(s) ((s)->length)
 
-extern MonoMethod *mono_start_method;
-
 void *
 mono_object_allocate        (size_t size);
 

@@ -237,7 +237,7 @@ x86_unwind_native_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, struct sig
 
 	frame = MONO_CONTEXT_GET_BP (ctx);
 
-	max_stack = lmf ? lmf : jit_tls->end_of_stack;
+	max_stack = lmf && lmf->method ? lmf : jit_tls->end_of_stack;
 
 	*new_ctx = *ctx;
 
@@ -652,6 +652,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContex
 		
 		*new_ctx = *ctx;
 
+		if (!(*lmf)->method)
+			return (gpointer)-1;
+
 		if (trace)
 			*trace = g_strdup_printf ("in (unmanaged) %s", mono_method_full_name ((*lmf)->method, TRUE));
 		
@@ -735,7 +738,10 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 		
 		ji = mono_arch_find_jit_info (domain, jit_tls, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
 		g_assert (ji);
-		
+
+		if (ji == (gpointer)-1)
+			return;
+
 		il_offset = mono_debug_il_offset_from_address (ji->method, native_offset);
 
 		if (func (ji->method, native_offset, il_offset, managed, user_data))
@@ -766,7 +772,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 		ji = mono_arch_find_jit_info (domain, jit_tls, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
 		ctx = new_ctx;
 		
-		if (!ji || MONO_CONTEXT_GET_BP (&ctx) >= jit_tls->end_of_stack)
+		if (!ji || ji == (gpointer)-1 || MONO_CONTEXT_GET_BP (&ctx) >= jit_tls->end_of_stack)
 			return FALSE;
 
 		if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)
@@ -845,14 +851,14 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		
 		ji = mono_arch_find_jit_info (domain, jit_tls, ctx, &new_ctx, 
 					      test_only ? &trace : NULL, &lmf, NULL, NULL);
+
 		if (!ji) {
 			g_warning ("Exception inside function without unwind info");
 			g_assert_not_reached ();
 		}
 
-		if (ji->method != mono_start_method) {
-			
-			if (test_only) {
+		if (ji != (gpointer)-1) {
+			if (test_only && ji->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
 				char *tmp, *strace;
 
 				trace_ips = g_list_append (trace_ips, MONO_CONTEXT_GET_IP (ctx));
@@ -861,7 +867,7 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 					strace = g_strdup ("");
 				else
 					strace = mono_string_to_utf8 (((MonoException*)obj)->stack_trace);
-
+			
 				tmp = g_strdup_printf ("%s%s\n", strace, trace);
 				g_free (strace);
 
@@ -917,7 +923,7 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 			
 		*ctx = new_ctx;
 
-		if (ji->method == mono_start_method || MONO_CONTEXT_GET_BP (ctx) >= jit_tls->end_of_stack) {
+		if ((ji == (gpointer)-1) || MONO_CONTEXT_GET_BP (ctx) >= jit_tls->end_of_stack) {
 			if (!test_only) {
 				jit_tls->lmf = lmf;
 				jit_tls->abort_func (obj);

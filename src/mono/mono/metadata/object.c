@@ -580,8 +580,6 @@ mono_runtime_get_main_args (void)
 	return main_args;
 }
 
-MonoMethod *mono_start_method = NULL;
-
 /*
  * Execute a standard Main() method (argc/argv contains the
  * executable name). This method also sets the command line argument value
@@ -614,8 +612,6 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 	
 	mono_assembly_set_main (method->klass->image->assembly);
 
-	mono_start_method = mono_marshal_get_runtime_invoke (method);
-	
 	return mono_runtime_exec_main (method, args, exc);
 }
 
@@ -663,6 +659,7 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 {
 	MonoDomain *domain;
 	gpointer pa [1];
+	MonoObject *res;
 	int rval;
 
 	g_assert (args);

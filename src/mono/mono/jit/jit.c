@@ -307,7 +307,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	MonoObject *(*runtime_invoke) (MonoObject *this, void **params, MonoObject **exc);
 
 	invoke = mono_marshal_get_runtime_invoke (method);
-	runtime_invoke = mono_compile_method (invoke);       
+	runtime_invoke = mono_compile_method (invoke);
 	return runtime_invoke (obj, params, exc);
 }
 
@@ -3661,7 +3661,10 @@ mono_cfg_new (MonoMethod *method)
 	/* reserve space to save LMF */
 	cfg->locals_size = sizeof (MonoLMF);
 	
+	cfg->locals_size += sizeof (gpointer);
 	mono_exc_esp_offset = - cfg->locals_size;
+
+	cfg->locals_size += sizeof (gpointer);
 
 	/* aligment check */
 	g_assert (!(cfg->locals_size & 0x7));
@@ -3773,7 +3776,7 @@ mono_method_blittable (MonoMethod *method)
 #endif
 
 /**
- * mono_compile_method:
+ * mono_jit_compile_method:
  * @method: pointer to the method info
  *
  * JIT compilation of a single method. 
@@ -3894,10 +3897,11 @@ mono_jit_compile_method (MonoMethod *method)
 
 		mono_jit_stats.native_code_size += ji->code_size;
 
+		ji->num_clauses = header->num_clauses;
+
 		if (header->num_clauses) {
 			int i, start_block, end_block, filter_block;
 
-			ji->num_clauses = header->num_clauses;
 			ji->clauses = mono_mempool_alloc0 (target_domain->mp, 
 			        sizeof (MonoJitExceptionInfo) * header->num_clauses);
 
@@ -4093,6 +4097,7 @@ static void
 mono_thread_start_cb (gpointer stack_start)
 {
 	MonoJitTlsData *jit_tls;
+	MonoLMF *lmf;
 
 	jit_tls = g_new0 (MonoJitTlsData, 1);
 
@@ -4100,6 +4105,11 @@ mono_thread_start_cb (gpointer stack_start)
 
 	jit_tls->abort_func = mono_thread_abort;
 	jit_tls->end_of_stack = stack_start;
+
+	lmf = g_new0 (MonoLMF, 1);
+	lmf->ebp = -1;
+
+	jit_tls->lmf = lmf;
 }
 
 void (*mono_thread_attach_aborted_cb ) (MonoObject *obj) = NULL;
@@ -4117,6 +4127,7 @@ static void
 mono_thread_attach_cb (gpointer stack_start)
 {
 	MonoJitTlsData *jit_tls;
+	MonoLMF *lmf;
 
 	jit_tls = g_new0 (MonoJitTlsData, 1);
 
@@ -4124,6 +4135,11 @@ mono_thread_attach_cb (gpointer stack_start)
 
 	jit_tls->abort_func = mono_thread_abort_dummy;
 	jit_tls->end_of_stack = stack_start;
+
+	lmf = g_new0 (MonoLMF, 1);
+	lmf->ebp = -1;
+
+	jit_tls->lmf = lmf;
 }
 
 static CRITICAL_SECTION ms;
