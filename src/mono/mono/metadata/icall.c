@@ -93,7 +93,7 @@ ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
 static void
 ves_icall_System_Array_SetValueImpl (MonoObject *this, MonoObject *value, guint32 pos)
 {
-	MonoArray *ao, *vo;
+	MonoArray *ao;
 	MonoClass *ac, *vc, *ec;
 	gint32 esize, vsize;
 	gpointer *ea, *va;
@@ -102,9 +102,8 @@ ves_icall_System_Array_SetValueImpl (MonoObject *this, MonoObject *value, guint3
 	gint64 i64;
 	gdouble r64;
 
-	vo = (MonoArray *)value;
-	if (vo)
-		vc = (MonoClass *)vo->obj.vtable->klass;
+	if (value)
+		vc = value->vtable->klass;
 	else
 		vc = NULL;
 
@@ -114,9 +113,9 @@ ves_icall_System_Array_SetValueImpl (MonoObject *this, MonoObject *value, guint3
 
 	esize = mono_array_element_size (ac);
 	ea = (gpointer*)((char*)ao->vector + (pos * esize));
-	va = (gpointer*)((char*)vo + sizeof (MonoObject));
+	va = (gpointer*)((char*)value + sizeof (MonoObject));
 
-	if (!vo) {
+	if (!value) {
 		memset (ea, 0,  esize);
 		return;
 	}
@@ -169,12 +168,12 @@ ves_icall_System_Array_SetValueImpl (MonoObject *this, MonoObject *value, guint3
 	}
 
 	if (!ec->valuetype) {
-		*ea = (gpointer)vo;
+		*ea = (gpointer)value;
 		return;
 	}
 
 	if (mono_object_isinst (value, ec)) {
-		memcpy (ea, (char *)vo + sizeof (MonoObject), esize);
+		memcpy (ea, (char *)value + sizeof (MonoObject), esize);
 		return;
 	}
 
