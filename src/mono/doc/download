@@ -44,7 +44,7 @@
 	          </td>
 		  <td>
 		    <ul>
-			<li><a href="archive/mono-0.25-1.src.rpm">mono-0.25-1.src.rpm</a>
+			<li><a href="archive/mono-0.25-1,ximian.5.src.rpm">mono-0.25-1.src.rpm</a>
 		    </ul>
 		  </td>
 	        </tr>
@@ -62,7 +62,7 @@
 	 	      <br>
                       <li><a href="archive/redhat-90-i386/gtk-sharp-0.10-1.ximian.6.1.i386.rpm">gtk-sharp-0.10-1.ximian.6.1.i386.rpm</a>
 		      <li><a href="archive/redhat-90-i386/gtk-sharp-gapi-0.10-1.ximian.6.1.i386.rpm">gtk-sharp-gapi-0.10-1.ximian.6.1.i386.rpm</a>
-		      <li><a href="archive/redhat-90-i386/gtk-sharp-debuginfo-0.10-1.ximian.6.1.i386.rpm">gtk-sharp-gapi-0.10-1.ximian.6.1.i386.rpm</a>
+		      <li><a href="archive/redhat-90-i386/gtk-sharp-debuginfo-0.10-1.ximian.6.1.i386.rpm">gtk-sharp-debuginfo-0.10-1.ximian.6.1.i386.rpm</a>
 		      <li><a href="archive/redhat-90-i386/monodoc-0.5-1.ximian.6.1.i386.rpm">monodoc-0.5-1.ximian.6.1.i386.rpm</a>
                       <li><a href="archive/redhat-90-i386/monodoc-debuginfo-0.5-1.ximian.6.1.i386.rpm">monodoc-debuginfo-0.5-1.ximian.6.1.i386.rpm</a>
                     </ul>
