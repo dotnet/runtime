@@ -411,6 +411,12 @@ mono_install_free_method    (MonoFreeMethodFunc func);
 void
 mono_type_initialization_init (void);
 
+guint32
+mono_thread_get_tls_key    (void);
+
+guint32
+mono_dmoain_get_tls_key    (void);
+
 /* Reflection and Reflection.Emit support */
 
 /*

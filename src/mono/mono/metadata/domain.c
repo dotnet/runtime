@@ -98,6 +98,12 @@ get_runtime_from_exe (const char *exe_file);
 static RuntimeInfo*
 get_runtime_by_version (const char *version);
 
+guint32
+mono_domain_get_tls_key (void)
+{
+	return appdomain_thread_id;
+}
+
 static MonoJitInfoTable *
 mono_jit_info_table_new (void)
 {

@@ -127,6 +127,11 @@ static CRITICAL_SECTION interruption_mutex;
 /* global count of thread interruptions requested */
 static gint32 thread_interruption_requested = 0;
 
+guint32
+mono_thread_get_tls_key (void)
+{
+	return current_object_key;
+}
 
 /* handle_store() and handle_remove() manage the array of threads that
  * still need to be waited for when the main thread exits.
