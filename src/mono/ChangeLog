@@ -1,3 +1,7 @@
+2003-10-29  Dick Porter  <dick@ximian.com>
+
+	* man/mono.1: Document MONO_EXTERNAL_ENCODINGS variable
+
 2003-10-16  Miguel de Icaza  <miguel@ximian.com>
 
 	* man/mono.1: Document new --trace options
