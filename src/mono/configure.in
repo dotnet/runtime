@@ -1028,6 +1028,18 @@ ac_cv_c_socklen_t=yes
 	AC_MSG_RESULT(no)
 ])
 
+AC_MSG_CHECKING(for array element initalizer support)
+AC_TRY_COMPILE([#include <sys/socket.h>], [
+	const int array[] = {[1] = 2,};
+], [
+	# Yes, we have it...
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(HAVE_ARRAY_ELEM_INIT)
+], [
+	# We'll have to use signals
+	AC_MSG_RESULT(no)
+])
+
 AC_CHECK_FUNCS(trunc, , AC_MSG_CHECKING(for trunc in math.h)
 	# Simply calling trunc (0.0) is no good since gcc will optimize the call away
 	AC_TRY_LINK([#include <math.h>], 
