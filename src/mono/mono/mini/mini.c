@@ -5409,6 +5409,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->type = STACK_I4;
 				ins->inst_i0 = cmp;
 				*sp++ = ins;
+				/* spill it to reduce the expression complexity
+				 * and workaround bug 54209 
+				 */
+				if (cmp->inst_left->type == STACK_I8) {
+					MonoInst *store, *temp, *load;
+					--sp;
+					temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
+					NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
+					store->cil_code = ins->cil_code;
+					MONO_ADD_INS (bblock, store);
+					NEW_TEMPLOAD (cfg, load, temp->inst_c0);
+					load->cil_code = ins->cil_code;
+					*sp++ = load;
+				}
 				ip += 2;
 				break;
 			}
