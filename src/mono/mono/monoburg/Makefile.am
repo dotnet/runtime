@@ -20,5 +20,7 @@ BUILT_SOURCES = parser.c sample.c
 
 CLEANFILES = $(BUILT_SOURCES)
 
-EXTRA_DIST = ChangeLog monoburg.y sample.brg
+man_MANS = monoburg.1
+
+EXTRA_DIST = ChangeLog monoburg.y sample.brg $(man_MANS)
 
