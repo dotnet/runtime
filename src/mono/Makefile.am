@@ -91,6 +91,12 @@ monolite-bootstrap: tmpinst-monolite mono-do-runtime-only
 	$(MAKE) tmpinst-mcs-short-build
 	$(MAKE) fasterstrap
 
+bootstrap-world:
+	$(MAKE) bootstrap-clean
+	$(MAKE) bootstrap
+	$(MAKE) install
+	$(MAKE) mcs-do-compiler-tests
+
 # internal targets
 
 tmpinst-mcs-basic-build: mcs-do-basic-build tmpinst-dir
@@ -140,6 +146,11 @@ mcs-do-run-test: tmpinst-dir $(tmpinst)/bin/mbas
 	tmpinst=`cd $(tmpinst) && pwd` ; \
 	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
 	cd $(mcs_topdir) && $(MAKE) PROFILE=default run-test
+
+mcs-do-compiler-tests: tmpinst-dir $(tmpinst)/bin/mbas
+	tmpinst=`cd $(tmpinst) && pwd` ; \
+	PATH=$$tmpinst/bin:$$PATH ; export PATH ; \
+	cd $(mcs_topdir) && $(MAKE) test-compiler
 
 populate-runtime-subdir:
 	test -n '$(populate_profiles)'

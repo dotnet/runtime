@@ -1,3 +1,7 @@
+2004-09-03  Martin Baulig  <martin@ximian.com>
+
+	* Makefile.am (bootstrap-world): New target.
+
 2004-09-02  Martin Baulig  <martin@ximian.com>
 
 	* runtime/net_1_1/Makefile.am (install-data-local): Install
