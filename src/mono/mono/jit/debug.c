@@ -201,6 +201,7 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 			}
 			break;
 		case MONO_DEBUG_FORMAT_MONO:
+		case MONO_DEBUG_FORMAT_MONO_DEBUGGER:
 			debug->flags |= MONO_DEBUG_FLAGS_DONT_UPDATE_IL_FILES |
 				MONO_DEBUG_FLAGS_DONT_CREATE_IL_FILES;
 			break;
@@ -208,7 +209,8 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 			break;
 		}
 
-		if (debug->format != MONO_DEBUG_FORMAT_MONO) {
+		if ((debug->format != MONO_DEBUG_FORMAT_MONO) &&
+		    (debug->format != MONO_DEBUG_FORMAT_MONO_DEBUGGER)) {
 			if (!strcmp (arg, "dont_assemble")) {
 				debug->flags |= MONO_DEBUG_FLAGS_DONT_ASSEMBLE;
 				continue;
@@ -223,14 +225,6 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 				continue;
 			} else if (!strcmp (arg, "dont_create_il_files")) {
 				debug->flags |= MONO_DEBUG_FLAGS_DONT_CREATE_IL_FILES;
-				continue;
-			}
-		} else {
-			mono_debugger_class_init_func = mono_debug_add_type;
-
-			if (!strcmp (arg, "internal_mono_debugger")) {
-				debug->flags |= MONO_DEBUG_FLAGS_MONO_DEBUGGER;
-				initialize_debugger_support ();
 				continue;
 			}
 		}
@@ -254,6 +248,11 @@ mono_debug_open (MonoAssembly *assembly, MonoDebugFormat format, const char **ar
 			debug->objfile = g_strdup_printf ("%s.o", g_basename (debug->name));
 		break;
 	case MONO_DEBUG_FORMAT_MONO:
+		mono_debugger_class_init_func = mono_debug_add_type;
+		break;
+	case MONO_DEBUG_FORMAT_MONO_DEBUGGER:
+		mono_debugger_class_init_func = mono_debug_add_type;
+		initialize_debugger_support ();
 		break;
 	default:
 		g_assert_not_reached ();
@@ -767,10 +766,11 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 			info->ilfile = g_strdup_printf ("%s.il", info->name);
 		break;
 	case MONO_DEBUG_FORMAT_MONO:
+	case MONO_DEBUG_FORMAT_MONO_DEBUGGER:
 		info->filename = replace_suffix (image->name, "dbg");
 		if (g_file_test (info->filename, G_FILE_TEST_EXISTS))
 			info->symfile = mono_debug_open_mono_symbol_file (info->image, info->filename, TRUE);
-		else if (debug->flags & MONO_DEBUG_FLAGS_MONO_DEBUGGER)
+		else if (info->format == MONO_DEBUG_FORMAT_MONO_DEBUGGER)
 			info->symfile = mono_debug_create_mono_symbol_file (info->image);
 		debugger_symbol_file_table_generation++;
 		break;
@@ -779,7 +779,7 @@ mono_debug_open_image (MonoDebugHandle* debug, MonoImage *image)
 		break;
 	}
 
-	if (debug->format != MONO_DEBUG_FORMAT_MONO)
+	if ((debug->format != MONO_DEBUG_FORMAT_MONO) && (debug->format != MONO_DEBUG_FORMAT_MONO_DEBUGGER))
 		debug_load_method_lines (info);
 
 	return info;
@@ -801,6 +801,7 @@ mono_debug_write_symbols (MonoDebugHandle *debug)
 		mono_debug_write_dwarf2 (debug);
 		break;
 	case MONO_DEBUG_FORMAT_MONO:
+	case MONO_DEBUG_FORMAT_MONO_DEBUGGER:
 		break;
 	default:
 		g_assert_not_reached ();
@@ -823,6 +824,7 @@ mono_debug_make_symbols (void)
 		mono_debug_write_dwarf2 (mono_debug_handle);
 		break;
 	case MONO_DEBUG_FORMAT_MONO:
+	case MONO_DEBUG_FORMAT_MONO_DEBUGGER:
 		debugger_update_symbol_file_table ();
 		break;
 	default:
@@ -837,6 +839,7 @@ mono_debug_close_assembly (AssemblyDebugInfo* info)
 {
 	switch (info->format) {
 	case MONO_DEBUG_FORMAT_MONO:
+	case MONO_DEBUG_FORMAT_MONO_DEBUGGER:
 		if (info->symfile != NULL)
 			mono_debug_close_mono_symbol_file (info->symfile);
 		break;
@@ -984,7 +987,8 @@ mono_debug_add_type (MonoClass *klass)
 	info = mono_debug_get_image (mono_debug_handle, klass->image);
 	g_assert (info);
 
-	if (mono_debug_handle->format != MONO_DEBUG_FORMAT_MONO)
+	if ((mono_debug_handle->format != MONO_DEBUG_FORMAT_MONO) &&
+	    (mono_debug_handle->format != MONO_DEBUG_FORMAT_MONO_DEBUGGER))
 		return;
 
 	if (info->symfile) {
@@ -1109,7 +1113,7 @@ mono_debug_add_method (MonoFlowGraph *cfg)
 	}
 
 	debug_generate_method_lines (info, minfo, cfg);
-	if (info->format == MONO_DEBUG_FORMAT_MONO)
+	if ((info->format == MONO_DEBUG_FORMAT_MONO) || (info->format == MONO_DEBUG_FORMAT_MONO_DEBUGGER))
 		debug_update_il_offsets (info, minfo, cfg);
 
 	if (!method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
@@ -1240,7 +1244,9 @@ update_symbol_file_table_count_func (gpointer key, gpointer value, gpointer user
 {
 	AssemblyDebugInfo *info = (AssemblyDebugInfo *) value;
 
-	if (!info->symfile || (info->format != MONO_DEBUG_FORMAT_MONO))
+	if (!info->symfile)
+		return;
+	if ((info->format != MONO_DEBUG_FORMAT_MONO) && (info->format != MONO_DEBUG_FORMAT_MONO_DEBUGGER))
 		return;
 
 	++ (* (int *) user_data);
@@ -1258,7 +1264,9 @@ update_symbol_file_table_func (gpointer key, gpointer value, gpointer user_data)
 	AssemblyDebugInfo *info = (AssemblyDebugInfo *) value;
 	struct SymfileTableData *data = (struct SymfileTableData *) user_data;
 
-	if (!info->symfile || (info->format != MONO_DEBUG_FORMAT_MONO))
+	if (!info->symfile)
+		return;
+	if ((info->format != MONO_DEBUG_FORMAT_MONO) && (info->format != MONO_DEBUG_FORMAT_MONO_DEBUGGER))
 		return;
 
 	data->symfile_table->symfiles [data->index++] = info->symfile;

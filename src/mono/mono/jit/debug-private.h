@@ -22,9 +22,7 @@ typedef enum {
 	// Don't precompile image.
 	MONO_DEBUG_FLAGS_DONT_PRECOMPILE	= (1 << 6),
 	// Update symbol file on exit.
-	MONO_DEBUG_FLAGS_UPDATE_ON_EXIT		= (1 << 7),
-	// The JIT is called from the Mono Debugger.
-	MONO_DEBUG_FLAGS_MONO_DEBUGGER		= (1 << 8)
+	MONO_DEBUG_FLAGS_UPDATE_ON_EXIT		= (1 << 7)
 } MonoDebugFlags;
 
 typedef struct {

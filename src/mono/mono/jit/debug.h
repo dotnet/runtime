@@ -17,7 +17,11 @@ typedef enum {
 	MONO_DEBUG_FORMAT_NONE,
 	MONO_DEBUG_FORMAT_STABS,
 	MONO_DEBUG_FORMAT_DWARF2,
-	MONO_DEBUG_FORMAT_MONO
+	MONO_DEBUG_FORMAT_MONO,
+	/* This format may only be used when the JIT is being run by the
+	 * Mono Debugger.
+	 */
+	MONO_DEBUG_FORMAT_MONO_DEBUGGER
 } MonoDebugFormat;
 
 extern MonoDebugFormat mono_debug_format;
