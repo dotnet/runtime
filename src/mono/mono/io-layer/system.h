@@ -23,8 +23,8 @@ struct _WapiSystemInfo
 		{
 			guint16 wProcessorArchitecture;
 			guint16 wReserved;
-		};
-	};
+		} _anon_struct;
+	} _anon_union;
 	
 	guint32 dwPageSize;
 	gpointer lpMinimumApplicationAddress;
