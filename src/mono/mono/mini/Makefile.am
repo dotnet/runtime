@@ -6,6 +6,8 @@ libs=	\
 	$(monodir)/mono/metadata/libmetadata.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
+	$(GMODULE_LIBS)	\
+	$(GLIB_LIBS)	\
 	$(LIBGC_LIBS)	\
 	$(ICU_LIBS)
 
