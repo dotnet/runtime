@@ -16,6 +16,13 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/appdomain.h>
 
+#ifdef HAVE_SYS_FILIO_H
+#include <sys/filio.h>    /* defines FIONBIO and FIONREAD */
+#endif
+#ifdef HAVE_SYS_SOCKIO_H
+#include <sys/sockio.h>   /* defines SIOCATMARK */
+#endif
+
 #undef DEBUG
 
 static gint32 convert_family(MonoAddressFamily mono_family)
@@ -1226,24 +1233,40 @@ extern gboolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host
 	return(hostent_to_IPHostEntry(he, h_name, h_aliases, h_addr_list));
 }
 
+#ifndef HAVE_INET_PTON
+static int
+inet_pton (int family, const char *address, void *inaddrp)
+{
+	if (family == AF_INET) {
+		struct in_addr inaddr;
+		
+		if (!inet_aton (address, &inaddr))
+			return 0;
+		
+		memcpy (inaddrp, &inaddr, sizeof (struct in_addr));
+		return 1;
+	}
+	
+	errno = EAFNOSUPPRT;
+	return -1;
+}
+#endif /* !HAVE_INET_PTON */
+
 extern gboolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *addr, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
 {
-	char *address;
-	guint32 inaddr;
+	struct in_addr inaddr;
 	struct hostent *he;
+	char *address;
 	
-	address=mono_string_to_utf8(addr);
-	inaddr=inet_addr(address);
-	free(address);
-	if(inaddr==INADDR_NONE) {
-		return(FALSE);
+	address = mono_string_to_utf8 (addr);
+	if (inet_pton (AF_INET, address, &inaddr) <= 0) {
+		free (address);
+		return FALSE;
 	}
 	
-	he=gethostbyaddr(&inaddr, sizeof(inaddr), AF_INET);
-	if(he==NULL) {
-		return(FALSE);
-	}
-
+	if ((he = gethostbyaddr ((char *) &inaddr, sizeof (inaddr), AF_INET)) == NULL)
+		return FALSE;
+	
 	return(hostent_to_IPHostEntry(he, h_name, h_aliases, h_addr_list));
 }
 
