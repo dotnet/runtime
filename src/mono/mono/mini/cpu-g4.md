@@ -580,7 +580,7 @@ float_cgt_un: dest:i src1:f src2:f len:12
 float_clt: dest:i src1:f src2:f len:12
 float_clt_un: dest:i src1:f src2:f len:12
 float_conv_to_u: dest:i src1:f len:36
-handler: len:12
+call_handler: len:12
 op_endfilter: src1:i len:12
 aot_const: dest:i len:8
 x86_test_null: src1:i len:4
