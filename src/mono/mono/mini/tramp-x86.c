@@ -23,6 +23,12 @@
 #include "mini.h"
 #include "mini-x86.h"
 
+typedef enum {
+	MONO_TRAMPOLINE_GENERIC,
+	MONO_TRAMPOLINE_JUMP,
+	MONO_TRAMPOLINE_CLASS_INIT
+} MonoTrampolineType;
+
 /* adapt to mini later... */
 #define mono_jit_share_code (1)
 
@@ -124,7 +130,7 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 				*((guint32*)(code + 2)) = (guint)addr - ((guint)code + 1) - 5;
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 				/* Tell valgrind to recompile the patched code */
-				VALGRIND_DISCARD_TRANSLATIONS (code, code + 16);
+				VALGRIND_DISCARD_TRANSLATIONS (code + 2, code + 6);
 #endif
 			}
 			return addr;
@@ -176,20 +182,65 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 	return addr;
 }
 
+/**
+ * x86_class_init_trampoline:
+ * @eax: saved x86 register 
+ * @ecx: saved x86 register 
+ * @edx: saved x86 register 
+ * @esi: saved x86 register 
+ * @edi: saved x86 register 
+ * @ebx: saved x86 register
+ * @code: pointer into caller code
+ * @vtable: the type to initialize
+ *
+ * This method calls mono_runtime_class_init () to run the static constructor
+ * for the type, then patches the caller code so it is not called again.
+ */
+static void
+x86_class_init_trampoline (int eax, int ecx, int edx, int esi, int edi, 
+						   int ebx, guint8 *code, MonoVTable *vtable)
+{
+	int i;
+
+	mono_runtime_class_init (vtable);
+
+	code -= 5;
+	if (code [0] == 0xe8) {
+		for (i = 0; i < 5; ++i)
+			x86_nop (code);
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+		/* FIXME: the calltree skin trips on the self modifying code above */
+
+		/* Tell valgrind to recompile the patched code */
+		VALGRIND_DISCARD_TRANSLATIONS (code, code + 8);
+#endif
+	}
+	else
+		g_assert_not_reached ();
+}
+
 static guchar*
-create_trampoline_code (int is_jump)
+create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code;
 	static guint8* generic_jump_trampoline = NULL;
-	
-	if (is_jump) {
-		if (generic_jump_trampoline)
-			return generic_jump_trampoline;
-	} else {
+	static guint8 *generic_class_init_trampoline = NULL;
+
+	switch (tramp_type) {
+	case MONO_TRAMPOLINE_GENERIC:
 		if (mono_generic_trampoline_code)
 			return mono_generic_trampoline_code;
+		break;
+	case MONO_TRAMPOLINE_JUMP:
+		if (generic_jump_trampoline)
+			return generic_jump_trampoline;
+		break;
+	case MONO_TRAMPOLINE_CLASS_INIT:
+		if (generic_class_init_trampoline)
+			return generic_class_init_trampoline;
+		break;
 	}
-	
+
 	code = buf = g_malloc (256);
 	/* save caller save regs because we need to do a call */ 
 	x86_push_reg (buf, X86_EDX);
@@ -199,7 +250,7 @@ create_trampoline_code (int is_jump)
 	/* save LMF begin */
 
 	/* save the IP (caller ip) */
-	if (is_jump)
+	if (tramp_type == MONO_TRAMPOLINE_JUMP)
 		x86_push_imm (buf, 0);
 	else
 		x86_push_membase (buf, X86_ESP, 16);
@@ -224,7 +275,7 @@ create_trampoline_code (int is_jump)
 	/* push the method info */
 	x86_push_membase (buf, X86_ESP, 44);
 	/* push the return address onto the stack */
-	if (is_jump)
+	if (tramp_type == MONO_TRAMPOLINE_JUMP)
 		x86_push_imm (buf, 0);
 	else
 		x86_push_membase (buf, X86_ESP, 52);
@@ -237,7 +288,10 @@ create_trampoline_code (int is_jump)
 	x86_push_membase (buf, X86_ESP, 64); /* ECX */
 	x86_push_membase (buf, X86_ESP, 64); /* EAX */
 
-	x86_call_code (buf, x86_magic_trampoline);
+	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
+		x86_call_code (buf, x86_class_init_trampoline);
+	else
+		x86_call_code (buf, x86_magic_trampoline);
 	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 8*4);
 
 	/* restore LMF start */
@@ -260,16 +314,27 @@ create_trampoline_code (int is_jump)
 
 	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 16);
 
-	/* call the compiled method */
-	x86_jump_reg (buf, X86_EAX);
+	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
+		x86_ret (buf);
+	else
+		/* call the compiled method */
+		x86_jump_reg (buf, X86_EAX);
 
 	g_assert ((buf - code) <= 256);
 
-	if (is_jump) {
-		return generic_jump_trampoline = code;
-	} else {
-		return mono_generic_trampoline_code = code;
+	switch (tramp_type) {
+	case MONO_TRAMPOLINE_GENERIC:
+		mono_generic_trampoline_code = code;
+		break;
+	case MONO_TRAMPOLINE_JUMP:
+		generic_jump_trampoline = code;
+		break;
+	case MONO_TRAMPOLINE_CLASS_INIT:
+		generic_class_init_trampoline = code;
+		break;
 	}
+
+	return code;
 }
 
 #define TRAMPOLINE_SIZE 10
@@ -302,7 +367,7 @@ mono_arch_create_jump_trampoline (MonoMethod *method)
 #endif
 	}
 	
-	tramp = create_trampoline_code (TRUE);
+	tramp = create_trampoline_code (MONO_TRAMPOLINE_JUMP);
 
 	code = buf = g_malloc (TRAMPOLINE_SIZE);
 	x86_push_imm (buf, method);
@@ -329,7 +394,7 @@ mono_arch_create_jump_trampoline (MonoMethod *method)
 gpointer
 mono_arch_create_jit_trampoline (MonoMethod *method)
 {
-	guint8 *code, *buf;
+	guint8 *code, *buf, *tramp;
 
 	/* previously created trampoline code */
 	if (method->info)
@@ -365,15 +430,43 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		return mono_arch_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
 
-	create_trampoline_code (FALSE);
+	tramp = create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
 
 	code = buf = g_malloc (TRAMPOLINE_SIZE);
 	x86_push_imm (buf, method);
-	x86_jump_code (buf, mono_generic_trampoline_code);
+	x86_jump_code (buf, tramp);
 	g_assert ((buf - code) <= TRAMPOLINE_SIZE);
 
 	/* store trampoline address */
 	method->info = code;
+
+	mono_jit_stats.method_trampolines++;
+
+	return code;
+}
+
+/**
+ * mono_arch_create_class_init_trampoline:
+ *  @vtable: the type to initialize
+ *
+ * Creates a trampoline function to run a type initializer. 
+ * If the trampoline is called, it calls mono_runtime_class_init with the
+ * given vtable, then patches the caller code so it does not get called any
+ * more.
+ * 
+ * Returns: a pointer to the newly created code 
+ */
+gpointer
+mono_arch_create_class_init_trampoline (MonoVTable *vtable)
+{
+	guint8 *code, *buf, *tramp;
+
+	tramp = create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
+
+	code = buf = g_malloc (TRAMPOLINE_SIZE);
+	x86_push_imm (buf, vtable);
+	x86_jump_code (buf, tramp);
+	g_assert ((buf - code) <= TRAMPOLINE_SIZE);
 
 	mono_jit_stats.method_trampolines++;
 

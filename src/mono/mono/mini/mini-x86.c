@@ -3062,6 +3062,13 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_VTABLE:
 			*((gconstpointer *)(ip + 1)) = mono_class_vtable (domain, patch_info->data.klass);
 			continue;
+		case MONO_PATCH_INFO_CLASS_INIT: {
+			guint8 *code = ip;
+			/* Might already been changed to a nop */
+			x86_call_imm (code, 0);
+			target = mono_create_class_init_trampoline (mono_class_vtable (domain, patch_info->data.klass));
+			break;
+		}
 		case MONO_PATCH_INFO_SFLDA: {
 			MonoVTable *vtable = mono_class_vtable (domain, patch_info->data.field->parent);
 			if (!vtable->initialized && !(vtable->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && mono_class_needs_cctor_run (vtable->klass, method))

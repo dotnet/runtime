@@ -18,7 +18,7 @@
 #define MONO_USE_AOT_COMPILER
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "4"
+#define MONO_AOT_FILE_VERSION "5"
 
 #if 1
 #define mono_bitset_test_fast(set,n) (((guint32*)set)[2+(n)/32] & (1 << ((n) % 32)))
@@ -347,6 +347,7 @@ typedef enum {
 	MONO_PATCH_INFO_IMAGE,
 	MONO_PATCH_INFO_FIELD,
 	MONO_PATCH_INFO_VTABLE,
+	MONO_PATCH_INFO_CLASS_INIT,
 	MONO_PATCH_INFO_SFLDA,
 	MONO_PATCH_INFO_LDSTR,
 	MONO_PATCH_INFO_LDTOKEN,
@@ -639,6 +640,9 @@ MonoJitICallInfo *mono_find_jit_icall_by_addr  (gconstpointer addr);
 MonoJitICallInfo *mono_register_jit_icall      (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save);
 gconstpointer     mono_icall_get_wrapper       (MonoJitICallInfo* callinfo);
 
+gpointer          mono_create_class_init_trampoline (MonoVTable *vtable);
+MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr);
+
 /* methods that must be provided by the arch-specific port */
 void      mono_arch_cpu_init                    (void);
 guint32   mono_arch_cpu_optimizazions           (guint32 *exclude_mask);
@@ -652,6 +656,7 @@ gpointer  mono_arch_get_throw_exception         (void);
 gpointer  mono_arch_get_throw_exception_by_name (void);
 gpointer  mono_arch_create_jit_trampoline       (MonoMethod *method);
 gpointer  mono_arch_create_jump_trampoline      (MonoMethod *method);
+gpointer  mono_arch_create_class_init_trampoline(MonoVTable *vtable);
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg);
 GList    *mono_arch_get_global_int_regs         (MonoCompile *cfg);
 void      mono_arch_patch_code                  (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji);

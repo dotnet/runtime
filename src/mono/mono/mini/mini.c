@@ -86,6 +86,7 @@ static MonoMethodSignature *helper_sig_long_double = NULL;
 static MonoMethodSignature *helper_sig_uint_double = NULL;
 static MonoMethodSignature *helper_sig_int_double = NULL;
 static MonoMethodSignature *helper_sig_stelem_ref = NULL;
+static MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
 
 static guint32 default_opt = MONO_OPT_PEEPHOLE;
 
@@ -4035,9 +4036,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				vtable = mono_class_vtable (cfg->domain, klass);
 				if (!addr) {
 					if ((!vtable->initialized || mono_compile_aot) && !(klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && mono_class_needs_cctor_run (klass, method)) {
-						MonoInst *iargs [1];
-						NEW_VTABLECONST (cfg, iargs [0], vtable);
-						mono_emit_jit_icall (cfg, bblock, mono_runtime_class_init, iargs, ip);
+						guint8 *tramp = mono_create_class_init_trampoline (vtable);
+						mono_emit_native_call (cfg, bblock, tramp, 
+											   helper_sig_class_init_trampoline,
+											   NULL, ip, FALSE);
 						if (cfg->verbose_level > 2)
 							g_print ("class %s.%s needs init call for %s\n", klass->name_space, klass->name, field->name);
 					} else {
@@ -5527,6 +5529,10 @@ create_helper_signature (void)
 	helper_sig_memset->params [2] = &mono_defaults.int32_class->byval_arg;
 	helper_sig_memset->ret = &mono_defaults.void_class->byval_arg;
 	helper_sig_memset->pinvoke = 1;
+
+	helper_sig_class_init_trampoline = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+	helper_sig_class_init_trampoline->ret = &mono_defaults.void_class->byval_arg;
+	helper_sig_class_init_trampoline->pinvoke = 1;	
 }
 
 static GHashTable *jit_icall_hash_name = NULL;
@@ -5587,7 +5593,7 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 	info->name = name;
 	info->func = func;
 	info->sig = sig;
-		
+
 	if (is_save
 #ifdef MONO_USE_EXC_TABLES
 	    || mono_arch_has_unwind_info (func)
@@ -5605,6 +5611,47 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 		g_hash_table_insert (jit_icall_hash_addr, (gpointer)info->wrapper, info);
 
 	return info;
+}
+
+static GHashTable *class_init_hash_addr = NULL;
+
+gpointer
+mono_create_class_init_trampoline (MonoVTable *vtable)
+{
+	gpointer code;
+
+	/* previously created trampoline code */
+	mono_domain_lock (vtable->domain);
+	code = 
+		mono_g_hash_table_lookup (vtable->domain->class_init_trampoline_hash,
+								  vtable);
+	mono_domain_unlock (vtable->domain);
+	if (code)
+		return code;
+
+	code = mono_arch_create_class_init_trampoline (vtable);
+
+	/* store trampoline address */
+	mono_domain_lock (vtable->domain);
+	mono_g_hash_table_insert (vtable->domain->class_init_trampoline_hash,
+							  vtable, code);
+	mono_domain_unlock (vtable->domain);
+
+	/* FIXME: locking */
+	if (!class_init_hash_addr)
+		class_init_hash_addr = g_hash_table_new (NULL, NULL);
+	g_hash_table_insert (class_init_hash_addr, code, vtable);
+
+	return code;
+}
+
+MonoVTable*
+mono_find_class_init_trampoline_by_addr (gconstpointer addr)
+{
+	if (class_init_hash_addr)
+		return g_hash_table_lookup (class_init_hash_addr, addr);
+	else
+		return NULL;
 }
 
 static GHashTable *emul_opcode_hash = NULL;
@@ -6547,6 +6594,13 @@ mono_codegen (MonoCompile *cfg)
 				//printf ("TEST %s %p\n", info->name, patch_info->data.target);
 				patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
 				patch_info->data.name = info->name;
+			}
+			else {
+				MonoVTable *vtable = mono_find_class_init_trampoline_by_addr (patch_info->data.target);
+				if (vtable) {
+					patch_info->type = MONO_PATCH_INFO_CLASS_INIT;
+					patch_info->data.klass = vtable->klass;
+				}
 			}
 			break;
 		}

@@ -68,7 +68,16 @@ static MonoGHashTable *aot_modules;
 
 static CRITICAL_SECTION aot_mutex;
 
-static guint32 mono_aot_verbose = 0;
+static guint32 mono_aot_verbose = 1;
+
+/*
+ * Disabling this will make a copy of the loaded code and use the copy instead 
+ * of the original. This will place the caller and the callee close to each 
+ * other in memory, possibly improving cache behavior. Since the original
+ * code is in copy-on-write memory, this will not increase the memory usage
+ * of the runtime.
+ */
+static gboolean use_loaded_code = FALSE;
 
 /* For debugging */
 static gint32 mono_last_aot_method = -1;
@@ -321,18 +330,12 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 	if (!g_module_symbol (module, info_label, (gpointer *)&info))
 		return NULL;
 
-	{
-		static int count = 0;
-
-		count ++;
-
-		if (mono_last_aot_method != -1) {
-			if (count > mono_last_aot_method)
+	if (mono_last_aot_method != -1) {
+		if (mono_jit_stats.methods_aot > mono_last_aot_method)
 				return NULL;
-			else
-				if (count == mono_last_aot_method)
-					printf ("LAST AOT METHOD: %s.%s.%s.\n", klass->name_space, klass->name, method->name);
-		}
+		else
+			if (mono_jit_stats.methods_aot == mono_last_aot_method)
+				printf ("LAST AOT METHOD: %s.%s.%s.\n", klass->name_space, klass->name, method->name);
 	}
 
 #ifdef HAVE_BOEHM_GC
@@ -348,18 +351,12 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 	used_int_regs = GPOINTER_TO_UINT (*((gpointer **)info));
 	info++;
 
-	/* 
-	 * Enabling this will place the caller and the callee close to each other
-	 * in memory, possibly improving cache behavior.
-	 */
-/*
-	{
+	if (!use_loaded_code) {
 		guint8 *code2;
 		code2 = mono_mempool_alloc (domain->code_mp, code_len);
 		memcpy (code2, code, code_len);
 		code = code2;
 	}
-*/
 
 	if (mono_aot_verbose > 1)
 		printf ("FOUND AOT compiled code for %s %p - %p %p\n", mono_method_full_name (method, TRUE), code, code + code_len, info);
@@ -454,6 +451,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 				mono_class_init (ji->data.klass);
 				break;
 			case MONO_PATCH_INFO_VTABLE:
+			case MONO_PATCH_INFO_CLASS_INIT:
 				ji->data.klass = decode_class_info (aot_module, data);
 				g_assert (ji->data.klass);
 				mono_class_init (ji->data.klass);
@@ -524,18 +522,20 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 			patch_info = ji;
 		}
 
-#ifndef PLATFORM_WIN32
+		if (use_loaded_code) {
 		/* disable write protection */
-		page_start = (char *) (((int) (code)) & ~ (PAGESIZE - 1));
-		pages = (code + code_len - page_start + PAGESIZE - 1) / PAGESIZE;
-		err = mprotect (page_start, pages * PAGESIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
-		g_assert (err == 0);
+#ifndef PLATFORM_WIN32
+			page_start = (char *) (((int) (code)) & ~ (PAGESIZE - 1));
+			pages = (code + code_len - page_start + PAGESIZE - 1) / PAGESIZE;
+			err = mprotect (page_start, pages * PAGESIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
+			g_assert (err == 0);
 #else
-		{
-			DWORD oldp;
-			g_assert (VirtualProtect (code, code_len, PAGE_EXECUTE_READWRITE, &oldp) != 0);
-		}
+			{
+				DWORD oldp;
+				g_assert (VirtualProtect (code, code_len, PAGE_EXECUTE_READWRITE, &oldp) != 0);
+			}
 #endif
+		}
 
 		/* Do this outside the lock to avoid deadlocks */
 		LeaveCriticalSection (&aot_mutex);
@@ -854,6 +854,7 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 			j++;
 			break;
 		case MONO_PATCH_INFO_VTABLE:
+		case MONO_PATCH_INFO_CLASS_INIT:
 			patch_info->data.name = cond_emit_klass_label (acfg, patch_info->data.klass);
 			j++;
 			break;
@@ -955,6 +956,7 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 			case MONO_PATCH_INFO_INTERNAL_METHOD:
 			case MONO_PATCH_INFO_IMAGE:
 			case MONO_PATCH_INFO_VTABLE:
+			case MONO_PATCH_INFO_CLASS_INIT:
 			case MONO_PATCH_INFO_SFLDA:
 			case MONO_PATCH_INFO_EXC_NAME:
 				fprintf (tmpfp, "\t.long %s\n", patch_info->data.name);
