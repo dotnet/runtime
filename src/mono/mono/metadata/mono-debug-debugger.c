@@ -1343,6 +1343,17 @@ mono_debugger_unhandled_exception (gpointer addr, MonoObject *exc)
 	return TRUE;
 }
 
+void
+mono_debugger_handle_exception (gpointer addr, int clause, MonoObject *exc)
+{
+	if (!mono_debugger_initialized)
+		return FALSE;
+
+	// Prevent the object from being finalized.
+	last_exception = exc;
+	mono_debugger_event (MONO_DEBUGGER_EVENT_EXCEPTION, exc, addr);
+}
+
 static gchar *
 get_exception_message (MonoObject *exc)
 {
