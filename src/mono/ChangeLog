@@ -1,6 +1,6 @@
 2005-02-12  Cesar Lopez Nataren  <cnataren@novell.com>
 
-	* scripts/Makefile.am: added mjs
+	* scripts/Makefile.am (bin_SCRIPTS): added mjs
 
 2005-02-12  Ben Maurer  <bmaurer@ximian.com>
 
