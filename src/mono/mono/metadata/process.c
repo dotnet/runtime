@@ -757,6 +757,16 @@ MonoBoolean ves_icall_System_Diagnostics_Process_Start_internal (MonoString *cmd
 			shell_path = mono_unicode_from_external (spath, &dummy);
 			tmp = mono_string_to_utf8 (cmd);
 			quoted = g_shell_quote (tmp);
+#ifdef PLATFORM_WIN32
+			{
+				gchar *q = quoted;
+				while (*q) {
+					if (*q == '\'')
+						*q = '\"';
+					q++;
+				}
+			}
+#endif
 			newcmd = g_strdup_printf (shell_args, quoted);
 			g_free (quoted);
 			g_free (tmp);
