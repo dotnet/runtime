@@ -1480,6 +1480,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		--i;
 		ins = tmp->data;
 		spec = ins_spec [ins->opcode];
+		prev_dreg = -1;
 		DEBUG (g_print ("processing:"));
 		DEBUG (print_ins (i, ins));
 		if (spec [MONO_INST_CLOB] == 's') {
@@ -1583,6 +1584,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					}
 				} else {
 					DEBUG (g_print ("\tshortcut assignment of R%d to %s\n", ins->dreg, mono_arch_regname (dest_reg)));
+					prev_dreg = ins->dreg;
 					rs->iassign [ins->dreg] = dest_reg;
 					rs->isymbolic [dest_reg] = ins->dreg;
 					ins->dreg = dest_reg;
@@ -1685,8 +1687,6 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else if (spec [MONO_INST_DEST] == 'd' && ins->dreg != X86_EDX && spec [MONO_INST_CLOB] != 'd') {
 				create_copy_ins (cfg, ins->dreg, X86_EDX, ins);
 			}
-		} else {
-			prev_dreg = -1;
 		}
 		if (spec [MONO_INST_DEST] != 'f' && reg_is_freeable (ins->dreg) && prev_dreg >= 0 && reginfo [prev_dreg].born_in >= i) {
 			DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
