@@ -19,7 +19,7 @@ Start the port
 
 <B>PowerPC architecture:</B>
 
-    <A HREF="http://e-www.motorola.com/brdata/PDFDB/docs/MPCFPE32B.pdf">PowerPC Programming environments manual</A>
+    <A HREF="http://e-www.motorola.com/brdata/PDFDB/docs/MPCFPE32B.pdf">PowerPC Programming environments manual</A><BR>
     <A HREF="http://e-www.motorola.com/brdata/PDFDB/docs/MPC7410UM.pdf">G4 (7410) User's manual</A>
 
 <B>Calling conventions:</B>
