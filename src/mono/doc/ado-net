@@ -57,8 +57,26 @@
 	
 * Current Status
 
-	We are able now to run basic commands (INSERT, DELETE) into a
-	PostgreSQL database (see mcs/class/System.Data/Test/TestSqlInsert.cs).
+	We are able to do simple CREATE TABLE, DROP TABLE, INSERT, and
+	DELETE SQL commands using the ExecuteNonQuery method in SqlCommand.  
+	
+	We are also	able to do simple aggregate functions, 
+	ie, count(), sum(), avg(), min(), and
+	max() in a simple SELECT SQL query using ExecuteSecalar() now.  
+	
+	We are also able to retrieve data with a simple SELECT SQL query 
+	using ExecuteReader() which returns a SqlDataReader.  We are able to
+	GetSchemaTable() get the meta data about the table columns.  We are able
+	to Read() to get each row from the result set.  We are able to get 
+	String data (char, bpchar (character), text, varchar), Int16 (int2 or smallint),
+	and Int32 (int4 or integer), Int64 (int8 or bigint).  More data types will
+	follow later on.
+		
+	Parameters are not working nor has stored procedures been tested - but they will be.
+	
+	A lot of functionality in System.Data is missing, but the infrastructure is
+	starting to come together.
+	
 	To compile that test program, you need:
 
 	<b>On Linux</b>

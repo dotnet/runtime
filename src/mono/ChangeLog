@@ -1,5 +1,10 @@
 2002-05-05  Daniel Morgan <danmorg@sc.rr.com>
 
+	* doc/ado-net: updated the current status which
+	I kept forgetting to do.
+
+2002-05-05  Daniel Morgan <danmorg@sc.rr.com>
+
 	* doc/ado-net: updated to includes an example for
 	running ipc-daemon as a	Windows service.  Thanks
 	to gonzalo.
