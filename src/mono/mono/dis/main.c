@@ -1410,7 +1410,7 @@ main (int argc, char *argv [])
 	 * If we just have one file, use the corlib version it requires.
 	 */
 	if (!input_files->next) {
-		char *filename = l->data;
+		char *filename = input_files->data;
 
 		mono_init_from_assembly (argv [0], filename);
 		disassemble_file (filename);
