@@ -579,7 +579,7 @@ mono_debug_add_type (MonoClass *klass)
 	MonoDebugClassEntry *entry;
 	char buffer [BUFSIZ];
 	guint8 *ptr, *oldptr;
-	guint32 token, i, size, total_size, max_size;
+	guint32 token, size, total_size, max_size;
 	int base_offset = 0;
 
 	handle = _mono_debug_get_image (klass->image);
@@ -605,7 +605,8 @@ mono_debug_add_type (MonoClass *klass)
 	write_leb128 (token, ptr, &ptr);
 	write_leb128 (klass->rank, ptr, &ptr);
 	write_leb128 (klass->instance_size + base_offset, ptr, &ptr);
-	* ((gpointer *) ptr)++ = klass;
+	* ((gpointer *) ptr) = klass;
+	ptr += sizeof (gpointer);
 
 	size = ptr - oldptr;
 	g_assert (size < max_size);
@@ -616,7 +617,7 @@ mono_debug_add_type (MonoClass *klass)
 		//        This should only happen for very big methods, for instance
 		//        with more than 40.000 line numbers and more than 5.000
 		//        local variables.
-		return NULL;
+		return;
 	}
 
 	allocate_data_item (mono_symbol_table, MONO_DEBUG_DATA_ITEM_CLASS, total_size, (guint8 **) &entry);
