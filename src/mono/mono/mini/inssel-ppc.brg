@@ -198,12 +198,13 @@ stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
 
 stmt: OP_OUTARG (freg) {
 	if (tree->inst_imm) {
-		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, s->frame_reg, tree->inst_imm, state->left->reg1);
+		int opcode = (tree->unused & 0xff00) == 0x0400? OP_STORER4_MEMBASE_REG: OP_STORER8_MEMBASE_REG;
+		MONO_EMIT_NEW_STORE_MEMBASE (s, opcode, s->frame_reg, tree->inst_imm, state->left->reg1);
 		return;
 	}
 	tree->opcode = OP_SETFREG;
 	tree->sreg1 = state->left->reg1;
-	tree->dreg = tree->unused;
+	tree->dreg = tree->unused & 0xff;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -373,6 +374,10 @@ reg: OP_CGT (OP_COMPARE (freg, freg)) {
 reg: OP_CGT_UN (OP_COMPARE (freg, freg)) {	
 	MONO_EMIT_BIALU (s, tree, OP_FCGT_UN, state->reg1, state->left->left->reg1,
 			 state->left->right->reg1);
+}
+
+reg: CEE_ADD_OVF (reg, reg) "0" {
+	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
 
 %%

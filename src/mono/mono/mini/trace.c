@@ -497,6 +497,7 @@ handle_enum:
 		printf ("lresult=0x%16llx", l);
 		break;
 	}
+	case MONO_TYPE_R4:
 	case MONO_TYPE_R8: {
 		double f = va_arg (ap, double);
 		printf ("FP=%f\n", f);

@@ -474,7 +474,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 				FP_ALSO_IN_REG (gr ++);
 				ALWAYS_ON_STACK (stack_size += 4);
 			} else {
-				cinfo->args [n].offset = stack_size;
+				cinfo->args [n].offset = PPC_STACK_PARAM_OFFSET + stack_size;
 				cinfo->args [n].regtype = RegTypeBase;
 				cinfo->args [n].reg = ppc_sp; /* in the caller*/
 				stack_size += 4;
@@ -491,7 +491,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 				FP_ALSO_IN_REG (gr += 2);
 				ALWAYS_ON_STACK (stack_size += 8);
 			} else {
-				cinfo->args [n].offset = stack_size;
+				cinfo->args [n].offset = PPC_STACK_PARAM_OFFSET + stack_size;
 				cinfo->args [n].regtype = RegTypeBase;
 				cinfo->args [n].reg = ppc_sp; /* in the caller*/
 				stack_size += 8;
@@ -773,11 +773,12 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				arg->unused = ainfo->reg;
 				call->used_fregs |= 1 << ainfo->reg;
 				if (ainfo->size == 4) {
+					arg->opcode = OP_OUTARG_R8;
 					/* we reduce the precision */
-					MonoInst *conv;
+					/*MonoInst *conv;
 					MONO_INST_NEW (cfg, conv, OP_FCONV_TO_R4);
 					conv->inst_left = arg->inst_left;
-					arg->inst_left = conv;
+					arg->inst_left = conv;*/
 				}
 			} else {
 				g_assert_not_reached ();
@@ -1272,7 +1273,7 @@ mono_spillvar_offset_float (MonoCompile *cfg, int spillvar)
 #define DEBUG(a) if (cfg->verbose_level > 1) a
 //#define DEBUG(a)
 #define reg_is_freeable(r) ((r) >= 3 && (r) <= 10)
-#define freg_is_freeable(r) ((r) >= 1 && (r) <= 14)
+#define freg_is_freeable(r) ((r) >= 1 && (r) <= 13)
 
 typedef struct {
 	int born_in;
@@ -1497,7 +1498,7 @@ get_float_register_spilling (MonoCompile *cfg, InstList *item, MonoInst *ins, gu
 	}
 	load->next = ins->next;
 	ins->next = load;
-	DEBUG (g_print ("SPILLED LOAD (%d at 0x%08x(%%sp)) R%d (freed %s)\n", spill, load->inst_offset, i, mono_arch_regname (sel)));
+	DEBUG (g_print ("SPILLED LOAD FP (%d at 0x%08x(%%sp)) R%d (freed %s)\n", spill, load->inst_offset, i, mono_arch_regname (sel)));
 	i = mono_regstate_alloc_float (cfg->rs, 1 << sel);
 	g_assert (i == sel);
 	
@@ -1562,7 +1563,7 @@ create_spilled_store_float (MonoCompile *cfg, int spill, int reg, int prev_reg, 
 		store->next = ins->next;
 		ins->next = store;
 	}
-	DEBUG (g_print ("SPILLED STORE (%d at 0x%08x(%%sp)) R%d (from %s)\n", spill, store->inst_offset, prev_reg, mono_arch_regname (reg)));
+	DEBUG (g_print ("SPILLED STORE FP (%d at 0x%08x(%%sp)) R%d (from %s)\n", spill, store->inst_offset, prev_reg, mono_arch_regname (reg)));
 	return store;
 }
 
@@ -1606,9 +1607,9 @@ alloc_int_reg (MonoCompile *cfg, InstList *curinst, MonoInst *ins, int sym_reg, 
 	return val;
 }
 
-/* use ppc_r3-ppc_10,ppc_12 as temp registers */
+/* use ppc_r3-ppc_10,ppc_r12 as temp registers, f1-f13 for FP registers */
 #define PPC_CALLER_REGS ((0xff<<3) | (1<<12) | USE_EXTRA_TEMPS)
-#define PPC_CALLER_FREGS (0xff<<2)
+#define PPC_CALLER_FREGS (0x3ffe)
 
 /*
  * Local register allocation.
@@ -1720,9 +1721,11 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		} else if (spec [MONO_INST_CLOB] == 'c') {
 			MonoCallInst *cinst = (MonoCallInst*)ins;
 			DEBUG (g_print ("excluding regs 0x%x from cur_iregs (0x%x)\n", cinst->used_iregs, cur_iregs));
+			DEBUG (g_print ("excluding fpregs 0x%x from cur_fregs (0x%x)\n", cinst->used_fregs, cur_fregs));
 			cur_iregs &= ~cinst->used_iregs;
 			cur_fregs &= ~cinst->used_fregs;
 			DEBUG (g_print ("available cur_iregs: 0x%x\n", cur_iregs));
+			DEBUG (g_print ("available cur_fregs: 0x%x\n", cur_fregs));
 			/* registers used by the calling convention are excluded from 
 			 * allocation: they will be selectively enabled when they are 
 			 * assigned by the special SETREG opcodes.
@@ -1731,6 +1734,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		dest_mask = src1_mask = src2_mask = cur_iregs;
 		/* update for use with FP regs... */
 		if (spec [MONO_INST_DEST] == 'f') {
+			dest_mask = cur_fregs;
 			if (ins->dreg >= MONO_MAX_FREGS) {
 				val = rs->fassign [ins->dreg];
 				prev_dreg = ins->dreg;
@@ -1751,7 +1755,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				rs->fsymbolic [val] = prev_dreg;
 				ins->dreg = val;
 				if (spec [MONO_INST_CLOB] == 'c' && ins->dreg != ppc_f1) {
-					/* this instruction only outputs to ppc_f3, need to copy */
+					/* this instruction only outputs to ppc_f1, need to copy */
 					create_copy_ins_float (cfg, ins->dreg, ppc_f1, ins);
 				}
 			} else {
@@ -1833,11 +1837,15 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		} else {
 			prev_dreg = -1;
 		}
-		if (spec [MONO_INST_DEST] != 'f' && reg_is_freeable (ins->dreg) && prev_dreg >= 0 && (reginfo [prev_dreg].born_in >= i)) {
-			DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
+		if (spec [MONO_INST_DEST] == 'f' && freg_is_freeable (ins->dreg) && prev_dreg >= 0 && (reginfof [prev_dreg].born_in >= i)) {
+			DEBUG (g_print ("\tfreeable %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfof [prev_dreg].born_in));
+			mono_regstate_free_float (rs, ins->dreg);
+		} else if (spec [MONO_INST_DEST] != 'f' && reg_is_freeable (ins->dreg) && prev_dreg >= 0 && (reginfo [prev_dreg].born_in >= i)) {
+			DEBUG (g_print ("\tfreeable float %s (R%d) (born in %d)\n", mono_arch_regname (ins->dreg), prev_dreg, reginfo [prev_dreg].born_in));
 			mono_regstate_free_int (rs, ins->dreg);
 		}
 		if (spec [MONO_INST_SRC1] == 'f') {
+			src1_mask = cur_fregs;
 			if (ins->sreg1 >= MONO_MAX_FREGS) {
 				val = rs->fassign [ins->sreg1];
 				prev_sreg1 = ins->sreg1;
@@ -1904,6 +1912,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			prev_sreg1 = -1;
 		}
 		if (spec [MONO_INST_SRC2] == 'f') {
+			src2_mask = cur_fregs;
 			if (ins->sreg2 >= MONO_MAX_FREGS) {
 				val = rs->fassign [ins->sreg2];
 				prev_sreg2 = ins->sreg2;
@@ -1976,9 +1985,9 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 static guchar*
 emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size, gboolean is_signed)
 {
-	/* sreg is a float, dreg is an integer reg. ppc_f1 is used a scratch */
-	ppc_fctiwz (code, ppc_f1, sreg);
-	ppc_stfd (code, ppc_f1, -8, ppc_sp);
+	/* sreg is a float, dreg is an integer reg. ppc_f0 is used a scratch */
+	ppc_fctiwz (code, ppc_f0, sreg);
+	ppc_stfd (code, ppc_f0, -8, ppc_sp);
 	ppc_lwz (code, dreg, -4, ppc_sp);
 	if (!is_signed) {
 		if (size == 1)
@@ -2429,6 +2438,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ADC_IMM:
 			ppc_load (code, ppc_r11, ins->inst_imm);
 			ppc_adde (code, ins->dreg, ins->sreg1, ppc_r11);
+			break;
+		case CEE_ADD_OVF:
+#if 0
+			/* clear summary overflow */
+			ppc_crxor (code, 28, 28, 28);
+			//ppc_break (code);
+			ppc_addod (code, ins->dreg, ins->sreg1, ins->sreg2);
+			//ppc_break (code);
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_SO, "OverflowException");
+#endif
+			ppc_addc (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_SUBCC:
 			ppc_subfc (code, ins->dreg, ins->sreg2, ins->sreg1);
@@ -2996,19 +3016,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case CEE_CKFINITE: {
 			ppc_stfd (code, ins->sreg1, -8, ppc_sp);
-			ppc_lwz (code, ppc_r0, -8, ppc_sp);
-			ppc_rlwinm (code, ppc_r0, ppc_r0, 0, 1, 31);
-			ppc_xoris (code, ppc_r11, ppc_r0, 0x7ff0);
-			ppc_neg (code, ppc_r0, ppc_r11);
-			ppc_rlwinm (code, ppc_r0, ppc_r0, 1, 31, 31);
-			g_assert_not_reached ();
-			/*x86_push_reg (code, X86_EAX);
-			x86_fxam (code);
-			x86_fnstsw (code);
-			x86_alu_reg_imm (code, X86_AND, X86_EAX, 0x4100);
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0x0100);
-			x86_pop_reg (code, X86_EAX);
-			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "ArithmeticException");*/
+			ppc_lwz (code, ppc_r11, -8, ppc_sp);
+			ppc_rlwinm (code, ppc_r11, ppc_r11, 0, 1, 31);
+			ppc_addis (code, ppc_r11, ppc_r11, -32752);
+			ppc_rlwinmd (code, ppc_r11, ppc_r11, 1, 31, 31);
+			EMIT_COND_SYSTEM_EXCEPTION (CEE_BEQ - CEE_BEQ, "ArithmeticException");
 			break;
 		}
 		default:

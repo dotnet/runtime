@@ -214,7 +214,7 @@ conv.ovf.u4:
 conv.ovf.i8:
 conv.ovf.u8:
 refanyval:
-ckfinite: dest:f src1:f len:22
+ckfinite: dest:f src1:f len:24
 mkrefany:
 ldtoken:
 conv.u2: dest:i src1:i len:4
@@ -222,7 +222,7 @@ conv.u1: dest:i src1:i len:4
 conv.i: dest:i src1:i len:4
 conv.ovf.i:
 conv.ovf.u:
-add.ovf:
+add.ovf: dest:i src1:i src2:i len:32
 add.ovf.un:
 mul.ovf: dest:i src1:i src2:i len:12
 # this opcode is handled specially in the code generator
