@@ -822,7 +822,7 @@ gboolean TlsSetValue(guint32 idx, gpointer value)
 void Sleep(guint32 ms)
 {
 	struct timespec req, rem;
-	div_t divvy;
+	int ms_quot, ms_rem;
 	int ret;
 	
 #ifdef DEBUG
@@ -835,10 +835,11 @@ void Sleep(guint32 ms)
 	}
 	
 	/* FIXME: check for INFINITE and sleep forever */
-	divvy=div((int)ms, 1000);
+	ms_quot = ms / 1000;
+	ms_rem = ms % 1000;
 	
-	req.tv_sec=divvy.quot;
-	req.tv_nsec=divvy.rem*1000000;
+	req.tv_sec=ms_quot;
+	req.tv_nsec=ms_rem*1000000;
 	
 again:
 	ret=nanosleep(&req, &rem);
