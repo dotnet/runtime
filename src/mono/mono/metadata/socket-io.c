@@ -78,9 +78,11 @@ static gint32 convert_family(MonoAddressFamily mono_family)
 		family=AF_INET;
 		break;
 		
+#ifdef AF_IPX
 	case AddressFamily_Ipx:
 		family=AF_IPX;
 		break;
+#endif
 		
 	case AddressFamily_Sna:
 		family=AF_SNA;
@@ -94,9 +96,11 @@ static gint32 convert_family(MonoAddressFamily mono_family)
 		family=AF_APPLETALK;
 		break;
 		
+#ifdef AF_INET6
 	case AddressFamily_InterNetworkV6:
 		family=AF_INET6;
 		break;
+#endif
 #ifdef AF_IRDA	
 	case AddressFamily_Irda:
 		family=AF_IRDA;
@@ -126,9 +130,11 @@ static MonoAddressFamily convert_to_mono_family(guint16 af_family)
 		family=AddressFamily_InterNetwork;
 		break;
 		
+#ifdef AF_IPX
 	case AF_IPX:
 		family=AddressFamily_Ipx;
 		break;
+#endif
 		
 	case AF_SNA:
 		family=AddressFamily_Sna;
@@ -142,9 +148,11 @@ static MonoAddressFamily convert_to_mono_family(guint16 af_family)
 		family=AddressFamily_AppleTalk;
 		break;
 		
+#ifdef AF_INET6
 	case AF_INET6:
 		family=AddressFamily_InterNetworkV6;
 		break;
+#endif
 		
 #ifdef AF_IRDA	
 	case AF_IRDA:
