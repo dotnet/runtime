@@ -1128,15 +1128,13 @@ int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *
 	
 	ec=U_ZERO_ERROR;
 	
-	set_collator_options (coll, options);
-
 	/* Need to set the collator to a fairly weak level, so that it
 	 * treats characters that can be written differently as
-	 * identical (eg "Žß" and "ss", "æ" and "ae" or "ä" etc.)  Note
+	 * identical (eg "ß" and "ss", "æ" and "ae" or "ä" etc.)  Note
 	 * that this means that the search string and the original
 	 * text might have differing lengths.
 	 */
-//	ucol_setAttribute (coll, UCOL_STRENGTH, UCOL_PRIMARY, &ec);
+	ucol_setAttribute (coll, UCOL_STRENGTH, UCOL_PRIMARY, &ec);
 
 	/* Still notice case differences though (normally a tertiary
 	 * difference)
@@ -1147,8 +1145,8 @@ int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *
 	ucol_setAttribute (coll, UCOL_ALTERNATE_HANDLING, UCOL_NON_IGNORABLE,
 			   &ec);
 	
-	search=usearch_openFromCollator (mono_string_chars (value), -1, usrcstr, -1, coll, NULL,
-					 &ec);
+	search=usearch_openFromCollator (mono_string_chars (value), -1,
+					 usrcstr, -1, coll, NULL, &ec);
 	if(U_SUCCESS (ec)) {
 		if(first) {
 			pos=usearch_first (search, &ec);
@@ -1156,19 +1154,55 @@ int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *
 			pos=usearch_last (search, &ec);
 		}
 
-		if(pos!=USEARCH_DONE) {
+		while (pos!=USEARCH_DONE) {
+			int32_t match_len;
+			UChar *match;
+			UCollationResult uret;
+			
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION
-				   ": Got match at %d (sindex %d) len %d", pos,
-				   sindex, usearch_getMatchedLength (search));
+				   ": Got potential match at %d (sindex %d) len %d", pos, sindex, usearch_getMatchedLength (search));
 #endif
-			if(sindex>0) {
-				if(first) {
-					pos+=sindex;
-				} else {
-					pos+=(sindex-count+1);
+
+			/* ICU usearch currently ignores most of the
+			 * collator attributes :-(
+			 *
+			 * Check the returned match to see if it
+			 * really does match properly...
+			 */
+			match_len = usearch_getMatchedLength (search);
+			match=(UChar *)g_malloc0 (sizeof(UChar) * (match_len + 1));
+			usearch_getMatchedText (search, match, match_len, &ec);
+
+			uret = ucol_strcoll (coll, match, -1,
+					     mono_string_chars (value), -1);
+			g_free (match);
+			
+			if (uret == UCOL_EQUAL) {
+				/* OK, we really did get a match */
+#ifdef DEBUG
+				g_message (G_GNUC_PRETTY_FUNCTION
+					   ": Got match at %d len %d", pos,
+					   match_len);
+#endif
+
+				if(sindex>0) {
+					if(first) {
+						pos+=sindex;
+					} else {
+						pos+=(sindex-count+1);
+					}
 				}
+
+				break;
 			}
+
+			/* False alarm, keep looking */
+			if(first) {
+				pos=usearch_next (search, &ec);
+			} else {
+				pos=usearch_previous (search, &ec);
+			}	
 		}
 	} else {
 		g_message (G_GNUC_PRETTY_FUNCTION ": usearch_open error: %s",
@@ -1231,7 +1265,7 @@ int ves_icall_System_Globalization_CompareInfo_internal_index_char (MonoCompareI
 	
 	/* Need to set the collator to a fairly weak level, so that it
 	 * treats characters that can be written differently as
-	 * identical (eg "Žß" and "ss", "æ" and "ae" or "ä" etc.)  Note
+	 * identical (eg "ß" and "ss", "æ" and "ae" or "ä" etc.)  Note
 	 * that this means that the search string and the original
 	 * text might have differing lengths.
 	 */
@@ -1255,19 +1289,54 @@ int ves_icall_System_Globalization_CompareInfo_internal_index_char (MonoCompareI
 			pos=usearch_last (search, &ec);
 		}
 
-		if(pos!=USEARCH_DONE) {
+		while (pos!=USEARCH_DONE) {
+			int32_t match_len;
+			UChar *match;
+			UCollationResult uret;
+			
 #ifdef DEBUG
 			g_message (G_GNUC_PRETTY_FUNCTION
-				   ": Got match at %d (sindex %d) len %d", pos,
-				   sindex, usearch_getMatchedLength (search));
+				   ": Got potential match at %d (sindex %d) len %d", pos, sindex, usearch_getMatchedLength (search));
 #endif
-			if(sindex>0) {
-				if(first) {
-					pos+=sindex;
-				} else {
-					pos+=(sindex-count+1);
+
+			/* ICU usearch currently ignores most of the
+			 * collator attributes :-(
+			 *
+			 * Check the returned match to see if it
+			 * really does match properly...
+			 */
+			match_len = usearch_getMatchedLength (search);
+			match=(UChar *)g_malloc0 (sizeof(UChar) * (match_len + 1));
+			usearch_getMatchedText (search, match, match_len, &ec);
+
+			uret = ucol_strcoll (coll, match, -1, uvalstr, -1);
+			g_free (match);
+			
+			if (uret == UCOL_EQUAL) {
+				/* OK, we really did get a match */
+#ifdef DEBUG
+				g_message (G_GNUC_PRETTY_FUNCTION
+					   ": Got match at %d len %d", pos,
+					   match_len);
+#endif
+
+				if(sindex>0) {
+					if(first) {
+						pos+=sindex;
+					} else {
+						pos+=(sindex-count+1);
+					}
 				}
+
+				break;
 			}
+
+			/* False alarm, keep looking */
+			if(first) {
+				pos=usearch_next (search, &ec);
+			} else {
+				pos=usearch_previous (search, &ec);
+			}	
 		}
 	} else {
 		g_message (G_GNUC_PRETTY_FUNCTION ": usearch_open error: %s",
@@ -1324,7 +1393,7 @@ MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, 
 	
 	/* Need to set the collator to a fairly weak level, so that it
 	 * treats characters that can be written differently as
-	 * identical (eg "Žß" and "ss", "æ" and "ae" or "ä" etc.)  Note
+	 * identical (eg "ß" and "ss", "æ" and "ae" or "ä" etc.)  Note
 	 * that this means that the search string and the original
 	 * text might have differing lengths.
 	 */
