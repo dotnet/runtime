@@ -564,6 +564,8 @@ mono_runtime_run_main (MonoMethod *method, int argc, char* argv[],
 			MonoString *arg = mono_string_new (domain, argv [i]);
 			mono_array_set (args, gpointer, i, arg);
 		}
+	} else {
+		args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, 0);
 	}
 	
 	mono_assembly_set_main (method->klass->image->assembly);
