@@ -89,6 +89,8 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_context_init (domain);
 	mono_context_set (domain->default_context);
 
+	mono_type_initialization_init ();
+
 	mono_thread_init (start_cb, attach_cb);
 
 	/*

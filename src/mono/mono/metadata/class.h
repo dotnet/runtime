@@ -216,7 +216,6 @@ struct MonoVTable {
         gpointer    type; /* System.Type type for klass */
 	guint remote          : 1; /* class is remotely activated */
 	guint initialized     : 1; /* cctor has been run */
-	guint initializing    : 1; /* cctor is running */
 	/* do not add any fields after vtable, the structure is dynamically extended */
         gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
 };

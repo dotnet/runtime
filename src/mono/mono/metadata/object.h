@@ -592,5 +592,8 @@ mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObjec
 MonoObject*
 mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObject **exc);
 
+void
+mono_type_initialization_init (void);
+
 #endif
 
