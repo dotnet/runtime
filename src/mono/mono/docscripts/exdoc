@@ -121,6 +121,8 @@ sub process_doc {
 		}
 		chop;
 		s/^\ \*//;
+		$_ = "\n<p>" if (/^\s+$/);
+				
 		if ($inbody == 0){
 		    if (/\s*(\w+):(.*)/){
 			$args .= "<dt><i>$1:</i></dt><dd>$2</dd>";
