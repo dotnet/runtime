@@ -2563,7 +2563,7 @@ static gconstpointer icall_map [] = {
     "System.Math::Exp", ves_icall_System_Math_Exp,
     "System.Math::Log", ves_icall_System_Math_Log,
     "System.Math::Log10", ves_icall_System_Math_Log10,
-    "System.Math::Pow", ves_icall_System_Math_Pow,
+    "System.Math::PowImpl", ves_icall_System_Math_Pow,
     "System.Math::Sqrt", ves_icall_System_Math_Sqrt,
 
 	/*
