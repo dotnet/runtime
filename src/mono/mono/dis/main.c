@@ -17,6 +17,7 @@
 #include <string.h>
 #include <glib.h>
 #include <stdlib.h>
+#include <errno.h>
 #include "meta.h"
 #include "util.h"
 #include "dump.h"
@@ -931,7 +932,7 @@ disassemble_file (const char *file)
 static void
 usage (void)
 {
-	GString *args = g_string_new ("[--help] [--mscorlib] ");
+	GString *args = g_string_new ("[--output=filename] [--help] [--mscorlib] ");
 	int i;
 	
 	for (i = 0; table_list [i].name != NULL; i++){
@@ -962,8 +963,15 @@ main (int argc, char *argv [])
 			else if (strcmp (argv [i], "--mscorlib") == 0) {
 				substitute_with_mscorlib_p = TRUE;
 				i++;
-			}
-			else if (strcmp (argv [i], "--help") == 0)
+			} else if (strncmp (argv [i], "--output=", 9) == 0) {
+				output = fopen (argv [i]+9, "w");
+				if (output == NULL) {
+					fprintf (stderr, "Can't open output file `%s': %s\n",
+						 argv [i]+9, strerror (errno));
+					exit (1);
+				}
+				continue;
+			} else if (strcmp (argv [i], "--help") == 0)
 				usage ();
 			for (j = 0; table_list [j].name != NULL; j++) {
 				if (strcmp (argv [i], table_list [j].name) == 0)

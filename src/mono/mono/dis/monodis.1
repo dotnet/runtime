@@ -10,7 +10,8 @@ monodis \- CIL image content dumper and disassembler.
 .SH SYNOPSIS
 .PP
 .B monodis
-[\-hd] [\-\-help] 
+[\-h] [\-\-help] 
+[\-\-output=FILENAME]
 [\-\-mscorlib]
 [\-\-assembly]
 [\-\-assemblyref]
@@ -41,6 +42,9 @@ The following Generic options are supported:
 .TP
 .I "--help", "-h"
 Displays usage instructions.
+.TP
+.I "--output=FILENAME"
+Write output into \fIFILENAME\fP.
 .TP
 .I "--mscorlib"
 For non-corlib assemblies, use "mscorlib" as the assembly name. This
