@@ -118,7 +118,32 @@
 	    <td>
 	      <img src="images/netmagazine.png">
 	    </td>
+	    <td>
 	      <a href="http://www.fawcette.com/dotnetmag/2003_TE/magazine/columns/trends/default.asp">May 31st, 2003</a>: CLI integration.
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <img src="images/infoworld.png">
+	    </td>
+	    <td>
+	      <a href="http://www.infoworld.com/article/03/05/22/HNmono_1.html">May 22nd, 2003</a>: Mono 1.0 plans.
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <img src="images/infoworld.png">
+	    </td>
+	    <td>
+	      <a href="http://www.infoworld.com/article/03/03/14/11stratdev_1.html">Mar 14th, 2003</a>: Whither Mono?
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <img src="images/b2.png">
+	    </td>
+	    <td>
+	      <a href="http://www.infoworld.com/article/03/05/22/HNmono_1.html">Dec, 2002</a>: The Penguin takes flight.
 	    </td>
 	  </tr>
  	</table>
