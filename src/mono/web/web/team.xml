@@ -12,13 +12,41 @@
 
 <contributors xmlns="http://go-mono.org/team.xsd">
 
+<contributor>
+
+    <name>
+
+      <first-name>Joel</first-name>
+
+      <last-name>Basson</last-name>
+
+    </name>
+
+    <e-mail>jstrike@mweb.co.za</e-mail>
+
+    <image>none.png</image>
+
+    <location>Cape Town, South Africa</location>
+
+    <organization></organization>
+
+    <description>External Contributor</description>
+
+    <tasks>
+
+      <task>System.Windows.Forms Gtk</task>
+
+    </tasks>
+    
+  </contributor>
+
   <contributor>
 
     <name>
 
       <first-name>Alejandro</first-name>
 
-      <last-name>S�nchez Acosta</last-name>
+      <last-name>Sánchez Acosta</last-name>
 
     </name>
 
@@ -955,7 +983,7 @@
 
     <image>none.png</image>
 
-    <location>São Paulo</location>
+    <location>SÃ£o Paulo</location>
 
     <organization>WEBforAll.</organization>
 
