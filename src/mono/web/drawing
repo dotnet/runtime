@@ -30,8 +30,8 @@
 	<tt>GDIPLUS.DLL</tt>.  Our implementation uses Cairo to do
 	the heavy lifting.
 
-	The implementation of GDI+ lives in mcs/class/System.Drawing
-	in the gdiplus directory and requires <a
+	The implementation of GDI+ lives in the libgdiplus cvs module
+	and requires <a
 	href="http://www.cairographics.org">Cairo</a> to be installed
 	to get the package built.
 
