@@ -401,7 +401,7 @@ mono_domain_set (MonoDomain *domain)
  * fixme: maybe we should integrate this with mono_assembly_open ??
  */
 MonoAssembly *
-mono_domain_assembly_open (MonoDomain *domain, char *name)
+mono_domain_assembly_open (MonoDomain *domain, const char *name)
 {
 	MonoAssembly *ass, *tmp;
 	int i;

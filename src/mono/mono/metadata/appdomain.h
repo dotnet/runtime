@@ -10,7 +10,6 @@
 #ifndef _MONO_METADATA_APPDOMAIN_H_
 #define _MONO_METADATA_APPDOMAIN_H_
 
-#include <config.h>
 #include <glib.h>
 
 #include <mono/metadata/object.h>
@@ -111,7 +110,7 @@ inline void
 mono_domain_set            (MonoDomain *domain);
 
 MonoAssembly *
-mono_domain_assembly_open  (MonoDomain *domain, char *name);
+mono_domain_assembly_open  (MonoDomain *domain, const char *name);
 
 void
 mono_domain_unload         (MonoDomain *domain, gboolean force);

@@ -12,8 +12,6 @@
 #define _MONO_METADATA_THREADS_TYPES_H_
 
 
-#include <config.h>
-
 #include <mono/io-layer/io-layer.h>
 
 /*

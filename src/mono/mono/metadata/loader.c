@@ -75,13 +75,19 @@ mono_lookup_internal_call (MonoMethod *method)
 		g_assert_not_reached ();
 	}
 
-	name = g_strconcat (method->klass->name_space, ".", method->klass->name, "::", method->name, NULL);
+	if (*method->klass->name_space)
+		name = g_strconcat (method->klass->name_space, ".", method->klass->name, "::", method->name, NULL);
+	else
+		name = g_strconcat (method->klass->name, "::", method->name, NULL);
 	if (!(res = g_hash_table_lookup (icall_hash, name))) {
 		/* trying to resolve with full signature */
 		g_free (name);
 	
 		tmpsig = mono_signature_get_desc(method->signature, TRUE);
-		name = g_strconcat (method->klass->name_space, ".", method->klass->name, "::", method->name, "(", tmpsig, ")", NULL);
+		if (*method->klass->name_space)
+			name = g_strconcat (method->klass->name_space, ".", method->klass->name, "::", method->name, "(", tmpsig, ")", NULL);
+		else
+			name = g_strconcat (method->klass->name, "::", method->name, "(", tmpsig, ")", NULL);
 		if (!(res = g_hash_table_lookup (icall_hash, name))) {
 			g_warning ("cant resolve internal call to \"%s\" (tested without signature also)", name);
 			g_print ("\nYour mono runtime and corlib are out of sync.\n");
