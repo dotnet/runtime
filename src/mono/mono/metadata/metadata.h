@@ -126,8 +126,9 @@ typedef struct {
 	union {
 		struct {
 			MonoMarshalNative elem_type;
-			gint32 param_num; /* -1 if not set */
 			gint32 num_elem; /* -1 if not set */
+			gint16 param_num; /* -1 if not set */
+			gint16 elem_mult; /* -1 if not set */
 		} array_data;
 		struct {
 			char *custom_name;

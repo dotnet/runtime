@@ -3427,6 +3427,7 @@ mono_metadata_parse_marshal_spec (MonoImage *image, const char *ptr)
 	if (res->native == MONO_NATIVE_LPARRAY) {
 		res->data.array_data.param_num = -1;
 		res->data.array_data.num_elem = -1;
+		res->data.array_data.elem_mult = -1;
 
 		if (ptr - start <= len)
 			res->data.array_data.elem_type = *ptr++;
@@ -3434,6 +3435,18 @@ mono_metadata_parse_marshal_spec (MonoImage *image, const char *ptr)
 			res->data.array_data.param_num = mono_metadata_decode_value (ptr, &ptr);
 		if (ptr - start <= len)
 			res->data.array_data.num_elem = mono_metadata_decode_value (ptr, &ptr);
+		if (ptr - start <= len) {
+			/*
+			 * LAMESPEC: Older spec versions say this parameter comes before 
+			 * num_elem. Never spec versions don't talk about elem_mult at
+			 * all, but csc still emits it, and it is used to distinguish
+			 * between param_num being 0, and param_num being omitted.
+			 * So if (param_num == 0) && (num_elem > 0), then
+			 * elem_mult == 0 -> the array size is num_elem
+			 * elem_mult == 1 -> the array size is @param_num + num_elem
+			 */
+			res->data.array_data.elem_mult = mono_metadata_decode_value (ptr, &ptr);
+		}
 	} 
 
 	if (res->native == MONO_NATIVE_BYVALTSTR) {

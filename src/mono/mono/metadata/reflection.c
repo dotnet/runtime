@@ -1636,8 +1636,20 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo) {
 		if (minfo->eltype || minfo->has_size) {
 			mono_metadata_encode_value (minfo->eltype, p, &p);
 			if (minfo->has_size) {
-				mono_metadata_encode_value (minfo->param_num, p, &p);
-				mono_metadata_encode_value (minfo->count, p, &p);
+				if (minfo->param_num != -1)
+					mono_metadata_encode_value (minfo->param_num, p, &p);
+				else
+					mono_metadata_encode_value (0, p, &p);
+				if (minfo->count != -1)
+					mono_metadata_encode_value (minfo->count, p, &p);
+				else
+					mono_metadata_encode_value (0, p, &p);
+
+				/* LAMESPEC: ElemMult is undocumented */
+				if (minfo->param_num != -1)
+					mono_metadata_encode_value (1, p, &p);
+				else
+					mono_metadata_encode_value (0, p, &p);
 			}
 		}
 		break;
@@ -7604,8 +7616,16 @@ mono_marshal_spec_from_builder (MonoAssembly *assembly,
 	switch (minfo->type) {
 	case MONO_NATIVE_LPARRAY:
 		res->data.array_data.elem_type = minfo->eltype;
-		res->data.array_data.param_num = 0; /* Not yet */
-		res->data.array_data.num_elem = minfo->count;
+		if (minfo->has_size) {
+			res->data.array_data.param_num = minfo->param_num;
+			res->data.array_data.num_elem = minfo->count;
+			res->data.array_data.elem_mult = minfo->param_num == -1 ? 0 : 1;
+		}
+		else {
+			res->data.array_data.param_num = -1;
+			res->data.array_data.num_elem = -1;
+			res->data.array_data.elem_mult = -1;
+		}
 		break;
 
 	case MONO_NATIVE_BYVALTSTR:
@@ -7649,6 +7669,7 @@ mono_reflection_marshal_from_marshal_spec (MonoDomain *domain, MonoClass *klass,
 	case MONO_NATIVE_LPARRAY:
 		minfo->eltype = spec->data.array_data.elem_type;
 		minfo->count = spec->data.array_data.num_elem;
+		minfo->param_num = spec->data.array_data.param_num;
 		break;
 
 	case MONO_NATIVE_BYVALTSTR:
