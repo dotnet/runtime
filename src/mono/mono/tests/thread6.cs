@@ -54,8 +54,9 @@ public class MultiThreadExceptionTest {
 					result |= 2;
 			}
 		} catch (Exception e) {
-			Console.WriteLine ("cought exception level 0");
-			Console.WriteLine (e);
+			Console.WriteLine ("cought exception level 0")
+;			Console.WriteLine (e);
+			Console.WriteLine (e.StackTrace);
 			result |= 4;
 		}
 
@@ -70,6 +71,19 @@ public class MultiThreadExceptionTest {
 	}
 	
 	public static int Main() {
+
+		// Check aborting the current thread
+		bool aborted = false;
+		try {
+			Thread.CurrentThread.Abort ();
+		}
+		catch {
+			aborted = true;
+			Thread.ResetAbort ();
+		}
+		if (!aborted)
+			return 2;
+
 		Thread t1 = new Thread(new ThreadStart
 			(MultiThreadExceptionTest.ThreadStart1));
 		t1.Name = "Thread 1";
@@ -77,9 +91,6 @@ public class MultiThreadExceptionTest {
 		Thread.Sleep (100);
 		
 		t1.Start();
-
-		//Thread t0 = Thread.CurrentThread;
-		//t0.Abort ();
 		
 		Thread.Sleep (200);
 		t1.Abort ("STATETEST");
