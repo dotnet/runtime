@@ -16,6 +16,7 @@
 #include "mono/metadata/domain-internals.h"
 #include "mono/metadata/object.h"
 #include "mono/metadata/tabledefs.h"
+#include "mono/metadata/marshal.h"
 
 
 /* Definitions */
