@@ -2365,8 +2365,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_SUB_IMM:
 			// we add the negated value
-			g_assert (ppc_is_imm16 (-ins->inst_imm));
-			ppc_addi (code, ins->dreg, ins->sreg1, -ins->inst_imm);
+			if (ppc_is_imm16 (-ins->inst_imm))
+				ppc_addi (code, ins->dreg, ins->sreg1, -ins->inst_imm);
+			else
+				ppc_load (code, ppc_r11, ins->inst_imm);
+				ppc_subf (code, ins->dreg, ins->sreg2, ppc_r11);
 			break;
 		case OP_SBB_IMM:
 			ppc_load (code, ppc_r11, ins->inst_imm);
