@@ -635,7 +635,8 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	scope = g_strdup (new_scope);
 	
 	if (strstr (scope, ".dll") == (scope + strlen (scope) - 4)) {
-		scope [strlen (scope) - 4] = '\0';
+		// FIXME: This won't work for libraries named lib<FOO>.dll.so
+		//scope [strlen (scope) - 4] = '\0';
 	}
 
 	full_name = g_module_build_path (NULL, scope);
@@ -652,7 +653,6 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		if (!(gmodule=g_module_open (scope, G_MODULE_BIND_LAZY))) {
 			if (exc_class) {
 				*exc_class = "DllNotFoundException";
-				/* FIXME: who frees orig_scope? */
 				*exc_arg = orig_scope;
 			}
 			g_free (error);
