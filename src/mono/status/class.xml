@@ -948,4 +948,14 @@
             <maintainer>jason@injektilo.org</maintainer>
         </maintainers>
     </class>
+
+    <class name="System.Collections.SortedList">
+        <last-activity>Jun-16-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>serge@wildwestsoftware.com</maintainer>
+        </maintainers>
+    </class>
 </classes>
