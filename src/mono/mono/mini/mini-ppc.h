@@ -28,4 +28,19 @@ struct MonoLMF {
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8 1
 
+/* deal with some of the ABI differences here */
+#ifdef __APPLE__
+#define PPC_RET_ADDR_OFFSET 8
+#define PPC_STACK_ALIGNMENT 16
+#define PPC_STACK_PARAM_OFFSET 24
+#define PPC_MINIMAL_STACK_SIZE 24
+#else
+/* Linux */
+#define PPC_RET_ADDR_OFFSET 4
+#define PPC_STACK_ALIGNMENT 16
+#define PPC_STACK_PARAM_OFFSET 8
+#define PPC_MINIMAL_STACK_SIZE 8
+#endif
+
+
 #endif /* __MONO_MINI_PPC_H__ */  

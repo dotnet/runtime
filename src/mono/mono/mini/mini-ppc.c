@@ -721,7 +721,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	 * also note that if the function uses alloca, we use ppc_r31
 	 * to point at the local variables.
 	 */
-	offset = 24; /* linkage area */
+	offset = PPC_MINIMAL_STACK_SIZE; /* linkage area */
 	/* align the offset to 16 bytes: not sure this is needed here  */
 	//offset += 16 - 1;
 	//offset &= ~(16 - 1);
@@ -3001,7 +3001,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
 		ppc_mflr (code, ppc_r0);
-		ppc_stw (code, ppc_r0, 8, ppc_sp);
+		ppc_stw (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
 	}
 	if (cfg->flags & MONO_CFG_HAS_ALLOCA) {
 		cfg->used_int_regs |= 1 << 31;
@@ -3053,9 +3053,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	alloc_size += pos;
-	// align to 16 bytes
-	if (alloc_size & (16 - 1))
-		alloc_size += 16 - (alloc_size & (16 - 1));
+	// align to PPC_STACK_ALIGNMENT bytes
+	if (alloc_size & (PPC_STACK_ALIGNMENT - 1))
+		alloc_size += PPC_STACK_ALIGNMENT - (alloc_size & (PPC_STACK_ALIGNMENT - 1));
 
 	cfg->stack_usage = alloc_size;
 	if (alloc_size)
@@ -3152,7 +3152,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
-		ppc_lwz (code, ppc_r0, cfg->stack_usage + 8, cfg->frame_reg);
+		ppc_lwz (code, ppc_r0, cfg->stack_usage + PPC_RET_ADDR_OFFSET, cfg->frame_reg);
 		ppc_mtlr (code, ppc_r0);
 	}
 	ppc_addic (code, ppc_sp, cfg->frame_reg, cfg->stack_usage);
