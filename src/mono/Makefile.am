@@ -20,8 +20,8 @@ fullbuild: remove-binaries mcs-tree-safe-build xinstall-runtime mcs-rest install
 
 mcs-tree-safe-build:
 	(cd ../mcs/jay; $(MAKE))
-	(cd ../mcs/mcs; $(MAKE) MCS=mcs)
-	(cd ../mcs/class/corlib; $(MAKE) MCS=mcs)
+	(cd ../mcs/mcs; $(MAKE) MCS=mcs BOOTSTRAP_MCS=mcs)
+	(cd ../mcs/class/corlib; $(MAKE) MCS=mcs BOOTSTRAP_MCS=mcs)
 	cp ../mcs/class/lib/mscorlib.dll runtime
 	cp ../mcs/mcs/mcs.exe runtime
 
