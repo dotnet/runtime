@@ -310,7 +310,7 @@ mono_mb_add_data (MonoMethodBuilder *mb, gpointer data)
 
 	mw->data = g_list_append (mw->data, data);
 
-	return g_list_length (mw->data);
+	return GUINT32_TO_LE (g_list_length (mw->data));
 }
 
 void
@@ -1001,7 +1001,7 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	mono_mb_emit_native_call (mb, csig, mono_delegate_begin_invoke);
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_method (mb, sig, 0);
+	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 	g_hash_table_insert (cache, sig, res);
 	return res;
@@ -1202,7 +1202,7 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	} else
 		mono_mb_emit_restore_result (mb, sig->ret);
 
-	res = mono_mb_create_method (mb, sig, 0);
+	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 	g_hash_table_insert (cache, sig, res);
 
@@ -1289,7 +1289,7 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 	else
 		mono_mb_emit_restore_result (mb, sig->ret);
 
-	res = mono_mb_create_method (mb, sig, 0);
+	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 	g_hash_table_insert (cache, method, res);
 	return res;
@@ -1423,7 +1423,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_method (mb, sig, 0);
+	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 
 	g_hash_table_insert (cache, sig, res);
@@ -1656,7 +1656,7 @@ handle_enum:
 	mono_mb_emit_ldloc (mb, 0);
 	mono_mb_emit_byte (mb, CEE_RET);
 	
-	res = mono_mb_create_method (mb, csig, 0);
+	res = mono_mb_create_method (mb, csig, sig->param_count + 16);
 	mono_mb_free (mb);
 
 	header = ((MonoMethodNormal *)res)->header;
@@ -1905,7 +1905,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoObject *this)
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_method (mb, csig, 0);
+	res = mono_mb_create_method (mb, csig, sig->param_count + 16);
 	mono_mb_free (mb);
 
 	g_hash_table_insert (cache, method, res);
@@ -1951,7 +1951,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	if (!method->addr) {
 		mono_mb_emit_exception (mb);
-		res = mono_mb_create_method (mb, sig, 0);
+		res = mono_mb_create_method (mb, sig, sig->param_count + 16);
 		mono_mb_free (mb);
 		g_hash_table_insert (cache, method, res);
 		return res;
@@ -1979,7 +1979,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 		mono_mb_emit_byte (mb, CEE_RET);
 
-		res = mono_mb_create_method (mb, csig, 0);
+		res = mono_mb_create_method (mb, csig, sig->param_count + 16);
 		mono_mb_free (mb);
 		g_hash_table_insert (cache, method, res);
 		return res;
@@ -2360,7 +2360,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_method (mb, sig, 0);
+	res = mono_mb_create_method (mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 
 	g_hash_table_insert (cache, method, res);
