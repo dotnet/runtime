@@ -27,6 +27,7 @@ spec:      ccode `%%' { dcl } [`%%' ccode]
 
 dcl:       `%start' nonterm
            `%term' { identifier [`=' integer] }
+           `%termprefix' { identifier }
            nonterm `:' tree [cost] [ `{' ccode `}' ] [costfunc]
 
 tree:      term `(' tree `,' tree `)'
@@ -84,7 +85,9 @@ Displays usage instructions.
 Writes a separate header file which contains all monoburg definitions.
 .TP
 .I "-p"
-Assume termainals are already defined.
+Assume termainals are already defined. Its possible to omit the %term
+definitions in this mode if you use the %termprefix command. All symbols
+starting with a prefix specified in %termprefix are considered to be terminals.
 .TP
 .I "-e"
 Extended mode. Enables monoburg to work with DAGs.

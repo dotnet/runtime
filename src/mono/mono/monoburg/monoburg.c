@@ -19,6 +19,7 @@ static GList *term_list;
 static GHashTable *nonterm_hash;
 static GList *nonterm_list;
 static GList *rule_list;
+static GList *prefix_list;
 
 FILE *inputfd;
 FILE *outputfd;
@@ -73,9 +74,25 @@ Tree *
 create_tree (char *id, Tree *left, Tree *right)
 {
 	int arity = (left != NULL) + (right != NULL);
-	Term *term = g_hash_table_lookup (term_hash, id);
+	Term *term = NULL; 
 	Tree *tree = g_new0 (Tree, 1);
-	
+
+	if (term_hash)
+		term = g_hash_table_lookup (term_hash, id);
+
+	// try if id has termprefix
+	if (!term) {
+		GList *pl;
+		for (pl = prefix_list; pl; pl = pl->next) {
+			char *pfx = (char *)pl->data;
+			if (!strncmp (pfx, id, strlen (pfx))) {
+				term = create_term (id, -1);
+				break;
+			}
+		}
+
+	}
+
 	if (term) {
 		if (term->arity == -1)
 			term->arity = arity;
@@ -102,11 +119,20 @@ check_term_num (char *key, Term *value, int num)
 }
  
 void  
+create_term_prefix (char *id)
+{
+	if (!predefined_terms)
+		yyerror ("%termprefix is only available with -p option");
+
+	prefix_list = g_list_prepend (prefix_list, g_strdup (id));
+}
+
+Term *
 create_term (char *id, int num)
 {
 	Term *term;
 
-	if (nonterm_list)
+	if (!predefined_terms && nonterm_list)
 		yyerror ("terminal definition after nonterminal definition");
 
 	if (num < -1)
@@ -126,6 +152,8 @@ create_term (char *id, int num)
 	term_list = g_list_append (term_list, term);
 
 	g_hash_table_insert (term_hash, term->name, term);
+
+	return term;
 }
 
 NonTerm *

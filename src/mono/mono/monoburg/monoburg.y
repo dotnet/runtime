@@ -35,6 +35,7 @@ static int yylinepos = 0;
 %token  START
 %token  COST
 %token  TERM
+%token  TERMPREFIX
 %token <ivalue> INTEGER
 
 %type   <tree>          tree
@@ -47,11 +48,16 @@ static int yylinepos = 0;
 decls   : /* empty */ 
 	| START IDENT { start_nonterm ($2); } decls
 	| TERM  tlist decls
+	| TERMPREFIX plist decls
 	| IDENT ':' tree optcost optcode optcfunc { create_rule ($1, $3, $5, $4, $6); } decls 
 	;
 
 optcode : /* empty */ { $$ = NULL }
 	| CODE 
+	;
+
+plist	: /* empty */
+	| plist IDENT { create_term_prefix ($2);}
 	;
 
 tlist	: /* empty */
@@ -169,6 +175,11 @@ yylex (void)
       if (!strncmp (next, "start", 5) && isspace (next[5])) {
 	next += 5;
 	return START;
+      }
+
+      if (!strncmp (next, "termprefix", 10) && isspace (next[10])) {
+	next += 10;
+	return TERMPREFIX;
       }
 
       if (!strncmp (next, "term", 4) && isspace (next[4])) {

@@ -49,7 +49,9 @@ struct _Rule {
 
 Tree    *create_tree    (char *id, Tree *left, Tree *right);
 
-void     create_term    (char *id, int num);
+Term    *create_term    (char *id, int num);
+
+void     create_term_prefix (char *id);
 
 NonTerm *nonterm        (char *id);
 
