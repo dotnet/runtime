@@ -3,6 +3,7 @@
 <a href="#gnome">Mono and GNOME</a><br>
 <a href="#gui">Building GUI applications with Mono</a><br>
 <a href="#msft">Mono and Microsoft</a><br>
+<a href="#platforms">Mono platforms</a><br>
 <a href="#pnpproject">Mono and the Portable.NET Project</a><br>
 <a href="#webservices">Web Services</a><br>
 <a href="#asp">Mono and ASP.NET</a><br>
@@ -314,14 +315,16 @@ A: We do not know, volunteers are working on this, but there is no set
 
 Q: Is Microsoft helping Ximian with this project?
 
-A: No. Ximian CTO Miguel de Icaza had a friendly conversation with
-   Microsoft software architect David Stutz, but that's about the
-   extent of the contact. Microsoft is interested in other
-   implementations of .NET and are willing to help make the ECMA spec
-   more accurate for this purpose.
+A: There is no high level communication between Ximian and Microsoft
+   at this point, but engineers who work on .NET or the ECMA groups
+   have been very friendly, and very nice to answer our questions, or
+   clarify part of the specification for us. 
 
-   Ximian representatives have also spoken with Sam Ruby at the ECMA
-   TG3 committee to discuss the same issues.
+   Microsoft is interested in other implementations of .NET and are
+   willing to help make the ECMA spec more accurate for this purpose.
+
+   Ximian was also invited to participate in the ECMA committee
+   meetings for C# and the CLI.
 
 Q: Is Microsoft or Corel paying Ximian to do this?
 
@@ -425,6 +428,44 @@ A: Not yet, but the client side API for authentication is not the problem.
    Alliance APIs. The problem is people on the web provider end that might use 
    this for authentication.
 
+<a name="platforms"></a>
+** Mono Platforms 
+
+Q: What operating systems does Mono run on?
+
+A: Mono is known to run on Linux, Unix and Windows systems.   
+
+Q: What architectures does Mono support?
+
+A: Mono today ships with a Just-in-Time compiler for x86-based
+   systems.  It is tested regularly on Linux, FreeBSD and Windows
+   (with the XP/NT core).
+
+   There is also an interpreter, which is slower that runs on the
+   s390, SPARC and PowerPC architectures.
+
+Q: Can Mono run on Windows 9x, or ME editions?
+
+A: Mono requires Unicode versions of Win32 APIs to run,
+   and only a handful of *W functions is supported under Win9x.
+
+   There is Microsoft Layer for Unicode that provides implementation
+   of these APIs on 9x systems.
+
+   Unfortunately it uses linker trick for delayed load that is not
+   supported by ld, so some sort of adapter is necessary.
+   
+   You will need MSLU and one of the following libs to link Mono to
+   unicows.dll <a
+   href="http://mono.eurosoft.od.ua/files/unimono.zip">http://mono.eurosoft.od.ua/files/unimono.zip</a>
+   or alternatively search the net for "libunicows".
+
+   No changes to Mono source code required, the only thing is to make
+   sure that linker will resolve imports to adapter library instead of
+   Win32 libs. This is achieved by inserting -lunimono before
+   -lkerner32/user32 in the linker's specs file.
+
+
 <a name="pnpproject"></a>
 ** Mono and Portable.NET
 
@@ -436,13 +477,20 @@ A: Most of Mono is being written using C#, with only
 
    It is easier to describe what is unique about Mono:
    <ul>
+     <li> A Just-in-Time compiler engine.  This is important for
+	  making your applications fast.
+
      <li> A self-hosting C# compiler written in C#, which is clean, easy
           to maintain.
 
+     <li> Focus on the .NET Framework: we are tracking down the .NET
+	  Framework API definition, as we believe it is the API people
+	  will be most familiar with.
+
      <li> A multi-platform runtime engine: both a JIT engine and an
           interpreter exist.  The JIT engine runs currently on x86
-          systems, while the interpreter works on SPARC, StrongARM and
-          PowerPC systems.  
+          systems, while the interpreter works on SPARC, StrongARM,
+	  s390 and PowerPC systems.  
 
      <li> Supports Linux, Windows and Solaris at this point.
 
@@ -471,8 +519,9 @@ A: Most of Mono is being written using C#, with only
      <li> We have a great community of developers, without which Mono
           would not be possible.
 
-     <li> We will provide an ahead of time compilation mode in the 
-          future.
+     <li> We are working on an ahead of time compilation mode to
+	  pre-compile code for the target architecture (this is part
+	  of our new code generation effort).
    </ul>
 
 <a name="webservices"></a>
