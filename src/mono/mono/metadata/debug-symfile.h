@@ -37,6 +37,7 @@ struct MonoDebugSymbolFile {
 	MonoImage *image;
 	/* Pointer to the mmap()ed contents of the file. */
 	void *raw_contents;
+	size_t raw_contents_size;
 	/* Array of MONO_DEBUG_SYMBOL_SECTION_MAX elements. */
 	MonoDebugSymbolFileSection *section_offsets;
 	gpointer user_data;

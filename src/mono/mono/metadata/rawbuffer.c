@@ -124,8 +124,10 @@ mono_raw_buffer_load_mmap (int fd, int is_writable, guint32 base, size_t size)
 
 	if (is_writable){
 		prot |= PROT_WRITE;
+		flags = MAP_SHARED;
+	} else {
+		flags = MAP_PRIVATE;
 	}
-	flags = MAP_PRIVATE;
 
 	ptr = mmap (0, end - start, prot, flags, fd, start);
 
@@ -156,6 +158,16 @@ mono_raw_buffer_free_mmap (void *base)
 #endif
 }
 
+static void
+mono_raw_buffer_update_mmap (void *base, size_t size)
+{
+#ifdef USE_WIN32_API
+	FlushViewOfFile (base, size);
+#else
+	msync (base, size, MS_SYNC);
+#endif
+}
+
 void *
 mono_raw_buffer_load (int fd, int is_writable, guint32 base, size_t size)
 {
@@ -166,6 +178,17 @@ mono_raw_buffer_load (int fd, int is_writable, guint32 base, size_t size)
 		ptr = mono_raw_buffer_load_malloc (fd, is_writable, base, size);
 	
 	return ptr;
+}
+
+void
+mono_raw_buffer_update (void *buffer, size_t size)
+{
+	char *mmap_base;
+
+	mmap_base = GINT_TO_POINTER (ROUND_DOWN (GPOINTER_TO_INT (buffer), alignment));
+	
+	if (mmap_map && g_hash_table_lookup (mmap_map, mmap_base))
+		mono_raw_buffer_update_mmap (mmap_base, size);
 }
 
 void

@@ -154,6 +154,7 @@ mono_debug_open_symbol_file (MonoImage *image, const char *filename, gboolean em
 	symfile->file_name = g_strdup (filename);
 	symfile->image = image;
 	symfile->raw_contents = ptr;
+	symfile->raw_contents_size = file_size;
 
 	if (!get_sections (symfile, emit_warnings)) {
 		mono_debug_close_symbol_file (symfile);
@@ -372,4 +373,6 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 			break;
 		}
 	}
+
+	mono_raw_buffer_update (symfile->raw_contents, symfile->raw_contents_size);
 }
