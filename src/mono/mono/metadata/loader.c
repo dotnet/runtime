@@ -181,6 +181,7 @@ static MonoMethod *
 find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignature *sig)
 {
 	int i;
+	MonoClass *sclass = klass;
 	char *qname, *fqname;
 
 	if (ic) {
@@ -197,8 +198,7 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 			MonoMethod *m = klass->methods [i];
 
 			if (!((fqname && !strcmp (m->name, fqname)) ||
-			      (qname && !strcmp (m->name, qname)) || !strcmp (m->name, name) ||
-			      (name [0] == '.' && (strcmp (name, ".ctor") == 0 || strcmp (name, ".cctor") == 0))))
+			      (qname && !strcmp (m->name, qname)) || !strcmp (m->name, name)))
 				continue;
 
 			if (sig->call_convention == MONO_CALL_VARARG) {
@@ -210,7 +210,27 @@ find_method (MonoClass *klass, MonoClass *ic, const char* name, MonoMethodSignat
 			}
 		}
 
+		if (name [0] == '.' && (strcmp (name, ".ctor") == 0 || strcmp (name, ".cctor") == 0))
+			break;
+
 		klass = klass->parent;
+	}
+
+	if (sclass->generic_inst) {
+		MonoClass *gclass;
+		MonoMethod *res;
+
+		gclass = mono_class_from_mono_type (sclass->generic_inst->generic_type);
+		mono_class_init (gclass);
+
+		res = find_method (gclass, ic, name, sig);
+		if (!res)
+			return NULL;
+		for (i = 0; i < res->klass->method.count; ++i) {
+			if (res == res->klass->methods [i]) {
+				return sclass->methods [i];
+			}
+		}
 	}
 
 	return NULL;
