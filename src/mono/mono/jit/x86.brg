@@ -118,7 +118,7 @@ guint64 mono_llrem_un  (guint64 a, guint64 b);
 %term BLT BLT_UN BEQ BNE_UN BRTRUE BRFALSE BGE BGE_UN BLE BLE_UN BGT BGT_UN 
 %term CEQ
 %term CONV_I4 CONV_I1 CONV_I2 CONV_I8 CONV_R8
-%term INTF_ADDR VFUNC_ADDR NOP BOX NEWARR NEWOBJ POP 
+%term INTF_ADDR VFUNC_ADDR NOP NEWARR NEWOBJ POP INITOBJ
 %term LDLEN
 
 #
@@ -243,6 +243,30 @@ stmt: STIND_I4 (addr, reg) {
 	}
 }
 
+stmt: STIND_I1 (addr, reg) {
+	switch (tree->left->data.ainfo.amode) {
+
+	case AMImmediate:
+		x86_mov_mem_reg (s->code, tree->left->data.ainfo.offset, tree->right->reg1, 1);
+		break;
+		
+	case AMBase:
+		x86_mov_membase_reg (s->code, tree->left->data.ainfo.basereg, 
+				     tree->left->data.ainfo.offset, tree->right->reg1, 1);
+		break;		
+	case AMIndex:
+		x86_mov_memindex_reg (s->code, X86_NOBASEREG, tree->left->data.ainfo.offset,
+				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
+				      tree->right->reg1, 1);
+		break;		
+	case AMBaseIndex:
+		x86_mov_memindex_reg (s->code, tree->left->data.ainfo.basereg, tree->left->data.ainfo.offset,
+				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift,
+				      tree->right->reg1, 1);
+		break;		
+	}
+}
+
 reg: LDIND_I4 (addr) {
 	switch (tree->left->data.ainfo.amode) {
 
@@ -262,6 +286,29 @@ reg: LDIND_I4 (addr) {
 		x86_mov_reg_memindex (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
 				      tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
 				      tree->left->data.ainfo.shift, 4);
+		break;		
+	}
+}
+
+reg: LDIND_U1 (addr) {
+	switch (tree->left->data.ainfo.amode) {
+
+	case AMImmediate:
+		x86_mov_reg_mem (s->code, tree->reg1, tree->left->data.ainfo.offset, 1);
+		break;
+
+	case AMBase:
+		x86_mov_reg_membase (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
+				     tree->left->data.ainfo.offset, 1);
+		break;		
+	case AMIndex:
+		x86_mov_reg_memindex (s->code, tree->reg1, X86_NOBASEREG, tree->left->data.ainfo.offset,
+				      tree->left->data.ainfo.indexreg, tree->left->data.ainfo.shift, 1);
+		break;		
+	case AMBaseIndex:
+		x86_mov_reg_memindex (s->code, tree->reg1, tree->left->data.ainfo.basereg, 
+				      tree->left->data.ainfo.offset, tree->left->data.ainfo.indexreg, 
+				      tree->left->data.ainfo.shift, 1);
 		break;		
 	}
 }
@@ -513,26 +560,6 @@ reg: SHR_UN (reg, reg) {
 		  tree->left->reg1 != X86_ECX);
 }
 
-reg: BOX (reg) {
-	if (tree->reg1 != X86_EAX)
-		x86_push_reg (s->code, X86_EAX);
-	x86_push_reg (s->code, X86_ECX);
-	x86_push_reg (s->code, X86_EDX);
-
-	x86_push_reg (s->code, tree->left->reg1); //save it to memory
-	x86_push_reg (s->code, X86_ESP); // push address to saved value
-	x86_push_imm (s->code, tree->data.p);
-	x86_call_code (s->code, mono_value_box);
-	x86_alu_reg_imm (s->code, X86_ADD, X86_ESP, 12);
-
-	x86_pop_reg (s->code, X86_EDX);
-	x86_pop_reg (s->code, X86_ECX);
-	if (tree->reg1 != X86_EAX) {
-		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
-		x86_pop_reg (s->code, X86_EAX);
-	}
-}
-
 # array support
 reg: LDLEN (reg) {
 	x86_mov_reg_membase (s->code, tree->reg1, tree->left->reg1,  
@@ -582,6 +609,69 @@ reg: NEWOBJ {
 		x86_mov_reg_reg (s->code, tree->reg1, X86_EAX, 4);
 		x86_pop_reg (s->code, X86_EAX);
 	}
+}
+
+stmt: INITOBJ (reg) {
+	int i, j;
+
+	if (i == 1 || i == 2 || i == 4) {
+		int t = X86_ECX;
+
+		if (tree->left->reg1 != X86_EAX) 
+			t = X86_EAX;
+
+		x86_push_reg (s->code, t);
+		x86_alu_reg_reg (s->code, X86_XOR, t, t);
+
+		switch (tree->data.i) {
+		case 4:
+			x86_mov_regp_reg (s->code, tree->left->reg1, t, 4);
+			break;
+		case 2:
+			x86_mov_regp_reg (s->code, tree->left->reg1, t, 4);
+			break;
+		case 1:
+			x86_mov_regp_reg (s->code, tree->left->reg1, t, 4);
+			break;
+		}
+		x86_pop_reg (s->code, t);
+
+		return;
+	}
+
+	i = tree->data.i / 4;
+	j = tree->data.i % 4;
+
+	x86_push_reg (s->code, X86_EAX);
+	
+	if (tree->left->reg1 != X86_EDI) {
+		x86_push_reg (s->code, X86_EDI);
+		x86_mov_reg_reg (s->code, X86_EDI, tree->left->reg1, 4);
+	}
+
+	if (i) {
+		x86_push_reg (s->code, X86_ECX);
+		x86_alu_reg_reg (s->code, X86_XOR, X86_EAX, X86_EAX);
+		x86_mov_reg_imm (s->code, X86_ECX, i);
+		x86_cld (s->code);
+		x86_prefix (s->code, X86_REP_PREFIX);
+		x86_stosl (s->code);
+		x86_pop_reg (s->code, X86_ECX);
+	}
+
+
+	if (j == 2) {
+		x86_prefix (s->code, X86_OPERAND_PREFIX);
+		x86_stosl (s->code);
+	} else {
+		for (i = 0; i < j; i++)
+			x86_stosb (s->code);
+	}
+
+	if (tree->left->reg1 != X86_EDI)
+		x86_pop_reg (s->code, X86_EDI);
+	
+	x86_pop_reg (s->code, X86_EAX);
 }
 
 stmt: NOP

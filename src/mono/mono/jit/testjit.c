@@ -166,6 +166,47 @@ mono_alloc_static0 (int size)
 	return g_malloc0 (size);
 } 
 
+
+typedef void (*MonoCCtor) (void);
+
+/**
+ * mono_jit_init_class:
+ * @klass: the class to initialise
+ *
+ * Initialise the class @klass by calling the class
+ * constructor.
+ */
+static void
+mono_jit_init_class (MonoClass *klass)
+{
+	MonoCCtor cctor;
+	MonoMethod *method;
+	int i;
+
+	if (!klass->metadata_inited)
+		mono_class_metadata_init (klass);
+
+	if (klass->inited)
+		return;
+
+	if (klass->parent && !klass->parent->inited)
+		mono_jit_init_class (klass->parent);
+	
+	klass->inited = 1;
+
+	for (i = 0; i < klass->method.count; ++i) {
+		method = klass->methods [i];
+		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
+		    (strcmp (".cctor", method->name) == 0)) {
+	
+			cctor = arch_compile_method (method);
+			cctor ();
+			return;
+		}
+	}
+	/* No class constructor found */
+}
+
 static int
 map_store_svt_type (int svt)
 {
@@ -182,6 +223,29 @@ map_store_svt_type (int svt)
 	}
 
 	return 0;
+}
+
+static int
+map_stvalue_type (MonoClass *class)
+{
+	int size;
+
+	g_assert (class->valuetype);
+
+	if (!class->inited)
+		mono_jit_init_class (class);
+
+	size =  class->instance_size - sizeof (MonoObject);
+
+	switch (size) {
+	case 4:
+		return MB_TERM_STIND_I4;
+	case 2:
+		return MB_TERM_STIND_I2;
+	case 1:
+		return MB_TERM_STIND_I1;
+	}
+	return MB_TERM_STIND_OBJ;
 }
 
 /**
@@ -223,19 +287,8 @@ map_stind_type (MonoType *type)
 		return MB_TERM_STIND_R4;
 	case MONO_TYPE_R8:
 		return MB_TERM_STIND_R8;
-	case MONO_TYPE_VALUETYPE: {
-		int size =  type->data.klass->instance_size - sizeof (MonoObject);
-
-		switch (size) {
-		case 4:
-			return MB_TERM_STIND_I4;
-		case 2:
-			return MB_TERM_STIND_I2;
-		case 1:
-			return MB_TERM_STIND_I1;
-		}
-		return MB_TERM_STIND_OBJ;
-	}
+	case MONO_TYPE_VALUETYPE: 
+		return map_stvalue_type (type->data.klass);
 	default:
 		g_warning ("unknown type %02x", type->type);
 		g_assert_not_reached ();
@@ -576,13 +629,20 @@ ctree_dup_address (MonoMemPool *mp, MBTree *s)
 	return NULL;
 }
 
+/**
+ * Create a duplicate of the value of a tree. This is
+ * easy for trees starting with LDIND/STIND, since the
+ * duplicate is simple a LDIND tree with the same address.
+ * For other trees we have to split the tree into one tree
+ * storing the value to a new temporary variable, and 
+ * another tree which loads that value back. We can then
+ * duplicate the second tree.
+ */
 static MBTree *
-mono_store_tree (MonoFlowGraph *cfg, int slot, MBTree *s, MBTree **dup)
+ctree_create_dup (MonoMemPool *mp, MBTree *s)
 {
-	MonoMemPool *mp = cfg->mp;
 	MBTree *t;
-	int vnum;
-
+	
 	switch (s->op) {
 	case MB_TERM_STIND_I1:
 	case MB_TERM_LDIND_I1:
@@ -600,6 +660,11 @@ mono_store_tree (MonoFlowGraph *cfg, int slot, MBTree *s, MBTree **dup)
 	case MB_TERM_LDIND_I4:
 		t = ctree_dup_address (mp, s->left);
 		t = mono_ctree_new (mp, MB_TERM_LDIND_I4, t, NULL);
+		t->svt = VAL_I32;
+		break;
+	case MB_TERM_LDIND_U4:
+		t = ctree_dup_address (mp, s->left);
+		t = mono_ctree_new (mp, MB_TERM_LDIND_U4, t, NULL);
 		t->svt = VAL_I32;
 		break;
 	case MB_TERM_STIND_I8:
@@ -620,6 +685,38 @@ mono_store_tree (MonoFlowGraph *cfg, int slot, MBTree *s, MBTree **dup)
 		t = mono_ctree_new (mp, MB_TERM_LDIND_R8, t, NULL);
 		t->svt = VAL_DOUBLE;
 		break;
+	default:
+		g_warning ("unknown op \"%s\"", mono_burg_term_string [s->op]);
+		g_assert_not_reached ();
+	}
+
+	return t;
+}
+
+static MBTree *
+mono_store_tree (MonoFlowGraph *cfg, int slot, MBTree *s, MBTree **dup)
+{
+	MonoMemPool *mp = cfg->mp;
+	MBTree *t;
+	int vnum;
+
+	switch (s->op) {
+	case MB_TERM_STIND_I1:
+	case MB_TERM_LDIND_I1:
+	case MB_TERM_STIND_I2:
+	case MB_TERM_LDIND_I2:
+	case MB_TERM_STIND_I4:
+	case MB_TERM_LDIND_I4:
+	case MB_TERM_STIND_I8:
+	case MB_TERM_LDIND_I8:
+	case MB_TERM_STIND_R4:
+	case MB_TERM_LDIND_R4:
+	case MB_TERM_STIND_R8:
+	case MB_TERM_LDIND_R8: {
+		if (dup)
+			*dup = ctree_create_dup (mp, s);
+		return NULL;
+	}			
 	default: {
 			g_assert (s->svt != VAL_UNKNOWN);
 
@@ -640,107 +737,9 @@ mono_store_tree (MonoFlowGraph *cfg, int slot, MBTree *s, MBTree **dup)
 	}
 
 	if (dup) 
-		*dup = mono_store_tree (cfg, -1, t, NULL);
+		mono_store_tree (cfg, -1, t, dup);
 
 	return t;
-}
-
-/**
- * Create a duplicate of the value of a tree. This is
- * easy for trees starting with LDIND/STIND, since the
- * duplicate is simple a LDIND tree with the same address.
- * For other trees we have to split the tree into one tree
- * storing the value to a new temporary variable, and 
- * another tree which loads that value back. We can then
- * duplicate the second tree.
- */
-static MBTree *
-ctree_create_dup (MonoMemPool *mp, MBTree *s)
-{
-	MBTree *t;
-	
-	switch (s->op) {
-	case MB_TERM_STIND_I1:
-	case MB_TERM_LDIND_I1:
-		t = ctree_dup_address (mp, s->left);
-		t->svt = VAL_I32;
-		return mono_ctree_new (mp, MB_TERM_LDIND_I1, t, NULL);
-	case MB_TERM_STIND_I2:
-	case MB_TERM_LDIND_I2:
-		t = ctree_dup_address (mp, s->left);
-		t->svt = VAL_I32;
-		return mono_ctree_new (mp, MB_TERM_LDIND_I2, t, NULL);
-	case MB_TERM_STIND_I4:
-	case MB_TERM_LDIND_I4:
-		t = ctree_dup_address (mp, s->left);
-		t->svt = VAL_I32;
-		return mono_ctree_new (mp, MB_TERM_LDIND_I4, t, NULL);
-	case MB_TERM_LDIND_U4:
-		t = ctree_dup_address (mp, s->left);
-		t->svt = VAL_I32;
-		return mono_ctree_new (mp, MB_TERM_LDIND_U4, t, NULL);
-	case MB_TERM_STIND_I8:
-	case MB_TERM_LDIND_I8:
-		t = ctree_dup_address (mp, s->left);
-		t->svt = VAL_I64;
-		return mono_ctree_new (mp, MB_TERM_LDIND_I8, t, NULL);
-	case MB_TERM_STIND_R4:
-	case MB_TERM_LDIND_R4:
-		t = ctree_dup_address (mp, s->left);
-		t->svt = VAL_DOUBLE;
-		return mono_ctree_new (mp, MB_TERM_LDIND_R4, t, NULL);
-	case MB_TERM_STIND_R8:
-	case MB_TERM_LDIND_R8:
-		t = ctree_dup_address (mp, s->left);
-		t->svt = VAL_DOUBLE;
-		return mono_ctree_new (mp, MB_TERM_LDIND_R8, t, NULL);
-	default:
-		g_warning ("unknown op \"%s\"", mono_burg_term_string [s->op]);
-		g_assert_not_reached ();
-	}
-
-	g_assert_not_reached ();
-	return NULL;
-}
-
-typedef void (*MonoCCtor) (void);
-
-/**
- * mono_jit_init_class:
- * @klass: the class to initialise
- *
- * Initialise the class @klass by calling the class
- * constructor.
- */
-static void
-mono_jit_init_class (MonoClass *klass)
-{
-	MonoCCtor cctor;
-	MonoMethod *method;
-	int i;
-
-	if (!klass->metadata_inited)
-		mono_class_metadata_init (klass);
-
-	if (klass->inited)
-		return;
-
-	if (klass->parent && !klass->parent->inited)
-		mono_jit_init_class (klass->parent);
-	
-	klass->inited = 1;
-
-	for (i = 0; i < klass->method.count; ++i) {
-		method = klass->methods [i];
-		if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
-		    (strcmp (".cctor", method->name) == 0)) {
-	
-			cctor = arch_compile_method (method);
-			cctor ();
-			return;
-		}
-	}
-	/* No class constructor found */
 }
 
 MonoFlowGraph *
@@ -939,6 +938,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 			ip += 5;
 			break;
 		case CEE_BR:
+		case CEE_LEAVE:
 		case CEE_BRTRUE:
 		case CEE_BRFALSE:
 		case CEE_BGT:
@@ -971,6 +971,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 			ip += 2;
 			break;
 		case CEE_BR_S:
+		case CEE_LEAVE_S:
 		case CEE_BRTRUE_S:
 		case CEE_BRFALSE_S:
 		case CEE_BGT_S:
@@ -1014,6 +1015,7 @@ mono_analyze_flow (MonoFlowGraph *cfg)
 				ip++;
 				break;
 			case CEE_LDARG:
+			case CEE_INITOBJ:
 				ip +=5;
 				break;
 			default:
@@ -1305,9 +1307,26 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			
 			c = mono_class_get (image, token);
 			
-			t1 = mono_ctree_new (mp, MB_TERM_BOX, *sp, NULL);
+			t1 = mono_ctree_new_leaf (mp, MB_TERM_NEWOBJ);
 			t1->data.p = c;
-			PUSH_TREE (t1, VAL_POINTER);
+			t1->svt = VAL_POINTER;
+
+			t1 = mono_store_tree (cfg, -1, t1, &t2);
+			g_assert (t1);
+
+			ADD_TREE (t1);
+			PUSH_TREE (t2, VAL_POINTER);
+
+			t1 = ctree_create_dup (mp, t2);
+			t2 = mono_ctree_new_leaf (mp, MB_TERM_CONST_I4);
+			t2->data.i = sizeof (MonoObject);
+			t1 = mono_ctree_new (mp, MB_TERM_ADD, t1, t2);
+
+			t1 = mono_ctree_new (mp, map_stvalue_type (c), t1, *sp);
+			ADD_TREE (t1);
+
+			// I need to test this first
+			g_assert_not_reached ();
 			break;
 		}
 		case CEE_UNBOX: {
@@ -1630,6 +1649,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				this->svt = VAL_POINTER;
 
 				t1 = mono_store_tree (cfg, -1, this, &this);
+				g_assert (t1);
 				ADD_TREE (t1);
 
 			}
@@ -1671,6 +1691,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 			if (newarr) {
 				
 				t1 = mono_store_tree (cfg, -1, t1, &t2);
+				g_assert (t1);
 				ADD_TREE (t1);
 				PUSH_TREE (t2, t2->svt);
 
@@ -1803,6 +1824,7 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				if (csig->ret->type != MONO_TYPE_VOID) {
 
 					t1 = mono_store_tree (cfg, -1, t1, &t2);
+					g_assert (t1);
 					ADD_TREE (t1);
 					PUSH_TREE (t2, t2->svt);
 					
@@ -2169,11 +2191,15 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 		}
 		case CEE_DUP: {
 			++ip; 
-			
+			sp--;
 			/* fixme: IMO we can use the temp. variable associated
 			 * with the current slot instead of -1 
 			 */
-			sp [-1] = mono_store_tree (cfg, -1, sp [-1], &t1);
+			if (t2 = mono_store_tree (cfg, -1, *sp, &t1))
+				ADD_TREE (t2);
+
+			PUSH_TREE (t1, t1->svt);
+			t1 = ctree_create_dup (mp, t1);		
 			PUSH_TREE (t1, t1->svt);
 
 			break;
@@ -2233,6 +2259,22 @@ mono_analyze_stack (MonoFlowGraph *cfg)
 				
 			MAKE_BI_ALU (CEQ)
 
+			case CEE_INITOBJ: {
+				MonoClass *class;
+				guint32 token;
+				
+				++ip;
+				token = read32 (ip);
+				class = mono_class_get (image, token);
+				ip += 4;
+				sp--;
+				
+				t1 = mono_ctree_new (mp, MB_TERM_INITOBJ, *sp, NULL);
+				t1->data.i = mono_class_value_size (class, NULL);
+				ADD_TREE (t1);
+
+				break;
+			}
 			case CEE_LDARG: {
 				guint32 n;
 				++ip;

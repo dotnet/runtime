@@ -240,9 +240,14 @@ mono_class_metadata_init (MonoClass *class)
 	for (k = class->parent; k ; k = k->parent) {
 		for (i = 0; i < k->interface_count; i++) {
 			ic = k->interfaces [i]; 
-			if (class->interface_offsets [ic->interface_id] == NULL)
-				class->interface_offsets [ic->interface_id] = 
-					&class->vtable [(k->interface_offsets [ic->interface_id] - (gpointer)k->vtable)>>2];
+			if (class->interface_offsets [ic->interface_id] == NULL) {
+				int io = (k->interface_offsets [ic->interface_id] - (gpointer)k->vtable)>>2;
+
+				g_assert (io >= 0);
+				g_assert (io <= class->vtable_size);
+
+				class->interface_offsets [ic->interface_id] = &class->vtable [io];
+			}
 		}
 	}
 
@@ -257,7 +262,10 @@ mono_class_metadata_init (MonoClass *class)
 			int j, l, io;
 			ic = k->interfaces [i];
 
-			io = (class->interface_offsets [ic->interface_id] - (gpointer)k->vtable)>>2;
+			io = (k->interface_offsets [ic->interface_id] - (gpointer)k->vtable)>>2;
+			
+			g_assert (io >= 0);
+			g_assert (io <= class->vtable_size);
 
 			if (k == class) {
 				for (l = 0; l < ic->method.count; l++) {

@@ -1,7 +1,7 @@
 /* Copyright (C)  2000 Intel Corporation.  All rights reserved.
    Copyright (C)  2001 Ximian, Inc. 
 //
-// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.14 2001/11/07 06:33:48 dietmar Exp $
+// $Header: /home/miguel/third-conversion/public/mono/mono/arch/x86/x86-codegen.h,v 1.15 2001/11/09 13:40:43 dietmar Exp $
 */
 
 #ifndef X86_H
@@ -258,6 +258,10 @@ typedef union {
 	do {	\
 		*(inst)++ = 0xcc;	\
 	} while (0)
+
+#define x86_cld(inst) do { *(inst)++ =(unsigned char)0xfc; } while (0)
+#define x86_stosb(inst) do { *(inst)++ =(unsigned char)0xaa; } while (0)
+#define x86_stosl(inst) do { *(inst)++ =(unsigned char)0xab; } while (0)
 
 #define x86_prefix(inst,p) do { *(inst)++ =(unsigned char) (p); } while (0)
 
