@@ -4409,7 +4409,7 @@ mono_interp_init(const char *file)
 #ifdef __hpux /* generates very big stack frames */
 	mono_threads_set_default_stacksize(32*1024*1024);
 #endif
-	mono_init_icall ();
+	mono_icall_init ();
 	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", ves_icall_get_frame_info);
 	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace", ves_icall_get_trace);
 	mono_add_internal_call ("Mono.Runtime::mono_runtime_install_handlers", mono_runtime_install_handlers);
