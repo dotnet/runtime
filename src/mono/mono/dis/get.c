@@ -990,10 +990,11 @@ get_method (MonoMetadata *m, guint32 token)
 	MonoMethod *mh;
 
 	mh = mono_get_method (m, token, NULL);
-	g_assert (mh);
-
-	name = g_strdup_printf ("%s.%s::%s", mh->klass->name_space, 
+	if (mh)
+		name = g_strdup_printf ("%s.%s::%s", mh->klass->name_space, 
 				mh->klass->name, mh->name); 
+	else
+		name = NULL;
 
 	switch (mono_metadata_token_code (token)){
 	case MONO_TOKEN_METHOD_DEF:
@@ -1007,6 +1008,10 @@ get_method (MonoMetadata *m, guint32 token)
 		
 		mono_metadata_decode_row (&m->tables [MONO_TABLE_MEMBERREF],
 					  idx - 1, member_cols, MONO_MEMBERREF_SIZE);
+		if (!name)
+			name = g_strdup_printf ("%s::%s",
+					get_memberref_parent (m, member_cols [MONO_MEMBERREF_CLASS]),
+					mono_metadata_string_heap (m, member_cols [MONO_MEMBERREF_NAME]));
 		sig = get_methodref_signature (
 			m, member_cols [MONO_MEMBERREF_SIGNATURE], name);
 		return sig;
