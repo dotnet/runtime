@@ -1,4 +1,9 @@
+2001-10-11
 
+	* ByMaintainer.xsl: support for sorting classnames
+	* ByNamespace.xsl: support for sorting classnames, mailto href on
+	  maintainer
+	  
 Tue Sep 25 19:03:52 CEST 2001 Paolo Molaro <lupus@ximian.com>
 
 	* class.xml: updates.
