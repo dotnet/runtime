@@ -579,7 +579,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 
 			address = minfo->locals [original].begin_scope;
 
-			* (gint32 *) base_ptr = minfo->code_start + address;
+			* (void **) base_ptr = minfo->code_start + address;
 
 			break;
 		}
@@ -607,7 +607,7 @@ mono_debug_update_symbol_file (MonoDebugSymbolFile *symfile,
 
 			address = minfo->locals [original].end_scope;
 
-			* (gint32 *) base_ptr = minfo->code_start + address;
+			* (void **) base_ptr = minfo->code_start + address;
 
 			break;
 		}
