@@ -1,3 +1,7 @@
+2002-09-15  Andrew Birkett  <andy@nobugs.org>
+
+	* man/mcs.1: --probe is now --expect-error.
+
 2002-09-09  Dick Porter  <dick@ximian.com>
 
 	* acconfig.h: 
