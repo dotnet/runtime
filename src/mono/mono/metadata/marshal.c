@@ -689,6 +689,29 @@ mono_mb_emit_save_args (MonoMethodBuilder *mb, MonoMethodSignature *sig, gboolea
 	return params_var;
 }
 
+static char*
+mono_signature_to_name (MonoMethodSignature *sig, const char *prefix)
+{
+	int i;
+	char *result;
+	GString *res = g_string_new ("");
+
+	if (prefix) {
+		g_string_append (res, prefix);
+		g_string_append_c (res, '_');
+	}
+
+	mono_type_get_desc (res, sig->ret, FALSE);
+
+	for (i = 0; i < sig->param_count; ++i) {
+		g_string_append_c (res, '_');
+		mono_type_get_desc (res, sig->params [i], FALSE);
+	}
+	result = res->str;
+	g_string_free (res, FALSE);
+	return result;
+}
+
 MonoMethod *
 mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 {
@@ -698,6 +721,7 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	MonoMethod *res;
 	GHashTable *cache;
 	int params_var;
+	char *name;
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "BeginInvoke"));
@@ -721,7 +745,10 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 		csig->params [1] = &mono_defaults.int_class->byval_arg;
 	}
 
-	mb = mono_mb_new (method->klass, method->name);
+	name = mono_signature_to_name (sig, "begin_invoke");
+	mb = mono_mb_new (mono_defaults.multicastdelegate_class, name);
+	g_free (name);
+
 	mb->method->wrapper_type = MONO_WRAPPER_DELEGATE_BEGIN_INVOKE;
 	mb->method->save_lmf = 1;
 
@@ -890,6 +917,7 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	MonoMethod *res;
 	GHashTable *cache;
 	int params_var;
+	char *name;
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "EndInvoke"));
@@ -913,7 +941,10 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 		csig->params [1] = &mono_defaults.int_class->byval_arg;
 	}
 
-	mb = mono_mb_new (method->klass, method->name);
+	name = mono_signature_to_name (sig, "end_invoke");
+	mb = mono_mb_new (mono_defaults.multicastdelegate_class, name);
+	g_free (name);
+
 	mb->method->wrapper_type = MONO_WRAPPER_DELEGATE_END_INVOKE;
 	mb->method->save_lmf = 1;
 
@@ -1032,6 +1063,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	MonoMethod *res;
 	GHashTable *cache;
 	int pos [3];
+	char *name;
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "Invoke"));
@@ -1046,7 +1078,10 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	static_sig = g_memdup (sig, sigsize);
 	static_sig->hasthis = 0;
 
-	mb = mono_mb_new (method->klass, method->name);
+	name = mono_signature_to_name (sig, "invoke");
+	mb = mono_mb_new (mono_defaults.multicastdelegate_class, name);
+	g_free (name);
+
 	mb->method->wrapper_type = MONO_WRAPPER_DELEGATE_INVOKE;
 
 	/* allocate local 0 (object) prev */
