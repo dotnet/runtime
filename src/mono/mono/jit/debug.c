@@ -1360,18 +1360,16 @@ debugger_thread_func (gpointer ptr)
 
 	/*
 	 * Ok, we're now running in the debugger - signal the parent thread that
-	 * we're ready and enter the event loop.
+	 * we're ready and enter the event loop.  Note that the condition is not
+	 * signalled before the debugger attached to us, so we don't need to raise
+	 * a SIGSTOP here anymore.
 	 */
 	g_assert (WaitForSingleObject (debugger_start_cond, INFINITE) == WAIT_OBJECT_0);
 
 	/*
-	 * Lock the mutex and raise a SIGSTOP to give the debugger a chance to
-	 * attach to us.  This is important since the `notification_code' contains a
-	 * breakpoint instruction which would otherwise be deadly for us.
+	 * Lock the mutex and enter the main event loop.
 	 */
 	mono_debugger_lock ();
-
-	raise (SIGSTOP);
 
 	while (TRUE) {
 		/* Wait for an event. */
@@ -1425,6 +1423,11 @@ initialize_debugger_support ()
 	x86_ret (buf);
 
 	/*
+	 * We keep this mutex until mono_debugger_jit_exec().
+	 */
+	mono_debugger_lock ();
+
+	/*
 	 * This mutex is only unlocked in mono_debugger_wait().
 	 */
 	EnterCriticalSection (&debugger_finished_mutex);
@@ -1438,11 +1441,6 @@ initialize_debugger_support ()
 	 */
 	mono_debugger_init_thread_debug (debugger_background_thread);
 	ReleaseSemaphore (debugger_start_cond, 1, NULL);
-
-	/*
-	 * We keep this mutex until mono_debugger_jit_exec().
-	 */
-	mono_debugger_lock ();
 }
 
 static GPtrArray *breakpoints = NULL;
