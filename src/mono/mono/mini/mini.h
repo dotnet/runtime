@@ -786,6 +786,8 @@ gboolean mono_arch_handle_exception             (void *sigctx, gpointer obj, gbo
 gpointer mono_arch_ip_from_context              (void *sigctx);
 void     mono_arch_flush_register_windows       (void);
 gboolean mono_arch_is_inst_imm                  (gint64 imm);
+MonoInst* mono_arch_get_domain_intrinsic        (MonoCompile* cfg);
+MonoInst* mono_arch_get_thread_intrinsic        (MonoCompile* cfg);
 gboolean mono_arch_is_int_overflow              (void *sigctx);
 
 /* Exception handling */

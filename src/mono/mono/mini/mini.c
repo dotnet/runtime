@@ -2476,6 +2476,10 @@ mini_get_opcode_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 			return ins;
 		} else
 			return NULL;
+	} else if (cmethod->klass == mono_defaults.thread_class) {
+		if (strcmp (cmethod->name, "get_CurrentThread") == 0 && (ins = mono_arch_get_thread_intrinsic (cfg)))
+			return ins;
+		return NULL;
 	} else {
 		op = mono_arch_get_opcode_for_method (cfg, cmethod, fsig, args);
 		if (op < 0)
@@ -5721,15 +5725,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	link_bblock (cfg, bblock, end_bblock);
 
 	if (cfg->method == method && cfg->domainvar) {
-		MonoCallInst *call;
-		MonoInst *store;
-
-		MONO_INST_NEW_CALL (cfg, call, CEE_CALL);
-		call->signature = helper_sig_domain_get;
-		call->inst.type = STACK_PTR;
-		call->fptr = mono_domain_get;
-		NEW_TEMPSTORE (cfg, store, cfg->domainvar->inst_c0, (MonoInst*)call);
 		
+		
+		MonoInst *store;
+		MonoInst *get_domain;
+		
+		if (! (get_domain = mono_arch_get_domain_intrinsic (cfg))) {
+			MonoCallInst *call;
+			
+			MONO_INST_NEW_CALL (cfg, call, CEE_CALL);
+			call->signature = helper_sig_domain_get;
+			call->inst.type = STACK_PTR;
+			call->fptr = mono_domain_get;
+			get_domain = (MonoInst*)call;
+		}
+		
+		NEW_TEMPSTORE (cfg, store, cfg->domainvar->inst_c0, get_domain);
 		MONO_ADD_INS (init_localsbb, store);
 	}
 

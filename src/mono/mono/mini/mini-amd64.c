@@ -5103,3 +5103,13 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 {
 	return 0;
 }
+
+MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
+{
+	return NULL;
+}
+
+MonoInst* mono_arch_get_thread_intrinsic (MonoCompile* cfg)
+{
+	return NULL;
+}

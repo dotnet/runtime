@@ -925,10 +925,7 @@ stmt: OP_VCALL_REG (reg, reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: OP_SAVE_LMF {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
+stmt: OP_SAVE_LMF,
 stmt: OP_RESTORE_LMF {
 	mono_bblock_add_inst (s->cbb, tree);
 }

@@ -562,3 +562,4 @@ op_bigmul: len:2 dest:l src1:a src2:i
 op_bigmul_un: len:2 dest:l src1:a src2:i
 sext_i1: dest:i src1:i len:3
 sext_i2: dest:i src1:i len:3
+x86_tls_get: dest:a len:20
