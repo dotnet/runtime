@@ -181,7 +181,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	guint32 cols [6], parent_token;
 	guint tidx = type_token & 0xffffff;
 	const char *name;
-
+     
 	memset (class, 0, sizeof (MonoClass));
 
 	mono_metadata_decode_row (tt, tidx-1, cols, CSIZE (cols));
@@ -191,7 +191,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	/*
 	 * If root of the hierarchy
 	 */
-	if (cols [3] == 0){
+	if (MONO_IMAGE_IS_CORLIB (image) && cols [3] == 5){
 		class->instance_size = sizeof (MonoObject);
 		class->parent = NULL;
 	} else {
@@ -308,8 +308,9 @@ typedef_from_typeref (MonoImage *image, guint32 type_token, MonoImage **rimage, 
 	/* dumb search for now */
 	for (i=0; i < t->rows; ++i) {
 		mono_metadata_decode_row (t, i, cols, 6);
-		if (strcmp (name, mono_metadata_string_heap (m, cols [1])) == 0 
-				&& strcmp (nspace, mono_metadata_string_heap (m, cols [2])) == 0) {
+
+		if (!strcmp (name, mono_metadata_string_heap (m, cols [1])) &&
+		    !strcmp (nspace, mono_metadata_string_heap (m, cols [2]))) {
 			*rimage = image;
 			*index = i + 1;
 			return;
@@ -330,7 +331,7 @@ MonoClass *
 mono_class_get (MonoImage *image, guint32 type_token)
 {
 	MonoClass *class;
-
+       
 	if ((type_token & 0xff000000) == MONO_TOKEN_TYPE_DEF 
 					&& (class = g_hash_table_lookup (image->class_cache, GUINT_TO_POINTER (type_token))))
 			return class;

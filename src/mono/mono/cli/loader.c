@@ -22,10 +22,97 @@
 #include <string.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
+#include <mono/metadata/assembly.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/tabledefs.h>
 #include "cli.h"
+
+
+guint32
+mono_get_string_class_info (guint *ttoken, MonoImage **cl)
+{
+	static guint32 ctor = 0, tt = 0;
+	enum MonoImageOpenStatus status = MONO_IMAGE_OK; 
+	MonoAssembly *ass;
+	static MonoImage *corlib;
+	MonoMetadata *m;
+	MonoTableInfo *t;
+	guint32 cols [MAX (MONO_TYPEDEF_SIZE, MONO_METHOD_SIZE)];
+	guint32 ncols [MONO_TYPEDEF_SIZE];
+	guint32 i, first = 0, last = 0;
+
+	if (ctor) {
+		*ttoken = tt;
+		*cl = corlib;
+		return ctor;
+	}
+
+	ass = mono_assembly_open (CORLIB_NAME, NULL, &status);
+	g_assert (status == MONO_IMAGE_OK);
+	g_assert (ass != NULL);
+	
+	*cl = corlib = ass->image;
+	g_assert (corlib != NULL);
+       
+	m = &corlib->metadata;
+	t = &m->tables [MONO_TABLE_TYPEDEF];
+
+	for (i = 0; i < t->rows; i++) {
+		mono_metadata_decode_row (t, i, cols, MONO_TYPEDEF_SIZE);
+
+		if (((cols [0] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == 
+		     TYPE_ATTRIBUTE_CLASS) &&
+		    (cols [3] == 5) &&
+		    (!strcmp (mono_metadata_string_heap (m, cols [1]), 
+			      "String"))) {
+
+			*ttoken = tt = MONO_TOKEN_TYPE_DEF | i + 1;
+
+			first = cols [5]-1;
+
+			first = cols [5]-1;
+
+			if (i + 1 < t->rows) {
+				mono_metadata_decode_row (t, i + 1, ncols, 
+							  MONO_TYPEDEF_SIZE);
+				last =  ncols [5] - 1;
+			} else
+				last = m->tables [MONO_TABLE_METHOD].rows;
+			break;
+		}
+	}
+
+	g_assert (last - first > 0);
+
+	t = &m->tables [MONO_TABLE_METHOD];
+	g_assert (last < t->rows);
+
+	for (i = first; i < last; i++) {
+		const char *ptr;
+		int len;
+
+		mono_metadata_decode_row (t, i, cols, MONO_METHOD_SIZE);
+
+		if (!strcmp (mono_metadata_string_heap (m, cols [3]), 
+			     ".ctor") &&
+		    (cols [2] & METHOD_ATTRIBUTE_SPECIAL_NAME)) {
+
+			ptr = mono_metadata_blob_heap (m, cols [4]);
+			len = mono_metadata_decode_value (ptr, &ptr);
+
+			if (len == 5 && ptr [0] == 0x20 && ptr [1] == 0x01 &&
+			     ptr [2] == 0x01 &&  ptr [3] == 0x0f && 
+			    ptr [4] == 0x03) {
+				ctor = MONO_TOKEN_METHOD_DEF | i + 1;
+				break;
+			}
+		} 
+
+	}
+
+	return ctor;
+}
 
 static guint32
 typedef_from_name (MonoImage *image, const char *name, const char *nspace, guint32 *mlist)
@@ -55,7 +142,7 @@ methoddef_from_memberref (MonoImage *image, guint32 index, MonoImage **rimage, g
 	guint32 cols[6];
 	guint32 nindex, sig_len, msig_len, class, i;
 	const char *sig, *msig, *mname, *name, *nspace;
-	
+
 	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], index-1, cols, 3);
 	nindex = cols [MONO_MEMBERREF_CLASS] >> MEMBERREF_PARENT_BITS;
 	class = cols [MONO_MEMBERREF_CLASS] & MEMBERREF_PARENT_MASK;
@@ -84,8 +171,14 @@ methoddef_from_memberref (MonoImage *image, guint32 index, MonoImage **rimage, g
 			 */
 			nspace = mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAMESPACE]);
 			name = mono_metadata_string_heap (m, cols [MONO_TYPEREF_NAME]);
-			
+
+			if (MONO_IMAGE_IS_CORLIB (image)) {
+				g_warning ("reference to mscorlib detected");
+				g_assert_not_reached ();
+			}
+
 			image = image->references [scopeindex-1]->image;
+
 			m = &image->metadata;
 			tables = &m->tables [MONO_TABLE_METHOD];
 			typedef_from_name (image, name, nspace, &i);
@@ -172,6 +265,7 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 	guint32 mr_cols [1];
 	const char *import = NULL;
 	const char *scope = NULL;
+	char *full_name;
 	GModule *gmodule;
 	ffi_type **args, *rettype;
 	int i, acount;
@@ -195,10 +289,13 @@ fill_pinvoke_info (MonoImage *image, MonoMethodPInvoke *piinfo, int index)
 
 	g_assert (import && scope);
 
+
 	if (!strcmp (scope, "cygwin1.dll"))
 		scope = "libc.so.6";
 
-	gmodule = g_module_open (scope, G_MODULE_BIND_LAZY);
+	full_name = g_module_build_path (NULL, scope);
+	gmodule = g_module_open (full_name, G_MODULE_BIND_LAZY);
+	g_free (full_name);
 
 	g_assert (gmodule);
 
@@ -294,3 +391,4 @@ mono_free_method  (MonoMethod *method)
 
 	g_free (method);
 }
+

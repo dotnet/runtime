@@ -1077,11 +1077,16 @@ get_constant (MonoMetadata *m, MonoTypeEnum t, guint32 blob_index)
 char *
 get_token (MonoMetadata *m, guint32 token)
 {
+	guint32 idx = mono_metadata_token_index (token);
+
 	switch (mono_metadata_token_code (token)){
 	case MONO_TOKEN_FIELD_DEF:
 		return (get_field (m, token));
-		
-	default:
+	case MONO_TOKEN_TYPE_DEF:
+		return get_typedef (m, idx);
+	case MONO_TOKEN_TYPE_REF:
+		return get_typeref (m, idx);
+	default:		
 		g_error ("Do not know how to decode tokens of type 0x%08x", token);
 	}
 

@@ -1031,21 +1031,50 @@ ves_exec_method (MonoMethod *mh, stackval *args)
 		CASE (CEE_CPOBJ) ves_abort(); BREAK;
 		CASE (CEE_LDOBJ) ves_abort(); BREAK;
 		CASE (CEE_LDSTR) {
+			guint32 ctor, ttoken;
 			MonoMetadata *m = &mh->image->metadata;
+			MonoMethod *cmh;
+			MonoObject *o;
+			MonoImage *cl;
 		        const char *name;
+			int len;
 			guint32 index;
-			
+			guint16 *data;
+
 			ip++;
 			index = mono_metadata_token_index (read32 (ip));
 			name = mono_metadata_user_string (m, index);
-			mono_metadata_decode_blob_size (name, &name);
+			len = mono_metadata_decode_blob_size (name, &name);
 
-			/* fixme: this is not correct */ 
-			sp->type = VAL_NATI;
-			sp->data.p = name;
+			/* 
+			 * terminate with 0, maybe we should use another 
+			 * constructor and pass the len
+			 */
+			data = g_malloc (len + 2);
+			memcpy (data, name, len + 2);
+			data [len/2 + 1] = 0;
+
+			ctor = mono_get_string_class_info (&ttoken, &cl);
+			o = mono_object_new (cl, ttoken);
+		
+			g_assert (o != NULL);
+
+			cmh = mono_get_method (cl, ctor);
+
+			sp->type = VAL_OBJ;
+			sp->data.p = o;
+			
+			sp[1].type = VAL_TP;
+			sp[1].data.p = data;
+
+			g_assert (cmh->signature->call_convention == MONO_CALL_DEFAULT);
+			ves_exec_method (cmh, sp);
+
+			g_free (data);
+
+			sp->type = VAL_OBJ;
+			sp->data.p = o;
 			++sp;
-
-			ip += 4;
 			BREAK;
 		}
 		CASE (CEE_NEWOBJ) {

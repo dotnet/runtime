@@ -3,6 +3,8 @@
 
 #include <mono/metadata/metadata.h>
 
+#define MONO_IMAGE_IS_CORLIB(image) (image->references [0] == NULL)
+
 typedef struct _MonoImage MonoImage;
 
 typedef struct {

@@ -25,7 +25,7 @@ static char *
 default_assembly_name_resolver (const char *name)
 {
 	if (strcmp (name, "mscorlib") == 0)
-		return g_strdup (MONO_ASSEMBLIES "/corlib.dll");
+		return g_strdup (MONO_ASSEMBLIES "/" CORLIB_NAME);
 
 	return g_strconcat (MONO_ASSEMBLIES "/", name, ".dll", NULL);
 }
@@ -50,7 +50,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	MonoImage *image;
 	MonoTableInfo *t;
 	MonoMetadata *m;
-	int i, j;
+	int i;
 	const char *basename = strrchr (filename, '/');
 	static MonoAssembly *corlib;
 	
@@ -62,7 +62,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	/*
 	 * Temporary hack until we have a complete corlib.dll
 	 */
-	if (!strcmp (basename, "corlib.dll") && corlib != NULL)
+	if (!strcmp (basename, CORLIB_NAME) && corlib != NULL)
 		return corlib;
 		
 	g_return_val_if_fail (filename != NULL, NULL);
@@ -80,7 +80,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	m = &image->metadata;
 	t = &m->tables [MONO_TABLE_ASSEMBLYREF];
 
-	image->references = g_new (MonoAssembly *, t->rows + 1);
+	image->references = g_new0 (MonoAssembly *, t->rows + 1);
 
 	ass = g_new (MonoAssembly, 1);
 	ass->image = image;
@@ -88,7 +88,7 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 	/*
 	 * Load any assemblies this image references
 	 */
-	for (i = j = 0; i < t->rows; i++){
+	for (i = 0; i < t->rows; i++){
 		char *assembly_ref;
 		const char *name;
 		guint32 cols [MONO_ASSEMBLYREF_SIZE];
@@ -102,10 +102,10 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 		 * ie, references to mscorlib from corlib.dll are ignored 
 		 * and we do not load corlib twice.
 		 */
-		if (strcmp (basename, "corlib.dll") == 0){
+		if (strcmp (basename, CORLIB_NAME) == 0){
 			if (corlib == NULL)
 				corlib = ass;
-
+			
 			if (strcmp (name, "mscorlib") == 0)
 				continue;
 		}
@@ -113,7 +113,6 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 		assembly_ref = (*resolver) (name);
 
 		image->references [i] = mono_assembly_open (assembly_ref, resolver, status);
-		
 		if (image->references [i] == NULL){
 			int j;
 			
@@ -130,9 +129,8 @@ mono_assembly_open (const char *filename, MonoAssemblyResolverFn resolver,
 			return NULL;
 		}
 		g_free (assembly_ref);
-		j++;
 	}
-	image->references [j] = NULL;
+	image->references [i] = NULL;
 
 	return ass;
 }

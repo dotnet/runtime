@@ -484,7 +484,6 @@ dis_method_list (MonoMetadata *m, MonoCLIImageInfo *ii, guint32 start, guint32 e
 	MonoTableInfo *t = &m->tables [MONO_TABLE_METHOD];
 	MonoTableInfo *p = &m->tables [MONO_TABLE_PARAM];
 	guint32 cols [6];
-	guint32 cols_next [6];
 	guint32 param_cols [3];
 	int i;
 
@@ -499,7 +498,6 @@ dis_method_list (MonoMetadata *m, MonoCLIImageInfo *ii, guint32 start, guint32 e
 		char *flags, *impl_flags;
 		
 		mono_metadata_decode_row (t, i, cols, CSIZE (cols));
-		mono_metadata_decode_row (t, i + 1, cols_next, CSIZE (cols_next));
 
 		flags = method_flags (cols [2]);
 		impl_flags = method_impl_flags (cols [1]);
