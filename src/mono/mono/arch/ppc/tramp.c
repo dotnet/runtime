@@ -438,9 +438,15 @@ enum_retvalue:
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
+			ppc_lwz  (p, ppc_r9, stack_size - 12, ppc_r31);        /* load "retval" address */
+			ppc_stb  (p, ppc_r3, 0, ppc_r9);                       /* save return value (r3) to "retval" */
+			break;
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
 		case MONO_TYPE_CHAR:
+			ppc_lwz  (p, ppc_r9, stack_size - 12, ppc_r31);        /* load "retval" address */
+			ppc_sth  (p, ppc_r3, 0, ppc_r9);                       /* save return value (r3) to "retval" */
+			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
