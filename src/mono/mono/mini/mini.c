@@ -8163,7 +8163,8 @@ static MonoObject*
 mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {
 	MonoMethod *invoke;
-	MonoObject *(*runtime_invoke) (MonoObject *this, void **params, MonoObject **exc);
+	MonoObject *(*runtime_invoke) (MonoObject *this, void **params, MonoObject **exc, void* compiled_method);
+	void* compiled_method;
 
 	if (obj == NULL && !(method->flags & METHOD_ATTRIBUTE_STATIC) && !method->string_ctor && (method->wrapper_type == 0)) {
 		g_warning ("Ignoring invocation of an instance method on a NULL instance.\n");
@@ -8172,7 +8173,8 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 	invoke = mono_marshal_get_runtime_invoke (method);
 	runtime_invoke = mono_jit_compile_method (invoke);
-	return runtime_invoke (obj, params, exc);
+	compiled_method = mono_jit_compile_method (method);
+	return runtime_invoke (obj, params, exc, compiled_method);
 }
 
 #ifdef PLATFORM_WIN32

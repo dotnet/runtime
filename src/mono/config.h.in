@@ -36,6 +36,7 @@
 #undef HAVE_SOCKLEN_T
 #undef HAVE_TRUNCL
 #undef HAVE_AINTL
+#undef HAVE_SCANDIR
 #undef HAVE_WORKING_SIGALTSTACK
 
 /* Define to 1 if you have the <aio.h> header file. */

@@ -559,16 +559,20 @@ mono_mb_emit_branch (MonoMethodBuilder *mb, guint8 op)
 	return res;
 }
 
+static void
+mono_mb_emit_calli (MonoMethodBuilder *mb, MonoMethodSignature *sig)
+{
+	mono_mb_emit_byte (mb, CEE_CALLI);
+	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, sig));
+}
+
 void
 mono_mb_emit_managed_call (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *opt_sig)
 {
-	if (!opt_sig)
-		opt_sig = method->signature;
 	mono_mb_emit_byte (mb, CEE_PREFIX1);
 	mono_mb_emit_byte (mb, CEE_LDFTN);
 	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, method));
-	mono_mb_emit_byte (mb, CEE_CALLI);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, opt_sig));
+	mono_mb_emit_calli (mb, opt_sig ? opt_sig : method->signature);
 }
 
 void
@@ -577,8 +581,7 @@ mono_mb_emit_native_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, gpoin
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_LDPTR);
 	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, func));
-	mono_mb_emit_byte (mb, CEE_CALLI);
-	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, sig));
+	mono_mb_emit_calli (mb, sig);
 }
 
 void
@@ -1796,14 +1799,14 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 
 /*
  * generates IL code for the runtime invoke function 
- * MonoObject *runtime_invoke (MonoObject *this, void **params, MonoObject **exc)
+ * MonoObject *runtime_invoke (MonoObject *this, void **params, MonoObject **exc, void* method)
  *
  * we also catch exceptions if exc != null
  */
 MonoMethod *
 mono_marshal_get_runtime_invoke (MonoMethod *method)
 {
-	MonoMethodSignature *sig, *csig;
+	MonoMethodSignature *sig, *csig, *callsig;
 	MonoExceptionClause *clause;
 	MonoMethodHeader *header;
 	MonoMethodBuilder *mb;
@@ -1811,11 +1814,23 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	GHashTable *cache;
 	static MonoString *string_dummy = NULL;
 	int i, pos;
+	char *name;
 
 	g_assert (method);
+	
+	if (method->string_ctor) {
+		static MonoMethodSignature *strsig = NULL;
+		if (!strsig) {
+			strsig = mono_metadata_signature_dup (method->signature);
+			strsig->ret = &mono_defaults.string_class->byval_arg;
+		}
+		
+		callsig = strsig;
+	} else
+		callsig = method->signature;
 
 	cache = method->klass->image->runtime_invoke_cache;
-	if ((res = mono_marshal_find_in_cache (cache, method)))
+	if ((res = mono_marshal_find_in_cache (cache, callsig)))
 		return res;
 
 	/* to make it work with our special string constructors */
@@ -1824,14 +1839,17 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 
 	sig = method->signature;
 
-	csig = mono_metadata_signature_alloc (method->klass->image, 3);
+	csig = mono_metadata_signature_alloc (method->klass->image, 4);
 
 	csig->ret = &mono_defaults.object_class->byval_arg;
 	csig->params [0] = &mono_defaults.object_class->byval_arg;
 	csig->params [1] = &mono_defaults.int_class->byval_arg;
 	csig->params [2] = &mono_defaults.int_class->byval_arg;
+	csig->params [3] = &mono_defaults.int_class->byval_arg;
 
-	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_RUNTIME_INVOKE);
+	name = mono_signature_to_name (callsig, "runtime_invoke");
+	mb = mono_mb_new (method->klass, name,  MONO_WRAPPER_RUNTIME_INVOKE);
+	g_free (name);
 
 	/* allocate local 0 (object) tmp */
 	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
@@ -1931,16 +1949,9 @@ handle_enum:
 			g_assert_not_reached ();
 		}		
 	}
-
-	if (method->string_ctor) {
-		MonoMethodSignature *strsig;
-
-		strsig = mono_metadata_signature_dup (sig);
-		strsig->ret = &mono_defaults.string_class->byval_arg;
-
-		mono_mb_emit_managed_call (mb, method, strsig);		
-	} else 
-		mono_mb_emit_managed_call (mb, method, NULL);
+	
+	mono_mb_emit_ldarg (mb, 3);
+	mono_mb_emit_calli (mb, callsig);
 
 	if (sig->ret->byref) {
 		/* fixme: */
@@ -2028,8 +2039,7 @@ handle_enum:
 	mono_mb_emit_ldloc (mb, 0);
 	mono_mb_emit_byte (mb, CEE_RET);
 	
-	res = mono_mb_create_and_cache (cache, method,
-										 mb, csig, sig->param_count + 16);
+	res = mono_mb_create_and_cache (cache, callsig, mb, csig, sig->param_count + 16);
 	mono_mb_free (mb);
 
 	header = ((MonoMethodNormal *)res)->header;

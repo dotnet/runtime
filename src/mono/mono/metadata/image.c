@@ -554,8 +554,10 @@ mono_image_init (MonoImage *image)
 	image->delegate_invoke_cache = 
 		g_hash_table_new ((GHashFunc)mono_signature_hash, 
 				  (GCompareFunc)mono_metadata_signature_equal);
-
-	image->runtime_invoke_cache = g_hash_table_new (NULL, NULL);
+	image->runtime_invoke_cache  = 
+		g_hash_table_new ((GHashFunc)mono_signature_hash, 
+				  (GCompareFunc)mono_metadata_signature_equal);
+	
 	image->managed_wrapper_cache = g_hash_table_new (NULL, NULL);
 	image->native_wrapper_cache = g_hash_table_new (NULL, NULL);
 	image->remoting_invoke_cache = g_hash_table_new (NULL, NULL);
