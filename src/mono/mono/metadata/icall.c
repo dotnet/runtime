@@ -2066,10 +2066,11 @@ ves_icall_System_Environment_GetEnvironmentVariableNames (void)
 	return names;
 }
 
-static MonoString *
-ves_icall_System_Environment_GetCommandLine (void)
+static void
+ves_icall_System_Environment_Exit (int result)
 {
-	return NULL;	/* FIXME */
+	/* we may need to do some cleanup here... */
+	exit (result);
 }
 
 static void
@@ -2466,7 +2467,8 @@ static gconstpointer icall_map [] = {
 	"System.Environment::get_NewLine", ves_icall_System_Environment_get_NewLine,
 	"System.Environment::GetEnvironmentVariable", ves_icall_System_Environment_GetEnvironmentVariable,
 	"System.Environment::GetEnvironmentVariableNames", ves_icall_System_Environment_GetEnvironmentVariableNames,
-	"System.Environment::GetCommandLine", ves_icall_System_Environment_GetCommandLine,
+	"System.Environment::GetCommandLineArgs", mono_runtime_get_main_args,
+	"System.Environment::Exit", ves_icall_System_Environment_Exit,
 
 	/*
 	 * Mono.CSharp.Debugger
