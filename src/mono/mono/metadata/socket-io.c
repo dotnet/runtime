@@ -1414,9 +1414,9 @@ static MonoObject* int_to_object (MonoDomain *domain, int val)
    	/* construct an Int32 object to hold val */
    	MonoObject* obj = mono_object_new(domain, mono_defaults.int32_class);
 
-   	/* Locate and set the "value" field */
+   	/* Locate and set the "m_value" field */
    	MonoClassField *field = mono_class_get_field_from_name(mono_defaults.int32_class,
-   					     "value");
+   					     "m_value");
    	*(gint32 *)(((char *)obj)+field->offset)=val;
     return obj;
 }
