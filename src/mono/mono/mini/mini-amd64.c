@@ -1080,6 +1080,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 						/* Reg1 */
 						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
+						load->ssa_op = MONO_SSA_LOAD;
 						load->inst_i0 = (cfg)->varinfo [vtaddr->inst_c0];
 
 						NEW_ICONST (cfg, offset_ins, 0);
@@ -1094,6 +1095,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 						/* Reg2 */
 						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
+						load->ssa_op = MONO_SSA_LOAD;
 						load->inst_i0 = (cfg)->varinfo [vtaddr->inst_c0];
 
 						NEW_ICONST (cfg, offset_ins, 8);
@@ -1116,6 +1118,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						/* Prepend a copy inst */
 						MONO_INST_NEW (cfg, arg, CEE_STIND_I);
 						arg->cil_code = in->cil_code;
+						arg->ssa_op = MONO_SSA_STORE;
 						arg->inst_left = vtaddr;
 						arg->inst_right = in;
 						arg->type = in->type;
