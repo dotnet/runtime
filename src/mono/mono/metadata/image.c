@@ -172,7 +172,7 @@ load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo)
 	if (offset == INVALID_ADDRESS)
 		return FALSE;
 
-	if (fseek (image->f, offset, 0) != 0)
+	if (fseek (image->f, offset, SEEK_SET) != 0)
 		return FALSE;
 	
 	if ((n = fread (&iinfo->cli_cli_header, sizeof (MonoCLIHeader), 1, image->f)) != 1)
@@ -367,38 +367,6 @@ load_class_names (MonoImage *image) {
 	}
 }
 
-int
-mono_image_get_header (MonoDynamicAssembly *assembly, char *buffer, int maxsize)
-{
-	MonoMSDOSHeader *msdos;
-	MonoDotNetHeader *header;
-
-	if (maxsize < sizeof (MonoMSDOSHeader) + sizeof (MonoDotNetHeader))
-		return -1;
-
-	memset (buffer, 0, sizeof (MonoMSDOSHeader) + sizeof (MonoDotNetHeader));
-
-	msdos = (MonoMSDOSHeader *)buffer;
-	header = (MonoDotNetHeader *)(buffer + sizeof (MonoMSDOSHeader));
-
-	/* FIXME: byteswap as needed */
-	msdos->msdos_header [0] = 'M';
-	msdos->msdos_header [1] = 'Z';
-
-	msdos->pe_offset = sizeof (MonoMSDOSHeader);
-
-	header->coff.coff_machine = 0x14c;
-	header->coff.coff_time = time (NULL);
-	header->coff.coff_opt_header_size = sizeof (MonoDotNetHeader) - sizeof (MonoCOFFHeader) - 4;
-	header->pe.pe_magic = 0x10B;
-	header->pe.pe_major = 6;
-	header->pe.pe_minor = 0;
-
-	/* Write section tables */
-
-	return sizeof (MonoMSDOSHeader) + sizeof (MonoDotNetHeader);
-}
-
 static MonoImage *
 do_mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
 {
@@ -478,7 +446,7 @@ do_mono_image_open (const char *fname, enum MonoImageOpenStatus *status)
 	if (header->coff.coff_opt_header_size != (sizeof (MonoDotNetHeader) - sizeof (MonoCOFFHeader) - 4))
 		goto invalid_image;
 
-	if (header->pe.pe_magic != 0x10B)
+	if (header->pesig[0] != 'P' || header->pesig[1] != 'E' || header->pe.pe_magic != 0x10B)
 		goto invalid_image;
 
 	if (header->pe.pe_major != 6 || header->pe.pe_minor != 0)

@@ -29,6 +29,7 @@ libmetadata_a_SOURCES = \
 	metadata.c	\
 	private.h	\
 	rawbuffer.c	\
+	reflection.c	\
 	loader.c	\
 	class.c		\
 	object.c	\
@@ -47,6 +48,7 @@ libmetadatainclude_HEADERS = \
 	image.h		\
 	metadata.h	\
 	rawbuffer.h	\
+	reflection.h	\
 	row-indexes.h	\
 	tabledefs.h	\
 	tokentype.h	\

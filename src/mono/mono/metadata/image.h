@@ -13,38 +13,6 @@ typedef struct {
 } MonoAssembly;
 
 typedef struct {
-	char *name;
-	char *data;
-	guint32 length;
-	guint32 data_size; /* malloced bytes */
-	guint32 offset;
-} MonoDynamicStream;
-
-typedef struct {
-	char *name;
-	char *fname;
-	GList *types;
-} MonoModuleBuilder;
-
-typedef struct {
-	char *name;
-	char *nspace;
-	int attrs;
-	GList *methods;
-} MonoTypeBuilder;
-
-typedef struct {
-	char *name;
-	MonoAssembly *assembly;
-	GList *modules;
-	MonoDynamicStream strings;
-	MonoDynamicStream us;
-	MonoDynamicStream blob;
-	MonoDynamicStream tables;
-	MonoDynamicStream guid;
-} MonoDynamicAssembly;
-
-typedef struct {
 	guint32  offset;
 	guint32  size;
 } MonoStreamHeader;
@@ -54,7 +22,7 @@ typedef struct {
 	char     *base;
 
 	/*
-	 * Tables contain up to 9 rows and the possible sizes of the
+	 * Tables contain up to 9 columns and the possible sizes of the
 	 * fields in the documentation are 1, 2 and 4 bytes.  So we
 	 * can encode in 2 bits the size.
 	 *
@@ -136,5 +104,4 @@ int           mono_image_ensure_section     (MonoImage *image,
 int           mono_image_ensure_section_idx (MonoImage *image,
 					     int section);
 	
-int           mono_image_get_header (MonoDynamicAssembly *assembly, char *buffer, int maxsize);
 #endif

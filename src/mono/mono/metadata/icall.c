@@ -14,6 +14,7 @@
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/reflection.h>
 
 static MonoObject *
 ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
@@ -225,7 +226,7 @@ ves_icall_app_define_assembly (MonoObject *appdomain, MonoObject *assembly_name,
 	MonoObject *name;
 
 	field = mono_class_get_field_from_name (assembly_name->klass, "name");
-	name = (MonoObject*)((char*)assembly_name + field->offset);
+	name = *(MonoObject**)((char*)assembly_name + field->offset);
 
 	ass->name = mono_string_to_utf8 (name);
 
@@ -266,16 +267,16 @@ ves_icall_define_type (MonoObject *moduleb, MonoObject *name, int attrs)
 	MonoTypeBuilder *tb = g_new0 (MonoTypeBuilder, 1);
 	MonoModuleBuilder *mb = object_impl_pointer (moduleb);
 	char *nspace = mono_string_to_utf8 (name);
-	char *name = strrchr (nspace, '.');
+	char *tname = strrchr (nspace, '.');
 	
-	if (name) {
-		*name = 0;
-		name++;
+	if (tname) {
+		*tname = 0;
+		tname++;
 	} else {
 		nspace = "";
 	}
 	
-	tb->name = name;
+	tb->name = tname;
 	tb->nspace = nspace;
 	tb->attrs = attrs;
 	mb->types = g_list_prepend (mb->types, tb);
