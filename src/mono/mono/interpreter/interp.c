@@ -3873,6 +3873,7 @@ usage (void)
 		 "--trace\n"
 		 "--traceops\n"
 		 "--traceclassinit\n"
+		 "--noptr\t\t\tdon't print pointer addresses in trace output\n"
 		 "--dieonex\n"
 		 "--profile\n"
 		 "--debug method_name\n"
