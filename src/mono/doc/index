@@ -102,7 +102,23 @@
   </tr>
 </table>
 
-@item Feb 12th: 2002: New assemblies, Gtk# stub documentation, Authenticode, Polish site
+@item Feb 14th, 2003: OpenGL# bindings for Mono;  Mono Basic updates.
+
+	Mark Crichton has completed his OpenGL/GLUT bindings for
+	Gnome.  A screenshot can be seen <a
+	href="sshots/oglcs.png">here</a>.  The bindings are available
+	on the Mono CVS repository on the module `glgen'.  This is a
+	straight binding to the C API. 
+
+	Marco has <a
+	href="http://lists.ximian.com/archives/public/mono-list/2003-February/011752.html">posted
+	an update</a> on the current state of the free VB.NET compiler
+	for Mono.
+
+	We are looking for contributors and maintainers to the
+	JavaScript compiler as well (Janet)
+
+@item Feb 12th, 2003: New assemblies, Gtk# stub documentation, Authenticode, Polish site
 
 	Mono now distributes a few new assemblies: Mono.Security.Win32
 	as a layer to use the crypto functionality on Win32.  The
