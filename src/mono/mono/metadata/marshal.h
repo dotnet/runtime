@@ -282,5 +282,12 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (MonoString 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src, MonoReflectionType *type);
 
+void*
+ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size);
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr);
+
+
 #endif /* __MONO_MARSHAL_H__ */
 
