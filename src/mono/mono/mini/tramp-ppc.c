@@ -56,8 +56,8 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	    
 	start = code = g_malloc (20);
 
-	ppc_load (code, ppc_r11, addr);
-	ppc_mtctr (code, ppc_r11);
+	ppc_load (code, ppc_r0, addr);
+	ppc_mtctr (code, ppc_r0);
 	ppc_addi (code, this_pos, this_pos, sizeof (MonoObject));
 	ppc_bcctr (code, 20, 0);
 	g_assert ((code - start) <= 20);
@@ -183,7 +183,7 @@ ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 	start = o;
 #if 1
 	/* FIXME: make the patching thread safe */
-	ppc_ba (o, 0);
+	ppc_b (o, 0);
 	ppc_patch (o - 4, addr);
 #else
 	ppc_stwu (o, ppc_r1, -16, ppc_r1);
@@ -360,7 +360,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
 			ppc_li (buf, ppc_r4, 0);
 		} else
-			ppc_lwz  (buf, ppc_r4, STACK + 4, ppc_r1);
+			ppc_lwz  (buf, ppc_r4, STACK + PPC_RET_ADDR_OFFSET, ppc_r1);
 		
 		/* Arg 3: stack pointer */
 		ppc_mr   (buf, ppc_r5, ppc_r1);
@@ -440,7 +440,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 		/* Restore stack pointer, r31, LR and jump to the code */
 		ppc_lwz  (buf, ppc_r1,  0, ppc_r1);
 		ppc_lwz  (buf, ppc_r31, -4, ppc_r1);
-		ppc_lwz  (buf, ppc_r11, 4, ppc_r1);
+		ppc_lwz  (buf, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_r1);
 		ppc_mtlr (buf, ppc_r11);
 		ppc_mtctr (buf, ppc_r0);
 		ppc_bcctr (buf, 20, 0);
@@ -526,8 +526,7 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	
 	/* Now save LR - we'll overwrite it now */
 	ppc_mflr (buf, ppc_r11);
-	ppc_stw  (buf, ppc_r11, 4, ppc_r1);
-	ppc_stw  (buf, ppc_r11, 8, ppc_r1);
+	ppc_stw  (buf, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_r1);
 	
 	/* Prepare the jump to the generic trampoline code.*/
 	ppc_lis  (buf, ppc_r11, (guint32) vc >> 16);

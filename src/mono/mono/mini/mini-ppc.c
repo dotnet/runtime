@@ -499,24 +499,15 @@ mono_arch_flush_icache (guint8 *code, gint size)
 #define NOT_IMPLEMENTED(x) \
                 g_error ("FIXME: %s is not yet implemented. (trampoline)", x);
 
-#define PROLOG_INS 8
-#define CALL_INS   2
-#define EPILOG_INS 6
 #define FLOAT_REGS 8
 #define GENERAL_REGS 8
 #ifdef __APPLE__
-#define MINIMAL_STACK_SIZE 10
 #define ALWAYS_ON_STACK(s) s
 #define FP_ALSO_IN_REG(s) s
-#define RET_ADDR_OFFSET 8
-#define STACK_PARAM_OFFSET 24
 #else
-#define MINIMAL_STACK_SIZE 5
 #define ALWAYS_ON_STACK(s)
 #define FP_ALSO_IN_REG(s) s
 #define ALIGN_DOUBLES
-#define RET_ADDR_OFFSET 4
-#define STACK_PARAM_OFFSET 8
 #endif
 
 enum {
@@ -560,21 +551,21 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 		}
 	} else {
 		if (*gr >= 3 + GENERAL_REGS - 1) {
+#ifdef ALIGN_DOUBLES
+			//*stack_size += (*stack_size % 8);
+#endif
 			ainfo->offset = PPC_STACK_PARAM_OFFSET + *stack_size;
 			ainfo->reg = ppc_sp; /* in the caller */
 			ainfo->regtype = RegTypeBase;
 			*stack_size += 8;
-#ifdef ALIGN_DOUBLES
-			*stack_size += (*stack_size % 8);
-#endif
 		} else {
+#ifdef ALIGN_DOUBLES
+		if (!((*gr) & 1))
+			(*gr) ++;
+#endif
 			ALWAYS_ON_STACK (*stack_size += 8);
 			ainfo->reg = *gr;
 		}
-#ifdef ALIGN_DOUBLES
-		if ((*gr) & 1)
-			(*gr) ++;
-#endif
 		(*gr) ++;
 	}
 	(*gr) ++;
@@ -2270,11 +2261,16 @@ ppc_patch (guchar *code, guchar *target)
 		// absolute address
 		if (ins & 2) {
 			guint32 li = (guint32)target;
+			ovf = li & 0xfc000000;
+			if ((li & 3) || ovf)
+				g_assert_not_reached ();
 			ins = prim << 26 | (ins & 3);
 			ins |= li;
-			// FIXME: assert the top bits of li are 0
 		} else {
 			gint diff = target - code;
+			ovf = diff & 0xfc000000;
+			if ((diff & 3) || (ovf != 0 && ovf != 0xfc000000))
+				g_assert_not_reached ();
 			ins = prim << 26 | (ins & 3);
 			diff &= ~3;
 			diff &= ~(63 << 26);

@@ -12,6 +12,8 @@
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
+void ppc_patch (guchar *code, guchar *target);
+
 struct MonoLMF {
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
