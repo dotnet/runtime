@@ -181,284 +181,6 @@ typedef struct {
 
 #endif
 
-/* disbale this for now */
-#undef MONO_USE_EXC_TABLES
-
-#ifdef MONO_USE_EXC_TABLES
-
-/*************************************/
-/*    STACK UNWINDING STUFF          */
-/*************************************/
-
-/* These definitions are from unwind-dw2.c in glibc 2.2.5 */
-
-/* For x86 */
-#define DWARF_FRAME_REGISTERS 17
-
-typedef struct frame_state
-{
-  void *cfa;
-  void *eh_ptr;
-  long cfa_offset;
-  long args_size;
-  long reg_or_offset[DWARF_FRAME_REGISTERS+1];
-  unsigned short cfa_reg;
-  unsigned short retaddr_column;
-  char saved[DWARF_FRAME_REGISTERS+1];
-} frame_state;
-
-#if 0
-
-static long
-get_sigcontext_reg (struct sigcontext *ctx, int dwarf_regnum)
-{
-	switch (dwarf_regnum) {
-	case X86_EAX:
-		return ctx->SC_EAX;
-	case X86_EBX:
-		return ctx->SC_EBX;
-	case X86_ECX:
-		return ctx->SC_ECX;
-	case X86_EDX:
-		return ctx->SC_EDX;
-	case X86_ESI:
-		return ctx->SC_ESI;
-	case X86_EDI:
-		return ctx->SC_EDI;
-	case X86_EBP:
-		return ctx->SC_EBP;
-	case X86_ESP:
-		return ctx->SC_ESP;
-	default:
-		g_assert_not_reached ();
-	}
-
-	return 0;
-}
-
-static void
-set_sigcontext_reg (struct sigcontext *ctx, int dwarf_regnum, long value)
-{
-	switch (dwarf_regnum) {
-	case X86_EAX:
-		ctx->SC_EAX = value;
-		break;
-	case X86_EBX:
-		ctx->SC_EBX = value;
-		break;
-	case X86_ECX:
-		ctx->SC_ECX = value;
-		break;
-	case X86_EDX:
-		ctx->SC_EDX = value;
-		break;
-	case X86_ESI:
-		ctx->SC_ESI = value;
-		break;
-	case X86_EDI:
-		ctx->SC_EDI = value;
-		break;
-	case X86_EBP:
-		ctx->SC_EBP = value;
-		break;
-	case X86_ESP:
-		ctx->SC_ESP = value;
-		break;
-	case 8:
-		ctx->SC_EIP = value;
-		break;
-	default:
-		g_assert_not_reached ();
-	}
-}
-
-typedef struct frame_state * (*framesf) (void *, struct frame_state *);
-
-static framesf frame_state_for = NULL;
-
-static gboolean inited = FALSE;
-
-typedef char ** (*get_backtrace_symbols_type) (void *__const *__array, int __size);
-
-static get_backtrace_symbols_type get_backtrace_symbols = NULL;
-
-static void
-init_frame_state_for (void)
-{
-	GModule *module;
-
-	/*
-	 * There are two versions of __frame_state_for: one in libgcc.a and the
-	 * other in glibc.so. We need the version from glibc.
-	 * For more info, see this:
-	 * http://gcc.gnu.org/ml/gcc/2002-08/msg00192.html
-	 */
-	if ((module = g_module_open ("libc.so.6", G_MODULE_BIND_LAZY))) {
-	
-		if (!g_module_symbol (module, "__frame_state_for", (gpointer*)&frame_state_for))
-			frame_state_for = NULL;
-
-		if (!g_module_symbol (module, "backtrace_symbols", (gpointer*)&get_backtrace_symbols)) {
-			get_backtrace_symbols = NULL;
-			frame_state_for = NULL;
-		}
-
-		g_module_close (module);
-	}
-
-	inited = TRUE;
-}
-
-#endif
-
-/* mono_arch_has_unwind_info:
- *
- * Tests if a function has an DWARF exception table able to restore
- * all caller saved registers. 
- */
-gboolean
-mono_arch_has_unwind_info (MonoMethod *method)
-{
-#if 0
-	struct frame_state state_in;
-	struct frame_state *res;
-
-	if (!inited) 
-		init_frame_state_for ();
-	
-	if (!frame_state_for)
-		return FALSE;
-
-	g_assert (method->addr);
-
-	memset (&state_in, 0, sizeof (state_in));
-
-	/* offset 10 is just a guess, but it works for all methods tested */
-	if ((res = frame_state_for ((char *)method->addr + 10, &state_in))) {
-
-		if (res->saved [X86_EBX] != 1 ||
-		    res->saved [X86_EDI] != 1 ||
-		    res->saved [X86_EBP] != 1 ||
-		    res->saved [X86_ESI] != 1) {
-			return FALSE;
-		}
-		return TRUE;
-	} else {
-		return FALSE;
-	}
-#else
-	return FALSE;
-#endif
-}
-
-struct stack_frame
-{
-  void *next;
-  void *return_address;
-};
-
-static MonoJitInfo *
-ppc_unwind_native_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *ctx, 
-			 MonoContext *new_ctx, MonoLMF *lmf, char **trace)
-{
-#if 0
-	struct stack_frame *frame;
-	gpointer max_stack;
-	MonoJitInfo *ji;
-	struct frame_state state_in;
-	struct frame_state *res;
-
-	if (trace)
-		*trace = NULL;
-
-	if (!inited) 
-		init_frame_state_for ();
-
-	if (!frame_state_for)
-		return FALSE;
-
-	frame = MONO_CONTEXT_GET_BP (ctx);
-
-	max_stack = lmf && lmf->method ? lmf : jit_tls->end_of_stack;
-
-	*new_ctx = *ctx;
-
-	memset (&state_in, 0, sizeof (state_in));
-
-	while ((gpointer)frame->next < (gpointer)max_stack) {
-		gpointer ip, addr = frame->return_address;
-		void *cfa;
-		char *tmp, **symbols;
-
-		if (trace) {
-			ip = MONO_CONTEXT_GET_IP (new_ctx);
-			symbols = get_backtrace_symbols (&ip, 1);
-			if (*trace)
-				tmp = g_strdup_printf ("%s\nin (unmanaged) %s", *trace, symbols [0]);
-			else
-				tmp = g_strdup_printf ("in (unmanaged) %s", symbols [0]);
-
-			free (symbols);
-			g_free (*trace);
-			*trace = tmp;
-		}
-
-		if ((res = frame_state_for (addr, &state_in))) {	
-			int i;
-
-			cfa = (gint8*) (get_sigcontext_reg (new_ctx, res->cfa_reg) + res->cfa_offset);
-			frame = (struct stack_frame *)((gint8*)cfa - 8);
-			for (i = 0; i < DWARF_FRAME_REGISTERS + 1; i++) {
-				int how = res->saved[i];
-				long val;
-				g_assert ((how == 0) || (how == 1));
-			
-				if (how == 1) {
-					val = * (long*) ((gint8*)cfa + res->reg_or_offset[i]);
-					set_sigcontext_reg (new_ctx, i, val);
-				}
-			}
-			new_ctx->SC_ESP = (long)cfa;
-
-			if (res->saved [X86_EBX] == 1 &&
-			    res->saved [X86_EDI] == 1 &&
-			    res->saved [X86_EBP] == 1 &&
-			    res->saved [X86_ESI] == 1 &&
-			    (ji = mono_jit_info_table_find (domain, frame->return_address))) {
-				//printf ("FRAME CFA %s\n", mono_method_full_name (ji->method, TRUE));
-				return ji;
-			}
-
-		} else {
-			//printf ("FRAME %p %p %p\n", frame, MONO_CONTEXT_GET_IP (new_ctx), mono_jit_info_table_find (domain, MONO_CONTEXT_GET_IP (new_ctx)));
-
-			MONO_CONTEXT_SET_IP (new_ctx, frame->return_address);
-			frame = frame->next;
-			MONO_CONTEXT_SET_BP (new_ctx, frame);
-
-			/* stop if !frame or when we detect an unexpected managed frame */
-			if (!frame || mono_jit_info_table_find (domain, frame->return_address)) {
-				if (trace) {
-					g_free (*trace);
-					*trace = NULL;
-				}
-				return NULL;
-			}
-		}
-	}
-
-	//if (!lmf)
-	//g_assert_not_reached ();
-
-	if (trace) {
-		g_free (*trace);
-		*trace = NULL;
-	}
-#endif
-	return NULL;
-}
-
-#endif
 
 #define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
 		int reg;	\
@@ -815,29 +537,12 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			g_free (source_location);
 			g_free (tmpaddr);
 		}
-#if 0				
-		offset = -1;
-		/* restore caller saved registers */
-		if (ji->used_regs & X86_EBX_MASK) {
-			new_ctx->SC_EBX = *((int *)ctx->SC_EBP + offset);
-			offset--;
-		}
-		if (ji->used_regs & X86_EDI_MASK) {
-			new_ctx->SC_EDI = *((int *)ctx->SC_EBP + offset);
-			offset--;
-		}
-		if (ji->used_regs & X86_ESI_MASK) {
-			new_ctx->SC_ESI = *((int *)ctx->SC_EBP + offset);
-		}
-
-		new_ctx->SC_ESP = ctx->SC_EBP;
-		/* we substract 1, so that the IP points into the call instruction */
-		new_ctx->SC_EIP = *((int *)ctx->SC_EBP + 1) - 1;
-		new_ctx->SC_EBP = *((int *)ctx->SC_EBP);
-#endif
 		sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_BP (ctx);
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->sp);
-		if (ji->used_regs) {
+		if (ji->method->save_lmf) {
+			memcpy (&new_ctx->fregs, (char*)sframe->sp - sizeof (double) * MONO_SAVED_FREGS, sizeof (double) * MONO_SAVED_FREGS);
+			memcpy (&new_ctx->regs, (char*)sframe->sp - sizeof (double) * MONO_SAVED_FREGS - sizeof (gulong) * MONO_SAVED_GREGS, sizeof (gulong) * MONO_SAVED_GREGS);
+		} else if (ji->used_regs) {
 			/* keep updated with emit_prolog in mini-ppc.c */
 			offset = 0;
 			/* FIXME handle floating point args 
@@ -858,13 +563,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		sframe = (MonoPPCStackFrame*)sframe->sp;
 		/* we substract 4, so that the IP points into the call instruction */
 		MONO_CONTEXT_SET_IP (new_ctx, sframe->lr - 4);
+
 		*res = *ji;
 		return res;
-#ifdef MONO_USE_EXC_TABLES
-	} else if ((ji = ppc_unwind_native_frame (domain, jit_tls, ctx, new_ctx, *lmf, trace))) {
-		*res = *ji;
-		return res;
-#endif
 	} else if (*lmf) {
 		
 		*new_ctx = *ctx;
@@ -883,16 +584,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			res->method = (*lmf)->method;
 		}
 
-#if 0
-		new_ctx->SC_ESI = (*lmf)->esi;
-		new_ctx->SC_EDI = (*lmf)->edi;
-		new_ctx->SC_EBX = (*lmf)->ebx;
-		new_ctx->SC_EBP = (*lmf)->ebp;
-		new_ctx->SC_EIP = (*lmf)->eip;
-		/* the lmf is always stored on the stack, so the following
-		 * expression points to a stack location which can be used as ESP */
-		new_ctx->SC_ESP = (unsigned long)&((*lmf)->eip);
-#endif
 		/*sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_BP (ctx);
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->sp);
 		MONO_CONTEXT_SET_IP (new_ctx, sframe->lr);*/
@@ -927,7 +618,12 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		gpointer ip = mono_array_get (ta, gpointer, i);
 
 		ji = mono_jit_info_table_find (domain, ip);
-		g_assert (ji != NULL);
+		if (!ji) {
+			sf->method = mono_method_get_object (domain, mono_defaults.object_class->methods [0], NULL);
+			mono_array_set (res, gpointer, i, sf);
+			continue;
+		}
+		//g_assert (ji != NULL);
 
 		sf->method = mono_method_get_object (domain, ji->method, NULL);
 		sf->native_offset = (char *)ip - (char *)ji->code_start;
@@ -971,8 +667,10 @@ mono_jit_walk_stack (MonoStackWalk func, gpointer user_data) {
 #else
 	__asm__ volatile("lwz   %0,0(1)" : "=r" (sframe));
 #endif
-	MONO_CONTEXT_SET_IP (&ctx, sframe->lr);
+	//MONO_CONTEXT_SET_IP (&ctx, sframe->lr);
 	MONO_CONTEXT_SET_BP (&ctx, sframe->sp);
+	sframe = (MonoPPCStackFrame*)sframe->sp;
+	MONO_CONTEXT_SET_IP (&ctx, sframe->lr);
 
 	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
 		
@@ -1003,9 +701,18 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MonoLMF *lmf = jit_tls->lmf;
 	MonoJitInfo *ji, rji;
 	MonoContext ctx, new_ctx;
+	MonoPPCStackFrame *sframe;
 
-	MONO_CONTEXT_SET_IP (&ctx, ves_icall_get_frame_info);
-	MONO_CONTEXT_SET_BP (&ctx, __builtin_frame_address (0));
+#ifdef __APPLE__
+	__asm__ volatile("lwz   %0,0(r1)" : "=r" (sframe));
+#else
+	__asm__ volatile("lwz   %0,0(1)" : "=r" (sframe));
+#endif
+	MONO_CONTEXT_SET_BP (&ctx, sframe->sp);
+	sframe = (MonoPPCStackFrame*)sframe->sp;
+	MONO_CONTEXT_SET_IP (&ctx, sframe->lr);
+	/*MONO_CONTEXT_SET_IP (&ctx, ves_icall_get_frame_info);
+	MONO_CONTEXT_SET_BP (&ctx, __builtin_frame_address (0));*/
 
 	skip++;
 

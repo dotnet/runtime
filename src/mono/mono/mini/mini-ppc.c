@@ -2809,7 +2809,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			int alloca_waste = PPC_STACK_PARAM_OFFSET + cfg->param_area + 31;
 			int area_offset = alloca_waste;
 			area_offset &= ~31;
-			ppc_addi (code, ppc_r11, ins->sreg1, alloca_waste);
+			ppc_addi (code, ppc_r11, ins->sreg1, alloca_waste + 31);
 			ppc_rlwinm (code, ppc_r11, ppc_r11, 0, 0, 27);
 			ppc_lwz (code, ppc_r0, 0, ppc_sp);
 			ppc_neg (code, ppc_r11, ppc_r11);
