@@ -2356,6 +2356,7 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 	gboolean ok;
 	struct stat buf;
 	const gchar *filename;
+	gchar *utf8_filename;
 	
 	gchar *base_filename;
 	gunichar2 *utf16_basename;
@@ -2400,6 +2401,23 @@ retry:
 		}
 	}
 	
+	/* Work around glib brain-damage, where it expects all filenames
+	 * to be validly utf8-encoded
+	 */
+	if(g_utf8_validate(filename, -1, NULL)) {
+		utf8_filename=g_strdup(filename);
+	} else {
+		utf8_filename=g_locale_to_utf8(filename, -1, NULL, NULL, NULL);
+	}
+
+	/* Final check... */
+	if(g_utf8_validate(utf8_filename, -1, NULL)==FALSE) {
+		/* glib can't cope with this filename, so just ignore it
+		 * instead of crashing.
+		 */
+		g_free(utf8_filename);
+		goto retry;
+	}
 
 	/* fill data block */
 
@@ -2426,7 +2444,7 @@ retry:
 	find_data->dwReserved0 = 0;
 	find_data->dwReserved1 = 0;
 
-	base_filename = g_path_get_basename (filename);
+	base_filename = g_path_get_basename (utf8_filename);
 	utf16_basename = g_utf8_to_utf16 (base_filename, MAX_PATH, NULL, NULL, NULL);
 
 	i = 0;
@@ -2439,6 +2457,7 @@ retry:
 	find_data->cAlternateFileName [0] = 0;	/* not used */
 
 	g_free (base_filename);
+	g_free (utf8_filename);
 	g_free (utf16_basename);
 	return TRUE;
 }
@@ -2721,25 +2740,41 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
  */
 extern guint32 GetCurrentDirectory (guint32 length, gunichar2 *buffer)
 {
-	gchar *path;
+	gchar *path, *utf8_path;
 	gunichar2 *utf16_path, *ptr;
 	glong count = 0;
 	
 	path = g_get_current_dir ();
 	if (path == NULL)
 		return 0;
+
+	/* No, g_get_current_dir () does not return utf8 strings */
+	if(g_utf8_validate(path, -1, NULL)) {
+		utf8_path=g_strdup(path);
+	} else {
+		utf8_path=g_locale_to_utf8(path, -1, NULL, NULL, NULL);
+	}
+
+	if(g_utf8_validate(utf8_path, -1, NULL)==FALSE) {
+		g_free(utf8_path);
+		return(0);
+	}
 	
 	/* if buffer too small, return number of characters required.
 	 * this is plain dumb.
 	 */
 	
-	count = strlen (path) + 1;
-	if (count > length)
-		return count;
+	count = strlen (utf8_path) + 1;
+	if (count > length) {
+		g_free(utf8_path);
+		return (count);
+	}
 	
-	utf16_path = g_utf8_to_utf16 (path, -1, NULL, NULL, NULL);
-	if (utf16_path == NULL)
-		return 0;
+	utf16_path = g_utf8_to_utf16 (utf8_path, -1, NULL, NULL, NULL);
+	if (utf16_path == NULL) {
+		g_free(utf8_path);
+		return (0);
+	}
 
 	ptr = utf16_path;
 	while (*ptr)
@@ -2747,6 +2782,7 @@ extern guint32 GetCurrentDirectory (guint32 length, gunichar2 *buffer)
 	
 	*buffer = 0;
 	
+	g_free (utf8_path);
 	g_free (utf16_path);
 	g_free (path);
 
@@ -2921,6 +2957,7 @@ gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 guint32 GetTempPath (guint32 len, gunichar2 *buf)
 {
 	gchar *tmpdir=g_strdup (g_get_tmp_dir ());
+	gchar *utf8_tmpdir;
 	gunichar2 *tmpdir16=NULL;
 	glong dirlen, bytes;
 	guint32 ret;
@@ -2930,7 +2967,25 @@ guint32 GetTempPath (guint32 len, gunichar2 *buf)
 		tmpdir=g_strdup_printf ("%s/", g_get_tmp_dir ());
 	}
 	
-	tmpdir16=g_utf8_to_utf16 (tmpdir, -1, NULL, &dirlen, NULL);
+	/* g_get_tmp_dir () doesn't return utf8 either */
+	if(g_utf8_validate(tmpdir, -1, NULL)) {
+		utf8_tmpdir=g_strdup(tmpdir);
+	} else {
+		utf8_tmpdir=g_locale_to_utf8(tmpdir, -1, NULL, NULL, NULL);
+	}
+
+	if(g_utf8_validate(utf8_tmpdir, -1, NULL)==FALSE) {
+		/* FIXME - set error code */
+#ifdef DEBUG
+		g_message (G_GNUC_PRETTY_FUNCTION ": UTF8 error");
+#endif
+
+		g_free(tmpdir);
+		g_free(utf8_tmpdir);
+		return(0);
+	}
+
+	tmpdir16=g_utf8_to_utf16 (utf8_tmpdir, -1, NULL, &dirlen, NULL);
 	if(tmpdir16==NULL) {
 		/* FIXME - set error code */
 #ifdef DEBUG
@@ -2959,6 +3014,7 @@ guint32 GetTempPath (guint32 len, gunichar2 *buf)
 	if(tmpdir16!=NULL) {
 		g_free (tmpdir16);
 	}
+	g_free (utf8_tmpdir);
 	g_free (tmpdir);
 	
 	return(ret);
