@@ -562,35 +562,32 @@ mono_create_method_pointer (MonoMethod *method)
 
 	/* add stackval arguments */
 	for (i = 0; i < sig->param_count; ++i) {
-#define CALL_STACKVAL_FROM_DATA \
-		ppc_lis  (p, ppc_r0, (guint32) stackval_from_data >> 16); \
-		ppc_ori  (p, ppc_r0, ppc_r0, (guint32) stackval_from_data & 0xffff); \
-		ppc_mtlr (p, ppc_r0); \
-		ppc_blrl (p)
-#define CALL_SIZE_4 \
-			if (reg_param < 3 - (sig->hasthis ? 1 : 0)) { \
-				ppc_addi (p, ppc_r5, ppc_r31, local_start + (reg_param - (sig->hasthis ? 1 : 0))*4); \
-				reg_param ++; \
-			} else if (reg_param < 8) { \
-				ppc_stw  (p, ppc_r3 + reg_param, local_pos, ppc_r31); \
-				ppc_addi (p, ppc_r5, ppc_r31, local_pos); \
-				reg_param ++; \
-			} else { \
-				ppc_addi (p, ppc_r5, stack_size + 8 + stack_param, ppc_r31); \
-				stack_param ++; \
-			} \
-			ppc_lis  (p, ppc_r3, (guint32) sig->params [i] >> 16); \
-			ppc_addi (p, ppc_r4, ppc_r31, stackval_arg_pos); \
-		/* fixme: alignment */ \
-		if (sig->pinvoke) \
-			stackval_arg_pos += mono_type_native_stack_size (sig->params [i], &align); \
-		else \
-			stackval_arg_pos += mono_type_stack_size (sig->params [i], &align); \
-			ppc_ori  (p, ppc_r3, ppc_r3, (guint32) sig->params [i] & 0xffff); \
-\
-			CALL_STACKVAL_FROM_DATA
+		if (reg_param < 3 - (sig->hasthis ? 1 : 0)) {
+			ppc_addi (p, ppc_r5, ppc_r31, local_start + (reg_param - (sig->hasthis ? 1 : 0))*4);
+			reg_param ++;
+		} else if (reg_param < 8) {
+			ppc_stw  (p, ppc_r3 + reg_param, local_pos, ppc_r31);
+			ppc_addi (p, ppc_r5, ppc_r31, local_pos);
+			reg_param ++;
+		} else {
+			ppc_addi (p, ppc_r5, stack_size + 8 + stack_param, ppc_r31);
+			stack_param ++;
+		}
+		ppc_lis  (p, ppc_r3, (guint32) sig->params [i] >> 16);
+		ppc_addi (p, ppc_r4, ppc_r31, stackval_arg_pos);
 
-		CALL_SIZE_4;
+		ppc_ori  (p, ppc_r3, ppc_r3, (guint32) sig->params [i] & 0xffff);
+		ppc_lis  (p, ppc_r0, (guint32) stackval_from_data >> 16);
+		ppc_li   (p, ppc_r6, sig->pinvoke);
+		ppc_ori  (p, ppc_r0, ppc_r0, (guint32) stackval_from_data & 0xffff);
+		ppc_mtlr (p, ppc_r0);
+		ppc_blrl (p);
+
+		/* fixme: alignment */
+		if (sig->pinvoke)
+			stackval_arg_pos += mono_type_native_stack_size (sig->params [i], &align);
+		else
+			stackval_arg_pos += mono_type_stack_size (sig->params [i], &align);
 	}
 
 	/* return value storage */
