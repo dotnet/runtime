@@ -2849,8 +2849,6 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p) {
 	
 	while (*p && (isalnum (*p) || *p == '.'))
 		p++;
-	if (!*p)
-		return 0;
 	found_sep = 0;
 	while (*p == ' ' || *p == ',') {
 		*p++ = 0;
