@@ -182,7 +182,8 @@ TEST_CS_SRC=			\
 	bug-48015.cs		\
 	bug-42136.cs		\
 	interlocked.cs		\
-	cross-domain.cs
+	cross-domain.cs		\
+	desweak.cs
 
 if X86
 PLATFORM_DISABLED_TESTS=
