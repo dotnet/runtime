@@ -1023,5 +1023,56 @@
             <maintainer>jbarn@httcb.net</maintainer>
         </maintainers>
     </class>
+
+    <class name="System.Uri">
+        <last-activity>Jun-16-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>rooneg@electricjellyfish.net</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.UriBuilder">
+        <last-activity>Jun-16-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>scott@stonecobra.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.UriFormatException">
+        <last-activity>Jun-16-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>scott@stonecobra.com</maintainer>
+        </maintainers>
+    </class>
+
+    <class name="System.Boolean">
+        <last-activity>Jun-16-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>dsh2120@draper.com</maintainer>
+        </maintainers>
+    </class>
+    <class name="System.Convert">
+        <last-activity>Jun-16-2001</last-activity>
+        <implementation>no</implementation>
+        <test-suite>no</test-suite>
+        <completion>?</completion>
+        <maintainers>
+            <maintainer>dsh2120@draper.com</maintainer>
+        </maintainers>
+    </class>
   
+
 </classes>
+
