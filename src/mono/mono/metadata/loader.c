@@ -92,6 +92,7 @@ mono_lookup_internal_call (MonoMethod *method)
 		if (!(res = g_hash_table_lookup (icall_hash, name))) {
 			g_warning ("cant resolve internal call to \"%s\" (tested without signature also)", name);
 			g_print ("\nYour mono runtime and corlib are out of sync.\n");
+			g_print ("Corlib is: %s", method->klass->image->name);
 			g_print ("When you update one from cvs you need to update, compile and install\nthe other too.\n");
 			g_print ("Do not report this as a bug unless you're sure you have updated correctly:\nyou probably have a broken mono install.\n");
 			g_print ("If you see other errors or faults after this message they are probably related\n");
