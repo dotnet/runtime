@@ -5696,7 +5696,11 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, MonoArray *ty
 	} else {
 		iklass->field = klass->field;
 		iklass->method = klass->method;
-		iklass->methods = klass->methods;
+
+		iklass->methods = g_new0 (MonoMethod *, iklass->method.count);
+
+		for (i = 0; i < iklass->method.count; i++)
+			iklass->methods [i] = mono_class_inflate_generic_method (klass->methods [i], ginst, NULL);
 	}
 
 	return iklass;
