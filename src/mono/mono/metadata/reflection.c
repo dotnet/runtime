@@ -1852,6 +1852,19 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	
 }
 
+typedef struct {
+	guint32 import_lookup_table;
+	guint32 timestamp;
+	guint32 forwarder;
+	guint32 name_rva;
+	guint32 import_address_table_rva;
+} MonoIDT;
+
+typedef struct {
+	guint32 name_rva;
+	guint32 flags;
+} MonoILT;
+
 /*
  * mono_image_get_heade:
  * @assemblyb: an assembly builder object
@@ -1869,11 +1882,15 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 {
 	MonoMSDOSHeader *msdos;
 	MonoDotNetHeader *header;
-	MonoSectionTable *section;
+	MonoSectionTable *section, *reloc;
 	MonoCLIHeader *cli_header;
 	guint32 header_size =  TEXT_OFFSET + CLI_H_SIZE;
 	MonoDynamicAssembly *assembly;
+	MonoIDT import_directory;
+	MonoILT import_lookup;
 
+	static const guchar entrycode [16] = {0xff, 0x25, 0};
+	guint32 entry_offset, import_table_offset, import_hint_offset;
 	static const unsigned char msheader[] = {
 		0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00,  0x04, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00,
 		0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -1893,6 +1910,41 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 
 	mono_image_build_metadata (assemblyb);
 
+	memset (&import_directory, 0, sizeof (MonoIDT));
+	assembly->code.index += 3;
+	assembly->code.index &= ~3;
+	import_table_offset = TEXT_OFFSET + CLI_H_SIZE + assembly->code.index;
+	/* calc rva... */
+	import_hint_offset = import_table_offset + 40 + 8;
+	import_hint_offset += 15;
+	import_hint_offset &= ~15;
+
+	import_directory.import_lookup_table = import_table_offset + 40;
+	import_directory.name_rva = import_hint_offset + 14;
+	import_directory.import_address_table_rva = 0x200; /* FIXME */
+
+	mono_image_add_stream_data (&assembly->code, (char*)&import_directory, sizeof (MonoIDT));
+	/* add an empty item to mark the end */
+	memset (&import_directory, 0, sizeof (MonoIDT));
+	mono_image_add_stream_data (&assembly->code, (char*)&import_directory, sizeof (MonoIDT));
+	
+	memset (&import_lookup, 0, sizeof (MonoILT));
+	import_lookup.name_rva = import_hint_offset;
+	mono_image_add_stream_data (&assembly->code, (char*)&import_lookup, sizeof (MonoILT));
+	assembly->code.index += 15;
+	assembly->code.index &= ~15;
+	mono_image_add_stream_data (&assembly->code, "", 1);
+	mono_image_add_stream_data (&assembly->code, "", 1);
+	mono_image_add_stream_data (&assembly->code, "_CorExeMain", 12);
+	mono_image_add_stream_data (&assembly->code, "mscoree.dll", 12);
+	mono_image_add_stream_data (&assembly->code, "", 1); /* lame */
+	mono_image_add_stream_data (&assembly->code, "", 1);
+	mono_image_add_stream_data (&assembly->code, "", 1);
+	mono_image_add_stream_data (&assembly->code, "", 1);
+
+	entry_offset = mono_image_add_stream_data (&assembly->code, entrycode, sizeof (entrycode));
+	/*g_print ("ep offset: 0x%08x\n", entry_offset);*/
+	
 	memset (buffer, 0, header_size);
 	memcpy (buffer, msheader, sizeof (MonoMSDOSHeader));
 
@@ -1908,7 +1960,7 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 	header->pesig [2] = header->pesig [3] = 0;
 
 	header->coff.coff_machine = 0x14c;
-	header->coff.coff_sections = 1; /* only .text supported now */
+	header->coff.coff_sections = 2; /* only .text and .reloc supported now */
 	header->coff.coff_time = time (NULL);
 	header->coff.coff_opt_header_size = sizeof (MonoDotNetHeader) - sizeof (MonoCOFFHeader) - 4;
 	/* it's an exe */
@@ -1918,7 +1970,7 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 	header->pe.pe_magic = 0x10B;
 	header->pe.pe_major = 6;
 	header->pe.pe_minor = 0;
-	/* need to set: pe_code_size pe_data_size pe_rva_entry_point pe_rva_code_base pe_rva_data_base */
+	/* set later: pe_code_size pe_data_size pe_rva_entry_point pe_rva_code_base pe_rva_data_base */
 
 	header->nt.pe_image_base = 0x400000;
 	header->nt.pe_section_align = 8192;
@@ -1949,12 +2001,25 @@ mono_image_get_header (MonoReflectionAssemblyBuilder *assemblyb, char *buffer, i
 
 	/* Write section tables */
 	strcpy (section->st_name, ".text");
-	section->st_virtual_address = START_TEXT_RVA;
-	section->st_virtual_size = assembly->meta_size +  assembly->code.index;
+	section->st_virtual_address = assembly->text_rva;
+	section->st_virtual_size = assembly->meta_size + assembly->code.index;
 	section->st_raw_data_size = section->st_virtual_size + (FILE_ALIGN - 1);
 	section->st_raw_data_size &= ~(FILE_ALIGN - 1);
 	section->st_raw_data_ptr = TEXT_OFFSET;
 	section->st_flags = SECT_FLAGS_HAS_CODE | SECT_FLAGS_MEM_EXECUTE | SECT_FLAGS_MEM_READ;
+
+	reloc = section + 1;
+	strcpy (reloc->st_name, ".reloc");
+	reloc->st_virtual_address = section->st_virtual_address + section->st_raw_data_size;
+	reloc->st_virtual_size = 12;
+	reloc->st_raw_data_size = reloc->st_virtual_size + (FILE_ALIGN - 1);
+	reloc->st_raw_data_size &= ~(FILE_ALIGN - 1);
+	reloc->st_raw_data_ptr = section->st_raw_data_ptr + section->st_raw_data_size;
+	reloc->st_flags = SECT_FLAGS_MEM_DISCARDABLE | SECT_FLAGS_HAS_INITIALIZED_DATA | SECT_FLAGS_MEM_READ;
+	
+
+	header->pe.pe_code_size = section->st_raw_data_size;
+	header->pe.pe_rva_entry_point = TEXT_OFFSET + CLI_H_SIZE + entry_offset;
 
 	/* 
 	 * align: build_compressed_metadata () assumes metadata is aligned 
