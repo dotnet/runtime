@@ -633,4 +633,145 @@ public class Tests {
 	static int test_0_marshal_small_struct_delegate11 () {
 		return mono_test_marshal_small_struct_delegate (new SmallStructDelegate11 (delegate_test_struct));
 	}
+
+	/*
+	 * Passing arrays
+	 */
+	public delegate int ArrayDelegate1 (int i, 
+										string j, 
+										[In, MarshalAs(UnmanagedType.LPArray, 
+													   ArraySubType=UnmanagedType.LPStr, SizeParamIndex=0)] string[] arr);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_array_delegate")]
+	public static extern int mono_test_marshal_array_delegate1 (string[] arr, int len, ArrayDelegate1 d);
+
+	public static int array_delegate1 (int i, string j, string[] arr) {
+		if (arr.Length != 2)
+			return 1;
+		if ((arr [0] != "ABC") || (arr [1] != "DEF"))
+			return 2;
+		return 0;
+	}
+
+	static int test_0_marshal_array_delegate_string () {	
+		string[] arr = new string [] { "ABC", "DEF" };
+		return mono_test_marshal_array_delegate1 (arr, arr.Length, new ArrayDelegate1 (array_delegate1));
+	}
+
+	public static int array_delegate2 (int i, string j, string[] arr) {
+		return (arr == null) ? 0 : 1;
+	}
+
+	static int test_0_marshal_array_delegate_null () {	
+		return mono_test_marshal_array_delegate1 (null, 0, new ArrayDelegate1 (array_delegate2));
+	}
+
+	public delegate int ArrayDelegate3 (int i, 
+										string j, 
+										[In, MarshalAs(UnmanagedType.LPArray, 
+													   ArraySubType=UnmanagedType.LPStr, SizeParamIndex=3)] string[] arr);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_array_delegate")]
+	public static extern int mono_test_marshal_array_delegate3 (string[] arr, int len, ArrayDelegate3 d);
+
+	public static int array_delegate3 (int i, string j, string[] arr) {
+		return (arr == null) ? 0 : 1;
+	}
+
+	static int test_0_marshal_array_delegate_bad_paramindex () {
+		try {
+			mono_test_marshal_array_delegate3 (null, 0, new ArrayDelegate3 (array_delegate3));
+			return 1;
+		}
+		catch (MarshalDirectiveException) {
+			return 0;
+		}
+	}
+
+	public delegate int ArrayDelegate4 (int i, 
+										string j, 
+										[In, MarshalAs(UnmanagedType.LPArray, 
+													   ArraySubType=UnmanagedType.LPStr, SizeParamIndex=1)] string[] arr);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_array_delegate")]
+	public static extern int mono_test_marshal_array_delegate4 (string[] arr, int len, ArrayDelegate4 d);
+
+	public static int array_delegate4 (int i, string j, string[] arr) {
+		return (arr == null) ? 0 : 1;
+	}
+
+	static int test_0_marshal_array_delegate_bad_paramtype () {
+		try {
+			mono_test_marshal_array_delegate4 (null, 0, new ArrayDelegate4 (array_delegate4));
+			return 1;
+		}
+		catch (MarshalDirectiveException) {
+			return 0;
+		}
+	}
+
+	public delegate int ArrayDelegate5 (int i, 
+										string j, 
+										[In, MarshalAs(UnmanagedType.LPArray, 
+													   ArraySubType=UnmanagedType.LPWStr, SizeParamIndex=0)] string[] arr);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_array_delegate", CharSet=CharSet.Unicode)]
+	public static extern int mono_test_marshal_array_delegate5 (string[] arr, int len, ArrayDelegate5 d);
+
+	public static int array_delegate5 (int i, string j, string[] arr) {
+		if (arr.Length != 2)
+			return 1;
+		if ((arr [0] != "ABC") || (arr [1] != "DEF"))
+			return 2;
+		return 0;
+	}
+
+	static int test_0_marshal_array_delegate_unicode_string () {	
+		string[] arr = new string [] { "ABC", "DEF" };
+		return mono_test_marshal_array_delegate5 (arr, arr.Length, new ArrayDelegate5 (array_delegate5));
+	}
+
+	public delegate int ArrayDelegate6 (int i, 
+										string j, 
+										[In, MarshalAs(UnmanagedType.LPArray, 
+													   ArraySubType=UnmanagedType.LPStr, SizeConst=2)] string[] arr);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_array_delegate")]
+	public static extern int mono_test_marshal_array_delegate6 (string[] arr, int len, ArrayDelegate6 d);
+
+	public static int array_delegate6 (int i, string j, string[] arr) {
+		if (arr.Length != 2)
+			return 1;
+		if ((arr [0] != "ABC") || (arr [1] != "DEF"))
+			return 2;
+		return 0;
+	}
+
+	static int test_0_marshal_array_delegate_sizeconst () {	
+		string[] arr = new string [] { "ABC", "DEF" };
+		return mono_test_marshal_array_delegate6 (arr, 1024, new ArrayDelegate6 (array_delegate6));
+	}
+
+
+	public delegate int ArrayDelegate7 (int i, 
+										string j, 
+										[In, MarshalAs(UnmanagedType.LPArray, 
+													   ArraySubType=UnmanagedType.LPStr, SizeConst=1, SizeParamIndex=0)] string[] arr);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_array_delegate")]
+	public static extern int mono_test_marshal_array_delegate7 (string[] arr, int len, ArrayDelegate7 d);
+
+	public static int array_delegate7 (int i, string j, string[] arr) {
+		if (arr.Length != 2)
+			return 1;
+		if ((arr [0] != "ABC") || (arr [1] != "DEF"))
+			return 2;
+		return 0;
+	}
+
+	static int test_0_marshal_array_delegate_sizeconst_paramindex () {	
+		string[] arr = new string [] { "ABC", "DEF" };
+		return mono_test_marshal_array_delegate7 (arr, 1, new ArrayDelegate7 (array_delegate7));
+	}
+
 }
