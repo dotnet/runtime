@@ -28,3 +28,4 @@
 #undef WITH_BUNDLE
 #undef HAVE_GETHOSTBYNAME2_R
 #undef HAVE_ICU
+#undef HAVE_KW_THREAD

@@ -532,6 +532,7 @@ if test x$platform_win32 = xno; then
 	dnl *** Checks for libpthread ***
 	dnl *****************************
 	AC_CHECK_LIB(pthread, main, LIBS="$LIBS -lpthread")
+	AC_CHECK_HEADERS(pthread.h)
 	AC_CHECK_FUNCS(pthread_mutex_timedlock)
 	AC_MSG_CHECKING(for PTHREAD_MUTEX_RECURSIVE)
 	AC_TRY_COMPILE([ #include <pthread.h>], [
@@ -545,6 +546,46 @@ if test x$platform_win32 = xno; then
 		AC_DEFINE(USE_MONO_MUTEX)
 	])
 	AC_CHECK_FUNCS(pthread_attr_setstacksize)
+
+	dnl ***********************************
+	dnl *** Checks for working __thread ***
+	dnl ***********************************
+	AC_MSG_CHECKING(for working __thread)
+	AC_TRY_RUN([
+		#include <pthread.h>
+
+		__thread int i;
+		static int res1, res2;
+
+		void thread_main (void *arg)
+		{
+			i = arg;
+			sleep (1);
+			if (arg == 1)
+				res1 = (i == arg);
+			else
+				res2 = (i == arg);
+		}
+
+		int main () {
+			pthread_t t1, t2;
+
+			i = 5;
+
+			pthread_create (&t1, NULL, thread_main, 1);
+			pthread_create (&t2, NULL, thread_main, 2);
+
+			pthread_join (t1, NULL);
+			pthread_join (t2, NULL);
+
+			return !(res1 + res2 == 2);
+		}
+	], [
+			AC_MSG_RESULT(yes)
+			AC_DEFINE(HAVE_KW_THREAD)
+	], [
+			AC_MSG_RESULT(no)
+	])
 
 	dnl ********************************
 	dnl *** Checks for semaphore lib ***

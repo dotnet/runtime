@@ -1,3 +1,7 @@
+2003-11-06  Zoltan Varga  <vargaz@freemail.hu>
+
+	* configure.in acconfig.h: Add check for __thread keyword in gcc.
+
 2003-10-29  Dick Porter  <dick@ximian.com>
 
 	* man/mono.1: Document MONO_EXTERNAL_ENCODINGS variable
