@@ -1327,7 +1327,8 @@ emit_method (MonoAotCompile *acfg, MonoCompile *cfg)
 		
 		if ((patch_info->type == MONO_PATCH_INFO_LABEL) ||
 			(patch_info->type == MONO_PATCH_INFO_BB) ||
-			(patch_info->type == MONO_PATCH_INFO_GOT_OFFSET))
+			(patch_info->type == MONO_PATCH_INFO_GOT_OFFSET) ||
+			(patch_info->type == MONO_PATCH_INFO_NONE))
 			/* Nothing to do */
 			continue;
 
@@ -1610,7 +1611,13 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		//printf ("START:           %s\n", mono_method_full_name (method, TRUE));
 		//mono_compile_method (method);
 
-		cfg = mini_method_compile (method, opts, mono_get_root_domain (), FALSE, 0);
+		/*
+		 * Since these methods are the only ones which are compiled with
+		 * AOT support, and they are not used by runtime startup/shutdown code,
+		 * the runtime will not see AOT methods during AOT compilation, so it
+		 * does not need to support them by creating a fake GOT etc.
+		 */
+		cfg = mini_method_compile (method, opts, mono_get_root_domain (), FALSE, TRUE, 0);
 		g_assert (cfg);
 
 		if (cfg->disable_aot) {

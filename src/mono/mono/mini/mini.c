@@ -289,8 +289,8 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_AOTCONST(cfg,dest,patch_type,cons) do {    \
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = mono_compile_aot ? OP_GOT_ENTRY : OP_PCONST;	\
-        if (mono_compile_aot) { \
+		(dest)->opcode = cfg->compile_aot ? OP_GOT_ENTRY : OP_PCONST;	\
+        if (cfg->compile_aot) { \
             MonoInst *group, *got_var; \
             NEW_TEMPLOAD ((cfg), got_var, mono_get_got_var (cfg)->inst_c0); \
 		    NEW_PATCH_INFO ((cfg), group, cons, patch_type); \
@@ -319,7 +319,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_AOTCONST(cfg,dest,patch_type,cons) do {    \
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = mono_compile_aot ? OP_AOTCONST : OP_PCONST;	\
+		(dest)->opcode = cfg->compile_aot ? OP_AOTCONST : OP_PCONST;	\
 		(dest)->inst_p0 = (cons);	\
 		(dest)->inst_i1 = (gpointer)(patch_type); \
 		(dest)->type = STACK_PTR;	\
@@ -343,7 +343,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_METHODCONST(cfg,dest,val) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_METHODCONST, (val))
 
-#define NEW_VTABLECONST(cfg,dest,vtable) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_VTABLE, mono_compile_aot ? (gpointer)((vtable)->klass) : (vtable))
+#define NEW_VTABLECONST(cfg,dest,vtable) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_VTABLE, cfg->compile_aot ? (gpointer)((vtable)->klass) : (vtable))
 
 #define NEW_SFLDACONST(cfg,dest,val) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_SFLDA, (val))
 
@@ -1419,7 +1419,7 @@ inline static MonoInst *
 mono_get_got_var (MonoCompile *cfg)
 {
 #ifdef MONO_ARCH_NEED_GOT_VAR
-	if (!mono_compile_aot)
+	if (!cfg->compile_aot)
 		return NULL;
 	if (!cfg->got_var) {
 		cfg->got_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
@@ -3003,7 +3003,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 	
-	if ((header->init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SHARED))) || mono_compile_aot) {
+	if ((header->init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SHARED))) || cfg->compile_aot) {
 		/* we use a separate basic block for the initialization code */
 		cfg->bb_init = init_localsbb = NEW_BBLOCK (cfg);
 		init_localsbb->real_offset = real_offset;
@@ -4248,7 +4248,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					int temp;
 					MonoInst *iargs [3];
 
-					if (mono_compile_aot) {
+					if (cfg->compile_aot) {
 						cfg->ldstr_list = g_list_prepend (cfg->ldstr_list, GINT_TO_POINTER (n));
 					}
 
@@ -4259,7 +4259,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_TEMPLOAD (cfg, *sp, temp);
 					mono_ldstr (cfg->domain, image, mono_metadata_token_index (n));
 				} else {
-					if (mono_compile_aot)
+					if (cfg->compile_aot)
 						NEW_LDSTRCONST (cfg, ins, image, n);
 					else {
 						NEW_PCONST (cfg, ins, NULL);
@@ -4789,7 +4789,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->domain->special_static_fields)
 				addr = g_hash_table_lookup (cfg->domain->special_static_fields, field);
 
-			if ((cfg->opt & MONO_OPT_SHARED) || (mono_compile_aot && addr)) {
+			if ((cfg->opt & MONO_OPT_SHARED) || (cfg->compile_aot && addr)) {
 				int temp;
 				MonoInst *iargs [2];
 				g_assert (field->parent);
@@ -4801,7 +4801,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoVTable *vtable;
 				vtable = mono_class_vtable (cfg->domain, klass);
 				if (!addr) {
-					if ((!vtable->initialized || mono_compile_aot) && !(klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && mono_class_needs_cctor_run (klass, method)) {
+					if ((!vtable->initialized || cfg->compile_aot) && !(klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && mono_class_needs_cctor_run (klass, method)) {
 						guint8 *tramp = mono_create_class_init_trampoline (vtable);
 						mono_emit_native_call (cfg, bblock, tramp, 
 											   helper_sig_class_init_trampoline,
@@ -4814,7 +4814,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					}
 					addr = (char*)vtable->data + field->offset;
 
-					if (mono_compile_aot)
+					if (cfg->compile_aot)
 						NEW_SFLDACONST (cfg, ins, field);
 					else
 						NEW_PCONST (cfg, ins, addr);
@@ -4854,7 +4854,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else {
 				gboolean is_const = FALSE;
 				MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
-				if (!((cfg->opt & MONO_OPT_SHARED) || mono_compile_aot) && 
+				if (!((cfg->opt & MONO_OPT_SHARED) || cfg->compile_aot) && 
 				    vtable->initialized && (field->type->attrs & FIELD_ATTRIBUTE_INIT_ONLY)) {
 					gpointer addr = (char*)vtable->data + field->offset;
 					/* g_print ("RO-FIELD %s.%s:%s\n", klass->name_space, klass->name, field->name);*/
@@ -5313,7 +5313,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						(strcmp (cmethod->name, "GetTypeFromHandle") == 0) && ip_in_bb (cfg, bblock, ip + 5)) {
 					MonoClass *tclass = mono_class_from_mono_type (handle);
 					mono_class_init (tclass);
-					if (mono_compile_aot)
+					if (cfg->compile_aot)
 						NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, image, n);
 					else
 						NEW_PCONST (cfg, ins, mono_type_get_object (cfg->domain, handle));
@@ -5323,7 +5323,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				} else {
 					MonoInst *store, *addr, *vtvar;
 
-					if (mono_compile_aot)
+					if (cfg->compile_aot)
 						NEW_LDTOKENCONST (cfg, ins, image, n);
 					else
 						NEW_PCONST (cfg, ins, handle);
@@ -7702,7 +7702,7 @@ mono_codegen (MonoCompile *cfg)
 				mono_domain_unlock (cfg->domain);
 			}
 
-			if (!mono_compile_aot)
+			if (!cfg->compile_aot)
 				/* In the aot case, the patch already points to the correct location */
 				patch_info->ip.i = patch_info->ip.label->inst_c0;
 			for (i = 0; i < patch_info->data.table->table_size; i++) {
@@ -7722,7 +7722,8 @@ mono_codegen (MonoCompile *cfg)
 				 mono_method_full_name (cfg->method, TRUE), 
 				 cfg->native_code, cfg->native_code + cfg->code_len, cfg->domain->friendly_name);
 
-	mono_arch_patch_code (cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors);
+	if (!cfg->compile_aot)
+		mono_arch_patch_code (cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors);
 
 	if (cfg->method->dynamic) {
 		mono_code_manager_commit (cfg->dynamic_info->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
@@ -8053,7 +8054,7 @@ remove_critical_edges (MonoCompile *cfg) {
 
 
 MonoCompile*
-mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, int parts)
+mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, gboolean compile_aot, int parts)
 {
 	MonoMethodHeader *header = mono_method_get_header (method);
 	guint8 *ip = (guint8 *)header->code;
@@ -8074,6 +8075,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	cfg->bb_hash = g_hash_table_new (NULL, NULL);
 	cfg->domain = domain;
 	cfg->verbose_level = mini_verbose;
+	cfg->compile_aot = compile_aot;
 	cfg->intvars = mono_mempool_alloc0 (cfg->mempool, sizeof (guint16) * STACK_MAX * 
 					    mono_method_get_header (method)->max_stack);
 
@@ -8387,7 +8389,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain)
 		return NULL;
 	}
 
-	cfg = mini_method_compile (method, opt, target_domain, TRUE, 0);
+	cfg = mini_method_compile (method, opt, target_domain, TRUE, FALSE, 0);
 
 	mono_domain_lock (target_domain);
 

@@ -549,6 +549,7 @@ typedef struct {
 	gboolean         disable_ssa;
 	gboolean         run_cctors;
 	gboolean         need_lmf_area;
+	gboolean         compile_aot;
 	gpointer         debug_info;
 	guint32          lmf_offset;
 	guint16          *intvars;
@@ -732,7 +733,7 @@ void      mono_analyze_liveness             (MonoCompile *cfg);
 void      mono_linear_scan                  (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_mask);
 void      mono_create_jump_table            (MonoCompile *cfg, MonoInst *label, MonoBasicBlock **bbs, int num_blocks);
 int       mono_compile_assembly             (MonoAssembly *ass, guint32 opts, const char *aot_options);
-MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, int parts);
+MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, gboolean compile_aot, int parts);
 void      mono_destroy_compile              (MonoCompile *cfg);
 void      mono_aot_init                     (void);
 MonoJitInfo*  mono_aot_get_method           (MonoDomain *domain,

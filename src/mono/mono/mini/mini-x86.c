@@ -2204,7 +2204,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	if (cfg->prof_options & MONO_PROFILE_COVERAGE) {
 		MonoProfileCoverageInfo *cov = cfg->coverage_info;
-		g_assert (!mono_compile_aot);
+		g_assert (!cfg->compile_aot);
 		cpos += 6;
 
 		cov->data [bb->dfn].cil_code = bb->cil_code;
@@ -3499,10 +3499,6 @@ mono_arch_register_lowlevel_calls (void)
 {
 }
 
-static gpointer *aot_got = NULL;
-static guint32 got_len = 0;
-static guint32 got_offset = 0;
-
 void
 mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
 {
@@ -3513,46 +3509,6 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		const unsigned char *target;
 
 		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
-
-		if (mono_compile_aot) {
-			switch (patch_info->type) {
-			case MONO_PATCH_INFO_BB:
-			case MONO_PATCH_INFO_LABEL:
-			case MONO_PATCH_INFO_GOT_OFFSET:
-				break;
-			case MONO_PATCH_INFO_METHOD_REL:
-			case MONO_PATCH_INFO_SWITCH:
-			case MONO_PATCH_INFO_IID:
-			case MONO_PATCH_INFO_METHODCONST:
-			case MONO_PATCH_INFO_CLASS:
-			case MONO_PATCH_INFO_IMAGE:
-			case MONO_PATCH_INFO_FIELD:
-			case MONO_PATCH_INFO_VTABLE:
-			case MONO_PATCH_INFO_SFLDA:
-			case MONO_PATCH_INFO_EXC_NAME:
-			case MONO_PATCH_INFO_LDSTR:
-			case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-			case MONO_PATCH_INFO_LDTOKEN: {
-				/* Just to make code run at aot time work */
-				if (aot_got == NULL) {
-					aot_got = g_new0 (gpointer, 1024);
-					got_len = 1024;
-					got_offset = 0;
-				} else if (got_offset >= got_len) {
-					got_len *= 2;
-					aot_got = g_realloc (aot_got, got_len * sizeof (gpointer));
-				}
-
-				aot_got [got_offset] = (gpointer)target;
-				target = (const unsigned char*)(got_offset * sizeof (gpointer));
-				got_offset ++;
-
-				break;
-			}
-			default:
-				break;
-			}
-		}
 
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_IP:
@@ -3568,11 +3524,9 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_R8:
 			*((gconstpointer *)(ip + 2)) = target;
 			continue;
-		case MONO_PATCH_INFO_GOT_OFFSET: {
-			guint32 offset = mono_arch_get_patch_offset (ip);
-			*((guint32*)(ip + offset)) = (guint32)((guint8*)aot_got - (guint8*)ip);
-			continue;
-		}
+		case MONO_PATCH_INFO_GOT_OFFSET:
+			g_assert_not_reached ();
+			break;
 		case MONO_PATCH_INFO_METHOD_REL:
 		case MONO_PATCH_INFO_SWITCH:
 		case MONO_PATCH_INFO_IID:
