@@ -1,4 +1,6 @@
-* Mono Debugger
+* Screenshots
+
+** Mono Debugger
 
 	Some shots of the <a href="jit-debug.html">Mono Debugger</a>
 
@@ -23,7 +25,7 @@
 	  </tr>
 	</table>
 
-* Mono Documentation Browser
+** Mono Documentation Browser
 
 	The Mono Documentation Browser is available from <a
 	href="anoncvs.html">CVS</a>, module `monodoc'.
@@ -49,7 +51,7 @@
 	  </tr>
 	</table>
 
-* Mono Basic
+** Mono Basic
 
 	The Mono Basic compiler ships with the Mono distribution.
 
@@ -64,7 +66,7 @@
 	  </tr>
 	</table>
 
-* Platano Media Player
+** Platano Media Player
 
 	Alp's <a href="http://www.atoker.com/platano/">Platano</a>
 	Media Player is written with Gtk# (with GStreamer support):
@@ -92,6 +94,51 @@
 	  </tr>
 	</table>
 
-* GSIRC
+** GSIRC
 
+	Alp's <a href="http://www.atoker.com/gsirc/">GSIRC</a>
+	Gtk-Sharp IRC written with Gtk#
+
+	<table border=1>
+	  <tr>
+	    <td>
+	      <a href="http://go-mono.com/images/gsirc-0.2a_overview.jpg"><img src="images/gsirc-0.2a_overview-thumb.jpg"></a>
+	    </td>
+	  </tr>
+	  <tr>
+	    GSIRC is shown with the preferences dialog and chatting on some channels (rooms).
+	  </tr>
+	</table>
+
+** SQL# For GTK#
+
+	Daniel Morgan's SQL query tool that runs on Mono on Linux and Windows.  It is
+	written in C# and allows you to connect to various Mono ADO.NET providers and
+	enter SQL commands.
+
+	<table border=1>
+	  <tr>
+	    <td>
+	      <img src="http://go-mono.com/images/sqlsharp.png"></a>
+	    </td>
+	  </tr>
+	  <tr>
+	    SQL# For GTK# is shown retrieving data from a Microsoft SQL Server 2000 database.
+	  </tr>
+	</table>
+
+** SkyNET
+
+	SkyNET is written in C# and uses GTK# for displaying a star chart.    
+
+	<table border=1>
+	  <tr>
+	    <td>
+	      <img src="http://go-mono.com/images/skynet.png"></a>
+	    </td>
+	  </tr>
+	  <tr>
+	    SQL# For GTK# is shown retrieving data from a Microsoft SQL Server 2000 database.
+	  </tr>
+	</table>
 	

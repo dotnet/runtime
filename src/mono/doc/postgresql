@@ -1,30 +1,79 @@
 * PostgreSQL Data Provider
 
+ There are two ADO.NET data providers for <a href="http://www.postgresql.org/">PostgreSQL</a> in Mono:
+
 <ul>
-	<li>Exists in namespace Mono.Data.PostgreSql and assembly Mono.Data.PostgreSql</li>
-	
-	<li>Is a Mono Data Provider for the <a href="http://www.postgresql.org/">PostgreSQL</a>
-	client/server database management system.</li>
-	
-	<li>Written in C# and has C# bindings to the PostgreSQL C Client library pq.dll on Windows
-	and libpq.so on Linux.</li>
-	
-	<li>Alternative to the PostgreSQL provider in Mono:
+
+	<li><a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a>
 		<ul>
-			<li><a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a>
-			is a Managed PostgreSQL provider written in 100% C#, does not require a client library,
-			and works on Microsoft .NET and Mono.  Npgsql providers works in the SQL# command-line version
-			and the GTK# version.
-			</li>
+			<li>a .NET Managed Data Provider for PostgreSQL
+			
+			<li>Written in 100% C#</li>
+			
+			<li>does not require a client library</li>
+			
+			<li>works on Mono and Microsoft .NET</li>
+			
+			<li>created by Francisco Figueiredo jr. and has many developers working on it
+			
+			<li>works in the SQL# (command-line and GTK# GUI versions)</li>
+			
+			<li>in namespace Npgsql and assembly Npgsql and is found in mcs
+			at mcs/class/Npgsql</li>
 		</ul>
 	</li>
 	
-	<li>See Testing for both Mono's Mono.Data.PostgreSqlClient and Npgsql.</li>
+	<li>Mono.Data.PostgreSQL (deprecated)
+		<ul>
+			<li>Deprecated in favor of Npgsql</li>
+			
+			<li>Exists in namespace Mono.Data.PostgreSql and assembly Mono.Data.PostgreSql</li>
+	
+			<li>Is a Mono Data Provider for the <a href="http://www.postgresql.org/">PostgreSQL</a>
+				client/server database management system.</li>
+	
+			<li>Written in C# and has C# bindings to the PostgreSQL C Client library pq.dll on Windows
+				and libpq.so on Linux.</li>
+		</ul>
+	</li>
+
 </ul>
+
+ Below, see separate Testing sections for Npgsql and Mono.Data.PostgreSqlClient.
 
 ** Current Status
 
 <ul>
+	<li>Npgsql
+		<ul>
+			<li>Builds and Runs on both Microsoft .NET and Mono.</li>
+			<li>Works using SQL# (command-line and GTK# versions)</li>
+			<li>You can send insert, update, delete queries 
+				through NpgsqlCommand.ExecuteNonQuery() method.</li>
+			<li>You can send queries like, select count(*) from table, select version()
+				with NpgsqlCommand.ExecuteScalar() method.</li>
+			<li>There is logging support. (Thanks Dave Page)
+				To use it, place code like that in your program:</li>
+
+<pre>      
+      // Enable logging.
+	  NpgsqlEventLog.Level = LogLevel.Debug;            // LogLevel.
+	  NpgsqlEventLog.LogName = "NpgsqlTests.LogFile";   // LogFile.
+</pre>
+    
+			<li>You can use Npgsql with Mono (Thanks Kristis Makris). It is not working perfectly.</li>
+			<li>There is a winforms test suite (Thanks Dave Page).</li>
+			<li>Clearer code in NpgsqlConnection removing *magic* numbers and constants. (Thanks Kristis Makris)</li>
+			<li>Better support of ODBC-like ConnectionString in NpgsqlConnection (Thanks Dave Page)</li>
+			<li>Thanks Ulrich Sprick for all discussion and ideas.</li>
+
+		</ul>
+	</li>
+	<li>Mono.Data.PostgreSQL status
+	<ul>
+	
+	<li>Deprecated in favor of Npgsql</li>
+	
 	<li>We are able to do simple CREATE TABLE, DROP TABLE, UPDATE, INSERT, and
 	DELETE SQL commands using the ExecuteNonQuery method in PgSqlCommand.</li>
 	
@@ -69,9 +118,6 @@
 	Input Parameters are currently supported.  Output, Input/Output,
 	and Return parameters still need to be done.</li>
 	
-	<li>A lot of functionality in System.Data is missing, but the 
-	infrastructure is starting to come together.</li>
-	
 	<li>A lot of Exceptions need to be thrown for various exceptions.  However,
 	PgSqlException, PgSqlErrorCollection, and PgSqlError have been partially
 	implemented.</li>
@@ -82,21 +128,48 @@
 	See the test mcs/class/System.Data/Test/TestSqlDataAdapter.cs to see it in action.</li>
 	
 	<li>Works in the SQL# command-line version
-			and the GTK# version.</li>
+			and the GTK# version on Linux.  It only works in SQL# command-line version
+			on Windows.</li>
+			
+	</ul>
+	</li>
+			
 </ul>
 
 ** Action Plan
+	<ul>
+		<li>More testing and fixing bugs</li>
+		
+		<li>Better error handling</li>
+		
+		<li>More Data Types to use</li>
+		
+		<li>Any features for Npgsql should be implemented in Npgsql's main cvs repository at
+		gborg.postgresql.org.  Most bugs should be fixed in gborg.postgresql.org's cvs.
+		Only bugs neccessary for building and running of Npgsql	on Mono can be done in Mono cvs, 
+		but once applied they should be sent to Npgsql's mailing list
+		at gborg.postgresql.org for inclusion into cvs there.  Whenever there is 
+		a release of Npgsql (determined by Francisco Figueiredo jr. or a release
+		of Mono (determined by Miguel de Icaza), then the Npgsql source 
+		in gborg.postgresql.org's cvs will be used to update the Npgsql source in
+		Mono's cvs. 
+		</li>
+		
+		<li>Mono.Data.PostgreSqlClient even though deprecated can still 
+		accept bug fixes. This is because other areas, such as, ASP.NET examples
+		may still use this provider.</li>
+		
+		<li>Add any missing functionality to Npgsql. If this funtionality works on
+		.NET but not on Mono, implement the missing features or fix the bugs in Mono</li>
 
-	<p>More testing and fixing bugs...
+		<li>Npgsql has replaced Mono.Data.PostgreSqlClient as the provider of
+		choice to use.  However, Mono.Data.PostgreSqlClient will remain in a
+		deprecated state until nobody uses it anymore - then it can be removed</li>
+		
+		<li>Implement more of PostgreSQL 7.3 features in Npgsql</li>
+	</ul>
 
-	<p>Eventually replace the PostgreSQL data provider in Mono
-	with <a href="http://gborg.postgresql.org/project/npgsql/projdisplay.php">Npgsql</a>.
-	Npgsql is a .Net Data Provider for PostgreSQL which implements 
-	the <a href="http://developer.postgresql.org/docs/postgres/protocol.html">PostgreSQL Frontend/Backend Protocol</a>.
-	Npgsql is implemented in 100% C#.  This provider was created by Francisco Figueiredo jr.
-	and has many programmers developing the provider.
-
-** Testing Mono's Mono.Data.PostgreSqlClient
+** Testing Mono.Data.PostgreSqlClient
 
 	<ul>
 		* <p>In order to test Mono.Data.PostgreSqlClient, you will need to have

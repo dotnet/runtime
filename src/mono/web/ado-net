@@ -54,6 +54,8 @@
 						<li><a href="http://www.hughes.com.au/">miniSQL</a></li>
 						<li><a href="http://www.sleepycat.com/">BerkeleyDB (Sleepycat)</a></li>
 						<li><a href="http://www.sapdb.org/">SapDB</a></li>
+						<li><a href="http://www-3.ibm.com/software/data/informix/">Informix</a></li>	
+						<li><a href="http://msdn.microsoft.com/vfoxpro/">Foxpro</a></li>	
 						<li>Microsoft Access - could be done by creating C# bindings to <a href="http://mdbtools.sourceforge.net">MDB Tools</a></li>
 						<li>dbase or xbase type database files</li>
 						<li>Others are welcome</li>
@@ -76,8 +78,54 @@
 			</li>
 		</ul>
 	<br>
-	<li>Create Tools for Configuration, Testing, and Entering SQL Queries  
+	<li>Create Tools to be used for ADO.NET and other technologies (ASP.NET, XML, etc)
+	
 	<ul>
+		<li><b>XML Schema Definition tool</b> <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cptools/html/cpconxmlschemadefinitiontoolxsdexe.asp">xsd.exe</a> needs 
+			to be created.
+			
+			<ul>
+				<li>This tool
+					would work like the xsd.exe tool included with 
+					the .NET Framework.  The Xsd.exe tools has the
+					following uses:
+					<ul>
+					<li><b>XDR to XSD</b> - used to generate an XML schema from an XDR (XML Data Reduced schema) file. 
+						XDR was used by Microsoft prior to XSD becoming a W3C recommendation.  So, this needs
+						to be supported for legacy reasons</li>
+					<li><b>XML to XSD</b> - used to generate an XML schema from an XML file</li> 
+					<li><b>XSD to DataSet</b> - used to generate DataSet classes from an XSD schema file.  The
+						DataSet classes created can then be used with XML data</li>
+					<li><b>XSD to Classes</b> - used to generate classes from an XSD schema file. The 
+					    classes created can be used with System.XML.Serialization.XMLSerializer 
+					    to read and write XML code that follows the schema</li>
+					<li><b>Classes to XSD</b> - used to generate an XML schema 
+						from type(s) in a assembly file. The 
+						XML schema created by the tool defines the XML format used 
+						by System.XML.Serialization.XMLSerializer</li>
+					</ul>
+				<li>Xsd.exe is used to manipulate XML schemas that 
+					follow the http://www.w3.org/XML/Schema">XML Schema Definition (XSD)</a> language 
+					recommended	by the <a href="http://w3.org/">World Wide Web Consortium (W3C)</a></li>
+					
+				<li>How this tool could be created:
+					<ul>
+						<li>Write xsd.exe in C# and run on Mono</li>
+						<li>Make sure we have XML Schema support in System.Xml.Schema.  Currently,
+						it is wrapped around libxlst</li>
+						<li>XML serialization support in System.Data classes</li>
+						<li>Create the TypedDataSetGenerator class in System.Data</li>
+						<li>Using CodeDOM or Reflection.Emit to create code</li>
+						<li>Make sure DataSet, XmlDataDocument, and related classes 
+						are implemented fully</li>
+					</ul>
+				</li>	
+					
+				<li>
+			</li>
+			</ul>
+		</li>
+	
 		<li><b>SQL# CLI - a command-line tool</b> written in C# to 
 		  execute SQL commands,
 		  test connection strings, and connect to various ADO.NET
@@ -86,20 +134,29 @@
 		  The SQL# CLI can be found in
 		  mcs/tools/SqlSharp/SqlSharpCli.cs</li>
 		  
-		<li><p><b>SQL# GUI - a GUI tool</b> written in C# to 
+		<li><p><b>SQL# GUI tool</b> written in C# to 
 		  execute SQL commands. 
 		  Currently, there is SQL# For GTK# which
 		  can be found at 
 		  mcs/tools/SqlSharp/gui/gtk-sharp  
 		  It has a SQL editor with 
 		  syntax hi lighting of SQL keywords.  This will be
-		  moving to its own cvs module sqlsharpgtk.</li>
-		  
+		  moving to its own cvs module sqlsharpgtk. A GUI version
+		  for QT# or System.Windows.Forms could be created too.</li>	  
+		
+		<li><b>Application XML Configuration File Editor</b> - a tool
+		to create and edit an application configuration file, such as,
+		we have a .net application named Accouting.exe, the tool could edit
+		the application configuration file Accounting.exe.config so a user could
+		connect to the database used by the program.  This tool has not
+		been created.</li>
+		
 		<li><b>Configuration Command-Line and GUI Tools for ADO.NET</b>.  
 		  These tools have not been started.  The tools would be written in
 		  C# and run on Mono. The
 		  configuration tool can be used to do the following:
 		  <ul> 
+			<li>bebased on the Application XML Configuration File Editor</li>
 			<li>setup DSNs for the ODBC and OLE-DB
 				providers and configurations for 
 				their underlying libraries (unixODBC and libgda)</li>
@@ -109,6 +166,7 @@
 				freetds.conf for Microsoft SQL Server and Sybase</li>
 		  </ul>
 		</li>
+
 	</ul>
 </ul>
 	
@@ -122,13 +180,17 @@
 	See their respective web page for
 	more information.
 	
-	<p>Constraints need lots of work
+	<p><b>Constraints</b> need lots of work
 	
-	<p>TypeDataSetGenerator needs to be stubbed and implemented.
+	<p><b>XML Schema Definition tool</b> xsd.exe that is included
+	in the .NET Framework has not been created for Mono
+	
+	<p><b>TypeDataSetGenerator</b> needs to be stubbed and implemented.
 		
 	<p><b>DataSet, DataAdaptor, DataTable, DataRelation, DataRow, DataColumn,
 	DataColumnCollection, DataRowCollection, and others</b> need more work.  There are
-	many classes that are just stubs and need to be implemented.  
+	many classes that are just stubs and need to be implemented.  Ville Palo has been
+	doing much testing here.
 
 	<p><b>XML support in System.Data</b> needs work.  This involves working on
 	the classes: DataSet, XmlDataDocument, and the method ExecuteXmlReader() that
@@ -138,21 +200,21 @@
 	heavily modifying DataSet, XmlDataDocument, and other classes for reading
 	and writing XML.
 	
-	<p><b>ADO.NET Provider Factory</b> has been started by Brian Ritchie.  The 
-	Provider Factory is way to dynamically create
-	connections, commands, parameters, and data adapters based on configuration information.  The
-	provider factory also provides utility functions needed by a lot of 
+	<p><b>ADO.NET Provider Factory</b> was created by Brian Ritchie.  The 
+	Provider Factory is a way to dynamically create
+	connections, commands, parameters, and data adapters based on configuration 
+	information.  The provider factory also provides utility functions needed by a lot of 
 	providers but are not exposed via the provider.  The ProviderFactory
 	is found at mcs/class/Mono.Data and includes a test named test.cs for it in
 	mcs/class/Mono.Data/Test.  Also, take a look at the sample .config file for the
 	test.exe application named test.exe.config.  The .config file is automatically
 	read when you use the Mono.Data.ProviderFactory or Mono.Data.DataTools.
 		
-	<p><b>Integration with ASP.NET</b> has been started, such as, data binding of
-	a DataTable in a DataSet to a System.Web.UI.WebControls.DataGrid.  This may 
-	involve implementing or fixing many classes
-	in System.Web and System.Data. If you want to help, 
-	contact Gonzalo Paniagua Javier. Here is information about using ADO.NET in ASP.NET:
+	<p><b>Integration with ASP.NET</b> has been created.  Data binding of
+	a DataTable in a DataSet to a System.Web.UI.WebControls.DataGrid works.  Data binding
+	of other types works too.
+	
+	<p><b>Database Access from ASP.NET</b>:
 	<ul>
 		<li>Take a look at xsp in cvs and look at the examples in test: dbpage1.aspx
 		and dbpage2.aspx:
@@ -194,7 +256,7 @@
 	has not been started, such as, data binding
 	to a GtkTreeView.  This may involve creating new classes
 	to go between the glist data model and the ADO.NET data model.
-	Mike Kestner would be the best person to ask for help on GTK#.
+	Mike Kestner or Rachel Hestilov would be the best people to ask for help on GTK#.
 	
 	<p><b>Integration with QT#</b> has not been started.  Any information on 
 	how this can be done is appreciated.  Adam Treat would be the best 

@@ -1,3 +1,11 @@
+2003-01-29  Daniel Morgan <danmorg@sc.rr.com>
+
+	* doc/postgresql
+	* doc/mysql
+	* doc/ado-net: updates to web pages
+	
+	* man/sqlsharp.1: update to man page
+
 2003-01-28  Gonzalo Paniagua Javier <gonzalo@ximian.com>
 
 	* configure.in: added WIN32_THREADS flag when building under windows.
