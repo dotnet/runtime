@@ -1624,7 +1624,7 @@ reg: LDELEMA (reg, coni4) {
 	int ind;
 
 	x86_alu_membase_imm (s->code, X86_CMP, tree->left->reg1, G_STRUCT_OFFSET (MonoArray, max_length), tree->right->data.i);
-	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_GE, FALSE, "IndexOutOfRangeException");
+	EMIT_COND_SYSTEM_EXCEPTION (X86_CC_GT, FALSE, "IndexOutOfRangeException");
        
 	ind = tree->data.i * tree->right->data.i + G_STRUCT_OFFSET (MonoArray, vector);
 	
