@@ -91,6 +91,10 @@
   </tr>
 </table>
 
+@item Jan, 15th: DB2 provider
+
+	Christopher Bockner has contributed a DB2 System.Data client. 
+
 @item Jan, 13th, 2003: Mono 0.18 released
 
 	Mono 0.18 has been released.  Check out the <a
