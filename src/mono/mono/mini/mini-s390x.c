@@ -111,7 +111,7 @@ if (ins->flags & MONO_INST_BRLABEL) { 							\
 /*----------------------------------------*/
 #define S390_CALLER_FREGS (0x73f8)
 
-#define S390_TRACE_STACK_SIZE (5*sizeof(gint32)+3*sizeof(gdouble))
+#define S390_TRACE_STACK_SIZE (5*sizeof(gint64)+3*sizeof(gdouble))
 
 /*========================= End of Defines =========================*/
 
@@ -127,9 +127,9 @@ if (ins->flags & MONO_INST_BRLABEL) { 							\
 #include <mono/metadata/profiler-private.h>
 #include <mono/utils/mono-math.h>
 
-#include "mini-s390.h"
+#include "mini-s390x.h"
 #include "inssel.h"
-#include "cpu-s390.h"
+#include "cpu-s390x.h"
 
 /*========================= End of Includes ========================*/
 
@@ -197,7 +197,7 @@ typedef struct {
 } CallInfo;
 
 typedef struct {
-	gint32	gr[5];		/* R2-R6			    */
+	gint64	gr[5];		/* R2-R6			    */
 	gdouble fp[3];		/* F0-F2			    */
 } __attribute__ ((packed)) RegParm;
 
@@ -207,7 +207,7 @@ typedef struct {
 /*                   P r o t o t y p e s                            */
 /*------------------------------------------------------------------*/
 
-static guint32 * emit_memcpy (guint8 *, int, int, int, int, int);
+static guint8 * emit_memcpy (guint8 *, int, int, int, int, int);
 static void indent (int);
 static guint8 * restoreLMF(MonoCompile *, guint8 *);
 static guint8 * backUpStackPtr(MonoCompile *, guint8 *);
@@ -215,7 +215,7 @@ static void decodeParm (MonoType *, void *, int);
 static void enter_method (MonoMethod *, RegParm *, char *);
 static void leave_method (MonoMethod *, ...);
 static gboolean is_regsize_var (MonoType *);
-static void add_general (guint *, size_data *, ArgInfo *, gboolean);
+static void add_general (guint *, size_data *, ArgInfo *);
 static CallInfo * calculate_sizes (MonoMethodSignature *, size_data *, gboolean);
 static void peephole_pass (MonoCompile *, MonoBasicBlock *);
 static int mono_spillvar_offset (MonoCompile *, int);
@@ -245,7 +245,7 @@ int mono_exc_esp_offset = 0;
 
 static int indent_level = 0;
 
-static const char*const * ins_spec = s390;
+static const char*const * ins_spec = s390x;
 
 /*====================== End of Global Variables ===================*/
 
@@ -275,6 +275,23 @@ mono_arch_regname (int reg) {
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
+/* Name		- mono_arch_is_inst_imm                             */
+/*                                                                  */
+/* Function	- Determine whether an instruction qualifies as an  */
+/*		  immediate.                                        */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+gboolean 
+mono_arch_is_inst_imm (gint64 imm)
+{
+	return s390_is_imm16 (imm);
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
 /* Name		- emit_memcpy                                       */
 /*                                                                  */
 /* Function	- Emit code to move from memory-to-memory based on  */
@@ -282,7 +299,7 @@ mono_arch_regname (int reg) {
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-static guint32*
+static guint8 *
 emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffset)
 {
 	switch (size) {
@@ -401,30 +418,30 @@ restoreLMF(MonoCompile *cfg, guint8 *code)
 {
 	int lmfOffset = 0;
 
-	s390_lr  (code, s390_r13, cfg->frame_reg);
+	s390_lgr (code, s390_r13, cfg->frame_reg);
 
 	lmfOffset = cfg->stack_usage -  sizeof(MonoLMF);
 
 	/*-------------------------------------------------*/
 	/* r13 = my lmf					   */
 	/*-------------------------------------------------*/
-	s390_ahi (code, s390_r13, lmfOffset);
+	s390_aghi (code, s390_r13, lmfOffset);
 
 	/*-------------------------------------------------*/
 	/* r6 = &jit_tls->lmf				   */
 	/*-------------------------------------------------*/
-	s390_l   (code, s390_r6, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, lmf_addr));
+	s390_lg  (code, s390_r6, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, lmf_addr));
 
 	/*-------------------------------------------------*/
 	/* r0 = lmf.previous_lmf			   */
 	/*-------------------------------------------------*/
-	s390_l   (code, s390_r0, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
+	s390_lg  (code, s390_r0, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
 
 	/*-------------------------------------------------*/
 	/* jit_tls->lmf = previous_lmf			   */
 	/*-------------------------------------------------*/
-	s390_l   (code, s390_r13, 0, s390_r6, 0);
-	s390_st  (code, s390_r0, 0, s390_r6, 0);
+	s390_lg  (code, s390_r13, 0, s390_r6, 0);
+	s390_stg (code, s390_r0, 0, s390_r6, 0);
 	return (code);
 }
 
@@ -444,13 +461,13 @@ backUpStackPtr(MonoCompile *cfg, guint8 *code)
 	int stackSize = cfg->stack_usage;
 
 	if (s390_is_imm16 (cfg->stack_usage)) {
-		s390_ahi  (code, STK_BASE, cfg->stack_usage);
+		s390_aghi (code, STK_BASE, cfg->stack_usage);
 	} else { 
 		while (stackSize > 32767) {
-			s390_ahi  (code, STK_BASE, 32767);
+			s390_aghi (code, STK_BASE, 32767);
 			stackSize -= 32767;
 		}
-		s390_ahi  (code, STK_BASE, stackSize);
+		s390_aghi (code, STK_BASE, stackSize);
 	}
 	return (code);
 }
@@ -625,7 +642,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	MonoJitArgumentInfo *arg_info;
 	MonoMethodSignature *sig;
 	char *fname;
-	guint32 ip;
+	guint64 ip;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
 	size_data sz;
@@ -636,7 +653,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	printf ("ENTER: %s(", fname);
 	g_free (fname);
 
-	ip  = (*(guint32 *) (sp+S390_RET_ADDR_OFFSET)) & 0x7fffffff;
+	ip  = (*(guint64 *) (sp+S390_RET_ADDR_OFFSET));
 	printf (") ip: %p sp: %p - ", ip, sp); 
 
 	if (rParm == NULL)
@@ -657,7 +674,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 		if (method->klass->valuetype) { 
 			if (obj) {
 				printf("this:[value:%p:%08x], ", 
-				       this, *((guint32 *)(this+sizeof(MonoObject))));
+				       this, *((guint64 *)(this+sizeof(MonoObject))));
 			} else 
 				printf ("this:[NULL], ");
 		} else {
@@ -726,7 +743,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 		}
 	}	
 	printf("\n");
-	g_free(cinfo);
+	g_free (cinfo);
 }
 
 /*========================= End of Function ========================*/
@@ -744,7 +761,7 @@ leave_method (MonoMethod *method, ...)
 {
 	MonoType *type;
 	char *fname;
-	guint32 ip;
+	guint64 ip;
 	va_list ap;
 
 	va_start(ap, method);
@@ -886,7 +903,7 @@ handle_enum:
 			method->signature->ret->type);
 	}
 
-	ip = ((gint32) __builtin_return_address (0)) & 0x7fffffff;
+	ip = ((gint64) __builtin_return_address (0));
 	printf (" ip: %p\n", ip);
 }
 
@@ -991,7 +1008,8 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 		if (vmv->range.first_use.abs_pos > vmv->range.last_use.abs_pos)
 			continue;
 
-		if (ins->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || (ins->opcode != OP_LOCAL && ins->opcode != OP_ARG))
+		if (ins->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || 
+			(ins->opcode != OP_LOCAL && ins->opcode != OP_ARG))
 			continue;
 
 		/* we can only allocate 32 bit values */
@@ -1054,33 +1072,18 @@ mono_arch_flush_icache (guint8 *code, gint size)
 /*------------------------------------------------------------------*/
 
 static void inline
-add_general (guint *gr, size_data *sz, ArgInfo *ainfo, gboolean simple)
+add_general (guint *gr, size_data *sz, ArgInfo *ainfo)
 {
-	if (simple) {
-		if (*gr > S390_LAST_ARG_REG) {
-			sz->stack_size  = S390_ALIGN(sz->stack_size, sizeof(long));
-			ainfo->offset   = sz->stack_size;
-			ainfo->reg	= STK_BASE;
-			ainfo->regtype  = RegTypeBase;
-			sz->stack_size += sizeof(int);
-			sz->code_size  += 12;    
-		} else {
-			ainfo->reg      = *gr;
-			sz->code_size  += 8;    
-		}
+	if (*gr > S390_LAST_ARG_REG) {
+		sz->stack_size  = S390_ALIGN(sz->stack_size, sizeof(long));
+		ainfo->offset   = sz->stack_size;
+		ainfo->reg	= STK_BASE;
+		ainfo->regtype  = RegTypeBase;
+		sz->stack_size += sizeof(int);
+		sz->code_size  += 12;    
 	} else {
-		if (*gr > S390_LAST_ARG_REG - 1) {
-			sz->stack_size  = S390_ALIGN(sz->stack_size, S390_STACK_ALIGNMENT);
-			ainfo->offset   = sz->stack_size;
-			ainfo->reg	= STK_BASE;
-			ainfo->regtype  = RegTypeBase;
-			sz->stack_size += sizeof(long long);
-			sz->code_size  += 10;   
-		} else {
-			ainfo->reg      = *gr;
-			sz->code_size  += 8;
-		}
-		(*gr) ++;
+		ainfo->reg      = *gr;
+		sz->code_size  += 8;    
 	}
 	(*gr) ++;
 }
@@ -1122,16 +1125,9 @@ calculate_sizes (MonoMethodSignature *sig, size_data *sz,
 	/* area that the callee will use.			    */
 	/*----------------------------------------------------------*/
 
-//	if (sig->ret->byref || string_ctor) {
-//		sz->code_size += 8;
-//		add_general (&gr, sz, cinfo->args+nParm, TRUE);
-//		cinfo->args[nParm].size = sizeof(gpointer);
-//		nParm++;
-//	} else {
-	{
-		simpletype = sig->ret->type;
+	simpletype = sig->ret->type;
 enum_retvalue:
-		switch (simpletype) {
+	switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
@@ -1183,11 +1179,10 @@ enum_retvalue:
 			break;
 		default:
 			g_error ("Can't handle as return value 0x%x", sig->ret->type);
-		}
 	}
 
 	if (sig->hasthis) {
-		add_general (&gr, sz, cinfo->args+nParm, TRUE);
+		add_general (&gr, sz, cinfo->args+nParm);
 		cinfo->args[nParm].size = sizeof(gpointer);
 		nParm++;
 	}
@@ -1200,7 +1195,7 @@ enum_retvalue:
 
 	for (i = 0; i < sig->param_count; ++i) {
 		if (sig->params [i]->byref) {
-			add_general (&gr, sz, cinfo->args+nParm, TRUE);
+			add_general (&gr, sz, cinfo->args+nParm);
 			cinfo->args[nParm].size = sizeof(gpointer);
 			nParm++;
 			continue;
@@ -1212,20 +1207,20 @@ enum_retvalue:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
 			cinfo->args[nParm].size = sizeof(char);
-			add_general (&gr, sz, cinfo->args+nParm, TRUE);
+			add_general (&gr, sz, cinfo->args+nParm);
 			nParm++;
 			break;
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
 		case MONO_TYPE_CHAR:
 			cinfo->args[nParm].size = sizeof(short);
-			add_general (&gr, sz, cinfo->args+nParm, TRUE);
+			add_general (&gr, sz, cinfo->args+nParm);
 			nParm++;
 			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 			cinfo->args[nParm].size = sizeof(int);
-			add_general (&gr, sz, cinfo->args+nParm, TRUE);
+			add_general (&gr, sz, cinfo->args+nParm);
 			nParm++;
 			break;
 		case MONO_TYPE_I:
@@ -1237,7 +1232,7 @@ enum_retvalue:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_ARRAY:
 			cinfo->args[nParm].size = sizeof(gpointer);
-			add_general (&gr, sz, cinfo->args+nParm, TRUE);
+			add_general (&gr, sz, cinfo->args+nParm);
 			nParm++;
 			break;
 		case MONO_TYPE_VALUETYPE:
@@ -1266,22 +1261,22 @@ enum_retvalue:
 				case 1:
 				case 2:
 				case 4:
-					add_general(&gr, sz, cinfo->args+nParm, TRUE);
+					add_general(&gr, sz, cinfo->args+nParm);
 					cinfo->args[nParm].size    = size;
 					cinfo->args[nParm].regtype = RegTypeStructByVal; 
 					nParm++;
 					sz->local_size 		  += sizeof(long);
 					break;
 				case 8:
-					add_general(&gr, sz, cinfo->args+nParm, FALSE);
+					add_general(&gr, sz, cinfo->args+nParm);
 					cinfo->args[nParm].size    = sizeof(long long);
 					cinfo->args[nParm].regtype = RegTypeStructByVal; 
 					nParm++;
 					sz->local_size 		  += sizeof(long);
 					break;
 				default:
-					add_general(&gr, sz, cinfo->args+nParm, TRUE);
-					cinfo->args[nParm].size    = sizeof(int);
+					add_general(&gr, sz, cinfo->args+nParm);
+					cinfo->args[nParm].size    = sizeof(gpointer);
 					cinfo->args[nParm].regtype = RegTypeStructByAddr; 
 					cinfo->args[nParm].vtsize  = size;
 					sz->code_size  		  += 40;
@@ -1294,7 +1289,7 @@ enum_retvalue:
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
 			cinfo->args[nParm].size = sizeof(long long);
-			add_general (&gr, sz, cinfo->args+nParm, FALSE);
+			add_general (&gr, sz, cinfo->args+nParm);
 			nParm++;
 			break;
 		case MONO_TYPE_R4:
@@ -1523,6 +1518,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	/* align the offset 					*/
 	/*------------------------------------------------------*/
 	m->stack_offset	= S390_ALIGN(offset, S390_STACK_ALIGNMENT);
+	g_free(cinfo);
 
 }
 
@@ -1588,8 +1584,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 			if (ainfo->regtype == RegTypeGeneral) {
 				arg->unused = ainfo->reg;
 				call->used_iregs |= 1 << ainfo->reg;
-				if (arg->type == STACK_I8)
-					call->used_iregs |= 1 << (ainfo->reg + 1);
 			} else if (ainfo->regtype == RegTypeStructByAddr) {
 				call->used_iregs |= 1 << ainfo->reg;
 				arg->sreg1     = ainfo->reg;
@@ -1599,20 +1593,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 				arg->sreg2     = ainfo->offparm + S390_MINIMAL_STACK_SIZE;
 			} else if (ainfo->regtype == RegTypeStructByVal) {
 				if (ainfo->reg != STK_BASE) {
-					switch (ainfo->size) {
-					case 0:
-					case 1:
-					case 2:
-					case 4:
-						call->used_iregs |= 1 << ainfo->reg;
-						break;
-					case 8:
-						call->used_iregs |= 1 << ainfo->reg;
-						call->used_iregs |= 1 << (ainfo->reg+1);
-						break;
-					default:
-						call->used_iregs |= 1 << ainfo->reg;
-					}
+					call->used_iregs |= 1 << ainfo->reg;
 				} 
 				arg->sreg1     = ainfo->reg;
 				arg->opcode    = OP_OUTARG_VT;
@@ -1700,26 +1681,26 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p,
 	parmOffset = cfg->stack_usage - S390_TRACE_STACK_SIZE;
 	if (cfg->method->save_lmf)
 		parmOffset -= sizeof(MonoLMF);
-	fpOffset   = parmOffset + (5*sizeof(gint32));
+	fpOffset   = parmOffset + (5*sizeof(long));
 
-	s390_stm  (code, s390_r2, s390_r6, STK_BASE, parmOffset);
+	s390_stmg (code, s390_r2, s390_r6, STK_BASE, parmOffset);
 	s390_std  (code, s390_f0, 0, STK_BASE, fpOffset);
 	s390_std  (code, s390_f1, 0, STK_BASE, fpOffset+sizeof(gdouble));
 	s390_std  (code, s390_f2, 0, STK_BASE, fpOffset+2*sizeof(gdouble));
 	s390_basr (code, s390_r13, 0);
-	s390_j    (code, 6);
-	s390_word (code, cfg->method);
-	s390_word (code, func);
-	s390_l    (code, s390_r2, 0, s390_r13, 4);
+	s390_j    (code, 10);
+	s390_llong(code, cfg->method);
+	s390_llong(code, func);
+	s390_lg   (code, s390_r2, 0, s390_r13, 4);
 	s390_la   (code, s390_r3, 0, STK_BASE, parmOffset);
-	s390_lr   (code, s390_r4, STK_BASE);
-	s390_ahi  (code, s390_r4, cfg->stack_usage);
-	s390_l	  (code, s390_r1, 0, s390_r13, 8);
+	s390_lgr  (code, s390_r4, STK_BASE);
+	s390_aghi (code, s390_r4, cfg->stack_usage);
+	s390_lg   (code, s390_r1, 0, s390_r13, 12);
 	s390_basr (code, s390_r14, s390_r1);
 	s390_ld   (code, s390_f2, 0, STK_BASE, fpOffset+2*sizeof(gdouble));
 	s390_ld   (code, s390_f1, 0, STK_BASE, fpOffset+sizeof(gdouble));
 	s390_ld   (code, s390_f0, 0, STK_BASE, fpOffset);
-	s390_lm   (code, s390_r2, s390_r6, STK_BASE, parmOffset);
+	s390_lmg  (code, s390_r2, s390_r6, STK_BASE, parmOffset);
 
 	return code;
 }
@@ -1779,32 +1760,28 @@ handle_enum:
 
 	switch (save_mode) {
 	case SAVE_TWO:
-		s390_stm (code, s390_r2, s390_r3, cfg->frame_reg, saveOffset);
-		if (enable_arguments) {
-			s390_lr (code, s390_r4, s390_r3);
-			s390_lr (code, s390_r3, s390_r2);
-		}
+		s390_stg (code, s390_r2, 0, cfg->frame_reg, saveOffset);
+		if (enable_arguments) 
+			s390_lgr (code, s390_r3, s390_r2);
 		break;
 	case SAVE_ONE:
-		s390_st (code, s390_r2, 0, cfg->frame_reg, saveOffset);
-		if (enable_arguments) {
-			s390_lr (code, s390_r3, s390_r2);
-		}
+		s390_stg (code, s390_r2, 0, cfg->frame_reg, saveOffset);
+		if (enable_arguments) 
+			s390_lgr (code, s390_r3, s390_r2);
 		break;
 	case SAVE_FP:
 		s390_std (code, s390_f0, 0, cfg->frame_reg, saveOffset);
 		if (enable_arguments) {
 			/* FIXME: what reg?  */
 			s390_ldr (code, s390_f2, s390_f0);
-			s390_lm  (code, s390_r3, s390_r4, cfg->frame_reg, saveOffset);
+			s390_lg  (code, s390_r3, 0, cfg->frame_reg, saveOffset);
 		}
 		break;
 	case SAVE_STRUCT:
-		s390_st (code, s390_r2, 0, cfg->frame_reg, saveOffset);
-		if (enable_arguments) {
-			s390_l (code, s390_r3, 0, cfg->frame_reg, 
-				S390_MINIMAL_STACK_SIZE+cfg->param_area);
-		}
+		s390_stg (code, s390_r2, 0, cfg->frame_reg, saveOffset);
+		if (enable_arguments) 
+			s390_lg (code, s390_r3, 0, cfg->frame_reg, 
+			 	 S390_MINIMAL_STACK_SIZE+cfg->param_area);
 		break;
 	case SAVE_NONE:
 	default:
@@ -1812,25 +1789,25 @@ handle_enum:
 	}
 
 	s390_basr (code, s390_r13, 0);
-	s390_j	  (code, 6);
-	s390_word (code, cfg->method);
-	s390_word (code, func);
-	s390_l    (code, s390_r2, 0, s390_r13, 4);
-	s390_l	  (code, s390_r1, 0, s390_r13, 8);
+	s390_j	  (code, 10);
+	s390_llong(code, cfg->method);
+	s390_llong(code, func);
+	s390_lg   (code, s390_r2, 0, s390_r13, 4);
+	s390_lg   (code, s390_r1, 0, s390_r13, 12);
 	s390_basr (code, s390_r14, s390_r1);
 
 	switch (save_mode) {
 	case SAVE_TWO:
-		s390_lm  (code, s390_r2, s390_r3, cfg->frame_reg, saveOffset);
+		s390_lg  (code, s390_r2, 0, cfg->frame_reg, saveOffset);
 		break;
 	case SAVE_ONE:
-		s390_l   (code, s390_r2, 0, cfg->frame_reg, saveOffset);
+		s390_lg  (code, s390_r2, 0, cfg->frame_reg, saveOffset);
 		break;
 	case SAVE_FP:
 		s390_ld  (code, s390_f0, 0, cfg->frame_reg, saveOffset);
 		break;
 	case SAVE_STRUCT:
-		s390_l   (code, s390_r2, 0, cfg->frame_reg, saveOffset);
+		s390_lg  (code, s390_r2, 0, cfg->frame_reg, saveOffset);
 		break;
 	case SAVE_NONE:
 	default:
@@ -1914,26 +1891,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->opcode = OP_MOVE;
 					ins->sreg1 = last_ins->dreg;
 				}
-
-				//g_assert_not_reached ();
-
-#if 0
-			/* 
-			 * OP_STORE_MEMBASE_IMM imm, offset(basereg) 
-			 * OP_LOAD_MEMBASE offset(basereg), reg
-			 * -->
-			 * OP_STORE_MEMBASE_IMM imm, offset(basereg) 
-			 * OP_ICONST reg, imm
-			 */
-			} else if (last_ins && (last_ins->opcode == OP_STOREI4_MEMBASE_IMM
-						|| last_ins->opcode == OP_STORE_MEMBASE_IMM) &&
-				   ins->inst_basereg == last_ins->inst_destbasereg &&
-				   ins->inst_offset == last_ins->inst_offset) {
-				//static int c = 0; printf ("MATCHX %s %d\n", cfg->method->name,c++);
-				ins->opcode = OP_ICONST;
-				ins->inst_c0 = last_ins->inst_imm;
-				g_assert_not_reached (); // check this rule
-#endif
 			}
 			break;
 		case OP_LOADU1_MEMBASE:
@@ -1946,7 +1903,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins = ins->next;				
 					continue;
 				} else {
-					//static int c = 0; printf ("MATCHX %s %d\n", cfg->method->name,c++);
 					ins->opcode = OP_MOVE;
 					ins->sreg1 = last_ins->sreg1;
 				}
@@ -2738,6 +2694,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 				DEBUG (g_print ("\tassigned hreg %s to dest R%d\n", mono_arch_regname (val), hreg));
 				rs->isymbolic [val] = hreg;
+// #if 0
 				/* FIXME:? ins->dreg = val; */
 				if (ins->dreg == s390_r3) {
 					if (val != s390_r2)
@@ -2762,6 +2719,7 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 						create_copy_ins (cfg, ins->dreg, s390_r3, ins);
 					}
 				}
+// #endif
 				if (reg_is_freeable (val) && hreg >= 0 && (reginfo [hreg].born_in >= i && !(cur_iregs & (1 << val)))) {
 					DEBUG (g_print ("\tfreeable %s (R%d)\n", mono_arch_regname (val), hreg));
 					mono_regstate_free_int (rs, val);
@@ -2916,20 +2874,9 @@ mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			for (j = 0; j < MONO_MAX_IREGS; ++j) {
 				s = 1 << j;
 				if ((clob_mask & s) && !(rs->ifree_mask & s) && j != ins->sreg1) {
-					//g_warning ("register %s busy at call site\n", mono_arch_regname (j));
 				}
 			}
 		}
-		/*if (reg_is_freeable (ins->sreg1) && prev_sreg1 >= 0 && reginfo [prev_sreg1].born_in >= i) {
-			DEBUG (g_print ("freeable %s\n", mono_arch_regname (ins->sreg1)));
-			mono_regstate_free_int (rs, ins->sreg1);
-		}
-		if (reg_is_freeable (ins->sreg2) && prev_sreg2 >= 0 && reginfo [prev_sreg2].born_in >= i) {
-			DEBUG (g_print ("freeable %s\n", mono_arch_regname (ins->sreg2)));
-			mono_regstate_free_int (rs, ins->sreg2);
-		}*/
-		
-		//DEBUG (print_ins (i, ins));
 		tmp = tmp->next;
 	}
 }
@@ -2953,13 +2900,13 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 		s390_cfdbr (code, dreg, 5, sreg);
 		switch (size) {
 			case 1:
-				s390_lhi  (code, s390_r0, 0);
-				s390_lhi  (code, s390_r13, 0xff);
-				s390_ltr  (code, dreg, dreg);
-				s390_jnl  (code, 4);
+				s390_lghi (code, s390_r0, 0);
+				s390_lghi (code, s390_r13, 0xff);
+				s390_ltgr (code, dreg, dreg);
+				s390_jnl  (code, 6);
 				s390_lhi  (code, s390_r0, 0x80);
-				s390_nr   (code, dreg, s390_r13);
-				s390_or   (code, dreg, s390_r0);
+				s390_ngr  (code, dreg, s390_r13);
+				s390_ogr  (code, dreg, s390_r0);
 				break;
 		}
 	} else {
@@ -2972,17 +2919,17 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 		s390_jl     (code, 10);
 		s390_sdb    (code, s390_f15, 0, s390_r13, 8);
 		s390_cfdbr  (code, dreg, 7, s390_f15);
-		s390_j      (code, 4);
+		s390_j      (code, 6);
 		s390_cfdbr  (code, dreg, 5, sreg);
 		switch (size) {
 			case 1: 
-				s390_lhi  (code, s390_r0, 0xff);
-				s390_nr   (code, dreg, s390_r0);
+				s390_lghi (code, s390_r0, 0xff);
+				s390_ngr  (code, dreg, s390_r0);
 				break;
 			case 2:
-				s390_lhi  (code, s390_r0, -1);
-				s390_srl  (code, s390_r0, 0, 16);
-				s390_nr   (code, dreg, s390_r0);
+				s390_lghi (code, s390_r0, -1);
+				s390_srlg (code, s390_r0, s390_r0, 0, 16);
+				s390_ngr  (code, dreg, s390_r0);
 				break;
 		}
 	}
@@ -3065,48 +3012,68 @@ guint8 cond;
 
 		switch (ins->opcode) {
 		case OP_STOREI1_MEMBASE_IMM: {
-			s390_lhi (code, s390_r14, ins->inst_imm);
+			s390_lghi (code, s390_r14, ins->inst_imm);
 			if (s390_is_uimm12(ins->inst_offset))
 				s390_stc (code, s390_r14, 0, ins->inst_destbasereg, ins->inst_offset);
 			else {
 				s390_basr (code, s390_r13, 0);
-				s390_j    (code, 4);
-				s390_word (code, ins->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
 				s390_stc  (code, s390_r14, s390_r13, ins->inst_destbasereg, 0);
 			}
 		}
 			break;
 		case OP_STOREI2_MEMBASE_IMM: {
-			s390_lhi (code, s390_r14, ins->inst_imm);
+			s390_lghi (code, s390_r14, ins->inst_imm);
 			if (s390_is_uimm12(ins->inst_offset)) {
 				s390_sth (code, s390_r14, 0, ins->inst_destbasereg, ins->inst_offset);
 			} else {
 				s390_basr (code, s390_r13, 0);
-				s390_j    (code, 4);
-				s390_word (code, ins->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
 				s390_sth  (code, s390_r14, s390_r13, ins->inst_destbasereg, 0);
 			}
 		}
 			break;
 		case OP_STORE_MEMBASE_IMM:
-		case OP_STOREI4_MEMBASE_IMM: {
+		case OP_STOREI8_MEMBASE_IMM: {
 			if (s390_is_imm16(ins->inst_imm)) {
-				s390_lhi  (code, s390_r14, ins->inst_imm);
+				s390_lghi (code, s390_r14, ins->inst_imm);
 			} else {
 				s390_basr (code, s390_r13, 0);
-				s390_j	  (code, 4);
-				s390_word (code, ins->inst_imm);
-				s390_l	  (code, s390_r14, 0, s390_r13, 4);
+				s390_j	  (code, 6);
+				s390_llong(code, ins->inst_imm);
+				s390_lg  (code, s390_r14, 0, s390_r13, 4);
+			}
+			if (s390_is_uimm12(ins->inst_offset)) {
+				s390_stg (code, s390_r14, 0, ins->inst_destbasereg, ins->inst_offset);
+			} else {
+				s390_basr (code, s390_r13, 0);
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
+				s390_stg  (code, s390_r14, s390_r13, ins->inst_destbasereg, 0);
+			}
+		}
+			break;
+		case OP_STOREI4_MEMBASE_IMM: {
+			if (s390_is_imm16(ins->inst_imm)) {
+				s390_lghi (code, s390_r14, ins->inst_imm);
+			} else {
+				s390_basr (code, s390_r13, 0);
+				s390_j	  (code, 6);
+				s390_llong(code, ins->inst_imm);
+				s390_lg  (code, s390_r14, 0, s390_r13, 4);
 			}
 			if (s390_is_uimm12(ins->inst_offset)) {
 				s390_st  (code, s390_r14, 0, ins->inst_destbasereg, ins->inst_offset);
 			} else {
 				s390_basr (code, s390_r13, 0);
-				s390_j    (code, 4);
-				s390_word (code, ins->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
 				s390_st   (code, s390_r14, s390_r13, ins->inst_destbasereg, 0);
 			}
 		}
@@ -3116,9 +3083,9 @@ guint8 cond;
 				s390_stc  (code, ins->sreg1, 0, ins->inst_destbasereg, ins->inst_offset);
 			} else {
 				s390_basr (code, s390_r13, 0);
-				s390_j    (code, 4);
-				s390_word (code, ins->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
 				s390_stc  (code, ins->sreg1, s390_r13, ins->inst_destbasereg, 0);
 			}
 		}
@@ -3128,22 +3095,34 @@ guint8 cond;
 				s390_sth  (code, ins->sreg1, 0, ins->inst_destbasereg, ins->inst_offset);
 			} else {
 				s390_basr (code, s390_r13, 0);
-				s390_j    (code, 4);
-				s390_word (code, ins->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
 				s390_sth  (code, ins->sreg1, s390_r13, ins->inst_destbasereg, 0);
 			}
 		}
 			break;
 		case OP_STORE_MEMBASE_REG:
+		case OP_STOREI8_MEMBASE_REG: {
+			if (s390_is_uimm12(ins->inst_offset)) {
+				s390_stg  (code, ins->sreg1, 0, ins->inst_destbasereg, ins->inst_offset);
+			} else {
+				s390_basr (code, s390_r13, 0);
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
+				s390_stg  (code, ins->sreg1, s390_r13, ins->inst_destbasereg, 0);
+			}
+		}
+			break;
 		case OP_STOREI4_MEMBASE_REG: {
 			if (s390_is_uimm12(ins->inst_offset)) {
 				s390_st   (code, ins->sreg1, 0, ins->inst_destbasereg, ins->inst_offset);
 			} else {
 				s390_basr (code, s390_r13, 0);
-				s390_j    (code, 4);
-				s390_word (code, ins->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
 				s390_st   (code, ins->sreg1, s390_r13, ins->inst_destbasereg, 0);
 			}
 		}
@@ -3152,154 +3131,152 @@ guint8 cond;
 		case CEE_LDIND_I4:
 		case CEE_LDIND_U4: {
 			s390_basr (code, s390_r13, 0);
-			s390_j	  (code, 4);
+			s390_j	  (code, 6);
 			s390_word (code, ins->inst_p0);
-			s390_l	  (code, s390_r13, 0, s390_r13, 4);
-			s390_l	  (code, ins->dreg, 0, s390_r13, 0);
+			s390_lg   (code, s390_r13, 0, s390_r13, 4);
+			s390_lgf  (code, ins->dreg, 0, s390_r13, 0);
 		}
 			break;
 		case OP_LOADU4_MEM:
 			g_assert_not_reached ();
 			break;
 		case OP_LOAD_MEMBASE:
+		case OP_LOADI8_MEMBASE: {
+			if (s390_is_uimm12(ins->inst_offset))
+				s390_lg  (code, ins->dreg, 0, ins->inst_basereg, ins->inst_offset);
+			else {
+				if (s390_is_imm16(ins->inst_offset)) {
+					s390_lghi(code, s390_r13, ins->inst_offset);
+					s390_lg  (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
+				} else {
+					s390_basr (code, s390_r13, 0);
+					s390_j    (code, 6);
+					s390_llong(code, ins->inst_offset);
+					s390_lg   (code, s390_r13, 0, s390_r13, 4);
+					s390_lg   (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
+				}
+			}
+		}
+			break;
 		case OP_LOADI4_MEMBASE:
 		case OP_LOADU4_MEMBASE: {
 			if (s390_is_uimm12(ins->inst_offset))
-				s390_l    (code, ins->dreg, 0, ins->inst_basereg, ins->inst_offset);
+				s390_lgf  (code, ins->dreg, 0, ins->inst_basereg, ins->inst_offset);
 			else {
 				if (s390_is_imm16(ins->inst_offset)) {
-					s390_lhi (code, s390_r13, ins->inst_offset);
-					s390_l   (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
+					s390_lghi(code, s390_r13, ins->inst_offset);
+					s390_lgf (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
 				} else {
 					s390_basr (code, s390_r13, 0);
-					s390_j    (code, 4);
-					s390_word (code, ins->inst_offset);
-					s390_l    (code, s390_r13, 0, s390_r13, 4);
-					s390_l    (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
+					s390_j    (code, 6);
+					s390_llong(code, ins->inst_offset);
+					s390_lg   (code, s390_r13, 0, s390_r13, 4);
+					s390_lgf  (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
 				}
 			}
 		}
 			break;
 		case OP_LOADU1_MEMBASE: {
-			s390_lhi (code, s390_r0, 0);
+			s390_lghi(code, s390_r0, 0);
 			if (s390_is_uimm12(ins->inst_offset))
 				s390_ic   (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
 			else {
 				s390_basr (code, s390_r13, 0);
-				s390_j    (code, 4);
-				s390_word (code, ins->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
 				s390_ic   (code, s390_r0, s390_r13, ins->inst_basereg, 0);
 			}
-			s390_lr   (code, ins->dreg, s390_r0);
+			s390_lgr  (code, ins->dreg, s390_r0);
 		}
 			break;
 		case OP_LOADI1_MEMBASE: {
-			s390_lhi (code, s390_r0, 0);
+			s390_lghi(code, s390_r0, 0);
 			if (s390_is_uimm12(ins->inst_offset))
-				s390_ic   (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
+				s390_lgb  (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
 			else {
 				s390_basr (code, s390_r13, 0);
-				s390_j    (code, 4);
-				s390_word (code, ins->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
-				s390_ic   (code, s390_r0, s390_r13, ins->inst_basereg, 0);
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
+				s390_lgb  (code, s390_r0, s390_r13, ins->inst_basereg, 0);
 			}
-			s390_lhi  (code, s390_r13, 0x80);
-			s390_nr   (code, s390_r13, s390_r0);
-			s390_jz   (code, 5);
-			s390_lhi  (code, s390_r13, 0xff00);
-			s390_or   (code, s390_r0, s390_r13);
-			s390_lr	  (code, ins->dreg, s390_r0);
 		}
 			break;
 		case OP_LOADU2_MEMBASE: {
-			s390_lhi (code, s390_r0, 0);
+			s390_lghi(code, s390_r0, 0);
 			if (s390_is_uimm12(ins->inst_offset))
 				s390_icm  (code, s390_r0, 3, ins->inst_basereg, ins->inst_offset);
 			else {
 				s390_basr (code, s390_r13, 0);
-				s390_j    (code, 4);
-				s390_word (code, ins->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
-				s390_ar   (code, s390_r13, ins->inst_basereg);
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
+				s390_agr  (code, s390_r13, ins->inst_basereg);
 				s390_icm  (code, s390_r0, 3, s390_r13, 0);
 			}
-			s390_lr  (code, ins->dreg, s390_r0);
+			s390_lgr (code, ins->dreg, s390_r0);
 		}
 			break;
 		case OP_LOADI2_MEMBASE: {
-			s390_lhi (code, s390_r0, 0);
+			s390_lghi(code, s390_r0, 0);
 			if (s390_is_uimm12(ins->inst_offset))
 				s390_lh   (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
 			else {
 				s390_basr (code, s390_r13, 0);
-				s390_j    (code, 4);
-				s390_word (code, ins->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
 				s390_lh   (code, s390_r0, s390_r13, ins->inst_basereg, 0);
 			}
-			s390_lr  (code, ins->dreg, s390_r0);
+			s390_lgr (code, ins->dreg, s390_r0);
 		}
 			break;
 		case CEE_CONV_I1: {
-			s390_lhi  (code, s390_r0, 0x80);
+			s390_lghi (code, s390_r0, 0x80);
 			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
+				s390_lgr  (code, ins->dreg, ins->sreg1);
 			}
-			s390_nr   (code, s390_r0, ins->sreg1);
+			s390_ngr  (code, s390_r0, ins->sreg1);
 			s390_jz   (code, 7);
-			s390_lhi  (code, s390_r13, -1);
-			s390_sll  (code, s390_r13, 0, 8);
-			s390_or	  (code, ins->dreg, s390_r13);
+			s390_lghi (code, s390_r13, -1);
+			s390_sllg (code, s390_r13, s390_r13, 0, 8);
+			s390_ogr  (code, ins->dreg, s390_r13);
 		}
 			break;
 		case CEE_CONV_I2: {
-			s390_lhi  (code, s390_r0, 0x80);
-			s390_sll  (code, s390_r0, 0, 8);
+			s390_lghi (code, s390_r0, 0x80);
+			s390_sllg (code, s390_r0, s390_r0, 0, 8);
 			if (ins->dreg != ins->sreg1) {
-				s390_lr   (code, ins->dreg, ins->sreg1);
+				s390_lgr  (code, ins->dreg, ins->sreg1);
 			}
-			s390_nr   (code, s390_r0, ins->sreg1);
+			s390_ngr  (code, s390_r0, ins->sreg1);
 			s390_jz   (code, 7);
-			s390_lhi  (code, s390_r13, -1);
-			s390_sll  (code, s390_r13, 0, 16);
-			s390_or	  (code, ins->dreg, s390_r13);
+			s390_lghi (code, s390_r13, -1);
+			s390_sllg (code, s390_r13, s390_r13, 0, 16);
+			s390_ogr  (code, ins->dreg, s390_r13);
 		}
 			break;
 		case CEE_CONV_U1: {
-			s390_lhi  (code, s390_r0, 0xff);
+			s390_lghi (code, s390_r0, 0xff);
 			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
+				s390_lgr  (code, ins->dreg, ins->sreg1);
 			}
-			s390_nr	  (code, ins->dreg, s390_r0);
+			s390_ngr  (code, ins->dreg, s390_r0);
 		}
 			break;
 		case CEE_CONV_U2: {
-			s390_lhi  (code, s390_r0, -1);
-			s390_sll  (code, s390_r0, 0, 16);
-			s390_srl  (code, s390_r0, 0, 16);
+			s390_lghi (code, s390_r0, -1);
+			s390_sllg  (code, s390_r0, s390_r0, 0, 48);
+			s390_srlg  (code, s390_r0, s390_r0, 0, 48);
 			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
+				s390_lgr  (code, ins->dreg, ins->sreg1);
 			}
-			s390_nr	  (code, ins->dreg, s390_r0);
+			s390_ngr  (code, ins->dreg, s390_r0);
 		}
 			break;
-		case CEE_CONV_U:
-		case CEE_CONV_U8: {
-			if (ins->dreg != ins->sreg1)
-				s390_lgr (code, ins->dreg, ins->sreg1);
-		}
-			break;
-		case CEE_CONV_I:
-		case CEE_CONV_I8: {
-			if (ins->dreg != ins->sreg1)
-				s390_lgr (code, ins->dreg, ins->sreg1);
-		}
-			break;
-		case OP_LCOMPARE:
-		case OP_ICOMPARE: {
-		case OP_COMPARE: {
+		case OP_COMPARE: 
+		case OP_LCOMPARE: {
 			if ((ins->next) && 
 			    ((ins->next->opcode >= CEE_BNE_UN) &&
 			     (ins->next->opcode <= CEE_BLT_UN)) || 
@@ -3307,15 +3284,14 @@ guint8 cond;
 			     (ins->next->opcode <= OP_COND_EXC_LT_UN)) ||
 			    ((ins->next->opcode == OP_CLT_UN) ||
 			     (ins->next->opcode == OP_CGT_UN)))
-				s390_clr  (code, ins->sreg1, ins->sreg2);
+				s390_clgr (code, ins->sreg1, ins->sreg2);
 			else
-				s390_cr   (code, ins->sreg1, ins->sreg2);
+				s390_cgr  (code, ins->sreg1, ins->sreg2);
 		}
 			break;
-		case OP_COMPARE_IMM: 
-		case OP_ICOMPARE_IMM: {
+		case OP_COMPARE_IMM: {
 			if (s390_is_imm16 (ins->inst_imm)) {
-				s390_lhi  (code, s390_r0, ins->inst_imm);
+				s390_lghi (code, s390_r0, ins->inst_imm);
 				if ((ins->next) && 
 				    ((ins->next->opcode >= CEE_BNE_UN) &&
 				     (ins->next->opcode <= CEE_BLT_UN)) || 
@@ -3323,9 +3299,53 @@ guint8 cond;
 				     (ins->next->opcode <= OP_COND_EXC_LT_UN)) ||
 				    ((ins->next->opcode == OP_CLT_UN) ||
 				     (ins->next->opcode == OP_CGT_UN)))
-					s390_clr  (code, ins->sreg1, s390_r0);
+					s390_clgr (code, ins->sreg1, s390_r0);
 				else
-					s390_cr   (code, ins->sreg1, s390_r0);
+					s390_cgr  (code, ins->sreg1, s390_r0);
+			}
+			else {
+				s390_basr (code, s390_r13, 0);
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_imm);
+				if ((ins->next) && 
+				    ((ins->next->opcode >= CEE_BNE_UN) &&
+				     (ins->next->opcode <= CEE_BLT_UN)) || 
+				    ((ins->next->opcode >= OP_COND_EXC_NE_UN) &&
+				     (ins->next->opcode <= OP_COND_EXC_LT_UN)) ||
+				    ((ins->next->opcode == OP_CLT_UN) &&
+				     (ins->next->opcode == OP_CGT_UN)))
+					s390_clg  (code, ins->sreg1, 0, s390_r13, 4);
+				else
+					s390_cg	  (code, ins->sreg1, 0, s390_r13, 4);
+			}
+		}
+			break;
+		case OP_ICOMPARE: {
+			if ((ins->next) && 
+			    ((ins->next->opcode >= CEE_BNE_UN) &&
+			     (ins->next->opcode <= CEE_BLT_UN)) || 
+			    ((ins->next->opcode >= OP_COND_EXC_NE_UN) &&
+			     (ins->next->opcode <= OP_COND_EXC_LT_UN)) ||
+			    ((ins->next->opcode == OP_CLT_UN) ||
+			     (ins->next->opcode == OP_CGT_UN)))
+				s390_clr (code, ins->sreg1, ins->sreg2);
+			else
+				s390_cr  (code, ins->sreg1, ins->sreg2);
+		}
+			break;
+		case OP_ICOMPARE_IMM: {
+			if (s390_is_imm16 (ins->inst_imm)) {
+				s390_lghi (code, s390_r0, ins->inst_imm);
+				if ((ins->next) && 
+				    ((ins->next->opcode >= CEE_BNE_UN) &&
+				     (ins->next->opcode <= CEE_BLT_UN)) || 
+				    ((ins->next->opcode >= OP_COND_EXC_NE_UN) &&
+				     (ins->next->opcode <= OP_COND_EXC_LT_UN)) ||
+				    ((ins->next->opcode == OP_CLT_UN) ||
+				     (ins->next->opcode == OP_CGT_UN)))
+					s390_clr (code, ins->sreg1, s390_r0);
+				else
+					s390_cr  (code, ins->sreg1, s390_r0);
 			}
 			else {
 				s390_basr (code, s390_r13, 0);
@@ -3338,14 +3358,14 @@ guint8 cond;
 				     (ins->next->opcode <= OP_COND_EXC_LT_UN)) ||
 				    ((ins->next->opcode == OP_CLT_UN) &&
 				     (ins->next->opcode == OP_CGT_UN)))
-					s390_cl   (code, ins->sreg1, 0, s390_r13, 4);
+					s390_cl  (code, ins->sreg1, 0, s390_r13, 4);
 				else
-					s390_c 	  (code, ins->sreg1, 0, s390_r13, 4);
+					s390_c   (code, ins->sreg1, 0, s390_r13, 4);
 			}
 		}
 			break;
 		case OP_X86_TEST_NULL: {
-			s390_ltr (code, ins->sreg1, ins->sreg1);
+			s390_ltgr(code, ins->sreg1, ins->sreg1);
 		}
 			break;
 		case CEE_BREAK: {
@@ -3354,26 +3374,488 @@ guint8 cond;
 			break;
 		case OP_ADDCC: {
 			if (ins->dreg != ins->sreg1) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_algr (code, ins->dreg, ins->sreg2);
+		}
+			break;
+		case CEE_ADD: {
+			if (ins->dreg != ins->sreg1) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_agr   (code, ins->dreg, ins->sreg2);
+		}
+			break;
+		case OP_ADC: {
+			if (ins->dreg != ins->sreg1) {
+				s390_lgr (code, ins->dreg, ins->sreg1);
+			}
+			s390_alcgr (code, ins->dreg, ins->sreg2);
+		}
+			break;
+		case OP_ADD_IMM: {
+			if ((ins->next) &&
+			    (ins->next->opcode == OP_ADC_IMM)) {
+				s390_basr (code, s390_r13, 0);
+				s390_j	  (code, 6);
+				s390_llong (code, ins->inst_imm);
+				if (ins->dreg != ins->sreg1) {
+					s390_lgr  (code, ins->dreg, ins->sreg1);
+				}
+				s390_alg  (code, ins->dreg, 0, s390_r13, 4);
+			} else {
+				if (s390_is_imm16 (ins->inst_imm)) {
+					if (ins->dreg != ins->sreg1) {
+						s390_lgr  (code, ins->dreg, ins->sreg1);
+					}
+					s390_aghi (code, ins->dreg, ins->inst_imm);
+				} else {
+					s390_basr (code, s390_r13, 0);
+					s390_j	  (code, 6);
+					s390_llong (code, ins->inst_imm);
+					if (ins->dreg != ins->sreg1) {
+						s390_lgr  (code, ins->dreg, ins->sreg1);
+					}
+					s390_ag   (code, ins->dreg, 0, s390_r13, 4);
+				}
+			}
+		}
+			break;
+		case OP_ADC_IMM: {
+			if (s390_is_imm16 (ins->inst_imm)) {
+				if (ins->dreg != ins->sreg1) {
+					s390_lgr  (code, ins->dreg, ins->sreg1);
+				} 
+				s390_lghi  (code, s390_r0, ins->inst_imm);
+				s390_alcgr (code, ins->dreg, s390_r0);
+			} else {
+				s390_basr (code, s390_r13, 0);
+				s390_j	  (code, 6);
+				s390_llong(code, ins->inst_imm);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
+				s390_alcgr(code, ins->dreg, s390_r13);
+			}
+		}
+			break;
+		case CEE_ADD_OVF: {
+			if (ins->dreg != ins->sreg1) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_ar   (code, ins->dreg, ins->sreg2);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
+		}
+			break;
+		case CEE_ADD_OVF_UN: {
+			if (ins->dreg != ins->sreg1) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_algr (code, ins->dreg, ins->sreg2);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_CY, "OverflowException");
+		}
+			break;
+		case OP_ADD_OVF_CARRY: {
+			if (ins->dreg != ins->sreg1) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_lghi (code, s390_r0, 0);
+			s390_lgr  (code, s390_r1, s390_r0);
+			s390_alcgr(code, s390_r0, s390_r1);
+			s390_agr  (code, ins->dreg, ins->sreg2);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
+			s390_agr  (code, ins->dreg, s390_r0);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
+		}
+			break;
+		case OP_ADD_OVF_UN_CARRY: {
+			if (ins->dreg != ins->sreg1) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_alcgr (code, ins->dreg, ins->sreg2);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_CY, "OverflowException");
+		}
+			break;
+		case OP_SUBCC: {
+			if (ins->dreg != ins->sreg1) {
+				s390_lr	  (code, ins->dreg, ins->sreg1);
+			}
+			s390_slgr (code, ins->dreg, ins->sreg2);
+		}
+			break;
+		case CEE_SUB: {
+			if (ins->dreg != ins->sreg1) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_sgr  (code, ins->dreg, ins->sreg2);
+		}
+			break;
+		case OP_SBB: {
+			if (ins->dreg != ins->sreg1) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_slbgr (code, ins->dreg, ins->sreg2);
+		}
+			break;
+		case OP_SUB_IMM: {
+			if (s390_is_imm16 (-ins->inst_imm)) {
+				if (ins->dreg != ins->sreg1) {
+					s390_lgr  (code, ins->dreg, ins->sreg1);
+				}
+				s390_aghi  (code, ins->dreg, -ins->inst_imm);
+			} else {
+				s390_basr (code, s390_r13, 0);
+				s390_j	  (code, 6);
+				s390_llong(code, ins->inst_imm);
+				if (ins->dreg != ins->sreg1) {
+					s390_lgr  (code, ins->dreg, ins->sreg1);
+				}
+				s390_sg   (code, ins->dreg, 0, s390_r13, 4);
+			}
+		}
+			break;
+		case OP_SBB_IMM: {
+			s390_basr (code, s390_r13, 0);
+			s390_j	  (code, 6);
+			s390_llong(code, ins->inst_imm);
+			s390_slg  (code, ins->dreg, 0, s390_r13, 4);
+		}
+			break;
+		case CEE_SUB_OVF: {
+			if (ins->dreg != ins->sreg1) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_sgr  (code, ins->dreg, ins->sreg2);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
+		}
+			break;
+		case CEE_SUB_OVF_UN: {
+			if (ins->dreg != ins->sreg1) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_slr  (code, ins->dreg, ins->sreg2);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NC, "OverflowException");
+		}
+			break;
+		case OP_SUB_OVF_CARRY: {
+			if (ins->dreg != ins->sreg1) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_lghi (code, s390_r0, 0);
+			s390_lgr  (code, s390_r1, s390_r0);
+			s390_slbr (code, s390_r0, s390_r1);
+			s390_sr   (code, ins->dreg, ins->sreg2);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
+			s390_agr  (code, ins->dreg, s390_r0);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
+		}
+			break;
+		case OP_SUB_OVF_UN_CARRY: {
+			if (ins->dreg != ins->sreg1) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_slbgr (code, ins->dreg, ins->sreg2);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NC, "OverflowException");
+		}
+			break;
+		case CEE_AND: {
+			if (ins->sreg1 == ins->dreg) {
+				s390_ngr  (code, ins->dreg, ins->sreg2);
+			} 
+			else { 
+				if (ins->sreg2 == ins->dreg) { 
+					s390_ngr  (code, ins->dreg, ins->sreg1);
+				}
+				else { 
+					s390_lgr (code, ins->dreg, ins->sreg1);
+					s390_ngr (code, ins->dreg, ins->sreg2);
+				}
+			}
+		}
+			break;
+		case OP_AND_IMM: {
+			if (s390_is_imm16 (ins->inst_imm)) {
+				s390_lghi  (code, s390_r0, ins->inst_imm);
+				if (ins->dreg != ins->sreg1) {
+					s390_lgr  (code, ins->dreg, ins->sreg1);
+				}
+				s390_ngr  (code, ins->dreg, s390_r0);
+			} else {
+				s390_basr (code, s390_r13, 0);
+				s390_j	  (code, 6);
+				s390_llong(code, ins->inst_imm);
+				if (ins->dreg != ins->sreg1) {
+					s390_lgr  (code, ins->dreg, ins->sreg1);
+				}
+				s390_ng	  (code, ins->dreg, 0, s390_r13, 4);
+			}
+		}
+			break;
+		case CEE_DIV: {
+			s390_lr	  (code, s390_r0, ins->sreg1);
+			s390_srda (code, s390_r0, 0, 32);
+			s390_dr   (code, s390_r0, ins->sreg2);
+			s390_lgfr (code, ins->dreg, s390_r1);
+		}
+			break;
+		case CEE_DIV_UN: {
+			s390_lr	  (code, s390_r0, ins->sreg1);
+			s390_srdl (code, s390_r0, 0, 32);
+			s390_dlr  (code, s390_r0, ins->sreg2);
+			s390_lgfr (code, ins->dreg, s390_r1);
+		}
+			break;
+		case OP_DIV_IMM: {
+			if (s390_is_imm16 (ins->inst_imm)) {
+				s390_lghi (code, s390_r13, ins->inst_imm);
+				s390_lgr  (code, s390_r0, ins->sreg1);
+			} else {
+				s390_basr (code, s390_r13, 0);
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_imm);
+				s390_lgr  (code, s390_r0, ins->sreg1);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
+			}
+			s390_srda (code, s390_r0, 0, 32);
+			s390_dr   (code, s390_r0, ins->sreg2);
+			s390_lgfr (code, ins->dreg, s390_r1);
+		}
+			break;
+		case CEE_REM: {
+			s390_lgr  (code, s390_r0, ins->sreg1);
+			s390_srda (code, s390_r0, 0, 32);
+			s390_dr   (code, s390_r0, ins->sreg2);
+			s390_lgfr (code, ins->dreg, s390_r0);
+			break;
+		case CEE_REM_UN:
+			s390_lgr  (code, s390_r0, ins->sreg1);
+			s390_srdl (code, s390_r0, 0, 32);
+			s390_dlr  (code, s390_r0, ins->sreg2);
+			s390_lgfr (code, ins->dreg, s390_r0);
+		}
+			break;
+		case OP_REM_IMM: {
+			if (s390_is_imm16 (ins->inst_imm)) {
+				s390_lghi  (code, s390_r13, ins->inst_imm);
+				s390_lgr   (code, s390_r0, ins->sreg1);
+			} else {
+				s390_basr (code, s390_r13, 0);
+				s390_j	  (code, 6);
+				s390_llong(code, ins->inst_imm);
+				s390_lgr  (code, s390_r0, ins->sreg1);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
+			}
+			s390_srda (code, s390_r0, 0, 32);
+			s390_dr   (code, s390_r0, ins->sreg2);
+			s390_lgfr (code, ins->dreg, s390_r0);
+		}
+			break;
+		case CEE_OR: {
+			if (ins->sreg1 == ins->dreg) {
+				s390_ogr  (code, ins->dreg, ins->sreg2);
+			} 
+			else { 
+				if (ins->sreg2 == ins->dreg) { 
+					s390_ogr  (code, ins->dreg, ins->sreg1);
+				}
+				else { 
+					s390_lr  (code, ins->dreg, ins->sreg1);
+					s390_ogr (code, ins->dreg, ins->sreg2);
+				}
+			}
+		}
+			break;
+		case OP_OR_IMM: {
+			if (s390_is_imm16 (ins->inst_imm)) {
+				s390_lghi (code, s390_r0, ins->inst_imm);
+				if (ins->dreg != ins->sreg1) {
+					s390_lgr  (code, ins->dreg, ins->sreg1);
+				}
+				s390_ogr  (code, ins->dreg, s390_r0);
+			} else {
+				s390_bras (code, s390_r13, 4);
+				s390_llong(code, ins->inst_imm);
+				if (ins->dreg != ins->sreg1) {
+					s390_lgr  (code, ins->dreg, ins->sreg1);
+				}
+				s390_og	  (code, ins->dreg, 0, s390_r13, 0);
+			}
+		}
+			break;
+		case CEE_XOR: {
+			if (ins->sreg1 == ins->dreg) {
+				s390_xgr  (code, ins->dreg, ins->sreg2);
+			} 
+			else { 
+				if (ins->sreg2 == ins->dreg) { 
+					s390_xgr (code, ins->dreg, ins->sreg1);
+				}
+				else { 
+					s390_lgr (code, ins->dreg, ins->sreg1);
+					s390_xgr (code, ins->dreg, ins->sreg2);
+				}
+			}
+		}
+			break;
+		case OP_XOR_IMM: {
+			if (s390_is_imm16 (ins->inst_imm)) {
+				s390_lghi (code, s390_r0, ins->inst_imm);
+				if (ins->dreg != ins->sreg1) {
+					s390_lgr  (code, ins->dreg, ins->sreg1);
+				}
+				s390_xgr  (code, ins->dreg, s390_r0);
+			} else {
+				s390_basr (code, s390_r13, 0);
+				s390_j	  (code, 6);
+				s390_llong(code, ins->inst_imm);
+				if (ins->dreg != ins->sreg1) {
+					s390_lgr  (code, ins->dreg, ins->sreg1);
+				}
+				s390_xg	  (code, ins->dreg, 0, s390_r13, 4);
+			}
+		}
+			break;
+		case CEE_SHL: 
+		case OP_LSHL: {
+			if (ins->sreg1 != ins->dreg) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_sllg (code, ins->dreg, ins->dreg, ins->sreg2, 0);
+		}
+			break;
+		case OP_SHL_IMM:
+		case OP_LSHL_IMM: {
+			if (ins->sreg1 != ins->dreg) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_sllg (code, ins->dreg, ins->dreg, 0,
+				   (ins->inst_imm & 0x1f));
+		}
+			break;
+		case CEE_SHR:
+		case OP_LSHR: {
+			if (ins->sreg1 != ins->dreg) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_srag (code, ins->dreg, ins->dreg, ins->sreg2, 0);
+		}
+			break;
+		case OP_SHR_IMM: 
+		case OP_LSHR_IMM: {
+			if (ins->sreg1 != ins->dreg) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_srag (code, ins->dreg, ins->dreg, 0, 
+				   (ins->inst_imm & 0x1f));
+		}
+			break;
+		case OP_SHR_UN_IMM:
+		case OP_LSHR_UN_IMM: {
+			if (ins->sreg1 != ins->dreg) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_srlg (code, ins->dreg, ins->dreg, 0, 
+				   (ins->inst_imm & 0x1f));
+		}
+			break;
+		case CEE_SHR_UN:
+		case OP_LSHR_UN: {
+			if (ins->sreg1 != ins->dreg) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_srlg (code, ins->dreg, ins->dreg, ins->sreg2, 0);
+		}
+			break;
+		case CEE_NOT: {
+			if (ins->sreg1 != ins->dreg) {
+				s390_lgr  (code, ins->dreg, ins->sreg1);
+			}
+			s390_lghi (code, s390_r0, -1);
+			s390_xgr  (code, ins->dreg, s390_r0);
+		}
+			break;
+		case CEE_NEG: {
+			s390_lcgr (code, ins->dreg, ins->sreg1);
+		}
+			break;
+		case CEE_MUL: {
+			if (ins->sreg1 == ins->dreg) {
+				s390_msgr (code, ins->dreg, ins->sreg2);
+			} 
+			else { 
+				if (ins->sreg2 == ins->dreg) { 
+					s390_msgr (code, ins->dreg, ins->sreg1);
+				}
+				else { 
+					s390_lgr  (code, ins->dreg, ins->sreg1);
+					s390_msgr (code, ins->dreg, ins->sreg2);
+				}
+			}
+		}
+			break;
+		case OP_MUL_IMM: {
+			if (s390_is_imm16 (ins->inst_imm)) {
+				s390_lghi  (code, s390_r13, ins->inst_imm);
+			} else {
+				s390_basr (code, s390_r13, 0);
+				s390_j	  (code, 6);
+				s390_llong(code, ins->inst_imm);
+				if (ins->dreg != ins->sreg1) {
+					s390_lgr  (code, ins->dreg, ins->sreg1);
+				}
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
+			}
+			s390_msgr (code, ins->dreg, s390_r13);
+		}
+			break;
+		case CEE_MUL_OVF: {
+			short int *o[2];
+			s390_ltgr (code, s390_r1, ins->sreg1);
+			s390_jz   (code, 0); CODEPTR(code, o[0]);
+			s390_ltgr (code, s390_r0, ins->sreg2);
+			s390_jnz  (code, 6);
+			s390_lghi (code, s390_r1, 0);
+			s390_j    (code, 0); CODEPTR(code, o[1]);
+			s390_xgr  (code, s390_r0, s390_r1);
+			s390_msgr (code, s390_r1, ins->sreg2);
+			s390_xgr  (code, s390_r0, s390_r1);
+			s390_srlg (code, s390_r0, s390_r0, 0, 64);
+			s390_ltgr (code, s390_r0, s390_r0);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NZ, "OverflowException");
+			PTRSLOT	  (code, o[0]); 
+			PTRSLOT   (code, o[1]);
+			s390_lgr  (code, ins->dreg, s390_r1);
+		}
+			break;
+		case CEE_MUL_OVF_UN: {
+			s390_lghi (code, s390_r0, 0);
+			s390_lgr  (code, s390_r1, ins->sreg1);
+			s390_mlgr (code, s390_r0, ins->sreg2);
+			s390_ltgr (code, s390_r0, s390_r0);
+			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NZ, "OverflowException");
+			s390_lgr  (code, ins->dreg, s390_r1);
+		}
+			break;
+		case OP_IADDCC: {
+			if (ins->dreg != ins->sreg1) {
 				s390_lr	  (code, ins->dreg, ins->sreg1);
 			}
 			s390_alr  (code, ins->dreg, ins->sreg2);
 		}
 			break;
-		case CEE_ADD: {
+		case OP_IADD: {
 			if (ins->dreg != ins->sreg1) {
 				s390_lr	  (code, ins->dreg, ins->sreg1);
 			}
 			s390_ar   (code, ins->dreg, ins->sreg2);
 		}
 			break;
-		case OP_ADC: {
+		case OP_IADC: {
 			if (ins->dreg != ins->sreg1) {
 				s390_lr	  (code, ins->dreg, ins->sreg1);
 			}
 			s390_alcr (code, ins->dreg, ins->sreg2);
 		}
 			break;
-		case OP_ADD_IMM: {
+		case OP_IADD_IMM: {
 			if ((ins->next) &&
 			    (ins->next->opcode == OP_ADC_IMM)) {
 				s390_basr (code, s390_r13, 0);
@@ -3401,7 +3883,7 @@ guint8 cond;
 			}
 		}
 			break;
-		case OP_ADC_IMM: {
+		case OP_IADC_IMM: {
 			if (s390_is_imm16 (ins->inst_imm)) {
 				if (ins->dreg != ins->sreg1) {
 					s390_lr   (code, ins->dreg, ins->sreg1);
@@ -3417,65 +3899,28 @@ guint8 cond;
 			}
 		}
 			break;
-		case CEE_ADD_OVF: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_ar   (code, ins->dreg, ins->sreg2);
-			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
-		}
-			break;
-		case CEE_ADD_OVF_UN: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_alr  (code, ins->dreg, ins->sreg2);
-			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_CY, "OverflowException");
-		}
-			break;
-		case OP_ADD_OVF_CARRY: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_lhi  (code, s390_r0, 0);
-			s390_lr   (code, s390_r1, s390_r0);
-			s390_alcr (code, s390_r0, s390_r1);
-			s390_ar   (code, ins->dreg, ins->sreg2);
-			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
-			s390_ar   (code, ins->dreg, s390_r0);
-			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
-		}
-			break;
-		case OP_ADD_OVF_UN_CARRY: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_alcr (code, ins->dreg, ins->sreg2);
-			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_CY, "OverflowException");
-		}
-			break;
-		case OP_SUBCC: {
+		case OP_ISUBCC: {
 			if (ins->dreg != ins->sreg1) {
 				s390_lr	  (code, ins->dreg, ins->sreg1);
 			}
 			s390_slr (code, ins->dreg, ins->sreg2);
 		}
 			break;
-		case CEE_SUB: {
+		case OP_ISUB: {
 			if (ins->dreg != ins->sreg1) {
 				s390_lr	  (code, ins->dreg, ins->sreg1);
 			}
 			s390_sr   (code, ins->dreg, ins->sreg2);
 		}
 			break;
-		case OP_SBB: {
+		case OP_ISBB: {
 			if (ins->dreg != ins->sreg1) {
 				s390_lr	  (code, ins->dreg, ins->sreg1);
 			}
 			s390_slbr (code, ins->dreg, ins->sreg2);
 		}
 			break;
-		case OP_SUB_IMM: {
+		case OP_ISUB_IMM: {
 			if (s390_is_imm16 (-ins->inst_imm)) {
 				if (ins->dreg != ins->sreg1) {
 					s390_lr   (code, ins->dreg, ins->sreg1);
@@ -3492,51 +3937,14 @@ guint8 cond;
 			}
 		}
 			break;
-		case OP_SBB_IMM: {
+		case OP_ISBB_IMM: {
 			s390_basr (code, s390_r13, 0);
 			s390_j	  (code, 4);
 			s390_word (code, ins->inst_imm);
 			s390_sl   (code, ins->dreg, 0, s390_r13, 4);
 		}
 			break;
-		case CEE_SUB_OVF: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_sr   (code, ins->dreg, ins->sreg2);
-			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
-		}
-			break;
-		case CEE_SUB_OVF_UN: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_slr  (code, ins->dreg, ins->sreg2);
-			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NC, "OverflowException");
-		}
-			break;
-		case OP_SUB_OVF_CARRY: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_lhi  (code, s390_r0, 0);
-			s390_lr   (code, s390_r1, s390_r0);
-			s390_slbr (code, s390_r0, s390_r1);
-			s390_sr   (code, ins->dreg, ins->sreg2);
-			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
-			s390_ar   (code, ins->dreg, s390_r0);
-			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
-		}
-			break;
-		case OP_SUB_OVF_UN_CARRY: {
-			if (ins->dreg != ins->sreg1) {
-				s390_lr	  (code, ins->dreg, ins->sreg1);
-			}
-			s390_slbr (code, ins->dreg, ins->sreg2);
-			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NC, "OverflowException");
-		}
-			break;
-		case CEE_AND: {
+		case OP_IAND: {
 			if (ins->sreg1 == ins->dreg) {
 				s390_nr   (code, ins->dreg, ins->sreg2);
 			} 
@@ -3551,7 +3959,7 @@ guint8 cond;
 			}
 		}
 			break;
-		case OP_AND_IMM: {
+		case OP_IAND_IMM: {
 			if (s390_is_imm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r0, ins->inst_imm);
 				if (ins->dreg != ins->sreg1) {
@@ -3569,21 +3977,21 @@ guint8 cond;
 			}
 		}
 			break;
-		case CEE_DIV: {
+		case OP_IDIV: {
 			s390_lr	  (code, s390_r0, ins->sreg1);
 			s390_srda (code, s390_r0, 0, 32);
 			s390_dr   (code, s390_r0, ins->sreg2);
 			s390_lr   (code, ins->dreg, s390_r1);
 		}
 			break;
-		case CEE_DIV_UN: {
+		case OP_IDIV_UN: {
 			s390_lr	  (code, s390_r0, ins->sreg1);
 			s390_srdl (code, s390_r0, 0, 32);
 			s390_dlr  (code, s390_r0, ins->sreg2);
 			s390_lr   (code, ins->dreg, s390_r1);
 		}
 			break;
-		case OP_DIV_IMM: {
+		case OP_IDIV_IMM: {
 			if (s390_is_imm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r13, ins->inst_imm);
 				s390_lr   (code, s390_r0, ins->sreg1);
@@ -3599,20 +4007,20 @@ guint8 cond;
 			s390_lr   (code, ins->dreg, s390_r1);
 		}
 			break;
-		case CEE_REM: {
+		case OP_IREM: {
 			s390_lr	  (code, s390_r0, ins->sreg1);
 			s390_srda (code, s390_r0, 0, 32);
 			s390_dr   (code, s390_r0, ins->sreg2);
 			s390_lr   (code, ins->dreg, s390_r0);
 			break;
-		case CEE_REM_UN:
+		case OP_IREM_UN:
 			s390_lr	  (code, s390_r0, ins->sreg1);
 			s390_srdl (code, s390_r0, 0, 32);
 			s390_dlr  (code, s390_r0, ins->sreg2);
 			s390_lr   (code, ins->dreg, s390_r0);
 		}
 			break;
-		case OP_REM_IMM: {
+		case OP_IREM_IMM: {
 			if (s390_is_imm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r13, ins->inst_imm);
 				s390_lr   (code, s390_r0, ins->sreg1);
@@ -3628,7 +4036,7 @@ guint8 cond;
 			s390_lr   (code, ins->dreg, s390_r0);
 		}
 			break;
-		case CEE_OR: {
+		case OP_IOR: {
 			if (ins->sreg1 == ins->dreg) {
 				s390_or   (code, ins->dreg, ins->sreg2);
 			} 
@@ -3643,7 +4051,7 @@ guint8 cond;
 			}
 		}
 			break;
-		case OP_OR_IMM: {
+		case OP_IOR_IMM: {
 			if (s390_is_imm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r0, ins->inst_imm);
 				if (ins->dreg != ins->sreg1) {
@@ -3660,7 +4068,7 @@ guint8 cond;
 			}
 		}
 			break;
-		case CEE_XOR: {
+		case OP_IXOR: {
 			if (ins->sreg1 == ins->dreg) {
 				s390_xr   (code, ins->dreg, ins->sreg2);
 			} 
@@ -3675,7 +4083,7 @@ guint8 cond;
 			}
 		}
 			break;
-		case OP_XOR_IMM: {
+		case OP_IXOR_IMM: {
 			if (s390_is_imm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r0, ins->inst_imm);
 				if (ins->dreg != ins->sreg1) {
@@ -3693,49 +4101,49 @@ guint8 cond;
 			}
 		}
 			break;
-		case CEE_SHL: {
+		case OP_ISHL: {
 			if (ins->sreg1 != ins->dreg) {
 				s390_lr   (code, ins->dreg, ins->sreg1);
 			}
 			s390_sll  (code, ins->dreg, ins->sreg2, 0);
 		}
 			break;
-		case OP_SHL_IMM: {
+		case OP_ISHL_IMM: {
 			if (ins->sreg1 != ins->dreg) {
 				s390_lr   (code, ins->dreg, ins->sreg1);
 			}
 			s390_sll  (code, ins->dreg, 0, (ins->inst_imm & 0x1f));
 		}
 			break;
-		case CEE_SHR: {
+		case OP_ISHR: {
 			if (ins->sreg1 != ins->dreg) {
 				s390_lr   (code, ins->dreg, ins->sreg1);
 			}
 			s390_sra  (code, ins->dreg, ins->sreg2, 0);
 		}
 			break;
-		case OP_SHR_IMM: {
+		case OP_ISHR_IMM: {
 			if (ins->sreg1 != ins->dreg) {
 				s390_lr   (code, ins->dreg, ins->sreg1);
 			}
 			s390_sra  (code, ins->dreg, 0, (ins->inst_imm & 0x1f));
 		}
 			break;
-		case OP_SHR_UN_IMM: {
+		case OP_ISHR_UN_IMM: {
 			if (ins->sreg1 != ins->dreg) {
 				s390_lr   (code, ins->dreg, ins->sreg1);
 			}
 			s390_srl  (code, ins->dreg, 0, (ins->inst_imm & 0x1f));
 		}
 			break;
-		case CEE_SHR_UN: {
+		case OP_ISHR_UN: {
 			if (ins->sreg1 != ins->dreg) {
 				s390_lr   (code, ins->dreg, ins->sreg1);
 			}
 			s390_srl  (code, ins->dreg, ins->sreg2, 0);
 		}
 			break;
-		case CEE_NOT: {
+		case OP_INOT: {
 			if (ins->sreg1 != ins->dreg) {
 				s390_lr   (code, ins->dreg, ins->sreg1);
 			}
@@ -3743,11 +4151,11 @@ guint8 cond;
 			s390_xr  (code, ins->dreg, s390_r0);
 		}
 			break;
-		case CEE_NEG: {
+		case OP_INEG: {
 			s390_lcr (code, ins->dreg, ins->sreg1);
 		}
 			break;
-		case CEE_MUL: {
+		case OP_IMUL: {
 			if (ins->sreg1 == ins->dreg) {
 				s390_msr  (code, ins->dreg, ins->sreg2);
 			} 
@@ -3762,7 +4170,7 @@ guint8 cond;
 			}
 		}
 			break;
-		case OP_MUL_IMM: {
+		case OP_IMUL_IMM: {
 			if (s390_is_imm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r13, ins->inst_imm);
 			} else {
@@ -3777,7 +4185,7 @@ guint8 cond;
 			s390_msr  (code, ins->dreg, s390_r13);
 		}
 			break;
-		case CEE_MUL_OVF: {
+		case OP_IMUL_OVF: {
 			short int *o[2];
 			s390_ltr  (code, s390_r1, ins->sreg1);
 			s390_jz   (code, 0); CODEPTR(code, o[0]);
@@ -3796,7 +4204,7 @@ guint8 cond;
 			s390_lr   (code, ins->dreg, s390_r1);
 		}
 			break;
-		case CEE_MUL_OVF_UN: {
+		case OP_IMUL_OVF_UN: {
 			s390_lhi  (code, s390_r0, 0);
 			s390_lr   (code, s390_r1, ins->sreg1);
 			s390_mlr  (code, s390_r0, ins->sreg2);
@@ -3805,63 +4213,39 @@ guint8 cond;
 			s390_lr   (code, ins->dreg, s390_r1);
 		}
 			break;
-		case OP_LMUL: {
-			s390_l    (code, s390_r0, 0, ins->sreg1, 4);
-			s390_lr   (code, s390_r14, s390_r0);
-			s390_srda (code, s390_r0, 0, 32);
-			s390_m	  (code, s390_r0, 0, ins->sreg2, 4);
-			s390_srl  (code, s390_r14, 0, 31);
-			s390_a    (code, s390_r14, 0, ins->sreg1, 0);
-			s390_l    (code, s390_r13, 0, ins->sreg2, 0);
-			s390_srl  (code, s390_r13, 0, 31);
-			s390_ms   (code, s390_r13, 0, ins->sreg1, 4);
-			s390_ar   (code, s390_r14, s390_r13);
-			s390_st   (code, s390_r14, 0, ins->dreg, 0);
-			s390_st   (code, s390_r1, 0, ins->dreg, 4);
-		}
-			break;	
 		case OP_ICONST:
+		case OP_I8CONST:
 		case OP_SETREGIMM: {
 			if (s390_is_imm16(ins->inst_c0)) {
-				s390_lhi  (code, ins->dreg, ins->inst_c0);
+				s390_lghi (code, ins->dreg, ins->inst_c0);
 			} else {
 				s390_basr (code, s390_r13, 0);
-				s390_j	  (code, 4);
-				s390_word (code, ins->inst_c0);
-				s390_l    (code, ins->dreg, 0, s390_r13, 4);
+				s390_j	  (code, 6);
+				s390_llong(code, ins->inst_c0);
+				s390_lg   (code, ins->dreg, 0, s390_r13, 4);
 			}
 		}
 			break;
 		case OP_AOTCONST: {
 			s390_basr (code, s390_r13, 0);
-			s390_j	  (code, 4);
+			s390_j	  (code, 6);
 			mono_add_patch_info (cfg, code - cfg->native_code, 
 				(MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
-			s390_word (code, 0);
-			s390_l    (code,ins->dreg, 0, s390_r13, 4);
+			s390_llong(code, 0);
+			s390_lg   (code,ins->dreg, 0, s390_r13, 4);
 		}
 			break;
+		case CEE_CONV_I:
 		case CEE_CONV_I4:
+		case CEE_CONV_I8:
 		case CEE_CONV_U4:
 		case OP_MOVE:
 		case OP_SETREG: {
 			if (ins->dreg != ins->sreg1) {
-				s390_lr (code, ins->dreg, ins->sreg1);
+				s390_lgr(code, ins->dreg, ins->sreg1);
 			}
 		}
 			break;
-		case OP_SETLRET: {
-			int saved = ins->sreg1;
-			if (ins->sreg1 == s390_r2) {
-				s390_lr (code, s390_r0, ins->sreg1);
-				saved = s390_r0;
-			}
-			if (ins->sreg2 != s390_r2)
-				s390_lr (code, s390_r2, ins->sreg2);
-			if (saved != s390_r3)
-				s390_lr (code, s390_r3, saved);
-			break;
-		}
 		case OP_SETFREG:
 		case OP_FMOVE: {
 			if (ins->dreg != ins->sreg1) {
@@ -3880,40 +4264,51 @@ guint8 cond;
 		}
 			break;
 		case CEE_JMP: {
-			int float;
+			int fParm;
 			if (cfg->method->save_lmf)
 				code = restoreLMF(cfg, code);
 
 			if (cfg->flags & MONO_CFG_HAS_TAIL) {
-				s390_lm (code, s390_r2, s390_r5, STK_BASE, 
+				s390_lmg(code, s390_r2, s390_r5, STK_BASE, 
 					 S390_PARM_SAVE_OFFSET);
-				for (float = 0; float < 4; float++)
-					s390_ld (code, float, 0, STK_BASE,
-					   S390_FLOAT_SAVE_OFFSET+float*sizeof(double));
+				for (fParm = 0; fParm < 4; fParm ++)
+					s390_ld  (code, fParm, 0, STK_BASE, 
+					   S390_FLOAT_SAVE_OFFSET+fParm*sizeof(double));
 			}
 
 			code = backUpStackPtr(cfg, code);
-			s390_l   (code, s390_r14, 0, STK_BASE, S390_RET_ADDR_OFFSET);
+			s390_lg   (code, s390_r14, 0, STK_BASE, S390_RET_ADDR_OFFSET);
+			s390_basr (code, s390_r10, 0);
+			s390_j    (code, 6);
 			mono_add_patch_info (cfg, code - cfg->native_code,
 					     MONO_PATCH_INFO_METHOD_JUMP,
 					     ins->inst_p0);
-			s390_jcl (code, S390_CC_UN, 0);
+			s390_llong(code, 0);
+			s390_lg   (code, s390_r1, 0, s390_r10, 4);
+			s390_basr (code, s390_r0, s390_r1);
 		}
 			break;
 		case OP_CHECK_THIS: {
 			/* ensure ins->sreg1 is not NULL */
-			s390_icm (code, s390_r0, 15, ins->sreg1, 0);
+			s390_lg   (code, s390_r0, 0, ins->sreg1, 0);
+			s390_ltgr (code, s390_r0, s390_r0);
 		}
 			break;
 		case OP_FCALL: {
+			s390_basr (code, s390_r10, 0);
+			s390_j    (code, 6);
 			call = (MonoCallInst*)ins;
 			if (ins->flags & MONO_INST_HAS_METHOD)
-				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, 
+				mono_add_patch_info (cfg, code-cfg->native_code,
+						     MONO_PATCH_INFO_METHOD, 
 						     call->method);
 			else
-				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, 
+				mono_add_patch_info (cfg, code-cfg->native_code,
+						     MONO_PATCH_INFO_ABS, 
 						     call->fptr);
-			s390_brasl (code, s390_r14, 0);
+			s390_llong(code, 0);
+			s390_lg   (code, s390_r1, 0, s390_r10, 4);
+			s390_basr (code, s390_r14, s390_r1);
 			if (call->signature->ret->type == MONO_TYPE_R4)
 				s390_ldebr (code, s390_f0, s390_f0);
 		}
@@ -3922,17 +4317,25 @@ guint8 cond;
 		case OP_VCALL:
 		case OP_VOIDCALL:
 		case CEE_CALL: {
+			s390_basr (code, s390_r10, 0);
+			s390_j    (code, 6);
 			call = (MonoCallInst*)ins;
 			if (ins->flags & MONO_INST_HAS_METHOD)
-				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
+				mono_add_patch_info (cfg, code-cfg->native_code,
+						     MONO_PATCH_INFO_METHOD, 
+						     call->method);
 			else
-				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
-			s390_brasl (code, s390_r14, 0);
+				mono_add_patch_info (cfg, code-cfg->native_code,
+						     MONO_PATCH_INFO_ABS, 
+						     call->fptr);
+			s390_llong(code, 0);
+			s390_lg   (code, s390_r1, 0, s390_r10, 4);
+			s390_basr (code, s390_r14, s390_r1);
 		}
 			break;
 		case OP_FCALL_REG: {
 			call = (MonoCallInst*)ins;
-			s390_lr   (code, s390_r1, ins->sreg1);
+			s390_lgr  (code, s390_r1, ins->sreg1);
 			s390_basr (code, s390_r14, s390_r1);
 			if (call->signature->ret->type == MONO_TYPE_R4)
 				s390_ldebr (code, s390_f0, s390_f0);
@@ -3942,13 +4345,13 @@ guint8 cond;
 		case OP_VCALL_REG:
 		case OP_VOIDCALL_REG:
 		case OP_CALL_REG: {
-			s390_lr   (code, s390_r1, ins->sreg1);
+			s390_lgr  (code, s390_r1, ins->sreg1);
 			s390_basr (code, s390_r14, s390_r1);
 		}
 			break;
 		case OP_FCALL_MEMBASE: {
 			call = (MonoCallInst*)ins;
-			s390_l    (code, s390_r1, 0, ins->sreg1, ins->inst_offset);
+			s390_lg   (code, s390_r1, 0, ins->sreg1, ins->inst_offset);
 			s390_basr (code, s390_r14, s390_r1);
 			if (call->signature->ret->type == MONO_TYPE_R4)
 				s390_ldebr (code, s390_f0, s390_f0);
@@ -3958,7 +4361,7 @@ guint8 cond;
 		case OP_VCALL_MEMBASE:
 		case OP_VOIDCALL_MEMBASE:
 		case OP_CALL_MEMBASE: {
-			s390_l    (code, s390_r1, 0, ins->sreg1, ins->inst_offset);
+			s390_lg   (code, s390_r1, 0, ins->sreg1, ins->inst_offset);
 			s390_basr (code, s390_r14, s390_r1);
 		}
 			break;
@@ -3969,17 +4372,17 @@ guint8 cond;
 			int alloca_skip = S390_MINIMAL_STACK_SIZE + cfg->param_area + 
 					  S390_STACK_ALIGNMENT - 1;
 			int area_offset = S390_ALIGN(alloca_skip, S390_STACK_ALIGNMENT);
-			s390_lr   (code, s390_r1, ins->sreg1);
-			s390_ahi  (code, s390_r1, 14);
-			s390_srl  (code, s390_r1, 0, 3);
-			s390_sll  (code, s390_r1, 0, 3);
-			s390_l	  (code, s390_r13, 0, STK_BASE, 0);
-			s390_lcr  (code, s390_r1, s390_r1);
+			s390_lgr  (code, s390_r1, ins->sreg1);
+			s390_aghi (code, s390_r1, 14);
+			s390_srlg (code, s390_r1, s390_r1, 0, 3);
+			s390_sllg (code, s390_r1, s390_r1, 0, 3);
+			s390_lg	  (code, s390_r13, 0, STK_BASE, 0);
+			s390_lcgr (code, s390_r1, s390_r1);
 			s390_la	  (code, STK_BASE, STK_BASE, s390_r1, 0);
-			s390_st   (code, s390_r13, 0, STK_BASE, 0);
+			s390_stg  (code, s390_r13, 0, STK_BASE, 0);
 			s390_la   (code, ins->dreg, 0, STK_BASE, area_offset);
-			s390_srl  (code, ins->dreg, 0, 3);
-			s390_sll  (code, ins->dreg, 0, 3);
+			s390_srlg (code, ins->dreg, ins->dreg, 0, 3);
+			s390_sllg (code, ins->dreg, ins->dreg, 0, 3);
 		}
 			break;
 		case CEE_RET: {
@@ -3987,39 +4390,43 @@ guint8 cond;
 		}
 			break;
 		case CEE_THROW: {
-			s390_lr (code, s390_r2, ins->sreg1);
+			s390_lgr  (code, s390_r2, ins->sreg1);
+			s390_basr (code, s390_r13, 0);
+			s390_j    (code, 6);
 			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_throw_exception");
-			s390_brasl (code, s390_r14, 0);
+			s390_llong(code, 0);
+			s390_lg   (code, s390_r1, 0, s390_r13, 4);
+			s390_basr (code, s390_r14, s390_r1);
 		}
 			break;
 		case OP_START_HANDLER: {
 			if (s390_is_uimm12 (ins->inst_left->inst_offset)) {
-				s390_st   (code, s390_r14, 0, 
+				s390_stg  (code, s390_r14, 0, 
 					   ins->inst_left->inst_basereg, 
 					   ins->inst_left->inst_offset);
 			} else {
 				s390_basr (code, s390_r13, 0);
-				s390_j    (code, 4);
-				s390_word (code, ins->inst_left->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
-				s390_st   (code, s390_r14, s390_r13, 
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_left->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
+				s390_stg  (code, s390_r14, s390_r13, 
 					   ins->inst_left->inst_basereg, 0);
 			}
 		}
 			break;
 		case OP_ENDFILTER: {
 			if (ins->sreg1 != s390_r2)
-				s390_lr (code, s390_r2, ins->sreg1);
+				s390_lgr(code, s390_r2, ins->sreg1);
 			if (s390_is_uimm12 (ins->inst_left->inst_offset)) {
 				s390_l  (code, s390_r14, 0, ins->inst_left->inst_basereg,
 					 ins->inst_left->inst_offset);
 			} else {
 				s390_basr (code, s390_r13, 0);
-				s390_j    (code, 4);
-				s390_word (code, ins->inst_left->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
-				s390_l    (code, s390_r14, s390_r13, 
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_left->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
+				s390_lg   (code, s390_r14, s390_r13, 
 					   ins->inst_left->inst_basereg, 0);
 			}
 			s390_br  (code, s390_r14);
@@ -4027,14 +4434,14 @@ guint8 cond;
 			break;
 		case CEE_ENDFINALLY: {
 			if (s390_is_uimm12 (ins->inst_left->inst_offset)) {
-				s390_l  (code, s390_r14, 0, ins->inst_left->inst_basereg,
+				s390_lg (code, s390_r14, 0, ins->inst_left->inst_basereg,
 					 ins->inst_left->inst_offset);
 			} else {
 				s390_basr (code, s390_r13, 0);
-				s390_j    (code, 4);
-				s390_word (code, ins->inst_left->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
-				s390_l    (code, s390_r14, s390_r13, 
+				s390_j    (code, 6);
+				s390_llong(code, ins->inst_left->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
+				s390_lg   (code, s390_r14, s390_r13, 
 					   ins->inst_left->inst_basereg, 0);
 			}
 			s390_br  (code, s390_r14);
@@ -4057,34 +4464,39 @@ guint8 cond;
 			s390_br	 (code, ins->sreg1);
 		}
 			break;
-		case OP_CEQ: {
-			s390_lhi (code, ins->dreg, 1);
+		case OP_CEQ: 
+		case OP_ICEQ: {
+			s390_lghi(code, ins->dreg, 1);
 			s390_jz  (code, 4);
-			s390_lhi (code, ins->dreg, 0);
+			s390_lghi(code, ins->dreg, 0);
 		}
 			break;
-		case OP_CLT: {
-			s390_lhi (code, ins->dreg, 1);
+		case OP_CLT: 
+		case OP_ICLT: {
+			s390_lghi(code, ins->dreg, 1);
 			s390_jl  (code, 4);
-			s390_lhi (code, ins->dreg, 0);
+			s390_lghi(code, ins->dreg, 0);
 		}
 			break;
-		case OP_CLT_UN: {
-			s390_lhi (code, ins->dreg, 1);
+		case OP_CLT_UN:
+		case OP_ICLT_UN: {
+			s390_lghi(code, ins->dreg, 1);
 			s390_jlo (code, 4);
-			s390_lhi (code, ins->dreg, 0);
+			s390_lghi(code, ins->dreg, 0);
 		}
 			break;
-		case OP_CGT: {
-			s390_lhi (code, ins->dreg, 1);
+		case OP_CGT: 
+		case OP_ICGT: {
+			s390_lghi(code, ins->dreg, 1);
 			s390_jh  (code, 4);
-			s390_lhi (code, ins->dreg, 0);
+			s390_lghi(code, ins->dreg, 0);
 		}
 			break;
-		case OP_CGT_UN: {
-			s390_lhi (code, ins->dreg, 1);
+		case OP_CGT_UN:
+		case OP_ICGT_UN: {
+			s390_lghi(code, ins->dreg, 1);
 			s390_jho (code, 4);
-			s390_lhi (code, ins->dreg, 0);
+			s390_lghi(code, ins->dreg, 0);
 		}
 			break;
 		case OP_COND_EXC_EQ:
@@ -4122,25 +4534,35 @@ guint8 cond;
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NC, ins->inst_p1);
 			break;
 		case CEE_BEQ:
+		case OP_IBEQ:
 			EMIT_COND_BRANCH (ins, S390_CC_EQ);
 			break;	
 		case CEE_BNE_UN:
+		case OP_IBNE_UN:
 			EMIT_COND_BRANCH (ins, S390_CC_NE);
 			break;	
 		case CEE_BLT:
 		case CEE_BLT_UN:
+		case OP_IBLT:
+		case OP_IBLT_UN:
 			EMIT_COND_BRANCH (ins, S390_CC_LT);
 			break;	
 		case CEE_BGT:
 		case CEE_BGT_UN:
+		case OP_IBGT:
+		case OP_IBGT_UN:
 			EMIT_COND_BRANCH (ins, S390_CC_GT);
 			break;	
 		case CEE_BGE:
 		case CEE_BGE_UN:
+		case OP_IBGE:
+		case OP_IBGE_UN:
 			EMIT_COND_BRANCH (ins, S390_CC_GE);
 			break;	
 		case CEE_BLE:
 		case CEE_BLE_UN:
+		case OP_IBLE:
+		case OP_IBLE_UN:
 			EMIT_COND_BRANCH (ins, S390_CC_LE);
 			break;
 
@@ -4150,9 +4572,9 @@ guint8 cond;
 				s390_lzdr (code, ins->dreg);
 			} else {
 				s390_basr  (code, s390_r13, 0);
-				s390_j	   (code, 4);
-				s390_word  (code, ins->inst_p0);
-				s390_l	   (code, s390_r13, 0, s390_r13, 4);
+				s390_j	   (code, 6);
+				s390_llong (code, ins->inst_p0);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
 				s390_ld    (code, ins->dreg, 0, s390_r13, 0);
 			}
 		}
@@ -4162,9 +4584,9 @@ guint8 cond;
 				s390_lzdr (code, ins->dreg);
 			} else {
 				s390_basr (code, s390_r13, 0);
-				s390_j	  (code, 4);
-				s390_word (code, ins->inst_p0);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
+				s390_j	  (code, 6);
+				s390_llong(code, ins->inst_p0);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
 				s390_ldeb (code, ins->dreg, 0, s390_r13, 0);
 			}
 		}
@@ -4174,9 +4596,9 @@ guint8 cond;
 				s390_std  (code, ins->sreg1, 0, ins->inst_destbasereg, ins->inst_offset);
 			} else {
 				s390_basr (code, s390_r13, 0);
-				s390_j	  (code, 4);
-				s390_word (code, ins->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
+				s390_j	  (code, 6);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
 				s390_std  (code, ins->sreg1, s390_r13, ins->inst_destbasereg, 0);
 			}
 		}
@@ -4186,9 +4608,9 @@ guint8 cond;
 				s390_ld   (code, ins->dreg, 0, ins->inst_basereg, ins->inst_offset);
 			} else {
 				s390_basr (code, s390_r13, 0);
-				s390_j	  (code, 4);
-				s390_word (code, ins->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
+				s390_j	  (code, 6);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
 				s390_ld   (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
 			}
 		}
@@ -4199,9 +4621,9 @@ guint8 cond;
 				s390_ste  (code, s390_f15, 0, ins->inst_destbasereg, ins->inst_offset);
 			} else {
 				s390_basr (code, s390_r13, 0);
-				s390_j	  (code, 4);
-				s390_word (code, ins->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
+				s390_j	  (code, 6);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
 				s390_ledbr(code, s390_f15, ins->sreg1);
 				s390_ste  (code, s390_f15, s390_r13, ins->inst_destbasereg, 0);
 			}
@@ -4212,16 +4634,16 @@ guint8 cond;
 				s390_ldeb (code, ins->dreg, 0, ins->inst_basereg, ins->inst_offset);
 			} else {
 				s390_basr (code, s390_r13, 0);
-				s390_j	  (code, 4);
-				s390_word (code, ins->inst_offset);
-				s390_l    (code, s390_r13, 0, s390_r13, 4);
+				s390_j	  (code, 6);
+				s390_llong(code, ins->inst_offset);
+				s390_lg   (code, s390_r13, 0, s390_r13, 4);
 				s390_ldeb (code, ins->dreg, s390_r13, ins->inst_basereg, 0);
 			}
 		}
 			break;
 		case CEE_CONV_R_UN: {
 			s390_cdfbr (code, ins->dreg, ins->sreg1);
-			s390_ltr   (code, ins->sreg1, ins->sreg1);
+			s390_ltgr  (code, ins->sreg1, ins->sreg1);
 			s390_jnl   (code, 12);
 			s390_basr  (code, s390_r13, 0);
 			s390_j	   (code, 6);
@@ -4270,15 +4692,15 @@ guint8 cond;
 		case OP_LCONV_TO_OVF_I: {
 			/* Valid ints: 0xffffffff:8000000 to 00000000:0x7f000000 */
 			short int *o[5];
-			s390_ltr  (code, ins->sreg2, ins->sreg2);
+			s390_ltgr (code, ins->sreg2, ins->sreg2);
 			s390_jnl  (code, 0); CODEPTR(code, o[0]);
-			s390_ltr  (code, ins->sreg1, ins->sreg1);
+			s390_ltgr (code, ins->sreg1, ins->sreg1);
 			s390_jnl  (code, 0); CODEPTR(code, o[1]);
 			s390_lhi  (code, s390_r13, -1);
-			s390_cr   (code, ins->sreg1, s390_r13);
+			s390_cgr  (code, ins->sreg1, s390_r13);
 			s390_jnz  (code, 0); CODEPTR(code, o[2]);
 			if (ins->dreg != ins->sreg2)
-				s390_lr   (code, ins->dreg, ins->sreg2);
+				s390_lgr  (code, ins->dreg, ins->sreg2);
 			s390_j	  (code, 0); CODEPTR(code, o[3]);
 			PTRSLOT(code, o[0]);
 			s390_jz   (code, 0); CODEPTR(code, o[4]);
@@ -4356,37 +4778,37 @@ guint8 cond;
 			break;
 		case OP_FCEQ: {
 			s390_cdbr  (code, ins->sreg1, ins->sreg2);
-			s390_lhi   (code, ins->dreg, 1);
-			s390_je    (code, 4);
-			s390_lhi   (code, ins->dreg, 0);
+			s390_lghi  (code, ins->dreg, 1);
+			s390_je    (code, 6);
+			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_FCLT: {
 			s390_cdbr  (code, ins->sreg1, ins->sreg2);
-			s390_lhi   (code, ins->dreg, 1);
+			s390_lghi  (code, ins->dreg, 1);
 			s390_jl    (code, 4);
-			s390_lhi   (code, ins->dreg, 0);
+			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_FCLT_UN: {
 			s390_cdbr  (code, ins->sreg1, ins->sreg2);
-			s390_lhi   (code, ins->dreg, 1);
+			s390_lghi  (code, ins->dreg, 1);
 			s390_jlo   (code, 4);
-			s390_lhi   (code, ins->dreg, 0);
+			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_FCGT: {
 			s390_cdbr  (code, ins->sreg1, ins->sreg2);
-			s390_lhi   (code, ins->dreg, 1);
+			s390_lghi  (code, ins->dreg, 1);
 			s390_jh    (code, 4);
-			s390_lhi   (code, ins->dreg, 0);
+			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_FCGT_UN: {
 			s390_cdbr  (code, ins->sreg1, ins->sreg2);
-			s390_lhi   (code, ins->dreg, 1);
+			s390_lghi  (code, ins->dreg, 1);
 			s390_jho   (code, 4);
-			s390_lhi   (code, ins->dreg, 0);
+			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_FBEQ:
@@ -4438,24 +4860,24 @@ guint8 cond;
 				} else {
 					s390_lr   (code, s390_r0, ins->dreg);
 					if (s390_is_imm16 (ins->inst_offset)) {
-						s390_ahi  (code, s390_r0, ins->inst_offset);
+						s390_aghi (code, s390_r0, ins->inst_offset);
 					} else {
 						s390_basr (code, s390_r13, 0);
-						s390_j    (code, 4);
-						s390_word (code, ins->inst_offset);
+						s390_j    (code, 6);
+						s390_llong(code, ins->inst_offset);
 						s390_a    (code, s390_r0, 0, s390_r13, 4);
 					}
 					s390_lr   (code, s390_r12, ins->sreg1);
 					if (s390_is_imm16 (ins->inst_imm)) {
-						s390_ahi  (code, s390_r12, ins->inst_imm);
+						s390_aghi (code, s390_r12, ins->inst_imm);
 					} else {
 						s390_basr (code, s390_r13, 0);
-						s390_j    (code, 4);
-							s390_word (code, ins->inst_imm);
-						s390_a    (code, s390_r12, 0, s390_r13, 4);
+						s390_j    (code, 6);
+						s390_llong(code, ins->inst_imm);
+						s390_ag   (code, s390_r12, 0, s390_r13, 4);
 					}
-					s390_lr   (code, s390_r1, ins->sreg1);
-					s390_lr   (code, s390_r13, s390_r1);
+					s390_lgr  (code, s390_r1, ins->sreg1);
+					s390_lgr  (code, s390_r13, s390_r1);
 					s390_mvcle(code, s390_r0, s390_r12, 0, 0);
 					s390_jo   (code, -2);
 				}
@@ -4470,7 +4892,7 @@ guint8 cond;
 		if ((cfg->opt & MONO_OPT_BRANCH) && ((code - cfg->native_code - offset) > max_len)) {
 			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %d)",
 				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
-			g_assert_not_reached ();
+//			g_assert_not_reached ();
 		}
 	       
 		cpos += max_len;
@@ -4520,23 +4942,27 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 
 	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
 		unsigned char *ip = patch_info->ip.i + code;
-		gint32 target = 0;
+		guint64 target = 0;
 
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_BB:
+printf("1. %016llx %p ",patch_info->data.bb->native_offset+code,ip);
 			target = S390_RELATIVE((patch_info->data.bb->native_offset+code),
 					       ip);
+printf("%016llx\n",target);
 			ip    += 2;	/* Skip over op-code */
 			break;
 		case MONO_PATCH_INFO_ABS:
-			target = S390_RELATIVE(patch_info->data.target, ip);
-			ip    += 2;	/* Skip over op-code */
+printf("2. %016llx %p\n",patch_info->data.target,ip);
+			*((gpointer *)(ip)) = patch_info->data.target;
 			break;
 		case MONO_PATCH_INFO_LABEL:
 			target = S390_RELATIVE((patch_info->data.inst->inst_c0+code),ip);
+printf("3. %016llx %p %016llx\n",patch_info->data.inst->inst_c0+code,ip,target);
 			ip    += 2;	/* Skip over op-code */
 			break;
 		case MONO_PATCH_INFO_IP:
+printf("4. %p\n",ip);
 			target = ip;
 			continue;
 		case MONO_PATCH_INFO_METHOD_REL:
@@ -4549,8 +4975,8 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 				g_warning ("unknown MONO_PATCH_INFO_INTERNAL_METHOD %s", patch_info->data.name);
 				g_assert_not_reached ();
 			}
-			target = S390_RELATIVE(mono_icall_get_wrapper (mi), ip);
-			ip    += 2;	/* Skip over op-code */
+			*((gpointer *)(ip)) = mono_icall_get_wrapper (mi);
+printf("5. %016llx %p %016llx\n",mono_icall_get_wrapper(mi),ip,target);
 			break;
 		}
 		case MONO_PATCH_INFO_METHOD_JUMP: {
@@ -4559,30 +4985,29 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			/*------------------------------------------------------*/
 			/* get the trampoline to the method from the domain 	*/
 			/*------------------------------------------------------*/
-			target = mono_create_jump_trampoline (domain, 
+			*((gpointer *)(ip)) = mono_create_jump_trampoline (
+						      domain, 
 						      patch_info->data.method, 
 						      TRUE);
-			target = S390_RELATIVE(target, ip);
-			if (!domain->jump_target_hash)
-				domain->jump_target_hash = g_hash_table_new (NULL, NULL);
+			
+printf("6. %p\n",(void *)(*ip));
+			
 			list = g_hash_table_lookup (domain->jump_target_hash, 
 						    patch_info->data.method);
 			list = g_slist_prepend (list, ip);
 			g_hash_table_insert (domain->jump_target_hash, 
 					     patch_info->data.method, list);
-			ip  +=2;
 			break;
 		}
 		case MONO_PATCH_INFO_METHOD:
 			if (patch_info->data.method == method) {
-				target = S390_RELATIVE(code, ip);
+				*((gpointer *)(ip)) = code;
+printf("7. %p %p\n",code,ip);
 			} else {
 				/* get the trampoline to the method from the domain */
-				target = S390_RELATIVE(mono_arch_create_jit_trampoline (patch_info->data.method), ip);
-				target = mono_arch_create_jit_trampoline(patch_info->data.method);
-				target = S390_RELATIVE(target, ip);
+				*((gpointer *)(ip)) = mono_arch_create_jit_trampoline(patch_info->data.method);
+printf("7. %p\n",(void *) (*ip));
 			}
-			ip    += 2;	/* Skip over op-code */
 			break;
 		case MONO_PATCH_INFO_SWITCH: {
 			gpointer *table = (gpointer *)patch_info->data.target;
@@ -4603,6 +5028,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_IMAGE:
 		case MONO_PATCH_INFO_FIELD:
 			target = S390_RELATIVE(patch_info->data.target, ip);
+printf("8. %016llx %p %p\n",patch_info->data.target, ip, target);
 			continue;
 		case MONO_PATCH_INFO_R4:
 		case MONO_PATCH_INFO_R8:
@@ -4632,6 +5058,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			}
 			target = S390_RELATIVE((char*)vtable->data + patch_info->data.field->offset, ip);
 			ip += 2;
+printf("10. %016llx %p %p\n",vtable->data,ip, target);
 			continue;
 		}
 		case MONO_PATCH_INFO_EXC_NAME:
@@ -4703,7 +5130,9 @@ mono_arch_max_epilog_size (MonoCompile *cfg)
 
 	/* count the number of exception infos */
      
-	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+	for (patch_info = cfg->patch_info; 
+	     patch_info; 
+	     patch_info = patch_info->next) {
 		if (patch_info->type == MONO_PATCH_INFO_EXC)
 			max_epilog_size += 26;
 	}
@@ -4738,17 +5167,17 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		tracing = 1;
 
-	cfg->code_size   = 256;
+	cfg->code_size   = 384;
 	cfg->native_code = code = g_malloc (cfg->code_size);
 
 	if (cfg->flags & MONO_CFG_HAS_TAIL) {
 		s390_stmg (code, s390_r2, s390_r14, STK_BASE, S390_PARM_SAVE_OFFSET);
 		for (pos = 0; pos < 4; pos++)
-			s390_std (code, pos, 0, STK_BASE, 
-				  S390_FLOAT_SAVE_OFFSET+pos*sizeof(double));
-	} else { 
-		s390_stm  (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
-        }
+			s390_std  (code, pos*2, 0, STK_BASE, 
+			   	S390_FLOAT_SAVE_OFFSET+pos*sizeof(double));
+	} else {
+		s390_stmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
+	}
 
 	if (cfg->flags & MONO_CFG_HAS_ALLOCA) {
 		cfg->used_int_regs |= 1 << 11;
@@ -4757,21 +5186,21 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	alloc_size = cfg->stack_offset;
 
 	cfg->stack_usage = alloc_size;
-	s390_lr   (code, s390_r11, STK_BASE);
+	s390_lgr  (code, s390_r11, STK_BASE);
 	if (s390_is_imm16 (-alloc_size)) {
-		s390_ahi  (code, STK_BASE, -alloc_size);
+		s390_aghi (code, STK_BASE, -alloc_size);
 	} else { 
 		int stackSize = alloc_size;
 		while (stackSize > 32767) {
-			s390_ahi  (code, STK_BASE, -32767);
+			s390_aghi (code, STK_BASE, -32767);
 			stackSize -= 32767;
 		}
-		s390_ahi  (code, STK_BASE, -stackSize);
+		s390_aghi (code, STK_BASE, -stackSize);
 	}
-	s390_st   (code, s390_r11, 0, STK_BASE, 0);
+	s390_stg  (code, s390_r11, 0, STK_BASE, 0);
 
 	if (cfg->frame_reg != STK_BASE)
-		s390_lr (code, s390_r11, STK_BASE);
+		s390_lgr (code, s390_r11, STK_BASE);
 
         /* compute max_offset in order to use short forward jumps
 	 * we always do it on s390 because the immediate displacement
@@ -4801,7 +5230,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		ArgInfo *ainfo = &cinfo->ret;
 		inst         = cfg->ret;
 		inst->unused = ainfo->vtsize;
-		s390_st (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
+		s390_stg (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
 	}
 
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
@@ -4810,7 +5239,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		
 		if (inst->opcode == OP_REGVAR) {
 			if (ainfo->regtype == RegTypeGeneral)
-				s390_lr (code, inst->dreg, ainfo->reg);
+				s390_lgr (code, inst->dreg, ainfo->reg);
 			else if (ainfo->regtype == RegTypeFP) {
 				if (inst->dreg != ainfo->reg) {
 					if (ainfo->size == 4) {
@@ -4821,9 +5250,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				}
 			}
 			else if (ainfo->regtype == RegTypeBase) {
-				s390_lr  (code, s390_r13, STK_BASE);
-				s390_ahi (code, s390_r13, alloc_size);
-				s390_l   (code, inst->dreg, 0, s390_r13, ainfo->offset);
+				s390_lgr (code, s390_r13, STK_BASE);
+				s390_aghi(code, s390_r13, alloc_size);
+				s390_lg  (code, inst->dreg, 0, s390_r13, ainfo->offset);
 			} else
 				g_assert_not_reached ();
 
@@ -4842,7 +5271,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					s390_sth (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
 					break;
 				case 8:
-					s390_stm (code, ainfo->reg, ainfo->reg + 1, 
+					s390_stg (code, ainfo->reg, 0,
 						  inst->inst_basereg, inst->inst_offset);
 					break;
 				default:
@@ -4863,8 +5292,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					reg = ainfo->reg;
 				else {
 					reg = s390_r0;
-					s390_lr  (code, s390_r13, STK_BASE);
-					s390_ahi (code, s390_r13, alloc_size);
+					s390_lgr (code, s390_r13, STK_BASE);
+					s390_aghi(code, s390_r13, alloc_size);
 				}
 				switch (ainfo->size) {
 					case 1:
@@ -4884,15 +5313,15 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 						break;
 					case 8:
 						if (ainfo->reg == STK_BASE)
-				                	s390_lm  (code, s390_r0, s390_r1, s390_r13, ainfo->offset);
-						s390_stm (code, reg, reg+1, inst->inst_basereg, doffset);
+				                	s390_lg  (code, s390_r0, 0, s390_r13, ainfo->offset);
+						s390_stg (code, reg, 0, inst->inst_basereg, doffset);
 						break;
 				}
 			} else if (ainfo->regtype == RegTypeStructByAddr) {
 				if (ainfo->reg == STK_BASE) {
-					s390_lr  (code, s390_r13, ainfo->reg);
-					s390_ahi (code, s390_r13, alloc_size);
-					s390_l   (code, s390_r13, 0, s390_r13, 
+					s390_lgr (code, s390_r13, ainfo->reg);
+					s390_aghi(code, s390_r13, alloc_size);
+					s390_lg  (code, s390_r13, 0, s390_r13, 
 						  ainfo->offparm + S390_MINIMAL_STACK_SIZE);
 					code = emit_memcpy (code, abs(ainfo->vtsize), 
 							    inst->inst_basereg, 
@@ -4913,69 +5342,73 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/*---------------------------------------------------------------*/
 		/* Preserve the parameter registers while we fix up the lmf	 */
 		/*---------------------------------------------------------------*/
-		s390_lr (code, s390_r7, s390_r2);
-		s390_lr (code, s390_r8, s390_r3);
-		s390_lr (code, s390_r9, s390_r4);
-		s390_lr (code, s390_r10, s390_r5);
+		s390_lgr (code, s390_r7, s390_r2);
+		s390_lgr (code, s390_r8, s390_r3);
+		s390_lgr (code, s390_r9, s390_r4);
+		s390_lgr (code, s390_r10, s390_r5);
 
-		mono_add_patch_info (cfg, code - cfg->native_code, 
-				     MONO_PATCH_INFO_INTERNAL_METHOD, 
-				     (gpointer)"mono_get_lmf_addr");
 		/*---------------------------------------------------------------*/
 		/* On return from this call r2 have the address of the &lmf	 */
 		/*---------------------------------------------------------------*/
-		s390_brasl (code, s390_r14, 0);
+		s390_basr(code, s390_r13, 0);
+		s390_j   (code, 6);
+		mono_add_patch_info (cfg, code - cfg->native_code, 
+				     MONO_PATCH_INFO_INTERNAL_METHOD, 
+				     (gpointer)"mono_get_lmf_addr");
+		s390_llong(code, 0);
+		s390_lg   (code, s390_r1, 0, s390_r13, 4);
+		s390_basr (code, s390_r14, s390_r1);
 
 		/*---------------------------------------------------------------*/
 		/* we build the MonoLMF structure on the stack - see mini-s390.h */
 		/*---------------------------------------------------------------*/
 		lmfOffset = alloc_size - sizeof(MonoLMF);
 
-		s390_lr    (code, s390_r13, cfg->frame_reg);
-		s390_ahi   (code, s390_r13, lmfOffset);
+		s390_lgr   (code, s390_r13, cfg->frame_reg);
+		s390_aghi  (code, s390_r13, lmfOffset);
 
 		/*---------------------------------------------------------------*/
 		/* Set lmf.lmf_addr = jit_tls->lmf				 */
 		/*---------------------------------------------------------------*/
-		s390_st    (code, s390_r2, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, lmf_addr));
+		s390_stg   (code, s390_r2, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, lmf_addr));
 
 		/*---------------------------------------------------------------*/
 		/* Get current lmf						 */
 		/*---------------------------------------------------------------*/
-		s390_l     (code, s390_r0, 0, s390_r2, 0);
+		s390_lg    (code, s390_r0, 0, s390_r2, 0);
 
 		/*---------------------------------------------------------------*/
 		/* Set our lmf as the current lmf				 */
 		/*---------------------------------------------------------------*/
-		s390_st	   (code, s390_r13, 0, s390_r2, 0);
+		s390_stg   (code, s390_r13, 0, s390_r2, 0);
 
 		/*---------------------------------------------------------------*/
 		/* Have our lmf.previous_lmf point to the last lmf		 */
 		/*---------------------------------------------------------------*/
-		s390_st	   (code, s390_r0, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
+		s390_stg   (code, s390_r0, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, previous_lmf));
 
 		/*---------------------------------------------------------------*/
 		/* save method info						 */
 		/*---------------------------------------------------------------*/
 		s390_basr  (code, s390_r1, 0);
-		s390_j	   (code, 4);
-		s390_word  (code, method);
-		s390_l	   (code, s390_r1, 0, s390_r1, 4);
-		s390_st    (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, method));
+		s390_j	   (code, 6);
+		s390_llong (code, method);
+		s390_lg    (code, s390_r1, 0, s390_r1, 4);
+		s390_stg   (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, method));
 
 		/*---------------------------------------------------------------*/
 		/* save the current IP						 */
 		/*---------------------------------------------------------------*/
-		s390_lr    (code, s390_r1, cfg->frame_reg);
-		s390_st	   (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, ebp));
-		s390_l     (code, s390_r1, 0, s390_r1, S390_RET_ADDR_OFFSET);
+		s390_lgr   (code, s390_r1, cfg->frame_reg);
+		s390_stg   (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, ebp));
+		s390_lg    (code, s390_r1, 0, s390_r1, S390_RET_ADDR_OFFSET);
 		s390_la    (code, s390_r1, 0, s390_r1, 0);
-		s390_st    (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, eip));
+		s390_stg   (code, s390_r1, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, eip));
 
 		/*---------------------------------------------------------------*/
 		/* Save general and floating point registers			 */
 		/*---------------------------------------------------------------*/
-		s390_stm   (code, s390_r2, s390_r12, s390_r13, G_STRUCT_OFFSET(MonoLMF, gregs[2]));
+		s390_stmg  (code, s390_r2, s390_r12, s390_r13, G_STRUCT_OFFSET(MonoLMF, gregs[2]));
 		for (i = 0; i < 16; i++) {
 			s390_std  (code, i, 0, s390_r13, G_STRUCT_OFFSET(MonoLMF, fregs[i]));
 		}
@@ -4983,16 +5416,18 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/*---------------------------------------------------------------*/
 		/* Restore the parameter registers now that we've set up the lmf */
 		/*---------------------------------------------------------------*/
-		s390_lr (code, s390_r2, s390_r7);
-		s390_lr (code, s390_r3, s390_r8);
-		s390_lr (code, s390_r4, s390_r9);
-		s390_lr (code, s390_r5, s390_r10);
+		s390_lgr (code, s390_r2, s390_r7);
+		s390_lgr (code, s390_r3, s390_r8);
+		s390_lgr (code, s390_r4, s390_r9);
+		s390_lgr (code, s390_r5, s390_r10);
 	}
 
 	if (tracing)
 		code = mono_arch_instrument_prolog (cfg, enter_method, code, TRUE);
 
 	cfg->code_len = code - cfg->native_code;
+
+	g_assert(cfg->code_len < cfg->code_size);
 	g_free (cinfo);
 
 	return code;
@@ -5029,44 +5464,48 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		code = restoreLMF(cfg, code);
 
 	if (cfg->flags & MONO_CFG_HAS_ALLOCA) 
-		s390_l	 (code, STK_BASE, 0, STK_BASE, 0);
+		s390_lg	 (code, STK_BASE, 0, STK_BASE, 0);
 	else
 		code = backUpStackPtr(cfg, code);
 
-	s390_lm  (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
+	s390_lmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
 	s390_br  (code, s390_r14);
 
 	/* add code to raise exceptions */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_EXC: {
-			/*-----------------------------------------------------*/
-			/* Patch the branch in epilog to come here	       */
-			/*-----------------------------------------------------*/
+			/*---------------------------------------------*/
+			/* Patch the branch in epilog to come here     */
+			/*---------------------------------------------*/
 			s390_patch (patch_info->ip.i+cfg->native_code+2, 
 				    S390_RELATIVE(code,patch_info->ip.i+cfg->native_code));
-			/*-----------------------------------------------------*/
-			/* Patch the parameter passed to the handler	       */ 
-			/*-----------------------------------------------------*/
+			/*---------------------------------------------*/
+			/* Patch the parameter passed to the handler   */ 
+			/*---------------------------------------------*/
 			s390_basr (code, s390_r13, 0);
-			s390_j	  (code, 4);
+			s390_j	  (code, 6);
 			mono_add_patch_info (cfg, code - cfg->native_code,
 					     MONO_PATCH_INFO_EXC_NAME,
 					     patch_info->data.target);
-			s390_word (code, 0);
+			s390_llong(code, 0);
 			/*-----------------------------------------------------*/
 			/* Load the return address and the parameter register  */
 			/*-----------------------------------------------------*/
 			s390_larl (code, s390_r14, S390_RELATIVE((patch_info->ip.i +
 						   cfg->native_code + 8), code));
-			s390_l    (code, s390_r2, 0, s390_r13, 4);
+			s390_lg   (code, s390_r2, 0, s390_r13, 4);
 			/*-----------------------------------------------------*/
 			/* Reuse the current patch to set the jump	       */
 			/*-----------------------------------------------------*/
+			s390_basr (code, s390_r13, 0);
+			s390_j    (code, 6);
 			patch_info->type      = MONO_PATCH_INFO_INTERNAL_METHOD;
 			patch_info->data.name = "mono_arch_throw_exception_by_name";
 			patch_info->ip.i      = code - cfg->native_code;
-			s390_jcl  (code, S390_CC_UN, 0);
+			s390_llong(code, 0);
+			s390_lg   (code, s390_r1, 0, s390_r13, 4);
+			s390_br   (code, s390_r1);
 			break;
 		}
 		default:

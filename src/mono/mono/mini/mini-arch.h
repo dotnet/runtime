@@ -10,7 +10,11 @@
 #elif defined(__sparc__) || defined(sparc)
 #include "mini-sparc.h"
 #elif defined(__s390__) || defined(s390)
-#include "mini-s390.h"
+# if defined(__s390x__)
+#  include "mini-s390x.h"
+# else
+#  include "mini-s390.h"
+# endif
 #else
 #error add arch specific include file in mini-arch.h
 #endif

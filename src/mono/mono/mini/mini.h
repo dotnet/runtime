@@ -547,7 +547,8 @@ typedef enum {
 	MONO_CFG_HAS_ALLOCA = 1 << 0,
 	MONO_CFG_HAS_CALLS  = 1 << 1,
 	MONO_CFG_HAS_LDELEMA  = 1 << 2,
-	MONO_CFG_HAS_VARARGS  = 1 << 3
+	MONO_CFG_HAS_VARARGS  = 1 << 3,
+	MONO_CFG_HAS_TAIL     = 1 << 4
 } MonoCompileFlags;
 
 typedef struct {

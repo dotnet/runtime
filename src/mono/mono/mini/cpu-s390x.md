@@ -1,4 +1,4 @@
-# S/390 64-bit cpu description file
+# S/390 cpu description file
 # this file is read by genmdesc to pruduce a table with all the relevant information
 # about the cpu instructions that may be used by the regsiter allocator, the scheduler
 # and other parts of the arch-dependent part of mini.
@@ -50,7 +50,7 @@ adc: dest:i src1:i src2:i len:6
 adc_imm: dest:i src1:i len:14
 add.ovf.un: len: 8 dest:i src1:i src2:i
 add.ovf: len: 24 dest:i src1:i src2:i
-add: dest:i src1:i src2:i len:4 clob:1
+add: dest:i src1:i src2:i len:6 clob:1
 add_imm: dest:i src1:i len:18
 add_ovf_carry: dest:i src1:1 src2:i len:28
 add_ovf_un_carry: dest:i src1:1 src2:i len:12
@@ -89,7 +89,7 @@ brfalse.s:
 brfalse:
 brtrue.s:
 brtrue:
-call: dest:a clob:c len:6
+call: dest:a clob:c len:26
 call_handler: len:12
 call_membase: dest:a src1:b len:12 clob:c
 call_reg: dest:a src1:i len:8 clob:c
@@ -99,7 +99,7 @@ castclass:
 ceq: dest:i len:12
 cgt.un: dest:i len:12
 cgt: dest:i len:12
-checkthis: src1:b len:4
+checkthis: src1:b len:10
 ckfinite: dest:f src1:f len:22
 clt.un: dest:i len:12
 clt: dest:i len:12
@@ -121,8 +121,8 @@ cond_exc_no: len:8
 cond_exc_ov: len:8
 conv.i1: dest:i src1:i len:24
 conv.i2: dest:i src1:i len:24
-conv.i4: dest:i src1:i len:2
-conv.i8:
+conv.i4: dest:i src1:i len:4
+conv.i8: dest:i src1:i len:4
 conv.i: dest:i src1:i len:2
 conv.ovf.i.un:
 conv.ovf.i1.un:
@@ -162,7 +162,7 @@ dup:
 endfilter: len:20
 endfinally: len: 20
 endmac:
-fcall: dest:f len:10 clob:c
+fcall: dest:f len:26 clob:c
 fcall_membase: dest:f src1:b len:14 clob:c
 fcall_reg: dest:f src1:i len:10 clob:c
 fcompare: src1:f src2:f len:14
@@ -229,18 +229,71 @@ float_sub: dest:f src1:f src2:f len:6
 float_sub_ovf:
 float_sub_ovf_un:
 fmove: dest:f src1:f len:4
-i8const:
-iconst: dest:i len:16
+i8const: dest:i len:20
+icompare: src1:i src2:i len:4
+icompare_imm: src1:i src2:i len:14
+iconst: dest:i len:20
 illegal:
 initblk:
 initobj:
+int_adc: dest:i src1:i src2:i clob:1 len:6
+int_adc_imm: dest:i src1:i clob:1 len:14
+int_addcc: dest:i src1:i src2:i clob:1 len:6
+int_add: dest:i src1:i src2:i clob:1 len:4
+int_add_imm: dest:i src1:i clob:1 len:18
+int_and: dest:i src1:i src2:i clob:1 len:6
+int_and_imm: dest:i src1:i clob:1 len:16
+int_beq: len:8
+int_bge: len:8
+int_bge_un: len:8
+int_bgt: len:8
+int_bgt_un: len:8
+int_ble: len:8
+int_ble_un: len:8
+int_blt: len:8
+int_blt_un: len:8
+int_bne_un: len:8
+int_ceq: dest:i len:12
+int_cgt: dest:i len:12
+int_cgt_un: dest:i len:12
+int_clt: dest:i len:12
+int_clt_un: dest:i len:12
+int_div: dest:a src1:i src2:i clob:d len:10
+int_div_imm: dest:a src1:i clob:d len:24
+int_div_un: dest:a src1:i src2:i clob:d len:12
+int_div_un_imm: dest:a src1:i clob:d len:24
+int_mul: dest:i src1:i src2:i clob:1 len:4
+int_mul_imm: dest:i src1:i clob:1 len:18
+int_mul_ovf: dest:i src1:i src2:i clob:1 len:42
+int_mul_ovf_un: dest:i src1:i src2:i clob:1 len:20
+int_neg: dest:i src1:i clob:1 len:4
+int_not: dest:i src1:i clob:1 len:8
+int_or: dest:i src1:i src2:i clob:1 len:4
+int_or_imm: dest:i src1:i clob:1 len:16
+int_rem: dest:d src1:i src2:i clob:d len:10
+int_rem_imm: dest:d src1:i clob:d len:24
+int_rem_un: dest:d src1:i src2:i clob:d len:12
+int_rem_un_imm: dest:d src1:i clob:d len:24
+int_sbb: dest:i src1:i src2:i clob:1 len:6
+int_sbb_imm: dest:i src1:i clob:1 len:14
+int_shl: dest:i src1:i src2:i clob:s len:6
+int_shl_imm: dest:i src1:i clob:1 len:8
+int_shr: dest:i src1:i src2:i clob:s len:6
+int_shr_imm: dest:i src1:i clob:1 len:8
+int_shr_un: dest:i src1:i src2:i clob:s len:6
+int_shr_un_imm: dest:i src1:i clob:1 len:8
+int_subcc: dest:i src1:i src2:i clob:1 len:6
+int_sub: dest:i src1:i src2:i clob:1 len:4
+int_sub_imm: dest:i src1:i clob:1 len:18
+int_xor: dest:i src1:i src2:i clob:1 len:4
+int_xor_imm: dest:i src1:i clob:1 len:16
 isinst:
 jmp: len:40
 label:
-lcall: dest:l len:8 clob:c
+lcall: dest:l len:22 clob:c
 lcall_membase: dest:l src1:b len:12 clob:c
 lcall_reg: dest:l src1:i len:8 clob:c
-lcompare:
+lcompare: src1:i src2:i len:4
 ldaddr:
 ldarg.0:
 ldarg.1:
@@ -314,7 +367,7 @@ load_membase: dest:i src1:b len:18
 loadi1_membase: dest:i src1:b len:40
 loadi2_membase: dest:i src1:b len:24
 loadi4_membase: dest:i src1:b len:18
-loadi8_membase: dest:i src1:b
+loadi8_membase: dest:i src1:b len:18
 loadr4_membase: dest:f src1:b len:20
 loadr8_membase: dest:f src1:b len:18
 loadu1_membase: dest:i src1:b len:26
@@ -386,12 +439,12 @@ long_not:
 long_or:
 long_rem:
 long_rem_un:
-long_shl:
-long_shl_imm:
-long_shr:
-long_shr_imm:
-long_shr_un:
-long_shr_un_imm:
+long_shl: dest:i src1:i src2:i clob:s len:6
+long_shl_imm: dest:i src1:i len:8
+long_shr_un: dest:i src1:i src2:i clob:s len:6
+long_shr: dest:i src1:i src2:i clob:s len:6
+long_shr_imm: dest:i src1:i len:8
+long_shr_un_imm: dest:i src1:i len:8
 long_sub:
 long_sub_imm:
 long_sub_ovf:
@@ -406,9 +459,9 @@ mono_vtaddr:
 move: dest:i src1:i len:4
 mul.ovf.un: dest:i src1:i src2:i len:20 clob:1
 mul.ovf: dest:i src1:i src2:i len:42 clob:1
-mul: dest:i src1:i src2:i len:4 clob:1
+mul: dest:i src1:i src2:i len:6 clob:1
 mul_imm: dest:i src1:i len:18
-neg: dest:i src1:i len:4 clob:1
+neg: dest:i src1:i len:6 clob:1
 newarr:
 newobj:
 nop: len:4
@@ -416,7 +469,7 @@ not: dest:i src1:i len:8 clob:1
 op_bigmul: len:2 dest:l src1:a src2:i
 op_bigmul_un: len:2 dest:l src1:a src2:i
 op_endfilter: src1:i len:12
-or: dest:i src1:i src2:i len:4 clob:1
+or: dest:i src1:i src2:i len:6 clob:1
 or_imm: dest:i src1:i len:16
 outarg: src1:i len:1
 outarg_imm: len:5
@@ -430,7 +483,7 @@ prefix5:
 prefix6:
 prefix7:
 prefixref:
-r4const: dest:f len:22
+r4const: dest:f len:26
 r8const: dest:f len:18
 refanytype:
 refanyval:
@@ -450,10 +503,9 @@ s390_setf4ret: dest:f src1:f len:4 clob:r
 sbb: dest:i src1:i src2:i len:6
 sbb_imm: dest:i src1:i len:14
 setfreg: dest:f src1:f len:4 clob:r
-setlret: src1:i src2:i len:12
 setreg: dest:i src1:i len:4 clob:r
-setregimm: dest:i len:18 clob:r
-setret: dest:a src1:i len:6
+setregimm: dest:i len:20 clob:r
+setret: dest:a src1:i len:4
 shl: dest:i src1:i src2:i clob:s len:6
 shl_imm: dest:i src1:i len:8
 shr.un: dest:i src1:i src2:i clob:s len:6
@@ -498,30 +550,30 @@ storei2_membase_imm: dest:b len:32
 storei2_membase_reg: dest:b src1:i len:18
 storei4_membase_imm: dest:b len:32
 storei4_membase_reg: dest:b src1:i len:18
-storei8_membase_imm: dest:b 
-storei8_membase_reg: dest:b src1:i 
+storei8_membase_imm: dest:b len:38
+storei8_membase_reg: dest:b src1:i len:26 
 storer4_membase_reg: dest:b src1:f len:22
 storer8_membase_reg: dest:b src1:f len:22
 stsfld:
 sub.ovf.un: len:10 dest:i src1:i src2:i 
 sub.ovf: len:24 dest:i src1:i src2:i
-sub: dest:i src1:i src2:i len:4 clob:1
+sub: dest:i src1:i src2:i len:6 clob:1
 sub_imm: dest:i src1:i len:18
 sub_ovf_carry: dest:i src1:1 src2:i len:28
 sub_ovf_un_carry: dest:i src1:1 src2:i len:12
 subcc: dest:i src1:i src2:i len:6
 switch:
 tail.:
-throw: src1:i len:8
+throw: src1:i len:26
 trap:
 unaligned.:
 unbox:
-vcall: len:8 clob:c
+vcall: len:22 clob:c
 vcall_membase: src1:b len:12 clob:c
 vcall_reg: src1:i len:8 clob:c
-voidcall: len:8 clob:c
+voidcall: len:22 clob:c
 voidcall_membase: src1:b len:12 clob:c
 voidcall_reg: src1:i len:8 clob:c
 volatile.:
-xor: dest:i src1:i src2:i len:4 clob:1
+xor: dest:i src1:i src2:i len:6 clob:1
 xor_imm: dest:i src1:i len:16

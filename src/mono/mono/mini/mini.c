@@ -5576,7 +5576,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 2;
 				break;
 			case CEE_TAIL_:
-				ins_flag |= MONO_INST_TAILCALL;
+				ins_flag   |= MONO_INST_TAILCALL;
+				cfg->flags |= MONO_CFG_HAS_TAIL;
 				/* Can't inline tail calls at this time */
 				inline_costs += 100000;
 				ip += 2;
