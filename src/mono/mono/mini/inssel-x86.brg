@@ -491,6 +491,7 @@ stmt: CEE_STIND_I4 (OP_REGVAR, CEE_SUB (CEE_LDIND_I4 (OP_REGVAR), OP_ICONST)) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+stmt: CEE_STIND_I (OP_REGVAR, CEE_ADD (CEE_LDIND_I (OP_REGVAR), OP_ICONST)),
 stmt: CEE_STIND_I4 (OP_REGVAR, CEE_ADD (CEE_LDIND_I4 (OP_REGVAR), OP_ICONST)) {
 	int con = state->right->right->tree->inst_c0;
 	int dreg = state->left->tree->dreg;

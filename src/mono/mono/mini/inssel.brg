@@ -845,6 +845,10 @@ reg: CEE_SUB (reg, reg) {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
 
+reg: CEE_SUB (reg, CEE_LDIND_I4 (OP_REGVAR)) {
+	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->left->tree->dreg);
+}
+
 reg: CEE_SUB (reg, OP_ICONST) {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_SUB_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
 }
@@ -1130,6 +1134,12 @@ cflags: OP_COMPARE (reg, reg) {
 cflags: OP_COMPARE (CEE_LDIND_I4 (OP_REGVAR), reg) {
 	tree->sreg1 = state->left->left->tree->dreg;
 	tree->sreg2 = state->right->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+cflags: OP_COMPARE (CEE_LDIND_I (OP_REGVAR), CEE_LDIND_I (OP_REGVAR)) {
+	tree->sreg1 = state->left->left->tree->dreg;
+	tree->sreg2 = state->right->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 

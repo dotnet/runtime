@@ -195,7 +195,16 @@ mono_constant_fold_inst (MonoInst *inst, gpointer data)
 			inst->opcode = OP_I8CONST;
 			inst->inst_l = inst->inst_i0->inst_c0;
 		}
-	return;
+		return;
+	case CEE_CONV_I:
+	case CEE_CONV_U:
+		if (inst->inst_i0->opcode == OP_ICONST) {
+			inst->opcode = OP_ICONST;
+			inst->inst_c0 = inst->inst_i0->inst_c0;
+		} else if (inst->inst_i0->opcode == CEE_LDIND_I) {
+			*inst = *inst->inst_i0;
+		}
+		return;
 	/* we should be able to handle isinst and castclass as well */
 	case CEE_ISINST:
 	case CEE_CASTCLASS:

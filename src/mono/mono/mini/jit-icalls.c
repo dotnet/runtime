@@ -256,6 +256,8 @@ mono_llrem_un (guint64 a, guint64 b)
 	return a % b;
 }
 
+#ifndef MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
+
 static guint64 
 mono_lshl (guint64 a, gint32 shamt)
 {
@@ -294,6 +296,8 @@ mono_lshr (gint64 a, gint32 shamt)
 
 	return res;
 }
+
+#endif
 
 /**
  * ves_array_element_address:

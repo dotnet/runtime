@@ -217,6 +217,7 @@ is_regsize_var (MonoType *t) {
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
 		return TRUE;
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
@@ -2033,28 +2034,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	if (cfg->opt & MONO_OPT_PEEPHOLE)
 		peephole_pass (cfg, bb);
 
-#if 0
-	/* 
-	 * various stratgies to align BBs. Using real loop detection or simply
-	 * aligning every block leads to more consistent benchmark results,
-	 * but usually slows down the code
-	 * we should do the alignment outside this function or we should adjust
-	 * bb->native offset as well or the code is effectively slowed down!
-	 */
-	/* align all blocks */
-//	if ((pad = (cfg->code_len & (align - 1)))) {
-	/* poor man loop start detection */
-//	if (bb->code && bb->in_count && bb->in_bb [0]->cil_code > bb->cil_code && (pad = (cfg->code_len & (align - 1)))) {
-	/* consider real loop detection and nesting level */
-//	if (bb->loop_blocks && bb->nesting < 3 && (pad = (cfg->code_len & (align - 1)))) {
-	/* consider real loop detection */
-	if (bb->loop_blocks && (pad = (cfg->code_len & (align - 1)))) {
-		pad = align - pad;
-		x86_padding (code, pad);
-		cfg->code_len += pad;
-		bb->native_offset = cfg->code_len;
+	if (cfg->opt & MONO_OPT_LOOP) {
+		int pad, align = 8;
+		/* set alignment depending on cpu */
+		if (bb->nesting && (bb->in_count == 1) && (pad = (cfg->code_len & (align - 1)))) {
+			pad = align - pad;
+			/*g_print ("adding %d pad at %x to loop in %s\n", pad, cfg->code_len, cfg->method->name);*/
+			x86_padding (code, pad);
+			cfg->code_len += pad;
+			bb->native_offset = cfg->code_len;
+		}
 	}
-#endif
 
 	if (cfg->verbose_level > 2)
 		g_print ("Basic block %d starting at offset 0x%x\n", bb->block_num, bb->native_offset);
