@@ -828,27 +828,37 @@ mono_compute_branches (MonoFlowGraph *cfg)
 		gpointer *ip = GUINT_TO_POINTER (GPOINTER_TO_UINT (ji->ip) + cfg->start);
 		gpointer target;
 
-		if (ji->target) {
-			target = ji->target;
-		} else if (ji->bb) {
-			target = ji->bb->addr + cfg->start;
-		} else {
-			/* special case - jump to epilog */
+		switch (ji->type) {
+		case MONO_JUMP_INFO_BB:
+			target = ji->data.bb->addr + cfg->start;
+			*ip = target - GPOINTER_TO_UINT(ip) - 4;
+			break;
+		case MONO_JUMP_INFO_ABS:
+			target = ji->data.target;
+			*ip = target - GPOINTER_TO_UINT(ip) - 4;
+			break;
+		case MONO_JUMP_INFO_EPILOG:
 			target = cfg->epilog + cfg->start;
+			*ip = target - GPOINTER_TO_UINT(ip) - 4;
+			break;
+		case MONO_JUMP_INFO_IP:
+			*ip = ip;
+			break;
+		default:
+			g_assert_not_reached ();
 		}
-		*ip = target - GPOINTER_TO_UINT(ip) - 4;
 	}
 }
 
 void
-mono_add_jump_info (MonoFlowGraph *cfg, gpointer ip, gpointer target, MonoBBlock *bb)
+mono_add_jump_info (MonoFlowGraph *cfg, gpointer ip, MonoJumpInfoType type, gpointer target)
 {
 	MonoJumpInfo *ji = mono_mempool_alloc (cfg->mp, sizeof (MonoJumpInfo));
 
+	ji->type = type;
 	ji->ip = GUINT_TO_POINTER (GPOINTER_TO_UINT (ip) - GPOINTER_TO_UINT (cfg->start));
-	ji->target = target;
+	ji->data.target = target;
 	ji->next = cfg->jump_info;
-	ji->bb = bb;
 
 	cfg->jump_info = ji;
 }
@@ -878,7 +888,7 @@ gpointer
 arch_compile_method (MonoMethod *method)
 {
 	MonoDomain *domain = mono_domain_get ();
-	MonoFlowGraph *cfg;
+	MonoJitInfo *ji;
 	MonoMemPool *mp;
 	guint8 *addr;
 	GHashTable *jit_code_hash;
@@ -1023,8 +1033,11 @@ arch_compile_method (MonoMethod *method)
 	
 	} else {
 		MonoMethodHeader *header = ((MonoMethodNormal *)method)->header;
-		MonoJitInfo *ji = g_new0 (MonoJitInfo, 1);
+		MonoFlowGraph *cfg;
+
 		gulong code_size_ratio;
+
+		ji = g_new0 (MonoJitInfo, 1);
 		
 		cfg = mono_cfg_new (method, mp);
 

@@ -66,12 +66,22 @@ typedef struct {
 	gint32        addr;
 } MonoBBlock;
 
+typedef enum {
+	MONO_JUMP_INFO_BB,
+	MONO_JUMP_INFO_ABS,
+	MONO_JUMP_INFO_EPILOG,
+	MONO_JUMP_INFO_IP,
+} MonoJumpInfoType;
+
 typedef struct _MonoJumpInfo MonoJumpInfo;
 struct _MonoJumpInfo {
 	MonoJumpInfo *next;
 	gpointer      ip;
-	gpointer      target;
-	MonoBBlock   *bb;
+	MonoJumpInfoType type;
+	union {
+		gpointer      target;
+		MonoBBlock   *bb;
+	} data;
 };
 
 typedef struct {
@@ -198,7 +208,7 @@ mono_analyze_stack         (MonoFlowGraph *cfg);
 
 void
 mono_add_jump_info         (MonoFlowGraph *cfg, gpointer ip, 
-			    gpointer target, MonoBBlock *bb);
+			    MonoJumpInfoType type, gpointer target);
 
 void
 mono_disassemble_code      (guint8 *code, int size, char *id);
