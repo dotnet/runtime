@@ -47,6 +47,11 @@ freg: CEE_CONV_R_UN (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+freg: OP_FCONV_TO_R4 (freg) "0" {
+	/* The conversion is done elsewhere */
+	MONO_EMIT_UNALU (s, tree, OP_FMOVE, state->reg1, state->left->reg1);
+}
+
 reg: OP_LOCALLOC (reg) {
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = state->reg1;
@@ -220,7 +225,6 @@ stmt: OP_SPARC_OUTARG_SPLIT_REG_STACK (freg) {
 
 # Handles scalar valuetypes like RuntimeTypeHandle
 reg: OP_OUTARG_VT (OP_ICONST) {
-	int size = tree->unused;
 	MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STOREI4_MEMBASE_IMM, sparc_sp, tree->inst_c1, state->left->tree->inst_c0);
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, sparc_sp, tree->inst_c1);
 }

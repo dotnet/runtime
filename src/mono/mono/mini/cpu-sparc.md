@@ -83,8 +83,8 @@ ldc.r4:
 ldc.r8:
 dup:
 pop:
-jmp:
-call: dest:i clob:c len:12
+jmp: len:16
+call: dest:i clob:c len:16
 calli:
 ret:
 br.s:
@@ -214,7 +214,7 @@ conv.ovf.u4:
 conv.ovf.i8:
 conv.ovf.u8:
 refanyval:
-ckfinite: dest:f src1:f len:28
+ckfinite: dest:f src1:f len:40
 mkrefany:
 ldtoken:
 conv.u2: dest:i src1:i len:8
@@ -301,20 +301,20 @@ setreg: dest:i src1:i len:4 clob:r
 setregimm: dest:i len:8 clob:r
 setfreg: dest:f src1:f len:4 clob:r
 checkthis: src1:b len:4
-voidcall: len:8 clob:c
-voidcall_reg: src1:i len:8 clob:c
-voidcall_membase: src1:b len:12 clob:c
-fcall: dest:f len:16 clob:c
-fcall_reg: dest:f src1:i len:16 clob:c
-fcall_membase: dest:f src1:b len:20 clob:c
-lcall: dest:l len:16 clob:c
-lcall_reg: dest:l src1:i len:16 clob:c
-lcall_membase: dest:l src1:b len:20 clob:c
-vcall: len:12 clob:c
-vcall_reg: src1:i len:12 clob:c
-vcall_membase: src1:b len:20 clob:c
-call_reg: dest:i src1:i len:12 clob:c
-call_membase: dest:i src1:b len:16 clob:c
+voidcall: len:12 clob:c
+voidcall_reg: src1:i len:12 clob:c
+voidcall_membase: src1:b len:16 clob:c
+fcall: dest:f len:20 clob:c
+fcall_reg: dest:f src1:i len:20 clob:c
+fcall_membase: dest:f src1:b len:24 clob:c
+lcall: dest:l len:20 clob:c
+lcall_reg: dest:l src1:i len:20 clob:c
+lcall_membase: dest:l src1:b len:24 clob:c
+vcall: len:16 clob:c
+vcall_reg: src1:i len:16 clob:c
+vcall_membase: src1:b len:24 clob:c
+call_reg: dest:i src1:i len:16 clob:c
+call_membase: dest:i src1:b len:20 clob:c
 trap:
 iconst: dest:i len:8
 i8const:
@@ -472,7 +472,7 @@ float_conv_to_i1: dest:i src1:f len:40
 float_conv_to_i2: dest:i src1:f len:40
 float_conv_to_i4: dest:i src1:f len:40
 float_conv_to_i8: dest:l src1:f len:40
-float_conv_to_r4:
+float_conv_to_r4: dest:f src1:f len:8
 float_conv_to_r8:
 float_conv_to_u4: dest:i src1:f len:40
 float_conv_to_u8: dest:l src1:f len:40
