@@ -5,13 +5,19 @@
 
 	These are just guidelines, and you should still profile your
 	code to find the actual performance problems in your
-	application.
+	application. It is never a smart idea to make a change with the
+	hopes of improving the performance of your code without first
+	measuring. In general, these guidelines should serve as ideas
+	to help you figure out `how can I make this method run faster'.
+	
+	It is up to you to figure out, `Which method is running slowly.'
 
 ** Using the Mono profiler
-
-	To obtain memory consumption and measure the time spent on
-	functions and the number of times a function is called in
-	Mono, you can invoke the runtime with the --profile flag, like this:
+	
+	So, how does one measure what method are running slowly? A profiler
+	helps with this task. Mono includes a profiler that is built
+	into the runtime system. You can invoke this profiler on your program
+	by running with the --profile flag.
 
 <pre>
 	mono --profile program.exe
@@ -21,8 +27,16 @@
 	for profiling.  The default Mono profiler will record the time
 	spent on a routine, the number of times the routine called,
 	the memory consumed by each method broken down by invoker, and
-	the total amount of memory consumed, this is what it looks
-	like:
+	the total amount of memory consumed.
+
+	It does this by asking the JIT to insert a call to the profiler
+	every time a method is entered or left. The profiler times the
+	amount of time elapsed between the beginning and the end of the
+	call. The profiler is also notified of allocations.
+	
+	When the program has finished executing, the profiler prints the
+	data in human readable format. It looks like:
+
 <pre>
 Total time spent compiling 227 methods (sec): 0.07154
 Slowest method to compile (sec): 0.01893: System.Console::.cctor()
@@ -44,10 +58,42 @@ Total mem Method
 Total memory allocated: 448 KB
 </pre>
 
+	At the top, it shows each method that is called. The data is sorted
+	by the total time that the program spent within the method. Then
+	it shows how many times the method was called, and the average time
+	per call.
+	
+	Below this, it shows the top callers of the method. This is very useful
+	data. If you find, for example, that the method Data::Computate () takes
+	a very long time to run, you can look to see if any of the calls can be
+	avoided.
+	
+	Two warnings must be given about the method data. First,
+	the profiler has an overhead associated with it. As such,
+	a high number of calls to a method may show up as comsuming
+	lots of time, when in reality they do not consume much time
+	at all. If you see a method that has a very high number of
+	calls, you may be able to ignore it. However, do consider
+	removing calls if possible, as that will sometimes help
+	performance. This problem is often seen with the use
+	of built in collection types.
+	
+	Secondly, due to the nature of the profiler, recursive calls
+	have extermely large times (because the profiler double counts
+	when the method calls itself). One easy way to see this problem
+	is that if a method is shown as taking more time than the Main
+	method, it is very likely recursive, and causing this problem.
+	
+	Below the method data, allocation data is sown. This shows
+	how much memory each method allocates. The number beside
+	the method is the total amount of memory. Below that, it
+	is broken down into types. Then, the caller data is given. This
+	data is again useful when you want to figure out how to eliminate calls.
+	
 	You might want to keep a close eye on the memory consumption
 	and on the method invocation counts.   A lot of the
 	performance gains in MCS for example came from reducing its
-	memory usage, as opposed to changes in the execution path. 
+	memory usage, as opposed to changes in the execution path.
 
 ** Memory Management in the .NET/Mono world.
 
@@ -57,6 +103,13 @@ Total memory allocated: 448 KB
 	is a great productivity gain, but if you create thousands of
 	objects, that will make the garbage collector do more work,
 	and it might slow down your application.
+	
+	Remember, each time you allocate an object, the GC is forced
+	to find space for the object. Each object has an 8 byte overhead
+	(4 to tell what type it is, then 4 for a sync block). If
+	the GC finds that it is running out of room, it will scan every
+	object for pointers, looking for unreferenced objects. If you allocate
+	extra objects, the GC then must take the effort to free the objects.
 
 ** foreach
 
