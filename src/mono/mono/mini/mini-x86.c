@@ -23,6 +23,13 @@
 
 static gint lmf_tls_offset = -1;
 
+#ifdef PLATFORM_WIN32
+/* Under windows, the default pinvoke calling convention is stdcall */
+#define CALLCONV_IS_STDCALL(call_conv) (((call_conv) == MONO_CALL_STDCALL) || ((call_conv) == MONO_CALL_DEFAULT))
+#else
+#define CALLCONV_IS_STDCALL(call_conv) ((call_conv) == MONO_CALL_STDCALL)
+#endif
+
 const char*
 mono_arch_regname (int reg) {
 	switch (reg) {
@@ -2559,7 +2566,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
 			}
 			x86_call_code (code, 0);
-			if (call->stack_usage && (call->signature->call_convention != MONO_CALL_STDCALL))
+			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
 				x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
 			break;
 		case OP_FCALL_REG:
@@ -2569,7 +2576,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CALL_REG:
 			call = (MonoCallInst*)ins;
 			x86_call_reg (code, ins->sreg1);
-			if (call->stack_usage && (call->signature->call_convention != MONO_CALL_STDCALL))
+			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
 				x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
 			break;
 		case OP_FCALL_MEMBASE:
@@ -2579,7 +2586,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CALL_MEMBASE:
 			call = (MonoCallInst*)ins;
 			x86_call_membase (code, ins->sreg1, ins->inst_offset);
-			if (call->stack_usage && (call->signature->call_convention != MONO_CALL_STDCALL))
+			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
 				x86_alu_reg_imm (code, X86_ADD, X86_ESP, call->stack_usage);
 			break;
 		case OP_OUTARG:
@@ -3579,7 +3586,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	x86_leave (code);
 
-	if (sig->call_convention == MONO_CALL_STDCALL) {
+	if (CALLCONV_IS_STDCALL (sig->call_convention)) {
 	  MonoJitArgumentInfo *arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
 
 	  stack_to_pop = arch_get_argument_info (sig, sig->param_count, arg_info);
