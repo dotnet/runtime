@@ -1,3 +1,8 @@
+2003-12-16  Martin Baulig  <martin@ximian.com>
+
+	* Makefile.am: In a Makefile.am, comments are started with `#' and
+	not with `dnl' - I must have been an idiot ...
+
 2003-12-10  Todd Berman <tberman@gentoo.org>
 
 	* configure.in: adding libicu url to the ICU: no message.
