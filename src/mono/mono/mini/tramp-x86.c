@@ -134,8 +134,10 @@ x86_magic_trampoline (int eax, int ecx, int edx, int esi, int edi,
 				if (do_patch) {
 					InterlockedExchange ((gint32*)(code + 2), (guint)addr - ((guint)code + 1) - 5);
 
+#ifdef HAVE_VALGRIND_MEMCHECK_H
 					/* Tell valgrind to recompile the patched code */
 					VALGRIND_DISCARD_TRANSLATIONS (code + 2, code + 6);
+#endif
 				}
 			}
 			return addr;
