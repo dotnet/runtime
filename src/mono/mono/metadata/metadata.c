@@ -1731,6 +1731,11 @@ mono_metadata_free_type (MonoType *type)
 		return;
 	
 	switch (type->type){
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_STRING:
+		if (!type->data.klass)
+			break;
+		/* fall through */
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
 		if (type == &type->data.klass->byval_arg || type == &type->data.klass->this_arg)
