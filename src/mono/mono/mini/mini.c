@@ -5900,13 +5900,13 @@ mono_find_class_init_trampoline_by_addr (gconstpointer addr)
 	return res;
 }
 
-static GHashTable *emul_opcode_hash = NULL;
+static MonoJitICallInfo **emul_opcode_map = NULL;
 
-static MonoJitICallInfo *
+static inline MonoJitICallInfo *
 mono_find_jit_opcode_emulation (int opcode)
 {
-	if  (emul_opcode_hash)
-		return g_hash_table_lookup (emul_opcode_hash, (gpointer)opcode);
+	if  (emul_opcode_map)
+		return emul_opcode_map [opcode];
 	else
 		return NULL;
 }
@@ -5916,15 +5916,15 @@ mono_register_opcode_emulation (int opcode, const char *name, MonoMethodSignatur
 {
 	MonoJitICallInfo *info;
 
-	if (!emul_opcode_hash)
-		emul_opcode_hash = g_hash_table_new (NULL, NULL);
+	if (!emul_opcode_map)
+		emul_opcode_map = g_new0 (MonoJitICallInfo*, OP_LAST + 1);
 
 	g_assert (!sig->hasthis);
 	g_assert (sig->param_count < 3);
 
 	info = mono_register_jit_icall (func, name, sig, no_throw);
 
-	g_hash_table_insert (emul_opcode_hash, (gpointer)opcode, info);
+	emul_opcode_map [opcode] = info;
 }
 
 static void
